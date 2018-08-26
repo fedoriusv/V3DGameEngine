@@ -64,7 +64,7 @@ bool WindowWindows::initialize()
 
     // create window
     ASSERT(!m_hWnd, "Already exist");
-    m_hWnd = CreateWindowEx(dwExStyle, m_classname.c_str(), __TEXT("Test"), dwStyle, m_params._position.x, m_params._position.y, m_params._size.width, m_params._size.height, NULL, NULL, m_hInstance, NULL);
+    m_hWnd = CreateWindowEx(dwExStyle, m_classname.c_str(), __TEXT("Test"), dwStyle, m_params._position.x, m_params._position.y, m_params._size.width, m_params._size.height, NULL, NULL, m_hInstance, this);
     if (!m_hWnd)
     {
         const u32 Error = GetLastError();
@@ -160,11 +160,13 @@ void WindowWindows::restore()
 void WindowWindows::setFullScreen(bool value)
 {
     //TODO:
+    ASSERT(false, "not implemented");
 }
 
 void WindowWindows::setResizeble(bool value)
 {
     //TODO:
+    ASSERT(false, "not implemented");
 }
 
 void WindowWindows::setTextCaption(const std::string& text)
@@ -174,54 +176,49 @@ void WindowWindows::setTextCaption(const std::string& text)
 
 void WindowWindows::setPosition(const core::Point2D& pos)
 {
-    //TODO:
+    if (m_params._isFullscreen)
+    {
+        return;
+    }
+
+    SetWindowPos(m_hWnd, NULL, pos.x, pos.y, 0, 0, SWP_NOACTIVATE | SWP_NOZORDER | SWP_NOSIZE);
+    m_params._position = pos;
 }
 
 bool WindowWindows::isMaximized() const
 {
-    return false;
+    return m_params._isMaximized;
 }
 
 bool WindowWindows::isMinimized() const
 {
-    return false;
+    return  m_params._isMinimized;
 }
 
 bool WindowWindows::isActive() const
 {
+    if (m_hWnd == GetActiveWindow())
+    {
+        return m_params._isActive;
+    }
+
     return false;
 }
 
 bool WindowWindows::isFocused() const
 {
+    if (m_hWnd == GetFocus())
+    {
+        return m_params._isFocused;
+    }
+
     return false;
 }
 
-LRESULT WindowWindows::WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
+LRESULT WindowWindows::HandleEvents(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
     switch (message)
     {
-    case WM_CREATE:
-    {
-        CREATESTRUCT* cs = (CREATESTRUCT*)lParam;
-        SetWindowLongPtr(hWnd, 0, (LONG_PTR)cs->lpCreateParams);
-
-        return TRUE;
-    }
-
-    case WM_ACTIVATE:
-    {
-        BOOL focused = LOWORD(wParam) != WA_INACTIVE;
-        BOOL iconified = HIWORD(wParam) ? TRUE : FALSE;
-
-        if (focused && iconified)
-        {
-            focused = FALSE;
-        }
-
-        return TRUE;
-    }
-
     case WM_SYSKEYDOWN:
     case WM_KEYDOWN:
     {
@@ -247,30 +244,92 @@ LRESULT WindowWindows::WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lP
     {
         return TRUE;
     }
-
-    case WM_TIMER:
-    {
-        //        {
-        //            KillTimer(hWnd, 0);
-        //        }
-        return TRUE;
     }
 
-    case WM_SIZE:
-    {
-        return TRUE;
-    }
+    return DefWindowProc(hWnd, message, wParam, lParam);
+}
 
-    case WM_SHOWWINDOW:
-    {
-        return TRUE;
-    }
+LRESULT WindowWindows::WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
+{
+    static u32 s_timer_ID = 0;
 
-    case WM_DESTROY:
+    if (message == WM_CREATE)
     {
-        PostQuitMessage(0);
+        CREATESTRUCT* cs = (CREATESTRUCT*)lParam;
+        SetWindowLongPtr(hWnd, GWLP_USERDATA, (LONG_PTR)cs->lpCreateParams);
+
+        SetTimer(hWnd, s_timer_ID, 1000, NULL); //milliseconds
+
         return TRUE;
     }
+    else
+    {
+        LONG_PTR lpCreateParams = 0;
+        lpCreateParams = GetWindowLongPtr(hWnd, GWLP_USERDATA);
+
+        if (!lpCreateParams)
+        {
+            return DefWindowProc(hWnd, message, wParam, lParam);
+        }
+        WindowWindows* window = reinterpret_cast<WindowWindows*>(lpCreateParams);
+
+        switch (message)
+        {
+        case WM_ACTIVATE:
+        {
+            BOOL active = LOWORD(wParam) != WA_INACTIVE;
+            BOOL iconified = HIWORD(wParam) ? TRUE : FALSE;
+
+            if (active && iconified)
+            {
+                active = FALSE;
+            }
+            window->m_params._isActive = active;
+
+
+            return TRUE;
+        }
+
+        case WM_SETFOCUS:
+        {
+            window->m_params._isFocused = true;
+            return TRUE;
+        }
+
+        case WM_KILLFOCUS:
+        {
+            window->m_params._isFocused = false;
+            return TRUE;
+        }
+
+        case WM_SHOWWINDOW:
+        {
+            return TRUE;
+        }
+
+        case WM_SIZE:
+        {
+            return TRUE;
+        }
+
+        case WM_TIMER:
+        {
+            return TRUE;
+        }
+
+        case WM_DESTROY:
+        {
+            KillTimer(hWnd, s_timer_ID);
+            PostQuitMessage(0);
+            return TRUE;
+        }
+
+        default:
+        {
+            ASSERT(window, "Must be valid pointer");
+            return window->HandleEvents(hWnd, message, wParam, lParam);
+        }
+        }
     }
 
     return DefWindowProc(hWnd, message, wParam, lParam);

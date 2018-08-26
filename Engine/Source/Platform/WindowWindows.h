@@ -39,6 +39,8 @@ namespace platform
         HWND m_hWnd;
         const std::wstring m_classname = L"V3DWin";
 
+        LRESULT HandleEvents(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
+
         static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
     };
 
