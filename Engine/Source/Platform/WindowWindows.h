@@ -7,13 +7,19 @@ namespace v3d
 {
 namespace platform
 {
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     class WindowWindows : public Window
     {
     public:
 
-        explicit WindowWindows(const WindowParam& params);
+        WindowWindows(const WindowParam& params, event::InputEventReceiver* receiver);
         ~WindowWindows();
+
+        WindowWindows(const WindowWindows&) = delete;
+        WindowWindows(WindowWindows&&) = delete;
+        WindowWindows& operator=(const WindowWindows&) = delete;
+        WindowWindows& operator=(WindowWindows&&) = delete;
 
         void minimize() override;
         void maximize() override;
@@ -35,14 +41,18 @@ namespace platform
         bool update() override;
         void destroy() override;
 
-        HINSTANCE m_hInstance;
-        HWND m_hWnd;
-        const std::wstring m_classname = L"V3DWin";
+        void fillKeyCodes();
 
-        LRESULT HandleEvents(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
+        HINSTANCE           m_hInstance;
+        HWND                m_hWnd;
+        const std::wstring  m_classname = L"V3DWin";
+
+        LRESULT HandleMessage(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
 
         static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
     };
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
 
 } //namespace platform
 } //namespace v3d

@@ -1,11 +1,18 @@
 #pragma once
 
 #include "Common.h"
+#include "Event/KeyCodes.h"
 
 namespace v3d
 {
+namespace event
+{
+    class InputEventReceiver;
+
+} //namespace event
 namespace platform
 {
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     class Window
     {
@@ -40,10 +47,11 @@ namespace platform
         };
 
         static Window*  createWindow(const core::Dimension2D& size = { 1024U, 768U }, const core::Point2D& pos = { 100U, 100U }, bool fullscreen = false, bool resizable = false);
+        static Window*  createWindow(const core::Dimension2D& size = { 1024U, 768U }, const core::Point2D& pos = { 100U, 100U }, bool fullscreen = false, event::InputEventReceiver* receiver = nullptr);
         static bool     updateWindow(Window* window);
         static void     detroyWindow(Window* window);
 
-        explicit Window(const WindowParam& params);
+        Window(const WindowParam& params, event::InputEventReceiver* receiver);
         virtual ~Window();
 
         Window(const Window&) = delete;
@@ -70,15 +78,22 @@ namespace platform
         bool isResizable() const;
         const core::Dimension2D& getSize() const;
 
+        event::InputEventReceiver* getInputEventReceiver() const;
+
     protected:
 
         virtual bool initialize() = 0;
         virtual bool update() = 0;
         virtual void destroy() = 0;
 
-        WindowParam m_params;
+        WindowParam                 m_params;
+
+        event::KeyCodes             m_keyCodes;
+        event::InputEventReceiver*  m_receiver;
 
     };
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
 
 } //namespace platform
 } //namespace v3d

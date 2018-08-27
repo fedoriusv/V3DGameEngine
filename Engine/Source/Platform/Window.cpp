@@ -1,4 +1,5 @@
 #include "Window.h"
+#include "Event/InputEventReceiver.h"
 #include "Utils/Logger.h"
 
 #ifdef _PLATFORM_WINDOWS_
@@ -10,8 +11,9 @@ namespace v3d
 namespace platform
 {
 
-Window::Window(const WindowParam& params)
+Window::Window(const WindowParam& params, event::InputEventReceiver* receiver)
     : m_params(params)
+    , m_receiver(receiver)
 {
 }
 
@@ -28,7 +30,7 @@ Window* Window::createWindow(const core::Dimension2D& size, const core::Point2D&
     params._isResizable = fullscreen ? false : resizable;
 
 #ifdef _PLATFORM_WINDOWS_
-    Window* window = new WindowWindows(params);
+    Window* window = new WindowWindows(params, nullptr);
 #endif //_PLATFORM_WINDOWS_
 
     if (window->initialize())
@@ -36,6 +38,29 @@ Window* Window::createWindow(const core::Dimension2D& size, const core::Point2D&
         return window;
     }
     
+    LOG_ERROR("Window::createWindow: Can't initialize window");
+    delete window;
+
+    return nullptr;
+}
+
+Window* Window::createWindow(const core::Dimension2D& size, const core::Point2D& pos, bool fullscreen, event::InputEventReceiver* receiver)
+{
+    WindowParam params;
+    params._size = size;
+    params._position = pos;
+    params._isFullscreen = fullscreen;
+    params._isResizable = false;
+
+#ifdef _PLATFORM_WINDOWS_
+    Window* window = new WindowWindows(params, receiver);
+#endif //_PLATFORM_WINDOWS_
+
+    if (window->initialize())
+    {
+        return window;
+    }
+
     LOG_ERROR("Window::createWindow: Can't initialize window");
     delete window;
 
@@ -53,7 +78,18 @@ void Window::detroyWindow(Window* window)
     ASSERT(window, "window is nullptr");
     window->destroy();
 
+    if (window->m_receiver)
+    {
+        delete window->m_receiver;
+        window->m_receiver = nullptr;
+    }
+
     delete window;
+}
+
+event::InputEventReceiver* Window::getInputEventReceiver() const
+{
+    return m_receiver;
 }
 
 } //namespace platform
