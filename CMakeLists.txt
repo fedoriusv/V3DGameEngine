@@ -77,6 +77,8 @@ file(GLOB UTILS_HEADERS ${SOURCE_DIR}/Utils/*.h)
 file(GLOB UTILS_SOURCES ${SOURCE_DIR}/Utils/*.cpp)
 file(GLOB EVENT_HEADERS ${SOURCE_DIR}/Event/*.h)
 file(GLOB EVENT_SOURCES ${SOURCE_DIR}/Event/*.cpp)
+file(GLOB RENDERER_HEADERS ${SOURCE_DIR}/Renderer/*.h)
+file(GLOB RENDERER_SOURCES ${SOURCE_DIR}/Renderer/*.cpp)
 ##############################################################
 
 #Filters
@@ -86,13 +88,15 @@ source_group("Core" FILES ${CORE_HEADERS} ${CORE_SOURCES})
 source_group("Platform" FILES ${PLATFORM_HEADERS} ${PLATFORM_SOURCES})
 source_group("Utils" FILES ${UTILS_HEADERS} ${UTILS_SOURCES})
 source_group("Event" FILES ${EVENT_HEADERS} ${EVENT_SOURCES})
+source_group("Renderer" FILES ${RENDERER_HEADERS} ${RENDERER_SOURCES})
 
 add_library(${ENGINE_NAME} STATIC 
     ${MAIN_HEADERS} ${MAIN_SOURCES}
     ${CORE_HEADERS} ${CORE_SOURCES}
     ${PLATFORM_HEADERS} ${PLATFORM_SOURCES}
     ${UTILS_HEADERS} ${UTILS_SOURCES}
-    ${EVENT_HEADERS} ${EVENT_SOURCES})
+    ${EVENT_HEADERS} ${EVENT_SOURCES}
+    ${RENDERER_HEADERS} ${RENDERER_SOURCES})
     
 ##############################################################
 
