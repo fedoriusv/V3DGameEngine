@@ -79,6 +79,9 @@ file(GLOB EVENT_HEADERS ${SOURCE_DIR}/Event/*.h)
 file(GLOB EVENT_SOURCES ${SOURCE_DIR}/Event/*.cpp)
 file(GLOB RENDERER_HEADERS ${SOURCE_DIR}/Renderer/*.h)
 file(GLOB RENDERER_SOURCES ${SOURCE_DIR}/Renderer/*.cpp)
+
+file(GLOB VULKAN_HEADERS ${SOURCE_DIR}/Renderer/Vulkan/*.h)
+file(GLOB VULKAN_SOURCES ${SOURCE_DIR}/Renderer/Vulkan/*.cpp)
 ##############################################################
 
 #Filters
@@ -90,13 +93,16 @@ source_group("Utils" FILES ${UTILS_HEADERS} ${UTILS_SOURCES})
 source_group("Event" FILES ${EVENT_HEADERS} ${EVENT_SOURCES})
 source_group("Renderer" FILES ${RENDERER_HEADERS} ${RENDERER_SOURCES})
 
+source_group("Renderer\\Vulkan" FILES ${VULKAN_HEADERS} ${VULKAN_SOURCES})
+
 add_library(${ENGINE_NAME} STATIC 
     ${MAIN_HEADERS} ${MAIN_SOURCES}
     ${CORE_HEADERS} ${CORE_SOURCES}
     ${PLATFORM_HEADERS} ${PLATFORM_SOURCES}
     ${UTILS_HEADERS} ${UTILS_SOURCES}
     ${EVENT_HEADERS} ${EVENT_SOURCES}
-    ${RENDERER_HEADERS} ${RENDERER_SOURCES})
+    ${RENDERER_HEADERS} ${RENDERER_SOURCES}
+    ${VULKAN_HEADERS} ${VULKAN_SOURCES})
     
 ##############################################################
 
