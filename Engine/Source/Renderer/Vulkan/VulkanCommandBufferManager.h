@@ -1,0 +1,26 @@
+#pragma once
+
+namespace v3d
+{
+namespace renderer
+{
+namespace vk
+{
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    class VulkanCommandBufferManager final
+    {
+    public:
+
+        VulkanCommandBufferManager();
+        ~VulkanCommandBufferManager();
+
+    private:
+
+    };
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
+
+} //namespace vk
+} //namespace renderer
+} //namespace v3d

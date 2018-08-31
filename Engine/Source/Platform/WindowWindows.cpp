@@ -4,6 +4,7 @@
 #include "Event/InputEventReceiver.h"
 #include "Utils/Logger.h"
 
+#ifdef PLATFORM_WINDOWS
 #include <winuser.h>
 
 namespace v3d
@@ -674,3 +675,5 @@ void WindowWindows::fillKeyCodes()
 
 } //namespace platform
 } //namespace v3d
+
+#endif //PLATFORM_WINDOWS

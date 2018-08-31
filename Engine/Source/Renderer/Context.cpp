@@ -1,7 +1,9 @@
 #include "Context.h"
 #include "Platform/Window.h"
 #include "Utils/Logger.h"
+
 #include "EmptyContext.h"
+#include "Vulkan/VulkanGraphicContext.h"
 
 
 
@@ -18,7 +20,7 @@ Context::~Context()
 {
 }
 
-Context* Context::createContext(platform::Window* window,  RenderType type)
+Context* Context::createContext(const platform::Window* window,  RenderType type, DeviceMask mask)
 {
     Context* context = nullptr;
     switch (type)
@@ -27,9 +29,17 @@ Context* Context::createContext(platform::Window* window,  RenderType type)
         context = new EmptyContext();
         break;
 
-    //case RenderType::VulkanRender:
-    //    //
-    //    break;
+    case RenderType::VulkanRender:
+        if (mask & DeviceMask::GraphicMask)
+        {
+            context = new vk::VulkanGraphicContext();
+        }
+        else
+        {
+            LOG_ERROR("Context::createContext mask %x is not supported for this render type %u. Set default bit", mask, type);
+            context = new vk::VulkanGraphicContext();
+        }
+        break;
 
     default:
         ASSERT(false, "Render type is not implemented");

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Window.h"
+#ifdef PLATFORM_WINDOWS
 #include <windows.h>
 
 namespace v3d
@@ -56,3 +57,5 @@ namespace platform
 
 } //namespace platform
 } //namespace v3d
+
+#endif //PLATFORM_WINDOWS

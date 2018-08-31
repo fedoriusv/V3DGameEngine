@@ -43,9 +43,11 @@ project(${SOLUTION_NAME})
 #Pathes
 ##############################################################
 set(SOURCE_DIR Engine/Source)
-set(THIRD_PARTY_DIR Engine/Source/ThirdParty)
 set(ENGINE_PROJECT_DIR ${PROJECT_SOURCE_DIR})
-set(LIB_INCLUDE_DIRECTORY ${ENGINE_PROJECT_DIR}/${SOURCE_DIR} ${ENGINE_PROJECT_DIR}/${THIRD_PARTY_DIR})
+set(LIB_INCLUDE_DIRECTORY 
+	${ENGINE_PROJECT_DIR}/${SOURCE_DIR} 
+	${ENGINE_PROJECT_DIR}/${SOURCE_DIR}/Renderer 
+	${ENGINE_PROJECT_DIR}/${SOURCE_DIR}/ThirdParty)
 
 include_directories(BEFORE ${LIB_INCLUDE_DIRECTORY})
 ##############################################################

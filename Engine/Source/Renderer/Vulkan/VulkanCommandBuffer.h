@@ -1,32 +1,26 @@
 #pragma once
 
-#include "Context.h"
-
 namespace v3d
 {
 namespace renderer
 {
+namespace vk
+{
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    class EmptyContext final : public Context
+    class VulkanCommandBuffer
     {
     public:
 
-        EmptyContext();
-        ~EmptyContext();
-
-        void beginFrame() override;
-        void endFrame() override;
-        void presentFrame() override;
+        VulkanCommandBuffer();
+        ~VulkanCommandBuffer();
 
     private:
-
-        bool initialize() override;
-        void destroy() override;
 
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
+} //namespace vk
 } //namespace renderer
 } //namespace v3d

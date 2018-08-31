@@ -2,9 +2,9 @@
 #include "Event/InputEventReceiver.h"
 #include "Utils/Logger.h"
 
-#ifdef _PLATFORM_WINDOWS_
+#ifdef PLATFORM_WINDOWS
     #include "WindowWindows.h"
-#endif //_PLATFORM_WINDOWS_
+#endif //PLATFORM_WINDOWS
 
 namespace v3d
 {
@@ -29,9 +29,9 @@ Window* Window::createWindow(const core::Dimension2D& size, const core::Point2D&
     params._isFullscreen = fullscreen;
     params._isResizable = fullscreen ? false : resizable;
 
-#ifdef _PLATFORM_WINDOWS_
+#ifdef PLATFORM_WINDOWS
     Window* window = new WindowWindows(params, nullptr);
-#endif //_PLATFORM_WINDOWS_
+#endif //PLATFORM_WINDOWS
 
     if (window->initialize())
     {

@@ -113,7 +113,7 @@ void MyApplication::Initialize()
     LOG_ERROR("Error Test, %s, %d", cvar, ivar++);
     LOG_FATAL("Fatal Test, %s, %d", cvar, ivar++);
 
-    renderer::Context* context = renderer::Context::createContext(renderer::Context::RenderType::EmptyRender);
+    renderer::Context* context = renderer::Context::createContext(m_Window, renderer::Context::RenderType::VulkanRender);
     renderer::CommandList list(context, renderer::CommandList::CommandListType::DelayedCommandList);
     list.cmdBeginFrame();
     list.cmdEndFrame();

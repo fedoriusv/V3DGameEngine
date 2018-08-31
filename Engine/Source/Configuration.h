@@ -25,7 +25,7 @@
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #if defined(_WIN32) || defined(_WIN64) || defined(WIN32) || defined(WIN64)
-#   define _PLATFORM_WINDOWS_
+#   define PLATFORM_WINDOWS
 #endif
 
 #if defined(__APPLE__) || defined(MACOSX)
