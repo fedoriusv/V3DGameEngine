@@ -3,6 +3,7 @@
 #include "InputEvent.h"
 #include "InputEventHandler.h"
 #include "Common.h"
+#include "Utils/NonCopyable.h"
 
 namespace v3d
 {
@@ -10,7 +11,7 @@ namespace event
 {
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    class InputEventReceiver final
+    class InputEventReceiver final : public utils::NonCopyable
     {
     public:
 

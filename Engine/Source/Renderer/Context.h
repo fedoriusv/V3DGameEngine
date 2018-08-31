@@ -1,13 +1,19 @@
 #pragma once
 #include "Common.h"
+#include "Utils/NonCopyable.h"
 
 namespace v3d
 {
+namespace platform
+{
+    class Window;
+} //namespace platform
+
 namespace renderer
 {
-    class EmptyContext;
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    class Context //no clonable
+    class Context : public utils::NonCopyable
     {
 
     public:
@@ -22,7 +28,7 @@ namespace renderer
         Context();
         virtual ~Context();
 
-        static Context* createContext(RenderType type);
+        static Context* createContext(const platform::Window* window, RenderType type);
 
         virtual void beginFrame() = 0;
         virtual void endFrame() = 0;
@@ -34,7 +40,10 @@ namespace renderer
     protected:
 
         RenderType m_renderType;
+
     };
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
 
 } //namespace renderer
 } //namespace v3d

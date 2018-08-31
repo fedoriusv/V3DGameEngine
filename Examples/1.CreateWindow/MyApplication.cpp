@@ -1,6 +1,8 @@
 #include "MyApplication.h"
 #include "Utils/Logger.h"
 
+#include "Renderer/Context.h"
+#include "Renderer/CommandList.h"
 
 using namespace v3d;
 using namespace v3d::platform;
@@ -110,6 +112,13 @@ void MyApplication::Initialize()
     LOG_WARNING("Warrnig Test, %s, %d", cvar, ivar++);
     LOG_ERROR("Error Test, %s, %d", cvar, ivar++);
     LOG_FATAL("Fatal Test, %s, %d", cvar, ivar++);
+
+    renderer::Context* context = renderer::Context::createContext(renderer::Context::RenderType::EmptyRender);
+    renderer::CommandList list(context, renderer::CommandList::CommandListType::DelayedCommandList);
+    list.cmdBeginFrame();
+    list.cmdEndFrame();
+
+    list.flushCommands();
 }
 
 bool MyApplication::Running()

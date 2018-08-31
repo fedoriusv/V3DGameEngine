@@ -1,6 +1,8 @@
 #include "Context.h"
+#include "Platform/Window.h"
 #include "Utils/Logger.h"
 #include "EmptyContext.h"
+
 
 
 namespace v3d
@@ -16,7 +18,7 @@ Context::~Context()
 {
 }
 
-Context* Context::createContext(RenderType type)
+Context* Context::createContext(platform::Window* window,  RenderType type)
 {
     Context* context = nullptr;
     switch (type)
