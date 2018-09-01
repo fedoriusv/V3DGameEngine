@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Context.h"
+#include "Common.h"
 #include "Utils/NonCopyable.h"
 
 namespace v3d
@@ -10,6 +10,7 @@ namespace renderer
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     class CommandList;
+    class Context;
 
     class Command
     {
@@ -47,7 +48,7 @@ namespace renderer
         void cmdPresentFrame();
 
         Context* getContext() const;
-        bool     isThreaded() const;
+        bool isThreaded() const;
 
         //....
 

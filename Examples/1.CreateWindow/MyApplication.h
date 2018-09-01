@@ -4,21 +4,22 @@
 #include "Platform/Window.h"
 #include "Event/InputEventReceiver.h"
 
+
 class MyApplication
 {
 public:
 
     MyApplication(int& argc, char** argv);
-    virtual ~MyApplication();
+    ~MyApplication();
 
-    void    Initialize();
-    bool    Running();
-    int     Execute();
-    void    Exit();
+    int Execute();
 
 private:
 
+    void Initialize();
+    bool Running();
+    void Exit();
+
     v3d::platform::Window* m_Window;
     v3d::event::InputEventHandler* m_InputEventHandler;
-
 };

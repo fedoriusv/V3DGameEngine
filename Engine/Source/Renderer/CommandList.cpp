@@ -1,63 +1,66 @@
 #include "CommandList.h"
 #include "Utils/Logger.h"
 
+#include "Context.h"
+
 namespace v3d
 {
 namespace renderer
 {
-    class CommandBeginFrame : public Command
-    {
-    public:
-        CommandBeginFrame() 
-        {
-            LOG_DEBUG("CommandBeginFrame constructor");
-        };
-        ~CommandBeginFrame() 
-        {
-            LOG_DEBUG("CommandBeginFrame destructor");
-        };
 
-        void execute(const CommandList& cmdList)
-        {
-            cmdList.getContext()->beginFrame();
-        }
+class CommandBeginFrame : public Command
+{
+public:
+    CommandBeginFrame() 
+    {
+        LOG_DEBUG("CommandBeginFrame constructor");
+    };
+    ~CommandBeginFrame() 
+    {
+        LOG_DEBUG("CommandBeginFrame destructor");
     };
 
-    class CommandEndFrame : public Command
+    void execute(const CommandList& cmdList)
     {
-    public:
-        CommandEndFrame() 
-        {
-            LOG_DEBUG("CommandEndFrame constructor");
-        };
-        ~CommandEndFrame() 
-        {
-            LOG_DEBUG("CommandBeginFrame destructor");
-        };
+        cmdList.getContext()->beginFrame();
+    }
+};
 
-        void execute(const CommandList& cmdList)
-        {
-            cmdList.getContext()->endFrame();
-        }
+class CommandEndFrame : public Command
+{
+public:
+    CommandEndFrame() 
+    {
+        LOG_DEBUG("CommandEndFrame constructor");
+    };
+    ~CommandEndFrame() 
+    {
+        LOG_DEBUG("CommandBeginFrame destructor");
     };
 
-    class CommandPresentFrame : public Command
+    void execute(const CommandList& cmdList)
     {
-    public:
-        CommandPresentFrame()
-        {
-            LOG_DEBUG("CommandPresentFrame constructor");
-        };
-        ~CommandPresentFrame()
-        {
-            LOG_DEBUG("CommandPresentFrame destructor");
-        };
+        cmdList.getContext()->endFrame();
+    }
+};
 
-        void execute(const CommandList& cmdList)
-        {
-            cmdList.getContext()->presentFrame();
-        }
+class CommandPresentFrame : public Command
+{
+public:
+    CommandPresentFrame()
+    {
+        LOG_DEBUG("CommandPresentFrame constructor");
     };
+    ~CommandPresentFrame()
+    {
+        LOG_DEBUG("CommandPresentFrame destructor");
+    };
+
+    void execute(const CommandList& cmdList)
+    {
+        cmdList.getContext()->presentFrame();
+    }
+};
 
 CommandList::CommandList(Context* context, CommandListType type)
     : m_context(context)

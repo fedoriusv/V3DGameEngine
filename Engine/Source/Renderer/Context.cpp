@@ -32,12 +32,12 @@ Context* Context::createContext(const platform::Window* window,  RenderType type
     case RenderType::VulkanRender:
         if (mask & DeviceMask::GraphicMask)
         {
-            context = new vk::VulkanGraphicContext();
+            context = new vk::VulkanGraphicContext(window);
         }
         else
         {
             LOG_ERROR("Context::createContext mask %x is not supported for this render type %u. Set default bit", mask, type);
-            context = new vk::VulkanGraphicContext();
+            context = new vk::VulkanGraphicContext(window);
         }
         break;
 

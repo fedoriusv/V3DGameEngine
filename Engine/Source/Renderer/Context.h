@@ -29,7 +29,6 @@ namespace renderer
         {
             EmptyRender,
             VulkanRender,
-            //....
         };
 
         Context();

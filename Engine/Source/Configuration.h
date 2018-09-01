@@ -10,7 +10,7 @@
 //Config
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-#if USE_LOGGER
+#ifdef USE_LOGGER
 #   define HIGHLIGHTING_LOGS 1
 #endif //USED_LOGGER
 
@@ -29,19 +29,39 @@
 #endif
 
 #if defined(__APPLE__) || defined(MACOSX)
-#   define _PLATFORM_MACOSX_
+#   define PLATFORM_MACOSX
+#   error Unsupported platform
 #endif
 
 #if defined(LINUX) || defined(_LINUX)
-#   define _PLATFORM_LINUX_
+#   define PLATFORM_LINUX
+#   error Unsupported platform
 #endif
 
+#if defined(__ANDROID__) && defined(__ARM_ARCH)
+#   define PLATFORM_ANDROID
+#   error Unsupported platform
+#endif
+/////////////////////////////////////////////////////////////////////////////////////////////////////
 
 //Render
 /////////////////////////////////////////////////////////////////////////////////////////////////////
+#ifdef VULKAN_RENDER
+#   define VULKAN_VERSION_MAJOR 1
+#   define VULKAN_VERSION_MINOR 1
+#   define VULKAN_VERSION_PATCH 0
 
-#if defined (_PLATFORM_WINDOWS_)
-//
-#endif //_PLATFORM_WINDOWS_
+#   define VULKAN_DEBUG 1
+#   define VULKAN_VALIDATION_LAYERS_CALLBACK 1
+#   define VULKAN_RENDERDOC_LAYER 0
+#   define VULKAN_DEBUG_MARKERS 0
 
+#   ifdef PLATFORM_WINDOWS
+#       define VK_USE_PLATFORM_WIN32_KHR
+#   elif PLATFORM_LINUX
+#       define VK_USE_PLATFORM_XLIB_KHR
+#   elif PLATFORM_ANDROID
+#       define VK_USE_PLATFORM_ANDROID_KHR
+#   endif
+#endif //VULKAN_RENDER
 /////////////////////////////////////////////////////////////////////////////////////////////////////

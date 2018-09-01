@@ -675,5 +675,4 @@ void WindowWindows::fillKeyCodes()
 
 } //namespace platform
 } //namespace v3d
-
 #endif //PLATFORM_WINDOWS

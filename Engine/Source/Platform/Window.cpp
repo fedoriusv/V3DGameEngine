@@ -52,7 +52,7 @@ Window* Window::createWindow(const core::Dimension2D& size, const core::Point2D&
     params._isFullscreen = fullscreen;
     params._isResizable = false;
 
-#ifdef _PLATFORM_WINDOWS_
+#ifdef PLATFORM_WINDOWS
     Window* window = new WindowWindows(params, receiver);
 #endif //_PLATFORM_WINDOWS_
 

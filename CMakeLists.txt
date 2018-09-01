@@ -1,7 +1,11 @@
 cmake_minimum_required(VERSION 3.0.0)
 
 ##############################################################
+#Examples
 option(BUILD_EXAMPLES "Generate Examples" ON)
+##############################################################
+#Render SDK
+option(BUILD_VULKAN_SDK "Build use Vulkan SDK" ON)
 ##############################################################
 
 if(COMPILER_MSVC)
@@ -54,15 +58,28 @@ include_directories(BEFORE ${LIB_INCLUDE_DIRECTORY})
  
 #Configuration
 ##############################################################
+#Vulkan
+if(BUILD_VULKAN_SDK)
+    set(VULKAN_SDK_DEFINE "-DVULKAN_RENDER")
+    #VK_SDK_PATH - must be added to system variables
+    set(VULKAN_SDK_PATH $ENV{VK_SDK_PATH})
+    set(VULKAN_SDK_INCLUDE_DIRECTORY ${VULKAN_SDK_PATH}/Include)
+    set(VULKAN_SDK_LIB_DIRECTORY ${VULKAN_SDK_PATH}/Lib)
+    message("-- Vulkan SDK Path " ${VULKAN_SDK_PATH})
+endif()
+
+#Compiler Flags
 if(WIN32)
     set(CMAKE_CONFIGURATION_TYPES "Debug;Release" CACHE STRING "" FORCE)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /EHsc /MP")
 #   Debug
-    set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DDEBUG -DUSE_LOGGER")
+    set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DDEBUG -DUSE_LOGGER ${VULKAN_SDK_DEFINE}")
+    set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -I${VULKAN_SDK_INCLUDE_DIRECTORY}")
     set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /Zi /MTd -D_CRT_SECURE_NO_WARNINGS")
     set(CMAKE_DEBUG_POSTFIX "_d")
 #   Release
-    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -I${FREETYPE_INCLUDE_DIRECTORY}")
+    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -DUSE_LOGGER ${VULKAN_SDK_DEFINE}")
+    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -I${VULKAN_SDK_INCLUDE_DIRECTORY}")
     set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /MT")
 endif()
 ##############################################################
@@ -82,8 +99,10 @@ file(GLOB EVENT_SOURCES ${SOURCE_DIR}/Event/*.cpp)
 file(GLOB RENDERER_HEADERS ${SOURCE_DIR}/Renderer/*.h)
 file(GLOB RENDERER_SOURCES ${SOURCE_DIR}/Renderer/*.cpp)
 
+if (BUILD_VULKAN_SDK)
 file(GLOB VULKAN_HEADERS ${SOURCE_DIR}/Renderer/Vulkan/*.h)
 file(GLOB VULKAN_SOURCES ${SOURCE_DIR}/Renderer/Vulkan/*.cpp)
+endif()
 ##############################################################
 
 #Filters
@@ -105,6 +124,8 @@ add_library(${ENGINE_NAME} STATIC
     ${EVENT_HEADERS} ${EVENT_SOURCES}
     ${RENDERER_HEADERS} ${RENDERER_SOURCES}
     ${VULKAN_HEADERS} ${VULKAN_SOURCES})
+
+link_directories(${ENGINE_NAME} ${VULKAN_SDK_LIB_DIRECTORY})
     
 ##############################################################
 
@@ -113,6 +134,7 @@ add_library(${ENGINE_NAME} STATIC
 if (BUILD_EXAMPLES)
     message("-- Create Examples:")
     add_subdirectory(Examples/1.CreateWindow)
+    add_subdirectory(Examples/2.ClearColor)
     message("-- ----------------")
 endif ()
 ##############################################################

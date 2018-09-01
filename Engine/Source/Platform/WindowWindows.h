@@ -57,5 +57,4 @@ namespace platform
 
 } //namespace platform
 } //namespace v3d
-
 #endif //PLATFORM_WINDOWS

@@ -1,7 +1,10 @@
 #pragma once
 
 #include "Context.h"
+#include "VulkanDeviceCaps.h"
 
+#ifdef VULKAN_RENDER
+#include "VulkanWrapper.h"
 namespace v3d
 {
 namespace renderer
@@ -16,11 +19,12 @@ namespace vk
 
         struct DeviceInfo
         {
-            //TODO:
-            u32 queueIndex;
+            VkInstance  _instance;
+            VkDevice    _device;
+            u32         _queueIndex;
         };
 
-        VulkanGraphicContext();
+        VulkanGraphicContext(const platform::Window* window);
         ~VulkanGraphicContext();
 
         void beginFrame() override;
@@ -29,8 +33,16 @@ namespace vk
 
     private:
 
+        DeviceInfo          m_deviceInfo;
+        VulkanDeviceCaps    m_deviceCaps;
+
+        const std::string s_vulkanApplicationName = "VulkanGraphicContext";
+
         bool initialize() override;
         void destroy() override;
+
+        bool createInstance();
+        bool createDevice();
 
     };
 
@@ -39,3 +51,4 @@ namespace vk
 } //namespace vk
 } //namespace renderer
 } //namespace v3d
+#endif //VULKAN_RENDER
