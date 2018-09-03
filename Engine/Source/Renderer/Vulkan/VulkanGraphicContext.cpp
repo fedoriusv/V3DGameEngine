@@ -66,6 +66,7 @@ void VulkanGraphicContext::presentFrame()
 
 bool VulkanGraphicContext::initialize()
 {
+    //Called from game thread
     LOG_DEBUG("VulkanGraphicContext::initialize");
 
     if (!VulkanGraphicContext::createInstance())
@@ -88,7 +89,11 @@ bool VulkanGraphicContext::initialize()
 
 void VulkanGraphicContext::destroy()
 {
+    //Called from game thread
     LOG_DEBUG("VulkanGraphicContext::destroy");
+
+    //TODO: Wait to complete all commands
+    VulkanWrapper::DestroyInstance(m_deviceInfo._instance, nullptr);
 }
 
 bool VulkanGraphicContext::createInstance()
