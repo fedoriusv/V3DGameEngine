@@ -92,5 +92,10 @@ event::InputEventReceiver* Window::getInputEventReceiver() const
     return m_receiver;
 }
 
+const core::Dimension2D & Window::getSize() const
+{
+    return m_params._size;
+}
+
 } //namespace platform
 } //namespace v3d

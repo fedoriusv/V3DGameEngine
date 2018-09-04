@@ -126,7 +126,7 @@ VkBool32 VulkanDebug::messageCallback(VkDebugReportFlagsEXT flags, VkDebugReport
     }
 }
 
-void VulkanDebug::createDebugCalllback(VkInstance instance, VkDebugReportFlagsEXT flags, VkDebugReportCallbackEXT callBack, void* userData)
+bool VulkanDebug::createDebugCalllback(VkInstance instance, VkDebugReportFlagsEXT flags, VkDebugReportCallbackEXT callBack, void* userData)
 {
     if (s_vkCreateDebugReportCallbackEXT == VK_NULL_HANDLE)
     {
@@ -147,7 +147,10 @@ void VulkanDebug::createDebugCalllback(VkInstance instance, VkDebugReportFlagsEX
     if (result != VK_SUCCESS)
     {
         LOG_ERROR("VulkanDebug::createDebugCalllback: vkCreateDebugReportCallbackEXT error %s", vk::ErrorString(result).c_str());
+        return false;
     }
+
+    return true;
 }
 
 void VulkanDebug::freeDebugCallback(VkInstance instance)

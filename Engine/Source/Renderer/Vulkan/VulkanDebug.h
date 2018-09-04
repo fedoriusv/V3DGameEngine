@@ -27,7 +27,7 @@ namespace vk
 
         static VkBool32                 messageCallback(VkDebugReportFlagsEXT flags, VkDebugReportObjectTypeEXT objType, u64 srcObject, size_t location, s32 msgCode, c8* layerPrefix, c8* msg, void* userData);
 
-        static void                     createDebugCalllback(VkInstance instance, VkDebugReportFlagsEXT flags, VkDebugReportCallbackEXT callBack, void* userData);
+        static bool                     createDebugCalllback(VkInstance instance, VkDebugReportFlagsEXT flags, VkDebugReportCallbackEXT callBack, void* userData);
         static void                     freeDebugCallback(VkInstance instance);
 
         static bool                     checkInstanceLayerIsSupported(const c8* layerName);

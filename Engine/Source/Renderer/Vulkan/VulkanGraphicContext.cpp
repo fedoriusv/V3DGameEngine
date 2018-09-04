@@ -130,8 +130,13 @@ bool VulkanGraphicContext::initialize()
         LOG_FATAL("VulkanGraphicContext::createContext: Can not create VkSurfaceKHR");
         return false;
     }
+
+    VulkanSwapchain::SwapchainConfig config;
+    config._size = m_window->getSize();
+    config._vsync = true; //TODO
+
     m_swapchain = new VulkanSwapchain(&m_deviceInfo, surface);
-    if (!m_swapchain->create())
+    if (!m_swapchain->create(config))
     {
         VulkanGraphicContext::destroy();
         LOG_FATAL("VulkanGraphicContext::createContext: Can not create VulkanSwapchain");
@@ -174,6 +179,8 @@ void VulkanGraphicContext::destroy()
         m_deviceInfo._device = VK_NULL_HANDLE;
         m_queueList.clear();
     }
+
+    VulkanDebug::freeDebugCallback(m_deviceInfo._instance);
 
     if (m_deviceInfo._instance)
     {
@@ -261,6 +268,32 @@ bool VulkanGraphicContext::createInstance()
         LOG_FATAL("VulkanGraphicContext::createInstance: vkCreateInstance error %s", ErrorString(result).c_str());
         return false;
     }
+
+#if VULKAN_VALIDATION_LAYERS_CALLBACK
+    const u16 validationLayerLevel = 4;
+
+    VkDebugReportFlagsEXT debugFlags = 0;
+    switch (validationLayerLevel)
+    {
+    case 4:
+        debugFlags |= VK_DEBUG_REPORT_DEBUG_BIT_EXT;
+    case 3:
+        debugFlags |= VK_DEBUG_REPORT_INFORMATION_BIT_EXT;
+    case 2:
+        debugFlags |= VK_DEBUG_REPORT_WARNING_BIT_EXT | VK_DEBUG_REPORT_PERFORMANCE_WARNING_BIT_EXT;
+    case 1:
+        debugFlags |= VK_DEBUG_REPORT_ERROR_BIT_EXT;
+    case 0:
+    default:
+        //turn off
+        break;
+    }
+
+    if (!VulkanDebug::createDebugCalllback(m_deviceInfo._instance, debugFlags, VulkanDebug::s_msgCallback, this))
+    {
+        LOG_ERROR("VulkanGraphicContext::createInstance: createDebugCalllback failed");
+    }
+#endif //VULKAN_VALIDATION_LAYERS_CALLBACK
 
     return true;
 }

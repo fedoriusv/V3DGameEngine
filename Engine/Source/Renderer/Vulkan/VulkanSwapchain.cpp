@@ -21,7 +21,7 @@ bool createSurfaceWinApi(VkInstance vkInstance, NativeInstance hInstance, Native
     surfaceCreateInfo.hinstance = hInstance;
     surfaceCreateInfo.hwnd = hWnd;
 
-    VkResult result = vkCreateWin32SurfaceKHR(vkInstance, &surfaceCreateInfo, VULKAN_ALLOCATOR, &surface);
+    VkResult result = VulkanWrapper::CreateWin32SurfaceKHR(vkInstance, &surfaceCreateInfo, VULKAN_ALLOCATOR, &surface);
     if (result != VK_SUCCESS)
     {
         LOG_FATAL("createSurfaceWinApi: vkCreateWin32SurfaceKHR. Error %s", ErrorString(result).c_str());
@@ -67,29 +67,28 @@ VkSurfaceKHR VulkanSwapchain::createSurface(VkInstance vkInstance, NativeInstanc
 
 void VulkanSwapchain::detroySurface(VkInstance vkInstance, VkSurfaceKHR surface)
 {
-    vkDestroySurfaceKHR(vkInstance, surface, VULKAN_ALLOCATOR);
+    VulkanWrapper::DestroySurfaceKHR(vkInstance, surface, VULKAN_ALLOCATOR);
 }
 
-bool VulkanSwapchain::create()
+bool VulkanSwapchain::create(const SwapchainConfig& config)
 {
     LOG_DEBUG("VulkanSwapchain::create");
 
-    VkSurfaceCapabilitiesKHR surfaceCaps;
-    VkResult result = vkGetPhysicalDeviceSurfaceCapabilitiesKHR(m_deviceInfo->_physicalDevice, m_surface, &surfaceCaps);
+    VkResult result = VulkanWrapper::GetPhysicalDeviceSurfaceCapabilitiesKHR(m_deviceInfo->_physicalDevice, m_surface, &m_surfaceCaps);
     if (result != VK_SUCCESS)
     {
         LOG_ERROR("VulkanSwapchain::create: vkGetPhysicalDeviceSurfaceCapabilitiesKHR. Error %s", ErrorString(result).c_str());
         return false;
     }
 
-    if (surfaceCaps.maxImageCount < 2)
+    if (m_surfaceCaps.maxImageCount < 2)
     {
         LOG_ERROR("VulkanSwapchain::create: Not enough images supported in vulkan swapchain");
         return false;
     }
 
     VkBool32 supportsPresentation = false;
-    vkGetPhysicalDeviceSurfaceSupportKHR(m_deviceInfo->_physicalDevice, m_deviceInfo->_queueFamilyIndex, m_surface, &supportsPresentation);
+    VulkanWrapper::GetPhysicalDeviceSurfaceSupportKHR(m_deviceInfo->_physicalDevice, m_deviceInfo->_queueFamilyIndex, m_surface, &supportsPresentation);
     if (!supportsPresentation)
     {
         LOG_ERROR("VulkanSwapchain::create: not support presentation");
@@ -98,7 +97,7 @@ bool VulkanSwapchain::create()
 
     //Get Surface format
     u32 surfaceFormatCount;
-    result = vkGetPhysicalDeviceSurfaceFormatsKHR(m_deviceInfo->_physicalDevice, m_surface, &surfaceFormatCount, nullptr);
+    result = VulkanWrapper::GetPhysicalDeviceSurfaceFormatsKHR(m_deviceInfo->_physicalDevice, m_surface, &surfaceFormatCount, nullptr);
     if (result != VK_SUCCESS)
     {
         LOG_ERROR("VulkanSwapchain::create: vkGetPhysicalDeviceSurfaceFormatsKHR. Error %s", ErrorString(result).c_str());
@@ -106,7 +105,7 @@ bool VulkanSwapchain::create()
     }
 
     std::vector<VkSurfaceFormatKHR> surfaceFormats(surfaceFormatCount);
-    result = vkGetPhysicalDeviceSurfaceFormatsKHR(m_deviceInfo->_physicalDevice, m_surface, &surfaceFormatCount, surfaceFormats.data());
+    result = VulkanWrapper::GetPhysicalDeviceSurfaceFormatsKHR(m_deviceInfo->_physicalDevice, m_surface, &surfaceFormatCount, surfaceFormats.data());
     if (result != VK_SUCCESS)
     {
         LOG_ERROR("VulkanSwapchain::create: vkGetPhysicalDeviceSurfaceFormatsKHR. Error %s", ErrorString(result).c_str());
@@ -135,16 +134,105 @@ bool VulkanSwapchain::create()
     m_surfaceFormat.colorSpace = surfaceFormats[0].colorSpace;
 
 
-    if (!VulkanSwapchain::createSwapchain())
+    if (!VulkanSwapchain::createSwapchain(config))
     {
         LOG_FATAL("VulkanSwapchain::createSwapchain Can not create swapchain");
+        return false;
+    }
+
+    if (!VulkanSwapchain::createSwapchainImages())
+    {
+        LOG_FATAL(" VulkanSwapchain::createSwapchainImages: cannot create swapchain images");
         return false;
     }
 
     return true;
 }
 
-bool VulkanSwapchain::createSwapchain()
+bool VulkanSwapchain::createSwapchain(const SwapchainConfig& config)
+{
+    ASSERT(m_surface, "surface is nullptr");
+
+    // Select a present mode for the swapchain
+    u32 presentModeCount = 0;
+    VulkanWrapper::GetPhysicalDeviceSurfacePresentModesKHR(m_deviceInfo->_physicalDevice, m_surface, &presentModeCount, nullptr);
+
+    std::vector<VkPresentModeKHR> presentModes(presentModeCount);
+    VulkanWrapper::GetPhysicalDeviceSurfacePresentModesKHR(m_deviceInfo->_physicalDevice, m_surface, &presentModeCount, presentModes.data());
+
+    // The VK_PRESENT_MODE_FIFO_KHR mode must always be present as per spec
+    // This mode waits for the vertical blank ("v-sync")
+    VkPresentModeKHR swapchainPresentMode = VK_PRESENT_MODE_FIFO_KHR;
+
+    // If v-sync is not requested, try to find a mailbox mode
+    // It's the lowest latency non-tearing present mode available
+    if (!config._vsync)
+    {
+        for (u32 i = 0; i < presentModeCount; i++)
+        {
+            if (presentModes[i] == VK_PRESENT_MODE_MAILBOX_KHR)
+            {
+                swapchainPresentMode = VK_PRESENT_MODE_MAILBOX_KHR;
+                break;
+            }
+
+            if ((swapchainPresentMode != VK_PRESENT_MODE_MAILBOX_KHR) && (presentModes[i] == VK_PRESENT_MODE_IMMEDIATE_KHR))
+            {
+                swapchainPresentMode = VK_PRESENT_MODE_IMMEDIATE_KHR;
+            }
+        }
+    }
+
+    // Determine the number of images
+    uint32_t desiredNumberOfSwapchainImages = m_surfaceCaps.minImageCount + 1;
+    if ((m_surfaceCaps.maxImageCount > 0) && (desiredNumberOfSwapchainImages > m_surfaceCaps.maxImageCount))
+    {
+        desiredNumberOfSwapchainImages = m_surfaceCaps.maxImageCount;
+    }
+
+    // Find the transformation of the surface
+    VkSurfaceTransformFlagsKHR preTransform;
+    if (m_surfaceCaps.supportedTransforms & VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR)
+    {
+        // We prefer a non-rotated transform
+        preTransform = VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR;
+    }
+    else
+    {
+        preTransform = m_surfaceCaps.currentTransform;
+    }
+
+    VkSwapchainCreateInfoKHR swapChainInfo = {};
+    swapChainInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
+    swapChainInfo.pNext = nullptr;
+    swapChainInfo.surface = m_surface;
+    swapChainInfo.minImageCount = desiredNumberOfSwapchainImages;
+    swapChainInfo.imageFormat = m_surfaceFormat.format;
+    swapChainInfo.imageColorSpace = m_surfaceFormat.colorSpace;
+    swapChainInfo.imageExtent = { config._size.width, config._size.height };
+    swapChainInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+    swapChainInfo.preTransform = (VkSurfaceTransformFlagBitsKHR)preTransform;
+    swapChainInfo.imageArrayLayers = 1;
+    swapChainInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
+    swapChainInfo.queueFamilyIndexCount = 0;
+    swapChainInfo.pQueueFamilyIndices = nullptr;
+    swapChainInfo.presentMode = swapchainPresentMode;
+    swapChainInfo.oldSwapchain = nullptr;
+    swapChainInfo.clipped = VK_TRUE; // Setting clipped to VK_TRUE allows the implementation to discard rendering outside of the surface area
+    swapChainInfo.compositeAlpha = (m_surfaceCaps.supportedCompositeAlpha & VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR) ? VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR : VK_COMPOSITE_ALPHA_INHERIT_BIT_KHR;;
+
+    VkResult result = VulkanWrapper::CreateSwapchainKHR(m_deviceInfo->_device, &swapChainInfo, VULKAN_ALLOCATOR, &m_swapchain);
+    if (result != VK_SUCCESS)
+    {
+        LOG_FATAL("VulkanSwapchain::createSwapChain: vkCreateSwapchainKHR. Error %s", ErrorString(result).c_str());
+        return false;
+    }
+    LOG_DEBUG("SwapChainVK::createSwapChain created");
+
+    return true;
+}
+
+bool VulkanSwapchain::createSwapchainImages()
 {
     //TODO:
     return false;
@@ -152,14 +240,32 @@ bool VulkanSwapchain::createSwapchain()
 
 void VulkanSwapchain::destroy()
 {
+    VulkanWrapper::DestroySwapchainKHR(m_deviceInfo->_device, m_swapchain, VULKAN_ALLOCATOR);
+    m_swapchain = VK_NULL_HANDLE;
 }
 
 void VulkanSwapchain::present()
 {
+    //TODO:
 }
 
 void VulkanSwapchain::acquireImage()
 {
+    //TODO:
+}
+
+bool VulkanSwapchain::recteateSwapchain(const SwapchainConfig& config)
+{
+    VulkanSwapchain::destroy();
+    //TODO: remove images
+    if (!VulkanSwapchain::createSwapchain(config))
+    {
+        LOG_FATAL("VulkanSwapchain::recteateSwapchain: is failed");
+        return false;
+    }
+    //TODO: create images
+
+    return true;
 }
 
 } //namespace vk

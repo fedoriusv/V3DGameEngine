@@ -620,6 +620,92 @@ void VulkanWrapper::CmdEndRenderPass(VkCommandBuffer commandBuffer)
 void VulkanWrapper::CmdExecuteCommands(VkCommandBuffer commandBuffer, uint32_t commandBufferCount, const VkCommandBuffer * pCommandBuffers)
 {
 }
+///////////////////////////////////////////////////////////
+
+#ifdef VK_KHR_surface
+void VulkanWrapper::DestroySurfaceKHR(VkInstance instance, VkSurfaceKHR surface, const VkAllocationCallbacks * pAllocator)
+{
+    vkDestroySurfaceKHR(instance, surface, pAllocator);
+}
+
+VkResult VulkanWrapper::GetPhysicalDeviceSurfaceSupportKHR(VkPhysicalDevice physicalDevice, uint32_t queueFamilyIndex, VkSurfaceKHR surface, VkBool32 * pSupported)
+{
+    return vkGetPhysicalDeviceSurfaceSupportKHR(physicalDevice, queueFamilyIndex, surface, pSupported);
+}
+
+VkResult VulkanWrapper::GetPhysicalDeviceSurfaceCapabilitiesKHR(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface, VkSurfaceCapabilitiesKHR * pSurfaceCapabilities)
+{
+    return vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physicalDevice, surface, pSurfaceCapabilities);
+}
+
+VkResult VulkanWrapper::GetPhysicalDeviceSurfaceFormatsKHR(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface, uint32_t * pSurfaceFormatCount, VkSurfaceFormatKHR * pSurfaceFormats)
+{
+    return vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, surface, pSurfaceFormatCount, pSurfaceFormats);
+}
+
+VkResult VulkanWrapper::GetPhysicalDeviceSurfacePresentModesKHR(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface, uint32_t * pPresentModeCount, VkPresentModeKHR * pPresentModes)
+{
+    return vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, surface, pPresentModeCount, pPresentModes);
+}
+#endif //VK_KHR_surface
+
+#ifdef VK_KHR_win32_surface
+VkResult VulkanWrapper::CreateWin32SurfaceKHR(VkInstance instance, const VkWin32SurfaceCreateInfoKHR * pCreateInfo, const VkAllocationCallbacks * pAllocator, VkSurfaceKHR * pSurface)
+{
+    return vkCreateWin32SurfaceKHR(instance, pCreateInfo, pAllocator, pSurface);
+}
+VkBool32 VulkanWrapper::GetPhysicalDeviceWin32PresentationSupportKHR(VkPhysicalDevice physicalDevice, uint32_t queueFamilyIndex)
+{
+    return vkGetPhysicalDeviceWin32PresentationSupportKHR(physicalDevice, queueFamilyIndex);
+}
+#endif //VK_KHR_win32_surface
+
+#ifdef VK_KHR_swapchain
+VkResult VulkanWrapper::CreateSwapchainKHR(VkDevice device, const VkSwapchainCreateInfoKHR * pCreateInfo, const VkAllocationCallbacks * pAllocator, VkSwapchainKHR * pSwapchain)
+{
+    return vkCreateSwapchainKHR(device, pCreateInfo, pAllocator, pSwapchain);
+}
+
+void VulkanWrapper::DestroySwapchainKHR(VkDevice device, VkSwapchainKHR swapchain, const VkAllocationCallbacks * pAllocator)
+{
+    vkDestroySwapchainKHR(device, swapchain, pAllocator);
+}
+
+VkResult VulkanWrapper::GetSwapchainImagesKHR(VkDevice device, VkSwapchainKHR swapchain, uint32_t * pSwapchainImageCount, VkImage * pSwapchainImages)
+{
+    return vkGetSwapchainImagesKHR(device, swapchain, pSwapchainImageCount, pSwapchainImages);
+}
+
+VkResult VulkanWrapper::AcquireNextImageKHR(VkDevice device, VkSwapchainKHR swapchain, uint64_t timeout, VkSemaphore semaphore, VkFence fence, uint32_t * pImageIndex)
+{
+    return vkAcquireNextImageKHR(device, swapchain, timeout, semaphore, fence, pImageIndex);
+}
+
+VkResult VulkanWrapper::QueuePresentKHR(VkQueue queue, const VkPresentInfoKHR * pPresentInfo)
+{
+    return vkQueuePresentKHR(queue, pPresentInfo);
+}
+
+VkResult VulkanWrapper::GetDeviceGroupPresentCapabilitiesKHR(VkDevice device, VkDeviceGroupPresentCapabilitiesKHR * pDeviceGroupPresentCapabilities)
+{
+    return vkGetDeviceGroupPresentCapabilitiesKHR(device, pDeviceGroupPresentCapabilities);
+}
+
+VkResult VulkanWrapper::GetDeviceGroupSurfacePresentModesKHR(VkDevice device, VkSurfaceKHR surface, VkDeviceGroupPresentModeFlagsKHR * pModes)
+{
+    return vkGetDeviceGroupSurfacePresentModesKHR(device, surface, pModes);
+}
+
+VkResult VulkanWrapper::GetPhysicalDevicePresentRectanglesKHR(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface, uint32_t * pRectCount, VkRect2D * pRects)
+{
+    return vkGetPhysicalDevicePresentRectanglesKHR(physicalDevice, surface, pRectCount, pRects);
+}
+
+VkResult VulkanWrapper::AcquireNextImage2KHR(VkDevice device, const VkAcquireNextImageInfoKHR * pAcquireInfo, uint32_t * pImageIndex)
+{
+    return vkAcquireNextImage2KHR(device, pAcquireInfo, pImageIndex);
+}
+#endif //VK_KHR_swapchain
 
 } //namespace vk
 } //namespace renderer

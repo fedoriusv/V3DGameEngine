@@ -86,16 +86,32 @@ void MyApplication::Initialize()
     ASSERT(m_Context, "context is nullptr");
 
     m_CommandList = new renderer::CommandList(m_Context, renderer::CommandList::CommandListType::DelayedCommandList);
+
+    /*Geometry geometry;
+    Image image;
+    Pipeline pipe;
+    {
+        texture.upload(image);
+        geometry.upload(data);
+    }*/
 }
 
 bool MyApplication::Running(renderer::CommandList& commandList)
 {
     //Frame
     commandList.cmdBeginFrame();
+
+    /*commandList.set(pipe1);
+    commandList.set(texture1);
+    commandList.set(uniform1);
+    commandList.draw(geometry1);
+
+    commandList.set(pipe2);
+    commandList.set(texture2);
+    commandList.set(uniform2);
+    commandList.draw(geometry2);*/
+
     commandList.cmdEndFrame();
-
-    commandList.flushCommands();
-
     commandList.cmdPresentFrame();
     //Frame
 
