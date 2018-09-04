@@ -23,7 +23,7 @@ WindowWindows::WindowWindows(const WindowParam& params, event::InputEventReceive
 
 bool WindowWindows::initialize()
 {
-    HINSTANCE m_hInstance = GetModuleHandle(NULL);
+    m_hInstance = GetModuleHandle(NULL);
 
     // Register Class
     WNDCLASSEX wcex;
@@ -218,6 +218,16 @@ bool WindowWindows::isFocused() const
     }
 
     return false;
+}
+
+NativeInstance WindowWindows::getInstance() const
+{
+    return m_hInstance;
+}
+
+NativeWindows WindowWindows::getWindowHandle() const
+{
+    return m_hWnd;
 }
 
 LRESULT WindowWindows::HandleMessage(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)

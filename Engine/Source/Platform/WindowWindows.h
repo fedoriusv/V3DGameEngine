@@ -36,6 +36,9 @@ namespace platform
         bool isActive() const override;
         bool isFocused() const override;
 
+        NativeInstance getInstance() const override;
+        NativeWindows getWindowHandle() const override;
+
     private:
 
         bool initialize() override;

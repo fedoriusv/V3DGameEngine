@@ -10,6 +10,8 @@ namespace renderer
 {
 namespace vk
 {
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
+
     struct VulkanDeviceCaps : DeviceCaps
     {
         //TODO
@@ -20,11 +22,21 @@ namespace vk
         static void listOfInstanceExtensions(std::vector<std::string>& extensionsList);
         static void listOfDeviceExtensions(VkPhysicalDevice physicalDevice, std::vector<std::string>& extensionsList);
 
+        u32 getQueueFamiliyIndex(VkQueueFlagBits queueFlags);
+
     private:
 
-        void fillCapabilitiesList();
+        friend class VulkanGraphicContext;
 
+        void fillCapabilitiesList(const struct DeviceInfo* info);
+
+        VkPhysicalDeviceFeatures            m_deviceFeatures;
+        VkPhysicalDeviceProperties          m_deviceProperties;
+        VkPhysicalDeviceMemoryProperties    m_deviceMemoryProps;
+        std::vector<VkQueueFamilyProperties> m_queueFamilyProperties;
     };
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
 
 } //namespace vk
 } //namespace renderer

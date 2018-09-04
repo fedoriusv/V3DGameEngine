@@ -62,9 +62,59 @@ public:
     }
 };
 
+class CommandClearColor : public Command
+{
+public:
+    CommandClearColor(const core::Vector4D& color)
+        : m_clearColor(color)
+    {
+        LOG_DEBUG("CommandClearColor constructor");
+    };
+    ~CommandClearColor()
+    {
+        LOG_DEBUG("CommandClearColor destructor");
+    };
+
+    void execute(const CommandList& cmdList)
+    {
+        cmdList.getContext()->clearColor(m_clearColor);
+    }
+
+private:
+
+    core::Vector4D m_clearColor;
+};
+
+class CommandSetContextState : public Command
+{
+public:
+    CommandSetContextState(const ContextStates& pendingStates)
+        : m_pendingStates(pendingStates)
+    {
+        LOG_DEBUG("CommandSetContextState constructor");
+    };
+    ~CommandSetContextState()
+    {
+        LOG_DEBUG("CommandSetContextState destructor");
+    };
+
+    void execute(const CommandList& cmdList)
+    {
+        cmdList.getContext()->setViewport(m_pendingStates._viewport);
+    }
+
+private:
+    ContextStates m_pendingStates;
+};
+
+
+
+
+
 CommandList::CommandList(Context* context, CommandListType type)
     : m_context(context)
     , m_commandListType(type)
+    , m_statesNeedUpdate(false)
 {
 }
 
@@ -79,6 +129,10 @@ void CommandList::flushCommands()
         return;
     }
 
+    if (m_statesNeedUpdate)
+    {
+        CommandList::cmdSetContextStates(m_pendingStates);
+    }
     CommandList::executeCommands();
 }
 
@@ -118,6 +172,31 @@ void CommandList::cmdPresentFrame()
     }
 }
 
+void CommandList::cmdClearColor(const core::Vector4D & color)
+{
+    if (m_commandListType == CommandListType::ImmediateCommandList)
+    {
+        m_context->clearColor(color);
+    }
+    else
+    {
+        CommandList::pushCommand(new CommandClearColor(color));
+    }
+}
+
+void CommandList::setViewport(const core::Rect32& viewport)
+{
+    if (m_commandListType == CommandListType::ImmediateCommandList)
+    {
+        m_context->setViewport(viewport);
+    }
+    else
+    {
+        m_pendingStates._viewport = viewport;
+        m_statesNeedUpdate = true;
+    }
+}
+
 Context* CommandList::getContext() const
 {
     return m_context;
@@ -126,6 +205,18 @@ Context* CommandList::getContext() const
 bool CommandList::isThreaded() const
 {
     return m_commandListType == CommandListType::ThreadCommandList;
+}
+
+void CommandList::cmdSetContextStates(const ContextStates & pendingStates)
+{
+    if (m_commandListType == CommandListType::ImmediateCommandList)
+    {
+        return;
+    }
+
+    CommandList::pushCommand(new CommandSetContextState(pendingStates));
+    m_statesNeedUpdate = false;
+
 }
 
 void CommandList::pushCommand(Command* cmd)

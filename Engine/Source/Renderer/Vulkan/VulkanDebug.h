@@ -9,6 +9,14 @@ namespace renderer
 {
 namespace vk
 {
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
+
+#if USE_VULKAN_ALLOCATOR
+#   define VULKAN_ALLOCATOR nullptr
+#else
+#   define VULKAN_ALLOCATOR nullptr
+#endif //USE_VULKAN_ALLOCATOR
+
     std::string  ErrorString(VkResult errorCode);
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -22,7 +30,8 @@ namespace vk
         static void                     createDebugCalllback(VkInstance instance, VkDebugReportFlagsEXT flags, VkDebugReportCallbackEXT callBack, void* userData);
         static void                     freeDebugCallback(VkInstance instance);
 
-        static bool                     checkLayerIsSupported(const c8* layerName);
+        static bool                     checkInstanceLayerIsSupported(const c8* layerName);
+        static bool                     checkDeviceLayerIsSupported(VkPhysicalDevice device, const c8* layerName);
 
         static VkDebugReportCallbackEXT s_msgCallback;
 

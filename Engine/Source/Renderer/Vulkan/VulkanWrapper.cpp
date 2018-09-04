@@ -93,29 +93,30 @@ VkResult VulkanWrapper::EnumerateDeviceLayerProperties(VkPhysicalDevice physical
     return vkEnumerateDeviceLayerProperties(physicalDevice, pPropertyCount, pProperties);
 }
 
-//////////////////////
 void VulkanWrapper::GetDeviceQueue(VkDevice device, uint32_t queueFamilyIndex, uint32_t queueIndex, VkQueue * pQueue)
 {
+    vkGetDeviceQueue(device, queueFamilyIndex, queueIndex, pQueue);
 }
 
 VkResult VulkanWrapper::QueueSubmit(VkQueue queue, uint32_t submitCount, const VkSubmitInfo * pSubmits, VkFence fence)
 {
-    return VkResult();
+    return vkQueueSubmit(queue, submitCount, pSubmits, fence);
 }
 
 VkResult VulkanWrapper::QueueWaitIdle(VkQueue queue)
 {
-    return VkResult();
+    return vkQueueWaitIdle(queue);
 }
 
 VkResult VulkanWrapper::DeviceWaitIdle(VkDevice device)
 {
-    return VkResult();
+    return vkDeviceWaitIdle(device);
 }
 
+//////////////////////
 VkResult VulkanWrapper::AllocateMemory(VkDevice device, const VkMemoryAllocateInfo * pAllocateInfo, const VkAllocationCallbacks * pAllocator, VkDeviceMemory * pMemory)
 {
-    return VkResult();
+    return VK_NOT_READY;
 }
 
 void VulkanWrapper::FreeMemory(VkDevice device, VkDeviceMemory memory, const VkAllocationCallbacks * pAllocator)
@@ -124,7 +125,7 @@ void VulkanWrapper::FreeMemory(VkDevice device, VkDeviceMemory memory, const VkA
 
 VkResult VulkanWrapper::MapMemory(VkDevice device, VkDeviceMemory memory, VkDeviceSize offset, VkDeviceSize size, VkMemoryMapFlags flags, void ** ppData)
 {
-    return VkResult();
+    return VK_NOT_READY;
 }
 
 void VulkanWrapper::UnmapMemory(VkDevice device, VkDeviceMemory memory)
@@ -133,12 +134,12 @@ void VulkanWrapper::UnmapMemory(VkDevice device, VkDeviceMemory memory)
 
 VkResult VulkanWrapper::FlushMappedMemoryRanges(VkDevice device, uint32_t memoryRangeCount, const VkMappedMemoryRange * pMemoryRanges)
 {
-    return VkResult();
+    return VK_NOT_READY;
 }
 
 VkResult VulkanWrapper::InvalidateMappedMemoryRanges(VkDevice device, uint32_t memoryRangeCount, const VkMappedMemoryRange * pMemoryRanges)
 {
-    return VkResult();
+    return VK_NOT_READY;
 }
 
 void VulkanWrapper::GetDeviceMemoryCommitment(VkDevice device, VkDeviceMemory memory, VkDeviceSize * pCommittedMemoryInBytes)
@@ -147,12 +148,12 @@ void VulkanWrapper::GetDeviceMemoryCommitment(VkDevice device, VkDeviceMemory me
 
 VkResult VulkanWrapper::BindBufferMemory(VkDevice device, VkBuffer buffer, VkDeviceMemory memory, VkDeviceSize memoryOffset)
 {
-    return VkResult();
+    return VK_NOT_READY;
 }
 
 VkResult VulkanWrapper::BindImageMemory(VkDevice device, VkImage image, VkDeviceMemory memory, VkDeviceSize memoryOffset)
 {
-    return VkResult();
+    return VK_NOT_READY;
 }
 
 void VulkanWrapper::GetBufferMemoryRequirements(VkDevice device, VkBuffer buffer, VkMemoryRequirements * pMemoryRequirements)
@@ -173,12 +174,12 @@ void VulkanWrapper::GetPhysicalDeviceSparseImageFormatProperties(VkPhysicalDevic
 
 VkResult VulkanWrapper::QueueBindSparse(VkQueue queue, uint32_t bindInfoCount, const VkBindSparseInfo * pBindInfo, VkFence fence)
 {
-    return VkResult();
+    return VK_NOT_READY;
 }
 
 VkResult VulkanWrapper::CreateFence(VkDevice device, const VkFenceCreateInfo * pCreateInfo, const VkAllocationCallbacks * pAllocator, VkFence * pFence)
 {
-    return VkResult();
+    return VK_NOT_READY;
 }
 
 void VulkanWrapper::DestroyFence(VkDevice device, VkFence fence, const VkAllocationCallbacks * pAllocator)
@@ -187,22 +188,22 @@ void VulkanWrapper::DestroyFence(VkDevice device, VkFence fence, const VkAllocat
 
 VkResult VulkanWrapper::ResetFences(VkDevice device, uint32_t fenceCount, const VkFence * pFences)
 {
-    return VkResult();
+    return VK_NOT_READY;
 }
 
 VkResult VulkanWrapper::GetFenceStatus(VkDevice device, VkFence fence)
 {
-    return VkResult();
+    return VK_NOT_READY;
 }
 
 VkResult VulkanWrapper::WaitForFences(VkDevice device, uint32_t fenceCount, const VkFence * pFences, VkBool32 waitAll, uint64_t timeout)
 {
-    return VkResult();
+    return VK_NOT_READY;
 }
 
 VkResult VulkanWrapper::CreateSemaphore(VkDevice device, const VkSemaphoreCreateInfo * pCreateInfo, const VkAllocationCallbacks * pAllocator, VkSemaphore * pSemaphore)
 {
-    return VkResult();
+    return VK_NOT_READY;
 }
 
 void VulkanWrapper::DestroySemaphore(VkDevice device, VkSemaphore semaphore, const VkAllocationCallbacks * pAllocator)
@@ -211,7 +212,7 @@ void VulkanWrapper::DestroySemaphore(VkDevice device, VkSemaphore semaphore, con
 
 VkResult VulkanWrapper::CreateEvent(VkDevice device, const VkEventCreateInfo * pCreateInfo, const VkAllocationCallbacks * pAllocator, VkEvent * pEvent)
 {
-    return VkResult();
+    return VK_NOT_READY;
 }
 
 void VulkanWrapper::DestroyEvent(VkDevice device, VkEvent event, const VkAllocationCallbacks * pAllocator)
@@ -220,22 +221,22 @@ void VulkanWrapper::DestroyEvent(VkDevice device, VkEvent event, const VkAllocat
 
 VkResult VulkanWrapper::GetEventStatus(VkDevice device, VkEvent event)
 {
-    return VkResult();
+    return VK_NOT_READY;
 }
 
 VkResult VulkanWrapper::SetEvent(VkDevice device, VkEvent event)
 {
-    return VkResult();
+    return VK_NOT_READY;
 }
 
 VkResult VulkanWrapper::ResetEvent(VkDevice device, VkEvent event)
 {
-    return VkResult();
+    return VK_NOT_READY;
 }
 
 VkResult VulkanWrapper::CreateQueryPool(VkDevice device, const VkQueryPoolCreateInfo * pCreateInfo, const VkAllocationCallbacks * pAllocator, VkQueryPool * pQueryPool)
 {
-    return VkResult();
+    return VK_NOT_READY;
 }
 
 void VulkanWrapper::DestroyQueryPool(VkDevice device, VkQueryPool queryPool, const VkAllocationCallbacks * pAllocator)
@@ -244,12 +245,12 @@ void VulkanWrapper::DestroyQueryPool(VkDevice device, VkQueryPool queryPool, con
 
 VkResult VulkanWrapper::GetQueryPoolResults(VkDevice device, VkQueryPool queryPool, uint32_t firstQuery, uint32_t queryCount, size_t dataSize, void * pData, VkDeviceSize stride, VkQueryResultFlags flags)
 {
-    return VkResult();
+    return VK_NOT_READY;
 }
 
 VkResult VulkanWrapper::CreateBuffer(VkDevice device, const VkBufferCreateInfo * pCreateInfo, const VkAllocationCallbacks * pAllocator, VkBuffer * pBuffer)
 {
-    return VkResult();
+    return VK_NOT_READY;
 }
 
 void VulkanWrapper::DestroyBuffer(VkDevice device, VkBuffer buffer, const VkAllocationCallbacks * pAllocator)
@@ -258,7 +259,7 @@ void VulkanWrapper::DestroyBuffer(VkDevice device, VkBuffer buffer, const VkAllo
 
 VkResult VulkanWrapper::CreateBufferView(VkDevice device, const VkBufferViewCreateInfo * pCreateInfo, const VkAllocationCallbacks * pAllocator, VkBufferView * pView)
 {
-    return VkResult();
+    return VK_NOT_READY;
 }
 
 void VulkanWrapper::DestroyBufferView(VkDevice device, VkBufferView bufferView, const VkAllocationCallbacks * pAllocator)
@@ -267,7 +268,7 @@ void VulkanWrapper::DestroyBufferView(VkDevice device, VkBufferView bufferView, 
 
 VkResult VulkanWrapper::CreateImage(VkDevice device, const VkImageCreateInfo * pCreateInfo, const VkAllocationCallbacks * pAllocator, VkImage * pImage)
 {
-    return VkResult();
+    return VK_NOT_READY;
 }
 
 void VulkanWrapper::DestroyImage(VkDevice device, VkImage image, const VkAllocationCallbacks * pAllocator)
@@ -280,7 +281,7 @@ void VulkanWrapper::GetImageSubresourceLayout(VkDevice device, VkImage image, co
 
 VkResult VulkanWrapper::CreateImageView(VkDevice device, const VkImageViewCreateInfo * pCreateInfo, const VkAllocationCallbacks * pAllocator, VkImageView * pView)
 {
-    return VkResult();
+    return VK_NOT_READY;
 }
 
 void VulkanWrapper::DestroyImageView(VkDevice device, VkImageView imageView, const VkAllocationCallbacks * pAllocator)
@@ -289,7 +290,7 @@ void VulkanWrapper::DestroyImageView(VkDevice device, VkImageView imageView, con
 
 VkResult VulkanWrapper::CreateShaderModule(VkDevice device, const VkShaderModuleCreateInfo * pCreateInfo, const VkAllocationCallbacks * pAllocator, VkShaderModule * pShaderModule)
 {
-    return VkResult();
+    return VK_NOT_READY;
 }
 
 void VulkanWrapper::DestroyShaderModule(VkDevice device, VkShaderModule shaderModule, const VkAllocationCallbacks * pAllocator)
@@ -298,7 +299,7 @@ void VulkanWrapper::DestroyShaderModule(VkDevice device, VkShaderModule shaderMo
 
 VkResult VulkanWrapper::CreatePipelineCache(VkDevice device, const VkPipelineCacheCreateInfo * pCreateInfo, const VkAllocationCallbacks * pAllocator, VkPipelineCache * pPipelineCache)
 {
-    return VkResult();
+    return VK_NOT_READY;
 }
 
 void VulkanWrapper::DestroyPipelineCache(VkDevice device, VkPipelineCache pipelineCache, const VkAllocationCallbacks * pAllocator)
@@ -307,22 +308,22 @@ void VulkanWrapper::DestroyPipelineCache(VkDevice device, VkPipelineCache pipeli
 
 VkResult VulkanWrapper::GetPipelineCacheData(VkDevice device, VkPipelineCache pipelineCache, size_t * pDataSize, void * pData)
 {
-    return VkResult();
+    return VK_NOT_READY;
 }
 
 VkResult VulkanWrapper::MergePipelineCaches(VkDevice device, VkPipelineCache dstCache, uint32_t srcCacheCount, const VkPipelineCache * pSrcCaches)
 {
-    return VkResult();
+    return VK_NOT_READY;
 }
 
 VkResult VulkanWrapper::CreateGraphicsPipelines(VkDevice device, VkPipelineCache pipelineCache, uint32_t createInfoCount, const VkGraphicsPipelineCreateInfo * pCreateInfos, const VkAllocationCallbacks * pAllocator, VkPipeline * pPipelines)
 {
-    return VkResult();
+    return VK_NOT_READY;
 }
 
 VkResult VulkanWrapper::CreateComputePipelines(VkDevice device, VkPipelineCache pipelineCache, uint32_t createInfoCount, const VkComputePipelineCreateInfo * pCreateInfos, const VkAllocationCallbacks * pAllocator, VkPipeline * pPipelines)
 {
-    return VkResult();
+    return VK_NOT_READY;
 }
 
 void VulkanWrapper::DestroyPipeline(VkDevice device, VkPipeline pipeline, const VkAllocationCallbacks * pAllocator)
@@ -331,7 +332,7 @@ void VulkanWrapper::DestroyPipeline(VkDevice device, VkPipeline pipeline, const 
 
 VkResult VulkanWrapper::CreatePipelineLayout(VkDevice device, const VkPipelineLayoutCreateInfo * pCreateInfo, const VkAllocationCallbacks * pAllocator, VkPipelineLayout * pPipelineLayout)
 {
-    return VkResult();
+    return VK_NOT_READY;
 }
 
 void VulkanWrapper::DestroyPipelineLayout(VkDevice device, VkPipelineLayout pipelineLayout, const VkAllocationCallbacks * pAllocator)
@@ -340,7 +341,7 @@ void VulkanWrapper::DestroyPipelineLayout(VkDevice device, VkPipelineLayout pipe
 
 VkResult VulkanWrapper::CreateSampler(VkDevice device, const VkSamplerCreateInfo * pCreateInfo, const VkAllocationCallbacks * pAllocator, VkSampler * pSampler)
 {
-    return VkResult();
+    return VK_NOT_READY;
 }
 
 void VulkanWrapper::DestroySampler(VkDevice device, VkSampler sampler, const VkAllocationCallbacks * pAllocator)
@@ -349,7 +350,7 @@ void VulkanWrapper::DestroySampler(VkDevice device, VkSampler sampler, const VkA
 
 VkResult VulkanWrapper::CreateDescriptorSetLayout(VkDevice device, const VkDescriptorSetLayoutCreateInfo * pCreateInfo, const VkAllocationCallbacks * pAllocator, VkDescriptorSetLayout * pSetLayout)
 {
-    return VkResult();
+    return VK_NOT_READY;
 }
 
 void VulkanWrapper::DestroyDescriptorSetLayout(VkDevice device, VkDescriptorSetLayout descriptorSetLayout, const VkAllocationCallbacks * pAllocator)
@@ -358,7 +359,7 @@ void VulkanWrapper::DestroyDescriptorSetLayout(VkDevice device, VkDescriptorSetL
 
 VkResult VulkanWrapper::CreateDescriptorPool(VkDevice device, const VkDescriptorPoolCreateInfo * pCreateInfo, const VkAllocationCallbacks * pAllocator, VkDescriptorPool * pDescriptorPool)
 {
-    return VkResult();
+    return VK_NOT_READY;
 }
 
 void VulkanWrapper::DestroyDescriptorPool(VkDevice device, VkDescriptorPool descriptorPool, const VkAllocationCallbacks * pAllocator)
@@ -367,17 +368,17 @@ void VulkanWrapper::DestroyDescriptorPool(VkDevice device, VkDescriptorPool desc
 
 VkResult VulkanWrapper::ResetDescriptorPool(VkDevice device, VkDescriptorPool descriptorPool, VkDescriptorPoolResetFlags flags)
 {
-    return VkResult();
+    return VK_NOT_READY;
 }
 
 VkResult VulkanWrapper::AllocateDescriptorSets(VkDevice device, const VkDescriptorSetAllocateInfo * pAllocateInfo, VkDescriptorSet * pDescriptorSets)
 {
-    return VkResult();
+    return VK_NOT_READY;
 }
 
 VkResult VulkanWrapper::FreeDescriptorSets(VkDevice device, VkDescriptorPool descriptorPool, uint32_t descriptorSetCount, const VkDescriptorSet * pDescriptorSets)
 {
-    return VkResult();
+    return VK_NOT_READY;
 }
 
 void VulkanWrapper::UpdateDescriptorSets(VkDevice device, uint32_t descriptorWriteCount, const VkWriteDescriptorSet * pDescriptorWrites, uint32_t descriptorCopyCount, const VkCopyDescriptorSet * pDescriptorCopies)
@@ -386,7 +387,7 @@ void VulkanWrapper::UpdateDescriptorSets(VkDevice device, uint32_t descriptorWri
 
 VkResult VulkanWrapper::CreateFramebuffer(VkDevice device, const VkFramebufferCreateInfo * pCreateInfo, const VkAllocationCallbacks * pAllocator, VkFramebuffer * pFramebuffer)
 {
-    return VkResult();
+    return VK_NOT_READY;
 }
 
 void VulkanWrapper::DestroyFramebuffer(VkDevice device, VkFramebuffer framebuffer, const VkAllocationCallbacks * pAllocator)
@@ -395,7 +396,7 @@ void VulkanWrapper::DestroyFramebuffer(VkDevice device, VkFramebuffer framebuffe
 
 VkResult VulkanWrapper::CreateRenderPass(VkDevice device, const VkRenderPassCreateInfo * pCreateInfo, const VkAllocationCallbacks * pAllocator, VkRenderPass * pRenderPass)
 {
-    return VkResult();
+    return VK_NOT_READY;
 }
 
 void VulkanWrapper::DestroyRenderPass(VkDevice device, VkRenderPass renderPass, const VkAllocationCallbacks * pAllocator)
@@ -408,7 +409,7 @@ void VulkanWrapper::GetRenderAreaGranularity(VkDevice device, VkRenderPass rende
 
 VkResult VulkanWrapper::CreateCommandPool(VkDevice device, const VkCommandPoolCreateInfo * pCreateInfo, const VkAllocationCallbacks * pAllocator, VkCommandPool * pCommandPool)
 {
-    return VkResult();
+    return VK_NOT_READY;
 }
 
 void VulkanWrapper::DestroyCommandPool(VkDevice device, VkCommandPool commandPool, const VkAllocationCallbacks * pAllocator)
@@ -417,12 +418,12 @@ void VulkanWrapper::DestroyCommandPool(VkDevice device, VkCommandPool commandPoo
 
 VkResult VulkanWrapper::ResetCommandPool(VkDevice device, VkCommandPool commandPool, VkCommandPoolResetFlags flags)
 {
-    return VkResult();
+    return VK_NOT_READY;
 }
 
 VkResult VulkanWrapper::AllocateCommandBuffers(VkDevice device, const VkCommandBufferAllocateInfo * pAllocateInfo, VkCommandBuffer * pCommandBuffers)
 {
-    return VkResult();
+    return VK_NOT_READY;
 }
 
 void VulkanWrapper::FreeCommandBuffers(VkDevice device, VkCommandPool commandPool, uint32_t commandBufferCount, const VkCommandBuffer * pCommandBuffers)
@@ -431,17 +432,17 @@ void VulkanWrapper::FreeCommandBuffers(VkDevice device, VkCommandPool commandPoo
 
 VkResult VulkanWrapper::BeginCommandBuffer(VkCommandBuffer commandBuffer, const VkCommandBufferBeginInfo * pBeginInfo)
 {
-    return VkResult();
+    return VK_NOT_READY;
 }
 
 VkResult VulkanWrapper::EndCommandBuffer(VkCommandBuffer commandBuffer)
 {
-    return VkResult();
+    return VK_NOT_READY;
 }
 
 VkResult VulkanWrapper::ResetCommandBuffer(VkCommandBuffer commandBuffer, VkCommandBufferResetFlags flags)
 {
-    return VkResult();
+    return VK_NOT_READY;
 }
 
 void VulkanWrapper::CmdBindPipeline(VkCommandBuffer commandBuffer, VkPipelineBindPoint pipelineBindPoint, VkPipeline pipeline)

@@ -40,6 +40,11 @@ namespace renderer
         virtual void endFrame() = 0;
         virtual void presentFrame() = 0;
 
+        //test
+        virtual void clearColor(const core::Vector4D& color) = 0;
+
+        virtual void setViewport(const core::Rect32& viewport) = 0;
+
     protected:
 
         virtual bool initialize() = 0;

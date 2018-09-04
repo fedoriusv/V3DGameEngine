@@ -1,4 +1,6 @@
 #include "VulkanDeviceCaps.h"
+#include "VulkanGraphicContext.h"
+#include "Utils/Logger.h"
 
 #ifdef VULKAN_RENDER
 namespace v3d
@@ -74,8 +76,66 @@ void VulkanDeviceCaps::listOfDeviceExtensions(VkPhysicalDevice physicalDevice, s
     }
 }
 
-void VulkanDeviceCaps::fillCapabilitiesList()
+u32 VulkanDeviceCaps::getQueueFamiliyIndex(VkQueueFlagBits queueFlags)
 {
+    // Dedicated queue for compute
+    // Try to find a queue family index that supports compute but not graphics
+    if (queueFlags & VK_QUEUE_COMPUTE_BIT)
+    {
+        for (uint32_t i = 0; i < static_cast<uint32_t>(m_queueFamilyProperties.size()); i++)
+        {
+            if ((m_queueFamilyProperties[i].queueFlags & queueFlags) && ((m_queueFamilyProperties[i].queueFlags & VK_QUEUE_GRAPHICS_BIT) == 0))
+            {
+                return i;
+                break;
+            }
+        }
+    }
+
+    // Dedicated queue for transfer
+    // Try to find a queue family index that supports transfer but not graphics and compute
+    if (queueFlags & VK_QUEUE_TRANSFER_BIT)
+    {
+        for (uint32_t i = 0; i < static_cast<uint32_t>(m_queueFamilyProperties.size()); i++)
+        {
+            if ((m_queueFamilyProperties[i].queueFlags & queueFlags) &&
+                ((m_queueFamilyProperties[i].queueFlags & VK_QUEUE_GRAPHICS_BIT) == 0) &&
+                ((m_queueFamilyProperties[i].queueFlags & VK_QUEUE_COMPUTE_BIT) == 0))
+            {
+                return i;
+                break;
+            }
+        }
+    }
+
+    // For other queue types or if no separate compute queue is present, return the first one to support the requested flags
+    for (uint32_t i = 0; i < static_cast<uint32_t>(m_queueFamilyProperties.size()); i++)
+    {
+        if (m_queueFamilyProperties[i].queueFlags & queueFlags)
+        {
+            return i;
+            break;
+        }
+    }
+
+    LOG_WARNING("VulkanDeviceCaps::getQueueFamiliyIndex: Could not find a matching queue family index %d", queueFlags);
+    return 0;
+}
+
+void VulkanDeviceCaps::fillCapabilitiesList(const DeviceInfo* info)
+{
+    ASSERT(info->_physicalDevice != VK_NULL_HANDLE, "PhysicalDevice is nullptr");
+    VulkanWrapper::GetPhysicalDeviceProperties(info->_physicalDevice, &m_deviceProperties);
+    VulkanWrapper::GetPhysicalDeviceFeatures(info->_physicalDevice, &m_deviceFeatures);
+    VulkanWrapper::GetPhysicalDeviceMemoryProperties(info->_physicalDevice, &m_deviceMemoryProps);
+
+    u32 queueFamilyCount = 0;
+    VulkanWrapper::GetPhysicalDeviceQueueFamilyProperties(info->_physicalDevice, &queueFamilyCount, nullptr);
+    ASSERT(queueFamilyCount > 0, "Must be greater than 0");
+    m_queueFamilyProperties.resize(queueFamilyCount);
+    VulkanWrapper::GetPhysicalDeviceQueueFamilyProperties(info->_physicalDevice, &queueFamilyCount, m_queueFamilyProperties.data());
+
+    //TODO:
 }
 
 } //namespace vk

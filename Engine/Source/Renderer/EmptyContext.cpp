@@ -32,6 +32,16 @@ void EmptyContext::presentFrame()
     LOG_DEBUG("EmptyContext::presentFrame");
 }
 
+void EmptyContext::setViewport(const core::Rect32 & viewport)
+{
+    LOG_DEBUG("EmptyContext::setViewport");
+}
+
+void EmptyContext::clearColor(const core::Vector4D & color)
+{
+    LOG_DEBUG("EmptyContext::clearColor");
+}
+
 bool EmptyContext::initialize()
 {
     LOG_DEBUG("EmptyContext::initialize");

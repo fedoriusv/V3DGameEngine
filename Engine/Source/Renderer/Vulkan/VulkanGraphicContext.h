@@ -13,23 +13,32 @@ namespace vk
 {
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    struct DeviceInfo
+    {
+        VkInstance          _instance;
+        VkPhysicalDevice    _physicalDevice;
+        u32                 _queueFamilyIndex;
+        VkDevice            _device;
+    };
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
+
     class VulkanGraphicContext final : public Context
     {
     public:
 
-        struct DeviceInfo
-        {
-            VkInstance  _instance;
-            VkDevice    _device;
-            u32         _queueIndex;
-        };
-
         VulkanGraphicContext(const platform::Window* window);
         ~VulkanGraphicContext();
 
+        //commands
         void beginFrame() override;
         void endFrame() override;
         void presentFrame() override;
+
+        void clearColor(const core::Vector4D& color) override;
+
+        //states
+        void setViewport(const core::Rect32& viewport) override;
 
     private:
 
@@ -44,6 +53,15 @@ namespace vk
         bool createInstance();
         bool createDevice();
 
+        std::vector<VkQueue>    m_queueList;
+        class VulkanSwapchain*  m_swapchain;
+
+        class VulkanCommandBufferManager* m_drawCmdBufferManager;
+        class VulkanCommandBuffer* m_currentDrawBuffer;
+
+        const platform::Window* m_window;
+
+        u64 m_frameCounter;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

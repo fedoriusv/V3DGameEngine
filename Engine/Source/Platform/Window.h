@@ -3,6 +3,15 @@
 #include "Common.h"
 #include "Event/KeyCodes.h"
 
+#ifdef PLATFORM_WINDOWS
+#   include <windows.h>
+typedef HINSTANCE NativeInstance;
+typedef HWND      NativeWindows;
+#else
+typedef void*     NativeInstance;
+typedef void*     NativeWindows;
+#endif
+
 namespace v3d
 {
 namespace event
@@ -79,6 +88,9 @@ namespace platform
         const core::Dimension2D& getSize() const;
 
         event::InputEventReceiver* getInputEventReceiver() const;
+
+        virtual NativeInstance getInstance() const = 0;
+        virtual NativeWindows getWindowHandle() const = 0;
 
     protected:
 

@@ -164,13 +164,13 @@ void VulkanDebug::freeDebugCallback(VkInstance instance)
     }
 }
 
-bool VulkanDebug::checkLayerIsSupported(const c8* layerName)
+bool VulkanDebug::checkInstanceLayerIsSupported(const c8* layerName)
 {
     u32 instanceLayerPropertyCount = 0;
     VkResult result = VulkanWrapper::EnumerateInstanceLayerProperties(&instanceLayerPropertyCount, nullptr);
     if (result != VK_SUCCESS)
     {
-        LOG_ERROR("DebugVK::isValidationLayerSupported: vkEnumerateInstanceLayerProperties count error %s", vk::ErrorString(result).c_str());
+        LOG_ERROR("VulkanDebug::checkInstanceLayerIsSupported: vkEnumerateInstanceLayerProperties count error %s", vk::ErrorString(result).c_str());
         return false;
     }
 
@@ -180,11 +180,45 @@ bool VulkanDebug::checkLayerIsSupported(const c8* layerName)
         result = VulkanWrapper::EnumerateInstanceLayerProperties(&instanceLayerPropertyCount, instanceLayerProperties.data());
         if (result != VK_SUCCESS)
         {
-            LOG_ERROR("DebugVK::isValidationLayerSupported: vkEnumerateInstanceLayerProperties list error %s", vk::ErrorString(result).c_str());
+            LOG_ERROR("VulkanDebug::checkInstanceLayerIsSupported: vkEnumerateInstanceLayerProperties list error %s", vk::ErrorString(result).c_str());
             return false;
         }
 
         for (auto iter = instanceLayerProperties.cbegin(); iter < instanceLayerProperties.cend(); ++iter)
+        {
+            if (!strcmp((*iter).layerName, layerName))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    return false;
+}
+
+bool VulkanDebug::checkDeviceLayerIsSupported(VkPhysicalDevice device, const c8* layerName)
+{
+    u32 deviceLayerPropertyCount = 0;
+    VkResult result = VulkanWrapper::EnumerateDeviceLayerProperties(device, &deviceLayerPropertyCount, nullptr);
+    if (result != VK_SUCCESS)
+    {
+        LOG_ERROR("VulkanDebug::checkDeviceLayerIsSupported: vkEnumerateDeviceLayerProperties count error %s", vk::ErrorString(result).c_str());
+        return false;
+    }
+
+    std::vector<VkLayerProperties> deviceLayerProperties(deviceLayerPropertyCount);
+    if (!deviceLayerProperties.empty())
+    {
+        result = VulkanWrapper::EnumerateDeviceLayerProperties(device, &deviceLayerPropertyCount, deviceLayerProperties.data());
+        if (result != VK_SUCCESS)
+        {
+            LOG_ERROR("VulkanDebug::checkDeviceLayerIsSupported: vkEnumerateDeviceLayerProperties list error %s", vk::ErrorString(result).c_str());
+            return false;
+        }
+
+        for (auto iter = deviceLayerProperties.cbegin(); iter < deviceLayerProperties.cend(); ++iter)
         {
             if (!strcmp((*iter).layerName, layerName))
             {

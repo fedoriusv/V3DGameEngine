@@ -19,6 +19,11 @@ namespace renderer
         void endFrame() override;
         void presentFrame() override;
 
+        void setViewport(const core::Rect32& viewport) override;
+
+        //test
+        void clearColor(const core::Vector4D& color) override;
+
     private:
 
         bool initialize() override;
