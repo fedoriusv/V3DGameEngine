@@ -1,4 +1,5 @@
 #include "VulkanFunctions.h"
+#include "Utils/Logger.h"
 
 #ifdef VULKAN_RENDER
 #   ifdef PLATFORM_WINDOWS
@@ -12,40 +13,41 @@ namespace renderer
 namespace vk
 {
 
-PFN_vkCreateDebugUtilsMessengerEXT vkCreateDebugUtilsMessengerEXT1 = nullptr;
+#define INITIALIZE_VK_FUNCTIONS(Func) PFN_##Func Func = nullptr;
+    ENUM_VK_DEBUG_UTILS_FUNCTIONS(INITIALIZE_VK_FUNCTIONS);
+#undef INITIALIZE_VK_FUNCTIONS
 
 bool LoadVulkanLibrary()
 {
+    //TODO:
     return false;
 }
 
 bool LoadVulkanLibrary(VkInstance instance)
 {
 #ifdef VULKAN_DYNAMIC
-#   error "Not implemented"
+#   error "Dynamic vulkan is not implemented"
     return false;
 #else
-
     ASSERT(&vkGetInstanceProcAddr, "vkGetInstanceProcAddr has not addres");
 
-    vkCreateDebugUtilsMessengerEXT1 = reinterpret_cast<PFN_vkCreateDebugUtilsMessengerEXT>(vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT"));
-    //vkCreateDebugUtilsMessengerEXT = vkCreateDebugUtilsMessenger;
-//#   define GET_ADDRES_VK_FUNCTIONS(Func) Func = reinterpret_cast<PFN_##Func>(vkGetInstanceProcAddr(instance, #Func));
-//    ENUM_VK_DEBUG_UTILS_FUNCTIONS(GET_ADDRES_VK_FUNCTIONS);
-//
-//    if (&vkCreateDebugUtilsMessengerEXT)
-//    {
-//        int a = 0;
-//    }
-//
-//#   undef GET_ADDRES_VK_FUNCTIONS
+#   define GET_ADDRES_VK_FUNCTIONS(Func) Func = reinterpret_cast<PFN_##Func>(vkGetInstanceProcAddr(instance, #Func));
+    ENUM_VK_DEBUG_UTILS_FUNCTIONS(GET_ADDRES_VK_FUNCTIONS);
+#   undef GET_ADDRES_VK_FUNCTIONS
 
-    return true;
+    bool validation = true;
+#ifdef VULKAN_DEBUG
+#   define CHECK_VK_FUNKTIONS(Func) if (!Func) { LOG_WARNING("LoadVulkanLibrary(VkInstance instance) funtion is invalid %s", #Func); validation = true; }
+    ENUM_VK_DEBUG_UTILS_FUNCTIONS(CHECK_VK_FUNKTIONS);
+#   undef CHECK_VK_FUNKTIONS
+#endif //VULKAN_DEBUG
+    return validation;
 #endif //VULKAN_DYNAMIC
 }
 
 bool LoadVulkanLibrary(VkDevice device)
 {
+    //TODO:
     return false;
 }
 

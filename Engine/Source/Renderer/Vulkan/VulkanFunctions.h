@@ -30,11 +30,7 @@
     Macro(vkSubmitDebugUtilsMessageEXT)
 #endif //VK_EXT_debug_utils
 
-#ifdef VULKAN_DYNAMIC
 #define DECLARE_VK_FUNCTIONS(Func) extern PFN_##Func Func;
-#else
-#define DECLARE_VK_FUNCTIONS(Func) static PFN_##Func Func = nullptr;
-#endif //VULKAN_DYNAMIC
 
 namespace v3d
 {
@@ -42,9 +38,7 @@ namespace renderer
 {
 namespace vk
 {
-    extern PFN_vkCreateDebugUtilsMessengerEXT vkCreateDebugUtilsMessengerEXT1;
-    //ENUM_VK_DEBUG_UTILS_FUNCTIONS(DECLARE_VK_FUNCTIONS);
-
+    ENUM_VK_DEBUG_UTILS_FUNCTIONS(DECLARE_VK_FUNCTIONS);
 
     bool LoadVulkanLibrary();
     bool LoadVulkanLibrary(VkInstance instance);
@@ -53,5 +47,7 @@ namespace vk
 } //namespace vk
 } //namespace renderer
 } //namespace v3d
+
+#undef DECLARE_VK_FUNCTIONS
 
 #endif //VULKAN_RENDER
