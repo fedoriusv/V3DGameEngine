@@ -5,17 +5,17 @@
 #include "VulkanSwapchain.h"
 #include "Utils/Logger.h"
 
+
 #ifdef VULKAN_RENDER
-#   ifdef PLATFORM_WINDOWS
-#       pragma comment(lib, "vulkan-1.lib")
-#   endif //PLATFORM_WINDOWS
+//#   ifdef PLATFORM_WINDOWS
+//#       pragma comment(lib, "vulkan-1.lib")
+//#   endif //PLATFORM_WINDOWS
 namespace v3d
 {
 namespace renderer
 {
 namespace vk
 {
-
 const std::vector<const c8*> k_instanceExtensionsList = 
 {
     VK_KHR_SURFACE_EXTENSION_NAME,
@@ -29,18 +29,15 @@ const std::vector<const c8*> k_instanceExtensionsList =
 #ifdef VK_KHR_xlib_surface
     VK_KHR_XLIB_SURFACE_EXTENSION_NAME,
 #endif
-#if VULKAN_VALIDATION_LAYERS_CALLBACK
-    VK_EXT_DEBUG_REPORT_EXTENSION_NAME, //- depricated, need use VK_EXT_DEBUG_UTILS_EXTENSION_NAME
-#endif //VULKAN_VALIDATION_LAYERS_CALLBACK
+#if VULKAN_LAYERS_CALLBACKS
+    VK_EXT_DEBUG_UTILS_EXTENSION_NAME,
+#endif //VULKAN_LAYERS_CALLBACKS
 };
 
 const std::vector<const c8*> k_deviceExtensionsList =
 {
     VK_KHR_SWAPCHAIN_EXTENSION_NAME,
     VK_KHR_SAMPLER_MIRROR_CLAMP_TO_EDGE_EXTENSION_NAME,
-#if VULKAN_DEBUG_MARKERS
-    VK_EXT_DEBUG_MARKER_EXTENSION_NAME,
-#endif //VULKAN_DEBUG_MARKERS
 };
 
 VulkanGraphicContext::VulkanGraphicContext(const platform::Window* window)
@@ -99,6 +96,10 @@ bool VulkanGraphicContext::initialize()
 {
     //Called from game thread
     LOG_DEBUG("VulkanGraphicContext::initialize");
+    if (!LoadVulkanLibrary())
+    {
+        LOG_WARNING("VulkanGraphicContext::initialize: LoadVulkanLibrary is falied");
+    }
 
     if (!VulkanGraphicContext::createInstance())
     {
@@ -180,7 +181,9 @@ void VulkanGraphicContext::destroy()
         m_queueList.clear();
     }
 
-    VulkanDebug::freeDebugCallback(m_deviceInfo._instance);
+#if VULKAN_LAYERS_CALLBACKS
+    VulkanDebug::destroyDebugUtilsMesseger(m_deviceInfo._instance);
+#endif //VULKAN_LAYERS_CALLBACKS
 
     if (m_deviceInfo._instance)
     {
@@ -269,31 +272,39 @@ bool VulkanGraphicContext::createInstance()
         return false;
     }
 
-#if VULKAN_VALIDATION_LAYERS_CALLBACK
-    const u16 validationLayerLevel = 4;
+    if (!LoadVulkanLibrary(m_deviceInfo._instance))
+    {
+        LOG_WARNING("VulkanGraphicContext::createInstance: LoadVulkanLibrary is falied");
+    }
 
-    VkDebugReportFlagsEXT debugFlags = 0;
-    switch (validationLayerLevel)
+#if VULKAN_LAYERS_CALLBACKS
+    VkDebugUtilsMessageSeverityFlagsEXT severityFlag = 0;
+    switch (VulkanDebug::s_severityDebugLevel)
     {
     case 4:
-        debugFlags |= VK_DEBUG_REPORT_DEBUG_BIT_EXT;
+        severityFlag |= VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT;
     case 3:
-        debugFlags |= VK_DEBUG_REPORT_INFORMATION_BIT_EXT;
+        severityFlag |= VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT;
     case 2:
-        debugFlags |= VK_DEBUG_REPORT_WARNING_BIT_EXT | VK_DEBUG_REPORT_PERFORMANCE_WARNING_BIT_EXT;
+        severityFlag |= VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT;
     case 1:
-        debugFlags |= VK_DEBUG_REPORT_ERROR_BIT_EXT;
+        severityFlag |= VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
     case 0:
     default:
         //turn off
         break;
     }
 
-    if (!VulkanDebug::createDebugCalllback(m_deviceInfo._instance, debugFlags, VulkanDebug::s_msgCallback, this))
-    {
-        LOG_ERROR("VulkanGraphicContext::createInstance: createDebugCalllback failed");
-    }
+    VkDebugUtilsMessageTypeFlagsEXT messageTypeFlag = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
+#if VULKAN_VALIDATION_LAYERS_CALLBACK
+    messageTypeFlag |= VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT;
 #endif //VULKAN_VALIDATION_LAYERS_CALLBACK
+
+    if(!VulkanDebug::createDebugUtilsMesseger(m_deviceInfo._instance, severityFlag, messageTypeFlag, nullptr, this))
+    {
+        LOG_ERROR("VulkanGraphicContext::createInstance: createDebugUtilsMessager failed");
+    }
+#endif //VULKAN_LAYERS_CALLBACKS
 
     return true;
 }
@@ -412,6 +423,11 @@ bool VulkanGraphicContext::createDevice()
     {
         LOG_FATAL("VulkanGraphicContext::createDevice: vkCreateDevice Error %s", ErrorString(result).c_str());
         return false;
+    }
+
+    if (!LoadVulkanLibrary(m_deviceInfo._device))
+    {
+        LOG_WARNING("VulkanGraphicContext::createDevice: LoadVulkanLibrary is falied");
     }
 
     return true;

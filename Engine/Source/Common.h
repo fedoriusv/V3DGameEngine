@@ -21,7 +21,6 @@
 #include <utility>
 #include <type_traits>
 
-#include <assert.h>
 #include <time.h>
 #include <cstdarg>
 #include <cstring>
@@ -34,6 +33,7 @@
 #include "Core/Core.h"
 
 #ifdef _DEBUG
+#   include <assert.h>
 #   define ASSERT(x, message) assert(x && message)
 #else //_DEBUG
 #   define ASSERT(x, message)
@@ -49,4 +49,15 @@
 #else //
 #   pragma message("WARNING: You need to implement DEPRECATED for this compiler")
 #   define DEPRECATED
+#endif //
+
+#ifdef PLATFORM_WINDOWS
+#   include <windows.h>
+typedef HINSTANCE NativeInstance;
+typedef HWND      NativeWindows;
+#   undef max
+#   undef min
+#else //
+typedef void*     NativeInstance;
+typedef void*     NativeWindows;
 #endif //

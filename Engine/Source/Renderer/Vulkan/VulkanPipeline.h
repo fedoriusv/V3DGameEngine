@@ -1,4 +1,5 @@
 #pragma once
+
 #include "Common.h"
 
 #ifdef VULKAN_RENDER

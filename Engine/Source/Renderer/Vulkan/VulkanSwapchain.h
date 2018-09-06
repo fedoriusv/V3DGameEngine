@@ -1,9 +1,10 @@
 #pragma once
+
 #include "Common.h"
 #include "Platform/Window.h"
+#include "VulkanWrapper.h"
 
 #ifdef VULKAN_RENDER
-#include "VulkanWrapper.h"
 namespace v3d
 {
 namespace renderer

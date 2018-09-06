@@ -30,6 +30,9 @@
     Macro(vkSubmitDebugUtilsMessageEXT)
 #endif //VK_EXT_debug_utils
 
+#define ENUM_VK_ALL_FUNCTIONS(Macro) \
+        ENUM_VK_DEBUG_UTILS_FUNCTIONS(Macro)
+
 #define DECLARE_VK_FUNCTIONS(Func) extern PFN_##Func Func;
 
 namespace v3d
@@ -38,7 +41,7 @@ namespace renderer
 {
 namespace vk
 {
-    ENUM_VK_DEBUG_UTILS_FUNCTIONS(DECLARE_VK_FUNCTIONS);
+    ENUM_VK_ALL_FUNCTIONS(DECLARE_VK_FUNCTIONS);
 
     bool LoadVulkanLibrary();
     bool LoadVulkanLibrary(VkInstance instance);

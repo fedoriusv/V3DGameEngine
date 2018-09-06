@@ -52,16 +52,11 @@
 #   define VULKAN_VERSION_PATCH 0
 
 #   define VULKAN_DEBUG 1
-#   define VULKAN_VALIDATION_LAYERS_CALLBACK 1
-#   define VULKAN_RENDERDOC_LAYER 0
-#   define VULKAN_DEBUG_MARKERS 0
-
-#   ifdef PLATFORM_WINDOWS
-#       define VK_USE_PLATFORM_WIN32_KHR
-#   elif PLATFORM_LINUX
-#       define VK_USE_PLATFORM_XLIB_KHR
-#   elif PLATFORM_ANDROID
-#       define VK_USE_PLATFORM_ANDROID_KHR
-#   endif
+#   define VULKAN_LAYERS_CALLBACKS 1
+#   if VULKAN_LAYERS_CALLBACKS
+#       define VULKAN_VALIDATION_LAYERS_CALLBACK 1
+#       define VULKAN_RENDERDOC_LAYER 0
+#       define VULKAN_DEBUG_MARKERS 0
+#   endif //VULKAN_LAYERS_CALLBACKS
 #endif //VULKAN_RENDER
 /////////////////////////////////////////////////////////////////////////////////////////////////////

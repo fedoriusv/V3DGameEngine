@@ -5,6 +5,7 @@
 
 #ifdef VULKAN_RENDER
 #include "VulkanWrapper.h"
+
 namespace v3d
 {
 namespace renderer

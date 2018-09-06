@@ -44,18 +44,6 @@ std::string ErrorString(VkResult errorCode)
     }
 }
 
-#if VULKAN_VALIDATION_LAYERS_CALLBACK
-const bool VulkanDebug::s_enableValidationLayers = true;
-#else
-const bool VulkanDebug::s_enableValidationLayers = false;
-#endif //VULKAN_VALIDATION_LAYERS_CALLBACK
-
-#if VULKAN_DEBUG_MARKERS
-const bool VulkanDebug::s_enableDebugMarkers = true;
-#else
-const bool VulkanDebug::s_enableDebugMarkers = false;
-#endif //VULKAN_DEBUG_MARKERS
-
 const std::vector<const c8*> VulkanDebug::s_validationLayerNames =
 {
 #ifdef PLATFORM_WINDOWS
@@ -72,99 +60,108 @@ const std::vector<const c8*> VulkanDebug::s_validationLayerNames =
     "VK_LAYER_LUNARG_device_limits",
     "VK_LAYER_LUNARG_image",
     "VK_LAYER_LUNARG_swapchain",
+    "VK_LAYER_LUNARG_swapchain",
     "VK_LAYER_GOOGLE_unique_objects", // should be late in the list, gets data early from the driver
 #endif
 };
 
-PFN_vkCreateDebugReportCallbackEXT  VulkanDebug::s_vkCreateDebugReportCallbackEXT = VK_NULL_HANDLE;
-PFN_vkDestroyDebugReportCallbackEXT VulkanDebug::s_vkDestroyDebugReportCallbackEXT = VK_NULL_HANDLE;
+VkDebugUtilsMessengerEXT VulkanDebug::s_messeger = VK_NULL_HANDLE;
 
-VkDebugReportCallbackEXT            VulkanDebug::s_msgCallback;
-
-VkBool32 VulkanDebug::messageCallback(VkDebugReportFlagsEXT flags, VkDebugReportObjectTypeEXT objType, u64 srcObject, size_t location, s32 msgCode, c8* layerPrefix, c8* msg, void* userData)
+bool VulkanDebug::createDebugUtilsMesseger(VkInstance instance, VkDebugUtilsMessageSeverityFlagsEXT severityFlag, VkDebugUtilsMessageTypeFlagsEXT flags, PFN_vkDebugUtilsMessengerCallbackEXT callback, void * userData)
 {
-    // Error that may result in undefined behaviour
-    if (flags & VK_DEBUG_REPORT_ERROR_BIT_EXT)
+    if (s_messeger)
     {
-        LOG_ERROR("[%s]Object: %d Code %d: %s", layerPrefix, srcObject, msgCode, msg);
-    };
-    // Warnings may hint at unexpected / non-spec API usage
-    if (flags & VK_DEBUG_REPORT_WARNING_BIT_EXT)
-    {
-        LOG_WARNING("[%s]Object: %d Code %d: %s", layerPrefix, srcObject, msgCode, msg);
-    };
-    // May indicate sub-optimal usage of the API
-    if (flags & VK_DEBUG_REPORT_PERFORMANCE_WARNING_BIT_EXT)
-    {
-        LOG_WARNING("[%s]Object: %d Code %d: %s", layerPrefix, srcObject, msgCode, msg);
-    };
-    // Informal messages that may become handy during debugging
-    if (flags & VK_DEBUG_REPORT_INFORMATION_BIT_EXT)
-    {
-        LOG_INFO("[%s]Object: %d Code %d: %s", layerPrefix, srcObject, msgCode, msg);
-    }
-    // Diagnostic info from the Vulkan loader and layers
-    // Usually not helpful in terms of API usage, but may help to debug layer and loader problems 
-    if (flags & VK_DEBUG_REPORT_DEBUG_BIT_EXT)
-    {
-        LOG_DEBUG("[%s]Object: %d Code %d: %s", layerPrefix, srcObject, msgCode, msg);
+        LOG_WARNING("VulkanDebug::createDebugUtilsMessagerCallback: already exist");
+        return true;
     }
 
-    // The return value of this callback controls wether the Vulkan call that caused
-    // the validation message will be aborted or not
-    // We return VK_FALSE as we DON'T want Vulkan calls that cause a validation message 
-    // (and return a VkResult) to abort
-    // If you instead want to have calls abort, pass in VK_TRUE and the function will 
-    // return VK_ERROR_VALIDATION_FAILED_EXT 
-    if (VulkanDebug::s_enableValidationLayers)
-    {
-        return VK_TRUE;
-    }
-    else
-    {
-        return VK_FALSE;
-    }
-}
+    VkDebugUtilsMessengerCreateInfoEXT debugUtilsMessengerCreateInfo = {};
+    debugUtilsMessengerCreateInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
+    debugUtilsMessengerCreateInfo.pNext = nullptr;
+    debugUtilsMessengerCreateInfo.flags = 0;
+    debugUtilsMessengerCreateInfo.messageSeverity = severityFlag;
+    debugUtilsMessengerCreateInfo.messageType = flags;
+    debugUtilsMessengerCreateInfo.pfnUserCallback = (callback) ? callback : VulkanDebug::defaultDebugUtilsMessegerCallback;
+    debugUtilsMessengerCreateInfo.pUserData = userData;
 
-bool VulkanDebug::createDebugCalllback(VkInstance instance, VkDebugReportFlagsEXT flags, VkDebugReportCallbackEXT callBack, void* userData)
-{
-    if (s_vkCreateDebugReportCallbackEXT == VK_NULL_HANDLE)
-    {
-        s_vkCreateDebugReportCallbackEXT = reinterpret_cast<PFN_vkCreateDebugReportCallbackEXT>(VulkanWrapper::GetInstanceProcAddr(instance, "vkCreateDebugReportCallbackEXT"));
-        ASSERT(s_vkCreateDebugReportCallbackEXT, "Can't get address");
-    }
-
-    VkDebugReportCallbackCreateInfoEXT dbgCreateInfo = {};
-    dbgCreateInfo.sType = VK_STRUCTURE_TYPE_DEBUG_REPORT_CREATE_INFO_EXT;
-    dbgCreateInfo.pNext = nullptr;
-    dbgCreateInfo.flags = flags;
-    dbgCreateInfo.pfnCallback = (PFN_vkDebugReportCallbackEXT)VulkanDebug::messageCallback;
-    dbgCreateInfo.pUserData = userData;
-
-    VkDebugReportCallbackEXT& callback = (callBack != VK_NULL_HANDLE) ? callBack : VulkanDebug::s_msgCallback;
-
-    VkResult result = s_vkCreateDebugReportCallbackEXT(instance, &dbgCreateInfo, nullptr, &callback);
+    VkResult result = VulkanWrapper::CreateDebugUtilsMessengerEXT(instance, &debugUtilsMessengerCreateInfo, VULKAN_ALLOCATOR, &s_messeger);
     if (result != VK_SUCCESS)
     {
-        LOG_ERROR("VulkanDebug::createDebugCalllback: vkCreateDebugReportCallbackEXT error %s", vk::ErrorString(result).c_str());
+        LOG_ERROR("VulkanDebug::createDebugUtilsMessagerCallback: vkCreateDebugUtilsMessengerEXT error %s", ErrorString(result).c_str());
         return false;
     }
-
     return true;
 }
 
-void VulkanDebug::freeDebugCallback(VkInstance instance)
+void VulkanDebug::destroyDebugUtilsMesseger(VkInstance instance)
 {
-    if (s_vkDestroyDebugReportCallbackEXT == VK_NULL_HANDLE)
+    if (s_messeger)
     {
-        s_vkDestroyDebugReportCallbackEXT = reinterpret_cast<PFN_vkDestroyDebugReportCallbackEXT>(VulkanWrapper::GetInstanceProcAddr(instance, "vkDestroyDebugReportCallbackEXT"));
-        ASSERT(s_vkCreateDebugReportCallbackEXT, "Can't get address");
+        VulkanWrapper::DestroyDebugUtilsMessengerEXT(instance, s_messeger, VULKAN_ALLOCATOR);
+        s_messeger = VK_NULL_HANDLE;
+    }
+}
+
+VkBool32 VulkanDebug::defaultDebugUtilsMessegerCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageType, const VkDebugUtilsMessengerCallbackDataEXT * pCallbackData, void * pUserData)
+{
+    switch (messageType)
+    {
+    case VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT:
+    {
+        if (messageSeverity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT)
+        {
+            LOG_ERROR("General[%s]Code %d: %s", pCallbackData->pMessageIdName, pCallbackData->messageIdNumber, pCallbackData->pMessage);
+        };
+
+        if (messageSeverity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT)
+        {
+            LOG_WARNING("General[%s]Code %d: %s", pCallbackData->pMessageIdName, pCallbackData->messageIdNumber, pCallbackData->pMessage);
+        };
+
+        if (messageSeverity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT)
+        {
+            LOG_INFO("General[%s]Code %d: %s", pCallbackData->pMessageIdName, pCallbackData->messageIdNumber, pCallbackData->pMessage);
+        }
+
+        if (messageSeverity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT)
+        {
+            LOG_DEBUG("General[%s]Code %d: %s", pCallbackData->pMessageIdName, pCallbackData->messageIdNumber, pCallbackData->pMessage);
+        }
+        return VK_FALSE;
     }
 
-    if (VulkanDebug::s_msgCallback != VK_NULL_HANDLE)
+    case VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT:
     {
-        s_vkDestroyDebugReportCallbackEXT(instance, VulkanDebug::s_msgCallback, nullptr);
+        if (messageSeverity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT)
+        {
+            LOG_ERROR("Validation[%s]Code %d: %s", pCallbackData->pMessageIdName, pCallbackData->messageIdNumber, pCallbackData->pMessage);
+        };
+
+        if (messageSeverity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT)
+        {
+            LOG_WARNING("Validation[%s]Code %d: %s", pCallbackData->pMessageIdName, pCallbackData->messageIdNumber, pCallbackData->pMessage);
+        };
+
+        if (messageSeverity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT)
+        {
+            LOG_INFO("Validation[%s]Code %d: %s", pCallbackData->pMessageIdName, pCallbackData->messageIdNumber, pCallbackData->pMessage);
+        }
+
+        if (messageSeverity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT)
+        {
+            LOG_DEBUG("Validation[%s]Code %d: %s", pCallbackData->pMessageIdName, pCallbackData->messageIdNumber, pCallbackData->pMessage);
+        }
+        return VK_TRUE;
     }
+
+    case VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT:
+    {
+        LOG_WARNING("Performance[Servity level %u][%s]Code %d: %s", messageSeverity, pCallbackData->pMessageIdName, pCallbackData->messageIdNumber, pCallbackData->pMessage);
+        return VK_FALSE;
+    }
+
+    }
+    return VK_FALSE;
 }
 
 bool VulkanDebug::checkInstanceLayerIsSupported(const c8* layerName)

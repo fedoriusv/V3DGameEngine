@@ -1,11 +1,10 @@
 #include "Context.h"
 #include "Platform/Window.h"
-#include "Utils/Logger.h"
 
 #include "EmptyContext.h"
 #include "Vulkan/VulkanGraphicContext.h"
 
-
+#include "Utils/Logger.h"
 
 namespace v3d
 {

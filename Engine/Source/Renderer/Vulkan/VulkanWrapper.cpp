@@ -707,6 +707,63 @@ VkResult VulkanWrapper::AcquireNextImage2KHR(VkDevice device, const VkAcquireNex
 }
 #endif //VK_KHR_swapchain
 
+#ifdef VK_EXT_debug_utils
+VkResult VulkanWrapper::SetDebugUtilsObjectNameEXT(VkDevice device, const VkDebugUtilsObjectNameInfoEXT * pNameInfo)
+{
+    return vkSetDebugUtilsObjectNameEXT(device, pNameInfo);
+}
+
+VkResult VulkanWrapper::SetDebugUtilsObjectTagEXT(VkDevice device, const VkDebugUtilsObjectTagInfoEXT * pTagInfo)
+{
+    return vkSetDebugUtilsObjectTagEXT(device, pTagInfo);
+}
+
+void VulkanWrapper::QueueBeginDebugUtilsLabelEXT(VkQueue queue, const VkDebugUtilsLabelEXT * pLabelInfo)
+{
+    vkQueueBeginDebugUtilsLabelEXT(queue, pLabelInfo);
+}
+
+void VulkanWrapper::QueueEndDebugUtilsLabelEXT(VkQueue queue)
+{
+    vkQueueEndDebugUtilsLabelEXT(queue);
+}
+
+void VulkanWrapper::QueueInsertDebugUtilsLabelEXT(VkQueue queue, const VkDebugUtilsLabelEXT * pLabelInfo)
+{
+    vkQueueInsertDebugUtilsLabelEXT(queue, pLabelInfo);
+}
+
+void VulkanWrapper::CmdBeginDebugUtilsLabelEXT(VkCommandBuffer commandBuffer, const VkDebugUtilsLabelEXT * pLabelInfo)
+{
+    vkCmdBeginDebugUtilsLabelEXT(commandBuffer, pLabelInfo);
+}
+
+void VulkanWrapper::CmdEndDebugUtilsLabelEXT(VkCommandBuffer commandBuffer)
+{
+    vkCmdEndDebugUtilsLabelEXT(commandBuffer);
+}
+
+void VulkanWrapper::CmdInsertDebugUtilsLabelEXT(VkCommandBuffer commandBuffer, const VkDebugUtilsLabelEXT * pLabelInfo)
+{
+    vkCmdInsertDebugUtilsLabelEXT(commandBuffer, pLabelInfo);
+}
+
+VkResult VulkanWrapper::CreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT * pCreateInfo, const VkAllocationCallbacks * pAllocator, VkDebugUtilsMessengerEXT * pMessenger)
+{
+    return vkCreateDebugUtilsMessengerEXT(instance, pCreateInfo, pAllocator, pMessenger);
+}
+
+void VulkanWrapper::DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT messenger, const VkAllocationCallbacks * pAllocator)
+{
+    vkDestroyDebugUtilsMessengerEXT(instance, messenger, pAllocator);
+}
+
+void VulkanWrapper::SubmitDebugUtilsMessageEXT(VkInstance instance, VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageTypes, const VkDebugUtilsMessengerCallbackDataEXT * pCallbackData)
+{
+    vkSubmitDebugUtilsMessageEXT(instance, messageSeverity, messageTypes, pCallbackData);
+}
+#endif //VK_EXT_debug_utils
+
 } //namespace vk
 } //namespace renderer
 } //namespace v3d
