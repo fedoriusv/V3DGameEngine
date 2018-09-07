@@ -11,7 +11,7 @@ namespace vk
 VulkanCommandBuffer::VulkanCommandBuffer(VkDevice device, VkCommandPool pool)
     : m_device(device)
     , m_pool(pool)
-    , m_buffer(VK_NULL_HANDLE)
+    , m_command(VK_NULL_HANDLE)
 {
 }
 
@@ -21,7 +21,7 @@ VulkanCommandBuffer::~VulkanCommandBuffer()
 
 VkCommandBuffer VulkanCommandBuffer::getHandle() const
 {
-    return m_buffer;
+    return m_command;
 }
 
 void VulkanCommandBuffer::beginCommandBuffer()
@@ -30,6 +30,23 @@ void VulkanCommandBuffer::beginCommandBuffer()
 
 void VulkanCommandBuffer::endCommandBuffer()
 {
+}
+
+void VulkanCommandBuffer::cmdDraw()
+{
+    if (m_type == CommandBufferType::PrimaryBuffer)
+    {
+        VulkanWrapper::CmdDraw(m_command, );
+    }
+    else
+    {
+        //create cmdDraw task
+    }
+}
+
+void VulkanCommandBuffer::cmdCopyBufferToImage()
+{
+    //VulkanWrapper::CmdCopyBufferToImage(m_command, , , )
 }
 
 } //namespace vk

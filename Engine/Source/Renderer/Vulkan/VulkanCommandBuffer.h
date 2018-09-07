@@ -45,13 +45,14 @@ namespace vk
         void cmdClearImage(VkImage image, VkImageLayout imageLayout, const VkClearDepthStencilValue* pDepthStencil);
 
         //TODO: cmd list
+        void cmdCopyBufferToImage();
 
     private:
 
         VkDevice        m_device;
         VkCommandPool   m_pool;
 
-        VkCommandBuffer m_buffer;
+        VkCommandBuffer m_command;
         VkSemaphore     m_semaphore;
 
         CommandBufferType m_type;

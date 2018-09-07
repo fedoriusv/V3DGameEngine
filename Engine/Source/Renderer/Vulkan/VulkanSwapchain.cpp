@@ -234,8 +234,43 @@ bool VulkanSwapchain::createSwapchain(const SwapchainConfig& config)
 
 bool VulkanSwapchain::createSwapchainImages()
 {
-    //TODO:
-    return false;
+    u32 swapChainImageCount;
+    VkResult result = vkGetSwapchainImagesKHR(m_deviceInfo->_device, m_swapchain, &swapChainImageCount, nullptr);
+    if (result != VK_SUCCESS)
+    {
+        LOG_FATAL("VulkanSwapchain::createSwapchainImages: vkGetSwapchainImagesKHR count. Error %s", ErrorString(result).c_str());
+        return false;
+    }
+
+    if (swapChainImageCount < 2)
+    {
+        LOG_ERROR("VulkanSwapchain::createSurface: Not enough images supported in vulkan swapchain");
+        return false;
+    }
+
+    LOG_DEBUG("SwapChainVK::createSwapchainImages: Count images %d", swapChainImageCount);
+
+    std::vector<VkImage> images(swapChainImageCount);
+    result = vkGetSwapchainImagesKHR(m_deviceInfo->_device, m_swapchain, &swapChainImageCount, images.data());
+    if (result != VK_SUCCESS)
+    {
+        LOG_FATAL("VulkanSwapchain::createSwapchainImages: vkGetSwapchainImagesKHR array. Error %s", ErrorString(result).c_str());
+        return false;
+    }
+
+    m_swapBuffers.reserve(swapChainImageCount);
+    for (auto& image : images)
+    {
+        /*TextureVK* texture = new TextureVK(ETextureTarget::eTextureRectangle, EImageFormat::eRGBA, EImageType::eUnsignedByte, core::Dimension3D(m_surfaceSize.width, m_surfaceSize.height, 1), nullptr);
+        if (!texture->create(image))
+        {
+            LOG_FATAL("VulkanSwapchain::createSwapchainImages: can't create surface texture");
+            delete texture;
+        }
+        m_swapBuffers.push_back(texture);*/
+    }
+
+    return true;
 }
 
 void VulkanSwapchain::destroy()

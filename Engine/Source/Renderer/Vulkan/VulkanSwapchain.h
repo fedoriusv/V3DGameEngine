@@ -13,6 +13,8 @@ namespace vk
 {
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    class VulkanImage;
+
     class VulkanSwapchain final
     {
     public:
@@ -51,6 +53,7 @@ namespace vk
         VkSurfaceFormatKHR m_surfaceFormat;
 
         VkSwapchainKHR m_swapchain;
+        std::vector<VulkanImage*> m_swapBuffers;
 
     };
 
