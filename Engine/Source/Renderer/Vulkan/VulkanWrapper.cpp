@@ -113,94 +113,102 @@ VkResult VulkanWrapper::DeviceWaitIdle(VkDevice device)
     return vkDeviceWaitIdle(device);
 }
 
-//////////////////////
 VkResult VulkanWrapper::AllocateMemory(VkDevice device, const VkMemoryAllocateInfo * pAllocateInfo, const VkAllocationCallbacks * pAllocator, VkDeviceMemory * pMemory)
 {
-    return VK_NOT_READY;
+    return vkAllocateMemory(device, pAllocateInfo, pAllocator, pMemory);
 }
 
 void VulkanWrapper::FreeMemory(VkDevice device, VkDeviceMemory memory, const VkAllocationCallbacks * pAllocator)
 {
+    vkFreeMemory(device, memory, pAllocator);
 }
 
 VkResult VulkanWrapper::MapMemory(VkDevice device, VkDeviceMemory memory, VkDeviceSize offset, VkDeviceSize size, VkMemoryMapFlags flags, void ** ppData)
 {
-    return VK_NOT_READY;
+    return vkMapMemory(device, memory, offset, size, flags, ppData);
 }
 
 void VulkanWrapper::UnmapMemory(VkDevice device, VkDeviceMemory memory)
 {
+    vkUnmapMemory(device, memory);
 }
 
 VkResult VulkanWrapper::FlushMappedMemoryRanges(VkDevice device, uint32_t memoryRangeCount, const VkMappedMemoryRange * pMemoryRanges)
 {
-    return VK_NOT_READY;
+    return vkFlushMappedMemoryRanges(device, memoryRangeCount, pMemoryRanges);
 }
 
 VkResult VulkanWrapper::InvalidateMappedMemoryRanges(VkDevice device, uint32_t memoryRangeCount, const VkMappedMemoryRange * pMemoryRanges)
 {
-    return VK_NOT_READY;
+    return vkInvalidateMappedMemoryRanges(device, memoryRangeCount, pMemoryRanges);
 }
 
 void VulkanWrapper::GetDeviceMemoryCommitment(VkDevice device, VkDeviceMemory memory, VkDeviceSize * pCommittedMemoryInBytes)
 {
+    vkGetDeviceMemoryCommitment(device, memory, pCommittedMemoryInBytes);
 }
 
 VkResult VulkanWrapper::BindBufferMemory(VkDevice device, VkBuffer buffer, VkDeviceMemory memory, VkDeviceSize memoryOffset)
 {
-    return VK_NOT_READY;
+    return vkBindBufferMemory(device, buffer, memory, memoryOffset);
 }
 
 VkResult VulkanWrapper::BindImageMemory(VkDevice device, VkImage image, VkDeviceMemory memory, VkDeviceSize memoryOffset)
 {
-    return VK_NOT_READY;
+    return vkBindImageMemory(device, image, memory, memoryOffset);
 }
 
 void VulkanWrapper::GetBufferMemoryRequirements(VkDevice device, VkBuffer buffer, VkMemoryRequirements * pMemoryRequirements)
 {
+    vkGetBufferMemoryRequirements(device, buffer, pMemoryRequirements);
 }
 
 void VulkanWrapper::GetImageMemoryRequirements(VkDevice device, VkImage image, VkMemoryRequirements * pMemoryRequirements)
 {
+    vkGetImageMemoryRequirements(device, image, pMemoryRequirements);
 }
 
 void VulkanWrapper::GetImageSparseMemoryRequirements(VkDevice device, VkImage image, uint32_t * pSparseMemoryRequirementCount, VkSparseImageMemoryRequirements * pSparseMemoryRequirements)
 {
+    vkGetImageSparseMemoryRequirements(device, image, pSparseMemoryRequirementCount, pSparseMemoryRequirements);
 }
 
 void VulkanWrapper::GetPhysicalDeviceSparseImageFormatProperties(VkPhysicalDevice physicalDevice, VkFormat format, VkImageType type, VkSampleCountFlagBits samples, VkImageUsageFlags usage, VkImageTiling tiling, uint32_t * pPropertyCount, VkSparseImageFormatProperties * pProperties)
 {
+    vkGetPhysicalDeviceSparseImageFormatProperties(physicalDevice, format, type, samples, usage, tiling, pPropertyCount, pProperties);
 }
 
 VkResult VulkanWrapper::QueueBindSparse(VkQueue queue, uint32_t bindInfoCount, const VkBindSparseInfo * pBindInfo, VkFence fence)
 {
-    return VK_NOT_READY;
+    return vkQueueBindSparse(queue, bindInfoCount, pBindInfo, fence);
 }
 
 VkResult VulkanWrapper::CreateFence(VkDevice device, const VkFenceCreateInfo * pCreateInfo, const VkAllocationCallbacks * pAllocator, VkFence * pFence)
 {
-    return VK_NOT_READY;
+    return vkCreateFence(device, pCreateInfo, pAllocator, pFence);
 }
 
 void VulkanWrapper::DestroyFence(VkDevice device, VkFence fence, const VkAllocationCallbacks * pAllocator)
 {
+    vkDestroyFence(device, fence, pAllocator);
 }
 
 VkResult VulkanWrapper::ResetFences(VkDevice device, uint32_t fenceCount, const VkFence * pFences)
 {
-    return VK_NOT_READY;
+    return vkResetFences(device, fenceCount, pFences);
 }
 
 VkResult VulkanWrapper::GetFenceStatus(VkDevice device, VkFence fence)
 {
-    return VK_NOT_READY;
+    return vkGetFenceStatus(device, fence);
 }
 
 VkResult VulkanWrapper::WaitForFences(VkDevice device, uint32_t fenceCount, const VkFence * pFences, VkBool32 waitAll, uint64_t timeout)
 {
-    return VK_NOT_READY;
+    return vkWaitForFences(device, fenceCount, pFences, waitAll, timeout);
 }
 
+///////////////////////////////////////////////////////
 VkResult VulkanWrapper::CreateSemaphore(VkDevice device, const VkSemaphoreCreateInfo * pCreateInfo, const VkAllocationCallbacks * pAllocator, VkSemaphore * pSemaphore)
 {
     return VK_NOT_READY;
