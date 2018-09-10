@@ -21,6 +21,9 @@ namespace vk
         VulkanImage(VkDevice device);
         ~VulkanImage();
 
+        bool create() override;
+        void destroy() override;
+
     private:
 
         VkDevice    m_device;

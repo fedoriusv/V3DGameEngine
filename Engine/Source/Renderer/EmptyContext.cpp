@@ -42,6 +42,11 @@ void EmptyContext::clearColor(const core::Vector4D & color)
     LOG_DEBUG("EmptyContext::clearColor");
 }
 
+Textue * EmptyContext::createTexture() const
+{
+    return nullptr;
+}
+
 bool EmptyContext::initialize()
 {
     LOG_DEBUG("EmptyContext::initialize");

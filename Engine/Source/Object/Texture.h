@@ -2,13 +2,13 @@
 
 #include "Common.h"
 #include "Object.h"
+#include "CommandList.h"
 
 namespace v3d
 {
 namespace renderer
 {
     class Image;
-
 } //namespace renderer
 
   /////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -58,7 +58,6 @@ namespace renderer
     {
     public:
 
-        Texture2D(/*ImageFormat format, ImageType type,*/ const core::Dimension2D& size, u32 mipmapCount, const void* data);
         ~Texture2D();
 
         TextureTarget               getTarget() const;
@@ -76,6 +75,10 @@ namespace renderer
 
     private:
 
+        Texture2D(renderer::CommandList& cmdList,  /*ImageFormat format, ImageType type,*/ const core::Dimension2D& size, u32 mipmapCount, const void* data);
+
+        void deletionNotify() { m_image = nullptr; };
+
         const TextureTarget         m_target;
         //const ImageFormat              m_format;
         //const ImageType                m_type;
@@ -87,6 +90,8 @@ namespace renderer
         const TextureWrap           m_wrap;
 
         renderer::Image*            m_image;
+
+        renderer::CommandList&      m_cmdList;
     };
 
 

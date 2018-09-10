@@ -2,6 +2,7 @@
 #include "Utils/Logger.h"
 
 #include "Context.h"
+#include "Object/Texture.h"
 
 namespace v3d
 {
@@ -205,6 +206,11 @@ Context* CommandList::getContext() const
 bool CommandList::isThreaded() const
 {
     return m_commandListType == CommandListType::ThreadCommandList;
+}
+
+bool CommandList::isImmediate() const
+{
+    return m_commandListType == CommandListType::ImmediateCommandList;
 }
 
 void CommandList::cmdSetContextStates(const ContextStates & pendingStates)

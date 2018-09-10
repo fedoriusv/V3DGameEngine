@@ -24,6 +24,8 @@ namespace renderer
         //test
         void clearColor(const core::Vector4D& color) override;
 
+        Textue* createTexture() const override;
+
     private:
 
         bool initialize() override;

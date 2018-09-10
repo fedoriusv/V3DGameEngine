@@ -54,6 +54,7 @@ namespace renderer
         void cmdEndFrame();
         void cmdPresentFrame();
 
+        void pushCommand(Command* cmd);
 
         //test
         void cmdClearColor(const core::Vector4D& color);
@@ -62,15 +63,26 @@ namespace renderer
 
         Context* getContext() const;
         bool isThreaded() const;
+        bool isImmediate() const;
 
         //....
 
+        template<T>
+        T* createObject() const
+        {
+            return new T(this);
+        }
+
+        Texture2D CommandList::createTexture()
+        {
+            return new Texture2D(this);
+        }
+
     private:
 
-        void cmdSetContextStates(const ContextStates& pendingStates);
-
-        void pushCommand(Command* cmd);
         void executeCommands();
+
+        void cmdSetContextStates(const ContextStates& pendingStates);
 
         std::queue<Command*> m_commandList;
 

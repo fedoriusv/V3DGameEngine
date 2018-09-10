@@ -3,6 +3,7 @@
 #include "VulkanCommandBufferManager.h"
 #include "VulkanCommandBuffer.h"
 #include "VulkanSwapchain.h"
+#include "VulkanImage.h"
 #include "Utils/Logger.h"
 
 
@@ -90,6 +91,12 @@ void VulkanGraphicContext::setViewport(const core::Rect32& viewport)
 {
     LOG_DEBUG("VulkanGraphicContext::setViewport [%u, %u; %u, %u]", viewport.getLeftX(), viewport.getTopY(), viewport.getWidth(), viewport.getHeight());
     //TODO:
+}
+
+Image* VulkanGraphicContext::createImage() const
+{
+    //TODO: memory pool
+    return new VulkanImage(m_deviceInfo._device);
 }
 
 bool VulkanGraphicContext::initialize()

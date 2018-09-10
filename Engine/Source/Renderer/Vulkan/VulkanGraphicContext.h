@@ -41,6 +41,8 @@ namespace vk
         //states
         void setViewport(const core::Rect32& viewport) override;
 
+        Image* createImage() const override;
+
     private:
 
         DeviceInfo          m_deviceInfo;

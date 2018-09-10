@@ -46,6 +46,8 @@ namespace renderer
 
         virtual void setViewport(const core::Rect32& viewport) = 0;
 
+        virtual class Image* createImage() const = 0;
+
     protected:
 
         virtual bool initialize() = 0;

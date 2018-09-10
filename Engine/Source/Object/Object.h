@@ -12,6 +12,15 @@ namespace v3d
 
         Object() {};
         virtual ~Object() {};
+
+        void* operator new(size_t size) noexcept
+        {
+            return nullptr;
+        }
+        
+        void operator delete(void* ptr) noexcept
+        {
+        }
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

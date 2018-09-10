@@ -25,6 +25,15 @@ VulkanImage::~VulkanImage()
     ASSERT(!m_image, "image not nullptr");
 }
 
+bool VulkanImage::create()
+{
+    return false;
+}
+
+void VulkanImage::destroy()
+{
+}
+
 } //namespace vk
 } //namespace renderer
 } //namespace v3d

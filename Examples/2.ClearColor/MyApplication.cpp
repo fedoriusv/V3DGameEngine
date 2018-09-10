@@ -5,6 +5,8 @@
 #include "Event/InputEventReceiver.h"
 #include "Platform/Window.h"
 
+#include "Object/Texture.h"
+
 
 using namespace v3d;
 using namespace v3d::platform;
@@ -86,6 +88,19 @@ void MyApplication::Initialize()
     ASSERT(m_Context, "context is nullptr");
 
     m_CommandList = new renderer::CommandList(m_Context, renderer::CommandList::CommandListType::DelayedCommandList);
+
+    Texture2D texture({0,0}, 0);
+    commandList.textureCreate(texture, data);
+    commandList.textureUpdate(texture, data);
+    commandList.textureSetFilter()
+
+ /*   Texture2D texture = m_CommandList.createTexture({ 0,0 }, 0, nullptr);
+    texture.update();*/
+
+    commandList.setPipeline(pipe1);
+    commandList.setTexture(texture);
+    commandList.setUnifrom(uniform1);
+    commandList.draw(geometry1);
 
     /*Geometry geometry;
     Image image;
