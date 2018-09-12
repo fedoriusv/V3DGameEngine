@@ -1,6 +1,7 @@
 #include "VulkanSwapchain.h"
 #include "VulkanGraphicContext.h"
 #include "VulkanDebug.h"
+#include "VulkanImage.h"
 #include "Utils/Logger.h"
 
 #ifdef VULKAN_RENDER
@@ -232,7 +233,7 @@ bool VulkanSwapchain::createSwapchain(const SwapchainConfig& config)
     return true;
 }
 
-bool VulkanSwapchain::createSwapchainImages()
+bool VulkanSwapchain::createSwapchainImages(const SwapchainConfig& config)
 {
     u32 swapChainImageCount;
     VkResult result = vkGetSwapchainImagesKHR(m_deviceInfo->_device, m_swapchain, &swapChainImageCount, nullptr);
@@ -261,13 +262,16 @@ bool VulkanSwapchain::createSwapchainImages()
     m_swapBuffers.reserve(swapChainImageCount);
     for (auto& image : images)
     {
-        /*TextureVK* texture = new TextureVK(ETextureTarget::eTextureRectangle, EImageFormat::eRGBA, EImageType::eUnsignedByte, core::Dimension3D(m_surfaceSize.width, m_surfaceSize.height, 1), nullptr);
-        if (!texture->create(image))
+        VkExtent3D extent = { config._size.width, config._size.height, 1 };
+        VulkanImage* swapchainImage = new VulkanImage(m_deviceInfo->_device, VK_IMAGE_TYPE_2D, m_surfaceFormat.format, extent, 1);
+        if (!swapchainImage->create(image))
         {
             LOG_FATAL("VulkanSwapchain::createSwapchainImages: can't create surface texture");
-            delete texture;
+
+            swapchainImage->destroy();
+            delete swapchainImage;
         }
-        m_swapBuffers.push_back(texture);*/
+        m_swapBuffers.push_back(swapchainImage);
     }
 
     return true;

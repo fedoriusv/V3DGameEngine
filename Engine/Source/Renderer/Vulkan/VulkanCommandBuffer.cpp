@@ -36,7 +36,7 @@ void VulkanCommandBuffer::cmdDraw()
 {
     if (m_type == CommandBufferType::PrimaryBuffer)
     {
-        VulkanWrapper::CmdDraw(m_command, );
+        //VulkanWrapper::CmdDraw(m_command, );
     }
     else
     {

@@ -44,7 +44,7 @@ namespace vk
         static void detroySurface(VkInstance vkInstance, VkSurfaceKHR surface);
 
         bool createSwapchain(const SwapchainConfig& config);
-        bool createSwapchainImages();
+        bool createSwapchainImages(const SwapchainConfig& config);
 
         const DeviceInfo* m_deviceInfo;
 

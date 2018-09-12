@@ -18,17 +18,31 @@ namespace vk
     {
     public:
 
-        VulkanImage(VkDevice device);
+        VulkanImage(VkDevice device, VkImageType type, VkFormat format, VkExtent3D dimension, u32 mipLevels);
         ~VulkanImage();
 
         bool create() override;
         void destroy() override;
 
+        bool create(VkImage image);
+
     private:
 
-        VkDevice    m_device;
-        VkImage     m_image;
-        VkImageView m_imageView;
+        bool createViewImage();
+        bool createSampler();
+
+        VkDevice                m_device;
+
+        VkImageType             m_type;
+        VkFormat                m_format;
+        VkExtent3D              m_dimension;
+        u32                     m_mipLevels;
+
+        VkSampleCountFlagBits   m_samples;
+        VkImageTiling           m_tiling;
+
+        VkImage                 m_image;
+        VkImageView             m_imageView;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
