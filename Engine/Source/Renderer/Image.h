@@ -1,14 +1,19 @@
 #pragma once
 
 #include "Common.h"
+#include "ImageFormats.h"
+#include "Utils/Observable.h"
 
 namespace v3d
 {
+
+    class Object;
+
 namespace renderer
 {
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    class Image
+    class Image : public utils::Observable
     {
     public:
 
@@ -17,6 +22,9 @@ namespace renderer
 
         virtual bool create() = 0;
         virtual void destroy() = 0;
+
+    private:
+
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

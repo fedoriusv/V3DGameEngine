@@ -24,7 +24,8 @@ namespace renderer
         //test
         void clearColor(const core::Vector4D& color) override;
 
-        Textue* createTexture() const override;
+        Image* createImage(TextureTarget target, renderer::ImageFormat m_format, core::Dimension3D dimension, u32 m_mipmapLevel,
+            s16 filter, TextureAnisotropic anisotropicLevel, TextureWrap wrap) const override;
 
     private:
 

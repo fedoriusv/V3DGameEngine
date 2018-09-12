@@ -2,7 +2,9 @@
 
 #include "Common.h"
 #include "Object.h"
+#include "Image.h"
 #include "CommandList.h"
+#include "Utils/Observable.h"
 
 namespace v3d
 {
@@ -54,11 +56,14 @@ namespace renderer
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    class Texture2D : public Object //ref couter
+    static renderer::CommandList* s_cmdList = nullptr;
+
+    class Texture2D : public Object, public utils::Observer //ref couter, 
     {
     public:
 
         ~Texture2D();
+        Texture2D(const Texture2D &) = delete;
 
         TextureTarget               getTarget() const;
         TextureFilter               getMinFilter() const;
@@ -66,43 +71,47 @@ namespace renderer
         TextureWrap                 getWrap() const;
         TextureAnisotropic          getAnisotropic() const;
         u32                         getMipmaps() const;
-        const core::Dimension2D&    getSize() const;
-        //ImageFormat                 getFormat() const;
-        //ImageType                   getType() const;
+        const core::Dimension2D&    getDimension() const;
+        renderer::ImageFormat       getFormat() const;
 
-        void update(const core::Dimension2D& offset, const core::Dimension2D& size, u32 mipmapCount, const void* data);
+        void update(const core::Dimension2D& offset, const core::Dimension2D& size, u32 mipLevel, const void* data);
         void read(const core::Dimension2D& offset, const core::Dimension2D& size, u32 mipLevel, void* const data);
+
+
 
     private:
 
-        Texture2D(renderer::CommandList& cmdList,  /*ImageFormat format, ImageType type,*/ const core::Dimension2D& size, u32 mipmapCount, const void* data);
+        Texture2D(renderer::CommandList& cmdList, renderer::ImageFormat format, const core::Dimension2D& dimension, u32 mipmapCount = 0, const void* data = nullptr);
 
-        void deletionNotify() { m_image = nullptr; };
+        void handleNotify() override;
+
+        renderer::CommandList&      m_cmdList;
 
         const TextureTarget         m_target;
-        //const ImageFormat              m_format;
-        //const ImageType                m_type;
+        const renderer::ImageFormat m_format;
+        const core::Dimension2D     m_dimension;
         const u32                   m_mipmapLevel;
-        const core::Dimension2D     m_size;
 
-        const s16                   m_filter;
-        const TextureAnisotropic    m_anisotropicLevel;
-        const TextureWrap           m_wrap;
+        s16                         m_filter;
+        TextureAnisotropic          m_anisotropicLevel;
+        TextureWrap                 m_wrap;
 
         renderer::Image*            m_image;
 
-        renderer::CommandList&      m_cmdList;
+        friend renderer::CommandList;
     };
 
 
     class SwapchainTexture : public Object
     {
-    public:
-
-        SwapchainTexture() {};
-        ~SwapchainTexture() {};
-
     private:
+
+        SwapchainTexture() 
+            : m_image(nullptr)
+        {
+        }
+
+        ~SwapchainTexture() {}
 
         renderer::Image* m_image;
     };

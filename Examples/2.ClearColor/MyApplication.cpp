@@ -6,6 +6,7 @@
 #include "Platform/Window.h"
 
 #include "Object/Texture.h"
+#include "Renderer/ImageFormats.h"
 
 
 using namespace v3d;
@@ -89,18 +90,18 @@ void MyApplication::Initialize()
 
     m_CommandList = new renderer::CommandList(m_Context, renderer::CommandList::CommandListType::DelayedCommandList);
 
-    Texture2D texture({0,0}, 0);
+   /* Texture2D texture({0,0}, 0);
     commandList.textureCreate(texture, data);
     commandList.textureUpdate(texture, data);
-    commandList.textureSetFilter()
+    commandList.textureSetFilter()*/
 
- /*   Texture2D texture = m_CommandList.createTexture({ 0,0 }, 0, nullptr);
-    texture.update();*/
+    Texture2D* texture = m_CommandList->createObject<Texture2D>(renderer::ImageFormat::ImageFormat_Undefined, core::Dimension2D(0, 0));
+    texture->update({ 0,0 }, {0, 0}, 1, nullptr);
 
-    commandList.setPipeline(pipe1);
+    /*commandList.setPipeline(pipe1);
     commandList.setTexture(texture);
     commandList.setUnifrom(uniform1);
-    commandList.draw(geometry1);
+    commandList.draw(geometry1);*/
 
     /*Geometry geometry;
     Image image;

@@ -93,10 +93,10 @@ void VulkanGraphicContext::setViewport(const core::Rect32& viewport)
     //TODO:
 }
 
-Image* VulkanGraphicContext::createImage() const
+Image * VulkanGraphicContext::createImage(TextureTarget target, renderer::ImageFormat m_format, core::Dimension3D dimension, u32 m_mipmapLevel, s16 filter, TextureAnisotropic anisotropicLevel, TextureWrap wrap) const
 {
     //TODO: memory pool
-    return new VulkanImage(m_deviceInfo._device);
+    return new VulkanImage(m_deviceInfo._device, );
 }
 
 bool VulkanGraphicContext::initialize()
@@ -153,7 +153,7 @@ bool VulkanGraphicContext::initialize()
 
     m_drawCmdBufferManager = new VulkanCommandBufferManager(m_queueList[0]);
     m_currentDrawBuffer = m_drawCmdBufferManager->acquireNewCmdBuffer(VulkanCommandBufferManager::CommandTargetType::CmdDrawBuffer);
-    ASSERT(m_currentDrawBuffer, "m_currentDrawBuffer is nullptr");
+    //ASSERT(m_currentDrawBuffer, "m_currentDrawBuffer is nullptr");
 
     return true;
 }

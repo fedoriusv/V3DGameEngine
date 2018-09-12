@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Common.h"
+#include "Object/Texture.h"
 #include "Utils/NonCopyable.h"
 
 namespace v3d
@@ -46,7 +47,8 @@ namespace renderer
 
         virtual void setViewport(const core::Rect32& viewport) = 0;
 
-        virtual class Image* createImage() const = 0;
+        virtual class Image* createImage(TextureTarget target, renderer::ImageFormat m_format, core::Dimension3D dimension, u32 m_mipmapLevel, 
+            s16 filter, TextureAnisotropic anisotropicLevel, TextureWrap wrap) const = 0;
 
     protected:
 

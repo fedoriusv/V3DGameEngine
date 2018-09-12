@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Common.h"
+#include "Object/Object.h"
 #include "Utils/NonCopyable.h"
 
 namespace v3d
@@ -67,15 +68,11 @@ namespace renderer
 
         //....
 
-        template<T>
-        T* createObject() const
+        template<class T, class ... Args>
+        T* createObject(Args ... args)
         {
-            return new T(this);
-        }
-
-        Texture2D CommandList::createTexture()
-        {
-            return new Texture2D(this);
+            static_assert(std::is_base_of<Object, T>());
+            return new T(*this, (args)...);
         }
 
     private:

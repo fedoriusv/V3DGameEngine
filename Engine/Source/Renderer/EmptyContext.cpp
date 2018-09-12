@@ -42,8 +42,9 @@ void EmptyContext::clearColor(const core::Vector4D & color)
     LOG_DEBUG("EmptyContext::clearColor");
 }
 
-Textue * EmptyContext::createTexture() const
+Image * EmptyContext::createImage(TextureTarget target, renderer::ImageFormat m_format, core::Dimension3D dimension, u32 m_mipmapLevel, s16 filter, TextureAnisotropic anisotropicLevel, TextureWrap wrap) const
 {
+    LOG_DEBUG("EmptyContext::createImage");
     return nullptr;
 }
 
