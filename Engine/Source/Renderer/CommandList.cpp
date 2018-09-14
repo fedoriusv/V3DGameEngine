@@ -165,7 +165,7 @@ void CommandList::cmdPresentFrame()
 {
     if (m_commandListType == CommandListType::ImmediateCommandList)
     {
-        m_context->endFrame();
+        m_context->presentFrame();
     }
     else
     {

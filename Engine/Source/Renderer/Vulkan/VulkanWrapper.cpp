@@ -208,40 +208,42 @@ VkResult VulkanWrapper::WaitForFences(VkDevice device, uint32_t fenceCount, cons
     return vkWaitForFences(device, fenceCount, pFences, waitAll, timeout);
 }
 
-///////////////////////////////////////////////////////
 VkResult VulkanWrapper::CreateSemaphore(VkDevice device, const VkSemaphoreCreateInfo * pCreateInfo, const VkAllocationCallbacks * pAllocator, VkSemaphore * pSemaphore)
 {
-    return VK_NOT_READY;
+    return vkCreateSemaphore(device, pCreateInfo, pAllocator, pSemaphore);
 }
 
 void VulkanWrapper::DestroySemaphore(VkDevice device, VkSemaphore semaphore, const VkAllocationCallbacks * pAllocator)
 {
+    vkDestroySemaphore(device, semaphore, pAllocator);
 }
 
 VkResult VulkanWrapper::CreateEvent(VkDevice device, const VkEventCreateInfo * pCreateInfo, const VkAllocationCallbacks * pAllocator, VkEvent * pEvent)
 {
-    return VK_NOT_READY;
+    return vkCreateEvent(device, pCreateInfo, pAllocator, pEvent);
 }
 
 void VulkanWrapper::DestroyEvent(VkDevice device, VkEvent event, const VkAllocationCallbacks * pAllocator)
 {
+    vkDestroyEvent(device, event, pAllocator);
 }
 
 VkResult VulkanWrapper::GetEventStatus(VkDevice device, VkEvent event)
 {
-    return VK_NOT_READY;
+    return vkGetEventStatus(device, event);
 }
 
 VkResult VulkanWrapper::SetEvent(VkDevice device, VkEvent event)
 {
-    return VK_NOT_READY;
+    return vkSetEvent(device, event);
 }
 
 VkResult VulkanWrapper::ResetEvent(VkDevice device, VkEvent event)
 {
-    return VK_NOT_READY;
+    return vkResetEvent(device, event);
 }
 
+///////////////////////////////////////////////////////
 VkResult VulkanWrapper::CreateQueryPool(VkDevice device, const VkQueryPoolCreateInfo * pCreateInfo, const VkAllocationCallbacks * pAllocator, VkQueryPool * pQueryPool)
 {
     return VK_NOT_READY;
@@ -274,27 +276,34 @@ void VulkanWrapper::DestroyBufferView(VkDevice device, VkBufferView bufferView, 
 {
 }
 
+/////////////////////////////////////////////////
+
 VkResult VulkanWrapper::CreateImage(VkDevice device, const VkImageCreateInfo * pCreateInfo, const VkAllocationCallbacks * pAllocator, VkImage * pImage)
 {
-    return VK_NOT_READY;
+    return vkCreateImage(device, pCreateInfo, pAllocator, pImage);
 }
 
 void VulkanWrapper::DestroyImage(VkDevice device, VkImage image, const VkAllocationCallbacks * pAllocator)
 {
+    vkDestroyImage(device, image, pAllocator);
 }
 
 void VulkanWrapper::GetImageSubresourceLayout(VkDevice device, VkImage image, const VkImageSubresource * pSubresource, VkSubresourceLayout * pLayout)
 {
+    vkGetImageSubresourceLayout(device, image, pSubresource, pLayout);
 }
 
 VkResult VulkanWrapper::CreateImageView(VkDevice device, const VkImageViewCreateInfo * pCreateInfo, const VkAllocationCallbacks * pAllocator, VkImageView * pView)
 {
-    return VK_NOT_READY;
+    return vkCreateImageView(device, pCreateInfo, pAllocator, pView);
 }
 
 void VulkanWrapper::DestroyImageView(VkDevice device, VkImageView imageView, const VkAllocationCallbacks * pAllocator)
 {
+    vkDestroyImageView(device, imageView, pAllocator);
 }
+
+/////////////////////////////////////////////////
 
 VkResult VulkanWrapper::CreateShaderModule(VkDevice device, const VkShaderModuleCreateInfo * pCreateInfo, const VkAllocationCallbacks * pAllocator, VkShaderModule * pShaderModule)
 {

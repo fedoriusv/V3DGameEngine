@@ -57,6 +57,8 @@ typedef HINSTANCE NativeInstance;
 typedef HWND      NativeWindows;
 #   undef max
 #   undef min
+#   undef CreateSemaphore
+#   undef CreateEvent
 #else //
 typedef void*     NativeInstance;
 typedef void*     NativeWindows;

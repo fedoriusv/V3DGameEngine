@@ -37,6 +37,9 @@ VulkanSwapchain::VulkanSwapchain(const DeviceInfo* info, VkSurfaceKHR surface)
     : m_deviceInfo(info)
     , m_surface(surface)
     , m_swapchain(VK_NULL_HANDLE)
+
+    , m_currentImageIndex((u32)-1)
+    , m_currentSemaphoreIndex(0U)
 {
     LOG_DEBUG("VulkanSwapchain constructor %llx", this);
 }
@@ -44,6 +47,12 @@ VulkanSwapchain::VulkanSwapchain(const DeviceInfo* info, VkSurfaceKHR surface)
 VulkanSwapchain::~VulkanSwapchain()
 {
     LOG_DEBUG("VulkanSwapchain destructor %llx", this);
+
+    for (auto& semaphore : m_acquireSemaphore)
+    {
+        VulkanWrapper::DestroySemaphore(m_deviceInfo->_device, semaphore, VULKAN_ALLOCATOR);
+    }
+    m_acquireSemaphore.clear();
 
     ASSERT(m_swapchain == VK_NULL_HANDLE, "swapchain is not nullptr");
 }
@@ -141,10 +150,29 @@ bool VulkanSwapchain::create(const SwapchainConfig& config)
         return false;
     }
 
-    if (!VulkanSwapchain::createSwapchainImages())
+    if (!VulkanSwapchain::createSwapchainImages(config))
     {
+        VulkanSwapchain::destroy();
+
         LOG_FATAL(" VulkanSwapchain::createSwapchainImages: cannot create swapchain images");
         return false;
+    }
+
+    m_acquireSemaphore.reserve(m_swapBuffers.size());
+    for (u32 index = 0; index < m_swapBuffers.size(); ++index)
+    {
+        VkSemaphoreCreateInfo semaphoreCreateInfo = {};
+        semaphoreCreateInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+        semaphoreCreateInfo.pNext = nullptr;
+        semaphoreCreateInfo.flags = 0;
+
+        VkSemaphore semaphore = VK_NULL_HANDLE;
+        VkResult result = VulkanWrapper::CreateSemaphore(m_deviceInfo->_device, &semaphoreCreateInfo, VULKAN_ALLOCATOR, &semaphore);
+        if (result != VK_SUCCESS)
+        {
+            LOG_ERROR(" VulkanSwapchain::create Acquire Semaphore vkCreateSemaphore is failed. Error %s", ErrorString(result).c_str());
+        }
+        m_acquireSemaphore.push_back(semaphore);
     }
 
     return true;
@@ -192,7 +220,7 @@ bool VulkanSwapchain::createSwapchain(const SwapchainConfig& config)
     }
 
     // Find the transformation of the surface
-    VkSurfaceTransformFlagsKHR preTransform;
+    VkSurfaceTransformFlagBitsKHR preTransform;
     if (m_surfaceCaps.supportedTransforms & VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR)
     {
         // We prefer a non-rotated transform
@@ -212,7 +240,7 @@ bool VulkanSwapchain::createSwapchain(const SwapchainConfig& config)
     swapChainInfo.imageColorSpace = m_surfaceFormat.colorSpace;
     swapChainInfo.imageExtent = { config._size.width, config._size.height };
     swapChainInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
-    swapChainInfo.preTransform = (VkSurfaceTransformFlagBitsKHR)preTransform;
+    swapChainInfo.preTransform = preTransform;
     swapChainInfo.imageArrayLayers = 1;
     swapChainInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
     swapChainInfo.queueFamilyIndexCount = 0;
@@ -271,7 +299,10 @@ bool VulkanSwapchain::createSwapchainImages(const SwapchainConfig& config)
             swapchainImage->destroy();
             delete swapchainImage;
         }
-        m_swapBuffers.push_back(swapchainImage);
+        else
+        {
+            m_swapBuffers.push_back(swapchainImage);
+        }
     }
 
     return true;
@@ -279,30 +310,90 @@ bool VulkanSwapchain::createSwapchainImages(const SwapchainConfig& config)
 
 void VulkanSwapchain::destroy()
 {
+    if (!m_swapBuffers.empty())
+    {
+        for (std::vector<VulkanImage*>::iterator image = m_swapBuffers.begin(); image < m_swapBuffers.end(); ++image)
+        {
+            if (*image)
+            {
+                delete (*image);
+                (*image) = nullptr;
+            }
+        }
+    }
+    m_swapBuffers.clear();
+
+
     VulkanWrapper::DestroySwapchainKHR(m_deviceInfo->_device, m_swapchain, VULKAN_ALLOCATOR);
     m_swapchain = VK_NULL_HANDLE;
 }
 
-void VulkanSwapchain::present()
+void VulkanSwapchain::present(VkQueue queue, const std::vector<VkSemaphore>& semaphores)
 {
-    //TODO:
+    ASSERT(m_swapchain, "m_swapchain is nullptr");
+
+    VkResult innerResults[1] = {};
+
+    VkPresentInfoKHR presentInfoKHR = {};
+    presentInfoKHR.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+    presentInfoKHR.pNext = nullptr;
+    if (semaphores.empty())
+    {
+        presentInfoKHR.waitSemaphoreCount = 1;
+        presentInfoKHR.pWaitSemaphores = &m_acquireSemaphore[m_currentSemaphoreIndex];
+    }
+    else
+    {
+        presentInfoKHR.waitSemaphoreCount = static_cast<u32>(semaphores.size());
+        presentInfoKHR.pWaitSemaphores = semaphores.data();
+    }
+    presentInfoKHR.swapchainCount = 1;
+    presentInfoKHR.pSwapchains = &m_swapchain;
+    presentInfoKHR.pImageIndices = &m_currentImageIndex;
+    presentInfoKHR.pResults = innerResults;
+
+    VkResult result = VulkanWrapper::QueuePresentKHR(queue, &presentInfoKHR);
+    if (result != VK_SUCCESS)
+    {
+        //TODO:
+        ASSERT(false, "vkQueuePresentKHR failed");
+    }
+    m_currentSemaphoreIndex = (m_currentSemaphoreIndex + 1) % m_acquireSemaphore.size();
 }
 
-void VulkanSwapchain::acquireImage()
+u32 VulkanSwapchain::acquireImage()
 {
-    //TODO:
+    VkSemaphore semaphore = m_acquireSemaphore[m_currentSemaphoreIndex];
+    VkFence fence = VK_NULL_HANDLE;
+
+    u32 imageIndex = 0;
+    VkResult result = VulkanWrapper::AcquireNextImageKHR(m_deviceInfo->_device, m_swapchain, UINT64_MAX, semaphore, fence, &imageIndex);
+    if (result != VK_SUCCESS)
+    {
+        //TODO:
+        ASSERT(false, "vkAcquireNextImageKHR failed");
+    }
+
+    m_currentImageIndex = imageIndex;
+    return imageIndex;
 }
 
 bool VulkanSwapchain::recteateSwapchain(const SwapchainConfig& config)
 {
     VulkanSwapchain::destroy();
-    //TODO: remove images
     if (!VulkanSwapchain::createSwapchain(config))
     {
         LOG_FATAL("VulkanSwapchain::recteateSwapchain: is failed");
         return false;
     }
-    //TODO: create images
+    
+    if (!VulkanSwapchain::createSwapchainImages(config))
+    {
+        VulkanSwapchain::destroy();
+
+        LOG_FATAL(" VulkanSwapchain::recteateSwapchain: cannot create swapchain images");
+        return false;
+    }
 
     return true;
 }

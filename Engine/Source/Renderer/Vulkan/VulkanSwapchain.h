@@ -31,8 +31,8 @@ namespace vk
         bool create(const SwapchainConfig& config);
         void destroy();
 
-        void present();
-        void acquireImage();
+        void present(VkQueue queue, const std::vector<VkSemaphore>& semaphores);
+        u32  acquireImage();
 
         bool recteateSwapchain(const SwapchainConfig& config);
 
@@ -54,6 +54,11 @@ namespace vk
 
         VkSwapchainKHR m_swapchain;
         std::vector<VulkanImage*> m_swapBuffers;
+
+        u32 m_currentImageIndex;
+        u32 m_currentSemaphoreIndex;
+        std::vector<VkSemaphore> m_acquireSemaphore;
+        std::vector<VkFence> m_acquireFence;
 
     };
 

@@ -10,12 +10,15 @@ namespace renderer
 namespace vk
 {
 
-VulkanImage::VulkanImage(VkDevice device, VkImageType type, VkFormat format, VkExtent3D dimension, u32 mipLevels)
+VulkanImage::VulkanImage(VkDevice device, VkImageType type, VkFormat format, VkExtent3D dimension, u32 mipsLevel)
     : m_device(device)
     , m_type(type)
     , m_format(format)
     , m_dimension(dimension)
-    , m_mipLevels(mipLevels)
+    , m_mipsLevel(mipsLevel)
+    , m_layersLevel(1)
+
+    , m_aspectMask(VK_IMAGE_ASPECT_COLOR_BIT)
 
     , m_samples(VK_SAMPLE_COUNT_1_BIT)
     , m_tiling(VK_IMAGE_TILING_OPTIMAL)
@@ -46,8 +49,8 @@ bool VulkanImage::create()
     imageCreateInfo.imageType = m_type;
     imageCreateInfo.format = m_format;
     imageCreateInfo.extent = m_dimension;
-    imageCreateInfo.mipLevels = m_mipLevels;
-    imageCreateInfo.arrayLayers = 0; //TODO:
+    imageCreateInfo.mipLevels = m_mipsLevel;
+    imageCreateInfo.arrayLayers = m_layersLevel;
 
     imageCreateInfo.samples = m_samples;
     imageCreateInfo.tiling = m_tiling;
@@ -66,19 +69,24 @@ bool VulkanImage::create()
         return false;
     }
 
+    if (!createViewImage())
+    {
+        VulkanImage::destroy();
+
+        LOG_ERROR("VulkanImage::VulkanImage::create(img) is failed");
+        return false;
+    }
+
     return true;
 }
 
 bool VulkanImage::create(VkImage image)
 {
     ASSERT(image, "image is nullptr");
-    if (!createViewImage())
-    {
-        LOG_ERROR("VulkanImage::VulkanImage::create(img) is failed");
-        return false;
-    }
+    ASSERT(!m_image, "m_image already exist");
+    m_image = image;
 
-    if (!createSampler())
+    if (!createViewImage())
     {
         LOG_ERROR("VulkanImage::VulkanImage::create(img) is failed");
         return false;
@@ -87,13 +95,86 @@ bool VulkanImage::create(VkImage image)
     return true;
 }
 
+VkFormat VulkanImage::convertImageFormatToVkFormat(renderer::ImageFormat format)
+{
+    return VK_FORMAT_UNDEFINED;
+}
+
+VkImageType VulkanImage::convertTextureTargetToVkImageType(TextureTarget target)
+{
+    return VK_IMAGE_TYPE_2D;
+}
+
 void VulkanImage::destroy()
 {
+    if (m_imageView)
+    {
+        VulkanWrapper::DestroyImageView(m_device, m_imageView, VULKAN_ALLOCATOR);
+        m_imageView = VK_NULL_HANDLE;
+    }
+
+    if (m_image)
+    {
+        VulkanWrapper::DestroyImage(m_device, m_image, VULKAN_ALLOCATOR);
+        m_image = VK_NULL_HANDLE;
+    }
 }
 
 bool VulkanImage::createViewImage()
 {
-    return false;
+    auto convertImageTypeToImageViewType = [](VkImageType type, bool cube = false, bool array = false) -> VkImageViewType
+    {
+        switch (type)
+        {
+        case VK_IMAGE_TYPE_1D:
+
+            if (array)
+            {
+                return VK_IMAGE_VIEW_TYPE_1D_ARRAY;
+            }
+            return VK_IMAGE_VIEW_TYPE_1D;
+
+        case VK_IMAGE_TYPE_2D:
+
+            if (cube)
+            {
+                return VK_IMAGE_VIEW_TYPE_CUBE;
+            }
+            else if (array)
+            {
+                return VK_IMAGE_VIEW_TYPE_2D_ARRAY;
+            }
+            return VK_IMAGE_VIEW_TYPE_2D;
+
+        case VK_IMAGE_TYPE_3D:
+            return VK_IMAGE_VIEW_TYPE_3D;
+        }
+
+        return VK_IMAGE_VIEW_TYPE_2D;
+    };
+
+    VkImageViewCreateInfo imageViewCreateInfo = {};
+    imageViewCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+    imageViewCreateInfo.pNext = nullptr;
+    imageViewCreateInfo.flags = 0;
+    imageViewCreateInfo.image = m_image;
+    imageViewCreateInfo.viewType = convertImageTypeToImageViewType(m_type, false, m_layersLevel > 1);
+    imageViewCreateInfo.format = m_format;
+    imageViewCreateInfo.components = { VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A };
+    imageViewCreateInfo.subresourceRange.aspectMask = m_aspectMask; //TODO: detect 
+    imageViewCreateInfo.subresourceRange.baseMipLevel = 0;
+    imageViewCreateInfo.subresourceRange.levelCount = m_mipsLevel;
+    imageViewCreateInfo.subresourceRange.baseArrayLayer = 0;
+    imageViewCreateInfo.subresourceRange.layerCount = m_layersLevel;
+
+    VkResult result = VulkanWrapper::CreateImageView(m_device, &imageViewCreateInfo, VULKAN_ALLOCATOR, &m_imageView);
+    if (result != VK_SUCCESS)
+    {
+        LOG_DEBUG("VulkanImage::createViewImage vkCreateImageView is failed. Error: %s", ErrorString(result).c_str());
+        return false;
+    }
+
+    return true;
 }
 
 bool VulkanImage::createSampler()

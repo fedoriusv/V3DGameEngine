@@ -95,8 +95,8 @@ void MyApplication::Initialize()
     commandList.textureUpdate(texture, data);
     commandList.textureSetFilter()*/
 
-    Texture2D* texture = m_CommandList->createObject<Texture2D>(renderer::ImageFormat::ImageFormat_Undefined, core::Dimension2D(0, 0));
-    texture->update({ 0,0 }, {0, 0}, 1, nullptr);
+    //Texture2D* texture = m_CommandList->createObject<Texture2D>(renderer::ImageFormat::ImageFormat_Undefined, core::Dimension2D(0, 0));
+    //texture->update({ 0,0 }, {0, 0}, 1, nullptr);
 
     /*commandList.setPipeline(pipe1);
     commandList.setTexture(texture);
@@ -110,6 +110,8 @@ void MyApplication::Initialize()
         texture.upload(image);
         geometry.upload(data);
     }*/
+
+    m_CommandList->flushCommands();
 }
 
 bool MyApplication::Running(renderer::CommandList& commandList)
@@ -129,7 +131,8 @@ bool MyApplication::Running(renderer::CommandList& commandList)
 
     commandList.cmdEndFrame();
     commandList.cmdPresentFrame();
-    //Frame
+    
+    commandList.flushCommands();
 
     return true;
 }

@@ -67,7 +67,9 @@ VulkanGraphicContext::~VulkanGraphicContext()
 
 void VulkanGraphicContext::beginFrame()
 {
-    LOG_DEBUG("VulkanGraphicContext::beginFrame %llu", m_frameCounter);
+    u32 index = m_swapchain->acquireImage();
+    LOG_DEBUG("VulkanGraphicContext::beginFrame %llu, image index %u", m_frameCounter, index);
+
 }
 
 void VulkanGraphicContext::endFrame()
@@ -78,6 +80,10 @@ void VulkanGraphicContext::endFrame()
 void VulkanGraphicContext::presentFrame()
 {
     LOG_DEBUG("VulkanGraphicContext::presentFrame %llu", m_frameCounter);
+
+    std::vector<VkSemaphore> semaphores;
+    m_swapchain->present(m_queueList[0], semaphores);
+
     m_frameCounter++;
 }
 
@@ -93,10 +99,14 @@ void VulkanGraphicContext::setViewport(const core::Rect32& viewport)
     //TODO:
 }
 
-Image * VulkanGraphicContext::createImage(TextureTarget target, renderer::ImageFormat m_format, core::Dimension3D dimension, u32 m_mipmapLevel, s16 filter, TextureAnisotropic anisotropicLevel, TextureWrap wrap) const
+Image * VulkanGraphicContext::createImage(TextureTarget target, renderer::ImageFormat format, core::Dimension3D dimension, u32 mipLevels, s16 filter, TextureAnisotropic anisotropicLevel, TextureWrap wrap) const
 {
+    VkImageType vkType = VulkanImage::convertTextureTargetToVkImageType(target);
+    VkFormat vkFormat = VulkanImage::convertImageFormatToVkFormat(format);
+    VkExtent3D vkExtent = { dimension.width, dimension.height, dimension.depth };
+
     //TODO: memory pool
-    return new VulkanImage(m_deviceInfo._device, );
+    return new VulkanImage(m_deviceInfo._device, vkType, vkFormat, vkExtent, mipLevels);
 }
 
 bool VulkanGraphicContext::initialize()
