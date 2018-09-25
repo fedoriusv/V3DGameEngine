@@ -70,11 +70,25 @@ void VulkanGraphicContext::beginFrame()
     u32 index = m_swapchain->acquireImage();
     LOG_DEBUG("VulkanGraphicContext::beginFrame %llu, image index %u", m_frameCounter, index);
 
+    m_currentDrawBuffer = m_drawCmdBufferManager->acquireNewCmdBuffer(VulkanCommandBufferManager::CommandTargetType::CmdDrawBuffer);
+    ASSERT(m_currentDrawBuffer, "m_currentDrawBuffer is nullptr");
+
+    if (m_currentDrawBuffer->getStatus() == VulkanCommandBuffer::CommandBufferStatus::Invalid)
+    {
+        LOG_ERROR("VulkanGraphicContext::beginFrame CommandBufferStatus is Invalid");
+    }
+
+    //TODO: transfer swapchain layout to write
 }
 
 void VulkanGraphicContext::endFrame()
 {
     LOG_DEBUG("VulkanGraphicContext::endFrame %llu", m_frameCounter);
+
+    //TODO: transfer swapchain layout to present
+
+    std::vector<VkSemaphore> semaphores;
+    m_drawCmdBufferManager->submit(m_currentDrawBuffer, semaphores);
 }
 
 void VulkanGraphicContext::presentFrame()
@@ -161,7 +175,7 @@ bool VulkanGraphicContext::initialize()
         return false;
     }
 
-    m_drawCmdBufferManager = new VulkanCommandBufferManager(m_queueList[0]);
+    m_drawCmdBufferManager = new VulkanCommandBufferManager(&m_deviceInfo, m_queueList[0]);
     m_currentDrawBuffer = m_drawCmdBufferManager->acquireNewCmdBuffer(VulkanCommandBufferManager::CommandTargetType::CmdDrawBuffer);
     //ASSERT(m_currentDrawBuffer, "m_currentDrawBuffer is nullptr");
 

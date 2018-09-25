@@ -24,10 +24,24 @@ namespace vk
             SecondaryBuffer
         };
 
+        enum class CommandBufferStatus
+        {
+            Invalid,
+            CreatedBuffer,
+            BeginBuffer,
+            EndBuffer,
+            ExecuteBuffer,
+            SubmittedBuffer,
+        };
+
         VulkanCommandBuffer(VkDevice device, VkCommandPool pool);
         ~VulkanCommandBuffer();
 
         VkCommandBuffer getHandle() const;
+
+        CommandBufferStatus getStatus() const;
+
+        void addSemaphore(VkPipelineStageFlags mask, VkSemaphore semaphore);
 
         void beginCommandBuffer();
         void endCommandBuffer();
@@ -49,6 +63,8 @@ namespace vk
 
     private:
 
+        friend class VulkanCommandBufferManager;
+
         VkDevice        m_device;
         VkCommandPool   m_pool;
 
@@ -56,6 +72,11 @@ namespace vk
         VkSemaphore     m_semaphore;
 
         CommandBufferType m_type;
+        CommandBufferStatus m_status;
+
+        std::vector<VkSemaphore>            m_semaphores;
+        std::vector<VkPipelineStageFlags>   m_stageMasks;
+        VkFence                             m_fence;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

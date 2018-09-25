@@ -26,20 +26,29 @@ namespace vk
             CmdUploadBuffer
         };
 
-        VulkanCommandBufferManager(VkQueue queue);
+        VulkanCommandBufferManager(const struct DeviceInfo* info, VkQueue queue);
         ~VulkanCommandBufferManager();
 
         VulkanCommandBuffer* acquireNewCmdBuffer(CommandTargetType type);
 
-        void submit(VulkanCommandBuffer* buffer);
+        bool submit(VulkanCommandBuffer* buffer, std::vector<VkSemaphore>& signalSemaphores);
         void waitCompete();
+
+        void resetPools();
 
     private:
 
-        std::vector<VkCommandPool> m_commandPools;
-        VkQueue m_queue;
+        VkDevice m_device;
+        VkQueue  m_queue;
+        u32      m_familyIndex;
 
-        bool createCommandPool();
+        VkCommandPoolCreateFlags m_poolFlag;
+
+        std::vector<VkCommandPool> m_commandPools;
+
+
+        VkCommandPool createCommandPool(VkCommandPoolCreateFlags flag, u32 familyIndex);
+        void destoryCommandPool(VkCommandPool pool);
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

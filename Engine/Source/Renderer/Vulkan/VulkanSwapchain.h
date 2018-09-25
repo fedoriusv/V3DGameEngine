@@ -31,7 +31,7 @@ namespace vk
         bool create(const SwapchainConfig& config);
         void destroy();
 
-        void present(VkQueue queue, const std::vector<VkSemaphore>& semaphores);
+        void present(VkQueue queue, const std::vector<VkSemaphore>& waitSemaphores);
         u32  acquireImage();
 
         bool recteateSwapchain(const SwapchainConfig& config);

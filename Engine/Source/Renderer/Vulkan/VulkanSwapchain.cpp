@@ -246,7 +246,7 @@ bool VulkanSwapchain::createSwapchain(const SwapchainConfig& config)
     swapChainInfo.queueFamilyIndexCount = 0;
     swapChainInfo.pQueueFamilyIndices = nullptr;
     swapChainInfo.presentMode = swapchainPresentMode;
-    swapChainInfo.oldSwapchain = nullptr;
+    swapChainInfo.oldSwapchain = VK_NULL_HANDLE;
     swapChainInfo.clipped = VK_TRUE; // Setting clipped to VK_TRUE allows the implementation to discard rendering outside of the surface area
     swapChainInfo.compositeAlpha = (m_surfaceCaps.supportedCompositeAlpha & VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR) ? VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR : VK_COMPOSITE_ALPHA_INHERIT_BIT_KHR;;
 
@@ -328,7 +328,7 @@ void VulkanSwapchain::destroy()
     m_swapchain = VK_NULL_HANDLE;
 }
 
-void VulkanSwapchain::present(VkQueue queue, const std::vector<VkSemaphore>& semaphores)
+void VulkanSwapchain::present(VkQueue queue, const std::vector<VkSemaphore>& waitSemaphores)
 {
     ASSERT(m_swapchain, "m_swapchain is nullptr");
 
@@ -337,15 +337,15 @@ void VulkanSwapchain::present(VkQueue queue, const std::vector<VkSemaphore>& sem
     VkPresentInfoKHR presentInfoKHR = {};
     presentInfoKHR.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
     presentInfoKHR.pNext = nullptr;
-    if (semaphores.empty())
+    if (waitSemaphores.empty())
     {
         presentInfoKHR.waitSemaphoreCount = 1;
         presentInfoKHR.pWaitSemaphores = &m_acquireSemaphore[m_currentSemaphoreIndex];
     }
     else
     {
-        presentInfoKHR.waitSemaphoreCount = static_cast<u32>(semaphores.size());
-        presentInfoKHR.pWaitSemaphores = semaphores.data();
+        presentInfoKHR.waitSemaphoreCount = static_cast<u32>(waitSemaphores.size());
+        presentInfoKHR.pWaitSemaphores = waitSemaphores.data();
     }
     presentInfoKHR.swapchainCount = 1;
     presentInfoKHR.pSwapchains = &m_swapchain;

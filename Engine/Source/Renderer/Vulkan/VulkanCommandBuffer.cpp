@@ -12,7 +12,11 @@ VulkanCommandBuffer::VulkanCommandBuffer(VkDevice device, VkCommandPool pool)
     : m_device(device)
     , m_pool(pool)
     , m_command(VK_NULL_HANDLE)
+
+    , m_fence(VK_NULL_HANDLE)
+
 {
+    //m_status = CreatedBuffer;
 }
 
 VulkanCommandBuffer::~VulkanCommandBuffer()
@@ -22,6 +26,17 @@ VulkanCommandBuffer::~VulkanCommandBuffer()
 VkCommandBuffer VulkanCommandBuffer::getHandle() const
 {
     return m_command;
+}
+
+VulkanCommandBuffer::CommandBufferStatus VulkanCommandBuffer::getStatus() const
+{
+    return m_status;
+}
+
+void VulkanCommandBuffer::addSemaphore(VkPipelineStageFlags mask, VkSemaphore semaphore)
+{
+    m_stageMasks.push_back(mask);
+    m_semaphores.push_back(semaphore);
 }
 
 void VulkanCommandBuffer::beginCommandBuffer()
