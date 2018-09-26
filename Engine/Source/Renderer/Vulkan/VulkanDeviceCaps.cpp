@@ -138,6 +138,11 @@ void VulkanDeviceCaps::fillCapabilitiesList(const DeviceInfo* info)
     //TODO:
 }
 
+void VulkanDeviceCaps::initialize()
+{
+    individuallyResetForCommandBuffers = true; //For PC
+}
+
 } //namespace vk
 } //namespace renderer
 } //namespace v3d

@@ -49,7 +49,7 @@ namespace vk
     private:
 
         DeviceInfo          m_deviceInfo;
-        VulkanDeviceCaps    m_deviceCaps;
+        VulkanDeviceCaps&   m_deviceCaps;
 
         const std::string s_vulkanApplicationName = "VulkanGraphicContext";
 

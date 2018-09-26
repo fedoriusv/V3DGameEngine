@@ -2,6 +2,7 @@
 
 #include "Common.h"
 #include "Utils/NonCopyable.h"
+#include "Utils/Observable.h"
 
 #ifdef VULKAN_RENDER
 #include "VulkanWrapper.h"
@@ -14,27 +15,29 @@ namespace vk
 {
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    class VulkanCommandBuffer : public utils::NonCopyable
+    class VulkanCommandBuffer final : public utils::NonCopyable, public utils::Observable
     {
     public:
 
-        enum class CommandBufferType
+        enum CommandBufferLevel
         {
-            PrimaryBuffer,
-            SecondaryBuffer
+            PrimaryBuffer = 0,
+            SecondaryBuffer = 1,
+
+            CommandBufferLevelCount
         };
 
         enum class CommandBufferStatus
         {
             Invalid,
-            CreatedBuffer,
-            BeginBuffer,
-            EndBuffer,
-            ExecuteBuffer,
-            SubmittedBuffer,
+            Ready,
+            Begin,
+            End,
+            Submit,
+            Finished
         };
 
-        VulkanCommandBuffer(VkDevice device, VkCommandPool pool);
+        VulkanCommandBuffer(VkDevice device, CommandBufferLevel type, VulkanCommandBuffer* primaryBuffer = nullptr);
         ~VulkanCommandBuffer();
 
         VkCommandBuffer getHandle() const;
@@ -61,22 +64,30 @@ namespace vk
         //TODO: cmd list
         void cmdCopyBufferToImage();
 
+        void cmdPipelineBarrier(VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask, const VkImageMemoryBarrier& imageMemoryBarrier);
+        void cmdPipelineBarrier(VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask, const VkMemoryBarrier& memoryBarrier);
+        void cmdPipelineBarrier(VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask, const VkBufferMemoryBarrier& bufferMemoryBarrier);
+
     private:
 
         friend class VulkanCommandBufferManager;
 
+        void refreshFenceStatus();
+
         VkDevice        m_device;
+
         VkCommandPool   m_pool;
-
         VkCommandBuffer m_command;
-        VkSemaphore     m_semaphore;
 
-        CommandBufferType m_type;
+        CommandBufferLevel m_level;
         CommandBufferStatus m_status;
 
         std::vector<VkSemaphore>            m_semaphores;
         std::vector<VkPipelineStageFlags>   m_stageMasks;
         VkFence                             m_fence;
+
+        VulkanCommandBuffer*                m_primaryBuffer;
+        std::vector<VulkanCommandBuffer*>   m_secondaryBuffers;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

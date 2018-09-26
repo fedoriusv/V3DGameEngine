@@ -1,6 +1,7 @@
 #pragma once
 
 #include "DeviceCaps.h"
+#include "Utils/Singleton.h"
 
 #ifdef VULKAN_RENDER
 #include "VulkanWrapper.h"
@@ -13,9 +14,9 @@ namespace vk
 {
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    struct VulkanDeviceCaps : DeviceCaps
+    struct VulkanDeviceCaps : DeviceCaps, public utils::Singleton<VulkanDeviceCaps>
     {
-        //TODO
+        bool individuallyResetForCommandBuffers;
 
         static bool checkInstanceExtension(const c8* extensionName);
         static bool checkDeviceExtension(VkPhysicalDevice physicalDevice, const c8* extensionName);
@@ -30,6 +31,7 @@ namespace vk
         friend class VulkanGraphicContext;
 
         void fillCapabilitiesList(const struct DeviceInfo* info);
+        void initialize();
 
         VkPhysicalDeviceFeatures            m_deviceFeatures;
         VkPhysicalDeviceProperties          m_deviceProperties;
