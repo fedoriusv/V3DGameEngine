@@ -76,7 +76,8 @@ namespace renderer
 
         void update(const core::Dimension2D& offset, const core::Dimension2D& size, u32 mipLevel, const void* data);
         void read(const core::Dimension2D& offset, const core::Dimension2D& size, u32 mipLevel, void* const data);
-
+        void clear(const core::Vector4D& color);
+        void clear(f64 depth);
 
 
     private:
@@ -104,16 +105,25 @@ namespace renderer
 
     class SwapchainTexture : public Object
     {
+    public:
+
+        ~SwapchainTexture() {};
+        SwapchainTexture(const SwapchainTexture &) = delete;
+
+        void clear(const core::Vector4D& color);
+
     private:
 
-        SwapchainTexture() 
-            : m_image(nullptr)
+        SwapchainTexture(renderer::CommandList& cmdList, renderer::Image* image)
+            : m_cmdList(cmdList)
+            , m_image(image)
         {
         }
 
-        ~SwapchainTexture() {}
+        renderer::CommandList&      m_cmdList;
+        renderer::Image*            m_image;
 
-        renderer::Image* m_image;
+        friend renderer::CommandList;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

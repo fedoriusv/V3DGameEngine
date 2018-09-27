@@ -146,15 +146,20 @@ namespace vk
 
  void VulkanCommandBufferManager::updateCommandBuffers()
  {
-     for (auto iter = m_usedCmdBuffers.begin(); iter != m_usedCmdBuffers.end(); ++iter)
+     for (auto iter = m_usedCmdBuffers.begin(); iter != m_usedCmdBuffers.end();)
      {
          VulkanCommandBuffer* cmdBuffer = (*iter);
          cmdBuffer->refreshFenceStatus();
          if (cmdBuffer->m_status == VulkanCommandBuffer::CommandBufferStatus::Finished)
          {
-             m_usedCmdBuffers.erase(iter);
+             iter = m_usedCmdBuffers.erase(iter);
+
+             cmdBuffer->m_status = VulkanCommandBuffer::CommandBufferStatus::Ready;
              m_freeCmdBuffers[cmdBuffer->m_level].push_back(cmdBuffer);
+
+             continue;
          }
+         ++iter;
      }
  }
 

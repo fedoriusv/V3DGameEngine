@@ -1,6 +1,7 @@
 #include "VulkanCommandBuffer.h"
 #include "VulkanGraphicContext.h"
 #include "VulkanDebug.h"
+#include "VulkanImage.h"
 #include "Utils/Logger.h"
 
 #ifdef VULKAN_RENDER
@@ -167,6 +168,20 @@ void VulkanCommandBuffer::cmdDraw()
     //{
     //    //create cmdDraw task
     //}
+}
+
+void VulkanCommandBuffer::cmdClearImage(VulkanImage* image, VkImageLayout imageLayout, const VkClearColorValue * pColor)
+{
+    ASSERT(image->getImageAspectFlags() == VK_IMAGE_ASPECT_COLOR_BIT, " image is not VK_IMAGE_ASPECT_COLOR_BIT");
+    if (m_level == CommandBufferLevel::PrimaryBuffer)
+    {
+        VkImageSubresourceRange imageSubresourceRange = VulkanImage::makeImageSubresourceRange(image);
+        VulkanWrapper::CmdClearColorImage(m_command, image->getHandle(), imageLayout, pColor, 1, &imageSubresourceRange);
+    }
+    else
+    {
+        ASSERT(false, "not implemented");
+    }
 }
 
 void VulkanCommandBuffer::cmdCopyBufferToImage()

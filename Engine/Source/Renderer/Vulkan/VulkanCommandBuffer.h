@@ -15,6 +15,8 @@ namespace vk
 {
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    class VulkanImage;
+
     class VulkanCommandBuffer final : public utils::NonCopyable, public utils::Observable
     {
     public:
@@ -58,8 +60,8 @@ namespace vk
         void cmdDrawIndexed();
 
         //outside renderpass
-        void cmdClearImage(VkImage image, VkImageLayout imageLayout, const VkClearColorValue* pColor);
-        void cmdClearImage(VkImage image, VkImageLayout imageLayout, const VkClearDepthStencilValue* pDepthStencil);
+        void cmdClearImage(VulkanImage* image, VkImageLayout imageLayout, const VkClearColorValue* pColor);
+        void cmdClearImage(VulkanImage* image, VkImageLayout imageLayout, const VkClearDepthStencilValue* pDepthStencil);
 
         //TODO: cmd list
         void cmdCopyBufferToImage();

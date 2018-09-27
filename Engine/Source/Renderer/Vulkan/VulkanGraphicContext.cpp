@@ -4,6 +4,9 @@
 #include "VulkanCommandBuffer.h"
 #include "VulkanSwapchain.h"
 #include "VulkanImage.h"
+
+#include "Object/Texture.h"
+
 #include "Utils/Logger.h"
 
 
@@ -84,18 +87,21 @@ void VulkanGraphicContext::beginFrame()
     }
 
     m_currentDrawBuffer->beginCommandBuffer();
-    //TODO: transfer swapchain layout to write
+
+    transferImageLayout(m_swapchain->getBackbuffer(), VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+
 }
 
 void VulkanGraphicContext::endFrame()
 {
     LOG_DEBUG("VulkanGraphicContext::endFrame %llu", m_frameCounter);
 
+    transferImageLayout(m_swapchain->getBackbuffer(),VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
 
-    //TODO: transfer swapchain layout to present
     m_currentDrawBuffer->endCommandBuffer();
 
     m_drawCmdBufferManager->submit(m_currentDrawBuffer, VK_NULL_HANDLE);
+    m_currentDrawBuffer = nullptr;
 }
 
 void VulkanGraphicContext::presentFrame()
@@ -105,13 +111,9 @@ void VulkanGraphicContext::presentFrame()
     std::vector<VkSemaphore> semaphores;
     m_swapchain->present(m_queueList[0], semaphores);
 
-    m_frameCounter++;
-}
+    m_drawCmdBufferManager->updateCommandBuffers();
 
-void VulkanGraphicContext::clearColor(const core::Vector4D & color)
-{
-    LOG_DEBUG("VulkanGraphicContext::clearColor [%u, %u, %u, %u]", color[0], color[1], color[2], color[3]);
-   // m_currentDrawBuffer->CmdClearColor();
+    m_frameCounter++;
 }
 
 void VulkanGraphicContext::setViewport(const core::Rect32& viewport)
@@ -128,6 +130,44 @@ Image * VulkanGraphicContext::createImage(TextureTarget target, renderer::ImageF
 
     //TODO: memory pool
     return new VulkanImage(m_deviceInfo._device, vkType, vkFormat, vkExtent, mipLevels);
+}
+
+//SwapchainTexture * VulkanGraphicContext::getBackbuffer() const
+//{
+//    return m_backbuffers[m_swapchain->m_currentImageIndex];
+//}
+
+VulkanCommandBuffer * VulkanGraphicContext::getCurrentBuffer(VulkanCommandBufferManager::CommandTargetType type) const
+{
+    if (type == VulkanCommandBufferManager::CommandTargetType::CmdDrawBuffer)
+    {
+        return m_currentDrawBuffer;
+    }
+    else
+    {
+        return nullptr;
+    }
+}
+
+void VulkanGraphicContext::transferImageLayout(VulkanImage * image, VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask, VkImageLayout layout) const
+{
+    auto accessMasks = VulkanImage::getAccessFlagsFromImageLayout(image->getLayout(), layout);
+
+    VkImageMemoryBarrier imageMemoryBarrier = {};
+    imageMemoryBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+    imageMemoryBarrier.pNext = nullptr;
+    imageMemoryBarrier.srcAccessMask = std::get<0>(accessMasks);
+    imageMemoryBarrier.dstAccessMask = std::get<1>(accessMasks);
+    imageMemoryBarrier.oldLayout = image->getLayout();
+    imageMemoryBarrier.newLayout = layout;
+    imageMemoryBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    imageMemoryBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    imageMemoryBarrier.image = image->getHandle();
+    imageMemoryBarrier.subresourceRange = VulkanImage::makeImageSubresourceRange(image);
+
+    image->setLayout(layout);
+
+    m_currentDrawBuffer->cmdPipelineBarrier(srcStageMask, dstStageMask, imageMemoryBarrier);
 }
 
 bool VulkanGraphicContext::initialize()
@@ -183,6 +223,12 @@ bool VulkanGraphicContext::initialize()
         LOG_FATAL("VulkanGraphicContext::createContext: Can not create VulkanSwapchain");
         return false;
     }
+
+    /*for (auto& image : m_swapchain->m_swapBuffers)
+    {
+        m_backbuffers = new SwapchainTexture(image);
+    }*/
+
 
     m_drawCmdBufferManager = new VulkanCommandBufferManager(&m_deviceInfo, m_queueList[0]);
     m_currentDrawBuffer = m_drawCmdBufferManager->acquireNewCmdBuffer(VulkanCommandBuffer::PrimaryBuffer);

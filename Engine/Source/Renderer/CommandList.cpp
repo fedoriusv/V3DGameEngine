@@ -63,29 +63,6 @@ public:
     }
 };
 
-class CommandClearColor : public Command
-{
-public:
-    CommandClearColor(const core::Vector4D& color)
-        : m_clearColor(color)
-    {
-        LOG_DEBUG("CommandClearColor constructor");
-    };
-    ~CommandClearColor()
-    {
-        LOG_DEBUG("CommandClearColor destructor");
-    };
-
-    void execute(const CommandList& cmdList)
-    {
-        cmdList.getContext()->clearColor(m_clearColor);
-    }
-
-private:
-
-    core::Vector4D m_clearColor;
-};
-
 class CommandSetContextState : public Command
 {
 public:
@@ -137,7 +114,7 @@ void CommandList::flushCommands()
     CommandList::executeCommands();
 }
 
-void CommandList::cmdBeginFrame()
+void CommandList::beginFrame()
 {
     if (m_commandListType == CommandListType::ImmediateCommandList)
     {
@@ -149,7 +126,7 @@ void CommandList::cmdBeginFrame()
     }
 }
 
-void CommandList::cmdEndFrame()
+void CommandList::endFrame()
 {
     if (m_commandListType == CommandListType::ImmediateCommandList)
     {
@@ -161,7 +138,7 @@ void CommandList::cmdEndFrame()
     }
  }
 
-void CommandList::cmdPresentFrame()
+void CommandList::presentFrame()
 {
     if (m_commandListType == CommandListType::ImmediateCommandList)
     {
@@ -173,16 +150,10 @@ void CommandList::cmdPresentFrame()
     }
 }
 
-void CommandList::cmdClearColor(const core::Vector4D & color)
+void CommandList::clearBackbuffer(const core::Vector4D & color)
 {
-    if (m_commandListType == CommandListType::ImmediateCommandList)
-    {
-        m_context->clearColor(color);
-    }
-    else
-    {
-        CommandList::pushCommand(new CommandClearColor(color));
-    }
+    /*SwapchainTexture* backbuffer = m_context->getBackbuffer();
+    backbuffer->clear(color);*/
 }
 
 void CommandList::setViewport(const core::Rect32& viewport)

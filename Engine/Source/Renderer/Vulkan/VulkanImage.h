@@ -27,8 +27,22 @@ namespace vk
 
         bool create(VkImage image);
 
+        void clear(const Context* context, const core::Vector4D& color) override;
+        void clear(const Context* context, f64 depth) override;
+
         static VkFormat convertImageFormatToVkFormat(renderer::ImageFormat format);
         static VkImageType convertTextureTargetToVkImageType(TextureTarget target);
+
+        static VkImageSubresourceRange makeImageSubresourceRange(const VulkanImage* image);
+
+        static VkImageAspectFlags getImageAspectFlags(VkFormat format);
+        static std::tuple<VkAccessFlags, VkAccessFlags> getAccessFlagsFromImageLayout(VkImageLayout oldLayout, VkImageLayout newLayout);
+
+        VkImage             getHandle() const;
+        VkImageAspectFlags  getImageAspectFlags() const;
+
+        VkImageLayout       getLayout() const;
+        void                setLayout(VkImageLayout layout);
 
     private:
 
@@ -49,6 +63,8 @@ namespace vk
         VkImage                 m_image;
         VkImageView             m_imageView;
         VkImageAspectFlags      m_aspectMask;
+
+        VkImageLayout           m_layout;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

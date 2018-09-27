@@ -37,10 +37,10 @@ void EmptyContext::setViewport(const core::Rect32 & viewport)
     LOG_DEBUG("EmptyContext::setViewport");
 }
 
-void EmptyContext::clearColor(const core::Vector4D & color)
-{
-    LOG_DEBUG("EmptyContext::clearColor");
-}
+//SwapchainTexture * EmptyContext::getBackbuffer() const
+//{
+//    return nullptr;
+//}
 
 Image * EmptyContext::createImage(TextureTarget target, renderer::ImageFormat m_format, core::Dimension3D dimension, u32 m_mipmapLevel, s16 filter, TextureAnisotropic anisotropicLevel, TextureWrap wrap) const
 {

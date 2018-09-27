@@ -117,7 +117,8 @@ void MyApplication::Initialize()
 bool MyApplication::Running(renderer::CommandList& commandList)
 {
     //Frame
-    commandList.cmdBeginFrame();
+    commandList.beginFrame();
+    commandList.clearBackbuffer({1.0f, 0.0f, 0.0f, 1.0f});
 
     /*commandList.set(pipe1);
     commandList.set(texture1);
@@ -129,8 +130,8 @@ bool MyApplication::Running(renderer::CommandList& commandList)
     commandList.set(uniform2);
     commandList.draw(geometry2);*/
 
-    commandList.cmdEndFrame();
-    commandList.cmdPresentFrame();
+    commandList.endFrame();
+    commandList.presentFrame();
     
     commandList.flushCommands();
 

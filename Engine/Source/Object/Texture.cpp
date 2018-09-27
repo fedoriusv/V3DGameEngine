@@ -1,6 +1,7 @@
 ﻿#include "Texture.h"
 #include "Renderer/Image.h"
 #include "Renderer/Context.h"
+#include "Utils/Logger.h"
 #include "CommandList.h"
 
 namespace v3d
@@ -14,6 +15,8 @@ namespace v3d
 
             : m_image(image) //TODO: need use handle
         {
+            LOG_DEBUG("CreateTextureCommand constructor");
+
             if (data)
             {
                 m_dataSize = dataSize;
@@ -25,6 +28,8 @@ namespace v3d
 
         ~CreateTextureCommand()
         {
+            LOG_DEBUG("CreateTextureCommand destructor");
+
             if (m_data)
             {
                 free(m_data); //TODO: return to pool
@@ -63,9 +68,12 @@ namespace v3d
         UploadTextureCommand(renderer::Image* image)
             : m_image(image)
         {
+            LOG_DEBUG("UploadTextureCommand constructor");
         }
+
         ~UploadTextureCommand()
         {
+            LOG_DEBUG("UploadTextureCommand destructor");
         }
 
         void execute(const renderer::CommandList& cmdList) override
@@ -79,6 +87,59 @@ namespace v3d
     };
 
 
+    class CommandClearColor : public renderer::Command
+    {
+    public:
+        CommandClearColor(renderer::Image* image, const core::Vector4D& color)
+            : m_image(image)
+            , m_clearColor(color)
+        {
+            LOG_DEBUG("CommandClearColor constructor");
+        };
+
+        ~CommandClearColor()
+        {
+            LOG_DEBUG("CommandClearColor destructor");
+        };
+
+        void execute(const renderer::CommandList& cmdList)
+        {
+            m_image->clear(cmdList.getContext(), m_clearColor);
+        }
+
+    private:
+
+        renderer::Image*    m_image;
+        core::Vector4D      m_clearColor;
+
+    };
+
+    class CommandClearDepth : public renderer::Command
+    {
+    public:
+        CommandClearDepth(renderer::Image* image, f64 depth)
+            : m_image(image)
+            , m_depth(depth)
+        {
+            LOG_DEBUG("CommandClearDepth constructor");
+        };
+
+        ~CommandClearDepth()
+        {
+            LOG_DEBUG("CommandClearDepth destructor");
+        };
+
+        void execute(const renderer::CommandList& cmdList)
+        {
+            m_image->clear(cmdList.getContext(), m_depth);
+        }
+
+    private:
+
+        renderer::Image*    m_image;
+        f64                 m_depth;
+
+    };
 
 Texture2D::Texture2D(renderer::CommandList& cmdList, renderer::ImageFormat format, const core::Dimension2D& dimension, u32 mipmapCount, const void * data)
     : m_cmdList(cmdList)
@@ -198,6 +259,49 @@ void Texture2D::update(const core::Dimension2D & offset, const core::Dimension2D
 void Texture2D::read(const core::Dimension2D & offset, const core::Dimension2D & size, u32 mipLevel, void * const data)
 {
     //m_imageManager.read();
+}
+
+void Texture2D::clear(const core::Vector4D & color)
+{
+    if (m_image)
+    {
+        if (m_cmdList.isImmediate())
+        {
+            m_image->clear(m_cmdList.getContext(), color);
+        }
+        else
+        {
+            m_cmdList.pushCommand(new CommandClearColor(m_image, color));
+        }
+    }
+}
+
+void Texture2D::clear(f64 depth)
+{
+    if (m_image)
+    {
+        if (m_cmdList.isImmediate())
+        {
+            m_image->clear(m_cmdList.getContext(), depth);
+        }
+        else
+        {
+            m_cmdList.pushCommand(new CommandClearDepth(m_image, depth));
+        }
+    }
+}
+
+void SwapchainTexture::clear(const core::Vector4D & color)
+{
+    ASSERT(m_image, "m_image is nullptr");
+    if (m_cmdList.isImmediate())
+    {
+        m_image->clear(m_cmdList.getContext(), color);
+    }
+    else
+    {
+        m_cmdList.pushCommand(new CommandClearColor(m_image, color));
+    }
 }
 
 } //namespace v3d

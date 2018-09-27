@@ -15,6 +15,9 @@ namespace renderer
 {
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    class Image;
+    class SwapchainTexture;
+
     class Context : public utils::NonCopyable
     {
 
@@ -42,19 +45,21 @@ namespace renderer
         virtual void endFrame() = 0;
         virtual void presentFrame() = 0;
 
-        //test
-        virtual void clearColor(const core::Vector4D& color) = 0;
-
         virtual void setViewport(const core::Rect32& viewport) = 0;
 
-        virtual class Image* createImage(TextureTarget target, renderer::ImageFormat m_format, core::Dimension3D dimension, u32 m_mipmapLevel, 
-            s16 filter, TextureAnisotropic anisotropicLevel, TextureWrap wrap) const = 0;
+        //virtual SwapchainTexture* getBackbuffer() const = 0;
 
     protected:
+
+        friend Texture2D;
+
+        virtual Image* createImage(TextureTarget target, renderer::ImageFormat m_format, core::Dimension3D dimension, u32 m_mipmapLevel,
+            s16 filter, TextureAnisotropic anisotropicLevel, TextureWrap wrap) const = 0;
 
         virtual bool initialize() = 0;
         virtual void destroy() = 0;
 
+        //std::vector<SwapchainTexture*> m_backbuffers;
         RenderType m_renderType;
 
     };

@@ -51,14 +51,13 @@ namespace renderer
 
         void flushCommands();
 
-        void cmdBeginFrame();
-        void cmdEndFrame();
-        void cmdPresentFrame();
+        void beginFrame();
+        void endFrame();
+        void presentFrame();
 
         void pushCommand(Command* cmd);
 
-        //test
-        void cmdClearColor(const core::Vector4D& color);
+        void clearBackbuffer(const core::Vector4D& color);
 
         void setViewport(const core::Rect32& viewport);
 

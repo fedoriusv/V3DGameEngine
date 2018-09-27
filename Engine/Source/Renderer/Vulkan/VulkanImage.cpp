@@ -1,5 +1,8 @@
 #include "VulkanImage.h"
+#include "VulkanGraphicContext.h"
+#include "VulkanCommandBufferManager.h"
 #include "VulkanDebug.h"
+
 #include "Utils/Logger.h"
 
 #ifdef VULKAN_RENDER
@@ -10,6 +13,98 @@ namespace renderer
 namespace vk
 {
 
+std::tuple<VkAccessFlags, VkAccessFlags> VulkanImage::getAccessFlagsFromImageLayout(VkImageLayout oldLayout, VkImageLayout newLayout)
+{
+    VkAccessFlags srcFlag = 0;
+    VkAccessFlags dstFlag = 0;
+
+    switch (oldLayout)
+    {
+    case VK_IMAGE_LAYOUT_UNDEFINED:
+        srcFlag = 0;
+        break;
+
+    case VK_IMAGE_LAYOUT_PREINITIALIZED:
+        srcFlag = VK_ACCESS_HOST_WRITE_BIT;
+        break;
+
+    case VK_IMAGE_LAYOUT_GENERAL:
+        srcFlag |= VK_ACCESS_COLOR_ATTACHMENT_READ_BIT;
+        srcFlag |= VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+        srcFlag |= VK_ACCESS_TRANSFER_WRITE_BIT;
+        srcFlag |= VK_ACCESS_TRANSFER_READ_BIT;
+        srcFlag |= VK_ACCESS_SHADER_READ_BIT;
+        srcFlag |= VK_ACCESS_SHADER_WRITE_BIT;
+        break;
+
+    case VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL:
+        srcFlag |= VK_ACCESS_TRANSFER_READ_BIT;
+        srcFlag |= VK_ACCESS_TRANSFER_WRITE_BIT;
+        break;
+
+    case VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL:
+        srcFlag |= VK_ACCESS_TRANSFER_READ_BIT;
+        srcFlag |= VK_ACCESS_TRANSFER_WRITE_BIT;
+        break;
+
+    case VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL:
+        srcFlag = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+        break;
+
+    case VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL:
+        srcFlag = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+        break;
+
+    case VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL:
+        srcFlag = VK_ACCESS_SHADER_READ_BIT;
+        break;
+
+    case VK_IMAGE_LAYOUT_PRESENT_SRC_KHR:
+        dstFlag = VK_ACCESS_MEMORY_READ_BIT;
+        break;
+    }
+
+    switch (newLayout)
+    {
+    case VK_IMAGE_LAYOUT_GENERAL:
+        dstFlag |= VK_ACCESS_COLOR_ATTACHMENT_READ_BIT;
+        dstFlag |= VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+        dstFlag |= VK_ACCESS_TRANSFER_WRITE_BIT;
+        dstFlag |= VK_ACCESS_TRANSFER_READ_BIT;
+        dstFlag |= VK_ACCESS_SHADER_READ_BIT;
+        dstFlag |= VK_ACCESS_SHADER_WRITE_BIT;
+        break;
+
+    case VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL:
+        dstFlag |= VK_ACCESS_TRANSFER_WRITE_BIT;
+        dstFlag |= VK_ACCESS_TRANSFER_READ_BIT;
+        break;
+
+    case VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL:
+        dstFlag |= VK_ACCESS_TRANSFER_WRITE_BIT;
+        dstFlag |= VK_ACCESS_TRANSFER_READ_BIT;
+        break;
+
+    case VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL:
+        dstFlag = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+        break;
+
+    case VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL:
+        dstFlag = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+        break;
+
+    case VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL:
+        dstFlag = VK_ACCESS_SHADER_READ_BIT;
+        break;
+
+    case VK_IMAGE_LAYOUT_PRESENT_SRC_KHR:
+        dstFlag = VK_ACCESS_MEMORY_READ_BIT;
+        break;
+    }
+
+    return { srcFlag, dstFlag };
+}
+
 VulkanImage::VulkanImage(VkDevice device, VkImageType type, VkFormat format, VkExtent3D dimension, u32 mipsLevel)
     : m_device(device)
     , m_type(type)
@@ -18,13 +113,15 @@ VulkanImage::VulkanImage(VkDevice device, VkImageType type, VkFormat format, VkE
     , m_mipsLevel(mipsLevel)
     , m_layersLevel(1)
 
-    , m_aspectMask(VK_IMAGE_ASPECT_COLOR_BIT)
+    , m_aspectMask(VulkanImage::getImageAspectFlags(format))
 
     , m_samples(VK_SAMPLE_COUNT_1_BIT)
     , m_tiling(VK_IMAGE_TILING_OPTIMAL)
 
     , m_image(VK_NULL_HANDLE)
     , m_imageView(VK_NULL_HANDLE)
+
+    , m_layout((m_tiling == VK_IMAGE_TILING_OPTIMAL) ? VK_IMAGE_LAYOUT_UNDEFINED : VK_IMAGE_LAYOUT_PREINITIALIZED)
 {
     LOG_DEBUG("VulkanImage::VulkanImage constructor %llx", this);
 }
@@ -60,7 +157,7 @@ bool VulkanImage::create()
     imageCreateInfo.queueFamilyIndexCount = 0;
     imageCreateInfo.pQueueFamilyIndices = nullptr;
 
-    imageCreateInfo.initialLayout = (m_tiling == VK_IMAGE_TILING_OPTIMAL) ? VK_IMAGE_LAYOUT_UNDEFINED : VK_IMAGE_LAYOUT_PREINITIALIZED;
+    imageCreateInfo.initialLayout = m_layout;
 
     VkResult result = VulkanWrapper::CreateImage(m_device, &imageCreateInfo, VULKAN_ALLOCATOR, &m_image);
     if (result != VK_SUCCESS)
@@ -95,6 +192,26 @@ bool VulkanImage::create(VkImage image)
     return true;
 }
 
+void VulkanImage::clear(const Context * context, const core::Vector4D & color)
+{
+    LOG_DEBUG("VulkanGraphicContext::clearColor [%f, %f, %f, %f]", color[0], color[1], color[2], color[3]);
+    VkClearColorValue clearColorValue = { color[0], color[1], color[2], color[3] };
+
+    const VulkanGraphicContext* vulkanContext = static_cast<const VulkanGraphicContext*>(context);
+    VulkanCommandBuffer* commandBuffer = vulkanContext->getCurrentBuffer(VulkanCommandBufferManager::CommandTargetType::CmdDrawBuffer);
+    ASSERT(commandBuffer, "commandBuffer is nullptr");
+
+    VkImageLayout layout = m_layout;
+    vulkanContext->transferImageLayout(this,VK_PIPELINE_STAGE_TRANSFER_BIT | VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+    commandBuffer->cmdClearImage(this, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &clearColorValue);
+    vulkanContext->transferImageLayout(this,VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT | VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, layout);
+}
+
+void VulkanImage::clear(const Context * context, f64 depth)
+{
+   //
+}
+
 VkFormat VulkanImage::convertImageFormatToVkFormat(renderer::ImageFormat format)
 {
     return VK_FORMAT_UNDEFINED;
@@ -103,6 +220,60 @@ VkFormat VulkanImage::convertImageFormatToVkFormat(renderer::ImageFormat format)
 VkImageType VulkanImage::convertTextureTargetToVkImageType(TextureTarget target)
 {
     return VK_IMAGE_TYPE_2D;
+}
+
+VkImageSubresourceRange VulkanImage::makeImageSubresourceRange(const VulkanImage * image)
+{
+    VkImageSubresourceRange imageSubresourceRange = {};
+    imageSubresourceRange.aspectMask = image->m_aspectMask;
+    imageSubresourceRange.baseMipLevel = 0;
+    imageSubresourceRange.levelCount = image->m_mipsLevel;
+    imageSubresourceRange.baseArrayLayer = 0;
+    imageSubresourceRange.layerCount = image->m_layersLevel;
+
+    return imageSubresourceRange;
+}
+
+VkImageAspectFlags VulkanImage::getImageAspectFlags(VkFormat format)
+{
+    switch (format)
+    {
+    case VK_FORMAT_D16_UNORM:
+    case VK_FORMAT_X8_D24_UNORM_PACK32:
+    case VK_FORMAT_D32_SFLOAT:
+        return VK_IMAGE_ASPECT_DEPTH_BIT;
+
+    case VK_FORMAT_S8_UINT:
+        return VK_IMAGE_ASPECT_STENCIL_BIT;
+
+    case VK_FORMAT_D16_UNORM_S8_UINT:
+    case VK_FORMAT_D24_UNORM_S8_UINT:
+    case VK_FORMAT_D32_SFLOAT_S8_UINT:
+        return VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT;
+
+    default:
+        return VK_IMAGE_ASPECT_COLOR_BIT;
+    }
+}
+
+VkImage VulkanImage::getHandle() const
+{
+    return m_image;
+}
+
+VkImageAspectFlags VulkanImage::getImageAspectFlags() const
+{
+    return m_aspectMask;
+}
+
+VkImageLayout VulkanImage::getLayout() const
+{
+    return m_layout;
+}
+
+void VulkanImage::setLayout(VkImageLayout layout)
+{
+    m_layout = layout;
 }
 
 void VulkanImage::destroy()
@@ -161,11 +332,7 @@ bool VulkanImage::createViewImage()
     imageViewCreateInfo.viewType = convertImageTypeToImageViewType(m_type, false, m_layersLevel > 1);
     imageViewCreateInfo.format = m_format;
     imageViewCreateInfo.components = { VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A };
-    imageViewCreateInfo.subresourceRange.aspectMask = m_aspectMask; //TODO: detect 
-    imageViewCreateInfo.subresourceRange.baseMipLevel = 0;
-    imageViewCreateInfo.subresourceRange.levelCount = m_mipsLevel;
-    imageViewCreateInfo.subresourceRange.baseArrayLayer = 0;
-    imageViewCreateInfo.subresourceRange.layerCount = m_layersLevel;
+    imageViewCreateInfo.subresourceRange = VulkanImage::makeImageSubresourceRange(this);
 
     VkResult result = VulkanWrapper::CreateImageView(m_device, &imageViewCreateInfo, VULKAN_ALLOCATOR, &m_imageView);
     if (result != VK_SUCCESS)

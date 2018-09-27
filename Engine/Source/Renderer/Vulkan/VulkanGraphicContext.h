@@ -2,6 +2,7 @@
 
 #include "Context.h"
 #include "VulkanDeviceCaps.h"
+#include "VulkanCommandBufferManager.h"
 
 #include "Object/Texture.h"
 
@@ -14,6 +15,8 @@ namespace renderer
 {
 namespace vk
 {
+    class VulkanImage;
+
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     struct DeviceInfo
@@ -38,13 +41,16 @@ namespace vk
         void endFrame() override;
         void presentFrame() override;
 
-        void clearColor(const core::Vector4D& color) override;
-
         //states
         void setViewport(const core::Rect32& viewport) override;
 
         Image* createImage(TextureTarget target, renderer::ImageFormat format, core::Dimension3D dimension, u32 mipLevels,
             s16 filter, TextureAnisotropic anisotropicLevel, TextureWrap wrap) const override;
+
+        //SwapchainTexture* getBackbuffer() const override;
+        VulkanCommandBuffer* getCurrentBuffer(VulkanCommandBufferManager::CommandTargetType type) const;
+
+        void transferImageLayout(VulkanImage* image, VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask, VkImageLayout layout) const;
 
     private:
 

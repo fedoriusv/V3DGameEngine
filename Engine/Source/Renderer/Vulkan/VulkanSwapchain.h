@@ -36,6 +36,8 @@ namespace vk
 
         bool recteateSwapchain(const SwapchainConfig& config);
 
+        VulkanImage* getBackbuffer() const;
+
     private:
 
         friend class VulkanGraphicContext;

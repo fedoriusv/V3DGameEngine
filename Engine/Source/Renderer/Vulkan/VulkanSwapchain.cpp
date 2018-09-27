@@ -398,6 +398,11 @@ bool VulkanSwapchain::recteateSwapchain(const SwapchainConfig& config)
     return true;
 }
 
+VulkanImage * VulkanSwapchain::getBackbuffer() const
+{
+    return m_swapBuffers[m_currentImageIndex];
+}
+
 } //namespace vk
 } //namespace renderer
 } //namespace v3d
