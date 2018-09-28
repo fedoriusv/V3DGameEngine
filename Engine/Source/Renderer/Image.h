@@ -26,7 +26,7 @@ namespace renderer
         virtual void destroy() = 0;
 
         virtual void clear(const Context* context, const core::Vector4D& color) = 0;
-        virtual void clear(const Context* context, f64 depth) = 0;
+        virtual void clear(const Context* context, f32 depth, u32 stencil) = 0;
 
     private:
 

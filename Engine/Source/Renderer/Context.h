@@ -16,7 +16,6 @@ namespace renderer
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     class Image;
-    class SwapchainTexture;
 
     class Context : public utils::NonCopyable
     {
@@ -45,9 +44,9 @@ namespace renderer
         virtual void endFrame() = 0;
         virtual void presentFrame() = 0;
 
-        virtual void setViewport(const core::Rect32& viewport) = 0;
+        virtual void clearBackbuffer(const core::Vector4D & color) = 0;
 
-        //virtual SwapchainTexture* getBackbuffer() const = 0;
+        virtual void setViewport(const core::Rect32& viewport) = 0;
 
     protected:
 
@@ -59,9 +58,7 @@ namespace renderer
         virtual bool initialize() = 0;
         virtual void destroy() = 0;
 
-        //std::vector<SwapchainTexture*> m_backbuffers;
         RenderType m_renderType;
-
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

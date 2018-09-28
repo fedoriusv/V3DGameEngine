@@ -28,7 +28,7 @@ namespace vk
         bool create(VkImage image);
 
         void clear(const Context* context, const core::Vector4D& color) override;
-        void clear(const Context* context, f64 depth) override;
+        void clear(const Context* context, f32 depth, u32 stencil) override;
 
         static VkFormat convertImageFormatToVkFormat(renderer::ImageFormat format);
         static VkImageType convertTextureTargetToVkImageType(TextureTarget target);

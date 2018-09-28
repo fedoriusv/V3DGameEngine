@@ -111,34 +111,58 @@ namespace v3d
 
         renderer::Image*    m_image;
         core::Vector4D      m_clearColor;
-
     };
 
-    class CommandClearDepth : public renderer::Command
+    class CommandClearDepthStencil : public renderer::Command
     {
     public:
-        CommandClearDepth(renderer::Image* image, f64 depth)
+        CommandClearDepthStencil(renderer::Image* image, f32 depth, u32 stencil)
             : m_image(image)
             , m_depth(depth)
+            , m_stencil(stencil)
         {
-            LOG_DEBUG("CommandClearDepth constructor");
+            LOG_DEBUG("CommandClearDepthStencil constructor");
         };
 
-        ~CommandClearDepth()
+        ~CommandClearDepthStencil()
         {
-            LOG_DEBUG("CommandClearDepth destructor");
+            LOG_DEBUG("CommandClearDepthStencil destructor");
         };
 
         void execute(const renderer::CommandList& cmdList)
         {
-            m_image->clear(cmdList.getContext(), m_depth);
+            m_image->clear(cmdList.getContext(), m_depth, m_stencil);
         }
 
     private:
 
         renderer::Image*    m_image;
-        f64                 m_depth;
+        f32                 m_depth;
+        u32                 m_stencil;
+    };
 
+    class CommandClearBackbuffer : public renderer::Command
+    {
+    public:
+        CommandClearBackbuffer(const core::Vector4D& color)
+            : m_clearColor(color)
+        {
+            LOG_DEBUG("CommandClearBackbuffer constructor");
+        };
+
+        ~CommandClearBackbuffer()
+        {
+            LOG_DEBUG("CommandClearBackbuffer destructor");
+        };
+
+        void execute(const renderer::CommandList& cmdList)
+        {
+            cmdList.getContext()->clearBackbuffer(m_clearColor);
+        }
+
+    private:
+
+        core::Vector4D      m_clearColor;
     };
 
 Texture2D::Texture2D(renderer::CommandList& cmdList, renderer::ImageFormat format, const core::Dimension2D& dimension, u32 mipmapCount, const void * data)
@@ -241,28 +265,25 @@ renderer::ImageFormat Texture2D::getFormat() const
 
 void Texture2D::update(const core::Dimension2D & offset, const core::Dimension2D & size, u32 mipLevel, const void * data)
 {
+    ASSERT(m_image, "m_image is nullptr");
     if (m_image)
     {
-        //Assert
-    }
-
-    if (m_cmdList.isImmediate())
-    {
-        //m_image->upload();
-    }
-    else
-    {
-        //m_cmdList.pushCommand(new UploadTextureCommand());
+        ASSERT(false, "not implemented");
     }
 }
 
 void Texture2D::read(const core::Dimension2D & offset, const core::Dimension2D & size, u32 mipLevel, void * const data)
 {
-    //m_imageManager.read();
+    ASSERT(m_image, "m_image is nullptr");
+    if (m_image)
+    {
+        ASSERT(false, "not implemented");
+    }
 }
 
 void Texture2D::clear(const core::Vector4D & color)
 {
+    ASSERT(m_image, "m_image is nullptr");
     if (m_image)
     {
         if (m_cmdList.isImmediate())
@@ -276,31 +297,31 @@ void Texture2D::clear(const core::Vector4D & color)
     }
 }
 
-void Texture2D::clear(f64 depth)
+void Texture2D::clear(f32 depth, u32 stencil)
 {
+    ASSERT(m_image, "m_image is nullptr");
     if (m_image)
     {
         if (m_cmdList.isImmediate())
         {
-            m_image->clear(m_cmdList.getContext(), depth);
+            m_image->clear(m_cmdList.getContext(), depth, stencil);
         }
         else
         {
-            m_cmdList.pushCommand(new CommandClearDepth(m_image, depth));
+            m_cmdList.pushCommand(new CommandClearDepthStencil(m_image, depth, stencil));
         }
     }
 }
 
 void SwapchainTexture::clear(const core::Vector4D & color)
 {
-    ASSERT(m_image, "m_image is nullptr");
     if (m_cmdList.isImmediate())
     {
-        m_image->clear(m_cmdList.getContext(), color);
+        m_cmdList.getContext()->clearBackbuffer(color);
     }
     else
     {
-        m_cmdList.pushCommand(new CommandClearColor(m_image, color));
+        m_cmdList.pushCommand(new CommandClearBackbuffer(color));
     }
 }
 

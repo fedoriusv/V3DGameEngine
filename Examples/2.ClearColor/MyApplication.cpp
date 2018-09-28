@@ -25,42 +25,25 @@ MyApplication::MyApplication(int& argc, char** argv)
     ASSERT(m_Window, "windows is nullptr");
 
     m_InputEventHandler = new InputEventHandler();
-    m_InputEventHandler->connect([](const KeyboardInputEvent* event)
+    m_InputEventHandler->connect([this](const MouseInputEvent* event)
     {
-        if (event->_event == KeyboardInputEvent::KeyboardPressDown)
+        if (event->_event == MouseInputEvent::MousePressDown || event->_event == MouseInputEvent::MouseDoubleClick)
         {
-            LOG_INFO("KeyboardInputEvent Down Key %c modif %x", event->_character, event->_modifers);
-        }
-        else
-        {
-            LOG_INFO("KeyboardInputEvent Up Key %c, modif %x", event->_character, event->_modifers);
-        }
-    });
-    m_InputEventHandler->connect([](const MouseInputEvent* event)
-    {
-        if (event->_event == MouseInputEvent::MousePressDown)
-        {
-            LOG_INFO("MouseInputEvent Down Key %u modif %x, wheel %f, pos %d, %d", event->_key, event->_modifers, event->_wheelValue, event->_cursorPosition.x, event->_cursorPosition.y);
-        }
-        else if (event->_event == MouseInputEvent::MousePressUp)
-        {
-            LOG_INFO("MouseInputEvent UP Key %u modif %x, wheel %f, pos %d, %d", event->_key, event->_modifers, event->_wheelValue, event->_cursorPosition.x, event->_cursorPosition.y);
-        }
-        else if (event->_event == MouseInputEvent::MouseDoubleClick)
-        {
-            LOG_INFO("MouseInputEvent MouseDoubleClick Key %u modif %x, wheel %f, pos %d, %d", event->_key, event->_modifers, event->_wheelValue, event->_cursorPosition.x, event->_cursorPosition.y);
-        }
-        else if (event->_event == MouseInputEvent::MouseMoved)
-        {
-            LOG_INFO("MouseInputEvent MouseMoved Key %u modif %x, wheel %f, pos %d, %d", event->_key, event->_modifers, event->_wheelValue, event->_cursorPosition.x, event->_cursorPosition.y);
-        }
-        else if (event->_event == MouseInputEvent::MouseWheel)
-        {
-            LOG_INFO("MouseInputEvent MouseWheel Key %u modif %x, wheel %f, pos %d, %d", event->_key, event->_modifers, event->_wheelValue, event->_cursorPosition.x, event->_cursorPosition.y);
+            s32 rvalue = std::rand();
+            f32 r = 1.0f / RAND_MAX * rvalue;
+
+            s32 gvalue = std::rand();
+            f32 g = 1.0f / RAND_MAX * gvalue;
+
+            s32 bvalue = std::rand();
+            f32 b = 1.0f / RAND_MAX * bvalue;
+
+            m_clearColor = {r, g, b, 1.0f };
+
         }
     });
 
-    m_Window->getInputEventReceiver()->attach(InputEvent::InputEventType::KeyboardInputEvent, m_InputEventHandler);
+    std::srand(u32(std::time(0)));
     m_Window->getInputEventReceiver()->attach(InputEvent::InputEventType::MouseInputEvent, m_InputEventHandler);
 }
 
@@ -111,14 +94,14 @@ void MyApplication::Initialize()
         geometry.upload(data);
     }*/
 
-    m_CommandList->flushCommands();
+    m_clearColor = { 1.0, 0.0, 0.0, 1.0 };
 }
 
 bool MyApplication::Running(renderer::CommandList& commandList)
 {
     //Frame
     commandList.beginFrame();
-    commandList.clearBackbuffer({1.0f, 0.0f, 0.0f, 1.0f});
+    commandList.clearBackbuffer(m_clearColor);
 
     /*commandList.set(pipe1);
     commandList.set(texture1);
@@ -140,7 +123,6 @@ bool MyApplication::Running(renderer::CommandList& commandList)
 
 void MyApplication::Exit()
 {
-    m_Window->getInputEventReceiver()->dettach(InputEvent::InputEventType::KeyboardInputEvent);
     m_Window->getInputEventReceiver()->dettach(InputEvent::InputEventType::MouseInputEvent);
 }
 

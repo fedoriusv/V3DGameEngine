@@ -94,6 +94,7 @@ CommandList::CommandList(Context* context, CommandListType type)
     , m_commandListType(type)
     , m_statesNeedUpdate(false)
 {
+    m_swapchainTexture = createObject<SwapchainTexture>();
 }
 
 CommandList::~CommandList()
@@ -152,8 +153,7 @@ void CommandList::presentFrame()
 
 void CommandList::clearBackbuffer(const core::Vector4D & color)
 {
-    /*SwapchainTexture* backbuffer = m_context->getBackbuffer();
-    backbuffer->clear(color);*/
+    m_swapchainTexture->clear(color);
 }
 
 void CommandList::setViewport(const core::Rect32& viewport)
@@ -223,14 +223,14 @@ Command::~Command()
     LOG_DEBUG("Command destructor");
 }
 
-void* Command::operator new(size_t size)
+void* Command::operator new(size_t size) noexcept
 {
     //TODO mem pool
     void* p = malloc(size);
     return p;
 }
 
-void Command::operator delete(void* memory)
+void Command::operator delete(void* memory) noexcept
 {
     //TODO mem pool
     free(memory);

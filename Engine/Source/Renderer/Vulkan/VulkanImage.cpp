@@ -207,9 +207,19 @@ void VulkanImage::clear(const Context * context, const core::Vector4D & color)
     vulkanContext->transferImageLayout(this,VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT | VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, layout);
 }
 
-void VulkanImage::clear(const Context * context, f64 depth)
+void VulkanImage::clear(const Context * context, f32 depth, u32 stencil)
 {
-   //
+    LOG_DEBUG("VulkanGraphicContext::clearDepthStencil [%f, %u]", depth, stencil);
+    VkClearDepthStencilValue clearDepthStencilValue = { depth, stencil };
+
+    const VulkanGraphicContext* vulkanContext = static_cast<const VulkanGraphicContext*>(context);
+    VulkanCommandBuffer* commandBuffer = vulkanContext->getCurrentBuffer(VulkanCommandBufferManager::CommandTargetType::CmdDrawBuffer);
+    ASSERT(commandBuffer, "commandBuffer is nullptr");
+
+    VkImageLayout layout = m_layout;
+    vulkanContext->transferImageLayout(this, VK_PIPELINE_STAGE_TRANSFER_BIT | VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+    commandBuffer->cmdClearImage(this, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &clearDepthStencilValue);
+    vulkanContext->transferImageLayout(this, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT | VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, layout);
 }
 
 VkFormat VulkanImage::convertImageFormatToVkFormat(renderer::ImageFormat format)

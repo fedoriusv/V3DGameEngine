@@ -172,11 +172,27 @@ void VulkanCommandBuffer::cmdDraw()
 
 void VulkanCommandBuffer::cmdClearImage(VulkanImage* image, VkImageLayout imageLayout, const VkClearColorValue * pColor)
 {
+    //outside renderpass
     ASSERT(image->getImageAspectFlags() == VK_IMAGE_ASPECT_COLOR_BIT, " image is not VK_IMAGE_ASPECT_COLOR_BIT");
     if (m_level == CommandBufferLevel::PrimaryBuffer)
     {
         VkImageSubresourceRange imageSubresourceRange = VulkanImage::makeImageSubresourceRange(image);
         VulkanWrapper::CmdClearColorImage(m_command, image->getHandle(), imageLayout, pColor, 1, &imageSubresourceRange);
+    }
+    else
+    {
+        ASSERT(false, "not implemented");
+    }
+}
+
+void VulkanCommandBuffer::cmdClearImage(VulkanImage * image, VkImageLayout imageLayout, const VkClearDepthStencilValue * pDepthStencil)
+{
+    //outside renderpass
+    ASSERT(image->getImageAspectFlags() & (VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT), " image is not VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT");
+    if (m_level == CommandBufferLevel::PrimaryBuffer)
+    {
+        VkImageSubresourceRange imageSubresourceRange = VulkanImage::makeImageSubresourceRange(image);
+        VulkanWrapper::CmdClearDepthStencilImage(m_command, image->getHandle(), imageLayout, pDepthStencil, 1, &imageSubresourceRange);
     }
     else
     {

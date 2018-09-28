@@ -116,6 +116,12 @@ void VulkanGraphicContext::presentFrame()
     m_frameCounter++;
 }
 
+void VulkanGraphicContext::clearBackbuffer(const core::Vector4D & color)
+{
+    ASSERT(m_swapchain, "m_swapchain is nullptr");
+    m_swapchain->getBackbuffer()->clear(this, color);
+}
+
 void VulkanGraphicContext::setViewport(const core::Rect32& viewport)
 {
     LOG_DEBUG("VulkanGraphicContext::setViewport [%u, %u; %u, %u]", viewport.getLeftX(), viewport.getTopY(), viewport.getWidth(), viewport.getHeight());
@@ -131,11 +137,6 @@ Image * VulkanGraphicContext::createImage(TextureTarget target, renderer::ImageF
     //TODO: memory pool
     return new VulkanImage(m_deviceInfo._device, vkType, vkFormat, vkExtent, mipLevels);
 }
-
-//SwapchainTexture * VulkanGraphicContext::getBackbuffer() const
-//{
-//    return m_backbuffers[m_swapchain->m_currentImageIndex];
-//}
 
 VulkanCommandBuffer * VulkanGraphicContext::getCurrentBuffer(VulkanCommandBufferManager::CommandTargetType type) const
 {
@@ -223,12 +224,6 @@ bool VulkanGraphicContext::initialize()
         LOG_FATAL("VulkanGraphicContext::createContext: Can not create VulkanSwapchain");
         return false;
     }
-
-    /*for (auto& image : m_swapchain->m_swapBuffers)
-    {
-        m_backbuffers = new SwapchainTexture(image);
-    }*/
-
 
     m_drawCmdBufferManager = new VulkanCommandBufferManager(&m_deviceInfo, m_queueList[0]);
     m_currentDrawBuffer = m_drawCmdBufferManager->acquireNewCmdBuffer(VulkanCommandBuffer::PrimaryBuffer);

@@ -29,6 +29,7 @@
 #include <iostream>
 #include <thread>
 #include <chrono>
+#include <ctime>
 
 #include "Core/Core.h"
 

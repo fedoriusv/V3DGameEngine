@@ -19,9 +19,9 @@ namespace renderer
         void endFrame() override;
         void presentFrame() override;
 
-        void setViewport(const core::Rect32& viewport) override;
+        virtual void clearBackbuffer(const core::Vector4D & color) override;
 
-        //SwapchainTexture* getBackbuffer() const override;
+        void setViewport(const core::Rect32& viewport) override;
 
         Image* createImage(TextureTarget target, renderer::ImageFormat m_format, core::Dimension3D dimension, u32 m_mipmapLevel,
             s16 filter, TextureAnisotropic anisotropicLevel, TextureWrap wrap) const override;

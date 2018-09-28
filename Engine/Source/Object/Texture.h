@@ -77,7 +77,7 @@ namespace renderer
         void update(const core::Dimension2D& offset, const core::Dimension2D& size, u32 mipLevel, const void* data);
         void read(const core::Dimension2D& offset, const core::Dimension2D& size, u32 mipLevel, void* const data);
         void clear(const core::Vector4D& color);
-        void clear(f64 depth);
+        void clear(f32 depth, u32 stencil);
 
 
     private:
@@ -114,14 +114,12 @@ namespace renderer
 
     private:
 
-        SwapchainTexture(renderer::CommandList& cmdList, renderer::Image* image)
+        SwapchainTexture(renderer::CommandList& cmdList)
             : m_cmdList(cmdList)
-            , m_image(image)
         {
         }
 
-        renderer::CommandList&      m_cmdList;
-        renderer::Image*            m_image;
+        renderer::CommandList& m_cmdList;
 
         friend renderer::CommandList;
     };
