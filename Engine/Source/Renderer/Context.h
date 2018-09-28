@@ -52,7 +52,10 @@ namespace renderer
 
         friend Texture2D;
 
-        virtual Image* createImage(TextureTarget target, renderer::ImageFormat m_format, core::Dimension3D dimension, u32 m_mipmapLevel,
+        virtual Image* createImage(TextureTarget target, renderer::ImageFormat format, core::Dimension3D dimension, u32 mipmapLevel,
+            s16 filter, TextureAnisotropic anisotropicLevel, TextureWrap wrap) const = 0;
+
+        virtual Image* createAttachmentImage(renderer::ImageFormat format, core::Dimension3D dimension, RenderTargetSamples samples,
             s16 filter, TextureAnisotropic anisotropicLevel, TextureWrap wrap) const = 0;
 
         virtual bool initialize() = 0;

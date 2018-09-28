@@ -1,10 +1,11 @@
 #pragma once
 
 #include "Common.h"
-#include "Object.h"
-#include "Image.h"
 #include "CommandList.h"
+#include "ImageFormats.h"
 #include "Utils/Observable.h"
+#include "TextureEnums.h"
+#include "Object.h"
 
 namespace v3d
 {
@@ -13,50 +14,7 @@ namespace renderer
     class Image;
 } //namespace renderer
 
-  /////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    enum class TextureTarget : s16
-    {
-        Texture1D,
-        Texture1DArray,
-        Texture2D,
-        Texture2DArray,
-        Texture3D,
-        TextureCubeMap,
-        TextureCubeMapArray,
-    };
-
-    enum TextureFilter : s16
-    {
-        TextureFilterNearest = 0x1,
-        TextureFilterLinear = 0x2,
-
-        TextureFilterNearestMipmapNearest = 0x4,
-        TextureFilterNearestMipmapLinear = 0x8,
-        TextureFilterLinearMipmapNearest = 0x16,
-        TextureFilterLinearMipmapLinear = 0x32
-    };
-
-    enum class TextureAnisotropic
-    {
-        TextureAnisotropicNone = 0,
-        TextureAnisotropic2x = 1 << 1,
-        TextureAnisotropic4x = 1 << 2,
-        TextureAnisotropic8x = 1 << 3,
-        TextureAnisotropic16x = 1 << 4,
-    };
-
-    enum class TextureWrap : s16
-    {
-        TextureRepeat,
-        TextureMirroredRepeat,
-        TextureClampToEdge,
-        TextureClampToBorder,
-    };
-
     /////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    static renderer::CommandList* s_cmdList = nullptr;
 
     class Texture2D : public Object, public utils::Observer //ref couter, 
     {
@@ -83,8 +41,11 @@ namespace renderer
     private:
 
         Texture2D(renderer::CommandList& cmdList, renderer::ImageFormat format, const core::Dimension2D& dimension, u32 mipmapCount = 0, const void* data = nullptr);
+        Texture2D(renderer::CommandList& cmdList, renderer::ImageFormat format, const core::Dimension2D& dimension, RenderTargetSamples samples);
 
         void handleNotify() override;
+
+        void createTexture2D(const void* data = nullptr);
 
         renderer::CommandList&      m_cmdList;
 
@@ -92,6 +53,7 @@ namespace renderer
         const renderer::ImageFormat m_format;
         const core::Dimension2D     m_dimension;
         const u32                   m_mipmapLevel;
+        RenderTargetSamples         m_samples;
 
         s16                         m_filter;
         TextureAnisotropic          m_anisotropicLevel;
@@ -102,6 +64,7 @@ namespace renderer
         friend renderer::CommandList;
     };
 
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     class SwapchainTexture : public Object
     {

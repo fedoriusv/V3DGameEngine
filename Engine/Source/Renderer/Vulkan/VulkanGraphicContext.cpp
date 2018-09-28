@@ -128,14 +128,26 @@ void VulkanGraphicContext::setViewport(const core::Rect32& viewport)
     //TODO:
 }
 
-Image * VulkanGraphicContext::createImage(TextureTarget target, renderer::ImageFormat format, core::Dimension3D dimension, u32 mipLevels, s16 filter, TextureAnisotropic anisotropicLevel, TextureWrap wrap) const
+Image * VulkanGraphicContext::createImage(TextureTarget target, renderer::ImageFormat format, core::Dimension3D dimension, u32 mipLevels,
+    s16 filter, TextureAnisotropic anisotropicLevel, TextureWrap wrap) const
 {
     VkImageType vkType = VulkanImage::convertTextureTargetToVkImageType(target);
     VkFormat vkFormat = VulkanImage::convertImageFormatToVkFormat(format);
     VkExtent3D vkExtent = { dimension.width, dimension.height, dimension.depth };
 
     //TODO: memory pool
-    return new VulkanImage(m_deviceInfo._device, vkType, vkFormat, vkExtent, mipLevels);
+    return new VulkanImage(m_deviceInfo._device, vkType, vkFormat, vkExtent, mipLevels, VK_IMAGE_TILING_OPTIMAL);
+}
+
+Image * VulkanGraphicContext::createAttachmentImage(renderer::ImageFormat format, core::Dimension3D dimension, RenderTargetSamples samples, 
+    s16 filter, TextureAnisotropic anisotropicLevel, TextureWrap wrap) const
+{
+    VkFormat vkFormat = VulkanImage::convertImageFormatToVkFormat(format);
+    VkExtent3D vkExtent = { dimension.width, dimension.height, dimension.depth };
+    VkSampleCountFlagBits vkSamples = VulkanImage::convertRenderTargetSamplesToVkSampleCount(samples);
+
+    //TODO: memory pool
+    return new VulkanImage(m_deviceInfo._device, vkFormat, vkExtent, vkSamples);
 }
 
 VulkanCommandBuffer * VulkanGraphicContext::getCurrentBuffer(VulkanCommandBufferManager::CommandTargetType type) const

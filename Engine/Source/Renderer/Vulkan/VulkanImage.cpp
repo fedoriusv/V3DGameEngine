@@ -105,7 +105,7 @@ std::tuple<VkAccessFlags, VkAccessFlags> VulkanImage::getAccessFlagsFromImageLay
     return { srcFlag, dstFlag };
 }
 
-VulkanImage::VulkanImage(VkDevice device, VkImageType type, VkFormat format, VkExtent3D dimension, u32 mipsLevel)
+VulkanImage::VulkanImage(VkDevice device, VkImageType type, VkFormat format, VkExtent3D dimension, u32 mipsLevel, VkImageTiling tiling)
     : m_device(device)
     , m_type(type)
     , m_format(format)
@@ -122,7 +122,39 @@ VulkanImage::VulkanImage(VkDevice device, VkImageType type, VkFormat format, VkE
     , m_imageView(VK_NULL_HANDLE)
 
     , m_layout((m_tiling == VK_IMAGE_TILING_OPTIMAL) ? VK_IMAGE_LAYOUT_UNDEFINED : VK_IMAGE_LAYOUT_PREINITIALIZED)
+    , m_usage(VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT)
 {
+    LOG_DEBUG("VulkanImage::VulkanImage constructor %llx", this);
+}
+
+VulkanImage::VulkanImage(VkDevice device, VkFormat format, VkExtent3D dimension, VkSampleCountFlagBits samples)
+    : m_device(device)
+    , m_type(VK_IMAGE_TYPE_2D)
+    , m_format(format)
+    , m_dimension(dimension)
+    , m_mipsLevel(1)
+    , m_layersLevel(1)
+
+    , m_aspectMask(VulkanImage::getImageAspectFlags(format))
+
+    , m_samples(samples)
+    , m_tiling(VK_IMAGE_TILING_OPTIMAL)
+
+    , m_image(VK_NULL_HANDLE)
+    , m_imageView(VK_NULL_HANDLE)
+
+    , m_layout(VK_IMAGE_LAYOUT_UNDEFINED)
+    , m_usage(VK_IMAGE_USAGE_TRANSFER_SRC_BIT)
+{
+    if (VulkanImage::isColorFormat(format))
+    {
+        m_usage |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+    }
+    else
+    {
+        m_usage |= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+    }
+
     LOG_DEBUG("VulkanImage::VulkanImage constructor %llx", this);
 }
 
@@ -142,6 +174,14 @@ bool VulkanImage::create()
     imageCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
     imageCreateInfo.pNext = nullptr;
     imageCreateInfo.flags = 0;
+    if (m_layersLevel == 6U)
+    {
+        imageCreateInfo.flags |= VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
+    }
+    if (m_format == VK_FORMAT_UNDEFINED)
+    {
+        imageCreateInfo.flags |= VK_IMAGE_CREATE_MUTABLE_FORMAT_BIT;
+    }
 
     imageCreateInfo.imageType = m_type;
     imageCreateInfo.format = m_format;
@@ -151,7 +191,7 @@ bool VulkanImage::create()
 
     imageCreateInfo.samples = m_samples;
     imageCreateInfo.tiling = m_tiling;
-    imageCreateInfo.usage = 0; //TODO:
+    imageCreateInfo.usage = m_usage;
 
     imageCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
     imageCreateInfo.queueFamilyIndexCount = 0;
@@ -232,6 +272,38 @@ VkImageType VulkanImage::convertTextureTargetToVkImageType(TextureTarget target)
     return VK_IMAGE_TYPE_2D;
 }
 
+VkSampleCountFlagBits VulkanImage::convertRenderTargetSamplesToVkSampleCount(RenderTargetSamples samples)
+{
+    switch (samples)
+    {
+    case RenderTargetSamples::SampleCount_x1:
+        return VK_SAMPLE_COUNT_1_BIT;
+
+    case RenderTargetSamples::SampleCount_x2:
+        return VK_SAMPLE_COUNT_2_BIT;
+
+    case RenderTargetSamples::SampleCount_x4:
+        return VK_SAMPLE_COUNT_4_BIT;
+
+    case RenderTargetSamples::SampleCount_x8:
+        return VK_SAMPLE_COUNT_8_BIT;
+
+    case RenderTargetSamples::SampleCount_x16:
+        return VK_SAMPLE_COUNT_16_BIT;
+
+    case RenderTargetSamples::SampleCount_x32:
+        return VK_SAMPLE_COUNT_32_BIT;
+
+    case RenderTargetSamples::SampleCount_x64:
+        return VK_SAMPLE_COUNT_64_BIT;
+
+    default:
+        ASSERT(false, "cant convert");
+    }
+
+    return VK_SAMPLE_COUNT_1_BIT;
+}
+
 VkImageSubresourceRange VulkanImage::makeImageSubresourceRange(const VulkanImage * image)
 {
     VkImageSubresourceRange imageSubresourceRange = {};
@@ -263,6 +335,31 @@ VkImageAspectFlags VulkanImage::getImageAspectFlags(VkFormat format)
 
     default:
         return VK_IMAGE_ASPECT_COLOR_BIT;
+    }
+}
+
+bool VulkanImage::isColorFormat(VkFormat format)
+{
+    return !isDepthStencilFormat(format);
+}
+
+bool VulkanImage::isDepthStencilFormat(VkFormat format)
+{
+    switch (format)
+    {
+    case VK_FORMAT_D16_UNORM:
+    case VK_FORMAT_X8_D24_UNORM_PACK32:
+    case VK_FORMAT_D32_SFLOAT:
+
+    case VK_FORMAT_S8_UINT:
+
+    case VK_FORMAT_D16_UNORM_S8_UINT:
+    case VK_FORMAT_D24_UNORM_S8_UINT:
+    case VK_FORMAT_D32_SFLOAT_S8_UINT:
+        return true;
+
+    default:
+        return false;
     }
 }
 

@@ -42,9 +42,17 @@ void EmptyContext::setViewport(const core::Rect32 & viewport)
     LOG_DEBUG("EmptyContext::setViewport");
 }
 
-Image * EmptyContext::createImage(TextureTarget target, renderer::ImageFormat m_format, core::Dimension3D dimension, u32 m_mipmapLevel, s16 filter, TextureAnisotropic anisotropicLevel, TextureWrap wrap) const
+Image * EmptyContext::createImage(TextureTarget target, renderer::ImageFormat format, core::Dimension3D dimension, u32 mipmapLevel,
+    s16 filter, TextureAnisotropic anisotropicLevel, TextureWrap wrap) const
 {
     LOG_DEBUG("EmptyContext::createImage");
+    return nullptr;
+}
+
+Image * EmptyContext::createAttachmentImage(renderer::ImageFormat format, core::Dimension3D dimension, RenderTargetSamples samples, 
+    s16 filter, TextureAnisotropic anisotropicLevel, TextureWrap wrap) const
+{
+    LOG_DEBUG("EmptyContext::createAttachmentImage");
     return nullptr;
 }
 

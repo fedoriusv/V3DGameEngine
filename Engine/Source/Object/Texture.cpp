@@ -1,8 +1,7 @@
 ﻿#include "Texture.h"
-#include "Renderer/Image.h"
-#include "Renderer/Context.h"
+#include "Context.h"
+#include "Image.h"
 #include "Utils/Logger.h"
-#include "CommandList.h"
 
 namespace v3d
 {
@@ -171,24 +170,59 @@ Texture2D::Texture2D(renderer::CommandList& cmdList, renderer::ImageFormat forma
     , m_format(format)
     , m_dimension(dimension)
     , m_mipmapLevel(mipmapCount)
-    , m_image(nullptr)
+    , m_samples(RenderTargetSamples::SampleCount_x1)
 
     , m_filter(TextureFilterNearest)
     , m_anisotropicLevel(TextureAnisotropic::TextureAnisotropicNone)
     , m_wrap(TextureWrap::TextureRepeat)
+
+    , m_image(nullptr)
+
 {
     core::Dimension3D dim = { m_dimension.width, m_dimension.height, 1 };
     m_image = m_cmdList.getContext()->createImage(m_target, m_format, dim, m_mipmapLevel, m_filter, m_anisotropicLevel, m_wrap);
     ASSERT(m_image, "m_image is nullptr");
-
     m_image->registerNotify(this);
 
+    createTexture2D(data);
+}
+
+Texture2D::Texture2D(renderer::CommandList & cmdList, renderer::ImageFormat format, const core::Dimension2D & dimension, RenderTargetSamples samples)
+    : m_cmdList(cmdList)
+    , m_target(TextureTarget::Texture2D)
+    , m_format(format)
+    , m_dimension(dimension)
+    , m_mipmapLevel(0)
+    , m_samples(samples)
+
+    , m_filter(TextureFilterNearest)
+    , m_anisotropicLevel(TextureAnisotropic::TextureAnisotropicNone)
+    , m_wrap(TextureWrap::TextureRepeat)
+
+    , m_image(nullptr)
+{
+    core::Dimension3D dim = { m_dimension.width, m_dimension.height, 1 };
+    m_image = m_cmdList.getContext()->createAttachmentImage(m_format, dim, m_samples, m_filter, m_anisotropicLevel, m_wrap);
+    ASSERT(m_image, "m_image is nullptr");
+    m_image->registerNotify(this);
+
+    createTexture2D(nullptr);
+}
+
+void Texture2D::handleNotify()
+{
+    m_image->unregisterNotify(this);
+    delete m_image;
+    m_image = nullptr;
+}
+
+void Texture2D::createTexture2D(const void * data)
+{
     if (m_cmdList.isImmediate())
     {
         if (!m_image->create())
         {
             m_image->destroy();
-
             m_image->unregisterNotify(this);
 
             delete m_image;
@@ -206,13 +240,6 @@ Texture2D::Texture2D(renderer::CommandList& cmdList, renderer::ImageFormat forma
         u32 calculatedSize = 0; //TODO:
         m_cmdList.pushCommand(new CreateTextureCommand(m_image, calculatedSize, data));
     }
-}
-
-void Texture2D::handleNotify()
-{
-    m_image->unregisterNotify(this);
-    delete m_image;
-    m_image = nullptr;
 }
 
 Texture2D::~Texture2D()

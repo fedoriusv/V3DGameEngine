@@ -73,10 +73,7 @@ void MyApplication::Initialize()
 
     m_CommandList = new renderer::CommandList(m_Context, renderer::CommandList::CommandListType::DelayedCommandList);
 
-   /* Texture2D texture({0,0}, 0);
-    commandList.textureCreate(texture, data);
-    commandList.textureUpdate(texture, data);
-    commandList.textureSetFilter()*/
+    //RenderTarget = m_CommandList->createObject<RenderTarget>({ 0,0 });
 
     //Texture2D* texture = m_CommandList->createObject<Texture2D>(renderer::ImageFormat::ImageFormat_Undefined, core::Dimension2D(0, 0));
     //texture->update({ 0,0 }, {0, 0}, 1, nullptr);

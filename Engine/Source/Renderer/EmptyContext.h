@@ -23,7 +23,10 @@ namespace renderer
 
         void setViewport(const core::Rect32& viewport) override;
 
-        Image* createImage(TextureTarget target, renderer::ImageFormat m_format, core::Dimension3D dimension, u32 m_mipmapLevel,
+        Image* createImage(TextureTarget target, renderer::ImageFormat format, core::Dimension3D dimension, u32 mipmapLevel,
+            s16 filter, TextureAnisotropic anisotropicLevel, TextureWrap wrap) const override;
+
+        Image* createAttachmentImage(renderer::ImageFormat format, core::Dimension3D dimension, RenderTargetSamples samples,
             s16 filter, TextureAnisotropic anisotropicLevel, TextureWrap wrap) const override;
 
     private:
