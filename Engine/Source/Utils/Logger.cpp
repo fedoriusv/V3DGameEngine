@@ -27,7 +27,9 @@ using colorFunc = std::ostream& (*)(std::ostream& stream);
 
 const colorFunc k_colorList[Logger::LoggerCount] =
 {
+#if defined(DEBUG)
     green,
+#endif //defined(DEBUG)
     green,
     white,
     yellow,
@@ -41,7 +43,7 @@ Logger::Logger()
 #if defined(DEBUG)
     , m_level(LoggerType::LoggerDebug)
 #else //defined(DEBUG)
-    , m_level(LoggerType::LoggerNofiy)
+    , m_level(LoggerType::LoggerNotify)
 #endif //defined(DEBUG)
     , m_immediateFlush(true)
 {
