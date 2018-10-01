@@ -26,8 +26,10 @@ namespace renderer
         Image* createImage(TextureTarget target, renderer::ImageFormat format, core::Dimension3D dimension, u32 mipmapLevel,
             s16 filter, TextureAnisotropic anisotropicLevel, TextureWrap wrap) const override;
 
-        Image* createAttachmentImage(renderer::ImageFormat format, core::Dimension3D dimension, RenderTargetSamples samples,
+        Image* createAttachmentImage(renderer::ImageFormat format, core::Dimension3D dimension, TextureSamples samples,
             s16 filter, TextureAnisotropic anisotropicLevel, TextureWrap wrap) const override;
+
+        Framebuffer* createFramebuffer() override;
 
     private:
 

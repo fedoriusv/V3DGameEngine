@@ -45,7 +45,7 @@ namespace v3d
         TextureClampToBorder,
     };
 
-    enum RenderTargetSamples : s16
+    enum TextureSamples : s16
     {
         SampleCount_x1 = 0x1,
         SampleCount_x2 = 0x2,

@@ -49,10 +49,16 @@ Image * EmptyContext::createImage(TextureTarget target, renderer::ImageFormat fo
     return nullptr;
 }
 
-Image * EmptyContext::createAttachmentImage(renderer::ImageFormat format, core::Dimension3D dimension, RenderTargetSamples samples, 
+Image * EmptyContext::createAttachmentImage(renderer::ImageFormat format, core::Dimension3D dimension, TextureSamples samples,
     s16 filter, TextureAnisotropic anisotropicLevel, TextureWrap wrap) const
 {
     LOG_DEBUG("EmptyContext::createAttachmentImage");
+    return nullptr;
+}
+
+Framebuffer * EmptyContext::createFramebuffer()
+{
+    LOG_DEBUG("EmptyContext::createFramebuffer");
     return nullptr;
 }
 

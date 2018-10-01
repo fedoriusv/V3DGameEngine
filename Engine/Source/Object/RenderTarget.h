@@ -19,7 +19,7 @@ namespace v3d
         struct AttachmentDesc
         {
             renderer::ImageFormat _format;
-            RenderTargetSamples   _samples;
+            TextureSamples        _samples;
             RenderTargetLoadOp    _loadOp;
             RenderTargetStoreOp   _storeOp;
         };
@@ -27,11 +27,8 @@ namespace v3d
         ~RenderTarget();
         RenderTarget(const RenderTarget &) = delete;
 
-        Texture2D* attachColorTexture(renderer::ImageFormat format, RenderTargetSamples samples = SampleCount_x1, 
-            RenderTargetLoadOp loadOp = RenderTargetLoadOp::LoadOp_Clear, RenderTargetStoreOp storeOp = RenderTargetStoreOp::StoreOp_Store);
-
-        Texture2D* attachDepthStencilTexture(renderer::ImageFormat format, RenderTargetSamples samples = SampleCount_x1, 
-            RenderTargetLoadOp loadOp = RenderTargetLoadOp::LoadOp_DontCare, RenderTargetStoreOp storeOp = RenderTargetStoreOp::StoreOp_DontCare);
+        bool attachColorTexture(Texture2D* colorTexture, RenderTargetLoadOp loadOp = RenderTargetLoadOp::LoadOp_Clear, RenderTargetStoreOp storeOp = RenderTargetStoreOp::StoreOp_Store);
+        bool attachDepthStencilTexture(Texture2D* depthStencilTexture, RenderTargetLoadOp loadOp = RenderTargetLoadOp::LoadOp_DontCare, RenderTargetStoreOp storeOp = RenderTargetStoreOp::StoreOp_DontCare);
 
         Texture2D* getColorTexture(u32 attachment) const;
         Texture2D* getDepthStencilTexture() const;
@@ -41,7 +38,6 @@ namespace v3d
         RenderTarget(renderer::CommandList& cmdList, const core::Dimension2D& dimension);
 
         renderer::CommandList&  m_cmdList;
-
         core::Dimension2D       m_dimension;
 
         std::vector<std::pair<Texture2D*, AttachmentDesc>> m_colorTextures;

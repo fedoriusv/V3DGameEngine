@@ -272,29 +272,29 @@ VkImageType VulkanImage::convertTextureTargetToVkImageType(TextureTarget target)
     return VK_IMAGE_TYPE_2D;
 }
 
-VkSampleCountFlagBits VulkanImage::convertRenderTargetSamplesToVkSampleCount(RenderTargetSamples samples)
+VkSampleCountFlagBits VulkanImage::convertRenderTargetSamplesToVkSampleCount(TextureSamples samples)
 {
     switch (samples)
     {
-    case RenderTargetSamples::SampleCount_x1:
+    case TextureSamples::SampleCount_x1:
         return VK_SAMPLE_COUNT_1_BIT;
 
-    case RenderTargetSamples::SampleCount_x2:
+    case TextureSamples::SampleCount_x2:
         return VK_SAMPLE_COUNT_2_BIT;
 
-    case RenderTargetSamples::SampleCount_x4:
+    case TextureSamples::SampleCount_x4:
         return VK_SAMPLE_COUNT_4_BIT;
 
-    case RenderTargetSamples::SampleCount_x8:
+    case TextureSamples::SampleCount_x8:
         return VK_SAMPLE_COUNT_8_BIT;
 
-    case RenderTargetSamples::SampleCount_x16:
+    case TextureSamples::SampleCount_x16:
         return VK_SAMPLE_COUNT_16_BIT;
 
-    case RenderTargetSamples::SampleCount_x32:
+    case TextureSamples::SampleCount_x32:
         return VK_SAMPLE_COUNT_32_BIT;
 
-    case RenderTargetSamples::SampleCount_x64:
+    case TextureSamples::SampleCount_x64:
         return VK_SAMPLE_COUNT_64_BIT;
 
     default:

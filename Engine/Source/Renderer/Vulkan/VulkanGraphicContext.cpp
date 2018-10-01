@@ -4,6 +4,7 @@
 #include "VulkanCommandBuffer.h"
 #include "VulkanSwapchain.h"
 #include "VulkanImage.h"
+#include "VulkanFramebuffer.h"
 
 #include "Object/Texture.h"
 
@@ -139,7 +140,7 @@ Image * VulkanGraphicContext::createImage(TextureTarget target, renderer::ImageF
     return new VulkanImage(m_deviceInfo._device, vkType, vkFormat, vkExtent, mipLevels, VK_IMAGE_TILING_OPTIMAL);
 }
 
-Image * VulkanGraphicContext::createAttachmentImage(renderer::ImageFormat format, core::Dimension3D dimension, RenderTargetSamples samples, 
+Image * VulkanGraphicContext::createAttachmentImage(renderer::ImageFormat format, core::Dimension3D dimension, TextureSamples samples, 
     s16 filter, TextureAnisotropic anisotropicLevel, TextureWrap wrap) const
 {
     VkFormat vkFormat = VulkanImage::convertImageFormatToVkFormat(format);
@@ -148,6 +149,12 @@ Image * VulkanGraphicContext::createAttachmentImage(renderer::ImageFormat format
 
     //TODO: memory pool
     return new VulkanImage(m_deviceInfo._device, vkFormat, vkExtent, vkSamples);
+}
+
+Framebuffer * VulkanGraphicContext::createFramebuffer()
+{
+    //TODO: memory pool
+    return new VulkanFramebuffer();
 }
 
 VulkanCommandBuffer * VulkanGraphicContext::getCurrentBuffer(VulkanCommandBufferManager::CommandTargetType type) const

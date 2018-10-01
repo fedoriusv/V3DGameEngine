@@ -170,7 +170,7 @@ Texture2D::Texture2D(renderer::CommandList& cmdList, renderer::ImageFormat forma
     , m_format(format)
     , m_dimension(dimension)
     , m_mipmapLevel(mipmapCount)
-    , m_samples(RenderTargetSamples::SampleCount_x1)
+    , m_samples(TextureSamples::SampleCount_x1)
 
     , m_filter(TextureFilterNearest)
     , m_anisotropicLevel(TextureAnisotropic::TextureAnisotropicNone)
@@ -187,7 +187,7 @@ Texture2D::Texture2D(renderer::CommandList& cmdList, renderer::ImageFormat forma
     createTexture2D(data);
 }
 
-Texture2D::Texture2D(renderer::CommandList & cmdList, renderer::ImageFormat format, const core::Dimension2D & dimension, RenderTargetSamples samples)
+Texture2D::Texture2D(renderer::CommandList & cmdList, renderer::ImageFormat format, const core::Dimension2D & dimension, TextureSamples samples)
     : m_cmdList(cmdList)
     , m_target(TextureTarget::Texture2D)
     , m_format(format)
@@ -273,6 +273,11 @@ TextureWrap Texture2D::getWrap() const
 TextureAnisotropic Texture2D::getAnisotropic() const
 {
     return m_anisotropicLevel;
+}
+
+TextureSamples Texture2D::getSampleCount() const
+{
+    return m_samples;
 }
 
 u32 Texture2D::getMipmaps() const

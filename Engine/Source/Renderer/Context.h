@@ -16,6 +16,8 @@ namespace renderer
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     class Image;
+    class Framebuffer;
+    class FramebufferManager;
 
     class Context : public utils::NonCopyable
     {
@@ -51,12 +53,15 @@ namespace renderer
     protected:
 
         friend Texture2D;
+        friend FramebufferManager;
 
         virtual Image* createImage(TextureTarget target, renderer::ImageFormat format, core::Dimension3D dimension, u32 mipmapLevel,
             s16 filter, TextureAnisotropic anisotropicLevel, TextureWrap wrap) const = 0;
 
-        virtual Image* createAttachmentImage(renderer::ImageFormat format, core::Dimension3D dimension, RenderTargetSamples samples,
+        virtual Image* createAttachmentImage(renderer::ImageFormat format, core::Dimension3D dimension, TextureSamples samples,
             s16 filter, TextureAnisotropic anisotropicLevel, TextureWrap wrap) const = 0;
+
+        virtual Framebuffer* createFramebuffer() = 0;
 
         virtual bool initialize() = 0;
         virtual void destroy() = 0;

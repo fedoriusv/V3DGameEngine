@@ -16,7 +16,7 @@ namespace vk
 {
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    class VulkanImage : public Image
+    class VulkanImage final : public Image
     {
     public:
 
@@ -34,7 +34,7 @@ namespace vk
 
         static VkFormat convertImageFormatToVkFormat(renderer::ImageFormat format);
         static VkImageType convertTextureTargetToVkImageType(TextureTarget target);
-        static VkSampleCountFlagBits convertRenderTargetSamplesToVkSampleCount(RenderTargetSamples samples);
+        static VkSampleCountFlagBits convertRenderTargetSamplesToVkSampleCount(TextureSamples samples);
 
         static VkImageSubresourceRange makeImageSubresourceRange(const VulkanImage* image);
 

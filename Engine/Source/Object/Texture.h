@@ -28,6 +28,7 @@ namespace renderer
         TextureFilter               getMagFilter() const;
         TextureWrap                 getWrap() const;
         TextureAnisotropic          getAnisotropic() const;
+        TextureSamples              getSampleCount() const;
         u32                         getMipmaps() const;
         const core::Dimension2D&    getDimension() const;
         renderer::ImageFormat       getFormat() const;
@@ -41,7 +42,7 @@ namespace renderer
     private:
 
         Texture2D(renderer::CommandList& cmdList, renderer::ImageFormat format, const core::Dimension2D& dimension, u32 mipmapCount = 0, const void* data = nullptr);
-        Texture2D(renderer::CommandList& cmdList, renderer::ImageFormat format, const core::Dimension2D& dimension, RenderTargetSamples samples);
+        Texture2D(renderer::CommandList& cmdList, renderer::ImageFormat format, const core::Dimension2D& dimension, TextureSamples samples);
 
         void handleNotify() override;
 
@@ -53,7 +54,7 @@ namespace renderer
         const renderer::ImageFormat m_format;
         const core::Dimension2D     m_dimension;
         const u32                   m_mipmapLevel;
-        RenderTargetSamples         m_samples;
+        TextureSamples              m_samples;
 
         s16                         m_filter;
         TextureAnisotropic          m_anisotropicLevel;

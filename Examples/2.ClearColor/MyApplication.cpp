@@ -6,6 +6,7 @@
 #include "Platform/Window.h"
 
 #include "Object/Texture.h"
+#include "Object/RenderTarget.h"
 #include "Renderer/ImageFormats.h"
 
 
@@ -73,7 +74,34 @@ void MyApplication::Initialize()
 
     m_CommandList = new renderer::CommandList(m_Context, renderer::CommandList::CommandListType::DelayedCommandList);
 
-    //RenderTarget = m_CommandList->createObject<RenderTarget>({ 0,0 });
+    RenderTarget* target = m_CommandList->createObject<RenderTarget>(core::Dimension2D(0, 0));
+    Texture2D* colorTexture = target->attachColorTexture(renderer::ImageFormat::ImageFormat_R8G8B8A8_UInt, RenderTargetSamples::SampleCount_x1, RenderTargetLoadOp::LoadOp_Clear, RenderTargetStoreOp::StoreOp_Store);
+    m_CommandList.setRenderTarget(target);
+
+    //draw
+
+    m_CommandList.submitCommands(bool wait, callbackCompete);
+    colorTexture->read();
+
+
+    ////////////////////////////////////
+
+
+    Texture2D* texture = m_CommandList->createObject<Texture2D>(renderer::ImageFormat::ImageFormat_Undefined, core::Dimension2D(0, 0), RenderTargetSamples::SampleCount_x1);
+    RenderTarget* target0 = m_CommandList->createObject<RenderTarget>(core::Dimension2D(0, 0), core::Vector4D(0.,0.,0.,0.));
+    bool success = target0->setColorTexture(texture, RenderTargetLoadOp::LoadOp_Clear, RenderTargetStoreOp::StoreOp_Store);
+    m_CommandList.setRenderTarget(target0);
+
+    //draw
+
+    
+    RenderTarget* target1 = m_CommandList->createObject<RenderTarget>(core::Dimension2D(0, 0));
+    bool success = target1->setColorTexture(texture, RenderTargetLoadOp::LoadOp_Load, RenderTargetStoreOp::StoreOp_Store);
+    m_CommandList.setRenderTarget(target1);
+
+    //draw
+
+
 
     //Texture2D* texture = m_CommandList->createObject<Texture2D>(renderer::ImageFormat::ImageFormat_Undefined, core::Dimension2D(0, 0));
     //texture->update({ 0,0 }, {0, 0}, 1, nullptr);

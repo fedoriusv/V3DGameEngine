@@ -9,6 +9,9 @@ namespace v3d
     RenderTarget::RenderTarget(renderer::CommandList& cmdList, const core::Dimension2D& dimension)
         : m_cmdList(cmdList)
         , m_dimension(dimension)
+
+        , m_framebuffer(nullptr)
+        , m_renderpass(nullptr)
     {
         m_depthStencilTexture.first = nullptr;
     }
@@ -17,31 +20,34 @@ namespace v3d
     {
     }
 
-    Texture2D* RenderTarget::attachColorTexture(renderer::ImageFormat format, RenderTargetSamples samples, RenderTargetLoadOp loadOp, RenderTargetStoreOp storeOp)
+    bool RenderTarget::attachColorTexture(Texture2D* colorTexture, RenderTargetLoadOp loadOp, RenderTargetStoreOp storeOp)
     {
         AttachmentDesc attachmentDesc = {};
-        attachmentDesc._format = format;
-        attachmentDesc._samples = samples;
+        attachmentDesc._format = colorTexture->getFormat();
+        attachmentDesc._samples = colorTexture->getSampleCount();
         attachmentDesc._loadOp = loadOp;
         attachmentDesc._storeOp = storeOp;
-        m_colorTextures.emplace_back(m_cmdList.createObject<Texture2D>(format, m_dimension), attachmentDesc);
+        m_colorTextures.emplace_back(colorTexture, attachmentDesc);
 
-        return m_colorTextures.back().first;
+        //TODO check compatibility
+        return true;
     }
 
-    Texture2D* RenderTarget::attachDepthStencilTexture(renderer::ImageFormat format, RenderTargetSamples samples, RenderTargetLoadOp loadOp, RenderTargetStoreOp storeOp)
+    bool RenderTarget::attachDepthStencilTexture(Texture2D* depthStencilTexture, RenderTargetLoadOp loadOp, RenderTargetStoreOp storeOp)
     {
         ASSERT(m_depthStencilTexture.first, "attachDepthStencilTexture can create only one");
         if (!m_depthStencilTexture.first)
         {
             AttachmentDesc attachmentDesc = {};
-            attachmentDesc._format = format;
-            attachmentDesc._samples = samples;
+            attachmentDesc._format = depthStencilTexture->getFormat();
+            attachmentDesc._samples = depthStencilTexture->getSampleCount();
             attachmentDesc._loadOp = loadOp;
             attachmentDesc._storeOp = storeOp;
-            m_depthStencilTexture = std::make_pair(m_cmdList.createObject<Texture2D>(format, m_dimension), attachmentDesc);
+            m_depthStencilTexture = std::make_pair(depthStencilTexture, attachmentDesc);
         }
-        return m_depthStencilTexture.first;
+
+        //TODO check compatibility
+        return true;
     }
 
     Texture2D * RenderTarget::getColorTexture(u32 attachment) const
