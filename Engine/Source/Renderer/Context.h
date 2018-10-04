@@ -41,20 +41,18 @@ namespace renderer
         virtual ~Context();
 
         static Context* createContext(const platform::Window* window, RenderType type, DeviceMask mask = DeviceMask::GraphicMask);
-
+        
+        //frame
         virtual void beginFrame() = 0;
         virtual void endFrame() = 0;
         virtual void presentFrame() = 0;
+
 
         virtual void clearBackbuffer(const core::Vector4D & color) = 0;
 
         virtual void setViewport(const core::Rect32& viewport) = 0;
 
-    protected:
-
-        friend Texture2D;
-        friend FramebufferManager;
-
+        //create
         virtual Image* createImage(TextureTarget target, renderer::ImageFormat format, core::Dimension3D dimension, u32 mipmapLevel,
             s16 filter, TextureAnisotropic anisotropicLevel, TextureWrap wrap) const = 0;
 
@@ -62,6 +60,12 @@ namespace renderer
             s16 filter, TextureAnisotropic anisotropicLevel, TextureWrap wrap) const = 0;
 
         virtual Framebuffer* createFramebuffer() = 0;
+
+    protected:
+
+        friend FramebufferManager;
+
+
 
         virtual bool initialize() = 0;
         virtual void destroy() = 0;

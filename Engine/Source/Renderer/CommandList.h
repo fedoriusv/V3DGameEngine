@@ -8,6 +8,8 @@ namespace v3d
 {
 
     class SwapchainTexture;
+    class RenderTarget;
+    class Backbuffer;
 
 namespace renderer
 {
@@ -62,6 +64,7 @@ namespace renderer
 
         void clearBackbuffer(const core::Vector4D& color);
 
+        void setRenderTarget(RenderTarget* rendertarget);
         void setViewport(const core::Rect32& viewport);
 
         Context* getContext() const;
@@ -91,7 +94,12 @@ namespace renderer
         ContextStates m_pendingStates;
         bool m_statesNeedUpdate;
 
+        //
         SwapchainTexture* m_swapchainTexture;
+        Backbuffer*       m_backbuffer;
+        //
+
+        RenderTarget*    m_currentRenderTarget;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

@@ -74,21 +74,22 @@ void MyApplication::Initialize()
 
     m_CommandList = new renderer::CommandList(m_Context, renderer::CommandList::CommandListType::DelayedCommandList);
 
-    RenderTarget* target = m_CommandList->createObject<RenderTarget>(core::Dimension2D(0, 0));
-    Texture2D* colorTexture = target->attachColorTexture(renderer::ImageFormat::ImageFormat_R8G8B8A8_UInt, RenderTargetSamples::SampleCount_x1, RenderTargetLoadOp::LoadOp_Clear, RenderTargetStoreOp::StoreOp_Store);
-    m_CommandList.setRenderTarget(target);
 
-    //draw
 
-    m_CommandList.submitCommands(bool wait, callbackCompete);
-    colorTexture->read();
+    //RenderTarget* target = m_CommandList->createObject<RenderTarget>(core::Dimension2D(0, 0));
+    //Texture2D* colorTexture = target->attachColorTexture(renderer::ImageFormat::ImageFormat_R8G8B8A8_UInt, RenderTargetSamples::SampleCount_x1, RenderTargetLoadOp::LoadOp_Clear, RenderTargetStoreOp::StoreOp_Store);
+    //m_CommandList.setRenderTarget(target);
+
+    ////draw
+
+    //m_CommandList.submitCommands(bool wait, callbackCompete);
+    //colorTexture->read();
 
 
     ////////////////////////////////////
 
-
-    Texture2D* texture = m_CommandList->createObject<Texture2D>(renderer::ImageFormat::ImageFormat_Undefined, core::Dimension2D(0, 0), RenderTargetSamples::SampleCount_x1);
-    RenderTarget* target0 = m_CommandList->createObject<RenderTarget>(core::Dimension2D(0, 0), core::Vector4D(0.,0.,0.,0.));
+    Texture2D* texture = m_CommandList->createObject<Texture2D>(renderer::ImageFormat::ImageFormat_R8G8B8A8_UInt, core::Dimension2D(80, 80), TextureSamples::SampleCount_x1);
+    RenderTarget* target0 = m_CommandList->createObject<RenderTarget>(core::Dimension2D(80, 80));
     bool success = target0->setColorTexture(texture, RenderTargetLoadOp::LoadOp_Clear, RenderTargetStoreOp::StoreOp_Store);
     m_CommandList.setRenderTarget(target0);
 

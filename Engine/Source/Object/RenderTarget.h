@@ -16,19 +16,11 @@ namespace v3d
     {
     public:
 
-        struct AttachmentDesc
-        {
-            renderer::ImageFormat _format;
-            TextureSamples        _samples;
-            RenderTargetLoadOp    _loadOp;
-            RenderTargetStoreOp   _storeOp;
-        };
-
         ~RenderTarget();
         RenderTarget(const RenderTarget &) = delete;
 
-        bool attachColorTexture(Texture2D* colorTexture, RenderTargetLoadOp loadOp = RenderTargetLoadOp::LoadOp_Clear, RenderTargetStoreOp storeOp = RenderTargetStoreOp::StoreOp_Store);
-        bool attachDepthStencilTexture(Texture2D* depthStencilTexture, RenderTargetLoadOp loadOp = RenderTargetLoadOp::LoadOp_DontCare, RenderTargetStoreOp storeOp = RenderTargetStoreOp::StoreOp_DontCare);
+        bool setColorTexture(Texture2D* colorTexture, RenderTargetLoadOp loadOp = RenderTargetLoadOp::LoadOp_Clear, RenderTargetStoreOp storeOp = RenderTargetStoreOp::StoreOp_Store);
+        bool setDepthStencilTexture(Texture2D* depthStencilTexture, RenderTargetLoadOp loadOp = RenderTargetLoadOp::LoadOp_DontCare, RenderTargetStoreOp storeOp = RenderTargetStoreOp::StoreOp_DontCare);
 
         Texture2D* getColorTexture(u32 attachment) const;
         Texture2D* getDepthStencilTexture() const;
@@ -45,6 +37,25 @@ namespace v3d
 
         Framebuffer* m_framebuffer;
         RenderPass*  m_renderpass;
+
+        friend renderer::CommandList;
+    };
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    class Backbuffer : public Object //ref couter,
+    {
+    public:
+
+        ~Backbuffer() {};
+        Backbuffer(const Backbuffer &) = delete;
+
+    private:
+
+        Backbuffer(renderer::CommandList& cmdList, SwapchainTexture* texture);
+
+        renderer::CommandList&  m_cmdList;
+        SwapchainTexture*       m_texture;
 
         friend renderer::CommandList;
     };

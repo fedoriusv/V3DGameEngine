@@ -3,6 +3,7 @@
 
 #include "Context.h"
 #include "Object/Texture.h"
+#include "Object/RenderTarget.h"
 
 namespace v3d
 {
@@ -86,8 +87,29 @@ private:
 };
 
 
+class CommandBindRenderTarget : public Command
+{
+public:
+    CommandBindRenderTarget(const std::vector<RenderTarget::AttachmentDesc>& attachments)
+        : m_attachments(attachments)
+    {
+        LOG_DEBUG("CommandBindRenderTarget constructor");
+    };
+    ~CommandBindRenderTarget()
+    {
+        LOG_DEBUG("CommandBindRenderTarget destructor");
+    };
 
+    void execute(const CommandList& cmdList)
+    {
+        cmdList.getContext()->
+    }
 
+private:
+    std::vector<RenderTarget::AttachmentDesc> m_attachments;
+};
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////
 
 CommandList::CommandList(Context* context, CommandListType type)
     : m_context(context)
@@ -95,6 +117,9 @@ CommandList::CommandList(Context* context, CommandListType type)
     , m_statesNeedUpdate(false)
 {
     m_swapchainTexture = createObject<SwapchainTexture>();
+    m_backbuffer = createObject<Backbuffer>(m_swapchainTexture);
+
+    m_currentRenderTarget = nullptr;
 }
 
 CommandList::~CommandList()
@@ -154,6 +179,11 @@ void CommandList::presentFrame()
 void CommandList::clearBackbuffer(const core::Vector4D & color)
 {
     m_swapchainTexture->clear(color);
+}
+
+void CommandList::setRenderTarget(RenderTarget * rendertarget)
+{
+    m_currentRenderTarget = rendertarget;
 }
 
 void CommandList::setViewport(const core::Rect32& viewport)

@@ -20,7 +20,7 @@ namespace v3d
     {
     }
 
-    bool RenderTarget::attachColorTexture(Texture2D* colorTexture, RenderTargetLoadOp loadOp, RenderTargetStoreOp storeOp)
+    bool RenderTarget::setColorTexture(Texture2D* colorTexture, RenderTargetLoadOp loadOp, RenderTargetStoreOp storeOp)
     {
         AttachmentDesc attachmentDesc = {};
         attachmentDesc._format = colorTexture->getFormat();
@@ -33,7 +33,7 @@ namespace v3d
         return true;
     }
 
-    bool RenderTarget::attachDepthStencilTexture(Texture2D* depthStencilTexture, RenderTargetLoadOp loadOp, RenderTargetStoreOp storeOp)
+    bool RenderTarget::setDepthStencilTexture(Texture2D* depthStencilTexture, RenderTargetLoadOp loadOp, RenderTargetStoreOp storeOp)
     {
         ASSERT(m_depthStencilTexture.first, "attachDepthStencilTexture can create only one");
         if (!m_depthStencilTexture.first)
@@ -62,5 +62,11 @@ namespace v3d
     }
 
 
+
+    Backbuffer::Backbuffer(renderer::CommandList & cmdList, SwapchainTexture * texture)
+        : m_cmdList(cmdList)
+        , m_texture(texture)
+    {
+    }
 
 } //namespace v3d
