@@ -3,7 +3,6 @@
 #include "Common.h"
 #include "Image.h"
 #include "ImageFormats.h"
-#include "Object/TextureEnums.h"
 
 #ifdef VULKAN_RENDER
 #include "VulkanWrapper.h"
@@ -45,6 +44,7 @@ namespace vk
 
         VkImage             getHandle() const;
         VkImageAspectFlags  getImageAspectFlags() const;
+        VkImageView         getImageView() const;
 
         VkImageLayout       getLayout() const;
         void                setLayout(VkImageLayout layout);

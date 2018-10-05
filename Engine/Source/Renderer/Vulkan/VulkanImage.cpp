@@ -202,7 +202,7 @@ bool VulkanImage::create()
     VkResult result = VulkanWrapper::CreateImage(m_device, &imageCreateInfo, VULKAN_ALLOCATOR, &m_image);
     if (result != VK_SUCCESS)
     {
-        LOG_DEBUG("VulkanImage::VulkanImage vkCreateImage is failed. Error: %s", ErrorString(result).c_str());
+        LOG_DEBUG("VulkanFramebuffer::create vkCreateImage is failed. Error: %s", ErrorString(result).c_str());
         return false;
     }
 
@@ -371,6 +371,11 @@ VkImage VulkanImage::getHandle() const
 VkImageAspectFlags VulkanImage::getImageAspectFlags() const
 {
     return m_aspectMask;
+}
+
+VkImageView VulkanImage::getImageView() const
+{
+    return m_imageView;
 }
 
 VkImageLayout VulkanImage::getLayout() const

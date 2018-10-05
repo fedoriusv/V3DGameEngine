@@ -184,7 +184,7 @@ namespace vk
      }
 
      VkCommandPoolResetFlags flag = (m_poolFlag == VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT) ? 0 : VK_COMMAND_POOL_RESET_RELEASE_RESOURCES_BIT;
-     for (auto pool : m_commandPools)
+     for (auto& pool : m_commandPools)
      {
          VkResult result = VulkanWrapper::ResetCommandPool(m_device, pool, flag);
          if (result != VK_SUCCESS)

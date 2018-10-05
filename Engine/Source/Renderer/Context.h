@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Common.h"
-#include "Object/Texture.h"
+#include "TextureProperties.h"
 #include "Utils/NonCopyable.h"
 
 namespace v3d
@@ -17,6 +17,7 @@ namespace renderer
 
     class Image;
     class Framebuffer;
+    class RenderPass;
     class FramebufferManager;
 
     class Context : public utils::NonCopyable
@@ -53,13 +54,13 @@ namespace renderer
         virtual void setViewport(const core::Rect32& viewport) = 0;
 
         //create
-        virtual Image* createImage(TextureTarget target, renderer::ImageFormat format, core::Dimension3D dimension, u32 mipmapLevel,
+        virtual Image* createImage(TextureTarget target, renderer::ImageFormat format, const core::Dimension3D& dimension, u32 mipmapLevel,
             s16 filter, TextureAnisotropic anisotropicLevel, TextureWrap wrap) const = 0;
 
-        virtual Image* createAttachmentImage(renderer::ImageFormat format, core::Dimension3D dimension, TextureSamples samples,
+        virtual Image* createAttachmentImage(renderer::ImageFormat format, const core::Dimension3D& dimension, TextureSamples samples,
             s16 filter, TextureAnisotropic anisotropicLevel, TextureWrap wrap) const = 0;
 
-        virtual Framebuffer* createFramebuffer() = 0;
+        virtual Framebuffer* createFramebuffer(const std::vector<Image*>& attachments, const RenderPass* pass, const core::Dimension2D& size) = 0;
 
     protected:
 

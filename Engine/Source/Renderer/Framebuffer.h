@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Common.h"
+#include "TextureProperties.h"
 #include "Context.h"
 
 namespace v3d
@@ -15,6 +16,12 @@ namespace renderer
     {
     public:
 
+        struct FramebufferDescription
+        {
+            core::Dimension2D                  _size;
+            std::vector<AttachmentDescription> _attachments;
+        };
+
         Framebuffer() {};
         virtual ~Framebuffer() {};
 
@@ -28,14 +35,6 @@ namespace renderer
     {
     public:
 
-        struct FramebufferDesc
-        {
-            FramebufferDesc& operator=(const FramebufferDesc&)
-            {
-                return *this;
-            }
-        };
-
         FramebufferManager(Context *context) 
         : m_context(context)
         {
@@ -43,14 +42,14 @@ namespace renderer
 
         ~FramebufferManager() {};
 
-        Framebuffer* acquireFramebuffer(const FramebufferDesc& desc)
+        Framebuffer* acquireFramebuffer(const Framebuffer::FramebufferDescription& desc)
         {
 
             Framebuffer* framebuffer = nullptr;
             auto found = m_framebuffers.emplace(desc, framebuffer);
             if (!found.second)
             {
-                framebuffer = m_context->createFramebuffer();
+                framebuffer = m_context->createFramebuffer(desc);
 
                 //command
 

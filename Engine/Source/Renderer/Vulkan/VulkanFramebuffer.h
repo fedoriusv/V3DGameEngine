@@ -17,7 +17,7 @@ namespace vk
     {
     public:
 
-        VulkanFramebuffer();
+        VulkanFramebuffer(VkDevice device, VkRenderPass pass, const std::vector<VkImageView>& images, const core::Dimension2D& size);
         ~VulkanFramebuffer();
 
         VkFramebuffer getHandle() const;
@@ -26,6 +26,12 @@ namespace vk
         void destroy() override;
 
     private:
+
+        VkDevice      m_device;
+        VkRenderPass  m_renderpass;
+
+        std::vector<VkImageView> m_images;
+        core::Dimension2D m_size;
 
         VkFramebuffer m_framebuffer;
 

@@ -5,8 +5,7 @@
 #include "VulkanSwapchain.h"
 #include "VulkanImage.h"
 #include "VulkanFramebuffer.h"
-
-#include "Object/Texture.h"
+#include "VulkanRenderpass.h"
 
 #include "Utils/Logger.h"
 
@@ -129,32 +128,38 @@ void VulkanGraphicContext::setViewport(const core::Rect32& viewport)
     //TODO:
 }
 
-Image * VulkanGraphicContext::createImage(TextureTarget target, renderer::ImageFormat format, core::Dimension3D dimension, u32 mipLevels,
+Image * VulkanGraphicContext::createImage(TextureTarget target, renderer::ImageFormat format, const core::Dimension3D& dimension, u32 mipLevels,
     s16 filter, TextureAnisotropic anisotropicLevel, TextureWrap wrap) const
 {
     VkImageType vkType = VulkanImage::convertTextureTargetToVkImageType(target);
     VkFormat vkFormat = VulkanImage::convertImageFormatToVkFormat(format);
     VkExtent3D vkExtent = { dimension.width, dimension.height, dimension.depth };
 
-    //TODO: memory pool
     return new VulkanImage(m_deviceInfo._device, vkType, vkFormat, vkExtent, mipLevels, VK_IMAGE_TILING_OPTIMAL);
 }
 
-Image * VulkanGraphicContext::createAttachmentImage(renderer::ImageFormat format, core::Dimension3D dimension, TextureSamples samples, 
+Image * VulkanGraphicContext::createAttachmentImage(renderer::ImageFormat format, const core::Dimension3D& dimension, TextureSamples samples, 
     s16 filter, TextureAnisotropic anisotropicLevel, TextureWrap wrap) const
 {
     VkFormat vkFormat = VulkanImage::convertImageFormatToVkFormat(format);
     VkExtent3D vkExtent = { dimension.width, dimension.height, dimension.depth };
     VkSampleCountFlagBits vkSamples = VulkanImage::convertRenderTargetSamplesToVkSampleCount(samples);
 
-    //TODO: memory pool
     return new VulkanImage(m_deviceInfo._device, vkFormat, vkExtent, vkSamples);
 }
 
-Framebuffer * VulkanGraphicContext::createFramebuffer()
+Framebuffer * VulkanGraphicContext::createFramebuffer(const std::vector<Image*>& attachments, const RenderPass* pass, const core::Dimension2D& size)
 {
-    //TODO: memory pool
-    return new VulkanFramebuffer();
+    VkRenderPass vkPass = static_cast<const VulkanRenderPass*>(pass)->getHandle();
+
+    std::vector<VkImageView> vkImageViews(attachments.size());
+    for (auto& attach : attachments)
+    {
+        VkImageView vkImage = static_cast<const VulkanImage*>(attach)->getImageView();
+        vkImageViews.push_back(vkImage);
+    }
+
+    return new VulkanFramebuffer(m_deviceInfo._device, vkPass, vkImageViews, size);
 }
 
 VulkanCommandBuffer * VulkanGraphicContext::getCurrentBuffer(VulkanCommandBufferManager::CommandTargetType type) const
