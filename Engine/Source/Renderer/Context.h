@@ -18,7 +18,7 @@ namespace renderer
     class Image;
     class Framebuffer;
     class RenderPass;
-    class FramebufferManager;
+    struct RenderPassInfo;
 
     class Context : public utils::NonCopyable
     {
@@ -60,13 +60,10 @@ namespace renderer
         virtual Image* createAttachmentImage(renderer::ImageFormat format, const core::Dimension3D& dimension, TextureSamples samples,
             s16 filter, TextureAnisotropic anisotropicLevel, TextureWrap wrap) const = 0;
 
-        virtual Framebuffer* createFramebuffer(const std::vector<Image*>& attachments, const RenderPass* pass, const core::Dimension2D& size) = 0;
+        virtual Framebuffer* createFramebuffer(const std::vector<Image*>& attachments, const core::Dimension2D& size) = 0;
+        virtual RenderPass* createRenderPass(const RenderPassInfo* renderpassInfo) = 0;
 
     protected:
-
-        friend FramebufferManager;
-
-
 
         virtual bool initialize() = 0;
         virtual void destroy() = 0;

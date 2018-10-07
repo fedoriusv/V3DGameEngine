@@ -3,42 +3,54 @@
 #include "Common.h"
 #include "CommandList.h"
 #include "ImageFormats.h"
-#include "Object/TextureEnums.h"
+#include "TextureProperties.h"
+#include "Utils/Observable.h"
 
 namespace v3d
 {
-  /////////////////////////////////////////////////////////////////////////////////////////////////////
-
+namespace renderer
+{
     class Framebuffer;
     class RenderPass;
+    class RenderPassManager;
+} //namespace renderer
 
-    class RenderTarget : public Object //ref couter, 
+  /////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    class Texture2D;
+
+    class RenderTarget : public Object, public utils::Observer //ref couter, 
     {
     public:
 
         ~RenderTarget();
         RenderTarget(const RenderTarget &) = delete;
 
-        bool setColorTexture(Texture2D* colorTexture, RenderTargetLoadOp loadOp = RenderTargetLoadOp::LoadOp_Clear, RenderTargetStoreOp storeOp = RenderTargetStoreOp::StoreOp_Store);
-        bool setDepthStencilTexture(Texture2D* depthStencilTexture, RenderTargetLoadOp loadOp = RenderTargetLoadOp::LoadOp_DontCare, RenderTargetStoreOp storeOp = RenderTargetStoreOp::StoreOp_DontCare);
+        bool setColorTexture(Texture2D* colorTexture, renderer::RenderTargetLoadOp loadOp = renderer::RenderTargetLoadOp::LoadOp_Clear, renderer::RenderTargetStoreOp storeOp = renderer::RenderTargetStoreOp::StoreOp_Store);
+        bool setDepthStencilTexture(Texture2D* depthStencilTexture, renderer::RenderTargetLoadOp loadOp = renderer::RenderTargetLoadOp::LoadOp_DontCare, renderer::RenderTargetStoreOp storeOp = renderer::RenderTargetStoreOp::StoreOp_DontCare);
 
         Texture2D* getColorTexture(u32 attachment) const;
         Texture2D* getDepthStencilTexture() const;
 
     private:
 
-        RenderTarget(renderer::CommandList& cmdList, const core::Dimension2D& dimension);
+        RenderTarget(renderer::CommandList& cmdList, const core::Dimension2D& size);
+
+        void makeRenderTarget();
+        void handleNotify(utils::Observable* ob) override;
 
         renderer::CommandList&  m_cmdList;
-        core::Dimension2D       m_dimension;
+        core::Dimension2D       m_size;
 
-        std::vector<std::pair<Texture2D*, AttachmentDesc>> m_colorTextures;
-        std::pair<Texture2D*, AttachmentDesc>              m_depthStencilTexture;
+        std::vector<std::pair<Texture2D*, renderer::AttachmentDescription>> m_colorTextures;
+        std::pair<Texture2D*, renderer::AttachmentDescription>              m_depthStencilTexture;
 
-        Framebuffer* m_framebuffer;
-        RenderPass*  m_renderpass;
+        renderer::Framebuffer* m_framebuffer;
+        renderer::RenderPass*  m_renderpass;
 
         friend renderer::CommandList;
+
+        static renderer::RenderPassManager* s_renderpassManager;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

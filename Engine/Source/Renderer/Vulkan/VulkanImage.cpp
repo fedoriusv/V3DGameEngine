@@ -105,6 +105,96 @@ std::tuple<VkAccessFlags, VkAccessFlags> VulkanImage::getAccessFlagsFromImageLay
     return { srcFlag, dstFlag };
 }
 
+VkFormat VulkanImage::convertImageFormatToVkFormat(renderer::ImageFormat format)
+{
+    switch (format)
+    {
+    case ImageFormat_Undefined :
+        return VK_FORMAT_UNDEFINED;
+    case ImageFormat_R4G4_UNorm_Pack8:
+        return VK_FORMAT_R4G4_UNORM_PACK8;
+    case ImageFormat_R4G4B4A4_UNorm_Pack16:
+        return VK_FORMAT_R4G4B4A4_UNORM_PACK16;
+    case ImageFormat_B4G4R4A4_UNorm_Pack16 :
+        return VK_FORMAT_B4G4R4A4_UNORM_PACK16;
+    case ImageFormat_R5G6B5_UNorm_Pack16:
+        return VK_FORMAT_R5G6B5_UNORM_PACK16;
+    case ImageFormat_B5G6R5_UNorm_Pack16:
+        return VK_FORMAT_B5G6R5_UNORM_PACK16;
+    case ImageFormat_R5G5B5A1_UNorm_Pack16:
+        return VK_FORMAT_R5G5B5A1_UNORM_PACK16;
+    case ImageFormat_B5G5R5A1_UNorm_Pack16:
+        return VK_FORMAT_B5G5R5A1_UNORM_PACK16;
+    case ImageFormat_A1R5G5B5_UNorm_Pack16:
+        return VK_FORMAT_A1R5G5B5_UNORM_PACK16;
+
+        //...
+    case ImageFormat_R8G8B8A8_UInt:
+        return VK_FORMAT_R8G8B8A8_UINT;
+        //...
+
+    default:
+        ASSERT(false, "unknown");
+    }
+
+    return VK_FORMAT_UNDEFINED;
+}
+
+VkImageType VulkanImage::convertTextureTargetToVkImageType(TextureTarget target)
+{
+    switch (target)
+    {
+    case TextureTarget::Texture1D:
+    case TextureTarget::Texture1DArray:
+        return VK_IMAGE_TYPE_1D;
+
+    case TextureTarget::Texture2D:
+    case TextureTarget::Texture2DArray:
+    case TextureTarget::TextureCubeMap:
+        return VK_IMAGE_TYPE_2D;
+
+    case TextureTarget::Texture3D:
+        return VK_IMAGE_TYPE_3D;
+
+    default:
+        ASSERT(false, "unknown");
+    }
+
+    return VK_IMAGE_TYPE_2D;
+}
+
+VkSampleCountFlagBits VulkanImage::convertRenderTargetSamplesToVkSampleCount(TextureSamples samples)
+{
+    switch (samples)
+    {
+    case TextureSamples::SampleCount_x1:
+        return VK_SAMPLE_COUNT_1_BIT;
+
+    case TextureSamples::SampleCount_x2:
+        return VK_SAMPLE_COUNT_2_BIT;
+
+    case TextureSamples::SampleCount_x4:
+        return VK_SAMPLE_COUNT_4_BIT;
+
+    case TextureSamples::SampleCount_x8:
+        return VK_SAMPLE_COUNT_8_BIT;
+
+    case TextureSamples::SampleCount_x16:
+        return VK_SAMPLE_COUNT_16_BIT;
+
+    case TextureSamples::SampleCount_x32:
+        return VK_SAMPLE_COUNT_32_BIT;
+
+    case TextureSamples::SampleCount_x64:
+        return VK_SAMPLE_COUNT_64_BIT;
+
+    default:
+        ASSERT(false, "cant convert");
+    }
+
+    return VK_SAMPLE_COUNT_1_BIT;
+}
+
 VulkanImage::VulkanImage(VkDevice device, VkImageType type, VkFormat format, VkExtent3D dimension, u32 mipsLevel, VkImageTiling tiling)
     : m_device(device)
     , m_type(type)
@@ -123,6 +213,8 @@ VulkanImage::VulkanImage(VkDevice device, VkImageType type, VkFormat format, VkE
 
     , m_layout((m_tiling == VK_IMAGE_TILING_OPTIMAL) ? VK_IMAGE_LAYOUT_UNDEFINED : VK_IMAGE_LAYOUT_PREINITIALIZED)
     , m_usage(VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT)
+
+    , m_resolveImage(nullptr)
 {
     LOG_DEBUG("VulkanImage::VulkanImage constructor %llx", this);
 }
@@ -144,8 +236,12 @@ VulkanImage::VulkanImage(VkDevice device, VkFormat format, VkExtent3D dimension,
     , m_imageView(VK_NULL_HANDLE)
 
     , m_layout(VK_IMAGE_LAYOUT_UNDEFINED)
-    , m_usage(VK_IMAGE_USAGE_TRANSFER_SRC_BIT)
+    , m_usage(VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_SAMPLED_BIT)
+
+    , m_resolveImage(nullptr)
 {
+    LOG_DEBUG("VulkanImage::VulkanImage constructor %llx", this);
+
     if (VulkanImage::isColorFormat(format))
     {
         m_usage |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
@@ -154,8 +250,6 @@ VulkanImage::VulkanImage(VkDevice device, VkFormat format, VkExtent3D dimension,
     {
         m_usage |= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
     }
-
-    LOG_DEBUG("VulkanImage::VulkanImage constructor %llx", this);
 }
 
 VulkanImage::~VulkanImage()
@@ -202,15 +296,18 @@ bool VulkanImage::create()
     VkResult result = VulkanWrapper::CreateImage(m_device, &imageCreateInfo, VULKAN_ALLOCATOR, &m_image);
     if (result != VK_SUCCESS)
     {
-        LOG_DEBUG("VulkanFramebuffer::create vkCreateImage is failed. Error: %s", ErrorString(result).c_str());
+        LOG_ERROR("VulkanFramebuffer::create vkCreateImage is failed. Error: %s", ErrorString(result).c_str());
         return false;
     }
+
+    //TODO: bind memory
+    //VulkanWrapper::BindImageMemory(m_device, m_image, );
 
     if (!createViewImage())
     {
         VulkanImage::destroy();
 
-        LOG_ERROR("VulkanImage::VulkanImage::create(img) is failed");
+        LOG_ERROR("VulkanImage::VulkanImage::create() is failed");
         return false;
     }
 
@@ -260,48 +357,6 @@ void VulkanImage::clear(const Context * context, f32 depth, u32 stencil)
     vulkanContext->transferImageLayout(this, VK_PIPELINE_STAGE_TRANSFER_BIT | VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
     commandBuffer->cmdClearImage(this, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &clearDepthStencilValue);
     vulkanContext->transferImageLayout(this, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT | VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, layout);
-}
-
-VkFormat VulkanImage::convertImageFormatToVkFormat(renderer::ImageFormat format)
-{
-    return VK_FORMAT_UNDEFINED;
-}
-
-VkImageType VulkanImage::convertTextureTargetToVkImageType(TextureTarget target)
-{
-    return VK_IMAGE_TYPE_2D;
-}
-
-VkSampleCountFlagBits VulkanImage::convertRenderTargetSamplesToVkSampleCount(TextureSamples samples)
-{
-    switch (samples)
-    {
-    case TextureSamples::SampleCount_x1:
-        return VK_SAMPLE_COUNT_1_BIT;
-
-    case TextureSamples::SampleCount_x2:
-        return VK_SAMPLE_COUNT_2_BIT;
-
-    case TextureSamples::SampleCount_x4:
-        return VK_SAMPLE_COUNT_4_BIT;
-
-    case TextureSamples::SampleCount_x8:
-        return VK_SAMPLE_COUNT_8_BIT;
-
-    case TextureSamples::SampleCount_x16:
-        return VK_SAMPLE_COUNT_16_BIT;
-
-    case TextureSamples::SampleCount_x32:
-        return VK_SAMPLE_COUNT_32_BIT;
-
-    case TextureSamples::SampleCount_x64:
-        return VK_SAMPLE_COUNT_64_BIT;
-
-    default:
-        ASSERT(false, "cant convert");
-    }
-
-    return VK_SAMPLE_COUNT_1_BIT;
 }
 
 VkImageSubresourceRange VulkanImage::makeImageSubresourceRange(const VulkanImage * image)
@@ -365,6 +420,7 @@ bool VulkanImage::isDepthStencilFormat(VkFormat format)
 
 VkImage VulkanImage::getHandle() const
 {
+    ASSERT(m_image, "nullptr");
     return m_image;
 }
 
@@ -375,6 +431,7 @@ VkImageAspectFlags VulkanImage::getImageAspectFlags() const
 
 VkImageView VulkanImage::getImageView() const
 {
+    ASSERT(m_imageView, "nullptr");
     return m_imageView;
 }
 
@@ -449,7 +506,7 @@ bool VulkanImage::createViewImage()
     VkResult result = VulkanWrapper::CreateImageView(m_device, &imageViewCreateInfo, VULKAN_ALLOCATOR, &m_imageView);
     if (result != VK_SUCCESS)
     {
-        LOG_DEBUG("VulkanImage::createViewImage vkCreateImageView is failed. Error: %s", ErrorString(result).c_str());
+        LOG_ERROR("VulkanImage::createViewImage vkCreateImageView is failed. Error: %s", ErrorString(result).c_str());
         return false;
     }
 

@@ -122,6 +122,11 @@ u32 VulkanDeviceCaps::getQueueFamiliyIndex(VkQueueFlagBits queueFlags)
     return 0;
 }
 
+const VkPhysicalDeviceLimits& VulkanDeviceCaps::getPhysicalDeviceLimits() const
+{
+    return m_deviceProperties.limits;
+}
+
 void VulkanDeviceCaps::fillCapabilitiesList(const DeviceInfo* info)
 {
     ASSERT(info->_physicalDevice != VK_NULL_HANDLE, "PhysicalDevice is nullptr");
@@ -141,6 +146,8 @@ void VulkanDeviceCaps::fillCapabilitiesList(const DeviceInfo* info)
 void VulkanDeviceCaps::initialize()
 {
     individuallyResetForCommandBuffers = true; //For PC
+
+    ASSERT(k_maxFramebufferAttachments <= m_deviceProperties.limits.maxFragmentOutputAttachments, "maxFragmentOutputAttachments less than k_maxFramebufferAttachments");
 }
 
 } //namespace vk

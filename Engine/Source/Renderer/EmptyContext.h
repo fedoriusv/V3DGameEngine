@@ -27,7 +27,8 @@ namespace renderer
         Image* createImage(TextureTarget target, renderer::ImageFormat format, const core::Dimension3D& dimension, u32 mipmapLevel, s16 filter, TextureAnisotropic anisotropicLevel, TextureWrap wrap) const override;
         Image* createAttachmentImage(renderer::ImageFormat format, const core::Dimension3D& dimension, TextureSamples samples, s16 filter, TextureAnisotropic anisotropicLevel, TextureWrap wrap) const override;
 
-        Framebuffer* createFramebuffer(const std::vector<Image*>& attachments, const RenderPass* pass, const core::Dimension2D& size) override;
+        Framebuffer* createFramebuffer(const std::vector<Image*>& attachments, const core::Dimension2D& size) override;
+        RenderPass* createRenderPass(const RenderPassInfo* renderpassInfo) override;
 
     private:
 

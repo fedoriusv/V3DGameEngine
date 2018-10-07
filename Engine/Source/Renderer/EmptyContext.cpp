@@ -56,9 +56,15 @@ Image * EmptyContext::createAttachmentImage(renderer::ImageFormat format, const 
     return nullptr;
 }
 
-Framebuffer * EmptyContext::createFramebuffer(const std::vector<Image*>& attachments, const RenderPass* pass, const core::Dimension2D& size)
+Framebuffer * EmptyContext::createFramebuffer(const std::vector<Image*>& attachments, const core::Dimension2D& size)
 {
     LOG_DEBUG("EmptyContext::createFramebuffer");
+    return nullptr;
+}
+
+RenderPass * EmptyContext::createRenderPass(const RenderPassInfo* renderpassInfo)
+{
+    LOG_DEBUG("EmptyContext::createRenderPass");
     return nullptr;
 }
 

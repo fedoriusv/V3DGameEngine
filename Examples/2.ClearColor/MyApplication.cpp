@@ -88,17 +88,17 @@ void MyApplication::Initialize()
 
     ////////////////////////////////////
 
-    Texture2D* texture = m_CommandList->createObject<Texture2D>(renderer::ImageFormat::ImageFormat_R8G8B8A8_UInt, core::Dimension2D(80, 80), TextureSamples::SampleCount_x1);
+    Texture2D* texture = m_CommandList->createObject<Texture2D>(renderer::ImageFormat::ImageFormat_R8G8B8A8_UInt, core::Dimension2D(80, 80), renderer::TextureSamples::SampleCount_x1);
     RenderTarget* target0 = m_CommandList->createObject<RenderTarget>(core::Dimension2D(80, 80));
-    bool success = target0->setColorTexture(texture, RenderTargetLoadOp::LoadOp_Clear, RenderTargetStoreOp::StoreOp_Store);
-    m_CommandList.setRenderTarget(target0);
+    bool success = target0->setColorTexture(texture, renderer::RenderTargetLoadOp::LoadOp_Clear, renderer::RenderTargetStoreOp::StoreOp_Store);
+    m_CommandList->setRenderTarget(target0);
 
     //draw
 
     
-    RenderTarget* target1 = m_CommandList->createObject<RenderTarget>(core::Dimension2D(0, 0));
-    bool success = target1->setColorTexture(texture, RenderTargetLoadOp::LoadOp_Load, RenderTargetStoreOp::StoreOp_Store);
-    m_CommandList.setRenderTarget(target1);
+    //RenderTarget* target1 = m_CommandList->createObject<RenderTarget>(core::Dimension2D(0, 0));
+    //bool success = target1->setColorTexture(texture, RenderTargetLoadOp::LoadOp_Load, RenderTargetStoreOp::StoreOp_Store);
+    //m_CommandList.setRenderTarget(target1);
 
     //draw
 

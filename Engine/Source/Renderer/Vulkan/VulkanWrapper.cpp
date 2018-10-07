@@ -402,29 +402,32 @@ void VulkanWrapper::UpdateDescriptorSets(VkDevice device, uint32_t descriptorWri
 {
 }
 
+///////////////////////////////////////////////////////////
+
 VkResult VulkanWrapper::CreateFramebuffer(VkDevice device, const VkFramebufferCreateInfo * pCreateInfo, const VkAllocationCallbacks * pAllocator, VkFramebuffer * pFramebuffer) noexcept
 {
-    return VK_NOT_READY;
+    return vkCreateFramebuffer(device, pCreateInfo, pAllocator, pFramebuffer);
 }
 
 void VulkanWrapper::DestroyFramebuffer(VkDevice device, VkFramebuffer framebuffer, const VkAllocationCallbacks * pAllocator) noexcept
 {
+    vkDestroyFramebuffer(device, framebuffer, pAllocator);
 }
 
 VkResult VulkanWrapper::CreateRenderPass(VkDevice device, const VkRenderPassCreateInfo * pCreateInfo, const VkAllocationCallbacks * pAllocator, VkRenderPass * pRenderPass) noexcept
 {
-    return VK_NOT_READY;
+    return vkCreateRenderPass(device, pCreateInfo, pAllocator, pRenderPass);
 }
 
 void VulkanWrapper::DestroyRenderPass(VkDevice device, VkRenderPass renderPass, const VkAllocationCallbacks * pAllocator) noexcept
 {
+    vkDestroyRenderPass(device, renderPass, pAllocator);
 }
 
 void VulkanWrapper::GetRenderAreaGranularity(VkDevice device, VkRenderPass renderPass, VkExtent2D * pGranularity) noexcept
 {
+    vkGetRenderAreaGranularity(device, renderPass, pGranularity);
 }
-
-///////////////////////////////////////////////////////////
 
 VkResult VulkanWrapper::CreateCommandPool(VkDevice device, const VkCommandPoolCreateInfo * pCreateInfo, const VkAllocationCallbacks * pAllocator, VkCommandPool * pCommandPool) noexcept
 {

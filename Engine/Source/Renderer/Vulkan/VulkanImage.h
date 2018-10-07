@@ -3,6 +3,7 @@
 #include "Common.h"
 #include "Image.h"
 #include "ImageFormats.h"
+#include "TextureProperties.h"
 
 #ifdef VULKAN_RENDER
 #include "VulkanWrapper.h"
@@ -31,7 +32,7 @@ namespace vk
         void clear(const Context* context, const core::Vector4D& color) override;
         void clear(const Context* context, f32 depth, u32 stencil) override;
 
-        static VkFormat convertImageFormatToVkFormat(renderer::ImageFormat format);
+        static VkFormat convertImageFormatToVkFormat(ImageFormat format);
         static VkImageType convertTextureTargetToVkImageType(TextureTarget target);
         static VkSampleCountFlagBits convertRenderTargetSamplesToVkSampleCount(TextureSamples samples);
 
@@ -71,6 +72,8 @@ namespace vk
 
         VkImageLayout           m_layout;
         VkImageUsageFlags       m_usage;
+
+        VulkanImage*            m_resolveImage;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

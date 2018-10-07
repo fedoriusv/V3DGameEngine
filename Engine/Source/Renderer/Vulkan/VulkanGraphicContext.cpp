@@ -148,10 +148,8 @@ Image * VulkanGraphicContext::createAttachmentImage(renderer::ImageFormat format
     return new VulkanImage(m_deviceInfo._device, vkFormat, vkExtent, vkSamples);
 }
 
-Framebuffer * VulkanGraphicContext::createFramebuffer(const std::vector<Image*>& attachments, const RenderPass* pass, const core::Dimension2D& size)
+Framebuffer * VulkanGraphicContext::createFramebuffer(const std::vector<Image*>& attachments, const core::Dimension2D& size)
 {
-    VkRenderPass vkPass = static_cast<const VulkanRenderPass*>(pass)->getHandle();
-
     std::vector<VkImageView> vkImageViews(attachments.size());
     for (auto& attach : attachments)
     {
@@ -159,7 +157,23 @@ Framebuffer * VulkanGraphicContext::createFramebuffer(const std::vector<Image*>&
         vkImageViews.push_back(vkImage);
     }
 
-    return new VulkanFramebuffer(m_deviceInfo._device, vkPass, vkImageViews, size);
+    return new VulkanFramebuffer(m_deviceInfo._device, vkImageViews, size);
+}
+
+RenderPass * VulkanGraphicContext::createRenderPass(const RenderPassInfo* renderpassInfo)
+{
+    u32 countAttachments = (renderpassInfo->_hasDepthStencilAttahment) ? renderpassInfo->_countColorAttachments + 1 : renderpassInfo->_countColorAttachments;
+    std::vector<VulkanRenderPass::VulkanAttachmentDescription> descs(countAttachments);
+    for (u32 index = 0; index < renderpassInfo->_countColorAttachments; ++index)
+    {
+        VulkanRenderPass::VulkanAttachmentDescription& desc = descs[index];
+        desc._format = VulkanImage::convertImageFormatToVkFormat(renderpassInfo->_attachments[index]._format);
+        desc._samples = VulkanImage::convertRenderTargetSamplesToVkSampleCount(renderpassInfo->_attachments[index]._samples);
+        desc._loadOp = VulkanRenderPass::convertAttachLoadOpToVkAttachmentLoadOp(renderpassInfo->_attachments[index]._loadOp);
+        desc._storeOp = VulkanRenderPass::convertAttachStoreOpToVkAttachmentStoreOp(renderpassInfo->_attachments[index]._storeOp);
+    }
+
+    return new VulkanRenderPass(m_deviceInfo._device, descs);
 }
 
 VulkanCommandBuffer * VulkanGraphicContext::getCurrentBuffer(VulkanCommandBufferManager::CommandTargetType type) const

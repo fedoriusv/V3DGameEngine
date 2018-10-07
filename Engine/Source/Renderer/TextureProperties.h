@@ -17,7 +17,6 @@ namespace renderer
         Texture2DArray,
         Texture3D,
         TextureCubeMap,
-        TextureCubeMapArray,
     };
 
     enum TextureFilter : s16
@@ -48,7 +47,7 @@ namespace renderer
         TextureClampToBorder,
     };
 
-    enum TextureSamples : s16
+    enum class TextureSamples : s32
     {
         SampleCount_x1 = 0x1,
         SampleCount_x2 = 0x2,
@@ -57,18 +56,16 @@ namespace renderer
         SampleCount_x16 = 0x16,
         SampleCount_x32 = 0x32,
         SampleCount_x64 = 0x64,
-
-        RenderTargetSamples_Count
     };
 
-    enum class RenderTargetLoadOp : s16
+    enum class RenderTargetLoadOp : s32
     {
         LoadOp_Load,
         LoadOp_Clear,
         LoadOp_DontCare
     };
 
-    enum class RenderTargetStoreOp : s16
+    enum class RenderTargetStoreOp : s32
     {
         StoreOp_Store,
         StoreOp_DontCare
@@ -76,13 +73,19 @@ namespace renderer
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    constexpr u32 k_maxFramebufferAttachments = 8;
+
     struct AttachmentDescription
     {
-        renderer::ImageFormat _format;
-        TextureSamples        _samples;
-        RenderTargetLoadOp    _loadOp;
-        RenderTargetStoreOp   _storeOp;
+        ImageFormat           _format  : 8;
+        TextureSamples        _samples : 4;
+        RenderTargetLoadOp    _loadOp  : 2;
+        RenderTargetStoreOp   _storeOp : 2;
+
+        s32                   _padding : 16;
     };
+
+
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 

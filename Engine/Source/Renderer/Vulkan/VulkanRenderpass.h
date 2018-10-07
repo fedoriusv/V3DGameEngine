@@ -1,6 +1,7 @@
 #pragma once
 
 #include "RenderPass.h"
+#include "TextureProperties.h"
 
 #ifdef VULKAN_RENDER
 #include "VulkanWrapper.h"
@@ -17,7 +18,18 @@ namespace vk
     {
     public:
 
-        VulkanRenderPass();
+        struct VulkanAttachmentDescription
+        {
+            VkFormat              _format;
+            VkSampleCountFlagBits _samples;
+            VkAttachmentLoadOp    _loadOp;
+            VkAttachmentStoreOp   _storeOp;
+        };
+
+        static VkAttachmentLoadOp convertAttachLoadOpToVkAttachmentLoadOp(RenderTargetLoadOp loadOp);
+        static VkAttachmentStoreOp convertAttachStoreOpToVkAttachmentStoreOp(RenderTargetStoreOp storeOp);
+
+        VulkanRenderPass(VkDevice device, const std::vector<VulkanAttachmentDescription>& desc);
         ~VulkanRenderPass();
 
         VkRenderPass getHandle() const;
@@ -27,8 +39,10 @@ namespace vk
 
     private:
 
+        VkDevice     m_device;
         VkRenderPass m_renderpass;
 
+        std::vector<VulkanAttachmentDescription> m_descriptions;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

@@ -26,6 +26,8 @@ namespace vk
 
         u32 getQueueFamiliyIndex(VkQueueFlagBits queueFlags);
 
+        const VkPhysicalDeviceLimits& getPhysicalDeviceLimits() const;
+
     private:
 
         friend class VulkanGraphicContext;

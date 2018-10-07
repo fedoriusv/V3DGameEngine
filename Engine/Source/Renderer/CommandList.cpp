@@ -87,27 +87,27 @@ private:
 };
 
 
-class CommandBindRenderTarget : public Command
-{
-public:
-    CommandBindRenderTarget(const std::vector<RenderTarget::AttachmentDesc>& attachments)
-        : m_attachments(attachments)
-    {
-        LOG_DEBUG("CommandBindRenderTarget constructor");
-    };
-    ~CommandBindRenderTarget()
-    {
-        LOG_DEBUG("CommandBindRenderTarget destructor");
-    };
-
-    void execute(const CommandList& cmdList)
-    {
-        cmdList.getContext()->
-    }
-
-private:
-    std::vector<RenderTarget::AttachmentDesc> m_attachments;
-};
+//class CommandBindRenderTarget : public Command
+//{
+//public:
+//    CommandBindRenderTarget(const std::vector<RenderTarget::AttachmentDesc>& attachments)
+//        : m_attachments(attachments)
+//    {
+//        LOG_DEBUG("CommandBindRenderTarget constructor");
+//    };
+//    ~CommandBindRenderTarget()
+//    {
+//        LOG_DEBUG("CommandBindRenderTarget destructor");
+//    };
+//
+//    void execute(const CommandList& cmdList)
+//    {
+//        cmdList.getContext()->
+//    }
+//
+//private:
+//    std::vector<RenderTarget::AttachmentDesc> m_attachments;
+//};
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -183,6 +183,17 @@ void CommandList::clearBackbuffer(const core::Vector4D & color)
 
 void CommandList::setRenderTarget(RenderTarget * rendertarget)
 {
+    rendertarget->makeRenderTarget();
+
+    if (m_commandListType == CommandListType::ImmediateCommandList)
+    {
+        //bind
+    }
+    else
+    {
+        //pendingState
+    }
+
     m_currentRenderTarget = rendertarget;
 }
 

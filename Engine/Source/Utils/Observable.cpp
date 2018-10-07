@@ -5,6 +5,7 @@ namespace v3d
 namespace utils
 {
 
+//TODO: set thread safe
 void Observable::registerNotify(Observer* obj)
 {
     m_observers.insert(obj);
@@ -24,7 +25,7 @@ void Observable::notifyObservers()
 {
     for (auto& observer : m_observers)
     {
-        observer->handleNotify();
+        observer->handleNotify(this);
     }
 }
 

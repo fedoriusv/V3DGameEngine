@@ -6,175 +6,217 @@
 namespace v3d
 {
 
-    class CreateTextureCommand : public renderer::Command
+    /*CreateTextureCommand*/
+class CreateTextureCommand : public renderer::Command
+{
+public:
+
+    CreateTextureCommand(renderer::Image* image, u32 dataSize, const void * data)
+
+        : m_image(image) //TODO: need use handle
+        , m_data(nullptr)
+        , m_dataSize(0)
     {
-    public:
+        LOG_DEBUG("CreateTextureCommand constructor");
 
-        CreateTextureCommand(renderer::Image* image, u32 dataSize, const void * data)
-
-            : m_image(image) //TODO: need use handle
+        if (data)
         {
-            LOG_DEBUG("CreateTextureCommand constructor");
+            m_dataSize = dataSize;
+            m_data = malloc(m_dataSize); //TODO: get from pool
 
-            if (data)
-            {
-                m_dataSize = dataSize;
-                m_data = malloc(m_dataSize); //TODO: get from pool
-
-                memcpy(m_data, data, dataSize);
-            }
+            memcpy(m_data, data, dataSize);
         }
+    }
 
-        ~CreateTextureCommand()
-        {
-            LOG_DEBUG("CreateTextureCommand destructor");
-
-            if (m_data)
-            {
-                free(m_data); //TODO: return to pool
-                m_data = nullptr;
-            }
-        }
-
-        void execute(const renderer::CommandList& cmdList) override
-        {
-            if (!m_image->create())
-            {
-                m_image->destroy();
-                m_image->notifyObservers();
-
-                return;
-            }
-
-            if (m_data)
-            {
-                //m_image->upload(m_data);
-            }
-        }
-
-    private:
-
-        renderer::Image*            m_image;
-
-        u32                         m_dataSize;
-        void*                       m_data;
-    };
-
-    class UploadTextureCommand : public renderer::Command
+    ~CreateTextureCommand()
     {
-    public:
+        LOG_DEBUG("CreateTextureCommand destructor");
 
-        UploadTextureCommand(renderer::Image* image)
-            : m_image(image)
+        if (m_data)
         {
-            LOG_DEBUG("UploadTextureCommand constructor");
+            free(m_data); //TODO: return to pool
+            m_data = nullptr;
+        }
+    }
+
+    void execute(const renderer::CommandList& cmdList) override
+    {
+        if (!m_image->create())
+        {
+            m_image->destroy();
+            m_image->notifyObservers();
+            delete m_image;
+
+            return;
         }
 
-        ~UploadTextureCommand()
+        if (m_data)
         {
-            LOG_DEBUG("UploadTextureCommand destructor");
+            //m_image->upload(m_data);
         }
+    }
 
-        void execute(const renderer::CommandList& cmdList) override
+private:
+
+    renderer::Image*            m_image;
+
+    u32                         m_dataSize;
+    void*                       m_data;
+};
+
+    /*UploadTextureCommand*/
+class UploadTextureCommand : public renderer::Command, utils::Observer
+{
+public:
+
+    UploadTextureCommand(renderer::Image* image)
+        : m_image(image)
+    {
+        LOG_DEBUG("UploadTextureCommand constructor");
+        m_image->registerNotify(this);
+    }
+
+    ~UploadTextureCommand()
+    {
+        LOG_DEBUG("UploadTextureCommand destructor");
+        m_image->unregisterNotify(this);
+    }
+
+    void execute(const renderer::CommandList& cmdList) override
+    {
+        if (m_image)
         {
             //m_image->upload();
         }
+    }
 
-    private:
+    void handleNotify(utils::Observable* ob) override
+    {
+        LOG_ERROR("UploadTextureCommand image %llx was deleted", m_image);
+        m_image = nullptr;
+    }
 
-        renderer::Image* m_image;
+private:
+
+    renderer::Image* m_image;
+};
+
+    /*CommandClearColor*/
+class CommandClearColor : public renderer::Command, utils::Observer
+{
+public:
+    CommandClearColor(renderer::Image* image, const core::Vector4D& color)
+        : m_image(image)
+        , m_clearColor(color)
+    {
+        LOG_DEBUG("CommandClearColor constructor");
+        m_image->registerNotify(this);
     };
 
-
-    class CommandClearColor : public renderer::Command
+    ~CommandClearColor()
     {
-    public:
-        CommandClearColor(renderer::Image* image, const core::Vector4D& color)
-            : m_image(image)
-            , m_clearColor(color)
-        {
-            LOG_DEBUG("CommandClearColor constructor");
-        };
+        LOG_DEBUG("CommandClearColor destructor");
+        m_image->unregisterNotify(this);
+    };
 
-        ~CommandClearColor()
-        {
-            LOG_DEBUG("CommandClearColor destructor");
-        };
-
-        void execute(const renderer::CommandList& cmdList)
+    void execute(const renderer::CommandList& cmdList)
+    {
+        if (m_image)
         {
             m_image->clear(cmdList.getContext(), m_clearColor);
         }
+    }
 
-    private:
+    void handleNotify(utils::Observable* ob) override
+    {
+        LOG_ERROR("UploadTextureCommand image %llx was deleted", m_image);
+        m_image = nullptr;
+    }
 
-        renderer::Image*    m_image;
-        core::Vector4D      m_clearColor;
+private:
+
+    renderer::Image*    m_image;
+    core::Vector4D      m_clearColor;
+};
+
+    /*CommandClearDepthStencil*/
+class CommandClearDepthStencil : public renderer::Command, utils::Observer
+{
+public:
+    CommandClearDepthStencil(renderer::Image* image, f32 depth, u32 stencil)
+        : m_image(image)
+        , m_depth(depth)
+        , m_stencil(stencil)
+    {
+        LOG_DEBUG("CommandClearDepthStencil constructor");
+        m_image->registerNotify(this);
     };
 
-    class CommandClearDepthStencil : public renderer::Command
+    ~CommandClearDepthStencil()
     {
-    public:
-        CommandClearDepthStencil(renderer::Image* image, f32 depth, u32 stencil)
-            : m_image(image)
-            , m_depth(depth)
-            , m_stencil(stencil)
-        {
-            LOG_DEBUG("CommandClearDepthStencil constructor");
-        };
+        LOG_DEBUG("CommandClearDepthStencil destructor");
+        m_image->unregisterNotify(this);
+    };
 
-        ~CommandClearDepthStencil()
-        {
-            LOG_DEBUG("CommandClearDepthStencil destructor");
-        };
-
-        void execute(const renderer::CommandList& cmdList)
+    void execute(const renderer::CommandList& cmdList)
+    {
+        if (m_image)
         {
             m_image->clear(cmdList.getContext(), m_depth, m_stencil);
         }
+    }
 
-    private:
-
-        renderer::Image*    m_image;
-        f32                 m_depth;
-        u32                 m_stencil;
-    };
-
-    class CommandClearBackbuffer : public renderer::Command
+    void handleNotify(utils::Observable* ob) override
     {
-    public:
-        CommandClearBackbuffer(const core::Vector4D& color)
-            : m_clearColor(color)
-        {
-            LOG_DEBUG("CommandClearBackbuffer constructor");
-        };
+        LOG_ERROR("UploadTextureCommand image %llx was deleted", m_image);
+        m_image = nullptr;
+    }
 
-        ~CommandClearBackbuffer()
-        {
-            LOG_DEBUG("CommandClearBackbuffer destructor");
-        };
+private:
 
-        void execute(const renderer::CommandList& cmdList)
-        {
-            cmdList.getContext()->clearBackbuffer(m_clearColor);
-        }
+    renderer::Image*    m_image;
+    f32                 m_depth;
+    u32                 m_stencil;
+};
 
-    private:
-
-        core::Vector4D      m_clearColor;
+    /*CommandClearBackbuffer*/
+class CommandClearBackbuffer : public renderer::Command
+{
+public:
+    CommandClearBackbuffer(const core::Vector4D& color)
+        : m_clearColor(color)
+    {
+        LOG_DEBUG("CommandClearBackbuffer constructor");
     };
+
+    ~CommandClearBackbuffer()
+    {
+        LOG_DEBUG("CommandClearBackbuffer destructor");
+    };
+
+    void execute(const renderer::CommandList& cmdList)
+    {
+        cmdList.getContext()->clearBackbuffer(m_clearColor);
+    }
+
+private:
+
+    core::Vector4D m_clearColor;
+};
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////
 
 Texture2D::Texture2D(renderer::CommandList& cmdList, renderer::ImageFormat format, const core::Dimension2D& dimension, u32 mipmapCount, const void * data)
     : m_cmdList(cmdList)
-    , m_target(TextureTarget::Texture2D)
+    , m_target(renderer::TextureTarget::Texture2D)
     , m_format(format)
     , m_dimension(dimension)
     , m_mipmapLevel(mipmapCount)
-    , m_samples(TextureSamples::SampleCount_x1)
+    , m_samples(renderer::TextureSamples::SampleCount_x1)
 
-    , m_filter(TextureFilterNearest)
-    , m_anisotropicLevel(TextureAnisotropic::TextureAnisotropicNone)
-    , m_wrap(TextureWrap::TextureRepeat)
+    , m_filter(renderer::TextureFilterNearest)
+    , m_anisotropicLevel(renderer::TextureAnisotropic::TextureAnisotropicNone)
+    , m_wrap(renderer::TextureWrap::TextureRepeat)
 
     , m_image(nullptr)
 
@@ -187,17 +229,17 @@ Texture2D::Texture2D(renderer::CommandList& cmdList, renderer::ImageFormat forma
     createTexture2D(data);
 }
 
-Texture2D::Texture2D(renderer::CommandList & cmdList, renderer::ImageFormat format, const core::Dimension2D & dimension, TextureSamples samples)
+Texture2D::Texture2D(renderer::CommandList & cmdList, renderer::ImageFormat format, const core::Dimension2D & dimension, renderer::TextureSamples samples)
     : m_cmdList(cmdList)
-    , m_target(TextureTarget::Texture2D)
+    , m_target(renderer::TextureTarget::Texture2D)
     , m_format(format)
     , m_dimension(dimension)
     , m_mipmapLevel(0)
     , m_samples(samples)
 
-    , m_filter(TextureFilterNearest)
-    , m_anisotropicLevel(TextureAnisotropic::TextureAnisotropicNone)
-    , m_wrap(TextureWrap::TextureRepeat)
+    , m_filter(renderer::TextureFilterNearest)
+    , m_anisotropicLevel(renderer::TextureAnisotropic::TextureAnisotropicNone)
+    , m_wrap(renderer::TextureWrap::TextureRepeat)
 
     , m_image(nullptr)
 {
@@ -209,10 +251,8 @@ Texture2D::Texture2D(renderer::CommandList & cmdList, renderer::ImageFormat form
     createTexture2D(nullptr);
 }
 
-void Texture2D::handleNotify()
+void Texture2D::handleNotify(utils::Observable* ob)
 {
-    m_image->unregisterNotify(this);
-    delete m_image;
     m_image = nullptr;
 }
 
@@ -223,7 +263,6 @@ void Texture2D::createTexture2D(const void * data)
         if (!m_image->create())
         {
             m_image->destroy();
-            m_image->unregisterNotify(this);
 
             delete m_image;
             m_image = nullptr;
@@ -242,6 +281,12 @@ void Texture2D::createTexture2D(const void * data)
     }
 }
 
+renderer::Image * Texture2D::getImage() const
+{
+    ASSERT(m_image, "nullptr");
+    return m_image;
+}
+
 Texture2D::~Texture2D()
 {
     //m_image delete
@@ -250,32 +295,32 @@ Texture2D::~Texture2D()
     m_image->unregisterNotify(this);
 }
 
-TextureTarget Texture2D::getTarget() const
+renderer::TextureTarget Texture2D::getTarget() const
 {
     return m_target;
 }
 
-TextureFilter Texture2D::getMinFilter() const
+renderer::TextureFilter Texture2D::getMinFilter() const
 {
-    return TextureFilterNearest;
+    return renderer::TextureFilterNearest;
 }
 
-TextureFilter Texture2D::getMagFilter() const
+renderer::TextureFilter Texture2D::getMagFilter() const
 {
-    return TextureFilterNearest;
+    return renderer::TextureFilterNearest;
 }
 
-TextureWrap Texture2D::getWrap() const
+renderer::TextureWrap Texture2D::getWrap() const
 {
     return m_wrap;
 }
 
-TextureAnisotropic Texture2D::getAnisotropic() const
+renderer::TextureAnisotropic Texture2D::getAnisotropic() const
 {
     return m_anisotropicLevel;
 }
 
-TextureSamples Texture2D::getSampleCount() const
+renderer::TextureSamples Texture2D::getSampleCount() const
 {
     return m_samples;
 }
