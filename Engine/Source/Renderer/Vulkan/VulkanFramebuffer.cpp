@@ -1,6 +1,7 @@
 #include "VulkanFramebuffer.h"
 #include "VulkanDeviceCaps.h"
 #include "VulkanRenderpass.h"
+#include "VulkanImage.h"
 #include "VulkanDebug.h"
 
 
@@ -15,9 +16,8 @@ namespace renderer
 namespace vk
 {
 
-VulkanFramebuffer::VulkanFramebuffer(VkDevice device, const std::vector<VkImageView>& images, const core::Dimension2D& size)
+VulkanFramebuffer::VulkanFramebuffer(VkDevice device, const core::Dimension2D& size)
     : m_device(device)
-    , m_images(images) //std::move
     , m_size(size)
 
     , m_framebuffer(VK_NULL_HANDLE)
@@ -36,12 +36,18 @@ VkFramebuffer VulkanFramebuffer::getHandle() const
     return m_framebuffer;
 }
 
-bool VulkanFramebuffer::create(const RenderPass* pass)
+bool VulkanFramebuffer::create(const RenderPass* pass, const std::vector<Image*>& images)
 {
-    ASSERT(VulkanDeviceCaps::getInstance()->getPhysicalDeviceLimits().maxFramebufferWidth >= m_size.width && VulkanDeviceCaps::getInstance()->getPhysicalDeviceLimits().maxFramebufferHeight >= m_size.height,
-        "maxFramebufferSize is over range");
+    ASSERT(VulkanDeviceCaps::getInstance()->getPhysicalDeviceLimits().maxFramebufferWidth >= m_size.width &&
+        VulkanDeviceCaps::getInstance()->getPhysicalDeviceLimits().maxFramebufferHeight >= m_size.height, "maxFramebufferSize is over range");
 
     VkRenderPass vkPass = static_cast<const VulkanRenderPass*>(pass)->getHandle();
+    m_images.reserve(images.size());
+    for (auto& attach : images)
+    {
+        VkImageView vkImage = static_cast<const VulkanImage*>(attach)->getImageView();
+        m_images.push_back(vkImage);
+    }
 
     VkFramebufferCreateInfo framebufferCreateInfo = {};
     framebufferCreateInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;

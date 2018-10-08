@@ -12,6 +12,7 @@ namespace renderer
 
     class Context;
     class RenderPass;
+    class Image;
 
     class Framebuffer : public utils::Observable
     {
@@ -26,7 +27,7 @@ namespace renderer
         Framebuffer() {};
         virtual ~Framebuffer() {};
 
-        virtual bool create(const RenderPass* pass) = 0;
+        virtual bool create(const RenderPass* pass, const std::vector<Image*>& images) = 0;
         virtual void destroy() = 0;
     };
 

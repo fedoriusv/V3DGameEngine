@@ -127,6 +127,11 @@ const VkPhysicalDeviceLimits& VulkanDeviceCaps::getPhysicalDeviceLimits() const
     return m_deviceProperties.limits;
 }
 
+const VkPhysicalDeviceMemoryProperties & VulkanDeviceCaps::getDeviceMemoryProperties() const
+{
+    return m_deviceMemoryProps;
+}
+
 void VulkanDeviceCaps::fillCapabilitiesList(const DeviceInfo* info)
 {
     ASSERT(info->_physicalDevice != VK_NULL_HANDLE, "PhysicalDevice is nullptr");
@@ -146,6 +151,7 @@ void VulkanDeviceCaps::fillCapabilitiesList(const DeviceInfo* info)
 void VulkanDeviceCaps::initialize()
 {
     individuallyResetForCommandBuffers = true; //For PC
+    supportCoherentMemory = true;
 
     ASSERT(k_maxFramebufferAttachments <= m_deviceProperties.limits.maxFragmentOutputAttachments, "maxFragmentOutputAttachments less than k_maxFramebufferAttachments");
 }

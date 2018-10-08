@@ -142,6 +142,7 @@ if (BUILD_EXAMPLES)
     message("-- Create Examples:")
     add_subdirectory(Examples/1.CreateWindow)
     add_subdirectory(Examples/2.ClearColor)
+	add_subdirectory(Examples/3.RenderTarget)
     message("-- ----------------")
 endif ()
 ##############################################################

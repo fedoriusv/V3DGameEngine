@@ -48,6 +48,7 @@ VulkanGraphicContext::VulkanGraphicContext(const platform::Window* window)
     : m_swapchain(nullptr)
     , m_drawCmdBufferManager(nullptr)
     , m_currentDrawBuffer(nullptr)
+    , m_memoryManager(nullptr)
     , m_window(window)
     , m_frameCounter(0U)
 
@@ -62,6 +63,8 @@ VulkanGraphicContext::VulkanGraphicContext(const platform::Window* window)
 VulkanGraphicContext::~VulkanGraphicContext()
  {
     LOG_DEBUG("~VulkanGraphicContext destructor this %llx", this);
+
+    ASSERT(!m_memoryManager, "m_memoryManager not nullptr");
 
     ASSERT(!m_swapchain, "m_swapchain not nullptr");
     ASSERT(!m_drawCmdBufferManager, "m_drawCmdBufferManager not nullptr");
@@ -135,7 +138,7 @@ Image * VulkanGraphicContext::createImage(TextureTarget target, renderer::ImageF
     VkFormat vkFormat = VulkanImage::convertImageFormatToVkFormat(format);
     VkExtent3D vkExtent = { dimension.width, dimension.height, dimension.depth };
 
-    return new VulkanImage(m_deviceInfo._device, vkType, vkFormat, vkExtent, mipLevels, VK_IMAGE_TILING_OPTIMAL);
+    return new VulkanImage(m_memoryManager, m_deviceInfo._device, vkType, vkFormat, vkExtent, mipLevels, VK_IMAGE_TILING_OPTIMAL);
 }
 
 Image * VulkanGraphicContext::createAttachmentImage(renderer::ImageFormat format, const core::Dimension3D& dimension, TextureSamples samples, 
@@ -145,19 +148,12 @@ Image * VulkanGraphicContext::createAttachmentImage(renderer::ImageFormat format
     VkExtent3D vkExtent = { dimension.width, dimension.height, dimension.depth };
     VkSampleCountFlagBits vkSamples = VulkanImage::convertRenderTargetSamplesToVkSampleCount(samples);
 
-    return new VulkanImage(m_deviceInfo._device, vkFormat, vkExtent, vkSamples);
+    return new VulkanImage(m_memoryManager, m_deviceInfo._device, vkFormat, vkExtent, vkSamples);
 }
 
 Framebuffer * VulkanGraphicContext::createFramebuffer(const std::vector<Image*>& attachments, const core::Dimension2D& size)
 {
-    std::vector<VkImageView> vkImageViews(attachments.size());
-    for (auto& attach : attachments)
-    {
-        VkImageView vkImage = static_cast<const VulkanImage*>(attach)->getImageView();
-        vkImageViews.push_back(vkImage);
-    }
-
-    return new VulkanFramebuffer(m_deviceInfo._device, vkImageViews, size);
+    return new VulkanFramebuffer(m_deviceInfo._device, size);
 }
 
 RenderPass * VulkanGraphicContext::createRenderPass(const RenderPassInfo* renderpassInfo)
@@ -262,6 +258,7 @@ bool VulkanGraphicContext::initialize()
         LOG_FATAL("VulkanGraphicContext::createContext: Can not create VulkanSwapchain");
         return false;
     }
+    m_memoryManager = new VulkanMemory(m_deviceInfo._device);
 
     m_drawCmdBufferManager = new VulkanCommandBufferManager(&m_deviceInfo, m_queueList[0]);
     m_currentDrawBuffer = m_drawCmdBufferManager->acquireNewCmdBuffer(VulkanCommandBuffer::PrimaryBuffer);

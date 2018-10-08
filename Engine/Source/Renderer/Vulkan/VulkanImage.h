@@ -4,6 +4,7 @@
 #include "Image.h"
 #include "ImageFormats.h"
 #include "TextureProperties.h"
+#include "VulkanMemory.h"
 
 #ifdef VULKAN_RENDER
 #include "VulkanWrapper.h"
@@ -20,8 +21,8 @@ namespace vk
     {
     public:
 
-        VulkanImage(VkDevice device, VkImageType type, VkFormat format, VkExtent3D dimension, u32 mipsLevel, VkImageTiling tiling);
-        VulkanImage(VkDevice device, VkFormat format, VkExtent3D dimension, VkSampleCountFlagBits samples);
+        VulkanImage(VulkanMemory* memory, VkDevice device, VkImageType type, VkFormat format, VkExtent3D dimension, u32 mipsLevel, VkImageTiling tiling);
+        VulkanImage(VulkanMemory* memory, VkDevice device, VkFormat format, VkExtent3D dimension, VkSampleCountFlagBits samples);
         ~VulkanImage();
 
         bool create() override;
@@ -55,25 +56,29 @@ namespace vk
         bool createViewImage();
         bool createSampler();
 
-        VkDevice                m_device;
+        VkDevice                    m_device;
 
-        VkImageType             m_type;
-        VkFormat                m_format;
-        VkExtent3D              m_dimension;
-        u32                     m_mipsLevel;
-        u32                     m_layersLevel;
+        VkImageType                 m_type;
+        VkFormat                    m_format;
+        VkExtent3D                  m_dimension;
+        u32                         m_mipsLevel;
+        u32                         m_layersLevel;
 
-        VkSampleCountFlagBits   m_samples;
-        VkImageTiling           m_tiling;
+        VkSampleCountFlagBits       m_samples;
+        VkImageTiling               m_tiling;
 
-        VkImage                 m_image;
-        VkImageView             m_imageView;
-        VkImageAspectFlags      m_aspectMask;
+        VkImage                     m_image;
+        VkImageView                 m_imageView;
+        VkImageAspectFlags          m_aspectMask;
 
-        VkImageLayout           m_layout;
-        VkImageUsageFlags       m_usage;
+        VkImageLayout               m_layout;
+        VkImageUsageFlags           m_usage;
 
-        VulkanImage*            m_resolveImage;
+        VulkanImage*                m_resolveImage; //?
+
+        VulkanMemory::VulkanAlloc   m_memory;
+        VulkanMemory*               m_memoryManager;
+        static VulkanMemory::VulkanMemoryAllocator* s_memoryAllocator;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

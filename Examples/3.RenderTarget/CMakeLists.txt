@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.0.0)
 
-set (CURRENT_PROJECT "2.ClearColor")
+set (CURRENT_PROJECT "3.RenderTarget")
 message("-- " ${CURRENT_PROJECT})
 
 project(${CURRENT_PROJECT})

@@ -72,6 +72,7 @@ namespace vk
 
         class VulkanCommandBufferManager* m_drawCmdBufferManager;
         class VulkanCommandBuffer* m_currentDrawBuffer;
+        class VulkanMemory* m_memoryManager;
 
         const platform::Window* m_window;
 

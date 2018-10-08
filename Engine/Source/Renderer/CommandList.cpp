@@ -1,5 +1,6 @@
 #include "CommandList.h"
 #include "Utils/Logger.h"
+#include "Utils/MemoryPool.h"
 
 #include "Context.h"
 #include "Object/Texture.h"
@@ -9,6 +10,8 @@ namespace v3d
 {
 namespace renderer
 {
+
+utils::MemoryPool g_commandMemoryPool(1024, 256, 256, utils::MemoryPool::getDefaultMemoryPoolAllocator());
 
 class CommandBeginFrame : public Command
 {
@@ -118,6 +121,8 @@ CommandList::CommandList(Context* context, CommandListType type)
 {
     m_swapchainTexture = createObject<SwapchainTexture>();
     m_backbuffer = createObject<Backbuffer>(m_swapchainTexture);
+
+
 
     m_currentRenderTarget = nullptr;
 }
@@ -266,15 +271,13 @@ Command::~Command()
 
 void* Command::operator new(size_t size) noexcept
 {
-    //TODO mem pool
-    void* p = malloc(size);
-    return p;
+    void* ptr = g_commandMemoryPool.getMemory(size);
+    return ptr;
 }
 
 void Command::operator delete(void* memory) noexcept
 {
-    //TODO mem pool
-    free(memory);
+    g_commandMemoryPool.freeMemory(memory);
 }
 
 } //namespace renderer

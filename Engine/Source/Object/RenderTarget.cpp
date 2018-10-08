@@ -51,9 +51,10 @@ class CreateFramebufferCommand : public renderer::Command, utils::Observer
 {
 public:
 
-    CreateFramebufferCommand(renderer::Framebuffer* framebuffer, renderer::RenderPass* renderpass)
+    CreateFramebufferCommand(renderer::Framebuffer* framebuffer, renderer::RenderPass* renderpass, const std::vector<renderer::Image*>& images)
         : m_framebuffer(framebuffer)
         , m_renderPass(renderpass)
+        , m_images(images)
     {
         LOG_DEBUG("CreateFramebufferCommand constructor");
         m_renderPass->registerNotify(this);
@@ -72,7 +73,7 @@ public:
             return;
         }
 
-        if (!m_framebuffer->create(m_renderPass))
+        if (!m_framebuffer->create(m_renderPass, m_images))
         {
             m_framebuffer->destroy();
             m_framebuffer->notifyObservers();
@@ -92,6 +93,7 @@ private:
 
     renderer::Framebuffer* m_framebuffer;
     renderer::RenderPass*  m_renderPass;
+    std::vector<renderer::Image*> m_images;
 };
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -201,7 +203,7 @@ void RenderTarget::makeRenderTarget()
 
     if (!m_framebuffer)
     {
-        std::vector<renderer::Image*> images(m_colorTextures.size() + 1);
+        std::vector<renderer::Image*> images;
         for (auto& texture : m_colorTextures)
         {
             images.push_back(texture.first->getImage());
@@ -217,7 +219,7 @@ void RenderTarget::makeRenderTarget()
 
         if (m_cmdList.isImmediate())
         {
-            if (!m_framebuffer->create(m_renderpass))
+            if (!m_framebuffer->create(m_renderpass, images))
             {
                 m_framebuffer->destroy();
                 delete m_framebuffer;
@@ -226,7 +228,7 @@ void RenderTarget::makeRenderTarget()
         }
         else
         {
-            m_cmdList.pushCommand(new CreateFramebufferCommand(m_framebuffer, m_renderpass));
+            m_cmdList.pushCommand(new CreateFramebufferCommand(m_framebuffer, m_renderpass, images));
         }
     }
 }

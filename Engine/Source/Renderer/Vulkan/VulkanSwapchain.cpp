@@ -291,7 +291,7 @@ bool VulkanSwapchain::createSwapchainImages(const SwapchainConfig& config)
     for (auto& image : images)
     {
         VkExtent3D extent = { config._size.width, config._size.height, 1 };
-        VulkanImage* swapchainImage = new VulkanImage(m_deviceInfo->_device, m_surfaceFormat.format, extent, VK_SAMPLE_COUNT_1_BIT);
+        VulkanImage* swapchainImage = new VulkanImage(nullptr, m_deviceInfo->_device, m_surfaceFormat.format, extent, VK_SAMPLE_COUNT_1_BIT);
         if (!swapchainImage->create(image))
         {
             LOG_FATAL("VulkanSwapchain::createSwapchainImages: can't create surface texture");

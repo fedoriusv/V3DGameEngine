@@ -17,6 +17,7 @@ namespace vk
     struct VulkanDeviceCaps : DeviceCaps, public utils::Singleton<VulkanDeviceCaps>
     {
         bool individuallyResetForCommandBuffers;
+        bool supportCoherentMemory;
 
         static bool checkInstanceExtension(const c8* extensionName);
         static bool checkDeviceExtension(VkPhysicalDevice physicalDevice, const c8* extensionName);
@@ -27,6 +28,7 @@ namespace vk
         u32 getQueueFamiliyIndex(VkQueueFlagBits queueFlags);
 
         const VkPhysicalDeviceLimits& getPhysicalDeviceLimits() const;
+        const VkPhysicalDeviceMemoryProperties&  getDeviceMemoryProperties() const;
 
     private:
 

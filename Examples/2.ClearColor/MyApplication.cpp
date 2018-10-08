@@ -73,53 +73,6 @@ void MyApplication::Initialize()
     ASSERT(m_Context, "context is nullptr");
 
     m_CommandList = new renderer::CommandList(m_Context, renderer::CommandList::CommandListType::DelayedCommandList);
-
-
-
-    //RenderTarget* target = m_CommandList->createObject<RenderTarget>(core::Dimension2D(0, 0));
-    //Texture2D* colorTexture = target->attachColorTexture(renderer::ImageFormat::ImageFormat_R8G8B8A8_UInt, RenderTargetSamples::SampleCount_x1, RenderTargetLoadOp::LoadOp_Clear, RenderTargetStoreOp::StoreOp_Store);
-    //m_CommandList.setRenderTarget(target);
-
-    ////draw
-
-    //m_CommandList.submitCommands(bool wait, callbackCompete);
-    //colorTexture->read();
-
-
-    ////////////////////////////////////
-
-    Texture2D* texture = m_CommandList->createObject<Texture2D>(renderer::ImageFormat::ImageFormat_R8G8B8A8_UInt, core::Dimension2D(80, 80), renderer::TextureSamples::SampleCount_x1);
-    RenderTarget* target0 = m_CommandList->createObject<RenderTarget>(core::Dimension2D(80, 80));
-    bool success = target0->setColorTexture(texture, renderer::RenderTargetLoadOp::LoadOp_Clear, renderer::RenderTargetStoreOp::StoreOp_Store);
-    m_CommandList->setRenderTarget(target0);
-
-    //draw
-
-    
-    //RenderTarget* target1 = m_CommandList->createObject<RenderTarget>(core::Dimension2D(0, 0));
-    //bool success = target1->setColorTexture(texture, RenderTargetLoadOp::LoadOp_Load, RenderTargetStoreOp::StoreOp_Store);
-    //m_CommandList.setRenderTarget(target1);
-
-    //draw
-
-
-
-    //Texture2D* texture = m_CommandList->createObject<Texture2D>(renderer::ImageFormat::ImageFormat_Undefined, core::Dimension2D(0, 0));
-    //texture->update({ 0,0 }, {0, 0}, 1, nullptr);
-
-    /*commandList.setPipeline(pipe1);
-    commandList.setTexture(texture);
-    commandList.setUnifrom(uniform1);
-    commandList.draw(geometry1);*/
-
-    /*Geometry geometry;
-    Image image;
-    Pipeline pipe;
-    {
-        texture.upload(image);
-        geometry.upload(data);
-    }*/
-
     m_clearColor = { 1.0, 0.0, 0.0, 1.0 };
 }
 
@@ -128,16 +81,6 @@ bool MyApplication::Running(renderer::CommandList& commandList)
     //Frame
     commandList.beginFrame();
     commandList.clearBackbuffer(m_clearColor);
-
-    /*commandList.set(pipe1);
-    commandList.set(texture1);
-    commandList.set(uniform1);
-    commandList.draw(geometry1);
-
-    commandList.set(pipe2);
-    commandList.set(texture2);
-    commandList.set(uniform2);
-    commandList.draw(geometry2);*/
 
     commandList.endFrame();
     commandList.presentFrame();

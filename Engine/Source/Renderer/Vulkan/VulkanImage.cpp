@@ -195,7 +195,9 @@ VkSampleCountFlagBits VulkanImage::convertRenderTargetSamplesToVkSampleCount(Tex
     return VK_SAMPLE_COUNT_1_BIT;
 }
 
-VulkanImage::VulkanImage(VkDevice device, VkImageType type, VkFormat format, VkExtent3D dimension, u32 mipsLevel, VkImageTiling tiling)
+VulkanMemory::VulkanMemoryAllocator* VulkanImage::s_memoryAllocator = new SimpleVulkanMemoryAllocator();
+
+VulkanImage::VulkanImage(VulkanMemory* memory, VkDevice device, VkImageType type, VkFormat format, VkExtent3D dimension, u32 mipsLevel, VkImageTiling tiling)
     : m_device(device)
     , m_type(type)
     , m_format(format)
@@ -215,11 +217,14 @@ VulkanImage::VulkanImage(VkDevice device, VkImageType type, VkFormat format, VkE
     , m_usage(VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT)
 
     , m_resolveImage(nullptr)
+
+    , m_memory(VulkanMemory::s_invalidMemory)
+    , m_memoryManager(memory)
 {
     LOG_DEBUG("VulkanImage::VulkanImage constructor %llx", this);
 }
 
-VulkanImage::VulkanImage(VkDevice device, VkFormat format, VkExtent3D dimension, VkSampleCountFlagBits samples)
+VulkanImage::VulkanImage(VulkanMemory* memory, VkDevice device, VkFormat format, VkExtent3D dimension, VkSampleCountFlagBits samples)
     : m_device(device)
     , m_type(VK_IMAGE_TYPE_2D)
     , m_format(format)
@@ -239,6 +244,9 @@ VulkanImage::VulkanImage(VkDevice device, VkFormat format, VkExtent3D dimension,
     , m_usage(VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_SAMPLED_BIT)
 
     , m_resolveImage(nullptr)
+
+    , m_memory(VulkanMemory::s_invalidMemory)
+    , m_memoryManager(memory)
 {
     LOG_DEBUG("VulkanImage::VulkanImage constructor %llx", this);
 
@@ -300,8 +308,20 @@ bool VulkanImage::create()
         return false;
     }
 
-    //TODO: bind memory
-    //VulkanWrapper::BindImageMemory(m_device, m_image, );
+    VkMemoryPropertyFlags flag = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+    if (m_tiling == VK_IMAGE_TILING_LINEAR)
+    {
+        flag |= VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
+        flag |= VulkanDeviceCaps::getInstance()->supportCoherentMemory ? VK_MEMORY_PROPERTY_HOST_COHERENT_BIT : VK_MEMORY_PROPERTY_HOST_CACHED_BIT;
+    }
+    m_memory = m_memoryManager->allocateImageMemory(*s_memoryAllocator, m_image, flag);
+    if (m_memory == VulkanMemory::s_invalidMemory)
+    {
+        VulkanImage::destroy();
+
+        LOG_ERROR("VulkanImage::VulkanImage::create() is failed");
+        return false;
+    }
 
     if (!createViewImage())
     {
