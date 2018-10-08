@@ -70,7 +70,7 @@ int MyApplication::Execute()
 
 void MyApplication::Initialize()
 {
-    Test_MemoryPool();
+    //Test_MemoryPool();
 
     m_Context = renderer::Context::createContext(m_Window, renderer::Context::RenderType::VulkanRender);
     ASSERT(m_Context, "context is nullptr");

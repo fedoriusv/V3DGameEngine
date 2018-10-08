@@ -88,6 +88,7 @@ void* MemoryPool::getMemory(u64 memorySize)
     // the Values of the MemoryChunk itself.
     m_usedMemoryPoolSize += bestMemBlockSize;
     m_freeMemoryPoolSize -= bestMemBlockSize;
+    ASSERT(m_usedMemoryPoolSize + m_freeMemoryPoolSize == m_totalMemoryPoolSize, "missing size");
     m_objectCount++;
     MemoryPool::setMemoryChunkValues(chunk, bestMemBlockSize);
 
@@ -181,12 +182,13 @@ bool MemoryPool::allocateMemory(u64 memorySize)
 
 
     void* newMemBlock = m_allocator->allocate(bestMemBlockSize); // allocate from Operating System
-    MemoryChunk* newChunks = (MemoryChunk*)malloc(neededChunks * sizeof(MemoryChunk)); // allocate Chunk-Array to Manage the Memory
+    MemoryChunk* newChunks = (MemoryChunk*)m_allocator->allocate(neededChunks * sizeof(MemoryChunk)); // allocate Chunk-Array to Manage the Memory
     ASSERT((newMemBlock) && (newChunks), "System ran out of Memory");
 
     // Adjust internal Values (Total/Free Memory, etc.)
     m_totalMemoryPoolSize += bestMemBlockSize;
     m_freeMemoryPoolSize += bestMemBlockSize;
+    ASSERT(m_usedMemoryPoolSize + m_freeMemoryPoolSize == m_totalMemoryPoolSize, "missing size");
     m_memoryChunkCount += neededChunks;
 
     // Associate the allocated Memory-Block with the Linked-List of MemoryChunks
@@ -210,7 +212,7 @@ void MemoryPool::freeAllAllocatedMemory()
 u32 MemoryPool::calculateNeededChunks(u64 memorySize)
 {
     f32 f = (f32)((f32)memorySize / (f32)m_memoryChunkSize);
-    return (u32)ceil(f);
+    return (u32)std::ceil(f);
 }
 
 u64 MemoryPool::calculateBestMemoryBlockSize(u64 requestedMemoryBlockSize)
@@ -329,6 +331,8 @@ void MemoryPool::freeChunks(MemoryChunk* chunk)
 
             // Step 3 : Adjust Memory-Pool Values and goto next Chunk
             m_usedMemoryPoolSize -= m_memoryChunkSize;
+            m_freeMemoryPoolSize += m_memoryChunkSize;
+            ASSERT(m_usedMemoryPoolSize + m_freeMemoryPoolSize == m_totalMemoryPoolSize, "missing size");
             currentChunk = currentChunk->_next;
         }
     }
@@ -344,7 +348,7 @@ void MemoryPool::deallocateAllChunks()
         {
             if (chunkToDelete)
             {
-                free(chunkToDelete);
+                m_allocator->deallocate(chunkToDelete);
                 chunkToDelete = nullptr;
             }
             chunkToDelete = chunk;

@@ -26,9 +26,9 @@ namespace utils
             virtual void  deallocate(void* block, u64 size = 0) = 0;
         };
 
-        static const u64 k_defaultMemoryPoolSize = 1000;
-        static const u64 k_defaultMemoryChunkSize = 128;
-        static const u64 k_defaultMemorySizeToAllocate = k_defaultMemoryChunkSize * 2;
+        static const u64 k_defaultMemoryPoolSize = 1024;
+        static const u64 k_defaultMemoryChunkSize = 64;
+        static const u64 k_defaultMemorySizeToAllocate = k_defaultMemoryPoolSize * 2;
 
         MemoryPool(u64 initialMemoryPoolSize = k_defaultMemoryPoolSize,
                 u64 memoryChunkSize = k_defaultMemoryChunkSize,

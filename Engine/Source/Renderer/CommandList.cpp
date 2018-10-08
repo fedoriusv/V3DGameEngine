@@ -11,7 +11,7 @@ namespace v3d
 namespace renderer
 {
 
-utils::MemoryPool g_commandMemoryPool(1024, 256, 256, utils::MemoryPool::getDefaultMemoryPoolAllocator());
+utils::MemoryPool g_commandMemoryPool(1024, 64, 1024 * 2, utils::MemoryPool::getDefaultMemoryPoolAllocator());
 
 class CommandBeginFrame : public Command
 {
@@ -271,6 +271,11 @@ Command::~Command()
 
 void* Command::operator new(size_t size) noexcept
 {
+#ifdef _DEBUG
+    static size_t s_sizeMax = 0;
+    s_sizeMax = std::max(s_sizeMax, size);
+    LOG_DEBUG("Command new allocate size %u, maxSize %u", size, s_sizeMax);
+#endif
     void* ptr = g_commandMemoryPool.getMemory(size);
     return ptr;
 }
