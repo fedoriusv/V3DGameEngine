@@ -5,14 +5,14 @@
 
 namespace v3d
 {
+namespace renderer
+{
 
     /*CreateTextureCommand*/
 class CreateTextureCommand : public renderer::Command
 {
 public:
-
     CreateTextureCommand(renderer::Image* image, u32 dataSize, const void * data)
-
         : m_image(image) //TODO: need use handle
         , m_data(nullptr)
         , m_dataSize(0)
@@ -57,9 +57,7 @@ public:
     }
 
 private:
-
     renderer::Image*            m_image;
-
     u32                         m_dataSize;
     void*                       m_data;
 };
@@ -68,7 +66,6 @@ private:
 class UploadTextureCommand : public renderer::Command, utils::Observer
 {
 public:
-
     UploadTextureCommand(renderer::Image* image)
         : m_image(image)
     {
@@ -97,7 +94,6 @@ public:
     }
 
 private:
-
     renderer::Image* m_image;
 };
 
@@ -134,7 +130,6 @@ public:
     }
 
 private:
-
     renderer::Image*    m_image;
     core::Vector4D      m_clearColor;
 };
@@ -173,7 +168,6 @@ public:
     }
 
 private:
-
     renderer::Image*    m_image;
     f32                 m_depth;
     u32                 m_stencil;
@@ -200,7 +194,6 @@ public:
     }
 
 private:
-
     core::Vector4D m_clearColor;
 };
 
@@ -402,4 +395,5 @@ void SwapchainTexture::clear(const core::Vector4D & color)
     }
 }
 
+} //namespace renderer
 } //namespace v3d

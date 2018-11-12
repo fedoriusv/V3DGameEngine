@@ -15,6 +15,7 @@ using namespace v3d;
 using namespace v3d::platform;
 using namespace v3d::utils;
 using namespace v3d::event;
+using namespace v3d::renderer;
 
 MyApplication::MyApplication(int& argc, char** argv)
     : m_Window(nullptr)

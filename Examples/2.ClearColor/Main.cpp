@@ -1,4 +1,4 @@
-// ClearColor.cpp : Defines the entry point for the console application.
+// Main.cpp : Defines the entry point for the console application.
 //
 
 #include "MyApplication.h"

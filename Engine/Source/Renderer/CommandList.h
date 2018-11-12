@@ -6,15 +6,13 @@
 
 namespace v3d
 {
-
-    class SwapchainTexture;
-    class RenderTarget;
-    class Backbuffer;
-
 namespace renderer
 {
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    class SwapchainTexture;
+    class RenderTarget;
+    class Backbuffer;
     class CommandList;
     class Context;
 

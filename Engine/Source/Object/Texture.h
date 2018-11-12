@@ -12,13 +12,11 @@ namespace v3d
 namespace renderer
 {
     class Image;
-} //namespace renderer
+    class RenderTarget;
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    class RenderTarget;
-
-    class Texture2D : public Object, public utils::Observer //ref couter, 
+    class Texture2D : public Object, public utils::Observer //ref counter, 
     {
     public:
 
@@ -95,4 +93,5 @@ namespace renderer
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
+} //namespace renderer
 } //namespace v3d

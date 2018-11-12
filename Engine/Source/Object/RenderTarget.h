@@ -13,21 +13,23 @@ namespace renderer
     class Framebuffer;
     class RenderPass;
     class RenderPassManager;
-} //namespace renderer
-
-  /////////////////////////////////////////////////////////////////////////////////////////////////////
-
     class Texture2D;
 
-    class RenderTarget : public Object, public utils::Observer //ref couter, 
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    class RenderTarget : public Object, public utils::Observer //ref counter
     {
     public:
 
         ~RenderTarget();
         RenderTarget(const RenderTarget &) = delete;
 
-        bool setColorTexture(Texture2D* colorTexture, renderer::RenderTargetLoadOp loadOp = renderer::RenderTargetLoadOp::LoadOp_Clear, renderer::RenderTargetStoreOp storeOp = renderer::RenderTargetStoreOp::StoreOp_Store);
-        bool setDepthStencilTexture(Texture2D* depthStencilTexture, renderer::RenderTargetLoadOp loadOp = renderer::RenderTargetLoadOp::LoadOp_DontCare, renderer::RenderTargetStoreOp storeOp = renderer::RenderTargetStoreOp::StoreOp_DontCare);
+        bool setColorTexture(Texture2D* colorTexture, 
+            RenderTargetLoadOp loadOp = RenderTargetLoadOp::LoadOp_Clear, RenderTargetStoreOp storeOp = RenderTargetStoreOp::StoreOp_Store);
+
+        bool setDepthStencilTexture(Texture2D* depthStencilTexture, 
+            RenderTargetLoadOp depthLoadOp = RenderTargetLoadOp::LoadOp_DontCare, RenderTargetStoreOp DepthStoreOp = RenderTargetStoreOp::StoreOp_DontCare, 
+            RenderTargetLoadOp stencilLoadOp = RenderTargetLoadOp::LoadOp_DontCare, RenderTargetStoreOp stencilStoreOp = RenderTargetStoreOp::StoreOp_DontCare);
 
         Texture2D* getColorTexture(u32 attachment) const;
         Texture2D* getDepthStencilTexture() const;
@@ -74,4 +76,5 @@ namespace renderer
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
+} //namespace renderer
 } //namespace v3d

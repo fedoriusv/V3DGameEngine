@@ -77,12 +77,14 @@ namespace renderer
 
     struct AttachmentDescription
     {
-        ImageFormat           _format  : 8;
-        TextureSamples        _samples : 4;
-        RenderTargetLoadOp    _loadOp  : 2;
-        RenderTargetStoreOp   _storeOp : 2;
+        ImageFormat           _format           : 8;
+        TextureSamples        _samples          : 4;
+        RenderTargetLoadOp    _loadOp           : 2;
+        RenderTargetStoreOp   _storeOp          : 2;
+        RenderTargetLoadOp    _stencilLoadOp    : 2;
+        RenderTargetStoreOp   _stencilStoreOp   : 2;
 
-        s32                   _padding : 16;
+        s32                   _padding          : 12;
     };
 
 

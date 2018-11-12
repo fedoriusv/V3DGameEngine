@@ -11,14 +11,14 @@
 
 namespace v3d
 {
+namespace renderer
+{
 
     /*CreateRenderPassCommand*/
 class CreateRenderPassCommand : public renderer::Command
 {
 public:
-
     CreateRenderPassCommand(renderer::RenderPass* renderpass)
-
         : m_renderPass(renderpass) //TODO: need use handle
     {
         LOG_DEBUG("CreateRenderPassCommand constructor");
@@ -42,7 +42,6 @@ public:
     }
 
 private:
-
     renderer::RenderPass* m_renderPass;
 };
 
@@ -50,7 +49,6 @@ private:
 class CreateFramebufferCommand : public renderer::Command, utils::Observer
 {
 public:
-
     CreateFramebufferCommand(renderer::Framebuffer* framebuffer, renderer::RenderPass* renderpass, const std::vector<renderer::Image*>& images)
         : m_framebuffer(framebuffer)
         , m_renderPass(renderpass)
@@ -90,7 +88,6 @@ public:
     }
 
 private:
-
     renderer::Framebuffer* m_framebuffer;
     renderer::RenderPass*  m_renderPass;
     std::vector<renderer::Image*> m_images;
@@ -123,20 +120,22 @@ RenderTarget::~RenderTarget()
     }
 }
 
-bool RenderTarget::setColorTexture(Texture2D* colorTexture, renderer::RenderTargetLoadOp loadOp, renderer::RenderTargetStoreOp storeOp)
+bool RenderTarget::setColorTexture(Texture2D* colorTexture, RenderTargetLoadOp loadOp, RenderTargetStoreOp storeOp)
 {
     renderer::AttachmentDescription attachmentDesc = {};
     attachmentDesc._format = colorTexture->getFormat();
     attachmentDesc._samples = colorTexture->getSampleCount();
     attachmentDesc._loadOp = loadOp;
     attachmentDesc._storeOp = storeOp;
+    attachmentDesc._stencilLoadOp = RenderTargetLoadOp::LoadOp_DontCare;
+    attachmentDesc._stencilStoreOp = RenderTargetStoreOp::StoreOp_DontCare;
     m_colorTextures.emplace_back(colorTexture, attachmentDesc);
 
     //TODO check compatibility
     return true;
 }
 
-bool RenderTarget::setDepthStencilTexture(Texture2D* depthStencilTexture, renderer::RenderTargetLoadOp loadOp, renderer::RenderTargetStoreOp storeOp)
+bool RenderTarget::setDepthStencilTexture(Texture2D* depthStencilTexture, RenderTargetLoadOp depthLoadOp, RenderTargetStoreOp depthStoreOp, RenderTargetLoadOp stencilLoadOp, RenderTargetStoreOp stencilStoreOp)
 {
     ASSERT(m_depthStencilTexture.first, "attachDepthStencilTexture can create only one");
     if (!m_depthStencilTexture.first)
@@ -144,8 +143,10 @@ bool RenderTarget::setDepthStencilTexture(Texture2D* depthStencilTexture, render
         renderer::AttachmentDescription attachmentDesc = {};
         attachmentDesc._format = depthStencilTexture->getFormat();
         attachmentDesc._samples = depthStencilTexture->getSampleCount();
-        attachmentDesc._loadOp = loadOp;
-        attachmentDesc._storeOp = storeOp;
+        attachmentDesc._loadOp = depthLoadOp;
+        attachmentDesc._storeOp = depthStoreOp;
+        attachmentDesc._stencilLoadOp = stencilLoadOp;
+        attachmentDesc._stencilStoreOp = stencilStoreOp;
         m_depthStencilTexture = std::make_pair(depthStencilTexture, attachmentDesc);
     }
 
@@ -254,4 +255,5 @@ Backbuffer::Backbuffer(renderer::CommandList & cmdList, SwapchainTexture * textu
 {
 }
 
+} //namespace renderer
 } //namespace v3d
