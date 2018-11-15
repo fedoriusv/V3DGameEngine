@@ -7,7 +7,10 @@ option(BUILD_EXAMPLES "Generate Examples" ON)
 #Render SDK
 option(BUILD_VULKAN_SDK "Build use Vulkan SDK" ON)
 ##############################################################
-
+#ThirdParty
+option(CRC32_LIB "Use Crc32c lib" ON)
+#https://github.com/google/crc32c
+##############################################################
 if(COMPILER_MSVC)
     message("-- Configuring MSVC Compiler")
 elseif(COMPILER_GCC)
@@ -53,11 +56,18 @@ set(LIB_INCLUDE_DIRECTORY
 	${ENGINE_PROJECT_DIR}/${SOURCE_DIR}/Renderer 
 	${ENGINE_PROJECT_DIR}/${SOURCE_DIR}/ThirdParty)
 
+#Crc32c	
+if (CRC32_LIB)
+	set(LIB_INCLUDE_DIRECTORY ${LIB_INCLUDE_DIRECTORY} ${ENGINE_PROJECT_DIR}/Libs/crc32c/include)
+endif()
+
 include_directories(BEFORE ${LIB_INCLUDE_DIRECTORY})
 ##############################################################
  
 #Configuration
 ##############################################################
+set(INCLUDE_DIRECTORY_PATHES "")
+
 #Vulkan
 if(BUILD_VULKAN_SDK)
     set(VULKAN_SDK_DEFINE "-DVULKAN_RENDER")
@@ -70,6 +80,7 @@ if(BUILD_VULKAN_SDK)
     set(VULKAN_SDK_LIB_DIRECTORY ${VULKAN_SDK_PATH}/Lib)
     message("-- Vulkan SDK Path " ${VULKAN_SDK_PATH})
 endif()
+
 
 #Compiler Flags
 if(WIN32)
@@ -131,9 +142,28 @@ add_library(${ENGINE_NAME} STATIC
     ${RENDERER_HEADERS} ${RENDERER_SOURCES}
 	${OBJECT_HEADERS} ${OBJECT_SOURCES}
     ${VULKAN_HEADERS} ${VULKAN_SOURCES})
+	
+set(BUILD_DEPENDENCIES "")
+	
+#Link Libs
+##############################################################
+#Crc32c	
+if (CRC32_LIB)
+	target_link_libraries(${ENGINE_NAME} crc32c)
+	set(BUILD_DEPENDENCIES ${BUILD_DEPENDENCIES} crc32c)
+endif()
 
 link_directories(${ENGINE_NAME} ${VULKAN_SDK_LIB_DIRECTORY})
     
+##############################################################
+
+#Libs
+##############################################################
+if (CRC32_LIB)
+	message("-- Add Crc32 lib")
+	add_subdirectory(Engine/Libs/crc32c)
+	message("-- Crc32 lib added")
+endif()
 ##############################################################
 
 #Examples
@@ -145,4 +175,8 @@ if (BUILD_EXAMPLES)
 	add_subdirectory(Examples/3.RenderTarget)
     message("-- ----------------")
 endif ()
+##############################################################
+
+add_dependencies(${ENGINE_NAME} ${BUILD_DEPENDENCIES})
+
 ##############################################################
