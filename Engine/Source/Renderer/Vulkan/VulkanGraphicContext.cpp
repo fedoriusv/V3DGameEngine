@@ -44,15 +44,16 @@ const std::vector<const c8*> k_deviceExtensionsList =
     VK_KHR_SAMPLER_MIRROR_CLAMP_TO_EDGE_EXTENSION_NAME,
 };
 
-VulkanGraphicContext::VulkanGraphicContext(const platform::Window* window)
-    : m_swapchain(nullptr)
+VulkanGraphicContext::VulkanGraphicContext(const platform::Window * window) noexcept
+    : m_deviceCaps(*VulkanDeviceCaps::getInstance())
+    , m_swapchain(nullptr)
     , m_drawCmdBufferManager(nullptr)
     , m_currentDrawBuffer(nullptr)
     , m_memoryManager(nullptr)
+    , m_renderpassManager(nullptr)
+    , m_framebuferManager(nullptr)
     , m_window(window)
     , m_frameCounter(0U)
-
-    , m_deviceCaps(*VulkanDeviceCaps::getInstance())
 {
     LOG_DEBUG("VulkanGraphicContext created this %llx", this);
 
@@ -131,6 +132,43 @@ void VulkanGraphicContext::setViewport(const core::Rect32& viewport)
     //TODO:
 }
 
+void VulkanGraphicContext::setRenderTarget(const RenderPassInfo * renderpassInfo, const std::vector<Image*>& attachments, const ClearValueInfo * clearInfo)
+{
+    RenderPass* renderpass = m_renderpassManager->acquireRenderPass(*renderpassInfo);
+    ASSERT(renderpass, "renderpass is nullptr");
+
+    Framebuffer* framebuffer = m_framebuferManager->acquireFramebuffer(renderpass, attachments, clearInfo->_size);
+    ASSERT(framebuffer, "framebuffer is nullptr");
+
+    m_currentRenderpass = static_cast<VulkanRenderPass*>(renderpass);
+    m_currentFramebuffer = static_cast<VulkanFramebuffer*>(framebuffer);
+
+    if (m_currentRenderpass != renderpass || m_currentFramebuffer != framebuffer /*|| clearInfo*/)
+    {
+        if (m_currentDrawBuffer->isInsideRenderPass())
+        {
+            m_currentDrawBuffer->cmdEndRenderPass();
+        }
+
+        VkRect2D area;
+        area.offset = { 0, 0 };
+        area.extent = { clearInfo->_size.width, clearInfo->_size.height };
+
+        std::vector<VkClearValue> clearValues(clearInfo->_color.size() + (renderpassInfo->_hasDepthStencilAttahment) ? 1 : 0);
+        for (u32 index = 0; index < clearInfo->_color.size(); ++index)
+        {
+            clearValues[index] = { clearInfo->_color[index].x, clearInfo->_color[index].y, clearInfo->_color[index].z, clearInfo->_color[index].w };
+        }
+
+        if (renderpassInfo->_hasDepthStencilAttahment)
+        {
+            clearValues.back().depthStencil = { clearInfo->_depth, clearInfo->_stencil };
+        }
+
+        m_currentDrawBuffer->cmdBeginRenderpass(m_currentRenderpass, m_currentFramebuffer, area, clearValues);
+    }
+}
+
 Image * VulkanGraphicContext::createImage(TextureTarget target, renderer::ImageFormat format, const core::Dimension3D& dimension, u32 mipLevels,
     s16 filter, TextureAnisotropic anisotropicLevel, TextureWrap wrap) const
 {
@@ -149,27 +187,6 @@ Image * VulkanGraphicContext::createAttachmentImage(renderer::ImageFormat format
     VkSampleCountFlagBits vkSamples = VulkanImage::convertRenderTargetSamplesToVkSampleCount(samples);
 
     return new VulkanImage(m_memoryManager, m_deviceInfo._device, vkFormat, vkExtent, vkSamples);
-}
-
-Framebuffer * VulkanGraphicContext::createFramebuffer(const std::vector<Image*>& attachments, const core::Dimension2D& size)
-{
-    return new VulkanFramebuffer(m_deviceInfo._device, size);
-}
-
-RenderPass * VulkanGraphicContext::createRenderPass(const RenderPassInfo* renderpassInfo)
-{
-    u32 countAttachments = (renderpassInfo->_hasDepthStencilAttahment) ? renderpassInfo->_countColorAttachments + 1 : renderpassInfo->_countColorAttachments;
-    std::vector<VulkanRenderPass::VulkanAttachmentDescription> descs(countAttachments);
-    for (u32 index = 0; index < renderpassInfo->_countColorAttachments; ++index)
-    {
-        VulkanRenderPass::VulkanAttachmentDescription& desc = descs[index];
-        desc._format = VulkanImage::convertImageFormatToVkFormat(renderpassInfo->_attachments[index]._format);
-        desc._samples = VulkanImage::convertRenderTargetSamplesToVkSampleCount(renderpassInfo->_attachments[index]._samples);
-        desc._loadOp = VulkanRenderPass::convertAttachLoadOpToVkAttachmentLoadOp(renderpassInfo->_attachments[index]._loadOp);
-        desc._storeOp = VulkanRenderPass::convertAttachStoreOpToVkAttachmentStoreOp(renderpassInfo->_attachments[index]._storeOp);
-    }
-
-    return new VulkanRenderPass(m_deviceInfo._device, descs);
 }
 
 VulkanCommandBuffer * VulkanGraphicContext::getCurrentBuffer(VulkanCommandBufferManager::CommandTargetType type) const
@@ -203,6 +220,11 @@ void VulkanGraphicContext::transferImageLayout(VulkanImage * image, VkPipelineSt
     image->setLayout(layout);
 
     m_currentDrawBuffer->cmdPipelineBarrier(srcStageMask, dstStageMask, imageMemoryBarrier);
+}
+
+const DeviceCaps* VulkanGraphicContext::getDeviceCaps() const
+{
+    return &m_deviceCaps;
 }
 
 bool VulkanGraphicContext::initialize()
@@ -264,6 +286,9 @@ bool VulkanGraphicContext::initialize()
     m_currentDrawBuffer = m_drawCmdBufferManager->acquireNewCmdBuffer(VulkanCommandBuffer::PrimaryBuffer);
     ASSERT(m_currentDrawBuffer, "m_currentDrawBuffer is nullptr");
 
+    m_renderpassManager = new RenderPassManager(this);
+    m_framebuferManager = new FramebufferManager(this);
+
     return true;
 }
 
@@ -279,6 +304,18 @@ void VulkanGraphicContext::destroy()
 
         delete m_drawCmdBufferManager;
         m_drawCmdBufferManager = nullptr;
+    }
+
+    if (m_renderpassManager)
+    {
+        delete m_renderpassManager;
+        m_renderpassManager = nullptr;
+    }
+
+    if (m_framebuferManager)
+    {
+        delete m_framebuferManager;
+        m_framebuferManager = nullptr;
     }
 
     if (m_swapchain)
@@ -306,6 +343,27 @@ void VulkanGraphicContext::destroy()
         VulkanWrapper::DestroyInstance(m_deviceInfo._instance, VULKAN_ALLOCATOR);
         m_deviceInfo._instance = VK_NULL_HANDLE;
     }
+}
+
+Framebuffer * VulkanGraphicContext::createFramebuffer(const std::vector<Image*>& images, const core::Dimension2D & size)
+{
+    return new VulkanFramebuffer(m_deviceInfo._device, images, size);
+}
+
+RenderPass * VulkanGraphicContext::createRenderPass(const RenderPassInfo * renderpassInfo)
+{
+    u32 countAttachments = (renderpassInfo->_hasDepthStencilAttahment) ? renderpassInfo->_countColorAttachments + 1 : renderpassInfo->_countColorAttachments;
+    std::vector<VulkanRenderPass::VulkanAttachmentDescription> descs(countAttachments);
+    for (u32 index = 0; index < renderpassInfo->_countColorAttachments; ++index)
+    {
+        VulkanRenderPass::VulkanAttachmentDescription& desc = descs[index];
+        desc._format = VulkanImage::convertImageFormatToVkFormat(renderpassInfo->_attachments[index]._format);
+        desc._samples = VulkanImage::convertRenderTargetSamplesToVkSampleCount(renderpassInfo->_attachments[index]._samples);
+        desc._loadOp = VulkanRenderPass::convertAttachLoadOpToVkAttachmentLoadOp(renderpassInfo->_attachments[index]._loadOp);
+        desc._storeOp = VulkanRenderPass::convertAttachStoreOpToVkAttachmentStoreOp(renderpassInfo->_attachments[index]._storeOp);
+    }
+
+    return new VulkanRenderPass(m_deviceInfo._device, descs);
 }
 
 bool VulkanGraphicContext::createInstance()

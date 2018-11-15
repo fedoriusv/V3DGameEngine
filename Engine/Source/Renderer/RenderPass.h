@@ -3,6 +3,7 @@
 #include "Common.h"
 #include "TextureProperties.h"
 #include "Utils/Observable.h"
+#include "Utils/Logger.h"
 #include "Context.h"
 
 namespace v3d
@@ -15,21 +16,33 @@ namespace renderer
 
     struct RenderPassInfo
     {
+        RenderPassInfo()
+        {
+            _attachments.fill(AttachmentDescription());
+            _countColorAttachments = 0;
+            _hasDepthStencilAttahment = false;
+        }
+
         std::array<AttachmentDescription, k_maxFramebufferAttachments> _attachments; //32
         u32  _countColorAttachments   : 24;
         u32 _hasDepthStencilAttahment : 8;
 
     };
 
+    struct ClearValueInfo
+    {
+        core::Dimension2D           _size;
+        std::vector<core::Vector4D> _color;
+        f32                         _depth;
+        u32                         _stencil;
+
+    };
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
+
     class RenderPass : public utils::Observable
     {
     public:
-
-        union RenderPassDescription
-        {
-            RenderPassInfo  _info;
-            u32             _hash;
-        };
 
         RenderPass() {};
         virtual ~RenderPass() {};
@@ -54,30 +67,51 @@ namespace renderer
             RenderPassManager::clear();
         };
 
-        RenderPass* acquireRenderPass(const RenderPass::RenderPassDescription& desc)
+        RenderPass* acquireRenderPass(const RenderPassInfo& desc)
         {
-            const RenderPassInfo* pDesc = &desc._info;
-            RenderPass* renderpass = m_context->createRenderPass(pDesc);
+            RenderPassDescription pDesc;
+            pDesc._info = desc;
 
-            renderpass->registerNotify(this);
-            return renderpass;
-
-            /*RenderPass* renderpass = nullptr;
-            auto found = m_renderpasses.emplace(desc._hash, renderpass);
-            if (!found.second)
+            RenderPass* renderpass = nullptr;
+            auto found = m_renderpasses.emplace(pDesc._hash, renderpass);
+            if (found.second)
             {
-                renderpass = m_context->createRenderPass(&desc._info);
+                renderpass = m_context->createRenderPass(&pDesc._info);
+                if (!renderpass->create())
+                {
+                    m_renderpasses.erase(pDesc._hash);
+
+                    ASSERT(false, "can't create renderpass");
+                    return nullptr;
+                }
                 found.first->second = renderpass;
+                renderpass->registerNotify(this);
 
                 return renderpass;
             }
 
-            return found.first->second;*/
+            return found.first->second;
+        }
+
+        bool removeRenderPass(const RenderPassInfo& desc)
+        {
+            RenderPassDescription pDesc;
+            pDesc._info = desc;
+
+            if (!m_renderpasses.erase(pDesc._hash))
+            {
+                LOG_DEBUG("RenderPassManager renderpass not found");
+                ASSERT(false, "renderpass");
+                return false;
+            }
+
+            return true;
         }
 
         void handleNotify(utils::Observable* ob) override
         {
-            //TODO:
+            LOG_DEBUG("RenderPassManager renderpass %x has been deleted", ob);
+            //m_renderpasses.erase(ob);
         }
 
         void clear()
@@ -94,6 +128,14 @@ namespace renderer
 
 
     private:
+
+        union RenderPassDescription
+        {
+            RenderPassDescription() {}
+
+            RenderPassInfo  _info;
+            u32             _hash;
+        };
 
         Context* m_context;
         std::map<u32, RenderPass*> m_renderpasses;

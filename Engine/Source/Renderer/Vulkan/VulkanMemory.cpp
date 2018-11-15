@@ -1,6 +1,7 @@
 #include "VulkanMemory.h"
 #include "VulkanDebug.h"
 #include "VulkanDeviceCaps.h"
+#include "VulkanGraphicContext.h"
 
 #include "Utils/Logger.h"
 

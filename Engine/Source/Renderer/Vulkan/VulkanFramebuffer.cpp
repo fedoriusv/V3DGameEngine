@@ -16,8 +16,9 @@ namespace renderer
 namespace vk
 {
 
-VulkanFramebuffer::VulkanFramebuffer(VkDevice device, const core::Dimension2D& size)
+VulkanFramebuffer::VulkanFramebuffer(VkDevice device, const std::vector<Image*>& images, const core::Dimension2D& size)
     : m_device(device)
+    , m_images(images)
     , m_size(size)
 
     , m_framebuffer(VK_NULL_HANDLE)
@@ -36,17 +37,17 @@ VkFramebuffer VulkanFramebuffer::getHandle() const
     return m_framebuffer;
 }
 
-bool VulkanFramebuffer::create(const RenderPass* pass, const std::vector<Image*>& images)
+bool VulkanFramebuffer::create(const RenderPass* pass)
 {
     ASSERT(VulkanDeviceCaps::getInstance()->getPhysicalDeviceLimits().maxFramebufferWidth >= m_size.width &&
         VulkanDeviceCaps::getInstance()->getPhysicalDeviceLimits().maxFramebufferHeight >= m_size.height, "maxFramebufferSize is over range");
 
     VkRenderPass vkPass = static_cast<const VulkanRenderPass*>(pass)->getHandle();
-    m_images.reserve(images.size());
-    for (auto& attach : images)
+    m_imageViews.reserve(m_images.size());
+    for (auto& attach : m_images)
     {
         VkImageView vkImage = static_cast<const VulkanImage*>(attach)->getImageView();
-        m_images.push_back(vkImage);
+        m_imageViews.push_back(vkImage);
     }
 
     VkFramebufferCreateInfo framebufferCreateInfo = {};
@@ -54,8 +55,8 @@ bool VulkanFramebuffer::create(const RenderPass* pass, const std::vector<Image*>
     framebufferCreateInfo.pNext = nullptr;
     framebufferCreateInfo.flags = 0;
     framebufferCreateInfo.renderPass = vkPass;
-    framebufferCreateInfo.attachmentCount = static_cast<u32>(m_images.size());
-    framebufferCreateInfo.pAttachments = m_images.data();
+    framebufferCreateInfo.attachmentCount = static_cast<u32>(m_imageViews.size());
+    framebufferCreateInfo.pAttachments = m_imageViews.data();
     framebufferCreateInfo.width = m_size.width;
     framebufferCreateInfo.height = m_size.height;
     framebufferCreateInfo.layers = 1;
@@ -67,7 +68,7 @@ bool VulkanFramebuffer::create(const RenderPass* pass, const std::vector<Image*>
         return false;
     }
 
-    return false;
+    return true;
 }
 
 void VulkanFramebuffer::destroy()

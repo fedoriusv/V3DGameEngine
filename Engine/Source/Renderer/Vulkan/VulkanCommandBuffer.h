@@ -16,6 +16,8 @@ namespace vk
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     class VulkanImage;
+    class VulkanRenderPass;
+    class VulkanFramebuffer;
 
     class VulkanCommandBuffer final : public utils::NonCopyable, public utils::Observable
     {
@@ -52,8 +54,9 @@ namespace vk
         void endCommandBuffer();
 
 
-        void cmdBeginRenderpass();
+        void cmdBeginRenderpass(VulkanRenderPass* pass, VulkanFramebuffer* framebuffer, VkRect2D area, std::vector<VkClearValue>& clearValues);
         void cmdEndRenderPass();
+        bool isInsideRenderPass();
 
         //inside renderpass
         void cmdDraw();
@@ -90,6 +93,8 @@ namespace vk
 
         VulkanCommandBuffer*                m_primaryBuffer;
         std::vector<VulkanCommandBuffer*>   m_secondaryBuffers;
+
+        bool m_isInsideRenderPass;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

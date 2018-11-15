@@ -5,6 +5,8 @@
 #include "Context.h"
 #include "Object/Texture.h"
 #include "Object/RenderTarget.h"
+#include "RenderPass.h"
+#include "Framebuffer.h"
 
 namespace v3d
 {
@@ -13,6 +15,7 @@ namespace renderer
 
 utils::MemoryPool g_commandMemoryPool(1024, 64, 1024 * 2, utils::MemoryPool::getDefaultMemoryPoolAllocator());
 
+    /*CommandBeginFrame*/
 class CommandBeginFrame : public Command
 {
 public:
@@ -31,6 +34,7 @@ public:
     }
 };
 
+    /*CommandEndFrame*/
 class CommandEndFrame : public Command
 {
 public:
@@ -49,6 +53,7 @@ public:
     }
 };
 
+    /*CommandPresentFrame*/
 class CommandPresentFrame : public Command
 {
 public:
@@ -67,6 +72,7 @@ public:
     }
 };
 
+    /*CommandSetContextState*/
 class CommandSetContextState : public Command
 {
 public:
@@ -89,28 +95,32 @@ private:
     ContextStates m_pendingStates;
 };
 
+    /*CommandSetRenderTarget*/
+class CommandSetRenderTarget : public Command
+{
+public:
+    CommandSetRenderTarget(const RenderPassInfo& renderpassInfo, const std::vector<Image*>& attachments, const ClearValueInfo& clearInfo)
+        : m_renderpassInfo(renderpassInfo)
+        , m_attachments(attachments)
+        , m_clearInfo(clearInfo)
+    {
+        LOG_DEBUG("CommandSetRenderTarget constructor");
+    };
+    ~CommandSetRenderTarget()
+    {
+        LOG_DEBUG("CommandSetRenderTarget destructor");
+    };
 
-//class CommandBindRenderTarget : public Command
-//{
-//public:
-//    CommandBindRenderTarget(const std::vector<RenderTarget::AttachmentDesc>& attachments)
-//        : m_attachments(attachments)
-//    {
-//        LOG_DEBUG("CommandBindRenderTarget constructor");
-//    };
-//    ~CommandBindRenderTarget()
-//    {
-//        LOG_DEBUG("CommandBindRenderTarget destructor");
-//    };
-//
-//    void execute(const CommandList& cmdList)
-//    {
-//        cmdList.getContext()->
-//    }
-//
-//private:
-//    std::vector<RenderTarget::AttachmentDesc> m_attachments;
-//};
+    void execute(const CommandList& cmdList)
+    {
+        cmdList.getContext()->setRenderTarget(&m_renderpassInfo, m_attachments, &m_clearInfo);
+    }
+
+private:
+    RenderPassInfo      m_renderpassInfo;
+    std::vector<Image*> m_attachments;
+    ClearValueInfo      m_clearInfo;
+};
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -118,13 +128,10 @@ CommandList::CommandList(Context* context, CommandListType type)
     : m_context(context)
     , m_commandListType(type)
     , m_statesNeedUpdate(false)
+    , m_renderTargetNeedUpdate(false)
 {
     m_swapchainTexture = createObject<SwapchainTexture>();
     m_backbuffer = createObject<Backbuffer>(m_swapchainTexture);
-
-
-
-    m_currentRenderTarget = nullptr;
 }
 
 CommandList::~CommandList()
@@ -138,10 +145,7 @@ void CommandList::flushCommands()
         return;
     }
 
-    if (m_statesNeedUpdate)
-    {
-        CommandList::cmdSetContextStates(m_pendingStates);
-    }
+    CommandList::flushPendingCommands();
     CommandList::executeCommands();
 }
 
@@ -186,20 +190,50 @@ void CommandList::clearBackbuffer(const core::Vector4D & color)
     m_swapchainTexture->clear(color);
 }
 
-void CommandList::setRenderTarget(RenderTarget * rendertarget)
+void CommandList::setRenderTarget(RenderTarget* rendertarget)
 {
-    rendertarget->makeRenderTarget();
+    std::vector<renderer::Image*> images;
+    images.reserve(rendertarget->getColorTextureCount() + (rendertarget->hasDepthStencilTexture()) ? 1 : 0);
+
+    ClearValueInfo clearValuesInfo;
+    clearValuesInfo._size = rendertarget->m_size;
+    clearValuesInfo._color.reserve(images.size());
+
+    RenderPassInfo renderPassInfo;
+
+    renderPassInfo._countColorAttachments = rendertarget->getColorTextureCount();
+    for (u32 index = 0; index < renderPassInfo._countColorAttachments; ++index)
+    {
+        auto attachment = rendertarget->m_colorTextures[index];
+
+        images.push_back(std::get<0>(attachment)->getImage());
+        renderPassInfo._attachments[index] = std::get<1>(attachment);
+
+        clearValuesInfo._color.push_back(std::get<2>(attachment));
+    }
+
+    renderPassInfo._hasDepthStencilAttahment = rendertarget->hasDepthStencilTexture();
+    if (renderPassInfo._hasDepthStencilAttahment)
+    {
+        images.push_back(rendertarget->getDepthStencilTexture()->getImage());
+        renderPassInfo._attachments.back() = std::get<1>(rendertarget->m_depthStencilTexture);
+
+        clearValuesInfo._depth = std::get<2>(rendertarget->m_depthStencilTexture);
+        clearValuesInfo._stencil = std::get<3>(rendertarget->m_depthStencilTexture);
+    }
+
 
     if (m_commandListType == CommandListType::ImmediateCommandList)
     {
-        //bind
+        m_context->setRenderTarget(&renderPassInfo, images, &clearValuesInfo);
     }
     else
     {
-        //pendingState
+        m_pendingRenderTargetInfo._attachments = std::move(images);
+        m_pendingRenderTargetInfo._clearInfo = std::move(clearValuesInfo);
+        m_pendingRenderTargetInfo._renderpassInfo = std::move(renderPassInfo);
+        m_renderTargetNeedUpdate = true;
     }
-
-    m_currentRenderTarget = rendertarget;
 }
 
 void CommandList::setViewport(const core::Rect32& viewport)
@@ -230,18 +264,6 @@ bool CommandList::isImmediate() const
     return m_commandListType == CommandListType::ImmediateCommandList;
 }
 
-void CommandList::cmdSetContextStates(const ContextStates & pendingStates)
-{
-    if (m_commandListType == CommandListType::ImmediateCommandList)
-    {
-        return;
-    }
-
-    CommandList::pushCommand(new CommandSetContextState(pendingStates));
-    m_statesNeedUpdate = false;
-
-}
-
 void CommandList::pushCommand(Command* cmd)
 {
     m_commandList.push(cmd);
@@ -256,6 +278,27 @@ void CommandList::executeCommands()
 
         cmd->execute(*this);
         delete cmd;
+    }
+}
+
+void CommandList::flushPendingCommands()
+{
+    if (m_commandListType == CommandListType::ImmediateCommandList)
+    {
+        return;
+    }
+
+    if (m_renderTargetNeedUpdate)
+    {
+        CommandList::pushCommand(
+            new CommandSetRenderTarget(m_pendingRenderTargetInfo._renderpassInfo, m_pendingRenderTargetInfo._attachments, m_pendingRenderTargetInfo._clearInfo));
+        m_renderTargetNeedUpdate = false;
+    }
+
+    if (m_statesNeedUpdate)
+    {
+        CommandList::pushCommand(new CommandSetContextState(m_pendingStates));
+        m_statesNeedUpdate = false;
     }
 }
 

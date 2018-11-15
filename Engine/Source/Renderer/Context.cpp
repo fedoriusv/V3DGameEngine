@@ -11,7 +11,7 @@ namespace v3d
 namespace renderer
 {
 
-Context::Context()
+Context::Context() noexcept
 {
 }
 

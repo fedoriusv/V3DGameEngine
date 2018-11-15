@@ -31,7 +31,7 @@ namespace vk
     {
     public:
 
-        VulkanGraphicContext(const platform::Window* window);
+        VulkanGraphicContext(const platform::Window* window) noexcept;
         ~VulkanGraphicContext();
 
         //commands
@@ -44,25 +44,29 @@ namespace vk
         //states
         void setViewport(const core::Rect32& viewport) override;
 
+        void setRenderTarget(const RenderPassInfo* renderpassInfo, const std::vector<Image*>& attachments, const ClearValueInfo* clearInfo) override;
+
         Image* createImage(TextureTarget target, renderer::ImageFormat format, const core::Dimension3D& dimension, u32 mipmapLevel, s16 filter, TextureAnisotropic anisotropicLevel, TextureWrap wrap) const override;
         Image* createAttachmentImage(renderer::ImageFormat format, const core::Dimension3D& dimension, TextureSamples samples, s16 filter, TextureAnisotropic anisotropicLevel, TextureWrap wrap) const override;
-
-        Framebuffer* createFramebuffer(const std::vector<Image*>& attachments, const core::Dimension2D& size) override;
-        RenderPass* createRenderPass(const RenderPassInfo* renderpassInfo) override;
 
         VulkanCommandBuffer* getCurrentBuffer(VulkanCommandBufferManager::CommandTargetType type) const;
 
         void transferImageLayout(VulkanImage* image, VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask, VkImageLayout layout) const;
 
+        const DeviceCaps* getDeviceCaps() const override;
+
     private:
 
-        DeviceInfo          m_deviceInfo;
         VulkanDeviceCaps&   m_deviceCaps;
+        DeviceInfo          m_deviceInfo;
 
         const std::string s_vulkanApplicationName = "VulkanGraphicContext";
 
         bool initialize() override;
         void destroy() override;
+
+        Framebuffer* createFramebuffer(const std::vector<Image*>& images, const core::Dimension2D& size) override;
+        RenderPass* createRenderPass(const RenderPassInfo* renderpassInfo) override;
 
         bool createInstance();
         bool createDevice();
@@ -73,6 +77,12 @@ namespace vk
         class VulkanCommandBufferManager* m_drawCmdBufferManager;
         class VulkanCommandBuffer* m_currentDrawBuffer;
         class VulkanMemory* m_memoryManager;
+
+        class RenderPassManager* m_renderpassManager;
+        VulkanRenderPass* m_currentRenderpass;
+
+        class FramebufferManager* m_framebuferManager;
+        VulkanFramebuffer* m_currentFramebuffer;
 
         const platform::Window* m_window;
 

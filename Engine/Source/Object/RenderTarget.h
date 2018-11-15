@@ -10,49 +10,46 @@ namespace v3d
 {
 namespace renderer
 {
-    class Framebuffer;
-    class RenderPass;
-    class RenderPassManager;
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
+    
     class Texture2D;
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    class RenderTarget : public Object, public utils::Observer //ref counter
+    class RenderTarget : public Object //ref counter
     {
     public:
 
         ~RenderTarget();
         RenderTarget(const RenderTarget &) = delete;
 
-        bool setColorTexture(Texture2D* colorTexture, 
-            RenderTargetLoadOp loadOp = RenderTargetLoadOp::LoadOp_Clear, RenderTargetStoreOp storeOp = RenderTargetStoreOp::StoreOp_Store);
+        bool setColorTexture(u32 index, Texture2D* colorTexture,
+            RenderTargetLoadOp loadOp = RenderTargetLoadOp::LoadOp_Clear, RenderTargetStoreOp storeOp = RenderTargetStoreOp::StoreOp_Store,
+            const core::Vector4D& clearColor = core::Vector4D(0.f));
 
         bool setDepthStencilTexture(Texture2D* depthStencilTexture, 
-            RenderTargetLoadOp depthLoadOp = RenderTargetLoadOp::LoadOp_DontCare, RenderTargetStoreOp DepthStoreOp = RenderTargetStoreOp::StoreOp_DontCare, 
-            RenderTargetLoadOp stencilLoadOp = RenderTargetLoadOp::LoadOp_DontCare, RenderTargetStoreOp stencilStoreOp = RenderTargetStoreOp::StoreOp_DontCare);
+            RenderTargetLoadOp depthLoadOp = RenderTargetLoadOp::LoadOp_DontCare, RenderTargetStoreOp depthStoreOp = RenderTargetStoreOp::StoreOp_DontCare,
+            f32 clearDepth = 0.0f,
+            RenderTargetLoadOp stencilLoadOp = RenderTargetLoadOp::LoadOp_DontCare, RenderTargetStoreOp stencilStoreOp = RenderTargetStoreOp::StoreOp_DontCare,
+            u32 clearStencil = 0);
 
-        Texture2D* getColorTexture(u32 attachment) const;
+        Texture2D* getColorTexture(u32 index) const;
         Texture2D* getDepthStencilTexture() const;
+
+        u32        getColorTextureCount() const;
+        bool       hasDepthStencilTexture() const;
 
     private:
 
         RenderTarget(renderer::CommandList& cmdList, const core::Dimension2D& size);
 
-        void makeRenderTarget();
-        void handleNotify(utils::Observable* ob) override;
-
         renderer::CommandList&  m_cmdList;
         core::Dimension2D       m_size;
 
-        std::vector<std::pair<Texture2D*, renderer::AttachmentDescription>> m_colorTextures;
-        std::pair<Texture2D*, renderer::AttachmentDescription>              m_depthStencilTexture;
-
-        renderer::Framebuffer* m_framebuffer;
-        renderer::RenderPass*  m_renderpass;
+        std::map<u32, std::tuple<Texture2D*, renderer::AttachmentDescription, core::Vector4D>>   m_colorTextures;
+        std::tuple<Texture2D*, renderer::AttachmentDescription, f32, u32>                        m_depthStencilTexture;
 
         friend renderer::CommandList;
-
-        static renderer::RenderPassManager* s_renderpassManager;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

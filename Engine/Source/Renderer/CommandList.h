@@ -3,6 +3,8 @@
 #include "Common.h"
 #include "Object/Object.h"
 #include "Utils/NonCopyable.h"
+#include "RenderPass.h"
+#include "Image.h"
 
 namespace v3d
 {
@@ -80,25 +82,32 @@ namespace renderer
 
     private:
 
+        struct RenderTargetInfo
+        {
+            std::vector<Image*> _attachments;
+            RenderPassInfo      _renderpassInfo;
+            ClearValueInfo      _clearInfo;
+        };
+
         void executeCommands();
 
-        void cmdSetContextStates(const ContextStates& pendingStates);
+        void flushPendingCommands();
 
         std::queue<Command*> m_commandList;
 
         Context* m_context;
         CommandListType m_commandListType;
 
-        ContextStates m_pendingStates;
-        bool m_statesNeedUpdate;
+        ContextStates       m_pendingStates;
+        bool                m_statesNeedUpdate;
+
+        RenderTargetInfo    m_pendingRenderTargetInfo;
+        bool                m_renderTargetNeedUpdate;
 
         //
         SwapchainTexture* m_swapchainTexture;
         Backbuffer*       m_backbuffer;
         //
-
-        RenderTarget*    m_currentRenderTarget;
-
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

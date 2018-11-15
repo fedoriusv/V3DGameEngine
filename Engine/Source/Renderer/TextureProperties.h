@@ -60,15 +60,15 @@ namespace renderer
 
     enum class RenderTargetLoadOp : s32
     {
-        LoadOp_Load,
+        LoadOp_DontCare,
         LoadOp_Clear,
-        LoadOp_DontCare
+        LoadOp_Load,
     };
 
     enum class RenderTargetStoreOp : s32
     {
+        StoreOp_DontCare,
         StoreOp_Store,
-        StoreOp_DontCare
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -77,6 +77,13 @@ namespace renderer
 
     struct AttachmentDescription
     {
+        AttachmentDescription()
+        {
+            memset(this, 0, sizeof(AttachmentDescription));
+            _samples = TextureSamples::SampleCount_x1;
+        }
+
+
         ImageFormat           _format           : 8;
         TextureSamples        _samples          : 4;
         RenderTargetLoadOp    _loadOp           : 2;

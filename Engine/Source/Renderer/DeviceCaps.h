@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Common.h"
+#include "TextureProperties.h"
 
 namespace v3d
 {
@@ -10,7 +11,7 @@ namespace renderer
 
     struct DeviceCaps
     {
-        //TODO
+        u32 maxColorattachments = k_maxFramebufferAttachments;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

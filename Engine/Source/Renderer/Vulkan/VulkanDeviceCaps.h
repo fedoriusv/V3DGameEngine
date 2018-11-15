@@ -14,7 +14,7 @@ namespace vk
 {
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    struct VulkanDeviceCaps : DeviceCaps, public utils::Singleton<VulkanDeviceCaps>
+    struct VulkanDeviceCaps : DeviceCaps, utils::Singleton<VulkanDeviceCaps>
     {
         bool individuallyResetForCommandBuffers;
         bool supportCoherentMemory;

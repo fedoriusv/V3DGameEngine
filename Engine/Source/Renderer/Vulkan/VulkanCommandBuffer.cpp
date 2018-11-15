@@ -2,6 +2,8 @@
 #include "VulkanGraphicContext.h"
 #include "VulkanDebug.h"
 #include "VulkanImage.h"
+#include "VulkanRenderpass.h"
+#include "VulkanFramebuffer.h"
 #include "Utils/Logger.h"
 
 #ifdef VULKAN_RENDER
@@ -21,6 +23,7 @@ VulkanCommandBuffer::VulkanCommandBuffer(VkDevice device, CommandBufferLevel lev
     , m_level(level)
 
     , m_fence(VK_NULL_HANDLE)
+    , m_isInsideRenderPass(false)
 {
     LOG_DEBUG("VulkanCommandBuffer constructor %llx", this);
     m_status = CommandBufferStatus::Invalid;
@@ -156,6 +159,34 @@ void VulkanCommandBuffer::endCommandBuffer()
     VulkanWrapper::EndCommandBuffer(m_command);
 
     m_status = CommandBufferStatus::End;
+}
+
+void VulkanCommandBuffer::cmdBeginRenderpass(VulkanRenderPass* pass, VulkanFramebuffer* framebuffer, VkRect2D area, std::vector<VkClearValue>& clearValues)
+{
+    VkRenderPassBeginInfo renderPassBeginInfo = {};
+    renderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+    renderPassBeginInfo.pNext = nullptr;
+    renderPassBeginInfo.renderPass = pass->getHandle();
+    renderPassBeginInfo.framebuffer = framebuffer->getHandle();
+    renderPassBeginInfo.renderArea = area;
+    renderPassBeginInfo.clearValueCount = static_cast<u32>(clearValues.size());
+    renderPassBeginInfo.pClearValues = clearValues.data();
+
+    VulkanWrapper::CmdBeginRenderPass(m_command, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+
+    m_isInsideRenderPass = true;
+}
+
+void VulkanCommandBuffer::cmdEndRenderPass()
+{
+    VulkanWrapper::CmdEndRenderPass(m_command);
+
+    m_isInsideRenderPass = false;
+}
+
+bool VulkanCommandBuffer::isInsideRenderPass()
+{
+    return m_isInsideRenderPass;
 }
 
 void VulkanCommandBuffer::cmdDraw()

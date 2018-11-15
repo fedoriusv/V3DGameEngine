@@ -6,7 +6,7 @@ namespace v3d
 namespace renderer
 {
 
- EmptyContext::EmptyContext()
+ EmptyContext::EmptyContext() noexcept
  {
      LOG_DEBUG("EmptyContext created this %llx", this);
      m_renderType = RenderType::EmptyRender;
@@ -56,13 +56,23 @@ Image * EmptyContext::createAttachmentImage(renderer::ImageFormat format, const 
     return nullptr;
 }
 
-Framebuffer * EmptyContext::createFramebuffer(const std::vector<Image*>& attachments, const core::Dimension2D& size)
+void EmptyContext::setRenderTarget(const RenderPassInfo * renderpassInfo, const std::vector<Image*>& attachments, const ClearValueInfo * clearInfo)
+{
+    LOG_DEBUG("EmptyContext::setRenderTarget");
+}
+
+const DeviceCaps* EmptyContext::getDeviceCaps() const
+{
+    return nullptr;
+}
+
+Framebuffer * EmptyContext::createFramebuffer(const std::vector<Image*>& images, const core::Dimension2D & size)
 {
     LOG_DEBUG("EmptyContext::createFramebuffer");
     return nullptr;
 }
 
-RenderPass * EmptyContext::createRenderPass(const RenderPassInfo* renderpassInfo)
+RenderPass * EmptyContext::createRenderPass(const RenderPassInfo * renderpassInfo)
 {
     LOG_DEBUG("EmptyContext::createRenderPass");
     return nullptr;
