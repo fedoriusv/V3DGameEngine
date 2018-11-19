@@ -20,7 +20,7 @@ namespace renderer
     {
     public:
 
-        Framebuffer() {};
+        Framebuffer() noexcept {};
         virtual ~Framebuffer() {};
 
         virtual bool create(const RenderPass* pass) = 0;
@@ -33,7 +33,7 @@ namespace renderer
     {
     public:
 
-        FramebufferManager(Context *context)
+        explicit FramebufferManager(Context *context) noexcept
             : m_context(context)
         {
         }

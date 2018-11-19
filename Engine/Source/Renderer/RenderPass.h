@@ -2,17 +2,15 @@
 
 #include "Common.h"
 #include "TextureProperties.h"
+#include "Context.h"
 #include "Utils/Observable.h"
 #include "Utils/Logger.h"
-#include "Context.h"
 
 namespace v3d
 {
 namespace renderer
 {
     /////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    class Context;
 
     struct RenderPassInfo
     {
@@ -44,7 +42,7 @@ namespace renderer
     {
     public:
 
-        RenderPass() {};
+        RenderPass() noexcept {};
         virtual ~RenderPass() {};
 
         virtual bool create() = 0;
@@ -57,7 +55,7 @@ namespace renderer
     {
     public:
 
-        RenderPassManager(Context *context)
+        explicit RenderPassManager(Context *context) noexcept
             : m_context(context)
         {
         };

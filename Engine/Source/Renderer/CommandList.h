@@ -14,6 +14,7 @@ namespace renderer
 
     class SwapchainTexture;
     class RenderTarget;
+    class PipelineState;
     class Backbuffer;
     class CommandList;
     class Context;
@@ -29,7 +30,7 @@ namespace renderer
     {
     public:
 
-        Command();
+        Command() noexcept;
         virtual ~Command();
 
         void* operator new (size_t size) noexcept;
@@ -51,7 +52,7 @@ namespace renderer
             ThreadCommandList
         };
 
-        CommandList(Context* context, CommandListType type);
+        CommandList(Context* context, CommandListType type) noexcept;
         ~CommandList();
 
         void flushCommands();
@@ -65,6 +66,7 @@ namespace renderer
         void clearBackbuffer(const core::Vector4D& color);
 
         void setRenderTarget(RenderTarget* rendertarget);
+        void setPipelineState(PipelineState* pipeline);
         void setViewport(const core::Rect32& viewport);
 
         Context* getContext() const;
@@ -93,20 +95,20 @@ namespace renderer
 
         void flushPendingCommands();
 
-        std::queue<Command*> m_commandList;
+        std::queue<Command*>    m_commandList;
 
-        Context* m_context;
-        CommandListType m_commandListType;
+        Context*                m_context;
+        CommandListType         m_commandListType;
 
-        ContextStates       m_pendingStates;
-        bool                m_statesNeedUpdate;
+        ContextStates           m_pendingStates;
+        bool                    m_statesNeedUpdate;
 
-        RenderTargetInfo    m_pendingRenderTargetInfo;
-        bool                m_renderTargetNeedUpdate;
+        RenderTargetInfo        m_pendingRenderTargetInfo;
+        bool                    m_renderTargetNeedUpdate;
 
         //
-        SwapchainTexture* m_swapchainTexture;
-        Backbuffer*       m_backbuffer;
+        SwapchainTexture*       m_swapchainTexture;
+        Backbuffer*             m_backbuffer;
         //
     };
 

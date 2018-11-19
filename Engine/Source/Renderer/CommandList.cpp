@@ -15,11 +15,13 @@ namespace renderer
 
 utils::MemoryPool g_commandMemoryPool(1024, 64, 1024 * 2, utils::MemoryPool::getDefaultMemoryPoolAllocator());
 
+/////////////////////////////////////////////////////////////////////////////////////////////////////
+
     /*CommandBeginFrame*/
 class CommandBeginFrame : public Command
 {
 public:
-    CommandBeginFrame() 
+    CommandBeginFrame() noexcept
     {
         LOG_DEBUG("CommandBeginFrame constructor");
     };
@@ -38,7 +40,7 @@ public:
 class CommandEndFrame : public Command
 {
 public:
-    CommandEndFrame() 
+    CommandEndFrame() noexcept
     {
         LOG_DEBUG("CommandEndFrame constructor");
     };
@@ -57,7 +59,7 @@ public:
 class CommandPresentFrame : public Command
 {
 public:
-    CommandPresentFrame()
+    CommandPresentFrame() noexcept
     {
         LOG_DEBUG("CommandPresentFrame constructor");
     };
@@ -76,7 +78,7 @@ public:
 class CommandSetContextState : public Command
 {
 public:
-    CommandSetContextState(const ContextStates& pendingStates)
+    explicit CommandSetContextState(const ContextStates& pendingStates) noexcept
         : m_pendingStates(pendingStates)
     {
         LOG_DEBUG("CommandSetContextState constructor");
@@ -99,7 +101,7 @@ private:
 class CommandSetRenderTarget : public Command
 {
 public:
-    CommandSetRenderTarget(const RenderPassInfo& renderpassInfo, const std::vector<Image*>& attachments, const ClearValueInfo& clearInfo)
+    CommandSetRenderTarget(const RenderPassInfo& renderpassInfo, const std::vector<Image*>& attachments, const ClearValueInfo& clearInfo) noexcept
         : m_renderpassInfo(renderpassInfo)
         , m_attachments(attachments)
         , m_clearInfo(clearInfo)
@@ -124,7 +126,35 @@ private:
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-CommandList::CommandList(Context* context, CommandListType type)
+Command::Command() noexcept
+{
+    LOG_DEBUG("Command constructor");
+}
+
+Command::~Command()
+{
+    LOG_DEBUG("Command destructor");
+}
+
+void* Command::operator new(size_t size) noexcept
+{
+#ifdef _DEBUG
+    static size_t s_sizeMax = 0;
+    s_sizeMax = std::max(s_sizeMax, size);
+    LOG_DEBUG("Command new allocate size %u, maxSize %u", size, s_sizeMax);
+#endif
+    void* ptr = g_commandMemoryPool.getMemory(size);
+    return ptr;
+}
+
+void Command::operator delete(void* memory) noexcept
+{
+    g_commandMemoryPool.freeMemory(memory);
+}
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////
+
+CommandList::CommandList(Context* context, CommandListType type) noexcept
     : m_context(context)
     , m_commandListType(type)
     , m_statesNeedUpdate(false)
@@ -140,7 +170,7 @@ CommandList::~CommandList()
 
 void CommandList::flushCommands()
 {
-    if (m_commandListType == CommandListType::ImmediateCommandList)
+    if (CommandList::isImmediate())
     {
         return;
     }
@@ -151,7 +181,7 @@ void CommandList::flushCommands()
 
 void CommandList::beginFrame()
 {
-    if (m_commandListType == CommandListType::ImmediateCommandList)
+    if (CommandList::isImmediate())
     {
         m_context->beginFrame();
     }
@@ -163,7 +193,7 @@ void CommandList::beginFrame()
 
 void CommandList::endFrame()
 {
-    if (m_commandListType == CommandListType::ImmediateCommandList)
+    if (CommandList::isImmediate())
     {
         m_context->endFrame();
     }
@@ -175,7 +205,7 @@ void CommandList::endFrame()
 
 void CommandList::presentFrame()
 {
-    if (m_commandListType == CommandListType::ImmediateCommandList)
+    if (CommandList::isImmediate())
     {
         m_context->presentFrame();
     }
@@ -223,7 +253,7 @@ void CommandList::setRenderTarget(RenderTarget* rendertarget)
     }
 
 
-    if (m_commandListType == CommandListType::ImmediateCommandList)
+    if (CommandList::isImmediate())
     {
         m_context->setRenderTarget(&renderPassInfo, images, &clearValuesInfo);
     }
@@ -236,9 +266,14 @@ void CommandList::setRenderTarget(RenderTarget* rendertarget)
     }
 }
 
+void CommandList::setPipelineState(PipelineState * pipeline)
+{
+    //TODO:
+}
+
 void CommandList::setViewport(const core::Rect32& viewport)
 {
-    if (m_commandListType == CommandListType::ImmediateCommandList)
+    if (CommandList::isImmediate())
     {
         m_context->setViewport(viewport);
     }
@@ -283,7 +318,7 @@ void CommandList::executeCommands()
 
 void CommandList::flushPendingCommands()
 {
-    if (m_commandListType == CommandListType::ImmediateCommandList)
+    if (CommandList::isImmediate())
     {
         return;
     }
@@ -300,32 +335,6 @@ void CommandList::flushPendingCommands()
         CommandList::pushCommand(new CommandSetContextState(m_pendingStates));
         m_statesNeedUpdate = false;
     }
-}
-
-Command::Command()
-{
-    LOG_DEBUG("Command constructor");
-}
-
-Command::~Command()
-{
-    LOG_DEBUG("Command destructor");
-}
-
-void* Command::operator new(size_t size) noexcept
-{
-#ifdef _DEBUG
-    static size_t s_sizeMax = 0;
-    s_sizeMax = std::max(s_sizeMax, size);
-    LOG_DEBUG("Command new allocate size %u, maxSize %u", size, s_sizeMax);
-#endif
-    void* ptr = g_commandMemoryPool.getMemory(size);
-    return ptr;
-}
-
-void Command::operator delete(void* memory) noexcept
-{
-    g_commandMemoryPool.freeMemory(memory);
 }
 
 } //namespace renderer

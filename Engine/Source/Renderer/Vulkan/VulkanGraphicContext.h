@@ -31,7 +31,7 @@ namespace vk
     {
     public:
 
-        VulkanGraphicContext(const platform::Window* window) noexcept;
+        explicit VulkanGraphicContext(const platform::Window* window) noexcept;
         ~VulkanGraphicContext();
 
         //commands
@@ -74,9 +74,10 @@ namespace vk
         std::vector<VkQueue>    m_queueList;
         class VulkanSwapchain*  m_swapchain;
 
-        class VulkanCommandBufferManager* m_drawCmdBufferManager;
-        class VulkanCommandBuffer* m_currentDrawBuffer;
         class VulkanMemory* m_memoryManager;
+
+        VulkanCommandBufferManager* m_drawCmdBufferManager;
+        VulkanCommandBuffer*        m_currentDrawBuffer;
 
         class RenderPassManager* m_renderpassManager;
         VulkanRenderPass* m_currentRenderpass;

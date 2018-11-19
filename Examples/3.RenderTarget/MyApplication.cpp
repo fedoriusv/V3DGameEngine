@@ -59,8 +59,10 @@ int MyApplication::Execute()
         running = Window::updateWindow(m_Window);
 
         m_Window->getInputEventReceiver()->sendDeferredEvents();
-
-        MyApplication::Running(*m_CommandList);
+        if (running)
+        {
+            MyApplication::Running(*m_CommandList);
+        }
     }
 
     Exit();
@@ -78,18 +80,6 @@ void MyApplication::Initialize()
 
     m_CommandList = new renderer::CommandList(m_Context, renderer::CommandList::CommandListType::DelayedCommandList);
 
-
-
-    //RenderTarget* target = m_CommandList->createObject<RenderTarget>(core::Dimension2D(0, 0));
-    //Texture2D* colorTexture = target->attachColorTexture(renderer::ImageFormat::ImageFormat_R8G8B8A8_UInt, RenderTargetSamples::SampleCount_x1, RenderTargetLoadOp::LoadOp_Clear, RenderTargetStoreOp::StoreOp_Store);
-    //m_CommandList.setRenderTarget(target);
-
-    ////draw
-
-    //m_CommandList.submitCommands(bool wait, callbackCompete);
-    //colorTexture->read();
-
-
     ////////////////////////////////////
 
     Texture2D* texture = m_CommandList->createObject<Texture2D>(renderer::ImageFormat::ImageFormat_R8G8B8A8_UInt, core::Dimension2D(80, 80), renderer::TextureSamples::SampleCount_x1);
@@ -101,15 +91,6 @@ void MyApplication::Initialize()
     renderTarget1 = m_CommandList->createObject<RenderTarget>(core::Dimension2D(80, 80));
     bool success1 = renderTarget1->setColorTexture(0, texture2, renderer::RenderTargetLoadOp::LoadOp_DontCare, renderer::RenderTargetStoreOp::StoreOp_Store);
     m_CommandList->setRenderTarget(renderTarget1);
-    //draw
-
-    
-    //RenderTarget* target1 = m_CommandList->createObject<RenderTarget>(core::Dimension2D(0, 0));
-    //bool success = target1->setColorTexture(texture, RenderTargetLoadOp::LoadOp_Load, RenderTargetStoreOp::StoreOp_Store);
-    //m_CommandList.setRenderTarget(target1);
-
-    //draw
-
 
 
     //Texture2D* texture = m_CommandList->createObject<Texture2D>(renderer::ImageFormat::ImageFormat_Undefined, core::Dimension2D(0, 0));

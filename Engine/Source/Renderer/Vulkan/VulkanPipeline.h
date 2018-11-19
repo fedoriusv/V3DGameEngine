@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Common.h"
+#include "Pipeline.h"
 
 #ifdef VULKAN_RENDER
 #include "VulkanWrapper.h"
@@ -13,7 +14,7 @@ namespace vk
 {
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    class VulkanPipeline final //cloneble
+    class VulkanPipeline final : public Pipeline
     {
     public:
 
