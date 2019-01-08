@@ -28,6 +28,7 @@ namespace renderer
         Image* createAttachmentImage(renderer::ImageFormat format, const core::Dimension3D& dimension, TextureSamples samples, s16 filter, TextureAnisotropic anisotropicLevel, TextureWrap wrap) const override;
 
         void setRenderTarget(const RenderPassInfo* renderpassInfo, const std::vector<Image*>& attachments, const ClearValueInfo* clearInfo) override;
+        void removeRenderTarget(const RenderPassInfo * renderpassInfo, const std::vector<Image*>& attachments, const ClearValueInfo * clearInfo) override;
 
         const DeviceCaps* getDeviceCaps() const override;
 

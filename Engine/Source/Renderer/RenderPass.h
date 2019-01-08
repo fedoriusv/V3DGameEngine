@@ -77,6 +77,7 @@ namespace renderer
                 renderpass = m_context->createRenderPass(&pDesc._info);
                 if (!renderpass->create())
                 {
+                    renderpass->destroy();
                     m_renderpasses.erase(pDesc._hash);
 
                     ASSERT(false, "can't create renderpass");
@@ -96,12 +97,16 @@ namespace renderer
             RenderPassDescription pDesc;
             pDesc._info = desc;
 
-            if (!m_renderpasses.erase(pDesc._hash))
+            auto renderpass = m_renderpasses.find(pDesc._hash);
+            if (renderpass == m_renderpasses.cend())
             {
                 LOG_DEBUG("RenderPassManager renderpass not found");
                 ASSERT(false, "renderpass");
                 return false;
             }
+
+            renderpass->second->destroy();
+            renderpass->second->notifyObservers();
 
             return true;
         }

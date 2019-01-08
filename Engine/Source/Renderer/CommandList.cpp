@@ -18,13 +18,15 @@ utils::MemoryPool g_commandMemoryPool(1024, 64, 1024 * 2, utils::MemoryPool::get
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /*CommandBeginFrame*/
-class CommandBeginFrame : public Command
+class CommandBeginFrame final : public Command
 {
 public:
     CommandBeginFrame() noexcept
     {
         LOG_DEBUG("CommandBeginFrame constructor");
     };
+    CommandBeginFrame(CommandBeginFrame&) = delete;
+
     ~CommandBeginFrame() 
     {
         LOG_DEBUG("CommandBeginFrame destructor");
@@ -37,13 +39,15 @@ public:
 };
 
     /*CommandEndFrame*/
-class CommandEndFrame : public Command
+class CommandEndFrame final : public Command
 {
 public:
     CommandEndFrame() noexcept
     {
         LOG_DEBUG("CommandEndFrame constructor");
     };
+    CommandEndFrame(CommandEndFrame&) = delete;
+
     ~CommandEndFrame() 
     {
         LOG_DEBUG("CommandBeginFrame destructor");
@@ -56,13 +60,15 @@ public:
 };
 
     /*CommandPresentFrame*/
-class CommandPresentFrame : public Command
+class CommandPresentFrame final : public Command
 {
 public:
     CommandPresentFrame() noexcept
     {
         LOG_DEBUG("CommandPresentFrame constructor");
     };
+    CommandPresentFrame(CommandPresentFrame&) = delete;
+
     ~CommandPresentFrame()
     {
         LOG_DEBUG("CommandPresentFrame destructor");
@@ -75,7 +81,7 @@ public:
 };
 
     /*CommandSetContextState*/
-class CommandSetContextState : public Command
+class CommandSetContextState final : public Command
 {
 public:
     explicit CommandSetContextState(const ContextStates& pendingStates) noexcept
@@ -83,6 +89,9 @@ public:
     {
         LOG_DEBUG("CommandSetContextState constructor");
     };
+    CommandSetContextState() = delete;
+    CommandSetContextState(CommandSetContextState&) = delete;
+
     ~CommandSetContextState()
     {
         LOG_DEBUG("CommandSetContextState destructor");
@@ -98,7 +107,7 @@ private:
 };
 
     /*CommandSetRenderTarget*/
-class CommandSetRenderTarget : public Command
+class CommandSetRenderTarget final : public Command
 {
 public:
     CommandSetRenderTarget(const RenderPassInfo& renderpassInfo, const std::vector<Image*>& attachments, const ClearValueInfo& clearInfo) noexcept
@@ -108,6 +117,9 @@ public:
     {
         LOG_DEBUG("CommandSetRenderTarget constructor");
     };
+    CommandSetRenderTarget() = delete;
+    CommandSetRenderTarget(CommandSetRenderTarget&) = delete;
+
     ~CommandSetRenderTarget()
     {
         LOG_DEBUG("CommandSetRenderTarget destructor");
@@ -116,6 +128,36 @@ public:
     void execute(const CommandList& cmdList)
     {
         cmdList.getContext()->setRenderTarget(&m_renderpassInfo, m_attachments, &m_clearInfo);
+    }
+
+private:
+    RenderPassInfo      m_renderpassInfo;
+    std::vector<Image*> m_attachments;
+    ClearValueInfo      m_clearInfo;
+};
+
+    /*CommandRemoveRenderTarget*/
+class CommandRemoveRenderTarget final : public Command
+{
+public:
+    CommandRemoveRenderTarget(const RenderPassInfo& renderpassInfo, const std::vector<Image*>& attachments, const ClearValueInfo& clearInfo) noexcept
+        : m_renderpassInfo(renderpassInfo)
+        , m_attachments(attachments)
+        , m_clearInfo(clearInfo)
+    {
+        LOG_DEBUG("CommandRemoveRenderTarget constructor");
+    };
+    CommandRemoveRenderTarget() = delete;
+    CommandRemoveRenderTarget(CommandRemoveRenderTarget&) = delete;
+
+    ~CommandRemoveRenderTarget()
+    {
+        LOG_DEBUG("CommandRemoveRenderTarget destructor");
+    };
+
+    void execute(const CommandList& cmdList)
+    {
+        cmdList.getContext()->removeRenderTarget(&m_renderpassInfo, m_attachments, &m_clearInfo);
     }
 
 private:
@@ -157,8 +199,6 @@ void Command::operator delete(void* memory) noexcept
 CommandList::CommandList(Context* context, CommandListType type) noexcept
     : m_context(context)
     , m_commandListType(type)
-    , m_statesNeedUpdate(false)
-    , m_renderTargetNeedUpdate(false)
 {
     m_swapchainTexture = createObject<SwapchainTexture>();
     m_backbuffer = createObject<Backbuffer>(m_swapchainTexture);
@@ -175,7 +215,7 @@ void CommandList::flushCommands()
         return;
     }
 
-    CommandList::flushPendingCommands();
+    CommandList::flushPendingCommands(m_pendingFlushMask);
     CommandList::executeCommands();
 }
 
@@ -262,7 +302,7 @@ void CommandList::setRenderTarget(RenderTarget* rendertarget)
         m_pendingRenderTargetInfo._attachments = std::move(images);
         m_pendingRenderTargetInfo._clearInfo = std::move(clearValuesInfo);
         m_pendingRenderTargetInfo._renderpassInfo = std::move(renderPassInfo);
-        m_renderTargetNeedUpdate = true;
+        m_pendingFlushMask |= PendingFlush_UpdateRenderTarget;
     }
 }
 
@@ -280,7 +320,50 @@ void CommandList::setViewport(const core::Rect32& viewport)
     else
     {
         m_pendingStates._viewport = viewport;
-        m_statesNeedUpdate = true;
+        m_pendingFlushMask |= PendingFlush_UpdateContextState;
+    }
+}
+
+void CommandList::removeRenderTarget(RenderTarget* rendertarget)
+{
+    std::vector<renderer::Image*> images;
+    images.reserve(rendertarget->getColorTextureCount() + (rendertarget->hasDepthStencilTexture()) ? 1 : 0);
+
+    ClearValueInfo clearValuesInfo;
+    clearValuesInfo._size = rendertarget->m_size;
+    clearValuesInfo._color.reserve(images.size());
+
+    RenderPassInfo renderPassInfo;
+
+    renderPassInfo._countColorAttachments = rendertarget->getColorTextureCount();
+    for (u32 index = 0; index < renderPassInfo._countColorAttachments; ++index)
+    {
+        auto attachment = rendertarget->m_colorTextures[index];
+
+        images.push_back(std::get<0>(attachment)->getImage());
+        renderPassInfo._attachments[index] = std::get<1>(attachment);
+
+        clearValuesInfo._color.push_back(std::get<2>(attachment));
+    }
+
+    renderPassInfo._hasDepthStencilAttahment = rendertarget->hasDepthStencilTexture();
+    if (renderPassInfo._hasDepthStencilAttahment)
+    {
+        images.push_back(rendertarget->getDepthStencilTexture()->getImage());
+        renderPassInfo._attachments.back() = std::get<1>(rendertarget->m_depthStencilTexture);
+
+        clearValuesInfo._depth = std::get<2>(rendertarget->m_depthStencilTexture);
+        clearValuesInfo._stencil = std::get<3>(rendertarget->m_depthStencilTexture);
+    }
+
+    if (CommandList::isImmediate())
+    {
+        m_context->removeRenderTarget(&renderPassInfo, images, &clearValuesInfo);
+    }
+    else
+    {
+        CommandList::flushPendingCommands(PendingFlush_UpdateRenderTarget);
+        CommandList::pushCommand(new CommandRemoveRenderTarget(renderPassInfo, images, clearValuesInfo));
     }
 }
 
@@ -316,24 +399,24 @@ void CommandList::executeCommands()
     }
 }
 
-void CommandList::flushPendingCommands()
+void CommandList::flushPendingCommands(u32 pendingFlushMask)
 {
     if (CommandList::isImmediate())
     {
         return;
     }
 
-    if (m_renderTargetNeedUpdate)
+    if (pendingFlushMask & PendingFlush_UpdateRenderTarget)
     {
         CommandList::pushCommand(
             new CommandSetRenderTarget(m_pendingRenderTargetInfo._renderpassInfo, m_pendingRenderTargetInfo._attachments, m_pendingRenderTargetInfo._clearInfo));
-        m_renderTargetNeedUpdate = false;
+        pendingFlushMask |= ~PendingFlush_UpdateRenderTarget;
     }
 
-    if (m_statesNeedUpdate)
+    if (pendingFlushMask & PendingFlush_UpdateContextState)
     {
         CommandList::pushCommand(new CommandSetContextState(m_pendingStates));
-        m_statesNeedUpdate = false;
+        pendingFlushMask |= ~PendingFlush_UpdateContextState;
     }
 }
 

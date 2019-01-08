@@ -55,6 +55,7 @@ namespace renderer
 
         virtual void setViewport(const core::Rect32& viewport) = 0;
         virtual void setRenderTarget(const RenderPassInfo* renderpassInfo, const std::vector<Image*>& attachments, const ClearValueInfo* clearInfo) = 0;
+        virtual void removeRenderTarget(const RenderPassInfo * renderpassInfo, const std::vector<Image*>& attachments, const ClearValueInfo * clearInfo) = 0;
 
         //create
         virtual Image* createImage(TextureTarget target, renderer::ImageFormat format, const core::Dimension3D& dimension, u32 mipmapLevel,

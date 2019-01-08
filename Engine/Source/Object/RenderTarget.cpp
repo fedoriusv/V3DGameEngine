@@ -26,6 +26,7 @@ RenderTarget::RenderTarget(renderer::CommandList& cmdList, const core::Dimension
 
 RenderTarget::~RenderTarget()
 {
+    m_cmdList.removeRenderTarget(this);
 }
 
 bool RenderTarget::setColorTexture(u32 index, Texture2D* colorTexture, RenderTargetLoadOp loadOp, RenderTargetStoreOp storeOp, const core::Vector4D& clearColor)

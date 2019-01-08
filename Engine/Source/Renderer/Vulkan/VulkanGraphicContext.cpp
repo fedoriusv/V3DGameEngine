@@ -169,6 +169,16 @@ void VulkanGraphicContext::setRenderTarget(const RenderPassInfo * renderpassInfo
     }
 }
 
+void VulkanGraphicContext::removeRenderTarget(const RenderPassInfo * renderpassInfo, const std::vector<Image*>& attachments, const ClearValueInfo * clearInfo)
+{
+
+    ASSERT(false, "need implement correct");
+    m_framebuferManager->removeFramebuffer(attachments);
+    
+    //TODO: check if not used for another framebuffers
+    m_renderpassManager->removeRenderPass(*renderpassInfo);
+}
+
 Image * VulkanGraphicContext::createImage(TextureTarget target, renderer::ImageFormat format, const core::Dimension3D& dimension, u32 mipLevels,
     s16 filter, TextureAnisotropic anisotropicLevel, TextureWrap wrap) const
 {

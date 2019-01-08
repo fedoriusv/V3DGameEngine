@@ -54,6 +54,7 @@ namespace renderer
                 framebuffer = m_context->createFramebuffer(images, size);
                 if (!framebuffer->create(renderpass))
                 {
+                    framebuffer->destroy();
                     m_framebuffers.erase(hash);
 
                     ASSERT(false, "can't create framebuffer");
@@ -68,14 +69,20 @@ namespace renderer
             return found.first->second;
         }
 
-        bool removeFramebuffer(Framebuffer* framebuffer)
+        bool removeFramebuffer(const std::vector<Image*>& images)
         {
-            /*if (!m_framebuffers.erase(hash))
+            u32 hash = crc32c::Crc32c((char*)images.data(), images.size() * sizeof(Image*));
+
+            auto framebuffer = m_framebuffers.find(hash);
+            if (framebuffer == m_framebuffers.cend())
             {
                 LOG_DEBUG("FramebufferManager renderpass not found");
                 ASSERT(false, "renderpass");
                 return false;
-            }*/
+            }
+
+            framebuffer->second->destroy();
+            framebuffer->second->notifyObservers();
 
             return true;
         }

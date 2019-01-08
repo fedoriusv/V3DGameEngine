@@ -41,7 +41,7 @@ endif()
 
 #Project
 ##############################################################
-set(SOLUTION_NAME V3DGameEngine)
+set(SOLUTION_NAME V3DGE)
 set(ENGINE_NAME V3DEngine)
 
 project(${SOLUTION_NAME})

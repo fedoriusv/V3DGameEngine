@@ -69,6 +69,8 @@ namespace renderer
         void setPipelineState(PipelineState* pipeline);
         void setViewport(const core::Rect32& viewport);
 
+        void removeRenderTarget(RenderTarget* rendertarget);
+
         Context* getContext() const;
         bool isThreaded() const;
         bool isImmediate() const;
@@ -93,7 +95,7 @@ namespace renderer
 
         void executeCommands();
 
-        void flushPendingCommands();
+        void flushPendingCommands(u32 pendingFlushMask);
 
         std::queue<Command*>    m_commandList;
 
@@ -101,10 +103,15 @@ namespace renderer
         CommandListType         m_commandListType;
 
         ContextStates           m_pendingStates;
-        bool                    m_statesNeedUpdate;
-
         RenderTargetInfo        m_pendingRenderTargetInfo;
-        bool                    m_renderTargetNeedUpdate;
+
+        enum PendingFlushMask
+        {
+            PendingFlush_UpdateRenderTarget = 0x1,
+            PendingFlush_UpdateContextState = 0x2,
+        };
+
+        u32                     m_pendingFlushMask;
 
         //
         SwapchainTexture*       m_swapchainTexture;

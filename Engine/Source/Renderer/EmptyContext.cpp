@@ -61,6 +61,11 @@ void EmptyContext::setRenderTarget(const RenderPassInfo * renderpassInfo, const 
     LOG_DEBUG("EmptyContext::setRenderTarget");
 }
 
+void EmptyContext::removeRenderTarget(const RenderPassInfo * renderpassInfo, const std::vector<Image*>& attachments, const ClearValueInfo * clearInfo)
+{
+    LOG_DEBUG("EmptyContext::removeRenderTarget");
+}
+
 const DeviceCaps* EmptyContext::getDeviceCaps() const
 {
     return nullptr;
