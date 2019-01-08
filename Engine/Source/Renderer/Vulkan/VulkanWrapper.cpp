@@ -303,49 +303,52 @@ void VulkanWrapper::DestroyImageView(VkDevice device, VkImageView imageView, con
     vkDestroyImageView(device, imageView, pAllocator);
 }
 
-/////////////////////////////////////////////////
-
 VkResult VulkanWrapper::CreateShaderModule(VkDevice device, const VkShaderModuleCreateInfo * pCreateInfo, const VkAllocationCallbacks * pAllocator, VkShaderModule * pShaderModule) noexcept
 {
-    return VK_NOT_READY;
+    return vkCreateShaderModule(device, pCreateInfo, pAllocator, pShaderModule);
 }
 
 void VulkanWrapper::DestroyShaderModule(VkDevice device, VkShaderModule shaderModule, const VkAllocationCallbacks * pAllocator) noexcept
 {
+    vkDestroyShaderModule(device, shaderModule, pAllocator);
 }
 
 VkResult VulkanWrapper::CreatePipelineCache(VkDevice device, const VkPipelineCacheCreateInfo * pCreateInfo, const VkAllocationCallbacks * pAllocator, VkPipelineCache * pPipelineCache) noexcept
 {
-    return VK_NOT_READY;
+    return vkCreatePipelineCache(device, pCreateInfo, pAllocator, pPipelineCache);
 }
 
 void VulkanWrapper::DestroyPipelineCache(VkDevice device, VkPipelineCache pipelineCache, const VkAllocationCallbacks * pAllocator) noexcept
 {
+    vkDestroyPipelineCache(device, pipelineCache, pAllocator);
 }
 
 VkResult VulkanWrapper::GetPipelineCacheData(VkDevice device, VkPipelineCache pipelineCache, size_t * pDataSize, void * pData) noexcept
 {
-    return VK_NOT_READY;
+    return vkGetPipelineCacheData(device, pipelineCache, pDataSize, pData);
 }
 
 VkResult VulkanWrapper::MergePipelineCaches(VkDevice device, VkPipelineCache dstCache, uint32_t srcCacheCount, const VkPipelineCache * pSrcCaches) noexcept
 {
-    return VK_NOT_READY;
+    return vkMergePipelineCaches(device, dstCache, srcCacheCount, pSrcCaches);
 }
 
 VkResult VulkanWrapper::CreateGraphicsPipelines(VkDevice device, VkPipelineCache pipelineCache, uint32_t createInfoCount, const VkGraphicsPipelineCreateInfo * pCreateInfos, const VkAllocationCallbacks * pAllocator, VkPipeline * pPipelines) noexcept
 {
-    return VK_NOT_READY;
+    return vkCreateGraphicsPipelines(device, pipelineCache, createInfoCount, pCreateInfos, pAllocator, pPipelines);
 }
 
 VkResult VulkanWrapper::CreateComputePipelines(VkDevice device, VkPipelineCache pipelineCache, uint32_t createInfoCount, const VkComputePipelineCreateInfo * pCreateInfos, const VkAllocationCallbacks * pAllocator, VkPipeline * pPipelines) noexcept
 {
-    return VK_NOT_READY;
+    return vkCreateComputePipelines(device, pipelineCache, createInfoCount, pCreateInfos, pAllocator, pPipelines);
 }
 
 void VulkanWrapper::DestroyPipeline(VkDevice device, VkPipeline pipeline, const VkAllocationCallbacks * pAllocator) noexcept
 {
+    vkDestroyPipeline(device, pipeline, pAllocator);
 }
+
+/////////////////////////////////////////////////
 
 VkResult VulkanWrapper::CreatePipelineLayout(VkDevice device, const VkPipelineLayoutCreateInfo * pCreateInfo, const VkAllocationCallbacks * pAllocator, VkPipelineLayout * pPipelineLayout) noexcept
 {

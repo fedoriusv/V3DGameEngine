@@ -13,17 +13,36 @@ namespace renderer
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    enum class PolygonMode : u32
+    {
+        PolygonMode_Triangle,
+        PolygonMode_Line,
+        PolygonMode_Point
+    };
+
+    enum class FrontFace : u32
+    {
+        FrontFace_CounterClockwise,
+        FrontFace_Clockwise
+    };
+
+    enum class CullMode : u32
+    {
+        CullMode_None,
+        CullMode_Front,
+        CullMode_Back,
+        CullMode_FrontAndBack,
+    };
+
     class GraphicsPipelineState : public PipelineState
     {
     public:
-        GraphicsPipelineState() {};
-        ~GraphicsPipelineState() {};
-
-    private:
 
         struct RasterizationState
         {
-            //TODO:
+            PolygonMode _polygonMode;
+            FrontFace   _frontFace;
+            CullMode    _cullMode;
         };
 
         struct BlendStateDesc
@@ -37,6 +56,15 @@ namespace renderer
             BlendStateDesc      _blendState;
 
         };
+
+        GraphicsPipelineState() noexcept;
+        GraphicsPipelineState(const GraphicsPipelineStateDesc& desc) noexcept;
+
+        ~GraphicsPipelineState();
+
+        void setPolygonMode(PolygonMode polygonMode);
+
+    private:
 
         GraphicsPipelineStateDesc m_pipelineStateDesc;
     };

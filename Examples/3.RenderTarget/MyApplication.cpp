@@ -93,7 +93,7 @@ void MyApplication::Initialize()
     bool success1 = renderTarget1->setColorTexture(0, texture2, renderer::RenderTargetLoadOp::LoadOp_DontCare, renderer::RenderTargetStoreOp::StoreOp_Store);
     m_CommandList->setRenderTarget(renderTarget1);
 
-    //GraphicsPipelineState 
+    GraphicsPipelineState pipeline;
 
     //Texture2D* texture = m_CommandList->createObject<Texture2D>(renderer::ImageFormat::ImageFormat_Undefined, core::Dimension2D(0, 0));
     //texture->update({ 0,0 }, {0, 0}, 1, nullptr);

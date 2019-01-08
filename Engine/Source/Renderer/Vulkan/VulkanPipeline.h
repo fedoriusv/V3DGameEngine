@@ -14,12 +14,24 @@ namespace vk
 {
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    class VulkanPipeline final : public Pipeline
+    class VulkanGraphicPipeline final : public Pipeline
     {
     public:
 
-        VulkanPipeline() {};
-        ~VulkanPipeline() {};
+        VulkanGraphicPipeline(VkDevice device);
+        ~VulkanGraphicPipeline();
+
+        bool create(const PipelineGraphicInfo* pipelineInfo) override;
+        void destroy() override;
+
+        static VkPolygonMode convertPolygonModeToVk(PolygonMode mode);
+        static VkCullModeFlags convertCullModeToVk(CullMode mode);
+        static VkFrontFace convertFrontFaceToVk(FrontFace face);
+
+    private:
+
+        VkDevice     m_device;
+        VkPipeline   m_pipeline;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
