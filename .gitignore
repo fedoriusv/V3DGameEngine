@@ -22,6 +22,7 @@
 ipch/
 obj/
 Project/Win64/*
+Engine/Libs/spirv/*
 [Dd]ebug*/
 [Rr]elease*/
 Ankh.NoLoad
