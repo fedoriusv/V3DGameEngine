@@ -10,7 +10,7 @@ option(BUILD_VULKAN_SDK "Build use Vulkan SDK" ON)
 #ThirdParty
 option(CRC32_LIB "Use Crc32c lib" ON)
 #https://github.com/google/crc32c
-option(SPIRV_INSTALL_FROM_GITHUB "implicity install SpirV" ON)
+option(SPIRV_INSTALL_FROM_GITHUB "implicity install SpirV" OFF)
 ##############################################################
 if(COMPILER_MSVC)
     message("-- Configuring MSVC Compiler")
@@ -62,11 +62,6 @@ if (CRC32_LIB)
 	set(LIB_INCLUDE_DIRECTORY ${LIB_INCLUDE_DIRECTORY} ${ENGINE_PROJECT_DIR}/Engine/Libs/crc32c/include)
 endif()
 
-#spirV
-if (SPIRV_INSTALL_FROM_GITHUB)
-	set (SPIRV_FOLDER ${ENGINE_PROJECT_DIR}/Engine/Libs/spirv)
-endif()
-
 include_directories(BEFORE ${LIB_INCLUDE_DIRECTORY})
 ##############################################################
  
@@ -82,9 +77,32 @@ if(BUILD_VULKAN_SDK)
 	if ("${VULKAN_SDK_PATH}" STREQUAL "")
 		message(FATAL_ERROR "Vulkan SDK not found. Please add VK_SDK_PATH to system variable")
 	endif()
-    set(VULKAN_SDK_INCLUDE_DIRECTORY ${VULKAN_SDK_PATH}/Include)
+    set(VULKAN_SDK_INCLUDE_DIRECTORY "-I${VULKAN_SDK_PATH}/Include")
     set(VULKAN_SDK_LIB_DIRECTORY ${VULKAN_SDK_PATH}/Lib)
     message("-- Vulkan SDK Path " ${VULKAN_SDK_PATH})
+	
+	#SpirV
+	set (SPIRV_FOLDER ${ENGINE_PROJECT_DIR}/Engine/Libs/spirv)
+	if ((IS_DIRECTORY ${SPIRV_FOLDER}/shaderc AND IS_DIRECTORY ${SPIRV_FOLDER}/SPIRV-Cross) OR SPIRV_INSTALL_FROM_GITHUB)
+		set(VULKAN_SDK_INCLUDE_DIRECTORY "${VULKAN_SDK_INCLUDE_DIRECTORY} -I${SPIRV_FOLDER}/shaderc/libshaderc/include")
+		set(VULKAN_SDK_INCLUDE_DIRECTORY "${VULKAN_SDK_INCLUDE_DIRECTORY} -I${SPIRV_FOLDER}/SPIRV-Cross")
+		set(VULKAN_SDK_DEFINE "${VULKAN_SDK_DEFINE} -DUSE_SPIRV")
+		if (WIN32)
+			set(SHADERC_LIB_FILE_DEBUG ${SPIRV_FOLDER}/shaderc/libshaderc/Debug/shadercd.lib)
+			#set(SHADERC_COMBINED_LIB_FILE_DEBUG ${SPIRV_FOLDER}/shaderc/libshaderc/Debug/shaderc_combined.lib)
+			set(SHADERC_LIB_FILE_RELEASE ${SPIRV_FOLDER}/shaderc/libshaderc/Release/shaderc.lib)
+			#set(SHADERC_COMBINED_LIB_FILE_RELEASE ${SPIRV_FOLDER}/shaderc/libshaderc/Release/shaderc_combined.lib)
+			
+			#set(SPIRV_CROSS_CPP_DEBUG ${SPIRV_FOLDER}/SPIRV-Cross/Debug/spirv-cross-cpp.lib)
+			#set(SPIRV_CROSS_CORE_DEBUG ${SPIRV_FOLDER}/SPIRV-Cross/Debug/spirv-cross-core.lib)
+			set(SPIRV_CROSS_GLSL_DEBUG ${SPIRV_FOLDER}/SPIRV-Cross/Debug/spirv-cross-glsl.lib)
+			#set(SPIRV_CROSS_MSL_DEBUG ${SPIRV_FOLDER}/SPIRV-Cross/Debug/spirv-cross-msl.lib)  
+			#set(SPIRV_CROSS_CPP_RELEASE ${SPIRV_FOLDER}/SPIRV-Cross/Release/spirv-cross-cpp.lib)
+			#set(SPIRV_CROSS_CORE_RELEASE ${SPIRV_FOLDER}/SPIRV-Cross/Release/spirv-cross-core.lib)
+			set(SPIRV_CROSS_GLSL_RELEASE ${SPIRV_FOLDER}/SPIRV-Cross/Release/spirv-cross-glsl.lib)
+			#set(SPIRV_CROSS_MSL_RELEASE ${SPIRV_FOLDER}/SPIRV-Cross/Release/spirv-cross-msl.lib)
+		endif()
+	endif()
 endif()
 
 
@@ -94,12 +112,12 @@ if(WIN32)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /EHsc /MP")
 #   Debug
     set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DDEBUG -DUSE_LOGGER -D_CRT_SECURE_NO_WARNINGS ${VULKAN_SDK_DEFINE}")
-    set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -I${VULKAN_SDK_INCLUDE_DIRECTORY}")
+    set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} ${VULKAN_SDK_INCLUDE_DIRECTORY}")
     set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /Zi /MTd /std:c++17")
     set(CMAKE_DEBUG_POSTFIX "_d")
 #   Release
     set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -DUSE_LOGGER ${VULKAN_SDK_DEFINE}")
-    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -I${VULKAN_SDK_INCLUDE_DIRECTORY}")
+    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} ${VULKAN_SDK_INCLUDE_DIRECTORY}")
     set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /MT /std:c++17")
 endif()
 ##############################################################
@@ -157,6 +175,18 @@ set(BUILD_DEPENDENCIES "")
 if (CRC32_LIB)
 	target_link_libraries(${ENGINE_NAME} crc32c)
 	set(BUILD_DEPENDENCIES ${BUILD_DEPENDENCIES} crc32c)
+endif()
+
+#Spirv
+if (BUILD_VULKAN_SDK)
+	if ((IS_DIRECTORY ${SPIRV_FOLDER}/shaderc AND IS_DIRECTORY ${SPIRV_FOLDER}/SPIRV-Cross) OR SPIRV_INSTALL_FROM_GITHUB)
+		target_link_libraries(${ENGINE_NAME} optimized ${SHADERC_LIB_FILE_RELEASE}          debug ${SHADERC_LIB_FILE_DEBUG})
+		#target_link_libraries(${ENGINE_NAME} optimized ${SHADERC_COMBINED_LIB_FILE_RELEASE} debug ${SHADERC_COMBINED_LIB_FILE_DEBUG})
+		#target_link_libraries(${ENGINE_NAME} optimized ${SPIRV_CROSS_CPP_RELEASE}           debug ${SPIRV_CROSS_CPP_DEBUG})
+		#target_link_libraries(${ENGINE_NAME} optimized ${SPIRV_CROSS_CORE_RELEASE}          debug ${SPIRV_CROSS_CORE_DEBUG})
+		target_link_libraries(${ENGINE_NAME} optimized ${SPIRV_CROSS_GLSL_RELEASE}          debug ${SPIRV_CROSS_GLSL_DEBUG})
+		#target_link_libraries(${ENGINE_NAME} optimized ${SPIRV_CROSS_MSL_RELEASE}           debug ${SPIRV_CROSS_MSL_DEBUG})
+	endif()
 endif()
 
 link_directories(${ENGINE_NAME} ${VULKAN_SDK_LIB_DIRECTORY})
