@@ -10,6 +10,7 @@ option(BUILD_VULKAN_SDK "Build use Vulkan SDK" ON)
 #ThirdParty
 option(CRC32_LIB "Use Crc32c lib" ON)
 #https://github.com/google/crc32c
+option(SPIRV_INSTALL_FROM_GITHUB "implicity install SpirV" ON)
 ##############################################################
 if(COMPILER_MSVC)
     message("-- Configuring MSVC Compiler")
@@ -53,12 +54,17 @@ set(SOURCE_DIR Engine/Source)
 set(ENGINE_PROJECT_DIR ${PROJECT_SOURCE_DIR})
 set(LIB_INCLUDE_DIRECTORY 
 	${ENGINE_PROJECT_DIR}/${SOURCE_DIR} 
-	${ENGINE_PROJECT_DIR}/${SOURCE_DIR}/Renderer 
+	${ENGINE_PROJECT_DIR}/${SOURCE_DIR}/Renderer
 	${ENGINE_PROJECT_DIR}/${SOURCE_DIR}/ThirdParty)
 
 #Crc32c	
 if (CRC32_LIB)
-	set(LIB_INCLUDE_DIRECTORY ${LIB_INCLUDE_DIRECTORY} ${ENGINE_PROJECT_DIR}/Libs/crc32c/include)
+	set(LIB_INCLUDE_DIRECTORY ${LIB_INCLUDE_DIRECTORY} ${ENGINE_PROJECT_DIR}/Engine/Libs/crc32c/include)
+endif()
+
+#spirV
+if (SPIRV_INSTALL_FROM_GITHUB)
+	set (SPIRV_FOLDER ${ENGINE_PROJECT_DIR}/Engine/Libs/spirv)
 endif()
 
 include_directories(BEFORE ${LIB_INCLUDE_DIRECTORY})
@@ -74,7 +80,7 @@ if(BUILD_VULKAN_SDK)
     #VK_SDK_PATH - must be added to system variables
     set(VULKAN_SDK_PATH $ENV{VK_SDK_PATH})
 	if ("${VULKAN_SDK_PATH}" STREQUAL "")
-		message(FATAL_ERROR "Vulkan SDK not found. Please add VK_SDK_PATH system variable")
+		message(FATAL_ERROR "Vulkan SDK not found. Please add VK_SDK_PATH to system variable")
 	endif()
     set(VULKAN_SDK_INCLUDE_DIRECTORY ${VULKAN_SDK_PATH}/Include)
     set(VULKAN_SDK_LIB_DIRECTORY ${VULKAN_SDK_PATH}/Lib)
@@ -179,4 +185,14 @@ endif ()
 
 add_dependencies(${ENGINE_NAME} ${BUILD_DEPENDENCIES})
 
+##############################################################
+
+#install external libs
+##############################################################
+
+if (WIN32 AND SPIRV_INSTALL_FROM_GITHUB)
+message("-- Installing SPIRV:")
+execute_process(COMMAND ${SPIRV_FOLDER}/install.bat WORKING_DIRECTORY ${SPIRV_FOLDER})
+message("-- SPIRV Installed")
+endif()
 ##############################################################
