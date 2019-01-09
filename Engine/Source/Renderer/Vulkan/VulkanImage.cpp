@@ -167,25 +167,25 @@ VkSampleCountFlagBits VulkanImage::convertRenderTargetSamplesToVkSampleCount(Tex
 {
     switch (samples)
     {
-    case TextureSamples::SampleCount_x1:
+    case TextureSamples::TextureSamples_x1:
         return VK_SAMPLE_COUNT_1_BIT;
 
-    case TextureSamples::SampleCount_x2:
+    case TextureSamples::TextureSamples_x2:
         return VK_SAMPLE_COUNT_2_BIT;
 
-    case TextureSamples::SampleCount_x4:
+    case TextureSamples::TextureSamples_x4:
         return VK_SAMPLE_COUNT_4_BIT;
 
-    case TextureSamples::SampleCount_x8:
+    case TextureSamples::TextureSamples_x8:
         return VK_SAMPLE_COUNT_8_BIT;
 
-    case TextureSamples::SampleCount_x16:
+    case TextureSamples::TextureSamples_x16:
         return VK_SAMPLE_COUNT_16_BIT;
 
-    case TextureSamples::SampleCount_x32:
+    case TextureSamples::TextureSamples_x32:
         return VK_SAMPLE_COUNT_32_BIT;
 
-    case TextureSamples::SampleCount_x64:
+    case TextureSamples::TextureSamples_x64:
         return VK_SAMPLE_COUNT_64_BIT;
 
     default:

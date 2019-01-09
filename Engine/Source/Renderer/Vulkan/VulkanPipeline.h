@@ -28,6 +28,8 @@ namespace vk
         static VkCullModeFlags convertCullModeToVk(CullMode mode);
         static VkFrontFace convertFrontFaceToVk(FrontFace face);
 
+        static VkPrimitiveTopology convertPrimitiveTopologyToVk(PrimitiveTopology primitiveTopology);
+
     private:
 
         VkDevice     m_device;

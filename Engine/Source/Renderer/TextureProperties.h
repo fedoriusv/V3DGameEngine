@@ -21,41 +21,41 @@ namespace renderer
 
     enum TextureFilter : s16
     {
-        TextureFilterNearest = 0x1,
-        TextureFilterLinear = 0x2,
+        TextureFilter_Nearest = 0x1,
+        TextureFilter_Linear = 0x2,
 
-        TextureFilterNearestMipmapNearest = 0x4,
-        TextureFilterNearestMipmapLinear = 0x8,
-        TextureFilterLinearMipmapNearest = 0x16,
-        TextureFilterLinearMipmapLinear = 0x32
+        TextureFilter_NearestMipmapNearest = 0x4,
+        TextureFilter_NearestMipmapLinear = 0x8,
+        TextureFilter_LinearMipmapNearest = 0x16,
+        TextureFilter_LinearMipmapLinear = 0x32
     };
 
     enum class TextureAnisotropic : s16
     {
-        TextureAnisotropicNone = 0,
-        TextureAnisotropic2x = 1 << 1,
-        TextureAnisotropic4x = 1 << 2,
-        TextureAnisotropic8x = 1 << 3,
-        TextureAnisotropic16x = 1 << 4,
+        TextureAnisotropic_None = 0,
+        TextureAnisotropic_2x = 1 << 1,
+        TextureAnisotropic_4x = 1 << 2,
+        TextureAnisotropic_8x = 1 << 3,
+        TextureAnisotropic_16x = 1 << 4,
     };
 
     enum class TextureWrap : s16
     {
-        TextureRepeat,
-        TextureMirroredRepeat,
-        TextureClampToEdge,
-        TextureClampToBorder,
+        TextureWrap_Repeat,
+        TextureWrap_MirroredRepeat,
+        TextureWrap_ClampToEdge,
+        TextureWrap_ClampToBorder,
     };
 
     enum class TextureSamples : s32
     {
-        SampleCount_x1 = 0x1,
-        SampleCount_x2 = 0x2,
-        SampleCount_x4 = 0x4,
-        SampleCount_x8 = 0x8,
-        SampleCount_x16 = 0x16,
-        SampleCount_x32 = 0x32,
-        SampleCount_x64 = 0x64,
+        TextureSamples_x1 = 0x1,
+        TextureSamples_x2 = 0x2,
+        TextureSamples_x4 = 0x4,
+        TextureSamples_x8 = 0x8,
+        TextureSamples_x16 = 0x16,
+        TextureSamples_x32 = 0x32,
+        TextureSamples_x64 = 0x64,
     };
 
     enum class RenderTargetLoadOp : s32
@@ -80,7 +80,7 @@ namespace renderer
         AttachmentDescription()
         {
             memset(this, 0, sizeof(AttachmentDescription));
-            _samples = TextureSamples::SampleCount_x1;
+            _samples = TextureSamples::TextureSamples_x1;
         }
 
 

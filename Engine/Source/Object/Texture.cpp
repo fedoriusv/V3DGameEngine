@@ -205,11 +205,11 @@ Texture2D::Texture2D(renderer::CommandList& cmdList, renderer::ImageFormat forma
     , m_format(format)
     , m_dimension(dimension)
     , m_mipmapLevel(mipmapCount)
-    , m_samples(renderer::TextureSamples::SampleCount_x1)
+    , m_samples(renderer::TextureSamples::TextureSamples_x1)
 
-    , m_filter(renderer::TextureFilterNearest)
-    , m_anisotropicLevel(renderer::TextureAnisotropic::TextureAnisotropicNone)
-    , m_wrap(renderer::TextureWrap::TextureRepeat)
+    , m_filter(renderer::TextureFilter_Nearest)
+    , m_anisotropicLevel(renderer::TextureAnisotropic::TextureAnisotropic_None)
+    , m_wrap(renderer::TextureWrap::TextureWrap_Repeat)
 
     , m_image(nullptr)
 
@@ -230,9 +230,9 @@ Texture2D::Texture2D(renderer::CommandList & cmdList, renderer::ImageFormat form
     , m_mipmapLevel(0)
     , m_samples(samples)
 
-    , m_filter(renderer::TextureFilterNearest)
-    , m_anisotropicLevel(renderer::TextureAnisotropic::TextureAnisotropicNone)
-    , m_wrap(renderer::TextureWrap::TextureRepeat)
+    , m_filter(renderer::TextureFilter_Nearest)
+    , m_anisotropicLevel(renderer::TextureAnisotropic::TextureAnisotropic_None)
+    , m_wrap(renderer::TextureWrap::TextureWrap_Repeat)
 
     , m_image(nullptr)
 {
@@ -295,12 +295,12 @@ renderer::TextureTarget Texture2D::getTarget() const
 
 renderer::TextureFilter Texture2D::getMinFilter() const
 {
-    return renderer::TextureFilterNearest;
+    return renderer::TextureFilter_Nearest;
 }
 
 renderer::TextureFilter Texture2D::getMagFilter() const
 {
-    return renderer::TextureFilterNearest;
+    return renderer::TextureFilter_Nearest;
 }
 
 renderer::TextureWrap Texture2D::getWrap() const

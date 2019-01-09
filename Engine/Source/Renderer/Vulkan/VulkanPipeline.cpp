@@ -72,7 +72,51 @@ VkFrontFace VulkanGraphicPipeline::convertFrontFaceToVk(FrontFace face)
         break;
     }
     ASSERT(false, "mode not found");
-    return VK_FRONT_FACE_COUNTER_CLOCKWISE;
+    return VK_FRONT_FACE_CLOCKWISE;
+}
+
+VkPrimitiveTopology VulkanGraphicPipeline::convertPrimitiveTopologyToVk(PrimitiveTopology primitiveTopology)
+{
+    switch (primitiveTopology)
+    {
+    case PrimitiveTopology::PrimitiveTopology_PointList:
+        return VK_PRIMITIVE_TOPOLOGY_POINT_LIST;
+
+    case PrimitiveTopology::PrimitiveTopology_LineList:
+        return VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
+
+    case PrimitiveTopology::PrimitiveTopology_LineStrip:
+        return VK_PRIMITIVE_TOPOLOGY_LINE_STRIP;
+
+    case PrimitiveTopology::PrimitiveTopology_TriangleList:
+        return VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+
+    case PrimitiveTopology::PrimitiveTopology_TriangleStrip:
+        return VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
+
+    case PrimitiveTopology::PrimitiveTopology_TriangleFan:
+        return VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN;
+
+    case PrimitiveTopology::PrimitiveTopology_LineListWithAdjacency:
+        return VK_PRIMITIVE_TOPOLOGY_LINE_LIST_WITH_ADJACENCY;
+
+    case PrimitiveTopology::PrimitiveTopology_LineStripWithAdjacency:
+        return VK_PRIMITIVE_TOPOLOGY_LINE_STRIP_WITH_ADJACENCY;
+
+    case PrimitiveTopology::PrimitiveTopology_TriangleListWithAdjacency:
+        return VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST_WITH_ADJACENCY;
+
+    case PrimitiveTopology::PrimitiveTopology_TriangleStripWithAdjacency:
+        return VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP_WITH_ADJACENCY;
+
+    case PrimitiveTopology::PrimitiveTopology_PatchList:
+        return VK_PRIMITIVE_TOPOLOGY_PATCH_LIST;
+
+    default:
+        break;
+    }
+    ASSERT(false, "primitiveTopology not found");
+    return VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
 }
 
 VulkanGraphicPipeline::VulkanGraphicPipeline(VkDevice device)
@@ -101,7 +145,7 @@ bool VulkanGraphicPipeline::create(const PipelineGraphicInfo* pipelineInfo)
     VkGraphicsPipelineCreateInfo graphicsPipelineCreateInfo = {};
     graphicsPipelineCreateInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
     graphicsPipelineCreateInfo.pNext = nullptr;
-    graphicsPipelineCreateInfo.flags = 0; //add VK_EXT_discard_rectangles
+    graphicsPipelineCreateInfo.flags = 0; //VkPipelineDiscardRectangleStateCreateInfoEXT
 
     graphicsPipelineCreateInfo.basePipelineIndex = 0;
     graphicsPipelineCreateInfo.basePipelineHandle = VK_NULL_HANDLE;
@@ -111,13 +155,14 @@ bool VulkanGraphicPipeline::create(const PipelineGraphicInfo* pipelineInfo)
     graphicsPipelineCreateInfo.stageCount = 0;
     graphicsPipelineCreateInfo.pStages = nullptr;
 
+    graphicsPipelineCreateInfo.renderPass = VK_NULL_HANDLE;
     graphicsPipelineCreateInfo.subpass = 0; //TODO
 
 
     const GraphicsPipelineState::RasterizationState& rasterizationState = pipelineDesc._rasterizationState;
     VkPipelineRasterizationStateCreateInfo rasterizationStateCreateInfo = {};
     rasterizationStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
-    rasterizationStateCreateInfo.pNext = nullptr; //
+    rasterizationStateCreateInfo.pNext = nullptr; //VkPipelineRasterizationStateStreamCreateInfoEXT, VkPipelineRasterizationConservativeStateCreateInfoEXT
     rasterizationStateCreateInfo.flags = 0;
     rasterizationStateCreateInfo.depthClampEnable = VK_FALSE;
     rasterizationStateCreateInfo.rasterizerDiscardEnable = VK_FALSE;
@@ -130,6 +175,26 @@ bool VulkanGraphicPipeline::create(const PipelineGraphicInfo* pipelineInfo)
     rasterizationStateCreateInfo.depthBiasSlopeFactor = 0.0f;
     rasterizationStateCreateInfo.lineWidth = 1.0f;
     graphicsPipelineCreateInfo.pRasterizationState = &rasterizationStateCreateInfo;
+
+    VkPipelineInputAssemblyStateCreateInfo inputAssemblyStateCreateInfo = {};
+    inputAssemblyStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
+    inputAssemblyStateCreateInfo.pNext = nullptr;
+    inputAssemblyStateCreateInfo.flags = 0;
+    inputAssemblyStateCreateInfo.topology = VulkanGraphicPipeline::convertPrimitiveTopologyToVk(pipelineDesc._primitiveTopology);
+    inputAssemblyStateCreateInfo.primitiveRestartEnable = VK_FALSE;
+    graphicsPipelineCreateInfo.pInputAssemblyState = &inputAssemblyStateCreateInfo;
+
+    VkPipelineVertexInputStateCreateInfo vertexInputStateCreateInfo = {};
+    vertexInputStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+    vertexInputStateCreateInfo.pNext = nullptr; //VkPipelineVertexInputDivisorStateCreateInfoEXT
+    vertexInputStateCreateInfo.flags = 0;
+    vertexInputStateCreateInfo.vertexAttributeDescriptionCount;
+    vertexInputStateCreateInfo.pVertexAttributeDescriptions;
+    vertexInputStateCreateInfo.vertexBindingDescriptionCount;
+    vertexInputStateCreateInfo.pVertexBindingDescriptions;
+
+    graphicsPipelineCreateInfo.pVertexInputState = &vertexInputStateCreateInfo;
+    
 
     VkResult result = VulkanWrapper::CreateGraphicsPipelines(m_device, pipelineCache, 1, &graphicsPipelineCreateInfo, VULKAN_ALLOCATOR, &m_pipeline);
     if (result != VK_SUCCESS)
