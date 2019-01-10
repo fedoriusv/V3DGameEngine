@@ -12,11 +12,17 @@
 #include "Renderer/ImageFormats.h"
 
 
+#include "Resource/ResourceLoaderManager.h"
+#include "Resource/ShaderSpirVDecoder.h"
+
+
 using namespace v3d;
 using namespace v3d::platform;
 using namespace v3d::utils;
 using namespace v3d::event;
 using namespace v3d::renderer;
+using namespace v3d::resource;
+
 
 MyApplication::MyApplication(int& argc, char** argv)
     : m_Window(nullptr)
@@ -92,6 +98,8 @@ void MyApplication::Initialize()
     renderTarget1 = m_CommandList->createObject<RenderTarget>(core::Dimension2D(80, 80));
     bool success1 = renderTarget1->setColorTexture(0, texture2, renderer::RenderTargetLoadOp::LoadOp_DontCare, renderer::RenderTargetStoreOp::StoreOp_Store);
     m_CommandList->setRenderTarget(renderTarget1);
+
+    ResourceLoaderManager::loadFromFile<int, resource::ShaderSpirVDecoder>("../../../../Engine/Shaders/mrt.vert");
 
     GraphicsPipelineState pipeline;
 

@@ -1,11 +1,12 @@
 #pragma once
 
 #include "Common.h"
-#include "CommandList.h"
-#include "ImageFormats.h"
-#include "Utils/Observable.h"
-#include "TextureProperties.h"
 #include "Object.h"
+#include "Renderer/ImageFormats.h"
+#include "Renderer/CommandList.h"
+#include "Renderer/TextureProperties.h"
+#include "Utils/Observable.h"
+
 
 namespace v3d
 {

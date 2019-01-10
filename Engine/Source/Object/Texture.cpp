@@ -1,6 +1,6 @@
 ﻿#include "Texture.h"
-#include "Context.h"
-#include "Image.h"
+#include "Renderer/Context.h"
+#include "Renderer/Image.h"
 #include "Utils/Logger.h"
 
 namespace v3d

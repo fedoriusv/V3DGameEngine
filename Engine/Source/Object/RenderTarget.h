@@ -1,9 +1,9 @@
 ﻿#pragma once
 
 #include "Common.h"
-#include "CommandList.h"
-#include "ImageFormats.h"
-#include "TextureProperties.h"
+#include "Renderer/ImageFormats.h"
+#include "Renderer/TextureProperties.h"
+#include "Renderer/CommandList.h"
 #include "Utils/Observable.h"
 
 namespace v3d

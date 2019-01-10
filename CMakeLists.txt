@@ -54,7 +54,7 @@ set(SOURCE_DIR Engine/Source)
 set(ENGINE_PROJECT_DIR ${PROJECT_SOURCE_DIR})
 set(LIB_INCLUDE_DIRECTORY 
 	${ENGINE_PROJECT_DIR}/${SOURCE_DIR} 
-	${ENGINE_PROJECT_DIR}/${SOURCE_DIR}/Renderer
+	#${ENGINE_PROJECT_DIR}/${SOURCE_DIR}/Renderer
 	${ENGINE_PROJECT_DIR}/${SOURCE_DIR}/ThirdParty)
 
 #Crc32c	
@@ -84,14 +84,11 @@ if(BUILD_VULKAN_SDK)
 	#SpirV
 	set (SPIRV_FOLDER ${ENGINE_PROJECT_DIR}/Engine/Libs/spirv)
 	if ((IS_DIRECTORY ${SPIRV_FOLDER}/shaderc AND IS_DIRECTORY ${SPIRV_FOLDER}/SPIRV-Cross) OR SPIRV_INSTALL_FROM_GITHUB)
-		set(VULKAN_SDK_INCLUDE_DIRECTORY "${VULKAN_SDK_INCLUDE_DIRECTORY} -I${SPIRV_FOLDER}/shaderc/libshaderc/include")
-		set(VULKAN_SDK_INCLUDE_DIRECTORY "${VULKAN_SDK_INCLUDE_DIRECTORY} -I${SPIRV_FOLDER}/SPIRV-Cross")
+		set(VULKAN_SDK_INCLUDE_DIRECTORY "${VULKAN_SDK_INCLUDE_DIRECTORY} -I${SPIRV_FOLDER}")
 		set(VULKAN_SDK_DEFINE "${VULKAN_SDK_DEFINE} -DUSE_SPIRV")
 		if (WIN32)
-			set(SHADERC_LIB_FILE_DEBUG ${SPIRV_FOLDER}/shaderc/libshaderc/Debug/shadercd.lib)
-			#set(SHADERC_COMBINED_LIB_FILE_DEBUG ${SPIRV_FOLDER}/shaderc/libshaderc/Debug/shaderc_combined.lib)
-			set(SHADERC_LIB_FILE_RELEASE ${SPIRV_FOLDER}/shaderc/libshaderc/Release/shaderc.lib)
-			#set(SHADERC_COMBINED_LIB_FILE_RELEASE ${SPIRV_FOLDER}/shaderc/libshaderc/Release/shaderc_combined.lib)
+			set(SHADERC_COMBINED_LIB_FILE_DEBUG ${SPIRV_FOLDER}/shaderc/libshaderc/Debug/shaderc_combined.lib)
+			set(SHADERC_COMBINED_LIB_FILE_RELEASE ${SPIRV_FOLDER}/shaderc/libshaderc/Release/shaderc_combined.lib)
 			
 			#set(SPIRV_CROSS_CPP_DEBUG ${SPIRV_FOLDER}/SPIRV-Cross/Debug/spirv-cross-cpp.lib)
 			#set(SPIRV_CROSS_CORE_DEBUG ${SPIRV_FOLDER}/SPIRV-Cross/Debug/spirv-cross-core.lib)
@@ -138,6 +135,10 @@ file(GLOB RENDERER_HEADERS ${SOURCE_DIR}/Renderer/*.h)
 file(GLOB RENDERER_SOURCES ${SOURCE_DIR}/Renderer/*.cpp)
 file(GLOB OBJECT_HEADERS ${SOURCE_DIR}/Object/*.h)
 file(GLOB OBJECT_SOURCES ${SOURCE_DIR}/Object/*.cpp)
+file(GLOB RESOURCE_HEADERS ${SOURCE_DIR}/Resource/*.h)
+file(GLOB RESOURCE_SOURCES ${SOURCE_DIR}/Resource/*.cpp)
+file(GLOB STREAM_HEADERS ${SOURCE_DIR}/Stream/*.h)
+file(GLOB STREAM_SOURCES ${SOURCE_DIR}/Stream/*.cpp)
 
 if (BUILD_VULKAN_SDK)
 file(GLOB VULKAN_HEADERS ${SOURCE_DIR}/Renderer/Vulkan/*.h)
@@ -154,8 +155,12 @@ source_group("Utils" FILES ${UTILS_HEADERS} ${UTILS_SOURCES})
 source_group("Event" FILES ${EVENT_HEADERS} ${EVENT_SOURCES})
 source_group("Renderer" FILES ${RENDERER_HEADERS} ${RENDERER_SOURCES})
 source_group("Object" FILES ${OBJECT_HEADERS} ${OBJECT_SOURCES})
+source_group("Resource" FILES ${RESOURCE_HEADERS} ${RESOURCE_SOURCES})
+source_group("Stream" FILES ${STREAM_HEADERS} ${STREAM_SOURCES})
 
-source_group("Renderer\\Vulkan" FILES ${VULKAN_HEADERS} ${VULKAN_SOURCES})
+if (BUILD_VULKAN_SDK)
+	source_group("Renderer\\Vulkan" FILES ${VULKAN_HEADERS} ${VULKAN_SOURCES})
+endif()
 
 add_library(${ENGINE_NAME} STATIC 
     ${MAIN_HEADERS} ${MAIN_SOURCES}
@@ -165,6 +170,8 @@ add_library(${ENGINE_NAME} STATIC
     ${EVENT_HEADERS} ${EVENT_SOURCES}
     ${RENDERER_HEADERS} ${RENDERER_SOURCES}
 	${OBJECT_HEADERS} ${OBJECT_SOURCES}
+	${RESOURCE_HEADERS} ${RESOURCE_SOURCES}
+	${STREAM_HEADERS} ${STREAM_SOURCES}
     ${VULKAN_HEADERS} ${VULKAN_SOURCES})
 	
 set(BUILD_DEPENDENCIES "")
@@ -180,8 +187,7 @@ endif()
 #Spirv
 if (BUILD_VULKAN_SDK)
 	if ((IS_DIRECTORY ${SPIRV_FOLDER}/shaderc AND IS_DIRECTORY ${SPIRV_FOLDER}/SPIRV-Cross) OR SPIRV_INSTALL_FROM_GITHUB)
-		target_link_libraries(${ENGINE_NAME} optimized ${SHADERC_LIB_FILE_RELEASE}          debug ${SHADERC_LIB_FILE_DEBUG})
-		#target_link_libraries(${ENGINE_NAME} optimized ${SHADERC_COMBINED_LIB_FILE_RELEASE} debug ${SHADERC_COMBINED_LIB_FILE_DEBUG})
+		target_link_libraries(${ENGINE_NAME} optimized ${SHADERC_COMBINED_LIB_FILE_RELEASE} debug ${SHADERC_COMBINED_LIB_FILE_DEBUG})
 		#target_link_libraries(${ENGINE_NAME} optimized ${SPIRV_CROSS_CPP_RELEASE}           debug ${SPIRV_CROSS_CPP_DEBUG})
 		#target_link_libraries(${ENGINE_NAME} optimized ${SPIRV_CROSS_CORE_RELEASE}          debug ${SPIRV_CROSS_CORE_DEBUG})
 		target_link_libraries(${ENGINE_NAME} optimized ${SPIRV_CROSS_GLSL_RELEASE}          debug ${SPIRV_CROSS_GLSL_DEBUG})
