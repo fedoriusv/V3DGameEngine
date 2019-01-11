@@ -1,78 +1,55 @@
 #pragma once
 
 #include "Common.h"
-#include "Stream/FileStream.h"
-#include "ResourceDecoder.h"
-#include "Shader.h"
-#include "Utils/Logger.h"
+#include "Utils/Singleton.h"
 
 namespace v3d
 {
+namespace renderer
+{
+    class Context;
+}
 namespace resource
 {
-    /////////////////////////////////////////////////////////////////////////////////////////////////////
-
     class Resource;
-
-    /////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    class FileLoader
-    {
-    public:
-        FileLoader() {}
-
-        stream::Stream* load(std::string filename)
-        {
-            /*if (!stream::FileStream::isExist(filename))
-            {
-                LOG_ERROR("File %s doens't exist", filename.c_str());
-                return nullptr;
-            }*/
-
-            stream::FileStream* file = new stream::FileStream(filename, stream::FileStream::e_in);
-            if (!file->isOpen())
-            {
-                LOG_ERROR("File %s didn't load", filename.c_str());
-                return nullptr;
-            }
-
-            return file;
-        }
-    };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
     
     /**
     * ResourceLoaderManager
     */
-    class ResourceLoaderManager
+    class ResourceLoaderManager : public utils::Singleton<ResourceLoaderManager>
     {
     public:
-        
-        template<class TResource, class TDecoder>
-        static Resource* loadFromFile(std::string filename)
+
+        template<class TResource, class TResourceLoader>
+        TResource* loadFromFile(renderer::Context* context, std::string filename)
         {
-            FileLoader loader;
-            stream::Stream* stream = loader.load(filename);
+            std::string innerName(filename);
+            std::transform(filename.begin(), filename.end(), innerName.begin(), ::tolower);
 
-            //rework
-            ShaderHeader* header = new ShaderHeader;
-            header->_version = 0;
-            header->_size = stream->size();
-            header->_flags = 0;
-            header->_contentType = ShaderHeader::SpirVResource::SpirVResource_Source;
-            header->_shaderType = ShaderHeader::ShaderType::ShaderType_Vertex;
-            header->_shaderLang = ShaderHeader::ShaderLang::ShaderLang_GLSL;
-            header->_apiVersion = 1.0f;
-            header->_optLevel = 0;
-            ResourceDecoder* decoder = new ShaderSpirVDecoder(header);
-            Resource* resource = decoder->decode(stream);
+            auto resourceIter = m_resources.emplace(std::make_pair(filename, nullptr));
+            if (resourceIter.second)
+            {
+                TResourceLoader loader(context);
+                Resource* res = loader.load(innerName);
+                if (!res)
+                {
+                    m_resources.erase(innerName);
+                    return nullptr;
+                }
+                
+                resourceIter.first->second = res;
+                return static_cast<TResource*>(res);
+            }
 
-            stream->close();
-            delete stream;
-
-            return resource;
+            return static_cast<TResource*>(resourceIter.first->second);
         }
+
+    private:
+
+        std::map<std::string, Resource*> m_resources;
+        std::vector<void*>              m_loaders;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

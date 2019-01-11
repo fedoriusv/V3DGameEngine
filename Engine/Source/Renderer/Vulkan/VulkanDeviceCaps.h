@@ -1,6 +1,6 @@
 #pragma once
 
-#include "DeviceCaps.h"
+#include "Renderer/DeviceCaps.h"
 #include "Utils/Singleton.h"
 
 #ifdef VULKAN_RENDER

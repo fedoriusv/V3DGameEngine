@@ -16,6 +16,7 @@ ResourceDecoder::ResourceDecoder(std::vector<std::string> supportedExtensions)
 
 ResourceDecoder::~ResourceDecoder()
 {
+    m_supportedExtensions.clear();
 }
 
 bool ResourceDecoder::isExtensionSupported(const std::string & extension) const

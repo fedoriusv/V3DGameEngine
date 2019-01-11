@@ -1,9 +1,9 @@
 #pragma once
 
 #include "Common.h"
-#include "Image.h"
-#include "ImageFormats.h"
-#include "TextureProperties.h"
+#include "Renderer/Image.h"
+#include "Renderer/ImageFormats.h"
+#include "Renderer/TextureProperties.h"
 #include "VulkanMemory.h"
 
 #ifdef VULKAN_RENDER

@@ -1,7 +1,7 @@
 #pragma once
 
-#include "RenderPass.h"
-#include "TextureProperties.h"
+#include "Renderer/RenderPass.h"
+#include "Renderer/TextureProperties.h"
 
 #ifdef VULKAN_RENDER
 #include "VulkanWrapper.h"

@@ -1,13 +1,13 @@
 #pragma once
 
 #include "ResourceDecoder.h"
+#include "Shader.h"
 
 namespace v3d
 {
 namespace resource
 {
     class Resource;
-    struct ShaderHeader;
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -15,20 +15,19 @@ namespace resource
     {
     public:
 
-        ShaderSpirVDecoder(const ShaderHeader* header, bool reflections = false);
-        ShaderSpirVDecoder(std::vector<std::string> supportedExtensions, const ShaderHeader* header, bool reflections);
+        ShaderSpirVDecoder(const ShaderHeader& header, bool reflections = false);
+        ShaderSpirVDecoder(std::vector<std::string> supportedExtensions, const ShaderHeader& header, bool reflections);
 
         ~ShaderSpirVDecoder();
 
-        Resource* decode(const stream::Stream* stream) override;
+        Resource* decode(const stream::Stream* stream, const std::string& name = "") override;
 
     private:
 
-        void                    parseReflections(const std::vector<u32>& spirv, const stream::Stream* stream);
+        bool parseReflections(const std::vector<u32>& spirv);
 
-        const ShaderHeader*         m_header;
-        bool                        m_reflections;
-
+        const ShaderHeader   m_header;
+        bool                 m_reflections;
     };
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////

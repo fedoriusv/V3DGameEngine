@@ -44,6 +44,8 @@ namespace renderer
         virtual ~Context();
 
         static Context* createContext(const platform::Window* window, RenderType type, DeviceMask mask = DeviceMask::GraphicMask);
+
+        RenderType getRenderType() const;
         
         //frame
         virtual void beginFrame() = 0;

@@ -56,5 +56,10 @@ Context* Context::createContext(const platform::Window* window,  RenderType type
     return context;
 }
 
+Context::RenderType Context::getRenderType() const
+{
+    return m_renderType;
+}
+
 } //namespace renderer
 } //namespace v3d

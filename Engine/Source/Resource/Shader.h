@@ -13,16 +13,10 @@ namespace resource
     */
     struct ShaderHeader : ResourceHeader
     {
-        enum class SpirVResource : u32
+        enum class ShaderResource : u32
         {
-            SpirVResource_Source,
-            SpirVResource_Bytecode
-        };
-
-        enum class ShaderType : u32
-        {
-            ShaderType_Vertex,
-            ShaderType_Fragment,
+            ShaderResource_Source,
+            ShaderResource_SpirVBytecode,
         };
 
         enum class ShaderLang : u32
@@ -32,8 +26,7 @@ namespace resource
             ShaderLang_CG
         };
 
-        SpirVResource  _contentType;
-        ShaderType     _shaderType;
+        ShaderResource _contentType;
         ShaderLang     _shaderLang;
         f32            _apiVersion;
         u32            _optLevel;
@@ -42,6 +35,8 @@ namespace resource
         std::vector<std::string>                         _include;
     };
 
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
+
     /**
     * Shader class
     */
@@ -49,15 +44,11 @@ namespace resource
     {
     public:
 
-        Shader() {};
-        virtual ~Shader() {};
+        Shader();
+        ~Shader();
 
-    private: 
-
-        Shader(const ResourceHeader* header, stream::Stream* stream)
-            : Resource(header, stream)
-        {
-        }
+        void init(const stream::Stream* stream, const ResourceHeader* header) override;
+        bool load() override;
 
     };
 

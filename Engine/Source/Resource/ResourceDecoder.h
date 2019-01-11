@@ -22,7 +22,7 @@ namespace resource
         explicit ResourceDecoder(std::vector<std::string> supportedExtensions);
         virtual  ~ResourceDecoder();
 
-        virtual Resource* decode(const stream::Stream* stream) = 0;
+        virtual Resource* decode(const stream::Stream* stream, const std::string& name = "") = 0;
 
         bool isExtensionSupported(const std::string& extension) const;
         void setSupportedExtensions(const std::vector<std::string> supportedExtensions);

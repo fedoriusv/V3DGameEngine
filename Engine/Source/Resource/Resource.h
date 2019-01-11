@@ -7,8 +7,6 @@ namespace v3d
 {
 namespace resource
 {
-    class ResourceCreator;
-
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
@@ -16,10 +14,21 @@ namespace resource
     */
     struct ResourceHeader
     {
+        ResourceHeader()
+            : _size(0)
+            , _version(0)
+            , _flags(0)
+        {
+        }
+
+        virtual ~ResourceHeader() {};
+
         u32 _size;
         u32 _version;
         u32 _flags;
     };
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
     * Base Interface for Resource class
@@ -28,32 +37,24 @@ namespace resource
     {
     public:
 
-        Resource() {};
+        Resource()
+            : m_header(nullptr)
+            , m_stream(nullptr)
+            , m_loaded(false)
+        {
+        }
+
         virtual ~Resource() {};
 
-    private:
+        virtual void init(const stream::Stream* stream, const ResourceHeader* header) = 0;
+        virtual bool load() = 0;
 
-        Resource(const ResourceHeader* header, stream::Stream* stream)
-            : m_header(header)
-            , m_stream(stream)
-        {
-        }
-
-        friend ResourceCreator;
+    protected:
 
         const ResourceHeader*     m_header;
-        stream::Stream*           m_stream;
-    };
-
-    class ResourceCreator
-    {
-    public:
-
-        template<class TResource>
-        static Resource* create(const ResourceHeader* header, stream::Stream* stream)
-        {
-            return new TResource(nullptr, nullptr);
-        }
+        const stream::Stream*     m_stream;
+        
+        bool                      m_loaded;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

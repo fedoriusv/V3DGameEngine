@@ -13,7 +13,9 @@
 
 
 #include "Resource/ResourceLoaderManager.h"
-#include "Resource/ShaderSpirVDecoder.h"
+
+#include "Resource/ShaderSourceLoader.h"
+#include "Resource/Shader.h"
 
 
 using namespace v3d;
@@ -99,7 +101,7 @@ void MyApplication::Initialize()
     bool success1 = renderTarget1->setColorTexture(0, texture2, renderer::RenderTargetLoadOp::LoadOp_DontCare, renderer::RenderTargetStoreOp::StoreOp_Store);
     m_CommandList->setRenderTarget(renderTarget1);
 
-    ResourceLoaderManager::loadFromFile<int, resource::ShaderSpirVDecoder>("../../../../Engine/Shaders/mrt.vert");
+    ResourceLoaderManager::getInstance()->loadFromFile<Shader, ShaderSourceLoader>(m_Context, "Shaders/mrt.vert");
 
     GraphicsPipelineState pipeline;
 
