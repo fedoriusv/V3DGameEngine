@@ -17,7 +17,7 @@ namespace resource
     {
     public:
 
-        ResourceLoader();
+        ResourceLoader() noexcept;
         virtual ~ResourceLoader();
 
         virtual T load(const std::string& name, const std::string& alias = "") = 0;
@@ -41,7 +41,7 @@ namespace resource
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     template<class T>
-    inline ResourceLoader<T>::ResourceLoader()
+    inline ResourceLoader<T>::ResourceLoader() noexcept
     {
     }
 

@@ -5,11 +5,11 @@ namespace v3d
 namespace resource
 {
 
-ResourceDecoder::ResourceDecoder()
+ResourceDecoder::ResourceDecoder() noexcept
 {
 }
 
-ResourceDecoder::ResourceDecoder(std::vector<std::string> supportedExtensions)
+ResourceDecoder::ResourceDecoder(std::vector<std::string> supportedExtensions) noexcept
     : m_supportedExtensions(supportedExtensions)
 {
 }

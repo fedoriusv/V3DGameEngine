@@ -15,8 +15,8 @@ namespace resource
     {
     public:
 
-        ShaderSpirVDecoder(const ShaderHeader& header, bool reflections = false);
-        ShaderSpirVDecoder(std::vector<std::string> supportedExtensions, const ShaderHeader& header, bool reflections);
+        ShaderSpirVDecoder(const ShaderHeader& header, bool reflections = false) noexcept;
+        ShaderSpirVDecoder(std::vector<std::string> supportedExtensions, const ShaderHeader& header, bool reflections) noexcept;
 
         ~ShaderSpirVDecoder();
 
@@ -24,7 +24,7 @@ namespace resource
 
     private:
 
-        bool parseReflections(const std::vector<u32>& spirv);
+        bool parseReflections(const std::vector<u32>& spirv, stream::Stream* stream);
 
         const ShaderHeader   m_header;
         bool                 m_reflections;

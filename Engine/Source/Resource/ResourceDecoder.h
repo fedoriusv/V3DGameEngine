@@ -18,8 +18,8 @@ namespace resource
     {
     public:
 
-        ResourceDecoder();
-        explicit ResourceDecoder(std::vector<std::string> supportedExtensions);
+        ResourceDecoder() noexcept;
+        explicit ResourceDecoder(std::vector<std::string> supportedExtensions) noexcept;
         virtual  ~ResourceDecoder();
 
         virtual Resource* decode(const stream::Stream* stream, const std::string& name = "") = 0;

@@ -37,7 +37,7 @@ namespace resource
     {
     public:
 
-        Resource()
+        Resource() noexcept
             : m_header(nullptr)
             , m_stream(nullptr)
             , m_loaded(false)

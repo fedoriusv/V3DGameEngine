@@ -5,7 +5,7 @@ namespace v3d
 namespace resource
 {
 
-Shader::Shader()
+Shader::Shader() noexcept
 {
 }
 

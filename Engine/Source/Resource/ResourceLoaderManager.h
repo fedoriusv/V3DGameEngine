@@ -22,6 +22,8 @@ namespace resource
     {
     public:
 
+        ResourceLoaderManager() = default;
+
         template<class TResource, class TResourceLoader>
         TResource* loadFromFile(renderer::Context* context, std::string filename)
         {
@@ -49,7 +51,6 @@ namespace resource
     private:
 
         std::map<std::string, Resource*> m_resources;
-        std::vector<void*>              m_loaders;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

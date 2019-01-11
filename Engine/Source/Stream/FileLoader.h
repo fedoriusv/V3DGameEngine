@@ -15,15 +15,14 @@ namespace stream
     class FileLoader
     {
     public:
-        FileLoader() = default;
+        FileLoader() = delete;
 
         static stream::Stream* load(std::string filename)
         {
-            /*if (!stream::FileStream::isExist(filename))
+            if (!stream::FileStream::isExists(filename))
             {
-                LOG_ERROR("File %s doens't exist", filename.c_str());
                 return nullptr;
-            }*/
+            }
 
             stream::FileStream* file = new stream::FileStream(filename, stream::FileStream::e_in);
             if (!file->isOpen())

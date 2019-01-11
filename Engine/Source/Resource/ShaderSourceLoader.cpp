@@ -11,7 +11,7 @@ namespace v3d
 namespace resource
 {
 
-ShaderSourceLoader::ShaderSourceLoader(renderer::Context* context)
+ShaderSourceLoader::ShaderSourceLoader(renderer::Context* context) noexcept
 {
     ASSERT(context, "context is nullptr");
     if (context->getRenderType() == renderer::Context::RenderType::VulkanRender)

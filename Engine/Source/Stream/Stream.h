@@ -14,7 +14,7 @@ namespace stream
     class Stream
     {
     public:
-        Stream() {}
+        Stream() noexcept {}
         virtual ~Stream() {}
 
         template <class T>

@@ -1,11 +1,7 @@
 #include "FileStream.h"
 #include "utils/Logger.h"
 
-//#include <sstream>
-//#include <fstream>
-//#include <ostream>
-//#include <istream>
-//#include <sys/stat.h>
+#include <filesystem>
 
 namespace v3d
 {
@@ -14,7 +10,7 @@ namespace stream
 
 using namespace core;
 
-FileStream::FileStream()
+FileStream::FileStream() noexcept
     : m_fileHandler(nullptr)
     , m_fileSize(0)
     , m_isOpen(false)
@@ -23,7 +19,7 @@ FileStream::FileStream()
 {
 }
 
-FileStream::FileStream(const std::string& file, OpenMode openMode)
+FileStream::FileStream(const std::string& file, OpenMode openMode) noexcept
     : m_fileHandler(nullptr)
     , m_fileSize(0)
     , m_isOpen(false)
@@ -363,28 +359,20 @@ const std::string& FileStream::getName() const
     return m_fileName;
 }
 
-//bool FileStream::isFileExist(const std::string& file)
-//{
-//    struct stat status;
-//    int ret = stat(file.c_str(), &status);
-//    return (ret == 0);
-//}
-//
-//bool FileStream::isDirectory(const std::string& path)
-//{
-//    struct stat status;
-//    int ret = stat(path.c_str(), &status);
-//    if (ret != -1)
-//    {
-//        ret = ((status.st_mode & S_IFDIR) != 0) ? 1 : 0;
-//    }
-//    return (ret != 0);
-//}
-//
-//bool FileStream::remove(const std::string& file)
-//{
-//    return std::remove(file.c_str()) == 0;
-//}
+bool FileStream::isExists(const std::string& file)
+{
+    return std::filesystem::exists(file);
+}
+
+bool FileStream::isDirectory(const std::string& path)
+{
+    return std::filesystem::is_directory(path);
+}
+
+bool FileStream::remove(const std::string& file)
+{
+    return std::filesystem::remove(file.c_str());
+}
 
 } //namespace stream
 } //namespace v3d

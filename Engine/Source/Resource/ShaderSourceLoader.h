@@ -21,7 +21,7 @@ namespace resource
     {
     public:
 
-        ShaderSourceLoader(renderer::Context* context);
+        ShaderSourceLoader(renderer::Context* context) noexcept;
         ~ShaderSourceLoader();
 
         Shader* load(const std::string& name, const std::string& alias = "") override;

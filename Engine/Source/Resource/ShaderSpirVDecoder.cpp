@@ -1,11 +1,14 @@
 #include "ShaderSpirVDecoder.h"
 #include "Shader.h"
 #include "Stream/FileLoader.h"
+#include "Stream/MemoryStream.h"
 
 #include "Utils/Logger.h"
 
 #ifdef USE_SPIRV
 #   include "shaderc/libshaderc/include/shaderc/shaderc.hpp"
+//#   include "shaderc/shaderc.hpp"
+#   include "SPIRV-Cross/spirv_glsl.hpp"
 #endif // USE_SPIRV
 
 namespace v3d
@@ -13,13 +16,13 @@ namespace v3d
 namespace resource
 {
 
-ShaderSpirVDecoder::ShaderSpirVDecoder(const ShaderHeader& header, bool reflections)
+ShaderSpirVDecoder::ShaderSpirVDecoder(const ShaderHeader& header, bool reflections) noexcept
     : m_header(header)
     , m_reflections(reflections)
 {
 }
 
-ShaderSpirVDecoder::ShaderSpirVDecoder(std::vector<std::string> supportedExtensions, const ShaderHeader& header, bool reflections)
+ShaderSpirVDecoder::ShaderSpirVDecoder(std::vector<std::string> supportedExtensions, const ShaderHeader& header, bool reflections) noexcept
     : ResourceDecoder(supportedExtensions)
     , m_header(header)
     , m_reflections(reflections)
@@ -194,14 +197,19 @@ Resource * ShaderSpirVDecoder::decode(const stream::Stream* stream, const std::s
                     //return nullptr;
                 }
             }
+
+            stream::Stream* resourceSpirvBinary = new stream::MemoryStream(result.cbegin(), (u32)std::distance(result.cend(), result.cbegin()) * sizeof(u32));
+
+            Resource* resource = new Shader();
+            resource->init(resourceSpirvBinary, new ShaderHeader(m_header));
+
+            return resource;
         }
         else
         {
             //bytecode
             ASSERT(false, "implement");
         }
-        /*stream::Stream * resource = nullptr;
-        return ResourceCreator::create<Shader>(nullptr, resource);*/
 #else //USE_SPIRV
         ASSERT(false, "spirv undefined");
 #endif //USE_SPIRV
@@ -210,9 +218,134 @@ Resource * ShaderSpirVDecoder::decode(const stream::Stream* stream, const std::s
     return nullptr;
 }
 
-bool ShaderSpirVDecoder::parseReflections(const std::vector<u32>& spirv)
+bool ShaderSpirVDecoder::parseReflections(const std::vector<u32>& spirv, stream::Stream* stream)
 {
-    return false;
+    if (m_header._shaderLang == ShaderHeader::ShaderLang::ShaderLang_GLSL)
+    {
+        spirv_cross::CompilerGLSL glsl(spirv);
+        spirv_cross::ShaderResources resources = glsl.get_shader_resources();
+
+        u32 inputChannelCount = static_cast<u32>(resources.stage_inputs.size());
+        stream->write<u32>(inputChannelCount);
+        for (auto& inputChannel : resources.stage_inputs)
+        {
+            const std::string& name = glsl.get_name(inputChannel.id);
+            ASSERT(!name.empty(), "empty name");
+
+            u32 location = glsl.get_decoration(inputChannel.id, spv::DecorationLocation);
+
+            const spirv_cross::SPIRType& type = glsl.get_type(inputChannel.type_id);
+            u32 col = type.columns;
+            u32 row = type.vecsize;
+
+            stream->write<ShaderDataType::DataType>(innerType);
+            stream->write(name);
+            stream->write<u32>(location);
+            stream->write<u32>(col);
+            stream->write<u32>(row);
+        }
+
+        u32 outputChannelCount = static_cast<u32>(resources.stage_outputs.size());
+        stream->write<u32>(outputChannelCount);
+        for (auto& outputChannel : resources.stage_outputs)
+        {
+            const std::string& name = glsl.get_name(outputChannel.id);
+            ASSERT(!name.empty(), "empty name");
+
+            u32 location = glsl.get_decoration(outputChannel.id, spv::DecorationLocation);
+
+            const spirv_cross::SPIRType& type = glsl.get_type(outputChannel.type_id);
+            u32 col = type.columns;
+            u32 row = type.vecsize;
+
+            ShaderDataType::DataType innerType = getInnerDataType(type);
+            stream->write(name);
+            stream->write<u32>(location);
+            stream->write<ShaderDataType::EDataType>(innerType);
+            stream->write<u32>(col);
+            stream->write<u32>(row);
+        }
+
+        u32 unifromBufferCount = static_cast<u32>(resources.uniform_buffers.size());
+        stream->write<u32>(unifromBufferCount);
+        s32 buffID = 0;
+        for (auto& buffer : resources.uniform_buffers)
+        {
+            const std::string& name = glsl.get_name(buffer.id);
+            ASSERT(!name.empty(), "empty name");
+
+            u32 binding = glsl.get_decoration(buffer.id, spv::DecorationBinding);
+            u32 set = glsl.get_decoration(buffer.id, spv::DecorationDescriptorSet);
+            const spirv_cross::SPIRType& block_type = glsl.get_type(buffer.type_id);
+
+            stream->write<s32>(buffID);
+            stream->write(name);
+            stream->write<u32>(set);
+            stream->write<u32>(binding);
+
+            u32 posMembers = stream->tell();
+
+            u32 countMembers = 0;
+            stream->write<u32>(countMembers);
+
+            u32 index = 0;
+            while (true)
+            {
+                const std::string& member_name = glsl.get_member_name(buffer.base_type_id, index);
+                if (member_name.empty())
+                {
+                    break;
+                }
+                const spirv_cross::SPIRType& type = glsl.get_type(block_type.member_types[index]);
+                u32 col = type.columns;
+                u32 row = type.vecsize;
+                ++index;
+
+                ShaderDataType::EDataType innerType = getInnerDataType(type);
+                stream->write<s32>(buffID);
+                stream->write(member_name);
+                stream->write<ShaderDataType::DataType>(innerType);
+                stream->write<u32>(col);
+                stream->write<u32>(row);
+            }
+
+            u32 posCurr = stream->tell();
+            countMembers = index;
+            stream->seekBeg(posMembers);
+            stream->write<u32>(countMembers);
+            stream->seekBeg(posCurr);
+
+            ++buffID;
+        }
+
+        u32 samplersCount = static_cast<u32>(resources.sampled_images.size());
+        stream->write<u32>(samplersCount);
+        for (auto& image : resources.sampled_images)
+        {
+            const std::string& name = glsl.get_name(image.id);
+            ASSERT(!name.empty(), "empty name");
+
+            u32 binding = glsl.get_decoration(image.id, spv::DecorationBinding);
+            u32 set = glsl.get_decoration(image.id, spv::DecorationDescriptorSet);
+
+            const spirv_cross::SPIRType& type = glsl.get_type(image.type_id);
+            bool depth = type.image.depth;
+
+            TextureTarget innerType = getInnerTextureTarget(type);
+            stream->write(name);
+            stream->write<u32>(set);
+            stream->write<u32>(binding);
+            stream->write<TextureTarget>(innerType);
+            stream->write<bool>(depth);
+        }
+
+        return true;
+
+    }
+    else
+    {
+        return false;
+    }
 }
 
 } //namespace resource
