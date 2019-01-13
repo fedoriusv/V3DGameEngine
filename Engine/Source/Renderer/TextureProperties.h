@@ -84,7 +84,7 @@ namespace renderer
         }
 
 
-        ImageFormat           _format           : 8;
+        Format                _format           : 8;
         TextureSamples        _samples          : 4;
         RenderTargetLoadOp    _loadOp           : 2;
         RenderTargetStoreOp   _storeOp          : 2;

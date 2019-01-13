@@ -8,7 +8,8 @@ namespace v3d
 namespace renderer
 {
     class Context;
-}
+} //namespace renderer
+
 namespace resource
 {
     class Resource;
@@ -25,19 +26,38 @@ namespace resource
         ResourceLoaderManager() = default;
 
         template<class TResource, class TResourceLoader>
-        TResource* loadFromFile(renderer::Context* context, std::string filename)
+        TResource* loadShaderFromFile(renderer::Context* context, std::string filename, std::vector<std::pair<std::string, std::string>> defines = {})
         {
             std::string innerName(filename);
             std::transform(filename.begin(), filename.end(), innerName.begin(), ::tolower);
 
-            auto resourceIter = m_resources.emplace(std::make_pair(filename, nullptr));
+            std::sort(defines.begin(), defines.end(), [](const std::pair<std::string, std::string>& macros1, const std::pair<std::string, std::string>& macros2) -> bool
+            {
+                return macros1.first < macros2.first;
+            });
+
+            auto composeResourceName = [](const std::string& name, const std::vector<std::pair<std::string, std::string>>& defines) -> std::string
+            {
+                std::string outString = name;
+                for (auto& define : defines)
+                {
+                    outString.append("_");
+                    outString.append(define.first);
+                    outString.append(define.second);
+                }
+
+                return outString;
+            };
+            const std::string resourceName = composeResourceName(innerName, defines);
+
+            auto resourceIter = m_resources.emplace(std::make_pair(resourceName, nullptr));
             if (resourceIter.second)
             {
-                TResourceLoader loader(context);
+                TResourceLoader loader(context, defines);
                 Resource* res = loader.load(innerName);
                 if (!res)
                 {
-                    m_resources.erase(innerName);
+                    m_resources.erase(resourceName);
                     return nullptr;
                 }
                 

@@ -32,7 +32,7 @@ namespace renderer
         renderer::TextureSamples        getSampleCount() const;
         u32                             getMipmaps() const;
         const core::Dimension2D&        getDimension() const;
-        renderer::ImageFormat           getFormat() const;
+        renderer::Format                getFormat() const;
 
         void update(const core::Dimension2D& offset, const core::Dimension2D& size, u32 mipLevel, const void* data);
         void read(const core::Dimension2D& offset, const core::Dimension2D& size, u32 mipLevel, void* const data);
@@ -42,8 +42,8 @@ namespace renderer
 
     private:
 
-        Texture2D(renderer::CommandList& cmdList, renderer::ImageFormat format, const core::Dimension2D& dimension, u32 mipmapCount = 0, const void* data = nullptr);
-        Texture2D(renderer::CommandList& cmdList, renderer::ImageFormat format, const core::Dimension2D& dimension, renderer::TextureSamples samples);
+        Texture2D(renderer::CommandList& cmdList, renderer::Format format, const core::Dimension2D& dimension, u32 mipmapCount = 0, const void* data = nullptr);
+        Texture2D(renderer::CommandList& cmdList, renderer::Format format, const core::Dimension2D& dimension, renderer::TextureSamples samples);
 
         void handleNotify(utils::Observable* ob) override;
 
@@ -54,7 +54,7 @@ namespace renderer
         renderer::CommandList&              m_cmdList;
 
         const  renderer::TextureTarget      m_target;
-        const renderer::ImageFormat         m_format;
+        const renderer::Format              m_format;
         const core::Dimension2D             m_dimension;
         const u32                           m_mipmapLevel;
         renderer::TextureSamples            m_samples;

@@ -76,6 +76,7 @@ namespace stream
 
         u8* map(u32 size) override;
         void unmap() override;
+        bool isMapped() const override;
         
         const std::string& getName() const;
 

@@ -47,8 +47,8 @@ namespace vk
         void setRenderTarget(const RenderPassInfo* renderpassInfo, const std::vector<Image*>& attachments, const ClearValueInfo* clearInfo) override;
         void removeRenderTarget(const RenderPassInfo * renderpassInfo, const std::vector<Image*>& attachments, const ClearValueInfo * clearInfo) override;
 
-        Image* createImage(TextureTarget target, renderer::ImageFormat format, const core::Dimension3D& dimension, u32 mipmapLevel, s16 filter, TextureAnisotropic anisotropicLevel, TextureWrap wrap) const override;
-        Image* createAttachmentImage(renderer::ImageFormat format, const core::Dimension3D& dimension, TextureSamples samples, s16 filter, TextureAnisotropic anisotropicLevel, TextureWrap wrap) const override;
+        Image* createImage(TextureTarget target, renderer::Format format, const core::Dimension3D& dimension, u32 mipmapLevel, s16 filter, TextureAnisotropic anisotropicLevel, TextureWrap wrap) const override;
+        Image* createAttachmentImage(renderer::Format format, const core::Dimension3D& dimension, TextureSamples samples, s16 filter, TextureAnisotropic anisotropicLevel, TextureWrap wrap) const override;
 
         VulkanCommandBuffer* getCurrentBuffer(VulkanCommandBufferManager::CommandTargetType type) const;
 

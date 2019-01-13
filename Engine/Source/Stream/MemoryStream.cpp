@@ -1,40 +1,44 @@
 #include "MemoryStream.h"
+#include "Utils/MemoryPool.h"
 
 namespace v3d
 {
 namespace stream
 {
 
-MemoryStream::MemoryStream() noexcept
+MemoryStream::MemoryStream(utils::MemoryPool* allocator) noexcept
     : m_stream(nullptr)
     , m_length(0)
     , m_allocated(0)
     , m_pos(0)
     , m_mapped(false)
+    , m_allocator(allocator)
 {
 }
 
-MemoryStream::MemoryStream(const MemoryStream& stream) noexcept
+MemoryStream::MemoryStream(const MemoryStream& stream, utils::MemoryPool* allocator) noexcept
     : m_stream(nullptr)
     , m_length(stream.m_length)
     , m_allocated(stream.m_allocated)
     , m_pos(stream.m_pos)
     , m_mapped(false)
+    , m_allocator(allocator)
 {
     ASSERT(!m_mapped, "data is mapped");
-    if (!m_stream && m_allocated > 0)
+    if (stream.m_stream && m_allocated > 0)
     {
         MemoryStream::allocate(m_allocated);
         memcpy(m_stream, stream.m_stream, m_length);
     }
 }
 
-MemoryStream::MemoryStream(MemoryStream&& stream) noexcept
+MemoryStream::MemoryStream(MemoryStream&& stream, utils::MemoryPool* allocator) noexcept
     : m_stream(nullptr)
     , m_length(0)
     , m_allocated(0)
     , m_pos(0)
     , m_mapped(false)
+    , m_allocator(allocator)
 {
     std::swap(m_stream, stream.m_stream);
     std::swap(m_length, stream.m_length);
@@ -43,16 +47,21 @@ MemoryStream::MemoryStream(MemoryStream&& stream) noexcept
     ASSERT(!m_mapped, "data is mapped");
 }
 
-MemoryStream::MemoryStream(const void* data, u32 size) noexcept
-    : m_stream((u8*)data)
+MemoryStream::MemoryStream(const void* data, u32 size, utils::MemoryPool* allocator) noexcept
+    : m_stream(nullptr)
     , m_length(size)
     , m_allocated(size)
     , m_pos(0)
     , m_mapped(false)
+    , m_allocator(allocator)
 {
-    if (!data && size > 0)
+    if (m_length > 0)
     {
         MemoryStream::allocate(size);
+        if (data)
+        {
+            memcpy(m_stream, data, m_length);
+        }
     }
 }
 
@@ -567,6 +576,11 @@ void MemoryStream::unmap()
     m_mapped = false;
 }
 
+bool MemoryStream::isMapped() const
+{
+    return m_mapped;
+}
+
 u8* MemoryStream::getData() const
 {
     ASSERT(!m_mapped, "Memory not mapped");
@@ -577,7 +591,14 @@ void MemoryStream::clear()
 {
     if (m_stream)
     {
-        delete[] m_stream;
+        if (m_allocator)
+        {
+            m_allocator->freeMemory(m_stream);
+        }
+        else
+        {
+            delete[] m_stream;
+        }
         m_stream = nullptr;
     }
 
@@ -590,13 +611,27 @@ void MemoryStream::allocate(u32 size)
 {
     if (m_stream)
     {
-        delete[] m_stream;
+        if (m_allocator)
+        {
+            m_allocator->freeMemory(m_stream);
+        }
+        else
+        {
+            delete[] m_stream;
+        }
         m_stream = nullptr;
     }
 
     m_allocated = size;
     m_length = size;
-    m_stream = new u8[m_allocated];
+    if (m_allocator)
+    {
+        m_stream = (u8*)m_allocator->getMemory(m_allocated);
+    }
+    else
+    {
+        m_stream = new u8[m_allocated];
+    }
 
     MemoryStream::seekBeg(0);
 }
@@ -612,14 +647,27 @@ bool MemoryStream::checkSize(u32 size)
     if (m_pos + size > m_allocated)
     {
         u8* oldStream = m_stream;
-
         s32 newAllocated = 2 * (m_pos + size);
-        m_stream = new u8[newAllocated];
-        memcpy(m_stream, oldStream, m_allocated);
+        if (m_allocator)
+        {
+            m_stream = (u8*)m_allocator->getMemory(newAllocated);
+        }
+        else
+        {
+            m_stream = new u8[newAllocated];
+        }
 
+        memcpy(m_stream, oldStream, m_allocated);
         m_allocated = newAllocated;
 
-        delete[] oldStream;
+        if (m_allocator)
+        {
+            m_allocator->freeMemory(oldStream);
+        }
+        else
+        {
+            delete[] oldStream;
+        }
         oldStream = nullptr;
     }
 

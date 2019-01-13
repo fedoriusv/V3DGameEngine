@@ -6,11 +6,22 @@ namespace resource
 {
 
 Shader::Shader() noexcept
+    : m_source(nullptr)
 {
 }
 
 Shader::~Shader()
 {
+    if (m_stream)
+    {
+        ASSERT(m_stream->isMapped(), "mapped");
+        delete m_stream;
+    }
+
+    if (m_source)
+    {
+        free(m_source);
+    }
 }
 
 void Shader::init(const stream::Stream * stream, const ResourceHeader * header)
@@ -26,11 +37,71 @@ bool Shader::load()
         return true;
     }
 
-    //TODO:
+    ASSERT(m_stream, "nullptr");
+    
+    m_stream->seekBeg(0);
+    m_stream->read<u32>(m_size);
+    m_source = malloc(m_size); //TODO memory manager
+    m_stream->read(m_source, m_size);
+
+    bool needParseReflect = false;
+    m_stream->read<bool>(needParseReflect);
+    if (needParseReflect)
+    {
+        u32 version;
+        m_stream->read<u32>(version);
+
+        u32 countInputAttachments;
+        m_stream->read<u32>(countInputAttachments);
+        m_reflectionInfo._inputAttribute.resize(countInputAttachments);
+        for (auto& attribute : m_reflectionInfo._inputAttribute)
+        {
+            attribute << m_stream;
+        }
+
+        u32 countOutputAttachments;
+        m_stream->read<u32>(countOutputAttachments);
+        m_reflectionInfo._outputAttribute.resize(countOutputAttachments);
+        for (auto& attribute : m_reflectionInfo._outputAttribute)
+        {
+            attribute << m_stream;
+        }
+
+        //TODO:
+    }
 
     m_loaded = true;
-    return false;
+    return true;
 }
+
+const ShaderHeader* Shader::getShaderHeader() const
+{
+    return static_cast<const ShaderHeader*>(m_header);
+}
+
+Shader::Attribute::Attribute()
+    : _location(0)
+    //, _binding(0)
+    //, _offset(0)
+    , _format(renderer::Format::Format_Undefined)
+    , _name("")
+{
+}
+
+void Shader::Attribute::operator>>(stream::Stream * stream)
+{
+    stream->write<u32>(_location);
+    stream->write<renderer::Format>(_format);
+    stream->write(_name);
+}
+
+void Shader::Attribute::operator<<(const stream::Stream * stream)
+{
+    stream->read<u32>(_location);
+    stream->read<renderer::Format>(_format);
+    stream->read(_name);
+}
+
 
 } //namespace resource
 } //namespace v3d

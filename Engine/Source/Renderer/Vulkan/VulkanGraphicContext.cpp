@@ -179,7 +179,7 @@ void VulkanGraphicContext::removeRenderTarget(const RenderPassInfo * renderpassI
     m_renderpassManager->removeRenderPass(*renderpassInfo);
 }
 
-Image * VulkanGraphicContext::createImage(TextureTarget target, renderer::ImageFormat format, const core::Dimension3D& dimension, u32 mipLevels,
+Image * VulkanGraphicContext::createImage(TextureTarget target, renderer::Format format, const core::Dimension3D& dimension, u32 mipLevels,
     s16 filter, TextureAnisotropic anisotropicLevel, TextureWrap wrap) const
 {
     VkImageType vkType = VulkanImage::convertTextureTargetToVkImageType(target);
@@ -189,7 +189,7 @@ Image * VulkanGraphicContext::createImage(TextureTarget target, renderer::ImageF
     return new VulkanImage(m_memoryManager, m_deviceInfo._device, vkType, vkFormat, vkExtent, mipLevels, VK_IMAGE_TILING_OPTIMAL);
 }
 
-Image * VulkanGraphicContext::createAttachmentImage(renderer::ImageFormat format, const core::Dimension3D& dimension, TextureSamples samples, 
+Image * VulkanGraphicContext::createAttachmentImage(renderer::Format format, const core::Dimension3D& dimension, TextureSamples samples, 
     s16 filter, TextureAnisotropic anisotropicLevel, TextureWrap wrap) const
 {
     VkFormat vkFormat = VulkanImage::convertImageFormatToVkFormat(format);

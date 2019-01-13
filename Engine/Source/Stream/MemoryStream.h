@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Stream.h"
+#include "Utils/MemoryPool.h"
 
 namespace v3d
 {
@@ -15,10 +16,10 @@ namespace stream
     {
     public:
 
-        MemoryStream() noexcept;
-        MemoryStream(const MemoryStream& stream) noexcept;
-        MemoryStream(MemoryStream&& stream) noexcept;
-        MemoryStream(const void* data, u32 size) noexcept;
+        MemoryStream(utils::MemoryPool* allocator = nullptr) noexcept;
+        MemoryStream(const MemoryStream& stream, utils::MemoryPool* allocator = nullptr) noexcept;
+        MemoryStream(MemoryStream&& stream, utils::MemoryPool* allocator = nullptr) noexcept;
+        MemoryStream(const void* data, u32 size, utils::MemoryPool* allocator = nullptr) noexcept;
         ~MemoryStream();
 
         void clear();
@@ -64,6 +65,7 @@ namespace stream
 
         u8* map(u32 size) override;
         void unmap() override;
+        bool isMapped() const override;
 
         u8* getData() const;
 
@@ -76,6 +78,8 @@ namespace stream
         u32             m_allocated;
         mutable u32     m_pos;
         bool            m_mapped;
+
+        utils::MemoryPool *const m_allocator;
          
     };
 

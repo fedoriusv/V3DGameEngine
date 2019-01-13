@@ -91,17 +91,20 @@ void MyApplication::Initialize()
 
     ////////////////////////////////////
 
-    Texture2D* texture = m_CommandList->createObject<Texture2D>(renderer::ImageFormat::ImageFormat_R8G8B8A8_UInt, core::Dimension2D(80, 80), renderer::TextureSamples::TextureSamples_x1);
+    Texture2D* texture = m_CommandList->createObject<Texture2D>(renderer::Format::Format_R8G8B8A8_UInt, core::Dimension2D(80, 80), renderer::TextureSamples::TextureSamples_x1);
     renderTarget0 = m_CommandList->createObject<RenderTarget>(core::Dimension2D(80, 80));
     bool success = renderTarget0->setColorTexture(0, texture, renderer::RenderTargetLoadOp::LoadOp_Clear, renderer::RenderTargetStoreOp::StoreOp_Store);
     m_CommandList->setRenderTarget(renderTarget0);
 
-    Texture2D* texture2 = m_CommandList->createObject<Texture2D>(renderer::ImageFormat::ImageFormat_R8G8B8A8_UInt, core::Dimension2D(80, 80), renderer::TextureSamples::TextureSamples_x1);
+    Texture2D* texture2 = m_CommandList->createObject<Texture2D>(renderer::Format::Format_R8G8B8A8_UInt, core::Dimension2D(80, 80), renderer::TextureSamples::TextureSamples_x1);
     renderTarget1 = m_CommandList->createObject<RenderTarget>(core::Dimension2D(80, 80));
     bool success1 = renderTarget1->setColorTexture(0, texture2, renderer::RenderTargetLoadOp::LoadOp_DontCare, renderer::RenderTargetStoreOp::StoreOp_Store);
     m_CommandList->setRenderTarget(renderTarget1);
 
-    ResourceLoaderManager::getInstance()->loadFromFile<Shader, ShaderSourceLoader>(m_Context, "Shaders/mrt.vert");
+    Shader* vertShader = ResourceLoaderManager::getInstance()->loadShaderFromFile<Shader, ShaderSourceLoader>(m_Context, "Shaders/mrt.vert");
+    Shader* fragShader = ResourceLoaderManager::getInstance()->loadShaderFromFile<Shader, ShaderSourceLoader>(m_Context, "Shaders/mrt.frag");
+    
+    //ShaderProgram* program = m_CommandList->createObject<ShaderProgram>(vertShader, fragShader);
 
     GraphicsPipelineState pipeline;
 

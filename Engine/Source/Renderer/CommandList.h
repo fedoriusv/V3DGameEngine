@@ -41,6 +41,9 @@ namespace renderer
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    /**
+    * CommandList class
+    */
     class CommandList final : public utils::NonCopyable
     {
     public:

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Resource.h"
+#include "Renderer/ImageFormats.h"
 
 namespace v3d
 {
@@ -44,45 +45,32 @@ namespace resource
     {
     public:
 
-        struct InputAttribute
+        struct Attribute
         {
-            InputAttribute()
-                : _location(0)
-                , _binding(0)
-                , _offset(0)
-                //, _type()
-            {
-            }
+            Attribute();
 
-            u32         _location;
-            u32         _binding;
-            u32         _offset;
-            //DataType    _type;
+            u32                 _location;
+            //u32                 _binding;
+            //u32                 _offset;
+            renderer::Format    _format;
+            std::string         _name;
 
-            void operator >> (stream::Stream * stream)
-            {
-                stream->write<u32>(_location);
-            }
-
-            void operator << (const stream::Stream * stream)
-            {
-                stream->read<u32>(_location);
-            }
-
-
+            void operator >> (stream::Stream * stream);
+            void operator << (const stream::Stream * stream);
         };
 
-        struct InputBinding
+        /*struct InputBinding
         {
             u32     _binding;
             u32     _stride;
             bool    _instance;
-        };
+        };*/
 
         struct ReflectionInfo
         {
-            std::vector<InputAttribute> _inputAttribute;
-            std::vector<InputBinding>   _inputBinding;
+            //std::vector<InputBinding>   _inputBinding;
+            std::vector<Attribute> _inputAttribute;
+            std::vector<Attribute> _outputAttribute;
         };
 
         Shader() noexcept;
@@ -90,6 +78,15 @@ namespace resource
 
         void init(const stream::Stream* stream, const ResourceHeader* header) override;
         bool load() override;
+
+    private:
+
+        const ShaderHeader* getShaderHeader() const;
+
+        ReflectionInfo m_reflectionInfo;
+
+        u32     m_size;
+        void*   m_source;
 
     };
 

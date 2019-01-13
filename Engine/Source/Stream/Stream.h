@@ -36,7 +36,7 @@ namespace stream
         virtual u32 read(std::string& value) const = 0;
 
         template <class T>
-        u32 write(T& value);
+        u32 write(T value);
 
         virtual u32 write(const void* buffer, u32 size, u32 count = 1) = 0;
         virtual u32 write(u8 value) = 0;
@@ -64,6 +64,7 @@ namespace stream
 
         virtual u8*  map(u32 size) = 0;
         virtual void unmap() = 0;
+        virtual bool isMapped() const = 0;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -76,7 +77,7 @@ namespace stream
     }
 
     template <class T>
-    u32 Stream::write(T& value)
+    u32 Stream::write(T value)
     {
         const u32 ret = write(&value, sizeof(T), 1);
         return ret;

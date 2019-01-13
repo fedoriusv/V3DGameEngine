@@ -199,7 +199,7 @@ private:
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-Texture2D::Texture2D(renderer::CommandList& cmdList, renderer::ImageFormat format, const core::Dimension2D& dimension, u32 mipmapCount, const void * data)
+Texture2D::Texture2D(renderer::CommandList& cmdList, renderer::Format format, const core::Dimension2D& dimension, u32 mipmapCount, const void * data)
     : m_cmdList(cmdList)
     , m_target(renderer::TextureTarget::Texture2D)
     , m_format(format)
@@ -222,7 +222,7 @@ Texture2D::Texture2D(renderer::CommandList& cmdList, renderer::ImageFormat forma
     createTexture2D(data);
 }
 
-Texture2D::Texture2D(renderer::CommandList & cmdList, renderer::ImageFormat format, const core::Dimension2D & dimension, renderer::TextureSamples samples)
+Texture2D::Texture2D(renderer::CommandList & cmdList, renderer::Format format, const core::Dimension2D & dimension, renderer::TextureSamples samples)
     : m_cmdList(cmdList)
     , m_target(renderer::TextureTarget::Texture2D)
     , m_format(format)
@@ -328,7 +328,7 @@ const core::Dimension2D& Texture2D::getDimension() const
     return m_dimension;
 }
 
-renderer::ImageFormat Texture2D::getFormat() const
+renderer::Format Texture2D::getFormat() const
 {
     return m_format;
 }

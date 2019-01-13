@@ -8,6 +8,9 @@ namespace utils
 {
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    /**
+    * Singleton class. Lazy Singleton
+    */
     template <class T>
     class Singleton
     {

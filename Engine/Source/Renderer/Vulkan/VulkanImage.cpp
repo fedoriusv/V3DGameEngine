@@ -105,31 +105,31 @@ std::tuple<VkAccessFlags, VkAccessFlags> VulkanImage::getAccessFlagsFromImageLay
     return { srcFlag, dstFlag };
 }
 
-VkFormat VulkanImage::convertImageFormatToVkFormat(renderer::ImageFormat format)
+VkFormat VulkanImage::convertImageFormatToVkFormat(renderer::Format format)
 {
     switch (format)
     {
-    case ImageFormat_Undefined :
+    case Format_Undefined :
         return VK_FORMAT_UNDEFINED;
-    case ImageFormat_R4G4_UNorm_Pack8:
+    case Format_R4G4_UNorm_Pack8:
         return VK_FORMAT_R4G4_UNORM_PACK8;
-    case ImageFormat_R4G4B4A4_UNorm_Pack16:
+    case Format_R4G4B4A4_UNorm_Pack16:
         return VK_FORMAT_R4G4B4A4_UNORM_PACK16;
-    case ImageFormat_B4G4R4A4_UNorm_Pack16 :
+    case Format_B4G4R4A4_UNorm_Pack16 :
         return VK_FORMAT_B4G4R4A4_UNORM_PACK16;
-    case ImageFormat_R5G6B5_UNorm_Pack16:
+    case Format_R5G6B5_UNorm_Pack16:
         return VK_FORMAT_R5G6B5_UNORM_PACK16;
-    case ImageFormat_B5G6R5_UNorm_Pack16:
+    case Format_B5G6R5_UNorm_Pack16:
         return VK_FORMAT_B5G6R5_UNORM_PACK16;
-    case ImageFormat_R5G5B5A1_UNorm_Pack16:
+    case Format_R5G5B5A1_UNorm_Pack16:
         return VK_FORMAT_R5G5B5A1_UNORM_PACK16;
-    case ImageFormat_B5G5R5A1_UNorm_Pack16:
+    case Format_B5G5R5A1_UNorm_Pack16:
         return VK_FORMAT_B5G5R5A1_UNORM_PACK16;
-    case ImageFormat_A1R5G5B5_UNorm_Pack16:
+    case Format_A1R5G5B5_UNorm_Pack16:
         return VK_FORMAT_A1R5G5B5_UNORM_PACK16;
 
         //...
-    case ImageFormat_R8G8B8A8_UInt:
+    case Format_R8G8B8A8_UInt:
         return VK_FORMAT_R8G8B8A8_UINT;
         //...
 

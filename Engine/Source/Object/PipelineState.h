@@ -50,6 +50,11 @@ namespace renderer
         CullMode_FrontAndBack,
     };
 
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    /**
+    * GraphicsPipelineState class
+    */
     class GraphicsPipelineState : public PipelineState
     {
     public:
@@ -95,9 +100,12 @@ namespace renderer
 
         void setPrimitiveTopology(PrimitiveTopology primitiveTopology);
 
+        void setShaderProgram(const ShaderProgram* program);
+
     private:
 
         GraphicsPipelineStateDesc m_pipelineStateDesc;
+        ShaderProgram*            m_program;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

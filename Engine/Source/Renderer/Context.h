@@ -22,6 +22,9 @@ namespace renderer
     struct RenderPassInfo;
     struct ClearValueInfo;
 
+    /**
+    * Context interface class
+    */
     class Context : public utils::NonCopyable
     {
 
@@ -60,10 +63,10 @@ namespace renderer
         virtual void removeRenderTarget(const RenderPassInfo * renderpassInfo, const std::vector<Image*>& attachments, const ClearValueInfo * clearInfo) = 0;
 
         //create
-        virtual Image* createImage(TextureTarget target, renderer::ImageFormat format, const core::Dimension3D& dimension, u32 mipmapLevel,
+        virtual Image* createImage(TextureTarget target, renderer::Format format, const core::Dimension3D& dimension, u32 mipmapLevel,
             s16 filter, TextureAnisotropic anisotropicLevel, TextureWrap wrap) const = 0;
 
-        virtual Image* createAttachmentImage(renderer::ImageFormat format, const core::Dimension3D& dimension, TextureSamples samples,
+        virtual Image* createAttachmentImage(renderer::Format format, const core::Dimension3D& dimension, TextureSamples samples,
             s16 filter, TextureAnisotropic anisotropicLevel, TextureWrap wrap) const = 0;
 
         virtual const DeviceCaps* getDeviceCaps() const = 0;

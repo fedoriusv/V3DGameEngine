@@ -1,7 +1,7 @@
 #include "ShaderSpirVDecoder.h"
 #include "Shader.h"
 #include "Stream/FileLoader.h"
-#include "Stream/MemoryStream.h"
+#include "Stream/StreamManager.h"
 
 #include "Utils/Logger.h"
 
@@ -48,7 +48,7 @@ Resource * ShaderSpirVDecoder::decode(const stream::Stream* stream, const std::s
             shaderc::CompileOptions options;
             options.SetTargetEnvironment(shaderc_target_env_vulkan, 0);
             options.SetOptimizationLevel(shaderc_optimization_level_zero);
-#ifndef DEBUG
+#ifdef DEBUG
             options.SetWarningsAsErrors();
 #endif
             switch (m_header._shaderLang)
@@ -123,6 +123,8 @@ Resource * ShaderSpirVDecoder::decode(const stream::Stream* stream, const std::s
                 return nullptr;
             }
 
+            LOG_DEBUG("Compile Shader %s to SpirV:\n %s\n", name.c_str(), source.c_str());
+
             shaderc::Compiler compiler;
             shaderc::SpvCompilationResult result = compiler.CompileGlslToSpv(source, shaderType, "shader", options);
             if (!compiler.IsValid())
@@ -189,16 +191,22 @@ Resource * ShaderSpirVDecoder::decode(const stream::Stream* stream, const std::s
                 LOG_WARNING("ShaderSpirVDecoder::decode: header [%s]%s shader warnings messages:\n%s", stringType.c_str(), name.c_str(), result.GetErrorMessage().c_str());
             }
 
+            u32 size = (u32)(result.cend() - result.cbegin()) * sizeof(u32);
+            stream::Stream* resourceSpirvBinary = stream::StreamManager::createMemoryStream(nullptr, size + sizeof(u32) + sizeof(bool));
+            resourceSpirvBinary->write<u32>(size);
+            resourceSpirvBinary->write(result.cbegin(), size);
+
+            resourceSpirvBinary->write<bool>(m_reflections);
             if (m_reflections)
             {
-                if (!ShaderSpirVDecoder::parseReflections({ result.cbegin(), result.cend() }))
+                if (!ShaderSpirVDecoder::parseReflections({ result.cbegin(), result.cend() }, resourceSpirvBinary))
                 {
                     LOG_ERROR("ShaderSpirVDecoder::decode: parseReflections failed for shader: %s", name.c_str());
-                    //return nullptr;
+                    delete resourceSpirvBinary;
+
+                    return nullptr;
                 }
             }
-
-            stream::Stream* resourceSpirvBinary = new stream::MemoryStream(result.cbegin(), (u32)std::distance(result.cend(), result.cbegin()) * sizeof(u32));
 
             Resource* resource = new Shader();
             resource->init(resourceSpirvBinary, new ShaderHeader(m_header));
@@ -220,10 +228,41 @@ Resource * ShaderSpirVDecoder::decode(const stream::Stream* stream, const std::s
 
 bool ShaderSpirVDecoder::parseReflections(const std::vector<u32>& spirv, stream::Stream* stream)
 {
+    auto convertSPRIVTypeToFormat = [](const spirv_cross::SPIRType& type) -> renderer::Format
+    {
+        switch (type.basetype)
+        {
+        case spirv_cross::SPIRType::Float:
+        {
+            if (type.width == 32)
+            {
+                if (type.vecsize == 1)
+                    return renderer::Format_R32_SFloat;
+                if (type.vecsize == 2)
+                    return renderer::Format_R32G32_SFloat;
+                if (type.vecsize == 3)
+                    return renderer::Format_R32G32B32_SFloat;
+                if (type.vecsize == 4)
+                    return renderer::Format_R32G32B32A32_SFloat;
+            }
+        }
+
+        default:
+            ASSERT(false, "format not found");
+        }
+
+        return renderer::Format_Undefined;
+    };
+
     if (m_header._shaderLang == ShaderHeader::ShaderLang::ShaderLang_GLSL)
     {
         spirv_cross::CompilerGLSL glsl(spirv);
         spirv_cross::ShaderResources resources = glsl.get_shader_resources();
+
+        const spirv_cross::CompilerGLSL::Options& options = glsl.get_common_options();
+        u32 version = options.version;
+
+        stream->write<u32>(version);
 
         u32 inputChannelCount = static_cast<u32>(resources.stage_inputs.size());
         stream->write<u32>(inputChannelCount);
@@ -235,14 +274,13 @@ bool ShaderSpirVDecoder::parseReflections(const std::vector<u32>& spirv, stream:
             u32 location = glsl.get_decoration(inputChannel.id, spv::DecorationLocation);
 
             const spirv_cross::SPIRType& type = glsl.get_type(inputChannel.type_id);
-            u32 col = type.columns;
-            u32 row = type.vecsize;
 
-            stream->write<ShaderDataType::DataType>(innerType);
-            stream->write(name);
-            stream->write<u32>(location);
-            stream->write<u32>(col);
-            stream->write<u32>(row);
+            Shader::Attribute input;
+            input._location = location;
+            input._format = convertSPRIVTypeToFormat(type);
+            input._name = name;
+
+            input >> stream;
         }
 
         u32 outputChannelCount = static_cast<u32>(resources.stage_outputs.size());
@@ -258,16 +296,16 @@ bool ShaderSpirVDecoder::parseReflections(const std::vector<u32>& spirv, stream:
             u32 col = type.columns;
             u32 row = type.vecsize;
 
-            ShaderDataType::DataType innerType = getInnerDataType(type);
-            stream->write(name);
-            stream->write<u32>(location);
-            stream->write<ShaderDataType::EDataType>(innerType);
-            stream->write<u32>(col);
-            stream->write<u32>(row);
+            Shader::Attribute output;
+            output._location = location;
+            output._format = convertSPRIVTypeToFormat(type);
+            output._name = name;
+
+            output >> stream;
         }
 
         u32 unifromBufferCount = static_cast<u32>(resources.uniform_buffers.size());
-        stream->write<u32>(unifromBufferCount);
+        //stream->write<u32>(unifromBufferCount);
         s32 buffID = 0;
         for (auto& buffer : resources.uniform_buffers)
         {
@@ -278,15 +316,15 @@ bool ShaderSpirVDecoder::parseReflections(const std::vector<u32>& spirv, stream:
             u32 set = glsl.get_decoration(buffer.id, spv::DecorationDescriptorSet);
             const spirv_cross::SPIRType& block_type = glsl.get_type(buffer.type_id);
 
-            stream->write<s32>(buffID);
+            /*stream->write<s32>(buffID);
             stream->write(name);
             stream->write<u32>(set);
-            stream->write<u32>(binding);
+            stream->write<u32>(binding);*/
 
             u32 posMembers = stream->tell();
 
             u32 countMembers = 0;
-            stream->write<u32>(countMembers);
+            //stream->write<u32>(countMembers);
 
             u32 index = 0;
             while (true)
@@ -301,25 +339,25 @@ bool ShaderSpirVDecoder::parseReflections(const std::vector<u32>& spirv, stream:
                 u32 row = type.vecsize;
                 ++index;
 
-                ShaderDataType::EDataType innerType = getInnerDataType(type);
-                stream->write<s32>(buffID);
-                stream->write(member_name);
-                stream->write<ShaderDataType::DataType>(innerType);
-                stream->write<u32>(col);
-                stream->write<u32>(row);
+                //ShaderDataType::EDataType innerType = getInnerDataType(type);
+                //stream->write<s32>(buffID);
+                //stream->write(member_name);
+                //stream->write<ShaderDataType::DataType>(innerType);
+                //stream->write<u32>(col);
+                //stream->write<u32>(row);
             }
 
             u32 posCurr = stream->tell();
             countMembers = index;
-            stream->seekBeg(posMembers);
-            stream->write<u32>(countMembers);
-            stream->seekBeg(posCurr);
+            //stream->seekBeg(posMembers);
+            //stream->write<u32>(countMembers);
+            //stream->seekBeg(posCurr);
 
             ++buffID;
         }
 
         u32 samplersCount = static_cast<u32>(resources.sampled_images.size());
-        stream->write<u32>(samplersCount);
+        //stream->write<u32>(samplersCount);
         for (auto& image : resources.sampled_images)
         {
             const std::string& name = glsl.get_name(image.id);
@@ -331,12 +369,12 @@ bool ShaderSpirVDecoder::parseReflections(const std::vector<u32>& spirv, stream:
             const spirv_cross::SPIRType& type = glsl.get_type(image.type_id);
             bool depth = type.image.depth;
 
-            TextureTarget innerType = getInnerTextureTarget(type);
-            stream->write(name);
-            stream->write<u32>(set);
-            stream->write<u32>(binding);
-            stream->write<TextureTarget>(innerType);
-            stream->write<bool>(depth);
+            //TextureTarget innerType = getInnerTextureTarget(type);
+            //stream->write(name);
+            //stream->write<u32>(set);
+            //stream->write<u32>(binding);
+            //stream->write<TextureTarget>(innerType);
+            //stream->write<bool>(depth);
         }
 
         return true;

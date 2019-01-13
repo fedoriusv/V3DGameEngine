@@ -354,6 +354,11 @@ void FileStream::unmap()
     m_mapped = false;
 }
 
+bool FileStream::isMapped() const
+{
+    return m_mapped;
+}
+
 const std::string& FileStream::getName() const
 {
     return m_fileName;
