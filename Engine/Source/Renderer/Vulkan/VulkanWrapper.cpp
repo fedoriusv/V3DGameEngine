@@ -348,64 +348,65 @@ void VulkanWrapper::DestroyPipeline(VkDevice device, VkPipeline pipeline, const 
     vkDestroyPipeline(device, pipeline, pAllocator);
 }
 
-/////////////////////////////////////////////////
-
 VkResult VulkanWrapper::CreatePipelineLayout(VkDevice device, const VkPipelineLayoutCreateInfo * pCreateInfo, const VkAllocationCallbacks * pAllocator, VkPipelineLayout * pPipelineLayout) noexcept
 {
-    return VK_NOT_READY;
+    return vkCreatePipelineLayout(device, pCreateInfo, pAllocator, pPipelineLayout);
 }
 
 void VulkanWrapper::DestroyPipelineLayout(VkDevice device, VkPipelineLayout pipelineLayout, const VkAllocationCallbacks * pAllocator) noexcept
 {
+    vkDestroyPipelineLayout(device, pipelineLayout, pAllocator);
 }
 
 VkResult VulkanWrapper::CreateSampler(VkDevice device, const VkSamplerCreateInfo * pCreateInfo, const VkAllocationCallbacks * pAllocator, VkSampler * pSampler) noexcept
 {
-    return VK_NOT_READY;
+    return vkCreateSampler(device, pCreateInfo, pAllocator, pSampler);
 }
 
 void VulkanWrapper::DestroySampler(VkDevice device, VkSampler sampler, const VkAllocationCallbacks * pAllocator) noexcept
 {
+    vkDestroySampler(device, sampler, pAllocator);
 }
 
 VkResult VulkanWrapper::CreateDescriptorSetLayout(VkDevice device, const VkDescriptorSetLayoutCreateInfo * pCreateInfo, const VkAllocationCallbacks * pAllocator, VkDescriptorSetLayout * pSetLayout) noexcept
 {
-    return VK_NOT_READY;
+    return vkCreateDescriptorSetLayout(device, pCreateInfo, pAllocator, pSetLayout);
 }
 
 void VulkanWrapper::DestroyDescriptorSetLayout(VkDevice device, VkDescriptorSetLayout descriptorSetLayout, const VkAllocationCallbacks * pAllocator) noexcept
 {
+    vkDestroyDescriptorSetLayout(device, descriptorSetLayout, pAllocator);
 }
 
 VkResult VulkanWrapper::CreateDescriptorPool(VkDevice device, const VkDescriptorPoolCreateInfo * pCreateInfo, const VkAllocationCallbacks * pAllocator, VkDescriptorPool * pDescriptorPool) noexcept
 {
-    return VK_NOT_READY;
+    return vkCreateDescriptorPool(device, pCreateInfo, pAllocator, pDescriptorPool);
 }
 
 void VulkanWrapper::DestroyDescriptorPool(VkDevice device, VkDescriptorPool descriptorPool, const VkAllocationCallbacks * pAllocator) noexcept
 {
+    vkDestroyDescriptorPool(device, descriptorPool, pAllocator);
 }
 
 VkResult VulkanWrapper::ResetDescriptorPool(VkDevice device, VkDescriptorPool descriptorPool, VkDescriptorPoolResetFlags flags) noexcept
 {
-    return VK_NOT_READY;
+    return vkResetDescriptorPool(device, descriptorPool, flags);
 }
 
 VkResult VulkanWrapper::AllocateDescriptorSets(VkDevice device, const VkDescriptorSetAllocateInfo * pAllocateInfo, VkDescriptorSet * pDescriptorSets) noexcept
 {
-    return VK_NOT_READY;
+    return vkAllocateDescriptorSets(device, pAllocateInfo, pDescriptorSets);
 }
 
 VkResult VulkanWrapper::FreeDescriptorSets(VkDevice device, VkDescriptorPool descriptorPool, uint32_t descriptorSetCount, const VkDescriptorSet * pDescriptorSets) noexcept
 {
-    return VK_NOT_READY;
+    return vkFreeDescriptorSets(device, descriptorPool, descriptorSetCount, pDescriptorSets);
 }
 
 void VulkanWrapper::UpdateDescriptorSets(VkDevice device, uint32_t descriptorWriteCount, const VkWriteDescriptorSet * pDescriptorWrites, uint32_t descriptorCopyCount, const VkCopyDescriptorSet * pDescriptorCopies) noexcept
 {
+    vkUpdateDescriptorSets(device, descriptorWriteCount, pDescriptorWrites, descriptorCopyCount, pDescriptorCopies);
 }
-
-///////////////////////////////////////////////////////////
 
 VkResult VulkanWrapper::CreateFramebuffer(VkDevice device, const VkFramebufferCreateInfo * pCreateInfo, const VkAllocationCallbacks * pAllocator, VkFramebuffer * pFramebuffer) noexcept
 {
@@ -472,47 +473,57 @@ VkResult VulkanWrapper::ResetCommandBuffer(VkCommandBuffer commandBuffer, VkComm
     return vkResetCommandBuffer(commandBuffer, flags);
 }
 
-///////////////////////////////////////////////////////////
 void VulkanWrapper::CmdBindPipeline(VkCommandBuffer commandBuffer, VkPipelineBindPoint pipelineBindPoint, VkPipeline pipeline) noexcept
 {
+    vkCmdBindPipeline(commandBuffer, pipelineBindPoint, pipeline);
 }
 
 void VulkanWrapper::CmdSetViewport(VkCommandBuffer commandBuffer, uint32_t firstViewport, uint32_t viewportCount, const VkViewport * pViewports) noexcept
 {
+    vkCmdSetViewport(commandBuffer, firstViewport, viewportCount, pViewports);
 }
 
 void VulkanWrapper::CmdSetScissor(VkCommandBuffer commandBuffer, uint32_t firstScissor, uint32_t scissorCount, const VkRect2D * pScissors) noexcept
 {
+    vkCmdSetScissor(commandBuffer, firstScissor, scissorCount, pScissors);
 }
 
 void VulkanWrapper::CmdSetLineWidth(VkCommandBuffer commandBuffer, float lineWidth) noexcept
 {
+    vkCmdSetLineWidth(commandBuffer, lineWidth);
 }
 
 void VulkanWrapper::CmdSetDepthBias(VkCommandBuffer commandBuffer, float depthBiasConstantFactor, float depthBiasClamp, float depthBiasSlopeFactor) noexcept
 {
+    vkCmdSetDepthBias(commandBuffer, depthBiasConstantFactor, depthBiasClamp, depthBiasSlopeFactor);
 }
 
 void VulkanWrapper::CmdSetBlendConstants(VkCommandBuffer commandBuffer, const float blendConstants[4]) noexcept
 {
+    vkCmdSetBlendConstants(commandBuffer, blendConstants);
 }
 
 void VulkanWrapper::CmdSetDepthBounds(VkCommandBuffer commandBuffer, float minDepthBounds, float maxDepthBounds) noexcept
 {
+    vkCmdSetDepthBounds(commandBuffer, minDepthBounds, maxDepthBounds);
 }
 
 void VulkanWrapper::CmdSetStencilCompareMask(VkCommandBuffer commandBuffer, VkStencilFaceFlags faceMask, uint32_t compareMask) noexcept
 {
+    vkCmdSetStencilCompareMask(commandBuffer, faceMask, compareMask);
 }
 
 void VulkanWrapper::CmdSetStencilWriteMask(VkCommandBuffer commandBuffer, VkStencilFaceFlags faceMask, uint32_t writeMask) noexcept
 {
+    vkCmdSetStencilWriteMask(commandBuffer, faceMask, writeMask);
 }
 
 void VulkanWrapper::CmdSetStencilReference(VkCommandBuffer commandBuffer, VkStencilFaceFlags faceMask, uint32_t reference) noexcept
 {
+    vkCmdSetStencilReference(commandBuffer, faceMask, reference);
 }
 
+///////////////////////////////////////////////////////////
 void VulkanWrapper::CmdBindDescriptorSets(VkCommandBuffer commandBuffer, VkPipelineBindPoint pipelineBindPoint, VkPipelineLayout layout, uint32_t firstSet, uint32_t descriptorSetCount, const VkDescriptorSet * pDescriptorSets, uint32_t dynamicOffsetCount, const uint32_t * pDynamicOffsets) noexcept
 {
 }
