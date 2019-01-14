@@ -29,8 +29,16 @@ namespace vk
         static VkFrontFace convertFrontFaceToVk(FrontFace face);
 
         static VkPrimitiveTopology convertPrimitiveTopologyToVk(PrimitiveTopology primitiveTopology);
+        static VkShaderStageFlagBits convertShaderTypeToVkStage(resource::ShaderType type);
 
     private:
+
+        bool compileShader(const resource::ShaderHeader* header, const void* source, u32 size) override;
+
+        bool createShaderModules(const ShaderProgram* program, std::vector<VkPipelineShaderStageCreateInfo>& outPipelineShaderStageCreateInfo);
+        void deleteShaderModules();
+
+        std::vector<VkShaderModule> m_modules;
 
         VkDevice     m_device;
         VkPipeline   m_pipeline;

@@ -38,6 +38,11 @@ void GraphicsPipelineState::setPrimitiveTopology(PrimitiveTopology primitiveTopo
     m_pipelineStateDesc._primitiveTopology = primitiveTopology;
 }
 
+void GraphicsPipelineState::setShaderProgram(const ShaderProgram * program)
+{
+    m_program = program;
+}
+
 GraphicsPipelineState::RasterizationState::RasterizationState()
     : _polygonMode(PolygonMode::PolygonMode_Triangle)
     , _frontFace(FrontFace::FrontFace_Clockwise)

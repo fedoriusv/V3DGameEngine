@@ -17,6 +17,9 @@ namespace renderer
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    /**
+    * Texture2D class
+    */
     class Texture2D : public Object, public utils::Observer //ref counter, 
     {
     public:
@@ -42,8 +45,8 @@ namespace renderer
 
     private:
 
-        Texture2D(renderer::CommandList& cmdList, renderer::Format format, const core::Dimension2D& dimension, u32 mipmapCount = 0, const void* data = nullptr);
-        Texture2D(renderer::CommandList& cmdList, renderer::Format format, const core::Dimension2D& dimension, renderer::TextureSamples samples);
+        Texture2D(renderer::CommandList& cmdList, renderer::Format format, const core::Dimension2D& dimension, u32 mipmapCount = 0, const void* data = nullptr) noexcept;
+        Texture2D(renderer::CommandList& cmdList, renderer::Format format, const core::Dimension2D& dimension, renderer::TextureSamples samples) noexcept;
 
         void handleNotify(utils::Observable* ob) override;
 
@@ -71,6 +74,9 @@ namespace renderer
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    /**
+    * SwapchainTexture class
+    */
     class SwapchainTexture : public Object
     {
     public:
@@ -82,7 +88,7 @@ namespace renderer
 
     private:
 
-        SwapchainTexture(renderer::CommandList& cmdList)
+        SwapchainTexture(renderer::CommandList& cmdList) noexcept
             : m_cmdList(cmdList)
         {
         }

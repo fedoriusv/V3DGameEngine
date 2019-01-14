@@ -105,7 +105,7 @@ namespace renderer
     private:
 
         GraphicsPipelineStateDesc m_pipelineStateDesc;
-        ShaderProgram*            m_program;
+        const ShaderProgram*      m_program;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

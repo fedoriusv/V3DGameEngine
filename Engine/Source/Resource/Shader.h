@@ -5,9 +5,24 @@
 
 namespace v3d
 {
+namespace renderer
+{
+    class ShaderProgram;
+    class Pipeline;
+} //namespace renderer
+
 namespace resource
 {
     /////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    enum ShaderType : s32
+    {
+        ShaderType_Undefined = -1,
+        ShaderType_Vertex = 0,
+        ShaderType_Fragment,
+
+        ShaderType_Count,
+    };
 
     /**
     * ShaderHeader meta info about Shader
@@ -27,10 +42,14 @@ namespace resource
             ShaderLang_CG
         };
 
+        ShaderHeader() noexcept;
+
+        ShaderType     _type;
         ShaderResource _contentType;
         ShaderLang     _shaderLang;
         f32            _apiVersion;
         u32            _optLevel;
+        std::string    _entyPoint;
 
         std::vector<std::pair<std::string, std::string>> _defines;
         std::vector<std::string>                         _include;
@@ -73,20 +92,22 @@ namespace resource
             std::vector<Attribute> _outputAttribute;
         };
 
-        Shader() noexcept;
+        explicit Shader(const ShaderHeader* header) noexcept;
         ~Shader();
 
-        void init(const stream::Stream* stream, const ResourceHeader* header) override;
+        void init(const stream::Stream* stream) override;
         bool load() override;
 
-    private:
-
         const ShaderHeader* getShaderHeader() const;
+
+    private:
 
         ReflectionInfo m_reflectionInfo;
 
         u32     m_size;
         void*   m_source;
+
+        friend renderer::Pipeline;
 
     };
 

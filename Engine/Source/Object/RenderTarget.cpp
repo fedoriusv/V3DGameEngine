@@ -17,7 +17,7 @@ namespace renderer
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-RenderTarget::RenderTarget(renderer::CommandList& cmdList, const core::Dimension2D& size)
+RenderTarget::RenderTarget(renderer::CommandList& cmdList, const core::Dimension2D& size) noexcept
     : m_cmdList(cmdList)
     , m_size(size)
 {
@@ -104,7 +104,7 @@ bool RenderTarget::hasDepthStencilTexture() const
     return std::get<0>(m_depthStencilTexture) != nullptr;
 }
 
-Backbuffer::Backbuffer(renderer::CommandList & cmdList, SwapchainTexture * texture)
+Backbuffer::Backbuffer(renderer::CommandList & cmdList, SwapchainTexture * texture) noexcept
     : m_cmdList(cmdList)
     , m_texture(texture)
 {

@@ -7,12 +7,17 @@
 
 namespace v3d
 {
+namespace resource
+{
+    struct ShaderHeader;
+} //namespace resource
 namespace renderer
 {
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     struct PipelineGraphicInfo
     {
+        ShaderProgram*                                   _program;
         GraphicsPipelineState::GraphicsPipelineStateDesc _pipelineDesc;
     };
 
@@ -38,6 +43,18 @@ namespace renderer
         virtual void destroy() = 0;
 
     protected:
+
+        bool createShader(const resource::Shader* shader)
+        {
+            if (!shader)
+            {
+                return false;
+            }
+
+            return compileShader(shader->getShaderHeader(), shader->m_source, shader->m_size);
+        }
+
+        virtual bool compileShader(const resource::ShaderHeader* header, const void* source, u32 size) = 0;
 
         PipelineType m_pipelineType;
     };

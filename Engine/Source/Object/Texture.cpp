@@ -12,7 +12,7 @@ namespace renderer
 class CreateTextureCommand : public renderer::Command
 {
 public:
-    CreateTextureCommand(renderer::Image* image, u32 dataSize, const void * data)
+    CreateTextureCommand(renderer::Image* image, u32 dataSize, const void * data) noexcept
         : m_image(image) //TODO: need use handle
         , m_data(nullptr)
         , m_dataSize(0)
@@ -66,7 +66,7 @@ private:
 class UploadTextureCommand : public renderer::Command, utils::Observer
 {
 public:
-    UploadTextureCommand(renderer::Image* image)
+    UploadTextureCommand(renderer::Image* image) noexcept
         : m_image(image)
     {
         LOG_DEBUG("UploadTextureCommand constructor");
@@ -101,7 +101,7 @@ private:
 class CommandClearColor : public renderer::Command, utils::Observer
 {
 public:
-    CommandClearColor(renderer::Image* image, const core::Vector4D& color)
+    CommandClearColor(renderer::Image* image, const core::Vector4D& color) noexcept
         : m_image(image)
         , m_clearColor(color)
     {
@@ -138,7 +138,7 @@ private:
 class CommandClearDepthStencil : public renderer::Command, utils::Observer
 {
 public:
-    CommandClearDepthStencil(renderer::Image* image, f32 depth, u32 stencil)
+    CommandClearDepthStencil(renderer::Image* image, f32 depth, u32 stencil) noexcept
         : m_image(image)
         , m_depth(depth)
         , m_stencil(stencil)
@@ -177,7 +177,7 @@ private:
 class CommandClearBackbuffer : public renderer::Command
 {
 public:
-    CommandClearBackbuffer(const core::Vector4D& color)
+    CommandClearBackbuffer(const core::Vector4D& color) noexcept
         : m_clearColor(color)
     {
         LOG_DEBUG("CommandClearBackbuffer constructor");
@@ -199,7 +199,7 @@ private:
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-Texture2D::Texture2D(renderer::CommandList& cmdList, renderer::Format format, const core::Dimension2D& dimension, u32 mipmapCount, const void * data)
+Texture2D::Texture2D(renderer::CommandList& cmdList, renderer::Format format, const core::Dimension2D& dimension, u32 mipmapCount, const void * data) noexcept
     : m_cmdList(cmdList)
     , m_target(renderer::TextureTarget::Texture2D)
     , m_format(format)
@@ -222,7 +222,7 @@ Texture2D::Texture2D(renderer::CommandList& cmdList, renderer::Format format, co
     createTexture2D(data);
 }
 
-Texture2D::Texture2D(renderer::CommandList & cmdList, renderer::Format format, const core::Dimension2D & dimension, renderer::TextureSamples samples)
+Texture2D::Texture2D(renderer::CommandList & cmdList, renderer::Format format, const core::Dimension2D & dimension, renderer::TextureSamples samples) noexcept
     : m_cmdList(cmdList)
     , m_target(renderer::TextureTarget::Texture2D)
     , m_format(format)

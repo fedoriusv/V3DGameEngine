@@ -16,6 +16,9 @@ namespace renderer
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    /**
+    * RenderTarget class
+    */
     class RenderTarget : public Object //ref counter
     {
     public:
@@ -41,7 +44,7 @@ namespace renderer
 
     private:
 
-        RenderTarget(renderer::CommandList& cmdList, const core::Dimension2D& size);
+        RenderTarget(renderer::CommandList& cmdList, const core::Dimension2D& size) noexcept;
 
         renderer::CommandList&  m_cmdList;
         core::Dimension2D       m_size;
@@ -54,6 +57,9 @@ namespace renderer
 
      /////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    /**
+    * Backbuffer class
+    */
     class Backbuffer : public Object //ref couter,
     {
     public:
@@ -63,7 +69,7 @@ namespace renderer
 
     private:
 
-        Backbuffer(renderer::CommandList& cmdList, SwapchainTexture* texture);
+        Backbuffer(renderer::CommandList& cmdList, SwapchainTexture* texture) noexcept;
 
         renderer::CommandList&  m_cmdList;
         SwapchainTexture*       m_texture;

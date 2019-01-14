@@ -37,16 +37,28 @@ namespace resource
     {
     public:
 
-        Resource() noexcept
-            : m_header(nullptr)
+        explicit Resource(const ResourceHeader* header) noexcept
+            : m_header(header)
             , m_stream(nullptr)
             , m_loaded(false)
         {
         }
 
-        virtual ~Resource() {};
+        virtual ~Resource() 
+        {
+            if (m_header)
+            {
+                delete m_header;
+            }
 
-        virtual void init(const stream::Stream* stream, const ResourceHeader* header) = 0;
+            if (m_stream)
+            {
+                ASSERT(!m_stream->isMapped(), "mapped");
+                delete m_stream;
+            }
+        };
+
+        virtual void init(const stream::Stream* stream) = 0;
         virtual bool load() = 0;
 
     protected:

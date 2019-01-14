@@ -79,17 +79,20 @@ Resource * ShaderSpirVDecoder::decode(const stream::Stream* stream, const std::s
             }
 
             bool validShaderType = false;
-            auto getShaderType = [&validShaderType](const std::string& name) -> shaderc_shader_kind
+            resource::ShaderType type = resource::ShaderType::ShaderType_Undefined;
+            auto getShaderType = [&validShaderType, &type](const std::string& name) -> shaderc_shader_kind
             {
                 std::string fileExtension = stream::FileLoader::getFileExtension(name);
                 if (fileExtension == "vert")
                 {
                     validShaderType = true;
+                    type = resource::ShaderType::ShaderType_Vertex;
                     return shaderc_shader_kind::shaderc_vertex_shader;
                 }
                 else if (fileExtension == "frag")
                 {
                     validShaderType = true;
+                    type = resource::ShaderType::ShaderType_Fragment;
                     return shaderc_shader_kind::shaderc_fragment_shader;
                 }
                 else if (fileExtension == "geom")
@@ -208,8 +211,12 @@ Resource * ShaderSpirVDecoder::decode(const stream::Stream* stream, const std::s
                 }
             }
 
-            Resource* resource = new Shader();
-            resource->init(resourceSpirvBinary, new ShaderHeader(m_header));
+            ShaderHeader* resourceHeader = new ShaderHeader(m_header);
+            resourceHeader->_type = type;
+            resourceHeader->_apiVersion = m_sourceVersion;
+
+            Resource* resource = new Shader(resourceHeader);
+            resource->init(resourceSpirvBinary);
 
             return resource;
         }
@@ -260,9 +267,7 @@ bool ShaderSpirVDecoder::parseReflections(const std::vector<u32>& spirv, stream:
         spirv_cross::ShaderResources resources = glsl.get_shader_resources();
 
         const spirv_cross::CompilerGLSL::Options& options = glsl.get_common_options();
-        u32 version = options.version;
-
-        stream->write<u32>(version);
+        m_sourceVersion = options.version;
 
         u32 inputChannelCount = static_cast<u32>(resources.stage_inputs.size());
         stream->write<u32>(inputChannelCount);

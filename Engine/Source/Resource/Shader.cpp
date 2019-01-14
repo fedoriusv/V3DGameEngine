@@ -5,29 +5,25 @@ namespace v3d
 namespace resource
 {
 
-Shader::Shader() noexcept
-    : m_source(nullptr)
+Shader::Shader(const ShaderHeader* header) noexcept
+    : Resource(header)
+    , m_source(nullptr)
 {
 }
 
 Shader::~Shader()
 {
-    if (m_stream)
-    {
-        ASSERT(m_stream->isMapped(), "mapped");
-        delete m_stream;
-    }
-
     if (m_source)
     {
         free(m_source);
     }
+    m_size = 0;
 }
 
-void Shader::init(const stream::Stream * stream, const ResourceHeader * header)
+void Shader::init(const stream::Stream * stream)
 {
+    ASSERT(stream, "nullptr");
     m_stream = stream;
-    m_header = header;
 }
 
 bool Shader::load()
@@ -48,9 +44,6 @@ bool Shader::load()
     m_stream->read<bool>(needParseReflect);
     if (needParseReflect)
     {
-        u32 version;
-        m_stream->read<u32>(version);
-
         u32 countInputAttachments;
         m_stream->read<u32>(countInputAttachments);
         m_reflectionInfo._inputAttribute.resize(countInputAttachments);
@@ -102,6 +95,16 @@ void Shader::Attribute::operator<<(const stream::Stream * stream)
     stream->read(_name);
 }
 
+
+ShaderHeader::ShaderHeader() noexcept
+    : _type(ShaderType::ShaderType_Undefined)
+    , _contentType(ShaderResource::ShaderResource_Source)
+    , _shaderLang(ShaderLang::ShaderLang_GLSL)
+    , _apiVersion(0)
+    , _optLevel(0)
+    , _entyPoint("main")
+{
+}
 
 } //namespace resource
 } //namespace v3d

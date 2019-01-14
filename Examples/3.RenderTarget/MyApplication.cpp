@@ -104,9 +104,8 @@ void MyApplication::Initialize()
     Shader* vertShader = ResourceLoaderManager::getInstance()->loadShaderFromFile<Shader, ShaderSourceLoader>(m_Context, "Shaders/mrt.vert");
     Shader* fragShader = ResourceLoaderManager::getInstance()->loadShaderFromFile<Shader, ShaderSourceLoader>(m_Context, "Shaders/mrt.frag");
     
-    //ShaderProgram* program = m_CommandList->createObject<ShaderProgram>(vertShader, fragShader);
-
-    GraphicsPipelineState pipeline;
+    //ShaderProgram* program = m_CommandList->createObject<ShaderProgram>({vertShader, fragShader});
+    //GraphicsPipelineState pipeline;
 
     //Texture2D* texture = m_CommandList->createObject<Texture2D>(renderer::ImageFormat::ImageFormat_Undefined, core::Dimension2D(0, 0));
     //texture->update({ 0,0 }, {0, 0}, 1, nullptr);

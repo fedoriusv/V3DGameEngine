@@ -18,10 +18,9 @@ ShaderSourceLoader::ShaderSourceLoader(const renderer::Context* context, const s
     {
 #ifdef USE_SPIRV
         {
-            ShaderHeader header = {};
+            ShaderHeader header;
             header._contentType = ShaderHeader::ShaderResource::ShaderResource_Source;
             header._shaderLang = ShaderHeader::ShaderLang::ShaderLang_GLSL;
-            header._apiVersion = 1.0f;
             header._optLevel = 0;
             header._defines = defines;
 
@@ -32,7 +31,6 @@ ShaderSourceLoader::ShaderSourceLoader(const renderer::Context* context, const s
             ShaderHeader header;
             header._contentType = ShaderHeader::ShaderResource::ShaderResource_Source;
             header._shaderLang = ShaderHeader::ShaderLang::ShaderLang_HLSL;
-            header._apiVersion = 1.0f;
             header._optLevel = 0;
             header._defines = defines;
 
