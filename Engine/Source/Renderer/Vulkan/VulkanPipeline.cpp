@@ -138,10 +138,12 @@ VkShaderStageFlagBits VulkanGraphicPipeline::convertShaderTypeToVkStage(resource
     return VK_SHADER_STAGE_VERTEX_BIT;
 }
 
-VulkanGraphicPipeline::VulkanGraphicPipeline(VkDevice device)
+VulkanGraphicPipeline::VulkanGraphicPipeline(VkDevice device, RenderPassManager* renderpassManager)
     : Pipeline(PipelineType::PipelineType_Graphic)
     , m_device(device)
     , m_pipeline(VK_NULL_HANDLE)
+
+    , m_renderpassManager(renderpassManager)
 {
     LOG_DEBUG("VulkanGraphicPipeline::VulkanGraphicPipeline constructor %llx", this);
 }
@@ -172,6 +174,7 @@ bool VulkanGraphicPipeline::create(const PipelineGraphicInfo* pipelineInfo)
     std::vector<VkPipelineShaderStageCreateInfo> pipelineShaderStageCreateInfos;
     if (!createShaderModules(pipelineInfo->_program, pipelineShaderStageCreateInfos))
     {
+        LOG_ERROR("VulkanGraphicPipeline::create couldn't create modules for pipeline");
         deleteShaderModules();
         return false;
     }
@@ -180,7 +183,24 @@ bool VulkanGraphicPipeline::create(const PipelineGraphicInfo* pipelineInfo)
 
     graphicsPipelineCreateInfo.layout = VK_NULL_HANDLE; //TODO
 
-    graphicsPipelineCreateInfo.renderPass = VK_NULL_HANDLE;
+    const ShaderProgram::ShaderProgramInfo& shaderProgramInfo = pipelineInfo->_program->getShaderMetaInfo();
+
+    RenderPassInfo renderPassInfo = {};
+    renderPassInfo._countColorAttachments = shaderProgramInfo._outputAttachment.size();
+    renderPassInfo._hasDepthStencilAttahment = false; //TODO
+    for (auto& att : shaderProgramInfo._outputAttachment)
+    {
+        //renderPassInfo._attachments TODO!!!
+    }
+
+    RenderPass* pass = m_renderpassManager->acquireRenderPass(renderPassInfo);
+    if (!pass)
+    {
+        LOG_ERROR("VulkanGraphicPipeline::create couldn't create renderpass for pipline");
+        return false;
+    }
+
+    graphicsPipelineCreateInfo.renderPass = static_cast<VulkanRenderPass*>(pass)->getHandle();
     graphicsPipelineCreateInfo.subpass = 0; //TODO
 
     const GraphicsPipelineState::RasterizationState& rasterizationState = pipelineDesc._rasterizationState;
@@ -200,6 +220,7 @@ bool VulkanGraphicPipeline::create(const PipelineGraphicInfo* pipelineInfo)
     rasterizationStateCreateInfo.lineWidth = 1.0f;
     graphicsPipelineCreateInfo.pRasterizationState = &rasterizationStateCreateInfo;
 
+
     VkPipelineInputAssemblyStateCreateInfo inputAssemblyStateCreateInfo = {};
     inputAssemblyStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
     inputAssemblyStateCreateInfo.pNext = nullptr;
@@ -208,7 +229,6 @@ bool VulkanGraphicPipeline::create(const PipelineGraphicInfo* pipelineInfo)
     inputAssemblyStateCreateInfo.primitiveRestartEnable = VK_FALSE;
     graphicsPipelineCreateInfo.pInputAssemblyState = &inputAssemblyStateCreateInfo;
 
-    //pipelineInfo->_program->getShaderInfo;
 
     VkPipelineVertexInputStateCreateInfo vertexInputStateCreateInfo = {};
     vertexInputStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
@@ -224,20 +244,57 @@ bool VulkanGraphicPipeline::create(const PipelineGraphicInfo* pipelineInfo)
     vertexInputStateCreateInfo.pVertexBindingDescriptions = &vertexInputBindingDescription;
 
     std::vector<VkVertexInputAttributeDescription> vertexInputAttributeDescriptions;
-    //for
-    VkVertexInputAttributeDescription vertexInputAttributeDescription = {};
-    vertexInputAttributeDescription.binding = 0;
-    vertexInputAttributeDescription.location;
-    vertexInputAttributeDescription.format;
-    vertexInputAttributeDescription.offset;
-    vertexInputAttributeDescriptions.push_back(vertexInputAttributeDescription);
-    //
-
+    vertexInputAttributeDescriptions.reserve(shaderProgramInfo._inputAttachment.size());
+    for (auto& attr : shaderProgramInfo._inputAttachment)
+    {
+        VkVertexInputAttributeDescription vertexInputAttributeDescription = {};
+        vertexInputAttributeDescription.binding = 0;
+        vertexInputAttributeDescription.location = attr.second._location;
+        vertexInputAttributeDescription.format = VulkanImage::convertImageFormatToVkFormat(attr.second._format);
+        vertexInputAttributeDescription.offset = attr.second._offset;
+        vertexInputAttributeDescriptions.push_back(vertexInputAttributeDescription);
+    }
     vertexInputStateCreateInfo.vertexAttributeDescriptionCount = static_cast<u32>(vertexInputAttributeDescriptions.size());
     vertexInputStateCreateInfo.pVertexAttributeDescriptions = vertexInputAttributeDescriptions.data();
 
     graphicsPipelineCreateInfo.pVertexInputState = &vertexInputStateCreateInfo;
-    
+
+
+    VkPipelineColorBlendStateCreateInfo pipelineColorBlendStateCreateInfo = {};
+    pipelineColorBlendStateCreateInfo.sType;
+    pipelineColorBlendStateCreateInfo.pNext;
+    pipelineColorBlendStateCreateInfo.flags;
+    pipelineColorBlendStateCreateInfo.logicOpEnable;
+    pipelineColorBlendStateCreateInfo.logicOp;
+    pipelineColorBlendStateCreateInfo.blendConstants;
+
+    std::vector<VkPipelineColorBlendAttachmentState> pipelineColorBlendAttachmentStates;
+    //for
+    VkPipelineColorBlendAttachmentState pipelineColorBlendAttachmentState = {};
+    pipelineColorBlendAttachmentState.blendEnable;
+    pipelineColorBlendAttachmentState.srcColorBlendFactor;
+    pipelineColorBlendAttachmentState.dstColorBlendFactor;
+    pipelineColorBlendAttachmentState.colorBlendOp;
+    pipelineColorBlendAttachmentState.srcAlphaBlendFactor;
+    pipelineColorBlendAttachmentState.dstAlphaBlendFactor;
+    pipelineColorBlendAttachmentState.alphaBlendOp;
+    pipelineColorBlendAttachmentState.colorWriteMask;
+
+    pipelineColorBlendAttachmentStates.push_back(pipelineColorBlendAttachmentState);
+    //
+
+    pipelineColorBlendStateCreateInfo.attachmentCount = static_cast<u32>(pipelineColorBlendAttachmentStates.size());
+    pipelineColorBlendStateCreateInfo.pAttachments = pipelineColorBlendAttachmentStates.data();
+
+    graphicsPipelineCreateInfo.pColorBlendState = &pipelineColorBlendStateCreateInfo;
+
+    VkPipelineDepthStencilStateCreateInfo pipelineDepthStencilStateCreateInfo = {};
+    pipelineDepthStencilStateCreateInfo.sType;
+    pipelineDepthStencilStateCreateInfo.pNext;
+    pipelineDepthStencilStateCreateInfo.flags;
+    //TODO:
+
+    graphicsPipelineCreateInfo.pDepthStencilState = &pipelineDepthStencilStateCreateInfo;
 
     VkResult result = VulkanWrapper::CreateGraphicsPipelines(m_device, pipelineCache, 1, &graphicsPipelineCreateInfo, VULKAN_ALLOCATOR, &m_pipeline);
     if (result != VK_SUCCESS)
@@ -251,6 +308,12 @@ bool VulkanGraphicPipeline::create(const PipelineGraphicInfo* pipelineInfo)
 
 void VulkanGraphicPipeline::destroy()
 {
+    if (m_pipeline)
+    {
+        VulkanWrapper::DestroyPipeline(m_device, m_pipeline, VULKAN_ALLOCATOR);
+        m_pipeline = VK_NULL_HANDLE;
+    }
+    deleteShaderModules();
 }
 
 bool VulkanGraphicPipeline::compileShader(const resource::ShaderHeader* header, const void * source, u32 size)
@@ -294,7 +357,7 @@ bool VulkanGraphicPipeline::createShaderModules(const ShaderProgram * program, s
             continue;
         }
 
-        if (!Pipeline::createShader(shader))
+        if (!Pipeline::createShader(shader)) //TODO: shader manager
         {
             return false;
         }

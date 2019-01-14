@@ -10,6 +10,8 @@ namespace v3d
 {
 namespace renderer
 {
+    class RenderPassManager;
+
 namespace vk
 {
     /////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -18,7 +20,7 @@ namespace vk
     {
     public:
 
-        VulkanGraphicPipeline(VkDevice device);
+        VulkanGraphicPipeline(VkDevice device, RenderPassManager* renderpassManager);
         ~VulkanGraphicPipeline();
 
         bool create(const PipelineGraphicInfo* pipelineInfo) override;
@@ -42,6 +44,8 @@ namespace vk
 
         VkDevice     m_device;
         VkPipeline   m_pipeline;
+
+        RenderPassManager* const m_renderpassManager;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

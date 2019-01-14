@@ -47,7 +47,7 @@ namespace resource
         ShaderType     _type;
         ShaderResource _contentType;
         ShaderLang     _shaderLang;
-        f32            _apiVersion;
+        u32            _apiVersion;
         u32            _optLevel;
         std::string    _entyPoint;
 
@@ -102,12 +102,13 @@ namespace resource
 
     private:
 
-        ReflectionInfo m_reflectionInfo;
+        ReflectionInfo  m_reflectionInfo;
 
-        u32     m_size;
-        void*   m_source;
+        u32             m_size;
+        void*           m_source;
 
         friend renderer::Pipeline;
+        friend renderer::ShaderProgram;
 
     };
 

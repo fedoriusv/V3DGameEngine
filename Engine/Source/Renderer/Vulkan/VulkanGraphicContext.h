@@ -68,6 +68,7 @@ namespace vk
 
         Framebuffer* createFramebuffer(const std::vector<Image*>& images, const core::Dimension2D& size) override;
         RenderPass* createRenderPass(const RenderPassInfo* renderpassInfo) override;
+        Pipeline* createPipeline(const PipelineGraphicInfo* pipelineGraphicInfo) override;
 
         bool createInstance();
         bool createDevice();

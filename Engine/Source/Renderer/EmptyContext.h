@@ -39,6 +39,7 @@ namespace renderer
 
         Framebuffer* createFramebuffer(const std::vector<Image*>& attachments, const core::Dimension2D& size) override;
         RenderPass* createRenderPass(const RenderPassInfo* renderpassInfo) override;
+        Pipeline* createPipeline(const PipelineGraphicInfo* pipelineGraphicInfo) override;
 
         bool initialize() override;
         void destroy() override;

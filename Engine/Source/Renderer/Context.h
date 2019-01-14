@@ -19,8 +19,11 @@ namespace renderer
     class Image;
     class Framebuffer;
     class RenderPass;
+    class Pipeline;
+
     struct RenderPassInfo;
     struct ClearValueInfo;
+    struct PipelineGraphicInfo;
 
     /**
     * Context interface class
@@ -78,6 +81,7 @@ namespace renderer
 
         virtual Framebuffer* createFramebuffer(const std::vector<Image*>& attachments, const core::Dimension2D& size) = 0;
         virtual RenderPass* createRenderPass(const RenderPassInfo* renderpassInfo) = 0;
+        virtual Pipeline* createPipeline(const PipelineGraphicInfo* pipelineGraphicInfo) = 0;
 
         virtual bool initialize() = 0;
         virtual void destroy() = 0;

@@ -6,6 +6,7 @@
 #include "VulkanImage.h"
 #include "VulkanFramebuffer.h"
 #include "VulkanRenderpass.h"
+#include "VulkanPipeline.h"
 
 #include "Utils/Logger.h"
 
@@ -374,6 +375,11 @@ RenderPass * VulkanGraphicContext::createRenderPass(const RenderPassInfo * rende
     }
 
     return new VulkanRenderPass(m_deviceInfo._device, descs);
+}
+
+Pipeline* VulkanGraphicContext::createPipeline(const PipelineGraphicInfo * pipelineGraphicInfo)
+{
+    return new VulkanGraphicPipeline(m_deviceInfo._device, m_renderpassManager);
 }
 
 bool VulkanGraphicContext::createInstance()

@@ -83,6 +83,12 @@ RenderPass * EmptyContext::createRenderPass(const RenderPassInfo * renderpassInf
     return nullptr;
 }
 
+Pipeline * EmptyContext::createPipeline(const PipelineGraphicInfo * pipelineGraphicInfo)
+{
+    LOG_DEBUG("EmptyContext::createPipeline");
+    return nullptr;
+}
+
 bool EmptyContext::initialize()
 {
     LOG_DEBUG("EmptyContext::initialize");
