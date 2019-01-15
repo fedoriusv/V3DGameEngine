@@ -110,7 +110,7 @@ private:
 class CommandSetRenderTarget final : public Command
 {
 public:
-    CommandSetRenderTarget(const RenderPassInfo& renderpassInfo, const std::vector<Image*>& attachments, const ClearValueInfo& clearInfo) noexcept
+    CommandSetRenderTarget(const RenderPass::RenderPassInfo& renderpassInfo, const std::vector<Image*>& attachments, const RenderPass::ClearValueInfo& clearInfo) noexcept
         : m_renderpassInfo(renderpassInfo)
         , m_attachments(attachments)
         , m_clearInfo(clearInfo)
@@ -131,39 +131,9 @@ public:
     }
 
 private:
-    RenderPassInfo      m_renderpassInfo;
-    std::vector<Image*> m_attachments;
-    ClearValueInfo      m_clearInfo;
-};
-
-    /*CommandRemoveRenderTarget*/
-class CommandRemoveRenderTarget final : public Command
-{
-public:
-    CommandRemoveRenderTarget(const RenderPassInfo& renderpassInfo, const std::vector<Image*>& attachments, const ClearValueInfo& clearInfo) noexcept
-        : m_renderpassInfo(renderpassInfo)
-        , m_attachments(attachments)
-        , m_clearInfo(clearInfo)
-    {
-        LOG_DEBUG("CommandRemoveRenderTarget constructor");
-    };
-    CommandRemoveRenderTarget() = delete;
-    CommandRemoveRenderTarget(CommandRemoveRenderTarget&) = delete;
-
-    ~CommandRemoveRenderTarget()
-    {
-        LOG_DEBUG("CommandRemoveRenderTarget destructor");
-    };
-
-    void execute(const CommandList& cmdList)
-    {
-        cmdList.getContext()->removeRenderTarget(&m_renderpassInfo, m_attachments, &m_clearInfo);
-    }
-
-private:
-    RenderPassInfo      m_renderpassInfo;
-    std::vector<Image*> m_attachments;
-    ClearValueInfo      m_clearInfo;
+    RenderPass::RenderPassInfo  m_renderpassInfo;
+    std::vector<Image*>         m_attachments;
+    RenderPass::ClearValueInfo  m_clearInfo;
 };
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -262,36 +232,10 @@ void CommandList::clearBackbuffer(const core::Vector4D & color)
 
 void CommandList::setRenderTarget(RenderTarget* rendertarget)
 {
+    RenderPass::RenderPassInfo renderPassInfo;
     std::vector<renderer::Image*> images;
-    images.reserve(rendertarget->getColorTextureCount() + (rendertarget->hasDepthStencilTexture()) ? 1 : 0);
-
-    ClearValueInfo clearValuesInfo;
-    clearValuesInfo._size = rendertarget->m_size;
-    clearValuesInfo._color.reserve(images.size());
-
-    RenderPassInfo renderPassInfo;
-
-    renderPassInfo._countColorAttachments = rendertarget->getColorTextureCount();
-    for (u32 index = 0; index < renderPassInfo._countColorAttachments; ++index)
-    {
-        auto attachment = rendertarget->m_colorTextures[index];
-
-        images.push_back(std::get<0>(attachment)->getImage());
-        renderPassInfo._attachments[index] = std::get<1>(attachment);
-
-        clearValuesInfo._color.push_back(std::get<2>(attachment));
-    }
-
-    renderPassInfo._hasDepthStencilAttahment = rendertarget->hasDepthStencilTexture();
-    if (renderPassInfo._hasDepthStencilAttahment)
-    {
-        images.push_back(rendertarget->getDepthStencilTexture()->getImage());
-        renderPassInfo._attachments.back() = std::get<1>(rendertarget->m_depthStencilTexture);
-
-        clearValuesInfo._depth = std::get<2>(rendertarget->m_depthStencilTexture);
-        clearValuesInfo._stencil = std::get<3>(rendertarget->m_depthStencilTexture);
-    }
-
+    RenderPass::ClearValueInfo clearValuesInfo;
+    rendertarget->extractRenderTargetInfo(renderPassInfo, images, clearValuesInfo);
 
     if (CommandList::isImmediate())
     {
@@ -306,9 +250,15 @@ void CommandList::setRenderTarget(RenderTarget* rendertarget)
     }
 }
 
-void CommandList::setPipelineState(PipelineState * pipeline)
+void CommandList::setPipelineState(GraphicsPipelineState * pipeline)
 {
-    //TODO:
+    if (CommandList::isImmediate())
+    {
+        //m_context->setPipeline();
+    }
+    else
+    {
+    }
 }
 
 void CommandList::setViewport(const core::Rect32& viewport)
@@ -321,49 +271,6 @@ void CommandList::setViewport(const core::Rect32& viewport)
     {
         m_pendingStates._viewport = viewport;
         m_pendingFlushMask |= PendingFlush_UpdateContextState;
-    }
-}
-
-void CommandList::removeRenderTarget(RenderTarget* rendertarget)
-{
-    std::vector<renderer::Image*> images;
-    images.reserve(rendertarget->getColorTextureCount() + (rendertarget->hasDepthStencilTexture()) ? 1 : 0);
-
-    ClearValueInfo clearValuesInfo;
-    clearValuesInfo._size = rendertarget->m_size;
-    clearValuesInfo._color.reserve(images.size());
-
-    RenderPassInfo renderPassInfo;
-
-    renderPassInfo._countColorAttachments = rendertarget->getColorTextureCount();
-    for (u32 index = 0; index < renderPassInfo._countColorAttachments; ++index)
-    {
-        auto attachment = rendertarget->m_colorTextures[index];
-
-        images.push_back(std::get<0>(attachment)->getImage());
-        renderPassInfo._attachments[index] = std::get<1>(attachment);
-
-        clearValuesInfo._color.push_back(std::get<2>(attachment));
-    }
-
-    renderPassInfo._hasDepthStencilAttahment = rendertarget->hasDepthStencilTexture();
-    if (renderPassInfo._hasDepthStencilAttahment)
-    {
-        images.push_back(rendertarget->getDepthStencilTexture()->getImage());
-        renderPassInfo._attachments.back() = std::get<1>(rendertarget->m_depthStencilTexture);
-
-        clearValuesInfo._depth = std::get<2>(rendertarget->m_depthStencilTexture);
-        clearValuesInfo._stencil = std::get<3>(rendertarget->m_depthStencilTexture);
-    }
-
-    if (CommandList::isImmediate())
-    {
-        m_context->removeRenderTarget(&renderPassInfo, images, &clearValuesInfo);
-    }
-    else
-    {
-        CommandList::flushPendingCommands(PendingFlush_UpdateRenderTarget);
-        CommandList::pushCommand(new CommandRemoveRenderTarget(renderPassInfo, images, clearValuesInfo));
     }
 }
 

@@ -2,48 +2,49 @@
 
 #include "Common.h"
 #include "TextureProperties.h"
-#include "Context.h"
 #include "Utils/Observable.h"
-#include "Utils/Logger.h"
 
 namespace v3d
 {
 namespace renderer
 {
-    /////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    struct RenderPassInfo
-    {
-        RenderPassInfo()
-        {
-            _attachments.fill(AttachmentDescription());
-            _countColorAttachments = 0;
-            _hasDepthStencilAttahment = false;
-        }
-
-        std::array<AttachmentDescription, k_maxFramebufferAttachments> _attachments; //32
-        u32  _countColorAttachments   : 24;
-        u32 _hasDepthStencilAttahment : 8;
-
-    };
-
-    struct ClearValueInfo
-    {
-        core::Dimension2D           _size;
-        std::vector<core::Vector4D> _color;
-        f32                         _depth;
-        u32                         _stencil;
-
-    };
+    class Context;
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    /**
+    * RenderPass base class. Render side
+    */
     class RenderPass : public utils::Observable
     {
     public:
 
-        RenderPass() noexcept {};
-        virtual ~RenderPass() {};
+        struct RenderPassInfo
+        {
+            RenderPassInfo()
+            {
+                _attachments.fill(AttachmentDescription());
+                _countColorAttachments = 0;
+                _hasDepthStencilAttahment = false;
+            }
+
+            std::array<AttachmentDescription, k_maxFramebufferAttachments> _attachments; //32
+            u32  _countColorAttachments : 24;
+            u32 _hasDepthStencilAttahment : 8;
+
+        };
+
+        struct ClearValueInfo
+        {
+            core::Dimension2D           _size;
+            std::vector<core::Vector4D> _color;
+            f32                         _depth;
+            u32                         _stencil;
+
+        };
+
+        RenderPass() noexcept;
+        virtual ~RenderPass();
 
         virtual bool create() = 0;
         virtual void destroy() = 0;
@@ -51,84 +52,23 @@ namespace renderer
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    /**
+    * RenderPassManager class
+    */
     class RenderPassManager final : utils::Observer
     {
     public:
 
-        explicit RenderPassManager(Context *context) noexcept
-            : m_context(context)
-        {
-        };
+        RenderPassManager() = delete;
 
-        ~RenderPassManager() 
-        {
-            RenderPassManager::clear();
-        };
+        explicit RenderPassManager(Context *context) noexcept;
+        ~RenderPassManager();
 
-        RenderPass* acquireRenderPass(const RenderPassInfo& desc)
-        {
-            RenderPassDescription pDesc;
-            pDesc._info = desc;
+        RenderPass* acquireRenderPass(const RenderPass::RenderPassInfo& desc);
+        bool removeRenderPass(const RenderPass::RenderPassInfo& desc);
+        void clear();
 
-            RenderPass* renderpass = nullptr;
-            auto found = m_renderpasses.emplace(pDesc._hash, renderpass);
-            if (found.second)
-            {
-                renderpass = m_context->createRenderPass(&pDesc._info);
-                if (!renderpass->create())
-                {
-                    renderpass->destroy();
-                    m_renderpasses.erase(pDesc._hash);
-
-                    ASSERT(false, "can't create renderpass");
-                    return nullptr;
-                }
-                found.first->second = renderpass;
-                renderpass->registerNotify(this);
-
-                return renderpass;
-            }
-
-            return found.first->second;
-        }
-
-        bool removeRenderPass(const RenderPassInfo& desc)
-        {
-            RenderPassDescription pDesc;
-            pDesc._info = desc;
-
-            auto renderpass = m_renderpasses.find(pDesc._hash);
-            if (renderpass == m_renderpasses.cend())
-            {
-                LOG_DEBUG("RenderPassManager renderpass not found");
-                ASSERT(false, "renderpass");
-                return false;
-            }
-
-            renderpass->second->destroy();
-            renderpass->second->notifyObservers();
-
-            return true;
-        }
-
-        void handleNotify(utils::Observable* ob) override
-        {
-            LOG_DEBUG("RenderPassManager renderpass %x has been deleted", ob);
-            //m_renderpasses.erase(ob);
-        }
-
-        void clear()
-        {
-            for (auto& renderpass : m_renderpasses)
-            {
-                renderpass.second->destroy();
-                renderpass.second->notifyObservers();
-
-                delete renderpass.second;
-            }
-            m_renderpasses.clear();
-        }
-
+        void handleNotify(utils::Observable* ob) override;
 
     private:
 
@@ -136,8 +76,8 @@ namespace renderer
         {
             RenderPassDescription() {}
 
-            RenderPassInfo  _info;
-            u32             _hash;
+            RenderPass::RenderPassInfo  _info;
+            u32                         _hash;
         };
 
         Context* m_context;

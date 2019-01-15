@@ -2,7 +2,7 @@
 
 #include "Common.h"
 #include "Object.h"
-#include "Renderer/ImageFormats.h"
+#include "Renderer/Formats.h"
 #include "Renderer/CommandList.h"
 #include "Renderer/TextureProperties.h"
 #include "Utils/Observable.h"

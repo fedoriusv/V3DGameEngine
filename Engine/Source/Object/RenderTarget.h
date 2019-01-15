@@ -1,7 +1,7 @@
 ﻿#pragma once
 
 #include "Common.h"
-#include "Renderer/ImageFormats.h"
+#include "Renderer/Formats.h"
 #include "Renderer/TextureProperties.h"
 #include "Renderer/CommandList.h"
 #include "Utils/Observable.h"
@@ -51,6 +51,9 @@ namespace renderer
 
         std::map<u32, std::tuple<Texture2D*, renderer::AttachmentDescription, core::Vector4D>>   m_colorTextures;
         std::tuple<Texture2D*, renderer::AttachmentDescription, f32, u32>                        m_depthStencilTexture;
+
+        void extractRenderTargetInfo(RenderPass::RenderPassInfo& renderpassInfo, std::vector<Image*>& attachments, RenderPass::ClearValueInfo& clearInfo);
+        void destroy();
 
         friend renderer::CommandList;
     };

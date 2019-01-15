@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Resource.h"
-#include "Renderer/ImageFormats.h"
+#include "Renderer/Formats.h"
 
 namespace v3d
 {

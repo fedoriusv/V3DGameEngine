@@ -10,7 +10,13 @@ namespace renderer
 {
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    class PipelineState : public Object {};
+    class PipelineState : public Object 
+    {
+    public:
+
+        PipelineState() = default;
+        virtual ~PipelineState() {};
+    };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -89,9 +95,7 @@ namespace renderer
 
         };
 
-        GraphicsPipelineState() noexcept;
-        explicit GraphicsPipelineState(const GraphicsPipelineStateDesc& desc) noexcept;
-
+        GraphicsPipelineState() = delete;
         ~GraphicsPipelineState();
 
         void setPolygonMode(PolygonMode polygonMode);
@@ -100,12 +104,24 @@ namespace renderer
 
         void setPrimitiveTopology(PrimitiveTopology primitiveTopology);
 
-        void setShaderProgram(const ShaderProgram* program);
+        const GraphicsPipelineStateDesc& getGraphicsPipelineStateDesc() const;
+        GraphicsPipelineStateDesc& getGraphicsPipelineStateDesc();
 
     private:
 
+        explicit GraphicsPipelineState(CommandList& cmdList, const ShaderProgram* const program, const RenderTarget* const renderTaget) noexcept;
+        explicit GraphicsPipelineState(CommandList& cmdList, const GraphicsPipelineStateDesc& desc, const ShaderProgram* const program, const RenderTarget* const renderTaget) noexcept;
+
+        void setShaderProgram(const ShaderProgram * program);
+        void setRenderTaget(const RenderTarget * target);
+
         GraphicsPipelineStateDesc m_pipelineStateDesc;
         const ShaderProgram*      m_program;
+        const RenderTarget*       m_renderTaget;
+
+        CommandList&              m_cmdList;
+
+        friend CommandList;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

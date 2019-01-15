@@ -49,14 +49,16 @@ VulkanGraphicContext::VulkanGraphicContext(const platform::Window * window) noex
     : m_deviceCaps(*VulkanDeviceCaps::getInstance())
     , m_swapchain(nullptr)
     , m_drawCmdBufferManager(nullptr)
-    , m_currentDrawBuffer(nullptr)
     , m_memoryManager(nullptr)
     , m_renderpassManager(nullptr)
     , m_framebuferManager(nullptr)
+    , m_pipelineManager(nullptr)
     , m_window(window)
     , m_frameCounter(0U)
 {
     LOG_DEBUG("VulkanGraphicContext created this %llx", this);
+
+    memset(&m_currentContextState, 0, sizeof(CurrentContextState));
 
     m_renderType = RenderType::VulkanRender;
     memset(&m_deviceInfo, 0, sizeof(DeviceInfo));
@@ -80,18 +82,18 @@ void VulkanGraphicContext::beginFrame()
     u32 index = m_swapchain->acquireImage();
     LOG_DEBUG("VulkanGraphicContext::beginFrame %llu, image index %u", m_frameCounter, index);
 
-    if (!m_currentDrawBuffer)
+    if (!m_currentContextState._currentDrawBuffer)
     {
-        m_currentDrawBuffer = m_drawCmdBufferManager->acquireNewCmdBuffer(VulkanCommandBuffer::PrimaryBuffer);
-        ASSERT(m_currentDrawBuffer, "m_currentDrawBuffer is nullptr");
+        m_currentContextState._currentDrawBuffer = m_drawCmdBufferManager->acquireNewCmdBuffer(VulkanCommandBuffer::PrimaryBuffer);
+        ASSERT(m_currentContextState._currentDrawBuffer, "m_currentDrawBuffer is nullptr");
     }
 
-    if (m_currentDrawBuffer->getStatus() != VulkanCommandBuffer::CommandBufferStatus::Ready)
+    if (m_currentContextState._currentDrawBuffer->getStatus() != VulkanCommandBuffer::CommandBufferStatus::Ready)
     {
         LOG_ERROR("VulkanGraphicContext::beginFrame CommandBufferStatus is Invalid");
     }
 
-    m_currentDrawBuffer->beginCommandBuffer();
+    m_currentContextState._currentDrawBuffer->beginCommandBuffer();
 
     transferImageLayout(m_swapchain->getBackbuffer(), VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 
@@ -103,10 +105,10 @@ void VulkanGraphicContext::endFrame()
 
     transferImageLayout(m_swapchain->getBackbuffer(),VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
 
-    m_currentDrawBuffer->endCommandBuffer();
+    m_currentContextState._currentDrawBuffer->endCommandBuffer();
 
-    m_drawCmdBufferManager->submit(m_currentDrawBuffer, VK_NULL_HANDLE);
-    m_currentDrawBuffer = nullptr;
+    m_drawCmdBufferManager->submit(m_currentContextState._currentDrawBuffer, VK_NULL_HANDLE);
+    m_currentContextState._currentDrawBuffer = nullptr;
 }
 
 void VulkanGraphicContext::presentFrame()
@@ -133,7 +135,7 @@ void VulkanGraphicContext::setViewport(const core::Rect32& viewport)
     //TODO:
 }
 
-void VulkanGraphicContext::setRenderTarget(const RenderPassInfo * renderpassInfo, const std::vector<Image*>& attachments, const ClearValueInfo * clearInfo)
+void VulkanGraphicContext::setRenderTarget(const RenderPass::RenderPassInfo * renderpassInfo, const std::vector<Image*>& attachments, const RenderPass::ClearValueInfo * clearInfo)
 {
     RenderPass* renderpass = m_renderpassManager->acquireRenderPass(*renderpassInfo);
     ASSERT(renderpass, "renderpass is nullptr");
@@ -141,14 +143,14 @@ void VulkanGraphicContext::setRenderTarget(const RenderPassInfo * renderpassInfo
     Framebuffer* framebuffer = m_framebuferManager->acquireFramebuffer(renderpass, attachments, clearInfo->_size);
     ASSERT(framebuffer, "framebuffer is nullptr");
 
-    m_currentRenderpass = static_cast<VulkanRenderPass*>(renderpass);
-    m_currentFramebuffer = static_cast<VulkanFramebuffer*>(framebuffer);
+    m_currentContextState._currentRenderpass = static_cast<VulkanRenderPass*>(renderpass);
+    m_currentContextState._currentFramebuffer = static_cast<VulkanFramebuffer*>(framebuffer);
 
-    if (m_currentRenderpass != renderpass || m_currentFramebuffer != framebuffer /*|| clearInfo*/)
+    if (m_currentContextState._currentRenderpass != renderpass || m_currentContextState._currentFramebuffer != framebuffer /*|| clearInfo*/)
     {
-        if (m_currentDrawBuffer->isInsideRenderPass())
+        if (m_currentContextState._currentDrawBuffer->isInsideRenderPass())
         {
-            m_currentDrawBuffer->cmdEndRenderPass();
+            m_currentContextState._currentDrawBuffer->cmdEndRenderPass();
         }
 
         VkRect2D area;
@@ -166,11 +168,11 @@ void VulkanGraphicContext::setRenderTarget(const RenderPassInfo * renderpassInfo
             clearValues.back().depthStencil = { clearInfo->_depth, clearInfo->_stencil };
         }
 
-        m_currentDrawBuffer->cmdBeginRenderpass(m_currentRenderpass, m_currentFramebuffer, area, clearValues);
+        m_currentContextState._currentDrawBuffer->cmdBeginRenderpass(m_currentContextState._currentRenderpass, m_currentContextState._currentFramebuffer, area, clearValues);
     }
 }
 
-void VulkanGraphicContext::removeRenderTarget(const RenderPassInfo * renderpassInfo, const std::vector<Image*>& attachments, const ClearValueInfo * clearInfo)
+void VulkanGraphicContext::removeRenderTarget(const RenderPass::RenderPassInfo * renderpassInfo, const std::vector<Image*>& attachments, const RenderPass::ClearValueInfo * clearInfo)
 {
 
     ASSERT(false, "need implement correct");
@@ -178,6 +180,12 @@ void VulkanGraphicContext::removeRenderTarget(const RenderPassInfo * renderpassI
     
     //TODO: check if not used for another framebuffers
     m_renderpassManager->removeRenderPass(*renderpassInfo);
+}
+
+void VulkanGraphicContext::setPipeline(const GraphicsPipelineState::GraphicsPipelineStateDesc* pipelineInfo, const ShaderProgram::ShaderProgramInfo* programInfo, const RenderPass::RenderPassInfo* renderpassInfo)
+{
+    //m_currentContextState._currentPipeline = static_cast<VulkanGraphicPipeline*>(m_pipelineManager->acquireGraphicPipeline());
+    ASSERT(m_currentContextState._currentPipeline, "nullptr");
 }
 
 Image * VulkanGraphicContext::createImage(TextureTarget target, renderer::Format format, const core::Dimension3D& dimension, u32 mipLevels,
@@ -204,7 +212,7 @@ VulkanCommandBuffer * VulkanGraphicContext::getCurrentBuffer(VulkanCommandBuffer
 {
     if (type == VulkanCommandBufferManager::CommandTargetType::CmdDrawBuffer)
     {
-        return m_currentDrawBuffer;
+        return m_currentContextState._currentDrawBuffer;
     }
     else
     {
@@ -230,7 +238,7 @@ void VulkanGraphicContext::transferImageLayout(VulkanImage * image, VkPipelineSt
 
     image->setLayout(layout);
 
-    m_currentDrawBuffer->cmdPipelineBarrier(srcStageMask, dstStageMask, imageMemoryBarrier);
+    m_currentContextState._currentDrawBuffer->cmdPipelineBarrier(srcStageMask, dstStageMask, imageMemoryBarrier);
 }
 
 const DeviceCaps* VulkanGraphicContext::getDeviceCaps() const
@@ -294,11 +302,12 @@ bool VulkanGraphicContext::initialize()
     m_memoryManager = new VulkanMemory(m_deviceInfo._device);
 
     m_drawCmdBufferManager = new VulkanCommandBufferManager(&m_deviceInfo, m_queueList[0]);
-    m_currentDrawBuffer = m_drawCmdBufferManager->acquireNewCmdBuffer(VulkanCommandBuffer::PrimaryBuffer);
-    ASSERT(m_currentDrawBuffer, "m_currentDrawBuffer is nullptr");
+    m_currentContextState._currentDrawBuffer = m_drawCmdBufferManager->acquireNewCmdBuffer(VulkanCommandBuffer::PrimaryBuffer);
+    ASSERT(m_currentContextState._currentDrawBuffer, "m_currentDrawBuffer is nullptr");
 
     m_renderpassManager = new RenderPassManager(this);
     m_framebuferManager = new FramebufferManager(this);
+    m_pipelineManager = new PipelineManager(this);
 
     return true;
 }
@@ -327,6 +336,12 @@ void VulkanGraphicContext::destroy()
     {
         delete m_framebuferManager;
         m_framebuferManager = nullptr;
+    }
+
+    if (m_pipelineManager)
+    {
+        delete m_pipelineManager;
+        m_pipelineManager = nullptr;
     }
 
     if (m_swapchain)
@@ -361,7 +376,7 @@ Framebuffer * VulkanGraphicContext::createFramebuffer(const std::vector<Image*>&
     return new VulkanFramebuffer(m_deviceInfo._device, images, size);
 }
 
-RenderPass * VulkanGraphicContext::createRenderPass(const RenderPassInfo * renderpassInfo)
+RenderPass * VulkanGraphicContext::createRenderPass(const RenderPass::RenderPassInfo * renderpassInfo)
 {
     u32 countAttachments = (renderpassInfo->_hasDepthStencilAttahment) ? renderpassInfo->_countColorAttachments + 1 : renderpassInfo->_countColorAttachments;
     std::vector<VulkanRenderPass::VulkanAttachmentDescription> descs(countAttachments);
@@ -377,7 +392,8 @@ RenderPass * VulkanGraphicContext::createRenderPass(const RenderPassInfo * rende
     return new VulkanRenderPass(m_deviceInfo._device, descs);
 }
 
-Pipeline* VulkanGraphicContext::createPipeline(const PipelineGraphicInfo * pipelineGraphicInfo)
+Pipeline* VulkanGraphicContext::createPipeline(const GraphicsPipelineState::GraphicsPipelineStateDesc* pipelineInfo,
+    const ShaderProgram::ShaderProgramInfo* programInfo, const RenderPass::RenderPassInfo* renderpassInfo)
 {
     return new VulkanGraphicPipeline(m_deviceInfo._device, m_renderpassManager);
 }

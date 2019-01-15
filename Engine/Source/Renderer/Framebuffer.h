@@ -3,25 +3,26 @@
 #include "Common.h"
 #include "TextureProperties.h"
 #include "Utils/Observable.h"
-#include "Utils/Logger.h"
-#include "Context.h"
-#include "crc32c/crc32c.h"
 
 namespace v3d
 {
 namespace renderer
 {
-    /////////////////////////////////////////////////////////////////////////////////////////////////////
-
+    class Context;
     class RenderPass;
     class Image;
 
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    /**
+    * Framebuffer base class. Render side
+    */
     class Framebuffer : public utils::Observable
     {
     public:
 
-        Framebuffer() noexcept {};
-        virtual ~Framebuffer() {};
+        Framebuffer() noexcept;
+        virtual ~Framebuffer();
 
         virtual bool create(const RenderPass* pass) = 0;
         virtual void destroy() = 0;
@@ -29,82 +30,23 @@ namespace renderer
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    /**
+    * FramebufferManager class
+    */
     class FramebufferManager final : utils::Observer
     {
     public:
 
-        explicit FramebufferManager(Context *context) noexcept
-            : m_context(context)
-        {
-        }
+        FramebufferManager() = delete;
 
-        ~FramebufferManager()
-        {
-            FramebufferManager::clear();
-        }
+        explicit FramebufferManager(Context *context) noexcept;
+        ~FramebufferManager();
 
-        Framebuffer* acquireFramebuffer(const RenderPass* renderpass, const std::vector<Image*>& images, const core::Dimension2D& size)
-        {
-            u32 hash = crc32c::Crc32c((char*)images.data(), images.size() * sizeof(Image*));
+        Framebuffer* acquireFramebuffer(const RenderPass* renderpass, const std::vector<Image*>& images, const core::Dimension2D& size);
+        bool removeFramebuffer(const std::vector<Image*>& images);
+        void clear();
 
-            Framebuffer* framebuffer = nullptr;
-            auto found = m_framebuffers.emplace(hash, framebuffer);
-            if (found.second)
-            {
-                framebuffer = m_context->createFramebuffer(images, size);
-                if (!framebuffer->create(renderpass))
-                {
-                    framebuffer->destroy();
-                    m_framebuffers.erase(hash);
-
-                    ASSERT(false, "can't create framebuffer");
-                    return nullptr;
-                }
-                found.first->second = framebuffer;
-                framebuffer->registerNotify(this);
-
-                return framebuffer;
-            }
-
-            return found.first->second;
-        }
-
-        bool removeFramebuffer(const std::vector<Image*>& images)
-        {
-            u32 hash = crc32c::Crc32c((char*)images.data(), images.size() * sizeof(Image*));
-
-            auto framebuffer = m_framebuffers.find(hash);
-            if (framebuffer == m_framebuffers.cend())
-            {
-                LOG_DEBUG("FramebufferManager renderpass not found");
-                ASSERT(false, "renderpass");
-                return false;
-            }
-
-            framebuffer->second->destroy();
-            framebuffer->second->notifyObservers();
-
-            return true;
-        }
-
-        void handleNotify(utils::Observable* ob) override
-        {
-            LOG_DEBUG("RenderPassManager renderpass %x has been deleted", ob);
-            //m_renderpasses.erase(ob);
-        }
-
-        void clear()
-        {
-            for (auto& renderpass : m_framebuffers)
-            {
-                renderpass.second->destroy();
-                renderpass.second->notifyObservers();
-
-                delete renderpass.second;
-            }
-            m_framebuffers.clear();
-        }
-
+        void handleNotify(utils::Observable* ob) override;
 
     private:
 

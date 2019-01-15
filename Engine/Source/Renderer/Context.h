@@ -3,6 +3,11 @@
 #include "Common.h"
 #include "TextureProperties.h"
 #include "DeviceCaps.h"
+#include "RenderPass.h"
+#include "Pipeline.h"
+#include "Framebuffer.h"
+#include "Object/ShaderProgram.h"
+
 #include "Utils/NonCopyable.h"
 
 namespace v3d
@@ -14,16 +19,13 @@ namespace platform
 
 namespace renderer
 {
-    /////////////////////////////////////////////////////////////////////////////////////////////////////
-
     class Image;
     class Framebuffer;
-    class RenderPass;
     class Pipeline;
 
-    struct RenderPassInfo;
-    struct ClearValueInfo;
     struct PipelineGraphicInfo;
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
     * Context interface class
@@ -62,8 +64,12 @@ namespace renderer
         virtual void clearBackbuffer(const core::Vector4D & color) = 0;
 
         virtual void setViewport(const core::Rect32& viewport) = 0;
-        virtual void setRenderTarget(const RenderPassInfo* renderpassInfo, const std::vector<Image*>& attachments, const ClearValueInfo* clearInfo) = 0;
-        virtual void removeRenderTarget(const RenderPassInfo * renderpassInfo, const std::vector<Image*>& attachments, const ClearValueInfo * clearInfo) = 0;
+
+        virtual void setRenderTarget(const RenderPass::RenderPassInfo* renderpassInfo, const std::vector<Image*>& attachments, const RenderPass::ClearValueInfo* clearInfo) = 0;
+        virtual void removeRenderTarget(const RenderPass::RenderPassInfo * renderpassInfo, const std::vector<Image*>& attachments, const RenderPass::ClearValueInfo * clearInfo) = 0;
+
+        virtual void setPipeline(const GraphicsPipelineState::GraphicsPipelineStateDesc* pipelineInfo, 
+            const ShaderProgram::ShaderProgramInfo* programInfo, const RenderPass::RenderPassInfo* renderpassInfo) = 0;
 
         //create
         virtual Image* createImage(TextureTarget target, renderer::Format format, const core::Dimension3D& dimension, u32 mipmapLevel,
@@ -76,12 +82,14 @@ namespace renderer
 
     protected:
 
-        friend class RenderPassManager;
-        friend class FramebufferManager;
+        friend RenderPassManager;
+        friend FramebufferManager;
+        friend PipelineManager;
 
         virtual Framebuffer* createFramebuffer(const std::vector<Image*>& attachments, const core::Dimension2D& size) = 0;
-        virtual RenderPass* createRenderPass(const RenderPassInfo* renderpassInfo) = 0;
-        virtual Pipeline* createPipeline(const PipelineGraphicInfo* pipelineGraphicInfo) = 0;
+        virtual RenderPass* createRenderPass(const RenderPass::RenderPassInfo* renderpassInfo) = 0;
+        virtual Pipeline* createPipeline(const GraphicsPipelineState::GraphicsPipelineStateDesc* pipelineInfo,
+            const ShaderProgram::ShaderProgramInfo* programInfo, const RenderPass::RenderPassInfo* renderpassInfo) = 0;
 
         virtual bool initialize() = 0;
         virtual void destroy() = 0;

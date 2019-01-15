@@ -9,7 +9,7 @@
 #include "Object/Texture.h"
 #include "Object/PipelineState.h"
 #include "Object/RenderTarget.h"
-#include "Renderer/ImageFormats.h"
+#include "Renderer/Formats.h"
 
 
 #include "Resource/ResourceLoaderManager.h"
@@ -104,8 +104,11 @@ void MyApplication::Initialize()
     Shader* vertShader = ResourceLoaderManager::getInstance()->loadShaderFromFile<Shader, ShaderSourceLoader>(m_Context, "Shaders/mrt.vert");
     Shader* fragShader = ResourceLoaderManager::getInstance()->loadShaderFromFile<Shader, ShaderSourceLoader>(m_Context, "Shaders/mrt.frag");
     
-    //ShaderProgram* program = m_CommandList->createObject<ShaderProgram>({vertShader, fragShader});
-    //GraphicsPipelineState pipeline;
+    ShaderProgram* program = m_CommandList->createObject<ShaderProgram>(std::vector<Shader*>{vertShader, fragShader});
+    GraphicsPipelineState* pipeline = m_CommandList->createObject<GraphicsPipelineState>(program, renderTarget0);
+
+    pipeline->setPrimitiveTopology(PrimitiveTopology::PrimitiveTopology_TriangleList);
+    m_CommandList->setPipelineState(pipeline);
 
     //Texture2D* texture = m_CommandList->createObject<Texture2D>(renderer::ImageFormat::ImageFormat_Undefined, core::Dimension2D(0, 0));
     //texture->update({ 0,0 }, {0, 0}, 1, nullptr);

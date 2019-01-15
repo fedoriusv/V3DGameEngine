@@ -14,6 +14,9 @@ namespace renderer
 namespace vk
 {
     class VulkanImage;
+    class VulkanRenderPass;
+    class VulkanFramebuffer;
+    class VulkanGraphicPipeline;
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -44,8 +47,11 @@ namespace vk
         //states
         void setViewport(const core::Rect32& viewport) override;
 
-        void setRenderTarget(const RenderPassInfo* renderpassInfo, const std::vector<Image*>& attachments, const ClearValueInfo* clearInfo) override;
-        void removeRenderTarget(const RenderPassInfo * renderpassInfo, const std::vector<Image*>& attachments, const ClearValueInfo * clearInfo) override;
+        void setRenderTarget(const RenderPass::RenderPassInfo* renderpassInfo, const std::vector<Image*>& attachments, const RenderPass::ClearValueInfo* clearInfo) override;
+        void removeRenderTarget(const RenderPass::RenderPassInfo * renderpassInfo, const std::vector<Image*>& attachments, const RenderPass::ClearValueInfo * clearInfo) override;
+
+        void setPipeline(const GraphicsPipelineState::GraphicsPipelineStateDesc* pipelineInfo,
+            const ShaderProgram::ShaderProgramInfo* programInfo, const RenderPass::RenderPassInfo* renderpassInfo) override;
 
         Image* createImage(TextureTarget target, renderer::Format format, const core::Dimension3D& dimension, u32 mipmapLevel, s16 filter, TextureAnisotropic anisotropicLevel, TextureWrap wrap) const override;
         Image* createAttachmentImage(renderer::Format format, const core::Dimension3D& dimension, TextureSamples samples, s16 filter, TextureAnisotropic anisotropicLevel, TextureWrap wrap) const override;
@@ -67,8 +73,9 @@ namespace vk
         void destroy() override;
 
         Framebuffer* createFramebuffer(const std::vector<Image*>& images, const core::Dimension2D& size) override;
-        RenderPass* createRenderPass(const RenderPassInfo* renderpassInfo) override;
-        Pipeline* createPipeline(const PipelineGraphicInfo* pipelineGraphicInfo) override;
+        RenderPass* createRenderPass(const RenderPass::RenderPassInfo* renderpassInfo) override;
+        Pipeline* createPipeline(const GraphicsPipelineState::GraphicsPipelineStateDesc* pipelineInfo,
+            const ShaderProgram::ShaderProgramInfo* programInfo, const RenderPass::RenderPassInfo* renderpassInfo) override;
 
         bool createInstance();
         bool createDevice();
@@ -76,16 +83,23 @@ namespace vk
         std::vector<VkQueue>    m_queueList;
         class VulkanSwapchain*  m_swapchain;
 
-        class VulkanMemory* m_memoryManager;
-
         VulkanCommandBufferManager* m_drawCmdBufferManager;
-        VulkanCommandBuffer*        m_currentDrawBuffer;
+        class VulkanMemory*         m_memoryManager;
+        RenderPassManager*          m_renderpassManager;
+        FramebufferManager*         m_framebuferManager;
+        PipelineManager*            m_pipelineManager;
 
-        class RenderPassManager* m_renderpassManager;
-        VulkanRenderPass* m_currentRenderpass;
+        struct CurrentContextState
+        {
+            VulkanCommandBuffer* _currentDrawBuffer;
 
-        class FramebufferManager* m_framebuferManager;
-        VulkanFramebuffer* m_currentFramebuffer;
+            VulkanRenderPass*    _currentRenderpass;
+            VulkanFramebuffer*   _currentFramebuffer;
+
+            VulkanGraphicPipeline* _currentPipeline;
+        };
+
+        CurrentContextState     m_currentContextState;
 
         const platform::Window* m_window;
 

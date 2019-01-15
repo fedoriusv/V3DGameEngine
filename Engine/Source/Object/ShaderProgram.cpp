@@ -1,13 +1,10 @@
 #include "ShaderProgram.h"
+#include "Renderer/Formats.h"
 
 namespace v3d
 {
 namespace renderer
 {
-
-ShaderProgram::~ShaderProgram()
-{
-}
 
 const resource::Shader * ShaderProgram::getShader(resource::ShaderType type) const
 {
@@ -33,8 +30,15 @@ ShaderProgram::ShaderProgram(renderer::CommandList & cmdList, std::vector<resour
     : m_cmdList(cmdList)
     , m_shaders(shaders)
 {
-    //TODO check compatibility
-    composeProgramData();
+    if (getShader(resource::ShaderType::ShaderType_Vertex) &&
+        getShader(resource::ShaderType::ShaderType_Fragment))
+    {
+        composeProgramData();
+    }
+    else
+    {
+        ASSERT(false, "unknown program");
+    }
 }
 
 void ShaderProgram::composeProgramData()
@@ -48,7 +52,7 @@ void ShaderProgram::composeProgramData()
             {
                 ASSERT(!attr._name.empty(), "empty name");
                 m_programInfo._inputAttachment[attr._name] = { attr._location, offest, attr._format };
-                u32 dataSize = 0; //TODO get data size;
+                u32 dataSize = renderer::getFormatSize(attr._format);
                 offest += dataSize;
             }
         }
@@ -60,11 +64,15 @@ void ShaderProgram::composeProgramData()
             {
                 ASSERT(!attr._name.empty(), "empty name");
                 m_programInfo._outputAttachment[attr._name] = { attr._location, offest, attr._format };
-                u32 dataSize = 0; //TODO get data size;
+                u32 dataSize = renderer::getFormatSize(attr._format);
                 offest += dataSize;
             }
         }
     }
+}
+
+ShaderProgram::~ShaderProgram()
+{
 }
 
 } //renderer

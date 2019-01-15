@@ -5,12 +5,32 @@ namespace v3d
 namespace renderer
 {
 
-GraphicsPipelineState::GraphicsPipelineState() noexcept
+
+
+GraphicsPipelineState::RasterizationState::RasterizationState()
+    : _polygonMode(PolygonMode::PolygonMode_Triangle)
+    , _frontFace(FrontFace::FrontFace_Clockwise)
+    , _cullMode(CullMode::CullMode_Back)
 {
 }
 
-GraphicsPipelineState::GraphicsPipelineState(const GraphicsPipelineStateDesc & desc) noexcept
-    : m_pipelineStateDesc(desc)
+GraphicsPipelineState::GraphicsPipelineStateDesc::GraphicsPipelineStateDesc()
+    : _primitiveTopology(PrimitiveTopology::PrimitiveTopology_TriangleList)
+{
+}
+
+GraphicsPipelineState::GraphicsPipelineState(CommandList& cmdList, const ShaderProgram* const program, const RenderTarget* const renderTaget) noexcept
+    : m_cmdList(cmdList)
+    , m_program(program)
+    , m_renderTaget(renderTaget)
+{
+}
+
+GraphicsPipelineState::GraphicsPipelineState(CommandList& cmdList, const GraphicsPipelineStateDesc& desc, const ShaderProgram* const program, const RenderTarget* const renderTaget) noexcept
+    : m_cmdList(cmdList)
+    , m_pipelineStateDesc(desc)
+    , m_program(program)
+    , m_renderTaget(renderTaget)
 {
 }
 
@@ -38,21 +58,24 @@ void GraphicsPipelineState::setPrimitiveTopology(PrimitiveTopology primitiveTopo
     m_pipelineStateDesc._primitiveTopology = primitiveTopology;
 }
 
+const GraphicsPipelineState::GraphicsPipelineStateDesc & GraphicsPipelineState::getGraphicsPipelineStateDesc() const
+{
+    return m_pipelineStateDesc;
+}
+
+GraphicsPipelineState::GraphicsPipelineStateDesc & GraphicsPipelineState::getGraphicsPipelineStateDesc()
+{
+    return m_pipelineStateDesc;
+}
+
 void GraphicsPipelineState::setShaderProgram(const ShaderProgram * program)
 {
     m_program = program;
 }
 
-GraphicsPipelineState::RasterizationState::RasterizationState()
-    : _polygonMode(PolygonMode::PolygonMode_Triangle)
-    , _frontFace(FrontFace::FrontFace_Clockwise)
-    , _cullMode(CullMode::CullMode_Back)
+void GraphicsPipelineState::setRenderTaget(const RenderTarget * target)
 {
-}
-
-GraphicsPipelineState::GraphicsPipelineStateDesc::GraphicsPipelineStateDesc()
-    : _primitiveTopology(PrimitiveTopology::PrimitiveTopology_TriangleList)
-{
+    m_renderTaget = target;
 }
 
 } //renderer

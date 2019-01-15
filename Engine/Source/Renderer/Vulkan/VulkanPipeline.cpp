@@ -171,36 +171,36 @@ bool VulkanGraphicPipeline::create(const PipelineGraphicInfo* pipelineInfo)
     graphicsPipelineCreateInfo.basePipelineIndex = 0;
     graphicsPipelineCreateInfo.basePipelineHandle = VK_NULL_HANDLE;
 
-    std::vector<VkPipelineShaderStageCreateInfo> pipelineShaderStageCreateInfos;
-    if (!createShaderModules(pipelineInfo->_program, pipelineShaderStageCreateInfos))
-    {
-        LOG_ERROR("VulkanGraphicPipeline::create couldn't create modules for pipeline");
-        deleteShaderModules();
-        return false;
-    }
-    graphicsPipelineCreateInfo.stageCount = static_cast<u32>(pipelineShaderStageCreateInfos.size());
-    graphicsPipelineCreateInfo.pStages = pipelineShaderStageCreateInfos.data();
+    //std::vector<VkPipelineShaderStageCreateInfo> pipelineShaderStageCreateInfos;
+    //if (!createShaderModules(pipelineInfo->_program, pipelineShaderStageCreateInfos))
+    //{
+    //    LOG_ERROR("VulkanGraphicPipeline::create couldn't create modules for pipeline");
+    //    deleteShaderModules();
+    //    return false;
+    //}
+    //graphicsPipelineCreateInfo.stageCount = static_cast<u32>(pipelineShaderStageCreateInfos.size());
+    //graphicsPipelineCreateInfo.pStages = pipelineShaderStageCreateInfos.data();
 
-    graphicsPipelineCreateInfo.layout = VK_NULL_HANDLE; //TODO
+    //graphicsPipelineCreateInfo.layout = VK_NULL_HANDLE; //TODO
 
-    const ShaderProgram::ShaderProgramInfo& shaderProgramInfo = pipelineInfo->_program->getShaderMetaInfo();
+    //const ShaderProgram::ShaderProgramInfo& shaderProgramInfo = pipelineInfo->_program->getShaderMetaInfo();
 
-    RenderPassInfo renderPassInfo = {};
-    renderPassInfo._countColorAttachments = shaderProgramInfo._outputAttachment.size();
-    renderPassInfo._hasDepthStencilAttahment = false; //TODO
-    for (auto& att : shaderProgramInfo._outputAttachment)
-    {
-        //renderPassInfo._attachments TODO!!!
-    }
+    //RenderPassInfo renderPassInfo = {};
+    //renderPassInfo._countColorAttachments = shaderProgramInfo._outputAttachment.size();
+    //renderPassInfo._hasDepthStencilAttahment = false; //TODO
+    //for (auto& att : shaderProgramInfo._outputAttachment)
+    //{
+    //    //renderPassInfo._attachments TODO!!!
+    //}
 
-    RenderPass* pass = m_renderpassManager->acquireRenderPass(renderPassInfo);
-    if (!pass)
-    {
-        LOG_ERROR("VulkanGraphicPipeline::create couldn't create renderpass for pipline");
-        return false;
-    }
+    //RenderPass* pass = m_renderpassManager->acquireRenderPass(renderPassInfo);
+    //if (!pass)
+    //{
+    //    LOG_ERROR("VulkanGraphicPipeline::create couldn't create renderpass for pipline");
+    //    return false;
+    //}
 
-    graphicsPipelineCreateInfo.renderPass = static_cast<VulkanRenderPass*>(pass)->getHandle();
+    //graphicsPipelineCreateInfo.renderPass = static_cast<VulkanRenderPass*>(pass)->getHandle();
     graphicsPipelineCreateInfo.subpass = 0; //TODO
 
     const GraphicsPipelineState::RasterizationState& rasterizationState = pipelineDesc._rasterizationState;
@@ -243,7 +243,7 @@ bool VulkanGraphicPipeline::create(const PipelineGraphicInfo* pipelineInfo)
     vertexInputStateCreateInfo.vertexBindingDescriptionCount = 1;
     vertexInputStateCreateInfo.pVertexBindingDescriptions = &vertexInputBindingDescription;
 
-    std::vector<VkVertexInputAttributeDescription> vertexInputAttributeDescriptions;
+   /* std::vector<VkVertexInputAttributeDescription> vertexInputAttributeDescriptions;
     vertexInputAttributeDescriptions.reserve(shaderProgramInfo._inputAttachment.size());
     for (auto& attr : shaderProgramInfo._inputAttachment)
     {
@@ -255,7 +255,7 @@ bool VulkanGraphicPipeline::create(const PipelineGraphicInfo* pipelineInfo)
         vertexInputAttributeDescriptions.push_back(vertexInputAttributeDescription);
     }
     vertexInputStateCreateInfo.vertexAttributeDescriptionCount = static_cast<u32>(vertexInputAttributeDescriptions.size());
-    vertexInputStateCreateInfo.pVertexAttributeDescriptions = vertexInputAttributeDescriptions.data();
+    vertexInputStateCreateInfo.pVertexAttributeDescriptions = vertexInputAttributeDescriptions.data();*/
 
     graphicsPipelineCreateInfo.pVertexInputState = &vertexInputStateCreateInfo;
 

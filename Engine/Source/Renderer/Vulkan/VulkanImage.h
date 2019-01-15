@@ -2,7 +2,7 @@
 
 #include "Common.h"
 #include "Renderer/Image.h"
-#include "Renderer/ImageFormats.h"
+#include "Renderer/Formats.h"
 #include "Renderer/TextureProperties.h"
 #include "VulkanMemory.h"
 

@@ -14,7 +14,7 @@ namespace renderer
 
     class SwapchainTexture;
     class RenderTarget;
-    class PipelineState;
+    class GraphicsPipelineState;
     class Backbuffer;
     class CommandList;
     class Context;
@@ -26,6 +26,9 @@ namespace renderer
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    /**
+    * Command base class
+    */
     class Command
     {
     public:
@@ -69,10 +72,8 @@ namespace renderer
         void clearBackbuffer(const core::Vector4D& color);
 
         void setRenderTarget(RenderTarget* rendertarget);
-        void setPipelineState(PipelineState* pipeline);
+        void setPipelineState(GraphicsPipelineState* pipeline);
         void setViewport(const core::Rect32& viewport);
-
-        void removeRenderTarget(RenderTarget* rendertarget);
 
         Context* getContext() const;
         bool isThreaded() const;
@@ -87,18 +88,26 @@ namespace renderer
             return new T(*this, (args)...);
         }
 
+        enum PendingFlushMask
+        {
+            PendingFlush_UpdateRenderTarget = 0x1,
+            PendingFlush_UpdateContextState = 0x2,
+        };
+
+        void flushPendingCommands(u32 pendingFlushMask);
+
     private:
 
         struct RenderTargetInfo
         {
-            std::vector<Image*> _attachments;
-            RenderPassInfo      _renderpassInfo;
-            ClearValueInfo      _clearInfo;
+            std::vector<Image*>         _attachments;
+            RenderPass::RenderPassInfo  _renderpassInfo;
+            RenderPass::ClearValueInfo  _clearInfo;
         };
 
         void executeCommands();
 
-        void flushPendingCommands(u32 pendingFlushMask);
+
 
         std::queue<Command*>    m_commandList;
 
@@ -107,12 +116,6 @@ namespace renderer
 
         ContextStates           m_pendingStates;
         RenderTargetInfo        m_pendingRenderTargetInfo;
-
-        enum PendingFlushMask
-        {
-            PendingFlush_UpdateRenderTarget = 0x1,
-            PendingFlush_UpdateContextState = 0x2,
-        };
 
         u32                     m_pendingFlushMask;
 

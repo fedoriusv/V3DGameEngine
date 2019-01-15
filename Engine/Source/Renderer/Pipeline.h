@@ -1,7 +1,6 @@
 #pragma once
 
 #include "Common.h"
-#include "Context.h"
 #include "Object/PipelineState.h"
 #include "Utils/Observable.h"
 
@@ -13,16 +12,20 @@ namespace resource
 } //namespace resource
 namespace renderer
 {
-    /////////////////////////////////////////////////////////////////////////////////////////////////////
+    class Context;
 
     struct PipelineGraphicInfo
     {
-        ShaderProgram*                                   _program;
+        ShaderProgram*                                   _programDesc;
         GraphicsPipelineState::GraphicsPipelineStateDesc _pipelineDesc;
     };
 
+
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    /**
+    * Pipeline base class. Render side
+    */
     class Pipeline : public utils::Observable
     {
     public:
@@ -32,28 +35,15 @@ namespace renderer
             PipelineType_Compute
         };
 
-        Pipeline(PipelineType type) noexcept 
-            : m_pipelineType(type)
-        {
-        };
-
-        virtual ~Pipeline() {};
+        Pipeline(PipelineType type) noexcept;
+        virtual ~Pipeline();
 
         virtual bool create(const PipelineGraphicInfo* pipelineInfo) = 0;
         virtual void destroy() = 0;
 
     protected:
 
-        bool createShader(const resource::Shader* shader)
-        {
-            if (!shader)
-            {
-                return false;
-            }
-
-            return compileShader(shader->getShaderHeader(), shader->m_source, shader->m_size);
-        }
-
+        bool createShader(const resource::Shader* shader);
         virtual bool compileShader(const resource::ShaderHeader* header, const void* source, u32 size) = 0;
 
         PipelineType m_pipelineType;
@@ -61,22 +51,21 @@ namespace renderer
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    /**
+    * PipelineManager class
+    */
     class PipelineManager final
     {
     public:
-        PipelineManager(Context* context)
-            : m_context(context)
-        {
-        }
-        
-        ~PipelineManager()
-        {
-        }
 
-        Pipeline* acquireGraphicPipeline()
-        {
-            //TODO:
-        }
+        PipelineManager() = delete;
+
+        PipelineManager(Context* context) noexcept;
+        ~PipelineManager();
+
+        Pipeline* acquireGraphicPipeline(const RenderPass::RenderPassInfo& renderpassInfo);
+        bool removePipeline();
+        void clear();
 
     private:
 

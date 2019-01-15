@@ -17,6 +17,38 @@ namespace renderer
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    /*CommandRemoveRenderTarget*/
+class CommandRemoveRenderTarget final : public Command
+{
+public:
+    CommandRemoveRenderTarget(const RenderPass::RenderPassInfo& renderpassInfo, const std::vector<Image*>& attachments, const RenderPass::ClearValueInfo& clearInfo) noexcept
+        : m_renderpassInfo(renderpassInfo)
+        , m_attachments(attachments)
+        , m_clearInfo(clearInfo)
+    {
+        LOG_DEBUG("CommandRemoveRenderTarget constructor");
+    };
+    CommandRemoveRenderTarget() = delete;
+    CommandRemoveRenderTarget(CommandRemoveRenderTarget&) = delete;
+
+    ~CommandRemoveRenderTarget()
+    {
+        LOG_DEBUG("CommandRemoveRenderTarget destructor");
+    };
+
+    void execute(const CommandList& cmdList)
+    {
+        cmdList.getContext()->removeRenderTarget(&m_renderpassInfo, m_attachments, &m_clearInfo);
+    }
+
+private:
+    RenderPass::RenderPassInfo  m_renderpassInfo;
+    std::vector<Image*>         m_attachments;
+    RenderPass::ClearValueInfo  m_clearInfo;
+};
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////
+
 RenderTarget::RenderTarget(renderer::CommandList& cmdList, const core::Dimension2D& size) noexcept
     : m_cmdList(cmdList)
     , m_size(size)
@@ -26,7 +58,7 @@ RenderTarget::RenderTarget(renderer::CommandList& cmdList, const core::Dimension
 
 RenderTarget::~RenderTarget()
 {
-    m_cmdList.removeRenderTarget(this);
+    RenderTarget::destroy();
 }
 
 bool RenderTarget::setColorTexture(u32 index, Texture2D* colorTexture, RenderTargetLoadOp loadOp, RenderTargetStoreOp storeOp, const core::Vector4D& clearColor)
@@ -102,6 +134,53 @@ u32 RenderTarget::getColorTextureCount() const
 bool RenderTarget::hasDepthStencilTexture() const
 {
     return std::get<0>(m_depthStencilTexture) != nullptr;
+}
+
+void RenderTarget::extractRenderTargetInfo(RenderPass::RenderPassInfo & renderPassInfo, std::vector<Image*>& images, RenderPass::ClearValueInfo & clearValuesInfo)
+{
+    images.reserve(getColorTextureCount() + (hasDepthStencilTexture()) ? 1 : 0);
+
+    clearValuesInfo._size = m_size;
+    clearValuesInfo._color.reserve(images.size());
+
+    renderPassInfo._countColorAttachments = getColorTextureCount();
+    for (u32 index = 0; index < renderPassInfo._countColorAttachments; ++index)
+    {
+        auto attachment = m_colorTextures[index];
+
+        images.push_back(std::get<0>(attachment)->getImage());
+        renderPassInfo._attachments[index] = std::get<1>(attachment);
+
+        clearValuesInfo._color.push_back(std::get<2>(attachment));
+    }
+
+    renderPassInfo._hasDepthStencilAttahment = hasDepthStencilTexture();
+    if (renderPassInfo._hasDepthStencilAttahment)
+    {
+        images.push_back(getDepthStencilTexture()->getImage());
+        renderPassInfo._attachments.back() = std::get<1>(m_depthStencilTexture);
+
+        clearValuesInfo._depth = std::get<2>(m_depthStencilTexture);
+        clearValuesInfo._stencil = std::get<3>(m_depthStencilTexture);
+    }
+}
+
+void RenderTarget::destroy()
+{
+    RenderPass::RenderPassInfo renderPassInfo;
+    std::vector<renderer::Image*> images;
+    RenderPass::ClearValueInfo clearValuesInfo;
+    RenderTarget::extractRenderTargetInfo(renderPassInfo, images, clearValuesInfo);
+
+    if (m_cmdList.isImmediate())
+    {
+        m_cmdList.getContext()->removeRenderTarget(&renderPassInfo, images, &clearValuesInfo);
+    }
+    else
+    {
+        m_cmdList.flushPendingCommands(CommandList::PendingFlush_UpdateRenderTarget);
+        m_cmdList.pushCommand(new CommandRemoveRenderTarget(renderPassInfo, images, clearValuesInfo));
+    }
 }
 
 Backbuffer::Backbuffer(renderer::CommandList & cmdList, SwapchainTexture * texture) noexcept

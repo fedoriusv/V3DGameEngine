@@ -56,14 +56,19 @@ Image * EmptyContext::createAttachmentImage(renderer::Format format, const core:
     return nullptr;
 }
 
-void EmptyContext::setRenderTarget(const RenderPassInfo * renderpassInfo, const std::vector<Image*>& attachments, const ClearValueInfo * clearInfo)
+void EmptyContext::setRenderTarget(const RenderPass::RenderPassInfo * renderpassInfo, const std::vector<Image*>& attachments, const RenderPass::ClearValueInfo * clearInfo)
 {
     LOG_DEBUG("EmptyContext::setRenderTarget");
 }
 
-void EmptyContext::removeRenderTarget(const RenderPassInfo * renderpassInfo, const std::vector<Image*>& attachments, const ClearValueInfo * clearInfo)
+void EmptyContext::removeRenderTarget(const RenderPass::RenderPassInfo * renderpassInfo, const std::vector<Image*>& attachments, const RenderPass::ClearValueInfo * clearInfo)
 {
     LOG_DEBUG("EmptyContext::removeRenderTarget");
+}
+
+void EmptyContext::setPipeline(const GraphicsPipelineState::GraphicsPipelineStateDesc * pipelineInfo, const ShaderProgram::ShaderProgramInfo * programInfo, const RenderPass::RenderPassInfo * renderpassInfo)
+{
+    LOG_DEBUG("EmptyContext::setPipeline");
 }
 
 const DeviceCaps* EmptyContext::getDeviceCaps() const
@@ -77,13 +82,13 @@ Framebuffer * EmptyContext::createFramebuffer(const std::vector<Image*>& images,
     return nullptr;
 }
 
-RenderPass * EmptyContext::createRenderPass(const RenderPassInfo * renderpassInfo)
+RenderPass * EmptyContext::createRenderPass(const RenderPass::RenderPassInfo * renderpassInfo)
 {
     LOG_DEBUG("EmptyContext::createRenderPass");
     return nullptr;
 }
 
-Pipeline * EmptyContext::createPipeline(const PipelineGraphicInfo * pipelineGraphicInfo)
+Pipeline * EmptyContext::createPipeline(const GraphicsPipelineState::GraphicsPipelineStateDesc* pipelineInfo, const ShaderProgram::ShaderProgramInfo* programInfo, const RenderPass::RenderPassInfo* renderpassInfo)
 {
     LOG_DEBUG("EmptyContext::createPipeline");
     return nullptr;
