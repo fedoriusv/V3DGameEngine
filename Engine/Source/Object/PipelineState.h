@@ -56,7 +56,7 @@ namespace renderer
         void destroyPipelines(const std::vector<Pipeline*>& pipelines);
 
         friend CommandList;
-        CommandList&                     m_cmdList;
+        CommandList& m_cmdList;
 
         GraphicsPipelineStateDescription m_pipelineStateDesc;
         const ShaderProgram*             m_program;
@@ -66,7 +66,7 @@ namespace renderer
         template<class TRenderObject>
         static void objectTrackerCallback(Object* self, const std::vector<TRenderObject*>& objects);
         
-        ObjectTracker<Pipeline>         m_tracker;
+        ObjectTracker<Pipeline> m_tracker;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

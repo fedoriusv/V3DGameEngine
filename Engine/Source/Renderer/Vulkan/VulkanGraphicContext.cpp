@@ -135,13 +135,14 @@ void VulkanGraphicContext::setViewport(const core::Rect32& viewport)
     //TODO:
 }
 
-void VulkanGraphicContext::setRenderTarget(const RenderPass::RenderPassInfo * renderpassInfo, const std::vector<Image*>& attachments, const RenderPass::ClearValueInfo * clearInfo)
+void VulkanGraphicContext::setRenderTarget(const RenderPass::RenderPassInfo * renderpassInfo, const std::vector<Image*>& attachments, const RenderPass::ClearValueInfo * clearInfo, ObjectTracker<Framebuffer>* trackerFramebuffer)
 {
     RenderPass* renderpass = m_renderpassManager->acquireRenderPass(*renderpassInfo);
     ASSERT(renderpass, "renderpass is nullptr");
 
     Framebuffer* framebuffer = m_framebuferManager->acquireFramebuffer(renderpass, attachments, clearInfo->_size);
     ASSERT(framebuffer, "framebuffer is nullptr");
+    trackerFramebuffer->attach(framebuffer);
 
     if (m_currentContextState._currentRenderpass != renderpass || m_currentContextState._currentFramebuffer != framebuffer /*|| clearInfo*/)
     {
@@ -174,12 +175,20 @@ void VulkanGraphicContext::setRenderTarget(const RenderPass::RenderPassInfo * re
 
 void VulkanGraphicContext::removeRenderTarget(const RenderPass::RenderPassInfo * renderpassInfo, const std::vector<Image*>& attachments, const RenderPass::ClearValueInfo * clearInfo)
 {
-
     ASSERT(false, "need implement correct");
     m_framebuferManager->removeFramebuffer(attachments);
-    
-    //TODO: check if not used for another framebuffers
     m_renderpassManager->removeRenderPass(*renderpassInfo);
+}
+
+void VulkanGraphicContext::removeFramebuffer(Framebuffer * framebuffer)
+{
+    if (m_currentContextState._currentFramebuffer == framebuffer)
+    {
+        ASSERT(false, "not implementing");
+        //delayed delete
+    }
+
+    m_framebuferManager->removeFramebuffer(framebuffer);
 }
 
 void VulkanGraphicContext::setPipeline(const Pipeline::PipelineGraphicInfo* pipelineInfo, ObjectTracker<Pipeline>* tracker)
@@ -201,6 +210,7 @@ void VulkanGraphicContext::removePipeline(Pipeline * pipeline)
 {
     if (m_currentContextState._currentPipeline == pipeline)
     {
+        ASSERT(false, "not implementing");
         //delayed delete
     }
 

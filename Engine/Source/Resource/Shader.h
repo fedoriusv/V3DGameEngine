@@ -105,6 +105,7 @@ namespace resource
 
         ReflectionInfo  m_reflectionInfo;
 
+        u32             m_hash;
         u32             m_size;
         void*           m_source;
 

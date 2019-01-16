@@ -56,7 +56,7 @@ Image * EmptyContext::createAttachmentImage(renderer::Format format, const core:
     return nullptr;
 }
 
-void EmptyContext::setRenderTarget(const RenderPass::RenderPassInfo * renderpassInfo, const std::vector<Image*>& attachments, const RenderPass::ClearValueInfo * clearInfo)
+void EmptyContext::setRenderTarget(const RenderPass::RenderPassInfo * renderpassInfo, const std::vector<Image*>& attachments, const RenderPass::ClearValueInfo * clearInfo, ObjectTracker<Framebuffer>* tracker)
 {
     LOG_DEBUG("EmptyContext::setRenderTarget");
 }
@@ -64,6 +64,11 @@ void EmptyContext::setRenderTarget(const RenderPass::RenderPassInfo * renderpass
 void EmptyContext::removeRenderTarget(const RenderPass::RenderPassInfo * renderpassInfo, const std::vector<Image*>& attachments, const RenderPass::ClearValueInfo * clearInfo)
 {
     LOG_DEBUG("EmptyContext::removeRenderTarget");
+}
+
+void EmptyContext::removeFramebuffer(Framebuffer * framebuffer)
+{
+    LOG_DEBUG("EmptyContext::removeFramebuffer");
 }
 
 void EmptyContext::setPipeline(const Pipeline::PipelineGraphicInfo* pipelineInfo, ObjectTracker<Pipeline>* tracker)

@@ -106,12 +106,14 @@ namespace renderer
             std::vector<Image*>         _attachments;
             RenderPass::RenderPassInfo  _renderpassInfo;
             RenderPass::ClearValueInfo  _clearInfo;
+
+            ObjectTracker<Framebuffer>* _tracker;
         };
 
         struct PipelineStateInfo
         {
-            Pipeline::PipelineGraphicInfo    _pipelineInfo;
-            ObjectTracker<Pipeline>*         _tracker;
+            Pipeline::PipelineGraphicInfo _pipelineInfo;
+            ObjectTracker<Pipeline>*      _tracker;
         };
 
         void executeCommands();

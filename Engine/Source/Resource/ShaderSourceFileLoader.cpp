@@ -1,4 +1,4 @@
-#include "ShaderSourceLoader.h"
+#include "ShaderSourceFileLoader.h"
 
 #include "ShaderSpirVDecoder.h"
 #include "Shader.h"
@@ -11,7 +11,7 @@ namespace v3d
 namespace resource
 {
 
-ShaderSourceLoader::ShaderSourceLoader(const renderer::Context* context, const std::vector<std::pair<std::string, std::string>>& defines) noexcept
+ShaderSourceFileLoader::ShaderSourceFileLoader(const renderer::Context* context, const std::vector<std::pair<std::string, std::string>>& defines) noexcept
 {
     ASSERT(context, "context is nullptr");
     if (context->getRenderType() == renderer::Context::RenderType::VulkanRender)
@@ -44,11 +44,11 @@ ShaderSourceLoader::ShaderSourceLoader(const renderer::Context* context, const s
     ResourceLoader::registerPath("../../../../engine/");
 }
 
-ShaderSourceLoader::~ShaderSourceLoader()
+ShaderSourceFileLoader::~ShaderSourceFileLoader()
 {
 }
 
-Shader * ShaderSourceLoader::load(const std::string & name, const std::string & alias)
+Shader * ShaderSourceFileLoader::load(const std::string & name, const std::string & alias)
 {
     for (std::string& path : m_pathes)
     {
@@ -70,22 +70,22 @@ Shader * ShaderSourceLoader::load(const std::string & name, const std::string & 
 
            if (!resource)
            {
-               LOG_ERROR("ShaderSourceLoader: Streaming error read file [%s]", name.c_str());
+               LOG_ERROR("ShaderSourceFileLoader: Streaming error read file [%s]", name.c_str());
                return nullptr;
            }
 
            if (!resource->load())
            {
-               LOG_ERROR("ShaderSourceLoader: Streaming error read file [%s]", name.c_str());
+               LOG_ERROR("ShaderSourceFileLoader: Streaming error read file [%s]", name.c_str());
                return nullptr;
            }
 
-           LOG_DEBUG("ShaderSourceLoader::load Shader [%s] is loaded", name.c_str());
+           LOG_DEBUG("ShaderSourceFileLoader::load Shader [%s] is loaded", name.c_str());
            return static_cast<Shader*>(resource);
         }
     }
 
-    LOG_WARNING("ShaderSourceLoader::load: File [%s] not found", name.c_str());
+    LOG_WARNING("ShaderSourceFileLoader::load: File [%s] not found", name.c_str());
     return nullptr;
 }
 

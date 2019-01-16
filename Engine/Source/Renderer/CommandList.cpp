@@ -112,10 +112,11 @@ private:
 class CommandSetRenderTarget final : public Command
 {
 public:
-    CommandSetRenderTarget(const RenderPass::RenderPassInfo& renderpassInfo, const std::vector<Image*>& attachments, const RenderPass::ClearValueInfo& clearInfo) noexcept
+    CommandSetRenderTarget(const RenderPass::RenderPassInfo& renderpassInfo, const std::vector<Image*>& attachments, const RenderPass::ClearValueInfo& clearInfo, ObjectTracker<Framebuffer>* tracker) noexcept
         : m_renderpassInfo(renderpassInfo)
         , m_attachments(attachments)
         , m_clearInfo(clearInfo)
+        , m_tracker(tracker)
     {
         LOG_DEBUG("CommandSetRenderTarget constructor");
     };
@@ -129,21 +130,21 @@ public:
 
     void execute(const CommandList& cmdList)
     {
-        cmdList.getContext()->setRenderTarget(&m_renderpassInfo, m_attachments, &m_clearInfo);
+        cmdList.getContext()->setRenderTarget(&m_renderpassInfo, m_attachments, &m_clearInfo, m_tracker);
     }
 
 private:
     RenderPass::RenderPassInfo  m_renderpassInfo;
     std::vector<Image*>         m_attachments;
     RenderPass::ClearValueInfo  m_clearInfo;
+    ObjectTracker<Framebuffer>* m_tracker;
 };
 
 /*CommandSetRenderTarget*/
 class CommandSetGraphicPipeline final : public Command
 {
 public:
-    CommandSetGraphicPipeline(const RenderPass::RenderPassInfo& renderpassInfo, const ShaderProgramDescription& shaderProgramInfo, 
-        const GraphicsPipelineStateDescription& pipelineInfo, ObjectTracker<Pipeline>* tracker) noexcept
+    CommandSetGraphicPipeline(const RenderPass::RenderPassInfo& renderpassInfo, const ShaderProgramDescription& shaderProgramInfo, const GraphicsPipelineStateDescription& pipelineInfo, ObjectTracker<Pipeline>* tracker) noexcept
         : m_renderpassDesc(renderpassInfo)
         , m_programDesc(shaderProgramInfo)
         , m_pipelineDesc(pipelineInfo)
@@ -283,7 +284,7 @@ void CommandList::setRenderTarget(RenderTarget* rendertarget)
 
     if (CommandList::isImmediate())
     {
-        m_context->setRenderTarget(&renderTargetInfo._renderpassInfo, renderTargetInfo._attachments, &renderTargetInfo._clearInfo);
+        m_context->setRenderTarget(&renderTargetInfo._renderpassInfo, renderTargetInfo._attachments, &renderTargetInfo._clearInfo, &rendertarget->m_tracker);
     }
     else
     {
@@ -292,6 +293,8 @@ void CommandList::setRenderTarget(RenderTarget* rendertarget)
         m_pendingRenderTargetInfo._attachments = std::move(renderTargetInfo._attachments);
         m_pendingRenderTargetInfo._clearInfo = std::move(renderTargetInfo._clearInfo);
         m_pendingRenderTargetInfo._renderpassInfo = std::move(renderTargetInfo._renderpassInfo);
+        m_pendingRenderTargetInfo._tracker = &rendertarget->m_tracker;
+
         m_pendingFlushMask |= PendingFlush_UpdateRenderTarget;
     }
 }
@@ -379,7 +382,7 @@ void CommandList::flushPendingCommands(u32 pendingFlushMask)
     if (pendingFlushMask & PendingFlush_UpdateRenderTarget)
     {
         CommandList::pushCommand(
-            new CommandSetRenderTarget(m_pendingRenderTargetInfo._renderpassInfo, m_pendingRenderTargetInfo._attachments, m_pendingRenderTargetInfo._clearInfo));
+            new CommandSetRenderTarget(m_pendingRenderTargetInfo._renderpassInfo, m_pendingRenderTargetInfo._attachments, m_pendingRenderTargetInfo._clearInfo, m_pendingRenderTargetInfo._tracker));
         pendingFlushMask |= ~PendingFlush_UpdateRenderTarget;
     }
 

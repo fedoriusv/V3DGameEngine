@@ -26,7 +26,7 @@ namespace resource
         ResourceLoaderManager() = default;
 
         template<class TResource, class TResourceLoader>
-        TResource* loadShaderFromFile(renderer::Context* context, std::string filename, std::vector<std::pair<std::string, std::string>> defines = {})
+        TResource* loadShader(renderer::Context* context, std::string filename, std::vector<std::pair<std::string, std::string>> defines = {})
         {
             std::string innerName(filename);
             std::transform(filename.begin(), filename.end(), innerName.begin(), ::tolower);

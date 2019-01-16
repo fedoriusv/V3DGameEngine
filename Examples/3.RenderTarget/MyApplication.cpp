@@ -14,7 +14,7 @@
 
 #include "Resource/ResourceLoaderManager.h"
 
-#include "Resource/ShaderSourceLoader.h"
+#include "Resource/ShaderSourceFileLoader.h"
 #include "Resource/Shader.h"
 
 
@@ -99,8 +99,9 @@ void MyApplication::Initialize()
     bool success1 = renderTarget1->setColorTexture(0, texture2, renderer::RenderTargetLoadOp::LoadOp_DontCare, renderer::RenderTargetStoreOp::StoreOp_Store);
     m_CommandList->setRenderTarget(renderTarget1);*/
 
-    Shader* vertShader = ResourceLoaderManager::getInstance()->loadShaderFromFile<Shader, ShaderSourceLoader>(m_Context, "Shaders/mrt.vert");
-    Shader* fragShader = ResourceLoaderManager::getInstance()->loadShaderFromFile<Shader, ShaderSourceLoader>(m_Context, "Shaders/mrt.frag");
+    Shader* vertShader = ResourceLoaderManager::getInstance()->loadShader<Shader, ShaderSourceFileLoader>(m_Context, "Shaders/mrt.vert");
+    Shader* fragShader = ResourceLoaderManager::getInstance()->loadShader<Shader, ShaderSourceFileLoader>(m_Context, "Shaders/mrt.frag");
+    //Shader* fragShader = ResourceLoaderManager::getInstance()->loadResource<Shader, ShaderSourceFileLoader(m_Context, name, header, defines)>();
     
     ShaderProgram* program = m_CommandList->createObject<ShaderProgram>(std::vector<Shader*>{vertShader, fragShader});
     GraphicsPipelineState* pipeline = m_CommandList->createObject<GraphicsPipelineState>(program, renderTarget0);
@@ -108,9 +109,10 @@ void MyApplication::Initialize()
     pipeline->setPrimitiveTopology(PrimitiveTopology::PrimitiveTopology_TriangleList);
     m_CommandList->setPipelineState(pipeline);
 
+    //program->SetTexture<Texture2D>(Texture, Sampler, "texture0");
+    //program->SetUniform<Matrix4D>(Mat, "proj");
+
     /*
-    commandList.setTexture(texture);
-    commandList.setUnifrom(uniform1);
     commandList.draw(geometry1);*/
 
     /*Geometry geometry;

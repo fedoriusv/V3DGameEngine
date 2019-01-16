@@ -16,14 +16,14 @@ namespace resource
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
-    * ShaderHeader meta info about Shader
+    * ShaderSourceFileLoader class. Loader from file
     */
-    class ShaderSourceLoader : public ResourceLoader<Shader*>
+    class ShaderSourceFileLoader : public ResourceLoader<Shader*>
     {
     public:
 
-        ShaderSourceLoader(const renderer::Context* context, const std::vector<std::pair<std::string, std::string>>& defines) noexcept;
-        ~ShaderSourceLoader();
+        ShaderSourceFileLoader(const renderer::Context* context, const std::vector<std::pair<std::string, std::string>>& defines) noexcept;
+        ~ShaderSourceFileLoader();
 
         Shader* load(const std::string& name, const std::string& alias = "") override;
 

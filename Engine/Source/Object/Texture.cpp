@@ -15,7 +15,7 @@ class CreateTextureCommand : public renderer::Command
 {
 public:
     CreateTextureCommand(renderer::Image* image, u32 dataSize, const void * data) noexcept
-        : m_image(image) //TODO: need use handle
+        : m_image(image)
         , m_data(nullptr)
         , m_dataSize(0)
     {
@@ -45,8 +45,9 @@ public:
     {
         if (!m_image->create())
         {
-            m_image->destroy();
             m_image->notifyObservers();
+
+            m_image->destroy();
             delete m_image;
 
             return;
@@ -286,7 +287,7 @@ Texture2D::~Texture2D()
 {
     //m_image delete
     //m_image = m_imageManager.destroyImage();
-
+    //create command
     m_image->unregisterNotify(this);
 }
 

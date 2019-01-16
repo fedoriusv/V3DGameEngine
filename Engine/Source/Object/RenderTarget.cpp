@@ -47,18 +47,49 @@ private:
     RenderPass::ClearValueInfo  m_clearInfo;
 };
 
+    /*CommandRemoveFramebuffers*/
+class CommandRemoveFramebuffers final : public Command
+{
+public:
+    CommandRemoveFramebuffers(const std::vector<Framebuffer*>& framebuffers) noexcept
+        : m_framebuffers(framebuffers)
+    {
+        LOG_DEBUG("CommandRemoveFramebuffers constructor");
+    };
+    CommandRemoveFramebuffers() = delete;
+    CommandRemoveFramebuffers(CommandRemoveFramebuffers&) = delete;
+
+    ~CommandRemoveFramebuffers()
+    {
+        LOG_DEBUG("CommandRemoveFramebuffers destructor");
+    };
+
+    void execute(const CommandList& cmdList)
+    {
+        for (auto& framebuffer : m_framebuffers)
+        {
+            cmdList.getContext()->removeFramebuffer(framebuffer);
+        }
+    }
+
+private:
+    std::vector<Framebuffer*> m_framebuffers;
+};
+
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 
 RenderTarget::RenderTarget(renderer::CommandList& cmdList, const core::Dimension2D& size) noexcept
     : m_cmdList(cmdList)
     , m_size(size)
+
+    , m_tracker(this, &RenderTarget::objectTrackerCallback<Framebuffer>)
 {
     std::get<0>(m_depthStencilTexture) = nullptr;
 }
 
 RenderTarget::~RenderTarget()
 {
-    RenderTarget::destroy();
+    m_tracker.release();
 }
 
 bool RenderTarget::setColorTexture(u32 index, Texture2D* colorTexture, RenderTargetLoadOp loadOp, RenderTargetStoreOp storeOp, const core::Vector4D& clearColor)
@@ -169,23 +200,22 @@ void RenderTarget::extractRenderTargetInfo(RenderPass::RenderPassInfo & renderPa
     }
 }
 
-void RenderTarget::destroy()
+void RenderTarget::destroyFramebuffers(const std::vector<Framebuffer*>& framebuffers)
 {
-    RenderPass::RenderPassInfo renderPassInfo;
-    std::vector<renderer::Image*> images;
-    RenderPass::ClearValueInfo clearValuesInfo;
-    RenderTarget::extractRenderTargetInfo(renderPassInfo, images, clearValuesInfo);
-
     if (m_cmdList.isImmediate())
     {
-        m_cmdList.getContext()->removeRenderTarget(&renderPassInfo, images, &clearValuesInfo);
+        for (auto& framebuffer : framebuffers)
+        {
+            m_cmdList.getContext()->removeFramebuffer(framebuffer);
+        }
     }
     else
     {
-        m_cmdList.flushPendingCommands(CommandList::PendingFlush_UpdateRenderTarget);
-        m_cmdList.pushCommand(new CommandRemoveRenderTarget(renderPassInfo, images, clearValuesInfo));
+        m_cmdList.pushCommand(new CommandRemoveFramebuffers(framebuffers));
     }
 }
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////
 
 Backbuffer::Backbuffer(renderer::CommandList & cmdList, SwapchainTexture * texture) noexcept
     : m_cmdList(cmdList)

@@ -4,6 +4,7 @@
 #include "Renderer/Formats.h"
 #include "Renderer/TextureProperties.h"
 #include "Renderer/CommandList.h"
+#include "Renderer/ObjectTracker.h"
 #include "Utils/Observable.h"
 
 namespace v3d
@@ -40,24 +41,38 @@ namespace renderer
         Texture2D* getColorTexture(u32 index) const;
         Texture2D* getDepthStencilTexture() const;
 
-        u32        getColorTextureCount() const;
-        bool       hasDepthStencilTexture() const;
+        u32 getColorTextureCount() const;
+        bool hasDepthStencilTexture() const;
 
     private:
 
         RenderTarget(renderer::CommandList& cmdList, const core::Dimension2D& size) noexcept;
 
         void extractRenderTargetInfo(RenderPass::RenderPassInfo& renderpassInfo, std::vector<Image*>& attachments, RenderPass::ClearValueInfo& clearInfo) const;
-        void destroy();
+        void destroyFramebuffers(const std::vector<Framebuffer*>& framebuffers);
 
         friend renderer::CommandList;
-        renderer::CommandList&  m_cmdList;
+        renderer::CommandList& m_cmdList;
 
-        core::Dimension2D       m_size;
+        core::Dimension2D m_size;
 
         std::map<u32, std::tuple<Texture2D*, renderer::AttachmentDescription, core::Vector4D>>   m_colorTextures;
         std::tuple<Texture2D*, renderer::AttachmentDescription, f32, u32>                        m_depthStencilTexture;
+
+
+        template<class TRenderObject>
+        static void objectTrackerCallback(Object* self, const std::vector<TRenderObject*>& objects);
+
+        ObjectTracker<Framebuffer> m_tracker;
     };
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    template<class TRenderObject>
+    inline void RenderTarget::objectTrackerCallback(Object* self, const std::vector<TRenderObject*>& objects)
+    {
+        static_cast<RenderTarget*>(self)->destroyFramebuffers(objects);
+    }
 
      /////////////////////////////////////////////////////////////////////////////////////////////////////
 

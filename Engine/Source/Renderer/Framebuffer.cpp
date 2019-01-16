@@ -11,6 +11,7 @@ namespace renderer
 {
 
 Framebuffer::Framebuffer() noexcept 
+    : m_key(0)
 {
 }
 
@@ -38,6 +39,8 @@ Framebuffer * FramebufferManager::acquireFramebuffer(const RenderPass * renderpa
     if (found.second)
     {
         framebuffer = m_context->createFramebuffer(images, size);
+        framebuffer->m_key = hash;
+
         if (!framebuffer->create(renderpass))
         {
             framebuffer->destroy();
@@ -59,16 +62,38 @@ bool FramebufferManager::removeFramebuffer(const std::vector<Image*>& images)
 {
     u32 hash = crc32c::Crc32c((char*)images.data(), images.size() * sizeof(Image*));
 
-    auto framebuffer = m_framebuffers.find(hash);
-    if (framebuffer == m_framebuffers.cend())
+    auto iter = m_framebuffers.find(hash);
+    if (iter == m_framebuffers.cend())
     {
         LOG_DEBUG("FramebufferManager renderpass not found");
         ASSERT(false, "renderpass");
         return false;
     }
 
-    framebuffer->second->destroy();
-    framebuffer->second->notifyObservers();
+    Framebuffer* framebuffer = iter->second;
+    framebuffer->notifyObservers();
+
+    framebuffer->destroy();
+    delete framebuffer;
+
+    return true;
+}
+
+bool FramebufferManager::removeFramebuffer(Framebuffer * framebufer)
+{
+    auto iter = m_framebuffers.find(framebufer->m_key);
+    if (iter == m_framebuffers.cend())
+    {
+        LOG_DEBUG("FramebufferManager renderpass not found");
+        ASSERT(false, "renderpass");
+        return false;
+    }
+
+    Framebuffer* framebuffer = iter->second;
+    framebuffer->notifyObservers();
+
+    framebuffer->destroy();
+    delete framebuffer;
 
     return true;
 }
@@ -76,7 +101,7 @@ bool FramebufferManager::removeFramebuffer(const std::vector<Image*>& images)
 void FramebufferManager::handleNotify(utils::Observable * ob)
 {
     LOG_DEBUG("RenderPassManager renderpass %x has been deleted", ob);
-    //m_renderpasses.erase(ob);
+    m_framebuffers.erase(static_cast<Framebuffer*>(ob)->m_key);
 }
 
 void FramebufferManager::clear()

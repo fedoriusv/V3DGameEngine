@@ -7,6 +7,8 @@ namespace resource
 
 Shader::Shader(const ShaderHeader* header) noexcept
     : Resource(header)
+    , m_hash(0)
+    , m_size(0)
     , m_source(nullptr)
 {
 }

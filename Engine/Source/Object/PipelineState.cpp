@@ -48,12 +48,6 @@ GraphicsPipelineState::GraphicsPipelineState(CommandList& cmdList, const ShaderP
 
     , m_tracker(this, &GraphicsPipelineState::objectTrackerCallback<Pipeline>)
 {
-
-    std::set<GraphicsPipelineState*> list;
-    for (auto& iter : list)
-    {
-        iter->getGraphicsPipelineStateDesc();
-    }
 }
 
 GraphicsPipelineState::GraphicsPipelineState(CommandList& cmdList, const GraphicsPipelineStateDescription& desc, const ShaderProgram* const program, const RenderTarget* const renderTaget) noexcept
