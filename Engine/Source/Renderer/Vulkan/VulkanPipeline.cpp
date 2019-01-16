@@ -6,6 +6,7 @@
 #include "VulkanPipeline.h"
 
 #include "Resource/Shader.h"
+#include "Object/ShaderProgram.h"
 
 #ifdef VULKAN_RENDER
 namespace v3d
@@ -159,7 +160,7 @@ bool VulkanGraphicPipeline::create(const PipelineGraphicInfo* pipelineInfo)
     ASSERT(getType() == PipelineType::PipelineType_Graphic, "invalid type");
 
     ASSERT(pipelineInfo, "nullptr");
-    const GraphicsPipelineState::GraphicsPipelineStateInfo& pipelineDesc = pipelineInfo->_pipelineDesc;
+    const GraphicsPipelineStateDescription& pipelineDesc = pipelineInfo->_pipelineDesc;
 
     VkPipelineCache pipelineCache = VK_NULL_HANDLE; //TODO
 
@@ -183,27 +184,18 @@ bool VulkanGraphicPipeline::create(const PipelineGraphicInfo* pipelineInfo)
 
     //graphicsPipelineCreateInfo.layout = VK_NULL_HANDLE; //TODO
 
-    //const ShaderProgram::ShaderProgramInfo& shaderProgramInfo = pipelineInfo->_program->getShaderMetaInfo();
+    const ShaderProgramDescription& shaderProgramInfo = pipelineInfo->_programDesc;
+    RenderPass* pass = m_renderpassManager->acquireRenderPass(pipelineInfo->_renderpassDesc);
+    if (!pass)
+    {
+        LOG_ERROR("VulkanGraphicPipeline::create couldn't create renderpass for pipline");
+        return false;
+    }
 
-    //RenderPassInfo renderPassInfo = {};
-    //renderPassInfo._countColorAttachments = shaderProgramInfo._outputAttachment.size();
-    //renderPassInfo._hasDepthStencilAttahment = false; //TODO
-    //for (auto& att : shaderProgramInfo._outputAttachment)
-    //{
-    //    //renderPassInfo._attachments TODO!!!
-    //}
-
-    //RenderPass* pass = m_renderpassManager->acquireRenderPass(renderPassInfo);
-    //if (!pass)
-    //{
-    //    LOG_ERROR("VulkanGraphicPipeline::create couldn't create renderpass for pipline");
-    //    return false;
-    //}
-
-    //graphicsPipelineCreateInfo.renderPass = static_cast<VulkanRenderPass*>(pass)->getHandle();
+    graphicsPipelineCreateInfo.renderPass = static_cast<VulkanRenderPass*>(pass)->getHandle();
     graphicsPipelineCreateInfo.subpass = 0; //TODO
 
-    const GraphicsPipelineState::RasterizationState& rasterizationState = pipelineDesc._rasterizationState;
+    const GraphicsPipelineStateDescription::RasterizationState& rasterizationState = pipelineDesc._rasterizationState;
     VkPipelineRasterizationStateCreateInfo rasterizationStateCreateInfo = {};
     rasterizationStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
     rasterizationStateCreateInfo.pNext = nullptr; //VkPipelineRasterizationStateStreamCreateInfoEXT, VkPipelineRasterizationConservativeStateCreateInfoEXT
@@ -243,7 +235,7 @@ bool VulkanGraphicPipeline::create(const PipelineGraphicInfo* pipelineInfo)
     vertexInputStateCreateInfo.vertexBindingDescriptionCount = 1;
     vertexInputStateCreateInfo.pVertexBindingDescriptions = &vertexInputBindingDescription;
 
-   /* std::vector<VkVertexInputAttributeDescription> vertexInputAttributeDescriptions;
+    std::vector<VkVertexInputAttributeDescription> vertexInputAttributeDescriptions;
     vertexInputAttributeDescriptions.reserve(shaderProgramInfo._inputAttachment.size());
     for (auto& attr : shaderProgramInfo._inputAttachment)
     {
@@ -255,7 +247,7 @@ bool VulkanGraphicPipeline::create(const PipelineGraphicInfo* pipelineInfo)
         vertexInputAttributeDescriptions.push_back(vertexInputAttributeDescription);
     }
     vertexInputStateCreateInfo.vertexAttributeDescriptionCount = static_cast<u32>(vertexInputAttributeDescriptions.size());
-    vertexInputStateCreateInfo.pVertexAttributeDescriptions = vertexInputAttributeDescriptions.data();*/
+    vertexInputStateCreateInfo.pVertexAttributeDescriptions = vertexInputAttributeDescriptions.data();
 
     graphicsPipelineCreateInfo.pVertexInputState = &vertexInputStateCreateInfo;
 

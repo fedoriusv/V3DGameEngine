@@ -66,9 +66,14 @@ void EmptyContext::removeRenderTarget(const RenderPass::RenderPassInfo * renderp
     LOG_DEBUG("EmptyContext::removeRenderTarget");
 }
 
-void EmptyContext::setPipeline(const Pipeline::PipelineGraphicInfo* pipelineInfo)
+void EmptyContext::setPipeline(const Pipeline::PipelineGraphicInfo* pipelineInfo, ObjectTracker<Pipeline>* tracker)
 {
     LOG_DEBUG("EmptyContext::setPipeline");
+}
+
+void EmptyContext::removePipeline(Pipeline * pipeline)
+{
+    LOG_DEBUG("EmptyContext::removePipeline");
 }
 
 const DeviceCaps* EmptyContext::getDeviceCaps() const

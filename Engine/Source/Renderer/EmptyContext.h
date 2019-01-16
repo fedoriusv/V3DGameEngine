@@ -33,7 +33,8 @@ namespace renderer
         void setRenderTarget(const RenderPass::RenderPassInfo* renderpassInfo, const std::vector<Image*>& attachments, const RenderPass::ClearValueInfo* clearInfo) override;
         void removeRenderTarget(const RenderPass::RenderPassInfo * renderpassInfo, const std::vector<Image*>& attachments, const RenderPass::ClearValueInfo * clearInfo) override;
 
-        void setPipeline(const Pipeline::PipelineGraphicInfo* pipelineInfo) override;
+        void setPipeline(const Pipeline::PipelineGraphicInfo* pipelineInfo, ObjectTracker<Pipeline>* tracker) override;
+        void removePipeline(Pipeline* pipeline) override;
 
         const DeviceCaps* getDeviceCaps() const override;
 

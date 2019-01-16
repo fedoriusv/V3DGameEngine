@@ -1,10 +1,12 @@
 #pragma once
 
 #include "Common.h"
-#include "Object/Object.h"
 #include "Utils/NonCopyable.h"
+#include "Object/Object.h"
 #include "RenderPass.h"
+#include "Pipeline.h"
 #include "Image.h"
+#include "Framebuffer.h"
 
 namespace v3d
 {
@@ -92,6 +94,7 @@ namespace renderer
         {
             PendingFlush_UpdateRenderTarget = 0x1,
             PendingFlush_UpdateContextState = 0x2,
+            PendingFlush_UpdateGraphicsPipeline = 0x4,
         };
 
         void flushPendingCommands(u32 pendingFlushMask);
@@ -105,23 +108,29 @@ namespace renderer
             RenderPass::ClearValueInfo  _clearInfo;
         };
 
+        struct PipelineStateInfo
+        {
+            Pipeline::PipelineGraphicInfo    _pipelineInfo;
+            ObjectTracker<Pipeline>*         _tracker;
+        };
+
         void executeCommands();
 
 
+        std::queue<Command*>        m_commandList;
 
-        std::queue<Command*>    m_commandList;
+        Context*                    m_context;
+        CommandListType             m_commandListType;
 
-        Context*                m_context;
-        CommandListType         m_commandListType;
+        ContextStates               m_pendingStates;
+        RenderTargetInfo            m_pendingRenderTargetInfo;
+        PipelineStateInfo           m_pendingPipelineStateInfo;
 
-        ContextStates           m_pendingStates;
-        RenderTargetInfo        m_pendingRenderTargetInfo;
-
-        u32                     m_pendingFlushMask;
+        u32                         m_pendingFlushMask;
 
         //
-        SwapchainTexture*       m_swapchainTexture;
-        Backbuffer*             m_backbuffer;
+        SwapchainTexture*           m_swapchainTexture;
+        Backbuffer*                 m_backbuffer;
         //
     };
 

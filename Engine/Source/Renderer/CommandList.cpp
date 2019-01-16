@@ -5,8 +5,10 @@
 #include "Context.h"
 #include "Object/Texture.h"
 #include "Object/RenderTarget.h"
+#include "Object/PipelineState.h"
 #include "RenderPass.h"
 #include "Framebuffer.h"
+
 
 namespace v3d
 {
@@ -140,10 +142,12 @@ private:
 class CommandSetGraphicPipeline final : public Command
 {
 public:
-    CommandSetGraphicPipeline(const RenderPass::RenderPassInfo& renderpassInfo, const ShaderProgram::ShaderProgramInfo& shaderProgramInfo, const GraphicsPipelineState::GraphicsPipelineStateInfo& pipelineInfo) noexcept
+    CommandSetGraphicPipeline(const RenderPass::RenderPassInfo& renderpassInfo, const ShaderProgramDescription& shaderProgramInfo, 
+        const GraphicsPipelineStateDescription& pipelineInfo, ObjectTracker<Pipeline>* tracker) noexcept
         : m_renderpassDesc(renderpassInfo)
         , m_programDesc(shaderProgramInfo)
         , m_pipelineDesc(pipelineInfo)
+        , m_tracker(tracker)
     {
         LOG_DEBUG("CommandSetGraphicPipeline constructor");
     };
@@ -162,13 +166,14 @@ public:
         pipelineGraphicInfo._programDesc = m_programDesc;
         pipelineGraphicInfo._pipelineDesc = m_pipelineDesc;
 
-        cmdList.getContext()->setPipeline(&pipelineGraphicInfo);
+        cmdList.getContext()->setPipeline(&pipelineGraphicInfo, m_tracker);
     }
 
 private:
-    RenderPass::RenderPassInfo                       m_renderpassDesc;
-    ShaderProgram::ShaderProgramInfo                 m_programDesc;
-    GraphicsPipelineState::GraphicsPipelineStateInfo m_pipelineDesc;
+    RenderPass::RenderPassInfo               m_renderpassDesc;
+    ShaderProgramDescription                 m_programDesc;
+    GraphicsPipelineStateDescription         m_pipelineDesc;
+    ObjectTracker<Pipeline>*                 m_tracker;
 };
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -273,49 +278,49 @@ void CommandList::setRenderTarget(RenderTarget* rendertarget)
         return;
     }
 
-    RenderPass::RenderPassInfo renderPassInfo;
-    std::vector<renderer::Image*> images;
-    RenderPass::ClearValueInfo clearValuesInfo;
-    rendertarget->extractRenderTargetInfo(renderPassInfo, images, clearValuesInfo);
+    RenderTargetInfo renderTargetInfo;
+    rendertarget->extractRenderTargetInfo(renderTargetInfo._renderpassInfo, renderTargetInfo._attachments, renderTargetInfo._clearInfo);
 
     if (CommandList::isImmediate())
     {
-        m_context->setRenderTarget(&renderPassInfo, images, &clearValuesInfo);
+        m_context->setRenderTarget(&renderTargetInfo._renderpassInfo, renderTargetInfo._attachments, &renderTargetInfo._clearInfo);
     }
     else
     {
-        m_pendingRenderTargetInfo._attachments = std::move(images);
-        m_pendingRenderTargetInfo._clearInfo = std::move(clearValuesInfo);
-        m_pendingRenderTargetInfo._renderpassInfo = std::move(renderPassInfo);
+        //m_pendingRenderTargetInfo = std::move(renderTargetInfo);
+
+        m_pendingRenderTargetInfo._attachments = std::move(renderTargetInfo._attachments);
+        m_pendingRenderTargetInfo._clearInfo = std::move(renderTargetInfo._clearInfo);
+        m_pendingRenderTargetInfo._renderpassInfo = std::move(renderTargetInfo._renderpassInfo);
         m_pendingFlushMask |= PendingFlush_UpdateRenderTarget;
     }
 }
 
 void CommandList::setPipelineState(GraphicsPipelineState * pipeline)
 {
-    if (!pipeline)
+    if (!pipeline || pipeline->m_renderTaget || pipeline->m_program)
     {
         ASSERT(false, "nullptr");
         return;
     }
 
-    RenderPass::RenderPassInfo renderPassInfo;
-    std::vector<renderer::Image*> images;
-    RenderPass::ClearValueInfo clearValuesInfo;
-    pipeline->m_renderTaget->extractRenderTargetInfo(renderPassInfo, images, clearValuesInfo);
+    RenderTargetInfo renderTargetInfo;
+    pipeline->m_renderTaget->extractRenderTargetInfo(renderTargetInfo._renderpassInfo, renderTargetInfo._attachments, renderTargetInfo._clearInfo);
+
+    Pipeline::PipelineGraphicInfo pipelineGraphicInfo;
+    pipelineGraphicInfo._renderpassDesc = std::move(renderTargetInfo._renderpassInfo);
+    pipelineGraphicInfo._programDesc = std::move(pipeline->m_program->getShaderDesc());
+    pipelineGraphicInfo._pipelineDesc = pipeline->getGraphicsPipelineStateDesc();
 
     if (CommandList::isImmediate())
     {
-        Pipeline::PipelineGraphicInfo pipelineGraphicInfo;
-        pipelineGraphicInfo._renderpassDesc = renderPassInfo;
-        pipelineGraphicInfo._programDesc = pipeline->m_program->getShaderMetaInfo();
-        pipelineGraphicInfo._pipelineDesc = pipeline->getGraphicsPipelineStateDesc();
-
-        m_context->setPipeline(&pipelineGraphicInfo);
+        m_context->setPipeline(&pipelineGraphicInfo, &pipeline->m_tracker);
     }
     else
     {
-        CommandList::pushCommand(new CommandSetGraphicPipeline(renderPassInfo, pipeline->m_program->getShaderMetaInfo(), pipeline->getGraphicsPipelineStateDesc()));
+        m_pendingPipelineStateInfo._pipelineInfo = std::move(pipelineGraphicInfo);
+        m_pendingPipelineStateInfo._tracker = &pipeline->m_tracker;
+        m_pendingFlushMask |= PendingFlush_UpdateGraphicsPipeline;
     }
 }
 
@@ -382,6 +387,15 @@ void CommandList::flushPendingCommands(u32 pendingFlushMask)
     {
         CommandList::pushCommand(new CommandSetContextState(m_pendingStates));
         pendingFlushMask |= ~PendingFlush_UpdateContextState;
+    }
+
+    if (pendingFlushMask & PendingFlush_UpdateGraphicsPipeline)
+    {
+        Pipeline::PipelineGraphicInfo& info = m_pendingPipelineStateInfo._pipelineInfo;
+        CommandList::pushCommand(
+            new CommandSetGraphicPipeline(info._renderpassDesc, info._programDesc, info._pipelineDesc, m_pendingPipelineStateInfo._tracker));
+
+        pendingFlushMask |= ~PendingFlush_UpdateGraphicsPipeline;
     }
 }
 

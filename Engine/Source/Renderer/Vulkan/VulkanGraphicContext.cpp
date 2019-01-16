@@ -182,20 +182,29 @@ void VulkanGraphicContext::removeRenderTarget(const RenderPass::RenderPassInfo *
     m_renderpassManager->removeRenderPass(*renderpassInfo);
 }
 
-void VulkanGraphicContext::setPipeline(/*ObjectTracker& tracker,*/ const Pipeline::PipelineGraphicInfo* pipelineInfo)
+void VulkanGraphicContext::setPipeline(const Pipeline::PipelineGraphicInfo* pipelineInfo, ObjectTracker<Pipeline>* tracker)
 {
     ASSERT(pipelineInfo, "nullptr");
 
-    VulkanGraphicPipeline* pipeline = static_cast<VulkanGraphicPipeline*>(m_pipelineManager->acquireGraphicPipeline(pipelineInfo));
-    ASSERT(m_currentContextState._currentPipeline, "nullptr");
+    Pipeline* pipeline = m_pipelineManager->acquireGraphicPipeline(pipelineInfo);
+    ASSERT(pipeline, "nullptr");
+    tracker->attach(pipeline);
 
     if (m_currentContextState._currentPipeline != pipeline)
     {
-        m_currentContextState._currentPipeline = pipeline;
+        m_currentContextState._currentPipeline = static_cast<VulkanGraphicPipeline*>(pipeline);
         //TODO
-
-        //tracker->add(pipeline);
     }
+}
+
+void VulkanGraphicContext::removePipeline(Pipeline * pipeline)
+{
+    if (m_currentContextState._currentPipeline == pipeline)
+    {
+        //delayed delete
+    }
+
+    m_pipelineManager->removePipeline(pipeline);
 }
 
 Image * VulkanGraphicContext::createImage(TextureTarget target, renderer::Format format, const core::Dimension3D& dimension, u32 mipLevels,

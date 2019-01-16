@@ -2,6 +2,7 @@
 
 #include "Common.h"
 #include "Renderer/CommandList.h"
+#include "Renderer/ShaderProperties.h"
 #include "Resource/Shader.h"
 
 namespace v3d
@@ -17,29 +18,13 @@ namespace renderer
     {
     public:
 
-        struct Attribute
-        {
-            u32     _location;
-            u32     _offset;
-            Format  _format;
-        };
-
-        struct ShaderProgramInfo
-        {
-            u32 _hash;
-
-            std::map<std::string, Attribute> _inputAttachment;
-            std::map<std::string, Attribute> _outputAttachment;
-
-            std::vector<resource::Shader*>   _shaders;
-        };
-
-        ~ShaderProgram();
+        ShaderProgram() = delete;
         ShaderProgram(const ShaderProgram &) = delete;
+        ~ShaderProgram();
 
         const resource::Shader* getShader(resource::ShaderType type) const;
 
-        const ShaderProgramInfo& getShaderMetaInfo() const;
+        const ShaderProgramDescription& getShaderDesc() const;
 
 
         //bool bindTexture(Texture* texture, std::string name);
@@ -49,14 +34,13 @@ namespace renderer
 
         ShaderProgram(renderer::CommandList& cmdList, std::vector<resource::Shader*> shaders) noexcept;
 
+        friend renderer::CommandList;
         renderer::CommandList&              m_cmdList;
 
         std::vector<resource::Shader*>      m_shaders;
-        ShaderProgramInfo                   m_programInfo;
+        ShaderProgramDescription            m_programInfo;
 
         void composeProgramData();
-
-        friend renderer::CommandList;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

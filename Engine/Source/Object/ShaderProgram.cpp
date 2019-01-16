@@ -21,7 +21,7 @@ const resource::Shader * ShaderProgram::getShader(resource::ShaderType type) con
     return nullptr;
 }
 
-const ShaderProgram::ShaderProgramInfo& ShaderProgram::getShaderMetaInfo() const
+const ShaderProgramDescription& ShaderProgram::getShaderDesc() const
 {
     return m_programInfo;
 }

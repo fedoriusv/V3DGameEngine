@@ -2,10 +2,10 @@
 
 #include "Common.h"
 #include "Object.h"
-#include "Renderer/Formats.h"
-#include "Renderer/CommandList.h"
-#include "Renderer/TextureProperties.h"
 #include "Utils/Observable.h"
+#include "Renderer/Formats.h"
+#include "Renderer/TextureProperties.h"
+#include "Renderer/CommandList.h"
 
 
 namespace v3d
@@ -24,8 +24,9 @@ namespace renderer
     {
     public:
 
-        ~Texture2D();
+        Texture2D() = delete;
         Texture2D(const Texture2D &) = delete;
+        ~Texture2D();
 
         renderer::TextureTarget         getTarget() const;
         renderer::TextureFilter         getMinFilter() const;
@@ -54,6 +55,7 @@ namespace renderer
 
         renderer::Image* getImage() const;
 
+        friend renderer::CommandList;
         renderer::CommandList&              m_cmdList;
 
         const  renderer::TextureTarget      m_target;
@@ -68,7 +70,6 @@ namespace renderer
 
         renderer::Image*                    m_image;
 
-        friend renderer::CommandList;
         friend RenderTarget;
     };
 

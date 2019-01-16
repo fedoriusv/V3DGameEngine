@@ -6,6 +6,7 @@
 #include "RenderPass.h"
 #include "Pipeline.h"
 #include "Framebuffer.h"
+#include "ObjectTracker.h"
 #include "Object/ShaderProgram.h"
 
 #include "Utils/NonCopyable.h"
@@ -68,7 +69,8 @@ namespace renderer
         virtual void setRenderTarget(const RenderPass::RenderPassInfo* renderpassInfo, const std::vector<Image*>& attachments, const RenderPass::ClearValueInfo* clearInfo) = 0;
         virtual void removeRenderTarget(const RenderPass::RenderPassInfo * renderpassInfo, const std::vector<Image*>& attachments, const RenderPass::ClearValueInfo * clearInfo) = 0;
 
-        virtual void setPipeline(const Pipeline::PipelineGraphicInfo* pipelineInfo) = 0;
+        virtual void setPipeline(const Pipeline::PipelineGraphicInfo* pipelineInfo, ObjectTracker<Pipeline>* tracker) = 0;
+        virtual void removePipeline(Pipeline* pipeline) = 0;
 
         //create
         virtual Image* createImage(TextureTarget target, renderer::Format format, const core::Dimension3D& dimension, u32 mipmapLevel,

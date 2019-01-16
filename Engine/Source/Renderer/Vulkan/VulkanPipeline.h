@@ -2,6 +2,7 @@
 
 #include "Common.h"
 #include "Renderer/Pipeline.h"
+#include "Resource/Shader.h"
 
 #ifdef VULKAN_RENDER
 #include "VulkanWrapper.h"

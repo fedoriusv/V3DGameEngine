@@ -1,14 +1,18 @@
 #pragma once
 
 #include "Common.h"
-#include "Object/PipelineState.h"
 #include "Utils/Observable.h"
+#include "PipelineStateProperties.h"
+#include "ShaderProperties.h"
+#include "ObjectTracker.h"
+#include "RenderPass.h"
 
 namespace v3d
 {
 namespace resource
 {
     struct ShaderHeader;
+    class Shader;
 } //namespace resource
 namespace renderer
 {
@@ -20,7 +24,7 @@ namespace renderer
     /**
     * Pipeline base class. Render side
     */
-    class Pipeline : public utils::Observable
+    class Pipeline : public RenderObject<Pipeline>, public utils::Observable
     {
     public:
         enum PipelineType
@@ -31,9 +35,9 @@ namespace renderer
 
         struct PipelineGraphicInfo
         {
-            RenderPass::RenderPassInfo                       _renderpassDesc;
-            ShaderProgram::ShaderProgramInfo                 _programDesc;
-            GraphicsPipelineState::GraphicsPipelineStateInfo _pipelineDesc;
+            RenderPass::RenderPassInfo       _renderpassDesc;
+            ShaderProgramDescription         _programDesc;
+            GraphicsPipelineStateDescription _pipelineDesc;
         };
 
         explicit Pipeline(PipelineType type) noexcept;

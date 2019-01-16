@@ -23,8 +23,9 @@ namespace renderer
     {
     public:
 
+        RenderTarget() = delete;
+        RenderTarget(const RenderTarget&) = delete;
         ~RenderTarget();
-        RenderTarget(const RenderTarget &) = delete;
 
         bool setColorTexture(u32 index, Texture2D* colorTexture,
             RenderTargetLoadOp loadOp = RenderTargetLoadOp::LoadOp_Clear, RenderTargetStoreOp storeOp = RenderTargetStoreOp::StoreOp_Store,
@@ -46,16 +47,16 @@ namespace renderer
 
         RenderTarget(renderer::CommandList& cmdList, const core::Dimension2D& size) noexcept;
 
-        renderer::CommandList&  m_cmdList;
-        core::Dimension2D       m_size;
-
-        std::map<u32, std::tuple<Texture2D*, renderer::AttachmentDescription, core::Vector4D>>   m_colorTextures;
-        std::tuple<Texture2D*, renderer::AttachmentDescription, f32, u32>                        m_depthStencilTexture;
-
         void extractRenderTargetInfo(RenderPass::RenderPassInfo& renderpassInfo, std::vector<Image*>& attachments, RenderPass::ClearValueInfo& clearInfo) const;
         void destroy();
 
         friend renderer::CommandList;
+        renderer::CommandList&  m_cmdList;
+
+        core::Dimension2D       m_size;
+
+        std::map<u32, std::tuple<Texture2D*, renderer::AttachmentDescription, core::Vector4D>>   m_colorTextures;
+        std::tuple<Texture2D*, renderer::AttachmentDescription, f32, u32>                        m_depthStencilTexture;
     };
 
      /////////////////////////////////////////////////////////////////////////////////////////////////////

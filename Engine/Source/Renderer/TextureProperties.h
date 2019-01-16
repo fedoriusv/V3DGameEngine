@@ -75,6 +75,11 @@ namespace renderer
 
     constexpr u32 k_maxFramebufferAttachments = 8;
 
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    /**
+    * AttachmentDescription
+    */
     struct AttachmentDescription
     {
         AttachmentDescription()
@@ -93,8 +98,6 @@ namespace renderer
 
         s32                   _padding          : 12;
     };
-
-
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 

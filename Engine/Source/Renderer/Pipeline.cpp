@@ -2,6 +2,7 @@
 
 #include "Context.h"
 #include "Utils/Logger.h"
+#include "Resource/Shader.h"
 
 #include "crc32c/crc32c.h"
 
@@ -46,10 +47,10 @@ PipelineManager::~PipelineManager()
 
 Pipeline* PipelineManager::acquireGraphicPipeline(const Pipeline::PipelineGraphicInfo* pipelineInfo)
 {
-    u32 hash = crc32c::Crc32c((u8*)&pipelineInfo->_pipelineDesc, sizeof(GraphicsPipelineState::GraphicsPipelineStateInfo));
+    u32 hash = crc32c::Crc32c((u8*)&pipelineInfo->_pipelineDesc, sizeof(GraphicsPipelineStateDescription));
     hash = crc32c::Extend(hash, (u8*)&pipelineInfo->_renderpassDesc, sizeof(RenderPass::RenderPassInfo));
 
-    u64 pipelineHash = pipelineInfo->_programDesc._hash;
+    u64 pipelineHash = 0;// pipelineInfo->_programDesc._hash;
     pipelineHash = pipelineHash << 8 | hash;
 
     Pipeline* pipeline = nullptr;
