@@ -33,8 +33,7 @@ namespace renderer
         void setRenderTarget(const RenderPass::RenderPassInfo* renderpassInfo, const std::vector<Image*>& attachments, const RenderPass::ClearValueInfo* clearInfo) override;
         void removeRenderTarget(const RenderPass::RenderPassInfo * renderpassInfo, const std::vector<Image*>& attachments, const RenderPass::ClearValueInfo * clearInfo) override;
 
-        void setPipeline(const GraphicsPipelineState::GraphicsPipelineStateDesc* pipelineInfo,
-            const ShaderProgram::ShaderProgramInfo* programInfo, const RenderPass::RenderPassInfo* renderpassInfo) override;
+        void setPipeline(const Pipeline::PipelineGraphicInfo* pipelineInfo) override;
 
         const DeviceCaps* getDeviceCaps() const override;
 
@@ -42,8 +41,7 @@ namespace renderer
 
         Framebuffer* createFramebuffer(const std::vector<Image*>& attachments, const core::Dimension2D& size) override;
         RenderPass* createRenderPass(const RenderPass::RenderPassInfo* renderpassInfo) override;
-        Pipeline* createPipeline(const GraphicsPipelineState::GraphicsPipelineStateDesc* pipelineInfo,
-            const ShaderProgram::ShaderProgramInfo* programInfo, const RenderPass::RenderPassInfo* renderpassInfo) override;
+        Pipeline* createPipeline(Pipeline::PipelineType type) override;
 
         bool initialize() override;
         void destroy() override;

@@ -83,9 +83,9 @@ namespace renderer
         {
         };
 
-        struct GraphicsPipelineStateDesc
+        struct GraphicsPipelineStateInfo
         {
-            GraphicsPipelineStateDesc();
+            GraphicsPipelineStateInfo();
 
             RasterizationState  _rasterizationState;
             BlendState          _blendState;
@@ -104,24 +104,71 @@ namespace renderer
 
         void setPrimitiveTopology(PrimitiveTopology primitiveTopology);
 
-        const GraphicsPipelineStateDesc& getGraphicsPipelineStateDesc() const;
-        GraphicsPipelineStateDesc& getGraphicsPipelineStateDesc();
+        const GraphicsPipelineStateInfo& getGraphicsPipelineStateDesc() const;
+        GraphicsPipelineStateInfo& getGraphicsPipelineStateDesc();
 
     private:
 
         explicit GraphicsPipelineState(CommandList& cmdList, const ShaderProgram* const program, const RenderTarget* const renderTaget) noexcept;
-        explicit GraphicsPipelineState(CommandList& cmdList, const GraphicsPipelineStateDesc& desc, const ShaderProgram* const program, const RenderTarget* const renderTaget) noexcept;
+        explicit GraphicsPipelineState(CommandList& cmdList, const GraphicsPipelineStateInfo& desc, const ShaderProgram* const program, const RenderTarget* const renderTaget) noexcept;
 
         void setShaderProgram(const ShaderProgram * program);
         void setRenderTaget(const RenderTarget * target);
 
-        GraphicsPipelineStateDesc m_pipelineStateDesc;
+        GraphicsPipelineStateInfo m_pipelineStateDesc;
         const ShaderProgram*      m_program;
         const RenderTarget*       m_renderTaget;
 
         CommandList&              m_cmdList;
 
         friend CommandList;
+
+        //ObjectTracker;
+
+        /*class Tracker
+         link()
+         {
+         counter++;
+         }
+
+         unlink()
+         {
+         counter--;
+         }
+
+         count()
+         {
+         return counter;
+         }
+
+         u64 counter;
+        */
+
+        /*class ObjectTracker : <U, T>
+        {
+        public:
+        void add(obj)
+        {
+            list.push(obj)
+            obj->link();
+        }
+
+        void release
+        {
+        for(obj : list)
+        {
+        obj->unlink();
+        if (!obj->count)
+        {
+        U.callback(obj)
+        }
+        }
+        }
+
+
+        std::vector<T> list;
+        };
+        */
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

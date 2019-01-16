@@ -55,7 +55,7 @@ VulkanRenderPass::VulkanRenderPass(VkDevice device, const std::vector<VulkanAtta
     : m_device(device)
     , m_renderpass(VK_NULL_HANDLE)
 
-    , m_descriptions(desc) //std::move
+    , m_descriptions(desc)
 {
     LOG_DEBUG("VulkanRenderPass::VulkanRenderPass constructor %llx", this);
 }

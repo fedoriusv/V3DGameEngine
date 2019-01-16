@@ -9,6 +9,7 @@ namespace v3d
 namespace renderer
 {
     class Context;
+    class RenderPassManager;
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -48,6 +49,12 @@ namespace renderer
 
         virtual bool create() = 0;
         virtual void destroy() = 0;
+
+    private:
+
+        u32 m_key;
+
+        friend RenderPassManager;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -66,6 +73,7 @@ namespace renderer
 
         RenderPass* acquireRenderPass(const RenderPass::RenderPassInfo& desc);
         bool removeRenderPass(const RenderPass::RenderPassInfo& desc);
+        bool removeRenderPass(const RenderPass* renderPass);
         void clear();
 
         void handleNotify(utils::Observable* ob) override;

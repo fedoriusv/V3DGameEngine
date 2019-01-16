@@ -68,8 +68,7 @@ namespace renderer
         virtual void setRenderTarget(const RenderPass::RenderPassInfo* renderpassInfo, const std::vector<Image*>& attachments, const RenderPass::ClearValueInfo* clearInfo) = 0;
         virtual void removeRenderTarget(const RenderPass::RenderPassInfo * renderpassInfo, const std::vector<Image*>& attachments, const RenderPass::ClearValueInfo * clearInfo) = 0;
 
-        virtual void setPipeline(const GraphicsPipelineState::GraphicsPipelineStateDesc* pipelineInfo, 
-            const ShaderProgram::ShaderProgramInfo* programInfo, const RenderPass::RenderPassInfo* renderpassInfo) = 0;
+        virtual void setPipeline(const Pipeline::PipelineGraphicInfo* pipelineInfo) = 0;
 
         //create
         virtual Image* createImage(TextureTarget target, renderer::Format format, const core::Dimension3D& dimension, u32 mipmapLevel,
@@ -88,8 +87,7 @@ namespace renderer
 
         virtual Framebuffer* createFramebuffer(const std::vector<Image*>& attachments, const core::Dimension2D& size) = 0;
         virtual RenderPass* createRenderPass(const RenderPass::RenderPassInfo* renderpassInfo) = 0;
-        virtual Pipeline* createPipeline(const GraphicsPipelineState::GraphicsPipelineStateDesc* pipelineInfo,
-            const ShaderProgram::ShaderProgramInfo* programInfo, const RenderPass::RenderPassInfo* renderpassInfo) = 0;
+        virtual Pipeline* createPipeline(Pipeline::PipelineType type) = 0;
 
         virtual bool initialize() = 0;
         virtual void destroy() = 0;

@@ -66,7 +66,7 @@ void EmptyContext::removeRenderTarget(const RenderPass::RenderPassInfo * renderp
     LOG_DEBUG("EmptyContext::removeRenderTarget");
 }
 
-void EmptyContext::setPipeline(const GraphicsPipelineState::GraphicsPipelineStateDesc * pipelineInfo, const ShaderProgram::ShaderProgramInfo * programInfo, const RenderPass::RenderPassInfo * renderpassInfo)
+void EmptyContext::setPipeline(const Pipeline::PipelineGraphicInfo* pipelineInfo)
 {
     LOG_DEBUG("EmptyContext::setPipeline");
 }
@@ -88,7 +88,7 @@ RenderPass * EmptyContext::createRenderPass(const RenderPass::RenderPassInfo * r
     return nullptr;
 }
 
-Pipeline * EmptyContext::createPipeline(const GraphicsPipelineState::GraphicsPipelineStateDesc* pipelineInfo, const ShaderProgram::ShaderProgramInfo* programInfo, const RenderPass::RenderPassInfo* renderpassInfo)
+Pipeline * EmptyContext::createPipeline(Pipeline::PipelineType type)
 {
     LOG_DEBUG("EmptyContext::createPipeline");
     return nullptr;

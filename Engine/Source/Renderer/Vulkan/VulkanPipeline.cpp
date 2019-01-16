@@ -156,10 +156,10 @@ VulkanGraphicPipeline::~VulkanGraphicPipeline()
 
 bool VulkanGraphicPipeline::create(const PipelineGraphicInfo* pipelineInfo)
 {
-    ASSERT(m_pipelineType == PipelineType::PipelineType_Graphic, "invalid type");
+    ASSERT(getType() == PipelineType::PipelineType_Graphic, "invalid type");
 
     ASSERT(pipelineInfo, "nullptr");
-    const GraphicsPipelineState::GraphicsPipelineStateDesc& pipelineDesc = pipelineInfo->_pipelineDesc;
+    const GraphicsPipelineState::GraphicsPipelineStateInfo& pipelineDesc = pipelineInfo->_pipelineDesc;
 
     VkPipelineCache pipelineCache = VK_NULL_HANDLE; //TODO
 

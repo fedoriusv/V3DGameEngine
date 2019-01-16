@@ -9,6 +9,7 @@ namespace renderer
 {
 
 RenderPass::RenderPass() noexcept
+    : m_key(0)
 {
 }
 
@@ -37,6 +38,8 @@ RenderPass* RenderPassManager::acquireRenderPass(const RenderPass::RenderPassInf
     if (found.second)
     {
         renderpass = m_context->createRenderPass(&pDesc._info);
+        renderpass->m_key = pDesc._hash;
+
         if (!renderpass->create())
         {
             renderpass->destroy();
@@ -59,16 +62,38 @@ bool RenderPassManager::removeRenderPass(const RenderPass::RenderPassInfo& desc)
     RenderPassDescription pDesc;
     pDesc._info = desc;
 
-    auto renderpass = m_renderpasses.find(pDesc._hash);
-    if (renderpass == m_renderpasses.cend())
+    auto iter = m_renderpasses.find(pDesc._hash);
+    if (iter == m_renderpasses.cend())
     {
         LOG_DEBUG("RenderPassManager renderpass not found");
         ASSERT(false, "renderpass");
         return false;
     }
 
-    renderpass->second->destroy();
-    renderpass->second->notifyObservers();
+    RenderPass* renderpass = iter->second;
+    renderpass->notifyObservers();
+
+    renderpass->destroy();
+    delete renderpass;
+
+    return true;
+}
+
+bool RenderPassManager::removeRenderPass(const RenderPass * renderPass)
+{
+    auto iter = m_renderpasses.find(renderPass->m_key);
+    if (iter == m_renderpasses.cend())
+    {
+        LOG_DEBUG("RenderPassManager renderpass not found");
+        ASSERT(false, "renderpass");
+        return false;
+    }
+
+    RenderPass* renderpass = iter->second;
+    renderpass->notifyObservers();
+
+    renderpass->destroy();
+    delete renderpass;
 
     return true;
 }
@@ -76,16 +101,16 @@ bool RenderPassManager::removeRenderPass(const RenderPass::RenderPassInfo& desc)
 void RenderPassManager::handleNotify(utils::Observable* ob)
 {
     LOG_DEBUG("RenderPassManager renderpass %x has been deleted", ob);
-    //m_renderpasses.erase(ob);
+    m_renderpasses.erase(static_cast<RenderPass*>(ob)->m_key);
 }
 
 void RenderPassManager::clear()
 {
     for (auto& renderpass : m_renderpasses)
     {
-        renderpass.second->destroy();
         renderpass.second->notifyObservers();
 
+        renderpass.second->destroy();
         delete renderpass.second;
     }
     m_renderpasses.clear();

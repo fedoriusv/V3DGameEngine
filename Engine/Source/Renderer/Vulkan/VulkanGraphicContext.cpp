@@ -143,11 +143,11 @@ void VulkanGraphicContext::setRenderTarget(const RenderPass::RenderPassInfo * re
     Framebuffer* framebuffer = m_framebuferManager->acquireFramebuffer(renderpass, attachments, clearInfo->_size);
     ASSERT(framebuffer, "framebuffer is nullptr");
 
-    m_currentContextState._currentRenderpass = static_cast<VulkanRenderPass*>(renderpass);
-    m_currentContextState._currentFramebuffer = static_cast<VulkanFramebuffer*>(framebuffer);
-
     if (m_currentContextState._currentRenderpass != renderpass || m_currentContextState._currentFramebuffer != framebuffer /*|| clearInfo*/)
     {
+        m_currentContextState._currentRenderpass = static_cast<VulkanRenderPass*>(renderpass);
+        m_currentContextState._currentFramebuffer = static_cast<VulkanFramebuffer*>(framebuffer);
+
         if (m_currentContextState._currentDrawBuffer->isInsideRenderPass())
         {
             m_currentContextState._currentDrawBuffer->cmdEndRenderPass();
@@ -182,10 +182,20 @@ void VulkanGraphicContext::removeRenderTarget(const RenderPass::RenderPassInfo *
     m_renderpassManager->removeRenderPass(*renderpassInfo);
 }
 
-void VulkanGraphicContext::setPipeline(const GraphicsPipelineState::GraphicsPipelineStateDesc* pipelineInfo, const ShaderProgram::ShaderProgramInfo* programInfo, const RenderPass::RenderPassInfo* renderpassInfo)
+void VulkanGraphicContext::setPipeline(/*ObjectTracker& tracker,*/ const Pipeline::PipelineGraphicInfo* pipelineInfo)
 {
-    //m_currentContextState._currentPipeline = static_cast<VulkanGraphicPipeline*>(m_pipelineManager->acquireGraphicPipeline());
+    ASSERT(pipelineInfo, "nullptr");
+
+    VulkanGraphicPipeline* pipeline = static_cast<VulkanGraphicPipeline*>(m_pipelineManager->acquireGraphicPipeline(pipelineInfo));
     ASSERT(m_currentContextState._currentPipeline, "nullptr");
+
+    if (m_currentContextState._currentPipeline != pipeline)
+    {
+        m_currentContextState._currentPipeline = pipeline;
+        //TODO
+
+        //tracker->add(pipeline);
+    }
 }
 
 Image * VulkanGraphicContext::createImage(TextureTarget target, renderer::Format format, const core::Dimension3D& dimension, u32 mipLevels,
@@ -392,10 +402,15 @@ RenderPass * VulkanGraphicContext::createRenderPass(const RenderPass::RenderPass
     return new VulkanRenderPass(m_deviceInfo._device, descs);
 }
 
-Pipeline* VulkanGraphicContext::createPipeline(const GraphicsPipelineState::GraphicsPipelineStateDesc* pipelineInfo,
-    const ShaderProgram::ShaderProgramInfo* programInfo, const RenderPass::RenderPassInfo* renderpassInfo)
+Pipeline* VulkanGraphicContext::createPipeline(Pipeline::PipelineType type)
 {
-    return new VulkanGraphicPipeline(m_deviceInfo._device, m_renderpassManager);
+    if (type == Pipeline::PipelineType::PipelineType_Graphic)
+    {
+        return new VulkanGraphicPipeline(m_deviceInfo._device, m_renderpassManager);
+    }
+
+    ASSERT(false, "not supported");
+    return nullptr;
 }
 
 bool VulkanGraphicContext::createInstance()

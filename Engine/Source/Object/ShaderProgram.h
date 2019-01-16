@@ -26,8 +26,12 @@ namespace renderer
 
         struct ShaderProgramInfo
         {
+            u32 _hash;
+
             std::map<std::string, Attribute> _inputAttachment;
             std::map<std::string, Attribute> _outputAttachment;
+
+            std::vector<resource::Shader*>   _shaders;
         };
 
         ~ShaderProgram();

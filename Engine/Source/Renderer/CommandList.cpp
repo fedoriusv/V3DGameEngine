@@ -136,6 +136,41 @@ private:
     RenderPass::ClearValueInfo  m_clearInfo;
 };
 
+/*CommandSetRenderTarget*/
+class CommandSetGraphicPipeline final : public Command
+{
+public:
+    CommandSetGraphicPipeline(const RenderPass::RenderPassInfo& renderpassInfo, const ShaderProgram::ShaderProgramInfo& shaderProgramInfo, const GraphicsPipelineState::GraphicsPipelineStateInfo& pipelineInfo) noexcept
+        : m_renderpassDesc(renderpassInfo)
+        , m_programDesc(shaderProgramInfo)
+        , m_pipelineDesc(pipelineInfo)
+    {
+        LOG_DEBUG("CommandSetGraphicPipeline constructor");
+    };
+    CommandSetGraphicPipeline() = delete;
+    CommandSetGraphicPipeline(CommandSetGraphicPipeline&) = delete;
+
+    ~CommandSetGraphicPipeline()
+    {
+        LOG_DEBUG("CommandSetGraphicPipeline destructor");
+    };
+
+    void execute(const CommandList& cmdList)
+    {
+        Pipeline::PipelineGraphicInfo pipelineGraphicInfo;
+        pipelineGraphicInfo._renderpassDesc = m_renderpassDesc;
+        pipelineGraphicInfo._programDesc = m_programDesc;
+        pipelineGraphicInfo._pipelineDesc = m_pipelineDesc;
+
+        cmdList.getContext()->setPipeline(&pipelineGraphicInfo);
+    }
+
+private:
+    RenderPass::RenderPassInfo                       m_renderpassDesc;
+    ShaderProgram::ShaderProgramInfo                 m_programDesc;
+    GraphicsPipelineState::GraphicsPipelineStateInfo m_pipelineDesc;
+};
+
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 
 Command::Command() noexcept
@@ -232,6 +267,12 @@ void CommandList::clearBackbuffer(const core::Vector4D & color)
 
 void CommandList::setRenderTarget(RenderTarget* rendertarget)
 {
+    if (!rendertarget)
+    {
+        ASSERT(false, "nullptr");
+        return;
+    }
+
     RenderPass::RenderPassInfo renderPassInfo;
     std::vector<renderer::Image*> images;
     RenderPass::ClearValueInfo clearValuesInfo;
@@ -252,12 +293,29 @@ void CommandList::setRenderTarget(RenderTarget* rendertarget)
 
 void CommandList::setPipelineState(GraphicsPipelineState * pipeline)
 {
+    if (!pipeline)
+    {
+        ASSERT(false, "nullptr");
+        return;
+    }
+
+    RenderPass::RenderPassInfo renderPassInfo;
+    std::vector<renderer::Image*> images;
+    RenderPass::ClearValueInfo clearValuesInfo;
+    pipeline->m_renderTaget->extractRenderTargetInfo(renderPassInfo, images, clearValuesInfo);
+
     if (CommandList::isImmediate())
     {
-        //m_context->setPipeline();
+        Pipeline::PipelineGraphicInfo pipelineGraphicInfo;
+        pipelineGraphicInfo._renderpassDesc = renderPassInfo;
+        pipelineGraphicInfo._programDesc = pipeline->m_program->getShaderMetaInfo();
+        pipelineGraphicInfo._pipelineDesc = pipeline->getGraphicsPipelineStateDesc();
+
+        m_context->setPipeline(&pipelineGraphicInfo);
     }
     else
     {
+        CommandList::pushCommand(new CommandSetGraphicPipeline(renderPassInfo, pipeline->m_program->getShaderMetaInfo(), pipeline->getGraphicsPipelineStateDesc()));
     }
 }
 

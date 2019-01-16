@@ -5,8 +5,6 @@ namespace v3d
 namespace renderer
 {
 
-
-
 GraphicsPipelineState::RasterizationState::RasterizationState()
     : _polygonMode(PolygonMode::PolygonMode_Triangle)
     , _frontFace(FrontFace::FrontFace_Clockwise)
@@ -14,7 +12,7 @@ GraphicsPipelineState::RasterizationState::RasterizationState()
 {
 }
 
-GraphicsPipelineState::GraphicsPipelineStateDesc::GraphicsPipelineStateDesc()
+GraphicsPipelineState::GraphicsPipelineStateInfo::GraphicsPipelineStateInfo()
     : _primitiveTopology(PrimitiveTopology::PrimitiveTopology_TriangleList)
 {
 }
@@ -26,7 +24,7 @@ GraphicsPipelineState::GraphicsPipelineState(CommandList& cmdList, const ShaderP
 {
 }
 
-GraphicsPipelineState::GraphicsPipelineState(CommandList& cmdList, const GraphicsPipelineStateDesc& desc, const ShaderProgram* const program, const RenderTarget* const renderTaget) noexcept
+GraphicsPipelineState::GraphicsPipelineState(CommandList& cmdList, const GraphicsPipelineStateInfo& desc, const ShaderProgram* const program, const RenderTarget* const renderTaget) noexcept
     : m_cmdList(cmdList)
     , m_pipelineStateDesc(desc)
     , m_program(program)
@@ -58,12 +56,12 @@ void GraphicsPipelineState::setPrimitiveTopology(PrimitiveTopology primitiveTopo
     m_pipelineStateDesc._primitiveTopology = primitiveTopology;
 }
 
-const GraphicsPipelineState::GraphicsPipelineStateDesc & GraphicsPipelineState::getGraphicsPipelineStateDesc() const
+const GraphicsPipelineState::GraphicsPipelineStateInfo & GraphicsPipelineState::getGraphicsPipelineStateDesc() const
 {
     return m_pipelineStateDesc;
 }
 
-GraphicsPipelineState::GraphicsPipelineStateDesc & GraphicsPipelineState::getGraphicsPipelineStateDesc()
+GraphicsPipelineState::GraphicsPipelineStateInfo& GraphicsPipelineState::getGraphicsPipelineStateDesc()
 {
     return m_pipelineStateDesc;
 }

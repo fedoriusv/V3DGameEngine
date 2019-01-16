@@ -136,7 +136,7 @@ bool RenderTarget::hasDepthStencilTexture() const
     return std::get<0>(m_depthStencilTexture) != nullptr;
 }
 
-void RenderTarget::extractRenderTargetInfo(RenderPass::RenderPassInfo & renderPassInfo, std::vector<Image*>& images, RenderPass::ClearValueInfo & clearValuesInfo)
+void RenderTarget::extractRenderTargetInfo(RenderPass::RenderPassInfo & renderPassInfo, std::vector<Image*>& images, RenderPass::ClearValueInfo & clearValuesInfo) const
 {
     images.reserve(getColorTextureCount() + (hasDepthStencilTexture()) ? 1 : 0);
 
@@ -146,12 +146,16 @@ void RenderTarget::extractRenderTargetInfo(RenderPass::RenderPassInfo & renderPa
     renderPassInfo._countColorAttachments = getColorTextureCount();
     for (u32 index = 0; index < renderPassInfo._countColorAttachments; ++index)
     {
-        auto attachment = m_colorTextures[index];
+        auto attachment = m_colorTextures.find(index);
+        if (attachment == m_colorTextures.cend())
+        {
+            continue;
+        }
 
-        images.push_back(std::get<0>(attachment)->getImage());
-        renderPassInfo._attachments[index] = std::get<1>(attachment);
+        images.push_back(std::get<0>(attachment->second)->getImage());
+        renderPassInfo._attachments[index] = std::get<1>(attachment->second);
 
-        clearValuesInfo._color.push_back(std::get<2>(attachment));
+        clearValuesInfo._color.push_back(std::get<2>(attachment->second));
     }
 
     renderPassInfo._hasDepthStencilAttahment = hasDepthStencilTexture();

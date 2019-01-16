@@ -58,7 +58,8 @@ namespace resource
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
-    * Shader class
+    * Shader class. 
+    * Resource, present on Render and Game thread
     */
     class Shader : public Resource
     {
