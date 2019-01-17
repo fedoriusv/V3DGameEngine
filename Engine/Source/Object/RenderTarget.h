@@ -63,7 +63,8 @@ namespace renderer
         template<class TRenderObject>
         static void objectTrackerCallback(Object* self, const std::vector<TRenderObject*>& objects);
 
-        ObjectTracker<Framebuffer> m_tracker;
+        ObjectTracker<Framebuffer>  m_trackerFramebuffer;
+        ObjectTracker<RenderPass>   m_trackerRenderpass;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

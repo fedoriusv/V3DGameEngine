@@ -78,18 +78,23 @@ private:
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 
+
+
+
 RenderTarget::RenderTarget(renderer::CommandList& cmdList, const core::Dimension2D& size) noexcept
     : m_cmdList(cmdList)
     , m_size(size)
 
-    , m_tracker(this, &RenderTarget::objectTrackerCallback<Framebuffer>)
+    , m_trackerFramebuffer(this, &RenderTarget::objectTrackerCallback<Framebuffer>)
+    , m_trackerRenderpass(this, &RenderTarget::objectTrackerCallback<RenderPass>)
 {
     std::get<0>(m_depthStencilTexture) = nullptr;
 }
 
 RenderTarget::~RenderTarget()
 {
-    m_tracker.release();
+    m_trackerFramebuffer.release();
+    m_trackerRenderpass.release();
 }
 
 bool RenderTarget::setColorTexture(u32 index, Texture2D* colorTexture, RenderTargetLoadOp loadOp, RenderTargetStoreOp storeOp, const core::Vector4D& clearColor)

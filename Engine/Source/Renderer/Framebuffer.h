@@ -1,8 +1,8 @@
 #pragma once
 
 #include "Common.h"
-#include "TextureProperties.h"
 #include "Utils/Observable.h"
+#include "TextureProperties.h"
 #include "ObjectTracker.h"
 
 namespace v3d

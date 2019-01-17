@@ -1,8 +1,9 @@
 #pragma once
 
 #include "Common.h"
-#include "TextureProperties.h"
 #include "Utils/Observable.h"
+#include "TextureProperties.h"
+#include "ObjectTracker.h"
 
 namespace v3d
 {
@@ -16,7 +17,7 @@ namespace renderer
     /**
     * RenderPass base class. Render side
     */
-    class RenderPass : public utils::Observable
+    class RenderPass : public RenderObject<RenderPass>, public utils::Observable
     {
     public:
 
