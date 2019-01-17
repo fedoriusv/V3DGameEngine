@@ -18,9 +18,9 @@ namespace renderer
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
-    * RenderTarget class
+    * RenderTarget class. Game side
     */
-    class RenderTarget : public Object //ref counter
+    class RenderTarget : public Object
     {
     public:
 

@@ -13,7 +13,7 @@ namespace renderer
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
-    * PipelineState base class
+    * PipelineState base class. Game side
     */
     class PipelineState : public Object
     {
@@ -26,7 +26,7 @@ namespace renderer
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
-    * GraphicsPipelineState class
+    * GraphicsPipelineState class. Game side
     */
     class GraphicsPipelineState : public PipelineState
     {

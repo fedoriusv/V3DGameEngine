@@ -18,7 +18,7 @@ namespace renderer
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
-    * Texture2D class
+    * Texture2D class. Game side
     */
     class Texture2D : public Object, public utils::Observer //ref counter, 
     {

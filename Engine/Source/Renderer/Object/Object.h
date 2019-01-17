@@ -4,12 +4,14 @@
 
 namespace v3d
 {
+namespace renderer
+{
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
-    * Object class
+    * Object base game class. Game side
     */
-    class Object //cloneable
+    class Object //cloneable, ref counter
     {
     public:
 
@@ -29,4 +31,5 @@ namespace v3d
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
+} //namespace renderer
 } //namespace v3d

@@ -12,9 +12,9 @@ namespace renderer
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
-    * ShaderProgram class
+    * ShaderProgram class. Game side
     */
-    class ShaderProgram : public Object //ref counter
+    class ShaderProgram : public Object
     {
     public:
 

@@ -6,11 +6,10 @@
 #include "Event/InputEventReceiver.h"
 #include "Platform/Window.h"
 
-#include "Object/Texture.h"
-#include "Object/PipelineState.h"
-#include "Object/RenderTarget.h"
+#include "Renderer/Object/Texture.h"
+#include "Renderer/Object/PipelineState.h"
+#include "Renderer/Object/RenderTarget.h"
 #include "Renderer/Formats.h"
-
 
 #include "Resource/ResourceLoaderManager.h"
 

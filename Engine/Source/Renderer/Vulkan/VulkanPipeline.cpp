@@ -6,7 +6,6 @@
 #include "VulkanPipeline.h"
 
 #include "Resource/Shader.h"
-#include "Object/ShaderProgram.h"
 
 #ifdef VULKAN_RENDER
 namespace v3d
@@ -341,32 +340,32 @@ bool VulkanGraphicPipeline::createShaderModules(const ShaderProgram * program, s
         return false;
     }
 
-    for (u32 type = resource::ShaderType::ShaderType_Vertex; type < resource::ShaderType_Count; ++type)
-    {
-        const resource::Shader* shader = program->getShader((resource::ShaderType)type);
-        if (!shader)
-        {
-            continue;
-        }
+    //for (u32 type = resource::ShaderType::ShaderType_Vertex; type < resource::ShaderType_Count; ++type)
+    //{
+    //    const resource::Shader* shader = program->getShader((resource::ShaderType)type);
+    //    if (!shader)
+    //    {
+    //        continue;
+    //    }
 
-        if (!Pipeline::createShader(shader)) //TODO: shader manager
-        {
-            return false;
-        }
+    //    if (!Pipeline::createShader(shader)) //TODO: shader manager
+    //    {
+    //        return false;
+    //    }
 
-        const resource::ShaderHeader* header = shader->getShaderHeader();
+    //    const resource::ShaderHeader* header = shader->getShaderHeader();
 
-        VkPipelineShaderStageCreateInfo pipelineShaderStageCreateInfo = {};
-        pipelineShaderStageCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-        pipelineShaderStageCreateInfo.pNext = nullptr;
-        pipelineShaderStageCreateInfo.flags = 0;
-        pipelineShaderStageCreateInfo.stage = convertShaderTypeToVkStage((resource::ShaderType)type);
-        pipelineShaderStageCreateInfo.module = m_modules.back();
-        pipelineShaderStageCreateInfo.pName = header->_entyPoint.c_str();
-        pipelineShaderStageCreateInfo.pSpecializationInfo = nullptr;
+    //    VkPipelineShaderStageCreateInfo pipelineShaderStageCreateInfo = {};
+    //    pipelineShaderStageCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+    //    pipelineShaderStageCreateInfo.pNext = nullptr;
+    //    pipelineShaderStageCreateInfo.flags = 0;
+    //    pipelineShaderStageCreateInfo.stage = convertShaderTypeToVkStage((resource::ShaderType)type);
+    //    pipelineShaderStageCreateInfo.module = m_modules.back();
+    //    pipelineShaderStageCreateInfo.pName = header->_entyPoint.c_str();
+    //    pipelineShaderStageCreateInfo.pSpecializationInfo = nullptr;
 
-        outPipelineShaderStageCreateInfo.push_back(pipelineShaderStageCreateInfo);
-    }
+    //    outPipelineShaderStageCreateInfo.push_back(pipelineShaderStageCreateInfo);
+    //}
 
     return true;
 }

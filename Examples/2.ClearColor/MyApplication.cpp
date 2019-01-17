@@ -5,9 +5,9 @@
 #include "Event/InputEventReceiver.h"
 #include "Platform/Window.h"
 
-#include "Object/Texture.h"
-#include "Object/RenderTarget.h"
-#include "Renderer/ImageFormats.h"
+#include "Renderer/Object/Texture.h"
+#include "Renderer/Object/RenderTarget.h"
+#include "Renderer/Formats.h"
 
 
 using namespace v3d;
