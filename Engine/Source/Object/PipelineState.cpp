@@ -46,7 +46,7 @@ GraphicsPipelineState::GraphicsPipelineState(CommandList& cmdList, const ShaderP
     , m_program(program)
     , m_renderTaget(renderTaget)
 
-    , m_tracker(this, &GraphicsPipelineState::objectTrackerCallback<Pipeline>)
+    , m_tracker(this, std::bind(&GraphicsPipelineState::destroyPipelines, this, std::placeholders::_1))
 {
 }
 
@@ -56,7 +56,7 @@ GraphicsPipelineState::GraphicsPipelineState(CommandList& cmdList, const Graphic
     , m_program(program)
     , m_renderTaget(renderTaget)
 
-    , m_tracker(this, &GraphicsPipelineState::objectTrackerCallback<Pipeline>)
+    , m_tracker(this, std::bind(&GraphicsPipelineState::destroyPipelines, this, std::placeholders::_1))
 {
 }
 

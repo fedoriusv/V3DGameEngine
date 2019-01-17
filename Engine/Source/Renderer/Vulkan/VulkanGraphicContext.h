@@ -47,9 +47,11 @@ namespace vk
         //states
         void setViewport(const core::Rect32& viewport) override;
 
-        void setRenderTarget(const RenderPass::RenderPassInfo* renderpassInfo, const std::vector<Image*>& attachments, const RenderPass::ClearValueInfo* clearInfo, ObjectTracker<Framebuffer>* tracker) override;
+        void setRenderTarget(const RenderPass::RenderPassInfo* renderpassInfo, const std::vector<Image*>& attachments, const RenderPass::ClearValueInfo* clearInfo, 
+            const std::tuple<ObjectTracker<RenderPass>*, ObjectTracker<Framebuffer>*>& trackers) override;
         void removeRenderTarget(const RenderPass::RenderPassInfo * renderpassInfo, const std::vector<Image*>& attachments, const RenderPass::ClearValueInfo * clearInfo) override;
         void removeFramebuffer(Framebuffer* framebuffer) override;
+        void removeRenderPass(RenderPass* renderpass) override;
 
         void setPipeline(const Pipeline::PipelineGraphicInfo* pipelineInfo, ObjectTracker<Pipeline>* tracker) override;
         void removePipeline(Pipeline* pipeline) override;

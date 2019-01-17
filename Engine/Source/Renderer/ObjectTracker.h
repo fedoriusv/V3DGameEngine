@@ -58,9 +58,9 @@ namespace renderer
     {
     public:
 
-        ObjectTracker(Object* handle, std::function<void(Object*, const std::vector<TRenderObject*>)> callback) noexcept
+        ObjectTracker(Object* handle, std::function<void(const std::vector<TRenderObject*>&)> deleteCallback) noexcept
             : m_handle(handle)
-            , m_callback(callback)
+            , m_deleteCallback(deleteCallback)
         {
         }
 
@@ -92,17 +92,17 @@ namespace renderer
 
             if (!deleteList.empty())
             {
-                m_callback(m_handle, deleteList);
+                m_deleteCallback(deleteList);
             }
         }
 
     private:
 
         std::recursive_mutex m_mutex;
-        Object*                                                            m_handle;
-        std::function<void(Object*, const std::vector<TRenderObject*>)>    m_callback;
-
         std::set<RenderObject<TRenderObject>*> m_list;
+
+        Object* m_handle;
+        std::function<void(const std::vector<TRenderObject*>&)> m_deleteCallback;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

@@ -67,9 +67,10 @@ namespace renderer
         virtual void setViewport(const core::Rect32& viewport) = 0;
 
         virtual void setRenderTarget(const RenderPass::RenderPassInfo* renderpassInfo, const std::vector<Image*>& attachments, const RenderPass::ClearValueInfo* clearInfo, 
-            ObjectTracker<Framebuffer>* tracker) = 0;
+            const std::tuple<ObjectTracker<RenderPass>*, ObjectTracker<Framebuffer>*>& trackers) = 0;
         virtual void removeRenderTarget(const RenderPass::RenderPassInfo * renderpassInfo, const std::vector<Image*>& attachments, const RenderPass::ClearValueInfo * clearInfo) = 0;
         virtual void removeFramebuffer(Framebuffer* framebuffer) = 0;
+        virtual void removeRenderPass(RenderPass* renderpass) = 0;
 
         virtual void setPipeline(const Pipeline::PipelineGraphicInfo* pipelineInfo, ObjectTracker<Pipeline>* tracker) = 0;
         virtual void removePipeline(Pipeline* pipeline) = 0;

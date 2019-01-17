@@ -135,14 +135,16 @@ void VulkanGraphicContext::setViewport(const core::Rect32& viewport)
     //TODO:
 }
 
-void VulkanGraphicContext::setRenderTarget(const RenderPass::RenderPassInfo * renderpassInfo, const std::vector<Image*>& attachments, const RenderPass::ClearValueInfo * clearInfo, ObjectTracker<Framebuffer>* trackerFramebuffer)
+void VulkanGraphicContext::setRenderTarget(const RenderPass::RenderPassInfo * renderpassInfo, const std::vector<Image*>& attachments, const RenderPass::ClearValueInfo * clearInfo, 
+    const std::tuple<ObjectTracker<RenderPass>*, ObjectTracker<Framebuffer>*>& trackers)
 {
     RenderPass* renderpass = m_renderpassManager->acquireRenderPass(*renderpassInfo);
     ASSERT(renderpass, "renderpass is nullptr");
+    std::get<0>(trackers)->attach(renderpass);
 
     Framebuffer* framebuffer = m_framebuferManager->acquireFramebuffer(renderpass, attachments, clearInfo->_size);
     ASSERT(framebuffer, "framebuffer is nullptr");
-    trackerFramebuffer->attach(framebuffer);
+    std::get<1>(trackers)->attach(framebuffer);
 
     if (m_currentContextState._currentRenderpass != renderpass || m_currentContextState._currentFramebuffer != framebuffer /*|| clearInfo*/)
     {
@@ -189,6 +191,17 @@ void VulkanGraphicContext::removeFramebuffer(Framebuffer * framebuffer)
     }
 
     m_framebuferManager->removeFramebuffer(framebuffer);
+}
+
+void VulkanGraphicContext::removeRenderPass(RenderPass * renderpass)
+{
+    if (m_currentContextState._currentRenderpass == renderpass)
+    {
+        ASSERT(false, "not implementing");
+        //delayed delete
+    }
+
+    m_renderpassManager->removeRenderPass(renderpass);
 }
 
 void VulkanGraphicContext::setPipeline(const Pipeline::PipelineGraphicInfo* pipelineInfo, ObjectTracker<Pipeline>* tracker)

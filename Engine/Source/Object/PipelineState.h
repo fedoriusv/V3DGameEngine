@@ -62,20 +62,8 @@ namespace renderer
         const ShaderProgram*             m_program;
         const RenderTarget*              m_renderTaget;
 
-
-        template<class TRenderObject>
-        static void objectTrackerCallback(Object* self, const std::vector<TRenderObject*>& objects);
-        
         ObjectTracker<Pipeline> m_tracker;
     };
-
-    /////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    template<class TRenderObject>
-    inline void GraphicsPipelineState::objectTrackerCallback(Object* self, const std::vector<TRenderObject*>& objects)
-    {
-        static_cast<GraphicsPipelineState*>(self)->destroyPipelines(objects);
-    }
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 

@@ -107,7 +107,8 @@ namespace renderer
             RenderPass::RenderPassInfo  _renderpassInfo;
             RenderPass::ClearValueInfo  _clearInfo;
 
-            ObjectTracker<Framebuffer>* _tracker;
+            ObjectTracker<RenderPass>*  _trackerRenderpass;
+            ObjectTracker<Framebuffer>* _trackerFramebuffer;
         };
 
         struct PipelineStateInfo

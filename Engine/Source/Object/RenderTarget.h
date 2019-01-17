@@ -50,6 +50,7 @@ namespace renderer
 
         void extractRenderTargetInfo(RenderPass::RenderPassInfo& renderpassInfo, std::vector<Image*>& attachments, RenderPass::ClearValueInfo& clearInfo) const;
         void destroyFramebuffers(const std::vector<Framebuffer*>& framebuffers);
+        void destroyRenderPasses(const std::vector<RenderPass*>& renderPasses);
 
         friend renderer::CommandList;
         renderer::CommandList& m_cmdList;
@@ -59,21 +60,9 @@ namespace renderer
         std::map<u32, std::tuple<Texture2D*, renderer::AttachmentDescription, core::Vector4D>>   m_colorTextures;
         std::tuple<Texture2D*, renderer::AttachmentDescription, f32, u32>                        m_depthStencilTexture;
 
-
-        template<class TRenderObject>
-        static void objectTrackerCallback(Object* self, const std::vector<TRenderObject*>& objects);
-
         ObjectTracker<Framebuffer>  m_trackerFramebuffer;
         ObjectTracker<RenderPass>   m_trackerRenderpass;
     };
-
-    /////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    template<class TRenderObject>
-    inline void RenderTarget::objectTrackerCallback(Object* self, const std::vector<TRenderObject*>& objects)
-    {
-        static_cast<RenderTarget*>(self)->destroyFramebuffers(objects);
-    }
 
      /////////////////////////////////////////////////////////////////////////////////////////////////////
 

@@ -76,17 +76,44 @@ private:
     std::vector<Framebuffer*> m_framebuffers;
 };
 
+    /*CommandRemoveRenderPasses*/
+class CommandRemoveRenderPasses final : public Command
+{
+public:
+    CommandRemoveRenderPasses(const std::vector<RenderPass*>& renderpasses) noexcept
+        : m_renderpasses(renderpasses)
+    {
+        LOG_DEBUG("CommandRemoveRenderPasses constructor");
+    };
+    CommandRemoveRenderPasses() = delete;
+    CommandRemoveRenderPasses(CommandRemoveRenderPasses&) = delete;
+
+    ~CommandRemoveRenderPasses()
+    {
+        LOG_DEBUG("CommandRemoveRenderPasses destructor");
+    };
+
+    void execute(const CommandList& cmdList)
+    {
+        for (auto& renderpass : m_renderpasses)
+        {
+            cmdList.getContext()->removeRenderPass(renderpass);
+        }
+    }
+
+private:
+    std::vector<RenderPass*> m_renderpasses;
+};
+
 /////////////////////////////////////////////////////////////////////////////////////////////////////
-
-
-
 
 RenderTarget::RenderTarget(renderer::CommandList& cmdList, const core::Dimension2D& size) noexcept
     : m_cmdList(cmdList)
     , m_size(size)
 
-    , m_trackerFramebuffer(this, &RenderTarget::objectTrackerCallback<Framebuffer>)
-    , m_trackerRenderpass(this, &RenderTarget::objectTrackerCallback<RenderPass>)
+    , m_trackerRenderpass(this, std::bind(&RenderTarget::destroyRenderPasses, this, std::placeholders::_1))
+    , m_trackerFramebuffer(this, std::bind(&RenderTarget::destroyFramebuffers, this, std::placeholders::_1))
+
 {
     std::get<0>(m_depthStencilTexture) = nullptr;
 }
@@ -217,6 +244,21 @@ void RenderTarget::destroyFramebuffers(const std::vector<Framebuffer*>& framebuf
     else
     {
         m_cmdList.pushCommand(new CommandRemoveFramebuffers(framebuffers));
+    }
+}
+
+void RenderTarget::destroyRenderPasses(const std::vector<RenderPass*>& renderPasses)
+{
+    if (m_cmdList.isImmediate())
+    {
+        for (auto& renderPasses : renderPasses)
+        {
+            m_cmdList.getContext()->removeRenderPass(renderPasses);
+        }
+    }
+    else
+    {
+        m_cmdList.pushCommand(new CommandRemoveRenderPasses(renderPasses));
     }
 }
 
