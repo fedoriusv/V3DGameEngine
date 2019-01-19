@@ -10,7 +10,7 @@ const resource::Shader * ShaderProgram::getShader(resource::ShaderType type) con
 {
     auto it = std::find_if(m_shaders.cbegin(), m_shaders.cend(), [type](const resource::Shader* shader) -> bool
     {
-        return shader->getShaderHeader()->_type == type;
+        return shader->getShaderHeader()._type == type;
     });
 
     if (it != m_shaders.cend())
@@ -45,7 +45,7 @@ void ShaderProgram::composeProgramData()
 {
     for (auto shader : m_shaders)
     {
-        if (shader->getShaderHeader()->_type == resource::ShaderType::ShaderType_Vertex)
+        if (shader->getShaderHeader()._type == resource::ShaderType::ShaderType_Vertex)
         {
             u32 offest = 0;
             for (auto& attr : shader->m_reflectionInfo._inputAttribute)
@@ -57,7 +57,7 @@ void ShaderProgram::composeProgramData()
             }
         }
 
-        if (shader->getShaderHeader()->_type == resource::ShaderType::ShaderType_Fragment)
+        if (shader->getShaderHeader()._type == resource::ShaderType::ShaderType_Fragment)
         {
             u32 offest = 0;
             for (auto& attr : shader->m_reflectionInfo._outputAttribute)

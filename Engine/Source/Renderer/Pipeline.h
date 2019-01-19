@@ -35,9 +35,11 @@ namespace renderer
 
         struct PipelineGraphicInfo
         {
-            RenderPass::RenderPassInfo       _renderpassDesc;
-            ShaderProgramDescription         _programDesc;
             GraphicsPipelineStateDescription _pipelineDesc;
+            RenderPass::RenderPassInfo       _renderpassDesc;
+
+            ShaderProgramDescription         _programDesc;
+            std::vector<resource::Shader*>   _shaders;
         };
 
         explicit Pipeline(PipelineType type) noexcept;

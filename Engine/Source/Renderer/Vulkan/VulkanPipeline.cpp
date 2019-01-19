@@ -171,15 +171,34 @@ bool VulkanGraphicPipeline::create(const PipelineGraphicInfo* pipelineInfo)
     graphicsPipelineCreateInfo.basePipelineIndex = 0;
     graphicsPipelineCreateInfo.basePipelineHandle = VK_NULL_HANDLE;
 
-    //std::vector<VkPipelineShaderStageCreateInfo> pipelineShaderStageCreateInfos;
-    //if (!createShaderModules(pipelineInfo->_program, pipelineShaderStageCreateInfos))
-    //{
-    //    LOG_ERROR("VulkanGraphicPipeline::create couldn't create modules for pipeline");
-    //    deleteShaderModules();
-    //    return false;
-    //}
-    //graphicsPipelineCreateInfo.stageCount = static_cast<u32>(pipelineShaderStageCreateInfos.size());
-    //graphicsPipelineCreateInfo.pStages = pipelineShaderStageCreateInfos.data();
+    auto findShaderByType = [](std::vector<resource::Shader*> shaders, resource::ShaderType type) -> const resource::Shader*
+    {
+        for (auto shader : shaders)
+        {
+            if (shader->getShaderHeader()._type == type)
+            {
+                return shader;
+            }
+        }
+
+        return nullptr;
+    };
+
+    std::vector<VkPipelineShaderStageCreateInfo> pipelineShaderStageCreateInfos;
+    for (u32 type = resource::ShaderType::ShaderType_Vertex; type < resource::ShaderType_Count; ++type)
+    {
+        VkPipelineShaderStageCreateInfo pipelineShaderStageCreateInfo = {};
+        if (!createShaderModule(findShaderByType(pipelineInfo->_shaders, (resource::ShaderType)type), pipelineShaderStageCreateInfo))
+        {
+            LOG_ERROR("VulkanGraphicPipeline::create couldn't create modules for pipeline");
+            deleteShaderModules();
+            return false;
+        }
+
+        pipelineShaderStageCreateInfos.push_back(pipelineShaderStageCreateInfo);
+    }
+    graphicsPipelineCreateInfo.stageCount = static_cast<u32>(pipelineShaderStageCreateInfos.size());
+    graphicsPipelineCreateInfo.pStages = pipelineShaderStageCreateInfos.data();
 
     //graphicsPipelineCreateInfo.layout = VK_NULL_HANDLE; //TODO
 
@@ -322,7 +341,7 @@ bool VulkanGraphicPipeline::compileShader(const resource::ShaderHeader* header, 
     shaderModuleCreateInfo.codeSize = size;
 
     VkShaderModule module = VK_NULL_HANDLE;
-    VkResult result = VulkanWrapper::CreateShaderModule(m_device, &shaderModuleCreateInfo, VULKAN_ALLOCATOR, &module);
+    VkResult result = VulkanWrapper::CreateShaderModule(m_device, &shaderModuleCreateInfo, VULKAN_ALLOCATOR, &module); //manager
     if (result != VK_SUCCESS)
     {
         LOG_ERROR("VulkanGraphicPipeline::compileShader vkCreateShaderModule is failed. Error: %s", ErrorString(result).c_str());
@@ -333,39 +352,22 @@ bool VulkanGraphicPipeline::compileShader(const resource::ShaderHeader* header, 
     return true;
 }
 
-bool VulkanGraphicPipeline::createShaderModules(const ShaderProgram * program, std::vector<VkPipelineShaderStageCreateInfo>& outPipelineShaderStageCreateInfo)
+bool VulkanGraphicPipeline::createShaderModule(const resource::Shader* shader, VkPipelineShaderStageCreateInfo& outPipelineShaderStageCreateInfo)
 {
-    if (!program)
+    if (!shader || VulkanGraphicPipeline::createShader(shader))
     {
         return false;
     }
 
-    //for (u32 type = resource::ShaderType::ShaderType_Vertex; type < resource::ShaderType_Count; ++type)
-    //{
-    //    const resource::Shader* shader = program->getShader((resource::ShaderType)type);
-    //    if (!shader)
-    //    {
-    //        continue;
-    //    }
+    const resource::ShaderHeader& header = shader->getShaderHeader();
 
-    //    if (!Pipeline::createShader(shader)) //TODO: shader manager
-    //    {
-    //        return false;
-    //    }
-
-    //    const resource::ShaderHeader* header = shader->getShaderHeader();
-
-    //    VkPipelineShaderStageCreateInfo pipelineShaderStageCreateInfo = {};
-    //    pipelineShaderStageCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-    //    pipelineShaderStageCreateInfo.pNext = nullptr;
-    //    pipelineShaderStageCreateInfo.flags = 0;
-    //    pipelineShaderStageCreateInfo.stage = convertShaderTypeToVkStage((resource::ShaderType)type);
-    //    pipelineShaderStageCreateInfo.module = m_modules.back();
-    //    pipelineShaderStageCreateInfo.pName = header->_entyPoint.c_str();
-    //    pipelineShaderStageCreateInfo.pSpecializationInfo = nullptr;
-
-    //    outPipelineShaderStageCreateInfo.push_back(pipelineShaderStageCreateInfo);
-    //}
+    outPipelineShaderStageCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+    outPipelineShaderStageCreateInfo.pNext = nullptr;
+    outPipelineShaderStageCreateInfo.flags = 0;
+    outPipelineShaderStageCreateInfo.stage = convertShaderTypeToVkStage((resource::ShaderType)header._type);
+    outPipelineShaderStageCreateInfo.module = m_modules.back();
+    outPipelineShaderStageCreateInfo.pName = header._entyPoint.c_str();
+    outPipelineShaderStageCreateInfo.pSpecializationInfo = nullptr;
 
     return true;
 }

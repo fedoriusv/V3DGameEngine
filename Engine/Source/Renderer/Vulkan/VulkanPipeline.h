@@ -38,7 +38,7 @@ namespace vk
 
         bool compileShader(const resource::ShaderHeader* header, const void* source, u32 size) override;
 
-        bool createShaderModules(const ShaderProgram* program, std::vector<VkPipelineShaderStageCreateInfo>& outPipelineShaderStageCreateInfo);
+        bool createShaderModule(const resource::Shader* shader, VkPipelineShaderStageCreateInfo& outPipelineShaderStageCreateInfo);
         void deleteShaderModules();
 
         std::vector<VkShaderModule> m_modules;

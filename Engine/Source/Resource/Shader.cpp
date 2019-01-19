@@ -69,9 +69,9 @@ bool Shader::load()
     return true;
 }
 
-const ShaderHeader* Shader::getShaderHeader() const
+const ShaderHeader& Shader::getShaderHeader() const
 {
-    return static_cast<const ShaderHeader*>(m_header);
+    return *static_cast<const ShaderHeader*>(m_header);
 }
 
 Shader::Attribute::Attribute()

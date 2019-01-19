@@ -33,7 +33,7 @@ bool Pipeline::createShader(const resource::Shader * shader)
         return false;
     }
 
-    return compileShader(shader->getShaderHeader(), shader->m_source, shader->m_size);
+    return compileShader(&shader->getShaderHeader(), shader->m_source, shader->m_size);
 }
 
 PipelineManager::PipelineManager(Context * context) noexcept

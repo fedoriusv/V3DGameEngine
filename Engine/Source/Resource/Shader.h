@@ -99,7 +99,7 @@ namespace resource
         void init(const stream::Stream* stream) override;
         bool load() override;
 
-        const ShaderHeader* getShaderHeader() const;
+        const ShaderHeader& getShaderHeader() const;
 
     private:
 
