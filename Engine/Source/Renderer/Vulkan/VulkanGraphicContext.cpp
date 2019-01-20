@@ -143,10 +143,10 @@ void VulkanGraphicContext::setViewport(const core::Rect32& viewport, const core:
     if (VulkanGraphicContext::isDynamicState(VK_DYNAMIC_STATE_VIEWPORT))
     {
         VkViewport vkViewport = {};
-        vkViewport.x = viewport.getLeftX();
-        vkViewport.y = viewport.getTopY();
-        vkViewport.width = viewport.getWidth();
-        vkViewport.height = viewport.getHeight();
+        vkViewport.x = static_cast<f32>(viewport.getLeftX());
+        vkViewport.y = static_cast<f32>(viewport.getTopY());
+        vkViewport.width = static_cast<f32>(viewport.getWidth());
+        vkViewport.height = static_cast<f32>(viewport.getHeight());
         vkViewport.minDepth = depth.x;
         vkViewport.maxDepth = depth.y;
         std::vector<VkViewport> viewports = { vkViewport };

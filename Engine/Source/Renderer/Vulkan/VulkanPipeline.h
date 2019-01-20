@@ -46,10 +46,13 @@ namespace vk
         bool createShaderModule(const resource::Shader* shader, VkPipelineShaderStageCreateInfo& outPipelineShaderStageCreateInfo);
         void deleteShaderModules();
 
+        bool createCompatibilityRenderPass(const RenderPass::RenderPassInfo& renderpassDesc, RenderPass* compatibilityRenderPass);
+
         std::vector<VkShaderModule> m_modules;
 
         VkDevice     m_device;
         VkPipeline   m_pipeline;
+        RenderPass*  m_compatibilityRenderPass;
 
         RenderPassManager* const m_renderpassManager;
     };

@@ -336,6 +336,7 @@ VulkanGraphicPipeline::VulkanGraphicPipeline(VkDevice device, RenderPassManager*
     : Pipeline(PipelineType::PipelineType_Graphic)
     , m_device(device)
     , m_pipeline(VK_NULL_HANDLE)
+    , m_compatibilityRenderPass(nullptr)
 
     , m_renderpassManager(renderpassManager)
 {
@@ -394,21 +395,19 @@ bool VulkanGraphicPipeline::create(const PipelineGraphicInfo* pipelineInfo)
     graphicsPipelineCreateInfo.stageCount = static_cast<u32>(pipelineShaderStageCreateInfos.size());
     graphicsPipelineCreateInfo.pStages = pipelineShaderStageCreateInfos.data();
 
-    //graphicsPipelineCreateInfo.layout = VK_NULL_HANDLE; //TODO
+    graphicsPipelineCreateInfo.layout = VK_NULL_HANDLE; //TODO
 
-    const ShaderProgramDescription& shaderProgramInfo = pipelineInfo->_programDesc;
-    RenderPass* pass = m_renderpassManager->acquireRenderPass(pipelineInfo->_renderpassDesc);
-    if (!pass)
+
+    ASSERT(!m_compatibilityRenderPass, "not nullptr");
+    if (!createCompatibilityRenderPass(pipelineInfo->_renderpassDesc, m_compatibilityRenderPass))
     {
         LOG_ERROR("VulkanGraphicPipeline::create couldn't create renderpass for pipline");
         return false;
     }
-
-    graphicsPipelineCreateInfo.renderPass = static_cast<VulkanRenderPass*>(pass)->getHandle();
+    graphicsPipelineCreateInfo.renderPass = static_cast<VulkanRenderPass*>(m_compatibilityRenderPass)->getHandle();
     graphicsPipelineCreateInfo.subpass = 0; //TODO
 
     const GraphicsPipelineStateDescription::RasterizationState& rasterizationState = pipelineDesc._rasterizationState;
-
 
     //VkPipelineRasterizationStateCreateInfo
     VkPipelineRasterizationStateCreateInfo rasterizationStateCreateInfo = {};
@@ -457,6 +456,8 @@ bool VulkanGraphicPipeline::create(const PipelineGraphicInfo* pipelineInfo)
     vertexInputBindingDescription.stride = 0;
     vertexInputStateCreateInfo.vertexBindingDescriptionCount = 1;
     vertexInputStateCreateInfo.pVertexBindingDescriptions = &vertexInputBindingDescription;
+
+    const ShaderProgramDescription& shaderProgramInfo = pipelineInfo->_programDesc;
 
     std::vector<VkVertexInputAttributeDescription> vertexInputAttributeDescriptions;
     vertexInputAttributeDescriptions.reserve(shaderProgramInfo._inputAttachment.size());
@@ -628,6 +629,12 @@ void VulkanGraphicPipeline::destroy()
         m_pipeline = VK_NULL_HANDLE;
     }
     deleteShaderModules();
+
+    if (m_compatibilityRenderPass)
+    {
+        m_renderpassManager->removeRenderPass(m_compatibilityRenderPass);
+        m_compatibilityRenderPass = nullptr;
+    }
 }
 
 bool VulkanGraphicPipeline::compileShader(const resource::ShaderHeader* header, const void * source, u32 size)
@@ -683,6 +690,36 @@ void VulkanGraphicPipeline::deleteShaderModules()
         VulkanWrapper::DestroyShaderModule(m_device, module, VULKAN_ALLOCATOR);
     }
     m_modules.clear();
+}
+
+bool VulkanGraphicPipeline::createCompatibilityRenderPass(const RenderPass::RenderPassInfo & renderpassDesc, RenderPass* compatibilityRenderPass)
+{
+    RenderPass::RenderPassInfo compatibilityRenderpassDesc(renderpassDesc);
+    for (u32 index = 0; index < renderpassDesc._countColorAttachments; ++index)
+    {
+        compatibilityRenderpassDesc._attachments[index]._loadOp = RenderTargetLoadOp::LoadOp_DontCare;
+        compatibilityRenderpassDesc._attachments[index]._storeOp = RenderTargetStoreOp::StoreOp_DontCare;
+        compatibilityRenderpassDesc._attachments[index]._stencilLoadOp = RenderTargetLoadOp::LoadOp_DontCare;
+        compatibilityRenderpassDesc._attachments[index]._stencilStoreOp = RenderTargetStoreOp::StoreOp_DontCare;
+    }
+
+    if (compatibilityRenderpassDesc._hasDepthStencilAttahment)
+    {
+        compatibilityRenderpassDesc._attachments.back()._loadOp = RenderTargetLoadOp::LoadOp_DontCare;
+        compatibilityRenderpassDesc._attachments.back()._storeOp = RenderTargetStoreOp::StoreOp_DontCare;
+        compatibilityRenderpassDesc._attachments.back()._stencilLoadOp = RenderTargetLoadOp::LoadOp_DontCare;
+        compatibilityRenderpassDesc._attachments.back()._stencilStoreOp = RenderTargetStoreOp::StoreOp_DontCare;
+    }
+
+
+    compatibilityRenderPass = m_renderpassManager->acquireRenderPass(compatibilityRenderpassDesc);
+    if (!compatibilityRenderPass)
+    {
+        LOG_ERROR("VulkanGraphicPipeline::createCompatibilityRenderPass couldn't create renderpass for pipline");
+        return false;
+    }
+
+    return true;
 }
 
 } //namespace vk
