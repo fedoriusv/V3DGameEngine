@@ -30,7 +30,7 @@ namespace renderer
                 _hasDepthStencilAttahment = false;
             }
 
-            std::array<AttachmentDescription, k_maxFramebufferAttachments> _attachments; //32
+            std::array<AttachmentDescription, k_maxFramebufferAttachments> _attachments; //: 32
             u32  _countColorAttachments : 24;
             u32 _hasDepthStencilAttahment : 8;
 

@@ -18,6 +18,7 @@ namespace vk
     {
         bool individuallyResetForCommandBuffers;
         bool supportCoherentMemory;
+        bool useDynamicUniforms;
 
         static bool checkInstanceExtension(const c8* extensionName);
         static bool checkDeviceExtension(VkPhysicalDevice physicalDevice, const c8* extensionName);

@@ -157,6 +157,7 @@ void VulkanDeviceCaps::initialize()
 {
     individuallyResetForCommandBuffers = true; //For PC
     supportCoherentMemory = true;
+    useDynamicUniforms = false;
 
     ASSERT(k_maxFramebufferAttachments <= m_deviceProperties.limits.maxFragmentOutputAttachments, "maxFragmentOutputAttachments less than k_maxFramebufferAttachments");
 }

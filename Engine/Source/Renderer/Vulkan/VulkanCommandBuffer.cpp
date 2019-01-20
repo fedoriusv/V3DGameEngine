@@ -193,7 +193,7 @@ void VulkanCommandBuffer::cmdSetViewport(const std::vector<VkViewport>& viewport
 {
     if (m_level == CommandBufferLevel::PrimaryBuffer)
     {
-        VulkanWrapper::CmdSetViewport(m_command, 0, viewports.size(), viewports.data());
+        VulkanWrapper::CmdSetViewport(m_command, 0, static_cast<u32>(viewports.size()), viewports.data());
     }
     else
     {
@@ -205,7 +205,7 @@ void VulkanCommandBuffer::cmdSetScissor(const std::vector<VkRect2D>& scissors)
 {
     if (m_level == CommandBufferLevel::PrimaryBuffer)
     {
-        VulkanWrapper::CmdSetScissor(m_command, 0, scissors.size(), scissors.data());
+        VulkanWrapper::CmdSetScissor(m_command, 0, static_cast<u32>(scissors.size()), scissors.data());
     }
     else
     {

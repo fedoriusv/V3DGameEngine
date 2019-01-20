@@ -310,7 +310,7 @@ bool ShaderSpirVDecoder::parseReflections(const std::vector<u32>& spirv, stream:
         }
 
         u32 unifromBufferCount = static_cast<u32>(resources.uniform_buffers.size());
-        //stream->write<u32>(unifromBufferCount);
+        stream->write<u32>(unifromBufferCount);
         s32 buffID = 0;
         for (auto& buffer : resources.uniform_buffers)
         {
@@ -321,17 +321,103 @@ bool ShaderSpirVDecoder::parseReflections(const std::vector<u32>& spirv, stream:
             u32 set = glsl.get_decoration(buffer.id, spv::DecorationDescriptorSet);
             const spirv_cross::SPIRType& block_type = glsl.get_type(buffer.type_id);
 
-            /*stream->write<s32>(buffID);
-            stream->write(name);
-            stream->write<u32>(set);
-            stream->write<u32>(binding);*/
+            Shader::UniformBuffer block;
+            block._id = buffID;
+            block._set = set;
+            block._binding = binding;
+            block._name = name;
 
             u32 posMembers = stream->tell();
-
             u32 countMembers = 0;
-            //stream->write<u32>(countMembers);
-
+            u32 membersSize = 0;
             u32 index = 0;
+
+            auto convertSPRIVTypeToDataType = [](const spirv_cross::SPIRType& type) -> renderer::DataType
+            {
+                u32 col = type.columns;
+                u32 row = type.vecsize;
+
+                if (row == 1 && col == 1) //value
+                {
+                    switch (type.basetype)
+                    {
+                    case spirv_cross::SPIRType::Int:
+                    case spirv_cross::SPIRType::UInt:
+                        return renderer::DataType::DataType_Int;
+
+                    case spirv_cross::SPIRType::Half:
+                    case spirv_cross::SPIRType::Float:
+                        return renderer::DataType::DataType_Float;
+
+                    case spirv_cross::SPIRType::Double:
+                        return renderer::DataType::DataType_Double;
+
+                    default:
+                        break;
+                    }
+
+                    ASSERT(false, "not support");
+                    return  renderer::DataType::DataType_None;
+                }
+                else if (row > 1 && col == 1) //vector
+                {
+                    switch (type.basetype)
+                    {
+                    case spirv_cross::SPIRType::Half:
+                    case spirv_cross::SPIRType::Float:
+                    //case spirv_cross::SPIRType::Double:
+                    {
+                        if (row == 2)
+                        {
+                            return renderer::DataType::DataType_Vector2;
+                        }
+                        else if (row == 3)
+                        {
+                            return renderer::DataType::DataType_Vector3;
+                        }
+                        else if (row == 4)
+                        {
+                            return renderer::DataType::DataType_Vector4;
+                        }
+                    }
+                    
+                    default:
+                        break;
+                    }
+
+                    ASSERT(false, "not support");
+                    return  renderer::DataType::DataType_None;
+                }
+                else if (col > 1 && row > 1) //matrix
+                {
+                    switch (type.basetype)
+                    {
+                    case spirv_cross::SPIRType::Half:
+                    case spirv_cross::SPIRType::Float:
+                    //case spirv_cross::SPIRType::Double:
+                    {
+                        if (col == 3 && row == 3)
+                        {
+                            return renderer::DataType::DataType_Matrix3;
+                        }
+                        else if (col == 4 && row == 4)
+                        {
+                            return renderer::DataType::DataType_Matrix4;
+                        }
+                    }
+
+                    default:
+                        break;
+                    }
+
+                    ASSERT(false, "not support");
+                    return  renderer::DataType::DataType_None;
+                }
+
+                ASSERT(false, "not support");
+                return  renderer::DataType::DataType_None;
+            };
+
             while (true)
             {
                 const std::string& member_name = glsl.get_member_name(buffer.base_type_id, index);
@@ -340,29 +426,56 @@ bool ShaderSpirVDecoder::parseReflections(const std::vector<u32>& spirv, stream:
                     break;
                 }
                 const spirv_cross::SPIRType& type = glsl.get_type(block_type.member_types[index]);
+                ++index;
                 u32 col = type.columns;
                 u32 row = type.vecsize;
-                ++index;
 
-                //ShaderDataType::EDataType innerType = getInnerDataType(type);
-                //stream->write<s32>(buffID);
-                //stream->write(member_name);
-                //stream->write<ShaderDataType::DataType>(innerType);
-                //stream->write<u32>(col);
-                //stream->write<u32>(row);
+                Shader::UniformBuffer::Uniform uniform;
+                uniform._bufferId = buffID;
+                uniform._array = type.array.empty() ? 1 : type.array[0];
+                uniform._type = convertSPRIVTypeToDataType(type);
+                uniform._name = member_name;
+
+                membersSize += type.width * col * row * uniform._array;
+
+                block._uniforms.push_back(uniform);
             }
+
+            block._size = membersSize;
+            block >> stream;
 
             u32 posCurr = stream->tell();
             countMembers = index;
-            //stream->seekBeg(posMembers);
-            //stream->write<u32>(countMembers);
-            //stream->seekBeg(posCurr);
 
             ++buffID;
         }
 
+        auto convertSPRIVTypeToTextureData = [](const spirv_cross::SPIRType& type) -> renderer::TextureTarget
+        {
+            switch (type.image.dim)
+            {
+            case spv::Dim::Dim1D:
+                return renderer::TextureTarget::Texture1D;
+
+            case spv::Dim::Dim2D:
+                return renderer::TextureTarget::Texture2D;
+
+            case spv::Dim::Dim3D:
+                return renderer::TextureTarget::Texture3D;
+
+            case spv::Dim::DimCube:
+                return renderer::TextureTarget::TextureCubeMap;
+
+            default:
+                break;
+            }
+
+            ASSERT(false, "not support");
+            return  renderer::TextureTarget::Texture2D;
+        };
+
         u32 samplersCount = static_cast<u32>(resources.sampled_images.size());
-        //stream->write<u32>(samplersCount);
+        stream->write<u32>(samplersCount);
         for (auto& image : resources.sampled_images)
         {
             const std::string& name = glsl.get_name(image.id);
@@ -374,19 +487,22 @@ bool ShaderSpirVDecoder::parseReflections(const std::vector<u32>& spirv, stream:
             const spirv_cross::SPIRType& type = glsl.get_type(image.type_id);
             bool depth = type.image.depth;
 
-            //TextureTarget innerType = getInnerTextureTarget(type);
-            //stream->write(name);
-            //stream->write<u32>(set);
-            //stream->write<u32>(binding);
-            //stream->write<TextureTarget>(innerType);
-            //stream->write<bool>(depth);
+            Shader::SampledImage image;
+            image._set = set;
+            image._binding = binding;
+            image._target = convertSPRIVTypeToTextureData(type);
+            image._ms = type.image.ms;
+            image._depth = depth;
+            image._name = name;
+
+            image >> stream;
         }
 
         return true;
-
     }
     else
     {
+        ASSERT(false, "not implemented");
         return false;
     }
 }

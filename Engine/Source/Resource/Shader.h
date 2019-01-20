@@ -2,6 +2,8 @@
 
 #include "Resource.h"
 #include "Renderer/Formats.h"
+#include "Renderer/TextureProperties.h"
+#include "Renderer/ShaderProperties.h"
 
 namespace v3d
 {
@@ -69,11 +71,55 @@ namespace resource
         {
             Attribute();
 
-            u32                 _location;
-            //u32                 _binding;
-            //u32                 _offset;
-            renderer::Format    _format;
-            std::string         _name;
+            u32              _location;
+            //u32            _binding;
+            //u32            _offset;
+            renderer::Format _format;
+            std::string      _name;
+
+            void operator >> (stream::Stream * stream);
+            void operator << (const stream::Stream * stream);
+        };
+
+        struct UniformBuffer
+        {
+            struct Uniform
+            {
+                Uniform();
+
+                u32                _bufferId;
+                u32                _array;
+                renderer::DataType _type;
+
+                std::string        _name;
+
+                void operator >> (stream::Stream * stream);
+                void operator << (const stream::Stream * stream);
+            };
+
+            UniformBuffer();
+
+            u32                  _id;
+            u32                  _set;
+            u32                  _binding;
+            u32                  _size;
+            std::string          _name;
+            std::vector<Uniform> _uniforms;
+
+            void operator >> (stream::Stream * stream);
+            void operator << (const stream::Stream * stream);
+        };
+
+        struct SampledImage
+        {
+            SampledImage();
+
+            u32                     _set;
+            u32                     _binding;
+            renderer::TextureTarget _target;
+            bool                    _depth;
+            bool                    _ms;
+            std::string             _name;
 
             void operator >> (stream::Stream * stream);
             void operator << (const stream::Stream * stream);
@@ -89,8 +135,10 @@ namespace resource
         struct ReflectionInfo
         {
             //std::vector<InputBinding>   _inputBinding;
-            std::vector<Attribute> _inputAttribute;
-            std::vector<Attribute> _outputAttribute;
+            std::vector<Attribute>      _inputAttribute;
+            std::vector<Attribute>      _outputAttribute;
+            std::vector<UniformBuffer>  _uniformBuffers;
+            std::vector<SampledImage>  _sampledImages;
         };
 
         explicit Shader(const ShaderHeader* header) noexcept;
