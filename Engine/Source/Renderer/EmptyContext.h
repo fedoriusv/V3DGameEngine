@@ -25,7 +25,8 @@ namespace renderer
 
         virtual void clearBackbuffer(const core::Vector4D & color) override;
 
-        void setViewport(const core::Rect32& viewport) override;
+        void setViewport(const core::Rect32& viewport, const core::Vector2D& depth = { 0.0f, 1.0f }) override;
+        void setScissor(const core::Rect32& scissor) override;
 
         Image* createImage(TextureTarget target, renderer::Format format, const core::Dimension3D& dimension, u32 mipmapLevel, s16 filter, TextureAnisotropic anisotropicLevel, TextureWrap wrap) const override;
         Image* createAttachmentImage(renderer::Format format, const core::Dimension3D& dimension, TextureSamples samples, s16 filter, TextureAnisotropic anisotropicLevel, TextureWrap wrap) const override;

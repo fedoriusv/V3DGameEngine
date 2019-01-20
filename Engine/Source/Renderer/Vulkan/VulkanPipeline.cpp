@@ -1,6 +1,8 @@
 #include "VulkanRenderpass.h"
 #include "VulkanImage.h"
 #include "VulkanDebug.h"
+#include "VulkanDeviceCaps.h"
+#include "VulkanGraphicContext.h"
 
 #include "Utils/Logger.h"
 #include "VulkanPipeline.h"
@@ -138,6 +140,198 @@ VkShaderStageFlagBits VulkanGraphicPipeline::convertShaderTypeToVkStage(resource
     return VK_SHADER_STAGE_VERTEX_BIT;
 }
 
+VkBlendFactor VulkanGraphicPipeline::convertBlendFactorToVk(BlendFactor factor)
+{
+    switch (factor)
+    {
+    case BlendFactor::BlendFactor_Zero:
+        return VK_BLEND_FACTOR_ZERO;
+
+    case BlendFactor::BlendFactor_One:
+        return VK_BLEND_FACTOR_ONE;
+
+    case BlendFactor::BlendFactor_SrcColor:
+        return VK_BLEND_FACTOR_SRC_COLOR;
+
+    case BlendFactor::BlendFactor_OneMinusSrcColor:
+        return VK_BLEND_FACTOR_ONE_MINUS_SRC_COLOR;
+
+    case BlendFactor::BlendFactor_DstColor:
+        return VK_BLEND_FACTOR_DST_COLOR;
+
+    case BlendFactor::BlendFactor_OneMinusDstColor:
+        return VK_BLEND_FACTOR_ONE_MINUS_DST_COLOR;
+
+    case BlendFactor::BlendFactor_SrcAlpha:
+        return VK_BLEND_FACTOR_SRC_ALPHA;
+
+    case BlendFactor::BlendFactor_OneMinusSrcAlpha:
+        return VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+
+    case BlendFactor::BlendFactor_DstAlpha:
+        return VK_BLEND_FACTOR_DST_ALPHA;
+
+    case BlendFactor::BlendFactor_OneMinusDstAlpha:
+        return VK_BLEND_FACTOR_ONE_MINUS_DST_ALPHA;
+
+    case BlendFactor::BlendFactor_ConstantColor:
+        return VK_BLEND_FACTOR_CONSTANT_COLOR;
+
+    case BlendFactor::BlendFactor_OneMinusConstantColor:
+        return VK_BLEND_FACTOR_ONE_MINUS_CONSTANT_COLOR;
+
+    case BlendFactor::BlendFactor_ConstantAlpha:
+        return VK_BLEND_FACTOR_CONSTANT_ALPHA;
+
+    case BlendFactor::BlendFactor_OneMinusConstantAlpha:
+        return VK_BLEND_FACTOR_ONE_MINUS_CONSTANT_ALPHA;
+
+    case BlendFactor::BlendFactor_SrcAlphaSaturate:
+        return VK_BLEND_FACTOR_SRC_ALPHA_SATURATE;
+
+    case BlendFactor::BlendFactor_Src1Color:
+        return VK_BLEND_FACTOR_SRC1_COLOR;
+
+    case BlendFactor::BlendFactor_OneMinusSrc1Color:
+        return VK_BLEND_FACTOR_ONE_MINUS_SRC1_COLOR;
+
+    case BlendFactor::BlendFactor_Src1Alpha:
+        return VK_BLEND_FACTOR_SRC1_ALPHA;
+
+    case BlendFactor::BlendFactor_OneMinusSrc1Alpha:
+        return VK_BLEND_FACTOR_ONE_MINUS_SRC1_ALPHA;
+
+    default:
+        break;
+    }
+
+    ASSERT(false, "blend facor not found");
+    return VK_BLEND_FACTOR_ZERO;
+}
+
+VkBlendOp VulkanGraphicPipeline::convertBlendOperationToVk(BlendOperation blendOp)
+{
+    switch (blendOp)
+    {
+    case BlendOperation::BlendOp_Add:
+        return VK_BLEND_OP_ADD;
+
+    case BlendOperation::BlendOp_Subtract:
+        return VK_BLEND_OP_SUBTRACT;
+
+    case BlendOperation::BlendOp_ReverseSubtract:
+        return VK_BLEND_OP_REVERSE_SUBTRACT;
+
+    case BlendOperation::BlendOp_Min:
+        return VK_BLEND_OP_MIN;
+
+    case BlendOperation::BlendOp_Max:
+        return VK_BLEND_OP_MAX;
+
+    default:
+        break;
+    }
+
+    ASSERT(false, "blend op not found");
+    return VK_BLEND_OP_ADD;
+}
+
+VkLogicOp VulkanGraphicPipeline::covertLogicOperationToVk(LogicalOperation logicalOp)
+{
+    switch (logicalOp)
+    {
+    case LogicalOperation::LogicalOp_Clear:
+        return VK_LOGIC_OP_CLEAR;
+
+    case LogicalOperation::LogicalOp_And:
+        return VK_LOGIC_OP_AND;
+
+    case LogicalOperation::LogicalOp_AndReverse:
+        return VK_LOGIC_OP_AND_REVERSE;
+
+    case LogicalOperation::LogicalOp_Copy:
+        return VK_LOGIC_OP_COPY;
+
+    case LogicalOperation::LogicalOp_AndInverted:
+        return VK_LOGIC_OP_AND_INVERTED;
+
+    case LogicalOperation::LogicalOp_NoOp:
+        return VK_LOGIC_OP_NO_OP;
+
+    case LogicalOperation::LogicalOp_Xor:
+        return VK_LOGIC_OP_XOR;
+
+    case LogicalOperation::LogicalOp_Or:
+        return VK_LOGIC_OP_OR;
+
+    case LogicalOperation::LogicalOp_Nor:
+        return VK_LOGIC_OP_NOR;
+
+    case LogicalOperation::LogicalOp_Equivalent:
+        return VK_LOGIC_OP_EQUIVALENT;
+
+    case LogicalOperation::LogicalOp_Invert:
+        return VK_LOGIC_OP_INVERT;
+
+    case LogicalOperation::LogicalOp_OrReverse:
+        return VK_LOGIC_OP_OR_REVERSE;
+
+    case LogicalOperation::LogicalOp_CopyInverted:
+        return VK_LOGIC_OP_COPY_INVERTED;
+
+    case LogicalOperation::LogicalOp_OrInverted:
+        return VK_LOGIC_OP_OR_INVERTED;
+
+    case LogicalOperation::LogicalOp_Nand:
+        return VK_LOGIC_OP_NAND;
+
+    case LogicalOperation::LogicalOp_Set:
+        return VK_LOGIC_OP_SET;
+
+    default:
+        break;
+    }
+
+    ASSERT(false, "logical Op not found");
+    return VK_LOGIC_OP_AND;
+}
+
+VkCompareOp VulkanGraphicPipeline::covertCompareOperationToVk(CompareOperation compareOp)
+{
+    switch (compareOp)
+    {
+    case CompareOperation::CompareOp_Never:
+        return VK_COMPARE_OP_NEVER;
+
+    case CompareOperation::CompareOp_Less:
+        return VK_COMPARE_OP_LESS;
+
+    case CompareOperation::CompareOp_Equal:
+        return VK_COMPARE_OP_EQUAL;
+
+    case CompareOperation::CompareOp_LessOrEqual:
+        return VK_COMPARE_OP_LESS_OR_EQUAL;
+
+    case CompareOperation::CompareOp_Greater:
+        return VK_COMPARE_OP_GREATER;
+
+    case CompareOperation::CompareOp_NotEqual:
+        return VK_COMPARE_OP_NOT_EQUAL;
+
+    case CompareOperation::CompareOp_GreaterOrEqual:
+        return VK_COMPARE_OP_GREATER_OR_EQUAL;
+
+    case CompareOperation::CompareOp_Always:
+        return VK_COMPARE_OP_ALWAYS;
+
+    default:
+        break;
+    }
+
+    ASSERT(false, "compare Op not found");
+    return VK_COMPARE_OP_GREATER;
+}
+
 VulkanGraphicPipeline::VulkanGraphicPipeline(VkDevice device, RenderPassManager* renderpassManager)
     : Pipeline(PipelineType::PipelineType_Graphic)
     , m_device(device)
@@ -214,6 +408,9 @@ bool VulkanGraphicPipeline::create(const PipelineGraphicInfo* pipelineInfo)
     graphicsPipelineCreateInfo.subpass = 0; //TODO
 
     const GraphicsPipelineStateDescription::RasterizationState& rasterizationState = pipelineDesc._rasterizationState;
+
+
+    //VkPipelineRasterizationStateCreateInfo
     VkPipelineRasterizationStateCreateInfo rasterizationStateCreateInfo = {};
     rasterizationStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
     rasterizationStateCreateInfo.pNext = nullptr; //VkPipelineRasterizationStateStreamCreateInfoEXT, VkPipelineRasterizationConservativeStateCreateInfoEXT
@@ -224,13 +421,21 @@ bool VulkanGraphicPipeline::create(const PipelineGraphicInfo* pipelineInfo)
     rasterizationStateCreateInfo.cullMode = VulkanGraphicPipeline::convertCullModeToVk(rasterizationState._cullMode);
     rasterizationStateCreateInfo.frontFace = VulkanGraphicPipeline::convertFrontFaceToVk(rasterizationState._frontFace);
     rasterizationStateCreateInfo.depthBiasEnable = VK_FALSE;
-    rasterizationStateCreateInfo.depthBiasConstantFactor = 0.0f;
-    rasterizationStateCreateInfo.depthBiasClamp = 0.0f;
-    rasterizationStateCreateInfo.depthBiasSlopeFactor = 0.0f;
-    rasterizationStateCreateInfo.lineWidth = 1.0f;
+    if (!VulkanGraphicContext::isDynamicState(VK_DYNAMIC_STATE_DEPTH_BIAS))
+    {
+        rasterizationStateCreateInfo.depthBiasConstantFactor = 0.0f;
+        rasterizationStateCreateInfo.depthBiasClamp = 0.0f;
+        rasterizationStateCreateInfo.depthBiasSlopeFactor = 0.0f;
+    }
+
+    if (!VulkanGraphicContext::isDynamicState(VK_DYNAMIC_STATE_LINE_WIDTH))
+    {
+        rasterizationStateCreateInfo.lineWidth = 1.0f; //wideLines
+    }
     graphicsPipelineCreateInfo.pRasterizationState = &rasterizationStateCreateInfo;
 
 
+    //VkPipelineInputAssemblyStateCreateInfo
     VkPipelineInputAssemblyStateCreateInfo inputAssemblyStateCreateInfo = {};
     inputAssemblyStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
     inputAssemblyStateCreateInfo.pNext = nullptr;
@@ -240,6 +445,7 @@ bool VulkanGraphicPipeline::create(const PipelineGraphicInfo* pipelineInfo)
     graphicsPipelineCreateInfo.pInputAssemblyState = &inputAssemblyStateCreateInfo;
 
 
+    //VkPipelineVertexInputStateCreateInfo
     VkPipelineVertexInputStateCreateInfo vertexInputStateCreateInfo = {};
     vertexInputStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
     vertexInputStateCreateInfo.pNext = nullptr; //VkPipelineVertexInputDivisorStateCreateInfoEXT
@@ -249,7 +455,6 @@ bool VulkanGraphicPipeline::create(const PipelineGraphicInfo* pipelineInfo)
     vertexInputBindingDescription.binding = 0;
     vertexInputBindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
     vertexInputBindingDescription.stride = 0;
-
     vertexInputStateCreateInfo.vertexBindingDescriptionCount = 1;
     vertexInputStateCreateInfo.pVertexBindingDescriptions = &vertexInputBindingDescription;
 
@@ -266,45 +471,144 @@ bool VulkanGraphicPipeline::create(const PipelineGraphicInfo* pipelineInfo)
     }
     vertexInputStateCreateInfo.vertexAttributeDescriptionCount = static_cast<u32>(vertexInputAttributeDescriptions.size());
     vertexInputStateCreateInfo.pVertexAttributeDescriptions = vertexInputAttributeDescriptions.data();
-
     graphicsPipelineCreateInfo.pVertexInputState = &vertexInputStateCreateInfo;
 
+    const GraphicsPipelineStateDescription::BlendState& blendState = pipelineDesc._blendState;
 
+    //VkPipelineColorBlendStateCreateInfo
     VkPipelineColorBlendStateCreateInfo pipelineColorBlendStateCreateInfo = {};
-    pipelineColorBlendStateCreateInfo.sType;
-    pipelineColorBlendStateCreateInfo.pNext;
-    pipelineColorBlendStateCreateInfo.flags;
-    pipelineColorBlendStateCreateInfo.logicOpEnable;
-    pipelineColorBlendStateCreateInfo.logicOp;
-    pipelineColorBlendStateCreateInfo.blendConstants;
+    pipelineColorBlendStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
+    pipelineColorBlendStateCreateInfo.pNext = nullptr; //VkPipelineColorBlendAdvancedStateCreateInfoEXT
+    pipelineColorBlendStateCreateInfo.flags = 0;
+    if (VulkanDeviceCaps::getInstance()->getPhysicalDeviceFeatures().logicOp)
+    {
+        pipelineColorBlendStateCreateInfo.logicOpEnable = blendState._logicalOpEnable;
+        pipelineColorBlendStateCreateInfo.logicOp = VulkanGraphicPipeline::covertLogicOperationToVk(blendState._logicalOp);
+    }
+    else
+    {
+        pipelineColorBlendStateCreateInfo.logicOpEnable = VK_FALSE;
+        ASSERT(blendState._logicalOpEnable == VK_FALSE, "feature logicOp not supported");
+    }
 
+    if (!VulkanGraphicContext::isDynamicState(VK_DYNAMIC_STATE_BLEND_CONSTANTS))
+    {
+        pipelineColorBlendStateCreateInfo.blendConstants[0] = blendState._constant.x;
+        pipelineColorBlendStateCreateInfo.blendConstants[1] = blendState._constant.y;
+        pipelineColorBlendStateCreateInfo.blendConstants[2] = blendState._constant.z;
+        pipelineColorBlendStateCreateInfo.blendConstants[3] = blendState._constant.w;
+    }
+
+    //bool independentBlend = VulkanDeviceCaps::getInstance()->getPhysicalDeviceFeatures().independentBlend;
     std::vector<VkPipelineColorBlendAttachmentState> pipelineColorBlendAttachmentStates;
-    //for
-    VkPipelineColorBlendAttachmentState pipelineColorBlendAttachmentState = {};
-    pipelineColorBlendAttachmentState.blendEnable;
-    pipelineColorBlendAttachmentState.srcColorBlendFactor;
-    pipelineColorBlendAttachmentState.dstColorBlendFactor;
-    pipelineColorBlendAttachmentState.colorBlendOp;
-    pipelineColorBlendAttachmentState.srcAlphaBlendFactor;
-    pipelineColorBlendAttachmentState.dstAlphaBlendFactor;
-    pipelineColorBlendAttachmentState.alphaBlendOp;
-    pipelineColorBlendAttachmentState.colorWriteMask;
+    for (u32 index = 0; index < pipelineInfo->_renderpassDesc._countColorAttachments; ++index)
+    {
+        const GraphicsPipelineStateDescription::ColorBlendAttachmentState& colorBlendState = blendState._colorBlendAttachments;
+        VkPipelineColorBlendAttachmentState pipelineColorBlendAttachmentState = {};
+        pipelineColorBlendAttachmentState.blendEnable = colorBlendState._colorBlendEnable;
+        pipelineColorBlendAttachmentState.srcColorBlendFactor = VulkanGraphicPipeline::convertBlendFactorToVk(colorBlendState._srcBlendFacor);
+        pipelineColorBlendAttachmentState.dstColorBlendFactor = VulkanGraphicPipeline::convertBlendFactorToVk(colorBlendState._dscBlendFacor);
+        pipelineColorBlendAttachmentState.colorBlendOp = VulkanGraphicPipeline::convertBlendOperationToVk(colorBlendState._blendOp);
+        pipelineColorBlendAttachmentState.srcAlphaBlendFactor = VulkanGraphicPipeline::convertBlendFactorToVk(colorBlendState._srcAlphaBlendFacor);
+        pipelineColorBlendAttachmentState.dstAlphaBlendFactor = VulkanGraphicPipeline::convertBlendFactorToVk(colorBlendState._dscAlphaBlendFacor);
+        pipelineColorBlendAttachmentState.alphaBlendOp = VulkanGraphicPipeline::convertBlendOperationToVk(colorBlendState._alphaBlendOp);
+        pipelineColorBlendAttachmentState.colorWriteMask = colorBlendState._colorWriteMask;
 
-    pipelineColorBlendAttachmentStates.push_back(pipelineColorBlendAttachmentState);
-    //
+        pipelineColorBlendAttachmentStates.push_back(pipelineColorBlendAttachmentState);
+    }
 
     pipelineColorBlendStateCreateInfo.attachmentCount = static_cast<u32>(pipelineColorBlendAttachmentStates.size());
     pipelineColorBlendStateCreateInfo.pAttachments = pipelineColorBlendAttachmentStates.data();
 
     graphicsPipelineCreateInfo.pColorBlendState = &pipelineColorBlendStateCreateInfo;
 
-    VkPipelineDepthStencilStateCreateInfo pipelineDepthStencilStateCreateInfo = {};
-    pipelineDepthStencilStateCreateInfo.sType;
-    pipelineDepthStencilStateCreateInfo.pNext;
-    pipelineDepthStencilStateCreateInfo.flags;
-    //TODO:
+    const GraphicsPipelineStateDescription::DepthStencilState& depthBlendState = pipelineInfo->_pipelineDesc._depthStencilState;
 
+    //VkPipelineDepthStencilStateCreateInfo
+    VkPipelineDepthStencilStateCreateInfo pipelineDepthStencilStateCreateInfo = {};
+    pipelineDepthStencilStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
+    pipelineDepthStencilStateCreateInfo.pNext = nullptr;
+    pipelineDepthStencilStateCreateInfo.flags = 0;
+    pipelineDepthStencilStateCreateInfo.depthTestEnable = depthBlendState._depthTestEnable;
+    pipelineDepthStencilStateCreateInfo.depthWriteEnable = depthBlendState._depthWriteEnable;
+    pipelineDepthStencilStateCreateInfo.depthCompareOp = VulkanGraphicPipeline::covertCompareOperationToVk(depthBlendState._compareOp);
+    if (VulkanDeviceCaps::getInstance()->getPhysicalDeviceFeatures().depthBounds)
+    {
+        pipelineDepthStencilStateCreateInfo.depthBoundsTestEnable = depthBlendState._depthBoundsTestEnable;
+        if (!VulkanGraphicContext::isDynamicState(VK_DYNAMIC_STATE_DEPTH_BOUNDS))
+        {
+            pipelineDepthStencilStateCreateInfo.minDepthBounds = depthBlendState._depthBounds.x;
+            pipelineDepthStencilStateCreateInfo.maxDepthBounds = depthBlendState._depthBounds.y;
+        }
+    }
+    else
+    {
+        pipelineDepthStencilStateCreateInfo.depthBoundsTestEnable = VK_FALSE;
+        ASSERT(depthBlendState._depthBoundsTestEnable == VK_FALSE, "feature depthBounds not supported");
+    }
+
+    VkStencilOpState stencilOpState = {}; //TODO
+    pipelineDepthStencilStateCreateInfo.stencilTestEnable = depthBlendState._stencilTestEnable;
+    pipelineDepthStencilStateCreateInfo.front = stencilOpState;
+    pipelineDepthStencilStateCreateInfo.back = stencilOpState;
     graphicsPipelineCreateInfo.pDepthStencilState = &pipelineDepthStencilStateCreateInfo;
+
+
+    //VkPipelineDynamicStateCreateInfo
+    VkPipelineDynamicStateCreateInfo pipelineDynamicStateCreateInfo = {};
+    pipelineDynamicStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
+    pipelineDynamicStateCreateInfo.pNext = nullptr;
+    pipelineDynamicStateCreateInfo.flags = 0;
+    pipelineDynamicStateCreateInfo.dynamicStateCount = static_cast<u32>(VulkanGraphicContext::getDynamicStates().size());
+    pipelineDynamicStateCreateInfo.pDynamicStates = VulkanGraphicContext::getDynamicStates().data();
+    graphicsPipelineCreateInfo.pDynamicState = &pipelineDynamicStateCreateInfo;
+
+    //VkPipelineViewportStateCreateInfo
+    VkPipelineViewportStateCreateInfo pipelineViewportStateCreateInfo = {};
+    pipelineViewportStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
+    pipelineViewportStateCreateInfo.pNext = nullptr;
+    pipelineViewportStateCreateInfo.flags = 0;
+
+    if (!VulkanGraphicContext::isDynamicState(VK_DYNAMIC_STATE_VIEWPORT))
+    {
+        VkViewport viewport = {};
+        pipelineViewportStateCreateInfo.viewportCount = 1;
+        pipelineViewportStateCreateInfo.pViewports = &viewport;
+
+        ASSERT(false, "not implemented");
+    }
+
+    if (!VulkanGraphicContext::isDynamicState(VK_DYNAMIC_STATE_SCISSOR))
+    {
+        VkRect2D scissor = {};
+        pipelineViewportStateCreateInfo.scissorCount = 1;
+        pipelineViewportStateCreateInfo.pScissors = &scissor;
+
+        ASSERT(false, "not implemented");
+    }
+    graphicsPipelineCreateInfo.pViewportState = &pipelineViewportStateCreateInfo;
+
+    //VkPipelineMultisampleStateCreateInfo
+    VkPipelineMultisampleStateCreateInfo pipelineMultisampleStateCreateInfo = {};
+    pipelineMultisampleStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
+    pipelineMultisampleStateCreateInfo.pNext = nullptr; //VkPipelineSampleLocationsStateCreateInfoEXT
+    pipelineMultisampleStateCreateInfo.flags = 0;
+    if (pipelineInfo->_renderpassDesc._attachments[0]._samples > TextureSamples::TextureSamples_x1)
+    {
+        pipelineMultisampleStateCreateInfo.rasterizationSamples = VulkanImage::convertRenderTargetSamplesToVkSampleCount(pipelineInfo->_renderpassDesc._attachments[0]._samples);
+        pipelineMultisampleStateCreateInfo.sampleShadingEnable = VK_FALSE;
+        pipelineMultisampleStateCreateInfo.minSampleShading = 0.0f;
+        pipelineMultisampleStateCreateInfo.pSampleMask = nullptr;
+        pipelineMultisampleStateCreateInfo.alphaToOneEnable = VK_FALSE;
+        pipelineMultisampleStateCreateInfo.alphaToCoverageEnable = VK_FALSE;
+    }
+
+    graphicsPipelineCreateInfo.pMultisampleState = &pipelineMultisampleStateCreateInfo;
+
+
+    //VkPipelineTessellationStateCreateInfo
+    graphicsPipelineCreateInfo.pTessellationState = nullptr; //TODO
+
 
     VkResult result = VulkanWrapper::CreateGraphicsPipelines(m_device, pipelineCache, 1, &graphicsPipelineCreateInfo, VULKAN_ALLOCATOR, &m_pipeline);
     if (result != VK_SUCCESS)

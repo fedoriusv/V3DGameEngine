@@ -37,9 +37,14 @@ void EmptyContext::clearBackbuffer(const core::Vector4D & color)
     LOG_DEBUG("EmptyContext::clearBackbuffer");
 }
 
-void EmptyContext::setViewport(const core::Rect32 & viewport)
+void EmptyContext::setViewport(const core::Rect32 & viewport, const core::Vector2D& depth)
 {
     LOG_DEBUG("EmptyContext::setViewport");
+}
+
+void EmptyContext::setScissor(const core::Rect32 & scissor)
+{
+    LOG_DEBUG("EmptyContext::setScissor");
 }
 
 Image * EmptyContext::createImage(TextureTarget target, renderer::Format format, const core::Dimension3D& dimension, u32 mipmapLevel,

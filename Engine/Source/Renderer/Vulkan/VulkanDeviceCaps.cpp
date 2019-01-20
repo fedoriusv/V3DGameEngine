@@ -132,6 +132,11 @@ const VkPhysicalDeviceMemoryProperties & VulkanDeviceCaps::getDeviceMemoryProper
     return m_deviceMemoryProps;
 }
 
+const VkPhysicalDeviceFeatures & VulkanDeviceCaps::getPhysicalDeviceFeatures() const
+{
+    return m_deviceFeatures;
+}
+
 void VulkanDeviceCaps::fillCapabilitiesList(const DeviceInfo* info)
 {
     ASSERT(info->_physicalDevice != VK_NULL_HANDLE, "PhysicalDevice is nullptr");

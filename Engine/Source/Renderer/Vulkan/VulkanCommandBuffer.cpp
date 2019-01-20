@@ -189,6 +189,30 @@ bool VulkanCommandBuffer::isInsideRenderPass()
     return m_isInsideRenderPass;
 }
 
+void VulkanCommandBuffer::cmdSetViewport(const std::vector<VkViewport>& viewports)
+{
+    if (m_level == CommandBufferLevel::PrimaryBuffer)
+    {
+        VulkanWrapper::CmdSetViewport(m_command, 0, viewports.size(), viewports.data());
+    }
+    else
+    {
+        ASSERT(false, "not implemented");
+    }
+}
+
+void VulkanCommandBuffer::cmdSetScissor(const std::vector<VkRect2D>& scissors)
+{
+    if (m_level == CommandBufferLevel::PrimaryBuffer)
+    {
+        VulkanWrapper::CmdSetScissor(m_command, 0, scissors.size(), scissors.data());
+    }
+    else
+    {
+        ASSERT(false, "not implemented");
+    }
+}
+
 void VulkanCommandBuffer::cmdDraw()
 {
     //if (m_type == CommandBufferType::PrimaryBuffer)

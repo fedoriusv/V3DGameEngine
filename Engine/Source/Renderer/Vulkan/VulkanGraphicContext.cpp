@@ -45,6 +45,15 @@ const std::vector<const c8*> k_deviceExtensionsList =
     VK_KHR_SAMPLER_MIRROR_CLAMP_TO_EDGE_EXTENSION_NAME,
 };
 
+
+std::vector<VkDynamicState> VulkanGraphicContext::s_dynamicStates =
+{
+    VK_DYNAMIC_STATE_VIEWPORT,
+    VK_DYNAMIC_STATE_SCISSOR,
+    //VK_DYNAMIC_STATE_BLEND_CONSTANTS,
+    VK_DYNAMIC_STATE_STENCIL_REFERENCE
+};
+
 VulkanGraphicContext::VulkanGraphicContext(const platform::Window * window) noexcept
     : m_deviceCaps(*VulkanDeviceCaps::getInstance())
     , m_swapchain(nullptr)
@@ -96,7 +105,6 @@ void VulkanGraphicContext::beginFrame()
     m_currentContextState._currentDrawBuffer->beginCommandBuffer();
 
     transferImageLayout(m_swapchain->getBackbuffer(), VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-
 }
 
 void VulkanGraphicContext::endFrame()
@@ -108,7 +116,7 @@ void VulkanGraphicContext::endFrame()
     m_currentContextState._currentDrawBuffer->endCommandBuffer();
 
     m_drawCmdBufferManager->submit(m_currentContextState._currentDrawBuffer, VK_NULL_HANDLE);
-    m_currentContextState._currentDrawBuffer = nullptr;
+    m_currentContextState.invalidateState();
 }
 
 void VulkanGraphicContext::presentFrame()
@@ -129,10 +137,45 @@ void VulkanGraphicContext::clearBackbuffer(const core::Vector4D & color)
     m_swapchain->getBackbuffer()->clear(this, color);
 }
 
-void VulkanGraphicContext::setViewport(const core::Rect32& viewport)
+void VulkanGraphicContext::setViewport(const core::Rect32& viewport, const core::Vector2D& depth)
 {
     LOG_DEBUG("VulkanGraphicContext::setViewport [%u, %u; %u, %u]", viewport.getLeftX(), viewport.getTopY(), viewport.getWidth(), viewport.getHeight());
-    //TODO:
+    if (VulkanGraphicContext::isDynamicState(VK_DYNAMIC_STATE_VIEWPORT))
+    {
+        VkViewport vkViewport = {};
+        vkViewport.x = viewport.getLeftX();
+        vkViewport.y = viewport.getTopY();
+        vkViewport.width = viewport.getWidth();
+        vkViewport.height = viewport.getHeight();
+        vkViewport.minDepth = depth.x;
+        vkViewport.maxDepth = depth.y;
+        std::vector<VkViewport> viewports = { vkViewport };
+ 
+        m_currentContextState._stateCallbacks[VK_DYNAMIC_STATE_VIEWPORT] = std::bind(&VulkanCommandBuffer::cmdSetViewport, m_currentContextState._currentDrawBuffer, viewports);
+    }
+    else
+    {
+        ASSERT(false, "static state");
+    }
+}
+
+void VulkanGraphicContext::setScissor(const core::Rect32 & scissor)
+{
+    LOG_DEBUG("VulkanGraphicContext::setScissor [%u, %u; %u, %u]", scissor.getLeftX(), scissor.getTopY(), scissor.getWidth(), scissor.getHeight());
+    if (VulkanGraphicContext::isDynamicState(VK_DYNAMIC_STATE_SCISSOR))
+    {
+        VkRect2D vkScissor = {};
+        vkScissor.offset = { scissor.getLeftX(), scissor.getTopY() };
+        vkScissor.offset = { scissor.getWidth(), scissor.getHeight() };
+
+        std::vector<VkRect2D> scissors = { vkScissor };
+
+        m_currentContextState._stateCallbacks[VK_DYNAMIC_STATE_SCISSOR] = std::bind(&VulkanCommandBuffer::cmdSetScissor, m_currentContextState._currentDrawBuffer, scissors);
+    }
+    else
+    {
+        ASSERT(false, "static state");
+    }
 }
 
 void VulkanGraphicContext::setRenderTarget(const RenderPass::RenderPassInfo * renderpassInfo, const std::vector<Image*>& attachments, const RenderPass::ClearValueInfo * clearInfo, 
@@ -286,6 +329,22 @@ void VulkanGraphicContext::transferImageLayout(VulkanImage * image, VkPipelineSt
 const DeviceCaps* VulkanGraphicContext::getDeviceCaps() const
 {
     return &m_deviceCaps;
+}
+
+const std::vector<VkDynamicState>& VulkanGraphicContext::getDynamicStates()
+{
+    return s_dynamicStates;
+}
+
+bool VulkanGraphicContext::isDynamicState(VkDynamicState state)
+{
+    auto iter = std::find(s_dynamicStates.cbegin(), s_dynamicStates.cend(), state);
+    if (iter != s_dynamicStates.cend())
+    {
+        return true;
+    }
+
+    return false;
 }
 
 bool VulkanGraphicContext::initialize()
@@ -684,6 +743,12 @@ bool VulkanGraphicContext::createDevice()
     }
 
     return true;
+}
+
+void VulkanGraphicContext::CurrentContextState::invalidateState()
+{
+    _currentDrawBuffer = nullptr;
+    _stateCallbacks.clear();
 }
 
 } //namespace vk

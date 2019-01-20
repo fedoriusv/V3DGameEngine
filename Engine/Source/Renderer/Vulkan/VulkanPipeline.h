@@ -34,6 +34,11 @@ namespace vk
         static VkPrimitiveTopology convertPrimitiveTopologyToVk(PrimitiveTopology primitiveTopology);
         static VkShaderStageFlagBits convertShaderTypeToVkStage(resource::ShaderType type);
 
+        static VkBlendFactor convertBlendFactorToVk(BlendFactor factor);
+        static VkBlendOp convertBlendOperationToVk(BlendOperation blendOp);
+        static VkLogicOp covertLogicOperationToVk(LogicalOperation logicalOp);
+        static VkCompareOp covertCompareOperationToVk(CompareOperation compareOp);
+
     private:
 
         bool compileShader(const resource::ShaderHeader* header, const void* source, u32 size) override;

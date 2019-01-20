@@ -101,7 +101,8 @@ public:
 
     void execute(const CommandList& cmdList)
     {
-        cmdList.getContext()->setViewport(m_pendingStates._viewport);
+        cmdList.getContext()->setViewport(m_pendingStates._viewportColor, m_pendingStates._viewportDepth);
+        cmdList.getContext()->setScissor(m_pendingStates._scissor);
     }
 
 private:
@@ -328,7 +329,7 @@ void CommandList::setPipelineState(GraphicsPipelineState * pipeline)
     }
 }
 
-void CommandList::setViewport(const core::Rect32& viewport)
+void CommandList::setViewport(const core::Rect32& viewport, const core::Vector2D& depth)
 {
     if (CommandList::isImmediate())
     {
@@ -336,7 +337,21 @@ void CommandList::setViewport(const core::Rect32& viewport)
     }
     else
     {
-        m_pendingStates._viewport = viewport;
+        m_pendingStates._viewportColor = viewport;
+        m_pendingStates._viewportDepth = depth;
+        m_pendingFlushMask |= PendingFlush_UpdateContextState;
+    }
+}
+
+void CommandList::setScissor(const core::Rect32 & scissor)
+{
+    if (CommandList::isImmediate())
+    {
+        m_context->setScissor(scissor);
+    }
+    else
+    {
+        m_pendingStates._scissor = scissor;
         m_pendingFlushMask |= PendingFlush_UpdateContextState;
     }
 }

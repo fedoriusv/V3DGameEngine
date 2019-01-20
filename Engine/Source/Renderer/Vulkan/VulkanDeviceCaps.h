@@ -29,6 +29,7 @@ namespace vk
 
         const VkPhysicalDeviceLimits& getPhysicalDeviceLimits() const;
         const VkPhysicalDeviceMemoryProperties&  getDeviceMemoryProperties() const;
+        const VkPhysicalDeviceFeatures& getPhysicalDeviceFeatures() const;
 
     private:
 

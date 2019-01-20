@@ -58,9 +58,14 @@ namespace vk
         void cmdEndRenderPass();
         bool isInsideRenderPass();
 
+        //dynamic states
+        void cmdSetViewport(const std::vector <VkViewport>& viewports);
+        void cmdSetScissor(const std::vector<VkRect2D>& scissors);
+
         //inside renderpass
         void cmdDraw();
         void cmdDrawIndexed();
+
 
         //outside renderpass
         void cmdClearImage(VulkanImage* image, VkImageLayout imageLayout, const VkClearColorValue* pColor);

@@ -23,7 +23,9 @@ namespace renderer
 
     struct ContextStates
     {
-        core::Rect32 _viewport;
+        core::Rect32    _viewportColor;
+        core::Vector2D  _viewportDepth;
+        core::Rect32    _scissor;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -75,7 +77,8 @@ namespace renderer
 
         void setRenderTarget(RenderTarget* rendertarget);
         void setPipelineState(GraphicsPipelineState* pipeline);
-        void setViewport(const core::Rect32& viewport);
+        void setViewport(const core::Rect32& viewport, const core::Vector2D& depth = {0.0f, 1.0f});
+        void setScissor(const core::Rect32& scissor);
 
         Context* getContext() const;
         bool isThreaded() const;

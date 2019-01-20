@@ -45,7 +45,8 @@ namespace vk
         void clearBackbuffer(const core::Vector4D & color) override;
 
         //states
-        void setViewport(const core::Rect32& viewport) override;
+        void setViewport(const core::Rect32& viewport, const core::Vector2D& depth = { 0.0f, 1.0f }) override;
+        void setScissor(const core::Rect32& scissor) override;
 
         void setRenderTarget(const RenderPass::RenderPassInfo* renderpassInfo, const std::vector<Image*>& attachments, const RenderPass::ClearValueInfo* clearInfo, 
             const std::tuple<ObjectTracker<RenderPass>*, ObjectTracker<Framebuffer>*>& trackers) override;
@@ -64,6 +65,9 @@ namespace vk
         void transferImageLayout(VulkanImage* image, VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask, VkImageLayout layout) const;
 
         const DeviceCaps* getDeviceCaps() const override;
+
+        static const std::vector<VkDynamicState>& getDynamicStates();
+        static bool isDynamicState(VkDynamicState state);
 
     private:
 
@@ -93,12 +97,16 @@ namespace vk
 
         struct CurrentContextState
         {
+            void invalidateState();
+
             VulkanCommandBuffer* _currentDrawBuffer;
 
             VulkanRenderPass*    _currentRenderpass;
             VulkanFramebuffer*   _currentFramebuffer;
 
             VulkanGraphicPipeline* _currentPipeline;
+
+            std::map<VkDynamicState, std::function<void()>>  _stateCallbacks;
         };
 
         CurrentContextState     m_currentContextState;
@@ -106,6 +114,8 @@ namespace vk
         const platform::Window* m_window;
 
         u64 m_frameCounter;
+
+        static std::vector<VkDynamicState>  s_dynamicStates;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

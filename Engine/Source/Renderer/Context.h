@@ -64,7 +64,8 @@ namespace renderer
 
         virtual void clearBackbuffer(const core::Vector4D & color) = 0;
 
-        virtual void setViewport(const core::Rect32& viewport) = 0;
+        virtual void setViewport(const core::Rect32& viewport, const core::Vector2D& depth = { 0.0f, 1.0f }) = 0;
+        virtual void setScissor(const core::Rect32& scissor) = 0;
 
         virtual void setRenderTarget(const RenderPass::RenderPassInfo* renderpassInfo, const std::vector<Image*>& attachments, const RenderPass::ClearValueInfo* clearInfo, 
             const std::tuple<ObjectTracker<RenderPass>*, ObjectTracker<Framebuffer>*>& trackers) = 0;
