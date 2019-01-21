@@ -27,6 +27,11 @@ namespace renderer
 
         virtual ~RenderObject() {}
 
+        bool linked() const
+        {
+            return m_couter > 0;
+        }
+
     private:
         void link()
         {

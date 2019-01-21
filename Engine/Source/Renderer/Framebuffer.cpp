@@ -65,12 +65,18 @@ bool FramebufferManager::removeFramebuffer(const std::vector<Image*>& images)
     auto iter = m_framebuffers.find(hash);
     if (iter == m_framebuffers.cend())
     {
-        LOG_DEBUG("FramebufferManager renderpass not found");
-        ASSERT(false, "renderpass");
+        LOG_DEBUG("FramebufferManager framebuffer not found");
+        ASSERT(false, "framebuffer");
         return false;
     }
 
     Framebuffer* framebuffer = iter->second;
+    if (framebuffer->linked())
+    {
+        LOG_WARNING("FramebufferManager::removeFramebuffer framebufer still linked, but reqested to delete");
+        ASSERT(false, "framebuffer");
+        //return false;
+    }
     framebuffer->notifyObservers();
 
     framebuffer->destroy();
@@ -79,17 +85,26 @@ bool FramebufferManager::removeFramebuffer(const std::vector<Image*>& images)
     return true;
 }
 
-bool FramebufferManager::removeFramebuffer(Framebuffer * framebufer)
+bool FramebufferManager::removeFramebuffer(Framebuffer * frameBuffer)
 {
-    auto iter = m_framebuffers.find(framebufer->m_key);
+
+
+    auto iter = m_framebuffers.find(frameBuffer->m_key);
     if (iter == m_framebuffers.cend())
     {
-        LOG_DEBUG("FramebufferManager renderpass not found");
+        LOG_DEBUG("FramebufferManager framebuffer not found");
         ASSERT(false, "renderpass");
         return false;
     }
 
     Framebuffer* framebuffer = iter->second;
+    ASSERT(framebuffer == frameBuffer, "Different pointers");
+    if (framebuffer->linked())
+    {
+        LOG_WARNING("FramebufferManager::removeFramebuffer framebufer still linked, but reqested to delete");
+        ASSERT(false, "framebuffer");
+        //return false;
+    }
     framebuffer->notifyObservers();
 
     framebuffer->destroy();
@@ -100,7 +115,7 @@ bool FramebufferManager::removeFramebuffer(Framebuffer * framebufer)
 
 void FramebufferManager::handleNotify(utils::Observable * ob)
 {
-    LOG_DEBUG("RenderPassManager renderpass %x has been deleted", ob);
+    LOG_DEBUG("FramebufferManager framebuffer %x has been deleted", ob);
     m_framebuffers.erase(static_cast<Framebuffer*>(ob)->m_key);
 }
 

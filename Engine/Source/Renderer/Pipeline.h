@@ -27,7 +27,7 @@ namespace renderer
     class Pipeline : public RenderObject<Pipeline>, public utils::Observable
     {
     public:
-        enum PipelineType
+        enum class PipelineType : u32
         {
             PipelineType_Graphic,
             PipelineType_Compute

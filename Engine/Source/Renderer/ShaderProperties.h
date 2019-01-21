@@ -51,7 +51,7 @@ namespace renderer
             Format  _format;
         };
 
-
+        u32 _hash;
         std::map<std::string, Attribute> _inputAttachment;
         std::map<std::string, Attribute> _outputAttachment;
         std::map<std::string, Uniform>   _uniforms;

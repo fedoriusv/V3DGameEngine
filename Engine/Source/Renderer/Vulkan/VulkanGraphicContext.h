@@ -67,7 +67,9 @@ namespace vk
 
         void bindTexture(const Image* image, const ShaderProgramDescription::Texture& bind) override;
 
-        void draw() override;
+        void bindVertexBuffer(const Buffer* buffer, u32 offset) override;
+
+        void draw(u32 firstVertex, u32 vertexCount, u32 firstInstance, u32 instanceCount) override;
         void drawIndexed() override;
 
         const DeviceCaps* getDeviceCaps() const override;
@@ -88,6 +90,7 @@ namespace vk
         Framebuffer* createFramebuffer(const std::vector<Image*>& images, const core::Dimension2D& size) override;
         RenderPass* createRenderPass(const RenderPass::RenderPassInfo* renderpassInfo) override;
         Pipeline* createPipeline(Pipeline::PipelineType type) override;
+        Buffer* createBuffer(Buffer::BufferType type, u16 usageFlag) override;
 
         bool createInstance();
         bool createDevice();

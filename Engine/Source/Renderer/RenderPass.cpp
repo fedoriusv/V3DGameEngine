@@ -71,6 +71,13 @@ bool RenderPassManager::removeRenderPass(const RenderPass::RenderPassInfo& desc)
     }
 
     RenderPass* renderpass = iter->second;
+    if (renderpass->linked())
+    {
+        LOG_WARNING("RenderPassManager::removeRenderPass renderPass still linked, but reqested to delete");
+        ASSERT(false, "renderpass");
+        //return false;
+    }
+
     renderpass->notifyObservers();
 
     renderpass->destroy();
@@ -90,6 +97,13 @@ bool RenderPassManager::removeRenderPass(const RenderPass * renderPass)
     }
 
     RenderPass* renderpass = iter->second;
+    ASSERT(renderpass == renderPass, "Different pointers");
+    if (renderPass->linked())
+    {
+        LOG_WARNING("RenderPassManager::removeRenderPass renderPass still linked, but reqested to delete");
+        ASSERT(false, "renderpass");
+        //return false;
+    }
     renderpass->notifyObservers();
 
     renderpass->destroy();

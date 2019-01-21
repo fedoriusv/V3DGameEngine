@@ -7,6 +7,7 @@
 #include "VulkanFramebuffer.h"
 #include "VulkanRenderpass.h"
 #include "VulkanPipeline.h"
+#include "VulkanBuffer.h"
 
 #include "Utils/Logger.h"
 
@@ -335,7 +336,11 @@ void VulkanGraphicContext::bindTexture(const Image * image, const ShaderProgramD
     //TODO:
 }
 
-void VulkanGraphicContext::draw()
+void VulkanGraphicContext::bindVertexBuffer(const Buffer * buffer, u32 offset)
+{
+}
+
+void VulkanGraphicContext::draw(u32 firstVertex, u32 vertexCount, u32 firstInstance, u32 instanceCount)
 {
     ASSERT(m_currentContextState._currentDrawBuffer, "command buffer is empty");
 
@@ -526,6 +531,22 @@ Pipeline* VulkanGraphicContext::createPipeline(Pipeline::PipelineType type)
 
     ASSERT(false, "not supported");
     return nullptr;
+}
+
+Buffer * VulkanGraphicContext::createBuffer(Buffer::BufferType type, u16 usageFlag)
+{
+    /*if (type == Buffer::BufferType::BufferType_VertexBuffer)
+    {
+        return VulkanBuffer(type, usageFlag);
+    }
+    else if (Buffer::BufferType::BufferType_IndexBuffer)
+    {
+        return 
+    }*/
+
+    ASSERT(false, "not supported");
+    return nullptr;
+
 }
 
 bool VulkanGraphicContext::createInstance()

@@ -18,6 +18,12 @@ namespace renderer
     {
     public:
 
+        enum class BufferType : u32
+        {
+            BufferType_VertexBuffer,
+            BufferType_IndexBuffer
+        };
+
         Buffer() {};
         virtual ~Buffer() {};
 

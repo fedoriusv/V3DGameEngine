@@ -97,10 +97,6 @@ void EmptyContext::bindTexture(const Image * image, const ShaderProgramDescripti
     LOG_DEBUG("EmptyContext::bindTexture");
 }
 
-void EmptyContext::draw()
-{
-}
-
 void EmptyContext::drawIndexed()
 {
 }
@@ -125,6 +121,12 @@ RenderPass * EmptyContext::createRenderPass(const RenderPass::RenderPassInfo * r
 Pipeline * EmptyContext::createPipeline(Pipeline::PipelineType type)
 {
     LOG_DEBUG("EmptyContext::createPipeline");
+    return nullptr;
+}
+
+Buffer * EmptyContext::createBuffer(Buffer::BufferType type, u16 usageFlag)
+{
+    LOG_DEBUG("EmptyContext::createBuffer");
     return nullptr;
 }
 

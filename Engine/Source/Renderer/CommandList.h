@@ -2,11 +2,16 @@
 
 #include "Common.h"
 #include "Utils/NonCopyable.h"
+
 #include "Object/Object.h"
+
 #include "RenderPass.h"
 #include "Pipeline.h"
 #include "Image.h"
 #include "Framebuffer.h"
+
+#include "BufferProperties.h"
+
 
 namespace v3d
 {
@@ -14,12 +19,13 @@ namespace renderer
 {
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    class Context;
+    class CommandList;
+
     class SwapchainTexture;
+    class Backbuffer;
     class RenderTarget;
     class GraphicsPipelineState;
-    class Backbuffer;
-    class CommandList;
-    class Context;
 
     struct ContextStates
     {
@@ -70,6 +76,8 @@ namespace renderer
         void beginFrame();
         void endFrame();
         void presentFrame();
+
+        void draw(const StreamBufferDescription& desc, u32 count, u32 offset, u32 instanceCount);
 
         void pushCommand(Command* cmd);
 

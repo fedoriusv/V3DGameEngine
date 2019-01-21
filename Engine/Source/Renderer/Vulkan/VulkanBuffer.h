@@ -22,13 +22,18 @@ namespace vk
     {
     public:
 
-        VulkanBuffer();
+        VulkanBuffer(VulkanMemory* memory, VkDevice device, u16 usageFlag);
         ~VulkanBuffer();
 
         bool create() override;
         void destroy() override;
 
     private:
+
+        VkDevice m_device;
+        VulkanMemory* m_memoryManager;
+
+        u32 m_usageFlags;
 
         static VulkanMemory::VulkanMemoryAllocator* s_memoryAllocator;
     };

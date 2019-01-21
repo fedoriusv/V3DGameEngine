@@ -50,8 +50,8 @@ Pipeline* PipelineManager::acquireGraphicPipeline(const Pipeline::PipelineGraphi
     u32 hash = crc32c::Crc32c((u8*)&pipelineInfo->_pipelineDesc, sizeof(GraphicsPipelineStateDescription));
     hash = crc32c::Extend(hash, (u8*)&pipelineInfo->_renderpassDesc, sizeof(RenderPass::RenderPassInfo));
 
-    u64 pipelineHash = 0;// pipelineInfo->_programDesc._hash;
-    pipelineHash = pipelineHash << 8 | hash;
+    u64 pipelineHash = pipelineInfo->_programDesc._hash;
+    pipelineHash = hash | pipelineHash << 8;
 
     Pipeline* pipeline = nullptr;
     auto found = m_pipelineGraphicList.emplace(pipelineHash, pipeline);
@@ -79,11 +79,11 @@ Pipeline* PipelineManager::acquireGraphicPipeline(const Pipeline::PipelineGraphi
     return nullptr;
 }
 
-bool PipelineManager::removePipeline(Pipeline* pipeline)
+bool PipelineManager::removePipeline(Pipeline* pipeLine)
 {
-    if (pipeline->getType() == Pipeline::PipelineType::PipelineType_Graphic)
+    if (pipeLine->getType() == Pipeline::PipelineType::PipelineType_Graphic)
     {
-        auto iter = m_pipelineGraphicList.find(pipeline->m_key);
+        auto iter = m_pipelineGraphicList.find(pipeLine->m_key);
         if (iter == m_pipelineGraphicList.cend())
         {
             LOG_DEBUG("PipelineManager pipeline not found");
@@ -92,6 +92,13 @@ bool PipelineManager::removePipeline(Pipeline* pipeline)
         }
 
         Pipeline* pipeline = iter->second;
+        ASSERT(pipeline == pipeLine, "Different pointers");
+        if (pipeline->linked())
+        {
+            LOG_WARNING("PipelineManager::PipelineManager pipleline still linked, but reqested to delete");
+            ASSERT(false, "pipeline");
+            //return false;
+        }
         pipeline->notifyObservers();
 
         pipeline->destroy();

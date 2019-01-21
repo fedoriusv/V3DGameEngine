@@ -1,14 +1,18 @@
 #pragma once
 
 #include "Common.h"
-#include "TextureProperties.h"
-#include "ShaderProperties.h"
+
 #include "DeviceCaps.h"
+#include "TextureProperties.h"
+#include "BufferProperties.h"
+#include "ShaderProperties.h"
+
 #include "RenderPass.h"
 #include "Pipeline.h"
 #include "Framebuffer.h"
+#include "Buffer.h"
+#include "Image.h"
 #include "ObjectTracker.h"
-#include "Object/ShaderProgram.h"
 
 #include "Utils/NonCopyable.h"
 
@@ -21,12 +25,6 @@ namespace platform
 
 namespace renderer
 {
-    class Image;
-    class Framebuffer;
-    class Pipeline;
-
-    struct PipelineGraphicInfo;
-
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
@@ -77,11 +75,14 @@ namespace renderer
         virtual void setPipeline(const Pipeline::PipelineGraphicInfo* pipelineInfo, ObjectTracker<Pipeline>* tracker) = 0;
         virtual void removePipeline(Pipeline* pipeline) = 0;
 
-        //bind
+        //program bind
         virtual void bindTexture(const Image* image, const ShaderProgramDescription::Texture& bind) = 0;
 
+        //geometry bind
+        virtual void bindVertexBuffer(const Buffer* buffer, u32 offset) = 0;
+
         //draw
-        virtual void draw() = 0;
+        virtual void draw(u32 firstVertex, u32 vertexCount, u32 firstInstance,  u32 instanceCount) = 0;
         virtual void drawIndexed() = 0;
 
         //create
@@ -102,6 +103,7 @@ namespace renderer
         virtual Framebuffer* createFramebuffer(const std::vector<Image*>& attachments, const core::Dimension2D& size) = 0;
         virtual RenderPass* createRenderPass(const RenderPass::RenderPassInfo* renderpassInfo) = 0;
         virtual Pipeline* createPipeline(Pipeline::PipelineType type) = 0;
+        virtual Buffer* createBuffer(Buffer::BufferType type, u16 usageFlag) = 0;
 
         virtual bool initialize() = 0;
         virtual void destroy() = 0;
