@@ -1,11 +1,12 @@
 #pragma once
 
 #include "Renderer/Context.h"
-#include "VulkanDeviceCaps.h"
-#include "VulkanCommandBufferManager.h"
 
 #ifdef VULKAN_RENDER
 #include "VulkanWrapper.h"
+#include "VulkanDeviceCaps.h"
+#include "VulkanDescriptorSet.h"
+#include "VulkanCommandBufferManager.h"
 
 namespace v3d
 {
@@ -64,6 +65,11 @@ namespace vk
 
         void transferImageLayout(VulkanImage* image, VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask, VkImageLayout layout) const;
 
+        void bindTexture(const Image* image, const ShaderProgramDescription::Texture& bind) override;
+
+        void draw() override;
+        void drawIndexed() override;
+
         const DeviceCaps* getDeviceCaps() const override;
 
         static const std::vector<VkDynamicState>& getDynamicStates();
@@ -106,10 +112,13 @@ namespace vk
 
             VulkanGraphicPipeline* _currentPipeline;
 
-            std::map<VkDynamicState, std::function<void()>>  _stateCallbacks;
-        };
+            std::map<VkDynamicState, std::function<void()>> _stateCallbacks;
 
+            std::vector<DescriptorBinding> _descriptorsStates;
+        };
         CurrentContextState     m_currentContextState;
+
+        bool prepareDraw();
 
         const platform::Window* m_window;
 

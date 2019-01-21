@@ -9,6 +9,7 @@
 #include "Renderer/Object/Texture.h"
 #include "Renderer/Object/PipelineState.h"
 #include "Renderer/Object/RenderTarget.h"
+#include "Renderer/Object/StreamBuffer.h"
 #include "Renderer/Formats.h"
 
 #include "Resource/ResourceLoaderManager.h"
@@ -108,11 +109,22 @@ void MyApplication::Initialize()
     pipeline->setPrimitiveTopology(PrimitiveTopology::PrimitiveTopology_TriangleList);
     m_CommandList->setPipelineState(pipeline);
 
-    //program->SetTexture<Texture2D>(Texture, Sampler, "texture0");
-    //program->SetUniform<Matrix4D>(Mat, "proj");
+    core::Matrix4D projection;
 
-    /*
-    commandList.draw(geometry1);*/
+    program->setTexture<Texture2D>("samplerColor", texture);
+    program->bindUniform<core::Matrix4D>("projection", projection);
+
+    std::vector<f32> vertexBuffer =
+    {
+         1.0f,  1.0f, 0.0f,
+         -1.0f,  1.0f, 0.0f,
+          0.0f, -1.0f, 0.0f
+    };
+    u32 vertexBufferSize = vertexBuffer.size() * sizeof(f32);
+    VertexStreamBuffer* streamBuffer = m_CommandList->createObject<VertexStreamBuffer>(VertexStreamBuffer::StreamType_Static, vertexBufferSize, vertexBuffer.data());
+
+    //StreamBufferDesc(VertexStreamBuffer, streamID);
+    //m_CommandList.draw(StreamBufferDesc, offset, count, instanceCount);
 
     /*Geometry geometry;
     Image image;

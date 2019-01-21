@@ -1,5 +1,9 @@
 #include "ShaderProgram.h"
+#include "Texture.h"
 #include "Renderer/Formats.h"
+#include "Renderer/Context.h"
+
+#include "Utils/Logger.h"
 
 namespace v3d
 {
@@ -69,6 +73,42 @@ void ShaderProgram::composeProgramData()
             }
         }
     }
+}
+
+bool ShaderProgram::setTexture(std::string& name, TextureTarget target, const Texture* texture)
+{
+    Image* image = nullptr;
+    switch (target)
+    {
+    case TextureTarget::Texture2D:
+        image = static_cast<const Texture2D*>(texture)->m_image;
+
+    default:
+        break;
+    }
+    if (!image)
+    {
+        ASSERT(false, "image nullptr");
+        return false;
+    }
+
+    auto iter = m_programInfo._textures.find(name);
+    if (iter == m_programInfo._textures.cend())
+    {
+        LOG_WARNING("ShaderProgram::setTexture: binding for texture [%s] not found ", name.c_str());
+        return false;
+    }
+
+    if (m_cmdList.isImmediate())
+    {
+        m_cmdList.getContext()->bindTexture(image, (*iter).second);
+    }
+    else
+    {
+        //TODO
+    }
+
+    return false;
 }
 
 ShaderProgram::~ShaderProgram()

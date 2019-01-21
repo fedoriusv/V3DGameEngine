@@ -4,10 +4,10 @@
 #include "Renderer/Image.h"
 #include "Renderer/Formats.h"
 #include "Renderer/TextureProperties.h"
-#include "VulkanMemory.h"
 
 #ifdef VULKAN_RENDER
 #include "VulkanWrapper.h"
+#include "VulkanMemory.h"
 
 namespace v3d
 {

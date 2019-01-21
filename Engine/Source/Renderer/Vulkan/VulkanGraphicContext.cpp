@@ -326,6 +326,30 @@ void VulkanGraphicContext::transferImageLayout(VulkanImage * image, VkPipelineSt
     m_currentContextState._currentDrawBuffer->cmdPipelineBarrier(srcStageMask, dstStageMask, imageMemoryBarrier);
 }
 
+void VulkanGraphicContext::bindTexture(const Image * image, const ShaderProgramDescription::Texture & bind)
+{
+    const VulkanImage* vkImage = static_cast<const VulkanImage*>(image);
+
+    VkImageView view = vkImage->getImageView();
+
+    //TODO:
+}
+
+void VulkanGraphicContext::draw()
+{
+    ASSERT(m_currentContextState._currentDrawBuffer, "command buffer is empty");
+
+    /*if (prepareDraw())
+    {
+        m_currentContextState._currentDrawBuffer->cmdBindVertexBuffers();
+        m_currentContextState._currentDrawBuffer->cmdDraw();
+    }*/
+}
+
+void VulkanGraphicContext::drawIndexed()
+{
+}
+
 const DeviceCaps* VulkanGraphicContext::getDeviceCaps() const
 {
     return &m_deviceCaps;
@@ -743,6 +767,11 @@ bool VulkanGraphicContext::createDevice()
     }
 
     return true;
+}
+
+bool VulkanGraphicContext::prepareDraw()
+{
+    return false;
 }
 
 void VulkanGraphicContext::CurrentContextState::invalidateState()

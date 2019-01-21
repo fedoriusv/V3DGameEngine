@@ -51,8 +51,11 @@ namespace renderer
             Format  _format;
         };
 
+
         std::map<std::string, Attribute> _inputAttachment;
         std::map<std::string, Attribute> _outputAttachment;
+        std::map<std::string, Uniform>   _uniforms;
+        std::map<std::string, Texture>   _textures;
     };
 
 

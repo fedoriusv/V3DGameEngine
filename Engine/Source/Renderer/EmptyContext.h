@@ -40,6 +40,11 @@ namespace renderer
         void setPipeline(const Pipeline::PipelineGraphicInfo* pipelineInfo, ObjectTracker<Pipeline>* tracker) override;
         void removePipeline(Pipeline* pipeline) override;
 
+        void bindTexture(const Image* image, const ShaderProgramDescription::Texture& bind) override;
+
+        void draw() override;
+        void drawIndexed() override;
+
         const DeviceCaps* getDeviceCaps() const override;
 
     private:

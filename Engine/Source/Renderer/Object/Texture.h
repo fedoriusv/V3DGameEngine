@@ -14,13 +14,27 @@ namespace renderer
 {
     class Image;
     class RenderTarget;
+    class ShaderProgram;
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    /**
+    * Texture base class. Game side
+    */
+    class Texture : public Object
+    {
+    public:
+
+        Texture() = default;
+        virtual ~Texture() {};
+    };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
     * Texture2D class. Game side
     */
-    class Texture2D : public Object, public utils::Observer //ref counter, 
+    class Texture2D : public Texture, public utils::Observer 
     {
     public:
 
@@ -55,8 +69,8 @@ namespace renderer
 
         renderer::Image* getImage() const;
 
-        friend renderer::CommandList;
-        renderer::CommandList&              m_cmdList;
+        friend CommandList;
+        CommandList& m_cmdList;
 
         const  renderer::TextureTarget      m_target;
         const renderer::Format              m_format;
@@ -70,6 +84,7 @@ namespace renderer
 
         renderer::Image*                    m_image;
 
+        friend ShaderProgram;
         friend RenderTarget;
     };
 
@@ -78,7 +93,7 @@ namespace renderer
     /**
     * SwapchainTexture class
     */
-    class SwapchainTexture : public Object
+    class SwapchainTexture : public Texture
     {
     public:
 

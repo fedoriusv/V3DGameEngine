@@ -291,11 +291,7 @@ void CommandList::setRenderTarget(RenderTarget* rendertarget)
     {
         m_pendingRenderTargetInfo._attachments = std::move(renderTargetInfo._attachments);
         m_pendingRenderTargetInfo._clearInfo = renderTargetInfo._clearInfo;
-
-        m_pendingRenderTargetInfo._renderpassInfo._attachments = std::move(renderTargetInfo._renderpassInfo._attachments);
-        m_pendingRenderTargetInfo._renderpassInfo._countColorAttachments = renderTargetInfo._renderpassInfo._countColorAttachments;
-        m_pendingRenderTargetInfo._renderpassInfo._hasDepthStencilAttahment = renderTargetInfo._renderpassInfo._hasDepthStencilAttahment;
-
+        m_pendingRenderTargetInfo._renderpassInfo = renderTargetInfo._renderpassInfo;
         m_pendingRenderTargetInfo._trackerFramebuffer = &rendertarget->m_trackerFramebuffer;
         m_pendingRenderTargetInfo._trackerRenderpass = &rendertarget->m_trackerRenderpass;
 
@@ -315,8 +311,8 @@ void CommandList::setPipelineState(GraphicsPipelineState * pipeline)
     pipeline->m_renderTaget->extractRenderTargetInfo(renderTargetInfo._renderpassInfo, renderTargetInfo._attachments, renderTargetInfo._clearInfo);
 
     Pipeline::PipelineGraphicInfo pipelineGraphicInfo;
-    pipelineGraphicInfo._renderpassDesc = std::move(renderTargetInfo._renderpassInfo);
-    pipelineGraphicInfo._programDesc = std::move(pipeline->m_program->getShaderDesc());
+    pipelineGraphicInfo._renderpassDesc = renderTargetInfo._renderpassInfo;
+    pipelineGraphicInfo._programDesc = pipeline->m_program->getShaderDesc();
     pipelineGraphicInfo._pipelineDesc = pipeline->getGraphicsPipelineStateDesc();
     pipelineGraphicInfo._shaders = pipeline->m_program->m_shaders;
 
@@ -326,7 +322,7 @@ void CommandList::setPipelineState(GraphicsPipelineState * pipeline)
     }
     else
     {
-        m_pendingPipelineStateInfo._pipelineInfo = std::move(pipelineGraphicInfo);
+        m_pendingPipelineStateInfo._pipelineInfo = pipelineGraphicInfo;
         m_pendingPipelineStateInfo._tracker = &pipeline->m_tracker;
         m_pendingFlushMask |= PendingFlush_UpdateGraphicsPipeline;
     }

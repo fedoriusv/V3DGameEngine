@@ -84,13 +84,11 @@ namespace renderer
         bool isThreaded() const;
         bool isImmediate() const;
 
-        //....
-
-        template<class T, class ... Args>
-        T* createObject(Args ... args)
+        template<class TObject, class ... Args>
+        TObject* createObject(Args ... args)
         {
-            static_assert(std::is_base_of<Object, T>());
-            return new T(*this, (args)...);
+            static_assert(std::is_base_of<Object, TObject>());
+            return new TObject(*this, (args)...);
         }
 
         enum PendingFlushMask

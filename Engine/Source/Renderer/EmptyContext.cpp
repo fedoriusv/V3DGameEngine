@@ -92,6 +92,19 @@ void EmptyContext::removePipeline(Pipeline * pipeline)
     LOG_DEBUG("EmptyContext::removePipeline");
 }
 
+void EmptyContext::bindTexture(const Image * image, const ShaderProgramDescription::Texture & bind)
+{
+    LOG_DEBUG("EmptyContext::bindTexture");
+}
+
+void EmptyContext::draw()
+{
+}
+
+void EmptyContext::drawIndexed()
+{
+}
+
 const DeviceCaps* EmptyContext::getDeviceCaps() const
 {
     return nullptr;

@@ -2,6 +2,7 @@
 
 #include "Common.h"
 #include "TextureProperties.h"
+#include "ShaderProperties.h"
 #include "DeviceCaps.h"
 #include "RenderPass.h"
 #include "Pipeline.h"
@@ -75,6 +76,13 @@ namespace renderer
 
         virtual void setPipeline(const Pipeline::PipelineGraphicInfo* pipelineInfo, ObjectTracker<Pipeline>* tracker) = 0;
         virtual void removePipeline(Pipeline* pipeline) = 0;
+
+        //bind
+        virtual void bindTexture(const Image* image, const ShaderProgramDescription::Texture& bind) = 0;
+
+        //draw
+        virtual void draw() = 0;
+        virtual void drawIndexed() = 0;
 
         //create
         virtual Image* createImage(TextureTarget target, renderer::Format format, const core::Dimension3D& dimension, u32 mipmapLevel,

@@ -11,8 +11,6 @@ namespace v3d
 {
 namespace renderer
 {
-    /////////////////////////////////////////////////////////////////////////////////////////////////////
-    
     class Texture2D;
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -52,8 +50,8 @@ namespace renderer
         void destroyFramebuffers(const std::vector<Framebuffer*>& framebuffers);
         void destroyRenderPasses(const std::vector<RenderPass*>& renderPasses);
 
-        friend renderer::CommandList;
-        renderer::CommandList& m_cmdList;
+        friend CommandList;
+        CommandList& m_cmdList;
 
         core::Dimension2D m_size;
 

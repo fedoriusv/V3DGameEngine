@@ -62,10 +62,12 @@ namespace vk
         void cmdSetViewport(const std::vector <VkViewport>& viewports);
         void cmdSetScissor(const std::vector<VkRect2D>& scissors);
 
-        //inside renderpass
-        void cmdDraw();
-        void cmdDrawIndexed();
+        //binds
+        void cmdBindVertexBuffers(const std::vector<VkBuffer*> buffers, const std::vector<VkDeviceSize*> offests);
 
+        //inside renderpass
+        void cmdDraw(u32 firstVertex, u32 vertexCount, u32 firstInstance, u32 instanceCount);
+        void cmdDrawIndexed();
 
         //outside renderpass
         void cmdClearImage(VulkanImage* image, VkImageLayout imageLayout, const VkClearColorValue* pColor);

@@ -213,16 +213,20 @@ void VulkanCommandBuffer::cmdSetScissor(const std::vector<VkRect2D>& scissors)
     }
 }
 
-void VulkanCommandBuffer::cmdDraw()
+void VulkanCommandBuffer::cmdBindVertexBuffers(const std::vector<VkBuffer*> buffers, const std::vector<VkDeviceSize*> offests)
 {
-    //if (m_type == CommandBufferType::PrimaryBuffer)
-    //{
-    //    //VulkanWrapper::CmdDraw(m_command, );
-    //}
-    //else
-    //{
-    //    //create cmdDraw task
-    //}
+}
+
+void VulkanCommandBuffer::cmdDraw(u32 firstVertex, u32 vertexCount, u32 firstInstance, u32 instanceCount)
+{
+    if (m_level == CommandBufferLevel::PrimaryBuffer)
+    {
+        VulkanWrapper::CmdDraw(m_command, vertexCount, instanceCount, firstVertex, firstInstance);
+    }
+    else
+    {
+        ASSERT(false, "not implemented");
+    }
 }
 
 void VulkanCommandBuffer::cmdClearImage(VulkanImage* image, VkImageLayout imageLayout, const VkClearColorValue * pColor)
