@@ -599,6 +599,19 @@ Buffer * VulkanGraphicContext::createBuffer(Buffer::BufferType type, u16 usageFl
 
 }
 
+void VulkanGraphicContext::removeBuffer(Buffer * buffer)
+{
+    //check if used
+    //TODO: maybe manager for this
+    if (buffer)
+    {
+        buffer->notifyObservers();
+
+        buffer->destroy();
+        delete buffer;
+    }
+}
+
 bool VulkanGraphicContext::createInstance()
 {
     VkApplicationInfo applicationInfo = {};

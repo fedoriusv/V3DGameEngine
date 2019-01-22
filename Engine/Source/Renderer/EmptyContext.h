@@ -47,6 +47,9 @@ namespace renderer
         void draw(u32 firstVertex, u32 vertexCount, u32 firstInstance, u32 instanceCount) override {};
         void drawIndexed() override;
 
+        Buffer* createBuffer(Buffer::BufferType type, u16 usageFlag, u64 size) override;
+        void removeBuffer(Buffer* buffer) override;
+
         const DeviceCaps* getDeviceCaps() const override;
 
     private:
@@ -54,7 +57,6 @@ namespace renderer
         Framebuffer* createFramebuffer(const std::vector<Image*>& attachments, const core::Dimension2D& size) override;
         RenderPass* createRenderPass(const RenderPass::RenderPassInfo* renderpassInfo) override;
         Pipeline* createPipeline(Pipeline::PipelineType type) override;
-        Buffer* createBuffer(Buffer::BufferType type, u16 usageFlag, u64 size) override;
 
         bool initialize() override;
         void destroy() override;

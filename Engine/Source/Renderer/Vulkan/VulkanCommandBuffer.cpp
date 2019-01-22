@@ -262,6 +262,7 @@ void VulkanCommandBuffer::cmdClearImage(VulkanImage * image, VkImageLayout image
 
 void VulkanCommandBuffer::cmdCopyBufferToImage()
 {
+    ASSERT(!isInsideRenderPass(), "outside render pass");
     if (m_level == CommandBufferLevel::PrimaryBuffer)
     {
         //VulkanWrapper::CmdCopyBufferToImage(m_command, , , )
@@ -274,6 +275,7 @@ void VulkanCommandBuffer::cmdCopyBufferToImage()
 
 void VulkanCommandBuffer::cmdCopyBufferToBuffer(VulkanBuffer* src, VulkanBuffer* dst, const VkBufferCopy& region)
 {
+    ASSERT(!isInsideRenderPass(), "outside render pass");
     if (m_level == CommandBufferLevel::PrimaryBuffer)
     {
         VulkanWrapper::CmdCopyBuffer(m_command, src->getHandle(), dst->getHandle(), 1, &region);

@@ -25,8 +25,6 @@ namespace platform
 
 namespace renderer
 {
-    class VertexStreamBuffer;
-
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
@@ -94,6 +92,9 @@ namespace renderer
         virtual Image* createAttachmentImage(renderer::Format format, const core::Dimension3D& dimension, TextureSamples samples,
             s16 filter, TextureAnisotropic anisotropicLevel, TextureWrap wrap) const = 0;
 
+        virtual Buffer* createBuffer(Buffer::BufferType type, u16 usageFlag, u64 size) = 0;
+        virtual void removeBuffer(Buffer* buffer) = 0;
+
         virtual const DeviceCaps* getDeviceCaps() const = 0;
 
     protected:
@@ -101,12 +102,10 @@ namespace renderer
         friend RenderPassManager;
         friend FramebufferManager;
         friend PipelineManager;
-        friend VertexStreamBuffer;
 
         virtual Framebuffer* createFramebuffer(const std::vector<Image*>& attachments, const core::Dimension2D& size) = 0;
         virtual RenderPass* createRenderPass(const RenderPass::RenderPassInfo* renderpassInfo) = 0;
         virtual Pipeline* createPipeline(Pipeline::PipelineType type) = 0;
-        virtual Buffer* createBuffer(Buffer::BufferType type, u16 usageFlag, u64 size) = 0;
 
         virtual bool initialize() = 0;
         virtual void destroy() = 0;

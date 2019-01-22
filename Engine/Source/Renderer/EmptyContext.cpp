@@ -130,6 +130,11 @@ Buffer * EmptyContext::createBuffer(Buffer::BufferType type, u16 usageFlag, u64 
     return nullptr;
 }
 
+void EmptyContext::removeBuffer(Buffer * buffer)
+{
+    LOG_DEBUG("EmptyContext::removeBuffer");
+}
+
 bool EmptyContext::initialize()
 {
     LOG_DEBUG("EmptyContext::initialize");

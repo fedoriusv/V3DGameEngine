@@ -63,6 +63,9 @@ namespace vk
         Image* createImage(TextureTarget target, renderer::Format format, const core::Dimension3D& dimension, u32 mipmapLevel, s16 filter, TextureAnisotropic anisotropicLevel, TextureWrap wrap) const override;
         Image* createAttachmentImage(renderer::Format format, const core::Dimension3D& dimension, TextureSamples samples, s16 filter, TextureAnisotropic anisotropicLevel, TextureWrap wrap) const override;
 
+        Buffer* createBuffer(Buffer::BufferType type, u16 usageFlag, u64 size) override;
+        void removeBuffer(Buffer* buffer) override;
+
         VulkanCommandBuffer* getCurrentBuffer(VulkanCommandBufferManager::CommandTargetType type) const;
 
         void transferImageLayout(VulkanImage* image, VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask, VkImageLayout layout) const;
@@ -93,7 +96,6 @@ namespace vk
         Framebuffer* createFramebuffer(const std::vector<Image*>& images, const core::Dimension2D& size) override;
         RenderPass* createRenderPass(const RenderPass::RenderPassInfo* renderpassInfo) override;
         Pipeline* createPipeline(Pipeline::PipelineType type) override;
-        Buffer* createBuffer(Buffer::BufferType type, u16 usageFlag, u64 size) override;
 
         bool createInstance();
         bool createDevice();

@@ -139,7 +139,7 @@ void VulkanBuffer::destroy()
     }
 }
 
-bool VulkanBuffer::upload(const Context* context, u32 offset, u32 size, void * data)
+bool VulkanBuffer::upload(const Context* context, u32 offset, u64 size, void * data)
 {
     if (size > 0 && data)
     {
@@ -177,6 +177,8 @@ bool VulkanBuffer::upload(const Context* context, u32 offset, u32 size, void * d
             bufferCopy.srcOffset = 0;
             bufferCopy.dstOffset = offset;
             bufferCopy.size = size;
+
+            //vkCmdUpdateBuffer check
 
             //TODO memory barrier
             vkContext->getCurrentBuffer(VulkanCommandBufferManager::CommandTargetType::CmdUploadBuffer)->cmdCopyBufferToBuffer(this, staginBuffer->getBuffer(), bufferCopy);

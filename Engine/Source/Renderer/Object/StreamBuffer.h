@@ -54,7 +54,7 @@ namespace renderer
         ~VertexStreamBuffer();
 
         bool isLocked() const;
-        void update(u32 stream, u32 size, void* data);
+        bool update(u32 offset, u64 size, void* data);
 
     private:
 
@@ -68,8 +68,9 @@ namespace renderer
 
         u64                 m_size;
         void*               m_data;
-        std::atomic<bool>   m_lock;
+        std::atomic<bool>   m_lock; //?
 
+        u16                 m_usageFlag;
         Buffer*             m_buffer;
     };
 
