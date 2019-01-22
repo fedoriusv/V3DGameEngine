@@ -159,6 +159,9 @@ void VulkanDeviceCaps::initialize()
     supportCoherentMemory = true;
     useDynamicUniforms = false;
 
+    unifiedMemoryManager = false;
+    useStagingBuffers = !supportCoherentMemory;
+
     ASSERT(k_maxFramebufferAttachments <= m_deviceProperties.limits.maxFragmentOutputAttachments, "maxFragmentOutputAttachments less than k_maxFramebufferAttachments");
 }
 

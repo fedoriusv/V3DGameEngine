@@ -16,6 +16,7 @@ namespace vk
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     class VulkanImage;
+    class VulkanBuffer;
     class VulkanRenderPass;
     class VulkanFramebuffer;
 
@@ -75,6 +76,7 @@ namespace vk
 
         //TODO: cmd list
         void cmdCopyBufferToImage();
+        void cmdCopyBufferToBuffer(VulkanBuffer* src, VulkanBuffer* dst, const VkBufferCopy& region);
 
         void cmdPipelineBarrier(VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask, const VkImageMemoryBarrier& imageMemoryBarrier);
         void cmdPipelineBarrier(VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask, const VkMemoryBarrier& memoryBarrier);

@@ -2,6 +2,7 @@
 #include "VulkanGraphicContext.h"
 #include "VulkanDebug.h"
 #include "VulkanImage.h"
+#include "VulkanBuffer.h"
 #include "VulkanRenderpass.h"
 #include "VulkanFramebuffer.h"
 #include "Utils/Logger.h"
@@ -261,7 +262,26 @@ void VulkanCommandBuffer::cmdClearImage(VulkanImage * image, VkImageLayout image
 
 void VulkanCommandBuffer::cmdCopyBufferToImage()
 {
-    //VulkanWrapper::CmdCopyBufferToImage(m_command, , , )
+    if (m_level == CommandBufferLevel::PrimaryBuffer)
+    {
+        //VulkanWrapper::CmdCopyBufferToImage(m_command, , , )
+    }
+    else
+    {
+        ASSERT(false, "not implemented");
+    }
+}
+
+void VulkanCommandBuffer::cmdCopyBufferToBuffer(VulkanBuffer* src, VulkanBuffer* dst, const VkBufferCopy& region)
+{
+    if (m_level == CommandBufferLevel::PrimaryBuffer)
+    {
+        VulkanWrapper::CmdCopyBuffer(m_command, src->getHandle(), dst->getHandle(), 1, &region);
+    }
+    else
+    {
+        ASSERT(false, "not implemented");
+    }
 }
 
 void VulkanCommandBuffer::cmdPipelineBarrier(VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask, const VkImageMemoryBarrier& imageMemoryBarrier)

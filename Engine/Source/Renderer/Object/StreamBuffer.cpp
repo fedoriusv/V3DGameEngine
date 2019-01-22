@@ -1,74 +1,105 @@
-#include "..\BufferProperties.h"
 #include "StreamBuffer.h"
+#include "Renderer/Context.h"
+#include "Renderer/Buffer.h"
+#include "Utils/Logger.h"
 
 namespace v3d
 {
 namespace renderer
 {
-
-StreamBufferData::StreamBufferData()
-    : _size(0)
-    , _data(0)
-    , _lock(false)
+    /*CreateBufferCommand*/
+class CreateBufferCommand : public Command
 {
-}
-
-StreamBufferData::StreamBufferData(u32 size, void * data)
-    : _size(size)
-    , _data(data)
-    , _lock(false)
-{
-}
-
-void StreamBufferData::lock()
-{
-    _lock = true;
-}
-
-void StreamBufferData::unlock()
-{
-    _lock = false;
-}
-
-/////////////////////////////////////////////////////////////////////////////////////////////////////
-
-StreamBufferDescription::StreamBufferDescription(VertexStreamBuffer* vertex, u32 streamId)
-{
-    _stream = &vertex->getStreamBufferData(streamId);
-    _stream->lock();
-
-    _usageFlag = vertex->m_usageFlag;
-}
-
-StreamBufferDescription::~StreamBufferDescription()
-{
-    if (_usageFlag & ~StreamBufferUsage::StreamBuffer_Direct)
+public:
+    CreateBufferCommand(Buffer* buffer, u64 dataSize, void * data, bool shared) noexcept
+        : m_buffer(buffer)
+        , m_size(0)
+        , m_data(nullptr)
     {
-        _stream->unlock();
+        LOG_DEBUG("CreateBufferCommand constructor");
+
+        if (data && dataSize > 0)
+        {
+            m_size = dataSize;
+            if (shared)
+            {
+                m_data = data;
+            }
+            else
+            {
+                m_data = malloc(m_size); //TODO: get from pool
+                memcpy(m_data, data, m_size);
+            }
+        }
     }
-}
+
+    ~CreateBufferCommand()
+    {
+        LOG_DEBUG("CreateBufferCommand destructor");
+
+        if (m_data)
+        {
+            free(m_data); //TODO: return to pool
+            m_data = nullptr;
+        }
+    }
+
+    void execute(const renderer::CommandList& cmdList) override
+    {
+        if (!m_buffer->create())
+        {
+            m_buffer->notifyObservers();
+
+            m_buffer->destroy();
+            delete m_buffer;
+
+            return;
+        }
+
+        if (m_data && m_size > 0)
+        {
+            m_buffer->upload(cmdList.getContext(), 0, m_size, m_data);
+        }
+    }
+
+private:
+    Buffer* m_buffer;
+    u64     m_size;
+    void*   m_data;
+};
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-VertexStreamBuffer::VertexStreamBuffer(CommandList& cmdList, u16 usageFlag, const std::vector<StreamBufferData>& streams) noexcept
+VertexStreamBuffer::VertexStreamBuffer(renderer::CommandList& cmdList, u16 usageFlag, u64 size, void* data) noexcept
     : m_cmdList(cmdList)
-    , m_usageFlag(usageFlag)
-    , m_streams(streams)
-{
-
-}
-
-VertexStreamBuffer::VertexStreamBuffer(renderer::CommandList& cmdList, u16 usageFlag, u32 size, void* data) noexcept
-    : m_cmdList(cmdList)
-    , m_usageFlag(usageFlag)
-
     , m_buffer(nullptr)
 {
-    m_streams.push_back({ size, data });
-
-   /* m_buffer = m_cmdList.getContext()->createBuffer();
+    m_buffer = m_cmdList.getContext()->createBuffer(Buffer::BufferType::BufferType_VertexBuffer, usageFlag, size);
     ASSERT(m_buffer, "m_buffer is nullptr");
-    m_buffer->registerNotify(this);*/
+
+    m_lock = true;
+    if (m_cmdList.isImmediate())
+    {
+        if (!m_buffer->create())
+        {
+            m_buffer->destroy();
+
+            delete m_buffer;
+            m_buffer = nullptr;
+            m_lock = false;
+        }
+        m_buffer->registerNotify(this);
+
+        if (data)
+        {
+            m_buffer->upload(m_cmdList.getContext(), 0, size, data);
+        }
+    }
+    else
+    {
+        m_buffer->registerNotify(this);
+        m_cmdList.pushCommand(new CreateBufferCommand(m_buffer, size, data, true));
+    }
 }
 
 VertexStreamBuffer::~VertexStreamBuffer()
@@ -76,10 +107,13 @@ VertexStreamBuffer::~VertexStreamBuffer()
     //TODO
 }
 
-StreamBufferData& VertexStreamBuffer::getStreamBufferData(u32 stream) const
+bool VertexStreamBuffer::isLocked() const
 {
-    ASSERT(stream < m_streams.size(), "range out");
-    return m_streams[stream];
+    return m_lock;
+}
+
+void VertexStreamBuffer::handleNotify(utils::Observable * ob)
+{
 }
 
 void VertexStreamBuffer::update(u32 stream, u32 size, void * data)

@@ -20,6 +20,7 @@ VulkanMemory::VulkanAlloc VulkanMemory::s_invalidMemory =
     VK_NULL_HANDLE,
     0,
     0,
+    0,
     nullptr
 };
 
@@ -82,6 +83,7 @@ VulkanMemory::VulkanAlloc VulkanMemory::allocateImageMemory(VulkanMemoryAllocato
         {
             return VulkanMemory::s_invalidMemory;
         }
+        memory._flag = flags;
 
         if (flags & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT)
         {
@@ -138,6 +140,7 @@ VulkanMemory::VulkanAlloc VulkanMemory::allocateBufferMemory(VulkanMemoryAllocat
         {
             return VulkanMemory::s_invalidMemory;
         }
+        memory._flag = flags;
 
         if (flags & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT)
         {

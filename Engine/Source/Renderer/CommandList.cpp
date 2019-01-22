@@ -267,24 +267,24 @@ void CommandList::presentFrame()
     }
 }
 
-void CommandList::draw(const StreamBufferDescription& desc, u32 count, u32 offset, u32 instanceCount)
-{
-    if (CommandList::isImmediate())
-    {
-        /*if (desc._usageFlag & ~StreamBuffer_Direct)
-        {
-
-        }
-        else
-        {
-            m_context->draw();
-        }*/
-    }
-    else
-    {
-        //CommandList::pushCommand(new CommandPresentFrame());
-    }
-}
+//void CommandList::draw(const StreamBufferDescription& desc, u32 count, u32 offset, u32 instanceCount)
+//{
+//    if (CommandList::isImmediate())
+//    {
+//        /*if (desc._usageFlag & ~StreamBuffer_Direct)
+//        {
+//
+//        }
+//        else
+//        {
+//            m_context->draw();
+//        }*/
+//    }
+//    else
+//    {
+//        //CommandList::pushCommand(new CommandPresentFrame());
+//    }
+//}
 
 void CommandList::clearBackbuffer(const core::Vector4D & color)
 {

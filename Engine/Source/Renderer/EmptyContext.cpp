@@ -124,7 +124,7 @@ Pipeline * EmptyContext::createPipeline(Pipeline::PipelineType type)
     return nullptr;
 }
 
-Buffer * EmptyContext::createBuffer(Buffer::BufferType type, u16 usageFlag)
+Buffer * EmptyContext::createBuffer(Buffer::BufferType type, u16 usageFlag, u64 size)
 {
     LOG_DEBUG("EmptyContext::createBuffer");
     return nullptr;

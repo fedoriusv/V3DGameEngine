@@ -1,9 +1,13 @@
 #include "VulkanBuffer.h"
 
 #include "Utils/Logger.h"
+#include "Renderer/Object/StreamBuffer.h"
 
 #ifdef VULKAN_RENDER
 #include "VulkanDebug.h"
+#include "VulkanDeviceCaps.h"
+#include "VulkanGraphicContext.h"
+#include "VulkanStagingBuffer.h"
 
 namespace v3d
 {
@@ -14,26 +18,248 @@ namespace vk
 
 VulkanMemory::VulkanMemoryAllocator* VulkanBuffer::s_memoryAllocator = new SimpleVulkanMemoryAllocator();
 
-VulkanBuffer::VulkanBuffer(VulkanMemory* memory, VkDevice device, u16 usageFlag)
+VulkanBuffer::VulkanBuffer(VulkanMemory* memory, VkDevice device, Buffer::BufferType type, u16 usageFlag, u64 size)
     : m_device(device)
+
+    , m_memory(VulkanMemory::s_invalidMemory)
     , m_memoryManager(memory)
+
     , m_usageFlags(usageFlag)
+    , m_type(type)
+
+    , m_size(size) //Check aligment
+
+    , m_buffer(VK_NULL_HANDLE)
 {
+    LOG_DEBUG("VulkanBuffer::VulkanBuffer constructor %llx", this);
 }
 
 VulkanBuffer::~VulkanBuffer()
 {
+    LOG_DEBUG("VulkanBuffer::VulkanBuffer destructor %llx", this);
+
+    ASSERT(!m_buffer, "m_buffer not nullptr");
 }
 
 bool VulkanBuffer::create()
 {
-    //VulkanWrapper::CreateBuffer(m_device, , VULKAN_ALLOCATOR, )
+    ASSERT(!m_buffer, "m_buffer already created");
 
-    return false;
+    VkBufferUsageFlags usage = 0;
+    VkMemoryPropertyFlags flag = 0;
+    if (m_type == Buffer::BufferType::BufferType_VertexBuffer)
+    {
+        usage |= VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+        flag |= VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+
+        if (!VulkanDeviceCaps::getInstance()->useStagingBuffers)
+        {
+            flag |= VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
+            flag |= VulkanDeviceCaps::getInstance()->supportCoherentMemory ? VK_MEMORY_PROPERTY_HOST_COHERENT_BIT : VK_MEMORY_PROPERTY_HOST_CACHED_BIT;
+        }
+    }
+    else if (m_type == Buffer::BufferType::BufferType_IndexBuffer)
+    {
+        usage |= VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
+        flag |= VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+
+        if (!VulkanDeviceCaps::getInstance()->useStagingBuffers)
+        {
+            flag |= VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
+            flag |= VulkanDeviceCaps::getInstance()->supportCoherentMemory ? VK_MEMORY_PROPERTY_HOST_COHERENT_BIT : VK_MEMORY_PROPERTY_HOST_CACHED_BIT;
+        }
+    }
+    else if (m_type == Buffer::BufferType::BufferType_StagingBuffer)
+    {
+        flag |= VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+    }
+
+    if (m_usageFlags & StreamBufferUsage::StreamBuffer_Read)
+    {
+        usage |= VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+    }
+
+    if (m_usageFlags & StreamBufferUsage::StreamBuffer_Write)
+    {
+        usage |= VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+    }
+    
+    VkBufferCreateInfo bufferCreateInfo = {};
+    bufferCreateInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+    bufferCreateInfo.pNext = nullptr;
+    bufferCreateInfo.flags = 0; //sparse
+    bufferCreateInfo.usage = usage;
+    bufferCreateInfo.size = m_size;
+    bufferCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+    bufferCreateInfo.queueFamilyIndexCount = 1;
+    bufferCreateInfo.pQueueFamilyIndices = nullptr;
+
+    VkResult result = VulkanWrapper::CreateBuffer(m_device, &bufferCreateInfo, VULKAN_ALLOCATOR, &m_buffer);
+    if (result != VK_SUCCESS)
+    {
+        LOG_ERROR("VulkanBuffer::create vkCreateBuffer is failed. Error: %s", ErrorString(result).c_str());
+        return false;
+    }
+
+    m_memory = m_memoryManager->allocateBufferMemory(*s_memoryAllocator, m_buffer, flag);
+    if (m_memory == VulkanMemory::s_invalidMemory)
+    {
+        VulkanBuffer::destroy();
+
+        LOG_ERROR("VulkanBuffer::VulkanBuffer::create() is failed");
+        return false;
+    }
+
+    /*if (!createViewBuffer())
+    {
+        VulkanBuffer::destroy();
+
+        LOG_ERROR("VulkanBuffer::VulkanBuffer::create() is failed");
+        return false;
+    }*/
+
+    return true;
 }
 
 void VulkanBuffer::destroy()
 {
+    ASSERT(!m_mapped, "mapped");
+
+    /*if (m_imageView)
+    {
+        VulkanWrapper::DestroyImageView(m_device, m_imageView, VULKAN_ALLOCATOR);
+        m_imageView = VK_NULL_HANDLE;
+    }*/
+
+    m_memoryManager->freeMemory(*s_memoryAllocator, m_memory);
+    if (m_buffer)
+    {
+        VulkanWrapper::DestroyBuffer(m_device, m_buffer, VULKAN_ALLOCATOR);
+        m_buffer = VK_NULL_HANDLE;
+    }
+}
+
+bool VulkanBuffer::upload(const Context* context, u32 offset, u32 size, void * data)
+{
+    if (size > 0 && data)
+    {
+        if (m_size != size && offset == 0)
+        {
+            if (m_usageFlags & ~StreamBufferUsage::StreamBuffer_Dynamic)
+            {
+                ASSERT(false, "different size in non dynamic data");
+                return false;
+            }
+
+            m_size = size;
+            if (!VulkanBuffer::recreate())
+            {
+                VulkanBuffer::destroy();
+                return false;
+            }
+        }
+
+        if (VulkanDeviceCaps::getInstance()->useStagingBuffers)
+        {
+            const VulkanGraphicContext* vkContext = static_cast<const VulkanGraphicContext*>(context);
+            VulkanStaginBuffer* staginBuffer = vkContext->getStagingManager()->createStagingBuffer(size, StreamBufferUsage::StreamBuffer_Read);
+            if (!staginBuffer)
+            {
+                ASSERT(false, "staginBuffer is nullptr");
+                return false;
+            }
+            void* stagingData = staginBuffer->map();
+            ASSERT(stagingData, "stagingData is nullptr");
+            memcpy(stagingData, data, size);
+            staginBuffer->unmap();
+
+            VkBufferCopy bufferCopy = {};
+            bufferCopy.srcOffset = 0;
+            bufferCopy.dstOffset = offset;
+            bufferCopy.size = size;
+
+            //TODO memory barrier
+            vkContext->getCurrentBuffer(VulkanCommandBufferManager::CommandTargetType::CmdUploadBuffer)->cmdCopyBufferToBuffer(this, staginBuffer->getBuffer(), bufferCopy);
+            //TODO memory barrier
+
+            //staginBuffer mark at frame
+        }
+        else
+        {
+            void* srcData = VulkanBuffer::map();
+            memcpy(srcData, data, size);
+            VulkanBuffer::unmap();
+        }
+    }
+
+    return false;
+}
+
+VkBuffer VulkanBuffer::getHandle() const
+{
+    return m_buffer;
+}
+
+void * VulkanBuffer::map()
+{
+    if (m_mapped)
+    {
+        ASSERT(false, "already mappped");
+    }
+
+    ASSERT(m_memory._mapped, "m_memory._mapped can't map");
+    if (m_memory._flag & VK_MEMORY_PROPERTY_HOST_CACHED_BIT)
+    {
+        VkMappedMemoryRange mappedMemoryRange = {};
+        mappedMemoryRange.sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
+        mappedMemoryRange.pNext = nullptr;
+        mappedMemoryRange.memory = m_memory._memory;
+        mappedMemoryRange.size = m_memory._size;
+        mappedMemoryRange.offset = m_memory._offset;
+
+        VkResult result = VulkanWrapper::InvalidateMappedMemoryRanges(m_device, 1, &mappedMemoryRange);
+        if (result != VK_SUCCESS)
+        {
+            ASSERT(false, "error");
+            return nullptr;
+        }
+    }
+    m_mapped = true;
+
+
+    return m_memory._mapped;
+}
+
+void VulkanBuffer::unmap()
+{
+    if (!m_mapped)
+    {
+        return;
+    }
+
+    ASSERT(m_memory._mapped, "m_memory._mapped can't map");
+    if (m_memory._flag & VK_MEMORY_PROPERTY_HOST_CACHED_BIT)
+    {
+        VkMappedMemoryRange mappedMemoryRange = {};
+        mappedMemoryRange.sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
+        mappedMemoryRange.pNext = nullptr;
+        mappedMemoryRange.memory = m_memory._memory;
+        mappedMemoryRange.size = m_memory._size;
+        mappedMemoryRange.offset = m_memory._offset;
+
+        VkResult result = VulkanWrapper::FlushMappedMemoryRanges(m_device, 1, &mappedMemoryRange);
+        if (result != VK_SUCCESS)
+        {
+            ASSERT(false, "error");
+        }
+    }
+    m_mapped = false;
+}
+
+bool VulkanBuffer::recreate()
+{
+    ASSERT(false, "not implementing");
+    return false;
 }
 
 } //namespace vk

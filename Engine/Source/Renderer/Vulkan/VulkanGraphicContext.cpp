@@ -8,6 +8,7 @@
 #include "VulkanRenderpass.h"
 #include "VulkanPipeline.h"
 #include "VulkanBuffer.h"
+#include "VulkanStagingBuffer.h"
 
 #include "Utils/Logger.h"
 
@@ -59,10 +60,15 @@ VulkanGraphicContext::VulkanGraphicContext(const platform::Window * window) noex
     : m_deviceCaps(*VulkanDeviceCaps::getInstance())
     , m_swapchain(nullptr)
     , m_drawCmdBufferManager(nullptr)
-    , m_memoryManager(nullptr)
+    , m_stagingBufferManager(nullptr)
+
+    , m_imageMemoryManager(nullptr)
+    , m_bufferMemoryManager(nullptr)
+
     , m_renderpassManager(nullptr)
     , m_framebuferManager(nullptr)
     , m_pipelineManager(nullptr)
+
     , m_window(window)
     , m_frameCounter(0U)
 {
@@ -78,7 +84,14 @@ VulkanGraphicContext::~VulkanGraphicContext()
  {
     LOG_DEBUG("~VulkanGraphicContext destructor this %llx", this);
 
-    ASSERT(!m_memoryManager, "m_memoryManager not nullptr");
+    ASSERT(!m_imageMemoryManager, "m_imageMemoryManager not nullptr");
+    ASSERT(!m_bufferMemoryManager, "m_bufferMemoryManager not nullptr");
+    ASSERT(!m_stagingBufferManager, "m_stagingBufferManager not nullptr");
+
+
+    ASSERT(!m_renderpassManager, "m_renderpassManager not nullptr");
+    ASSERT(!m_framebuferManager, "m_framebuferManager not nullptr");
+    ASSERT(!m_pipelineManager, "m_pipelineManager not nullptr");
 
     ASSERT(!m_swapchain, "m_swapchain not nullptr");
     ASSERT(!m_drawCmdBufferManager, "m_drawCmdBufferManager not nullptr");
@@ -281,7 +294,7 @@ Image * VulkanGraphicContext::createImage(TextureTarget target, renderer::Format
     VkFormat vkFormat = VulkanImage::convertImageFormatToVkFormat(format);
     VkExtent3D vkExtent = { dimension.width, dimension.height, dimension.depth };
 
-    return new VulkanImage(m_memoryManager, m_deviceInfo._device, vkType, vkFormat, vkExtent, mipLevels, VK_IMAGE_TILING_OPTIMAL);
+    return new VulkanImage(m_imageMemoryManager, m_deviceInfo._device, vkType, vkFormat, vkExtent, mipLevels, VK_IMAGE_TILING_OPTIMAL);
 }
 
 Image * VulkanGraphicContext::createAttachmentImage(renderer::Format format, const core::Dimension3D& dimension, TextureSamples samples, 
@@ -291,7 +304,7 @@ Image * VulkanGraphicContext::createAttachmentImage(renderer::Format format, con
     VkExtent3D vkExtent = { dimension.width, dimension.height, dimension.depth };
     VkSampleCountFlagBits vkSamples = VulkanImage::convertRenderTargetSamplesToVkSampleCount(samples);
 
-    return new VulkanImage(m_memoryManager, m_deviceInfo._device, vkFormat, vkExtent, vkSamples);
+    return new VulkanImage(m_imageMemoryManager, m_deviceInfo._device, vkFormat, vkExtent, vkSamples);
 }
 
 VulkanCommandBuffer * VulkanGraphicContext::getCurrentBuffer(VulkanCommandBufferManager::CommandTargetType type) const
@@ -358,6 +371,12 @@ void VulkanGraphicContext::drawIndexed()
 const DeviceCaps* VulkanGraphicContext::getDeviceCaps() const
 {
     return &m_deviceCaps;
+}
+
+const VulkanStaginBufferManager * VulkanGraphicContext::getStagingManager() const
+{
+    ASSERT(m_deviceCaps.useStagingBuffers, "enable feature");
+    return m_stagingBufferManager;
 }
 
 const std::vector<VkDynamicState>& VulkanGraphicContext::getDynamicStates()
@@ -429,12 +448,26 @@ bool VulkanGraphicContext::initialize()
         LOG_FATAL("VulkanGraphicContext::createContext: Can not create VulkanSwapchain");
         return false;
     }
-    m_memoryManager = new VulkanMemory(m_deviceInfo._device);
+
+    if (m_deviceCaps.unifiedMemoryManager)
+    {
+        m_imageMemoryManager = new VulkanMemory(m_deviceInfo._device);
+        m_bufferMemoryManager = m_imageMemoryManager;
+    }
+    else
+    {
+        m_imageMemoryManager = new VulkanMemory(m_deviceInfo._device);
+        m_bufferMemoryManager = new VulkanMemory(m_deviceInfo._device);
+    }
 
     m_drawCmdBufferManager = new VulkanCommandBufferManager(&m_deviceInfo, m_queueList[0]);
     m_currentContextState._currentDrawBuffer = m_drawCmdBufferManager->acquireNewCmdBuffer(VulkanCommandBuffer::PrimaryBuffer);
     ASSERT(m_currentContextState._currentDrawBuffer, "m_currentDrawBuffer is nullptr");
 
+    if (m_deviceCaps.useStagingBuffers)
+    {
+        m_stagingBufferManager = new VulkanStaginBufferManager(m_deviceInfo._device);
+    }
     m_renderpassManager = new RenderPassManager(this);
     m_framebuferManager = new FramebufferManager(this);
     m_pipelineManager = new PipelineManager(this);
@@ -454,6 +487,27 @@ void VulkanGraphicContext::destroy()
 
         delete m_drawCmdBufferManager;
         m_drawCmdBufferManager = nullptr;
+    }
+
+    if (m_stagingBufferManager)
+    {
+        delete m_stagingBufferManager;
+        m_stagingBufferManager = nullptr;
+    }
+
+    if (m_deviceCaps.unifiedMemoryManager)
+    {
+        delete m_imageMemoryManager;
+        m_imageMemoryManager = nullptr;
+        m_bufferMemoryManager = nullptr;
+    }
+    else
+    {
+        delete m_imageMemoryManager;
+        m_imageMemoryManager = nullptr;
+
+        delete m_bufferMemoryManager;
+        m_bufferMemoryManager = nullptr;
     }
 
     if (m_renderpassManager)
@@ -533,16 +587,12 @@ Pipeline* VulkanGraphicContext::createPipeline(Pipeline::PipelineType type)
     return nullptr;
 }
 
-Buffer * VulkanGraphicContext::createBuffer(Buffer::BufferType type, u16 usageFlag)
+Buffer * VulkanGraphicContext::createBuffer(Buffer::BufferType type, u16 usageFlag, u64 size)
 {
-    /*if (type == Buffer::BufferType::BufferType_VertexBuffer)
+    if (type == Buffer::BufferType::BufferType_VertexBuffer || type == Buffer::BufferType::BufferType_IndexBuffer)
     {
-        return VulkanBuffer(type, usageFlag);
+        return new VulkanBuffer(m_bufferMemoryManager, m_deviceInfo._device, type, usageFlag, size);
     }
-    else if (Buffer::BufferType::BufferType_IndexBuffer)
-    {
-        return 
-    }*/
 
     ASSERT(false, "not supported");
     return nullptr;

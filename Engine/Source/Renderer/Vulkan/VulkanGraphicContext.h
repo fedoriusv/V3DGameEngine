@@ -19,6 +19,8 @@ namespace vk
     class VulkanFramebuffer;
     class VulkanGraphicPipeline;
 
+    class VulkanStaginBufferManager;
+
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     struct DeviceInfo
@@ -73,6 +75,7 @@ namespace vk
         void drawIndexed() override;
 
         const DeviceCaps* getDeviceCaps() const override;
+        const VulkanStaginBufferManager* getStagingManager() const;
 
         static const std::vector<VkDynamicState>& getDynamicStates();
         static bool isDynamicState(VkDynamicState state);
@@ -90,7 +93,7 @@ namespace vk
         Framebuffer* createFramebuffer(const std::vector<Image*>& images, const core::Dimension2D& size) override;
         RenderPass* createRenderPass(const RenderPass::RenderPassInfo* renderpassInfo) override;
         Pipeline* createPipeline(Pipeline::PipelineType type) override;
-        Buffer* createBuffer(Buffer::BufferType type, u16 usageFlag) override;
+        Buffer* createBuffer(Buffer::BufferType type, u16 usageFlag, u64 size) override;
 
         bool createInstance();
         bool createDevice();
@@ -99,7 +102,12 @@ namespace vk
         class VulkanSwapchain*  m_swapchain;
 
         VulkanCommandBufferManager* m_drawCmdBufferManager;
-        class VulkanMemory*         m_memoryManager;
+        VulkanStaginBufferManager*  m_stagingBufferManager;
+
+        class VulkanMemory*         m_imageMemoryManager;
+        class VulkanMemory*         m_bufferMemoryManager;
+
+
         RenderPassManager*          m_renderpassManager;
         FramebufferManager*         m_framebuferManager;
         PipelineManager*            m_pipelineManager;

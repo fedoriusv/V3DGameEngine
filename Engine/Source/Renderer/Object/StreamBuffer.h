@@ -2,6 +2,7 @@
 
 #include "Common.h"
 #include "Object.h"
+#include "Utils/Observable.h"
 #include "Renderer/CommandList.h"
 #include "Renderer/Formats.h"
 #include "Renderer/BufferProperties.h"
@@ -11,6 +12,20 @@ namespace v3d
 namespace renderer
 {
     class Buffer;
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    /**
+    * StreamBufferUsage enum. usageFlag inside StreamBuffer
+    */
+    enum StreamBufferUsage
+    {
+        StreamBuffer_Write = 0x01,
+        StreamBuffer_Read = 0x02,
+
+        StreamBuffer_Shared = 0x04,
+        StreamBuffer_Dynamic = 0x08,
+    };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -30,7 +45,7 @@ namespace renderer
     /**
     * VertexStreamBuffer class. Game side
     */
-    class VertexStreamBuffer : public StreamBuffer
+    class VertexStreamBuffer : public StreamBuffer, public utils::Observer
     {
     public:
 
@@ -38,24 +53,24 @@ namespace renderer
         VertexStreamBuffer(const VertexStreamBuffer&) = delete;
         ~VertexStreamBuffer();
 
-        StreamBufferData& getStreamBufferData(u32 stream) const;
-
+        bool isLocked() const;
         void update(u32 stream, u32 size, void* data);
 
     private:
 
-        explicit VertexStreamBuffer(CommandList& cmdList, u16 usageFlag, const std::vector<StreamBufferData>& streams) noexcept;
-        explicit VertexStreamBuffer(CommandList& cmdList, u16 usageFlag, u32 size, void* data) noexcept;
+        void handleNotify(utils::Observable* ob) override;
+
+        explicit VertexStreamBuffer(CommandList& cmdList, u16 usageFlag, u64 size, void* data) noexcept;
 
         friend CommandList;
         CommandList& m_cmdList;
 
-        u16 m_usageFlag;
-        mutable std::vector<StreamBufferData> m_streams;
 
-        Buffer* m_buffer;
+        u64                 m_size;
+        void*               m_data;
+        std::atomic<bool>   m_lock;
 
-        friend StreamBufferDescription;
+        Buffer*             m_buffer;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

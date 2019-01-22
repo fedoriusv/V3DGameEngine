@@ -120,8 +120,8 @@ void MyApplication::Initialize()
          -1.0f,  1.0f, 0.0f,
           0.0f, -1.0f, 0.0f
     };
-    u32 vertexBufferSize = vertexBuffer.size() * sizeof(f32);
-    VertexStreamBuffer* streamBuffer = m_CommandList->createObject<VertexStreamBuffer>(StreamBufferUsage::StreamBuffer_Upload | StreamBufferUsage::StreamBuffer_Direct,  vertexBufferSize, vertexBuffer.data());
+    u64 vertexBufferSize = vertexBuffer.size() * sizeof(f32);
+    VertexStreamBuffer* streamBuffer = m_CommandList->createObject<VertexStreamBuffer>(StreamBuffer_Write | StreamBuffer_Shared,  vertexBufferSize, vertexBuffer.data());
 
     //m_CommandList.draw(StreamBufferDesc, offset, count, instanceCount);
 

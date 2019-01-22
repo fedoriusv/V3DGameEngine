@@ -21,14 +21,17 @@ namespace renderer
         enum class BufferType : u32
         {
             BufferType_VertexBuffer,
-            BufferType_IndexBuffer
+            BufferType_IndexBuffer,
+            BufferType_StagingBuffer
         };
 
-        Buffer() {};
+        Buffer() noexcept {};
         virtual ~Buffer() {};
 
         virtual bool create() = 0;
         virtual void destroy() = 0;
+
+        virtual bool upload(const Context* context, u32 offset, u32 size, void* data) = 0;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

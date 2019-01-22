@@ -22,18 +22,35 @@ namespace vk
     {
     public:
 
-        VulkanBuffer(VulkanMemory* memory, VkDevice device, u16 usageFlag);
+        VulkanBuffer(VulkanMemory* memory, VkDevice device, Buffer::BufferType type, u16 usageFlag, u64 size);
         ~VulkanBuffer();
 
         bool create() override;
         void destroy() override;
 
+        bool upload(const Context* context, u32 offset, u32 size, void* data) override;
+
+        VkBuffer getHandle() const;
+
+        void* map();
+        void unmap();
+
     private:
 
+        bool recreate();
+
         VkDevice m_device;
+
+        VulkanMemory::VulkanAlloc m_memory;
         VulkanMemory* m_memoryManager;
 
         u32 m_usageFlags;
+        BufferType m_type;
+
+        u64 m_size;
+        bool m_mapped;
+
+        VkBuffer m_buffer;
 
         static VulkanMemory::VulkanMemoryAllocator* s_memoryAllocator;
     };

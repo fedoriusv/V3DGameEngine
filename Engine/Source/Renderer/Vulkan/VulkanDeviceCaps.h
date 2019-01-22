@@ -16,9 +16,14 @@ namespace vk
 
     struct VulkanDeviceCaps : DeviceCaps, utils::Singleton<VulkanDeviceCaps>
     {
+        VulkanDeviceCaps() = default;
+
         bool individuallyResetForCommandBuffers;
         bool supportCoherentMemory;
+
         bool useDynamicUniforms;
+        bool unifiedMemoryManager;
+        bool useStagingBuffers;
 
         static bool checkInstanceExtension(const c8* extensionName);
         static bool checkDeviceExtension(VkPhysicalDevice physicalDevice, const c8* extensionName);

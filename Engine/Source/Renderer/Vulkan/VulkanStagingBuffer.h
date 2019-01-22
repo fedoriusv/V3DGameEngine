@@ -1,0 +1,62 @@
+#pragma once
+
+#include "Common.h"
+#include "Utils/Singleton.h"
+
+#ifdef VULKAN_RENDER
+#include "VulkanWrapper.h"
+#include "VulkanBuffer.h"
+
+namespace v3d
+{
+namespace renderer
+{
+namespace vk
+{
+    class VulkanMemory;
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    class VulkanStaginBuffer final
+    {
+    public:
+
+        VulkanStaginBuffer(VulkanMemory* memory, VkDevice device, u64 size, u16 usageFlag) noexcept;
+        ~VulkanStaginBuffer();
+
+        bool create();
+        void destroy();
+
+        void* map();
+        void unmap();
+
+        VulkanBuffer* getBuffer() const;
+
+    private:
+
+        VkDevice        m_device;
+        VulkanBuffer*   m_buffer;
+        VulkanMemory*   m_memoryManager;
+    };
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    class VulkanStaginBufferManager final
+    {
+    public:
+
+        VulkanStaginBufferManager(VkDevice device);
+        ~VulkanStaginBufferManager();
+
+        VulkanStaginBuffer* createStagingBuffer(u64 size, u16 usageFlag) const;
+
+        VkDevice m_device;
+        class VulkanMemory* m_memoryManager;
+    };
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
+
+} //namespace vk
+} //namespace renderer
+} //namespace v3d
+#endif //VULKAN_RENDER

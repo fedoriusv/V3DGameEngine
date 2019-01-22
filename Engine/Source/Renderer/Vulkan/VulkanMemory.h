@@ -20,14 +20,15 @@ namespace vk
 
         struct VulkanAlloc
         {
-            VkDeviceMemory _memory;
-            VkDeviceSize   _size;
-            VkDeviceSize   _offset;
-            void*          _mapped;
+            VkDeviceMemory          _memory;
+            VkMemoryPropertyFlags   _flag;
+            VkDeviceSize            _size;
+            VkDeviceSize            _offset;
+            void*                   _mapped;
 
             bool operator==(const VulkanAlloc& op)
             {
-                return _memory == op._memory &&
+                return _memory == op._memory && _flag == op._flag &&
                     _size == op._size && _offset == op._offset &&
                     _mapped == op._mapped;
             }
