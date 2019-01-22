@@ -232,13 +232,32 @@ bool VertexStreamBuffer::update(u32 offset, u64 size, void * data)
 
     if (size > 0 && data)
     {
+        if (m_size != size && offset == 0)
+        {
+            if (!(m_usageFlag & StreamBuffer_Dynamic))
+            {
+                ASSERT(false, "static buffer");
+                return false;
+            }
+
+            if (m_data)
+            {
+                //TODO maybe used in render side
+                delete m_data;
+            }
+            m_data = malloc(size);
+            m_size = size;
+        }
+
+        memcpy(m_data, data, size);
+
         if (m_cmdList.isImmediate())
         {
-            return m_buffer->upload(m_cmdList.getContext(), offset, size, data);
+            return m_buffer->upload(m_cmdList.getContext(), offset, m_size, m_data);
         }
         else
         {
-            m_cmdList.pushCommand(new UpdateBufferCommand(m_buffer, offset, size, data, (m_usageFlag & StreamBuffer_Shared)));
+            m_cmdList.pushCommand(new UpdateBufferCommand(m_buffer, offset, m_size, m_data, (m_usageFlag & StreamBuffer_Shared)));
             return true;
         }
     }
