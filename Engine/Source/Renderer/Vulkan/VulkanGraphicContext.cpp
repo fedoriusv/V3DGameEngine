@@ -70,7 +70,6 @@ VulkanGraphicContext::VulkanGraphicContext(const platform::Window * window) noex
     , m_pipelineManager(nullptr)
 
     , m_window(window)
-    , m_frameCounter(0U)
 {
     LOG_DEBUG("VulkanGraphicContext created this %llx", this);
 

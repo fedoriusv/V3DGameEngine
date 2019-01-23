@@ -75,6 +75,7 @@ namespace vk
         void cmdClearImage(VulkanImage* image, VkImageLayout imageLayout, const VkClearDepthStencilValue* pDepthStencil);
 
         //TODO: cmd list
+        void cmdUpdateBuffer(VulkanBuffer* src, u32 offset, u64 size, void* data);
         void cmdCopyBufferToImage();
         void cmdCopyBufferToBuffer(VulkanBuffer* src, VulkanBuffer* dst, const VkBufferCopy& region);
 

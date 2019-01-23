@@ -169,7 +169,6 @@ VertexStreamBuffer::VertexStreamBuffer(renderer::CommandList& cmdList, u16 usage
     m_buffer = m_cmdList.getContext()->createBuffer(Buffer::BufferType::BufferType_VertexBuffer, m_usageFlag, m_size);
     ASSERT(m_buffer, "m_buffer is nullptr");
 
-    m_lock = true;
     if (m_cmdList.isImmediate())
     {
         if (!m_buffer->create())
@@ -178,7 +177,6 @@ VertexStreamBuffer::VertexStreamBuffer(renderer::CommandList& cmdList, u16 usage
 
             delete m_buffer;
             m_buffer = nullptr;
-            m_lock = false;
         }
         m_buffer->registerNotify(this);
 
@@ -213,11 +211,6 @@ VertexStreamBuffer::~VertexStreamBuffer()
     }
 }
 
-bool VertexStreamBuffer::isLocked() const
-{
-    return m_lock; //?
-}
-
 void VertexStreamBuffer::handleNotify(utils::Observable * ob)
 {
     m_buffer = nullptr;
@@ -234,7 +227,7 @@ bool VertexStreamBuffer::update(u32 offset, u64 size, void * data)
     {
         if (m_size != size && offset == 0)
         {
-            if (!(m_usageFlag & StreamBuffer_Dynamic))
+            if (!(m_usageFlag & StreamBuffer_Dynamic) || (m_usageFlag & StreamBuffer_Shared))
             {
                 ASSERT(false, "static buffer");
                 return false;
@@ -242,7 +235,6 @@ bool VertexStreamBuffer::update(u32 offset, u64 size, void * data)
 
             if (m_data)
             {
-                //TODO maybe used in render side
                 delete m_data;
             }
             m_data = malloc(size);

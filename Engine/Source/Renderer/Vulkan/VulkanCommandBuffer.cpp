@@ -260,6 +260,19 @@ void VulkanCommandBuffer::cmdClearImage(VulkanImage * image, VkImageLayout image
     }
 }
 
+void VulkanCommandBuffer::cmdUpdateBuffer(VulkanBuffer * src, u32 offset, u64 size, void * data)
+{
+    ASSERT(!isInsideRenderPass(), "outside render pass");
+    if (m_level == CommandBufferLevel::PrimaryBuffer)
+    {
+        VulkanWrapper::CmdUpdateBuffer(m_command, src->getHandle(), offset, size, data);
+    }
+    else
+    {
+        ASSERT(false, "not implemented");
+    }
+}
+
 void VulkanCommandBuffer::cmdCopyBufferToImage()
 {
     ASSERT(!isInsideRenderPass(), "outside render pass");

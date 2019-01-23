@@ -162,29 +162,34 @@ bool VulkanBuffer::upload(const Context* context, u32 offset, u64 size, void * d
         if (VulkanDeviceCaps::getInstance()->useStagingBuffers)
         {
             const VulkanGraphicContext* vkContext = static_cast<const VulkanGraphicContext*>(context);
-            VulkanStaginBuffer* staginBuffer = vkContext->getStagingManager()->createStagingBuffer(size, StreamBufferUsage::StreamBuffer_Read);
-            if (!staginBuffer)
+            if (m_size <= 65536)
             {
-                ASSERT(false, "staginBuffer is nullptr");
-                return false;
+                vkContext->getCurrentBuffer(VulkanCommandBufferManager::CommandTargetType::CmdUploadBuffer)->cmdUpdateBuffer(this, offset, m_size, data);
             }
-            void* stagingData = staginBuffer->map();
-            ASSERT(stagingData, "stagingData is nullptr");
-            memcpy(stagingData, data, size);
-            staginBuffer->unmap();
+            else
+            {
+                VulkanStaginBuffer* staginBuffer = vkContext->getStagingManager()->createStagingBuffer(size, StreamBufferUsage::StreamBuffer_Read);
+                if (!staginBuffer)
+                {
+                    ASSERT(false, "staginBuffer is nullptr");
+                    return false;
+                }
+                void* stagingData = staginBuffer->map();
+                ASSERT(stagingData, "stagingData is nullptr");
+                memcpy(stagingData, data, size);
+                staginBuffer->unmap();
 
-            VkBufferCopy bufferCopy = {};
-            bufferCopy.srcOffset = 0;
-            bufferCopy.dstOffset = offset;
-            bufferCopy.size = size;
+                VkBufferCopy bufferCopy = {};
+                bufferCopy.srcOffset = 0;
+                bufferCopy.dstOffset = offset;
+                bufferCopy.size = size;
 
-            //vkCmdUpdateBuffer check
+                //TODO memory barrier
+                vkContext->getCurrentBuffer(VulkanCommandBufferManager::CommandTargetType::CmdUploadBuffer)->cmdCopyBufferToBuffer(this, staginBuffer->getBuffer(), bufferCopy);
+                //TODO memory barrier
 
-            //TODO memory barrier
-            vkContext->getCurrentBuffer(VulkanCommandBufferManager::CommandTargetType::CmdUploadBuffer)->cmdCopyBufferToBuffer(this, staginBuffer->getBuffer(), bufferCopy);
-            //TODO memory barrier
-
-            //staginBuffer mark at frame
+                staginBuffer->getBuffer()->captureInsideFrame(vkContext->getCurrentFrameIndex());
+            }
         }
         else
         {

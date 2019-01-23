@@ -6,6 +6,7 @@
 #ifdef VULKAN_RENDER
 #include "VulkanWrapper.h"
 #include "VulkanMemory.h"
+#include "VulkanFrameResource.h"
 
 namespace v3d
 {
@@ -18,7 +19,7 @@ namespace vk
     /**
     * VulkanBuffer class. Render side
     */
-    class VulkanBuffer final : public Buffer
+    class VulkanBuffer final : public Buffer, public FrameResource
     {
     public:
 

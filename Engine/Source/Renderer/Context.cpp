@@ -12,6 +12,7 @@ namespace renderer
 {
 
 Context::Context() noexcept
+    : m_frameCounter(0)
 {
 }
 
@@ -59,6 +60,11 @@ Context* Context::createContext(const platform::Window* window,  RenderType type
 Context::RenderType Context::getRenderType() const
 {
     return m_renderType;
+}
+
+u64 Context::getCurrentFrameIndex() const
+{
+    return m_frameCounter;
 }
 
 } //namespace renderer

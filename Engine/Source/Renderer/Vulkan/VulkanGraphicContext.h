@@ -130,14 +130,11 @@ namespace vk
             std::vector<DescriptorBinding> _descriptorsStates;
         };
         CurrentContextState     m_currentContextState;
+        static std::vector<VkDynamicState>  s_dynamicStates;
 
         bool prepareDraw();
 
         const platform::Window* m_window;
-
-        u64 m_frameCounter;
-
-        static std::vector<VkDynamicState>  s_dynamicStates;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

@@ -95,6 +95,7 @@ namespace renderer
         virtual Buffer* createBuffer(Buffer::BufferType type, u16 usageFlag, u64 size) = 0;
         virtual void removeBuffer(Buffer* buffer) = 0;
 
+        u64 getCurrentFrameIndex() const;
         virtual const DeviceCaps* getDeviceCaps() const = 0;
 
     protected:
@@ -111,6 +112,7 @@ namespace renderer
         virtual void destroy() = 0;
 
         RenderType  m_renderType;
+        u64 m_frameCounter;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
