@@ -150,6 +150,9 @@ void VulkanDeviceCaps::fillCapabilitiesList(const DeviceInfo* info)
     m_queueFamilyProperties.resize(queueFamilyCount);
     VulkanWrapper::GetPhysicalDeviceQueueFamilyProperties(info->_physicalDevice, &queueFamilyCount, m_queueFamilyProperties.data());
 
+    //VK_EXT_memory_budget
+    //VK_EXT_memory_priority
+
     //TODO:
 }
 

@@ -32,6 +32,11 @@ void EmptyContext::presentFrame()
     LOG_DEBUG("EmptyContext::presentFrame");
 }
 
+void EmptyContext::submit(bool wait)
+{
+    LOG_DEBUG("EmptyContext::submit");
+}
+
 void EmptyContext::clearBackbuffer(const core::Vector4D & color)
 {
     LOG_DEBUG("EmptyContext::clearBackbuffer");

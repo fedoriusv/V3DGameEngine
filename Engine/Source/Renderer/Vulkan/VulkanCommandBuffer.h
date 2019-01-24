@@ -2,10 +2,10 @@
 
 #include "Common.h"
 #include "Utils/NonCopyable.h"
-#include "Utils/Observable.h"
 
 #ifdef VULKAN_RENDER
 #include "VulkanWrapper.h"
+#include "VulkanResource.h"
 
 namespace v3d
 {
@@ -20,7 +20,10 @@ namespace vk
     class VulkanRenderPass;
     class VulkanFramebuffer;
 
-    class VulkanCommandBuffer final : public utils::NonCopyable, public utils::Observable
+    /**
+    * VulkanCommandBuffer class. Render side
+    */
+    class VulkanCommandBuffer final : public utils::NonCopyable
     {
     public:
 
@@ -50,6 +53,7 @@ namespace vk
         CommandBufferStatus getStatus() const;
 
         void addSemaphore(VkPipelineStageFlags mask, VkSemaphore semaphore);
+        bool waitComplete(u64 timeout = 0);
 
         void beginCommandBuffer();
         void endCommandBuffer();
@@ -83,6 +87,9 @@ namespace vk
         void cmdPipelineBarrier(VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask, const VkMemoryBarrier& memoryBarrier);
         void cmdPipelineBarrier(VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask, const VkBufferMemoryBarrier& bufferMemoryBarrier);
 
+        void captureResource(VulkanResource* resource, u64 frame);
+        void releaseResources();
+
     private:
 
         friend class VulkanCommandBufferManager;
@@ -105,6 +112,9 @@ namespace vk
         std::vector<VulkanCommandBuffer*>   m_secondaryBuffers;
 
         bool m_isInsideRenderPass;
+
+        std::recursive_mutex m_mutex;
+        std::set<VulkanResource*> m_resources;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

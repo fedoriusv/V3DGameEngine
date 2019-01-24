@@ -14,8 +14,9 @@ namespace utils
     {
     public:
 
+        Observer() = default;
         virtual ~Observer() {};
-        virtual void handleNotify(Observable* ob) = 0;
+        virtual void handleNotify(Observable* obj) = 0;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -24,6 +25,7 @@ namespace utils
     {
     public:
 
+        Observable() = default;
         virtual ~Observable() {};
 
         void registerNotify(Observer* obj);
@@ -36,6 +38,7 @@ namespace utils
 
     private:
 
+        std::recursive_mutex m_mutex;
         std::set<Observer*> m_observers;
     };
 

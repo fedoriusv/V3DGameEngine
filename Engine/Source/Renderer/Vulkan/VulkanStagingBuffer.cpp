@@ -90,6 +90,28 @@ VulkanStaginBuffer * VulkanStaginBufferManager::createStagingBuffer(u64 size, u1
     return stagingBuffer;
 }
 
+void VulkanStaginBufferManager::destroyAfterUse(VulkanStaginBuffer * buffer)
+{
+    std::lock_guard lock(m_mutex);
+    m_stagingBuffers.push_back(buffer);
+}
+
+void VulkanStaginBufferManager::destroyStagingBuffers()
+{
+    std::lock_guard lock(m_mutex);
+    for (auto buff : m_stagingBuffers)
+    {
+        if (buff->getBuffer()->isCaptured())
+        {
+            ASSERT(false, "captured");
+            buff->getBuffer()->waitComplete();
+        }
+        buff->destroy();
+        delete buff;
+    }
+    m_stagingBuffers.clear();
+}
+
 } //namespace vk
 } //namespace renderer
 } //namespace v3d

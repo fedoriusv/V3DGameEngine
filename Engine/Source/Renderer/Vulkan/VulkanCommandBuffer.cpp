@@ -88,6 +88,30 @@ void VulkanCommandBuffer::addSemaphore(VkPipelineStageFlags mask, VkSemaphore se
     m_semaphores.push_back(semaphore);
 }
 
+bool VulkanCommandBuffer::waitComplete(u64 timeout)
+{
+    VulkanCommandBuffer::refreshFenceStatus();
+    if (m_status == VulkanCommandBuffer::CommandBufferStatus::Finished)
+    {
+        return true;
+    }
+
+    if (m_status == VulkanCommandBuffer::CommandBufferStatus::Submit)
+    {
+        VkResult result = VulkanWrapper::WaitForFences(m_device, 1, &m_fence, VK_TRUE, timeout);
+        if (result != VK_SUCCESS)
+        {
+            LOG_WARNING("VulkanCommandBuffer::waitComplete vkWaitForFences. Error %s", ErrorString(result).c_str());
+            return false;
+        }
+
+        return true;
+    }
+
+    ASSERT(false, "not started");
+    return false;
+}
+
 void VulkanCommandBuffer::refreshFenceStatus()
 {
     if (m_status == VulkanCommandBuffer::CommandBufferStatus::Submit)
@@ -117,10 +141,37 @@ void VulkanCommandBuffer::refreshFenceStatus()
                     secondaryBuffer->m_semaphores.clear();
                 }
 
-                notifyObservers();
+                VulkanCommandBuffer::releaseResources();
             }
         }
     }
+}
+
+void VulkanCommandBuffer::captureResource(VulkanResource* resource, u64 frame)
+{
+    std::lock_guard lock(m_mutex);
+
+    auto iter = m_resources.insert(resource);
+    if (!iter.second)
+    {
+        ASSERT((*(iter.first))->m_cmdBuffer == resource->m_cmdBuffer, "different buffers");
+    }
+
+    resource->m_status = VulkanResource::Status::Status_Captured;
+    resource->m_frame = frame;
+    resource->m_cmdBuffer = this;
+}
+
+void VulkanCommandBuffer::releaseResources()
+{
+    std::lock_guard lock(m_mutex);
+    for (auto res : m_resources)
+    {
+        res->m_status = VulkanResource::Status::Status_Done;
+        res->m_cmdBuffer = nullptr;
+        res->m_frame = 0;
+    }
+    m_resources.clear();
 }
 
 void VulkanCommandBuffer::beginCommandBuffer()
@@ -164,6 +215,9 @@ void VulkanCommandBuffer::endCommandBuffer()
 
 void VulkanCommandBuffer::cmdBeginRenderpass(VulkanRenderPass* pass, VulkanFramebuffer* framebuffer, VkRect2D area, std::vector<VkClearValue>& clearValues)
 {
+    pass->captureInsideCommandBuffer(this, 0);
+    framebuffer->captureInsideCommandBuffer(this, 0);
+
     VkRenderPassBeginInfo renderPassBeginInfo = {};
     renderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
     renderPassBeginInfo.pNext = nullptr;
@@ -232,8 +286,10 @@ void VulkanCommandBuffer::cmdDraw(u32 firstVertex, u32 vertexCount, u32 firstIns
 
 void VulkanCommandBuffer::cmdClearImage(VulkanImage* image, VkImageLayout imageLayout, const VkClearColorValue * pColor)
 {
-    //outside renderpass
+    ASSERT(!isInsideRenderPass(), "outside render pass");
     ASSERT(image->getImageAspectFlags() == VK_IMAGE_ASPECT_COLOR_BIT, " image is not VK_IMAGE_ASPECT_COLOR_BIT");
+
+    image->captureInsideCommandBuffer(this, 0);
     if (m_level == CommandBufferLevel::PrimaryBuffer)
     {
         VkImageSubresourceRange imageSubresourceRange = VulkanImage::makeImageSubresourceRange(image);
@@ -247,8 +303,10 @@ void VulkanCommandBuffer::cmdClearImage(VulkanImage* image, VkImageLayout imageL
 
 void VulkanCommandBuffer::cmdClearImage(VulkanImage * image, VkImageLayout imageLayout, const VkClearDepthStencilValue * pDepthStencil)
 {
-    //outside renderpass
+    ASSERT(!isInsideRenderPass(), "outside render pass");
     ASSERT(image->getImageAspectFlags() & (VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT), " image is not VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT");
+
+    image->captureInsideCommandBuffer(this, 0);
     if (m_level == CommandBufferLevel::PrimaryBuffer)
     {
         VkImageSubresourceRange imageSubresourceRange = VulkanImage::makeImageSubresourceRange(image);
@@ -263,6 +321,8 @@ void VulkanCommandBuffer::cmdClearImage(VulkanImage * image, VkImageLayout image
 void VulkanCommandBuffer::cmdUpdateBuffer(VulkanBuffer * src, u32 offset, u64 size, void * data)
 {
     ASSERT(!isInsideRenderPass(), "outside render pass");
+
+    src->captureInsideCommandBuffer(this, 0);
     if (m_level == CommandBufferLevel::PrimaryBuffer)
     {
         VulkanWrapper::CmdUpdateBuffer(m_command, src->getHandle(), offset, size, data);
@@ -289,6 +349,9 @@ void VulkanCommandBuffer::cmdCopyBufferToImage()
 void VulkanCommandBuffer::cmdCopyBufferToBuffer(VulkanBuffer* src, VulkanBuffer* dst, const VkBufferCopy& region)
 {
     ASSERT(!isInsideRenderPass(), "outside render pass");
+
+    src->captureInsideCommandBuffer(this, 0);
+    dst->captureInsideCommandBuffer(this, 0);
     if (m_level == CommandBufferLevel::PrimaryBuffer)
     {
         VulkanWrapper::CmdCopyBuffer(m_command, src->getHandle(), dst->getHandle(), 1, &region);

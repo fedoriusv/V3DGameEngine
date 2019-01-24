@@ -22,6 +22,7 @@ namespace renderer
         void beginFrame() override;
         void endFrame() override;
         void presentFrame() override;
+        void submit(bool wait = false) override;
 
         virtual void clearBackbuffer(const core::Vector4D & color) override;
 

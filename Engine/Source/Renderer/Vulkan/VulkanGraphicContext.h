@@ -44,6 +44,7 @@ namespace vk
         void beginFrame() override;
         void endFrame() override;
         void presentFrame() override;
+        void submit(bool wait = false) override;
 
         void clearBackbuffer(const core::Vector4D & color) override;
 
@@ -67,6 +68,7 @@ namespace vk
         void removeBuffer(Buffer* buffer) override;
 
         VulkanCommandBuffer* getCurrentBuffer(VulkanCommandBufferManager::CommandTargetType type) const;
+        bool isCurrentBuffer(VulkanCommandBufferManager::CommandTargetType type) const;
 
         void transferImageLayout(VulkanImage* image, VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask, VkImageLayout layout) const;
 
@@ -78,7 +80,7 @@ namespace vk
         void drawIndexed() override;
 
         const DeviceCaps* getDeviceCaps() const override;
-        const VulkanStaginBufferManager* getStagingManager() const;
+        VulkanStaginBufferManager* getStagingManager();
 
         static const std::vector<VkDynamicState>& getDynamicStates();
         static bool isDynamicState(VkDynamicState state);
@@ -119,10 +121,10 @@ namespace vk
             void invalidateState();
 
             VulkanCommandBuffer* _currentDrawBuffer;
+            VulkanCommandBuffer* _currentUploadBuffer;
 
             VulkanRenderPass*    _currentRenderpass;
             VulkanFramebuffer*   _currentFramebuffer;
-
             VulkanGraphicPipeline* _currentPipeline;
 
             std::map<VkDynamicState, std::function<void()>> _stateCallbacks;

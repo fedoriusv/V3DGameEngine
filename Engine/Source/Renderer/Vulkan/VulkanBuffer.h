@@ -6,7 +6,7 @@
 #ifdef VULKAN_RENDER
 #include "VulkanWrapper.h"
 #include "VulkanMemory.h"
-#include "VulkanFrameResource.h"
+#include "VulkanResource.h"
 
 namespace v3d
 {
@@ -19,7 +19,7 @@ namespace vk
     /**
     * VulkanBuffer class. Render side
     */
-    class VulkanBuffer final : public Buffer, public FrameResource
+    class VulkanBuffer final : public Buffer, public VulkanResource
     {
     public:
 
@@ -29,7 +29,7 @@ namespace vk
         bool create() override;
         void destroy() override;
 
-        bool upload(const Context* context, u32 offset, u64 size, void* data) override;
+        bool upload(Context* context, u32 offset, u64 size, void* data) override;
 
         VkBuffer getHandle() const;
 

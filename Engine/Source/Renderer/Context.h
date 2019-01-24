@@ -59,6 +59,7 @@ namespace renderer
         virtual void beginFrame() = 0;
         virtual void endFrame() = 0;
         virtual void presentFrame() = 0;
+        virtual void submit(bool wait = false) = 0;
 
 
         virtual void clearBackbuffer(const core::Vector4D & color) = 0;

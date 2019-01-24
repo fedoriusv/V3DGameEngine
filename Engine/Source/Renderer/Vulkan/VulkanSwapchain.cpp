@@ -234,6 +234,7 @@ bool VulkanSwapchain::createSwapchain(const SwapchainConfig& config)
     VkSwapchainCreateInfoKHR swapChainInfo = {};
     swapChainInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
     swapChainInfo.pNext = nullptr;
+    swapChainInfo.flags = 0;
     swapChainInfo.surface = m_surface;
     swapChainInfo.minImageCount = desiredNumberOfSwapchainImages;
     swapChainInfo.imageFormat = m_surfaceFormat.format;

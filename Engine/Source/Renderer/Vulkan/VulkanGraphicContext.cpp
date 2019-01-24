@@ -104,17 +104,14 @@ void VulkanGraphicContext::beginFrame()
     u32 index = m_swapchain->acquireImage();
     LOG_DEBUG("VulkanGraphicContext::beginFrame %llu, image index %u", m_frameCounter, index);
 
-    if (!m_currentContextState._currentDrawBuffer)
-    {
-        m_currentContextState._currentDrawBuffer = m_drawCmdBufferManager->acquireNewCmdBuffer(VulkanCommandBuffer::PrimaryBuffer);
-        ASSERT(m_currentContextState._currentDrawBuffer, "m_currentDrawBuffer is nullptr");
-    }
+    ASSERT(!isCurrentBuffer(VulkanCommandBufferManager::CommandTargetType::CmdDrawBuffer), "buffer exist");
+    m_currentContextState._currentDrawBuffer = m_drawCmdBufferManager->acquireNewCmdBuffer(VulkanCommandBuffer::PrimaryBuffer);
+    ASSERT(m_currentContextState._currentDrawBuffer, "m_currentDrawBuffer is nullptr");
 
     if (m_currentContextState._currentDrawBuffer->getStatus() != VulkanCommandBuffer::CommandBufferStatus::Ready)
     {
         LOG_ERROR("VulkanGraphicContext::beginFrame CommandBufferStatus is Invalid");
     }
-
     m_currentContextState._currentDrawBuffer->beginCommandBuffer();
 
     transferImageLayout(m_swapchain->getBackbuffer(), VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
@@ -123,12 +120,20 @@ void VulkanGraphicContext::beginFrame()
 void VulkanGraphicContext::endFrame()
 {
     LOG_DEBUG("VulkanGraphicContext::endFrame %llu", m_frameCounter);
+    if (isCurrentBuffer(VulkanCommandBufferManager::CommandTargetType::CmdUploadBuffer))
+    {
+        m_drawCmdBufferManager->submit(m_currentContextState._currentUploadBuffer, VK_NULL_HANDLE);
+        m_currentContextState._currentDrawBuffer->waitComplete();
+        m_currentContextState._currentUploadBuffer = nullptr;
+    }
 
+    ASSERT(m_currentContextState._currentDrawBuffer, "m_currentDrawBuffer is nullptr");
     transferImageLayout(m_swapchain->getBackbuffer(),VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
 
     m_currentContextState._currentDrawBuffer->endCommandBuffer();
 
     m_drawCmdBufferManager->submit(m_currentContextState._currentDrawBuffer, VK_NULL_HANDLE);
+    m_currentContextState._currentDrawBuffer = nullptr;
     m_currentContextState.invalidateState();
 }
 
@@ -140,8 +145,30 @@ void VulkanGraphicContext::presentFrame()
     m_swapchain->present(m_queueList[0], semaphores);
 
     m_drawCmdBufferManager->updateCommandBuffers();
+    m_stagingBufferManager->destroyStagingBuffers();
 
     m_frameCounter++;
+}
+
+void VulkanGraphicContext::submit(bool wait)
+{
+    if (isCurrentBuffer(VulkanCommandBufferManager::CommandTargetType::CmdUploadBuffer))
+    {
+        m_drawCmdBufferManager->submit(m_currentContextState._currentUploadBuffer, VK_NULL_HANDLE);
+        m_currentContextState._currentDrawBuffer->waitComplete();
+        m_currentContextState._currentUploadBuffer = nullptr;
+    }
+
+    if (m_currentContextState._currentDrawBuffer->getStatus() == VulkanCommandBuffer::CommandBufferStatus::Begin)
+    {
+        m_currentContextState._currentDrawBuffer->endCommandBuffer();
+        m_drawCmdBufferManager->submit(m_currentContextState._currentDrawBuffer, VK_NULL_HANDLE);
+        if (wait)
+        {
+            m_currentContextState._currentDrawBuffer->waitComplete();
+        }
+        m_currentContextState._currentDrawBuffer = nullptr;
+    }
 }
 
 void VulkanGraphicContext::clearBackbuffer(const core::Vector4D & color)
@@ -240,7 +267,8 @@ void VulkanGraphicContext::removeRenderTarget(const RenderPass::RenderPassInfo *
 
 void VulkanGraphicContext::removeFramebuffer(Framebuffer * framebuffer)
 {
-    if (m_currentContextState._currentFramebuffer == framebuffer)
+    VulkanFramebuffer* vkFramebuffer = static_cast<VulkanFramebuffer*>(framebuffer);
+    if (m_currentContextState._currentFramebuffer == vkFramebuffer || vkFramebuffer->isCaptured())
     {
         ASSERT(false, "not implementing");
         //delayed delete
@@ -251,7 +279,8 @@ void VulkanGraphicContext::removeFramebuffer(Framebuffer * framebuffer)
 
 void VulkanGraphicContext::removeRenderPass(RenderPass * renderpass)
 {
-    if (m_currentContextState._currentRenderpass == renderpass)
+    VulkanRenderPass* vkRenderpass = static_cast<VulkanRenderPass*>(renderpass);
+    if (m_currentContextState._currentRenderpass == vkRenderpass || vkRenderpass->isCaptured())
     {
         ASSERT(false, "not implementing");
         //delayed delete
@@ -312,11 +341,29 @@ VulkanCommandBuffer * VulkanGraphicContext::getCurrentBuffer(VulkanCommandBuffer
     {
         return m_currentContextState._currentDrawBuffer;
     }
-    else
+    else if (type == VulkanCommandBufferManager::CommandTargetType::CmdUploadBuffer)
     {
-        return nullptr;
+        return m_currentContextState._currentUploadBuffer;
     }
+    
+    return nullptr;
 }
+
+bool VulkanGraphicContext::isCurrentBuffer(VulkanCommandBufferManager::CommandTargetType type) const
+{
+    if (type == VulkanCommandBufferManager::CommandTargetType::CmdDrawBuffer)
+    {
+        return m_currentContextState._currentDrawBuffer != nullptr;
+    }
+    else if (type == VulkanCommandBufferManager::CommandTargetType::CmdUploadBuffer)
+    {
+        return m_currentContextState._currentUploadBuffer != nullptr;
+    }
+
+    return false;
+}
+
+
 
 void VulkanGraphicContext::transferImageLayout(VulkanImage * image, VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask, VkImageLayout layout) const
 {
@@ -372,7 +419,7 @@ const DeviceCaps* VulkanGraphicContext::getDeviceCaps() const
     return &m_deviceCaps;
 }
 
-const VulkanStaginBufferManager * VulkanGraphicContext::getStagingManager() const
+VulkanStaginBufferManager * VulkanGraphicContext::getStagingManager()
 {
     ASSERT(m_deviceCaps.useStagingBuffers, "enable feature");
     return m_stagingBufferManager;
@@ -859,7 +906,6 @@ bool VulkanGraphicContext::prepareDraw()
 
 void VulkanGraphicContext::CurrentContextState::invalidateState()
 {
-    _currentDrawBuffer = nullptr;
     _stateCallbacks.clear();
 }
 

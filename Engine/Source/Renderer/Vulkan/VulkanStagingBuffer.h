@@ -50,7 +50,15 @@ namespace vk
 
         VulkanStaginBuffer* createStagingBuffer(u64 size, u16 usageFlag) const;
 
+        void destroyAfterUse(VulkanStaginBuffer* buffer);
+
+        void destroyStagingBuffers();
+
         VkDevice m_device;
+
+        std::recursive_mutex m_mutex;
+        std::vector<VulkanStaginBuffer*> m_stagingBuffers;
+
         class VulkanMemory* m_memoryManager;
     };
 

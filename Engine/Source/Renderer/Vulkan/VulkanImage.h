@@ -8,6 +8,7 @@
 #ifdef VULKAN_RENDER
 #include "VulkanWrapper.h"
 #include "VulkanMemory.h"
+#include "VulkanResource.h" 
 
 namespace v3d
 {
@@ -17,7 +18,7 @@ namespace vk
 {
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    class VulkanImage final : public Image
+    class VulkanImage final : public Image, public VulkanResource
     {
     public:
 

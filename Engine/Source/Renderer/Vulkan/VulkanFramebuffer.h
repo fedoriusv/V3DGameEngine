@@ -4,6 +4,7 @@
 
 #ifdef VULKAN_RENDER
 #include "VulkanWrapper.h"
+#include "VulkanResource.h"
 
 namespace v3d
 {
@@ -13,7 +14,7 @@ namespace vk
 {
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    class VulkanFramebuffer final : public Framebuffer
+    class VulkanFramebuffer final : public Framebuffer, public VulkanResource
     {
     public:
 

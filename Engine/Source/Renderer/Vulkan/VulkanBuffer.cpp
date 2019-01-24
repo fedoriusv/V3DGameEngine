@@ -139,8 +139,13 @@ void VulkanBuffer::destroy()
     }
 }
 
-bool VulkanBuffer::upload(const Context* context, u32 offset, u64 size, void * data)
+bool VulkanBuffer::upload(Context* context, u32 offset, u64 size, void * data)
 {
+    if (VulkanResource::isCaptured())
+    {
+        VulkanResource::waitComplete();
+    }
+
     if (size > 0 && data)
     {
         if (m_size != size && offset == 0)
@@ -161,7 +166,7 @@ bool VulkanBuffer::upload(const Context* context, u32 offset, u64 size, void * d
 
         if (VulkanDeviceCaps::getInstance()->useStagingBuffers)
         {
-            const VulkanGraphicContext* vkContext = static_cast<const VulkanGraphicContext*>(context);
+            VulkanGraphicContext* vkContext = static_cast<VulkanGraphicContext*>(context);
             if (m_size <= 65536)
             {
                 vkContext->getCurrentBuffer(VulkanCommandBufferManager::CommandTargetType::CmdUploadBuffer)->cmdUpdateBuffer(this, offset, m_size, data);
@@ -188,7 +193,7 @@ bool VulkanBuffer::upload(const Context* context, u32 offset, u64 size, void * d
                 vkContext->getCurrentBuffer(VulkanCommandBufferManager::CommandTargetType::CmdUploadBuffer)->cmdCopyBufferToBuffer(this, staginBuffer->getBuffer(), bufferCopy);
                 //TODO memory barrier
 
-                staginBuffer->getBuffer()->captureInsideFrame(vkContext->getCurrentFrameIndex());
+                vkContext->getStagingManager()->destroyAfterUse(staginBuffer);
             }
         }
         else

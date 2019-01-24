@@ -5,6 +5,7 @@
 
 #ifdef VULKAN_RENDER
 #include "VulkanWrapper.h"
+#include "VulkanResource.h"
 
 namespace v3d
 {
@@ -14,7 +15,7 @@ namespace vk
 {
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    class VulkanRenderPass final : public RenderPass
+    class VulkanRenderPass final : public RenderPass, public VulkanResource
     {
     public:
 

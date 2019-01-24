@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "Common.h"
 
@@ -15,30 +15,37 @@ namespace vk
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    class FrameResource
+    /**
+    * VulkanResource class. Render side
+    */
+    class VulkanResource
     {
     public:
 
-        enum Status
+        enum Status : u32
         {
             Status_Free,
-            Status_InQueue,
-            Status_Submitting,
+            Status_Captured,
             Status_Done
         };
 
-        FrameResource() noexcept;
-        ~FrameResource();
+        VulkanResource() noexcept;
+        virtual ~VulkanResource();
 
-
-        void captureInsideFrame(u64 frame);
+        Status getStatus() const;
         bool isCaptured() const;
 
+        bool waitComplete(u64 time = 0);
+
+        void captureInsideCommandBuffer(VulkanCommandBuffer* buffer, u64 frame);
 
     private:
 
-        Status           m_status;
-        std::atomic<u64> m_frame;
+        std::atomic<Status>     m_status;
+        std::atomic<u64>        m_frame;
+        VulkanCommandBuffer*    m_cmdBuffer;
+
+        friend VulkanCommandBuffer;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
