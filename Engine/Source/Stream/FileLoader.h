@@ -19,6 +19,7 @@ namespace stream
 
         static stream::Stream* load(std::string filename)
         {
+            LOG_DEBUG("FileLoader::try load [%s] file", filename.c_str());
             if (!stream::FileStream::isExists(filename))
             {
                 return nullptr;

@@ -80,7 +80,7 @@ namespace renderer
         virtual void bindTexture(const Image* image, const ShaderProgramDescription::Texture& bind) = 0;
 
         //geometry bind
-        virtual void bindVertexBuffer(const Buffer* buffer, u32 offset) = 0;
+        virtual void bindVertexBuffers(const std::vector<Buffer*>& buffer, const std::vector<u64>& offsets) = 0;
 
         //draw
         virtual void draw(u32 firstVertex, u32 vertexCount, u32 firstInstance,  u32 instanceCount) = 0;

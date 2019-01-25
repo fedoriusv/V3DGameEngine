@@ -29,6 +29,7 @@ public:
 
     void execute(const CommandList& cmdList)
     {
+        LOG_DEBUG("CommandRemovePipelines execute");
         for (auto& pipeline : m_pipelines)
         {
             cmdList.getContext()->removePipeline(pipeline);
@@ -58,6 +59,14 @@ GraphicsPipelineState::GraphicsPipelineState(CommandList& cmdList, const Graphic
 
     , m_tracker(this, std::bind(&GraphicsPipelineState::destroyPipelines, this, std::placeholders::_1))
 {
+}
+
+GraphicsPipelineState::GraphicsPipelineState(CommandList& cmdList, const ShaderProgram* const program, const Backbuffer* const backbuffer) noexcept
+    : m_cmdList(cmdList)
+
+    , m_tracker(this, nullptr)
+{
+    ASSERT(false, "need implement");
 }
 
 GraphicsPipelineState::~GraphicsPipelineState()

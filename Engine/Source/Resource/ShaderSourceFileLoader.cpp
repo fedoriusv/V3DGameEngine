@@ -41,11 +41,13 @@ ShaderSourceFileLoader::ShaderSourceFileLoader(const renderer::Context* context,
 #endif //USE_SPIRV
     }
 
+    ResourceLoader::registerPath("../../../../");
     ResourceLoader::registerPath("../../../../engine/");
 }
 
 ShaderSourceFileLoader::~ShaderSourceFileLoader()
 {
+
 }
 
 Shader * ShaderSourceFileLoader::load(const std::string & name, const std::string & alias)

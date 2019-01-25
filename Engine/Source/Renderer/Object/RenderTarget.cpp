@@ -38,6 +38,7 @@ public:
 
     void execute(const CommandList& cmdList)
     {
+        LOG_DEBUG("CommandRemoveRenderTarget execute");
         cmdList.getContext()->removeRenderTarget(&m_renderpassInfo, m_attachments, &m_clearInfo);
     }
 
@@ -66,6 +67,7 @@ public:
 
     void execute(const CommandList& cmdList)
     {
+        LOG_DEBUG("CommandRemoveFramebuffers execute");
         for (auto& framebuffer : m_framebuffers)
         {
             cmdList.getContext()->removeFramebuffer(framebuffer);
@@ -95,6 +97,7 @@ public:
 
     void execute(const CommandList& cmdList)
     {
+        LOG_DEBUG("CommandRemoveRenderPasses execute");
         for (auto& renderpass : m_renderpasses)
         {
             cmdList.getContext()->removeRenderPass(renderpass);

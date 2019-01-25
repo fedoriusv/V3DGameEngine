@@ -47,6 +47,7 @@ public:
 
     void execute(const renderer::CommandList& cmdList) override
     {
+        LOG_DEBUG("CreateBufferCommand execute");
         if (!m_buffer->create())
         {
             m_buffer->notifyObservers();
@@ -112,6 +113,7 @@ public:
 
     void execute(const renderer::CommandList& cmdList) override
     {
+        LOG_DEBUG("UpdateBufferCommand execute");
         if (m_data && m_size > 0)
         {
             m_buffer->upload(cmdList.getContext(), m_offest, m_size, m_data);
@@ -143,6 +145,7 @@ public:
 
     void execute(const renderer::CommandList& cmdList) override
     {
+        LOG_DEBUG("DestroyBufferCommand execute");
         cmdList.getContext()->removeBuffer(m_buffer);
     }
 
@@ -152,7 +155,7 @@ private:
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-VertexStreamBuffer::VertexStreamBuffer(renderer::CommandList& cmdList, u16 usageFlag, u64 size, void* data) noexcept
+VertexStreamBuffer::VertexStreamBuffer(renderer::CommandList& cmdList, u16 usageFlag, u64 size, const void* data) noexcept
     : m_cmdList(cmdList)
     , m_data(nullptr)
     , m_size(size)

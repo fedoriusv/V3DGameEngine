@@ -67,14 +67,15 @@ namespace vk
         Buffer* createBuffer(Buffer::BufferType type, u16 usageFlag, u64 size) override;
         void removeBuffer(Buffer* buffer) override;
 
-        VulkanCommandBuffer* getCurrentBuffer(VulkanCommandBufferManager::CommandTargetType type) const;
-        bool isCurrentBuffer(VulkanCommandBufferManager::CommandTargetType type) const;
+        VulkanCommandBuffer* getCurrentBuffer(CommandTargetType type);
+        bool isCurrentBuffer(CommandTargetType type) const;
+        bool createAndStartCommandBuffer(CommandTargetType type);
 
         void transferImageLayout(VulkanImage* image, VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask, VkImageLayout layout) const;
 
         void bindTexture(const Image* image, const ShaderProgramDescription::Texture& bind) override;
 
-        void bindVertexBuffer(const Buffer* buffer, u32 offset) override;
+        void bindVertexBuffers(const std::vector<Buffer*>& buffer, const std::vector<u64>& offsets)  override;
 
         void draw(u32 firstVertex, u32 vertexCount, u32 firstInstance, u32 instanceCount) override;
         void drawIndexed() override;
@@ -105,7 +106,7 @@ namespace vk
         std::vector<VkQueue>    m_queueList;
         class VulkanSwapchain*  m_swapchain;
 
-        VulkanCommandBufferManager* m_drawCmdBufferManager;
+        VulkanCommandBufferManager* m_cmdBufferManager;
         VulkanStaginBufferManager*  m_stagingBufferManager;
 
         class VulkanMemory*         m_imageMemoryManager;
@@ -118,10 +119,11 @@ namespace vk
 
         struct CurrentContextState
         {
+            CurrentContextState();
+
             void invalidateState();
 
-            VulkanCommandBuffer* _currentDrawBuffer;
-            VulkanCommandBuffer* _currentUploadBuffer;
+            VulkanCommandBuffer* _currentCmdBuffer[CommandTargetType::CommandTarget_Count];
 
             VulkanRenderPass*    _currentRenderpass;
             VulkanFramebuffer*   _currentFramebuffer;
@@ -130,6 +132,8 @@ namespace vk
             std::map<VkDynamicState, std::function<void()>> _stateCallbacks;
 
             std::vector<DescriptorBinding> _descriptorsStates;
+
+            std::tuple<std::vector<Buffer*>, std::vector<u64>, bool> _boundVertexBuffer;
         };
         CurrentContextState     m_currentContextState;
         static std::vector<VkDynamicState>  s_dynamicStates;

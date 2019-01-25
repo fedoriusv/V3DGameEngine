@@ -102,6 +102,16 @@ void EmptyContext::bindTexture(const Image * image, const ShaderProgramDescripti
     LOG_DEBUG("EmptyContext::bindTexture");
 }
 
+void EmptyContext::bindVertexBuffers(const std::vector<Buffer*>& buffer, const std::vector<u64>& offsets)
+{
+    LOG_DEBUG("EmptyContext::bindVertexBuffers");
+}
+
+void EmptyContext::draw(u32 firstVertex, u32 vertexCount, u32 firstInstance, u32 instanceCount)
+{
+    LOG_DEBUG("EmptyContext::draw");
+}
+
 void EmptyContext::drawIndexed()
 {
 }

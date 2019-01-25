@@ -15,7 +15,7 @@ namespace v3d
 namespace renderer
 {
 
-utils::MemoryPool g_commandMemoryPool(1024, 64, 1024 * 2, utils::MemoryPool::getDefaultMemoryPoolAllocator());
+utils::MemoryPool g_commandMemoryPool(1024, 256, 1024 * 2, utils::MemoryPool::getDefaultMemoryPoolAllocator());
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -36,6 +36,7 @@ public:
 
     void execute(const CommandList& cmdList)
     {
+        LOG_DEBUG("CommandBeginFrame execute");
         cmdList.getContext()->beginFrame();
     }
 };
@@ -52,11 +53,12 @@ public:
 
     ~CommandEndFrame() 
     {
-        LOG_DEBUG("CommandBeginFrame destructor");
+        LOG_DEBUG("CommandEndFrame destructor");
     };
 
     void execute(const CommandList& cmdList)
     {
+        LOG_DEBUG("CommandEndFrame execute");
         cmdList.getContext()->endFrame();
     }
 };
@@ -78,6 +80,7 @@ public:
 
     void execute(const CommandList& cmdList)
     {
+        LOG_DEBUG("CommandPresentFrame execute");
         cmdList.getContext()->presentFrame();
     }
 };
@@ -101,6 +104,7 @@ public:
 
     void execute(const CommandList& cmdList)
     {
+        LOG_DEBUG("CommandSetContextState execute");
         cmdList.getContext()->setViewport(m_pendingStates._viewportColor, m_pendingStates._viewportDepth);
         cmdList.getContext()->setScissor(m_pendingStates._scissor);
     }
@@ -131,6 +135,7 @@ public:
 
     void execute(const CommandList& cmdList)
     {
+        LOG_DEBUG("CommandSetRenderTarget execute");
         cmdList.getContext()->setRenderTarget(&m_renderpassInfo, m_attachments, &m_clearInfo, m_trackers);
     }
 
@@ -141,7 +146,7 @@ private:
     std::tuple<ObjectTracker<RenderPass>*, ObjectTracker<Framebuffer>*> m_trackers;
 };
 
-/*CommandSetRenderTarget*/
+    /*CommandSetRenderTarget*/
 class CommandSetGraphicPipeline final : public Command
 {
 public:
@@ -163,6 +168,7 @@ public:
 
     void execute(const CommandList& cmdList)
     {
+        LOG_DEBUG("CommandSetGraphicPipeline execute");
         Pipeline::PipelineGraphicInfo pipelineGraphicInfo;
         pipelineGraphicInfo._renderpassDesc = m_renderpassDesc;
         pipelineGraphicInfo._programDesc = m_programDesc;
@@ -176,6 +182,66 @@ private:
     ShaderProgramDescription                 m_programDesc;
     GraphicsPipelineStateDescription         m_pipelineDesc;
     ObjectTracker<Pipeline>*                 m_tracker;
+};
+
+    /*CommandSubmit*/
+class CommandSubmit : public Command
+{
+public:
+    CommandSubmit(bool wait, u64 timeout) noexcept
+        : m_timeout(timeout)
+        , m_wait(wait)
+    {
+        LOG_DEBUG("CommandSubmit constructor");
+    }
+    CommandSubmit() = delete;
+    CommandSubmit(CommandSubmit&) = delete;
+
+    ~CommandSubmit()
+    {
+        LOG_DEBUG("CommandSubmit constructor");
+    }
+
+    void execute(const CommandList& cmdList)
+    {
+        LOG_DEBUG("CommandSubmit execute");
+        cmdList.getContext()->submit(m_wait);
+    }
+
+private:
+    u64     m_timeout;
+    bool    m_wait;
+};
+
+class CommandDraw : public Command
+{
+public:
+    CommandDraw(const StreamBufferDescription& desc, u32 firtsInstance, u32 instanceCount) noexcept
+        : m_buffersDesc(desc)
+        , m_firtsInstance(firtsInstance)
+        , m_instanceCount(instanceCount)
+    {
+        LOG_DEBUG("CommandDraw constructor");
+    }
+    CommandDraw() = delete;
+    CommandDraw(CommandDraw&) = delete;
+
+    ~CommandDraw()
+    {
+        LOG_DEBUG("CommandDraw constructor");
+    }
+
+    void execute(const CommandList& cmdList)
+    {
+        LOG_DEBUG("CommandDraw execute");
+        cmdList.getContext()->bindVertexBuffers(m_buffersDesc._vertices, {}); //TODO bind if needed
+        cmdList.getContext()->draw(m_buffersDesc._firstVertex, m_buffersDesc._countVertex, m_firtsInstance, m_instanceCount);
+    }
+
+private:
+    StreamBufferDescription m_buffersDesc;
+    u32 m_firtsInstance;
+    u32 m_instanceCount;
 };
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -211,6 +277,8 @@ void Command::operator delete(void* memory) noexcept
 CommandList::CommandList(Context* context, CommandListType type) noexcept
     : m_context(context)
     , m_commandListType(type)
+
+    , m_pendingFlushMask(0)
 {
     m_swapchainTexture = createObject<SwapchainTexture>();
     m_backbuffer = createObject<Backbuffer>(m_swapchainTexture);
@@ -229,6 +297,23 @@ void CommandList::flushCommands()
 
     CommandList::flushPendingCommands(m_pendingFlushMask);
     CommandList::executeCommands();
+}
+
+void CommandList::sumitCommands(bool wait)
+{
+    if (CommandList::isImmediate())
+    {
+        m_context->submit(wait);
+    }
+    else
+    {
+        CommandList::flushPendingCommands(m_pendingFlushMask);
+        CommandList::pushCommand(new CommandSubmit(wait, 0));
+        if (wait)
+        {
+            CommandList::executeCommands();
+        }
+    }
 }
 
 void CommandList::beginFrame()
@@ -267,24 +352,19 @@ void CommandList::presentFrame()
     }
 }
 
-//void CommandList::draw(const StreamBufferDescription& desc, u32 count, u32 offset, u32 instanceCount)
-//{
-//    if (CommandList::isImmediate())
-//    {
-//        /*if (desc._usageFlag & ~StreamBuffer_Direct)
-//        {
-//
-//        }
-//        else
-//        {
-//            m_context->draw();
-//        }*/
-//    }
-//    else
-//    {
-//        //CommandList::pushCommand(new CommandPresentFrame());
-//    }
-//}
+void CommandList::draw(const StreamBufferDescription& desc, u32 instanceCount)
+{
+    if (CommandList::isImmediate())
+    {
+        m_context->bindVertexBuffers(desc._vertices, {}); //TODO bind if needed
+        m_context->draw(desc._firstVertex, desc._countVertex, 0, instanceCount);
+    }
+    else
+    {
+        CommandList::flushPendingCommands(m_pendingFlushMask);
+        CommandList::pushCommand(new CommandDraw(desc, 0, instanceCount));
+    }
+}
 
 void CommandList::clearBackbuffer(const core::Vector4D & color)
 {
@@ -320,7 +400,7 @@ void CommandList::setRenderTarget(RenderTarget* rendertarget)
 
 void CommandList::setPipelineState(GraphicsPipelineState * pipeline)
 {
-    if (!pipeline || pipeline->m_renderTaget || pipeline->m_program)
+    if (!pipeline || !pipeline->m_renderTaget || !pipeline->m_program)
     {
         ASSERT(false, "nullptr");
         return;
@@ -416,7 +496,8 @@ void CommandList::flushPendingCommands(u32 pendingFlushMask)
     if (pendingFlushMask & PendingFlush_UpdateRenderTarget)
     {
         CommandList::pushCommand(
-            new CommandSetRenderTarget(m_pendingRenderTargetInfo._renderpassInfo, m_pendingRenderTargetInfo._attachments, m_pendingRenderTargetInfo._clearInfo, { m_pendingRenderTargetInfo._trackerRenderpass, m_pendingRenderTargetInfo._trackerFramebuffer }));
+            new CommandSetRenderTarget(m_pendingRenderTargetInfo._renderpassInfo, m_pendingRenderTargetInfo._attachments, m_pendingRenderTargetInfo._clearInfo, 
+                { m_pendingRenderTargetInfo._trackerRenderpass, m_pendingRenderTargetInfo._trackerFramebuffer }));
         pendingFlushMask |= ~PendingFlush_UpdateRenderTarget;
     }
 

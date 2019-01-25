@@ -17,18 +17,20 @@ namespace vk
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    enum CommandTargetType
+    {
+        CmdDrawBuffer = 0,
+        CmdUploadBuffer = 1,
+
+        CommandTarget_Count
+    };
+
     /**
     * VulkanCommandBufferManager class. Render side
     */
     class VulkanCommandBufferManager final : public utils::NonCopyable
     {
     public:
-
-        enum class CommandTargetType
-        {
-            CmdDrawBuffer,
-            CmdUploadBuffer
-        };
 
         VulkanCommandBufferManager(const struct DeviceInfo* info, VkQueue queue);
         ~VulkanCommandBufferManager();

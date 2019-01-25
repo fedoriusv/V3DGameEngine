@@ -51,7 +51,7 @@ namespace vk
         };
 
         static s32 findMemoryTypeIndex(const VkMemoryRequirements& memoryRequirements, VkMemoryPropertyFlags memoryPropertyFlags);
-
+        static bool isSupportedMemoryType(VkMemoryPropertyFlags memoryPropertyFlags, bool isEqual);
 
         static VulkanMemory::VulkanAlloc s_invalidMemory;
 

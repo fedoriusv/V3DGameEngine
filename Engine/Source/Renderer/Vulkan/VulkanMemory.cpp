@@ -44,6 +44,30 @@ s32 VulkanMemory::findMemoryTypeIndex(const VkMemoryRequirements& memoryRequirem
     return -1;
 }
 
+bool VulkanMemory::isSupportedMemoryType(VkMemoryPropertyFlags memoryPropertyFlags, bool isEqual)
+{
+    const VkPhysicalDeviceMemoryProperties& physicalDeviceMemoryProperties = VulkanDeviceCaps::getInstance()->getDeviceMemoryProperties();
+    for (u32 memoryTypeIndex = 0; memoryTypeIndex < VK_MAX_MEMORY_TYPES; ++memoryTypeIndex)
+    {
+        if (isEqual)
+        {
+            if (physicalDeviceMemoryProperties.memoryTypes[memoryTypeIndex].propertyFlags == memoryPropertyFlags)
+            {
+                return true;
+            }
+        }
+        else
+        {
+            if ((physicalDeviceMemoryProperties.memoryTypes[memoryTypeIndex].propertyFlags & memoryPropertyFlags) == memoryPropertyFlags)
+            {
+                return true;
+            }
+        }
+    }
+
+    return false;
+}
+
 VulkanMemory::VulkanMemory(VkDevice device)
     : m_device(device)
 {

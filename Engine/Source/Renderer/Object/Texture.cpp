@@ -43,6 +43,7 @@ public:
 
     void execute(const renderer::CommandList& cmdList) override
     {
+        LOG_DEBUG("CreateTextureCommand execute");
         if (!m_image->create())
         {
             m_image->notifyObservers();
@@ -84,6 +85,7 @@ public:
 
     void execute(const renderer::CommandList& cmdList) override
     {
+        LOG_DEBUG("UploadTextureCommand execute");
         if (m_image)
         {
             //m_image->upload();
@@ -120,6 +122,7 @@ public:
 
     void execute(const renderer::CommandList& cmdList)
     {
+        LOG_DEBUG("CommandClearColor execute");
         if (m_image)
         {
             m_image->clear(cmdList.getContext(), m_clearColor);
@@ -158,6 +161,7 @@ public:
 
     void execute(const renderer::CommandList& cmdList)
     {
+        LOG_DEBUG("CommandClearDepthStencil execute");
         if (m_image)
         {
             m_image->clear(cmdList.getContext(), m_depth, m_stencil);
@@ -193,6 +197,7 @@ public:
 
     void execute(const renderer::CommandList& cmdList)
     {
+        LOG_DEBUG("CommandClearBackbuffer execute");
         cmdList.getContext()->clearBackbuffer(m_clearColor);
     }
 

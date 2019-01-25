@@ -43,9 +43,9 @@ namespace renderer
 
         void bindTexture(const Image* image, const ShaderProgramDescription::Texture& bind) override;
 
-        void bindVertexBuffer(const Buffer* buffer, u32 offset) override {};
+        void bindVertexBuffers(const std::vector<Buffer*>& buffer, const std::vector<u64>& offsets) override;
 
-        void draw(u32 firstVertex, u32 vertexCount, u32 firstInstance, u32 instanceCount) override {};
+        void draw(u32 firstVertex, u32 vertexCount, u32 firstInstance, u32 instanceCount) override;
         void drawIndexed() override;
 
         Buffer* createBuffer(Buffer::BufferType type, u16 usageFlag, u64 size) override;

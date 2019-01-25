@@ -86,16 +86,13 @@ namespace resource
     template<class T>
     inline void ResourceLoader<T>::registerPath(const std::string & path)
     {
-        if (!path.empty())
-        {
-            std::string innerPath(path);
-            std::transform(innerPath.begin(), innerPath.end(), innerPath.begin(), ::tolower);
+        std::string innerPath(path);
+        std::transform(innerPath.begin(), innerPath.end(), innerPath.begin(), ::tolower);
 
-            auto it = std::find(m_pathes.begin(), m_pathes.end(), innerPath);
-            if (it == m_pathes.end())
-            {
-                m_pathes.push_back(innerPath);
-            }
+        auto it = std::find(m_pathes.begin(), m_pathes.end(), innerPath);
+        if (it == m_pathes.end())
+        {
+            m_pathes.push_back(innerPath);
         }
     }
 

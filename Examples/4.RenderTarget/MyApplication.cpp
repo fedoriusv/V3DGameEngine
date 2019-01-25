@@ -122,9 +122,7 @@ void MyApplication::Initialize()
     };
     u64 vertexBufferSize = vertexBuffer.size() * sizeof(f32);
     VertexStreamBuffer* streamBuffer = m_CommandList->createObject<VertexStreamBuffer>(StreamBuffer_Write | StreamBuffer_Shared,  vertexBufferSize, vertexBuffer.data());
-
-    //m_CommandList.draw(StreamBufferDesc, offset, count, instanceCount);
-
+    
     /*Geometry geometry;
     Image image;
     Pipeline pipe;
@@ -141,6 +139,8 @@ bool MyApplication::Running(renderer::CommandList& commandList)
     //Frame
     commandList.beginFrame();
     commandList.clearBackbuffer(m_clearColor);
+
+    //m_CommandList->draw(StreamBufferDescription(streamBuffer, 0, 3), 1);
 
     //m_CommandList->setRenderTarget(renderTarget0);
     //commandList.flushCommands();

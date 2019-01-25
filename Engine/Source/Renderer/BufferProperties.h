@@ -6,26 +6,27 @@ namespace v3d
 {
 namespace renderer
 {
-    //class VertexStreamBuffer;
-
-    ///////////////////////////////////////////////////////////////////////////////////////////////////////
+    class Buffer;
+    class VertexStreamBuffer;
 
     ///////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
     * StreamBufferDescription struct
     */
-    /*struct StreamBufferDescription
+    struct StreamBufferDescription
     {
         StreamBufferDescription() = delete;
-        StreamBufferDescription(StreamBufferDescription&) = delete;
+        explicit StreamBufferDescription(const StreamBufferDescription& desc) = default;
 
-        StreamBufferDescription(VertexStreamBuffer* vertex, u32 streamId);
+        StreamBufferDescription(VertexStreamBuffer* vertex, u32 firstVertex, u32 countVertex) noexcept;
         ~StreamBufferDescription();
 
-        u16 _usageFlag;
-        StreamBufferData* _stream;
-    };*/
+
+        std::vector<Buffer*> _vertices;
+        u32 _firstVertex;
+        u32 _countVertex;
+    };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 

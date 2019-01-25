@@ -59,7 +59,7 @@ std::vector<VkDynamicState> VulkanGraphicContext::s_dynamicStates =
 VulkanGraphicContext::VulkanGraphicContext(const platform::Window * window) noexcept
     : m_deviceCaps(*VulkanDeviceCaps::getInstance())
     , m_swapchain(nullptr)
-    , m_drawCmdBufferManager(nullptr)
+    , m_cmdBufferManager(nullptr)
     , m_stagingBufferManager(nullptr)
 
     , m_imageMemoryManager(nullptr)
@@ -93,7 +93,7 @@ VulkanGraphicContext::~VulkanGraphicContext()
     ASSERT(!m_pipelineManager, "m_pipelineManager not nullptr");
 
     ASSERT(!m_swapchain, "m_swapchain not nullptr");
-    ASSERT(!m_drawCmdBufferManager, "m_drawCmdBufferManager not nullptr");
+    ASSERT(!m_cmdBufferManager, "m_cmdBufferManager not nullptr");
 
     ASSERT(m_deviceInfo._device == VK_NULL_HANDLE, "Device is not nullptr");
     ASSERT(m_deviceInfo._instance == VK_NULL_HANDLE, "Instance is not nullptr");
@@ -104,15 +104,14 @@ void VulkanGraphicContext::beginFrame()
     u32 index = m_swapchain->acquireImage();
     LOG_DEBUG("VulkanGraphicContext::beginFrame %llu, image index %u", m_frameCounter, index);
 
-    ASSERT(!isCurrentBuffer(VulkanCommandBufferManager::CommandTargetType::CmdDrawBuffer), "buffer exist");
-    m_currentContextState._currentDrawBuffer = m_drawCmdBufferManager->acquireNewCmdBuffer(VulkanCommandBuffer::PrimaryBuffer);
-    ASSERT(m_currentContextState._currentDrawBuffer, "m_currentDrawBuffer is nullptr");
+    ASSERT(!isCurrentBuffer(CommandTargetType::CmdDrawBuffer), "buffer exist");
+    m_currentContextState._currentCmdBuffer[CommandTargetType::CmdDrawBuffer] = m_cmdBufferManager->acquireNewCmdBuffer(VulkanCommandBuffer::PrimaryBuffer);
 
-    if (m_currentContextState._currentDrawBuffer->getStatus() != VulkanCommandBuffer::CommandBufferStatus::Ready)
+    if (getCurrentBuffer(CommandTargetType::CmdDrawBuffer)->getStatus() != VulkanCommandBuffer::CommandBufferStatus::Ready)
     {
         LOG_ERROR("VulkanGraphicContext::beginFrame CommandBufferStatus is Invalid");
     }
-    m_currentContextState._currentDrawBuffer->beginCommandBuffer();
+    getCurrentBuffer(CommandTargetType::CmdDrawBuffer)->beginCommandBuffer();
 
     transferImageLayout(m_swapchain->getBackbuffer(), VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 }
@@ -120,20 +119,20 @@ void VulkanGraphicContext::beginFrame()
 void VulkanGraphicContext::endFrame()
 {
     LOG_DEBUG("VulkanGraphicContext::endFrame %llu", m_frameCounter);
-    if (isCurrentBuffer(VulkanCommandBufferManager::CommandTargetType::CmdUploadBuffer))
+    if (isCurrentBuffer(CommandTargetType::CmdUploadBuffer))
     {
-        m_drawCmdBufferManager->submit(m_currentContextState._currentUploadBuffer, VK_NULL_HANDLE);
-        m_currentContextState._currentDrawBuffer->waitComplete();
-        m_currentContextState._currentUploadBuffer = nullptr;
+        m_cmdBufferManager->submit(getCurrentBuffer(CommandTargetType::CmdUploadBuffer), VK_NULL_HANDLE);
+        getCurrentBuffer(CommandTargetType::CmdUploadBuffer)->waitComplete();
+        m_currentContextState._currentCmdBuffer[CommandTargetType::CmdUploadBuffer] = nullptr;
     }
 
-    ASSERT(m_currentContextState._currentDrawBuffer, "m_currentDrawBuffer is nullptr");
+    ASSERT(isCurrentBuffer(CommandTargetType::CmdDrawBuffer), "m_currentDrawBuffer is nullptr");
     transferImageLayout(m_swapchain->getBackbuffer(),VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
 
-    m_currentContextState._currentDrawBuffer->endCommandBuffer();
+    getCurrentBuffer(CommandTargetType::CmdDrawBuffer)->endCommandBuffer();
 
-    m_drawCmdBufferManager->submit(m_currentContextState._currentDrawBuffer, VK_NULL_HANDLE);
-    m_currentContextState._currentDrawBuffer = nullptr;
+    m_cmdBufferManager->submit(getCurrentBuffer(CommandTargetType::CmdDrawBuffer), VK_NULL_HANDLE);
+    m_currentContextState._currentCmdBuffer[CommandTargetType::CmdDrawBuffer] = nullptr;
     m_currentContextState.invalidateState();
 }
 
@@ -144,30 +143,32 @@ void VulkanGraphicContext::presentFrame()
     std::vector<VkSemaphore> semaphores;
     m_swapchain->present(m_queueList[0], semaphores);
 
-    m_drawCmdBufferManager->updateCommandBuffers();
-    m_stagingBufferManager->destroyStagingBuffers();
-
+    m_cmdBufferManager->updateCommandBuffers();
+    if (m_deviceCaps.useStagingBuffers)
+    {
+        m_stagingBufferManager->destroyStagingBuffers();
+    }
     m_frameCounter++;
 }
 
 void VulkanGraphicContext::submit(bool wait)
 {
-    if (isCurrentBuffer(VulkanCommandBufferManager::CommandTargetType::CmdUploadBuffer))
+    if (isCurrentBuffer(CommandTargetType::CmdUploadBuffer))
     {
-        m_drawCmdBufferManager->submit(m_currentContextState._currentUploadBuffer, VK_NULL_HANDLE);
-        m_currentContextState._currentDrawBuffer->waitComplete();
-        m_currentContextState._currentUploadBuffer = nullptr;
+        m_cmdBufferManager->submit(getCurrentBuffer(CommandTargetType::CmdUploadBuffer), VK_NULL_HANDLE);
+        getCurrentBuffer(CommandTargetType::CmdUploadBuffer)->waitComplete();
+        m_currentContextState._currentCmdBuffer[CommandTargetType::CmdUploadBuffer] = nullptr;
     }
 
-    if (m_currentContextState._currentDrawBuffer->getStatus() == VulkanCommandBuffer::CommandBufferStatus::Begin)
+    if (getCurrentBuffer(CommandTargetType::CmdDrawBuffer)->getStatus() == VulkanCommandBuffer::CommandBufferStatus::Begin)
     {
-        m_currentContextState._currentDrawBuffer->endCommandBuffer();
-        m_drawCmdBufferManager->submit(m_currentContextState._currentDrawBuffer, VK_NULL_HANDLE);
+        getCurrentBuffer(CommandTargetType::CmdDrawBuffer)->endCommandBuffer();
+        m_cmdBufferManager->submit(getCurrentBuffer(CommandTargetType::CmdDrawBuffer), VK_NULL_HANDLE);
         if (wait)
         {
-            m_currentContextState._currentDrawBuffer->waitComplete();
+            getCurrentBuffer(CommandTargetType::CmdDrawBuffer)->waitComplete();
         }
-        m_currentContextState._currentDrawBuffer = nullptr;
+        m_currentContextState._currentCmdBuffer[CommandTargetType::CmdDrawBuffer] = nullptr;
     }
 }
 
@@ -179,6 +180,7 @@ void VulkanGraphicContext::clearBackbuffer(const core::Vector4D & color)
 
 void VulkanGraphicContext::setViewport(const core::Rect32& viewport, const core::Vector2D& depth)
 {
+    ASSERT(isCurrentBuffer(CommandTargetType::CmdDrawBuffer), "nullptr");
     LOG_DEBUG("VulkanGraphicContext::setViewport [%u, %u; %u, %u]", viewport.getLeftX(), viewport.getTopY(), viewport.getWidth(), viewport.getHeight());
     if (VulkanGraphicContext::isDynamicState(VK_DYNAMIC_STATE_VIEWPORT))
     {
@@ -191,7 +193,7 @@ void VulkanGraphicContext::setViewport(const core::Rect32& viewport, const core:
         vkViewport.maxDepth = depth.y;
         std::vector<VkViewport> viewports = { vkViewport };
  
-        m_currentContextState._stateCallbacks[VK_DYNAMIC_STATE_VIEWPORT] = std::bind(&VulkanCommandBuffer::cmdSetViewport, m_currentContextState._currentDrawBuffer, viewports);
+        m_currentContextState._stateCallbacks[VK_DYNAMIC_STATE_VIEWPORT] = std::bind(&VulkanCommandBuffer::cmdSetViewport, m_currentContextState._currentCmdBuffer[CommandTargetType::CmdDrawBuffer], viewports);
     }
     else
     {
@@ -201,6 +203,7 @@ void VulkanGraphicContext::setViewport(const core::Rect32& viewport, const core:
 
 void VulkanGraphicContext::setScissor(const core::Rect32 & scissor)
 {
+    ASSERT(isCurrentBuffer(CommandTargetType::CmdDrawBuffer), "nullptr");
     LOG_DEBUG("VulkanGraphicContext::setScissor [%u, %u; %u, %u]", scissor.getLeftX(), scissor.getTopY(), scissor.getWidth(), scissor.getHeight());
     if (VulkanGraphicContext::isDynamicState(VK_DYNAMIC_STATE_SCISSOR))
     {
@@ -210,7 +213,7 @@ void VulkanGraphicContext::setScissor(const core::Rect32 & scissor)
 
         std::vector<VkRect2D> scissors = { vkScissor };
 
-        m_currentContextState._stateCallbacks[VK_DYNAMIC_STATE_SCISSOR] = std::bind(&VulkanCommandBuffer::cmdSetScissor, m_currentContextState._currentDrawBuffer, scissors);
+        m_currentContextState._stateCallbacks[VK_DYNAMIC_STATE_SCISSOR] = std::bind(&VulkanCommandBuffer::cmdSetScissor, m_currentContextState._currentCmdBuffer[CommandTargetType::CmdDrawBuffer], scissors);
     }
     else
     {
@@ -234,9 +237,9 @@ void VulkanGraphicContext::setRenderTarget(const RenderPass::RenderPassInfo * re
         m_currentContextState._currentRenderpass = static_cast<VulkanRenderPass*>(renderpass);
         m_currentContextState._currentFramebuffer = static_cast<VulkanFramebuffer*>(framebuffer);
 
-        if (m_currentContextState._currentDrawBuffer->isInsideRenderPass())
+        if (getCurrentBuffer(CommandTargetType::CmdDrawBuffer)->isInsideRenderPass())
         {
-            m_currentContextState._currentDrawBuffer->cmdEndRenderPass();
+            getCurrentBuffer(CommandTargetType::CmdDrawBuffer)->cmdEndRenderPass();
         }
 
         VkRect2D area;
@@ -254,7 +257,7 @@ void VulkanGraphicContext::setRenderTarget(const RenderPass::RenderPassInfo * re
             clearValues.back().depthStencil = { clearInfo->_depth, clearInfo->_stencil };
         }
 
-        m_currentContextState._currentDrawBuffer->cmdBeginRenderpass(m_currentContextState._currentRenderpass, m_currentContextState._currentFramebuffer, area, clearValues);
+        getCurrentBuffer(CommandTargetType::CmdDrawBuffer)->cmdBeginRenderpass(m_currentContextState._currentRenderpass, m_currentContextState._currentFramebuffer, area, clearValues);
     }
 }
 
@@ -335,35 +338,30 @@ Image * VulkanGraphicContext::createAttachmentImage(renderer::Format format, con
     return new VulkanImage(m_imageMemoryManager, m_deviceInfo._device, vkFormat, vkExtent, vkSamples);
 }
 
-VulkanCommandBuffer * VulkanGraphicContext::getCurrentBuffer(VulkanCommandBufferManager::CommandTargetType type) const
+VulkanCommandBuffer * VulkanGraphicContext::getCurrentBuffer(CommandTargetType type)
 {
-    if (type == VulkanCommandBufferManager::CommandTargetType::CmdDrawBuffer)
-    {
-        return m_currentContextState._currentDrawBuffer;
-    }
-    else if (type == VulkanCommandBufferManager::CommandTargetType::CmdUploadBuffer)
-    {
-        return m_currentContextState._currentUploadBuffer;
-    }
-    
-    return nullptr;
+    VulkanCommandBuffer * currentBuffer = m_currentContextState._currentCmdBuffer[type];
+    ASSERT(currentBuffer, "nullptr");
+    return currentBuffer;
 }
 
-bool VulkanGraphicContext::isCurrentBuffer(VulkanCommandBufferManager::CommandTargetType type) const
+bool VulkanGraphicContext::isCurrentBuffer(CommandTargetType type) const
 {
-    if (type == VulkanCommandBufferManager::CommandTargetType::CmdDrawBuffer)
-    {
-        return m_currentContextState._currentDrawBuffer != nullptr;
-    }
-    else if (type == VulkanCommandBufferManager::CommandTargetType::CmdUploadBuffer)
-    {
-        return m_currentContextState._currentUploadBuffer != nullptr;
-    }
-
-    return false;
+    return m_currentContextState._currentCmdBuffer[type] != nullptr;
 }
 
+bool VulkanGraphicContext::createAndStartCommandBuffer(CommandTargetType type)
+{
+    VulkanCommandBuffer * currentBuffer = m_currentContextState._currentCmdBuffer[type];
+    ASSERT(!currentBuffer, "exist");
 
+    currentBuffer = m_cmdBufferManager->acquireNewCmdBuffer(VulkanCommandBuffer::PrimaryBuffer);
+    ASSERT(currentBuffer, "nullptr");
+    currentBuffer->beginCommandBuffer();
+
+    m_currentContextState._currentCmdBuffer[type] = currentBuffer;
+    return true;
+}
 
 void VulkanGraphicContext::transferImageLayout(VulkanImage * image, VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask, VkImageLayout layout) const
 {
@@ -383,7 +381,7 @@ void VulkanGraphicContext::transferImageLayout(VulkanImage * image, VkPipelineSt
 
     image->setLayout(layout);
 
-    m_currentContextState._currentDrawBuffer->cmdPipelineBarrier(srcStageMask, dstStageMask, imageMemoryBarrier);
+    m_currentContextState._currentCmdBuffer[CommandTargetType::CmdDrawBuffer]->cmdPipelineBarrier(srcStageMask, dstStageMask, imageMemoryBarrier);
 }
 
 void VulkanGraphicContext::bindTexture(const Image * image, const ShaderProgramDescription::Texture & bind)
@@ -395,19 +393,24 @@ void VulkanGraphicContext::bindTexture(const Image * image, const ShaderProgramD
     //TODO:
 }
 
-void VulkanGraphicContext::bindVertexBuffer(const Buffer * buffer, u32 offset)
+void VulkanGraphicContext::bindVertexBuffers(const std::vector<Buffer*>& buffer, const std::vector<u64>& offsets)
 {
+    m_currentContextState._boundVertexBuffer = { buffer, offsets, true };
 }
 
 void VulkanGraphicContext::draw(u32 firstVertex, u32 vertexCount, u32 firstInstance, u32 instanceCount)
 {
-    ASSERT(m_currentContextState._currentDrawBuffer, "command buffer is empty");
-
-    /*if (prepareDraw())
+    ASSERT(isCurrentBuffer(CommandTargetType::CmdDrawBuffer), "nullptr");
+    if (prepareDraw())
     {
-        m_currentContextState._currentDrawBuffer->cmdBindVertexBuffers();
-        m_currentContextState._currentDrawBuffer->cmdDraw();
-    }*/
+        if (std::get<2>(m_currentContextState._boundVertexBuffer))
+        {
+            getCurrentBuffer(CommandTargetType::CmdDrawBuffer)->cmdBindVertexBuffers(0, static_cast<u32>(std::get<0>(m_currentContextState._boundVertexBuffer).size()),
+                std::get<0>(m_currentContextState._boundVertexBuffer), std::get<1>(m_currentContextState._boundVertexBuffer));
+            std::get<2>(m_currentContextState._boundVertexBuffer) = false;
+        }
+        getCurrentBuffer(CommandTargetType::CmdDrawBuffer)->cmdDraw(firstVertex, vertexCount, firstInstance, instanceCount);
+    }
 }
 
 void VulkanGraphicContext::drawIndexed()
@@ -506,9 +509,9 @@ bool VulkanGraphicContext::initialize()
         m_bufferMemoryManager = new VulkanMemory(m_deviceInfo._device);
     }
 
-    m_drawCmdBufferManager = new VulkanCommandBufferManager(&m_deviceInfo, m_queueList[0]);
-    m_currentContextState._currentDrawBuffer = m_drawCmdBufferManager->acquireNewCmdBuffer(VulkanCommandBuffer::PrimaryBuffer);
-    ASSERT(m_currentContextState._currentDrawBuffer, "m_currentDrawBuffer is nullptr");
+    m_cmdBufferManager = new VulkanCommandBufferManager(&m_deviceInfo, m_queueList[0]);
+    //m_currentContextState._currentDrawBuffer = m_drawCmdBufferManager->acquireNewCmdBuffer(VulkanCommandBuffer::PrimaryBuffer);
+    //ASSERT(m_currentContextState._currentDrawBuffer, "m_currentDrawBuffer is nullptr");
 
     if (m_deviceCaps.useStagingBuffers)
     {
@@ -527,12 +530,12 @@ void VulkanGraphicContext::destroy()
     LOG_DEBUG("VulkanGraphicContext::destroy");
 
     //TODO: Wait to complete all commands
-    if (m_drawCmdBufferManager)
+    if (m_cmdBufferManager)
     {
-        m_drawCmdBufferManager->waitCompete();
+        m_cmdBufferManager->waitCompete();
 
-        delete m_drawCmdBufferManager;
-        m_drawCmdBufferManager = nullptr;
+        delete m_cmdBufferManager;
+        m_cmdBufferManager = nullptr;
     }
 
     if (m_stagingBufferManager)
@@ -904,9 +907,22 @@ bool VulkanGraphicContext::prepareDraw()
     return false;
 }
 
+VulkanGraphicContext::CurrentContextState::CurrentContextState()
+{
+    _currentCmdBuffer[CommandTargetType::CmdDrawBuffer] = nullptr;
+    _currentCmdBuffer[CommandTargetType::CmdUploadBuffer] = nullptr;
+
+    _currentRenderpass = nullptr;
+    _currentFramebuffer = nullptr;
+    _currentPipeline = nullptr;
+}
+
 void VulkanGraphicContext::CurrentContextState::invalidateState()
 {
-    _stateCallbacks.clear();
+    if (!_stateCallbacks.empty())
+    {
+        _stateCallbacks.clear();
+    }
 }
 
 } //namespace vk

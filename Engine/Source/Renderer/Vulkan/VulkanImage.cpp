@@ -713,13 +713,13 @@ bool VulkanImage::create(VkImage image)
     return true;
 }
 
-void VulkanImage::clear(const Context * context, const core::Vector4D & color)
+void VulkanImage::clear(Context * context, const core::Vector4D & color)
 {
     LOG_DEBUG("VulkanGraphicContext::clearColor [%f, %f, %f, %f]", color[0], color[1], color[2], color[3]);
     VkClearColorValue clearColorValue = { color[0], color[1], color[2], color[3] };
 
-    const VulkanGraphicContext* vulkanContext = static_cast<const VulkanGraphicContext*>(context);
-    VulkanCommandBuffer* commandBuffer = vulkanContext->getCurrentBuffer(VulkanCommandBufferManager::CommandTargetType::CmdDrawBuffer);
+    VulkanGraphicContext* vulkanContext = static_cast<VulkanGraphicContext*>(context);
+    VulkanCommandBuffer* commandBuffer = vulkanContext->getCurrentBuffer(CommandTargetType::CmdDrawBuffer);
     ASSERT(commandBuffer, "commandBuffer is nullptr");
 
     VkImageLayout layout = m_layout;
@@ -728,13 +728,13 @@ void VulkanImage::clear(const Context * context, const core::Vector4D & color)
     vulkanContext->transferImageLayout(this,VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT | VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, layout);
 }
 
-void VulkanImage::clear(const Context * context, f32 depth, u32 stencil)
+void VulkanImage::clear(Context * context, f32 depth, u32 stencil)
 {
     LOG_DEBUG("VulkanGraphicContext::clearDepthStencil [%f, %u]", depth, stencil);
     VkClearDepthStencilValue clearDepthStencilValue = { depth, stencil };
 
-    const VulkanGraphicContext* vulkanContext = static_cast<const VulkanGraphicContext*>(context);
-    VulkanCommandBuffer* commandBuffer = vulkanContext->getCurrentBuffer(VulkanCommandBufferManager::CommandTargetType::CmdDrawBuffer);
+    VulkanGraphicContext* vulkanContext = static_cast<VulkanGraphicContext*>(context);
+    VulkanCommandBuffer* commandBuffer = vulkanContext->getCurrentBuffer(CommandTargetType::CmdDrawBuffer);
     ASSERT(commandBuffer, "commandBuffer is nullptr");
 
     VkImageLayout layout = m_layout;

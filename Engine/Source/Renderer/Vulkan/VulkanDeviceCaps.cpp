@@ -1,8 +1,10 @@
 #include "VulkanDeviceCaps.h"
-#include "VulkanGraphicContext.h"
 #include "Utils/Logger.h"
 
 #ifdef VULKAN_RENDER
+#include "VulkanGraphicContext.h"
+#include "VulkanMemory.h"
+
 namespace v3d
 {
 namespace renderer
@@ -159,11 +161,12 @@ void VulkanDeviceCaps::fillCapabilitiesList(const DeviceInfo* info)
 void VulkanDeviceCaps::initialize()
 {
     individuallyResetForCommandBuffers = true; //For PC
-    supportCoherentMemory = true;
+
+    supportCoherentMemory = VulkanMemory::isSupportedMemoryType(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, true);
     useDynamicUniforms = false;
 
     unifiedMemoryManager = false;
-    useStagingBuffers = !supportCoherentMemory;
+    useStagingBuffers = !VulkanMemory::isSupportedMemoryType(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, false);
 
     ASSERT(k_maxFramebufferAttachments <= m_deviceProperties.limits.maxFragmentOutputAttachments, "maxFragmentOutputAttachments less than k_maxFramebufferAttachments");
 }

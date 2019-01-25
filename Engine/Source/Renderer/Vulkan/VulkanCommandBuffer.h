@@ -2,6 +2,7 @@
 
 #include "Common.h"
 #include "Utils/NonCopyable.h"
+#include "Renderer/Buffer.h"
 
 #ifdef VULKAN_RENDER
 #include "VulkanWrapper.h"
@@ -68,7 +69,7 @@ namespace vk
         void cmdSetScissor(const std::vector<VkRect2D>& scissors);
 
         //binds
-        void cmdBindVertexBuffers(const std::vector<VkBuffer*> buffers, const std::vector<VkDeviceSize*> offests);
+        void cmdBindVertexBuffers(u32 firstBinding, u32 countBindinng, const std::vector<Buffer*>& buffers, const std::vector<VkDeviceSize>& offests);
 
         //inside renderpass
         void cmdDraw(u32 firstVertex, u32 vertexCount, u32 firstInstance, u32 instanceCount);

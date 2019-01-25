@@ -215,6 +215,8 @@ void VulkanCommandBuffer::endCommandBuffer()
 
 void VulkanCommandBuffer::cmdBeginRenderpass(VulkanRenderPass* pass, VulkanFramebuffer* framebuffer, VkRect2D area, std::vector<VkClearValue>& clearValues)
 {
+    ASSERT(m_status == CommandBufferStatus::Begin, "not started");
+
     pass->captureInsideCommandBuffer(this, 0);
     framebuffer->captureInsideCommandBuffer(this, 0);
 
@@ -246,6 +248,8 @@ bool VulkanCommandBuffer::isInsideRenderPass()
 
 void VulkanCommandBuffer::cmdSetViewport(const std::vector<VkViewport>& viewports)
 {
+    ASSERT(m_status == CommandBufferStatus::Begin, "not started");
+
     if (m_level == CommandBufferLevel::PrimaryBuffer)
     {
         VulkanWrapper::CmdSetViewport(m_command, 0, static_cast<u32>(viewports.size()), viewports.data());
@@ -258,6 +262,8 @@ void VulkanCommandBuffer::cmdSetViewport(const std::vector<VkViewport>& viewport
 
 void VulkanCommandBuffer::cmdSetScissor(const std::vector<VkRect2D>& scissors)
 {
+    ASSERT(m_status == CommandBufferStatus::Begin, "not started");
+
     if (m_level == CommandBufferLevel::PrimaryBuffer)
     {
         VulkanWrapper::CmdSetScissor(m_command, 0, static_cast<u32>(scissors.size()), scissors.data());
@@ -268,12 +274,35 @@ void VulkanCommandBuffer::cmdSetScissor(const std::vector<VkRect2D>& scissors)
     }
 }
 
-void VulkanCommandBuffer::cmdBindVertexBuffers(const std::vector<VkBuffer*> buffers, const std::vector<VkDeviceSize*> offests)
+void VulkanCommandBuffer::cmdBindVertexBuffers(u32 firstBinding, u32 countBindinng, const std::vector<Buffer*>& buffers, const std::vector<VkDeviceSize>& offests)
 {
+    ASSERT(m_status == CommandBufferStatus::Begin, "not started");
+
+    std::vector<VkBuffer> vkBuffers;
+    vkBuffers.reserve(buffers.size());
+    for (auto& buffer : buffers)
+    {
+        VulkanBuffer* vkBuffer = static_cast<VulkanBuffer*>(buffer);
+        vkBuffers.push_back(vkBuffer->getHandle());
+
+        vkBuffer->captureInsideCommandBuffer(this, 0);
+    }
+
+    if (m_level == CommandBufferLevel::PrimaryBuffer)
+    {
+        VulkanWrapper::CmdBindVertexBuffers(m_command, firstBinding, countBindinng, vkBuffers.data(), offests.data());
+    }
+    else
+    {
+        ASSERT(false, "not implemented");
+    }
 }
 
 void VulkanCommandBuffer::cmdDraw(u32 firstVertex, u32 vertexCount, u32 firstInstance, u32 instanceCount)
 {
+    ASSERT(m_status == CommandBufferStatus::Begin, "not started");
+    ASSERT(isInsideRenderPass(), "inside render pass");
+
     if (m_level == CommandBufferLevel::PrimaryBuffer)
     {
         VulkanWrapper::CmdDraw(m_command, vertexCount, instanceCount, firstVertex, firstInstance);
@@ -286,7 +315,9 @@ void VulkanCommandBuffer::cmdDraw(u32 firstVertex, u32 vertexCount, u32 firstIns
 
 void VulkanCommandBuffer::cmdClearImage(VulkanImage* image, VkImageLayout imageLayout, const VkClearColorValue * pColor)
 {
+    ASSERT(m_status == CommandBufferStatus::Begin, "not started");
     ASSERT(!isInsideRenderPass(), "outside render pass");
+
     ASSERT(image->getImageAspectFlags() == VK_IMAGE_ASPECT_COLOR_BIT, " image is not VK_IMAGE_ASPECT_COLOR_BIT");
 
     image->captureInsideCommandBuffer(this, 0);
@@ -303,6 +334,7 @@ void VulkanCommandBuffer::cmdClearImage(VulkanImage* image, VkImageLayout imageL
 
 void VulkanCommandBuffer::cmdClearImage(VulkanImage * image, VkImageLayout imageLayout, const VkClearDepthStencilValue * pDepthStencil)
 {
+    ASSERT(m_status == CommandBufferStatus::Begin, "not started");
     ASSERT(!isInsideRenderPass(), "outside render pass");
     ASSERT(image->getImageAspectFlags() & (VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT), " image is not VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT");
 
@@ -320,6 +352,7 @@ void VulkanCommandBuffer::cmdClearImage(VulkanImage * image, VkImageLayout image
 
 void VulkanCommandBuffer::cmdUpdateBuffer(VulkanBuffer * src, u32 offset, u64 size, void * data)
 {
+    ASSERT(m_status == CommandBufferStatus::Begin, "not started");
     ASSERT(!isInsideRenderPass(), "outside render pass");
 
     src->captureInsideCommandBuffer(this, 0);
@@ -335,7 +368,9 @@ void VulkanCommandBuffer::cmdUpdateBuffer(VulkanBuffer * src, u32 offset, u64 si
 
 void VulkanCommandBuffer::cmdCopyBufferToImage()
 {
+    ASSERT(m_status == CommandBufferStatus::Begin, "not started");
     ASSERT(!isInsideRenderPass(), "outside render pass");
+
     if (m_level == CommandBufferLevel::PrimaryBuffer)
     {
         //VulkanWrapper::CmdCopyBufferToImage(m_command, , , )
@@ -348,6 +383,7 @@ void VulkanCommandBuffer::cmdCopyBufferToImage()
 
 void VulkanCommandBuffer::cmdCopyBufferToBuffer(VulkanBuffer* src, VulkanBuffer* dst, const VkBufferCopy& region)
 {
+    ASSERT(m_status == CommandBufferStatus::Begin, "not started");
     ASSERT(!isInsideRenderPass(), "outside render pass");
 
     src->captureInsideCommandBuffer(this, 0);
@@ -364,6 +400,8 @@ void VulkanCommandBuffer::cmdCopyBufferToBuffer(VulkanBuffer* src, VulkanBuffer*
 
 void VulkanCommandBuffer::cmdPipelineBarrier(VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask, const VkImageMemoryBarrier& imageMemoryBarrier)
 {
+    ASSERT(m_status == CommandBufferStatus::Begin, "not started");
+
     if (m_level == CommandBufferLevel::PrimaryBuffer)
     {
         VulkanWrapper::CmdPipelineBarrier(m_command, srcStageMask, dstStageMask, VK_DEPENDENCY_BY_REGION_BIT, 0, nullptr, 0, nullptr, 1, &imageMemoryBarrier);
@@ -376,6 +414,8 @@ void VulkanCommandBuffer::cmdPipelineBarrier(VkPipelineStageFlags srcStageMask, 
 
 void VulkanCommandBuffer::cmdPipelineBarrier(VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask, const VkMemoryBarrier& memoryBarrier)
 {
+    ASSERT(m_status == CommandBufferStatus::Begin, "not started");
+
     if (m_level == CommandBufferLevel::PrimaryBuffer)
     {
         VulkanWrapper::CmdPipelineBarrier(m_command, srcStageMask, dstStageMask, VK_DEPENDENCY_BY_REGION_BIT, 1, &memoryBarrier, 0, nullptr, 0, nullptr);
@@ -388,6 +428,8 @@ void VulkanCommandBuffer::cmdPipelineBarrier(VkPipelineStageFlags srcStageMask, 
 
 void VulkanCommandBuffer::cmdPipelineBarrier(VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask, const VkBufferMemoryBarrier& bufferMemoryBarrier)
 {
+    ASSERT(m_status == CommandBufferStatus::Begin, "not started");
+
     if (m_level == CommandBufferLevel::PrimaryBuffer)
     {
         VulkanWrapper::CmdPipelineBarrier(m_command, srcStageMask, dstStageMask, VK_DEPENDENCY_BY_REGION_BIT, 0, nullptr, 1, &bufferMemoryBarrier, 0, nullptr);

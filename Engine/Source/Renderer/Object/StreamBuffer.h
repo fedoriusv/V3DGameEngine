@@ -12,6 +12,7 @@ namespace v3d
 namespace renderer
 {
     class Buffer;
+    struct StreamBufferDescription;
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -60,7 +61,7 @@ namespace renderer
 
         void handleNotify(utils::Observable* ob) override;
 
-        explicit VertexStreamBuffer(CommandList& cmdList, u16 usageFlag, u64 size, void* data) noexcept;
+        explicit VertexStreamBuffer(CommandList& cmdList, u16 usageFlag, u64 size, const void* data) noexcept;
 
         friend CommandList;
         CommandList& m_cmdList;
@@ -71,6 +72,8 @@ namespace renderer
 
         u16                 m_usageFlag;
         Buffer*             m_buffer;
+
+        friend StreamBufferDescription;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

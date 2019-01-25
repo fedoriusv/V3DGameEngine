@@ -73,11 +73,12 @@ namespace renderer
 
         void flushCommands();
 
+        void sumitCommands(bool wait = false);
         void beginFrame();
         void endFrame();
         void presentFrame();
 
-        //void draw(const StreamBufferDescription& desc, u32 count, u32 offset, u32 instanceCount);
+        void draw(const StreamBufferDescription& desc, u32 instanceCount);
 
         void pushCommand(Command* cmd);
 
