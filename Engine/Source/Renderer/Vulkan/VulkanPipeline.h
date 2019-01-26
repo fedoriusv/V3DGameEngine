@@ -6,6 +6,7 @@
 
 #ifdef VULKAN_RENDER
 #include "VulkanWrapper.h"
+#include "VulkanResource.h"
 
 namespace v3d
 {
@@ -17,7 +18,7 @@ namespace vk
 {
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    class VulkanGraphicPipeline final : public Pipeline
+    class VulkanGraphicPipeline final : public Pipeline, public VulkanResource
     {
     public:
 
@@ -46,7 +47,7 @@ namespace vk
         bool createShaderModule(const resource::Shader* shader, VkPipelineShaderStageCreateInfo& outPipelineShaderStageCreateInfo);
         void deleteShaderModules();
 
-        bool createCompatibilityRenderPass(const RenderPass::RenderPassInfo& renderpassDesc, RenderPass* compatibilityRenderPass);
+        bool createCompatibilityRenderPass(const RenderPass::RenderPassInfo& renderpassDesc, RenderPass* &compatibilityRenderPass);
 
         std::vector<VkShaderModule> m_modules;
 

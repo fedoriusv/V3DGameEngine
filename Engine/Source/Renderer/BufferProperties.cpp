@@ -11,6 +11,7 @@ StreamBufferDescription::StreamBufferDescription(VertexStreamBuffer* vertex, u32
     , _firstVertex(firstVertex)
     , _countVertex(countVertex)
 {
+    _offsets.resize(_vertices.size(), 0);
 }
 
 StreamBufferDescription::~StreamBufferDescription()

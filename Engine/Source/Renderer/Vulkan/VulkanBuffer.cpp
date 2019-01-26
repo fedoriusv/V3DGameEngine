@@ -141,72 +141,77 @@ void VulkanBuffer::destroy()
 
 bool VulkanBuffer::upload(Context* context, u32 offset, u64 size, void * data)
 {
-    if (VulkanResource::isCaptured())
+    if (size == 0 || !data)
     {
-        VulkanResource::waitComplete();
+        return false;
     }
 
-    if (size > 0 && data)
+    if (m_size != size && offset == 0)
     {
-        if (m_size != size && offset == 0)
+        if (m_usageFlags & ~StreamBufferUsage::StreamBuffer_Dynamic)
         {
-            if (m_usageFlags & ~StreamBufferUsage::StreamBuffer_Dynamic)
-            {
-                ASSERT(false, "different size in non dynamic data");
-                return false;
-            }
-
-            m_size = size;
-            if (!VulkanBuffer::recreate())
-            {
-                VulkanBuffer::destroy();
-                return false;
-            }
+            ASSERT(false, "different size in non dynamic data");
+            return false;
         }
 
-        if (VulkanDeviceCaps::getInstance()->useStagingBuffers)
+        m_size = size;
+        if (!VulkanBuffer::recreate())
         {
-            VulkanGraphicContext* vkContext = static_cast<VulkanGraphicContext*>(context);
-            if (!vkContext->isCurrentBuffer(CommandTargetType::CmdUploadBuffer))
-            {
-                vkContext->createAndStartCommandBuffer(CommandTargetType::CmdUploadBuffer);
-            }
+            VulkanBuffer::destroy();
+            return false;
+        }
+    }
 
-            if (m_size <= 65536)
-            {
-                vkContext->getCurrentBuffer(CommandTargetType::CmdUploadBuffer)->cmdUpdateBuffer(this, offset, m_size, data);
-            }
-            else
-            {
-                VulkanStaginBuffer* staginBuffer = vkContext->getStagingManager()->createStagingBuffer(size, StreamBufferUsage::StreamBuffer_Read);
-                if (!staginBuffer)
-                {
-                    ASSERT(false, "staginBuffer is nullptr");
-                    return false;
-                }
-                void* stagingData = staginBuffer->map();
-                ASSERT(stagingData, "stagingData is nullptr");
-                memcpy(stagingData, data, size);
-                staginBuffer->unmap();
-
-                VkBufferCopy bufferCopy = {};
-                bufferCopy.srcOffset = 0;
-                bufferCopy.dstOffset = offset;
-                bufferCopy.size = size;
-
-                //TODO memory barrier
-                vkContext->getCurrentBuffer(CommandTargetType::CmdUploadBuffer)->cmdCopyBufferToBuffer(this, staginBuffer->getBuffer(), bufferCopy);
-                //TODO memory barrier
-
-                vkContext->getStagingManager()->destroyAfterUse(staginBuffer);
-            }
+    if (VulkanDeviceCaps::getInstance()->useStagingBuffers)
+    {
+        VulkanGraphicContext* vkContext = static_cast<VulkanGraphicContext*>(context);
+        VulkanCommandBuffer* updateBuffer = vkContext->getOrCreateAndStartCommandBuffer(CommandTargetType::CmdUploadBuffer);
+        if (m_size <= 65536)
+        {
+            ASSERT(!VulkanResource::isCaptured(), "still submitted");
+            //TODO memory barrier
+            updateBuffer->cmdUpdateBuffer(this, offset, m_size, data);
+            //TODO memory barrier
         }
         else
         {
-            void* srcData = VulkanBuffer::map();
-            memcpy(srcData, data, size);
-            VulkanBuffer::unmap();
+            VulkanStaginBuffer* staginBuffer = vkContext->getStagingManager()->createStagingBuffer(size, StreamBufferUsage::StreamBuffer_Read);
+            if (!staginBuffer)
+            {
+                ASSERT(false, "staginBuffer is nullptr");
+                return false;
+            }
+            void* stagingData = staginBuffer->map();
+            ASSERT(stagingData, "stagingData is nullptr");
+            memcpy(stagingData, data, size);
+            staginBuffer->unmap();
+
+            VkBufferCopy bufferCopy = {};
+            bufferCopy.srcOffset = 0;
+            bufferCopy.dstOffset = offset;
+            bufferCopy.size = size;
+
+            ASSERT(!VulkanResource::isCaptured(), "still submitted");
+            //TODO memory barrier
+            updateBuffer->cmdCopyBufferToBuffer(this, staginBuffer->getBuffer(), bufferCopy);
+            //TODO memory barrier
+
+            vkContext->getStagingManager()->destroyAfterUse(staginBuffer);
         }
+    }
+    else
+    {
+        if (VulkanResource::isCaptured())
+        {
+            ASSERT(false, "still submitted");
+            VulkanResource::waitComplete();
+        }
+
+        void* srcData = VulkanBuffer::map();
+        memcpy(srcData, data, size);
+        VulkanBuffer::unmap();
+
+        return true;
     }
 
     return false;

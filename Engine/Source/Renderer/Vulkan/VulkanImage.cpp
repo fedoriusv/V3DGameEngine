@@ -719,13 +719,13 @@ void VulkanImage::clear(Context * context, const core::Vector4D & color)
     VkClearColorValue clearColorValue = { color[0], color[1], color[2], color[3] };
 
     VulkanGraphicContext* vulkanContext = static_cast<VulkanGraphicContext*>(context);
-    VulkanCommandBuffer* commandBuffer = vulkanContext->getCurrentBuffer(CommandTargetType::CmdDrawBuffer);
+    VulkanCommandBuffer* commandBuffer = vulkanContext->getOrCreateAndStartCommandBuffer(CommandTargetType::CmdDrawBuffer);
     ASSERT(commandBuffer, "commandBuffer is nullptr");
 
     VkImageLayout layout = m_layout;
-    vulkanContext->transferImageLayout(this,VK_PIPELINE_STAGE_TRANSFER_BIT | VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+    commandBuffer->cmdPipelineBarrier(this,VK_PIPELINE_STAGE_TRANSFER_BIT | VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
     commandBuffer->cmdClearImage(this, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &clearColorValue);
-    vulkanContext->transferImageLayout(this,VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT | VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, layout);
+    commandBuffer->cmdPipelineBarrier(this,VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT | VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, layout);
 }
 
 void VulkanImage::clear(Context * context, f32 depth, u32 stencil)
@@ -734,13 +734,13 @@ void VulkanImage::clear(Context * context, f32 depth, u32 stencil)
     VkClearDepthStencilValue clearDepthStencilValue = { depth, stencil };
 
     VulkanGraphicContext* vulkanContext = static_cast<VulkanGraphicContext*>(context);
-    VulkanCommandBuffer* commandBuffer = vulkanContext->getCurrentBuffer(CommandTargetType::CmdDrawBuffer);
+    VulkanCommandBuffer* commandBuffer = vulkanContext->getOrCreateAndStartCommandBuffer(CommandTargetType::CmdDrawBuffer);
     ASSERT(commandBuffer, "commandBuffer is nullptr");
 
     VkImageLayout layout = m_layout;
-    vulkanContext->transferImageLayout(this, VK_PIPELINE_STAGE_TRANSFER_BIT | VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+    commandBuffer->cmdPipelineBarrier(this, VK_PIPELINE_STAGE_TRANSFER_BIT | VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
     commandBuffer->cmdClearImage(this, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &clearDepthStencilValue);
-    vulkanContext->transferImageLayout(this, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT | VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, layout);
+    commandBuffer->cmdPipelineBarrier(this, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT | VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, layout);
 }
 
 VkImageSubresourceRange VulkanImage::makeImageSubresourceRange(const VulkanImage * image)

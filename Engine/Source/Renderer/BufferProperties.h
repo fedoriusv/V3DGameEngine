@@ -24,6 +24,7 @@ namespace renderer
 
 
         std::vector<Buffer*> _vertices;
+        std::vector<u64>     _offsets;
         u32 _firstVertex;
         u32 _countVertex;
     };

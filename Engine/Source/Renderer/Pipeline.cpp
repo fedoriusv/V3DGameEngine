@@ -51,7 +51,7 @@ Pipeline* PipelineManager::acquireGraphicPipeline(const Pipeline::PipelineGraphi
     hash = crc32c::Extend(hash, (u8*)&pipelineInfo->_renderpassDesc, sizeof(RenderPass::RenderPassInfo));
 
     u64 pipelineHash = pipelineInfo->_programDesc._hash;
-    pipelineHash = hash | pipelineHash << 8;
+    pipelineHash = hash | pipelineHash << 32;
 
     Pipeline* pipeline = nullptr;
     auto found = m_pipelineGraphicList.emplace(pipelineHash, pipeline);

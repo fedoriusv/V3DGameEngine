@@ -398,13 +398,48 @@ void VulkanCommandBuffer::cmdCopyBufferToBuffer(VulkanBuffer* src, VulkanBuffer*
     }
 }
 
-void VulkanCommandBuffer::cmdPipelineBarrier(VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask, const VkImageMemoryBarrier& imageMemoryBarrier)
+void VulkanCommandBuffer::cmdPipelineBarrier(VulkanImage * image, VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask, VkImageLayout layout)
 {
     ASSERT(m_status == CommandBufferStatus::Begin, "not started");
 
+    image->captureInsideCommandBuffer(this, 0);
     if (m_level == CommandBufferLevel::PrimaryBuffer)
     {
+        auto accessMasks = VulkanImage::getAccessFlagsFromImageLayout(image->getLayout(), layout);
+
+        VkImageMemoryBarrier imageMemoryBarrier = {};
+        imageMemoryBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+        imageMemoryBarrier.pNext = nullptr;
+        imageMemoryBarrier.srcAccessMask = std::get<0>(accessMasks);
+        imageMemoryBarrier.dstAccessMask = std::get<1>(accessMasks);
+        imageMemoryBarrier.oldLayout = image->getLayout();
+        imageMemoryBarrier.newLayout = layout;
+        imageMemoryBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+        imageMemoryBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+        imageMemoryBarrier.image = image->getHandle();
+        imageMemoryBarrier.subresourceRange = VulkanImage::makeImageSubresourceRange(image);
+
+        image->setLayout(layout);
+
         VulkanWrapper::CmdPipelineBarrier(m_command, srcStageMask, dstStageMask, VK_DEPENDENCY_BY_REGION_BIT, 0, nullptr, 0, nullptr, 1, &imageMemoryBarrier);
+    }
+    else
+    {
+        ASSERT(false, "not implemented");
+    }
+}
+
+void VulkanCommandBuffer::cmdPipelineBarrier(VulkanBuffer* buffer, VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask, VkImageLayout layout)
+{
+    ASSERT(m_status == CommandBufferStatus::Begin, "not started");
+
+    buffer->captureInsideCommandBuffer(this, 0);
+    if (m_level == CommandBufferLevel::PrimaryBuffer)
+    {
+        VkBufferMemoryBarrier bufferMemoryBarrier = {};
+        //TODO:
+
+        VulkanWrapper::CmdPipelineBarrier(m_command, srcStageMask, dstStageMask, VK_DEPENDENCY_BY_REGION_BIT, 0, nullptr, 1, &bufferMemoryBarrier, 0, nullptr);
     }
     else
     {
@@ -419,20 +454,6 @@ void VulkanCommandBuffer::cmdPipelineBarrier(VkPipelineStageFlags srcStageMask, 
     if (m_level == CommandBufferLevel::PrimaryBuffer)
     {
         VulkanWrapper::CmdPipelineBarrier(m_command, srcStageMask, dstStageMask, VK_DEPENDENCY_BY_REGION_BIT, 1, &memoryBarrier, 0, nullptr, 0, nullptr);
-    }
-    else
-    {
-        ASSERT(false, "not implemented");
-    }
-}
-
-void VulkanCommandBuffer::cmdPipelineBarrier(VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask, const VkBufferMemoryBarrier& bufferMemoryBarrier)
-{
-    ASSERT(m_status == CommandBufferStatus::Begin, "not started");
-
-    if (m_level == CommandBufferLevel::PrimaryBuffer)
-    {
-        VulkanWrapper::CmdPipelineBarrier(m_command, srcStageMask, dstStageMask, VK_DEPENDENCY_BY_REGION_BIT, 0, nullptr, 1, &bufferMemoryBarrier, 0, nullptr);
     }
     else
     {

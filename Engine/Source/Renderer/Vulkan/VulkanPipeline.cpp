@@ -380,6 +380,7 @@ bool VulkanGraphicPipeline::create(const PipelineGraphicInfo* pipelineInfo)
     };
 
     std::vector<VkPipelineShaderStageCreateInfo> pipelineShaderStageCreateInfos;
+    ASSERT(!pipelineInfo->_shaders.empty(), "empty");
     for (u32 type = resource::ShaderType::ShaderType_Vertex; type < resource::ShaderType_Count; ++type)
     {
         VkPipelineShaderStageCreateInfo pipelineShaderStageCreateInfo = {};
@@ -639,8 +640,9 @@ void VulkanGraphicPipeline::destroy()
 
 bool VulkanGraphicPipeline::compileShader(const resource::ShaderHeader* header, const void * source, u32 size)
 {
-    if (!source || size > 0)
+    if (!source || size == 0)
     {
+        ASSERT(false, "invalid source");
         return false;
     }
 
@@ -665,7 +667,7 @@ bool VulkanGraphicPipeline::compileShader(const resource::ShaderHeader* header, 
 
 bool VulkanGraphicPipeline::createShaderModule(const resource::Shader* shader, VkPipelineShaderStageCreateInfo& outPipelineShaderStageCreateInfo)
 {
-    if (!shader || VulkanGraphicPipeline::createShader(shader))
+    if (!shader || !VulkanGraphicPipeline::createShader(shader))
     {
         return false;
     }
@@ -692,7 +694,7 @@ void VulkanGraphicPipeline::deleteShaderModules()
     m_modules.clear();
 }
 
-bool VulkanGraphicPipeline::createCompatibilityRenderPass(const RenderPass::RenderPassInfo & renderpassDesc, RenderPass* compatibilityRenderPass)
+bool VulkanGraphicPipeline::createCompatibilityRenderPass(const RenderPass::RenderPassInfo & renderpassDesc, RenderPass* &compatibilityRenderPass)
 {
     RenderPass::RenderPassInfo compatibilityRenderpassDesc(renderpassDesc);
     for (u32 index = 0; index < renderpassDesc._countColorAttachments; ++index)

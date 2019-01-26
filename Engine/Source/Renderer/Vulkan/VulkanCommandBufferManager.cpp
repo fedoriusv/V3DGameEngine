@@ -113,6 +113,7 @@ namespace vk
      if (buffer->getStatus() != VulkanCommandBuffer::CommandBufferStatus::End)
      {
          LOG_ERROR("VulkanCommandBufferManager::submit buffer current status not EndBuffer. skip submit");
+         ASSERT(false, "invalid state");
          return false;
      }
 

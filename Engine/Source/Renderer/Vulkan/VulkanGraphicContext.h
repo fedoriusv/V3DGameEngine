@@ -40,51 +40,48 @@ namespace vk
         explicit VulkanGraphicContext(const platform::Window* window) noexcept;
         ~VulkanGraphicContext();
 
-        //commands
         void beginFrame() override;
         void endFrame() override;
         void presentFrame() override;
         void submit(bool wait = false) override;
 
+        void draw(u32 firstVertex, u32 vertexCount, u32 firstInstance, u32 instanceCount) override;
+        void drawIndexed() override;
+
         void clearBackbuffer(const core::Vector4D & color) override;
 
-        //states
+
+        void bindTexture(const Image* image, const ShaderProgramDescription::Texture& bind) override;
+
+        void bindVertexBuffers(const std::vector<Buffer*>& buffer, const std::vector<u64>& offsets)  override;
+
         void setViewport(const core::Rect32& viewport, const core::Vector2D& depth = { 0.0f, 1.0f }) override;
         void setScissor(const core::Rect32& scissor) override;
 
         void setRenderTarget(const RenderPass::RenderPassInfo* renderpassInfo, const std::vector<Image*>& attachments, const RenderPass::ClearValueInfo* clearInfo, 
             const std::tuple<ObjectTracker<RenderPass>*, ObjectTracker<Framebuffer>*>& trackers) override;
-        void removeRenderTarget(const RenderPass::RenderPassInfo * renderpassInfo, const std::vector<Image*>& attachments, const RenderPass::ClearValueInfo * clearInfo) override;
+        //void removeRenderTarget(const RenderPass::RenderPassInfo * renderpassInfo, const std::vector<Image*>& attachments, const RenderPass::ClearValueInfo * clearInfo) override;
         void removeFramebuffer(Framebuffer* framebuffer) override;
         void removeRenderPass(RenderPass* renderpass) override;
+        void invalidateRenderPass() override;
 
         void setPipeline(const Pipeline::PipelineGraphicInfo* pipelineInfo, ObjectTracker<Pipeline>* tracker) override;
         void removePipeline(Pipeline* pipeline) override;
 
         Image* createImage(TextureTarget target, renderer::Format format, const core::Dimension3D& dimension, u32 mipmapLevel, s16 filter, TextureAnisotropic anisotropicLevel, TextureWrap wrap) const override;
         Image* createAttachmentImage(renderer::Format format, const core::Dimension3D& dimension, TextureSamples samples, s16 filter, TextureAnisotropic anisotropicLevel, TextureWrap wrap) const override;
+        void removeImage(Image* image) override;
 
         Buffer* createBuffer(Buffer::BufferType type, u16 usageFlag, u64 size) override;
         void removeBuffer(Buffer* buffer) override;
-
-        VulkanCommandBuffer* getCurrentBuffer(CommandTargetType type);
-        bool isCurrentBuffer(CommandTargetType type) const;
-        bool createAndStartCommandBuffer(CommandTargetType type);
-
-        void transferImageLayout(VulkanImage* image, VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask, VkImageLayout layout) const;
-
-        void bindTexture(const Image* image, const ShaderProgramDescription::Texture& bind) override;
-
-        void bindVertexBuffers(const std::vector<Buffer*>& buffer, const std::vector<u64>& offsets)  override;
-
-        void draw(u32 firstVertex, u32 vertexCount, u32 firstInstance, u32 instanceCount) override;
-        void drawIndexed() override;
 
         const DeviceCaps* getDeviceCaps() const override;
         VulkanStaginBufferManager* getStagingManager();
 
         static const std::vector<VkDynamicState>& getDynamicStates();
         static bool isDynamicState(VkDynamicState state);
+
+        VulkanCommandBuffer* getOrCreateAndStartCommandBuffer(CommandTargetType type);
 
     private:
 
@@ -103,8 +100,8 @@ namespace vk
         bool createInstance();
         bool createDevice();
 
-        std::vector<VkQueue>    m_queueList;
-        class VulkanSwapchain*  m_swapchain;
+        std::vector<VkQueue>        m_queueList;
+        class VulkanSwapchain*      m_swapchain;
 
         VulkanCommandBufferManager* m_cmdBufferManager;
         VulkanStaginBufferManager*  m_stagingBufferManager;
@@ -117,25 +114,39 @@ namespace vk
         FramebufferManager*         m_framebuferManager;
         PipelineManager*            m_pipelineManager;
 
+        //replace to another class
         struct CurrentContextState
         {
             CurrentContextState();
 
             void invalidateState();
+            void invalidateCommandBuffer(CommandTargetType type);
+
+            VulkanCommandBuffer* getAcitveBuffer(CommandTargetType type);
+            bool isCurrentBufferAcitve(CommandTargetType type) const;
 
             VulkanCommandBuffer* _currentCmdBuffer[CommandTargetType::CommandTarget_Count];
 
+            bool isCurrentRenderPass(const RenderPass* pass) const;
+            bool isCurrentFramebuffer(const Framebuffer* framebuffer) const;
+            bool isCurrentPipeline(const Pipeline* pipeline) const;
+
+            bool setDynamicState(VkDynamicState state, const std::function<void()>& callback);
+
             VulkanRenderPass*    _currentRenderpass;
             VulkanFramebuffer*   _currentFramebuffer;
+
             VulkanGraphicPipeline* _currentPipeline;
+            bool _updatePipeline;
 
             std::map<VkDynamicState, std::function<void()>> _stateCallbacks;
 
             std::vector<DescriptorBinding> _descriptorsStates;
-
             std::tuple<std::vector<Buffer*>, std::vector<u64>, bool> _boundVertexBuffer;
         };
-        CurrentContextState     m_currentContextState;
+        //
+
+        CurrentContextState         m_currentContextState;
         static std::vector<VkDynamicState>  s_dynamicStates;
 
         bool prepareDraw();

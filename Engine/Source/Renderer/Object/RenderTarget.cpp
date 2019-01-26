@@ -17,37 +17,6 @@ namespace renderer
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    /*CommandRemoveRenderTarget*/
-class CommandRemoveRenderTarget final : public Command
-{
-public:
-    CommandRemoveRenderTarget(const RenderPass::RenderPassInfo& renderpassInfo, const std::vector<Image*>& attachments, const RenderPass::ClearValueInfo& clearInfo) noexcept
-        : m_renderpassInfo(renderpassInfo)
-        , m_attachments(attachments)
-        , m_clearInfo(clearInfo)
-    {
-        LOG_DEBUG("CommandRemoveRenderTarget constructor");
-    };
-    CommandRemoveRenderTarget() = delete;
-    CommandRemoveRenderTarget(CommandRemoveRenderTarget&) = delete;
-
-    ~CommandRemoveRenderTarget()
-    {
-        LOG_DEBUG("CommandRemoveRenderTarget destructor");
-    };
-
-    void execute(const CommandList& cmdList)
-    {
-        LOG_DEBUG("CommandRemoveRenderTarget execute");
-        cmdList.getContext()->removeRenderTarget(&m_renderpassInfo, m_attachments, &m_clearInfo);
-    }
-
-private:
-    RenderPass::RenderPassInfo  m_renderpassInfo;
-    std::vector<Image*>         m_attachments;
-    RenderPass::ClearValueInfo  m_clearInfo;
-};
-
     /*CommandRemoveFramebuffers*/
 class CommandRemoveFramebuffers final : public Command
 {

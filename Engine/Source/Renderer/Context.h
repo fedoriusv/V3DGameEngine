@@ -61,20 +61,11 @@ namespace renderer
         virtual void presentFrame() = 0;
         virtual void submit(bool wait = false) = 0;
 
+        //draw
+        virtual void draw(u32 firstVertex, u32 vertexCount, u32 firstInstance, u32 instanceCount) = 0;
+        virtual void drawIndexed() = 0;
 
         virtual void clearBackbuffer(const core::Vector4D & color) = 0;
-
-        virtual void setViewport(const core::Rect32& viewport, const core::Vector2D& depth = { 0.0f, 1.0f }) = 0;
-        virtual void setScissor(const core::Rect32& scissor) = 0;
-
-        virtual void setRenderTarget(const RenderPass::RenderPassInfo* renderpassInfo, const std::vector<Image*>& attachments, const RenderPass::ClearValueInfo* clearInfo, 
-            const std::tuple<ObjectTracker<RenderPass>*, ObjectTracker<Framebuffer>*>& trackers) = 0;
-        virtual void removeRenderTarget(const RenderPass::RenderPassInfo * renderpassInfo, const std::vector<Image*>& attachments, const RenderPass::ClearValueInfo * clearInfo) = 0;
-        virtual void removeFramebuffer(Framebuffer* framebuffer) = 0;
-        virtual void removeRenderPass(RenderPass* renderpass) = 0;
-
-        virtual void setPipeline(const Pipeline::PipelineGraphicInfo* pipelineInfo, ObjectTracker<Pipeline>* tracker) = 0;
-        virtual void removePipeline(Pipeline* pipeline) = 0;
 
         //program bind
         virtual void bindTexture(const Image* image, const ShaderProgramDescription::Texture& bind) = 0;
@@ -82,16 +73,26 @@ namespace renderer
         //geometry bind
         virtual void bindVertexBuffers(const std::vector<Buffer*>& buffer, const std::vector<u64>& offsets) = 0;
 
-        //draw
-        virtual void draw(u32 firstVertex, u32 vertexCount, u32 firstInstance,  u32 instanceCount) = 0;
-        virtual void drawIndexed() = 0;
+        //state
+        virtual void setViewport(const core::Rect32& viewport, const core::Vector2D& depth = { 0.0f, 1.0f }) = 0;
+        virtual void setScissor(const core::Rect32& scissor) = 0;
 
-        //create
+        virtual void setRenderTarget(const RenderPass::RenderPassInfo* renderpassInfo, const std::vector<Image*>& attachments, const RenderPass::ClearValueInfo* clearInfo, 
+            const std::tuple<ObjectTracker<RenderPass>*, ObjectTracker<Framebuffer>*>& trackers) = 0;
+        //virtual void removeRenderTarget(const RenderPass::RenderPassInfo * renderpassInfo, const std::vector<Image*>& attachments, const RenderPass::ClearValueInfo * clearInfo) = 0;
+        virtual void removeFramebuffer(Framebuffer* framebuffer) = 0;
+        virtual void removeRenderPass(RenderPass* renderpass) = 0;
+        virtual void invalidateRenderPass() = 0;
+
+        virtual void setPipeline(const Pipeline::PipelineGraphicInfo* pipelineInfo, ObjectTracker<Pipeline>* tracker) = 0;
+        virtual void removePipeline(Pipeline* pipeline) = 0;
+
+        //objects
         virtual Image* createImage(TextureTarget target, renderer::Format format, const core::Dimension3D& dimension, u32 mipmapLevel,
             s16 filter, TextureAnisotropic anisotropicLevel, TextureWrap wrap) const = 0;
-
         virtual Image* createAttachmentImage(renderer::Format format, const core::Dimension3D& dimension, TextureSamples samples,
             s16 filter, TextureAnisotropic anisotropicLevel, TextureWrap wrap) const = 0;
+        virtual void removeImage(Image* image) = 0;
 
         virtual Buffer* createBuffer(Buffer::BufferType type, u16 usageFlag, u64 size) = 0;
         virtual void removeBuffer(Buffer* buffer) = 0;
@@ -105,6 +106,7 @@ namespace renderer
         friend FramebufferManager;
         friend PipelineManager;
 
+        //managment objects
         virtual Framebuffer* createFramebuffer(const std::vector<Image*>& attachments, const core::Dimension2D& size) = 0;
         virtual RenderPass* createRenderPass(const RenderPass::RenderPassInfo* renderpassInfo) = 0;
         virtual Pipeline* createPipeline(Pipeline::PipelineType type) = 0;

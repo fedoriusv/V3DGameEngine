@@ -15,7 +15,7 @@ namespace v3d
 namespace renderer
 {
 
-utils::MemoryPool g_commandMemoryPool(1024, 256, 1024 * 2, utils::MemoryPool::getDefaultMemoryPoolAllocator());
+utils::MemoryPool g_commandMemoryPool(2048, 64, 2048, utils::MemoryPool::getDefaultMemoryPoolAllocator());
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -150,10 +150,11 @@ private:
 class CommandSetGraphicPipeline final : public Command
 {
 public:
-    CommandSetGraphicPipeline(const RenderPass::RenderPassInfo& renderpassInfo, const ShaderProgramDescription& shaderProgramInfo, const GraphicsPipelineStateDescription& pipelineInfo, ObjectTracker<Pipeline>* tracker) noexcept
+    CommandSetGraphicPipeline(const RenderPass::RenderPassInfo& renderpassInfo, const ShaderProgramDescription& shaderProgramInfo, const GraphicsPipelineStateDescription& pipelineInfo, const std::vector<resource::Shader*>& shaders, ObjectTracker<Pipeline>* tracker) noexcept
         : m_renderpassDesc(renderpassInfo)
         , m_programDesc(shaderProgramInfo)
         , m_pipelineDesc(pipelineInfo)
+        , m_shaders(shaders)
         , m_tracker(tracker)
     {
         LOG_DEBUG("CommandSetGraphicPipeline constructor");
@@ -173,6 +174,7 @@ public:
         pipelineGraphicInfo._renderpassDesc = m_renderpassDesc;
         pipelineGraphicInfo._programDesc = m_programDesc;
         pipelineGraphicInfo._pipelineDesc = m_pipelineDesc;
+        pipelineGraphicInfo._shaders = std::move(m_shaders);
 
         cmdList.getContext()->setPipeline(&pipelineGraphicInfo, m_tracker);
     }
@@ -181,6 +183,7 @@ private:
     RenderPass::RenderPassInfo               m_renderpassDesc;
     ShaderProgramDescription                 m_programDesc;
     GraphicsPipelineStateDescription         m_pipelineDesc;
+    std::vector<resource::Shader*>           m_shaders;
     ObjectTracker<Pipeline>*                 m_tracker;
 };
 
@@ -213,6 +216,7 @@ private:
     bool    m_wait;
 };
 
+    /*CommandDraw*/
 class CommandDraw : public Command
 {
 public:
@@ -234,7 +238,7 @@ public:
     void execute(const CommandList& cmdList)
     {
         LOG_DEBUG("CommandDraw execute");
-        cmdList.getContext()->bindVertexBuffers(m_buffersDesc._vertices, {}); //TODO bind if needed
+        cmdList.getContext()->bindVertexBuffers(m_buffersDesc._vertices, m_buffersDesc._offsets); //TODO bind if needed
         cmdList.getContext()->draw(m_buffersDesc._firstVertex, m_buffersDesc._countVertex, m_firtsInstance, m_instanceCount);
     }
 
@@ -242,6 +246,28 @@ private:
     StreamBufferDescription m_buffersDesc;
     u32 m_firtsInstance;
     u32 m_instanceCount;
+};
+
+    /*CommandInvalidateRenderPass*/
+class CommandInvalidateRenderPass : public Command
+{
+public:
+    CommandInvalidateRenderPass() noexcept
+    {
+        LOG_DEBUG("CommandInvalidateRenderPass constructor");
+    }
+    CommandInvalidateRenderPass(CommandInvalidateRenderPass&) = delete;
+
+    ~CommandInvalidateRenderPass()
+    {
+        LOG_DEBUG("CommandInvalidateRenderPass constructor");
+    }
+
+    void execute(const CommandList& cmdList)
+    {
+        LOG_DEBUG("CommandInvalidateRenderPass execute");
+        cmdList.getContext()->invalidateRenderPass();
+    }
 };
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -356,7 +382,7 @@ void CommandList::draw(const StreamBufferDescription& desc, u32 instanceCount)
 {
     if (CommandList::isImmediate())
     {
-        m_context->bindVertexBuffers(desc._vertices, {}); //TODO bind if needed
+        m_context->bindVertexBuffers(desc._vertices, desc._offsets); //TODO bind if needed
         m_context->draw(desc._firstVertex, desc._countVertex, 0, instanceCount);
     }
     else
@@ -375,8 +401,15 @@ void CommandList::setRenderTarget(RenderTarget* rendertarget)
 {
     if (!rendertarget)
     {
-        ASSERT(false, "nullptr");
-        return;
+        if (CommandList::isImmediate())
+        {
+            m_context->invalidateRenderPass();
+        }
+        else
+        {
+            CommandList::flushPendingCommands(m_pendingFlushMask);
+            CommandList::pushCommand(new CommandInvalidateRenderPass());
+        }
     }
 
     RenderTargetInfo renderTargetInfo;
@@ -495,25 +528,23 @@ void CommandList::flushPendingCommands(u32 pendingFlushMask)
 
     if (pendingFlushMask & PendingFlush_UpdateRenderTarget)
     {
-        CommandList::pushCommand(
-            new CommandSetRenderTarget(m_pendingRenderTargetInfo._renderpassInfo, m_pendingRenderTargetInfo._attachments, m_pendingRenderTargetInfo._clearInfo, 
+        CommandList::pushCommand(new CommandSetRenderTarget(m_pendingRenderTargetInfo._renderpassInfo, m_pendingRenderTargetInfo._attachments, m_pendingRenderTargetInfo._clearInfo, 
                 { m_pendingRenderTargetInfo._trackerRenderpass, m_pendingRenderTargetInfo._trackerFramebuffer }));
-        pendingFlushMask |= ~PendingFlush_UpdateRenderTarget;
+        pendingFlushMask &= ~PendingFlush_UpdateRenderTarget;
     }
 
     if (pendingFlushMask & PendingFlush_UpdateContextState)
     {
         CommandList::pushCommand(new CommandSetContextState(m_pendingStates));
-        pendingFlushMask |= ~PendingFlush_UpdateContextState;
+        pendingFlushMask &= ~PendingFlush_UpdateContextState;
     }
 
     if (pendingFlushMask & PendingFlush_UpdateGraphicsPipeline)
     {
         Pipeline::PipelineGraphicInfo& info = m_pendingPipelineStateInfo._pipelineInfo;
-        CommandList::pushCommand(
-            new CommandSetGraphicPipeline(info._renderpassDesc, info._programDesc, info._pipelineDesc, m_pendingPipelineStateInfo._tracker));
+        CommandList::pushCommand(new CommandSetGraphicPipeline(info._renderpassDesc, info._programDesc, info._pipelineDesc, info._shaders, m_pendingPipelineStateInfo._tracker));
 
-        pendingFlushMask |= ~PendingFlush_UpdateGraphicsPipeline;
+        pendingFlushMask &= ~PendingFlush_UpdateGraphicsPipeline;
     }
 }
 
