@@ -76,18 +76,22 @@ bool Shader::load()
 
         u32 countUniformBuffers;
         m_stream->read<u32>(countUniformBuffers);
-        m_reflectionInfo._uniformBuffers.resize(countUniformBuffers);
-        for (auto& buffer : m_reflectionInfo._uniformBuffers)
+        for (u32 index = 0; index < countUniformBuffers; ++index)
         {
+            UniformBuffer buffer;
             buffer << m_stream;
+
+            m_reflectionInfo._uniformBuffers.emplace(buffer._name, buffer);
         }
 
         u32 countImages;
         m_stream->read<u32>(countImages);
-        m_reflectionInfo._sampledImages.resize(countImages);
-        for (auto& image : m_reflectionInfo._sampledImages)
+        for (u32 index = 0; index < countImages; ++index)
         {
+            SampledImage image;
             image << m_stream;
+
+            m_reflectionInfo._sampledImages.emplace(image._name, image);
         }
     }
 
@@ -100,6 +104,11 @@ bool Shader::load()
 const ShaderHeader& Shader::getShaderHeader() const
 {
     return *static_cast<const ShaderHeader*>(m_header);
+}
+
+const Shader::ReflectionInfo& Shader::getReflectionInfo() const
+{
+    return m_reflectionInfo;
 }
 
 Shader::Attribute::Attribute()

@@ -97,7 +97,15 @@ void MyApplication::Initialize()
         0.0f, -1.0f, 0.0f ,     0.0f, 0.0f, 1.0f
     };
 
-    m_Render = new SimpleRender(*m_CommandList, vertexBuffer);
+    VertexInputAttribDescription::InputBinding binding(0, VertexInputAttribDescription::InputRate_Vertex, sizeof(f32) * vertexBuffer.size());
+    renderer::VertexInputAttribDescription vertexDesc({ binding },
+        {
+            { 0, 0, Format::Format_R32G32B32_SFloat, 0 },                  //pos
+            { 0, 0, Format::Format_R32G32B32_SFloat, sizeof(f32) * 3 }     //color
+        }
+    );
+
+    m_Render = new renderer::SimpleRender(*m_CommandList, vertexDesc, vertexBuffer);
     m_ClearColor = { 1.0, 0.0, 0.0, 1.0 };
 }
 

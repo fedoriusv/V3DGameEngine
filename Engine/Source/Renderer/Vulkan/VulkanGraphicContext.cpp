@@ -375,7 +375,7 @@ void VulkanGraphicContext::removeImage(Image * image)
 
 Buffer * VulkanGraphicContext::createBuffer(Buffer::BufferType type, u16 usageFlag, u64 size)
 {
-    if (type == Buffer::BufferType::BufferType_VertexBuffer || type == Buffer::BufferType::BufferType_IndexBuffer)
+    if (type == Buffer::BufferType::BufferType_VertexBuffer || type == Buffer::BufferType::BufferType_IndexBuffer || type == Buffer::BufferType::BufferType_UniformBuffer)
     {
         return new VulkanBuffer(m_bufferMemoryManager, m_deviceInfo._device, type, usageFlag, size);
     }
@@ -402,18 +402,22 @@ void VulkanGraphicContext::removeBuffer(Buffer * buffer)
     }
 }
 
-void VulkanGraphicContext::bindTexture(const Image * image, const ShaderProgramDescription::Texture & bind)
+void VulkanGraphicContext::bindTexture(const resource::Shader* shader, const std::string& name, const Image* image)
 {
     const VulkanImage* vkImage = static_cast<const VulkanImage*>(image);
-
     VkImageView view = vkImage->getImageView();
 
-    //TODO:
+    //shader->getReflectionInfo()._sampledImages[name]
+}
+
+void VulkanGraphicContext::bindUniformBuffers(const resource::Shader* shader, const std::string& name, const void* data, u32 offset, u32 size)
+{
+    //m_currentContextState._boundUniformBuffers = { {buffer}, {}, true };
 }
 
 void VulkanGraphicContext::bindVertexBuffers(const std::vector<Buffer*>& buffer, const std::vector<u64>& offsets)
 {
-    m_currentContextState._boundVertexBuffer = { buffer, offsets, true };
+    m_currentContextState._boundVertexBuffers = { buffer, offsets, true };
 }
 
 void VulkanGraphicContext::draw(u32 firstVertex, u32 vertexCount, u32 firstInstance, u32 instanceCount)
@@ -422,10 +426,10 @@ void VulkanGraphicContext::draw(u32 firstVertex, u32 vertexCount, u32 firstInsta
     if (prepareDraw())
     {
         VulkanCommandBuffer* drawBuffer = m_currentContextState.getAcitveBuffer(CommandTargetType::CmdDrawBuffer);
-        if (std::get<2>(m_currentContextState._boundVertexBuffer))
+        if (std::get<2>(m_currentContextState._boundVertexBuffers))
         {
-            drawBuffer->cmdBindVertexBuffers(0, static_cast<u32>(std::get<0>(m_currentContextState._boundVertexBuffer).size()), std::get<0>(m_currentContextState._boundVertexBuffer), std::get<1>(m_currentContextState._boundVertexBuffer));
-            std::get<2>(m_currentContextState._boundVertexBuffer) = false;
+            drawBuffer->cmdBindVertexBuffers(0, static_cast<u32>(std::get<0>(m_currentContextState._boundVertexBuffers).size()), std::get<0>(m_currentContextState._boundVertexBuffers), std::get<1>(m_currentContextState._boundVertexBuffers));
+            std::get<2>(m_currentContextState._boundVertexBuffers) = false;
         }
         drawBuffer->cmdDraw(firstVertex, vertexCount, firstInstance, instanceCount);
     }
@@ -937,16 +941,15 @@ VulkanGraphicContext::CurrentContextState::CurrentContextState()
 
 void VulkanGraphicContext::CurrentContextState::invalidateState()
 {
-    if (!_stateCallbacks.empty())
-    {
-        _stateCallbacks.clear();
-    }
 }
 
 void VulkanGraphicContext::CurrentContextState::invalidateCommandBuffer(CommandTargetType type)
 {
-    //TODO:
     _currentCmdBuffer[type] = nullptr;
+    if (type == CommandTargetType::CmdDrawBuffer)
+    {
+        _stateCallbacks.clear();
+    }
 }
 
 VulkanCommandBuffer * VulkanGraphicContext::CurrentContextState::getAcitveBuffer(CommandTargetType type)

@@ -69,6 +69,12 @@ bool VulkanBuffer::create()
             flag |= VulkanDeviceCaps::getInstance()->supportCoherentMemory ? VK_MEMORY_PROPERTY_HOST_COHERENT_BIT : VK_MEMORY_PROPERTY_HOST_CACHED_BIT;
         }
     }
+    else if (m_type == Buffer::BufferType::BufferType_UniformBuffer)
+    {
+        usage |= VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
+        flag |= VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
+        flag |= VulkanDeviceCaps::getInstance()->supportCoherentMemory ? VK_MEMORY_PROPERTY_HOST_COHERENT_BIT : VK_MEMORY_PROPERTY_HOST_CACHED_BIT;
+    }
     else if (m_type == Buffer::BufferType::BufferType_StagingBuffer)
     {
         flag |= VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;

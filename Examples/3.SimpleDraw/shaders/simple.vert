@@ -3,7 +3,7 @@
 layout (location = 0) in vec3 inPos;
 layout (location = 1) in vec3 inColor;
 
-layout (set = 0, binding = 0) uniform UBO 
+layout (set = 0, binding = 0, std140) uniform UBO 
 {
 	mat4 projectionMatrix;
 	mat4 modelMatrix;

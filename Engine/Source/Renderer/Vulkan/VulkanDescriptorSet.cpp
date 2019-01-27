@@ -92,30 +92,30 @@ VkDescriptorSetLayout DescriptorSetManager::createDescriptorSetLayout(const std:
             continue;
         }
 
-        const resource::Shader::ReflectionInfo info; //TODO:get shader
-        for (auto& uniform : info._uniformBuffers)
-        {
-            VkDescriptorSetLayoutBinding descriptorSetLayoutBinding;
-            descriptorSetLayoutBinding.descriptorType = VulkanDeviceCaps::getInstance()->useDynamicUniforms ? VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC : VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-            descriptorSetLayoutBinding.binding = uniform._binding;
-            descriptorSetLayoutBinding.stageFlags = convertShaderTypeToVkStage((resource::ShaderType)type);
-            descriptorSetLayoutBinding.descriptorCount = 1;
-            descriptorSetLayoutBinding.pImmutableSamplers = nullptr;
+        //const resource::Shader::ReflectionInfo info; //TODO:get shader
+        //for (auto& uniform : info._uniformBuffers)
+        //{
+        //    VkDescriptorSetLayoutBinding descriptorSetLayoutBinding;
+        //    descriptorSetLayoutBinding.descriptorType = VulkanDeviceCaps::getInstance()->useDynamicUniforms ? VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC : VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        //    descriptorSetLayoutBinding.binding = uniform._binding;
+        //    descriptorSetLayoutBinding.stageFlags = convertShaderTypeToVkStage((resource::ShaderType)type);
+        //    descriptorSetLayoutBinding.descriptorCount = 1;
+        //    descriptorSetLayoutBinding.pImmutableSamplers = nullptr;
 
-            descriptorSetLayoutBindings.push_back(descriptorSetLayoutBinding);
-        }
+        //    descriptorSetLayoutBindings.push_back(descriptorSetLayoutBinding);
+        //}
 
-        for (auto& image : info._sampledImages)
-        {
-            VkDescriptorSetLayoutBinding descriptorSetLayoutBinding;
-            descriptorSetLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER; //VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE
-            descriptorSetLayoutBinding.binding = image._binding;
-            descriptorSetLayoutBinding.stageFlags = convertShaderTypeToVkStage((resource::ShaderType)type);
-            descriptorSetLayoutBinding.descriptorCount = 1;
-            descriptorSetLayoutBinding.pImmutableSamplers = nullptr;
+        //for (auto& image : info._sampledImages)
+        //{
+        //    VkDescriptorSetLayoutBinding descriptorSetLayoutBinding;
+        //    descriptorSetLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER; //VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE
+        //    descriptorSetLayoutBinding.binding = image._binding;
+        //    descriptorSetLayoutBinding.stageFlags = convertShaderTypeToVkStage((resource::ShaderType)type);
+        //    descriptorSetLayoutBinding.descriptorCount = 1;
+        //    descriptorSetLayoutBinding.pImmutableSamplers = nullptr;
 
-            descriptorSetLayoutBindings.push_back(descriptorSetLayoutBinding);
-        }
+        //    descriptorSetLayoutBindings.push_back(descriptorSetLayoutBinding);
+        //}
 
         //TODO:
     }

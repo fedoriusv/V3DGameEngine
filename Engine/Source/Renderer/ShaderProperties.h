@@ -5,8 +5,13 @@
 
 namespace v3d
 {
+namespace resource
+{
+    class Shader;
+}
 namespace renderer
 {
+
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     enum DataType : s32
@@ -34,28 +39,32 @@ namespace renderer
     */
     struct ShaderProgramDescription
     {
-        struct Uniform
+        ShaderProgramDescription() noexcept
+            : _hash(0)
         {
-            u32     _binding;
-        };
+        }
+        ShaderProgramDescription(const ShaderProgramDescription&) = default;
+        ShaderProgramDescription& operator=(const ShaderProgramDescription&) = default;
 
-        struct Texture
+        ShaderProgramDescription(ShaderProgramDescription&& desc) noexcept
         {
-            u32     _binding;
-        };
+            _hash = desc._hash;
+            _shaders = std::move(desc._shaders);
+        }
 
-        struct Attribute
+        ShaderProgramDescription& operator=(ShaderProgramDescription&& desc) noexcept
         {
-            u32     _location;
-            u32     _offset;
-            Format  _format;
-        };
+            if (this == &desc)
+            {
+                return *this;
+            }
+
+            _hash = desc._hash;
+            _shaders = std::move(desc._shaders);
+        }
 
         u32 _hash;
-        std::map<std::string, Attribute> _inputAttachment;
-        std::map<std::string, Attribute> _outputAttachment;
-        std::map<std::string, Uniform>   _uniforms;
-        std::map<std::string, Texture>   _textures;
+        std::vector<resource::Shader*> _shaders;
     };
 
 

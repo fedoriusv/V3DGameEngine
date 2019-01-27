@@ -33,6 +33,6 @@ private:
     v3d::renderer::CommandList* m_CommandList;
 
     v3d::core::Vector4D m_ClearColor;
-    v3d::SimpleRender* m_Render;
+    v3d::renderer::SimpleRender* m_Render;
 
 };

@@ -11,22 +11,25 @@
 
 namespace v3d
 {
+namespace renderer
+{
 
 class SimpleRender
 {
 public:
-    SimpleRender(renderer::CommandList& cmdList, const std::vector<f32>& geomentry);
+    SimpleRender(renderer::CommandList& cmdList, const renderer::VertexInputAttribDescription& desc, const std::vector<f32>& geomentry);
     ~SimpleRender();
 
     void render(renderer::CommandList& cmdList);
 
 private:
 
-    renderer::Texture2D*        m_texture;
-    renderer::RenderTarget*    m_renderTarget;
-    renderer::ShaderProgram*   m_program;
-    renderer::GraphicsPipelineState* m_pipeline;
-    renderer::VertexStreamBuffer* m_vetexBuffer;
+    Texture2D*        m_texture;
+    RenderTarget*     m_renderTarget;
+    ShaderProgram*    m_program;
+    GraphicsPipelineState* m_pipeline;
+    VertexStreamBuffer* m_vetexBuffer;
 };
 
+} //namespace renderer
 } //namespace v3d

@@ -22,6 +22,7 @@ namespace renderer
         {
             BufferType_VertexBuffer,
             BufferType_IndexBuffer,
+            BufferType_UniformBuffer,
             BufferType_StagingBuffer
         };
 

@@ -332,6 +332,22 @@ VkCompareOp VulkanGraphicPipeline::covertCompareOperationToVk(CompareOperation c
     return VK_COMPARE_OP_GREATER;
 }
 
+VkVertexInputRate VulkanGraphicPipeline::covertInputRateToVk(VertexInputAttribDescription::InputRate rate)
+{
+    if (rate == VertexInputAttribDescription::InputRate::InputRate_Vertex)
+    {
+        return VK_VERTEX_INPUT_RATE_VERTEX;
+    }
+    else if (rate == VertexInputAttribDescription::InputRate::InputRate_Instance)
+    {
+        return VK_VERTEX_INPUT_RATE_INSTANCE;
+    }
+
+    ASSERT(false, "rate not found");
+    return VK_VERTEX_INPUT_RATE_VERTEX;
+
+}
+
 VulkanGraphicPipeline::VulkanGraphicPipeline(VkDevice device, RenderPassManager* renderpassManager)
     : Pipeline(PipelineType::PipelineType_Graphic)
     , m_device(device)
@@ -380,11 +396,12 @@ bool VulkanGraphicPipeline::create(const PipelineGraphicInfo* pipelineInfo)
     };
 
     std::vector<VkPipelineShaderStageCreateInfo> pipelineShaderStageCreateInfos;
-    ASSERT(!pipelineInfo->_shaders.empty(), "empty");
+    const ShaderProgramDescription& programDesc = pipelineInfo->_programDesc;
+    ASSERT(!programDesc._shaders.empty(), "empty");
     for (u32 type = resource::ShaderType::ShaderType_Vertex; type < resource::ShaderType_Count; ++type)
     {
         VkPipelineShaderStageCreateInfo pipelineShaderStageCreateInfo = {};
-        if (!createShaderModule(findShaderByType(pipelineInfo->_shaders, (resource::ShaderType)type), pipelineShaderStageCreateInfo))
+        if (!createShaderModule(findShaderByType(programDesc._shaders, (resource::ShaderType)type), pipelineShaderStageCreateInfo))
         {
             LOG_ERROR("VulkanGraphicPipeline::create couldn't create modules for pipeline");
             deleteShaderModules();
@@ -440,7 +457,7 @@ bool VulkanGraphicPipeline::create(const PipelineGraphicInfo* pipelineInfo)
     inputAssemblyStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
     inputAssemblyStateCreateInfo.pNext = nullptr;
     inputAssemblyStateCreateInfo.flags = 0;
-    inputAssemblyStateCreateInfo.topology = VulkanGraphicPipeline::convertPrimitiveTopologyToVk(pipelineDesc._primitiveTopology);
+    inputAssemblyStateCreateInfo.topology = VulkanGraphicPipeline::convertPrimitiveTopologyToVk(pipelineDesc._vertexInputState._primitiveTopology);
     inputAssemblyStateCreateInfo.primitiveRestartEnable = VK_FALSE;
     graphicsPipelineCreateInfo.pInputAssemblyState = &inputAssemblyStateCreateInfo;
 
@@ -451,28 +468,40 @@ bool VulkanGraphicPipeline::create(const PipelineGraphicInfo* pipelineInfo)
     vertexInputStateCreateInfo.pNext = nullptr; //VkPipelineVertexInputDivisorStateCreateInfoEXT
     vertexInputStateCreateInfo.flags = 0;
 
-    VkVertexInputBindingDescription vertexInputBindingDescription = {};
-    vertexInputBindingDescription.binding = 0;
-    vertexInputBindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
-    vertexInputBindingDescription.stride = 0;
-    vertexInputStateCreateInfo.vertexBindingDescriptionCount = 1;
-    vertexInputStateCreateInfo.pVertexBindingDescriptions = &vertexInputBindingDescription;
+    const VertexInputAttribDescription& inputAttrDesc = pipelineDesc._vertexInputState._inputAttributes;
 
-    const ShaderProgramDescription& shaderProgramInfo = pipelineInfo->_programDesc;
+    std::vector<VkVertexInputBindingDescription> vertexInputBindingDescriptions;
+    vertexInputBindingDescriptions.reserve(inputAttrDesc._countInputBindings);
+    for (u32 index = 0; index < inputAttrDesc._countInputBindings; ++index)
+    {
+        VkVertexInputBindingDescription vertexInputBindingDescription = {};
+        vertexInputBindingDescription.binding = inputAttrDesc._inputBindings[index]._index;
+        vertexInputBindingDescription.inputRate = VulkanGraphicPipeline::covertInputRateToVk(inputAttrDesc._inputBindings[index]._rate);
+        vertexInputBindingDescription.stride = inputAttrDesc._inputBindings[index]._stride;
+        vertexInputBindingDescriptions.push_back(vertexInputBindingDescription);
+    }
+    vertexInputStateCreateInfo.vertexBindingDescriptionCount = static_cast<u32>(vertexInputBindingDescriptions.size());
+    vertexInputStateCreateInfo.pVertexBindingDescriptions = vertexInputBindingDescriptions.data();
 
+    const resource::Shader* fragmentShader = findShaderByType(programDesc._shaders, resource::ShaderType::ShaderType_Fragment);
+    ASSERT(fragmentShader, "nullptr");
     std::vector<VkVertexInputAttributeDescription> vertexInputAttributeDescriptions;
-    vertexInputAttributeDescriptions.reserve(shaderProgramInfo._inputAttachment.size());
-    for (auto& attr : shaderProgramInfo._inputAttachment)
+    vertexInputAttributeDescriptions.reserve(inputAttrDesc._countInputAttributes);
+    const resource::Shader::ReflectionInfo& reflectionInfo = fragmentShader->getReflectionInfo();
+    ASSERT(reflectionInfo._inputAttribute.size() == inputAttrDesc._countInputAttributes, "defferent sizes");
+    for (u32 index = 0; index < inputAttrDesc._countInputAttributes; ++index)
     {
         VkVertexInputAttributeDescription vertexInputAttributeDescription = {};
-        vertexInputAttributeDescription.binding = 0;
-        vertexInputAttributeDescription.location = attr.second._location;
-        vertexInputAttributeDescription.format = VulkanImage::convertImageFormatToVkFormat(attr.second._format);
-        vertexInputAttributeDescription.offset = attr.second._offset;
+        vertexInputAttributeDescription.binding = inputAttrDesc._inputAttribute[index]._bindingId;
+        vertexInputAttributeDescription.location = reflectionInfo._inputAttribute[index]._location;
+        ASSERT(reflectionInfo._inputAttribute[index]._format == inputAttrDesc._inputAttribute[index]._format, "defferent formats");
+        vertexInputAttributeDescription.format = VulkanImage::convertImageFormatToVkFormat(inputAttrDesc._inputAttribute[index]._format);
+        vertexInputAttributeDescription.offset = inputAttrDesc._inputAttribute[index]._offest;
         vertexInputAttributeDescriptions.push_back(vertexInputAttributeDescription);
     }
     vertexInputStateCreateInfo.vertexAttributeDescriptionCount = static_cast<u32>(vertexInputAttributeDescriptions.size());
     vertexInputStateCreateInfo.pVertexAttributeDescriptions = vertexInputAttributeDescriptions.data();
+
     graphicsPipelineCreateInfo.pVertexInputState = &vertexInputStateCreateInfo;
 
     const GraphicsPipelineStateDescription::BlendState& blendState = pipelineDesc._blendState;

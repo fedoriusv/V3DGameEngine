@@ -104,14 +104,16 @@ void MyApplication::Initialize()
     //Shader* fragShader = ResourceLoaderManager::getInstance()->loadResource<Shader, ShaderSourceFileLoader(m_Context, name, header, defines)>();
     
     ShaderProgram* program = m_CommandList->createObject<ShaderProgram>(std::vector<Shader*>{vertShader, fragShader});
-    GraphicsPipelineState* pipeline = m_CommandList->createObject<GraphicsPipelineState>(program, renderTarget0);
+    renderer::VertexInputAttribDescription vertexDesc;
+
+    GraphicsPipelineState* pipeline = m_CommandList->createObject<GraphicsPipelineState>(vertexDesc, program, renderTarget0);
 
     pipeline->setPrimitiveTopology(PrimitiveTopology::PrimitiveTopology_TriangleList);
     m_CommandList->setPipelineState(pipeline);
 
     core::Matrix4D projection;
 
-    program->setTexture<Texture2D>("samplerColor", texture);
+    program->bindTexture<Texture2D, resource::ShaderType::ShaderType_Fragment>("samplerColor", texture);
     program->bindUniform<core::Matrix4D>("projection", projection);
 
     std::vector<f32> vertexBuffer =

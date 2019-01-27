@@ -3,6 +3,7 @@
 #include "Common.h"
 #include "ShaderProgram.h"
 #include "Renderer/PipelineStateProperties.h"
+#include "Renderer/BufferProperties.h"
 #include "Renderer/CommandList.h"
 #include "Renderer/ObjectTracker.h"
 
@@ -47,8 +48,8 @@ namespace renderer
 
     private:
 
-        explicit GraphicsPipelineState(CommandList& cmdList, const ShaderProgram* const program, const RenderTarget* const renderTaget) noexcept;
-        explicit GraphicsPipelineState(CommandList& cmdList, const ShaderProgram* const program, const Backbuffer* const backbuffer) noexcept;
+        explicit GraphicsPipelineState(CommandList& cmdList, const VertexInputAttribDescription& vertex, const ShaderProgram* const program, const RenderTarget* const renderTaget) noexcept;
+        explicit GraphicsPipelineState(CommandList& cmdList, const VertexInputAttribDescription& vertex, const ShaderProgram* const program, const Backbuffer* const backbuffer) noexcept;
         explicit GraphicsPipelineState(CommandList& cmdList, const GraphicsPipelineStateDescription& desc, const ShaderProgram* const program, const RenderTarget* const renderTaget) noexcept;
 
         void setShaderProgram(const ShaderProgram * program);

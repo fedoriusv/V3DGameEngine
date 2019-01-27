@@ -2,6 +2,7 @@
 
 #include "Common.h"
 #include "TextureProperties.h"
+#include "BufferProperties.h"
 
 namespace v3d
 {
@@ -214,16 +215,28 @@ namespace renderer
             u8                  _padding[3];
         };
 
+        struct VertexInputState
+        {
+            VertexInputState()
+                : _primitiveTopology(PrimitiveTopology::PrimitiveTopology_TriangleList)
+            {
+            }
+
+            VertexInputAttribDescription _inputAttributes;
+            PrimitiveTopology           _primitiveTopology;
+        };
+
         GraphicsPipelineStateDescription()
-            : _primitiveTopology(PrimitiveTopology::PrimitiveTopology_TriangleList)
         {
         }
 
+        VertexInputState    _vertexInputState;
         RasterizationState  _rasterizationState;
         BlendState          _blendState;
         DepthStencilState   _depthStencilState;
 
-        PrimitiveTopology   _primitiveTopology;
+
+
 
     };
 

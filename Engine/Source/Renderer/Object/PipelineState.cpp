@@ -42,13 +42,24 @@ private:
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-GraphicsPipelineState::GraphicsPipelineState(CommandList& cmdList, const ShaderProgram* const program, const RenderTarget* const renderTaget) noexcept
+GraphicsPipelineState::GraphicsPipelineState(CommandList& cmdList, const VertexInputAttribDescription& vertex, const ShaderProgram* const program, const RenderTarget* const renderTaget) noexcept
     : m_cmdList(cmdList)
     , m_program(program)
     , m_renderTaget(renderTaget)
 
     , m_tracker(this, std::bind(&GraphicsPipelineState::destroyPipelines, this, std::placeholders::_1))
 {
+    m_pipelineStateDesc._vertexInputState._inputAttributes = vertex;
+}
+
+GraphicsPipelineState::GraphicsPipelineState(CommandList& cmdList, const VertexInputAttribDescription& vertex, const ShaderProgram* const program, const Backbuffer* const backbuffer) noexcept
+    : m_cmdList(cmdList)
+    , m_program(program)
+
+    , m_tracker(this, nullptr)
+{
+    m_pipelineStateDesc._vertexInputState._inputAttributes = vertex;
+    ASSERT(false, "need implement");
 }
 
 GraphicsPipelineState::GraphicsPipelineState(CommandList& cmdList, const GraphicsPipelineStateDescription& desc, const ShaderProgram* const program, const RenderTarget* const renderTaget) noexcept
@@ -59,14 +70,6 @@ GraphicsPipelineState::GraphicsPipelineState(CommandList& cmdList, const Graphic
 
     , m_tracker(this, std::bind(&GraphicsPipelineState::destroyPipelines, this, std::placeholders::_1))
 {
-}
-
-GraphicsPipelineState::GraphicsPipelineState(CommandList& cmdList, const ShaderProgram* const program, const Backbuffer* const backbuffer) noexcept
-    : m_cmdList(cmdList)
-
-    , m_tracker(this, nullptr)
-{
-    ASSERT(false, "need implement");
 }
 
 GraphicsPipelineState::~GraphicsPipelineState()
@@ -91,7 +94,7 @@ void GraphicsPipelineState::setCullMode(CullMode cullMode)
 
 void GraphicsPipelineState::setPrimitiveTopology(PrimitiveTopology primitiveTopology)
 {
-    m_pipelineStateDesc._primitiveTopology = primitiveTopology;
+    m_pipelineStateDesc._vertexInputState._primitiveTopology = primitiveTopology;
 }
 
 const GraphicsPipelineStateDescription & GraphicsPipelineState::getGraphicsPipelineStateDesc() const

@@ -51,7 +51,8 @@ namespace vk
         void clearBackbuffer(const core::Vector4D & color) override;
 
 
-        void bindTexture(const Image* image, const ShaderProgramDescription::Texture& bind) override;
+        void bindTexture(const resource::Shader* shader, const std::string& name, const Image* image) override;
+        void bindUniformBuffers(const resource::Shader* shader, const std::string& name, const void* data, u32 offset, u32 size) override;
 
         void bindVertexBuffers(const std::vector<Buffer*>& buffer, const std::vector<u64>& offsets)  override;
 
@@ -142,7 +143,8 @@ namespace vk
             std::map<VkDynamicState, std::function<void()>> _stateCallbacks;
 
             std::vector<DescriptorBinding> _descriptorsStates;
-            std::tuple<std::vector<Buffer*>, std::vector<u64>, bool> _boundVertexBuffer;
+            std::tuple<std::vector<Buffer*>, std::vector<u64>, bool> _boundVertexBuffers;
+            std::tuple<std::vector<Buffer*>, std::vector<u64>, bool> _boundUniformBuffers;
         };
         //
 

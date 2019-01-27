@@ -3,6 +3,7 @@
 #include "Common.h"
 #include "Renderer/Pipeline.h"
 #include "Resource/Shader.h"
+#include "Renderer/BufferProperties.h"
 
 #ifdef VULKAN_RENDER
 #include "VulkanWrapper.h"
@@ -39,6 +40,8 @@ namespace vk
         static VkBlendOp convertBlendOperationToVk(BlendOperation blendOp);
         static VkLogicOp covertLogicOperationToVk(LogicalOperation logicalOp);
         static VkCompareOp covertCompareOperationToVk(CompareOperation compareOp);
+
+        static VkVertexInputRate covertInputRateToVk(VertexInputAttribDescription::InputRate rate);
 
     private:
 

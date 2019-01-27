@@ -30,13 +30,13 @@ namespace renderer
 
         const ShaderProgramDescription& getShaderDesc() const;
 
-        template<class TTexture>
-        bool setTexture(std::string name, const TTexture* texture);
+        template<class TTexture, resource::ShaderType shaderType>
+        bool bindTexture(std::string name, const TTexture* texture);
 
         template<class TDataType>
         bool bindUniform(std::string name, const TDataType& data);
 
-        bool bindUniformsBuffer(std::string name, const u8* data, u32 size);
+        bool bindUniformsBuffer(std::string name, const u8* data, u32 size, u32 offset);
 
     private:
 
@@ -45,20 +45,19 @@ namespace renderer
         friend CommandList;
         CommandList& m_cmdList;
 
-        std::vector<resource::Shader*>      m_shaders;
-        ShaderProgramDescription            m_programInfo;
+        ShaderProgramDescription m_programInfo;
 
-        void composeProgramData();
+        void composeProgramData(const std::vector<resource::Shader*>& shaders);
 
-        bool setTexture(std::string& name, TextureTarget target, const Texture* texture);
+        bool bindTexture(std::string& name, resource::ShaderType shaderType, TextureTarget target, const Texture* texture);
     };
 
 
-    template<class TTexture>
-    inline bool ShaderProgram::setTexture(std::string name, const TTexture* texture)
+    template<class TTexture, resource::ShaderType shaderType>
+    inline bool ShaderProgram::bindTexture(std::string name, const TTexture* texture)
     {
         static_assert(std::is_base_of<Texture, TTexture>());
-        return setTexture(name, texture->m_target, texture);
+        return bindTexture(name, shaderType, texture->m_target, texture);
     }
 
     template<class TDataType>

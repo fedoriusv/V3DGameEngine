@@ -169,6 +169,8 @@ void VulkanDeviceCaps::initialize()
     useStagingBuffers = !VulkanMemory::isSupportedMemoryType(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, false);
 
     ASSERT(k_maxFramebufferAttachments <= m_deviceProperties.limits.maxFragmentOutputAttachments, "maxFragmentOutputAttachments less than k_maxFramebufferAttachments");
+    ASSERT(k_maxVertexInputAttributes <= m_deviceProperties.limits.maxVertexInputAttributes, "maxVertexInputAttributes less than k_maxVertexInputAttributes");
+    ASSERT(k_maxVertexInputBindings <= m_deviceProperties.limits.maxVertexInputBindings, "maxVertexInputBindings less than k_maxVertexInputBindings");
 }
 
 } //namespace vk

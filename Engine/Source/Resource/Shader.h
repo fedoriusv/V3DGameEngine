@@ -135,10 +135,10 @@ namespace resource
         struct ReflectionInfo
         {
             //std::vector<InputBinding>   _inputBinding;
-            std::vector<Attribute>      _inputAttribute;
-            std::vector<Attribute>      _outputAttribute;
-            std::vector<UniformBuffer>  _uniformBuffers;
-            std::vector<SampledImage>  _sampledImages;
+            std::vector<Attribute>   _inputAttribute;
+            std::vector<Attribute>   _outputAttribute;
+            std::map< std::string, UniformBuffer>  _uniformBuffers;
+            std::map< std::string, SampledImage>   _sampledImages;
         };
 
         explicit Shader(const ShaderHeader* header) noexcept;
@@ -148,6 +148,7 @@ namespace resource
         bool load() override;
 
         const ShaderHeader& getShaderHeader() const;
+        const ReflectionInfo& getReflectionInfo() const;
 
     private:
 

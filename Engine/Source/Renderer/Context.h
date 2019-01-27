@@ -68,7 +68,8 @@ namespace renderer
         virtual void clearBackbuffer(const core::Vector4D & color) = 0;
 
         //program bind
-        virtual void bindTexture(const Image* image, const ShaderProgramDescription::Texture& bind) = 0;
+        virtual void bindTexture(const resource::Shader* shader, const std::string& name, const Image* image) = 0;
+        virtual void bindUniformBuffers(const resource::Shader* shader, const std::string& name, const void* data, u32 offset, u32 size) = 0;
 
         //geometry bind
         virtual void bindVertexBuffers(const std::vector<Buffer*>& buffer, const std::vector<u64>& offsets) = 0;

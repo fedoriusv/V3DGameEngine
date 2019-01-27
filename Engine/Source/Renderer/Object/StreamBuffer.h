@@ -54,7 +54,6 @@ namespace renderer
         VertexStreamBuffer(const VertexStreamBuffer&) = delete;
         ~VertexStreamBuffer();
 
-        bool isLocked() const;
         bool update(u32 offset, u64 size, void* data);
 
     private:
