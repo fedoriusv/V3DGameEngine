@@ -5,6 +5,7 @@
 #include "VulkanBuffer.h"
 #include "VulkanRenderpass.h"
 #include "VulkanFramebuffer.h"
+#include "VulkanPipeline.h"
 #include "Utils/Logger.h"
 
 #ifdef VULKAN_RENDER
@@ -291,6 +292,20 @@ void VulkanCommandBuffer::cmdBindVertexBuffers(u32 firstBinding, u32 countBindin
     if (m_level == CommandBufferLevel::PrimaryBuffer)
     {
         VulkanWrapper::CmdBindVertexBuffers(m_command, firstBinding, countBindinng, vkBuffers.data(), offests.data());
+    }
+    else
+    {
+        ASSERT(false, "not implemented");
+    }
+}
+
+void VulkanCommandBuffer::cmdBindPipeline(VulkanGraphicPipeline * pipeline)
+{
+    ASSERT(m_status == CommandBufferStatus::Begin, "not started");
+    pipeline->captureInsideCommandBuffer(this, 0);
+    if (m_level == CommandBufferLevel::PrimaryBuffer)
+    {
+        VulkanWrapper::CmdBindPipeline(m_command, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->getHandle());
     }
     else
     {

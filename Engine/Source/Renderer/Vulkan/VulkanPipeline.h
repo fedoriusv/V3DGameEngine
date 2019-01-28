@@ -8,6 +8,7 @@
 #ifdef VULKAN_RENDER
 #include "VulkanWrapper.h"
 #include "VulkanResource.h"
+#include "VulkanDescriptorSet.h"
 
 namespace v3d
 {
@@ -23,7 +24,7 @@ namespace vk
     {
     public:
 
-        VulkanGraphicPipeline(VkDevice device, RenderPassManager* renderpassManager);
+        VulkanGraphicPipeline(VkDevice device, RenderPassManager* renderpassManager, VulkanDescriptorSetManager* descriptorSetManager);
         ~VulkanGraphicPipeline();
 
         bool create(const PipelineGraphicInfo* pipelineInfo) override;
@@ -43,6 +44,8 @@ namespace vk
 
         static VkVertexInputRate covertInputRateToVk(VertexInputAttribDescription::InputRate rate);
 
+        VkPipeline getHandle() const;
+
     private:
 
         bool compileShader(const resource::ShaderHeader* header, const void* source, u32 size) override;
@@ -57,8 +60,10 @@ namespace vk
         VkDevice     m_device;
         VkPipeline   m_pipeline;
         RenderPass*  m_compatibilityRenderPass;
+        VulkanPipelineLayout m_pipelineLayout;
 
         RenderPassManager* const m_renderpassManager;
+        VulkanDescriptorSetManager* const m_descriptorSetManager;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

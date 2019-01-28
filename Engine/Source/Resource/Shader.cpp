@@ -93,6 +93,16 @@ bool Shader::load()
 
             m_reflectionInfo._sampledImages.emplace(image._name, image);
         }
+
+        u32 countPushConstant;
+        m_stream->read<u32>(countPushConstant);
+        for (u32 index = 0; index < countPushConstant; ++index)
+        {
+            PushConstant pushConstant;
+            pushConstant << m_stream;
+
+            m_reflectionInfo._pushConstant.emplace(pushConstant._name, pushConstant);
+        }
     }
 
     m_hash = crc32c::Crc32c(reinterpret_cast<u8*>(m_source), m_size);
@@ -113,8 +123,6 @@ const Shader::ReflectionInfo& Shader::getReflectionInfo() const
 
 Shader::Attribute::Attribute()
     : _location(0)
-    //, _binding(0)
-    //, _offset(0)
     , _format(renderer::Format::Format_Undefined)
     , _name("")
 {
@@ -139,6 +147,7 @@ Shader::UniformBuffer::UniformBuffer()
     : _id(0)
     , _set(0)
     , _binding(0)
+    , _array(1)
     , _size(0)
     , _name("")
 {
@@ -149,6 +158,8 @@ void Shader::UniformBuffer::operator>>(stream::Stream * stream)
     stream->write<u32>(_id);
     stream->write<u32>(_set);
     stream->write<u32>(_binding);
+    stream->write<u32>(_array);
+    stream->write<u32>(_size);
     stream->write(_name);
 
     stream->write<u32>(static_cast<u32>(_uniforms.size()));
@@ -163,6 +174,8 @@ void Shader::UniformBuffer::operator<<(const stream::Stream * stream)
     stream->read<u32>(_id);
     stream->read<u32>(_set);
     stream->read<u32>(_binding);
+    stream->read<u32>(_array);
+    stream->read<u32>(_size);
     stream->read(_name);
 
     u32 size;
@@ -204,6 +217,7 @@ Shader::SampledImage::SampledImage()
     : _set(0)
     , _binding(0)
     , _target(renderer::TextureTarget::Texture2D)
+    , _array(1)
     , _depth(false)
     , _ms(false)
     , _name("")
@@ -215,6 +229,7 @@ void Shader::SampledImage::operator>>(stream::Stream * stream)
     stream->write<u32>(_set);
     stream->write<u32>(_binding);
     stream->write<renderer::TextureTarget>(_target);
+    stream->write<u32>(_array);
     stream->write<bool>(_depth);
     stream->write<bool>(_ms);
     stream->write(_name);
@@ -225,8 +240,30 @@ void Shader::SampledImage::operator<<(const stream::Stream * stream)
     stream->read<u32>(_set);
     stream->read<u32>(_binding);
     stream->read<renderer::TextureTarget>(_target);
+    stream->read<u32>(_array);
     stream->read<bool>(_depth);
     stream->read<bool>(_ms);
+    stream->read(_name);
+}
+
+Shader::PushConstant::PushConstant()
+    : _offset(0)
+    , _size(0)
+    , _name("")
+{
+}
+
+void Shader::PushConstant::operator>>(stream::Stream * stream)
+{
+    stream->write<u32>(_offset);
+    stream->write<u32>(_size);
+    stream->write(_name);
+}
+
+void Shader::PushConstant::operator<<(const stream::Stream * stream)
+{
+    stream->read<u32>(_offset);
+    stream->read<u32>(_size);
     stream->read(_name);
 }
 

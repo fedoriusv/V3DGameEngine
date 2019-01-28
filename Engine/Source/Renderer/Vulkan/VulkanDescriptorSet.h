@@ -23,27 +23,53 @@ namespace vk
         };
     };
 
+    struct VulkanPipelineLayout
+    {
+        VulkanPipelineLayout();
+
+        u32 _key;
+        VkPipelineLayout                    _layout;
+        std::vector<VkDescriptorSetLayout>  _descriptorSetLayouts;
+    };
+
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    class DescriptorSetManager final
+    class VulkanDescriptorSetManager final
     {
     public:
 
+        struct DescriptorSetDescription
+        {
+            DescriptorSetDescription(const std::vector<resource::Shader*> shaders) noexcept;
+            DescriptorSetDescription() = delete;
+            DescriptorSetDescription(const DescriptorSetDescription&) = delete;
+
+            u32 _hash;
+            std::vector<std::vector<VkDescriptorSetLayoutBinding>> _descriptorSets;
+            std::vector<VkPushConstantRange> _pushConstant;
+        };
+
         static VkShaderStageFlagBits convertShaderTypeToVkStage(resource::ShaderType type);
 
-        DescriptorSetManager(VkDevice device) noexcept;
+        VulkanDescriptorSetManager(VkDevice device) noexcept;
+        VulkanDescriptorSetManager() = delete;
+        VulkanDescriptorSetManager(const VulkanDescriptorSetManager&) = delete;
 
-        void createPipelineLayout();
-        void removePipelineLayout();
-
-        VkDescriptorSetLayout createDescriptorSetLayout(const std::vector<resource::Shader*> shaders);
-        void removeDescriptorSetLayout();
+        VulkanPipelineLayout acquirePipelineLayout(const DescriptorSetDescription& desc);
+        bool removePipelineLayout(const DescriptorSetDescription& desc);
+        bool removePipelineLayout(VulkanPipelineLayout& layout);
 
     private:
 
+        VkPipelineLayout createPipelineLayout(const DescriptorSetDescription& desc, std::vector<VkDescriptorSetLayout>& descriptorSetLayouts);
+        void destroyPipelineLayout(VkPipelineLayout layout, std::vector<VkDescriptorSetLayout>& descriptorSetLayouts);
+
+        bool createDescriptorSetLayouts(const DescriptorSetDescription& desc, std::vector<VkDescriptorSetLayout>& descriptorSetLayouts);
+        void destroyDescriptorSetLayouts(std::vector<VkDescriptorSetLayout>& descriptorSetLayouts);
+
         VkDevice m_device;
 
-        std::map<u32, VkDescriptorSetLayout> m_descriptorSetLayouts;
+        std::map<u32, VulkanPipelineLayout> m_pipelinesLayouts;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

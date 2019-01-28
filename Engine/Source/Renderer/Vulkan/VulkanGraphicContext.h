@@ -106,6 +106,7 @@ namespace vk
 
         VulkanCommandBufferManager* m_cmdBufferManager;
         VulkanStaginBufferManager*  m_stagingBufferManager;
+        VulkanDescriptorSetManager* m_descriptorSetManager;
 
         class VulkanMemory*         m_imageMemoryManager;
         class VulkanMemory*         m_bufferMemoryManager;
@@ -151,7 +152,7 @@ namespace vk
         CurrentContextState         m_currentContextState;
         static std::vector<VkDynamicState>  s_dynamicStates;
 
-        bool prepareDraw();
+        bool prepareDraw(VulkanCommandBuffer* drawBuffer);
 
         const platform::Window* m_window;
     };

@@ -61,6 +61,7 @@ VulkanGraphicContext::VulkanGraphicContext(const platform::Window * window) noex
     , m_swapchain(nullptr)
     , m_cmdBufferManager(nullptr)
     , m_stagingBufferManager(nullptr)
+    , m_descriptorSetManager(nullptr)
 
     , m_imageMemoryManager(nullptr)
     , m_bufferMemoryManager(nullptr)
@@ -423,9 +424,10 @@ void VulkanGraphicContext::bindVertexBuffers(const std::vector<Buffer*>& buffer,
 void VulkanGraphicContext::draw(u32 firstVertex, u32 vertexCount, u32 firstInstance, u32 instanceCount)
 {
     ASSERT(m_currentContextState.isCurrentBufferAcitve(CommandTargetType::CmdDrawBuffer), "nullptr");
-    if (prepareDraw())
+    VulkanCommandBuffer* drawBuffer = m_currentContextState.getAcitveBuffer(CommandTargetType::CmdDrawBuffer);
+    if (prepareDraw(drawBuffer))
     {
-        VulkanCommandBuffer* drawBuffer = m_currentContextState.getAcitveBuffer(CommandTargetType::CmdDrawBuffer);
+       
         if (std::get<2>(m_currentContextState._boundVertexBuffers))
         {
             drawBuffer->cmdBindVertexBuffers(0, static_cast<u32>(std::get<0>(m_currentContextState._boundVertexBuffers).size()), std::get<0>(m_currentContextState._boundVertexBuffers), std::get<1>(m_currentContextState._boundVertexBuffers));
@@ -540,6 +542,8 @@ bool VulkanGraphicContext::initialize()
     {
         m_stagingBufferManager = new VulkanStaginBufferManager(m_deviceInfo._device);
     }
+    m_descriptorSetManager = new VulkanDescriptorSetManager(m_deviceInfo._device);
+
     m_renderpassManager = new RenderPassManager(this);
     m_framebuferManager = new FramebufferManager(this);
     m_pipelineManager = new PipelineManager(this);
@@ -565,6 +569,12 @@ void VulkanGraphicContext::destroy()
     {
         delete m_stagingBufferManager;
         m_stagingBufferManager = nullptr;
+    }
+
+    if (m_descriptorSetManager)
+    {
+        delete m_descriptorSetManager;
+        m_descriptorSetManager = nullptr;
     }
 
     if (m_deviceCaps.unifiedMemoryManager)
@@ -652,7 +662,7 @@ Pipeline* VulkanGraphicContext::createPipeline(Pipeline::PipelineType type)
 {
     if (type == Pipeline::PipelineType::PipelineType_Graphic)
     {
-        return new VulkanGraphicPipeline(m_deviceInfo._device, m_renderpassManager);
+        return new VulkanGraphicPipeline(m_deviceInfo._device, m_renderpassManager, m_descriptorSetManager);
     }
 
     ASSERT(false, "not supported");
@@ -900,8 +910,20 @@ bool VulkanGraphicContext::createDevice()
     return true;
 }
 
-bool VulkanGraphicContext::prepareDraw()
+bool VulkanGraphicContext::prepareDraw(VulkanCommandBuffer* drawBuffer)
 {
+    ASSERT(drawBuffer, "nullptr");
+
+    ASSERT(m_currentContextState._currentPipeline, "not bound");
+    drawBuffer->cmdBindPipeline(m_currentContextState._currentPipeline);
+
+    for (auto& callback : m_currentContextState._stateCallbacks)
+    {
+        callback.second();
+    }
+
+    //Bind desc sets
+
     return true;
 }
 

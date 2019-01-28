@@ -3,9 +3,10 @@
 #include "VulkanDebug.h"
 #include "VulkanDeviceCaps.h"
 #include "VulkanGraphicContext.h"
+#include "VulkanPipeline.h"
+#include "VulkanDescriptorSet.h"
 
 #include "Utils/Logger.h"
-#include "VulkanPipeline.h"
 
 #include "Resource/Shader.h"
 
@@ -348,13 +349,19 @@ VkVertexInputRate VulkanGraphicPipeline::covertInputRateToVk(VertexInputAttribDe
 
 }
 
-VulkanGraphicPipeline::VulkanGraphicPipeline(VkDevice device, RenderPassManager* renderpassManager)
+VkPipeline VulkanGraphicPipeline::getHandle() const
+{
+    return m_pipeline;
+}
+
+VulkanGraphicPipeline::VulkanGraphicPipeline(VkDevice device, RenderPassManager* renderpassManager, VulkanDescriptorSetManager* descriptorSetManager)
     : Pipeline(PipelineType::PipelineType_Graphic)
     , m_device(device)
     , m_pipeline(VK_NULL_HANDLE)
     , m_compatibilityRenderPass(nullptr)
 
     , m_renderpassManager(renderpassManager)
+    , m_descriptorSetManager(descriptorSetManager)
 {
     LOG_DEBUG("VulkanGraphicPipeline::VulkanGraphicPipeline constructor %llx", this);
 }
@@ -413,8 +420,9 @@ bool VulkanGraphicPipeline::create(const PipelineGraphicInfo* pipelineInfo)
     graphicsPipelineCreateInfo.stageCount = static_cast<u32>(pipelineShaderStageCreateInfos.size());
     graphicsPipelineCreateInfo.pStages = pipelineShaderStageCreateInfos.data();
 
-    graphicsPipelineCreateInfo.layout = VK_NULL_HANDLE; //TODO
-
+    VulkanDescriptorSetManager::DescriptorSetDescription layoutDesc(programDesc._shaders);
+    m_pipelineLayout = m_descriptorSetManager->acquirePipelineLayout(layoutDesc);
+    graphicsPipelineCreateInfo.layout = m_pipelineLayout._layout;
 
     ASSERT(!m_compatibilityRenderPass, "not nullptr");
     if (!createCompatibilityRenderPass(pipelineInfo->_renderpassDesc, m_compatibilityRenderPass))
@@ -659,6 +667,12 @@ void VulkanGraphicPipeline::destroy()
         m_pipeline = VK_NULL_HANDLE;
     }
     deleteShaderModules();
+
+    if (m_pipelineLayout._layout)
+    {
+        m_descriptorSetManager->removePipelineLayout(m_pipelineLayout);
+        m_pipelineLayout._layout = VK_NULL_HANDLE;
+    }
 
     if (m_compatibilityRenderPass)
     {

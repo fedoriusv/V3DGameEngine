@@ -20,6 +20,7 @@ namespace vk
     class VulkanBuffer;
     class VulkanRenderPass;
     class VulkanFramebuffer;
+    class VulkanGraphicPipeline;
 
     /**
     * VulkanCommandBuffer class. Render side
@@ -70,6 +71,7 @@ namespace vk
 
         //binds
         void cmdBindVertexBuffers(u32 firstBinding, u32 countBindinng, const std::vector<Buffer*>& buffers, const std::vector<VkDeviceSize>& offests);
+        void cmdBindPipeline(VulkanGraphicPipeline* pipeline);
 
         //inside renderpass
         void cmdDraw(u32 firstVertex, u32 vertexCount, u32 firstInstance, u32 instanceCount);

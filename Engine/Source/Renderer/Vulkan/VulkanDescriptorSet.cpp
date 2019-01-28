@@ -3,9 +3,9 @@
 #include "VulkanDeviceCaps.h"
 
 #include "Resource/Shader.h"
-
 #include "Utils/Logger.h"
 
+#include "crc32c/crc32c.h"
 
 #ifdef VULKAN_RENDER
 namespace v3d
@@ -15,7 +15,13 @@ namespace renderer
 namespace vk
 {
 
-VkShaderStageFlagBits DescriptorSetManager::convertShaderTypeToVkStage(resource::ShaderType type)
+VulkanPipelineLayout::VulkanPipelineLayout()
+    : _key(0)
+    , _layout(VK_NULL_HANDLE)
+{
+}
+
+VkShaderStageFlagBits VulkanDescriptorSetManager::convertShaderTypeToVkStage(resource::ShaderType type)
 {
     switch (type)
     {
@@ -33,37 +39,136 @@ VkShaderStageFlagBits DescriptorSetManager::convertShaderTypeToVkStage(resource:
     return VK_SHADER_STAGE_VERTEX_BIT;
 }
 
-DescriptorSetManager::DescriptorSetManager(VkDevice device) noexcept
+VulkanDescriptorSetManager::VulkanDescriptorSetManager(VkDevice device) noexcept
     : m_device(device)
 {
 }
 
-void DescriptorSetManager::createPipelineLayout()
+VulkanPipelineLayout VulkanDescriptorSetManager::acquirePipelineLayout(const DescriptorSetDescription& desc)
 {
+    u32 hash = desc._hash;
+
+    auto found = m_pipelinesLayouts.emplace(hash, VulkanPipelineLayout());
+    if (found.second)
+    {
+        VulkanPipelineLayout& layout = found.first->second;
+        layout._key = hash;
+        layout._layout = VulkanDescriptorSetManager::createPipelineLayout(desc, layout._descriptorSetLayouts);
+
+        return layout;
+    }
+
+    return found.first->second;
+}
+
+bool VulkanDescriptorSetManager::removePipelineLayout(const DescriptorSetDescription & desc)
+{
+    auto iter = m_pipelinesLayouts.find(desc._hash);
+    if (iter == m_pipelinesLayouts.cend())
+    {
+        LOG_DEBUG("removePipelineLayout PipelineLayout not found");
+        ASSERT(false, "PipelineLayout");
+        return false;
+    }
+
+    VulkanPipelineLayout& layout = iter->second;
+    VulkanDescriptorSetManager::destroyPipelineLayout(layout._layout, layout._descriptorSetLayouts);
+
+    m_pipelinesLayouts.erase(desc._hash);
+
+    return true;
+}
+
+bool VulkanDescriptorSetManager::removePipelineLayout(VulkanPipelineLayout & layout)
+{
+    auto iter = m_pipelinesLayouts.find(layout._key);
+    if (iter == m_pipelinesLayouts.cend())
+    {
+        LOG_DEBUG("removePipelineLayout PipelineLayout not found");
+        ASSERT(false, "PipelineLayout");
+        return false;
+    }
+
+    VulkanPipelineLayout& pipelinelayout = iter->second;
+    VulkanDescriptorSetManager::destroyPipelineLayout(pipelinelayout._layout, pipelinelayout._descriptorSetLayouts);
+
+    m_pipelinesLayouts.erase(layout._key);
+
+    return true;
+}
+
+VkPipelineLayout VulkanDescriptorSetManager::createPipelineLayout(const DescriptorSetDescription& desc, std::vector<VkDescriptorSetLayout>& descriptorSetLayouts)
+{
+    if (!VulkanDescriptorSetManager::createDescriptorSetLayouts(desc, descriptorSetLayouts))
+    {
+        ASSERT(false, "error");
+        VulkanDescriptorSetManager::destroyDescriptorSetLayouts(descriptorSetLayouts);
+
+        return VK_NULL_HANDLE;
+    }
+
     VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo = {};
     pipelineLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
     pipelineLayoutCreateInfo.pNext = nullptr;
     pipelineLayoutCreateInfo.flags = 0;
-
-    //std::vector<VkDescriptorSetLayout> 
-
-    //pipelineLayoutCreateInfo.setLayoutCount;
-    //pipelineLayoutCreateInfo.pSetLayouts;
-    ////if push const
-    //pipelineLayoutCreateInfo.pushConstantRangeCount;
-    //pipelineLayoutCreateInfo.pPushConstantRanges;
-
+    pipelineLayoutCreateInfo.setLayoutCount = static_cast<u32>(descriptorSetLayouts.size());
+    pipelineLayoutCreateInfo.pSetLayouts = descriptorSetLayouts.data();
+    pipelineLayoutCreateInfo.pushConstantRangeCount = static_cast<u32>(desc._pushConstant.size());
+    pipelineLayoutCreateInfo.pPushConstantRanges = desc._pushConstant.data();
 
     VkPipelineLayout pipelineLayout = VK_NULL_HANDLE;
     VkResult result = VulkanWrapper::CreatePipelineLayout(m_device, &pipelineLayoutCreateInfo, VULKAN_ALLOCATOR, &pipelineLayout);
     if (result != VK_SUCCESS)
     {
+        LOG_ERROR("DescriptorSetManager::createPipelineLayout vkCreatePipelineLayout is failed. Error: %s", ErrorString(result).c_str());
+        return VK_NULL_HANDLE;
+    }
 
-        //return false;
+    return pipelineLayout;
+}
+
+void VulkanDescriptorSetManager::destroyPipelineLayout(VkPipelineLayout layout, std::vector<VkDescriptorSetLayout>& descriptorSetLayouts)
+{
+    VulkanDescriptorSetManager::destroyDescriptorSetLayouts(descriptorSetLayouts);
+    VulkanWrapper::DestroyPipelineLayout(m_device, layout, VULKAN_ALLOCATOR);
+}
+
+bool VulkanDescriptorSetManager::createDescriptorSetLayouts(const DescriptorSetDescription& desc, std::vector<VkDescriptorSetLayout>& descriptorSetLayouts)
+{
+    descriptorSetLayouts.reserve(desc._descriptorSets.size());
+    for (auto& set : desc._descriptorSets)
+    {
+        VkDescriptorSetLayoutCreateInfo descriptorSetLayoutCreateInfo = {};
+        descriptorSetLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+        descriptorSetLayoutCreateInfo.pNext = nullptr; //VkDescriptorSetLayoutBindingFlagsCreateInfoEXT
+        descriptorSetLayoutCreateInfo.flags = 0; //VK_DESCRIPTOR_SET_LAYOUT_CREATE_PUSH_DESCRIPTOR_BIT_KHR
+        descriptorSetLayoutCreateInfo.bindingCount = static_cast<u32>(set.size());
+        descriptorSetLayoutCreateInfo.pBindings = set.data();
+
+        VkDescriptorSetLayout descriptorSetLayout = VK_NULL_HANDLE;
+        VkResult result = VulkanWrapper::CreateDescriptorSetLayout(m_device, &descriptorSetLayoutCreateInfo, VULKAN_ALLOCATOR, &descriptorSetLayout);
+        if (result != VK_SUCCESS)
+        {
+            LOG_ERROR("DescriptorSetManager::createDescriptorSetLayout vkCreateDescriptorSetLayout is failed. Error: %s", ErrorString(result).c_str());
+            return false;
+        }
+
+        descriptorSetLayouts.push_back(descriptorSetLayout);
+    }
+
+    return true;
+}
+
+void VulkanDescriptorSetManager::destroyDescriptorSetLayouts(std::vector<VkDescriptorSetLayout>& descriptorSetLayouts)
+{
+    for (auto& set : descriptorSetLayouts)
+    {
+        VulkanWrapper::DestroyDescriptorSetLayout(m_device, set, VULKAN_ALLOCATOR);
     }
 }
 
-VkDescriptorSetLayout DescriptorSetManager::createDescriptorSetLayout(const std::vector<resource::Shader*> shaders)
+VulkanDescriptorSetManager::DescriptorSetDescription::DescriptorSetDescription(const std::vector<resource::Shader*> shaders) noexcept
+    : _hash(0)
 {
     auto findShaderByType = [](const std::vector<resource::Shader*>& shaders, resource::ShaderType type) -> resource::Shader*
     {
@@ -78,12 +183,56 @@ VkDescriptorSetLayout DescriptorSetManager::createDescriptorSetLayout(const std:
         return nullptr;
     };
 
-    VkDescriptorSetLayoutCreateInfo descriptorSetLayoutCreateInfo = {};
-    descriptorSetLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-    descriptorSetLayoutCreateInfo.pNext = nullptr; //VkDescriptorSetLayoutBindingFlagsCreateInfoEXT
-    descriptorSetLayoutCreateInfo.flags = 0; //VK_DESCRIPTOR_SET_LAYOUT_CREATE_PUSH_DESCRIPTOR_BIT_KHR
+    for (u32 set = 0; set < VulkanDeviceCaps::getInstance()->getPhysicalDeviceLimits().maxBoundDescriptorSets; ++set)
+    {
+        std::vector<VkDescriptorSetLayoutBinding> descriptorSetLayoutBindings;
+        for (u32 type = resource::ShaderType::ShaderType_Vertex; type < resource::ShaderType_Count; ++type)
+        {
+            resource::Shader* shader = findShaderByType(shaders, (resource::ShaderType)type);
+            if (!shader)
+            {
+                continue;
+            }
 
-    std::vector<VkDescriptorSetLayoutBinding> descriptorSetLayoutBindings;
+            const resource::Shader::ReflectionInfo& info = shader->getReflectionInfo();
+            for (auto& uniform : info._uniformBuffers)
+            {
+                if (uniform.second._set != set)
+                {
+                    continue;
+                }
+
+                VkDescriptorSetLayoutBinding descriptorSetLayoutBinding;
+                descriptorSetLayoutBinding.descriptorType = VulkanDeviceCaps::getInstance()->useDynamicUniforms ? VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC : VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+                descriptorSetLayoutBinding.binding = uniform.second._binding;
+                descriptorSetLayoutBinding.stageFlags = convertShaderTypeToVkStage((resource::ShaderType)type);
+                descriptorSetLayoutBinding.descriptorCount = uniform.second._array;
+                descriptorSetLayoutBinding.pImmutableSamplers = nullptr;
+
+                descriptorSetLayoutBindings.push_back(descriptorSetLayoutBinding);
+            }
+
+            for (auto& image : info._sampledImages)
+            {
+                if (image.second._set != set)
+                {
+                    continue;
+                }
+
+                VkDescriptorSetLayoutBinding descriptorSetLayoutBinding;
+                descriptorSetLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER; //VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE
+                descriptorSetLayoutBinding.binding = image.second._binding;
+                descriptorSetLayoutBinding.stageFlags = convertShaderTypeToVkStage((resource::ShaderType)type);
+                descriptorSetLayoutBinding.descriptorCount = image.second._array;
+                descriptorSetLayoutBinding.pImmutableSamplers = nullptr;
+
+                descriptorSetLayoutBindings.push_back(descriptorSetLayoutBinding);
+            }
+        }
+
+        _descriptorSets.push_back(descriptorSetLayoutBindings);
+    }
+
     for (u32 type = resource::ShaderType::ShaderType_Vertex; type < resource::ShaderType_Count; ++type)
     {
         resource::Shader* shader = findShaderByType(shaders, (resource::ShaderType)type);
@@ -92,48 +241,27 @@ VkDescriptorSetLayout DescriptorSetManager::createDescriptorSetLayout(const std:
             continue;
         }
 
-        //const resource::Shader::ReflectionInfo info; //TODO:get shader
-        //for (auto& uniform : info._uniformBuffers)
-        //{
-        //    VkDescriptorSetLayoutBinding descriptorSetLayoutBinding;
-        //    descriptorSetLayoutBinding.descriptorType = VulkanDeviceCaps::getInstance()->useDynamicUniforms ? VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC : VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-        //    descriptorSetLayoutBinding.binding = uniform._binding;
-        //    descriptorSetLayoutBinding.stageFlags = convertShaderTypeToVkStage((resource::ShaderType)type);
-        //    descriptorSetLayoutBinding.descriptorCount = 1;
-        //    descriptorSetLayoutBinding.pImmutableSamplers = nullptr;
+        const resource::Shader::ReflectionInfo& info = shader->getReflectionInfo();
+        _pushConstant.reserve(info._pushConstant.size());
+        for (auto& push : info._pushConstant)
+        {
+            VkPushConstantRange pushConstantRange = {};
+            pushConstantRange.stageFlags = convertShaderTypeToVkStage((resource::ShaderType)type);
+            pushConstantRange.offset = push.second._offset;
+            pushConstantRange.size = push.second._size;
 
-        //    descriptorSetLayoutBindings.push_back(descriptorSetLayoutBinding);
-        //}
-
-        //for (auto& image : info._sampledImages)
-        //{
-        //    VkDescriptorSetLayoutBinding descriptorSetLayoutBinding;
-        //    descriptorSetLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER; //VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE
-        //    descriptorSetLayoutBinding.binding = image._binding;
-        //    descriptorSetLayoutBinding.stageFlags = convertShaderTypeToVkStage((resource::ShaderType)type);
-        //    descriptorSetLayoutBinding.descriptorCount = 1;
-        //    descriptorSetLayoutBinding.pImmutableSamplers = nullptr;
-
-        //    descriptorSetLayoutBindings.push_back(descriptorSetLayoutBinding);
-        //}
-
-        //TODO:
+            _pushConstant.push_back(pushConstantRange);
+        }
     }
-    descriptorSetLayoutCreateInfo.bindingCount = static_cast<u32>(descriptorSetLayoutBindings.size());
-    descriptorSetLayoutCreateInfo.pBindings = descriptorSetLayoutBindings.data();
 
-    VkDescriptorSetLayout descriptorSetLayout = VK_NULL_HANDLE;
-    VkResult result = VulkanWrapper::CreateDescriptorSetLayout(m_device, &descriptorSetLayoutCreateInfo, VULKAN_ALLOCATOR, &descriptorSetLayout);
-    if (result != VK_SUCCESS)
+    _hash = crc32c::Crc32c(reinterpret_cast<u8*>(_pushConstant.data()), _pushConstant.size() * sizeof(VkPushConstantRange));
+    for (auto& set : _descriptorSets)
     {
-        LOG_ERROR("DescriptorSet::createDescriptorSetLayout vkCreateDescriptorSetLayout is failed. Error: %s", ErrorString(result).c_str());
-        return VK_NULL_HANDLE;
+        _hash = crc32c::Extend(_hash, reinterpret_cast<u8*>(set.data()), set.size() * sizeof(VkDescriptorSetLayoutBinding));
     }
-
-    return descriptorSetLayout;
 }
 
-} //namespace vk
+}//namespace vk
 } //namespace renderer
 } //namespace v3d
 #endif //VULKAN_RENDER

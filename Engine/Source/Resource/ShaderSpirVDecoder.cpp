@@ -325,6 +325,7 @@ bool ShaderSpirVDecoder::parseReflections(const std::vector<u32>& spirv, stream:
             block._id = buffID;
             block._set = set;
             block._binding = binding;
+            block._array = block_type.array.empty() ? 1 : block_type.array[0];
             block._name = name;
 
             u32 posMembers = stream->tell();
@@ -491,11 +492,32 @@ bool ShaderSpirVDecoder::parseReflections(const std::vector<u32>& spirv, stream:
             image._set = set;
             image._binding = binding;
             image._target = convertSPRIVTypeToTextureData(type);
+            image._array = type.array.empty() ? 1 : type.array[0];
             image._ms = type.image.ms;
             image._depth = depth;
             image._name = name;
 
             image >> stream;
+        }
+
+        u32 pushConstantCount = static_cast<u32>(resources.push_constant_buffers.size());
+        stream->write<u32>(pushConstantCount);
+        for (auto& pushConstant : resources.push_constant_buffers)
+        {
+            const std::string& name = glsl.get_name(pushConstant.id);
+            ASSERT(!name.empty(), "empty name");
+
+            u32 offset = glsl.get_decoration(pushConstant.id, spv::DecorationOffset);
+
+            const spirv_cross::SPIRType& type = glsl.get_type(pushConstant.type_id);
+            bool depth = type.image.depth;
+
+            Shader::PushConstant constant;
+            constant._offset = offset;
+            constant._size = type.width; //TODO check
+            constant._name = name;
+
+            constant >> stream;
         }
 
         return true;

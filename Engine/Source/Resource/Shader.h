@@ -72,8 +72,6 @@ namespace resource
             Attribute();
 
             u32              _location;
-            //u32            _binding;
-            //u32            _offset;
             renderer::Format _format;
             std::string      _name;
 
@@ -102,6 +100,7 @@ namespace resource
             u32                  _id;
             u32                  _set;
             u32                  _binding;
+            u32                  _array;
             u32                  _size;
             std::string          _name;
             std::vector<Uniform> _uniforms;
@@ -117,6 +116,7 @@ namespace resource
             u32                     _set;
             u32                     _binding;
             renderer::TextureTarget _target;
+            u32                     _array;
             bool                    _depth;
             bool                    _ms;
             std::string             _name;
@@ -125,20 +125,25 @@ namespace resource
             void operator << (const stream::Stream * stream);
         };
 
-        /*struct InputBinding
+        struct PushConstant
         {
-            u32     _binding;
-            u32     _stride;
-            bool    _instance;
-        };*/
+            PushConstant();
+
+            u32         _offset;
+            u32         _size;
+            std::string _name;
+
+            void operator >> (stream::Stream * stream);
+            void operator << (const stream::Stream * stream);
+        };
 
         struct ReflectionInfo
         {
-            //std::vector<InputBinding>   _inputBinding;
             std::vector<Attribute>   _inputAttribute;
             std::vector<Attribute>   _outputAttribute;
-            std::map< std::string, UniformBuffer>  _uniformBuffers;
-            std::map< std::string, SampledImage>   _sampledImages;
+            std::map<std::string, UniformBuffer>  _uniformBuffers;
+            std::map<std::string, SampledImage>   _sampledImages;
+            std::map<std::string, PushConstant> _pushConstant;
         };
 
         explicit Shader(const ShaderHeader* header) noexcept;
