@@ -56,6 +56,9 @@ namespace renderer
 
         bool update(u32 offset, u64 size, void* data);
 
+        //map
+        //unmap
+
     private:
 
         void handleNotify(utils::Observable* ob) override;

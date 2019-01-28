@@ -79,20 +79,20 @@ Resource * ShaderSpirVDecoder::decode(const stream::Stream* stream, const std::s
             }
 
             bool validShaderType = false;
-            resource::ShaderType type = resource::ShaderType::ShaderType_Undefined;
+            renderer::ShaderType type = renderer::ShaderType::ShaderType_Undefined;
             auto getShaderType = [&validShaderType, &type](const std::string& name) -> shaderc_shader_kind
             {
                 std::string fileExtension = stream::FileLoader::getFileExtension(name);
                 if (fileExtension == "vert")
                 {
                     validShaderType = true;
-                    type = resource::ShaderType::ShaderType_Vertex;
+                    type = renderer::ShaderType::ShaderType_Vertex;
                     return shaderc_shader_kind::shaderc_vertex_shader;
                 }
                 else if (fileExtension == "frag")
                 {
                     validShaderType = true;
-                    type = resource::ShaderType::ShaderType_Fragment;
+                    type = renderer::ShaderType::ShaderType_Fragment;
                     return shaderc_shader_kind::shaderc_fragment_shader;
                 }
                 else if (fileExtension == "geom")

@@ -146,6 +146,8 @@ namespace vk
             std::vector<DescriptorBinding> _descriptorsStates;
             std::tuple<std::vector<Buffer*>, std::vector<u64>, bool> _boundVertexBuffers;
             std::tuple<std::vector<Buffer*>, std::vector<u64>, bool> _boundUniformBuffers;
+
+            void* _boundShaderStage[ShaderType::ShaderType_Count];
         };
         //
 

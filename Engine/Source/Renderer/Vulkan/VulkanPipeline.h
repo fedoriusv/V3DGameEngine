@@ -2,7 +2,6 @@
 
 #include "Common.h"
 #include "Renderer/Pipeline.h"
-#include "Resource/Shader.h"
 #include "Renderer/BufferProperties.h"
 
 #ifdef VULKAN_RENDER
@@ -12,6 +11,10 @@
 
 namespace v3d
 {
+namespace resource
+{
+    class Shader;
+} //namespace resource
 namespace renderer
 {
     class RenderPassManager;
@@ -35,7 +38,7 @@ namespace vk
         static VkFrontFace convertFrontFaceToVk(FrontFace face);
 
         static VkPrimitiveTopology convertPrimitiveTopologyToVk(PrimitiveTopology primitiveTopology);
-        static VkShaderStageFlagBits convertShaderTypeToVkStage(resource::ShaderType type);
+        static VkShaderStageFlagBits convertShaderTypeToVkStage(ShaderType type);
 
         static VkBlendFactor convertBlendFactorToVk(BlendFactor factor);
         static VkBlendOp convertBlendOperationToVk(BlendOperation blendOp);

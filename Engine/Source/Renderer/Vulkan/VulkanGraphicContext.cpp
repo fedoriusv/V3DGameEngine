@@ -413,6 +413,7 @@ void VulkanGraphicContext::bindTexture(const resource::Shader* shader, const std
 
 void VulkanGraphicContext::bindUniformBuffers(const resource::Shader* shader, const std::string& name, const void* data, u32 offset, u32 size)
 {
+    //m_currentContextState._boundShaderStage[shader->stage].updateDescriptorSets(name, offset, size, data);
     //m_currentContextState._boundUniformBuffers = { {buffer}, {}, true };
 }
 
@@ -955,6 +956,11 @@ VulkanGraphicContext::CurrentContextState::CurrentContextState()
 {
     _currentCmdBuffer[CommandTargetType::CmdDrawBuffer] = nullptr;
     _currentCmdBuffer[CommandTargetType::CmdUploadBuffer] = nullptr;
+
+    for (u32 type = 0; type < ShaderType::ShaderType_Count; type++)
+    {
+        _boundShaderStage[type] = nullptr;
+    }
 
     _currentRenderpass = nullptr;
     _currentFramebuffer = nullptr;

@@ -113,8 +113,8 @@ void MyApplication::Initialize()
 
     core::Matrix4D projection;
 
-    program->bindTexture<Texture2D, resource::ShaderType::ShaderType_Fragment>("samplerColor", texture);
-    program->bindUniform<core::Matrix4D>("projection", projection);
+    program->bindTexture<Texture2D, ShaderType::ShaderType_Fragment>("samplerColor", texture);
+    program->bindUniform<core::Matrix4D, ShaderType::ShaderType_Fragment>("projection", projection);
 
     std::vector<f32> vertexBuffer =
     {

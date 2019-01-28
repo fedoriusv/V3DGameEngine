@@ -124,14 +124,14 @@ VkPrimitiveTopology VulkanGraphicPipeline::convertPrimitiveTopologyToVk(Primitiv
     return VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
 }
 
-VkShaderStageFlagBits VulkanGraphicPipeline::convertShaderTypeToVkStage(resource::ShaderType type)
+VkShaderStageFlagBits VulkanGraphicPipeline::convertShaderTypeToVkStage(ShaderType type)
 {
     switch (type)
     {
-    case resource::ShaderType::ShaderType_Vertex:
+    case ShaderType::ShaderType_Vertex:
         return VK_SHADER_STAGE_VERTEX_BIT;
 
-    case resource::ShaderType::ShaderType_Fragment:
+    case ShaderType::ShaderType_Fragment:
         return VK_SHADER_STAGE_FRAGMENT_BIT;
 
     default:
@@ -389,7 +389,7 @@ bool VulkanGraphicPipeline::create(const PipelineGraphicInfo* pipelineInfo)
     graphicsPipelineCreateInfo.basePipelineIndex = 0;
     graphicsPipelineCreateInfo.basePipelineHandle = VK_NULL_HANDLE;
 
-    auto findShaderByType = [](std::vector<resource::Shader*> shaders, resource::ShaderType type) -> const resource::Shader*
+    auto findShaderByType = [](std::vector<resource::Shader*> shaders, ShaderType type) -> const resource::Shader*
     {
         for (auto shader : shaders)
         {
@@ -405,10 +405,10 @@ bool VulkanGraphicPipeline::create(const PipelineGraphicInfo* pipelineInfo)
     std::vector<VkPipelineShaderStageCreateInfo> pipelineShaderStageCreateInfos;
     const ShaderProgramDescription& programDesc = pipelineInfo->_programDesc;
     ASSERT(!programDesc._shaders.empty(), "empty");
-    for (u32 type = resource::ShaderType::ShaderType_Vertex; type < resource::ShaderType_Count; ++type)
+    for (u32 type = ShaderType::ShaderType_Vertex; type < ShaderType_Count; ++type)
     {
         VkPipelineShaderStageCreateInfo pipelineShaderStageCreateInfo = {};
-        if (!createShaderModule(findShaderByType(programDesc._shaders, (resource::ShaderType)type), pipelineShaderStageCreateInfo))
+        if (!createShaderModule(findShaderByType(programDesc._shaders, (ShaderType)type), pipelineShaderStageCreateInfo))
         {
             LOG_ERROR("VulkanGraphicPipeline::create couldn't create modules for pipeline");
             deleteShaderModules();
@@ -491,7 +491,7 @@ bool VulkanGraphicPipeline::create(const PipelineGraphicInfo* pipelineInfo)
     vertexInputStateCreateInfo.vertexBindingDescriptionCount = static_cast<u32>(vertexInputBindingDescriptions.size());
     vertexInputStateCreateInfo.pVertexBindingDescriptions = vertexInputBindingDescriptions.data();
 
-    const resource::Shader* fragmentShader = findShaderByType(programDesc._shaders, resource::ShaderType::ShaderType_Fragment);
+    const resource::Shader* fragmentShader = findShaderByType(programDesc._shaders, ShaderType::ShaderType_Fragment);
     ASSERT(fragmentShader, "nullptr");
     std::vector<VkVertexInputAttributeDescription> vertexInputAttributeDescriptions;
     vertexInputAttributeDescriptions.reserve(inputAttrDesc._countInputAttributes);
@@ -720,7 +720,7 @@ bool VulkanGraphicPipeline::createShaderModule(const resource::Shader* shader, V
     outPipelineShaderStageCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
     outPipelineShaderStageCreateInfo.pNext = nullptr;
     outPipelineShaderStageCreateInfo.flags = 0;
-    outPipelineShaderStageCreateInfo.stage = convertShaderTypeToVkStage((resource::ShaderType)header._type);
+    outPipelineShaderStageCreateInfo.stage = convertShaderTypeToVkStage((ShaderType)header._type);
     outPipelineShaderStageCreateInfo.module = m_modules.back();
     outPipelineShaderStageCreateInfo.pName = header._entyPoint.c_str();
     outPipelineShaderStageCreateInfo.pSpecializationInfo = nullptr;

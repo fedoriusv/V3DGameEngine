@@ -2,6 +2,7 @@
 
 #include "Resource/ResourceLoaderManager.h"
 #include "Resource/ShaderSourceFileLoader.h"
+#include "Resource/Shader.h"
 
 
 namespace v3d
@@ -31,9 +32,9 @@ SimpleRender::SimpleRender(renderer::CommandList& cmdList, const renderer::Verte
     core::Matrix4D projection;
     renderer::Texture2D* texture;
 
-    m_program->bindTexture<renderer::Texture2D, resource::ShaderType::ShaderType_Fragment>("samplerColor", texture);
+    m_program->bindTexture<renderer::Texture2D, ShaderType::ShaderType_Fragment>("samplerColor", texture);
     //m_program->bindUniform<core::Matrix4D, Vertex>("projection", projection);
-    //m_program->bindUniformsBuffer<Vertex>("ubo", nullptr, 0, 0);
+    m_program->bindUniformsBuffer<ShaderType::ShaderType_Vertex>("ubo", 0, 0, nullptr);
 }
 
 SimpleRender::~SimpleRender()
@@ -64,7 +65,7 @@ void SimpleRender::render(renderer::CommandList& cmdList)
     ////////////////////////////////////
 
     //m_program->bindUniform<core::Matrix4D>("pos", matrix);
-    //cmdList.draw(renderer::StreamBufferDescription(m_vetexBuffer, offset, size), 0, 3, 1); !!!!!!!!
+    cmdList.draw(renderer::StreamBufferDescription(m_vetexBuffer, 0), 0, 3, 1);
     ////cmdList.draw(renderer::StreamBufferDescriptions({ m_vetexBuffer0, offset, size }, m_vetexBuffer1, 0, 3) }, 0, 3, 1);
     //m_program->bindUniform<core::Matrix4D>("pos", matrix);
     //cmdList.draw(renderer::StreamBufferDescription(m_vetexBuffer, offset, size), 0, 3, 1);

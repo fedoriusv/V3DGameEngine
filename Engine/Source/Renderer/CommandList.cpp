@@ -235,8 +235,8 @@ public:
     void execute(const CommandList& cmdList)
     {
         LOG_DEBUG("CommandDraw execute");
-        cmdList.getContext()->bindVertexBuffers(m_buffersDesc._vertices, m_buffersDesc._offsets); //TODO bind if needed
-        cmdList.getContext()->draw(m_buffersDesc._firstVertex, m_buffersDesc._countVertex, m_firtsInstance, m_instanceCount);
+        //cmdList.getContext()->bindVertexBuffers(m_buffersDesc._vertices, m_buffersDesc._offsets); //TODO bind if needed
+        //cmdList.getContext()->draw(m_buffersDesc._firstVertex, m_buffersDesc._countVertex, m_firtsInstance, m_instanceCount);
     }
 
 private:
@@ -375,17 +375,17 @@ void CommandList::presentFrame()
     }
 }
 
-void CommandList::draw(const StreamBufferDescription& desc, u32 instanceCount)
+void CommandList::draw(const StreamBufferDescription& desc, u32 firstVertex, u32 countVertex, u32 countInstance)
 {
     if (CommandList::isImmediate())
     {
-        m_context->bindVertexBuffers(desc._vertices, desc._offsets); //TODO bind if needed
-        m_context->draw(desc._firstVertex, desc._countVertex, 0, instanceCount);
+        //m_context->bindVertexBuffers(desc._vertices, desc._offsets); //TODO bind if needed
+        //m_context->draw(firstVertex, countVertex, 0, countInstance);
     }
     else
     {
-        CommandList::flushPendingCommands(m_pendingFlushMask);
-        CommandList::pushCommand(new CommandDraw(desc, 0, instanceCount));
+        //CommandList::flushPendingCommands(m_pendingFlushMask);
+        //CommandList::pushCommand(new CommandDraw(desc, 0, countInstance));
     }
 }
 

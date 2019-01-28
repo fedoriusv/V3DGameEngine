@@ -8,7 +8,7 @@ namespace resource
 {
 
 ShaderHeader::ShaderHeader() noexcept
-    : _type(ShaderType::ShaderType_Undefined)
+    : _type(renderer::ShaderType::ShaderType_Undefined)
     , _contentType(ShaderResource::ShaderResource_Source)
     , _shaderLang(ShaderLang::ShaderLang_GLSL)
     , _apiVersion(0)

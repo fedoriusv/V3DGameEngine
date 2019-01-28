@@ -6,12 +6,16 @@ namespace v3d
 namespace renderer
 {
 
-StreamBufferDescription::StreamBufferDescription(VertexStreamBuffer* vertex, u32 firstVertex, u32 countVertex) noexcept
-    : _vertices({ vertex->m_buffer })
-    , _firstVertex(firstVertex)
-    , _countVertex(countVertex)
+StreamBufferDescription::StreamBufferDescription(VertexStreamBuffer* vertex, u32 stream) noexcept
+    : _vertices({ {vertex->m_buffer, stream} })
 {
-    _offsets.resize(_vertices.size(), 0);
+    _offsets.resize(_vertices.size(), { 0, 0 });
+}
+
+StreamBufferDescription::StreamBufferDescription(VertexStreamBuffer* vertex, u32 stream, u32 offset, u32 size) noexcept
+    : _vertices({ {vertex->m_buffer, stream} })
+    , _offsets({ { offset, size } })
+{
 }
 
 StreamBufferDescription::~StreamBufferDescription()

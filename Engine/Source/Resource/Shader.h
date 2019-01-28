@@ -17,15 +17,6 @@ namespace resource
 {
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    enum ShaderType : s32
-    {
-        ShaderType_Undefined = -1,
-        ShaderType_Vertex = 0,
-        ShaderType_Fragment,
-
-        ShaderType_Count,
-    };
-
     /**
     * ShaderHeader meta info about Shader
     */
@@ -46,7 +37,7 @@ namespace resource
 
         ShaderHeader() noexcept;
 
-        ShaderType     _type;
+        renderer::ShaderType _type;
         ShaderResource _contentType;
         ShaderLang     _shaderLang;
         u32            _apiVersion;

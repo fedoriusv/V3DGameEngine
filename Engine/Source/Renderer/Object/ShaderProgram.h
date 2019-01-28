@@ -4,8 +4,6 @@
 #include "Renderer/CommandList.h"
 #include "Renderer/TextureProperties.h"
 #include "Renderer/ShaderProperties.h"
-#include "Resource/Shader.h"
-
 
 namespace v3d
 {
@@ -26,17 +24,18 @@ namespace renderer
         ShaderProgram(const ShaderProgram &) = delete;
         ~ShaderProgram();
 
-        const resource::Shader* getShader(resource::ShaderType type) const;
+        const resource::Shader* getShader(ShaderType type) const;
 
         const ShaderProgramDescription& getShaderDesc() const;
 
-        template<class TTexture, resource::ShaderType shaderType>
+        template<class TTexture, ShaderType shaderType>
         bool bindTexture(std::string name, const TTexture* texture);
 
-        template<class TDataType>
+        template<class TDataType, ShaderType shaderType>
         bool bindUniform(std::string name, const TDataType& data);
 
-        bool bindUniformsBuffer(std::string name, const u8* data, u32 size, u32 offset);
+        template<ShaderType shaderType>
+        bool bindUniformsBuffer(std::string name, u32 offset, u32 size, const u8* data);
 
     private:
 
@@ -49,22 +48,31 @@ namespace renderer
 
         void composeProgramData(const std::vector<resource::Shader*>& shaders);
 
-        bool bindTexture(std::string& name, resource::ShaderType shaderType, TextureTarget target, const Texture* texture);
+        bool bindTexture(ShaderType shaderType, std::string& name, TextureTarget target, const Texture* texture);
+        bool bindUniformsBuffer(ShaderType shaderType, std::string& name, u32 offset, u32 size, const u8* data);
     };
 
 
-    template<class TTexture, resource::ShaderType shaderType>
+    template<class TTexture, ShaderType shaderType>
     inline bool ShaderProgram::bindTexture(std::string name, const TTexture* texture)
     {
         static_assert(std::is_base_of<Texture, TTexture>());
-        return bindTexture(name, shaderType, texture->m_target, texture);
+        return bindTexture(shaderType, name, texture->m_target, texture);
     }
 
-    template<class TDataType>
+    template<class TDataType, ShaderType shaderType>
     inline bool ShaderProgram::bindUniform(std::string name, const TDataType & data)
     {
         return false;
     }
+
+    template<ShaderType shaderType>
+    inline bool ShaderProgram::bindUniformsBuffer(std::string name, u32 offset, u32 size, const u8* data)
+    {
+        //static_assert(std::is_base_of<Texture, TTexture>());
+        return ShaderProgram::bindUniformsBuffer(shaderType, name, offset, size, data);
+    }
+
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 

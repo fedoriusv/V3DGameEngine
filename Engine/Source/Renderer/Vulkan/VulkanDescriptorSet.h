@@ -2,7 +2,6 @@
 
 #include "Common.h"
 #include "Renderer/ShaderProperties.h"
-#include "Resource/Shader.h"
 
 #ifdef VULKAN_RENDER
 #include "VulkanWrapper.h"
@@ -49,7 +48,7 @@ namespace vk
             std::vector<VkPushConstantRange> _pushConstant;
         };
 
-        static VkShaderStageFlagBits convertShaderTypeToVkStage(resource::ShaderType type);
+        static VkShaderStageFlagBits convertShaderTypeToVkStage(ShaderType type);
 
         VulkanDescriptorSetManager(VkDevice device) noexcept;
         VulkanDescriptorSetManager() = delete;

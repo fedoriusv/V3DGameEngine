@@ -21,14 +21,14 @@ VulkanPipelineLayout::VulkanPipelineLayout()
 {
 }
 
-VkShaderStageFlagBits VulkanDescriptorSetManager::convertShaderTypeToVkStage(resource::ShaderType type)
+VkShaderStageFlagBits VulkanDescriptorSetManager::convertShaderTypeToVkStage(ShaderType type)
 {
     switch (type)
     {
-    case resource::ShaderType_Vertex:
+    case ShaderType_Vertex:
         return VK_SHADER_STAGE_VERTEX_BIT;
 
-    case resource::ShaderType_Fragment:
+    case ShaderType_Fragment:
         return VK_SHADER_STAGE_FRAGMENT_BIT;
 
     default:
@@ -170,7 +170,7 @@ void VulkanDescriptorSetManager::destroyDescriptorSetLayouts(std::vector<VkDescr
 VulkanDescriptorSetManager::DescriptorSetDescription::DescriptorSetDescription(const std::vector<resource::Shader*> shaders) noexcept
     : _hash(0)
 {
-    auto findShaderByType = [](const std::vector<resource::Shader*>& shaders, resource::ShaderType type) -> resource::Shader*
+    auto findShaderByType = [](const std::vector<resource::Shader*>& shaders, ShaderType type) -> resource::Shader*
     {
         for (auto& shader : shaders)
         {
@@ -186,9 +186,9 @@ VulkanDescriptorSetManager::DescriptorSetDescription::DescriptorSetDescription(c
     for (u32 set = 0; set < VulkanDeviceCaps::getInstance()->getPhysicalDeviceLimits().maxBoundDescriptorSets; ++set)
     {
         std::vector<VkDescriptorSetLayoutBinding> descriptorSetLayoutBindings;
-        for (u32 type = resource::ShaderType::ShaderType_Vertex; type < resource::ShaderType_Count; ++type)
+        for (u32 type = ShaderType::ShaderType_Vertex; type < ShaderType_Count; ++type)
         {
-            resource::Shader* shader = findShaderByType(shaders, (resource::ShaderType)type);
+            resource::Shader* shader = findShaderByType(shaders, (ShaderType)type);
             if (!shader)
             {
                 continue;
@@ -205,7 +205,7 @@ VulkanDescriptorSetManager::DescriptorSetDescription::DescriptorSetDescription(c
                 VkDescriptorSetLayoutBinding descriptorSetLayoutBinding;
                 descriptorSetLayoutBinding.descriptorType = VulkanDeviceCaps::getInstance()->useDynamicUniforms ? VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC : VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
                 descriptorSetLayoutBinding.binding = uniform.second._binding;
-                descriptorSetLayoutBinding.stageFlags = convertShaderTypeToVkStage((resource::ShaderType)type);
+                descriptorSetLayoutBinding.stageFlags = convertShaderTypeToVkStage((ShaderType)type);
                 descriptorSetLayoutBinding.descriptorCount = uniform.second._array;
                 descriptorSetLayoutBinding.pImmutableSamplers = nullptr;
 
@@ -222,7 +222,7 @@ VulkanDescriptorSetManager::DescriptorSetDescription::DescriptorSetDescription(c
                 VkDescriptorSetLayoutBinding descriptorSetLayoutBinding;
                 descriptorSetLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER; //VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE
                 descriptorSetLayoutBinding.binding = image.second._binding;
-                descriptorSetLayoutBinding.stageFlags = convertShaderTypeToVkStage((resource::ShaderType)type);
+                descriptorSetLayoutBinding.stageFlags = convertShaderTypeToVkStage((ShaderType)type);
                 descriptorSetLayoutBinding.descriptorCount = image.second._array;
                 descriptorSetLayoutBinding.pImmutableSamplers = nullptr;
 
@@ -233,9 +233,9 @@ VulkanDescriptorSetManager::DescriptorSetDescription::DescriptorSetDescription(c
         _descriptorSets.push_back(descriptorSetLayoutBindings);
     }
 
-    for (u32 type = resource::ShaderType::ShaderType_Vertex; type < resource::ShaderType_Count; ++type)
+    for (u32 type = ShaderType::ShaderType_Vertex; type < ShaderType_Count; ++type)
     {
-        resource::Shader* shader = findShaderByType(shaders, (resource::ShaderType)type);
+        resource::Shader* shader = findShaderByType(shaders, (ShaderType)type);
         if (!shader)
         {
             continue;
@@ -246,7 +246,7 @@ VulkanDescriptorSetManager::DescriptorSetDescription::DescriptorSetDescription(c
         for (auto& push : info._pushConstant)
         {
             VkPushConstantRange pushConstantRange = {};
-            pushConstantRange.stageFlags = convertShaderTypeToVkStage((resource::ShaderType)type);
+            pushConstantRange.stageFlags = convertShaderTypeToVkStage((ShaderType)type);
             pushConstantRange.offset = push.second._offset;
             pushConstantRange.size = push.second._size;
 

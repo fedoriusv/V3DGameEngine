@@ -108,14 +108,13 @@ namespace renderer
         StreamBufferDescription() = delete;
         explicit StreamBufferDescription(const StreamBufferDescription& desc) = default;
 
-        StreamBufferDescription(VertexStreamBuffer* vertex, u32 firstVertex, u32 countVertex) noexcept;
+        StreamBufferDescription(VertexStreamBuffer* vertex, u32 stream) noexcept;
+        StreamBufferDescription(VertexStreamBuffer* vertex, u32 stream, u32 offset, u32 size) noexcept;
         ~StreamBufferDescription();
 
 
-        std::vector<Buffer*> _vertices;
-        std::vector<u64>     _offsets;
-        u32 _firstVertex;
-        u32 _countVertex;
+        std::vector<std::pair<Buffer*, u32>> _vertices;
+        std::vector<std::pair<u64, u64>>     _offsets;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

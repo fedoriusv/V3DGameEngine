@@ -2,6 +2,7 @@
 #include "Texture.h"
 #include "Renderer/Formats.h"
 #include "Renderer/Context.h"
+#include "Resource/Shader.h"
 
 #include "Utils/Logger.h"
 #include "crc32c/crc32c.h"
@@ -11,7 +12,7 @@ namespace v3d
 namespace renderer
 {
 
-const resource::Shader * ShaderProgram::getShader(resource::ShaderType type) const
+const resource::Shader * ShaderProgram::getShader(ShaderType type) const
 {
     auto it = std::find_if(m_programInfo._shaders.cbegin(), m_programInfo._shaders.cend(), [type](const resource::Shader* shader) -> bool
     {
@@ -34,8 +35,8 @@ const ShaderProgramDescription& ShaderProgram::getShaderDesc() const
 ShaderProgram::ShaderProgram(renderer::CommandList & cmdList, std::vector<resource::Shader*> shaders) noexcept
     : m_cmdList(cmdList)
 {
-    if (getShader(resource::ShaderType::ShaderType_Vertex) &&
-        getShader(resource::ShaderType::ShaderType_Fragment))
+    if (getShader(ShaderType::ShaderType_Vertex) &&
+        getShader(ShaderType::ShaderType_Fragment))
     {
         composeProgramData(shaders);
     }
@@ -92,7 +93,7 @@ void ShaderProgram::composeProgramData(const std::vector<resource::Shader*>& sha
     }
 }
 
-bool ShaderProgram::bindUniformsBuffer(std::string name, const u8 * data, u32 size, u32 offset)
+bool ShaderProgram::bindUniformsBuffer(ShaderType shaderType, std::string& name, u32 offset, u32 size, const u8* data)
 {
    /* auto iter = m_programInfo._uniformsBuffer.find(name);
     if (iter == m_programInfo._uniformsBuffer.cend())
@@ -106,7 +107,7 @@ bool ShaderProgram::bindUniformsBuffer(std::string name, const u8 * data, u32 si
     return false;
 }
 
-bool ShaderProgram::bindTexture(std::string& name, resource::ShaderType shaderType, TextureTarget target, const Texture* texture)
+bool ShaderProgram::bindTexture(ShaderType shaderType, std::string& name, TextureTarget target, const Texture* texture)
 {
     Image* image = nullptr;
     switch (target)

@@ -14,6 +14,15 @@ namespace renderer
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    enum ShaderType : s32
+    {
+        ShaderType_Undefined = -1,
+        ShaderType_Vertex = 0,
+        ShaderType_Fragment,
+
+        ShaderType_Count,
+    };
+
     enum DataType : s32
     {
         DataType_None = -1,
