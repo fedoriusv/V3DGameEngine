@@ -7,6 +7,7 @@
 #include "VulkanDeviceCaps.h"
 #include "VulkanDescriptorSet.h"
 #include "VulkanCommandBufferManager.h"
+#include "VulkanContextState.h"
 
 namespace v3d
 {
@@ -133,16 +134,11 @@ namespace vk
             bool isCurrentFramebuffer(const Framebuffer* framebuffer) const;
             bool isCurrentPipeline(const Pipeline* pipeline) const;
 
-            bool setDynamicState(VkDynamicState state, const std::function<void()>& callback);
-
             VulkanRenderPass*    _currentRenderpass;
             VulkanFramebuffer*   _currentFramebuffer;
 
             VulkanGraphicPipeline* _currentPipeline;
             bool _updatePipeline;
-
-            std::map<VkDynamicState, std::function<void()>> _stateCallbacks;
-
 
             std::vector<DescriptorBinding> _descriptorsStates;
             std::pair<StreamBufferDescription, bool> _currentStreamBufferDescription;
@@ -153,6 +149,8 @@ namespace vk
         //
 
         CurrentContextState         m_currentContextState;
+        VulkanContextState*         m_currentContextStateNEW;
+
         static std::vector<VkDynamicState>  s_dynamicStates;
 
         bool prepareDraw(VulkanCommandBuffer* drawBuffer);

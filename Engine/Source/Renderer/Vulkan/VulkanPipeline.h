@@ -48,6 +48,7 @@ namespace vk
         static VkVertexInputRate covertInputRateToVk(VertexInputAttribDescription::InputRate rate);
 
         VkPipeline getHandle() const;
+        VkPipelineLayout getPipelineLayoutHandle() const;
 
     private:
 

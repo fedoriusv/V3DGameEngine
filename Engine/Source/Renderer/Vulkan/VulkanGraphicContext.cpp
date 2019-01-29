@@ -70,6 +70,8 @@ VulkanGraphicContext::VulkanGraphicContext(const platform::Window * window) noex
     , m_framebuferManager(nullptr)
     , m_pipelineManager(nullptr)
 
+    , m_currentContextStateNEW(nullptr)
+
     , m_window(window)
 {
     LOG_DEBUG("VulkanGraphicContext created this %llx", this);
@@ -199,7 +201,7 @@ void VulkanGraphicContext::setViewport(const core::Rect32& viewport, const core:
         std::vector<VkViewport> viewports = { vkViewport };
  
         VulkanCommandBuffer* drawBuffer = m_currentContextState.getAcitveBuffer(CommandTargetType::CmdDrawBuffer);
-        m_currentContextState.setDynamicState(VK_DYNAMIC_STATE_VIEWPORT, std::bind(&VulkanCommandBuffer::cmdSetViewport, drawBuffer, viewports));
+        m_currentContextStateNEW->setDynamicState(VK_DYNAMIC_STATE_VIEWPORT, std::bind(&VulkanCommandBuffer::cmdSetViewport, drawBuffer, viewports));
     }
     else
     {
@@ -220,7 +222,7 @@ void VulkanGraphicContext::setScissor(const core::Rect32 & scissor)
         std::vector<VkRect2D> scissors = { vkScissor };
 
         VulkanCommandBuffer* drawBuffer = m_currentContextState.getAcitveBuffer(CommandTargetType::CmdDrawBuffer);
-        m_currentContextState.setDynamicState(VK_DYNAMIC_STATE_SCISSOR, std::bind(&VulkanCommandBuffer::cmdSetScissor, drawBuffer, scissors));
+        m_currentContextStateNEW->setDynamicState(VK_DYNAMIC_STATE_SCISSOR, std::bind(&VulkanCommandBuffer::cmdSetScissor, drawBuffer, scissors));
     }
     else
     {
@@ -555,6 +557,8 @@ bool VulkanGraphicContext::initialize()
     m_framebuferManager = new FramebufferManager(this);
     m_pipelineManager = new PipelineManager(this);
 
+    m_currentContextStateNEW = new VulkanContextState(m_deviceInfo._device);
+
     return true;
 }
 
@@ -615,6 +619,12 @@ void VulkanGraphicContext::destroy()
     {
         delete m_pipelineManager;
         m_pipelineManager = nullptr;
+    }
+
+    if (m_currentContextStateNEW)
+    {
+        delete m_currentContextStateNEW;
+        m_currentContextStateNEW = nullptr;
     }
 
     if (m_swapchain)
@@ -924,12 +934,14 @@ bool VulkanGraphicContext::prepareDraw(VulkanCommandBuffer* drawBuffer)
     ASSERT(m_currentContextState._currentPipeline, "not bound");
     drawBuffer->cmdBindPipeline(m_currentContextState._currentPipeline);
 
-    for (auto& callback : m_currentContextState._stateCallbacks)
-    {
-        callback.second();
-    }
+    m_currentContextStateNEW->invokeDynamicStates(); //check, becouse every draw
 
-    //Bind desc sets
+    //state update ds
+    //get dss
+    std::vector<VkDescriptorSet> sets;
+    std::vector<u32> offsets;
+
+    drawBuffer->cmdBindDescriptorSets(m_currentContextState._currentPipeline, 0, static_cast<u32>(sets.size()), sets, offsets);
 
     return true;
 }
@@ -980,10 +992,6 @@ void VulkanGraphicContext::CurrentContextState::invalidateState()
 void VulkanGraphicContext::CurrentContextState::invalidateCommandBuffer(CommandTargetType type)
 {
     _currentCmdBuffer[type] = nullptr;
-    if (type == CommandTargetType::CmdDrawBuffer)
-    {
-        _stateCallbacks.clear();
-    }
 }
 
 VulkanCommandBuffer * VulkanGraphicContext::CurrentContextState::getAcitveBuffer(CommandTargetType type)
@@ -1006,17 +1014,6 @@ bool VulkanGraphicContext::CurrentContextState::isCurrentFramebuffer(const Frame
 bool VulkanGraphicContext::CurrentContextState::isCurrentPipeline(const Pipeline * pipeline) const
 {
     return _currentPipeline == pipeline;
-}
-
-bool VulkanGraphicContext::CurrentContextState::setDynamicState(VkDynamicState state, const std::function<void()>& callback)
-{
-    auto iter = _stateCallbacks.emplace(state, callback);
-    if (iter.second)
-    {
-        return true;
-    }
-
-    return false;
 }
 
 bool VulkanGraphicContext::CurrentContextState::isCurrentRenderPass(const RenderPass* pass) const

@@ -158,7 +158,7 @@ void VulkanCommandBuffer::captureResource(VulkanResource* resource, u64 frame)
         ASSERT((*(iter.first))->m_cmdBuffer == resource->m_cmdBuffer, "different buffers");
     }
 
-    resource->m_status = VulkanResource::Status::Status_Captured;
+    resource->m_status = VulkanResource::Status::Status_Captured; //TODO add counter
     resource->m_frame = frame;
     resource->m_cmdBuffer = this;
 }
@@ -306,6 +306,20 @@ void VulkanCommandBuffer::cmdBindPipeline(VulkanGraphicPipeline * pipeline)
     if (m_level == CommandBufferLevel::PrimaryBuffer)
     {
         VulkanWrapper::CmdBindPipeline(m_command, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->getHandle());
+    }
+    else
+    {
+        ASSERT(false, "not implemented");
+    }
+}
+
+void VulkanCommandBuffer::cmdBindDescriptorSets(VulkanGraphicPipeline * pipeline, u32 firstSet, u32 countSets, const std::vector<VkDescriptorSet>& sets, const std::vector<u32>& offsets)
+{
+    ASSERT(m_status == CommandBufferStatus::Begin, "not started");
+    pipeline->captureInsideCommandBuffer(this, 0);
+    if (m_level == CommandBufferLevel::PrimaryBuffer)
+    {
+        VulkanWrapper::CmdBindDescriptorSets(m_command, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->getPipelineLayoutHandle(), firstSet, countSets, sets.data(), static_cast<u32>(offsets.size()), offsets.data());
     }
     else
     {
