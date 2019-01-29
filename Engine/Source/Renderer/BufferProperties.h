@@ -105,16 +105,22 @@ namespace renderer
     */
     struct StreamBufferDescription
     {
-        StreamBufferDescription() = delete;
-        explicit StreamBufferDescription(const StreamBufferDescription& desc) = default;
+        StreamBufferDescription() noexcept = default;
+        explicit StreamBufferDescription(const StreamBufferDescription& desc) noexcept;
+        explicit StreamBufferDescription(StreamBufferDescription&& desc) noexcept;
+        StreamBufferDescription& operator=(StreamBufferDescription&& desc);
 
-        StreamBufferDescription(VertexStreamBuffer* vertex, u32 stream) noexcept;
-        StreamBufferDescription(VertexStreamBuffer* vertex, u32 stream, u32 offset, u32 size) noexcept;
+        explicit StreamBufferDescription(VertexStreamBuffer* vertex, u32 stream) noexcept;
+        explicit StreamBufferDescription(VertexStreamBuffer* vertex, u32 stream, u32 offset) noexcept;
         ~StreamBufferDescription();
 
+        bool operator==(const StreamBufferDescription& desc);
+        bool operator!=(const StreamBufferDescription& desc);
 
-        std::vector<std::pair<Buffer*, u32>> _vertices;
-        std::vector<std::pair<u64, u64>>     _offsets;
+        std::vector<Buffer*> _vertices;
+        std::vector<u32> _streamsID;
+
+        std::vector<u64> _offsets;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

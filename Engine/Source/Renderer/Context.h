@@ -62,7 +62,7 @@ namespace renderer
         virtual void submit(bool wait = false) = 0;
 
         //draw
-        virtual void draw(u32 firstVertex, u32 vertexCount, u32 firstInstance, u32 instanceCount) = 0;
+        virtual void draw(StreamBufferDescription& desc, u32 firstVertex, u32 vertexCount, u32 firstInstance, u32 instanceCount) = 0;
         virtual void drawIndexed() = 0;
 
         virtual void clearBackbuffer(const core::Vector4D & color) = 0;
@@ -72,7 +72,7 @@ namespace renderer
         virtual void bindUniformBuffers(const resource::Shader* shader, const std::string& name, const void* data, u32 offset, u32 size) = 0;
 
         //geometry bind
-        virtual void bindVertexBuffers(const std::vector<Buffer*>& buffer, const std::vector<u64>& offsets) = 0;
+        //virtual void bindVertexBuffers(const std::vector<Buffer*>& buffer, const std::vector<u64>& offsets) = 0;
 
         //state
         virtual void setViewport(const core::Rect32& viewport, const core::Vector2D& depth = { 0.0f, 1.0f }) = 0;

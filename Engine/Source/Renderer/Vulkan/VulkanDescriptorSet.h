@@ -31,6 +31,29 @@ namespace vk
         std::vector<VkDescriptorSetLayout>  _descriptorSetLayouts;
     };
 
+    class VulkanDescriptorPool
+    {
+    public:
+        VulkanDescriptorPool(VkDevice device, VkDescriptorPoolCreateFlags flag) noexcept;
+
+        bool create(const VulkanPipelineLayout& layout, const std::vector<VkDescriptorPoolSize>& sizes);
+        void destroy();
+
+        bool reset(VkDescriptorPoolResetFlags flag);
+
+    private:
+
+        bool createDescriptorPool(u32 setsCount, const std::vector<VkDescriptorPoolSize>& sizes);
+        bool allocateDescriptorSet(const VulkanPipelineLayout& layout, std::vector<VkDescriptorSet>& descriptorSets);
+        bool freeDescriptorSet(std::vector<VkDescriptorSet>& descriptorSets);
+
+        VkDevice m_device;
+        VkDescriptorPoolCreateFlags m_flag;
+        std::vector<VkDescriptorSet> m_descriptorSets;
+
+        VkDescriptorPool m_pool;
+    };
+
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     class VulkanDescriptorSetManager final
@@ -58,6 +81,8 @@ namespace vk
         bool removePipelineLayout(const DescriptorSetDescription& desc);
         bool removePipelineLayout(VulkanPipelineLayout& layout);
 
+        VkDescriptorSet acquireDescriptorSet();
+
     private:
 
         VkPipelineLayout createPipelineLayout(const DescriptorSetDescription& desc, std::vector<VkDescriptorSetLayout>& descriptorSetLayouts);
@@ -69,6 +94,7 @@ namespace vk
         VkDevice m_device;
 
         std::map<u32, VulkanPipelineLayout> m_pipelinesLayouts;
+        std::vector<VulkanDescriptorPool*> m_descriptorPools;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

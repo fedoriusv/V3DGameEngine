@@ -117,12 +117,12 @@ void EmptyContext::bindUniformBuffers(const resource::Shader* shader, const std:
     LOG_DEBUG("EmptyContext::bindUniformBuffers");
 }
 
-void EmptyContext::bindVertexBuffers(const std::vector<Buffer*>& buffer, const std::vector<u64>& offsets)
-{
-    LOG_DEBUG("EmptyContext::bindVertexBuffers");
-}
+//void EmptyContext::bindVertexBuffers(const std::vector<Buffer*>& buffer, const std::vector<u64>& offsets)
+//{
+//    LOG_DEBUG("EmptyContext::bindVertexBuffers");
+//}
 
-void EmptyContext::draw(u32 firstVertex, u32 vertexCount, u32 firstInstance, u32 instanceCount)
+void EmptyContext::draw(StreamBufferDescription& desc, u32 firstVertex, u32 vertexCount, u32 firstInstance, u32 instanceCount)
 {
     LOG_DEBUG("EmptyContext::draw");
 }

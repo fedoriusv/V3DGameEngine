@@ -21,6 +21,125 @@ VulkanPipelineLayout::VulkanPipelineLayout()
 {
 }
 
+VulkanDescriptorPool::VulkanDescriptorPool(VkDevice device, VkDescriptorPoolCreateFlags flag) noexcept
+    : m_device(device)
+    , m_pool(VK_NULL_HANDLE)
+{
+    ASSERT(m_descriptorSets.empty(), "not empty");
+    ASSERT(!m_pool, "not nullptr");
+}
+
+bool VulkanDescriptorPool::create(const VulkanPipelineLayout& layout, const std::vector<VkDescriptorPoolSize>& sizes)
+{
+    ASSERT(m_descriptorSets.empty(), "not empty");
+    ASSERT(!m_pool, "not nullptr");
+
+    if (!VulkanDescriptorPool::createDescriptorPool(static_cast<u32>(layout._descriptorSetLayouts.size()), sizes))
+    {
+        return false;
+    }
+
+    m_descriptorSets.clear();
+    if (!VulkanDescriptorPool::allocateDescriptorSet(layout, m_descriptorSets))
+    {
+        VulkanDescriptorPool::destroy();
+        return false;
+    }
+
+    return true;
+}
+
+void VulkanDescriptorPool::destroy()
+{
+    if (!m_descriptorSets.empty())
+    {
+        VulkanDescriptorPool::freeDescriptorSet(m_descriptorSets);
+        m_descriptorSets.clear();
+    }
+
+    if (m_pool)
+    {
+        VulkanWrapper::DestroyDescriptorPool(m_device, m_pool, VULKAN_ALLOCATOR);
+        m_pool = VK_NULL_HANDLE;
+    }
+}
+
+bool VulkanDescriptorPool::allocateDescriptorSet(const VulkanPipelineLayout& layout, std::vector<VkDescriptorSet>& descriptorSets)
+{
+    VkDescriptorSetAllocateInfo descriptorSetAllocateInfo = {};
+    descriptorSetAllocateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+    descriptorSetAllocateInfo.pNext = nullptr; //VkDescriptorSetVariableDescriptorCountAllocateInfoEXT
+    descriptorSetAllocateInfo.descriptorPool = m_pool;
+    descriptorSetAllocateInfo.descriptorSetCount = static_cast<u32>(layout._descriptorSetLayouts.size());
+    descriptorSetAllocateInfo.pSetLayouts = layout._descriptorSetLayouts.data();
+
+    descriptorSets.resize(layout._descriptorSetLayouts.size(), VK_NULL_HANDLE);
+    VkResult result = VulkanWrapper::AllocateDescriptorSets(m_device, &descriptorSetAllocateInfo, descriptorSets.data());
+    if (result == VK_ERROR_OUT_OF_POOL_MEMORY || result == VK_ERROR_FRAGMENTED_POOL)
+    {
+        LOG_ERROR("VulkanDescriptorPool::createDescriptorSet vkAllocateDescriptorSets is failed. Error: %s", ErrorString(result).c_str());
+        VulkanDescriptorPool::freeDescriptorSet(descriptorSets);
+
+        return false;
+    }
+    else if (result != VK_SUCCESS)
+    {
+        LOG_ERROR("VulkanDescriptorPool::createDescriptorSet vkAllocateDescriptorSets is failed. Error: %s", ErrorString(result).c_str());
+        return false;
+    }
+
+    return true;
+}
+
+bool VulkanDescriptorPool::freeDescriptorSet(std::vector<VkDescriptorSet>& descriptorSets)
+{
+    if (m_flag & ~VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT)
+    {
+        return false;
+    }
+
+    VkResult result = VulkanWrapper::FreeDescriptorSets(m_device, m_pool, static_cast<u32>(descriptorSets.size()), descriptorSets.data());
+    if (result != VK_SUCCESS)
+    {
+        LOG_ERROR("VulkanDescriptorPool::destroyDescriptorSet vkFreeDescriptorSets is failed. Error: %s", ErrorString(result).c_str());
+        return false;
+    }
+
+    return true;
+}
+
+bool VulkanDescriptorPool::reset(VkDescriptorPoolResetFlags flag)
+{
+    VkResult result = VulkanWrapper::ResetDescriptorPool(m_device, m_pool, flag);
+    if (result != VK_SUCCESS)
+    {
+        LOG_ERROR("VulkanDescriptorPool::reset vkResetDescriptorPool is failed. Error: %s", ErrorString(result).c_str());
+        return false;
+    }
+
+    return true;
+}
+
+bool VulkanDescriptorPool::createDescriptorPool(u32 setsCount, const std::vector<VkDescriptorPoolSize>& sizes)
+{
+    VkDescriptorPoolCreateInfo descriptorPoolCreateInfo = {};
+    descriptorPoolCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+    descriptorPoolCreateInfo.pNext = nullptr; //VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO
+    descriptorPoolCreateInfo.flags = m_flag;
+    descriptorPoolCreateInfo.maxSets = setsCount;
+    descriptorPoolCreateInfo.poolSizeCount = static_cast<u32>(sizes.size());
+    descriptorPoolCreateInfo.pPoolSizes = sizes.data();
+
+    VkResult result = VulkanWrapper::CreateDescriptorPool(m_device, &descriptorPoolCreateInfo, VULKAN_ALLOCATOR, &m_pool);
+    if (result != VK_SUCCESS)
+    {
+        LOG_ERROR("VulkanDescriptorPool::createDescriptorPool vkResetDescriptorPool is failed. Error: %s", ErrorString(result).c_str());
+        return false;
+    }
+
+    return true;
+}
+
 VkShaderStageFlagBits VulkanDescriptorSetManager::convertShaderTypeToVkStage(ShaderType type)
 {
     switch (type)
@@ -97,6 +216,12 @@ bool VulkanDescriptorSetManager::removePipelineLayout(VulkanPipelineLayout & lay
     return true;
 }
 
+VkDescriptorSet VulkanDescriptorSetManager::acquireDescriptorSet()
+{
+    return VK_NULL_HANDLE;
+    //return VulkanDescriptorSetManager::createDescriptorSet();
+}
+
 VkPipelineLayout VulkanDescriptorSetManager::createPipelineLayout(const DescriptorSetDescription& desc, std::vector<VkDescriptorSetLayout>& descriptorSetLayouts)
 {
     if (!VulkanDescriptorSetManager::createDescriptorSetLayouts(desc, descriptorSetLayouts))
@@ -120,7 +245,7 @@ VkPipelineLayout VulkanDescriptorSetManager::createPipelineLayout(const Descript
     VkResult result = VulkanWrapper::CreatePipelineLayout(m_device, &pipelineLayoutCreateInfo, VULKAN_ALLOCATOR, &pipelineLayout);
     if (result != VK_SUCCESS)
     {
-        LOG_ERROR("DescriptorSetManager::createPipelineLayout vkCreatePipelineLayout is failed. Error: %s", ErrorString(result).c_str());
+        LOG_ERROR("VulkanDescriptorSetManager::createPipelineLayout vkCreatePipelineLayout is failed. Error: %s", ErrorString(result).c_str());
         return VK_NULL_HANDLE;
     }
 

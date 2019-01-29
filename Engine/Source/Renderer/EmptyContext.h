@@ -24,7 +24,7 @@ namespace renderer
         void presentFrame() override;
         void submit(bool wait = false) override;
 
-        void draw(u32 firstVertex, u32 vertexCount, u32 firstInstance, u32 instanceCount) override;
+        void draw(StreamBufferDescription& desc, u32 firstVertex, u32 vertexCount, u32 firstInstance, u32 instanceCount) override;
         void drawIndexed() override;
 
         virtual void clearBackbuffer(const core::Vector4D & color) override;
@@ -32,7 +32,7 @@ namespace renderer
         void bindTexture(const resource::Shader* shader, const std::string& name, const Image* image) override;
         void bindUniformBuffers(const resource::Shader* shader, const std::string& name, const void* data, u32 offset, u32 size) override;
 
-        void bindVertexBuffers(const std::vector<Buffer*>& buffer, const std::vector<u64>& offsets) override;
+        //void bindVertexBuffers(const std::vector<Buffer*>& buffer, const std::vector<u64>& offsets) override;
 
         void setViewport(const core::Rect32& viewport, const core::Vector2D& depth = { 0.0f, 1.0f }) override;
         void setScissor(const core::Rect32& scissor) override;

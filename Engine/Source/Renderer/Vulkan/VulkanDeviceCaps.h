@@ -24,6 +24,7 @@ namespace vk
         bool useDynamicUniforms;
         bool unifiedMemoryManager;
         bool useStagingBuffers;
+        bool useGlobalDescriptorPool;
 
         static bool checkInstanceExtension(const c8* extensionName);
         static bool checkDeviceExtension(VkPhysicalDevice physicalDevice, const c8* extensionName);

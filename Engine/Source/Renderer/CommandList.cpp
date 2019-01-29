@@ -217,10 +217,12 @@ private:
 class CommandDraw : public Command
 {
 public:
-    CommandDraw(const StreamBufferDescription& desc, u32 firtsInstance, u32 instanceCount) noexcept
+    CommandDraw(const StreamBufferDescription& desc, u32 firstVertex, u32 countVertex, u32 firtsInstance, u32 instanceCount) noexcept
         : m_buffersDesc(desc)
         , m_firtsInstance(firtsInstance)
         , m_instanceCount(instanceCount)
+        , m_firstVertex(firstVertex)
+        , m_vertexCount(countVertex)
     {
         LOG_DEBUG("CommandDraw constructor");
     }
@@ -235,14 +237,15 @@ public:
     void execute(const CommandList& cmdList)
     {
         LOG_DEBUG("CommandDraw execute");
-        //cmdList.getContext()->bindVertexBuffers(m_buffersDesc._vertices, m_buffersDesc._offsets); //TODO bind if needed
-        //cmdList.getContext()->draw(m_buffersDesc._firstVertex, m_buffersDesc._countVertex, m_firtsInstance, m_instanceCount);
+        cmdList.getContext()->draw(m_buffersDesc, m_firstVertex, m_vertexCount, m_firtsInstance, m_instanceCount);
     }
 
 private:
     StreamBufferDescription m_buffersDesc;
     u32 m_firtsInstance;
     u32 m_instanceCount;
+    u32 m_firstVertex;
+    u32 m_vertexCount;
 };
 
     /*CommandInvalidateRenderPass*/
@@ -375,17 +378,16 @@ void CommandList::presentFrame()
     }
 }
 
-void CommandList::draw(const StreamBufferDescription& desc, u32 firstVertex, u32 countVertex, u32 countInstance)
+void CommandList::draw(StreamBufferDescription& desc, u32 firstVertex, u32 countVertex, u32 countInstance)
 {
     if (CommandList::isImmediate())
     {
-        //m_context->bindVertexBuffers(desc._vertices, desc._offsets); //TODO bind if needed
-        //m_context->draw(firstVertex, countVertex, 0, countInstance);
+        m_context->draw(desc, firstVertex, countVertex, 0, countInstance);
     }
     else
     {
-        //CommandList::flushPendingCommands(m_pendingFlushMask);
-        //CommandList::pushCommand(new CommandDraw(desc, 0, countInstance));
+        CommandList::flushPendingCommands(m_pendingFlushMask);
+        CommandList::pushCommand(new CommandDraw(desc, firstVertex, countVertex, 0, countInstance));
     }
 }
 

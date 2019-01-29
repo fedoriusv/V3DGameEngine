@@ -417,22 +417,28 @@ void VulkanGraphicContext::bindUniformBuffers(const resource::Shader* shader, co
     //m_currentContextState._boundUniformBuffers = { {buffer}, {}, true };
 }
 
-void VulkanGraphicContext::bindVertexBuffers(const std::vector<Buffer*>& buffer, const std::vector<u64>& offsets)
-{
-    m_currentContextState._boundVertexBuffers = { buffer, offsets, true };
-}
+//void VulkanGraphicContext::bindVertexBuffers(const std::vector<Buffer*>& buffer, const std::vector<u64>& offsets)
+//{
+//    m_currentContextState._boundVertexBuffers = { buffer, offsets, true };
+//}
 
-void VulkanGraphicContext::draw(u32 firstVertex, u32 vertexCount, u32 firstInstance, u32 instanceCount)
+void VulkanGraphicContext::draw(StreamBufferDescription& desc, u32 firstVertex, u32 vertexCount, u32 firstInstance, u32 instanceCount)
 {
+    if (m_currentContextState._currentStreamBufferDescription.first != desc)
+    {
+        m_currentContextState._currentStreamBufferDescription.first = std::move(desc);
+        m_currentContextState._currentStreamBufferDescription.second = true;
+    }
+
     ASSERT(m_currentContextState.isCurrentBufferAcitve(CommandTargetType::CmdDrawBuffer), "nullptr");
     VulkanCommandBuffer* drawBuffer = m_currentContextState.getAcitveBuffer(CommandTargetType::CmdDrawBuffer);
     if (prepareDraw(drawBuffer))
     {
-       
-        if (std::get<2>(m_currentContextState._boundVertexBuffers))
+        if (m_currentContextState._currentStreamBufferDescription.second)
         {
-            drawBuffer->cmdBindVertexBuffers(0, static_cast<u32>(std::get<0>(m_currentContextState._boundVertexBuffers).size()), std::get<0>(m_currentContextState._boundVertexBuffers), std::get<1>(m_currentContextState._boundVertexBuffers));
-            std::get<2>(m_currentContextState._boundVertexBuffers) = false;
+            const StreamBufferDescription& desc = m_currentContextState._currentStreamBufferDescription.first;
+            drawBuffer->cmdBindVertexBuffers(0, static_cast<u32>(desc._vertices.size()), desc._vertices, desc._offsets);
+            m_currentContextState._currentStreamBufferDescription.second = false;
         }
         drawBuffer->cmdDraw(firstVertex, vertexCount, firstInstance, instanceCount);
     }
