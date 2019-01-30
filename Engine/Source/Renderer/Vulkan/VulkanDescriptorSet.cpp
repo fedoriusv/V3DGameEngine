@@ -29,24 +29,13 @@ VulkanDescriptorPool::VulkanDescriptorPool(VkDevice device, VkDescriptorPoolCrea
     ASSERT(!m_pool, "not nullptr");
 }
 
-bool VulkanDescriptorPool::create(const VulkanPipelineLayout& layout, const std::vector<VkDescriptorPoolSize>& sizes)
+bool VulkanDescriptorPool::create(u32 setsCount, const std::vector<VkDescriptorPoolSize>& sizes)
 {
-    ASSERT(m_descriptorSets.empty(), "not empty");
     ASSERT(!m_pool, "not nullptr");
-
-    if (!VulkanDescriptorPool::createDescriptorPool(static_cast<u32>(layout._descriptorSetLayouts.size()), sizes))
+    if (!VulkanDescriptorPool::createDescriptorPool(setsCount, sizes))
     {
         return false;
     }
-
-    m_descriptorSets.clear();
-    if (!VulkanDescriptorPool::allocateDescriptorSet(layout, m_descriptorSets))
-    {
-        VulkanDescriptorPool::destroy();
-        return false;
-    }
-
-    return true;
 }
 
 void VulkanDescriptorPool::destroy()
@@ -117,6 +106,7 @@ bool VulkanDescriptorPool::reset(VkDescriptorPoolResetFlags flag)
         return false;
     }
 
+    m_descriptorSets.clear();
     return true;
 }
 
@@ -139,6 +129,21 @@ bool VulkanDescriptorPool::createDescriptorPool(u32 setsCount, const std::vector
 
     return true;
 }
+
+u32 VulkanDescriptorSetManager::s_maxSets = 256;
+
+std::vector<VkDescriptorPoolSize> VulkanDescriptorSetManager::s_poolSizes =
+{
+    { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,                 512 },
+    { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC,         256 },
+    { VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,                  512 },
+    { VK_DESCRIPTOR_TYPE_SAMPLER,                        256 },
+    { VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,                  128 },
+    { VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,                 128 },
+    { VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER,           128 },
+    { VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER,           128 },
+    { VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT,               128 },
+};
 
 VkShaderStageFlagBits VulkanDescriptorSetManager::convertShaderTypeToVkStage(ShaderType type)
 {
@@ -216,10 +221,25 @@ bool VulkanDescriptorSetManager::removePipelineLayout(VulkanPipelineLayout & lay
     return true;
 }
 
-VkDescriptorSet VulkanDescriptorSetManager::acquireDescriptorSet()
+VulkanDescriptorPool* VulkanDescriptorSetManager::acquireDescriptorSets(const VulkanPipelineLayout& layout, std::vector<VkDescriptorSet>& sets, std::vector<u32>& offsets)
 {
-    return VK_NULL_HANDLE;
-    //return VulkanDescriptorSetManager::createDescriptorSet();
+    for (auto& pool : m_descriptorPools)
+    {
+        if (pool->allocateDescriptorSet(layout, sets))
+        {
+            return pool;
+        }
+    }
+
+    VulkanDescriptorPool* newPool = VulkanDescriptorSetManager::createPool(layout);
+    if (m_descriptorPools.empty())
+    {
+        m_descriptorPools.push_back(newPool);
+    }
+
+    bool result = newPool->allocateDescriptorSet(layout, sets);
+    ASSERT(result, "fail");
+    return newPool;
 }
 
 VkPipelineLayout VulkanDescriptorSetManager::createPipelineLayout(const DescriptorSetDescription& desc, std::vector<VkDescriptorSetLayout>& descriptorSetLayouts)
@@ -290,6 +310,36 @@ void VulkanDescriptorSetManager::destroyDescriptorSetLayouts(std::vector<VkDescr
     {
         VulkanWrapper::DestroyDescriptorSetLayout(m_device, set, VULKAN_ALLOCATOR);
     }
+}
+
+VulkanDescriptorPool * VulkanDescriptorSetManager::createPool(const VulkanPipelineLayout& layout)
+{
+    VulkanDescriptorPool* pool = new VulkanDescriptorPool(m_device, 0);
+
+    u32 setCount = 0;
+    std::vector<VkDescriptorPoolSize>* sizes = nullptr;
+    if (VulkanDeviceCaps::getInstance()->useGlobalDescriptorPool)
+    {
+        setCount = s_maxSets;
+        sizes = &VulkanDescriptorSetManager::s_poolSizes;
+    }
+    else
+    {
+        ASSERT(false, "not implemented");
+        setCount = layout._descriptorSetLayouts.size();
+        for (auto& set : layout._descriptorSetLayouts)
+        {
+            //TODO: need shader
+        }
+    }
+
+    if (!pool->create(setCount, *sizes))
+    {
+        ASSERT(false, "fail");
+        pool->destroy();
+    }
+
+    return pool;
 }
 
 VulkanDescriptorSetManager::DescriptorSetDescription::DescriptorSetDescription(const std::vector<resource::Shader*> shaders) noexcept

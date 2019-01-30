@@ -7,7 +7,6 @@
 #include "VulkanDeviceCaps.h"
 #include "VulkanDescriptorSet.h"
 #include "VulkanCommandBufferManager.h"
-#include "VulkanContextState.h"
 
 namespace v3d
 {
@@ -19,7 +18,7 @@ namespace vk
     class VulkanRenderPass;
     class VulkanFramebuffer;
     class VulkanGraphicPipeline;
-
+    class VulkanContextState;
     class VulkanStaginBufferManager;
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -130,21 +129,9 @@ namespace vk
 
             VulkanCommandBuffer* _currentCmdBuffer[CommandTargetType::CommandTarget_Count];
 
-            bool isCurrentRenderPass(const RenderPass* pass) const;
-            bool isCurrentFramebuffer(const Framebuffer* framebuffer) const;
-            bool isCurrentPipeline(const Pipeline* pipeline) const;
-
-            VulkanRenderPass*    _currentRenderpass;
-            VulkanFramebuffer*   _currentFramebuffer;
-
-            VulkanGraphicPipeline* _currentPipeline;
-            bool _updatePipeline;
-
             std::vector<DescriptorBinding> _descriptorsStates;
-            std::pair<StreamBufferDescription, bool> _currentStreamBufferDescription;
             std::tuple<std::vector<Buffer*>, std::vector<u64>, bool> _boundUniformBuffers;
 
-            void* _boundShaderStage[ShaderType::ShaderType_Count];
         };
         //
 

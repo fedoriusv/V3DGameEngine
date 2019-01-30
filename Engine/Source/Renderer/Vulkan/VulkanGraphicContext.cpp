@@ -9,6 +9,7 @@
 #include "VulkanPipeline.h"
 #include "VulkanBuffer.h"
 #include "VulkanStagingBuffer.h"
+#include "VulkanContextState.h"
 
 #include "Utils/Logger.h"
 
@@ -131,7 +132,7 @@ void VulkanGraphicContext::endFrame()
     VulkanCommandBuffer* drawBuffer = m_currentContextState.getAcitveBuffer(CommandTargetType::CmdDrawBuffer);
     if (drawBuffer->isInsideRenderPass())
     {
-        ASSERT(m_currentContextState._currentRenderpass, "nullptr");
+        ASSERT(m_currentContextStateNEW->getCurrentPipeline(), "nullptr");
         drawBuffer->cmdEndRenderPass();
     }
     drawBuffer->cmdPipelineBarrier(m_swapchain->getBackbuffer(),VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
@@ -241,11 +242,10 @@ void VulkanGraphicContext::setRenderTarget(const RenderPass::RenderPassInfo * re
     ASSERT(framebuffer, "framebuffer is nullptr");
     std::get<1>(trackers)->attach(framebuffer);
 
-    if (!m_currentContextState.isCurrentRenderPass(renderpass) || !m_currentContextState.isCurrentFramebuffer(framebuffer) /*|| clearInfo*/)
+    VulkanRenderPass* vkRenderpass = static_cast<VulkanRenderPass*>(renderpass);
+    VulkanFramebuffer* vkFramebuffer = static_cast<VulkanFramebuffer*>(framebuffer);
+    if (m_currentContextStateNEW->setCurrentRenderPass(vkRenderpass) || m_currentContextStateNEW->setCurrentFramebuffer(vkFramebuffer) /*|| clearInfo*/)
     {
-        m_currentContextState._currentRenderpass = static_cast<VulkanRenderPass*>(renderpass);
-        m_currentContextState._currentFramebuffer = static_cast<VulkanFramebuffer*>(framebuffer);
-
         VulkanCommandBuffer* drawBuffer = m_currentContextState.getAcitveBuffer(CommandTargetType::CmdDrawBuffer);
         if (drawBuffer->isInsideRenderPass())
         {
@@ -267,7 +267,7 @@ void VulkanGraphicContext::setRenderTarget(const RenderPass::RenderPassInfo * re
             clearValues.back().depthStencil = { clearInfo->_depth, clearInfo->_stencil };
         }
 
-        drawBuffer->cmdBeginRenderpass(m_currentContextState._currentRenderpass, m_currentContextState._currentFramebuffer, area, clearValues);
+        drawBuffer->cmdBeginRenderpass(m_currentContextStateNEW->getCurrentRenderpass(), m_currentContextStateNEW->getCurrentFramebuffer(), area, clearValues);
     }
 }
 
@@ -281,7 +281,7 @@ void VulkanGraphicContext::setRenderTarget(const RenderPass::RenderPassInfo * re
 void VulkanGraphicContext::removeFramebuffer(Framebuffer * framebuffer)
 {
     VulkanFramebuffer* vkFramebuffer = static_cast<VulkanFramebuffer*>(framebuffer);
-    if (m_currentContextState.isCurrentFramebuffer(vkFramebuffer) || vkFramebuffer->isCaptured())
+    if (m_currentContextStateNEW->isCurrentFramebuffer(vkFramebuffer) || vkFramebuffer->isCaptured())
     {
         ASSERT(false, "not implementing");
         //delayed delete
@@ -293,7 +293,7 @@ void VulkanGraphicContext::removeFramebuffer(Framebuffer * framebuffer)
 void VulkanGraphicContext::removeRenderPass(RenderPass * renderpass)
 {
     VulkanRenderPass* vkRenderpass = static_cast<VulkanRenderPass*>(renderpass);
-    if (m_currentContextState.isCurrentRenderPass(vkRenderpass) || vkRenderpass->isCaptured())
+    if (m_currentContextStateNEW->isCurrentRenderPass(vkRenderpass) || vkRenderpass->isCaptured())
     {
         ASSERT(false, "not implementing");
         //delayed delete
@@ -304,7 +304,7 @@ void VulkanGraphicContext::removeRenderPass(RenderPass * renderpass)
 
 void VulkanGraphicContext::invalidateRenderPass()
 {
-    ASSERT(m_currentContextState._currentRenderpass, "nuulptr");
+    ASSERT(m_currentContextStateNEW->getCurrentRenderpass(), "nuulptr");
     VulkanCommandBuffer* drawBuffer = m_currentContextState.getAcitveBuffer(CommandTargetType::CmdDrawBuffer);
     if (drawBuffer->isInsideRenderPass())
     {
@@ -320,17 +320,14 @@ void VulkanGraphicContext::setPipeline(const Pipeline::PipelineGraphicInfo* pipe
     ASSERT(pipeline, "nullptr");
     tracker->attach(pipeline);
 
-    if (!m_currentContextState.isCurrentPipeline(pipeline))
-    {
-        m_currentContextState._currentPipeline = static_cast<VulkanGraphicPipeline*>(pipeline);
-        m_currentContextState._updatePipeline = true;
-    }
+    VulkanGraphicPipeline* vkPipeline = static_cast<VulkanGraphicPipeline*>(pipeline);
+    m_currentContextStateNEW->setCurrentPipeline(vkPipeline);
 }
 
 void VulkanGraphicContext::removePipeline(Pipeline * pipeline)
 {
     VulkanGraphicPipeline* vkPipeline = static_cast<VulkanGraphicPipeline*>(pipeline);;
-    if (m_currentContextState.isCurrentPipeline(vkPipeline) || vkPipeline->isCaptured())
+    if (m_currentContextStateNEW->isCurrentPipeline(vkPipeline) || vkPipeline->isCaptured())
     {
         ASSERT(false, "not implementing");
         //delayed delete
@@ -410,11 +407,14 @@ void VulkanGraphicContext::bindTexture(const resource::Shader* shader, const std
     const VulkanImage* vkImage = static_cast<const VulkanImage*>(image);
     VkImageView view = vkImage->getImageView();
 
+//    m_currentContextStateNEW->bindTexture();
     //shader->getReflectionInfo()._sampledImages[name]
 }
 
 void VulkanGraphicContext::bindUniformBuffers(const resource::Shader* shader, const std::string& name, const void* data, u32 offset, u32 size)
 {
+
+ //   m_currentContextStateNEW->bindUnifrom();
     //m_currentContextState._boundShaderStage[shader->stage].updateDescriptorSets(name, offset, size, data);
     //m_currentContextState._boundUniformBuffers = { {buffer}, {}, true };
 }
@@ -426,21 +426,16 @@ void VulkanGraphicContext::bindUniformBuffers(const resource::Shader* shader, co
 
 void VulkanGraphicContext::draw(StreamBufferDescription& desc, u32 firstVertex, u32 vertexCount, u32 firstInstance, u32 instanceCount)
 {
-    if (m_currentContextState._currentStreamBufferDescription.first != desc)
-    {
-        m_currentContextState._currentStreamBufferDescription.first = std::move(desc);
-        m_currentContextState._currentStreamBufferDescription.second = true;
-    }
+    bool changed = m_currentContextStateNEW->setCurrentVertexBuffers(desc);
 
     ASSERT(m_currentContextState.isCurrentBufferAcitve(CommandTargetType::CmdDrawBuffer), "nullptr");
     VulkanCommandBuffer* drawBuffer = m_currentContextState.getAcitveBuffer(CommandTargetType::CmdDrawBuffer);
     if (prepareDraw(drawBuffer))
     {
-        if (m_currentContextState._currentStreamBufferDescription.second)
+        if (changed)
         {
-            const StreamBufferDescription& desc = m_currentContextState._currentStreamBufferDescription.first;
+            const StreamBufferDescription& desc = m_currentContextStateNEW->getStreamBufferDescription();
             drawBuffer->cmdBindVertexBuffers(0, static_cast<u32>(desc._vertices.size()), desc._vertices, desc._offsets);
-            m_currentContextState._currentStreamBufferDescription.second = false;
         }
         drawBuffer->cmdDraw(firstVertex, vertexCount, firstInstance, instanceCount);
     }
@@ -557,7 +552,7 @@ bool VulkanGraphicContext::initialize()
     m_framebuferManager = new FramebufferManager(this);
     m_pipelineManager = new PipelineManager(this);
 
-    m_currentContextStateNEW = new VulkanContextState(m_deviceInfo._device);
+    m_currentContextStateNEW = new VulkanContextState(m_deviceInfo._device, m_descriptorSetManager);
 
     return true;
 }
@@ -580,12 +575,6 @@ void VulkanGraphicContext::destroy()
     {
         delete m_stagingBufferManager;
         m_stagingBufferManager = nullptr;
-    }
-
-    if (m_descriptorSetManager)
-    {
-        delete m_descriptorSetManager;
-        m_descriptorSetManager = nullptr;
     }
 
     if (m_deviceCaps.unifiedMemoryManager)
@@ -625,6 +614,12 @@ void VulkanGraphicContext::destroy()
     {
         delete m_currentContextStateNEW;
         m_currentContextStateNEW = nullptr;
+    }
+
+    if (m_descriptorSetManager)
+    {
+        delete m_descriptorSetManager;
+        m_descriptorSetManager = nullptr;
     }
 
     if (m_swapchain)
@@ -931,17 +926,18 @@ bool VulkanGraphicContext::prepareDraw(VulkanCommandBuffer* drawBuffer)
 {
     ASSERT(drawBuffer, "nullptr");
 
-    ASSERT(m_currentContextState._currentPipeline, "not bound");
-    drawBuffer->cmdBindPipeline(m_currentContextState._currentPipeline);
+    ASSERT(m_currentContextStateNEW->getCurrentPipeline(), "not bound");
+    drawBuffer->cmdBindPipeline(m_currentContextStateNEW->getCurrentPipeline());
 
-    m_currentContextStateNEW->invokeDynamicStates(); //check, becouse every draw
+    m_currentContextStateNEW->invokeDynamicStates();
 
-    //state update ds
-    //get dss
+    m_currentContextStateNEW->updateDescriptorSet();
+
     std::vector<VkDescriptorSet> sets;
     std::vector<u32> offsets;
+    m_currentContextStateNEW->acquireDescriptorSets(sets, offsets);
 
-    drawBuffer->cmdBindDescriptorSets(m_currentContextState._currentPipeline, 0, static_cast<u32>(sets.size()), sets, offsets);
+    drawBuffer->cmdBindDescriptorSets(m_currentContextStateNEW->getCurrentPipeline(), 0, static_cast<u32>(sets.size()), sets, offsets);
 
     return true;
 }
@@ -974,15 +970,6 @@ VulkanGraphicContext::CurrentContextState::CurrentContextState()
 {
     _currentCmdBuffer[CommandTargetType::CmdDrawBuffer] = nullptr;
     _currentCmdBuffer[CommandTargetType::CmdUploadBuffer] = nullptr;
-
-    for (u32 type = 0; type < ShaderType::ShaderType_Count; type++)
-    {
-        _boundShaderStage[type] = nullptr;
-    }
-
-    _currentRenderpass = nullptr;
-    _currentFramebuffer = nullptr;
-    _currentPipeline = nullptr;
 }
 
 void VulkanGraphicContext::CurrentContextState::invalidateState()
@@ -1005,22 +992,6 @@ bool VulkanGraphicContext::CurrentContextState::isCurrentBufferAcitve(CommandTar
 {
     return _currentCmdBuffer[type] != nullptr;
 }
-
-bool VulkanGraphicContext::CurrentContextState::isCurrentFramebuffer(const Framebuffer * framebuffer) const
-{
-    return _currentFramebuffer ==framebuffer;
-}
-
-bool VulkanGraphicContext::CurrentContextState::isCurrentPipeline(const Pipeline * pipeline) const
-{
-    return _currentPipeline == pipeline;
-}
-
-bool VulkanGraphicContext::CurrentContextState::isCurrentRenderPass(const RenderPass* pass) const
-{
-    return _currentRenderpass == pass;
-}
-
 
 } //namespace vk
 } //namespace renderer

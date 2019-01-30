@@ -49,6 +49,7 @@ namespace vk
 
         VkPipeline getHandle() const;
         VkPipelineLayout getPipelineLayoutHandle() const;
+        const VulkanPipelineLayout& getDescriptorSetLayouts() const;
 
     private:
 

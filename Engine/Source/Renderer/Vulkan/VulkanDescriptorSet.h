@@ -36,16 +36,17 @@ namespace vk
     public:
         VulkanDescriptorPool(VkDevice device, VkDescriptorPoolCreateFlags flag) noexcept;
 
-        bool create(const VulkanPipelineLayout& layout, const std::vector<VkDescriptorPoolSize>& sizes);
+        bool create(u32 setsCount, const std::vector<VkDescriptorPoolSize>& sizes);
         void destroy();
 
         bool reset(VkDescriptorPoolResetFlags flag);
 
+        bool allocateDescriptorSet(const VulkanPipelineLayout& layout, std::vector<VkDescriptorSet>& descriptorSets);
+        bool freeDescriptorSet(std::vector<VkDescriptorSet>& descriptorSets);
+
     private:
 
         bool createDescriptorPool(u32 setsCount, const std::vector<VkDescriptorPoolSize>& sizes);
-        bool allocateDescriptorSet(const VulkanPipelineLayout& layout, std::vector<VkDescriptorSet>& descriptorSets);
-        bool freeDescriptorSet(std::vector<VkDescriptorSet>& descriptorSets);
 
         VkDevice m_device;
         VkDescriptorPoolCreateFlags m_flag;
@@ -81,7 +82,7 @@ namespace vk
         bool removePipelineLayout(const DescriptorSetDescription& desc);
         bool removePipelineLayout(VulkanPipelineLayout& layout);
 
-        VkDescriptorSet acquireDescriptorSet();
+        VulkanDescriptorPool* acquireDescriptorSets(const VulkanPipelineLayout& layout, std::vector<VkDescriptorSet>& sets, std::vector<u32>& offsets);
 
     private:
 
@@ -91,10 +92,15 @@ namespace vk
         bool createDescriptorSetLayouts(const DescriptorSetDescription& desc, std::vector<VkDescriptorSetLayout>& descriptorSetLayouts);
         void destroyDescriptorSetLayouts(std::vector<VkDescriptorSetLayout>& descriptorSetLayouts);
 
+        VulkanDescriptorPool* createPool(const VulkanPipelineLayout& layout);
+
         VkDevice m_device;
 
         std::map<u32, VulkanPipelineLayout> m_pipelinesLayouts;
-        std::vector<VulkanDescriptorPool*> m_descriptorPools;
+        std::deque<VulkanDescriptorPool*> m_descriptorPools;
+
+        static std::vector<VkDescriptorPoolSize> s_poolSizes;
+        static u32 s_maxSets;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
