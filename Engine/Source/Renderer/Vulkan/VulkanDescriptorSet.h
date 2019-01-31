@@ -19,6 +19,9 @@ namespace vk
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    /**
+    * VulkanPipelineLayout struct. Vulkan Render side
+    */
     struct VulkanPipelineLayout
     {
         VulkanPipelineLayout();
@@ -26,16 +29,13 @@ namespace vk
         u32 _key;
         VkPipelineLayout                    _layout;
         std::vector<VkDescriptorSetLayout>  _descriptorSetLayouts;
-
-        s32 _layoutIndex[k_maxDescriptorSetIndex][k_maxDescriptorBindingIndex];
     };
 
-    struct VulkanDescriptorSets
-    {
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-
-    };
-
+    /**
+    * VulkanDescriptorPool class. Vulkan Render side
+    */
     class VulkanDescriptorPool
     {
     public:
@@ -62,6 +62,9 @@ namespace vk
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    /**
+    * VulkanDescriptorSetManager class. Vulkan Render side
+    */
     class VulkanDescriptorSetManager final
     {
     public:

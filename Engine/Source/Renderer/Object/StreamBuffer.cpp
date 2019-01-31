@@ -51,9 +51,7 @@ public:
         if (!m_buffer->create())
         {
             m_buffer->notifyObservers();
-
             m_buffer->destroy();
-            delete m_buffer;
 
             return;
         }
@@ -155,7 +153,7 @@ private:
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-VertexStreamBuffer::VertexStreamBuffer(renderer::CommandList& cmdList, u16 usageFlag, u64 size, const void* data) noexcept
+VertexStreamBuffer::VertexStreamBuffer(renderer::CommandList& cmdList, u16 usageFlag, u64 size, const u8* data) noexcept
     : m_cmdList(cmdList)
     , m_data(nullptr)
     , m_size(size)
@@ -177,9 +175,10 @@ VertexStreamBuffer::VertexStreamBuffer(renderer::CommandList& cmdList, u16 usage
         if (!m_buffer->create())
         {
             m_buffer->destroy();
-
             delete m_buffer;
             m_buffer = nullptr;
+
+            return;
         }
         m_buffer->registerNotify(this);
 
@@ -216,13 +215,18 @@ VertexStreamBuffer::~VertexStreamBuffer()
 
 void VertexStreamBuffer::handleNotify(utils::Observable * ob)
 {
+    LOG_DEBUG("VertexStreamBuffer::handleNotify to delete buffer %xll", this);
+    ASSERT(m_buffer == ob, "not same");
+
+    delete m_buffer;
     m_buffer = nullptr;
 }
 
-bool VertexStreamBuffer::update(u32 offset, u64 size, void * data)
+bool VertexStreamBuffer::update(u32 offset, u64 size, const u8* data)
 {
     if (!m_buffer)
     {
+        ASSERT(false, "buffer nullptr");
         return false;
     }
 
@@ -257,6 +261,18 @@ bool VertexStreamBuffer::update(u32 offset, u64 size, void * data)
         }
     }
 
+    return false;
+}
+
+bool VertexStreamBuffer::read(u32 offset, u64 size, u8 * data)
+{
+    if (!m_buffer)
+    {
+        ASSERT(false, "buffer nullptr");
+        return false;
+    }
+
+    ASSERT(false, "not implemented");
     return false;
 }
 

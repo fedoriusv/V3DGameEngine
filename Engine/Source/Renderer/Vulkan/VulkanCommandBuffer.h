@@ -14,16 +14,16 @@ namespace renderer
 {
 namespace vk
 {
-    /////////////////////////////////////////////////////////////////////////////////////////////////////
-
     class VulkanImage;
     class VulkanBuffer;
     class VulkanRenderPass;
     class VulkanFramebuffer;
     class VulkanGraphicPipeline;
 
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
+
     /**
-    * VulkanCommandBuffer class. Render side
+    * VulkanCommandBuffer class. Vulkan Render side
     */
     class VulkanCommandBuffer final : public utils::NonCopyable
     {

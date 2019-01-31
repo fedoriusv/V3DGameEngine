@@ -17,6 +17,9 @@ namespace vk
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    /**
+    * VulkanStaginBuffer final class. Vulkan Render side
+    */
     class VulkanStaginBuffer final
     {
     public:
@@ -41,6 +44,9 @@ namespace vk
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    /**
+    * VulkanStaginBufferManager final class. Vulkan Render side
+    */
     class VulkanStaginBufferManager final
     {
     public:

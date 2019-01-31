@@ -19,7 +19,6 @@ VulkanPipelineLayout::VulkanPipelineLayout()
     : _key(0)
     , _layout(VK_NULL_HANDLE)
 {
-    memset(_layoutIndex, -1, sizeof(_layoutIndex));
 }
 
 VulkanDescriptorPool::VulkanDescriptorPool(VkDevice device, VkDescriptorPoolCreateFlags flag) noexcept
@@ -135,10 +134,10 @@ u32 VulkanDescriptorSetManager::s_maxSets = 256;
 
 std::vector<VkDescriptorPoolSize> VulkanDescriptorSetManager::s_poolSizes =
 {
-    { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,                 512 },
-    { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC,         256 },
-    { VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,                  512 },
-    { VK_DESCRIPTOR_TYPE_SAMPLER,                        256 },
+    { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,                 128 },
+    { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC,         128 },
+    { VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,                  128 },
+    { VK_DESCRIPTOR_TYPE_SAMPLER,                        128 },
     { VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,                  128 },
     { VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,                 128 },
     { VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER,           128 },
@@ -359,7 +358,7 @@ VulkanDescriptorSetManager::DescriptorSetDescription::DescriptorSetDescription(c
         return nullptr;
     };
 
-    for (u32 set = 0; set < 4/*VulkanDeviceCaps::getInstance()->getPhysicalDeviceLimits().maxBoundDescriptorSets*/; ++set)
+    for (u32 set = 0; set < k_maxDescriptorSetIndex; ++set)
     {
         std::vector<VkDescriptorSetLayoutBinding> descriptorSetLayoutBindings;
         for (u32 type = ShaderType::ShaderType_Vertex; type < ShaderType_Count; ++type)
@@ -373,6 +372,7 @@ VulkanDescriptorSetManager::DescriptorSetDescription::DescriptorSetDescription(c
             const resource::Shader::ReflectionInfo& info = shader->getReflectionInfo();
             for (auto& uniform : info._uniformBuffers)
             {
+                ASSERT(uniform.second._set < k_maxDescriptorSetIndex && uniform.second._binding < k_maxDescriptorBindingIndex, "range out");
                 if (uniform.second._set != set)
                 {
                     continue;

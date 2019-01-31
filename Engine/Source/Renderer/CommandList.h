@@ -17,8 +17,6 @@ namespace v3d
 {
 namespace renderer
 {
-    /////////////////////////////////////////////////////////////////////////////////////////////////////
-
     class Context;
     class CommandList;
 
@@ -26,13 +24,6 @@ namespace renderer
     class Backbuffer;
     class RenderTarget;
     class GraphicsPipelineState;
-
-    struct ContextStates
-    {
-        core::Rect32    _viewportColor;
-        core::Vector2D  _viewportDepth;
-        core::Rect32    _scissor;
-    };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -108,6 +99,13 @@ namespace renderer
         };
 
         void flushPendingCommands(u32 pendingFlushMask);
+
+        struct ContextStates
+        {
+            core::Rect32    _viewportColor;
+            core::Vector2D  _viewportDepth;
+            core::Rect32    _scissor;
+        };
 
     private:
 

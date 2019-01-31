@@ -23,6 +23,9 @@ namespace vk
 {
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    /**
+    * VulkanGraphicPipeline final class. Vulkan Render side
+    */
     class VulkanGraphicPipeline final : public Pipeline, public VulkanResource
     {
     public:

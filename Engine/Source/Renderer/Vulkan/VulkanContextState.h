@@ -18,8 +18,14 @@ namespace vk
     class VulkanDescriptorSetManager;
     class VulkanImage;
     class VulkanSampler;
+    class VulkanUnifromBuffer;
     class VulkanDescriptorPool;
 
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    /**
+    * VulkanContextState class. Vulkan Render side
+    */
     class VulkanContextState
     {
     public:
@@ -50,41 +56,39 @@ namespace vk
         bool acquireDescriptorSets(std::vector<VkDescriptorSet>& sets, std::vector<u32>& offsets);
         void updateDescriptorSet();
 
-        void bindTexture(const VulkanImage* image, const VulkanSampler* sampler, u32 arrayIndex, const resource::Shader::SampledImage& reflaction);
-        void bindUnifrom();
+        void bindTexture(const VulkanImage* image, VulkanSampler* sampler, u32 arrayIndex, const resource::Shader::SampledImage& reflaction);
+        void bindUnifrom(const VulkanUnifromBuffer* uniform, u32 arrayIndex, const resource::Shader::UniformBuffer& reflaction);
 
     private:
 
         struct BindingInfo
         {
+            struct BindingImageInfo
+            {
+                VulkanImage*    _image;
+                VulkanSampler*  _sampler;
+            };
+
+            struct BindingBufferInfo
+            {
+                VulkanBuffer* _buffer;
+                u32           _offset;
+                u32           _size;
+            };
+
             BindingInfo();
-            virtual ~BindingInfo();
+
+            union
+            {
+                VkDescriptorImageInfo _imageInfo;
+                VkDescriptorBufferInfo _bufferInfo;
+            };
+            //std::variant<BindingImageInfo, BindingBufferInfo> _descriptorBinding;
 
             u32                 _set;
             u32                 _binding;
             VkDescriptorType    _type;
             u32                 _arrayIndex;
-
-        };
-
-        struct BindingImageInfo final : BindingInfo
-        {
-            BindingImageInfo();
-            ~BindingImageInfo();
-
-            VulkanImage* _image;
-            VulkanSampler* _sampler;
-
-        };
-
-        struct BindingBufferInfo final : BindingInfo
-        {
-            BindingBufferInfo();
-            ~BindingBufferInfo();
-
-            VulkanBuffer* _buffer;
-            u32 _offset;
-            u32 _size;
         };
 
         VkDevice m_device;
@@ -101,9 +105,13 @@ namespace vk
         VulkanDescriptorPool* m_currentPool;
         std::vector<VkDescriptorSet> m_currentSets;
 
-        std::map<u32, std::map<u32, std::vector<BindingInfo*>>> m_bindingInfo;
-        //void* _boundShaderStage[ShaderType::ShaderType_Count];
+        void setBinding(BindingInfo& binding);
+
+        std::vector<BindingInfo> m_updatedBindings;
+        std::map<u32, BindingInfo> m_currentBindingCache;
     };
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
 
 } //namespace vk
 } //namespace renderer

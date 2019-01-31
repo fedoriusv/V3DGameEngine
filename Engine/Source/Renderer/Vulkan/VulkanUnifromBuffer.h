@@ -11,13 +11,11 @@ namespace vk
 {
     class VulkanBuffer;
 
-    class VulkanUnifromBuffer
+    struct VulkanUnifromBuffer
     {
-    public:
-
-    private:
-
-        VulkanBuffer* m_buffer;
+        VulkanBuffer* _buffer;
+        u32 _offset;
+        u32 _size;
     };
 
 

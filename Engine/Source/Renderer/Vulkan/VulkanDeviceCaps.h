@@ -14,6 +14,9 @@ namespace vk
 {
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    /**
+    * VulkanDeviceCaps struct. Vulkan Render side
+    */
     struct VulkanDeviceCaps : DeviceCaps, utils::Singleton<VulkanDeviceCaps>
     {
         VulkanDeviceCaps() = default;

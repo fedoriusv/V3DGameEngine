@@ -147,6 +147,12 @@ void VulkanBuffer::destroy()
 
 bool VulkanBuffer::upload(Context* context, u32 offset, u64 size, void * data)
 {
+    if (!m_buffer)
+    {
+        ASSERT(false, "nullptr");
+        return false;
+    }
+
     if (size == 0 || !data)
     {
         return false;
@@ -230,6 +236,12 @@ VkBuffer VulkanBuffer::getHandle() const
 
 void * VulkanBuffer::map()
 {
+    if (!m_buffer)
+    {
+        ASSERT(false, "nullptr");
+        return nullptr;
+    }
+
     if (m_mapped)
     {
         ASSERT(false, "already mappped");
@@ -260,6 +272,12 @@ void * VulkanBuffer::map()
 
 void VulkanBuffer::unmap()
 {
+    if (!m_buffer)
+    {
+        ASSERT(false, "nullptr");
+        return;
+    }
+
     if (!m_mapped)
     {
         return;
@@ -286,6 +304,12 @@ void VulkanBuffer::unmap()
 
 bool VulkanBuffer::recreate()
 {
+    if (!m_buffer)
+    {
+        ASSERT(false, "nullptr");
+        return false;
+    }
+
     ASSERT(false, "not implementing");
     return false;
 }

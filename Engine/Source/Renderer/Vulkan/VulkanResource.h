@@ -16,7 +16,7 @@ namespace vk
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
-    * VulkanResource class. Render side
+    * VulkanResource class. Vulkan Render side
     */
     class VulkanResource
     {

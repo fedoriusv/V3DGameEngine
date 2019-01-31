@@ -123,7 +123,7 @@ void MyApplication::Initialize()
           0.0f, -1.0f, 0.0f
     };
     u64 vertexBufferSize = vertexBuffer.size() * sizeof(f32);
-    VertexStreamBuffer* streamBuffer = m_CommandList->createObject<VertexStreamBuffer>(StreamBuffer_Write | StreamBuffer_Shared,  vertexBufferSize, vertexBuffer.data());
+    VertexStreamBuffer* streamBuffer = m_CommandList->createObject<VertexStreamBuffer>(StreamBuffer_Write | StreamBuffer_Shared,  vertexBufferSize, (u8*)vertexBuffer.data());
     
     /*Geometry geometry;
     Image image;

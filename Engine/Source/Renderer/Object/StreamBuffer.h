@@ -54,28 +54,45 @@ namespace renderer
         VertexStreamBuffer(const VertexStreamBuffer&) = delete;
         ~VertexStreamBuffer();
 
-        bool update(u32 offset, u64 size, void* data);
-
-        //map
-        //unmap
+        bool update(u32 offset, u64 size, const u8* data);
+        bool read(u32 offset, u64 size, u8* data); //TODO: maybe add callback for async
 
     private:
 
         void handleNotify(utils::Observable* ob) override;
 
-        explicit VertexStreamBuffer(CommandList& cmdList, u16 usageFlag, u64 size, const void* data) noexcept;
+        explicit VertexStreamBuffer(CommandList& cmdList, u16 usageFlag, u64 size, const u8* data) noexcept;
 
         friend CommandList;
         CommandList& m_cmdList;
 
-
-        u64                 m_size;
-        void*               m_data;
-
-        u16                 m_usageFlag;
-        Buffer*             m_buffer;
+        u64     m_size;
+        void*   m_data;
+                
+        u16     m_usageFlag;
+        Buffer* m_buffer;
 
         friend StreamBufferDescription;
+    };
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    /**
+    * IndexStreamBuffer class. Game side
+    */
+    class IndexStreamBuffer : public StreamBuffer, public utils::Observer
+    {
+    public:
+
+        IndexStreamBuffer() = delete;
+        IndexStreamBuffer(const IndexStreamBuffer&) = delete;
+        ~IndexStreamBuffer() {};
+
+    private:
+
+        void handleNotify(utils::Observable* ob) override {};
+
+        //TODO:
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

@@ -20,6 +20,7 @@
 #include <functional>
 #include <utility>
 #include <type_traits>
+#include <variant>
 
 #include <time.h>
 #include <cstdarg>

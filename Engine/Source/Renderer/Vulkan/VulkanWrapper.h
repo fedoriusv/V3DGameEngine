@@ -10,7 +10,10 @@ namespace renderer
 namespace vk
 {
     /////////////////////////////////////////////////////////////////////////////////////////////////////
-
+    
+    /**
+    * VulkanWrapper class. Cover Vulkan API
+    */
     class VulkanWrapper
     {
     public:

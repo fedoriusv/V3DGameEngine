@@ -18,6 +18,9 @@ namespace vk
 {
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    /**
+    * VulkanImage final class. Vulkan Render side
+    */
     class VulkanImage final : public Image, public VulkanResource
     {
     public:

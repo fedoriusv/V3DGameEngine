@@ -33,6 +33,9 @@ namespace vk
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    /**
+    * VulkanGraphicContext final class. Vulkan Render side
+    */
     class VulkanGraphicContext final : public Context
     {
     public:

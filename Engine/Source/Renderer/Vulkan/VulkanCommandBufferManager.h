@@ -26,7 +26,7 @@ namespace vk
     };
 
     /**
-    * VulkanCommandBufferManager class. Render side
+    * VulkanCommandBufferManager class. Vulkan Render side
     */
     class VulkanCommandBufferManager final : public utils::NonCopyable
     {

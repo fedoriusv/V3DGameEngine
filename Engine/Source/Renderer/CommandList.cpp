@@ -89,7 +89,7 @@ public:
 class CommandSetContextState final : public Command
 {
 public:
-    explicit CommandSetContextState(const ContextStates& pendingStates) noexcept
+    explicit CommandSetContextState(const CommandList::ContextStates& pendingStates) noexcept
         : m_pendingStates(pendingStates)
     {
         LOG_DEBUG("CommandSetContextState constructor");
@@ -110,7 +110,7 @@ public:
     }
 
 private:
-    ContextStates m_pendingStates;
+    CommandList::ContextStates m_pendingStates;
 };
 
     /*CommandSetRenderTarget*/

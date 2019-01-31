@@ -15,6 +15,9 @@ namespace vk
 {
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    /**
+    * VulkanRenderPass final class. Vulkan Render side
+    */
     class VulkanRenderPass final : public RenderPass, public VulkanResource
     {
     public:

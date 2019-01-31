@@ -21,7 +21,7 @@ SimpleRender::SimpleRender(renderer::CommandList& cmdList, const renderer::Verte
     bool success = m_renderTarget->setColorTexture(0, m_texture, RenderTargetLoadOp::LoadOp_Clear, RenderTargetStoreOp::StoreOp_Store);
 
     u64 vertexBufferSize = geomentry.size() * sizeof(f32);
-    m_vetexBuffer = cmdList.createObject<VertexStreamBuffer>(StreamBufferUsage::StreamBuffer_Write | StreamBufferUsage::StreamBuffer_Shared, vertexBufferSize, geomentry.data());
+    m_vetexBuffer = cmdList.createObject<VertexStreamBuffer>(StreamBufferUsage::StreamBuffer_Write | StreamBufferUsage::StreamBuffer_Shared, vertexBufferSize, (u8*)geomentry.data());
 
     m_pipeline = cmdList.createObject<GraphicsPipelineState>(desc, m_program, m_renderTarget);
     m_pipeline->setPrimitiveTopology(PrimitiveTopology::PrimitiveTopology_TriangleList);
