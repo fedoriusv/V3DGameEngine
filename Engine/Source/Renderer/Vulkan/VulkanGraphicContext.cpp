@@ -266,9 +266,10 @@ void VulkanGraphicContext::setRenderTarget(const RenderPass::RenderPassInfo * re
         {
             clearValues.back().depthStencil = { clearInfo->_depth, clearInfo->_stencil };
         }
+        m_currentContextStateNEW->setClearValues(area, clearValues);
 
         //TODO: start before draw command
-        drawBuffer->cmdBeginRenderpass(m_currentContextStateNEW->getCurrentRenderpass(), m_currentContextStateNEW->getCurrentFramebuffer(), area, clearValues);
+        //drawBuffer->cmdBeginRenderpass(m_currentContextStateNEW->getCurrentRenderpass(), m_currentContextStateNEW->getCurrentFramebuffer(), area, clearValues);
     }
 }
 
@@ -946,7 +947,11 @@ bool VulkanGraphicContext::prepareDraw(VulkanCommandBuffer* drawBuffer)
 
     drawBuffer->cmdBindDescriptorSets(m_currentContextStateNEW->getCurrentPipeline(), 0, static_cast<u32>(sets.size()), sets, offsets);
 
-    //start render pass
+    ASSERT(m_currentContextStateNEW->getCurrentRenderpass(), "not bound");
+    if (!drawBuffer->isInsideRenderPass())
+    {
+        drawBuffer->cmdBeginRenderpass(m_currentContextStateNEW->getCurrentRenderpass(), m_currentContextStateNEW->getCurrentFramebuffer(), m_currentContextStateNEW->m_renderPassArea, m_currentContextStateNEW->m_renderPassClearValues);
+    }
 
     return true;
 }

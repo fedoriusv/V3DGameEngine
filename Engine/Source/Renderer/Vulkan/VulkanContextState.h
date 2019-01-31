@@ -43,6 +43,7 @@ namespace vk
         bool setCurrentPipeline(VulkanGraphicPipeline* pipeline);
 
         bool setCurrentVertexBuffers(StreamBufferDescription& desc);
+        void setClearValues(const VkRect2D& area, std::vector <VkClearValue>& clearValues);
 
         VulkanRenderPass *getCurrentRenderpass() const;
         VulkanFramebuffer* getCurrentFramebuffer() const;
@@ -58,6 +59,9 @@ namespace vk
 
         void bindTexture(const VulkanImage* image, VulkanSampler* sampler, u32 arrayIndex, const resource::Shader::SampledImage& reflaction);
         void bindUnifrom(const VulkanUnifromBuffer* uniform, u32 arrayIndex, const resource::Shader::UniformBuffer& reflaction);
+
+        std::vector<VkClearValue> m_renderPassClearValues;
+        VkRect2D m_renderPassArea;
 
     private:
 

@@ -92,6 +92,12 @@ bool VulkanContextState::setCurrentVertexBuffers(StreamBufferDescription & desc)
     return changed;
 }
 
+void VulkanContextState::setClearValues(const VkRect2D & area, std::vector<VkClearValue>& clearValues)
+{
+    m_renderPassArea = area;
+    m_renderPassClearValues = std::move(clearValues);
+}
+
 VulkanRenderPass * VulkanContextState::getCurrentRenderpass() const
 {
     return m_currentRenderpass.first;

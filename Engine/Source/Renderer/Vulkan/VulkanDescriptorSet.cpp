@@ -36,6 +36,8 @@ bool VulkanDescriptorPool::create(u32 setsCount, const std::vector<VkDescriptorP
     {
         return false;
     }
+
+    return true;
 }
 
 void VulkanDescriptorPool::destroy()
@@ -326,7 +328,7 @@ VulkanDescriptorPool * VulkanDescriptorSetManager::createPool(const VulkanPipeli
     else
     {
         ASSERT(false, "not implemented");
-        setCount = layout._descriptorSetLayouts.size();
+        setCount = static_cast<u32>(layout._descriptorSetLayouts.size());
         for (auto& set : layout._descriptorSetLayouts)
         {
             //TODO: need shader
