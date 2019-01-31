@@ -71,7 +71,7 @@ namespace vk
 
         struct DescriptorSetDescription
         {
-            DescriptorSetDescription(const std::vector<resource::Shader*>& shaders) noexcept;
+            DescriptorSetDescription(const std::array<resource::Shader*, ShaderType::ShaderType_Count>& shaders) noexcept;
             DescriptorSetDescription() = delete;
             DescriptorSetDescription(const DescriptorSetDescription&) = delete;
 

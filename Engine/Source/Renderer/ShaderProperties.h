@@ -51,17 +51,18 @@ namespace renderer
         ShaderProgramDescription() noexcept
             : _hash(0)
         {
+            memset(&_shaders, 0, sizeof(_shaders));
         }
         ShaderProgramDescription(const ShaderProgramDescription&) = default;
         ShaderProgramDescription& operator=(const ShaderProgramDescription&) = default;
 
-        ShaderProgramDescription(ShaderProgramDescription&& desc) noexcept
-        {
-            _hash = desc._hash;
-            _shaders = std::move(desc._shaders);
-        }
+        //ShaderProgramDescription(ShaderProgramDescription&& desc) noexcept
+        //{
+        //    _hash = desc._hash;
+        //    _shaders = std::move(desc._shaders);
+        //}
 
-        ShaderProgramDescription& operator=(ShaderProgramDescription&& desc) noexcept
+        /*ShaderProgramDescription& operator=(ShaderProgramDescription&& desc) noexcept
         {
             if (this == &desc)
             {
@@ -70,10 +71,11 @@ namespace renderer
 
             _hash = desc._hash;
             _shaders = std::move(desc._shaders);
-        }
+        }*/
 
         u32 _hash;
-        std::vector<resource::Shader*> _shaders;
+        //std::vector<resource::Shader*> _shaders;
+        std::array<resource::Shader*, ShaderType::ShaderType_Count> _shaders;
     };
 
 

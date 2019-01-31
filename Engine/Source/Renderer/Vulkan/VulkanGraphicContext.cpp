@@ -123,6 +123,10 @@ void VulkanGraphicContext::endFrame()
     if (m_currentContextState.isCurrentBufferAcitve(CommandTargetType::CmdUploadBuffer))
     {
         VulkanCommandBuffer* uploadBuffer = m_currentContextState.getAcitveBuffer(CommandTargetType::CmdUploadBuffer);
+        if (uploadBuffer->getStatus() == VulkanCommandBuffer::CommandBufferStatus::Begin)
+        {
+            uploadBuffer->endCommandBuffer();
+        }
         m_cmdBufferManager->submit(uploadBuffer, VK_NULL_HANDLE);
         uploadBuffer->waitComplete();
         m_currentContextState.invalidateCommandBuffer(CommandTargetType::CmdUploadBuffer);
@@ -162,21 +166,28 @@ void VulkanGraphicContext::submit(bool wait)
     if (m_currentContextState.isCurrentBufferAcitve(CommandTargetType::CmdUploadBuffer))
     {
         VulkanCommandBuffer* uploadBuffer = m_currentContextState.getAcitveBuffer(CommandTargetType::CmdUploadBuffer);
+        if (uploadBuffer->getStatus() == VulkanCommandBuffer::CommandBufferStatus::Begin)
+        {
+            uploadBuffer->endCommandBuffer();
+        }
         m_cmdBufferManager->submit(uploadBuffer, VK_NULL_HANDLE);
         uploadBuffer->waitComplete();
         m_currentContextState.invalidateCommandBuffer(CommandTargetType::CmdUploadBuffer);
     }
 
-    VulkanCommandBuffer* drawBuffer = m_currentContextState.getAcitveBuffer(CommandTargetType::CmdDrawBuffer);
-    if (drawBuffer->getStatus() == VulkanCommandBuffer::CommandBufferStatus::Begin)
+    if (m_currentContextState.isCurrentBufferAcitve(CommandTargetType::CmdDrawBuffer))
     {
-        drawBuffer->endCommandBuffer();
-        m_cmdBufferManager->submit(drawBuffer, VK_NULL_HANDLE);
-        if (wait)
+        VulkanCommandBuffer* drawBuffer = m_currentContextState.getAcitveBuffer(CommandTargetType::CmdDrawBuffer);
+        if (drawBuffer->getStatus() == VulkanCommandBuffer::CommandBufferStatus::Begin)
         {
-            drawBuffer->waitComplete();
+            drawBuffer->endCommandBuffer();
+            m_cmdBufferManager->submit(drawBuffer, VK_NULL_HANDLE);
+            if (wait)
+            {
+                drawBuffer->waitComplete();
+            }
+            m_currentContextState.invalidateCommandBuffer(CommandTargetType::CmdDrawBuffer);
         }
-        m_currentContextState.invalidateCommandBuffer(CommandTargetType::CmdDrawBuffer);
     }
 }
 
@@ -733,7 +744,7 @@ bool VulkanGraphicContext::createInstance()
 
     VkInstanceCreateInfo instanceCreateInfo = {};
     instanceCreateInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
-    instanceCreateInfo.pNext = nullptr;
+    instanceCreateInfo.pNext = nullptr; //VkDebugUtilsMessengerCreateInfoEXT
     instanceCreateInfo.flags = 0;
     instanceCreateInfo.pApplicationInfo = &applicationInfo;
     instanceCreateInfo.enabledExtensionCount = static_cast<u32>(enabledExtensions.size());
@@ -962,6 +973,7 @@ VulkanCommandBuffer * VulkanGraphicContext::getOrCreateAndStartCommandBuffer(Com
     if (!currentBuffer)
     {
         currentBuffer = m_cmdBufferManager->acquireNewCmdBuffer(VulkanCommandBuffer::PrimaryBuffer);
+        m_currentContextState._currentCmdBuffer[type] = currentBuffer;
     }
 
     if (currentBuffer->getStatus() == VulkanCommandBuffer::CommandBufferStatus::Ready)

@@ -82,7 +82,7 @@ bool VulkanContextState::setCurrentPipeline(VulkanGraphicPipeline * pipeline)
 
 bool VulkanContextState::setCurrentVertexBuffers(StreamBufferDescription & desc)
 {
-    bool changed = m_currentVertexBuffers.first == desc;
+    bool changed = m_currentVertexBuffers.first != desc;
     if (changed)
     {
         m_currentVertexBuffers.first = std::move(desc);
@@ -155,7 +155,10 @@ bool VulkanContextState::acquireDescriptorSets(std::vector<VkDescriptorSet>& set
 
 void VulkanContextState::updateDescriptorSet()
 {
-    bool changed = false;
+    if (m_updatedBindings.empty())
+    {
+        return;
+    }
 
     std::vector<VkWriteDescriptorSet> writeDescriptorSets;
     writeDescriptorSets.reserve(m_updatedBindings.size());
@@ -191,8 +194,8 @@ void VulkanContextState::updateDescriptorSet()
 
         writeDescriptorSets.push_back(writeDescriptorSet);
     }
-    VulkanWrapper::UpdateDescriptorSets(m_device, static_cast<u32>(writeDescriptorSets.size()), writeDescriptorSets.data(), 0, nullptr);
 
+    VulkanWrapper::UpdateDescriptorSets(m_device, static_cast<u32>(writeDescriptorSets.size()), writeDescriptorSets.data(), 0, nullptr);
     m_updatedBindings.clear();
 }
 

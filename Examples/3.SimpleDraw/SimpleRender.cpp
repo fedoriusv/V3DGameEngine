@@ -32,9 +32,12 @@ SimpleRender::SimpleRender(renderer::CommandList& cmdList, const renderer::Verte
     core::Matrix4D projection;
     renderer::Texture2D* texture;
 
-    m_program->bindTexture<renderer::Texture2D, ShaderType::ShaderType_Fragment>("samplerColor", texture);
+    //m_program->bindTexture<renderer::Texture2D, ShaderType::ShaderType_Fragment>("samplerColor", texture);
     //m_program->bindUniform<core::Matrix4D, Vertex>("projection", projection);
-    m_program->bindUniformsBuffer<ShaderType::ShaderType_Vertex>("ubo", 0, 0, nullptr);
+    //m_program->bindUniformsBuffer<ShaderType::ShaderType_Vertex>("ubo", 0, 0, nullptr);
+
+    cmdList.sumitCommands();
+    cmdList.flushCommands();
 }
 
 SimpleRender::~SimpleRender()

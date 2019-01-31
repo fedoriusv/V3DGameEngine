@@ -98,7 +98,9 @@ namespace renderer
             PendingFlush_UpdateGraphicsPipeline = 0x4,
         };
 
-        void flushPendingCommands(u32 pendingFlushMask);
+        typedef u16 PendingFlushMaskFlags;
+
+        PendingFlushMaskFlags flushPendingCommands(PendingFlushMaskFlags pendingFlushMask);
 
         struct ContextStates
         {
@@ -137,7 +139,7 @@ namespace renderer
         RenderTargetInfo            m_pendingRenderTargetInfo;
         PipelineStateInfo           m_pendingPipelineStateInfo;
 
-        u32                         m_pendingFlushMask;
+        PendingFlushMaskFlags       m_pendingFlushMask;
 
         //
         SwapchainTexture*           m_swapchainTexture;

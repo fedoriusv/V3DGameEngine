@@ -321,7 +321,7 @@ void CommandList::flushCommands()
         return;
     }
 
-    CommandList::flushPendingCommands(m_pendingFlushMask);
+    m_pendingFlushMask = CommandList::flushPendingCommands(m_pendingFlushMask);
     CommandList::executeCommands();
 }
 
@@ -333,7 +333,7 @@ void CommandList::sumitCommands(bool wait)
     }
     else
     {
-        CommandList::flushPendingCommands(m_pendingFlushMask);
+        m_pendingFlushMask = CommandList::flushPendingCommands(m_pendingFlushMask);
         CommandList::pushCommand(new CommandSubmit(wait, 0));
         if (wait)
         {
@@ -517,11 +517,11 @@ void CommandList::executeCommands()
     }
 }
 
-void CommandList::flushPendingCommands(u32 pendingFlushMask)
+CommandList::PendingFlushMaskFlags CommandList::flushPendingCommands(PendingFlushMaskFlags pendingFlushMask)
 {
     if (CommandList::isImmediate())
     {
-        return;
+        return 0;
     }
 
     if (pendingFlushMask & PendingFlush_UpdateRenderTarget)
@@ -544,6 +544,8 @@ void CommandList::flushPendingCommands(u32 pendingFlushMask)
 
         pendingFlushMask &= ~PendingFlush_UpdateGraphicsPipeline;
     }
+
+    return pendingFlushMask;
 }
 
 } //namespace renderer

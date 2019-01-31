@@ -14,17 +14,7 @@ namespace renderer
 
 const resource::Shader * ShaderProgram::getShader(ShaderType type) const
 {
-    auto it = std::find_if(m_programInfo._shaders.cbegin(), m_programInfo._shaders.cend(), [type](const resource::Shader* shader) -> bool
-    {
-        return shader->getShaderHeader()._type == type;
-    });
-
-    if (it != m_programInfo._shaders.cend())
-    {
-        return *it;
-    }
-
-    return nullptr;
+    return m_programInfo._shaders[type];
 }
 
 const ShaderProgramDescription& ShaderProgram::getShaderDesc() const
@@ -35,8 +25,12 @@ const ShaderProgramDescription& ShaderProgram::getShaderDesc() const
 ShaderProgram::ShaderProgram(renderer::CommandList & cmdList, std::vector<resource::Shader*> shaders) noexcept
     : m_cmdList(cmdList)
 {
-    if (getShader(ShaderType::ShaderType_Vertex) &&
-        getShader(ShaderType::ShaderType_Fragment))
+    for (auto shader : shaders)
+    {
+        m_programInfo._shaders[shader->getShaderHeader()._type] = shader;
+    }
+
+    if (getShader(ShaderType::ShaderType_Vertex) && getShader(ShaderType::ShaderType_Fragment))
     {
         composeProgramData(shaders);
     }
@@ -89,7 +83,7 @@ void ShaderProgram::composeProgramData(const std::vector<resource::Shader*>& sha
             }
         }*/
 
-        m_programInfo._shaders.push_back(shader);
+//        m_programInfo._shaders.push_back(shader);
     }
 }
 

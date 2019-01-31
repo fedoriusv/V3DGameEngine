@@ -175,12 +175,12 @@ bool VulkanBuffer::upload(Context* context, u32 offset, u64 size, void * data)
     if (VulkanDeviceCaps::getInstance()->useStagingBuffers)
     {
         VulkanGraphicContext* vkContext = static_cast<VulkanGraphicContext*>(context);
-        VulkanCommandBuffer* updateBuffer = vkContext->getOrCreateAndStartCommandBuffer(CommandTargetType::CmdUploadBuffer);
+        VulkanCommandBuffer* uploadBuffer = vkContext->getOrCreateAndStartCommandBuffer(CommandTargetType::CmdUploadBuffer);
         if (m_size <= 65536)
         {
             ASSERT(!VulkanResource::isCaptured(), "still submitted");
             //TODO memory barrier
-            updateBuffer->cmdUpdateBuffer(this, offset, m_size, data);
+            uploadBuffer->cmdUpdateBuffer(this, offset, m_size, data);
             //TODO memory barrier
         }
         else
@@ -203,7 +203,7 @@ bool VulkanBuffer::upload(Context* context, u32 offset, u64 size, void * data)
 
             ASSERT(!VulkanResource::isCaptured(), "still submitted");
             //TODO memory barrier
-            updateBuffer->cmdCopyBufferToBuffer(this, staginBuffer->getBuffer(), bufferCopy);
+            uploadBuffer->cmdCopyBufferToBuffer(this, staginBuffer->getBuffer(), bufferCopy);
             //TODO memory barrier
 
             vkContext->getStagingManager()->destroyAfterUse(staginBuffer);

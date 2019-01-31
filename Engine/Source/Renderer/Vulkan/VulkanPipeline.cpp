@@ -399,26 +399,25 @@ bool VulkanGraphicPipeline::create(const PipelineGraphicInfo* pipelineInfo)
     graphicsPipelineCreateInfo.basePipelineIndex = 0;
     graphicsPipelineCreateInfo.basePipelineHandle = VK_NULL_HANDLE;
 
-    auto findShaderByType = [](std::vector<resource::Shader*> shaders, ShaderType type) -> const resource::Shader*
-    {
-        for (auto shader : shaders)
-        {
-            if (shader->getShaderHeader()._type == type)
-            {
-                return shader;
-            }
-        }
+    //auto findShaderByType = [](std::vector<resource::Shader*> shaders, ShaderType type) -> const resource::Shader*
+    //{
+    //    for (auto shader : shaders)
+    //    {
+    //        if (shader->getShaderHeader()._type == type)
+    //        {
+    //            return shader;
+    //        }
+    //    }
 
-        return nullptr;
-    };
+    //    return nullptr;
+    //};
 
     std::vector<VkPipelineShaderStageCreateInfo> pipelineShaderStageCreateInfos;
     const ShaderProgramDescription& programDesc = pipelineInfo->_programDesc;
-    ASSERT(!programDesc._shaders.empty(), "empty");
     for (u32 type = ShaderType::ShaderType_Vertex; type < ShaderType_Count; ++type)
     {
         VkPipelineShaderStageCreateInfo pipelineShaderStageCreateInfo = {};
-        if (!createShaderModule(findShaderByType(programDesc._shaders, (ShaderType)type), pipelineShaderStageCreateInfo))
+        if (!createShaderModule(programDesc._shaders[type], pipelineShaderStageCreateInfo))
         {
             LOG_ERROR("VulkanGraphicPipeline::create couldn't create modules for pipeline");
             deleteShaderModules();
@@ -501,11 +500,11 @@ bool VulkanGraphicPipeline::create(const PipelineGraphicInfo* pipelineInfo)
     vertexInputStateCreateInfo.vertexBindingDescriptionCount = static_cast<u32>(vertexInputBindingDescriptions.size());
     vertexInputStateCreateInfo.pVertexBindingDescriptions = vertexInputBindingDescriptions.data();
 
-    const resource::Shader* fragmentShader = findShaderByType(programDesc._shaders, ShaderType::ShaderType_Fragment);
-    ASSERT(fragmentShader, "nullptr");
+    const resource::Shader* vertexShader = programDesc._shaders[ShaderType::ShaderType_Vertex];
+    ASSERT(vertexShader, "nullptr");
     std::vector<VkVertexInputAttributeDescription> vertexInputAttributeDescriptions;
     vertexInputAttributeDescriptions.reserve(inputAttrDesc._countInputAttributes);
-    const resource::Shader::ReflectionInfo& reflectionInfo = fragmentShader->getReflectionInfo();
+    const resource::Shader::ReflectionInfo& reflectionInfo = vertexShader->getReflectionInfo();
     ASSERT(reflectionInfo._inputAttribute.size() == inputAttrDesc._countInputAttributes, "different sizes");
     for (u32 index = 0; index < inputAttrDesc._countInputAttributes; ++index)
     {

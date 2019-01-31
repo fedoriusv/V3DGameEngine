@@ -79,6 +79,7 @@ bool VulkanDescriptorPool::allocateDescriptorSet(const VulkanPipelineLayout& lay
         return false;
     }
 
+    m_descriptorSets.insert(m_descriptorSets.cend(), descriptorSets.cbegin(), descriptorSets.cend());
     return true;
 }
 
@@ -234,10 +235,7 @@ VulkanDescriptorPool* VulkanDescriptorSetManager::acquireDescriptorSets(const Vu
     }
 
     VulkanDescriptorPool* newPool = VulkanDescriptorSetManager::createPool(layout);
-    if (m_descriptorPools.empty())
-    {
-        m_descriptorPools.push_back(newPool);
-    }
+    m_descriptorPools.push_back(newPool);
 
     bool result = newPool->allocateDescriptorSet(layout, sets);
     ASSERT(result, "fail");
@@ -344,10 +342,10 @@ VulkanDescriptorPool * VulkanDescriptorSetManager::createPool(const VulkanPipeli
     return pool;
 }
 
-VulkanDescriptorSetManager::DescriptorSetDescription::DescriptorSetDescription(const std::vector<resource::Shader*>& shaders) noexcept
+VulkanDescriptorSetManager::DescriptorSetDescription::DescriptorSetDescription(const std::array<resource::Shader*, ShaderType::ShaderType_Count>& shaders) noexcept
     : _hash(0)
 {
-    auto findShaderByType = [](const std::vector<resource::Shader*>& shaders, ShaderType type) -> resource::Shader*
+   /* auto findShaderByType = [](const std::vector<resource::Shader*>& shaders, ShaderType type) -> resource::Shader*
     {
         for (auto& shader : shaders)
         {
@@ -358,14 +356,15 @@ VulkanDescriptorSetManager::DescriptorSetDescription::DescriptorSetDescription(c
         }
 
         return nullptr;
-    };
+    };*/
 
+    u32 maxSet = 0;
     for (u32 set = 0; set < k_maxDescriptorSetIndex; ++set)
     {
         std::vector<VkDescriptorSetLayoutBinding> descriptorSetLayoutBindings;
         for (u32 type = ShaderType::ShaderType_Vertex; type < ShaderType_Count; ++type)
         {
-            resource::Shader* shader = findShaderByType(shaders, (ShaderType)type);
+            const resource::Shader* shader = shaders[type];
             if (!shader)
             {
                 continue;
@@ -408,12 +407,17 @@ VulkanDescriptorSetManager::DescriptorSetDescription::DescriptorSetDescription(c
             }
         }
 
-        _descriptorSets.push_back(descriptorSetLayoutBindings);
+        if (!descriptorSetLayoutBindings.empty())
+        {
+            maxSet = std::max(maxSet, set);
+            _descriptorSets.push_back(descriptorSetLayoutBindings); //TODO: need store set index
+        }
     }
+    ASSERT(maxSet + 1 == _descriptorSets.size(), "invalid max set index");
 
     for (u32 type = ShaderType::ShaderType_Vertex; type < ShaderType_Count; ++type)
     {
-        resource::Shader* shader = findShaderByType(shaders, (ShaderType)type);
+        const resource::Shader* shader = shaders[type];
         if (!shader)
         {
             continue;
