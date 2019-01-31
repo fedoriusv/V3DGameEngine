@@ -160,6 +160,9 @@ void VulkanDeviceCaps::fillCapabilitiesList(const DeviceInfo* info)
 
 void VulkanDeviceCaps::initialize()
 {
+    maxDescriptorSetIndex = k_maxDescriptorSetIndex;
+    maxDescriptorBindingIndex = maxDescriptorBindingIndex;
+
     individuallyResetForCommandBuffers = true; //For PC
 
     supportCoherentMemory = VulkanMemory::isSupportedMemoryType(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, true);

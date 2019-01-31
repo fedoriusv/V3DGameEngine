@@ -152,7 +152,7 @@ void VulkanContextState::updateDescriptorSet()
         VkWriteDescriptorSet writeDescriptorSet = {};
         writeDescriptorSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
         writeDescriptorSet.pNext = nullptr; //VkWriteDescriptorSetInlineUniformBlockEXT
-        writeDescriptorSet.dstSet = set;
+        writeDescriptorSet.dstSet = set;//m_currentSets[layoutIndex];
         writeDescriptorSet.dstBinding;
         writeDescriptorSet.dstArrayElement;
         writeDescriptorSet.descriptorCount;
@@ -168,8 +168,10 @@ void VulkanContextState::updateDescriptorSet()
     VulkanWrapper::UpdateDescriptorSets(m_device, static_cast<u32>(writeDescriptorSets.size()), writeDescriptorSets.data(), 0, nullptr);
 }
 
-void VulkanContextState::bindTexture(VulkanImage* image, VulkanSampler* sampler, u32 arrayIndex, const resource::Shader::SampledImage& reflaction)
+void VulkanContextState::bindTexture(const VulkanImage* image, const VulkanSampler* sampler, u32 arrayIndex, const resource::Shader::SampledImage& reflaction)
 {
+    m_currentPipeline.first->getDescriptorSetLayouts()._layoutIndex;
+    //layoutIndex
     /*BindingImageInfo* bindingInfo = new BindingImageInfo();
     bindingInfo->_set = reflaction._set;
     bindingInfo->_binding = reflaction._binding;

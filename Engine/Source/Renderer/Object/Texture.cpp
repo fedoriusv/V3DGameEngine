@@ -49,8 +49,6 @@ public:
             m_image->notifyObservers();
 
             m_image->destroy();
-            delete m_image;
-
             return;
         }
 
@@ -254,7 +252,11 @@ Texture2D::Texture2D(renderer::CommandList & cmdList, renderer::Format format, c
 
 void Texture2D::handleNotify(utils::Observable* ob)
 {
-    m_image = nullptr;
+    if (m_image)
+    {
+        delete m_image;
+        m_image = nullptr;
+    }
 }
 
 void Texture2D::createTexture2D(const void * data)

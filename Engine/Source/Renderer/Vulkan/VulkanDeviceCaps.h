@@ -26,6 +26,9 @@ namespace vk
         bool useStagingBuffers;
         bool useGlobalDescriptorPool;
 
+        u32 maxDescriptorSetIndex;
+        u32 maxDescriptorBindingIndex;
+
         static bool checkInstanceExtension(const c8* extensionName);
         static bool checkDeviceExtension(VkPhysicalDevice physicalDevice, const c8* extensionName);
 

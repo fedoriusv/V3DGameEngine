@@ -267,6 +267,7 @@ void VulkanGraphicContext::setRenderTarget(const RenderPass::RenderPassInfo * re
             clearValues.back().depthStencil = { clearInfo->_depth, clearInfo->_stencil };
         }
 
+        //TODO: start before draw command
         drawBuffer->cmdBeginRenderpass(m_currentContextStateNEW->getCurrentRenderpass(), m_currentContextStateNEW->getCurrentFramebuffer(), area, clearValues);
     }
 }
@@ -407,7 +408,14 @@ void VulkanGraphicContext::bindTexture(const resource::Shader* shader, const std
     const VulkanImage* vkImage = static_cast<const VulkanImage*>(image);
     VkImageView view = vkImage->getImageView();
 
-//    m_currentContextStateNEW->bindTexture();
+    const resource::Shader::ReflectionInfo& info = shader->getReflectionInfo();
+    auto iter = info._sampledImages.find(name);
+    if (iter == info._sampledImages.cend())
+    {
+        ASSERT(false, "fail");
+    }
+
+    m_currentContextStateNEW->bindTexture(vkImage, nullptr, 0, iter->second);
     //shader->getReflectionInfo()._sampledImages[name]
 }
 
@@ -931,13 +939,14 @@ bool VulkanGraphicContext::prepareDraw(VulkanCommandBuffer* drawBuffer)
 
     m_currentContextStateNEW->invokeDynamicStates();
 
-    m_currentContextStateNEW->updateDescriptorSet();
-
     std::vector<VkDescriptorSet> sets;
     std::vector<u32> offsets;
     m_currentContextStateNEW->acquireDescriptorSets(sets, offsets);
+    m_currentContextStateNEW->updateDescriptorSet();
 
     drawBuffer->cmdBindDescriptorSets(m_currentContextStateNEW->getCurrentPipeline(), 0, static_cast<u32>(sets.size()), sets, offsets);
+
+    //start render pass
 
     return true;
 }

@@ -14,13 +14,10 @@ namespace vk
 {
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    struct DescriptorBinding
-    {
-        struct BindingInfo
-        {
-            VkImageView      _imageView;
-        };
-    };
+    constexpr u32 k_maxDescriptorSetIndex = 4;
+    constexpr u32 k_maxDescriptorBindingIndex = 8;
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     struct VulkanPipelineLayout
     {
@@ -29,6 +26,14 @@ namespace vk
         u32 _key;
         VkPipelineLayout                    _layout;
         std::vector<VkDescriptorSetLayout>  _descriptorSetLayouts;
+
+        s32 _layoutIndex[k_maxDescriptorSetIndex][k_maxDescriptorBindingIndex];
+    };
+
+    struct VulkanDescriptorSets
+    {
+
+
     };
 
     class VulkanDescriptorPool
@@ -63,7 +68,7 @@ namespace vk
 
         struct DescriptorSetDescription
         {
-            DescriptorSetDescription(const std::vector<resource::Shader*> shaders) noexcept;
+            DescriptorSetDescription(const std::vector<resource::Shader*>& shaders) noexcept;
             DescriptorSetDescription() = delete;
             DescriptorSetDescription(const DescriptorSetDescription&) = delete;
 

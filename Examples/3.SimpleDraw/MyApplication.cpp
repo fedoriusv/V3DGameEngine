@@ -100,8 +100,8 @@ void MyApplication::Initialize()
     VertexInputAttribDescription::InputBinding binding(0, VertexInputAttribDescription::InputRate_Vertex, sizeof(f32) * vertexBuffer.size());
     renderer::VertexInputAttribDescription vertexDesc({ binding },
         {
-            { 0, 0, Format::Format_R32G32B32_SFloat, 0 },                  //pos
-            { 0, 0, Format::Format_R32G32B32_SFloat, sizeof(f32) * 3 }     //color
+            { binding._index, 0, Format::Format_R32G32B32_SFloat, 0 },                  //pos
+            { binding._index, 0, Format::Format_R32G32B32_SFloat, sizeof(f32) * 3 }     //color
         }
     );
 

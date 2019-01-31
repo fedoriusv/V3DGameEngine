@@ -19,6 +19,7 @@ VulkanPipelineLayout::VulkanPipelineLayout()
     : _key(0)
     , _layout(VK_NULL_HANDLE)
 {
+    memset(_layoutIndex, -1, sizeof(_layoutIndex));
 }
 
 VulkanDescriptorPool::VulkanDescriptorPool(VkDevice device, VkDescriptorPoolCreateFlags flag) noexcept
@@ -342,7 +343,7 @@ VulkanDescriptorPool * VulkanDescriptorSetManager::createPool(const VulkanPipeli
     return pool;
 }
 
-VulkanDescriptorSetManager::DescriptorSetDescription::DescriptorSetDescription(const std::vector<resource::Shader*> shaders) noexcept
+VulkanDescriptorSetManager::DescriptorSetDescription::DescriptorSetDescription(const std::vector<resource::Shader*>& shaders) noexcept
     : _hash(0)
 {
     auto findShaderByType = [](const std::vector<resource::Shader*>& shaders, ShaderType type) -> resource::Shader*
@@ -358,7 +359,7 @@ VulkanDescriptorSetManager::DescriptorSetDescription::DescriptorSetDescription(c
         return nullptr;
     };
 
-    for (u32 set = 0; set < VulkanDeviceCaps::getInstance()->getPhysicalDeviceLimits().maxBoundDescriptorSets; ++set)
+    for (u32 set = 0; set < 4/*VulkanDeviceCaps::getInstance()->getPhysicalDeviceLimits().maxBoundDescriptorSets*/; ++set)
     {
         std::vector<VkDescriptorSetLayoutBinding> descriptorSetLayoutBindings;
         for (u32 type = ShaderType::ShaderType_Vertex; type < ShaderType_Count; ++type)

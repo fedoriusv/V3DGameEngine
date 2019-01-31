@@ -50,7 +50,7 @@ namespace vk
         bool acquireDescriptorSets(std::vector<VkDescriptorSet>& sets, std::vector<u32>& offsets);
         void updateDescriptorSet();
 
-        void bindTexture(VulkanImage* image, VulkanSampler* sampler, u32 arrayIndex, const resource::Shader::SampledImage& reflaction);
+        void bindTexture(const VulkanImage* image, const VulkanSampler* sampler, u32 arrayIndex, const resource::Shader::SampledImage& reflaction);
         void bindUnifrom();
 
     private:

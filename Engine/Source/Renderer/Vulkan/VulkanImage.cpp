@@ -715,6 +715,12 @@ bool VulkanImage::create(VkImage image)
 
 void VulkanImage::clear(Context * context, const core::Vector4D & color)
 {
+    if (!m_image)
+    {
+        ASSERT(false, "nullptr");
+        return;
+    }
+
     LOG_DEBUG("VulkanGraphicContext::clearColor [%f, %f, %f, %f]", color[0], color[1], color[2], color[3]);
     VkClearColorValue clearColorValue = { color[0], color[1], color[2], color[3] };
 

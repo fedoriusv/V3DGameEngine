@@ -129,9 +129,6 @@ namespace vk
 
             VulkanCommandBuffer* _currentCmdBuffer[CommandTargetType::CommandTarget_Count];
 
-            std::vector<DescriptorBinding> _descriptorsStates;
-            std::tuple<std::vector<Buffer*>, std::vector<u64>, bool> _boundUniformBuffers;
-
         };
         //
 

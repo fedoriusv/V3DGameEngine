@@ -506,13 +506,13 @@ bool VulkanGraphicPipeline::create(const PipelineGraphicInfo* pipelineInfo)
     std::vector<VkVertexInputAttributeDescription> vertexInputAttributeDescriptions;
     vertexInputAttributeDescriptions.reserve(inputAttrDesc._countInputAttributes);
     const resource::Shader::ReflectionInfo& reflectionInfo = fragmentShader->getReflectionInfo();
-    ASSERT(reflectionInfo._inputAttribute.size() == inputAttrDesc._countInputAttributes, "defferent sizes");
+    ASSERT(reflectionInfo._inputAttribute.size() == inputAttrDesc._countInputAttributes, "different sizes");
     for (u32 index = 0; index < inputAttrDesc._countInputAttributes; ++index)
     {
         VkVertexInputAttributeDescription vertexInputAttributeDescription = {};
         vertexInputAttributeDescription.binding = inputAttrDesc._inputAttribute[index]._bindingId;
         vertexInputAttributeDescription.location = reflectionInfo._inputAttribute[index]._location;
-        ASSERT(reflectionInfo._inputAttribute[index]._format == inputAttrDesc._inputAttribute[index]._format, "defferent formats");
+        ASSERT(reflectionInfo._inputAttribute[index]._format == inputAttrDesc._inputAttribute[index]._format, "different formats");
         vertexInputAttributeDescription.format = VulkanImage::convertImageFormatToVkFormat(inputAttrDesc._inputAttribute[index]._format);
         vertexInputAttributeDescription.offset = inputAttrDesc._inputAttribute[index]._offest;
         vertexInputAttributeDescriptions.push_back(vertexInputAttributeDescription);
