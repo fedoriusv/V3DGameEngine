@@ -7,6 +7,7 @@
 #include "VulkanDeviceCaps.h"
 #include "VulkanDescriptorSet.h"
 #include "VulkanCommandBufferManager.h"
+#include "VulkanMemory.h"
 
 namespace v3d
 {
@@ -111,8 +112,8 @@ namespace vk
         VulkanStaginBufferManager*  m_stagingBufferManager;
         VulkanDescriptorSetManager* m_descriptorSetManager;
 
-        class VulkanMemory*         m_imageMemoryManager;
-        class VulkanMemory*         m_bufferMemoryManager;
+        VulkanMemory::VulkanMemoryAllocator* m_imageMemoryManager;
+        VulkanMemory::VulkanMemoryAllocator* m_bufferMemoryManager;
 
 
         RenderPassManager*          m_renderpassManager;

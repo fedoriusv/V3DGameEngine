@@ -1,11 +1,11 @@
 #pragma once
 
 #include "Common.h"
-#include "Utils/Singleton.h"
 
 #ifdef VULKAN_RENDER
 #include "VulkanWrapper.h"
 #include "VulkanBuffer.h"
+#include "VulkanMemory.h"
 
 namespace v3d
 {
@@ -24,7 +24,7 @@ namespace vk
     {
     public:
 
-        VulkanStaginBuffer(VulkanMemory* memory, VkDevice device, u64 size, u16 usageFlag) noexcept;
+        VulkanStaginBuffer(VulkanMemory::VulkanMemoryAllocator* memory, VkDevice device, u64 size, StreamBufferUsageFlags usageFlag) noexcept;
         ~VulkanStaginBuffer();
 
         bool create();
@@ -37,9 +37,7 @@ namespace vk
 
     private:
 
-        VkDevice        m_device;
         VulkanBuffer*   m_buffer;
-        VulkanMemory*   m_memoryManager;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -51,7 +49,7 @@ namespace vk
     {
     public:
 
-        VulkanStaginBufferManager(VkDevice device);
+        explicit VulkanStaginBufferManager(VkDevice device) noexcept;
         ~VulkanStaginBufferManager();
 
         VulkanStaginBuffer* createStagingBuffer(u64 size, u16 usageFlag) const;
@@ -65,7 +63,7 @@ namespace vk
         std::recursive_mutex m_mutex;
         std::vector<VulkanStaginBuffer*> m_stagingBuffers;
 
-        class VulkanMemory* m_memoryManager;
+        VulkanMemory::VulkanMemoryAllocator* m_memoryManager;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

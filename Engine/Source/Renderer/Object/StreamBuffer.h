@@ -17,20 +17,6 @@ namespace renderer
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
-    * StreamBufferUsage enum. usageFlag inside StreamBuffer
-    */
-    enum StreamBufferUsage
-    {
-        StreamBuffer_Write = 0x01,
-        StreamBuffer_Read = 0x02,
-
-        StreamBuffer_Shared = 0x04,
-        StreamBuffer_Dynamic = 0x08,
-    };
-
-    /////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    /**
     * StreamBuffer base class. Game side
     */
     class StreamBuffer : public Object
@@ -61,7 +47,7 @@ namespace renderer
 
         void handleNotify(utils::Observable* ob) override;
 
-        explicit VertexStreamBuffer(CommandList& cmdList, u16 usageFlag, u64 size, const u8* data) noexcept;
+        explicit VertexStreamBuffer(CommandList& cmdList, StreamBufferUsageFlags usageFlag, u64 size, const u8* data) noexcept;
 
         friend CommandList;
         CommandList& m_cmdList;
@@ -69,7 +55,7 @@ namespace renderer
         u64     m_size;
         void*   m_data;
                 
-        u16     m_usageFlag;
+        StreamBufferUsageFlags m_usageFlag;
         Buffer* m_buffer;
 
         friend StreamBufferDescription;

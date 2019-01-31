@@ -24,6 +24,8 @@ VulkanMemory::VulkanAlloc VulkanMemory::s_invalidMemory =
     nullptr
 };
 
+std::recursive_mutex VulkanMemory::s_mutex;
+
 s32 VulkanMemory::findMemoryTypeIndex(const VkMemoryRequirements& memoryRequirements, VkMemoryPropertyFlags memoryPropertyFlags)
 {
     const VkPhysicalDeviceMemoryProperties& physicalDeviceMemoryProperties = VulkanDeviceCaps::getInstance()->getDeviceMemoryProperties();
@@ -68,15 +70,6 @@ bool VulkanMemory::isSupportedMemoryType(VkMemoryPropertyFlags memoryPropertyFla
     return false;
 }
 
-VulkanMemory::VulkanMemory(VkDevice device)
-    : m_device(device)
-{
-}
-
-VulkanMemory::~VulkanMemory()
-{
-}
-
 VulkanMemory::VulkanAlloc VulkanMemory::allocateImageMemory(VulkanMemoryAllocator& allocator, VkImage image, VkMemoryPropertyFlags flags)
 {
     if (image == VK_NULL_HANDLE)
@@ -88,10 +81,10 @@ VulkanMemory::VulkanAlloc VulkanMemory::allocateImageMemory(VulkanMemoryAllocato
     }
 
     {
-        std::lock_guard<std::recursive_mutex> lock(m_mutex);
+        std::lock_guard<std::recursive_mutex> lock(s_mutex);
 
         VkMemoryRequirements memoryRequirements = {};
-        VulkanWrapper::GetImageMemoryRequirements(m_device, image, &memoryRequirements);
+        VulkanWrapper::GetImageMemoryRequirements(allocator.m_device, image, &memoryRequirements);
 
         s32 memoryTypeIndex = VulkanMemory::findMemoryTypeIndex(memoryRequirements, flags);
         if (memoryTypeIndex < 0)
@@ -102,7 +95,7 @@ VulkanMemory::VulkanAlloc VulkanMemory::allocateImageMemory(VulkanMemoryAllocato
             return  VulkanMemory::s_invalidMemory;
         }
 
-        VulkanAlloc memory = allocator.allocate(m_device, memoryRequirements.size, memoryTypeIndex);
+        VulkanAlloc memory = allocator.allocate(memoryRequirements.size, memoryTypeIndex);
         if (memory._memory == VK_NULL_HANDLE)
         {
             return VulkanMemory::s_invalidMemory;
@@ -111,21 +104,21 @@ VulkanMemory::VulkanAlloc VulkanMemory::allocateImageMemory(VulkanMemoryAllocato
 
         if (flags & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT)
         {
-            VkResult result = VulkanWrapper::MapMemory(m_device, memory._memory, 0, VK_WHOLE_SIZE, 0, &memory._mapped);
+            VkResult result = VulkanWrapper::MapMemory(allocator.m_device, memory._memory, 0, VK_WHOLE_SIZE, 0, &memory._mapped);
             if (result != VK_SUCCESS)
             {
                 LOG_ERROR("VulkanMemory::allocateImageMemory: vkMapMemory. Error %s", ErrorString(result).c_str());
-                allocator.deallocate(m_device, memory);
+                allocator.deallocate(memory);
 
                 return VulkanMemory::s_invalidMemory;
             }
         }
 
-        VkResult result = VulkanWrapper::BindImageMemory(m_device, image, memory._memory, memory._offset);
+        VkResult result = VulkanWrapper::BindImageMemory(allocator.m_device, image, memory._memory, memory._offset);
         if (result != VK_SUCCESS)
         {
             LOG_ERROR("VulkanMemory::allocateImageMemory: vkBindImageMemory. Error %s", ErrorString(result).c_str());
-            allocator.deallocate(m_device, memory);
+            allocator.deallocate(memory);
 
             return VulkanMemory::s_invalidMemory;;
         }
@@ -145,10 +138,10 @@ VulkanMemory::VulkanAlloc VulkanMemory::allocateBufferMemory(VulkanMemoryAllocat
     }
 
     {
-        std::lock_guard<std::recursive_mutex> lock(m_mutex);
+        std::lock_guard<std::recursive_mutex> lock(s_mutex);
 
         VkMemoryRequirements memoryRequirements = {};
-        VulkanWrapper::GetBufferMemoryRequirements(m_device, buffer, &memoryRequirements);
+        VulkanWrapper::GetBufferMemoryRequirements(allocator.m_device, buffer, &memoryRequirements);
 
         s32 memoryTypeIndex = VulkanMemory::findMemoryTypeIndex(memoryRequirements, flags);
         if (memoryTypeIndex < 0)
@@ -159,7 +152,7 @@ VulkanMemory::VulkanAlloc VulkanMemory::allocateBufferMemory(VulkanMemoryAllocat
             return VulkanMemory::s_invalidMemory;
         }
 
-        VulkanAlloc memory = allocator.allocate(m_device, memoryRequirements.size, memoryTypeIndex);
+        VulkanAlloc memory = allocator.allocate(memoryRequirements.size, memoryTypeIndex);
         if (memory._memory == VK_NULL_HANDLE)
         {
             return VulkanMemory::s_invalidMemory;
@@ -168,21 +161,21 @@ VulkanMemory::VulkanAlloc VulkanMemory::allocateBufferMemory(VulkanMemoryAllocat
 
         if (flags & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT)
         {
-            VkResult result = VulkanWrapper::MapMemory(m_device, memory._memory, 0, VK_WHOLE_SIZE, 0, &memory._mapped);
+            VkResult result = VulkanWrapper::MapMemory(allocator.m_device, memory._memory, 0, VK_WHOLE_SIZE, 0, &memory._mapped);
             if (result != VK_SUCCESS)
             {
                 LOG_ERROR("VulkanMemory::allocateBufferMemory: vkMapMemory. Error %s", ErrorString(result).c_str());
-                allocator.deallocate(m_device, memory);
+                allocator.deallocate(memory);
 
                 return VulkanMemory::s_invalidMemory;
             }
         }
 
-        VkResult result = VulkanWrapper::BindBufferMemory(m_device, buffer, memory._memory, memory._offset);
+        VkResult result = VulkanWrapper::BindBufferMemory(allocator.m_device, buffer, memory._memory, memory._offset);
         if (result != VK_SUCCESS)
         {
             LOG_ERROR("VulkanMemory::allocateBufferMemory: vkBindBufferMemory. Error %s", ErrorString(result).c_str());
-            allocator.deallocate(m_device, memory);
+            allocator.deallocate(memory);
 
             return  VulkanMemory::s_invalidMemory;;
         }
@@ -194,23 +187,24 @@ VulkanMemory::VulkanAlloc VulkanMemory::allocateBufferMemory(VulkanMemoryAllocat
 void VulkanMemory::freeMemory(VulkanMemoryAllocator& allocator, VulkanAlloc& memory)
 {
     {
-        std::lock_guard<std::recursive_mutex> lock(m_mutex);
-
-        allocator.deallocate(m_device, memory);
+        std::lock_guard<std::recursive_mutex> lock(s_mutex);
+        allocator.deallocate(memory);
     }
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-SimpleVulkanMemoryAllocator::SimpleVulkanMemoryAllocator()
+SimpleVulkanMemoryAllocator::SimpleVulkanMemoryAllocator(VkDevice device)
+    : VulkanMemoryAllocator(device)
 {
 }
 
 SimpleVulkanMemoryAllocator::~SimpleVulkanMemoryAllocator()
 {
+    //TODO: deallocate all
 }
 
-VulkanMemory::VulkanAlloc SimpleVulkanMemoryAllocator::allocate(VkDevice device, VkDeviceSize size, u32 memoryTypeIndex)
+VulkanMemory::VulkanAlloc SimpleVulkanMemoryAllocator::allocate(VkDeviceSize size, u32 memoryTypeIndex)
 {
     VulkanMemory::VulkanAlloc memory = {};
 
@@ -220,7 +214,7 @@ VulkanMemory::VulkanAlloc SimpleVulkanMemoryAllocator::allocate(VkDevice device,
     memoryAllocateInfo.allocationSize = size;
     memoryAllocateInfo.memoryTypeIndex = memoryTypeIndex;
 
-    VkResult result = VulkanWrapper::AllocateMemory(device, &memoryAllocateInfo, VULKAN_ALLOCATOR, &memory._memory);
+    VkResult result = VulkanWrapper::AllocateMemory(m_device, &memoryAllocateInfo, VULKAN_ALLOCATOR, &memory._memory);
     if (result != VK_SUCCESS)
     {
         LOG_ERROR("SimpleVulkanMemoryAllocator::allocate vkAllocateMemory is failed. Error: %s", ErrorString(result).c_str());
@@ -234,24 +228,25 @@ VulkanMemory::VulkanAlloc SimpleVulkanMemoryAllocator::allocate(VkDevice device,
     return memory;
 }
 
-void SimpleVulkanMemoryAllocator::deallocate(VkDevice device, VulkanMemory::VulkanAlloc& memory)
+void SimpleVulkanMemoryAllocator::deallocate(VulkanMemory::VulkanAlloc& memory)
 {
     if (memory._mapped)
     {
-        VulkanWrapper::UnmapMemory(device, memory._memory);
+        VulkanWrapper::UnmapMemory(m_device, memory._memory);
     }
 
     if (memory._memory != VK_NULL_HANDLE)
     {
-        VulkanWrapper::FreeMemory(device, memory._memory, VULKAN_ALLOCATOR);
+        VulkanWrapper::FreeMemory(m_device, memory._memory, VULKAN_ALLOCATOR);
     }
     memory = VulkanMemory::s_invalidMemory;
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-PoolVulkanMemoryAllocator::PoolVulkanMemoryAllocator(u64 initializeMemSize, u64 blockSize, u64 minAllocSize, u64 hugeAllocSize)
-    : m_initializeMemSize(initializeMemSize)
+PoolVulkanMemoryAllocator::PoolVulkanMemoryAllocator(VkDevice device, u64 initializeMemSize, u64 blockSize, u64 minAllocSize, u64 hugeAllocSize)
+    : VulkanMemoryAllocator(device)
+    , m_initializeMemSize(initializeMemSize)
     , m_blockSize(blockSize)
     , m_minAllocSize(minAllocSize)
     , m_hugeAllocSize(hugeAllocSize)
@@ -262,20 +257,29 @@ PoolVulkanMemoryAllocator::~PoolVulkanMemoryAllocator()
 {
 }
 
-VulkanMemory::VulkanAlloc PoolVulkanMemoryAllocator::allocate(VkDevice device, VkDeviceSize size, u32 memoryTypeIndex)
+VulkanMemory::VulkanAlloc PoolVulkanMemoryAllocator::allocate(VkDeviceSize size, u32 memoryTypeIndex)
 {
     //TODO:
     ASSERT(false, "not implemented");
     return VulkanMemory::s_invalidMemory;
 }
 
-void PoolVulkanMemoryAllocator::deallocate(VkDevice device, VulkanMemory::VulkanAlloc & memory)
+void PoolVulkanMemoryAllocator::deallocate(VulkanMemory::VulkanAlloc & memory)
 {
     ASSERT(false, "not implemented");
     //TODO:
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////
+
+VulkanMemory::VulkanMemoryAllocator::VulkanMemoryAllocator(VkDevice device)
+    : m_device(device)
+{
+}
+
+VulkanMemory::VulkanMemoryAllocator::~VulkanMemoryAllocator()
+{
+}
 
 } //namespace vk
 } //namespace renderer

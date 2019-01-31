@@ -153,7 +153,7 @@ private:
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-VertexStreamBuffer::VertexStreamBuffer(renderer::CommandList& cmdList, u16 usageFlag, u64 size, const u8* data) noexcept
+VertexStreamBuffer::VertexStreamBuffer(renderer::CommandList& cmdList, StreamBufferUsageFlags usageFlag, u64 size, const u8* data) noexcept
     : m_cmdList(cmdList)
     , m_data(nullptr)
     , m_size(size)

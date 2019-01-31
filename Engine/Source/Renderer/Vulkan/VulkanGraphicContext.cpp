@@ -537,13 +537,13 @@ bool VulkanGraphicContext::initialize()
 
     if (m_deviceCaps.unifiedMemoryManager)
     {
-        m_imageMemoryManager = new VulkanMemory(m_deviceInfo._device);
+        m_imageMemoryManager = new SimpleVulkanMemoryAllocator(m_deviceInfo._device);
         m_bufferMemoryManager = m_imageMemoryManager;
     }
     else
     {
-        m_imageMemoryManager = new VulkanMemory(m_deviceInfo._device);
-        m_bufferMemoryManager = new VulkanMemory(m_deviceInfo._device);
+        m_imageMemoryManager = new SimpleVulkanMemoryAllocator(m_deviceInfo._device);
+        m_bufferMemoryManager = new SimpleVulkanMemoryAllocator(m_deviceInfo._device);
     }
 
     m_cmdBufferManager = new VulkanCommandBufferManager(&m_deviceInfo, m_queueList[0]);

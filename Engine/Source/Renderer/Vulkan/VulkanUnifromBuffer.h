@@ -2,6 +2,7 @@
 
 #ifdef VULKAN_RENDER
 #include "VulkanWrapper.h"
+#include "VulkanMemory.h"
 
 namespace v3d
 {
@@ -11,24 +12,34 @@ namespace vk
 {
     class VulkanBuffer;
 
-    struct VulkanUnifromBuffer
+    class VulkanUnifromBuffer
     {
+    public:
         VulkanBuffer* _buffer;
         u32 _offset;
         u32 _size;
     };
 
-
-    class VulkanUniformBufferManager
+    class VulkanUniformBufferManager final
     {
     public:
 
-        VulkanUniformBufferManager();
-        VulkanUnifromBuffer* acquireUnformBuffer();
+        VulkanUniformBufferManager(VkDevice device);
+        ~VulkanUniformBufferManager();
+
+        VulkanUnifromBuffer* acquireUnformBuffer(u32 size);
+
 
     private:
 
-        std::vector<VulkanBuffer*> m_buffers;
+        std::deque<VulkanBuffer*> m_freeBuffers;
+        std::deque<VulkanBuffer*> m_usedUBuffers;
+        VulkanBuffer* m_currentBuffer;
+
+        std::list<VulkanUnifromBuffer*> m_uniformBuffers;
+
+        VkDevice m_device;
+        VulkanMemory::VulkanMemoryAllocator* m_memoryManager;
     };
 
 } //namespace vk

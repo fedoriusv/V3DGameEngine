@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Common.h"
+#include "Renderer/BufferProperties.h"
 #include "Renderer/Buffer.h"
 
 #ifdef VULKAN_RENDER
@@ -23,7 +24,7 @@ namespace vk
     {
     public:
 
-        VulkanBuffer(VulkanMemory* memory, VkDevice device, Buffer::BufferType type, u16 usageFlag, u64 size);
+        VulkanBuffer(VulkanMemory::VulkanMemoryAllocator* memory, VkDevice device, Buffer::BufferType type, StreamBufferUsageFlags usageFlag, u64 size);
         ~VulkanBuffer();
 
         bool create() override;
@@ -43,17 +44,15 @@ namespace vk
         VkDevice m_device;
 
         VulkanMemory::VulkanAlloc m_memory;
-        VulkanMemory* m_memoryManager;
+        VulkanMemory::VulkanMemoryAllocator* m_memoryAllocator;
 
-        u32 m_usageFlags;
+        StreamBufferUsageFlags m_usageFlags;
         BufferType m_type;
 
         u64 m_size;
         bool m_mapped;
 
         VkBuffer m_buffer;
-
-        static VulkanMemory::VulkanMemoryAllocator* s_memoryAllocator;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

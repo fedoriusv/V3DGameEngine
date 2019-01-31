@@ -25,8 +25,8 @@ namespace vk
     {
     public:
 
-        VulkanImage(VulkanMemory* memory, VkDevice device, VkImageType type, VkFormat format, VkExtent3D dimension, u32 mipsLevel, VkImageTiling tiling);
-        VulkanImage(VulkanMemory* memory, VkDevice device, VkFormat format, VkExtent3D dimension, VkSampleCountFlagBits samples);
+        VulkanImage(VulkanMemory::VulkanMemoryAllocator* memory, VkDevice device, VkImageType type, VkFormat format, VkExtent3D dimension, u32 mipsLevel, VkImageTiling tiling);
+        VulkanImage(VulkanMemory::VulkanMemoryAllocator* memory, VkDevice device, VkFormat format, VkExtent3D dimension, VkSampleCountFlagBits samples);
         ~VulkanImage();
 
         bool create() override;
@@ -81,8 +81,7 @@ namespace vk
         VulkanImage*                m_resolveImage; //?
 
         VulkanMemory::VulkanAlloc   m_memory;
-        VulkanMemory*               m_memoryManager;
-        static VulkanMemory::VulkanMemoryAllocator* s_memoryAllocator;
+        VulkanMemory::VulkanMemoryAllocator* m_memoryAllocator;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

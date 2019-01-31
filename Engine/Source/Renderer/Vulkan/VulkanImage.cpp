@@ -559,9 +559,7 @@ VkSampleCountFlagBits VulkanImage::convertRenderTargetSamplesToVkSampleCount(Tex
     return VK_SAMPLE_COUNT_1_BIT;
 }
 
-VulkanMemory::VulkanMemoryAllocator* VulkanImage::s_memoryAllocator = new SimpleVulkanMemoryAllocator();
-
-VulkanImage::VulkanImage(VulkanMemory* memory, VkDevice device, VkImageType type, VkFormat format, VkExtent3D dimension, u32 mipsLevel, VkImageTiling tiling)
+VulkanImage::VulkanImage(VulkanMemory::VulkanMemoryAllocator* memory, VkDevice device, VkImageType type, VkFormat format, VkExtent3D dimension, u32 mipsLevel, VkImageTiling tiling)
     : m_device(device)
     , m_type(type)
     , m_format(format)
@@ -583,12 +581,12 @@ VulkanImage::VulkanImage(VulkanMemory* memory, VkDevice device, VkImageType type
     , m_resolveImage(nullptr)
 
     , m_memory(VulkanMemory::s_invalidMemory)
-    , m_memoryManager(memory)
+    , m_memoryAllocator(memory)
 {
     LOG_DEBUG("VulkanImage::VulkanImage constructor %llx", this);
 }
 
-VulkanImage::VulkanImage(VulkanMemory* memory, VkDevice device, VkFormat format, VkExtent3D dimension, VkSampleCountFlagBits samples)
+VulkanImage::VulkanImage(VulkanMemory::VulkanMemoryAllocator* memory, VkDevice device, VkFormat format, VkExtent3D dimension, VkSampleCountFlagBits samples)
     : m_device(device)
     , m_type(VK_IMAGE_TYPE_2D)
     , m_format(format)
@@ -610,7 +608,7 @@ VulkanImage::VulkanImage(VulkanMemory* memory, VkDevice device, VkFormat format,
     , m_resolveImage(nullptr)
 
     , m_memory(VulkanMemory::s_invalidMemory)
-    , m_memoryManager(memory)
+    , m_memoryAllocator(memory)
 {
     LOG_DEBUG("VulkanImage::VulkanImage constructor %llx", this);
 
@@ -678,7 +676,7 @@ bool VulkanImage::create()
         flag |= VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
         flag |= VulkanDeviceCaps::getInstance()->supportCoherentMemory ? VK_MEMORY_PROPERTY_HOST_COHERENT_BIT : VK_MEMORY_PROPERTY_HOST_CACHED_BIT;
     }
-    m_memory = m_memoryManager->allocateImageMemory(*s_memoryAllocator, m_image, flag);
+    m_memory = VulkanMemory::allocateImageMemory(*m_memoryAllocator, m_image, flag);
     if (m_memory == VulkanMemory::s_invalidMemory)
     {
         VulkanImage::destroy();

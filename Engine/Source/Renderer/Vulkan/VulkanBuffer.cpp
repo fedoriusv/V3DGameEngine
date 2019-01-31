@@ -16,13 +16,11 @@ namespace renderer
 namespace vk
 {
 
-VulkanMemory::VulkanMemoryAllocator* VulkanBuffer::s_memoryAllocator = new SimpleVulkanMemoryAllocator();
-
-VulkanBuffer::VulkanBuffer(VulkanMemory* memory, VkDevice device, Buffer::BufferType type, u16 usageFlag, u64 size)
+VulkanBuffer::VulkanBuffer(VulkanMemory::VulkanMemoryAllocator* memory, VkDevice device, Buffer::BufferType type, StreamBufferUsageFlags usageFlag, u64 size)
     : m_device(device)
 
     , m_memory(VulkanMemory::s_invalidMemory)
-    , m_memoryManager(memory)
+    , m_memoryAllocator(memory)
 
     , m_usageFlags(usageFlag)
     , m_type(type)
@@ -107,7 +105,7 @@ bool VulkanBuffer::create()
         return false;
     }
 
-    m_memory = m_memoryManager->allocateBufferMemory(*s_memoryAllocator, m_buffer, flag);
+    m_memory = VulkanMemory::allocateBufferMemory(*m_memoryAllocator, m_buffer, flag);
     if (m_memory == VulkanMemory::s_invalidMemory)
     {
         VulkanBuffer::destroy();
@@ -137,7 +135,7 @@ void VulkanBuffer::destroy()
         m_imageView = VK_NULL_HANDLE;
     }*/
 
-    m_memoryManager->freeMemory(*s_memoryAllocator, m_memory);
+    VulkanMemory::freeMemory(*m_memoryAllocator, m_memory);
     if (m_buffer)
     {
         VulkanWrapper::DestroyBuffer(m_device, m_buffer, VULKAN_ALLOCATOR);

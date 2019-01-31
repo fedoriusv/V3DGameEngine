@@ -14,9 +14,12 @@ namespace vk
 {
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    class VulkanMemory final : utils::NonCopyable
+    class VulkanMemory final
     {
     public:
+
+        VulkanMemory() = delete;
+        VulkanMemory(const VulkanMemory&) = delete;
 
         struct VulkanAlloc
         {
@@ -35,17 +38,21 @@ namespace vk
 
         };
 
-        class VulkanMemoryAllocator
+        class VulkanMemoryAllocator : public utils::NonCopyable
         {
         public:
 
-            VulkanMemoryAllocator() {};
-            virtual ~VulkanMemoryAllocator() {};
+            VulkanMemoryAllocator(VkDevice device);
+            virtual ~VulkanMemoryAllocator();
+
+        protected:
+
+            VkDevice m_device;
 
         private:
 
-            virtual VulkanAlloc allocate(VkDevice device, VkDeviceSize size, u32 memoryTypeIndex) = 0;
-            virtual void deallocate(VkDevice device, VulkanMemory::VulkanAlloc& memory) = 0;
+            virtual VulkanAlloc allocate(VkDeviceSize size, u32 memoryTypeIndex) = 0;
+            virtual void deallocate(VulkanMemory::VulkanAlloc& memory) = 0;
 
             friend VulkanMemory;
         };
@@ -55,19 +62,14 @@ namespace vk
 
         static VulkanMemory::VulkanAlloc s_invalidMemory;
 
-        explicit VulkanMemory(VkDevice device);
-        ~VulkanMemory();
+        static VulkanAlloc allocateImageMemory(VulkanMemoryAllocator& allocator, VkImage image, VkMemoryPropertyFlags flags);
+        static VulkanAlloc allocateBufferMemory(VulkanMemoryAllocator& allocator, VkBuffer buffer, VkMemoryPropertyFlags flags);
 
-        VulkanAlloc allocateImageMemory(VulkanMemoryAllocator& allocator, VkImage image, VkMemoryPropertyFlags flags);
-        VulkanAlloc allocateBufferMemory(VulkanMemoryAllocator& allocator, VkBuffer buffer, VkMemoryPropertyFlags flags);
-
-        void freeMemory(VulkanMemoryAllocator& allocator, VulkanAlloc& memory);
+        static void freeMemory(VulkanMemoryAllocator& allocator, VulkanAlloc& memory);
 
     private:
 
-        VkDevice m_device;
-
-        std::recursive_mutex m_mutex;
+        static std::recursive_mutex s_mutex;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -75,12 +77,12 @@ namespace vk
     class SimpleVulkanMemoryAllocator final : public VulkanMemory::VulkanMemoryAllocator
     {
     public:
-        SimpleVulkanMemoryAllocator();
+        SimpleVulkanMemoryAllocator(VkDevice device);
         ~SimpleVulkanMemoryAllocator();
 
     private:
-        VulkanMemory::VulkanAlloc allocate(VkDevice device, VkDeviceSize size, u32 memoryTypeIndex) override;
-        void deallocate(VkDevice device, VulkanMemory::VulkanAlloc& memory) override;
+        VulkanMemory::VulkanAlloc allocate(VkDeviceSize size, u32 memoryTypeIndex) override;
+        void deallocate(VulkanMemory::VulkanAlloc& memory) override;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -88,12 +90,12 @@ namespace vk
     class PoolVulkanMemoryAllocator final : public VulkanMemory::VulkanMemoryAllocator
     {
     public:
-        PoolVulkanMemoryAllocator(u64 initializeMemSize, u64 blockSize, u64 minAllocSize, u64 hugeAllocSize);
+        PoolVulkanMemoryAllocator(VkDevice device, u64 initializeMemSize, u64 blockSize, u64 minAllocSize, u64 hugeAllocSize);
         ~PoolVulkanMemoryAllocator();
 
     private:
-        VulkanMemory::VulkanAlloc allocate(VkDevice device, VkDeviceSize size, u32 memoryTypeIndex) override;
-        void deallocate(VkDevice device, VulkanMemory::VulkanAlloc& memory) override;
+        VulkanMemory::VulkanAlloc allocate(VkDeviceSize size, u32 memoryTypeIndex) override;
+        void deallocate(VulkanMemory::VulkanAlloc& memory) override;
 
         const u64 m_initializeMemSize;
         const u64 m_blockSize;

@@ -10,12 +10,10 @@ namespace renderer
 namespace vk
 {
 
-VulkanStaginBuffer::VulkanStaginBuffer(VulkanMemory* memory, VkDevice device, u64 size, u16 usageFlag) noexcept
-    : m_device(device)
-    , m_buffer(nullptr)
-    , m_memoryManager(memory)
+VulkanStaginBuffer::VulkanStaginBuffer(VulkanMemory::VulkanMemoryAllocator* memory, VkDevice device, u64 size, StreamBufferUsageFlags usageFlag) noexcept
+    : m_buffer(nullptr)
 {
-    m_buffer = new VulkanBuffer(m_memoryManager, m_device, Buffer::BufferType::BufferType_StagingBuffer, usageFlag, size);
+    m_buffer = new VulkanBuffer(memory, device, Buffer::BufferType::BufferType_StagingBuffer, usageFlag, size);
 }
 
 VulkanStaginBuffer::~VulkanStaginBuffer()
@@ -59,11 +57,9 @@ VulkanBuffer * VulkanStaginBuffer::getBuffer() const
     return m_buffer;
 }
 
-
-
-VulkanStaginBufferManager::VulkanStaginBufferManager(VkDevice device)
+VulkanStaginBufferManager::VulkanStaginBufferManager(VkDevice device) noexcept
     : m_device(device)
-    , m_memoryManager(new VulkanMemory(device))
+    , m_memoryManager(new SimpleVulkanMemoryAllocator(device))
 {
 }
 

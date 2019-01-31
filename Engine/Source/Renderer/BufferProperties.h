@@ -15,7 +15,23 @@ namespace renderer
     constexpr u32 k_maxVertexInputAttributes = 16;
     constexpr u32 k_maxVertexInputBindings = 16;
 
+    /**
+    * StreamBufferUsage enum. usageFlag inside StreamBuffer
+    */
+    enum StreamBufferUsage
+    {
+        StreamBuffer_Write = 0x01,
+        StreamBuffer_Read = 0x02,
+
+        StreamBuffer_Shared = 0x04,
+        StreamBuffer_Dynamic = 0x08,
+    };
+
+    typedef u16 StreamBufferUsageFlags;
+
     ///////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
 
     /**
     * VertexInputAttributeDesc struct
