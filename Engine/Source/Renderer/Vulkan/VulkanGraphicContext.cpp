@@ -10,6 +10,7 @@
 #include "VulkanBuffer.h"
 #include "VulkanStagingBuffer.h"
 #include "VulkanContextState.h"
+#include "VulkanUnifromBuffer.h"
 
 #include "Utils/Logger.h"
 
@@ -61,7 +62,9 @@ VulkanGraphicContext::VulkanGraphicContext(const platform::Window * window) noex
     : m_deviceCaps(*VulkanDeviceCaps::getInstance())
     , m_swapchain(nullptr)
     , m_cmdBufferManager(nullptr)
+
     , m_stagingBufferManager(nullptr)
+    , m_uniformBufferManager(nullptr)
     , m_descriptorSetManager(nullptr)
 
     , m_imageMemoryManager(nullptr)
@@ -433,10 +436,18 @@ void VulkanGraphicContext::bindTexture(const resource::Shader* shader, const std
 
 void VulkanGraphicContext::bindUniformBuffers(const resource::Shader* shader, const std::string& name, const void* data, u32 offset, u32 size)
 {
+    //TODO check shader present inside pipeline
+    const resource::Shader::ReflectionInfo& info = shader->getReflectionInfo();
+    auto iter = info._uniformBuffers.find(name);
+    if (iter == info._uniformBuffers.cend())
+    {
+        ASSERT(false, "fail");
+    }
 
- //   m_currentContextStateNEW->bindUnifrom();
-    //m_currentContextState._boundShaderStage[shader->stage].updateDescriptorSets(name, offset, size, data);
-    //m_currentContextState._boundUniformBuffers = { {buffer}, {}, true };
+    VulkanUnifromBuffer* buffer =  m_uniformBufferManager->acquireUnformBuffer(size);
+    ASSERT(buffer, "nullptr");
+    //TODO copy
+    m_currentContextStateNEW->bindUnifrom(buffer, 0, iter->second);
 }
 
 //void VulkanGraphicContext::bindVertexBuffers(const std::vector<Buffer*>& buffer, const std::vector<u64>& offsets)
@@ -566,6 +577,7 @@ bool VulkanGraphicContext::initialize()
     {
         m_stagingBufferManager = new VulkanStaginBufferManager(m_deviceInfo._device);
     }
+    m_uniformBufferManager = new VulkanUniformBufferManager(m_deviceInfo._device);
     m_descriptorSetManager = new VulkanDescriptorSetManager(m_deviceInfo._device);
 
     m_renderpassManager = new RenderPassManager(this);
@@ -595,6 +607,12 @@ void VulkanGraphicContext::destroy()
     {
         delete m_stagingBufferManager;
         m_stagingBufferManager = nullptr;
+    }
+
+    if (m_uniformBufferManager)
+    {
+        delete m_uniformBufferManager;
+        m_uniformBufferManager = nullptr;
     }
 
     if (m_deviceCaps.unifiedMemoryManager)

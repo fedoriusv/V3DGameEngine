@@ -12,6 +12,61 @@ namespace v3d
 namespace renderer
 {
 
+    /*UpdateUniformsBuffer*/
+class UpdateUniformsBuffer : public Command
+{
+public:
+    UpdateUniformsBuffer(resource::Shader* shader, const std::string& name, u32 offset, u32 size, u8* data, bool shared) noexcept
+        : m_shader(shader)
+        , m_name(name)
+        , m_offset(offset)
+        , m_size(size)
+        , m_data(nullptr)
+        , m_shared(shader)
+    {
+        LOG_DEBUG("UpdateUniformsBuffer constructor");
+
+        if (m_shared)
+        {
+            m_data = data;
+        }
+        else
+        {
+            ASSERT(m_size > 0, "invalid size");
+            m_data = reinterpret_cast<u8*>(malloc(size));
+            memcpy(m_data, data, size);
+        }
+    };
+    UpdateUniformsBuffer() = delete;
+    UpdateUniformsBuffer(UpdateUniformsBuffer&) = delete;
+
+    ~UpdateUniformsBuffer()
+    {
+        LOG_DEBUG("UpdateUniformsBuffer destructor");
+
+        if (m_data && !m_shared)
+        {
+            free(m_data);
+            m_data = nullptr;
+        }
+    };
+
+    void execute(const CommandList& cmdList)
+    {
+        LOG_DEBUG("UpdateUniformsBuffer execute");
+        cmdList.getContext()->bindUniformBuffers(m_shader, m_name, m_data, m_offset, m_size);
+    }
+
+private:
+    resource::Shader* m_shader;
+    const std::string m_name;
+    u32 m_offset;
+    u32 m_size;
+    u8* m_data;
+
+    bool m_shared;
+};
+
 const resource::Shader * ShaderProgram::getShader(ShaderType type) const
 {
     return m_programInfo._shaders[type];
@@ -89,14 +144,17 @@ void ShaderProgram::composeProgramData(const std::vector<resource::Shader*>& sha
 
 bool ShaderProgram::bindUniformsBuffer(ShaderType shaderType, std::string& name, u32 offset, u32 size, const u8* data)
 {
-   /* auto iter = m_programInfo._uniformsBuffer.find(name);
-    if (iter == m_programInfo._uniformsBuffer.cend())
-    {
-        LOG_WARNING("ShaderProgram::bindUniformsBuffer: binding for uniform [%s] not found ", name.c_str());
-        return false;
-    }
+    resource::Shader* shader = m_programInfo._shaders[shaderType];
+    ASSERT(shader, "fail");
 
-    context->bindUniform(shader, const u8 * data, u32 size, u32 offset)*/
+    if (m_cmdList.isImmediate())
+    {
+        m_cmdList.getContext()->bindUniformBuffers(shader, name, data, offset, size);
+    }
+    else
+    {
+        m_cmdList.pushCommand(new UpdateUniformsBuffer(shader, name, offset, size, const_cast<u8*>(data), true));
+    }
 
     return false;
 }

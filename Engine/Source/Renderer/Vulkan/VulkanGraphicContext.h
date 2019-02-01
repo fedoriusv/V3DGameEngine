@@ -21,6 +21,7 @@ namespace vk
     class VulkanGraphicPipeline;
     class VulkanContextState;
     class VulkanStaginBufferManager;
+    class VulkanUniformBufferManager;
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -109,8 +110,9 @@ namespace vk
         class VulkanSwapchain*      m_swapchain;
 
         VulkanCommandBufferManager* m_cmdBufferManager;
-        VulkanStaginBufferManager*  m_stagingBufferManager;
         VulkanDescriptorSetManager* m_descriptorSetManager;
+        VulkanStaginBufferManager*  m_stagingBufferManager;
+        VulkanUniformBufferManager* m_uniformBufferManager;
 
         VulkanMemory::VulkanMemoryAllocator* m_imageMemoryManager;
         VulkanMemory::VulkanMemoryAllocator* m_bufferMemoryManager;

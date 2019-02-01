@@ -24,6 +24,7 @@ VulkanPipelineLayout::VulkanPipelineLayout()
 VulkanDescriptorPool::VulkanDescriptorPool(VkDevice device, VkDescriptorPoolCreateFlags flag) noexcept
     : m_device(device)
     , m_pool(VK_NULL_HANDLE)
+    , m_flag(flag)
 {
     ASSERT(m_descriptorSets.empty(), "not empty");
     ASSERT(!m_pool, "not nullptr");
@@ -234,7 +235,8 @@ VulkanDescriptorPool* VulkanDescriptorSetManager::acquireDescriptorSets(const Vu
         }
     }
 
-    VulkanDescriptorPool* newPool = VulkanDescriptorSetManager::createPool(layout);
+    VkDescriptorPoolCreateFlags flag = 0;
+    VulkanDescriptorPool* newPool = VulkanDescriptorSetManager::createPool(layout, flag);
     m_descriptorPools.push_back(newPool);
 
     bool result = newPool->allocateDescriptorSet(layout, sets);
@@ -312,9 +314,9 @@ void VulkanDescriptorSetManager::destroyDescriptorSetLayouts(std::vector<VkDescr
     }
 }
 
-VulkanDescriptorPool * VulkanDescriptorSetManager::createPool(const VulkanPipelineLayout& layout)
+VulkanDescriptorPool * VulkanDescriptorSetManager::createPool(const VulkanPipelineLayout& layout, VkDescriptorPoolCreateFlags flag)
 {
-    VulkanDescriptorPool* pool = new VulkanDescriptorPool(m_device, 0);
+    VulkanDescriptorPool* pool = new VulkanDescriptorPool(m_device, flag);
 
     u32 setCount = 0;
     std::vector<VkDescriptorPoolSize>* sizes = nullptr;

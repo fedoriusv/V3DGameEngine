@@ -16,7 +16,7 @@ SimpleRender::SimpleRender(renderer::CommandList& cmdList, const renderer::Verte
     resource::Shader* fragShader = resource::ResourceLoaderManager::getInstance()->loadShader<resource::Shader, resource::ShaderSourceFileLoader>(cmdList.getContext(), "examples/3.simpledraw/shaders/simple.frag");
     m_program = cmdList.createObject<ShaderProgram>(std::vector<resource::Shader*>{vertShader, fragShader});
 
-    m_texture = cmdList.createObject<Texture2D>(Format::Format_R8G8B8A8_UInt, core::Dimension2D(1024, 768), TextureSamples::TextureSamples_x1);
+    m_texture = cmdList.createObject<Texture2D>(Format::Format_R8G8B8A8_UNorm, core::Dimension2D(1024, 768), TextureSamples::TextureSamples_x1);
     m_renderTarget = cmdList.createObject<RenderTarget>(m_texture->getDimension());
     bool success = m_renderTarget->setColorTexture(0, m_texture, RenderTargetLoadOp::LoadOp_Clear, RenderTargetStoreOp::StoreOp_Store);
 
@@ -26,6 +26,7 @@ SimpleRender::SimpleRender(renderer::CommandList& cmdList, const renderer::Verte
     m_pipeline = cmdList.createObject<GraphicsPipelineState>(desc, m_program, m_renderTarget);
     m_pipeline->setPrimitiveTopology(PrimitiveTopology::PrimitiveTopology_TriangleList);
 
+    m_program->bindUniformsBuffer<ShaderType::ShaderType_Vertex>("ubo", 0, 128, nullptr);
     cmdList.setPipelineState(m_pipeline);
     cmdList.setRenderTarget(m_renderTarget);
 
@@ -34,7 +35,7 @@ SimpleRender::SimpleRender(renderer::CommandList& cmdList, const renderer::Verte
 
     //m_program->bindTexture<renderer::Texture2D, ShaderType::ShaderType_Fragment>("samplerColor", texture);
     //m_program->bindUniform<core::Matrix4D, Vertex>("projection", projection);
-    //m_program->bindUniformsBuffer<ShaderType::ShaderType_Vertex>("ubo", 0, 0, nullptr);
+    m_program->bindUniformsBuffer<ShaderType::ShaderType_Vertex>("ubo", 0, 128, nullptr);
 
     cmdList.sumitCommands();
     cmdList.flushCommands();
@@ -68,6 +69,10 @@ void SimpleRender::render(renderer::CommandList& cmdList)
     ////////////////////////////////////
 
     //m_program->bindUniform<core::Matrix4D>("pos", matrix);
+    m_program->bindUniformsBuffer<ShaderType::ShaderType_Vertex>("ubo", 0, 128, nullptr);
+    cmdList.draw(renderer::StreamBufferDescription(m_vetexBuffer, 0), 0, 3, 1);
+
+    m_program->bindUniformsBuffer<ShaderType::ShaderType_Vertex>("ubo", 0, 128, nullptr);
     cmdList.draw(renderer::StreamBufferDescription(m_vetexBuffer, 0), 0, 3, 1);
     ////cmdList.draw(renderer::StreamBufferDescriptions({ m_vetexBuffer0, offset, size }, m_vetexBuffer1, 0, 3) }, 0, 3, 1);
     //m_program->bindUniform<core::Matrix4D>("pos", matrix);

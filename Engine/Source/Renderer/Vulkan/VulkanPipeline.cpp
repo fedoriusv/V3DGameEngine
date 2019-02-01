@@ -625,6 +625,10 @@ bool VulkanGraphicPipeline::create(const PipelineGraphicInfo* pipelineInfo)
 
         ASSERT(false, "not implemented");
     }
+    else
+    {
+        pipelineViewportStateCreateInfo.viewportCount = 1;
+    }
 
     if (!VulkanGraphicContext::isDynamicState(VK_DYNAMIC_STATE_SCISSOR))
     {
@@ -633,6 +637,10 @@ bool VulkanGraphicPipeline::create(const PipelineGraphicInfo* pipelineInfo)
         pipelineViewportStateCreateInfo.pScissors = &scissor;
 
         ASSERT(false, "not implemented");
+    }
+    else
+    {
+        pipelineViewportStateCreateInfo.scissorCount = 1;
     }
     graphicsPipelineCreateInfo.pViewportState = &pipelineViewportStateCreateInfo;
 
@@ -649,6 +657,10 @@ bool VulkanGraphicPipeline::create(const PipelineGraphicInfo* pipelineInfo)
         pipelineMultisampleStateCreateInfo.pSampleMask = nullptr;
         pipelineMultisampleStateCreateInfo.alphaToOneEnable = VK_FALSE;
         pipelineMultisampleStateCreateInfo.alphaToCoverageEnable = VK_FALSE;
+    }
+    else
+    {
+        pipelineMultisampleStateCreateInfo.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
     }
 
     graphicsPipelineCreateInfo.pMultisampleState = &pipelineMultisampleStateCreateInfo;

@@ -100,7 +100,7 @@ namespace vk
         bool createDescriptorSetLayouts(const DescriptorSetDescription& desc, std::vector<VkDescriptorSetLayout>& descriptorSetLayouts);
         void destroyDescriptorSetLayouts(std::vector<VkDescriptorSetLayout>& descriptorSetLayouts);
 
-        VulkanDescriptorPool* createPool(const VulkanPipelineLayout& layout);
+        VulkanDescriptorPool* createPool(const VulkanPipelineLayout& layout, VkDescriptorPoolCreateFlags flag);
 
         VkDevice m_device;
 
