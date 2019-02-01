@@ -68,8 +68,8 @@ namespace renderer
         virtual void clearBackbuffer(const core::Vector4D & color) = 0;
 
         //program bind
-        virtual void bindTexture(const resource::Shader* shader, const std::string& name, const Image* image) = 0;
-        virtual void bindUniformBuffers(const resource::Shader* shader, const std::string& name, const void* data, u32 offset, u32 size) = 0;
+        virtual void bindTexture(const resource::Shader* shader, u32 bindIndex, const Image* image) = 0;
+        virtual void bindUniformsBuffer(const resource::Shader* shader, u32 bindIndex, u32 offset, u32 size, const void* data) = 0;
 
         //geometry bind
         //virtual void bindVertexBuffers(const std::vector<Buffer*>& buffer, const std::vector<u64>& offsets) = 0;
@@ -89,10 +89,8 @@ namespace renderer
         virtual void removePipeline(Pipeline* pipeline) = 0;
 
         //objects
-        virtual Image* createImage(TextureTarget target, renderer::Format format, const core::Dimension3D& dimension, u32 mipmapLevel,
-            s16 filter, TextureAnisotropic anisotropicLevel, TextureWrap wrap) const = 0;
-        virtual Image* createAttachmentImage(renderer::Format format, const core::Dimension3D& dimension, TextureSamples samples,
-            s16 filter, TextureAnisotropic anisotropicLevel, TextureWrap wrap) const = 0;
+        virtual Image* createImage(TextureTarget target, renderer::Format format, const core::Dimension3D& dimension, u32 mipmapLevel, u16 flags) const = 0;
+        virtual Image* createAttachmentImage(renderer::Format format, const core::Dimension3D& dimension, TextureSamples samples, u16 flags) const = 0;
         virtual void removeImage(Image* image) = 0;
 
         virtual Buffer* createBuffer(Buffer::BufferType type, u16 usageFlag, u64 size) = 0;

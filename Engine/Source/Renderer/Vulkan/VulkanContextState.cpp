@@ -9,6 +9,7 @@
 #include "VulkanDescriptorSet.h"
 #include "VulkanImage.h"
 #include "VulkanBuffer.h"
+#include "VulkanSampler.h"
 #include "VulkanUnifromBuffer.h"
 #include "VulkanDeviceCaps.h"
 
@@ -19,9 +20,10 @@ namespace renderer
 namespace vk
 {
 
-VulkanContextState::VulkanContextState(VkDevice device, VulkanDescriptorSetManager* descriptorSetManager) noexcept
+VulkanContextState::VulkanContextState(VkDevice device, VulkanDescriptorSetManager* descriptorSetManager, VulkanUniformBufferManager* unifromBufferManager) noexcept
     : m_device(device)
     , m_descriptorSetManager(descriptorSetManager)
+    , m_unifromBufferManager(unifromBufferManager)
 {
     m_currentRenderpass = { nullptr, false };
     m_currentFramebuffer = { nullptr, false };
@@ -180,12 +182,12 @@ void VulkanContextState::updateDescriptorSet()
         case VK_DESCRIPTOR_TYPE_SAMPLER:
         case VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE:
         case VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER:
-            writeDescriptorSet.pImageInfo = &bindingSet._imageInfo;
+            writeDescriptorSet.pImageInfo = &bindingSet._imageBinding._imageInfo;
             break;
 
         case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER:
         case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC:
-            writeDescriptorSet.pBufferInfo = &bindingSet._bufferInfo;;
+            writeDescriptorSet.pBufferInfo = &bindingSet._bufferBinding._bufferInfo;;
             break;
 
         default:
@@ -199,33 +201,99 @@ void VulkanContextState::updateDescriptorSet()
     m_updatedBindings.clear();
 }
 
-void VulkanContextState::bindTexture(const VulkanImage* image, VulkanSampler* sampler, u32 arrayIndex, const resource::Shader::SampledImage& reflaction)
+void VulkanContextState::bindTexture(const VulkanImage* image, const VulkanSampler* sampler, u32 arrayIndex, const resource::Shader::SampledImage& reflaction)
 {
-    BindingInfo bindingInfo;
-    bindingInfo._type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    bindingInfo._set = reflaction._set;
-    bindingInfo._binding = reflaction._binding;
-    bindingInfo._arrayIndex = arrayIndex;
-    bindingInfo._imageInfo.imageView = image->getImageView();
-    bindingInfo._imageInfo.imageLayout = image->getLayout();
-    bindingInfo._imageInfo.sampler = VK_NULL_HANDLE; //TODO:
+    auto& bindingList = m_descriptorSetsBindings[reflaction._set];
+    if (bindingList.size() < reflaction._binding)
+    {
+        ASSERT(reflaction._binding < k_maxDescriptorBindingIndex, "invalid binding");
+        bindingList.resize(reflaction._binding + 1);
+    }
+    BindingInfo& bindingInfo = bindingList[reflaction._binding];
 
+    bool updated = false;
+    if (!bindingInfo._imageBinding._image && !bindingInfo._imageBinding._sampler)
+    {
+        updated = true;
+    }
+    else if (bindingInfo._imageBinding._image != image || bindingInfo._imageBinding._sampler != sampler)
+    {
+        updated = true;
+    }
 
-    VulkanContextState::setBinding(bindingInfo);
+    if (updated)
+    {
+        bindingInfo._type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        bindingInfo._set = reflaction._set;
+        bindingInfo._binding = reflaction._binding;
+        bindingInfo._arrayIndex = arrayIndex;
+        bindingInfo._imageBinding._image = image;
+        bindingInfo._imageBinding._sampler = sampler;
+        bindingInfo._imageBinding._imageInfo = VulkanContextState::makeVkDescriptorImageInfo(image, sampler);
+
+        VulkanContextState::setBinding(bindingInfo);
+    }
 }
 
-void VulkanContextState::bindUnifrom(const VulkanUnifromBuffer * uniform, u32 arrayIndex, const resource::Shader::UniformBuffer & reflaction)
+void VulkanContextState::updateConstantBuffer(u32 arrayIndex, const resource::Shader::UniformBuffer& reflaction, u32 offset, u32 size, const void* data)
 {
-    BindingInfo bindingInfo;
-    bindingInfo._type = VulkanDeviceCaps::getInstance()->useDynamicUniforms ? VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC : VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-    bindingInfo._set = reflaction._set;
-    bindingInfo._binding = reflaction._binding;
-    bindingInfo._arrayIndex = arrayIndex;
-    bindingInfo._bufferInfo.buffer = uniform->_buffer->getHandle();
-    bindingInfo._bufferInfo.offset = uniform->_offset;
-    bindingInfo._bufferInfo.range = uniform->_size;
+    ASSERT(size <= reflaction._size, "over size");
+    auto& bindingList = m_descriptorSetsBindings[reflaction._set];
+    if (bindingList.size() < reflaction._binding + 1)
+    {
+        ASSERT(reflaction._binding < k_maxDescriptorBindingIndex, "invalid binding");
+        bindingList.resize(reflaction._binding + 1);
+    }
+    BindingInfo& bindingInfo = bindingList[reflaction._binding];
 
-    VulkanContextState::setBinding(bindingInfo);
+    bool updated = false;
+    VulkanUniformBuffer * uniformBuffer = nullptr;
+    if (!bindingInfo._bufferBinding._buffer)
+    {
+        uniformBuffer = m_unifromBufferManager->acquireUnformBuffer(size);
+        updated = true;
+    }
+    else
+    {
+        uniformBuffer = m_unifromBufferManager->findUniformBuffer(bindingInfo._bufferBinding._buffer, size);
+        ASSERT(uniformBuffer, "nulptr");
+
+        updated = uniformBuffer->update(offset, size, data);
+    }
+
+    if (updated)
+    {
+        bindingInfo._set = reflaction._set;
+        bindingInfo._binding = reflaction._binding;
+        bindingInfo._type = VulkanDeviceCaps::getInstance()->useDynamicUniforms ? VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC : VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        bindingInfo._arrayIndex = arrayIndex;
+        bindingInfo._bufferBinding._buffer = uniformBuffer->_buffer;
+        bindingInfo._bufferBinding._offset = uniformBuffer->_offset;
+        bindingInfo._bufferBinding._size = uniformBuffer->_size;
+        bindingInfo._bufferBinding._bufferInfo = VulkanContextState::makeVkDescriptorBufferInfo(uniformBuffer->_buffer, uniformBuffer->_offset, uniformBuffer->_size);
+
+        VulkanContextState::setBinding(bindingInfo);
+    }
+}
+
+VkDescriptorBufferInfo VulkanContextState::makeVkDescriptorBufferInfo(const VulkanBuffer* buffer, u64 offset, u64 range)
+{
+    VkDescriptorBufferInfo descriptorBufferInfo = {};
+    descriptorBufferInfo.buffer = buffer->getHandle();
+    descriptorBufferInfo.offset = offset;
+    descriptorBufferInfo.range = range;
+
+    return descriptorBufferInfo;
+}
+
+VkDescriptorImageInfo VulkanContextState::makeVkDescriptorImageInfo(const VulkanImage* image, const VulkanSampler* sampler)
+{
+    VkDescriptorImageInfo descriptorImageInfo = {};
+    descriptorImageInfo.sampler = sampler->getHandle();
+    descriptorImageInfo.imageView = image->getImageView();
+    descriptorImageInfo.imageLayout = image->getLayout();
+
+    return descriptorImageInfo;
 }
 
 void VulkanContextState::setBinding(BindingInfo & binding)
@@ -243,6 +311,28 @@ void VulkanContextState::setBinding(BindingInfo & binding)
 VulkanContextState::BindingInfo::BindingInfo()
 {
     memset(this, 0, sizeof(VulkanContextState::BindingInfo));
+}
+
+bool VulkanContextState::BindingInfo::operator==(const BindingInfo & info) const
+{
+    if (this == &info)
+    {
+        return true;
+    }
+
+    if (_set != info._set || _binding != info._binding 
+        || _type != info._type || _arrayIndex != info._arrayIndex)
+    {
+        return false;
+    }
+
+    if ( memcmp(&_bufferBinding, &info._bufferBinding, sizeof(BindingBufferInfo)) ||
+        memcmp(&_imageBinding, &info._imageBinding, sizeof(BindingImageInfo)) )
+    {
+        return false;
+    }
+
+    return true;
 }
 
 } //namespace vk

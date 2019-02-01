@@ -50,6 +50,8 @@ namespace renderer
 
         bool bindTexture(ShaderType shaderType, std::string& name, TextureTarget target, const Texture* texture);
         bool bindUniformsBuffer(ShaderType shaderType, std::string& name, u32 offset, u32 size, const u8* data);
+
+        std::map<std::string, u32> m_shaderParameters[ShaderType::ShaderType_Count];
     };
 
 

@@ -174,7 +174,7 @@ VulkanDescriptorSetManager::VulkanDescriptorSetManager(VkDevice device) noexcept
 
 VulkanPipelineLayout VulkanDescriptorSetManager::acquirePipelineLayout(const DescriptorSetDescription& desc)
 {
-    u32 hash = desc._hash;
+    u64 hash = desc._hash;
 
     auto found = m_pipelinesLayouts.emplace(hash, VulkanPipelineLayout());
     if (found.second)
@@ -285,6 +285,11 @@ bool VulkanDescriptorSetManager::createDescriptorSetLayouts(const DescriptorSetD
     descriptorSetLayouts.reserve(desc._descriptorSets.size());
     for (auto& set : desc._descriptorSets)
     {
+        if (set.empty())
+        {
+            continue;
+        }
+
         VkDescriptorSetLayoutCreateInfo descriptorSetLayoutCreateInfo = {};
         descriptorSetLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
         descriptorSetLayoutCreateInfo.pNext = nullptr; //VkDescriptorSetLayoutBindingFlagsCreateInfoEXT
@@ -347,21 +352,10 @@ VulkanDescriptorPool * VulkanDescriptorSetManager::createPool(const VulkanPipeli
 VulkanDescriptorSetManager::DescriptorSetDescription::DescriptorSetDescription(const std::array<resource::Shader*, ShaderType::ShaderType_Count>& shaders) noexcept
     : _hash(0)
 {
-   /* auto findShaderByType = [](const std::vector<resource::Shader*>& shaders, ShaderType type) -> resource::Shader*
-    {
-        for (auto& shader : shaders)
-        {
-            if (shader->getShaderHeader()._type == type)
-            {
-                return shader;
-            }
-        }
-
-        return nullptr;
-    };*/
+    _descriptorSets.fill({});
 
     u32 maxSet = 0;
-    for (u32 set = 0; set < k_maxDescriptorSetIndex; ++set)
+    for (u32 setIndex = 0; setIndex < k_maxDescriptorSetIndex; ++setIndex)
     {
         std::vector<VkDescriptorSetLayoutBinding> descriptorSetLayoutBindings;
         for (u32 type = ShaderType::ShaderType_Vertex; type < ShaderType_Count; ++type)
@@ -375,17 +369,17 @@ VulkanDescriptorSetManager::DescriptorSetDescription::DescriptorSetDescription(c
             const resource::Shader::ReflectionInfo& info = shader->getReflectionInfo();
             for (auto& uniform : info._uniformBuffers)
             {
-                ASSERT(uniform.second._set < k_maxDescriptorSetIndex && uniform.second._binding < k_maxDescriptorBindingIndex, "range out");
-                if (uniform.second._set != set)
+                ASSERT(uniform._set < k_maxDescriptorSetIndex && uniform._binding < k_maxDescriptorBindingIndex, "range out");
+                if (uniform._set != setIndex)
                 {
                     continue;
                 }
 
                 VkDescriptorSetLayoutBinding descriptorSetLayoutBinding;
                 descriptorSetLayoutBinding.descriptorType = VulkanDeviceCaps::getInstance()->useDynamicUniforms ? VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC : VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-                descriptorSetLayoutBinding.binding = uniform.second._binding;
+                descriptorSetLayoutBinding.binding = uniform._binding;
                 descriptorSetLayoutBinding.stageFlags = convertShaderTypeToVkStage((ShaderType)type);
-                descriptorSetLayoutBinding.descriptorCount = uniform.second._array;
+                descriptorSetLayoutBinding.descriptorCount = uniform._array;
                 descriptorSetLayoutBinding.pImmutableSamplers = nullptr;
 
                 descriptorSetLayoutBindings.push_back(descriptorSetLayoutBinding);
@@ -393,16 +387,16 @@ VulkanDescriptorSetManager::DescriptorSetDescription::DescriptorSetDescription(c
 
             for (auto& image : info._sampledImages)
             {
-                if (image.second._set != set)
+                if (image._set != setIndex)
                 {
                     continue;
                 }
 
                 VkDescriptorSetLayoutBinding descriptorSetLayoutBinding;
                 descriptorSetLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER; //VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE
-                descriptorSetLayoutBinding.binding = image.second._binding;
+                descriptorSetLayoutBinding.binding = image._binding;
                 descriptorSetLayoutBinding.stageFlags = convertShaderTypeToVkStage((ShaderType)type);
-                descriptorSetLayoutBinding.descriptorCount = image.second._array;
+                descriptorSetLayoutBinding.descriptorCount = image._array;
                 descriptorSetLayoutBinding.pImmutableSamplers = nullptr;
 
                 descriptorSetLayoutBindings.push_back(descriptorSetLayoutBinding);
@@ -411,8 +405,8 @@ VulkanDescriptorSetManager::DescriptorSetDescription::DescriptorSetDescription(c
 
         if (!descriptorSetLayoutBindings.empty())
         {
-            maxSet = std::max(maxSet, set);
-            _descriptorSets.push_back(descriptorSetLayoutBindings); //TODO: need store set index
+            maxSet = std::max(maxSet, setIndex);
+            _descriptorSets[setIndex] = std::move(descriptorSetLayoutBindings);
         }
     }
     ASSERT(maxSet + 1 == _descriptorSets.size(), "invalid max set index");
@@ -431,18 +425,23 @@ VulkanDescriptorSetManager::DescriptorSetDescription::DescriptorSetDescription(c
         {
             VkPushConstantRange pushConstantRange = {};
             pushConstantRange.stageFlags = convertShaderTypeToVkStage((ShaderType)type);
-            pushConstantRange.offset = push.second._offset;
-            pushConstantRange.size = push.second._size;
+            pushConstantRange.offset = push._offset;
+            pushConstantRange.size = push._size;
 
             _pushConstant.push_back(pushConstantRange);
         }
     }
 
-    _hash = crc32c::Crc32c(reinterpret_cast<u8*>(_pushConstant.data()), _pushConstant.size() * sizeof(VkPushConstantRange));
+    u64 pushConstantHash = crc32c::Extend(static_cast<u32>(_pushConstant.size()), reinterpret_cast<u8*>(_pushConstant.data()), _pushConstant.size() * sizeof(VkPushConstantRange));
+
+    u32 setHash = static_cast<u32>(_descriptorSets.size());
     for (auto& set : _descriptorSets)
     {
-        _hash = crc32c::Extend(_hash, reinterpret_cast<u8*>(set.data()), set.size() * sizeof(VkDescriptorSetLayoutBinding));
+        u32 bindingCount = static_cast<u32>(set.size());
+        setHash = crc32c::Extend(setHash, reinterpret_cast<u8*>(&bindingCount), sizeof(u32));
+        setHash = crc32c::Extend(setHash, reinterpret_cast<u8*>(set.data()), set.size() * sizeof(VkDescriptorSetLayoutBinding));
     }
+    _hash = setHash | pushConstantHash << 32;
 }
 
 }//namespace vk

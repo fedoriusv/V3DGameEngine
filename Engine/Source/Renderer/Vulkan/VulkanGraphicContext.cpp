@@ -352,8 +352,7 @@ void VulkanGraphicContext::removePipeline(Pipeline * pipeline)
     m_pipelineManager->removePipeline(pipeline);
 }
 
-Image * VulkanGraphicContext::createImage(TextureTarget target, renderer::Format format, const core::Dimension3D& dimension, u32 mipLevels,
-    s16 filter, TextureAnisotropic anisotropicLevel, TextureWrap wrap) const
+Image * VulkanGraphicContext::createImage(TextureTarget target, renderer::Format format, const core::Dimension3D& dimension, u32 mipLevels, u16 flags) const
 {
     VkImageType vkType = VulkanImage::convertTextureTargetToVkImageType(target);
     VkFormat vkFormat = VulkanImage::convertImageFormatToVkFormat(format);
@@ -362,8 +361,7 @@ Image * VulkanGraphicContext::createImage(TextureTarget target, renderer::Format
     return new VulkanImage(m_imageMemoryManager, m_deviceInfo._device, vkType, vkFormat, vkExtent, mipLevels, VK_IMAGE_TILING_OPTIMAL);
 }
 
-Image * VulkanGraphicContext::createAttachmentImage(renderer::Format format, const core::Dimension3D& dimension, TextureSamples samples, 
-    s16 filter, TextureAnisotropic anisotropicLevel, TextureWrap wrap) const
+Image * VulkanGraphicContext::createAttachmentImage(renderer::Format format, const core::Dimension3D& dimension, TextureSamples samples, u16 flags) const
 {
     VkFormat vkFormat = VulkanImage::convertImageFormatToVkFormat(format);
     VkExtent3D vkExtent = { dimension.width, dimension.height, dimension.depth };
@@ -418,36 +416,22 @@ void VulkanGraphicContext::removeBuffer(Buffer * buffer)
     }
 }
 
-void VulkanGraphicContext::bindTexture(const resource::Shader* shader, const std::string& name, const Image* image)
+void VulkanGraphicContext::bindTexture(const resource::Shader* shader, u32 bindIndex, const Image* image)
 {
     const VulkanImage* vkImage = static_cast<const VulkanImage*>(image);
     VkImageView view = vkImage->getImageView();
 
-    const resource::Shader::ReflectionInfo& info = shader->getReflectionInfo();
-    auto iter = info._sampledImages.find(name);
-    if (iter == info._sampledImages.cend())
-    {
-        ASSERT(false, "fail");
-    }
-
-    m_currentContextStateNEW->bindTexture(vkImage, nullptr, 0, iter->second);
+    //TODO
+    //m_currentContextStateNEW->bindTexture(vkImage, nullptr, 0, iter->second);
     //shader->getReflectionInfo()._sampledImages[name]
 }
 
-void VulkanGraphicContext::bindUniformBuffers(const resource::Shader* shader, const std::string& name, const void* data, u32 offset, u32 size)
+void VulkanGraphicContext::bindUniformsBuffer(const resource::Shader* shader, u32 bindIndex, u32 offset, u32 size, const void* data)
 {
-    //TODO check shader present inside pipeline
     const resource::Shader::ReflectionInfo& info = shader->getReflectionInfo();
-    auto iter = info._uniformBuffers.find(name);
-    if (iter == info._uniformBuffers.cend())
-    {
-        ASSERT(false, "fail");
-    }
+    const resource::Shader::UniformBuffer& bufferData = info._uniformBuffers[bindIndex];
 
-    VulkanUnifromBuffer* buffer =  m_uniformBufferManager->acquireUnformBuffer(size);
-    ASSERT(buffer, "nullptr");
-    //TODO copy
-    m_currentContextStateNEW->bindUnifrom(buffer, 0, iter->second);
+    m_currentContextStateNEW->updateConstantBuffer(bindIndex, bufferData, offset, size, data);
 }
 
 //void VulkanGraphicContext::bindVertexBuffers(const std::vector<Buffer*>& buffer, const std::vector<u64>& offsets)
@@ -584,7 +568,7 @@ bool VulkanGraphicContext::initialize()
     m_framebuferManager = new FramebufferManager(this);
     m_pipelineManager = new PipelineManager(this);
 
-    m_currentContextStateNEW = new VulkanContextState(m_deviceInfo._device, m_descriptorSetManager);
+    m_currentContextStateNEW = new VulkanContextState(m_deviceInfo._device, m_descriptorSetManager, m_uniformBufferManager);
 
     return true;
 }

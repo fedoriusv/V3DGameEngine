@@ -213,15 +213,11 @@ Texture2D::Texture2D(renderer::CommandList& cmdList, renderer::Format format, co
     , m_mipmapLevel(mipmapCount)
     , m_samples(renderer::TextureSamples::TextureSamples_x1)
 
-    , m_filter(renderer::TextureFilter_Nearest)
-    , m_anisotropicLevel(renderer::TextureAnisotropic::TextureAnisotropic_None)
-    , m_wrap(renderer::TextureWrap::TextureWrap_Repeat)
-
     , m_image(nullptr)
 
 {
     core::Dimension3D dim = { m_dimension.width, m_dimension.height, 1 };
-    m_image = m_cmdList.getContext()->createImage(m_target, m_format, dim, m_mipmapLevel, m_filter, m_anisotropicLevel, m_wrap);
+    m_image = m_cmdList.getContext()->createImage(m_target, m_format, dim, m_mipmapLevel, 0);
     ASSERT(m_image, "m_image is nullptr");
     m_image->registerNotify(this);
 
@@ -236,14 +232,10 @@ Texture2D::Texture2D(renderer::CommandList & cmdList, renderer::Format format, c
     , m_mipmapLevel(0)
     , m_samples(samples)
 
-    , m_filter(renderer::TextureFilter_Nearest)
-    , m_anisotropicLevel(renderer::TextureAnisotropic::TextureAnisotropic_None)
-    , m_wrap(renderer::TextureWrap::TextureWrap_Repeat)
-
     , m_image(nullptr)
 {
     core::Dimension3D dim = { m_dimension.width, m_dimension.height, 1 };
-    m_image = m_cmdList.getContext()->createAttachmentImage(m_format, dim, m_samples, m_filter, m_anisotropicLevel, m_wrap);
+    m_image = m_cmdList.getContext()->createAttachmentImage(m_format, dim, m_samples, 0);
     ASSERT(m_image, "m_image is nullptr");
     m_image->registerNotify(this);
 
@@ -301,26 +293,6 @@ Texture2D::~Texture2D()
 renderer::TextureTarget Texture2D::getTarget() const
 {
     return m_target;
-}
-
-renderer::TextureFilter Texture2D::getMinFilter() const
-{
-    return renderer::TextureFilter_Nearest;
-}
-
-renderer::TextureFilter Texture2D::getMagFilter() const
-{
-    return renderer::TextureFilter_Nearest;
-}
-
-renderer::TextureWrap Texture2D::getWrap() const
-{
-    return m_wrap;
-}
-
-renderer::TextureAnisotropic Texture2D::getAnisotropic() const
-{
-    return m_anisotropicLevel;
 }
 
 renderer::TextureSamples Texture2D::getSampleCount() const

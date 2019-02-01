@@ -16,9 +16,9 @@ namespace renderer
 class UpdateUniformsBuffer : public Command
 {
 public:
-    UpdateUniformsBuffer(resource::Shader* shader, const std::string& name, u32 offset, u32 size, u8* data, bool shared) noexcept
+    UpdateUniformsBuffer(resource::Shader* shader, u32 bindIndex, u32 offset, u32 size, u8* data, bool shared) noexcept
         : m_shader(shader)
-        , m_name(name)
+        , m_bindIndex(bindIndex)
         , m_offset(offset)
         , m_size(size)
         , m_data(nullptr)
@@ -54,12 +54,13 @@ public:
     void execute(const CommandList& cmdList)
     {
         LOG_DEBUG("UpdateUniformsBuffer execute");
-        cmdList.getContext()->bindUniformBuffers(m_shader, m_name, m_data, m_offset, m_size);
+        cmdList.getContext()->bindUniformsBuffer(m_shader, m_bindIndex, m_offset, m_size, m_data);
     }
 
 private:
     resource::Shader* m_shader;
-    const std::string m_name;
+    u32 m_bindIndex;
+
     u32 m_offset;
     u32 m_size;
     u8* m_data;
@@ -102,43 +103,30 @@ void ShaderProgram::composeProgramData(const std::vector<resource::Shader*>& sha
     {
         m_programInfo._hash = crc32c::Extend(m_programInfo._hash, reinterpret_cast<u8*>(&shader->m_hash), sizeof(u32));
 
-       /* if (shader->getShaderHeader()._type == resource::ShaderType::ShaderType_Vertex)
+        auto& prameters = m_shaderParameters[shader->getShaderHeader()._type];
+        u32 uniformIndex = 0;
+        for (auto& buffer : shader->m_reflectionInfo._uniformBuffers)
         {
-            u32 offest = 0;
-            for (auto& attr : shader->m_reflectionInfo._inputAttribute)
+            ASSERT(!buffer._name.empty(), "empty name");
+            auto iter = prameters.emplace(buffer._name, uniformIndex);
+            if (!iter.second)
             {
-                ASSERT(!attr._name.empty(), "empty name");
-                m_programInfo._inputAttachment[attr._name] = { attr._location, offest, attr._format };
-                u32 dataSize = renderer::getFormatSize(attr._format);
-                offest += dataSize;
+                ASSERT(false, "already present inside map");
             }
-
-            for (auto& buffer : shader->m_reflectionInfo._uniformBuffers)
-            {
-                ASSERT(!buffer._name.empty(), "empty name");
-                m_programInfo._uniformsBuffer[buffer._name] = { buffer._set, buffer._binding, buffer._size };
-            }
+            ++uniformIndex;
         }
 
-        if (shader->getShaderHeader()._type == resource::ShaderType::ShaderType_Fragment)
+        u32 imageIndex = 0;
+        for (auto& image : shader->m_reflectionInfo._sampledImages)
         {
-            u32 offest = 0;
-            for (auto& attr : shader->m_reflectionInfo._outputAttribute)
+            ASSERT(!image._name.empty(), "empty name");
+            auto iter = prameters.emplace(image._name, imageIndex);
+            if (!iter.second)
             {
-                ASSERT(!attr._name.empty(), "empty name");
-                m_programInfo._outputAttachment[attr._name] = { attr._location, offest, attr._format };
-                u32 dataSize = renderer::getFormatSize(attr._format);
-                offest += dataSize;
+                ASSERT(false, "already present inside map");
             }
-
-            for (auto& buffer : shader->m_reflectionInfo._uniformBuffers)
-            {
-                ASSERT(!buffer._name.empty(), "empty name");
-                m_programInfo._uniformsBuffer[buffer._name] = { buffer._set, buffer._binding, buffer._size };
-            }
-        }*/
-
-//        m_programInfo._shaders.push_back(shader);
+            ++imageIndex;
+        }
     }
 }
 
@@ -146,17 +134,25 @@ bool ShaderProgram::bindUniformsBuffer(ShaderType shaderType, std::string& name,
 {
     resource::Shader* shader = m_programInfo._shaders[shaderType];
     ASSERT(shader, "fail");
+    ASSERT(!m_shaderParameters[shaderType].empty(), "fail");
+    auto iter = m_shaderParameters[shaderType].find(name);
+    if (iter == m_shaderParameters[shaderType].cend())
+    {
+        LOG_WARNING("ShaderProgram::bindUniformsBuffer: binding for buffer [%s] not found ", name.c_str());
+        ASSERT(false, "not found");
+        return false;
+    }
 
     if (m_cmdList.isImmediate())
     {
-        m_cmdList.getContext()->bindUniformBuffers(shader, name, data, offset, size);
+        m_cmdList.getContext()->bindUniformsBuffer(shader, iter->second, offset, size, data);
     }
     else
     {
-        m_cmdList.pushCommand(new UpdateUniformsBuffer(shader, name, offset, size, const_cast<u8*>(data), true));
+        m_cmdList.pushCommand(new UpdateUniformsBuffer(shader, iter->second, offset, size, const_cast<u8*>(data), true));
     }
 
-    return false;
+    return true;
 }
 
 bool ShaderProgram::bindTexture(ShaderType shaderType, std::string& name, TextureTarget target, const Texture* texture)
@@ -170,27 +166,33 @@ bool ShaderProgram::bindTexture(ShaderType shaderType, std::string& name, Textur
     default:
         break;
     }
+
     if (!image)
     {
         ASSERT(false, "image nullptr");
         return false;
     }
 
-    //auto iter = m_programInfo._textures.find(name);
-    //if (iter == m_programInfo._textures.cend())
-    //{
-    //    LOG_WARNING("ShaderProgram::setTexture: binding for texture [%s] not found ", name.c_str());
-    //    return false;
-    //}
+    resource::Shader* shader = m_programInfo._shaders[shaderType];
+    ASSERT(shader, "fail");
+    ASSERT(!m_shaderParameters[shaderType].empty(), "fail");
+    auto iter = m_shaderParameters[shaderType].find(name);
+    if (iter == m_shaderParameters[shaderType].cend())
+    {
+        LOG_WARNING("ShaderProgram::setTexture: binding for texture [%s] not found ", name.c_str());
+        ASSERT(false, "not found");
+        return false;
+    }
 
-    //if (m_cmdList.isImmediate())
-    //{
-    //    m_cmdList.getContext()->bindTexture(image, (*iter).second);
-    //}
-    //else
-    //{
-    //    //TODO
-    //}
+    if (m_cmdList.isImmediate())
+    {
+        m_cmdList.getContext()->bindTexture(shader, iter->second, image);
+    }
+    else
+    {
+        ASSERT(false, "not impl");
+        //TODO
+    }
 
     return false;
 }

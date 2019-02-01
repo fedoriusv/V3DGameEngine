@@ -52,15 +52,13 @@ void EmptyContext::setScissor(const core::Rect32 & scissor)
     LOG_DEBUG("EmptyContext::setScissor");
 }
 
-Image * EmptyContext::createImage(TextureTarget target, renderer::Format format, const core::Dimension3D& dimension, u32 mipmapLevel,
-    s16 filter, TextureAnisotropic anisotropicLevel, TextureWrap wrap) const
+Image * EmptyContext::createImage(TextureTarget target, renderer::Format format, const core::Dimension3D& dimension, u32 mipmapLevel, u16 flags) const
 {
     LOG_DEBUG("EmptyContext::createImage");
     return nullptr;
 }
 
-Image * EmptyContext::createAttachmentImage(renderer::Format format, const core::Dimension3D& dimension, TextureSamples samples,
-    s16 filter, TextureAnisotropic anisotropicLevel, TextureWrap wrap) const
+Image * EmptyContext::createAttachmentImage(renderer::Format format, const core::Dimension3D& dimension, TextureSamples samples, u16 flags) const
 {
     LOG_DEBUG("EmptyContext::createAttachmentImage");
     return nullptr;
@@ -107,14 +105,14 @@ void EmptyContext::removePipeline(Pipeline * pipeline)
     LOG_DEBUG("EmptyContext::removePipeline");
 }
 
-void EmptyContext::bindTexture(const resource::Shader* shader, const std::string& name, const Image* image)
+void EmptyContext::bindTexture(const resource::Shader* shader, u32 bindIndex, const Image* image)
 {
     LOG_DEBUG("EmptyContext::bindTexture");
 }
 
-void EmptyContext::bindUniformBuffers(const resource::Shader* shader, const std::string& name, const void* data, u32 offset, u32 size)
+void EmptyContext::bindUniformsBuffer(const resource::Shader* shader, u32 bindIndex, u32 offset, u32 size, const void* data)
 {
-    LOG_DEBUG("EmptyContext::bindUniformBuffers");
+    LOG_DEBUG("EmptyContext::bindUniformsBuffer");
 }
 
 //void EmptyContext::bindVertexBuffers(const std::vector<Buffer*>& buffer, const std::vector<u64>& offsets)

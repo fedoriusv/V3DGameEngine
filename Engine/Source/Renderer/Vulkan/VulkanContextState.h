@@ -5,6 +5,7 @@
 #ifdef VULKAN_RENDER
 #include "VulkanWrapper.h"
 #include "VulkanCommandBufferManager.h"
+#include "VulkanDescriptorSet.h"
 
 namespace v3d
 {
@@ -16,9 +17,10 @@ namespace vk
     class VulkanFramebuffer;
     class VulkanGraphicPipeline;
     class VulkanDescriptorSetManager;
+    class VulkanUniformBufferManager;
     class VulkanImage;
     class VulkanSampler;
-    class VulkanUnifromBuffer;
+    class VulkanUniformBuffer;
     class VulkanDescriptorPool;
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -30,7 +32,7 @@ namespace vk
     {
     public:
 
-        explicit VulkanContextState(VkDevice device, VulkanDescriptorSetManager* descriptorSetManager) noexcept;
+        explicit VulkanContextState(VkDevice device, VulkanDescriptorSetManager* descriptorSetManager, VulkanUniformBufferManager* unifromBufferManager) noexcept;
 
         void invalidateCommandBuffer(CommandTargetType type);
 
@@ -57,8 +59,8 @@ namespace vk
         bool acquireDescriptorSets(std::vector<VkDescriptorSet>& sets, std::vector<u32>& offsets);
         void updateDescriptorSet();
 
-        void bindTexture(const VulkanImage* image, VulkanSampler* sampler, u32 arrayIndex, const resource::Shader::SampledImage& reflaction);
-        void bindUnifrom(const VulkanUnifromBuffer* uniform, u32 arrayIndex, const resource::Shader::UniformBuffer& reflaction);
+        void bindTexture(const VulkanImage* image, const VulkanSampler* sampler, u32 arrayIndex, const resource::Shader::SampledImage& reflaction);
+        void updateConstantBuffer(u32 arrayIndex, const resource::Shader::UniformBuffer& reflaction, u32 offset, u32 size, const void* data);
 
         std::vector<VkClearValue> m_renderPassClearValues;
         VkRect2D m_renderPassArea;
@@ -69,31 +71,38 @@ namespace vk
         {
             struct BindingImageInfo
             {
-                VulkanImage*    _image;
-                VulkanSampler*  _sampler;
+                VkDescriptorImageInfo _imageInfo;
+                const VulkanImage*    _image;
+                const VulkanSampler*  _sampler;
             };
 
             struct BindingBufferInfo
             {
-                VulkanBuffer* _buffer;
-                u32           _offset;
-                u32           _size;
+                VkDescriptorBufferInfo _bufferInfo;
+                const VulkanBuffer*    _buffer;
+                u32                    _offset;
+                u32                    _size;
             };
 
             BindingInfo();
+            bool operator==(const BindingInfo& info) const;
 
             union
             {
-                VkDescriptorImageInfo _imageInfo;
-                VkDescriptorBufferInfo _bufferInfo;
+                BindingImageInfo  _imageBinding;
+                BindingBufferInfo _bufferBinding;
+
             };
             //std::variant<BindingImageInfo, BindingBufferInfo> _descriptorBinding;
 
-            u32                 _set;
-            u32                 _binding;
-            VkDescriptorType    _type;
-            u32                 _arrayIndex;
+            u32                 _set        : 16;
+            u32                 _binding    : 16;
+            VkDescriptorType    _type       : 16;
+            u32                 _arrayIndex : 16;
         };
+
+        static VkDescriptorBufferInfo makeVkDescriptorBufferInfo(const VulkanBuffer* buffer, u64 offset, u64 range);
+        static VkDescriptorImageInfo makeVkDescriptorImageInfo(const VulkanImage* image, const VulkanSampler* sampler);
 
         VkDevice m_device;
 
@@ -105,14 +114,18 @@ namespace vk
 
         std::pair<StreamBufferDescription, bool> m_currentVertexBuffers;
 
-        VulkanDescriptorSetManager* m_descriptorSetManager;
         VulkanDescriptorPool* m_currentPool;
         std::vector<VkDescriptorSet> m_currentSets;
+        VulkanDescriptorSetManager* m_descriptorSetManager;
+
+        VulkanUniformBufferManager* m_unifromBufferManager;
 
         void setBinding(BindingInfo& binding);
 
         std::vector<BindingInfo> m_updatedBindings;
         std::map<u32, BindingInfo> m_currentBindingCache;
+
+        std::array<std::vector<BindingInfo>, k_maxDescriptorSetIndex> m_descriptorSetsBindings;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

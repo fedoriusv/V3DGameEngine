@@ -56,8 +56,8 @@ namespace vk
         void clearBackbuffer(const core::Vector4D & color) override;
 
 
-        void bindTexture(const resource::Shader* shader, const std::string& name, const Image* image) override;
-        void bindUniformBuffers(const resource::Shader* shader, const std::string& name, const void* data, u32 offset, u32 size) override;
+        void bindTexture(const resource::Shader* shader, u32 bindIndex, const Image* image) override;
+        void bindUniformsBuffer(const resource::Shader* shader, u32 bindIndex, u32 offset, u32 size, const void* data) override;
 
         //void bindVertexBuffers(const std::vector<Buffer*>& buffer, const std::vector<u64>& offsets)  override;
 
@@ -74,8 +74,8 @@ namespace vk
         void setPipeline(const Pipeline::PipelineGraphicInfo* pipelineInfo, ObjectTracker<Pipeline>* tracker) override;
         void removePipeline(Pipeline* pipeline) override;
 
-        Image* createImage(TextureTarget target, renderer::Format format, const core::Dimension3D& dimension, u32 mipmapLevel, s16 filter, TextureAnisotropic anisotropicLevel, TextureWrap wrap) const override;
-        Image* createAttachmentImage(renderer::Format format, const core::Dimension3D& dimension, TextureSamples samples, s16 filter, TextureAnisotropic anisotropicLevel, TextureWrap wrap) const override;
+        Image* createImage(TextureTarget target, renderer::Format format, const core::Dimension3D& dimension, u32 mipmapLevel, u16 flags) const override;
+        Image* createAttachmentImage(renderer::Format format, const core::Dimension3D& dimension, TextureSamples samples, u16 flags) const override;
         void removeImage(Image* image) override;
 
         Buffer* createBuffer(Buffer::BufferType type, u16 usageFlag, u64 size) override;

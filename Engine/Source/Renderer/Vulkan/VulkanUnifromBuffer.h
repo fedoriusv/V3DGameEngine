@@ -12,12 +12,20 @@ namespace vk
 {
     class VulkanBuffer;
 
-    class VulkanUnifromBuffer
+    class VulkanUniformBuffer final
     {
     public:
-        VulkanBuffer* _buffer;
-        u32 _offset;
-        u32 _size;
+
+        VulkanUniformBuffer(VulkanBuffer* buffer, u64 offset, u64 size) noexcept;
+
+        VulkanBuffer*   _buffer;
+        u32             _offset;
+        u32             _size;
+
+        bool update(u32 offset, u32 size, const void* data);
+
+    private:
+
     };
 
     class VulkanUniformBufferManager final
@@ -27,19 +35,30 @@ namespace vk
         VulkanUniformBufferManager(VkDevice device);
         ~VulkanUniformBufferManager();
 
-        VulkanUnifromBuffer* acquireUnformBuffer(u32 size);
-
+        VulkanUniformBuffer* acquireUnformBuffer(u32 requestedSize);
+        VulkanUniformBuffer* findUniformBuffer(const VulkanBuffer* buffer, u32 requestedSize);
 
     private:
 
-        std::deque<VulkanBuffer*> m_freeBuffers;
-        std::deque<VulkanBuffer*> m_usedUBuffers;
-        VulkanBuffer* m_currentBuffer;
+        struct VulkanUniformBufferPool
+        {
+            VulkanBuffer* _buffer;
+            u64 _usedSize;
+            u64 _freeSize;
+        };
 
-        std::list<VulkanUnifromBuffer*> m_uniformBuffers;
+        VulkanUniformBufferPool* getFreePool();
+
+        std::deque<VulkanUniformBufferPool*> m_freeBuffers;
+        std::deque<VulkanUniformBufferPool*> m_usedUBuffers;
+        VulkanUniformBufferPool* m_currentBuffer;
+
+        std::map<VulkanBuffer*, VulkanUniformBufferPool*> m_uniformBuffers;
 
         VkDevice m_device;
         VulkanMemory::VulkanMemoryAllocator* m_memoryManager;
+
+        const u64 k_bufferPoolSize = 1 * 1024 * 1024;
     };
 
 } //namespace vk

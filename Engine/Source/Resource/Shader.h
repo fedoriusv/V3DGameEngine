@@ -134,9 +134,9 @@ namespace resource
         {
             std::vector<Attribute>   _inputAttribute;
             std::vector<Attribute>   _outputAttribute;
-            std::map<std::string, UniformBuffer>  _uniformBuffers;
-            std::map<std::string, SampledImage>   _sampledImages;
-            std::map<std::string, PushConstant> _pushConstant;
+            std::vector<UniformBuffer>  _uniformBuffers;
+            std::vector<SampledImage>   _sampledImages;
+            std::vector<PushConstant> _pushConstant;
         };
 
         explicit Shader(const ShaderHeader* header) noexcept;

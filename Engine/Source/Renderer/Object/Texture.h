@@ -43,10 +43,6 @@ namespace renderer
         ~Texture2D();
 
         renderer::TextureTarget         getTarget() const;
-        renderer::TextureFilter         getMinFilter() const;
-        renderer::TextureFilter         getMagFilter() const;
-        renderer::TextureWrap           getWrap() const;
-        renderer::TextureAnisotropic    getAnisotropic() const;
         renderer::TextureSamples        getSampleCount() const;
         u32                             getMipmaps() const;
         const core::Dimension2D&        getDimension() const;
@@ -77,10 +73,6 @@ namespace renderer
         const core::Dimension2D             m_dimension;
         const u32                           m_mipmapLevel;
         renderer::TextureSamples            m_samples;
-
-        s16                                 m_filter;
-        renderer::TextureAnisotropic        m_anisotropicLevel;
-        renderer::TextureWrap               m_wrap;
 
         renderer::Image*                    m_image;
 

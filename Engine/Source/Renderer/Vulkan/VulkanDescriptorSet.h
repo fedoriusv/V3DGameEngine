@@ -26,7 +26,7 @@ namespace vk
     {
         VulkanPipelineLayout();
 
-        u32 _key;
+        u64 _key;
         VkPipelineLayout                    _layout;
         std::vector<VkDescriptorSetLayout>  _descriptorSetLayouts;
     };
@@ -75,8 +75,8 @@ namespace vk
             DescriptorSetDescription() = delete;
             DescriptorSetDescription(const DescriptorSetDescription&) = delete;
 
-            u32 _hash;
-            std::vector<std::vector<VkDescriptorSetLayoutBinding>> _descriptorSets;
+            u64 _hash;
+            std::array<std::vector<VkDescriptorSetLayoutBinding>, k_maxDescriptorSetIndex> _descriptorSets;
             std::vector<VkPushConstantRange> _pushConstant;
         };
 
@@ -104,7 +104,7 @@ namespace vk
 
         VkDevice m_device;
 
-        std::map<u32, VulkanPipelineLayout> m_pipelinesLayouts;
+        std::map<u64, VulkanPipelineLayout> m_pipelinesLayouts;
         std::deque<VulkanDescriptorPool*> m_descriptorPools;
 
         static std::vector<VkDescriptorPoolSize> s_poolSizes;
