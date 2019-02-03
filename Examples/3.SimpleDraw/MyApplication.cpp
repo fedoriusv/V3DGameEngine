@@ -97,7 +97,7 @@ void MyApplication::Initialize()
         0.0f, -1.0f, 0.0f ,     0.0f, 0.0f, 1.0f
     };
 
-    VertexInputAttribDescription::InputBinding binding(0, VertexInputAttribDescription::InputRate_Vertex, sizeof(f32) * vertexBuffer.size());
+    VertexInputAttribDescription::InputBinding binding(0, VertexInputAttribDescription::InputRate_Vertex, u32(sizeof(f32) * vertexBuffer.size()));
     renderer::VertexInputAttribDescription vertexDesc({ binding },
         {
             { binding._index, 0, Format::Format_R32G32B32_SFloat, 0 },                  //pos
@@ -129,7 +129,7 @@ void MyApplication::Exit()
 {
     delete m_Render;
     delete m_CommandList;
-    delete m_Context;
+    Context::destroyContext(m_Context);
 
     m_Window->getInputEventReceiver()->dettach(InputEvent::InputEventType::MouseInputEvent);
 }

@@ -142,7 +142,7 @@ namespace resource
         explicit Shader(const ShaderHeader* header) noexcept;
         ~Shader();
 
-        void init(const stream::Stream* stream) override;
+        void init(stream::Stream* stream) override;
         bool load() override;
 
         const ShaderHeader& getShaderHeader() const;

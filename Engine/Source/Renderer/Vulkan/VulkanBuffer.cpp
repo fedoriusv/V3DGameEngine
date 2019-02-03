@@ -43,6 +43,7 @@ VulkanBuffer::~VulkanBuffer()
 bool VulkanBuffer::create()
 {
     ASSERT(!m_buffer, "m_buffer already created");
+    ASSERT(m_size, "m_size");
 
     VkBufferUsageFlags usage = 0;
     VkMemoryPropertyFlags flag = 0;

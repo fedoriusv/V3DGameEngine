@@ -218,7 +218,7 @@ void VertexStreamBuffer::handleNotify(utils::Observable * ob)
     LOG_DEBUG("VertexStreamBuffer::handleNotify to delete buffer %xll", this);
     ASSERT(m_buffer == ob, "not same");
 
-    delete m_buffer;
+    //delete m_buffer;
     m_buffer = nullptr;
 }
 

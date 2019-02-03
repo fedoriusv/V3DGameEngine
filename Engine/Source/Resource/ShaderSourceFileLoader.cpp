@@ -42,6 +42,7 @@ ShaderSourceFileLoader::ShaderSourceFileLoader(const renderer::Context* context,
     }
 
     ResourceLoader::registerPath("../../../../");
+    ResourceLoader::registerPath("../../../../../");
     ResourceLoader::registerPath("../../../../engine/");
 }
 

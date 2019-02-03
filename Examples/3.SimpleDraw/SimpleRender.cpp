@@ -21,7 +21,7 @@ SimpleRender::SimpleRender(renderer::CommandList& cmdList, const renderer::Verte
     bool success = m_renderTarget->setColorTexture(0, m_textureTarget, RenderTargetLoadOp::LoadOp_Clear, RenderTargetStoreOp::StoreOp_Store);
 
     u64 vertexBufferSize = geomentry.size() * sizeof(f32);
-    m_vetexBuffer = cmdList.createObject<VertexStreamBuffer>(StreamBufferUsage::StreamBuffer_Write | StreamBufferUsage::StreamBuffer_Shared, vertexBufferSize, (u8*)geomentry.data());
+    m_vetexBuffer = cmdList.createObject<VertexStreamBuffer>(StreamBufferUsage::StreamBuffer_Write | StreamBufferUsage::StreamBuffer_Shared, 256, (u8*)geomentry.data());
 
     m_pipeline = cmdList.createObject<GraphicsPipelineState>(desc, m_program, m_renderTarget);
     m_pipeline->setPrimitiveTopology(PrimitiveTopology::PrimitiveTopology_TriangleList);
@@ -66,6 +66,9 @@ void SimpleRender::update(f32 zoom, const core::Vector3D& rotate)
 
 void SimpleRender::render(renderer::CommandList& cmdList)
 {
+    cmdList.setViewport(core::Rect32(0, 0, m_renderTarget->getDimension().width, m_renderTarget->getDimension().height));
+    cmdList.setScissor(core::Rect32(0, 0, m_renderTarget->getDimension().width, m_renderTarget->getDimension().height));
+
     SimpleRender::update(1.0f, core::Vector3D(0.0f));
     cmdList.draw(renderer::StreamBufferDescription(m_vetexBuffer, 0), 0, 3, 1);
 }

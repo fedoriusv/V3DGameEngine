@@ -58,13 +58,13 @@ namespace resource
             }
         };
 
-        virtual void init(const stream::Stream* stream) = 0;
+        virtual void init(stream::Stream* stream) = 0;
         virtual bool load() = 0;
 
     protected:
 
         const ResourceHeader*     m_header;
-        const stream::Stream*     m_stream;
+        stream::Stream*           m_stream;
         
         bool                      m_loaded;
     };

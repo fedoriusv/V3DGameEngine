@@ -30,6 +30,9 @@ VulkanContextState::VulkanContextState(VkDevice device, VulkanDescriptorSetManag
     m_currentPipeline = { nullptr, false };
 
     m_currentVertexBuffers.second = false;
+
+    m_renderPassArea = { 0, 0, 0, 0 };
+    m_renderPassClearValues.resize(1, { 0.0f, 0.0f, 0.0f, 0.0f });
 }
 
 void VulkanContextState::invalidateCommandBuffer(CommandTargetType type)
@@ -57,7 +60,7 @@ inline bool VulkanContextState::isCurrentPipeline(const VulkanGraphicPipeline * 
 
 bool VulkanContextState::setCurrentRenderPass(VulkanRenderPass * pass)
 {
-    bool changed = VulkanContextState::isCurrentRenderPass(pass);
+    bool changed = !VulkanContextState::isCurrentRenderPass(pass);
     m_currentRenderpass.first = pass;
     m_currentRenderpass.second = changed;
 
@@ -66,7 +69,7 @@ bool VulkanContextState::setCurrentRenderPass(VulkanRenderPass * pass)
 
 bool VulkanContextState::setCurrentFramebuffer(VulkanFramebuffer * framebuffer)
 {
-    bool changed = VulkanContextState::isCurrentFramebuffer(framebuffer);
+    bool changed = !VulkanContextState::isCurrentFramebuffer(framebuffer);
     m_currentFramebuffer.first = framebuffer;
     m_currentFramebuffer.second = changed;
 
@@ -75,7 +78,7 @@ bool VulkanContextState::setCurrentFramebuffer(VulkanFramebuffer * framebuffer)
 
 bool VulkanContextState::setCurrentPipeline(VulkanGraphicPipeline * pipeline)
 {
-    bool changed = VulkanContextState::isCurrentPipeline(pipeline);
+    bool changed = !VulkanContextState::isCurrentPipeline(pipeline);
     m_currentPipeline.first = pipeline;
     m_currentPipeline.second = changed;
 
@@ -102,16 +105,19 @@ void VulkanContextState::setClearValues(const VkRect2D & area, std::vector<VkCle
 
 VulkanRenderPass * VulkanContextState::getCurrentRenderpass() const
 {
+    ASSERT(m_currentRenderpass.first, "nullptr");
     return m_currentRenderpass.first;
 }
 
 VulkanFramebuffer * VulkanContextState::getCurrentFramebuffer() const
 {
+    ASSERT(m_currentFramebuffer.first, "nullptr");
     return m_currentFramebuffer.first;
 }
 
 VulkanGraphicPipeline * VulkanContextState::getCurrentPipeline() const
 {
+    ASSERT(m_currentPipeline.first, "nullptr");
     return m_currentPipeline.first;
 }
 

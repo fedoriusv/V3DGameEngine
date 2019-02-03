@@ -83,6 +83,7 @@ ShaderProgram::ShaderProgram(renderer::CommandList & cmdList, std::vector<resour
 {
     for (auto shader : shaders)
     {
+        ASSERT(shader, "nullptr");
         m_programInfo._shaders[shader->getShaderHeader()._type] = shader;
     }
 

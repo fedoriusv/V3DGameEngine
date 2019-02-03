@@ -386,7 +386,7 @@ void CommandList::draw(StreamBufferDescription& desc, u32 firstVertex, u32 count
     }
     else
     {
-        CommandList::flushPendingCommands(m_pendingFlushMask);
+        m_pendingFlushMask = CommandList::flushPendingCommands(m_pendingFlushMask);
         CommandList::pushCommand(new CommandDraw(desc, firstVertex, countVertex, 0, countInstance));
     }
 }
@@ -406,7 +406,7 @@ void CommandList::setRenderTarget(RenderTarget* rendertarget)
         }
         else
         {
-            CommandList::flushPendingCommands(m_pendingFlushMask);
+            m_pendingFlushMask = CommandList::flushPendingCommands(m_pendingFlushMask);
             CommandList::pushCommand(new CommandInvalidateRenderPass());
         }
     }

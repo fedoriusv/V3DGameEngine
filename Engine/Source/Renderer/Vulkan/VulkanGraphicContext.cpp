@@ -259,13 +259,19 @@ void VulkanGraphicContext::setRenderTarget(const RenderPass::RenderPassInfo * re
 
     VulkanRenderPass* vkRenderpass = static_cast<VulkanRenderPass*>(renderpass);
     VulkanFramebuffer* vkFramebuffer = static_cast<VulkanFramebuffer*>(framebuffer);
-    if (m_currentContextStateNEW->setCurrentRenderPass(vkRenderpass) || m_currentContextStateNEW->setCurrentFramebuffer(vkFramebuffer) /*|| clearInfo*/)
+    if (!m_currentContextStateNEW->isCurrentRenderPass(vkRenderpass) || !m_currentContextStateNEW->isCurrentFramebuffer(vkFramebuffer) /*|| clearInfo*/)
     {
-        VulkanCommandBuffer* drawBuffer = m_currentContextState.getAcitveBuffer(CommandTargetType::CmdDrawBuffer);
-        if (drawBuffer->isInsideRenderPass())
+        if (m_currentContextState.isCurrentBufferAcitve(CommandTargetType::CmdDrawBuffer))
         {
-            drawBuffer->cmdEndRenderPass();
+            VulkanCommandBuffer* drawBuffer = m_currentContextState.getAcitveBuffer(CommandTargetType::CmdDrawBuffer);
+            if (drawBuffer->isInsideRenderPass())
+            {
+                drawBuffer->cmdEndRenderPass();
+            }
         }
+
+        m_currentContextStateNEW->setCurrentRenderPass(vkRenderpass);
+        m_currentContextStateNEW->setCurrentFramebuffer(vkFramebuffer);
 
         VkRect2D area;
         area.offset = { 0, 0 };
@@ -448,11 +454,12 @@ void VulkanGraphicContext::draw(StreamBufferDescription& desc, u32 firstVertex, 
     VulkanCommandBuffer* drawBuffer = m_currentContextState.getAcitveBuffer(CommandTargetType::CmdDrawBuffer);
     if (prepareDraw(drawBuffer))
     {
-        if (changed)
+        //if (changed)
         {
             const StreamBufferDescription& desc = m_currentContextStateNEW->getStreamBufferDescription();
             drawBuffer->cmdBindVertexBuffers(0, static_cast<u32>(desc._vertices.size()), desc._vertices, desc._offsets);
         }
+        ASSERT(drawBuffer->isInsideRenderPass(), "not inside renderpass");
         drawBuffer->cmdDraw(firstVertex, vertexCount, firstInstance, instanceCount);
     }
 }

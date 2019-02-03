@@ -74,7 +74,7 @@ bool VulkanFramebuffer::create(const RenderPass* pass)
 void VulkanFramebuffer::destroy()
 {
     VulkanWrapper::DestroyFramebuffer(m_device, m_framebuffer, VULKAN_ALLOCATOR);
-    m_framebuffer = nullptr;
+    m_framebuffer = VK_NULL_HANDLE;
 }
 
 } //namespace vk

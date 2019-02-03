@@ -57,6 +57,12 @@ Context* Context::createContext(const platform::Window* window,  RenderType type
     return context;
 }
 
+void Context::destroyContext(Context* context)
+{
+    context->destroy();
+    delete context;
+}
+
 Context::RenderType Context::getRenderType() const
 {
     return m_renderType;

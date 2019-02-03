@@ -32,9 +32,14 @@ Shader::~Shader()
         free(m_source);
     }
     m_size = 0;
+
+    if (m_stream)
+    {
+        delete m_stream;
+    }
 }
 
-void Shader::init(const stream::Stream * stream)
+void Shader::init(stream::Stream * stream)
 {
     ASSERT(stream, "nullptr");
     m_stream = stream;
@@ -58,6 +63,11 @@ bool Shader::load()
     m_stream->read<bool>(needParseReflect);
     if (needParseReflect)
     {
+        auto sortAttributtes = [](const Attribute& obj0, const Attribute& obj1) -> bool
+        {
+            return obj0._location < obj1._location;
+        };
+
         u32 countInputAttachments;
         m_stream->read<u32>(countInputAttachments);
         m_reflectionInfo._inputAttribute.resize(countInputAttachments);
@@ -65,6 +75,7 @@ bool Shader::load()
         {
             attribute << m_stream;
         }
+        std::sort(m_reflectionInfo._inputAttribute.begin(), m_reflectionInfo._inputAttribute.end(), sortAttributtes);
 
         u32 countOutputAttachments;
         m_stream->read<u32>(countOutputAttachments);
@@ -73,6 +84,7 @@ bool Shader::load()
         {
             attribute << m_stream;
         }
+        std::sort(m_reflectionInfo._outputAttribute.begin(), m_reflectionInfo._outputAttribute.end(), sortAttributtes);
 
         u32 countUniformBuffers;
         m_stream->read<u32>(countUniformBuffers);
@@ -98,6 +110,7 @@ bool Shader::load()
             pushConstant << m_stream;
         }
     }
+    m_stream->close();
 
     m_hash = crc32c::Crc32c(reinterpret_cast<u8*>(m_source), m_size);
 
