@@ -38,7 +38,7 @@ namespace vk
 
      for (u32 level = 0; level < VulkanCommandBuffer::CommandBufferLevelCount; ++level)
      {
-         while (m_freeCmdBuffers[level].empty())
+         while (!m_freeCmdBuffers[level].empty())
          {
              VulkanCommandBuffer* cmdBuffer = m_freeCmdBuffers[level].front();
              m_freeCmdBuffers[level].pop_front();

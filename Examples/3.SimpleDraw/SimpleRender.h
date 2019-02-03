@@ -20,11 +20,12 @@ public:
     SimpleRender(renderer::CommandList& cmdList, const renderer::VertexInputAttribDescription& desc, const std::vector<f32>& geomentry);
     ~SimpleRender();
 
+    void update(f32 zoom, const core::Vector3D& rotate);
     void render(renderer::CommandList& cmdList);
 
 private:
 
-    Texture2D*        m_texture;
+    Texture2D*        m_textureTarget;
     RenderTarget*     m_renderTarget;
     ShaderProgram*    m_program;
     GraphicsPipelineState* m_pipeline;

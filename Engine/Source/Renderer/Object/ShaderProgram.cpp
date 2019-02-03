@@ -16,7 +16,7 @@ namespace renderer
 class UpdateUniformsBuffer : public Command
 {
 public:
-    UpdateUniformsBuffer(resource::Shader* shader, u32 bindIndex, u32 offset, u32 size, u8* data, bool shared) noexcept
+    UpdateUniformsBuffer(resource::Shader* shader, u32 bindIndex, u32 offset, u32 size, void* data, bool shared) noexcept
         : m_shader(shader)
         , m_bindIndex(bindIndex)
         , m_offset(offset)
@@ -33,7 +33,7 @@ public:
         else
         {
             ASSERT(m_size > 0, "invalid size");
-            m_data = reinterpret_cast<u8*>(malloc(size));
+            m_data = malloc(size);
             memcpy(m_data, data, size);
         }
     };
@@ -63,7 +63,7 @@ private:
 
     u32 m_offset;
     u32 m_size;
-    u8* m_data;
+    void* m_data;
 
     bool m_shared;
 };
@@ -130,7 +130,7 @@ void ShaderProgram::composeProgramData(const std::vector<resource::Shader*>& sha
     }
 }
 
-bool ShaderProgram::bindUniformsBuffer(ShaderType shaderType, std::string& name, u32 offset, u32 size, const u8* data)
+bool ShaderProgram::bindUniformsBuffer(ShaderType shaderType, std::string& name, u32 offset, u32 size, const void* data)
 {
     resource::Shader* shader = m_programInfo._shaders[shaderType];
     ASSERT(shader, "fail");
@@ -149,7 +149,7 @@ bool ShaderProgram::bindUniformsBuffer(ShaderType shaderType, std::string& name,
     }
     else
     {
-        m_cmdList.pushCommand(new UpdateUniformsBuffer(shader, iter->second, offset, size, const_cast<u8*>(data), true));
+        m_cmdList.pushCommand(new UpdateUniformsBuffer(shader, iter->second, offset, size, const_cast<void*>(data), true));
     }
 
     return true;

@@ -17,15 +17,19 @@ namespace vk
     public:
 
         VulkanUniformBuffer(VulkanBuffer* buffer, u64 offset, u64 size) noexcept;
+        ~VulkanUniformBuffer();
 
-        VulkanBuffer*   _buffer;
-        u32             _offset;
-        u32             _size;
+        VulkanBuffer* getBuffer() const;
+        u64 getOffset() const;
+        u64 getSize() const;
 
         bool update(u32 offset, u32 size, const void* data);
 
     private:
 
+        VulkanBuffer*   m_buffer;
+        u64             m_offset;
+        u64             m_size;
     };
 
     class VulkanUniformBufferManager final
@@ -38,6 +42,8 @@ namespace vk
         VulkanUniformBuffer* acquireUnformBuffer(u32 requestedSize);
         VulkanUniformBuffer* findUniformBuffer(const VulkanBuffer* buffer, u32 requestedSize);
 
+        void updateUniformBuffers();
+
     private:
 
         struct VulkanUniformBufferPool
@@ -45,13 +51,17 @@ namespace vk
             VulkanBuffer* _buffer;
             u64 _usedSize;
             u64 _freeSize;
+
+            std::vector<VulkanUniformBuffer*> _uniformList;
+
+            void addUniformBuffer(VulkanUniformBuffer* uniformBuffer, u64 size);
         };
 
-        VulkanUniformBufferPool* getFreePool();
+        VulkanUniformBufferPool* getNewPool();
 
-        std::deque<VulkanUniformBufferPool*> m_freeBuffers;
-        std::deque<VulkanUniformBufferPool*> m_usedUBuffers;
-        VulkanUniformBufferPool* m_currentBuffer;
+        std::deque<VulkanUniformBufferPool*> m_freePoolBuffers;
+        std::deque<VulkanUniformBufferPool*> m_usedPoolBuffers;
+        VulkanUniformBufferPool* m_currentPoolBuffer;
 
         std::map<VulkanBuffer*, VulkanUniformBufferPool*> m_uniformBuffers;
 

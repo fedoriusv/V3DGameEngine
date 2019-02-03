@@ -673,8 +673,8 @@ bool VulkanImage::create()
     VkMemoryPropertyFlags flag = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
     if (m_tiling == VK_IMAGE_TILING_LINEAR)
     {
-        flag |= VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
-        flag |= VulkanDeviceCaps::getInstance()->supportCoherentMemory ? VK_MEMORY_PROPERTY_HOST_COHERENT_BIT : VK_MEMORY_PROPERTY_HOST_CACHED_BIT;
+        flag = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
+        flag |= VulkanDeviceCaps::getInstance()->supportHostCoherentMemory ? VK_MEMORY_PROPERTY_HOST_COHERENT_BIT : VK_MEMORY_PROPERTY_HOST_CACHED_BIT;
     }
     m_memory = VulkanMemory::allocateImageMemory(*m_memoryAllocator, m_image, flag);
     if (m_memory == VulkanMemory::s_invalidMemory)

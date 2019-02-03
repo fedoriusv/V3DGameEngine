@@ -38,6 +38,7 @@ namespace renderer
 
         Texture2D* getColorTexture(u32 index) const;
         Texture2D* getDepthStencilTexture() const;
+        const core::Dimension2D& getDimension() const;
 
         u32 getColorTextureCount() const;
         bool hasDepthStencilTexture() const;

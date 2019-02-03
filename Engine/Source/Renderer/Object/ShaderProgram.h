@@ -35,7 +35,7 @@ namespace renderer
         bool bindUniform(std::string name, const TDataType& data);
 
         template<ShaderType shaderType>
-        bool bindUniformsBuffer(std::string name, u32 offset, u32 size, const u8* data);
+        bool bindUniformsBuffer(std::string name, u32 offset, u32 size, const void* data);
 
     private:
 
@@ -49,7 +49,7 @@ namespace renderer
         void composeProgramData(const std::vector<resource::Shader*>& shaders);
 
         bool bindTexture(ShaderType shaderType, std::string& name, TextureTarget target, const Texture* texture);
-        bool bindUniformsBuffer(ShaderType shaderType, std::string& name, u32 offset, u32 size, const u8* data);
+        bool bindUniformsBuffer(ShaderType shaderType, std::string& name, u32 offset, u32 size, const void* data);
 
         std::map<std::string, u32> m_shaderParameters[ShaderType::ShaderType_Count];
     };
@@ -69,7 +69,7 @@ namespace renderer
     }
 
     template<ShaderType shaderType>
-    inline bool ShaderProgram::bindUniformsBuffer(std::string name, u32 offset, u32 size, const u8* data)
+    inline bool ShaderProgram::bindUniformsBuffer(std::string name, u32 offset, u32 size, const void* data)
     {
         //static_assert(std::is_base_of<Texture, TTexture>());
         return ShaderProgram::bindUniformsBuffer(shaderType, name, offset, size, data);

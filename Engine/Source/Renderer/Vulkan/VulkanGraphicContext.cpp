@@ -40,6 +40,7 @@ const std::vector<const c8*> k_instanceExtensionsList =
 #endif
 #if VULKAN_LAYERS_CALLBACKS
     VK_EXT_DEBUG_UTILS_EXTENSION_NAME,
+    "VK_EXT_debug_report",
 #endif //VULKAN_LAYERS_CALLBACKS
 };
 

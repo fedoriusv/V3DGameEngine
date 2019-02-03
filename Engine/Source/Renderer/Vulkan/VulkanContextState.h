@@ -67,6 +67,18 @@ namespace vk
 
     private:
 
+        enum BindingType
+        {
+            BindingType_Unknown = 0,
+            BindingType_Uniform,
+            BindingType_DynamicUniform,
+            BindingType_Sampler,
+            BindingType_Texture,
+            BindingType_SamplerAndTexture,
+
+            //TODO
+        };
+
         struct BindingInfo
         {
             struct BindingImageInfo
@@ -78,10 +90,9 @@ namespace vk
 
             struct BindingBufferInfo
             {
-                VkDescriptorBufferInfo _bufferInfo;
-                const VulkanBuffer*    _buffer;
-                u32                    _offset;
-                u32                    _size;
+                VkDescriptorBufferInfo      _bufferInfo;
+                const VulkanBuffer*         _buffer;
+                VulkanUniformBuffer*        _uniform;
             };
 
             BindingInfo();
@@ -97,7 +108,7 @@ namespace vk
 
             u32                 _set        : 16;
             u32                 _binding    : 16;
-            VkDescriptorType    _type       : 16;
+            BindingType         _type       : 16;
             u32                 _arrayIndex : 16;
         };
 
@@ -125,7 +136,7 @@ namespace vk
         std::vector<BindingInfo> m_updatedBindings;
         std::map<u32, BindingInfo> m_currentBindingCache;
 
-        std::array<std::vector<BindingInfo>, k_maxDescriptorSetIndex> m_descriptorSetsBindings;
+        std::array<std::vector<BindingInfo>, k_maxDescriptorSetIndex> m_descriptorSetsState;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

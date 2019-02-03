@@ -22,7 +22,8 @@ namespace vk
         VulkanDeviceCaps() = default;
 
         bool individuallyResetForCommandBuffers;
-        bool supportCoherentMemory;
+        bool supportDeviceCoherentMemory;
+        bool supportHostCoherentMemory;
 
         bool useDynamicUniforms;
         bool unifiedMemoryManager;

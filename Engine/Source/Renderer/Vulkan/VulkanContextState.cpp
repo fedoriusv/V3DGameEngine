@@ -165,29 +165,48 @@ void VulkanContextState::updateDescriptorSet()
     std::vector<VkWriteDescriptorSet> writeDescriptorSets;
     writeDescriptorSets.reserve(m_updatedBindings.size());
 
-    for (auto& bindingSet : m_updatedBindings)
+    for (auto& binding : m_updatedBindings)
     {
         VkWriteDescriptorSet writeDescriptorSet = {};
         writeDescriptorSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
         writeDescriptorSet.pNext = nullptr; //VkWriteDescriptorSetInlineUniformBlockEXT
-        writeDescriptorSet.dstSet = m_currentSets[bindingSet._set];
-        writeDescriptorSet.dstBinding = bindingSet._binding;
-        writeDescriptorSet.dstArrayElement = bindingSet._arrayIndex;
+        writeDescriptorSet.dstSet = m_currentSets[binding._set];
+        writeDescriptorSet.dstBinding = binding._binding;
+        writeDescriptorSet.dstArrayElement = binding._arrayIndex;
         writeDescriptorSet.descriptorCount = 1;
-        writeDescriptorSet.descriptorType = bindingSet._type;
         writeDescriptorSet.pTexelBufferView = nullptr;
 
-        switch (bindingSet._type)
+        switch (binding._type)
         {
-        case VK_DESCRIPTOR_TYPE_SAMPLER:
-        case VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE:
-        case VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER:
-            writeDescriptorSet.pImageInfo = &bindingSet._imageBinding._imageInfo;
+        case BindingType::BindingType_Uniform:
+            writeDescriptorSet.pBufferInfo = &binding._bufferBinding._bufferInfo;
+            writeDescriptorSet.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
             break;
 
-        case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER:
-        case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC:
-            writeDescriptorSet.pBufferInfo = &bindingSet._bufferBinding._bufferInfo;;
+        case BindingType::BindingType_DynamicUniform:
+            writeDescriptorSet.pBufferInfo = &binding._bufferBinding._bufferInfo;
+            writeDescriptorSet.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+            break;
+
+        case BindingType::BindingType_Sampler:
+            ASSERT(binding._imageBinding._imageInfo.imageView == VK_NULL_HANDLE, "image present");
+            ASSERT(binding._imageBinding._imageInfo.sampler != VK_NULL_HANDLE, "sampler");
+            writeDescriptorSet.pImageInfo = &binding._imageBinding._imageInfo;
+            writeDescriptorSet.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLER;
+            break;
+
+        case BindingType::BindingType_Texture:
+            ASSERT(binding._imageBinding._imageInfo.sampler == VK_NULL_HANDLE, "sampler present");
+            ASSERT(binding._imageBinding._imageInfo.imageView != VK_NULL_HANDLE, "image");
+            writeDescriptorSet.pImageInfo = &binding._imageBinding._imageInfo;
+            writeDescriptorSet.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
+            break;
+
+        case BindingType::BindingType_SamplerAndTexture:
+            ASSERT(binding._imageBinding._imageInfo.imageView != VK_NULL_HANDLE, "image");
+            ASSERT(binding._imageBinding._imageInfo.sampler != VK_NULL_HANDLE, "sampler");
+            writeDescriptorSet.pImageInfo = &binding._imageBinding._imageInfo;
+            writeDescriptorSet.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
             break;
 
         default:
@@ -203,7 +222,7 @@ void VulkanContextState::updateDescriptorSet()
 
 void VulkanContextState::bindTexture(const VulkanImage* image, const VulkanSampler* sampler, u32 arrayIndex, const resource::Shader::SampledImage& reflaction)
 {
-    auto& bindingList = m_descriptorSetsBindings[reflaction._set];
+    auto& bindingList = m_descriptorSetsState[reflaction._set];
     if (bindingList.size() < reflaction._binding)
     {
         ASSERT(reflaction._binding < k_maxDescriptorBindingIndex, "invalid binding");
@@ -223,7 +242,7 @@ void VulkanContextState::bindTexture(const VulkanImage* image, const VulkanSampl
 
     if (updated)
     {
-        bindingInfo._type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        bindingInfo._type = BindingType::BindingType_SamplerAndTexture;
         bindingInfo._set = reflaction._set;
         bindingInfo._binding = reflaction._binding;
         bindingInfo._arrayIndex = arrayIndex;
@@ -238,7 +257,7 @@ void VulkanContextState::bindTexture(const VulkanImage* image, const VulkanSampl
 void VulkanContextState::updateConstantBuffer(u32 arrayIndex, const resource::Shader::UniformBuffer& reflaction, u32 offset, u32 size, const void* data)
 {
     ASSERT(size <= reflaction._size, "over size");
-    auto& bindingList = m_descriptorSetsBindings[reflaction._set];
+    auto& bindingList = m_descriptorSetsState[reflaction._set];
     if (bindingList.size() < reflaction._binding + 1)
     {
         ASSERT(reflaction._binding < k_maxDescriptorBindingIndex, "invalid binding");
@@ -250,12 +269,12 @@ void VulkanContextState::updateConstantBuffer(u32 arrayIndex, const resource::Sh
     VulkanUniformBuffer * uniformBuffer = nullptr;
     if (!bindingInfo._bufferBinding._buffer)
     {
-        uniformBuffer = m_unifromBufferManager->acquireUnformBuffer(size);
+        uniformBuffer = m_unifromBufferManager->acquireUnformBuffer(reflaction._size);
         updated = true;
     }
     else
     {
-        uniformBuffer = m_unifromBufferManager->findUniformBuffer(bindingInfo._bufferBinding._buffer, size);
+        uniformBuffer = bindingInfo._bufferBinding._uniform;
         ASSERT(uniformBuffer, "nulptr");
 
         updated = uniformBuffer->update(offset, size, data);
@@ -265,12 +284,11 @@ void VulkanContextState::updateConstantBuffer(u32 arrayIndex, const resource::Sh
     {
         bindingInfo._set = reflaction._set;
         bindingInfo._binding = reflaction._binding;
-        bindingInfo._type = VulkanDeviceCaps::getInstance()->useDynamicUniforms ? VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC : VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        bindingInfo._type = VulkanDeviceCaps::getInstance()->useDynamicUniforms ? BindingType::BindingType_DynamicUniform : BindingType::BindingType_Uniform;
         bindingInfo._arrayIndex = arrayIndex;
-        bindingInfo._bufferBinding._buffer = uniformBuffer->_buffer;
-        bindingInfo._bufferBinding._offset = uniformBuffer->_offset;
-        bindingInfo._bufferBinding._size = uniformBuffer->_size;
-        bindingInfo._bufferBinding._bufferInfo = VulkanContextState::makeVkDescriptorBufferInfo(uniformBuffer->_buffer, uniformBuffer->_offset, uniformBuffer->_size);
+        bindingInfo._bufferBinding._uniform = uniformBuffer;
+        bindingInfo._bufferBinding._buffer = uniformBuffer->getBuffer();
+        bindingInfo._bufferBinding._bufferInfo = VulkanContextState::makeVkDescriptorBufferInfo(uniformBuffer->getBuffer(), uniformBuffer->getOffset(), uniformBuffer->getSize());
 
         VulkanContextState::setBinding(bindingInfo);
     }

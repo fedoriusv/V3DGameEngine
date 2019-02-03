@@ -354,7 +354,7 @@ VulkanDescriptorSetManager::DescriptorSetDescription::DescriptorSetDescription(c
 {
     _descriptorSets.fill({});
 
-    u32 maxSet = 0;
+    u32 maxSetIndex = 0;
     for (u32 setIndex = 0; setIndex < k_maxDescriptorSetIndex; ++setIndex)
     {
         std::vector<VkDescriptorSetLayoutBinding> descriptorSetLayoutBindings;
@@ -370,7 +370,7 @@ VulkanDescriptorSetManager::DescriptorSetDescription::DescriptorSetDescription(c
             for (auto& uniform : info._uniformBuffers)
             {
                 ASSERT(uniform._set < k_maxDescriptorSetIndex && uniform._binding < k_maxDescriptorBindingIndex, "range out");
-                if (uniform._set != setIndex)
+                if (uniform._set != maxSetIndex)
                 {
                     continue;
                 }
@@ -387,7 +387,7 @@ VulkanDescriptorSetManager::DescriptorSetDescription::DescriptorSetDescription(c
 
             for (auto& image : info._sampledImages)
             {
-                if (image._set != setIndex)
+                if (image._set != maxSetIndex)
                 {
                     continue;
                 }
@@ -405,11 +405,11 @@ VulkanDescriptorSetManager::DescriptorSetDescription::DescriptorSetDescription(c
 
         if (!descriptorSetLayoutBindings.empty())
         {
-            maxSet = std::max(maxSet, setIndex);
+            maxSetIndex = std::max(maxSetIndex, setIndex);
             _descriptorSets[setIndex] = std::move(descriptorSetLayoutBindings);
         }
     }
-    ASSERT(maxSet + 1 == _descriptorSets.size(), "invalid max set index");
+    ASSERT(maxSetIndex < k_maxDescriptorSetIndex, "invalid max set index");
 
     for (u32 type = ShaderType::ShaderType_Vertex; type < ShaderType_Count; ++type)
     {

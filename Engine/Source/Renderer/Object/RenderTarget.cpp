@@ -155,6 +155,11 @@ Texture2D * RenderTarget::getColorTexture(u32 index) const
 
     return std::get<0>((*attachment).second);
 }
+const core::Dimension2D& RenderTarget::getDimension() const
+{
+    return m_size;
+}
+
 
 Texture2D * RenderTarget::getDepthStencilTexture() const
 {
