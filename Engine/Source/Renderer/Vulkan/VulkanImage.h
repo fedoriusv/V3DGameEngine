@@ -38,6 +38,7 @@ namespace vk
         void clear(Context* context, f32 depth, u32 stencil) override;
 
         static VkFormat convertImageFormatToVkFormat(Format format);
+        static Format convertVkImageFormatToFormat(VkFormat format);
         static VkImageType convertTextureTargetToVkImageType(TextureTarget target);
         static VkSampleCountFlagBits convertRenderTargetSamplesToVkSampleCount(TextureSamples samples);
 
@@ -51,6 +52,7 @@ namespace vk
         VkImage             getHandle() const;
         VkImageAspectFlags  getImageAspectFlags() const;
         VkImageView         getImageView() const;
+        VkFormat            getFormat() const;
 
         VkImageLayout       getLayout() const;
         void                setLayout(VkImageLayout layout);

@@ -82,6 +82,7 @@ namespace vk
         void removeBuffer(Buffer* buffer) override;
 
         const DeviceCaps* getDeviceCaps() const override;
+
         VulkanStaginBufferManager* getStagingManager();
 
         static const std::vector<VkDynamicState>& getDynamicStates();

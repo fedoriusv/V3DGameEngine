@@ -253,6 +253,15 @@ void VulkanGraphicContext::setRenderTarget(const RenderPass::RenderPassInfo * re
     ASSERT(renderpass, "renderpass is nullptr");
     std::get<0>(trackers)->attach(renderpass);
 
+    //VulkanImage* swapchainImage = m_swapchain->getBackbuffer();
+    /*std::vector<Image*> vkAttachments = attachments;
+    std::for_each(attachments.begin(), attachments.end(), [&swapchainImage](Image* image) -> void
+    {
+        if (image == nullptr)
+        {
+            image = swapchainImage;
+        }
+    });*/
     Framebuffer* framebuffer = m_framebuferManager->acquireFramebuffer(renderpass, attachments, clearInfo->_size);
     ASSERT(framebuffer, "framebuffer is nullptr");
     std::get<1>(trackers)->attach(framebuffer);
@@ -541,6 +550,7 @@ bool VulkanGraphicContext::initialize()
     VulkanSwapchain::SwapchainConfig config;
     config._size = m_window->getSize();
     config._vsync = true; //TODO
+    config._countSwapchaiImages = 3;
 
     m_swapchain = new VulkanSwapchain(&m_deviceInfo, surface);
     if (!m_swapchain->create(config))
@@ -549,6 +559,9 @@ bool VulkanGraphicContext::initialize()
         LOG_FATAL("VulkanGraphicContext::createContext: Can not create VulkanSwapchain");
         return false;
     }
+
+    m_backufferDescription._size = config._size;
+    m_backufferDescription._format = VulkanImage::convertVkImageFormatToFormat(m_swapchain->getSwapImage(0)->getFormat());
 
     if (m_deviceCaps.unifiedMemoryManager)
     {

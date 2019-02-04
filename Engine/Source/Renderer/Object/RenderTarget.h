@@ -30,6 +30,10 @@ namespace renderer
             RenderTargetLoadOp loadOp = RenderTargetLoadOp::LoadOp_Clear, RenderTargetStoreOp storeOp = RenderTargetStoreOp::StoreOp_Store,
             const core::Vector4D& clearColor = core::Vector4D(0.f));
 
+        bool setColorTexture(u32 index, BackbufferTexture* swapchainTexture,
+            RenderTargetLoadOp loadOp = RenderTargetLoadOp::LoadOp_Clear, RenderTargetStoreOp storeOp = RenderTargetStoreOp::StoreOp_Store,
+            const core::Vector4D& clearColor = core::Vector4D(0.f));
+
         bool setDepthStencilTexture(Texture2D* depthStencilTexture, 
             RenderTargetLoadOp depthLoadOp = RenderTargetLoadOp::LoadOp_DontCare, RenderTargetStoreOp depthStoreOp = RenderTargetStoreOp::StoreOp_DontCare,
             f32 clearDepth = 0.0f,
@@ -68,7 +72,7 @@ namespace renderer
     /**
     * Backbuffer class
     */
-    class Backbuffer : public Object //ref couter,
+    class Backbuffer : public Object
     {
     public:
 
@@ -77,10 +81,10 @@ namespace renderer
 
     private:
 
-        Backbuffer(renderer::CommandList& cmdList, SwapchainTexture* texture) noexcept;
+        Backbuffer(renderer::CommandList& cmdList, BackbufferTexture* texture) noexcept;
 
         renderer::CommandList&  m_cmdList;
-        SwapchainTexture*       m_texture;
+        BackbufferTexture*       m_texture;
 
         friend renderer::CommandList;
     };

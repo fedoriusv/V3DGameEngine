@@ -113,7 +113,6 @@ bool MyApplication::Running(renderer::CommandList& commandList)
 {
     //Frame
     commandList.beginFrame();
-    commandList.clearBackbuffer(m_ClearColor);
 
     m_Render->render(commandList);
 

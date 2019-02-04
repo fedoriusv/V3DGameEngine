@@ -42,11 +42,11 @@ namespace renderer
         Texture2D(const Texture2D &) = delete;
         ~Texture2D();
 
-        renderer::TextureTarget         getTarget() const;
-        renderer::TextureSamples        getSampleCount() const;
-        u32                             getMipmaps() const;
-        const core::Dimension2D&        getDimension() const;
-        renderer::Format                getFormat() const;
+        renderer::TextureTarget  getTarget() const;
+        renderer::TextureSamples getSampleCount() const;
+        u32                      getMipmaps() const;
+        const core::Dimension2D& getDimension() const;
+        renderer::Format         getFormat() const;
 
         void update(const core::Dimension2D& offset, const core::Dimension2D& size, u32 mipLevel, const void* data);
         void read(const core::Dimension2D& offset, const core::Dimension2D& size, u32 mipLevel, void* const data);
@@ -83,26 +83,27 @@ namespace renderer
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
-    * SwapchainTexture class
+    * BackbufferTexture class
     */
-    class SwapchainTexture : public Texture
+    class BackbufferTexture : public Texture
     {
     public:
 
-        ~SwapchainTexture() {};
-        SwapchainTexture(const SwapchainTexture &) = delete;
+        BackbufferTexture() = delete;
+        BackbufferTexture(const BackbufferTexture &) = delete;
+        ~BackbufferTexture();
 
+        const core::Dimension2D& getDimension() const;
+        renderer::Format         getFormat() const;
+
+        void read(const core::Dimension2D& offset, const core::Dimension2D& size, void* const data);
         void clear(const core::Vector4D& color);
 
     private:
 
-        SwapchainTexture(renderer::CommandList& cmdList) noexcept
-            : m_cmdList(cmdList)
-        {
-        }
+        BackbufferTexture(renderer::CommandList& cmdList) noexcept;
 
         renderer::CommandList& m_cmdList;
-
         friend renderer::CommandList;
     };
 

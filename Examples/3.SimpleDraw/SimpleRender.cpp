@@ -19,6 +19,8 @@ SimpleRender::SimpleRender(renderer::CommandList& cmdList, const renderer::Verte
     m_textureTarget = cmdList.createObject<Texture2D>(Format::Format_R8G8B8A8_UNorm, core::Dimension2D(1024, 768), TextureSamples::TextureSamples_x1);
     m_renderTarget = cmdList.createObject<RenderTarget>(m_textureTarget->getDimension());
     bool success = m_renderTarget->setColorTexture(0, m_textureTarget, RenderTargetLoadOp::LoadOp_Clear, RenderTargetStoreOp::StoreOp_Store);
+    //m_renderTarget = cmdList.createObject<RenderTarget>(cmdList.getBackbuffer()->getDimension());
+    //bool success = m_renderTarget->setColorTexture(0, cmdList.getBackbuffer(), RenderTargetLoadOp::LoadOp_Clear, RenderTargetStoreOp::StoreOp_Store);
 
     u64 vertexBufferSize = geomentry.size() * sizeof(f32);
     m_vetexBuffer = cmdList.createObject<VertexStreamBuffer>(StreamBufferUsage::StreamBuffer_Write | StreamBufferUsage::StreamBuffer_Shared, 256, (u8*)geomentry.data());
@@ -70,6 +72,9 @@ void SimpleRender::render(renderer::CommandList& cmdList)
     cmdList.setScissor(core::Rect32(0, 0, m_renderTarget->getDimension().width, m_renderTarget->getDimension().height));
 
     SimpleRender::update(1.0f, core::Vector3D(0.0f));
+    cmdList.draw(renderer::StreamBufferDescription(m_vetexBuffer, 0), 0, 3, 1);
+
+    SimpleRender::update(2.0f, core::Vector3D(0.0f, 90.0f, 0.0f));
     cmdList.draw(renderer::StreamBufferDescription(m_vetexBuffer, 0), 0, 3, 1);
 }
 

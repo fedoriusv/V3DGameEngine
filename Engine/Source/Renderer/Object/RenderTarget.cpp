@@ -99,7 +99,6 @@ RenderTarget::~RenderTarget()
 bool RenderTarget::setColorTexture(u32 index, Texture2D* colorTexture, RenderTargetLoadOp loadOp, RenderTargetStoreOp storeOp, const core::Vector4D& clearColor)
 {
     ASSERT(index < m_cmdList.getContext()->getDeviceCaps()->maxColorattachments, "index >= maxColorattachments");
-
     if (colorTexture)
     {
         renderer::AttachmentDescription attachmentDesc = {};
@@ -118,6 +117,29 @@ bool RenderTarget::setColorTexture(u32 index, Texture2D* colorTexture, RenderTar
     }
 
     //TODO check compatibility
+    return true;
+}
+
+bool RenderTarget::setColorTexture(u32 index, BackbufferTexture * swapchainTexture, RenderTargetLoadOp loadOp, RenderTargetStoreOp storeOp, const core::Vector4D & clearColor)
+{
+    ASSERT(index < m_cmdList.getContext()->getDeviceCaps()->maxColorattachments, "index >= maxColorattachments");
+    if (swapchainTexture)
+    {
+        renderer::AttachmentDescription attachmentDesc = {};
+        attachmentDesc._format = swapchainTexture->getFormat();
+        attachmentDesc._samples = TextureSamples::TextureSamples_x1;
+        attachmentDesc._loadOp = loadOp;
+        attachmentDesc._storeOp = storeOp;
+        attachmentDesc._stencilLoadOp = RenderTargetLoadOp::LoadOp_DontCare;
+        attachmentDesc._stencilStoreOp = RenderTargetStoreOp::StoreOp_DontCare;
+
+        m_colorTextures[index] = std::make_tuple(nullptr, attachmentDesc, clearColor);
+    }
+    else
+    {
+        m_colorTextures[index] = std::make_tuple(nullptr, renderer::AttachmentDescription(), clearColor);
+    }
+
     return true;
 }
 
@@ -241,7 +263,7 @@ void RenderTarget::destroyRenderPasses(const std::vector<RenderPass*>& renderPas
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-Backbuffer::Backbuffer(renderer::CommandList & cmdList, SwapchainTexture * texture) noexcept
+Backbuffer::Backbuffer(renderer::CommandList & cmdList, BackbufferTexture * texture) noexcept
     : m_cmdList(cmdList)
     , m_texture(texture)
 {

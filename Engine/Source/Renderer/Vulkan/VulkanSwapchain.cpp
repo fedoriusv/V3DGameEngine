@@ -213,10 +213,19 @@ bool VulkanSwapchain::createSwapchain(const SwapchainConfig& config)
     }
 
     // Determine the number of images
-    uint32_t desiredNumberOfSwapchainImages = m_surfaceCaps.minImageCount + 1;
-    if ((m_surfaceCaps.maxImageCount > 0) && (desiredNumberOfSwapchainImages > m_surfaceCaps.maxImageCount))
+    uint32_t desiredNumberOfSwapchainImages = m_surfaceCaps.minImageCount;
+    if (config._countSwapchaiImages == 0)
     {
-        desiredNumberOfSwapchainImages = m_surfaceCaps.maxImageCount;
+        desiredNumberOfSwapchainImages = m_surfaceCaps.minImageCount + 1;
+        if ((m_surfaceCaps.maxImageCount > 0) && (desiredNumberOfSwapchainImages > m_surfaceCaps.maxImageCount))
+        {
+            desiredNumberOfSwapchainImages = m_surfaceCaps.maxImageCount;
+        }
+    }
+    else
+    {
+        ASSERT(m_surfaceCaps.minImageCount <= config._countSwapchaiImages && config._countSwapchaiImages <= m_surfaceCaps.maxImageCount, "range out");
+        desiredNumberOfSwapchainImages = std::clamp(config._countSwapchaiImages, m_surfaceCaps.minImageCount, m_surfaceCaps.maxImageCount);
     }
 
     // Find the transformation of the surface
@@ -399,8 +408,14 @@ bool VulkanSwapchain::recteateSwapchain(const SwapchainConfig& config)
     return true;
 }
 
+VulkanImage * VulkanSwapchain::getSwapImage(u32 index) const
+{
+    return m_swapBuffers[index];
+}
+
 VulkanImage * VulkanSwapchain::getBackbuffer() const
 {
+    ASSERT(m_currentImageIndex >= 0, "invalid index");
     return m_swapBuffers[m_currentImageIndex];
 }
 

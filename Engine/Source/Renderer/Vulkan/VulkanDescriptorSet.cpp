@@ -370,7 +370,7 @@ VulkanDescriptorSetManager::DescriptorSetDescription::DescriptorSetDescription(c
             for (auto& uniform : info._uniformBuffers)
             {
                 ASSERT(uniform._set < k_maxDescriptorSetIndex && uniform._binding < k_maxDescriptorBindingIndex, "range out");
-                if (uniform._set != maxSetIndex)
+                if (uniform._set != setIndex)
                 {
                     continue;
                 }
@@ -387,7 +387,7 @@ VulkanDescriptorSetManager::DescriptorSetDescription::DescriptorSetDescription(c
 
             for (auto& image : info._sampledImages)
             {
-                if (image._set != maxSetIndex)
+                if (image._set != setIndex)
                 {
                     continue;
                 }

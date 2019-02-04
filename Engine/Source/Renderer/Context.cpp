@@ -14,6 +14,7 @@ namespace renderer
 Context::Context() noexcept
     : m_frameCounter(0)
 {
+    memset(&m_backufferDescription, 0, sizeof(Backbuffer));
 }
 
 Context::~Context()

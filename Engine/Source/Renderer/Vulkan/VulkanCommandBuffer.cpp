@@ -99,6 +99,7 @@ bool VulkanCommandBuffer::waitComplete(u64 timeout)
 
     if (m_status == VulkanCommandBuffer::CommandBufferStatus::Submit)
     {
+        timeout = (timeout == 0) ? u64(~0ULL) : timeout;
         VkResult result = VulkanWrapper::WaitForFences(m_device, 1, &m_fence, VK_TRUE, timeout);
         if (result != VK_SUCCESS)
         {

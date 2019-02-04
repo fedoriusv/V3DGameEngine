@@ -20,8 +20,7 @@ namespace renderer
     class Context;
     class CommandList;
 
-    class SwapchainTexture;
-    class Backbuffer;
+    class BackbufferTexture;
     class RenderTarget;
     class GraphicsPipelineState;
 
@@ -84,6 +83,8 @@ namespace renderer
         bool isThreaded() const;
         bool isImmediate() const;
 
+        BackbufferTexture* getBackbuffer() const;
+
         template<class TObject, class ... Args>
         TObject* createObject(Args ... args)
         {
@@ -141,10 +142,7 @@ namespace renderer
 
         PendingFlushMaskFlags       m_pendingFlushMask;
 
-        //
-        SwapchainTexture*           m_swapchainTexture;
-        Backbuffer*                 m_backbuffer;
-        //
+        BackbufferTexture*           m_swapchainTexture;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

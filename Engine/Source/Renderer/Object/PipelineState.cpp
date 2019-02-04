@@ -52,16 +52,6 @@ GraphicsPipelineState::GraphicsPipelineState(CommandList& cmdList, const VertexI
     m_pipelineStateDesc._vertexInputState._inputAttributes = vertex;
 }
 
-GraphicsPipelineState::GraphicsPipelineState(CommandList& cmdList, const VertexInputAttribDescription& vertex, const ShaderProgram* const program, const Backbuffer* const backbuffer) noexcept
-    : m_cmdList(cmdList)
-    , m_program(program)
-
-    , m_tracker(this, nullptr)
-{
-    m_pipelineStateDesc._vertexInputState._inputAttributes = vertex;
-    ASSERT(false, "need implement");
-}
-
 GraphicsPipelineState::GraphicsPipelineState(CommandList& cmdList, const GraphicsPipelineStateDescription& desc, const ShaderProgram* const program, const RenderTarget* const renderTaget) noexcept
     : m_cmdList(cmdList)
     , m_pipelineStateDesc(desc)

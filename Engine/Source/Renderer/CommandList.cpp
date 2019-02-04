@@ -306,8 +306,7 @@ CommandList::CommandList(Context* context, CommandListType type) noexcept
 
     , m_pendingFlushMask(0)
 {
-    m_swapchainTexture = createObject<SwapchainTexture>();
-    m_backbuffer = createObject<Backbuffer>(m_swapchainTexture);
+    m_swapchainTexture = createObject<BackbufferTexture>();
 }
 
 CommandList::~CommandList()
@@ -488,6 +487,11 @@ void CommandList::setScissor(const core::Rect32 & scissor)
 Context* CommandList::getContext() const
 {
     return m_context;
+}
+
+BackbufferTexture* CommandList::getBackbuffer() const
+{
+    return m_swapchainTexture;
 }
 
 bool CommandList::isThreaded() const

@@ -25,6 +25,8 @@ namespace platform
 
 namespace renderer
 {
+    class BackbufferTexture;
+
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
@@ -105,6 +107,7 @@ namespace renderer
         friend RenderPassManager;
         friend FramebufferManager;
         friend PipelineManager;
+        friend BackbufferTexture;
 
         //managment objects
         virtual Framebuffer* createFramebuffer(const std::vector<Image*>& attachments, const core::Dimension2D& size) = 0;
@@ -113,6 +116,14 @@ namespace renderer
 
         virtual bool initialize() = 0;
         virtual void destroy() = 0;
+
+
+        struct Backbuffer
+        {
+            core::Dimension2D _size;
+            Format            _format;
+        };
+        Backbuffer m_backufferDescription;
 
         RenderType  m_renderType;
         u64 m_frameCounter;

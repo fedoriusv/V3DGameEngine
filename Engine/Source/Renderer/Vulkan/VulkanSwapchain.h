@@ -25,6 +25,7 @@ namespace vk
         struct SwapchainConfig
         {
             core::Dimension2D   _size;
+            u32                 _countSwapchaiImages;
             bool                _vsync;
         };
 
@@ -40,6 +41,7 @@ namespace vk
         bool recteateSwapchain(const SwapchainConfig& config);
 
         VulkanImage* getBackbuffer() const;
+        VulkanImage* getSwapImage(u32 index) const;
 
     private:
 

@@ -504,6 +504,11 @@ VkFormat VulkanImage::convertImageFormatToVkFormat(renderer::Format format)
     return VK_FORMAT_UNDEFINED;
 }
 
+Format VulkanImage::convertVkImageFormatToFormat(VkFormat format)
+{
+    return Format(format);
+}
+
 VkImageType VulkanImage::convertTextureTargetToVkImageType(TextureTarget target)
 {
     switch (target)
@@ -821,6 +826,11 @@ VkImageView VulkanImage::getImageView() const
 {
     ASSERT(m_imageView, "nullptr");
     return m_imageView;
+}
+
+VkFormat VulkanImage::getFormat() const
+{
+    return m_format;
 }
 
 VkImageLayout VulkanImage::getLayout() const

@@ -365,7 +365,32 @@ void Texture2D::clear(f32 depth, u32 stencil)
     }
 }
 
-void SwapchainTexture::clear(const core::Vector4D & color)
+/////////////////////////////////////////////////////////////////////////////////////////////////////
+
+BackbufferTexture::BackbufferTexture(renderer::CommandList & cmdList) noexcept
+    : m_cmdList(cmdList)
+{
+}
+
+BackbufferTexture::~BackbufferTexture()
+{
+}
+
+const core::Dimension2D & BackbufferTexture::getDimension() const
+{
+    return m_cmdList.getContext()->m_backufferDescription._size;
+}
+
+renderer::Format BackbufferTexture::getFormat() const
+{
+    return m_cmdList.getContext()->m_backufferDescription._format;
+}
+
+void BackbufferTexture::read(const core::Dimension2D & offset, const core::Dimension2D & size, void * const data)
+{
+}
+
+void BackbufferTexture::clear(const core::Vector4D & color)
 {
     if (m_cmdList.isImmediate())
     {
@@ -376,6 +401,7 @@ void SwapchainTexture::clear(const core::Vector4D & color)
         m_cmdList.pushCommand(new CommandClearBackbuffer(color));
     }
 }
+
 
 } //namespace renderer
 } //namespace v3d
