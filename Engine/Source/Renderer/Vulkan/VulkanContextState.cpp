@@ -300,6 +300,16 @@ void VulkanContextState::updateConstantBuffer(u32 arrayIndex, const resource::Sh
     }
 }
 
+void VulkanContextState::invalidateDescriptorSetsState()
+{
+    m_descriptorSetsState.fill({ BindingInfo() });
+}
+
+void VulkanContextState::resetCurrentDescriptorPool()
+{
+    m_currentPool->reset(0);
+}
+
 VkDescriptorBufferInfo VulkanContextState::makeVkDescriptorBufferInfo(const VulkanBuffer* buffer, u64 offset, u64 range)
 {
     VkDescriptorBufferInfo descriptorBufferInfo = {};

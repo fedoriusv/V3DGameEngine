@@ -62,6 +62,9 @@ namespace vk
         void bindTexture(const VulkanImage* image, const VulkanSampler* sampler, u32 arrayIndex, const resource::Shader::SampledImage& reflaction);
         void updateConstantBuffer(u32 arrayIndex, const resource::Shader::UniformBuffer& reflaction, u32 offset, u32 size, const void* data);
 
+        void invalidateDescriptorSetsState();
+        void resetCurrentDescriptorPool();
+
         std::vector<VkClearValue> m_renderPassClearValues;
         VkRect2D m_renderPassArea;
 

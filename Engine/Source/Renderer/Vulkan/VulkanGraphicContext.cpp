@@ -446,6 +446,10 @@ void VulkanGraphicContext::bindUniformsBuffer(const resource::Shader* shader, u3
 {
     const resource::Shader::ReflectionInfo& info = shader->getReflectionInfo();
     const resource::Shader::UniformBuffer& bufferData = info._uniformBuffers[bindIndex];
+    if (offset == 0)
+    {
+        ASSERT(bufferData._size == size, "different size");
+    }
 
     m_currentContextStateNEW->updateConstantBuffer(bindIndex, bufferData, offset, size, data);
 }
@@ -471,6 +475,8 @@ void VulkanGraphicContext::draw(StreamBufferDescription& desc, u32 firstVertex, 
         ASSERT(drawBuffer->isInsideRenderPass(), "not inside renderpass");
         drawBuffer->cmdDraw(firstVertex, vertexCount, firstInstance, instanceCount);
     }
+
+    //m_currentContextStateNEW->invalidateDescriptorSetsState();
 }
 
 void VulkanGraphicContext::drawIndexed()

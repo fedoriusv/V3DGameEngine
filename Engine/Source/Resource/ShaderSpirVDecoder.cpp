@@ -437,7 +437,8 @@ bool ShaderSpirVDecoder::parseReflections(const std::vector<u32>& spirv, stream:
                 uniform._type = convertSPRIVTypeToDataType(type);
                 uniform._name = member_name;
 
-                membersSize += type.width * col * row * uniform._array;
+                u32 dataSize = (type.width == 32) ? 4 : 8;
+                membersSize += dataSize * col * row * uniform._array;
 
                 block._uniforms.push_back(uniform);
             }

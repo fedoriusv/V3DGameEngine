@@ -22,7 +22,7 @@ public:
         , m_offset(offset)
         , m_size(size)
         , m_data(nullptr)
-        , m_shared(shader)
+        , m_shared(shared)
     {
         LOG_DEBUG("UpdateUniformsBuffer constructor");
 
@@ -150,7 +150,7 @@ bool ShaderProgram::bindUniformsBuffer(ShaderType shaderType, std::string& name,
     }
     else
     {
-        m_cmdList.pushCommand(new UpdateUniformsBuffer(shader, iter->second, offset, size, const_cast<void*>(data), true));
+        m_cmdList.pushCommand(new UpdateUniformsBuffer(shader, iter->second, offset, size, const_cast<void*>(data), false));
     }
 
     return true;
