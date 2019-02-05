@@ -311,6 +311,7 @@ void VulkanContextState::updateConstantBuffer(u32 arrayIndex, const resource::Sh
     }*/
 
     VulkanUniformBuffer * uniformBuffer = m_unifromBufferManager->acquireUnformBuffer(reflaction._size);
+    bool updated = uniformBuffer->update(offset, size, data);
 
     BindingInfo bindingInfo;
     bindingInfo._set = reflaction._set;

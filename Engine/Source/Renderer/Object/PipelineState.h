@@ -40,6 +40,9 @@ namespace renderer
         void setPolygonMode(PolygonMode polygonMode);
         void setFrontFace(FrontFace frontFace);
         void setCullMode(CullMode cullMode);
+        void setDepthCompareOp(CompareOperation op);
+        void setDepthTest(bool enable);
+        void setDepthWrite(bool enable);
 
         void setPrimitiveTopology(PrimitiveTopology primitiveTopology);
 

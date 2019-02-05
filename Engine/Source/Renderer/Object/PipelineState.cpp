@@ -87,6 +87,21 @@ void GraphicsPipelineState::setPrimitiveTopology(PrimitiveTopology primitiveTopo
     m_pipelineStateDesc._vertexInputState._primitiveTopology = primitiveTopology;
 }
 
+void GraphicsPipelineState::setDepthCompareOp(CompareOperation op)
+{
+    m_pipelineStateDesc._depthStencilState._compareOp = op;
+}
+
+void GraphicsPipelineState::setDepthTest(bool enable)
+{
+    m_pipelineStateDesc._depthStencilState._depthTestEnable = enable;
+}
+
+void GraphicsPipelineState::setDepthWrite(bool enable)
+{
+    m_pipelineStateDesc._depthStencilState._depthWriteEnable = enable;
+}
+
 const GraphicsPipelineStateDescription & GraphicsPipelineState::getGraphicsPipelineStateDesc() const
 {
     return m_pipelineStateDesc;

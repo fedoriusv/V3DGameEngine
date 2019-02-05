@@ -235,7 +235,7 @@ void VulkanGraphicContext::setScissor(const core::Rect32 & scissor)
     {
         VkRect2D vkScissor = {};
         vkScissor.offset = { scissor.getLeftX(), scissor.getTopY() };
-        vkScissor.offset = { scissor.getWidth(), scissor.getHeight() };
+        vkScissor.extent = { static_cast<u32>(scissor.getWidth()), static_cast<u32>(scissor.getHeight()) };
 
         std::vector<VkRect2D> scissors = { vkScissor };
 
@@ -557,7 +557,7 @@ bool VulkanGraphicContext::initialize()
 
     VulkanSwapchain::SwapchainConfig config;
     config._size = m_window->getSize();
-    config._vsync = true; //TODO
+    config._vsync = false; //TODO
     config._countSwapchaiImages = 3;
 
     m_swapchain = new VulkanSwapchain(&m_deviceInfo, surface);

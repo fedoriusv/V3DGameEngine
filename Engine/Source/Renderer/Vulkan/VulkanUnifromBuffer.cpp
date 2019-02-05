@@ -44,12 +44,13 @@ bool VulkanUniformBuffer::update(u32 offset, u32 size, const void * data)
     ASSERT(originBuffer, "nullptr");
     u8* buffer = reinterpret_cast<u8*>(originBuffer) + m_offset;
     
-    bool checkContent = true;
+    bool checkContent = false;
     if (checkContent)
     {
         u32 result = memcmp(buffer, data, size);
         if (!result)
         {
+            m_buffer->unmap();
             return false;
         }
     }
@@ -72,12 +73,6 @@ VulkanUniformBufferManager::~VulkanUniformBufferManager()
 {
     ASSERT(m_usedPoolBuffers.empty(), "still not empty");
 
-    if (m_memoryManager)
-    {
-        delete m_memoryManager;
-        m_memoryManager = nullptr;
-    }
-
     while (!m_freePoolBuffers.empty())
     {
         VulkanUniformBufferPool* poolUnifromBuffers = m_freePoolBuffers.front();
@@ -87,12 +82,19 @@ VulkanUniformBufferManager::~VulkanUniformBufferManager()
         {
             delete uniform;
         }
+        //TODO crash
         poolUnifromBuffers->_uniformList.clear();
 
         poolUnifromBuffers->_buffer->destroy();
         delete poolUnifromBuffers->_buffer;
 
         delete poolUnifromBuffers;
+    }
+
+    if (m_memoryManager)
+    {
+        delete m_memoryManager;
+        m_memoryManager = nullptr;
     }
 }
 

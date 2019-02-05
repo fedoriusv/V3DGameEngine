@@ -16,9 +16,12 @@ SimpleRender::SimpleRender(renderer::CommandList& cmdList, const renderer::Verte
     resource::Shader* fragShader = resource::ResourceLoaderManager::getInstance()->loadShader<resource::Shader, resource::ShaderSourceFileLoader>(cmdList.getContext(), "examples/3.simpledraw/shaders/simple.frag");
     m_program = cmdList.createObject<ShaderProgram>(std::vector<resource::Shader*>{vertShader, fragShader});
 
-    m_textureTarget = cmdList.createObject<Texture2D>(Format::Format_R8G8B8A8_UNorm, core::Dimension2D(1024, 768), TextureSamples::TextureSamples_x1);
-    m_renderTarget = cmdList.createObject<RenderTarget>(m_textureTarget->getDimension());
-    bool success = m_renderTarget->setColorTexture(0, m_textureTarget, RenderTargetLoadOp::LoadOp_Clear, RenderTargetStoreOp::StoreOp_Store);
+    Texture2D* colorAttachment = cmdList.createObject<Texture2D>(Format::Format_R8G8B8A8_UNorm, core::Dimension2D(1024, 768), TextureSamples::TextureSamples_x1);
+    Texture2D* depthAttachment = cmdList.createObject<Texture2D>(Format::Format_D16_UNorm_S8_UInt, core::Dimension2D(1024, 768), TextureSamples::TextureSamples_x1);
+
+    m_renderTarget = cmdList.createObject<RenderTarget>(colorAttachment->getDimension());
+    m_renderTarget->setColorTexture(0, colorAttachment, RenderTargetLoadOp::LoadOp_Clear, RenderTargetStoreOp::StoreOp_Store);
+    m_renderTarget->setDepthStencilTexture(depthAttachment, RenderTargetLoadOp::LoadOp_Clear, RenderTargetStoreOp::StoreOp_Store);
     //m_renderTarget = cmdList.createObject<RenderTarget>(cmdList.getBackbuffer()->getDimension());
     //bool success = m_renderTarget->setColorTexture(0, cmdList.getBackbuffer(), RenderTargetLoadOp::LoadOp_Clear, RenderTargetStoreOp::StoreOp_Store);
 
@@ -27,6 +30,7 @@ SimpleRender::SimpleRender(renderer::CommandList& cmdList, const renderer::Verte
 
     m_pipeline = cmdList.createObject<GraphicsPipelineState>(desc, m_program, m_renderTarget);
     m_pipeline->setPrimitiveTopology(PrimitiveTopology::PrimitiveTopology_TriangleList);
+    m_pipeline->setDepthWrite(true);
 
     cmdList.setPipelineState(m_pipeline);
     cmdList.setRenderTarget(m_renderTarget);
@@ -43,12 +47,13 @@ SimpleRender::~SimpleRender()
     delete m_pipeline;
     delete m_program;
     delete m_renderTarget;
-    delete m_textureTarget;
-
+    
+    //TODO:
+    //delete m_textureTarget;
     //delete shaders
 }
 
-void SimpleRender::update(f32 zoom, const core::Vector3D& rotate)
+void SimpleRender::update(f32 z, const core::Vector3D& rotate)
 {
     struct
     {
@@ -59,7 +64,7 @@ void SimpleRender::update(f32 zoom, const core::Vector3D& rotate)
 
     uboVS.projectionMatrix = core::buildProjectionMatrixPerspective(60.0f, f32(m_renderTarget->getDimension().width / m_renderTarget->getDimension().height), 0.1f, 256.0f);
     uboVS.modelMatrix.makeIdentity();
-    uboVS.viewMatrix.setTranslation(core::Vector3D(0.0f, 0.0f, zoom));
+    uboVS.viewMatrix.setTranslation(core::Vector3D(0.0f, 0.0f, -z));
     uboVS.modelMatrix.makeIdentity();
     uboVS.modelMatrix.setRotation(rotate);
 
@@ -71,10 +76,10 @@ void SimpleRender::render(renderer::CommandList& cmdList)
     cmdList.setViewport(core::Rect32(0, 0, m_renderTarget->getDimension().width, m_renderTarget->getDimension().height));
     cmdList.setScissor(core::Rect32(0, 0, m_renderTarget->getDimension().width, m_renderTarget->getDimension().height));
 
-    SimpleRender::update(1.0f, core::Vector3D(0.0f));
+    SimpleRender::update(2.0f, core::Vector3D(0.0f));
     cmdList.draw(renderer::StreamBufferDescription(m_vetexBuffer, 0), 0, 3, 1);
 
-    SimpleRender::update(2.0f, core::Vector3D(0.0f, 90.0f, 0.0f));
+    SimpleRender::update(1.0f, core::Vector3D(0.0f, 0.0f, 90.0f));
     cmdList.draw(renderer::StreamBufferDescription(m_vetexBuffer, 0), 0, 3, 1);
 }
 

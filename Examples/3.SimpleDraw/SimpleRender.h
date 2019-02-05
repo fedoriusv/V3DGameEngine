@@ -25,7 +25,6 @@ public:
 
 private:
 
-    Texture2D*        m_textureTarget;
     RenderTarget*     m_renderTarget;
     ShaderProgram*    m_program;
     GraphicsPipelineState* m_pipeline;
