@@ -180,6 +180,12 @@ namespace core
         return (T)ix + f;
     }
 
+    template<class T>
+    inline T alignUp(T val, T alignment)
+    {
+        return ((val) + (alignment) - 1) & ~((alignment) - 1);
+    }
+
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
 } //namespace core

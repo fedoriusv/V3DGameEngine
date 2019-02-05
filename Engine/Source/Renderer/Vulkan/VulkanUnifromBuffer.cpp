@@ -2,6 +2,7 @@
 
 #ifdef VULKAN_RENDER
 #include "VulkanBuffer.h"
+#include "VulkanDeviceCaps.h"
 
 namespace v3d
 {
@@ -97,6 +98,9 @@ VulkanUniformBufferManager::~VulkanUniformBufferManager()
 
 VulkanUniformBuffer * VulkanUniformBufferManager::acquireUnformBuffer(u32 requestedSize)
 {
+    u32 alingment = static_cast<u32>(VulkanDeviceCaps::getInstance()->getPhysicalDeviceLimits().minUniformBufferOffsetAlignment);
+    u32 requirementSize = core::alignUp(requestedSize, alingment);
+
     if (!m_currentPoolBuffer)
     {
         m_currentPoolBuffer = VulkanUniformBufferManager::getNewPool();
@@ -104,7 +108,7 @@ VulkanUniformBuffer * VulkanUniformBufferManager::acquireUnformBuffer(u32 reques
     else
     {
         m_usedPoolBuffers.push_back(m_currentPoolBuffer);
-        if (m_currentPoolBuffer->_freeSize < requestedSize)
+        if (m_currentPoolBuffer->_freeSize < requirementSize)
         {
             if (!m_freePoolBuffers.empty())
             {
@@ -118,17 +122,10 @@ VulkanUniformBuffer * VulkanUniformBufferManager::acquireUnformBuffer(u32 reques
         }
     }
 
-    VulkanUniformBuffer * newUnifromBuffer = new VulkanUniformBuffer(m_currentPoolBuffer->_buffer, m_currentPoolBuffer->_usedSize, requestedSize);
-    m_currentPoolBuffer->addUniformBuffer(newUnifromBuffer, requestedSize);
+    VulkanUniformBuffer * newUnifromBuffer = new VulkanUniformBuffer(m_currentPoolBuffer->_buffer, m_currentPoolBuffer->_usedSize, requirementSize);
+    m_currentPoolBuffer->addUniformBuffer(newUnifromBuffer, requirementSize);
 
     return newUnifromBuffer;
-}
-
-VulkanUniformBuffer * VulkanUniformBufferManager::findUniformBuffer(const VulkanBuffer * buffer, u32 requestedSize)
-{
-
-
-    return nullptr;
 }
 
 void VulkanUniformBufferManager::updateUniformBuffers()
@@ -139,7 +136,13 @@ void VulkanUniformBufferManager::updateUniformBuffers()
         if (!pool->_buffer->isCaptured())
         {
             m_freePoolBuffers.push_back(pool);
-            m_usedPoolBuffers.erase(iter);
+            iter = m_usedPoolBuffers.erase(iter);
+
+            pool->resetPool();
+        }
+        else
+        {
+            ++iter;
         }
     }
 }
@@ -159,6 +162,19 @@ VulkanUniformBufferManager::VulkanUniformBufferPool * VulkanUniformBufferManager
         return nullptr;
     }
     return newPool;
+}
+
+void VulkanUniformBufferManager::VulkanUniformBufferPool::resetPool()
+{
+    for (auto& buffer : _uniformList)
+    {
+        delete buffer;
+        buffer = nullptr;
+    }
+    _uniformList.clear();
+
+    _usedSize = 0;
+    _freeSize = 0;
 }
 
 void VulkanUniformBufferManager::VulkanUniformBufferPool::addUniformBuffer(VulkanUniformBuffer * uniformBuffer, u64 size)

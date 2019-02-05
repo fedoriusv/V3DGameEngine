@@ -40,7 +40,6 @@ const std::vector<const c8*> k_instanceExtensionsList =
 #endif
 #if VULKAN_LAYERS_CALLBACKS
     VK_EXT_DEBUG_UTILS_EXTENSION_NAME,
-    "VK_EXT_debug_report",
 #endif //VULKAN_LAYERS_CALLBACKS
 };
 
@@ -158,10 +157,13 @@ void VulkanGraphicContext::presentFrame()
     m_swapchain->present(m_queueList[0], semaphores);
 
     m_cmdBufferManager->updateCommandBuffers();
+    m_uniformBufferManager->updateUniformBuffers();
     if (m_deviceCaps.useStagingBuffers)
     {
         m_stagingBufferManager->destroyStagingBuffers();
     }
+    m_currentContextStateNEW->invalidateDescriptorSetsState();
+
     m_frameCounter++;
 }
 
@@ -974,6 +976,11 @@ bool VulkanGraphicContext::createDevice()
 bool VulkanGraphicContext::prepareDraw(VulkanCommandBuffer* drawBuffer)
 {
     ASSERT(drawBuffer, "nullptr");
+    ASSERT(m_currentContextStateNEW->getCurrentRenderpass(), "not bound");
+    if (!drawBuffer->isInsideRenderPass())
+    {
+        drawBuffer->cmdBeginRenderpass(m_currentContextStateNEW->getCurrentRenderpass(), m_currentContextStateNEW->getCurrentFramebuffer(), m_currentContextStateNEW->m_renderPassArea, m_currentContextStateNEW->m_renderPassClearValues);
+    }
 
     ASSERT(m_currentContextStateNEW->getCurrentPipeline(), "not bound");
     drawBuffer->cmdBindPipeline(m_currentContextStateNEW->getCurrentPipeline());
@@ -986,12 +993,6 @@ bool VulkanGraphicContext::prepareDraw(VulkanCommandBuffer* drawBuffer)
     m_currentContextStateNEW->updateDescriptorSet();
 
     drawBuffer->cmdBindDescriptorSets(m_currentContextStateNEW->getCurrentPipeline(), 0, static_cast<u32>(sets.size()), sets, offsets);
-
-    ASSERT(m_currentContextStateNEW->getCurrentRenderpass(), "not bound");
-    if (!drawBuffer->isInsideRenderPass())
-    {
-        drawBuffer->cmdBeginRenderpass(m_currentContextStateNEW->getCurrentRenderpass(), m_currentContextStateNEW->getCurrentFramebuffer(), m_currentContextStateNEW->m_renderPassArea, m_currentContextStateNEW->m_renderPassClearValues);
-    }
 
     return true;
 }

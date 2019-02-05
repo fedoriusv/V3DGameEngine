@@ -63,7 +63,6 @@ namespace vk
         void updateConstantBuffer(u32 arrayIndex, const resource::Shader::UniformBuffer& reflaction, u32 offset, u32 size, const void* data);
 
         void invalidateDescriptorSetsState();
-        void resetCurrentDescriptorPool();
 
         std::vector<VkClearValue> m_renderPassClearValues;
         VkRect2D m_renderPassArea;
@@ -139,7 +138,7 @@ namespace vk
         std::vector<BindingInfo> m_updatedBindings;
         std::map<u32, BindingInfo> m_currentBindingCache;
 
-        std::array<std::vector<BindingInfo>, k_maxDescriptorSetIndex> m_descriptorSetsState;
+        //std::array<std::vector<BindingInfo>, k_maxDescriptorSetIndex> m_descriptorSetsState;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

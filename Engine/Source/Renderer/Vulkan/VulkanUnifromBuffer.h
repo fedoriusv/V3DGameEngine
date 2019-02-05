@@ -40,8 +40,6 @@ namespace vk
         ~VulkanUniformBufferManager();
 
         VulkanUniformBuffer* acquireUnformBuffer(u32 requestedSize);
-        VulkanUniformBuffer* findUniformBuffer(const VulkanBuffer* buffer, u32 requestedSize);
-
         void updateUniformBuffers();
 
     private:
@@ -54,6 +52,7 @@ namespace vk
 
             std::vector<VulkanUniformBuffer*> _uniformList;
 
+            void resetPool();
             void addUniformBuffer(VulkanUniformBuffer* uniformBuffer, u64 size);
         };
 
