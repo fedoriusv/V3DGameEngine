@@ -56,6 +56,7 @@ namespace vk
         VkPhysicalDeviceProperties          m_deviceProperties;
         VkPhysicalDeviceMemoryProperties    m_deviceMemoryProps;
         std::vector<VkQueueFamilyProperties> m_queueFamilyProperties;
+
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

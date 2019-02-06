@@ -15,6 +15,23 @@ namespace renderer
         u32 maxColorattachments = k_maxFramebufferAttachments;
         u32 maxVertexInputAttributes = k_maxVertexInputAttributes;
         u32 maxVertexInputBindings = k_maxVertexInputBindings;
+
+        struct ImageFormatSupport
+        {
+            bool _tilingOptimal;
+            bool _tilingLinear;
+            bool _supportAttachment;
+            bool _supportSampled;
+        };
+
+        const ImageFormatSupport& getIFormatSupportInfo(Format format)
+        {
+            return m_imageFormatSupport[format];
+        }
+
+    protected:
+
+        ImageFormatSupport m_imageFormatSupport[Format::Format_Count];
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

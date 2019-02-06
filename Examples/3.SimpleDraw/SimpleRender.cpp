@@ -16,14 +16,13 @@ SimpleRender::SimpleRender(renderer::CommandList& cmdList, const renderer::Verte
     resource::Shader* fragShader = resource::ResourceLoaderManager::getInstance()->loadShader<resource::Shader, resource::ShaderSourceFileLoader>(cmdList.getContext(), "examples/3.simpledraw/shaders/simple.frag");
     m_program = cmdList.createObject<ShaderProgram>(std::vector<resource::Shader*>{vertShader, fragShader});
 
-    Texture2D* colorAttachment = cmdList.createObject<Texture2D>(Format::Format_R8G8B8A8_UNorm, core::Dimension2D(1024, 768), TextureSamples::TextureSamples_x1);
-    Texture2D* depthAttachment = cmdList.createObject<Texture2D>(Format::Format_D16_UNorm_S8_UInt, core::Dimension2D(1024, 768), TextureSamples::TextureSamples_x1);
+    //Texture2D* colorAttachment = cmdList.createObject<Texture2D>(Format::Format_R8G8B8A8_UNorm, core::Dimension2D(1024, 768), TextureSamples::TextureSamples_x1);
+    Texture2D* depthAttachment = cmdList.createObject<Texture2D>(TextureUsage::TextureUsage_Attachment, Format::Format_D24_UNorm_S8_UInt, core::Dimension2D(1024, 768), TextureSamples::TextureSamples_x1);
 
-    m_renderTarget = cmdList.createObject<RenderTarget>(colorAttachment->getDimension());
-    m_renderTarget->setColorTexture(0, colorAttachment, RenderTargetLoadOp::LoadOp_Clear, RenderTargetStoreOp::StoreOp_Store);
+    m_renderTarget = cmdList.createObject<RenderTarget>(cmdList.getBackbuffer()->getDimension());
+    //m_renderTarget->setColorTexture(0, colorAttachment, RenderTargetLoadOp::LoadOp_Clear, RenderTargetStoreOp::StoreOp_Store);
+    m_renderTarget->setColorTexture(0, cmdList.getBackbuffer(), RenderTargetLoadOp::LoadOp_Clear, RenderTargetStoreOp::StoreOp_Store);
     m_renderTarget->setDepthStencilTexture(depthAttachment, RenderTargetLoadOp::LoadOp_Clear, RenderTargetStoreOp::StoreOp_Store);
-    //m_renderTarget = cmdList.createObject<RenderTarget>(cmdList.getBackbuffer()->getDimension());
-    //bool success = m_renderTarget->setColorTexture(0, cmdList.getBackbuffer(), RenderTargetLoadOp::LoadOp_Clear, RenderTargetStoreOp::StoreOp_Store);
 
     u64 vertexBufferSize = geomentry.size() * sizeof(f32);
     m_vetexBuffer = cmdList.createObject<VertexStreamBuffer>(StreamBufferUsage::StreamBuffer_Write | StreamBufferUsage::StreamBuffer_Shared, vertexBufferSize, (u8*)geomentry.data());
@@ -33,6 +32,7 @@ SimpleRender::SimpleRender(renderer::CommandList& cmdList, const renderer::Verte
     m_pipeline->setDepthWrite(true);
 
     cmdList.setPipelineState(m_pipeline);
+    cmdList.setRenderTarget(m_renderTarget);
     cmdList.setRenderTarget(m_renderTarget);
 
     core::Matrix4D projection;

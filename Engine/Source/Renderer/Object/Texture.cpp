@@ -178,34 +178,9 @@ private:
     u32                 m_stencil;
 };
 
-    /*CommandClearBackbuffer*/
-class CommandClearBackbuffer : public renderer::Command
-{
-public:
-    CommandClearBackbuffer(const core::Vector4D& color) noexcept
-        : m_clearColor(color)
-    {
-        LOG_DEBUG("CommandClearBackbuffer constructor");
-    };
-
-    ~CommandClearBackbuffer()
-    {
-        LOG_DEBUG("CommandClearBackbuffer destructor");
-    };
-
-    void execute(const renderer::CommandList& cmdList)
-    {
-        LOG_DEBUG("CommandClearBackbuffer execute");
-        cmdList.getContext()->clearBackbuffer(m_clearColor);
-    }
-
-private:
-    core::Vector4D m_clearColor;
-};
-
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-Texture2D::Texture2D(renderer::CommandList& cmdList, renderer::Format format, const core::Dimension2D& dimension, u32 mipmapCount, const void * data) noexcept
+Texture2D::Texture2D(renderer::CommandList& cmdList, TextureUsageFlags usage, renderer::Format format, const core::Dimension2D& dimension, u32 mipmapCount, const void * data) noexcept
     : m_cmdList(cmdList)
     , m_target(renderer::TextureTarget::Texture2D)
     , m_format(format)
@@ -213,29 +188,32 @@ Texture2D::Texture2D(renderer::CommandList& cmdList, renderer::Format format, co
     , m_mipmapLevel(mipmapCount)
     , m_samples(renderer::TextureSamples::TextureSamples_x1)
 
+    , m_usage(usage)
     , m_image(nullptr)
 
 {
     core::Dimension3D dim = { m_dimension.width, m_dimension.height, 1 };
-    m_image = m_cmdList.getContext()->createImage(m_target, m_format, dim, m_mipmapLevel, 0);
+    m_image = m_cmdList.getContext()->createImage(m_target, m_format, dim, m_mipmapLevel, m_usage);
     ASSERT(m_image, "m_image is nullptr");
     m_image->registerNotify(this);
 
     createTexture2D(data);
 }
 
-Texture2D::Texture2D(renderer::CommandList & cmdList, renderer::Format format, const core::Dimension2D & dimension, renderer::TextureSamples samples) noexcept
+Texture2D::Texture2D(renderer::CommandList & cmdList, TextureUsageFlags usage, renderer::Format format, const core::Dimension2D & dimension, renderer::TextureSamples samples) noexcept
     : m_cmdList(cmdList)
     , m_target(renderer::TextureTarget::Texture2D)
     , m_format(format)
     , m_dimension(dimension)
-    , m_mipmapLevel(0)
+    , m_mipmapLevel(1)
     , m_samples(samples)
 
+    , m_usage(usage)
     , m_image(nullptr)
 {
     core::Dimension3D dim = { m_dimension.width, m_dimension.height, 1 };
-    m_image = m_cmdList.getContext()->createAttachmentImage(m_format, dim, m_samples, 0);
+    //m_image = m_cmdList.getContext()->createAttachmentImage(m_format, dim, m_samples, 0);
+    m_image = m_cmdList.getContext()->createImage(m_target, m_format, dim, m_mipmapLevel, m_usage);
     ASSERT(m_image, "m_image is nullptr");
     m_image->registerNotify(this);
 
@@ -364,44 +342,6 @@ void Texture2D::clear(f32 depth, u32 stencil)
         }
     }
 }
-
-/////////////////////////////////////////////////////////////////////////////////////////////////////
-
-BackbufferTexture::BackbufferTexture(renderer::CommandList & cmdList) noexcept
-    : m_cmdList(cmdList)
-{
-}
-
-BackbufferTexture::~BackbufferTexture()
-{
-}
-
-const core::Dimension2D & BackbufferTexture::getDimension() const
-{
-    return m_cmdList.getContext()->m_backufferDescription._size;
-}
-
-renderer::Format BackbufferTexture::getFormat() const
-{
-    return m_cmdList.getContext()->m_backufferDescription._format;
-}
-
-void BackbufferTexture::read(const core::Dimension2D & offset, const core::Dimension2D & size, void * const data)
-{
-}
-
-void BackbufferTexture::clear(const core::Vector4D & color)
-{
-    if (m_cmdList.isImmediate())
-    {
-        m_cmdList.getContext()->clearBackbuffer(color);
-    }
-    else
-    {
-        m_cmdList.pushCommand(new CommandClearBackbuffer(color));
-    }
-}
-
 
 } //namespace renderer
 } //namespace v3d

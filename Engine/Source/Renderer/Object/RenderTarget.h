@@ -12,6 +12,7 @@ namespace v3d
 namespace renderer
 {
     class Texture2D;
+    class Backbuffer;
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -30,7 +31,7 @@ namespace renderer
             RenderTargetLoadOp loadOp = RenderTargetLoadOp::LoadOp_Clear, RenderTargetStoreOp storeOp = RenderTargetStoreOp::StoreOp_Store,
             const core::Vector4D& clearColor = core::Vector4D(0.f));
 
-        bool setColorTexture(u32 index, BackbufferTexture* swapchainTexture,
+        bool setColorTexture(u32 index, Backbuffer* swapchainTexture,
             RenderTargetLoadOp loadOp = RenderTargetLoadOp::LoadOp_Clear, RenderTargetStoreOp storeOp = RenderTargetStoreOp::StoreOp_Store,
             const core::Vector4D& clearColor = core::Vector4D(0.f));
 
@@ -76,17 +77,21 @@ namespace renderer
     {
     public:
 
-        ~Backbuffer() {};
-        Backbuffer(const Backbuffer &) = delete;
+        ~Backbuffer();
+        Backbuffer(const Backbuffer&) = delete;
+
+        const core::Dimension2D& getDimension() const;
+        renderer::Format         getFormat() const;
+
+        void read(const core::Dimension2D& offset, const core::Dimension2D& size, void* const data);
+        void clear(const core::Vector4D& color);
 
     private:
 
-        Backbuffer(renderer::CommandList& cmdList, BackbufferTexture* texture) noexcept;
+        Backbuffer(renderer::CommandList& cmdList) noexcept;
 
-        renderer::CommandList&  m_cmdList;
-        BackbufferTexture*       m_texture;
-
-        friend renderer::CommandList;
+        friend CommandList;
+        CommandList&  m_cmdList;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

@@ -4,6 +4,7 @@
 #ifdef VULKAN_RENDER
 #include "VulkanGraphicContext.h"
 #include "VulkanMemory.h"
+#include "VulkanImage.h"
 
 namespace v3d
 {
@@ -151,6 +152,26 @@ void VulkanDeviceCaps::fillCapabilitiesList(const DeviceInfo* info)
     ASSERT(queueFamilyCount > 0, "Must be greater than 0");
     m_queueFamilyProperties.resize(queueFamilyCount);
     VulkanWrapper::GetPhysicalDeviceQueueFamilyProperties(info->_physicalDevice, &queueFamilyCount, m_queueFamilyProperties.data());
+
+
+    memset(m_imageFormatSupport, 0, sizeof(m_imageFormatSupport));
+    for (u32 index = 0; index < Format::Format_Count; ++index)
+    {
+        ImageFormatSupport& support = m_imageFormatSupport[index];
+        support._tilingLinear = false;
+        support._tilingOptimal = true;
+
+        VkImageFormatProperties imageFormatProperties = {};
+        VkFormat vkFormat = VulkanImage::convertImageFormatToVkFormat((Format)index);
+
+        VkResult result = VulkanWrapper::GetPhysicalDeviceImageFormatProperties(info->_physicalDevice, vkFormat, VK_IMAGE_TYPE_2D, VK_IMAGE_TILING_OPTIMAL, 
+            VulkanImage::isColorFormat(vkFormat) ? VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT : VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, 0, &imageFormatProperties);
+        support._supportAttachment = (result == VK_SUCCESS) ? true : false;
+
+        result = VulkanWrapper::GetPhysicalDeviceImageFormatProperties(info->_physicalDevice, vkFormat, VK_IMAGE_TYPE_2D, VK_IMAGE_TILING_OPTIMAL,
+            VK_IMAGE_USAGE_SAMPLED_BIT, 0, &imageFormatProperties);
+        support._supportSampled = (result == VK_SUCCESS) ? true : false;
+    }
 
     //VK_EXT_memory_budget
     //VK_EXT_memory_priority

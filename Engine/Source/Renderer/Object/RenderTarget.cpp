@@ -77,6 +77,31 @@ private:
     std::vector<RenderPass*> m_renderpasses;
 };
 
+/*CommandClearBackbuffer*/
+class CommandClearBackbuffer : public renderer::Command
+{
+public:
+    CommandClearBackbuffer(const core::Vector4D& color) noexcept
+        : m_clearColor(color)
+    {
+        LOG_DEBUG("CommandClearBackbuffer constructor");
+    };
+
+    ~CommandClearBackbuffer()
+    {
+        LOG_DEBUG("CommandClearBackbuffer destructor");
+    };
+
+    void execute(const renderer::CommandList& cmdList)
+    {
+        LOG_DEBUG("CommandClearBackbuffer execute");
+        cmdList.getContext()->clearBackbuffer(m_clearColor);
+    }
+
+private:
+    core::Vector4D m_clearColor;
+};
+
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 
 RenderTarget::RenderTarget(renderer::CommandList& cmdList, const core::Dimension2D& size) noexcept
@@ -108,6 +133,7 @@ bool RenderTarget::setColorTexture(u32 index, Texture2D* colorTexture, RenderTar
         attachmentDesc._storeOp = storeOp;
         attachmentDesc._stencilLoadOp = RenderTargetLoadOp::LoadOp_DontCare;
         attachmentDesc._stencilStoreOp = RenderTargetStoreOp::StoreOp_DontCare;
+        attachmentDesc._internalTarget = false;
 
         m_colorTextures[index] = std::make_tuple(colorTexture, attachmentDesc, clearColor);
     }
@@ -120,7 +146,7 @@ bool RenderTarget::setColorTexture(u32 index, Texture2D* colorTexture, RenderTar
     return true;
 }
 
-bool RenderTarget::setColorTexture(u32 index, BackbufferTexture * swapchainTexture, RenderTargetLoadOp loadOp, RenderTargetStoreOp storeOp, const core::Vector4D & clearColor)
+bool RenderTarget::setColorTexture(u32 index, Backbuffer* swapchainTexture, RenderTargetLoadOp loadOp, RenderTargetStoreOp storeOp, const core::Vector4D & clearColor)
 {
     ASSERT(index < m_cmdList.getContext()->getDeviceCaps()->maxColorattachments, "index >= maxColorattachments");
     if (swapchainTexture)
@@ -132,6 +158,7 @@ bool RenderTarget::setColorTexture(u32 index, BackbufferTexture * swapchainTextu
         attachmentDesc._storeOp = storeOp;
         attachmentDesc._stencilLoadOp = RenderTargetLoadOp::LoadOp_DontCare;
         attachmentDesc._stencilStoreOp = RenderTargetStoreOp::StoreOp_DontCare;
+        attachmentDesc._internalTarget = true;
 
         m_colorTextures[index] = std::make_tuple(nullptr, attachmentDesc, clearColor);
     }
@@ -155,6 +182,8 @@ bool RenderTarget::setDepthStencilTexture(Texture2D* depthStencilTexture,
         attachmentDesc._storeOp = depthStoreOp;
         attachmentDesc._stencilLoadOp = stencilLoadOp;
         attachmentDesc._stencilStoreOp = stencilStoreOp;
+        attachmentDesc._internalTarget = false;
+
         m_depthStencilTexture = std::make_tuple(depthStencilTexture, attachmentDesc, clearDepth, clearStencil);
     }
     else
@@ -198,7 +227,7 @@ bool RenderTarget::hasDepthStencilTexture() const
     return std::get<0>(m_depthStencilTexture) != nullptr;
 }
 
-void RenderTarget::extractRenderTargetInfo(RenderPass::RenderPassInfo & renderPassInfo, std::vector<Image*>& images, RenderPass::ClearValueInfo & clearValuesInfo) const
+void RenderTarget::extractRenderTargetInfo(RenderPass::RenderPassInfo& renderPassInfo, std::vector<Image*>& images, RenderPass::ClearValueInfo& clearValuesInfo) const
 {
     images.reserve(getColorTextureCount() + (hasDepthStencilTexture()) ? 1 : 0);
 
@@ -214,9 +243,15 @@ void RenderTarget::extractRenderTargetInfo(RenderPass::RenderPassInfo & renderPa
             continue;
         }
 
-        images.push_back(std::get<0>(attachment->second)->getImage());
+        if (std::get<1>(attachment->second)._internalTarget)
+        {
+            images.push_back(nullptr);
+        }
+        else
+        {
+            images.push_back(std::get<0>(attachment->second)->getImage());
+        }
         renderPassInfo._attachments[index] = std::get<1>(attachment->second);
-
         clearValuesInfo._color.push_back(std::get<2>(attachment->second));
     }
 
@@ -263,10 +298,39 @@ void RenderTarget::destroyRenderPasses(const std::vector<RenderPass*>& renderPas
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-Backbuffer::Backbuffer(renderer::CommandList & cmdList, BackbufferTexture * texture) noexcept
+Backbuffer::Backbuffer(renderer::CommandList& cmdList) noexcept
     : m_cmdList(cmdList)
-    , m_texture(texture)
 {
+}
+
+Backbuffer::~Backbuffer()
+{
+}
+
+const core::Dimension2D & Backbuffer::getDimension() const
+{
+    return m_cmdList.getContext()->m_backufferDescription._size;
+}
+
+renderer::Format Backbuffer::getFormat() const
+{
+    return m_cmdList.getContext()->m_backufferDescription._format;
+}
+
+void Backbuffer::read(const core::Dimension2D & offset, const core::Dimension2D & size, void * const data)
+{
+}
+
+void Backbuffer::clear(const core::Vector4D & color)
+{
+    if (m_cmdList.isImmediate())
+    {
+        m_cmdList.getContext()->clearBackbuffer(color);
+    }
+    else
+    {
+        m_cmdList.pushCommand(new CommandClearBackbuffer(color));
+    }
 }
 
 } //namespace renderer

@@ -344,34 +344,34 @@ VkFormat VulkanImage::convertImageFormatToVkFormat(renderer::Format format)
     case v3d::renderer::Format_R32G32B32A32_SFloat:
          return VK_FORMAT_R32G32B32A32_SFLOAT;
 
-    /*case v3d::renderer::Format_R64_UInt:
-         return VK_FORMAT_UNDEFINED;
+    case v3d::renderer::Format_R64_UInt:
+         return VK_FORMAT_R64_UINT;
     case v3d::renderer::Format_R64_SInt:
-         return VK_FORMAT_UNDEFINED;
+         return VK_FORMAT_R64_SINT;
     case v3d::renderer::Format_R64_SFloat:
-         return VK_FORMAT_UNDEFINED;
+         return VK_FORMAT_R64_SFLOAT;
     case v3d::renderer::Format_R64G64_UInt:
-         return VK_FORMAT_UNDEFINED;
+         return VK_FORMAT_R64G64_UINT;
     case v3d::renderer::Format_R64G64_SInt:
-         return VK_FORMAT_UNDEFINED;
+         return VK_FORMAT_R64G64_SINT;
     case v3d::renderer::Format_R64G64_SFloat:
-         return VK_FORMAT_UNDEFINED;
+         return VK_FORMAT_R64G64_SFLOAT;
     case v3d::renderer::Format_R64G64B64_UInt:
-         return VK_FORMAT_UNDEFINED;
+         return VK_FORMAT_R64G64B64_UINT;
     case v3d::renderer::Format_R64G64B64_SInt:
-         return VK_FORMAT_UNDEFINED;
+         return VK_FORMAT_R64G64B64_SINT;
     case v3d::renderer::Format_R64G64B64_SFloat:
-         return VK_FORMAT_UNDEFINED;
+         return VK_FORMAT_R64G64B64_SFLOAT;
     case v3d::renderer::Format_R64G64B64A64_UInt:
-         return VK_FORMAT_UNDEFINED;
+         return VK_FORMAT_R64G64B64A64_UINT;
     case v3d::renderer::Format_R64G64B64A64_SInt:
-         return VK_FORMAT_UNDEFINED;
+         return VK_FORMAT_R64G64B64A64_SINT;
     case v3d::renderer::Format_R64G64B64A64_SFloat:
-         return VK_FORMAT_UNDEFINED;
+         return VK_FORMAT_R64G64B64A64_SFLOAT;
     case v3d::renderer::Format_B10G11R11_UFloat_Pack32:
-         return VK_FORMAT_UNDEFINED;
+         return VK_FORMAT_B10G11R11_UFLOAT_PACK32;
     case v3d::renderer::Format_E5B9G9R9_UFloat_Pack32:
-         return VK_FORMAT_UNDEFINED;*/
+         return VK_FORMAT_E5B9G9R9_UFLOAT_PACK32;
 
     case v3d::renderer::Format_D16_UNorm:
          return VK_FORMAT_D16_UNORM;
@@ -388,7 +388,8 @@ VkFormat VulkanImage::convertImageFormatToVkFormat(renderer::Format format)
     case v3d::renderer::Format_D32_SFloat_S8_UInt:
          return VK_FORMAT_D32_SFLOAT_S8_UINT;
 
-    /*case v3d::renderer::Format_BC1_RGB_UNorm_Block:
+        //TODO:
+    case v3d::renderer::Format_BC1_RGB_UNorm_Block:
          return VK_FORMAT_UNDEFINED;
     case v3d::renderer::Format_BC1_RGB_SRGB_Block:
          return VK_FORMAT_UNDEFINED;
@@ -495,7 +496,7 @@ VkFormat VulkanImage::convertImageFormatToVkFormat(renderer::Format format)
     case v3d::renderer::Format_ASTC_12x12_UNorm_Block:
          return VK_FORMAT_UNDEFINED;
     case v3d::renderer::Format_ASTC_12x12_SRGB_Block:
-         return VK_FORMAT_UNDEFINED;*/
+         return VK_FORMAT_UNDEFINED;
 
     default:
         ASSERT(false, "unknown");
@@ -564,7 +565,7 @@ VkSampleCountFlagBits VulkanImage::convertRenderTargetSamplesToVkSampleCount(Tex
     return VK_SAMPLE_COUNT_1_BIT;
 }
 
-VulkanImage::VulkanImage(VulkanMemory::VulkanMemoryAllocator* memory, VkDevice device, VkImageType type, VkFormat format, VkExtent3D dimension, u32 mipsLevel, VkImageTiling tiling)
+VulkanImage::VulkanImage(VulkanMemory::VulkanMemoryAllocator* memory, VkDevice device, VkImageType type, VkFormat format, VkExtent3D dimension, u32 mipsLevel, VkImageTiling tiling, TextureUsageFlags usage)
     : m_device(device)
     , m_type(type)
     , m_format(format)
@@ -581,8 +582,7 @@ VulkanImage::VulkanImage(VulkanMemory::VulkanMemoryAllocator* memory, VkDevice d
     , m_imageView(VK_NULL_HANDLE)
 
     , m_layout((m_tiling == VK_IMAGE_TILING_OPTIMAL) ? VK_IMAGE_LAYOUT_UNDEFINED : VK_IMAGE_LAYOUT_PREINITIALIZED)
-    , m_usage(VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT)
-
+    , m_usage(usage)
     , m_resolveImage(nullptr)
 
     , m_memory(VulkanMemory::s_invalidMemory)
@@ -591,7 +591,7 @@ VulkanImage::VulkanImage(VulkanMemory::VulkanMemoryAllocator* memory, VkDevice d
     LOG_DEBUG("VulkanImage::VulkanImage constructor %llx", this);
 }
 
-VulkanImage::VulkanImage(VulkanMemory::VulkanMemoryAllocator* memory, VkDevice device, VkFormat format, VkExtent3D dimension, VkSampleCountFlagBits samples)
+VulkanImage::VulkanImage(VulkanMemory::VulkanMemoryAllocator* memory, VkDevice device, VkFormat format, VkExtent3D dimension, VkSampleCountFlagBits samples, TextureUsageFlags usage)
     : m_device(device)
     , m_type(VK_IMAGE_TYPE_2D)
     , m_format(format)
@@ -608,23 +608,13 @@ VulkanImage::VulkanImage(VulkanMemory::VulkanMemoryAllocator* memory, VkDevice d
     , m_imageView(VK_NULL_HANDLE)
 
     , m_layout(VK_IMAGE_LAYOUT_UNDEFINED)
-    , m_usage(VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_SAMPLED_BIT)
-
+    , m_usage(usage)
     , m_resolveImage(nullptr)
 
     , m_memory(VulkanMemory::s_invalidMemory)
     , m_memoryAllocator(memory)
 {
     LOG_DEBUG("VulkanImage::VulkanImage constructor %llx", this);
-
-    if (VulkanImage::isColorFormat(format))
-    {
-        m_usage |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
-    }
-    else
-    {
-        m_usage |= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
-    }
 }
 
 VulkanImage::~VulkanImage()
@@ -638,6 +628,38 @@ VulkanImage::~VulkanImage()
 bool VulkanImage::create()
 {
     ASSERT(!m_image, "image already created");
+
+    const DeviceCaps::ImageFormatSupport& supportFormatInfo = VulkanDeviceCaps::getInstance()->getIFormatSupportInfo(VulkanImage::convertVkImageFormatToFormat(m_format));
+
+    VkImageUsageFlags usage = 0;
+    if (m_usage & TextureUsage::TextureUsage_Sampled)
+    {
+        ASSERT(supportFormatInfo._supportSampled, "not supported");
+        usage |= VK_IMAGE_USAGE_SAMPLED_BIT;
+    }
+
+    if (m_usage & TextureUsage::TextureUsage_Attachment)
+    {
+        ASSERT(supportFormatInfo._supportAttachment, "not supported");
+        if (VulkanImage::isColorFormat(m_format))
+        {
+            usage |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+        }
+        else
+        {
+            usage |= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+        }
+    }
+
+    if (m_usage & TextureUsage::TextureUsage_Write)
+    {
+        usage |= VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+    }
+
+    if (m_usage & TextureUsage::TextureUsage_Read)
+    {
+        usage |= VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+    }
 
     VkImageCreateInfo imageCreateInfo = {};
     imageCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
@@ -660,7 +682,7 @@ bool VulkanImage::create()
 
     imageCreateInfo.samples = m_samples;
     imageCreateInfo.tiling = m_tiling;
-    imageCreateInfo.usage = m_usage;
+    imageCreateInfo.usage = usage;
 
     imageCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
     imageCreateInfo.queueFamilyIndexCount = 0;
@@ -680,6 +702,11 @@ bool VulkanImage::create()
     {
         flag = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
         flag |= VulkanDeviceCaps::getInstance()->supportHostCoherentMemory ? VK_MEMORY_PROPERTY_HOST_COHERENT_BIT : VK_MEMORY_PROPERTY_HOST_CACHED_BIT;
+    }
+
+    if (flag == VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT)
+    {
+        imageCreateInfo.flags |= VK_IMAGE_CREATE_PROTECTED_BIT;
     }
     m_memory = VulkanMemory::allocateImageMemory(*m_memoryAllocator, m_image, flag);
     if (m_memory == VulkanMemory::s_invalidMemory)

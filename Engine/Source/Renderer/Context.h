@@ -25,7 +25,7 @@ namespace platform
 
 namespace renderer
 {
-    class BackbufferTexture;
+    class Backbuffer;
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -64,11 +64,11 @@ namespace renderer
         virtual void presentFrame() = 0;
         virtual void submit(bool wait = false) = 0;
 
+        virtual void clearBackbuffer(const core::Vector4D & color) = 0;
+
         //draw
         virtual void draw(StreamBufferDescription& desc, u32 firstVertex, u32 vertexCount, u32 firstInstance, u32 instanceCount) = 0;
         virtual void drawIndexed() = 0;
-
-        virtual void clearBackbuffer(const core::Vector4D & color) = 0;
 
         //program bind
         virtual void bindTexture(const resource::Shader* shader, u32 bindIndex, const Image* image) = 0;
@@ -92,8 +92,8 @@ namespace renderer
         virtual void removePipeline(Pipeline* pipeline) = 0;
 
         //objects
-        virtual Image* createImage(TextureTarget target, renderer::Format format, const core::Dimension3D& dimension, u32 mipmapLevel, u16 flags) const = 0;
-        virtual Image* createAttachmentImage(renderer::Format format, const core::Dimension3D& dimension, TextureSamples samples, u16 flags) const = 0;
+        virtual Image* createImage(TextureTarget target, renderer::Format format, const core::Dimension3D& dimension, u32 mipmapLevel, TextureUsageFlags flags) const = 0;
+        //virtual Image* createAttachmentImage(renderer::Format format, const core::Dimension3D& dimension, TextureSamples samples, TextureUsageFlags flags) const = 0;
         virtual void removeImage(Image* image) = 0;
 
         virtual Buffer* createBuffer(Buffer::BufferType type, u16 usageFlag, u64 size) = 0;
@@ -107,7 +107,7 @@ namespace renderer
         friend RenderPassManager;
         friend FramebufferManager;
         friend PipelineManager;
-        friend BackbufferTexture;
+        friend Backbuffer;
 
         //managment objects
         virtual Framebuffer* createFramebuffer(const std::vector<Image*>& attachments, const core::Dimension2D& size) = 0;
@@ -118,12 +118,12 @@ namespace renderer
         virtual void destroy() = 0;
 
 
-        struct Backbuffer
+        struct BackbufferDesc
         {
             core::Dimension2D _size;
             Format            _format;
         };
-        Backbuffer m_backufferDescription;
+        BackbufferDesc m_backufferDescription;
 
         RenderType  m_renderType;
         u64 m_frameCounter;

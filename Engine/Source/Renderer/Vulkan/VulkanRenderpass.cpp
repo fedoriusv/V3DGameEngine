@@ -95,10 +95,15 @@ bool VulkanRenderPass::create()
         vkAttach.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE; //TODO: if use stencil need enable it
         vkAttach.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
 
-        //TODO:
         vkAttach.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-        vkAttach.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-
+        if (attach._swapchainImage)
+        {
+            vkAttach.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+        }
+        else
+        {
+            vkAttach.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        }
         attachmentDescriptions.push_back(vkAttach);
 
         if (VulkanImage::isColorFormat(attach._format))

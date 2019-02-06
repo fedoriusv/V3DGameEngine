@@ -21,6 +21,10 @@ namespace renderer
     {
     public:
 
+        /**
+        * RenderPassInfo struct
+        * 36 byte size
+        */
         struct RenderPassInfo
         {
             RenderPassInfo()
@@ -30,10 +34,11 @@ namespace renderer
                 _hasDepthStencilAttahment = false;
             }
 
-            std::array<AttachmentDescription, k_maxFramebufferAttachments> _attachments; //: 32
-            u32  _countColorAttachments : 24;
-            u32 _hasDepthStencilAttahment : 8;
+            std::array<AttachmentDescription, k_maxFramebufferAttachments> _attachments; //32 bytes
+            u32 _countColorAttachments     : 4;
+            u32 _hasDepthStencilAttahment  : 1;
 
+            u32 _padding                   : 27;
         };
 
         struct ClearValueInfo

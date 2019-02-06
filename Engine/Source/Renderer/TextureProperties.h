@@ -9,7 +9,25 @@ namespace renderer
 {
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    enum class TextureTarget : s16
+    /**
+    * TextureUsage enum. usageFlag inside Texture
+    */
+    enum TextureUsage
+    {
+        TextureUsage_Write = 0x01,
+        TextureUsage_Read = 0x02,
+
+        TextureUsage_Sampled = 0x04,
+        TextureUsage_Attachment = 0x08,
+
+        TextureUsage_Shared = 0x16,
+    };
+
+    typedef u16 TextureUsageFlags;
+
+    ///////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    enum class TextureTarget : u16
     {
         Texture1D,
         Texture1DArray,
@@ -47,25 +65,25 @@ namespace renderer
         TextureWrap_ClampToBorder,
     };
 
-    enum class TextureSamples : s32
+    enum class TextureSamples : u32
     {
-        TextureSamples_x1 = 0x1,
-        TextureSamples_x2 = 0x2,
-        TextureSamples_x4 = 0x4,
-        TextureSamples_x8 = 0x8,
-        TextureSamples_x16 = 0x16,
-        TextureSamples_x32 = 0x32,
-        TextureSamples_x64 = 0x64,
+        TextureSamples_x1 = 0,
+        TextureSamples_x2 = 1,
+        TextureSamples_x4 = 2,
+        TextureSamples_x8 = 3,
+        TextureSamples_x16 = 4,
+        TextureSamples_x32 = 5,
+        TextureSamples_x64 = 6,
     };
 
-    enum class RenderTargetLoadOp : s32
+    enum class RenderTargetLoadOp : u32
     {
         LoadOp_DontCare,
         LoadOp_Clear,
         LoadOp_Load,
     };
 
-    enum class RenderTargetStoreOp : s32
+    enum class RenderTargetStoreOp : u32
     {
         StoreOp_DontCare,
         StoreOp_Store,
@@ -78,25 +96,25 @@ namespace renderer
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
-    * AttachmentDescription
+    * AttachmentDescription struct
+    * 4 byte size
     */
     struct AttachmentDescription
     {
         AttachmentDescription()
         {
             memset(this, 0, sizeof(AttachmentDescription));
-            _samples = TextureSamples::TextureSamples_x1;
         }
 
-
         Format                _format           : 8;
-        TextureSamples        _samples          : 4;
         RenderTargetLoadOp    _loadOp           : 2;
         RenderTargetStoreOp   _storeOp          : 2;
         RenderTargetLoadOp    _stencilLoadOp    : 2;
         RenderTargetStoreOp   _stencilStoreOp   : 2;
+        TextureSamples        _samples          : 3;
+        u32                  _internalTarget    : 1;
 
-        s32                   _padding          : 12;
+        u32                   _padding          : 12;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

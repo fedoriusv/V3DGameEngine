@@ -47,7 +47,7 @@ namespace renderer
 
         void handleNotify(utils::Observable* ob) override;
 
-        explicit VertexStreamBuffer(CommandList& cmdList, StreamBufferUsageFlags usageFlag, u64 size, const u8* data) noexcept;
+        explicit VertexStreamBuffer(CommandList& cmdList, StreamBufferUsageFlags usage, u64 size, const u8* data) noexcept;
 
         friend CommandList;
         CommandList& m_cmdList;
@@ -55,7 +55,7 @@ namespace renderer
         u64     m_size;
         void*   m_data;
                 
-        StreamBufferUsageFlags m_usageFlag;
+        StreamBufferUsageFlags m_usage;
         Buffer* m_buffer;
 
         friend StreamBufferDescription;

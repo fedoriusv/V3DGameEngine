@@ -34,6 +34,8 @@ namespace vk
 
         explicit VulkanContextState(VkDevice device, VulkanDescriptorSetManager* descriptorSetManager, VulkanUniformBufferManager* unifromBufferManager) noexcept;
 
+        void updateSwapchainIndex(u32 index);
+
         void invalidateCommandBuffer(CommandTargetType type);
 
         inline bool isCurrentRenderPass(const VulkanRenderPass* pass) const;
@@ -42,6 +44,7 @@ namespace vk
 
         bool setCurrentRenderPass(VulkanRenderPass* pass);
         bool setCurrentFramebuffer(VulkanFramebuffer* framebuffer);
+        bool setCurrentFramebuffer(std::vector<VulkanFramebuffer*>& framebuffers);
         bool setCurrentPipeline(VulkanGraphicPipeline* pipeline);
 
         bool setCurrentVertexBuffers(StreamBufferDescription& desc);
@@ -119,8 +122,10 @@ namespace vk
 
         VkDevice m_device;
 
+        u32 m_swapchainIndex;
+
         std::pair<VulkanRenderPass*, bool>          m_currentRenderpass;
-        std::pair <VulkanFramebuffer*, bool>        m_currentFramebuffer;
+        std::pair <std::vector<VulkanFramebuffer*>, bool> m_currentFramebuffer;
         std::pair <VulkanGraphicPipeline*, bool>    m_currentPipeline;
 
         std::map<VkDynamicState, std::function<void()>> m_stateCallbacks;

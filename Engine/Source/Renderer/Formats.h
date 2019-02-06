@@ -11,7 +11,7 @@ namespace renderer
     /**
     * Format enum
     */
-    enum Format : s32
+    enum Format : u32
     {
         Format_Undefined = 0,
         Format_R4G4_UNorm_Pack8 = 1,

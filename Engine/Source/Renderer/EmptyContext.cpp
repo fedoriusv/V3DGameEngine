@@ -52,17 +52,17 @@ void EmptyContext::setScissor(const core::Rect32 & scissor)
     LOG_DEBUG("EmptyContext::setScissor");
 }
 
-Image * EmptyContext::createImage(TextureTarget target, renderer::Format format, const core::Dimension3D& dimension, u32 mipmapLevel, u16 flags) const
+Image * EmptyContext::createImage(TextureTarget target, renderer::Format format, const core::Dimension3D& dimension, u32 mipmapLevel, TextureUsageFlags flags) const
 {
     LOG_DEBUG("EmptyContext::createImage");
     return nullptr;
 }
 
-Image * EmptyContext::createAttachmentImage(renderer::Format format, const core::Dimension3D& dimension, TextureSamples samples, u16 flags) const
-{
-    LOG_DEBUG("EmptyContext::createAttachmentImage");
-    return nullptr;
-}
+//Image * EmptyContext::createAttachmentImage(renderer::Format format, const core::Dimension3D& dimension, TextureSamples samples, TextureUsageFlags flags) const
+//{
+//    LOG_DEBUG("EmptyContext::createAttachmentImage");
+//    return nullptr;
+//}
 
 void EmptyContext::removeImage(Image * image)
 {

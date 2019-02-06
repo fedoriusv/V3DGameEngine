@@ -56,8 +56,8 @@ namespace renderer
 
     private:
 
-        Texture2D(renderer::CommandList& cmdList, renderer::Format format, const core::Dimension2D& dimension, u32 mipmapCount = 0, const void* data = nullptr) noexcept;
-        Texture2D(renderer::CommandList& cmdList, renderer::Format format, const core::Dimension2D& dimension, renderer::TextureSamples samples) noexcept;
+        Texture2D(renderer::CommandList& cmdList, TextureUsageFlags usage, renderer::Format format, const core::Dimension2D& dimension, u32 mipmapCount = 0, const void* data = nullptr) noexcept;
+        Texture2D(renderer::CommandList& cmdList, TextureUsageFlags usage, renderer::Format format, const core::Dimension2D& dimension, renderer::TextureSamples samples) noexcept;
 
         void handleNotify(utils::Observable* ob) override;
 
@@ -74,37 +74,11 @@ namespace renderer
         const u32                           m_mipmapLevel;
         renderer::TextureSamples            m_samples;
 
+        TextureUsageFlags                   m_usage;
         renderer::Image*                    m_image;
 
         friend ShaderProgram;
         friend RenderTarget;
-    };
-
-    /////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    /**
-    * BackbufferTexture class
-    */
-    class BackbufferTexture : public Texture
-    {
-    public:
-
-        BackbufferTexture() = delete;
-        BackbufferTexture(const BackbufferTexture &) = delete;
-        ~BackbufferTexture();
-
-        const core::Dimension2D& getDimension() const;
-        renderer::Format         getFormat() const;
-
-        void read(const core::Dimension2D& offset, const core::Dimension2D& size, void* const data);
-        void clear(const core::Vector4D& color);
-
-    private:
-
-        BackbufferTexture(renderer::CommandList& cmdList) noexcept;
-
-        renderer::CommandList& m_cmdList;
-        friend renderer::CommandList;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

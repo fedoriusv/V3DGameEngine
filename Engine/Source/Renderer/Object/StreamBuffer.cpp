@@ -153,13 +153,13 @@ private:
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-VertexStreamBuffer::VertexStreamBuffer(renderer::CommandList& cmdList, StreamBufferUsageFlags usageFlag, u64 size, const u8* data) noexcept
+VertexStreamBuffer::VertexStreamBuffer(renderer::CommandList& cmdList, StreamBufferUsageFlags usage, u64 size, const u8* data) noexcept
     : m_cmdList(cmdList)
     , m_data(nullptr)
     , m_size(size)
     , m_buffer(nullptr)
 
-    , m_usageFlag(usageFlag)
+    , m_usage(usage)
 {
     if (data && size > 0)
     {
@@ -167,7 +167,7 @@ VertexStreamBuffer::VertexStreamBuffer(renderer::CommandList& cmdList, StreamBuf
         memcpy(m_data, data, size);
     }
 
-    m_buffer = m_cmdList.getContext()->createBuffer(Buffer::BufferType::BufferType_VertexBuffer, m_usageFlag, m_size);
+    m_buffer = m_cmdList.getContext()->createBuffer(Buffer::BufferType::BufferType_VertexBuffer, m_usage, m_size);
     ASSERT(m_buffer, "m_buffer is nullptr");
 
     if (m_cmdList.isImmediate())
@@ -190,7 +190,7 @@ VertexStreamBuffer::VertexStreamBuffer(renderer::CommandList& cmdList, StreamBuf
     else
     {
         m_buffer->registerNotify(this);
-        m_cmdList.pushCommand(new CreateBufferCommand(m_buffer, m_size, m_data, (m_usageFlag & StreamBuffer_Shared)));
+        m_cmdList.pushCommand(new CreateBufferCommand(m_buffer, m_size, m_data, (m_usage & StreamBuffer_Shared)));
     }
 }
 
@@ -234,7 +234,7 @@ bool VertexStreamBuffer::update(u32 offset, u64 size, const u8* data)
     {
         if (m_size != size && offset == 0)
         {
-            if (!(m_usageFlag & StreamBuffer_Dynamic) || (m_usageFlag & StreamBuffer_Shared))
+            if (!(m_usage & StreamBuffer_Dynamic) || (m_usage & StreamBuffer_Shared))
             {
                 ASSERT(false, "static buffer");
                 return false;
@@ -256,7 +256,7 @@ bool VertexStreamBuffer::update(u32 offset, u64 size, const u8* data)
         }
         else
         {
-            m_cmdList.pushCommand(new UpdateBufferCommand(m_buffer, offset, m_size, m_data, (m_usageFlag & StreamBuffer_Shared)));
+            m_cmdList.pushCommand(new UpdateBufferCommand(m_buffer, offset, m_size, m_data, (m_usage & StreamBuffer_Shared)));
             return true;
         }
     }

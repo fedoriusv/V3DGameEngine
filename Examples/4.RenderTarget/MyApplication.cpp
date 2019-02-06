@@ -84,54 +84,54 @@ void MyApplication::Initialize()
 {
     //Test_MemoryPool();
 
-    m_Context = renderer::Context::createContext(m_Window, renderer::Context::RenderType::VulkanRender);
-    ASSERT(m_Context, "context is nullptr");
+    //m_Context = renderer::Context::createContext(m_Window, renderer::Context::RenderType::VulkanRender);
+    //ASSERT(m_Context, "context is nullptr");
 
-    m_CommandList = new renderer::CommandList(m_Context, renderer::CommandList::CommandListType::DelayedCommandList);
+    //m_CommandList = new renderer::CommandList(m_Context, renderer::CommandList::CommandListType::DelayedCommandList);
 
-    Texture2D* texture = m_CommandList->createObject<Texture2D>(renderer::Format::Format_R8G8B8A8_UInt, core::Dimension2D(1024, 768), renderer::TextureSamples::TextureSamples_x1);
-    renderTarget0 = m_CommandList->createObject<RenderTarget>(texture->getDimension());
-    bool success = renderTarget0->setColorTexture(0, texture, renderer::RenderTargetLoadOp::LoadOp_Clear, renderer::RenderTargetStoreOp::StoreOp_Store);
-    m_CommandList->setRenderTarget(renderTarget0);
+    //Texture2D* texture = m_CommandList->createObject<Texture2D>(renderer::Format::Format_R8G8B8A8_UInt, core::Dimension2D(1024, 768), renderer::TextureSamples::TextureSamples_x1);
+    //renderTarget0 = m_CommandList->createObject<RenderTarget>(texture->getDimension());
+    //bool success = renderTarget0->setColorTexture(0, texture, renderer::RenderTargetLoadOp::LoadOp_Clear, renderer::RenderTargetStoreOp::StoreOp_Store);
+    //m_CommandList->setRenderTarget(renderTarget0);
 
-    /*Texture2D* texture2 = m_CommandList->createObject<Texture2D>(renderer::Format::Format_R8G8B8A8_UInt, core::Dimension2D(80, 80), renderer::TextureSamples::TextureSamples_x1);
-    renderTarget1 = m_CommandList->createObject<RenderTarget>(core::Dimension2D(80, 80));
-    bool success1 = renderTarget1->setColorTexture(0, texture2, renderer::RenderTargetLoadOp::LoadOp_DontCare, renderer::RenderTargetStoreOp::StoreOp_Store);
-    m_CommandList->setRenderTarget(renderTarget1);*/
+    ///*Texture2D* texture2 = m_CommandList->createObject<Texture2D>(renderer::Format::Format_R8G8B8A8_UInt, core::Dimension2D(80, 80), renderer::TextureSamples::TextureSamples_x1);
+    //renderTarget1 = m_CommandList->createObject<RenderTarget>(core::Dimension2D(80, 80));
+    //bool success1 = renderTarget1->setColorTexture(0, texture2, renderer::RenderTargetLoadOp::LoadOp_DontCare, renderer::RenderTargetStoreOp::StoreOp_Store);
+    //m_CommandList->setRenderTarget(renderTarget1);*/
 
-    Shader* vertShader = ResourceLoaderManager::getInstance()->loadShader<Shader, ShaderSourceFileLoader>(m_Context, "Shaders/mrt.vert");
-    Shader* fragShader = ResourceLoaderManager::getInstance()->loadShader<Shader, ShaderSourceFileLoader>(m_Context, "Shaders/mrt.frag");
-    //Shader* fragShader = ResourceLoaderManager::getInstance()->loadResource<Shader, ShaderSourceFileLoader(m_Context, name, header, defines)>();
-    
-    ShaderProgram* program = m_CommandList->createObject<ShaderProgram>(std::vector<Shader*>{vertShader, fragShader});
-    renderer::VertexInputAttribDescription vertexDesc;
+    //Shader* vertShader = ResourceLoaderManager::getInstance()->loadShader<Shader, ShaderSourceFileLoader>(m_Context, "Shaders/mrt.vert");
+    //Shader* fragShader = ResourceLoaderManager::getInstance()->loadShader<Shader, ShaderSourceFileLoader>(m_Context, "Shaders/mrt.frag");
+    ////Shader* fragShader = ResourceLoaderManager::getInstance()->loadResource<Shader, ShaderSourceFileLoader(m_Context, name, header, defines)>();
+    //
+    //ShaderProgram* program = m_CommandList->createObject<ShaderProgram>(std::vector<Shader*>{vertShader, fragShader});
+    //renderer::VertexInputAttribDescription vertexDesc;
 
-    GraphicsPipelineState* pipeline = m_CommandList->createObject<GraphicsPipelineState>(vertexDesc, program, renderTarget0);
+    //GraphicsPipelineState* pipeline = m_CommandList->createObject<GraphicsPipelineState>(vertexDesc, program, renderTarget0);
 
-    pipeline->setPrimitiveTopology(PrimitiveTopology::PrimitiveTopology_TriangleList);
-    m_CommandList->setPipelineState(pipeline);
+    //pipeline->setPrimitiveTopology(PrimitiveTopology::PrimitiveTopology_TriangleList);
+    //m_CommandList->setPipelineState(pipeline);
 
-    core::Matrix4D projection;
+    //core::Matrix4D projection;
 
-    program->bindTexture<Texture2D, ShaderType::ShaderType_Fragment>("samplerColor", texture);
-    program->bindUniform<core::Matrix4D, ShaderType::ShaderType_Fragment>("projection", projection);
+    //program->bindTexture<Texture2D, ShaderType::ShaderType_Fragment>("samplerColor", texture);
+    //program->bindUniform<core::Matrix4D, ShaderType::ShaderType_Fragment>("projection", projection);
 
-    std::vector<f32> vertexBuffer =
-    {
-         1.0f,  1.0f, 0.0f,
-         -1.0f,  1.0f, 0.0f,
-          0.0f, -1.0f, 0.0f
-    };
-    u64 vertexBufferSize = vertexBuffer.size() * sizeof(f32);
-    VertexStreamBuffer* streamBuffer = m_CommandList->createObject<VertexStreamBuffer>(StreamBuffer_Write | StreamBuffer_Shared,  vertexBufferSize, (u8*)vertexBuffer.data());
-    
-    /*Geometry geometry;
-    Image image;
-    Pipeline pipe;
-    {
-        texture.upload(image);
-        geometry.upload(data);
-    }*/
+    //std::vector<f32> vertexBuffer =
+    //{
+    //     1.0f,  1.0f, 0.0f,
+    //     -1.0f,  1.0f, 0.0f,
+    //      0.0f, -1.0f, 0.0f
+    //};
+    //u64 vertexBufferSize = vertexBuffer.size() * sizeof(f32);
+    //VertexStreamBuffer* streamBuffer = m_CommandList->createObject<VertexStreamBuffer>(StreamBuffer_Write | StreamBuffer_Shared,  vertexBufferSize, (u8*)vertexBuffer.data());
+    //
+    ///*Geometry geometry;
+    //Image image;
+    //Pipeline pipe;
+    //{
+    //    texture.upload(image);
+    //    geometry.upload(data);
+    //}*/
 
     m_clearColor = { 1.0, 0.0, 0.0, 1.0 };
 }
@@ -139,29 +139,29 @@ void MyApplication::Initialize()
 bool MyApplication::Running(renderer::CommandList& commandList)
 {
     //Frame
-    commandList.beginFrame();
-    commandList.clearBackbuffer(m_clearColor);
+    //commandList.beginFrame();
+    //commandList.clearBackbuffer(m_clearColor);
 
-    //m_CommandList->draw(StreamBufferDescription(streamBuffer, 0, 3), 1);
+    ////m_CommandList->draw(StreamBufferDescription(streamBuffer, 0, 3), 1);
 
-    //m_CommandList->setRenderTarget(renderTarget0);
+    ////m_CommandList->setRenderTarget(renderTarget0);
+    ////commandList.flushCommands();
+    ////m_CommandList->setRenderTarget(renderTarget1);
+
+    ///*commandList.set(pipe1);
+    //commandList.set(texture1);
+    //commandList.set(uniform1);
+    //commandList.draw(geometry1);
+
+    //commandList.set(pipe2);
+    //commandList.set(texture2);
+    //commandList.set(uniform2);
+    //commandList.draw(geometry2);*/
+
+    //commandList.endFrame();
+    //commandList.presentFrame();
+    //
     //commandList.flushCommands();
-    //m_CommandList->setRenderTarget(renderTarget1);
-
-    /*commandList.set(pipe1);
-    commandList.set(texture1);
-    commandList.set(uniform1);
-    commandList.draw(geometry1);
-
-    commandList.set(pipe2);
-    commandList.set(texture2);
-    commandList.set(uniform2);
-    commandList.draw(geometry2);*/
-
-    commandList.endFrame();
-    commandList.presentFrame();
-    
-    commandList.flushCommands();
 
     return true;
 }

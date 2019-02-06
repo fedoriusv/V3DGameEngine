@@ -27,8 +27,6 @@ namespace renderer
         void draw(StreamBufferDescription& desc, u32 firstVertex, u32 vertexCount, u32 firstInstance, u32 instanceCount) override;
         void drawIndexed() override;
 
-        virtual void clearBackbuffer(const core::Vector4D & color) override;
-
         void bindTexture(const resource::Shader* shader, u32 bindIndex, const Image* image) override;
         void bindUniformsBuffer(const resource::Shader* shader, u32 bindIndex, u32 offset, u32 size, const void* data) override;
 
@@ -47,8 +45,8 @@ namespace renderer
         void setPipeline(const Pipeline::PipelineGraphicInfo* pipelineInfo, ObjectTracker<Pipeline>* tracker) override;
         void removePipeline(Pipeline* pipeline) override;
 
-        Image* createImage(TextureTarget target, renderer::Format format, const core::Dimension3D& dimension, u32 mipmapLevel, u16 flags) const override;
-        Image* createAttachmentImage(renderer::Format format, const core::Dimension3D& dimension, TextureSamples samples, u16 flags) const override;
+        Image* createImage(TextureTarget target, renderer::Format format, const core::Dimension3D& dimension, u32 mipmapLevel, TextureUsageFlags flags) const override;
+        //Image* createAttachmentImage(renderer::Format format, const core::Dimension3D& dimension, TextureSamples samples, TextureUsageFlags flags) const override;
         void removeImage(Image* image) override;
 
         Buffer* createBuffer(Buffer::BufferType type, u16 usageFlag, u64 size) override;
@@ -57,6 +55,8 @@ namespace renderer
         const DeviceCaps* getDeviceCaps() const override;
 
     private:
+
+        virtual void clearBackbuffer(const core::Vector4D & color) override;
 
         Framebuffer* createFramebuffer(const std::vector<Image*>& attachments, const core::Dimension2D& size) override;
         RenderPass* createRenderPass(const RenderPass::RenderPassInfo* renderpassInfo) override;

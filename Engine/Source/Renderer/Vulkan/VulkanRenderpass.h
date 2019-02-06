@@ -28,6 +28,7 @@ namespace vk
             VkSampleCountFlagBits _samples;
             VkAttachmentLoadOp    _loadOp;
             VkAttachmentStoreOp   _storeOp;
+            bool                  _swapchainImage;
         };
 
         static VkAttachmentLoadOp convertAttachLoadOpToVkAttachmentLoadOp(RenderTargetLoadOp loadOp);

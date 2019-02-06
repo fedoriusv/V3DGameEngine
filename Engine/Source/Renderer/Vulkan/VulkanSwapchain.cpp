@@ -214,7 +214,7 @@ bool VulkanSwapchain::createSwapchain(const SwapchainConfig& config)
 
     // Determine the number of images
     uint32_t desiredNumberOfSwapchainImages = m_surfaceCaps.minImageCount;
-    if (config._countSwapchaiImages == 0)
+    if (config._countSwapchainImages == 0)
     {
         desiredNumberOfSwapchainImages = m_surfaceCaps.minImageCount + 1;
         if ((m_surfaceCaps.maxImageCount > 0) && (desiredNumberOfSwapchainImages > m_surfaceCaps.maxImageCount))
@@ -224,8 +224,8 @@ bool VulkanSwapchain::createSwapchain(const SwapchainConfig& config)
     }
     else
     {
-        ASSERT(m_surfaceCaps.minImageCount <= config._countSwapchaiImages && config._countSwapchaiImages <= m_surfaceCaps.maxImageCount, "range out");
-        desiredNumberOfSwapchainImages = std::clamp(config._countSwapchaiImages, m_surfaceCaps.minImageCount, m_surfaceCaps.maxImageCount);
+        ASSERT(m_surfaceCaps.minImageCount <= config._countSwapchainImages && config._countSwapchainImages <= m_surfaceCaps.maxImageCount, "range out");
+        desiredNumberOfSwapchainImages = std::clamp(config._countSwapchainImages, m_surfaceCaps.minImageCount, m_surfaceCaps.maxImageCount);
     }
 
     // Find the transformation of the surface
@@ -301,7 +301,8 @@ bool VulkanSwapchain::createSwapchainImages(const SwapchainConfig& config)
     for (auto& image : images)
     {
         VkExtent3D extent = { config._size.width, config._size.height, 1 };
-        VulkanImage* swapchainImage = new VulkanImage(nullptr, m_deviceInfo->_device, m_surfaceFormat.format, extent, VK_SAMPLE_COUNT_1_BIT);
+        VulkanImage* swapchainImage = new VulkanImage(nullptr, m_deviceInfo->_device, m_surfaceFormat.format, extent, VK_SAMPLE_COUNT_1_BIT, 
+            TextureUsage::TextureUsage_Attachment | TextureUsage::TextureUsage_Sampled | TextureUsage::TextureUsage_Read);
         if (!swapchainImage->create(image))
         {
             LOG_FATAL("VulkanSwapchain::createSwapchainImages: can't create surface texture");
@@ -408,7 +409,7 @@ bool VulkanSwapchain::recteateSwapchain(const SwapchainConfig& config)
     return true;
 }
 
-VulkanImage * VulkanSwapchain::getSwapImage(u32 index) const
+VulkanImage * VulkanSwapchain::getSwapchainImage(u32 index) const
 {
     return m_swapBuffers[index];
 }
@@ -417,6 +418,11 @@ VulkanImage * VulkanSwapchain::getBackbuffer() const
 {
     ASSERT(m_currentImageIndex >= 0, "invalid index");
     return m_swapBuffers[m_currentImageIndex];
+}
+
+u32 VulkanSwapchain::getSwapchainImageCount() const
+{
+    return static_cast<u32>(m_swapBuffers.size());
 }
 
 } //namespace vk

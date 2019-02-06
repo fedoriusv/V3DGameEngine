@@ -107,6 +107,7 @@ VulkanGraphicContext::~VulkanGraphicContext()
 void VulkanGraphicContext::beginFrame()
 {
     u32 index = m_swapchain->acquireImage();
+    m_currentContextStateNEW->updateSwapchainIndex(index);
     LOG_DEBUG("VulkanGraphicContext::beginFrame %llu, image index %u", m_frameCounter, index);
 
     ASSERT(!m_currentContextState.isCurrentBufferAcitve(CommandTargetType::CmdDrawBuffer), "buffer exist");
@@ -254,23 +255,42 @@ void VulkanGraphicContext::setRenderTarget(const RenderPass::RenderPassInfo * re
     RenderPass* renderpass = m_renderpassManager->acquireRenderPass(*renderpassInfo);
     ASSERT(renderpass, "renderpass is nullptr");
     std::get<0>(trackers)->attach(renderpass);
-
-    //VulkanImage* swapchainImage = m_swapchain->getBackbuffer();
-    /*std::vector<Image*> vkAttachments = attachments;
-    std::for_each(attachments.begin(), attachments.end(), [&swapchainImage](Image* image) -> void
-    {
-        if (image == nullptr)
-        {
-            image = swapchainImage;
-        }
-    });*/
-    Framebuffer* framebuffer = m_framebuferManager->acquireFramebuffer(renderpass, attachments, clearInfo->_size);
-    ASSERT(framebuffer, "framebuffer is nullptr");
-    std::get<1>(trackers)->attach(framebuffer);
-
     VulkanRenderPass* vkRenderpass = static_cast<VulkanRenderPass*>(renderpass);
-    VulkanFramebuffer* vkFramebuffer = static_cast<VulkanFramebuffer*>(framebuffer);
-    if (!m_currentContextStateNEW->isCurrentRenderPass(vkRenderpass) || !m_currentContextStateNEW->isCurrentFramebuffer(vkFramebuffer) /*|| clearInfo*/)
+
+    std::vector<VulkanFramebuffer*> vkFramebuffer;
+    bool swapchainPresnet = std::find(attachments.cbegin(), attachments.cend(), nullptr) != attachments.cend();
+    if (swapchainPresnet)
+    {
+        for (u32 index = 0; index < m_swapchain->getSwapchainImageCount(); ++index)
+        {
+            std::vector<Image*> images;
+            images.reserve(attachments.size());
+            Image* swapchainImage = m_swapchain->getSwapchainImage(index);
+            for (auto iter = attachments.begin(); iter < attachments.end(); ++iter)
+            {
+                if (*iter == nullptr)
+                {
+                    images.push_back(swapchainImage);
+                    continue;
+                }
+                images.push_back(*iter);
+            }
+
+            Framebuffer* framebuffer = m_framebuferManager->acquireFramebuffer(renderpass, images, clearInfo->_size);
+            ASSERT(framebuffer, "framebuffer is nullptr");
+            std::get<1>(trackers)->attach(framebuffer);
+            vkFramebuffer.push_back(static_cast<VulkanFramebuffer*>(framebuffer));
+        }
+    }
+    else
+    {
+        Framebuffer* framebuffer = m_framebuferManager->acquireFramebuffer(renderpass, attachments, clearInfo->_size);
+        ASSERT(framebuffer, "framebuffer is nullptr");
+        std::get<1>(trackers)->attach(framebuffer);
+        vkFramebuffer.push_back(static_cast<VulkanFramebuffer*>(framebuffer));
+    }
+
+    if (!m_currentContextStateNEW->isCurrentRenderPass(vkRenderpass) || !m_currentContextStateNEW->isCurrentFramebuffer(vkFramebuffer.back()) /*|| clearInfo*/)
     {
         if (m_currentContextState.isCurrentBufferAcitve(CommandTargetType::CmdDrawBuffer))
         {
@@ -288,7 +308,9 @@ void VulkanGraphicContext::setRenderTarget(const RenderPass::RenderPassInfo * re
         area.offset = { 0, 0 };
         area.extent = { clearInfo->_size.width, clearInfo->_size.height };
 
-        std::vector<VkClearValue> clearValues(clearInfo->_color.size() + (renderpassInfo->_hasDepthStencilAttahment) ? 1 : 0);
+
+        u32 countClearValues = clearInfo->_color.size() + ((renderpassInfo->_hasDepthStencilAttahment) ? 1 : 0);
+        std::vector<VkClearValue> clearValues(countClearValues);
         for (u32 index = 0; index < clearInfo->_color.size(); ++index)
         {
             clearValues[index] = { clearInfo->_color[index].x, clearInfo->_color[index].y, clearInfo->_color[index].z, clearInfo->_color[index].w };
@@ -370,23 +392,23 @@ void VulkanGraphicContext::removePipeline(Pipeline * pipeline)
     m_pipelineManager->removePipeline(pipeline);
 }
 
-Image * VulkanGraphicContext::createImage(TextureTarget target, renderer::Format format, const core::Dimension3D& dimension, u32 mipLevels, u16 flags) const
+Image * VulkanGraphicContext::createImage(TextureTarget target, renderer::Format format, const core::Dimension3D& dimension, u32 mipLevels, TextureUsageFlags flags) const
 {
     VkImageType vkType = VulkanImage::convertTextureTargetToVkImageType(target);
     VkFormat vkFormat = VulkanImage::convertImageFormatToVkFormat(format);
     VkExtent3D vkExtent = { dimension.width, dimension.height, dimension.depth };
 
-    return new VulkanImage(m_imageMemoryManager, m_deviceInfo._device, vkType, vkFormat, vkExtent, mipLevels, VK_IMAGE_TILING_OPTIMAL);
+    return new VulkanImage(m_imageMemoryManager, m_deviceInfo._device, vkType, vkFormat, vkExtent, mipLevels, VK_IMAGE_TILING_OPTIMAL, flags);
 }
 
-Image * VulkanGraphicContext::createAttachmentImage(renderer::Format format, const core::Dimension3D& dimension, TextureSamples samples, u16 flags) const
-{
-    VkFormat vkFormat = VulkanImage::convertImageFormatToVkFormat(format);
-    VkExtent3D vkExtent = { dimension.width, dimension.height, dimension.depth };
-    VkSampleCountFlagBits vkSamples = VulkanImage::convertRenderTargetSamplesToVkSampleCount(samples);
-
-    return new VulkanImage(m_imageMemoryManager, m_deviceInfo._device, vkFormat, vkExtent, vkSamples);
-}
+//Image * VulkanGraphicContext::createAttachmentImage(renderer::Format format, const core::Dimension3D& dimension, TextureSamples samples, TextureUsageFlags flags) const
+//{
+//    VkFormat vkFormat = VulkanImage::convertImageFormatToVkFormat(format);
+//    VkExtent3D vkExtent = { dimension.width, dimension.height, dimension.depth };
+//    VkSampleCountFlagBits vkSamples = VulkanImage::convertRenderTargetSamplesToVkSampleCount(samples);
+//
+//    return new VulkanImage(m_imageMemoryManager, m_deviceInfo._device, vkFormat, vkExtent, vkSamples);
+//}
 
 void VulkanGraphicContext::removeImage(Image * image)
 {
@@ -558,7 +580,7 @@ bool VulkanGraphicContext::initialize()
     VulkanSwapchain::SwapchainConfig config;
     config._size = m_window->getSize();
     config._vsync = false; //TODO
-    config._countSwapchaiImages = 3;
+    config._countSwapchainImages = 3;
 
     m_swapchain = new VulkanSwapchain(&m_deviceInfo, surface);
     if (!m_swapchain->create(config))
@@ -569,7 +591,7 @@ bool VulkanGraphicContext::initialize()
     }
 
     m_backufferDescription._size = config._size;
-    m_backufferDescription._format = VulkanImage::convertVkImageFormatToFormat(m_swapchain->getSwapImage(0)->getFormat());
+    m_backufferDescription._format = VulkanImage::convertVkImageFormatToFormat(m_swapchain->getSwapchainImage(0)->getFormat());
 
     if (m_deviceCaps.unifiedMemoryManager)
     {
@@ -716,6 +738,17 @@ RenderPass * VulkanGraphicContext::createRenderPass(const RenderPass::RenderPass
         desc._samples = VulkanImage::convertRenderTargetSamplesToVkSampleCount(renderpassInfo->_attachments[index]._samples);
         desc._loadOp = VulkanRenderPass::convertAttachLoadOpToVkAttachmentLoadOp(renderpassInfo->_attachments[index]._loadOp);
         desc._storeOp = VulkanRenderPass::convertAttachStoreOpToVkAttachmentStoreOp(renderpassInfo->_attachments[index]._storeOp);
+        desc._swapchainImage = (renderpassInfo->_attachments[index]._internalTarget) ? true : false;
+    }
+
+    if (renderpassInfo->_hasDepthStencilAttahment)
+    {
+        VulkanRenderPass::VulkanAttachmentDescription& desc = descs.back();
+        desc._format = VulkanImage::convertImageFormatToVkFormat(renderpassInfo->_attachments.back()._format);
+        desc._samples = VulkanImage::convertRenderTargetSamplesToVkSampleCount(renderpassInfo->_attachments.back()._samples);
+        desc._loadOp = VulkanRenderPass::convertAttachLoadOpToVkAttachmentLoadOp(renderpassInfo->_attachments.back()._loadOp);
+        desc._storeOp = VulkanRenderPass::convertAttachStoreOpToVkAttachmentStoreOp(renderpassInfo->_attachments.back()._storeOp);
+        desc._swapchainImage = (renderpassInfo->_attachments.back()._internalTarget) ? true : false;
     }
 
     return new VulkanRenderPass(m_deviceInfo._device, descs);

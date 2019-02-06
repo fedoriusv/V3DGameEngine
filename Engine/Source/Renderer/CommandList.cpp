@@ -306,7 +306,7 @@ CommandList::CommandList(Context* context, CommandListType type) noexcept
 
     , m_pendingFlushMask(0)
 {
-    m_swapchainTexture = createObject<BackbufferTexture>();
+    m_swapchainTexture = createObject<Backbuffer>();
 }
 
 CommandList::~CommandList()
@@ -489,7 +489,7 @@ Context* CommandList::getContext() const
     return m_context;
 }
 
-BackbufferTexture* CommandList::getBackbuffer() const
+Backbuffer* CommandList::getBackbuffer() const
 {
     return m_swapchainTexture;
 }

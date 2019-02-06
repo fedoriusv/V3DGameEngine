@@ -22,17 +22,23 @@ namespace vk
 
 VulkanContextState::VulkanContextState(VkDevice device, VulkanDescriptorSetManager* descriptorSetManager, VulkanUniformBufferManager* unifromBufferManager) noexcept
     : m_device(device)
+    , m_swapchainIndex(0)
     , m_descriptorSetManager(descriptorSetManager)
     , m_unifromBufferManager(unifromBufferManager)
 {
     m_currentRenderpass = { nullptr, false };
-    m_currentFramebuffer = { nullptr, false };
+    m_currentFramebuffer = { { nullptr }, false };
     m_currentPipeline = { nullptr, false };
 
     m_currentVertexBuffers.second = false;
 
     m_renderPassArea = { 0, 0, 0, 0 };
     m_renderPassClearValues.resize(1, { 0.0f, 0.0f, 0.0f, 0.0f });
+}
+
+void VulkanContextState::updateSwapchainIndex(u32 index)
+{
+    m_swapchainIndex = index;
 }
 
 void VulkanContextState::invalidateCommandBuffer(CommandTargetType type)
@@ -50,7 +56,24 @@ inline bool VulkanContextState::isCurrentRenderPass(const VulkanRenderPass* pass
 
 inline bool VulkanContextState::isCurrentFramebuffer(const VulkanFramebuffer * framebuffer) const
 {
-    return m_currentFramebuffer.first == framebuffer;
+    if (m_currentFramebuffer.first.size() == 1)
+    {
+        return m_currentFramebuffer.first[0] == framebuffer;
+    }
+    else
+    {
+        for (auto framebuff : m_currentFramebuffer.first)
+        {
+            if (framebuff == framebuffer)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    return false;
 }
 
 inline bool VulkanContextState::isCurrentPipeline(const VulkanGraphicPipeline * pipeline) const
@@ -70,7 +93,16 @@ bool VulkanContextState::setCurrentRenderPass(VulkanRenderPass * pass)
 bool VulkanContextState::setCurrentFramebuffer(VulkanFramebuffer * framebuffer)
 {
     bool changed = !VulkanContextState::isCurrentFramebuffer(framebuffer);
-    m_currentFramebuffer.first = framebuffer;
+    m_currentFramebuffer.first[0] = framebuffer;
+    m_currentFramebuffer.second = changed;
+
+    return changed;
+}
+
+bool VulkanContextState::setCurrentFramebuffer(std::vector<VulkanFramebuffer*>& framebuffers)
+{
+    bool changed = !VulkanContextState::isCurrentFramebuffer(framebuffers[0]);
+    m_currentFramebuffer.first = std::move(framebuffers);
     m_currentFramebuffer.second = changed;
 
     return changed;
@@ -111,8 +143,15 @@ VulkanRenderPass * VulkanContextState::getCurrentRenderpass() const
 
 VulkanFramebuffer * VulkanContextState::getCurrentFramebuffer() const
 {
-    ASSERT(m_currentFramebuffer.first, "nullptr");
-    return m_currentFramebuffer.first;
+    ASSERT(!m_currentFramebuffer.first.empty(), "nullptr");
+    if (m_currentFramebuffer.first.size() == 1)
+    {
+        return m_currentFramebuffer.first[0];
+    }
+    else
+    {
+        return m_currentFramebuffer.first[m_swapchainIndex];
+    }
 }
 
 VulkanGraphicPipeline * VulkanContextState::getCurrentPipeline() const
