@@ -20,7 +20,7 @@ public:
     SimpleRender(renderer::CommandList& cmdList, const renderer::VertexInputAttribDescription& desc, const std::vector<f32>& geomentry);
     ~SimpleRender();
 
-    void update(f32 zoom, const core::Vector3D& rotate);
+    void update(const core::Vector3D& pos, const core::Vector3D& rotate);
     void render(renderer::CommandList& cmdList);
 
 private:

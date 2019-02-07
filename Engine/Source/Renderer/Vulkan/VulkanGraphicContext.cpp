@@ -55,7 +55,7 @@ std::vector<VkDynamicState> VulkanGraphicContext::s_dynamicStates =
     VK_DYNAMIC_STATE_VIEWPORT,
     VK_DYNAMIC_STATE_SCISSOR,
     //VK_DYNAMIC_STATE_BLEND_CONSTANTS,
-    VK_DYNAMIC_STATE_STENCIL_REFERENCE
+    //VK_DYNAMIC_STATE_STENCIL_REFERENCE
 };
 
 VulkanGraphicContext::VulkanGraphicContext(const platform::Window * window) noexcept
