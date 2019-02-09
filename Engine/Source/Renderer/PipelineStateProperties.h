@@ -123,6 +123,8 @@ namespace renderer
 
     };
 
+    typedef u16 ColorMaskFlags;
+
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
@@ -155,7 +157,7 @@ namespace renderer
                 , _srcAlphaBlendFacor(BlendFactor::BlendFactor_SrcAlpha)
                 , _dscAlphaBlendFacor(BlendFactor::BlendFactor_DstAlpha)
 
-                , _colorWriteMask(ColorMask::ColorMask_None)
+                , _colorWriteMask(ColorMask::ColorMask_All)
                 , _colorBlendEnable(false)
             {
             }
@@ -168,7 +170,7 @@ namespace renderer
             BlendFactor     _srcAlphaBlendFacor;
             BlendFactor     _dscAlphaBlendFacor;
 
-            u16             _colorWriteMask;
+            ColorMaskFlags  _colorWriteMask;
             bool            _colorBlendEnable;
 
             u8              _padding;

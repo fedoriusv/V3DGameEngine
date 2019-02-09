@@ -118,7 +118,7 @@ void VulkanGraphicContext::beginFrame()
         LOG_ERROR("VulkanGraphicContext::beginFrame CommandBufferStatus is Invalid");
     }
     drawBuffer->beginCommandBuffer();
-    drawBuffer->cmdPipelineBarrier(m_swapchain->getBackbuffer(), VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+    //drawBuffer->cmdPipelineBarrier(m_swapchain->getBackbuffer(), VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 }
 
 void VulkanGraphicContext::endFrame()
@@ -143,7 +143,7 @@ void VulkanGraphicContext::endFrame()
         ASSERT(m_currentContextStateNEW->getCurrentPipeline(), "nullptr");
         drawBuffer->cmdEndRenderPass();
     }
-    drawBuffer->cmdPipelineBarrier(m_swapchain->getBackbuffer(),VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
+    //drawBuffer->cmdPipelineBarrier(m_swapchain->getBackbuffer(),VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
 
     drawBuffer->endCommandBuffer();
     m_cmdBufferManager->submit(drawBuffer, VK_NULL_HANDLE);
@@ -309,7 +309,7 @@ void VulkanGraphicContext::setRenderTarget(const RenderPass::RenderPassInfo * re
         area.extent = { clearInfo->_size.width, clearInfo->_size.height };
 
 
-        u32 countClearValues = clearInfo->_color.size() + ((renderpassInfo->_hasDepthStencilAttahment) ? 1 : 0);
+        u32 countClearValues = static_cast<u32>(clearInfo->_color.size() + ((renderpassInfo->_hasDepthStencilAttahment) ? 1 : 0));
         std::vector<VkClearValue> clearValues(countClearValues);
         for (u32 index = 0; index < clearInfo->_color.size(); ++index)
         {

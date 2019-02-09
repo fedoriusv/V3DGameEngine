@@ -103,24 +103,33 @@ VulkanUniformBuffer * VulkanUniformBufferManager::acquireUnformBuffer(u32 reques
     u32 alingment = static_cast<u32>(VulkanDeviceCaps::getInstance()->getPhysicalDeviceLimits().minUniformBufferOffsetAlignment);
     u32 requirementSize = core::alignUp(requestedSize, alingment);
 
+
     if (!m_currentPoolBuffer)
     {
-        m_currentPoolBuffer = VulkanUniformBufferManager::getNewPool();
+        if (m_freePoolBuffers.empty())
+        {
+            ASSERT(requirementSize <= k_bufferPoolSize, "pool size less than reqested");
+            m_currentPoolBuffer = VulkanUniformBufferManager::getNewPool(k_bufferPoolSize);
+        }
+        else
+        {
+            m_currentPoolBuffer = m_freePoolBuffers.front();
+            m_freePoolBuffers.pop_front();
+        }
     }
-    else
+
+    if (m_currentPoolBuffer->_freeSize < requirementSize)
     {
         m_usedPoolBuffers.push_back(m_currentPoolBuffer);
-        if (m_currentPoolBuffer->_freeSize < requirementSize)
+        if (!m_freePoolBuffers.empty())
         {
-            if (!m_freePoolBuffers.empty())
-            {
-                m_currentPoolBuffer = m_freePoolBuffers.front();
-                m_freePoolBuffers.pop_front();
-            }
-            else
-            {
-                m_currentPoolBuffer = VulkanUniformBufferManager::getNewPool();
-            }
+            m_currentPoolBuffer = m_freePoolBuffers.front();
+            m_freePoolBuffers.pop_front();
+        }
+        else
+        {
+            ASSERT(requirementSize <= k_bufferPoolSize, "pool size less than reqested");
+            m_currentPoolBuffer = VulkanUniformBufferManager::getNewPool(k_bufferPoolSize);
         }
     }
 
@@ -149,12 +158,12 @@ void VulkanUniformBufferManager::updateUniformBuffers()
     }
 }
 
-VulkanUniformBufferManager::VulkanUniformBufferPool * VulkanUniformBufferManager::getNewPool()
+VulkanUniformBufferManager::VulkanUniformBufferPool * VulkanUniformBufferManager::getNewPool(u64 size)
 {
     VulkanUniformBufferPool* newPool = new VulkanUniformBufferPool();
-    newPool->_buffer = new VulkanBuffer(m_memoryManager, m_device, Buffer::BufferType::BufferType_UniformBuffer, 0, k_bufferPoolSize);
+    newPool->_buffer = new VulkanBuffer(m_memoryManager, m_device, Buffer::BufferType::BufferType_UniformBuffer, 0, size);
     newPool->_usedSize = 0;
-    newPool->_freeSize = k_bufferPoolSize;
+    newPool->_freeSize = size;
 
     if (!newPool->_buffer->create())
     {

@@ -102,6 +102,23 @@ void GraphicsPipelineState::setDepthWrite(bool enable)
     m_pipelineStateDesc._depthStencilState._depthWriteEnable = enable;
 }
 
+void GraphicsPipelineState::setColorMask(ColorMaskFlags colormask, s32 attachmet)
+{
+    /*if (attachmet < 0)
+    {
+        for (auto& attach : m_pipelineStateDesc._blendState._colorBlendAttachments)
+        {
+            attach._colorWriteMask = colormask;
+        }
+    }
+    else
+    {
+        m_pipelineStateDesc._blendState._colorBlendAttachments[attachmet]._colorWriteMask = colormask;
+    }*/
+
+    m_pipelineStateDesc._blendState._colorBlendAttachments._colorWriteMask = colormask;
+}
+
 const GraphicsPipelineStateDescription & GraphicsPipelineState::getGraphicsPipelineStateDesc() const
 {
     return m_pipelineStateDesc;

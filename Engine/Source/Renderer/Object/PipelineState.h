@@ -44,6 +44,8 @@ namespace renderer
         void setDepthTest(bool enable);
         void setDepthWrite(bool enable);
 
+        void setColorMask(ColorMaskFlags colormask, s32 attachmet = -1);
+
         void setPrimitiveTopology(PrimitiveTopology primitiveTopology);
 
         const GraphicsPipelineStateDescription& getGraphicsPipelineStateDesc() const;

@@ -170,8 +170,10 @@ bool VulkanRenderPass::create()
     renderPassCreateInfo.pAttachments = attachmentDescriptions.data();
     renderPassCreateInfo.subpassCount = static_cast<u32>(subpassDescriptions.size());
     renderPassCreateInfo.pSubpasses = subpassDescriptions.data();
-    renderPassCreateInfo.dependencyCount = dependencies.size();
-    renderPassCreateInfo.pDependencies = dependencies.data();
+    //renderPassCreateInfo.dependencyCount = dependencies.size();
+    //renderPassCreateInfo.pDependencies = dependencies.data();
+    renderPassCreateInfo.dependencyCount = 0;//dependencies.size();
+    renderPassCreateInfo.pDependencies = nullptr;//ependencies.data();
 
     VkResult result = VulkanWrapper::CreateRenderPass(m_device, &renderPassCreateInfo, VULKAN_ALLOCATOR, &m_renderpass);
     if (result != VK_SUCCESS)

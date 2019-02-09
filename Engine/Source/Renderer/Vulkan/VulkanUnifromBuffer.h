@@ -56,7 +56,7 @@ namespace vk
             void addUniformBuffer(VulkanUniformBuffer* uniformBuffer, u64 size);
         };
 
-        VulkanUniformBufferPool* getNewPool();
+        VulkanUniformBufferPool* getNewPool(u64 size);
 
         std::deque<VulkanUniformBufferPool*> m_freePoolBuffers;
         std::deque<VulkanUniformBufferPool*> m_usedPoolBuffers;
