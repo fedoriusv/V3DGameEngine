@@ -6,6 +6,7 @@
 #include "Object/Texture.h"
 #include "Object/RenderTarget.h"
 #include "Object/PipelineState.h"
+#include "Object/ShaderProgram.h"
 #include "RenderPass.h"
 #include "Framebuffer.h"
 

@@ -8,6 +8,7 @@
 #include "Renderer/Object/PipelineState.h"
 #include "Renderer/Object/StreamBuffer.h"
 #include "Renderer/Object/Texture.h"
+#include "Scene/CameraHelper.h"
 
 namespace v3d
 {
@@ -24,6 +25,8 @@ public:
     void render(renderer::CommandList& cmdList);
 
 private:
+
+    scene::CameraHelper* m_camera;
 
     RenderTarget*     m_renderTarget;
     ShaderProgram*    m_program;

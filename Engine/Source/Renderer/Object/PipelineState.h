@@ -1,16 +1,18 @@
 #pragma once
 
 #include "Common.h"
-#include "ShaderProgram.h"
+#include "Object.h"
 #include "Renderer/PipelineStateProperties.h"
 #include "Renderer/BufferProperties.h"
-#include "Renderer/CommandList.h"
 #include "Renderer/ObjectTracker.h"
+#include "Renderer/CommandList.h"
 
 namespace v3d
 {
 namespace renderer
 {
+    class ShaderProgram;
+
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**

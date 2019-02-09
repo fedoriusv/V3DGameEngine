@@ -1,9 +1,10 @@
 #pragma once
 
 #include "Common.h"
-#include "Renderer/CommandList.h"
+#include "Object.h"
 #include "Renderer/TextureProperties.h"
 #include "Renderer/ShaderProperties.h"
+#include "Renderer/CommandList.h"
 
 namespace v3d
 {

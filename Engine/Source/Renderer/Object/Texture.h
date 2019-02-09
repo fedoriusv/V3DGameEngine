@@ -7,7 +7,6 @@
 #include "Renderer/TextureProperties.h"
 #include "Renderer/CommandList.h"
 
-
 namespace v3d
 {
 namespace renderer

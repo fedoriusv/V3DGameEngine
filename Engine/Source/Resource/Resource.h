@@ -37,6 +37,13 @@ namespace resource
     {
     public:
 
+        Resource() noexcept
+            : m_header(nullptr)
+            , m_stream(nullptr)
+            , m_loaded(false)
+        {
+        }
+
         explicit Resource(const ResourceHeader* header) noexcept
             : m_header(header)
             , m_stream(nullptr)

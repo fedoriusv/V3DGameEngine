@@ -92,9 +92,9 @@ void MyApplication::Initialize()
 
     std::vector<f32> vertexBuffer =
     {
-        1.0f,  1.0f, 0.0f ,     1.0f, 0.0f, 0.0f,
-       -1.0f,  1.0f, 0.0f ,     0.0f, 1.0f, 0.0f,
-        0.0f, -1.0f, 0.0f ,     0.0f, 0.0f, 1.0f
+        0.0f,  1.0f, 0.0f ,     1.0f, 0.0f, 0.0f,
+        1.0f, -1.0f, 0.0f ,     0.0f, 1.0f, 0.0f,
+       -1.0f, -1.0f, 0.0f ,     0.0f, 0.0f, 1.0f
     };
 
     VertexInputAttribDescription::InputBinding binding(0, VertexInputAttribDescription::InputRate_Vertex, sizeof(f32) * 6);

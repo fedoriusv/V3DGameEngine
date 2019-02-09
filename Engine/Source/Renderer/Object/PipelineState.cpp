@@ -1,4 +1,5 @@
 #include "PipelineState.h"
+#include "ShaderProgram.h"
 #include "Renderer/Context.h"
 
 #include "Utils/Logger.h"

@@ -16,6 +16,8 @@ namespace renderer
         u32 maxVertexInputAttributes = k_maxVertexInputAttributes;
         u32 maxVertexInputBindings = k_maxVertexInputBindings;
 
+        bool invertZ = true;
+
         struct ImageFormatSupport
         {
             bool _tilingOptimal;

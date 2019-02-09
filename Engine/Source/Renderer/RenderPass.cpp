@@ -120,12 +120,13 @@ void RenderPassManager::handleNotify(utils::Observable* ob)
 
 void RenderPassManager::clear()
 {
-    for (auto& renderpass : m_renderpasses)
+    for (auto& iter : m_renderpasses)
     {
-        renderpass.second->notifyObservers();
+        RenderPass* renderpass = iter.second;
+        renderpass->notifyObservers();
 
-        renderpass.second->destroy();
-        delete renderpass.second;
+        renderpass->destroy();
+        delete renderpass;
     }
     m_renderpasses.clear();
 }

@@ -3,7 +3,7 @@
 #include "Common.h"
 #include "Utils/NonCopyable.h"
 
-#include "Object/Object.h"
+#include "Object.h"
 
 #include "RenderPass.h"
 #include "Pipeline.h"

@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Common.h"
-#include "Object/Object.h"
+#include "Object.h"
 
 namespace v3d
 {
