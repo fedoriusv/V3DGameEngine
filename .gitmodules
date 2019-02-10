@@ -2,3 +2,7 @@
 	path = Engine/Libs/assimp
 	url = https://github.com/assimp/assimp.git
 	branch = master
+[submodule "Engine/Libs/crc32c"]
+	path = Engine/Libs/crc32c
+	url = https://github.com/google/crc32c.git
+	branch = master
