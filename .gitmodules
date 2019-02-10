@@ -1,0 +1,4 @@
+[submodule "assimp"]
+	path = Engine/Libs/assimp
+	url = https://github.com/assimp/assimp.git
+    branch = master

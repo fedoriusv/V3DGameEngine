@@ -1,4 +1,5 @@
 cmake_minimum_required(VERSION 3.0.0)
+set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
 ##############################################################
 #Examples
@@ -179,7 +180,7 @@ add_library(${ENGINE_NAME} STATIC
     ${VULKAN_HEADERS} ${VULKAN_SOURCES})
 	
 set(BUILD_DEPENDENCIES "")
-	
+
 #Link Libs
 ##############################################################
 #Crc32c	
@@ -208,6 +209,7 @@ link_directories(${ENGINE_NAME} ${VULKAN_SDK_LIB_DIRECTORY})
 if (CRC32_LIB)
 	message("-- Add Crc32 lib")
 	add_subdirectory(Engine/Libs/crc32c)
+    set_target_properties(crc32c PROPERTIES FOLDER Libs)
 	message("-- Crc32 lib added")
 endif()
 ##############################################################
@@ -218,8 +220,9 @@ if (BUILD_EXAMPLES)
     message("-- Create Examples:")
     add_subdirectory(Examples/1.CreateWindow)
     add_subdirectory(Examples/2.ClearColor)
-	add_subdirectory(Examples/3.simpleDraw)
+	add_subdirectory(Examples/3.SimpleDraw)
 	add_subdirectory(Examples/4.RenderTarget)
+    set_target_properties(1.CreateWindow 2.ClearColor 3.SimpleDraw 4.RenderTarget PROPERTIES FOLDER Examples)
     message("-- ----------------")
 endif ()
 ##############################################################
