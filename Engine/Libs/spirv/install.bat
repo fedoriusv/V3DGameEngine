@@ -18,16 +18,19 @@ if not exist shaderc (
 
 cd shaderc
 cmake -DSHADERC_SKIP_TESTS=ON -G%VS_VERSION%
-
-@echo on
-call vcvarsall.bat x64
-echo "Shaderc builds started..." 
-devenv "%CD%\shaderc.sln" /build "Debug|x64"
-devenv "%CD%\shaderc.sln" /build "Release|x64"
-echo "Shaderc builds finished..." 
-echo "Shaderc All builds completed."
+cmake --build . --config Debug
+cmake --build . --config Release
 cd ../
-@echo off
+
+REM @echo on
+REM call vcvarsall.bat x64
+REM echo "Shaderc builds started..." 
+REM devenv "%CD%\shaderc.sln" /build "Debug|x64"
+REM devenv "%CD%\shaderc.sln" /build "Release|x64"
+REM echo "Shaderc builds finished..." 
+REM echo "Shaderc All builds completed."
+REM cd ../
+REM @echo off
 
 if not exist SPIRV-Cross (
 	git clone https://github.com/KhronosGroup/SPIRV-Cross.git
@@ -35,15 +38,18 @@ if not exist SPIRV-Cross (
 
 cd SPIRV-Cross
 cmake -DCMAKE_CXX_FLAGS_DEBUG="/Zi /MTd" -DCMAKE_CXX_FLAGS_RELEASE="/MT" -G%VS_VERSION%
-
-@echo on
-call vcvarsall.bat x64
-echo "SPIRV-Cross builds started..." 
-devenv "%CD%\SPIRV-Cross.sln" /build "Debug|x64"
-devenv "%CD%\SPIRV-Cross.sln" /build "Release|x64"
-echo "SPIRV-Cross builds finished..." 
-echo "SPIRV-Cross All builds completed."
+cmake --build . --config Debug
+cmake --build . --config Release
 cd ../
-@echo off
+
+REM @echo on
+REM call vcvarsall.bat x64
+REM echo "SPIRV-Cross builds started..." 
+REM devenv "%CD%\SPIRV-Cross.sln" /build "Debug|x64"
+REM devenv "%CD%\SPIRV-Cross.sln" /build "Release|x64"
+REM echo "SPIRV-Cross builds finished..." 
+REM echo "SPIRV-Cross All builds completed."
+REM cd ../
+REM @echo off
 
 pause

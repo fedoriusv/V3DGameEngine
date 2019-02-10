@@ -235,6 +235,7 @@ Resource * ShaderSpirVDecoder::decode(const stream::Stream* stream, const std::s
 
 bool ShaderSpirVDecoder::parseReflections(const std::vector<u32>& spirv, stream::Stream* stream)
 {
+#ifdef USE_SPIRV
     auto convertSPRIVTypeToFormat = [](const spirv_cross::SPIRType& type) -> renderer::Format
     {
         switch (type.basetype)
@@ -528,6 +529,9 @@ bool ShaderSpirVDecoder::parseReflections(const std::vector<u32>& spirv, stream:
         ASSERT(false, "not implemented");
         return false;
     }
+#endif //USE_SPIRV
+    ASSERT(false, "not implemented");
+    return false;
 }
 
 } //namespace resource
