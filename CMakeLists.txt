@@ -10,7 +10,9 @@ option(BUILD_VULKAN_SDK "Build use Vulkan SDK" ON)
 ##############################################################
 #ThirdParty
 option(CRC32_LIB "Use Crc32c lib" ON)
-#https://github.com/google/crc32c
+#https://github.com/google/crc32c.git
+option(ASSIMP_LIB "Use Assimp lib" ON)
+#https://github.com/assimp/assimp.git
 option(SPIRV_INSTALL_FROM_GITHUB "implicity install SpirV" OFF)
 ##############################################################
 if(COMPILER_MSVC)
@@ -61,6 +63,10 @@ set(LIB_INCLUDE_DIRECTORY
 #Crc32c	
 if (CRC32_LIB)
 	set(LIB_INCLUDE_DIRECTORY ${LIB_INCLUDE_DIRECTORY} ${ENGINE_PROJECT_DIR}/Engine/Libs/crc32c/include)
+endif()
+#Assimp
+if (ASSIMP_LIB)
+	set(LIB_INCLUDE_DIRECTORY ${LIB_INCLUDE_DIRECTORY} ${ENGINE_PROJECT_DIR}/Engine/Libs/assimp/include)
 endif()
 
 include_directories(BEFORE ${LIB_INCLUDE_DIRECTORY})
@@ -188,7 +194,11 @@ if (CRC32_LIB)
 	target_link_libraries(${ENGINE_NAME} crc32c)
 	set(BUILD_DEPENDENCIES ${BUILD_DEPENDENCIES} crc32c)
 endif()
-
+#Assimp	
+if (ASSIMP_LIB)
+	target_link_libraries(${ENGINE_NAME} assimp)
+	set(BUILD_DEPENDENCIES ${BUILD_DEPENDENCIES} assimp)
+endif()
 #Spirv
 if (BUILD_VULKAN_SDK)
 	if ((IS_DIRECTORY ${SPIRV_FOLDER}/shaderc AND IS_DIRECTORY ${SPIRV_FOLDER}/SPIRV-Cross) OR SPIRV_INSTALL_FROM_GITHUB)
@@ -210,6 +220,12 @@ if (CRC32_LIB)
 	message("-- Add Crc32 lib")
 	add_subdirectory(Engine/Libs/crc32c)
     set_target_properties(crc32c PROPERTIES FOLDER Libs)
+	message("-- Crc32 lib added")
+endif()
+if (ASSIMP_LIB)
+	message("-- Add Assimp lib")
+	add_subdirectory(Engine/Libs/assimp)
+    set_target_properties(assimp PROPERTIES FOLDER Libs)
 	message("-- Crc32 lib added")
 endif()
 ##############################################################
