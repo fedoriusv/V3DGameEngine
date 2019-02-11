@@ -74,8 +74,8 @@ namespace stream
         u32 tell() const override;
         u32 size() const override;
 
-        u8* map(u32 size) override;
-        void unmap() override;
+        u8* map(u32 size) const override;
+        void unmap() const override;
         bool isMapped() const override;
         
         const std::string& getName() const;
@@ -87,8 +87,8 @@ namespace stream
         mutable u32     m_fileSize;
         bool            m_isOpen;
 
-        u8*             m_mappedMemory;
-        bool            m_mapped;
+        mutable u8*     m_mappedMemory;
+        mutable bool    m_mapped;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

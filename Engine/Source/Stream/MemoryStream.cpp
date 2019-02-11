@@ -553,7 +553,7 @@ u32 MemoryStream::size() const
     return m_length;
 }
 
-u8* MemoryStream::map(u32 size)
+u8* MemoryStream::map(u32 size) const
 {
     u8* res = 0;
 
@@ -570,7 +570,7 @@ u8* MemoryStream::map(u32 size)
     return res;
 }
 
-void MemoryStream::unmap()
+void MemoryStream::unmap() const
 {
     ASSERT(m_mapped, "Memory mapped");
     m_mapped = false;

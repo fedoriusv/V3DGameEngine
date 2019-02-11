@@ -327,7 +327,7 @@ u32 FileStream::size() const
     return m_fileSize;
 }
 
-u8* FileStream::map(u32 size)
+u8* FileStream::map(u32 size) const
 {
     ASSERT(size > 0 && tell() + size <= FileStream::size(), "Invalid file size");
     u8* address = 0;
@@ -343,7 +343,7 @@ u8* FileStream::map(u32 size)
     return address;
 }
 
-void FileStream::unmap()
+void FileStream::unmap() const
 {
     if (m_mappedMemory)
     {

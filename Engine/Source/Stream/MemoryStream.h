@@ -63,8 +63,8 @@ namespace stream
         u32  tell() const override;
         u32  size() const override;
 
-        u8* map(u32 size) override;
-        void unmap() override;
+        u8* map(u32 size) const override;
+        void unmap() const override;
         bool isMapped() const override;
 
         u8* getData() const;
@@ -77,7 +77,7 @@ namespace stream
         u32             m_length;
         u32             m_allocated;
         mutable u32     m_pos;
-        bool            m_mapped;
+        mutable bool    m_mapped;
 
         utils::MemoryPool *const m_allocator;
          

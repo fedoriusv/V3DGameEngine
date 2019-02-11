@@ -68,6 +68,30 @@ namespace resource
             return static_cast<TResource*>(resourceIter.first->second);
         }
 
+        template<class TResource, class TResourceLoader>
+        TResource* loadMesh(renderer::Context* context, std::string filename)
+        {
+            std::string innerName(filename);
+            std::transform(filename.begin(), filename.end(), innerName.begin(), ::tolower);
+
+            auto resourceIter = m_resources.emplace(std::make_pair(innerName, nullptr));
+            if (resourceIter.second)
+            {
+                TResourceLoader loader(context);
+                Resource* res = loader.load(innerName);
+                if (!res)
+                {
+                    m_resources.erase(innerName);
+                    return nullptr;
+                }
+
+                resourceIter.first->second = res;
+                return static_cast<TResource*>(res);
+            }
+
+            return static_cast<TResource*>(resourceIter.first->second);
+        }
+
     private:
 
         std::map<std::string, Resource*> m_resources;
