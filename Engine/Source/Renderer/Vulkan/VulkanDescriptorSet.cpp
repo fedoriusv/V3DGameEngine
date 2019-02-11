@@ -1,8 +1,8 @@
 #include "VulkanDescriptorSet.h"
 #include "VulkanDebug.h"
 #include "VulkanDeviceCaps.h"
+#include "Renderer/Shader.h"
 
-#include "Resource/Shader.h"
 #include "Utils/Logger.h"
 
 #include "crc32c/crc32c.h"
@@ -349,7 +349,7 @@ VulkanDescriptorPool * VulkanDescriptorSetManager::createPool(const VulkanPipeli
     return pool;
 }
 
-VulkanDescriptorSetManager::DescriptorSetDescription::DescriptorSetDescription(const std::array<resource::Shader*, ShaderType::ShaderType_Count>& shaders) noexcept
+VulkanDescriptorSetManager::DescriptorSetDescription::DescriptorSetDescription(const std::array<Shader*, ShaderType::ShaderType_Count>& shaders) noexcept
     : _hash(0)
 {
     _descriptorSets.fill({});
@@ -360,13 +360,13 @@ VulkanDescriptorSetManager::DescriptorSetDescription::DescriptorSetDescription(c
         std::vector<VkDescriptorSetLayoutBinding> descriptorSetLayoutBindings;
         for (u32 type = ShaderType::ShaderType_Vertex; type < ShaderType_Count; ++type)
         {
-            const resource::Shader* shader = shaders[type];
+            const Shader* shader = shaders[type];
             if (!shader)
             {
                 continue;
             }
 
-            const resource::Shader::ReflectionInfo& info = shader->getReflectionInfo();
+            const Shader::ReflectionInfo& info = shader->getReflectionInfo();
             for (auto& uniform : info._uniformBuffers)
             {
                 ASSERT(uniform._set < k_maxDescriptorSetIndex && uniform._binding < k_maxDescriptorBindingIndex, "range out");
@@ -413,13 +413,13 @@ VulkanDescriptorSetManager::DescriptorSetDescription::DescriptorSetDescription(c
 
     for (u32 type = ShaderType::ShaderType_Vertex; type < ShaderType_Count; ++type)
     {
-        const resource::Shader* shader = shaders[type];
+        const Shader* shader = shaders[type];
         if (!shader)
         {
             continue;
         }
 
-        const resource::Shader::ReflectionInfo& info = shader->getReflectionInfo();
+        const Shader::ReflectionInfo& info = shader->getReflectionInfo();
         _pushConstant.reserve(info._pushConstant.size());
         for (auto& push : info._pushConstant)
         {

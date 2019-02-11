@@ -9,13 +9,10 @@
 
 namespace v3d
 {
-namespace resource
+namespace renderer
 {
     struct ShaderHeader;
     class Shader;
-} //namespace resource
-namespace renderer
-{
     class Context;
     class PipelineManager;
 
@@ -51,8 +48,8 @@ namespace renderer
 
     protected:
 
-        bool createShader(const resource::Shader* shader);
-        virtual bool compileShader(const resource::ShaderHeader* header, const void* source, u32 size) = 0;
+        bool createShader(const Shader* shader);
+        virtual bool compileShader(const ShaderHeader* header, const void* source, u32 size) = 0;
 
     private:
 

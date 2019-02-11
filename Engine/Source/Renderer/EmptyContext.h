@@ -27,8 +27,8 @@ namespace renderer
         void draw(StreamBufferDescription& desc, u32 firstVertex, u32 vertexCount, u32 firstInstance, u32 instanceCount) override;
         void drawIndexed() override;
 
-        void bindTexture(const resource::Shader* shader, u32 bindIndex, const Image* image) override;
-        void bindUniformsBuffer(const resource::Shader* shader, u32 bindIndex, u32 offset, u32 size, const void* data) override;
+        void bindTexture(const Shader* shader, u32 bindIndex, const Image* image) override;
+        void bindUniformsBuffer(const Shader* shader, u32 bindIndex, u32 offset, u32 size, const void* data) override;
 
         //void bindVertexBuffers(const std::vector<Buffer*>& buffer, const std::vector<u64>& offsets) override;
 

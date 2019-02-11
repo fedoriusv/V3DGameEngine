@@ -1,6 +1,6 @@
 #include "Common.h"
 #include "Renderer/BufferProperties.h"
-#include "Resource/Shader.h"
+#include "Renderer/Shader.h"
 
 #ifdef VULKAN_RENDER
 #include "VulkanWrapper.h"
@@ -62,8 +62,8 @@ namespace vk
         bool acquireDescriptorSets(std::vector<VkDescriptorSet>& sets, std::vector<u32>& offsets);
         void updateDescriptorSet();
 
-        void bindTexture(const VulkanImage* image, const VulkanSampler* sampler, u32 arrayIndex, const resource::Shader::SampledImage& reflaction);
-        void updateConstantBuffer(u32 arrayIndex, const resource::Shader::UniformBuffer& reflaction, u32 offset, u32 size, const void* data);
+        void bindTexture(const VulkanImage* image, const VulkanSampler* sampler, u32 arrayIndex, const Shader::SampledImage& reflaction);
+        void updateConstantBuffer(u32 arrayIndex, const Shader::UniformBuffer& reflaction, u32 offset, u32 size, const void* data);
 
         void invalidateDescriptorSetsState();
 

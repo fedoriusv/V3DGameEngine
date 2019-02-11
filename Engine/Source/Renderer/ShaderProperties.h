@@ -5,12 +5,9 @@
 
 namespace v3d
 {
-namespace resource
-{
-    class Shader;
-}
 namespace renderer
 {
+    class Shader;
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -75,7 +72,7 @@ namespace renderer
 
         u32 _hash;
         //std::vector<resource::Shader*> _shaders;
-        std::array<resource::Shader*, ShaderType::ShaderType_Count> _shaders;
+        std::array<Shader*, ShaderType::ShaderType_Count> _shaders;
     };
 
 

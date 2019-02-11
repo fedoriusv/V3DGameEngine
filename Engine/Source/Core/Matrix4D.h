@@ -3,6 +3,8 @@
 #include "Vector3D.h"
 #include "Vector4D.h"
 
+#define DEPTH_ZERO_TO_ONE 0
+
 namespace v3d
 {
 namespace core
@@ -88,7 +90,7 @@ namespace core
         f32* matrix = outMatrix.getPtr();
 
         const f32 yFac = tanf(fieldOfViewRadians / 2.0f);
-        const f32 xFac = yFac*aspectRatio;
+        const f32 xFac = yFac * aspectRatio;
 
         matrix[0] = 1 / xFac;
         matrix[1] = 0;
@@ -102,12 +104,20 @@ namespace core
 
         matrix[8] = 0;
         matrix[9] = 0;
-        matrix[10] = -(zFar + zNear) / (zFar - zNear);
+#if DEPTH_ZERO_TO_ONE
+        matrix[10] = zFar / (zNear - zFar);
+#else
+        matrix[10] = - (zFar + zNear) / (zFar - zNear);
+#endif //DEPTH_ZERO_TO_ONE
         matrix[11] = -1;
 
         matrix[12] = 0;
         matrix[13] = 0;
-        matrix[14] = -(2 * zFar*zNear) / (zFar - zNear);
+#if DEPTH_ZERO_TO_ONE
+        matrix[14] = - (zFar * zNear) / (zFar - zNear);
+#else
+        matrix[14] = - (2 * zFar * zNear) / (zFar - zNear);
+#endif //DEPTH_ZERO_TO_ONE
         matrix[15] = 0;
 
         return outMatrix;
@@ -131,12 +141,20 @@ namespace core
 
         matrix[8] = 0.f;
         matrix[9] = 0.f;
+#if DEPTH_ZERO_TO_ONE
+        matrix[10] = 1.f / (zFar - zNear);
+#else
         matrix[10] = 2.f / (zFar - zNear);
+#endif //DEPTH_ZERO_TO_ONE
         matrix[11] = 0.f;
 
-        matrix[12] = -(right + left) / (right - left) /*0.f*/;
-        matrix[13] = -(top + bottom) / (top - bottom) /*0.f*/;
-        matrix[14] = -(zFar + zNear) / (zFar - zNear);
+        matrix[12] = - (right + left) / (right - left) /*0.f*/;
+        matrix[13] = - (top + bottom) / (top - bottom) /*0.f*/;
+#if DEPTH_ZERO_TO_ONE
+        matrix[14] = - zNear / (zFar - zNear);
+#else	
+        matrix[14] = - (zFar + zNear) / (zFar - zNear);
+#endif //DEPTH_ZERO_TO_ONE
         matrix[15] = 1.f;
 
         return outMatrix;

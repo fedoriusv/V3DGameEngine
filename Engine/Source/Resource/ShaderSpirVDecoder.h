@@ -1,7 +1,7 @@
 #pragma once
 
 #include "ResourceDecoder.h"
-#include "Shader.h"
+#include "Renderer/Shader.h"
 
 namespace v3d
 {
@@ -15,8 +15,8 @@ namespace resource
     {
     public:
 
-        ShaderSpirVDecoder(const ShaderHeader& header, bool reflections = false) noexcept;
-        ShaderSpirVDecoder(std::vector<std::string> supportedExtensions, const ShaderHeader& header, bool reflections) noexcept;
+        ShaderSpirVDecoder(const renderer::ShaderHeader& header, bool reflections = false) noexcept;
+        ShaderSpirVDecoder(std::vector<std::string> supportedExtensions, const renderer::ShaderHeader& header, bool reflections) noexcept;
 
         ~ShaderSpirVDecoder();
 
@@ -26,10 +26,10 @@ namespace resource
 
         bool parseReflections(const std::vector<u32>& spirv, stream::Stream* stream);
 
-        u32                  m_sourceVersion;
+        u32 m_sourceVersion;
 
-        const ShaderHeader   m_header;
-        bool                 m_reflections;
+        const renderer::ShaderHeader m_header;
+        bool m_reflections;
     };
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////

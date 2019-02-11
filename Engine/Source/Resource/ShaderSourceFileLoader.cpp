@@ -1,7 +1,7 @@
 #include "ShaderSourceFileLoader.h"
 
 #include "ShaderSpirVDecoder.h"
-#include "Shader.h"
+#include "Renderer/Shader.h"
 
 #include "Stream/FileLoader.h"
 #include "Renderer/Context.h"
@@ -18,9 +18,9 @@ ShaderSourceFileLoader::ShaderSourceFileLoader(const renderer::Context* context,
     {
 #ifdef USE_SPIRV
         {
-            ShaderHeader header;
-            header._contentType = ShaderHeader::ShaderResource::ShaderResource_Source;
-            header._shaderLang = ShaderHeader::ShaderLang::ShaderLang_GLSL;
+            renderer::ShaderHeader header;
+            header._contentType = renderer::ShaderHeader::ShaderResource::ShaderResource_Source;
+            header._shaderLang = renderer::ShaderHeader::ShaderLang::ShaderLang_GLSL;
             header._optLevel = 0;
             header._defines = defines;
 
@@ -28,9 +28,9 @@ ShaderSourceFileLoader::ShaderSourceFileLoader(const renderer::Context* context,
         }
 
         {
-            ShaderHeader header;
-            header._contentType = ShaderHeader::ShaderResource::ShaderResource_Source;
-            header._shaderLang = ShaderHeader::ShaderLang::ShaderLang_HLSL;
+            renderer::ShaderHeader header;
+            header._contentType = renderer::ShaderHeader::ShaderResource::ShaderResource_Source;
+            header._shaderLang = renderer::ShaderHeader::ShaderLang::ShaderLang_HLSL;
             header._optLevel = 0;
             header._defines = defines;
 
@@ -51,7 +51,7 @@ ShaderSourceFileLoader::~ShaderSourceFileLoader()
 
 }
 
-Shader * ShaderSourceFileLoader::load(const std::string & name, const std::string & alias)
+renderer::Shader * ShaderSourceFileLoader::load(const std::string & name, const std::string & alias)
 {
     for (std::string& path : m_pathes)
     {
@@ -84,7 +84,7 @@ Shader * ShaderSourceFileLoader::load(const std::string & name, const std::strin
            }
 
            LOG_DEBUG("ShaderSourceFileLoader::load Shader [%s] is loaded", name.c_str());
-           return static_cast<Shader*>(resource);
+           return static_cast<renderer::Shader*>(resource);
         }
     }
 

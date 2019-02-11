@@ -5,10 +5,10 @@
 #include "VulkanGraphicContext.h"
 #include "VulkanPipeline.h"
 #include "VulkanDescriptorSet.h"
+#include "Renderer/Shader.h"
 
 #include "Utils/Logger.h"
 
-#include "Resource/Shader.h"
 
 #ifdef VULKAN_RENDER
 namespace v3d
@@ -500,11 +500,11 @@ bool VulkanGraphicPipeline::create(const PipelineGraphicInfo* pipelineInfo)
     vertexInputStateCreateInfo.vertexBindingDescriptionCount = static_cast<u32>(vertexInputBindingDescriptions.size());
     vertexInputStateCreateInfo.pVertexBindingDescriptions = vertexInputBindingDescriptions.data();
 
-    const resource::Shader* vertexShader = programDesc._shaders[ShaderType::ShaderType_Vertex];
+    const Shader* vertexShader = programDesc._shaders[ShaderType::ShaderType_Vertex];
     ASSERT(vertexShader, "nullptr");
     std::vector<VkVertexInputAttributeDescription> vertexInputAttributeDescriptions;
     vertexInputAttributeDescriptions.reserve(inputAttrDesc._countInputAttributes);
-    const resource::Shader::ReflectionInfo& reflectionInfo = vertexShader->getReflectionInfo();
+    const Shader::ReflectionInfo& reflectionInfo = vertexShader->getReflectionInfo();
     ASSERT(reflectionInfo._inputAttribute.size() == inputAttrDesc._countInputAttributes, "different sizes");
     for (u32 index = 0; index < inputAttrDesc._countInputAttributes; ++index)
     {
@@ -702,7 +702,7 @@ void VulkanGraphicPipeline::destroy()
     }
 }
 
-bool VulkanGraphicPipeline::compileShader(const resource::ShaderHeader* header, const void * source, u32 size)
+bool VulkanGraphicPipeline::compileShader(const ShaderHeader* header, const void * source, u32 size)
 {
     if (!source || size == 0)
     {
@@ -729,14 +729,14 @@ bool VulkanGraphicPipeline::compileShader(const resource::ShaderHeader* header, 
     return true;
 }
 
-bool VulkanGraphicPipeline::createShaderModule(const resource::Shader* shader, VkPipelineShaderStageCreateInfo& outPipelineShaderStageCreateInfo)
+bool VulkanGraphicPipeline::createShaderModule(const Shader* shader, VkPipelineShaderStageCreateInfo& outPipelineShaderStageCreateInfo)
 {
     if (!shader || !VulkanGraphicPipeline::createShader(shader))
     {
         return false;
     }
 
-    const resource::ShaderHeader& header = shader->getShaderHeader();
+    const ShaderHeader& header = shader->getShaderHeader();
 
     outPipelineShaderStageCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
     outPipelineShaderStageCreateInfo.pNext = nullptr;

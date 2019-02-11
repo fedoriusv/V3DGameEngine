@@ -1,5 +1,4 @@
 #include "ShaderSpirVDecoder.h"
-#include "Shader.h"
 #include "Stream/FileLoader.h"
 #include "Stream/StreamManager.h"
 
@@ -16,13 +15,13 @@ namespace v3d
 namespace resource
 {
 
-ShaderSpirVDecoder::ShaderSpirVDecoder(const ShaderHeader& header, bool reflections) noexcept
+ShaderSpirVDecoder::ShaderSpirVDecoder(const renderer::ShaderHeader& header, bool reflections) noexcept
     : m_header(header)
     , m_reflections(reflections)
 {
 }
 
-ShaderSpirVDecoder::ShaderSpirVDecoder(std::vector<std::string> supportedExtensions, const ShaderHeader& header, bool reflections) noexcept
+ShaderSpirVDecoder::ShaderSpirVDecoder(std::vector<std::string> supportedExtensions, const renderer::ShaderHeader& header, bool reflections) noexcept
     : ResourceDecoder(supportedExtensions)
     , m_header(header)
     , m_reflections(reflections)
@@ -43,7 +42,7 @@ Resource * ShaderSpirVDecoder::decode(const stream::Stream* stream, const std::s
         std::string source;
         stream->read(source);
 
-        if (m_header._contentType == ShaderHeader::ShaderResource::ShaderResource_Source)
+        if (m_header._contentType == renderer::ShaderHeader::ShaderResource::ShaderResource_Source)
         {
             shaderc::CompileOptions options;
             options.SetTargetEnvironment(shaderc_target_env_vulkan, 0);
@@ -53,11 +52,11 @@ Resource * ShaderSpirVDecoder::decode(const stream::Stream* stream, const std::s
 #endif
             switch (m_header._shaderLang)
             {
-            case ShaderHeader::ShaderLang::ShaderLang_GLSL:
+            case renderer::ShaderHeader::ShaderLang::ShaderLang_GLSL:
                 options.SetSourceLanguage(shaderc_source_language_glsl);
                 break;
 
-            case ShaderHeader::ShaderLang::ShaderLang_HLSL:
+            case renderer::ShaderHeader::ShaderLang::ShaderLang_HLSL:
                 options.SetSourceLanguage(shaderc_source_language_hlsl);
                 break;
 
@@ -211,11 +210,11 @@ Resource * ShaderSpirVDecoder::decode(const stream::Stream* stream, const std::s
                 }
             }
 
-            ShaderHeader* resourceHeader = new ShaderHeader(m_header);
+            renderer::ShaderHeader* resourceHeader = new renderer::ShaderHeader(m_header);
             resourceHeader->_type = type;
             resourceHeader->_apiVersion = m_sourceVersion;
 
-            Resource* resource = new Shader(resourceHeader);
+            Resource* resource = new renderer::Shader(resourceHeader);
             resource->init(resourceSpirvBinary);
 
             return resource;
@@ -262,7 +261,7 @@ bool ShaderSpirVDecoder::parseReflections(const std::vector<u32>& spirv, stream:
         return renderer::Format_Undefined;
     };
 
-    if (m_header._shaderLang == ShaderHeader::ShaderLang::ShaderLang_GLSL)
+    if (m_header._shaderLang == renderer::ShaderHeader::ShaderLang::ShaderLang_GLSL)
     {
         spirv_cross::CompilerGLSL glsl(spirv);
         spirv_cross::ShaderResources resources = glsl.get_shader_resources();
@@ -281,7 +280,7 @@ bool ShaderSpirVDecoder::parseReflections(const std::vector<u32>& spirv, stream:
 
             const spirv_cross::SPIRType& type = glsl.get_type(inputChannel.type_id);
 
-            Shader::Attribute input;
+            renderer::Shader::Attribute input;
             input._location = location;
             input._format = convertSPRIVTypeToFormat(type);
             input._name = name;
@@ -302,7 +301,7 @@ bool ShaderSpirVDecoder::parseReflections(const std::vector<u32>& spirv, stream:
             u32 col = type.columns;
             u32 row = type.vecsize;
 
-            Shader::Attribute output;
+            renderer::Shader::Attribute output;
             output._location = location;
             output._format = convertSPRIVTypeToFormat(type);
             output._name = name;
@@ -322,7 +321,7 @@ bool ShaderSpirVDecoder::parseReflections(const std::vector<u32>& spirv, stream:
             u32 set = glsl.get_decoration(buffer.id, spv::DecorationDescriptorSet);
             const spirv_cross::SPIRType& block_type = glsl.get_type(buffer.type_id);
 
-            Shader::UniformBuffer block;
+            renderer::Shader::UniformBuffer block;
             block._id = buffID;
             block._set = set;
             block._binding = binding;
@@ -432,7 +431,7 @@ bool ShaderSpirVDecoder::parseReflections(const std::vector<u32>& spirv, stream:
                 u32 col = type.columns;
                 u32 row = type.vecsize;
 
-                Shader::UniformBuffer::Uniform uniform;
+                renderer::Shader::UniformBuffer::Uniform uniform;
                 uniform._bufferId = buffID;
                 uniform._array = type.array.empty() ? 1 : type.array[0];
                 uniform._type = convertSPRIVTypeToDataType(type);
@@ -490,7 +489,7 @@ bool ShaderSpirVDecoder::parseReflections(const std::vector<u32>& spirv, stream:
             const spirv_cross::SPIRType& type = glsl.get_type(image.type_id);
             bool depth = type.image.depth;
 
-            Shader::SampledImage image;
+            renderer::Shader::SampledImage image;
             image._set = set;
             image._binding = binding;
             image._target = convertSPRIVTypeToTextureData(type);
@@ -514,7 +513,7 @@ bool ShaderSpirVDecoder::parseReflections(const std::vector<u32>& spirv, stream:
             const spirv_cross::SPIRType& type = glsl.get_type(pushConstant.type_id);
             bool depth = type.image.depth;
 
-            Shader::PushConstant constant;
+            renderer::Shader::PushConstant constant;
             constant._offset = offset;
             constant._size = type.width; //TODO check
             constant._name = name;

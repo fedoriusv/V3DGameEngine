@@ -56,9 +56,9 @@ namespace vk
 
     private:
 
-        bool compileShader(const resource::ShaderHeader* header, const void* source, u32 size) override;
+        bool compileShader(const ShaderHeader* header, const void* source, u32 size) override;
 
-        bool createShaderModule(const resource::Shader* shader, VkPipelineShaderStageCreateInfo& outPipelineShaderStageCreateInfo);
+        bool createShaderModule(const Shader* shader, VkPipelineShaderStageCreateInfo& outPipelineShaderStageCreateInfo);
         void deleteShaderModules();
 
         bool createCompatibilityRenderPass(const RenderPass::RenderPassInfo& renderpassDesc, RenderPass* &compatibilityRenderPass);

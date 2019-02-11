@@ -12,7 +12,7 @@ namespace renderer
     /**
     * TextureUsage enum. usageFlag inside Texture
     */
-    enum TextureUsage
+    enum TextureUsage : u16
     {
         TextureUsage_Write = 0x01,
         TextureUsage_Read = 0x02,
@@ -20,7 +20,7 @@ namespace renderer
         TextureUsage_Sampled = 0x04,
         TextureUsage_Attachment = 0x08,
 
-        TextureUsage_Shared = 0x16,
+        TextureUsage_Shared = 0x64,
     };
 
     typedef u16 TextureUsageFlags;

@@ -71,8 +71,8 @@ namespace renderer
         virtual void drawIndexed() = 0;
 
         //program bind
-        virtual void bindTexture(const resource::Shader* shader, u32 bindIndex, const Image* image) = 0;
-        virtual void bindUniformsBuffer(const resource::Shader* shader, u32 bindIndex, u32 offset, u32 size, const void* data) = 0;
+        virtual void bindTexture(const Shader* shader, u32 bindIndex, const Image* image) = 0;
+        virtual void bindUniformsBuffer(const Shader* shader, u32 bindIndex, u32 offset, u32 size, const void* data) = 0;
 
         //geometry bind
         //virtual void bindVertexBuffers(const std::vector<Buffer*>& buffer, const std::vector<u64>& offsets) = 0;

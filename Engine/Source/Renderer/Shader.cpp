@@ -4,7 +4,7 @@
 
 namespace v3d
 {
-namespace resource
+namespace renderer
 {
 
 ShaderHeader::ShaderHeader() noexcept
@@ -274,5 +274,5 @@ void Shader::PushConstant::operator<<(const stream::Stream * stream)
     stream->read(_name);
 }
 
-} //namespace resource
+} //namespace renderer
 } //namespace v3d

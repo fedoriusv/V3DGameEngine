@@ -2,7 +2,7 @@
 #include "Texture.h"
 #include "Renderer/Formats.h"
 #include "Renderer/Context.h"
-#include "Resource/Shader.h"
+#include "Renderer/Shader.h"
 
 #include "Utils/Logger.h"
 #include "crc32c/crc32c.h"
@@ -16,7 +16,7 @@ namespace renderer
 class UpdateUniformsBuffer : public Command
 {
 public:
-    UpdateUniformsBuffer(resource::Shader* shader, u32 bindIndex, u32 offset, u32 size, void* data, bool shared) noexcept
+    UpdateUniformsBuffer(Shader* shader, u32 bindIndex, u32 offset, u32 size, void* data, bool shared) noexcept
         : m_shader(shader)
         , m_bindIndex(bindIndex)
         , m_offset(offset)
@@ -58,7 +58,7 @@ public:
     }
 
 private:
-    resource::Shader* m_shader;
+    Shader* m_shader;
     u32 m_bindIndex;
 
     u32 m_offset;
@@ -68,7 +68,7 @@ private:
     bool m_shared;
 };
 
-const resource::Shader * ShaderProgram::getShader(ShaderType type) const
+const Shader * ShaderProgram::getShader(ShaderType type) const
 {
     return m_programInfo._shaders[type];
 }
@@ -78,7 +78,7 @@ const ShaderProgramDescription& ShaderProgram::getShaderDesc() const
     return m_programInfo;
 }
 
-ShaderProgram::ShaderProgram(renderer::CommandList & cmdList, std::vector<resource::Shader*> shaders) noexcept
+ShaderProgram::ShaderProgram(renderer::CommandList & cmdList, std::vector<Shader*> shaders) noexcept
     : m_cmdList(cmdList)
 {
     for (auto shader : shaders)
@@ -97,7 +97,7 @@ ShaderProgram::ShaderProgram(renderer::CommandList & cmdList, std::vector<resour
     }
 }
 
-void ShaderProgram::composeProgramData(const std::vector<resource::Shader*>& shaders)
+void ShaderProgram::composeProgramData(const std::vector<Shader*>& shaders)
 {
     m_programInfo._hash = 0;
     for (auto shader : shaders)
@@ -133,7 +133,7 @@ void ShaderProgram::composeProgramData(const std::vector<resource::Shader*>& sha
 
 bool ShaderProgram::bindUniformsBuffer(ShaderType shaderType, std::string& name, u32 offset, u32 size, const void* data)
 {
-    resource::Shader* shader = m_programInfo._shaders[shaderType];
+    Shader* shader = m_programInfo._shaders[shaderType];
     ASSERT(shader, "fail");
     ASSERT(!m_shaderParameters[shaderType].empty(), "fail");
     auto iter = m_shaderParameters[shaderType].find(name);
@@ -174,7 +174,7 @@ bool ShaderProgram::bindTexture(ShaderType shaderType, std::string& name, Textur
         return false;
     }
 
-    resource::Shader* shader = m_programInfo._shaders[shaderType];
+    Shader* shader = m_programInfo._shaders[shaderType];
     ASSERT(shader, "fail");
     ASSERT(!m_shaderParameters[shaderType].empty(), "fail");
     auto iter = m_shaderParameters[shaderType].find(name);

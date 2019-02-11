@@ -2,7 +2,7 @@
 
 #include "Context.h"
 #include "Utils/Logger.h"
-#include "Resource/Shader.h"
+#include "Shader.h"
 
 #include "crc32c/crc32c.h"
 
@@ -26,7 +26,7 @@ Pipeline::PipelineType Pipeline::getType() const
     return m_pipelineType;
 }
 
-bool Pipeline::createShader(const resource::Shader * shader)
+bool Pipeline::createShader(const Shader * shader)
 {
     if (!shader)
     {

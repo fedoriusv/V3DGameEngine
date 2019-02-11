@@ -105,12 +105,12 @@ void EmptyContext::removePipeline(Pipeline * pipeline)
     LOG_DEBUG("EmptyContext::removePipeline");
 }
 
-void EmptyContext::bindTexture(const resource::Shader* shader, u32 bindIndex, const Image* image)
+void EmptyContext::bindTexture(const Shader* shader, u32 bindIndex, const Image* image)
 {
     LOG_DEBUG("EmptyContext::bindTexture");
 }
 
-void EmptyContext::bindUniformsBuffer(const resource::Shader* shader, u32 bindIndex, u32 offset, u32 size, const void* data)
+void EmptyContext::bindUniformsBuffer(const Shader* shader, u32 bindIndex, u32 offset, u32 size, const void* data)
 {
     LOG_DEBUG("EmptyContext::bindUniformsBuffer");
 }

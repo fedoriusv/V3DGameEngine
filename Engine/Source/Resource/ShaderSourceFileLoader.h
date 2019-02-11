@@ -7,25 +7,25 @@ namespace v3d
 namespace renderer
 {
     class Context;
+    class Shader;
 } //namespace renderer
 
 namespace resource
 {
-    class Shader;
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
     * ShaderSourceFileLoader class. Loader from file
     */
-    class ShaderSourceFileLoader : public ResourceLoader<Shader*>
+    class ShaderSourceFileLoader : public ResourceLoader<renderer::Shader*>
     {
     public:
 
         ShaderSourceFileLoader(const renderer::Context* context, const std::vector<std::pair<std::string, std::string>>& defines) noexcept;
         ~ShaderSourceFileLoader();
 
-        Shader* load(const std::string& name, const std::string& alias = "") override;
+        renderer::Shader* load(const std::string& name, const std::string& alias = "") override;
 
     };
 

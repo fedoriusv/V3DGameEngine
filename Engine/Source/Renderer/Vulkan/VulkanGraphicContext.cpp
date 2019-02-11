@@ -456,7 +456,7 @@ void VulkanGraphicContext::removeBuffer(Buffer * buffer)
     }
 }
 
-void VulkanGraphicContext::bindTexture(const resource::Shader* shader, u32 bindIndex, const Image* image)
+void VulkanGraphicContext::bindTexture(const Shader* shader, u32 bindIndex, const Image* image)
 {
     const VulkanImage* vkImage = static_cast<const VulkanImage*>(image);
     VkImageView view = vkImage->getImageView();
@@ -466,10 +466,10 @@ void VulkanGraphicContext::bindTexture(const resource::Shader* shader, u32 bindI
     //shader->getReflectionInfo()._sampledImages[name]
 }
 
-void VulkanGraphicContext::bindUniformsBuffer(const resource::Shader* shader, u32 bindIndex, u32 offset, u32 size, const void* data)
+void VulkanGraphicContext::bindUniformsBuffer(const Shader* shader, u32 bindIndex, u32 offset, u32 size, const void* data)
 {
-    const resource::Shader::ReflectionInfo& info = shader->getReflectionInfo();
-    const resource::Shader::UniformBuffer& bufferData = info._uniformBuffers[bindIndex];
+    const Shader::ReflectionInfo& info = shader->getReflectionInfo();
+    const Shader::UniformBuffer& bufferData = info._uniformBuffers[bindIndex];
     if (offset == 0)
     {
         ASSERT(bufferData._size == size, "different size");

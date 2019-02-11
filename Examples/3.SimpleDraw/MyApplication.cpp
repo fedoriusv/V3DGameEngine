@@ -11,14 +11,10 @@
 #include "Renderer/Object/RenderTarget.h"
 #include "Renderer/Object/StreamBuffer.h"
 #include "Renderer/Formats.h"
+#include "Renderer/Shader.h"
 
 #include "Resource/ResourceLoaderManager.h"
-
 #include "Resource/ShaderSourceFileLoader.h"
-#include "Resource/Shader.h"
-
-
-
 
 using namespace v3d;
 using namespace v3d::platform;

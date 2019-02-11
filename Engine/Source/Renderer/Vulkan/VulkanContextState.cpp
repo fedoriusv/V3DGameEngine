@@ -265,7 +265,7 @@ void VulkanContextState::updateDescriptorSet()
     m_updatedBindings.clear();
 }
 
-void VulkanContextState::bindTexture(const VulkanImage* image, const VulkanSampler* sampler, u32 arrayIndex, const resource::Shader::SampledImage& reflaction)
+void VulkanContextState::bindTexture(const VulkanImage* image, const VulkanSampler* sampler, u32 arrayIndex, const Shader::SampledImage& reflaction)
 {
     /*auto& bindingList = m_descriptorSetsState[reflaction._set];
     if (bindingList.size() < reflaction._binding)
@@ -310,7 +310,7 @@ void VulkanContextState::bindTexture(const VulkanImage* image, const VulkanSampl
     VulkanContextState::setBinding(bindingInfo);
 }
 
-void VulkanContextState::updateConstantBuffer(u32 arrayIndex, const resource::Shader::UniformBuffer& reflaction, u32 offset, u32 size, const void* data)
+void VulkanContextState::updateConstantBuffer(u32 arrayIndex, const Shader::UniformBuffer& reflaction, u32 offset, u32 size, const void* data)
 {
     ASSERT(size <= reflaction._size, "over size");
     /*auto& bindingList = m_descriptorSetsState[reflaction._set];

@@ -1,9 +1,9 @@
 #pragma once
 
-#include "Resource.h"
-#include "Renderer/Formats.h"
-#include "Renderer/TextureProperties.h"
-#include "Renderer/ShaderProperties.h"
+#include "Resource/Resource.h"
+#include "Formats.h"
+#include "TextureProperties.h"
+#include "ShaderProperties.h"
 
 namespace v3d
 {
@@ -11,16 +11,13 @@ namespace renderer
 {
     class ShaderProgram;
     class Pipeline;
-} //namespace renderer
 
-namespace resource
-{
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
     * ShaderHeader meta info about Shader
     */
-    struct ShaderHeader : ResourceHeader
+    struct ShaderHeader : resource::ResourceHeader
     {
         enum class ShaderResource : u32
         {
@@ -54,7 +51,7 @@ namespace resource
     * Shader class. 
     * Resource, present on Render and Game thread
     */
-    class Shader : public Resource
+    class Shader : public resource::Resource
     {
     public:
 
@@ -163,5 +160,5 @@ namespace resource
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-} //namespace resource
+} //namespace renderer
 } //namespace v3d
