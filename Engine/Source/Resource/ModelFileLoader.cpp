@@ -14,9 +14,7 @@ namespace resource
 ModelFileLoader::ModelFileLoader(const renderer::Context* context) noexcept
 {
     scene::ModleHeader header;
-    //TODO:
-
-    ResourceLoader::registerDecoder(new MeshAssimpDecoder({ "dae" }, header));
+    ResourceLoader::registerDecoder(new MeshAssimpDecoder({ "dae" }, header, false));
 
     ResourceLoader::registerPath("../../../../");
     ResourceLoader::registerPath("../../../../../");

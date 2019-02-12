@@ -5,6 +5,11 @@
 
 namespace v3d
 {
+namespace stream
+{
+    class Stream;
+} //namespace stream
+
 namespace renderer
 {
     class Buffer;
@@ -44,17 +49,11 @@ namespace renderer
 
         struct InputBinding
         {
-            InputBinding()
-            {
-                memset(this, 0, sizeof(InputBinding));
-            }
-            
-            InputBinding(u32 index, InputRate rate, u32 stride)
-                : _index(index)
-                , _rate(rate)
-                , _stride(stride)
-            {
-            }
+            InputBinding() noexcept;
+            InputBinding(u32 index, InputRate rate, u32 stride) noexcept;
+
+            void operator >> (stream::Stream* stream);
+            void operator << (const stream::Stream* stream);
 
             u32       _index;
             InputRate _rate;
@@ -63,18 +62,11 @@ namespace renderer
 
         struct InputAttribute
         {
-            InputAttribute()
-            {
-                memset(this, 0, sizeof(InputAttribute));
-            }
+            InputAttribute() noexcept;
+            InputAttribute(u32 binding, u32 stream, Format format, u32 offset) noexcept;
 
-            InputAttribute(u32 binding, u32 stream, Format format, u32 offset)
-                : _bindingId(binding)
-                , _streamId(stream)
-                , _format(format)
-                , _offest(offset)
-            {
-            }
+            void operator >> (stream::Stream* stream);
+            void operator << (const stream::Stream* stream);
 
             u32          _bindingId;
             u32          _streamId;
@@ -82,28 +74,13 @@ namespace renderer
             u32          _offest;
         };
 
-        VertexInputAttribDescription() noexcept
-        {
-        }
+        VertexInputAttribDescription() noexcept;
+        VertexInputAttribDescription(const VertexInputAttribDescription& desc) noexcept;
+        VertexInputAttribDescription(std::vector<InputBinding> inputBindings, std::vector<VertexInputAttribDescription::InputAttribute> inputAttributes) noexcept;
+        VertexInputAttribDescription& operator=(const VertexInputAttribDescription& desc);
 
-        VertexInputAttribDescription(std::vector<InputBinding> inputBindings, std::vector<VertexInputAttribDescription::InputAttribute> inputAttributes) noexcept
-        {
-            u32 index = 0;
-            for (auto& binding : inputBindings)
-            {
-                _inputBindings[index] = binding;
-                index++;
-            }
-            _countInputBindings = index;
-
-            index = 0;
-            for (auto& attribute : inputAttributes)
-            {
-                _inputAttribute[index] = attribute;
-                index++;
-            }
-            _countInputAttributes = index;
-        }
+        void operator >> (stream::Stream* stream);
+        void operator << (const stream::Stream* stream);
 
         u32 _countInputBindings;
         std::array<InputBinding, k_maxVertexInputBindings> _inputBindings;

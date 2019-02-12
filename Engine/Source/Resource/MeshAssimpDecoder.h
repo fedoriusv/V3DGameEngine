@@ -15,7 +15,7 @@ namespace resource
     {
     public:
 
-        MeshAssimpDecoder(std::vector<std::string> supportedExtensions, const scene::ModleHeader& header) noexcept;
+        MeshAssimpDecoder(std::vector<std::string> supportedExtensions, const scene::ModleHeader& header, bool readHeader) noexcept;
         ~MeshAssimpDecoder();
 
         Resource* decode(const stream::Stream* stream, const std::string& name = "") override;
@@ -23,6 +23,7 @@ namespace resource
     private:
 
         const scene::ModleHeader m_header;
+        bool m_headerRules;
     };
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////

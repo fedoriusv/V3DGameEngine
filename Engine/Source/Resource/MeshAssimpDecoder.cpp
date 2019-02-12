@@ -1,5 +1,6 @@
 #include "MeshAssimpDecoder.h"
 #include "Renderer/BufferProperties.h"
+#include "Renderer/PipelineStateProperties.h"
 #include "Renderer/Formats.h"
 #include "Stream/StreamManager.h"
 
@@ -17,9 +18,10 @@ namespace v3d
 namespace resource
 {
 
-MeshAssimpDecoder::MeshAssimpDecoder(std::vector<std::string> supportedExtensions, const scene::ModleHeader& header) noexcept
+MeshAssimpDecoder::MeshAssimpDecoder(std::vector<std::string> supportedExtensions, const scene::ModleHeader& header, bool readHeader) noexcept
     : ResourceDecoder(supportedExtensions)
     , m_header(header)
+    , m_headerRules(readHeader)
 {
 }
 
@@ -37,8 +39,36 @@ Resource * MeshAssimpDecoder::decode(const stream::Stream* stream, const std::st
         const aiScene* scene;
         Assimp::Importer Importer;
 
-        // Flags for loading the mesh
-        static const int assimpFlags = aiProcess_FlipWindingOrder | aiProcess_Triangulate | aiProcess_PreTransformVertices;
+        scene::ModleHeader* newHeader = new scene::ModleHeader(m_header);
+        u32 assimpFlags = 0;
+        if (m_headerRules)
+        {
+            assimpFlags = aiProcess_MakeLeftHanded | aiProcess_FlipUVs;
+            if (!m_header._localTransform)
+            {
+                assimpFlags |= aiProcess_PreTransformVertices;
+            }
+
+            if (m_header._mode == renderer::PolygonMode::PolygonMode_Triangle)
+            {
+                assimpFlags |= aiProcess_Triangulate;
+            }
+
+            if (m_header._frontFace == renderer::FrontFace::FrontFace_Clockwise)
+            {
+                assimpFlags |= aiProcess_FlipWindingOrder;
+            }
+        }
+        else
+        {
+            assimpFlags = aiProcess_ConvertToLeftHanded | aiProcess_Triangulate | aiProcess_PreTransformVertices;
+            //assimpFlags = aiProcess_FlipWindingOrder | aiProcess_Triangulate | aiProcess_PreTransformVertices;
+
+            newHeader->_content = 0;
+            newHeader->_mode = renderer::PolygonMode::PolygonMode_Triangle;
+            newHeader->_frontFace = renderer::FrontFace::FrontFace_Clockwise;
+            newHeader->_localTransform = false;
+        }
 
         //scene = Importer.ReadFile(name.c_str(), assimpFlags);
         u8* data = stream->map(stream->size());
@@ -46,16 +76,26 @@ Resource * MeshAssimpDecoder::decode(const stream::Stream* stream, const std::st
         if (!scene)
         {
             ASSERT(false, "nullptr");
+            delete newHeader;
+
             return nullptr;
         }
-        
-        stream::MemoryStream* modelStream = stream::StreamManager::createMemoryStream();
+
+        u32 globalModelSize = 0;
+        newHeader->_vertex._count = scene->mNumMeshes;
+        newHeader->_vertex._size.reserve(scene->mNumMeshes);
+        newHeader->_vertex._offset.reserve(scene->mNumMeshes);
+
+        std::vector<renderer::VertexInputAttribDescription> attribDescriptionList;
+
+        stream::Stream* modelStream = stream::StreamManager::createMemoryStream();
         for (u32 m = 0; m < scene->mNumMeshes; m++)
         {
             std::vector<renderer::VertexInputAttribDescription::InputBinding> inputBindings;
             std::vector<renderer::VertexInputAttribDescription::InputAttribute> inputAttributes;
 
-            auto buildVertexData = [&inputBindings, &inputAttributes](const aiMesh* mesh, const scene::ModleHeader& header) -> u32
+            scene::ModleHeader::VertexProperiesFlags contentFlag = 0;
+            auto buildVertexData = [&inputBindings, &inputAttributes, &contentFlag](const aiMesh* mesh, const scene::ModleHeader& header) -> u32
             {
                 u32 vertexSize = 0;
                 if (mesh->HasPositions())
@@ -65,65 +105,67 @@ Resource * MeshAssimpDecoder::decode(const stream::Stream* stream, const std::st
                     attrib._streamId = 0;
                     attrib._format = renderer::Format::Format_R32G32B32_SFloat;
                     attrib._offest = vertexSize;
-
                     inputAttributes.push_back(attrib);
+
+                    contentFlag |= scene::ModleHeader::VertexProperies_Position;
+                    vertexSize += sizeof(core::Vector3D);
                 }
 
                 if (mesh->HasNormals())
                 {
-                    vertexSize += sizeof(core::Vector3D);
-
                     renderer::VertexInputAttribDescription::InputAttribute attrib;
                     attrib._bindingId = 0;
                     attrib._streamId = 0;
                     attrib._format = renderer::Format::Format_R32G32B32_SFloat;
                     attrib._offest = vertexSize;
-
                     inputAttributes.push_back(attrib);
+
+                    contentFlag |= scene::ModleHeader::VertexProperies_Normals;
+                    vertexSize += sizeof(core::Vector3D);
                 }
 
                 if (mesh->HasTangentsAndBitangents())
                 {
-                    vertexSize += sizeof(core::Vector3D);
-
                     renderer::VertexInputAttribDescription::InputAttribute attrib;
                     attrib._bindingId = 0;
                     attrib._streamId = 0;
                     attrib._format = renderer::Format::Format_R32G32B32_SFloat;
                     attrib._offest = vertexSize;
-
                     inputAttributes.push_back(attrib);
+
+                    contentFlag |= scene::ModleHeader::VertexProperies_Tangent;
+                    vertexSize += sizeof(core::Vector3D);
                 }
 
-                for (u32 uv = 0; uv < 4; uv++)
+                for (u32 uv = 0; uv < scene::k_maxTextureCoordsIndex; uv++)
                 {
                     if (mesh->HasTextureCoords(uv))
                     {
-                        vertexSize += sizeof(core::Vector2D);
-
                         renderer::VertexInputAttribDescription::InputAttribute attrib;
                         attrib._bindingId = 0;
                         attrib._streamId = 0;
                         attrib._format = renderer::Format::Format_R32G32_SFloat;
                         attrib._offest = vertexSize;
-
                         inputAttributes.push_back(attrib);
+
+                        contentFlag |= scene::ModleHeader::VertexProperies_TextCoord0 + uv;
+                        vertexSize += sizeof(core::Vector2D);
                     }
                 }
 
-                for (u32 c = 0; c < 4; c++)
+                for (u32 c = 0; c < scene::k_maxVertexColorIndex; c++)
                 {
                     if (mesh->HasVertexColors(c))
                     {
-                        vertexSize += sizeof(core::Vector3D);
-
                         renderer::VertexInputAttribDescription::InputAttribute attrib;
                         attrib._bindingId = 0;
                         attrib._streamId = 0;
-                        attrib._format = renderer::Format::Format_R32G32B32_SFloat;
+                        attrib._format = renderer::Format::Format_R32G32B32A32_SFloat;
                         attrib._offest = vertexSize;
-
                         inputAttributes.push_back(attrib);
+
+                        contentFlag |= scene::ModleHeader::VertexProperies_Color0 + c;
+                        vertexSize += sizeof(core::Vector4D);
                     }
                 }
 
@@ -132,61 +174,153 @@ Resource * MeshAssimpDecoder::decode(const stream::Stream* stream, const std::st
 
             const aiMesh* mesh = scene->mMeshes[m];
             u32 stride = buildVertexData(mesh, m_header);
+            u32 meshSize = stride * mesh->mNumVertices;
             ASSERT(stride > 0, "invalid stride");
 
-            stream::MemoryStream* meshData = stream::StreamManager::createMemoryStream(nullptr, stride * mesh->mNumVertices);
+            newHeader->_vertex._size.push_back(meshSize);
+            newHeader->_vertex._offset.push_back(globalModelSize);
+            newHeader->_vertex._names.push_back(mesh->mName.C_Str());
+            newHeader->_content = contentFlag;
+            globalModelSize += meshSize;
+
+#ifdef DEBUG
+            u32 memorySize = 0;
+#endif //DEBUG
+            stream::Stream* meshStream = stream::StreamManager::createMemoryStream(nullptr, meshSize);
             for (u32 v = 0; v < mesh->mNumVertices; v++)
             {
                 if (mesh->HasPositions())
                 {
-                    ASSERT(m_header._content & scene::ModleHeader::VertexProperies_Vertex, "should contain vertex data");
-                    core::Vector3D position = scene->mMeshes[m]->mVertices[v].x;
-                    meshData->write(&position.x, sizeof(core::Vector3D));
-                    //meshData->write<core::Vector3D>(position);
+                    core::Vector3D position;
+                    position.x = mesh->mVertices[v].x;
+                    position.y = mesh->mVertices[v].y;
+                    position.z = mesh->mVertices[v].z;
+                    meshStream->write<core::Vector3D>(position);
+#ifdef DEBUG
+                    memorySize += sizeof(core::Vector3D);
+#endif //DEBUG
+                }
+                else
+                {
+                    ASSERT(!(m_headerRules && (m_header._content & scene::ModleHeader::VertexProperies_Position)), "should contain vertex data");
                 }
 
                 if (mesh->HasNormals())
                 {
-                    core::Vector3D normal = scene->mMeshes[m]->mNormals[v].x;
-                    meshData->write(&normal.x, sizeof(core::Vector3D));
+                    core::Vector3D normal;
+                    normal.x = mesh->mNormals[v].x;
+                    normal.y = mesh->mNormals[v].y;
+                    normal.z = mesh->mNormals[v].z;
+                    meshStream->write<core::Vector3D>(normal);
+#ifdef DEBUG
+                    memorySize += sizeof(core::Vector3D);
+#endif //DEBUG
+                }
+                else
+                {
+                    ASSERT(!(m_headerRules && (m_header._content & scene::ModleHeader::VertexProperies_Normals)), "should contain normal data");
                 }
 
                 if (mesh->HasTangentsAndBitangents())
                 {
-                    core::Vector3D tangent = scene->mMeshes[m]->mTangents[v].x;
-                    meshData->write(&tangent.x, sizeof(core::Vector3D));
+                    core::Vector3D tangent;
+                    tangent.x = mesh->mTangents[v].x;
+                    tangent.y = mesh->mTangents[v].y;
+                    tangent.z = mesh->mTangents[v].z;
+                    meshStream->write<core::Vector3D>(tangent);
+#ifdef DEBUG
+                    memorySize += sizeof(core::Vector3D);
+#endif //DEBUG
+                }
+                else
+                {
+                    ASSERT(!(m_headerRules && (m_header._content & scene::ModleHeader::VertexProperies_Tangent)), "should contain tangent data");
                 }
 
-                //TODO:
+                for (u32 uv = 0; uv < scene::k_maxTextureCoordsIndex; uv++)
+                {
+                    if (mesh->HasTextureCoords(uv))
+                    {
+                        core::Vector2D coord;
+                        coord.x = mesh->mTextureCoords[uv][v].x;
+                        coord.y = mesh->mTextureCoords[uv][v].y;
+                        meshStream->write<core::Vector2D>(coord);
+#ifdef DEBUG
+                        memorySize += sizeof(core::Vector2D);
+#endif //DEBUG
+                    }
+                    else
+                    {
+                        ASSERT(!(m_headerRules && (m_header._content & scene::ModleHeader::VertexProperies_TextCoord0 + uv)), "should contain texture coord data");
+                    }
+                }
+
+                for (u32 c = 0; c < scene::k_maxVertexColorIndex; c++)
+                {
+                    if (mesh->HasVertexColors(c))
+                    {
+                        core::Vector4D color;
+                        color.x = mesh->mColors[c][v].r;
+                        color.y = mesh->mColors[c][v].g;
+                        color.z = mesh->mColors[c][v].b;
+                        color.w = mesh->mColors[c][v].a;
+                        meshStream->write<core::Vector4D>(color);
+#ifdef DEBUG
+                        memorySize += sizeof(core::Vector4D);
+#endif //DEBUG
+                    }
+                    else
+                    {
+                        ASSERT(!(m_headerRules && (m_header._content & scene::ModleHeader::VertexProperies_Color0 + c)), "should contain color data");
+                    }
+                }
             }
 
+#ifdef DEBUG
+            ASSERT(meshSize == memorySize, "different sizes");
+#endif //DEBUG
+            meshStream->seekBeg(0);
+            void* data = meshStream->map(meshSize);
+            modelStream->write(data, meshSize);
+            meshStream->unmap();
+
             inputBindings.push_back(renderer::VertexInputAttribDescription::InputBinding(0, renderer::VertexInputAttribDescription::InputRate_Vertex, stride));
-            renderer::VertexInputAttribDescription vertexDesc(inputBindings, inputAttributes);
+            attribDescriptionList.emplace_back(inputBindings, inputAttributes);
 
-            //vertexDesc >> meshData;
+            //delete meshStream;
+        }
+        newHeader->_vertex._globalSize = globalModelSize;
 
-            modelStream->write(meshData, meshData->size());
-            delete meshData;
+        bool skipIndex = m_headerRules && !m_header._indexBuffer;
+        if (!skipIndex)
+        {
+            std::vector<u32> indexBuffer;
+            for (u32 m = 0; m < scene->mNumMeshes; m++)
+            {
+                u32 indexBase = static_cast<u32>(indexBuffer.size());
+                for (u32 f = 0; f < scene->mMeshes[m]->mNumFaces; f++)
+                {
+                    for (u32 i = 0; i < 3; i++)
+                    {
+                        indexBuffer.push_back(scene->mMeshes[m]->mFaces[f].mIndices[i] + indexBase);
+                    }
+                }
+            }
+
+            newHeader->_indexBuffer = true;
+            newHeader->_index._count = static_cast<u32>(indexBuffer.size());
+            newHeader->_index._globalSize = static_cast<u32>(indexBuffer.size()) * sizeof(u32);
+            newHeader->_index._size.push_back(newHeader->_index._globalSize);
+            newHeader->_index._offset.push_back(0);
+
+            modelStream->write(indexBuffer.data(), static_cast<u32>(indexBuffer.size()));
         }
 
-        //// Generate index buffer from ASSIMP scene data
-        //std::vector<uint32_t> indexBuffer;
-        //for (uint32_t m = 0; m < scene->mNumMeshes; m++)
-        //{
-        //    uint32_t indexBase = static_cast<uint32_t>(indexBuffer.size());
-        //    for (uint32_t f = 0; f < scene->mMeshes[m]->mNumFaces; f++)
-        //    {
-        //        // We assume that all faces are triangulated
-        //        for (uint32_t i = 0; i < 3; i++)
-        //        {
-        //            indexBuffer.push_back(scene->mMeshes[m]->mFaces[f].mIndices[i] + indexBase);
-        //        }
-        //    }
-        //}
-        //size_t indexBufferSize = indexBuffer.size() * sizeof(uint32_t);
-        //model.indices.count = static_cast<uint32_t>(indexBuffer.size());
+        for (auto& desc : attribDescriptionList)
+        {
+            desc >> modelStream;
+        }
 
-        scene::ModleHeader* newHeader = new scene::ModleHeader(m_header);
         scene::Model* model = new scene::Model(newHeader);
         model->init(modelStream);
 

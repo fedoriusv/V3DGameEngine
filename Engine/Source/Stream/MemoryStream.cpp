@@ -638,11 +638,11 @@ void MemoryStream::allocate(u32 size)
 
 bool MemoryStream::checkSize(u32 size)
 {
-   /* ASSERT(m_stream);
     if (m_allocated == 0)
     {
-        return false;
-    }*/
+        MemoryStream::allocate(size);
+        return true;
+    }
 
     if (m_pos + size > m_allocated)
     {
