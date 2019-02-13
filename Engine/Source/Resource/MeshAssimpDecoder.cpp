@@ -82,9 +82,8 @@ Resource * MeshAssimpDecoder::decode(const stream::Stream* stream, const std::st
         }
 
         u32 globalModelSize = 0;
-        newHeader->_vertex._count = scene->mNumMeshes;
-        newHeader->_vertex._size.reserve(scene->mNumMeshes);
-        newHeader->_vertex._offset.reserve(scene->mNumMeshes);
+        newHeader->_vertex._countElements = scene->mNumMeshes;
+        newHeader->_vertex._data.reserve(scene->mNumMeshes);
 
         std::vector<renderer::VertexInputAttribDescription> attribDescriptionList;
 
@@ -177,9 +176,7 @@ Resource * MeshAssimpDecoder::decode(const stream::Stream* stream, const std::st
             u32 meshSize = stride * mesh->mNumVertices;
             ASSERT(stride > 0, "invalid stride");
 
-            newHeader->_vertex._size.push_back(meshSize);
-            newHeader->_vertex._offset.push_back(globalModelSize);
-            newHeader->_vertex._names.push_back(mesh->mName.C_Str());
+            newHeader->_vertex._data.push_back({ meshSize , globalModelSize, mesh->mNumVertices });
             newHeader->_content = contentFlag;
             globalModelSize += meshSize;
 
@@ -298,22 +295,26 @@ Resource * MeshAssimpDecoder::decode(const stream::Stream* stream, const std::st
             for (u32 m = 0; m < scene->mNumMeshes; m++)
             {
                 u32 indexBase = static_cast<u32>(indexBuffer.size());
+                u32 indexSize = 0;
+                u32 indexCount = 0;
                 for (u32 f = 0; f < scene->mMeshes[m]->mNumFaces; f++)
                 {
                     for (u32 i = 0; i < 3; i++)
                     {
                         indexBuffer.push_back(scene->mMeshes[m]->mFaces[f].mIndices[i] + indexBase);
+                        indexSize += sizeof(u32);
+                        indexCount++;
                     }
                 }
+
+                newHeader->_vertex._data.push_back({ indexSize , static_cast<u32>(indexBuffer.size() * sizeof(u32)), indexCount });
             }
 
             newHeader->_indexBuffer = true;
-            newHeader->_index._count = static_cast<u32>(indexBuffer.size());
+            newHeader->_index._countElements = static_cast<u32>(indexBuffer.size());
             newHeader->_index._globalSize = static_cast<u32>(indexBuffer.size()) * sizeof(u32);
-            newHeader->_index._size.push_back(newHeader->_index._globalSize);
-            newHeader->_index._offset.push_back(0);
 
-            modelStream->write(indexBuffer.data(), static_cast<u32>(indexBuffer.size()));
+            modelStream->write(indexBuffer.data(), newHeader->_index._globalSize);
         }
 
         for (auto& desc : attribDescriptionList)

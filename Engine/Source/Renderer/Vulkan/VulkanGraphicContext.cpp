@@ -503,9 +503,26 @@ void VulkanGraphicContext::draw(StreamBufferDescription& desc, u32 firstVertex, 
     //m_currentContextStateNEW->invalidateDescriptorSetsState();
 }
 
-void VulkanGraphicContext::drawIndexed()
+void VulkanGraphicContext::drawIndexed(StreamBufferDescription & desc, u32 firstIndex, u32 indexCount, u32 firstInstance, u32 instanceCount)
 {
-    //TODO:
+    bool changed = m_currentContextStateNEW->setCurrentVertexBuffers(desc);
+
+    ASSERT(m_currentContextState.isCurrentBufferAcitve(CommandTargetType::CmdDrawBuffer), "nullptr");
+    VulkanCommandBuffer* drawBuffer = m_currentContextState.getAcitveBuffer(CommandTargetType::CmdDrawBuffer);
+    if (prepareDraw(drawBuffer))
+    {
+        if (changed)
+        {
+            ASSERT(desc._indices, "nullptr");
+            VulkanBuffer* indexBuffer = static_cast<VulkanBuffer*>(desc._indices);
+            drawBuffer->cmdBindIndexBuffers(indexBuffer, desc._indicesOffet, (desc._indexType == StreamIndexBufferType::IndexType_16) ? VK_INDEX_TYPE_UINT16 : VK_INDEX_TYPE_UINT32);
+
+            const StreamBufferDescription& desc = m_currentContextStateNEW->getStreamBufferDescription();
+            drawBuffer->cmdBindVertexBuffers(0, static_cast<u32>(desc._vertices.size()), desc._vertices, desc._offsets);
+        }
+        ASSERT(drawBuffer->isInsideRenderPass(), "not inside renderpass");
+        drawBuffer->cmdDrawIndexed(firstIndex, indexCount, firstInstance, instanceCount, 0);
+    }
 }
 
 const DeviceCaps* VulkanGraphicContext::getDeviceCaps() const

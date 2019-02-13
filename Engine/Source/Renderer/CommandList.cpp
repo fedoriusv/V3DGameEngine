@@ -249,6 +249,41 @@ private:
     u32 m_vertexCount;
 };
 
+    /*CommandDrawIndexed*/
+class CommandDrawIndexed : public Command
+{
+public:
+    CommandDrawIndexed(const StreamBufferDescription& desc, u32 firstIndex, u32 countIndex, u32 firtsInstance, u32 instanceCount) noexcept
+        : m_buffersDesc(desc)
+        , m_firtsInstance(firtsInstance)
+        , m_instanceCount(instanceCount)
+        , m_firstIndex(firstIndex)
+        , m_countIndex(countIndex)
+    {
+        LOG_DEBUG("CommandDrawIndexed constructor");
+    }
+    CommandDrawIndexed() = delete;
+    CommandDrawIndexed(CommandDrawIndexed&) = delete;
+
+    ~CommandDrawIndexed()
+    {
+        LOG_DEBUG("CommandDrawIndexed constructor");
+    }
+
+    void execute(const CommandList& cmdList)
+    {
+        LOG_DEBUG("CommandDrawIndexed execute");
+        cmdList.getContext()->drawIndexed(m_buffersDesc, m_firstIndex, m_countIndex, m_firtsInstance, m_instanceCount);
+    }
+
+private:
+    StreamBufferDescription m_buffersDesc;
+    u32 m_firtsInstance;
+    u32 m_instanceCount;
+    u32 m_firstIndex;
+    u32 m_countIndex;
+};
+
     /*CommandInvalidateRenderPass*/
 class CommandInvalidateRenderPass : public Command
 {
@@ -388,6 +423,19 @@ void CommandList::draw(StreamBufferDescription& desc, u32 firstVertex, u32 count
     {
         m_pendingFlushMask = CommandList::flushPendingCommands(m_pendingFlushMask);
         CommandList::pushCommand(new CommandDraw(desc, firstVertex, countVertex, 0, countInstance));
+    }
+}
+
+void CommandList::drawIndexed(StreamBufferDescription& desc, u32 firstIndex, u32 countIndex, u32 countInstance)
+{
+    if (CommandList::isImmediate())
+    {
+        m_context->drawIndexed(desc, firstIndex, countIndex, 0, countInstance);
+    }
+    else
+    {
+       m_pendingFlushMask = CommandList::flushPendingCommands(m_pendingFlushMask);
+       CommandList::pushCommand(new CommandDrawIndexed(desc, firstIndex, countIndex, 0, countInstance));
     }
 }
 

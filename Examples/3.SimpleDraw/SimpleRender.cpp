@@ -23,6 +23,7 @@ SimpleRender::SimpleRender(renderer::CommandList& cmdList, const renderer::Verte
     m_program = cmdList.createObject<ShaderProgram>(std::vector<Shader*>{vertShader, fragShader});
 
     scene::Model* mesh = resource::ResourceLoaderManager::getInstance()->loadMesh<scene::Model, resource::ModelFileLoader>(cmdList.getContext(), "examples/3.simpledraw/models/voyager/voyager.dae");
+    m_modelDrawer = new scene::ModelHelper(cmdList, mesh);
 
     //Texture2D* colorAttachment = cmdList.createObject<Texture2D>(TextureUsage::TextureUsage_Attachment, Format::Format_R8G8B8A8_UNorm, core::Dimension2D(1024, 768), TextureSamples::TextureSamples_x1);
     Texture2D* depthAttachment = cmdList.createObject<Texture2D>(TextureUsage::TextureUsage_Attachment, Format::Format_D32_SFloat_S8_UInt/*Format_D24_UNorm_S8_UInt*/, core::Dimension2D(1024, 768), TextureSamples::TextureSamples_x1);
@@ -32,10 +33,10 @@ SimpleRender::SimpleRender(renderer::CommandList& cmdList, const renderer::Verte
     m_renderTarget->setColorTexture(0, cmdList.getBackbuffer(), RenderTargetLoadOp::LoadOp_Clear, RenderTargetStoreOp::StoreOp_Store, core::Vector4D(0.0f));
     m_renderTarget->setDepthStencilTexture(depthAttachment, RenderTargetLoadOp::LoadOp_Clear, RenderTargetStoreOp::StoreOp_DontCare, 1.0f);
 
-    u64 vertexBufferSize = geomentry.size() * sizeof(f32);
-    m_vetexBuffer = cmdList.createObject<VertexStreamBuffer>(StreamBufferUsage::StreamBuffer_Write | StreamBufferUsage::StreamBuffer_Shared, vertexBufferSize, (u8*)geomentry.data());
+    //u64 vertexBufferSize = geomentry.size() * sizeof(f32);
+    //m_vetexBuffer = cmdList.createObject<VertexStreamBuffer>(StreamBufferUsage::StreamBuffer_Write | StreamBufferUsage::StreamBuffer_Shared, vertexBufferSize, (u8*)geomentry.data());
 
-    m_pipeline = cmdList.createObject<GraphicsPipelineState>(desc, m_program, m_renderTarget);
+    m_pipeline = cmdList.createObject<GraphicsPipelineState>(m_modelDrawer->getVertexInputAttribDescription(0), m_program, m_renderTarget);
     m_pipeline->setPrimitiveTopology(PrimitiveTopology::PrimitiveTopology_TriangleList);
     m_pipeline->setFrontFace(FrontFace::FrontFace_Clockwise);
     m_pipeline->setCullMode(CullMode::CullMode_None);
@@ -66,7 +67,7 @@ SimpleRender::~SimpleRender()
     delete m_renderTarget;
 
     delete m_camera;
-    
+    delete m_modelDrawer;
     //TODO:
     //delete m_textureTarget;
     //delete shaders
@@ -99,10 +100,12 @@ void SimpleRender::render(renderer::CommandList& cmdList)
     cmdList.setViewport(core::Rect32(0, 0, m_renderTarget->getDimension().width, m_renderTarget->getDimension().height));
     cmdList.setScissor(core::Rect32(0, 0, m_renderTarget->getDimension().width, m_renderTarget->getDimension().height));
 
-    SimpleRender::update(core::Vector3D(0.0f, 0.0f, 5.1f), core::Vector3D(0.0f, 0.0f, 40.0f));
-    cmdList.draw(renderer::StreamBufferDescription(m_vetexBuffer, 0), 0, 3, 1);
-    SimpleRender::update(core::Vector3D(0.0f, 0.0f, 3.0f), core::Vector3D(0.0f));
-    cmdList.draw(renderer::StreamBufferDescription(m_vetexBuffer, 0), 0, 3, 1);
+    m_modelDrawer->draw();
+
+    //SimpleRender::update(core::Vector3D(0.0f, 0.0f, 5.1f), core::Vector3D(0.0f, 0.0f, 40.0f));
+    //cmdList.draw(renderer::StreamBufferDescription(m_vetexBuffer, 0), 0, 3, 1);
+    //SimpleRender::update(core::Vector3D(0.0f, 0.0f, 3.0f), core::Vector3D(0.0f));
+    //cmdList.draw(renderer::StreamBufferDescription(m_vetexBuffer, 0), 0, 3, 1);
 }
 
 } //namespace renderer

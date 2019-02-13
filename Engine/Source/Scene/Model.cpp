@@ -1,4 +1,5 @@
 #include "Model.h"
+#include "Stream/StreamManager.h"
 
 namespace v3d
 {
@@ -7,11 +8,41 @@ namespace scene
 
 Model::Model(ModleHeader* header) noexcept
     : Resource(header)
+    , m_vertexModelData(nullptr)
+    , m_indexModelData(nullptr)
 {
 }
 
 Model::~Model()
 {
+    for (auto& mesh : m_meshes)
+    {
+        delete mesh;
+    }
+    m_meshes.clear();
+
+    if (m_vertexModelData)
+    {
+        delete m_vertexModelData;
+        m_vertexModelData = nullptr;
+    }
+
+    if (m_indexModelData)
+    {
+        delete m_indexModelData;
+        m_indexModelData = nullptr;
+    }
+}
+
+const ModleHeader & Model::getModleHeader() const
+{
+    return *(static_cast<const scene::ModleHeader*>(m_header));
+}
+
+Model::Mesh * Model::getMeshByIndex(u32 index)
+{
+    ASSERT(index < m_meshes.size(), "range out");
+    return m_meshes[index];
 }
 
 
@@ -28,9 +59,49 @@ bool Model::load()
         return true;
     }
     ASSERT(m_stream, "nullptr");
+    m_stream->seekBeg(0);
 
-    //TODO:
-    ASSERT(false, "not implemented");
+    const ModleHeader& header = Model::getModleHeader();
+
+    m_vertexModelData = stream::StreamManager::createMemoryStream(nullptr, header._vertex._globalSize);
+    u8* data = m_vertexModelData->map(header._vertex._globalSize);
+    m_stream->read(data, header._vertex._globalSize, 1);
+
+    for (u32 vertBuffIndex = 0; vertBuffIndex < header._vertex._countElements; ++vertBuffIndex)
+    {
+        Mesh* mesh = new Mesh();
+
+        u8* vertexData = data + header._vertex._data[vertBuffIndex]._offset;
+        u32 vertexSize = header._vertex._data[vertBuffIndex]._size;
+        mesh->fillVertexData(header._vertex._data[vertBuffIndex]._count, vertexData, vertexSize);
+
+        if (header._indexBuffer)
+        {
+            u8* indexData = data + header._index._data[vertBuffIndex]._offset;
+            u32 indexSize = header._index._data[vertBuffIndex]._size;
+            mesh->fillIndexData(header._index._data[vertBuffIndex]._count, indexData, indexSize);
+        }
+
+        m_meshes.push_back(mesh);
+    }
+    m_vertexModelData->unmap();
+
+    if (header._indexBuffer)
+    {
+        m_indexModelData = stream::StreamManager::createMemoryStream(nullptr, header._index._globalSize);
+        u8* data = m_indexModelData->map(header._index._globalSize);
+        m_stream->read(data, header._index._globalSize, 1);
+        m_indexModelData->unmap();
+    }
+
+    for (u32 vertBuffIndex = 0; vertBuffIndex < header._vertex._countElements; ++vertBuffIndex)
+    {
+        m_meshes[vertBuffIndex]->m_description << m_stream;
+    }
+
+    ASSERT(!m_stream->isMapped(), "mapped");
+    delete m_stream;
+    m_stream = nullptr;
 
     m_loaded = true;
     return false;
@@ -43,15 +114,58 @@ ModleHeader::ModleHeader() noexcept
     , _localTransform(false)
     , _indexBuffer(false)
 {
-    _vertex._count = 0;
-    _vertex._globalSize = 0;
-
-    _index._count = 0;
-    _index._globalSize = 0;
+    memset(&_vertex, 0, sizeof(_vertex));
+    memset(&_index, 0, sizeof(_index));
 }
 
 ModleHeader::~ModleHeader()
 {
+}
+
+Model::Mesh::Mesh() noexcept
+    : m_vertexCount(0)
+    , m_indexCount(0)
+{
+    fillVertexData(0, nullptr, 0);
+    fillIndexData(0, nullptr, 0);
+}
+
+Model::Mesh::~Mesh()
+{
+}
+
+u8 * Model::Mesh::getVertexData() const
+{
+    ASSERT(m_vertexData._data, "nullptr");
+    return m_vertexData._data;
+}
+
+u8 * Model::Mesh::getIndexData() const
+{
+    ASSERT(m_indexData._data, "nullptr");
+    return m_indexData._data;
+}
+
+const renderer::VertexInputAttribDescription & Model::Mesh::getVertexInputAttribDesc() const
+{
+    return m_description;
+}
+
+void Model::Mesh::fillVertexData(u32 count, u8 * data, u32 size)
+{
+    ASSERT(!m_indexData._data, "not nullptr");
+    m_vertexCount = count;
+    m_vertexData._data = data;
+    m_vertexData._size = size;
+}
+
+
+void Model::Mesh::fillIndexData(u32 count, u8 * data, u32 size)
+{
+    ASSERT(!m_indexData._data, "not nullptr");
+    m_indexCount = count;
+    m_indexData._data = data;
+    m_indexData._size = size;
 }
 
 } //namespace scene

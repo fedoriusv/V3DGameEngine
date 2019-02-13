@@ -9,6 +9,7 @@
 #include "Renderer/Object/StreamBuffer.h"
 #include "Renderer/Object/Texture.h"
 #include "Scene/CameraHelper.h"
+#include "Scene/ModelHelper.h"
 
 namespace v3d
 {
@@ -27,6 +28,7 @@ public:
 private:
 
     scene::CameraHelper* m_camera;
+    scene::ModelHelper* m_modelDrawer;
 
     RenderTarget*     m_renderTarget;
     ShaderProgram*    m_program;

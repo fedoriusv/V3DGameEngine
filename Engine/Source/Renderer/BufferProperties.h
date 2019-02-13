@@ -14,6 +14,7 @@ namespace renderer
 {
     class Buffer;
     class VertexStreamBuffer;
+    class IndexStreamBuffer;
 
     ///////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -33,6 +34,12 @@ namespace renderer
     };
 
     typedef u16 StreamBufferUsageFlags;
+
+    enum StreamIndexBufferType : u32
+    {
+        IndexType_16,
+        IndexType_32
+    };
 
     ///////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -103,15 +110,21 @@ namespace renderer
 
         explicit StreamBufferDescription(VertexStreamBuffer* vertex, u32 stream) noexcept;
         explicit StreamBufferDescription(VertexStreamBuffer* vertex, u32 stream, u32 offset) noexcept;
+
+        explicit StreamBufferDescription(IndexStreamBuffer* index, u32 indexOffset, VertexStreamBuffer* vertex, u32 vertexOffset, u32 stream) noexcept;
+
         ~StreamBufferDescription();
 
         bool operator==(const StreamBufferDescription& desc);
         bool operator!=(const StreamBufferDescription& desc);
 
         std::vector<Buffer*> _vertices;
-        std::vector<u32> _streamsID;
+        std::vector<u32>     _streamsID;
+        std::vector<u64>     _offsets;
 
-        std::vector<u64> _offsets;
+        Buffer*               _indices;
+        u32                   _indicesOffet;
+        StreamIndexBufferType _indexType;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

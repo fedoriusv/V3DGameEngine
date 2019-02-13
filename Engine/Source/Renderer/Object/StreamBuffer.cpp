@@ -276,6 +276,68 @@ bool VertexStreamBuffer::read(u32 offset, u64 size, u8 * data)
     return false;
 }
 
+/////////////////////////////////////////////////////////////////////////////////////////////////////
+
+IndexStreamBuffer::IndexStreamBuffer(CommandList & cmdList, StreamBufferUsageFlags usage, StreamIndexBufferType type, u32 count, const u8 * data) noexcept
+    : m_cmdList(cmdList)
+    , m_type(type)
+    , m_count(count)
+    , m_buffer(nullptr)
+
+    , m_usage(usage)
+{
+    u32 size = count * (type == StreamIndexBufferType::IndexType_16) ? sizeof(16) : sizeof(32);
+    if (data && size > 0)
+    {
+        m_data = malloc(size);
+        memcpy(m_data, data, size);
+    }
+
+    m_buffer = m_cmdList.getContext()->createBuffer(Buffer::BufferType::BufferType_IndexBuffer, m_usage, size);
+    ASSERT(m_buffer, "m_buffer is nullptr");
+
+    if (m_cmdList.isImmediate())
+    {
+        if (!m_buffer->create())
+        {
+            m_buffer->destroy();
+            delete m_buffer;
+            m_buffer = nullptr;
+
+            return;
+        }
+        m_buffer->registerNotify(this);
+
+        if (m_data)
+        {
+            m_buffer->upload(m_cmdList.getContext(), 0, size, m_data);
+        }
+    }
+    else
+    {
+        m_buffer->registerNotify(this);
+        m_cmdList.pushCommand(new CreateBufferCommand(m_buffer, size, m_data, (m_usage & StreamBuffer_Shared)));
+    }
+}
+
+IndexStreamBuffer::~IndexStreamBuffer()
+{
+    ASSERT(m_buffer, "buffer nullptr");
+    if (m_cmdList.isImmediate())
+    {
+        m_cmdList.getContext()->removeBuffer(m_buffer);
+    }
+    else
+    {
+        m_cmdList.pushCommand(new DestroyBufferCommand(m_buffer));
+    }
+
+    if (m_data)
+    {
+        free(m_data);
+        m_data = nullptr;
+    }
+}
 
 } //namespace renderer
 } //namespace v3d

@@ -125,8 +125,9 @@ void EmptyContext::draw(StreamBufferDescription& desc, u32 firstVertex, u32 vert
     LOG_DEBUG("EmptyContext::draw");
 }
 
-void EmptyContext::drawIndexed()
+void EmptyContext::drawIndexed(StreamBufferDescription & desc, u32 firstIndex, u32 indexCount, u32 firstInstance, u32 instanceCount)
 {
+    LOG_DEBUG("EmptyContext::drawIndexed");
 }
 
 const DeviceCaps* EmptyContext::getDeviceCaps() const

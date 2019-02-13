@@ -300,6 +300,21 @@ void VulkanCommandBuffer::cmdBindVertexBuffers(u32 firstBinding, u32 countBindin
     }
 }
 
+void VulkanCommandBuffer::cmdBindIndexBuffers(VulkanBuffer* buffer, VkDeviceSize offest, VkIndexType type)
+{
+    ASSERT(m_status == CommandBufferStatus::Begin, "not started");
+    buffer->captureInsideCommandBuffer(this, 0);
+
+    if (m_level == CommandBufferLevel::PrimaryBuffer)
+    {
+        VulkanWrapper::CmdBindIndexBuffer(m_command, buffer->getHandle(), offest, type);
+    }
+    else
+    {
+        ASSERT(false, "not implemented");
+    }
+}
+
 void VulkanCommandBuffer::cmdBindPipeline(VulkanGraphicPipeline * pipeline)
 {
     ASSERT(m_status == CommandBufferStatus::Begin, "not started");
@@ -336,6 +351,21 @@ void VulkanCommandBuffer::cmdDraw(u32 firstVertex, u32 vertexCount, u32 firstIns
     if (m_level == CommandBufferLevel::PrimaryBuffer)
     {
         VulkanWrapper::CmdDraw(m_command, vertexCount, instanceCount, firstVertex, firstInstance);
+    }
+    else
+    {
+        ASSERT(false, "not implemented");
+    }
+}
+
+void VulkanCommandBuffer::cmdDrawIndexed(u32 firstIndex, u32 indexCount, u32 firstInstance, u32 instanceCount, u32 vertexOffest)
+{
+    ASSERT(m_status == CommandBufferStatus::Begin, "not started");
+    ASSERT(isInsideRenderPass(), "inside render pass");
+
+    if (m_level == CommandBufferLevel::PrimaryBuffer)
+    {
+        VulkanWrapper::CmdDrawIndexed(m_command, indexCount, instanceCount, firstIndex, vertexOffest, firstInstance);
     }
     else
     {

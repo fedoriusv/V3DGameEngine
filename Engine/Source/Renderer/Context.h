@@ -68,7 +68,7 @@ namespace renderer
 
         //draw
         virtual void draw(StreamBufferDescription& desc, u32 firstVertex, u32 vertexCount, u32 firstInstance, u32 instanceCount) = 0;
-        virtual void drawIndexed() = 0;
+        virtual void drawIndexed(StreamBufferDescription& desc, u32 firstIndex, u32 indexCount, u32 firstInstance, u32 instanceCount) = 0;
 
         //program bind
         virtual void bindTexture(const Shader* shader, u32 bindIndex, const Image* image) = 0;

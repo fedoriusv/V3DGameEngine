@@ -51,7 +51,7 @@ namespace vk
         void submit(bool wait = false) override;
 
         void draw(StreamBufferDescription& desc, u32 firstVertex, u32 vertexCount, u32 firstInstance, u32 instanceCount) override;
-        void drawIndexed() override;
+        void drawIndexed(StreamBufferDescription& desc, u32 firstIndex, u32 indexCount, u32 firstInstance, u32 instanceCount) override;
 
         void bindTexture(const Shader* shader, u32 bindIndex, const Image* image) override;
         void bindUniformsBuffer(const Shader* shader, u32 bindIndex, u32 offset, u32 size, const void* data) override;

@@ -4,6 +4,7 @@
 #include "Component.h"
 #include "Resource/Resource.h"
 #include "Renderer/PipelineStateProperties.h"
+#include "Renderer/BufferProperties.h"
 
 namespace v3d
 {
@@ -38,11 +39,16 @@ namespace scene
 
         struct MeshInfo
         {
-            std::vector<u32>        _size;
-            std::vector<u32>        _offset;
-            std::vector<std::string> _names;
-            u32                     _count;
-            u32                     _globalSize;
+            struct Data
+            {
+                u32 _size;
+                u32 _offset;
+                u32 _count;
+            };
+
+            std::vector<Data>        _data;
+            u32                      _countElements;
+            u32                      _globalSize;
         };
 
         MeshInfo                _vertex;
@@ -53,6 +59,8 @@ namespace scene
         VertexProperiesFlags    _content;
         bool                    _localTransform;
         bool                    _indexBuffer;
+
+        std::vector<std::string> _names;
     };
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -67,36 +75,58 @@ namespace scene
     {
     public:
 
-        struct Vertex
-        {
-        };
-
-        struct Index
-        {
-        };
-
         class Mesh final
         {
         public:
 
-            Mesh() {};
-            ~Mesh() {};
+            Mesh() noexcept;
+            ~Mesh();
+
+            u8* getVertexData() const;
+            u8* getIndexData() const;
+
+            const renderer::VertexInputAttribDescription& getVertexInputAttribDesc() const;
 
         private:
 
-            std::vector<Vertex> m_vertices;
-            std::vector<Index> m_indices;
+            friend Model;
+
+            void fillVertexData(u32 count, u8* data, u32 size);
+            void fillIndexData(u32 count, u8* data, u32 size);
+
+            struct BufferData
+            {
+                u8* _data;
+                u32 _size;
+            };
+
+            BufferData m_vertexData;
+            BufferData m_indexData;
+
+            u32 m_vertexCount;
+            u32 m_indexCount;
+
+            renderer::VertexInputAttribDescription m_description;
         };
 
         explicit Model(ModleHeader* header) noexcept;
         ~Model();
+
+        const ModleHeader& getModleHeader() const;
+
+        Model::Mesh* getMeshByIndex(u32 index);
 
         void init(stream::Stream* stream) override;
         bool load() override;
 
     private:
 
-        std::vector<Mesh> m_meshes;
+        friend class ModelHelper;
+
+        stream::Stream* m_vertexModelData;
+        stream::Stream* m_indexModelData;
+
+        std::vector<Mesh*> m_meshes;
     };
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
