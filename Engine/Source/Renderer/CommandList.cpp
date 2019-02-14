@@ -325,13 +325,18 @@ void* Command::operator new(size_t size) noexcept
     s_sizeMax = std::max(s_sizeMax, size);
     LOG_DEBUG("Command new allocate size %u, maxSize %u", size, s_sizeMax);
 #endif
-    void* ptr = g_commandMemoryPool.getMemory(size);
+
+    //void* ptr = g_commandMemoryPool.getMemory(size);
+    void* ptr = malloc(size);
     return ptr;
+
+
 }
 
 void Command::operator delete(void* memory) noexcept
 {
-    g_commandMemoryPool.freeMemory(memory);
+    free(memory);
+    //g_commandMemoryPool.freeMemory(memory);
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////

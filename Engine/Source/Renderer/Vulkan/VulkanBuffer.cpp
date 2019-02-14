@@ -205,8 +205,10 @@ bool VulkanBuffer::upload(Context* context, u32 offset, u64 size, void * data)
 
             ASSERT(!VulkanResource::isCaptured(), "still submitted");
             //TODO memory barrier
-            uploadBuffer->cmdCopyBufferToBuffer(this, staginBuffer->getBuffer(), bufferCopy);
+            uploadBuffer->cmdCopyBufferToBuffer(staginBuffer->getBuffer(), this, bufferCopy);
             //TODO memory barrier
+
+            vkContext->submit(true);
 
             vkContext->getStagingManager()->destroyAfterUse(staginBuffer);
         }

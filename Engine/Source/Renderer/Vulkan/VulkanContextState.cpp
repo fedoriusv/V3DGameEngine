@@ -185,7 +185,6 @@ void VulkanContextState::invokeDynamicStates()
     }
 }
 
-
 bool VulkanContextState::acquireDescriptorSets(std::vector<VkDescriptorSet>& sets, std::vector<u32>& offsets)
 {
     //TODO:
@@ -249,7 +248,7 @@ void VulkanContextState::updateDescriptorSet()
 
         case BindingType::BindingType_SamplerAndTexture:
             ASSERT(binding._imageBinding._imageInfo.imageView != VK_NULL_HANDLE, "image");
-            ASSERT(binding._imageBinding._imageInfo.sampler != VK_NULL_HANDLE, "sampler");
+            //ASSERT(binding._imageBinding._imageInfo.sampler != VK_NULL_HANDLE, "sampler");
             writeDescriptorSet.pImageInfo = &binding._imageBinding._imageInfo;
             writeDescriptorSet.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
             break;
@@ -397,9 +396,11 @@ void VulkanContextState::setBinding(BindingInfo & binding)
     auto iter = m_currentBindingCache.find(hash);
     if (iter == m_currentBindingCache.cend())
     {
-        m_updatedBindings.push_back(binding);
         m_currentBindingCache.insert({ hash, binding });
     }
+
+    //TODO
+    m_updatedBindings.push_back(binding);
 }
 
 VulkanContextState::BindingInfo::BindingInfo()

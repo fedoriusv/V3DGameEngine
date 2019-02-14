@@ -68,6 +68,40 @@ private:
     bool m_shared;
 };
 
+    /*BindTextureCommand*/
+class BindTextureCommand : public Command
+{
+public:
+    BindTextureCommand(Shader* shader, u32 bindIndex, Image* image) noexcept
+        : m_shader(shader)
+        , m_bindIndex(bindIndex)
+        , m_image(image)
+    {
+        LOG_DEBUG("BindTextureCommand constructor");
+    };
+    BindTextureCommand() = delete;
+    BindTextureCommand(BindTextureCommand&) = delete;
+
+    ~BindTextureCommand()
+    {
+        LOG_DEBUG("BindTextureCommand destructor");
+    };
+
+    void execute(const CommandList& cmdList)
+    {
+        LOG_DEBUG("BindTextureCommand execute");
+        cmdList.getContext()->bindTexture(m_shader, m_bindIndex, m_image);
+    }
+
+private:
+    Shader* m_shader;
+    u32 m_bindIndex;
+
+    Image* m_image;
+};
+
+
+
 const Shader * ShaderProgram::getShader(ShaderType type) const
 {
     return m_programInfo._shaders[type];
@@ -191,8 +225,7 @@ bool ShaderProgram::bindTexture(ShaderType shaderType, std::string& name, Textur
     }
     else
     {
-        ASSERT(false, "not impl");
-        //TODO
+        m_cmdList.pushCommand(new BindTextureCommand(shader, iter->second, image));
     }
 
     return false;

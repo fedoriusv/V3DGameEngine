@@ -286,7 +286,7 @@ IndexStreamBuffer::IndexStreamBuffer(CommandList & cmdList, StreamBufferUsageFla
 
     , m_usage(usage)
 {
-    u32 size = count * (type == StreamIndexBufferType::IndexType_16) ? sizeof(16) : sizeof(32);
+    u32 size = count * ((type == StreamIndexBufferType::IndexType_16) ? sizeof(16) : sizeof(32));
     if (data && size > 0)
     {
         m_data = malloc(size);

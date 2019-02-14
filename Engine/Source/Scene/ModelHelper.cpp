@@ -11,17 +11,19 @@ ModelHelper::ModelHelper(renderer::CommandList & cmdList, Model* model) noexcept
     : m_cmdList(cmdList)
     , m_model(model)
 {
-    bool unifyMesh = false;
+
+    ASSERT(m_model, "nullptr");
+    bool unifyMesh = true;
     if (unifyMesh)
     {
-        u32 size = model->getModleHeader()._vertex._globalSize;
-        u8* data = model->getMeshByIndex(0)->getVertexData();
+        u32 size = m_model->getModleHeader()._vertex._globalSize;
+        u8* data = m_model->getMeshByIndex(0)->getVertexData();
         renderer::VertexStreamBuffer* vertexBuffer = cmdList.createObject<renderer::VertexStreamBuffer>(renderer::StreamBuffer_Write | renderer::StreamBuffer_Shared, size, data);
 
-        if (model->getModleHeader()._indexBuffer)
+        if (m_model->getModleHeader()._indexBuffer)
         {
-            u32 count = model->getModleHeader()._index._countElements;
-            u8* data = model->getMeshByIndex(0)->getIndexData();
+            u32 count = m_model->getModleHeader()._index._countElements;
+            u8* data = m_model->getMeshByIndex(0)->getIndexData();
             renderer::IndexStreamBuffer* indexBuffer = cmdList.createObject<renderer::IndexStreamBuffer>(renderer::StreamBuffer_Write | renderer::StreamBuffer_Shared, renderer::StreamIndexBufferType::IndexType_32, count, data);
 
             DrawProps props = { 0, count, 0, 1, true };
@@ -29,7 +31,7 @@ ModelHelper::ModelHelper(renderer::CommandList & cmdList, Model* model) noexcept
         }
         else
         {
-            DrawProps props = { 0, model->getModleHeader()._vertex._countElements, 0, 1, false };
+            DrawProps props = { 0, m_model->getModleHeader()._vertex._countElements, 0, 1, false };
             m_drawState.push_back(std::make_tuple(renderer::StreamBufferDescription(vertexBuffer, 0, 0), props));
         }
     }
@@ -59,11 +61,11 @@ void ModelHelper::draw()
         const DrawProps& props = std::get<1>(buffer);
         if (props._indexDraws)
         {
-            m_cmdList.draw(std::get<0>(buffer), props._start, props._count, props._countInstance);
+            m_cmdList.drawIndexed(std::get<0>(buffer), props._start, props._count, props._countInstance);
         }
         else
         {
-            m_cmdList.drawIndexed(std::get<0>(buffer), props._start, props._count, props._countInstance);
+            m_cmdList.draw(std::get<0>(buffer), props._start, props._count, props._countInstance);
         }
     }
 }

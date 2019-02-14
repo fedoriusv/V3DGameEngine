@@ -459,11 +459,11 @@ void VulkanGraphicContext::removeBuffer(Buffer * buffer)
 void VulkanGraphicContext::bindTexture(const Shader* shader, u32 bindIndex, const Image* image)
 {
     const VulkanImage* vkImage = static_cast<const VulkanImage*>(image);
-    VkImageView view = vkImage->getImageView();
 
-    //TODO
-    //m_currentContextStateNEW->bindTexture(vkImage, nullptr, 0, iter->second);
-    //shader->getReflectionInfo()._sampledImages[name]
+    const Shader::ReflectionInfo& info = shader->getReflectionInfo();
+    const Shader::SampledImage& sampledData = info._sampledImages[bindIndex];
+
+    m_currentContextStateNEW->bindTexture(vkImage, nullptr, 1, sampledData);
 }
 
 void VulkanGraphicContext::bindUniformsBuffer(const Shader* shader, u32 bindIndex, u32 offset, u32 size, const void* data)
@@ -511,14 +511,15 @@ void VulkanGraphicContext::drawIndexed(StreamBufferDescription & desc, u32 first
     VulkanCommandBuffer* drawBuffer = m_currentContextState.getAcitveBuffer(CommandTargetType::CmdDrawBuffer);
     if (prepareDraw(drawBuffer))
     {
-        if (changed)
+        //if (changed)
         {
-            ASSERT(desc._indices, "nullptr");
-            VulkanBuffer* indexBuffer = static_cast<VulkanBuffer*>(desc._indices);
-            drawBuffer->cmdBindIndexBuffers(indexBuffer, desc._indicesOffet, (desc._indexType == StreamIndexBufferType::IndexType_16) ? VK_INDEX_TYPE_UINT16 : VK_INDEX_TYPE_UINT32);
+            const StreamBufferDescription& descBuff = m_currentContextStateNEW->getStreamBufferDescription();
+            ASSERT(descBuff._indices, "nullptr");
+            VulkanBuffer* indexBuffer = static_cast<VulkanBuffer*>(descBuff._indices);
+            drawBuffer->cmdBindIndexBuffers(indexBuffer, descBuff._indicesOffet, (descBuff._indexType == StreamIndexBufferType::IndexType_16) ? VK_INDEX_TYPE_UINT16 : VK_INDEX_TYPE_UINT32);
 
-            const StreamBufferDescription& desc = m_currentContextStateNEW->getStreamBufferDescription();
-            drawBuffer->cmdBindVertexBuffers(0, static_cast<u32>(desc._vertices.size()), desc._vertices, desc._offsets);
+
+            drawBuffer->cmdBindVertexBuffers(0, static_cast<u32>(descBuff._vertices.size()), descBuff._vertices, descBuff._offsets);
         }
         ASSERT(drawBuffer->isInsideRenderPass(), "not inside renderpass");
         drawBuffer->cmdDrawIndexed(firstIndex, indexCount, firstInstance, instanceCount, 0);

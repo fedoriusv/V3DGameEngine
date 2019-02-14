@@ -307,7 +307,7 @@ Resource * MeshAssimpDecoder::decode(const stream::Stream* stream, const std::st
                     }
                 }
 
-                newHeader->_vertex._data.push_back({ indexSize , static_cast<u32>(indexBuffer.size() * sizeof(u32)), indexCount });
+                newHeader->_index._data.push_back({ indexSize , static_cast<u32>(indexBuffer.size() * sizeof(u32)), indexCount });
             }
 
             newHeader->_indexBuffer = true;
@@ -315,6 +315,10 @@ Resource * MeshAssimpDecoder::decode(const stream::Stream* stream, const std::st
             newHeader->_index._globalSize = static_cast<u32>(indexBuffer.size()) * sizeof(u32);
 
             modelStream->write(indexBuffer.data(), newHeader->_index._globalSize);
+        }
+        else
+        {
+            newHeader->_indexBuffer = false;
         }
 
         for (auto& desc : attribDescriptionList)

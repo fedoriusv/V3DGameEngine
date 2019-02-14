@@ -34,6 +34,8 @@ private:
     ShaderProgram*    m_program;
     GraphicsPipelineState* m_pipeline;
     VertexStreamBuffer* m_vetexBuffer;
+
+    Texture2D* m_colorTexture;
 };
 
 } //namespace renderer

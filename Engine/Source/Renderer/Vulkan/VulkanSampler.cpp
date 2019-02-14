@@ -32,7 +32,7 @@ void VulkanSampler::destroy()
 
 VkSampler VulkanSampler::getHandle() const
 {
-    return m_sampler;
+    return VK_NULL_HANDLE/*m_sampler*/;
 }
 
 } //namespace vk
