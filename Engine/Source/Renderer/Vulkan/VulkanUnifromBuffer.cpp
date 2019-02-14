@@ -164,6 +164,7 @@ VulkanUniformBufferManager::VulkanUniformBufferPool * VulkanUniformBufferManager
     newPool->_buffer = new VulkanBuffer(m_memoryManager, m_device, Buffer::BufferType::BufferType_UniformBuffer, 0, size);
     newPool->_usedSize = 0;
     newPool->_freeSize = size;
+    newPool->_poolSize = size;
 
     if (!newPool->_buffer->create())
     {
@@ -185,7 +186,7 @@ void VulkanUniformBufferManager::VulkanUniformBufferPool::resetPool()
     _uniformList.clear();
 
     _usedSize = 0;
-    _freeSize = 0;
+    _freeSize = _poolSize;
 }
 
 void VulkanUniformBufferManager::VulkanUniformBufferPool::addUniformBuffer(VulkanUniformBuffer * uniformBuffer, u64 size)

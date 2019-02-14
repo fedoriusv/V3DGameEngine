@@ -13,22 +13,34 @@ namespace scene
     /**
     * CameraHelper
     */
-    class CameraHelper final
+    class CameraHelper
     {
     public:
 
-        CameraHelper(Camera* camera, const core::Vector3D& position) noexcept;
-        ~CameraHelper();
+        CameraHelper() = delete;
+        CameraHelper(const CameraHelper&) = delete;
+
+        explicit CameraHelper(Camera* camera, const core::Vector3D& position) noexcept;
+        virtual ~CameraHelper();
 
         Camera& getCamera();
         void setPosition(const core::Vector3D& position);
+        const core::Vector3D& getPosition() const;
 
-        void update(const core::Dimension2D& size);
+        void setPerspective(f32 FOV, const core::Dimension2D& size, f32 zNear, f32 zFar);
+        void setOrtho(const core::RectU32& area, f32 zNear, f32 zFar);
+
+        virtual void update();
 
     private:
 
-        Camera*     m_camera;
-        Transform   m_transform;
+        Camera*         m_camera;
+        core::RectU32   m_area;
+        bool            m_needUpdate;
+
+    protected:
+
+        Transform       m_transform;
     };
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////

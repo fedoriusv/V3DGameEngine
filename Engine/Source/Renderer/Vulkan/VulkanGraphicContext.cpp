@@ -108,8 +108,9 @@ void VulkanGraphicContext::beginFrame()
 {
     u32 index = m_swapchain->acquireImage();
     m_currentContextStateNEW->updateSwapchainIndex(index);
+#if VULKAN_DEBUG
     LOG_DEBUG("VulkanGraphicContext::beginFrame %llu, image index %u", m_frameCounter, index);
-
+#endif //VULKAN_DEBUG
     ASSERT(!m_currentContextState.isCurrentBufferAcitve(CommandTargetType::CmdDrawBuffer), "buffer exist");
     VulkanCommandBuffer* drawBuffer = m_currentContextState._currentCmdBuffer[CommandTargetType::CmdDrawBuffer] = m_cmdBufferManager->acquireNewCmdBuffer(VulkanCommandBuffer::PrimaryBuffer);
 
@@ -123,7 +124,9 @@ void VulkanGraphicContext::beginFrame()
 
 void VulkanGraphicContext::endFrame()
 {
+#if VULKAN_DEBUG
     LOG_DEBUG("VulkanGraphicContext::endFrame %llu", m_frameCounter);
+#endif //VULKAN_DEBUG
     if (m_currentContextState.isCurrentBufferAcitve(CommandTargetType::CmdUploadBuffer))
     {
         VulkanCommandBuffer* uploadBuffer = m_currentContextState.getAcitveBuffer(CommandTargetType::CmdUploadBuffer);
@@ -152,8 +155,9 @@ void VulkanGraphicContext::endFrame()
 
 void VulkanGraphicContext::presentFrame()
 {
+#if VULKAN_DEBUG
     LOG_DEBUG("VulkanGraphicContext::presentFrame %llu", m_frameCounter);
-
+#endif //VULKAN_DEBUG
     std::vector<VkSemaphore> semaphores;
     m_swapchain->present(m_queueList[0], semaphores);
 
@@ -207,7 +211,9 @@ void VulkanGraphicContext::clearBackbuffer(const core::Vector4D & color)
 void VulkanGraphicContext::setViewport(const core::Rect32& viewport, const core::Vector2D& depth)
 {
     ASSERT(m_currentContextState.isCurrentBufferAcitve(CommandTargetType::CmdDrawBuffer), "nullptr");
+#if VULKAN_DEBUG
     LOG_DEBUG("VulkanGraphicContext::setViewport [%u, %u; %u, %u]", viewport.getLeftX(), viewport.getTopY(), viewport.getWidth(), viewport.getHeight());
+#endif //VULKAN_DEBUG
     if (VulkanGraphicContext::isDynamicState(VK_DYNAMIC_STATE_VIEWPORT))
     {
         VkViewport vkViewport = {};
@@ -231,7 +237,9 @@ void VulkanGraphicContext::setViewport(const core::Rect32& viewport, const core:
 void VulkanGraphicContext::setScissor(const core::Rect32 & scissor)
 {
     ASSERT(m_currentContextState.isCurrentBufferAcitve(CommandTargetType::CmdDrawBuffer), "nullptr");
+#if VULKAN_DEBUG
     LOG_DEBUG("VulkanGraphicContext::setScissor [%u, %u; %u, %u]", scissor.getLeftX(), scissor.getTopY(), scissor.getWidth(), scissor.getHeight());
+#endif //VULKAN_DEBUG
     if (VulkanGraphicContext::isDynamicState(VK_DYNAMIC_STATE_SCISSOR))
     {
         VkRect2D vkScissor = {};
@@ -375,6 +383,9 @@ void VulkanGraphicContext::setPipeline(const Pipeline::PipelineGraphicInfo* pipe
     Pipeline* pipeline = m_pipelineManager->acquireGraphicPipeline(pipelineInfo);
     ASSERT(pipeline, "nullptr");
     tracker->attach(pipeline);
+#if VULKAN_DEBUG
+    LOG_DEBUG("VulkanGraphicContext::setPipeline %xll", pipeline);
+#endif //VULKAN_DEBUG
 
     VulkanGraphicPipeline* vkPipeline = static_cast<VulkanGraphicPipeline*>(pipeline);
     m_currentContextStateNEW->setCurrentPipeline(vkPipeline);

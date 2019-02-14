@@ -7,18 +7,19 @@ namespace v3d
 {
 namespace renderer
 {
-    /*CreateBufferCommand*/
-class CreateBufferCommand : public Command
+    /*CommandCreateBuffer*/
+class CommandCreateBuffer : public Command
 {
 public:
-    CreateBufferCommand(Buffer* buffer, u64 dataSize, void * data, bool shared) noexcept
+    CommandCreateBuffer(Buffer* buffer, u64 dataSize, void * data, bool shared) noexcept
         : m_buffer(buffer)
         , m_size(0)
         , m_data(nullptr)
         , m_shadred(shared)
     {
-        LOG_DEBUG("CreateBufferCommand constructor");
-
+#if DEBUG_COMMAND_LIST
+        LOG_DEBUG("CommandCreateBuffer constructor");
+#endif //DEBUG_COMMAND_LIST
         if (data && dataSize > 0)
         {
             m_size = dataSize;
@@ -34,10 +35,11 @@ public:
         }
     }
 
-    ~CreateBufferCommand()
+    ~CommandCreateBuffer()
     {
-        LOG_DEBUG("CreateBufferCommand destructor");
-
+#if DEBUG_COMMAND_LIST
+        LOG_DEBUG("CommandCreateBuffer destructor");
+#endif //DEBUG_COMMAND_LIST
         if (m_data && m_shadred)
         {
             free(m_data); //TODO: return to pool
@@ -47,7 +49,9 @@ public:
 
     void execute(const renderer::CommandList& cmdList) override
     {
-        LOG_DEBUG("CreateBufferCommand execute");
+#if DEBUG_COMMAND_LIST
+        LOG_DEBUG("CommandCreateBuffer execute");
+#endif //DEBUG_COMMAND_LIST
         if (!m_buffer->create())
         {
             m_buffer->notifyObservers();
@@ -69,18 +73,20 @@ private:
     bool    m_shadred;
 };
 
-    /*UpdateBufferCommand*/
-class UpdateBufferCommand : public Command
+    /*CommandUpdateBuffer*/
+class CommandUpdateBuffer : public Command
 {
 public:
-    UpdateBufferCommand(Buffer* buffer, u32 dataOffset, u64 dataSize, void * data, bool shared) noexcept
+    CommandUpdateBuffer(Buffer* buffer, u32 dataOffset, u64 dataSize, void * data, bool shared) noexcept
         : m_buffer(buffer)
         , m_offest(0)
         , m_size(0)
         , m_data(nullptr)
         , m_shadred(shared)
     {
-        LOG_DEBUG("UpdateBufferCommand constructor");
+#if DEBUG_COMMAND_LIST
+        LOG_DEBUG("CommandUpdateBuffer constructor");
+#endif //DEBUG_COMMAND_LIST
 
         if (data && dataSize > 0)
         {
@@ -98,10 +104,11 @@ public:
         }
     }
 
-    ~UpdateBufferCommand()
+    ~CommandUpdateBuffer()
     {
-        LOG_DEBUG("UpdateBufferCommand destructor");
-
+#if DEBUG_COMMAND_LIST
+        LOG_DEBUG("CommandUpdateBuffer destructor");
+#endif //DEBUG_COMMAND_LIST
         if (m_data && m_shadred)
         {
             free(m_data); //TODO: return to pool
@@ -111,7 +118,9 @@ public:
 
     void execute(const renderer::CommandList& cmdList) override
     {
-        LOG_DEBUG("UpdateBufferCommand execute");
+#if DEBUG_COMMAND_LIST
+        LOG_DEBUG("CommandUpdateBuffer execute");
+#endif //DEBUG_COMMAND_LIST
         if (m_data && m_size > 0)
         {
             m_buffer->upload(cmdList.getContext(), m_offest, m_size, m_data);
@@ -126,24 +135,30 @@ private:
     bool    m_shadred;
 };
 
-    /*DestroyBufferCommand*/
-class DestroyBufferCommand : public Command
+    /*CommandDestroyBuffer*/
+class CommandDestroyBuffer : public Command
 {
 public:
-    DestroyBufferCommand(Buffer* buffer) noexcept
+    CommandDestroyBuffer(Buffer* buffer) noexcept
         : m_buffer(buffer)
     {
-        LOG_DEBUG("DestroyBufferCommand constructor");
+#if DEBUG_COMMAND_LIST
+        LOG_DEBUG("CommandDestroyBuffer constructor");
+#endif //DEBUG_COMMAND_LIST
     }
 
-    ~DestroyBufferCommand()
+    ~CommandDestroyBuffer()
     {
-        LOG_DEBUG("DestroyBufferCommand destructor");
+#if DEBUG_COMMAND_LIST
+        LOG_DEBUG("CommandDestroyBuffer destructor");
+#endif //DEBUG_COMMAND_LIST
     }
 
     void execute(const renderer::CommandList& cmdList) override
     {
-        LOG_DEBUG("DestroyBufferCommand execute");
+#if DEBUG_COMMAND_LIST
+        LOG_DEBUG("CommandDestroyBuffer execute");
+#endif //DEBUG_COMMAND_LIST
         cmdList.getContext()->removeBuffer(m_buffer);
     }
 
@@ -190,7 +205,7 @@ VertexStreamBuffer::VertexStreamBuffer(renderer::CommandList& cmdList, StreamBuf
     else
     {
         m_buffer->registerNotify(this);
-        m_cmdList.pushCommand(new CreateBufferCommand(m_buffer, m_size, m_data, (m_usage & StreamBuffer_Shared)));
+        m_cmdList.pushCommand(new CommandCreateBuffer(m_buffer, m_size, m_data, (m_usage & StreamBuffer_Shared)));
     }
 }
 
@@ -203,7 +218,7 @@ VertexStreamBuffer::~VertexStreamBuffer()
     }
     else
     {
-        m_cmdList.pushCommand(new DestroyBufferCommand(m_buffer));
+        m_cmdList.pushCommand(new CommandDestroyBuffer(m_buffer));
     }
 
     if (m_data)
@@ -256,7 +271,7 @@ bool VertexStreamBuffer::update(u32 offset, u64 size, const u8* data)
         }
         else
         {
-            m_cmdList.pushCommand(new UpdateBufferCommand(m_buffer, offset, m_size, m_data, (m_usage & StreamBuffer_Shared)));
+            m_cmdList.pushCommand(new CommandUpdateBuffer(m_buffer, offset, m_size, m_data, (m_usage & StreamBuffer_Shared)));
             return true;
         }
     }
@@ -316,7 +331,7 @@ IndexStreamBuffer::IndexStreamBuffer(CommandList & cmdList, StreamBufferUsageFla
     else
     {
         m_buffer->registerNotify(this);
-        m_cmdList.pushCommand(new CreateBufferCommand(m_buffer, size, m_data, (m_usage & StreamBuffer_Shared)));
+        m_cmdList.pushCommand(new CommandCreateBuffer(m_buffer, size, m_data, (m_usage & StreamBuffer_Shared)));
     }
 }
 
@@ -329,7 +344,7 @@ IndexStreamBuffer::~IndexStreamBuffer()
     }
     else
     {
-        m_cmdList.pushCommand(new DestroyBufferCommand(m_buffer));
+        m_cmdList.pushCommand(new CommandDestroyBuffer(m_buffer));
     }
 
     if (m_data)

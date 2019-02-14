@@ -15,7 +15,7 @@ Camera::Camera(const core::Vector3D& target, const core::Vector3D& up, bool orth
     , m_up(up)
     , m_target(target)
 
-    , m_matricesFlag(CameraState::CameraState_Projection)
+    , m_matricesFlag(CameraState::CameraState_Projection | CameraState::CameraState_View)
 {
     LOG_DEBUG("Camera constructor %xll", this);
 }
@@ -69,6 +69,18 @@ const core::Matrix4D& Camera::getProjectionMatrix() const
     return m_transform[TransformMatrix::TransformMatrix_ProjectionMatrix];
 }
 
+void Camera::setViewMatrix(const core::Matrix4D & view)
+{
+    m_transform[TransformMatrix::TransformMatrix_ViewMatrix] = view;
+    m_matricesFlag &= ~CameraState::CameraState_View;
+}
+
+void Camera::setProjectionMatrix(const core::Matrix4D & proj)
+{
+    m_transform[TransformMatrix::TransformMatrix_ProjectionMatrix] = proj;
+    m_matricesFlag &= ~CameraState::CameraState_Projection;
+}
+
 bool Camera::isOrthogonal() const
 {
     return m_orthogonal;
@@ -104,35 +116,42 @@ void Camera::setFarValue(f32 value)
 void Camera::setFOV(f32 value)
 {
     m_fieldOfView = value;
+    m_matricesFlag |= CameraState::CameraState_Projection;
 }
 
-void Camera::recalculateProjectionMatrix(const core::Dimension2D& size) const
+void Camera::recalculateProjectionMatrix(const core::RectU32& size) const
 {
-    if (Camera::isOrthogonal())
+    //if (m_matricesFlag & CameraState::CameraState_Projection)
     {
-        m_transform[TransformMatrix::TransformMatrix_ProjectionMatrix] = core::buildProjectionMatrixOrtho(0.0f, static_cast<f32>(size.width), 0.0f, static_cast<f32>(size.height), m_zNear, m_zFar);
-        m_transform[TransformMatrix::TransformMatrix_ProjectionMatrix].makeTransposed();
+        if (Camera::isOrthogonal())
+        {
+            m_transform[TransformMatrix::TransformMatrix_ProjectionMatrix] = core::buildProjectionMatrixOrtho(static_cast<f32>(size.getLeftX()), static_cast<f32>(size.getRightX()), static_cast<f32>(size.getTopY()), static_cast<f32>(size.getBottomY()), m_zNear, m_zFar);
+            m_transform[TransformMatrix::TransformMatrix_ProjectionMatrix].makeTransposed();
+        }
+        else
+        {
+            m_transform[TransformMatrix::TransformMatrix_ProjectionMatrix] = core::buildProjectionMatrixPerspective(m_fieldOfView, static_cast<f32>(size.getWidth()) / static_cast<f32>(size.getHeight()), m_zNear, m_zFar);
+        }
+        m_matricesFlag &= ~CameraState::CameraState_Projection;
     }
-    else
-    {
-        m_transform[TransformMatrix::TransformMatrix_ProjectionMatrix] = core::buildProjectionMatrixPerspective(m_fieldOfView, static_cast<f32>(size.width) / static_cast<f32>(size.height), m_zNear, m_zFar);
-    }
-    m_matricesFlag &= ~CameraState::CameraState_Projection;
 }
 
 void Camera::recalculateViewMatrix(const core::Vector3D& position) const
 {
-    /*core::Vector3D tgtv = m_target - position;
-    core::Vector3D up = m_up;
-    f32 dp = core::dotProduct(tgtv.normalize(), up.normalize());
-    if (core::isEquals(fabs(dp), 1.f))
+    //if (m_matricesFlag & CameraState::CameraState_View)
     {
-        up.x = (up.x + 0.5f);
-    }*/
+        /*core::Vector3D tgtv = m_target - position;
+        core::Vector3D up = m_up;
+        f32 dp = core::dotProduct(tgtv.normalize(), up.normalize());
+        if (core::isEquals(fabs(dp), 1.f))
+        {
+            up.x = (up.x + 0.5f);
+        }*/
 
-    m_transform[TransformMatrix::TransformMatrix_ViewMatrix] = core::buildLookAtMatrix(position, m_target, m_up);
-    //m_transform[TransformMatrix::TransformMatrix_ViewMatrix].makeTransposed();
-    m_matricesFlag &= ~CameraState::CameraState_View;
+        m_transform[TransformMatrix::TransformMatrix_ViewMatrix] = core::buildLookAtMatrix(position, m_target, m_up);
+        //m_transform[TransformMatrix::TransformMatrix_ViewMatrix].makeTransposed();
+        m_matricesFlag &= ~CameraState::CameraState_View;
+    }
 }
 
 void Camera::init(stream::Stream* stream)

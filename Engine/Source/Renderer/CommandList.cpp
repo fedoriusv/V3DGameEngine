@@ -26,18 +26,24 @@ class CommandBeginFrame final : public Command
 public:
     CommandBeginFrame() noexcept
     {
+#if DEBUG_COMMAND_LIST
         LOG_DEBUG("CommandBeginFrame constructor");
+#endif //DEBUG_COMMAND_LIST
     };
     CommandBeginFrame(CommandBeginFrame&) = delete;
 
     ~CommandBeginFrame() 
     {
+#if DEBUG_COMMAND_LIST
         LOG_DEBUG("CommandBeginFrame destructor");
+#endif //DEBUG_COMMAND_LIST
     };
 
     void execute(const CommandList& cmdList)
     {
+#if DEBUG_COMMAND_LIST
         LOG_DEBUG("CommandBeginFrame execute");
+#endif //DEBUG_COMMAND_LIST
         cmdList.getContext()->beginFrame();
     }
 };
@@ -48,18 +54,24 @@ class CommandEndFrame final : public Command
 public:
     CommandEndFrame() noexcept
     {
+#if DEBUG_COMMAND_LIST
         LOG_DEBUG("CommandEndFrame constructor");
+#endif //DEBUG_COMMAND_LIST
     };
     CommandEndFrame(CommandEndFrame&) = delete;
 
     ~CommandEndFrame() 
     {
+#if DEBUG_COMMAND_LIST
         LOG_DEBUG("CommandEndFrame destructor");
+#endif //DEBUG_COMMAND_LIST
     };
 
     void execute(const CommandList& cmdList)
     {
+#if DEBUG_COMMAND_LIST
         LOG_DEBUG("CommandEndFrame execute");
+#endif //DEBUG_COMMAND_LIST
         cmdList.getContext()->endFrame();
     }
 };
@@ -70,18 +82,24 @@ class CommandPresentFrame final : public Command
 public:
     CommandPresentFrame() noexcept
     {
+#if DEBUG_COMMAND_LIST
         LOG_DEBUG("CommandPresentFrame constructor");
+#endif //DEBUG_COMMAND_LIST
     };
     CommandPresentFrame(CommandPresentFrame&) = delete;
 
     ~CommandPresentFrame()
     {
+#if DEBUG_COMMAND_LIST
         LOG_DEBUG("CommandPresentFrame destructor");
+#endif //DEBUG_COMMAND_LIST
     };
 
     void execute(const CommandList& cmdList)
     {
+#if DEBUG_COMMAND_LIST
         LOG_DEBUG("CommandPresentFrame execute");
+#endif //DEBUG_COMMAND_LIST
         cmdList.getContext()->presentFrame();
     }
 };
@@ -93,19 +111,25 @@ public:
     explicit CommandSetContextState(const CommandList::ContextStates& pendingStates) noexcept
         : m_pendingStates(pendingStates)
     {
+#if DEBUG_COMMAND_LIST
         LOG_DEBUG("CommandSetContextState constructor");
+#endif //DEBUG_COMMAND_LIST
     };
     CommandSetContextState() = delete;
     CommandSetContextState(CommandSetContextState&) = delete;
 
     ~CommandSetContextState()
     {
+#if DEBUG_COMMAND_LIST
         LOG_DEBUG("CommandSetContextState destructor");
+#endif //DEBUG_COMMAND_LIST
     };
 
     void execute(const CommandList& cmdList)
     {
+#if DEBUG_COMMAND_LIST
         LOG_DEBUG("CommandSetContextState execute");
+#endif //DEBUG_COMMAND_LIST
         cmdList.getContext()->setViewport(m_pendingStates._viewportColor, m_pendingStates._viewportDepth);
         cmdList.getContext()->setScissor(m_pendingStates._scissor);
     }
@@ -124,19 +148,25 @@ public:
         , m_clearInfo(clearInfo)
         , m_trackers(trackers)
     {
+#if DEBUG_COMMAND_LIST
         LOG_DEBUG("CommandSetRenderTarget constructor");
+#endif //DEBUG_COMMAND_LIST
     };
     CommandSetRenderTarget() = delete;
     CommandSetRenderTarget(CommandSetRenderTarget&) = delete;
 
     ~CommandSetRenderTarget()
     {
+#if DEBUG_COMMAND_LIST
         LOG_DEBUG("CommandSetRenderTarget destructor");
+#endif //DEBUG_COMMAND_LIST
     };
 
     void execute(const CommandList& cmdList)
     {
+#if DEBUG_COMMAND_LIST
         LOG_DEBUG("CommandSetRenderTarget execute");
+#endif //DEBUG_COMMAND_LIST
         cmdList.getContext()->setRenderTarget(&m_renderpassInfo, m_attachments, &m_clearInfo, m_trackers);
     }
 
@@ -157,19 +187,25 @@ public:
         , m_renderpassDesc(renderpassInfo)
         , m_tracker(tracker)
     {
+#if DEBUG_COMMAND_LIST
         LOG_DEBUG("CommandSetGraphicPipeline constructor");
+#endif //DEBUG_COMMAND_LIST
     };
     CommandSetGraphicPipeline() = delete;
     CommandSetGraphicPipeline(CommandSetGraphicPipeline&) = delete;
 
     ~CommandSetGraphicPipeline()
     {
+#if DEBUG_COMMAND_LIST
         LOG_DEBUG("CommandSetGraphicPipeline destructor");
+#endif //DEBUG_COMMAND_LIST
     };
 
     void execute(const CommandList& cmdList)
     {
+#if DEBUG_COMMAND_LIST
         LOG_DEBUG("CommandSetGraphicPipeline execute");
+#endif //DEBUG_COMMAND_LIST
         Pipeline::PipelineGraphicInfo pipelineGraphicInfo;
         pipelineGraphicInfo._renderpassDesc = m_renderpassDesc;
         pipelineGraphicInfo._programDesc = m_programDesc;
@@ -193,19 +229,25 @@ public:
         : m_timeout(timeout)
         , m_wait(wait)
     {
+#if DEBUG_COMMAND_LIST
         LOG_DEBUG("CommandSubmit constructor");
+#endif //DEBUG_COMMAND_LIST
     }
     CommandSubmit() = delete;
     CommandSubmit(CommandSubmit&) = delete;
 
     ~CommandSubmit()
     {
+#if DEBUG_COMMAND_LIST
         LOG_DEBUG("CommandSubmit constructor");
+#endif //DEBUG_COMMAND_LIST
     }
 
     void execute(const CommandList& cmdList)
     {
+#if DEBUG_COMMAND_LIST
         LOG_DEBUG("CommandSubmit execute");
+#endif //DEBUG_COMMAND_LIST
         cmdList.getContext()->submit(m_wait);
     }
 
@@ -225,19 +267,25 @@ public:
         , m_firstVertex(firstVertex)
         , m_vertexCount(countVertex)
     {
+#if DEBUG_COMMAND_LIST
         LOG_DEBUG("CommandDraw constructor");
+#endif //DEBUG_COMMAND_LIST
     }
     CommandDraw() = delete;
     CommandDraw(CommandDraw&) = delete;
 
     ~CommandDraw()
     {
+#if DEBUG_COMMAND_LIST
         LOG_DEBUG("CommandDraw constructor");
+#endif //DEBUG_COMMAND_LIST
     }
 
     void execute(const CommandList& cmdList)
     {
+#if DEBUG_COMMAND_LIST
         LOG_DEBUG("CommandDraw execute");
+#endif //DEBUG_COMMAND_LIST
         cmdList.getContext()->draw(m_buffersDesc, m_firstVertex, m_vertexCount, m_firtsInstance, m_instanceCount);
     }
 
@@ -260,19 +308,25 @@ public:
         , m_firstIndex(firstIndex)
         , m_countIndex(countIndex)
     {
+#if DEBUG_COMMAND_LIST
         LOG_DEBUG("CommandDrawIndexed constructor");
+#endif //DEBUG_COMMAND_LIST
     }
     CommandDrawIndexed() = delete;
     CommandDrawIndexed(CommandDrawIndexed&) = delete;
 
     ~CommandDrawIndexed()
     {
+#if DEBUG_COMMAND_LIST
         LOG_DEBUG("CommandDrawIndexed constructor");
+#endif //DEBUG_COMMAND_LIST
     }
 
     void execute(const CommandList& cmdList)
     {
+#if DEBUG_COMMAND_LIST
         LOG_DEBUG("CommandDrawIndexed execute");
+#endif //DEBUG_COMMAND_LIST
         cmdList.getContext()->drawIndexed(m_buffersDesc, m_firstIndex, m_countIndex, m_firtsInstance, m_instanceCount);
     }
 
@@ -290,18 +344,24 @@ class CommandInvalidateRenderPass : public Command
 public:
     CommandInvalidateRenderPass() noexcept
     {
+#if DEBUG_COMMAND_LIST
         LOG_DEBUG("CommandInvalidateRenderPass constructor");
+#endif //DEBUG_COMMAND_LIST
     }
     CommandInvalidateRenderPass(CommandInvalidateRenderPass&) = delete;
 
     ~CommandInvalidateRenderPass()
     {
+#if DEBUG_COMMAND_LIST
         LOG_DEBUG("CommandInvalidateRenderPass constructor");
+#endif //DEBUG_COMMAND_LIST
     }
 
     void execute(const CommandList& cmdList)
     {
+#if DEBUG_COMMAND_LIST
         LOG_DEBUG("CommandInvalidateRenderPass execute");
+#endif //DEBUG_COMMAND_LIST
         cmdList.getContext()->invalidateRenderPass();
     }
 };
@@ -310,21 +370,26 @@ public:
 
 Command::Command() noexcept
 {
+#if DEBUG_COMMAND_LIST
     LOG_DEBUG("Command constructor");
+#endif //DEBUG_COMMAND_LIST
+
 }
 
 Command::~Command()
 {
+#if DEBUG_COMMAND_LIST
     LOG_DEBUG("Command destructor");
+#endif //DEBUG_COMMAND_LIST
 }
 
 void* Command::operator new(size_t size) noexcept
 {
-#ifdef _DEBUG
+#if DEBUG_COMMAND_LIST
     static size_t s_sizeMax = 0;
     s_sizeMax = std::max(s_sizeMax, size);
     LOG_DEBUG("Command new allocate size %u, maxSize %u", size, s_sizeMax);
-#endif
+#endif //DEBUG_COMMAND_LIST
 
     //void* ptr = g_commandMemoryPool.getMemory(size);
     void* ptr = malloc(size);

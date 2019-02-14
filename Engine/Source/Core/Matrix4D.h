@@ -123,7 +123,7 @@ namespace core
         return outMatrix;
     }
 
-    inline Matrix4D buildProjectionMatrixOrtho(f32 left, f32 right, f32 bottom, f32 top, f32 zNear, f32 zFar)
+    inline Matrix4D buildProjectionMatrixOrtho(f32 left, f32 right, f32 top, f32 bottom, f32 zNear, f32 zFar)
     {
         Matrix4D outMatrix;
 

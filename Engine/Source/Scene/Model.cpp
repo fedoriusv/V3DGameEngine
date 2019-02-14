@@ -39,7 +39,7 @@ const ModleHeader & Model::getModleHeader() const
     return *(static_cast<const scene::ModleHeader*>(m_header));
 }
 
-Model::Mesh * Model::getMeshByIndex(u32 index)
+Model::Mesh * Model::getMeshByIndex(u32 index) const
 {
     ASSERT(index < m_meshes.size(), "range out");
     return m_meshes[index];

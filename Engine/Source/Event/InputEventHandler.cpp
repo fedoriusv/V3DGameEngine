@@ -137,11 +137,22 @@ bool InputEventHandler::onEvent(Event* ev)
         switch (mouseEvent->_event)
         {
         case MouseInputEvent::MousePressDown:
-        case MouseInputEvent::MousePressUp:
-        case MouseInputEvent::MouseDoubleClick:
+        {
+            applyModifiers(mouseEvent);
+            m_keysPressed[mouseEvent->_key] = true;
+            break;
+        }
 
-        /*case MouseInputEvent::MouseWheel:
-        case MouseInputEvent::MouseMoved:*/
+        case MouseInputEvent::MousePressUp:
+        {
+            applyModifiers(mouseEvent);
+            m_keysPressed[mouseEvent->_key] = false;
+            break;
+        }
+
+        case MouseInputEvent::MouseDoubleClick:
+        case MouseInputEvent::MouseWheel:
+        case MouseInputEvent::MouseMoved:
         {
             applyModifiers(mouseEvent);
             break;
@@ -216,17 +227,17 @@ bool InputEventHandler::isKeyPressed(const KeyCode& code)  const
 
 bool InputEventHandler::isLeftMousePressed() const
 {
-    return m_mouseStates[MouseInputEvent::MousePressDown] && m_keysPressed[KeyLButton];
+    return /*m_mouseStates[MouseInputEvent::MousePressDown] &&*/ m_keysPressed[KeyLButton];
 }
 
 bool InputEventHandler::isRightMousePressed() const
 {
-    return m_mouseStates[MouseInputEvent::MousePressDown] && m_keysPressed[KeyRButton];
+    return /*m_mouseStates[MouseInputEvent::MousePressDown] &&*/ m_keysPressed[KeyRButton];
 }
 
 bool InputEventHandler::isMiddleMousePressed() const
 {
-    return m_mouseStates[MouseInputEvent::MousePressDown] && m_keysPressed[KeyMButton];
+    return /*m_mouseStates[MouseInputEvent::MousePressDown] &&*/ m_keysPressed[KeyMButton];
 }
 
 bool InputEventHandler::isGamepadPressed(const GamepadInputEvent::GamepadButton& code) const

@@ -7,37 +7,40 @@ namespace v3d
 namespace scene
 {
 
-ModelHelper::ModelHelper(renderer::CommandList & cmdList, Model* model) noexcept
+ModelHelper::ModelHelper(renderer::CommandList & cmdList, const std::vector<const Model*>& models) noexcept
     : m_cmdList(cmdList)
-    , m_model(model)
+    , m_models(models)
 {
-
-    ASSERT(m_model, "nullptr");
-    bool unifyMesh = true;
-    if (unifyMesh)
+    ASSERT(!m_models.empty(), "empty list");
+    for (auto model : m_models)
     {
-        u32 size = m_model->getModleHeader()._vertex._globalSize;
-        u8* data = m_model->getMeshByIndex(0)->getVertexData();
-        renderer::VertexStreamBuffer* vertexBuffer = cmdList.createObject<renderer::VertexStreamBuffer>(renderer::StreamBuffer_Write | renderer::StreamBuffer_Shared, size, data);
-
-        if (m_model->getModleHeader()._indexBuffer)
+        ASSERT(model, "nullptr");
+        bool unifyMesh = true;
+        if (unifyMesh)
         {
-            u32 count = m_model->getModleHeader()._index._countElements;
-            u8* data = m_model->getMeshByIndex(0)->getIndexData();
-            renderer::IndexStreamBuffer* indexBuffer = cmdList.createObject<renderer::IndexStreamBuffer>(renderer::StreamBuffer_Write | renderer::StreamBuffer_Shared, renderer::StreamIndexBufferType::IndexType_32, count, data);
+            u32 size = model->getModleHeader()._vertex._globalSize;
+            u8* data = model->getMeshByIndex(0)->getVertexData();
+            renderer::VertexStreamBuffer* vertexBuffer = cmdList.createObject<renderer::VertexStreamBuffer>(renderer::StreamBuffer_Write | renderer::StreamBuffer_Shared, size, data);
 
-            DrawProps props = { 0, count, 0, 1, true };
-            m_drawState.push_back(std::make_tuple(renderer::StreamBufferDescription(indexBuffer, 0, vertexBuffer, 0, 0), props));
+            if (model->getModleHeader()._indexBuffer)
+            {
+                u32 count = model->getModleHeader()._index._countElements;
+                u8* data = model->getMeshByIndex(0)->getIndexData();
+                renderer::IndexStreamBuffer* indexBuffer = cmdList.createObject<renderer::IndexStreamBuffer>(renderer::StreamBuffer_Write | renderer::StreamBuffer_Shared, renderer::StreamIndexBufferType::IndexType_32, count, data);
+
+                DrawProps props = { 0, count, 0, 1, true };
+                m_drawState.push_back(std::make_tuple(renderer::StreamBufferDescription(indexBuffer, 0, vertexBuffer, 0, 0), props));
+            }
+            else
+            {
+                DrawProps props = { 0, model->getModleHeader()._vertex._countElements, 0, 1, false };
+                m_drawState.push_back(std::make_tuple(renderer::StreamBufferDescription(vertexBuffer, 0, 0), props));
+            }
         }
         else
         {
-            DrawProps props = { 0, m_model->getModleHeader()._vertex._countElements, 0, 1, false };
-            m_drawState.push_back(std::make_tuple(renderer::StreamBufferDescription(vertexBuffer, 0, 0), props));
+            ASSERT(false, "not implemented");
         }
-    }
-    else
-    {
-        ASSERT(false, "not implemented");
     }
 }
 
@@ -48,13 +51,19 @@ ModelHelper::~ModelHelper()
     //renderer::IndexStreamBuffer* indexBuffer
 }
 
-const renderer::VertexInputAttribDescription& ModelHelper::getVertexInputAttribDescription(u32 meshIndex) const
+const renderer::VertexInputAttribDescription& ModelHelper::getVertexInputAttribDescription(u32 modelIndex, u32 meshIndex) const
 {
-    ASSERT(m_model, "nullptr");
-    return m_model->getMeshByIndex(meshIndex)->getVertexInputAttribDesc();
+    ASSERT(!m_models.empty(), "empty list");
+    ASSERT(m_models[modelIndex], "nullptr");
+    return m_models[modelIndex]->getMeshByIndex(meshIndex)->getVertexInputAttribDesc();
 }
 
-void ModelHelper::draw()
+Transform & ModelHelper::getTransform()
+{
+    return m_tramsform;
+}
+
+void ModelHelper::drawModel()
 {
     for (auto& buffer : m_drawState)
     {

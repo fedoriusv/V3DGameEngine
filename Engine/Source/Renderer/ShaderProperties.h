@@ -72,7 +72,7 @@ namespace renderer
 
         u32 _hash;
         //std::vector<resource::Shader*> _shaders;
-        std::array<Shader*, ShaderType::ShaderType_Count> _shaders;
+        std::array<const Shader*, ShaderType::ShaderType_Count> _shaders;
     };
 
 

@@ -1,6 +1,5 @@
 #include "MyApplication.h"
 #include "Utils/Logger.h"
-#include "Utils/MemoryPool.h"
 
 #include "Renderer/Context.h"
 #include "Event/InputEventReceiver.h"
@@ -15,6 +14,10 @@
 
 #include "Resource/ResourceLoaderManager.h"
 #include "Resource/ShaderSourceFileLoader.h"
+#include "Resource/ModelFileLoader.h"
+
+#include "Scene/Model.h"
+#include "Scene/Camera.h"
 
 using namespace v3d;
 using namespace v3d::platform;
@@ -22,7 +25,9 @@ using namespace v3d::utils;
 using namespace v3d::event;
 using namespace v3d::renderer;
 using namespace v3d::resource;
+using namespace v3d::scene;
 
+const f32 k_rotationSpeed = 1.5f;
 
 MyApplication::MyApplication(int& argc, char** argv)
     : m_Window(nullptr)
@@ -30,30 +35,50 @@ MyApplication::MyApplication(int& argc, char** argv)
 
     , m_Context(nullptr)
     , m_CommandList(nullptr)
+
+    , m_Camera(nullptr)
 {
-    m_Window = Window::createWindow({ 1024, 768 }, {800, 500}, false, new v3d::event::InputEventReceiver());
+    core::Dimension2D widowsSize = { 1280, 720 };
+    m_Window = Window::createWindow(widowsSize, {800, 500}, false, new v3d::event::InputEventReceiver());
     ASSERT(m_Window, "windows is nullptr");
+
+    m_Camera = new CameraViewTargetHelper(new Camera(core::Vector3D(0.0f, 0.0f, 0.0f), core::Vector3D(0.0f, -1.0f, 0.0f)), core::Vector3D(0.0f, 0.0f, 10.0f));
+    m_Camera->setPerspective(45.0f, widowsSize, 0.1f, 50.f);
 
     m_InputEventHandler = new InputEventHandler();
     m_InputEventHandler->connect([this](const MouseInputEvent* event)
     {
-        if (event->_event == MouseInputEvent::MousePressDown || event->_event == MouseInputEvent::MouseDoubleClick)
+        static core::Point2D position = event->_cursorPosition;
+        static f32 wheel = event->_wheelValue;
+
+        if (m_InputEventHandler->isLeftMousePressed())
         {
-            s32 rvalue = std::rand();
-            f32 r = 1.0f / RAND_MAX * rvalue;
+            core::Point2D positionDelta = position - event->_cursorPosition;
+            LOG_ERROR("pos %d, %d", positionDelta.x, positionDelta.y);
 
-            s32 gvalue = std::rand();
-            f32 g = 1.0f / RAND_MAX * gvalue;
-
-            s32 bvalue = std::rand();
-            f32 b = 1.0f / RAND_MAX * bvalue;
-
-            m_ClearColor = {r, g, b, 1.0f };
-
+            core::Vector3D rotation = m_Camera->getRotation();
+            rotation.x += positionDelta.y * k_rotationSpeed;
+            rotation.y -= positionDelta.x * k_rotationSpeed;
+            m_Camera->setRotation(rotation);
+            LOG_ERROR("rotate %f, %f", rotation.x, rotation.y);
         }
-    });
 
-    std::srand(u32(std::time(0)));
+        if (event->_event == MouseInputEvent::MouseWheel)
+        {
+            f32 wheelDelta = wheel - event->_wheelValue;
+            LOG_ERROR("wheel value %f, delta %f", event->_wheelValue, wheelDelta);
+
+            core::Vector3D postion = m_Camera->getPosition();
+            f32 newZPos = postion.z + (wheelDelta * 0.3f);
+            postion.z = (newZPos < -5.0f && newZPos > -20.0f) ? newZPos : postion.z;
+            m_Camera->setPosition(postion);
+        }
+
+        position = event->_cursorPosition;
+        wheel = event->_wheelValue;
+    });
+    m_InputEventHandler->connect(std::bind(&CameraViewTargetHelper::rotateHandler, m_Camera, std::placeholders::_1));
+
     m_Window->getInputEventReceiver()->attach(InputEvent::InputEventType::MouseInputEvent, m_InputEventHandler);
 }
 
@@ -80,29 +105,16 @@ int MyApplication::Execute()
 
 void MyApplication::Initialize()
 {
-    //Test_MemoryPool();
-
     m_Context = renderer::Context::createContext(m_Window, renderer::Context::RenderType::VulkanRender);
     ASSERT(m_Context, "context is nullptr");
     m_CommandList = new renderer::CommandList(m_Context, renderer::CommandList::CommandListType::DelayedCommandList);
 
-    std::vector<f32> vertexBuffer =
-    {
-        0.0f,  1.0f, 0.0f ,     1.0f, 0.0f, 0.0f,
-        1.0f, -1.0f, 0.0f ,     0.0f, 1.0f, 0.0f,
-       -1.0f, -1.0f, 0.0f ,     0.0f, 0.0f, 1.0f
-    };
+    Shader* vertShader = resource::ResourceLoaderManager::getInstance()->loadShader<Shader, resource::ShaderSourceFileLoader>(m_CommandList->getContext(), "examples/3.simpledraw/shaders/mesh.vert");
+    Shader* fragShader = resource::ResourceLoaderManager::getInstance()->loadShader<Shader, resource::ShaderSourceFileLoader>(m_CommandList->getContext(), "examples/3.simpledraw/shaders/mesh.frag");
+    Model* model = resource::ResourceLoaderManager::getInstance()->loadMesh<Model, resource::ModelFileLoader>(m_CommandList->getContext(), "examples/3.simpledraw/models/voyager/voyager.dae");
 
-    VertexInputAttribDescription::InputBinding binding(0, VertexInputAttribDescription::InputRate_Vertex, sizeof(f32) * 6);
-    renderer::VertexInputAttribDescription vertexDesc({ binding },
-        {
-            { binding._index, 0, Format::Format_R32G32B32_SFloat, 0 },                  //pos
-            { binding._index, 0, Format::Format_R32G32B32_SFloat, sizeof(f32) * 3 }     //color
-        }
-    );
-
-    m_Render = new renderer::SimpleRender(*m_CommandList, vertexDesc, vertexBuffer);
-    m_ClearColor = { 1.0, 0.0, 0.0, 1.0 };
+    m_Render = new renderer::SimpleRender(*m_CommandList, m_Window->getSize(), { vertShader, fragShader }, { model });
+    m_Render->setCamera(&m_Camera->getCamera());
 }
 
 bool MyApplication::Running(renderer::CommandList& commandList)
@@ -110,6 +122,7 @@ bool MyApplication::Running(renderer::CommandList& commandList)
     //Frame
     commandList.beginFrame();
 
+    m_Camera->update();
     m_Render->render(commandList);
 
     commandList.endFrame();
@@ -127,49 +140,6 @@ void MyApplication::Exit()
     Context::destroyContext(m_Context);
 
     m_Window->getInputEventReceiver()->dettach(InputEvent::InputEventType::MouseInputEvent);
-}
-
-void MyApplication::Test_MemoryPool()
-{
-    MemoryPool pool;
-    ////TEST
-    char* a = (char*)pool.getMemory(253);
-    memset(a, 'a', 253);
-    u64 ofsa = pool.getOffsetInBlock(a);
-    char* b = (char*)pool.getMemory(253);
-    memset(b, 'b', 253);
-    u64 ofsb = pool.getOffsetInBlock(b);
-    char* c = (char*)pool.getMemory(253);
-    memset(c, 'c', 253);
-    u64 ofsc = pool.getOffsetInBlock(c);
-    char* d = (char*)pool.getMemory(253);
-    memset(d, 'd', 253);
-    u64 ofsd = pool.getOffsetInBlock(d);
-    char* e = (char*)pool.getMemory(253);
-    memset(e, 'e', 253);
-    u64 ofse = pool.getOffsetInBlock(e);
-    char* f = (char*)pool.getMemory(253);
-    memset(f, 'f', 10);
-    u64 ofsf = pool.getOffsetInBlock(f);
-    ////
-
-    pool.freeMemory((void*)b);
-    char* nb = (char*)pool.getMemory(253);
-    memset(b, 'B', 253);
-    u64 nofsb = pool.getOffsetInBlock(b);
-
-    void* hugeData = pool.getMemory(1024 * 1024 * 4);
-    u64 ofhugeData = pool.getOffsetInBlock(hugeData);
-
-    void* hugeData1 = pool.getMemory(1024 * 1024 * 40);
-    u64 ofhugeData1 = pool.getOffsetInBlock(hugeData1);
-
-    pool.freeMemory(hugeData1);
-
-    void* hugeData2 = pool.getMemory(1024 * 1024 * 400);
-    u64 ofhugeData2 = pool.getOffsetInBlock(hugeData2);
-
-    pool.clearPools();
 }
 
 MyApplication::~MyApplication()

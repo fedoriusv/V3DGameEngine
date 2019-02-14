@@ -4,6 +4,8 @@
 #include "Renderer/CommandList.h"
 #include "Renderer/BufferProperties.h"
 
+#include "Scene/Transform.h"
+
 namespace v3d
 {
 namespace renderer
@@ -24,12 +26,16 @@ namespace scene
     {
     public:
 
-        ModelHelper(renderer::CommandList& cmdList, Model* model) noexcept;
+        ModelHelper() = delete;
+        ModelHelper(const ModelHelper&) = delete;
+
+        explicit ModelHelper(renderer::CommandList& cmdList, const std::vector<const Model*>& models) noexcept;
         ~ModelHelper();
 
-        void draw();
+        void drawModel();
 
-        const renderer::VertexInputAttribDescription& getVertexInputAttribDescription(u32 meshIndex) const;
+        const renderer::VertexInputAttribDescription& getVertexInputAttribDescription(u32 modelIndex, u32 meshIndex) const;
+        Transform& getTransform();
 
     private:
 
@@ -45,8 +51,10 @@ namespace scene
 
         renderer::CommandList& m_cmdList;
 
-        Model* m_model;
+        std::vector<const Model*> m_models;
         std::vector<std::tuple<renderer::StreamBufferDescription, DrawProps>> m_drawState;
+
+        Transform m_tramsform;
     };
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////

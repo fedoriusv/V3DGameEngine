@@ -11,12 +11,13 @@ namespace v3d
 {
 namespace renderer
 {
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    /*UpdateUniformsBuffer*/
-class UpdateUniformsBuffer : public Command
+    /*CommandUpdateUniformsBuffer*/
+class CommandUpdateUniformsBuffer : public Command
 {
 public:
-    UpdateUniformsBuffer(Shader* shader, u32 bindIndex, u32 offset, u32 size, void* data, bool shared) noexcept
+    CommandUpdateUniformsBuffer(const Shader* shader, u32 bindIndex, u32 offset, u32 size, void* data, bool shared) noexcept
         : m_shader(shader)
         , m_bindIndex(bindIndex)
         , m_offset(offset)
@@ -24,7 +25,9 @@ public:
         , m_data(nullptr)
         , m_shared(shared)
     {
-        LOG_DEBUG("UpdateUniformsBuffer constructor");
+#if DEBUG_COMMAND_LIST
+        LOG_DEBUG("CommandUpdateUniformsBuffer constructor");
+#endif //DEBUG_COMMAND_LIST
 
         if (m_shared)
         {
@@ -37,12 +40,14 @@ public:
             memcpy(m_data, data, size);
         }
     };
-    UpdateUniformsBuffer() = delete;
-    UpdateUniformsBuffer(UpdateUniformsBuffer&) = delete;
+    CommandUpdateUniformsBuffer() = delete;
+    CommandUpdateUniformsBuffer(CommandUpdateUniformsBuffer&) = delete;
 
-    ~UpdateUniformsBuffer()
+    ~CommandUpdateUniformsBuffer()
     {
-        LOG_DEBUG("UpdateUniformsBuffer destructor");
+#if DEBUG_COMMAND_LIST
+        LOG_DEBUG("CommandUpdateUniformsBuffer destructor");
+#endif //DEBUG_COMMAND_LIST
 
         if (m_data && !m_shared)
         {
@@ -53,12 +58,14 @@ public:
 
     void execute(const CommandList& cmdList)
     {
-        LOG_DEBUG("UpdateUniformsBuffer execute");
+#if DEBUG_COMMAND_LIST
+        LOG_DEBUG("CommandUpdateUniformsBuffer execute");
+#endif //DEBUG_COMMAND_LIST
         cmdList.getContext()->bindUniformsBuffer(m_shader, m_bindIndex, m_offset, m_size, m_data);
     }
 
 private:
-    Shader* m_shader;
+    const Shader* m_shader;
     u32 m_bindIndex;
 
     u32 m_offset;
@@ -68,39 +75,45 @@ private:
     bool m_shared;
 };
 
-    /*BindTextureCommand*/
-class BindTextureCommand : public Command
+    /*CommandBindTexture*/
+class CommandBindTexture : public Command
 {
 public:
-    BindTextureCommand(Shader* shader, u32 bindIndex, Image* image) noexcept
+    CommandBindTexture(const Shader* shader, u32 bindIndex, Image* image) noexcept
         : m_shader(shader)
         , m_bindIndex(bindIndex)
         , m_image(image)
     {
-        LOG_DEBUG("BindTextureCommand constructor");
+#if DEBUG_COMMAND_LIST
+        LOG_DEBUG("CommandBindTexture constructor");
+#endif //DEBUG_COMMAND_LIST
     };
-    BindTextureCommand() = delete;
-    BindTextureCommand(BindTextureCommand&) = delete;
+    CommandBindTexture() = delete;
+    CommandBindTexture(CommandBindTexture&) = delete;
 
-    ~BindTextureCommand()
+    ~CommandBindTexture()
     {
-        LOG_DEBUG("BindTextureCommand destructor");
+#if DEBUG_COMMAND_LIST
+        LOG_DEBUG("CommandBindTexture destructor");
+#endif //DEBUG_COMMAND_LIST
     };
 
     void execute(const CommandList& cmdList)
     {
-        LOG_DEBUG("BindTextureCommand execute");
+#if DEBUG_COMMAND_LIST
+        LOG_DEBUG("CommandBindTexture execute");
+#endif //DEBUG_COMMAND_LIST
         cmdList.getContext()->bindTexture(m_shader, m_bindIndex, m_image);
     }
 
 private:
-    Shader* m_shader;
+    const Shader* m_shader;
     u32 m_bindIndex;
 
     Image* m_image;
 };
 
-
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
 
 const Shader * ShaderProgram::getShader(ShaderType type) const
 {
@@ -112,7 +125,7 @@ const ShaderProgramDescription& ShaderProgram::getShaderDesc() const
     return m_programInfo;
 }
 
-ShaderProgram::ShaderProgram(renderer::CommandList & cmdList, std::vector<Shader*> shaders) noexcept
+ShaderProgram::ShaderProgram(renderer::CommandList & cmdList, std::vector<const Shader*> shaders) noexcept
     : m_cmdList(cmdList)
 {
     for (auto shader : shaders)
@@ -131,12 +144,12 @@ ShaderProgram::ShaderProgram(renderer::CommandList & cmdList, std::vector<Shader
     }
 }
 
-void ShaderProgram::composeProgramData(const std::vector<Shader*>& shaders)
+void ShaderProgram::composeProgramData(const std::vector<const Shader*>& shaders)
 {
     m_programInfo._hash = 0;
     for (auto shader : shaders)
     {
-        m_programInfo._hash = crc32c::Extend(m_programInfo._hash, reinterpret_cast<u8*>(&shader->m_hash), sizeof(u32));
+        m_programInfo._hash = crc32c::Extend(m_programInfo._hash, reinterpret_cast<const u8*>(&shader->m_hash), sizeof(u32));
 
         auto& prameters = m_shaderParameters[shader->getShaderHeader()._type];
         u32 uniformIndex = 0;
@@ -167,7 +180,7 @@ void ShaderProgram::composeProgramData(const std::vector<Shader*>& shaders)
 
 bool ShaderProgram::bindUniformsBuffer(ShaderType shaderType, std::string& name, u32 offset, u32 size, const void* data)
 {
-    Shader* shader = m_programInfo._shaders[shaderType];
+    const Shader* shader = m_programInfo._shaders[shaderType];
     ASSERT(shader, "fail");
     ASSERT(!m_shaderParameters[shaderType].empty(), "fail");
     auto iter = m_shaderParameters[shaderType].find(name);
@@ -184,7 +197,7 @@ bool ShaderProgram::bindUniformsBuffer(ShaderType shaderType, std::string& name,
     }
     else
     {
-        m_cmdList.pushCommand(new UpdateUniformsBuffer(shader, iter->second, offset, size, const_cast<void*>(data), false));
+        m_cmdList.pushCommand(new CommandUpdateUniformsBuffer(shader, iter->second, offset, size, const_cast<void*>(data), false));
     }
 
     return true;
@@ -208,7 +221,7 @@ bool ShaderProgram::bindTexture(ShaderType shaderType, std::string& name, Textur
         return false;
     }
 
-    Shader* shader = m_programInfo._shaders[shaderType];
+    const Shader* shader = m_programInfo._shaders[shaderType];
     ASSERT(shader, "fail");
     ASSERT(!m_shaderParameters[shaderType].empty(), "fail");
     auto iter = m_shaderParameters[shaderType].find(name);
@@ -225,7 +238,7 @@ bool ShaderProgram::bindTexture(ShaderType shaderType, std::string& name, Textur
     }
     else
     {
-        m_cmdList.pushCommand(new BindTextureCommand(shader, iter->second, image));
+        m_cmdList.pushCommand(new CommandBindTexture(shader, iter->second, image));
     }
 
     return false;

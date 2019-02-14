@@ -11,7 +11,7 @@ namespace scene
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
-    * Camera class
+    * Camera class. Component, Resource
     */
     class Camera : public Component, public resource::Resource
     {
@@ -49,6 +49,9 @@ namespace scene
         const core::Matrix4D& getViewMatrix() const;
         const core::Matrix4D& getProjectionMatrix() const;
 
+        void setViewMatrix(const core::Matrix4D& view);
+        void setProjectionMatrix(const core::Matrix4D& proj);
+
         f32 getNearValue() const;
         f32 getFarValue() const;
         f32 getFOV() const;
@@ -60,7 +63,7 @@ namespace scene
 
     protected:
 
-        void recalculateProjectionMatrix(const core::Dimension2D& size) const;
+        void recalculateProjectionMatrix(const core::RectU32& size) const;
         void recalculateViewMatrix(const core::Vector3D& position) const;
 
         mutable core::Matrix4D m_transform[TransformMatrix_Count];

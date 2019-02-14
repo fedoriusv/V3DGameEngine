@@ -349,7 +349,7 @@ VulkanDescriptorPool * VulkanDescriptorSetManager::createPool(const VulkanPipeli
     return pool;
 }
 
-VulkanDescriptorSetManager::DescriptorSetDescription::DescriptorSetDescription(const std::array<Shader*, ShaderType::ShaderType_Count>& shaders) noexcept
+VulkanDescriptorSetManager::DescriptorSetDescription::DescriptorSetDescription(const std::array<const Shader*, ShaderType::ShaderType_Count>& shaders) noexcept
     : _hash(0)
 {
     _descriptorSets.fill({});

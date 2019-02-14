@@ -11,7 +11,7 @@ Transform::Transform() noexcept
     , m_rotation(core::Vector3D(0.f))
     , m_scale(core::Vector3D(1.f))
 
-    , m_transformFlag(TransformState::TransformState_All)
+    , m_transformFlag(0/*TransformState::TransformState_All*/)
 {
     LOG_DEBUG("Transform constructor %xll", this);
 }
@@ -61,11 +61,13 @@ const core::Vector3D& Transform::getPosition() const
 
 const core::Vector3D& Transform::getRotation() const
 {
+    ASSERT(m_transformFlag & ~TransformState::TransformState_Scale && m_transformFlag & ~TransformState::TransformState_Rotation, "not updated");
     return m_rotation;
 }
 
 const core::Vector3D& Transform::getScale() const
 {
+    ASSERT(m_transformFlag & ~TransformState::TransformState_Scale && m_transformFlag & ~TransformState::TransformState_Rotation, "not updated");
     return m_scale;
 }
 

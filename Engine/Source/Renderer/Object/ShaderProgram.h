@@ -40,14 +40,14 @@ namespace renderer
 
     private:
 
-        ShaderProgram(renderer::CommandList& cmdList, std::vector<Shader*> shaders) noexcept;
+        ShaderProgram(renderer::CommandList& cmdList, std::vector<const Shader*> shaders) noexcept;
 
         friend CommandList;
         CommandList& m_cmdList;
 
         ShaderProgramDescription m_programInfo;
 
-        void composeProgramData(const std::vector<Shader*>& shaders);
+        void composeProgramData(const std::vector<const Shader*>& shaders);
 
         bool bindTexture(ShaderType shaderType, std::string& name, TextureTarget target, const Texture* texture);
         bool bindUniformsBuffer(ShaderType shaderType, std::string& name, u32 offset, u32 size, const void* data);

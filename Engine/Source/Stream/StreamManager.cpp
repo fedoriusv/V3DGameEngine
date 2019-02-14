@@ -11,7 +11,7 @@ utils::MemoryPool* StreamManager::m_memoryPool = new utils::MemoryPool(1024 * 10
 
 MemoryStream* StreamManager::createMemoryStream(const void* data, const u32 size)
 {
-    return new MemoryStream(data, size, m_memoryPool);
+    return new MemoryStream(data, size, nullptr/*m_memoryPool*/);
 }
 
 } //namespace stream

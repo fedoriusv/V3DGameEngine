@@ -8,8 +8,10 @@
 #include "Renderer/Object/PipelineState.h"
 #include "Renderer/Object/StreamBuffer.h"
 #include "Renderer/Object/Texture.h"
-#include "Scene/CameraHelper.h"
+
 #include "Scene/ModelHelper.h"
+#include "Scene/CameraHelper.h"
+
 
 namespace v3d
 {
@@ -19,23 +21,24 @@ namespace renderer
 class SimpleRender
 {
 public:
-    SimpleRender(renderer::CommandList& cmdList, const renderer::VertexInputAttribDescription& desc, const std::vector<f32>& geomentry);
+    SimpleRender(renderer::CommandList& cmdList, const core::Dimension2D& size, const std::vector<const Shader*> shaders, const std::vector<const scene::Model*> models) noexcept;
     ~SimpleRender();
 
-    void update(const core::Vector3D& pos, const core::Vector3D& rotate);
+    void update(u32 shaderIndex, renderer::CommandList& cmdList, const core::Vector3D& pos, const core::Vector3D& rotate);
     void render(renderer::CommandList& cmdList);
+
+    void setCamera(scene::Camera* camera);
 
 private:
 
-    scene::CameraHelper* m_camera;
-    scene::ModelHelper* m_modelDrawer;
+    ShaderProgram* m_program[2];
+    GraphicsPipelineState* m_pipeline[2];
+    RenderTarget* m_renderTarget;
 
-    RenderTarget*     m_renderTarget;
-    ShaderProgram*    m_program;
-    GraphicsPipelineState* m_pipeline;
-    VertexStreamBuffer* m_vetexBuffer;
+   scene::ModelHelper* m_modelDrawer;
+   VertexStreamBuffer* m_drawBuffer;
 
-    Texture2D* m_colorTexture;
+   scene::Camera* m_camera;
 };
 
 } //namespace renderer

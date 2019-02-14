@@ -24,19 +24,25 @@ public:
     CommandRemoveFramebuffers(const std::vector<Framebuffer*>& framebuffers) noexcept
         : m_framebuffers(framebuffers)
     {
+#if DEBUG_COMMAND_LIST
         LOG_DEBUG("CommandRemoveFramebuffers constructor");
+#endif //DEBUG_COMMAND_LIST
     };
     CommandRemoveFramebuffers() = delete;
     CommandRemoveFramebuffers(CommandRemoveFramebuffers&) = delete;
 
     ~CommandRemoveFramebuffers()
     {
+#if DEBUG_COMMAND_LIST
         LOG_DEBUG("CommandRemoveFramebuffers destructor");
+#endif //DEBUG_COMMAND_LIST
     };
 
     void execute(const CommandList& cmdList)
     {
+#if DEBUG_COMMAND_LIST
         LOG_DEBUG("CommandRemoveFramebuffers execute");
+#endif //DEBUG_COMMAND_LIST
         for (auto& framebuffer : m_framebuffers)
         {
             cmdList.getContext()->removeFramebuffer(framebuffer);
@@ -54,19 +60,25 @@ public:
     CommandRemoveRenderPasses(const std::vector<RenderPass*>& renderpasses) noexcept
         : m_renderpasses(renderpasses)
     {
+#if DEBUG_COMMAND_LIST
         LOG_DEBUG("CommandRemoveRenderPasses constructor");
+#endif //DEBUG_COMMAND_LIST
     };
     CommandRemoveRenderPasses() = delete;
     CommandRemoveRenderPasses(CommandRemoveRenderPasses&) = delete;
 
     ~CommandRemoveRenderPasses()
     {
+#if DEBUG_COMMAND_LIST
         LOG_DEBUG("CommandRemoveRenderPasses destructor");
+#endif //DEBUG_COMMAND_LIST
     };
 
     void execute(const CommandList& cmdList)
     {
+#if DEBUG_COMMAND_LIST
         LOG_DEBUG("CommandRemoveRenderPasses execute");
+#endif //DEBUG_COMMAND_LIST
         for (auto& renderpass : m_renderpasses)
         {
             cmdList.getContext()->removeRenderPass(renderpass);
@@ -84,17 +96,23 @@ public:
     CommandClearBackbuffer(const core::Vector4D& color) noexcept
         : m_clearColor(color)
     {
+#if DEBUG_COMMAND_LIST
         LOG_DEBUG("CommandClearBackbuffer constructor");
+#endif //DEBUG_COMMAND_LIST
     };
 
     ~CommandClearBackbuffer()
     {
+#if DEBUG_COMMAND_LIST
         LOG_DEBUG("CommandClearBackbuffer destructor");
+#endif //DEBUG_COMMAND_LIST
     };
 
     void execute(const renderer::CommandList& cmdList)
     {
+#if DEBUG_COMMAND_LIST
         LOG_DEBUG("CommandClearBackbuffer execute");
+#endif //DEBUG_COMMAND_LIST
         cmdList.getContext()->clearBackbuffer(m_clearColor);
     }
 

@@ -69,7 +69,7 @@ namespace scene
     constexpr u32 k_maxVertexColorIndex = 4;
 
     /**
-    * Model class
+    * Model class. Component, Resource
     */
     class Model : public Component, public resource::Resource
     {
@@ -114,7 +114,7 @@ namespace scene
 
         const ModleHeader& getModleHeader() const;
 
-        Model::Mesh* getMeshByIndex(u32 index);
+        Model::Mesh* getMeshByIndex(u32 index) const;
 
         void init(stream::Stream* stream) override;
         bool load() override;

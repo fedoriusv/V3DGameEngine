@@ -51,12 +51,17 @@
 #   define VULKAN_VERSION_MINOR 1
 #   define VULKAN_VERSION_PATCH 0
 
-#   define VULKAN_DEBUG 1
+#   define VULKAN_DEBUG 0
 #   define VULKAN_LAYERS_CALLBACKS 1
 #   if VULKAN_LAYERS_CALLBACKS
-#       define VULKAN_VALIDATION_LAYERS_CALLBACK 1
+#       define VULKAN_VALIDATION_LAYERS_CALLBACK 0
 #       define VULKAN_RENDERDOC_LAYER 0
 #       define VULKAN_DEBUG_MARKERS 0
 #   endif //VULKAN_LAYERS_CALLBACKS
 #endif //VULKAN_RENDER
+
+#ifdef DEBUG
+#   define DEBUG_COMMAND_LIST 0
+#endif //DEBUG
+
 /////////////////////////////////////////////////////////////////////////////////////////////////////

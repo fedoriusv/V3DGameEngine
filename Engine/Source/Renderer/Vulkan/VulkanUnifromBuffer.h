@@ -49,6 +49,7 @@ namespace vk
             VulkanBuffer* _buffer;
             u64 _usedSize;
             u64 _freeSize;
+            u64 _poolSize;
 
             std::vector<VulkanUniformBuffer*> _uniformList;
 
