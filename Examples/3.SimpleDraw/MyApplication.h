@@ -32,7 +32,7 @@ private:
     v3d::renderer::Context* m_Context;
     v3d::renderer::CommandList* m_CommandList;
 
-    v3d::scene::CameraViewTargetHelper* m_Camera;
+    v3d::scene::CameraArcballHelper* m_Camera;
 
     v3d::renderer::SimpleRender* m_Render;
 

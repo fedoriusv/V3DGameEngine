@@ -424,9 +424,15 @@ LRESULT WindowWindows::HandleMessage(HWND hWnd, UINT message, WPARAM wParam, LPA
 
     case WM_MOUSEWHEEL:
     {
+        //Sometimes return absolute coords
+        POINT pt;
+        pt.x = LOWORD(lParam);
+        pt.y = HIWORD(lParam);
+        ScreenToClient(hWnd, &pt);
+
         event::MouseInputEvent* event = new(m_receiver->allocateInputEvent()) event::MouseInputEvent();
-        event->_cursorPosition.x = (s16)LOWORD(lParam);
-        event->_cursorPosition.y = (s16)HIWORD(lParam);
+        event->_cursorPosition.x = (s16)pt.x;
+        event->_cursorPosition.y = (s16)pt.y;
         event->_wheelValue = ((f32)((s16)HIWORD(wParam))) / (f32)WHEEL_DELTA;
         event->_event = event::MouseInputEvent::MouseWheel;
         event->_modifers = 0;

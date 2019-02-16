@@ -27,8 +27,6 @@ using namespace v3d::renderer;
 using namespace v3d::resource;
 using namespace v3d::scene;
 
-const f32 k_rotationSpeed = 1.5f;
-
 MyApplication::MyApplication(int& argc, char** argv)
     : m_Window(nullptr)
     , m_InputEventHandler(nullptr)
@@ -42,42 +40,11 @@ MyApplication::MyApplication(int& argc, char** argv)
     m_Window = Window::createWindow(widowsSize, {800, 500}, false, new v3d::event::InputEventReceiver());
     ASSERT(m_Window, "windows is nullptr");
 
-    m_Camera = new CameraViewTargetHelper(new Camera(core::Vector3D(0.0f, 0.0f, 0.0f), core::Vector3D(0.0f, -1.0f, 0.0f)), core::Vector3D(0.0f, 0.0f, 10.0f));
+    m_Camera = new CameraArcballHelper(new Camera(core::Vector3D(0.0f, 0.0f, 0.0f), core::Vector3D(0.0f, -1.0f, 0.0f)), 10.0f);
     m_Camera->setPerspective(45.0f, widowsSize, 0.1f, 50.f);
 
     m_InputEventHandler = new InputEventHandler();
-    m_InputEventHandler->connect([this](const MouseInputEvent* event)
-    {
-        static core::Point2D position = event->_cursorPosition;
-        static f32 wheel = event->_wheelValue;
-
-        if (m_InputEventHandler->isLeftMousePressed())
-        {
-            core::Point2D positionDelta = position - event->_cursorPosition;
-            LOG_ERROR("pos %d, %d", positionDelta.x, positionDelta.y);
-
-            core::Vector3D rotation = m_Camera->getRotation();
-            rotation.x += positionDelta.y * k_rotationSpeed;
-            rotation.y -= positionDelta.x * k_rotationSpeed;
-            m_Camera->setRotation(rotation);
-            LOG_ERROR("rotate %f, %f", rotation.x, rotation.y);
-        }
-
-        if (event->_event == MouseInputEvent::MouseWheel)
-        {
-            f32 wheelDelta = wheel - event->_wheelValue;
-            LOG_ERROR("wheel value %f, delta %f", event->_wheelValue, wheelDelta);
-
-            core::Vector3D postion = m_Camera->getPosition();
-            f32 newZPos = postion.z + (wheelDelta * 0.3f);
-            postion.z = (newZPos < -5.0f && newZPos > -20.0f) ? newZPos : postion.z;
-            m_Camera->setPosition(postion);
-        }
-
-        position = event->_cursorPosition;
-        wheel = event->_wheelValue;
-    });
-    m_InputEventHandler->connect(std::bind(&CameraViewTargetHelper::rotateHandler, m_Camera, std::placeholders::_1));
+    m_InputEventHandler->connect(std::bind(&CameraArcballHelper::handlerCallback, m_Camera, m_InputEventHandler, std::placeholders::_1));
 
     m_Window->getInputEventReceiver()->attach(InputEvent::InputEventType::MouseInputEvent, m_InputEventHandler);
 }

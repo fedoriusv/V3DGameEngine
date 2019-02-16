@@ -3,7 +3,7 @@
 #include "Common.h"
 #include "CameraHelper.h"
 
-#include "Event/InputEventMouse.h"
+#include "Event/InputEventHandler.h"
 
 namespace v3d
 {
@@ -12,29 +12,31 @@ namespace scene
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
-    * CameraViewTargetHelper
+    * CameraArcballHelper
     */
-    class CameraViewTargetHelper final : public CameraHelper
+    class CameraArcballHelper final : public CameraHelper
     {
     public:
 
-        CameraViewTargetHelper() = delete;
-        CameraViewTargetHelper(const CameraViewTargetHelper&) = delete;
+        CameraArcballHelper() = delete;
+        CameraArcballHelper(const CameraArcballHelper&) = delete;
 
-        explicit CameraViewTargetHelper(Camera* camera, const core::Vector3D& position) noexcept;
-        ~CameraViewTargetHelper();
+        explicit CameraArcballHelper(Camera* camera, f32 distance) noexcept;
+        ~CameraArcballHelper();
 
         void setRotation(const core::Vector3D& rotation);
         const core::Vector3D& getRotation() const;
 
         virtual void update();
 
-        void rotateHandler(const event::MouseInputEvent* event);
+        void handlerCallback(v3d::event::InputEventHandler* handler, const event::MouseInputEvent* event);
 
     private:
 
         core::Vector3D  m_rotate;
-        bool            m_needUpdate;
+
+        const f32       k_rotationSpeed = 0.8f;
+        const f32       k_zoomSpeed = 1.0f;
 
     };
 

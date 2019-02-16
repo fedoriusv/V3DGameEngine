@@ -36,11 +36,11 @@ namespace scene
 
         Camera*         m_camera;
         core::RectU32   m_area;
-        bool            m_needUpdate;
 
     protected:
 
         Transform       m_transform;
+        bool            m_needUpdate;
     };
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////

@@ -86,7 +86,7 @@ namespace core
     template<class T>
     T distance(const TVector3D<T>& v1, const TVector3D<T>& v2)
     {
-        const T distance = TVector3D<T>(v1.x - v2.x, v1.y - v2.y, v1.z - v2.z).getLength();
+        const T distance = TVector3D<T>(v1.x - v2.x, v1.y - v2.y, v1.z - v2.z).length();
         return distance;
     }
 

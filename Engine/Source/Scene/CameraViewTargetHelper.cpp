@@ -1,57 +1,94 @@
 #include "CameraViewTargetHelper.h"
+#include "Camera.h"
+
+#include "Utils/Logger.h"
 
 namespace v3d
 {
 namespace scene
 {
 
-CameraViewTargetHelper::CameraViewTargetHelper(Camera * camera, const core::Vector3D & position) noexcept
-    : CameraHelper(camera, position)
-    , m_needUpdate(false)
+CameraArcballHelper::CameraArcballHelper(Camera* camera, f32 distance) noexcept
+    : CameraHelper(camera, core::Vector3D(0.0f, 0.0f, distance))
 {
 }
 
-CameraViewTargetHelper::~CameraViewTargetHelper()
+CameraArcballHelper::~CameraArcballHelper()
 {
 }
 
-void CameraViewTargetHelper::setRotation(const core::Vector3D & rotation)
+void CameraArcballHelper::setRotation(const core::Vector3D & rotation)
 {
     m_rotate = rotation;
     m_needUpdate = true;
 }
 
-const core::Vector3D& CameraViewTargetHelper::getRotation() const
+const core::Vector3D& CameraArcballHelper::getRotation() const
 {
-    return m_transform.getRotation();
+    return m_rotate;
 }
 
-void CameraViewTargetHelper::update()
+void CameraArcballHelper::update()
 {
     if (m_needUpdate)
     {
-        core::Matrix4D tranformCamera;
-        tranformCamera.makeIdentity();
-        tranformCamera.setTranslation(m_transform.getPosition());
+        CameraHelper::update();
 
-        core::Matrix4D rotate;
-        rotate.makeIdentity();
-        rotate.setRotation(m_rotate);
+        core::Matrix4D rotateX;
+        rotateX.makeIdentity();
+        rotateX.setRotation(core::Vector3D(m_rotate.x, 0.0f, 0.0f));
 
-        core::Matrix4D view = rotate * tranformCamera;
-        CameraHelper::setPosition(view.getTranslation());
-        //getCamera().setViewMatrix(view);
+        core::Matrix4D rotateY;
+        rotateY.makeIdentity();
+        rotateY.setRotation(core::Vector3D(0.0f, m_rotate.y, 0.0f));
 
+        core::Matrix4D rotate = rotateX * rotateY;
+
+
+        core::Matrix4D position;
+        position.makeIdentity();
+        position.setTranslation(-m_transform.getPosition());
+
+        core::Matrix4D view = position * rotate;
+
+        getCamera().setViewMatrix(view);
         m_needUpdate = false;
     }
-
-    CameraHelper::update();
 }
 
-void CameraViewTargetHelper::rotateHandler(const event::MouseInputEvent * event)
+void CameraArcballHelper::handlerCallback(v3d::event::InputEventHandler* handler, const event::MouseInputEvent* event)
 {
     static core::Point2D position = event->_cursorPosition;
     static f32 wheel = event->_wheelValue;
+
+    if (handler->isLeftMousePressed())
+    {
+        core::Point2D positionDelta = position - event->_cursorPosition;
+
+        core::Vector3D rotation = CameraArcballHelper::getRotation();
+        rotation.x += positionDelta.y * k_rotationSpeed;
+        rotation.y += positionDelta.x * k_rotationSpeed;
+        CameraArcballHelper::setRotation(rotation);
+    }
+
+    if (handler->isRightMousePressed())
+    {
+        s32 positionDelta = position.y - event->_cursorPosition.y;
+        core::Vector3D postion = CameraHelper::getPosition();
+        f32 newZPos = postion.z + (positionDelta * k_zoomSpeed);
+        postion.z = std::clamp(newZPos, CameraHelper::getCamera().getNearValue(), CameraHelper::getCamera().getFarValue());
+        CameraHelper::setPosition(postion);
+    }
+    else if (event->_event == event::MouseInputEvent::MouseWheel)
+    {
+        f32 wheelDelta = wheel - event->_wheelValue;
+
+        core::Vector3D postion = CameraHelper::getPosition();
+        f32 newZPos = postion.z + (wheelDelta * k_zoomSpeed);
+        postion.z = std::clamp(newZPos, CameraHelper::getCamera().getNearValue(), CameraHelper::getCamera().getFarValue());
+        CameraHelper::setPosition(postion);
+    }
+
     position = event->_cursorPosition;
     wheel = event->_wheelValue;
 }
