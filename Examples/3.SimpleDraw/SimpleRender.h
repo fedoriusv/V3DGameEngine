@@ -17,28 +17,37 @@ namespace v3d
 {
 namespace renderer
 {
-
 class SimpleRender
 {
 public:
+
+    struct Parameter
+    {
+        std::string _name;
+        u32         _size;
+        void*       _data;
+    };
+
     SimpleRender(renderer::CommandList& cmdList, const core::Dimension2D& size, const std::vector<const Shader*> shaders, const std::vector<const scene::Model*> models) noexcept;
     ~SimpleRender();
 
-    void update(u32 shaderIndex, renderer::CommandList& cmdList, const core::Vector3D& pos, const core::Vector3D& rotate);
+    void update(renderer::CommandList& cmdList);
     void render(renderer::CommandList& cmdList);
 
     void setCamera(scene::Camera* camera);
 
 private:
 
-    ShaderProgram* m_program[2];
-    GraphicsPipelineState* m_pipeline[2];
-    RenderTarget* m_renderTarget;
+    void updateParameters(renderer::CommandList& cmdList, const std::vector<Parameter>& parameters);
 
-   scene::ModelHelper* m_modelDrawer;
-   VertexStreamBuffer* m_drawBuffer;
+    ShaderProgram*          m_program;
+    GraphicsPipelineState*  m_pipeline;
 
-   scene::Camera* m_camera;
+    RenderTarget*           m_renderTarget;
+
+   scene::ModelHelper*      m_modelDrawer;
+
+   scene::Camera*           m_camera;
 };
 
 } //namespace renderer

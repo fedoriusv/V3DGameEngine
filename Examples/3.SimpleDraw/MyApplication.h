@@ -7,7 +7,7 @@
 #include "Event/InputEventHandler.h"
 
 #include "Scene/Transform.h"
-#include "Scene/CameraViewTargetHelper.h"
+#include "Scene/CameraArcballHelper.h"
 
 #include "SimpleRender.h"
 
@@ -35,5 +35,4 @@ private:
     v3d::scene::CameraArcballHelper* m_Camera;
 
     v3d::renderer::SimpleRender* m_Render;
-
 };

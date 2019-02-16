@@ -33,8 +33,6 @@ namespace scene
 
     private:
 
-        core::Vector3D  m_rotate;
-
         const f32       k_rotationSpeed = 0.8f;
         const f32       k_zoomSpeed = 1.0f;
 

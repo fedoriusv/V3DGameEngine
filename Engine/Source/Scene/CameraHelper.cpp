@@ -57,6 +57,9 @@ void CameraHelper::setPosition(const core::Vector3D & position)
 {
     m_transform.setPosition(position);
     m_needUpdate = true;
+
+    ASSERT(m_camera, "nullptr");
+    m_camera->m_matricesFlag |= Camera::CameraState::CameraState_View;
 }
 
 const core::Vector3D& CameraHelper::getPosition() const

@@ -14,10 +14,9 @@ namespace renderer
 {
 
 SimpleRender::SimpleRender(renderer::CommandList& cmdList, const core::Dimension2D& size, const std::vector<const Shader*> shaders, const std::vector<const scene::Model*> models) noexcept
-    : m_drawBuffer(nullptr)
-    , m_camera(nullptr)
+    : m_camera(nullptr)
 {
-    m_program[0] = cmdList.createObject<ShaderProgram>(shaders);
+    m_program = cmdList.createObject<ShaderProgram>(shaders);
 
     m_modelDrawer = new scene::ModelHelper(cmdList, models);
 
@@ -26,17 +25,18 @@ SimpleRender::SimpleRender(renderer::CommandList& cmdList, const core::Dimension
     Texture2D* depthAttachment = cmdList.createObject<Texture2D>(TextureUsage::TextureUsage_Attachment, Format::Format_D32_SFloat_S8_UInt, size, TextureSamples::TextureSamples_x1);
     m_renderTarget->setDepthStencilTexture(depthAttachment, RenderTargetLoadOp::LoadOp_Clear, RenderTargetStoreOp::StoreOp_DontCare, 1.0f);
 
-    m_pipeline[0] = cmdList.createObject<GraphicsPipelineState>(m_modelDrawer->getVertexInputAttribDescription(0, 0), m_program[0], m_renderTarget);
-    m_pipeline[0]->setPrimitiveTopology(PrimitiveTopology::PrimitiveTopology_TriangleList);
-    m_pipeline[0]->setFrontFace(FrontFace::FrontFace_Clockwise);
-    m_pipeline[0]->setCullMode(CullMode::CullMode_None);
-    m_pipeline[0]->setDepthCompareOp(CompareOperation::CompareOp_Less);
-    m_pipeline[0]->setDepthWrite(true);
-    m_pipeline[0]->setDepthTest(true);
+    m_pipeline = cmdList.createObject<GraphicsPipelineState>(m_modelDrawer->getVertexInputAttribDescription(0, 0), m_program, m_renderTarget);
+    m_pipeline->setPrimitiveTopology(PrimitiveTopology::PrimitiveTopology_TriangleList);
+    m_pipeline->setFrontFace(FrontFace::FrontFace_Clockwise);
+    m_pipeline->setCullMode(CullMode::CullMode_None);
+    m_pipeline->setDepthCompareOp(CompareOperation::CompareOp_Less);
+    m_pipeline->setDepthWrite(true);
+    m_pipeline->setDepthTest(true);
 
     //cmdList.setPipelineState(m_pipeline[0]);
 
     //test
+    /*
     std::vector<f32> vertexBuffer =
     {
         0.0f,  1.0f, 0.0f ,     1.0f, 0.0f, 0.0f,
@@ -58,16 +58,20 @@ SimpleRender::SimpleRender(renderer::CommandList& cmdList, const core::Dimension
     const Shader* vertShader = resource::ResourceLoaderManager::getInstance()->loadShader<Shader, resource::ShaderSourceFileLoader>(cmdList.getContext(), "examples/3.simpledraw/shaders/simple.vert");
     const Shader* fragShader = resource::ResourceLoaderManager::getInstance()->loadShader<Shader, resource::ShaderSourceFileLoader>(cmdList.getContext(), "examples/3.simpledraw/shaders/simple.frag");
     const std::vector<const Shader*> sha = { vertShader, fragShader };
-    m_program[1] = cmdList.createObject<ShaderProgram>(sha);
+    m_program = cmdList.createObject<ShaderProgram>(sha);
 
-    m_pipeline[1] = cmdList.createObject<GraphicsPipelineState>(vertexDesc, m_program[1], m_renderTarget);
-    m_pipeline[1]->setPrimitiveTopology(PrimitiveTopology::PrimitiveTopology_TriangleList);
-    m_pipeline[1]->setFrontFace(FrontFace::FrontFace_Clockwise);
-    m_pipeline[1]->setCullMode(CullMode::CullMode_None);
-    m_pipeline[1]->setDepthCompareOp(CompareOperation::CompareOp_Less);
-    m_pipeline[1]->setDepthWrite(true);
-    m_pipeline[1]->setDepthTest(true);
+    m_pipeline = cmdList.createObject<GraphicsPipelineState>(vertexDesc, m_program, m_renderTarget);
+    m_pipeline->setPrimitiveTopology(PrimitiveTopology::PrimitiveTopology_TriangleList);
+    m_pipeline->setFrontFace(FrontFace::FrontFace_Clockwise);
 
+    m_pipeline = cmdList.createObject<GraphicsPipelineState>(vertexDesc, m_program, m_renderTarget);
+    m_pipeline->setPrimitiveTopology(PrimitiveTopology::PrimitiveTopology_TriangleList);
+    m_pipeline->setFrontFace(FrontFace::FrontFace_Clockwise);
+    m_pipeline->setCullMode(CullMode::CullMode_None);
+    m_pipeline->setDepthCompareOp(CompareOperation::CompareOp_Less);
+    m_pipeline->setDepthWrite(true);
+    m_pipeline->setDepthTest(true);
+    */
     //
 
     cmdList.setRenderTarget(m_renderTarget);
@@ -85,52 +89,31 @@ SimpleRender::~SimpleRender()
     delete m_program;
 }
 
-void SimpleRender::update(u32 shaderIndex, renderer::CommandList& cmdList, const core::Vector3D& pos, const core::Vector3D& rotate)
+void SimpleRender::updateParameters(renderer::CommandList& cmdList, const std::vector<Parameter>& parameters)
 {
-    if (shaderIndex == 0)
+    struct
     {
-        struct
-        {
-            core::Matrix4D projectionMatrix;
-            core::Matrix4D modelMatrix;
-            core::Matrix4D viewMatrix;
-            core::Vector4D lightPos = core::Vector4D(25.0f, 5.0f, 5.0f, 1.0f);
-        }
-        uboVS, uboVS1;
-
-        uboVS.projectionMatrix = m_camera->getProjectionMatrix();
-        uboVS.viewMatrix = m_camera->getViewMatrix();
-
-        uboVS.modelMatrix.makeIdentity();
-        uboVS.modelMatrix.setRotation(rotate);
-        uboVS.modelMatrix.setTranslation(pos);
-        //uboVS.modelMatrix.makeTransposed();
-
-        m_program[shaderIndex]->bindUniformsBuffer<ShaderType::ShaderType_Vertex>("ubo", 0, sizeof(uboVS), &uboVS);
-        //m_program->bindTexture<Texture2D, ShaderType::ShaderType_Fragment>("samplerColorMap", m_colorTexture);
+        core::Matrix4D projectionMatrix;
+        core::Matrix4D modelMatrix;
+        core::Matrix4D viewMatrix;
+        core::Vector4D lightPos = core::Vector4D(25.0f, 5.0f, 5.0f, 1.0f);
     }
-    else
-    {
-        struct
-        {
-            core::Matrix4D projectionMatrix;
-            core::Matrix4D modelMatrix;
-            core::Matrix4D viewMatrix;
-        }
-        uboVS, uboVS1;
+    uboVS;
 
-        uboVS.projectionMatrix = m_camera->getProjectionMatrix();
-        uboVS.viewMatrix = m_camera->getViewMatrix();
+     uboVS.projectionMatrix = m_camera->getProjectionMatrix();
+     uboVS.viewMatrix = m_camera->getViewMatrix();
 
-        uboVS.modelMatrix.makeIdentity();
-        uboVS.modelMatrix.setRotation(rotate);
-        uboVS.modelMatrix.setTranslation(pos);
-        //uboVS.modelMatrix.makeTransposed();
+     //uboVS.modelMatrix.makeIdentity();
+     //uboVS.modelMatrix.setRotation(rotate);
+     //uboVS.modelMatrix.setTranslation(pos);
 
-        m_program[shaderIndex]->bindUniformsBuffer<ShaderType::ShaderType_Vertex>("ubo", 0, sizeof(uboVS), &uboVS);
-        //m_program->bindTexture<Texture2D, ShaderType::ShaderType_Fragment>("samplerColorMap", m_colorTexture);
-    }
+      m_program->bindUniformsBuffer<ShaderType::ShaderType_Vertex>("ubo", 0, sizeof(uboVS), &uboVS);
+      //m_program->bindTexture<Texture2D, ShaderType::ShaderType_Fragment>("samplerColorMap", m_colorTexture);
+}
 
+void SimpleRender::update(renderer::CommandList& cmdList)
+{
+    //TODO
 }
 
 void SimpleRender::render(renderer::CommandList& cmdList)
@@ -140,18 +123,9 @@ void SimpleRender::render(renderer::CommandList& cmdList)
 
     if (m_modelDrawer)
     {
-        cmdList.setPipelineState(m_pipeline[0]);
-        SimpleRender::update(0, cmdList, core::Vector3D(0.0f, 0.0f, 0.0f), core::Vector3D(0.0f));
+        cmdList.setPipelineState(m_pipeline);
+        SimpleRender::updateParameters(cmdList, {});
         m_modelDrawer->drawModel();
-    }
-
-    if (m_drawBuffer)
-    {
-        cmdList.setPipelineState(m_pipeline[1]);
-        SimpleRender::update(1, cmdList, core::Vector3D(0.0f, 0.0f, 5.1f), core::Vector3D(0.0f, 0.0f, 40.0f));
-        cmdList.draw(renderer::StreamBufferDescription(m_drawBuffer, 0), 0, 3, 1);
-        SimpleRender::update(1, cmdList, core::Vector3D(0.0f, 0.0f, 3.0f), core::Vector3D(0.0f));
-        cmdList.draw(renderer::StreamBufferDescription(m_drawBuffer, 0), 0, 3, 1);
     }
 }
 
