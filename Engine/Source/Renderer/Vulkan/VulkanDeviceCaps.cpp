@@ -13,6 +13,8 @@ namespace renderer
 namespace vk
 {
 
+std::vector<const c8*> VulkanDeviceCaps::s_enableExtensions = {};
+
 bool VulkanDeviceCaps::checkInstanceExtension(const c8 * extensionName)
 {
     u32 extensionCount = 0;
@@ -198,6 +200,9 @@ void VulkanDeviceCaps::initialize()
     ASSERT(k_maxVertexInputBindings <= m_deviceProperties.limits.maxVertexInputBindings, "maxVertexInputBindings less than k_maxVertexInputBindings");
 
     useGlobalDescriptorPool = true;
+
+    //extetions
+    enableSamplerMirrorClampToEdge = std::find(s_enableExtensions.cbegin(), s_enableExtensions.cend(), VK_KHR_SAMPLER_MIRROR_CLAMP_TO_EDGE_EXTENSION_NAME) != s_enableExtensions.cend();
 }
 
 } //namespace vk

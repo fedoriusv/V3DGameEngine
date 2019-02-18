@@ -2,6 +2,7 @@
 
 #include "Common.h"
 #include "Renderer/Sampler.h"
+#include "Renderer/TextureProperties.h"
 
 #ifdef VULKAN_RENDER
 #include "VulkanWrapper.h"
@@ -22,10 +23,15 @@ namespace vk
     {
     public:
 
+        static VkFilter convertSamplerFilterToVk(SamplerFilter filter);
+        static VkSamplerMipmapMode convertMipmapSamplerFilterToVk(SamplerFilter filter);
+        static f32 convertAnisotropyCount(SamplerAnisotropic level);
+        static VkSamplerAddressMode convertSamplerWrapToVkSamplerAddressMode(SamplerWrap wrap);
+
         VulkanSampler();
         ~VulkanSampler();
 
-        bool create() override;
+        bool create(const SamplerInfo& info) override;
         void destroy() override;
 
         VkSampler getHandle() const;

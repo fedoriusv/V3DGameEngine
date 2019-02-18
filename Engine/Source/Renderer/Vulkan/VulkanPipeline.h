@@ -46,7 +46,7 @@ namespace vk
         static VkBlendFactor convertBlendFactorToVk(BlendFactor factor);
         static VkBlendOp convertBlendOperationToVk(BlendOperation blendOp);
         static VkLogicOp covertLogicOperationToVk(LogicalOperation logicalOp);
-        static VkCompareOp covertCompareOperationToVk(CompareOperation compareOp);
+        static VkCompareOp convertCompareOperationToVk(CompareOperation compareOp);
 
         static VkVertexInputRate covertInputRateToVk(VertexInputAttribDescription::InputRate rate);
 

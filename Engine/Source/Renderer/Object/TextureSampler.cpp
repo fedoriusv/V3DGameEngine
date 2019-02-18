@@ -5,31 +5,36 @@ namespace v3d
 namespace renderer
 {
 
-TextureSampler::TextureSampler(renderer::CommandList & cmdList) noexcept
+SamplerState::SamplerState(renderer::CommandList & cmdList) noexcept
     : m_cmdList(cmdList)
 
-    , m_filter(renderer::TextureFilter_Nearest)
-    , m_anisotropicLevel(renderer::TextureAnisotropic::TextureAnisotropic_None)
-    , m_wrap(renderer::TextureWrap::TextureWrap_Repeat)
+    , m_filter(renderer::SamplerFilter_Nearest)
+    , m_anisotropicLevel(renderer::SamplerAnisotropic::SamplerAnisotropic_None)
+    , m_wrap(renderer::SamplerWrap::TextureWrap_Repeat)
 {
 }
 
-renderer::TextureFilter TextureSampler::getMinFilter() const
+void SamplerState::handleNotify(utils::Observable * ob)
 {
-    return renderer::TextureFilter_Nearest;
+   //TODO:
 }
 
-renderer::TextureFilter TextureSampler::getMagFilter() const
+renderer::SamplerFilter SamplerState::getMinFilter() const
 {
-    return renderer::TextureFilter_Nearest;
+    return renderer::SamplerFilter_Nearest;
 }
 
-renderer::TextureWrap TextureSampler::getWrap() const
+renderer::SamplerFilter SamplerState::getMagFilter() const
+{
+    return renderer::SamplerFilter_Nearest;
+}
+
+renderer::SamplerWrap SamplerState::getWrap() const
 {
     return m_wrap;
 }
 
-renderer::TextureAnisotropic TextureSampler::getAnisotropic() const
+renderer::SamplerAnisotropic SamplerState::getAnisotropic() const
 {
     return m_anisotropicLevel;
 }

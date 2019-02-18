@@ -8,6 +8,7 @@
 #include "VulkanRenderpass.h"
 #include "VulkanPipeline.h"
 #include "VulkanBuffer.h"
+#include "VulkanSampler.h"
 #include "VulkanStagingBuffer.h"
 #include "VulkanContextState.h"
 #include "VulkanUnifromBuffer.h"
@@ -794,6 +795,11 @@ Pipeline* VulkanGraphicContext::createPipeline(Pipeline::PipelineType type)
     return nullptr;
 }
 
+Sampler * VulkanGraphicContext::createSampler()
+{
+    return new VulkanSampler();
+}
+
 bool VulkanGraphicContext::createInstance()
 {
     VkApplicationInfo applicationInfo = {};
@@ -995,6 +1001,7 @@ bool VulkanGraphicContext::createDevice()
             LOG_ERROR("VulkanGraphicContext::createDevice: extention [%s] is not supported", *extentionName);
         }
     }
+    VulkanDeviceCaps::s_enableExtensions = enabledExtensions;
 
     VkDeviceCreateInfo deviceCreateInfo = {};
     deviceCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;

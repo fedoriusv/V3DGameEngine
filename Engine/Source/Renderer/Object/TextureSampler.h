@@ -14,30 +14,32 @@ namespace renderer
      /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
-    * TextureSampler class. Game side
+    * SamplerState class. Game side
     */
-    class TextureSampler : public Object //??????
+    class SamplerState : public Object, public utils::Observer
     {
     public:
 
-        ~TextureSampler() {};
-        TextureSampler(const TextureSampler &) = delete;
+        ~SamplerState() {};
+        SamplerState(const SamplerState &) = delete;
 
-        TextureFilter         getMinFilter() const;
-        TextureFilter         getMagFilter() const;
-        TextureWrap           getWrap() const;
-        TextureAnisotropic    getAnisotropic() const;
+        SamplerFilter         getMinFilter() const;
+        SamplerFilter         getMagFilter() const;
+        SamplerWrap           getWrap() const;
+        SamplerAnisotropic    getAnisotropic() const;
 
     private:
 
-        TextureSampler(renderer::CommandList& cmdList) noexcept;
+        SamplerState(renderer::CommandList& cmdList) noexcept;
 
         renderer::CommandList& m_cmdList;
         friend renderer::CommandList;
 
-        s16                           m_filter;
-        renderer::TextureAnisotropic  m_anisotropicLevel;
-        renderer::TextureWrap         m_wrap;
+        void handleNotify(utils::Observable* ob) override;
+
+        u32                           m_filter;
+        renderer::SamplerAnisotropic  m_anisotropicLevel;
+        renderer::SamplerWrap         m_wrap;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

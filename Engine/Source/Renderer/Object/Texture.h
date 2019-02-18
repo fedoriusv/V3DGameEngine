@@ -33,7 +33,7 @@ namespace renderer
     /**
     * Texture2D class. Game side
     */
-    class Texture2D : public Texture, public utils::Observer 
+    class Texture2D : public Texture, public utils::Observer
     {
     public:
 

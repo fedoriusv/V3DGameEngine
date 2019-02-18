@@ -297,7 +297,7 @@ VkLogicOp VulkanGraphicPipeline::covertLogicOperationToVk(LogicalOperation logic
     return VK_LOGIC_OP_AND;
 }
 
-VkCompareOp VulkanGraphicPipeline::covertCompareOperationToVk(CompareOperation compareOp)
+VkCompareOp VulkanGraphicPipeline::convertCompareOperationToVk(CompareOperation compareOp)
 {
     switch (compareOp)
     {
@@ -579,7 +579,7 @@ bool VulkanGraphicPipeline::create(const PipelineGraphicInfo* pipelineInfo)
     pipelineDepthStencilStateCreateInfo.flags = 0;
     pipelineDepthStencilStateCreateInfo.depthTestEnable = depthBlendState._depthTestEnable;
     pipelineDepthStencilStateCreateInfo.depthWriteEnable = depthBlendState._depthWriteEnable;
-    pipelineDepthStencilStateCreateInfo.depthCompareOp = VulkanGraphicPipeline::covertCompareOperationToVk(depthBlendState._compareOp);
+    pipelineDepthStencilStateCreateInfo.depthCompareOp = VulkanGraphicPipeline::convertCompareOperationToVk(depthBlendState._compareOp);
     if (VulkanDeviceCaps::getInstance()->getPhysicalDeviceFeatures().depthBounds)
     {
         pipelineDepthStencilStateCreateInfo.depthBoundsTestEnable = depthBlendState._depthBoundsTestEnable;

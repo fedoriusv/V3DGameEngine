@@ -33,6 +33,8 @@ namespace vk
         u32 maxDescriptorSetIndex;
         u32 maxDescriptorBindingIndex;
 
+        bool enableSamplerMirrorClampToEdge;
+
         static bool checkInstanceExtension(const c8* extensionName);
         static bool checkDeviceExtension(VkPhysicalDevice physicalDevice, const c8* extensionName);
 
@@ -57,6 +59,7 @@ namespace vk
         VkPhysicalDeviceMemoryProperties    m_deviceMemoryProps;
         std::vector<VkQueueFamilyProperties> m_queueFamilyProperties;
 
+        static std::vector<const c8*>        s_enableExtensions;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

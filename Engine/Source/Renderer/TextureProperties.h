@@ -37,32 +37,30 @@ namespace renderer
         TextureCubeMap,
     };
 
-    enum TextureFilter : s16
+    enum SamplerFilter : s16
     {
-        TextureFilter_Nearest = 0x1,
-        TextureFilter_Linear = 0x2,
-
-        TextureFilter_NearestMipmapNearest = 0x4,
-        TextureFilter_NearestMipmapLinear = 0x8,
-        TextureFilter_LinearMipmapNearest = 0x16,
-        TextureFilter_LinearMipmapLinear = 0x32
+        SamplerFilter_Nearest = 0x1,
+        SamplerFilter_Bilinear = 0x2,
+        SamplerFilter_Trilinear = 0x4,
+        SamplerFilter_Cubic = 0x8
     };
 
-    enum class TextureAnisotropic : s16
+    enum class SamplerAnisotropic : s16
     {
-        TextureAnisotropic_None = 0,
-        TextureAnisotropic_2x = 1 << 1,
-        TextureAnisotropic_4x = 1 << 2,
-        TextureAnisotropic_8x = 1 << 3,
-        TextureAnisotropic_16x = 1 << 4,
+        SamplerAnisotropic_None = 0,
+        SamplerAnisotropic_2x = 1 << 1,
+        SamplerAnisotropic_4x = 1 << 2,
+        SamplerAnisotropic_8x = 1 << 3,
+        SamplerAnisotropic_16x = 1 << 4,
     };
 
-    enum class TextureWrap : s16
+    enum class SamplerWrap : s16
     {
         TextureWrap_Repeat,
         TextureWrap_MirroredRepeat,
         TextureWrap_ClampToEdge,
         TextureWrap_ClampToBorder,
+        TextureWrap_MirroredClampToEdge,
     };
 
     enum class TextureSamples : u32

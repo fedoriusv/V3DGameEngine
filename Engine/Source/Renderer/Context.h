@@ -12,6 +12,7 @@
 #include "Framebuffer.h"
 #include "Buffer.h"
 #include "Image.h"
+#include "Sampler.h"
 #include "ObjectTracker.h"
 
 #include "Utils/NonCopyable.h"
@@ -108,11 +109,13 @@ namespace renderer
         friend FramebufferManager;
         friend PipelineManager;
         friend Backbuffer;
+        friend SamplerManager;
 
         //managment objects
         virtual Framebuffer* createFramebuffer(const std::vector<Image*>& attachments, const core::Dimension2D& size) = 0;
         virtual RenderPass* createRenderPass(const RenderPass::RenderPassInfo* renderpassInfo) = 0;
         virtual Pipeline* createPipeline(Pipeline::PipelineType type) = 0;
+        virtual Sampler* createSampler() = 0;
 
         virtual bool initialize() = 0;
         virtual void destroy() = 0;

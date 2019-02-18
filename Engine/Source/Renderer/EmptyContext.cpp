@@ -153,6 +153,12 @@ Pipeline * EmptyContext::createPipeline(Pipeline::PipelineType type)
     return nullptr;
 }
 
+Sampler * EmptyContext::createSampler()
+{
+    LOG_DEBUG("EmptyContext::createSampler");
+    return nullptr;
+}
+
 Buffer * EmptyContext::createBuffer(Buffer::BufferType type, u16 usageFlag, u64 size)
 {
     LOG_DEBUG("EmptyContext::createBuffer");
