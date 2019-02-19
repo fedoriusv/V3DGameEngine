@@ -8,6 +8,7 @@
 #include "Renderer/Object/PipelineState.h"
 #include "Renderer/Object/StreamBuffer.h"
 #include "Renderer/Object/Texture.h"
+#include "Renderer/Object/SamplerState.h"
 
 #include "Scene/ModelHelper.h"
 #include "Scene/CameraHelper.h"
@@ -48,6 +49,9 @@ private:
    scene::ModelHelper*      m_modelDrawer;
 
    scene::Camera*           m_camera;
+
+   Texture2D*    m_texture;
+   SamplerState* m_sampler;
 };
 
 } //namespace renderer

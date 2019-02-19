@@ -85,7 +85,7 @@ bool SamplerManager::removeSampler(const Sampler::SamplerInfo& samplerInfo)
     //renderpass->destroy();
     //delete renderpass;
 
-    //return true;
+    return false;
 }
 
 bool SamplerManager::removeSampler(Sampler * sampler)

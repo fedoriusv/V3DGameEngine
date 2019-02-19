@@ -468,16 +468,6 @@ void VulkanGraphicContext::removeBuffer(Buffer * buffer)
     }
 }
 
-void VulkanGraphicContext::bindTexture(const Shader* shader, u32 bindIndex, const Image* image)
-{
-    const VulkanImage* vkImage = static_cast<const VulkanImage*>(image);
-
-    const Shader::ReflectionInfo& info = shader->getReflectionInfo();
-    const Shader::SampledImage& sampledData = info._sampledImages[bindIndex];
-
-    m_currentContextStateNEW->bindTexture(vkImage, nullptr, 1, sampledData);
-}
-
 void VulkanGraphicContext::bindUniformsBuffer(const Shader* shader, u32 bindIndex, u32 offset, u32 size, const void* data)
 {
     const Shader::ReflectionInfo& info = shader->getReflectionInfo();
@@ -536,6 +526,32 @@ void VulkanGraphicContext::drawIndexed(StreamBufferDescription & desc, u32 first
         ASSERT(drawBuffer->isInsideRenderPass(), "not inside renderpass");
         drawBuffer->cmdDrawIndexed(firstIndex, indexCount, firstInstance, instanceCount, 0);
     }
+}
+
+void VulkanGraphicContext::bindImage(const Shader * shader, u32 bindIndex, const Image * image)
+{
+    const VulkanImage* vkImage = static_cast<const VulkanImage*>(image);
+
+    const Shader::ReflectionInfo& info = shader->getReflectionInfo();
+    const Shader::SampledImage& sampledData = info._sampledImages[bindIndex];
+
+    m_currentContextStateNEW->bindTexture(vkImage, nullptr, 1, sampledData);
+}
+
+void VulkanGraphicContext::bindSampler(const Shader * shader, u32 bindIndex, const Sampler * sampler)
+{
+    //TODO:
+}
+
+void VulkanGraphicContext::bindSampledImage(const Shader * shader, u32 bindIndex, const Image * image, const Sampler * sampler)
+{
+    const VulkanImage* vkImage = static_cast<const VulkanImage*>(image);
+    const VulkanSampler* vkSampler = static_cast<const VulkanSampler*>(sampler);
+
+    const Shader::ReflectionInfo& info = shader->getReflectionInfo();
+    const Shader::SampledImage& sampledData = info._sampledImages[bindIndex];
+
+    m_currentContextStateNEW->bindTexture(vkImage, vkSampler, 1, sampledData);
 }
 
 const DeviceCaps* VulkanGraphicContext::getDeviceCaps() const

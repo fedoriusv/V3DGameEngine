@@ -2,7 +2,7 @@
 
 #include "Common.h"
 #include "Utils/Observable.h"
-#include "Renderer/TextureProperties.h"
+#include "Renderer/SamplerProperties.h"
 #include "Renderer/PipelineStateProperties.h"
 
 namespace v3d

@@ -72,7 +72,9 @@ namespace renderer
         virtual void drawIndexed(StreamBufferDescription& desc, u32 firstIndex, u32 indexCount, u32 firstInstance, u32 instanceCount) = 0;
 
         //program bind
-        virtual void bindTexture(const Shader* shader, u32 bindIndex, const Image* image) = 0;
+        virtual void bindImage(const Shader* shader, u32 bindIndex, const Image* image) = 0;
+        virtual void bindSampler(const Shader* shader, u32 bindIndex, const Sampler* sampler) = 0;
+        virtual void bindSampledImage(const Shader* shader, u32 bindIndex, const Image* image, const Sampler* sampler) = 0;
         virtual void bindUniformsBuffer(const Shader* shader, u32 bindIndex, u32 offset, u32 size, const void* data) = 0;
 
         //geometry bind

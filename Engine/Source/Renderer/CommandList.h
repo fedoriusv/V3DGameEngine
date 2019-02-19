@@ -6,11 +6,11 @@
 #include "Object.h"
 
 #include "RenderPass.h"
-#include "Pipeline.h"
-#include "Image.h"
 #include "Framebuffer.h"
-
-#include "BufferProperties.h"
+#include "Pipeline.h"
+#include "Sampler.h"
+#include "Image.h"
+#include "Buffer.h"
 
 
 namespace v3d

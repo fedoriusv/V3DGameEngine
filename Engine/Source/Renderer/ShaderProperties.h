@@ -20,6 +20,7 @@ namespace renderer
         ShaderType_Count,
     };
 
+
     enum DataType : s32
     {
         DataType_None = -1,
@@ -53,25 +54,7 @@ namespace renderer
         ShaderProgramDescription(const ShaderProgramDescription&) = default;
         ShaderProgramDescription& operator=(const ShaderProgramDescription&) = default;
 
-        //ShaderProgramDescription(ShaderProgramDescription&& desc) noexcept
-        //{
-        //    _hash = desc._hash;
-        //    _shaders = std::move(desc._shaders);
-        //}
-
-        /*ShaderProgramDescription& operator=(ShaderProgramDescription&& desc) noexcept
-        {
-            if (this == &desc)
-            {
-                return *this;
-            }
-
-            _hash = desc._hash;
-            _shaders = std::move(desc._shaders);
-        }*/
-
         u32 _hash;
-        //std::vector<resource::Shader*> _shaders;
         std::array<const Shader*, ShaderType::ShaderType_Count> _shaders;
     };
 

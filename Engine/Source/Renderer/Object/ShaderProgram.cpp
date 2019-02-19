@@ -1,5 +1,6 @@
 #include "ShaderProgram.h"
 #include "Texture.h"
+#include "SamplerState.h"
 #include "Renderer/Formats.h"
 #include "Renderer/Context.h"
 #include "Renderer/Shader.h"
@@ -75,35 +76,35 @@ private:
     bool m_shared;
 };
 
-    /*CommandBindTexture*/
-class CommandBindTexture : public Command
+    /*CommandBindImage*/
+class CommandBindImage : public Command
 {
 public:
-    CommandBindTexture(const Shader* shader, u32 bindIndex, Image* image) noexcept
+    CommandBindImage(const Shader* shader, u32 bindIndex, Image* image) noexcept
         : m_shader(shader)
         , m_bindIndex(bindIndex)
         , m_image(image)
     {
 #if DEBUG_COMMAND_LIST
-        LOG_DEBUG("CommandBindTexture constructor");
+        LOG_DEBUG("CommandBindImage constructor");
 #endif //DEBUG_COMMAND_LIST
     };
-    CommandBindTexture() = delete;
-    CommandBindTexture(CommandBindTexture&) = delete;
+    CommandBindImage() = delete;
+    CommandBindImage(CommandBindImage&) = delete;
 
-    ~CommandBindTexture()
+    ~CommandBindImage()
     {
 #if DEBUG_COMMAND_LIST
-        LOG_DEBUG("CommandBindTexture destructor");
+        LOG_DEBUG("CommandBindImage destructor");
 #endif //DEBUG_COMMAND_LIST
     };
 
     void execute(const CommandList& cmdList)
     {
 #if DEBUG_COMMAND_LIST
-        LOG_DEBUG("CommandBindTexture execute");
+        LOG_DEBUG("CommandBindImage execute");
 #endif //DEBUG_COMMAND_LIST
-        cmdList.getContext()->bindTexture(m_shader, m_bindIndex, m_image);
+        cmdList.getContext()->bindImage(m_shader, m_bindIndex, m_image);
     }
 
 private:
@@ -205,6 +206,7 @@ bool ShaderProgram::bindUniformsBuffer(ShaderType shaderType, std::string& name,
 
 bool ShaderProgram::bindTexture(ShaderType shaderType, std::string& name, TextureTarget target, const Texture* texture)
 {
+    ASSERT(texture, "nullptr");
     Image* image = nullptr;
     switch (target)
     {
@@ -234,11 +236,53 @@ bool ShaderProgram::bindTexture(ShaderType shaderType, std::string& name, Textur
 
     if (m_cmdList.isImmediate())
     {
-        m_cmdList.getContext()->bindTexture(shader, iter->second, image);
+        m_cmdList.getContext()->bindImage(shader, iter->second, image);
     }
     else
     {
-        m_cmdList.pushCommand(new CommandBindTexture(shader, iter->second, image));
+        m_cmdList.pushCommand(new CommandBindImage(shader, iter->second, image));
+    }
+
+    return false;
+}
+
+bool ShaderProgram::bindSampledTexture(ShaderType shaderType, std::string& name, TextureTarget target, const Texture* texture, const SamplerDescription& sampler)
+{
+    ASSERT(texture, "nullptr");
+    Image* image = nullptr;
+    switch (target)
+    {
+    case TextureTarget::Texture2D:
+        image = static_cast<const Texture2D*>(texture)->m_image;
+
+    default:
+        break;
+    }
+
+    if (!image)
+    {
+        ASSERT(false, "image nullptr");
+        return false;
+    }
+
+    const Shader* shader = m_programInfo._shaders[shaderType];
+    ASSERT(shader, "fail");
+    ASSERT(!m_shaderParameters[shaderType].empty(), "fail");
+    auto iter = m_shaderParameters[shaderType].find(name);
+    if (iter == m_shaderParameters[shaderType].cend())
+    {
+        LOG_WARNING("ShaderProgram::bindSampledTexture: binding for sampled texture [%s] not found ", name.c_str());
+        ASSERT(false, "not found");
+        return false;
+    }
+
+    if (m_cmdList.isImmediate())
+    {
+        m_cmdList.getContext()->bindSampledImage(shader, iter->second, image, nullptr);
+    }
+    else
+    {
+        m_cmdList.pushCommand(new CommandBindImage(shader, iter->second, image));
     }
 
     return false;
@@ -246,6 +290,7 @@ bool ShaderProgram::bindTexture(ShaderType shaderType, std::string& name, Textur
 
 ShaderProgram::~ShaderProgram()
 {
+    //TDOO
 }
 
 } //renderer
