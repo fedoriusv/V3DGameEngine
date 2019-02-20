@@ -5,7 +5,6 @@
 #ifdef VULKAN_RENDER
 #include "VulkanWrapper.h"
 #include "VulkanDeviceCaps.h"
-#include "VulkanDescriptorSet.h"
 #include "VulkanCommandBufferManager.h"
 #include "VulkanMemory.h"
 
@@ -16,12 +15,17 @@ namespace renderer
 namespace vk
 {
     class VulkanImage;
+    class VulkanSampler;
     class VulkanRenderPass;
     class VulkanFramebuffer;
     class VulkanGraphicPipeline;
+
     class VulkanContextState;
+
+    class VulkanDescriptorSetManager;
     class VulkanStaginBufferManager;
     class VulkanUniformBufferManager;
+    class VulkanSamplerManager;
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -54,8 +58,8 @@ namespace vk
         void drawIndexed(StreamBufferDescription& desc, u32 firstIndex, u32 indexCount, u32 firstInstance, u32 instanceCount) override;
 
         void bindImage(const Shader* shader, u32 bindIndex, const Image* image) override;
-        void bindSampler(const Shader* shader, u32 bindIndex, const Sampler* sampler) override;
-        void bindSampledImage(const Shader* shader, u32 bindIndex, const Image* image, const Sampler* sampler) override;
+        void bindSampler(const Shader* shader, u32 bindIndex, const SamplerDescription& desc) override;
+        void bindSampledImage(const Shader* shader, u32 bindIndex, const Image* image, const SamplerDescription& desc) override;
         void bindUniformsBuffer(const Shader* shader, u32 bindIndex, u32 offset, u32 size, const void* data) override;
 
         //void bindVertexBuffers(const std::vector<Buffer*>& buffer, const std::vector<u64>& offsets)  override;
@@ -63,18 +67,15 @@ namespace vk
         void setViewport(const core::Rect32& viewport, const core::Vector2D& depth = { 0.0f, 1.0f }) override;
         void setScissor(const core::Rect32& scissor) override;
 
-        void setRenderTarget(const RenderPass::RenderPassInfo* renderpassInfo, const std::vector<Image*>& attachments, const RenderPass::ClearValueInfo* clearInfo, 
-            const std::tuple<ObjectTracker<RenderPass>*, ObjectTracker<Framebuffer>*>& trackers) override;
-        //void removeRenderTarget(const RenderPass::RenderPassInfo * renderpassInfo, const std::vector<Image*>& attachments, const RenderPass::ClearValueInfo * clearInfo) override;
+        void setRenderTarget(const RenderPass::RenderPassInfo* renderpassInfo, const Framebuffer::FramebufferInfo* framebufferInfo) override;
         void removeFramebuffer(Framebuffer* framebuffer) override;
         void removeRenderPass(RenderPass* renderpass) override;
         void invalidateRenderPass() override;
 
-        void setPipeline(const Pipeline::PipelineGraphicInfo* pipelineInfo, ObjectTracker<Pipeline>* tracker) override;
+        void setPipeline(const Pipeline::PipelineGraphicInfo* pipelineInfo) override;
         void removePipeline(Pipeline* pipeline) override;
 
         Image* createImage(TextureTarget target, renderer::Format format, const core::Dimension3D& dimension, u32 mipmapLevel, TextureUsageFlags flags) const override;
-        //Image* createAttachmentImage(renderer::Format format, const core::Dimension3D& dimension, TextureSamples samples, TextureUsageFlags flags) const override;
         void removeImage(Image* image) override;
 
         Buffer* createBuffer(Buffer::BufferType type, u16 usageFlag, u64 size) override;
@@ -102,7 +103,7 @@ namespace vk
         void clearBackbuffer(const core::Vector4D & color) override;
 
         Framebuffer* createFramebuffer(const std::vector<Image*>& images, const core::Dimension2D& size) override;
-        RenderPass* createRenderPass(const RenderPass::RenderPassInfo* renderpassInfo) override;
+        RenderPass* createRenderPass(const RenderPassDescription* renderpassDesc) override;
         Pipeline* createPipeline(Pipeline::PipelineType type) override;
         Sampler* createSampler() override;
 
@@ -124,6 +125,7 @@ namespace vk
         RenderPassManager*          m_renderpassManager;
         FramebufferManager*         m_framebuferManager;
         PipelineManager*            m_pipelineManager;
+        SamplerManager*             m_samplerManager;
 
         //replace to another class
         struct CurrentContextState

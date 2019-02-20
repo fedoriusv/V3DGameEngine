@@ -51,8 +51,6 @@ namespace renderer
         {
             memset(&_shaders, 0, sizeof(_shaders));
         }
-        ShaderProgramDescription(const ShaderProgramDescription&) = default;
-        ShaderProgramDescription& operator=(const ShaderProgramDescription&) = default;
 
         u32 _hash;
         std::array<const Shader*, ShaderType::ShaderType_Count> _shaders;

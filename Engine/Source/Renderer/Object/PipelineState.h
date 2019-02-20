@@ -55,11 +55,11 @@ namespace renderer
 
     private:
 
-        explicit GraphicsPipelineState(CommandList& cmdList, const VertexInputAttribDescription& vertex, const ShaderProgram* const program, const RenderTarget* const renderTaget) noexcept;
-        explicit GraphicsPipelineState(CommandList& cmdList, const GraphicsPipelineStateDescription& desc, const ShaderProgram* const program, const RenderTarget* const renderTaget) noexcept;
+        explicit GraphicsPipelineState(CommandList& cmdList, const VertexInputAttribDescription& vertex, const ShaderProgram* const program, const RenderTargetState* const renderTaget) noexcept;
+        explicit GraphicsPipelineState(CommandList& cmdList, const GraphicsPipelineStateDescription& desc, const ShaderProgram* const program, const RenderTargetState* const renderTaget) noexcept;
 
         void setShaderProgram(const ShaderProgram * program);
-        void setRenderTaget(const RenderTarget * target);
+        void setRenderTaget(const RenderTargetState * target);
 
         void destroyPipelines(const std::vector<Pipeline*>& pipelines);
 
@@ -68,7 +68,7 @@ namespace renderer
 
         GraphicsPipelineStateDescription m_pipelineStateDesc;
         const ShaderProgram*             m_program;
-        const RenderTarget*              m_renderTaget;
+        const RenderTargetState*         m_renderTaget;
 
         ObjectTracker<Pipeline> m_tracker;
     };

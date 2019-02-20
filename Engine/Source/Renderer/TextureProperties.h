@@ -73,7 +73,7 @@ namespace renderer
     */
     struct AttachmentDescription
     {
-        AttachmentDescription()
+        AttachmentDescription() noexcept
         {
             memset(this, 0, sizeof(AttachmentDescription));
         }
@@ -87,6 +87,26 @@ namespace renderer
         u32                  _internalTarget    : 1;
 
         u32                   _padding          : 12;
+    };
+
+    /**
+    * RenderPassInfo struct
+    * 36 byte size
+    */
+    struct RenderPassDescription
+    {
+        RenderPassDescription() noexcept
+        {
+            _attachments.fill(AttachmentDescription());
+            _countColorAttachments = 0;
+            _hasDepthStencilAttahment = false;
+        }
+
+        std::array<AttachmentDescription, k_maxFramebufferAttachments> _attachments; //32 bytes
+        u32 _countColorAttachments      : 4;
+        u32 _hasDepthStencilAttahment   : 1;
+
+        u32 _padding                    : 27;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

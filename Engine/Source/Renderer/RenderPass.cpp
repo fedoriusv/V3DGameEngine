@@ -28,22 +28,19 @@ RenderPassManager::~RenderPassManager()
    RenderPassManager::clear();
 }
 
-RenderPass* RenderPassManager::acquireRenderPass(const RenderPass::RenderPassInfo& desc)
+RenderPass* RenderPassManager::acquireRenderPass(const RenderPass::RenderPassInfo& renderPassInfo)
 {
-    RenderPassDescription pDesc;
-    pDesc._info = desc;
-
     RenderPass* renderpass = nullptr;
-    auto found = m_renderpasses.emplace(pDesc._hash, renderpass);
+    auto found = m_renderPassList.emplace(std::get<u32>(renderPassInfo._desc), renderpass);
     if (found.second)
     {
-        renderpass = m_context->createRenderPass(&pDesc._info);
-        renderpass->m_key = pDesc._hash;
+        renderpass = m_context->createRenderPass(&std::get<RenderPassDescription>(renderPassInfo._desc));
+        renderpass->m_key = std::get<u32>(renderPassInfo._desc);
 
         if (!renderpass->create())
         {
             renderpass->destroy();
-            m_renderpasses.erase(pDesc._hash);
+            m_renderPassList.erase(std::get<u32>(renderPassInfo._desc));
 
             ASSERT(false, "can't create renderpass");
             return nullptr;
@@ -57,39 +54,10 @@ RenderPass* RenderPassManager::acquireRenderPass(const RenderPass::RenderPassInf
     return found.first->second;
 }
 
-bool RenderPassManager::removeRenderPass(const RenderPass::RenderPassInfo& desc)
-{
-    RenderPassDescription pDesc;
-    pDesc._info = desc;
-
-    auto iter = m_renderpasses.find(pDesc._hash);
-    if (iter == m_renderpasses.cend())
-    {
-        LOG_DEBUG("RenderPassManager renderpass not found");
-        ASSERT(false, "renderpass");
-        return false;
-    }
-
-    RenderPass* renderpass = iter->second;
-    if (renderpass->linked())
-    {
-        LOG_WARNING("RenderPassManager::removeRenderPass renderPass still linked, but reqested to delete");
-        ASSERT(false, "renderpass");
-        //return false;
-    }
-
-    renderpass->notifyObservers();
-
-    renderpass->destroy();
-    delete renderpass;
-
-    return true;
-}
-
 bool RenderPassManager::removeRenderPass(const RenderPass * renderPass)
 {
-    auto iter = m_renderpasses.find(renderPass->m_key);
-    if (iter == m_renderpasses.cend())
+    auto iter = m_renderPassList.find(renderPass->m_key);
+    if (iter == m_renderPassList.cend())
     {
         LOG_DEBUG("RenderPassManager renderpass not found");
         ASSERT(false, "renderpass");
@@ -104,6 +72,8 @@ bool RenderPassManager::removeRenderPass(const RenderPass * renderPass)
         ASSERT(false, "renderpass");
         //return false;
     }
+    m_renderPassList.erase(iter);
+
     renderpass->notifyObservers();
 
     renderpass->destroy();
@@ -112,23 +82,28 @@ bool RenderPassManager::removeRenderPass(const RenderPass * renderPass)
     return true;
 }
 
-void RenderPassManager::handleNotify(utils::Observable* ob)
-{
-    LOG_DEBUG("RenderPassManager renderpass %x has been deleted", ob);
-    m_renderpasses.erase(static_cast<RenderPass*>(ob)->m_key);
-}
-
 void RenderPassManager::clear()
 {
-    for (auto& iter : m_renderpasses)
+    for (auto& iter : m_renderPassList)
     {
         RenderPass* renderpass = iter.second;
+        if (renderpass->linked())
+        {
+            LOG_WARNING("RenderPassManager::removeRenderPass renderPass still linked, but reqested to delete");
+            ASSERT(false, "renderpass");
+            //return false;
+        }
         renderpass->notifyObservers();
 
         renderpass->destroy();
         delete renderpass;
     }
-    m_renderpasses.clear();
+    m_renderPassList.clear();
+}
+
+void RenderPassManager::handleNotify(utils::Observable* ob)
+{
+    LOG_DEBUG("RenderPassManager renderpass %x has been deleted", ob);
 }
 
 } //namespace renderer

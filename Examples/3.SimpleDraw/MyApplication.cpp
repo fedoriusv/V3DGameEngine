@@ -7,7 +7,7 @@
 
 #include "Renderer/Object/Texture.h"
 #include "Renderer/Object/PipelineState.h"
-#include "Renderer/Object/RenderTarget.h"
+#include "Renderer/Object/RenderTargetState.h"
 #include "Renderer/Object/StreamBuffer.h"
 #include "Renderer/Formats.h"
 #include "Renderer/Shader.h"

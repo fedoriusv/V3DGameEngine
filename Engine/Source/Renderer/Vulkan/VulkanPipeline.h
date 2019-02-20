@@ -8,6 +8,7 @@
 #include "VulkanWrapper.h"
 #include "VulkanResource.h"
 #include "VulkanDescriptorSet.h"
+#include "VulkanRenderpass.h"
 
 namespace v3d
 {
@@ -61,7 +62,7 @@ namespace vk
         bool createShaderModule(const Shader* shader, VkPipelineShaderStageCreateInfo& outPipelineShaderStageCreateInfo);
         void deleteShaderModules();
 
-        bool createCompatibilityRenderPass(const RenderPass::RenderPassInfo& renderpassDesc, RenderPass* &compatibilityRenderPass);
+        bool createCompatibilityRenderPass(const RenderPassDescription& renderpassDesc, RenderPass* &compatibilityRenderPass);
 
         std::vector<VkShaderModule> m_modules;
 

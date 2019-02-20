@@ -23,7 +23,7 @@ SimpleRender::SimpleRender(renderer::CommandList& cmdList, const core::Dimension
 
     m_modelDrawer = new scene::ModelHelper(cmdList, models);
 
-    m_renderTarget = cmdList.createObject<RenderTarget>(size);
+    m_renderTarget = cmdList.createObject<RenderTargetState>(size);
     m_renderTarget->setColorTexture(0, cmdList.getBackbuffer(), RenderTargetLoadOp::LoadOp_Clear, RenderTargetStoreOp::StoreOp_Store, core::Vector4D(0.0f));
     Texture2D* depthAttachment = cmdList.createObject<Texture2D>(TextureUsage::TextureUsage_Attachment, Format::Format_D32_SFloat_S8_UInt, size, TextureSamples::TextureSamples_x1);
     m_renderTarget->setDepthStencilTexture(depthAttachment, RenderTargetLoadOp::LoadOp_Clear, RenderTargetStoreOp::StoreOp_DontCare, 1.0f);

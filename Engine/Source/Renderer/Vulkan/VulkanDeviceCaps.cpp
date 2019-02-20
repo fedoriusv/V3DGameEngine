@@ -5,6 +5,7 @@
 #include "VulkanGraphicContext.h"
 #include "VulkanMemory.h"
 #include "VulkanImage.h"
+#include "VulkanDescriptorSet.h"
 
 namespace v3d
 {

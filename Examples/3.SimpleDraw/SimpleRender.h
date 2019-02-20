@@ -3,11 +3,11 @@
 #include "Common.h"
 #include "Renderer/CommandList.h"
 
-#include "Renderer/Object/RenderTarget.h"
+#include "Renderer/Object/Texture.h"
+#include "Renderer/Object/StreamBuffer.h"
 #include "Renderer/Object/ShaderProgram.h"
 #include "Renderer/Object/PipelineState.h"
-#include "Renderer/Object/StreamBuffer.h"
-#include "Renderer/Object/Texture.h"
+#include "Renderer/Object/RenderTargetState.h"
 #include "Renderer/Object/SamplerState.h"
 
 #include "Scene/ModelHelper.h"
@@ -44,7 +44,7 @@ private:
     ShaderProgram*          m_program;
     GraphicsPipelineState*  m_pipeline;
 
-    RenderTarget*           m_renderTarget;
+    RenderTargetState*           m_renderTarget;
 
    scene::ModelHelper*      m_modelDrawer;
 

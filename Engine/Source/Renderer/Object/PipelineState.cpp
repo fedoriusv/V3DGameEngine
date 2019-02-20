@@ -43,7 +43,7 @@ private:
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-GraphicsPipelineState::GraphicsPipelineState(CommandList& cmdList, const VertexInputAttribDescription& vertex, const ShaderProgram* const program, const RenderTarget* const renderTaget) noexcept
+GraphicsPipelineState::GraphicsPipelineState(CommandList& cmdList, const VertexInputAttribDescription& vertex, const ShaderProgram* const program, const RenderTargetState* const renderTaget) noexcept
     : m_cmdList(cmdList)
     , m_program(program)
     , m_renderTaget(renderTaget)
@@ -53,7 +53,7 @@ GraphicsPipelineState::GraphicsPipelineState(CommandList& cmdList, const VertexI
     m_pipelineStateDesc._vertexInputState._inputAttributes = vertex;
 }
 
-GraphicsPipelineState::GraphicsPipelineState(CommandList& cmdList, const GraphicsPipelineStateDescription& desc, const ShaderProgram* const program, const RenderTarget* const renderTaget) noexcept
+GraphicsPipelineState::GraphicsPipelineState(CommandList& cmdList, const GraphicsPipelineStateDescription& desc, const ShaderProgram* const program, const RenderTargetState* const renderTaget) noexcept
     : m_cmdList(cmdList)
     , m_pipelineStateDesc(desc)
     , m_program(program)
@@ -135,7 +135,7 @@ void GraphicsPipelineState::setShaderProgram(const ShaderProgram * program)
     m_program = program;
 }
 
-void GraphicsPipelineState::setRenderTaget(const RenderTarget * target)
+void GraphicsPipelineState::setRenderTaget(const RenderTargetState * target)
 {
     m_renderTaget = target;
 }

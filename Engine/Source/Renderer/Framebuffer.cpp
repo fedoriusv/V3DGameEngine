@@ -30,21 +30,21 @@ FramebufferManager::~FramebufferManager()
     FramebufferManager::clear();
 }
 
-Framebuffer * FramebufferManager::acquireFramebuffer(const RenderPass * renderpass, const std::vector<Image*>& images, const core::Dimension2D & size)
+Framebuffer * FramebufferManager::acquireFramebuffer(const RenderPass* renderpass, const Framebuffer::FramebufferInfo& framebufferInfo)
 {
-    u32 hash = crc32c::Crc32c((char*)images.data(), images.size() * sizeof(Image*));
+    u32 hash = crc32c::Crc32c((char*)framebufferInfo._images.data(), framebufferInfo._images.size() * sizeof(Image*));
 
     Framebuffer* framebuffer = nullptr;
-    auto found = m_framebuffers.emplace(hash, framebuffer);
+    auto found = m_framebufferList.emplace(hash, framebuffer);
     if (found.second)
     {
-        framebuffer = m_context->createFramebuffer(images, size);
+        framebuffer = m_context->createFramebuffer(framebufferInfo._images, framebufferInfo._clearInfo._size);
         framebuffer->m_key = hash;
 
         if (!framebuffer->create(renderpass))
         {
             framebuffer->destroy();
-            m_framebuffers.erase(hash);
+            m_framebufferList.erase(hash);
 
             ASSERT(false, "can't create framebuffer");
             return nullptr;
@@ -58,39 +58,11 @@ Framebuffer * FramebufferManager::acquireFramebuffer(const RenderPass * renderpa
     return found.first->second;
 }
 
-bool FramebufferManager::removeFramebuffer(const std::vector<Image*>& images)
-{
-    u32 hash = crc32c::Crc32c((char*)images.data(), images.size() * sizeof(Image*));
-
-    auto iter = m_framebuffers.find(hash);
-    if (iter == m_framebuffers.cend())
-    {
-        LOG_DEBUG("FramebufferManager framebuffer not found");
-        ASSERT(false, "framebuffer");
-        return false;
-    }
-
-    Framebuffer* framebuffer = iter->second;
-    if (framebuffer->linked())
-    {
-        LOG_WARNING("FramebufferManager::removeFramebuffer framebufer still linked, but reqested to delete");
-        ASSERT(false, "framebuffer");
-        //return false;
-    }
-    framebuffer->notifyObservers();
-
-    framebuffer->destroy();
-    delete framebuffer;
-
-    return true;
-}
-
 bool FramebufferManager::removeFramebuffer(Framebuffer * frameBuffer)
 {
 
-
-    auto iter = m_framebuffers.find(frameBuffer->m_key);
-    if (iter == m_framebuffers.cend())
+    auto iter = m_framebufferList.find(frameBuffer->m_key);
+    if (iter == m_framebufferList.cend())
     {
         LOG_DEBUG("FramebufferManager framebuffer not found");
         ASSERT(false, "renderpass");
@@ -105,6 +77,8 @@ bool FramebufferManager::removeFramebuffer(Framebuffer * frameBuffer)
         ASSERT(false, "framebuffer");
         //return false;
     }
+    m_framebufferList.erase(iter);
+
     framebuffer->notifyObservers();
 
     framebuffer->destroy();
@@ -113,22 +87,28 @@ bool FramebufferManager::removeFramebuffer(Framebuffer * frameBuffer)
     return true;
 }
 
+void FramebufferManager::clear()
+{
+    for (auto& iter : m_framebufferList)
+    {
+        Framebuffer* framebuffer = iter.second;
+        if (framebuffer->linked())
+        {
+            LOG_WARNING("FramebufferManager::removeFramebuffer framebufer still linked, but reqested to delete");
+            ASSERT(false, "framebuffer");
+            //return false;
+        }
+        framebuffer->notifyObservers();
+
+        framebuffer->destroy();
+        delete framebuffer;
+    }
+    m_framebufferList.clear();
+}
+
 void FramebufferManager::handleNotify(utils::Observable * ob)
 {
     LOG_DEBUG("FramebufferManager framebuffer %x has been deleted", ob);
-    m_framebuffers.erase(static_cast<Framebuffer*>(ob)->m_key);
-}
-
-void FramebufferManager::clear()
-{
-    for (auto& renderpass : m_framebuffers)
-    {
-        renderpass.second->destroy();
-        renderpass.second->notifyObservers();
-
-        delete renderpass.second;
-    }
-    m_framebuffers.clear();
 }
 
 } //namespace renderer

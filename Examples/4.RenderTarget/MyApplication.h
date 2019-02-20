@@ -33,7 +33,7 @@ private:
     v3d::core::Vector4D m_clearColor;
 
     //
-    class v3d::renderer::RenderTarget* renderTarget0;
-    class v3d::renderer::RenderTarget* renderTarget1;
+    class v3d::renderer::RenderTargetState* renderTarget0;
+    class v3d::renderer::RenderTargetState* renderTarget1;
     //
 };

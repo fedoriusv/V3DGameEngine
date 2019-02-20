@@ -225,6 +225,7 @@ bool ShaderProgram::bindTexture(ShaderType shaderType, std::string& name, Textur
 
     const Shader* shader = m_programInfo._shaders[shaderType];
     ASSERT(shader, "fail");
+
     ASSERT(!m_shaderParameters[shaderType].empty(), "fail");
     auto iter = m_shaderParameters[shaderType].find(name);
     if (iter == m_shaderParameters[shaderType].cend())
@@ -246,7 +247,12 @@ bool ShaderProgram::bindTexture(ShaderType shaderType, std::string& name, Textur
     return false;
 }
 
-bool ShaderProgram::bindSampledTexture(ShaderType shaderType, std::string& name, TextureTarget target, const Texture* texture, const SamplerDescription& sampler)
+bool ShaderProgram::bindSampledTexture(ShaderType shaderType, std::string & name, TextureTarget target, const Texture * texture, const SamplerState * sampler)
+{
+    return ShaderProgram::bindSampledTexture(shaderType, name, target, texture, sampler->m_samplerDesc);
+}
+
+bool ShaderProgram::bindSampledTexture(ShaderType shaderType, std::string& name, TextureTarget target, const Texture* texture, const SamplerDescription& desc)
 {
     ASSERT(texture, "nullptr");
     Image* image = nullptr;
@@ -267,6 +273,7 @@ bool ShaderProgram::bindSampledTexture(ShaderType shaderType, std::string& name,
 
     const Shader* shader = m_programInfo._shaders[shaderType];
     ASSERT(shader, "fail");
+
     ASSERT(!m_shaderParameters[shaderType].empty(), "fail");
     auto iter = m_shaderParameters[shaderType].find(name);
     if (iter == m_shaderParameters[shaderType].cend())
@@ -278,7 +285,7 @@ bool ShaderProgram::bindSampledTexture(ShaderType shaderType, std::string& name,
 
     if (m_cmdList.isImmediate())
     {
-        m_cmdList.getContext()->bindSampledImage(shader, iter->second, image, nullptr);
+        //m_cmdList.getContext()->bindSampledImage(shader, iter->second, image, nullptr);
     }
     else
     {

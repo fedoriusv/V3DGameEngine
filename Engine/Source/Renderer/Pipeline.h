@@ -5,15 +5,15 @@
 #include "PipelineStateProperties.h"
 #include "ShaderProperties.h"
 #include "ObjectTracker.h"
-#include "RenderPass.h"
 
 namespace v3d
 {
 namespace renderer
 {
     struct ShaderHeader;
-    class Shader;
+
     class Context;
+    class Shader;
     class PipelineManager;
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -33,9 +33,10 @@ namespace renderer
         struct PipelineGraphicInfo
         {
             GraphicsPipelineStateDescription _pipelineDesc;
-            RenderPass::RenderPassInfo       _renderpassDesc;
-
+            RenderPassDescription            _renderpassDesc;
             ShaderProgramDescription         _programDesc;
+
+            ObjectTracker<Pipeline>*         _tracker;
         };
 
         explicit Pipeline(PipelineType type) noexcept;
@@ -69,11 +70,12 @@ namespace renderer
     public:
 
         PipelineManager() = delete;
+        PipelineManager(const PipelineManager&) = delete;
 
-        PipelineManager(Context* context) noexcept;
+        explicit PipelineManager(Context* context) noexcept;
         ~PipelineManager();
 
-        Pipeline* acquireGraphicPipeline(const Pipeline::PipelineGraphicInfo* pipelineInfo);
+        Pipeline* acquireGraphicPipeline(const Pipeline::PipelineGraphicInfo& pipelineInfo);
         bool removePipeline(Pipeline* pipeline);
         void clear();
 
@@ -83,6 +85,7 @@ namespace renderer
 
         Context*                    m_context;
         std::map<u64, Pipeline*>    m_pipelineGraphicList;
+        //std::unordered_map<u64, Pipeline*> m_pipelineGraphicList; TODO
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

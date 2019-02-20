@@ -58,27 +58,15 @@ Image * EmptyContext::createImage(TextureTarget target, renderer::Format format,
     return nullptr;
 }
 
-//Image * EmptyContext::createAttachmentImage(renderer::Format format, const core::Dimension3D& dimension, TextureSamples samples, TextureUsageFlags flags) const
-//{
-//    LOG_DEBUG("EmptyContext::createAttachmentImage");
-//    return nullptr;
-//}
-
 void EmptyContext::removeImage(Image * image)
 {
     LOG_DEBUG("EmptyContext::removeImage");
 }
 
-void EmptyContext::setRenderTarget(const RenderPass::RenderPassInfo * renderpassInfo, const std::vector<Image*>& attachments, const RenderPass::ClearValueInfo * clearInfo, 
-    const std::tuple<ObjectTracker<RenderPass>*, ObjectTracker<Framebuffer>*>& trackers)
+void EmptyContext::setRenderTarget(const RenderPass::RenderPassInfo * renderpassInfo, const Framebuffer::FramebufferInfo* framebufferInfo)
 {
     LOG_DEBUG("EmptyContext::setRenderTarget");
 }
-
-/*void EmptyContext::removeRenderTarget(const RenderPass::RenderPassInfo * renderpassInfo, const std::vector<Image*>& attachments, const RenderPass::ClearValueInfo * clearInfo)
-{
-    LOG_DEBUG("EmptyContext::removeRenderTarget");
-}*/
 
 void EmptyContext::removeFramebuffer(Framebuffer * framebuffer)
 {
@@ -95,7 +83,7 @@ void EmptyContext::invalidateRenderPass()
     LOG_DEBUG("EmptyContext::invalidateRenderPass");
 }
 
-void EmptyContext::setPipeline(const Pipeline::PipelineGraphicInfo* pipelineInfo, ObjectTracker<Pipeline>* tracker)
+void EmptyContext::setPipeline(const Pipeline::PipelineGraphicInfo* pipelineInfo)
 {
     LOG_DEBUG("EmptyContext::setPipeline");
 }
@@ -130,12 +118,12 @@ void EmptyContext::bindImage(const Shader * shader, u32 bindIndex, const Image *
     LOG_DEBUG("EmptyContext::bindImage");
 }
 
-void EmptyContext::bindSampler(const Shader * shader, u32 bindIndex, const Sampler * sampler)
+void EmptyContext::bindSampler(const Shader * shader, u32 bindIndex, const SamplerDescription& desc)
 {
     LOG_DEBUG("EmptyContext::bindSampler");
 }
 
-void EmptyContext::bindSampledImage(const Shader * shader, u32 bindIndex, const Image * image, const Sampler * sampler)
+void EmptyContext::bindSampledImage(const Shader * shader, u32 bindIndex, const Image * image, const SamplerDescription& desc)
 {
     LOG_DEBUG("EmptyContext::bindSampledImage");
 }
@@ -151,7 +139,7 @@ Framebuffer * EmptyContext::createFramebuffer(const std::vector<Image*>& images,
     return nullptr;
 }
 
-RenderPass * EmptyContext::createRenderPass(const RenderPass::RenderPassInfo * renderpassInfo)
+RenderPass * EmptyContext::createRenderPass(const RenderPassDescription * renderpassDesc)
 {
     LOG_DEBUG("EmptyContext::createRenderPass");
     return nullptr;

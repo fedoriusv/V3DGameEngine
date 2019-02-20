@@ -12,6 +12,7 @@ namespace v3d
 namespace renderer
 {
     class Texture;
+    class SamplerState;
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -34,8 +35,11 @@ namespace renderer
         bool bindTexture(std::string name, const TTexture* texture);
 
         template<class TTexture, ShaderType shaderType>
-        bool bindSampledTexture(std::string name, const TTexture* texture, const SamplerDescription& sampler);
+        bool bindSampledTexture(std::string name, const TTexture* texture, const SamplerDescription& desc);
 
+        template<class TTexture, ShaderType shaderType>
+        bool bindSampledTexture(std::string name, const TTexture* texture, const SamplerState* sampler);
+        
         template<class TDataType, ShaderType shaderType>
         bool bindUniform(std::string name, const TDataType& data);
 
@@ -54,7 +58,8 @@ namespace renderer
         void composeProgramData(const std::vector<const Shader*>& shaders);
 
         bool bindTexture(ShaderType shaderType, std::string& name, TextureTarget target, const Texture* texture);
-        bool bindSampledTexture(ShaderType shaderType, std::string& name, TextureTarget target, const Texture* texture, const SamplerDescription& sampler);
+        bool bindSampledTexture(ShaderType shaderType, std::string& name, TextureTarget target, const Texture* texture, const SamplerState* sampler);
+        bool bindSampledTexture(ShaderType shaderType, std::string& name, TextureTarget target, const Texture* texture, const SamplerDescription& desc);
         bool bindUniformsBuffer(ShaderType shaderType, std::string& name, u32 offset, u32 size, const void* data);
 
         std::map<std::string, u32> m_shaderParameters[ShaderType::ShaderType_Count];
@@ -69,7 +74,14 @@ namespace renderer
     }
 
     template<class TTexture, ShaderType shaderType>
-    bool bindSampledTexture(std::string name, const TTexture* texture, const SamplerDescription& sampler)
+    bool bindSampledTexture(std::string name, const TTexture* texture, const SamplerDescription& desc)
+    {
+        static_assert(std::is_base_of<Texture, TTexture>());
+        return bindSampledTexture(shaderType, name, texture->m_target, texture, desc);
+    }
+
+    template<class TTexture, ShaderType shaderType>
+    bool bindSampledTexture(std::string name, const TTexture* texture, const SamplerState* sampler)
     {
         static_assert(std::is_base_of<Texture, TTexture>());
         return bindSampledTexture(shaderType, name, texture->m_target, texture, sampler);

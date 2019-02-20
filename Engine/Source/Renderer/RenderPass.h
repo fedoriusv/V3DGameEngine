@@ -21,33 +21,10 @@ namespace renderer
     {
     public:
 
-        /**
-        * RenderPassInfo struct
-        * 36 byte size
-        */
         struct RenderPassInfo
         {
-            RenderPassInfo()
-            {
-                _attachments.fill(AttachmentDescription());
-                _countColorAttachments = 0;
-                _hasDepthStencilAttahment = false;
-            }
-
-            std::array<AttachmentDescription, k_maxFramebufferAttachments> _attachments; //32 bytes
-            u32 _countColorAttachments     : 4;
-            u32 _hasDepthStencilAttahment  : 1;
-
-            u32 _padding                   : 27;
-        };
-
-        struct ClearValueInfo
-        {
-            core::Dimension2D           _size;
-            std::vector<core::Vector4D> _color;
-            f32                         _depth;
-            u32                         _stencil;
-
+            std::variant<u32, RenderPassDescription> _desc;
+            ObjectTracker<RenderPass>*               _tracker;
         };
 
         RenderPass() noexcept;
@@ -73,12 +50,12 @@ namespace renderer
     public:
 
         RenderPassManager() = delete;
+        RenderPassManager(const RenderPassManager&) = delete;
 
         explicit RenderPassManager(Context *context) noexcept;
         ~RenderPassManager();
 
-        RenderPass* acquireRenderPass(const RenderPass::RenderPassInfo& desc);
-        bool removeRenderPass(const RenderPass::RenderPassInfo& desc);
+        RenderPass* acquireRenderPass(const RenderPass::RenderPassInfo& renderPassInfo);
         bool removeRenderPass(const RenderPass* renderPass);
         void clear();
 
@@ -86,16 +63,9 @@ namespace renderer
 
     private:
 
-        union RenderPassDescription
-        {
-            RenderPassDescription() {}
-
-            RenderPass::RenderPassInfo  _info;
-            u32                         _hash;
-        };
-
         Context* m_context;
-        std::map<u32, RenderPass*> m_renderpasses;
+        std::map<u32, RenderPass*> m_renderPassList;
+        //std::unordered_map<u32, RenderPass*> m_renderPasses; TODO
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

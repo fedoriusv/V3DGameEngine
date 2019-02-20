@@ -1,6 +1,7 @@
 #include "VulkanGraphicContext.h"
 #include "VulkanDebug.h"
 #include "VulkanCommandBufferManager.h"
+#include "VulkanDescriptorSet.h"
 #include "VulkanCommandBuffer.h"
 #include "VulkanSwapchain.h"
 #include "VulkanImage.h"
@@ -74,6 +75,7 @@ VulkanGraphicContext::VulkanGraphicContext(const platform::Window * window) noex
     , m_renderpassManager(nullptr)
     , m_framebuferManager(nullptr)
     , m_pipelineManager(nullptr)
+    , m_samplerManager(nullptr)
 
     , m_currentContextStateNEW(nullptr)
 
@@ -97,6 +99,7 @@ VulkanGraphicContext::~VulkanGraphicContext()
     ASSERT(!m_renderpassManager, "m_renderpassManager not nullptr");
     ASSERT(!m_framebuferManager, "m_framebuferManager not nullptr");
     ASSERT(!m_pipelineManager, "m_pipelineManager not nullptr");
+    ASSERT(!m_samplerManager, "m_samplerManager not nullptr");
 
     ASSERT(!m_swapchain, "m_swapchain not nullptr");
     ASSERT(!m_cmdBufferManager, "m_cmdBufferManager not nullptr");
@@ -258,24 +261,25 @@ void VulkanGraphicContext::setScissor(const core::Rect32 & scissor)
     }
 }
 
-void VulkanGraphicContext::setRenderTarget(const RenderPass::RenderPassInfo * renderpassInfo, const std::vector<Image*>& attachments, const RenderPass::ClearValueInfo * clearInfo, 
-    const std::tuple<ObjectTracker<RenderPass>*, ObjectTracker<Framebuffer>*>& trackers)
+void VulkanGraphicContext::setRenderTarget(const RenderPass::RenderPassInfo * renderpassInfo, const Framebuffer::FramebufferInfo* framebufferInfo)
 {
+    ASSERT(renderpassInfo && framebufferInfo, "nullptr");
+
     RenderPass* renderpass = m_renderpassManager->acquireRenderPass(*renderpassInfo);
     ASSERT(renderpass, "renderpass is nullptr");
-    std::get<0>(trackers)->attach(renderpass);
+    renderpassInfo->_tracker->attach(renderpass);
     VulkanRenderPass* vkRenderpass = static_cast<VulkanRenderPass*>(renderpass);
 
     std::vector<VulkanFramebuffer*> vkFramebuffer;
-    bool swapchainPresnet = std::find(attachments.cbegin(), attachments.cend(), nullptr) != attachments.cend();
+    bool swapchainPresnet = std::find(framebufferInfo->_images.cbegin(), framebufferInfo->_images.cend(), nullptr) != framebufferInfo->_images.cend();
     if (swapchainPresnet)
     {
         for (u32 index = 0; index < m_swapchain->getSwapchainImageCount(); ++index)
         {
             std::vector<Image*> images;
-            images.reserve(attachments.size());
+            images.reserve(framebufferInfo->_images.size());
             Image* swapchainImage = m_swapchain->getSwapchainImage(index);
-            for (auto iter = attachments.begin(); iter < attachments.end(); ++iter)
+            for (auto iter = framebufferInfo->_images.begin(); iter < framebufferInfo->_images.end(); ++iter)
             {
                 if (*iter == nullptr)
                 {
@@ -285,17 +289,17 @@ void VulkanGraphicContext::setRenderTarget(const RenderPass::RenderPassInfo * re
                 images.push_back(*iter);
             }
 
-            Framebuffer* framebuffer = m_framebuferManager->acquireFramebuffer(renderpass, images, clearInfo->_size);
+            Framebuffer* framebuffer = m_framebuferManager->acquireFramebuffer(renderpass, *framebufferInfo);
             ASSERT(framebuffer, "framebuffer is nullptr");
-            std::get<1>(trackers)->attach(framebuffer);
+            framebufferInfo->_tracker->attach(framebuffer);
             vkFramebuffer.push_back(static_cast<VulkanFramebuffer*>(framebuffer));
         }
     }
     else
     {
-        Framebuffer* framebuffer = m_framebuferManager->acquireFramebuffer(renderpass, attachments, clearInfo->_size);
+        Framebuffer* framebuffer = m_framebuferManager->acquireFramebuffer(renderpass, *framebufferInfo);
         ASSERT(framebuffer, "framebuffer is nullptr");
-        std::get<1>(trackers)->attach(framebuffer);
+        framebufferInfo->_tracker->attach(framebuffer);
         vkFramebuffer.push_back(static_cast<VulkanFramebuffer*>(framebuffer));
     }
 
@@ -315,19 +319,19 @@ void VulkanGraphicContext::setRenderTarget(const RenderPass::RenderPassInfo * re
 
         VkRect2D area;
         area.offset = { 0, 0 };
-        area.extent = { clearInfo->_size.width, clearInfo->_size.height };
+        area.extent = { framebufferInfo->_clearInfo._size.width, framebufferInfo->_clearInfo._size.height };
 
 
-        u32 countClearValues = static_cast<u32>(clearInfo->_color.size() + ((renderpassInfo->_hasDepthStencilAttahment) ? 1 : 0));
+        u32 countClearValues = static_cast<u32>(framebufferInfo->_clearInfo._color.size() + ((std::get<RenderPassDescription>(renderpassInfo->_desc)._hasDepthStencilAttahment) ? 1 : 0));
         std::vector<VkClearValue> clearValues(countClearValues);
-        for (u32 index = 0; index < clearInfo->_color.size(); ++index)
+        for (u32 index = 0; index < framebufferInfo->_clearInfo._color.size(); ++index)
         {
-            clearValues[index] = { clearInfo->_color[index].x, clearInfo->_color[index].y, clearInfo->_color[index].z, clearInfo->_color[index].w };
+            clearValues[index] = { framebufferInfo->_clearInfo._color[index].x, framebufferInfo->_clearInfo._color[index].y, framebufferInfo->_clearInfo._color[index].z, framebufferInfo->_clearInfo._color[index].w };
         }
 
-        if (renderpassInfo->_hasDepthStencilAttahment)
+        if (std::get<RenderPassDescription>(renderpassInfo->_desc)._hasDepthStencilAttahment)
         {
-            clearValues.back().depthStencil = { clearInfo->_depth, clearInfo->_stencil };
+            clearValues.back().depthStencil = { framebufferInfo->_clearInfo._depth, framebufferInfo->_clearInfo._stencil };
         }
         m_currentContextStateNEW->setClearValues(area, clearValues);
 
@@ -377,13 +381,13 @@ void VulkanGraphicContext::invalidateRenderPass()
     }
 }
 
-void VulkanGraphicContext::setPipeline(const Pipeline::PipelineGraphicInfo* pipelineInfo, ObjectTracker<Pipeline>* tracker)
+void VulkanGraphicContext::setPipeline(const Pipeline::PipelineGraphicInfo* pipelineInfo)
 {
     ASSERT(pipelineInfo, "nullptr");
 
-    Pipeline* pipeline = m_pipelineManager->acquireGraphicPipeline(pipelineInfo);
+    Pipeline* pipeline = m_pipelineManager->acquireGraphicPipeline(*pipelineInfo);
     ASSERT(pipeline, "nullptr");
-    tracker->attach(pipeline);
+    pipelineInfo->_tracker->attach(pipeline);
 #if VULKAN_DEBUG
     LOG_DEBUG("VulkanGraphicContext::setPipeline %xll", pipeline);
 #endif //VULKAN_DEBUG
@@ -398,7 +402,7 @@ void VulkanGraphicContext::removePipeline(Pipeline * pipeline)
     if (m_currentContextStateNEW->isCurrentPipeline(vkPipeline) || vkPipeline->isCaptured())
     {
         ASSERT(false, "not implementing");
-        //delayed delete
+        //TODO: delayed delete
     }
 
     m_pipelineManager->removePipeline(pipeline);
@@ -538,20 +542,23 @@ void VulkanGraphicContext::bindImage(const Shader * shader, u32 bindIndex, const
     m_currentContextStateNEW->bindTexture(vkImage, nullptr, 1, sampledData);
 }
 
-void VulkanGraphicContext::bindSampler(const Shader * shader, u32 bindIndex, const Sampler * sampler)
+void VulkanGraphicContext::bindSampler(const Shader * shader, u32 bindIndex, const SamplerDescription& desc)
 {
     //TODO:
 }
 
-void VulkanGraphicContext::bindSampledImage(const Shader * shader, u32 bindIndex, const Image * image, const Sampler * sampler)
+void VulkanGraphicContext::bindSampledImage(const Shader * shader, u32 bindIndex, const Image * image, const SamplerDescription& desc)
 {
-    const VulkanImage* vkImage = static_cast<const VulkanImage*>(image);
+    /*const VulkanImage* vkImage = static_cast<const VulkanImage*>(image);
+
+    Sampler* sampler = m_samplerManager->acquireSampler(desc);
+    ASSERT(sampler, "nullptr");
     const VulkanSampler* vkSampler = static_cast<const VulkanSampler*>(sampler);
 
     const Shader::ReflectionInfo& info = shader->getReflectionInfo();
     const Shader::SampledImage& sampledData = info._sampledImages[bindIndex];
 
-    m_currentContextStateNEW->bindTexture(vkImage, vkSampler, 1, sampledData);
+    m_currentContextStateNEW->bindTexture(vkImage, vkSampler, 1, sampledData);*/
 }
 
 const DeviceCaps* VulkanGraphicContext::getDeviceCaps() const
@@ -664,6 +671,7 @@ bool VulkanGraphicContext::initialize()
     m_renderpassManager = new RenderPassManager(this);
     m_framebuferManager = new FramebufferManager(this);
     m_pipelineManager = new PipelineManager(this);
+    m_samplerManager = new SamplerManager(this);
 
     m_currentContextStateNEW = new VulkanContextState(m_deviceInfo._device, m_descriptorSetManager, m_uniformBufferManager);
 
@@ -696,6 +704,13 @@ void VulkanGraphicContext::destroy()
         m_uniformBufferManager = nullptr;
     }
 
+    if (m_descriptorSetManager)
+    {
+        delete m_descriptorSetManager;
+        m_descriptorSetManager = nullptr;
+    }
+
+
     if (m_deviceCaps.unifiedMemoryManager)
     {
         delete m_imageMemoryManager;
@@ -710,6 +725,7 @@ void VulkanGraphicContext::destroy()
         delete m_bufferMemoryManager;
         m_bufferMemoryManager = nullptr;
     }
+
 
     if (m_renderpassManager)
     {
@@ -729,16 +745,17 @@ void VulkanGraphicContext::destroy()
         m_pipelineManager = nullptr;
     }
 
+    if (m_samplerManager)
+    {
+        delete m_samplerManager;
+        m_samplerManager = nullptr;
+    }
+
+
     if (m_currentContextStateNEW)
     {
         delete m_currentContextStateNEW;
         m_currentContextStateNEW = nullptr;
-    }
-
-    if (m_descriptorSetManager)
-    {
-        delete m_descriptorSetManager;
-        m_descriptorSetManager = nullptr;
     }
 
     if (m_swapchain)
@@ -773,28 +790,28 @@ Framebuffer * VulkanGraphicContext::createFramebuffer(const std::vector<Image*>&
     return new VulkanFramebuffer(m_deviceInfo._device, images, size);
 }
 
-RenderPass * VulkanGraphicContext::createRenderPass(const RenderPass::RenderPassInfo * renderpassInfo)
+RenderPass * VulkanGraphicContext::createRenderPass(const RenderPassDescription* renderpassDesc)
 {
-    u32 countAttachments = (renderpassInfo->_hasDepthStencilAttahment) ? renderpassInfo->_countColorAttachments + 1 : renderpassInfo->_countColorAttachments;
+    u32 countAttachments = (renderpassDesc->_hasDepthStencilAttahment) ? renderpassDesc->_countColorAttachments + 1 : renderpassDesc->_countColorAttachments;
     std::vector<VulkanRenderPass::VulkanAttachmentDescription> descs(countAttachments);
-    for (u32 index = 0; index < renderpassInfo->_countColorAttachments; ++index)
+    for (u32 index = 0; index < renderpassDesc->_countColorAttachments; ++index)
     {
         VulkanRenderPass::VulkanAttachmentDescription& desc = descs[index];
-        desc._format = VulkanImage::convertImageFormatToVkFormat(renderpassInfo->_attachments[index]._format);
-        desc._samples = VulkanImage::convertRenderTargetSamplesToVkSampleCount(renderpassInfo->_attachments[index]._samples);
-        desc._loadOp = VulkanRenderPass::convertAttachLoadOpToVkAttachmentLoadOp(renderpassInfo->_attachments[index]._loadOp);
-        desc._storeOp = VulkanRenderPass::convertAttachStoreOpToVkAttachmentStoreOp(renderpassInfo->_attachments[index]._storeOp);
-        desc._swapchainImage = (renderpassInfo->_attachments[index]._internalTarget) ? true : false;
+        desc._format = VulkanImage::convertImageFormatToVkFormat(renderpassDesc->_attachments[index]._format);
+        desc._samples = VulkanImage::convertRenderTargetSamplesToVkSampleCount(renderpassDesc->_attachments[index]._samples);
+        desc._loadOp = VulkanRenderPass::convertAttachLoadOpToVkAttachmentLoadOp(renderpassDesc->_attachments[index]._loadOp);
+        desc._storeOp = VulkanRenderPass::convertAttachStoreOpToVkAttachmentStoreOp(renderpassDesc->_attachments[index]._storeOp);
+        desc._swapchainImage = (renderpassDesc->_attachments[index]._internalTarget) ? true : false;
     }
 
-    if (renderpassInfo->_hasDepthStencilAttahment)
+    if (renderpassDesc->_hasDepthStencilAttahment)
     {
         VulkanRenderPass::VulkanAttachmentDescription& desc = descs.back();
-        desc._format = VulkanImage::convertImageFormatToVkFormat(renderpassInfo->_attachments.back()._format);
-        desc._samples = VulkanImage::convertRenderTargetSamplesToVkSampleCount(renderpassInfo->_attachments.back()._samples);
-        desc._loadOp = VulkanRenderPass::convertAttachLoadOpToVkAttachmentLoadOp(renderpassInfo->_attachments.back()._loadOp);
-        desc._storeOp = VulkanRenderPass::convertAttachStoreOpToVkAttachmentStoreOp(renderpassInfo->_attachments.back()._storeOp);
-        desc._swapchainImage = (renderpassInfo->_attachments.back()._internalTarget) ? true : false;
+        desc._format = VulkanImage::convertImageFormatToVkFormat(renderpassDesc->_attachments.back()._format);
+        desc._samples = VulkanImage::convertRenderTargetSamplesToVkSampleCount(renderpassDesc->_attachments.back()._samples);
+        desc._loadOp = VulkanRenderPass::convertAttachLoadOpToVkAttachmentLoadOp(renderpassDesc->_attachments.back()._loadOp);
+        desc._storeOp = VulkanRenderPass::convertAttachStoreOpToVkAttachmentStoreOp(renderpassDesc->_attachments.back()._storeOp);
+        desc._swapchainImage = (renderpassDesc->_attachments.back()._internalTarget) ? true : false;
     }
 
     return new VulkanRenderPass(m_deviceInfo._device, descs);

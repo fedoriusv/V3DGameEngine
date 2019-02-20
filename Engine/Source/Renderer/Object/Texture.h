@@ -12,7 +12,7 @@ namespace v3d
 namespace renderer
 {
     class Image;
-    class RenderTarget;
+    class RenderTargetState;
     class ShaderProgram;
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -77,7 +77,7 @@ namespace renderer
         renderer::Image*                    m_image;
 
         friend ShaderProgram;
-        friend RenderTarget;
+        friend RenderTargetState;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

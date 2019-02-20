@@ -43,14 +43,15 @@ PipelineManager::PipelineManager(Context * context) noexcept
 
 PipelineManager::~PipelineManager()
 {
+    PipelineManager::clear();
 }
 
-Pipeline* PipelineManager::acquireGraphicPipeline(const Pipeline::PipelineGraphicInfo* pipelineInfo)
+Pipeline* PipelineManager::acquireGraphicPipeline(const Pipeline::PipelineGraphicInfo& pipelineInfo)
 {
-    u32 hash = crc32c::Crc32c((u8*)&pipelineInfo->_pipelineDesc, sizeof(GraphicsPipelineStateDescription));
-    hash = crc32c::Extend(hash, (u8*)&pipelineInfo->_renderpassDesc, sizeof(RenderPass::RenderPassInfo));
+    u32 hash = crc32c::Crc32c((u8*)&pipelineInfo._pipelineDesc, sizeof(GraphicsPipelineStateDescription));
+    hash = crc32c::Extend(hash, (u8*)&pipelineInfo._renderpassDesc, sizeof(RenderPass::RenderPassInfo));
 
-    u64 pipelineHash = pipelineInfo->_programDesc._hash;
+    u64 pipelineHash = pipelineInfo._programDesc._hash;
     pipelineHash = hash | pipelineHash << 32;
 
     Pipeline* pipeline = nullptr;
@@ -60,7 +61,7 @@ Pipeline* PipelineManager::acquireGraphicPipeline(const Pipeline::PipelineGraphi
         pipeline = m_context->createPipeline(Pipeline::PipelineType::PipelineType_Graphic);
         pipeline->m_key = pipelineHash;
 
-        if (!pipeline->create(pipelineInfo))
+        if (!pipeline->create(&pipelineInfo))
         {
             pipeline->destroy();
             m_pipelineGraphicList.erase(pipelineHash);
@@ -75,8 +76,6 @@ Pipeline* PipelineManager::acquireGraphicPipeline(const Pipeline::PipelineGraphi
     }
 
     return found.first->second;
-
-    return nullptr;
 }
 
 bool PipelineManager::removePipeline(Pipeline* pipeLine)
@@ -95,10 +94,12 @@ bool PipelineManager::removePipeline(Pipeline* pipeLine)
         ASSERT(pipeline == pipeLine, "Different pointers");
         if (pipeline->linked())
         {
-            LOG_WARNING("PipelineManager::PipelineManager pipleline still linked, but reqested to delete");
+            LOG_WARNING("PipelineManager::removePipeline pipleline still linked, but reqested to delete");
             ASSERT(false, "pipeline");
             //return false;
         }
+        m_pipelineGraphicList.erase(iter);
+
         pipeline->notifyObservers();
 
         pipeline->destroy();
@@ -112,12 +113,18 @@ bool PipelineManager::removePipeline(Pipeline* pipeLine)
 
 void PipelineManager::clear()
 {
-    for (auto& pipeline : m_pipelineGraphicList)
+    for (auto& iter : m_pipelineGraphicList)
     {
-        pipeline.second->destroy();
-        pipeline.second->notifyObservers();
+        Pipeline* pipeline = iter.second;
+        if (pipeline->linked())
+        {
+            LOG_WARNING("PipelineManager::clear pipleline still linked, but reqested to delete");
+            ASSERT(false, "pipeline");
+        }
+        pipeline->notifyObservers();
 
-        delete pipeline.second;
+        pipeline->destroy();
+        delete pipeline;
     }
     m_pipelineGraphicList.clear();
 }
@@ -125,7 +132,6 @@ void PipelineManager::clear()
 void PipelineManager::handleNotify(utils::Observable * ob)
 {
     LOG_DEBUG("PipelineManager pipeline %x has been deleted", ob);
-    m_pipelineGraphicList.erase(static_cast<Pipeline*>(ob)->m_key);
 }
 
 } //namespace renderer

@@ -18,15 +18,15 @@ namespace renderer
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
-    * RenderTarget class. Game side
+    * RenderTargetState class. Game side
     */
-    class RenderTarget : public Object
+    class RenderTargetState : public Object
     {
     public:
 
-        RenderTarget() = delete;
-        RenderTarget(const RenderTarget&) = delete;
-        ~RenderTarget();
+        RenderTargetState() = delete;
+        RenderTargetState(const RenderTargetState&) = delete;
+        ~RenderTargetState();
 
         bool setColorTexture(u32 index, Texture2D* colorTexture,
             RenderTargetLoadOp loadOp = RenderTargetLoadOp::LoadOp_Clear, RenderTargetStoreOp storeOp = RenderTargetStoreOp::StoreOp_Store,
@@ -51,9 +51,9 @@ namespace renderer
 
     private:
 
-        RenderTarget(renderer::CommandList& cmdList, const core::Dimension2D& size) noexcept;
+        RenderTargetState(renderer::CommandList& cmdList, const core::Dimension2D& size) noexcept;
 
-        void extractRenderTargetInfo(RenderPass::RenderPassInfo& renderpassInfo, std::vector<Image*>& attachments, RenderPass::ClearValueInfo& clearInfo) const;
+        void extractRenderTargetInfo(RenderPassDescription& renderpassDesc, std::vector<Image*>& attachments, Framebuffer::ClearValueInfo& clearInfo) const;
         void destroyFramebuffers(const std::vector<Framebuffer*>& framebuffers);
         void destroyRenderPasses(const std::vector<RenderPass*>& renderPasses);
 

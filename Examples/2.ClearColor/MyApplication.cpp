@@ -6,7 +6,7 @@
 #include "Platform/Window.h"
 
 #include "Renderer/Object/Texture.h"
-#include "Renderer/Object/RenderTarget.h"
+#include "Renderer/Object/RenderTargetState.h"
 #include "Renderer/Formats.h"
 
 

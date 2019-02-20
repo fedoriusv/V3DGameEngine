@@ -21,7 +21,7 @@ namespace renderer
     class CommandList;
 
     class Backbuffer;
-    class RenderTarget;
+    class RenderTargetState;
     class GraphicsPipelineState;
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -75,7 +75,7 @@ namespace renderer
 
         void clearBackbuffer(const core::Vector4D& color);
 
-        void setRenderTarget(RenderTarget* rendertarget);
+        void setRenderTarget(RenderTargetState* rendertarget);
         void setPipelineState(GraphicsPipelineState* pipeline);
         void setViewport(const core::Rect32& viewport, const core::Vector2D& depth = {0.0f, 1.0f});
         void setScissor(const core::Rect32& scissor);
@@ -113,20 +113,15 @@ namespace renderer
 
     private:
 
-        struct RenderTargetInfo
+        struct RenderTargetPendingState
         {
-            std::vector<Image*>         _attachments;
-            RenderPass::RenderPassInfo  _renderpassInfo;
-            RenderPass::ClearValueInfo  _clearInfo;
-
-            ObjectTracker<RenderPass>*  _trackerRenderpass;
-            ObjectTracker<Framebuffer>* _trackerFramebuffer;
+            RenderPass::RenderPassInfo   _renderpassInfo;
+            Framebuffer::FramebufferInfo _framebufferInfo;
         };
 
-        struct PipelineStateInfo
+        struct PipelinePendingState
         {
             Pipeline::PipelineGraphicInfo _pipelineInfo;
-            ObjectTracker<Pipeline>*      _tracker;
         };
 
         void executeCommands();
@@ -138,8 +133,8 @@ namespace renderer
         CommandListType             m_commandListType;
 
         ContextStates               m_pendingStates;
-        RenderTargetInfo            m_pendingRenderTargetInfo;
-        PipelineStateInfo           m_pendingPipelineStateInfo;
+        RenderTargetPendingState    m_pendingRenderTargetInfo;
+        PipelinePendingState        m_pendingPipelineStateInfo;
 
         PendingFlushMaskFlags       m_pendingFlushMask;
 

@@ -73,8 +73,8 @@ namespace renderer
 
         //program bind
         virtual void bindImage(const Shader* shader, u32 bindIndex, const Image* image) = 0;
-        virtual void bindSampler(const Shader* shader, u32 bindIndex, const Sampler* sampler) = 0;
-        virtual void bindSampledImage(const Shader* shader, u32 bindIndex, const Image* image, const Sampler* sampler) = 0;
+        virtual void bindSampler(const Shader* shader, u32 bindIndex, const SamplerDescription& desc) = 0;
+        virtual void bindSampledImage(const Shader* shader, u32 bindIndex, const Image* image, const SamplerDescription& desc) = 0;
         virtual void bindUniformsBuffer(const Shader* shader, u32 bindIndex, u32 offset, u32 size, const void* data) = 0;
 
         //geometry bind
@@ -84,19 +84,16 @@ namespace renderer
         virtual void setViewport(const core::Rect32& viewport, const core::Vector2D& depth = { 0.0f, 1.0f }) = 0;
         virtual void setScissor(const core::Rect32& scissor) = 0;
 
-        virtual void setRenderTarget(const RenderPass::RenderPassInfo* renderpassInfo, const std::vector<Image*>& attachments, const RenderPass::ClearValueInfo* clearInfo, 
-            const std::tuple<ObjectTracker<RenderPass>*, ObjectTracker<Framebuffer>*>& trackers) = 0;
-        //virtual void removeRenderTarget(const RenderPass::RenderPassInfo * renderpassInfo, const std::vector<Image*>& attachments, const RenderPass::ClearValueInfo * clearInfo) = 0;
+        virtual void setRenderTarget(const RenderPass::RenderPassInfo* renderpassInfo, const Framebuffer::FramebufferInfo* framebufferInfo) = 0;
         virtual void removeFramebuffer(Framebuffer* framebuffer) = 0;
         virtual void removeRenderPass(RenderPass* renderpass) = 0;
         virtual void invalidateRenderPass() = 0;
 
-        virtual void setPipeline(const Pipeline::PipelineGraphicInfo* pipelineInfo, ObjectTracker<Pipeline>* tracker) = 0;
+        virtual void setPipeline(const Pipeline::PipelineGraphicInfo* pipelineInfo) = 0;
         virtual void removePipeline(Pipeline* pipeline) = 0;
 
         //objects
         virtual Image* createImage(TextureTarget target, renderer::Format format, const core::Dimension3D& dimension, u32 mipmapLevel, TextureUsageFlags flags) const = 0;
-        //virtual Image* createAttachmentImage(renderer::Format format, const core::Dimension3D& dimension, TextureSamples samples, TextureUsageFlags flags) const = 0;
         virtual void removeImage(Image* image) = 0;
 
         virtual Buffer* createBuffer(Buffer::BufferType type, u16 usageFlag, u64 size) = 0;
@@ -113,9 +110,9 @@ namespace renderer
         friend Backbuffer;
         friend SamplerManager;
 
-        //managment objects
+        //management objects
         virtual Framebuffer* createFramebuffer(const std::vector<Image*>& attachments, const core::Dimension2D& size) = 0;
-        virtual RenderPass* createRenderPass(const RenderPass::RenderPassInfo* renderpassInfo) = 0;
+        virtual RenderPass* createRenderPass(const RenderPassDescription* renderpassDesc) = 0;
         virtual Pipeline* createPipeline(Pipeline::PipelineType type) = 0;
         virtual Sampler* createSampler() = 0;
 
@@ -131,7 +128,7 @@ namespace renderer
         BackbufferDesc m_backufferDescription;
 
         RenderType  m_renderType;
-        u64 m_frameCounter;
+        u64         m_frameCounter;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

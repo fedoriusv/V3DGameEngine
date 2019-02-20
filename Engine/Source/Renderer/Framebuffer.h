@@ -23,6 +23,22 @@ namespace renderer
     {
     public:
 
+        struct ClearValueInfo
+        {
+            core::Dimension2D           _size;
+            std::vector<core::Vector4D> _color;
+            f32                         _depth;
+            u32                         _stencil;
+        };
+
+        struct FramebufferInfo
+        {
+            std::vector<Image*>         _images;
+            ClearValueInfo              _clearInfo;
+
+            ObjectTracker<Framebuffer>* _tracker;
+        };
+
         Framebuffer() noexcept;
         virtual ~Framebuffer();
 
@@ -51,8 +67,7 @@ namespace renderer
         explicit FramebufferManager(Context *context) noexcept;
         ~FramebufferManager();
 
-        Framebuffer* acquireFramebuffer(const RenderPass* renderpass, const std::vector<Image*>& images, const core::Dimension2D& size);
-        bool removeFramebuffer(const std::vector<Image*>& images);
+        Framebuffer* acquireFramebuffer(const RenderPass* renderpass, const Framebuffer::FramebufferInfo& framebufferInfo);
         bool removeFramebuffer(Framebuffer* framebufer);
         void clear();
 
@@ -61,7 +76,8 @@ namespace renderer
     private:
 
         Context* m_context;
-        std::map<u32, Framebuffer*> m_framebuffers;
+        std::map<u32, Framebuffer*> m_framebufferList;
+        //std::unordered_map<u32, Framebuffer*> m_framebufferList; TODO
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
