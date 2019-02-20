@@ -77,7 +77,9 @@ namespace renderer
     bool bindSampledTexture(std::string name, const TTexture* texture, const SamplerDescription& desc)
     {
         static_assert(std::is_base_of<Texture, TTexture>());
-        return bindSampledTexture(shaderType, name, texture->m_target, texture, desc);
+        ASSERT(false, "not implemented");
+        return false;
+        //return bindSampledTexture(shaderType, name, texture->m_target, texture, desc);
     }
 
     template<class TTexture, ShaderType shaderType>

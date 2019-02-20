@@ -4,6 +4,7 @@
 #include "Utils/Observable.h"
 #include "Renderer/SamplerProperties.h"
 #include "Renderer/PipelineStateProperties.h"
+#include "ObjectTracker.h"
 
 namespace v3d
 {
@@ -17,33 +18,40 @@ namespace renderer
     /**
     * Sampler base class. Render side
     */
-    class Sampler : public utils::Observable
+    class Sampler : public RenderObject<Sampler>, public utils::Observable
     {
     public:
 
         struct SamplerInfo
         {
-            SamplerFilter       _mag;
-            SamplerFilter       _min;
-            SamplerAnisotropic  _aniso;
-            SamplerWrap         _wrap[3];
-            f32                 _mipBias;
-            f32                 _minLod;
-            f32                 _maxLod;
+            SamplerInfo() noexcept
+                : _tracker(nullptr)
+            {
+            }
 
-            CompareOperation    _compareOp;
-            bool                _enableCompOp;
+            union SamplerDesc
+            {
+                SamplerDesc() noexcept
+                {
+                    memset(this, 0, sizeof(SamplerDesc));
+                }
+
+                SamplerDescription    _desc;
+                u64                   _hash;
+            };
+            SamplerDesc             _value;
+            ObjectTracker<Sampler>* _tracker;
         };
 
         Sampler() noexcept;
         virtual ~Sampler();
 
-        virtual bool create(const SamplerInfo& info) = 0;
+        virtual bool create(const SamplerDescription& info) = 0;
         virtual void destroy() = 0;
 
     private:
 
-        u32 m_key;
+        u64 m_key;
 
         friend SamplerManager;
     };
@@ -64,23 +72,15 @@ namespace renderer
 
         void handleNotify(utils::Observable* ob) override;
 
-        Sampler* acquireSampler(const Sampler::SamplerInfo& samplerInfo);
-        bool removeSampler(const Sampler::SamplerInfo& samplerInfo);
+        Sampler* acquireSampler(const SamplerDescription& samplerInfo);
         bool removeSampler(Sampler* sampler);
         void clear();
 
     private:
 
-        union SamplerDescription
-        {
-            SamplerDescription() {}
-
-            Sampler::SamplerInfo  _info;
-            u32                   _hash;
-        };
-
         Context*                   m_context;
-        std::map<u32, Sampler*>    m_samplerList;
+        std::map<u64, Sampler*>    m_samplerList;
+        //TODO hash map
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

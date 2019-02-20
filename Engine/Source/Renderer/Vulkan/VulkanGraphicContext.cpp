@@ -265,7 +265,7 @@ void VulkanGraphicContext::setRenderTarget(const RenderPass::RenderPassInfo * re
 {
     ASSERT(renderpassInfo && framebufferInfo, "nullptr");
 
-    RenderPass* renderpass = m_renderpassManager->acquireRenderPass(*renderpassInfo);
+    RenderPass* renderpass = m_renderpassManager->acquireRenderPass(renderpassInfo->_value._desc);
     ASSERT(renderpass, "renderpass is nullptr");
     renderpassInfo->_tracker->attach(renderpass);
     VulkanRenderPass* vkRenderpass = static_cast<VulkanRenderPass*>(renderpass);
@@ -289,7 +289,7 @@ void VulkanGraphicContext::setRenderTarget(const RenderPass::RenderPassInfo * re
                 images.push_back(*iter);
             }
 
-            Framebuffer* framebuffer = m_framebuferManager->acquireFramebuffer(renderpass, *framebufferInfo);
+            Framebuffer* framebuffer = m_framebuferManager->acquireFramebuffer(renderpass, images, framebufferInfo->_clearInfo._size);
             ASSERT(framebuffer, "framebuffer is nullptr");
             framebufferInfo->_tracker->attach(framebuffer);
             vkFramebuffer.push_back(static_cast<VulkanFramebuffer*>(framebuffer));
@@ -297,7 +297,7 @@ void VulkanGraphicContext::setRenderTarget(const RenderPass::RenderPassInfo * re
     }
     else
     {
-        Framebuffer* framebuffer = m_framebuferManager->acquireFramebuffer(renderpass, *framebufferInfo);
+        Framebuffer* framebuffer = m_framebuferManager->acquireFramebuffer(renderpass, framebufferInfo->_images, framebufferInfo->_clearInfo._size);
         ASSERT(framebuffer, "framebuffer is nullptr");
         framebufferInfo->_tracker->attach(framebuffer);
         vkFramebuffer.push_back(static_cast<VulkanFramebuffer*>(framebuffer));
@@ -322,14 +322,14 @@ void VulkanGraphicContext::setRenderTarget(const RenderPass::RenderPassInfo * re
         area.extent = { framebufferInfo->_clearInfo._size.width, framebufferInfo->_clearInfo._size.height };
 
 
-        u32 countClearValues = static_cast<u32>(framebufferInfo->_clearInfo._color.size() + ((std::get<RenderPassDescription>(renderpassInfo->_desc)._hasDepthStencilAttahment) ? 1 : 0));
+        u32 countClearValues = static_cast<u32>(framebufferInfo->_clearInfo._color.size()) + (renderpassInfo->_value._desc._hasDepthStencilAttahment ? 1 : 0);
         std::vector<VkClearValue> clearValues(countClearValues);
         for (u32 index = 0; index < framebufferInfo->_clearInfo._color.size(); ++index)
         {
             clearValues[index] = { framebufferInfo->_clearInfo._color[index].x, framebufferInfo->_clearInfo._color[index].y, framebufferInfo->_clearInfo._color[index].z, framebufferInfo->_clearInfo._color[index].w };
         }
 
-        if (std::get<RenderPassDescription>(renderpassInfo->_desc)._hasDepthStencilAttahment)
+        if (renderpassInfo->_value._desc._hasDepthStencilAttahment)
         {
             clearValues.back().depthStencil = { framebufferInfo->_clearInfo._depth, framebufferInfo->_clearInfo._stencil };
         }
@@ -472,6 +472,20 @@ void VulkanGraphicContext::removeBuffer(Buffer * buffer)
     }
 }
 
+void VulkanGraphicContext::removeSampler(Sampler * sampler)
+{
+    VulkanSampler* vkSampler = static_cast<VulkanSampler*>(sampler);
+    if (vkSampler->isCaptured())
+    {
+        //delayed destoy
+        ASSERT(false, "not implementing");
+    }
+    else
+    {
+        m_samplerManager->removeSampler(sampler);
+    }
+}
+
 void VulkanGraphicContext::bindUniformsBuffer(const Shader* shader, u32 bindIndex, u32 offset, u32 size, const void* data)
 {
     const Shader::ReflectionInfo& info = shader->getReflectionInfo();
@@ -542,23 +556,26 @@ void VulkanGraphicContext::bindImage(const Shader * shader, u32 bindIndex, const
     m_currentContextStateNEW->bindTexture(vkImage, nullptr, 1, sampledData);
 }
 
-void VulkanGraphicContext::bindSampler(const Shader * shader, u32 bindIndex, const SamplerDescription& desc)
+void VulkanGraphicContext::bindSampler(const Shader * shader, u32 bindIndex, const Sampler::SamplerInfo* samplerInfo)
 {
+    ASSERT(false, "not impl");
     //TODO:
 }
 
-void VulkanGraphicContext::bindSampledImage(const Shader * shader, u32 bindIndex, const Image * image, const SamplerDescription& desc)
+void VulkanGraphicContext::bindSampledImage(const Shader * shader, u32 bindIndex, const Image * image, const Sampler::SamplerInfo* samplerInfo)
 {
-    /*const VulkanImage* vkImage = static_cast<const VulkanImage*>(image);
+    ASSERT(image && samplerInfo, "nullptr");
+    const VulkanImage* vkImage = static_cast<const VulkanImage*>(image);
 
-    Sampler* sampler = m_samplerManager->acquireSampler(desc);
+    Sampler* sampler = m_samplerManager->acquireSampler(samplerInfo->_value._desc);
     ASSERT(sampler, "nullptr");
+    samplerInfo->_tracker->attach(sampler);
     const VulkanSampler* vkSampler = static_cast<const VulkanSampler*>(sampler);
 
     const Shader::ReflectionInfo& info = shader->getReflectionInfo();
     const Shader::SampledImage& sampledData = info._sampledImages[bindIndex];
 
-    m_currentContextStateNEW->bindTexture(vkImage, vkSampler, 1, sampledData);*/
+    m_currentContextStateNEW->bindTexture(vkImage, vkSampler, 1, sampledData);
 }
 
 const DeviceCaps* VulkanGraphicContext::getDeviceCaps() const
@@ -830,7 +847,7 @@ Pipeline* VulkanGraphicContext::createPipeline(Pipeline::PipelineType type)
 
 Sampler * VulkanGraphicContext::createSampler()
 {
-    return new VulkanSampler();
+    return new VulkanSampler(m_deviceInfo._device);
 }
 
 bool VulkanGraphicContext::createInstance()

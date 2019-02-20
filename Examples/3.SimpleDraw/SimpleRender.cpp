@@ -18,7 +18,7 @@ SimpleRender::SimpleRender(renderer::CommandList& cmdList, const core::Dimension
 {
     m_program = cmdList.createObject<ShaderProgram>(shaders);
 
-    m_sampler = cmdList.createObject<SamplerState>(SamplerFilter::SamplerFilter_Nearest, SamplerFilter::SamplerFilter_Nearest);
+    m_sampler = cmdList.createObject<SamplerState>(SamplerFilter::SamplerFilter_Nearest, SamplerFilter::SamplerFilter_Nearest, SamplerAnisotropic::SamplerAnisotropic_None);
     //m_texture = cmdList.createObject<Texture2D>(TextureUsage::TextureUsage_Sampled | TextureUsage_Shared | TextureUsage_Write, Format::Format_BC2_UNorm_Block, size,,,);
 
     m_modelDrawer = new scene::ModelHelper(cmdList, models);

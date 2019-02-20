@@ -760,11 +760,7 @@ void VulkanGraphicPipeline::deleteShaderModules()
 
 bool VulkanGraphicPipeline::createCompatibilityRenderPass(const RenderPassDescription& renderpassDesc, RenderPass* &compatibilityRenderPass)
 {
-    RenderPass::RenderPassInfo compatibilityRenderpassInfo;
-    compatibilityRenderpassInfo._desc = renderpassDesc;
-    compatibilityRenderpassInfo._tracker = nullptr;
-
-    RenderPassDescription& compatibilityRenderpassDesc = std::get<RenderPassDescription>(compatibilityRenderpassInfo._desc);
+    RenderPassDescription compatibilityRenderpassDesc(renderpassDesc);
     for (u32 index = 0; index < renderpassDesc._countColorAttachments; ++index)
     {
         compatibilityRenderpassDesc._attachments[index]._loadOp = RenderTargetLoadOp::LoadOp_DontCare;
@@ -781,7 +777,7 @@ bool VulkanGraphicPipeline::createCompatibilityRenderPass(const RenderPassDescri
         compatibilityRenderpassDesc._attachments.back()._stencilStoreOp = RenderTargetStoreOp::StoreOp_DontCare;
     }
 
-    compatibilityRenderPass = m_renderpassManager->acquireRenderPass(compatibilityRenderpassInfo);
+    compatibilityRenderPass = m_renderpassManager->acquireRenderPass(compatibilityRenderpassDesc);
     if (!compatibilityRenderPass)
     {
         LOG_ERROR("VulkanGraphicPipeline::createCompatibilityRenderPass couldn't create renderpass for pipline");

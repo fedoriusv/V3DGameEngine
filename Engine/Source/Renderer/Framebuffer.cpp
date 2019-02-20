@@ -30,15 +30,15 @@ FramebufferManager::~FramebufferManager()
     FramebufferManager::clear();
 }
 
-Framebuffer * FramebufferManager::acquireFramebuffer(const RenderPass* renderpass, const Framebuffer::FramebufferInfo& framebufferInfo)
+Framebuffer * FramebufferManager::acquireFramebuffer(const RenderPass* renderpass, const std::vector<Image*> images, const core::Dimension2D& area)
 {
-    u32 hash = crc32c::Crc32c((char*)framebufferInfo._images.data(), framebufferInfo._images.size() * sizeof(Image*));
+    u32 hash = crc32c::Crc32c((char*)images.data(), images.size() * sizeof(Image*));
 
     Framebuffer* framebuffer = nullptr;
     auto found = m_framebufferList.emplace(hash, framebuffer);
     if (found.second)
     {
-        framebuffer = m_context->createFramebuffer(framebufferInfo._images, framebufferInfo._clearInfo._size);
+        framebuffer = m_context->createFramebuffer(images, area);
         framebuffer->m_key = hash;
 
         if (!framebuffer->create(renderpass))
@@ -65,7 +65,7 @@ bool FramebufferManager::removeFramebuffer(Framebuffer * frameBuffer)
     if (iter == m_framebufferList.cend())
     {
         LOG_DEBUG("FramebufferManager framebuffer not found");
-        ASSERT(false, "renderpass");
+        ASSERT(false, "frameBuffer");
         return false;
     }
 

@@ -111,8 +111,9 @@ VkSamplerAddressMode VulkanSampler::convertSamplerWrapToVkSamplerAddressMode(Sam
     return VK_SAMPLER_ADDRESS_MODE_REPEAT;
 }
 
-VulkanSampler::VulkanSampler()
-    : m_sampler(VK_NULL_HANDLE)
+VulkanSampler::VulkanSampler(VkDevice device) noexcept
+    : m_device(device)
+    , m_sampler(VK_NULL_HANDLE)
 {
 }
 
@@ -121,24 +122,24 @@ VulkanSampler::~VulkanSampler()
     ASSERT(!m_sampler, "still exist");
 }
 
-bool VulkanSampler::create(const SamplerInfo& info)
+bool VulkanSampler::create(const SamplerDescription& info)
 {
     VkSamplerCreateInfo samplerCreateInfo = {};
     samplerCreateInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
     samplerCreateInfo.pNext = nullptr; //VkSamplerReductionModeCreateInfoEXT, VkSamplerYcbcrConversionInfo
     samplerCreateInfo.flags;
-    samplerCreateInfo.magFilter = VulkanSampler::convertSamplerFilterToVk(info._mag);
-    samplerCreateInfo.minFilter = VulkanSampler::convertSamplerFilterToVk(info._min);
-    samplerCreateInfo.mipmapMode = VulkanSampler::convertMipmapSamplerFilterToVk(info._min);
-    samplerCreateInfo.anisotropyEnable = (VulkanSampler::convertAnisotropyCount(info._aniso) > 0) ? VK_TRUE : VK_FALSE;
-    samplerCreateInfo.maxAnisotropy = VulkanSampler::convertAnisotropyCount(info._aniso);
+    samplerCreateInfo.magFilter = VulkanSampler::convertSamplerFilterToVk(info._magFilter);
+    samplerCreateInfo.minFilter = VulkanSampler::convertSamplerFilterToVk(info._minFilter);
+    samplerCreateInfo.mipmapMode = VulkanSampler::convertMipmapSamplerFilterToVk(info._minFilter);
+    samplerCreateInfo.anisotropyEnable = (VulkanSampler::convertAnisotropyCount(info._anisotropic) > 0) ? VK_TRUE : VK_FALSE;
+    samplerCreateInfo.maxAnisotropy = VulkanSampler::convertAnisotropyCount(info._anisotropic);
     ASSERT(samplerCreateInfo.maxAnisotropy <= VulkanDeviceCaps::getInstance()->getPhysicalDeviceLimits().maxSamplerAnisotropy, "max aniso");
-    samplerCreateInfo.addressModeU = VulkanSampler::convertSamplerWrapToVkSamplerAddressMode(info._wrap[0]);
-    samplerCreateInfo.addressModeV = VulkanSampler::convertSamplerWrapToVkSamplerAddressMode(info._wrap[1]);
-    samplerCreateInfo.addressModeW = VulkanSampler::convertSamplerWrapToVkSamplerAddressMode(info._wrap[2]);
-    samplerCreateInfo.mipLodBias = info._mipBias;
-    samplerCreateInfo.minLod = info._minLod;
-    samplerCreateInfo.maxLod = info._maxLod;
+    samplerCreateInfo.addressModeU = VulkanSampler::convertSamplerWrapToVkSamplerAddressMode(info._wrapU);
+    samplerCreateInfo.addressModeV = VulkanSampler::convertSamplerWrapToVkSamplerAddressMode(info._wrapV);
+    samplerCreateInfo.addressModeW = VulkanSampler::convertSamplerWrapToVkSamplerAddressMode(info._wrapW);
+    samplerCreateInfo.mipLodBias = info._lodBias;
+    samplerCreateInfo.minLod = 0.0f;
+    samplerCreateInfo.maxLod = FLT_MAX;
     samplerCreateInfo.compareEnable = (info._enableCompOp) ? VK_TRUE : VK_FALSE;
     samplerCreateInfo.compareOp = VulkanGraphicPipeline::convertCompareOperationToVk(info._compareOp);
     samplerCreateInfo.borderColor = VK_BORDER_COLOR_FLOAT_TRANSPARENT_BLACK;

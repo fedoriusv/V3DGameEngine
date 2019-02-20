@@ -32,6 +32,11 @@ namespace renderer
 
         struct PipelineGraphicInfo
         {
+            PipelineGraphicInfo() noexcept
+                : _tracker(nullptr)
+            {
+            }
+
             GraphicsPipelineStateDescription _pipelineDesc;
             RenderPassDescription            _renderpassDesc;
             ShaderProgramDescription         _programDesc;

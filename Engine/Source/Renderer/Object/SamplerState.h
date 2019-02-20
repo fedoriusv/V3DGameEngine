@@ -28,14 +28,26 @@ namespace renderer
 
         SamplerFilter         getMinFilter() const;
         SamplerFilter         getMagFilter() const;
-        SamplerWrap           getWrap() const;
+        SamplerWrap           getWrapU() const;
+        SamplerWrap           getWrapV() const;
+        SamplerWrap           getWrapW() const;
         SamplerAnisotropic    getAnisotropic() const;
+        CompareOperation      getCompareOp() const;
+        bool                  isEnableCompareOp() const;
 
-        //TODO sets
+        void setMinFilter(SamplerFilter filter);
+        void setMagFilter(SamplerFilter filter);
+        void setWrap(SamplerWrap u, SamplerWrap v, SamplerWrap w = SamplerWrap::TextureWrap_Repeat);
+        void setAnisotropic(SamplerAnisotropic level);
+        void setLodBias(f32 value);
+        void setCompareOp(CompareOperation op);
+        void setEnableCompareOp(bool enable);
 
     private:
 
-        SamplerState(renderer::CommandList& cmdList, SamplerFilter min, SamplerFilter mag) noexcept;
+        explicit SamplerState(renderer::CommandList& cmdList) noexcept;
+        explicit SamplerState(renderer::CommandList& cmdList, SamplerFilter filter, SamplerAnisotropic aniso) noexcept;
+        explicit SamplerState(renderer::CommandList& cmdList, SamplerFilter min, SamplerFilter mag, SamplerAnisotropic aniso) noexcept;
 
         renderer::CommandList& m_cmdList;
         friend renderer::CommandList;
@@ -43,13 +55,9 @@ namespace renderer
         void handleNotify(utils::Observable* ob) override;
         void destroySamplers(const std::vector<Sampler*>& samplers);
 
-        SamplerDescription            m_samplerDesc;
+        SamplerDescription m_samplerDesc;
 
-        u32                           m_filter;
-        renderer::SamplerAnisotropic  m_anisotropicLevel;
-        renderer::SamplerWrap         m_wrap;
-
-        ObjectTracker<Sampler>       m_trackerSampler;
+        ObjectTracker<Sampler> m_trackerSampler;
 
         friend ShaderProgram;
     };

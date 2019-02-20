@@ -28,19 +28,22 @@ RenderPassManager::~RenderPassManager()
    RenderPassManager::clear();
 }
 
-RenderPass* RenderPassManager::acquireRenderPass(const RenderPass::RenderPassInfo& renderPassInfo)
+RenderPass* RenderPassManager::acquireRenderPass(const RenderPassDescription& renderPassInfo)
 {
+    RenderPass::RenderPassInfo::RenderPassDesc info;
+    info._desc = renderPassInfo;
+
     RenderPass* renderpass = nullptr;
-    auto found = m_renderPassList.emplace(std::get<u32>(renderPassInfo._desc), renderpass);
+    auto found = m_renderPassList.emplace(info._hash, renderpass);
     if (found.second)
     {
-        renderpass = m_context->createRenderPass(&std::get<RenderPassDescription>(renderPassInfo._desc));
-        renderpass->m_key = std::get<u32>(renderPassInfo._desc);
+        renderpass = m_context->createRenderPass(&info._desc);
+        renderpass->m_key = info._hash;
 
         if (!renderpass->create())
         {
             renderpass->destroy();
-            m_renderPassList.erase(std::get<u32>(renderPassInfo._desc));
+            m_renderPassList.erase(info._hash);
 
             ASSERT(false, "can't create renderpass");
             return nullptr;

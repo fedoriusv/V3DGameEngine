@@ -73,8 +73,8 @@ namespace renderer
 
         //program bind
         virtual void bindImage(const Shader* shader, u32 bindIndex, const Image* image) = 0;
-        virtual void bindSampler(const Shader* shader, u32 bindIndex, const SamplerDescription& desc) = 0;
-        virtual void bindSampledImage(const Shader* shader, u32 bindIndex, const Image* image, const SamplerDescription& desc) = 0;
+        virtual void bindSampler(const Shader* shader, u32 bindIndex, const Sampler::SamplerInfo* samplerInfo) = 0;
+        virtual void bindSampledImage(const Shader* shader, u32 bindIndex, const Image* image, const Sampler::SamplerInfo* samplerInfo) = 0;
         virtual void bindUniformsBuffer(const Shader* shader, u32 bindIndex, u32 offset, u32 size, const void* data) = 0;
 
         //geometry bind
@@ -91,6 +91,8 @@ namespace renderer
 
         virtual void setPipeline(const Pipeline::PipelineGraphicInfo* pipelineInfo) = 0;
         virtual void removePipeline(Pipeline* pipeline) = 0;
+
+        virtual void removeSampler(Sampler* sampler) = 0;
 
         //objects
         virtual Image* createImage(TextureTarget target, renderer::Format format, const core::Dimension3D& dimension, u32 mipmapLevel, TextureUsageFlags flags) const = 0;

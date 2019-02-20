@@ -58,8 +58,8 @@ namespace vk
         void drawIndexed(StreamBufferDescription& desc, u32 firstIndex, u32 indexCount, u32 firstInstance, u32 instanceCount) override;
 
         void bindImage(const Shader* shader, u32 bindIndex, const Image* image) override;
-        void bindSampler(const Shader* shader, u32 bindIndex, const SamplerDescription& desc) override;
-        void bindSampledImage(const Shader* shader, u32 bindIndex, const Image* image, const SamplerDescription& desc) override;
+        void bindSampler(const Shader* shader, u32 bindIndex, const Sampler::SamplerInfo* samplerInfo) override;
+        void bindSampledImage(const Shader* shader, u32 bindIndex, const Image* image, const Sampler::SamplerInfo* samplerInfo) override;
         void bindUniformsBuffer(const Shader* shader, u32 bindIndex, u32 offset, u32 size, const void* data) override;
 
         //void bindVertexBuffers(const std::vector<Buffer*>& buffer, const std::vector<u64>& offsets)  override;
@@ -80,6 +80,8 @@ namespace vk
 
         Buffer* createBuffer(Buffer::BufferType type, u16 usageFlag, u64 size) override;
         void removeBuffer(Buffer* buffer) override;
+
+        void removeSampler(Sampler* sampler) override;
 
         const DeviceCaps* getDeviceCaps() const override;
 

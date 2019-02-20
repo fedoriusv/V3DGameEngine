@@ -527,10 +527,10 @@ void CommandList::setRenderTarget(RenderTargetState* rendertarget)
     }
 
     RenderTargetPendingState renderTargetInfo;
-    renderTargetInfo._renderpassInfo._tracker = &rendertarget->m_trackerRenderpass;
+    RenderPass::RenderPassInfo& renderPassInfo = renderTargetInfo._renderpassInfo;
+    renderPassInfo._tracker = &rendertarget->m_trackerRenderpass;
     renderTargetInfo._framebufferInfo._tracker = &rendertarget->m_trackerFramebuffer;
-    RenderPassDescription renderPassDescription = std::get<RenderPassDescription>(renderTargetInfo._renderpassInfo._desc);
-    rendertarget->extractRenderTargetInfo(renderPassDescription, renderTargetInfo._framebufferInfo._images, renderTargetInfo._framebufferInfo._clearInfo);
+    rendertarget->extractRenderTargetInfo(renderPassInfo._value._desc, renderTargetInfo._framebufferInfo._images, renderTargetInfo._framebufferInfo._clearInfo);
 
     if (CommandList::isImmediate())
     {

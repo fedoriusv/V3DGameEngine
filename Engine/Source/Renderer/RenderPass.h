@@ -23,8 +23,23 @@ namespace renderer
 
         struct RenderPassInfo
         {
-            std::variant<u32, RenderPassDescription> _desc;
-            ObjectTracker<RenderPass>*               _tracker;
+            RenderPassInfo() noexcept
+                : _tracker(nullptr)
+            {
+            }
+
+            union RenderPassDesc
+            {
+                RenderPassDesc() noexcept
+                {
+                    memset(this, 0, sizeof(RenderPassDesc));
+                }
+
+                RenderPassDescription _desc;
+                u32                   _hash;
+            };
+            RenderPassDesc             _value;
+            ObjectTracker<RenderPass>* _tracker;
         };
 
         RenderPass() noexcept;
@@ -55,7 +70,7 @@ namespace renderer
         explicit RenderPassManager(Context *context) noexcept;
         ~RenderPassManager();
 
-        RenderPass* acquireRenderPass(const RenderPass::RenderPassInfo& renderPassInfo);
+        RenderPass* acquireRenderPass(const RenderPassDescription& renderPassInfo);
         bool removeRenderPass(const RenderPass* renderPass);
         void clear();
 

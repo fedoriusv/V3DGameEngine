@@ -118,12 +118,12 @@ void EmptyContext::bindImage(const Shader * shader, u32 bindIndex, const Image *
     LOG_DEBUG("EmptyContext::bindImage");
 }
 
-void EmptyContext::bindSampler(const Shader * shader, u32 bindIndex, const SamplerDescription& desc)
+void EmptyContext::bindSampler(const Shader * shader, u32 bindIndex, const Sampler::SamplerInfo* samplerInfo)
 {
     LOG_DEBUG("EmptyContext::bindSampler");
 }
 
-void EmptyContext::bindSampledImage(const Shader * shader, u32 bindIndex, const Image * image, const SamplerDescription& desc)
+void EmptyContext::bindSampledImage(const Shader * shader, u32 bindIndex, const Image * image, const Sampler::SamplerInfo* samplerInfo)
 {
     LOG_DEBUG("EmptyContext::bindSampledImage");
 }
@@ -166,6 +166,11 @@ Buffer * EmptyContext::createBuffer(Buffer::BufferType type, u16 usageFlag, u64 
 void EmptyContext::removeBuffer(Buffer * buffer)
 {
     LOG_DEBUG("EmptyContext::removeBuffer");
+}
+
+void EmptyContext::removeSampler(Sampler * sampler)
+{
+    LOG_DEBUG("EmptyContext::removeSampler");
 }
 
 bool EmptyContext::initialize()

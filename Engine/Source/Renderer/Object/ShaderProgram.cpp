@@ -114,6 +114,46 @@ private:
     Image* m_image;
 };
 
+    /*CommandBindSampledImage*/
+class CommandBindSampledImage : public Command
+{
+public:
+    CommandBindSampledImage(const Shader* shader, u32 bindIndex, Image* image, const Sampler::SamplerInfo& samplerInfo) noexcept
+        : m_shader(shader)
+        , m_bindIndex(bindIndex)
+        , m_image(image)
+        , m_samplerInfo(samplerInfo)
+    {
+#if DEBUG_COMMAND_LIST
+        LOG_DEBUG("CommandBindSampledImage constructor");
+#endif //DEBUG_COMMAND_LIST
+    };
+    CommandBindSampledImage() = delete;
+    CommandBindSampledImage(CommandBindSampledImage&) = delete;
+
+    ~CommandBindSampledImage()
+    {
+#if DEBUG_COMMAND_LIST
+        LOG_DEBUG("CommandBindSampledImage destructor");
+#endif //DEBUG_COMMAND_LIST
+    };
+
+    void execute(const CommandList& cmdList)
+    {
+#if DEBUG_COMMAND_LIST
+        LOG_DEBUG("CommandBindSampledImage execute");
+#endif //DEBUG_COMMAND_LIST
+        cmdList.getContext()->bindSampledImage(m_shader, m_bindIndex, m_image, &m_samplerInfo);
+    }
+
+private:
+    const Shader* m_shader;
+    u32 m_bindIndex;
+
+    Image* m_image;
+    Sampler::SamplerInfo m_samplerInfo;
+};
+
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
 const Shader * ShaderProgram::getShader(ShaderType type) const
@@ -135,7 +175,7 @@ ShaderProgram::ShaderProgram(renderer::CommandList & cmdList, std::vector<const 
         m_programInfo._shaders[shader->getShaderHeader()._type] = shader;
     }
 
-    if (getShader(ShaderType::ShaderType_Vertex) && getShader(ShaderType::ShaderType_Fragment))
+    if (getShader(ShaderType::ShaderType_Vertex) && getShader(ShaderType::ShaderType_Fragment) || getShader(ShaderType::ShaderType_Vertex))
     {
         composeProgramData(shaders);
     }
@@ -247,12 +287,7 @@ bool ShaderProgram::bindTexture(ShaderType shaderType, std::string& name, Textur
     return false;
 }
 
-bool ShaderProgram::bindSampledTexture(ShaderType shaderType, std::string & name, TextureTarget target, const Texture * texture, const SamplerState * sampler)
-{
-    return ShaderProgram::bindSampledTexture(shaderType, name, target, texture, sampler->m_samplerDesc);
-}
-
-bool ShaderProgram::bindSampledTexture(ShaderType shaderType, std::string& name, TextureTarget target, const Texture* texture, const SamplerDescription& desc)
+bool ShaderProgram::bindSampledTexture(ShaderType shaderType, std::string& name, TextureTarget target, const Texture* texture, const SamplerState* sampler)
 {
     ASSERT(texture, "nullptr");
     Image* image = nullptr;
@@ -283,21 +318,32 @@ bool ShaderProgram::bindSampledTexture(ShaderType shaderType, std::string& name,
         return false;
     }
 
+    Sampler::SamplerInfo samplerInfo;
+    samplerInfo._tracker = const_cast<ObjectTracker<Sampler>*>(&sampler->m_trackerSampler);
+    samplerInfo._value._desc = sampler->m_samplerDesc;
+
     if (m_cmdList.isImmediate())
     {
-        //m_cmdList.getContext()->bindSampledImage(shader, iter->second, image, nullptr);
+        m_cmdList.getContext()->bindSampledImage(shader, iter->second, image, &samplerInfo);
     }
     else
     {
-        m_cmdList.pushCommand(new CommandBindImage(shader, iter->second, image));
+        m_cmdList.pushCommand(new CommandBindSampledImage(shader, iter->second, image, samplerInfo));
     }
 
     return false;
 }
 
+bool ShaderProgram::bindSampledTexture(ShaderType shaderType, std::string& name, TextureTarget target, const Texture* texture, const SamplerDescription& desc)
+{
+    ASSERT(false, "not implemented");
+    //m_cmdList.createObject<SamplerState>();
+    //return ShaderProgram::bindSampledTexture(shaderType, name, target, texture, sampler->m_samplerDesc);
+    return false;
+}
+
 ShaderProgram::~ShaderProgram()
 {
-    //TDOO
 }
 
 } //renderer
