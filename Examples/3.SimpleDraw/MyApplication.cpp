@@ -80,7 +80,7 @@ void MyApplication::Initialize()
     Shader* fragShader = resource::ResourceLoaderManager::getInstance()->loadShader<Shader, resource::ShaderSourceFileLoader>(m_CommandList->getContext(), "examples/3.simpledraw/shaders/mesh.frag");
 
     //ImageData* image = resource::ResourceLoaderManager::getInstance()->loadImage<ImageData, resource::ImageFileLoader>(),
-    Model* model = resource::ResourceLoaderManager::getInstance()->loadMesh<Model, resource::ModelFileLoader>(m_CommandList->getContext(), "examples/3.simpledraw/models/voyager/voyager.dae");
+    Model* model = resource::ResourceLoaderManager::getInstance()->load<Model, resource::ModelFileLoader>(m_CommandList->getContext(), "examples/3.simpledraw/models/voyager/voyager.dae");
 
     m_Render = new renderer::SimpleRender(*m_CommandList, m_Window->getSize(), { vertShader, fragShader }, { model });
     m_Render->setCamera(&m_Camera->getCamera());

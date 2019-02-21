@@ -69,7 +69,7 @@ namespace resource
         }
 
         template<class TResource, class TResourceLoader>
-        TResource* loadMesh(renderer::Context* context, std::string filename)
+        TResource* load(renderer::Context* context, std::string filename)
         {
             std::string innerName(filename);
             std::transform(filename.begin(), filename.end(), innerName.begin(), ::tolower);
