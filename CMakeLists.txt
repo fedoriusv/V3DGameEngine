@@ -13,6 +13,10 @@ option(CRC32_LIB "Use Crc32c lib" ON)
 #https://github.com/google/crc32c.git
 option(ASSIMP_LIB "Use Assimp lib" ON)
 #https://github.com/assimp/assimp.git
+option(STB_LIB "Use Stb lib" ON)
+#https://github.com/nothings/stb.git
+option(IL_LIB "Use gli lib" OFF)
+#https://github.com/g-truc/gli.git
 option(SPIRV_INSTALL_FROM_GITHUB "implicity install SpirV" OFF)
 ##############################################################
 if(COMPILER_MSVC)
@@ -69,6 +73,10 @@ if (ASSIMP_LIB)
 	set(LIB_INCLUDE_DIRECTORY ${LIB_INCLUDE_DIRECTORY} ${ENGINE_PROJECT_DIR}/Engine/Libs/assimp/include)
 	set(ASSIMP_DEFINE "-DUSE_ASSIMP")
 endif()
+#Stb
+if (STB_LIB)
+	set(STB_DEFINE "-DUSE_STB")
+endif()
 
 include_directories(BEFORE ${LIB_INCLUDE_DIRECTORY})
 ##############################################################
@@ -116,12 +124,12 @@ if(WIN32)
     set(CMAKE_CONFIGURATION_TYPES "Debug;Release" CACHE STRING "" FORCE)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /EHsc /MP")
 #   Debug
-    set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DDEBUG -DUSE_LOGGER -D_CRT_SECURE_NO_WARNINGS ${VULKAN_SDK_DEFINE} ${ASSIMP_DEFINE}")
+    set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DDEBUG -DUSE_LOGGER -D_CRT_SECURE_NO_WARNINGS ${VULKAN_SDK_DEFINE} ${ASSIMP_DEFINE} ${STB_DEFINE}")
     set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} ${VULKAN_SDK_INCLUDE_DIRECTORY}")
     set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /Zi /MTd /std:c++17")
     set(CMAKE_DEBUG_POSTFIX "_d")
 #   Release
-    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -DUSE_LOGGER ${VULKAN_SDK_DEFINE} ${ASSIMP_DEFINE}")
+    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -DUSE_LOGGER ${VULKAN_SDK_DEFINE} ${ASSIMP_DEFINE} ${STB_DEFINE}")
     set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} ${VULKAN_SDK_INCLUDE_DIRECTORY}")
     set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /MT /std:c++17")
 endif()

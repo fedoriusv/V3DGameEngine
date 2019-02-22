@@ -15,7 +15,7 @@ namespace resource
     {
     public:
 
-        ImageStbDecoder(std::vector<std::string> supportedExtensions, const resource::ImageHeader& header) noexcept;
+        ImageStbDecoder(std::vector<std::string> supportedExtensions, const resource::ImageHeader& header, bool readHeader) noexcept;
         ~ImageStbDecoder();
 
         Resource* decode(const stream::Stream* stream, const std::string& name = "") override;
@@ -23,6 +23,7 @@ namespace resource
     private:
 
         const resource::ImageHeader m_header;
+        bool m_readHeader;
     };
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////

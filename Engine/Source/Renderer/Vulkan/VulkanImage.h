@@ -37,6 +37,8 @@ namespace vk
         void clear(Context* context, const core::Vector4D& color) override;
         void clear(Context* context, f32 depth, u32 stencil) override;
 
+        bool upload(Context* context, const core::Dimension3D& offsets, const core::Dimension3D& size, u32 mips, const void* data) override;
+
         static VkFormat convertImageFormatToVkFormat(Format format);
         static Format convertVkImageFormatToFormat(VkFormat format);
         static VkImageType convertTextureTargetToVkImageType(TextureTarget target);

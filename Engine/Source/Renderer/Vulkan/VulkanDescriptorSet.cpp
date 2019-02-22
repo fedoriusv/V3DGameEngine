@@ -139,14 +139,19 @@ u32 VulkanDescriptorSetManager::s_maxSets = 256;
 std::vector<VkDescriptorPoolSize> VulkanDescriptorSetManager::s_poolSizes =
 {
     { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,                 128 },
-    { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC,         128 },
+    { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC,         64  },
+
+    { VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,         128 },
     { VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,                  128 },
     { VK_DESCRIPTOR_TYPE_SAMPLER,                        128 },
+
     { VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,                  128 },
     { VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,                 128 },
+
     { VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER,           128 },
     { VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER,           128 },
-    { VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT,               128 },
+
+    { VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT,               64  },
 };
 
 VkShaderStageFlagBits VulkanDescriptorSetManager::convertShaderTypeToVkStage(ShaderType type)

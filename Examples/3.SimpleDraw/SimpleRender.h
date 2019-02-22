@@ -10,6 +10,8 @@
 #include "Renderer/Object/RenderTargetState.h"
 #include "Renderer/Object/SamplerState.h"
 
+#include "Resource/Image.h"
+
 #include "Scene/ModelHelper.h"
 #include "Scene/CameraHelper.h"
 
@@ -29,7 +31,8 @@ public:
         void*       _data;
     };
 
-    SimpleRender(renderer::CommandList& cmdList, const core::Dimension2D& size, const std::vector<const Shader*> shaders, const std::vector<const scene::Model*> models) noexcept;
+    SimpleRender(renderer::CommandList& cmdList, const core::Dimension2D& size, const std::vector<const Shader*> shaders, const std::vector<const resource::Image*> image, 
+        const std::vector<const scene::Model*> models) noexcept;
     ~SimpleRender();
 
     void update(renderer::CommandList& cmdList);

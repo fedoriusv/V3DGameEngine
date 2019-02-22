@@ -13,9 +13,10 @@ namespace resource
 
 ModelFileLoader::ModelFileLoader() noexcept
 {
+#ifdef USE_ASSIMP
     scene::ModleHeader header;
     ResourceLoader::registerDecoder(new MeshAssimpDecoder({ "dae" }, header, false));
-
+#endif //USE_ASSIMP
     ResourceLoader::registerPath("../../../../");
     ResourceLoader::registerPath("../../../../../");
     ResourceLoader::registerPath("../../../../engine/");

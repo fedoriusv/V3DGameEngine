@@ -13,13 +13,15 @@ namespace v3d
 namespace renderer
 {
 
-SimpleRender::SimpleRender(renderer::CommandList& cmdList, const core::Dimension2D& size, const std::vector<const Shader*> shaders, const std::vector<const scene::Model*> models) noexcept
+SimpleRender::SimpleRender(renderer::CommandList& cmdList, const core::Dimension2D& size, const std::vector<const Shader*> shaders, const std::vector<const resource::Image*> image, const std::vector<const scene::Model*> models) noexcept
     : m_camera(nullptr)
 {
     m_program = cmdList.createObject<ShaderProgram>(shaders);
 
     m_sampler = cmdList.createObject<SamplerState>(SamplerFilter::SamplerFilter_Nearest, SamplerFilter::SamplerFilter_Nearest, SamplerAnisotropic::SamplerAnisotropic_None);
     //m_texture = cmdList.createObject<Texture2D>(TextureUsage::TextureUsage_Sampled | TextureUsage_Shared | TextureUsage_Write, Format::Format_BC2_UNorm_Block, size,,,);
+    m_texture = cmdList.createObject<Texture2D>(TextureUsage::TextureUsage_Sampled | TextureUsage_Shared | TextureUsage_Write, 
+        image[0]->getFormat(), core::Dimension2D(image[0]->getDimension().width, image[0]->getDimension().height), 1, image[0]->getRawData());
 
     m_modelDrawer = new scene::ModelHelper(cmdList, models);
 
@@ -111,7 +113,7 @@ void SimpleRender::updateParameters(renderer::CommandList& cmdList, const std::v
      //uboVS.modelMatrix.setTranslation(pos);
 
       m_program->bindUniformsBuffer<ShaderType::ShaderType_Vertex>("ubo", 0, sizeof(uboVS), &uboVS);
-      //m_program->bindSampledTexture<Texture2D, ShaderType::ShaderType_Fragment>("samplerColorMap", m_texture, m_sampler);
+      m_program->bindSampledTexture<ShaderType::ShaderType_Fragment, Texture2D>("samplerColorMap", m_texture, m_sampler);
 }
 
 void SimpleRender::update(renderer::CommandList& cmdList)

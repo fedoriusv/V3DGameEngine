@@ -779,6 +779,12 @@ void VulkanImage::clear(Context * context, f32 depth, u32 stencil)
     commandBuffer->cmdPipelineBarrier(this, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT | VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, layout);
 }
 
+bool VulkanImage::upload(Context * context, const core::Dimension3D & offsets, const core::Dimension3D & size, u32 mips, const void * data)
+{
+    //TODO:
+    return false;
+}
+
 VkImageSubresourceRange VulkanImage::makeImageSubresourceRange(const VulkanImage * image)
 {
     VkImageSubresourceRange imageSubresourceRange = {};

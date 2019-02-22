@@ -31,17 +31,17 @@ namespace renderer
 
         const ShaderProgramDescription& getShaderDesc() const;
 
-        template<class TTexture, ShaderType shaderType>
+        template<ShaderType shaderType, class TTexture>
         bool bindTexture(std::string name, const TTexture* texture);
 
-        template<class TTexture, ShaderType shaderType>
-        bool bindSampledTexture(std::string name, const TTexture* texture, const SamplerDescription& desc);
+        /*template<class TTexture, ShaderType shaderType>
+        bool bindSampledTexture(std::string name, const TTexture* texture, const SamplerDescription& desc);*/
 
-        template<class TTexture, ShaderType shaderType>
+        template<ShaderType shaderType, class TTexture>
         bool bindSampledTexture(std::string name, const TTexture* texture, const SamplerState* sampler);
-        
-        template<class TDataType, ShaderType shaderType>
-        bool bindUniform(std::string name, const TDataType& data);
+
+        /*template<cShaderType shaderType, class TDataType>
+        bool bindUniform(std::string name, const TDataType& data);*/
 
         template<ShaderType shaderType>
         bool bindUniformsBuffer(std::string name, u32 offset, u32 size, const void* data);
@@ -66,35 +66,36 @@ namespace renderer
     };
 
 
-    template<class TTexture, ShaderType shaderType>
+    template<ShaderType shaderType, class TTexture>
     inline bool ShaderProgram::bindTexture(std::string name, const TTexture* texture)
     {
         static_assert(std::is_base_of<Texture, TTexture>());
         return bindTexture(shaderType, name, texture->m_target, texture);
     }
 
-    template<class TTexture, ShaderType shaderType>
+    /*template<class TTexture, ShaderType shaderType>
     bool bindSampledTexture(std::string name, const TTexture* texture, const SamplerDescription& desc)
     {
         static_assert(std::is_base_of<Texture, TTexture>());
         ASSERT(false, "not implemented");
         return false;
         //return bindSampledTexture(shaderType, name, texture->m_target, texture, desc);
-    }
+    }*/
 
-    template<class TTexture, ShaderType shaderType>
-    bool bindSampledTexture(std::string name, const TTexture* texture, const SamplerState* sampler)
+    template<ShaderType shaderType, class TTexture>
+    inline bool ShaderProgram::bindSampledTexture(std::string name, const TTexture* texture, const SamplerState* sampler)
     {
         static_assert(std::is_base_of<Texture, TTexture>());
         return bindSampledTexture(shaderType, name, texture->m_target, texture, sampler);
+        return false;
     }
 
-    template<class TDataType, ShaderType shaderType>
+    /*template<class TDataType, ShaderType shaderType>
     inline bool ShaderProgram::bindUniform(std::string name, const TDataType & data)
     {
         ASSERT(false, "not implemented");
         return false;
-    }
+    }*/
 
     template<ShaderType shaderType>
     inline bool ShaderProgram::bindUniformsBuffer(std::string name, u32 offset, u32 size, const void* data)

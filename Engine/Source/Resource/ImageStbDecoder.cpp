@@ -1,7 +1,10 @@
 #include "ImageStbDecoder.h"
+#include "Stream/StreamManager.h"
+#include "Utils/Logger.h"
 
-//#ifdef USE_STB
+#if USE_STB
 #define STB_IMAGE_IMPLEMENTATION
+#define STBI_NO_STDIO
 
 #define STBI_ONLY_JPEG
 #define STBI_ONLY_PNG
@@ -12,17 +15,18 @@
 //#define STBI_ONLY_HDR
 //#define STBI_ONLY_PIC
 
-#define STBI_NO_STDIO
-
 #include "ThirdParty/stb/stb_image.h"
+#endif //USE_STB
 
 namespace v3d
 {
 namespace resource
 {
 
-ImageStbDecoder::ImageStbDecoder(std::vector<std::string> supportedExtensions, const resource::ImageHeader & header) noexcept
+ImageStbDecoder::ImageStbDecoder(std::vector<std::string> supportedExtensions, const resource::ImageHeader & header, bool readHeader) noexcept
     : ResourceDecoder(supportedExtensions)
+    , m_header(header)
+    , m_readHeader(readHeader)
 {
 }
 
@@ -34,7 +38,7 @@ Resource * ImageStbDecoder::decode(const stream::Stream * stream, const std::str
 {
     if (stream->size() > 0)
     {
-//#ifdef USE_STB
+#ifdef USE_STB
         stream->seekBeg(0);
         u8* source = stream->map(stream->size());
 
@@ -42,11 +46,148 @@ Resource * ImageStbDecoder::decode(const stream::Stream * stream, const std::str
         s32 sizeY;
         s32 componentCount = 0;
         s32 req_componentCount = 0;
+        void* data = nullptr;
+        renderer::Format format = renderer::Format::Format_Undefined;
 
-        u8* data = stbi_load_from_memory(source, stream->size(), &sizeX, &sizeY, &componentCount, req_componentCount);
+        if (m_readHeader)
+        {
+            if (m_header._flipY)
+            {
+                stbi_set_flip_vertically_on_load(true);
+            }
 
-        //TODO
-        int a = 0;
+            req_componentCount = 4;
+            //TODO:
+        }
+
+        bool is16BitPerChannel = stbi_is_16_bit_from_memory(source, stream->size());
+        if (!is16BitPerChannel)
+        {
+            //8-bit per channel
+            stbi_info_from_memory(source, stream->size(), &sizeX, &sizeY, &componentCount);
+            if (componentCount == 3)
+            {
+                req_componentCount = 4; //Render doesn't support RGB8 for PC. Use instead RGBA8
+            }
+            else
+            {
+                req_componentCount = componentCount;
+            }
+
+            data = stbi_load_from_memory(source, stream->size(), &sizeX, &sizeY, &componentCount, req_componentCount);
+            LOG_DEBUG("ImageStbDecoder::decode load image %s, size [%d, %d], components %d", name.c_str(), sizeX, sizeY, componentCount);
+            if (!data)
+            {
+                LOG_ERROR("ImageStbDecoder::decode fail, Error : %s", stbi_failure_reason());
+                ASSERT(false, "load failed");
+                return nullptr;
+            }
+            componentCount = req_componentCount;
+
+            auto convert8BitFormat = [](s32 componentCount) -> renderer::Format
+            {
+                switch (componentCount)
+                {
+                case 1:
+                    return renderer::Format::Format_R8_UNorm;
+                case 2:
+                    return renderer::Format::Format_R8G8_UNorm;
+                case 3:
+                    return renderer::Format::Format_R8G8B8_UNorm;
+                case 4:
+                    return renderer::Format::Format_R8G8B8A8_UNorm;
+                default:
+                    ASSERT(false, "wrong counter");
+                };
+
+                return renderer::Format::Format_R8G8B8A8_UNorm;
+            };
+
+            format = convert8BitFormat(componentCount);
+        }
+        else
+        {
+            bool isFloatFormat = stbi_is_hdr_from_memory(source, stream->size());
+            if (isFloatFormat)
+            {
+                auto convertFloatFormat = [](s32 componentCount) -> renderer::Format
+                {
+                    switch (componentCount)
+                    {
+                    case 1:
+                        return renderer::Format::Format_R32_SFloat;
+                    case 2:
+                        return renderer::Format::Format_R16G16_UNorm;
+                    case 3:
+                        return renderer::Format::Format_R16G16B16_UNorm;
+                    case 4:
+                        return renderer::Format::Format_R16G16B16A16_UNorm;
+                    default:
+                        ASSERT(false, "wrong counter");
+                    };
+
+                    return renderer::Format::Format_R16G16B16A16_UNorm;
+                };
+
+                data = stbi_loadf_from_memory(source, stream->size(), &sizeX, &sizeY, &componentCount, req_componentCount);
+                if (!data)
+                {
+                    ASSERT(false, "load failed");
+                    return nullptr;
+                }
+
+                format = convertFloatFormat(componentCount);
+            }
+            else
+            {
+                auto convert16BitFormat = [](s32 componentCount) -> renderer::Format
+                {
+                    switch (componentCount)
+                    {
+                    case 1:
+                        return renderer::Format::Format_R16_UNorm;
+                    case 2:
+                        return renderer::Format::Format_R16G16_UNorm;
+                    case 3:
+                        return renderer::Format::Format_R16G16B16_UNorm;
+                    case 4:
+                        return renderer::Format::Format_R16G16B16A16_UNorm;
+                    default:
+                        ASSERT(false, "wrong counter");
+                    };
+
+                    return renderer::Format::Format_R16G16B16A16_UNorm;
+                };
+
+                data = stbi_load_16_from_memory(source, stream->size(), &sizeX, &sizeY, &componentCount, req_componentCount);
+                if (!data)
+                {
+                    ASSERT(false, "load failed");
+                    return nullptr;
+                }
+
+                format = convert16BitFormat(componentCount);
+            }
+        }
+
+        resource::ImageHeader* newHeader = new resource::ImageHeader(m_header);
+        newHeader->_dimension.width = static_cast<u32>(sizeX);
+        newHeader->_dimension.height = static_cast<u32>(sizeY);
+        newHeader->_dimension.depth = 1;
+        newHeader->_format = format;
+        newHeader->_size = stream->size();
+        newHeader->_flipY = false;
+
+        stream::Stream* imageStream = stream::StreamManager::createMemoryStream(data, stream->size());
+
+        resource::Image* image = new resource::Image(newHeader);
+        image->init(imageStream);
+
+        stbi_image_free(data);
+
+        return image;
+
+#endif //USE_STB
     }
 
     return nullptr;

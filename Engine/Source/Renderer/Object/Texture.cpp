@@ -14,19 +14,31 @@ namespace renderer
 class CreateTextureCommand : public renderer::Command
 {
 public:
-    CreateTextureCommand(renderer::Image* image, u32 dataSize, const void * data) noexcept
+    CreateTextureCommand(renderer::Image* image, const core::Dimension3D & offsets, const core::Dimension3D & size, u32 mips, void * data, bool shared) noexcept
         : m_image(image)
+        , m_offsets(offsets)
+        , m_size(size)
+        , m_mipmaps(mips)
         , m_data(nullptr)
-        , m_dataSize(0)
+
+        , m_shared(shared)
     {
         LOG_DEBUG("CreateTextureCommand constructor");
 
         if (data)
         {
-            m_dataSize = dataSize;
-            m_data = malloc(m_dataSize); //TODO: get from pool
+            if (m_shared)
+            {
+                m_data = data;
+            }
+            else
+            {
+                ASSERT(false, "impl");
+                u32 dataSize = 0;
+                m_data = malloc(dataSize); //TODO: get from pool
 
-            memcpy(m_data, data, dataSize);
+                memcpy(m_data, data, dataSize);
+            }
         }
     }
 
@@ -54,14 +66,19 @@ public:
 
         if (m_data)
         {
-            //m_image->upload(m_data);
+            m_image->upload(cmdList.getContext(), m_offsets, m_size, m_mipmaps, m_data);
         }
     }
 
 private:
     renderer::Image*            m_image;
-    u32                         m_dataSize;
+    core::Dimension3D           m_offsets;
+    core::Dimension3D           m_size;
+    u32                         m_mipmaps;
+
     void*                       m_data;
+
+    bool                        m_shared;
 };
 
     /*UploadTextureCommand*/
@@ -185,7 +202,7 @@ Texture2D::Texture2D(renderer::CommandList& cmdList, TextureUsageFlags usage, re
     , m_target(renderer::TextureTarget::Texture2D)
     , m_format(format)
     , m_dimension(dimension)
-    , m_mipmapLevel(mipmapCount)
+    , m_mipmaps(mipmapCount)
     , m_samples(renderer::TextureSamples::TextureSamples_x1)
 
     , m_usage(usage)
@@ -193,7 +210,7 @@ Texture2D::Texture2D(renderer::CommandList& cmdList, TextureUsageFlags usage, re
 
 {
     core::Dimension3D dim = { m_dimension.width, m_dimension.height, 1 };
-    m_image = m_cmdList.getContext()->createImage(m_target, m_format, dim, m_mipmapLevel, m_usage);
+    m_image = m_cmdList.getContext()->createImage(m_target, m_format, dim, m_mipmaps, m_usage);
     ASSERT(m_image, "m_image is nullptr");
     m_image->registerNotify(this);
 
@@ -205,15 +222,15 @@ Texture2D::Texture2D(renderer::CommandList & cmdList, TextureUsageFlags usage, r
     , m_target(renderer::TextureTarget::Texture2D)
     , m_format(format)
     , m_dimension(dimension)
-    , m_mipmapLevel(1)
+    , m_mipmaps(1)
     , m_samples(samples)
 
     , m_usage(usage)
     , m_image(nullptr)
 {
     core::Dimension3D dim = { m_dimension.width, m_dimension.height, 1 };
-    //m_image = m_cmdList.getContext()->createAttachmentImage(m_format, dim, m_samples, 0);
-    m_image = m_cmdList.getContext()->createImage(m_target, m_format, dim, m_mipmapLevel, m_usage);
+
+    m_image = m_cmdList.getContext()->createImage(m_target, m_format, dim, m_mipmaps, m_usage);
     ASSERT(m_image, "m_image is nullptr");
     m_image->registerNotify(this);
 
@@ -243,14 +260,12 @@ void Texture2D::createTexture2D(const void * data)
 
         if (data)
         {
-            u32 calculatedSize = 0; //TODO:
-            //m_image->upload(data);
+            m_image->upload(m_cmdList.getContext(), core::Dimension3D(0, 0, 0), core::Dimension3D(m_dimension.width, m_dimension.height, 1), m_mipmaps, data);
         }
     }
     else
     {
-        u32 calculatedSize = 0; //TODO:
-        m_cmdList.pushCommand(new CreateTextureCommand(m_image, calculatedSize, data));
+        m_cmdList.pushCommand(new CreateTextureCommand(m_image, core::Dimension3D(0, 0, 0), core::Dimension3D(m_dimension.width, m_dimension.height, 1), m_mipmaps, const_cast<void*>(data), true));
     }
 }
 
@@ -280,7 +295,7 @@ renderer::TextureSamples Texture2D::getSampleCount() const
 
 u32 Texture2D::getMipmaps() const
 {
-    return m_mipmapLevel;
+    return m_mipmaps;
 }
 
 const core::Dimension2D& Texture2D::getDimension() const

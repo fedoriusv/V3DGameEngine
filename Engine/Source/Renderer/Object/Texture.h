@@ -55,7 +55,7 @@ namespace renderer
 
     private:
 
-        Texture2D(renderer::CommandList& cmdList, TextureUsageFlags usage, renderer::Format format, const core::Dimension2D& dimension, u32 mipmapCount = 0, const void* data = nullptr) noexcept;
+        Texture2D(renderer::CommandList& cmdList, TextureUsageFlags usage, renderer::Format format, const core::Dimension2D& dimension, u32 mipmapCount = 1, const void* data = nullptr) noexcept;
         Texture2D(renderer::CommandList& cmdList, TextureUsageFlags usage, renderer::Format format, const core::Dimension2D& dimension, renderer::TextureSamples samples) noexcept;
 
         void handleNotify(utils::Observable* ob) override;
@@ -70,7 +70,7 @@ namespace renderer
         const  renderer::TextureTarget      m_target;
         const renderer::Format              m_format;
         const core::Dimension2D             m_dimension;
-        const u32                           m_mipmapLevel;
+        const u32                           m_mipmaps;
         renderer::TextureSamples            m_samples;
 
         TextureUsageFlags                   m_usage;

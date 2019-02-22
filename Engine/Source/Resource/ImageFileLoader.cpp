@@ -13,9 +13,10 @@ namespace resource
 
 ImageFileLoader::ImageFileLoader() noexcept
 {
+#if USE_STB
     resource::ImageHeader header;
-    ResourceLoader::registerDecoder(new ImageStbDecoder({ "jpg" }, header));
-
+    ResourceLoader::registerDecoder(new ImageStbDecoder({ "jpg", "png", "bmp", "tga" }, header, false));
+#endif USE_STB
     ResourceLoader::registerPath("../../../../");
     ResourceLoader::registerPath("../../../../../");
     ResourceLoader::registerPath("../../../../engine/");
