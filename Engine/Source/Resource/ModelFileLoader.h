@@ -26,7 +26,7 @@ namespace resource
     {
     public:
 
-        ModelFileLoader(const renderer::Context* context) noexcept;
+        ModelFileLoader() noexcept;
         ~ModelFileLoader();
 
         scene::Model* load(const std::string& name, const std::string& alias = "") override;

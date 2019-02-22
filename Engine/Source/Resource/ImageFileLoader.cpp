@@ -11,7 +11,7 @@ namespace v3d
 namespace resource
 {
 
-ImageFileLoader::ImageFileLoader(const renderer::Context* context) noexcept
+ImageFileLoader::ImageFileLoader() noexcept
 {
     resource::ImageHeader header;
     ResourceLoader::registerDecoder(new ImageStbDecoder({ "jpg" }, header));

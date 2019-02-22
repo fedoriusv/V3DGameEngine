@@ -69,7 +69,7 @@ namespace resource
         }
 
         template<class TResource, class TResourceLoader>
-        TResource* load(renderer::Context* context, std::string filename)
+        TResource* load(std::string filename)
         {
             std::string innerName(filename);
             std::transform(filename.begin(), filename.end(), innerName.begin(), ::tolower);
@@ -77,7 +77,7 @@ namespace resource
             auto resourceIter = m_resources.emplace(std::make_pair(innerName, nullptr));
             if (resourceIter.second)
             {
-                TResourceLoader loader(context);
+                TResourceLoader loader;
                 Resource* res = loader.load(innerName);
                 if (!res)
                 {

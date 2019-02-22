@@ -11,7 +11,7 @@ namespace v3d
 namespace resource
 {
 
-ModelFileLoader::ModelFileLoader(const renderer::Context* context) noexcept
+ModelFileLoader::ModelFileLoader() noexcept
 {
     scene::ModleHeader header;
     ResourceLoader::registerDecoder(new MeshAssimpDecoder({ "dae" }, header, false));
