@@ -57,7 +57,7 @@ namespace vk
         VkFormat            getFormat() const;
 
         VkImageLayout       getLayout() const;
-        void                setLayout(VkImageLayout layout);
+        VkImageLayout       setLayout(VkImageLayout layout);
 
     private:
 

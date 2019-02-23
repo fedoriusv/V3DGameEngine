@@ -117,11 +117,11 @@ Resource * ImageStbDecoder::decode(const stream::Stream * stream, const std::str
                     case 1:
                         return renderer::Format::Format_R32_SFloat;
                     case 2:
-                        return renderer::Format::Format_R16G16_UNorm;
+                        return renderer::Format::Format_R32G32_SFloat;
                     case 3:
-                        return renderer::Format::Format_R16G16B16_UNorm;
+                        return renderer::Format::Format_R32G32B32_SFloat;
                     case 4:
-                        return renderer::Format::Format_R16G16B16A16_UNorm;
+                        return renderer::Format::Format_R32G32B32A32_SFloat;
                     default:
                         ASSERT(false, "wrong counter");
                     };
@@ -175,10 +175,10 @@ Resource * ImageStbDecoder::decode(const stream::Stream * stream, const std::str
         newHeader->_dimension.height = static_cast<u32>(sizeY);
         newHeader->_dimension.depth = 1;
         newHeader->_format = format;
-        newHeader->_size = stream->size();
+        newHeader->_size = sizeX * sizeY * req_componentCount;
         newHeader->_flipY = false;
 
-        stream::Stream* imageStream = stream::StreamManager::createMemoryStream(data, stream->size());
+        stream::Stream* imageStream = stream::StreamManager::createMemoryStream(data, newHeader->_size);
 
         resource::Image* image = new resource::Image(newHeader);
         image->init(imageStream);

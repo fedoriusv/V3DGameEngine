@@ -113,7 +113,7 @@ void SimpleRender::updateParameters(renderer::CommandList& cmdList, const std::v
      //uboVS.modelMatrix.setTranslation(pos);
 
       m_program->bindUniformsBuffer<ShaderType::ShaderType_Vertex>("ubo", 0, sizeof(uboVS), &uboVS);
-      m_program->bindSampledTexture<ShaderType::ShaderType_Fragment, Texture2D>("samplerColorMap", m_texture, m_sampler);
+      //m_program->bindSampledTexture<ShaderType::ShaderType_Fragment, Texture2D>("samplerColorMap", m_texture, m_sampler);
 }
 
 void SimpleRender::update(renderer::CommandList& cmdList)

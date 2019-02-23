@@ -426,22 +426,7 @@ void VulkanCommandBuffer::cmdUpdateBuffer(VulkanBuffer * src, u32 offset, u64 si
     }
 }
 
-void VulkanCommandBuffer::cmdCopyBufferToImage()
-{
-    ASSERT(m_status == CommandBufferStatus::Begin, "not started");
-    ASSERT(!isInsideRenderPass(), "outside render pass");
-
-    if (m_level == CommandBufferLevel::PrimaryBuffer)
-    {
-        //VulkanWrapper::CmdCopyBufferToImage(m_command, , , )
-    }
-    else
-    {
-        ASSERT(false, "not implemented");
-    }
-}
-
-void VulkanCommandBuffer::cmdCopyBufferToBuffer(VulkanBuffer* src, VulkanBuffer* dst, const VkBufferCopy& region)
+void VulkanCommandBuffer::cmdCopyBufferToImage(VulkanBuffer* src, VulkanImage* dst, VkImageLayout layout, const std::vector<VkBufferImageCopy>& regions)
 {
     ASSERT(m_status == CommandBufferStatus::Begin, "not started");
     ASSERT(!isInsideRenderPass(), "outside render pass");
@@ -450,7 +435,24 @@ void VulkanCommandBuffer::cmdCopyBufferToBuffer(VulkanBuffer* src, VulkanBuffer*
     dst->captureInsideCommandBuffer(this, 0);
     if (m_level == CommandBufferLevel::PrimaryBuffer)
     {
-        VulkanWrapper::CmdCopyBuffer(m_command, src->getHandle(), dst->getHandle(), 1, &region);
+        VulkanWrapper::CmdCopyBufferToImage(m_command, src->getHandle(), dst->getHandle(), layout, static_cast<u32>(regions.size()), regions.data());
+    }
+    else
+    {
+        ASSERT(false, "not implemented");
+    }
+}
+
+void VulkanCommandBuffer::cmdCopyBufferToBuffer(VulkanBuffer* src, VulkanBuffer* dst, const std::vector<VkBufferCopy>& regions)
+{
+    ASSERT(m_status == CommandBufferStatus::Begin, "not started");
+    ASSERT(!isInsideRenderPass(), "outside render pass");
+
+    src->captureInsideCommandBuffer(this, 0);
+    dst->captureInsideCommandBuffer(this, 0);
+    if (m_level == CommandBufferLevel::PrimaryBuffer)
+    {
+        VulkanWrapper::CmdCopyBuffer(m_command, src->getHandle(), dst->getHandle(), static_cast<u32>(regions.size()), regions.data());
     }
     else
     {

@@ -60,6 +60,30 @@ namespace core
         return !(*this == other);
     }
 
+    template<class T>
+    inline bool TDimension3D<T>::operator >= (const TDimension3D<T>& other) const
+    {
+        return !(*this <= other);
+    }
+
+    template<class T>
+    inline bool TDimension3D<T>::operator <= (const TDimension3D<T>& other) const
+    {
+        return (*this < other) || (*this == other);
+    }
+
+    template<class T>
+    inline bool TDimension3D<T>::operator > (const TDimension3D<T>& other) const
+    {
+        return !(*this < other);
+    }
+
+    template<class T>
+    inline bool TDimension3D<T>::operator < (const TDimension3D<T>& other) const
+    {
+        return width < other.width && height < other.height && depth < other.depth;
+    }
+
     template <class T>
     TDimension3D<T>& TDimension3D<T>::set(const T& nWidth, const T& nHeight, const T& nDepth)
     {
@@ -126,6 +150,12 @@ namespace core
     TDimension3D<T> TDimension3D<T>::operator + (const TDimension3D<T>& other) const
     {
         return TDimension3D<T>(width + other.width, height + other.height, depth + other.depth);
+    }
+
+    template<class T>
+    inline TDimension3D<T> TDimension3D<T>::operator - (const TDimension3D<T>& other) const
+    {
+        return TDimension3D<T>(width - other.width, height - other.height, depth - other.depth);
     }
 
     template <class T>

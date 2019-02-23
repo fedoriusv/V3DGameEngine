@@ -30,6 +30,9 @@ namespace vk
         bool useStagingBuffers;
         bool useGlobalDescriptorPool;
 
+        //immediateResourceSubmit: 0 - not submit, 1 - submit, 2 - submit and wait complete
+        u32 immediateResourceSubmit; 
+
         u32 maxDescriptorSetIndex;
         u32 maxDescriptorBindingIndex;
 

@@ -176,6 +176,10 @@ void VulkanDeviceCaps::fillCapabilitiesList(const DeviceInfo* info)
         support._supportSampled = (result == VK_SUCCESS) ? true : false;
     }
 
+
+    //check !!!!
+    immediateResourceSubmit = 2;
+
     //VK_EXT_memory_budget
     //VK_EXT_memory_priority
 

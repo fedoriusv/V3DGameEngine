@@ -19,12 +19,17 @@ namespace core
 
         bool                operator == (const TDimension3D<T>& other)  const;
         bool                operator != (const TDimension3D<T>& other)  const;
+        bool                operator >= (const TDimension3D<T>& other)  const;
+        bool                operator <= (const TDimension3D<T>& other)  const;
+        bool                operator > (const TDimension3D<T>& other)  const;
+        bool                operator < (const TDimension3D<T>& other)  const;
 
         TDimension3D<T>&    operator = (const TDimension3D<T>& other);
         TDimension3D<T>&    operator /= (const T& scale);
         TDimension3D<T>     operator /  (const T& scale)                const;
         TDimension3D<T>     operator *  (const T& scale)                const;
         TDimension3D<T>     operator +  (const TDimension3D<T>& other)  const;
+        TDimension3D<T>     operator -  (const TDimension3D<T>& other)  const;
         TDimension3D<T>&    operator += (const TDimension3D<T>& other);
         TDimension3D<T>&    operator -= (const TDimension3D<T>& other);
         TDimension3D<T>&    operator *= (const T& scale);

@@ -7,7 +7,7 @@ namespace renderer
 
     const u32 k_formatList[Format::Format_Count][2] = 
     {
-        /*                                             Components, Bytes*/
+        /*                                             Components, Bits*/
         /* Format_Undefined = 0*/                           { 0, 0  },
 
         /* Format_R4G4_UNorm_Pack8 = 1*/                    { 2, 8  },

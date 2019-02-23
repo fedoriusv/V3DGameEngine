@@ -198,19 +198,23 @@ bool VulkanBuffer::upload(Context* context, u32 offset, u64 size, void * data)
             memcpy(stagingData, data, size);
             staginBuffer->unmap();
 
+            ASSERT(!VulkanResource::isCaptured(), "still submitted");
+            vkContext->getStagingManager()->destroyAfterUse(staginBuffer);
+
             VkBufferCopy bufferCopy = {};
             bufferCopy.srcOffset = 0;
             bufferCopy.dstOffset = offset;
             bufferCopy.size = size;
 
-            ASSERT(!VulkanResource::isCaptured(), "still submitted");
             //TODO memory barrier
-            uploadBuffer->cmdCopyBufferToBuffer(staginBuffer->getBuffer(), this, bufferCopy);
+            uploadBuffer->cmdCopyBufferToBuffer(staginBuffer->getBuffer(), this, { bufferCopy });
             //TODO memory barrier
 
-            vkContext->submit(true);
-
-            vkContext->getStagingManager()->destroyAfterUse(staginBuffer);
+            u32 immediateResourceSubmit = VulkanDeviceCaps::getInstance()->immediateResourceSubmit;
+            if (immediateResourceSubmit > 0)
+            {
+                vkContext->submit(immediateResourceSubmit == 2 ? true : false);
+            }
         }
     }
     else
