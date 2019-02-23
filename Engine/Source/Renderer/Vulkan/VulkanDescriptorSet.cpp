@@ -69,14 +69,15 @@ bool VulkanDescriptorPool::allocateDescriptorSet(const VulkanPipelineLayout& lay
     VkResult result = VulkanWrapper::AllocateDescriptorSets(m_device, &descriptorSetAllocateInfo, descriptorSets.data());
     if (result == VK_ERROR_OUT_OF_POOL_MEMORY || result == VK_ERROR_FRAGMENTED_POOL)
     {
-        LOG_ERROR("VulkanDescriptorPool::createDescriptorSet vkAllocateDescriptorSets is failed. Error: %s", ErrorString(result).c_str());
-        VulkanDescriptorPool::freeDescriptorSet(descriptorSets);
+        LOG_WARNING("VulkanDescriptorPool::createDescriptorSet vkAllocateDescriptorSets is failed. Error: %s", ErrorString(result).c_str());
+        //VulkanDescriptorPool::freeDescriptorSet(descriptorSets);
 
         return false;
     }
     else if (result != VK_SUCCESS)
     {
         LOG_ERROR("VulkanDescriptorPool::createDescriptorSet vkAllocateDescriptorSets is failed. Error: %s", ErrorString(result).c_str());
+        VulkanDescriptorPool::freeDescriptorSet(descriptorSets);
         return false;
     }
 
@@ -138,7 +139,7 @@ u32 VulkanDescriptorSetManager::s_maxSets = 256;
 
 std::vector<VkDescriptorPoolSize> VulkanDescriptorSetManager::s_poolSizes =
 {
-    { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,                 128 },
+    { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,                 256 }, //Nvidia always use 256
     { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC,         64  },
 
     { VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,         128 },
@@ -174,7 +175,13 @@ VkShaderStageFlagBits VulkanDescriptorSetManager::convertShaderTypeToVkStage(Sha
 
 VulkanDescriptorSetManager::VulkanDescriptorSetManager(VkDevice device) noexcept
     : m_device(device)
+    , m_currentDescriptorPool(nullptr)
 {
+}
+
+VulkanDescriptorSetManager::~VulkanDescriptorSetManager()
+{
+    VulkanDescriptorSetManager::destroyPools();
 }
 
 VulkanPipelineLayout VulkanDescriptorSetManager::acquirePipelineLayout(const DescriptorSetDescription& desc)
@@ -232,21 +239,59 @@ bool VulkanDescriptorSetManager::removePipelineLayout(VulkanPipelineLayout & lay
 
 VulkanDescriptorPool* VulkanDescriptorSetManager::acquireDescriptorSets(const VulkanPipelineLayout& layout, std::vector<VkDescriptorSet>& sets, std::vector<u32>& offsets)
 {
-    for (auto& pool : m_descriptorPools)
+    VkDescriptorPoolCreateFlags flag = 0;
+    if (!m_currentDescriptorPool)
     {
-        if (pool->allocateDescriptorSet(layout, sets))
+        if (m_freeDescriptorPools.empty())
         {
-            return pool;
+            m_currentDescriptorPool = VulkanDescriptorSetManager::createPool(layout, flag);
+        }
+        else
+        {
+            m_currentDescriptorPool = m_freeDescriptorPools.front();
+            m_freeDescriptorPools.pop_front();
         }
     }
 
-    VkDescriptorPoolCreateFlags flag = 0;
-    VulkanDescriptorPool* newPool = VulkanDescriptorSetManager::createPool(layout, flag);
-    m_descriptorPools.push_back(newPool);
+    ASSERT(m_currentDescriptorPool, "nullptr");
+    bool result = m_currentDescriptorPool->allocateDescriptorSet(layout, sets);
+    if (!result)
+    {
+        m_usedDescriptorPools.push_back(m_currentDescriptorPool);
+        if (m_freeDescriptorPools.empty())
+        {
+            m_currentDescriptorPool = VulkanDescriptorSetManager::createPool(layout, flag);
+        }
+        else
+        {
+            m_currentDescriptorPool = m_freeDescriptorPools.front();
+            m_freeDescriptorPools.pop_front();
+        }
 
-    bool result = newPool->allocateDescriptorSet(layout, sets);
-    ASSERT(result, "fail");
-    return newPool;
+        result = m_currentDescriptorPool->allocateDescriptorSet(layout, sets);
+        ASSERT(result, "fail");
+    }
+
+    return m_currentDescriptorPool;
+}
+
+void VulkanDescriptorSetManager::updateDescriptorPools()
+{
+    for (auto iter = m_usedDescriptorPools.begin(); iter != m_usedDescriptorPools.end();)
+    {
+        VulkanDescriptorPool* pool = (*iter);
+        if (!pool->isCaptured())
+        {
+            m_freeDescriptorPools.push_back(pool);
+            iter = m_usedDescriptorPools.erase(iter);
+
+            pool->reset(0);
+        }
+        else
+        {
+            ++iter;
+        }
+    }
 }
 
 VkPipelineLayout VulkanDescriptorSetManager::createPipelineLayout(const DescriptorSetDescription& desc, std::vector<VkDescriptorSetLayout>& descriptorSetLayouts)
@@ -352,6 +397,25 @@ VulkanDescriptorPool * VulkanDescriptorSetManager::createPool(const VulkanPipeli
     }
 
     return pool;
+}
+
+void VulkanDescriptorSetManager::destroyPools()
+{
+    ASSERT(m_usedDescriptorPools.empty(), "not enmpty");
+
+    if (m_currentDescriptorPool)
+    {
+        ASSERT(!m_currentDescriptorPool->isCaptured(), "still used");
+        m_currentDescriptorPool->destroy();
+        delete m_currentDescriptorPool;
+    }
+
+    for (auto pool : m_freeDescriptorPools)
+    {
+        pool->destroy();
+        delete pool;
+    }
+    m_freeDescriptorPools.clear();
 }
 
 VulkanDescriptorSetManager::DescriptorSetDescription::DescriptorSetDescription(const std::array<const Shader*, ShaderType::ShaderType_Count>& shaders) noexcept

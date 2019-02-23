@@ -575,7 +575,7 @@ void VulkanGraphicContext::bindSampledImage(const Shader * shader, u32 bindIndex
     const Shader::ReflectionInfo& info = shader->getReflectionInfo();
     const Shader::SampledImage& sampledData = info._sampledImages[bindIndex];
 
-    m_currentContextStateNEW->bindTexture(vkImage, vkSampler, 1, sampledData);
+    m_currentContextStateNEW->bindTexture(vkImage, vkSampler, 0, sampledData);
 }
 
 const DeviceCaps* VulkanGraphicContext::getDeviceCaps() const
@@ -1106,11 +1106,10 @@ bool VulkanGraphicContext::prepareDraw(VulkanCommandBuffer* drawBuffer)
 
     m_currentContextStateNEW->invokeDynamicStates();
 
+
     std::vector<VkDescriptorSet> sets;
     std::vector<u32> offsets;
-    m_currentContextStateNEW->acquireDescriptorSets(sets, offsets);
-    m_currentContextStateNEW->updateDescriptorSet();
-
+    m_currentContextStateNEW->prepareDescriptorSets(drawBuffer, sets, offsets);
     drawBuffer->cmdBindDescriptorSets(m_currentContextStateNEW->getCurrentPipeline(), 0, static_cast<u32>(sets.size()), sets, offsets);
 
     return true;

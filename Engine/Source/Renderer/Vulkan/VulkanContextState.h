@@ -59,8 +59,7 @@ namespace vk
         bool setDynamicState(VkDynamicState state, const std::function<void()>& callback);
         void invokeDynamicStates();
 
-        bool acquireDescriptorSets(std::vector<VkDescriptorSet>& sets, std::vector<u32>& offsets);
-        void updateDescriptorSet();
+        bool prepareDescriptorSets(VulkanCommandBuffer* cmdBuffer, std::vector<VkDescriptorSet>& sets, std::vector<u32>& offsets);
 
         void bindTexture(const VulkanImage* image, const VulkanSampler* sampler, u32 arrayIndex, const Shader::SampledImage& reflaction);
         void updateConstantBuffer(u32 arrayIndex, const Shader::UniformBuffer& reflaction, u32 offset, u32 size, const void* data);
@@ -71,6 +70,8 @@ namespace vk
         VkRect2D m_renderPassArea;
 
     private:
+
+        bool updateDescriptorSet(VulkanCommandBuffer* cmdBuffer, std::vector<VkDescriptorSet>& sets);
 
         enum BindingType
         {
@@ -133,7 +134,6 @@ namespace vk
         std::pair<StreamBufferDescription, bool> m_currentVertexBuffers;
 
         VulkanDescriptorPool* m_currentPool;
-        std::vector<VkDescriptorSet> m_currentSets;
         VulkanDescriptorSetManager* m_descriptorSetManager;
 
         VulkanUniformBufferManager* m_unifromBufferManager;

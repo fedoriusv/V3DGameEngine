@@ -83,6 +83,7 @@ void MyApplication::Initialize()
 
     resource::Image* image = resource::ResourceLoaderManager::getInstance()->load<resource::Image, resource::ImageFileLoader>("textures/test_basetex.jpg");
     Model* model = resource::ResourceLoaderManager::getInstance()->load<Model, resource::ModelFileLoader>("examples/3.simpledraw/models/voyager/voyager.dae");
+    //Model* model = resource::ResourceLoaderManager::getInstance()->load<Model, resource::ModelFileLoader>("models/cube.blend");
 
     m_Render = new renderer::SimpleRender(*m_CommandList, m_Window->getSize(), { vertShader, fragShader }, { image }, { model });
     m_Render->setCamera(&m_Camera->getCamera());

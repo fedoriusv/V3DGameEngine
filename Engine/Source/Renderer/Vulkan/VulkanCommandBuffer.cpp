@@ -154,14 +154,13 @@ void VulkanCommandBuffer::captureResource(VulkanResource* resource, u64 frame)
     std::lock_guard lock(m_mutex);
 
     auto iter = m_resources.insert(resource);
-    if (!iter.second)
+    if (iter.second)
     {
-        ASSERT((*(iter.first))->m_cmdBuffer == resource->m_cmdBuffer, "different buffers");
+        resource->m_counter++;
+        resource->m_cmdBuffers.push_back(this);
     }
-
-    resource->m_status = VulkanResource::Status::Status_Captured; //TODO add counter
+    resource->m_status = VulkanResource::Status::Status_Captured;
     resource->m_frame = frame;
-    resource->m_cmdBuffer = this;
 }
 
 void VulkanCommandBuffer::releaseResources()
@@ -169,9 +168,16 @@ void VulkanCommandBuffer::releaseResources()
     std::lock_guard lock(m_mutex);
     for (auto res : m_resources)
     {
-        res->m_status = VulkanResource::Status::Status_Done;
-        res->m_cmdBuffer = nullptr;
-        res->m_frame = 0;
+        res->m_counter--;
+        res->m_cmdBuffers.erase(std::remove(res->m_cmdBuffers.begin(), res->m_cmdBuffers.end(), this));
+        ASSERT(res->m_counter >= 0, "less 0");
+        if (!res->m_counter)
+        {
+            ASSERT(res->m_cmdBuffers.empty(), "less 0");
+            //res->m_cmdBuffers.clear();
+            res->m_status = VulkanResource::Status::Status_Done;
+            res->m_frame = 0;
+        }
     }
     m_resources.clear();
 }

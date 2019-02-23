@@ -5,6 +5,7 @@
 
 #ifdef VULKAN_RENDER
 #include "VulkanWrapper.h"
+#include "VulkanResource.h"
 
 namespace v3d
 {
@@ -36,7 +37,7 @@ namespace vk
     /**
     * VulkanDescriptorPool class. Vulkan Render side
     */
-    class VulkanDescriptorPool
+    class VulkanDescriptorPool : public VulkanResource
     {
     public:
         VulkanDescriptorPool(VkDevice device, VkDescriptorPoolCreateFlags flag) noexcept;
@@ -83,6 +84,7 @@ namespace vk
         static VkShaderStageFlagBits convertShaderTypeToVkStage(ShaderType type);
 
         VulkanDescriptorSetManager(VkDevice device) noexcept;
+        ~VulkanDescriptorSetManager();
         VulkanDescriptorSetManager() = delete;
         VulkanDescriptorSetManager(const VulkanDescriptorSetManager&) = delete;
 
@@ -91,6 +93,7 @@ namespace vk
         bool removePipelineLayout(VulkanPipelineLayout& layout);
 
         VulkanDescriptorPool* acquireDescriptorSets(const VulkanPipelineLayout& layout, std::vector<VkDescriptorSet>& sets, std::vector<u32>& offsets);
+        void updateDescriptorPools();
 
     private:
 
@@ -101,11 +104,14 @@ namespace vk
         void destroyDescriptorSetLayouts(std::vector<VkDescriptorSetLayout>& descriptorSetLayouts);
 
         VulkanDescriptorPool* createPool(const VulkanPipelineLayout& layout, VkDescriptorPoolCreateFlags flag);
+        void destroyPools();
 
         VkDevice m_device;
 
         std::map<u64, VulkanPipelineLayout> m_pipelinesLayouts;
-        std::deque<VulkanDescriptorPool*> m_descriptorPools;
+        std::deque<VulkanDescriptorPool*> m_freeDescriptorPools;
+        std::deque<VulkanDescriptorPool*> m_usedDescriptorPools;
+        VulkanDescriptorPool*             m_currentDescriptorPool;
 
         static std::vector<VkDescriptorPoolSize> s_poolSizes;
         static u32 s_maxSets;

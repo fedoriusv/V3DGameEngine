@@ -34,11 +34,12 @@ SimpleRender::SimpleRender(renderer::CommandList& cmdList, const core::Dimension
     m_pipeline->setPrimitiveTopology(PrimitiveTopology::PrimitiveTopology_TriangleList);
     m_pipeline->setFrontFace(FrontFace::FrontFace_Clockwise);
     m_pipeline->setCullMode(CullMode::CullMode_Back);
+    m_pipeline->setColorMask(ColorMask::ColorMask_All);
     m_pipeline->setDepthCompareOp(CompareOperation::CompareOp_Less);
     m_pipeline->setDepthWrite(true);
-    m_pipeline->setDepthTest(false);
+    m_pipeline->setDepthTest(true);
 
-    //cmdList.setPipelineState(m_pipeline[0]);
+    cmdList.setPipelineState(m_pipeline);
 
     //test
     /*
@@ -113,7 +114,7 @@ void SimpleRender::updateParameters(renderer::CommandList& cmdList, const std::v
      //uboVS.modelMatrix.setTranslation(pos);
 
       m_program->bindUniformsBuffer<ShaderType::ShaderType_Vertex>("ubo", 0, sizeof(uboVS), &uboVS);
-      //m_program->bindSampledTexture<ShaderType::ShaderType_Fragment, Texture2D>("samplerColorMap", m_texture, m_sampler);
+      m_program->bindSampledTexture<ShaderType::ShaderType_Fragment, Texture2D>("samplerColorMap", m_texture, m_sampler);
 }
 
 void SimpleRender::update(renderer::CommandList& cmdList)
@@ -128,7 +129,7 @@ void SimpleRender::render(renderer::CommandList& cmdList)
 
     if (m_modelDrawer)
     {
-        m_pipeline->setDepthWrite(true);
+        /*m_pipeline->setDepthWrite(true);
         m_pipeline->setDepthTest(true);
         m_pipeline->setDepthCompareOp(CompareOperation::CompareOp_Less);
         m_pipeline->setColorMask(ColorMask::ColorMask_None);
@@ -141,7 +142,7 @@ void SimpleRender::render(renderer::CommandList& cmdList)
         m_pipeline->setDepthTest(true);
         m_pipeline->setDepthCompareOp(CompareOperation::CompareOp_Equal);
         m_pipeline->setColorMask(ColorMask::ColorMask_All);
-        cmdList.setPipelineState(m_pipeline);
+        cmdList.setPipelineState(m_pipeline);*/
 
         SimpleRender::updateParameters(cmdList, {});
         m_modelDrawer->drawModel();

@@ -37,13 +37,14 @@ namespace vk
 
         bool waitComplete(u64 time = 0);
 
-        void captureInsideCommandBuffer(VulkanCommandBuffer* buffer, u64 frame);
+        void captureInsideCommandBuffer(VulkanCommandBuffer* buffer, u64 frame) const;
 
     private:
 
         std::atomic<Status>     m_status;
+        std::atomic<s64>        m_counter;
         std::atomic<u64>        m_frame;
-        VulkanCommandBuffer*    m_cmdBuffer;
+        std::vector<VulkanCommandBuffer*> m_cmdBuffers;
 
         friend VulkanCommandBuffer;
     };

@@ -137,12 +137,12 @@ void VulkanBuffer::destroy()
         m_imageView = VK_NULL_HANDLE;
     }*/
 
-    VulkanMemory::freeMemory(*m_memoryAllocator, m_memory);
     if (m_buffer)
     {
         VulkanWrapper::DestroyBuffer(m_device, m_buffer, VULKAN_ALLOCATOR);
         m_buffer = VK_NULL_HANDLE;
     }
+    VulkanMemory::freeMemory(*m_memoryAllocator, m_memory);
 }
 
 bool VulkanBuffer::upload(Context* context, u32 offset, u64 size, void * data)
