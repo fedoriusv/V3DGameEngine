@@ -6,3 +6,7 @@
 	path = Engine/Libs/crc32c
 	url = https://github.com/google/crc32c.git
 	branch = master
+[submodule "engine/libs/gli"]
+	path = engine/libs/gli
+	url = https://github.com/g-truc/gli.git
+	branch = master

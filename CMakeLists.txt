@@ -15,7 +15,7 @@ option(ASSIMP_LIB "Use Assimp lib" ON)
 #https://github.com/assimp/assimp.git
 option(STB_LIB "Use Stb lib" ON)
 #https://github.com/nothings/stb.git
-option(IL_LIB "Use gli lib" OFF)
+option(GIL_LIB "Use gli lib" ON)
 #https://github.com/g-truc/gli.git
 option(SPIRV_INSTALL_FROM_GITHUB "implicity install SpirV" OFF)
 ##############################################################
@@ -64,6 +64,7 @@ set(LIB_INCLUDE_DIRECTORY
 	#${ENGINE_PROJECT_DIR}/${SOURCE_DIR}/Renderer
 	${ENGINE_PROJECT_DIR}/${SOURCE_DIR}/ThirdParty)
 
+set(EXTRA_LIB_DEFINE "")
 #Crc32c	
 if (CRC32_LIB)
 	set(LIB_INCLUDE_DIRECTORY ${LIB_INCLUDE_DIRECTORY} ${ENGINE_PROJECT_DIR}/Engine/Libs/crc32c/include)
@@ -71,11 +72,15 @@ endif()
 #Assimp
 if (ASSIMP_LIB)
 	set(LIB_INCLUDE_DIRECTORY ${LIB_INCLUDE_DIRECTORY} ${ENGINE_PROJECT_DIR}/Engine/Libs/assimp/include)
-	set(ASSIMP_DEFINE "-DUSE_ASSIMP")
+	set(EXTRA_LIB_DEFINE ${EXTRA_LIB_DEFINE} "-DUSE_ASSIMP")
 endif()
 #Stb
 if (STB_LIB)
-	set(STB_DEFINE "-DUSE_STB")
+	set(EXTRA_LIB_DEFINE ${EXTRA_LIB_DEFINE} "-DUSE_STB")
+endif()
+#Gli
+if (GIL_LIB)
+	set(EXTRA_LIB_DEFINE ${EXTRA_LIB_DEFINE} "-DUSE_GLI")
 endif()
 
 include_directories(BEFORE ${LIB_INCLUDE_DIRECTORY})
@@ -124,12 +129,12 @@ if(WIN32)
     set(CMAKE_CONFIGURATION_TYPES "Debug;Release" CACHE STRING "" FORCE)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /EHsc /MP")
 #   Debug
-    set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DDEBUG -DUSE_LOGGER -D_CRT_SECURE_NO_WARNINGS ${VULKAN_SDK_DEFINE} ${ASSIMP_DEFINE} ${STB_DEFINE}")
+    set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DDEBUG -DUSE_LOGGER -D_CRT_SECURE_NO_WARNINGS ${VULKAN_SDK_DEFINE} ${EXTRA_LIB_DEFINE}")
     set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} ${VULKAN_SDK_INCLUDE_DIRECTORY}")
     set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /Zi /MTd /std:c++17")
     set(CMAKE_DEBUG_POSTFIX "_d")
 #   Release
-    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -DUSE_LOGGER ${VULKAN_SDK_DEFINE} ${ASSIMP_DEFINE} ${STB_DEFINE}")
+    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -DUSE_LOGGER ${VULKAN_SDK_DEFINE} ${EXTRA_LIB_DEFINE}")
     set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} ${VULKAN_SDK_INCLUDE_DIRECTORY}")
     set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /MT /std:c++17")
 endif()
@@ -233,6 +238,7 @@ if (CRC32_LIB)
     set_target_properties(crc32c_sse42 PROPERTIES FOLDER Libs/crc32c)
 	message("-- Crc32 lib added")
 endif()
+
 if (ASSIMP_LIB)
 	message("-- Add Assimp lib")
 	add_subdirectory(Engine/Libs/assimp)
@@ -244,6 +250,13 @@ if (ASSIMP_LIB)
     set_target_properties(zlibstatic PROPERTIES FOLDER Libs/assimp)
 	message("-- Crc32 lib added")
 endif()
+
+if (GIL_LIB)
+	message("-- Add Gli lib")
+    add_subdirectory(Engine/Libs/gli)
+    message("-- Gli lib added")
+endif()
+
 ##############################################################
 
 #Examples
