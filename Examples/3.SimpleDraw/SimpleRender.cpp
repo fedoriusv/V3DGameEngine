@@ -19,9 +19,9 @@ SimpleRender::SimpleRender(renderer::CommandList& cmdList, const core::Dimension
     m_program = cmdList.createObject<ShaderProgram>(shaders);
 
     m_sampler = cmdList.createObject<SamplerState>(SamplerFilter::SamplerFilter_Nearest, SamplerFilter::SamplerFilter_Nearest, SamplerAnisotropic::SamplerAnisotropic_None);
-    //m_texture = cmdList.createObject<Texture2D>(TextureUsage::TextureUsage_Sampled | TextureUsage_Shared | TextureUsage_Write, Format::Format_BC2_UNorm_Block, size,,,);
     m_texture = cmdList.createObject<Texture2D>(TextureUsage::TextureUsage_Sampled | TextureUsage_Shared | TextureUsage_Write, 
         image[0]->getFormat(), core::Dimension2D(image[0]->getDimension().width, image[0]->getDimension().height), 1, image[0]->getRawData());
+    m_images.emplace(image[0], std::make_pair(m_texture, m_sampler));
 
     m_modelDrawer = new scene::ModelHelper(cmdList, models);
 
@@ -40,46 +40,6 @@ SimpleRender::SimpleRender(renderer::CommandList& cmdList, const core::Dimension
     m_pipeline->setDepthTest(true);
 
     cmdList.setPipelineState(m_pipeline);
-
-    //test
-    /*
-    std::vector<f32> vertexBuffer =
-    {
-        0.0f,  1.0f, 0.0f ,     1.0f, 0.0f, 0.0f,
-        1.0f, -1.0f, 0.0f ,     0.0f, 1.0f, 0.0f,
-       -1.0f, -1.0f, 0.0f ,     0.0f, 0.0f, 1.0f
-    };
-
-    VertexInputAttribDescription::InputBinding binding(0, VertexInputAttribDescription::InputRate_Vertex, sizeof(f32) * 6);
-    renderer::VertexInputAttribDescription vertexDesc({ binding },
-        {
-            { binding._index, 0, Format::Format_R32G32B32_SFloat, 0 },                  //pos
-            { binding._index, 0, Format::Format_R32G32B32_SFloat, sizeof(f32) * 3 }     //color
-        }
-    );
-    u64 vertexBufferSize = vertexBuffer.size() * sizeof(f32);
-    m_drawBuffer = cmdList.createObject<VertexStreamBuffer>(StreamBufferUsage::StreamBuffer_Write | StreamBufferUsage::StreamBuffer_Shared, vertexBufferSize, (u8*)vertexBuffer.data());
-
-
-    const Shader* vertShader = resource::ResourceLoaderManager::getInstance()->loadShader<Shader, resource::ShaderSourceFileLoader>(cmdList.getContext(), "examples/3.simpledraw/shaders/simple.vert");
-    const Shader* fragShader = resource::ResourceLoaderManager::getInstance()->loadShader<Shader, resource::ShaderSourceFileLoader>(cmdList.getContext(), "examples/3.simpledraw/shaders/simple.frag");
-    const std::vector<const Shader*> sha = { vertShader, fragShader };
-    m_program = cmdList.createObject<ShaderProgram>(sha);
-
-    m_pipeline = cmdList.createObject<GraphicsPipelineState>(vertexDesc, m_program, m_renderTarget);
-    m_pipeline->setPrimitiveTopology(PrimitiveTopology::PrimitiveTopology_TriangleList);
-    m_pipeline->setFrontFace(FrontFace::FrontFace_Clockwise);
-
-    m_pipeline = cmdList.createObject<GraphicsPipelineState>(vertexDesc, m_program, m_renderTarget);
-    m_pipeline->setPrimitiveTopology(PrimitiveTopology::PrimitiveTopology_TriangleList);
-    m_pipeline->setFrontFace(FrontFace::FrontFace_Clockwise);
-    m_pipeline->setCullMode(CullMode::CullMode_None);
-    m_pipeline->setDepthCompareOp(CompareOperation::CompareOp_Less);
-    m_pipeline->setDepthWrite(true);
-    m_pipeline->setDepthTest(true);
-    */
-    //
-
     cmdList.setRenderTarget(m_renderTarget);
 
     cmdList.sumitCommands();
@@ -90,31 +50,43 @@ SimpleRender::~SimpleRender()
 {
     delete m_modelDrawer;
 
-    delete m_renderTarget;
-    delete m_pipeline;
-    delete m_program;
+    //TODO should remove self
+    {
+        delete m_renderTarget;
+        delete m_pipeline;
+        delete m_program;
+        delete m_texture;
+        delete m_sampler;
+    }
 }
 
 void SimpleRender::updateParameters(renderer::CommandList& cmdList, const std::vector<Parameter>& parameters)
 {
-    struct
-    {
-        core::Matrix4D projectionMatrix;
-        core::Matrix4D modelMatrix;
-        core::Matrix4D viewMatrix;
-        core::Vector4D lightPos = core::Vector4D(25.0f, 5.0f, 5.0f, 1.0f);
-    }
-    uboVS;
+    //struct
+    //{
+    //    core::Matrix4D projectionMatrix;
+    //    core::Matrix4D modelMatrix;
+    //    core::Matrix4D viewMatrix;
+    //    core::Vector4D lightPos = core::Vector4D(25.0f, 5.0f, 5.0f, 1.0f);
+    //}
+    //uboVS;
 
-     uboVS.projectionMatrix = m_camera->getProjectionMatrix();
-     uboVS.viewMatrix = m_camera->getViewMatrix();
+    // uboVS.projectionMatrix = m_camera->getProjectionMatrix();
+    // uboVS.viewMatrix = m_camera->getViewMatrix();
 
-     //uboVS.modelMatrix.makeIdentity();
-     //uboVS.modelMatrix.setRotation(rotate);
-     //uboVS.modelMatrix.setTranslation(pos);
+    //  m_program->bindUniformsBuffer<ShaderType::ShaderType_Vertex>("ubo", 0, sizeof(uboVS), &uboVS);
+    //  m_program->bindSampledTexture<ShaderType::ShaderType_Fragment, Texture2D>("samplerColorMap", m_texture, m_sampler);
+}
 
-      m_program->bindUniformsBuffer<ShaderType::ShaderType_Vertex>("ubo", 0, sizeof(uboVS), &uboVS);
-      m_program->bindSampledTexture<ShaderType::ShaderType_Fragment, Texture2D>("samplerColorMap", m_texture, m_sampler);
+void SimpleRender::updateParameter(renderer::CommandList & cmdList, const std::string& name, u32 size, const void * ubo)
+{
+    m_program->bindUniformsBuffer<ShaderType::ShaderType_Vertex>(name, 0, size, ubo);
+}
+
+void SimpleRender::updateParameter(renderer::CommandList & cmdList, const std::string & name, const resource::Image * image)
+{
+    auto& data = m_images.begin()->second; //m_images[image];
+    m_program->bindSampledTexture<ShaderType::ShaderType_Fragment, Texture2D>(name, data.first, data.second);
 }
 
 void SimpleRender::update(renderer::CommandList& cmdList)
@@ -129,22 +101,7 @@ void SimpleRender::render(renderer::CommandList& cmdList)
 
     if (m_modelDrawer)
     {
-        /*m_pipeline->setDepthWrite(true);
-        m_pipeline->setDepthTest(true);
-        m_pipeline->setDepthCompareOp(CompareOperation::CompareOp_Less);
-        m_pipeline->setColorMask(ColorMask::ColorMask_None);
-        cmdList.setPipelineState(m_pipeline);
-
-        SimpleRender::updateParameters(cmdList, {});
-        m_modelDrawer->drawModel();
-
-        m_pipeline->setDepthWrite(false);
-        m_pipeline->setDepthTest(true);
-        m_pipeline->setDepthCompareOp(CompareOperation::CompareOp_Equal);
-        m_pipeline->setColorMask(ColorMask::ColorMask_All);
-        cmdList.setPipelineState(m_pipeline);*/
-
-        SimpleRender::updateParameters(cmdList, {});
+        //SimpleRender::updateParameters(cmdList, {});
         m_modelDrawer->drawModel();
     }
 }

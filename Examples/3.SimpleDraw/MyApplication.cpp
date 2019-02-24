@@ -90,12 +90,32 @@ void MyApplication::Initialize()
     m_Render->setCamera(&m_Camera->getCamera());
 }
 
+void MyApplication::Update()
+{
+    struct
+    {
+        core::Matrix4D projectionMatrix;
+        core::Matrix4D modelMatrix;
+        core::Matrix4D viewMatrix;
+        core::Vector4D lightPos = core::Vector4D(25.0f, 5.0f, 5.0f, 1.0f);
+    }
+    uboVS;
+
+    uboVS.projectionMatrix = m_Camera->getCamera().getProjectionMatrix();
+    uboVS.viewMatrix = m_Camera->getCamera().getViewMatrix();
+
+    m_Render->updateParameter(*m_CommandList, "ubo", sizeof(uboVS), &uboVS);
+    m_Render->updateParameter(*m_CommandList, "samplerColorMap", nullptr);
+}
+
 bool MyApplication::Running(renderer::CommandList& commandList)
 {
     //Frame
     commandList.beginFrame();
 
     m_Camera->update();
+    Update();
+
     m_Render->render(commandList);
 
     commandList.endFrame();
@@ -108,6 +128,8 @@ bool MyApplication::Running(renderer::CommandList& commandList)
 
 void MyApplication::Exit()
 {
+    delete m_Camera;
+
     delete m_Render;
     delete m_CommandList;
     Context::destroyContext(m_Context);

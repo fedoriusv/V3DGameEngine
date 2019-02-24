@@ -40,18 +40,22 @@ public:
 
     void setCamera(scene::Camera* camera);
 
+    void updateParameter(renderer::CommandList& cmdList, const std::string& name, u32 size, const void* ubo);
+    void updateParameter(renderer::CommandList& cmdList, const std::string& name, const resource::Image* image);
+
 private:
 
     void updateParameters(renderer::CommandList& cmdList, const std::vector<Parameter>& parameters);
 
     ShaderProgram*          m_program;
     GraphicsPipelineState*  m_pipeline;
-
-    RenderTargetState*           m_renderTarget;
+    RenderTargetState*      m_renderTarget;
 
    scene::ModelHelper*      m_modelDrawer;
 
    scene::Camera*           m_camera;
+
+   std::map<const resource::Image*, std::pair<Texture2D*, SamplerState*>> m_images;
 
    Texture2D*    m_texture;
    SamplerState* m_sampler;

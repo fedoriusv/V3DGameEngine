@@ -284,7 +284,7 @@ Resource * MeshAssimpDecoder::decode(const stream::Stream* stream, const std::st
             inputBindings.push_back(renderer::VertexInputAttribDescription::InputBinding(0, renderer::VertexInputAttribDescription::InputRate_Vertex, stride));
             attribDescriptionList.emplace_back(inputBindings, inputAttributes);
 
-            //delete meshStream;
+            delete meshStream;
         }
         newHeader->_vertex._globalSize = globalModelSize;
 

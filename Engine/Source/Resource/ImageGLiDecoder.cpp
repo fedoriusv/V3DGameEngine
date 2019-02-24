@@ -42,7 +42,7 @@ Resource * ImageGLiDecoder::decode(const stream::Stream * stream, const std::str
             return nullptr;
         }
 
-        bool flipY = true;
+        bool flipY = gli::is_s3tc_compressed(texture.format());
         if (m_readHeader)
         {
             flipY = m_header._flipY;
@@ -70,9 +70,125 @@ Resource * ImageGLiDecoder::decode(const stream::Stream * stream, const std::str
             case gli::format::FORMAT_RGBA_DXT5_UNORM_BLOCK16:
                 return renderer::Format::Format_BC3_UNorm_Block;
 
+
+            case gli::format::FORMAT_RGB_ETC2_UNORM_BLOCK8:
+                return renderer::Format::Format_ETC2_R8G8B8_UNorm_Block;
+
+            case gli::format::FORMAT_RGB_ETC2_SRGB_BLOCK8:
+                return renderer::Format::Format_ETC2_R8G8B8_SRGB_Block;
+
+            case gli::format::FORMAT_RGBA_ETC2_UNORM_BLOCK8:
+                return renderer::Format::Format_ETC2_R8G8B8A1_UNorm_Block;
+
+            case gli::format::FORMAT_RGBA_ETC2_SRGB_BLOCK8:
+                return renderer::Format::Format_ETC2_R8G8B8A1_SRGB_Block;
+
+            case gli::format::FORMAT_RGBA_ETC2_UNORM_BLOCK16:
+                return renderer::Format::Format_ETC2_R8G8B8A8_UNorm_Block;
+
+            case gli::format::FORMAT_RGBA_ETC2_SRGB_BLOCK16:
+                return renderer::Format::Format_ETC2_R8G8B8A8_SRGB_Block;
+
+            case gli::format::FORMAT_R_EAC_UNORM_BLOCK8:
+                return renderer::Format::Format_EAC_R11_UNorm_Block;
+
+            case gli::format::FORMAT_R_EAC_SNORM_BLOCK8:
+                return renderer::Format::Format_EAC_R11_SNorm_Block;
+
+            case gli::format::FORMAT_RG_EAC_UNORM_BLOCK16:
+                return renderer::Format::Format_EAC_R11G11_UNorm_Block;
+
+            case gli::format::FORMAT_RG_EAC_SNORM_BLOCK16:
+                return renderer::Format::Format_EAC_R11G11_SNorm_Block;
+
+
+            case gli::format::FORMAT_RGBA_ASTC_4X4_UNORM_BLOCK16:
+                return renderer::Format::Format_ASTC_4x4_UNorm_Block;
+
+            case gli::format::FORMAT_RGBA_ASTC_4X4_SRGB_BLOCK16:
+                return renderer::Format::Format_ASTC_4x4_SRGB_Block;
+
+            case gli::format::FORMAT_RGBA_ASTC_5X4_UNORM_BLOCK16:
+                return renderer::Format::Format_ASTC_5x4_UNorm_Block;
+
+            case gli::format::FORMAT_RGBA_ASTC_5X4_SRGB_BLOCK16:
+                return renderer::Format::Format_ASTC_5x4_SRGB_Block;
+
+            case gli::format::FORMAT_RGBA_ASTC_5X5_UNORM_BLOCK16:
+                return renderer::Format::Format_ASTC_5x5_UNorm_Block;
+
+            case gli::format::FORMAT_RGBA_ASTC_5X5_SRGB_BLOCK16:
+                return renderer::Format::Format_ASTC_5x5_SRGB_Block;
+
+            case gli::format::FORMAT_RGBA_ASTC_6X5_UNORM_BLOCK16:
+                return renderer::Format::Format_ASTC_6x5_UNorm_Block;
+
+            case gli::format::FORMAT_RGBA_ASTC_6X5_SRGB_BLOCK16:
+                return renderer::Format::Format_ASTC_6x5_SRGB_Block;
+
+            case gli::format::FORMAT_RGBA_ASTC_6X6_UNORM_BLOCK16:
+                return renderer::Format::Format_ASTC_6x6_UNorm_Block;
+
+            case gli::format::FORMAT_RGBA_ASTC_6X6_SRGB_BLOCK16:
+                return renderer::Format::Format_ASTC_6x6_SRGB_Block;
+
+            case gli::format::FORMAT_RGBA_ASTC_8X5_UNORM_BLOCK16:
+                return renderer::Format::Format_ASTC_8x5_UNorm_Block;
+
+            case gli::format::FORMAT_RGBA_ASTC_8X5_SRGB_BLOCK16:
+                return renderer::Format::Format_ASTC_8x5_SRGB_Block;
+
+            case gli::format::FORMAT_RGBA_ASTC_8X6_UNORM_BLOCK16:
+                return renderer::Format::Format_ASTC_8x6_UNorm_Block;
+
+            case gli::format::FORMAT_RGBA_ASTC_8X6_SRGB_BLOCK16:
+                return renderer::Format::Format_ASTC_8x6_SRGB_Block;
+
+            case gli::format::FORMAT_RGBA_ASTC_8X8_UNORM_BLOCK16:
+                return renderer::Format::Format_ASTC_8x8_UNorm_Block;
+
+            case gli::format::FORMAT_RGBA_ASTC_8X8_SRGB_BLOCK16:
+                return renderer::Format::Format_ASTC_8x8_SRGB_Block;
+
+            case gli::format::FORMAT_RGBA_ASTC_10X5_UNORM_BLOCK16:
+                return renderer::Format::Format_ASTC_10x5_UNorm_Block;
+
+            case gli::format::FORMAT_RGBA_ASTC_10X5_SRGB_BLOCK16:
+                return renderer::Format::Format_ASTC_10x5_SRGB_Block;
+
+            case gli::format::FORMAT_RGBA_ASTC_10X6_UNORM_BLOCK16:
+                return renderer::Format::Format_ASTC_10x6_UNorm_Block;
+
+            case gli::format::FORMAT_RGBA_ASTC_10X6_SRGB_BLOCK16:
+                return renderer::Format::Format_ASTC_10x6_SRGB_Block;
+
+            case gli::format::FORMAT_RGBA_ASTC_10X8_UNORM_BLOCK16:
+                return renderer::Format::Format_ASTC_10x8_UNorm_Block;
+
+            case gli::format::FORMAT_RGBA_ASTC_10X8_SRGB_BLOCK16:
+                return renderer::Format::Format_ASTC_10x8_SRGB_Block;
+
+            case gli::format::FORMAT_RGBA_ASTC_10X10_UNORM_BLOCK16:
+                return renderer::Format::Format_ASTC_10x10_UNorm_Block;
+
+            case gli::format::FORMAT_RGBA_ASTC_10X10_SRGB_BLOCK16:
+                return renderer::Format::Format_ASTC_10x10_SRGB_Block;
+
+            case gli::format::FORMAT_RGBA_ASTC_12X10_UNORM_BLOCK16:
+                return renderer::Format::Format_ASTC_12x10_UNorm_Block;
+
+            case gli::format::FORMAT_RGBA_ASTC_12X10_SRGB_BLOCK16:
+                return renderer::Format::Format_ASTC_12x10_SRGB_Block;
+
+            case gli::format::FORMAT_RGBA_ASTC_12X12_UNORM_BLOCK16:
+                return renderer::Format::Format_ASTC_12x12_UNorm_Block;
+
+            case gli::format::FORMAT_RGBA_ASTC_12X12_SRGB_BLOCK16:
+                return renderer::Format::Format_ASTC_12x12_SRGB_Block;
+
             case gli::format::FORMAT_UNDEFINED:
             default:
-                ASSERT(false, "not found");
+                ASSERT(false, "format not found");
             }
 
             return renderer::Format::Format_Undefined;

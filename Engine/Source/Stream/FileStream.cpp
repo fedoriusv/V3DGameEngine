@@ -369,6 +369,18 @@ bool FileStream::isExists(const std::string& file)
     return std::filesystem::exists(file);
 }
 
+std::string FileStream::absolutePath(const std::string & file)
+{
+    std::filesystem::path path = file;
+    return std::filesystem::absolute(path).string();
+}
+
+std::string FileStream::extension(const std::string & file)
+{
+    std::filesystem::path path = file;
+    return path.extension().string();
+}
+
 bool FileStream::isDirectory(const std::string& path)
 {
     return std::filesystem::is_directory(path);

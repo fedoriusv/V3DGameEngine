@@ -12,6 +12,14 @@ namespace renderer
 
     struct DeviceCaps
     {
+        enum TilingType
+        {
+            TilingType_Optimal = 0,
+            TilingType_Linear = 1,
+
+            TilingType_Count
+        };
+
         u32 maxColorattachments = k_maxFramebufferAttachments;
         u32 maxVertexInputAttributes = k_maxVertexInputAttributes;
         u32 maxVertexInputBindings = k_maxVertexInputBindings;
@@ -20,20 +28,18 @@ namespace renderer
 
         struct ImageFormatSupport
         {
-            bool _tilingOptimal;
-            bool _tilingLinear;
             bool _supportAttachment;
             bool _supportSampled;
         };
 
-        const ImageFormatSupport& getIFormatSupportInfo(Format format)
+        const ImageFormatSupport& getImageFormatSupportInfo(Format format, TilingType type)
         {
-            return m_imageFormatSupport[format];
+            return m_imageFormatSupport[format][type];
         }
 
     protected:
 
-        ImageFormatSupport m_imageFormatSupport[Format::Format_Count];
+        ImageFormatSupport m_imageFormatSupport[Format::Format_Count][TilingType::TilingType_Count];
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

@@ -23,6 +23,7 @@ public:
 private:
 
     void Initialize();
+    void Update();
     bool Running(v3d::renderer::CommandList& cmd);
     void Exit();
 

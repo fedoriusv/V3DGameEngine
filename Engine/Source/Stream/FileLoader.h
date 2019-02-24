@@ -19,7 +19,9 @@ namespace stream
 
         static stream::Stream* load(std::string filename)
         {
-            LOG_DEBUG("FileLoader::try load [%s] file", filename.c_str());
+#if DEBUG
+            LOG_DEBUG("FileLoader::try load [%s] file", stream::FileStream::absolutePath(filename).c_str());
+#endif //DEBUG
             if (!stream::FileStream::isExists(filename))
             {
                 return nullptr;
@@ -40,11 +42,13 @@ namespace stream
         {
             std::string fileExtension;
 
-            const size_t pos = fileName.find_last_of('.');
+            /*const size_t pos = fileName.find_last_of('.');
             if (pos != std::string::npos)
             {
                 fileExtension = std::string(fileName.begin() + pos + 1, fileName.end());
-            }
+            }*/
+            std::string extension = stream::FileStream::extension(fileName);
+            fileExtension = extension.substr(1, extension.size() - 1);
 
             return fileExtension;
         }

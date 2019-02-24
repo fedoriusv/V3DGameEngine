@@ -25,6 +25,9 @@ namespace stream
             e_create = 1 << 5
         };
 
+        static std::string absolutePath(const std::string& file);
+        static std::string extension(const std::string& file);
+
         static bool isExists(const std::string& file);
         static bool isDirectory(const std::string& path);
         static bool remove(const std::string& file);
