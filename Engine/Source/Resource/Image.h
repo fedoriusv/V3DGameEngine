@@ -19,7 +19,10 @@ namespace resource
 
         renderer::Format    _format;
         core::Dimension3D   _dimension;
-        u32                 _size;
+        u32                 _layers;
+        u32                 _mips;
+
+        u64                 _size;
 
         bool                _flipY;
     };

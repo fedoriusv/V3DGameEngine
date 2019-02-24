@@ -7,10 +7,10 @@
 #include "Utils/Logger.h"
 
 #ifdef USE_ASSIMP
-#include <assimp/Importer.hpp>
-#include <assimp/scene.h>
-#include <assimp/postprocess.h>
-#include <assimp/cimport.h>
+#   include <assimp/Importer.hpp>
+#   include <assimp/scene.h>
+#   include <assimp/postprocess.h>
+#   include <assimp/cimport.h>
 #endif //USE_ASSIMP
 
 namespace v3d

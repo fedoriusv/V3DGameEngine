@@ -49,6 +49,7 @@ namespace vk
         static VkImageAspectFlags getImageAspectFlags(VkFormat format);
         static bool isColorFormat(VkFormat format);
         static bool isDepthStencilFormat(VkFormat format);
+        static bool isCompressedFormat(VkFormat format);
         static std::tuple<VkAccessFlags, VkAccessFlags> getAccessFlagsFromImageLayout(VkImageLayout oldLayout, VkImageLayout newLayout);
 
         VkImage             getHandle() const;

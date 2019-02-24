@@ -5,9 +5,8 @@
 #include "Utils/Logger.h"
 
 #ifdef USE_SPIRV
-#   include "shaderc/libshaderc/include/shaderc/shaderc.hpp"
-//#   include "shaderc/shaderc.hpp"
-#   include "SPIRV-Cross/spirv_glsl.hpp"
+#   include <shaderc/libshaderc/include/shaderc/shaderc.hpp>
+#   include <SPIRV-Cross/spirv_glsl.hpp>
 #endif // USE_SPIRV
 
 namespace v3d

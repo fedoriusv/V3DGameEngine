@@ -14,6 +14,7 @@ namespace renderer
     enum Format : u32
     {
         Format_Undefined = 0,
+
         Format_R4G4_UNorm_Pack8 = 1,
         Format_R4G4B4A4_UNorm_Pack16 = 2,
         Format_B4G4R4A4_UNorm_Pack16 = 3,
@@ -22,6 +23,7 @@ namespace renderer
         Format_R5G5B5A1_UNorm_Pack16 = 6,
         Format_B5G5R5A1_UNorm_Pack16 = 7,
         Format_A1R5G5B5_UNorm_Pack16 = 8,
+
         Format_R8_UNorm = 9,
         Format_R8_SNorm = 10,
         Format_R8_UScaled = 11,
@@ -29,6 +31,7 @@ namespace renderer
         Format_R8_UInt = 13,
         Format_R8_SInt = 14,
         Format_R8_SRGB = 15,
+
         Format_R8G8_UNorm = 16,
         Format_R8G8_SNorm = 17,
         Format_R8G8_UScaled = 18,
@@ -36,6 +39,7 @@ namespace renderer
         Format_R8G8_UInt = 20,
         Format_R8G8_SInt = 21,
         Format_R8G8_SRGB = 22,
+
         Format_R8G8B8_UNorm = 23,
         Format_R8G8B8_SNorm = 24,
         Format_R8G8B8_UScaled = 25,
@@ -50,6 +54,7 @@ namespace renderer
         Format_B8G8R8_UInt = 34,
         Format_B8G8R8_SInt = 35,
         Format_B8G8R8_SRGB = 36,
+
         Format_R8G8B8A8_UNorm = 37,
         Format_R8G8B8A8_SNorm = 38,
         Format_R8G8B8A8_UScaled = 39,
@@ -64,6 +69,7 @@ namespace renderer
         Format_B8G8R8A8_UInt = 48,
         Format_B8G8R8A8_SInt = 49,
         Format_B8G8R8A8_SRGB = 50,
+
         Format_A8B8G8R8_UNorm_Pack32 = 51,
         Format_A8B8G8R8_SNorm_Pack32 = 52,
         Format_A8B8G8R8_UScaled_Pack32 = 53,
@@ -71,6 +77,7 @@ namespace renderer
         Format_A8B8G8R8_UInt_Pack32 = 55,
         Format_A8B8G8R8_SInt_Pack32 = 56,
         Format_A8B8G8R8_SRGB_Pack32 = 57,
+
         Format_A2R10G10B10_UNorm_Pack32 = 58,
         Format_A2R10G10B10_SNorm_Pack32 = 59,
         Format_A2R10G10B10_UScaled_Pack32 = 60,
@@ -83,6 +90,7 @@ namespace renderer
         Format_A2B10G10R10_SScaled_Pack32 = 67,
         Format_A2B10G10R10_UInt_Pack32 = 68,
         Format_A2B10G10R10_SInt_Pack32 = 69,
+
         Format_R16_UNorm = 70,
         Format_R16_SNorm = 71,
         Format_R16_UScaled = 72,
@@ -90,6 +98,7 @@ namespace renderer
         Format_R16_UInt = 74,
         Format_R16_SInt = 75,
         Format_R16_SFloat = 76,
+
         Format_R16G16_UNorm = 77,
         Format_R16G16_SNorm = 78,
         Format_R16G16_UScaled = 79,
@@ -97,6 +106,7 @@ namespace renderer
         Format_R16G16_UInt = 81,
         Format_R16G16_SInt = 82,
         Format_R16G16_SFloat = 83,
+
         Format_R16G16B16_UNorm = 84,
         Format_R16G16B16_SNorm = 85,
         Format_R16G16B16_UScaled = 86,
@@ -104,6 +114,7 @@ namespace renderer
         Format_R16G16B16_UInt = 88,
         Format_R16G16B16_SInt = 89,
         Format_R16G16B16_SFloat = 90,
+
         Format_R16G16B16A16_UNorm = 91,
         Format_R16G16B16A16_SNorm = 92,
         Format_R16G16B16A16_UScaled = 93,
@@ -111,6 +122,7 @@ namespace renderer
         Format_R16G16B16A16_UInt = 95,
         Format_R16G16B16A16_SInt = 96,
         Format_R16G16B16A16_SFloat = 97,
+
         Format_R32_UInt = 98,
         Format_R32_SInt = 99,
         Format_R32_SFloat = 100,
@@ -123,6 +135,7 @@ namespace renderer
         Format_R32G32B32A32_UInt = 107,
         Format_R32G32B32A32_SInt = 108,
         Format_R32G32B32A32_SFloat = 109,
+
         Format_R64_UInt = 110,
         Format_R64_SInt = 111,
         Format_R64_SFloat = 112,
@@ -137,6 +150,7 @@ namespace renderer
         Format_R64G64B64A64_SFloat = 121,
         Format_B10G11R11_UFloat_Pack32 = 122,
         Format_E5B9G9R9_UFloat_Pack32 = 123,
+
         Format_D16_UNorm = 124,
         Format_X8_D24_UNorm_Pack32 = 125,
         Format_D32_SFloat = 126,
@@ -144,6 +158,7 @@ namespace renderer
         Format_D16_UNorm_S8_UInt = 128,
         Format_D24_UNorm_S8_UInt = 129,
         Format_D32_SFloat_S8_UInt = 130,
+
         Format_BC1_RGB_UNorm_Block = 131,
         Format_BC1_RGB_SRGB_Block = 132,
         Format_BC1_RGBA_UNorm_Block = 133,
@@ -160,16 +175,19 @@ namespace renderer
         Format_BC6H_SFloat_Block = 144,
         Format_BC7_UNorm_Block = 145,
         Format_BC7_SRGB_Block = 146,
+
         Format_ETC2_R8G8B8_UNorm_Block = 147,
         Format_ETC2_R8G8B8_SRGB_Block = 148,
         Format_ETC2_R8G8B8A1_UNorm_Block = 149,
         Format_ETC2_R8G8B8A1_SRGB_Block = 150,
         Format_ETC2_R8G8B8A8_UNorm_Block = 151,
         Format_ETC2_R8G8B8A8_SRGB_Block = 152,
+
         Format_EAC_R11_UNorm_Block = 153,
         Format_EAC_R11_SNorm_Block = 154,
         Format_EAC_R11G11_UNorm_Block = 155,
         Format_EAC_R11G11_SNorm_Block = 156,
+
         Format_ASTC_4x4_UNorm_Block = 157,
         Format_ASTC_4x4_SRGB_Block = 158,
         Format_ASTC_5x4_UNorm_Block = 159,

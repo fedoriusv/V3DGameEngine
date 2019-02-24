@@ -3,19 +3,19 @@
 #include "Utils/Logger.h"
 
 #if USE_STB
-#define STB_IMAGE_IMPLEMENTATION
-#define STBI_NO_STDIO
+#   define STB_IMAGE_IMPLEMENTATION
+#   define STBI_NO_STDIO
 
-#define STBI_ONLY_JPEG
-#define STBI_ONLY_PNG
-#define STBI_ONLY_BMP
-#define STBI_ONLY_TGA
-//#define STBI_ONLY_PSD
-//#define STBI_ONLY_GIF
-//#define STBI_ONLY_HDR
-//#define STBI_ONLY_PIC
+#   define STBI_ONLY_JPEG
+#   define STBI_ONLY_PNG
+#   define STBI_ONLY_BMP
+#   define STBI_ONLY_TGA
+//#    define STBI_ONLY_PSD
+//#    define STBI_ONLY_GIF
+//#    define STBI_ONLY_HDR
+//#    define STBI_ONLY_PIC
 
-#include "ThirdParty/stb/stb_image.h"
+#   include <ThirdParty/stb/stb_image.h>
 #endif //USE_STB
 
 namespace v3d
@@ -76,6 +76,9 @@ Resource * ImageStbDecoder::decode(const stream::Stream * stream, const std::str
 
             data = stbi_load_from_memory(source, stream->size(), &sizeX, &sizeY, &componentCount, req_componentCount);
             LOG_DEBUG("ImageStbDecoder::decode load image %s, size [%d, %d], components %d", name.c_str(), sizeX, sizeY, componentCount);
+
+            stream->unmap();
+
             if (!data)
             {
                 LOG_ERROR("ImageStbDecoder::decode fail, Error : %s", stbi_failure_reason());
@@ -178,7 +181,7 @@ Resource * ImageStbDecoder::decode(const stream::Stream * stream, const std::str
         newHeader->_size = sizeX * sizeY * req_componentCount;
         newHeader->_flipY = false;
 
-        stream::Stream* imageStream = stream::StreamManager::createMemoryStream(data, newHeader->_size);
+        stream::Stream* imageStream = stream::StreamManager::createMemoryStream(data, static_cast<u32>(newHeader->_size));
 
         resource::Image* image = new resource::Image(newHeader);
         image->init(imageStream);

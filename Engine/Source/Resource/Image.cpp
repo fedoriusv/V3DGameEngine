@@ -72,6 +72,9 @@ const ImageHeader & Image::getImageHeader() const
 ImageHeader::ImageHeader() noexcept
     : _format(renderer::Format::Format_Undefined)
     , _dimension(core::Dimension3D())
+    , _layers(1)
+    , _mips(1)
+
     , _size(0)
     , _flipY(false)
 {

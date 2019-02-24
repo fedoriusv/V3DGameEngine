@@ -72,15 +72,15 @@ endif()
 #Assimp
 if (ASSIMP_LIB)
 	set(LIB_INCLUDE_DIRECTORY ${LIB_INCLUDE_DIRECTORY} ${ENGINE_PROJECT_DIR}/Engine/Libs/assimp/include)
-	set(EXTRA_LIB_DEFINE ${EXTRA_LIB_DEFINE} "-DUSE_ASSIMP")
+	set(EXTRA_LIB_DEFINE "${EXTRA_LIB_DEFINE} -DUSE_ASSIMP")
 endif()
 #Stb
 if (STB_LIB)
-	set(EXTRA_LIB_DEFINE ${EXTRA_LIB_DEFINE} "-DUSE_STB")
+	set(EXTRA_LIB_DEFINE "${EXTRA_LIB_DEFINE} -DUSE_STB")
 endif()
 #Gli
 if (GIL_LIB)
-	set(EXTRA_LIB_DEFINE ${EXTRA_LIB_DEFINE} "-DUSE_GLI")
+	set(EXTRA_LIB_DEFINE "${EXTRA_LIB_DEFINE} -DUSE_GLI")
 endif()
 
 include_directories(BEFORE ${LIB_INCLUDE_DIRECTORY})
@@ -208,11 +208,13 @@ if (CRC32_LIB)
 	target_link_libraries(${ENGINE_NAME} crc32c)
 	set(BUILD_DEPENDENCIES ${BUILD_DEPENDENCIES} crc32c)
 endif()
+
 #Assimp	
 if (ASSIMP_LIB)
 	target_link_libraries(${ENGINE_NAME} assimp)
 	set(BUILD_DEPENDENCIES ${BUILD_DEPENDENCIES} assimp)
 endif()
+
 #Spirv
 if (BUILD_VULKAN_SDK)
 	if ((IS_DIRECTORY ${SPIRV_FOLDER}/shaderc AND IS_DIRECTORY ${SPIRV_FOLDER}/SPIRV-Cross) OR SPIRV_INSTALL_FROM_GITHUB)
@@ -249,12 +251,6 @@ if (ASSIMP_LIB)
     set_target_properties(zlib PROPERTIES FOLDER Libs/assimp)  
     set_target_properties(zlibstatic PROPERTIES FOLDER Libs/assimp)
 	message("-- Crc32 lib added")
-endif()
-
-if (GIL_LIB)
-	message("-- Add Gli lib")
-    add_subdirectory(Engine/Libs/gli)
-    message("-- Gli lib added")
 endif()
 
 ##############################################################

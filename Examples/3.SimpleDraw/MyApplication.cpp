@@ -81,8 +81,9 @@ void MyApplication::Initialize()
     Shader* vertShader = resource::ResourceLoaderManager::getInstance()->loadShader<Shader, resource::ShaderSourceFileLoader>(m_CommandList->getContext(), "examples/3.simpledraw/shaders/mesh.vert");
     Shader* fragShader = resource::ResourceLoaderManager::getInstance()->loadShader<Shader, resource::ShaderSourceFileLoader>(m_CommandList->getContext(), "examples/3.simpledraw/shaders/mesh.frag");
 
-    resource::Image* image = resource::ResourceLoaderManager::getInstance()->load<resource::Image, resource::ImageFileLoader>("textures/test_basetex.jpg");
+    resource::Image* image = resource::ResourceLoaderManager::getInstance()->load<resource::Image, resource::ImageFileLoader>("examples/3.simpledraw/models/voyager/voyager_bc3_unorm.ktx");
     Model* model = resource::ResourceLoaderManager::getInstance()->load<Model, resource::ModelFileLoader>("examples/3.simpledraw/models/voyager/voyager.dae");
+    //resource::Image* image = resource::ResourceLoaderManager::getInstance()->load<resource::Image, resource::ImageFileLoader>("textures/test_basetex.jpg");
     //Model* model = resource::ResourceLoaderManager::getInstance()->load<Model, resource::ModelFileLoader>("models/cube.blend");
 
     m_Render = new renderer::SimpleRender(*m_CommandList, m_Window->getSize(), { vertShader, fragShader }, { image }, { model });

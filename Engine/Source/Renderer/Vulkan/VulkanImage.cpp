@@ -389,59 +389,62 @@ VkFormat VulkanImage::convertImageFormatToVkFormat(renderer::Format format)
     case v3d::renderer::Format_D32_SFloat_S8_UInt:
          return VK_FORMAT_D32_SFLOAT_S8_UINT;
 
-        //TODO:
     case v3d::renderer::Format_BC1_RGB_UNorm_Block:
-         return VK_FORMAT_UNDEFINED;
+         return VK_FORMAT_BC1_RGB_UNORM_BLOCK;
     case v3d::renderer::Format_BC1_RGB_SRGB_Block:
-         return VK_FORMAT_UNDEFINED;
+         return VK_FORMAT_BC1_RGB_SRGB_BLOCK;
     case v3d::renderer::Format_BC1_RGBA_UNorm_Block:
-         return VK_FORMAT_UNDEFINED;
+         return VK_FORMAT_BC1_RGBA_UNORM_BLOCK;
     case v3d::renderer::Format_BC1_RGBA_SRGB_Block:
-         return VK_FORMAT_UNDEFINED;
+         return VK_FORMAT_BC1_RGBA_SRGB_BLOCK;
     case v3d::renderer::Format_BC2_UNorm_Block:
-         return VK_FORMAT_UNDEFINED;
+         return VK_FORMAT_BC2_UNORM_BLOCK;
     case v3d::renderer::Format_BC2_SRGB_Block:
-         return VK_FORMAT_UNDEFINED;
+         return VK_FORMAT_BC2_SRGB_BLOCK;
     case v3d::renderer::Format_BC3_UNorm_Block:
-         return VK_FORMAT_UNDEFINED;
+         return VK_FORMAT_BC3_UNORM_BLOCK;
     case v3d::renderer::Format_BC3_SRGB_Block:
-         return VK_FORMAT_UNDEFINED;
+         return VK_FORMAT_BC3_SRGB_BLOCK;
     case v3d::renderer::Format_BC4_UNorm_Block:
-         return VK_FORMAT_UNDEFINED;
+         return VK_FORMAT_BC4_UNORM_BLOCK;
     case v3d::renderer::Format_BC4_SNorm_Block:
-         return VK_FORMAT_UNDEFINED;
+         return VK_FORMAT_BC4_SNORM_BLOCK;
     case v3d::renderer::Format_BC5_UNorm_Block:
-         return VK_FORMAT_UNDEFINED;
+         return VK_FORMAT_BC5_UNORM_BLOCK;
     case v3d::renderer::Format_BC5_SNorm_Block:
-         return VK_FORMAT_UNDEFINED;
+         return VK_FORMAT_BC5_SNORM_BLOCK;
     case v3d::renderer::Format_BC6H_UFloat_Block:
-         return VK_FORMAT_UNDEFINED;
+         return VK_FORMAT_BC6H_UFLOAT_BLOCK;
     case v3d::renderer::Format_BC6H_SFloat_Block:
-         return VK_FORMAT_UNDEFINED;
+         return VK_FORMAT_BC6H_SFLOAT_BLOCK;
     case v3d::renderer::Format_BC7_UNorm_Block:
-         return VK_FORMAT_UNDEFINED;
+         return VK_FORMAT_BC7_UNORM_BLOCK;
     case v3d::renderer::Format_BC7_SRGB_Block:
-         return VK_FORMAT_UNDEFINED;
+         return VK_FORMAT_BC7_SRGB_BLOCK;
+
     case v3d::renderer::Format_ETC2_R8G8B8_UNorm_Block:
-         return VK_FORMAT_UNDEFINED;
+         return VK_FORMAT_ETC2_R8G8B8_UNORM_BLOCK;
     case v3d::renderer::Format_ETC2_R8G8B8_SRGB_Block:
-         return VK_FORMAT_UNDEFINED;
+         return VK_FORMAT_ETC2_R8G8B8_SRGB_BLOCK;
     case v3d::renderer::Format_ETC2_R8G8B8A1_UNorm_Block:
-         return VK_FORMAT_UNDEFINED;
+         return VK_FORMAT_ETC2_R8G8B8A1_UNORM_BLOCK;
     case v3d::renderer::Format_ETC2_R8G8B8A1_SRGB_Block:
-         return VK_FORMAT_UNDEFINED;
+         return VK_FORMAT_ETC2_R8G8B8A1_SRGB_BLOCK;
     case v3d::renderer::Format_ETC2_R8G8B8A8_UNorm_Block:
-         return VK_FORMAT_UNDEFINED;
+         return VK_FORMAT_ETC2_R8G8B8A8_UNORM_BLOCK;
     case v3d::renderer::Format_ETC2_R8G8B8A8_SRGB_Block:
-         return VK_FORMAT_UNDEFINED;
+         return VK_FORMAT_ETC2_R8G8B8A8_SRGB_BLOCK;
+
     case v3d::renderer::Format_EAC_R11_UNorm_Block:
-         return VK_FORMAT_UNDEFINED;
+         return VK_FORMAT_EAC_R11_UNORM_BLOCK;
     case v3d::renderer::Format_EAC_R11_SNorm_Block:
-         return VK_FORMAT_UNDEFINED;
+         return VK_FORMAT_EAC_R11_SNORM_BLOCK;
     case v3d::renderer::Format_EAC_R11G11_UNorm_Block:
-         return VK_FORMAT_UNDEFINED;
+         return VK_FORMAT_EAC_R11G11_UNORM_BLOCK;
     case v3d::renderer::Format_EAC_R11G11_SNorm_Block:
-         return VK_FORMAT_UNDEFINED;
+         return VK_FORMAT_EAC_R11G11_SNORM_BLOCK;
+
+         //TODO::
     case v3d::renderer::Format_ASTC_4x4_UNorm_Block:
          return VK_FORMAT_UNDEFINED;
     case v3d::renderer::Format_ASTC_4x4_SRGB_Block:
@@ -798,7 +801,11 @@ bool VulkanImage::upload(Context * context, const core::Dimension3D & offsets, c
     ASSERT(size > offsets, "wrong offset");
     core::Dimension3D diffSize = (size - offsets);
 
-    u64 calculatedSize = (getFormatSize(format)/8) * diffSize.getArea() * mips; //TODO
+    u64 calculatedSize = (getFormatSize(format) / 8) * diffSize.getArea() * mips;
+    if (isCompressedFormat(m_format))
+    {
+        calculatedSize /= 16;
+    }
     ASSERT(calculatedSize > 0, "wrong size");
 
     if (VulkanDeviceCaps::getInstance()->useStagingBuffers)
@@ -964,6 +971,33 @@ bool VulkanImage::isDepthStencilFormat(VkFormat format)
     case VK_FORMAT_D16_UNORM_S8_UINT:
     case VK_FORMAT_D24_UNORM_S8_UINT:
     case VK_FORMAT_D32_SFLOAT_S8_UINT:
+        return true;
+
+    default:
+        return false;
+    }
+}
+
+bool VulkanImage::isCompressedFormat(VkFormat format)
+{
+    switch (format)
+    {
+    case VK_FORMAT_BC1_RGB_UNORM_BLOCK:
+    case VK_FORMAT_BC1_RGB_SRGB_BLOCK:
+    case VK_FORMAT_BC1_RGBA_UNORM_BLOCK:
+    case VK_FORMAT_BC1_RGBA_SRGB_BLOCK:
+    case VK_FORMAT_BC2_UNORM_BLOCK:
+    case VK_FORMAT_BC2_SRGB_BLOCK:
+    case VK_FORMAT_BC3_UNORM_BLOCK:
+    case VK_FORMAT_BC3_SRGB_BLOCK:
+    case VK_FORMAT_BC4_UNORM_BLOCK:
+    case VK_FORMAT_BC4_SNORM_BLOCK:
+    case VK_FORMAT_BC5_UNORM_BLOCK:
+    case VK_FORMAT_BC5_SNORM_BLOCK:
+    case VK_FORMAT_BC6H_UFLOAT_BLOCK:
+    case VK_FORMAT_BC6H_SFLOAT_BLOCK:
+    case VK_FORMAT_BC7_UNORM_BLOCK:
+    case VK_FORMAT_BC7_SRGB_BLOCK:
         return true;
 
     default:

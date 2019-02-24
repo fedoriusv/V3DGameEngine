@@ -1,10 +1,12 @@
 #include "ShaderSourceFileLoader.h"
 
-#include "ShaderSpirVDecoder.h"
+#include "Renderer/Context.h"
+#include "Stream/FileLoader.h"
 #include "Renderer/Shader.h"
 
-#include "Stream/FileLoader.h"
-#include "Renderer/Context.h"
+#ifdef USE_SPIRV
+#include "ShaderSpirVDecoder.h"
+#endif //USE_SPIRV
 
 namespace v3d
 {

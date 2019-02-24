@@ -1,10 +1,15 @@
 #include "ImageFileLoader.h"
 
-#include "Resource/Image.h"
-#include "ImageStbDecoder.h"
-
-#include "Stream/FileLoader.h"
 #include "Renderer/Context.h"
+#include "Stream/FileLoader.h"
+#include "Resource/Image.h"
+#if USE_STB
+#   include "ImageStbDecoder.h"
+#endif USE_STB
+
+#if USE_GLI
+#   include "ImageGLiDecoder.h"
+#endif //USE_GLI
 
 namespace v3d
 {
@@ -14,9 +19,19 @@ namespace resource
 ImageFileLoader::ImageFileLoader() noexcept
 {
 #if USE_STB
-    resource::ImageHeader header;
-    ResourceLoader::registerDecoder(new ImageStbDecoder({ "jpg", "png", "bmp", "tga" }, header, false));
+    {
+        resource::ImageHeader header;
+        ResourceLoader::registerDecoder(new ImageStbDecoder({ "jpg", "png", "bmp", "tga" }, header, false));
+    }
 #endif USE_STB
+
+#if USE_GLI
+    {
+        resource::ImageHeader header;
+        ResourceLoader::registerDecoder(new ImageGLiDecoder({ "ktx", "kmg", "dds" }, header, false));
+    }
+#endif //USE_GLI
+
     ResourceLoader::registerPath("../../../../");
     ResourceLoader::registerPath("../../../../../");
     ResourceLoader::registerPath("../../../../engine/");
