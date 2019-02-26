@@ -18,13 +18,13 @@ ModelHelper::ModelHelper(renderer::CommandList & cmdList, const std::vector<cons
         bool unifyMesh = true;
         if (unifyMesh)
         {
-            u32 size = model->getModleHeader()._vertex._globalSize;
+            u32 size = static_cast<u32>(model->getModelHeader()._vertex._globalSize);
             u8* data = model->getMeshByIndex(0)->getVertexData();
             renderer::VertexStreamBuffer* vertexBuffer = cmdList.createObject<renderer::VertexStreamBuffer>(renderer::StreamBuffer_Write | renderer::StreamBuffer_Shared, size, data);
 
-            if (model->getModleHeader()._indexBuffer)
+            if (model->getModelHeader()._index._present)
             {
-                u32 count = model->getModleHeader()._index._countElements;
+                u32 count = static_cast<u32>(model->getModelHeader()._index._countElements);
                 u8* data = model->getMeshByIndex(0)->getIndexData();
                 renderer::IndexStreamBuffer* indexBuffer = cmdList.createObject<renderer::IndexStreamBuffer>(renderer::StreamBuffer_Write | renderer::StreamBuffer_Shared, renderer::StreamIndexBufferType::IndexType_32, count, data);
 
@@ -33,7 +33,7 @@ ModelHelper::ModelHelper(renderer::CommandList & cmdList, const std::vector<cons
             }
             else
             {
-                DrawProps props = { 0, model->getModleHeader()._vertex._countElements, 0, 1, false };
+                DrawProps props = { 0, static_cast<u32>(model->getModelHeader()._vertex._countElements), 0, 1, false };
                 m_drawState.push_back(std::make_tuple(renderer::StreamBufferDescription(vertexBuffer, 0, 0), props));
             }
         }

@@ -181,9 +181,7 @@ bool VulkanBuffer::upload(Context* context, u32 offset, u64 size, void * data)
         if (m_size <= 65536)
         {
             ASSERT(!VulkanResource::isCaptured(), "still submitted");
-            //TODO memory barrier
             uploadBuffer->cmdUpdateBuffer(this, offset, m_size, data);
-            //TODO memory barrier
         }
         else
         {

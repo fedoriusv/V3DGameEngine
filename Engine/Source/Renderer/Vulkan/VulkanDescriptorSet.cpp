@@ -67,7 +67,7 @@ bool VulkanDescriptorPool::allocateDescriptorSet(const VulkanPipelineLayout& lay
 
     descriptorSets.resize(layout._descriptorSetLayouts.size(), VK_NULL_HANDLE);
     VkResult result = VulkanWrapper::AllocateDescriptorSets(m_device, &descriptorSetAllocateInfo, descriptorSets.data());
-    if (result == VK_ERROR_OUT_OF_POOL_MEMORY || result == VK_ERROR_FRAGMENTED_POOL)
+    if (result == VK_ERROR_OUT_OF_POOL_MEMORY || result == VK_ERROR_FRAGMENTED_POOL || result == VK_ERROR_OUT_OF_DEVICE_MEMORY)
     {
         LOG_WARNING("VulkanDescriptorPool::createDescriptorSet vkAllocateDescriptorSets is failed. Error: %s", ErrorString(result).c_str());
         //VulkanDescriptorPool::freeDescriptorSet(descriptorSets);

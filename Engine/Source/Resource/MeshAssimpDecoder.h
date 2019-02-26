@@ -3,6 +3,8 @@
 #include "ResourceDecoder.h"
 #include "Scene/Model.h"
 
+struct aiScene;
+
 namespace v3d
 {
 namespace resource
@@ -15,14 +17,17 @@ namespace resource
     {
     public:
 
-        MeshAssimpDecoder(std::vector<std::string> supportedExtensions, const scene::ModleHeader& header, bool readHeader) noexcept;
+        MeshAssimpDecoder(std::vector<std::string> supportedExtensions, const scene::ModelHeader& header, bool readHeader) noexcept;
         ~MeshAssimpDecoder();
 
         Resource* decode(const stream::Stream* stream, const std::string& name = "") override;
 
     private:
 
-        const scene::ModleHeader m_header;
+        bool decodeMesh(const aiScene* scene, stream::Stream* stream, scene::ModelHeader* header);
+        bool decodeMaterial(const aiScene* scene, stream::Stream* stream, scene::ModelHeader* header);
+
+        const scene::ModelHeader m_header;
         bool m_headerRules;
     };
 

@@ -15,10 +15,19 @@ namespace scene
     /**
     * ModleHeader meta info about Shader
     */
-    struct ModleHeader : resource::ResourceHeader
+    struct ModelHeader : resource::ResourceHeader
     {
+        enum ModelContent : u32
+        {
+            ModelContext_Empty = 0,
+            ModelContext_Mesh = 1 << 0,
+            ModelContext_Material = 1 << 1
+        };
+        typedef u32 ModelContentFlags;
+
         enum VertexProperies : u32
         {
+            VertexProperies_Empty = 0,
             VertexProperies_Position  = 1 << 0,
             VertexProperies_Normals = 1 << 1,
             VertexProperies_Tangent = 1 << 2,
@@ -31,36 +40,46 @@ namespace scene
             VertexProperies_Color2 = 1 << 9,
             VertexProperies_Color3 = 1 << 10,
         };
-
         typedef u16 VertexProperiesFlags;
 
-        ModleHeader() noexcept;
-        ~ModleHeader();
+        ModelHeader() noexcept;
+        ~ModelHeader();
 
         struct MeshInfo
         {
             struct Data
             {
-                u32 _size;
-                u32 _offset;
-                u32 _count;
+                u64 _size;
+                u64 _offset;
+                u64 _count;
             };
 
             std::vector<Data>        _data;
-            u32                      _countElements;
-            u32                      _globalSize;
+            u64                      _countElements;
+            u64                      _globalSize;
+            std::vector<std::string> _names;
+            bool                     _present;
         };
 
-        MeshInfo                _vertex;
-        MeshInfo                _index;
+        struct MaterialInfo
+        {
+            u64                      _countElements;
+            u64                      _globalSize;
+            std::vector<std::string> _names;
+            bool                     _present;
+        };
+
+        ModelContentFlags       _modelContent;
 
         renderer::PolygonMode   _mode;
         renderer::FrontFace     _frontFace;
-        VertexProperiesFlags    _content;
+        VertexProperiesFlags    _vertexContent;
         bool                    _localTransform;
-        bool                    _indexBuffer;
 
-        std::vector<std::string> _names;
+        MeshInfo                _vertex;
+        MeshInfo                _index;
+        MaterialInfo            _materials;
+
     };
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -109,10 +128,10 @@ namespace scene
             renderer::VertexInputAttribDescription m_description;
         };
 
-        explicit Model(ModleHeader* header) noexcept;
+        explicit Model(ModelHeader* header) noexcept;
         ~Model();
 
-        const ModleHeader& getModleHeader() const;
+        const ModelHeader& getModelHeader() const;
 
         Model::Mesh* getMeshByIndex(u32 index) const;
 

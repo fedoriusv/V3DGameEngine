@@ -6,7 +6,7 @@ namespace v3d
 namespace scene
 {
 
-Model::Model(ModleHeader* header) noexcept
+Model::Model(ModelHeader* header) noexcept
     : Resource(header)
     , m_vertexModelData(nullptr)
     , m_indexModelData(nullptr)
@@ -34,9 +34,9 @@ Model::~Model()
     }
 }
 
-const ModleHeader & Model::getModleHeader() const
+const ModelHeader & Model::getModelHeader() const
 {
-    return *(static_cast<const scene::ModleHeader*>(m_header));
+    return *(static_cast<const scene::ModelHeader*>(m_header));
 }
 
 Model::Mesh * Model::getMeshByIndex(u32 index) const
@@ -61,20 +61,20 @@ bool Model::load()
     ASSERT(m_stream, "nullptr");
     m_stream->seekBeg(0);
 
-    const ModleHeader& header = Model::getModleHeader();
+    const ModelHeader& header = Model::getModelHeader();
 
-    m_vertexModelData = stream::StreamManager::createMemoryStream(nullptr, header._vertex._globalSize);
-    u8* vetexData = m_vertexModelData->map(header._vertex._globalSize);
-    m_stream->read(vetexData, header._vertex._globalSize, 1);
+    m_vertexModelData = stream::StreamManager::createMemoryStream(nullptr, static_cast<u32>(header._vertex._globalSize));
+    u8* vetexData = m_vertexModelData->map(static_cast<u32>(header._vertex._globalSize));
+    m_stream->read(vetexData, static_cast<u32>(header._vertex._globalSize), 1);
 
     m_meshes.resize(header._vertex._countElements);
 
     u8* indexData = nullptr;
-    if (header._indexBuffer)
+    if (header._index._present)
     {
-        m_indexModelData = stream::StreamManager::createMemoryStream(nullptr, header._index._globalSize);
-        indexData = m_indexModelData->map(header._index._globalSize);
-        m_stream->read(indexData, header._index._globalSize, 1);
+        m_indexModelData = stream::StreamManager::createMemoryStream(nullptr, static_cast<u32>(header._index._globalSize));
+        indexData = m_indexModelData->map(static_cast<u32>(header._index._globalSize));
+        m_stream->read(indexData, static_cast<u32>(header._index._globalSize), 1);
         m_indexModelData->unmap();
     }
 
@@ -83,14 +83,14 @@ bool Model::load()
         Mesh* mesh = new Mesh();
 
         u8* vertexDataPtr = vetexData + header._vertex._data[meshIndex]._offset;
-        u32 vertexSize = header._vertex._data[meshIndex]._size;
-        mesh->fillVertexData(header._vertex._data[meshIndex]._count, vertexDataPtr, vertexSize);
+        u32 vertexSize = static_cast<u32>(header._vertex._data[meshIndex]._size);
+        mesh->fillVertexData(static_cast<u32>(header._vertex._data[meshIndex]._count), vertexDataPtr, vertexSize);
 
-        if (header._indexBuffer)
+        if (header._index._present)
         {
             u8* indexDataPtr = indexData + header._index._data[meshIndex]._offset;
-            u32 indexSize = header._index._data[meshIndex]._size;
-            mesh->fillIndexData(header._index._data[meshIndex]._count, indexDataPtr, indexSize);
+            u32 indexSize = static_cast<u32>(header._index._data[meshIndex]._size);
+            mesh->fillIndexData(static_cast<u32>(header._index._data[meshIndex]._count), indexDataPtr, indexSize);
         }
 
         m_meshes[meshIndex] = mesh;
@@ -112,18 +112,19 @@ bool Model::load()
     return true;
 }
 
-ModleHeader::ModleHeader() noexcept
+ModelHeader::ModelHeader() noexcept
     : _mode(renderer::PolygonMode::PolygonMode_Triangle)
     , _frontFace(renderer::FrontFace::FrontFace_Clockwise)
-    , _content(0)
+    , _modelContent(ModelContent::ModelContext_Empty)
+    , _vertexContent(VertexProperies::VertexProperies_Empty)
     , _localTransform(false)
-    , _indexBuffer(false)
 {
-    memset(&_vertex, 0, sizeof(_vertex));
-    memset(&_index, 0, sizeof(_index));
+    memset(&_vertex, 0, sizeof(MeshInfo));
+    memset(&_index, 0, sizeof(MeshInfo));
+    memset(&_materials, 0, sizeof(MaterialInfo));
 }
 
-ModleHeader::~ModleHeader()
+ModelHeader::~ModelHeader()
 {
 }
 
