@@ -10,7 +10,9 @@ namespace v3d
 {
 namespace scene
 {
-    /////////////////////////////////////////////////////////////////////////////////////////////////////
+    class Mesh;
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
     * ModleHeader meta info about Shader
@@ -23,7 +25,7 @@ namespace scene
             ModelContext_Mesh = 1 << 0,
             ModelContext_Material = 1 << 1
         };
-        typedef u32 ModelContentFlags;
+        typedef u16 ModelContentFlags;
 
         enum VertexProperies : u32
         {
@@ -45,20 +47,31 @@ namespace scene
         ModelHeader() noexcept;
         ~ModelHeader();
 
-        struct MeshInfo
+        struct GeometryInfo
         {
-            struct Data
+            GeometryInfo();
+
+            struct SubData
             {
-                u64 _size;
                 u64 _offset;
-                u64 _count;
+                u64 _size;
+                u32 _count;
             };
 
-            std::vector<Data>        _data;
-            u64                      _countElements;
-            u64                      _globalSize;
-            std::vector<std::string> _names;
+            u64                      _size;
+            u32                      _count;
+            std::vector<SubData>     _subData;
             bool                     _present;
+
+            void operator >> (stream::Stream * stream) const;
+            void operator << (const stream::Stream * stream);
+        };
+
+        struct MeshInfo
+        {
+            GeometryInfo _index;
+            GeometryInfo _vertex;
+            u64          _globalSize;
         };
 
         struct MaterialInfo
@@ -69,15 +82,14 @@ namespace scene
             bool                     _present;
         };
 
-        ModelContentFlags       _modelContent;
+        ModelContentFlags       _modelContentFlags;
+        VertexProperiesFlags    _vertexContentFlags;
 
         renderer::PolygonMode   _mode;
         renderer::FrontFace     _frontFace;
-        VertexProperiesFlags    _vertexContent;
         bool                    _localTransform;
 
-        MeshInfo                _vertex;
-        MeshInfo                _index;
+        std::vector<MeshInfo>   _meshes;
         MaterialInfo            _materials;
 
     };
@@ -94,58 +106,21 @@ namespace scene
     {
     public:
 
-        class Mesh final
-        {
-        public:
-
-            Mesh() noexcept;
-            ~Mesh();
-
-            u8* getVertexData() const;
-            u8* getIndexData() const;
-
-            const renderer::VertexInputAttribDescription& getVertexInputAttribDesc() const;
-
-        private:
-
-            friend Model;
-
-            void fillVertexData(u32 count, u8* data, u32 size);
-            void fillIndexData(u32 count, u8* data, u32 size);
-
-            struct BufferData
-            {
-                u8* _data;
-                u32 _size;
-            };
-
-            BufferData m_vertexData;
-            BufferData m_indexData;
-
-            u32 m_vertexCount;
-            u32 m_indexCount;
-
-            renderer::VertexInputAttribDescription m_description;
-        };
-
         explicit Model(ModelHeader* header) noexcept;
         ~Model();
 
         const ModelHeader& getModelHeader() const;
 
-        Model::Mesh* getMeshByIndex(u32 index) const;
+        Mesh* getMeshByIndex(u32 index) const;
 
         void init(stream::Stream* stream) override;
         bool load() override;
 
     private:
 
-        friend class ModelHelper;
-
-        stream::Stream* m_vertexModelData;
-        stream::Stream* m_indexModelData;
-
         std::vector<Mesh*> m_meshes;
+
+        friend class ModelHelper;
     };
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////

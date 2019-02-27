@@ -139,7 +139,7 @@ void VulkanGraphicContext::endFrame()
             uploadBuffer->endCommandBuffer();
         }
         m_cmdBufferManager->submit(uploadBuffer, VK_NULL_HANDLE);
-        uploadBuffer->waitComplete();
+        //uploadBuffer->waitComplete();
         m_currentContextState.invalidateCommandBuffer(CommandTargetType::CmdUploadBuffer);
     }
 

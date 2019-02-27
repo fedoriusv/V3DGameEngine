@@ -29,6 +29,9 @@ namespace resource
 
         const scene::ModelHeader m_header;
         bool m_headerRules;
+
+        bool m_seperateMesh = false;
+        bool m_generateIndices = true;
     };
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////

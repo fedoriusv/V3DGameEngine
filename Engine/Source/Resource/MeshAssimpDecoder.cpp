@@ -64,13 +64,13 @@ Resource * MeshAssimpDecoder::decode(const stream::Stream* stream, const std::st
             {
                 assimpFlags |= aiProcess_FlipWindingOrder;
             }
-            newHeader->_modelContent |= scene::ModelHeader::ModelContext_Mesh;
+            newHeader->_modelContentFlags |= scene::ModelHeader::ModelContext_Mesh;
         }
         else
         {
             assimpFlags = aiProcess_ConvertToLeftHanded | aiProcess_Triangulate | aiProcess_PreTransformVertices;
 
-            newHeader->_vertexContent = 0;
+            newHeader->_vertexContentFlags = 0;
             newHeader->_mode = renderer::PolygonMode::PolygonMode_Triangle;
             newHeader->_frontFace = renderer::FrontFace::FrontFace_Clockwise;
             newHeader->_localTransform = false;
@@ -90,27 +90,27 @@ Resource * MeshAssimpDecoder::decode(const stream::Stream* stream, const std::st
 
         if (scene->HasMeshes())
         {
-            if (m_headerRules && (newHeader->_modelContent & scene::ModelHeader::ModelContext_Mesh))
+            if (m_headerRules && (newHeader->_modelContentFlags & scene::ModelHeader::ModelContext_Mesh))
             {
                 MeshAssimpDecoder::decodeMesh(scene, modelStream, newHeader);
             }
             else
             {
                 MeshAssimpDecoder::decodeMesh(scene, modelStream, newHeader);
-                newHeader->_modelContent |= scene::ModelHeader::ModelContext_Mesh;
+                newHeader->_modelContentFlags |= scene::ModelHeader::ModelContext_Mesh;
             }
         }
 
         if (scene->HasMaterials())
         {
-            if (m_headerRules && (newHeader->_modelContent & scene::ModelHeader::ModelContext_Material))
+            if (m_headerRules && (newHeader->_modelContentFlags & scene::ModelHeader::ModelContext_Material))
             {
                 MeshAssimpDecoder::decodeMaterial(scene, modelStream, newHeader);
             }
             else
             {
                 MeshAssimpDecoder::decodeMaterial(scene, modelStream, newHeader);
-                newHeader->_modelContent |= scene::ModelHeader::ModelContext_Material;
+                newHeader->_modelContentFlags |= scene::ModelHeader::ModelContext_Material;
             }
         }
 
@@ -133,15 +133,21 @@ Resource * MeshAssimpDecoder::decode(const stream::Stream* stream, const std::st
 
 bool MeshAssimpDecoder::decodeMesh(const aiScene* scene, stream::Stream* modelStream, scene::ModelHeader* newHeader)
 {
-    u64 globalModelSize = 0;
-    newHeader->_vertex._present = true;
-    newHeader->_vertex._countElements = scene->mNumMeshes;
-    newHeader->_vertex._data.reserve(scene->mNumMeshes);
+    u64 globalVertexSize = 0;
+    u32 globalMeshes = scene->mNumMeshes;
 
+    newHeader->_meshes.resize(m_seperateMesh ? globalMeshes : 1);
+    if (!m_seperateMesh)
+    {
+        newHeader->_meshes[0]._vertex._subData.reserve(globalMeshes);
+    }
+    
     std::vector<renderer::VertexInputAttribDescription> attribDescriptionList;
 
-    for (u32 m = 0; m < scene->mNumMeshes; m++)
+    for (u32 m = 0; m < globalMeshes; m++)
     {
+        scene::ModelHeader::GeometryInfo& vertexInfo = m_seperateMesh ? newHeader->_meshes[m]._vertex : newHeader->_meshes[0]._vertex;
+
         std::vector<renderer::VertexInputAttribDescription::InputBinding> inputBindings;
         std::vector<renderer::VertexInputAttribDescription::InputAttribute> inputAttributes;
 
@@ -228,9 +234,14 @@ bool MeshAssimpDecoder::decodeMesh(const aiScene* scene, stream::Stream* modelSt
         u64 meshSize = stride * mesh->mNumVertices;
         ASSERT(stride > 0, "invalid stride");
 
-        newHeader->_vertex._data.push_back({ meshSize , globalModelSize, mesh->mNumVertices });
-        newHeader->_vertexContent = contentFlag;
-        globalModelSize += meshSize;
+        vertexInfo._present = true;
+        vertexInfo._subData.push_back({ globalVertexSize, meshSize, mesh->mNumVertices });
+        vertexInfo._count += mesh->mNumVertices;
+        vertexInfo._size += meshSize;
+
+        newHeader->_meshes[m_seperateMesh ? m : 0]._globalSize += meshSize;
+        newHeader->_vertexContentFlags = contentFlag;
+        globalVertexSize += meshSize;
 
 #ifdef DEBUG
         u64 memorySize = 0;
@@ -251,7 +262,7 @@ bool MeshAssimpDecoder::decodeMesh(const aiScene* scene, stream::Stream* modelSt
             }
             else
             {
-                ASSERT(!(m_headerRules && (m_header._vertexContent & scene::ModelHeader::VertexProperies_Position)), "should contain vertex data");
+                ASSERT(!(m_headerRules && (m_header._vertexContentFlags & scene::ModelHeader::VertexProperies_Position)), "should contain vertex data");
             }
 
             if (mesh->HasNormals())
@@ -267,7 +278,7 @@ bool MeshAssimpDecoder::decodeMesh(const aiScene* scene, stream::Stream* modelSt
             }
             else
             {
-                ASSERT(!(m_headerRules && (m_header._vertexContent & scene::ModelHeader::VertexProperies_Normals)), "should contain normal data");
+                ASSERT(!(m_headerRules && (m_header._vertexContentFlags & scene::ModelHeader::VertexProperies_Normals)), "should contain normal data");
             }
 
             if (mesh->HasTangentsAndBitangents())
@@ -283,7 +294,7 @@ bool MeshAssimpDecoder::decodeMesh(const aiScene* scene, stream::Stream* modelSt
             }
             else
             {
-                ASSERT(!(m_headerRules && (m_header._vertexContent & scene::ModelHeader::VertexProperies_Tangent)), "should contain tangent data");
+                ASSERT(!(m_headerRules && (m_header._vertexContentFlags & scene::ModelHeader::VertexProperies_Tangent)), "should contain tangent data");
             }
 
             for (u32 uv = 0; uv < scene::k_maxTextureCoordsIndex; uv++)
@@ -300,7 +311,7 @@ bool MeshAssimpDecoder::decodeMesh(const aiScene* scene, stream::Stream* modelSt
                 }
                 else
                 {
-                    ASSERT(!(m_headerRules && (m_header._vertexContent & scene::ModelHeader::VertexProperies_TextCoord0 + uv)), "should contain texture coord data");
+                    ASSERT(!(m_headerRules && (m_header._vertexContentFlags & scene::ModelHeader::VertexProperies_TextCoord0 + uv)), "should contain texture coord data");
                 }
             }
 
@@ -320,7 +331,7 @@ bool MeshAssimpDecoder::decodeMesh(const aiScene* scene, stream::Stream* modelSt
                 }
                 else
                 {
-                    ASSERT(!(m_headerRules && (m_header._vertexContent & scene::ModelHeader::VertexProperies_Color0 + c)), "should contain color data");
+                    ASSERT(!(m_headerRules && (m_header._vertexContentFlags & scene::ModelHeader::VertexProperies_Color0 + c)), "should contain color data");
                 }
             }
         }
@@ -338,47 +349,54 @@ bool MeshAssimpDecoder::decodeMesh(const aiScene* scene, stream::Stream* modelSt
 
         delete meshStream;
     }
-    newHeader->_vertex._globalSize = globalModelSize;
 
-    bool skipIndex = m_headerRules && !newHeader->_index._present;
+    u64 globalIndexSize = 0;
+    bool skipIndex = m_headerRules && !m_generateIndices;
     if (!skipIndex)
     {
         std::vector<u32> indexBuffer;
-        for (u32 m = 0; m < scene->mNumMeshes; m++)
+        for (u32 m = 0; m < globalMeshes; m++)
         {
+            scene::ModelHeader::GeometryInfo& indexInfo = m_seperateMesh ? newHeader->_meshes[m]._index : newHeader->_meshes[0]._index;
+
             u32 indexBase = static_cast<u32>(indexBuffer.size());
-            u32 indexSize = 0;
             u32 indexCount = 0;
             for (u32 f = 0; f < scene->mMeshes[m]->mNumFaces; f++)
             {
                 for (u32 i = 0; i < 3; i++)
                 {
                     indexBuffer.push_back(scene->mMeshes[m]->mFaces[f].mIndices[i] + indexBase);
-                    indexSize += sizeof(u32);
                     indexCount++;
                 }
             }
 
-            newHeader->_index._data.push_back({ indexSize , static_cast<u32>(indexBuffer.size() * sizeof(u32)), indexCount });
+            u32 indexSize = indexCount * sizeof(u32);
+            indexInfo._present = true;
+            indexInfo._size += indexSize;
+            indexInfo._count += indexCount;
+            indexInfo._subData.push_back({ globalIndexSize, indexSize, indexCount });
+
+            globalIndexSize += indexSize;
+            newHeader->_meshes[m_seperateMesh ? m : 0]._globalSize += indexSize;
         }
-
-        newHeader->_index._present = true;
-        newHeader->_index._countElements = static_cast<u32>(indexBuffer.size());
-        newHeader->_index._globalSize = static_cast<u32>(indexBuffer.size()) * sizeof(u32);
-
-        modelStream->write(indexBuffer.data(), static_cast<u32>(newHeader->_index._globalSize));
     }
-    else
+
+    for (u32 m = 0; m < globalMeshes; m++)
     {
-        newHeader->_index._present = false;
+        if (m_seperateMesh)
+        {
+            attribDescriptionList.front() >> modelStream;
+        }
+        else
+        {
+            for (auto& desc : attribDescriptionList)
+            {
+                desc >> modelStream;
+            }
+        }
     }
 
-    for (auto& desc : attribDescriptionList)
-    {
-        desc >> modelStream;
-    }
-
-    LOG_DEBUG("MeshAssimpDecoder::decodeMesh: load meshes: %d, size %d bytes", newHeader->_vertex._countElements, newHeader->_vertex._globalSize);
+    LOG_DEBUG("MeshAssimpDecoder::decodeMesh: load meshes: %d, size %d bytes", globalMeshes, globalVertexSize + globalIndexSize);
     return true;
 }
 

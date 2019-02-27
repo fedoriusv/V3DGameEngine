@@ -1,5 +1,6 @@
 #include "ModelHelper.h"
 #include "Model.h"
+#include "Mesh.h"
 #include "Renderer/Object/StreamBuffer.h"
 
 namespace v3d
@@ -18,7 +19,7 @@ ModelHelper::ModelHelper(renderer::CommandList & cmdList, const std::vector<cons
         bool unifyMesh = true;
         if (unifyMesh)
         {
-            u32 size = static_cast<u32>(model->getModelHeader()._vertex._globalSize);
+            /*u32 size = static_cast<u32>(model->getModelHeader()._vertex._globalSize);
             u8* data = model->getMeshByIndex(0)->getVertexData();
             renderer::VertexStreamBuffer* vertexBuffer = cmdList.createObject<renderer::VertexStreamBuffer>(renderer::StreamBuffer_Write | renderer::StreamBuffer_Shared, size, data);
 
@@ -35,7 +36,7 @@ ModelHelper::ModelHelper(renderer::CommandList & cmdList, const std::vector<cons
             {
                 DrawProps props = { 0, static_cast<u32>(model->getModelHeader()._vertex._countElements), 0, 1, false };
                 m_drawState.push_back(std::make_tuple(renderer::StreamBufferDescription(vertexBuffer, 0, 0), props));
-            }
+            }*/
         }
         else
         {
