@@ -3,6 +3,7 @@
 #include "Resource/Image.h"
 
 #include "Utils/Logger.h"
+#include "Utils/Timer.h"
 
 #if USE_GLI
 #   include <gli/gli.hpp>
@@ -32,6 +33,10 @@ Resource * ImageGLiDecoder::decode(const stream::Stream * stream, const std::str
         stream->seekBeg(0);
         u8* source = stream->map(stream->size());
 
+#if DEBUG
+        utils::Timer timer;
+        timer.start();
+#endif
         gli::texture texture = gli::load(reinterpret_cast<c8*>(source), stream->size());
         stream->unmap();
 
@@ -193,6 +198,12 @@ Resource * ImageGLiDecoder::decode(const stream::Stream * stream, const std::str
 
             return renderer::Format::Format_Undefined;
         };
+
+#if DEBUG
+        timer.stop();
+        u64 time = timer.getTime<utils::Timer::Duration_MilliSeconds>();
+        LOG_DEBUG("ImageGLiDecoder::decode , image %s, is loaded. Time %.4f sec", name.c_str(), static_cast<f32>(time) / 1000.0f);
+#endif
 
         resource::ImageHeader* newHeader = new resource::ImageHeader(m_header);
         newHeader->_dimension.width = static_cast<u32>(texture.extent().x);

@@ -6,6 +6,7 @@
 #include "Scene/Material.h"
 
 #include "Utils/Logger.h"
+#include "Utils/Timer.h"
 
 #ifdef USE_ASSIMP
 #   include <assimp/Importer.hpp>
@@ -37,6 +38,10 @@ Resource * MeshAssimpDecoder::decode(const stream::Stream* stream, const std::st
 #ifdef USE_ASSIMP
         stream->seekBeg(0);
 
+#if DEBUG
+        utils::Timer timer;
+        timer.start();
+#endif
         const aiScene* scene;
         Assimp::Importer Importer;
 
@@ -108,6 +113,12 @@ Resource * MeshAssimpDecoder::decode(const stream::Stream* stream, const std::st
                 newHeader->_modelContent |= scene::ModelHeader::ModelContext_Material;
             }
         }
+
+#if DEBUG
+        timer.stop();
+        u64 time = timer.getTime<utils::Timer::Duration_MilliSeconds>();
+        LOG_DEBUG("MeshAssimpDecoder::decode , model %s, is loaded. Time %.4f sec", name.c_str(), static_cast<f32>(time) / 1000.0f);
+#endif
 
         scene::Model* model = new scene::Model(newHeader);
         model->init(modelStream);
@@ -459,10 +470,10 @@ bool MeshAssimpDecoder::decodeMaterial(const aiScene * scene, stream::Stream * s
             }
         }
 
-        materialStream->seekBeg(0);
+        /*materialStream->seekBeg(0);
         void* data = materialStream->map(static_cast<u32>(materialStream->size()));
         stream->write(data, static_cast<u32>(materialStream->size()));
-        materialStream->unmap();
+        materialStream->unmap();*/
     }
 
     LOG_DEBUG("MeshAssimpDecoder::decodeMaterial: load materials: %d", newHeader->_materials._countElements);

@@ -1,6 +1,8 @@
 #include "ImageStbDecoder.h"
 #include "Stream/StreamManager.h"
+
 #include "Utils/Logger.h"
+#include "Utils/Timer.h"
 
 #if USE_STB
 #   define STB_IMAGE_IMPLEMENTATION
@@ -60,6 +62,10 @@ Resource * ImageStbDecoder::decode(const stream::Stream * stream, const std::str
             //TODO:
         }
 
+#if DEBUG
+        utils::Timer timer;
+        timer.start();
+#endif
         bool is16BitPerChannel = stbi_is_16_bit_from_memory(source, stream->size());
         if (!is16BitPerChannel)
         {
@@ -172,6 +178,12 @@ Resource * ImageStbDecoder::decode(const stream::Stream * stream, const std::str
                 format = convert16BitFormat(componentCount);
             }
         }
+
+#if DEBUG
+        timer.stop();
+        u64 time = timer.getTime<utils::Timer::Duration_MilliSeconds>();
+        LOG_DEBUG("ImageStbDecoder::decode , image %s, is loaded. Time %.4f sec", name.c_str(), static_cast<f32>(time) / 1000.0f);
+#endif
 
         resource::ImageHeader* newHeader = new resource::ImageHeader(m_header);
         newHeader->_dimension.width = static_cast<u32>(sizeX);

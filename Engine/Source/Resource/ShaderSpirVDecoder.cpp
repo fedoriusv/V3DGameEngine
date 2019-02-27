@@ -3,6 +3,7 @@
 #include "Stream/StreamManager.h"
 
 #include "Utils/Logger.h"
+#include "Utils/Timer.h"
 
 #ifdef USE_SPIRV
 #   include <shaderc/libshaderc/include/shaderc/shaderc.hpp>
@@ -43,6 +44,10 @@ Resource * ShaderSpirVDecoder::decode(const stream::Stream* stream, const std::s
 
         if (m_header._contentType == renderer::ShaderHeader::ShaderResource::ShaderResource_Source)
         {
+#if DEBUG
+            utils::Timer timer;
+            timer.start();
+#endif
             shaderc::CompileOptions options;
             options.SetTargetEnvironment(shaderc_target_env_vulkan, 0);
             options.SetOptimizationLevel(shaderc_optimization_level_zero);
@@ -208,6 +213,12 @@ Resource * ShaderSpirVDecoder::decode(const stream::Stream* stream, const std::s
                     return nullptr;
                 }
             }
+
+#if DEBUG
+            timer.stop();
+            u64 time = timer.getTime<utils::Timer::Duration_MilliSeconds>();
+            LOG_DEBUG("ShaderSpirVDecoder::decode , shader %s, is loaded. Time %.4f sec", name.c_str(), static_cast<f32>(time) / 1000.0f);
+#endif
 
             renderer::ShaderHeader* resourceHeader = new renderer::ShaderHeader(m_header);
             resourceHeader->_type = type;

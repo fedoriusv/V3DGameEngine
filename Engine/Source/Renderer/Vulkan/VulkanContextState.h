@@ -104,18 +104,18 @@ namespace vk
             BindingInfo();
             bool operator==(const BindingInfo& info) const;
 
-            union
+            union //32
             {
-                BindingImageInfo  _imageBinding;
+                BindingImageInfo  _imageBinding; 
                 BindingBufferInfo _bufferBinding;
 
             };
             //std::variant<BindingImageInfo, BindingBufferInfo> _descriptorBinding;
 
-            u32                 _set        : 16;
-            u32                 _binding    : 16;
-            BindingType         _type       : 16;
-            u32                 _arrayIndex : 16;
+            u32                 _set        : 16; //6
+            u32                 _binding    : 16; //6
+            BindingType         _type       : 16; //4
+            u32                 _arrayIndex : 16; //16
         };
 
         static VkDescriptorBufferInfo makeVkDescriptorBufferInfo(const VulkanBuffer* buffer, u64 offset, u64 range);
