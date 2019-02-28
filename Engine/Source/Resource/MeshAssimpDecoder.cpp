@@ -234,8 +234,8 @@ bool MeshAssimpDecoder::decodeMesh(const aiScene* scene, stream::Stream* modelSt
 
         const aiMesh* mesh = scene->mMeshes[m];
         u32 stride = buildVertexData(mesh, m_header);
-        u64 meshSize = stride * mesh->mNumVertices;
         ASSERT(stride > 0, "invalid stride");
+        u64 meshSize = stride * mesh->mNumVertices;
 
         inputBindings.push_back(renderer::VertexInputAttribDescription::InputBinding(0, renderer::VertexInputAttribDescription::InputRate_Vertex, stride));
         attribDescriptionList.emplace_back(inputBindings, inputAttributes);
@@ -253,6 +253,7 @@ bool MeshAssimpDecoder::decodeMesh(const aiScene* scene, stream::Stream* modelSt
         vertexInfo._size += meshSize;
 
         newHeader->_meshes[m_seperateMesh ? m : 0]._size += meshSize;
+        newHeader->_meshes[m_seperateMesh ? m : 0]._name = (m_seperateMesh) ? mesh->mName.C_Str() : scene->mMeshes[0]->mName.C_Str();
         newHeader->_vertexContentFlags = contentFlag;
         globalVertexSize += meshSize;
 
@@ -433,101 +434,78 @@ bool MeshAssimpDecoder::decodeMesh(const aiScene* scene, stream::Stream* modelSt
 
 bool MeshAssimpDecoder::decodeMaterial(const aiScene * scene, stream::Stream * stream, scene::ModelHeader * newHeader)
 {
-    newHeader->_materials._countElements = scene->mNumMaterials;
+    newHeader->_materials.resize(scene->mNumMaterials);
     for (u32 m = 0; m < scene->mNumMaterials; m++)
     {
         stream::Stream* materialStream = stream::StreamManager::createMemoryStream();
 
         aiMaterial* material = scene->mMaterials[m];
+        scene::MaterialHeader& materialHeader = newHeader->_materials[m];
 
         aiString name;
         material->Get(AI_MATKEY_NAME, name);
-        newHeader->_materials._names.push_back(name.C_Str());
+        materialHeader._name = name.C_Str();
 
+        std::tuple<std::string, aiTextureType, scene::MaterialHeader::Property, bool> vectorProp[] =
         {
-            aiColor4D color;
-            material->Get(AI_MATKEY_COLOR_AMBIENT, color);
+            { "$clr.diffuse", aiTextureType_DIFFUSE, scene::MaterialHeader::Property_Diffuse, true },
+            { "$clr.ambient", aiTextureType_AMBIENT, scene::MaterialHeader::Property_Ambient, true },
+            { "$clr.specular", aiTextureType_SPECULAR, scene::MaterialHeader::Property_Specular, true },
+            { "$clr.emissive", aiTextureType_EMISSIVE, scene::MaterialHeader::Property_Emission, true },
 
-            aiString texturefile;
-            if (material->GetTextureCount(aiTextureType_AMBIENT) > 0)
+            { "$mat.shininess", aiTextureType_SHININESS, scene::MaterialHeader::Property_Shininess, false },
+            { "$mat.opacity", aiTextureType_OPACITY, scene::MaterialHeader::Property_Opacity, false },
+        };
+
+        for (auto& iter : vectorProp)
+        {
+            scene::MaterialHeader::PropertyInfo info;
+
+            aiReturn result = aiReturn_FAILURE;
+            if (std::get<3>(iter))
             {
+                aiColor4D color;
 
-                material->GetTexture(aiTextureType_AMBIENT, 0, &texturefile);
+                result = material->Get(std::get<0>(iter).c_str(), 0, 0, color);
+                if (result == aiReturn_SUCCESS)
+                {
+                   core::Vector4D value;
+                   value.x = color.r;
+                   value.y = color.g;
+                   value.z = color.b;
+                   value.w = color.a;
+
+                   info._value = value;
+                }
+            }
+            else
+            {
+                f32 value;
+                result = material->Get(std::get<0>(iter).c_str(), 0, 0, value);
+                if (result == aiReturn_SUCCESS)
+                {
+                    info._value = value;
+                }
             }
 
-            scene::Material::Ambient ambient;
-            ambient._color.x = color.r;
-            ambient._color.y = color.g;
-            ambient._color.z = color.b;
-            ambient._color.w = color.a;
-            ambient._texture = texturefile.C_Str();
-
-            ambient >> materialStream;
-        }
-
-        {
-            aiColor4D color;
-            material->Get(AI_MATKEY_COLOR_DIFFUSE, color);
-
-            aiString texturefile;
-            if (material->GetTextureCount(aiTextureType_DIFFUSE) > 0)
+            bool texturePresent = material->GetTextureCount(std::get<1>(iter)) > 0;
+            if (texturePresent)
             {
-
-                material->GetTexture(aiTextureType_DIFFUSE, 0, &texturefile);
+                aiString texture;
+                material->GetTexture(std::get<1>(iter), 0, &texture);
+                info._name = texture.C_Str();
             }
 
-            scene::Material::Diffuse diffuse;
-            diffuse._color.x = color.r;
-            diffuse._color.y = color.g;
-            diffuse._color.z = color.b;
-            diffuse._color.w = color.a;
-            diffuse._texture = texturefile.C_Str();
-
-            diffuse >> materialStream;
-        }
-
-        {
-            aiColor4D color;
-            material->Get(AI_MATKEY_COLOR_SPECULAR, color);
-
-            aiString texturefile;
-            if (material->GetTextureCount(aiTextureType_SPECULAR) > 0)
+            if (result == aiReturn_SUCCESS || texturePresent)
             {
-                material->GetTexture(aiTextureType_SPECULAR, 0, &texturefile);
+                materialHeader._properties.emplace(std::make_pair(std::get<2>(iter), info));
             }
         }
-
-        {
-            aiColor4D color;
-            material->Get(AI_MATKEY_BUMPSCALING, color);
-
-            if (material->GetTextureCount(aiTextureType_NORMALS) > 0)
-            {
-                aiString texturefile;
-                material->GetTexture(aiTextureType_NORMALS, 0, &texturefile);
-            }
-        }
-
-        {
-            aiColor4D color;
-            material->Get(AI_MATKEY_OPACITY, color);
-
-            aiString texturefile;
-            if (material->GetTextureCount(aiTextureType_OPACITY) > 0)
-            {
-                material->GetTexture(aiTextureType_NORMALS, 0, &texturefile);
-            }
-        }
-
-        /*materialStream->seekBeg(0);
-        void* data = materialStream->map(static_cast<u32>(materialStream->size()));
-        stream->write(data, static_cast<u32>(materialStream->size()));
-        materialStream->unmap();*/
     }
 
-    LOG_DEBUG("MeshAssimpDecoder::decodeMaterial: load materials: %d", newHeader->_materials._countElements);
+    LOG_DEBUG("MeshAssimpDecoder::decodeMaterial: load materials: %d", newHeader->_materials.size());
 
-    return false;
+    return true;
 }
 
 } //namespace decoders

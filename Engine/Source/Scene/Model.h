@@ -6,6 +6,7 @@
 #include "Renderer/PipelineStateProperties.h"
 #include "Renderer/BufferProperties.h"
 #include "Mesh.h"
+#include "Material.h"
 
 namespace v3d
 {
@@ -16,7 +17,7 @@ namespace scene
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
-    * ModleHeader meta info about Shader
+    * ModleHeader meta info about Model
     */
     struct ModelHeader : resource::ResourceHeader
     {
@@ -48,34 +49,6 @@ namespace scene
         ModelHeader() noexcept;
         ~ModelHeader();
 
-        struct GeometryInfo
-        {
-            GeometryInfo();
-
-            struct SubData
-            {
-                u64 _offset;
-                u64 _size;
-                u32 _count;
-            };
-
-            u64                      _size;
-            u32                      _count;
-            std::vector<SubData>     _subData;
-            bool                     _present;
-
-            void operator >> (stream::Stream * stream) const;
-            void operator << (const stream::Stream * stream);
-        };
-
-        struct MaterialInfo
-        {
-            u64                      _countElements;
-            u64                      _globalSize;
-            std::vector<std::string> _names;
-            bool                     _present;
-        };
-
         ModelContentFlags       _modelContentFlags;
         VertexProperiesFlags    _vertexContentFlags;
 
@@ -83,8 +56,8 @@ namespace scene
         renderer::FrontFace     _frontFace;
         bool                    _localTransform;
 
-        std::vector<MeshHeader> _meshes;
-        MaterialInfo            _materials;
+        std::vector<MeshHeader>     _meshes;
+        std::vector<MaterialHeader> _materials;
 
     };
 
@@ -114,6 +87,7 @@ namespace scene
     private:
 
         std::vector<Mesh*> m_meshes;
+        std::vector<Material*> m_materials;
 
         friend class ModelHelper;
     };

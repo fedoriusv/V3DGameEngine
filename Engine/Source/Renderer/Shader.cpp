@@ -135,7 +135,7 @@ Shader::Attribute::Attribute()
 {
 }
 
-void Shader::Attribute::operator>>(stream::Stream * stream)
+void Shader::Attribute::operator>>(stream::Stream * stream) const
 {
     stream->write<u32>(_location);
     stream->write<renderer::Format>(_format);
@@ -160,7 +160,7 @@ Shader::UniformBuffer::UniformBuffer()
 {
 }
 
-void Shader::UniformBuffer::operator>>(stream::Stream * stream)
+void Shader::UniformBuffer::operator>>(stream::Stream * stream) const
 {
     stream->write<u32>(_id);
     stream->write<u32>(_set);
@@ -203,7 +203,7 @@ Shader::UniformBuffer::Uniform::Uniform()
 {
 }
 
-void Shader::UniformBuffer::Uniform::operator>>(stream::Stream * stream)
+void Shader::UniformBuffer::Uniform::operator>>(stream::Stream * stream) const
 {
     stream->write<u32>(_bufferId);
     stream->write<u32>(_array);
@@ -231,7 +231,7 @@ Shader::SampledImage::SampledImage()
 {
 }
 
-void Shader::SampledImage::operator>>(stream::Stream * stream)
+void Shader::SampledImage::operator>>(stream::Stream * stream) const
 {
     stream->write<u32>(_set);
     stream->write<u32>(_binding);
@@ -260,7 +260,7 @@ Shader::PushConstant::PushConstant()
 {
 }
 
-void Shader::PushConstant::operator>>(stream::Stream * stream)
+void Shader::PushConstant::operator>>(stream::Stream * stream) const
 {
     stream->write<u32>(_offset);
     stream->write<u32>(_size);

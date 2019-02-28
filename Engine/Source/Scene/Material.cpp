@@ -1,56 +1,52 @@
 #include "Material.h"
 
+#include "Utils/Logger.h"
+
 namespace v3d
 {
 namespace scene
 {
 
-Material::Diffuse::Diffuse()
-    : _color(core::Vector4D(0.0f))
+MaterialHeader::MaterialHeader()
 {
 }
 
-void Material::Diffuse::operator>>(stream::Stream * stream)
-{
-
-}
-
-void Material::Diffuse::operator<<(const stream::Stream * stream)
-{
-
-}
-
-Material::Ambient::Ambient()
-    : _color(core::Vector4D(0.0f))
+MaterialHeader::PropertyInfo::PropertyInfo()
 {
 }
 
-void Material::Ambient::operator>>(stream::Stream * stream)
+Material::Material(MaterialHeader* header) noexcept
+    : Resource(header)
 {
-
-}
-
-void Material::Ambient::operator<<(const stream::Stream * stream)
-{
-
-}
-
-Material::Material() noexcept
-{
+    LOG_DEBUG("Mesh constructor %xll", this);
 }
 
 Material::~Material()
 {
+    LOG_DEBUG("Mesh destructor %xll", this);
 }
 
 void Material::init(stream::Stream * stream)
 {
+    //ASSERT(stream, "nullptr");
+    m_stream = stream;
 }
 
 bool Material::load()
 {
-    return false;
+    if (m_loaded)
+    {
+        return true;
+    }
+    //ASSERT(m_stream, "nullptr");
+
+    //TODO
+
+    m_loaded = true;
+    return true;
 }
+
+
 
 } //namespace scene
 } //namespace v3d

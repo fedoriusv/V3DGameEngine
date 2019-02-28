@@ -23,38 +23,6 @@ ModelHeader::~ModelHeader()
 }
 
 
-ModelHeader::GeometryInfo::GeometryInfo()
-    : _count(0)
-    , _size(0)
-    , _present(false)
-{
-}
-
-void ModelHeader::GeometryInfo::operator >> (stream::Stream * stream) const
-{
-    stream->write<u32>(_count);
-    stream->write<u64>(_size);
-    stream->write<bool>(_present);
-
-    u32 count = static_cast<u32>(_subData.size());
-    stream->write<u32>(count);
-    stream->write(_subData.data(), count * sizeof(SubData), 1);
-}
-
-void ModelHeader::GeometryInfo::operator << (const stream::Stream * stream)
-{
-    stream->read<u32>(_count);
-    stream->read<u64>(_size);
-    stream->read<bool>(_present);
-
-    u32 count;
-    stream->read<u32>(count);
-    _subData.resize(count);
-    stream->read(_subData.data(), count * sizeof(SubData), 1);
-}
-
-
-
 Model::Model(ModelHeader* header) noexcept
     : Resource(header)
 {
@@ -64,6 +32,15 @@ Model::Model(ModelHeader* header) noexcept
 Model::~Model()
 {
     LOG_DEBUG("Model destructor %xll", this);
+    for (auto mesh : m_meshes)
+    {
+        delete mesh;
+    }
+
+    for (auto material : m_materials)
+    {
+        delete material;
+    }
 }
 
 const ModelHeader& Model::getModelHeader() const
@@ -129,7 +106,24 @@ bool Model::load()
         m_meshes.push_back(mesh);
     }
 
-    //TODO matterials
+    u32 countMaterials = static_cast<u32>(header._materials.size());
+    for (u32 i = 0; i < countMaterials; ++i)
+    {
+        MaterialHeader* newMaterialHeader = new MaterialHeader(header._materials[i]);
+
+        Material* material = new Material(newMaterialHeader);
+        material->init(nullptr);
+
+        if (!material->load())
+        {
+            ASSERT(false, "fail load material");
+
+            delete material;
+            continue;
+
+            m_materials.push_back(material);
+        }
+    }
 
     ASSERT(!m_stream->isMapped(), "mapped");
     delete m_stream;

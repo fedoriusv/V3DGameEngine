@@ -21,7 +21,6 @@ MeshHeader::GeometryInfo::GeometryInfo()
 {
 }
 
-
 void MeshHeader::GeometryInfo::operator >> (stream::Stream * stream) const
 {
     stream->write<u32>(_count);

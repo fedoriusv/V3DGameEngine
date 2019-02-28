@@ -63,7 +63,7 @@ namespace renderer
             renderer::Format _format;
             std::string      _name;
 
-            void operator >> (stream::Stream * stream);
+            void operator >> (stream::Stream * stream) const;
             void operator << (const stream::Stream * stream);
         };
 
@@ -81,7 +81,7 @@ namespace renderer
 
                 std::string        _name;
 
-                void operator >> (stream::Stream * stream);
+                void operator >> (stream::Stream * stream) const;
                 void operator << (const stream::Stream * stream);
             };
 
@@ -95,7 +95,7 @@ namespace renderer
             std::string          _name;
             std::vector<Uniform> _uniforms;
 
-            void operator >> (stream::Stream * stream);
+            void operator >> (stream::Stream * stream) const;
             void operator << (const stream::Stream * stream);
         };
 
@@ -111,7 +111,7 @@ namespace renderer
             bool                    _ms;
             std::string             _name;
 
-            void operator >> (stream::Stream * stream);
+            void operator >> (stream::Stream * stream) const;
             void operator << (const stream::Stream * stream);
         };
 
@@ -123,17 +123,17 @@ namespace renderer
             u32         _size;
             std::string _name;
 
-            void operator >> (stream::Stream * stream);
+            void operator >> (stream::Stream * stream) const;
             void operator << (const stream::Stream * stream);
         };
 
         struct ReflectionInfo
         {
-            std::vector<Attribute>   _inputAttribute;
-            std::vector<Attribute>   _outputAttribute;
+            std::vector<Attribute>      _inputAttribute;
+            std::vector<Attribute>      _outputAttribute;
             std::vector<UniformBuffer>  _uniformBuffers;
             std::vector<SampledImage>   _sampledImages;
-            std::vector<PushConstant> _pushConstant;
+            std::vector<PushConstant>   _pushConstant;
         };
 
         explicit Shader(const ShaderHeader* header) noexcept;
