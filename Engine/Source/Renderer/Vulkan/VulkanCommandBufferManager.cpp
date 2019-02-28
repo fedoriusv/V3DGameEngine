@@ -166,6 +166,8 @@ namespace vk
 
  void VulkanCommandBufferManager::waitCompete()
  {
+     VkResult result = VulkanWrapper::QueueWaitIdle(m_queue);
+     VulkanCommandBufferManager::updateCommandBuffers();
  }
 
  void VulkanCommandBufferManager::resetPools()

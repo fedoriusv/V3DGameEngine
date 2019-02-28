@@ -16,31 +16,23 @@ ModelHelper::ModelHelper(renderer::CommandList & cmdList, const std::vector<cons
     for (auto model : m_models)
     {
         ASSERT(model, "nullptr");
-        bool unifyMesh = true;
-        if (unifyMesh)
+        u64 size = model->getMeshByIndex(0)->getVertexSize();
+        u8* data = model->getMeshByIndex(0)->getVertexData();
+        renderer::VertexStreamBuffer* vertexBuffer = cmdList.createObject<renderer::VertexStreamBuffer>(renderer::StreamBuffer_Write | renderer::StreamBuffer_Shared, size, data);
+
+        if (model->getMeshByIndex(0)->getIndexCount() > 0)
         {
-            /*u32 size = static_cast<u32>(model->getModelHeader()._vertex._globalSize);
-            u8* data = model->getMeshByIndex(0)->getVertexData();
-            renderer::VertexStreamBuffer* vertexBuffer = cmdList.createObject<renderer::VertexStreamBuffer>(renderer::StreamBuffer_Write | renderer::StreamBuffer_Shared, size, data);
+            u32 count = model->getMeshByIndex(0)->getIndexCount();
+            u8* data = model->getMeshByIndex(0)->getIndexData();
+            renderer::IndexStreamBuffer* indexBuffer = cmdList.createObject<renderer::IndexStreamBuffer>(renderer::StreamBuffer_Write | renderer::StreamBuffer_Shared, renderer::StreamIndexBufferType::IndexType_32, count, data);
 
-            if (model->getModelHeader()._index._present)
-            {
-                u32 count = static_cast<u32>(model->getModelHeader()._index._countElements);
-                u8* data = model->getMeshByIndex(0)->getIndexData();
-                renderer::IndexStreamBuffer* indexBuffer = cmdList.createObject<renderer::IndexStreamBuffer>(renderer::StreamBuffer_Write | renderer::StreamBuffer_Shared, renderer::StreamIndexBufferType::IndexType_32, count, data);
-
-                DrawProps props = { 0, count, 0, 1, true };
-                m_drawState.push_back(std::make_tuple(renderer::StreamBufferDescription(indexBuffer, 0, vertexBuffer, 0, 0), props));
-            }
-            else
-            {
-                DrawProps props = { 0, static_cast<u32>(model->getModelHeader()._vertex._countElements), 0, 1, false };
-                m_drawState.push_back(std::make_tuple(renderer::StreamBufferDescription(vertexBuffer, 0, 0), props));
-            }*/
+            DrawProps props = { 0, count, 0, 1, true };
+            m_drawState.push_back(std::make_tuple(renderer::StreamBufferDescription(indexBuffer, 0, vertexBuffer, 0, 0), props));
         }
         else
         {
-            ASSERT(false, "not implemented");
+            DrawProps props = { 0, model->getMeshByIndex(0)->getVertexCount(), 0, 1, false };
+            m_drawState.push_back(std::make_tuple(renderer::StreamBufferDescription(vertexBuffer, 0, 0), props));
         }
     }
 }

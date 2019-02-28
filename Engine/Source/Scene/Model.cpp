@@ -2,6 +2,8 @@
 #include "Stream/StreamManager.h"
 #include "Scene/Mesh.h"
 
+#include "Utils/Logger.h"
+
 namespace v3d
 {
 namespace scene
@@ -56,10 +58,12 @@ void ModelHeader::GeometryInfo::operator << (const stream::Stream * stream)
 Model::Model(ModelHeader* header) noexcept
     : Resource(header)
 {
+    LOG_DEBUG("Model constructor %xll", this);
 }
 
 Model::~Model()
 {
+    LOG_DEBUG("Model destructor %xll", this);
 }
 
 const ModelHeader& Model::getModelHeader() const
@@ -71,6 +75,11 @@ Mesh * Model::getMeshByIndex(u32 index) const
 {
     ASSERT(index < m_meshes.size(), "range out");
     return m_meshes[index];
+}
+
+u32 Model::getMeshCount() const
+{
+    return static_cast<u32>(m_meshes.size());
 }
 
 void Model::init(stream::Stream * stream)
@@ -93,16 +102,20 @@ bool Model::load()
     u32 countMeshes = static_cast<u32>(header._meshes.size());
     for (u32 i = 0; i < countMeshes; ++i)
     {
-        ASSERT(header._meshes[i]._globalSize > 0, "empty size");
-        stream::Stream* meshStream = stream::StreamManager::createMemoryStream(nullptr, 0);
+        const MeshHeader& meshHeader = header._meshes[i];
 
-        header._meshes[i]._vertex >> meshStream;
-        header._meshes[i]._index >> meshStream;
-        u8* data = m_stream->map(static_cast<u32>(header._meshes[i]._globalSize));
-        meshStream->write(data, static_cast<u32>(header._meshes[i]._globalSize), 1);
+        ASSERT(meshHeader._size > 0, "empty size");
+        u32 size = static_cast<u32>(meshHeader._size) + sizeof(renderer::VertexInputAttribDescription);
+        stream::Stream* meshStream = stream::StreamManager::createMemoryStream(nullptr, size);
+
+        m_stream->seekBeg(static_cast<u32>(meshHeader._offset) + sizeof(renderer::VertexInputAttribDescription) * i);
+        u8* data = m_stream->map(size);
+        meshStream->write(data, size, 1);
         m_stream->unmap();
 
-        Mesh* mesh = new Mesh();
+        MeshHeader* newMeshHeader = new MeshHeader(header._meshes[i]);
+
+        Mesh* mesh = new Mesh(newMeshHeader);
         mesh->init(meshStream);
 
         if (!mesh->load())

@@ -700,7 +700,7 @@ void VulkanGraphicContext::destroy()
     //Called from game thread
     LOG_DEBUG("VulkanGraphicContext::destroy");
 
-    //TODO: Wait to complete all commands
+    VkResult result = VulkanWrapper::DeviceWaitIdle(m_deviceInfo._device);
     if (m_cmdBufferManager)
     {
         m_cmdBufferManager->waitCompete();
@@ -756,18 +756,17 @@ void VulkanGraphicContext::destroy()
         m_framebuferManager = nullptr;
     }
 
-    if (m_pipelineManager)
-    {
-        delete m_pipelineManager;
-        m_pipelineManager = nullptr;
-    }
-
     if (m_samplerManager)
     {
         delete m_samplerManager;
         m_samplerManager = nullptr;
     }
 
+    if (m_pipelineManager)
+    {
+        delete m_pipelineManager;
+        m_pipelineManager = nullptr;
+    }
 
     if (m_currentContextStateNEW)
     {

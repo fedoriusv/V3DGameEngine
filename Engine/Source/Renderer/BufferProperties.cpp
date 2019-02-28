@@ -160,33 +160,37 @@ VertexInputAttribDescription & VertexInputAttribDescription::operator=(const Ver
 void VertexInputAttribDescription::operator>>(stream::Stream * stream)
 {
     stream->write<u32>(_countInputBindings);
-    for (u32 i = 0; i < _countInputBindings; ++i)
+    stream->write(_inputBindings.data(), k_maxVertexInputBindings * sizeof(InputBinding));
+    /*for (u32 i = 0; i < _countInputBindings; ++i)
     {
         _inputBindings[i] >> stream;
-    }
+    }*/
 
     stream->write<u32>(_countInputAttributes);
-    for (u32 i = 0; i < _countInputAttributes; ++i)
+    stream->write(_inputAttribute.data(), k_maxVertexInputAttributes * sizeof(InputAttribute));
+    /*for (u32 i = 0; i < _countInputAttributes; ++i)
     {
         _inputAttribute[i] >> stream;
-    }
+    }*/
 }
 
 void VertexInputAttribDescription::operator<<(const stream::Stream * stream)
 {
     stream->read<u32>(_countInputBindings);
-    _inputBindings.fill(InputBinding());
+    stream->read(_inputBindings.data(), k_maxVertexInputBindings *  sizeof(InputBinding));
+    /*_inputBindings.fill(InputBinding());
     for (u32 i = 0; i < _countInputBindings; ++i)
     {
         _inputBindings[i] << stream;
-    }
+    }*/
 
     stream->read<u32>(_countInputAttributes);
-    _inputAttribute.fill(InputAttribute());
+    stream->read(_inputAttribute.data(), k_maxVertexInputAttributes * sizeof(InputAttribute));
+    /*_inputAttribute.fill(InputAttribute());
     for (u32 i = 0; i < _countInputAttributes; ++i)
     {
         _inputAttribute[i] << stream;
-    }
+    }*/
 }
 
 VertexInputAttribDescription::InputAttribute::InputAttribute() noexcept

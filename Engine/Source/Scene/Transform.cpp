@@ -18,7 +18,7 @@ Transform::Transform() noexcept
 
 Transform::~Transform()
 {
-    LOG_DEBUG("Camera destructor %xll", this);
+    LOG_DEBUG("Transform destructor %xll", this);
 }
 
 void Transform::setPosition(const core::Vector3D& position)

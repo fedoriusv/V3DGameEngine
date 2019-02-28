@@ -18,7 +18,7 @@ namespace renderer
 
     ///////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    constexpr u32 k_maxVertexInputAttributes = 16;
+    constexpr u32 k_maxVertexInputAttributes = 8;
     constexpr u32 k_maxVertexInputBindings = 4;
 
     /**
@@ -89,11 +89,13 @@ namespace renderer
         void operator >> (stream::Stream* stream);
         void operator << (const stream::Stream* stream);
 
+
         u32 _countInputBindings;
         std::array<InputBinding, k_maxVertexInputBindings> _inputBindings;
 
         u32 _countInputAttributes;
         std::array<InputAttribute, k_maxVertexInputAttributes> _inputAttribute;
+
     };
 
     ///////////////////////////////////////////////////////////////////////////////////////////////////////

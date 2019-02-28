@@ -136,6 +136,9 @@ bool MeshAssimpDecoder::decodeMesh(const aiScene* scene, stream::Stream* modelSt
     u64 globalVertexSize = 0;
     u32 globalMeshes = scene->mNumMeshes;
 
+    u64 globalIndexSize = 0;
+    std::vector<u32> indexBuffer;
+
     newHeader->_meshes.resize(m_seperateMesh ? globalMeshes : 1);
     if (!m_seperateMesh)
     {
@@ -146,7 +149,7 @@ bool MeshAssimpDecoder::decodeMesh(const aiScene* scene, stream::Stream* modelSt
 
     for (u32 m = 0; m < globalMeshes; m++)
     {
-        scene::ModelHeader::GeometryInfo& vertexInfo = m_seperateMesh ? newHeader->_meshes[m]._vertex : newHeader->_meshes[0]._vertex;
+        scene::MeshHeader::GeometryInfo& vertexInfo = m_seperateMesh ? newHeader->_meshes[m]._vertex : newHeader->_meshes[0]._vertex;
 
         std::vector<renderer::VertexInputAttribDescription::InputBinding> inputBindings;
         std::vector<renderer::VertexInputAttribDescription::InputAttribute> inputAttributes;
@@ -234,12 +237,22 @@ bool MeshAssimpDecoder::decodeMesh(const aiScene* scene, stream::Stream* modelSt
         u64 meshSize = stride * mesh->mNumVertices;
         ASSERT(stride > 0, "invalid stride");
 
-        vertexInfo._present = true;
+        inputBindings.push_back(renderer::VertexInputAttribDescription::InputBinding(0, renderer::VertexInputAttribDescription::InputRate_Vertex, stride));
+        attribDescriptionList.emplace_back(inputBindings, inputAttributes);
+        if (m_seperateMesh)
+        {
+            attribDescriptionList[m] >> modelStream;
+        }
+        else if (m == 0)
+        {
+            attribDescriptionList.front() >> modelStream;
+        }
+
         vertexInfo._subData.push_back({ globalVertexSize, meshSize, mesh->mNumVertices });
         vertexInfo._count += mesh->mNumVertices;
         vertexInfo._size += meshSize;
 
-        newHeader->_meshes[m_seperateMesh ? m : 0]._globalSize += meshSize;
+        newHeader->_meshes[m_seperateMesh ? m : 0]._size += meshSize;
         newHeader->_vertexContentFlags = contentFlag;
         globalVertexSize += meshSize;
 
@@ -340,24 +353,18 @@ bool MeshAssimpDecoder::decodeMesh(const aiScene* scene, stream::Stream* modelSt
         ASSERT(meshSize == memorySize, "different sizes");
 #endif //DEBUG
         meshStream->seekBeg(0);
+
         void* data = meshStream->map(static_cast<u32>(meshSize));
         modelStream->write(data, static_cast<u32>(meshSize));
         meshStream->unmap();
 
-        inputBindings.push_back(renderer::VertexInputAttribDescription::InputBinding(0, renderer::VertexInputAttribDescription::InputRate_Vertex, stride));
-        attribDescriptionList.emplace_back(inputBindings, inputAttributes);
-
         delete meshStream;
-    }
 
-    u64 globalIndexSize = 0;
-    bool skipIndex = m_headerRules && !m_generateIndices;
-    if (!skipIndex)
-    {
-        std::vector<u32> indexBuffer;
-        for (u32 m = 0; m < globalMeshes; m++)
+
+        bool skipIndex = m_headerRules && !m_generateIndices;
+        if (!skipIndex)
         {
-            scene::ModelHeader::GeometryInfo& indexInfo = m_seperateMesh ? newHeader->_meshes[m]._index : newHeader->_meshes[0]._index;
+            scene::MeshHeader::GeometryInfo& indexInfo = m_seperateMesh ? newHeader->_meshes[m]._index : newHeader->_meshes[0]._index;
 
             u32 indexBase = static_cast<u32>(indexBuffer.size());
             u32 indexCount = 0;
@@ -371,29 +378,53 @@ bool MeshAssimpDecoder::decodeMesh(const aiScene* scene, stream::Stream* modelSt
             }
 
             u32 indexSize = indexCount * sizeof(u32);
-            indexInfo._present = true;
+            indexInfo._size += indexSize;
+            indexInfo._count += indexCount;
+            indexInfo._subData.push_back({ globalIndexSize, indexSize, indexCount });
+
+            newHeader->_meshes[m_seperateMesh ? m : 0]._size += indexSize;
+            globalIndexSize += indexSize;
+
+            if (m_seperateMesh)
+            {
+                modelStream->write((indexBuffer.data() + globalIndexSize), indexSize, 1);
+            }
+        }
+    }
+
+    /*u64 globalIndexSize = 0;
+    bool skipIndex = m_headerRules && !m_generateIndices;
+    if (!skipIndex)
+    {
+        std::vector<u32> indexBuffer;
+        for (u32 m = 0; m < globalMeshes; m++)
+        {
+            scene::MeshHeader::GeometryInfo& indexInfo = m_seperateMesh ? newHeader->_meshes[m]._index : newHeader->_meshes[0]._index;
+
+            u32 indexBase = static_cast<u32>(indexBuffer.size());
+            u32 indexCount = 0;
+            for (u32 f = 0; f < scene->mMeshes[m]->mNumFaces; f++)
+            {
+                for (u32 i = 0; i < 3; i++)
+                {
+                    indexBuffer.push_back(scene->mMeshes[m]->mFaces[f].mIndices[i] + indexBase);
+                    indexCount++;
+                }
+            }
+
+            u32 indexSize = indexCount * sizeof(u32);
             indexInfo._size += indexSize;
             indexInfo._count += indexCount;
             indexInfo._subData.push_back({ globalIndexSize, indexSize, indexCount });
 
             globalIndexSize += indexSize;
-            newHeader->_meshes[m_seperateMesh ? m : 0]._globalSize += indexSize;
+            newHeader->_meshes[m_seperateMesh ? m : 0]._size += indexSize;
         }
-    }
+    }*/
 
-    for (u32 m = 0; m < globalMeshes; m++)
+    if (!m_seperateMesh)
     {
-        if (m_seperateMesh)
-        {
-            attribDescriptionList.front() >> modelStream;
-        }
-        else
-        {
-            for (auto& desc : attribDescriptionList)
-            {
-                desc >> modelStream;
-            }
-        }
+        modelStream->write(indexBuffer.data(), static_cast<u32>(globalIndexSize), 1);
     }
 
     LOG_DEBUG("MeshAssimpDecoder::decodeMesh: load meshes: %d, size %d bytes", globalMeshes, globalVertexSize + globalIndexSize);

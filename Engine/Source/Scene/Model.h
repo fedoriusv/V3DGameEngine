@@ -5,6 +5,7 @@
 #include "Resource/Resource.h"
 #include "Renderer/PipelineStateProperties.h"
 #include "Renderer/BufferProperties.h"
+#include "Mesh.h"
 
 namespace v3d
 {
@@ -67,13 +68,6 @@ namespace scene
             void operator << (const stream::Stream * stream);
         };
 
-        struct MeshInfo
-        {
-            GeometryInfo _index;
-            GeometryInfo _vertex;
-            u64          _globalSize;
-        };
-
         struct MaterialInfo
         {
             u64                      _countElements;
@@ -89,7 +83,7 @@ namespace scene
         renderer::FrontFace     _frontFace;
         bool                    _localTransform;
 
-        std::vector<MeshInfo>   _meshes;
+        std::vector<MeshHeader> _meshes;
         MaterialInfo            _materials;
 
     };
@@ -112,6 +106,7 @@ namespace scene
         const ModelHeader& getModelHeader() const;
 
         Mesh* getMeshByIndex(u32 index) const;
+        u32   getMeshCount() const;
 
         void init(stream::Stream* stream) override;
         bool load() override;
