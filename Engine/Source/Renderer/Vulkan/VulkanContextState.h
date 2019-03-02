@@ -143,6 +143,9 @@ namespace vk
         std::vector<BindingInfo> m_updatedBindings;
         std::map<u32, BindingInfo> m_currentBindingCache;
 
+
+        std::vector<VkDescriptorSet> m_currentSets;
+
         //std::array<std::vector<BindingInfo>, k_maxDescriptorSetIndex> m_descriptorSetsState;
     };
 

@@ -191,6 +191,12 @@ bool VulkanContextState::prepareDescriptorSets(VulkanCommandBuffer * cmdBuffer, 
     //TODO:
     //m_currentBindingCache.clear();
 
+    if (!m_currentSets.empty())
+    {
+        sets = m_currentSets;
+        return true;
+    }
+
     m_currentPool = m_descriptorSetManager->acquireDescriptorSets(m_currentPipeline.first->getDescriptorSetLayouts(), sets, offsets);
     ASSERT(m_currentPool, "m_currentPool");
     m_currentPool->captureInsideCommandBuffer(cmdBuffer, 0);
@@ -199,6 +205,8 @@ bool VulkanContextState::prepareDescriptorSets(VulkanCommandBuffer * cmdBuffer, 
     {
         return false;
     }
+
+    m_currentSets = sets;
     return updateDescriptorSet(cmdBuffer, sets);
 }
 
@@ -282,6 +290,8 @@ bool VulkanContextState::updateDescriptorSet(VulkanCommandBuffer* cmdBuffer, std
 
 void VulkanContextState::bindTexture(const VulkanImage* image, const VulkanSampler* sampler, u32 arrayIndex, const Shader::SampledImage& reflaction)
 {
+    m_currentSets.clear();
+
     /*auto& bindingList = m_descriptorSetsState[reflaction._set];
     if (bindingList.size() < reflaction._binding)
     {
@@ -327,6 +337,7 @@ void VulkanContextState::bindTexture(const VulkanImage* image, const VulkanSampl
 
 void VulkanContextState::updateConstantBuffer(u32 arrayIndex, const Shader::UniformBuffer& reflaction, u32 offset, u32 size, const void* data)
 {
+    m_currentSets.clear();
     ASSERT(size <= reflaction._size, "over size");
     /*auto& bindingList = m_descriptorSetsState[reflaction._set];
     if (bindingList.size() < reflaction._binding + 1)

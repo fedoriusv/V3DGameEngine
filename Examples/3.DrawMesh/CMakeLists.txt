@@ -7,7 +7,6 @@ project(${CURRENT_PROJECT})
 
 file(GLOB TEST_HEADERS *.h)
 file(GLOB TEST_SOURCES *.cpp)
-file(GLOB TEST_TEST "shaders/*.h")
 file(GLOB TEST_SHADERS "shaders/*.vert" "shaders/*.frag")
 
 source_group("project" FILES ${TEST_HEADERS} ${TEST_SOURCES})

@@ -8,8 +8,10 @@ namespace v3d
 namespace scene
 {
 
+
+
 CameraArcballHelper::CameraArcballHelper(Camera* camera, f32 distance) noexcept
-    : CameraHelper(camera, core::Vector3D(0.0f, 0.0f, distance))
+    : CameraHelper(camera, core::Vector3D(0.0f, 0.0f, k_signZ * distance))
 {
 }
 
@@ -67,7 +69,7 @@ void CameraArcballHelper::handlerCallback(v3d::event::InputEventHandler* handler
         core::Point2D positionDelta = position - event->_cursorPosition;
 
         core::Vector3D rotation = CameraArcballHelper::getRotation();
-        rotation.x -= positionDelta.y * k_rotationSpeed;
+        rotation.x += positionDelta.y * k_rotationSpeed;
         rotation.y += positionDelta.x * k_rotationSpeed;
         CameraArcballHelper::setRotation(rotation);
     }
@@ -77,7 +79,14 @@ void CameraArcballHelper::handlerCallback(v3d::event::InputEventHandler* handler
         s32 positionDelta = position.y - event->_cursorPosition.y;
         core::Vector3D postion = CameraHelper::getPosition();
         f32 newZPos = postion.z + (positionDelta * k_zoomSpeed * 0.1f);
-        postion.z = std::clamp(newZPos, CameraHelper::getCamera().getNearValue(), CameraHelper::getCamera().getFarValue());
+        if (k_signZ < 0)
+        {
+            postion.z = std::clamp(newZPos, k_signZ * CameraHelper::getCamera().getFarValue(), k_signZ * CameraHelper::getCamera().getNearValue());
+        }
+        else
+        {
+            postion.z = std::clamp(newZPos, CameraHelper::getCamera().getNearValue(), CameraHelper::getCamera().getFarValue());
+        }
         CameraHelper::setPosition(postion);
     }
     else if (event->_event == event::MouseInputEvent::MouseWheel)
@@ -86,7 +95,14 @@ void CameraArcballHelper::handlerCallback(v3d::event::InputEventHandler* handler
 
         core::Vector3D postion = CameraHelper::getPosition();
         f32 newZPos = postion.z + (wheelDelta * k_zoomSpeed);
-        postion.z = std::clamp(newZPos, CameraHelper::getCamera().getNearValue(), CameraHelper::getCamera().getFarValue());
+        if (k_signZ < 0)
+        {
+            postion.z = std::clamp(newZPos, k_signZ * CameraHelper::getCamera().getFarValue(), k_signZ * CameraHelper::getCamera().getNearValue());
+        }
+        else
+        {
+            postion.z = std::clamp(newZPos, CameraHelper::getCamera().getNearValue(), CameraHelper::getCamera().getFarValue());
+        }
         CameraHelper::setPosition(postion);
     }
 

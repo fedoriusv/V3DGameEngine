@@ -17,7 +17,7 @@ namespace resource
     {
     public:
 
-        MeshAssimpDecoder(std::vector<std::string> supportedExtensions, const scene::ModelHeader& header, bool readHeader) noexcept;
+        MeshAssimpDecoder(std::vector<std::string> supportedExtensions, const scene::ModelHeader& header, u32 flags) noexcept;
         ~MeshAssimpDecoder();
 
         Resource* decode(const stream::Stream* stream, const std::string& name = "") override;
@@ -30,8 +30,14 @@ namespace resource
         const scene::ModelHeader m_header;
         bool m_headerRules;
 
-        bool m_seperateMesh = false;
-        bool m_generateIndices = true;
+        bool m_seperateMesh;
+        bool m_splitLargeMeshes;
+        bool m_generateIndices;
+        //bool m_generateTextureCoords;
+        bool m_generateNormals;
+        bool m_generateTangents;
+        bool m_localTransform;
+        bool m_flipYPosition;
     };
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////

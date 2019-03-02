@@ -4,6 +4,7 @@
 #include "Scene/Model.h"
 
 #include "Stream/FileLoader.h"
+#include "Resource/ResourceLoaderManager.h"
 #include "Renderer/Context.h"
 
 namespace v3d
@@ -11,15 +12,28 @@ namespace v3d
 namespace resource
 {
 
-ModelFileLoader::ModelFileLoader() noexcept
+ModelFileLoader::ModelFileLoader(u32 flags) noexcept
 {
 #ifdef USE_ASSIMP
     scene::ModelHeader header;
-    ResourceLoader::registerDecoder(new MeshAssimpDecoder({ "dae", "blend" }, header, false));
+    ResourceLoader::registerDecoder(new MeshAssimpDecoder({ "dae" }, header, flags));
 #endif //USE_ASSIMP
     ResourceLoader::registerPath("../../../../");
     ResourceLoader::registerPath("../../../../../");
     ResourceLoader::registerPath("../../../../engine/");
+    ResourceLoader::registerPathes(ResourceLoaderManager::getInstance()->getPathes());
+}
+
+ModelFileLoader::ModelFileLoader(const ResourceHeader* header, u32 flags) noexcept
+{
+#ifdef USE_ASSIMP
+    scene::ModelHeader modelHeader = *static_cast<const scene::ModelHeader*>(header);
+    ResourceLoader::registerDecoder(new MeshAssimpDecoder({ "dae" }, modelHeader, flags));
+#endif //USE_ASSIMP
+    ResourceLoader::registerPath("../../../../");
+    ResourceLoader::registerPath("../../../../../");
+    ResourceLoader::registerPath("../../../../engine/");
+    ResourceLoader::registerPathes(ResourceLoaderManager::getInstance()->getPathes());
 }
 
 ModelFileLoader::~ModelFileLoader()
@@ -58,7 +72,7 @@ scene::Model* ModelFileLoader::load(const std::string & name, const std::string 
                return nullptr;
            }
 
-           LOG_DEBUG("ModelFileLoader::load Shader [%s] is loaded", name.c_str());
+           LOG_INFO("ModelFileLoader::load Shader [%s] is loaded", name.c_str());
            return static_cast<scene::Model*>(resource);
         }
     }

@@ -86,6 +86,8 @@ namespace renderer
         VertexInputAttribDescription(std::vector<InputBinding> inputBindings, std::vector<VertexInputAttribDescription::InputAttribute> inputAttributes) noexcept;
         VertexInputAttribDescription& operator=(const VertexInputAttribDescription& desc);
 
+        bool operator==(const VertexInputAttribDescription& desc);
+
         void operator >> (stream::Stream* stream);
         void operator << (const stream::Stream* stream);
 
@@ -94,7 +96,7 @@ namespace renderer
         std::array<InputBinding, k_maxVertexInputBindings> _inputBindings;
 
         u32 _countInputAttributes;
-        std::array<InputAttribute, k_maxVertexInputAttributes> _inputAttribute;
+        std::array<InputAttribute, k_maxVertexInputAttributes> _inputAttributes;
 
     };
 

@@ -26,7 +26,7 @@ namespace resource
     {
     public:
 
-        ImageFileLoader() noexcept;
+        ImageFileLoader(u32 flags) noexcept;
         ~ImageFileLoader();
 
         resource::Image* load(const std::string& name, const std::string& alias = "") override;

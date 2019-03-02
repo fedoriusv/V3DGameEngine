@@ -32,8 +32,9 @@ SimpleRender::SimpleRender(renderer::CommandList& cmdList, const core::Dimension
 
     m_pipeline = cmdList.createObject<GraphicsPipelineState>(m_modelDrawer->getVertexInputAttribDescription(0, 0), m_program, m_renderTarget);
     m_pipeline->setPrimitiveTopology(PrimitiveTopology::PrimitiveTopology_TriangleList);
-    m_pipeline->setFrontFace(FrontFace::FrontFace_Clockwise);
-    m_pipeline->setCullMode(CullMode::CullMode_Back);
+   // m_pipeline->setPolygonMode(PolygonMode::PolygonMode_Line);
+    m_pipeline->setFrontFace(FrontFace::FrontFace_CounterClockwise);
+    m_pipeline->setCullMode(CullMode::CullMode_None);
     m_pipeline->setColorMask(ColorMask::ColorMask_All);
     m_pipeline->setDepthCompareOp(CompareOperation::CompareOp_Less);
     m_pipeline->setDepthWrite(true);

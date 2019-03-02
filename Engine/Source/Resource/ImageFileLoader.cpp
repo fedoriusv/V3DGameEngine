@@ -16,7 +16,7 @@ namespace v3d
 namespace resource
 {
 
-ImageFileLoader::ImageFileLoader() noexcept
+ImageFileLoader::ImageFileLoader(u32 flags) noexcept
 {
 #if USE_STB
     {

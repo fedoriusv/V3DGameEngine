@@ -27,7 +27,10 @@ namespace resource
         void unregisterAllDecoders();
 
         void registerPath(const std::string& path);
+        void registerPathes(const std::vector<std::string> &pathes);
+
         void unregisterPath(const std::string& path);
+        void unregisterPathes(const std::vector<std::string>& pathes);
 
     protected:
 
@@ -97,12 +100,41 @@ namespace resource
     }
 
     template<class T>
+    inline void ResourceLoader<T>::registerPathes(const std::vector<std::string>& pathes)
+    {
+        for (const std::string& path : pathes)
+        {
+            std::string innerPath(path);
+            std::transform(innerPath.begin(), innerPath.end(), innerPath.begin(), ::tolower);
+
+            auto it = std::find(m_pathes.begin(), m_pathes.end(), innerPath);
+            if (it == m_pathes.end())
+            {
+                m_pathes.push_back(innerPath);
+            }
+        }
+    }
+
+    template<class T>
     inline void ResourceLoader<T>::unregisterPath(const std::string & path)
     {
         auto it = std::find(m_pathes.begin(), m_pathes.end(), path);
         if (it != m_pathes.end())
         {
             m_pathes.erase(std::remove(m_pathes.begin(), m_pathes.end(), *it), m_pathes.end());
+        }
+    }
+
+    template<class T>
+    inline void ResourceLoader<T>::unregisterPathes(const std::vector<std::string>& pathes)
+    {
+        for (const std::string& path : m_pathes)
+        {
+            auto it = std::find(m_pathes.begin(), m_pathes.end(), path);
+            if (it != m_pathes.end())
+            {
+                m_pathes.erase(std::remove(m_pathes.begin(), m_pathes.end(), *it), m_pathes.end());
+            }
         }
     }
 

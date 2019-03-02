@@ -15,6 +15,8 @@ namespace renderer
 
 namespace scene
 {
+    class MaterialHelper;
+
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
@@ -61,30 +63,45 @@ namespace scene
         void init(stream::Stream* stream) override;
         bool load() override;
 
+        template<class TType>
+        void setParmeter(MaterialHeader::Property property, TType value);
+
+        void setTextureParameter(MaterialHeader::Property property, renderer::Texture* texture);
+        void setFloatParameter(MaterialHeader::Property property, f32 value);
+        void setVectorParameter(MaterialHeader::Property property, const core::Vector4D& vector);
+
+        template<class TType>
+        TType getParameter(MaterialHeader::Property property);
+
+        renderer::Texture* getTextureParameter(MaterialHeader::Property property) const;
+        f32 getFloatParameter(MaterialHeader::Property property) const;
+        core::Vector4D getVectorParameter(MaterialHeader::Property property) const;
+
     private:
 
-        struct ColorProperty
-        {
-            std::string    _name;
+        const MaterialHeader& getMaterialHeader() const;
 
-            core::Vector4D _color;
-        };
-
-        struct TextureProperty
-        {
-            std::string         _name;
-            renderer::Texture*  _texture;
-        };
-
-        struct BufferProperty
-        {
-            std::string             _name;
-            renderer::StreamBuffer* _buffer;
-        };
 
         std::string m_name;
+        std::map<MaterialHeader::Property, std::variant<std::monostate, f32, core::Vector4D, renderer::Texture*>> m_properties;
+
+        friend MaterialHelper;
 
     };
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    template<class TType>
+    inline TType Material::getParameter(MaterialHeader::Property property)
+    {
+        ASSERT(false, "not implemented");
+    }
+
+    template<class TType>
+    inline void Material::setParmeter(MaterialHeader::Property property, TType value)
+    {
+        ASSERT(false, "not implemented");
+    }
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 

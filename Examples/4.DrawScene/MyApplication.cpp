@@ -51,7 +51,11 @@ void MyApplication::Initialize()
     ASSERT(m_Context, "context is nullptr");
     m_CommandList = new renderer::CommandList(m_Context, renderer::CommandList::CommandListType::DelayedCommandList);
 
-    m_Scene = new scene::Scene();
+    m_Camera = new CameraArcballHelper(new Camera(core::Vector3D(0.0f, 0.0f, 0.0f), core::Vector3D(0.0f, -1.0f, 0.0f)), 10.0f);
+    m_Camera->setPerspective(45.0f, m_Window->getSize(), 0.1f, 50.f);
+
+    m_Scene = new scene::Scene(m_Window->getSize());
+    m_Scene->setCamera(&m_Camera->getCamera());
     m_Scene->onLoad(*m_CommandList);
 }
 
@@ -60,6 +64,7 @@ bool MyApplication::Running(renderer::CommandList& commandList)
     //Frame
     commandList.beginFrame();
 
+    m_Camera->update();
     m_Scene->onUpdate();
     m_Scene->onRender(commandList);
 
@@ -73,6 +78,7 @@ bool MyApplication::Running(renderer::CommandList& commandList)
 
 void MyApplication::Exit()
 {
+    delete m_Camera;
     delete m_Scene;
 
     delete m_CommandList;
@@ -86,3 +92,4 @@ MyApplication::~MyApplication()
 
     Window::detroyWindow(m_Window);
 }
+

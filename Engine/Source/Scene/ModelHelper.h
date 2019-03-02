@@ -32,10 +32,12 @@ namespace scene
         explicit ModelHelper(renderer::CommandList& cmdList, const std::vector<const Model*>& models) noexcept;
         ~ModelHelper();
 
-        void drawModel();
+        void drawModel(s32 index = -1);
 
         const renderer::VertexInputAttribDescription& getVertexInputAttribDescription(u32 modelIndex, u32 meshIndex) const;
         Transform& getTransform();
+
+        static ModelHelper* createModelHelper(renderer::CommandList& cmdList, const std::vector<const Model*>& models);
 
     private:
 
