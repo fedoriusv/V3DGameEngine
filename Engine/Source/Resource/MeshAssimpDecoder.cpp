@@ -89,9 +89,9 @@ Resource * MeshAssimpDecoder::decode(const stream::Stream* stream, const std::st
                 assimpFlags |= aiProcess_SplitLargeMeshes;
             }
 
-            if (m_generateIndices)
+            if (m_generateIndices && m_seperateMesh)
             {
-                //assimpFlags |= aiProcess_JoinIdenticalVertices; corrupt geometry
+                assimpFlags |= aiProcess_JoinIdenticalVertices;
             }
 
             newHeader->_vertexContentFlags = 0;
@@ -411,11 +411,27 @@ bool MeshAssimpDecoder::decodeMesh(const aiScene* scene, stream::Stream* modelSt
 
             u32 indexBase = static_cast<u32>(indexBuffer.size());
             u32 indexCount = 0;
-            for (u32 f = 0; f < scene->mMeshes[m]->mNumFaces; f++)
+            /*for (u32 f = 0; f < scene->mMeshes[m]->mNumFaces; f++)
             {
                 for (u32 i = 0; i < 3; i++)
                 {
                     indexBuffer.push_back(scene->mMeshes[m]->mFaces[f].mIndices[i] + indexBase);
+                    indexCount++;
+                }
+            }*/
+            for (u32 f = 0; f < scene->mMeshes[m]->mNumFaces; f++)
+            {
+                aiFace& face = scene->mMeshes[m]->mFaces[f];
+                for (u32 i = 0; i < face.mNumIndices; i++)
+                {
+                    if (m_seperateMesh)
+                    {
+                        indexBuffer.push_back(face.mIndices[i]);
+                    }
+                    else
+                    {
+                        indexBuffer.push_back(scene->mMeshes[m]->mFaces[f].mIndices[i] + indexBase);
+                    }
                     indexCount++;
                 }
             }

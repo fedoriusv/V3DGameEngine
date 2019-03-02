@@ -18,11 +18,13 @@ SimpleRender::SimpleRender(renderer::CommandList& cmdList, const core::Dimension
 {
     m_program = cmdList.createObject<ShaderProgram>(shaders);
 
-    m_sampler = cmdList.createObject<SamplerState>(SamplerFilter::SamplerFilter_Nearest, SamplerFilter::SamplerFilter_Nearest, SamplerAnisotropic::SamplerAnisotropic_None);
-    m_texture = cmdList.createObject<Texture2D>(TextureUsage::TextureUsage_Sampled | TextureUsage_Shared | TextureUsage_Write, 
-        image[0]->getFormat(), core::Dimension2D(image[0]->getDimension().width, image[0]->getDimension().height), 1, image[0]->getRawData());
-    m_images.emplace(image[0], std::make_pair(m_texture, m_sampler));
-
+    if (!image.empty())
+    {
+        m_sampler = cmdList.createObject<SamplerState>(SamplerFilter::SamplerFilter_Bilinear, SamplerFilter::SamplerFilter_Bilinear, SamplerAnisotropic::SamplerAnisotropic_None);
+        m_texture = cmdList.createObject<Texture2D>(TextureUsage::TextureUsage_Sampled | TextureUsage_Shared | TextureUsage_Write,
+            image[0]->getFormat(), core::Dimension2D(image[0]->getDimension().width, image[0]->getDimension().height), 1, image[0]->getRawData());
+        m_images.emplace(image[0], std::make_pair(m_texture, m_sampler));
+    }
     m_modelDrawer = new scene::ModelHelper(cmdList, models);
 
     m_renderTarget = cmdList.createObject<RenderTargetState>(size);
@@ -32,7 +34,7 @@ SimpleRender::SimpleRender(renderer::CommandList& cmdList, const core::Dimension
 
     m_pipeline = cmdList.createObject<GraphicsPipelineState>(m_modelDrawer->getVertexInputAttribDescription(0, 0), m_program, m_renderTarget);
     m_pipeline->setPrimitiveTopology(PrimitiveTopology::PrimitiveTopology_TriangleList);
-   // m_pipeline->setPolygonMode(PolygonMode::PolygonMode_Line);
+    //m_pipeline->setPolygonMode(PolygonMode::PolygonMode_Line);
     m_pipeline->setFrontFace(FrontFace::FrontFace_CounterClockwise);
     m_pipeline->setCullMode(CullMode::CullMode_None);
     m_pipeline->setColorMask(ColorMask::ColorMask_All);

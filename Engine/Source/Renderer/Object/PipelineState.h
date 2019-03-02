@@ -30,6 +30,7 @@ namespace renderer
 
     /**
     * GraphicsPipelineState class. Game side
+    *\n
     * Constructor param:
     const VertexInputAttribDescription& vertex
     const ShaderProgram* const program

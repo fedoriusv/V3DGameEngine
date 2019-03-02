@@ -17,6 +17,15 @@ namespace renderer
 
     /**
     * SamplerState class. Game side
+    *\n
+    * Constructor param:
+    SamplerFilter min
+    SamplerFilter mag
+    SamplerAnisotropic aniso
+    *\n
+    * Constructor param:
+    SamplerFilter filter
+    SamplerAnisotropic aniso
     */
     class SamplerState : public Object, public utils::Observer
     {

@@ -84,13 +84,6 @@ void MyApplication::Initialize()
     resource::Image* image = resource::ResourceLoaderManager::getInstance()->load<resource::Image, resource::ImageFileLoader>("examples/3.drawmesh/models/voyager/voyager_bc3_unorm.ktx");
     Model* model = resource::ResourceLoaderManager::getInstance()->load<Model, resource::ModelFileLoader>("examples/3.drawmesh/models/voyager/voyager.dae");
 
-
-    //
-    //Shader* vertShader0 = resource::ResourceLoaderManager::getInstance()->loadShader<Shader, resource::ShaderSourceFileLoader>(m_CommandList->getContext(), "examples/3.drawmesh/shaders/simple.vert");
-    //Shader* fragShader0 = resource::ResourceLoaderManager::getInstance()->loadShader<Shader, resource::ShaderSourceFileLoader>(m_CommandList->getContext(), "examples/3.drawmesh/shaders/simple.frag");
-    //Model* model0 = resource::ResourceLoaderManager::getInstance()->load<Model, resource::ModelFileLoader>("engine/models/test1.dae", ModelLoaderFlag_SeperateMesh | ModelLoaderFlag_LocalTransform);
-    //
-
     m_Render = new renderer::SimpleRender(*m_CommandList, m_Window->getSize(), { vertShader, fragShader }, { image }, { model });
     m_Render->setCamera(&m_Camera->getCamera());
 }
