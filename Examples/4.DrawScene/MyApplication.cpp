@@ -22,6 +22,9 @@ MyApplication::MyApplication(int& argc, char** argv)
     core::Dimension2D widowsSize = { 1280, 720 };
     m_Window = Window::createWindow(widowsSize, {800, 500}, false, new v3d::event::InputEventReceiver());
     ASSERT(m_Window, "windows is nullptr");
+
+    m_InputEventHandler = new InputEventHandler();
+    m_Window->getInputEventReceiver()->attach(InputEvent::InputEventType::MouseInputEvent, m_InputEventHandler);
 }
 
 int MyApplication::Execute()
@@ -52,7 +55,9 @@ void MyApplication::Initialize()
     m_CommandList = new renderer::CommandList(m_Context, renderer::CommandList::CommandListType::DelayedCommandList);
 
     m_Camera = new CameraArcballHelper(new Camera(core::Vector3D(0.0f, 0.0f, 0.0f), core::Vector3D(0.0f, -1.0f, 0.0f)), 10.0f);
-    m_Camera->setPerspective(45.0f, m_Window->getSize(), 0.1f, 50.f);
+    m_Camera->setPerspective(45.0f, m_Window->getSize(), 0.01f, 250.f);
+
+    m_InputEventHandler->connect(std::bind(&CameraArcballHelper::handlerCallback, m_Camera, m_InputEventHandler, std::placeholders::_1));
 
     m_Scene = new scene::Scene(m_Window->getSize());
     m_Scene->setCamera(&m_Camera->getCamera());
@@ -80,6 +85,8 @@ void MyApplication::Exit()
 {
     delete m_Camera;
     delete m_Scene;
+
+    m_Window->getInputEventReceiver()->dettach(InputEvent::InputEventType::MouseInputEvent);
 
     delete m_CommandList;
     Context::destroyContext(m_Context);

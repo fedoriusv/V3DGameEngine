@@ -32,9 +32,14 @@ namespace scene
 
     private:
 
+        renderer::RenderTargetState* m_simpleBackbuffer;
+        renderer::ShaderProgram* m_simpleProgram;
+        renderer::GraphicsPipelineState* m_simplePipeline;
+
         //void updateProgramParameters(renderer::ShaderProgram* program, scene::ModelHelper* model, scene::MaterialHelper* material);
 
         renderer::RenderTargetState* m_offsceenRenderTarget;
+
 
 
         renderer::GraphicsPipelineState* m_sponzaMRTPipeline;
