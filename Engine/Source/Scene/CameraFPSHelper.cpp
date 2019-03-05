@@ -1,4 +1,104 @@
-//#include "FPSCamera.h"
+#include "CameraFPSHelper.h"
+#include "Camera.h"
+
+#include "Utils/Logger.h"
+
+namespace v3d
+{
+namespace scene
+{
+
+CameraFPSHelper::CameraFPSHelper(Camera* camera, const core::Vector3D& position) noexcept
+    : CameraHelper(camera, position)
+{
+}
+
+CameraFPSHelper::~CameraFPSHelper()
+{
+}
+
+void CameraFPSHelper::update(f32 deltaTime)
+{
+    if (m_needUpdate)
+    {
+        CameraHelper::update();
+
+        core::Matrix4D rotateX;
+        rotateX.makeIdentity();
+        rotateX.setRotation(core::Vector3D(m_transform.getRotation().x, 0.0f, 0.0f));
+
+        core::Matrix4D rotateY;
+        rotateY.makeIdentity();
+        rotateY.setRotation(core::Vector3D(0.0f, m_transform.getRotation().y, 0.0f));
+
+        core::Matrix4D rotate = rotateX * rotateY;
+
+        core::Matrix4D look = core::buildLookAtMatrix(m_transform.getPosition(), getCamera().getTarget(), getCamera().getUpVector());
+        core::Matrix4D view = rotate * look;
+
+        getCamera().setViewMatrix(view);
+        m_needUpdate = false;
+        
+        m_needUpdate = false;
+    }
+}
+
+void CameraFPSHelper::setRotation(const core::Vector3D & rotation)
+{
+    m_transform.setRotation(rotation);
+    m_needUpdate = true;
+}
+
+const core::Vector3D& CameraFPSHelper::getRotation() const
+{
+    return m_transform.getRotation();
+}
+
+
+void CameraFPSHelper::rotateHandlerCallback(v3d::event::InputEventHandler* handler, const event::MouseInputEvent* event)
+{
+    static core::Point2D position = event->_cursorPosition;
+
+    if (handler->isLeftMousePressed() || true)
+    {
+        core::Point2D positionDelta = position - event->_cursorPosition;
+
+        core::Vector3D rotation = CameraFPSHelper::getRotation();
+        rotation.x += positionDelta.y * k_rotationSpeed;
+        rotation.y -= positionDelta.x * k_rotationSpeed;
+        CameraFPSHelper::setRotation(rotation);
+    }
+
+    position = event->_cursorPosition;
+}
+
+void CameraFPSHelper::moveHandlerCallback(v3d::event::InputEventHandler * handler, const event::KeyboardInputEvent * event)
+{
+    if (handler->isKeyPressed(event::KeyCode::KeyKey_W))
+    {
+        //CameraFPSHelper::setPosition()
+    }
+
+
+    if (handler->isKeyPressed(event::KeyCode::KeyKey_S))
+    {
+
+    }
+
+    if (handler->isKeyPressed(event::KeyCode::KeyKey_A))
+    {
+
+    }
+
+    if (handler->isKeyPressed(event::KeyCode::KeyKey_D))
+    {
+
+    }
+}
+
+} //namespace scene
+} //namespace v3d
+
 //#include "Engine.h"
 //
 //

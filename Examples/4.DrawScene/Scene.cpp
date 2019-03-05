@@ -29,7 +29,7 @@ Scene::Scene(const core::Dimension2D& size) noexcept
     , m_camera(nullptr)
 {
 }
-    
+
 Scene::~Scene()
 {
     m_camera = nullptr;

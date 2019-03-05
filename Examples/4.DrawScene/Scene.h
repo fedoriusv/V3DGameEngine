@@ -53,6 +53,7 @@ namespace scene
 
         core::Dimension2D m_size;
         scene::Camera*    m_camera;
+
     };
 
 } //namespace scene

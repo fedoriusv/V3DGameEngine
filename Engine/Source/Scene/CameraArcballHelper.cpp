@@ -8,8 +8,6 @@ namespace v3d
 namespace scene
 {
 
-
-
 CameraArcballHelper::CameraArcballHelper(Camera* camera, f32 distance) noexcept
     : CameraHelper(camera, core::Vector3D(0.0f, 0.0f, k_signZ * distance))
 {

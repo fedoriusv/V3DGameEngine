@@ -7,7 +7,9 @@
 #include "Event/InputEventHandler.h"
 
 #include "Scene.h"
-#include "Scene/CameraArcballHelper.h"
+#include "Scene/CameraFPSHelper.h"
+
+#include "Utils/Timer.h"
 
 class MyApplication
 {
@@ -30,6 +32,10 @@ private:
     v3d::renderer::Context* m_Context;
     v3d::renderer::CommandList* m_CommandList;
 
-    v3d::scene::CameraArcballHelper* m_Camera;
+    v3d::scene::CameraFPSHelper* m_Camera;
     v3d::scene::Scene* m_Scene;
+
+
+    v3d::utils::Timer* m_Timer;
+    v3d::f32 m_frameTime;
 };
