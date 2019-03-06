@@ -34,8 +34,21 @@ namespace scene
 
     private:
 
+        f32 m_moveSpeed;
+
         const f32 k_rotationSpeed = 0.8f;
-        const f32 k_movementSpeed = 1.0f;
+        const f32 k_movementSpeed = 50.0f;
+        const f32 k_accelerationSpeed = 2.0f;
+
+        struct Move
+        {
+            bool _forward;
+            bool _back;
+            bool _left;
+            bool _right;
+        };
+
+        Move    m_direction;
     };
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
