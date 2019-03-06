@@ -16,6 +16,8 @@
 #include "Resource/ResourceLoaderManager.h"
 #include "Resource/ShaderSourceFileLoader.h"
 
+#include <random>
+
 
 using namespace v3d;
 using namespace v3d::platform;
@@ -81,12 +83,12 @@ int MyApplication::Execute()
 
 void MyApplication::Initialize()
 {
-    //Test_MemoryPool();
+    Test_MemoryPool();
 
-    //m_Context = renderer::Context::createContext(m_Window, renderer::Context::RenderType::VulkanRender);
-    //ASSERT(m_Context, "context is nullptr");
+    m_Context = renderer::Context::createContext(m_Window, renderer::Context::RenderType::VulkanRender);
+    ASSERT(m_Context, "context is nullptr");
 
-    //m_CommandList = new renderer::CommandList(m_Context, renderer::CommandList::CommandListType::DelayedCommandList);
+    m_CommandList = new renderer::CommandList(m_Context, renderer::CommandList::CommandListType::DelayedCommandList);
 
     //Texture2D* texture = m_CommandList->createObject<Texture2D>(renderer::Format::Format_R8G8B8A8_UInt, core::Dimension2D(1024, 768), renderer::TextureSamples::TextureSamples_x1);
     //renderTarget0 = m_CommandList->createObject<RenderTarget>(texture->getDimension());
@@ -172,45 +174,86 @@ void MyApplication::Exit()
 
 void MyApplication::Test_MemoryPool()
 {
-    MemoryPool pool;
-    ////TEST
-    char* a = (char*)pool.getMemory(253);
-    memset(a, 'a', 253);
-    u64 ofsa = pool.getOffsetInBlock(a);
-    char* b = (char*)pool.getMemory(253);
-    memset(b, 'b', 253);
-    u64 ofsb = pool.getOffsetInBlock(b);
-    char* c = (char*)pool.getMemory(253);
-    memset(c, 'c', 253);
-    u64 ofsc = pool.getOffsetInBlock(c);
-    char* d = (char*)pool.getMemory(253);
-    memset(d, 'd', 253);
-    u64 ofsd = pool.getOffsetInBlock(d);
-    char* e = (char*)pool.getMemory(253);
-    memset(e, 'e', 253);
-    u64 ofse = pool.getOffsetInBlock(e);
-    char* f = (char*)pool.getMemory(253);
-    memset(f, 'f', 10);
-    u64 ofsf = pool.getOffsetInBlock(f);
-    ////
+    {
+        MemoryPool pool;
 
-    pool.freeMemory((void*)b);
-    char* nb = (char*)pool.getMemory(253);
-    memset(b, 'B', 253);
-    u64 nofsb = pool.getOffsetInBlock(b);
+        char* a = (char*)pool.getMemory(253);
+        memset(a, 'a', 253);
+        u64 ofsa = pool.getOffsetInBlock(a);
+        char* b = (char*)pool.getMemory(253);
+        memset(b, 'b', 253);
+        u64 ofsb = pool.getOffsetInBlock(b);
+        char* c = (char*)pool.getMemory(253);
+        memset(c, 'c', 253);
+        u64 ofsc = pool.getOffsetInBlock(c);
+        char* d = (char*)pool.getMemory(253);
+        memset(d, 'd', 253);
+        u64 ofsd = pool.getOffsetInBlock(d);
+        char* e = (char*)pool.getMemory(253);
+        memset(e, 'e', 253);
+        u64 ofse = pool.getOffsetInBlock(e);
+        char* f = (char*)pool.getMemory(253);
+        memset(f, 'f', 10);
+        u64 ofsf = pool.getOffsetInBlock(f);
+        ////
 
-    void* hugeData = pool.getMemory(1024 * 1024 * 4);
-    u64 ofhugeData = pool.getOffsetInBlock(hugeData);
+        pool.freeMemory((void*)b);
+        char* nb = (char*)pool.getMemory(253);
+        memset(b, 'B', 253);
+        u64 nofsb = pool.getOffsetInBlock(b);
 
-    void* hugeData1 = pool.getMemory(1024 * 1024 * 40);
-    u64 ofhugeData1 = pool.getOffsetInBlock(hugeData1);
+        void* hugeData = pool.getMemory(1024 * 1024 * 4);
+        u64 ofhugeData = pool.getOffsetInBlock(hugeData);
 
-    pool.freeMemory(hugeData1);
+        void* hugeData1 = pool.getMemory(1024 * 1024 * 40);
+        u64 ofhugeData1 = pool.getOffsetInBlock(hugeData1);
 
-    void* hugeData2 = pool.getMemory(1024 * 1024 * 400);
-    u64 ofhugeData2 = pool.getOffsetInBlock(hugeData2);
+        pool.freeMemory(hugeData1);
 
-    pool.clearPools();
+        void* hugeData2 = pool.getMemory(1024 * 1024 * 400);
+        u64 ofhugeData2 = pool.getOffsetInBlock(hugeData2);
+
+        pool.clearPools();
+    }
+
+    {
+        auto randomFunc = [](u32 min, u32 max) -> u32
+        {
+            std::srand(u32(std::time(nullptr)));
+            s32 rnd = std::rand();
+            return (u32)(rnd % (max - min + 1) + min);
+         };
+
+
+        MemoryPool pool(2048, 32, 32, utils::MemoryPool::getDefaultMemoryPoolAllocator());
+        std::vector<std::pair<u32, void*>> sizes;
+
+        std::random_device rd;
+        std::mt19937 g(rd());
+
+        for (u32 e = 0; e < 100; ++e)
+        {
+            std::uniform_int_distribution<u32> uid(1, 512);
+            for (u32 i = 0; i < 1000; ++i)
+            {
+                u32 rendomSize = uid(g);
+                void* ptr = pool.getMemory(rendomSize);
+                sizes.push_back(std::make_pair(rendomSize, ptr));
+            }
+
+            std::shuffle(sizes.begin(), sizes.end(), g);
+
+            for (u32 i = 0; i < 1000; ++i)
+            {
+                void* ptr = sizes[i].second;
+                pool.freeMemory(ptr);
+            }
+        }
+
+        //pool.clearPools();
+    }
+
+    int test;
 }
 
 MyApplication::~MyApplication()
