@@ -50,7 +50,7 @@ namespace scene
         const core::Matrix4D& getProjectionMatrix() const;
 
         void setViewMatrix(const core::Matrix4D& view);
-        void setProjectionMatrix(const core::Matrix4D& proj);
+        void setProjectionMatrix(const core::Matrix4D& projection);
 
         f32 getNearValue() const;
         f32 getFarValue() const;

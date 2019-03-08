@@ -39,6 +39,8 @@ namespace scene
 
     protected:
 
+        const core::RectU32& getArea() const;
+
         Transform       m_transform;
         bool            m_needUpdate;
     };

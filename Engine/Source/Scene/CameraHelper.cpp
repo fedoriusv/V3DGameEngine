@@ -79,5 +79,10 @@ void CameraHelper::update()
     }
 }
 
+const core::RectU32 & CameraHelper::getArea() const
+{
+    return m_area;
+}
+
 } // namespace scene
 } //namespace v3d

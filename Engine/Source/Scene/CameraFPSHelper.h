@@ -29,16 +29,20 @@ namespace scene
 
         void update(f32 deltaTime);
 
-        void rotateHandlerCallback(v3d::event::InputEventHandler* handler, const event::MouseInputEvent* event);
+        void rotateHandlerCallback(v3d::event::InputEventHandler* handler, const event::MouseInputEvent* event, bool mouseCapture);
         void moveHandlerCallback(v3d::event::InputEventHandler* handler, const event::KeyboardInputEvent* event);
 
     private:
 
+        void move(const core::Vector3D& direction);
+        void rotate(f32 angle, const core::Vector3D& point);
+        bool isPointOut(const core::Vector3D& point);
+
         f32 m_moveSpeed;
 
-        const f32 k_rotationSpeed = 0.8f;
-        const f32 k_movementSpeed = 50.0f;
-        const f32 k_accelerationSpeed = 2.0f;
+        const f32 k_rotationSpeed = 8.8f;
+        const f32 k_movementSpeed = 1000.0f;
+        const f32 k_accelerationSpeed = 10.0f;
 
         struct Move
         {
@@ -49,6 +53,15 @@ namespace scene
         };
 
         Move    m_direction;
+        bool    m_rotate;
+
+        bool isDirectionChange() const;
+        bool isRotationChange() const;
+
+        core::Vector3D m_angle;
+
+        core::Vector3D m_minBorder;
+        core::Vector3D m_maxBorder;
     };
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////

@@ -516,6 +516,13 @@ LRESULT WindowWindows::WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lP
             return TRUE;
         }
 
+        case WM_MOVE:
+        {
+            window->m_params._position.x = (s16)LOWORD(lParam);
+            window->m_params._position.y = (s16)HIWORD(lParam);
+            return TRUE;
+        }
+
         case WM_SIZE:
         {
             return TRUE;

@@ -36,6 +36,10 @@ private:
     v3d::scene::Scene* m_Scene;
 
 
+    bool m_captureMouseCursor;
+
+
     v3d::utils::Timer* m_Timer;
-    v3d::f32 m_frameTime;
+    v3d::f32 m_frameTime; // Sec/Frame
+    const v3d::f32 m_timeFactor = 0.1f;
 };

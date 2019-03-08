@@ -4,6 +4,7 @@
 #include "Renderer/Context.h"
 #include "Event/InputEventReceiver.h"
 #include "Platform/Window.h"
+#include "Platform/Platform.h"
 
 using namespace v3d;
 using namespace v3d::platform;
@@ -21,11 +22,13 @@ MyApplication::MyApplication(int& argc, char** argv)
 
     , m_Camera(nullptr)
 
+    , m_captureMouseCursor(false)
+
     , m_Timer(new utils::Timer())
     , m_frameTime(0.f)
 {
-    core::Dimension2D widowsSize = { 1280, 720 };
-    m_Window = Window::createWindow(widowsSize, {800, 500}, false, new v3d::event::InputEventReceiver());
+    core::Dimension2D widowsSize = { 1920, 1080 };
+    m_Window = Window::createWindow(widowsSize, {400, 100}, false, new v3d::event::InputEventReceiver());
     ASSERT(m_Window, "windows is nullptr");
 
     m_InputEventHandler = new InputEventHandler();
@@ -46,6 +49,18 @@ int MyApplication::Execute()
         {
             MyApplication::Running(*m_CommandList);
         }
+
+        if (m_captureMouseCursor && m_Window->isActive())
+        {
+            core::Rect32 area(m_Window->getPosition().x, m_Window->getPosition().y, m_Window->getPosition().x + m_Window->getSize().width, m_Window->getPosition().y + m_Window->getSize().height);
+            core::Point2D centerPosition = area.getCenter();
+
+            core::Point2D cursorPosition = platform::Platform::getCursorPosition();
+            if (cursorPosition != centerPosition)
+            {
+                platform::Platform::setCursorPostion(centerPosition);
+            }
+        }
     }
 
     Exit();
@@ -63,7 +78,7 @@ void MyApplication::Initialize()
     m_Camera = new CameraFPSHelper(new Camera(core::Vector3D(0.0f, 0.0f, 0.0f), core::Vector3D(0.0f, -1.0f, 0.0f)), core::Vector3D(0.0f, 0.0f, -10.0f));
     m_Camera->setPerspective(45.0f, m_Window->getSize(), 0.01f, 250.f);
 
-    m_InputEventHandler->connect(std::bind(&CameraFPSHelper::rotateHandlerCallback, m_Camera, m_InputEventHandler, std::placeholders::_1));
+    m_InputEventHandler->connect(std::bind(&CameraFPSHelper::rotateHandlerCallback, m_Camera, m_InputEventHandler, std::placeholders::_1, m_captureMouseCursor));
     m_InputEventHandler->connect(std::bind(&CameraFPSHelper::moveHandlerCallback, m_Camera, m_InputEventHandler, std::placeholders::_1));
 
     m_Scene = new scene::Scene(m_Window->getSize());
@@ -89,17 +104,29 @@ bool MyApplication::Running(renderer::CommandList& commandList)
 
     m_Timer->stop();
 
+    static u32 frameCounter;
+    static f32 fpsTime;
     u64 diff = m_Timer->getTime<utils::Timer::Duration::Duration_MilliSeconds>();
-    m_frameTime = static_cast<f32>(diff) / 1000.0f;
+    if (diff <= 0.0f)
+    {
+        fpsTime += 1.0f;
+    }
+    else
+    {
+        m_frameTime = (static_cast<f32>(diff) / 1000.0f) * m_timeFactor;
+        fpsTime += diff;
+    }
+    ++frameCounter;
+
+    if (fpsTime >= 1000.0f)
+    {
+        m_Window->setTextCaption("Time: " + std::to_string(fpsTime / frameCounter) + " ms (" + std::to_string(frameCounter) + " FPS)");
+
+        frameCounter = 0;
+        fpsTime = 0.0f;
+    }
     m_Timer->reset();
 
-    static f32 fpsTimer;
-    fpsTimer += static_cast<f32>(diff);
-    if (fpsTimer > 1000.0f)
-    {
-        m_Window->setTextCaption("Time: " + std::to_string(m_frameTime) + " ms (" + std::to_string(fpsTimer) + " FPS)");
-        fpsTimer = 0;
-    }
     return true;
 }
 

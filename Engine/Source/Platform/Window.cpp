@@ -97,5 +97,10 @@ const core::Dimension2D & Window::getSize() const
     return m_params._size;
 }
 
+const core::Point2D & Window::getPosition() const
+{
+    return m_params._position;
+}
+
 } //namespace platform
 } //namespace v3d

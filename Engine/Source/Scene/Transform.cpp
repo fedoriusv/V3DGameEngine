@@ -61,13 +61,13 @@ const core::Vector3D& Transform::getPosition() const
 
 const core::Vector3D& Transform::getRotation() const
 {
-    ASSERT(m_transformFlag & ~TransformState::TransformState_Scale && m_transformFlag & ~TransformState::TransformState_Rotation, "not updated");
+    //ASSERT(!(m_transformFlag & TransformState::TransformState_Scale) && !(m_transformFlag & TransformState::TransformState_Rotation), "not updated");
     return m_rotation;
 }
 
 const core::Vector3D& Transform::getScale() const
 {
-    ASSERT(m_transformFlag & ~TransformState::TransformState_Scale && m_transformFlag & ~TransformState::TransformState_Rotation, "not updated");
+    //ASSERT(!(m_transformFlag & TransformState::TransformState_Scale) && !(m_transformFlag & TransformState::TransformState_Rotation), "not updated");
     return m_scale;
 }
 
