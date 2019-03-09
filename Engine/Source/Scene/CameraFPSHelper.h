@@ -34,15 +34,18 @@ namespace scene
 
     private:
 
+#if 0
         void move(const core::Vector3D& direction);
         void rotate(f32 angle, const core::Vector3D& point);
         bool isPointOut(const core::Vector3D& point);
-
+#endif
         f32 m_moveSpeed;
 
-        const f32 k_rotationSpeed = 8.8f;
+        const f32 k_rotationSpeed = 0.8f;
         const f32 k_movementSpeed = 1000.0f;
         const f32 k_accelerationSpeed = 10.0f;
+
+        static constexpr f32 k_constrainPitch = 89.0f;
 
         struct Move
         {
@@ -51,17 +54,9 @@ namespace scene
             bool _left;
             bool _right;
         };
-
         Move    m_direction;
-        bool    m_rotate;
 
         bool isDirectionChange() const;
-        bool isRotationChange() const;
-
-        core::Vector3D m_angle;
-
-        core::Vector3D m_minBorder;
-        core::Vector3D m_maxBorder;
     };
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////

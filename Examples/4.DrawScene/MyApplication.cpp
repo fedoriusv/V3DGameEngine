@@ -78,7 +78,7 @@ void MyApplication::Initialize()
     m_Camera = new CameraFPSHelper(new Camera(core::Vector3D(0.0f, 0.0f, 0.0f), core::Vector3D(0.0f, -1.0f, 0.0f)), core::Vector3D(0.0f, 0.0f, -10.0f));
     m_Camera->setPerspective(45.0f, m_Window->getSize(), 0.01f, 250.f);
 
-    m_InputEventHandler->connect(std::bind(&CameraFPSHelper::rotateHandlerCallback, m_Camera, m_InputEventHandler, std::placeholders::_1, m_captureMouseCursor));
+    m_InputEventHandler->connect(std::bind(&CameraFPSHelper::rotateHandlerCallback, m_Camera, m_InputEventHandler, std::placeholders::_1, true/*m_captureMouseCursor*/));
     m_InputEventHandler->connect(std::bind(&CameraFPSHelper::moveHandlerCallback, m_Camera, m_InputEventHandler, std::placeholders::_1));
 
     m_Scene = new scene::Scene(m_Window->getSize());

@@ -4,7 +4,7 @@
 #include "Platform/Platform.h"
 #include "Utils/Logger.h"
 
-#define NEW_CAMERA 0
+#define NEW_CAMERA 1
 
 namespace v3d
 {
@@ -16,10 +16,6 @@ CameraFPSHelper::CameraFPSHelper(Camera* camera, const core::Vector3D& position)
     , m_moveSpeed(0.0f)
 
     , m_direction( { false, false, false, false })
-    , m_rotate(false)
-
-    , m_minBorder(-1000.0f)
-    , m_maxBorder(1000.0f)
 {
 }
 
@@ -48,131 +44,48 @@ void CameraFPSHelper::update(f32 deltaTime)
 
     if (m_needUpdate)
     {
-#if NEW_CAMERA
-        CameraHelper::update();
-
         core::Vector3D camFront;
-        camFront.x = -cos(m_transform.getRotation().x * core::k_degToRad) * sin(m_transform.getRotation().y * core::k_degToRad);
-        camFront.y = sin(m_transform.getRotation().x * core::k_degToRad);
-        camFront.z = cos(m_transform.getRotation().x * core::k_degToRad) * cos(m_transform.getRotation().y * core::k_degToRad);
+        camFront.x = -cos(CameraFPSHelper::getRotation().x * core::k_degToRad) * sin(CameraFPSHelper::getRotation().y * core::k_degToRad);
+        camFront.y = sin(CameraFPSHelper::getRotation().x * core::k_degToRad);
+        camFront.z = cos(CameraFPSHelper::getRotation().x * core::k_degToRad) * cos(CameraFPSHelper::getRotation().y * core::k_degToRad);
         camFront.normalize();
+        //LOG_DEBUG("rotation: x= %f, y=%f, z=%f", CameraFPSHelper::getRotation().x, CameraFPSHelper::getRotation().y, CameraFPSHelper::getRotation().z);
 
-        f32 moveSpeed = /*deltaTime*/ m_moveSpeed;
         core::Vector3D position = m_transform.getPosition();
-
-        if (m_direction._forward)
-        {
-            position += camFront * moveSpeed;
-        }
-
-        if (m_direction._back)
-        {
-            position -= camFront * moveSpeed;
-        }
-
-        if (m_direction._left)
-        {
-            position -= (core::crossProduct(camFront, getCamera().getUpVector())).normalize() * moveSpeed;
-        }
-
-        if (m_direction._right)
-        {
-            position += (core::crossProduct(camFront, getCamera().getUpVector())).normalize() * moveSpeed;
-        }
-        m_transform.setPosition(position);
-
-        core::Matrix4D rotateX;
-        rotateX.makeIdentity();
-        rotateX.setRotation(core::Vector3D(m_transform.getRotation().x, 0.0f, 0.0f));
-
-        core::Matrix4D rotateY;
-        rotateY.makeIdentity();
-        rotateY.setRotation(core::Vector3D(0.0f, m_transform.getRotation().y, 0.0f));
-
-        core::Matrix4D rotate = rotateX * rotateY;
-        core::Vector3D rotation = rotate.getRotation();
-        //LOG_DEBUG("rotation: x= %f, y=%f, z=%f", rotation.x, rotation.y, rotation.z);
-
-       /* core::Matrix4D look = core::buildLookAtMatrix(m_transform.getPosition(), getCamera().getTarget(), getCamera().getUpVector());*/
-        core::Matrix4D view = rotate * m_transform.getTransform();
-
-        //core::Vector3D pos = view.getTranslation();
-        //LOG_DEBUG("final pos: x= %f, y=%f, z=%f", pos.x, pos.y, pos.z);
-
-        LOG_DEBUG("cam target: x= %f, y=%f, z=%f", camFront.x, camFront.y, camFront.z);
-        //getCamera().setTarget(camFront);
-        getCamera().setViewMatrix(view);
-        
-        m_needUpdate = false;
-#else //NEW_CAMERA
-        //LOG_DEBUG("update deltaTime: %f", deltaTime);
-
-        if (CameraFPSHelper::isRotationChange())
-        {
-            core::Vector3D angle = m_angle;//core::Vector3D(CameraFPSHelper::getRotation().x, CameraFPSHelper::getRotation().y, 0.f);
-            angle *= deltaTime;
-            LOG_DEBUG("cam angle: x= %f, y=%f, z=%f", angle.x, angle.y, angle.z);
-
-            core::Vector3D vAxis = core::crossProduct(core::Vector3D(getCamera().getTarget() - CameraFPSHelper::getPosition()), getCamera().getUpVector());
-            vAxis.normalize();
-
-            static f32 currentRotX = 0.0f;
-            static f32 lastRotX = 0.0f;
-
-            lastRotX = -currentRotX;
-            if (currentRotX > 1.0f)
-            {
-                currentRotX = 1.0f;
-                if (lastRotX != 1.0f)
-                {
-                    CameraFPSHelper::rotate(1.0f - lastRotX, vAxis);
-                }
-            }
-            else if (currentRotX < -1.0f)
-            {
-                currentRotX = -1.0f;
-                if (lastRotX != -1.0f)
-                {
-                    CameraFPSHelper::rotate(-1.0f - lastRotX, vAxis);
-                }
-            }
-            else
-            {
-                currentRotX = vAxis.x;
-                CameraFPSHelper::rotate(angle.y, vAxis);
-            }
-            LOG_DEBUG("cam vAxis: x= %f, y=%f, z=%f", vAxis.x, vAxis.y, vAxis.z);
-            CameraFPSHelper::rotate(angle.x, core::Vector3D(0.0f, 1.0f, 0.0f));
-
-            m_rotate = false;
-        }
-
         if (CameraFPSHelper::isDirectionChange())
         {
+            core::Vector3D camRight = (core::crossProduct(camFront, getCamera().getUpVector())).normalize();
+            //core::Vector3D camUp = (core::crossProduct(camRight, camFront)).normalize();
+
             f32 moveSpeed = deltaTime * m_moveSpeed;
+
             if (m_direction._forward)
             {
-                CameraFPSHelper::move(core::Vector3D(0, 0, moveSpeed));
+                position += camFront * moveSpeed;
             }
 
             if (m_direction._back)
             {
-                CameraFPSHelper::move(core::Vector3D(0, 0, -moveSpeed));
+                position -= camFront * moveSpeed;
             }
 
             if (m_direction._left)
             {
-                CameraFPSHelper::move(core::Vector3D(-moveSpeed, 0, 0));
+                position -= camRight * moveSpeed;
             }
 
             if (m_direction._right)
             {
-                CameraFPSHelper::move(core::Vector3D(moveSpeed, 0, 0));
+                position += camRight * moveSpeed;
             }
+            m_transform.setPosition(position);
+
+            //getCamera().setUpVector(camUp);
         }
-        
+
+        getCamera().setTarget(position + camFront);
+
         CameraHelper::update();
-#endif //NEW_CAMERA
     }
 }
 
@@ -187,6 +100,54 @@ const core::Vector3D& CameraFPSHelper::getRotation() const
     return m_transform.getRotation();
 }
 
+bool CameraFPSHelper::isDirectionChange() const
+{
+    return m_direction._forward || m_direction._back || m_direction._left || m_direction._right;
+}
+
+void CameraFPSHelper::rotateHandlerCallback(v3d::event::InputEventHandler* handler, const event::MouseInputEvent* event, bool mouseCapture)
+{
+    static core::Point2D position = event->_cursorPosition;
+
+    if (handler->isLeftMousePressed() || mouseCapture)
+    {
+        core::Point2D positionDelta = position - event->_cursorPosition;
+
+        //if (positionDelta.x != 0 && positionDelta.y != 0)
+        {
+            core::Vector3D rotation = CameraFPSHelper::getRotation();
+            rotation.x += positionDelta.y * k_rotationSpeed;
+            rotation.y += positionDelta.x * k_rotationSpeed;
+
+            rotation.x = std::clamp(rotation.x, -k_constrainPitch, k_constrainPitch);
+            CameraFPSHelper::setRotation(rotation);
+        }
+    }
+
+    position = event->_cursorPosition;
+}
+
+void CameraFPSHelper::moveHandlerCallback(v3d::event::InputEventHandler * handler, const event::KeyboardInputEvent * event)
+{
+    m_direction._forward = handler->isKeyPressed(event::KeyCode::KeyKey_W);
+    m_direction._back = handler->isKeyPressed(event::KeyCode::KeyKey_S);
+    m_direction._left = handler->isKeyPressed(event::KeyCode::KeyKey_A);
+    m_direction._right = handler->isKeyPressed(event::KeyCode::KeyKey_D);
+
+    f32 accelerationSpeed = 1.0f;
+    if (handler->isKeyPressed(event::KeyCode::KeyShift))
+    {
+        accelerationSpeed = k_accelerationSpeed;
+    }
+
+    if (CameraFPSHelper::isDirectionChange())
+    {
+        m_moveSpeed = k_movementSpeed * accelerationSpeed;
+        m_needUpdate = true;
+    }
+}
+
+#if 0
 void CameraFPSHelper::move(const core::Vector3D& direction)
 {
     core::Vector3D pos = CameraFPSHelper::getPosition();
@@ -247,61 +208,7 @@ bool CameraFPSHelper::isPointOut(const core::Vector3D& point)
 
     return false;
 }
-
-bool CameraFPSHelper::isDirectionChange() const
-{
-    return m_direction._forward || m_direction._back || m_direction._left || m_direction._right;
-}
-
-bool CameraFPSHelper::isRotationChange() const
-{
-    return m_rotate;
-}
-
-void CameraFPSHelper::rotateHandlerCallback(v3d::event::InputEventHandler* handler, const event::MouseInputEvent* event, bool mouseCapture)
-{
-    static core::Point2D position = event->_cursorPosition;
-
-    if (handler->isLeftMousePressed() || mouseCapture)
-    {
-        core::Point2D positionDelta = position - event->_cursorPosition;
-
-#if NEW_CAMERA
-        core::Vector3D rotation = CameraFPSHelper::getRotation();
-        rotation.x += positionDelta.y * k_rotationSpeed;
-        rotation.y -= positionDelta.x * k_rotationSpeed;
-#else //NEW_CAMERA
-        if (positionDelta.x != 0 && positionDelta.y != 0)
-        {
-            m_angle = core::Vector3D(positionDelta.x * k_rotationSpeed, positionDelta.y * k_rotationSpeed, 0.f);
-            m_rotate = true;
-            m_needUpdate = true;
-        }
-#endif //NEW_CAMERA
-     }
-
-    position = event->_cursorPosition;
-}
-
-void CameraFPSHelper::moveHandlerCallback(v3d::event::InputEventHandler * handler, const event::KeyboardInputEvent * event)
-{
-    m_direction._forward = handler->isKeyPressed(event::KeyCode::KeyKey_W);
-    m_direction._back = handler->isKeyPressed(event::KeyCode::KeyKey_S);
-    m_direction._left = handler->isKeyPressed(event::KeyCode::KeyKey_A);
-    m_direction._right = handler->isKeyPressed(event::KeyCode::KeyKey_D);
-
-    f32 accelerationSpeed = 1.0f;
-    if (handler->isKeyPressed(event::KeyCode::KeyShift))
-    {
-        accelerationSpeed = k_accelerationSpeed;
-    }
-
-    if (CameraFPSHelper::isDirectionChange())
-    {
-        m_moveSpeed = k_movementSpeed * accelerationSpeed;
-        m_needUpdate = true;
-    }
-}
+#endif
 
 } //namespace scene
 } //namespace v3d
