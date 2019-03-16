@@ -6,11 +6,11 @@ REM vcvarsall.bat find it here: C:\Program Files (x86)\Microsoft Visual Studio\2
 set VS_VERSION="Visual Studio 15 2017 Win64"
 
 if not exist shaderc (
-	git clone https://github.com/google/shaderc
+	git clone https://github.com/google/shaderc.git
 
 	cd shaderc/third_party
 	REM  git clone https://github.com/google/googletest.git
-	git clone https://github.com/google/glslang.git
+	git clone https://github.com/KhronosGroup/glslang.git glslang
 	git clone https://github.com/KhronosGroup/SPIRV-Tools.git spirv-tools
 	git clone https://github.com/KhronosGroup/SPIRV-Headers.git spirv-tools/external/spirv-headers
 	cd ../../
