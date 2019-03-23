@@ -23,7 +23,7 @@ SimpleRender::SimpleRender(renderer::CommandList& cmdList, const core::Dimension
         m_sampler = cmdList.createObject<SamplerState>(SamplerFilter::SamplerFilter_Bilinear, SamplerFilter::SamplerFilter_Bilinear, SamplerAnisotropic::SamplerAnisotropic_None);
         m_texture = cmdList.createObject<Texture2D>(TextureUsage::TextureUsage_Sampled | TextureUsage_Shared | TextureUsage_Write,
             image[0]->getFormat(), core::Dimension2D(image[0]->getDimension().width, image[0]->getDimension().height), 1, image[0]->getRawData());
-        m_images.emplace(image[0], std::make_pair(m_texture, m_sampler));
+        m_images.emplace(image[0], std::make_pair(m_texture, m_sampler.get()));
     }
     m_modelDrawer = new scene::ModelHelper(cmdList, models);
 
@@ -59,7 +59,7 @@ SimpleRender::~SimpleRender()
         delete m_pipeline;
         delete m_program;
         delete m_texture;
-        delete m_sampler;
+        //delete m_sampler;
     }
 }
 

@@ -29,28 +29,28 @@ namespace renderer
 
         bool linked() const
         {
-            return m_couter > 0;
+            return m_counter > 0;
         }
 
     private:
         void link()
         {
-            ++m_couter;
+            ++m_counter;
         }
 
         void unlink()
         {
-            --m_couter;
-            ASSERT(m_couter >= 0, "less zero");
+            --m_counter;
+            ASSERT(m_counter >= 0, "less zero");
         }
 
         s32 count() const
         {
-            return m_couter;
+            return m_counter;
         }
         friend ObjectTracker<TRenderObject>;
 
-        std::atomic<s32> m_couter;
+        std::atomic<s32> m_counter;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

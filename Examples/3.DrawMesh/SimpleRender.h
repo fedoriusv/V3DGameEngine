@@ -1,6 +1,8 @@
 #pragma once
 
 #include "Common.h"
+#include "Utils/IntrusivePointer.h"
+
 #include "Renderer/CommandList.h"
 
 #include "Renderer/Object/Texture.h"
@@ -55,7 +57,7 @@ private:
    std::map<const resource::Image*, std::pair<Texture2D*, SamplerState*>> m_images;
 
    Texture2D*    m_texture;
-   SamplerState* m_sampler;
+   utils::IntrusivePointer<SamplerState> m_sampler;
 };
 
 } //namespace renderer

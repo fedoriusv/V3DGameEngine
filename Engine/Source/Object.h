@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Common.h"
+#include "Utils/RefCounted.h"
 
 namespace v3d
 {
@@ -9,7 +10,7 @@ namespace v3d
     /**
     * Object base game class. Game side
     */
-    class Object //cloneable, ref counter
+    class Object : public utils::RefCounted //cloneable
     {
     public:
 
