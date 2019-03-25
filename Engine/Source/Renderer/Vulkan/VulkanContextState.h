@@ -38,9 +38,9 @@ namespace vk
 
         void invalidateCommandBuffer(CommandTargetType type);
 
-        inline bool isCurrentRenderPass(const VulkanRenderPass* pass) const;
-        inline bool isCurrentFramebuffer(const VulkanFramebuffer* framebuffer) const;
-        inline bool isCurrentPipeline(const VulkanGraphicPipeline* pipeline) const;
+        bool isCurrentRenderPass(const VulkanRenderPass* pass) const;
+        bool isCurrentFramebuffer(const VulkanFramebuffer* framebuffer) const;
+        bool isCurrentPipeline(const VulkanGraphicPipeline* pipeline) const;
 
         bool setCurrentRenderPass(VulkanRenderPass* pass);
         bool setCurrentFramebuffer(VulkanFramebuffer* framebuffer);

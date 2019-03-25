@@ -1108,8 +1108,10 @@ bool VulkanGraphicContext::prepareDraw(VulkanCommandBuffer* drawBuffer)
 
     std::vector<VkDescriptorSet> sets;
     std::vector<u32> offsets;
-    m_currentContextStateNEW->prepareDescriptorSets(drawBuffer, sets, offsets);
-    drawBuffer->cmdBindDescriptorSets(m_currentContextStateNEW->getCurrentPipeline(), 0, static_cast<u32>(sets.size()), sets, offsets);
+    if (m_currentContextStateNEW->prepareDescriptorSets(drawBuffer, sets, offsets))
+    {
+        drawBuffer->cmdBindDescriptorSets(m_currentContextStateNEW->getCurrentPipeline(), 0, static_cast<u32>(sets.size()), sets, offsets);
+    }
 
     return true;
 }

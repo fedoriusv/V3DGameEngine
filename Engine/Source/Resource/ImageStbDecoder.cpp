@@ -192,6 +192,9 @@ Resource * ImageStbDecoder::decode(const stream::Stream * stream, const std::str
         newHeader->_format = format;
         newHeader->_size = sizeX * sizeY * req_componentCount;
         newHeader->_flipY = false;
+#if DEBUG
+        newHeader->_debugName = name;
+#endif
 
         stream::Stream* imageStream = stream::StreamManager::createMemoryStream(data, static_cast<u32>(newHeader->_size));
 

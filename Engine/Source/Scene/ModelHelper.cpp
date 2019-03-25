@@ -59,12 +59,17 @@ Transform & ModelHelper::getTransform()
     return m_tramsform;
 }
 
+u32 ModelHelper::getDrawStatesCount() const
+{
+    return static_cast<u32>(m_drawState.size());
+}
+
 ModelHelper * ModelHelper::createModelHelper(renderer::CommandList & cmdList, const std::vector<const Model*>& models)
 {
     return new ModelHelper(cmdList, models);
 }
 
-void ModelHelper::drawModel(s32 index)
+void ModelHelper::draw(s32 index)
 {
     if (index < 0)
     {

@@ -42,11 +42,11 @@ bool Material::load()
     const MaterialHeader& header = Material::getMaterialHeader();
     for (auto& prop : header._properties)
     {
-        /*if (prop.second._name.empty())
+        if (!prop.second._name.empty())
         {
             Material::setTextureParameter(prop.first, nullptr);
         }
-        else*/
+        else
         {
             u32 index = static_cast<u32>(prop.second._value.index());
             ASSERT(index != 0, "monostate");
@@ -98,39 +98,39 @@ void Material::setTextureParameter(MaterialHeader::Property property, renderer::
 f32 Material::getFloatParameter(MaterialHeader::Property property) const
 {
     auto iter = m_properties.find(property);
-    if (iter != m_properties.cend())
+    if (iter != m_properties.cend() && iter->second.index() == 1)
     {
         ASSERT(iter->second.index() == 1, "invalid type");
         return std::get<1>(iter->second);
     }
 
-    ASSERT(false, "not found");
+    LOG_WARNING("Material::getFloatParameter property %d not found", property);
     return 0.0f;
 }
 
 core::Vector4D Material::getVectorParameter(MaterialHeader::Property property) const
 {
     auto iter = m_properties.find(property);
-    if (iter != m_properties.cend())
+    if (iter != m_properties.cend() && iter->second.index() == 2)
     {
         ASSERT(iter->second.index() == 2, "invalid type");
         return std::get<2>(iter->second);
     }
 
-    ASSERT(false, "not found");
+    LOG_WARNING("Material::getVectorParameter property %d not found", property);
     return core::Vector4D(0.0f);
 }
 
 renderer::Texture * Material::getTextureParameter(MaterialHeader::Property property) const
 {
     auto iter = m_properties.find(property);
-    if (iter != m_properties.cend())
+    if (iter != m_properties.cend() && iter->second.index() == 3)
     {
         ASSERT(iter->second.index() == 3, "invalid type");
         return std::get<3>(iter->second);
     }
 
-    ASSERT(false, "not found");
+    LOG_WARNING("Material::getTextureParameter property %d not found", property);
     return nullptr;
 }
 

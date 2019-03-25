@@ -81,7 +81,7 @@ void SimpleRender::render(renderer::CommandList& cmdList)
 
     if (m_modelDrawer)
     {
-        m_modelDrawer->drawModel();
+        m_modelDrawer->draw();
     }
 }
 

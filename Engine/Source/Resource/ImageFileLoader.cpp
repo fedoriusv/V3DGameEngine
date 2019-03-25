@@ -2,6 +2,7 @@
 
 #include "Renderer/Context.h"
 #include "Stream/FileLoader.h"
+#include "Resource/ResourceLoaderManager.h"
 #include "Resource/Image.h"
 #if USE_STB
 #   include "ImageStbDecoder.h"
@@ -35,6 +36,7 @@ ImageFileLoader::ImageFileLoader(u32 flags) noexcept
     ResourceLoader::registerPath("../../../../");
     ResourceLoader::registerPath("../../../../../");
     ResourceLoader::registerPath("../../../../engine/");
+    ResourceLoader::registerPathes(ResourceLoaderManager::getInstance()->getPathes());
 }
 
 ImageFileLoader::~ImageFileLoader()

@@ -31,6 +31,11 @@ namespace renderer
 
     /**
     * VertexStreamBuffer class. Game side
+    *\n
+    * Constructor param:
+    StreamBufferUsageFlags usage
+    u64 size - in bytes
+    const u8* data
     */
     class VertexStreamBuffer : public StreamBuffer, public utils::Observer
     {
@@ -65,6 +70,12 @@ namespace renderer
 
     /**
     * IndexStreamBuffer class. Game side
+    *\n
+    * Constructor param:
+    StreamBufferUsageFlags usage
+    StreamIndexBufferType type
+    u32 count
+    const u8* data
     */
     class IndexStreamBuffer : public StreamBuffer, public utils::Observer
     {

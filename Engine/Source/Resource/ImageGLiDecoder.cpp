@@ -214,7 +214,9 @@ Resource * ImageGLiDecoder::decode(const stream::Stream * stream, const std::str
         newHeader->_format = covertFormat(texture.format());
         newHeader->_size = texture.size();
         newHeader->_flipY = flipY;
-
+#if DEBUG
+        newHeader->_debugName = name;
+#endif
         stream::Stream* imageStream = stream::StreamManager::createMemoryStream(texture.data(), static_cast<u32>(newHeader->_size));
 
         resource::Image* image = new resource::Image(newHeader);

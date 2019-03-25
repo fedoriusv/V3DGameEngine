@@ -30,9 +30,10 @@ MeshAssimpDecoder::MeshAssimpDecoder(std::vector<std::string> supportedExtension
     , m_generateIndices(!(flags & ModelLoaderFlag::ModelLoaderFlag_NoGenerateIndex))
     //, m_generateTextureCoords(flags & ModelLoaderFlag::ModelLoaderFlag_GenerateTextureCoord)
     , m_generateNormals(flags & ModelLoaderFlag::ModelLoaderFlag_GenerateNormals)
-    , m_generateTangents(flags & ModelLoaderFlag::ModelLoaderFlag_GenerateTangent)
+    , m_generateTangents(flags & ModelLoaderFlag::ModelLoaderFlag_GenerateTangentAndBitangent)
     , m_localTransform(flags & ModelLoaderFlag::ModelLoaderFlag_LocalTransform)
     , m_flipYPosition(flags & ModelLoaderFlag::ModelLoaderFlag_FlipYPosition)
+    , m_useBitangents(flags & ModelLoaderFlag_UseBitangent)
 {
 }
 
@@ -109,6 +110,11 @@ Resource * MeshAssimpDecoder::decode(const stream::Stream* stream, const std::st
 
             return nullptr;
         }
+#if DEBUG
+        timer.stop();
+        u64 time = timer.getTime<utils::Timer::Duration_MilliSeconds>();
+        LOG_DEBUG("MeshAssimpDecoder::decode , model %s, is loaded. Time %.4f sec", name.c_str(), static_cast<f32>(time) / 1000.0f);
+#endif
 
         stream::Stream* modelStream = stream::StreamManager::createMemoryStream();
         if (scene->HasMeshes())
@@ -137,10 +143,14 @@ Resource * MeshAssimpDecoder::decode(const stream::Stream* stream, const std::st
             }
         }
 
+//#if DEBUG
+//        timer.stop();
+//        u64 time = timer.getTime<utils::Timer::Duration_MilliSeconds>();
+//        LOG_DEBUG("MeshAssimpDecoder::decode , model %s, is loaded. Time %.4f sec", name.c_str(), static_cast<f32>(time) / 1000.0f);
+//#endif
+
 #if DEBUG
-        timer.stop();
-        u64 time = timer.getTime<utils::Timer::Duration_MilliSeconds>();
-        LOG_DEBUG("MeshAssimpDecoder::decode , model %s, is loaded. Time %.4f sec", name.c_str(), static_cast<f32>(time) / 1000.0f);
+        newHeader->_debugName = name;
 #endif
 
         scene::Model* model = new scene::Model(newHeader);
@@ -174,11 +184,13 @@ bool MeshAssimpDecoder::decodeMesh(const aiScene* scene, stream::Stream* modelSt
         std::vector<renderer::VertexInputAttribDescription::InputAttribute> inputAttributes;
 
         scene::ModelHeader::VertexProperiesFlags contentFlag = 0;
-        auto buildVertexData = [&inputBindings, &inputAttributes, &contentFlag](const aiMesh* mesh, const scene::ModelHeader& header) -> u32
+        auto buildVertexData = [&inputBindings, &inputAttributes, &contentFlag](const aiMesh* mesh, const scene::ModelHeader& header, bool useBitangent) -> u32
         {
             u32 vertexSize = 0;
             if (mesh->HasPositions())
             {
+                LOG_DEBUG("MeshAssimpDecoder::decodeMesh: Add Attribute VertexProperies_Position vec3");
+
                 renderer::VertexInputAttribDescription::InputAttribute attrib;
                 attrib._bindingId = 0;
                 attrib._streamId = 0;
@@ -192,6 +204,8 @@ bool MeshAssimpDecoder::decodeMesh(const aiScene* scene, stream::Stream* modelSt
 
             if (mesh->HasNormals())
             {
+                LOG_DEBUG("MeshAssimpDecoder::decodeMesh: Add Attribute VertexProperies_Normals vec3");
+
                 renderer::VertexInputAttribDescription::InputAttribute attrib;
                 attrib._bindingId = 0;
                 attrib._streamId = 0;
@@ -205,6 +219,8 @@ bool MeshAssimpDecoder::decodeMesh(const aiScene* scene, stream::Stream* modelSt
 
             if (mesh->HasTangentsAndBitangents())
             {
+                LOG_DEBUG("MeshAssimpDecoder::decodeMesh: Add Attribute VertexProperies_Tangent vec3");
+
                 renderer::VertexInputAttribDescription::InputAttribute attrib;
                 attrib._bindingId = 0;
                 attrib._streamId = 0;
@@ -214,12 +230,29 @@ bool MeshAssimpDecoder::decodeMesh(const aiScene* scene, stream::Stream* modelSt
 
                 contentFlag |= scene::ModelHeader::VertexProperies_Tangent;
                 vertexSize += sizeof(core::Vector3D);
+
+                if (useBitangent)
+                {
+                    LOG_DEBUG("MeshAssimpDecoder::decodeMesh: Add Attribute VertexProperies_Bitangent vec3");
+
+                    renderer::VertexInputAttribDescription::InputAttribute attrib;
+                    attrib._bindingId = 0;
+                    attrib._streamId = 0;
+                    attrib._format = renderer::Format::Format_R32G32B32_SFloat;
+                    attrib._offest = vertexSize;
+                    inputAttributes.push_back(attrib);
+
+                    contentFlag |= scene::ModelHeader::VertexProperies_Bitangent;
+                    vertexSize += sizeof(core::Vector3D);
+                }
             }
 
             for (u32 uv = 0; uv < scene::k_maxTextureCoordsIndex; uv++)
             {
                 if (mesh->HasTextureCoords(uv))
                 {
+                    LOG_DEBUG("MeshAssimpDecoder::decodeMesh: Add Attribute VertexProperies_TextCoord[%d] vec2", uv);
+
                     renderer::VertexInputAttribDescription::InputAttribute attrib;
                     attrib._bindingId = 0;
                     attrib._streamId = 0;
@@ -236,6 +269,8 @@ bool MeshAssimpDecoder::decodeMesh(const aiScene* scene, stream::Stream* modelSt
             {
                 if (mesh->HasVertexColors(c))
                 {
+                    LOG_DEBUG("MeshAssimpDecoder::decodeMesh: Add Attribute VertexProperies_Color[%d] vec2", c);
+
                     renderer::VertexInputAttribDescription::InputAttribute attrib;
                     attrib._bindingId = 0;
                     attrib._streamId = 0;
@@ -252,7 +287,7 @@ bool MeshAssimpDecoder::decodeMesh(const aiScene* scene, stream::Stream* modelSt
         };
 
         const aiMesh* mesh = scene->mMeshes[m];
-        u32 stride = buildVertexData(mesh, m_header);
+        u32 stride = buildVertexData(mesh, m_header, m_useBitangents);
         ASSERT(stride > 0, "invalid stride");
         u64 meshSize = stride * mesh->mNumVertices;
 
@@ -265,9 +300,10 @@ bool MeshAssimpDecoder::decodeMesh(const aiScene* scene, stream::Stream* modelSt
 
             newHeader->_meshes[m]._size = meshSize;
             newHeader->_meshes[m]._offset = globalVertexSize;
-            newHeader->_meshes[m]._name = mesh->mName.C_Str();
             newHeader->_meshes[m]._indexPresent = m_generateIndices;
-
+#if DEBUG
+            newHeader->_meshes[m]._debugName = mesh->mName.C_Str();
+#endif
             scene::MeshHeader::GeometryInfo& vertexInfo = newHeader->_meshes[m]._vertex;
             vertexInfo._subData.push_back({ globalVertexSize, meshSize, mesh->mNumVertices });
             vertexInfo._count = mesh->mNumVertices;
@@ -280,8 +316,10 @@ bool MeshAssimpDecoder::decodeMesh(const aiScene* scene, stream::Stream* modelSt
                 attribDescriptionList.front() >> modelStream;
 
                 newHeader->_meshes.front()._offset = 0;
-                newHeader->_meshes.front()._name = scene->mMeshes[0]->mName.C_Str();
                 newHeader->_meshes.front()._indexPresent = m_generateIndices;
+#if DEBUG
+                newHeader->_meshes.front()._debugName = scene->mMeshes[0]->mName.C_Str();
+#endif
             }
             ASSERT(attribDescriptionList.front() == attribDescriptionList[m], "different descriptions");
 
@@ -344,10 +382,22 @@ bool MeshAssimpDecoder::decodeMesh(const aiScene* scene, stream::Stream* modelSt
 #ifdef DEBUG
                 memorySize += sizeof(core::Vector3D);
 #endif //DEBUG
+                if (m_useBitangents)
+                {
+                    core::Vector3D bitangent;
+                    bitangent.x = mesh->mBitangents[v].x;
+                    bitangent.y = mesh->mBitangents[v].y;
+                    bitangent.z = mesh->mBitangents[v].z;
+                    meshStream->write<core::Vector3D>(bitangent);
+#ifdef DEBUG
+                    memorySize += sizeof(core::Vector3D);
+#endif //DEBUG
+                }
             }
             else
             {
-                ASSERT(!(m_headerRules && (m_header._vertexContentFlags & scene::ModelHeader::VertexProperies_Tangent)), "should contain tangent data");
+                ASSERT(!(m_headerRules && ((m_header._vertexContentFlags & scene::ModelHeader::VertexProperies_Tangent) ||
+                    (m_header._vertexContentFlags & scene::ModelHeader::VertexProperies_Bitangent))), "should contain tangent or/and bitanget data");
             }
 
             for (u32 uv = 0; uv < scene::k_maxTextureCoordsIndex; uv++)
@@ -481,16 +531,20 @@ bool MeshAssimpDecoder::decodeMaterial(const aiScene * scene, stream::Stream * s
         aiMaterial* material = scene->mMaterials[m];
         scene::MaterialHeader& materialHeader = newHeader->_materials[m];
 
+#if DEBUG
         aiString name;
         material->Get(AI_MATKEY_NAME, name);
-        materialHeader._name = name.C_Str();
-
+        materialHeader._debugName = name.C_Str();
+#endif
         std::tuple<std::string, aiTextureType, scene::MaterialHeader::Property, bool> vectorProp[] =
         {
             { "$clr.diffuse", aiTextureType_DIFFUSE, scene::MaterialHeader::Property_Diffuse, true },
             { "$clr.ambient", aiTextureType_AMBIENT, scene::MaterialHeader::Property_Ambient, true },
             { "$clr.specular", aiTextureType_SPECULAR, scene::MaterialHeader::Property_Specular, true },
             { "$clr.emissive", aiTextureType_EMISSIVE, scene::MaterialHeader::Property_Emission, true },
+
+            { "", aiTextureType_NORMALS, scene::MaterialHeader::Property_Normals, false },
+            { "", aiTextureType_HEIGHT, scene::MaterialHeader::Property_Heightmap, false },
 
             { "$mat.shininess", aiTextureType_SHININESS, scene::MaterialHeader::Property_Shininess, false },
             { "$mat.opacity", aiTextureType_OPACITY, scene::MaterialHeader::Property_Opacity, false },

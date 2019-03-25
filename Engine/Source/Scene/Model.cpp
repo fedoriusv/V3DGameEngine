@@ -48,6 +48,11 @@ const ModelHeader& Model::getModelHeader() const
     return *(static_cast<const scene::ModelHeader*>(m_header));
 }
 
+std::vector<Mesh*> Model::getMeshes() const
+{
+    return m_meshes;
+}
+
 Mesh * Model::getMeshByIndex(u32 index) const
 {
     ASSERT(index < m_meshes.size(), "range out");
@@ -58,6 +63,23 @@ u32 Model::getMeshCount() const
 {
     return static_cast<u32>(m_meshes.size());
 }
+
+std::vector<Material*> Model::getMaterials() const
+{
+    return m_materials;
+}
+
+Material* Model::getMaterialByIndex(u32 index) const
+{
+    ASSERT(index < m_materials.size(), "range out");
+    return m_materials[index];
+}
+
+u32 Model::getMaterialsCount() const
+{
+    return static_cast<u32>(m_materials.size());
+}
+
 
 void Model::init(stream::Stream * stream)
 {
@@ -120,9 +142,9 @@ bool Model::load()
 
             delete material;
             continue;
-
-            m_materials.push_back(material);
         }
+
+        m_materials.push_back(material);
     }
 
     ASSERT(!m_stream->isMapped(), "mapped");

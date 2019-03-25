@@ -26,11 +26,13 @@ namespace scene
         void setFloatParameter(MaterialHeader::Property property, f32 value);
         void setVectorParameter(MaterialHeader::Property property, const core::Vector4D& vector);
 
-        renderer::Texture* getTextureParameter(MaterialHeader::Property property) const;
+        template <class TTexture>
+        TTexture* getTextureParameter(MaterialHeader::Property property) const;
         f32 getFloatParameter(MaterialHeader::Property property) const;
         core::Vector4D getVectorParameter(MaterialHeader::Property property) const;
 
         static MaterialHelper* createMaterialHelper(renderer::CommandList& cmdList, Material* material);
+        static std::vector<MaterialHelper*> createMaterialHelpers(renderer::CommandList & cmdList, std::vector<Material*> materials);
 
     private:
 
@@ -40,6 +42,16 @@ namespace scene
 
         std::vector<renderer::Texture*> m_textures;
     };
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    template<class TTexture>
+    inline TTexture * MaterialHelper::getTextureParameter(MaterialHeader::Property property) const
+    {
+        ASSERT(m_material, "nullptr");
+        static_assert(std::is_base_of<renderer::Texture, TTexture>());
+        return static_cast<TTexture*>(m_material->getTextureParameter(property));
+    }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 

@@ -15,6 +15,19 @@ namespace scene
      return new MaterialHelper(cmdList, material);
  }
 
+ std::vector<MaterialHelper*> MaterialHelper::createMaterialHelpers(renderer::CommandList & cmdList, std::vector<Material*> materials)
+ {
+     std::vector<MaterialHelper*> materialHelpers;
+     materialHelpers.reserve(materials.size());
+
+     for (auto material : materials)
+     {
+         materialHelpers.push_back(new MaterialHelper(cmdList, material));
+     }
+     
+     return materialHelpers;
+ }
+
  MaterialHelper::MaterialHelper(renderer::CommandList & cmdList, Material * material) noexcept
      : m_cmdList(cmdList)
      , m_material(material)
@@ -23,15 +36,17 @@ namespace scene
      std::map<scene::MaterialHeader::Property, resource::Image*> images;
      for (auto& prop : m_material->getMaterialHeader()._properties)
      {
-         if (prop.second._name.empty())
+         if (!prop.second._name.empty())
          {
-             continue;
+             resource::Image* image = resource::ResourceLoaderManager::getInstance()->load<resource::Image, resource::ImageFileLoader>(prop.second._name);
+             ASSERT(image, "nullptr");
+
+             images.emplace(prop.first, image);
          }
-
-         resource::Image* image = resource::ResourceLoaderManager::getInstance()->load<resource::Image, resource::ImageFileLoader>(prop.second._name);
-         ASSERT(image, "nullptr");
-
-        images.emplace(prop.first, image);
+         else
+         {
+             //TODO
+         }
      }
 
      for (auto& iter : images)
@@ -68,12 +83,6 @@ namespace scene
  {
      ASSERT(m_material, "nullptr");
      m_material->setVectorParameter(property, vector);
- }
-
- renderer::Texture * MaterialHelper::getTextureParameter(MaterialHeader::Property property) const
- {
-     ASSERT(m_material, "nullptr");
-     return m_material->getTextureParameter(property);
  }
 
  f32 MaterialHelper::getFloatParameter(MaterialHeader::Property property) const

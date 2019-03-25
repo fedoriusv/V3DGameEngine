@@ -1,15 +1,14 @@
 #version 450
 
-layout (binding = 1) uniform sampler2D samplerColor;
-layout (binding = 2) uniform sampler2D samplerSpecular;
-layout (binding = 3) uniform sampler2D samplerNormal;
+layout (set = 0, binding = 1) uniform sampler2D samplerColor;
+layout (set = 0, binding = 2) uniform sampler2D samplerSpecular;
+layout (set = 0, binding = 3) uniform sampler2D samplerNormal;
 
-layout (location = 0) in vec3 inNormal;
-layout (location = 1) in vec2 inUV;
-layout (location = 2) in vec3 inColor;
-layout (location = 3) in vec3 inWorldPos;
-layout (location = 4) in vec3 inTangent;
-layout (location = 5) in vec3 inBitangent;
+layout (location = 0) in vec3 inWorldPos;
+layout (location = 1) in vec3 inNormal;
+layout (location = 2) in vec3 inTangent;
+layout (location = 3) in vec3 inBitangent;
+layout (location = 4) in vec2 inUV;
 
 layout (location = 0) out vec4 outPosition;
 layout (location = 1) out vec4 outNormal;

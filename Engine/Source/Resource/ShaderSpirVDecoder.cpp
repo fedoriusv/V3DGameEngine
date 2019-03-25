@@ -223,6 +223,9 @@ Resource * ShaderSpirVDecoder::decode(const stream::Stream* stream, const std::s
             renderer::ShaderHeader* resourceHeader = new renderer::ShaderHeader(m_header);
             resourceHeader->_type = type;
             resourceHeader->_apiVersion = m_sourceVersion;
+#if DEBUG
+            resourceHeader->_debugName = name;
+#endif
 
             Resource* resource = new renderer::Shader(resourceHeader);
             resource->init(resourceSpirvBinary);
@@ -261,6 +264,36 @@ bool ShaderSpirVDecoder::parseReflections(const std::vector<u32>& spirv, stream:
                     return renderer::Format_R32G32B32_SFloat;
                 if (type.vecsize == 4)
                     return renderer::Format_R32G32B32A32_SFloat;
+            }
+        }
+
+        case spirv_cross::SPIRType::Int:
+        {
+            if (type.width == 32)
+            {
+                if (type.vecsize == 1)
+                    return renderer::Format_R32_SInt;
+                if (type.vecsize == 2)
+                    return renderer::Format_R32G32_SInt;
+                if (type.vecsize == 3)
+                    return renderer::Format_R32G32B32_SInt;
+                if (type.vecsize == 4)
+                    return renderer::Format_R32G32B32A32_SInt;
+            }
+        }
+
+        case spirv_cross::SPIRType::UInt:
+        {
+            if (type.width == 32)
+            {
+                if (type.vecsize == 1)
+                    return renderer::Format_R32_UInt;
+                if (type.vecsize == 2)
+                    return renderer::Format_R32G32_UInt;
+                if (type.vecsize == 3)
+                    return renderer::Format_R32G32B32_UInt;
+                if (type.vecsize == 4)
+                    return renderer::Format_R32G32B32A32_UInt;
             }
         }
 

@@ -34,6 +34,7 @@ namespace scene
             Property_Specular,
             Property_Emission,
             Property_Normals,
+            Property_Heightmap,
             Property_Opacity,
             Property_Shininess
         };
@@ -47,7 +48,6 @@ namespace scene
         };
 
         std::map<Property, PropertyInfo> _properties;
-        std::string _name;
     };
 
     /**

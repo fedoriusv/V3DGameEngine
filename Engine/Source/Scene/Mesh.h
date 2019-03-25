@@ -42,7 +42,6 @@ namespace scene
 
         u64             _size;
         u64             _offset;
-        std::string     _name;
 
         bool            _indexPresent;
     };

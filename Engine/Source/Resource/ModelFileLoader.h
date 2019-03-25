@@ -27,10 +27,11 @@ namespace resource
         ModelLoaderFlag_NoGenerateIndex = 1 << 2,
         //ModelLoaderFlag_GenerateTextureCoord = 1 << 3,
         ModelLoaderFlag_GenerateNormals = 1 << 4,
-        ModelLoaderFlag_GenerateTangent = 1 << 5,
-        ModelLoaderFlag_ReadHeader = 1 << 6,
-        ModelLoaderFlag_LocalTransform = 1 << 7,
-        ModelLoaderFlag_FlipYPosition = 1 << 8,
+        ModelLoaderFlag_GenerateTangentAndBitangent = 1 << 6,
+        ModelLoaderFlag_UseBitangent = 1 << 7,
+        ModelLoaderFlag_ReadHeader = 1 << 8,
+        ModelLoaderFlag_LocalTransform = 1 << 9,
+        ModelLoaderFlag_FlipYPosition = 1 << 10,
     };
     typedef u32 ModelLoaderFlags;
 

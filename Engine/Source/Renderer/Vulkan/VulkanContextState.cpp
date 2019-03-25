@@ -50,12 +50,12 @@ void VulkanContextState::invalidateCommandBuffer(CommandTargetType type)
     }
 }
 
-inline bool VulkanContextState::isCurrentRenderPass(const VulkanRenderPass* pass) const
+bool VulkanContextState::isCurrentRenderPass(const VulkanRenderPass* pass) const
 {
     return m_currentRenderpass.first == pass;
 }
 
-inline bool VulkanContextState::isCurrentFramebuffer(const VulkanFramebuffer * framebuffer) const
+bool VulkanContextState::isCurrentFramebuffer(const VulkanFramebuffer * framebuffer) const
 {
     if (m_currentFramebuffer.first.size() == 1)
     {
@@ -77,7 +77,7 @@ inline bool VulkanContextState::isCurrentFramebuffer(const VulkanFramebuffer * f
     return false;
 }
 
-inline bool VulkanContextState::isCurrentPipeline(const VulkanGraphicPipeline * pipeline) const
+bool VulkanContextState::isCurrentPipeline(const VulkanGraphicPipeline * pipeline) const
 {
     return m_currentPipeline.first == pipeline;
 }
@@ -188,9 +188,12 @@ void VulkanContextState::invokeDynamicStates()
 
 bool VulkanContextState::prepareDescriptorSets(VulkanCommandBuffer * cmdBuffer, std::vector<VkDescriptorSet>& sets, std::vector<u32>& offsets)
 {
-    //TODO:
-    //m_currentBindingCache.clear();
+    if (m_currentPipeline.first->getDescriptorSetLayouts()._descriptorSetLayouts.empty())
+    {
+        return false;
+    }
 
+    //TODO:
     if (!m_currentSets.empty())
     {
         sets = m_currentSets;

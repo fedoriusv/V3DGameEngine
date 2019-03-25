@@ -2,6 +2,7 @@
 
 #include "Renderer/Context.h"
 #include "Stream/FileLoader.h"
+#include "Resource/ResourceLoaderManager.h"
 #include "Renderer/Shader.h"
 
 #ifdef USE_SPIRV
@@ -46,6 +47,7 @@ ShaderSourceFileLoader::ShaderSourceFileLoader(const renderer::Context* context,
     ResourceLoader::registerPath("../../../../");
     ResourceLoader::registerPath("../../../../../");
     ResourceLoader::registerPath("../../../../engine/");
+    ResourceLoader::registerPathes(ResourceLoaderManager::getInstance()->getPathes());
 }
 
 ShaderSourceFileLoader::~ShaderSourceFileLoader()

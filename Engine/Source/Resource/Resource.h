@@ -26,6 +26,9 @@ namespace resource
         u32 _size;
         u32 _version;
         u32 _flags;
+#if DEBUG
+        std::string _debugName;
+#endif
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

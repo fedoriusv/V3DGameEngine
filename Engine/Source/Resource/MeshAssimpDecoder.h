@@ -36,6 +36,7 @@ namespace resource
         //bool m_generateTextureCoords;
         bool m_generateNormals;
         bool m_generateTangents;
+        bool m_useBitangents;
         bool m_localTransform;
         bool m_flipYPosition;
     };

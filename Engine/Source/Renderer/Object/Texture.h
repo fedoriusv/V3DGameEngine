@@ -32,6 +32,19 @@ namespace renderer
 
     /**
     * Texture2D class. Game side
+    *\n
+    * Constructor param:
+    TextureUsageFlags usage
+    Format format
+    const Dimension2D& dimension
+    u32 mipmapCount = 1
+    const void* data = nullptr
+    *\n
+    * Constructor param:
+    TextureUsageFlags usage
+    Format format
+    const Dimension2D& dimension
+    TextureSamples samples
     */
     class Texture2D : public Texture, public utils::Observer
     {

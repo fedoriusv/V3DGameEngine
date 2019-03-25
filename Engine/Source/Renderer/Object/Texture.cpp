@@ -46,7 +46,7 @@ public:
     {
         LOG_DEBUG("CreateTextureCommand destructor");
 
-        if (m_data)
+        if (m_data && !m_shared)
         {
             free(m_data); //TODO: return to pool
             m_data = nullptr;

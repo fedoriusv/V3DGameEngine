@@ -21,7 +21,7 @@ namespace renderer
     public:
 
         RenderObject()
-            : m_couter(0)
+            : m_counter(0)
         {
         }
 
@@ -75,7 +75,10 @@ namespace renderer
             std::lock_guard<std::recursive_mutex> lock(m_mutex);
 
             auto iter = m_list.emplace(object);
-            object->link();
+            if (iter.second)
+            {
+                object->link();
+            }
             return iter.second;
         }
 
