@@ -92,6 +92,8 @@ namespace vk
 
         VulkanMemory::VulkanAlloc   m_memory;
         VulkanMemory::VulkanMemoryAllocator* m_memoryAllocator;
+
+        bool                        m_swapchainImage;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

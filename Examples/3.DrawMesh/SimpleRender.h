@@ -26,13 +26,6 @@ class SimpleRender
 {
 public:
 
-    struct Parameter
-    {
-        std::string _name;
-        u32         _size;
-        void*       _data;
-    };
-
     SimpleRender(renderer::CommandList& cmdList, const core::Dimension2D& size, const std::vector<const Shader*> shaders, const std::vector<const resource::Image*> image, 
         const std::vector<const scene::Model*> models) noexcept;
     ~SimpleRender();
@@ -42,22 +35,20 @@ public:
     void setCamera(scene::Camera* camera);
 
     void updateParameter(renderer::CommandList& cmdList, const std::string& name, u32 size, const void* ubo);
-    void updateParameter(renderer::CommandList& cmdList, const std::string& name, const resource::Image* image);
+    void updateParameter(renderer::CommandList& cmdList, const std::string& name, u32 index);
 
 private:
 
-    ShaderProgram*          m_program;
-    GraphicsPipelineState*  m_pipeline;
-    RenderTargetState*      m_renderTarget;
+    utils::IntrusivePointer<ShaderProgram>          m_program;
+    utils::IntrusivePointer<GraphicsPipelineState>  m_pipeline;
+    utils::IntrusivePointer<RenderTargetState>      m_renderTarget;
+
+   utils::IntrusivePointer<Texture2D>    m_texture[1];
+   utils::IntrusivePointer<SamplerState> m_sampler;
 
    scene::ModelHelper*      m_modelDrawer;
 
    scene::Camera*           m_camera;
-
-   std::map<const resource::Image*, std::pair<Texture2D*, SamplerState*>> m_images;
-
-   Texture2D*    m_texture;
-   utils::IntrusivePointer<SamplerState> m_sampler;
 };
 
 } //namespace renderer

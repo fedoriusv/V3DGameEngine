@@ -33,9 +33,9 @@ namespace event
 
         bool            operator<(const InputEvent& event);
 
+        u64            _timeStamp;
         InputEventType _eventType;
         Priority       _priority;
-        u64            _timeStamp;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

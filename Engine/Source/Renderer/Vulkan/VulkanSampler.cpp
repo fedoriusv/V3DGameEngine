@@ -160,6 +160,7 @@ void VulkanSampler::destroy()
     if (m_sampler)
     {
         VulkanWrapper::DestroySampler(m_device, m_sampler, VULKAN_ALLOCATOR);
+        m_sampler = VK_NULL_HANDLE;
     }
 }
 

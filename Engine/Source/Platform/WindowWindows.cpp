@@ -240,9 +240,9 @@ LRESULT WindowWindows::HandleMessage(HWND hWnd, UINT message, WPARAM wParam, LPA
         return DefWindowProc(hWnd, message, wParam, lParam);
     }
 
-    auto getModifiers = [](WPARAM wParam, LPARAM lParam) -> u16
+    auto getModifiers = [](WPARAM wParam, LPARAM lParam) -> u8
     {
-        u16 modifers = 0;
+        u8 modifers = 0;
 
         switch (wParam)
         {

@@ -91,7 +91,7 @@ bool InputEventReceiver::sendEvent(InputEvent* event)
 void InputEventReceiver::reset()
 {
     std::queue<InputEvent*> empty;
-    std::swap(m_events, empty);
+    empty.swap(std::move(m_events));
 }
 
 void InputEventReceiver::attach(InputEvent::InputEventType type, InputEventHandler* handler)

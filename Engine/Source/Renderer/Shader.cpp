@@ -31,12 +31,8 @@ Shader::~Shader()
     {
         free(m_source);
     }
+    m_hash = 0;
     m_size = 0;
-
-    if (m_stream)
-    {
-        delete m_stream;
-    }
 }
 
 void Shader::init(stream::Stream * stream)

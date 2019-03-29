@@ -4,7 +4,7 @@ namespace v3d
 {
 namespace event
 {
-    enum KeyModifierCode
+    enum KeyModifierCode : u8
     {
         KeyModifier_Uknown = 0x00,
         KeyModifier_Ctrl = 0x01,
@@ -13,7 +13,7 @@ namespace event
         KeyModifier_CapsLock = 0x08
     };
 
-    enum KeyCode
+    enum KeyCode : u32
     {
         KeyUknown,  // Default
 

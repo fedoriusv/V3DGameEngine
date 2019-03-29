@@ -26,10 +26,10 @@ namespace event
 
         bool operator==(const KeyboardInputEvent& event) const;
 
-        c8                      _character;
-        KeyCode                 _key;
         KeyboardPressInputEvent _event;
-        u16                     _modifers;
+        KeyCode                 _key;
+        c8                      _character;
+        u8                      _modifers;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

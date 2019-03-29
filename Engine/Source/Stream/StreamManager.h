@@ -21,6 +21,7 @@ namespace stream
     public:
 
         static MemoryStream* createMemoryStream(const void* data = nullptr, const u32 size = 0);
+        static void clearPools();
 
     private:
 

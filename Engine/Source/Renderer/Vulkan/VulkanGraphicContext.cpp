@@ -721,13 +721,6 @@ void VulkanGraphicContext::destroy()
         m_uniformBufferManager = nullptr;
     }
 
-    if (m_descriptorSetManager)
-    {
-        delete m_descriptorSetManager;
-        m_descriptorSetManager = nullptr;
-    }
-
-
     if (m_deviceCaps.unifiedMemoryManager)
     {
         delete m_imageMemoryManager;
@@ -743,6 +736,17 @@ void VulkanGraphicContext::destroy()
         m_bufferMemoryManager = nullptr;
     }
 
+    if (m_pipelineManager)
+    {
+        delete m_pipelineManager;
+        m_pipelineManager = nullptr;
+    }
+
+    if (m_descriptorSetManager)
+    {
+        delete m_descriptorSetManager;
+        m_descriptorSetManager = nullptr;
+    }
 
     if (m_renderpassManager)
     {
@@ -760,12 +764,6 @@ void VulkanGraphicContext::destroy()
     {
         delete m_samplerManager;
         m_samplerManager = nullptr;
-    }
-
-    if (m_pipelineManager)
-    {
-        delete m_pipelineManager;
-        m_pipelineManager = nullptr;
     }
 
     if (m_currentContextStateNEW)

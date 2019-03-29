@@ -29,11 +29,11 @@ namespace event
 
         bool operator==(const MouseInputEvent& event) const;
 
+        MousePressInputEvent    _event;
         core::Point2D           _cursorPosition;
         f32                     _wheelValue;
-        MousePressInputEvent    _event;
         KeyCode                 _key;
-        u16                     _modifers;
+        u8                      _modifers;
 
     };
 

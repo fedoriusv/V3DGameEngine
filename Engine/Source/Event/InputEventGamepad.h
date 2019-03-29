@@ -48,11 +48,11 @@ namespace event
 
         bool    operator==(const GamepadInputEvent& event) const;
 
-        GamepadPessInputEvent  _event;
-        u32                     _buttons;
-        s32                     _pov;
-        s32                     _axis[AxesCount];
-        s32                     _gamepad;
+        GamepadPessInputEvent   _event;
+        u16                     _buttons;
+        s16                     _pov;
+        s16                     _axis[AxesCount];
+        s16                     _gamepad;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

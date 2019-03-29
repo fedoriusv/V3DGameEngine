@@ -589,6 +589,8 @@ VulkanImage::VulkanImage(VulkanMemory::VulkanMemoryAllocator* memory, VkDevice d
 
     , m_memory(VulkanMemory::s_invalidMemory)
     , m_memoryAllocator(memory)
+
+    , m_swapchainImage(false)
 {
     LOG_DEBUG("VulkanImage::VulkanImage constructor %llx", this);
     m_layout.resize(m_layersLevel * m_mipsLevel, VK_IMAGE_LAYOUT_UNDEFINED);
@@ -615,6 +617,8 @@ VulkanImage::VulkanImage(VulkanMemory::VulkanMemoryAllocator* memory, VkDevice d
 
     , m_memory(VulkanMemory::s_invalidMemory)
     , m_memoryAllocator(memory)
+
+    , m_swapchainImage(false)
 {
     LOG_DEBUG("VulkanImage::VulkanImage constructor %llx", this);
     m_layout.resize(m_layersLevel * m_mipsLevel, VK_IMAGE_LAYOUT_UNDEFINED);
@@ -624,7 +628,9 @@ VulkanImage::~VulkanImage()
 {
     LOG_DEBUG("VulkanImage::VulkanImage destructor %llx", this);
 
+    ASSERT(!m_generalImageView, "image view not nullptr");
     ASSERT(m_imageView.empty(), "m_imageView is not empty");
+
     ASSERT(!m_image, "image not nullptr");
 }
 
@@ -746,6 +752,7 @@ bool VulkanImage::create(VkImage image)
     ASSERT(image, "image is nullptr");
     ASSERT(!m_image, "m_image already exist");
     m_image = image;
+    m_swapchainImage = true;
 
     if (!createViewImage())
     {
@@ -1151,6 +1158,12 @@ void VulkanImage::destroy()
     }
     m_imageView.clear();
 
+    if (m_swapchainImage)
+    {
+        //not delete swapchain image
+        m_image = VK_NULL_HANDLE;
+    }
+
     if (m_image)
     {
         VulkanWrapper::DestroyImage(m_device, m_image, VULKAN_ALLOCATOR);
@@ -1208,7 +1221,7 @@ bool VulkanImage::createViewImage()
         return false;
     }
 
-    if (m_layersLevel > 0)
+    if (m_layersLevel > 1)
     {
         m_imageView.resize(m_layersLevel, VK_NULL_HANDLE);
         for (u32 layer = 0; layer < m_layersLevel; ++layer)

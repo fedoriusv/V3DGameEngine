@@ -327,6 +327,8 @@ void VulkanSwapchain::destroy()
         {
             if (*image)
             {
+                (*image)->destroy();
+
                 delete (*image);
                 (*image) = nullptr;
             }

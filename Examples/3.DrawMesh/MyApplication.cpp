@@ -21,6 +21,8 @@
 #include "Scene/Model.h"
 #include "Scene/Camera.h"
 
+#include "Stream/StreamManager.h"
+
 using namespace v3d;
 using namespace v3d::platform;
 using namespace v3d::utils;
@@ -104,7 +106,7 @@ void MyApplication::Update()
     uboVS.viewMatrix = m_Camera->getCamera().getViewMatrix();
 
     m_Render->updateParameter(*m_CommandList, "ubo", sizeof(uboVS), &uboVS);
-    m_Render->updateParameter(*m_CommandList, "samplerColorMap", nullptr);
+    m_Render->updateParameter(*m_CommandList, "samplerColorMap", 0);
 }
 
 bool MyApplication::Running(renderer::CommandList& commandList)
@@ -131,8 +133,11 @@ void MyApplication::Exit()
 
     delete m_Render;
     delete m_CommandList;
-    Context::destroyContext(m_Context);
+    resource::ResourceLoaderManager::getInstance()->clear();
 
+    stream::StreamManager::clearPools();
+
+    Context::destroyContext(m_Context);
     m_Window->getInputEventReceiver()->dettach(InputEvent::InputEventType::MouseInputEvent);
 }
 
@@ -142,4 +147,5 @@ MyApplication::~MyApplication()
     m_InputEventHandler = nullptr;
 
     Window::detroyWindow(m_Window);
+    int test;
 }

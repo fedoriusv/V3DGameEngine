@@ -65,6 +65,7 @@ namespace resource
             {
                 ASSERT(!m_stream->isMapped(), "mapped");
                 delete m_stream;
+                m_stream = nullptr;
             }
         };
 

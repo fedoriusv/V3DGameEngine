@@ -2,6 +2,7 @@
 
 #include "Common.h"
 #include "Utils/Singleton.h"
+#include "Resource.h"
 
 namespace v3d
 {
@@ -12,7 +13,6 @@ namespace renderer
 
 namespace resource
 {
-    class Resource;
     struct ResourceHeader;
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -34,6 +34,9 @@ namespace resource
 
         template<class TResource, class TResourceLoader>
         TResource* load(std::string filename, const ResourceHeader* header, u32 flags = 0);
+
+        void clear();
+        bool remove(Resource* resource);
 
         void addPath(const std::string& path);
         void removePath(const std::string& path);
@@ -136,6 +139,33 @@ namespace resource
         }
 
         return static_cast<TResource*>(resourceIter.first->second);
+    }
+
+    inline void ResourceLoaderManager::clear()
+    {
+        for (auto& iter : m_resources)
+        {
+            Resource* res = iter.second;
+            delete res;
+        }
+        m_resources.clear();
+    }
+
+    inline bool ResourceLoaderManager::remove(Resource* resource)
+    {
+        for (auto& iter : m_resources)
+        {
+            Resource* res = iter.second;
+            if (resource == res)
+            {
+                delete res;
+                m_resources.erase(iter.first);
+
+                return true;
+            }
+        }
+
+        return false;
     }
 
     inline void ResourceLoaderManager::addPath(const std::string & path)

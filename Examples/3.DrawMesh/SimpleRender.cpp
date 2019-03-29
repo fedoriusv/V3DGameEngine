@@ -21,9 +21,8 @@ SimpleRender::SimpleRender(renderer::CommandList& cmdList, const core::Dimension
     if (!image.empty())
     {
         m_sampler = cmdList.createObject<SamplerState>(SamplerFilter::SamplerFilter_Bilinear, SamplerFilter::SamplerFilter_Bilinear, SamplerAnisotropic::SamplerAnisotropic_None);
-        m_texture = cmdList.createObject<Texture2D>(TextureUsage::TextureUsage_Sampled | TextureUsage_Shared | TextureUsage_Write,
+        m_texture[0] = cmdList.createObject<Texture2D>(TextureUsage::TextureUsage_Sampled | TextureUsage_Shared | TextureUsage_Write,
             image[0]->getFormat(), core::Dimension2D(image[0]->getDimension().width, image[0]->getDimension().height), 1, image[0]->getRawData());
-        m_images.emplace(image[0], std::make_pair(m_texture, m_sampler.get()));
     }
     m_modelDrawer = new scene::ModelHelper(cmdList, models);
 
@@ -32,7 +31,7 @@ SimpleRender::SimpleRender(renderer::CommandList& cmdList, const core::Dimension
     Texture2D* depthAttachment = cmdList.createObject<Texture2D>(TextureUsage::TextureUsage_Attachment, Format::Format_D32_SFloat_S8_UInt, size, TextureSamples::TextureSamples_x1);
     m_renderTarget->setDepthStencilTexture(depthAttachment, RenderTargetLoadOp::LoadOp_Clear, RenderTargetStoreOp::StoreOp_DontCare, 1.0f);
 
-    m_pipeline = cmdList.createObject<GraphicsPipelineState>(m_modelDrawer->getVertexInputAttribDescription(0, 0), m_program, m_renderTarget);
+    m_pipeline = cmdList.createObject<GraphicsPipelineState>(m_modelDrawer->getVertexInputAttribDescription(0, 0), m_program.get(), m_renderTarget.get());
     m_pipeline->setPrimitiveTopology(PrimitiveTopology::PrimitiveTopology_TriangleList);
     //m_pipeline->setPolygonMode(PolygonMode::PolygonMode_Line);
     m_pipeline->setFrontFace(FrontFace::FrontFace_CounterClockwise);
@@ -42,8 +41,8 @@ SimpleRender::SimpleRender(renderer::CommandList& cmdList, const core::Dimension
     m_pipeline->setDepthWrite(true);
     m_pipeline->setDepthTest(true);
 
-    cmdList.setPipelineState(m_pipeline);
-    cmdList.setRenderTarget(m_renderTarget);
+    cmdList.setPipelineState(m_pipeline.get());
+    cmdList.setRenderTarget(m_renderTarget.get());
 
     cmdList.sumitCommands();
     cmdList.flushCommands();
@@ -52,15 +51,6 @@ SimpleRender::SimpleRender(renderer::CommandList& cmdList, const core::Dimension
 SimpleRender::~SimpleRender()
 {
     delete m_modelDrawer;
-
-    //TODO should remove self
-    {
-        delete m_renderTarget;
-        delete m_pipeline;
-        delete m_program;
-        delete m_texture;
-        //delete m_sampler;
-    }
 }
 
 void SimpleRender::updateParameter(renderer::CommandList & cmdList, const std::string& name, u32 size, const void * ubo)
@@ -68,10 +58,9 @@ void SimpleRender::updateParameter(renderer::CommandList & cmdList, const std::s
     m_program->bindUniformsBuffer<ShaderType::ShaderType_Vertex>(name, 0, size, ubo);
 }
 
-void SimpleRender::updateParameter(renderer::CommandList & cmdList, const std::string & name, const resource::Image * image)
+void SimpleRender::updateParameter(renderer::CommandList & cmdList, const std::string & name, u32 index)
 {
-    auto& data = m_images.begin()->second; //m_images[image];
-    m_program->bindSampledTexture<ShaderType::ShaderType_Fragment, Texture2D>(name, data.first, data.second);
+    m_program->bindSampledTexture<ShaderType::ShaderType_Fragment, Texture2D>(name, m_texture[index].get(), m_sampler.get());
 }
 
 void SimpleRender::render(renderer::CommandList& cmdList)
