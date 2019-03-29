@@ -1105,7 +1105,6 @@ bool VulkanGraphicContext::prepareDraw(VulkanCommandBuffer* drawBuffer)
 
     m_currentContextStateNEW->invokeDynamicStates();
 
-
     std::vector<VkDescriptorSet> sets;
     std::vector<u32> offsets;
     if (m_currentContextStateNEW->prepareDescriptorSets(drawBuffer, sets, offsets))

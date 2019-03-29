@@ -209,6 +209,8 @@ bool VulkanContextState::prepareDescriptorSets(VulkanCommandBuffer * cmdBuffer, 
         return false;
     }
 
+    m_transitionLayoutState.flushImageLayout(cmdBuffer);
+
     m_currentSets = sets;
     return updateDescriptorSet(cmdBuffer, sets);
 }
@@ -326,6 +328,15 @@ void VulkanContextState::bindTexture(const VulkanImage* image, const VulkanSampl
         VulkanContextState::setBinding(bindingInfo);
     }*/
 
+    if (VulkanImage::isAttachmentLayout(image))
+    {
+        if (!m_transitionLayoutState.pushImageLayout(
+            { const_cast<VulkanImage*>(image), VulkanImage::makeImageSubresourceRange(image), VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL }))
+        {
+            LOG_WARNING("VulkanContextState::bindTexture image already present in transtion state");
+        }
+    }
+
     BindingInfo bindingInfo;
     bindingInfo._type = BindingType::BindingType_SamplerAndTexture;
     bindingInfo._set = reflaction._set;
@@ -333,7 +344,7 @@ void VulkanContextState::bindTexture(const VulkanImage* image, const VulkanSampl
     bindingInfo._arrayIndex = arrayIndex;
     bindingInfo._imageBinding._image = image;
     bindingInfo._imageBinding._sampler = sampler;
-    bindingInfo._imageBinding._imageInfo = VulkanContextState::makeVkDescriptorImageInfo(image, sampler);
+    bindingInfo._imageBinding._imageInfo = VulkanContextState::makeVkDescriptorImageInfo(image, sampler, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
     VulkanContextState::setBinding(bindingInfo);
 }
@@ -419,12 +430,12 @@ VkDescriptorBufferInfo VulkanContextState::makeVkDescriptorBufferInfo(const Vulk
     return descriptorBufferInfo;
 }
 
-VkDescriptorImageInfo VulkanContextState::makeVkDescriptorImageInfo(const VulkanImage* image, const VulkanSampler* sampler)
+VkDescriptorImageInfo VulkanContextState::makeVkDescriptorImageInfo(const VulkanImage* image, const VulkanSampler* sampler, VkImageLayout layout, s32 layer)
 {
     VkDescriptorImageInfo descriptorImageInfo = {};
     descriptorImageInfo.sampler = sampler->getHandle();
-    descriptorImageInfo.imageView = image->getImageView();
-    descriptorImageInfo.imageLayout = image->getLayout();
+    descriptorImageInfo.imageView = image->getImageView(layer);
+    descriptorImageInfo.imageLayout = layout;
 
     return descriptorImageInfo;
 }
@@ -468,6 +479,21 @@ bool VulkanContextState::BindingInfo::operator==(const BindingInfo & info) const
     }
 
     return true;
+}
+
+bool VulkanContextState::TransitionLayoutState::pushImageLayout(const TransitionImageLayout & obj)
+{
+    auto iter = m_transitionImageLayouts.insert(obj);
+    return iter.second;
+}
+
+void VulkanContextState::TransitionLayoutState::flushImageLayout(VulkanCommandBuffer * cmdBuffer)
+{
+    //TODO merge barriers
+    for (auto& iter : m_transitionImageLayouts)
+    {
+        cmdBuffer->cmdPipelineBarrier(iter._image, iter._srcStage, iter._dstStage, iter._layout);
+    }
 }
 
 } //namespace vk

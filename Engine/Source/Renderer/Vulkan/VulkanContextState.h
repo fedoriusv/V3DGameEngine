@@ -119,7 +119,7 @@ namespace vk
         };
 
         static VkDescriptorBufferInfo makeVkDescriptorBufferInfo(const VulkanBuffer* buffer, u64 offset, u64 range);
-        static VkDescriptorImageInfo makeVkDescriptorImageInfo(const VulkanImage* image, const VulkanSampler* sampler);
+        static VkDescriptorImageInfo makeVkDescriptorImageInfo(const VulkanImage* image, const VulkanSampler* sampler, VkImageLayout layout, s32 layer = -1);
 
         VkDevice m_device;
 
@@ -147,6 +147,62 @@ namespace vk
         std::vector<VkDescriptorSet> m_currentSets;
 
         //std::array<std::vector<BindingInfo>, k_maxDescriptorSetIndex> m_descriptorSetsState;
+
+        class TransitionLayoutState
+        {
+        public:
+
+            struct TransitionImageLayout
+            {
+                VulkanImage*            _image;
+                VkImageSubresourceRange _subresource;
+                VkPipelineStageFlags    _srcStage;
+                VkPipelineStageFlags    _dstStage;
+                VkImageLayout           _layout;
+
+                bool operator==(const TransitionImageLayout& obj) const
+                {
+                    if (this == &obj)
+                    {
+                        return true;
+                    }
+
+                    if (_image != obj._image || memcmp(&_subresource, &obj._subresource, sizeof(VkImageSubresourceRange)))
+                    {
+                        return false;
+                    }
+
+                    return true;
+                }
+
+            };
+
+            bool pushImageLayout(const TransitionImageLayout& obj);
+            void flushImageLayout(VulkanCommandBuffer * cmdBuffer);
+
+        private:
+
+            struct ImageLayoutHash
+            {
+                size_t operator()(const TransitionImageLayout& obj) const
+                {
+                    //TODO
+                    return 0;
+                }
+            };
+
+            struct ImageLayoutEqual
+            {
+                bool operator()(const TransitionImageLayout& lhs, const TransitionImageLayout& rhs) const
+                {
+                    return lhs == rhs;
+                }
+            };
+
+            std::unordered_set<TransitionImageLayout, ImageLayoutHash, ImageLayoutEqual> m_transitionImageLayouts;
+        };
+
+        TransitionLayoutState m_transitionLayoutState;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

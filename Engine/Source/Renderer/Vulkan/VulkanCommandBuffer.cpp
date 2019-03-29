@@ -466,28 +466,28 @@ void VulkanCommandBuffer::cmdCopyBufferToBuffer(VulkanBuffer* src, VulkanBuffer*
     }
 }
 
-void VulkanCommandBuffer::cmdPipelineBarrier(VulkanImage * image, VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask, VkImageLayout layout)
+void VulkanCommandBuffer::cmdPipelineBarrier(VulkanImage * image, VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask, VkImageLayout layout, s32 layer, s32 mip)
 {
     ASSERT(m_status == CommandBufferStatus::Begin, "not started");
 
     image->captureInsideCommandBuffer(this, 0);
     if (m_level == CommandBufferLevel::PrimaryBuffer)
     {
-        auto accessMasks = VulkanImage::getAccessFlagsFromImageLayout(image->getLayout(), layout);
+        auto accessMasks = VulkanImage::getAccessFlagsFromImageLayout(image->getLayout(layer, mip), layout);
 
         VkImageMemoryBarrier imageMemoryBarrier = {};
         imageMemoryBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
         imageMemoryBarrier.pNext = nullptr;
         imageMemoryBarrier.srcAccessMask = std::get<0>(accessMasks);
         imageMemoryBarrier.dstAccessMask = std::get<1>(accessMasks);
-        imageMemoryBarrier.oldLayout = image->getLayout();
+        imageMemoryBarrier.oldLayout = image->getLayout(layer, mip);
         imageMemoryBarrier.newLayout = layout;
         imageMemoryBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
         imageMemoryBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
         imageMemoryBarrier.image = image->getHandle();
-        imageMemoryBarrier.subresourceRange = VulkanImage::makeImageSubresourceRange(image);
+        imageMemoryBarrier.subresourceRange = VulkanImage::makeImageSubresourceRange(image, layer, mip);
 
-        image->setLayout(layout);
+        image->setLayout(layout, layer, mip);
 
         VulkanWrapper::CmdPipelineBarrier(m_command, srcStageMask, dstStageMask, VK_DEPENDENCY_BY_REGION_BIT, 0, nullptr, 0, nullptr, 1, &imageMemoryBarrier);
     }

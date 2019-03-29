@@ -44,7 +44,7 @@ namespace vk
         static VkImageType convertTextureTargetToVkImageType(TextureTarget target);
         static VkSampleCountFlagBits convertRenderTargetSamplesToVkSampleCount(TextureSamples samples);
 
-        static VkImageSubresourceRange makeImageSubresourceRange(const VulkanImage* image);
+        static VkImageSubresourceRange makeImageSubresourceRange(const VulkanImage* image, s32 layer = -1, s32 mip = -1);
 
         static VkImageAspectFlags getImageAspectFlags(VkFormat format);
         static bool isColorFormat(VkFormat format);
@@ -52,18 +52,19 @@ namespace vk
         static bool isCompressedFormat(VkFormat format);
         static std::tuple<VkAccessFlags, VkAccessFlags> getAccessFlagsFromImageLayout(VkImageLayout oldLayout, VkImageLayout newLayout);
 
+        static bool isAttachmentLayout(const VulkanImage* image, s32 layer = -1);
+
         VkImage             getHandle() const;
         VkImageAspectFlags  getImageAspectFlags() const;
-        VkImageView         getImageView() const;
+        VkImageView         getImageView(s32 layer = -1) const;
         VkFormat            getFormat() const;
 
-        VkImageLayout       getLayout() const;
-        VkImageLayout       setLayout(VkImageLayout layout);
+        VkImageLayout       getLayout(s32 layer = -1, s32 mip = -1) const;
+        VkImageLayout       setLayout(VkImageLayout layout, s32 layer = -1, s32 mip = -1);
 
     private:
 
         bool createViewImage();
-        bool createSampler();
 
         VkDevice                    m_device;
 
@@ -77,10 +78,13 @@ namespace vk
         VkImageTiling               m_tiling;
 
         VkImage                     m_image;
-        VkImageView                 m_imageView;
+
+        VkImageView                 m_generalImageView;
+        std::vector<VkImageView>    m_imageView;
+
         VkImageAspectFlags          m_aspectMask;
 
-        VkImageLayout               m_layout;
+        std::vector<VkImageLayout>  m_layout;
 
         TextureUsageFlags           m_usage;
 

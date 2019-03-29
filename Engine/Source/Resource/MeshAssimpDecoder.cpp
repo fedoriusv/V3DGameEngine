@@ -16,6 +16,8 @@
 #   include <assimp/cimport.h>
 #endif //USE_ASSIMP
 
+#define LOG_LOADIMG_TIME 1
+
 namespace v3d
 {
 namespace resource
@@ -48,7 +50,7 @@ Resource * MeshAssimpDecoder::decode(const stream::Stream* stream, const std::st
 #ifdef USE_ASSIMP
         stream->seekBeg(0);
 
-#if DEBUG
+#if LOG_LOADIMG_TIME
         utils::Timer timer;
         timer.start();
 #endif
@@ -110,11 +112,6 @@ Resource * MeshAssimpDecoder::decode(const stream::Stream* stream, const std::st
 
             return nullptr;
         }
-#if DEBUG
-        timer.stop();
-        u64 time = timer.getTime<utils::Timer::Duration_MilliSeconds>();
-        LOG_DEBUG("MeshAssimpDecoder::decode , model %s, is loaded. Time %.4f sec", name.c_str(), static_cast<f32>(time) / 1000.0f);
-#endif
 
         stream::Stream* modelStream = stream::StreamManager::createMemoryStream();
         if (scene->HasMeshes())
@@ -143,11 +140,11 @@ Resource * MeshAssimpDecoder::decode(const stream::Stream* stream, const std::st
             }
         }
 
-//#if DEBUG
-//        timer.stop();
-//        u64 time = timer.getTime<utils::Timer::Duration_MilliSeconds>();
-//        LOG_DEBUG("MeshAssimpDecoder::decode , model %s, is loaded. Time %.4f sec", name.c_str(), static_cast<f32>(time) / 1000.0f);
-//#endif
+#if LOG_LOADIMG_TIME
+        timer.stop();
+        u64 time = timer.getTime<utils::Timer::Duration_MilliSeconds>();
+        LOG_INFO("MeshAssimpDecoder::decode , model %s, is loaded. Time %.4f sec", name.c_str(), static_cast<f32>(time) / 1000.0f);
+#endif
 
 #if DEBUG
         newHeader->_debugName = name;
@@ -286,6 +283,7 @@ bool MeshAssimpDecoder::decodeMesh(const aiScene* scene, stream::Stream* modelSt
             return vertexSize;
         };
 
+        LOG_DEBUG("MeshAssimpDecoder::decodeMesh: Load mesh index %d", m);
         const aiMesh* mesh = scene->mMeshes[m];
         u32 stride = buildVertexData(mesh, m_header, m_useBitangents);
         ASSERT(stride > 0, "invalid stride");
