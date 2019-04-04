@@ -27,7 +27,7 @@ namespace renderer
         virtual void clear(Context* context, const core::Vector4D& color) = 0;
         virtual void clear(Context* context, f32 depth, u32 stencil) = 0;
 
-        virtual bool upload(Context* context, const core::Dimension3D& offsets, const core::Dimension3D& size,  u32 mips, const void* data) = 0;
+        virtual bool upload(Context* context, const core::Dimension3D& offsets, const core::Dimension3D& size,  u32 mips, u32 layers, const void* data) = 0;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

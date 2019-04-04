@@ -75,7 +75,7 @@ resource::Image* ImageFileLoader::load(const std::string & name, const std::stri
                return nullptr;
            }
 
-           LOG_DEBUG("ImageFileLoader::load Shader [%s] is loaded", name.c_str());
+           LOG_INFO("ImageFileLoader::load Shader [%s] is loaded", name.c_str());
            return static_cast<resource::Image*>(resource);
         }
     }

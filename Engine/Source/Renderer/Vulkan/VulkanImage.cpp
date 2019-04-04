@@ -799,7 +799,7 @@ void VulkanImage::clear(Context * context, f32 depth, u32 stencil)
     commandBuffer->cmdPipelineBarrier(this, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT | VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, layout);
 }
 
-bool VulkanImage::upload(Context * context, const core::Dimension3D & offsets, const core::Dimension3D & size, u32 mips, const void * data)
+bool VulkanImage::upload(Context * context, const core::Dimension3D & offsets, const core::Dimension3D & size, u32 mips, u32 layers, const void * data)
 {
     if (!m_image)
     {
@@ -817,7 +817,10 @@ bool VulkanImage::upload(Context * context, const core::Dimension3D & offsets, c
     ASSERT(size > offsets, "wrong offset");
     core::Dimension3D diffSize = (size - offsets);
 
-    u64 calculatedSize = getFormatBlockSize(format) * diffSize.getArea() * mips;
+    //TODO
+    ASSERT(mips == 1, "impl");
+
+    u64 calculatedSize = ImageFormat::getFormatBlockSize(format) * diffSize.getArea() * layers;
     if (isCompressedFormat(m_format))
     {
         calculatedSize /= 16;
@@ -858,7 +861,7 @@ bool VulkanImage::upload(Context * context, const core::Dimension3D & offsets, c
         core::Dimension3D mipOffset = offsets;
         for (u32 mip = 0; mip < mips; ++mip)
         {
-            bufferDataSize = getFormatBlockSize(format) * (size - offsets).getArea();
+            bufferDataSize = ImageFormat::getFormatBlockSize(format) * (size - offsets).getArea();
             for (u32 layer = 0; layer < m_layersLevel; ++layer)
             {
                 VkBufferImageCopy regions;

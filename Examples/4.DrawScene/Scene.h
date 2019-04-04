@@ -68,14 +68,21 @@ namespace scene
             renderer::RenderTargetState*                  renderTarget;
         };
 
+
         RenderPass<3> m_MRTRenderPass;
 
 
+        RenderPass<1> m_SSAORenderPass;
+        renderer::GraphicsPipelineState* m_SSAOPipeline;
+        renderer::ShaderProgram* m_SSAOProgram;
+
+        std::vector<core::Vector4D> m_SSAOKernel;
+        utils::IntrusivePointer<renderer::Texture2D> m_SSAONoiseTexture;
+        utils::IntrusivePointer<renderer::SamplerState> m_SSAONoiseSampler;
 
         RenderPass<1> m_CompositionRenderPass;
         renderer::GraphicsPipelineState* m_CompositionPipeline;
         renderer::ShaderProgram* m_CompositionProgram;
-
         utils::IntrusivePointer<renderer::VertexStreamBuffer> m_ScreenQuad;
 
         utils::IntrusivePointer<renderer::Texture2D> m_DummyTexture;

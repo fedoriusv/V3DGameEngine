@@ -22,6 +22,10 @@
 
 #define TEST_DRAW 0
 
+#define SSAO_KERNEL_SIZE 32
+#define SSAO_RADIUS 2.0f
+#define SSAO_NOISE_DIM 4
+
 namespace v3d
 {
 namespace scene
@@ -126,6 +130,7 @@ void Scene::onRender(v3d::renderer::CommandList & cmd)
     {
         cmd.setViewport(core::Rect32(0, 0, m_size.width, m_size.height));
         cmd.setScissor(core::Rect32(0, 0, m_size.width, m_size.height));
+
         cmd.setRenderTarget(m_MRTRenderPass.renderTarget);
         cmd.setPipelineState(m_sponzaPipeline);
 
@@ -155,14 +160,29 @@ void Scene::onRender(v3d::renderer::CommandList & cmd)
         }
     }
 
+    //SSAO
+    {
+        cmd.setRenderTarget(m_SSAORenderPass.renderTarget);
+        cmd.setPipelineState(m_SSAOPipeline);
+
+        m_SSAOProgram->bindUniformsBuffer<renderer::ShaderType::ShaderType_Fragment>("ubo", 0, sizeof(core::Matrix4D), m_camera->getProjectionMatrix().getPtr());
+        m_SSAOProgram->bindUniformsBuffer<renderer::ShaderType::ShaderType_Fragment>("uboSSAOKernel", 0, sizeof(core::Vector4D) * static_cast<u32>(m_SSAOKernel.size()), m_SSAOKernel.data());
+        m_SSAOProgram->bindSampledTexture<renderer::ShaderType::ShaderType_Fragment, renderer::Texture2D>("samplerPositionDepth", m_MRTRenderPass.colorTexture[0], m_Sampler.get());
+        m_SSAOProgram->bindSampledTexture<renderer::ShaderType::ShaderType_Fragment, renderer::Texture2D>("samplerNormal", m_MRTRenderPass.colorTexture[1], m_Sampler.get());
+        m_SSAOProgram->bindSampledTexture<renderer::ShaderType::ShaderType_Fragment, renderer::Texture2D>("ssaoNoise", m_SSAONoiseTexture.get(), m_Sampler.get());
+
+        cmd.draw(renderer::StreamBufferDescription(nullptr, 0), 0, 3, 1);
+    }
+
     //Composition
     {
         cmd.setViewport(core::Rect32(0, 0, cmd.getBackbuffer()->getDimension().width, cmd.getBackbuffer()->getDimension().height));
         cmd.setScissor(core::Rect32(0, 0, cmd.getBackbuffer()->getDimension().width, cmd.getBackbuffer()->getDimension().height));
+
         cmd.setRenderTarget(m_CompositionRenderPass.renderTarget);
         cmd.setPipelineState(m_CompositionPipeline);
 
-        m_CompositionProgram->bindSampledTexture<renderer::ShaderType::ShaderType_Fragment, renderer::Texture2D>("samplerColor", m_MRTRenderPass.renderTarget->getColorTexture(1), m_Sampler.get());
+        m_CompositionProgram->bindSampledTexture<renderer::ShaderType::ShaderType_Fragment, renderer::Texture2D>("samplerColor", m_SSAORenderPass.colorTexture[0], m_Sampler.get());
 
         cmd.draw(renderer::StreamBufferDescription(m_ScreenQuad.get(), 0), 0, 6, 1);
     }
@@ -223,8 +243,15 @@ void Scene::onLoad(v3d::renderer::CommandList & cmd)
         m_MRTRenderPass.renderTarget->setDepthStencilTexture(m_MRTRenderPass.depthTexture, renderer::RenderTargetLoadOp::LoadOp_Clear, renderer::RenderTargetStoreOp::StoreOp_Store, 1.0f);
 
         {
+            std::vector<std::pair<std::string, std::string>> defines =
+            {
+                { "NEAR_PLANE", std::to_string(m_camera->getNearValue()) },
+                { "FAR_PLANE", std::to_string(m_camera->getFarValue()) },
+                { "ENABLE_DISCARD", std::to_string(0) }
+            };
+
             const renderer::Shader* sponzaMRTVertShader = resource::ResourceLoaderManager::getInstance()->loadShader<renderer::Shader, resource::ShaderSourceFileLoader>(cmd.getContext(), "shaders/mrt.vert");
-            const renderer::Shader* sponzaMRTFragShader = resource::ResourceLoaderManager::getInstance()->loadShader<renderer::Shader, resource::ShaderSourceFileLoader>(cmd.getContext(), "shaders/mrt.frag");
+            const renderer::Shader* sponzaMRTFragShader = resource::ResourceLoaderManager::getInstance()->loadShader<renderer::Shader, resource::ShaderSourceFileLoader>(cmd.getContext(), "shaders/mrt.frag", defines);
             m_sponzaProgram = cmd.createObject<renderer::ShaderProgram>(std::vector<const renderer::Shader*>({ sponzaMRTVertShader , sponzaMRTFragShader }));
 
             m_sponzaPipeline = cmd.createObject<renderer::GraphicsPipelineState>(sponza->getMeshByIndex(0)->getVertexInputAttribDesc(), m_sponzaProgram, m_MRTRenderPass.renderTarget);
@@ -232,7 +259,7 @@ void Scene::onLoad(v3d::renderer::CommandList & cmd)
             m_sponzaPipeline->setFrontFace(renderer::FrontFace::FrontFace_Clockwise);
             m_sponzaPipeline->setCullMode(renderer::CullMode::CullMode_Back);
             m_sponzaPipeline->setColorMask(renderer::ColorMask::ColorMask_All);
-            m_sponzaPipeline->setDepthCompareOp(renderer::CompareOperation::CompareOp_Less);
+            m_sponzaPipeline->setDepthCompareOp(renderer::CompareOperation::CompareOp_LessOrEqual);
             m_sponzaPipeline->setDepthWrite(true);
             m_sponzaPipeline->setDepthTest(true);
         }
@@ -253,9 +280,57 @@ void Scene::onLoad(v3d::renderer::CommandList & cmd)
         }*/
     }
 
+    const renderer::Shader* fullscreenVertShader = resource::ResourceLoaderManager::getInstance()->loadShader<renderer::Shader, resource::ShaderSourceFileLoader>(cmd.getContext(), "shaders/fullscreen.vert");
+
     //SSAO pass 2
     {
-        //TODO
+        {
+            std::uniform_real_distribution<f32> rndDist(0.0f, 1.0f);
+            std::random_device rndDev;
+            std::default_random_engine rndGen;
+
+            auto lerp = [](f32 a, f32 b, f32 f) -> f32
+            {
+                return a + f * (b - a);
+            };
+
+            // Sample kernel
+            m_SSAOKernel.resize(SSAO_KERNEL_SIZE);
+            for (u32 i = 0; i < SSAO_KERNEL_SIZE; ++i)
+            {
+                core::Vector3D sample(rndDist(rndGen) * 2.0f - 1.0f, rndDist(rndGen) * 2.0f - 1.0f, rndDist(rndGen));
+                sample.normalize();
+                sample *= rndDist(rndGen);
+                f32 scale = f32(i) / f32(SSAO_KERNEL_SIZE);
+                scale = lerp(0.1f, 1.0f, scale * scale);
+                m_SSAOKernel[i] = core::Vector4D(sample * scale, 0.0f);
+            }
+
+            // Random noise
+            std::vector<core::Vector4D> ssaoNoise(SSAO_NOISE_DIM * SSAO_NOISE_DIM);
+            for (u32 i = 0; i < ssaoNoise.size(); i++)
+            {
+                ssaoNoise[i] = core::Vector4D(rndDist(rndGen) * 2.0f - 1.0f, rndDist(rndGen) * 2.0f - 1.0f, 0.0f, 0.0f);
+            }
+            m_SSAONoiseTexture = cmd.createObject<renderer::Texture2D>(renderer::TextureUsage::TextureUsage_Sampled | renderer::TextureUsage::TextureUsage_Write, renderer::Format::Format_R32G32B32A32_SFloat, core::Dimension2D(SSAO_NOISE_DIM, SSAO_NOISE_DIM), 1, ssaoNoise.data());
+        }
+
+        std::vector<std::pair<std::string, std::string>> defines = 
+        {
+            { "SSAO_KERNEL_SIZE", std::to_string(SSAO_KERNEL_SIZE) },
+            { "SSAO_RADIUS", std::to_string(SSAO_RADIUS) },
+            { "SSAO_POWER", std::to_string(1.5f) }
+        };
+
+        const renderer::Shader* ssaoFragShader = resource::ResourceLoaderManager::getInstance()->loadShader<renderer::Shader, resource::ShaderSourceFileLoader>(cmd.getContext(), "shaders/ssao.frag", defines);
+        m_SSAOProgram = cmd.createObject<renderer::ShaderProgram>(std::vector<const renderer::Shader*>({ fullscreenVertShader , ssaoFragShader }));
+
+        m_SSAORenderPass.colorTexture[0] = cmd.createObject<renderer::Texture2D>(renderer::TextureUsage::TextureUsage_Attachment | renderer::TextureUsage::TextureUsage_Sampled, renderer::Format::Format_R8_UNorm, m_size, renderer::TextureSamples::TextureSamples_x1);
+        m_SSAORenderPass.renderTarget = cmd.createObject<renderer::RenderTargetState>(m_size);
+        m_SSAORenderPass.renderTarget->setColorTexture(0, m_SSAORenderPass.colorTexture[0], renderer::RenderTargetLoadOp::LoadOp_DontCare, renderer::RenderTargetStoreOp::StoreOp_Store, core::Vector4D(0.0f));
+
+        m_SSAOPipeline = cmd.createObject<renderer::GraphicsPipelineState>(renderer::VertexInputAttribDescription(), m_SSAOProgram, m_SSAORenderPass.renderTarget);
+        m_SSAOPipeline->setColorMask(renderer::ColorMask::ColorMask_All);
     }
 
     //SSAO Blur pass 3
@@ -302,8 +377,7 @@ void Scene::onLoad(v3d::renderer::CommandList & cmd)
             m_CompositionPipeline->setFrontFace(renderer::FrontFace::FrontFace_Clockwise);
             m_CompositionPipeline->setCullMode(renderer::CullMode::CullMode_Back);
             m_CompositionPipeline->setColorMask(renderer::ColorMask::ColorMask_All);
-            //m_CompositionPipeline->setDepthCompareOp(renderer::CompareOperation::CompareOp_Less);
-            m_CompositionPipeline->setDepthWrite(true);
+            m_CompositionPipeline->setDepthWrite(false);
             m_CompositionPipeline->setDepthTest(false);
         }
     }

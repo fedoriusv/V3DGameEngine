@@ -514,7 +514,10 @@ void VulkanGraphicContext::draw(StreamBufferDescription& desc, u32 firstVertex, 
         //if (changed)
         {
             const StreamBufferDescription& desc = m_currentContextStateNEW->getStreamBufferDescription();
-            drawBuffer->cmdBindVertexBuffers(0, static_cast<u32>(desc._vertices.size()), desc._vertices, desc._offsets);
+            if (!desc._vertices.empty())
+            {
+                drawBuffer->cmdBindVertexBuffers(0, static_cast<u32>(desc._vertices.size()), desc._vertices, desc._offsets);
+            }
         }
         ASSERT(drawBuffer->isInsideRenderPass(), "not inside renderpass");
         drawBuffer->cmdDraw(firstVertex, vertexCount, firstInstance, instanceCount);
@@ -538,7 +541,7 @@ void VulkanGraphicContext::drawIndexed(StreamBufferDescription & desc, u32 first
             VulkanBuffer* indexBuffer = static_cast<VulkanBuffer*>(descBuff._indices);
             drawBuffer->cmdBindIndexBuffers(indexBuffer, descBuff._indicesOffet, (descBuff._indexType == StreamIndexBufferType::IndexType_16) ? VK_INDEX_TYPE_UINT16 : VK_INDEX_TYPE_UINT32);
 
-
+            ASSERT(!descBuff._vertices.empty(), "empty");
             drawBuffer->cmdBindVertexBuffers(0, static_cast<u32>(descBuff._vertices.size()), descBuff._vertices, descBuff._offsets);
         }
         ASSERT(drawBuffer->isInsideRenderPass(), "not inside renderpass");

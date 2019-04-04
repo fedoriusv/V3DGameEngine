@@ -264,16 +264,24 @@ namespace renderer
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    /**
-    * Format functions. Return count bytes per block
-    */
-    u32 getFormatBlockSize(Format format);
+    class ImageFormat
+    {
+    public:
+        /**
+        * Format functions. Return count bytes per block
+        */
+        static u32 getFormatBlockSize(Format format);
 
-    /**
-    * Format functions. Return count components
-    */
-    u32 getFormatCountComponent(Format format);
+        /**
+        * Format functions. Return count components
+        */
+        static u32 getFormatCountComponent(Format format);
 
+        /**
+        * Format functions. Return check compressed format
+        */
+        static bool isFormatCompressed(Format format);
+    };
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
 } //namespace renderer

@@ -308,6 +308,7 @@ public:
 #if DEBUG_COMMAND_LIST
         LOG_DEBUG("CommandDrawIndexed constructor");
 #endif //DEBUG_COMMAND_LIST
+        ASSERT(!m_buffersDesc._vertices.empty() && m_buffersDesc._indices, "buffers is empty");
     }
     CommandDrawIndexed() = delete;
     CommandDrawIndexed(CommandDrawIndexed&) = delete;

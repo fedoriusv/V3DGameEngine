@@ -341,7 +341,7 @@ void VulkanContextState::bindTexture(const VulkanImage* image, const VulkanSampl
     bindingInfo._type = BindingType::BindingType_SamplerAndTexture;
     bindingInfo._set = reflaction._set;
     bindingInfo._binding = reflaction._binding;
-    bindingInfo._arrayIndex = arrayIndex;
+    bindingInfo._arrayIndex = 0;
     bindingInfo._imageBinding._image = image;
     bindingInfo._imageBinding._sampler = sampler;
     bindingInfo._imageBinding._imageInfo = VulkanContextState::makeVkDescriptorImageInfo(image, sampler, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
@@ -396,7 +396,7 @@ void VulkanContextState::updateConstantBuffer(u32 arrayIndex, const Shader::Unif
     bindingInfo._set = reflaction._set;
     bindingInfo._binding = reflaction._binding;
     bindingInfo._type = VulkanDeviceCaps::getInstance()->useDynamicUniforms ? BindingType::BindingType_DynamicUniform : BindingType::BindingType_Uniform;
-    bindingInfo._arrayIndex = arrayIndex;
+    bindingInfo._arrayIndex = 0;
     bindingInfo._bufferBinding._uniform = uniformBuffer;
     bindingInfo._bufferBinding._buffer = uniformBuffer->getBuffer();
     bindingInfo._bufferBinding._bufferInfo = VulkanContextState::makeVkDescriptorBufferInfo(uniformBuffer->getBuffer(), uniformBuffer->getOffset(), uniformBuffer->getSize());

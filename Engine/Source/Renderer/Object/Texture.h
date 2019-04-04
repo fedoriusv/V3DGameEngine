@@ -84,6 +84,7 @@ namespace renderer
         const renderer::Format              m_format;
         const core::Dimension2D             m_dimension;
         const u32                           m_mipmaps;
+        const u32                           m_layers;
         renderer::TextureSamples            m_samples;
 
         TextureUsageFlags                   m_usage;

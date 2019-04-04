@@ -20,7 +20,7 @@ namespace renderer
         TextureUsage_Sampled = 0x04,
         TextureUsage_Attachment = 0x08,
 
-        TextureUsage_Shared = 0x64,
+        TextureUsage_Shared = 0x40,
     };
 
     typedef u16 TextureUsageFlags;

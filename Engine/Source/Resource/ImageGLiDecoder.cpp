@@ -217,7 +217,7 @@ Resource * ImageGLiDecoder::decode(const stream::Stream * stream, const std::str
 #if DEBUG
         newHeader->_debugName = name;
 #endif
-        ASSERT(false, "need test");
+        //ASSERT(false, "need test");
         stream::Stream* imageStream = stream::StreamManager::createMemoryStream(texture.data(), static_cast<u32>(newHeader->_size));
         //stream::Stream* imageStream = new stream::MemoryStream(texture.data(), static_cast<u32>(newHeader->_size), nullptr);
 

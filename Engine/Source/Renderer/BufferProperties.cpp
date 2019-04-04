@@ -8,7 +8,7 @@ namespace renderer
 {
 
 StreamBufferDescription::StreamBufferDescription(VertexStreamBuffer* vertex, u32 stream) noexcept
-    : _vertices({ vertex->m_buffer })
+    : _vertices(vertex ? std::vector<Buffer*>({ vertex->m_buffer }) : std::vector<Buffer*>())
     , _streamsID({ stream })
     
     , _indices(nullptr)
@@ -19,7 +19,7 @@ StreamBufferDescription::StreamBufferDescription(VertexStreamBuffer* vertex, u32
 }
 
 StreamBufferDescription::StreamBufferDescription(VertexStreamBuffer* vertex, u32 stream, u32 offset) noexcept
-    : _vertices({ vertex->m_buffer })
+    : _vertices(vertex ? std::vector<Buffer*>({ vertex->m_buffer }) : std::vector<Buffer*>())
     , _streamsID({ stream })
     , _offsets({ offset })
 
@@ -30,7 +30,7 @@ StreamBufferDescription::StreamBufferDescription(VertexStreamBuffer* vertex, u32
 }
 
 StreamBufferDescription::StreamBufferDescription(IndexStreamBuffer* index, u32 indexOffset, VertexStreamBuffer* vertex, u32 vertexOffset, u32 stream) noexcept
-    : _vertices({ vertex->m_buffer })
+    : _vertices(vertex ? std::vector<Buffer*>({ vertex->m_buffer }) : std::vector<Buffer*>())
     , _streamsID({ stream })
     , _offsets({ vertexOffset })
 

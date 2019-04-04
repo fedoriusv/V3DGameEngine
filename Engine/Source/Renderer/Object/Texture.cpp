@@ -14,11 +14,12 @@ namespace renderer
 class CreateTextureCommand : public renderer::Command
 {
 public:
-    CreateTextureCommand(renderer::Image* image, const core::Dimension3D & offsets, const core::Dimension3D & size, u32 mips, void * data, bool shared) noexcept
+    CreateTextureCommand(renderer::Image* image, const core::Dimension3D & offsets, const core::Dimension3D & dim, u32 mips, u32 layers, u32 size, void * data, bool shared) noexcept
         : m_image(image)
         , m_offsets(offsets)
-        , m_size(size)
+        , m_dimension(dim)
         , m_mipmaps(mips)
+        , m_layers(layers)
         , m_data(nullptr)
 
         , m_shared(shared)
@@ -33,11 +34,8 @@ public:
             }
             else
             {
-                ASSERT(false, "impl");
-                u32 dataSize = 0;
-                m_data = malloc(dataSize); //TODO: get from pool
-
-                memcpy(m_data, data, dataSize);
+                m_data = malloc(size); //TODO: get from pool
+                memcpy(m_data, data, size);
             }
         }
     }
@@ -66,15 +64,16 @@ public:
 
         if (m_data)
         {
-            m_image->upload(cmdList.getContext(), m_offsets, m_size, m_mipmaps, m_data);
+            m_image->upload(cmdList.getContext(), m_offsets, m_dimension, m_mipmaps, m_layers, m_data);
         }
     }
 
 private:
     renderer::Image*            m_image;
     core::Dimension3D           m_offsets;
-    core::Dimension3D           m_size;
+    core::Dimension3D           m_dimension;
     u32                         m_mipmaps;
+    u32                         m_layers;
 
     void*                       m_data;
 
@@ -203,6 +202,7 @@ Texture2D::Texture2D(renderer::CommandList& cmdList, TextureUsageFlags usage, re
     , m_format(format)
     , m_dimension(dimension)
     , m_mipmaps(mipmapCount)
+    , m_layers(1)
     , m_samples(renderer::TextureSamples::TextureSamples_x1)
 
     , m_usage(usage)
@@ -223,6 +223,7 @@ Texture2D::Texture2D(renderer::CommandList & cmdList, TextureUsageFlags usage, r
     , m_format(format)
     , m_dimension(dimension)
     , m_mipmaps(1)
+    , m_layers(1)
     , m_samples(samples)
 
     , m_usage(usage)
@@ -260,12 +261,27 @@ void Texture2D::createTexture2D(const void * data)
 
         if (data)
         {
-            m_image->upload(m_cmdList.getContext(), core::Dimension3D(0, 0, 0), core::Dimension3D(m_dimension.width, m_dimension.height, 1), m_mipmaps, data);
+            m_image->upload(m_cmdList.getContext(), core::Dimension3D(0, 0, 0), core::Dimension3D(m_dimension.width, m_dimension.height, 1), m_mipmaps, m_layers, data);
         }
     }
     else
     {
-        m_cmdList.pushCommand(new CreateTextureCommand(m_image, core::Dimension3D(0, 0, 0), core::Dimension3D(m_dimension.width, m_dimension.height, 1), m_mipmaps, const_cast<void*>(data), true));
+        u32 calculatedSize = 0;
+        if (data && (m_usage & TextureUsage_Shared) == 0)
+        {
+            //TODO
+            ASSERT(m_mipmaps == 1, "impl");
+
+            calculatedSize = ImageFormat::getFormatBlockSize(m_format) * m_dimension.getArea() * m_layers;
+            if (ImageFormat::isFormatCompressed(m_format))
+            {
+                calculatedSize /= 16;
+            }
+            ASSERT(calculatedSize > 0, "size is 0");
+        }
+
+        m_cmdList.pushCommand(
+            new CreateTextureCommand(m_image, core::Dimension3D(0, 0, 0), core::Dimension3D(m_dimension.width, m_dimension.height, 1), m_mipmaps, m_layers, calculatedSize, const_cast<void*>(data), (m_usage & TextureUsage_Shared)));
     }
 }
 

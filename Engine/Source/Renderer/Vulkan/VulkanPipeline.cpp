@@ -399,19 +399,6 @@ bool VulkanGraphicPipeline::create(const PipelineGraphicInfo* pipelineInfo)
     graphicsPipelineCreateInfo.basePipelineIndex = 0;
     graphicsPipelineCreateInfo.basePipelineHandle = VK_NULL_HANDLE;
 
-    //auto findShaderByType = [](std::vector<resource::Shader*> shaders, ShaderType type) -> const resource::Shader*
-    //{
-    //    for (auto shader : shaders)
-    //    {
-    //        if (shader->getShaderHeader()._type == type)
-    //        {
-    //            return shader;
-    //        }
-    //    }
-
-    //    return nullptr;
-    //};
-
     std::vector<VkPipelineShaderStageCreateInfo> pipelineShaderStageCreateInfos;
     const ShaderProgramDescription& programDesc = pipelineInfo->_programDesc;
     for (u32 type = ShaderType::ShaderType_Vertex; type < ShaderType_Count; ++type)

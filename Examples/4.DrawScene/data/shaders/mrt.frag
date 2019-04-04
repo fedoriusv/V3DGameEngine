@@ -1,5 +1,8 @@
 #version 450
 
+#extension GL_ARB_separate_shader_objects : enable
+#extension GL_ARB_shading_language_420pack : enable
+
 layout (set = 0, binding = 1) uniform sampler2D samplerColor;
 layout (set = 0, binding = 2) uniform sampler2D samplerSpecular;
 layout (set = 0, binding = 3) uniform sampler2D samplerNormal;
@@ -14,9 +17,9 @@ layout (location = 0) out vec4 outPosition;
 layout (location = 1) out vec4 outNormal;
 layout (location = 2) out uvec4 outAlbedo;
 
-layout (constant_id = 0) const float NEAR_PLANE = 0.1f;
-layout (constant_id = 1) const float FAR_PLANE = 64.0f;
-layout (constant_id = 2) const int ENABLE_DISCARD = 0;
+//layout (constant_id = 0) const float NEAR_PLANE = 1.0f;
+//layout (constant_id = 1) const float FAR_PLANE = 512.0f;
+//layout (constant_id = 2) const int ENABLE_DISCARD = 0;
 
 float linearDepth(float depth)
 {

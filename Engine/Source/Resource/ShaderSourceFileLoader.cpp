@@ -87,7 +87,7 @@ renderer::Shader * ShaderSourceFileLoader::load(const std::string & name, const 
                return nullptr;
            }
 
-           LOG_DEBUG("ShaderSourceFileLoader::load Shader [%s] is loaded", name.c_str());
+           LOG_INFO("ShaderSourceFileLoader::load Shader [%s] is loaded", name.c_str());
            return static_cast<renderer::Shader*>(resource);
         }
     }
