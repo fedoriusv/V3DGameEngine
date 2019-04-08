@@ -128,7 +128,7 @@ endif()
 #Compiler Flags
 if(WIN32)
     set(CMAKE_CONFIGURATION_TYPES "Debug;Release" CACHE STRING "" FORCE)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /EHsc /MP")
+#	set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /NODEFAULTLIB")
 #   Debug
     set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DDEBUG -DUSE_LOGGER -D_CRT_SECURE_NO_WARNINGS ${VULKAN_SDK_DEFINE} ${EXTRA_LIB_DEFINE}")
     set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} ${VULKAN_SDK_INCLUDE_DIRECTORY}")
@@ -250,9 +250,11 @@ if (ASSIMP_LIB)
     set_target_properties(IrrXML PROPERTIES FOLDER Libs/assimp)
     set_target_properties(uninstall PROPERTIES FOLDER Libs/assimp)
     set_target_properties(UpdateAssimpLibsDebugSymbolsAndDLLs PROPERTIES FOLDER Libs/assimp)
+	set_target_properties(zlib PROPERTIES COMPILE_FLAGS "/MTd")
     set_target_properties(zlib PROPERTIES FOLDER Libs/assimp)  
-    set_target_properties(zlibstatic PROPERTIES FOLDER Libs/assimp)
-	message("-- Crc32 lib added")
+	set_target_properties(zlibstatic PROPERTIES COMPILE_FLAGS "/MTd")
+	set_target_properties(zlibstatic PROPERTIES FOLDER Libs/assimp)
+	message("-- Assimp lib added")
 endif()
 
 ##############################################################
@@ -266,7 +268,9 @@ if (BUILD_EXAMPLES)
 	add_subdirectory(Examples/3.DrawMesh)
 	add_subdirectory(Examples/4.DrawScene)
 	add_subdirectory(Examples/5.Test)
-    set_target_properties(#[[1.CreateWindow 2.ClearColor]] 3.DrawMesh 4.DrawScene 5.Test PROPERTIES FOLDER Examples)
+	
+	set(BUILD_PROJECTS #[[1.CreateWindow 2.ClearColor]] 3.DrawMesh 4.DrawScene 5.Test)
+    set_target_properties(${BUILD_PROJECTS} PROPERTIES FOLDER Examples)
     message("-- ----------------")
 endif ()
 ##############################################################
