@@ -396,6 +396,9 @@ bool ShaderSpirVDecoder::parseReflections(const std::vector<u32>& spirv, stream:
                     case spirv_cross::SPIRType::Double:
                         return renderer::DataType::DataType_Double;
 
+                    case spirv_cross::SPIRType::Struct:
+                        return renderer::DataType::DataType_Struct;
+
                     default:
                         break;
                     }
@@ -462,6 +465,30 @@ bool ShaderSpirVDecoder::parseReflections(const std::vector<u32>& spirv, stream:
                 return  renderer::DataType::DataType_None;
             };
 
+            auto calculateMemberSizeInsideStruct = [&glsl](const spirv_cross::SPIRType& type) -> u32
+            {
+                if (type.basetype != spirv_cross::SPIRType::Struct)
+                {
+                    return 0;
+                }
+
+                u32 size = 0;
+                for (auto& member : type.member_types)
+                {
+                    const spirv_cross::SPIRType& type = glsl.get_type(member);
+                    u32 col = type.columns;
+                    u32 row = type.vecsize;
+                    u32 array = type.array.empty() ? 1 : type.array[0];
+                    ASSERT(type.basetype != spirv_cross::SPIRType::Struct, "struct");
+
+                    u32 dataSize = (type.width == 32) ? 4 : 8;
+                    size += dataSize * col * row * array;
+                }
+
+                return size;
+            };
+
+
             while (true)
             {
                 const std::string& member_name = glsl.get_member_name(buffer.base_type_id, index);
@@ -479,11 +506,18 @@ bool ShaderSpirVDecoder::parseReflections(const std::vector<u32>& spirv, stream:
                 uniform._array = type.array.empty() ? 1 : type.array[0];
                 uniform._type = convertSPRIVTypeToDataType(type);
                 uniform._name = member_name;
-
-                u32 dataSize = (type.width == 32) ? 4 : 8;
-                membersSize += dataSize * col * row * uniform._array;
+                if (uniform._type == renderer::DataType::DataType_Struct)
+                {
+                    uniform._size = calculateMemberSizeInsideStruct(type);
+                }
+                else
+                {
+                    u32 dataSize = (type.width == 32) ? 4 : 8;
+                    uniform._size = dataSize * col * row;
+                }
 
                 block._uniforms.push_back(uniform);
+                membersSize += uniform._size * uniform._array;
             }
 
             block._size = membersSize;

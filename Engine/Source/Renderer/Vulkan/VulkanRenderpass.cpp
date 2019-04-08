@@ -86,28 +86,29 @@ bool VulkanRenderPass::create()
         VulkanAttachmentDescription& attach = m_descriptions[index];
         ASSERT(attach._format != VK_FORMAT_UNDEFINED, "undefined format");
 
-        VkAttachmentDescription vkAttach = {};
-        vkAttach.format = attach._format;
-        vkAttach.samples = attach._samples;
-        vkAttach.flags = 0;// VK_ATTACHMENT_DESCRIPTION_MAY_ALIAS_BIT; //need check
-        vkAttach.loadOp = attach._loadOp;
-        vkAttach.storeOp = attach._storeOp;
-        vkAttach.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE; //TODO: if use stencil need enable it
-        vkAttach.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+        VkAttachmentDescription attachmentDescription = {};
+        attachmentDescription.format = attach._format;
+        attachmentDescription.samples = attach._samples;
+        attachmentDescription.flags = 0;// VK_ATTACHMENT_DESCRIPTION_MAY_ALIAS_BIT; //need check
+        attachmentDescription.loadOp = attach._loadOp;
+        attachmentDescription.storeOp = attach._storeOp;
+        attachmentDescription.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE; //TODO: if use stencil need enable it
+        attachmentDescription.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
 
-        vkAttach.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-        if (attach._swapchainImage)
-        {
-            vkAttach.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
-        }
-        else
-        {
-            vkAttach.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-        }
-        attachmentDescriptions.push_back(vkAttach);
+        attachmentDescription.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 
         if (VulkanImage::isColorFormat(attach._format))
         {
+            attachmentDescription.finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+            /*if (attach._swapchainImage)
+            {
+                attachmentDescription.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+            }
+            else
+            {
+                attachmentDescription.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+            }*/
+
             VkAttachmentReference attachmentReference = {};
             attachmentReference.attachment = index;
             attachmentReference.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
@@ -116,10 +117,14 @@ bool VulkanRenderPass::create()
         }
         else
         {
+            attachmentDescription.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+
             depthStencilAttachmentReferences.attachment = index;
             depthStencilAttachmentReferences.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
             depthStencil = true;
         }
+
+        attachmentDescriptions.push_back(attachmentDescription);
     } 
 
     u32 countSubpasses = 1;
@@ -144,22 +149,22 @@ bool VulkanRenderPass::create()
     }
 
     //////
-    std::array<VkSubpassDependency, 2> dependencies;
-    dependencies[0].srcSubpass = VK_SUBPASS_EXTERNAL;								// Producer of the dependency 
-    dependencies[0].dstSubpass = 0;													// Consumer is our single subpass that will wait for the execution depdendency
-    dependencies[0].srcStageMask = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
-    dependencies[0].dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-    dependencies[0].srcAccessMask = VK_ACCESS_MEMORY_READ_BIT;
-    dependencies[0].dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-    dependencies[0].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
+    //std::array<VkSubpassDependency, 2> dependencies;
+    //dependencies[0].srcSubpass = VK_SUBPASS_EXTERNAL;								// Producer of the dependency 
+    //dependencies[0].dstSubpass = 0;													// Consumer is our single subpass that will wait for the execution depdendency
+    //dependencies[0].srcStageMask = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
+    //dependencies[0].dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+    //dependencies[0].srcAccessMask = VK_ACCESS_MEMORY_READ_BIT;
+    //dependencies[0].dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+    //dependencies[0].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
 
-    dependencies[1].srcSubpass = 0;													// Producer of the dependency is our single subpass
-    dependencies[1].dstSubpass = VK_SUBPASS_EXTERNAL;								// Consumer are all commands outside of the renderpass
-    dependencies[1].srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-    dependencies[1].dstStageMask = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
-    dependencies[1].srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-    dependencies[1].dstAccessMask = VK_ACCESS_MEMORY_READ_BIT;
-    dependencies[1].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
+    //dependencies[1].srcSubpass = 0;													// Producer of the dependency is our single subpass
+    //dependencies[1].dstSubpass = VK_SUBPASS_EXTERNAL;								// Consumer are all commands outside of the renderpass
+    //dependencies[1].srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+    //dependencies[1].dstStageMask = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
+    //dependencies[1].srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+    //dependencies[1].dstAccessMask = VK_ACCESS_MEMORY_READ_BIT;
+    //dependencies[1].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
     //////
 
     VkRenderPassCreateInfo renderPassCreateInfo = {};

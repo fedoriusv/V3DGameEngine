@@ -498,10 +498,11 @@ void VulkanGraphicContext::bindUniformsBuffer(const Shader* shader, u32 bindInde
     m_currentContextStateNEW->updateConstantBuffer(bindIndex, bufferData, offset, size, data);
 }
 
-//void VulkanGraphicContext::bindVertexBuffers(const std::vector<Buffer*>& buffer, const std::vector<u64>& offsets)
-//{
-//    m_currentContextState._boundVertexBuffers = { buffer, offsets, true };
-//}
+void VulkanGraphicContext::transitionImages(const std::vector<Image*>& images, TransitionState transition, s32 layer)
+{
+    ASSERT(!images.empty(), "empty");
+    m_currentContextStateNEW->transition(images, layer, transition);
+}
 
 void VulkanGraphicContext::draw(StreamBufferDescription& desc, u32 firstVertex, u32 vertexCount, u32 firstInstance, u32 instanceCount)
 {
@@ -1095,6 +1096,9 @@ bool VulkanGraphicContext::createDevice()
 bool VulkanGraphicContext::prepareDraw(VulkanCommandBuffer* drawBuffer)
 {
     ASSERT(drawBuffer, "nullptr");
+
+    //TODO update image layouts
+
     ASSERT(m_currentContextStateNEW->getCurrentRenderpass(), "not bound");
     if (!drawBuffer->isInsideRenderPass())
     {
@@ -1102,6 +1106,7 @@ bool VulkanGraphicContext::prepareDraw(VulkanCommandBuffer* drawBuffer)
     }
 
     ASSERT(m_currentContextStateNEW->getCurrentPipeline(), "not bound");
+    //TODO check if bounded already
     drawBuffer->cmdBindPipeline(m_currentContextStateNEW->getCurrentPipeline());
 
     m_currentContextStateNEW->invokeDynamicStates();

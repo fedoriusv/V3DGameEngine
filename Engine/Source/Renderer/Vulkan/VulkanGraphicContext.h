@@ -62,7 +62,7 @@ namespace vk
         void bindSampledImage(const Shader* shader, u32 bindIndex, const Image* image, const Sampler::SamplerInfo* samplerInfo) override;
         void bindUniformsBuffer(const Shader* shader, u32 bindIndex, u32 offset, u32 size, const void* data) override;
 
-        //void bindVertexBuffers(const std::vector<Buffer*>& buffer, const std::vector<u64>& offsets)  override;
+        void transitionImages(const std::vector<Image*>& images, TransitionState transition, s32 layer = -1) override;
 
         void setViewport(const core::Rect32& viewport, const core::Vector2D& depth = { 0.0f, 1.0f }) override;
         void setScissor(const core::Rect32& scissor) override;

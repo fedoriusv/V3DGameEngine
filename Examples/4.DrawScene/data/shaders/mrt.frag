@@ -24,7 +24,7 @@ layout (location = 2) out uvec4 outAlbedo;
 float linearDepth(float depth)
 {
 	float z = depth * 2.0f - 1.0f; 
-	return (2.0f * NEAR_PLANE * FAR_PLANE) / (FAR_PLANE + NEAR_PLANE - z * (FAR_PLANE - NEAR_PLANE));	
+	return (2.0f * NEAR_PLANE * FAR_PLANE) / (FAR_PLANE + NEAR_PLANE - z * (FAR_PLANE - NEAR_PLANE));
 }
 
 void main() 

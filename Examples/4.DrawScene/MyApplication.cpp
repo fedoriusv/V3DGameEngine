@@ -93,8 +93,7 @@ bool MyApplication::Running(renderer::CommandList& commandList)
     //Frame
     commandList.beginFrame();
 
-    m_Camera->update(m_frameTime);
-    m_Scene->onUpdate();
+    Update();
     m_Scene->onRender(commandList);
 
     commandList.endFrame();
@@ -128,6 +127,14 @@ bool MyApplication::Running(renderer::CommandList& commandList)
     m_Timer->reset();
 
     return true;
+}
+
+void MyApplication::Update()
+{
+    m_Camera->update(m_frameTime);
+    m_Scene->setCameraPosition(m_Camera->getPosition());
+
+    m_Scene->onUpdate();
 }
 
 void MyApplication::Exit()

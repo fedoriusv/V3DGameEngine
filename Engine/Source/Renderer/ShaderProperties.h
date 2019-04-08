@@ -36,6 +36,8 @@ namespace renderer
         DataType_Matrix3,
         DataType_Matrix4,
 
+        DataType_Struct,
+
         DataType_Count
     };
 

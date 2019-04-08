@@ -364,6 +364,43 @@ public:
     }
 };
 
+    /*CommandTransitionImage*/
+class CommandTransitionImage : public Command
+{
+public:
+    CommandTransitionImage(const std::vector<Image*>& images, TransitionState state, s32 layer) noexcept
+        : m_images(images)
+        , m_state(state)
+        , m_layer(layer)
+    {
+#if DEBUG_COMMAND_LIST
+        LOG_DEBUG("CommandTransitionImage constructor");
+#endif //DEBUG_COMMAND_LIST
+    }
+    CommandTransitionImage(CommandTransitionImage&) = delete;
+
+    ~CommandTransitionImage()
+    {
+#if DEBUG_COMMAND_LIST
+        LOG_DEBUG("CommandTransitionImage constructor");
+#endif //DEBUG_COMMAND_LIST
+    }
+
+    void execute(const CommandList& cmdList)
+    {
+#if DEBUG_COMMAND_LIST
+        LOG_DEBUG("CommandTransitionImage execute");
+#endif //DEBUG_COMMAND_LIST
+        cmdList.getContext()->transitionImages(m_images, m_state, m_layer);
+    }
+
+private:
+
+    std::vector<Image*> m_images;
+    TransitionState     m_state;
+    s32                 m_layer;
+};
+
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 
 Command::Command() noexcept
@@ -667,6 +704,18 @@ CommandList::PendingFlushMaskFlags CommandList::flushPendingCommands(PendingFlus
     }
 
     return pendingFlushMask;
+}
+
+void CommandList::transfer(const std::vector<Image*>& image, TransitionState state, s32 layer)
+{
+    if (CommandList::isImmediate())
+    {
+        m_context->transitionImages(image, state, layer);
+    }
+    else
+    {
+        CommandList::pushCommand(new CommandTransitionImage(image, state, layer);
+    }
 }
 
 } //namespace renderer

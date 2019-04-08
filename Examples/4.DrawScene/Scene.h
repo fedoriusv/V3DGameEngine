@@ -32,60 +32,67 @@ namespace scene
         void onRender(v3d::renderer::CommandList& cmd);
 
         void setCamera(scene::Camera* camera);
+        void setCameraPosition(const core::Vector3D& position);
 
     private:
 
         renderer::RenderTargetState* m_simpleBackbuffer;
         renderer::ShaderProgram* m_simpleProgram;
         renderer::GraphicsPipelineState* m_simplePipeline;
+        utils::IntrusivePointer<renderer::VertexStreamBuffer> m_ScreenQuad;
 
         //void updateProgramParameters(renderer::ShaderProgram* program, scene::ModelHelper* model, scene::MaterialHelper* material);
 
-        renderer::GraphicsPipelineState* m_mptParticlesPipeline;
-        renderer::GraphicsPipelineState* m_mptSkyboxPipeline;
-
-
-        renderer::GraphicsPipelineState* m_sponzaPipeline;
-        renderer::ShaderProgram* m_sponzaProgram;
 
         std::vector<scene::MaterialHelper*> m_sponzaMaterials;
         scene::ModelHelper* m_modelDrawer;
 
 
-
-
-        utils::IntrusivePointer<renderer::SamplerState> m_Sampler;
-
         core::Dimension2D m_size;
+        core::Vector3D    m_viewPosition;
         scene::Camera*    m_camera;
 
         template<u32 attachments>
         struct RenderPass
         {
-            std::array<renderer::Texture2D*, attachments> colorTexture;
-            renderer::Texture2D*                          depthTexture;
+            std::array< utils::IntrusivePointer<renderer::Texture2D>, attachments> colorTexture;
+            utils::IntrusivePointer<renderer::Texture2D>                           depthTexture;
 
-            renderer::RenderTargetState*                  renderTarget;
+            utils::IntrusivePointer<renderer::RenderTargetState>                   renderTarget;
         };
 
+        utils::IntrusivePointer<renderer::SamplerState> m_Sampler;
+        utils::IntrusivePointer<renderer::Texture2D> m_DummyTexture;
 
+        //Pass 1
         RenderPass<3> m_MRTRenderPass;
+        renderer::GraphicsPipelineState* m_MRTOpaquePipeline;
+        renderer::ShaderProgram*         m_MRTOpaqueProgram;
 
+        //renderer::GraphicsPipelineState* m_MRTParticlesPipeline;
+        //renderer::GraphicsPipelineState* m_mptSkyboxPipeline;
 
+        //Pass 2
         RenderPass<1> m_SSAORenderPass;
         renderer::GraphicsPipelineState* m_SSAOPipeline;
-        renderer::ShaderProgram* m_SSAOProgram;
+        renderer::ShaderProgram*         m_SSAOProgram;
 
         std::vector<core::Vector4D> m_SSAOKernel;
         utils::IntrusivePointer<renderer::Texture2D> m_SSAONoiseTexture;
         utils::IntrusivePointer<renderer::SamplerState> m_SSAONoiseSampler;
 
+        //Pass 3
+        RenderPass<1> m_SSAOBlurRenderPass;
+        renderer::GraphicsPipelineState* m_SSAOBlurPipeline;
+        renderer::ShaderProgram*         m_SSAOBlurProgram;
+
+        bool m_enableSSAO;
+
+        //Pass 4
         RenderPass<1> m_CompositionRenderPass;
         renderer::GraphicsPipelineState* m_CompositionPipeline;
         renderer::ShaderProgram* m_CompositionProgram;
-        utils::IntrusivePointer<renderer::VertexStreamBuffer> m_ScreenQuad;
 
-        utils::IntrusivePointer<renderer::Texture2D> m_DummyTexture;
     };
 
 } //namespace scene

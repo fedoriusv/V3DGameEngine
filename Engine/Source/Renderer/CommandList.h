@@ -20,6 +20,7 @@ namespace renderer
     class Context;
     class CommandList;
 
+    class Texture;
     class Backbuffer;
     class RenderTargetState;
     class GraphicsPipelineState;
@@ -80,6 +81,13 @@ namespace renderer
         void setViewport(const core::Rect32& viewport, const core::Vector2D& depth = {0.0f, 1.0f});
         void setScissor(const core::Rect32& scissor);
 
+        template<class TTexture>
+        void transfer(TTexture* texture, TransitionState state)
+        {
+            static_assert(std::is_base_of<Texture, TTexture>());
+            transfer({ texture->getImage() }, state);
+        }
+
         Context* getContext() const;
         bool isThreaded() const;
         bool isImmediate() const;
@@ -112,6 +120,8 @@ namespace renderer
         };
 
     private:
+
+        void transfer(const std::vector<Image*>& image, TransitionState state, s32 layer = -1);
 
         struct RenderTargetPendingState
         {

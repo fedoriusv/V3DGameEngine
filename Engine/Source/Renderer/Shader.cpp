@@ -204,6 +204,7 @@ void Shader::UniformBuffer::Uniform::operator>>(stream::Stream * stream) const
     stream->write<u32>(_bufferId);
     stream->write<u32>(_array);
     stream->write<renderer::DataType>(_type);
+    stream->write<u32>(_size);
     stream->write(_name);
 }
 
@@ -212,6 +213,7 @@ void Shader::UniformBuffer::Uniform::operator<<(const stream::Stream * stream)
     stream->read<u32>(_bufferId);
     stream->read<u32>(_array);
     stream->read<renderer::DataType>(_type);
+    stream->read<u32>(_size);
     stream->read(_name);
 }
 

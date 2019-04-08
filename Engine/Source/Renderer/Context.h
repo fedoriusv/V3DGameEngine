@@ -77,8 +77,8 @@ namespace renderer
         virtual void bindSampledImage(const Shader* shader, u32 bindIndex, const Image* image, const Sampler::SamplerInfo* samplerInfo) = 0;
         virtual void bindUniformsBuffer(const Shader* shader, u32 bindIndex, u32 offset, u32 size, const void* data) = 0;
 
-        //geometry bind
-        //virtual void bindVertexBuffers(const std::vector<Buffer*>& buffer, const std::vector<u64>& offsets) = 0;
+        //transfer
+        virtual void transitionImages(const std::vector<Image*>& images, TransitionState transition, s32 layer = -1) = 0;
 
         //state
         virtual void setViewport(const core::Rect32& viewport, const core::Vector2D& depth = { 0.0f, 1.0f }) = 0;

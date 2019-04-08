@@ -76,8 +76,7 @@ namespace renderer
                 u32                _bufferId;
                 u32                _array;
                 renderer::DataType _type;
-                //TODO add offset;
-                //TODO add size;
+                u32                _size;
 
                 std::string        _name;
 
