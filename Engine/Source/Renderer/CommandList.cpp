@@ -368,7 +368,7 @@ public:
 class CommandTransitionImage : public Command
 {
 public:
-    CommandTransitionImage(const std::vector<Image*>& images, TransitionState state, s32 layer) noexcept
+    CommandTransitionImage(const std::vector<Image*>& images, TransitionOp state, s32 layer) noexcept
         : m_images(images)
         , m_state(state)
         , m_layer(layer)
@@ -397,7 +397,7 @@ public:
 private:
 
     std::vector<Image*> m_images;
-    TransitionState     m_state;
+    TransitionOp        m_state;
     s32                 m_layer;
 };
 
@@ -706,7 +706,7 @@ CommandList::PendingFlushMaskFlags CommandList::flushPendingCommands(PendingFlus
     return pendingFlushMask;
 }
 
-void CommandList::transfer(const std::vector<Image*>& image, TransitionState state, s32 layer)
+void CommandList::transfer(const std::vector<Image*>& image, TransitionOp state, s32 layer)
 {
     if (CommandList::isImmediate())
     {
@@ -714,7 +714,7 @@ void CommandList::transfer(const std::vector<Image*>& image, TransitionState sta
     }
     else
     {
-        CommandList::pushCommand(new CommandTransitionImage(image, state, layer);
+        CommandList::pushCommand(new CommandTransitionImage(image, state, layer));
     }
 }
 

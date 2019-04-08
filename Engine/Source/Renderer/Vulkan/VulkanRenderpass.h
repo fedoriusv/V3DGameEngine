@@ -28,11 +28,18 @@ namespace vk
             VkSampleCountFlagBits _samples;
             VkAttachmentLoadOp    _loadOp;
             VkAttachmentStoreOp   _storeOp;
+            VkAttachmentLoadOp    _stencilLoadOp;
+            VkAttachmentStoreOp   _stensilStoreOp;
+
+            VkImageLayout         _initialLayout;
+            VkImageLayout         _finalLayout;
+
             bool                  _swapchainImage;
         };
 
         static VkAttachmentLoadOp convertAttachLoadOpToVkAttachmentLoadOp(RenderTargetLoadOp loadOp);
         static VkAttachmentStoreOp convertAttachStoreOpToVkAttachmentStoreOp(RenderTargetStoreOp storeOp);
+        static VkImageLayout convertTransitionStateToImageLayout(TransitionOp state);
 
         VulkanRenderPass(VkDevice device, const std::vector<VulkanAttachmentDescription>& desc);
         ~VulkanRenderPass();

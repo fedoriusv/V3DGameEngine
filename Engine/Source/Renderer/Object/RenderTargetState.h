@@ -28,6 +28,82 @@ namespace renderer
         RenderTargetState(const RenderTargetState&) = delete;
         ~RenderTargetState();
 
+        struct ColorOpState
+        {
+            ColorOpState()
+                : _loadOp(RenderTargetLoadOp::LoadOp_Clear)
+                , _storeOp(RenderTargetStoreOp::StoreOp_Store)
+                , _clearColor(core::Vector4D(0.f))
+            {
+            }
+            
+            ColorOpState(RenderTargetLoadOp loadOp, RenderTargetStoreOp storeOp, const core::Vector4D& clearColor)
+                : _loadOp(loadOp)
+                , _storeOp(storeOp)
+                , _clearColor(clearColor)
+            {
+            }
+
+            RenderTargetLoadOp      _loadOp;
+            RenderTargetStoreOp     _storeOp;
+            const core::Vector4D    _clearColor;
+        };
+
+        struct DepthOpState
+        {
+            DepthOpState()
+                : _loadOp(RenderTargetLoadOp::LoadOp_Clear)
+                , _storeOp(RenderTargetStoreOp::StoreOp_DontCare)
+                , _clearDepth(1.0f)
+            {
+            }
+
+            DepthOpState(RenderTargetLoadOp loadOp, RenderTargetStoreOp storeOp, f32 clearDepth = 1.0f)
+                : _loadOp(loadOp)
+                , _storeOp(storeOp)
+                , _clearDepth(clearDepth)
+            {
+            }
+
+            RenderTargetLoadOp   _loadOp;
+            RenderTargetStoreOp  _storeOp;
+            f32                  _clearDepth;
+        };
+
+        struct StencilOpState
+        {
+            StencilOpState()
+                : _loadOp(RenderTargetLoadOp::LoadOp_Clear)
+                , _storeOp(RenderTargetStoreOp::StoreOp_DontCare)
+                , _clearStencil(0U)
+            {
+            }
+
+            StencilOpState(RenderTargetLoadOp loadOp, RenderTargetStoreOp storeOp, u32 clearStencil = 0U)
+                : _loadOp(loadOp)
+                , _storeOp(storeOp)
+                , _clearStencil(clearStencil)
+            {
+            }
+
+            RenderTargetLoadOp   _loadOp;
+            RenderTargetStoreOp  _storeOp;
+            u32                  _clearStencil;
+        };
+
+        struct TransitionState
+        {
+            TransitionState(TransitionOp initialState, TransitionOp finalState)
+                : _initialState(initialState)
+                , _finalState(finalState)
+            {
+            }
+
+            TransitionOp _initialState;
+            TransitionOp _finalState;
+        };
+
+
         bool setColorTexture(u32 index, Texture2D* colorTexture,
             RenderTargetLoadOp loadOp = RenderTargetLoadOp::LoadOp_Clear, RenderTargetStoreOp storeOp = RenderTargetStoreOp::StoreOp_Store,
             const core::Vector4D& clearColor = core::Vector4D(0.f));
@@ -38,9 +114,18 @@ namespace renderer
 
         bool setDepthStencilTexture(Texture2D* depthStencilTexture, 
             RenderTargetLoadOp depthLoadOp = RenderTargetLoadOp::LoadOp_DontCare, RenderTargetStoreOp depthStoreOp = RenderTargetStoreOp::StoreOp_DontCare,
-            f32 clearDepth = 0.0f,
+            f32 clearDepth = 1.0f,
             RenderTargetLoadOp stencilLoadOp = RenderTargetLoadOp::LoadOp_DontCare, RenderTargetStoreOp stencilStoreOp = RenderTargetStoreOp::StoreOp_DontCare,
             u32 clearStencil = 0);
+
+        bool setColorTexture(u32 index, Texture2D* colorTexture, 
+            const ColorOpState& colorOpState, const TransitionState& tansitionState);
+
+        bool setColorTexture(u32 index, Backbuffer* swapchainTexture,
+            const ColorOpState& colorOpState, const TransitionState& tansitionState);
+
+        bool setDepthStencilTexture(Texture2D* depthStencilTexture,
+            const DepthOpState& depthOpState, const StencilOpState& stencilOpState, const TransitionState& tansitionState);
 
         Texture2D* getColorTexture(u32 index) const;
         Texture2D* getDepthStencilTexture() const;

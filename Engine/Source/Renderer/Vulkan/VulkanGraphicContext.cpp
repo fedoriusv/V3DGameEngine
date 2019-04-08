@@ -498,10 +498,9 @@ void VulkanGraphicContext::bindUniformsBuffer(const Shader* shader, u32 bindInde
     m_currentContextStateNEW->updateConstantBuffer(bindIndex, bufferData, offset, size, data);
 }
 
-void VulkanGraphicContext::transitionImages(const std::vector<Image*>& images, TransitionState transition, s32 layer)
+void VulkanGraphicContext::transitionImages(const std::vector<Image*>& images, TransitionOp transition, s32 layer)
 {
-    ASSERT(!images.empty(), "empty");
-    m_currentContextStateNEW->transition(images, layer, transition);
+    ASSERT(false, "impl");
 }
 
 void VulkanGraphicContext::draw(StreamBufferDescription& desc, u32 firstVertex, u32 vertexCount, u32 firstInstance, u32 instanceCount)
@@ -819,6 +818,9 @@ RenderPass * VulkanGraphicContext::createRenderPass(const RenderPassDescription*
         desc._samples = VulkanImage::convertRenderTargetSamplesToVkSampleCount(renderpassDesc->_attachments[index]._samples);
         desc._loadOp = VulkanRenderPass::convertAttachLoadOpToVkAttachmentLoadOp(renderpassDesc->_attachments[index]._loadOp);
         desc._storeOp = VulkanRenderPass::convertAttachStoreOpToVkAttachmentStoreOp(renderpassDesc->_attachments[index]._storeOp);
+        desc._initialLayout = VulkanRenderPass::convertTransitionStateToImageLayout(renderpassDesc->_attachments[index]._initTransition);
+        desc._finalLayout = VulkanRenderPass::convertTransitionStateToImageLayout(renderpassDesc->_attachments[index]._finalTransition);
+
         desc._swapchainImage = (renderpassDesc->_attachments[index]._internalTarget) ? true : false;
     }
 
@@ -829,6 +831,10 @@ RenderPass * VulkanGraphicContext::createRenderPass(const RenderPassDescription*
         desc._samples = VulkanImage::convertRenderTargetSamplesToVkSampleCount(renderpassDesc->_attachments.back()._samples);
         desc._loadOp = VulkanRenderPass::convertAttachLoadOpToVkAttachmentLoadOp(renderpassDesc->_attachments.back()._loadOp);
         desc._storeOp = VulkanRenderPass::convertAttachStoreOpToVkAttachmentStoreOp(renderpassDesc->_attachments.back()._storeOp);
+        desc._stencilLoadOp = VulkanRenderPass::convertAttachLoadOpToVkAttachmentLoadOp(renderpassDesc->_attachments.back()._stencilLoadOp);
+        desc._stensilStoreOp = VulkanRenderPass::convertAttachStoreOpToVkAttachmentStoreOp(renderpassDesc->_attachments.back()._stencilStoreOp);
+        desc._initialLayout = VulkanRenderPass::convertTransitionStateToImageLayout(renderpassDesc->_attachments.back()._initTransition);
+        desc._finalLayout = VulkanRenderPass::convertTransitionStateToImageLayout(renderpassDesc->_attachments.back()._finalTransition);
         desc._swapchainImage = (renderpassDesc->_attachments.back()._internalTarget) ? true : false;
     }
 

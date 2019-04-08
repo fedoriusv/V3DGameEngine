@@ -50,6 +50,32 @@ VkAttachmentStoreOp VulkanRenderPass::convertAttachStoreOpToVkAttachmentStoreOp(
     return VK_ATTACHMENT_STORE_OP_STORE;
 }
 
+VkImageLayout VulkanRenderPass::convertTransitionStateToImageLayout(TransitionOp state)
+{
+    switch (state)
+    {
+    case TransitionOp::TransitionOp_Undefined:
+        return VK_IMAGE_LAYOUT_UNDEFINED;
+
+    case TransitionOp::TransitionOp_ShaderRead:
+        return VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+
+    case TransitionOp::TransitionOp_ColorAttachmet:
+        return VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+    case TransitionOp::TransitionOp_DepthStencilAttachmet:
+        return VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+
+    case TransitionOp::TransitionOp_Present:
+        return VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+
+    default:
+        ASSERT(false, "unknown");
+    }
+
+    return VK_IMAGE_LAYOUT_UNDEFINED;
+}
+
 
 VulkanRenderPass::VulkanRenderPass(VkDevice device, const std::vector<VulkanAttachmentDescription>& desc)
     : m_device(device)
@@ -92,23 +118,13 @@ bool VulkanRenderPass::create()
         attachmentDescription.flags = 0;// VK_ATTACHMENT_DESCRIPTION_MAY_ALIAS_BIT; //need check
         attachmentDescription.loadOp = attach._loadOp;
         attachmentDescription.storeOp = attach._storeOp;
-        attachmentDescription.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE; //TODO: if use stencil need enable it
+        attachmentDescription.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
         attachmentDescription.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-
-        attachmentDescription.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+        attachmentDescription.initialLayout = attach._initialLayout;
+        attachmentDescription.finalLayout = attach._finalLayout;
 
         if (VulkanImage::isColorFormat(attach._format))
         {
-            attachmentDescription.finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-            /*if (attach._swapchainImage)
-            {
-                attachmentDescription.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
-            }
-            else
-            {
-                attachmentDescription.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            }*/
-
             VkAttachmentReference attachmentReference = {};
             attachmentReference.attachment = index;
             attachmentReference.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
@@ -117,7 +133,8 @@ bool VulkanRenderPass::create()
         }
         else
         {
-            attachmentDescription.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+            attachmentDescription.stencilLoadOp = attach._stencilLoadOp;
+            attachmentDescription.stencilStoreOp = attach._stensilStoreOp;
 
             depthStencilAttachmentReferences.attachment = index;
             depthStencilAttachmentReferences.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;

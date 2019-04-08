@@ -78,7 +78,7 @@ namespace renderer
         virtual void bindUniformsBuffer(const Shader* shader, u32 bindIndex, u32 offset, u32 size, const void* data) = 0;
 
         //transfer
-        virtual void transitionImages(const std::vector<Image*>& images, TransitionState transition, s32 layer = -1) = 0;
+        virtual void transitionImages(const std::vector<Image*>& images, TransitionOp transition, s32 layer = -1) = 0;
 
         //state
         virtual void setViewport(const core::Rect32& viewport, const core::Vector2D& depth = { 0.0f, 1.0f }) = 0;

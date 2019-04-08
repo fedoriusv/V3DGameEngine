@@ -61,6 +61,16 @@ namespace renderer
         StoreOp_Store,
     };
 
+    enum class TransitionOp : u32
+    {
+        TransitionOp_Undefined,
+        TransitionOp_ShaderRead,
+        TransitionOp_ColorAttachmet,
+        TransitionOp_DepthStencilAttachmet,
+
+        TransitionOp_Present,
+    };
+
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     constexpr u32 k_maxFramebufferAttachments = 8;
@@ -84,9 +94,11 @@ namespace renderer
         RenderTargetLoadOp    _stencilLoadOp    : 2;
         RenderTargetStoreOp   _stencilStoreOp   : 2;
         TextureSamples        _samples          : 3;
-        u32                  _internalTarget    : 1;
+        u32                   _internalTarget   : 1;
 
-        u32                   _padding          : 12;
+        TransitionOp          _initTransition   : 6;
+        TransitionOp          _finalTransition  : 6;
+        //u32                   _padding          : 12;
     };
 
     /**
@@ -107,17 +119,6 @@ namespace renderer
         u32 _hasDepthStencilAttahment   : 1;
 
         u32 _padding                    : 27;
-    };
-
-    /////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    enum TransitionState
-    {
-        TransitionState_ShaderRead,
-        TransitionState_ColorAttachmet,
-        TransitionState_DepthStencilAttachmet,
-
-        TransitionState_Present
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

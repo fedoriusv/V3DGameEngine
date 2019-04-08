@@ -82,7 +82,7 @@ namespace renderer
         void setScissor(const core::Rect32& scissor);
 
         template<class TTexture>
-        void transfer(TTexture* texture, TransitionState state)
+        void transfer(TTexture* texture, TransitionOp state)
         {
             static_assert(std::is_base_of<Texture, TTexture>());
             transfer({ texture->getImage() }, state);
@@ -121,7 +121,7 @@ namespace renderer
 
     private:
 
-        void transfer(const std::vector<Image*>& image, TransitionState state, s32 layer = -1);
+        void transfer(const std::vector<Image*>& image, TransitionOp state, s32 layer = -1);
 
         struct RenderTargetPendingState
         {

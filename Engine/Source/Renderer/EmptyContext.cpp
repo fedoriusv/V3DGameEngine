@@ -98,10 +98,10 @@ void EmptyContext::bindUniformsBuffer(const Shader* shader, u32 bindIndex, u32 o
     LOG_DEBUG("EmptyContext::bindUniformsBuffer");
 }
 
-//void EmptyContext::bindVertexBuffers(const std::vector<Buffer*>& buffer, const std::vector<u64>& offsets)
-//{
-//    LOG_DEBUG("EmptyContext::bindVertexBuffers");
-//}
+void EmptyContext::transitionImages(const std::vector<Image*>& images, TransitionOp transition, s32 layer)
+{
+    LOG_DEBUG("EmptyContext::transitionImages");
+}
 
 void EmptyContext::draw(StreamBufferDescription& desc, u32 firstVertex, u32 vertexCount, u32 firstInstance, u32 instanceCount)
 {

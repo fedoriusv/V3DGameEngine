@@ -153,6 +153,9 @@ bool RenderTargetState::setColorTexture(u32 index, Texture2D* colorTexture, Rend
         attachmentDesc._stencilStoreOp = RenderTargetStoreOp::StoreOp_DontCare;
         attachmentDesc._internalTarget = false;
 
+        attachmentDesc._initTransition = TransitionOp::TransitionOp_Undefined;
+        attachmentDesc._finalTransition = TransitionOp::TransitionOp_ColorAttachmet;
+
         m_colorTextures[index] = std::make_tuple(colorTexture, attachmentDesc, clearColor);
     }
     else
@@ -178,6 +181,9 @@ bool RenderTargetState::setColorTexture(u32 index, Backbuffer* swapchainTexture,
         attachmentDesc._stencilStoreOp = RenderTargetStoreOp::StoreOp_DontCare;
         attachmentDesc._internalTarget = true;
 
+        attachmentDesc._initTransition = TransitionOp::TransitionOp_Undefined;
+        attachmentDesc._finalTransition = TransitionOp::TransitionOp_Present;
+
         m_colorTextures[index] = std::make_tuple(nullptr, attachmentDesc, clearColor);
     }
     else
@@ -202,6 +208,9 @@ bool RenderTargetState::setDepthStencilTexture(Texture2D* depthStencilTexture,
         attachmentDesc._stencilStoreOp = stencilStoreOp;
         attachmentDesc._internalTarget = false;
 
+        attachmentDesc._initTransition = TransitionOp::TransitionOp_Undefined;
+        attachmentDesc._finalTransition = TransitionOp::TransitionOp_DepthStencilAttachmet;
+
         m_depthStencilTexture = std::make_tuple(depthStencilTexture, attachmentDesc, clearDepth, clearStencil);
     }
     else
@@ -210,6 +219,86 @@ bool RenderTargetState::setDepthStencilTexture(Texture2D* depthStencilTexture,
     }
 
     //TODO check compatibility
+    return true;
+}
+
+bool RenderTargetState::setColorTexture(u32 index, Texture2D * colorTexture, const ColorOpState & colorOpState, const TransitionState & tansitionState)
+{
+    ASSERT(index < m_cmdList.getContext()->getDeviceCaps()->maxColorattachments, "index >= maxColorattachments");
+    if (colorTexture)
+    {
+        renderer::AttachmentDescription attachmentDesc = {};
+        attachmentDesc._format = colorTexture->getFormat();
+        attachmentDesc._samples = colorTexture->getSampleCount();
+        attachmentDesc._loadOp = colorOpState._loadOp;
+        attachmentDesc._storeOp = colorOpState._storeOp;
+        attachmentDesc._stencilLoadOp = RenderTargetLoadOp::LoadOp_DontCare;
+        attachmentDesc._stencilStoreOp = RenderTargetStoreOp::StoreOp_DontCare;
+        attachmentDesc._internalTarget = false;
+
+        attachmentDesc._initTransition = tansitionState._initialState;
+        attachmentDesc._finalTransition = tansitionState._finalState;
+
+        m_colorTextures[index] = std::make_tuple(colorTexture, attachmentDesc, colorOpState._clearColor);
+    }
+    else
+    {
+        m_colorTextures[index] = std::make_tuple(nullptr, renderer::AttachmentDescription(), colorOpState._clearColor);
+    }
+
+    return true;
+}
+
+bool RenderTargetState::setColorTexture(u32 index, Backbuffer * swapchainTexture, const ColorOpState & colorOpState, const TransitionState & tansitionState)
+{
+    ASSERT(index < m_cmdList.getContext()->getDeviceCaps()->maxColorattachments, "index >= maxColorattachments");
+    if (swapchainTexture)
+    {
+        renderer::AttachmentDescription attachmentDesc = {};
+        attachmentDesc._format = swapchainTexture->getFormat();
+        attachmentDesc._samples = TextureSamples::TextureSamples_x1;
+        attachmentDesc._loadOp = colorOpState._loadOp;
+        attachmentDesc._storeOp = colorOpState._storeOp;
+        attachmentDesc._stencilLoadOp = RenderTargetLoadOp::LoadOp_DontCare;
+        attachmentDesc._stencilStoreOp = RenderTargetStoreOp::StoreOp_DontCare;
+        attachmentDesc._internalTarget = true;
+
+        attachmentDesc._initTransition = tansitionState._initialState;
+        attachmentDesc._finalTransition = tansitionState._finalState;
+
+        m_colorTextures[index] = std::make_tuple(nullptr, attachmentDesc, colorOpState._clearColor);
+    }
+    else
+    {
+        m_colorTextures[index] = std::make_tuple(nullptr, renderer::AttachmentDescription(), colorOpState._clearColor);
+    }
+
+    return true;
+}
+
+bool RenderTargetState::setDepthStencilTexture(Texture2D * depthStencilTexture, const DepthOpState & depthOpState, const StencilOpState & stencilOpState, const TransitionState & tansitionState)
+{
+    if (depthStencilTexture)
+    {
+        renderer::AttachmentDescription attachmentDesc = {};
+        attachmentDesc._format = depthStencilTexture->getFormat();
+        attachmentDesc._samples = depthStencilTexture->getSampleCount();
+        attachmentDesc._loadOp = depthOpState._loadOp;
+        attachmentDesc._storeOp = depthOpState._storeOp;
+        attachmentDesc._stencilLoadOp = stencilOpState._loadOp;
+        attachmentDesc._stencilStoreOp = stencilOpState._storeOp;
+        attachmentDesc._internalTarget = false;
+
+        attachmentDesc._initTransition = tansitionState._initialState;
+        attachmentDesc._finalTransition = tansitionState._finalState;
+
+        m_depthStencilTexture = std::make_tuple(depthStencilTexture, attachmentDesc, depthOpState._clearDepth, stencilOpState._clearStencil);
+    }
+    else
+    {
+        m_depthStencilTexture = std::make_tuple(nullptr, renderer::AttachmentDescription(), depthOpState._clearDepth, stencilOpState._clearStencil);
+    }
+
     return true;
 }
 

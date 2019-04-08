@@ -176,10 +176,6 @@ void Scene::onRender(v3d::renderer::CommandList & cmd)
 
             m_modelDrawer->draw(i);
         }
-
-        cmd.transfer<renderer::Texture2D>(m_MRTRenderPass.colorTexture[0].get(), renderer::TransitionState::TransitionState_ShaderRead);
-        cmd.transfer<renderer::Texture2D>(m_MRTRenderPass.colorTexture[1].get(), renderer::TransitionState::TransitionState_ShaderRead);
-        cmd.transfer<renderer::Texture2D>(m_MRTRenderPass.colorTexture[2].get(), renderer::TransitionState::TransitionState_ShaderRead);
     }
 
     //SSAO
@@ -194,8 +190,6 @@ void Scene::onRender(v3d::renderer::CommandList & cmd)
         m_SSAOProgram->bindSampledTexture<renderer::ShaderType::ShaderType_Fragment, renderer::Texture2D>("ssaoNoise", m_SSAONoiseTexture.get(), m_Sampler.get());
 
         cmd.draw(renderer::StreamBufferDescription(nullptr, 0), 0, 3, 1);
-
-        cmd.transfer<renderer::Texture2D>(m_SSAORenderPass.colorTexture[0].get(), renderer::TransitionState::TransitionState_ShaderRead);
     }
 
     // SSAO Blur
@@ -206,8 +200,6 @@ void Scene::onRender(v3d::renderer::CommandList & cmd)
         m_SSAOBlurProgram->bindSampledTexture<renderer::ShaderType::ShaderType_Fragment, renderer::Texture2D>("samplerSSAO", m_SSAORenderPass.colorTexture[0].get(), m_Sampler.get());
 
         cmd.draw(renderer::StreamBufferDescription(nullptr, 0), 0, 3, 1);
-
-        cmd.transfer<renderer::Texture2D>(m_SSAOBlurRenderPass.colorTexture[0].get(), renderer::TransitionState::TransitionState_ShaderRead);
     }
 
     //Composition
@@ -289,11 +281,13 @@ void Scene::onLoad(v3d::renderer::CommandList & cmd)
         m_MRTRenderPass.colorTexture[2] = cmd.createObject<renderer::Texture2D>(renderer::TextureUsage::TextureUsage_Attachment | renderer::TextureUsage::TextureUsage_Sampled, renderer::Format::Format_R32G32B32A32_UInt, m_size, renderer::TextureSamples::TextureSamples_x1);
         m_MRTRenderPass.depthTexture = cmd.createObject<renderer::Texture2D>(renderer::TextureUsage::TextureUsage_Attachment, renderer::Format::Format_D32_SFloat_S8_UInt, m_size, renderer::TextureSamples::TextureSamples_x1);
 
+        renderer::RenderTargetState::ColorOpState colorOpState = { renderer::RenderTargetLoadOp::LoadOp_Clear, renderer::RenderTargetStoreOp::StoreOp_Store, core::Vector4D(0.0f) };
+        renderer::RenderTargetState::TransitionState tansitionState = { renderer::TransitionOp::TransitionOp_Undefined, renderer::TransitionOp::TransitionOp_ShaderRead };
         m_MRTRenderPass.renderTarget = cmd.createObject<renderer::RenderTargetState>(m_size);
-        m_MRTRenderPass.renderTarget->setColorTexture(0, m_MRTRenderPass.colorTexture[0].get(), renderer::RenderTargetLoadOp::LoadOp_Clear, renderer::RenderTargetStoreOp::StoreOp_Store, core::Vector4D(0.0f));
-        m_MRTRenderPass.renderTarget->setColorTexture(1, m_MRTRenderPass.colorTexture[1].get(), renderer::RenderTargetLoadOp::LoadOp_Clear, renderer::RenderTargetStoreOp::StoreOp_Store, core::Vector4D(0.0f));
-        m_MRTRenderPass.renderTarget->setColorTexture(2, m_MRTRenderPass.colorTexture[2].get(), renderer::RenderTargetLoadOp::LoadOp_Clear, renderer::RenderTargetStoreOp::StoreOp_Store, core::Vector4D(0.0f));
-        m_MRTRenderPass.renderTarget->setDepthStencilTexture(m_MRTRenderPass.depthTexture.get(), renderer::RenderTargetLoadOp::LoadOp_Clear, renderer::RenderTargetStoreOp::StoreOp_Store, 1.0f);
+        m_MRTRenderPass.renderTarget->setColorTexture(0, m_MRTRenderPass.colorTexture[0].get(), colorOpState, tansitionState);
+        m_MRTRenderPass.renderTarget->setColorTexture(1, m_MRTRenderPass.colorTexture[1].get(), colorOpState, tansitionState);
+        m_MRTRenderPass.renderTarget->setColorTexture(2, m_MRTRenderPass.colorTexture[2].get(), colorOpState, tansitionState);
+        m_MRTRenderPass.renderTarget->setDepthStencilTexture(m_MRTRenderPass.depthTexture.get(), renderer::RenderTargetLoadOp::LoadOp_Clear, renderer::RenderTargetStoreOp::StoreOp_DontCare, 1.0f);
 
         {
             std::vector<std::pair<std::string, std::string>> defines =
@@ -378,8 +372,11 @@ void Scene::onLoad(v3d::renderer::CommandList & cmd)
         m_SSAOProgram = cmd.createObject<renderer::ShaderProgram>(std::vector<const renderer::Shader*>({ fullscreenVertShader , ssaoFragShader }));
 
         m_SSAORenderPass.colorTexture[0] = cmd.createObject<renderer::Texture2D>(renderer::TextureUsage::TextureUsage_Attachment | renderer::TextureUsage::TextureUsage_Sampled, renderer::Format::Format_R8_UNorm, m_size, renderer::TextureSamples::TextureSamples_x1);
+
+        renderer::RenderTargetState::ColorOpState colorOpState = { renderer::RenderTargetLoadOp::LoadOp_DontCare, renderer::RenderTargetStoreOp::StoreOp_Store, core::Vector4D(0.0f) };
+        renderer::RenderTargetState::TransitionState tansitionState = { renderer::TransitionOp::TransitionOp_Undefined, renderer::TransitionOp::TransitionOp_ShaderRead };
         m_SSAORenderPass.renderTarget = cmd.createObject<renderer::RenderTargetState>(m_size);
-        m_SSAORenderPass.renderTarget->setColorTexture(0, m_SSAORenderPass.colorTexture[0].get(), renderer::RenderTargetLoadOp::LoadOp_DontCare, renderer::RenderTargetStoreOp::StoreOp_Store, core::Vector4D(0.0f));
+        m_SSAORenderPass.renderTarget->setColorTexture(0, m_SSAORenderPass.colorTexture[0].get(), colorOpState, tansitionState);
 
         m_SSAOPipeline = cmd.createObject<renderer::GraphicsPipelineState>(renderer::VertexInputAttribDescription(), m_SSAOProgram, m_SSAORenderPass.renderTarget.get());
         m_SSAOPipeline->setColorMask(renderer::ColorMask::ColorMask_All);
@@ -392,8 +389,11 @@ void Scene::onLoad(v3d::renderer::CommandList & cmd)
         m_SSAOBlurProgram = cmd.createObject<renderer::ShaderProgram>(std::vector<const renderer::Shader*>({ fullscreenVertShader , ssaoBlurFragShader }));
 
         m_SSAOBlurRenderPass.colorTexture[0] = cmd.createObject<renderer::Texture2D>(renderer::TextureUsage::TextureUsage_Attachment | renderer::TextureUsage::TextureUsage_Sampled, renderer::Format::Format_R8_UNorm, m_size, renderer::TextureSamples::TextureSamples_x1);
+
+        renderer::RenderTargetState::ColorOpState colorOpState = { renderer::RenderTargetLoadOp::LoadOp_DontCare, renderer::RenderTargetStoreOp::StoreOp_Store, core::Vector4D(0.0f) };
+        renderer::RenderTargetState::TransitionState tansitionState = { renderer::TransitionOp::TransitionOp_Undefined, renderer::TransitionOp::TransitionOp_ShaderRead };
         m_SSAOBlurRenderPass.renderTarget = cmd.createObject<renderer::RenderTargetState>(m_size);
-        m_SSAOBlurRenderPass.renderTarget->setColorTexture(0, m_SSAOBlurRenderPass.colorTexture[0].get(), renderer::RenderTargetLoadOp::LoadOp_DontCare, renderer::RenderTargetStoreOp::StoreOp_Store, core::Vector4D(0.0f));
+        m_SSAOBlurRenderPass.renderTarget->setColorTexture(0, m_SSAOBlurRenderPass.colorTexture[0].get(), colorOpState, tansitionState);
 
         m_SSAOBlurPipeline = cmd.createObject<renderer::GraphicsPipelineState>(renderer::VertexInputAttribDescription(), m_SSAOBlurProgram, m_SSAOBlurRenderPass.renderTarget.get());
         m_SSAOBlurPipeline->setColorMask(renderer::ColorMask::ColorMask_All);
@@ -428,8 +428,10 @@ void Scene::onLoad(v3d::renderer::CommandList & cmd)
             { "AMBIENT_FACTOR", std::to_string(0.15f) },
         };
 
+        renderer::RenderTargetState::ColorOpState colorOpState = { renderer::RenderTargetLoadOp::LoadOp_DontCare, renderer::RenderTargetStoreOp::StoreOp_Store, core::Vector4D(0.0f) };
+        renderer::RenderTargetState::TransitionState tansitionState = { renderer::TransitionOp::TransitionOp_Undefined, renderer::TransitionOp::TransitionOp_Present };
         m_CompositionRenderPass.renderTarget = cmd.createObject<renderer::RenderTargetState>(m_size);
-        m_CompositionRenderPass.renderTarget->setColorTexture(0, cmd.getBackbuffer(), renderer::RenderTargetLoadOp::LoadOp_DontCare, renderer::RenderTargetStoreOp::StoreOp_Store, core::Vector4D(0.0f));
+        m_CompositionRenderPass.renderTarget->setColorTexture(0, cmd.getBackbuffer(), colorOpState, tansitionState);
 
         const renderer::Shader* fullscreenVertShader = resource::ResourceLoaderManager::getInstance()->loadShader<renderer::Shader, resource::ShaderSourceFileLoader>(cmd.getContext(), "shaders/fullscreen.vert");
         const renderer::Shader* compositionFragShader = resource::ResourceLoaderManager::getInstance()->loadShader<renderer::Shader, resource::ShaderSourceFileLoader>(cmd.getContext(), "shaders/composition.frag", defines);
