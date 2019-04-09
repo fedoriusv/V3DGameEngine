@@ -69,6 +69,9 @@ namespace scene
         renderer::GraphicsPipelineState* m_MRTOpaquePipeline;
         renderer::ShaderProgram*         m_MRTOpaqueProgram;
 
+        renderer::GraphicsPipelineState* m_MRTTransparentPipeline;
+        renderer::ShaderProgram*         m_MRTTransparentProgram;
+
         //renderer::GraphicsPipelineState* m_MRTParticlesPipeline;
         //renderer::GraphicsPipelineState* m_mptSkyboxPipeline;
 

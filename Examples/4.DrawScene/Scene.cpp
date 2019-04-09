@@ -150,7 +150,6 @@ void Scene::onRender(v3d::renderer::CommandList & cmd)
         cmd.setScissor(core::Rect32(0, 0, m_size.width, m_size.height));
 
         cmd.setRenderTarget(m_MRTRenderPass.renderTarget.get());
-        cmd.setPipelineState(m_MRTOpaquePipeline);
 
         struct
         {
@@ -163,8 +162,34 @@ void Scene::onRender(v3d::renderer::CommandList & cmd)
         ubo.model.makeIdentity();
         ubo.view = m_camera->getViewMatrix();
 
+        cmd.setPipelineState(m_MRTOpaquePipeline);
         for (u32 i = 0; i < m_modelDrawer->getDrawStatesCount(); ++i)
         {
+            if (m_sponzaMaterials[i]->getFloatParameter(MaterialHeader::Property::Property_Opacity) > 0.0f)
+            {
+                continue;
+            }
+
+            renderer::Texture2D* baseColor = m_sponzaMaterials[i]->getTextureParameter<renderer::Texture2D>(MaterialHeader::Property::Property_BaseColor);
+            renderer::Texture2D* specularColor = m_sponzaMaterials[i]->getTextureParameter<renderer::Texture2D>(MaterialHeader::Property::Property_Specular);
+            renderer::Texture2D* normalMap = m_sponzaMaterials[i]->getTextureParameter<renderer::Texture2D>(MaterialHeader::Property::Property_Normals);
+
+            m_MRTOpaqueProgram->bindUniformsBuffer<renderer::ShaderType::ShaderType_Vertex>("ubo", 0, sizeof(ubo), &ubo);
+            m_MRTOpaqueProgram->bindSampledTexture<renderer::ShaderType::ShaderType_Fragment, renderer::Texture2D>("samplerColor", baseColor ? baseColor : m_DummyTexture.get(), m_Sampler.get());
+            m_MRTOpaqueProgram->bindSampledTexture<renderer::ShaderType::ShaderType_Fragment, renderer::Texture2D>("samplerSpecular", specularColor ? specularColor : m_DummyTexture.get(), m_Sampler.get());
+            m_MRTOpaqueProgram->bindSampledTexture<renderer::ShaderType::ShaderType_Fragment, renderer::Texture2D>("samplerNormal", normalMap ? normalMap : m_DummyTexture.get(), m_Sampler.get());
+
+            m_modelDrawer->draw(i);
+        }
+
+        cmd.setPipelineState(m_MRTTransparentPipeline);
+        for (u32 i = 0; i < m_modelDrawer->getDrawStatesCount(); ++i)
+        {
+            if (m_sponzaMaterials[i]->getFloatParameter(MaterialHeader::Property::Property_Opacity) == 0.0f)
+            {
+                continue;
+            }
+
             renderer::Texture2D* baseColor = m_sponzaMaterials[i]->getTextureParameter<renderer::Texture2D>(MaterialHeader::Property::Property_BaseColor);
             renderer::Texture2D* specularColor = m_sponzaMaterials[i]->getTextureParameter<renderer::Texture2D>(MaterialHeader::Property::Property_Specular);
             renderer::Texture2D* normalMap = m_sponzaMaterials[i]->getTextureParameter<renderer::Texture2D>(MaterialHeader::Property::Property_Normals);
@@ -281,7 +306,7 @@ void Scene::onLoad(v3d::renderer::CommandList & cmd)
         m_MRTRenderPass.colorTexture[2] = cmd.createObject<renderer::Texture2D>(renderer::TextureUsage::TextureUsage_Attachment | renderer::TextureUsage::TextureUsage_Sampled, renderer::Format::Format_R32G32B32A32_UInt, m_size, renderer::TextureSamples::TextureSamples_x1);
         m_MRTRenderPass.depthTexture = cmd.createObject<renderer::Texture2D>(renderer::TextureUsage::TextureUsage_Attachment, renderer::Format::Format_D32_SFloat_S8_UInt, m_size, renderer::TextureSamples::TextureSamples_x1);
 
-        renderer::RenderTargetState::ColorOpState colorOpState = { renderer::RenderTargetLoadOp::LoadOp_Clear, renderer::RenderTargetStoreOp::StoreOp_Store, core::Vector4D(0.0f) };
+        renderer::RenderTargetState::ColorOpState colorOpState = { renderer::RenderTargetLoadOp::LoadOp_DontCare, renderer::RenderTargetStoreOp::StoreOp_Store, core::Vector4D(0.0f) };
         renderer::RenderTargetState::TransitionState tansitionState = { renderer::TransitionOp::TransitionOp_Undefined, renderer::TransitionOp::TransitionOp_ShaderRead };
         m_MRTRenderPass.renderTarget = cmd.createObject<renderer::RenderTargetState>(m_size);
         m_MRTRenderPass.renderTarget->setColorTexture(0, m_MRTRenderPass.colorTexture[0].get(), colorOpState, tansitionState);
@@ -309,6 +334,28 @@ void Scene::onLoad(v3d::renderer::CommandList & cmd)
             m_MRTOpaquePipeline->setDepthCompareOp(renderer::CompareOperation::CompareOp_LessOrEqual);
             m_MRTOpaquePipeline->setDepthWrite(true);
             m_MRTOpaquePipeline->setDepthTest(true);
+        }
+
+        {
+            std::vector<std::pair<std::string, std::string>> defines =
+            {
+                { "NEAR_PLANE", std::to_string(m_camera->getNearValue()) },
+                { "FAR_PLANE", std::to_string(m_camera->getFarValue()) },
+                { "ENABLE_DISCARD", std::to_string(1) }
+            };
+
+            const renderer::Shader* sponzaMRTVertShader = resource::ResourceLoaderManager::getInstance()->loadShader<renderer::Shader, resource::ShaderSourceFileLoader>(cmd.getContext(), "shaders/mrt.vert");
+            const renderer::Shader* sponzaMRTFragShader = resource::ResourceLoaderManager::getInstance()->loadShader<renderer::Shader, resource::ShaderSourceFileLoader>(cmd.getContext(), "shaders/mrt.frag", defines);
+            m_MRTTransparentProgram = cmd.createObject<renderer::ShaderProgram>(std::vector<const renderer::Shader*>({ sponzaMRTVertShader , sponzaMRTFragShader }));
+
+            m_MRTTransparentPipeline = cmd.createObject<renderer::GraphicsPipelineState>(sponza->getMeshByIndex(0)->getVertexInputAttribDesc(), m_MRTTransparentProgram, m_MRTRenderPass.renderTarget.get());
+            m_MRTTransparentPipeline->setPrimitiveTopology(renderer::PrimitiveTopology::PrimitiveTopology_TriangleList);
+            m_MRTTransparentPipeline->setFrontFace(renderer::FrontFace::FrontFace_Clockwise);
+            m_MRTTransparentPipeline->setCullMode(renderer::CullMode::CullMode_Back);
+            m_MRTTransparentPipeline->setColorMask(renderer::ColorMask::ColorMask_All);
+            m_MRTTransparentPipeline->setDepthCompareOp(renderer::CompareOperation::CompareOp_LessOrEqual);
+            m_MRTTransparentPipeline->setDepthWrite(false);
+            m_MRTTransparentPipeline->setDepthTest(true);
         }
 
         /*{

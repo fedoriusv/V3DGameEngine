@@ -27,7 +27,7 @@ namespace vk
     {
     public:
 
-        static const u16    s_severityDebugLevel = 4;
+        static const u16    k_severityDebugLevel = 2;
 
         static bool         createDebugUtilsMesseger(VkInstance instance, VkDebugUtilsMessageSeverityFlagsEXT severityFlag, VkDebugUtilsMessageTypeFlagsEXT flags, PFN_vkDebugUtilsMessengerCallbackEXT callback, void* userData);
         static void         destroyDebugUtilsMesseger(VkInstance instance);

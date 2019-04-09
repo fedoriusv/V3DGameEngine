@@ -130,7 +130,7 @@ renderer::Texture * Material::getTextureParameter(MaterialHeader::Property prope
         return std::get<3>(iter->second);
     }
 
-    LOG_WARNING("Material::getTextureParameter property %d not found", property);
+    //LOG_WARNING("Material::getTextureParameter property %d not found", property);
     return nullptr;
 }
 

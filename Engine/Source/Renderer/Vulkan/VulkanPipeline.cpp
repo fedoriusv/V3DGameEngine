@@ -755,7 +755,7 @@ bool VulkanGraphicPipeline::createCompatibilityRenderPass(const RenderPassDescri
         compatibilityRenderpassDesc._attachments[index]._stencilLoadOp = RenderTargetLoadOp::LoadOp_DontCare;
         compatibilityRenderpassDesc._attachments[index]._stencilStoreOp = RenderTargetStoreOp::StoreOp_DontCare;
         compatibilityRenderpassDesc._attachments[index]._initTransition = TransitionOp::TransitionOp_Undefined;
-        compatibilityRenderpassDesc._attachments[index]._finalTransition = TransitionOp::TransitionOp_Undefined;
+        compatibilityRenderpassDesc._attachments[index]._finalTransition = TransitionOp::TransitionOp_ColorAttachmet;
     }
 
     if (compatibilityRenderpassDesc._hasDepthStencilAttahment)
@@ -765,7 +765,7 @@ bool VulkanGraphicPipeline::createCompatibilityRenderPass(const RenderPassDescri
         compatibilityRenderpassDesc._attachments.back()._stencilLoadOp = RenderTargetLoadOp::LoadOp_DontCare;
         compatibilityRenderpassDesc._attachments.back()._stencilStoreOp = RenderTargetStoreOp::StoreOp_DontCare;
         compatibilityRenderpassDesc._attachments.back()._initTransition = TransitionOp::TransitionOp_Undefined;
-        compatibilityRenderpassDesc._attachments.back()._finalTransition = TransitionOp::TransitionOp_Undefined;
+        compatibilityRenderpassDesc._attachments.back()._finalTransition = TransitionOp::TransitionOp_DepthStencilAttachmet;
     }
 
     compatibilityRenderPass = m_renderpassManager->acquireRenderPass(compatibilityRenderpassDesc);

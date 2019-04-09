@@ -944,7 +944,7 @@ bool VulkanGraphicContext::createInstance()
 
 #if VULKAN_LAYERS_CALLBACKS
     VkDebugUtilsMessageSeverityFlagsEXT severityFlag = 0;
-    switch (VulkanDebug::s_severityDebugLevel)
+    switch (VulkanDebug::k_severityDebugLevel)
     {
     case 4:
         severityFlag |= VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT;

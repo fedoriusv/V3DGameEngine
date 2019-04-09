@@ -283,8 +283,8 @@ bool MeshAssimpDecoder::decodeMesh(const aiScene* scene, stream::Stream* modelSt
             return vertexSize;
         };
 
-        LOG_DEBUG("MeshAssimpDecoder::decodeMesh: Load mesh index %d", m);
         const aiMesh* mesh = scene->mMeshes[m];
+        LOG_DEBUG("MeshAssimpDecoder::decodeMesh: Load mesh index %d, name %s, material index %d", m, mesh->mName.C_Str(), mesh->mMaterialIndex);
         u32 stride = buildVertexData(mesh, m_header, m_useBitangents);
         ASSERT(stride > 0, "invalid stride");
         u64 meshSize = stride * mesh->mNumVertices;
@@ -533,7 +533,9 @@ bool MeshAssimpDecoder::decodeMaterial(const aiScene * scene, stream::Stream * s
         aiString name;
         material->Get(AI_MATKEY_NAME, name);
         materialHeader._debugName = name.C_Str();
+        LOG_DEBUG("MeshAssimpDecoder::decodeMaterial: Load material index %d, name %s", m, name.C_Str());
 #endif
+
         std::tuple<std::string, aiTextureType, scene::MaterialHeader::Property, bool> vectorProp[] =
         {
             { "$clr.diffuse", aiTextureType_DIFFUSE, scene::MaterialHeader::Property_Diffuse, true },
