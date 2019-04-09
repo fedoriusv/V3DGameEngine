@@ -91,6 +91,14 @@ bool VulkanSwapchain::create(const SwapchainConfig& config)
         return false;
     }
 
+    if ((config._size.width < m_surfaceCaps.minImageExtent.width || config._size.width > m_surfaceCaps.maxImageExtent.width) ||
+        (config._size.height < m_surfaceCaps.minImageExtent.height || config._size.height > m_surfaceCaps.maxImageExtent.height))
+    {
+        LOG_ERROR("VulkanSwapchain::create: Not support swapchain size min[%d, %d], max[%d, %d], requested [%d, %d]", 
+            m_surfaceCaps.minImageExtent.width, m_surfaceCaps.minImageExtent.height, m_surfaceCaps.maxImageExtent.width, m_surfaceCaps.maxImageExtent.height, config._size.width, config._size.height);
+        return false;
+    }
+
     if (m_surfaceCaps.maxImageCount < 2)
     {
         LOG_ERROR("VulkanSwapchain::create: Not enough images supported in vulkan swapchain");
