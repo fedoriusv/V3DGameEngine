@@ -27,7 +27,7 @@ MyApplication::MyApplication(int& argc, char** argv)
     , m_Timer(new utils::Timer())
     , m_frameTime(0.f)
 {
-    core::Dimension2D widowsSize = { 1920, 1080 };
+    core::Dimension2D widowsSize = { 1920, 1058 };
     m_Window = Window::createWindow(widowsSize, {400, 100}, false, new v3d::event::InputEventReceiver());
     ASSERT(m_Window, "windows is nullptr");
 

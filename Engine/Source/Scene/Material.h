@@ -79,11 +79,24 @@ namespace scene
 
     private:
 
+        struct Visitor
+        {
+            void operator()(MaterialHeader::Property property, const core::Vector4D& vector)
+            {
+                //TODO
+            }
+
+            void operator()(MaterialHeader::Property property, f32 value)
+            {
+                //TODO
+            }
+        };
+
         const MaterialHeader& getMaterialHeader() const;
 
 
         std::string m_name;
-        std::map<MaterialHeader::Property, std::variant<std::monostate, f32, core::Vector4D, renderer::Texture*>> m_properties;
+        std::map<MaterialHeader::Property, std::pair<std::variant<std::monostate, f32, core::Vector4D>, renderer::Texture*>> m_properties;
 
         friend MaterialHelper;
 
@@ -94,6 +107,26 @@ namespace scene
     template<class TType>
     inline TType Material::getParameter(MaterialHeader::Property property)
     {
+        auto iter = m_properties.find(property);
+        if (std::is_convertible<TType, renderer::Texture*>::value)
+        {
+            if (iter != m_properties.cend())
+            {
+                return static_cast<TType>(iter->second.second);
+            }
+
+            return nullptr;
+        }
+        else
+        {
+            if (iter == m_properties.cend())
+            {
+                return TType();
+            }
+
+            return TType();
+            //std::visit(Visitor, iter->second.first);
+        }
         ASSERT(false, "not implemented");
     }
 

@@ -46,18 +46,21 @@ bool Material::load()
         {
             Material::setTextureParameter(prop.first, nullptr);
         }
-        else
+
+        u32 index = static_cast<u32>(prop.second._value.index());
+        if (index == 0)
         {
-            u32 index = static_cast<u32>(prop.second._value.index());
-            ASSERT(index != 0, "monostate");
-            if (index == 1)
-            {
-                Material::setFloatParameter(prop.first, std::get<1>(prop.second._value));
-            }
-            else if (index == 2)
-            {
-                Material::setVectorParameter(prop.first, std::get<2>(prop.second._value));
-            }
+            continue;
+        }
+
+        ASSERT(index != 0, "monostate");
+        if (index == 1)
+        {
+            Material::setFloatParameter(prop.first, std::get<1>(prop.second._value));
+        }
+        else if (index == 2)
+        {
+            Material::setVectorParameter(prop.first, std::get<2>(prop.second._value));
         }
     }
 
@@ -67,41 +70,41 @@ bool Material::load()
 
 void Material::setFloatParameter(MaterialHeader::Property property, f32 value)
 {
-    auto iter = m_properties.emplace(std::make_pair(property, value));
+    auto iter = m_properties.emplace(std::make_pair(property, std::make_pair(value, nullptr)));
     if (!iter.second)
     {
-        ASSERT(iter.first->second.index() == 1, "invalid type");
-        iter.first->second = value;
+        ASSERT(iter.first->second.first.index() == 0 || iter.first->second.first.index() == 1, "invalid type");
+        iter.first->second.first = value;
     }
 }
 
 void Material::setVectorParameter(MaterialHeader::Property property, const core::Vector4D & vector)
 {
-    auto iter = m_properties.emplace(std::make_pair(property, vector));
+    auto iter = m_properties.emplace(std::make_pair(property, std::make_pair(vector, nullptr)));
     if (!iter.second)
     {
-        ASSERT(iter.first->second.index() == 2, "invalid type");
-        iter.first->second = vector;
+        ASSERT(iter.first->second.first.index() == 0 || iter.first->second.first.index() == 2, "invalid type");
+        iter.first->second.first = vector;
     }
 }
 
 void Material::setTextureParameter(MaterialHeader::Property property, renderer::Texture * texture)
 {
-    auto iter = m_properties.emplace(std::make_pair(property, texture));
+    auto iter = m_properties.emplace(std::make_pair(property, std::make_pair(std::monostate(), texture)));
     if (!iter.second)
     {
-        ASSERT(iter.first->second.index() == 3, "invalid type");
-        iter.first->second = texture;
+        ASSERT(texture, "nullptr");
+        iter.first->second.second = texture;
     }
 }
 
 f32 Material::getFloatParameter(MaterialHeader::Property property) const
 {
     auto iter = m_properties.find(property);
-    if (iter != m_properties.cend() && iter->second.index() == 1)
+    if (iter != m_properties.cend() && iter->second.first.index() == 1)
     {
-        ASSERT(iter->second.index() == 1, "invalid type");
-        return std::get<1>(iter->second);
+        ASSERT(iter->second.first.index() == 1, "invalid type");
+        return std::get<1>(iter->second.first);
     }
 
     LOG_WARNING("Material::getFloatParameter property %d not found", property);
@@ -111,26 +114,25 @@ f32 Material::getFloatParameter(MaterialHeader::Property property) const
 core::Vector4D Material::getVectorParameter(MaterialHeader::Property property) const
 {
     auto iter = m_properties.find(property);
-    if (iter != m_properties.cend() && iter->second.index() == 2)
+    if (iter != m_properties.cend() && iter->second.first.index() == 2)
     {
-        ASSERT(iter->second.index() == 2, "invalid type");
-        return std::get<2>(iter->second);
+        ASSERT(iter->second.first.index() == 2, "invalid type");
+        return std::get<2>(iter->second.first);
     }
 
     LOG_WARNING("Material::getVectorParameter property %d not found", property);
     return core::Vector4D(0.0f);
 }
 
-renderer::Texture * Material::getTextureParameter(MaterialHeader::Property property) const
+renderer::Texture* Material::getTextureParameter(MaterialHeader::Property property) const
 {
     auto iter = m_properties.find(property);
-    if (iter != m_properties.cend() && iter->second.index() == 3)
+    if (iter != m_properties.cend())
     {
-        ASSERT(iter->second.index() == 3, "invalid type");
-        return std::get<3>(iter->second);
+        return iter->second.second;
     }
 
-    //LOG_WARNING("Material::getTextureParameter property %d not found", property);
+    LOG_WARNING("Material::getTextureParameter property %d not found", property);
     return nullptr;
 }
 

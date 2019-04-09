@@ -46,11 +46,11 @@ namespace scene
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     template<class TTexture>
-    inline TTexture * MaterialHelper::getTextureParameter(MaterialHeader::Property property) const
+    inline TTexture* MaterialHelper::getTextureParameter(MaterialHeader::Property property) const
     {
         ASSERT(m_material, "nullptr");
         static_assert(std::is_base_of<renderer::Texture, TTexture>());
-        return static_cast<TTexture*>(m_material->getTextureParameter(property));
+        return m_material->getParameter<TTexture*>(property);
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
