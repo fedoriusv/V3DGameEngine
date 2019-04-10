@@ -127,7 +127,9 @@ const Shader::ReflectionInfo& Shader::getReflectionInfo() const
 Shader::Attribute::Attribute()
     : _location(0)
     , _format(renderer::Format::Format_Undefined)
+#if USE_STRING_ID_SHADER
     , _name("")
+#endif
 {
 }
 
@@ -135,14 +137,18 @@ void Shader::Attribute::operator>>(stream::Stream * stream) const
 {
     stream->write<u32>(_location);
     stream->write<renderer::Format>(_format);
+#if USE_STRING_ID_SHADER
     stream->write(_name);
+#endif
 }
 
 void Shader::Attribute::operator<<(const stream::Stream * stream)
 {
     stream->read<u32>(_location);
     stream->read<renderer::Format>(_format);
+#if USE_STRING_ID_SHADER
     stream->read(_name);
+#endif
 }
 
 
@@ -152,7 +158,9 @@ Shader::UniformBuffer::UniformBuffer()
     , _binding(0)
     , _array(1)
     , _size(0)
+#if USE_STRING_ID_SHADER
     , _name("")
+#endif
 {
 }
 
@@ -163,8 +171,9 @@ void Shader::UniformBuffer::operator>>(stream::Stream * stream) const
     stream->write<u32>(_binding);
     stream->write<u32>(_array);
     stream->write<u32>(_size);
+#if USE_STRING_ID_SHADER
     stream->write(_name);
-
+#endif
     stream->write<u32>(static_cast<u32>(_uniforms.size()));
     for (auto& uniform : _uniforms)
     {
@@ -179,8 +188,9 @@ void Shader::UniformBuffer::operator<<(const stream::Stream * stream)
     stream->read<u32>(_binding);
     stream->read<u32>(_array);
     stream->read<u32>(_size);
+#if USE_STRING_ID_SHADER
     stream->read(_name);
-
+#endif
     u32 size;
     stream->read<u32>(size);
     _uniforms.resize(size);
@@ -195,7 +205,9 @@ Shader::UniformBuffer::Uniform::Uniform()
     : _bufferId(0)
     , _array(1)
     , _type(renderer::DataType::DataType_None)
+#if USE_STRING_ID_SHADER
     , _name("")
+#endif
 {
 }
 
@@ -205,7 +217,9 @@ void Shader::UniformBuffer::Uniform::operator>>(stream::Stream * stream) const
     stream->write<u32>(_array);
     stream->write<renderer::DataType>(_type);
     stream->write<u32>(_size);
+#if USE_STRING_ID_SHADER
     stream->write(_name);
+#endif
 }
 
 void Shader::UniformBuffer::Uniform::operator<<(const stream::Stream * stream)
@@ -214,7 +228,9 @@ void Shader::UniformBuffer::Uniform::operator<<(const stream::Stream * stream)
     stream->read<u32>(_array);
     stream->read<renderer::DataType>(_type);
     stream->read<u32>(_size);
+#if USE_STRING_ID_SHADER
     stream->read(_name);
+#endif
 }
 
 
@@ -225,7 +241,9 @@ Shader::SampledImage::SampledImage()
     , _array(1)
     , _depth(false)
     , _ms(false)
+#if USE_STRING_ID_SHADER
     , _name("")
+#endif
 {
 }
 
@@ -237,7 +255,9 @@ void Shader::SampledImage::operator>>(stream::Stream * stream) const
     stream->write<u32>(_array);
     stream->write<bool>(_depth);
     stream->write<bool>(_ms);
+#if USE_STRING_ID_SHADER
     stream->write(_name);
+#endif
 }
 
 void Shader::SampledImage::operator<<(const stream::Stream * stream)
@@ -248,13 +268,17 @@ void Shader::SampledImage::operator<<(const stream::Stream * stream)
     stream->read<u32>(_array);
     stream->read<bool>(_depth);
     stream->read<bool>(_ms);
+#if USE_STRING_ID_SHADER
     stream->read(_name);
+#endif
 }
 
 Shader::PushConstant::PushConstant()
     : _offset(0)
     , _size(0)
+#if USE_STRING_ID_SHADER
     , _name("")
+#endif
 {
 }
 
@@ -262,14 +286,18 @@ void Shader::PushConstant::operator>>(stream::Stream * stream) const
 {
     stream->write<u32>(_offset);
     stream->write<u32>(_size);
+#if USE_STRING_ID_SHADER
     stream->write(_name);
+#endif
 }
 
 void Shader::PushConstant::operator<<(const stream::Stream * stream)
 {
     stream->read<u32>(_offset);
     stream->read<u32>(_size);
+#if USE_STRING_ID_SHADER
     stream->read(_name);
+#endif
 }
 
 } //namespace renderer

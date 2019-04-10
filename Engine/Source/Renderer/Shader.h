@@ -61,8 +61,9 @@ namespace renderer
 
             u32              _location;
             renderer::Format _format;
+#if USE_STRING_ID_SHADER
             std::string      _name;
-
+#endif
             void operator >> (stream::Stream * stream) const;
             void operator << (const stream::Stream * stream);
         };
@@ -77,9 +78,9 @@ namespace renderer
                 u32                _array;
                 renderer::DataType _type;
                 u32                _size;
-
+#if USE_STRING_ID_SHADER
                 std::string        _name;
-
+#endif
                 void operator >> (stream::Stream * stream) const;
                 void operator << (const stream::Stream * stream);
             };
@@ -91,7 +92,9 @@ namespace renderer
             u32                  _binding;
             u32                  _array;
             u32                  _size;
+#if USE_STRING_ID_SHADER
             std::string          _name;
+#endif
             std::vector<Uniform> _uniforms;
 
             void operator >> (stream::Stream * stream) const;
@@ -108,8 +111,9 @@ namespace renderer
             u32                     _array;
             bool                    _depth;
             bool                    _ms;
+#if USE_STRING_ID_SHADER
             std::string             _name;
-
+#endif
             void operator >> (stream::Stream * stream) const;
             void operator << (const stream::Stream * stream);
         };
@@ -120,8 +124,9 @@ namespace renderer
 
             u32         _offset;
             u32         _size;
+#if USE_STRING_ID_SHADER
             std::string _name;
-
+#endif
             void operator >> (stream::Stream * stream) const;
             void operator << (const stream::Stream * stream);
         };

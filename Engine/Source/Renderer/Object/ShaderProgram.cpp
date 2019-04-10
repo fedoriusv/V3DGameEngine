@@ -191,7 +191,7 @@ void ShaderProgram::composeProgramData(const std::vector<const Shader*>& shaders
     for (auto shader : shaders)
     {
         m_programInfo._hash = crc32c::Extend(m_programInfo._hash, reinterpret_cast<const u8*>(&shader->m_hash), sizeof(u32));
-
+#if USE_STRING_ID_SHADER
         auto& prameters = m_shaderParameters[shader->getShaderHeader()._type];
         u32 uniformIndex = 0;
         for (auto& buffer : shader->m_reflectionInfo._uniformBuffers)
@@ -202,12 +202,13 @@ void ShaderProgram::composeProgramData(const std::vector<const Shader*>& shaders
             {
                 ASSERT(false, "already present inside map");
             }
-            ++uniformIndex;
         }
+        ++uniformIndex;
 
         u32 imageIndex = 0;
         for (auto& image : shader->m_reflectionInfo._sampledImages)
         {
+
             ASSERT(!image._name.empty(), "empty name");
             auto iter = prameters.emplace(image._name, imageIndex);
             if (!iter.second)
@@ -216,9 +217,11 @@ void ShaderProgram::composeProgramData(const std::vector<const Shader*>& shaders
             }
             ++imageIndex;
         }
+#endif //USE_STRING_ID_SHADER
     }
 }
 
+#if USE_STRING_ID_SHADER
 bool ShaderProgram::bindUniformsBuffer(ShaderType shaderType, std::string& name, u32 offset, u32 size, const void* data)
 {
     const Shader* shader = m_programInfo._shaders[shaderType];
@@ -341,6 +344,7 @@ bool ShaderProgram::bindSampledTexture(ShaderType shaderType, std::string& name,
     //return ShaderProgram::bindSampledTexture(shaderType, name, target, texture, sampler->m_samplerDesc);
     return false;
 }
+#endif //USE_STRING_ID_SHADER
 
 ShaderProgram::~ShaderProgram()
 {

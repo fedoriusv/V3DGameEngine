@@ -57,15 +57,24 @@ namespace renderer
 
         void composeProgramData(const std::vector<const Shader*>& shaders);
 
+#if USE_STRING_ID_SHADER
         bool bindTexture(ShaderType shaderType, std::string& name, TextureTarget target, const Texture* texture);
         bool bindSampledTexture(ShaderType shaderType, std::string& name, TextureTarget target, const Texture* texture, const SamplerState* sampler);
         bool bindSampledTexture(ShaderType shaderType, std::string& name, TextureTarget target, const Texture* texture, const SamplerDescription& desc);
         bool bindUniformsBuffer(ShaderType shaderType, std::string& name, u32 offset, u32 size, const void* data);
+#else
+        bool bindTexture(ShaderType shaderType, u32 index, TextureTarget target, const Texture* texture);
+        bool bindSampledTexture(ShaderType shaderType, u32 index, TextureTarget target, const Texture* texture, const SamplerState* sampler);
+        bool bindUniformsBuffer(ShaderType shaderType, u32 index, u32 offset, u32 size, const void* data);
+#endif
 
+#if USE_STRING_ID_SHADER
         std::map<std::string, u32> m_shaderParameters[ShaderType::ShaderType_Count];
+#endif
     };
 
 
+#if USE_STRING_ID_SHADER
     template<ShaderType shaderType, class TTexture>
     inline bool ShaderProgram::bindTexture(std::string name, const TTexture* texture)
     {
@@ -102,7 +111,7 @@ namespace renderer
     {
         return ShaderProgram::bindUniformsBuffer(shaderType, name, offset, size, data);
     }
-
+#endif //USE_STRING_ID_SHADER
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 

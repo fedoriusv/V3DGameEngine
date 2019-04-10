@@ -14,7 +14,7 @@ namespace v3d
 namespace resource
 {
 
-ShaderSourceFileLoader::ShaderSourceFileLoader(const renderer::Context* context, const std::vector<std::pair<std::string, std::string>>& defines) noexcept
+ShaderSourceFileLoader::ShaderSourceFileLoader(const renderer::Context* context, const std::vector<std::pair<std::string, std::string>>& defines, ShaderSourceBuildFlags flags) noexcept
 {
     ASSERT(context, "context is nullptr");
     if (context->getRenderType() == renderer::Context::RenderType::VulkanRender)
@@ -24,20 +24,20 @@ ShaderSourceFileLoader::ShaderSourceFileLoader(const renderer::Context* context,
             renderer::ShaderHeader header;
             header._contentType = renderer::ShaderHeader::ShaderResource::ShaderResource_Source;
             header._shaderLang = renderer::ShaderHeader::ShaderLang::ShaderLang_GLSL;
-            header._optLevel = 0;
+            header._optLevel = (flags | ShaderSourceBuildFlag::ShaderSource_OptimisationPerformance) ? 2 : (flags | ShaderSourceBuildFlag::ShaderSource_OptimisationSize) ? 1 : 0;
             header._defines = defines;
 
-            ResourceLoader::registerDecoder(new ShaderSpirVDecoder({ "vert", "frag" }, header, true));
+            ResourceLoader::registerDecoder(new ShaderSpirVDecoder({ "vert", "frag" }, header, (flags | ShaderSourceBuildFlag::ShaderSource_DontUseReflaction) != 0));
         }
 
         {
             renderer::ShaderHeader header;
             header._contentType = renderer::ShaderHeader::ShaderResource::ShaderResource_Source;
             header._shaderLang = renderer::ShaderHeader::ShaderLang::ShaderLang_HLSL;
-            header._optLevel = 0;
+            header._optLevel = (flags | ShaderSourceBuildFlag::ShaderSource_OptimisationPerformance) ? 2 : (flags | ShaderSourceBuildFlag::ShaderSource_OptimisationSize) ? 1 : 0;
             header._defines = defines;
 
-            ResourceLoader::registerDecoder(new ShaderSpirVDecoder({"hlsl"}, header, true));
+            ResourceLoader::registerDecoder(new ShaderSpirVDecoder({ "vs", "ps" }, header, (flags | ShaderSourceBuildFlag::ShaderSource_DontUseReflaction) != 0));
         }
 #else //USE_SPIRV
         ASSERT(false, "not implemented");

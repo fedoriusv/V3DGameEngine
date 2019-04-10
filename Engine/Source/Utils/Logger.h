@@ -61,8 +61,13 @@ namespace utils
 
         LoggerType                              m_level;
 
+#ifdef DEBUG
         const static u32                        k_bufferSize = 32;
-        const static u32                        k_maxMessageSize = 2048;
+        const static u32                        k_maxMessageSize = 1024 * 10;
+#else
+        const static u32                        k_bufferSize = 32;
+        const static u32                        k_maxMessageSize = 1024;
+#endif
 
         bool                                    m_immediateFlush;
         std::vector<std::string>                m_fileBuffer;

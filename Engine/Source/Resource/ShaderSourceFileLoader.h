@@ -15,6 +15,15 @@ namespace resource
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    enum ShaderSourceBuildFlag
+    {
+        ShaderSource_DontUseReflaction = 1 << 0,
+        ShaderSource_OptimisationSize = 1 << 1,
+        ShaderSource_OptimisationPerformance = 1 << 2,
+    };
+
+    typedef u32 ShaderSourceBuildFlags;
+
     /**
     * ShaderSourceFileLoader class. Loader from file
     */
@@ -22,7 +31,7 @@ namespace resource
     {
     public:
 
-        ShaderSourceFileLoader(const renderer::Context* context, const std::vector<std::pair<std::string, std::string>>& defines) noexcept;
+        ShaderSourceFileLoader(const renderer::Context* context, const std::vector<std::pair<std::string, std::string>>& defines, ShaderSourceBuildFlags flags = 0) noexcept;
         ~ShaderSourceFileLoader();
 
         renderer::Shader* load(const std::string& name, const std::string& alias = "") override;
