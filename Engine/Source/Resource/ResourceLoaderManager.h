@@ -27,7 +27,7 @@ namespace resource
         ResourceLoaderManager() = default;
 
         template<class TResource, class TResourceLoader>
-        TResource* loadShader(renderer::Context* context, std::string filename, std::vector<std::pair<std::string, std::string>> defines = {});
+        TResource* loadShader(renderer::Context* context, std::string filename, std::vector<std::pair<std::string, std::string>> defines = {}, u32 flags = 0);
 
         template<class TResource, class TResourceLoader>
         TResource* load(std::string filename, u32 flags = 0);
@@ -51,7 +51,7 @@ namespace resource
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     template<class TResource, class TResourceLoader>
-    TResource* ResourceLoaderManager::loadShader(renderer::Context* context, std::string filename, std::vector<std::pair<std::string, std::string>> defines)
+    TResource* ResourceLoaderManager::loadShader(renderer::Context* context, std::string filename, std::vector<std::pair<std::string, std::string>> defines, u32 flags)
     {
         std::string innerName(filename);
         std::transform(filename.begin(), filename.end(), innerName.begin(), ::tolower);
@@ -78,7 +78,7 @@ namespace resource
         auto resourceIter = m_resources.emplace(std::make_pair(resourceName, nullptr));
         if (resourceIter.second)
         {
-            TResourceLoader loader(context, defines);
+            TResourceLoader loader(context, defines, flags);
             Resource* res = loader.load(innerName);
             if (!res)
             {

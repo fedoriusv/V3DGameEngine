@@ -231,7 +231,7 @@ Resource * ShaderSpirVDecoder::decode(const stream::Stream* stream, const std::s
             resourceSpirvBinary->write(result.cbegin(), size);
 
             resourceSpirvBinary->write<bool>(m_reflections);
-            if (!m_reflections)
+            if (m_reflections)
             {
                 if (!ShaderSpirVDecoder::parseReflections({ result.cbegin(), result.cend() }, resourceSpirvBinary))
                 {
@@ -531,7 +531,7 @@ bool ShaderSpirVDecoder::parseReflections(const std::vector<u32>& spirv, stream:
             };
 
 
-            while (true)
+            while (index < block_type.member_types.size())
             {
 #if USE_STRING_ID_SHADER
                 const std::string& member_name = glsl.get_member_name(buffer.base_type_id, index);

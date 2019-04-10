@@ -31,6 +31,7 @@ namespace renderer
 
         const ShaderProgramDescription& getShaderDesc() const;
 
+#if USE_STRING_ID_SHADER
         template<ShaderType shaderType, class TTexture>
         bool bindTexture(std::string name, const TTexture* texture);
 
@@ -45,7 +46,16 @@ namespace renderer
 
         template<ShaderType shaderType>
         bool bindUniformsBuffer(std::string name, u32 offset, u32 size, const void* data);
+#else
+        template<ShaderType shaderType, class TTexture>
+        bool bindTexture(u32 index, const TTexture* texture);
 
+        template<ShaderType shaderType, class TTexture>
+        bool bindSampledTexture(u32 index, const TTexture* texture, const SamplerState* sampler);
+
+        template<ShaderType shaderType>
+        bool bindUniformsBuffer(u32 index, u32 offset, u32 size, const void* data);
+#endif
     private:
 
         ShaderProgram(renderer::CommandList& cmdList, std::vector<const Shader*> shaders) noexcept;
@@ -110,6 +120,27 @@ namespace renderer
     inline bool ShaderProgram::bindUniformsBuffer(std::string name, u32 offset, u32 size, const void* data)
     {
         return ShaderProgram::bindUniformsBuffer(shaderType, name, offset, size, data);
+    }
+#else
+    template<ShaderType shaderType, class TTexture>
+    inline bool ShaderProgram::bindTexture(u32 index, const TTexture* texture)
+    {
+        static_assert(std::is_base_of<Texture, TTexture>());
+        return bindTexture(shaderType, index, texture->m_target, texture);
+    }
+
+    template<ShaderType shaderType, class TTexture>
+    inline bool ShaderProgram::bindSampledTexture(u32 index, const TTexture* texture, const SamplerState* sampler)
+    {
+        static_assert(std::is_base_of<Texture, TTexture>());
+        return bindSampledTexture(shaderType, index, texture->m_target, texture, sampler);
+        return false;
+    }
+
+    template<ShaderType shaderType>
+    inline bool ShaderProgram::bindUniformsBuffer(u32 index, u32 offset, u32 size, const void* data)
+    {
+        return ShaderProgram::bindUniformsBuffer(shaderType, index, offset, size, data);
     }
 #endif //USE_STRING_ID_SHADER
 

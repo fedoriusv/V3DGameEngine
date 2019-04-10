@@ -172,10 +172,10 @@ void Scene::onRender(v3d::renderer::CommandList & cmd)
             renderer::Texture2D* specularColor = m_sponzaMaterials[i]->getTextureParameter<renderer::Texture2D>(MaterialHeader::Property::Property_Specular);
             renderer::Texture2D* normalMap = m_sponzaMaterials[i]->getTextureParameter<renderer::Texture2D>(MaterialHeader::Property::Property_Normals);
 
-            m_MRTOpaqueProgram->bindUniformsBuffer<renderer::ShaderType::ShaderType_Vertex>("ubo", 0, sizeof(ubo), &ubo);
-            m_MRTOpaqueProgram->bindSampledTexture<renderer::ShaderType::ShaderType_Fragment, renderer::Texture2D>("samplerColor", baseColor ? baseColor : m_DummyTexture.get(), m_Sampler.get());
-            m_MRTOpaqueProgram->bindSampledTexture<renderer::ShaderType::ShaderType_Fragment, renderer::Texture2D>("samplerSpecular", specularColor ? specularColor : m_DummyTexture.get(), m_Sampler.get());
-            m_MRTOpaqueProgram->bindSampledTexture<renderer::ShaderType::ShaderType_Fragment, renderer::Texture2D>("samplerNormal", normalMap ? normalMap : m_DummyTexture.get(), m_Sampler.get());
+            m_MRTOpaqueProgram->bindUniformsBuffer<renderer::ShaderType::ShaderType_Vertex>(0/*"ubo"*/, 0, sizeof(ubo), &ubo);
+            m_MRTOpaqueProgram->bindSampledTexture<renderer::ShaderType::ShaderType_Fragment, renderer::Texture2D>(0/*"samplerColor"*/, baseColor ? baseColor : m_DummyTexture.get(), m_Sampler.get());
+            m_MRTOpaqueProgram->bindSampledTexture<renderer::ShaderType::ShaderType_Fragment, renderer::Texture2D>(1/*"samplerSpecular"*/, specularColor ? specularColor : m_DummyTexture.get(), m_Sampler.get());
+            m_MRTOpaqueProgram->bindSampledTexture<renderer::ShaderType::ShaderType_Fragment, renderer::Texture2D>(2/*"samplerNormal"*/, normalMap ? normalMap : m_DummyTexture.get(), m_Sampler.get());
 
             m_modelDrawer->draw(i);
         }
@@ -197,8 +197,8 @@ void Scene::onRender(v3d::renderer::CommandList & cmd)
             ubo.view = m_camera->getViewMatrix();
             ubo.viewPos = m_viewPosition;
 
-            m_MRTSkyboxProgram->bindUniformsBuffer<renderer::ShaderType::ShaderType_Vertex>("ubo", 0, sizeof(ubo), &ubo);
-            m_MRTSkyboxProgram->bindSampledTexture<renderer::ShaderType::ShaderType_Fragment, renderer::Texture2D>("samplerSky", m_SkyTexture.get(), m_Sampler.get());
+            m_MRTSkyboxProgram->bindUniformsBuffer<renderer::ShaderType::ShaderType_Vertex>(0/*"ubo"*/, 0, sizeof(ubo), &ubo);
+            m_MRTSkyboxProgram->bindSampledTexture<renderer::ShaderType::ShaderType_Fragment, renderer::Texture2D>(0/*"samplerSky"*/, m_SkyTexture.get(), m_Sampler.get());
 
             cmd.drawIndexed(renderer::StreamBufferDescription(m_SkySphereIndexBuffer.get(), 0, m_SkySphereVertexBuffer.get(), 0, 0), 0, m_SkySphereIndexBuffer->getIndexCount(), 1);
         }
@@ -215,10 +215,10 @@ void Scene::onRender(v3d::renderer::CommandList & cmd)
             renderer::Texture2D* specularColor = m_sponzaMaterials[i]->getTextureParameter<renderer::Texture2D>(MaterialHeader::Property::Property_Specular);
             renderer::Texture2D* normalMap = m_sponzaMaterials[i]->getTextureParameter<renderer::Texture2D>(MaterialHeader::Property::Property_Normals);
 
-            m_MRTOpaqueProgram->bindUniformsBuffer<renderer::ShaderType::ShaderType_Vertex>("ubo", 0, sizeof(ubo), &ubo);
-            m_MRTOpaqueProgram->bindSampledTexture<renderer::ShaderType::ShaderType_Fragment, renderer::Texture2D>("samplerColor", baseColor ? baseColor : m_DummyTexture.get(), m_Sampler.get());
-            m_MRTOpaqueProgram->bindSampledTexture<renderer::ShaderType::ShaderType_Fragment, renderer::Texture2D>("samplerSpecular", specularColor ? specularColor : m_DummyTexture.get(), m_Sampler.get());
-            m_MRTOpaqueProgram->bindSampledTexture<renderer::ShaderType::ShaderType_Fragment, renderer::Texture2D>("samplerNormal", normalMap ? normalMap : m_DummyTexture.get(), m_Sampler.get());
+            m_MRTOpaqueProgram->bindUniformsBuffer<renderer::ShaderType::ShaderType_Vertex>(0/*"ubo"*/, 0, sizeof(ubo), &ubo);
+            m_MRTOpaqueProgram->bindSampledTexture<renderer::ShaderType::ShaderType_Fragment, renderer::Texture2D>(0/*"samplerColor"*/, baseColor ? baseColor : m_DummyTexture.get(), m_Sampler.get());
+            m_MRTOpaqueProgram->bindSampledTexture<renderer::ShaderType::ShaderType_Fragment, renderer::Texture2D>(1/*"samplerSpecular"*/, specularColor ? specularColor : m_DummyTexture.get(), m_Sampler.get());
+            m_MRTOpaqueProgram->bindSampledTexture<renderer::ShaderType::ShaderType_Fragment, renderer::Texture2D>(2/*"samplerNormal"*/, normalMap ? normalMap : m_DummyTexture.get(), m_Sampler.get());
 
             m_modelDrawer->draw(i);
         }
@@ -229,11 +229,11 @@ void Scene::onRender(v3d::renderer::CommandList & cmd)
         cmd.setRenderTarget(m_SSAORenderPass.renderTarget.get());
         cmd.setPipelineState(m_SSAOPipeline.get());
 
-        m_SSAOProgram->bindUniformsBuffer<renderer::ShaderType::ShaderType_Fragment>("ubo", 0, sizeof(core::Matrix4D), m_camera->getProjectionMatrix().getPtr());
-        m_SSAOProgram->bindUniformsBuffer<renderer::ShaderType::ShaderType_Fragment>("uboSSAOKernel", 0, sizeof(core::Vector4D) * static_cast<u32>(m_SSAOKernel.size()), m_SSAOKernel.data());
-        m_SSAOProgram->bindSampledTexture<renderer::ShaderType::ShaderType_Fragment, renderer::Texture2D>("samplerPositionDepth", m_MRTRenderPass.colorTexture[0].get(), m_Sampler.get());
-        m_SSAOProgram->bindSampledTexture<renderer::ShaderType::ShaderType_Fragment, renderer::Texture2D>("samplerNormal", m_MRTRenderPass.colorTexture[1].get(), m_Sampler.get());
-        m_SSAOProgram->bindSampledTexture<renderer::ShaderType::ShaderType_Fragment, renderer::Texture2D>("ssaoNoise", m_SSAONoiseTexture.get(), m_Sampler.get());
+        m_SSAOProgram->bindUniformsBuffer<renderer::ShaderType::ShaderType_Fragment>(0/*"uboSSAOKernel"*/, 0, sizeof(core::Vector4D) * static_cast<u32>(m_SSAOKernel.size()), m_SSAOKernel.data());
+        m_SSAOProgram->bindUniformsBuffer<renderer::ShaderType::ShaderType_Fragment>(1/*"ubo"*/, 0, sizeof(core::Matrix4D), m_camera->getProjectionMatrix().getPtr());
+        m_SSAOProgram->bindSampledTexture<renderer::ShaderType::ShaderType_Fragment, renderer::Texture2D>(0/*"samplerPositionDepth"*/, m_MRTRenderPass.colorTexture[0].get(), m_Sampler.get());
+        m_SSAOProgram->bindSampledTexture<renderer::ShaderType::ShaderType_Fragment, renderer::Texture2D>(1/*"samplerNormal"*/, m_MRTRenderPass.colorTexture[1].get(), m_Sampler.get());
+        m_SSAOProgram->bindSampledTexture<renderer::ShaderType::ShaderType_Fragment, renderer::Texture2D>(2/*"ssaoNoise"*/, m_SSAONoiseTexture.get(), m_Sampler.get());
 
         cmd.draw(renderer::StreamBufferDescription(nullptr, 0), 0, 3, 1);
     }
@@ -243,7 +243,7 @@ void Scene::onRender(v3d::renderer::CommandList & cmd)
         cmd.setRenderTarget(m_SSAOBlurRenderPass.renderTarget.get());
         cmd.setPipelineState(m_SSAOBlurPipeline.get());
 
-        m_SSAOBlurProgram->bindSampledTexture<renderer::ShaderType::ShaderType_Fragment, renderer::Texture2D>("samplerSSAO", m_SSAORenderPass.colorTexture[0].get(), m_Sampler.get());
+        m_SSAOBlurProgram->bindSampledTexture<renderer::ShaderType::ShaderType_Fragment, renderer::Texture2D>(0/*"samplerSSAO"*/, m_SSAORenderPass.colorTexture[0].get(), m_Sampler.get());
 
         cmd.draw(renderer::StreamBufferDescription(nullptr, 0), 0, 3, 1);
     }
@@ -268,11 +268,11 @@ void Scene::onRender(v3d::renderer::CommandList & cmd)
         ubo.model.makeIdentity();
         ubo.view = m_camera->getViewMatrix();
 
-        m_CompositionProgram->bindUniformsBuffer<renderer::ShaderType::ShaderType_Fragment>("ubo", 0, sizeof(ubo), &ubo);
-        m_CompositionProgram->bindSampledTexture<renderer::ShaderType::ShaderType_Fragment, renderer::Texture2D>("samplerPosition", m_MRTRenderPass.colorTexture[0].get(), m_Sampler.get());
-        m_CompositionProgram->bindSampledTexture<renderer::ShaderType::ShaderType_Fragment, renderer::Texture2D>("samplerNormal", m_MRTRenderPass.colorTexture[1].get(), m_Sampler.get());
-        m_CompositionProgram->bindSampledTexture<renderer::ShaderType::ShaderType_Fragment, renderer::Texture2D>("samplerAlbedo", m_MRTRenderPass.colorTexture[2].get(), m_Sampler.get());
-        m_CompositionProgram->bindSampledTexture<renderer::ShaderType::ShaderType_Fragment, renderer::Texture2D>("samplerSSAO", m_SSAOBlurRenderPass.colorTexture[0].get(), m_Sampler.get());
+        m_CompositionProgram->bindUniformsBuffer<renderer::ShaderType::ShaderType_Fragment>(0/*"ubo"*/, 0, sizeof(ubo), &ubo);
+        m_CompositionProgram->bindSampledTexture<renderer::ShaderType::ShaderType_Fragment, renderer::Texture2D>(0/*"samplerPosition"*/, m_MRTRenderPass.colorTexture[0].get(), m_Sampler.get());
+        m_CompositionProgram->bindSampledTexture<renderer::ShaderType::ShaderType_Fragment, renderer::Texture2D>(1/*"samplerNormal"*/, m_MRTRenderPass.colorTexture[1].get(), m_Sampler.get());
+        m_CompositionProgram->bindSampledTexture<renderer::ShaderType::ShaderType_Fragment, renderer::Texture2D>(2/*"samplerAlbedo"*/, m_MRTRenderPass.colorTexture[2].get(), m_Sampler.get());
+        m_CompositionProgram->bindSampledTexture<renderer::ShaderType::ShaderType_Fragment, renderer::Texture2D>(3/*"samplerSSAO"*/, m_SSAOBlurRenderPass.colorTexture[0].get(), m_Sampler.get());
 
         cmd.draw(renderer::StreamBufferDescription(nullptr, 0), 0, 3, 1);
         //cmd.draw(renderer::StreamBufferDescription(m_ScreenQuad.get(), 0), 0, 6, 1);

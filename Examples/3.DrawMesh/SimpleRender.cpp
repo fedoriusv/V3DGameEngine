@@ -33,7 +33,6 @@ SimpleRender::SimpleRender(renderer::CommandList& cmdList, const core::Dimension
 
     m_pipeline = cmdList.createObject<GraphicsPipelineState>(m_modelDrawer->getVertexInputAttribDescription(0, 0), m_program.get(), m_renderTarget.get());
     m_pipeline->setPrimitiveTopology(PrimitiveTopology::PrimitiveTopology_TriangleList);
-    //m_pipeline->setPolygonMode(PolygonMode::PolygonMode_Line);
     m_pipeline->setFrontFace(FrontFace::FrontFace_CounterClockwise);
     m_pipeline->setCullMode(CullMode::CullMode_None);
     m_pipeline->setColorMask(ColorMask::ColorMask_All);
@@ -55,12 +54,12 @@ SimpleRender::~SimpleRender()
 
 void SimpleRender::updateParameter(renderer::CommandList & cmdList, const std::string& name, u32 size, const void * ubo)
 {
-    m_program->bindUniformsBuffer<ShaderType::ShaderType_Vertex>(name, 0, size, ubo);
+    m_program->bindUniformsBuffer<ShaderType::ShaderType_Vertex>(0/*name*/, 0, size, ubo);
 }
 
 void SimpleRender::updateParameter(renderer::CommandList & cmdList, const std::string & name, u32 index)
 {
-    m_program->bindSampledTexture<ShaderType::ShaderType_Fragment, Texture2D>(name, m_texture[index].get(), m_sampler.get());
+    m_program->bindSampledTexture<ShaderType::ShaderType_Fragment, Texture2D>(0/*name*/, m_texture[index].get(), m_sampler.get());
 }
 
 void SimpleRender::render(renderer::CommandList& cmdList)

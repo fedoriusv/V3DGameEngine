@@ -344,6 +344,99 @@ bool ShaderProgram::bindSampledTexture(ShaderType shaderType, std::string& name,
     //return ShaderProgram::bindSampledTexture(shaderType, name, target, texture, sampler->m_samplerDesc);
     return false;
 }
+#else //USE_STRING_ID_SHADER
+bool ShaderProgram::bindTexture(ShaderType shaderType, u32 index, TextureTarget target, const Texture * texture)
+{
+    ASSERT(texture, "nullptr");
+    Image* image = nullptr;
+    switch (target)
+    {
+    case TextureTarget::Texture2D:
+        image = static_cast<const Texture2D*>(texture)->m_image;
+        break;
+
+    default:
+        break;
+    }
+
+    if (!image)
+    {
+        ASSERT(false, "image nullptr");
+        return false;
+    }
+
+    const Shader* shader = m_programInfo._shaders[shaderType];
+    ASSERT(shader, "fail");
+    ASSERT(index < shader->getReflectionInfo()._sampledImages.size(), "range out");
+
+    if (m_cmdList.isImmediate())
+    {
+        m_cmdList.getContext()->bindImage(shader, index, image);
+    }
+    else
+    {
+        m_cmdList.pushCommand(new CommandBindImage(shader, index, image));
+    }
+
+    return false;
+}
+
+bool ShaderProgram::bindSampledTexture(ShaderType shaderType, u32 index, TextureTarget target, const Texture * texture, const SamplerState * sampler)
+{
+    ASSERT(texture, "nullptr");
+    Image* image = nullptr;
+    switch (target)
+    {
+    case TextureTarget::Texture2D:
+        image = static_cast<const Texture2D*>(texture)->m_image;
+        break;
+
+    default:
+        break;
+    }
+
+    if (!image)
+    {
+        ASSERT(false, "image nullptr");
+        return false;
+    }
+    const Shader* shader = m_programInfo._shaders[shaderType];
+    ASSERT(shader, "fail");
+    ASSERT(index < shader->getReflectionInfo()._sampledImages.size(), "range out");
+
+    Sampler::SamplerInfo samplerInfo;
+    samplerInfo._tracker = const_cast<ObjectTracker<Sampler>*>(&sampler->m_trackerSampler);
+    samplerInfo._value._desc = sampler->m_samplerDesc;
+
+    if (m_cmdList.isImmediate())
+    {
+        m_cmdList.getContext()->bindSampledImage(shader, index, image, &samplerInfo);
+    }
+    else
+    {
+        m_cmdList.pushCommand(new CommandBindSampledImage(shader, index, image, samplerInfo));
+    }
+
+    return false;
+}
+
+bool ShaderProgram::bindUniformsBuffer(ShaderType shaderType, u32 index, u32 offset, u32 size, const void * data)
+{
+    const Shader* shader = m_programInfo._shaders[shaderType];
+    ASSERT(shader, "fail");
+    ASSERT(index < shader->getReflectionInfo()._uniformBuffers.size(), "range out");
+   
+    if (m_cmdList.isImmediate())
+    {
+        m_cmdList.getContext()->bindUniformsBuffer(shader, index, offset, size, data);
+    }
+    else
+    {
+        m_cmdList.pushCommand(new CommandUpdateUniformsBuffer(shader, index, offset, size, const_cast<void*>(data), false));
+    }
+
+    return true;
+}
 #endif //USE_STRING_ID_SHADER
 
 ShaderProgram::~ShaderProgram()

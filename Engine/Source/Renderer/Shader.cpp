@@ -59,9 +59,25 @@ bool Shader::load()
     m_stream->read<bool>(needParseReflect);
     if (needParseReflect)
     {
-        auto sortAttributtes = [](const Attribute& obj0, const Attribute& obj1) -> bool
+        auto sorByLocation = [](const Attribute& obj0, const Attribute& obj1) -> bool
         {
             return obj0._location < obj1._location;
+        };
+
+        auto sortByDescriptorSet = [](const auto& obj0, const auto& obj1) -> bool
+        {
+            if (obj0._set < obj1._set)
+            {
+                return true;
+            }
+            else if (obj0._set > obj1._set)
+            {
+                return false;
+            }
+            else
+            {
+                return obj0._binding < obj1._binding;
+            }
         };
 
         u32 countInputAttachments;
@@ -71,7 +87,7 @@ bool Shader::load()
         {
             attribute << m_stream;
         }
-        std::sort(m_reflectionInfo._inputAttribute.begin(), m_reflectionInfo._inputAttribute.end(), sortAttributtes);
+        std::sort(m_reflectionInfo._inputAttribute.begin(), m_reflectionInfo._inputAttribute.end(), sorByLocation);
 
         u32 countOutputAttachments;
         m_stream->read<u32>(countOutputAttachments);
@@ -80,7 +96,7 @@ bool Shader::load()
         {
             attribute << m_stream;
         }
-        std::sort(m_reflectionInfo._outputAttribute.begin(), m_reflectionInfo._outputAttribute.end(), sortAttributtes);
+        std::sort(m_reflectionInfo._outputAttribute.begin(), m_reflectionInfo._outputAttribute.end(), sorByLocation);
 
         u32 countUniformBuffers;
         m_stream->read<u32>(countUniformBuffers);
@@ -89,6 +105,7 @@ bool Shader::load()
         {
             buffer << m_stream;
         }
+        std::sort(m_reflectionInfo._uniformBuffers.begin(), m_reflectionInfo._uniformBuffers.end(), sortByDescriptorSet);
 
         u32 countImages;
         m_stream->read<u32>(countImages);
@@ -97,6 +114,7 @@ bool Shader::load()
         {
             image << m_stream;
         }
+        std::sort(m_reflectionInfo._sampledImages.begin(), m_reflectionInfo._sampledImages.end(), sortByDescriptorSet);
 
         u32 countPushConstant;
         m_stream->read<u32>(countPushConstant);
