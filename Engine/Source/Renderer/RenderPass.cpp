@@ -106,7 +106,7 @@ void RenderPassManager::clear()
 
 void RenderPassManager::handleNotify(utils::Observable* ob)
 {
-    LOG_DEBUG("RenderPassManager renderpass %x has been deleted", ob);
+    LOG_DEBUG("RenderPassManager renderpass %x has been deleted, hash %d", ob, static_cast<RenderPass*>(ob)->m_key);
 }
 
 } //namespace renderer

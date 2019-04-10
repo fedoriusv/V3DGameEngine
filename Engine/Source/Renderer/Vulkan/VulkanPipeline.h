@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Common.h"
+#include "Renderer/ObjectTracker.h"
 #include "Renderer/Pipeline.h"
 #include "Renderer/BufferProperties.h"
 
@@ -69,6 +70,7 @@ namespace vk
         VkDevice     m_device;
         VkPipeline   m_pipeline;
         RenderPass*  m_compatibilityRenderPass;
+        ObjectTracker<RenderPass> m_trackerRenderPass;
         VulkanPipelineLayout m_pipelineLayout;
 
         RenderPassManager* const m_renderpassManager;

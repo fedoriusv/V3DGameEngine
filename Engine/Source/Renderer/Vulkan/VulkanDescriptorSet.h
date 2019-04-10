@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Common.h"
+#include "Renderer/ObjectTracker.h"
 #include "Renderer/ShaderProperties.h"
 
 #ifdef VULKAN_RENDER
@@ -94,6 +95,8 @@ namespace vk
 
         VulkanDescriptorPool* acquireDescriptorSets(const VulkanPipelineLayout& layout, std::vector<VkDescriptorSet>& sets, std::vector<u32>& offsets);
         void updateDescriptorPools();
+
+        void clear();
 
     private:
 

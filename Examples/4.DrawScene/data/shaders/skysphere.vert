@@ -12,6 +12,7 @@ layout (set = 0, binding = 0) uniform UBO
 	mat4 projection;
 	mat4 view;
 	mat4 model;
+	vec3 viewPos;
 } ubo;
 
 layout (location = 0) out vec2 outUV;
@@ -25,5 +26,9 @@ void main()
 {
 	outUV = inUV;
 	outUV.y *= -1.0;
-	gl_Position = ubo.projection * mat4(mat3(ubo.view)) * mat4(mat3(ubo.model)) * vec4(inPos.xyz, 1.0);
+
+	mat4 skypos = ubo.model;
+	skypos[3].xyz = ubo.viewPos;
+	vec4 vertex = skypos * vec4(inPos.xyz, 1.0);
+	gl_Position = ubo.projection * ubo.view * ubo.model * vertex;
 }

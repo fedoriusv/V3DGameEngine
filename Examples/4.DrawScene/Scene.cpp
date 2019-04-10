@@ -20,7 +20,7 @@
 #include "Scene/MaterialHelper.h"
 #include "Scene/Camera.h"
 
-#define TEST_DRAW 1
+#define TEST_DRAW 0
 
 #define SSAO_KERNEL_SIZE 32
 #define SSAO_RADIUS 2.0f
@@ -65,8 +65,6 @@ Scene::~Scene()
     m_modelDrawer = nullptr;
 
     m_Sampler = nullptr;
-    m_ScreenQuad = nullptr;
-
     m_DummyTexture = nullptr;
 }
 
@@ -121,10 +119,10 @@ void Scene::onRender(v3d::renderer::CommandList & cmd)
     cmd.setViewport(core::Rect32(0, 0, m_size.width, m_size.height));
     cmd.setScissor(core::Rect32(0, 0, m_size.width, m_size.height));
 
-    cmd.setRenderTarget(m_simpleBackbuffer);
+    cmd.setRenderTarget(m_SimpleBackbuffer.get());
 
     {
-        cmd.setPipelineState(m_simplePipeline);
+        cmd.setPipelineState(m_SimplePipeline.get());
         {
             struct
             {
@@ -136,7 +134,7 @@ void Scene::onRender(v3d::renderer::CommandList & cmd)
             ubo.projection = m_camera->getProjectionMatrix();
             ubo.view = m_camera->getViewMatrix();
 
-            m_simpleProgram->bindUniformsBuffer<renderer::ShaderType::ShaderType_Vertex>("ubo", 0, sizeof(ubo), &ubo);
+            m_SimpleProgram->bindUniformsBuffer<renderer::ShaderType::ShaderType_Vertex>("ubo", 0, sizeof(ubo), &ubo);
         }
         m_modelDrawer->draw(0);
 
@@ -162,7 +160,7 @@ void Scene::onRender(v3d::renderer::CommandList & cmd)
         ubo.model.makeIdentity();
         ubo.view = m_camera->getViewMatrix();
 
-        cmd.setPipelineState(m_MRTOpaquePipeline);
+        cmd.setPipelineState(m_MRTOpaquePipeline.get());
         for (u32 i = 0; i < m_modelDrawer->getDrawStatesCount(); ++i)
         {
             if (m_sponzaMaterials[i]->getFloatParameter(MaterialHeader::Property::Property_Opacity) > 0.0f)
@@ -182,16 +180,30 @@ void Scene::onRender(v3d::renderer::CommandList & cmd)
             m_modelDrawer->draw(i);
         }
 
+        {
+            cmd.setPipelineState(m_MRTSkyboxPipeline.get());
 
-        cmd.setPipelineState(m_MRTSkyboxPipeline);
+            struct
+            {
+                core::Matrix4D projection;
+                core::Matrix4D model;
+                core::Matrix4D view;
+                core::Vector3D viewPos;
+            } ubo;
 
-        m_MRTSkyboxProgram->bindUniformsBuffer<renderer::ShaderType::ShaderType_Vertex>("ubo", 0, sizeof(ubo), &ubo);
-        m_MRTSkyboxProgram->bindSampledTexture<renderer::ShaderType::ShaderType_Fragment, renderer::Texture2D>("samplerSky", m_SkyTexture.get(), m_Sampler.get());
+            ubo.projection = m_camera->getProjectionMatrix();
+            ubo.model.makeIdentity();
+            ubo.model.setScale(core::Vector3D(80.0f));
+            ubo.view = m_camera->getViewMatrix();
+            ubo.viewPos = m_viewPosition;
 
-        cmd.drawIndexed(renderer::StreamBufferDescription(m_SkySphereIndexBuffer.get(), 0, m_SkySphereVertexBuffer.get(), 0, 0), 0, m_SkySphereIndexBuffer->getIndexCount(), 1);
+            m_MRTSkyboxProgram->bindUniformsBuffer<renderer::ShaderType::ShaderType_Vertex>("ubo", 0, sizeof(ubo), &ubo);
+            m_MRTSkyboxProgram->bindSampledTexture<renderer::ShaderType::ShaderType_Fragment, renderer::Texture2D>("samplerSky", m_SkyTexture.get(), m_Sampler.get());
 
+            cmd.drawIndexed(renderer::StreamBufferDescription(m_SkySphereIndexBuffer.get(), 0, m_SkySphereVertexBuffer.get(), 0, 0), 0, m_SkySphereIndexBuffer->getIndexCount(), 1);
+        }
 
-        cmd.setPipelineState(m_MRTTransparentPipeline);
+        cmd.setPipelineState(m_MRTTransparentPipeline.get());
         for (u32 i = 0; i < m_modelDrawer->getDrawStatesCount(); ++i)
         {
             if (m_sponzaMaterials[i]->getFloatParameter(MaterialHeader::Property::Property_Opacity) == 0.0f)
@@ -215,7 +227,7 @@ void Scene::onRender(v3d::renderer::CommandList & cmd)
     //SSAO
     {
         cmd.setRenderTarget(m_SSAORenderPass.renderTarget.get());
-        cmd.setPipelineState(m_SSAOPipeline);
+        cmd.setPipelineState(m_SSAOPipeline.get());
 
         m_SSAOProgram->bindUniformsBuffer<renderer::ShaderType::ShaderType_Fragment>("ubo", 0, sizeof(core::Matrix4D), m_camera->getProjectionMatrix().getPtr());
         m_SSAOProgram->bindUniformsBuffer<renderer::ShaderType::ShaderType_Fragment>("uboSSAOKernel", 0, sizeof(core::Vector4D) * static_cast<u32>(m_SSAOKernel.size()), m_SSAOKernel.data());
@@ -229,7 +241,7 @@ void Scene::onRender(v3d::renderer::CommandList & cmd)
     // SSAO Blur
     {
         cmd.setRenderTarget(m_SSAOBlurRenderPass.renderTarget.get());
-        cmd.setPipelineState(m_SSAOBlurPipeline);
+        cmd.setPipelineState(m_SSAOBlurPipeline.get());
 
         m_SSAOBlurProgram->bindSampledTexture<renderer::ShaderType::ShaderType_Fragment, renderer::Texture2D>("samplerSSAO", m_SSAORenderPass.colorTexture[0].get(), m_Sampler.get());
 
@@ -242,7 +254,7 @@ void Scene::onRender(v3d::renderer::CommandList & cmd)
         cmd.setScissor(core::Rect32(0, 0, cmd.getBackbuffer()->getDimension().width, cmd.getBackbuffer()->getDimension().height));
 
         cmd.setRenderTarget(m_CompositionRenderPass.renderTarget.get());
-        cmd.setPipelineState(m_CompositionPipeline);
+        cmd.setPipelineState(m_CompositionPipeline.get());
 
         struct
         {
@@ -292,23 +304,23 @@ void Scene::onLoad(v3d::renderer::CommandList & cmd)
     //Simple Draw (test)
     {
         renderer::Texture2D* depthTexture = cmd.createObject<renderer::Texture2D>(renderer::TextureUsage::TextureUsage_Attachment, renderer::Format::Format_D32_SFloat_S8_UInt, m_size, renderer::TextureSamples::TextureSamples_x1);
-        m_simpleBackbuffer = cmd.createObject<renderer::RenderTargetState>(m_size);
-        m_simpleBackbuffer->setColorTexture(0, cmd.getBackbuffer(), renderer::RenderTargetLoadOp::LoadOp_Clear, renderer::RenderTargetStoreOp::StoreOp_Store, core::Vector4D(0.0f));
-        m_simpleBackbuffer->setDepthStencilTexture(depthTexture, renderer::RenderTargetLoadOp::LoadOp_Clear, renderer::RenderTargetStoreOp::StoreOp_DontCare, 1.0f);
+        m_SimpleBackbuffer = cmd.createObject<renderer::RenderTargetState>(m_size);
+        m_SimpleBackbuffer->setColorTexture(0, cmd.getBackbuffer(), renderer::RenderTargetLoadOp::LoadOp_Clear, renderer::RenderTargetStoreOp::StoreOp_Store, core::Vector4D(0.0f));
+        m_SimpleBackbuffer->setDepthStencilTexture(depthTexture, renderer::RenderTargetLoadOp::LoadOp_Clear, renderer::RenderTargetStoreOp::StoreOp_DontCare, 1.0f);
 
         renderer::Shader* vertShader = resource::ResourceLoaderManager::getInstance()->loadShader<renderer::Shader, resource::ShaderSourceFileLoader>(cmd.getContext(), "shaders/simple.vert");
         renderer::Shader* fragShader = resource::ResourceLoaderManager::getInstance()->loadShader<renderer::Shader, resource::ShaderSourceFileLoader>(cmd.getContext(), "shaders/simple.frag");
-        m_simpleProgram = cmd.createObject<renderer::ShaderProgram>(std::vector<const renderer::Shader*>({ vertShader, fragShader }));
+        m_SimpleProgram = cmd.createObject<renderer::ShaderProgram>(std::vector<const renderer::Shader*>({ vertShader, fragShader }));
 
-        m_simplePipeline = cmd.createObject<renderer::GraphicsPipelineState>(sponza->getMeshByIndex(0)->getVertexInputAttribDesc(), m_simpleProgram, m_simpleBackbuffer);
-        m_simplePipeline->setPrimitiveTopology(renderer::PrimitiveTopology::PrimitiveTopology_TriangleList);
-        m_simplePipeline->setPolygonMode(renderer::PolygonMode::PolygonMode_Line);
-        m_simplePipeline->setFrontFace(renderer::FrontFace::FrontFace_Clockwise);
-        m_simplePipeline->setCullMode(renderer::CullMode::CullMode_Back);
-        m_simplePipeline->setColorMask(renderer::ColorMask::ColorMask_All);
-        m_simplePipeline->setDepthCompareOp(renderer::CompareOperation::CompareOp_Less);
-        m_simplePipeline->setDepthWrite(true);
-        m_simplePipeline->setDepthTest(true);
+        m_SimplePipeline = cmd.createObject<renderer::GraphicsPipelineState>(sponza->getMeshByIndex(0)->getVertexInputAttribDesc(), m_SimpleProgram.get(), m_SimpleBackbuffer.get());
+        m_SimplePipeline->setPrimitiveTopology(renderer::PrimitiveTopology::PrimitiveTopology_TriangleList);
+        m_SimplePipeline->setPolygonMode(renderer::PolygonMode::PolygonMode_Line);
+        m_SimplePipeline->setFrontFace(renderer::FrontFace::FrontFace_Clockwise);
+        m_SimplePipeline->setCullMode(renderer::CullMode::CullMode_Back);
+        m_SimplePipeline->setColorMask(renderer::ColorMask::ColorMask_All);
+        m_SimplePipeline->setDepthCompareOp(renderer::CompareOperation::CompareOp_Less);
+        m_SimplePipeline->setDepthWrite(true);
+        m_SimplePipeline->setDepthTest(true);
     }
 #else
     //MRT pass 1
@@ -338,7 +350,7 @@ void Scene::onLoad(v3d::renderer::CommandList & cmd)
             const renderer::Shader* sponzaMRTFragShader = resource::ResourceLoaderManager::getInstance()->loadShader<renderer::Shader, resource::ShaderSourceFileLoader>(cmd.getContext(), "shaders/mrt.frag", defines);
             m_MRTOpaqueProgram = cmd.createObject<renderer::ShaderProgram>(std::vector<const renderer::Shader*>({ sponzaMRTVertShader , sponzaMRTFragShader }));
 
-            m_MRTOpaquePipeline = cmd.createObject<renderer::GraphicsPipelineState>(sponza->getMeshByIndex(0)->getVertexInputAttribDesc(), m_MRTOpaqueProgram, m_MRTRenderPass.renderTarget.get());
+            m_MRTOpaquePipeline = cmd.createObject<renderer::GraphicsPipelineState>(sponza->getMeshByIndex(0)->getVertexInputAttribDesc(), m_MRTOpaqueProgram.get(), m_MRTRenderPass.renderTarget.get());
             m_MRTOpaquePipeline->setPrimitiveTopology(renderer::PrimitiveTopology::PrimitiveTopology_TriangleList);
             m_MRTOpaquePipeline->setFrontFace(renderer::FrontFace::FrontFace_Clockwise);
             m_MRTOpaquePipeline->setCullMode(renderer::CullMode::CullMode_Back);
@@ -360,7 +372,7 @@ void Scene::onLoad(v3d::renderer::CommandList & cmd)
             const renderer::Shader* sponzaMRTFragShader = resource::ResourceLoaderManager::getInstance()->loadShader<renderer::Shader, resource::ShaderSourceFileLoader>(cmd.getContext(), "shaders/mrt.frag", defines);
             m_MRTTransparentProgram = cmd.createObject<renderer::ShaderProgram>(std::vector<const renderer::Shader*>({ sponzaMRTVertShader , sponzaMRTFragShader }));
 
-            m_MRTTransparentPipeline = cmd.createObject<renderer::GraphicsPipelineState>(sponza->getMeshByIndex(0)->getVertexInputAttribDesc(), m_MRTTransparentProgram, m_MRTRenderPass.renderTarget.get());
+            m_MRTTransparentPipeline = cmd.createObject<renderer::GraphicsPipelineState>(sponza->getMeshByIndex(0)->getVertexInputAttribDesc(), m_MRTTransparentProgram.get(), m_MRTRenderPass.renderTarget.get());
             m_MRTTransparentPipeline->setPrimitiveTopology(renderer::PrimitiveTopology::PrimitiveTopology_TriangleList);
             m_MRTTransparentPipeline->setFrontFace(renderer::FrontFace::FrontFace_Clockwise);
             m_MRTTransparentPipeline->setCullMode(renderer::CullMode::CullMode_Back);
@@ -375,10 +387,10 @@ void Scene::onLoad(v3d::renderer::CommandList & cmd)
             renderer::Shader* skysphereFragShader = resource::ResourceLoaderManager::getInstance()->loadShader<renderer::Shader, resource::ShaderSourceFileLoader>(cmd.getContext(), "shaders/skysphere.frag");
             m_MRTSkyboxProgram = cmd.createObject<renderer::ShaderProgram>(std::vector<const renderer::Shader*>({ skysphereVertShader , skysphereFragShader }));
 
-            m_MRTSkyboxPipeline = cmd.createObject<renderer::GraphicsPipelineState>(skysphereModel->getMeshByIndex(0)->getVertexInputAttribDesc(), m_MRTSkyboxProgram, m_MRTRenderPass.renderTarget.get());
+            m_MRTSkyboxPipeline = cmd.createObject<renderer::GraphicsPipelineState>(skysphereModel->getMeshByIndex(0)->getVertexInputAttribDesc(), m_MRTSkyboxProgram.get(), m_MRTRenderPass.renderTarget.get());
             m_MRTSkyboxPipeline->setPrimitiveTopology(renderer::PrimitiveTopology::PrimitiveTopology_TriangleList);
-            m_MRTSkyboxPipeline->setFrontFace(renderer::FrontFace::FrontFace_Clockwise);
-            m_MRTSkyboxPipeline->setCullMode(renderer::CullMode::CullMode_Back);
+            m_MRTSkyboxPipeline->setFrontFace(renderer::FrontFace::FrontFace_CounterClockwise);
+            m_MRTSkyboxPipeline->setCullMode(renderer::CullMode::CullMode_None);
             m_MRTSkyboxPipeline->setColorMask(renderer::ColorMask::ColorMask_All);
             m_MRTSkyboxPipeline->setDepthCompareOp(renderer::CompareOperation::CompareOp_LessOrEqual);
             m_MRTSkyboxPipeline->setDepthWrite(true);
@@ -437,7 +449,7 @@ void Scene::onLoad(v3d::renderer::CommandList & cmd)
         m_SSAORenderPass.renderTarget = cmd.createObject<renderer::RenderTargetState>(m_size);
         m_SSAORenderPass.renderTarget->setColorTexture(0, m_SSAORenderPass.colorTexture[0].get(), colorOpState, tansitionState);
 
-        m_SSAOPipeline = cmd.createObject<renderer::GraphicsPipelineState>(renderer::VertexInputAttribDescription(), m_SSAOProgram, m_SSAORenderPass.renderTarget.get());
+        m_SSAOPipeline = cmd.createObject<renderer::GraphicsPipelineState>(renderer::VertexInputAttribDescription(), m_SSAOProgram.get(), m_SSAORenderPass.renderTarget.get());
         m_SSAOPipeline->setColorMask(renderer::ColorMask::ColorMask_All);
     }
 
@@ -454,7 +466,7 @@ void Scene::onLoad(v3d::renderer::CommandList & cmd)
         m_SSAOBlurRenderPass.renderTarget = cmd.createObject<renderer::RenderTargetState>(m_size);
         m_SSAOBlurRenderPass.renderTarget->setColorTexture(0, m_SSAOBlurRenderPass.colorTexture[0].get(), colorOpState, tansitionState);
 
-        m_SSAOBlurPipeline = cmd.createObject<renderer::GraphicsPipelineState>(renderer::VertexInputAttribDescription(), m_SSAOBlurProgram, m_SSAOBlurRenderPass.renderTarget.get());
+        m_SSAOBlurPipeline = cmd.createObject<renderer::GraphicsPipelineState>(renderer::VertexInputAttribDescription(), m_SSAOBlurProgram.get(), m_SSAOBlurRenderPass.renderTarget.get());
         m_SSAOBlurPipeline->setColorMask(renderer::ColorMask::ColorMask_All);
     }
 
@@ -496,7 +508,7 @@ void Scene::onLoad(v3d::renderer::CommandList & cmd)
         const renderer::Shader* compositionFragShader = resource::ResourceLoaderManager::getInstance()->loadShader<renderer::Shader, resource::ShaderSourceFileLoader>(cmd.getContext(), "shaders/composition.frag", defines);
         m_CompositionProgram = cmd.createObject<renderer::ShaderProgram>(std::vector<const renderer::Shader*>({ fullscreenVertShader , compositionFragShader }));
 
-        m_CompositionPipeline = cmd.createObject<renderer::GraphicsPipelineState>(renderer::VertexInputAttribDescription()/*screenQuadDesc*/, m_CompositionProgram, m_CompositionRenderPass.renderTarget.get());
+        m_CompositionPipeline = cmd.createObject<renderer::GraphicsPipelineState>(renderer::VertexInputAttribDescription()/*screenQuadDesc*/, m_CompositionProgram.get(), m_CompositionRenderPass.renderTarget.get());
         m_CompositionPipeline->setColorMask(renderer::ColorMask::ColorMask_All);
     }
 

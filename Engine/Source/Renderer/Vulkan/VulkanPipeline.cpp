@@ -368,7 +368,9 @@ VulkanGraphicPipeline::VulkanGraphicPipeline(VkDevice device, RenderPassManager*
     : Pipeline(PipelineType::PipelineType_Graphic)
     , m_device(device)
     , m_pipeline(VK_NULL_HANDLE)
+
     , m_compatibilityRenderPass(nullptr)
+    , m_trackerRenderPass(nullptr, [](const std::vector<renderer::RenderPass*>&) {})
 
     , m_renderpassManager(renderpassManager)
     , m_descriptorSetManager(descriptorSetManager)
@@ -419,6 +421,7 @@ bool VulkanGraphicPipeline::create(const PipelineGraphicInfo* pipelineInfo)
     VulkanDescriptorSetManager::DescriptorSetDescription layoutDesc(programDesc._shaders);
     m_pipelineLayout = m_descriptorSetManager->acquirePipelineLayout(layoutDesc);
     graphicsPipelineCreateInfo.layout = m_pipelineLayout._layout;
+
 
     ASSERT(!m_compatibilityRenderPass, "not nullptr");
     if (!createCompatibilityRenderPass(pipelineInfo->_renderpassDesc, m_compatibilityRenderPass))
@@ -678,13 +681,18 @@ void VulkanGraphicPipeline::destroy()
 
     if (m_pipelineLayout._layout)
     {
-        m_descriptorSetManager->removePipelineLayout(m_pipelineLayout);
+        //release when manager will be destryoed
+        //m_descriptorSetManager->removePipelineLayout(m_pipelineLayout);
         m_pipelineLayout._layout = VK_NULL_HANDLE;
     }
 
     if (m_compatibilityRenderPass)
     {
-        m_renderpassManager->removeRenderPass(m_compatibilityRenderPass);
+        m_trackerRenderPass.release();
+        if (!m_compatibilityRenderPass->linked())
+        {
+            m_renderpassManager->removeRenderPass(m_compatibilityRenderPass);
+        }
         m_compatibilityRenderPass = nullptr;
     }
 }
@@ -775,6 +783,7 @@ bool VulkanGraphicPipeline::createCompatibilityRenderPass(const RenderPassDescri
         return false;
     }
 
+    m_trackerRenderPass.attach(compatibilityRenderPass);
     return true;
 }
 

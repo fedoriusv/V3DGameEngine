@@ -183,7 +183,9 @@ VulkanDescriptorSetManager::VulkanDescriptorSetManager(VkDevice device) noexcept
 
 VulkanDescriptorSetManager::~VulkanDescriptorSetManager()
 {
-    VulkanDescriptorSetManager::destroyPools();
+    ASSERT(!m_currentDescriptorPool, "not nullptr");
+    ASSERT(m_freeDescriptorPools.empty(), "not empty");
+    ASSERT(m_usedDescriptorPools.empty(), "not empty");
 }
 
 VulkanPipelineLayout VulkanDescriptorSetManager::acquirePipelineLayout(const DescriptorSetDescription& desc)
@@ -294,6 +296,16 @@ void VulkanDescriptorSetManager::updateDescriptorPools()
             ++iter;
         }
     }
+}
+
+void VulkanDescriptorSetManager::clear()
+{
+    VulkanDescriptorSetManager::destroyPools();
+    for (auto& iter : m_pipelinesLayouts)
+    {
+        VulkanDescriptorSetManager::destroyPipelineLayout(iter.second._layout, iter.second._descriptorSetLayouts);
+    }
+    m_pipelinesLayouts.clear();
 }
 
 VkPipelineLayout VulkanDescriptorSetManager::createPipelineLayout(const DescriptorSetDescription& desc, std::vector<VkDescriptorSetLayout>& descriptorSetLayouts)
@@ -410,6 +422,7 @@ void VulkanDescriptorSetManager::destroyPools()
         ASSERT(!m_currentDescriptorPool->isCaptured(), "still used");
         m_currentDescriptorPool->destroy();
         delete m_currentDescriptorPool;
+        m_currentDescriptorPool = nullptr;
     }
 
     for (auto pool : m_freeDescriptorPools)

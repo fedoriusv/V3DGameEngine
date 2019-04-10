@@ -65,17 +65,17 @@ namespace scene
 
         //Pass 1
         RenderPass<3> m_MRTRenderPass;
-        renderer::GraphicsPipelineState* m_MRTOpaquePipeline;
-        renderer::ShaderProgram*         m_MRTOpaqueProgram;
+        utils::IntrusivePointer<renderer::GraphicsPipelineState> m_MRTOpaquePipeline;
+        utils::IntrusivePointer<renderer::ShaderProgram>         m_MRTOpaqueProgram;
 
-        renderer::GraphicsPipelineState* m_MRTTransparentPipeline;
-        renderer::ShaderProgram*         m_MRTTransparentProgram;
+        utils::IntrusivePointer<renderer::GraphicsPipelineState> m_MRTTransparentPipeline;
+        utils::IntrusivePointer<renderer::ShaderProgram>         m_MRTTransparentProgram;
 
-        renderer::GraphicsPipelineState* m_MRTSkyboxPipeline;
-        renderer::ShaderProgram*         m_MRTSkyboxProgram;
+        utils::IntrusivePointer<renderer::GraphicsPipelineState> m_MRTSkyboxPipeline;
+        utils::IntrusivePointer<renderer::ShaderProgram>         m_MRTSkyboxProgram;
 
         utils::IntrusivePointer<renderer::VertexStreamBuffer> m_SkySphereVertexBuffer;
-        utils::IntrusivePointer<renderer::IndexStreamBuffer> m_SkySphereIndexBuffer;
+        utils::IntrusivePointer<renderer::IndexStreamBuffer>  m_SkySphereIndexBuffer;
         utils::IntrusivePointer<renderer::Texture2D> m_SkyTexture;
 
 
@@ -83,8 +83,8 @@ namespace scene
 
         //Pass 2
         RenderPass<1> m_SSAORenderPass;
-        renderer::GraphicsPipelineState* m_SSAOPipeline;
-        renderer::ShaderProgram*         m_SSAOProgram;
+        utils::IntrusivePointer<renderer::GraphicsPipelineState> m_SSAOPipeline;
+        utils::IntrusivePointer<renderer::ShaderProgram>         m_SSAOProgram;
 
         std::vector<core::Vector4D> m_SSAOKernel;
         utils::IntrusivePointer<renderer::Texture2D> m_SSAONoiseTexture;
@@ -92,16 +92,15 @@ namespace scene
 
         //Pass 3
         RenderPass<1> m_SSAOBlurRenderPass;
-        renderer::GraphicsPipelineState* m_SSAOBlurPipeline;
-        renderer::ShaderProgram*         m_SSAOBlurProgram;
+        utils::IntrusivePointer<renderer::GraphicsPipelineState> m_SSAOBlurPipeline;
+        utils::IntrusivePointer<renderer::ShaderProgram>         m_SSAOBlurProgram;
 
         bool m_enableSSAO;
 
         //Pass 4
         RenderPass<1> m_CompositionRenderPass;
-        renderer::GraphicsPipelineState* m_CompositionPipeline;
-        renderer::ShaderProgram* m_CompositionProgram;
-
+        utils::IntrusivePointer<renderer::GraphicsPipelineState> m_CompositionPipeline;
+        utils::IntrusivePointer<renderer::ShaderProgram>         m_CompositionProgram;
     };
 
 } //namespace scene

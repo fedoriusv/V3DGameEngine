@@ -704,6 +704,12 @@ void VulkanGraphicContext::destroy()
     LOG_DEBUG("VulkanGraphicContext::destroy");
 
     VkResult result = VulkanWrapper::DeviceWaitIdle(m_deviceInfo._device);
+    if (result != VK_SUCCESS)
+    {
+        LOG_ERROR("VulkanGraphicContext::destroy DeviceWaitIdle is failed. Error: %s", ErrorString(result).c_str());
+        ASSERT(false, "error");
+    }
+
     if (m_cmdBufferManager)
     {
         m_cmdBufferManager->waitCompete();
@@ -747,6 +753,9 @@ void VulkanGraphicContext::destroy()
 
     if (m_descriptorSetManager)
     {
+        m_descriptorSetManager->updateDescriptorPools();
+        m_descriptorSetManager->clear();
+
         delete m_descriptorSetManager;
         m_descriptorSetManager = nullptr;
     }

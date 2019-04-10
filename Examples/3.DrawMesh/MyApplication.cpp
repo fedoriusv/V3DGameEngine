@@ -147,5 +147,4 @@ MyApplication::~MyApplication()
     m_InputEventHandler = nullptr;
 
     Window::detroyWindow(m_Window);
-    int test;
 }
