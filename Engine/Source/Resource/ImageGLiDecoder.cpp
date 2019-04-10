@@ -63,6 +63,10 @@ Resource * ImageGLiDecoder::decode(const stream::Stream * stream, const std::str
         {
             switch (format)
             {
+            case gli::format::FORMAT_RGBA8_UNORM_PACK8:
+                return renderer::Format::Format_R8G8B8A8_UNorm;
+
+
             case gli::format::FORMAT_RGB_DXT1_UNORM_BLOCK8:
                 return renderer::Format::Format_BC1_RGB_UNorm_Block;
 

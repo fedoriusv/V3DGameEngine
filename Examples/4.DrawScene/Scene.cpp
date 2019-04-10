@@ -20,7 +20,7 @@
 #include "Scene/MaterialHelper.h"
 #include "Scene/Camera.h"
 
-#define TEST_DRAW 0
+#define TEST_DRAW 1
 
 #define SSAO_KERNEL_SIZE 32
 #define SSAO_RADIUS 2.0f
@@ -138,7 +138,7 @@ void Scene::onRender(v3d::renderer::CommandList & cmd)
 
             m_simpleProgram->bindUniformsBuffer<renderer::ShaderType::ShaderType_Vertex>("ubo", 0, sizeof(ubo), &ubo);
         }
-        m_modelDrawer->drawModel(0);
+        m_modelDrawer->draw(0);
 
         //cmd.setPipelineState(m_mptSkyboxPipeline);
         //m_modelDrawer->drawModel(1);
@@ -181,6 +181,15 @@ void Scene::onRender(v3d::renderer::CommandList & cmd)
 
             m_modelDrawer->draw(i);
         }
+
+
+        cmd.setPipelineState(m_MRTSkyboxPipeline);
+
+        m_MRTSkyboxProgram->bindUniformsBuffer<renderer::ShaderType::ShaderType_Vertex>("ubo", 0, sizeof(ubo), &ubo);
+        m_MRTSkyboxProgram->bindSampledTexture<renderer::ShaderType::ShaderType_Fragment, renderer::Texture2D>("samplerSky", m_SkyTexture.get(), m_Sampler.get());
+
+        cmd.drawIndexed(renderer::StreamBufferDescription(m_SkySphereIndexBuffer.get(), 0, m_SkySphereVertexBuffer.get(), 0, 0), 0, m_SkySphereIndexBuffer->getIndexCount(), 1);
+
 
         cmd.setPipelineState(m_MRTTransparentPipeline);
         for (u32 i = 0; i < m_modelDrawer->getDrawStatesCount(); ++i)
@@ -261,7 +270,7 @@ void Scene::onRender(v3d::renderer::CommandList & cmd)
 
 void Scene::onLoad(v3d::renderer::CommandList & cmd)
 {
-    m_Sampler = cmd.createObject<renderer::SamplerState>(renderer::SamplerFilter::SamplerFilter_Bilinear, renderer::SamplerFilter::SamplerFilter_Bilinear, renderer::SamplerAnisotropic::SamplerAnisotropic_None);
+    m_Sampler = cmd.createObject<renderer::SamplerState>(renderer::SamplerFilter::SamplerFilter_Bilinear, renderer::SamplerFilter::SamplerFilter_Trilinear, renderer::SamplerAnisotropic::SamplerAnisotropic_8x);
 
     resource::Image* dummyImage = resource::ResourceLoaderManager::getInstance()->load<resource::Image, resource::ImageFileLoader>("sponza/dummy.dds");
     m_DummyTexture = cmd.createObject<renderer::Texture2D>(renderer::TextureUsage_Sampled | renderer::TextureUsage_Write, dummyImage->getFormat(), core::Dimension2D(dummyImage->getDimension().width, dummyImage->getDimension().height), 1, dummyImage->getRawData());
@@ -273,8 +282,11 @@ void Scene::onLoad(v3d::renderer::CommandList & cmd)
     m_modelDrawer = ModelHelper::createModelHelper(cmd, { sponza });
 
     //Load skysphere
-    //Model* skysphereModel = resource::ResourceLoaderManager::getInstance()->load<Model, resource::ModelFileLoader>("examples/4.drawscene/data/skysphere.dae");
-    //resource::Image* skysphereTexture = resource::ResourceLoaderManager::getInstance()->load<resource::Image, resource::ImageFileLoader>("examples/4.drawscene/data/textures/skysphere_night.ktx");
+    Model* skysphereModel = resource::ResourceLoaderManager::getInstance()->load<Model, resource::ModelFileLoader>("examples/4.drawscene/data/skysphere.dae", resource::ModelLoaderFlag::ModelLoaderFlag_SeperateMesh);
+    resource::Image* skysphereImage = resource::ResourceLoaderManager::getInstance()->load<resource::Image, resource::ImageFileLoader>("examples/4.drawscene/data/textures/skysphere_night.ktx");
+    m_SkyTexture = cmd.createObject<renderer::Texture2D>(renderer::TextureUsage_Sampled | renderer::TextureUsage_Write, skysphereImage->getFormat(), core::Dimension2D(skysphereImage->getDimension().width, skysphereImage->getDimension().height), 1, skysphereImage->getRawData());
+    m_SkySphereVertexBuffer = cmd.createObject<renderer::VertexStreamBuffer>(renderer::StreamBufferUsage::StreamBuffer_Write, skysphereModel->getMeshByIndex(0)->getVertexSize(), skysphereModel->getMeshByIndex(0)->getVertexData());
+    m_SkySphereIndexBuffer = cmd.createObject<renderer::IndexStreamBuffer>(renderer::StreamBufferUsage::StreamBuffer_Write, renderer::StreamIndexBufferType::IndexType_32, skysphereModel->getMeshByIndex(0)->getIndexCount(), skysphereModel->getMeshByIndex(0)->getIndexData());
 
 #if TEST_DRAW
     //Simple Draw (test)
@@ -284,8 +296,8 @@ void Scene::onLoad(v3d::renderer::CommandList & cmd)
         m_simpleBackbuffer->setColorTexture(0, cmd.getBackbuffer(), renderer::RenderTargetLoadOp::LoadOp_Clear, renderer::RenderTargetStoreOp::StoreOp_Store, core::Vector4D(0.0f));
         m_simpleBackbuffer->setDepthStencilTexture(depthTexture, renderer::RenderTargetLoadOp::LoadOp_Clear, renderer::RenderTargetStoreOp::StoreOp_DontCare, 1.0f);
 
-        renderer::Shader* vertShader = resource::ResourceLoaderManager::getInstance()->loadShader<renderer::Shader, resource::ShaderSourceFileLoader>(cmd.getContext(), "examples/4.drawscene/data/shaders/simple.vert");
-        renderer::Shader* fragShader = resource::ResourceLoaderManager::getInstance()->loadShader<renderer::Shader, resource::ShaderSourceFileLoader>(cmd.getContext(), "examples/4.drawscene/data/shaders/simple.frag");
+        renderer::Shader* vertShader = resource::ResourceLoaderManager::getInstance()->loadShader<renderer::Shader, resource::ShaderSourceFileLoader>(cmd.getContext(), "shaders/simple.vert");
+        renderer::Shader* fragShader = resource::ResourceLoaderManager::getInstance()->loadShader<renderer::Shader, resource::ShaderSourceFileLoader>(cmd.getContext(), "shaders/simple.frag");
         m_simpleProgram = cmd.createObject<renderer::ShaderProgram>(std::vector<const renderer::Shader*>({ vertShader, fragShader }));
 
         m_simplePipeline = cmd.createObject<renderer::GraphicsPipelineState>(sponza->getMeshByIndex(0)->getVertexInputAttribDesc(), m_simpleProgram, m_simpleBackbuffer);
@@ -358,20 +370,20 @@ void Scene::onLoad(v3d::renderer::CommandList & cmd)
             m_MRTTransparentPipeline->setDepthTest(true);
         }
 
-        /*{
-            renderer::Shader* skysphereVertShader = resource::ResourceLoaderManager::getInstance()->loadShader<renderer::Shader, resource::ShaderSourceFileLoader>(cmd.getContext(), "examples/4.drawscene/data/shaders/skysphere.vert");
-            renderer::Shader* skysphereFragShader = resource::ResourceLoaderManager::getInstance()->loadShader<renderer::Shader, resource::ShaderSourceFileLoader>(cmd.getContext(), "examples/4.drawscene/data/shaders/skysphere.frag");
-            renderer::ShaderProgram* mrtProgram = cmd.createObject<renderer::ShaderProgram>(std::vector<const renderer::Shader*>({ skysphereVertShader , skysphereFragShader }));
+        {
+            renderer::Shader* skysphereVertShader = resource::ResourceLoaderManager::getInstance()->loadShader<renderer::Shader, resource::ShaderSourceFileLoader>(cmd.getContext(), "shaders/skysphere.vert");
+            renderer::Shader* skysphereFragShader = resource::ResourceLoaderManager::getInstance()->loadShader<renderer::Shader, resource::ShaderSourceFileLoader>(cmd.getContext(), "shaders/skysphere.frag");
+            m_MRTSkyboxProgram = cmd.createObject<renderer::ShaderProgram>(std::vector<const renderer::Shader*>({ skysphereVertShader , skysphereFragShader }));
 
-            m_mptSkyboxPipeline = cmd.createObject<renderer::GraphicsPipelineState>(skysphereModel->getMeshByIndex(0)->getVertexInputAttribDesc(), mrtProgram, m_offsceenRenderTarget);
-            m_mptSkyboxPipeline->setPrimitiveTopology(renderer::PrimitiveTopology::PrimitiveTopology_TriangleList);
-            m_mptSkyboxPipeline->setFrontFace(renderer::FrontFace::FrontFace_Clockwise);
-            m_mptSkyboxPipeline->setCullMode(renderer::CullMode::CullMode_Back);
-            m_mptSkyboxPipeline->setColorMask(renderer::ColorMask::ColorMask_All);
-            m_mptSkyboxPipeline->setDepthCompareOp(renderer::CompareOperation::CompareOp_Less);
-            m_mptSkyboxPipeline->setDepthWrite(true);
-            m_mptSkyboxPipeline->setDepthTest(true);
-        }*/
+            m_MRTSkyboxPipeline = cmd.createObject<renderer::GraphicsPipelineState>(skysphereModel->getMeshByIndex(0)->getVertexInputAttribDesc(), m_MRTSkyboxProgram, m_MRTRenderPass.renderTarget.get());
+            m_MRTSkyboxPipeline->setPrimitiveTopology(renderer::PrimitiveTopology::PrimitiveTopology_TriangleList);
+            m_MRTSkyboxPipeline->setFrontFace(renderer::FrontFace::FrontFace_Clockwise);
+            m_MRTSkyboxPipeline->setCullMode(renderer::CullMode::CullMode_Back);
+            m_MRTSkyboxPipeline->setColorMask(renderer::ColorMask::ColorMask_All);
+            m_MRTSkyboxPipeline->setDepthCompareOp(renderer::CompareOperation::CompareOp_LessOrEqual);
+            m_MRTSkyboxPipeline->setDepthWrite(true);
+            m_MRTSkyboxPipeline->setDepthTest(true);
+        }
     }
 
     //SSAO pass 2

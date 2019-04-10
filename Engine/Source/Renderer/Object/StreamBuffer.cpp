@@ -354,5 +354,24 @@ IndexStreamBuffer::~IndexStreamBuffer()
     }
 }
 
+void IndexStreamBuffer::handleNotify(utils::Observable* ob)
+{
+    LOG_DEBUG("IndexStreamBuffer::handleNotify to delete buffer %xll", this);
+    ASSERT(m_buffer == ob, "not same");
+
+    //delete m_buffer;
+    m_buffer = nullptr;
+}
+
+u32 IndexStreamBuffer::getIndexCount() const
+{
+    return m_count;
+}
+
+StreamIndexBufferType IndexStreamBuffer::getIndexBufferType() const
+{
+    return m_type;
+}
+
 } //namespace renderer
 } //namespace v3d

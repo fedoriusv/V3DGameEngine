@@ -85,11 +85,14 @@ namespace renderer
         IndexStreamBuffer(const IndexStreamBuffer&) = delete;
         ~IndexStreamBuffer();
 
+        u32 getIndexCount() const;
+        StreamIndexBufferType getIndexBufferType() const;
+
     private:
 
         explicit IndexStreamBuffer(CommandList& cmdList, StreamBufferUsageFlags usage, StreamIndexBufferType type, u32 count, const u8* data) noexcept;
 
-        void handleNotify(utils::Observable* ob) override {};
+        void handleNotify(utils::Observable* ob) override;
 
         friend CommandList;
         CommandList& m_cmdList;

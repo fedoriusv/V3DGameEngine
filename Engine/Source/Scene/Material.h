@@ -64,33 +64,12 @@ namespace scene
         bool load() override;
 
         template<class TType>
-        void setParmeter(MaterialHeader::Property property, TType value);
-
-        void setTextureParameter(MaterialHeader::Property property, renderer::Texture* texture);
-        void setFloatParameter(MaterialHeader::Property property, f32 value);
-        void setVectorParameter(MaterialHeader::Property property, const core::Vector4D& vector);
+        void setParameter(MaterialHeader::Property property, TType value);
 
         template<class TType>
-        TType getParameter(MaterialHeader::Property property);
-
-        renderer::Texture* getTextureParameter(MaterialHeader::Property property) const;
-        f32 getFloatParameter(MaterialHeader::Property property) const;
-        core::Vector4D getVectorParameter(MaterialHeader::Property property) const;
+        TType getParameter(MaterialHeader::Property property) const;
 
     private:
-
-        struct Visitor
-        {
-            void operator()(MaterialHeader::Property property, const core::Vector4D& vector)
-            {
-                //TODO
-            }
-
-            void operator()(MaterialHeader::Property property, f32 value)
-            {
-                //TODO
-            }
-        };
 
         const MaterialHeader& getMaterialHeader() const;
 
@@ -105,10 +84,10 @@ namespace scene
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     template<class TType>
-    inline TType Material::getParameter(MaterialHeader::Property property)
+    inline TType Material::getParameter(MaterialHeader::Property property) const
     {
         auto iter = m_properties.find(property);
-        if (std::is_convertible<TType, renderer::Texture*>::value)
+        if constexpr (std::is_convertible<TType, renderer::Texture*>::value)
         {
             if (iter != m_properties.cend())
             {
@@ -124,16 +103,44 @@ namespace scene
                 return TType();
             }
 
-            return TType();
-            //std::visit(Visitor, iter->second.first);
+            if constexpr (std::is_same<TType, f32>::value)
+            {
+                return std::get<1>(iter->second.first);
+            }
+            else if constexpr (std::is_same<TType, core::Vector4D>::value)
+            {
+                return std::get<2>(iter->second.first);
+            }
+            else
+            {
+                static_assert(false, "invalid type");
+            }
         }
-        ASSERT(false, "not implemented");
+
+        ASSERT(false, "fail");
+        return TType();
     }
 
     template<class TType>
-    inline void Material::setParmeter(MaterialHeader::Property property, TType value)
+    inline void Material::setParameter(MaterialHeader::Property property, TType value)
     {
-        ASSERT(false, "not implemented");
+        if constexpr (std::is_convertible<TType, renderer::Texture*>::value)
+        {
+            auto iter = m_properties.emplace(std::make_pair(property, std::make_pair(std::monostate(), value)));
+            if (!iter.second)
+            {
+                ASSERT(value, "nullptr");
+                iter.first->second.second = value;
+            }
+        }
+        else
+        {
+            auto iter = m_properties.emplace(std::make_pair(property, std::make_pair(value, nullptr)));
+            if (!iter.second)
+            {
+                iter.first->second.first = value;
+            }
+        }
     }
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

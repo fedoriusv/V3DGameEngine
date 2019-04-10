@@ -44,7 +44,7 @@ bool Material::load()
     {
         if (!prop.second._name.empty())
         {
-            Material::setTextureParameter(prop.first, nullptr);
+            Material::setParameter<renderer::Texture*>(prop.first, nullptr);
         }
 
         u32 index = static_cast<u32>(prop.second._value.index());
@@ -56,11 +56,11 @@ bool Material::load()
         ASSERT(index != 0, "monostate");
         if (index == 1)
         {
-            Material::setFloatParameter(prop.first, std::get<1>(prop.second._value));
+            Material::setParameter<f32>(prop.first, std::get<1>(prop.second._value));
         }
         else if (index == 2)
         {
-            Material::setVectorParameter(prop.first, std::get<2>(prop.second._value));
+            Material::setParameter<core::Vector4D>(prop.first, std::get<2>(prop.second._value));
         }
     }
 
@@ -68,7 +68,7 @@ bool Material::load()
     return true;
 }
 
-void Material::setFloatParameter(MaterialHeader::Property property, f32 value)
+/*void Material::setFloatParameter(MaterialHeader::Property property, f32 value)
 {
     auto iter = m_properties.emplace(std::make_pair(property, std::make_pair(value, nullptr)));
     if (!iter.second)
@@ -134,7 +134,7 @@ renderer::Texture* Material::getTextureParameter(MaterialHeader::Property proper
 
     LOG_WARNING("Material::getTextureParameter property %d not found", property);
     return nullptr;
-}
+}*/
 
 const MaterialHeader & Material::getMaterialHeader() const
 {

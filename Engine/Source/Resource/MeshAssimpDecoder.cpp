@@ -36,6 +36,7 @@ MeshAssimpDecoder::MeshAssimpDecoder(std::vector<std::string> supportedExtension
     , m_localTransform(flags & ModelLoaderFlag::ModelLoaderFlag_LocalTransform)
     , m_flipYPosition(flags & ModelLoaderFlag::ModelLoaderFlag_FlipYPosition)
     , m_useBitangents(flags & ModelLoaderFlag_UseBitangent)
+    //TODO add ModelLoaderFlag_SkipNormals
 {
 }
 

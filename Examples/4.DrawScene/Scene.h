@@ -36,10 +36,9 @@ namespace scene
 
     private:
 
-        renderer::RenderTargetState* m_simpleBackbuffer;
-        renderer::ShaderProgram* m_simpleProgram;
-        renderer::GraphicsPipelineState* m_simplePipeline;
-        utils::IntrusivePointer<renderer::VertexStreamBuffer> m_ScreenQuad;
+        utils::IntrusivePointer<renderer::RenderTargetState>     m_SimpleBackbuffer;
+        utils::IntrusivePointer<renderer::ShaderProgram>         m_SimpleProgram;
+        utils::IntrusivePointer<renderer::GraphicsPipelineState> m_SimplePipeline;
 
         //void updateProgramParameters(renderer::ShaderProgram* program, scene::ModelHelper* model, scene::MaterialHelper* material);
 
@@ -72,8 +71,15 @@ namespace scene
         renderer::GraphicsPipelineState* m_MRTTransparentPipeline;
         renderer::ShaderProgram*         m_MRTTransparentProgram;
 
+        renderer::GraphicsPipelineState* m_MRTSkyboxPipeline;
+        renderer::ShaderProgram*         m_MRTSkyboxProgram;
+
+        utils::IntrusivePointer<renderer::VertexStreamBuffer> m_SkySphereVertexBuffer;
+        utils::IntrusivePointer<renderer::IndexStreamBuffer> m_SkySphereIndexBuffer;
+        utils::IntrusivePointer<renderer::Texture2D> m_SkyTexture;
+
+
         //renderer::GraphicsPipelineState* m_MRTParticlesPipeline;
-        //renderer::GraphicsPipelineState* m_mptSkyboxPipeline;
 
         //Pass 2
         RenderPass<1> m_SSAORenderPass;
