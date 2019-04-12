@@ -101,6 +101,20 @@ namespace scene
         RenderPass<1> m_CompositionRenderPass;
         utils::IntrusivePointer<renderer::GraphicsPipelineState> m_CompositionPipeline;
         utils::IntrusivePointer<renderer::ShaderProgram>         m_CompositionProgram;
+
+
+        struct Light
+        {
+            core::Vector4D  _position;
+            core::Vector4D  _color;
+            float           _radius;
+        };
+
+        std::vector<Light> m_lights;
+
+        void setupLights();
+
+
     };
 
 } //namespace scene

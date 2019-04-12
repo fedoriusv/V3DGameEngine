@@ -12,8 +12,8 @@ layout (location = 4) in vec2 inUV;
 layout (set = 0, binding = 0, std140) uniform UBO 
 {
 	mat4 projection;
-	mat4 model;
 	mat4 view;
+	mat4 model;
 } ubo;
 
 layout (location = 0) out vec3 outWorldPos;

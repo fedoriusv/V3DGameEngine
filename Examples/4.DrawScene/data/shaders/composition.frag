@@ -11,25 +11,29 @@ layout (set = 0, binding = 3) uniform sampler2D samplerSSAO;
 //layout (constant_id = 0) const int SSAO_ENABLED = 1;
 //layout (constant_id = 1) const float AMBIENT_FACTOR = 0.0;
 
-struct Light 
-{
-	vec4 position;
-	vec4 color;
-	float radius;
-	float quadraticFalloff;
-	float linearFalloff;
-	float _pad;
-};
+//struct Light 
+//{
+//	vec4 position;
+//	vec4 color;
+//	float radius;
+//};
 
-#define NUM_LIGHTS 17
+//#define NUM_LIGHTS 17
 
 layout (set = 0, binding = 4) uniform UBO 
 {
-	Light lights[NUM_LIGHTS];
-	vec4 viewPos;
+	//Light lights[NUM_LIGHTS];
 	mat4 view;
 	mat4 model;
+	vec4 viewPos;
 } ubo;
+
+layout (set = 0, binding = 5) uniform LIGHT
+{
+	vec4 position[NUM_LIGHTS];
+	vec4 color[NUM_LIGHTS];
+	float radius[NUM_LIGHTS];
+} light;
 
 layout (location = 0) in vec2 inUV;
 layout (location = 0) out vec4 outFragcolor;
@@ -43,16 +47,16 @@ void main()
 
 	// unpack
 	ivec2 texDim = textureSize(samplerAlbedo, 0);
-	//uvec4 albedo = texture(samplerAlbedo, inUV.st, 0);
 	uvec4 albedo = texelFetch(samplerAlbedo, ivec2(inUV.st * texDim ), 0);
+	//uvec4 albedo = texture(samplerAlbedo, inUV.st, 0);
 
 	vec4 color;
 	color.rg = unpackHalf2x16(albedo.r);
 	color.ba = unpackHalf2x16(albedo.g);
 	vec4 spec;
-	spec.rg = unpackHalf2x16(albedo.b);	
+	spec.rg = unpackHalf2x16(albedo.b);
 
-	vec3 ambient = color.rgb * AMBIENT_FACTOR;	
+	vec3 ambient = color.rgb * AMBIENT_FACTOR;
 	vec3 fragcolor  = ambient;
 	
 	if (length(fragPos) == 0.0)
@@ -60,35 +64,35 @@ void main()
 		fragcolor = color.rgb;
 	}
 	else
-	{	
-//		for(int i = 0; i < NUM_LIGHTS; ++i)
-//		{
-//			// Light to fragment
-//			vec3 lightPos = vec3(ubo.view * ubo.model * vec4(ubo.lights[i].position.xyz, 1.0));
-//			vec3 L = lightPos - fragPos;
-//			float dist = length(L);
-//			L = normalize(L);
-//
-//			// Viewer to fragment
-//			vec3 viewPos = vec3(ubo.view * ubo.model * vec4(ubo.viewPos.xyz, 1.0));
-//			vec3 V = viewPos - fragPos;
-//			V = normalize(V);
-//
-//			// Attenuation
-//			float atten = ubo.lights[i].radius / (pow(dist, 2.0) + 1.0);
-//
-//			// Diffuse part
-//			vec3 N = normalize(normal);
-//			float NdotL = max(0.0, dot(N, L));
-//			vec3 diff = ubo.lights[i].color.rgb * color.rgb * NdotL * atten;
-//
-//			// Specular part
-//			vec3 R = reflect(-L, N);
-//			float NdotR = max(0.0, dot(R, V));
-//			vec3 spec = ubo.lights[i].color.rgb * spec.r * pow(NdotR, 16.0) * (atten * 1.5);
-//
-//			fragcolor += diff + spec;				
-//		}    	
+	{
+		for(int i = 0; i < NUM_LIGHTS; ++i)
+		{
+			// Light to fragment
+			vec3 lightPos = vec3(ubo.view * ubo.model * vec4(light.position[i].xyz, 1.0));
+			vec3 L = lightPos - fragPos;
+			float dist = length(L);
+			L = normalize(L);
+
+			// Viewer to fragment
+			vec3 viewPos = vec3(ubo.view * ubo.model * vec4(ubo.viewPos.xyz, 1.0)); 
+			vec3 V = viewPos - fragPos;
+			V = normalize(V);
+
+			// Attenuation
+			float atten = light.radius[i] / (pow(dist, 2.0) + 1.0);
+
+			// Diffuse part
+			vec3 N = normalize(normal);
+			float NdotL = max(0.0, dot(N, L));
+			vec3 diff = light.color[i].rgb * color.rgb * NdotL * atten;
+
+			// Specular part
+			vec3 R = reflect(-L, N);
+			float NdotR = max(0.0, dot(R, V));
+			vec3 spec = light.color[i].rgb * spec.r * pow(NdotR, 16.0) * (atten * 1.5);
+
+			fragcolor += diff + spec;
+		}
 
 		if (SSAO_ENABLED == 1)
 		{
@@ -97,5 +101,5 @@ void main()
 		}
 	}
    
-	outFragcolor = vec4(fragcolor, 1.0);	
+	outFragcolor = vec4(fragcolor, 1.0);
 }

@@ -26,22 +26,12 @@
 #define SSAO_RADIUS 2.0f
 #define SSAO_NOISE_DIM 4
 
-#define LIGHTS_COUNT 17
+#define LIGHTS_COUNT 4
 
 namespace v3d
 {
 namespace scene
 {
-
-struct Light
-{
-    core::Vector4D  _position;
-    core::Vector4D  _color;
-    float           _radius;
-    float           _quadraticFalloff;
-    float           _linearFalloff;
-    float           _pad;
-};
 
 Scene::Scene(const core::Dimension2D& size) noexcept
     : m_size(size)
@@ -78,24 +68,64 @@ void Scene::setCameraPosition(const core::Vector3D & position)
     m_viewPosition = position;
 }
 
-//void Scene::updateProgramParameters(renderer::ShaderProgram* program, scene::ModelHelper* model, scene::MaterialHelper* material)
-//{
-//
-//   /* u32 size;
-//    const void* data;
-//    model->getConstantBuffer(size, data);
-//    
-//    program->bindUniformsBuffer<>("ubo", 0, size, data);
-//
-//    renderer::Texture2D* samplerColor = material->getTextureParameter<renderer::Texture2D>(scene::MaterialHeader::Property_BaseColor);
-//    program->bindTexture<renderer::ShaderType::ShaderType_Fragment, renderer::Texture2D>("samplerColor", samplerColor);
-//
-//    renderer::Texture2D* samplerColor = material->getTextureParameter<renderer::Texture2D>(scene::MaterialHeader::Property_Specular);
-//    program->bindTexture<renderer::ShaderType::ShaderType_Fragment, renderer::Texture2D>("samplerColor", samplerColor);
-//
-//    renderer::Texture2D* samplerColor = material->getTextureParameter<renderer::Texture2D>(scene::MaterialHeader::Property_Normals);
-//    program->bindTexture<renderer::ShaderType::ShaderType_Fragment, renderer::Texture2D>("samplerColor", samplerColor);*/
-//}
+void Scene::setupLights()
+{
+    m_lights.resize(LIGHTS_COUNT);
+
+    auto setupLight = [](Light *light, const core::Vector4D& pos, const core::Vector4D& color, f32 radius) -> void
+    {
+        light->_position = pos;
+        light->_color = color;
+        light->_radius = radius;
+    };
+
+
+    //test
+    setupLight(&m_lights[0], { -122.0f, -18.0f, -3.2f, 1.0f }, { 1.0f, 0.3f, 0.3f, 1.0f }, 25.0f);
+    setupLight(&m_lights[1], { -122.0f, -18.0f,  3.2f, 1.0f }, { 0.3f, 1.0f, 0.3f, 1.0f }, 25.0f);
+
+    setupLight(&m_lights[2], { 135.0f, -18.0f, -3.2f, 1.0f }, { 0.3f, 0.3f, 1.0f, 1.0f }, 25.0f);
+    setupLight(&m_lights[3], { 135.0f, -18.0f,  3.2f, 1.0f }, { 1.0f, 1.0f, 0.3f, 1.0f }, 25.0f);
+
+    //std::array<core::Vector4D, 5> lightColors;
+    //lightColors[0] = core::Vector4D(1.0f, 0.0f, 0.0f, 1.0f);
+    //lightColors[1] = core::Vector4D(1.0f, 0.7f, 0.7f, 1.0f);
+    //lightColors[2] = core::Vector4D(1.0f, 0.0f, 0.0f, 1.0f);
+    //lightColors[3] = core::Vector4D(0.0f, 0.0f, 1.0f, 1.0f);
+    //lightColors[4] = core::Vector4D(1.0f, 0.0f, 0.0f, 1.0f);
+
+    //for (u32 i = 0; i < lightColors.size(); i++)
+    //{
+    //    setupLight(&m_lights[i], core::Vector4D((f32)(i - 2.5f) * 50.0f, -10.0f, 0.0f, 1.0f), lightColors[i], 120.0f);
+    //}
+
+    //// Dynamic light moving over the floor
+    ////setupLight(&uboFragmentLights.lights[0], { -sin(glm::radians(360.0f * timer)) * 120.0f, -2.5f, cos(glm::radians(360.0f * timer * 8.0f)) * 10.0f }, glm::vec3(1.0f), 100.0f);
+
+    //// Fire bowls
+    //setupLight(&m_lights[5], { -48.75f, -16.0f, -17.8f, 1.0f }, { 1.0f, 0.6f, 0.0f, 1.0f }, 45.0f);
+    //setupLight(&m_lights[6], { -48.75f, -16.0f,  18.4f, 1.0f }, { 1.0f, 0.6f, 0.0f, 1.0f }, 45.0f);
+    //setupLight(&m_lights[7], { 62.0f, -16.0f, -17.8f, 1.0f },   { 1.0f, 0.6f, 0.0f, 1.0f }, 45.0f);
+    //setupLight(&m_lights[8], { 62.0f, -16.0f,  18.4f, 1.0f },   { 1.0f, 0.6f, 0.0f, 1.0f }, 45.0f);
+
+    //setupLight(&m_lights[9], { 120.0f, -20.0f, -43.75f, 1.0f },     { 1.0f, 0.8f, 0.3f, 1.0f }, 75.0f);
+    //setupLight(&m_lights[10], { 120.0f, -20.0f, 41.75f, 1.0f },     { 1.0f, 0.8f, 0.3f, 1.0f }, 75.0f);
+    //setupLight(&m_lights[11], { -110.0f, -20.0f, -43.75f, 1.0f },   { 1.0f, 0.8f, 0.3f, 1.0f }, 75.0f);
+    //setupLight(&m_lights[12], { -110.0f, -20.0f, 41.75f, 1.0f },    { 1.0f, 0.8f, 0.3f, 1.0f }, 75.0f);
+
+    //// Lion eyes
+    //setupLight(&m_lights[13], { -122.0f, -18.0f, -3.2f, 1.0f }, { 1.0f, 0.3f, 0.3f, 1.0f }, 25.0f);
+    //setupLight(&m_lights[14], { -122.0f, -18.0f,  3.2f, 1.0f }, { 0.3f, 1.0f, 0.3f, 1.0f }, 25.0f);
+
+    //setupLight(&m_lights[15], { 135.0f, -18.0f, -3.2f, 1.0f }, { 0.3f, 0.3f, 1.0f, 1.0f }, 25.0f);
+    //setupLight(&m_lights[16], { 135.0f, -18.0f,  3.2f, 1.0f }, { 1.0f, 1.0f, 0.3f, 1.0f }, 25.0f);
+
+    // Setup particle systems for fire bowls
+    /*for (u32 i = 5; i < 9; i++)
+    {
+        resources.particleSystems->add(512, glm::vec3(uboFragmentLights.lights[i].position) + glm::vec3(0.0f, 2.5f, 0.0f), glm::vec3(-2.0f, 0.25f, -2.0f), glm::vec3(2.0f, 2.5f, 2.0f));
+    }*/
+}
 
 void Scene::onUpdate()
 {
@@ -152,13 +182,13 @@ void Scene::onRender(v3d::renderer::CommandList & cmd)
         struct
         {
             core::Matrix4D projection;
-            core::Matrix4D model;
             core::Matrix4D view;
+            core::Matrix4D model;
         } ubo;
 
         ubo.projection = m_camera->getProjectionMatrix();
-        ubo.model.makeIdentity();
         ubo.view = m_camera->getViewMatrix();
+        ubo.model.makeIdentity();
 
         cmd.setPipelineState(m_MRTOpaquePipeline.get());
         for (u32 i = 0; i < m_modelDrawer->getDrawStatesCount(); ++i)
@@ -186,15 +216,15 @@ void Scene::onRender(v3d::renderer::CommandList & cmd)
             struct
             {
                 core::Matrix4D projection;
-                core::Matrix4D model;
                 core::Matrix4D view;
+                core::Matrix4D model;
                 core::Vector3D viewPos;
             } ubo;
 
             ubo.projection = m_camera->getProjectionMatrix();
+            ubo.view = m_camera->getViewMatrix();
             ubo.model.makeIdentity();
             ubo.model.setScale(core::Vector3D(80.0f));
-            ubo.view = m_camera->getViewMatrix();
             ubo.viewPos = m_viewPosition;
 
             m_MRTSkyboxProgram->bindUniformsBuffer<renderer::ShaderType::ShaderType_Vertex>(0/*"ubo"*/, 0, sizeof(ubo), &ubo);
@@ -258,17 +288,19 @@ void Scene::onRender(v3d::renderer::CommandList & cmd)
 
         struct
         {
-            Light light[LIGHTS_COUNT];
-            core::Vector4D viewPos;
-            core::Matrix4D model;
+            //Light light[LIGHTS_COUNT];
             core::Matrix4D view;
+            core::Matrix4D model;
+            core::Vector4D viewPos;
         } ubo;
 
-        ubo.viewPos = core::Vector4D(m_viewPosition, 0.0f);
-        ubo.model.makeIdentity();
         ubo.view = m_camera->getViewMatrix();
+        ubo.model.makeIdentity();
+        ubo.viewPos = core::Vector4D(m_viewPosition, 0.0f);
+        //memcpy(&ubo.light, m_lights.data(), sizeof(Light) * LIGHTS_COUNT);
 
         m_CompositionProgram->bindUniformsBuffer<renderer::ShaderType::ShaderType_Fragment>(0/*"ubo"*/, 0, sizeof(ubo), &ubo);
+        m_CompositionProgram->bindUniformsBuffer<renderer::ShaderType::ShaderType_Fragment>(1/*"ubo"*/, 0, sizeof(Light) * LIGHTS_COUNT, m_lights.data());
         m_CompositionProgram->bindSampledTexture<renderer::ShaderType::ShaderType_Fragment, renderer::Texture2D>(0/*"samplerPosition"*/, m_MRTRenderPass.colorTexture[0].get(), m_Sampler.get());
         m_CompositionProgram->bindSampledTexture<renderer::ShaderType::ShaderType_Fragment, renderer::Texture2D>(1/*"samplerNormal"*/, m_MRTRenderPass.colorTexture[1].get(), m_Sampler.get());
         m_CompositionProgram->bindSampledTexture<renderer::ShaderType::ShaderType_Fragment, renderer::Texture2D>(2/*"samplerAlbedo"*/, m_MRTRenderPass.colorTexture[2].get(), m_Sampler.get());
@@ -330,7 +362,7 @@ void Scene::onLoad(v3d::renderer::CommandList & cmd)
         m_MRTRenderPass.colorTexture[2] = cmd.createObject<renderer::Texture2D>(renderer::TextureUsage::TextureUsage_Attachment | renderer::TextureUsage::TextureUsage_Sampled, renderer::Format::Format_R32G32B32A32_UInt, m_size, renderer::TextureSamples::TextureSamples_x1);
         m_MRTRenderPass.depthTexture = cmd.createObject<renderer::Texture2D>(renderer::TextureUsage::TextureUsage_Attachment, renderer::Format::Format_D32_SFloat_S8_UInt, m_size, renderer::TextureSamples::TextureSamples_x1);
 
-        renderer::RenderTargetState::ColorOpState colorOpState = { renderer::RenderTargetLoadOp::LoadOp_DontCare, renderer::RenderTargetStoreOp::StoreOp_Store, core::Vector4D(0.0f) };
+        renderer::RenderTargetState::ColorOpState colorOpState = { renderer::RenderTargetLoadOp::LoadOp_Clear, renderer::RenderTargetStoreOp::StoreOp_Store, core::Vector4D(0.0f) };
         renderer::RenderTargetState::TransitionState tansitionState = { renderer::TransitionOp::TransitionOp_Undefined, renderer::TransitionOp::TransitionOp_ShaderRead };
         m_MRTRenderPass.renderTarget = cmd.createObject<renderer::RenderTargetState>(m_size);
         m_MRTRenderPass.renderTarget->setColorTexture(0, m_MRTRenderPass.colorTexture[0].get(), colorOpState, tansitionState);
@@ -388,6 +420,7 @@ void Scene::onLoad(v3d::renderer::CommandList & cmd)
             m_MRTSkyboxProgram = cmd.createObject<renderer::ShaderProgram>(std::vector<const renderer::Shader*>({ skysphereVertShader , skysphereFragShader }));
 
             m_MRTSkyboxPipeline = cmd.createObject<renderer::GraphicsPipelineState>(skysphereModel->getMeshByIndex(0)->getVertexInputAttribDesc(), m_MRTSkyboxProgram.get(), m_MRTRenderPass.renderTarget.get());
+            //m_MRTSkyboxPipeline->setPolygonMode(renderer::PolygonMode::PolygonMode_Line);
             m_MRTSkyboxPipeline->setPrimitiveTopology(renderer::PrimitiveTopology::PrimitiveTopology_TriangleList);
             m_MRTSkyboxPipeline->setFrontFace(renderer::FrontFace::FrontFace_CounterClockwise);
             m_MRTSkyboxPipeline->setCullMode(renderer::CullMode::CullMode_None);
@@ -497,6 +530,7 @@ void Scene::onLoad(v3d::renderer::CommandList & cmd)
         {
             { "SSAO_ENABLED", std::to_string(m_enableSSAO) },
             { "AMBIENT_FACTOR", std::to_string(0.15f) },
+            { "NUM_LIGHTS", std::to_string(LIGHTS_COUNT) },
         };
 
         renderer::RenderTargetState::ColorOpState colorOpState = { renderer::RenderTargetLoadOp::LoadOp_DontCare, renderer::RenderTargetStoreOp::StoreOp_Store, core::Vector4D(0.0f) };
@@ -510,6 +544,8 @@ void Scene::onLoad(v3d::renderer::CommandList & cmd)
 
         m_CompositionPipeline = cmd.createObject<renderer::GraphicsPipelineState>(renderer::VertexInputAttribDescription()/*screenQuadDesc*/, m_CompositionProgram.get(), m_CompositionRenderPass.renderTarget.get());
         m_CompositionPipeline->setColorMask(renderer::ColorMask::ColorMask_All);
+
+        setupLights();
     }
 
 #endif

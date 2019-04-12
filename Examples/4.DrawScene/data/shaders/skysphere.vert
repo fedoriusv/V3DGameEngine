@@ -25,10 +25,10 @@ out gl_PerVertex
 void main() 
 {
 	outUV = inUV;
-	outUV.y *= -1.0;
 
 	mat4 skypos = ubo.model;
 	skypos[3].xyz = ubo.viewPos;
-	vec4 vertex = skypos * vec4(inPos.xyz, 1.0);
-	gl_Position = ubo.projection * ubo.view * ubo.model * vertex;
+
+	vec4 vertex = skypos * vec4(inPos, 1.0);
+	gl_Position = ubo.projection * ubo.view * vertex;
 }

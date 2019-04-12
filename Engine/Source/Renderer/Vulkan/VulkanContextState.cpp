@@ -352,7 +352,7 @@ void VulkanContextState::bindTexture(const VulkanImage* image, const VulkanSampl
 void VulkanContextState::updateConstantBuffer(u32 arrayIndex, const Shader::UniformBuffer& reflaction, u32 offset, u32 size, const void* data)
 {
     m_currentSets.clear();
-    ASSERT(size <= reflaction._size, "over size");
+    ASSERT(size <= reflaction._size * reflaction._array, "over size");
     /*auto& bindingList = m_descriptorSetsState[reflaction._set];
     if (bindingList.size() < reflaction._binding + 1)
     {

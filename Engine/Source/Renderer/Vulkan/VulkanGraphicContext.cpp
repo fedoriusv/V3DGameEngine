@@ -492,7 +492,7 @@ void VulkanGraphicContext::bindUniformsBuffer(const Shader* shader, u32 bindInde
     const Shader::UniformBuffer& bufferData = info._uniformBuffers[bindIndex];
     if (offset == 0)
     {
-        ASSERT(bufferData._size == size, "different size");
+        ASSERT(bufferData._size * bufferData._array == size, "different size");
     }
 
     m_currentContextStateNEW->updateConstantBuffer(bindIndex, bufferData, offset, size, data);
