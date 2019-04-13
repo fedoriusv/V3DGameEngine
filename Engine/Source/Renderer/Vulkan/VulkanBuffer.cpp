@@ -185,19 +185,19 @@ bool VulkanBuffer::upload(Context* context, u32 offset, u64 size, void * data)
         }
         else
         {
-            VulkanStaginBuffer* staginBuffer = vkContext->getStagingManager()->createStagingBuffer(size, StreamBufferUsage::StreamBuffer_Read);
-            if (!staginBuffer)
+            VulkanStagingBuffer* stagingBuffer = vkContext->getStagingManager()->createStagingBuffer(size, StreamBufferUsage::StreamBuffer_Read);
+            if (!stagingBuffer)
             {
                 ASSERT(false, "staginBuffer is nullptr");
                 return false;
             }
-            void* stagingData = staginBuffer->map();
+            void* stagingData = stagingBuffer->map();
             ASSERT(stagingData, "stagingData is nullptr");
             memcpy(stagingData, data, size);
-            staginBuffer->unmap();
+            stagingBuffer->unmap();
 
             ASSERT(!VulkanResource::isCaptured(), "still submitted");
-            vkContext->getStagingManager()->destroyAfterUse(staginBuffer);
+            vkContext->getStagingManager()->destroyAfterUse(stagingBuffer);
 
             VkBufferCopy bufferCopy = {};
             bufferCopy.srcOffset = 0;
@@ -205,7 +205,7 @@ bool VulkanBuffer::upload(Context* context, u32 offset, u64 size, void * data)
             bufferCopy.size = size;
 
             //TODO memory barrier
-            uploadBuffer->cmdCopyBufferToBuffer(staginBuffer->getBuffer(), this, { bufferCopy });
+            uploadBuffer->cmdCopyBufferToBuffer(stagingBuffer->getBuffer(), this, { bufferCopy });
             //TODO memory barrier
 
             u32 immediateResourceSubmit = VulkanDeviceCaps::getInstance()->immediateResourceSubmit;

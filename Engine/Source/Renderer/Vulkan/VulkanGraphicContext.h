@@ -23,7 +23,7 @@ namespace vk
     class VulkanContextState;
 
     class VulkanDescriptorSetManager;
-    class VulkanStaginBufferManager;
+    class VulkanStagingBufferManager;
     class VulkanUniformBufferManager;
     class VulkanSamplerManager;
 
@@ -85,7 +85,7 @@ namespace vk
 
         const DeviceCaps* getDeviceCaps() const override;
 
-        VulkanStaginBufferManager* getStagingManager();
+        VulkanStagingBufferManager* getStagingManager();
 
         static const std::vector<VkDynamicState>& getDynamicStates();
         static bool isDynamicState(VkDynamicState state);
@@ -117,7 +117,7 @@ namespace vk
 
         VulkanCommandBufferManager* m_cmdBufferManager;
         VulkanDescriptorSetManager* m_descriptorSetManager;
-        VulkanStaginBufferManager*  m_stagingBufferManager;
+        VulkanStagingBufferManager* m_stagingBufferManager;
         VulkanUniformBufferManager* m_uniformBufferManager;
 
         VulkanMemory::VulkanMemoryAllocator* m_imageMemoryManager;

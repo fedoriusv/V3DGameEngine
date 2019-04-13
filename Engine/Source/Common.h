@@ -25,6 +25,8 @@
 
 #include <fstream>
 #include <iostream>
+#include <sstream>
+#include <iomanip>
 
 #include <numeric>
 #include <variant>
@@ -46,7 +48,12 @@
 #   include <assert.h>
 #   define ASSERT(x, message) assert(x && message)
 #else //_DEBUG
-#   define ASSERT(x, message)
+inline void crashFunc()
+{
+    int* ptr = 0;
+    *ptr = 1;
+}
+#   define ASSERT(x, message) (x) ? x : crashFunc()
 #endif //_DEBUG
 
 #ifdef __GNUC__

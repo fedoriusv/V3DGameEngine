@@ -122,7 +122,7 @@ bool MyApplication::Running(renderer::CommandList& commandList)
         m_Window->setTextCaption("Time: " + std::to_string(fpsTime / frameCounter) + " ms (" + std::to_string(frameCounter) + " FPS)");
 
         frameCounter = 0;
-        fpsTime = 0.0f;
+        fpsTime -= 1000.0f;
     }
     m_Timer->reset();
 
@@ -134,7 +134,7 @@ void MyApplication::Update()
     m_Camera->update(m_frameTime);
     m_Scene->setCameraPosition(m_Camera->getPosition());
 
-    m_Scene->onUpdate();
+    m_Scene->onUpdate(m_frameTime);
 }
 
 void MyApplication::Exit()

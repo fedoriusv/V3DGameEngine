@@ -24,8 +24,9 @@ public:
 
         , m_shared(shared)
     {
+#if DEBUG_COMMAND_LIST
         LOG_DEBUG("CreateTextureCommand constructor");
-
+#endif
         if (data)
         {
             if (m_shared)
@@ -42,8 +43,9 @@ public:
 
     ~CreateTextureCommand()
     {
+#if DEBUG_COMMAND_LIST
         LOG_DEBUG("CreateTextureCommand destructor");
-
+#endif
         if (m_data && !m_shared)
         {
             free(m_data); //TODO: return to pool
@@ -53,7 +55,9 @@ public:
 
     void execute(const renderer::CommandList& cmdList) override
     {
+#if DEBUG_COMMAND_LIST
         LOG_DEBUG("CreateTextureCommand execute");
+#endif
         if (!m_image->create())
         {
             m_image->notifyObservers();
@@ -87,19 +91,25 @@ public:
     UploadTextureCommand(renderer::Image* image) noexcept
         : m_image(image)
     {
+#if DEBUG_COMMAND_LIST
         LOG_DEBUG("UploadTextureCommand constructor");
+#endif
         m_image->registerNotify(this);
     }
 
     ~UploadTextureCommand()
     {
+#if DEBUG_COMMAND_LIST
         LOG_DEBUG("UploadTextureCommand destructor");
+#endif
         m_image->unregisterNotify(this);
     }
 
     void execute(const renderer::CommandList& cmdList) override
     {
+#if DEBUG_COMMAND_LIST
         LOG_DEBUG("UploadTextureCommand execute");
+#endif
         if (m_image)
         {
             //m_image->upload();
@@ -124,19 +134,25 @@ public:
         : m_image(image)
         , m_clearColor(color)
     {
+#if DEBUG_COMMAND_LIST
         LOG_DEBUG("CommandClearColor constructor");
+#endif
         m_image->registerNotify(this);
     };
 
     ~CommandClearColor()
     {
+#if DEBUG_COMMAND_LIST
         LOG_DEBUG("CommandClearColor destructor");
+#endif
         m_image->unregisterNotify(this);
     };
 
     void execute(const renderer::CommandList& cmdList)
     {
+#if DEBUG_COMMAND_LIST
         LOG_DEBUG("CommandClearColor execute");
+#endif
         if (m_image)
         {
             m_image->clear(cmdList.getContext(), m_clearColor);
@@ -163,19 +179,25 @@ public:
         , m_depth(depth)
         , m_stencil(stencil)
     {
+#if DEBUG_COMMAND_LIST
         LOG_DEBUG("CommandClearDepthStencil constructor");
+#endif
         m_image->registerNotify(this);
     };
 
     ~CommandClearDepthStencil()
     {
+#if DEBUG_COMMAND_LIST
         LOG_DEBUG("CommandClearDepthStencil destructor");
+#endif
         m_image->unregisterNotify(this);
     };
 
     void execute(const renderer::CommandList& cmdList)
     {
+#if DEBUG_COMMAND_LIST
         LOG_DEBUG("CommandClearDepthStencil execute");
+#endif
         if (m_image)
         {
             m_image->clear(cmdList.getContext(), m_depth, m_stencil);

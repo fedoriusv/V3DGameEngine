@@ -85,6 +85,10 @@ VulkanGraphicContext::VulkanGraphicContext(const platform::Window * window) noex
 
     m_renderType = RenderType::VulkanRender;
     memset(&m_deviceInfo, 0, sizeof(DeviceInfo));
+
+#if VULKAN_DUMP
+    VulkanDump::getInstance()->clearFile(VULKAN_DUMP_FILE);
+#endif
 }
 
 VulkanGraphicContext::~VulkanGraphicContext()
@@ -110,6 +114,10 @@ VulkanGraphicContext::~VulkanGraphicContext()
 
 void VulkanGraphicContext::beginFrame()
 {
+#if VULKAN_DUMP
+    VulkanDump::getInstance()->dumpFrameNumber(m_frameCounter);
+#endif
+
     u32 index = m_swapchain->acquireImage();
     m_currentContextStateNEW->updateSwapchainIndex(index);
 #if VULKAN_DEBUG
@@ -204,6 +212,10 @@ void VulkanGraphicContext::submit(bool wait)
             m_currentContextState.invalidateCommandBuffer(CommandTargetType::CmdDrawBuffer);
         }
     }
+
+#if VULKAN_DUMP
+    VulkanDump::getInstance()->flushToFile(VULKAN_DUMP_FILE);
+#endif
 }
 
 void VulkanGraphicContext::clearBackbuffer(const core::Vector4D & color)
@@ -586,7 +598,7 @@ const DeviceCaps* VulkanGraphicContext::getDeviceCaps() const
     return &m_deviceCaps;
 }
 
-VulkanStaginBufferManager * VulkanGraphicContext::getStagingManager()
+VulkanStagingBufferManager * VulkanGraphicContext::getStagingManager()
 {
     ASSERT(m_deviceCaps.useStagingBuffers, "enable feature");
     return m_stagingBufferManager;
@@ -683,7 +695,7 @@ bool VulkanGraphicContext::initialize()
 
     if (m_deviceCaps.useStagingBuffers)
     {
-        m_stagingBufferManager = new VulkanStaginBufferManager(m_deviceInfo._device);
+        m_stagingBufferManager = new VulkanStagingBufferManager(m_deviceInfo._device);
     }
     m_uniformBufferManager = new VulkanUniformBufferManager(m_deviceInfo._device);
     m_descriptorSetManager = new VulkanDescriptorSetManager(m_deviceInfo._device);

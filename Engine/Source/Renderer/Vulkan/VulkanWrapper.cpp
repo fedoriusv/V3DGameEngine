@@ -1,6 +1,8 @@
 #include "VulkanWrapper.h"
 
 #ifdef VULKAN_RENDER
+#include "VulkanDebug.h"
+
 namespace v3d
 {
 namespace renderer
@@ -160,7 +162,13 @@ VkResult VulkanWrapper::BindImageMemory(VkDevice device, VkImage image, VkDevice
 
 void VulkanWrapper::GetBufferMemoryRequirements(VkDevice device, VkBuffer buffer, VkMemoryRequirements * pMemoryRequirements) noexcept
 {
+#if VULKAN_DUMP
+    VulkanDump::getInstance()->dumpPreGetBufferMemoryRequirements(device, buffer);
     vkGetBufferMemoryRequirements(device, buffer, pMemoryRequirements);
+    VulkanDump::getInstance()->dumpPostGetBufferMemoryRequirements(pMemoryRequirements);
+#else
+    vkGetBufferMemoryRequirements(device, buffer, pMemoryRequirements);
+#endif //VULKAN_DUMP
 }
 
 void VulkanWrapper::GetImageMemoryRequirements(VkDevice device, VkImage image, VkMemoryRequirements * pMemoryRequirements) noexcept
@@ -260,7 +268,14 @@ VkResult VulkanWrapper::GetQueryPoolResults(VkDevice device, VkQueryPool queryPo
 
 VkResult VulkanWrapper::CreateBuffer(VkDevice device, const VkBufferCreateInfo * pCreateInfo, const VkAllocationCallbacks * pAllocator, VkBuffer * pBuffer) noexcept
 {
+#if VULKAN_DUMP
+    VulkanDump::getInstance()->dumpPreCreateBuffer(device, pCreateInfo, pAllocator);
+    VkResult result = vkCreateBuffer(device, pCreateInfo, pAllocator, pBuffer);
+    VulkanDump::getInstance()->dumpPostCreateBuffer(result, pBuffer);
+    return result;
+#else
     return vkCreateBuffer(device, pCreateInfo, pAllocator, pBuffer);
+#endif //VULKAN_DUMP
 }
 
 void VulkanWrapper::DestroyBuffer(VkDevice device, VkBuffer buffer, const VkAllocationCallbacks * pAllocator) noexcept

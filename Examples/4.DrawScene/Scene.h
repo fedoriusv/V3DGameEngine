@@ -28,7 +28,7 @@ namespace scene
 
         void onLoad(v3d::renderer::CommandList & cmd);
 
-        void onUpdate();
+        void onUpdate(f32 dt);
         void onRender(v3d::renderer::CommandList& cmd);
 
         void setCamera(scene::Camera* camera);
@@ -107,7 +107,8 @@ namespace scene
         {
             core::Vector4D  _position;
             core::Vector4D  _color;
-            float           _radius;
+            f32             _radius;
+            f32             _pad[3];
         };
 
         std::vector<Light> m_lights;

@@ -10,13 +10,13 @@ namespace renderer
 namespace vk
 {
 
-VulkanStaginBuffer::VulkanStaginBuffer(VulkanMemory::VulkanMemoryAllocator* memory, VkDevice device, u64 size, StreamBufferUsageFlags usageFlag) noexcept
+VulkanStagingBuffer::VulkanStagingBuffer(VulkanMemory::VulkanMemoryAllocator* memory, VkDevice device, u64 size, StreamBufferUsageFlags usageFlag) noexcept
     : m_buffer(nullptr)
 {
     m_buffer = new VulkanBuffer(memory, device, Buffer::BufferType::BufferType_StagingBuffer, usageFlag, size);
 }
 
-VulkanStaginBuffer::~VulkanStaginBuffer()
+VulkanStagingBuffer::~VulkanStagingBuffer()
 {
     if (m_buffer)
     {
@@ -27,43 +27,43 @@ VulkanStaginBuffer::~VulkanStaginBuffer()
     }
 }
 
-bool VulkanStaginBuffer::create()
+bool VulkanStagingBuffer::create()
 {
     ASSERT(m_buffer, "nullptr");
     return m_buffer->create();
 }
 
-void VulkanStaginBuffer::destroy()
+void VulkanStagingBuffer::destroy()
 {
     ASSERT(m_buffer, "nullptr");
     m_buffer->destroy();
 }
 
-void * VulkanStaginBuffer::map()
+void * VulkanStagingBuffer::map()
 {
     ASSERT(m_buffer, "nullptr");
     return m_buffer->map();
 }
 
-void VulkanStaginBuffer::unmap()
+void VulkanStagingBuffer::unmap()
 {
     ASSERT(m_buffer, "nullptr");
     m_buffer->unmap();
 }
 
-VulkanBuffer * VulkanStaginBuffer::getBuffer() const
+VulkanBuffer * VulkanStagingBuffer::getBuffer() const
 {
     ASSERT(m_buffer, "nullptr");
     return m_buffer;
 }
 
-VulkanStaginBufferManager::VulkanStaginBufferManager(VkDevice device) noexcept
+VulkanStagingBufferManager::VulkanStagingBufferManager(VkDevice device) noexcept
     : m_device(device)
     , m_memoryManager(new SimpleVulkanMemoryAllocator(device))
 {
 }
 
-VulkanStaginBufferManager::~VulkanStaginBufferManager()
+VulkanStagingBufferManager::~VulkanStagingBufferManager()
 {
     if (m_memoryManager)
     {
@@ -72,9 +72,9 @@ VulkanStaginBufferManager::~VulkanStaginBufferManager()
     }
 }
 
-VulkanStaginBuffer * VulkanStaginBufferManager::createStagingBuffer(u64 size, u16 usageFlag) const
+VulkanStagingBuffer * VulkanStagingBufferManager::createStagingBuffer(u64 size, u16 usageFlag) const
 {
-    VulkanStaginBuffer * stagingBuffer = new VulkanStaginBuffer(m_memoryManager, m_device, size, usageFlag);
+    VulkanStagingBuffer * stagingBuffer = new VulkanStagingBuffer(m_memoryManager, m_device, size, usageFlag);
     ASSERT(stagingBuffer, "nullptr");
     
     if (!stagingBuffer->create())
@@ -86,13 +86,13 @@ VulkanStaginBuffer * VulkanStaginBufferManager::createStagingBuffer(u64 size, u1
     return stagingBuffer;
 }
 
-void VulkanStaginBufferManager::destroyAfterUse(VulkanStaginBuffer * buffer)
+void VulkanStagingBufferManager::destroyAfterUse(VulkanStagingBuffer * buffer)
 {
     std::lock_guard lock(m_mutex);
     m_stagingBuffers.push_back(buffer);
 }
 
-void VulkanStaginBufferManager::destroyStagingBuffers()
+void VulkanStagingBufferManager::destroyStagingBuffers()
 {
     std::lock_guard lock(m_mutex);
     for (auto buff : m_stagingBuffers)

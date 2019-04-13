@@ -18,14 +18,16 @@ namespace vk
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
-    * VulkanStaginBuffer final class. Vulkan Render side
+    * VulkanStagingBuffer final class. Vulkan Render side
     */
-    class VulkanStaginBuffer final
+    class VulkanStagingBuffer final
     {
     public:
 
-        VulkanStaginBuffer(VulkanMemory::VulkanMemoryAllocator* memory, VkDevice device, u64 size, StreamBufferUsageFlags usageFlag) noexcept;
-        ~VulkanStaginBuffer();
+        VulkanStagingBuffer(const VulkanStagingBuffer&) = delete;
+
+        VulkanStagingBuffer(VulkanMemory::VulkanMemoryAllocator* memory, VkDevice device, u64 size, StreamBufferUsageFlags usageFlag) noexcept;
+        ~VulkanStagingBuffer();
 
         bool create();
         void destroy();
@@ -43,25 +45,27 @@ namespace vk
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
-    * VulkanStaginBufferManager final class. Vulkan Render side
+    * VulkanStagingBufferManager final class. Vulkan Render side
     */
-    class VulkanStaginBufferManager final
+    class VulkanStagingBufferManager final
     {
     public:
 
-        explicit VulkanStaginBufferManager(VkDevice device) noexcept;
-        ~VulkanStaginBufferManager();
+        VulkanStagingBufferManager(const VulkanStagingBufferManager&) = delete;
 
-        VulkanStaginBuffer* createStagingBuffer(u64 size, u16 usageFlag) const;
+        explicit VulkanStagingBufferManager(VkDevice device) noexcept;
+        ~VulkanStagingBufferManager();
 
-        void destroyAfterUse(VulkanStaginBuffer* buffer);
+        VulkanStagingBuffer* createStagingBuffer(u64 size, u16 usageFlag) const;
+
+        void destroyAfterUse(VulkanStagingBuffer* buffer);
 
         void destroyStagingBuffers();
 
         VkDevice m_device;
 
         std::recursive_mutex m_mutex;
-        std::vector<VulkanStaginBuffer*> m_stagingBuffers;
+        std::vector<VulkanStagingBuffer*> m_stagingBuffers;
 
         VulkanMemory::VulkanMemoryAllocator* m_memoryManager;
     };

@@ -150,6 +150,17 @@ void VulkanDeviceCaps::fillCapabilitiesList(const DeviceInfo* info)
     VulkanWrapper::GetPhysicalDeviceFeatures(info->_physicalDevice, &m_deviceFeatures);
     VulkanWrapper::GetPhysicalDeviceMemoryProperties(info->_physicalDevice, &m_deviceMemoryProps);
 
+    LOG_INFO("VulkanDeviceCaps::initialize:  memoryHeapCount is %d", m_deviceMemoryProps.memoryHeapCount);
+    for (u32 i = 0; i < m_deviceMemoryProps.memoryHeapCount; ++i)
+    {
+        LOG_INFO("  VulkanDeviceCaps::initialize:  memoryHeap [flags %d, size %llu]", m_deviceMemoryProps.memoryHeaps[i].flags, m_deviceMemoryProps.memoryHeaps[i].size);
+    }
+    LOG_INFO("VulkanDeviceCaps::initialize:  memoryTypeCount is %d", m_deviceMemoryProps.memoryTypeCount);
+    for (u32 i = 0; i < m_deviceMemoryProps.memoryTypeCount; ++i)
+    {
+        LOG_INFO("  VulkanDeviceCaps::initialize:  memoryType [heapIndex %u, propertyFlags %d]", m_deviceMemoryProps.memoryTypes[i].heapIndex, m_deviceMemoryProps.memoryTypes[i].propertyFlags);
+    }
+
     u32 queueFamilyCount = 0;
     VulkanWrapper::GetPhysicalDeviceQueueFamilyProperties(info->_physicalDevice, &queueFamilyCount, nullptr);
     ASSERT(queueFamilyCount > 0, "Must be greater than 0");
@@ -214,6 +225,7 @@ void VulkanDeviceCaps::initialize()
 
     unifiedMemoryManager = false;
     useStagingBuffers = !VulkanMemory::isSupportedMemoryType(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, false);
+    LOG_INFO("VulkanDeviceCaps::initialize: useStagingBuffers is %d", useStagingBuffers);
 
     ASSERT(k_maxFramebufferAttachments <= m_deviceProperties.limits.maxFragmentOutputAttachments, "maxFragmentOutputAttachments less than k_maxFramebufferAttachments");
     ASSERT(k_maxVertexInputAttributes <= m_deviceProperties.limits.maxVertexInputAttributes, "maxVertexInputAttributes less than k_maxVertexInputAttributes");

@@ -30,7 +30,7 @@ s32 VulkanMemory::findMemoryTypeIndex(const VkMemoryRequirements& memoryRequirem
 {
     const VkPhysicalDeviceMemoryProperties& physicalDeviceMemoryProperties = VulkanDeviceCaps::getInstance()->getDeviceMemoryProperties();
     u32 memoryTypeBits = memoryRequirements.memoryTypeBits;
-    for (u32 memoryTypeIndex = 0; memoryTypeIndex < VK_MAX_MEMORY_TYPES; ++memoryTypeIndex)
+    for (u32 memoryTypeIndex = 0; memoryTypeIndex < physicalDeviceMemoryProperties.memoryTypeCount; ++memoryTypeIndex)
     {
         if ((memoryTypeBits & 1) == 1)
         {
@@ -49,7 +49,7 @@ s32 VulkanMemory::findMemoryTypeIndex(const VkMemoryRequirements& memoryRequirem
 bool VulkanMemory::isSupportedMemoryType(VkMemoryPropertyFlags memoryPropertyFlags, bool isEqual)
 {
     const VkPhysicalDeviceMemoryProperties& physicalDeviceMemoryProperties = VulkanDeviceCaps::getInstance()->getDeviceMemoryProperties();
-    for (u32 memoryTypeIndex = 0; memoryTypeIndex < VK_MAX_MEMORY_TYPES; ++memoryTypeIndex)
+    for (u32 memoryTypeIndex = 0; memoryTypeIndex < physicalDeviceMemoryProperties.memoryTypeCount; ++memoryTypeIndex)
     {
         if (isEqual)
         {
@@ -89,7 +89,7 @@ VulkanMemory::VulkanAlloc VulkanMemory::allocateImageMemory(VulkanMemoryAllocato
         s32 memoryTypeIndex = VulkanMemory::findMemoryTypeIndex(memoryRequirements, flags);
         if (memoryTypeIndex < 0)
         {
-            LOG_ERROR("VulkanMemory::allocateImageMemory: invalid memoryTypeIndex");
+            LOG_ERROR("VulkanMemory::allocateImageMemory: invalid memoryTypeIndex %d, VkMemoryPropertyFlags %d", memoryTypeIndex, flags);
             ASSERT(false, "invalid memoryTypeIndex");
 
             return  VulkanMemory::s_invalidMemory;
@@ -146,7 +146,7 @@ VulkanMemory::VulkanAlloc VulkanMemory::allocateBufferMemory(VulkanMemoryAllocat
         s32 memoryTypeIndex = VulkanMemory::findMemoryTypeIndex(memoryRequirements, flags);
         if (memoryTypeIndex < 0)
         {
-            LOG_ERROR("VulkanMemory::allocateBufferMemory: invalid memoryTypeIndex");
+            LOG_ERROR("VulkanMemory::allocateBufferMemory: invalid memoryTypeIndex %d, VkMemoryPropertyFlags %d", memoryTypeIndex, flags);
             ASSERT(false, "invalid memoryTypeIndex");
 
             return VulkanMemory::s_invalidMemory;
@@ -177,7 +177,7 @@ VulkanMemory::VulkanAlloc VulkanMemory::allocateBufferMemory(VulkanMemoryAllocat
             LOG_ERROR("VulkanMemory::allocateBufferMemory: vkBindBufferMemory. Error %s", ErrorString(result).c_str());
             allocator.deallocate(memory);
 
-            return  VulkanMemory::s_invalidMemory;;
+            return  VulkanMemory::s_invalidMemory;
         }
 
         return memory;

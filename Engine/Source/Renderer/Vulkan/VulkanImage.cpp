@@ -832,19 +832,19 @@ bool VulkanImage::upload(Context * context, const core::Dimension3D & offsets, c
         VulkanGraphicContext* vkContext = static_cast<VulkanGraphicContext*>(context);
         VulkanCommandBuffer* uploadBuffer = vkContext->getOrCreateAndStartCommandBuffer(CommandTargetType::CmdUploadBuffer);
 
-        VulkanStaginBuffer* staginBuffer = vkContext->getStagingManager()->createStagingBuffer(calculatedSize, StreamBufferUsage::StreamBuffer_Read);
-        if (!staginBuffer)
+        VulkanStagingBuffer* stagingBuffer = vkContext->getStagingManager()->createStagingBuffer(calculatedSize, StreamBufferUsage::StreamBuffer_Read);
+        if (!stagingBuffer)
         {
             ASSERT(false, "staginBuffer is nullptr");
             return false;
         }
-        void* stagingData = staginBuffer->map();
+        void* stagingData = stagingBuffer->map();
         ASSERT(stagingData, "stagingData is nullptr");
         memcpy(stagingData, data, calculatedSize);
-        staginBuffer->unmap();
+        stagingBuffer->unmap();
 
         ASSERT(!VulkanResource::isCaptured(), "still submitted");
-        vkContext->getStagingManager()->destroyAfterUse(staginBuffer);
+        vkContext->getStagingManager()->destroyAfterUse(stagingBuffer);
 
         u64 bufferOffset = 0;
         u64 bufferDataSize = 0;
@@ -903,7 +903,7 @@ bool VulkanImage::upload(Context * context, const core::Dimension3D & offsets, c
         VkImageLayout newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
         uploadBuffer->cmdPipelineBarrier(this, srcStageMask, VK_PIPELINE_STAGE_TRANSFER_BIT, newLayout);
        
-        uploadBuffer->cmdCopyBufferToImage(staginBuffer->getBuffer(), this, newLayout, bufferImageCopys);
+        uploadBuffer->cmdCopyBufferToImage(stagingBuffer->getBuffer(), this, newLayout, bufferImageCopys);
 
         VkPipelineStageFlags dstStageMask = VK_PIPELINE_STAGE_TRANSFER_BIT;
         if (prevLayout == VK_IMAGE_LAYOUT_UNDEFINED || prevLayout == VK_IMAGE_LAYOUT_PREINITIALIZED) //first time

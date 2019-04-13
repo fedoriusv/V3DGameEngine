@@ -15,6 +15,7 @@ std::string ErrorString(VkResult errorCode)
     switch (errorCode)
     {
 #define STR(r) case VK_ ##r: return #r
+        STR(SUCCESS);
         STR(NOT_READY);
         STR(TIMEOUT);
         STR(EVENT_SET);
@@ -232,6 +233,124 @@ bool VulkanDebug::checkDeviceLayerIsSupported(VkPhysicalDevice device, const c8*
 
     return false;
 }
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////
+
+#if VULKAN_DUMP
+std::recursive_mutex VulkanDump::s_mutex;
+
+void VulkanDump::dumpFrameNumber(u64 frame)
+{
+    m_dump << "------------FrameNamber #" << frame << "------------" << std::endl;
+}
+
+void VulkanDump::dumpPreGetBufferMemoryRequirements(VkDevice device, VkBuffer buffer)
+{
+    std::lock_guard<std::recursive_mutex> lock(s_mutex);
+
+    m_dump << "--GetBufferMemoryRequirements--" << std::endl;
+    m_dump << "PreGetBufferMemoryRequirements(" << std::endl;
+    m_dump << "VkDevice device: " << std::hex << device << std::endl;
+    m_dump << "VkBuffer: " << std::hex << buffer << ")" << std::endl;
+
+    if (k_forceFlush)
+    {
+        VulkanDump::flushToFile(VULKAN_DUMP_FILE);
+    }
+}
+
+void VulkanDump::dumpPostGetBufferMemoryRequirements(VkMemoryRequirements * pMemoryRequirements)
+{
+    std::lock_guard<std::recursive_mutex> lock(s_mutex);
+
+    m_dump << "PostGetBufferMemoryRequirements(" << std::endl;
+    m_dump << "VkMemoryRequirements: pMemoryRequirements[" << std::endl;
+    m_dump << "     VkDeviceSize    size: " << pMemoryRequirements->size << std::endl;
+    m_dump << "     VkDeviceSize    alignment: " << pMemoryRequirements->alignment << std::endl;
+    m_dump << "     uint32_t        memoryTypeBits: " << pMemoryRequirements->memoryTypeBits << std::endl;
+    m_dump << "])" << std::endl;
+    m_dump << "----------------" << std::endl;
+
+    if (k_forceFlush)
+    {
+        VulkanDump::flushToFile(VULKAN_DUMP_FILE);
+    }
+}
+
+void VulkanDump::dumpPreCreateBuffer(VkDevice device, const VkBufferCreateInfo * pCreateInfo, const VkAllocationCallbacks * pAllocator)
+{
+    std::lock_guard<std::recursive_mutex> lock(s_mutex);
+
+    m_dump << "--CreateBuffer--" << std::endl;
+    m_dump << "PreCreateBuffer(" << std::endl;
+    m_dump << "VkDevice device: " << std::hex << device << std::endl;
+    m_dump << "VkBufferCreateInfo: pCreateInfo[" << std::endl;
+    m_dump << "     VkStructureType     sType: " << std::dec << pCreateInfo->sType << std::endl;
+    m_dump << "     const void*         pNext: " << std::hex << pCreateInfo->pNext << std::endl;
+    m_dump << "     VkBufferCreateFlags flags: " << std::dec << pCreateInfo->flags << std::endl;
+    m_dump << "     VkDeviceSize        size: " << std::dec << pCreateInfo->size << std::endl;
+    m_dump << "     VkBufferUsageFlags  usage: " << std::dec << pCreateInfo->usage << std::endl;
+    m_dump << "     VkSharingMode       sharingMode: " << std::dec << pCreateInfo->sharingMode << std::endl;
+    m_dump << "     uint32_t            queueFamilyIndexCount: " << std::dec << pCreateInfo->queueFamilyIndexCount << std::endl;
+    m_dump << "     const uint32_t*     pQueueFamilyIndices: " << std::hex <<pCreateInfo->pQueueFamilyIndices << std::endl;
+    m_dump << "]," << std::endl;
+    m_dump << "VkAllocationCallbacks pAllocator: " << std::hex << pAllocator << ")" << std::endl;
+
+    if (k_forceFlush)
+    {
+        VulkanDump::flushToFile(VULKAN_DUMP_FILE);
+    }
+}
+
+void VulkanDump::dumpPostCreateBuffer(VkResult result, VkBuffer * pBuffer)
+{
+    std::lock_guard<std::recursive_mutex> lock(s_mutex);
+
+    m_dump << "PostCreateBuffer( VkResult: " << ErrorString(result) << ", VkBuffer: " << std::hex << *pBuffer << " )" << std::endl;
+    m_dump << "----------------" << std::endl;
+
+    if (k_forceFlush)
+    {
+        VulkanDump::flushToFile(VULKAN_DUMP_FILE);
+    }
+}
+
+void VulkanDump::flushToConsole()
+{
+    std::lock_guard<std::recursive_mutex> lock(s_mutex);
+
+    if (!m_dump.str().empty())
+    {
+        LOG("", m_dump.str().c_str());
+        m_dump.clear();
+    }
+}
+
+void VulkanDump::clearFile(const std::string & file)
+{
+    std::lock_guard<std::recursive_mutex> lock(s_mutex);
+
+    std::ofstream sfile;
+    sfile.open(file, std::ios::out);
+    sfile << "";
+    sfile.close();
+}
+
+void VulkanDump::flushToFile(const std::string & file)
+{
+    std::lock_guard<std::recursive_mutex> lock(s_mutex);
+
+    if (!m_dump.str().empty())
+    {
+        std::ofstream sfile;
+        sfile.open(file, std::ios::out | std::ios::ate);
+        sfile << m_dump.str();
+        sfile.close();
+
+        m_dump.clear();
+    }
+}
+#endif //VULKAN_DUMP
 
 } //namespace vk
 } //namespace renderer

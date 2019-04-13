@@ -5,6 +5,8 @@
 #ifdef VULKAN_RENDER
 #include "VulkanWrapper.h"
 
+#include "Utils/Singleton.h"
+
 namespace v3d
 {
 namespace renderer
@@ -27,6 +29,8 @@ namespace vk
     {
     public:
 
+        VulkanDebug(const VulkanDebug&) = delete;
+
         static const u16    k_severityDebugLevel = 2;
 
         static bool         createDebugUtilsMesseger(VkInstance instance, VkDebugUtilsMessageSeverityFlagsEXT severityFlag, VkDebugUtilsMessageTypeFlagsEXT flags, PFN_vkDebugUtilsMessengerCallbackEXT callback, void* userData);
@@ -44,6 +48,38 @@ namespace vk
 
         static VkDebugUtilsMessengerEXT s_messeger;
     };
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
+
+#if VULKAN_DUMP
+    class VulkanDump : public utils::Singleton<VulkanDump>
+    {
+    public:
+
+        VulkanDump() = default;
+        VulkanDump(const VulkanDump&) = delete;
+
+        void dumpFrameNumber(u64 frame);
+
+        void dumpPreGetBufferMemoryRequirements(VkDevice device, VkBuffer buffer);
+        void dumpPostGetBufferMemoryRequirements(VkMemoryRequirements * pMemoryRequirements);
+
+        void dumpPreCreateBuffer(VkDevice device, const VkBufferCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator);
+        void dumpPostCreateBuffer(VkResult result, VkBuffer* pBuffer);
+
+        void flushToConsole();
+
+        void clearFile(const std::string& file);
+        void flushToFile(const std::string& file);
+
+    private:
+
+        std::stringstream m_dump;
+        static std::recursive_mutex s_mutex;
+
+        const bool k_forceFlush = true;
+    };
+#endif //VULKAN_DUMP
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 

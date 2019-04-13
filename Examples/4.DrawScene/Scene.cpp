@@ -26,7 +26,7 @@
 #define SSAO_RADIUS 2.0f
 #define SSAO_NOISE_DIM 4
 
-#define LIGHTS_COUNT 4
+#define LIGHTS_COUNT 17
 
 namespace v3d
 {
@@ -80,45 +80,38 @@ void Scene::setupLights()
     };
 
 
-    //test
-    setupLight(&m_lights[0], { -122.0f, -18.0f, -3.2f, 1.0f }, { 1.0f, 0.3f, 0.3f, 1.0f }, 25.0f);
-    setupLight(&m_lights[1], { -122.0f, -18.0f,  3.2f, 1.0f }, { 0.3f, 1.0f, 0.3f, 1.0f }, 25.0f);
+    std::array<core::Vector4D, 5> lightColors;
+    lightColors[0] = core::Vector4D(1.0f, 0.0f, 0.0f, 1.0f);
+    lightColors[1] = core::Vector4D(1.0f, 0.7f, 0.7f, 1.0f);
+    lightColors[2] = core::Vector4D(1.0f, 0.0f, 0.0f, 1.0f);
+    lightColors[3] = core::Vector4D(0.0f, 0.0f, 1.0f, 1.0f);
+    lightColors[4] = core::Vector4D(1.0f, 0.0f, 0.0f, 1.0f);
 
-    setupLight(&m_lights[2], { 135.0f, -18.0f, -3.2f, 1.0f }, { 0.3f, 0.3f, 1.0f, 1.0f }, 25.0f);
-    setupLight(&m_lights[3], { 135.0f, -18.0f,  3.2f, 1.0f }, { 1.0f, 1.0f, 0.3f, 1.0f }, 25.0f);
+    for (u32 i = 0; i < lightColors.size(); i++)
+    {
+        setupLight(&m_lights[i], core::Vector4D((f32)(i - 2.5f) * 50.0f, 10.0f, 0.0f, 1.0f), lightColors[i], 120.0f);
+    }
 
-    //std::array<core::Vector4D, 5> lightColors;
-    //lightColors[0] = core::Vector4D(1.0f, 0.0f, 0.0f, 1.0f);
-    //lightColors[1] = core::Vector4D(1.0f, 0.7f, 0.7f, 1.0f);
-    //lightColors[2] = core::Vector4D(1.0f, 0.0f, 0.0f, 1.0f);
-    //lightColors[3] = core::Vector4D(0.0f, 0.0f, 1.0f, 1.0f);
-    //lightColors[4] = core::Vector4D(1.0f, 0.0f, 0.0f, 1.0f);
+    // Dynamic light moving over the floor
+    setupLight(&m_lights[0], { 0.0f * 120.0f, 2.5f, 1.0f * 10.0f }, core::Vector4D(1.0f), 100.0f);
 
-    //for (u32 i = 0; i < lightColors.size(); i++)
-    //{
-    //    setupLight(&m_lights[i], core::Vector4D((f32)(i - 2.5f) * 50.0f, -10.0f, 0.0f, 1.0f), lightColors[i], 120.0f);
-    //}
+    // Fire bowls
+    setupLight(&m_lights[5], { -48.75f, 16.0f, -17.8f, 1.0f }, { 1.0f, 0.6f, 0.0f, 1.0f }, 45.0f);
+    setupLight(&m_lights[6], { -48.75f, 16.0f,  18.4f, 1.0f }, { 1.0f, 0.6f, 0.0f, 1.0f }, 45.0f);
+    setupLight(&m_lights[7], { 62.0f, 16.0f, -17.8f, 1.0f },   { 1.0f, 0.6f, 0.0f, 1.0f }, 45.0f);
+    setupLight(&m_lights[8], { 62.0f, 16.0f,  18.4f, 1.0f },   { 1.0f, 0.6f, 0.0f, 1.0f }, 45.0f);
 
-    //// Dynamic light moving over the floor
-    ////setupLight(&uboFragmentLights.lights[0], { -sin(glm::radians(360.0f * timer)) * 120.0f, -2.5f, cos(glm::radians(360.0f * timer * 8.0f)) * 10.0f }, glm::vec3(1.0f), 100.0f);
+    setupLight(&m_lights[9], { 120.0f, 20.0f, -43.75f, 1.0f },     { 1.0f, 0.8f, 0.3f, 1.0f }, 75.0f);
+    setupLight(&m_lights[10], { 120.0f, 20.0f, 41.75f, 1.0f },     { 1.0f, 0.8f, 0.3f, 1.0f }, 75.0f);
+    setupLight(&m_lights[11], { -110.0f, 20.0f, -43.75f, 1.0f },   { 1.0f, 0.8f, 0.3f, 1.0f }, 75.0f);
+    setupLight(&m_lights[12], { -110.0f, 20.0f, 41.75f, 1.0f },    { 1.0f, 0.8f, 0.3f, 1.0f }, 75.0f);
 
-    //// Fire bowls
-    //setupLight(&m_lights[5], { -48.75f, -16.0f, -17.8f, 1.0f }, { 1.0f, 0.6f, 0.0f, 1.0f }, 45.0f);
-    //setupLight(&m_lights[6], { -48.75f, -16.0f,  18.4f, 1.0f }, { 1.0f, 0.6f, 0.0f, 1.0f }, 45.0f);
-    //setupLight(&m_lights[7], { 62.0f, -16.0f, -17.8f, 1.0f },   { 1.0f, 0.6f, 0.0f, 1.0f }, 45.0f);
-    //setupLight(&m_lights[8], { 62.0f, -16.0f,  18.4f, 1.0f },   { 1.0f, 0.6f, 0.0f, 1.0f }, 45.0f);
+    // Lion eyes
+    setupLight(&m_lights[13], { -122.0f, 18.0f, -3.2f, 1.0f }, { 1.0f, 0.3f, 0.3f, 1.0f }, 25.0f);
+    setupLight(&m_lights[14], { -122.0f, 18.0f,  3.2f, 1.0f }, { 0.3f, 1.0f, 0.3f, 1.0f }, 25.0f);
 
-    //setupLight(&m_lights[9], { 120.0f, -20.0f, -43.75f, 1.0f },     { 1.0f, 0.8f, 0.3f, 1.0f }, 75.0f);
-    //setupLight(&m_lights[10], { 120.0f, -20.0f, 41.75f, 1.0f },     { 1.0f, 0.8f, 0.3f, 1.0f }, 75.0f);
-    //setupLight(&m_lights[11], { -110.0f, -20.0f, -43.75f, 1.0f },   { 1.0f, 0.8f, 0.3f, 1.0f }, 75.0f);
-    //setupLight(&m_lights[12], { -110.0f, -20.0f, 41.75f, 1.0f },    { 1.0f, 0.8f, 0.3f, 1.0f }, 75.0f);
-
-    //// Lion eyes
-    //setupLight(&m_lights[13], { -122.0f, -18.0f, -3.2f, 1.0f }, { 1.0f, 0.3f, 0.3f, 1.0f }, 25.0f);
-    //setupLight(&m_lights[14], { -122.0f, -18.0f,  3.2f, 1.0f }, { 0.3f, 1.0f, 0.3f, 1.0f }, 25.0f);
-
-    //setupLight(&m_lights[15], { 135.0f, -18.0f, -3.2f, 1.0f }, { 0.3f, 0.3f, 1.0f, 1.0f }, 25.0f);
-    //setupLight(&m_lights[16], { 135.0f, -18.0f,  3.2f, 1.0f }, { 1.0f, 1.0f, 0.3f, 1.0f }, 25.0f);
+    setupLight(&m_lights[15], { 135.0f, 18.0f, -3.2f, 1.0f }, { 0.3f, 0.3f, 1.0f, 1.0f }, 25.0f);
+    setupLight(&m_lights[16], { 135.0f, 18.0f,  3.2f, 1.0f }, { 1.0f, 1.0f, 0.3f, 1.0f }, 25.0f);
 
     // Setup particle systems for fire bowls
     /*for (u32 i = 5; i < 9; i++)
@@ -127,20 +120,19 @@ void Scene::setupLights()
     }*/
 }
 
-void Scene::onUpdate()
+void Scene::onUpdate(f32 dt)
 {
-   /* struct
+    const f32 timerSpeed = 0.25f;
+    static f32 timer;
+    timer += timerSpeed * dt;
+    if (timer > 1.0)
     {
-        core::Matrix4D projection;
-        core::Matrix4D model;
-        core::Matrix4D view;
-    } ubo;
+        timer -= 1.0f;
+    }
 
-    ubo.projection = m_camera->getProjectionMatrix();
-    ubo.model = ;
-    ubo.view = m_camera->getViewMatrix();
-
-    m_modelDrawer->updateConstantBuffer(0, 0, sizeof(ubo), &ubo);*/
+    // Move across the floow
+    m_lights[0]._position.x = -sin(core::k_degToRad * 360.0f * timer) * 120.0f;
+    m_lights[0]._position.z = cos(core::k_degToRad * 360.0f * timer * 8.0f) * 10.0f;
 }
 
 void Scene::onRender(v3d::renderer::CommandList & cmd)
@@ -288,19 +280,19 @@ void Scene::onRender(v3d::renderer::CommandList & cmd)
 
         struct
         {
-            //Light light[LIGHTS_COUNT];
             core::Matrix4D view;
             core::Matrix4D model;
             core::Vector4D viewPos;
+            Light light[LIGHTS_COUNT];
         } ubo;
 
         ubo.view = m_camera->getViewMatrix();
         ubo.model.makeIdentity();
         ubo.viewPos = core::Vector4D(m_viewPosition, 0.0f);
-        //memcpy(&ubo.light, m_lights.data(), sizeof(Light) * LIGHTS_COUNT);
+        memcpy(&ubo.light, m_lights.data(), sizeof(Light) * LIGHTS_COUNT);
 
         m_CompositionProgram->bindUniformsBuffer<renderer::ShaderType::ShaderType_Fragment>(0/*"ubo"*/, 0, sizeof(ubo), &ubo);
-        m_CompositionProgram->bindUniformsBuffer<renderer::ShaderType::ShaderType_Fragment>(1/*"ubo"*/, 0, sizeof(Light) * LIGHTS_COUNT, m_lights.data());
+        //m_CompositionProgram->bindUniformsBuffer<renderer::ShaderType::ShaderType_Fragment>(1/*"ubo"*/, 0, sizeof(Light) * LIGHTS_COUNT, m_lights.data());
         m_CompositionProgram->bindSampledTexture<renderer::ShaderType::ShaderType_Fragment, renderer::Texture2D>(0/*"samplerPosition"*/, m_MRTRenderPass.colorTexture[0].get(), m_Sampler.get());
         m_CompositionProgram->bindSampledTexture<renderer::ShaderType::ShaderType_Fragment, renderer::Texture2D>(1/*"samplerNormal"*/, m_MRTRenderPass.colorTexture[1].get(), m_Sampler.get());
         m_CompositionProgram->bindSampledTexture<renderer::ShaderType::ShaderType_Fragment, renderer::Texture2D>(2/*"samplerAlbedo"*/, m_MRTRenderPass.colorTexture[2].get(), m_Sampler.get());
