@@ -95,40 +95,40 @@ if(BUILD_VULKAN_SDK)
     set(VULKAN_SDK_DEFINE "-DVULKAN_RENDER")
     #VK_SDK_PATH - must be added to system variables
     set(VULKAN_SDK_PATH $ENV{VK_SDK_PATH})
-	if ("${VULKAN_SDK_PATH}" STREQUAL "")
-		message(FATAL_ERROR "Vulkan SDK not found. Please add VK_SDK_PATH to system variable")
-	endif()
+    if ("${VULKAN_SDK_PATH}" STREQUAL "")
+        message(FATAL_ERROR "Vulkan SDK not found. Please add VK_SDK_PATH to system variable")
+    endif()
     set(VULKAN_SDK_INCLUDE_DIRECTORY "-I${VULKAN_SDK_PATH}/Include")
     set(VULKAN_SDK_LIB_DIRECTORY ${VULKAN_SDK_PATH}/Lib)
     message("-- Vulkan SDK Path " ${VULKAN_SDK_PATH})
-	
-	#SpirV
-	set (SPIRV_FOLDER ${ENGINE_PROJECT_DIR}/Engine/Libs/spirv)
-	if ((IS_DIRECTORY ${SPIRV_FOLDER}/shaderc AND IS_DIRECTORY ${SPIRV_FOLDER}/SPIRV-Cross) OR SPIRV_INSTALL_FROM_GITHUB)
-		set(VULKAN_SDK_INCLUDE_DIRECTORY "${VULKAN_SDK_INCLUDE_DIRECTORY} -I${SPIRV_FOLDER}")
-		set(VULKAN_SDK_INCLUDE_DIRECTORY "${VULKAN_SDK_INCLUDE_DIRECTORY} -I${SPIRV_FOLDER}/shaderc/libshaderc/include")
-		set(VULKAN_SDK_DEFINE "${VULKAN_SDK_DEFINE} -DUSE_SPIRV")
-		if (WIN32)
-			set(SHADERC_COMBINED_LIB_FILE_DEBUG ${SPIRV_FOLDER}/shaderc/libshaderc/Debug/shaderc_combined.lib)
-			set(SHADERC_COMBINED_LIB_FILE_RELEASE ${SPIRV_FOLDER}/shaderc/libshaderc/Release/shaderc_combined.lib)
-			
-			set(SPIRV_CROSS_CPP_DEBUG ${SPIRV_FOLDER}/SPIRV-Cross/Debug/spirv-cross-cpp.lib)
-			set(SPIRV_CROSS_CORE_DEBUG ${SPIRV_FOLDER}/SPIRV-Cross/Debug/spirv-cross-core.lib)
-			set(SPIRV_CROSS_GLSL_DEBUG ${SPIRV_FOLDER}/SPIRV-Cross/Debug/spirv-cross-glsl.lib)
-			#set(SPIRV_CROSS_MSL_DEBUG ${SPIRV_FOLDER}/SPIRV-Cross/Debug/spirv-cross-msl.lib)  
-			set(SPIRV_CROSS_CPP_RELEASE ${SPIRV_FOLDER}/SPIRV-Cross/Release/spirv-cross-cpp.lib)
-			set(SPIRV_CROSS_CORE_RELEASE ${SPIRV_FOLDER}/SPIRV-Cross/Release/spirv-cross-core.lib)
-			set(SPIRV_CROSS_GLSL_RELEASE ${SPIRV_FOLDER}/SPIRV-Cross/Release/spirv-cross-glsl.lib)
-			#set(SPIRV_CROSS_MSL_RELEASE ${SPIRV_FOLDER}/SPIRV-Cross/Release/spirv-cross-msl.lib)
-		endif()
-	endif()
+
+    #SpirV
+    set(SPIRV_FOLDER ${ENGINE_PROJECT_DIR}/Engine/Libs/spirv)
+    if ((IS_DIRECTORY ${SPIRV_FOLDER}/shaderc AND IS_DIRECTORY ${SPIRV_FOLDER}/SPIRV-Cross) OR SPIRV_INSTALL_FROM_GITHUB)
+        set(VULKAN_SDK_INCLUDE_DIRECTORY "${VULKAN_SDK_INCLUDE_DIRECTORY} -I${SPIRV_FOLDER}")
+        set(VULKAN_SDK_INCLUDE_DIRECTORY "${VULKAN_SDK_INCLUDE_DIRECTORY} -I${SPIRV_FOLDER}/shaderc/libshaderc/include")
+        set(VULKAN_SDK_DEFINE "${VULKAN_SDK_DEFINE} -DUSE_SPIRV")
+        if (WIN32)
+            set(SHADERC_COMBINED_LIB_FILE_DEBUG ${SPIRV_FOLDER}/shaderc/libshaderc/Debug/shaderc_combined.lib)
+            set(SHADERC_COMBINED_LIB_FILE_RELEASE ${SPIRV_FOLDER}/shaderc/libshaderc/Release/shaderc_combined.lib)
+
+            set(SPIRV_CROSS_CPP_DEBUG ${SPIRV_FOLDER}/SPIRV-Cross/Debug/spirv-cross-cpp.lib)
+            set(SPIRV_CROSS_CORE_DEBUG ${SPIRV_FOLDER}/SPIRV-Cross/Debug/spirv-cross-core.lib)
+            set(SPIRV_CROSS_GLSL_DEBUG ${SPIRV_FOLDER}/SPIRV-Cross/Debug/spirv-cross-glsl.lib)
+            #set(SPIRV_CROSS_MSL_DEBUG ${SPIRV_FOLDER}/SPIRV-Cross/Debug/spirv-cross-msl.lib)  
+            set(SPIRV_CROSS_CPP_RELEASE ${SPIRV_FOLDER}/SPIRV-Cross/Release/spirv-cross-cpp.lib)
+            set(SPIRV_CROSS_CORE_RELEASE ${SPIRV_FOLDER}/SPIRV-Cross/Release/spirv-cross-core.lib)
+            set(SPIRV_CROSS_GLSL_RELEASE ${SPIRV_FOLDER}/SPIRV-Cross/Release/spirv-cross-glsl.lib)
+            #set(SPIRV_CROSS_MSL_RELEASE ${SPIRV_FOLDER}/SPIRV-Cross/Release/spirv-cross-msl.lib)
+        endif()
+    endif()
 endif()
 
 
 #Compiler Flags
 if(WIN32)
     set(CMAKE_CONFIGURATION_TYPES "Debug;Release" CACHE STRING "" FORCE)
-#	set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /NODEFAULTLIB")
+#   set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /NODEFAULTLIB")
 #   Debug
     set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DDEBUG -DUSE_LOGGER -D_CRT_SECURE_NO_WARNINGS ${VULKAN_SDK_DEFINE} ${EXTRA_LIB_DEFINE}")
     set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} ${VULKAN_SDK_INCLUDE_DIRECTORY}")
@@ -184,7 +184,7 @@ source_group("Stream" FILES ${STREAM_HEADERS} ${STREAM_SOURCES})
 source_group("Scene" FILES ${SCENE_HEADERS} ${SCENE_SOURCES})
 
 if (BUILD_VULKAN_SDK)
-	source_group("Renderer\\Vulkan" FILES ${VULKAN_HEADERS} ${VULKAN_SOURCES})
+    source_group("Renderer\\Vulkan" FILES ${VULKAN_HEADERS} ${VULKAN_SOURCES})
 endif()
 
 add_library(${ENGINE_NAME} STATIC 
@@ -194,37 +194,37 @@ add_library(${ENGINE_NAME} STATIC
     ${UTILS_HEADERS} ${UTILS_SOURCES}
     ${EVENT_HEADERS} ${EVENT_SOURCES}
     ${RENDERER_HEADERS} ${RENDERER_SOURCES}
-	${RENDER_OBJECT_HEADERS} ${RENDER_OBJECT_SOURCES}
-	${RESOURCE_HEADERS} ${RESOURCE_SOURCES}
-	${STREAM_HEADERS} ${STREAM_SOURCES}
+    ${RENDER_OBJECT_HEADERS} ${RENDER_OBJECT_SOURCES}
+    ${RESOURCE_HEADERS} ${RESOURCE_SOURCES}
+    ${STREAM_HEADERS} ${STREAM_SOURCES}
     ${SCENE_HEADERS} ${SCENE_SOURCES}
     ${VULKAN_HEADERS} ${VULKAN_SOURCES})
-	
+    
 set(BUILD_DEPENDENCIES "")
 
 #Link Libs
 ##############################################################
 #Crc32c	
 if (CRC32_LIB)
-	target_link_libraries(${ENGINE_NAME} crc32c)
-	set(BUILD_DEPENDENCIES ${BUILD_DEPENDENCIES} crc32c)
+    target_link_libraries(${ENGINE_NAME} crc32c)
+    set(BUILD_DEPENDENCIES ${BUILD_DEPENDENCIES} crc32c)
 endif()
 
 #Assimp	
 if (ASSIMP_LIB)
-	target_link_libraries(${ENGINE_NAME} assimp)
-	set(BUILD_DEPENDENCIES ${BUILD_DEPENDENCIES} assimp)
+    target_link_libraries(${ENGINE_NAME} assimp)
+    set(BUILD_DEPENDENCIES ${BUILD_DEPENDENCIES} assimp)
 endif()
 
 #Spirv
 if (BUILD_VULKAN_SDK)
-	if ((IS_DIRECTORY ${SPIRV_FOLDER}/shaderc AND IS_DIRECTORY ${SPIRV_FOLDER}/SPIRV-Cross) OR SPIRV_INSTALL_FROM_GITHUB)
-		target_link_libraries(${ENGINE_NAME} optimized ${SHADERC_COMBINED_LIB_FILE_RELEASE} debug ${SHADERC_COMBINED_LIB_FILE_DEBUG})
-		target_link_libraries(${ENGINE_NAME} optimized ${SPIRV_CROSS_CPP_RELEASE}           debug ${SPIRV_CROSS_CPP_DEBUG})
-		target_link_libraries(${ENGINE_NAME} optimized ${SPIRV_CROSS_CORE_RELEASE}          debug ${SPIRV_CROSS_CORE_DEBUG})
-		target_link_libraries(${ENGINE_NAME} optimized ${SPIRV_CROSS_GLSL_RELEASE}          debug ${SPIRV_CROSS_GLSL_DEBUG})
-		#target_link_libraries(${ENGINE_NAME} optimized ${SPIRV_CROSS_MSL_RELEASE}           debug ${SPIRV_CROSS_MSL_DEBUG})
-	endif()
+    if ((IS_DIRECTORY ${SPIRV_FOLDER}/shaderc AND IS_DIRECTORY ${SPIRV_FOLDER}/SPIRV-Cross) OR SPIRV_INSTALL_FROM_GITHUB)
+        target_link_libraries(${ENGINE_NAME} optimized ${SHADERC_COMBINED_LIB_FILE_RELEASE} debug ${SHADERC_COMBINED_LIB_FILE_DEBUG})
+        target_link_libraries(${ENGINE_NAME} optimized ${SPIRV_CROSS_CPP_RELEASE}           debug ${SPIRV_CROSS_CPP_DEBUG})
+        target_link_libraries(${ENGINE_NAME} optimized ${SPIRV_CROSS_CORE_RELEASE}          debug ${SPIRV_CROSS_CORE_DEBUG})
+        target_link_libraries(${ENGINE_NAME} optimized ${SPIRV_CROSS_GLSL_RELEASE}          debug ${SPIRV_CROSS_GLSL_DEBUG})
+        #target_link_libraries(${ENGINE_NAME} optimized ${SPIRV_CROSS_MSL_RELEASE}           debug ${SPIRV_CROSS_MSL_DEBUG})
+    endif()
 endif()
 
 link_directories(${ENGINE_NAME} ${VULKAN_SDK_LIB_DIRECTORY})
@@ -234,17 +234,17 @@ link_directories(${ENGINE_NAME} ${VULKAN_SDK_LIB_DIRECTORY})
 #Libs
 ##############################################################
 if (CRC32_LIB)
-	message("-- Add Crc32 lib")
-	add_subdirectory(Engine/Libs/crc32c)
+    message("-- Add Crc32 lib")
+    add_subdirectory(Engine/Libs/crc32c)
     set_target_properties(crc32c PROPERTIES FOLDER Libs/crc32c)
     set_target_properties(crc32c_arm64 PROPERTIES FOLDER Libs/crc32c)
     set_target_properties(crc32c_sse42 PROPERTIES FOLDER Libs/crc32c)
-	message("-- Crc32 lib added")
+    message("-- Crc32 lib added")
 endif()
 
 if (ASSIMP_LIB)
-	message("-- Add Assimp lib")
-	add_subdirectory(Engine/Libs/assimp)
+    message("-- Add Assimp lib")
+    add_subdirectory(Engine/Libs/assimp)
     set_target_properties(assimp PROPERTIES FOLDER Libs/assimp)
     target_compile_options(assimp PRIVATE -D_SILENCE_ALL_CXX17_DEPRECATION_WARNINGS)
     set_target_properties(IrrXML PROPERTIES FOLDER Libs/assimp)
@@ -257,7 +257,7 @@ if(WIN32)
     target_compile_options(zlibstatic PRIVATE $<$<CONFIG:DEBUG>:/MTd> $<$<CONFIG:RELEASE>:/MT>)
 endif()
 
-	message("-- Assimp lib added")
+    message("-- Assimp lib added")
 endif()
 
 ##############################################################
@@ -268,11 +268,11 @@ if (BUILD_EXAMPLES)
     message("-- Create Examples:")
 #    add_subdirectory(Examples/1.CreateWindow)
 #    add_subdirectory(Examples/2.ClearColor)
-	add_subdirectory(Examples/3.DrawMesh)
-	add_subdirectory(Examples/4.DrawScene)
-	add_subdirectory(Examples/5.Test)
-	
-	set(BUILD_PROJECTS #[[1.CreateWindow 2.ClearColor]] 3.DrawMesh 4.DrawScene 5.Test)
+    add_subdirectory(Examples/3.DrawMesh)
+    add_subdirectory(Examples/4.DrawScene)
+    add_subdirectory(Examples/5.Test)
+    
+    set(BUILD_PROJECTS #[[1.CreateWindow 2.ClearColor]] 3.DrawMesh 4.DrawScene 5.Test)
     set_target_properties(${BUILD_PROJECTS} PROPERTIES FOLDER Examples)
     message("-- ----------------")
 endif ()

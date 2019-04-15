@@ -7,14 +7,14 @@ project(${CURRENT_PROJECT})
 
 file(GLOB TEST_HEADERS *.h)
 file(GLOB TEST_SOURCES *.cpp)
-file(GLOB TEST_SHADERS "data/shaders/*")
+file(GLOB TEST_SHADERS "data/shaders/*.frag" "data/shaders/*.vert")
 
 source_group("project" FILES ${TEST_HEADERS} ${TEST_SOURCES})
 source_group("project\\shaders" FILES ${TEST_SHADERS})
 
 if(WIN32)
-	set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /SUBSYSTEM:CONSOLE")
-	add_executable(${CURRENT_PROJECT} WIN32 ${TEST_HEADERS}	${TEST_SOURCES} ${TEST_SHADERS})
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /SUBSYSTEM:CONSOLE")
+    add_executable(${CURRENT_PROJECT} WIN32 ${TEST_HEADERS}	${TEST_SOURCES} ${TEST_SHADERS})
 endif()
 
 target_link_libraries(${CURRENT_PROJECT} ${ENGINE_NAME})
