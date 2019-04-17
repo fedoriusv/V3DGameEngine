@@ -103,12 +103,12 @@ void EmptyContext::transitionImages(const std::vector<Image*>& images, Transitio
     LOG_DEBUG("EmptyContext::transitionImages");
 }
 
-void EmptyContext::draw(StreamBufferDescription& desc, u32 firstVertex, u32 vertexCount, u32 firstInstance, u32 instanceCount)
+void EmptyContext::draw(const StreamBufferDescription& desc, u32 firstVertex, u32 vertexCount, u32 firstInstance, u32 instanceCount)
 {
     LOG_DEBUG("EmptyContext::draw");
 }
 
-void EmptyContext::drawIndexed(StreamBufferDescription & desc, u32 firstIndex, u32 indexCount, u32 firstInstance, u32 instanceCount)
+void EmptyContext::drawIndexed(const StreamBufferDescription & desc, u32 firstIndex, u32 indexCount, u32 firstInstance, u32 instanceCount)
 {
     LOG_DEBUG("EmptyContext::drawIndexed");
 }

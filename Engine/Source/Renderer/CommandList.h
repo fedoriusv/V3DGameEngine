@@ -69,8 +69,8 @@ namespace renderer
         void endFrame();
         void presentFrame();
 
-        void draw(StreamBufferDescription& desc, u32 firstVertex, u32 countVertex, u32 countInstance);
-        void drawIndexed(StreamBufferDescription& desc, u32 firstIndex, u32 countIndex, u32 countInstance);
+        void draw(const StreamBufferDescription& desc, u32 firstVertex, u32 countVertex, u32 countInstance);
+        void drawIndexed(const StreamBufferDescription& desc, u32 firstIndex, u32 countIndex, u32 countInstance);
 
         void pushCommand(Command* cmd);
 

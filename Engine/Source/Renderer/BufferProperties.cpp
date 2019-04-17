@@ -68,6 +68,24 @@ StreamBufferDescription::StreamBufferDescription(StreamBufferDescription && desc
     _indexType = desc._indexType;
 }
 
+StreamBufferDescription& StreamBufferDescription::operator=(const StreamBufferDescription& desc)
+{
+    if (this == &desc)
+    {
+        return *this;
+    }
+
+    _vertices = desc._vertices;
+    _streamsID = desc._streamsID;
+    _offsets = desc._offsets;
+    _indices = desc._indices;
+
+    _indicesOffet = desc._indicesOffet;
+    _indexType = desc._indexType;
+
+    return *this;
+}
+
 StreamBufferDescription & StreamBufferDescription::operator=(StreamBufferDescription && desc)
 {
     if (this == &desc)

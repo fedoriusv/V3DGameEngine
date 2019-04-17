@@ -118,12 +118,12 @@ bool VulkanContextState::setCurrentPipeline(VulkanGraphicPipeline * pipeline)
     return changed;
 }
 
-bool VulkanContextState::setCurrentVertexBuffers(StreamBufferDescription & desc)
+bool VulkanContextState::setCurrentVertexBuffers(const StreamBufferDescription & desc)
 {
     bool changed = m_currentVertexBuffers.first != desc;
     if (changed)
     {
-        m_currentVertexBuffers.first = std::move(desc);
+        m_currentVertexBuffers.first = desc;//std::move(desc);
     }
     m_currentVertexBuffers.second = changed;
 

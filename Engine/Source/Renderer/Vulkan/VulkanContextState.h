@@ -47,7 +47,7 @@ namespace vk
         bool setCurrentFramebuffer(std::vector<VulkanFramebuffer*>& framebuffers);
         bool setCurrentPipeline(VulkanGraphicPipeline* pipeline);
 
-        bool setCurrentVertexBuffers(StreamBufferDescription& desc);
+        bool setCurrentVertexBuffers(const StreamBufferDescription& desc);
         void setClearValues(const VkRect2D& area, std::vector <VkClearValue>& clearValues);
 
         VulkanRenderPass *getCurrentRenderpass() const;

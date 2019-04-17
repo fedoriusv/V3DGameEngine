@@ -518,7 +518,7 @@ void CommandList::presentFrame()
     }
 }
 
-void CommandList::draw(StreamBufferDescription& desc, u32 firstVertex, u32 countVertex, u32 countInstance)
+void CommandList::draw(const StreamBufferDescription& desc, u32 firstVertex, u32 countVertex, u32 countInstance)
 {
     if (CommandList::isImmediate())
     {
@@ -531,7 +531,7 @@ void CommandList::draw(StreamBufferDescription& desc, u32 firstVertex, u32 count
     }
 }
 
-void CommandList::drawIndexed(StreamBufferDescription& desc, u32 firstIndex, u32 countIndex, u32 countInstance)
+void CommandList::drawIndexed(const StreamBufferDescription& desc, u32 firstIndex, u32 countIndex, u32 countInstance)
 {
     if (CommandList::isImmediate())
     {

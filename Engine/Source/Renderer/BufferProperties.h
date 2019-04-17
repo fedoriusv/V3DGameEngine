@@ -110,6 +110,7 @@ namespace renderer
         StreamBufferDescription() noexcept = default;
         explicit StreamBufferDescription(const StreamBufferDescription& desc) noexcept;
         explicit StreamBufferDescription(StreamBufferDescription&& desc) noexcept;
+        StreamBufferDescription& operator=(const StreamBufferDescription& desc);
         StreamBufferDescription& operator=(StreamBufferDescription&& desc);
 
         explicit StreamBufferDescription(VertexStreamBuffer* vertex, u32 stream) noexcept;

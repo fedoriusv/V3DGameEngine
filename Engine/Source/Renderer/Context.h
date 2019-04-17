@@ -68,8 +68,8 @@ namespace renderer
         virtual void clearBackbuffer(const core::Vector4D & color) = 0;
 
         //draw
-        virtual void draw(StreamBufferDescription& desc, u32 firstVertex, u32 vertexCount, u32 firstInstance, u32 instanceCount) = 0;
-        virtual void drawIndexed(StreamBufferDescription& desc, u32 firstIndex, u32 indexCount, u32 firstInstance, u32 instanceCount) = 0;
+        virtual void draw(const StreamBufferDescription& desc, u32 firstVertex, u32 vertexCount, u32 firstInstance, u32 instanceCount) = 0;
+        virtual void drawIndexed(const StreamBufferDescription& desc, u32 firstIndex, u32 indexCount, u32 firstInstance, u32 instanceCount) = 0;
 
         //program bind
         virtual void bindImage(const Shader* shader, u32 bindIndex, const Image* image) = 0;

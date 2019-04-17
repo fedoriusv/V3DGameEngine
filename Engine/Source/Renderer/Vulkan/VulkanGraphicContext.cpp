@@ -515,7 +515,7 @@ void VulkanGraphicContext::transitionImages(const std::vector<Image*>& images, T
     ASSERT(false, "impl");
 }
 
-void VulkanGraphicContext::draw(StreamBufferDescription& desc, u32 firstVertex, u32 vertexCount, u32 firstInstance, u32 instanceCount)
+void VulkanGraphicContext::draw(const StreamBufferDescription& desc, u32 firstVertex, u32 vertexCount, u32 firstInstance, u32 instanceCount)
 {
     bool changed = m_currentContextStateNEW->setCurrentVertexBuffers(desc);
 
@@ -538,7 +538,7 @@ void VulkanGraphicContext::draw(StreamBufferDescription& desc, u32 firstVertex, 
     //m_currentContextStateNEW->invalidateDescriptorSetsState();
 }
 
-void VulkanGraphicContext::drawIndexed(StreamBufferDescription & desc, u32 firstIndex, u32 indexCount, u32 firstInstance, u32 instanceCount)
+void VulkanGraphicContext::drawIndexed(const StreamBufferDescription & desc, u32 firstIndex, u32 indexCount, u32 firstInstance, u32 instanceCount)
 {
     bool changed = m_currentContextStateNEW->setCurrentVertexBuffers(desc);
 

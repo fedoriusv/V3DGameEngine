@@ -327,12 +327,12 @@ void Scene::onRender(v3d::renderer::CommandList & cmd)
             ubo.projection = m_camera->getProjectionMatrix();
             ubo.view = m_camera->getViewMatrix();
             ubo.model.makeIdentity();
-            ubo.viewportDim = core::Vector2D(cmd.getBackbuffer()->getDimension().width, cmd.getBackbuffer()->getDimension().height);
+            ubo.viewportDim = core::Vector2D(f32(cmd.getBackbuffer()->getDimension().width), f32(cmd.getBackbuffer()->getDimension().height));
 
-            m_CompositionProgram->bindUniformsBuffer<renderer::ShaderType::ShaderType_Vertex>(0/*"ubo"*/, 0, sizeof(ubo), &ubo);
-            m_CompositionProgram->bindSampledTexture<renderer::ShaderType::ShaderType_Fragment, renderer::Texture2D>(0/*"samplerSmoke"*/, m_ParticleSmokeTexture.get(), m_Sampler.get());
-            m_CompositionProgram->bindSampledTexture<renderer::ShaderType::ShaderType_Fragment, renderer::Texture2D>(1/*"samplerFire"*/, m_ParticleFireTexture.get(), m_Sampler.get());
-            m_CompositionProgram->bindSampledTexture<renderer::ShaderType::ShaderType_Fragment, renderer::Texture2D>(2/*"samplerPositionDepth"*/, m_MRTRenderPass.colorTexture[0].get(), m_Sampler.get());
+            m_MRTParticlesProgram->bindUniformsBuffer<renderer::ShaderType::ShaderType_Vertex>(0/*"ubo"*/, 0, sizeof(ubo), &ubo);
+            m_MRTParticlesProgram->bindSampledTexture<renderer::ShaderType::ShaderType_Fragment, renderer::Texture2D>(0/*"samplerSmoke"*/, m_ParticleSmokeTexture.get(), m_Sampler.get());
+            m_MRTParticlesProgram->bindSampledTexture<renderer::ShaderType::ShaderType_Fragment, renderer::Texture2D>(1/*"samplerFire"*/, m_ParticleFireTexture.get(), m_Sampler.get());
+            m_MRTParticlesProgram->bindSampledTexture<renderer::ShaderType::ShaderType_Fragment, renderer::Texture2D>(2/*"samplerPositionDepth"*/, m_MRTRenderPass.colorTexture[0].get(), m_Sampler.get());
 
             m_ParticleSystem->draw();
         }
@@ -346,19 +346,12 @@ void Scene::onLoad(v3d::renderer::CommandList & cmd)
 
     resource::Image* dummyImage = resource::ResourceLoaderManager::getInstance()->load<resource::Image, resource::ImageFileLoader>("sponza/dummy.dds");
     m_DummyTexture = cmd.createObject<renderer::Texture2D>(renderer::TextureUsage_Sampled | renderer::TextureUsage_Write, dummyImage->getFormat(), core::Dimension2D(dummyImage->getDimension().width, dummyImage->getDimension().height), 1, dummyImage->getRawData());
-
+    
     //Load Sponza
     Model* sponza = resource::ResourceLoaderManager::getInstance()->load<Model, resource::ModelFileLoader>("sponza.dae", 
         resource::ModelLoaderFlag::ModelLoaderFlag_SeperateMesh | resource::ModelLoaderFlag::ModelLoaderFlag_GenerateTangentAndBitangent | resource::ModelLoaderFlag::ModelLoaderFlag_UseBitangent);
     m_SponzaMaterials = MaterialHelper::createMaterialHelpers(cmd, sponza->getMaterials());
     m_SponzaModelDrawer = ModelHelper::createModelHelper(cmd, { sponza });
-
-    //Load skysphere
-    Model* skysphereModel = resource::ResourceLoaderManager::getInstance()->load<Model, resource::ModelFileLoader>("examples/4.drawscene/data/skysphere.dae", resource::ModelLoaderFlag::ModelLoaderFlag_SeperateMesh);
-    resource::Image* skysphereImage = resource::ResourceLoaderManager::getInstance()->load<resource::Image, resource::ImageFileLoader>("examples/4.drawscene/data/textures/skysphere_night.ktx");
-    m_SkyTexture = cmd.createObject<renderer::Texture2D>(renderer::TextureUsage_Sampled | renderer::TextureUsage_Write, skysphereImage->getFormat(), core::Dimension2D(skysphereImage->getDimension().width, skysphereImage->getDimension().height), 1, skysphereImage->getRawData());
-    m_SkySphereVertexBuffer = cmd.createObject<renderer::VertexStreamBuffer>(renderer::StreamBufferUsage::StreamBuffer_Write, skysphereModel->getMeshByIndex(0)->getVertexSize(), skysphereModel->getMeshByIndex(0)->getVertexData());
-    m_SkySphereIndexBuffer = cmd.createObject<renderer::IndexStreamBuffer>(renderer::StreamBufferUsage::StreamBuffer_Write, renderer::StreamIndexBufferType::IndexType_32, skysphereModel->getMeshByIndex(0)->getIndexCount(), skysphereModel->getMeshByIndex(0)->getIndexData());
 
 #if TEST_DRAW
     //Simple Draw (test)
@@ -449,7 +442,6 @@ void Scene::onLoad(v3d::renderer::CommandList & cmd)
             m_SkyTexture = cmd.createObject<renderer::Texture2D>(renderer::TextureUsage_Sampled | renderer::TextureUsage_Write, skysphereImage->getFormat(), core::Dimension2D(skysphereImage->getDimension().width, skysphereImage->getDimension().height), 1, skysphereImage->getRawData());
             m_SkySphereVertexBuffer = cmd.createObject<renderer::VertexStreamBuffer>(renderer::StreamBufferUsage::StreamBuffer_Write, skysphereModel->getMeshByIndex(0)->getVertexSize(), skysphereModel->getMeshByIndex(0)->getVertexData());
             m_SkySphereIndexBuffer = cmd.createObject<renderer::IndexStreamBuffer>(renderer::StreamBufferUsage::StreamBuffer_Write, renderer::StreamIndexBufferType::IndexType_32, skysphereModel->getMeshByIndex(0)->getIndexCount(), skysphereModel->getMeshByIndex(0)->getIndexData());
-
 
             renderer::Shader* skysphereVertShader = resource::ResourceLoaderManager::getInstance()->loadShader<renderer::Shader, resource::ShaderSourceFileLoader>(cmd.getContext(), "shaders/skysphere.vert");
             renderer::Shader* skysphereFragShader = resource::ResourceLoaderManager::getInstance()->loadShader<renderer::Shader, resource::ShaderSourceFileLoader>(cmd.getContext(), "shaders/skysphere.frag");
