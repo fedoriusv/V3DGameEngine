@@ -19,6 +19,8 @@
 #include "Scene/Material.h"
 #include "Scene/MaterialHelper.h"
 #include "Scene/Camera.h"
+#include "Scene/ParticleSystem.h"
+#include "Scene/ParticleSystemHelper.h"
 
 #define TEST_DRAW 0
 
@@ -45,14 +47,20 @@ Scene::~Scene()
 {
     m_camera = nullptr;
 
-    for (auto material : m_sponzaMaterials)
+    for (auto material : m_SponzaMaterials)
     {
         delete material;
     }
-    m_sponzaMaterials.clear();
+    m_SponzaMaterials.clear();
 
-    delete m_modelDrawer;
-    m_modelDrawer = nullptr;
+    delete m_SponzaModelDrawer;
+    m_SponzaModelDrawer = nullptr;
+
+    if (m_ParticleSystem)
+    {
+        delete m_ParticleSystem;
+        m_ParticleSystem = nullptr;
+    }
 
     m_Sampler = nullptr;
     m_DummyTexture = nullptr;
@@ -114,10 +122,11 @@ void Scene::setupLights()
     setupLight(&m_lights[16], { 135.0f, 18.0f,  3.2f, 1.0f }, { 1.0f, 1.0f, 0.3f, 1.0f }, 25.0f);
 
     // Setup particle systems for fire bowls
-    /*for (u32 i = 5; i < 9; i++)
+    for (u32 i = 5; i < 9; i++)
     {
-        resources.particleSystems->add(512, glm::vec3(uboFragmentLights.lights[i].position) + glm::vec3(0.0f, 2.5f, 0.0f), glm::vec3(-2.0f, 0.25f, -2.0f), glm::vec3(2.0f, 2.5f, 2.0f));
-    }*/
+        m_ParticleSystem->add(512, core::Vector3D(m_lights[i]._position.x, m_lights[i]._position.y, m_lights[i]._position.z) + core::Vector3D(0.0f, 2.5f, 0.0f),
+            core::Vector3D(-2.0f, 0.25f, -2.0f), core::Vector3D(2.0f, 2.5f, 2.0f));
+    }
 }
 
 void Scene::onUpdate(f32 dt)
@@ -133,6 +142,8 @@ void Scene::onUpdate(f32 dt)
     // Move across the floow
     m_lights[0]._position.x = -sin(core::k_degToRad * 360.0f * timer) * 120.0f;
     m_lights[0]._position.z = cos(core::k_degToRad * 360.0f * timer * 8.0f) * 10.0f;
+
+    m_ParticleSystem->update(dt);
 }
 
 void Scene::onRender(v3d::renderer::CommandList & cmd)
@@ -183,23 +194,23 @@ void Scene::onRender(v3d::renderer::CommandList & cmd)
         ubo.model.makeIdentity();
 
         cmd.setPipelineState(m_MRTOpaquePipeline.get());
-        for (u32 i = 0; i < m_modelDrawer->getDrawStatesCount(); ++i)
+        for (u32 i = 0; i < m_SponzaModelDrawer->getDrawStatesCount(); ++i)
         {
-            if (m_sponzaMaterials[i]->getFloatParameter(MaterialHeader::Property::Property_Opacity) > 0.0f)
+            if (m_SponzaMaterials[i]->getFloatParameter(MaterialHeader::Property::Property_Opacity) > 0.0f)
             {
                 continue;
             }
 
-            renderer::Texture2D* baseColor = m_sponzaMaterials[i]->getTextureParameter<renderer::Texture2D>(MaterialHeader::Property::Property_BaseColor);
-            renderer::Texture2D* specularColor = m_sponzaMaterials[i]->getTextureParameter<renderer::Texture2D>(MaterialHeader::Property::Property_Specular);
-            renderer::Texture2D* normalMap = m_sponzaMaterials[i]->getTextureParameter<renderer::Texture2D>(MaterialHeader::Property::Property_Normals);
+            renderer::Texture2D* baseColor = m_SponzaMaterials[i]->getTextureParameter<renderer::Texture2D>(MaterialHeader::Property::Property_BaseColor);
+            renderer::Texture2D* specularColor = m_SponzaMaterials[i]->getTextureParameter<renderer::Texture2D>(MaterialHeader::Property::Property_Specular);
+            renderer::Texture2D* normalMap = m_SponzaMaterials[i]->getTextureParameter<renderer::Texture2D>(MaterialHeader::Property::Property_Normals);
 
             m_MRTOpaqueProgram->bindUniformsBuffer<renderer::ShaderType::ShaderType_Vertex>(0/*"ubo"*/, 0, sizeof(ubo), &ubo);
             m_MRTOpaqueProgram->bindSampledTexture<renderer::ShaderType::ShaderType_Fragment, renderer::Texture2D>(0/*"samplerColor"*/, baseColor ? baseColor : m_DummyTexture.get(), m_Sampler.get());
             m_MRTOpaqueProgram->bindSampledTexture<renderer::ShaderType::ShaderType_Fragment, renderer::Texture2D>(1/*"samplerSpecular"*/, specularColor ? specularColor : m_DummyTexture.get(), m_Sampler.get());
             m_MRTOpaqueProgram->bindSampledTexture<renderer::ShaderType::ShaderType_Fragment, renderer::Texture2D>(2/*"samplerNormal"*/, normalMap ? normalMap : m_DummyTexture.get(), m_Sampler.get());
 
-            m_modelDrawer->draw(i);
+            m_SponzaModelDrawer->draw(i);
         }
 
         {
@@ -226,23 +237,23 @@ void Scene::onRender(v3d::renderer::CommandList & cmd)
         }
 
         cmd.setPipelineState(m_MRTTransparentPipeline.get());
-        for (u32 i = 0; i < m_modelDrawer->getDrawStatesCount(); ++i)
+        for (u32 i = 0; i < m_SponzaModelDrawer->getDrawStatesCount(); ++i)
         {
-            if (m_sponzaMaterials[i]->getFloatParameter(MaterialHeader::Property::Property_Opacity) == 0.0f)
+            if (m_SponzaMaterials[i]->getFloatParameter(MaterialHeader::Property::Property_Opacity) == 0.0f)
             {
                 continue;
             }
 
-            renderer::Texture2D* baseColor = m_sponzaMaterials[i]->getTextureParameter<renderer::Texture2D>(MaterialHeader::Property::Property_BaseColor);
-            renderer::Texture2D* specularColor = m_sponzaMaterials[i]->getTextureParameter<renderer::Texture2D>(MaterialHeader::Property::Property_Specular);
-            renderer::Texture2D* normalMap = m_sponzaMaterials[i]->getTextureParameter<renderer::Texture2D>(MaterialHeader::Property::Property_Normals);
+            renderer::Texture2D* baseColor = m_SponzaMaterials[i]->getTextureParameter<renderer::Texture2D>(MaterialHeader::Property::Property_BaseColor);
+            renderer::Texture2D* specularColor = m_SponzaMaterials[i]->getTextureParameter<renderer::Texture2D>(MaterialHeader::Property::Property_Specular);
+            renderer::Texture2D* normalMap = m_SponzaMaterials[i]->getTextureParameter<renderer::Texture2D>(MaterialHeader::Property::Property_Normals);
 
             m_MRTOpaqueProgram->bindUniformsBuffer<renderer::ShaderType::ShaderType_Vertex>(0/*"ubo"*/, 0, sizeof(ubo), &ubo);
             m_MRTOpaqueProgram->bindSampledTexture<renderer::ShaderType::ShaderType_Fragment, renderer::Texture2D>(0/*"samplerColor"*/, baseColor ? baseColor : m_DummyTexture.get(), m_Sampler.get());
             m_MRTOpaqueProgram->bindSampledTexture<renderer::ShaderType::ShaderType_Fragment, renderer::Texture2D>(1/*"samplerSpecular"*/, specularColor ? specularColor : m_DummyTexture.get(), m_Sampler.get());
             m_MRTOpaqueProgram->bindSampledTexture<renderer::ShaderType::ShaderType_Fragment, renderer::Texture2D>(2/*"samplerNormal"*/, normalMap ? normalMap : m_DummyTexture.get(), m_Sampler.get());
 
-            m_modelDrawer->draw(i);
+            m_SponzaModelDrawer->draw(i);
         }
     }
 
@@ -270,36 +281,61 @@ void Scene::onRender(v3d::renderer::CommandList & cmd)
         cmd.draw(renderer::StreamBufferDescription(nullptr, 0), 0, 3, 1);
     }
 
+    cmd.setViewport(core::Rect32(0, 0, cmd.getBackbuffer()->getDimension().width, cmd.getBackbuffer()->getDimension().height));
+    cmd.setScissor(core::Rect32(0, 0, cmd.getBackbuffer()->getDimension().width, cmd.getBackbuffer()->getDimension().height));
+
     //Composition
     {
-        cmd.setViewport(core::Rect32(0, 0, cmd.getBackbuffer()->getDimension().width, cmd.getBackbuffer()->getDimension().height));
-        cmd.setScissor(core::Rect32(0, 0, cmd.getBackbuffer()->getDimension().width, cmd.getBackbuffer()->getDimension().height));
-
         cmd.setRenderTarget(m_CompositionRenderPass.renderTarget.get());
-        cmd.setPipelineState(m_CompositionPipeline.get());
 
-        struct
         {
-            core::Matrix4D view;
-            core::Matrix4D model;
-            core::Vector4D viewPos;
-            Light light[LIGHTS_COUNT];
-        } ubo;
+            cmd.setPipelineState(m_CompositionPipeline.get());
 
-        ubo.view = m_camera->getViewMatrix();
-        ubo.model.makeIdentity();
-        ubo.viewPos = core::Vector4D(m_viewPosition, 0.0f);
-        memcpy(&ubo.light, m_lights.data(), sizeof(Light) * LIGHTS_COUNT);
+            struct
+            {
+                core::Matrix4D view;
+                core::Matrix4D model;
+                core::Vector4D viewPos;
+                Light light[LIGHTS_COUNT];
+            } ubo;
 
-        m_CompositionProgram->bindUniformsBuffer<renderer::ShaderType::ShaderType_Fragment>(0/*"ubo"*/, 0, sizeof(ubo), &ubo);
-        //m_CompositionProgram->bindUniformsBuffer<renderer::ShaderType::ShaderType_Fragment>(1/*"ubo"*/, 0, sizeof(Light) * LIGHTS_COUNT, m_lights.data());
-        m_CompositionProgram->bindSampledTexture<renderer::ShaderType::ShaderType_Fragment, renderer::Texture2D>(0/*"samplerPosition"*/, m_MRTRenderPass.colorTexture[0].get(), m_Sampler.get());
-        m_CompositionProgram->bindSampledTexture<renderer::ShaderType::ShaderType_Fragment, renderer::Texture2D>(1/*"samplerNormal"*/, m_MRTRenderPass.colorTexture[1].get(), m_Sampler.get());
-        m_CompositionProgram->bindSampledTexture<renderer::ShaderType::ShaderType_Fragment, renderer::Texture2D>(2/*"samplerAlbedo"*/, m_MRTRenderPass.colorTexture[2].get(), m_Sampler.get());
-        m_CompositionProgram->bindSampledTexture<renderer::ShaderType::ShaderType_Fragment, renderer::Texture2D>(3/*"samplerSSAO"*/, m_SSAOBlurRenderPass.colorTexture[0].get(), m_Sampler.get());
+            ubo.view = m_camera->getViewMatrix();
+            ubo.model.makeIdentity();
+            ubo.viewPos = core::Vector4D(m_viewPosition, 0.0f);
+            memcpy(&ubo.light, m_lights.data(), sizeof(Light) * LIGHTS_COUNT);
 
-        cmd.draw(renderer::StreamBufferDescription(nullptr, 0), 0, 3, 1);
-        //cmd.draw(renderer::StreamBufferDescription(m_ScreenQuad.get(), 0), 0, 6, 1);
+            m_CompositionProgram->bindUniformsBuffer<renderer::ShaderType::ShaderType_Fragment>(0/*"ubo"*/, 0, sizeof(ubo), &ubo);
+            m_CompositionProgram->bindSampledTexture<renderer::ShaderType::ShaderType_Fragment, renderer::Texture2D>(0/*"samplerPosition"*/, m_MRTRenderPass.colorTexture[0].get(), m_Sampler.get());
+            m_CompositionProgram->bindSampledTexture<renderer::ShaderType::ShaderType_Fragment, renderer::Texture2D>(1/*"samplerNormal"*/, m_MRTRenderPass.colorTexture[1].get(), m_Sampler.get());
+            m_CompositionProgram->bindSampledTexture<renderer::ShaderType::ShaderType_Fragment, renderer::Texture2D>(2/*"samplerAlbedo"*/, m_MRTRenderPass.colorTexture[2].get(), m_Sampler.get());
+            m_CompositionProgram->bindSampledTexture<renderer::ShaderType::ShaderType_Fragment, renderer::Texture2D>(3/*"samplerSSAO"*/, m_SSAOBlurRenderPass.colorTexture[0].get(), m_Sampler.get());
+
+            cmd.draw(renderer::StreamBufferDescription(nullptr, 0), 0, 3, 1);
+        }
+
+        {
+            cmd.setPipelineState(m_MRTParticlesPipeline.get());
+
+            struct
+            {
+                core::Matrix4D projection;
+                core::Matrix4D view;
+                core::Matrix4D model;
+                core::Vector2D viewportDim;
+            } ubo;
+
+            ubo.projection = m_camera->getProjectionMatrix();
+            ubo.view = m_camera->getViewMatrix();
+            ubo.model.makeIdentity();
+            ubo.viewportDim = core::Vector2D(cmd.getBackbuffer()->getDimension().width, cmd.getBackbuffer()->getDimension().height);
+
+            m_CompositionProgram->bindUniformsBuffer<renderer::ShaderType::ShaderType_Vertex>(0/*"ubo"*/, 0, sizeof(ubo), &ubo);
+            m_CompositionProgram->bindSampledTexture<renderer::ShaderType::ShaderType_Fragment, renderer::Texture2D>(0/*"samplerSmoke"*/, m_ParticleSmokeTexture.get(), m_Sampler.get());
+            m_CompositionProgram->bindSampledTexture<renderer::ShaderType::ShaderType_Fragment, renderer::Texture2D>(1/*"samplerFire"*/, m_ParticleFireTexture.get(), m_Sampler.get());
+            m_CompositionProgram->bindSampledTexture<renderer::ShaderType::ShaderType_Fragment, renderer::Texture2D>(2/*"samplerPositionDepth"*/, m_MRTRenderPass.colorTexture[0].get(), m_Sampler.get());
+
+            m_ParticleSystem->draw();
+        }
     }
 #endif
 }
@@ -314,8 +350,8 @@ void Scene::onLoad(v3d::renderer::CommandList & cmd)
     //Load Sponza
     Model* sponza = resource::ResourceLoaderManager::getInstance()->load<Model, resource::ModelFileLoader>("sponza.dae", 
         resource::ModelLoaderFlag::ModelLoaderFlag_SeperateMesh | resource::ModelLoaderFlag::ModelLoaderFlag_GenerateTangentAndBitangent | resource::ModelLoaderFlag::ModelLoaderFlag_UseBitangent);
-    m_sponzaMaterials = MaterialHelper::createMaterialHelpers(cmd, sponza->getMaterials());
-    m_modelDrawer = ModelHelper::createModelHelper(cmd, { sponza });
+    m_SponzaMaterials = MaterialHelper::createMaterialHelpers(cmd, sponza->getMaterials());
+    m_SponzaModelDrawer = ModelHelper::createModelHelper(cmd, { sponza });
 
     //Load skysphere
     Model* skysphereModel = resource::ResourceLoaderManager::getInstance()->load<Model, resource::ModelFileLoader>("examples/4.drawscene/data/skysphere.dae", resource::ModelLoaderFlag::ModelLoaderFlag_SeperateMesh);
@@ -407,6 +443,14 @@ void Scene::onLoad(v3d::renderer::CommandList & cmd)
         }
 
         {
+            //Load skysphere
+            Model* skysphereModel = resource::ResourceLoaderManager::getInstance()->load<Model, resource::ModelFileLoader>("examples/4.drawscene/data/skysphere.dae", resource::ModelLoaderFlag::ModelLoaderFlag_SeperateMesh);
+            resource::Image* skysphereImage = resource::ResourceLoaderManager::getInstance()->load<resource::Image, resource::ImageFileLoader>("examples/4.drawscene/data/textures/skysphere_night.ktx");
+            m_SkyTexture = cmd.createObject<renderer::Texture2D>(renderer::TextureUsage_Sampled | renderer::TextureUsage_Write, skysphereImage->getFormat(), core::Dimension2D(skysphereImage->getDimension().width, skysphereImage->getDimension().height), 1, skysphereImage->getRawData());
+            m_SkySphereVertexBuffer = cmd.createObject<renderer::VertexStreamBuffer>(renderer::StreamBufferUsage::StreamBuffer_Write, skysphereModel->getMeshByIndex(0)->getVertexSize(), skysphereModel->getMeshByIndex(0)->getVertexData());
+            m_SkySphereIndexBuffer = cmd.createObject<renderer::IndexStreamBuffer>(renderer::StreamBufferUsage::StreamBuffer_Write, renderer::StreamIndexBufferType::IndexType_32, skysphereModel->getMeshByIndex(0)->getIndexCount(), skysphereModel->getMeshByIndex(0)->getIndexData());
+
+
             renderer::Shader* skysphereVertShader = resource::ResourceLoaderManager::getInstance()->loadShader<renderer::Shader, resource::ShaderSourceFileLoader>(cmd.getContext(), "shaders/skysphere.vert");
             renderer::Shader* skysphereFragShader = resource::ResourceLoaderManager::getInstance()->loadShader<renderer::Shader, resource::ShaderSourceFileLoader>(cmd.getContext(), "shaders/skysphere.frag");
             m_MRTSkyboxProgram = cmd.createObject<renderer::ShaderProgram>(std::vector<const renderer::Shader*>({ skysphereVertShader , skysphereFragShader }));
@@ -420,6 +464,28 @@ void Scene::onLoad(v3d::renderer::CommandList & cmd)
             m_MRTSkyboxPipeline->setDepthCompareOp(renderer::CompareOperation::CompareOp_LessOrEqual);
             m_MRTSkyboxPipeline->setDepthWrite(true);
             m_MRTSkyboxPipeline->setDepthTest(true);
+        }
+
+        {
+            resource::Image* particleFireImage = resource::ResourceLoaderManager::getInstance()->load<resource::Image, resource::ImageFileLoader>("textures/particle_fire.ktx");
+            m_ParticleFireTexture = cmd.createObject<renderer::Texture2D>(renderer::TextureUsage_Sampled | renderer::TextureUsage_Write, particleFireImage->getFormat(), core::Dimension2D(particleFireImage->getDimension().width, particleFireImage->getDimension().height), 1, particleFireImage->getRawData());
+
+            resource::Image* particleSmokeImage = resource::ResourceLoaderManager::getInstance()->load<resource::Image, resource::ImageFileLoader>("textures/particle_smoke.ktx");
+            m_ParticleSmokeTexture = cmd.createObject<renderer::Texture2D>(renderer::TextureUsage_Sampled | renderer::TextureUsage_Write, particleSmokeImage->getFormat(), core::Dimension2D(particleSmokeImage->getDimension().width, particleSmokeImage->getDimension().height), 1, particleSmokeImage->getRawData());
+
+            m_ParticleSystem = ParticleSystemHelper::createParticleSystemHelper(cmd);
+
+            renderer::Shader* particleVertShader = resource::ResourceLoaderManager::getInstance()->loadShader<renderer::Shader, resource::ShaderSourceFileLoader>(cmd.getContext(), "shaders/particle.vert");
+            renderer::Shader* particleFragShader = resource::ResourceLoaderManager::getInstance()->loadShader<renderer::Shader, resource::ShaderSourceFileLoader>(cmd.getContext(), "shaders/particle.frag");
+            m_MRTParticlesProgram = cmd.createObject<renderer::ShaderProgram>(std::vector<const renderer::Shader*>({ particleVertShader , particleFragShader }));
+
+            m_MRTParticlesPipeline = cmd.createObject<renderer::GraphicsPipelineState>(m_ParticleSystem->getVertexInputAttribDesc(), m_MRTParticlesProgram.get(), m_MRTRenderPass.renderTarget.get());
+            m_MRTParticlesPipeline->setPrimitiveTopology(renderer::PrimitiveTopology::PrimitiveTopology_PointList);
+            m_MRTParticlesPipeline->setFrontFace(renderer::FrontFace::FrontFace_CounterClockwise);
+            m_MRTParticlesPipeline->setCullMode(renderer::CullMode::CullMode_None);
+            m_MRTParticlesPipeline->setColorMask(renderer::ColorMask::ColorMask_All);
+            m_MRTParticlesPipeline->setDepthCompareOp(renderer::CompareOperation::CompareOp_Always);
+            //blend
         }
     }
 

@@ -19,6 +19,7 @@ namespace scene
     class Camera;
     class ModelHelper;
     class MaterialHelper;
+    class ParticleSystemHelper;
 
     class Scene
     {
@@ -40,13 +41,6 @@ namespace scene
         utils::IntrusivePointer<renderer::ShaderProgram>         m_SimpleProgram;
         utils::IntrusivePointer<renderer::GraphicsPipelineState> m_SimplePipeline;
 
-        //void updateProgramParameters(renderer::ShaderProgram* program, scene::ModelHelper* model, scene::MaterialHelper* material);
-
-
-        std::vector<scene::MaterialHelper*> m_sponzaMaterials;
-        scene::ModelHelper* m_modelDrawer;
-
-
         core::Dimension2D m_size;
         core::Vector3D    m_viewPosition;
         scene::Camera*    m_camera;
@@ -65,6 +59,9 @@ namespace scene
 
         //Pass 1
         RenderPass<3> m_MRTRenderPass;
+        std::vector<scene::MaterialHelper*> m_SponzaMaterials;
+        scene::ModelHelper* m_SponzaModelDrawer;
+
         utils::IntrusivePointer<renderer::GraphicsPipelineState> m_MRTOpaquePipeline;
         utils::IntrusivePointer<renderer::ShaderProgram>         m_MRTOpaqueProgram;
 
@@ -78,8 +75,11 @@ namespace scene
         utils::IntrusivePointer<renderer::IndexStreamBuffer>  m_SkySphereIndexBuffer;
         utils::IntrusivePointer<renderer::Texture2D> m_SkyTexture;
 
-
-        //renderer::GraphicsPipelineState* m_MRTParticlesPipeline;
+        utils::IntrusivePointer<renderer::GraphicsPipelineState> m_MRTParticlesPipeline;
+        utils::IntrusivePointer<renderer::ShaderProgram>         m_MRTParticlesProgram;
+        utils::IntrusivePointer<renderer::Texture2D> m_ParticleFireTexture;
+        utils::IntrusivePointer<renderer::Texture2D> m_ParticleSmokeTexture;
+        ParticleSystemHelper* m_ParticleSystem;
 
         //Pass 2
         RenderPass<1> m_SSAORenderPass;

@@ -18,7 +18,7 @@ layout (location = 4) out float outRotation;
 layout (location = 5) out vec2 outViewportDim;
 layout (location = 6) out float outArrayPos;
 
-layout (binding = 0) uniform UBO 
+layout (set = 0, binding = 0, std140) uniform UBO 
 {
 	mat4 projection;
 	mat4 view;

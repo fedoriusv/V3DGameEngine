@@ -3,9 +3,9 @@
 #extension GL_ARB_separate_shader_objects : enable
 #extension GL_ARB_shading_language_420pack : enable
 
-layout (binding = 1) uniform sampler2D samplerSmoke;
-layout (binding = 2) uniform sampler2DArray samplerFire;
-layout (binding = 3) uniform sampler2D samplerPositionDepth;
+layout (set = 0, binding = 1) uniform sampler2D samplerSmoke;
+layout (set = 0, binding = 2) uniform sampler2DArray samplerFire;
+layout (set = 0, binding = 3) uniform sampler2D samplerPositionDepth;
 
 layout (location = 0) in vec4 inColor;
 layout (location = 1) in float inPointSize;

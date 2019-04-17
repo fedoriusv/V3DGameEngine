@@ -11,12 +11,12 @@ layout (set = 0, binding = 2) uniform sampler2D ssaoNoise;
 //layout (constant_id = 1) const float SSAO_RADIUS = 0.5;
 //layout (constant_id = 2) const float SSAO_POWER = 1.0;
 
-layout (set = 0, binding = 3) uniform UBOSSAOKernel
+layout (set = 0, binding = 3, std140) uniform UBOSSAOKernel
 {
 	vec4 samples[SSAO_KERNEL_SIZE];
 } uboSSAOKernel;
 
-layout (set = 0, binding = 4) uniform UBO 
+layout (set = 0, binding = 4, std140) uniform UBO 
 {
 	mat4 projection;
 } ubo;
