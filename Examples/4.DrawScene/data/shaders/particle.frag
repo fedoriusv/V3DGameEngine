@@ -17,8 +17,8 @@ layout (location = 6) in float inArrayPos;
 
 layout (location = 0) out vec4 outColor;
 
-layout (constant_id = 0) const float NEAR_PLANE = 1.0f;
-layout (constant_id = 1) const float FAR_PLANE = 512.0f;
+//layout (constant_id = 0) const float NEAR_PLANE = 1.0f;
+//layout (constant_id = 1) const float FAR_PLANE = 512.0f;
 
 float linearDepth(float depth)
 {

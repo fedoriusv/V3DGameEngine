@@ -95,7 +95,7 @@ namespace renderer
         virtual void removeSampler(Sampler* sampler) = 0;
 
         //objects
-        virtual Image* createImage(TextureTarget target, renderer::Format format, const core::Dimension3D& dimension, u32 mipmapLevel, TextureUsageFlags flags) const = 0;
+        virtual Image* createImage(TextureTarget target, renderer::Format format, const core::Dimension3D& dimension, u32 layers, u32 mipmapLevel, TextureUsageFlags flags) = 0;
         virtual void removeImage(Image* image) = 0;
 
         virtual Buffer* createBuffer(Buffer::BufferType type, u16 usageFlag, u64 size) = 0;

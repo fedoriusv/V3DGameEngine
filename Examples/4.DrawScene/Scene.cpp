@@ -345,7 +345,7 @@ void Scene::onLoad(v3d::renderer::CommandList & cmd)
     m_Sampler = cmd.createObject<renderer::SamplerState>(renderer::SamplerFilter::SamplerFilter_Bilinear, renderer::SamplerFilter::SamplerFilter_Trilinear, renderer::SamplerAnisotropic::SamplerAnisotropic_8x);
 
     resource::Image* dummyImage = resource::ResourceLoaderManager::getInstance()->load<resource::Image, resource::ImageFileLoader>("sponza/dummy.dds");
-    m_DummyTexture = cmd.createObject<renderer::Texture2D>(renderer::TextureUsage_Sampled | renderer::TextureUsage_Write, dummyImage->getFormat(), core::Dimension2D(dummyImage->getDimension().width, dummyImage->getDimension().height), 1, dummyImage->getRawData());
+    m_DummyTexture = cmd.createObject<renderer::Texture2D>(renderer::TextureUsage_Sampled | renderer::TextureUsage_Write, dummyImage->getFormat(), core::Dimension2D(dummyImage->getDimension().width, dummyImage->getDimension().height), 1, 1, dummyImage->getRawData());
     
     //Load Sponza
     Model* sponza = resource::ResourceLoaderManager::getInstance()->load<Model, resource::ModelFileLoader>("sponza.dae", 
@@ -439,7 +439,7 @@ void Scene::onLoad(v3d::renderer::CommandList & cmd)
             //Load skysphere
             Model* skysphereModel = resource::ResourceLoaderManager::getInstance()->load<Model, resource::ModelFileLoader>("examples/4.drawscene/data/skysphere.dae", resource::ModelLoaderFlag::ModelLoaderFlag_SeperateMesh);
             resource::Image* skysphereImage = resource::ResourceLoaderManager::getInstance()->load<resource::Image, resource::ImageFileLoader>("examples/4.drawscene/data/textures/skysphere_night.ktx");
-            m_SkyTexture = cmd.createObject<renderer::Texture2D>(renderer::TextureUsage_Sampled | renderer::TextureUsage_Write, skysphereImage->getFormat(), core::Dimension2D(skysphereImage->getDimension().width, skysphereImage->getDimension().height), 1, skysphereImage->getRawData());
+            m_SkyTexture = cmd.createObject<renderer::Texture2D>(renderer::TextureUsage_Sampled | renderer::TextureUsage_Write, skysphereImage->getFormat(), core::Dimension2D(skysphereImage->getDimension().width, skysphereImage->getDimension().height), 1, 1, skysphereImage->getRawData());
             m_SkySphereVertexBuffer = cmd.createObject<renderer::VertexStreamBuffer>(renderer::StreamBufferUsage::StreamBuffer_Write, skysphereModel->getMeshByIndex(0)->getVertexSize(), skysphereModel->getMeshByIndex(0)->getVertexData());
             m_SkySphereIndexBuffer = cmd.createObject<renderer::IndexStreamBuffer>(renderer::StreamBufferUsage::StreamBuffer_Write, renderer::StreamIndexBufferType::IndexType_32, skysphereModel->getMeshByIndex(0)->getIndexCount(), skysphereModel->getMeshByIndex(0)->getIndexData());
 
@@ -456,28 +456,6 @@ void Scene::onLoad(v3d::renderer::CommandList & cmd)
             m_MRTSkyboxPipeline->setDepthCompareOp(renderer::CompareOperation::CompareOp_LessOrEqual);
             m_MRTSkyboxPipeline->setDepthWrite(true);
             m_MRTSkyboxPipeline->setDepthTest(true);
-        }
-
-        {
-            resource::Image* particleFireImage = resource::ResourceLoaderManager::getInstance()->load<resource::Image, resource::ImageFileLoader>("textures/particle_fire.ktx");
-            m_ParticleFireTexture = cmd.createObject<renderer::Texture2D>(renderer::TextureUsage_Sampled | renderer::TextureUsage_Write, particleFireImage->getFormat(), core::Dimension2D(particleFireImage->getDimension().width, particleFireImage->getDimension().height), 1, particleFireImage->getRawData());
-
-            resource::Image* particleSmokeImage = resource::ResourceLoaderManager::getInstance()->load<resource::Image, resource::ImageFileLoader>("textures/particle_smoke.ktx");
-            m_ParticleSmokeTexture = cmd.createObject<renderer::Texture2D>(renderer::TextureUsage_Sampled | renderer::TextureUsage_Write, particleSmokeImage->getFormat(), core::Dimension2D(particleSmokeImage->getDimension().width, particleSmokeImage->getDimension().height), 1, particleSmokeImage->getRawData());
-
-            m_ParticleSystem = ParticleSystemHelper::createParticleSystemHelper(cmd);
-
-            renderer::Shader* particleVertShader = resource::ResourceLoaderManager::getInstance()->loadShader<renderer::Shader, resource::ShaderSourceFileLoader>(cmd.getContext(), "shaders/particle.vert");
-            renderer::Shader* particleFragShader = resource::ResourceLoaderManager::getInstance()->loadShader<renderer::Shader, resource::ShaderSourceFileLoader>(cmd.getContext(), "shaders/particle.frag");
-            m_MRTParticlesProgram = cmd.createObject<renderer::ShaderProgram>(std::vector<const renderer::Shader*>({ particleVertShader , particleFragShader }));
-
-            m_MRTParticlesPipeline = cmd.createObject<renderer::GraphicsPipelineState>(m_ParticleSystem->getVertexInputAttribDesc(), m_MRTParticlesProgram.get(), m_MRTRenderPass.renderTarget.get());
-            m_MRTParticlesPipeline->setPrimitiveTopology(renderer::PrimitiveTopology::PrimitiveTopology_PointList);
-            m_MRTParticlesPipeline->setFrontFace(renderer::FrontFace::FrontFace_CounterClockwise);
-            m_MRTParticlesPipeline->setCullMode(renderer::CullMode::CullMode_None);
-            m_MRTParticlesPipeline->setColorMask(renderer::ColorMask::ColorMask_All);
-            m_MRTParticlesPipeline->setDepthCompareOp(renderer::CompareOperation::CompareOp_Always);
-            //blend
         }
     }
 
@@ -511,7 +489,7 @@ void Scene::onLoad(v3d::renderer::CommandList & cmd)
             {
                 ssaoNoise[i] = core::Vector4D(rndDist(rndGen) * 2.0f - 1.0f, rndDist(rndGen) * 2.0f - 1.0f, 0.0f, 0.0f);
             }
-            m_SSAONoiseTexture = cmd.createObject<renderer::Texture2D>(renderer::TextureUsage::TextureUsage_Sampled | renderer::TextureUsage::TextureUsage_Write, renderer::Format::Format_R32G32B32A32_SFloat, core::Dimension2D(SSAO_NOISE_DIM, SSAO_NOISE_DIM), 1, ssaoNoise.data());
+            m_SSAONoiseTexture = cmd.createObject<renderer::Texture2D>(renderer::TextureUsage::TextureUsage_Sampled | renderer::TextureUsage::TextureUsage_Write, renderer::Format::Format_R32G32B32A32_SFloat, core::Dimension2D(SSAO_NOISE_DIM, SSAO_NOISE_DIM), 1, 1, ssaoNoise.data());
         }
 
         std::vector<std::pair<std::string, std::string>> defines = 
@@ -555,45 +533,56 @@ void Scene::onLoad(v3d::renderer::CommandList & cmd)
 
     //Composition pass 4
     {
-        /*std::vector<f32> quard =
         {
-            1.0f,  1.0f, 0.0f ,  1.0f, 1.0f ,
-           -1.0f,  1.0f, 0.0f ,  0.0f, 1.0f ,
-           -1.0f, -1.0f, 0.0f ,  0.0f, 0.0f ,
+            std::vector<std::pair<std::string, std::string>> defines =
+            {
+                { "SSAO_ENABLED", std::to_string(m_enableSSAO) },
+                { "AMBIENT_FACTOR", std::to_string(0.15f) },
+                { "NUM_LIGHTS", std::to_string(LIGHTS_COUNT) },
+            };
 
-            1.0f,  1.0f, 0.0f ,  1.0f, 1.0f ,
-           -1.0f, -1.0f, 0.0f ,  0.0f, 0.0f ,
-            1.0f, -1.0f, 0.0f ,  1.0f, 0.0f ,
-        };
-        m_ScreenQuad = cmd.createObject<renderer::VertexStreamBuffer>(renderer::StreamBufferUsage::StreamBuffer_Write, quard.size() * sizeof(f32), reinterpret_cast<u8*>(quard.data()));
+            renderer::RenderTargetState::ColorOpState colorOpState = { renderer::RenderTargetLoadOp::LoadOp_DontCare, renderer::RenderTargetStoreOp::StoreOp_Store, core::Vector4D(0.0f) };
+            renderer::RenderTargetState::TransitionState tansitionState = { renderer::TransitionOp::TransitionOp_Undefined, renderer::TransitionOp::TransitionOp_Present };
+            m_CompositionRenderPass.renderTarget = cmd.createObject<renderer::RenderTargetState>(m_size);
+            m_CompositionRenderPass.renderTarget->setColorTexture(0, cmd.getBackbuffer(), colorOpState, tansitionState);
 
-        renderer::VertexInputAttribDescription screenQuadDesc = 
+            const renderer::Shader* fullscreenVertShader = resource::ResourceLoaderManager::getInstance()->loadShader<renderer::Shader, resource::ShaderSourceFileLoader>(cmd.getContext(), "shaders/fullscreen.vert");
+            const renderer::Shader* compositionFragShader = resource::ResourceLoaderManager::getInstance()->loadShader<renderer::Shader, resource::ShaderSourceFileLoader>(cmd.getContext(), "shaders/composition.frag", defines);
+            m_CompositionProgram = cmd.createObject<renderer::ShaderProgram>(std::vector<const renderer::Shader*>({ fullscreenVertShader , compositionFragShader }));
+
+            m_CompositionPipeline = cmd.createObject<renderer::GraphicsPipelineState>(renderer::VertexInputAttribDescription()/*screenQuadDesc*/, m_CompositionProgram.get(), m_CompositionRenderPass.renderTarget.get());
+            m_CompositionPipeline->setColorMask(renderer::ColorMask::ColorMask_All);
+        }
+
         {
-            { renderer::VertexInputAttribDescription::InputBinding(0, renderer::VertexInputAttribDescription::InputRate_Vertex, 20) },
-            { 
-                renderer::VertexInputAttribDescription::InputAttribute(0, 0, renderer::Format_R32G32B32_SFloat, 0),
-                renderer::VertexInputAttribDescription::InputAttribute(0, 0, renderer::Format_R32G32_SFloat, 12),
-            },
-        };*/
+            std::vector<std::pair<std::string, std::string>> defines =
+            {
+                { "NEAR_PLANE", std::to_string(m_camera->getNearValue()) },
+                { "FAR_PLANE", std::to_string(m_camera->getFarValue()) },
+            };
 
-        std::vector<std::pair<std::string, std::string>> defines =
-        {
-            { "SSAO_ENABLED", std::to_string(m_enableSSAO) },
-            { "AMBIENT_FACTOR", std::to_string(0.15f) },
-            { "NUM_LIGHTS", std::to_string(LIGHTS_COUNT) },
-        };
+            resource::Image* particleFireImage = resource::ResourceLoaderManager::getInstance()->load<resource::Image, resource::ImageFileLoader>("textures/particle_fire.ktx");
+            m_ParticleFireTexture = cmd.createObject<renderer::Texture2D>(renderer::TextureUsage_Sampled | renderer::TextureUsage_Write, particleFireImage->getFormat(), core::Dimension2D(particleFireImage->getDimension().width, particleFireImage->getDimension().height),
+                particleFireImage->getLayersCount(), 1/*particleFireImage->getMipMapsCount()*/, particleFireImage->getRawData());
 
-        renderer::RenderTargetState::ColorOpState colorOpState = { renderer::RenderTargetLoadOp::LoadOp_DontCare, renderer::RenderTargetStoreOp::StoreOp_Store, core::Vector4D(0.0f) };
-        renderer::RenderTargetState::TransitionState tansitionState = { renderer::TransitionOp::TransitionOp_Undefined, renderer::TransitionOp::TransitionOp_Present };
-        m_CompositionRenderPass.renderTarget = cmd.createObject<renderer::RenderTargetState>(m_size);
-        m_CompositionRenderPass.renderTarget->setColorTexture(0, cmd.getBackbuffer(), colorOpState, tansitionState);
+            resource::Image* particleSmokeImage = resource::ResourceLoaderManager::getInstance()->load<resource::Image, resource::ImageFileLoader>("textures/particle_smoke.ktx");
+            m_ParticleSmokeTexture = cmd.createObject<renderer::Texture2D>(renderer::TextureUsage_Sampled | renderer::TextureUsage_Write, particleSmokeImage->getFormat(), core::Dimension2D(particleSmokeImage->getDimension().width, particleSmokeImage->getDimension().height),
+                particleSmokeImage->getLayersCount(), 1/*particleSmokeImage->getMipMapsCount()*/, particleSmokeImage->getRawData());
 
-        const renderer::Shader* fullscreenVertShader = resource::ResourceLoaderManager::getInstance()->loadShader<renderer::Shader, resource::ShaderSourceFileLoader>(cmd.getContext(), "shaders/fullscreen.vert");
-        const renderer::Shader* compositionFragShader = resource::ResourceLoaderManager::getInstance()->loadShader<renderer::Shader, resource::ShaderSourceFileLoader>(cmd.getContext(), "shaders/composition.frag", defines);
-        m_CompositionProgram = cmd.createObject<renderer::ShaderProgram>(std::vector<const renderer::Shader*>({ fullscreenVertShader , compositionFragShader }));
+            m_ParticleSystem = ParticleSystemHelper::createParticleSystemHelper(cmd);
 
-        m_CompositionPipeline = cmd.createObject<renderer::GraphicsPipelineState>(renderer::VertexInputAttribDescription()/*screenQuadDesc*/, m_CompositionProgram.get(), m_CompositionRenderPass.renderTarget.get());
-        m_CompositionPipeline->setColorMask(renderer::ColorMask::ColorMask_All);
+            renderer::Shader* particleVertShader = resource::ResourceLoaderManager::getInstance()->loadShader<renderer::Shader, resource::ShaderSourceFileLoader>(cmd.getContext(), "shaders/particle.vert");
+            renderer::Shader* particleFragShader = resource::ResourceLoaderManager::getInstance()->loadShader<renderer::Shader, resource::ShaderSourceFileLoader>(cmd.getContext(), "shaders/particle.frag", defines);
+            m_MRTParticlesProgram = cmd.createObject<renderer::ShaderProgram>(std::vector<const renderer::Shader*>({ particleVertShader , particleFragShader }));
+
+            m_MRTParticlesPipeline = cmd.createObject<renderer::GraphicsPipelineState>(m_ParticleSystem->getVertexInputAttribDesc(), m_MRTParticlesProgram.get(), m_CompositionRenderPass.renderTarget.get());
+            m_MRTParticlesPipeline->setPrimitiveTopology(renderer::PrimitiveTopology::PrimitiveTopology_PointList);
+            m_MRTParticlesPipeline->setFrontFace(renderer::FrontFace::FrontFace_CounterClockwise);
+            m_MRTParticlesPipeline->setCullMode(renderer::CullMode::CullMode_None);
+            m_MRTParticlesPipeline->setColorMask(renderer::ColorMask::ColorMask_All);
+            m_MRTParticlesPipeline->setDepthCompareOp(renderer::CompareOperation::CompareOp_Always);
+            //blend
+        }
 
         setupLights();
     }

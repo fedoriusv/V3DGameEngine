@@ -68,7 +68,7 @@ public:
 
         if (m_data)
         {
-            m_image->upload(cmdList.getContext(), m_offsets, m_dimension, m_mipmaps, m_layers, m_data);
+            m_image->upload(cmdList.getContext(), m_dimension, m_layers, m_mipmaps, m_data);
         }
     }
 
@@ -218,13 +218,13 @@ private:
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-Texture2D::Texture2D(renderer::CommandList& cmdList, TextureUsageFlags usage, renderer::Format format, const core::Dimension2D& dimension, u32 mipmapCount, const void * data) noexcept
+Texture2D::Texture2D(renderer::CommandList& cmdList, TextureUsageFlags usage, renderer::Format format, const core::Dimension2D& dimension, u32 layers, u32 mipmapCount, const void * data) noexcept
     : m_cmdList(cmdList)
     , m_target(renderer::TextureTarget::Texture2D)
     , m_format(format)
     , m_dimension(dimension)
     , m_mipmaps(mipmapCount)
-    , m_layers(1)
+    , m_layers(layers)
     , m_samples(renderer::TextureSamples::TextureSamples_x1)
 
     , m_usage(usage)
@@ -232,7 +232,7 @@ Texture2D::Texture2D(renderer::CommandList& cmdList, TextureUsageFlags usage, re
 
 {
     core::Dimension3D dim = { m_dimension.width, m_dimension.height, 1 };
-    m_image = m_cmdList.getContext()->createImage(m_target, m_format, dim, m_mipmaps, m_usage);
+    m_image = m_cmdList.getContext()->createImage(m_target, m_format, dim, m_layers, m_mipmaps, m_usage);
     ASSERT(m_image, "m_image is nullptr");
     m_image->registerNotify(this);
 
@@ -253,7 +253,7 @@ Texture2D::Texture2D(renderer::CommandList & cmdList, TextureUsageFlags usage, r
 {
     core::Dimension3D dim = { m_dimension.width, m_dimension.height, 1 };
 
-    m_image = m_cmdList.getContext()->createImage(m_target, m_format, dim, m_mipmaps, m_usage);
+    m_image = m_cmdList.getContext()->createImage(m_target, m_format, dim, m_layers, m_mipmaps, m_usage);
     ASSERT(m_image, "m_image is nullptr");
     m_image->registerNotify(this);
 
@@ -283,7 +283,7 @@ void Texture2D::createTexture2D(const void * data)
 
         if (data)
         {
-            m_image->upload(m_cmdList.getContext(), core::Dimension3D(0, 0, 0), core::Dimension3D(m_dimension.width, m_dimension.height, 1), m_mipmaps, m_layers, data);
+            m_image->upload(m_cmdList.getContext(), core::Dimension3D(m_dimension.width, m_dimension.height, 1), m_layers, m_mipmaps, data);
         }
     }
     else

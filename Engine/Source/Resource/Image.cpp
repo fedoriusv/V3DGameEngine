@@ -36,6 +36,16 @@ core::Dimension3D Image::getDimension() const
     return Image::getImageHeader()._dimension;
 }
 
+u32 Image::getLayersCount() const
+{
+    return Image::getImageHeader()._layers;
+}
+
+u32 Image::getMipMapsCount() const
+{
+    return Image::getImageHeader()._mips;
+}
+
 u8* Image::getRawData() const
 {
     ASSERT(m_rawData, "nullptr");

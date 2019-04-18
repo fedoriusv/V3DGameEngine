@@ -25,7 +25,7 @@ namespace vk
     {
     public:
 
-        VulkanImage(VulkanMemory::VulkanMemoryAllocator* memory, VkDevice device, VkImageType type, VkFormat format, VkExtent3D dimension, u32 mipsLevel, VkImageTiling tiling, TextureUsageFlags usage);
+        VulkanImage(VulkanMemory::VulkanMemoryAllocator* memory, VkDevice device, VkImageType type, VkFormat format, VkExtent3D dimension, u32 layers, u32 mipsLevel, VkImageTiling tiling, TextureUsageFlags usage);
         VulkanImage(VulkanMemory::VulkanMemoryAllocator* memory, VkDevice device, VkFormat format, VkExtent3D dimension, VkSampleCountFlagBits samples, TextureUsageFlags usage);
         ~VulkanImage();
 
@@ -37,7 +37,8 @@ namespace vk
         void clear(Context* context, const core::Vector4D& color) override;
         void clear(Context* context, f32 depth, u32 stencil) override;
 
-        bool upload(Context* context, const core::Dimension3D& offsets, const core::Dimension3D& size, u32 mips, u32 layers, const void* data) override;
+        bool upload(Context* context, const core::Dimension3D& size, u32 layers, u32 mips, const void* data) override;
+        bool upload(Context* context, const core::Dimension3D& offsets, const core::Dimension3D& size, u32 layers, const void* data) override;
 
         static VkFormat convertImageFormatToVkFormat(Format format);
         static Format convertVkImageFormatToFormat(VkFormat format);
@@ -65,6 +66,8 @@ namespace vk
     private:
 
         bool createViewImage();
+
+        bool internalUpload(Context* context, const core::Dimension3D& offsets, const core::Dimension3D& size, u32 layers, u32 mips, u64 dataSize, const void* data);
 
         VkDevice                    m_device;
 

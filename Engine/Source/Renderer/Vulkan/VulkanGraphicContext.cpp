@@ -420,13 +420,13 @@ void VulkanGraphicContext::removePipeline(Pipeline * pipeline)
     m_pipelineManager->removePipeline(pipeline);
 }
 
-Image * VulkanGraphicContext::createImage(TextureTarget target, renderer::Format format, const core::Dimension3D& dimension, u32 mipLevels, TextureUsageFlags flags) const
+Image * VulkanGraphicContext::createImage(TextureTarget target, renderer::Format format, const core::Dimension3D& dimension, u32 layers, u32 mipLevels, TextureUsageFlags flags)
 {
     VkImageType vkType = VulkanImage::convertTextureTargetToVkImageType(target);
     VkFormat vkFormat = VulkanImage::convertImageFormatToVkFormat(format);
     VkExtent3D vkExtent = { dimension.width, dimension.height, dimension.depth };
 
-    return new VulkanImage(m_imageMemoryManager, m_deviceInfo._device, vkType, vkFormat, vkExtent, mipLevels, VK_IMAGE_TILING_OPTIMAL, flags);
+    return new VulkanImage(m_imageMemoryManager, m_deviceInfo._device, vkType, vkFormat, vkExtent, layers, mipLevels, VK_IMAGE_TILING_OPTIMAL, flags);
 }
 
 //Image * VulkanGraphicContext::createAttachmentImage(renderer::Format format, const core::Dimension3D& dimension, TextureSamples samples, TextureUsageFlags flags) const

@@ -53,7 +53,7 @@ namespace scene
      {
          resource::Image* image = iter.second;
          renderer::Texture2D* texture = cmdList.createObject<renderer::Texture2D>(renderer::TextureUsage_Sampled | renderer::TextureUsage_Shared | renderer::TextureUsage_Write, 
-             image->getFormat(), core::Dimension2D(image->getDimension().width, image->getDimension().height), 1, image->getRawData());
+             image->getFormat(), core::Dimension2D(image->getDimension().width, image->getDimension().height), image->getLayersCount(), 1/*image->getMipMapsCount()*/, image->getRawData());
 
          material->setParameter<renderer::Texture*>(iter.first, texture);
 

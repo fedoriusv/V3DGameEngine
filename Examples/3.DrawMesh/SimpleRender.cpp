@@ -22,7 +22,7 @@ SimpleRender::SimpleRender(renderer::CommandList& cmdList, const core::Dimension
     {
         m_sampler = cmdList.createObject<SamplerState>(SamplerFilter::SamplerFilter_Bilinear, SamplerFilter::SamplerFilter_Bilinear, SamplerAnisotropic::SamplerAnisotropic_None);
         m_texture[0] = cmdList.createObject<Texture2D>(TextureUsage::TextureUsage_Sampled | TextureUsage_Shared | TextureUsage_Write,
-            image[0]->getFormat(), core::Dimension2D(image[0]->getDimension().width, image[0]->getDimension().height), 1, image[0]->getRawData());
+            image[0]->getFormat(), core::Dimension2D(image[0]->getDimension().width, image[0]->getDimension().height), 1, 1, image[0]->getRawData());
     }
     m_modelDrawer = new scene::ModelHelper(cmdList, models);
 

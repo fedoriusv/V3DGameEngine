@@ -45,7 +45,7 @@ namespace renderer
         void setPipeline(const Pipeline::PipelineGraphicInfo* pipelineInfo) override;
         void removePipeline(Pipeline* pipeline) override;
 
-        Image* createImage(TextureTarget target, renderer::Format format, const core::Dimension3D& dimension, u32 mipmapLevel, TextureUsageFlags flags) const override;
+        Image* createImage(TextureTarget target, renderer::Format format, const core::Dimension3D& dimension, u32 layers, u32 mipmapLevel, TextureUsageFlags flags) override;
         void removeImage(Image* image) override;
 
         Buffer* createBuffer(Buffer::BufferType type, u16 usageFlag, u64 size) override;

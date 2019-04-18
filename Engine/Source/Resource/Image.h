@@ -41,6 +41,9 @@ namespace resource
 
         renderer::Format getFormat() const;
         core::Dimension3D getDimension() const;
+        u32 getLayersCount() const;
+        u32 getMipMapsCount() const;
+
         u8* getRawData() const;
 
         void init(stream::Stream* stream) override;
