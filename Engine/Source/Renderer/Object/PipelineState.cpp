@@ -83,6 +83,21 @@ void GraphicsPipelineState::setCullMode(CullMode cullMode)
     m_pipelineStateDesc._rasterizationState._cullMode = cullMode;
 }
 
+PolygonMode GraphicsPipelineState::getPolygonMode() const
+{
+    return m_pipelineStateDesc._rasterizationState._polygonMode;
+}
+
+FrontFace GraphicsPipelineState::getFrontFace() const
+{
+    return m_pipelineStateDesc._rasterizationState._frontFace;
+}
+
+CullMode GraphicsPipelineState::getCullMode() const
+{
+    return m_pipelineStateDesc._rasterizationState._cullMode;
+}
+
 void GraphicsPipelineState::setPrimitiveTopology(PrimitiveTopology primitiveTopology)
 {
     m_pipelineStateDesc._vertexInputState._primitiveTopology = primitiveTopology;
@@ -103,7 +118,96 @@ void GraphicsPipelineState::setDepthWrite(bool enable)
     m_pipelineStateDesc._depthStencilState._depthWriteEnable = enable;
 }
 
-void GraphicsPipelineState::setColorMask(ColorMaskFlags colormask, s32 attachmet)
+CompareOperation GraphicsPipelineState::getDepthCompareOp() const
+{
+    return m_pipelineStateDesc._depthStencilState._compareOp;
+}
+
+bool GraphicsPipelineState::isDepthTestEnable() const
+{
+    return m_pipelineStateDesc._depthStencilState._depthTestEnable;
+}
+
+bool GraphicsPipelineState::isDepthWriteEnable() const
+{
+    return m_pipelineStateDesc._depthStencilState._depthWriteEnable;
+}
+
+void GraphicsPipelineState::setBlendEnable(bool enable, s32 attachment)
+{
+    //TODO attachment
+    m_pipelineStateDesc._blendState._colorBlendAttachments._colorBlendEnable = enable;
+}
+
+void GraphicsPipelineState::setColorBlendFactor(BlendFactor src, BlendFactor dst, s32 attachment)
+{
+    //TODO attachment
+    m_pipelineStateDesc._blendState._colorBlendAttachments._srcBlendFacor = src;
+    m_pipelineStateDesc._blendState._colorBlendAttachments._dscBlendFacor = dst;
+}
+
+void GraphicsPipelineState::setColorBlendOp(BlendOperation op, s32 attachment)
+{
+    //TODO attachment
+    m_pipelineStateDesc._blendState._colorBlendAttachments._blendOp = op;
+}
+
+void GraphicsPipelineState::setAlphaBlendFactor(BlendFactor src, BlendFactor dst, s32 attachment)
+{
+    //TODO attachment
+    m_pipelineStateDesc._blendState._colorBlendAttachments._srcAlphaBlendFacor = src;
+    m_pipelineStateDesc._blendState._colorBlendAttachments._dscAlphaBlendFacor = dst;
+}
+
+void GraphicsPipelineState::setAlphaBlendOp(BlendOperation op, s32 attachment)
+{
+    //TODO attachment
+    m_pipelineStateDesc._blendState._colorBlendAttachments._alphaBlendOp = op;
+}
+
+bool GraphicsPipelineState::isBlendEnable(s32 attachment) const
+{
+    //TODO attachment
+    return m_pipelineStateDesc._blendState._colorBlendAttachments._colorBlendEnable;
+}
+
+BlendFactor GraphicsPipelineState::getSrcColorBlendFactor(s32 attachment) const
+{
+    //TODO attachment
+    return m_pipelineStateDesc._blendState._colorBlendAttachments._srcBlendFacor;
+}
+
+BlendFactor GraphicsPipelineState::getDstColorBlendFactor(s32 attachment) const
+{
+    //TODO attachment
+    return m_pipelineStateDesc._blendState._colorBlendAttachments._dscBlendFacor;
+}
+
+BlendOperation GraphicsPipelineState::getColorBlendOp(s32 attachment) const
+{
+    //TODO attachment
+    return m_pipelineStateDesc._blendState._colorBlendAttachments._blendOp;
+}
+
+BlendFactor GraphicsPipelineState::getSrcAlphaBlendFactor(s32 attachment) const
+{
+    //TODO attachment
+    return m_pipelineStateDesc._blendState._colorBlendAttachments._srcAlphaBlendFacor;
+}
+
+BlendFactor GraphicsPipelineState::getDstAlphaBlendFactor(s32 attachment) const
+{
+    //TODO attachment
+    return m_pipelineStateDesc._blendState._colorBlendAttachments._dscAlphaBlendFacor;
+}
+
+BlendOperation GraphicsPipelineState::getAlphaBlendOp(s32 attachment) const
+{
+    //TODO attachment
+    return m_pipelineStateDesc._blendState._colorBlendAttachments._alphaBlendOp;
+}
+
+void GraphicsPipelineState::setColorMask(ColorMaskFlags colormask, s32 attachment)
 {
     /*if (attachmet < 0)
     {
@@ -118,6 +222,17 @@ void GraphicsPipelineState::setColorMask(ColorMaskFlags colormask, s32 attachmet
     }*/
 
     m_pipelineStateDesc._blendState._colorBlendAttachments._colorWriteMask = colormask;
+}
+
+ColorMaskFlags GraphicsPipelineState::getColorMask(s32 attachment) const
+{
+    //TODO attachment
+    return m_pipelineStateDesc._blendState._colorBlendAttachments._colorWriteMask;
+}
+
+PrimitiveTopology GraphicsPipelineState::getPrimitiveTopology() const
+{
+    return m_pipelineStateDesc._vertexInputState._primitiveTopology;
 }
 
 const GraphicsPipelineStateDescription & GraphicsPipelineState::getGraphicsPipelineStateDesc() const

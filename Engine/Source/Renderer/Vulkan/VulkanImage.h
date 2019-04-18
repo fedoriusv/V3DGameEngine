@@ -54,6 +54,7 @@ namespace vk
         static std::tuple<VkAccessFlags, VkAccessFlags> getAccessFlagsFromImageLayout(VkImageLayout oldLayout, VkImageLayout newLayout);
 
         static bool isAttachmentLayout(const VulkanImage* image, s32 layer = -1);
+        static u32 calculateImageSize(const core::Dimension3D& size, u32 mipLevel, VkFormat format);
 
         VkImage             getHandle() const;
         VkImageAspectFlags  getImageAspectFlags() const;

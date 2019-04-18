@@ -281,6 +281,11 @@ namespace renderer
         * Format functions. Return check compressed format
         */
         static bool isFormatCompressed(Format format);
+
+        /**
+        * Format functions. Return width, hegit inside compression format
+        */
+        static core::Dimension2D getBlockDimension(Format format);
     };
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 

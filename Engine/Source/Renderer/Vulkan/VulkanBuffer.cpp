@@ -50,16 +50,24 @@ bool VulkanBuffer::create()
     if (m_type == Buffer::BufferType::BufferType_VertexBuffer)
     {
         usage |= VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
-        flag |= VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
-
-        if (!VulkanDeviceCaps::getInstance()->useStagingBuffers)
+        if (m_usageFlags & StreamBuffer_Dynamic)
         {
             flag |= VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
-            flag |= VulkanDeviceCaps::getInstance()->supportDeviceCoherentMemory ? VK_MEMORY_PROPERTY_HOST_COHERENT_BIT : VK_MEMORY_PROPERTY_HOST_CACHED_BIT;
+            flag |= VulkanDeviceCaps::getInstance()->supportHostCoherentMemory ? VK_MEMORY_PROPERTY_HOST_COHERENT_BIT : VK_MEMORY_PROPERTY_HOST_CACHED_BIT;
+        }
+        else
+        {
+            flag |= VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+            if (!VulkanDeviceCaps::getInstance()->useStagingBuffers)
+            {
+                flag |= VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
+                flag |= VulkanDeviceCaps::getInstance()->supportDeviceCoherentMemory ? VK_MEMORY_PROPERTY_HOST_COHERENT_BIT : VK_MEMORY_PROPERTY_HOST_CACHED_BIT;
+            }
         }
     }
     else if (m_type == Buffer::BufferType::BufferType_IndexBuffer)
     {
+        ASSERT(m_usageFlags & ~StreamBuffer_Dynamic, "not support");
         usage |= VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
         flag |= VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
 
@@ -174,7 +182,7 @@ bool VulkanBuffer::upload(Context* context, u32 offset, u64 size, void * data)
         }
     }
 
-    if (VulkanDeviceCaps::getInstance()->useStagingBuffers)
+    if (VulkanDeviceCaps::getInstance()->useStagingBuffers && !(m_usageFlags & StreamBufferUsage::StreamBuffer_Dynamic))
     {
         VulkanGraphicContext* vkContext = static_cast<VulkanGraphicContext*>(context);
         VulkanCommandBuffer* uploadBuffer = vkContext->getOrCreateAndStartCommandBuffer(CommandTargetType::CmdUploadBuffer);
@@ -219,7 +227,7 @@ bool VulkanBuffer::upload(Context* context, u32 offset, u64 size, void * data)
     {
         if (VulkanResource::isCaptured())
         {
-            ASSERT(false, "still submitted");
+            //ASSERT(false, "still submitted");
             VulkanResource::waitComplete();
         }
 

@@ -47,13 +47,38 @@ namespace renderer
         void setPolygonMode(PolygonMode polygonMode);
         void setFrontFace(FrontFace frontFace);
         void setCullMode(CullMode cullMode);
+
+        PolygonMode getPolygonMode() const;
+        FrontFace getFrontFace() const;
+        CullMode getCullMode() const;
+
         void setDepthCompareOp(CompareOperation op);
         void setDepthTest(bool enable);
         void setDepthWrite(bool enable);
 
-        void setColorMask(ColorMaskFlags colormask, s32 attachmet = -1);
+        CompareOperation getDepthCompareOp() const;
+        bool isDepthTestEnable() const;
+        bool isDepthWriteEnable() const;
 
+        void setBlendEnable(bool enable, s32 attachment = -1);
+        void setColorBlendFactor(BlendFactor src, BlendFactor dst, s32 attachment = -1);
+        void setColorBlendOp(BlendOperation op, s32 attachment = -1);
+        void setAlphaBlendFactor(BlendFactor src, BlendFactor dst, s32 attachment = -1);
+        void setAlphaBlendOp(BlendOperation op, s32 attachment = -1);
+
+        bool isBlendEnable(s32 attachment = -1) const;
+        BlendFactor getSrcColorBlendFactor(s32 attachment = -1) const;
+        BlendFactor getDstColorBlendFactor(s32 attachment = -1) const;
+        BlendOperation getColorBlendOp(s32 attachment = -1) const;
+        BlendFactor getSrcAlphaBlendFactor(s32 attachment = -1) const;
+        BlendFactor getDstAlphaBlendFactor(s32 attachment = -1) const;
+        BlendOperation getAlphaBlendOp(s32 attachment = -1) const;
+
+        void setColorMask(ColorMaskFlags colormask, s32 attachment = -1);
         void setPrimitiveTopology(PrimitiveTopology primitiveTopology);
+
+        ColorMaskFlags getColorMask(s32 attachment = -1) const;
+        PrimitiveTopology getPrimitiveTopology() const;
 
         const GraphicsPipelineStateDescription& getGraphicsPipelineStateDesc() const;
         GraphicsPipelineStateDescription& getGraphicsPipelineStateDesc();

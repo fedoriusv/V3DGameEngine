@@ -90,13 +90,13 @@ void ParticleSystem::update(f32 dt)
         switch (particle._type)
         {
         case ParticleType_Flame:
-            particle._position.y -= particle._vel.y * particleTimer * 3.5f;
+            particle._position.y += particle._vel.y * particleTimer * 3.5f;
             particle._alpha += particleTimer * 2.5f;
             particle._size -= particleTimer * 0.5f;
             break;
 
         case ParticleType_Smoke:
-            particle._position -= particle._vel * dt * 1.0f;
+            particle._position += particle._vel * dt * 1.0f;
             particle._alpha += particleTimer * 1.25f;
             particle._size += particleTimer * 0.125f;
             particle._color -= particleTimer * 0.05f;

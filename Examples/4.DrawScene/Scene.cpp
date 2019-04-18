@@ -124,7 +124,7 @@ void Scene::setupLights()
     // Setup particle systems for fire bowls
     for (u32 i = 5; i < 9; i++)
     {
-        m_ParticleSystem->add(512, core::Vector3D(m_lights[i]._position.x, m_lights[i]._position.y, m_lights[i]._position.z) + core::Vector3D(0.0f, 2.5f, 0.0f),
+        m_ParticleSystem->add(512, core::Vector3D(m_lights[i]._position.x, m_lights[i]._position.y, m_lights[i]._position.z) + core::Vector3D(0.0f, -2.5f, 0.0f),
             core::Vector3D(-2.0f, 0.25f, -2.0f), core::Vector3D(2.0f, 2.5f, 2.0f));
     }
 }
@@ -143,7 +143,7 @@ void Scene::onUpdate(f32 dt)
     m_lights[0]._position.x = -sin(core::k_degToRad * 360.0f * timer) * 120.0f;
     m_lights[0]._position.z = cos(core::k_degToRad * 360.0f * timer * 8.0f) * 10.0f;
 
-    m_ParticleSystem->update(dt);
+    m_ParticleSystem->update(dt * 10.65f);
 }
 
 void Scene::onRender(v3d::renderer::CommandList & cmd)
@@ -563,11 +563,11 @@ void Scene::onLoad(v3d::renderer::CommandList & cmd)
 
             resource::Image* particleFireImage = resource::ResourceLoaderManager::getInstance()->load<resource::Image, resource::ImageFileLoader>("textures/particle_fire.ktx");
             m_ParticleFireTexture = cmd.createObject<renderer::Texture2D>(renderer::TextureUsage_Sampled | renderer::TextureUsage_Write, particleFireImage->getFormat(), core::Dimension2D(particleFireImage->getDimension().width, particleFireImage->getDimension().height),
-                particleFireImage->getLayersCount(), 1/*particleFireImage->getMipMapsCount()*/, particleFireImage->getRawData());
+                particleFireImage->getLayersCount(), particleFireImage->getMipMapsCount(), particleFireImage->getRawData());
 
             resource::Image* particleSmokeImage = resource::ResourceLoaderManager::getInstance()->load<resource::Image, resource::ImageFileLoader>("textures/particle_smoke.ktx");
             m_ParticleSmokeTexture = cmd.createObject<renderer::Texture2D>(renderer::TextureUsage_Sampled | renderer::TextureUsage_Write, particleSmokeImage->getFormat(), core::Dimension2D(particleSmokeImage->getDimension().width, particleSmokeImage->getDimension().height),
-                particleSmokeImage->getLayersCount(), 1/*particleSmokeImage->getMipMapsCount()*/, particleSmokeImage->getRawData());
+                particleSmokeImage->getLayersCount(), particleSmokeImage->getMipMapsCount(), particleSmokeImage->getRawData());
 
             m_ParticleSystem = ParticleSystemHelper::createParticleSystemHelper(cmd);
 
@@ -578,10 +578,13 @@ void Scene::onLoad(v3d::renderer::CommandList & cmd)
             m_MRTParticlesPipeline = cmd.createObject<renderer::GraphicsPipelineState>(m_ParticleSystem->getVertexInputAttribDesc(), m_MRTParticlesProgram.get(), m_CompositionRenderPass.renderTarget.get());
             m_MRTParticlesPipeline->setPrimitiveTopology(renderer::PrimitiveTopology::PrimitiveTopology_PointList);
             m_MRTParticlesPipeline->setFrontFace(renderer::FrontFace::FrontFace_CounterClockwise);
-            m_MRTParticlesPipeline->setCullMode(renderer::CullMode::CullMode_None);
+            m_MRTParticlesPipeline->setCullMode(renderer::CullMode::CullMode_Back);
             m_MRTParticlesPipeline->setColorMask(renderer::ColorMask::ColorMask_All);
-            m_MRTParticlesPipeline->setDepthCompareOp(renderer::CompareOperation::CompareOp_Always);
-            //blend
+            m_MRTParticlesPipeline->setBlendEnable(true);
+            m_MRTParticlesPipeline->setColorBlendFactor(renderer::BlendFactor::BlendFactor_One, renderer::BlendFactor::BlendFactor_OneMinusSrcAlpha);
+            m_MRTParticlesPipeline->setColorBlendOp(renderer::BlendOperation::BlendOp_Add);
+            m_MRTParticlesPipeline->setAlphaBlendFactor(renderer::BlendFactor::BlendFactor_One, renderer::BlendFactor::BlendFactor_Zero);
+            m_MRTParticlesPipeline->setAlphaBlendOp(renderer::BlendOperation::BlendOp_Add);
         }
 
         setupLights();

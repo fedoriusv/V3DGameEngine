@@ -804,29 +804,11 @@ bool VulkanImage::upload(Context* context, const core::Dimension3D& size, u32 la
     ASSERT(m_mipsLevel == mips, "should be same");
     ASSERT(m_layersLevel == layers, "should be same");
 
-    auto calculateMipSize = [](const core::Dimension3D& size) -> core::Dimension3D
-    {
-        core::Dimension3D newDim = size / 2;
-        newDim.width = core::clamp(newDim.width, 1U, size.width);
-        newDim.height = core::clamp(newDim.height, 1U, size.height);
-        newDim.depth = core::clamp(newDim.depth, 1U, size.depth);
-
-        return newDim;
-    };
-
     u64 calculatedSize = 0;
-    Format format = VulkanImage::convertVkImageFormatToFormat(m_format);
-    core::Dimension3D mipSize = size;
     for (u32 mip = 0; mip < mips; ++mip)
     {
-        u32 size = ImageFormat::getFormatBlockSize(format) * mipSize.getArea() * layers;
-        if (isCompressedFormat(m_format))
-        {
-            size /= 16;
-        }
-        calculatedSize += size;
-
-        mipSize = calculateMipSize(mipSize);
+        u32 mipSize = VulkanImage::calculateImageSize(size, mip, m_format);
+        calculatedSize += mipSize * layers;
     }
     ASSERT(calculatedSize > 0, "wrong size");
 
@@ -840,13 +822,7 @@ bool VulkanImage::upload(Context * context, const core::Dimension3D & offsets, c
 
     ASSERT(size > offsets, "wrong offset");
     core::Dimension3D diffSize = (size - offsets);
-
-    Format format = VulkanImage::convertVkImageFormatToFormat(m_format);
-    u64 calculatedSize = ImageFormat::getFormatBlockSize(format) * diffSize.getArea() * layers;
-    if (isCompressedFormat(m_format))
-    {
-        calculatedSize /= 16;
-    }
+    u32 calculatedSize = VulkanImage::calculateImageSize(diffSize, 0, m_format) * layers;
     ASSERT(calculatedSize > 0, "wrong size");
 
     return VulkanImage::internalUpload(context, offsets, size, layers, 1, calculatedSize, data);
@@ -887,48 +863,53 @@ bool VulkanImage::internalUpload(Context * context, const core::Dimension3D & of
 
         auto calculateMipSize = [](const core::Dimension3D& size) -> core::Dimension3D
         {
-            core::Dimension3D newDim = size / 2;
-            newDim.width = core::clamp(newDim.width, 1U, size.width);
-            newDim.height = core::clamp(newDim.height, 1U, size.height);
-            newDim.depth = core::clamp(newDim.depth, 1U, size.depth);
+            core::Dimension3D mipSize;
+            mipSize.width = std::max(size.width / 2, 1U);
+            mipSize.height = std::max(size.height / 2, 1U);
+            mipSize.depth = std::max(size.depth / 2, 1U);
 
-            return newDim;
+            return mipSize;
+        };
+
+        auto calculateMipOffset = [](const core::Dimension3D& size) -> core::Dimension3D
+        {
+            core::Dimension3D mipSize;
+            mipSize.width = std::max(size.width / 2, 0U);
+            mipSize.height = std::max(size.height / 2, 0U);
+            mipSize.depth = std::max(size.depth / 2, 0U);
+
+            return mipSize;
         };
 
         u64 bufferOffset = 0;
         u64 bufferDataSize = 0;
         std::vector<VkBufferImageCopy> bufferImageCopys;
 
-        core::Dimension3D mipSize = size;
-        core::Dimension3D mipOffset = offsets;
-        Format format = VulkanImage::convertVkImageFormatToFormat(m_format);
         for (u32 layer = 0; layer < layers; ++layer)
         {
+            core::Dimension3D mipSize = size;
+            core::Dimension3D mipOffset = offsets;
+
             for (u32 mip = 0; mip < mips; ++mip)
             {
-                bufferDataSize = ImageFormat::getFormatBlockSize(format) * (mipSize - mipOffset).getArea();
-                if (isCompressedFormat(m_format))
-                {
-                    bufferDataSize /= 16;
-                }
+                bufferDataSize = VulkanImage::calculateImageSize(size, mip, m_format);
 
                 VkBufferImageCopy regions;
                 regions.imageOffset = { static_cast<s32>(mipOffset.width), static_cast<s32>(mipOffset.height), static_cast<s32>(mipOffset.depth) };
                 regions.imageExtent = { mipSize.width, mipSize.height, mipSize.depth };
                 regions.imageSubresource.aspectMask = m_aspectMask;
                 regions.imageSubresource.baseArrayLayer = layer;
-                regions.imageSubresource.layerCount = m_layersLevel;
+                regions.imageSubresource.layerCount = 1;
                 regions.imageSubresource.mipLevel = mip;
                 regions.bufferRowLength = 0;
                 regions.bufferImageHeight = 0;
                 regions.bufferOffset = bufferOffset;
-
                 bufferOffset += bufferDataSize;
 
                 bufferImageCopys.push_back(regions);
 
                 mipSize = calculateMipSize(mipSize);
-                mipOffset = calculateMipSize(mipOffset);
+                mipOffset = calculateMipOffset(mipOffset);
             }
         }
 
@@ -1148,6 +1129,33 @@ bool VulkanImage::isAttachmentLayout(const VulkanImage* image, s32 layer)
     }
 
     return false;
+}
+
+
+u32 VulkanImage::calculateImageSize(const core::Dimension3D & size, u32 mipLevel, VkFormat format)
+{
+    core::Dimension3D mipSize;
+    mipSize.width = std::max(size.width >> mipLevel, 1U);
+    mipSize.height = std::max(size.height >> mipLevel, 1U);
+    mipSize.depth = std::max(size.depth >> mipLevel, 1U);
+
+    Format globalFormat = VulkanImage::convertVkImageFormatToFormat(format);
+    u32 calculatedSize = ImageFormat::getFormatBlockSize(globalFormat);
+    if (isCompressedFormat(format))
+    {
+        auto roundToBlocksLayer = [](const core::Dimension3D& size, const core::Dimension2D& blockDim, u32 blockSize)
+        {
+            const u32 widthSize = (size.width + blockDim.width - 1) / blockDim.width;
+            const u32 heightSize = (size.height + blockDim.height - 1) / blockDim.height;
+            return widthSize * heightSize * blockSize;
+        };
+
+        calculatedSize = roundToBlocksLayer(mipSize, ImageFormat::getBlockDimension(globalFormat), calculatedSize);
+        return calculatedSize * mipSize.depth;
+    }
+
+    calculatedSize *=  mipSize.getArea();
+    return calculatedSize;
 }
 
 VkImage VulkanImage::getHandle() const
