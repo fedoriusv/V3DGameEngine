@@ -19,6 +19,13 @@ namespace resource
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    enum ImageLoaderFlag : u32
+    {
+        ImageLoaderFlag_FlipY = 1 << 0,
+    };
+
+    typedef u32 ImageLoaderFlags;
+
     /**
     * ImageFileLoader class. Loader from file
     */

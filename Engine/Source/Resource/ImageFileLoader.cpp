@@ -22,14 +22,16 @@ ImageFileLoader::ImageFileLoader(u32 flags) noexcept
 #if USE_STB
     {
         resource::ImageHeader header;
-        ResourceLoader::registerDecoder(new ImageStbDecoder({ "jpg", "png", "bmp", "tga" }, header, false));
+        header._flipY = (flags & ImageLoaderFlag::ImageLoaderFlag_FlipY);
+        ResourceLoader::registerDecoder(new ImageStbDecoder({ "jpg", "png", "bmp", "tga" }, header, !!flags));
     }
 #endif USE_STB
 
 #if USE_GLI
     {
         resource::ImageHeader header;
-        ResourceLoader::registerDecoder(new ImageGLiDecoder({ "ktx", "kmg", "dds" }, header, false));
+        header._flipY = (flags & ImageLoaderFlag::ImageLoaderFlag_FlipY);
+        ResourceLoader::registerDecoder(new ImageGLiDecoder({ "ktx", "kmg", "dds" }, header, !!flags));
     }
 #endif //USE_GLI
 

@@ -19,8 +19,8 @@ namespace renderer
     * SamplerState class. Game side
     *\n
     * Constructor param:
-    SamplerFilter min
     SamplerFilter mag
+    SamplerFilter min
     SamplerAnisotropic aniso
     *\n
     * Constructor param:
@@ -46,6 +46,7 @@ namespace renderer
 
         void setMinFilter(SamplerFilter filter);
         void setMagFilter(SamplerFilter filter);
+        void setWrap(SamplerWrap uvw);
         void setWrap(SamplerWrap u, SamplerWrap v, SamplerWrap w = SamplerWrap::TextureWrap_Repeat);
         void setAnisotropic(SamplerAnisotropic level);
         void setLodBias(f32 value);
@@ -56,7 +57,7 @@ namespace renderer
 
         explicit SamplerState(renderer::CommandList& cmdList) noexcept;
         explicit SamplerState(renderer::CommandList& cmdList, SamplerFilter filter, SamplerAnisotropic aniso) noexcept;
-        explicit SamplerState(renderer::CommandList& cmdList, SamplerFilter min, SamplerFilter mag, SamplerAnisotropic aniso) noexcept;
+        explicit SamplerState(renderer::CommandList& cmdList, SamplerFilter mag, SamplerFilter min, SamplerAnisotropic aniso) noexcept;
 
         renderer::CommandList& m_cmdList;
         friend renderer::CommandList;

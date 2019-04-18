@@ -330,8 +330,8 @@ void Scene::onRender(v3d::renderer::CommandList & cmd)
             ubo.viewportDim = core::Vector2D(f32(cmd.getBackbuffer()->getDimension().width), f32(cmd.getBackbuffer()->getDimension().height));
 
             m_MRTParticlesProgram->bindUniformsBuffer<renderer::ShaderType::ShaderType_Vertex>(0/*"ubo"*/, 0, sizeof(ubo), &ubo);
-            m_MRTParticlesProgram->bindSampledTexture<renderer::ShaderType::ShaderType_Fragment, renderer::Texture2D>(0/*"samplerSmoke"*/, m_ParticleSmokeTexture.get(), m_Sampler.get());
-            m_MRTParticlesProgram->bindSampledTexture<renderer::ShaderType::ShaderType_Fragment, renderer::Texture2D>(1/*"samplerFire"*/, m_ParticleFireTexture.get(), m_Sampler.get());
+            m_MRTParticlesProgram->bindSampledTexture<renderer::ShaderType::ShaderType_Fragment, renderer::Texture2D>(0/*"samplerSmoke"*/, m_ParticleSmokeTexture.get(), m_ParticleSmokeSampler.get());
+            m_MRTParticlesProgram->bindSampledTexture<renderer::ShaderType::ShaderType_Fragment, renderer::Texture2D>(1/*"samplerFire"*/, m_ParticleFireTexture.get(), m_ParticleFireSampler.get());
             m_MRTParticlesProgram->bindSampledTexture<renderer::ShaderType::ShaderType_Fragment, renderer::Texture2D>(2/*"samplerPositionDepth"*/, m_MRTRenderPass.colorTexture[0].get(), m_Sampler.get());
 
             m_ParticleSystem->draw();
@@ -545,12 +545,14 @@ void Scene::onLoad(v3d::renderer::CommandList & cmd)
             renderer::RenderTargetState::TransitionState tansitionState = { renderer::TransitionOp::TransitionOp_Undefined, renderer::TransitionOp::TransitionOp_Present };
             m_CompositionRenderPass.renderTarget = cmd.createObject<renderer::RenderTargetState>(m_size);
             m_CompositionRenderPass.renderTarget->setColorTexture(0, cmd.getBackbuffer(), colorOpState, tansitionState);
+            //m_CompositionRenderPass.depthTexture = cmd.createObject<renderer::Texture2D>(renderer::TextureUsage::TextureUsage_Attachment, renderer::Format::Format_D32_SFloat_S8_UInt, m_size, renderer::TextureSamples::TextureSamples_x1);
+            //m_CompositionRenderPass.renderTarget->setDepthStencilTexture(m_CompositionRenderPass.depthTexture.get(), renderer::RenderTargetLoadOp::LoadOp_Clear, renderer::RenderTargetStoreOp::StoreOp_DontCare, 1.0f);
 
             const renderer::Shader* fullscreenVertShader = resource::ResourceLoaderManager::getInstance()->loadShader<renderer::Shader, resource::ShaderSourceFileLoader>(cmd.getContext(), "shaders/fullscreen.vert");
             const renderer::Shader* compositionFragShader = resource::ResourceLoaderManager::getInstance()->loadShader<renderer::Shader, resource::ShaderSourceFileLoader>(cmd.getContext(), "shaders/composition.frag", defines);
             m_CompositionProgram = cmd.createObject<renderer::ShaderProgram>(std::vector<const renderer::Shader*>({ fullscreenVertShader , compositionFragShader }));
 
-            m_CompositionPipeline = cmd.createObject<renderer::GraphicsPipelineState>(renderer::VertexInputAttribDescription()/*screenQuadDesc*/, m_CompositionProgram.get(), m_CompositionRenderPass.renderTarget.get());
+            m_CompositionPipeline = cmd.createObject<renderer::GraphicsPipelineState>(renderer::VertexInputAttribDescription(), m_CompositionProgram.get(), m_CompositionRenderPass.renderTarget.get());
             m_CompositionPipeline->setColorMask(renderer::ColorMask::ColorMask_All);
         }
 
@@ -561,13 +563,17 @@ void Scene::onLoad(v3d::renderer::CommandList & cmd)
                 { "FAR_PLANE", std::to_string(m_camera->getFarValue()) },
             };
 
-            resource::Image* particleFireImage = resource::ResourceLoaderManager::getInstance()->load<resource::Image, resource::ImageFileLoader>("textures/particle_fire.ktx");
-            m_ParticleFireTexture = cmd.createObject<renderer::Texture2D>(renderer::TextureUsage_Sampled | renderer::TextureUsage_Write, particleFireImage->getFormat(), core::Dimension2D(particleFireImage->getDimension().width, particleFireImage->getDimension().height),
+            resource::Image* particleFireImage = resource::ResourceLoaderManager::getInstance()->load<resource::Image, resource::ImageFileLoader>("textures/particle_fire.ktx", resource::ImageLoaderFlag::ImageLoaderFlag_FlipY);
+            m_ParticleFireTexture = cmd.createObject<renderer::Texture2D>(renderer::TextureUsage_Sampled | renderer::TextureUsage_Write | renderer::TextureUsage_Shared, particleFireImage->getFormat(), core::Dimension2D(particleFireImage->getDimension().width, particleFireImage->getDimension().height),
                 particleFireImage->getLayersCount(), particleFireImage->getMipMapsCount(), particleFireImage->getRawData());
+            m_ParticleFireSampler = cmd.createObject<renderer::SamplerState>(renderer::SamplerFilter::SamplerFilter_Bilinear, renderer::SamplerFilter::SamplerFilter_Trilinear, renderer::SamplerAnisotropic::SamplerAnisotropic_None);
+            m_ParticleFireSampler->setWrap(renderer::SamplerWrap::TextureWrap_ClampToEdge);
 
-            resource::Image* particleSmokeImage = resource::ResourceLoaderManager::getInstance()->load<resource::Image, resource::ImageFileLoader>("textures/particle_smoke.ktx");
-            m_ParticleSmokeTexture = cmd.createObject<renderer::Texture2D>(renderer::TextureUsage_Sampled | renderer::TextureUsage_Write, particleSmokeImage->getFormat(), core::Dimension2D(particleSmokeImage->getDimension().width, particleSmokeImage->getDimension().height),
+            resource::Image* particleSmokeImage = resource::ResourceLoaderManager::getInstance()->load<resource::Image, resource::ImageFileLoader>("textures/particle_smoke.ktx", resource::ImageLoaderFlag::ImageLoaderFlag_FlipY);
+            m_ParticleSmokeTexture = cmd.createObject<renderer::Texture2D>(renderer::TextureUsage_Sampled | renderer::TextureUsage_Write | renderer::TextureUsage_Shared, particleSmokeImage->getFormat(), core::Dimension2D(particleSmokeImage->getDimension().width, particleSmokeImage->getDimension().height),
                 particleSmokeImage->getLayersCount(), particleSmokeImage->getMipMapsCount(), particleSmokeImage->getRawData());
+            m_ParticleSmokeSampler = cmd.createObject<renderer::SamplerState>(renderer::SamplerFilter::SamplerFilter_Bilinear, renderer::SamplerFilter::SamplerFilter_Trilinear, renderer::SamplerAnisotropic::SamplerAnisotropic_8x);
+            m_ParticleSmokeSampler->setWrap(renderer::SamplerWrap::TextureWrap_ClampToBorder);
 
             m_ParticleSystem = ParticleSystemHelper::createParticleSystemHelper(cmd);
 
@@ -585,6 +591,9 @@ void Scene::onLoad(v3d::renderer::CommandList & cmd)
             m_MRTParticlesPipeline->setColorBlendOp(renderer::BlendOperation::BlendOp_Add);
             m_MRTParticlesPipeline->setAlphaBlendFactor(renderer::BlendFactor::BlendFactor_One, renderer::BlendFactor::BlendFactor_Zero);
             m_MRTParticlesPipeline->setAlphaBlendOp(renderer::BlendOperation::BlendOp_Add);
+            //m_MRTParticlesPipeline->setDepthCompareOp(renderer::CompareOperation::CompareOp_Always);
+            //m_MRTParticlesPipeline->setDepthWrite(true);
+            //m_MRTParticlesPipeline->setDepthTest(true);
         }
 
         setupLights();

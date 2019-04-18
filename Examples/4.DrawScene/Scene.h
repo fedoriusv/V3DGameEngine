@@ -78,7 +78,9 @@ namespace scene
         utils::IntrusivePointer<renderer::GraphicsPipelineState> m_MRTParticlesPipeline;
         utils::IntrusivePointer<renderer::ShaderProgram>         m_MRTParticlesProgram;
         utils::IntrusivePointer<renderer::Texture2D> m_ParticleFireTexture;
+        utils::IntrusivePointer<renderer::SamplerState> m_ParticleFireSampler;
         utils::IntrusivePointer<renderer::Texture2D> m_ParticleSmokeTexture;
+        utils::IntrusivePointer<renderer::SamplerState> m_ParticleSmokeSampler;
         ParticleSystemHelper* m_ParticleSystem;
 
         //Pass 2

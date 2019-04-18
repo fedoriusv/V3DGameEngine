@@ -57,7 +57,7 @@ SamplerState::SamplerState(renderer::CommandList & cmdList, SamplerFilter filter
     m_samplerDesc._anisotropic = aniso;
 }
 
-SamplerState::SamplerState(renderer::CommandList & cmdList, SamplerFilter min, SamplerFilter mag, SamplerAnisotropic aniso) noexcept
+SamplerState::SamplerState(renderer::CommandList & cmdList, SamplerFilter mag, SamplerFilter min, SamplerAnisotropic aniso) noexcept
     : m_cmdList(cmdList)
     , m_trackerSampler(this, std::bind(&SamplerState::destroySamplers, this, std::placeholders::_1))
 {
@@ -139,6 +139,13 @@ void SamplerState::setMinFilter(SamplerFilter filter)
 void SamplerState::setMagFilter(SamplerFilter filter)
 {
     m_samplerDesc._magFilter = filter;
+}
+
+void SamplerState::setWrap(SamplerWrap uvw)
+{
+    m_samplerDesc._wrapU = uvw;
+    m_samplerDesc._wrapV = uvw;
+    m_samplerDesc._wrapW = uvw;
 }
 
 void SamplerState::setWrap(SamplerWrap u, SamplerWrap v, SamplerWrap w)
