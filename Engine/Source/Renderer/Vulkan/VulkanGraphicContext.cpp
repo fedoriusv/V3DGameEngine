@@ -405,7 +405,7 @@ void VulkanGraphicContext::setPipeline(const Pipeline::PipelineGraphicInfo* pipe
 #endif //VULKAN_DEBUG
 
     VulkanGraphicPipeline* vkPipeline = static_cast<VulkanGraphicPipeline*>(pipeline);
-    m_currentContextStateNEW->setCurrentPipeline(vkPipeline);
+    m_pendingState.setPendingPipeline(vkPipeline);
 }
 
 void VulkanGraphicContext::removePipeline(Pipeline * pipeline)
@@ -1124,17 +1124,20 @@ bool VulkanGraphicContext::prepareDraw(VulkanCommandBuffer* drawBuffer)
 {
     ASSERT(drawBuffer, "nullptr");
 
-    //TODO update image layouts
-
     ASSERT(m_currentContextStateNEW->getCurrentRenderpass(), "not bound");
     if (!drawBuffer->isInsideRenderPass())
     {
         drawBuffer->cmdBeginRenderpass(m_currentContextStateNEW->getCurrentRenderpass(), m_currentContextStateNEW->getCurrentFramebuffer(), m_currentContextStateNEW->m_renderPassArea, m_currentContextStateNEW->m_renderPassClearValues);
     }
 
+    if (m_pendingState.isPipeline())
+    {
+        if (m_currentContextStateNEW->setCurrentPipeline(m_pendingState.takePipeline()))
+        {
+            drawBuffer->cmdBindPipeline(m_currentContextStateNEW->getCurrentPipeline());
+        }
+    }
     ASSERT(m_currentContextStateNEW->getCurrentPipeline(), "not bound");
-    //TODO check if bounded already
-    drawBuffer->cmdBindPipeline(m_currentContextStateNEW->getCurrentPipeline());
 
     m_currentContextStateNEW->invokeDynamicStates();
 

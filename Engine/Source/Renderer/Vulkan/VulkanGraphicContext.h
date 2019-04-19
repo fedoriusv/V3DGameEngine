@@ -143,9 +143,42 @@ namespace vk
             VulkanCommandBuffer* _currentCmdBuffer[CommandTargetType::CommandTarget_Count];
 
         };
-        //
 
+        struct PendingState
+        {
+            bool setPendingPipeline(VulkanGraphicPipeline* pipeline)
+            {
+                if (pipeline && m_pipeline != pipeline)
+                {
+                    m_pipeline = pipeline;
+                    return true;
+                }
+
+                return false;
+            }
+
+            bool isPipeline()
+            {
+                return m_pipeline != nullptr;
+            }
+
+            VulkanGraphicPipeline* takePipeline()
+            {
+                ASSERT(m_pipeline, "nullptr");
+                return std::exchange(m_pipeline, nullptr);
+            }
+
+
+
+        private:
+
+            VulkanGraphicPipeline* m_pipeline;
+
+        };
+        
         CurrentContextState         m_currentContextState;
+
+        PendingState                m_pendingState;
         VulkanContextState*         m_currentContextStateNEW;
 
         static std::vector<VkDynamicState>  s_dynamicStates;
