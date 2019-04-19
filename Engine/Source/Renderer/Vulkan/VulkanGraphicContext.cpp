@@ -180,6 +180,7 @@ void VulkanGraphicContext::presentFrame()
         m_stagingBufferManager->destroyStagingBuffers();
     }
     m_currentContextStateNEW->invalidateDescriptorSetsState();
+    m_resourceDeleter.updateResourceDeleter();
 
     m_frameCounter++;
 }
@@ -326,6 +327,7 @@ void VulkanGraphicContext::setRenderTarget(const RenderPass::RenderPassInfo * re
             }
         }
 
+        //TODO use penging states
         m_currentContextStateNEW->setCurrentRenderPass(vkRenderpass);
         m_currentContextStateNEW->setCurrentFramebuffer(vkFramebuffer);
 
@@ -346,29 +348,23 @@ void VulkanGraphicContext::setRenderTarget(const RenderPass::RenderPassInfo * re
             clearValues.back().depthStencil = { framebufferInfo->_clearInfo._depth, framebufferInfo->_clearInfo._stencil };
         }
         m_currentContextStateNEW->setClearValues(area, clearValues);
-
-        //TODO: start before draw command
-        //drawBuffer->cmdBeginRenderpass(m_currentContextStateNEW->getCurrentRenderpass(), m_currentContextStateNEW->getCurrentFramebuffer(), area, clearValues);
     }
 }
-
-/*void VulkanGraphicContext::removeRenderTarget(const RenderPass::RenderPassInfo * renderpassInfo, const std::vector<Image*>& attachments, const RenderPass::ClearValueInfo * clearInfo)
-{
-    ASSERT(false, "need implement correct");
-    m_framebuferManager->removeFramebuffer(attachments);
-    m_renderpassManager->removeRenderPass(*renderpassInfo);
-}*/
 
 void VulkanGraphicContext::removeFramebuffer(Framebuffer * framebuffer)
 {
     VulkanFramebuffer* vkFramebuffer = static_cast<VulkanFramebuffer*>(framebuffer);
     if (m_currentContextStateNEW->isCurrentFramebuffer(vkFramebuffer) || vkFramebuffer->isCaptured())
     {
-        ASSERT(false, "not implementing");
-        //delayed delete
+        m_resourceDeleter.addResourceToDelete(vkFramebuffer, [this, vkFramebuffer](VulkanResource* resource) -> void
+        {
+            m_framebuferManager->removeFramebuffer(vkFramebuffer);
+        });
     }
-
-    m_framebuferManager->removeFramebuffer(framebuffer);
+    else
+    {
+        m_framebuferManager->removeFramebuffer(framebuffer);
+    }
 }
 
 void VulkanGraphicContext::removeRenderPass(RenderPass * renderpass)
@@ -376,11 +372,15 @@ void VulkanGraphicContext::removeRenderPass(RenderPass * renderpass)
     VulkanRenderPass* vkRenderpass = static_cast<VulkanRenderPass*>(renderpass);
     if (m_currentContextStateNEW->isCurrentRenderPass(vkRenderpass) || vkRenderpass->isCaptured())
     {
-        ASSERT(false, "not implementing");
-        //delayed delete
+        m_resourceDeleter.addResourceToDelete(vkRenderpass, [this, vkRenderpass](VulkanResource* resource) -> void
+        {
+            m_renderpassManager->removeRenderPass(vkRenderpass);
+        });
     }
-
-    m_renderpassManager->removeRenderPass(renderpass);
+    else
+    {
+        m_renderpassManager->removeRenderPass(renderpass);
+    }
 }
 
 void VulkanGraphicContext::invalidateRenderPass()
@@ -413,11 +413,15 @@ void VulkanGraphicContext::removePipeline(Pipeline * pipeline)
     VulkanGraphicPipeline* vkPipeline = static_cast<VulkanGraphicPipeline*>(pipeline);;
     if (m_currentContextStateNEW->isCurrentPipeline(vkPipeline) || vkPipeline->isCaptured())
     {
-        ASSERT(false, "not implementing");
-        //TODO: delayed delete
+        m_resourceDeleter.addResourceToDelete(vkPipeline, [this, vkPipeline](VulkanResource* resource) -> void
+        {
+            m_pipelineManager->removePipeline(vkPipeline);
+        });
     }
-
-    m_pipelineManager->removePipeline(pipeline);
+    else
+    {
+        m_pipelineManager->removePipeline(pipeline);
+    }
 }
 
 Image * VulkanGraphicContext::createImage(TextureTarget target, renderer::Format format, const core::Dimension3D& dimension, u32 layers, u32 mipLevels, TextureUsageFlags flags)
@@ -429,22 +433,18 @@ Image * VulkanGraphicContext::createImage(TextureTarget target, renderer::Format
     return new VulkanImage(m_imageMemoryManager, m_deviceInfo._device, vkType, vkFormat, vkExtent, layers, mipLevels, VK_IMAGE_TILING_OPTIMAL, flags);
 }
 
-//Image * VulkanGraphicContext::createAttachmentImage(renderer::Format format, const core::Dimension3D& dimension, TextureSamples samples, TextureUsageFlags flags) const
-//{
-//    VkFormat vkFormat = VulkanImage::convertImageFormatToVkFormat(format);
-//    VkExtent3D vkExtent = { dimension.width, dimension.height, dimension.depth };
-//    VkSampleCountFlagBits vkSamples = VulkanImage::convertRenderTargetSamplesToVkSampleCount(samples);
-//
-//    return new VulkanImage(m_imageMemoryManager, m_deviceInfo._device, vkFormat, vkExtent, vkSamples);
-//}
-
 void VulkanGraphicContext::removeImage(Image * image)
 {
     VulkanImage* vkImage = static_cast<VulkanImage*>(image);
     if (vkImage->isCaptured())
     {
-        ASSERT(false, "not implementing");
-        //delayed delete
+        m_resourceDeleter.addResourceToDelete(vkImage, [vkImage](VulkanResource* resource) -> void
+        {
+            vkImage->notifyObservers();
+
+            vkImage->destroy();
+            delete vkImage;
+        });
     }
     else
     {
@@ -472,8 +472,13 @@ void VulkanGraphicContext::removeBuffer(Buffer * buffer)
     VulkanBuffer* vkBuffer = static_cast<VulkanBuffer*>(buffer);
     if (vkBuffer->isCaptured())
     {
-        //delayed destoy
-        ASSERT(false, "not implementing");
+        m_resourceDeleter.addResourceToDelete(vkBuffer, [vkBuffer](VulkanResource* resource) -> void
+        {
+            vkBuffer->notifyObservers();
+
+            vkBuffer->destroy();
+            delete vkBuffer;
+        });
     }
     else
     {
@@ -489,8 +494,10 @@ void VulkanGraphicContext::removeSampler(Sampler * sampler)
     VulkanSampler* vkSampler = static_cast<VulkanSampler*>(sampler);
     if (vkSampler->isCaptured())
     {
-        //delayed destoy
-        ASSERT(false, "not implementing");
+        m_resourceDeleter.addResourceToDelete(vkSampler, [this, vkSampler](VulkanResource* resource) -> void
+        {
+            m_samplerManager->removeSampler(vkSampler);
+        });
     }
     else
     {
@@ -729,6 +736,7 @@ void VulkanGraphicContext::destroy()
         delete m_cmdBufferManager;
         m_cmdBufferManager = nullptr;
     }
+    m_resourceDeleter.updateResourceDeleter(true);
 
     if (m_stagingBufferManager)
     {

@@ -54,6 +54,78 @@ void VulkanResource::captureInsideCommandBuffer(VulkanCommandBuffer* buffer, u64
     buffer->captureResource(const_cast<VulkanResource*>(this), frame);
 }
 
+
+
+VulkanResourceDeleter::~VulkanResourceDeleter()
+{
+    ASSERT(m_delayedList.empty(), "should be empty");
+    ASSERT(m_deleterList.empty(), "should be empty");
+}
+
+void VulkanResourceDeleter::addResourceToDelete(VulkanResource* resource, const std::function<void(VulkanResource* resource)>& deleter, bool forceDelete)
+{
+    if (resource->isCaptured() && !forceDelete)
+    {
+        m_delayedList.emplace(resource, deleter);
+    }
+
+    if (forceDelete)
+    {
+        resource->waitComplete();
+    }
+    deleter(resource);
+}
+
+void VulkanResourceDeleter::updateResourceDeleter(bool wait)
+{
+    ASSERT(m_deleterList.empty(), "should be empty");
+    std::queue<std::pair<VulkanResource*, std::function<void(VulkanResource* resource)>>> delayedList;
+    while(!m_delayedList.empty())
+    {
+        auto iter = m_delayedList.back();
+        m_delayedList.pop();
+
+        if (iter.first->isCaptured())
+        {
+            if (wait)
+            {
+                iter.first->waitComplete();
+                m_deleterList.push(iter);
+            }
+            else
+            {
+                delayedList.push(iter);
+            }
+        }
+        else
+        {
+            m_deleterList.push(iter);
+        }
+    }
+
+    ASSERT(m_delayedList.empty(), "should be empty");
+    delayedList.swap(m_delayedList);
+#if DEBUG
+    if (wait)
+    {
+        ASSERT(m_delayedList.empty(), "should be empty");
+    }
+#endif
+
+    resourceGarbageCollect();
+}
+
+void VulkanResourceDeleter::resourceGarbageCollect()
+{
+    while (!m_deleterList.empty())
+    {
+        auto iter = m_deleterList.back();
+        m_deleterList.pop();
+
+        iter.second(iter.first);
+    }
+}
+
 } //namespace vk
 } //namespace renderer
 } //namespace v3d

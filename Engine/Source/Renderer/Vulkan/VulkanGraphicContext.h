@@ -181,6 +181,8 @@ namespace vk
         PendingState                m_pendingState;
         VulkanContextState*         m_currentContextStateNEW;
 
+        VulkanResourceDeleter       m_resourceDeleter;
+
         static std::vector<VkDynamicState>  s_dynamicStates;
 
         bool prepareDraw(VulkanCommandBuffer* drawBuffer);

@@ -30,6 +30,7 @@ namespace vk
         };
 
         VulkanResource() noexcept;
+        VulkanResource(const VulkanResource&) = delete;
         virtual ~VulkanResource();
 
         Status getStatus() const;
@@ -47,6 +48,28 @@ namespace vk
         std::vector<VulkanCommandBuffer*> m_cmdBuffers;
 
         friend VulkanCommandBuffer;
+    };
+
+    /**
+    * VulkanResourceDeleter class. Vulkan Render side
+    */
+    class VulkanResourceDeleter final
+    {
+    public:
+
+        VulkanResourceDeleter() = default;
+        VulkanResourceDeleter(const VulkanResourceDeleter&) = delete;
+        ~VulkanResourceDeleter();
+
+        void addResourceToDelete(VulkanResource* resource, const std::function<void(VulkanResource* resource)>& deleter, bool forceDelete = false);
+        void updateResourceDeleter(bool wait = false);
+
+    private:
+
+        void resourceGarbageCollect();
+
+        std::queue<std::pair<VulkanResource*, std::function<void(VulkanResource* resource)>>> m_delayedList;
+        std::queue<std::pair<VulkanResource*, std::function<void(VulkanResource* resource)>>> m_deleterList;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
