@@ -178,11 +178,16 @@ bool VulkanContextState::setDynamicState(VkDynamicState state, const std::functi
     return false;
 }
 
-void VulkanContextState::invokeDynamicStates()
+void VulkanContextState::invokeDynamicStates(bool clear)
 {
     for (auto& callback : m_stateCallbacks)
     {
         callback.second();
+    }
+
+    if (clear)
+    {
+        m_stateCallbacks.clear();
     }
 }
 

@@ -57,7 +57,7 @@ namespace vk
         const StreamBufferDescription& getStreamBufferDescription() const;
 
         bool setDynamicState(VkDynamicState state, const std::function<void()>& callback);
-        void invokeDynamicStates();
+        void invokeDynamicStates(bool clear = true);
 
         bool prepareDescriptorSets(VulkanCommandBuffer* cmdBuffer, std::vector<VkDescriptorSet>& sets, std::vector<u32>& offsets);
 
