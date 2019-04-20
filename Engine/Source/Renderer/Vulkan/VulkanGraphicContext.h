@@ -129,12 +129,10 @@ namespace vk
         PipelineManager*            m_pipelineManager;
         SamplerManager*             m_samplerManager;
 
-        //replace to another class
-        struct CurrentContextState
+        struct CurrentCommandBufferState
         {
-            CurrentContextState();
+            CurrentCommandBufferState();
 
-            void invalidateState();
             void invalidateCommandBuffer(CommandTargetType type);
 
             VulkanCommandBuffer* getAcitveBuffer(CommandTargetType type);
@@ -176,10 +174,10 @@ namespace vk
 
         };
         
-        CurrentContextState         m_currentContextState;
 
         PendingState                m_pendingState;
-        VulkanContextState*         m_currentContextStateNEW;
+        CurrentCommandBufferState   m_currentBufferState;
+        VulkanContextState*         m_currentContextState;
 
         VulkanResourceDeleter       m_resourceDeleter;
 

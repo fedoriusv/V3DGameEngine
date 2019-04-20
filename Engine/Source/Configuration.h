@@ -1,4 +1,4 @@
-// V3D Engine (c) 2018 Fred Nekrasov
+// V3D Engine (c) 2018-2019 Fred Nekrasov
 #pragma once
 
 //Version 2.0.0
@@ -52,9 +52,9 @@
 #   define VULKAN_VERSION_PATCH 0
 
 #   define VULKAN_DEBUG 0
-#   define VULKAN_LAYERS_CALLBACKS 1
+#   define VULKAN_LAYERS_CALLBACKS 0
 #   if VULKAN_LAYERS_CALLBACKS
-#       define VULKAN_VALIDATION_LAYERS_CALLBACK 1
+#       define VULKAN_VALIDATION_LAYERS_CALLBACK 0
 #       define VULKAN_RENDERDOC_LAYER 0
 #       define VULKAN_DEBUG_MARKERS 0
 #   endif //VULKAN_LAYERS_CALLBACKS
