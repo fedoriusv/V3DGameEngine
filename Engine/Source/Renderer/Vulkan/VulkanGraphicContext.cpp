@@ -424,6 +424,15 @@ void VulkanGraphicContext::removePipeline(Pipeline * pipeline)
     }
 }
 
+Image * VulkanGraphicContext::createImage(renderer::Format format, const core::Dimension3D& dimension, TextureSamples samples, TextureUsageFlags flags)
+{
+    VkFormat vkFormat = VulkanImage::convertImageFormatToVkFormat(format);
+    VkExtent3D vkExtent = { dimension.width, dimension.height, dimension.depth };
+    VkSampleCountFlagBits vkSamples = VulkanImage::convertRenderTargetSamplesToVkSampleCount(samples);
+
+    return new VulkanImage(m_imageMemoryManager, m_deviceInfo._device, vkFormat, vkExtent, vkSamples, flags);
+}
+
 Image * VulkanGraphicContext::createImage(TextureTarget target, renderer::Format format, const core::Dimension3D& dimension, u32 layers, u32 mipLevels, TextureUsageFlags flags)
 {
     VkImageType vkType = VulkanImage::convertTextureTargetToVkImageType(target);
@@ -840,6 +849,7 @@ RenderPass * VulkanGraphicContext::createRenderPass(const RenderPassDescription*
 {
     u32 countAttachments = (renderpassDesc->_hasDepthStencilAttahment) ? renderpassDesc->_countColorAttachments + 1 : renderpassDesc->_countColorAttachments;
     std::vector<VulkanRenderPass::VulkanAttachmentDescription> descs(countAttachments);
+    std::vector<VulkanRenderPass::VulkanAttachmentDescription> resolves;
     for (u32 index = 0; index < renderpassDesc->_countColorAttachments; ++index)
     {
         VulkanRenderPass::VulkanAttachmentDescription& desc = descs[index];
@@ -849,7 +859,6 @@ RenderPass * VulkanGraphicContext::createRenderPass(const RenderPassDescription*
         desc._storeOp = VulkanRenderPass::convertAttachStoreOpToVkAttachmentStoreOp(renderpassDesc->_attachments[index]._storeOp);
         desc._initialLayout = VulkanRenderPass::convertTransitionStateToImageLayout(renderpassDesc->_attachments[index]._initTransition);
         desc._finalLayout = VulkanRenderPass::convertTransitionStateToImageLayout(renderpassDesc->_attachments[index]._finalTransition);
-
         desc._swapchainImage = (renderpassDesc->_attachments[index]._internalTarget) ? true : false;
     }
 

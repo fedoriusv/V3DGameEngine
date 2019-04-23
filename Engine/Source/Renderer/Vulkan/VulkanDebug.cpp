@@ -277,6 +277,39 @@ void VulkanDump::dumpPostGetBufferMemoryRequirements(VkMemoryRequirements * pMem
     }
 }
 
+void VulkanDump::dumpPreGetImageMemoryRequirements(VkDevice device, VkImage image)
+{
+    std::lock_guard<std::recursive_mutex> lock(s_mutex);
+
+    m_dump << "--GetImageMemoryRequirements--" << std::endl;
+    m_dump << "PreGetImageMemoryRequirements(" << std::endl;
+    m_dump << "VkDevice device: " << std::hex << device << std::endl;
+    m_dump << "VkBuffer: " << std::hex << image << ")" << std::endl;
+
+    if (k_forceFlush)
+    {
+        VulkanDump::flushToFile(VULKAN_DUMP_FILE);
+    }
+}
+
+void VulkanDump::dumpPostGetImageMemoryRequirements(VkMemoryRequirements * pMemoryRequirements)
+{
+    std::lock_guard<std::recursive_mutex> lock(s_mutex);
+
+    m_dump << "PostGetImageMemoryRequirements(" << std::endl;
+    m_dump << "VkMemoryRequirements: pMemoryRequirements[" << std::endl;
+    m_dump << "     VkDeviceSize    size: " << pMemoryRequirements->size << std::endl;
+    m_dump << "     VkDeviceSize    alignment: " << pMemoryRequirements->alignment << std::endl;
+    m_dump << "     uint32_t        memoryTypeBits: " << pMemoryRequirements->memoryTypeBits << std::endl;
+    m_dump << "])" << std::endl;
+    m_dump << "----------------" << std::endl;
+
+    if (k_forceFlush)
+    {
+        VulkanDump::flushToFile(VULKAN_DUMP_FILE);
+    }
+}
+
 void VulkanDump::dumpPreCreateBuffer(VkDevice device, const VkBufferCreateInfo * pCreateInfo, const VkAllocationCallbacks * pAllocator)
 {
     std::lock_guard<std::recursive_mutex> lock(s_mutex);
@@ -307,6 +340,84 @@ void VulkanDump::dumpPostCreateBuffer(VkResult result, VkBuffer * pBuffer)
     std::lock_guard<std::recursive_mutex> lock(s_mutex);
 
     m_dump << "PostCreateBuffer( VkResult: " << ErrorString(result) << ", VkBuffer: " << std::hex << *pBuffer << " )" << std::endl;
+    m_dump << "----------------" << std::endl;
+
+    if (k_forceFlush)
+    {
+        VulkanDump::flushToFile(VULKAN_DUMP_FILE);
+    }
+}
+
+void VulkanDump::dumpPreCreateImage(VkDevice device, const VkImageCreateInfo * pCreateInfo, const VkAllocationCallbacks * pAllocator)
+{
+    std::lock_guard<std::recursive_mutex> lock(s_mutex);
+
+    m_dump << "--CreateImage--" << std::endl;
+    m_dump << "PreCreateImage(" << std::endl;
+    m_dump << "VkDevice device: " << std::hex << device << std::endl;
+    m_dump << "VkImageCreateInfo: pCreateInfo[" << std::endl;
+    m_dump << "     VkStructureType         sType: " << std::dec << pCreateInfo->sType << std::endl;
+    m_dump << "     const void*             pNext: " << std::hex << pCreateInfo->pNext << std::endl;
+    m_dump << "     VkImageCreateFlagss     flags: " << std::dec << pCreateInfo->flags << std::endl;
+    m_dump << "     VkImageType             imageType: " << std::dec << pCreateInfo->flags << std::endl;
+    m_dump << "     VkFormat                format: " << std::dec << pCreateInfo->flags << std::endl;
+    m_dump << "     VkExtent3D              extent:[ " << std::dec << pCreateInfo->extent.width << ", " << pCreateInfo->extent.height << ", " << pCreateInfo->extent.depth << "]" << std::endl;
+    m_dump << "     uint32_t                mipLevels: " << std::dec << pCreateInfo->mipLevels << std::endl;
+    m_dump << "     uint32_t                arrayLayers: " << std::dec << pCreateInfo->arrayLayers << std::endl;
+    m_dump << "     VkSampleCountFlagBits   samples: " << std::dec << pCreateInfo->samples << std::endl;
+    m_dump << "     VkImageTiling           tiling: " << std::dec << pCreateInfo->tiling << std::endl;
+    m_dump << "     VkImageUsageFlags       usage: " << std::dec << pCreateInfo->usage << std::endl;
+    m_dump << "     VkSharingMode           sharingMode: " << std::dec << pCreateInfo->sharingMode << std::endl;
+    m_dump << "     uint32_t                queueFamilyIndexCount: " << std::dec << pCreateInfo->queueFamilyIndexCount << std::endl;
+    m_dump << "     const uint32_t*         pQueueFamilyIndices: " << std::hex << pCreateInfo->pQueueFamilyIndices << std::endl;
+    m_dump << "     VkImageLayout           initialLayout: " << pCreateInfo->initialLayout << std::endl;
+    m_dump << "]," << std::endl;
+    m_dump << "VkAllocationCallbacks pAllocator: " << std::hex << pAllocator << ")" << std::endl;
+
+    if (k_forceFlush)
+    {
+        VulkanDump::flushToFile(VULKAN_DUMP_FILE);
+    }
+}
+
+void VulkanDump::dumpDestroyBuffer(VkDevice device, VkBuffer buffer, const VkAllocationCallbacks * pAllocator)
+{
+    std::lock_guard<std::recursive_mutex> lock(s_mutex);
+
+    m_dump << "--DestroyBuffer--" << std::endl;
+    m_dump << "VkDevice device: " << std::hex << device << std::endl;
+    m_dump << "VkBuffer buffer: " << std::hex << buffer << std::endl;
+    m_dump << "VkAllocationCallbacks pAllocator: " << std::hex << pAllocator << std::endl;
+    m_dump << "----------------" << std::endl;
+
+    if (k_forceFlush)
+    {
+        VulkanDump::flushToFile(VULKAN_DUMP_FILE);
+    }
+}
+
+
+void VulkanDump::dumpPostCreateImage(VkResult result, VkImage * pImage)
+{
+    std::lock_guard<std::recursive_mutex> lock(s_mutex);
+
+    m_dump << "PostCreateImage( VkResult: " << ErrorString(result) << ", VkImage: " << std::hex << *pImage << " )" << std::endl;
+    m_dump << "----------------" << std::endl;
+
+    if (k_forceFlush)
+    {
+        VulkanDump::flushToFile(VULKAN_DUMP_FILE);
+    }
+}
+
+void VulkanDump::dumpDestroyImage(VkDevice device, VkImage image, const VkAllocationCallbacks * pAllocator)
+{
+    std::lock_guard<std::recursive_mutex> lock(s_mutex);
+
+    m_dump << "--DestroyImage--" << std::endl;
+    m_dump << "VkDevice device: " << std::hex << device << std::endl;
+    m_dump << "VkImage image: " << std::hex << image << std::endl;
+    m_dump << "VkAllocationCallbacks pAllocator: " << std::hex << pAllocator << std::endl;
     m_dump << "----------------" << std::endl;
 
     if (k_forceFlush)

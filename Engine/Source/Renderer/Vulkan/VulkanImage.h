@@ -56,13 +56,16 @@ namespace vk
         static bool isAttachmentLayout(const VulkanImage* image, s32 layer = -1);
         static u32 calculateImageSize(const core::Dimension3D& size, u32 mipLevel, VkFormat format);
 
-        VkImage             getHandle() const;
-        VkImageAspectFlags  getImageAspectFlags() const;
-        VkImageView         getImageView(s32 layer = -1) const;
-        VkFormat            getFormat() const;
+        VkImage               getHandle() const;
+        VkImageAspectFlags    getImageAspectFlags() const;
+        VkSampleCountFlagBits getSampleCount() const;
+        VkImageView           getImageView(s32 layer = -1) const;
+        VkFormat              getFormat() const;
 
-        VkImageLayout       getLayout(s32 layer = -1, s32 mip = -1) const;
-        VkImageLayout       setLayout(VkImageLayout layout, s32 layer = -1, s32 mip = -1);
+        VkImageLayout         getLayout(s32 layer = -1, s32 mip = -1) const;
+        VkImageLayout         setLayout(VkImageLayout layout, s32 layer = -1, s32 mip = -1);
+
+        VulkanImage*          getResolveImage() const;
 
     private:
 
@@ -92,7 +95,7 @@ namespace vk
 
         TextureUsageFlags           m_usage;
 
-        VulkanImage*                m_resolveImage; //?
+        VulkanImage*                m_resolveImage;
 
         VulkanMemory::VulkanAlloc   m_memory;
         VulkanMemory::VulkanMemoryAllocator* m_memoryAllocator;

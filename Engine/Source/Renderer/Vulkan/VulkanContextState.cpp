@@ -439,8 +439,15 @@ VkDescriptorImageInfo VulkanContextState::makeVkDescriptorImageInfo(const Vulkan
 {
     VkDescriptorImageInfo descriptorImageInfo = {};
     descriptorImageInfo.sampler = sampler->getHandle();
-    descriptorImageInfo.imageView = image->getImageView(layer);
     descriptorImageInfo.imageLayout = layout;
+    if (image->getResolveImage())
+    {
+        descriptorImageInfo.imageView = image->getResolveImage()->getImageView(layer);
+    }
+    else
+    {
+        descriptorImageInfo.imageView = image->getImageView(layer);
+    }
 
     return descriptorImageInfo;
 }

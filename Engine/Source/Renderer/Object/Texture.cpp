@@ -253,7 +253,7 @@ Texture2D::Texture2D(renderer::CommandList & cmdList, TextureUsageFlags usage, r
 {
     core::Dimension3D dim = { m_dimension.width, m_dimension.height, 1 };
 
-    m_image = m_cmdList.getContext()->createImage(m_target, m_format, dim, m_layers, m_mipmaps, m_usage);
+    m_image = m_cmdList.getContext()->createImage(m_format, dim, m_samples, m_usage);
     ASSERT(m_image, "m_image is nullptr");
     m_image->registerNotify(this);
 
