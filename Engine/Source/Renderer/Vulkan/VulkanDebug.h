@@ -64,8 +64,16 @@ namespace vk
         void dumpPreGetBufferMemoryRequirements(VkDevice device, VkBuffer buffer);
         void dumpPostGetBufferMemoryRequirements(VkMemoryRequirements * pMemoryRequirements);
 
+        void dumpPreGetImageMemoryRequirements(VkDevice device, VkImage image);
+        void dumpPostGetImageMemoryRequirements(VkMemoryRequirements * pMemoryRequirements);
+
         void dumpPreCreateBuffer(VkDevice device, const VkBufferCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator);
         void dumpPostCreateBuffer(VkResult result, VkBuffer* pBuffer);
+        void dumpDestroyBuffer(VkDevice device, VkBuffer buffer, const VkAllocationCallbacks * pAllocator);
+
+        void dumpPreCreateImage(VkDevice device, const VkImageCreateInfo * pCreateInfo, const VkAllocationCallbacks * pAllocator);
+        void dumpPostCreateImage(VkResult result, VkImage * pImage);
+        void dumpDestroyImage(VkDevice device, VkImage image, const VkAllocationCallbacks * pAllocator);
 
         void flushToConsole();
 

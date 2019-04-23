@@ -173,7 +173,13 @@ void VulkanWrapper::GetBufferMemoryRequirements(VkDevice device, VkBuffer buffer
 
 void VulkanWrapper::GetImageMemoryRequirements(VkDevice device, VkImage image, VkMemoryRequirements * pMemoryRequirements) noexcept
 {
+#if VULKAN_DUMP
+    VulkanDump::getInstance()->dumpPreGetImageMemoryRequirements(device, image);
     vkGetImageMemoryRequirements(device, image, pMemoryRequirements);
+    VulkanDump::getInstance()->dumpPostGetImageMemoryRequirements(pMemoryRequirements);
+#else
+    vkGetImageMemoryRequirements(device, image, pMemoryRequirements);
+#endif //VULKAN_DUMP
 }
 
 void VulkanWrapper::GetImageSparseMemoryRequirements(VkDevice device, VkImage image, uint32_t * pSparseMemoryRequirementCount, VkSparseImageMemoryRequirements * pSparseMemoryRequirements) noexcept
@@ -280,7 +286,11 @@ VkResult VulkanWrapper::CreateBuffer(VkDevice device, const VkBufferCreateInfo *
 
 void VulkanWrapper::DestroyBuffer(VkDevice device, VkBuffer buffer, const VkAllocationCallbacks * pAllocator) noexcept
 {
+#if VULKAN_DUMP
+    VulkanDump::getInstance()->dumpDestroyBuffer(device, buffer, pAllocator);
+#else
     vkDestroyBuffer(device, buffer, pAllocator);
+#endif //VULKAN_DUMP
 }
 
 VkResult VulkanWrapper::CreateBufferView(VkDevice device, const VkBufferViewCreateInfo * pCreateInfo, const VkAllocationCallbacks * pAllocator, VkBufferView * pView) noexcept
@@ -295,12 +305,23 @@ void VulkanWrapper::DestroyBufferView(VkDevice device, VkBufferView bufferView, 
 
 VkResult VulkanWrapper::CreateImage(VkDevice device, const VkImageCreateInfo * pCreateInfo, const VkAllocationCallbacks * pAllocator, VkImage * pImage) noexcept
 {
+#if VULKAN_DUMP
+    VulkanDump::getInstance()->dumpPreCreateImage(device, pCreateInfo, pAllocator);
+    VkResult result = vkCreateImage(device, pCreateInfo, pAllocator, pImage);
+    VulkanDump::getInstance()->dumpPostCreateImage(result, pImage);
+    return result;
+#else
     return vkCreateImage(device, pCreateInfo, pAllocator, pImage);
+#endif //VULKAN_DUMP
 }
 
 void VulkanWrapper::DestroyImage(VkDevice device, VkImage image, const VkAllocationCallbacks * pAllocator) noexcept
 {
+#if VULKAN_DUMP
+    VulkanDump::getInstance()->dumpDestroyImage(device, image, pAllocator);
+#else
     vkDestroyImage(device, image, pAllocator);
+#endif //VULKAN_DUMP
 }
 
 void VulkanWrapper::GetImageSubresourceLayout(VkDevice device, VkImage image, const VkImageSubresource * pSubresource, VkSubresourceLayout * pLayout) noexcept
