@@ -46,8 +46,15 @@ bool VulkanFramebuffer::create(const RenderPass* pass)
     m_imageViews.reserve(m_images.size());
     for (auto& attach : m_images)
     {
-        VkImageView vkImage = static_cast<const VulkanImage*>(attach)->getImageView();
-        m_imageViews.push_back(vkImage);
+        const VulkanImage* vkImage = static_cast<const VulkanImage*>(attach);
+        m_imageViews.push_back(vkImage->getImageView());
+
+        if (vkImage->getResolveImage())
+        {
+            ASSERT(vkImage->getSampleCount() > VK_SAMPLE_COUNT_1_BIT, "wrong sample count");
+            const VulkanImage* vkResolveImage = vkImage->getResolveImage();
+            m_imageViews.push_back(vkResolveImage->getImageView());
+        }
     }
 
     VkFramebufferCreateInfo framebufferCreateInfo = {};

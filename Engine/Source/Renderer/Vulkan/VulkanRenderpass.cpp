@@ -99,50 +99,111 @@ VkRenderPass VulkanRenderPass::getHandle() const
 
 bool VulkanRenderPass::create()
 {
-    //TODO merge renderpasses
     std::vector<VkAttachmentDescription> attachmentDescriptions;
     attachmentDescriptions.reserve(m_descriptions.size());
 
     std::vector<VkAttachmentReference> colorAttachmentReferences;
+    std::vector<VkAttachmentReference> resolveAttachmentReferences;
     VkAttachmentReference depthStencilAttachmentReferences = {};
 
     bool depthStencil = false;
-    for (u32 index = 0; index < m_descriptions.size(); ++index)
+    u32 index = 0;
+    for (u32 descIndex = 0; descIndex < m_descriptions.size(); ++descIndex)
     {
-        VulkanAttachmentDescription& attach = m_descriptions[index];
+        VulkanAttachmentDescription& attach = m_descriptions[descIndex];
         ASSERT(attach._format != VK_FORMAT_UNDEFINED, "undefined format");
 
-        VkAttachmentDescription attachmentDescription = {};
-        attachmentDescription.format = attach._format;
-        attachmentDescription.samples = attach._samples;
-        attachmentDescription.flags = 0;// VK_ATTACHMENT_DESCRIPTION_MAY_ALIAS_BIT; //need check
-        attachmentDescription.loadOp = attach._loadOp;
-        attachmentDescription.storeOp = attach._storeOp;
-        attachmentDescription.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-        attachmentDescription.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-        attachmentDescription.initialLayout = attach._initialLayout;
-        attachmentDescription.finalLayout = attach._finalLayout;
-
-        if (VulkanImage::isColorFormat(attach._format))
+        if (attach._samples == VK_SAMPLE_COUNT_1_BIT)
         {
-            VkAttachmentReference attachmentReference = {};
-            attachmentReference.attachment = index;
-            attachmentReference.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+            VkAttachmentDescription attachmentDescription = {};
+            attachmentDescription.format = attach._format;
+            attachmentDescription.samples = attach._samples;
+            attachmentDescription.flags = 0;// VK_ATTACHMENT_DESCRIPTION_MAY_ALIAS_BIT; //need check
+            attachmentDescription.loadOp = attach._loadOp;
+            attachmentDescription.storeOp = attach._storeOp;
+            attachmentDescription.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+            attachmentDescription.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+            attachmentDescription.initialLayout = attach._initialLayout;
+            attachmentDescription.finalLayout = attach._finalLayout;
 
-            colorAttachmentReferences.push_back(attachmentReference);
+            if (VulkanImage::isColorFormat(attach._format))
+            {
+                VkAttachmentReference attachmentReference = {};
+                attachmentReference.attachment = index;
+                attachmentReference.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+                index++;
+                colorAttachmentReferences.push_back(attachmentReference);
+            }
+            else
+            {
+                attachmentDescription.stencilLoadOp = attach._stencilLoadOp;
+                attachmentDescription.stencilStoreOp = attach._stensilStoreOp;
+
+                depthStencilAttachmentReferences.attachment = index;
+                depthStencilAttachmentReferences.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+                index++;
+                depthStencil = true;
+            }
+
+            attachmentDescriptions.push_back(attachmentDescription);
         }
         else
         {
-            attachmentDescription.stencilLoadOp = attach._stencilLoadOp;
-            attachmentDescription.stencilStoreOp = attach._stensilStoreOp;
+            VkAttachmentDescription msaaAttachmentDescription = {};
+            msaaAttachmentDescription.format = attach._format;
+            msaaAttachmentDescription.samples = attach._samples;
+            msaaAttachmentDescription.flags = 0;
+            msaaAttachmentDescription.loadOp = attach._loadOp;
+            msaaAttachmentDescription.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+            msaaAttachmentDescription.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+            msaaAttachmentDescription.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+            msaaAttachmentDescription.initialLayout = attach._initialLayout;
+            msaaAttachmentDescription.finalLayout = attach._finalLayout;
 
-            depthStencilAttachmentReferences.attachment = index;
-            depthStencilAttachmentReferences.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-            depthStencil = true;
+            VkAttachmentDescription resolveAttachmentDescription = {};
+            resolveAttachmentDescription.format = attach._format;
+            resolveAttachmentDescription.samples = VK_SAMPLE_COUNT_1_BIT;
+            resolveAttachmentDescription.flags = 0;
+            resolveAttachmentDescription.loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+            resolveAttachmentDescription.storeOp = attach._storeOp;
+            resolveAttachmentDescription.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+            resolveAttachmentDescription.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+            resolveAttachmentDescription.initialLayout = attach._initialLayout;
+            resolveAttachmentDescription.finalLayout = attach._finalLayout;
+
+            if (VulkanImage::isColorFormat(attach._format))
+            {
+                VkAttachmentReference msaaAttachmentReference = {};
+                msaaAttachmentReference.attachment = index;
+                msaaAttachmentReference.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+                index++;
+                colorAttachmentReferences.push_back(msaaAttachmentReference);
+
+                VkAttachmentReference resolveAttachmentReference = {};
+                resolveAttachmentReference.attachment = index;
+                resolveAttachmentReference.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+                index++;
+                resolveAttachmentReferences.push_back(resolveAttachmentReference);
+            }
+            else
+            {
+                msaaAttachmentDescription.stencilLoadOp = attach._stencilLoadOp;
+                msaaAttachmentDescription.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+
+                resolveAttachmentDescription.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+                resolveAttachmentDescription.stencilStoreOp = attach._stensilStoreOp;
+
+                depthStencilAttachmentReferences.attachment = index;
+                depthStencilAttachmentReferences.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+                index++;
+                depthStencil = true;
+            }
+
+            attachmentDescriptions.push_back(msaaAttachmentDescription);
+            attachmentDescriptions.push_back(resolveAttachmentDescription);
         }
 
-        attachmentDescriptions.push_back(attachmentDescription);
-    } 
+    }
 
     u32 countSubpasses = 1;
     std::vector<VkSubpassDescription> subpassDescriptions;
@@ -157,7 +218,7 @@ bool VulkanRenderPass::create()
         subpassDescription.pInputAttachments = nullptr;
         subpassDescription.colorAttachmentCount = static_cast<u32>(colorAttachmentReferences.size());
         subpassDescription.pColorAttachments = colorAttachmentReferences.data();
-        subpassDescription.pResolveAttachments = nullptr;
+        subpassDescription.pResolveAttachments = !resolveAttachmentReferences.empty() ? resolveAttachmentReferences.data() : nullptr;
         subpassDescription.pDepthStencilAttachment = depthStencil  ? &depthStencilAttachmentReferences : nullptr;
         subpassDescription.preserveAttachmentCount = 0;
         subpassDescription.pPreserveAttachments = nullptr;

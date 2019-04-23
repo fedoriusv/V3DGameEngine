@@ -58,6 +58,12 @@ Image * EmptyContext::createImage(TextureTarget target, renderer::Format format,
     return nullptr;
 }
 
+Image* EmptyContext::createImage(renderer::Format format, const core::Dimension3D& dimension, TextureSamples samples, TextureUsageFlags flags)
+{
+    LOG_DEBUG("EmptyContext::createImage");
+    return nullptr;
+}
+
 void EmptyContext::removeImage(Image * image)
 {
     LOG_DEBUG("EmptyContext::removeImage");

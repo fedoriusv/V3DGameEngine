@@ -622,12 +622,19 @@ VulkanImage::VulkanImage(VulkanMemory::VulkanMemoryAllocator* memory, VkDevice d
 {
     LOG_DEBUG("VulkanImage::VulkanImage constructor %llx", this);
     m_layout.resize(m_layersLevel * m_mipsLevel, VK_IMAGE_LAYOUT_UNDEFINED);
+
+    if (usage & TextureUsage_Resolve)
+    {
+        ASSERT(samples > VkSampleCountFlagBits::VK_SAMPLE_COUNT_1_BIT, "wrong sample count");
+        m_resolveImage = new VulkanImage(memory, device, format, dimension, VkSampleCountFlagBits::VK_SAMPLE_COUNT_1_BIT, usage & ~TextureUsage_Resolve);
+    }
 }
 
 VulkanImage::~VulkanImage()
 {
     LOG_DEBUG("VulkanImage::VulkanImage destructor %llx", this);
 
+    ASSERT(!m_resolveImage, "m_resolveImage nullptr");
     ASSERT(!m_generalImageView, "image view not nullptr");
     ASSERT(m_imageView.empty(), "m_imageView is not empty");
 
@@ -744,6 +751,17 @@ bool VulkanImage::create()
         return false;
     }
 
+    if (m_resolveImage)
+    {
+        if (!m_resolveImage->create())
+        {
+            VulkanImage::destroy();
+
+            LOG_ERROR("VulkanImage::VulkanImage::create() esolve is failed");
+            return false;
+        }
+    }
+
     return true;
 }
 
@@ -803,6 +821,7 @@ bool VulkanImage::upload(Context* context, const core::Dimension3D& size, u32 la
 {
     ASSERT(m_mipsLevel == mips, "should be same");
     ASSERT(m_layersLevel == layers, "should be same");
+    ASSERT(m_samples == VkSampleCountFlagBits::VK_SAMPLE_COUNT_1_BIT, "wrong sample count");
 
     u64 calculatedSize = 0;
     for (u32 mip = 0; mip < mips; ++mip)
@@ -819,6 +838,7 @@ bool VulkanImage::upload(Context * context, const core::Dimension3D & offsets, c
 {
     ASSERT(m_mipsLevel == 1, "should be 1");
     ASSERT(m_layersLevel == layers, "should be same");
+    ASSERT(m_samples == VkSampleCountFlagBits::VK_SAMPLE_COUNT_1_BIT, "wrong sample count");
 
     ASSERT(size > offsets, "wrong offset");
     core::Dimension3D diffSize = (size - offsets);
@@ -1169,10 +1189,16 @@ VkImageAspectFlags VulkanImage::getImageAspectFlags() const
     return m_aspectMask;
 }
 
+VkSampleCountFlagBits VulkanImage::getSampleCount() const
+{
+    return m_samples;
+}
+
 VkImageView VulkanImage::getImageView(s32 layer) const
 {
     if (layer == -1)
     {
+        ASSERT(m_generalImageView, "null handle");
         return m_generalImageView;
     }
 
@@ -1204,8 +1230,21 @@ VkImageLayout VulkanImage::setLayout(VkImageLayout layout, s32 layer, s32 mip)
     return oldLayout;
 }
 
+VulkanImage * VulkanImage::getResolveImage() const
+{
+    return m_resolveImage;
+}
+
 void VulkanImage::destroy()
 {
+    if (m_resolveImage)
+    {
+        m_resolveImage->destroy();
+
+        delete m_resolveImage;
+        m_resolveImage = nullptr;
+    }
+
     if (m_generalImageView)
     {
         VulkanWrapper::DestroyImageView(m_device, m_generalImageView, VULKAN_ALLOCATOR);
