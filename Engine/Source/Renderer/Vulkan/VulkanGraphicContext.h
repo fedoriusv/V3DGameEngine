@@ -110,6 +110,8 @@ namespace vk
         Pipeline* createPipeline(Pipeline::PipelineType type) override;
         Sampler* createSampler() override;
 
+        void invalidateStates();
+
         bool createInstance();
         bool createDevice();
 

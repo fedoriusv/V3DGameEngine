@@ -59,7 +59,7 @@ namespace vk
         VkImage               getHandle() const;
         VkImageAspectFlags    getImageAspectFlags() const;
         VkSampleCountFlagBits getSampleCount() const;
-        VkImageView           getImageView(s32 layer = -1) const;
+        VkImageView           getImageView(s32 layer = -1, VkImageAspectFlags aspect  = 0) const;
         VkFormat              getFormat() const;
 
         VkImageLayout         getLayout(s32 layer = -1, s32 mip = -1) const;
@@ -68,6 +68,21 @@ namespace vk
         VulkanImage*          getResolveImage() const;
 
     private:
+
+        enum ImageAspect : s32
+        {
+            ImageAspect_General = -1,
+            ImageAspect_Color = 0,
+            ImageAspect_Depth,
+            ImageAspect_Stencil,
+            ImageAspect_DepthStencil,
+
+            ImageAspect_Count
+        };
+
+        static ImageAspect convertVkImageAspectFlags(VkImageAspectFlags aspect);
+        static VkImageAspectFlags convertImageAspectFlagsToVk(ImageAspect aspect);
+        static VkImageSubresourceRange makeImageSubresourceRangeWithAspect(const VulkanImage* image, s32 layer = -1, s32 mip = -1, ImageAspect aspect = ImageAspect::ImageAspect_General);
 
         bool createViewImage();
 
@@ -86,7 +101,7 @@ namespace vk
 
         VkImage                     m_image;
 
-        VkImageView                 m_generalImageView;
+        VkImageView                 m_generalImageView[ImageAspect::ImageAspect_Count];
         std::vector<VkImageView>    m_imageView;
 
         VkImageAspectFlags          m_aspectMask;

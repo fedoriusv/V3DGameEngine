@@ -25,6 +25,12 @@ namespace renderer
 
         struct ClearValueInfo
         {
+            ClearValueInfo()
+                : _depth(0.0f)
+                , _stencil(0U)
+            {
+            }
+
             core::Dimension2D           _size;
             std::vector<core::Vector4D> _color;
             f32                         _depth;

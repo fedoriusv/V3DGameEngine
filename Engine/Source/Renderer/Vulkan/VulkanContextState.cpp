@@ -440,13 +440,15 @@ VkDescriptorImageInfo VulkanContextState::makeVkDescriptorImageInfo(const Vulkan
     VkDescriptorImageInfo descriptorImageInfo = {};
     descriptorImageInfo.sampler = sampler->getHandle();
     descriptorImageInfo.imageLayout = layout;
-    if (image->getResolveImage())
+
+    const VulkanImage* vkImage = (image->getResolveImage()) ? image->getResolveImage() : image;
+    if (vkImage->getImageAspectFlags() & VK_IMAGE_ASPECT_DEPTH_BIT)
     {
-        descriptorImageInfo.imageView = image->getResolveImage()->getImageView(layer);
+        descriptorImageInfo.imageView = vkImage->getImageView(layer, VK_IMAGE_ASPECT_DEPTH_BIT);
     }
     else
     {
-        descriptorImageInfo.imageView = image->getImageView(layer);
+        descriptorImageInfo.imageView = vkImage->getImageView(layer, VK_IMAGE_ASPECT_COLOR_BIT);
     }
 
     return descriptorImageInfo;

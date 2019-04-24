@@ -182,6 +182,8 @@ void VulkanGraphicContext::presentFrame()
     m_currentContextState->invalidateDescriptorSetsState();
     m_resourceDeleter.updateResourceDeleter();
 
+    invalidateStates();
+
     m_frameCounter++;
 }
 
@@ -336,16 +338,35 @@ void VulkanGraphicContext::setRenderTarget(const RenderPass::RenderPassInfo * re
         area.extent = { framebufferInfo->_clearInfo._size.width, framebufferInfo->_clearInfo._size.height };
 
 
-        u32 countClearValues = static_cast<u32>(framebufferInfo->_clearInfo._color.size()) + (renderpassInfo->_value._desc._hasDepthStencilAttahment ? 1 : 0);
-        std::vector<VkClearValue> clearValues(countClearValues);
-        for (u32 index = 0; index < framebufferInfo->_clearInfo._color.size(); ++index)
+        //u32 countClearValues = static_cast<u32>(framebufferInfo->_clearInfo._color.size()) + (renderpassInfo->_value._desc._hasDepthStencilAttahment ? 1 : 0);
+        std::vector<VkClearValue> clearValues;
+        for (u32 clearIndex = 0; clearIndex < framebufferInfo->_clearInfo._color.size(); ++clearIndex)
         {
-            clearValues[index] = { framebufferInfo->_clearInfo._color[index].x, framebufferInfo->_clearInfo._color[index].y, framebufferInfo->_clearInfo._color[index].z, framebufferInfo->_clearInfo._color[index].w };
+            VkClearValue clearColor = {};
+            clearColor.color = {
+                framebufferInfo->_clearInfo._color[clearIndex].x,
+                framebufferInfo->_clearInfo._color[clearIndex].y,
+                framebufferInfo->_clearInfo._color[clearIndex].z,
+                framebufferInfo->_clearInfo._color[clearIndex].w };
+
+            clearValues.push_back(clearColor);
+            if (renderpassInfo->_value._desc._attachments[clearIndex]._samples > TextureSamples::TextureSamples_x1)
+            {
+                clearValues.push_back(clearColor);
+            }
         }
 
         if (renderpassInfo->_value._desc._hasDepthStencilAttahment)
         {
-            clearValues.back().depthStencil = { framebufferInfo->_clearInfo._depth, framebufferInfo->_clearInfo._stencil };
+            VkClearValue depthClear = {};
+            depthClear.depthStencil.depth = framebufferInfo->_clearInfo._depth;
+            depthClear.depthStencil.stencil = framebufferInfo->_clearInfo._stencil;
+
+            clearValues.push_back(depthClear);
+            if (renderpassInfo->_value._desc._attachments.back()._samples > TextureSamples::TextureSamples_x1)
+            {
+                clearValues.push_back(depthClear);
+            }
         }
         m_currentContextState->setClearValues(area, clearValues);
     }
@@ -893,6 +914,16 @@ Pipeline* VulkanGraphicContext::createPipeline(Pipeline::PipelineType type)
 Sampler * VulkanGraphicContext::createSampler()
 {
     return new VulkanSampler(m_deviceInfo._device);
+}
+
+void VulkanGraphicContext::invalidateStates()
+{
+    VulkanGraphicPipeline* pipeline = m_currentContextState->getCurrentPipeline();
+    if (pipeline)
+    {
+        m_currentContextState->setCurrentPipeline(nullptr);
+        m_pendingState.setPendingPipeline(pipeline);
+    }
 }
 
 bool VulkanGraphicContext::createInstance()

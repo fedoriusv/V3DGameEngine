@@ -89,7 +89,7 @@ bool VulkanDescriptorPool::allocateDescriptorSet(const VulkanPipelineLayout& lay
 
 bool VulkanDescriptorPool::freeDescriptorSet(std::vector<VkDescriptorSet>& descriptorSets)
 {
-    if (m_flag & ~VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT)
+    if (!(m_flag & VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT))
     {
         return false;
     }

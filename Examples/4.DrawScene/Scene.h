@@ -37,10 +37,6 @@ namespace scene
 
     private:
 
-        utils::IntrusivePointer<renderer::RenderTargetState>     m_SimpleBackbuffer;
-        utils::IntrusivePointer<renderer::ShaderProgram>         m_SimpleProgram;
-        utils::IntrusivePointer<renderer::GraphicsPipelineState> m_SimplePipeline;
-
         core::Dimension2D m_size;
         core::Vector3D    m_viewPosition;
         scene::Camera*    m_camera;
@@ -56,6 +52,17 @@ namespace scene
 
         utils::IntrusivePointer<renderer::SamplerState> m_Sampler;
         utils::IntrusivePointer<renderer::Texture2D> m_DummyTexture;
+
+        
+        //Test
+        RenderPass<1> m_SimplePass;
+        utils::IntrusivePointer<renderer::ShaderProgram>         m_SimpleProgram;
+        utils::IntrusivePointer<renderer::GraphicsPipelineState> m_SimplePipeline;
+
+        RenderPass<1> m_SimpleOffsceenPass;
+        utils::IntrusivePointer<renderer::ShaderProgram>         m_SimpleProgramOffsceen;
+        utils::IntrusivePointer<renderer::GraphicsPipelineState> m_SimplePipelineOffsceen;
+
 
         //Pass 1
         RenderPass<3> m_MRTRenderPass;

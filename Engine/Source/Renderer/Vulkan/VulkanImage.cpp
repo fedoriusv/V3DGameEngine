@@ -581,7 +581,6 @@ VulkanImage::VulkanImage(VulkanMemory::VulkanMemoryAllocator* memory, VkDevice d
     , m_tiling(VK_IMAGE_TILING_OPTIMAL)
 
     , m_image(VK_NULL_HANDLE)
-    , m_generalImageView(VK_NULL_HANDLE)
 
     , m_layout((m_tiling == VK_IMAGE_TILING_OPTIMAL) ? VK_IMAGE_LAYOUT_UNDEFINED : VK_IMAGE_LAYOUT_PREINITIALIZED)
     , m_usage(usage)
@@ -594,6 +593,8 @@ VulkanImage::VulkanImage(VulkanMemory::VulkanMemoryAllocator* memory, VkDevice d
 {
     LOG_DEBUG("VulkanImage::VulkanImage constructor %llx", this);
     m_layout.resize(m_layersLevel * m_mipsLevel, VK_IMAGE_LAYOUT_UNDEFINED);
+
+    memset(&m_generalImageView[0], VK_NULL_HANDLE, sizeof(m_generalImageView));
 }
 
 VulkanImage::VulkanImage(VulkanMemory::VulkanMemoryAllocator* memory, VkDevice device, VkFormat format, VkExtent3D dimension, VkSampleCountFlagBits samples, TextureUsageFlags usage)
@@ -610,7 +611,6 @@ VulkanImage::VulkanImage(VulkanMemory::VulkanMemoryAllocator* memory, VkDevice d
     , m_tiling(VK_IMAGE_TILING_OPTIMAL)
 
     , m_image(VK_NULL_HANDLE)
-    , m_generalImageView(VK_NULL_HANDLE)
 
     , m_usage(usage)
     , m_resolveImage(nullptr)
@@ -622,6 +622,8 @@ VulkanImage::VulkanImage(VulkanMemory::VulkanMemoryAllocator* memory, VkDevice d
 {
     LOG_DEBUG("VulkanImage::VulkanImage constructor %llx", this);
     m_layout.resize(m_layersLevel * m_mipsLevel, VK_IMAGE_LAYOUT_UNDEFINED);
+
+    memset(&m_generalImageView[0], VK_NULL_HANDLE, sizeof(m_generalImageView));
 
     if (usage & TextureUsage_Resolve)
     {
@@ -635,7 +637,10 @@ VulkanImage::~VulkanImage()
     LOG_DEBUG("VulkanImage::VulkanImage destructor %llx", this);
 
     ASSERT(!m_resolveImage, "m_resolveImage nullptr");
-    ASSERT(!m_generalImageView, "image view not nullptr");
+    for (u32 i = 0; i < ImageAspect::ImageAspect_Count; ++i)
+    {
+        ASSERT(!m_generalImageView[i], "image view not nullptr");
+    }
     ASSERT(m_imageView.empty(), "m_imageView is not empty");
 
     ASSERT(!m_image, "image not nullptr");
@@ -1017,6 +1022,43 @@ VkImageSubresourceRange VulkanImage::makeImageSubresourceRange(const VulkanImage
     return imageSubresourceRange;
 }
 
+VkImageSubresourceRange VulkanImage::makeImageSubresourceRangeWithAspect(const VulkanImage* image, s32 layer, s32 mip, ImageAspect aspect)
+{
+    VkImageSubresourceRange imageSubresourceRange = {};
+    if (aspect == ImageAspect::ImageAspect_General)
+    {
+        imageSubresourceRange.aspectMask = aspect;
+    }
+    else
+    {
+        imageSubresourceRange.aspectMask = VulkanImage::convertImageAspectFlagsToVk(aspect);
+    }
+
+    if (layer == -1)
+    {
+        imageSubresourceRange.baseArrayLayer = 0;
+        imageSubresourceRange.layerCount = image->m_layersLevel;
+    }
+    else
+    {
+        imageSubresourceRange.baseArrayLayer = layer;
+        imageSubresourceRange.layerCount = 1;
+    }
+
+    if (mip == -1)
+    {
+        imageSubresourceRange.baseMipLevel = 0;
+        imageSubresourceRange.levelCount = image->m_mipsLevel;
+    }
+    else
+    {
+        imageSubresourceRange.baseMipLevel = mip;
+        imageSubresourceRange.levelCount = 1;
+    }
+
+    return imageSubresourceRange;
+}
+
 VkImageAspectFlags VulkanImage::getImageAspectFlags(VkFormat format)
 {
     switch (format)
@@ -1194,12 +1236,12 @@ VkSampleCountFlagBits VulkanImage::getSampleCount() const
     return m_samples;
 }
 
-VkImageView VulkanImage::getImageView(s32 layer) const
+VkImageView VulkanImage::getImageView(s32 layer, VkImageAspectFlags aspect) const
 {
     if (layer == -1)
     {
-        ASSERT(m_generalImageView, "null handle");
-        return m_generalImageView;
+        ASSERT(m_generalImageView[convertVkImageAspectFlags(aspect ? aspect : m_aspectMask)], "null handle");
+        return m_generalImageView[convertVkImageAspectFlags(aspect ? aspect : m_aspectMask)];
     }
 
     ASSERT(m_imageView.empty(), "empty");
@@ -1245,10 +1287,13 @@ void VulkanImage::destroy()
         m_resolveImage = nullptr;
     }
 
-    if (m_generalImageView)
+    for (u32 i = 0; i < ImageAspect::ImageAspect_Count; ++i)
     {
-        VulkanWrapper::DestroyImageView(m_device, m_generalImageView, VULKAN_ALLOCATOR);
-        m_generalImageView = VK_NULL_HANDLE;
+        if (m_generalImageView[i])
+        {
+            VulkanWrapper::DestroyImageView(m_device, m_generalImageView[i], VULKAN_ALLOCATOR);
+            m_generalImageView[i] = VK_NULL_HANDLE;
+        }
     }
 
     for (auto& view : m_imageView)
@@ -1268,6 +1313,52 @@ void VulkanImage::destroy()
         VulkanWrapper::DestroyImage(m_device, m_image, VULKAN_ALLOCATOR);
         m_image = VK_NULL_HANDLE;
     }
+}
+
+VulkanImage::ImageAspect VulkanImage::convertVkImageAspectFlags(VkImageAspectFlags aspect)
+{
+    switch (aspect)
+    {
+    case VK_IMAGE_ASPECT_COLOR_BIT:
+        return ImageAspect::ImageAspect_Color;
+
+    case VK_IMAGE_ASPECT_DEPTH_BIT:
+        return ImageAspect::ImageAspect_Depth;
+
+    case VK_IMAGE_ASPECT_STENCIL_BIT:
+        return ImageAspect::ImageAspect_Stencil;
+
+    case VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT:
+        return ImageAspect::ImageAspect_DepthStencil;
+
+    default:
+        ASSERT(false, "not found");
+    }
+
+    return ImageAspect::ImageAspect_Color;
+}
+
+VkImageAspectFlags VulkanImage::convertImageAspectFlagsToVk(VulkanImage::ImageAspect aspect)
+{
+    switch (aspect)
+    {
+    case ImageAspect::ImageAspect_Color:
+        return VK_IMAGE_ASPECT_COLOR_BIT;
+
+    case ImageAspect::ImageAspect_Depth:
+        return VK_IMAGE_ASPECT_DEPTH_BIT;
+
+    case ImageAspect::ImageAspect_Stencil:
+        return VK_IMAGE_ASPECT_STENCIL_BIT;
+
+    case ImageAspect::ImageAspect_DepthStencil:
+        return VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT;
+
+    default:
+        ASSERT(false, "not found");
+    }
+
+    return VK_IMAGE_ASPECT_COLOR_BIT;
 }
 
 bool VulkanImage::createViewImage()
@@ -1303,21 +1394,55 @@ bool VulkanImage::createViewImage()
         return VK_IMAGE_VIEW_TYPE_2D;
     };
 
-    VkImageViewCreateInfo imageViewCreateInfo = {};
-    imageViewCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-    imageViewCreateInfo.pNext = nullptr;
-    imageViewCreateInfo.flags = 0;
-    imageViewCreateInfo.image = m_image;
-    imageViewCreateInfo.viewType = convertImageTypeToImageViewType(m_type, m_layersLevel == 6U, m_layersLevel > 1);
-    imageViewCreateInfo.format = m_format;
-    imageViewCreateInfo.components = { VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A };
-    imageViewCreateInfo.subresourceRange = VulkanImage::makeImageSubresourceRange(this);
-
-    VkResult result = VulkanWrapper::CreateImageView(m_device, &imageViewCreateInfo, VULKAN_ALLOCATOR, &m_generalImageView);
-    if (result != VK_SUCCESS)
+    switch (m_aspectMask)
     {
-        LOG_ERROR("VulkanImage::createViewImage vkCreateImageView is failed. Error: %s", ErrorString(result).c_str());
-        return false;
+        case VK_IMAGE_ASPECT_COLOR_BIT:
+        {
+            VkImageViewCreateInfo imageViewCreateInfo = {};
+            imageViewCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+            imageViewCreateInfo.pNext = nullptr;
+            imageViewCreateInfo.flags = 0;
+            imageViewCreateInfo.image = m_image;
+            imageViewCreateInfo.viewType = convertImageTypeToImageViewType(m_type, m_layersLevel == 6U, m_layersLevel > 1);
+            imageViewCreateInfo.format = m_format;
+            imageViewCreateInfo.components = { VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A };
+            imageViewCreateInfo.subresourceRange = VulkanImage::makeImageSubresourceRangeWithAspect(this, -1, -1, ImageAspect::ImageAspect_Color);
+
+            VkResult result = VulkanWrapper::CreateImageView(m_device, &imageViewCreateInfo, VULKAN_ALLOCATOR, &m_generalImageView[ImageAspect::ImageAspect_Color]);
+            if (result != VK_SUCCESS)
+            {
+                LOG_ERROR("VulkanImage::createViewImage vkCreateImageView is failed. Error: %s", ErrorString(result).c_str());
+                return false;
+            }
+        }
+        break;
+
+        case VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT:
+        {
+            for (u32 i = ImageAspect::ImageAspect_Depth; i <= ImageAspect::ImageAspect_DepthStencil; ++i)
+            {
+                VkImageViewCreateInfo imageViewCreateInfo = {};
+                imageViewCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+                imageViewCreateInfo.pNext = nullptr;
+                imageViewCreateInfo.flags = 0;
+                imageViewCreateInfo.image = m_image;
+                imageViewCreateInfo.viewType = convertImageTypeToImageViewType(m_type, m_layersLevel == 6U, m_layersLevel > 1);
+                imageViewCreateInfo.format = m_format;
+                imageViewCreateInfo.components = { VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A };
+                imageViewCreateInfo.subresourceRange = VulkanImage::makeImageSubresourceRangeWithAspect(this, -1, -1, (ImageAspect)i);
+
+                VkResult result = VulkanWrapper::CreateImageView(m_device, &imageViewCreateInfo, VULKAN_ALLOCATOR, &m_generalImageView[i]);
+                if (result != VK_SUCCESS)
+                {
+                    LOG_ERROR("VulkanImage::createViewImage vkCreateImageView is failed. Error: %s", ErrorString(result).c_str());
+                    return false;
+                }
+            }
+        }
+        break;
+
+        default:
+            break;
     }
 
     if (m_layersLevel > 1)

@@ -6,7 +6,7 @@ layout (location = 2) in vec3 inTang;
 layout (location = 3) in vec3 inBitang;
 layout (location = 4) in vec2 inUV;
 
-layout (set = 0, binding = 0, std140) uniform UBO 
+layout (set = 0, binding = 0, std140) uniform UBO
 {
 	mat4 projectionMatrix;
 	mat4 modelMatrix;
