@@ -237,15 +237,22 @@ void VulkanCommandBuffer::cmdBeginRenderpass(VulkanRenderPass* pass, VulkanFrame
     renderPassBeginInfo.clearValueCount = static_cast<u32>(clearValues.size());
     renderPassBeginInfo.pClearValues = clearValues.data();
 
-    VulkanWrapper::CmdBeginRenderPass(m_command, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+    VkSubpassBeginInfoKHR subpassBeginInfo = {};
+    subpassBeginInfo.sType = VK_STRUCTURE_TYPE_SUBPASS_BEGIN_INFO_KHR;
+    subpassBeginInfo.pNext = nullptr;
+    subpassBeginInfo.contents = VK_SUBPASS_CONTENTS_INLINE;
 
+    VulkanWrapper::CmdBeginRenderPass2(m_command, &renderPassBeginInfo, &subpassBeginInfo);
     m_isInsideRenderPass = true;
 }
 
 void VulkanCommandBuffer::cmdEndRenderPass()
 {
-    VulkanWrapper::CmdEndRenderPass(m_command);
+    VkSubpassEndInfoKHR subpassEndInfo = {};
+    subpassEndInfo.sType = VK_STRUCTURE_TYPE_SUBPASS_END_INFO_KHR;
+    subpassEndInfo.pNext = nullptr;
 
+    VulkanWrapper::CmdEndRenderPass2(m_command, &subpassEndInfo);
     m_isInsideRenderPass = false;
 }
 

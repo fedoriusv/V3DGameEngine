@@ -161,6 +161,7 @@ void VulkanDeviceCaps::fillCapabilitiesList(const DeviceInfo* info)
         return false;
     };
 
+    ASSERT(isEnableExtension(VK_KHR_CREATE_RENDERPASS_2_EXTENSION_NAME), "VK_KHR_create_renderpass2 not supported");
     enableSamplerMirrorClampToEdge = isEnableExtension(VK_KHR_SAMPLER_MIRROR_CLAMP_TO_EDGE_EXTENSION_NAME);
     supportDepthAutoResolve = isEnableExtension(VK_KHR_DEPTH_STENCIL_RESOLVE_EXTENSION_NAME);
 
@@ -179,7 +180,7 @@ void VulkanDeviceCaps::fillCapabilitiesList(const DeviceInfo* info)
 #endif // VK_KHR_depth_stencil_resolve
 
     VulkanWrapper::GetPhysicalDeviceProperties2(info->_physicalDevice, &physicalDeviceProperties);
-    memcpy(&physicalDeviceProperties.properties, &m_deviceProperties, sizeof(VkPhysicalDeviceProperties));
+    memcpy(&m_deviceProperties, &physicalDeviceProperties.properties, sizeof(VkPhysicalDeviceProperties));
 
     VulkanWrapper::GetPhysicalDeviceFeatures(info->_physicalDevice, &m_deviceFeatures);
     VulkanWrapper::GetPhysicalDeviceMemoryProperties(info->_physicalDevice, &m_deviceMemoryProps);

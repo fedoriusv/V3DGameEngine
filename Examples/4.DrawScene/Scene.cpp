@@ -379,10 +379,10 @@ void Scene::onLoad(v3d::renderer::CommandList & cmd)
 
             m_SimplePass.renderTarget = cmd.createObject<renderer::RenderTargetState>(m_size);
             m_SimplePass.colorTexture[0] = cmd.createObject<renderer::Texture2D>(
-                renderer::TextureUsage::TextureUsage_Attachment | renderer::TextureUsage::TextureUsage_Sampled, renderer::Format::Format_R8G8B8A8_UNorm, m_size, renderer::TextureSamples::TextureSamples_x1);
+                renderer::TextureUsage::TextureUsage_Attachment | renderer::TextureUsage::TextureUsage_Sampled | renderer::TextureUsage::TextureUsage_Resolve, renderer::Format::Format_R8G8B8A8_UNorm, m_size, renderer::TextureSamples::TextureSamples_x8);
             m_SimplePass.renderTarget->setColorTexture(0, m_SimplePass.colorTexture[0].get(), colorOpState, tansitionState);
             m_SimplePass.depthTexture = cmd.createObject<renderer::Texture2D>(
-                renderer::TextureUsage::TextureUsage_Attachment | renderer::TextureUsage::TextureUsage_Sampled, renderer::Format::Format_D32_SFloat_S8_UInt, m_size, renderer::TextureSamples::TextureSamples_x1);
+                renderer::TextureUsage::TextureUsage_Attachment | renderer::TextureUsage::TextureUsage_Sampled | renderer::TextureUsage::TextureUsage_Resolve, renderer::Format::Format_D32_SFloat_S8_UInt, m_size, renderer::TextureSamples::TextureSamples_x8);
             m_SimplePass.renderTarget->setDepthStencilTexture(m_SimplePass.depthTexture.get(), depthOpState, stencilOpState, tansitionState);
 
             renderer::Shader* vertShader = resource::ResourceLoaderManager::getInstance()->loadShader<renderer::Shader, resource::ShaderSourceFileLoader>(cmd.getContext(), "shaders/simple.vert");
