@@ -30,8 +30,17 @@
     Macro(vkSubmitDebugUtilsMessageEXT)
 #endif //VK_EXT_debug_utils
 
+#ifdef VK_KHR_create_renderpass2
+#define ENUM_VK_CREATE_RENDERPASS2_FUNCTIONS(Macro) \
+    Macro(vkCreateRenderPass2KHR) \
+    Macro(vkCmdBeginRenderPass2KHR) \
+    Macro(vkCmdNextSubpass2KHR) \
+    Macro(vkCmdEndRenderPass2KHR)
+#endif // VK_KHR_create_renderpass2
+
 #define ENUM_VK_ALL_FUNCTIONS(Macro) \
-        ENUM_VK_DEBUG_UTILS_FUNCTIONS(Macro)
+        ENUM_VK_DEBUG_UTILS_FUNCTIONS(Macro) \
+        ENUM_VK_CREATE_RENDERPASS2_FUNCTIONS(Macro)
 
 #define DECLARE_VK_FUNCTIONS(Func) extern PFN_##Func Func;
 

@@ -730,86 +730,226 @@ void VulkanWrapper::CmdExecuteCommands(VkCommandBuffer commandBuffer, uint32_t c
     vkCmdExecuteCommands(commandBuffer, commandBufferCount, pCommandBuffers);
 }
 
+VkResult VulkanWrapper::EnumerateInstanceVersion(uint32_t * pApiVersion) noexcept
+{
+    return vkEnumerateInstanceVersion(pApiVersion);
+}
+
+VkResult VulkanWrapper::BindBufferMemory2(VkDevice device, uint32_t bindInfoCount, const VkBindBufferMemoryInfo * pBindInfos) noexcept
+{
+    return vkBindBufferMemory2(device, bindInfoCount, pBindInfos);
+}
+
+VkResult VulkanWrapper::BindImageMemory2(VkDevice device, uint32_t bindInfoCount, const VkBindImageMemoryInfo * pBindInfos) noexcept
+{
+    return vkBindImageMemory2(device, bindInfoCount, pBindInfos);
+}
+
+void VulkanWrapper::GetDeviceGroupPeerMemoryFeatures(VkDevice device, uint32_t heapIndex, uint32_t localDeviceIndex, uint32_t remoteDeviceIndex, VkPeerMemoryFeatureFlags * pPeerMemoryFeatures) noexcept
+{
+    vkGetDeviceGroupPeerMemoryFeatures(device, heapIndex, localDeviceIndex, remoteDeviceIndex, pPeerMemoryFeatures);
+}
+
+void VulkanWrapper::CmdSetDeviceMask(VkCommandBuffer commandBuffer, uint32_t deviceMask) noexcept
+{
+    vkCmdSetDeviceMask(commandBuffer, deviceMask);
+}
+
+void VulkanWrapper::CmdDispatchBase(VkCommandBuffer commandBuffer, uint32_t baseGroupX, uint32_t baseGroupY, uint32_t baseGroupZ, uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ) noexcept
+{
+    vkCmdDispatchBase(commandBuffer, baseGroupX, baseGroupY, baseGroupZ, groupCountX, groupCountY, groupCountZ);
+}
+
+VkResult VulkanWrapper::EnumeratePhysicalDeviceGroups(VkInstance instance, uint32_t * pPhysicalDeviceGroupCount, VkPhysicalDeviceGroupProperties * pPhysicalDeviceGroupProperties) noexcept
+{
+    return vkEnumeratePhysicalDeviceGroups(instance, pPhysicalDeviceGroupCount, pPhysicalDeviceGroupProperties);
+}
+
+void VulkanWrapper::GetImageMemoryRequirements2(VkDevice device, const VkImageMemoryRequirementsInfo2 * pInfo, VkMemoryRequirements2 * pMemoryRequirements) noexcept
+{
+    vkGetImageMemoryRequirements2(device, pInfo, pMemoryRequirements);
+}
+
+void VulkanWrapper::GetBufferMemoryRequirements2(VkDevice device, const VkBufferMemoryRequirementsInfo2 * pInfo, VkMemoryRequirements2 * pMemoryRequirements) noexcept
+{
+    vkGetBufferMemoryRequirements2(device, pInfo, pMemoryRequirements);
+}
+
+void VulkanWrapper::GetImageSparseMemoryRequirements2(VkDevice device, const VkImageSparseMemoryRequirementsInfo2 * pInfo, uint32_t * pSparseMemoryRequirementCount, VkSparseImageMemoryRequirements2 * pSparseMemoryRequirements) noexcept
+{
+    vkGetImageSparseMemoryRequirements2(device, pInfo, pSparseMemoryRequirementCount, pSparseMemoryRequirements);
+}
+
+void VulkanWrapper::GetPhysicalDeviceFeatures2(VkPhysicalDevice physicalDevice, VkPhysicalDeviceFeatures2 * pFeatures) noexcept
+{
+    vkGetPhysicalDeviceFeatures2(physicalDevice, pFeatures);
+}
+
+void VulkanWrapper::GetPhysicalDeviceProperties2(VkPhysicalDevice physicalDevice, VkPhysicalDeviceProperties2 * pProperties) noexcept
+{
+    vkGetPhysicalDeviceProperties2(physicalDevice, pProperties);
+}
+
+void VulkanWrapper::GetPhysicalDeviceFormatProperties2(VkPhysicalDevice physicalDevice, VkFormat format, VkFormatProperties2 * pFormatProperties) noexcept
+{
+    vkGetPhysicalDeviceFormatProperties2(physicalDevice, format, pFormatProperties);
+}
+
+VkResult VulkanWrapper::GetPhysicalDeviceImageFormatProperties2(VkPhysicalDevice physicalDevice, const VkPhysicalDeviceImageFormatInfo2 * pImageFormatInfo, VkImageFormatProperties2 * pImageFormatProperties) noexcept
+{
+    return vkGetPhysicalDeviceImageFormatProperties2(physicalDevice, pImageFormatInfo, pImageFormatProperties);
+}
+
+void VulkanWrapper::GetPhysicalDeviceQueueFamilyProperties2(VkPhysicalDevice physicalDevice, uint32_t * pQueueFamilyPropertyCount, VkQueueFamilyProperties2 * pQueueFamilyProperties) noexcept
+{
+    vkGetPhysicalDeviceQueueFamilyProperties2(physicalDevice, pQueueFamilyPropertyCount, pQueueFamilyProperties);
+}
+
+void VulkanWrapper::GetPhysicalDeviceMemoryProperties2(VkPhysicalDevice physicalDevice, VkPhysicalDeviceMemoryProperties2 * pMemoryProperties) noexcept
+{
+    vkGetPhysicalDeviceMemoryProperties2(physicalDevice, pMemoryProperties);
+}
+
+void VulkanWrapper::GetPhysicalDeviceSparseImageFormatProperties2(VkPhysicalDevice physicalDevice, const VkPhysicalDeviceSparseImageFormatInfo2 * pFormatInfo, uint32_t * pPropertyCount, VkSparseImageFormatProperties2 * pProperties) noexcept
+{
+    vkGetPhysicalDeviceSparseImageFormatProperties2(physicalDevice, pFormatInfo, pPropertyCount, pProperties);
+}
+
+void VulkanWrapper::TrimCommandPool(VkDevice device, VkCommandPool commandPool, VkCommandPoolTrimFlags flags) noexcept
+{
+    vkTrimCommandPool(device, commandPool, flags);
+}
+
+void VulkanWrapper::GetDeviceQueue2(VkDevice device, const VkDeviceQueueInfo2 * pQueueInfo, VkQueue * pQueue) noexcept
+{
+    vkGetDeviceQueue2(device, pQueueInfo, pQueue);
+}
+
+VkResult VulkanWrapper::CreateSamplerYcbcrConversion(VkDevice device, const VkSamplerYcbcrConversionCreateInfo * pCreateInfo, const VkAllocationCallbacks * pAllocator, VkSamplerYcbcrConversion * pYcbcrConversion) noexcept
+{
+    return vkCreateSamplerYcbcrConversion(device, pCreateInfo, pAllocator, pYcbcrConversion);
+}
+
+void VulkanWrapper::DestroySamplerYcbcrConversion(VkDevice device, VkSamplerYcbcrConversion ycbcrConversion, const VkAllocationCallbacks * pAllocator) noexcept
+{
+    vkDestroySamplerYcbcrConversion(device, ycbcrConversion, pAllocator);
+}
+
+VkResult VulkanWrapper::CreateDescriptorUpdateTemplate(VkDevice device, const VkDescriptorUpdateTemplateCreateInfo * pCreateInfo, const VkAllocationCallbacks * pAllocator, VkDescriptorUpdateTemplate * pDescriptorUpdateTemplate) noexcept
+{
+    return vkCreateDescriptorUpdateTemplate(device, pCreateInfo, pAllocator, pDescriptorUpdateTemplate);
+}
+
+void VulkanWrapper::DestroyDescriptorUpdateTemplate(VkDevice device, VkDescriptorUpdateTemplate descriptorUpdateTemplate, const VkAllocationCallbacks * pAllocator) noexcept
+{
+    vkDestroyDescriptorUpdateTemplate(device, descriptorUpdateTemplate, pAllocator);
+}
+
+void VulkanWrapper::UpdateDescriptorSetWithTemplate(VkDevice device, VkDescriptorSet descriptorSet, VkDescriptorUpdateTemplate descriptorUpdateTemplate, const void * pData) noexcept
+{
+    vkUpdateDescriptorSetWithTemplate(device, descriptorSet, descriptorUpdateTemplate, pData);
+}
+
+void VulkanWrapper::GetPhysicalDeviceExternalBufferProperties(VkPhysicalDevice physicalDevice, const VkPhysicalDeviceExternalBufferInfo * pExternalBufferInfo, VkExternalBufferProperties * pExternalBufferProperties) noexcept
+{
+    vkGetPhysicalDeviceExternalBufferProperties(physicalDevice, pExternalBufferInfo, pExternalBufferProperties);
+}
+
+void VulkanWrapper::GetPhysicalDeviceExternalFenceProperties(VkPhysicalDevice physicalDevice, const VkPhysicalDeviceExternalFenceInfo * pExternalFenceInfo, VkExternalFenceProperties * pExternalFenceProperties) noexcept
+{
+    vkGetPhysicalDeviceExternalFenceProperties(physicalDevice, pExternalFenceInfo, pExternalFenceProperties);
+}
+
+void VulkanWrapper::GetPhysicalDeviceExternalSemaphoreProperties(VkPhysicalDevice physicalDevice, const VkPhysicalDeviceExternalSemaphoreInfo * pExternalSemaphoreInfo, VkExternalSemaphoreProperties * pExternalSemaphoreProperties) noexcept
+{
+    vkGetPhysicalDeviceExternalSemaphoreProperties(physicalDevice, pExternalSemaphoreInfo, pExternalSemaphoreProperties);
+}
+
+void VulkanWrapper::GetDescriptorSetLayoutSupport(VkDevice device, const VkDescriptorSetLayoutCreateInfo * pCreateInfo, VkDescriptorSetLayoutSupport * pSupport) noexcept
+{
+    vkGetDescriptorSetLayoutSupport(device, pCreateInfo, pSupport);
+}
+
 #ifdef VK_KHR_surface
-void VulkanWrapper::DestroySurfaceKHR(VkInstance instance, VkSurfaceKHR surface, const VkAllocationCallbacks * pAllocator) noexcept
+void VulkanWrapper::DestroySurface(VkInstance instance, VkSurfaceKHR surface, const VkAllocationCallbacks * pAllocator) noexcept
 {
     vkDestroySurfaceKHR(instance, surface, pAllocator);
 }
 
-VkResult VulkanWrapper::GetPhysicalDeviceSurfaceSupportKHR(VkPhysicalDevice physicalDevice, uint32_t queueFamilyIndex, VkSurfaceKHR surface, VkBool32 * pSupported) noexcept
+VkResult VulkanWrapper::GetPhysicalDeviceSurfaceSupport(VkPhysicalDevice physicalDevice, uint32_t queueFamilyIndex, VkSurfaceKHR surface, VkBool32 * pSupported) noexcept
 {
     return vkGetPhysicalDeviceSurfaceSupportKHR(physicalDevice, queueFamilyIndex, surface, pSupported);
 }
 
-VkResult VulkanWrapper::GetPhysicalDeviceSurfaceCapabilitiesKHR(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface, VkSurfaceCapabilitiesKHR * pSurfaceCapabilities) noexcept
+VkResult VulkanWrapper::GetPhysicalDeviceSurfaceCapabilities(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface, VkSurfaceCapabilitiesKHR * pSurfaceCapabilities) noexcept
 {
     return vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physicalDevice, surface, pSurfaceCapabilities);
 }
 
-VkResult VulkanWrapper::GetPhysicalDeviceSurfaceFormatsKHR(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface, uint32_t * pSurfaceFormatCount, VkSurfaceFormatKHR * pSurfaceFormats) noexcept
+VkResult VulkanWrapper::GetPhysicalDeviceSurfaceFormats(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface, uint32_t * pSurfaceFormatCount, VkSurfaceFormatKHR * pSurfaceFormats) noexcept
 {
     return vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, surface, pSurfaceFormatCount, pSurfaceFormats);
 }
 
-VkResult VulkanWrapper::GetPhysicalDeviceSurfacePresentModesKHR(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface, uint32_t * pPresentModeCount, VkPresentModeKHR * pPresentModes) noexcept
+VkResult VulkanWrapper::GetPhysicalDeviceSurfacePresentModes(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface, uint32_t * pPresentModeCount, VkPresentModeKHR * pPresentModes) noexcept
 {
     return vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, surface, pPresentModeCount, pPresentModes);
 }
 #endif //VK_KHR_surface
 
 #ifdef VK_KHR_win32_surface
-VkResult VulkanWrapper::CreateWin32SurfaceKHR(VkInstance instance, const VkWin32SurfaceCreateInfoKHR * pCreateInfo, const VkAllocationCallbacks * pAllocator, VkSurfaceKHR * pSurface) noexcept
+VkResult VulkanWrapper::CreateWin32Surface(VkInstance instance, const VkWin32SurfaceCreateInfoKHR * pCreateInfo, const VkAllocationCallbacks * pAllocator, VkSurfaceKHR * pSurface) noexcept
 {
     return vkCreateWin32SurfaceKHR(instance, pCreateInfo, pAllocator, pSurface);
 }
-VkBool32 VulkanWrapper::GetPhysicalDeviceWin32PresentationSupportKHR(VkPhysicalDevice physicalDevice, uint32_t queueFamilyIndex) noexcept
+VkBool32 VulkanWrapper::GetPhysicalDeviceWin32PresentationSupport(VkPhysicalDevice physicalDevice, uint32_t queueFamilyIndex) noexcept
 {
     return vkGetPhysicalDeviceWin32PresentationSupportKHR(physicalDevice, queueFamilyIndex);
 }
 #endif //VK_KHR_win32_surface
 
 #ifdef VK_KHR_swapchain
-VkResult VulkanWrapper::CreateSwapchainKHR(VkDevice device, const VkSwapchainCreateInfoKHR * pCreateInfo, const VkAllocationCallbacks * pAllocator, VkSwapchainKHR * pSwapchain) noexcept
+VkResult VulkanWrapper::CreateSwapchain(VkDevice device, const VkSwapchainCreateInfoKHR * pCreateInfo, const VkAllocationCallbacks * pAllocator, VkSwapchainKHR * pSwapchain) noexcept
 {
     return vkCreateSwapchainKHR(device, pCreateInfo, pAllocator, pSwapchain);
 }
 
-void VulkanWrapper::DestroySwapchainKHR(VkDevice device, VkSwapchainKHR swapchain, const VkAllocationCallbacks * pAllocator) noexcept
+void VulkanWrapper::DestroySwapchain(VkDevice device, VkSwapchainKHR swapchain, const VkAllocationCallbacks * pAllocator) noexcept
 {
     vkDestroySwapchainKHR(device, swapchain, pAllocator);
 }
 
-VkResult VulkanWrapper::GetSwapchainImagesKHR(VkDevice device, VkSwapchainKHR swapchain, uint32_t * pSwapchainImageCount, VkImage * pSwapchainImages) noexcept
+VkResult VulkanWrapper::GetSwapchainImages(VkDevice device, VkSwapchainKHR swapchain, uint32_t * pSwapchainImageCount, VkImage * pSwapchainImages) noexcept
 {
     return vkGetSwapchainImagesKHR(device, swapchain, pSwapchainImageCount, pSwapchainImages);
 }
 
-VkResult VulkanWrapper::AcquireNextImageKHR(VkDevice device, VkSwapchainKHR swapchain, uint64_t timeout, VkSemaphore semaphore, VkFence fence, uint32_t * pImageIndex) noexcept
+VkResult VulkanWrapper::AcquireNextImage(VkDevice device, VkSwapchainKHR swapchain, uint64_t timeout, VkSemaphore semaphore, VkFence fence, uint32_t * pImageIndex) noexcept
 {
     return vkAcquireNextImageKHR(device, swapchain, timeout, semaphore, fence, pImageIndex);
 }
 
-VkResult VulkanWrapper::QueuePresentKHR(VkQueue queue, const VkPresentInfoKHR * pPresentInfo) noexcept
+VkResult VulkanWrapper::QueuePresent(VkQueue queue, const VkPresentInfoKHR * pPresentInfo) noexcept
 {
     return vkQueuePresentKHR(queue, pPresentInfo);
 }
 
-VkResult VulkanWrapper::GetDeviceGroupPresentCapabilitiesKHR(VkDevice device, VkDeviceGroupPresentCapabilitiesKHR * pDeviceGroupPresentCapabilities) noexcept
+VkResult VulkanWrapper::GetDeviceGroupPresentCapabilities(VkDevice device, VkDeviceGroupPresentCapabilitiesKHR * pDeviceGroupPresentCapabilities) noexcept
 {
     return vkGetDeviceGroupPresentCapabilitiesKHR(device, pDeviceGroupPresentCapabilities);
 }
 
-VkResult VulkanWrapper::GetDeviceGroupSurfacePresentModesKHR(VkDevice device, VkSurfaceKHR surface, VkDeviceGroupPresentModeFlagsKHR * pModes) noexcept
+VkResult VulkanWrapper::GetDeviceGroupSurfacePresentModes(VkDevice device, VkSurfaceKHR surface, VkDeviceGroupPresentModeFlagsKHR * pModes) noexcept
 {
     return vkGetDeviceGroupSurfacePresentModesKHR(device, surface, pModes);
 }
 
-VkResult VulkanWrapper::GetPhysicalDevicePresentRectanglesKHR(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface, uint32_t * pRectCount, VkRect2D * pRects) noexcept
+VkResult VulkanWrapper::GetPhysicalDevicePresentRectangles(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface, uint32_t * pRectCount, VkRect2D * pRects) noexcept
 {
     return vkGetPhysicalDevicePresentRectanglesKHR(physicalDevice, surface, pRectCount, pRects);
 }
 
-VkResult VulkanWrapper::AcquireNextImage2KHR(VkDevice device, const VkAcquireNextImageInfoKHR * pAcquireInfo, uint32_t * pImageIndex) noexcept
+VkResult VulkanWrapper::AcquireNextImage2(VkDevice device, const VkAcquireNextImageInfoKHR * pAcquireInfo, uint32_t * pImageIndex) noexcept
 {
     return vkAcquireNextImage2KHR(device, pAcquireInfo, pImageIndex);
 }
@@ -871,6 +1011,28 @@ void VulkanWrapper::SubmitDebugUtilsMessageEXT(VkInstance instance, VkDebugUtils
     vkSubmitDebugUtilsMessageEXT(instance, messageSeverity, messageTypes, pCallbackData);
 }
 #endif //VK_EXT_debug_utils
+
+#ifdef VK_KHR_create_renderpass2
+VkResult VulkanWrapper::CreateRenderPass2(VkDevice device, const VkRenderPassCreateInfo2KHR * pCreateInfo, const VkAllocationCallbacks * pAllocator, VkRenderPass * pRenderPass) noexcept
+{
+    return vkCreateRenderPass2KHR(device, pCreateInfo, pAllocator, pRenderPass);
+}
+
+void VulkanWrapper::CmdBeginRenderPass2(VkCommandBuffer commandBuffer, const VkRenderPassBeginInfo * pRenderPassBegin, const VkSubpassBeginInfoKHR * pSubpassBeginInfo) noexcept
+{
+    vkCmdBeginRenderPass2KHR(commandBuffer, pRenderPassBegin, pSubpassBeginInfo);
+}
+
+void VulkanWrapper::CmdNextSubpass2(VkCommandBuffer commandBuffer, const VkSubpassBeginInfoKHR * pSubpassBeginInfo, const VkSubpassEndInfoKHR * pSubpassEndInfo) noexcept
+{
+    vkCmdNextSubpass2KHR(commandBuffer, pSubpassBeginInfo, pSubpassEndInfo);
+}
+
+void VulkanWrapper::CmdEndRenderPass2(VkCommandBuffer commandBuffer, const VkSubpassEndInfoKHR * pSubpassEndInfo) noexcept
+{
+    vkCmdEndRenderPass2KHR(commandBuffer, pSubpassEndInfo);
+}
+#endif // VK_KHR_create_renderpass2
 
 } //namespace vk
 } //namespace renderer

@@ -24,6 +24,7 @@ namespace vk
         bool individuallyResetForCommandBuffers;
         bool supportDeviceCoherentMemory;
         bool supportHostCoherentMemory;
+        bool supportDepthAutoResolve;
 
         bool useDynamicUniforms;
         bool unifiedMemoryManager;

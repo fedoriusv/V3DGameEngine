@@ -146,9 +146,44 @@ const VkPhysicalDeviceFeatures & VulkanDeviceCaps::getPhysicalDeviceFeatures() c
 void VulkanDeviceCaps::fillCapabilitiesList(const DeviceInfo* info)
 {
     ASSERT(info->_physicalDevice != VK_NULL_HANDLE, "PhysicalDevice is nullptr");
-    VulkanWrapper::GetPhysicalDeviceProperties(info->_physicalDevice, &m_deviceProperties);
+
+    //extetions
+    auto isEnableExtension = [](const c8* extension) -> bool
+    {
+        for (auto& iter : s_enableExtensions)
+        {
+            if (strcmp(extension, iter))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    };
+
+    enableSamplerMirrorClampToEdge = isEnableExtension(VK_KHR_SAMPLER_MIRROR_CLAMP_TO_EDGE_EXTENSION_NAME);
+    supportDepthAutoResolve = isEnableExtension(VK_KHR_DEPTH_STENCIL_RESOLVE_EXTENSION_NAME);
+
+#ifdef VK_KHR_depth_stencil_resolve
+    VkPhysicalDeviceDepthStencilResolvePropertiesKHR physicalDeviceDepthStencilResolveProperties = {};
+    physicalDeviceDepthStencilResolveProperties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEPTH_STENCIL_RESOLVE_PROPERTIES_KHR;
+    physicalDeviceDepthStencilResolveProperties.pNext = nullptr;
+#endif // VK_KHR_depth_stencil_resolve
+
+    VkPhysicalDeviceProperties2 physicalDeviceProperties = {};
+    physicalDeviceProperties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
+#ifdef VK_KHR_depth_stencil_resolve
+    physicalDeviceProperties.pNext = &physicalDeviceDepthStencilResolveProperties;
+#else
+    physicalDeviceProperties.pNext = nullptr;
+#endif // VK_KHR_depth_stencil_resolve
+
+    VulkanWrapper::GetPhysicalDeviceProperties2(info->_physicalDevice, &physicalDeviceProperties);
+    memcpy(&physicalDeviceProperties.properties, &m_deviceProperties, sizeof(VkPhysicalDeviceProperties));
+
     VulkanWrapper::GetPhysicalDeviceFeatures(info->_physicalDevice, &m_deviceFeatures);
     VulkanWrapper::GetPhysicalDeviceMemoryProperties(info->_physicalDevice, &m_deviceMemoryProps);
+
 
     LOG_INFO("VulkanDeviceCaps::initialize:  memoryHeapCount is %d", m_deviceMemoryProps.memoryHeapCount);
     for (u32 i = 0; i < m_deviceMemoryProps.memoryHeapCount; ++i)
@@ -232,9 +267,6 @@ void VulkanDeviceCaps::initialize()
     ASSERT(k_maxVertexInputBindings <= m_deviceProperties.limits.maxVertexInputBindings, "maxVertexInputBindings less than k_maxVertexInputBindings");
 
     useGlobalDescriptorPool = true;
-
-    //extetions
-    enableSamplerMirrorClampToEdge = std::find(s_enableExtensions.cbegin(), s_enableExtensions.cend(), VK_KHR_SAMPLER_MIRROR_CLAMP_TO_EDGE_EXTENSION_NAME) != s_enableExtensions.cend();
 }
 
 } //namespace vk

@@ -49,6 +49,7 @@ const std::vector<const c8*> k_deviceExtensionsList =
 {
     VK_KHR_SWAPCHAIN_EXTENSION_NAME,
     VK_KHR_SAMPLER_MIRROR_CLAMP_TO_EDGE_EXTENSION_NAME,
+    VK_KHR_DEPTH_STENCIL_RESOLVE_EXTENSION_NAME,
 };
 
 
@@ -1067,6 +1068,36 @@ bool VulkanGraphicContext::createDevice()
     LOG_INFO("VulkanGraphicContext::createDevice: count GPU: %u, use first", gpuCount);
     m_deviceInfo._physicalDevice = physicalDevices.front();
 
+    std::vector<std::string> supportedExtensions;
+    VulkanDeviceCaps::listOfDeviceExtensions(m_deviceInfo._physicalDevice, supportedExtensions);
+#if VULKAN_DEBUG
+    for (auto iter = supportedExtensions.cbegin(); iter != supportedExtensions.cend(); ++iter)
+    {
+        LOG_INFO("VulkanGraphicContext::createDevice: extention: [%s]", (*iter).c_str());
+    }
+#endif //VULKAN_DEBUG
+    std::vector<const c8*> enabledExtensions;
+    for (auto extentionName = k_deviceExtensionsList.cbegin(); extentionName != k_deviceExtensionsList.cend(); ++extentionName)
+    {
+        bool found = false;
+        for (auto iter = supportedExtensions.cbegin(); iter != supportedExtensions.cend(); ++iter)
+        {
+            if (!(*iter).compare(*extentionName))
+            {
+                LOG_INFO("VulkanGraphicContext::createDevice: enable extention: [%s]", (*iter).c_str());
+                enabledExtensions.push_back(*extentionName);
+                found = true;
+                break;
+            }
+        }
+
+        if (!found)
+        {
+            LOG_ERROR("VulkanGraphicContext::createDevice: extention [%s] is not supported", *extentionName);
+        }
+    }
+    VulkanDeviceCaps::s_enableExtensions = enabledExtensions;
+
     m_deviceCaps.fillCapabilitiesList(&m_deviceInfo);
 
     u32 familyIndex = m_deviceCaps.getQueueFamiliyIndex(VK_QUEUE_GRAPHICS_BIT);
@@ -1098,36 +1129,6 @@ bool VulkanGraphicContext::createDevice()
 
         queueCreateInfos.push_back(queueInfo);
     }
-
-    std::vector<std::string> supportedExtensions;
-    VulkanDeviceCaps::listOfDeviceExtensions(m_deviceInfo._physicalDevice, supportedExtensions);
-#if VULKAN_DEBUG
-    for (auto iter = supportedExtensions.cbegin(); iter != supportedExtensions.cend(); ++iter)
-    {
-        LOG_INFO("VulkanGraphicContext::createDevice: extention: [%s]", (*iter).c_str());
-    }
-#endif //VULKAN_DEBUG
-    std::vector<const c8*> enabledExtensions;
-    for (auto extentionName = k_deviceExtensionsList.cbegin(); extentionName != k_deviceExtensionsList.cend(); ++extentionName)
-    {
-        bool found = false;
-        for (auto iter = supportedExtensions.cbegin(); iter != supportedExtensions.cend(); ++iter)
-        {
-            if (!(*iter).compare(*extentionName))
-            {
-                LOG_INFO("VulkanGraphicContext::createDevice: enable extention: [%s]", (*iter).c_str());
-                enabledExtensions.push_back(*extentionName);
-                found = true;
-                break;
-            }
-        }
-
-        if (!found)
-        {
-            LOG_ERROR("VulkanGraphicContext::createDevice: extention [%s] is not supported", *extentionName);
-        }
-    }
-    VulkanDeviceCaps::s_enableExtensions = enabledExtensions;
 
     VkDeviceCreateInfo deviceCreateInfo = {};
     deviceCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;

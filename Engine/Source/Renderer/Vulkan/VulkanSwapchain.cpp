@@ -22,7 +22,7 @@ bool createSurfaceWinApi(VkInstance vkInstance, NativeInstance hInstance, Native
     surfaceCreateInfo.hinstance = hInstance;
     surfaceCreateInfo.hwnd = hWnd;
 
-    VkResult result = VulkanWrapper::CreateWin32SurfaceKHR(vkInstance, &surfaceCreateInfo, VULKAN_ALLOCATOR, &surface);
+    VkResult result = VulkanWrapper::CreateWin32Surface(vkInstance, &surfaceCreateInfo, VULKAN_ALLOCATOR, &surface);
     if (result != VK_SUCCESS)
     {
         LOG_FATAL("createSurfaceWinApi: vkCreateWin32SurfaceKHR. Error %s", ErrorString(result).c_str());
@@ -77,14 +77,14 @@ VkSurfaceKHR VulkanSwapchain::createSurface(VkInstance vkInstance, NativeInstanc
 
 void VulkanSwapchain::detroySurface(VkInstance vkInstance, VkSurfaceKHR surface)
 {
-    VulkanWrapper::DestroySurfaceKHR(vkInstance, surface, VULKAN_ALLOCATOR);
+    VulkanWrapper::DestroySurface(vkInstance, surface, VULKAN_ALLOCATOR);
 }
 
 bool VulkanSwapchain::create(const SwapchainConfig& config)
 {
     LOG_DEBUG("VulkanSwapchain::create");
 
-    VkResult result = VulkanWrapper::GetPhysicalDeviceSurfaceCapabilitiesKHR(m_deviceInfo->_physicalDevice, m_surface, &m_surfaceCaps);
+    VkResult result = VulkanWrapper::GetPhysicalDeviceSurfaceCapabilities(m_deviceInfo->_physicalDevice, m_surface, &m_surfaceCaps);
     if (result != VK_SUCCESS)
     {
         LOG_ERROR("VulkanSwapchain::create: vkGetPhysicalDeviceSurfaceCapabilitiesKHR. Error %s", ErrorString(result).c_str());
@@ -106,7 +106,7 @@ bool VulkanSwapchain::create(const SwapchainConfig& config)
     }
 
     VkBool32 supportsPresentation = false;
-    VulkanWrapper::GetPhysicalDeviceSurfaceSupportKHR(m_deviceInfo->_physicalDevice, m_deviceInfo->_queueFamilyIndex, m_surface, &supportsPresentation);
+    VulkanWrapper::GetPhysicalDeviceSurfaceSupport(m_deviceInfo->_physicalDevice, m_deviceInfo->_queueFamilyIndex, m_surface, &supportsPresentation);
     if (!supportsPresentation)
     {
         LOG_ERROR("VulkanSwapchain::create: not support presentation");
@@ -115,7 +115,7 @@ bool VulkanSwapchain::create(const SwapchainConfig& config)
 
     //Get Surface format
     u32 surfaceFormatCount;
-    result = VulkanWrapper::GetPhysicalDeviceSurfaceFormatsKHR(m_deviceInfo->_physicalDevice, m_surface, &surfaceFormatCount, nullptr);
+    result = VulkanWrapper::GetPhysicalDeviceSurfaceFormats(m_deviceInfo->_physicalDevice, m_surface, &surfaceFormatCount, nullptr);
     if (result != VK_SUCCESS)
     {
         LOG_ERROR("VulkanSwapchain::create: vkGetPhysicalDeviceSurfaceFormatsKHR. Error %s", ErrorString(result).c_str());
@@ -123,7 +123,7 @@ bool VulkanSwapchain::create(const SwapchainConfig& config)
     }
 
     std::vector<VkSurfaceFormatKHR> surfaceFormats(surfaceFormatCount);
-    result = VulkanWrapper::GetPhysicalDeviceSurfaceFormatsKHR(m_deviceInfo->_physicalDevice, m_surface, &surfaceFormatCount, surfaceFormats.data());
+    result = VulkanWrapper::GetPhysicalDeviceSurfaceFormats(m_deviceInfo->_physicalDevice, m_surface, &surfaceFormatCount, surfaceFormats.data());
     if (result != VK_SUCCESS)
     {
         LOG_ERROR("VulkanSwapchain::create: vkGetPhysicalDeviceSurfaceFormatsKHR. Error %s", ErrorString(result).c_str());
@@ -192,10 +192,10 @@ bool VulkanSwapchain::createSwapchain(const SwapchainConfig& config)
 
     // Select a present mode for the swapchain
     u32 presentModeCount = 0;
-    VulkanWrapper::GetPhysicalDeviceSurfacePresentModesKHR(m_deviceInfo->_physicalDevice, m_surface, &presentModeCount, nullptr);
+    VulkanWrapper::GetPhysicalDeviceSurfacePresentModes(m_deviceInfo->_physicalDevice, m_surface, &presentModeCount, nullptr);
 
     std::vector<VkPresentModeKHR> presentModes(presentModeCount);
-    VulkanWrapper::GetPhysicalDeviceSurfacePresentModesKHR(m_deviceInfo->_physicalDevice, m_surface, &presentModeCount, presentModes.data());
+    VulkanWrapper::GetPhysicalDeviceSurfacePresentModes(m_deviceInfo->_physicalDevice, m_surface, &presentModeCount, presentModes.data());
 
     // The VK_PRESENT_MODE_FIFO_KHR mode must always be present as per spec
     // This mode waits for the vertical blank ("v-sync")
@@ -268,7 +268,7 @@ bool VulkanSwapchain::createSwapchain(const SwapchainConfig& config)
     swapChainInfo.clipped = VK_TRUE; // Setting clipped to VK_TRUE allows the implementation to discard rendering outside of the surface area
     swapChainInfo.compositeAlpha = (m_surfaceCaps.supportedCompositeAlpha & VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR) ? VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR : VK_COMPOSITE_ALPHA_INHERIT_BIT_KHR;;
 
-    VkResult result = VulkanWrapper::CreateSwapchainKHR(m_deviceInfo->_device, &swapChainInfo, VULKAN_ALLOCATOR, &m_swapchain);
+    VkResult result = VulkanWrapper::CreateSwapchain(m_deviceInfo->_device, &swapChainInfo, VULKAN_ALLOCATOR, &m_swapchain);
     if (result != VK_SUCCESS)
     {
         LOG_FATAL("VulkanSwapchain::createSwapChain: vkCreateSwapchainKHR. Error %s", ErrorString(result).c_str());
@@ -345,7 +345,7 @@ void VulkanSwapchain::destroy()
     m_swapBuffers.clear();
 
 
-    VulkanWrapper::DestroySwapchainKHR(m_deviceInfo->_device, m_swapchain, VULKAN_ALLOCATOR);
+    VulkanWrapper::DestroySwapchain(m_deviceInfo->_device, m_swapchain, VULKAN_ALLOCATOR);
     m_swapchain = VK_NULL_HANDLE;
 }
 
@@ -373,7 +373,7 @@ void VulkanSwapchain::present(VkQueue queue, const std::vector<VkSemaphore>& wai
     presentInfoKHR.pImageIndices = &m_currentImageIndex;
     presentInfoKHR.pResults = innerResults;
 
-    VkResult result = VulkanWrapper::QueuePresentKHR(queue, &presentInfoKHR);
+    VkResult result = VulkanWrapper::QueuePresent(queue, &presentInfoKHR);
     if (result != VK_SUCCESS)
     {
         //TODO:
@@ -388,7 +388,7 @@ u32 VulkanSwapchain::acquireImage()
     VkFence fence = VK_NULL_HANDLE;
 
     u32 imageIndex = 0;
-    VkResult result = VulkanWrapper::AcquireNextImageKHR(m_deviceInfo->_device, m_swapchain, UINT64_MAX, semaphore, fence, &imageIndex);
+    VkResult result = VulkanWrapper::AcquireNextImage(m_deviceInfo->_device, m_swapchain, UINT64_MAX, semaphore, fence, &imageIndex);
     if (result != VK_SUCCESS)
     {
         //TODO:
