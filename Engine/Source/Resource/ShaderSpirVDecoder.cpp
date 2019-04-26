@@ -39,11 +39,10 @@ Resource * ShaderSpirVDecoder::decode(const stream::Stream* stream, const std::s
 #ifdef USE_SPIRV
         stream->seekBeg(0);
 
-        std::string source;
-        stream->read(source);
-
         if (m_header._contentType == renderer::ShaderHeader::ShaderResource::ShaderResource_Source)
         {
+            std::string source;
+            stream->read(source);
 #if DEBUG
             utils::Timer timer;
             timer.start();
@@ -262,8 +261,66 @@ Resource * ShaderSpirVDecoder::decode(const stream::Stream* stream, const std::s
         }
         else
         {
-            //bytecode
-            ASSERT(false, "implement");
+            bool validShaderType = false;
+            auto getShaderType = [&validShaderType](const std::string& name) -> renderer::ShaderType
+            {
+                std::string fileExtension = stream::FileLoader::getFileExtension(name);
+                if (fileExtension == "vspv")
+                {
+                    validShaderType = true;
+                    return renderer::ShaderType::ShaderType_Vertex;
+                }
+                else if (fileExtension == "fspv")
+                {
+                    validShaderType = true;
+                    return renderer::ShaderType::ShaderType_Fragment;
+                }
+
+                validShaderType = false;
+                return renderer::ShaderType::ShaderType_Undefined;
+            };
+
+            renderer::ShaderType type = getShaderType(name);
+            ASSERT(validShaderType, "invalid type");
+#if DEBUG
+        utils::Timer timer;
+        timer.start();
+#endif
+            std::vector<u32> bytecode(stream->size() / sizeof(u32));
+            stream->read(&bytecode[0], stream->size(), sizeof(u32));
+            ASSERT(bytecode[0] == 0x07230203, "invalid spirv magic number in head");
+
+            stream::Stream* resourceSpirvBinary = stream::StreamManager::createMemoryStream(nullptr, stream->size() + sizeof(u32) + sizeof(bool));
+            resourceSpirvBinary->write<u32>(stream->size());
+            resourceSpirvBinary->write(bytecode.data(), stream->size());
+
+            resourceSpirvBinary->write<bool>(m_reflections);
+            if (m_reflections)
+            {
+                if (!ShaderSpirVDecoder::parseReflections({ bytecode.cbegin(), bytecode.cend() }, resourceSpirvBinary))
+                {
+                    LOG_ERROR("ShaderSpirVDecoder::decode: parseReflections failed for shader: %s", name.c_str());
+                    delete resourceSpirvBinary;
+
+                    return nullptr;
+                }
+            }
+#if DEBUG
+            timer.stop();
+            u64 time = timer.getTime<utils::Timer::Duration_MilliSeconds>();
+            LOG_DEBUG("ShaderSpirVDecoder::decode , shader %s, is loaded. Time %.4f sec", name.c_str(), static_cast<f32>(time) / 1000.0f);
+#endif
+            renderer::ShaderHeader* resourceHeader = new renderer::ShaderHeader(m_header);
+            resourceHeader->_type = type;
+            resourceHeader->_apiVersion = m_sourceVersion;
+#if DEBUG
+            resourceHeader->_debugName = name;
+#endif
+
+            Resource* resource = new renderer::Shader(resourceHeader);
+            resource->init(resourceSpirvBinary);
+
+            return resource;
         }
 #else //USE_SPIRV
         ASSERT(false, "spirv undefined");
@@ -333,7 +390,8 @@ bool ShaderSpirVDecoder::parseReflections(const std::vector<u32>& spirv, stream:
     };
 
     if (m_header._shaderLang == renderer::ShaderHeader::ShaderLang::ShaderLang_GLSL ||
-        m_header._shaderLang == renderer::ShaderHeader::ShaderLang::ShaderLang_HLSL)
+        m_header._shaderLang == renderer::ShaderHeader::ShaderLang::ShaderLang_HLSL ||
+        m_header._shaderLang == renderer::ShaderHeader::ShaderLang::ShaderLang_SpirV)
     {
         spirv_cross::CompilerGLSL glsl(spirv);
         spirv_cross::ShaderResources resources = glsl.get_shader_resources();

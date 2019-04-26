@@ -14,6 +14,7 @@
 
 #include "Resource/ResourceLoaderManager.h"
 #include "Resource/ShaderSourceFileLoader.h"
+#include "Resource/ShaderBinaryFileLoader.h"
 #include "Resource/ModelFileLoader.h"
 #include "Resource/ImageFileLoader.h"
 #include "Resource/Image.h"
@@ -80,8 +81,11 @@ void MyApplication::Initialize()
     ASSERT(m_Context, "context is nullptr");
     m_CommandList = new renderer::CommandList(m_Context, renderer::CommandList::CommandListType::ImmediateCommandList);
 
-    Shader* vertShader = resource::ResourceLoaderManager::getInstance()->loadShader<Shader, resource::ShaderSourceFileLoader>(m_CommandList->getContext(), "examples/3.drawmesh/shaders/mesh.vert", {}, ShaderSource_OptimisationPerformance);
-    Shader* fragShader = resource::ResourceLoaderManager::getInstance()->loadShader<Shader, resource::ShaderSourceFileLoader>(m_CommandList->getContext(), "examples/3.drawmesh/shaders/mesh.frag", {}, ShaderSource_OptimisationPerformance);
+    //Shader* vertShader = resource::ResourceLoaderManager::getInstance()->loadShader<Shader, resource::ShaderSourceFileLoader>(m_CommandList->getContext(), "examples/3.drawmesh/shaders/mesh.vert", {}, ShaderSource_OptimisationPerformance);
+    Shader* vertShader = resource::ResourceLoaderManager::getInstance()->loadShader<Shader, resource::ShaderBinaryFileLoader>(m_CommandList->getContext(), "examples/3.drawmesh/shaders/mesh.vspv", {});
+    //Shader* fragShader = resource::ResourceLoaderManager::getInstance()->loadShader<Shader, resource::ShaderSourceFileLoader>(m_CommandList->getContext(), "examples/3.drawmesh/shaders/mesh.frag", {}, ShaderSource_OptimisationPerformance);
+    Shader* fragShader = resource::ResourceLoaderManager::getInstance()->loadShader<Shader, resource::ShaderBinaryFileLoader>(m_CommandList->getContext(), "examples/3.drawmesh/shaders/mesh.fspv", {});
+
 
     resource::Image* image = resource::ResourceLoaderManager::getInstance()->load<resource::Image, resource::ImageFileLoader>("examples/3.drawmesh/models/voyager/voyager_bc3_unorm.ktx");
     Model* model = resource::ResourceLoaderManager::getInstance()->load<Model, resource::ModelFileLoader>("examples/3.drawmesh/models/voyager/voyager.dae");

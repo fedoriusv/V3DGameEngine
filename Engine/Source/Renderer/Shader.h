@@ -29,7 +29,8 @@ namespace renderer
         {
             ShaderLang_GLSL,
             ShaderLang_HLSL,
-            ShaderLang_CG
+            ShaderLang_CG,
+            ShaderLang_SpirV
         };
 
         ShaderHeader() noexcept;
