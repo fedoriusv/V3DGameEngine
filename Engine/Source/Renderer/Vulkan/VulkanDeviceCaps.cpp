@@ -152,7 +152,7 @@ void VulkanDeviceCaps::fillCapabilitiesList(const DeviceInfo* info)
     {
         for (auto& iter : s_enableExtensions)
         {
-            if (strcmp(extension, iter))
+            if (!strcmp(extension, iter))
             {
                 return true;
             }

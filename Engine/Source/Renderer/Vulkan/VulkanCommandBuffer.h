@@ -82,6 +82,7 @@ namespace vk
         //outside renderpass
         void cmdClearImage(VulkanImage* image, VkImageLayout imageLayout, const VkClearColorValue* pColor);
         void cmdClearImage(VulkanImage* image, VkImageLayout imageLayout, const VkClearDepthStencilValue* pDepthStencil);
+        void cmdResolveImage(VulkanImage* src, VkImageLayout srcLayout, VulkanImage* dst, VkImageLayout dstLayout, const std::vector<VkImageResolve>& regions);
 
         //TODO: cmd list
         void cmdUpdateBuffer(VulkanBuffer* src, u32 offset, u64 size, void* data);

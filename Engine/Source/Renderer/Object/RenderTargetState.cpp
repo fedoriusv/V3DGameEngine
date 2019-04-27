@@ -152,6 +152,7 @@ bool RenderTargetState::setColorTexture(u32 index, Texture2D* colorTexture, Rend
         attachmentDesc._stencilLoadOp = RenderTargetLoadOp::LoadOp_DontCare;
         attachmentDesc._stencilStoreOp = RenderTargetStoreOp::StoreOp_DontCare;
         attachmentDesc._internalTarget = false;
+        attachmentDesc._autoResolve = colorTexture->isTextureUsageFlagsContains(TextureUsage::TextureUsage_Resolve);
 
         attachmentDesc._initTransition = TransitionOp::TransitionOp_Undefined;
         attachmentDesc._finalTransition = TransitionOp::TransitionOp_ColorAttachmet;
@@ -180,6 +181,7 @@ bool RenderTargetState::setColorTexture(u32 index, Backbuffer* swapchainTexture,
         attachmentDesc._stencilLoadOp = RenderTargetLoadOp::LoadOp_DontCare;
         attachmentDesc._stencilStoreOp = RenderTargetStoreOp::StoreOp_DontCare;
         attachmentDesc._internalTarget = true;
+        attachmentDesc._autoResolve = false;
 
         attachmentDesc._initTransition = TransitionOp::TransitionOp_Undefined;
         attachmentDesc._finalTransition = TransitionOp::TransitionOp_Present;
@@ -207,6 +209,7 @@ bool RenderTargetState::setDepthStencilTexture(Texture2D* depthStencilTexture,
         attachmentDesc._stencilLoadOp = stencilLoadOp;
         attachmentDesc._stencilStoreOp = stencilStoreOp;
         attachmentDesc._internalTarget = false;
+        attachmentDesc._autoResolve = depthStencilTexture->isTextureUsageFlagsContains(TextureUsage::TextureUsage_Resolve);
 
         attachmentDesc._initTransition = TransitionOp::TransitionOp_Undefined;
         attachmentDesc._finalTransition = TransitionOp::TransitionOp_DepthStencilAttachmet;
@@ -235,6 +238,7 @@ bool RenderTargetState::setColorTexture(u32 index, Texture2D * colorTexture, con
         attachmentDesc._stencilLoadOp = RenderTargetLoadOp::LoadOp_DontCare;
         attachmentDesc._stencilStoreOp = RenderTargetStoreOp::StoreOp_DontCare;
         attachmentDesc._internalTarget = false;
+        attachmentDesc._autoResolve = colorTexture->isTextureUsageFlagsContains(TextureUsage::TextureUsage_Resolve);
 
         attachmentDesc._initTransition = tansitionState._initialState;
         attachmentDesc._finalTransition = tansitionState._finalState;
@@ -262,6 +266,7 @@ bool RenderTargetState::setColorTexture(u32 index, Backbuffer * swapchainTexture
         attachmentDesc._stencilLoadOp = RenderTargetLoadOp::LoadOp_DontCare;
         attachmentDesc._stencilStoreOp = RenderTargetStoreOp::StoreOp_DontCare;
         attachmentDesc._internalTarget = true;
+        attachmentDesc._autoResolve = false;
 
         attachmentDesc._initTransition = tansitionState._initialState;
         attachmentDesc._finalTransition = tansitionState._finalState;
@@ -288,6 +293,7 @@ bool RenderTargetState::setDepthStencilTexture(Texture2D * depthStencilTexture, 
         attachmentDesc._stencilLoadOp = stencilOpState._loadOp;
         attachmentDesc._stencilStoreOp = stencilOpState._storeOp;
         attachmentDesc._internalTarget = false;
+        attachmentDesc._autoResolve = depthStencilTexture->isTextureUsageFlagsContains(TextureUsage::TextureUsage_Resolve);
 
         attachmentDesc._initTransition = tansitionState._initialState;
         attachmentDesc._finalTransition = tansitionState._finalState;

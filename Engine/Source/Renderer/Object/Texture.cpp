@@ -396,5 +396,10 @@ void Texture2D::clear(f32 depth, u32 stencil)
     }
 }
 
+bool Texture2D::isTextureUsageFlagsContains(TextureUsageFlags usage) const
+{
+    return m_usage & usage;
+}
+
 } //namespace renderer
 } //namespace v3d

@@ -37,6 +37,11 @@ VkFramebuffer VulkanFramebuffer::getHandle() const
     return m_framebuffer;
 }
 
+const std::vector<Image*>& VulkanFramebuffer::getImages() const
+{
+    return m_images;
+}
+
 bool VulkanFramebuffer::create(const RenderPass* pass)
 {
     ASSERT(VulkanDeviceCaps::getInstance()->getPhysicalDeviceLimits().maxFramebufferWidth >= m_size.width &&
@@ -49,11 +54,23 @@ bool VulkanFramebuffer::create(const RenderPass* pass)
         const VulkanImage* vkImage = static_cast<const VulkanImage*>(attach);
         m_imageViews.push_back(vkImage->getImageView());
 
-        if (vkImage->getResolveImage())
+        if (VulkanImage::isColorFormat(vkImage->getFormat()))
         {
-            ASSERT(vkImage->getSampleCount() > VK_SAMPLE_COUNT_1_BIT, "wrong sample count");
-            const VulkanImage* vkResolveImage = vkImage->getResolveImage();
-            m_imageViews.push_back(vkResolveImage->getImageView());
+            if (vkImage->getResolveImage())
+            {
+                ASSERT(vkImage->getSampleCount() > VK_SAMPLE_COUNT_1_BIT, "wrong sample count");
+                const VulkanImage* vkResolveImage = vkImage->getResolveImage();
+                m_imageViews.push_back(vkResolveImage->getImageView());
+            }
+        }
+        else
+        {
+            if (VulkanDeviceCaps::getInstance()->supportDepthAutoResolve && vkImage->getResolveImage())
+            {
+                ASSERT(vkImage->getSampleCount() > VK_SAMPLE_COUNT_1_BIT, "wrong sample count");
+                const VulkanImage* vkResolveImage = vkImage->getResolveImage();
+                m_imageViews.push_back(vkResolveImage->getImageView());
+            }
         }
     }
 

@@ -423,6 +423,27 @@ void VulkanCommandBuffer::cmdClearImage(VulkanImage * image, VkImageLayout image
     }
 }
 
+void VulkanCommandBuffer::cmdResolveImage(VulkanImage* src, VkImageLayout srcLayout, VulkanImage* dst, VkImageLayout dstLayout, const std::vector<VkImageResolve>& regions)
+{
+    ASSERT(m_status == CommandBufferStatus::Begin, "not started");
+    ASSERT(!isInsideRenderPass(), "should be outside render pass");
+
+    ASSERT(src->getSampleCount() > VK_SAMPLE_COUNT_1_BIT, "should be > 1");
+    ASSERT(dst->getSampleCount() == VK_SAMPLE_COUNT_1_BIT, "should be 1");
+
+    src->captureInsideCommandBuffer(this, 0);
+    dst->captureInsideCommandBuffer(this, 0);
+
+    if (m_level == CommandBufferLevel::PrimaryBuffer)
+    {
+        VulkanWrapper::CmdResolveImage(m_command, src->getHandle(), srcLayout, dst->getHandle(), dstLayout, static_cast<u32>(regions.size()), regions.data());
+    }
+    else
+    {
+        ASSERT(false, "not implemented");
+    }
+}
+
 void VulkanCommandBuffer::cmdUpdateBuffer(VulkanBuffer * src, u32 offset, u64 size, void * data)
 {
     ASSERT(m_status == CommandBufferStatus::Begin, "not started");

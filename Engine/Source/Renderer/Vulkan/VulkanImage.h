@@ -46,6 +46,7 @@ namespace vk
         static VkSampleCountFlagBits convertRenderTargetSamplesToVkSampleCount(TextureSamples samples);
 
         static VkImageSubresourceRange makeImageSubresourceRange(const VulkanImage* image, s32 layer = -1, s32 mip = -1);
+        static VkImageSubresourceLayers makeImageSubresourceLayers(const VulkanImage* image, s32 layer = -1, s32 mip = 0);
 
         static VkImageAspectFlags getImageAspectFlags(VkFormat format);
         static bool isColorFormat(VkFormat format);
@@ -61,6 +62,7 @@ namespace vk
         VkSampleCountFlagBits getSampleCount() const;
         VkImageView           getImageView(s32 layer = -1, VkImageAspectFlags aspect  = 0) const;
         VkFormat              getFormat() const;
+        VkExtent3D            getSize() const;
 
         VkImageLayout         getLayout(s32 layer = -1, s32 mip = -1) const;
         VkImageLayout         setLayout(VkImageLayout layout, s32 layer = -1, s32 mip = -1);

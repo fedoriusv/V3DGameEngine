@@ -22,7 +22,7 @@
 #include "Scene/ParticleSystem.h"
 #include "Scene/ParticleSystemHelper.h"
 
-#define TEST_DRAW 1
+#define TEST_DRAW 0
 
 #define SSAO_KERNEL_SIZE 32
 #define SSAO_RADIUS 2.0f
@@ -184,7 +184,7 @@ void Scene::onRender(v3d::renderer::CommandList & cmd)
         cmd.setRenderTarget(m_SimpleOffsceenPass.renderTarget.get());
         cmd.setPipelineState(m_SimplePipelineOffsceen.get());
 
-        m_SimpleProgramOffsceen->bindSampledTexture<renderer::ShaderType::ShaderType_Fragment, renderer::Texture2D>(0, m_SimplePass.depthTexture.get(), m_Sampler.get());
+        m_SimpleProgramOffsceen->bindSampledTexture<renderer::ShaderType::ShaderType_Fragment, renderer::Texture2D>(0, m_SimplePass.colorTexture[0].get(), m_Sampler.get());
 
         cmd.draw(renderer::StreamBufferDescription(nullptr, 0), 0, 3, 1);
     }
@@ -382,7 +382,7 @@ void Scene::onLoad(v3d::renderer::CommandList & cmd)
                 renderer::TextureUsage::TextureUsage_Attachment | renderer::TextureUsage::TextureUsage_Sampled | renderer::TextureUsage::TextureUsage_Resolve, renderer::Format::Format_R8G8B8A8_UNorm, m_size, renderer::TextureSamples::TextureSamples_x8);
             m_SimplePass.renderTarget->setColorTexture(0, m_SimplePass.colorTexture[0].get(), colorOpState, tansitionState);
             m_SimplePass.depthTexture = cmd.createObject<renderer::Texture2D>(
-                renderer::TextureUsage::TextureUsage_Attachment | renderer::TextureUsage::TextureUsage_Sampled | renderer::TextureUsage::TextureUsage_Resolve, renderer::Format::Format_D32_SFloat_S8_UInt, m_size, renderer::TextureSamples::TextureSamples_x8);
+                renderer::TextureUsage::TextureUsage_Attachment | renderer::TextureUsage::TextureUsage_Sampled, renderer::Format::Format_D32_SFloat_S8_UInt, m_size, renderer::TextureSamples::TextureSamples_x8);
             m_SimplePass.renderTarget->setDepthStencilTexture(m_SimplePass.depthTexture.get(), depthOpState, stencilOpState, tansitionState);
 
             renderer::Shader* vertShader = resource::ResourceLoaderManager::getInstance()->loadShader<renderer::Shader, resource::ShaderSourceFileLoader>(cmd.getContext(), "shaders/simple.vert");
@@ -391,7 +391,7 @@ void Scene::onLoad(v3d::renderer::CommandList & cmd)
 
             m_SimplePipeline = cmd.createObject<renderer::GraphicsPipelineState>(sponza->getMeshByIndex(0)->getVertexInputAttribDesc(), m_SimpleProgram.get(), m_SimplePass.renderTarget.get());
             m_SimplePipeline->setPrimitiveTopology(renderer::PrimitiveTopology::PrimitiveTopology_TriangleList);
-            //m_SimplePipeline->setPolygonMode(renderer::PolygonMode::PolygonMode_Line);
+            m_SimplePipeline->setPolygonMode(renderer::PolygonMode::PolygonMode_Line);
             m_SimplePipeline->setFrontFace(renderer::FrontFace::FrontFace_Clockwise);
             m_SimplePipeline->setCullMode(renderer::CullMode::CullMode_Back);
             m_SimplePipeline->setColorMask(renderer::ColorMask::ColorMask_All);
@@ -401,7 +401,7 @@ void Scene::onLoad(v3d::renderer::CommandList & cmd)
         }
 
         {
-            renderer::RenderTargetState::ColorOpState colorOpState = { renderer::RenderTargetLoadOp::LoadOp_DontCare, renderer::RenderTargetStoreOp::StoreOp_Store, core::Vector4D(0.0f) };
+            renderer::RenderTargetState::ColorOpState colorOpState = { renderer::RenderTargetLoadOp::LoadOp_Clear, renderer::RenderTargetStoreOp::StoreOp_Store, core::Vector4D(0.0f) };
             renderer::RenderTargetState::TransitionState tansitionState = { renderer::TransitionOp::TransitionOp_Undefined, renderer::TransitionOp::TransitionOp_Present };
 
             m_SimpleOffsceenPass.renderTarget = cmd.createObject<renderer::RenderTargetState>(m_size);
@@ -421,11 +421,11 @@ void Scene::onLoad(v3d::renderer::CommandList & cmd)
 #else
     //MRT pass 1
     {
-        renderer::TextureUsageFlags attachmentsFlags = renderer::TextureUsage::TextureUsage_Attachment | renderer::TextureUsage::TextureUsage_Sampled;
-        m_MRTRenderPass.colorTexture[0] = cmd.createObject<renderer::Texture2D>(attachmentsFlags, renderer::Format::Format_R32G32B32A32_SFloat, m_size, renderer::TextureSamples::TextureSamples_x1);
-        m_MRTRenderPass.colorTexture[1] = cmd.createObject<renderer::Texture2D>(attachmentsFlags, renderer::Format::Format_R8G8B8A8_UNorm, m_size, renderer::TextureSamples::TextureSamples_x1);
-        m_MRTRenderPass.colorTexture[2] = cmd.createObject<renderer::Texture2D>(attachmentsFlags, renderer::Format::Format_R32G32B32A32_UInt, m_size, renderer::TextureSamples::TextureSamples_x1);
-        m_MRTRenderPass.depthTexture = cmd.createObject<renderer::Texture2D>(renderer::TextureUsage::TextureUsage_Attachment, renderer::Format::Format_D32_SFloat_S8_UInt, m_size, renderer::TextureSamples::TextureSamples_x1);
+        renderer::TextureUsageFlags attachmentsFlags = renderer::TextureUsage::TextureUsage_Attachment | renderer::TextureUsage::TextureUsage_Sampled | renderer::TextureUsage::TextureUsage_Resolve;
+        m_MRTRenderPass.colorTexture[0] = cmd.createObject<renderer::Texture2D>(attachmentsFlags, renderer::Format::Format_R32G32B32A32_SFloat, m_size, renderer::TextureSamples::TextureSamples_x8);
+        m_MRTRenderPass.colorTexture[1] = cmd.createObject<renderer::Texture2D>(attachmentsFlags, renderer::Format::Format_R8G8B8A8_UNorm, m_size, renderer::TextureSamples::TextureSamples_x8);
+        m_MRTRenderPass.colorTexture[2] = cmd.createObject<renderer::Texture2D>(attachmentsFlags, renderer::Format::Format_R32G32B32A32_UInt, m_size, renderer::TextureSamples::TextureSamples_x8);
+        m_MRTRenderPass.depthTexture = cmd.createObject<renderer::Texture2D>(renderer::TextureUsage::TextureUsage_Attachment, renderer::Format::Format_D32_SFloat_S8_UInt, m_size, renderer::TextureSamples::TextureSamples_x8);
 
         renderer::RenderTargetState::ColorOpState colorOpState = { renderer::RenderTargetLoadOp::LoadOp_DontCare, renderer::RenderTargetStoreOp::StoreOp_Store, core::Vector4D(0.0f) };
         renderer::RenderTargetState::TransitionState tansitionState = { renderer::TransitionOp::TransitionOp_Undefined, renderer::TransitionOp::TransitionOp_ShaderRead };
@@ -449,7 +449,7 @@ void Scene::onLoad(v3d::renderer::CommandList & cmd)
 
             m_MRTOpaquePipeline = cmd.createObject<renderer::GraphicsPipelineState>(sponza->getMeshByIndex(0)->getVertexInputAttribDesc(), m_MRTOpaqueProgram.get(), m_MRTRenderPass.renderTarget.get());
             m_MRTOpaquePipeline->setPrimitiveTopology(renderer::PrimitiveTopology::PrimitiveTopology_TriangleList);
-            m_MRTOpaquePipeline->setPolygonMode(renderer::PolygonMode::PolygonMode_Line);
+            //m_MRTOpaquePipeline->setPolygonMode(renderer::PolygonMode::PolygonMode_Line);
             m_MRTOpaquePipeline->setFrontFace(renderer::FrontFace::FrontFace_Clockwise);
             m_MRTOpaquePipeline->setCullMode(renderer::CullMode::CullMode_Back);
             m_MRTOpaquePipeline->setColorMask(renderer::ColorMask::ColorMask_All);

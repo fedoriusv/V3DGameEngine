@@ -105,7 +105,18 @@ bool VulkanRenderPass::create()
 
     std::vector<VkAttachmentReference2KHR> colorAttachmentReferences;
     std::vector<VkAttachmentReference2KHR> resolveAttachmentReferences;
+
     VkAttachmentReference2KHR depthStencilAttachmentReferences = {};
+	depthStencilAttachmentReferences.sType = VK_STRUCTURE_TYPE_ATTACHMENT_REFERENCE_2_KHR;
+	depthStencilAttachmentReferences.pNext = nullptr;
+	depthStencilAttachmentReferences.aspectMask = 0;
+
+#ifdef VK_KHR_depth_stencil_resolve
+	VkAttachmentReference2KHR resolveDepthStencilAttachmentReferences = {};
+	depthStencilAttachmentReferences.sType = VK_STRUCTURE_TYPE_ATTACHMENT_REFERENCE_2_KHR;
+	depthStencilAttachmentReferences.pNext = nullptr;
+	depthStencilAttachmentReferences.aspectMask = 0;
+#endif //VK_KHR_depth_stencil_resolve
 
     bool depthStencil = false;
     u32 index = 0;
@@ -114,7 +125,13 @@ bool VulkanRenderPass::create()
         VulkanAttachmentDescription& attach = m_descriptions[descIndex];
         ASSERT(attach._format != VK_FORMAT_UNDEFINED, "undefined format");
 
-        if (attach._samples == VK_SAMPLE_COUNT_1_BIT)
+        bool disableAutoresolve = !attach._autoResolve;
+        if (VulkanImage::isDepthStencilFormat(attach._format))
+        {
+            disableAutoresolve = VulkanDeviceCaps::getInstance()->supportDepthAutoResolve ? disableAutoresolve : true;
+        }
+
+        if (attach._samples == VK_SAMPLE_COUNT_1_BIT || disableAutoresolve)
         {
             VkAttachmentDescription2KHR attachmentDescription = {};
             attachmentDescription.sType = VK_STRUCTURE_TYPE_ATTACHMENT_DESCRIPTION_2_KHR;
@@ -215,6 +232,15 @@ bool VulkanRenderPass::create()
                 depthStencilAttachmentReferences.attachment = index;
                 depthStencilAttachmentReferences.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
                 index++;
+
+#ifdef VK_KHR_depth_stencil_resolve
+				if (VulkanDeviceCaps::getInstance()->supportDepthAutoResolve)
+				{
+					resolveDepthStencilAttachmentReferences.attachment = index;
+					resolveDepthStencilAttachmentReferences.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+					index++;
+				}
+#endif //VK_KHR_depth_stencil_resolve
                 depthStencil = true;
             }
 
@@ -233,13 +259,13 @@ bool VulkanRenderPass::create()
         VkSubpassDescription2KHR subpassDescription = {};
         subpassDescription.sType = VK_STRUCTURE_TYPE_SUBPASS_DESCRIPTION_2_KHR;
 #ifdef VK_KHR_depth_stencil_resolve
+		VkSubpassDescriptionDepthStencilResolveKHR subpassDescriptionDepthStencilResolve = {};
+		subpassDescriptionDepthStencilResolve.sType = VK_STRUCTURE_TYPE_SUBPASS_DESCRIPTION_DEPTH_STENCIL_RESOLVE_KHR;
+		subpassDescriptionDepthStencilResolve.pNext = nullptr;
         if (VulkanDeviceCaps::getInstance()->supportDepthAutoResolve && depthStencil)
         {
-            VkSubpassDescriptionDepthStencilResolveKHR subpassDescriptionDepthStencilResolve = {};
-            subpassDescriptionDepthStencilResolve.sType = VK_STRUCTURE_TYPE_SUBPASS_DESCRIPTION_DEPTH_STENCIL_RESOLVE_KHR;
-            subpassDescriptionDepthStencilResolve.pNext = nullptr;
-            subpassDescriptionDepthStencilResolve.pDepthStencilResolveAttachment = &depthStencilAttachmentReferences;
-            subpassDescriptionDepthStencilResolve.depthResolveMode = VK_RESOLVE_MODE_AVERAGE_BIT_KHR;//VK_RESOLVE_MODE_SAMPLE_ZERO_BIT_KHR;
+            subpassDescriptionDepthStencilResolve.pDepthStencilResolveAttachment = &resolveDepthStencilAttachmentReferences;
+            subpassDescriptionDepthStencilResolve.depthResolveMode = VK_RESOLVE_MODE_AVERAGE_BIT_KHR;
             subpassDescriptionDepthStencilResolve.stencilResolveMode = VK_RESOLVE_MODE_NONE_KHR;
 
             subpassDescription.pNext = &subpassDescriptionDepthStencilResolve;
@@ -265,7 +291,7 @@ bool VulkanRenderPass::create()
     }
 
     VkRenderPassCreateInfo2KHR renderPassCreateInfo = {};
-    renderPassCreateInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+    renderPassCreateInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO_2_KHR;
     renderPassCreateInfo.pNext = nullptr;
     renderPassCreateInfo.flags = 0;
     renderPassCreateInfo.attachmentCount = static_cast<u32>(attachmentDescriptions.size());

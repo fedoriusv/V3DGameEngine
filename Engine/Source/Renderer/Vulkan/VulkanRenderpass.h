@@ -34,6 +34,7 @@ namespace vk
             VkImageLayout         _initialLayout;
             VkImageLayout         _finalLayout;
 
+            bool                  _autoResolve;
             bool                  _swapchainImage;
         };
 

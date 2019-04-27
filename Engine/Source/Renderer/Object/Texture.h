@@ -65,12 +65,12 @@ namespace renderer
         void clear(const core::Vector4D& color);
         void clear(f32 depth, u32 stencil);
 
-
     private:
 
         Texture2D(renderer::CommandList& cmdList, TextureUsageFlags usage, renderer::Format format, const core::Dimension2D& dimension, u32 layers = 1, u32 mipmapCount = 1, const void* data = nullptr) noexcept;
         Texture2D(renderer::CommandList& cmdList, TextureUsageFlags usage, renderer::Format format, const core::Dimension2D& dimension, renderer::TextureSamples samples) noexcept;
 
+        bool isTextureUsageFlagsContains(TextureUsageFlags usage) const;
         void handleNotify(utils::Observable* ob) override;
 
         void createTexture2D(const void* data = nullptr);

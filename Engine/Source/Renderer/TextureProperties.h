@@ -96,11 +96,12 @@ namespace renderer
         RenderTargetLoadOp    _stencilLoadOp    : 2;
         RenderTargetStoreOp   _stencilStoreOp   : 2;
         TextureSamples        _samples          : 3;
+        TransitionOp          _initTransition   : 3;
+        TransitionOp          _finalTransition  : 3;
         u32                   _internalTarget   : 1;
+        u32                   _autoResolve      : 1;
 
-        TransitionOp          _initTransition   : 6;
-        TransitionOp          _finalTransition  : 6;
-        //u32                   _padding          : 12;
+        u32                   _padding          : 5;
     };
 
     /**

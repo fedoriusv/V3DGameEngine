@@ -341,7 +341,6 @@ void VulkanGraphicContext::setRenderTarget(const RenderPass::RenderPassInfo * re
         area.extent = { framebufferInfo->_clearInfo._size.width, framebufferInfo->_clearInfo._size.height };
 
 
-        //u32 countClearValues = static_cast<u32>(framebufferInfo->_clearInfo._color.size()) + (renderpassInfo->_value._desc._hasDepthStencilAttahment ? 1 : 0);
         std::vector<VkClearValue> clearValues;
         for (u32 clearIndex = 0; clearIndex < framebufferInfo->_clearInfo._color.size(); ++clearIndex)
         {
@@ -353,7 +352,7 @@ void VulkanGraphicContext::setRenderTarget(const RenderPass::RenderPassInfo * re
                 framebufferInfo->_clearInfo._color[clearIndex].w };
 
             clearValues.push_back(clearColor);
-            if (renderpassInfo->_value._desc._attachments[clearIndex]._samples > TextureSamples::TextureSamples_x1)
+            if (renderpassInfo->_value._desc._attachments[clearIndex]._autoResolve)
             {
                 clearValues.push_back(clearColor);
             }
@@ -366,7 +365,7 @@ void VulkanGraphicContext::setRenderTarget(const RenderPass::RenderPassInfo * re
             depthClear.depthStencil.stencil = framebufferInfo->_clearInfo._stencil;
 
             clearValues.push_back(depthClear);
-            if (renderpassInfo->_value._desc._attachments.back()._samples > TextureSamples::TextureSamples_x1)
+            if (VulkanDeviceCaps::getInstance()->supportDepthAutoResolve && renderpassInfo->_value._desc._attachments.back()._autoResolve)
             {
                 clearValues.push_back(depthClear);
             }
@@ -884,6 +883,7 @@ RenderPass * VulkanGraphicContext::createRenderPass(const RenderPassDescription*
         desc._initialLayout = VulkanRenderPass::convertTransitionStateToImageLayout(renderpassDesc->_attachments[index]._initTransition);
         desc._finalLayout = VulkanRenderPass::convertTransitionStateToImageLayout(renderpassDesc->_attachments[index]._finalTransition);
         desc._swapchainImage = (renderpassDesc->_attachments[index]._internalTarget) ? true : false;
+        desc._autoResolve = (renderpassDesc->_attachments[index]._autoResolve) ? true : false;
     }
 
     if (renderpassDesc->_hasDepthStencilAttahment)
@@ -898,6 +898,7 @@ RenderPass * VulkanGraphicContext::createRenderPass(const RenderPassDescription*
         desc._initialLayout = VulkanRenderPass::convertTransitionStateToImageLayout(renderpassDesc->_attachments.back()._initTransition);
         desc._finalLayout = VulkanRenderPass::convertTransitionStateToImageLayout(renderpassDesc->_attachments.back()._finalTransition);
         desc._swapchainImage = (renderpassDesc->_attachments.back()._internalTarget) ? true : false;
+        desc._autoResolve = (renderpassDesc->_attachments.back()._autoResolve) ? true : false;
     }
 
     return new VulkanRenderPass(m_deviceInfo._device, descs);

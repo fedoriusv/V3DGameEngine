@@ -627,8 +627,23 @@ VulkanImage::VulkanImage(VulkanMemory::VulkanMemoryAllocator* memory, VkDevice d
 
     if (usage & TextureUsage_Resolve)
     {
-        ASSERT(samples > VkSampleCountFlagBits::VK_SAMPLE_COUNT_1_BIT, "wrong sample count");
-        m_resolveImage = new VulkanImage(memory, device, format, dimension, VkSampleCountFlagBits::VK_SAMPLE_COUNT_1_BIT, usage & ~TextureUsage_Resolve);
+        if (VulkanImage::isColorFormat(m_format))
+        {
+            ASSERT(samples > VkSampleCountFlagBits::VK_SAMPLE_COUNT_1_BIT, "wrong sample count");
+            m_resolveImage = new VulkanImage(memory, device, format, dimension, VkSampleCountFlagBits::VK_SAMPLE_COUNT_1_BIT, usage & ~TextureUsage_Resolve);
+        }
+        else
+        {
+            if (VulkanDeviceCaps::getInstance()->supportDepthAutoResolve)
+            {
+                ASSERT(samples > VkSampleCountFlagBits::VK_SAMPLE_COUNT_1_BIT, "wrong sample count");
+                m_resolveImage = new VulkanImage(memory, device, format, dimension, VkSampleCountFlagBits::VK_SAMPLE_COUNT_1_BIT, usage & ~TextureUsage_Resolve);
+            }
+            else
+            {
+                ASSERT(false, "resolve for depth not supported");
+            }
+        }
     }
 }
 
@@ -1022,6 +1037,25 @@ VkImageSubresourceRange VulkanImage::makeImageSubresourceRange(const VulkanImage
     return imageSubresourceRange;
 }
 
+VkImageSubresourceLayers VulkanImage::makeImageSubresourceLayers(const VulkanImage* image, s32 layer, s32 mip)
+{
+    VkImageSubresourceLayers imageSubresourceLayers = {};
+    imageSubresourceLayers.aspectMask = image->m_aspectMask;
+    imageSubresourceLayers.mipLevel = 0;
+    if (layer == -1)
+    {
+        imageSubresourceLayers.baseArrayLayer = 0;
+        imageSubresourceLayers.layerCount = image->m_layersLevel;
+    }
+    else
+    {
+        imageSubresourceLayers.baseArrayLayer = layer;
+        imageSubresourceLayers.layerCount = 1;
+    }
+
+    return imageSubresourceLayers;
+}
+
 VkImageSubresourceRange VulkanImage::makeImageSubresourceRangeWithAspect(const VulkanImage* image, s32 layer, s32 mip, ImageAspect aspect)
 {
     VkImageSubresourceRange imageSubresourceRange = {};
@@ -1251,6 +1285,11 @@ VkImageView VulkanImage::getImageView(s32 layer, VkImageAspectFlags aspect) cons
 VkFormat VulkanImage::getFormat() const
 {
     return m_format;
+}
+
+VkExtent3D VulkanImage::getSize() const
+{
+    return m_dimension;
 }
 
 VkImageLayout VulkanImage::getLayout(s32 layer, s32 mip) const

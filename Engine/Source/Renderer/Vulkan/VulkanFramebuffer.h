@@ -25,6 +25,7 @@ namespace vk
         ~VulkanFramebuffer();
 
         VkFramebuffer getHandle() const;
+        const std::vector<Image*>& getImages() const;
 
         bool create(const RenderPass* pass) override;
         void destroy() override;
