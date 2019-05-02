@@ -29,7 +29,6 @@
 #include <iomanip>
 
 #include <numeric>
-#include <variant>
 #include <random>
 
 //#include <time.h>
@@ -41,6 +40,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include <variant>
 
 #include "Core/Core.h"
 

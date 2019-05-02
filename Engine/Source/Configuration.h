@@ -14,18 +14,14 @@
 #   define HIGHLIGHTING_LOGS 1
 #endif //USED_LOGGER
 
-//Compiler
-/////////////////////////////////////////////////////////////////////////////////////////////////////
-
-#if defined(_MSC_VER) && (_MSC_VER < 1910)
-#   error "Only Microsoft Visual Studio 2017 RTW (15.0) and later are supported."
-#endif
-
 //PLatform
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #if defined(_WIN32) || defined(_WIN64) || defined(WIN32) || defined(WIN64)
 #   define PLATFORM_WINDOWS
+#   if defined(_MSC_VER) && (_MSC_VER < 1910)
+#       error "Only Microsoft Visual Studio 2017 RTW (15.0) and later are supported."
+#   endif
 #endif
 
 #if defined(__APPLE__) || defined(MACOSX)
@@ -38,8 +34,11 @@
 #   error Unsupported platform
 #endif
 
-#if defined(__ANDROID__) && defined(__ARM_ARCH)
+#if defined(_ANDROID)
 #   define PLATFORM_ANDROID
+#   if defined(__ANDROID_API__) && (__ANDROID_API__ < 26)
+#       error "Only Android-26 platform and later are supported."
+#   endif
 #endif
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 

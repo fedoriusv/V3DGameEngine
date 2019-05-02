@@ -3,8 +3,8 @@
 if not exist Project\Android mkdir Project\Android
 cd Project\Android
 
-set C_ANDROID_TOOLCHAIN=%NDK_ROOT%\build\cmake\android.toolchain.cmake
-set C_ANDROID_NDK=%NDK_ROOT%
+set C_ANDROID_TOOLCHAIN=%ANDROID_NDK%\build\cmake\android.toolchain.cmake
+set C_ANDROID_NDK=%ANDROID_NDK%
 set C_ANDROID_ABI=arm64-v8a
 set C_ANDROID_PLATFORM=android-26
 set C_BUILD_TUPE=Debug

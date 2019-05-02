@@ -285,7 +285,7 @@ if (BUILD_EXAMPLES)
 endif ()
 ##############################################################
 
-if (${BUILD_DEPENDENCIES} NOT STREQUAL "")
+if (BUILD_DEPENDENCIES)
 	add_dependencies(${ENGINE_NAME} ${BUILD_DEPENDENCIES})
 endif()
 ##############################################################
