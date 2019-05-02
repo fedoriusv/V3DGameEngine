@@ -21,7 +21,7 @@
 *.unsuccessfulbuild
 ipch/
 obj/
-Project/Win64/*
+Project/*
 Engine/Libs/spirv/*
 [Dd]ebug*/
 [Rr]elease*/
