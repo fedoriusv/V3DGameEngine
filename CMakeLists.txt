@@ -6,16 +6,16 @@ set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 option(BUILD_EXAMPLES "Generate Examples" ON)
 ##############################################################
 #Render SDK
-option(BUILD_VULKAN_SDK "Build use Vulkan SDK" ON)
+option(BUILD_VULKAN_SDK "Build use Vulkan SDK" OFF)
 ##############################################################
 #ThirdParty
-option(CRC32_LIB "Use Crc32c lib" ON)
+option(CRC32_LIB "Use Crc32c lib" OFF)
 #https://github.com/google/crc32c.git
-option(ASSIMP_LIB "Use Assimp lib" ON)
+option(ASSIMP_LIB "Use Assimp lib" OFF)
 #https://github.com/assimp/assimp.git
-option(STB_LIB "Use Stb lib" ON)
+option(STB_LIB "Use Stb lib" OFF)
 #https://github.com/nothings/stb.git
-option(GIL_LIB "Use gli lib" ON)
+option(GIL_LIB "Use gli lib" OFF)
 #https://github.com/g-truc/gli.git
 option(SPIRV_INSTALL_FROM_GITHUB "implicity install SpirV" OFF)
 ##############################################################
@@ -35,6 +35,7 @@ if(TARGET_WIN AND WIN32)
     add_definitions(-D_WINAPI -DUNICODE -D_UNICODE)
 elseif(TARGET_ANDROID)
     message("-- Platform Android")
+	include(Config/Android.cmake)
     add_definitions(-D_ANDROID -DUNICODE -D_UNICODE)
 else()
     message(FATAL_ERROR "Unknown platform. Only Platform Windows | Android supported")
@@ -114,23 +115,26 @@ if(BUILD_VULKAN_SDK)
             set(SPIRV_CROSS_CORE_RELEASE ${SPIRV_FOLDER}/SPIRV-Cross/Release/spirv-cross-core.lib)
             set(SPIRV_CROSS_GLSL_RELEASE ${SPIRV_FOLDER}/SPIRV-Cross/Release/spirv-cross-glsl.lib)
             #set(SPIRV_CROSS_MSL_RELEASE ${SPIRV_FOLDER}/SPIRV-Cross/Release/spirv-cross-msl.lib)
+		elseif (TARGET_ANDROID)
+			set(SHADERC_COMBINED_LIB_FILE_DEBUG ${SPIRV_FOLDER}/shaderc/libshaderc/Debug/shaderc_combined.a)
+            set(SHADERC_COMBINED_LIB_FILE_RELEASE ${SPIRV_FOLDER}/shaderc/libshaderc/Release/shaderc_combined.a)
+
+            set(SPIRV_CROSS_CPP_DEBUG ${SPIRV_FOLDER}/SPIRV-Cross/Debug/spirv-cross-cpp.a)
+            set(SPIRV_CROSS_CORE_DEBUG ${SPIRV_FOLDER}/SPIRV-Cross/Debug/spirv-cross-core.a)
+            set(SPIRV_CROSS_GLSL_DEBUG ${SPIRV_FOLDER}/SPIRV-Cross/Debug/spirv-cross-glsl.a)
+            #set(SPIRV_CROSS_MSL_DEBUG ${SPIRV_FOLDER}/SPIRV-Cross/Debug/spirv-cross-msl.a)  
+            set(SPIRV_CROSS_CPP_RELEASE ${SPIRV_FOLDER}/SPIRV-Cross/Release/spirv-cross-cpp.a)
+            set(SPIRV_CROSS_CORE_RELEASE ${SPIRV_FOLDER}/SPIRV-Cross/Release/spirv-cross-core.a)
+            set(SPIRV_CROSS_GLSL_RELEASE ${SPIRV_FOLDER}/SPIRV-Cross/Release/spirv-cross-glsl.a)
+            #set(SPIRV_CROSS_MSL_RELEASE ${SPIRV_FOLDER}/SPIRV-Cross/Release/spirv-cross-msl.a)
         endif()
     endif()
 endif()
 
-
 #Compiler Flags
-if(TARGET_WIN)
-#    set(CMAKE_CONFIGURATION_TYPES "Debug;Release" CACHE STRING "" FORCE)
-#   set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /NODEFAULTLIB")
-#   Debug
-    set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DDEBUG -DUSE_LOGGER -D_CRT_SECURE_NO_WARNINGS ${VULKAN_SDK_DEFINE} ${EXTRA_LIB_DEFINE}")
-#    set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /Zi /MTd /std:c++17")
-#    set(CMAKE_DEBUG_POSTFIX "_d")
-#   Release
-    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -DUSE_LOGGER ${VULKAN_SDK_DEFINE} ${EXTRA_LIB_DEFINE}")
-#    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /MT /std:c++17")
-endif()
+set(CMAKE_CONFIGURATION_TYPES "Debug;Release" CACHE STRING "" FORCE)
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DDEBUG -DUSE_LOGGER -D_CRT_SECURE_NO_WARNINGS ${VULKAN_SDK_DEFINE} ${EXTRA_LIB_DEFINE}")
+set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -DUSE_LOGGER ${VULKAN_SDK_DEFINE} ${EXTRA_LIB_DEFINE}")
 ##############################################################
 
 #Source
@@ -139,8 +143,6 @@ file(GLOB MAIN_HEADERS ${SOURCE_DIR}/*.h)
 file(GLOB MAIN_SOURCES ${SOURCE_DIR}/*.cpp)
 file(GLOB CORE_HEADERS ${SOURCE_DIR}/Core/*.h  ${SOURCE_DIR}/Core/*.inl)
 file(GLOB CORE_SOURCES ${SOURCE_DIR}/Core/*.cpp)
-file(GLOB PLATFORM_HEADERS ${SOURCE_DIR}/Platform/*.h)
-file(GLOB PLATFORM_SOURCES ${SOURCE_DIR}/Platform/*.cpp)
 file(GLOB UTILS_HEADERS ${SOURCE_DIR}/Utils/*.h)
 file(GLOB UTILS_SOURCES ${SOURCE_DIR}/Utils/*.cpp)
 file(GLOB EVENT_HEADERS ${SOURCE_DIR}/Event/*.h)
@@ -155,7 +157,15 @@ file(GLOB STREAM_HEADERS ${SOURCE_DIR}/Stream/*.h)
 file(GLOB STREAM_SOURCES ${SOURCE_DIR}/Stream/*.cpp)
 file(GLOB SCENE_HEADERS ${SOURCE_DIR}/Scene/*.h)
 file(GLOB SCENE_SOURCES ${SOURCE_DIR}/Scene/*.cpp)
-
+if (TARGET_WIN)
+	file(GLOB PLATFORM_HEADERS ${SOURCE_DIR}/Platform/Platform.h ${SOURCE_DIR}/Platform/Window.h
+						${SOURCE_DIR}/Platform/WindowWindows.h)
+	file(GLOB PLATFORM_SOURCES ${SOURCE_DIR}/Platform/Platform.cpp ${SOURCE_DIR}/Platform/Window.cpp
+						${SOURCE_DIR}/Platform/WindowWindows.cpp)
+elseif (TARGET_ANDROID)
+	file(GLOB PLATFORM_HEADERS ${SOURCE_DIR}/Platform/Platform.h ${SOURCE_DIR}/Platform/Window.h)
+	file(GLOB PLATFORM_SOURCES ${SOURCE_DIR}/Platform/Platform.cpp ${SOURCE_DIR}/Platform/Window.cpp)
+endif()
 if (BUILD_VULKAN_SDK)
 	file(GLOB VULKAN_HEADERS ${SOURCE_DIR}/Renderer/Vulkan/*.h)
 	file(GLOB VULKAN_SOURCES ${SOURCE_DIR}/Renderer/Vulkan/*.cpp)
@@ -275,8 +285,9 @@ if (BUILD_EXAMPLES)
 endif ()
 ##############################################################
 
-add_dependencies(${ENGINE_NAME} ${BUILD_DEPENDENCIES})
-
+if (${BUILD_DEPENDENCIES} NOT STREQUAL "")
+	add_dependencies(${ENGINE_NAME} ${BUILD_DEPENDENCIES})
+endif()
 ##############################################################
 
 #install external libs
