@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.0.0)
+cmake_minimum_required(VERSION 3.0.2 FATAL_ERROR)
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
 ##############################################################
@@ -29,17 +29,15 @@ else()
     message(FATAL_ERROR "Unknown compiler. Only COMPILER_MSVC|COMPILER_GCC|COMPILER_CLANG supported")
 endif()
 
-if(WIN32)
+if(TARGET_WIN AND WIN32)
     message("-- Platform Windows")
-    add_definitions(-D_WINAPI -D_CONSOLE -DUNICODE -D_UNICODE)
-elseif(UNIX AND NOT APPLE)
-    message("-- Platform Linux")
-    add_definitions(-D_LINUX -DUNICODE -D_UNICODE)
-elseif(APPLE)
-    message("-- Platform MacOSX")
-    add_definitions(-DMACOSX -DUNICODE -D_UNICODE)
+	include(Config/Windows64.cmake)
+    add_definitions(-D_WINAPI -DUNICODE -D_UNICODE)
+elseif(TARGET_ANDROID)
+    message("-- Platform Android")
+    add_definitions(-D_ANDROID -DUNICODE -D_UNICODE)
 else()
-    message(FATAL_ERROR "Unknown platform. Only Platrorm Windows|Platrorm Linux|Platrorm MacOSX supported")
+    message(FATAL_ERROR "Unknown platform. Only Platform Windows | Android supported")
 endif()
 
 if(CMAKE_SIZEOF_VOID_P EQUAL 8)
@@ -61,7 +59,6 @@ set(SOURCE_DIR Engine/Source)
 set(ENGINE_PROJECT_DIR ${PROJECT_SOURCE_DIR})
 set(LIB_INCLUDE_DIRECTORY 
 	${ENGINE_PROJECT_DIR}/${SOURCE_DIR} 
-	#${ENGINE_PROJECT_DIR}/${SOURCE_DIR}/Renderer
 	${ENGINE_PROJECT_DIR}/${SOURCE_DIR}/ThirdParty)
 
 set(EXTRA_LIB_DEFINE "")
@@ -82,9 +79,6 @@ endif()
 if (GIL_LIB)
 	set(EXTRA_LIB_DEFINE "${EXTRA_LIB_DEFINE} -DUSE_GLI")
 endif()
-
-include_directories(BEFORE ${LIB_INCLUDE_DIRECTORY})
-##############################################################
  
 #Configuration
 ##############################################################
@@ -98,17 +92,17 @@ if(BUILD_VULKAN_SDK)
     if ("${VULKAN_SDK_PATH}" STREQUAL "")
         message(FATAL_ERROR "Vulkan SDK not found. Please add VK_SDK_PATH to system variable")
     endif()
-    set(VULKAN_SDK_INCLUDE_DIRECTORY "-I${VULKAN_SDK_PATH}/Include")
+    set(VULKAN_SDK_INCLUDE_DIRECTORY "${VULKAN_SDK_PATH}/Include")
     set(VULKAN_SDK_LIB_DIRECTORY ${VULKAN_SDK_PATH}/Lib)
     message("-- Vulkan SDK Path " ${VULKAN_SDK_PATH})
 
     #SpirV
     set(SPIRV_FOLDER ${ENGINE_PROJECT_DIR}/Engine/Libs/spirv)
     if ((IS_DIRECTORY ${SPIRV_FOLDER}/shaderc AND IS_DIRECTORY ${SPIRV_FOLDER}/SPIRV-Cross) OR SPIRV_INSTALL_FROM_GITHUB)
-        set(VULKAN_SDK_INCLUDE_DIRECTORY "${VULKAN_SDK_INCLUDE_DIRECTORY} -I${SPIRV_FOLDER}")
-        set(VULKAN_SDK_INCLUDE_DIRECTORY "${VULKAN_SDK_INCLUDE_DIRECTORY} -I${SPIRV_FOLDER}/shaderc/libshaderc/include")
+        set(VULKAN_SDK_INCLUDE_DIRECTORY ${VULKAN_SDK_INCLUDE_DIRECTORY} ${SPIRV_FOLDER})
+        set(VULKAN_SDK_INCLUDE_DIRECTORY ${VULKAN_SDK_INCLUDE_DIRECTORY} ${SPIRV_FOLDER}/shaderc/libshaderc/include)
         set(VULKAN_SDK_DEFINE "${VULKAN_SDK_DEFINE} -DUSE_SPIRV")
-        if (WIN32)
+        if (TARGET_WIN)
             set(SHADERC_COMBINED_LIB_FILE_DEBUG ${SPIRV_FOLDER}/shaderc/libshaderc/Debug/shaderc_combined.lib)
             set(SHADERC_COMBINED_LIB_FILE_RELEASE ${SPIRV_FOLDER}/shaderc/libshaderc/Release/shaderc_combined.lib)
 
@@ -126,18 +120,16 @@ endif()
 
 
 #Compiler Flags
-if(WIN32)
-    set(CMAKE_CONFIGURATION_TYPES "Debug;Release" CACHE STRING "" FORCE)
+if(TARGET_WIN)
+#    set(CMAKE_CONFIGURATION_TYPES "Debug;Release" CACHE STRING "" FORCE)
 #   set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /NODEFAULTLIB")
 #   Debug
     set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DDEBUG -DUSE_LOGGER -D_CRT_SECURE_NO_WARNINGS ${VULKAN_SDK_DEFINE} ${EXTRA_LIB_DEFINE}")
-    set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} ${VULKAN_SDK_INCLUDE_DIRECTORY}")
-    set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /Zi /MTd /std:c++17")
-    set(CMAKE_DEBUG_POSTFIX "_d")
+#    set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /Zi /MTd /std:c++17")
+#    set(CMAKE_DEBUG_POSTFIX "_d")
 #   Release
     set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -DUSE_LOGGER ${VULKAN_SDK_DEFINE} ${EXTRA_LIB_DEFINE}")
-    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} ${VULKAN_SDK_INCLUDE_DIRECTORY}")
-    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /MT /std:c++17")
+#    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /MT /std:c++17")
 endif()
 ##############################################################
 
@@ -165,8 +157,8 @@ file(GLOB SCENE_HEADERS ${SOURCE_DIR}/Scene/*.h)
 file(GLOB SCENE_SOURCES ${SOURCE_DIR}/Scene/*.cpp)
 
 if (BUILD_VULKAN_SDK)
-file(GLOB VULKAN_HEADERS ${SOURCE_DIR}/Renderer/Vulkan/*.h)
-file(GLOB VULKAN_SOURCES ${SOURCE_DIR}/Renderer/Vulkan/*.cpp)
+	file(GLOB VULKAN_HEADERS ${SOURCE_DIR}/Renderer/Vulkan/*.h)
+	file(GLOB VULKAN_SOURCES ${SOURCE_DIR}/Renderer/Vulkan/*.cpp)
 endif()
 ##############################################################
 
@@ -199,6 +191,10 @@ add_library(${ENGINE_NAME} STATIC
     ${STREAM_HEADERS} ${STREAM_SOURCES}
     ${SCENE_HEADERS} ${SCENE_SOURCES}
     ${VULKAN_HEADERS} ${VULKAN_SOURCES})
+	
+target_include_directories(${ENGINE_NAME} BEFORE 
+	PRIVATE ${LIB_INCLUDE_DIRECTORY}
+	PRIVATE $<$<BOOL:BUILD_VULKAN_SDK>:${VULKAN_SDK_INCLUDE_DIRECTORY}>)
     
 set(BUILD_DEPENDENCIES "")
 
@@ -252,7 +248,7 @@ if (ASSIMP_LIB)
     set_target_properties(UpdateAssimpLibsDebugSymbolsAndDLLs PROPERTIES FOLDER Libs/assimp)
     set_target_properties(zlib PROPERTIES FOLDER Libs/assimp)  
     set_target_properties(zlibstatic PROPERTIES FOLDER Libs/assimp)
-if(WIN32)
+if(TARGET_WIN)
     target_compile_options(zlib PRIVATE $<$<CONFIG:DEBUG>:/MTd> $<$<CONFIG:RELEASE>:/MT>)
     target_compile_options(zlibstatic PRIVATE $<$<CONFIG:DEBUG>:/MTd> $<$<CONFIG:RELEASE>:/MT>)
 endif()
@@ -274,6 +270,7 @@ if (BUILD_EXAMPLES)
     
     set(BUILD_PROJECTS #[[1.CreateWindow 2.ClearColor]] 3.DrawMesh 4.DrawScene 5.Test)
     set_target_properties(${BUILD_PROJECTS} PROPERTIES FOLDER Examples)
+	set_target_properties(${BUILD_PROJECTS} PROPERTIES INCLUDE_DIRECTORIES ${ENGINE_PROJECT_DIR}/${SOURCE_DIR})
     message("-- ----------------")
 endif ()
 ##############################################################
