@@ -27,6 +27,8 @@ Engine/Libs/spirv/*
 [Rr]elease*/
 Ankh.NoLoad
 
+.vscode/*
+
 # Compiled Object files
 *.slo
 *.lo
