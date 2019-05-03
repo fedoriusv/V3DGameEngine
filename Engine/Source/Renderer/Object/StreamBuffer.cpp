@@ -257,7 +257,7 @@ bool VertexStreamBuffer::update(u32 offset, u64 size, const u8* data)
 
             if (m_data)
             {
-                delete m_data;
+                free(m_data);
             }
             m_data = malloc(size);
             m_size = size;

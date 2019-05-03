@@ -44,17 +44,17 @@
 
 #include "Core/Core.h"
 
-#ifdef _DEBUG
+#ifdef DEBUG
 #   include <assert.h>
 #   define ASSERT(x, message) assert(x && message)
-#else //_DEBUG
+#else //DEBUG
 inline void crashFunc()
 {
     int* ptr = 0;
     *ptr = 1;
 }
 #   define ASSERT(x, message) (x) ? x : crashFunc()
-#endif //_DEBUG
+#endif //DEBUG
 
 #ifdef __GNUC__
 #   define DEPRECATED __attribute__((deprecated))

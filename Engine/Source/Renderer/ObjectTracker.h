@@ -71,7 +71,7 @@ namespace renderer
 
         bool attach(TRenderObject* object) noexcept
         {
-            static_assert(std::is_base_of<RenderObject<TRenderObject>, TRenderObject>());
+            static_assert(std::is_base_of<RenderObject<TRenderObject>, TRenderObject>(), "wrong type");
             std::lock_guard<std::recursive_mutex> lock(m_mutex);
 
             auto iter = m_list.emplace(object);

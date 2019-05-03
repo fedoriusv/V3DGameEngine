@@ -324,7 +324,7 @@ void MemoryPool::freeChunks(MemoryChunk* chunk)
 #if 0
             static const c8  k_allocatedMemoryContent = 'H';
             memset(currentChunk->_data, k_allocatedMemoryContent, m_memoryChunkSize);
-#endif //_DEBUG
+#endif //DEBUG
 
             // Step 2 : Set the Used-Size to Zero
             currentChunk->_usedSize = 0;
@@ -434,9 +434,9 @@ void* DefaultMemoryPoolAllocator::allocate(u64 size, s32 aligment)
     void* newBlock = malloc(size);
     ASSERT(newBlock, "Invalid allocate");
 
-#ifdef _DEBUG
+#ifdef DEBUG
     memset(newBlock, 'X', size);
-#endif //_DEBUG
+#endif //DEBUG
     return newBlock;
 }
 

@@ -87,7 +87,7 @@ namespace renderer
         template<class TTexture>
         void transfer(TTexture* texture, TransitionOp state)
         {
-            static_assert(std::is_base_of<Texture, TTexture>());
+            static_assert(std::is_base_of<Texture, TTexture>(), "wrong type");
             transfer({ texture->getImage() }, state);
         }
 
@@ -100,7 +100,7 @@ namespace renderer
         template<class TObject, class ... Args>
         TObject* createObject(Args ... args)
         {
-            static_assert(std::is_base_of<Object, TObject>());
+            static_assert(std::is_base_of<Object, TObject>(), "wrong type");
             return new TObject(*this, (args)...);
         }
 

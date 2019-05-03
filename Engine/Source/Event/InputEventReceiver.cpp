@@ -57,7 +57,7 @@ void InputEventReceiver::resetInputEventPool()
 {
     m_currentEventIndex = 0;
 #ifdef DEBUG
-    memset(m_eventPool, 0, k_maxInputEventSize * s_eventPoolSize);
+    memset(&m_eventPool, 0, k_maxInputEventSize * s_eventPoolSize);
 #endif
 }
 
@@ -91,7 +91,7 @@ bool InputEventReceiver::sendEvent(InputEvent* event)
 void InputEventReceiver::reset()
 {
     std::queue<InputEvent*> empty;
-    empty.swap(std::move(m_events));
+    empty.swap(m_events);
 }
 
 void InputEventReceiver::attach(InputEvent::InputEventType type, InputEventHandler* handler)

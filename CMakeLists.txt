@@ -9,7 +9,7 @@ option(BUILD_EXAMPLES "Generate Examples" ON)
 option(BUILD_VULKAN_SDK "Build use Vulkan SDK" OFF)
 ##############################################################
 #ThirdParty
-option(CRC32_LIB "Use Crc32c lib" OFF)
+#Crc32c lib is required"
 #https://github.com/google/crc32c.git
 option(ASSIMP_LIB "Use Assimp lib" OFF)
 #https://github.com/assimp/assimp.git
@@ -64,9 +64,8 @@ set(LIB_INCLUDE_DIRECTORY
 
 set(EXTRA_LIB_DEFINE "")
 #Crc32c	
-if (CRC32_LIB)
-	set(LIB_INCLUDE_DIRECTORY ${LIB_INCLUDE_DIRECTORY} ${ENGINE_PROJECT_DIR}/Engine/Libs/crc32c/include)
-endif()
+set(LIB_INCLUDE_DIRECTORY ${LIB_INCLUDE_DIRECTORY} ${ENGINE_PROJECT_DIR}/Engine/Libs/crc32c/include)
+
 #Assimp
 if (ASSIMP_LIB)
 	set(LIB_INCLUDE_DIRECTORY ${LIB_INCLUDE_DIRECTORY} ${ENGINE_PROJECT_DIR}/Engine/Libs/assimp/include)
@@ -157,15 +156,15 @@ file(GLOB STREAM_HEADERS ${SOURCE_DIR}/Stream/*.h)
 file(GLOB STREAM_SOURCES ${SOURCE_DIR}/Stream/*.cpp)
 file(GLOB SCENE_HEADERS ${SOURCE_DIR}/Scene/*.h)
 file(GLOB SCENE_SOURCES ${SOURCE_DIR}/Scene/*.cpp)
+
 if (TARGET_WIN)
-	file(GLOB PLATFORM_HEADERS ${SOURCE_DIR}/Platform/Platform.h ${SOURCE_DIR}/Platform/Window.h
-						${SOURCE_DIR}/Platform/WindowWindows.h)
-	file(GLOB PLATFORM_SOURCES ${SOURCE_DIR}/Platform/Platform.cpp ${SOURCE_DIR}/Platform/Window.cpp
-						${SOURCE_DIR}/Platform/WindowWindows.cpp)
+	file(GLOB PLATFORM_HEADERS ${SOURCE_DIR}/Platform/Platform.h ${SOURCE_DIR}/Platform/Window.h ${SOURCE_DIR}/Platform/WindowWindows.h)
+	file(GLOB PLATFORM_SOURCES ${SOURCE_DIR}/Platform/Platform.cpp ${SOURCE_DIR}/Platform/Window.cpp ${SOURCE_DIR}/Platform/WindowWindows.cpp)
 elseif (TARGET_ANDROID)
-	file(GLOB PLATFORM_HEADERS ${SOURCE_DIR}/Platform/Platform.h ${SOURCE_DIR}/Platform/Window.h)
-	file(GLOB PLATFORM_SOURCES ${SOURCE_DIR}/Platform/Platform.cpp ${SOURCE_DIR}/Platform/Window.cpp)
+	file(GLOB PLATFORM_HEADERS ${SOURCE_DIR}/Platform/Platform.h ${SOURCE_DIR}/Platform/Window.h ${SOURCE_DIR}/Platform/WindowAndroid.h)
+	file(GLOB PLATFORM_SOURCES ${SOURCE_DIR}/Platform/Platform.cpp ${SOURCE_DIR}/Platform/Window.cpp ${SOURCE_DIR}/Platform/WindowAndroid.cpp)
 endif()
+
 if (BUILD_VULKAN_SDK)
 	file(GLOB VULKAN_HEADERS ${SOURCE_DIR}/Renderer/Vulkan/*.h)
 	file(GLOB VULKAN_SOURCES ${SOURCE_DIR}/Renderer/Vulkan/*.cpp)
@@ -211,10 +210,8 @@ set(BUILD_DEPENDENCIES "")
 #Link Libs
 ##############################################################
 #Crc32c	
-if (CRC32_LIB)
-    target_link_libraries(${ENGINE_NAME} crc32c)
-    set(BUILD_DEPENDENCIES ${BUILD_DEPENDENCIES} crc32c)
-endif()
+target_link_libraries(${ENGINE_NAME} crc32c)
+set(BUILD_DEPENDENCIES ${BUILD_DEPENDENCIES} crc32c)
 
 #Assimp	
 if (ASSIMP_LIB)
@@ -239,14 +236,12 @@ link_directories(${ENGINE_NAME} ${VULKAN_SDK_LIB_DIRECTORY})
 
 #Libs
 ##############################################################
-if (CRC32_LIB)
-    message("-- Add Crc32 lib")
-    add_subdirectory(Engine/Libs/crc32c)
-    set_target_properties(crc32c PROPERTIES FOLDER Libs/crc32c)
-    set_target_properties(crc32c_arm64 PROPERTIES FOLDER Libs/crc32c)
-    set_target_properties(crc32c_sse42 PROPERTIES FOLDER Libs/crc32c)
-    message("-- Crc32 lib added")
-endif()
+message("-- Add Crc32 lib")
+add_subdirectory(Engine/Libs/crc32c)
+set_target_properties(crc32c PROPERTIES FOLDER Libs/crc32c)
+set_target_properties(crc32c_arm64 PROPERTIES FOLDER Libs/crc32c)
+set_target_properties(crc32c_sse42 PROPERTIES FOLDER Libs/crc32c)
+message("-- Crc32 lib added")
 
 if (ASSIMP_LIB)
     message("-- Add Assimp lib")
@@ -271,22 +266,28 @@ endif()
 #Examples
 ##############################################################
 if (BUILD_EXAMPLES)
+    set(BUILD_PROJECTS 
+        1.CreateWindow
+        2.ClearColor
+        3.DrawMesh
+        4.DrawScene
+        5.Test
+    )
+    #set(BUILD_PROJECTS #[[1.CreateWindow 2.ClearColor]] 3.DrawMesh 4.DrawScene 5.Test)
     message("-- Create Examples:")
-#    add_subdirectory(Examples/1.CreateWindow)
-#    add_subdirectory(Examples/2.ClearColor)
-    add_subdirectory(Examples/3.DrawMesh)
-    add_subdirectory(Examples/4.DrawScene)
-    add_subdirectory(Examples/5.Test)
     
-    set(BUILD_PROJECTS #[[1.CreateWindow 2.ClearColor]] 3.DrawMesh 4.DrawScene 5.Test)
+    foreach (PROJ ${BUILD_PROJECTS})
+        add_subdirectory(Examples/${PROJ})
+    endforeach(PROJ)
+    
     set_target_properties(${BUILD_PROJECTS} PROPERTIES FOLDER Examples)
-	set_target_properties(${BUILD_PROJECTS} PROPERTIES INCLUDE_DIRECTORIES ${ENGINE_PROJECT_DIR}/${SOURCE_DIR})
+    set_target_properties(${BUILD_PROJECTS} PROPERTIES INCLUDE_DIRECTORIES ${ENGINE_PROJECT_DIR}/${SOURCE_DIR})
     message("-- ----------------")
 endif ()
 ##############################################################
 
 if (BUILD_DEPENDENCIES)
-	add_dependencies(${ENGINE_NAME} ${BUILD_DEPENDENCIES})
+    add_dependencies(${ENGINE_NAME} ${BUILD_DEPENDENCIES})
 endif()
 ##############################################################
 
@@ -294,8 +295,8 @@ endif()
 ##############################################################
 
 if (WIN32 AND SPIRV_INSTALL_FROM_GITHUB)
-message("-- Installing SPIRV:")
-execute_process(COMMAND ${SPIRV_FOLDER}/install.bat WORKING_DIRECTORY ${SPIRV_FOLDER})
-message("-- SPIRV Installed")
+    message("-- Installing SPIRV:")
+    execute_process(COMMAND ${SPIRV_FOLDER}/install.bat WORKING_DIRECTORY ${SPIRV_FOLDER})
+    message("-- SPIRV Installed")
 endif()
 ##############################################################

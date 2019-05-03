@@ -29,8 +29,9 @@ Window* Window::createWindow(const core::Dimension2D& size, const core::Point2D&
     params._isFullscreen = fullscreen;
     params._isResizable = fullscreen ? false : resizable;
 
+    Window* window = nullptr;
 #ifdef PLATFORM_WINDOWS
-    Window* window = new WindowWindows(params, nullptr);
+    window = new WindowWindows(params, nullptr);
 #endif //PLATFORM_WINDOWS
 
     if (window->initialize())
@@ -52,9 +53,17 @@ Window* Window::createWindow(const core::Dimension2D& size, const core::Point2D&
     params._isFullscreen = fullscreen;
     params._isResizable = false;
 
+    Window* window = nullptr;
 #ifdef PLATFORM_WINDOWS
-    Window* window = new WindowWindows(params, receiver);
+    window = new WindowWindows(params, receiver);
 #endif //_PLATFORM_WINDOWS_
+
+    if (!window)
+    {
+        ASSERT(false, "unsupported platform");
+        LOG_ERROR("Window::createWindow: Unsupported platform");
+        return nullptr;
+    }
 
     if (window->initialize())
     {

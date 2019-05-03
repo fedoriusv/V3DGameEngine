@@ -49,7 +49,7 @@ namespace scene
     inline TTexture* MaterialHelper::getTextureParameter(MaterialHeader::Property property) const
     {
         ASSERT(m_material, "nullptr");
-        static_assert(std::is_base_of<renderer::Texture, TTexture>());
+        static_assert(std::is_base_of<renderer::Texture, TTexture>(), "wrong type");
         return m_material->getParameter<TTexture*>(property);
     }
 
