@@ -2,7 +2,6 @@
 
 #include "Common.h"
 #include "Event.h"
-#include "Utils/NonCopyable.h"
 
 namespace v3d
 {
@@ -10,11 +9,13 @@ namespace event
 {
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    class EventHandler : public utils::NonCopyable
+    class EventHandler
     {
     protected:
 
-        EventHandler() {};
+        EventHandler() = default;
+        EventHandler(const EventHandler&) = delete;
+        EventHandler& operator=(const EventHandler&) = delete;
 
     public:
 

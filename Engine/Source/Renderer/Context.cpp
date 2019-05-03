@@ -30,6 +30,7 @@ Context* Context::createContext(const platform::Window* window,  RenderType type
         context = new EmptyContext();
         break;
 
+#ifdef VULKAN_RENDER
     case RenderType::VulkanRender:
         if (mask & DeviceMask::GraphicMask)
         {
@@ -41,7 +42,7 @@ Context* Context::createContext(const platform::Window* window,  RenderType type
             context = new vk::VulkanGraphicContext(window);
         }
         break;
-
+#endif //VULKAN_RENDER
     default:
         ASSERT(false, "Render type is not implemented");
     }

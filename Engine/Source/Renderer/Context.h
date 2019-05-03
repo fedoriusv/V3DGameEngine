@@ -15,8 +15,6 @@
 #include "Sampler.h"
 #include "ObjectTracker.h"
 
-#include "Utils/NonCopyable.h"
-
 namespace v3d
 {
 namespace platform
@@ -33,7 +31,7 @@ namespace renderer
     /**
     * Context interface class
     */
-    class Context : public utils::NonCopyable
+    class Context
     {
 
     public:
@@ -50,6 +48,9 @@ namespace renderer
             EmptyRender,
             VulkanRender,
         };
+
+        Context(const Context&) = delete;
+        Context& operator=(const Context&) = delete;
 
         Context() noexcept;
         virtual ~Context();

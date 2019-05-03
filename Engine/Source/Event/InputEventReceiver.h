@@ -3,7 +3,6 @@
 #include "InputEvent.h"
 #include "InputEventHandler.h"
 #include "Common.h"
-#include "Utils/NonCopyable.h"
 
 namespace v3d
 {
@@ -11,9 +10,12 @@ namespace event
 {
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    class InputEventReceiver final : public utils::NonCopyable
+    class InputEventReceiver final
     {
     public:
+
+        InputEventReceiver(const InputEventReceiver&) = delete;
+        InputEventReceiver& operator=(const InputEventReceiver&) = delete;
 
         InputEventReceiver();
         ~InputEventReceiver();

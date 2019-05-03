@@ -162,8 +162,10 @@ Resource * MeshAssimpDecoder::decode(const stream::Stream* stream, const std::st
     return nullptr;
 }
 
+
 bool MeshAssimpDecoder::decodeMesh(const aiScene* scene, stream::Stream* modelStream, scene::ModelHeader* newHeader)
 {
+#ifdef USE_ASSIMP
     u64 globalVertexSize = 0;
     u64 globalIndexSize = 0;
     std::vector<u32> indexBuffer;
@@ -518,10 +520,14 @@ bool MeshAssimpDecoder::decodeMesh(const aiScene* scene, stream::Stream* modelSt
 
     LOG_DEBUG("MeshAssimpDecoder::decodeMesh: load meshes: %d, size %d bytes", scene->mNumMeshes, globalVertexSize + globalIndexSize);
     return true;
+#else //USE_ASSIMP
+    return false;
+#endif //USE_ASSIMP
 }
 
 bool MeshAssimpDecoder::decodeMaterial(const aiScene * scene, stream::Stream * stream, scene::ModelHeader * newHeader)
 {
+#ifdef USE_ASSIMP
     newHeader->_materials.resize(scene->mNumMaterials);
     for (u32 m = 0; m < scene->mNumMaterials; m++)
     {
@@ -600,6 +606,9 @@ bool MeshAssimpDecoder::decodeMaterial(const aiScene * scene, stream::Stream * s
     LOG_DEBUG("MeshAssimpDecoder::decodeMaterial: load materials: %d", newHeader->_materials.size());
 
     return true;
+#else //USE_ASSIMP
+    return false;
+#endif //USE_ASSIMP
 }
 
 } //namespace decoders

@@ -1,7 +1,6 @@
 #pragma once
 
 #include "Common.h"
-#include "Utils/NonCopyable.h"
 
 #include "Object.h"
 
@@ -48,7 +47,7 @@ namespace renderer
     /**
     * CommandList class
     */
-    class CommandList final : public utils::NonCopyable
+    class CommandList final
     {
     public:
 
@@ -58,6 +57,10 @@ namespace renderer
             DelayedCommandList,
             ThreadCommandList
         };
+
+        CommandList() = delete;
+        CommandList(const CommandList&) = delete;
+        CommandList& operator=(const CommandList&) = delete;
 
         CommandList(Context* context, CommandListType type) noexcept;
         ~CommandList();

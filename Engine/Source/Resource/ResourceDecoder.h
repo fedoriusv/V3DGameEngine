@@ -1,7 +1,6 @@
 #pragma once
 
 #include "Stream/Stream.h"
-#include "Utils/NonCopyable.h"
 
 namespace v3d
 {
@@ -14,9 +13,12 @@ namespace resource
     /**
     * Base class ResourceDecoder
     */
-    class ResourceDecoder : public utils::NonCopyable
+    class ResourceDecoder
     {
     public:
+
+        ResourceDecoder(const ResourceDecoder&) = delete;
+        ResourceDecoder& operator=(const ResourceDecoder&) = delete;
 
         ResourceDecoder() noexcept;
         explicit ResourceDecoder(std::vector<std::string> supportedExtensions) noexcept;

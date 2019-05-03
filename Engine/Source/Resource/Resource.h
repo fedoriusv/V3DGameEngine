@@ -1,7 +1,6 @@
 #pragma once
 
 #include "Stream/Stream.h"
-#include "Utils/NonCopyable.h"
 
 namespace v3d
 {
@@ -36,9 +35,12 @@ namespace resource
     /**
     * Base Interface for Resource class
     */
-    class Resource : public utils::NonCopyable
+    class Resource
     {
     public:
+
+        Resource(const Resource&) = delete;
+        Resource& operator=(const Resource&) = delete;
 
         Resource() noexcept
             : m_header(nullptr)

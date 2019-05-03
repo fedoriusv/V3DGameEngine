@@ -1,7 +1,6 @@
 #pragma once
 
 #include "Common.h"
-#include "Utils/NonCopyable.h"
 
 namespace v3d
 {
@@ -11,7 +10,7 @@ namespace utils
 
     class DefaultMemoryPoolAllocator;
 
-    class MemoryPool final : utils::NonCopyable
+    class MemoryPool
     {
     public:
 
@@ -29,6 +28,9 @@ namespace utils
         static const u64 k_defaultMemoryPoolSize = 1024;
         static const u64 k_defaultMemoryChunkSize = 64;
         static const u64 k_defaultMemorySizeToAllocate = k_defaultMemoryPoolSize * 2;
+
+        MemoryPool(const MemoryPool&) = delete;
+        MemoryPool& operator=(const MemoryPool&) = delete;
 
         MemoryPool(u64 initialMemoryPoolSize = k_defaultMemoryPoolSize,
                 u64 memoryChunkSize = k_defaultMemoryChunkSize,
