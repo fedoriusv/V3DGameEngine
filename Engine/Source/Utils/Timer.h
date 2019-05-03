@@ -26,7 +26,7 @@ namespace utils
         Timer() noexcept;
         virtual ~Timer();
 
-        template<typename Duration duration = Duration_MilliSeconds>
+        template<typename Timer::Duration duration = Duration_MilliSeconds>
         u64         getTime() const;
 
         void        start();
@@ -35,13 +35,13 @@ namespace utils
 
         bool        isStopped() const;
 
-        template<typename Duration duration = Duration_MilliSeconds>
+        template<typename Timer::Duration duration = Duration_MilliSeconds>
         static u64 getCurrentTime();
 
     private:
 
-        template<typename Duration duration>
-        u64 convertDuration(std::chrono::nanoseconds& time) const;
+        template<typename Timer::Duration duration>
+        static u64 convertDuration(std::chrono::nanoseconds& time);
 
         mutable std::chrono::nanoseconds m_duration;
         mutable std::chrono::time_point<std::chrono::high_resolution_clock> m_beginTime;
@@ -72,7 +72,7 @@ namespace utils
     }
 
     template<typename Timer::Duration duration>
-    inline u64 Timer::convertDuration(std::chrono::nanoseconds& time) const
+    inline u64 Timer::convertDuration(std::chrono::nanoseconds& time)
     {
         switch (duration)
         {

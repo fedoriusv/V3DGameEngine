@@ -1,9 +1,7 @@
 #include "Logger.h"
 
-#include <Windows.h>
-
 #if HIGHLIGHTING_LOGS
-#include "termcolor/termcolor.hpp"
+#   include "termcolor/termcolor.hpp"
 using namespace termcolor;
 #endif //HIGHLIGHTING_LOGS
 

@@ -37,7 +37,7 @@
 #if defined(_ANDROID)
 #   define PLATFORM_ANDROID
 #   if defined(__ANDROID_API__) && (__ANDROID_API__ < 26)
-#       error "Only Android-26 platform and later are supported."
+#       error "Support Android NDK R18b and later"
 #   endif
 #endif
 /////////////////////////////////////////////////////////////////////////////////////////////////////
