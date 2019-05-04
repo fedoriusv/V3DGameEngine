@@ -18,9 +18,7 @@ namespace platform
         ~WindowWindows();
 
         WindowWindows(const WindowWindows&) = delete;
-        WindowWindows(WindowWindows&&) = delete;
         WindowWindows& operator=(const WindowWindows&) = delete;
-        WindowWindows& operator=(WindowWindows&&) = delete;
 
         void minimize() override;
         void maximize() override;

@@ -54,10 +54,9 @@ namespace platform
         Window(const WindowParam& params, event::InputEventReceiver* receiver);
         virtual ~Window();
 
+        Window() = delete;
         Window(const Window&) = delete;
-        Window(Window&&) = delete;
         Window& operator=(const Window&) = delete;
-        Window& operator=(Window&&) = delete;
 
         virtual void minimize() = 0;
         virtual void maximize() = 0;

@@ -34,6 +34,13 @@ Window* Window::createWindow(const core::Dimension2D& size, const core::Point2D&
     window = new WindowWindows(params, nullptr);
 #endif //PLATFORM_WINDOWS
 
+    if (!window)
+    {
+        ASSERT(false, "unsupported platform");
+        LOG_ERROR("Window::createWindow: Unsupported platform");
+        return nullptr;
+    }
+
     if (window->initialize())
     {
         return window;

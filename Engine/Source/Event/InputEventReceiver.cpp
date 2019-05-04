@@ -57,7 +57,7 @@ void InputEventReceiver::resetInputEventPool()
 {
     m_currentEventIndex = 0;
 #ifdef DEBUG
-    memset(&m_eventPool, 0, k_maxInputEventSize * s_eventPoolSize);
+    memset(m_eventPool, 0, k_maxInputEventSize * s_eventPoolSize);
 #endif
 }
 
