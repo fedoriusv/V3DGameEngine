@@ -21,36 +21,37 @@ namespace renderer
     public:
 
         RenderObject()
-            : m_counter(0)
+            : m_countLinks(0)
         {
         }
 
-        virtual ~RenderObject() {}
+        virtual ~RenderObject() = default;
 
         bool linked() const
         {
-            return m_counter > 0;
+            return m_countLinks > 0;
         }
 
     private:
+
         void link()
         {
-            ++m_counter;
+            ++m_countLinks;
         }
 
         void unlink()
         {
-            --m_counter;
-            ASSERT(m_counter >= 0, "less zero");
+            --m_countLinks;
+            ASSERT(m_countLinks >= 0, "less zero");
         }
 
         s32 count() const
         {
-            return m_counter;
+            return m_countLinks;
         }
         friend ObjectTracker<TRenderObject>;
 
-        std::atomic<s32> m_counter;
+        std::atomic<s32> m_countLinks;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

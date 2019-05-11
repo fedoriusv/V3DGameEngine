@@ -592,7 +592,7 @@ VulkanImage::VulkanImage(VulkanMemory::VulkanMemoryAllocator* memory, VkDevice d
     , m_swapchainImage(false)
 {
     LOG_DEBUG("VulkanImage::VulkanImage constructor %llx", this);
-    m_layout.resize(m_layersLevel * m_mipsLevel, VK_IMAGE_LAYOUT_UNDEFINED);
+    m_layout.resize(static_cast<u64>(m_layersLevel) * static_cast<u64>(m_mipsLevel), VK_IMAGE_LAYOUT_UNDEFINED);
 
     memset(&m_generalImageView[0], VK_NULL_HANDLE, sizeof(m_generalImageView));
 }
@@ -621,7 +621,7 @@ VulkanImage::VulkanImage(VulkanMemory::VulkanMemoryAllocator* memory, VkDevice d
     , m_swapchainImage(false)
 {
     LOG_DEBUG("VulkanImage::VulkanImage constructor %llx", this);
-    m_layout.resize(m_layersLevel * m_mipsLevel, VK_IMAGE_LAYOUT_UNDEFINED);
+    m_layout.resize(static_cast<u64>(m_layersLevel) * static_cast<u64>(m_mipsLevel), VK_IMAGE_LAYOUT_UNDEFINED);
 
     memset(&m_generalImageView[0], VK_NULL_HANDLE, sizeof(m_generalImageView));
 
@@ -847,7 +847,7 @@ bool VulkanImage::upload(Context* context, const core::Dimension3D& size, u32 la
     for (u32 mip = 0; mip < mips; ++mip)
     {
         u32 mipSize = VulkanImage::calculateImageSize(size, mip, m_format);
-        calculatedSize += mipSize * layers;
+        calculatedSize += static_cast<u64>(mipSize) * static_cast<u64>(layers);
     }
     ASSERT(calculatedSize > 0, "wrong size");
 
@@ -1346,11 +1346,18 @@ void VulkanImage::destroy()
         //not delete swapchain image
         m_image = VK_NULL_HANDLE;
     }
-
-    if (m_image)
+    else
     {
-        VulkanWrapper::DestroyImage(m_device, m_image, VULKAN_ALLOCATOR);
-        m_image = VK_NULL_HANDLE;
+        if (m_image)
+        {
+            VulkanWrapper::DestroyImage(m_device, m_image, VULKAN_ALLOCATOR);
+            m_image = VK_NULL_HANDLE;
+        }
+
+        if (m_memory != VulkanMemory::s_invalidMemory)
+        {
+            VulkanMemory::freeMemory(*m_memoryAllocator, m_memory);
+        }
     }
 }
 

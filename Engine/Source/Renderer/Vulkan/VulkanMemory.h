@@ -1,7 +1,6 @@
 #pragma once
 
 #include "Common.h"
-#include "Utils/NonCopyable.h"
 
 #ifdef VULKAN_RENDER
 #include "VulkanWrapper.h"
@@ -36,11 +35,20 @@ namespace vk
                     _mapped == op._mapped;
             }
 
+            bool operator!=(const VulkanAlloc& op)
+            {
+                return !(*this == op);
+            }
+
         };
 
-        class VulkanMemoryAllocator : public utils::NonCopyable
+        class VulkanMemoryAllocator
         {
         public:
+
+            VulkanMemoryAllocator() = delete;
+            VulkanMemoryAllocator(const VulkanMemoryAllocator&) = delete;
+            VulkanMemoryAllocator& operator=(const VulkanMemoryAllocator&) = delete;
 
             VulkanMemoryAllocator(VkDevice device);
             virtual ~VulkanMemoryAllocator();

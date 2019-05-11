@@ -66,11 +66,6 @@ SamplerState::SamplerState(renderer::CommandList & cmdList, SamplerFilter mag, S
     m_samplerDesc._anisotropic = aniso;
 }
 
-void SamplerState::handleNotify(utils::Observable * ob)
-{
-   //TODO:
-}
-
 void SamplerState::destroySamplers(const std::vector<Sampler*>& samplers)
 {
     if (m_cmdList.isImmediate())

@@ -10,12 +10,12 @@ namespace v3d
     /**
     * Object base game class. Game side
     */
-    class Object : public utils::RefCounted //cloneable
+    class Object : public utils::RefCounted
     {
     public:
 
-        Object() {};
-        virtual ~Object() {};
+        Object() = default;
+        virtual ~Object() = default;
 
         void* operator new(size_t size) noexcept
         {

@@ -212,6 +212,8 @@ VertexStreamBuffer::VertexStreamBuffer(renderer::CommandList& cmdList, StreamBuf
 VertexStreamBuffer::~VertexStreamBuffer()
 {
     ASSERT(m_buffer, "buffer nullptr");
+    m_buffer->unregisterNotify(this);
+
     if (m_cmdList.isImmediate())
     {
         m_cmdList.getContext()->removeBuffer(m_buffer);
@@ -233,7 +235,6 @@ void VertexStreamBuffer::handleNotify(utils::Observable * ob)
     LOG_DEBUG("VertexStreamBuffer::handleNotify to delete buffer %xll", this);
     ASSERT(m_buffer == ob, "not same");
 
-    //delete m_buffer;
     m_buffer = nullptr;
 }
 
@@ -338,6 +339,8 @@ IndexStreamBuffer::IndexStreamBuffer(CommandList & cmdList, StreamBufferUsageFla
 IndexStreamBuffer::~IndexStreamBuffer()
 {
     ASSERT(m_buffer, "buffer nullptr");
+    m_buffer->unregisterNotify(this);
+
     if (m_cmdList.isImmediate())
     {
         m_cmdList.getContext()->removeBuffer(m_buffer);
@@ -359,7 +362,6 @@ void IndexStreamBuffer::handleNotify(utils::Observable* ob)
     LOG_DEBUG("IndexStreamBuffer::handleNotify to delete buffer %xll", this);
     ASSERT(m_buffer == ob, "not same");
 
-    //delete m_buffer;
     m_buffer = nullptr;
 }
 

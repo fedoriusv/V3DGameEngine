@@ -13,7 +13,7 @@ namespace utils
     public:
 
         explicit    RefCounted(s32 refCount = 0);
-        virtual     ~RefCounted();
+        virtual     ~RefCounted() = default;
 
         s32         getCount() const;
 

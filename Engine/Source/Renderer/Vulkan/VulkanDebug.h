@@ -56,8 +56,22 @@ namespace vk
     {
     public:
 
-        VulkanDump() = default;
+        enum DumpFlag : u32
+        {
+            DumpFlag_None = 0,
+            DumpFlag_Memory = 1 << 0,
+            DumpFlag_Image = 1 << 1,
+            DumpFlag_Buffer = 1 << 2,
+
+            DumpFlag_All = 0x7FFFFFFF
+        };
+
+        typedef u32 DumpFlags;
+
+        VulkanDump();
         VulkanDump(const VulkanDump&) = delete;
+
+        void init(DumpFlags flags = DumpFlag::DumpFlag_All);
 
         void dumpFrameNumber(u64 frame);
 
@@ -75,6 +89,10 @@ namespace vk
         void dumpPostCreateImage(VkResult result, VkImage * pImage);
         void dumpDestroyImage(VkDevice device, VkImage image, const VkAllocationCallbacks * pAllocator);
 
+        void dumpPreAllocateMemory(VkDevice device, const VkMemoryAllocateInfo* pAllocateInfo, const VkAllocationCallbacks* pAllocator);
+        void dumpPostAllocateMemory(VkResult result, VkDeviceMemory* pMemory);
+        void dumpFreeMemory(VkDevice device, VkDeviceMemory memory, const VkAllocationCallbacks* pAllocator);
+
         void flushToConsole();
 
         void clearFile(const std::string& file);
@@ -85,9 +103,33 @@ namespace vk
         std::stringstream m_dump;
         static std::recursive_mutex s_mutex;
 
+        DumpFlags   m_flags;
+
         const bool k_forceFlush = true;
     };
 #endif //VULKAN_DUMP
+
+#if VULKAN_STATISTICS
+    class VulkanStatistics : public utils::Singleton<VulkanStatistics>
+    {
+    public:
+
+        VulkanStatistics() = default;
+        VulkanStatistics(const VulkanStatistics&) = delete;
+
+        template<class VkObject>
+        void addObject(VkObject object)
+        {
+            //TODO:
+        }
+
+        template<class VkObject>
+        void removeObject(VkObject object)
+        {
+            //TODO:
+        }
+    };
+#endif //VULKAN_STATICSIC
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 

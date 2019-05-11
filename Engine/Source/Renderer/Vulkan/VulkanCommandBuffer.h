@@ -1,7 +1,6 @@
 #pragma once
 
 #include "Common.h"
-#include "Utils/NonCopyable.h"
 #include "Renderer/Buffer.h"
 
 #ifdef VULKAN_RENDER
@@ -25,7 +24,7 @@ namespace vk
     /**
     * VulkanCommandBuffer class. Vulkan Render side
     */
-    class VulkanCommandBuffer final : public utils::NonCopyable
+    class VulkanCommandBuffer final
     {
     public:
 
@@ -46,6 +45,10 @@ namespace vk
             Submit,
             Finished
         };
+
+        VulkanCommandBuffer() = delete;
+        VulkanCommandBuffer(const VulkanCommandBuffer&) = delete;
+        VulkanCommandBuffer& operator=(const VulkanCommandBuffer&) = delete;
 
         VulkanCommandBuffer(VkDevice device, CommandBufferLevel type, VulkanCommandBuffer* primaryBuffer = nullptr);
         ~VulkanCommandBuffer();

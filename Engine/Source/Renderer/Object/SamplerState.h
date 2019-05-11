@@ -27,7 +27,7 @@ namespace renderer
     SamplerFilter filter
     SamplerAnisotropic aniso
     */
-    class SamplerState : public Object, public utils::Observer
+    class SamplerState : public Object
     {
     public:
 
@@ -62,7 +62,6 @@ namespace renderer
         renderer::CommandList& m_cmdList;
         friend renderer::CommandList;
 
-        void handleNotify(utils::Observable* ob) override;
         void destroySamplers(const std::vector<Sampler*>& samplers);
 
         SamplerDescription m_samplerDesc;

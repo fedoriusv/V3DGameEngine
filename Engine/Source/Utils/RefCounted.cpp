@@ -6,11 +6,7 @@ namespace utils
 {
 
  RefCounted::RefCounted(s32 refCount)
-: m_refCount(refCount)
-{
-}
-
- RefCounted::~RefCounted()
+    : m_refCount(refCount)
 {
 }
 
@@ -18,7 +14,6 @@ s32 RefCounted::getCount() const
 {
     return m_refCount;
 }
-
 
 void RefCounted::grab() const
 {

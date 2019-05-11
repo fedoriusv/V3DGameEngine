@@ -25,7 +25,7 @@ namespace renderer
     public:
 
         Texture() = default;
-        virtual ~Texture() {};
+        virtual ~Texture() = default;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -51,8 +51,8 @@ namespace renderer
     public:
 
         Texture2D() = delete;
-        Texture2D(const Texture2D &) = delete;
-        ~Texture2D();
+        Texture2D(const Texture2D&) = delete;
+        virtual ~Texture2D();
 
         renderer::TextureTarget  getTarget() const;
         renderer::TextureSamples getSampleCount() const;

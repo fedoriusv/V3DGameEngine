@@ -17,7 +17,6 @@ RenderPass::~RenderPass()
 {
 }
 
-
 RenderPassManager::RenderPassManager(Context * context) noexcept
     : m_context(context)
 {
@@ -73,7 +72,7 @@ bool RenderPassManager::removeRenderPass(const RenderPass * renderPass)
     {
         LOG_WARNING("RenderPassManager::removeRenderPass renderPass still linked, but reqested to delete");
         ASSERT(false, "renderpass");
-        //return false;
+        return false;
     }
     m_renderPassList.erase(iter);
 

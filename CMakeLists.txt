@@ -6,16 +6,16 @@ set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 option(BUILD_EXAMPLES "Generate Examples" ON)
 ##############################################################
 #Render SDK
-option(BUILD_VULKAN_SDK "Build use Vulkan SDK" OFF)
+option(BUILD_VULKAN_SDK "Build use Vulkan SDK" ON)
 ##############################################################
 #ThirdParty
 #Crc32c lib is required"
 #https://github.com/google/crc32c.git
-option(ASSIMP_LIB "Use Assimp lib" OFF)
+option(ASSIMP_LIB "Use Assimp lib" ON)
 #https://github.com/assimp/assimp.git
-option(STB_LIB "Use Stb lib" OFF)
+option(STB_LIB "Use Stb lib" ON)
 #https://github.com/nothings/stb.git
-option(GIL_LIB "Use gli lib" OFF)
+option(GIL_LIB "Use gli lib" ON)
 #https://github.com/g-truc/gli.git
 option(SPIRV_INSTALL_FROM_GITHUB "implicity install SpirV" OFF)
 ##############################################################

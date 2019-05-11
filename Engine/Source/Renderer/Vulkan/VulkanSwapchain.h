@@ -25,8 +25,8 @@ namespace vk
         struct SwapchainConfig
         {
             core::Dimension2D   _size;
-            u32                 _countSwapchainImages;
-            bool                _vsync;
+            u32                 _countSwapchainImages = 0;
+            bool                _vsync                = false;
         };
 
         VulkanSwapchain(const struct DeviceInfo* info, VkSurfaceKHR surface);

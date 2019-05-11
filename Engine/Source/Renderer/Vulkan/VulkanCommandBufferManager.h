@@ -1,7 +1,6 @@
 #pragma once
 
 #include "Common.h"
-#include "Utils/NonCopyable.h"
 
 #ifdef VULKAN_RENDER
 #include "VulkanWrapper.h"
@@ -28,9 +27,13 @@ namespace vk
     /**
     * VulkanCommandBufferManager class. Vulkan Render side
     */
-    class VulkanCommandBufferManager final : public utils::NonCopyable
+    class VulkanCommandBufferManager final
     {
     public:
+        
+        VulkanCommandBufferManager() = delete;
+        VulkanCommandBufferManager(const VulkanCommandBufferManager&) = delete;
+        VulkanCommandBufferManager& operator=(const VulkanCommandBufferManager&) = delete;
 
         VulkanCommandBufferManager(const struct DeviceInfo* info, VkQueue queue);
         ~VulkanCommandBufferManager();

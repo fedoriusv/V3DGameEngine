@@ -21,23 +21,23 @@ namespace vk
     {
         VulkanDeviceCaps() = default;
 
-        bool individuallyResetForCommandBuffers;
-        bool supportDeviceCoherentMemory;
-        bool supportHostCoherentMemory;
-        bool supportDepthAutoResolve;
+        bool individuallyResetForCommandBuffers = false;
+        bool supportDeviceCoherentMemory = false;
+        bool supportHostCoherentMemory = false;
+        bool supportDepthAutoResolve = false;
 
-        bool useDynamicUniforms;
-        bool unifiedMemoryManager;
-        bool useStagingBuffers;
-        bool useGlobalDescriptorPool;
+        bool useDynamicUniforms = false;
+        bool unifiedMemoryManager = false;
+        bool useStagingBuffers = false;
+        bool useGlobalDescriptorPool = false;
 
         //immediateResourceSubmit: 0 - not submit, 1 - submit, 2 - submit and wait complete
-        u32 immediateResourceSubmit; 
+        u32 immediateResourceSubmit = 0; 
 
-        u32 maxDescriptorSetIndex;
-        u32 maxDescriptorBindingIndex;
+        u32 maxDescriptorSetIndex = 0;
+        u32 maxDescriptorBindingIndex = 0;
 
-        bool enableSamplerMirrorClampToEdge;
+        bool enableSamplerMirrorClampToEdge = false;
 
         static bool checkInstanceExtension(const c8* extensionName);
         static bool checkDeviceExtension(VkPhysicalDevice physicalDevice, const c8* extensionName);

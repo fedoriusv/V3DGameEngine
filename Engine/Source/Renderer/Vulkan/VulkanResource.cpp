@@ -55,7 +55,6 @@ void VulkanResource::captureInsideCommandBuffer(VulkanCommandBuffer* buffer, u64
 }
 
 
-
 VulkanResourceDeleter::~VulkanResourceDeleter()
 {
     ASSERT(m_delayedList.empty(), "should be empty");
@@ -64,16 +63,22 @@ VulkanResourceDeleter::~VulkanResourceDeleter()
 
 void VulkanResourceDeleter::addResourceToDelete(VulkanResource* resource, const std::function<void(VulkanResource* resource)>& deleter, bool forceDelete)
 {
-    if (resource->isCaptured() && !forceDelete)
-    {
-        m_delayedList.emplace(resource, deleter);
-    }
-
     if (forceDelete)
     {
         resource->waitComplete();
+        deleter(resource);
     }
-    deleter(resource);
+    else
+    {
+        if (resource->isCaptured())
+        {
+            m_delayedList.emplace(resource, deleter);
+        }
+        else
+        {
+            deleter(resource);
+        }
+    }
 }
 
 void VulkanResourceDeleter::updateResourceDeleter(bool wait)
@@ -82,7 +87,7 @@ void VulkanResourceDeleter::updateResourceDeleter(bool wait)
     std::queue<std::pair<VulkanResource*, std::function<void(VulkanResource* resource)>>> delayedList;
     while(!m_delayedList.empty())
     {
-        auto iter = m_delayedList.back();
+        auto iter = m_delayedList.front();
         m_delayedList.pop();
 
         if (iter.first->isCaptured())
@@ -104,13 +109,13 @@ void VulkanResourceDeleter::updateResourceDeleter(bool wait)
     }
 
     ASSERT(m_delayedList.empty(), "should be empty");
-    delayedList.swap(m_delayedList);
+    m_delayedList.swap(delayedList);
 #if DEBUG
     if (wait)
     {
         ASSERT(m_delayedList.empty(), "should be empty");
     }
-#endif
+#endif //DEBUG
 
     resourceGarbageCollect();
 }
@@ -119,7 +124,7 @@ void VulkanResourceDeleter::resourceGarbageCollect()
 {
     while (!m_deleterList.empty())
     {
-        auto iter = m_deleterList.back();
+        auto iter = m_deleterList.front();
         m_deleterList.pop();
 
         iter.second(iter.first);

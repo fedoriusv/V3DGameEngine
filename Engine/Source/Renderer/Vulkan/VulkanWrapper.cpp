@@ -117,12 +117,24 @@ VkResult VulkanWrapper::DeviceWaitIdle(VkDevice device) noexcept
 
 VkResult VulkanWrapper::AllocateMemory(VkDevice device, const VkMemoryAllocateInfo * pAllocateInfo, const VkAllocationCallbacks * pAllocator, VkDeviceMemory * pMemory) noexcept
 {
+#if VULKAN_DUMP
+    VulkanDump::getInstance()->dumpPreAllocateMemory(device, pAllocateInfo, pAllocator);
+    VkResult result = vkAllocateMemory(device, pAllocateInfo, pAllocator, pMemory);
+    VulkanDump::getInstance()->dumpPostAllocateMemory(result, pMemory);
+    return result;
+#else
     return vkAllocateMemory(device, pAllocateInfo, pAllocator, pMemory);
+#endif //VULKAN_DUMP
 }
 
 void VulkanWrapper::FreeMemory(VkDevice device, VkDeviceMemory memory, const VkAllocationCallbacks * pAllocator) noexcept
 {
+#if VULKAN_DUMP
+    VulkanDump::getInstance()->dumpFreeMemory(device, memory, pAllocator);
     vkFreeMemory(device, memory, pAllocator);
+#else
+    vkFreeMemory(device, memory, pAllocator);
+#endif //VULKAN_DUMP
 }
 
 VkResult VulkanWrapper::MapMemory(VkDevice device, VkDeviceMemory memory, VkDeviceSize offset, VkDeviceSize size, VkMemoryMapFlags flags, void ** ppData) noexcept

@@ -40,6 +40,8 @@ MyApplication::MyApplication(int& argc, char** argv)
     , m_CommandList(nullptr)
 
     , m_Camera(nullptr)
+
+    , m_Render(nullptr)
 {
     core::Dimension2D widowsSize = { 1280, 720 };
     m_Window = Window::createWindow(widowsSize, {800, 500}, false, new v3d::event::InputEventReceiver());
@@ -79,11 +81,11 @@ void MyApplication::Initialize()
 {
     m_Context = renderer::Context::createContext(m_Window, renderer::Context::RenderType::VulkanRender);
     ASSERT(m_Context, "context is nullptr");
-    m_CommandList = new renderer::CommandList(m_Context, renderer::CommandList::CommandListType::ImmediateCommandList);
+    m_CommandList = new renderer::CommandList(m_Context, renderer::CommandList::CommandListType::DelayedCommandList);
 
     //Shader* vertShader = resource::ResourceLoaderManager::getInstance()->loadShader<Shader, resource::ShaderSourceFileLoader>(m_CommandList->getContext(), "examples/3.drawmesh/shaders/mesh.vert", {}, ShaderSource_OptimisationPerformance);
-    Shader* vertShader = resource::ResourceLoaderManager::getInstance()->loadShader<Shader, resource::ShaderBinaryFileLoader>(m_CommandList->getContext(), "examples/3.drawmesh/shaders/mesh.vspv", {});
     //Shader* fragShader = resource::ResourceLoaderManager::getInstance()->loadShader<Shader, resource::ShaderSourceFileLoader>(m_CommandList->getContext(), "examples/3.drawmesh/shaders/mesh.frag", {}, ShaderSource_OptimisationPerformance);
+    Shader* vertShader = resource::ResourceLoaderManager::getInstance()->loadShader<Shader, resource::ShaderBinaryFileLoader>(m_CommandList->getContext(), "examples/3.drawmesh/shaders/mesh.vspv", {});
     Shader* fragShader = resource::ResourceLoaderManager::getInstance()->loadShader<Shader, resource::ShaderBinaryFileLoader>(m_CommandList->getContext(), "examples/3.drawmesh/shaders/mesh.fspv", {});
 
 

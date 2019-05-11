@@ -90,7 +90,7 @@ VulkanGraphicContext::VulkanGraphicContext(const platform::Window * window) noex
     memset(&m_deviceInfo, 0, sizeof(DeviceInfo));
 
 #if VULKAN_DUMP
-    VulkanDump::getInstance()->clearFile(VULKAN_DUMP_FILE);
+    VulkanDump::getInstance()->init(VulkanDump::DumpFlag_Image);
 #endif
 }
 
@@ -386,7 +386,7 @@ void VulkanGraphicContext::removeFramebuffer(Framebuffer * framebuffer)
     }
     else
     {
-        m_framebuferManager->removeFramebuffer(framebuffer);
+        m_framebuferManager->removeFramebuffer(vkFramebuffer);
     }
 }
 
@@ -402,7 +402,7 @@ void VulkanGraphicContext::removeRenderPass(RenderPass * renderpass)
     }
     else
     {
-        m_renderpassManager->removeRenderPass(renderpass);
+        m_renderpassManager->removeRenderPass(vkRenderpass);
     }
 }
 
@@ -443,7 +443,7 @@ void VulkanGraphicContext::removePipeline(Pipeline * pipeline)
     }
     else
     {
-        m_pipelineManager->removePipeline(pipeline);
+        m_pipelineManager->removePipeline(vkPipeline);
     }
 }
 
@@ -514,10 +514,10 @@ void VulkanGraphicContext::removeBuffer(Buffer * buffer)
     }
     else
     {
-        buffer->notifyObservers();
+        vkBuffer->notifyObservers();
 
-        buffer->destroy();
-        delete buffer;
+        vkBuffer->destroy();
+        delete vkBuffer;
     }
 }
 
@@ -533,7 +533,7 @@ void VulkanGraphicContext::removeSampler(Sampler * sampler)
     }
     else
     {
-        m_samplerManager->removeSampler(sampler);
+        m_samplerManager->removeSampler(vkSampler);
     }
 }
 
@@ -939,7 +939,7 @@ bool VulkanGraphicContext::createInstance()
     applicationInfo.applicationVersion = 1;
     applicationInfo.pEngineName = s_vulkanApplicationName.c_str();
     applicationInfo.engineVersion = 1;
-    applicationInfo.apiVersion = VK_MAKE_VERSION(VULKAN_VERSION_MAJOR, VULKAN_VERSION_MINOR, VULKAN_VERSION_PATCH);
+    applicationInfo.apiVersion = VK_MAKE_VERSION(VULKAN_VERSION_MAJOR, VULKAN_VERSION_MINOR, 0);
 
     std::vector<std::string> supportedExtensions;
     VulkanDeviceCaps::listOfInstanceExtensions(supportedExtensions);
