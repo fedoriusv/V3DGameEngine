@@ -53,11 +53,11 @@
 #   if VULKAN_LAYERS_CALLBACKS
 #       define VULKAN_VALIDATION_LAYERS_CALLBACK 1
 #       define VULKAN_RENDERDOC_LAYER 0
-#       define VULKAN_DEBUG_MARKERS 0
+#       define VULKAN_DEBUG_MARKERS 1
 #   endif //VULKAN_LAYERS_CALLBACKS
 
 #   define VULKAN_STATISTICS 0
-#   define VULKAN_DUMP 0
+#   define VULKAN_DUMP 1
 #   if VULKAN_DUMP
 #   define VULKAN_DUMP_FILE "VulkanCommandsDump.log"
 #   endif //VULKAN_DUMP

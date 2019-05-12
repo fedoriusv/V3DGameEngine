@@ -18,8 +18,8 @@ namespace renderer
     {
     public:
 
-        Image() {};
-        virtual ~Image() {};
+        Image() = default;
+        virtual ~Image() = default;
 
         virtual bool create() = 0;
         virtual void destroy() = 0;

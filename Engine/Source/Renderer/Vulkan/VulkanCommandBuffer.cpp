@@ -227,6 +227,11 @@ void VulkanCommandBuffer::cmdBeginRenderpass(VulkanRenderPass* pass, VulkanFrame
 
     pass->captureInsideCommandBuffer(this, 0);
     framebuffer->captureInsideCommandBuffer(this, 0);
+    for (auto& image : framebuffer->getImages())
+    {
+        VulkanImage* vkImage = static_cast<VulkanImage*>(image);
+        vkImage->captureInsideCommandBuffer(this, 0);
+    }
 
     VkRenderPassBeginInfo renderPassBeginInfo = {};
     renderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;

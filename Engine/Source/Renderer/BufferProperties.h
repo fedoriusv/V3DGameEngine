@@ -84,7 +84,7 @@ namespace renderer
         VertexInputAttribDescription() noexcept;
         VertexInputAttribDescription(const VertexInputAttribDescription& desc) noexcept;
         VertexInputAttribDescription(std::vector<InputBinding> inputBindings, std::vector<VertexInputAttribDescription::InputAttribute> inputAttributes) noexcept;
-        VertexInputAttribDescription& operator=(const VertexInputAttribDescription& desc);
+        VertexInputAttribDescription& operator=(const VertexInputAttribDescription& desc) noexcept;
 
         bool operator==(const VertexInputAttribDescription& desc);
 
@@ -110,8 +110,8 @@ namespace renderer
         StreamBufferDescription() noexcept = default;
         explicit StreamBufferDescription(const StreamBufferDescription& desc) noexcept;
         explicit StreamBufferDescription(StreamBufferDescription&& desc) noexcept;
-        StreamBufferDescription& operator=(const StreamBufferDescription& desc);
-        StreamBufferDescription& operator=(StreamBufferDescription&& desc);
+        StreamBufferDescription& operator=(const StreamBufferDescription& desc) noexcept;
+        StreamBufferDescription& operator=(StreamBufferDescription&& desc) noexcept;
 
         explicit StreamBufferDescription(VertexStreamBuffer* vertex, u32 stream) noexcept;
         explicit StreamBufferDescription(VertexStreamBuffer* vertex, u32 stream, u32 offset) noexcept;

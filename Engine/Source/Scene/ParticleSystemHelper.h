@@ -19,6 +19,7 @@ namespace scene
         ParticleSystemHelper(const ParticleSystemHelper&) = delete;
 
         ParticleSystemHelper(renderer::CommandList& list);
+        ~ParticleSystemHelper();
 
         void add(u32 particleCount, const core::Vector3D& pos, const core::Vector3D& minVel, const core::Vector3D& maxVel);
         void update(f32 dt);

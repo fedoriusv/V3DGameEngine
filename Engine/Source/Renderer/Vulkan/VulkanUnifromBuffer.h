@@ -2,6 +2,7 @@
 
 #ifdef VULKAN_RENDER
 #include "VulkanWrapper.h"
+#include "VulkanResource.h"
 #include "VulkanMemory.h"
 
 namespace v3d
@@ -15,6 +16,8 @@ namespace vk
     class VulkanUniformBuffer final
     {
     public:
+
+        VulkanUniformBuffer() = delete;
 
         VulkanUniformBuffer(VulkanBuffer* buffer, u64 offset, u64 size) noexcept;
         ~VulkanUniformBuffer();
@@ -36,7 +39,11 @@ namespace vk
     {
     public:
 
-        VulkanUniformBufferManager(VkDevice device);
+        VulkanUniformBufferManager() = delete;
+        VulkanUniformBufferManager(const VulkanUniformBufferManager&) = delete;
+        VulkanUniformBufferManager& operator=(const VulkanUniformBufferManager&) = delete;
+
+        explicit VulkanUniformBufferManager(VkDevice device, VulkanResourceDeleter& resourceDeleter) noexcept;
         ~VulkanUniformBufferManager();
 
         VulkanUniformBuffer* acquireUnformBuffer(u32 requestedSize);
@@ -57,6 +64,8 @@ namespace vk
             void addUniformBuffer(VulkanUniformBuffer* uniformBuffer, u64 size);
         };
 
+        bool freeUniformBufferPool(VulkanUniformBufferPool* uniformPool, bool waitComplete);
+
         VulkanUniformBufferPool* getNewPool(u64 size);
 
         std::deque<VulkanUniformBufferPool*> m_freePoolBuffers;
@@ -64,6 +73,8 @@ namespace vk
         VulkanUniformBufferPool* m_currentPoolBuffer;
 
         std::map<VulkanBuffer*, VulkanUniformBufferPool*> m_uniformBuffers;
+
+        VulkanResourceDeleter& m_resourceDeleter;
 
         VkDevice m_device;
         VulkanMemory::VulkanMemoryAllocator* m_memoryManager;

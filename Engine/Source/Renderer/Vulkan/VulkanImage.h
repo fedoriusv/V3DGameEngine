@@ -25,8 +25,10 @@ namespace vk
     {
     public:
 
-        VulkanImage(VulkanMemory::VulkanMemoryAllocator* memory, VkDevice device, VkImageType type, VkFormat format, VkExtent3D dimension, u32 layers, u32 mipsLevel, VkImageTiling tiling, TextureUsageFlags usage);
-        VulkanImage(VulkanMemory::VulkanMemoryAllocator* memory, VkDevice device, VkFormat format, VkExtent3D dimension, VkSampleCountFlagBits samples, TextureUsageFlags usage);
+        VulkanImage() = delete;
+
+        VulkanImage(VulkanMemory::VulkanMemoryAllocator* memory, VkDevice device, VkImageType type, VkFormat format, VkExtent3D dimension, u32 layers, u32 mipsLevel, VkImageTiling tiling, TextureUsageFlags usage, const std::string& name = "") noexcept;
+        VulkanImage(VulkanMemory::VulkanMemoryAllocator* memory, VkDevice device, VkFormat format, VkExtent3D dimension, VkSampleCountFlagBits samples, TextureUsageFlags usage, const std::string& name = "") noexcept;
         ~VulkanImage();
 
         bool create() override;
@@ -118,6 +120,11 @@ namespace vk
         VulkanMemory::VulkanMemoryAllocator* m_memoryAllocator;
 
         bool                        m_swapchainImage;
+
+#if VULKAN_DEBUG_MARKERS
+        std::string m_debugName;
+        static u32 s_debugNameGenerator;
+#endif //VULKAN_DEBUG_MARKERS
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

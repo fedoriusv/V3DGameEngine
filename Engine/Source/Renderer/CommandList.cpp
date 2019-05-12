@@ -452,6 +452,8 @@ CommandList::CommandList(Context* context, CommandListType type) noexcept
 
 CommandList::~CommandList()
 {
+    CommandList::flushCommands();
+    ASSERT(m_commandList.empty(), "not empty");
 }
 
 void CommandList::flushCommands()
@@ -562,24 +564,27 @@ void CommandList::setRenderTarget(RenderTargetState* rendertarget)
             m_pendingFlushMask = CommandList::flushPendingCommands(m_pendingFlushMask);
             CommandList::pushCommand(new CommandInvalidateRenderPass());
         }
-    }
 
-    RenderTargetPendingState renderTargetInfo;
-    RenderPass::RenderPassInfo& renderPassInfo = renderTargetInfo._renderpassInfo;
-    renderPassInfo._tracker = &rendertarget->m_trackerRenderpass;
-    renderTargetInfo._framebufferInfo._tracker = &rendertarget->m_trackerFramebuffer;
-    rendertarget->extractRenderTargetInfo(renderPassInfo._value._desc, renderTargetInfo._framebufferInfo._images, renderTargetInfo._framebufferInfo._clearInfo);
-
-    if (CommandList::isImmediate())
-    {
-        m_context->setRenderTarget(&renderTargetInfo._renderpassInfo, &renderTargetInfo._framebufferInfo);
     }
     else
     {
-        m_pendingRenderTargetInfo._framebufferInfo = std::move(renderTargetInfo._framebufferInfo);
-        m_pendingRenderTargetInfo._renderpassInfo = std::move(renderTargetInfo._renderpassInfo);
+        RenderTargetPendingState renderTargetInfo;
+        RenderPass::RenderPassInfo& renderPassInfo = renderTargetInfo._renderpassInfo;
+        renderPassInfo._tracker = &rendertarget->m_trackerRenderpass;
+        renderTargetInfo._framebufferInfo._tracker = &rendertarget->m_trackerFramebuffer;
+        rendertarget->extractRenderTargetInfo(renderPassInfo._value._desc, renderTargetInfo._framebufferInfo._images, renderTargetInfo._framebufferInfo._clearInfo);
 
-        m_pendingFlushMask |= PendingFlush_UpdateRenderTarget;
+        if (CommandList::isImmediate())
+        {
+            m_context->setRenderTarget(&renderTargetInfo._renderpassInfo, &renderTargetInfo._framebufferInfo);
+        }
+        else
+        {
+            m_pendingRenderTargetInfo._framebufferInfo = std::move(renderTargetInfo._framebufferInfo);
+            m_pendingRenderTargetInfo._renderpassInfo = std::move(renderTargetInfo._renderpassInfo);
+
+            m_pendingFlushMask |= PendingFlush_UpdateRenderTarget;
+        }
     }
 }
 

@@ -26,8 +26,8 @@ namespace renderer
             BufferType_StagingBuffer
         };
 
-        Buffer() noexcept {};
-        virtual ~Buffer() {};
+        Buffer() = default;
+        virtual ~Buffer() = default;
 
         virtual bool create() = 0;
         virtual void destroy() = 0;

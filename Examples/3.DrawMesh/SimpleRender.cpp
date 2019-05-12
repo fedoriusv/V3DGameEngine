@@ -7,7 +7,6 @@
 #include "Scene/Camera.h"
 #include "Scene/Model.h"
 
-
 namespace v3d
 {
 namespace renderer
@@ -21,7 +20,7 @@ SimpleRender::SimpleRender(renderer::CommandList& cmdList, const core::Dimension
     if (!image.empty())
     {
         m_sampler = cmdList.createObject<SamplerState>(SamplerFilter::SamplerFilter_Bilinear, SamplerFilter::SamplerFilter_Bilinear, SamplerAnisotropic::SamplerAnisotropic_None);
-        m_texture[0] = cmdList.createObject<Texture2D>(TextureUsage::TextureUsage_Sampled | TextureUsage_Shared | TextureUsage_Write,
+        m_texture = cmdList.createObject<Texture2D>(TextureUsage::TextureUsage_Sampled | TextureUsage_Shared | TextureUsage_Write,
             image[0]->getFormat(), core::Dimension2D(image[0]->getDimension().width, image[0]->getDimension().height), 1, 1, image[0]->getRawData());
     }
     m_modelDrawer = new scene::ModelHelper(cmdList, models);
@@ -49,6 +48,12 @@ SimpleRender::SimpleRender(renderer::CommandList& cmdList, const core::Dimension
 
 SimpleRender::~SimpleRender()
 {
+    Texture2D* depthAttachment = m_renderTarget->getDepthStencilTexture();
+    if (depthAttachment)
+    {
+        delete depthAttachment;
+    }
+
     delete m_modelDrawer;
 }
 
@@ -59,7 +64,7 @@ void SimpleRender::updateParameter(renderer::CommandList & cmdList, const std::s
 
 void SimpleRender::updateParameter(renderer::CommandList & cmdList, const std::string & name, u32 index)
 {
-    m_program->bindSampledTexture<ShaderType::ShaderType_Fragment, Texture2D>(0/*name*/, m_texture[index].get(), m_sampler.get());
+    m_program->bindSampledTexture<ShaderType::ShaderType_Fragment, Texture2D>(0/*name*/, m_texture.get(), m_sampler.get());
 }
 
 void SimpleRender::render(renderer::CommandList& cmdList)

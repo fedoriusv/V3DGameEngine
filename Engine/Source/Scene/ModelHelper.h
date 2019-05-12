@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Common.h"
+#include "Utils/IntrusivePointer.h"
 #include "Renderer/CommandList.h"
 #include "Renderer/BufferProperties.h"
 
@@ -56,6 +57,7 @@ namespace scene
 
         std::vector<const Model*> m_models;
         std::vector<std::tuple<renderer::StreamBufferDescription, DrawProps>> m_drawState;
+        std::vector<utils::IntrusivePointer<renderer::StreamBuffer>> m_buffers;
 
         Transform m_tramsform;
     };

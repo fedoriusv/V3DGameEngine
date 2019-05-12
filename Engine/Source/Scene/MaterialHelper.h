@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Common.h"
+#include "Utils/IntrusivePointer.h"
 #include "Renderer/CommandList.h"
 #include "Renderer/Object/ShaderProgram.h"
 #include "Renderer/Object/Texture.h"
@@ -40,7 +41,7 @@ namespace scene
 
         Material* m_material;
 
-        std::vector<renderer::Texture*> m_textures;
+        std::vector<utils::IntrusivePointer<renderer::Texture>> m_textures;
     };
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////

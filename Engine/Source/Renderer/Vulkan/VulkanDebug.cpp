@@ -86,7 +86,7 @@ bool VulkanDebug::createDebugUtilsMesseger(VkInstance instance, VkDebugUtilsMess
     debugUtilsMessengerCreateInfo.pfnUserCallback = (callback) ? callback : VulkanDebug::defaultDebugUtilsMessegerCallback;
     debugUtilsMessengerCreateInfo.pUserData = userData;
 
-    VkResult result = VulkanWrapper::CreateDebugUtilsMessengerEXT(instance, &debugUtilsMessengerCreateInfo, VULKAN_ALLOCATOR, &s_messeger);
+    VkResult result = VulkanWrapper::CreateDebugUtilsMessenger(instance, &debugUtilsMessengerCreateInfo, VULKAN_ALLOCATOR, &s_messeger);
     if (result != VK_SUCCESS)
     {
         LOG_ERROR("VulkanDebug::createDebugUtilsMessagerCallback: vkCreateDebugUtilsMessengerEXT error %s", ErrorString(result).c_str());
@@ -99,7 +99,7 @@ void VulkanDebug::destroyDebugUtilsMesseger(VkInstance instance)
 {
     if (s_messeger)
     {
-        VulkanWrapper::DestroyDebugUtilsMessengerEXT(instance, s_messeger, VULKAN_ALLOCATOR);
+        VulkanWrapper::DestroyDebugUtilsMessenger(instance, s_messeger, VULKAN_ALLOCATOR);
         s_messeger = VK_NULL_HANDLE;
     }
 }
@@ -252,7 +252,15 @@ void VulkanDump::init(DumpFlags flags)
 
 void VulkanDump::dumpFrameNumber(u64 frame)
 {
-    m_dump << "------------FrameNamber #" << frame << "------------" << std::endl;
+    if (m_flags & DumpFlag::DumpFlag_General)
+    {
+        m_dump << "------------FrameNamber #" << std::dec << frame << "------------" << std::endl;
+
+        if (k_forceFlush)
+        {
+            VulkanDump::flushToFile(VULKAN_DUMP_FILE);
+        }
+    }
 }
 
 void VulkanDump::dumpPreGetBufferMemoryRequirements(VkDevice device, VkBuffer buffer)
@@ -519,7 +527,6 @@ void VulkanDump::dumpFreeMemory(VkDevice device, VkDeviceMemory memory, const Vk
         m_dump << "FreeMemory(" << std::endl;
         m_dump << "VkDevice device: " << std::hex << device << std::endl;
         m_dump << "VkDeviceMemory memory: " << std::hex << memory << std::endl;
-        m_dump << "]," << std::endl;
         m_dump << "VkAllocationCallbacks pAllocator: " << std::hex << pAllocator << ")" << std::endl;
 
         if (k_forceFlush)

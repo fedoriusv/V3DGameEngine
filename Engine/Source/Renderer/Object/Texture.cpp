@@ -84,6 +84,37 @@ private:
     bool                        m_shared;
 };
 
+    /*CommandDestroyImage*/
+class CommandDestroyImage : public Command
+{
+public:
+    CommandDestroyImage(Image* image) noexcept
+        : m_image(image)
+    {
+#if DEBUG_COMMAND_LIST
+        LOG_DEBUG("CommandDestroyImage constructor");
+#endif //DEBUG_COMMAND_LIST
+    }
+
+    ~CommandDestroyImage()
+    {
+#if DEBUG_COMMAND_LIST
+        LOG_DEBUG("CommandDestroyImage destructor");
+#endif //DEBUG_COMMAND_LIST
+    }
+
+    void execute(const renderer::CommandList& cmdList) override
+    {
+#if DEBUG_COMMAND_LIST
+        LOG_DEBUG("CommandDestroyImage execute");
+#endif //DEBUG_COMMAND_LIST
+        cmdList.getContext()->removeImage(m_image);
+    }
+
+private:
+    Image* m_image;
+};
+
     /*UploadTextureCommand*/
 class UploadTextureCommand : public renderer::Command, utils::Observer
 {
@@ -262,11 +293,10 @@ Texture2D::Texture2D(renderer::CommandList & cmdList, TextureUsageFlags usage, r
 
 void Texture2D::handleNotify(utils::Observable* ob)
 {
-    if (m_image)
-    {
-        delete m_image;
-        m_image = nullptr;
-    }
+    LOG_DEBUG("Texture2D::handleNotify to delete image %xll", this);
+    ASSERT(m_image == ob, "not same");
+
+    m_image = nullptr;
 }
 
 void Texture2D::createTexture2D(const void * data)
@@ -315,10 +345,16 @@ renderer::Image * Texture2D::getImage() const
 
 Texture2D::~Texture2D()
 {
-    //m_image delete
-    //m_image = m_imageManager.destroyImage();
-    //create command
+    ASSERT(m_image, "image nullptr");
     m_image->unregisterNotify(this);
+    if (m_cmdList.isImmediate())
+    {
+        m_cmdList.getContext()->removeImage(m_image);
+    }
+    else
+    {
+        m_cmdList.pushCommand(new CommandDestroyImage(m_image));
+    }
 }
 
 renderer::TextureTarget Texture2D::getTarget() const

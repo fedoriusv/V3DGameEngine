@@ -26,6 +26,8 @@ VulkanContextState::VulkanContextState(VkDevice device, VulkanDescriptorSetManag
     , m_swapchainIndex(0)
     , m_descriptorSetManager(descriptorSetManager)
     , m_unifromBufferManager(unifromBufferManager)
+
+    , m_currentPool(nullptr)
 {
     m_currentRenderpass = { nullptr, false };
     m_currentFramebuffer = { { nullptr }, false };

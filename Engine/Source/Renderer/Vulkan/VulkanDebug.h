@@ -29,6 +29,7 @@ namespace vk
     {
     public:
 
+        VulkanDebug() = default;
         VulkanDebug(const VulkanDebug&) = delete;
 
         static const u16    k_severityDebugLevel = 2;
@@ -59,9 +60,10 @@ namespace vk
         enum DumpFlag : u32
         {
             DumpFlag_None = 0,
-            DumpFlag_Memory = 1 << 0,
-            DumpFlag_Image = 1 << 1,
-            DumpFlag_Buffer = 1 << 2,
+            DumpFlag_General = 1 << 0,
+            DumpFlag_Memory = 1 << 1,
+            DumpFlag_Image = 1 << 2,
+            DumpFlag_Buffer = 1 << 3,
 
             DumpFlag_All = 0x7FFFFFFF
         };

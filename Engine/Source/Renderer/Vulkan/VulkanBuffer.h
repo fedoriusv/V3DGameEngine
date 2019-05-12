@@ -24,7 +24,10 @@ namespace vk
     {
     public:
 
-        VulkanBuffer(VulkanMemory::VulkanMemoryAllocator* memory, VkDevice device, Buffer::BufferType type, StreamBufferUsageFlags usageFlag, u64 size);
+        VulkanBuffer() = delete;
+        VulkanBuffer(const VulkanBuffer&) = delete;
+
+        VulkanBuffer(VulkanMemory::VulkanMemoryAllocator* memory, VkDevice device, Buffer::BufferType type, StreamBufferUsageFlags usageFlag, u64 size, const std::string& name = "") noexcept;
         ~VulkanBuffer();
 
         bool create() override;
@@ -53,6 +56,11 @@ namespace vk
         bool m_mapped;
 
         VkBuffer m_buffer;
+
+#if VULKAN_DEBUG_MARKERS
+        std::string m_debugName;
+        static u32 s_debugNameGenerator;
+#endif //VULKAN_DEBUG_MARKERS
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

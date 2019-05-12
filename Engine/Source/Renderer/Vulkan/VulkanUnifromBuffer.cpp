@@ -61,11 +61,13 @@ bool VulkanUniformBuffer::update(u32 offset, u32 size, const void * data)
     return true;
 }
 
-VulkanUniformBufferManager::VulkanUniformBufferManager(VkDevice device)
+VulkanUniformBufferManager::VulkanUniformBufferManager(VkDevice device, VulkanResourceDeleter& resourceDeleter) noexcept
     : m_device(device)
     , m_memoryManager(new SimpleVulkanMemoryAllocator(device))
 
     , m_currentPoolBuffer(nullptr)
+
+    , m_resourceDeleter(resourceDeleter)
 {
 }
 
@@ -73,21 +75,20 @@ VulkanUniformBufferManager::~VulkanUniformBufferManager()
 {
     ASSERT(m_usedPoolBuffers.empty(), "still not empty");
 
+    if (m_currentPoolBuffer)
+    {
+        bool result = VulkanUniformBufferManager::freeUniformBufferPool(m_currentPoolBuffer, true);
+        ASSERT(result, "fail to delete uniform current pool. Still used");
+        delete m_currentPoolBuffer;
+        m_currentPoolBuffer = nullptr;
+    }
+
     while (!m_freePoolBuffers.empty())
     {
         VulkanUniformBufferPool* poolUnifromBuffers = m_freePoolBuffers.front();
         m_freePoolBuffers.pop_front();
 
-        for (auto& uniform : poolUnifromBuffers->_uniformList)
-        {
-            delete uniform;
-        }
-        //TODO crash
-        poolUnifromBuffers->_uniformList.clear();
-
-        poolUnifromBuffers->_buffer->destroy();
-        delete poolUnifromBuffers->_buffer;
-
+        VulkanUniformBufferManager::freeUniformBufferPool(poolUnifromBuffers, false);
         delete poolUnifromBuffers;
     }
 
@@ -156,6 +157,43 @@ void VulkanUniformBufferManager::updateUniformBuffers()
             ++iter;
         }
     }
+}
+
+bool VulkanUniformBufferManager::freeUniformBufferPool(VulkanUniformBufferPool* uniformPool, bool waitComplete)
+{
+    for (auto& uniform : uniformPool->_uniformList)
+    {
+        delete uniform;
+    }
+    uniformPool->_uniformList.clear();
+
+    VulkanBuffer* buffer = uniformPool->_buffer;
+    ASSERT(buffer, "nullptr");
+
+    if (buffer->isCaptured())
+    {
+        m_resourceDeleter.addResourceToDelete(buffer, [buffer](VulkanResource * resource) -> void
+            {
+                buffer->notifyObservers();
+
+                buffer->destroy();
+                delete buffer;
+
+            }, waitComplete);
+
+        return false;
+    }
+    else
+    {
+        buffer->notifyObservers();
+
+        buffer->destroy();
+        delete buffer;
+
+        return true;
+    }
+
+    return true;
 }
 
 VulkanUniformBufferManager::VulkanUniformBufferPool * VulkanUniformBufferManager::getNewPool(u64 size)

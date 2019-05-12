@@ -15,8 +15,11 @@ namespace renderer
 {
 namespace vk
 {
+#if VULKAN_DEBUG_MARKERS
+u32 VulkanBuffer::s_debugNameGenerator = 0;
+#endif //VULKAN_DEBUG_MARKERS
 
-VulkanBuffer::VulkanBuffer(VulkanMemory::VulkanMemoryAllocator* memory, VkDevice device, Buffer::BufferType type, StreamBufferUsageFlags usageFlag, u64 size)
+VulkanBuffer::VulkanBuffer(VulkanMemory::VulkanMemoryAllocator* memory, VkDevice device, Buffer::BufferType type, StreamBufferUsageFlags usageFlag, u64 size, const std::string& name) noexcept
     : m_device(device)
 
     , m_memory(VulkanMemory::s_invalidMemory)
@@ -31,6 +34,9 @@ VulkanBuffer::VulkanBuffer(VulkanMemory::VulkanMemoryAllocator* memory, VkDevice
     , m_mapped(false)
 {
     LOG_DEBUG("VulkanBuffer::VulkanBuffer constructor %llx", this);
+#if VULKAN_DEBUG_MARKERS
+    m_debugName = name.empty() ? "Buffer_" + std::to_string(s_debugNameGenerator++) : name;
+#endif //VULKAN_DEBUG_MARKERS
 }
 
 VulkanBuffer::~VulkanBuffer()
@@ -115,6 +121,17 @@ bool VulkanBuffer::create()
         return false;
     }
 
+#if VULKAN_DEBUG_MARKERS
+    VkDebugUtilsObjectNameInfoEXT debugUtilsObjectNameInfo = {};
+    debugUtilsObjectNameInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT;
+    debugUtilsObjectNameInfo.pNext = nullptr;
+    debugUtilsObjectNameInfo.objectType = VK_OBJECT_TYPE_BUFFER;
+    debugUtilsObjectNameInfo.objectHandle = reinterpret_cast<u64>(m_buffer);
+    debugUtilsObjectNameInfo.pObjectName = m_debugName.c_str();
+
+    VulkanWrapper::SetDebugUtilsObjectName(m_device, &debugUtilsObjectNameInfo);
+#endif //VULKAN_DEBUG_MARKERS
+
     m_memory = VulkanMemory::allocateBufferMemory(*m_memoryAllocator, m_buffer, flag);
     if (m_memory == VulkanMemory::s_invalidMemory)
     {
@@ -124,13 +141,13 @@ bool VulkanBuffer::create()
         return false;
     }
 
-    /*if (!createViewBuffer())
-    {
-        VulkanBuffer::destroy();
+/*if (!createViewBuffer())
+{
+    VulkanBuffer::destroy();
 
-        LOG_ERROR("VulkanBuffer::VulkanBuffer::create() is failed");
-        return false;
-    }*/
+    LOG_ERROR("VulkanBuffer::VulkanBuffer::create() is failed");
+    return false;
+}*/
 
     return true;
 }

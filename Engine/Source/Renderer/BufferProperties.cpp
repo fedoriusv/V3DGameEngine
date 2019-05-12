@@ -68,7 +68,7 @@ StreamBufferDescription::StreamBufferDescription(StreamBufferDescription && desc
     _indexType = desc._indexType;
 }
 
-StreamBufferDescription& StreamBufferDescription::operator=(const StreamBufferDescription& desc)
+StreamBufferDescription& StreamBufferDescription::operator=(const StreamBufferDescription& desc) noexcept
 {
     if (this == &desc)
     {
@@ -86,7 +86,7 @@ StreamBufferDescription& StreamBufferDescription::operator=(const StreamBufferDe
     return *this;
 }
 
-StreamBufferDescription & StreamBufferDescription::operator=(StreamBufferDescription && desc)
+StreamBufferDescription& StreamBufferDescription::operator=(StreamBufferDescription && desc) noexcept
 {
     if (this == &desc)
     {
@@ -164,7 +164,7 @@ VertexInputAttribDescription::VertexInputAttribDescription(std::vector<InputBind
     _countInputAttributes = index;
 }
 
-VertexInputAttribDescription & VertexInputAttribDescription::operator=(const VertexInputAttribDescription & desc)
+VertexInputAttribDescription & VertexInputAttribDescription::operator=(const VertexInputAttribDescription & desc) noexcept
 {
     _countInputBindings = desc._countInputBindings;
     _inputBindings = desc._inputBindings;

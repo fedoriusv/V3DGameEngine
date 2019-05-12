@@ -91,6 +91,10 @@ namespace vk
     private:
         VulkanMemory::VulkanAlloc allocate(VkDeviceSize size, u32 memoryTypeIndex) override;
         void deallocate(VulkanMemory::VulkanAlloc& memory) override;
+
+#if VULKAN_DEBUG_MARKERS
+        static u32 s_debugNameGenerator;
+#endif //VULKAN_DEBUG_MARKERS
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

@@ -43,7 +43,7 @@ private:
     utils::IntrusivePointer<GraphicsPipelineState>  m_pipeline;
     utils::IntrusivePointer<RenderTargetState>      m_renderTarget;
 
-   utils::IntrusivePointer<Texture2D>    m_texture[1];
+   utils::IntrusivePointer<Texture2D>    m_texture;
    utils::IntrusivePointer<SamplerState> m_sampler;
 
    scene::ModelHelper*      m_modelDrawer;

@@ -300,6 +300,7 @@ void VulkanWrapper::DestroyBuffer(VkDevice device, VkBuffer buffer, const VkAllo
 {
 #if VULKAN_DUMP
     VulkanDump::getInstance()->dumpDestroyBuffer(device, buffer, pAllocator);
+    vkDestroyBuffer(device, buffer, pAllocator);
 #else
     vkDestroyBuffer(device, buffer, pAllocator);
 #endif //VULKAN_DUMP
@@ -331,6 +332,7 @@ void VulkanWrapper::DestroyImage(VkDevice device, VkImage image, const VkAllocat
 {
 #if VULKAN_DUMP
     VulkanDump::getInstance()->dumpDestroyImage(device, image, pAllocator);
+    vkDestroyImage(device, image, pAllocator);
 #else
     vkDestroyImage(device, image, pAllocator);
 #endif //VULKAN_DUMP
@@ -968,57 +970,57 @@ VkResult VulkanWrapper::AcquireNextImage2(VkDevice device, const VkAcquireNextIm
 #endif //VK_KHR_swapchain
 
 #ifdef VK_EXT_debug_utils
-VkResult VulkanWrapper::SetDebugUtilsObjectNameEXT(VkDevice device, const VkDebugUtilsObjectNameInfoEXT * pNameInfo) noexcept
+VkResult VulkanWrapper::SetDebugUtilsObjectName(VkDevice device, const VkDebugUtilsObjectNameInfoEXT * pNameInfo) noexcept
 {
     return vkSetDebugUtilsObjectNameEXT(device, pNameInfo);
 }
 
-VkResult VulkanWrapper::SetDebugUtilsObjectTagEXT(VkDevice device, const VkDebugUtilsObjectTagInfoEXT * pTagInfo) noexcept
+VkResult VulkanWrapper::SetDebugUtilsObjectTag(VkDevice device, const VkDebugUtilsObjectTagInfoEXT * pTagInfo) noexcept
 {
     return vkSetDebugUtilsObjectTagEXT(device, pTagInfo);
 }
 
-void VulkanWrapper::QueueBeginDebugUtilsLabelEXT(VkQueue queue, const VkDebugUtilsLabelEXT * pLabelInfo) noexcept
+void VulkanWrapper::QueueBeginDebugUtilsLabel(VkQueue queue, const VkDebugUtilsLabelEXT * pLabelInfo) noexcept
 {
     vkQueueBeginDebugUtilsLabelEXT(queue, pLabelInfo);
 }
 
-void VulkanWrapper::QueueEndDebugUtilsLabelEXT(VkQueue queue) noexcept
+void VulkanWrapper::QueueEndDebugUtilsLabel(VkQueue queue) noexcept
 {
     vkQueueEndDebugUtilsLabelEXT(queue);
 }
 
-void VulkanWrapper::QueueInsertDebugUtilsLabelEXT(VkQueue queue, const VkDebugUtilsLabelEXT * pLabelInfo) noexcept
+void VulkanWrapper::QueueInsertDebugUtilsLabel(VkQueue queue, const VkDebugUtilsLabelEXT * pLabelInfo) noexcept
 {
     vkQueueInsertDebugUtilsLabelEXT(queue, pLabelInfo);
 }
 
-void VulkanWrapper::CmdBeginDebugUtilsLabelEXT(VkCommandBuffer commandBuffer, const VkDebugUtilsLabelEXT * pLabelInfo) noexcept
+void VulkanWrapper::CmdBeginDebugUtilsLabel(VkCommandBuffer commandBuffer, const VkDebugUtilsLabelEXT * pLabelInfo) noexcept
 {
     vkCmdBeginDebugUtilsLabelEXT(commandBuffer, pLabelInfo);
 }
 
-void VulkanWrapper::CmdEndDebugUtilsLabelEXT(VkCommandBuffer commandBuffer) noexcept
+void VulkanWrapper::CmdEndDebugUtilsLabel(VkCommandBuffer commandBuffer) noexcept
 {
     vkCmdEndDebugUtilsLabelEXT(commandBuffer);
 }
 
-void VulkanWrapper::CmdInsertDebugUtilsLabelEXT(VkCommandBuffer commandBuffer, const VkDebugUtilsLabelEXT * pLabelInfo) noexcept
+void VulkanWrapper::CmdInsertDebugUtilsLabel(VkCommandBuffer commandBuffer, const VkDebugUtilsLabelEXT * pLabelInfo) noexcept
 {
     vkCmdInsertDebugUtilsLabelEXT(commandBuffer, pLabelInfo);
 }
 
-VkResult VulkanWrapper::CreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT * pCreateInfo, const VkAllocationCallbacks * pAllocator, VkDebugUtilsMessengerEXT * pMessenger) noexcept
+VkResult VulkanWrapper::CreateDebugUtilsMessenger(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT * pCreateInfo, const VkAllocationCallbacks * pAllocator, VkDebugUtilsMessengerEXT * pMessenger) noexcept
 {
     return vkCreateDebugUtilsMessengerEXT(instance, pCreateInfo, pAllocator, pMessenger);
 }
 
-void VulkanWrapper::DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT messenger, const VkAllocationCallbacks * pAllocator) noexcept
+void VulkanWrapper::DestroyDebugUtilsMessenger(VkInstance instance, VkDebugUtilsMessengerEXT messenger, const VkAllocationCallbacks * pAllocator) noexcept
 {
     vkDestroyDebugUtilsMessengerEXT(instance, messenger, pAllocator);
 }
 
-void VulkanWrapper::SubmitDebugUtilsMessageEXT(VkInstance instance, VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageTypes, const VkDebugUtilsMessengerCallbackDataEXT * pCallbackData) noexcept
+void VulkanWrapper::SubmitDebugUtilsMessage(VkInstance instance, VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageTypes, const VkDebugUtilsMessengerCallbackDataEXT * pCallbackData) noexcept
 {
     vkSubmitDebugUtilsMessageEXT(instance, messageSeverity, messageTypes, pCallbackData);
 }

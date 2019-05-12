@@ -25,6 +25,16 @@ ParticleSystemHelper::ParticleSystemHelper(renderer::CommandList & list)
 
 }
 
+ParticleSystemHelper::~ParticleSystemHelper()
+{
+    for (auto& particle : m_particleSystems)
+    {
+        delete particle.first;
+        delete particle.second;
+    }
+    m_particleSystems.clear();
+}
+
 const renderer::VertexInputAttribDescription& ParticleSystemHelper::getVertexInputAttribDesc() const
 {
     return m_attributeDesc;

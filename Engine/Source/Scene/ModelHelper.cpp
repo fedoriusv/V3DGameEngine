@@ -21,12 +21,14 @@ ModelHelper::ModelHelper(renderer::CommandList & cmdList, const std::vector<cons
             u64 size = model->getMeshByIndex(meshIndex)->getVertexSize();
             u8* data = model->getMeshByIndex(meshIndex)->getVertexData();
             renderer::VertexStreamBuffer* vertexBuffer = cmdList.createObject<renderer::VertexStreamBuffer>(renderer::StreamBuffer_Write | renderer::StreamBuffer_Shared, size, data);
+            m_buffers.push_back(vertexBuffer);
 
             if (model->getMeshByIndex(meshIndex)->getIndexCount() > 0)
             {
                 u32 count = model->getMeshByIndex(meshIndex)->getIndexCount();
                 u8* data = model->getMeshByIndex(meshIndex)->getIndexData();
                 renderer::IndexStreamBuffer* indexBuffer = cmdList.createObject<renderer::IndexStreamBuffer>(renderer::StreamBuffer_Write | renderer::StreamBuffer_Shared, renderer::StreamIndexBufferType::IndexType_32, count, data);
+                m_buffers.push_back(indexBuffer);
 
                 DrawProps props = { 0, count, 0, 1, true };
                 m_drawState.push_back(std::make_tuple(renderer::StreamBufferDescription(indexBuffer, 0, vertexBuffer, 0, 0), props));
@@ -42,9 +44,8 @@ ModelHelper::ModelHelper(renderer::CommandList & cmdList, const std::vector<cons
 
 ModelHelper::~ModelHelper()
 {
+    m_buffers.clear();
     m_drawState.clear();
-    //renderer::VertexStreamBuffer* vertexBuffer - remove by smartptr
-    //renderer::IndexStreamBuffer* indexBuffer
 }
 
 const renderer::VertexInputAttribDescription& ModelHelper::getVertexInputAttribDescription(u32 modelIndex, u32 meshIndex) const

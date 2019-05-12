@@ -567,7 +567,11 @@ VkSampleCountFlagBits VulkanImage::convertRenderTargetSamplesToVkSampleCount(Tex
     return VK_SAMPLE_COUNT_1_BIT;
 }
 
-VulkanImage::VulkanImage(VulkanMemory::VulkanMemoryAllocator* memory, VkDevice device, VkImageType type, VkFormat format, VkExtent3D dimension, u32 layers, u32 mipsLevel, VkImageTiling tiling, TextureUsageFlags usage)
+#if VULKAN_DEBUG_MARKERS
+u32 VulkanImage::s_debugNameGenerator = 0;
+#endif //VULKAN_DEBUG_MARKERS
+
+VulkanImage::VulkanImage(VulkanMemory::VulkanMemoryAllocator* memory, VkDevice device, VkImageType type, VkFormat format, VkExtent3D dimension, u32 layers, u32 mipsLevel, VkImageTiling tiling, TextureUsageFlags usage, const std::string& name) noexcept
     : m_device(device)
     , m_type(type)
     , m_format(format)
@@ -595,9 +599,13 @@ VulkanImage::VulkanImage(VulkanMemory::VulkanMemoryAllocator* memory, VkDevice d
     m_layout.resize(static_cast<u64>(m_layersLevel) * static_cast<u64>(m_mipsLevel), VK_IMAGE_LAYOUT_UNDEFINED);
 
     memset(&m_generalImageView[0], VK_NULL_HANDLE, sizeof(m_generalImageView));
+
+#if VULKAN_DEBUG_MARKERS
+    m_debugName = name.empty() ? "Image_" + std::to_string(s_debugNameGenerator++) : name;
+#endif //VULKAN_DEBUG_MARKERS
 }
 
-VulkanImage::VulkanImage(VulkanMemory::VulkanMemoryAllocator* memory, VkDevice device, VkFormat format, VkExtent3D dimension, VkSampleCountFlagBits samples, TextureUsageFlags usage)
+VulkanImage::VulkanImage(VulkanMemory::VulkanMemoryAllocator* memory, VkDevice device, VkFormat format, VkExtent3D dimension, VkSampleCountFlagBits samples, TextureUsageFlags usage, const std::string& name) noexcept
     : m_device(device)
     , m_type(VK_IMAGE_TYPE_2D)
     , m_format(format)
@@ -645,6 +653,10 @@ VulkanImage::VulkanImage(VulkanMemory::VulkanMemoryAllocator* memory, VkDevice d
             }
         }
     }
+
+#if VULKAN_DEBUG_MARKERS
+    m_debugName = name.empty() ? "Image_" + std::to_string(s_debugNameGenerator++) : name;
+#endif //VULKAN_DEBUG_MARKERS
 }
 
 VulkanImage::~VulkanImage()
@@ -762,6 +774,17 @@ bool VulkanImage::create()
         LOG_ERROR("VulkanImage::VulkanImage::create() is failed");
         return false;
     }
+
+#if VULKAN_DEBUG_MARKERS
+    VkDebugUtilsObjectNameInfoEXT debugUtilsObjectNameInfo = {};
+    debugUtilsObjectNameInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT;
+    debugUtilsObjectNameInfo.pNext = nullptr;
+    debugUtilsObjectNameInfo.objectType = VK_OBJECT_TYPE_IMAGE;
+    debugUtilsObjectNameInfo.objectHandle = reinterpret_cast<u64>(m_image);
+    debugUtilsObjectNameInfo.pObjectName = m_debugName.c_str();
+
+    VulkanWrapper::SetDebugUtilsObjectName(m_device, &debugUtilsObjectNameInfo);
+#endif //VULKAN_DEBUG_MARKERS
 
     if (!createViewImage())
     {

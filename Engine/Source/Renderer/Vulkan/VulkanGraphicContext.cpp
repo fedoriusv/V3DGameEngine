@@ -90,7 +90,7 @@ VulkanGraphicContext::VulkanGraphicContext(const platform::Window * window) noex
     memset(&m_deviceInfo, 0, sizeof(DeviceInfo));
 
 #if VULKAN_DUMP
-    VulkanDump::getInstance()->init(VulkanDump::DumpFlag_Image);
+    VulkanDump::getInstance()->init(VulkanDump::DumpFlag_Buffer);
 #endif
 }
 
@@ -736,7 +736,7 @@ bool VulkanGraphicContext::initialize()
     {
         m_stagingBufferManager = new VulkanStagingBufferManager(m_deviceInfo._device);
     }
-    m_uniformBufferManager = new VulkanUniformBufferManager(m_deviceInfo._device);
+    m_uniformBufferManager = new VulkanUniformBufferManager(m_deviceInfo._device, m_resourceDeleter);
     m_descriptorSetManager = new VulkanDescriptorSetManager(m_deviceInfo._device);
 
     m_renderpassManager = new RenderPassManager(this);

@@ -40,7 +40,7 @@ public:
 #if DEBUG_COMMAND_LIST
         LOG_DEBUG("CommandCreateBuffer destructor");
 #endif //DEBUG_COMMAND_LIST
-        if (m_data && m_shadred)
+        if (m_data && !m_shadred)
         {
             free(m_data); //TODO: return to pool
             m_data = nullptr;
@@ -109,7 +109,7 @@ public:
 #if DEBUG_COMMAND_LIST
         LOG_DEBUG("CommandUpdateBuffer destructor");
 #endif //DEBUG_COMMAND_LIST
-        if (m_data && m_shadred)
+        if (m_data && !m_shadred)
         {
             free(m_data); //TODO: return to pool
             m_data = nullptr;
@@ -299,6 +299,7 @@ IndexStreamBuffer::IndexStreamBuffer(CommandList & cmdList, StreamBufferUsageFla
     , m_type(type)
     , m_count(count)
     , m_buffer(nullptr)
+    , m_data(nullptr)
 
     , m_usage(usage)
 {
