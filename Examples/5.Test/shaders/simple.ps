@@ -1,0 +1,18 @@
+struct PS_INPUT 
+{
+   float4 Pos: SV_POSITION;
+   float3 Norm: NORMAL;
+   float2 TexCoord: TEXCOORD0; 
+};
+
+//Texture2D textureColor;
+//SamplerState samplerColor;
+
+float4 main(PS_INPUT Input) : SV_TARGET0
+{
+	float3 OutColor = float3(1.0);
+	//float3 OutColor = textureColor.Sample(samplerColor, Input.TexCoord);
+	//float3 OutColor = float3(Input.TexCoord.xy, 0.0, 1.0);
+
+	return float4(OutColor, 1.0);
+}

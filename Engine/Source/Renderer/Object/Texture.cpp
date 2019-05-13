@@ -179,7 +179,7 @@ public:
         m_image->unregisterNotify(this);
     };
 
-    void execute(const renderer::CommandList& cmdList)
+    void execute(const renderer::CommandList& cmdList) override
     {
 #if DEBUG_COMMAND_LIST
         LOG_DEBUG("CommandClearColor execute");
@@ -224,7 +224,7 @@ public:
         m_image->unregisterNotify(this);
     };
 
-    void execute(const renderer::CommandList& cmdList)
+    void execute(const renderer::CommandList& cmdList) override
     {
 #if DEBUG_COMMAND_LIST
         LOG_DEBUG("CommandClearDepthStencil execute");

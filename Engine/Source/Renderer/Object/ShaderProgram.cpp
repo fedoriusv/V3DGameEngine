@@ -175,7 +175,8 @@ ShaderProgram::ShaderProgram(renderer::CommandList & cmdList, std::vector<const 
         m_programInfo._shaders[shader->getShaderHeader()._type] = shader;
     }
 
-    if (getShader(ShaderType::ShaderType_Vertex) && getShader(ShaderType::ShaderType_Fragment) || getShader(ShaderType::ShaderType_Vertex))
+    if (getShader(ShaderType::ShaderType_Vertex) ||
+    (getShader(ShaderType::ShaderType_Fragment) && getShader(ShaderType::ShaderType_Vertex)))
     {
         composeProgramData(shaders);
     }

@@ -6,7 +6,7 @@
 #include "Resource/Image.h"
 #if USE_STB
 #   include "ImageStbDecoder.h"
-#endif USE_STB
+#endif //USE_STB
 
 #if USE_GLI
 #   include "ImageGLiDecoder.h"
@@ -25,7 +25,7 @@ ImageFileLoader::ImageFileLoader(u32 flags) noexcept
         header._flipY = (flags & ImageLoaderFlag::ImageLoaderFlag_FlipY);
         ResourceLoader::registerDecoder(new ImageStbDecoder({ "jpg", "png", "bmp", "tga" }, header, !!flags));
     }
-#endif USE_STB
+#endif //USE_STB
 
 #if USE_GLI
     {

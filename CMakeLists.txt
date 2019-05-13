@@ -6,19 +6,28 @@ set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 option(BUILD_EXAMPLES "Generate Examples" ON)
 ##############################################################
 #Render SDK
-option(BUILD_VULKAN_SDK "Build use Vulkan SDK" ON)
+option(BUILD_VULKAN_SDK "Build use Vulkan SDK" OFF)
 ##############################################################
 #ThirdParty
 #Crc32c lib is required"
 #https://github.com/google/crc32c.git
-option(ASSIMP_LIB "Use Assimp lib" ON)
+option(ASSIMP_LIB "Use Assimp lib" OFF)
 #https://github.com/assimp/assimp.git
-option(STB_LIB "Use Stb lib" ON)
+option(STB_LIB "Use Stb lib" OFF)
 #https://github.com/nothings/stb.git
-option(GIL_LIB "Use gli lib" ON)
+option(GIL_LIB "Use gli lib" OFF)
 #https://github.com/g-truc/gli.git
 option(SPIRV_INSTALL_FROM_GITHUB "implicity install SpirV" OFF)
 ##############################################################
+
+#Project
+##############################################################
+set(SOLUTION_NAME V3DGE)
+set(ENGINE_NAME V3DEngine)
+
+project(${SOLUTION_NAME})
+##############################################################
+
 if(COMPILER_MSVC)
     message("-- Configuring MSVC Compiler")
 elseif(COMPILER_GCC)
@@ -41,17 +50,9 @@ else()
     message(FATAL_ERROR "Unknown platform. Only Platform Windows | Android supported")
 endif()
 
-if(CMAKE_SIZEOF_VOID_P EQUAL 8)
+if(NOT CMAKE_SIZEOF_VOID_P EQUAL 8)
     message(FATAL_ERROR "Only support x64 Architecture")
 endif()
-##############################################################
-
-#Project
-##############################################################
-set(SOLUTION_NAME V3DGE)
-set(ENGINE_NAME V3DEngine)
-
-project(${SOLUTION_NAME})
 ##############################################################
 
 #Pathes
@@ -268,10 +269,6 @@ endif()
 if (BUILD_EXAMPLES)
     set(BUILD_PROJECTS 
         1.CreateWindow
-        2.ClearColor
-        3.DrawMesh
-        4.DrawScene
-        5.Test
     )
     #set(BUILD_PROJECTS #[[1.CreateWindow 2.ClearColor]] 3.DrawMesh 4.DrawScene 5.Test)
     message("-- Create Examples:")
