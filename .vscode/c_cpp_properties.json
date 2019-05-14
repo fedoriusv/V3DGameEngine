@@ -1,0 +1,45 @@
+{
+    "configurations": [
+        {
+            "name": "Windows",
+            "defines": [
+                "WIN32",
+                "_WINDOWS",
+                "_CRT_SECURE_NO_WARNINGS",
+                "DEBUG",
+                "USE_LOGGER",
+                "_WINAPI",
+                "UNICODE",
+                "_UNICODE"
+            ],
+            "includePath": [
+                "${workspaceFolder}/Engine/Source"
+            ],
+            "intelliSenseMode": "msvc-x64",
+            "cppStandard": "c++17",
+            "externalConsole": true
+        },
+        {
+            "name": "Android",
+            "defines": [
+                "__ANDROID__",
+                "_ANDROID",
+                "_CRT_SECURE_NO_WARNINGS",
+                "DEBUG",
+                "USE_LOGGER",
+                "UNICODE",
+                "_UNICODE",
+                "_WIN32 = 0",
+                "_WIN64 = 0"
+            ],
+            "includePath": [
+                "${workspaceFolder}/Engine/Source",
+                "${env:ANDROID_NDK}/sysroot/usr/include",
+                "${env:ANDROID_NDK}/sources/android/native_app_glue"
+            ],
+            "cppStandard": "c++17",
+            "intelliSenseMode": "clang-x64"
+        }
+    ],
+    "version": 4
+}
