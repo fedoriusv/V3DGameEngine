@@ -6,8 +6,8 @@ set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 option(BUILD_EXAMPLES "Generate Examples" ON)
 ##############################################################
 #Render SDK
-option(BUILD_VULKAN_SDK "Build use Vulkan SDK" ON)
-option(BUILD_DIRECTX_SDK "Use DirectX SDK" ON)
+option(BUILD_VULKAN_SDK "Build use Vulkan SDK" OFF)
+option(BUILD_DIRECTX_SDK "Use DirectX SDK" OFF)
 ##############################################################
 #ThirdParty
 #Crc32c lib is required"
@@ -294,7 +294,6 @@ endif()
 if (BUILD_EXAMPLES)
     set(BUILD_PROJECTS 
         1.CreateWindow
-		2.ClearColor
     )
     #set(BUILD_PROJECTS #[[1.CreateWindow 2.ClearColor]] 3.DrawMesh 4.DrawScene 5.Test)
     message("-- Create Examples:")

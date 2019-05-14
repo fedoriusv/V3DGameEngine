@@ -17,7 +17,7 @@
 //PLatform
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-#if defined(_WIN32) || defined(_WIN64) || defined(WIN32) || defined(WIN64)
+#if (defined(_WIN32) && _WIN32) || (defined(_WIN64) && _WIN64) || defined(WIN32) || defined(WIN64)
 #   define PLATFORM_WINDOWS
 #   if defined(_MSC_VER) && (_MSC_VER < 1910)
 #       error "Only Microsoft Visual Studio 2017 RTW (15.0) and later are supported."
@@ -34,7 +34,7 @@
 #   error Unsupported platform
 #endif
 
-#if defined(_ANDROID)
+#if (defined(_ANDROID) && _ANDROID)
 #   define PLATFORM_ANDROID
 #   if defined(__ANDROID_API__) && (__ANDROID_API__ < 26)
 #       error "Support Android NDK R18b and later"

@@ -113,7 +113,7 @@ namespace scene
             }
             else
             {
-                static_assert(false, "invalid type");
+                static_assert(std::is_same<TType, core::Vector4D>::value || std::is_same<TType, f32>::value, "invalid type");
             }
         }
 

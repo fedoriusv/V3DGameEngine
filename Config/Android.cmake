@@ -8,8 +8,10 @@
 
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -O0 -std=c++17")
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -Wdynamic-class-memaccess")
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -I$ENV{ANDROID_NDK}/sources/android/native_app_glue")
 
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O2 -std=c++17")
+set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -I$ENV{ANDROID_NDK}/sources/android/native_app_glue")
 set(CMAKE_DEBUG_POSTFIX "_d")
 
 message(STATUS "Toolchain ${CMAKE_TOOLCHAIN_FILE}")

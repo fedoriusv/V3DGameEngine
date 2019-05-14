@@ -5,6 +5,9 @@
 #include "Utils/Logger.h"
 
 #ifdef PLATFORM_ANDROID
+#include "AndroidNative.h"
+
+extern struct android_app* g_nativeAndroidApp;
 
 namespace v3d
 {
@@ -19,7 +22,7 @@ WindowAndroid::WindowAndroid(const WindowParam& params, event::InputEventReceive
 
 bool WindowAndroid::initialize()
 {
-   //TODO
+    //TODO
     return false;
 }
 

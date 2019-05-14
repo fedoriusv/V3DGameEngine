@@ -1,7 +1,7 @@
 @echo off
 
 setlocal
-set command = all
+set command=all
 
 if "%ANDROID_NDK%" == "" (
 	echo Error. Variable ANDROID_NDK is NOT defined
@@ -16,25 +16,26 @@ if "%1" == "--help" (
 )
 
 if "%1" == "--clean" (
-    set command = single
+    set command=single
     goto clean
 )
     
 if "%1" == "--prepare" (
-    set command = single
+    set command=single
     goto prepare
 )
     
 if "%1" == "--build" (
-    set command = single
+    set command=single
     goto build
 )
 
 :help
     echo Build Android
-    echo --clean    Clean build folder
-    echo --prepare  Generate ninja cmake project
-    echo --build    Build Android .so file
+    echo --clean          Clean build folder
+    echo --prepare        Generate ninja cmake project
+    echo --build          Build Android .so file
+    echo --pack           Pack resources
     goto end
 
 :all
@@ -73,6 +74,21 @@ if "%1" == "--build" (
     cmake --build .
     cd ..\..
     if "%command%" == "single" goto end
+    
+:pack
+    echo Pack
+    if not exist Project\Android (
+        echo Error. Start prepare first
+        goto end
+    )
+    cd Project\Android
+    
+rem    mkdir "assets"
+rem	   xcopy "..\data\*.*" "assets" /SY
+
+    cd ..\..
+    if "%command%" == "single" goto end
+    
     
 :end
 if "%command%" == "all" pause
