@@ -2,7 +2,13 @@
 #include "Platform/Window.h"
 
 #include "EmptyContext.h"
-#include "Vulkan/VulkanGraphicContext.h"
+#ifdef VULKAN_RENDER
+#   include "Vulkan/VulkanGraphicContext.h"
+#endif //VULKAN_RENDER
+
+#ifdef D3D_RENDER
+#   include "D3D/D3DGraphicContext.h"
+#endif //D3D_RENDER
 
 #include "Utils/Logger.h"
 
@@ -43,6 +49,21 @@ Context* Context::createContext(const platform::Window* window,  RenderType type
         }
         break;
 #endif //VULKAN_RENDER
+
+#ifdef D3D_RENDER
+    case RenderType::D3DRender:
+        if (mask & DeviceMask::GraphicMask)
+        {
+            context = new d3d::D3DGraphicContext(window);
+        }
+        else
+        {
+            LOG_ERROR("Context::createContext mask %x is not supported for this render type %u. Set default bit", mask, type);
+            context = new d3d::D3DGraphicContext(window);
+        }
+        break;
+#endif //D3D_RENDER
+
     default:
         ASSERT(false, "Render type is not implemented");
     }

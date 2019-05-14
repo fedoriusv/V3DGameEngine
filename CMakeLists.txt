@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.0.2 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.0.0 FATAL_ERROR)
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
 ##############################################################
@@ -6,7 +6,8 @@ set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 option(BUILD_EXAMPLES "Generate Examples" ON)
 ##############################################################
 #Render SDK
-option(BUILD_VULKAN_SDK "Build use Vulkan SDK" OFF)
+option(BUILD_VULKAN_SDK "Build use Vulkan SDK" ON)
+option(BUILD_DIRECTX_SDK "Use DirectX SDK" ON)
 ##############################################################
 #ThirdParty
 #Crc32c lib is required"
@@ -45,6 +46,7 @@ if(TARGET_WIN AND WIN32)
 elseif(TARGET_ANDROID)
     message("-- Platform Android")
 	include(Config/Android.cmake)
+	set(BUILD_DIRECTX_SDK OFF)
     add_definitions(-D_ANDROID -DUNICODE -D_UNICODE)
 else()
     message(FATAL_ERROR "Unknown platform. Only Platform Windows | Android supported")
@@ -115,8 +117,8 @@ if(BUILD_VULKAN_SDK)
             set(SPIRV_CROSS_CORE_RELEASE ${SPIRV_FOLDER}/SPIRV-Cross/Release/spirv-cross-core.lib)
             set(SPIRV_CROSS_GLSL_RELEASE ${SPIRV_FOLDER}/SPIRV-Cross/Release/spirv-cross-glsl.lib)
             #set(SPIRV_CROSS_MSL_RELEASE ${SPIRV_FOLDER}/SPIRV-Cross/Release/spirv-cross-msl.lib)
-		elseif (TARGET_ANDROID)
-			set(SHADERC_COMBINED_LIB_FILE_DEBUG ${SPIRV_FOLDER}/shaderc/libshaderc/Debug/shaderc_combined.a)
+        elseif (TARGET_ANDROID)
+            set(SHADERC_COMBINED_LIB_FILE_DEBUG ${SPIRV_FOLDER}/shaderc/libshaderc/Debug/shaderc_combined.a)
             set(SHADERC_COMBINED_LIB_FILE_RELEASE ${SPIRV_FOLDER}/shaderc/libshaderc/Release/shaderc_combined.a)
 
             set(SPIRV_CROSS_CPP_DEBUG ${SPIRV_FOLDER}/SPIRV-Cross/Debug/spirv-cross-cpp.a)
@@ -131,10 +133,22 @@ if(BUILD_VULKAN_SDK)
     endif()
 endif()
 
+#DirectX
+if (BUILD_DIRECTX_SDK)
+    set(DIRECTX_SDK_DEFINE "-DD3D_RENDER")
+#	set(DIRECTX_SDK_PATH $ENV{DXSDK_DIR})
+#	if ("${DIRECTX_SDK_PATH}" STREQUAL "")
+#		message(FATAL_ERROR "DirectX SDK not found. Please add DXSDK_DIR to system variable")
+#    endif()
+#	set(DIRECTX_SDK_INCLUDE_DIRECTORY "${DIRECTX_SDK_PATH}/Include")
+#    set(DIRECTX_SDK_LIB_DIRECTORY "${DIRECTX_SDK_PATH}/Lib")
+#    message("-- DirectX SDK Path " ${DIRECTX_SDK_PATH})
+endif()
+
 #Compiler Flags
 set(CMAKE_CONFIGURATION_TYPES "Debug;Release" CACHE STRING "" FORCE)
-set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DDEBUG -DUSE_LOGGER ${VULKAN_SDK_DEFINE} ${EXTRA_LIB_DEFINE}")
-set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -DUSE_LOGGER ${VULKAN_SDK_DEFINE} ${EXTRA_LIB_DEFINE}")
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DDEBUG -DUSE_LOGGER ${VULKAN_SDK_DEFINE} ${DIRECTX_SDK_DEFINE} ${EXTRA_LIB_DEFINE}")
+set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -DUSE_LOGGER ${VULKAN_SDK_DEFINE} ${DIRECTX_SDK_DEFINE} ${EXTRA_LIB_DEFINE}")
 ##############################################################
 
 #Source
@@ -159,16 +173,21 @@ file(GLOB SCENE_HEADERS ${SOURCE_DIR}/Scene/*.h)
 file(GLOB SCENE_SOURCES ${SOURCE_DIR}/Scene/*.cpp)
 
 if (TARGET_WIN)
-	file(GLOB PLATFORM_HEADERS ${SOURCE_DIR}/Platform/Platform.h ${SOURCE_DIR}/Platform/Window.h ${SOURCE_DIR}/Platform/WindowWindows.h)
-	file(GLOB PLATFORM_SOURCES ${SOURCE_DIR}/Platform/Platform.cpp ${SOURCE_DIR}/Platform/Window.cpp ${SOURCE_DIR}/Platform/WindowWindows.cpp)
+    file(GLOB PLATFORM_HEADERS ${SOURCE_DIR}/Platform/Platform.h ${SOURCE_DIR}/Platform/Window.h ${SOURCE_DIR}/Platform/WindowWindows.h)
+    file(GLOB PLATFORM_SOURCES ${SOURCE_DIR}/Platform/Platform.cpp ${SOURCE_DIR}/Platform/Window.cpp ${SOURCE_DIR}/Platform/WindowWindows.cpp)
 elseif (TARGET_ANDROID)
-	file(GLOB PLATFORM_HEADERS ${SOURCE_DIR}/Platform/Platform.h ${SOURCE_DIR}/Platform/Window.h ${SOURCE_DIR}/Platform/WindowAndroid.h)
-	file(GLOB PLATFORM_SOURCES ${SOURCE_DIR}/Platform/Platform.cpp ${SOURCE_DIR}/Platform/Window.cpp ${SOURCE_DIR}/Platform/WindowAndroid.cpp)
+    file(GLOB PLATFORM_HEADERS ${SOURCE_DIR}/Platform/Platform.h ${SOURCE_DIR}/Platform/Window.h ${SOURCE_DIR}/Platform/WindowAndroid.h)
+    file(GLOB PLATFORM_SOURCES ${SOURCE_DIR}/Platform/Platform.cpp ${SOURCE_DIR}/Platform/Window.cpp ${SOURCE_DIR}/Platform/WindowAndroid.cpp)
 endif()
 
 if (BUILD_VULKAN_SDK)
-	file(GLOB VULKAN_HEADERS ${SOURCE_DIR}/Renderer/Vulkan/*.h)
-	file(GLOB VULKAN_SOURCES ${SOURCE_DIR}/Renderer/Vulkan/*.cpp)
+    file(GLOB VULKAN_HEADERS ${SOURCE_DIR}/Renderer/Vulkan/*.h)
+    file(GLOB VULKAN_SOURCES ${SOURCE_DIR}/Renderer/Vulkan/*.cpp)
+endif()
+
+if (BUILD_DIRECTX_SDK)
+    file(GLOB DIRECTX_HEADERS ${SOURCE_DIR}/Renderer/D3D/*.h)
+    file(GLOB DIRECTX_SOURCES ${SOURCE_DIR}/Renderer/D3D/*.cpp)
 endif()
 ##############################################################
 
@@ -189,6 +208,10 @@ if (BUILD_VULKAN_SDK)
     source_group("Renderer\\Vulkan" FILES ${VULKAN_HEADERS} ${VULKAN_SOURCES})
 endif()
 
+if (BUILD_DIRECTX_SDK)
+    source_group("Renderer\\D3D" FILES ${DIRECTX_HEADERS} ${DIRECTX_SOURCES})
+endif()
+
 add_library(${ENGINE_NAME} STATIC 
     ${MAIN_HEADERS} ${MAIN_SOURCES}
     ${CORE_HEADERS} ${CORE_SOURCES}
@@ -200,7 +223,9 @@ add_library(${ENGINE_NAME} STATIC
     ${RESOURCE_HEADERS} ${RESOURCE_SOURCES}
     ${STREAM_HEADERS} ${STREAM_SOURCES}
     ${SCENE_HEADERS} ${SCENE_SOURCES}
-    ${VULKAN_HEADERS} ${VULKAN_SOURCES})
+    ${VULKAN_HEADERS} ${VULKAN_SOURCES}
+	${DIRECTX_HEADERS} ${DIRECTX_SOURCES}
+	)
 	
 target_include_directories(${ENGINE_NAME} BEFORE 
 	PRIVATE ${LIB_INCLUDE_DIRECTORY}
@@ -269,6 +294,7 @@ endif()
 if (BUILD_EXAMPLES)
     set(BUILD_PROJECTS 
         1.CreateWindow
+		2.ClearColor
     )
     #set(BUILD_PROJECTS #[[1.CreateWindow 2.ClearColor]] 3.DrawMesh 4.DrawScene 5.Test)
     message("-- Create Examples:")

@@ -47,6 +47,7 @@ namespace renderer
         {
             EmptyRender,
             VulkanRender,
+            D3DRender
         };
 
         Context(const Context&) = delete;

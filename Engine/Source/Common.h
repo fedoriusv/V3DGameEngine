@@ -1,4 +1,3 @@
-// V3D Engine (c) 2018 Fred Nekrasov
 #pragma once
 
 #include "Configuration.h"
