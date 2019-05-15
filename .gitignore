@@ -28,6 +28,7 @@ Engine/Libs/spirv/*
 Ankh.NoLoad
 
 #.vscode/*
+Config/gradle/wrapper/dists/*
 
 # Compiled Object files
 *.slo
