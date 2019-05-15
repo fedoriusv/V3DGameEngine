@@ -101,7 +101,7 @@ rem    if "%command%" == "single" goto end
     xcopy Project\Android\Examples\%2\lib%2.so Project\Android\Examples\%2\libs\%C_ANDROID_ABI%
     
     cd Config
-    call gradlew.bat -p Project/Android/Examples/%2 build
+    call gradlew.bat -p ../Project/Android/Examples/%2 build
     cd ..
     if "%command%" == "single" goto end
     
