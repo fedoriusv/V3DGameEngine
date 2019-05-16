@@ -7,7 +7,7 @@
 #endif //VULKAN_RENDER
 
 #ifdef D3D_RENDER
-#   include "D3D/D3DGraphicContext.h"
+#   include "D3D12/D3D12GraphicContext.h"
 #endif //D3D_RENDER
 
 #include "Utils/Logger.h"
@@ -54,12 +54,12 @@ Context* Context::createContext(const platform::Window* window,  RenderType type
     case RenderType::D3DRender:
         if (mask & DeviceMask::GraphicMask)
         {
-            context = new d3d::D3DGraphicContext(window);
+            context = new d3d12::D3DGraphicContext(window);
         }
         else
         {
             LOG_ERROR("Context::createContext mask %x is not supported for this render type %u. Set default bit", mask, type);
-            context = new d3d::D3DGraphicContext(window);
+            context = new d3d12::D3DGraphicContext(window);
         }
         break;
 #endif //D3D_RENDER

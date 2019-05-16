@@ -7,7 +7,7 @@ option(BUILD_EXAMPLES "Generate Examples" ON)
 ##############################################################
 #Render SDK
 option(BUILD_VULKAN_SDK "Build use Vulkan SDK" OFF)
-option(BUILD_DIRECTX_SDK "Use DirectX SDK" OFF)
+option(BUILD_DIRECTX_SDK "Use DirectX SDK" ON)
 ##############################################################
 #ThirdParty
 #Crc32c lib is required"
@@ -186,8 +186,8 @@ if (BUILD_VULKAN_SDK)
 endif()
 
 if (BUILD_DIRECTX_SDK)
-    file(GLOB DIRECTX_HEADERS ${SOURCE_DIR}/Renderer/D3D/*.h)
-    file(GLOB DIRECTX_SOURCES ${SOURCE_DIR}/Renderer/D3D/*.cpp)
+    file(GLOB DIRECTX_HEADERS ${SOURCE_DIR}/Renderer/D3D12/*.h)
+    file(GLOB DIRECTX_SOURCES ${SOURCE_DIR}/Renderer/D3D12/*.cpp)
 endif()
 ##############################################################
 
@@ -209,7 +209,7 @@ if (BUILD_VULKAN_SDK)
 endif()
 
 if (BUILD_DIRECTX_SDK)
-    source_group("Renderer\\D3D" FILES ${DIRECTX_HEADERS} ${DIRECTX_SOURCES})
+    source_group("Renderer\\D3D12" FILES ${DIRECTX_HEADERS} ${DIRECTX_SOURCES})
 endif()
 
 add_library(${ENGINE_NAME} STATIC 
@@ -294,6 +294,7 @@ endif()
 if (BUILD_EXAMPLES)
     set(BUILD_PROJECTS 
         1.CreateWindow
+		2.ClearColor
     )
     #set(BUILD_PROJECTS #[[1.CreateWindow 2.ClearColor]] 3.DrawMesh 4.DrawScene 5.Test)
     message("-- Create Examples:")

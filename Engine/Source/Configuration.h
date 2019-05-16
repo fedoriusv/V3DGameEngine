@@ -67,7 +67,9 @@
 #ifdef D3D_RENDER
 #   define D3D_VERSION_MAJOR 12
 #   define D3D_VERSION_MINOR 0
+
 #   define D3D_DEBUG 1
+#   define D3D_DEBUG_LAYERS 1
 #endif //D3D_RENDER
 
 #define DEBUG_COMMAND_LIST 0
