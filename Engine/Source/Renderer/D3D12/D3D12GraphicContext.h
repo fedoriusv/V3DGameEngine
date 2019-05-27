@@ -3,13 +3,14 @@
 #include "Renderer/Context.h"
 
 #ifdef D3D_RENDER
-#   include "D3DConfiguration.h"
+#   include "D3D12Configuration.h"
+#   include "D3D12Swapchain.h"
 
 namespace v3d
 {
 namespace renderer
 {
-namespace d3d
+namespace d3d12
 {
      /////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -74,15 +75,26 @@ namespace d3d
         Pipeline* createPipeline(Pipeline::PipelineType type) override;
         Sampler* createSampler() override;
 
-        void invalidateStates();
+        IDXGIFactory4*      m_factory;
+        IDXGIAdapter1*      m_adapter;
+        ID3D12Device*       m_device;
+        ID3D12CommandQueue* m_commandQueue;
+#if D3D_DEBUG_LAYERS
+        ID3D12Debug*        m_debugController;
+#endif //D3D_DEBUG_LAYERS
 
-        bool createInstance();
-        bool createDevice();
+        D3DSwapchain*                 m_swapchain;
+        const platform::Window* const m_window;
+
+
+        static D3D_FEATURE_LEVEL s_featureLevel;
+
+        static void GetHardwareAdapter(_In_ IDXGIFactory2* pFactory, _Outptr_result_maybenull_ IDXGIAdapter1** ppAdapter);
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-} //namespace d3d
+} //namespace d3d12
 } //namespace renderer
 } //namespace v3d
 #endif //D3D_RENDER
