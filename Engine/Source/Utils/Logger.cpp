@@ -5,6 +5,12 @@
 using namespace termcolor;
 #endif //HIGHLIGHTING_LOGS
 
+#ifdef PLATFORM_ANDROID
+#   include "Platform/AndroidNative.h"
+
+extern void android_log(v3d::utils::Logger::LoggerType type, const char* message, ...);
+#endif //PLATFORM_ANDROID
+
 namespace v3d
 {
 namespace utils
@@ -74,6 +80,12 @@ void Logger::log(LoggerType type, u16 maskOut, const char* format, ...)
         return;
     }
 
+#ifdef PLATFORM_ANDROID
+    va_list args;
+    va_start(args, format);
+    android_log(type, format, args);
+    va_end(args);
+#else
     char buffer[k_maxMessageSize];
 
     va_list args;
@@ -85,6 +97,7 @@ void Logger::log(LoggerType type, u16 maskOut, const char* format, ...)
     message.assign(buffer);
 
     log(message, type, maskOut);
+#endif
 }
 
 void Logger::flush()
@@ -111,7 +124,11 @@ void Logger::log(const std::string& message, LoggerType type, u16 maskOut)
 
     if (maskOut & LogOut::ConsoleLog)
     {
+#ifdef PLATFORM_ANDROID
+        android_log(type, message.c_str());
+#else   
         logToConsole(message, type);
+#endif
     }
 
     if (maskOut & LogOut::FileLog)

@@ -7,7 +7,7 @@ option(BUILD_EXAMPLES "Generate Examples" ON)
 ##############################################################
 #Render SDK
 option(BUILD_VULKAN_SDK "Build use Vulkan SDK" OFF)
-option(BUILD_DIRECTX_SDK "Use DirectX SDK" ON)
+option(BUILD_DIRECTX_SDK "Use DirectX SDK" OFF)
 ##############################################################
 #ThirdParty
 #Crc32c lib is required"
@@ -173,11 +173,31 @@ file(GLOB SCENE_HEADERS ${SOURCE_DIR}/Scene/*.h)
 file(GLOB SCENE_SOURCES ${SOURCE_DIR}/Scene/*.cpp)
 
 if (TARGET_WIN)
-    file(GLOB PLATFORM_HEADERS ${SOURCE_DIR}/Platform/Platform.h ${SOURCE_DIR}/Platform/Window.h ${SOURCE_DIR}/Platform/WindowWindows.h)
-    file(GLOB PLATFORM_SOURCES ${SOURCE_DIR}/Platform/Platform.cpp ${SOURCE_DIR}/Platform/Window.cpp ${SOURCE_DIR}/Platform/WindowWindows.cpp)
+    file(GLOB PLATFORM_HEADERS 
+        ${SOURCE_DIR}/Platform/Platform.h 
+        ${SOURCE_DIR}/Platform/Window.h 
+        ${SOURCE_DIR}/Platform/WindowWindows.h
+    )
+    
+    file(GLOB PLATFORM_SOURCES 
+        ${SOURCE_DIR}/Platform/Platform.cpp 
+        ${SOURCE_DIR}/Platform/Window.cpp 
+        ${SOURCE_DIR}/Platform/WindowWindows.cpp
+    )
 elseif (TARGET_ANDROID)
-    file(GLOB PLATFORM_HEADERS ${SOURCE_DIR}/Platform/Platform.h ${SOURCE_DIR}/Platform/Window.h ${SOURCE_DIR}/Platform/WindowAndroid.h)
-    file(GLOB PLATFORM_SOURCES ${SOURCE_DIR}/Platform/Platform.cpp ${SOURCE_DIR}/Platform/Window.cpp ${SOURCE_DIR}/Platform/WindowAndroid.cpp)
+    file(GLOB PLATFORM_HEADERS 
+        ${SOURCE_DIR}/Platform/Platform.h 
+        ${SOURCE_DIR}/Platform/Window.h 
+        ${SOURCE_DIR}/Platform/WindowAndroid.h
+        ${SOURCE_DIR}/Platform/AndroidNative.h
+    )
+    
+    file(GLOB PLATFORM_SOURCES 
+        ${SOURCE_DIR}/Platform/Platform.cpp 
+        ${SOURCE_DIR}/Platform/Window.cpp 
+        ${SOURCE_DIR}/Platform/WindowAndroid.cpp
+        ${SOURCE_DIR}/Platform/AndroidNative.cpp
+    )
 endif()
 
 if (BUILD_VULKAN_SDK)
@@ -294,7 +314,6 @@ endif()
 if (BUILD_EXAMPLES)
     set(BUILD_PROJECTS 
         1.CreateWindow
-		2.ClearColor
     )
     #set(BUILD_PROJECTS #[[1.CreateWindow 2.ClearColor]] 3.DrawMesh 4.DrawScene 5.Test)
     message("-- Create Examples:")

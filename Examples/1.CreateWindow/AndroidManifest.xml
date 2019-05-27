@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Changes made to Package Name should also be reflected in the Debugging - Package Name property, in the Property Pages -->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-        package="com.VulkanShowcase"
+        package="com.createwindow"
         android:versionCode="1"
         android:versionName="1.0">
 
@@ -9,11 +9,11 @@
     <uses-sdk android:minSdkVersion="9" android:targetSdkVersion="21"/>
 
     <!-- This .apk has no Java code itself, so set hasCode to false. -->
-    <application android:label="test" android:hasCode="false">
+    <application android:label="CreateWindow" android:hasCode="false">
       <!-- Our activity is the built-in NativeActivity framework class.
              This will take care of integrating with our NDK code. -->
         <activity android:name="android.app.NativeActivity"
-                android:label="test"
+                android:label="Create Window"
                 android:configChanges="orientation|keyboardHidden|screenSize"
                 android:theme="@android:style/Theme.NoTitleBar.Fullscreen"
                 android:screenOrientation="sensorLandscape">
