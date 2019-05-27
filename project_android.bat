@@ -90,15 +90,14 @@ rem    if "%command%" == "single" goto end
 :pack
     echo Pack
     if not exist Project\Android\Examples\%2 (
-        echo Error. Start prepare and build first
+        echo Error. Project has not found
         goto end
     )
     
     xcopy Examples\%2\AndroidManifest.xml Project\Android\Examples\%2
     xcopy Examples\%2\build.gradle Project\Android\Examples\%2
     
-    mkdir "Project\Android\Examples\%2\libs\%C_ANDROID_ABI%"
-    xcopy Project\Android\Examples\%2\lib%2.so Project\Android\Examples\%2\libs\%C_ANDROID_ABI%
+    xcopy "Project\Android\Examples\%2\lib%2.so" "Project\Android\Examples\%2\libs\%C_ANDROID_ABI%\"
     
     cd Config
     call gradlew.bat -p ../Project/Android/Examples/%2 build

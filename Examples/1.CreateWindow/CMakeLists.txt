@@ -15,6 +15,7 @@ if(TARGET_WIN)
     add_executable(${CURRENT_PROJECT} WIN32 ${TEST_HEADERS}	${TEST_SOURCES})
 elseif (TARGET_ANDROID)
 	add_library(${CURRENT_PROJECT} SHARED ${TEST_HEADERS} ${TEST_SOURCES})
+    target_link_libraries(${CURRENT_PROJECT} log android)
 endif()
 
 target_link_libraries(${CURRENT_PROJECT} ${ENGINE_NAME})
