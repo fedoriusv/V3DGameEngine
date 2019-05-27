@@ -3,6 +3,7 @@
 #include "ResourceDecoder.h"
 #include "Renderer/Shader.h"
 
+#ifdef USE_SPIRV
 namespace v3d
 {
 namespace resource
@@ -36,3 +37,4 @@ namespace resource
 
 } //namespace decoders
 } //namespace v3d
+#endif //USE_SPIRV

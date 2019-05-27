@@ -6,9 +6,9 @@ namespace event
 {
 
 KeyboardInputEvent::KeyboardInputEvent()
-    : _character(0)
+    : _event(KeyboardUnknown)
     , _key(KeyUknown)
-    , _event(KeyboardUnknown)
+    , _character(0)
     , _modifers(0)
 {
     _eventType = InputEventType::KeyboardInputEvent;

@@ -27,7 +27,7 @@ namespace scene
         void setRotation(const core::Vector3D& rotation);
         const core::Vector3D& getRotation() const;
 
-        virtual void update();
+        void update(f32 deltaTime) override;
 
         void handlerCallback(v3d::event::InputEventHandler* handler, const event::MouseInputEvent* event);
 

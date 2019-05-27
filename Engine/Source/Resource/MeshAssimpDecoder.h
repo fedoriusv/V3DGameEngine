@@ -3,6 +3,7 @@
 #include "ResourceDecoder.h"
 #include "Scene/Model.h"
 
+#ifdef USE_ASSIMP
 struct aiScene;
 
 namespace v3d
@@ -45,3 +46,4 @@ namespace resource
 
 } //namespace decoders
 } //namespace v3d
+#endif //USE_ASSIMP

@@ -7,9 +7,9 @@ namespace event
 {
 
 InputEventReceiver::InputEventReceiver()
-    : m_currentEventIndex(0)
+    : k_maxInputEventSize((u32)core::max(sizeof(MouseInputEvent), sizeof(GamepadInputEvent), sizeof(KeyboardInputEvent)))
     , m_eventPool(nullptr)
-    , k_maxInputEventSize((u32)core::max(sizeof(MouseInputEvent), sizeof(GamepadInputEvent), sizeof(KeyboardInputEvent)))
+    , m_currentEventIndex(0)
 {
     m_eventPool = reinterpret_cast<InputEvent*>(malloc(k_maxInputEventSize * s_eventPoolSize));
     resetInputEventPool();
@@ -57,7 +57,7 @@ void InputEventReceiver::resetInputEventPool()
 {
     m_currentEventIndex = 0;
 #ifdef DEBUG
-    memset(m_eventPool, 0, k_maxInputEventSize * s_eventPoolSize);
+    memset((void*)m_eventPool, 0, k_maxInputEventSize * s_eventPoolSize);
 #endif
 }
 

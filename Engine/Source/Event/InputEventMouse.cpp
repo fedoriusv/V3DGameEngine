@@ -6,9 +6,9 @@ namespace event
 {
 
 MouseInputEvent::MouseInputEvent()
-    : _cursorPosition({ 0, 0 })
+    : _event(MouseUnknown)
+    , _cursorPosition({ 0, 0 })
     , _wheelValue(0.0f)
-    , _event(MouseUnknown)
     , _key(KeyUknown)
     , _modifers(0)
 {

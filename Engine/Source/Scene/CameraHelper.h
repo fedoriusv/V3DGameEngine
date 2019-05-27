@@ -30,7 +30,7 @@ namespace scene
         void setPerspective(f32 FOV, const core::Dimension2D& size, f32 zNear, f32 zFar);
         void setOrtho(const core::RectU32& area, f32 zNear, f32 zFar);
 
-        virtual void update();
+        virtual void update(f32 deltaTime);
 
     private:
 

@@ -6,9 +6,9 @@ namespace event
 {
 
 InputEvent::InputEvent()
-    : _eventType(InputEventType::UnknownInputEvent)
+    : _timeStamp(0) //TODO: get current time, need class Timer
+    , _eventType(InputEventType::UnknownInputEvent)
     , _priority(Normal)
-    , _timeStamp(0) //TODO: get current time, need class Timer
 {
 }
 

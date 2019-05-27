@@ -28,11 +28,11 @@ const core::Vector3D& CameraArcballHelper::getRotation() const
     return m_transform.getRotation();
 }
 
-void CameraArcballHelper::update()
+void CameraArcballHelper::update(f32 deltaTime)
 {
     if (m_needUpdate)
     {
-        CameraHelper::update();
+        CameraHelper::update(deltaTime);
 
         core::Matrix4D rotateX;
         rotateX.makeIdentity();

@@ -43,8 +43,8 @@ void MeshHeader::GeometryInfo::operator << (const stream::Stream * stream)
 }
 
 Mesh::SubMesh::SubMesh() noexcept
-    : m_vertexCount(0)
-    , m_indexCount(0)
+    : m_indexCount(0)
+    , m_vertexCount(0)
 {
     memset(&m_indexData, 0, sizeof(BufferData));
     memset(&m_vertexData, 0, sizeof(BufferData));

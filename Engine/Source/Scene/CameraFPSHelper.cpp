@@ -85,7 +85,7 @@ void CameraFPSHelper::update(f32 deltaTime)
 
         getCamera().setTarget(position + camFront);
 
-        CameraHelper::update();
+        CameraHelper::update(deltaTime);
     }
 }
 

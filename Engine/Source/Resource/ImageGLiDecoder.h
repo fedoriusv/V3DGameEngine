@@ -3,6 +3,7 @@
 #include "ResourceDecoder.h"
 #include "Resource/Image.h"
 
+#ifdef USE_GLI
 namespace v3d
 {
 namespace resource
@@ -33,3 +34,4 @@ namespace resource
 
 } //namespace decoders
 } //namespace v3d
+#endif //USE_GLI

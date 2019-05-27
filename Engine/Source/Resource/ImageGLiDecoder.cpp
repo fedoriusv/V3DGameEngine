@@ -5,9 +5,8 @@
 #include "Utils/Logger.h"
 #include "Utils/Timer.h"
 
-#if USE_GLI
+#ifdef USE_GLI
 #   include <gli/gli.hpp>
-#endif //USE_GLI
 
 namespace v3d
 {
@@ -29,7 +28,6 @@ Resource * ImageGLiDecoder::decode(const stream::Stream * stream, const std::str
 {
     if (stream->size() > 0)
     {
-#ifdef USE_GLI
         stream->seekBeg(0);
         u8* source = stream->map(stream->size());
 
@@ -230,7 +228,6 @@ Resource * ImageGLiDecoder::decode(const stream::Stream * stream, const std::str
 
         return image;
 
-#endif //USE_GLI
     }
 
     return nullptr;
@@ -238,3 +235,4 @@ Resource * ImageGLiDecoder::decode(const stream::Stream * stream, const std::str
 
 } // namespace resource
 } // namespace v3d
+#endif //USE_GLI

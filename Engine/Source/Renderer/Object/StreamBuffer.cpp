@@ -170,11 +170,12 @@ private:
 
 VertexStreamBuffer::VertexStreamBuffer(renderer::CommandList& cmdList, StreamBufferUsageFlags usage, u64 size, const u8* data) noexcept
     : m_cmdList(cmdList)
-    , m_data(nullptr)
+
     , m_size(size)
-    , m_buffer(nullptr)
+    , m_data(nullptr)
 
     , m_usage(usage)
+    , m_buffer(nullptr)
 {
     if (data && size > 0)
     {
@@ -297,11 +298,12 @@ bool VertexStreamBuffer::read(u32 offset, u64 size, u8 * data)
 IndexStreamBuffer::IndexStreamBuffer(CommandList & cmdList, StreamBufferUsageFlags usage, StreamIndexBufferType type, u32 count, const u8 * data) noexcept
     : m_cmdList(cmdList)
     , m_type(type)
+
     , m_count(count)
-    , m_buffer(nullptr)
     , m_data(nullptr)
 
     , m_usage(usage)
+    , m_buffer(nullptr)
 {
     u32 size = count * ((type == StreamIndexBufferType::IndexType_16) ? sizeof(16) : sizeof(32));
     if (data && size > 0)

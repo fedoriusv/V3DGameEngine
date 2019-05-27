@@ -8,7 +8,6 @@
 #ifdef USE_SPIRV
 #   include <shaderc/libshaderc/include/shaderc/shaderc.hpp>
 #   include <SPIRV-Cross/spirv_glsl.hpp>
-#endif // USE_SPIRV
 
 namespace v3d
 {
@@ -36,7 +35,6 @@ Resource * ShaderSpirVDecoder::decode(const stream::Stream* stream, const std::s
 {
     if (stream->size() > 0)
     {
-#ifdef USE_SPIRV
         stream->seekBeg(0);
 
         if (m_header._contentType == renderer::ShaderHeader::ShaderResource::ShaderResource_Source)
@@ -322,17 +320,14 @@ Resource * ShaderSpirVDecoder::decode(const stream::Stream* stream, const std::s
 
             return resource;
         }
-#else //USE_SPIRV
-        ASSERT(false, "spirv undefined");
-#endif //USE_SPIRV
     }
 
+    ASSERT(false, "spirv undefined");
     return nullptr;
 }
 
 bool ShaderSpirVDecoder::parseReflections(const std::vector<u32>& spirv, stream::Stream* stream)
 {
-#ifdef USE_SPIRV
     auto convertSPRIVTypeToFormat = [](const spirv_cross::SPIRType& type) -> renderer::Format
     {
         switch (type.basetype)
@@ -708,15 +703,11 @@ bool ShaderSpirVDecoder::parseReflections(const std::vector<u32>& spirv, stream:
 
         return true;
     }
-    else
-    {
-        ASSERT(false, "not implemented");
-        return false;
-    }
-#endif //USE_SPIRV
+
     ASSERT(false, "not implemented");
     return false;
 }
 
 } //namespace resource
 } //namespace v3d
+#endif //USE_SPIRV

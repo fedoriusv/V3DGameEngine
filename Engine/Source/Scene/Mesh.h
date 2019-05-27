@@ -29,8 +29,8 @@ namespace scene
                 u32 _count;
             };
 
-            u64                  _size;
             u32                  _count;
+            u64                  _size;
             std::vector<SubData> _subData;
 
             void operator >> (stream::Stream * stream) const;

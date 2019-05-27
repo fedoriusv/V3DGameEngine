@@ -4,7 +4,7 @@
 #include "Utils/Logger.h"
 #include "Utils/Timer.h"
 
-#if USE_STB
+#ifdef USE_STB
 #   define STB_IMAGE_IMPLEMENTATION
 #   define STBI_NO_STDIO
 
@@ -18,7 +18,6 @@
 //#    define STBI_ONLY_PIC
 
 #   include <ThirdParty/stb/stb_image.h>
-#endif //USE_STB
 
 namespace v3d
 {
@@ -40,7 +39,6 @@ Resource * ImageStbDecoder::decode(const stream::Stream * stream, const std::str
 {
     if (stream->size() > 0)
     {
-#ifdef USE_STB
         stream->seekBeg(0);
         u8* source = stream->map(stream->size());
 
@@ -205,7 +203,6 @@ Resource * ImageStbDecoder::decode(const stream::Stream * stream, const std::str
 
         return image;
 
-#endif //USE_STB
     }
 
     return nullptr;
@@ -213,3 +210,4 @@ Resource * ImageStbDecoder::decode(const stream::Stream * stream, const std::str
 
 } // namespace resource
 } // namespace v3d
+#endif //USE_STB

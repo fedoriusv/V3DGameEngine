@@ -67,7 +67,7 @@ const core::Vector3D& CameraHelper::getPosition() const
     return m_transform.getPosition();
 }
 
-void CameraHelper::update()
+void CameraHelper::update(f32 deltaTime)
 {
     ASSERT(m_camera, "nullptr");
     if (m_needUpdate)

@@ -126,8 +126,8 @@ RenderTargetState::RenderTargetState(renderer::CommandList& cmdList, const core:
     : m_cmdList(cmdList)
     , m_size(size)
 
-    , m_trackerRenderpass(this, std::bind(&RenderTargetState::destroyRenderPasses, this, std::placeholders::_1))
     , m_trackerFramebuffer(this, std::bind(&RenderTargetState::destroyFramebuffers, this, std::placeholders::_1))
+    , m_trackerRenderpass(this, std::bind(&RenderTargetState::destroyRenderPasses, this, std::placeholders::_1))
 
 {
     std::get<0>(m_depthStencilTexture) = nullptr;
@@ -135,8 +135,8 @@ RenderTargetState::RenderTargetState(renderer::CommandList& cmdList, const core:
 
 RenderTargetState::~RenderTargetState()
 {
-    m_trackerFramebuffer.release();
     m_trackerRenderpass.release();
+    m_trackerFramebuffer.release();
 }
 
 bool RenderTargetState::setColorTexture(u32 index, Texture2D* colorTexture, RenderTargetLoadOp loadOp, RenderTargetStoreOp storeOp, const core::Vector4D& clearColor)
