@@ -8,6 +8,7 @@ using namespace termcolor;
 #ifdef PLATFORM_ANDROID
 #   include "Platform/AndroidNative.h"
 
+extern void android_log_arg(v3d::utils::Logger::LoggerType type, const char* message, va_list ap);
 extern void android_log(v3d::utils::Logger::LoggerType type, const char* message, ...);
 #endif //PLATFORM_ANDROID
 
@@ -83,7 +84,7 @@ void Logger::log(LoggerType type, u16 maskOut, const char* format, ...)
 #ifdef PLATFORM_ANDROID
     va_list args;
     va_start(args, format);
-    android_log(type, format, args);
+    android_log_arg(type, format, args);
     va_end(args);
 #else
     char buffer[k_maxMessageSize];

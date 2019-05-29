@@ -6,6 +6,7 @@
 
 #ifdef PLATFORM_ANDROID
 #include "AndroidNative.h"
+#include "android_native_app_glue.h"
 
 extern struct android_app* g_nativeAndroidApp;
 
@@ -22,8 +23,10 @@ WindowAndroid::WindowAndroid(const WindowParam& params, event::InputEventReceive
 
 bool WindowAndroid::initialize()
 {
+    app_dummy(); //needs for link libV3D.a to *.so file
+
     //TODO
-    return false;
+    return true;
 }
 
 bool WindowAndroid::update()

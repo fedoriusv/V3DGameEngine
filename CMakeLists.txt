@@ -190,6 +190,7 @@ elseif (TARGET_ANDROID)
         ${SOURCE_DIR}/Platform/Window.h 
         ${SOURCE_DIR}/Platform/WindowAndroid.h
         ${SOURCE_DIR}/Platform/AndroidNative.h
+        ${SOURCE_DIR}/Platform/android_native_app_glue.h
     )
     
     file(GLOB PLATFORM_SOURCES 
@@ -197,6 +198,7 @@ elseif (TARGET_ANDROID)
         ${SOURCE_DIR}/Platform/Window.cpp 
         ${SOURCE_DIR}/Platform/WindowAndroid.cpp
         ${SOURCE_DIR}/Platform/AndroidNative.cpp
+        ${SOURCE_DIR}/Platform/android_native_app_glue.c
     )
 endif()
 
@@ -243,8 +245,8 @@ add_library(${ENGINE_NAME} STATIC
     ${RESOURCE_HEADERS} ${RESOURCE_SOURCES}
     ${STREAM_HEADERS} ${STREAM_SOURCES}
     ${SCENE_HEADERS} ${SCENE_SOURCES}
-    ${VULKAN_HEADERS} ${VULKAN_SOURCES}
-	${DIRECTX_HEADERS} ${DIRECTX_SOURCES}
+    $<$<BOOL:BUILD_VULKAN_SDK>:${VULKAN_HEADERS} ${VULKAN_SOURCES}>
+    $<$<BOOL:BUILD_DIRECTX_SDK>:${DIRECTX_HEADERS} ${DIRECTX_SOURCES}>
 	)
 	
 target_include_directories(${ENGINE_NAME} BEFORE 

@@ -2,9 +2,11 @@
 #include "Event/InputEventReceiver.h"
 #include "Utils/Logger.h"
 
-#ifdef PLATFORM_WINDOWS
-    #include "WindowWindows.h"
-#endif //PLATFORM_WINDOWS
+#if defined(PLATFORM_WINDOWS)
+#   include "WindowWindows.h"
+#elif defined(PLATFORM_ANDROID)
+#   include "WindowAndroid.h"
+#endif //
 
 namespace v3d
 {
@@ -30,9 +32,11 @@ Window* Window::createWindow(const core::Dimension2D& size, const core::Point2D&
     params._isResizable = fullscreen ? false : resizable;
 
     Window* window = nullptr;
-#ifdef PLATFORM_WINDOWS
+#if defined(PLATFORM_WINDOWS)
     window = new WindowWindows(params, nullptr);
-#endif //PLATFORM_WINDOWS
+#elif defined(PLATFORM_ANDROID)
+    window = new WindowAndroid(params, nullptr);
+#endif //
 
     if (!window)
     {
@@ -61,9 +65,11 @@ Window* Window::createWindow(const core::Dimension2D& size, const core::Point2D&
     params._isResizable = false;
 
     Window* window = nullptr;
-#ifdef PLATFORM_WINDOWS
+#if defined(PLATFORM_WINDOWS)
     window = new WindowWindows(params, receiver);
-#endif //_PLATFORM_WINDOWS_
+#elif defined(PLATFORM_ANDROID)
+    window = new WindowAndroid(params, receiver);
+#endif //
 
     if (!window)
     {
@@ -105,6 +111,7 @@ void Window::detroyWindow(Window* window)
 
 event::InputEventReceiver* Window::getInputEventReceiver() const
 {
+    ASSERT(m_receiver, "m_receiver is nullptr");
     return m_receiver;
 }
 

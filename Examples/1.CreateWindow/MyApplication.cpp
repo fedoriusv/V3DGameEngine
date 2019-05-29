@@ -16,6 +16,7 @@ MyApplication::MyApplication(int& argc, char** argv)
     m_Window = Window::createWindow({ 1024, 768 }, {800, 500}, false, new v3d::event::InputEventReceiver());
     ASSERT(m_Window, "windows is nullptr");
 
+#ifdef PLATFORM_WINDOWS
     m_InputEventHandler = new InputEventHandler();
     m_InputEventHandler->connect([](const KeyboardInputEvent* event)
     {
@@ -54,6 +55,7 @@ MyApplication::MyApplication(int& argc, char** argv)
 
     m_Window->getInputEventReceiver()->attach(InputEvent::InputEventType::KeyboardInputEvent, m_InputEventHandler);
     m_Window->getInputEventReceiver()->attach(InputEvent::InputEventType::MouseInputEvent, m_InputEventHandler);
+#endif //PLATFORM_WINDOWS
 }
 
 int MyApplication::Execute()
@@ -111,8 +113,10 @@ bool MyApplication::Running()
 
 void MyApplication::Exit()
 {
+#ifdef PLATFORM_WINDOWS
     m_Window->getInputEventReceiver()->dettach(InputEvent::InputEventType::KeyboardInputEvent);
     m_Window->getInputEventReceiver()->dettach(InputEvent::InputEventType::MouseInputEvent);
+#endif //PLATFORM_WINDOWS
 
     if (m_InputEventHandler)
     {
