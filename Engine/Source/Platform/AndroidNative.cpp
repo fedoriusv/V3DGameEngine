@@ -10,8 +10,6 @@ struct android_app* g_nativeAndroidApp;
 void android_main(struct android_app* state)
 {
     LOG_INFO("Android main started");
-
-    //app_dummy();
     g_nativeAndroidApp = state;
 
     //TODO

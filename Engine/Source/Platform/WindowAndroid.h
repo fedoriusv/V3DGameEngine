@@ -2,6 +2,7 @@
 
 #include "Window.h"
 #ifdef PLATFORM_ANDROID
+#include "AndroidNative.h"
 
 namespace v3d
 {
@@ -41,6 +42,21 @@ namespace platform
         bool initialize() override;
         bool update() override;
         void destroy() override;
+
+        struct SavedState 
+        {
+	        f32 _angle;
+	        u32 _x;
+	        u32 _y;
+        };
+
+        ASensorManager*     m_sensorManager;
+	    const ASensor*      m_accelerometerSensor;
+	    ASensorEventQueue*  m_sensorEventQueue;
+        SavedState          m_state;
+
+        static void handleCmdCallback(struct android_app* app, int32_t cmd);
+        static int32_t handleInputCallback(struct android_app* app, AInputEvent* event);
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

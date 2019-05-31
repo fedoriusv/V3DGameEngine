@@ -6,6 +6,7 @@
 
 #include <android/native_activity.h>
 #include <android/asset_manager.h>
+#include <android/sensor.h>
 
 extern "C" void android_main(struct android_app* state);
 
