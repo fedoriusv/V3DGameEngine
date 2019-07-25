@@ -161,27 +161,36 @@ void VulkanDeviceCaps::fillCapabilitiesList(const DeviceInfo* info)
         return false;
     };
 
-    ASSERT(isEnableExtension(VK_KHR_CREATE_RENDERPASS_2_EXTENSION_NAME), "VK_KHR_create_renderpass2 not supported");
+    supportRenderpass2 = isEnableExtension(VK_KHR_CREATE_RENDERPASS_2_EXTENSION_NAME);
     enableSamplerMirrorClampToEdge = isEnableExtension(VK_KHR_SAMPLER_MIRROR_CLAMP_TO_EDGE_EXTENSION_NAME);
     supportDepthAutoResolve = isEnableExtension(VK_KHR_DEPTH_STENCIL_RESOLVE_EXTENSION_NAME);
+    LOG_INFO("VulkanDeviceCaps::initialize:  supportRenderpass2 is %s", supportRenderpass2 ? "supported" : "unsupported");
+    LOG_INFO("VulkanDeviceCaps::initialize:  enableSamplerMirrorClampToEdge is %s", enableSamplerMirrorClampToEdge ? "supported" : "unsupported");
+    LOG_INFO("VulkanDeviceCaps::initialize:  supportDepthAutoResolve is %s", supportDepthAutoResolve ? "supported" : "unsupported");
 
+    if (isEnableExtension(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME))
+    {
 #ifdef VK_KHR_depth_stencil_resolve
     VkPhysicalDeviceDepthStencilResolvePropertiesKHR physicalDeviceDepthStencilResolveProperties = {};
     physicalDeviceDepthStencilResolveProperties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEPTH_STENCIL_RESOLVE_PROPERTIES_KHR;
     physicalDeviceDepthStencilResolveProperties.pNext = nullptr;
 #endif // VK_KHR_depth_stencil_resolve
 
-    VkPhysicalDeviceProperties2 physicalDeviceProperties = {};
-    physicalDeviceProperties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
+        VkPhysicalDeviceProperties2 physicalDeviceProperties = {};
+        physicalDeviceProperties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
 #ifdef VK_KHR_depth_stencil_resolve
-    physicalDeviceProperties.pNext = &physicalDeviceDepthStencilResolveProperties;
+        physicalDeviceProperties.pNext = &physicalDeviceDepthStencilResolveProperties;
 #else
-    physicalDeviceProperties.pNext = nullptr;
+        physicalDeviceProperties.pNext = nullptr;
 #endif // VK_KHR_depth_stencil_resolve
 
-    VulkanWrapper::GetPhysicalDeviceProperties2(info->_physicalDevice, &physicalDeviceProperties);
-    memcpy(&m_deviceProperties, &physicalDeviceProperties.properties, sizeof(VkPhysicalDeviceProperties));
-
+        VulkanWrapper::GetPhysicalDeviceProperties2(info->_physicalDevice, &physicalDeviceProperties);
+        memcpy(&m_deviceProperties, &physicalDeviceProperties.properties, sizeof(VkPhysicalDeviceProperties));
+    }
+    else
+    {
+        VulkanWrapper::GetPhysicalDeviceProperties(info->_physicalDevice, &m_deviceProperties);
+    }
     VulkanWrapper::GetPhysicalDeviceFeatures(info->_physicalDevice, &m_deviceFeatures);
     VulkanWrapper::GetPhysicalDeviceMemoryProperties(info->_physicalDevice, &m_deviceMemoryProps);
 
@@ -251,7 +260,7 @@ void VulkanDeviceCaps::fillCapabilitiesList(const DeviceInfo* info)
 void VulkanDeviceCaps::initialize()
 {
     maxDescriptorSetIndex = k_maxDescriptorSetIndex;
-    maxDescriptorBindingIndex = maxDescriptorBindingIndex;
+    maxDescriptorBindingIndex = k_maxDescriptorBindingIndex;
 
     individuallyResetForCommandBuffers = true; //For PC
 

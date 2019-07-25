@@ -127,7 +127,7 @@ bool VulkanSampler::create(const SamplerDescription& info)
     VkSamplerCreateInfo samplerCreateInfo = {};
     samplerCreateInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
     samplerCreateInfo.pNext = nullptr; //VkSamplerReductionModeCreateInfoEXT, VkSamplerYcbcrConversionInfo
-    samplerCreateInfo.flags;
+    samplerCreateInfo.flags = 0;
     samplerCreateInfo.magFilter = VulkanSampler::convertSamplerFilterToVk(info._magFilter);
     samplerCreateInfo.minFilter = VulkanSampler::convertSamplerFilterToVk(info._minFilter);
     samplerCreateInfo.mipmapMode = VulkanSampler::convertMipmapSamplerFilterToVk(info._minFilter);

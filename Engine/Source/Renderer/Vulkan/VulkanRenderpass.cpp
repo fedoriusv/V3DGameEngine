@@ -100,214 +100,370 @@ VkRenderPass VulkanRenderPass::getHandle() const
 
 bool VulkanRenderPass::create()
 {
-    std::vector<VkAttachmentDescription2KHR> attachmentDescriptions;
-    attachmentDescriptions.reserve(m_descriptions.size());
+    if (VulkanDeviceCaps::getInstance()->supportRenderpass2)
+    {
+        std::vector<VkAttachmentDescription2KHR> attachmentDescriptions;
+        attachmentDescriptions.reserve(m_descriptions.size());
 
-    std::vector<VkAttachmentReference2KHR> colorAttachmentReferences;
-    std::vector<VkAttachmentReference2KHR> resolveAttachmentReferences;
+        std::vector<VkAttachmentReference2KHR> colorAttachmentReferences;
+        std::vector<VkAttachmentReference2KHR> resolveAttachmentReferences;
 
-    VkAttachmentReference2KHR depthStencilAttachmentReferences = {};
-	depthStencilAttachmentReferences.sType = VK_STRUCTURE_TYPE_ATTACHMENT_REFERENCE_2_KHR;
-	depthStencilAttachmentReferences.pNext = nullptr;
-	depthStencilAttachmentReferences.aspectMask = 0;
+        VkAttachmentReference2KHR depthStencilAttachmentReferences = {};
+        depthStencilAttachmentReferences.sType = VK_STRUCTURE_TYPE_ATTACHMENT_REFERENCE_2_KHR;
+        depthStencilAttachmentReferences.pNext = nullptr;
+        depthStencilAttachmentReferences.aspectMask = 0;
 
 #ifdef VK_KHR_depth_stencil_resolve
-	VkAttachmentReference2KHR resolveDepthStencilAttachmentReferences = {};
-	depthStencilAttachmentReferences.sType = VK_STRUCTURE_TYPE_ATTACHMENT_REFERENCE_2_KHR;
-	depthStencilAttachmentReferences.pNext = nullptr;
-	depthStencilAttachmentReferences.aspectMask = 0;
+        VkAttachmentReference2KHR resolveDepthStencilAttachmentReferences = {};
+        depthStencilAttachmentReferences.sType = VK_STRUCTURE_TYPE_ATTACHMENT_REFERENCE_2_KHR;
+        depthStencilAttachmentReferences.pNext = nullptr;
+        depthStencilAttachmentReferences.aspectMask = 0;
 #endif //VK_KHR_depth_stencil_resolve
 
-    bool depthStencil = false;
-    u32 index = 0;
-    for (u32 descIndex = 0; descIndex < m_descriptions.size(); ++descIndex)
-    {
-        VulkanAttachmentDescription& attach = m_descriptions[descIndex];
-        ASSERT(attach._format != VK_FORMAT_UNDEFINED, "undefined format");
-
-        bool disableAutoresolve = !attach._autoResolve;
-        if (VulkanImage::isDepthStencilFormat(attach._format))
+        bool depthStencil = false;
+        u32 index = 0;
+        for (u32 descIndex = 0; descIndex < m_descriptions.size(); ++descIndex)
         {
-            disableAutoresolve = VulkanDeviceCaps::getInstance()->supportDepthAutoResolve ? disableAutoresolve : true;
-        }
+            VulkanAttachmentDescription &attach = m_descriptions[descIndex];
+            ASSERT(attach._format != VK_FORMAT_UNDEFINED, "undefined format");
 
-        if (attach._samples == VK_SAMPLE_COUNT_1_BIT || disableAutoresolve)
-        {
-            VkAttachmentDescription2KHR attachmentDescription = {};
-            attachmentDescription.sType = VK_STRUCTURE_TYPE_ATTACHMENT_DESCRIPTION_2_KHR;
-            attachmentDescription.pNext = nullptr;
-            attachmentDescription.flags = 0;
-            attachmentDescription.format = attach._format;
-            attachmentDescription.samples = attach._samples;
-            attachmentDescription.flags = 0;// VK_ATTACHMENT_DESCRIPTION_MAY_ALIAS_BIT; //need check
-            attachmentDescription.loadOp = attach._loadOp;
-            attachmentDescription.storeOp = attach._storeOp;
-            attachmentDescription.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-            attachmentDescription.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-            attachmentDescription.initialLayout = attach._initialLayout;
-            attachmentDescription.finalLayout = attach._finalLayout;
-
-            if (VulkanImage::isColorFormat(attach._format))
+            bool disableAutoresolve = !attach._autoResolve;
+            if (VulkanImage::isDepthStencilFormat(attach._format))
             {
-                VkAttachmentReference2KHR attachmentReference = {};
-                attachmentReference.sType = VK_STRUCTURE_TYPE_ATTACHMENT_REFERENCE_2_KHR;
-                attachmentReference.pNext = nullptr;
-                attachmentReference.aspectMask = 0;
-                attachmentReference.attachment = index;
-                attachmentReference.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-                index++;
-                colorAttachmentReferences.push_back(attachmentReference);
+                disableAutoresolve = VulkanDeviceCaps::getInstance()->supportDepthAutoResolve ? disableAutoresolve : true;
+            }
+
+            if (attach._samples == VK_SAMPLE_COUNT_1_BIT || disableAutoresolve)
+            {
+                VkAttachmentDescription2KHR attachmentDescription = {};
+                attachmentDescription.sType = VK_STRUCTURE_TYPE_ATTACHMENT_DESCRIPTION_2_KHR;
+                attachmentDescription.pNext = nullptr;
+                attachmentDescription.flags = 0;
+                attachmentDescription.format = attach._format;
+                attachmentDescription.samples = attach._samples;
+                attachmentDescription.flags = 0; // VK_ATTACHMENT_DESCRIPTION_MAY_ALIAS_BIT; //need check
+                attachmentDescription.loadOp = attach._loadOp;
+                attachmentDescription.storeOp = attach._storeOp;
+                attachmentDescription.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+                attachmentDescription.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+                attachmentDescription.initialLayout = attach._initialLayout;
+                attachmentDescription.finalLayout = attach._finalLayout;
+
+                if (VulkanImage::isColorFormat(attach._format))
+                {
+                    VkAttachmentReference2KHR attachmentReference = {};
+                    attachmentReference.sType = VK_STRUCTURE_TYPE_ATTACHMENT_REFERENCE_2_KHR;
+                    attachmentReference.pNext = nullptr;
+                    attachmentReference.aspectMask = 0;
+                    attachmentReference.attachment = index;
+                    attachmentReference.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+                    index++;
+                    colorAttachmentReferences.push_back(attachmentReference);
+                }
+                else
+                {
+                    attachmentDescription.stencilLoadOp = attach._stencilLoadOp;
+                    attachmentDescription.stencilStoreOp = attach._stensilStoreOp;
+
+                    depthStencilAttachmentReferences.attachment = index;
+                    depthStencilAttachmentReferences.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+                    index++;
+                    depthStencil = true;
+                }
+
+                attachmentDescriptions.push_back(attachmentDescription);
             }
             else
             {
-                attachmentDescription.stencilLoadOp = attach._stencilLoadOp;
-                attachmentDescription.stencilStoreOp = attach._stensilStoreOp;
-
-                depthStencilAttachmentReferences.attachment = index;
-                depthStencilAttachmentReferences.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-                index++;
-                depthStencil = true;
-            }
-
-            attachmentDescriptions.push_back(attachmentDescription);
-        }
-        else
-        {
-            VkAttachmentDescription2KHR msaaAttachmentDescription = {};
-            msaaAttachmentDescription.sType = VK_STRUCTURE_TYPE_ATTACHMENT_DESCRIPTION_2_KHR;
-            msaaAttachmentDescription.pNext = nullptr;
-            msaaAttachmentDescription.flags = 0;
-            msaaAttachmentDescription.format = attach._format;
-            msaaAttachmentDescription.samples = attach._samples;
-            msaaAttachmentDescription.flags = 0;
-            msaaAttachmentDescription.loadOp = attach._loadOp;
-            msaaAttachmentDescription.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-            msaaAttachmentDescription.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-            msaaAttachmentDescription.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-            msaaAttachmentDescription.initialLayout = attach._initialLayout;
-            msaaAttachmentDescription.finalLayout = attach._finalLayout;
-
-            VkAttachmentDescription2KHR resolveAttachmentDescription = {};
-            resolveAttachmentDescription.sType = VK_STRUCTURE_TYPE_ATTACHMENT_DESCRIPTION_2_KHR;
-            resolveAttachmentDescription.pNext = nullptr;
-            resolveAttachmentDescription.flags = 0;
-            resolveAttachmentDescription.format = attach._format;
-            resolveAttachmentDescription.samples = VK_SAMPLE_COUNT_1_BIT;
-            resolveAttachmentDescription.flags = 0;
-            resolveAttachmentDescription.loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-            resolveAttachmentDescription.storeOp = attach._storeOp;
-            resolveAttachmentDescription.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-            resolveAttachmentDescription.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-            resolveAttachmentDescription.initialLayout = attach._initialLayout;
-            resolveAttachmentDescription.finalLayout = attach._finalLayout;
-
-            if (VulkanImage::isColorFormat(attach._format))
-            {
-                VkAttachmentReference2KHR msaaAttachmentReference = {};
-                msaaAttachmentReference.sType = VK_STRUCTURE_TYPE_ATTACHMENT_REFERENCE_2_KHR;
-                msaaAttachmentReference.pNext = nullptr;
-                msaaAttachmentReference.aspectMask = 0;
-                msaaAttachmentReference.attachment = index;
-                msaaAttachmentReference.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-                index++;
-                colorAttachmentReferences.push_back(msaaAttachmentReference);
-
-                VkAttachmentReference2KHR resolveAttachmentReference = {};
-                resolveAttachmentReference.sType = VK_STRUCTURE_TYPE_ATTACHMENT_REFERENCE_2_KHR;
-                resolveAttachmentReference.pNext = nullptr;
-                resolveAttachmentReference.aspectMask = 0;
-                resolveAttachmentReference.attachment = index;
-                resolveAttachmentReference.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-                index++;
-                resolveAttachmentReferences.push_back(resolveAttachmentReference);
-            }
-            else
-            {
-                msaaAttachmentDescription.stencilLoadOp = attach._stencilLoadOp;
+                VkAttachmentDescription2KHR msaaAttachmentDescription = {};
+                msaaAttachmentDescription.sType = VK_STRUCTURE_TYPE_ATTACHMENT_DESCRIPTION_2_KHR;
+                msaaAttachmentDescription.pNext = nullptr;
+                msaaAttachmentDescription.flags = 0;
+                msaaAttachmentDescription.format = attach._format;
+                msaaAttachmentDescription.samples = attach._samples;
+                msaaAttachmentDescription.flags = 0;
+                msaaAttachmentDescription.loadOp = attach._loadOp;
+                msaaAttachmentDescription.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+                msaaAttachmentDescription.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
                 msaaAttachmentDescription.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+                msaaAttachmentDescription.initialLayout = attach._initialLayout;
+                msaaAttachmentDescription.finalLayout = attach._finalLayout;
 
+                VkAttachmentDescription2KHR resolveAttachmentDescription = {};
+                resolveAttachmentDescription.sType = VK_STRUCTURE_TYPE_ATTACHMENT_DESCRIPTION_2_KHR;
+                resolveAttachmentDescription.pNext = nullptr;
+                resolveAttachmentDescription.flags = 0;
+                resolveAttachmentDescription.format = attach._format;
+                resolveAttachmentDescription.samples = VK_SAMPLE_COUNT_1_BIT;
+                resolveAttachmentDescription.flags = 0;
+                resolveAttachmentDescription.loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+                resolveAttachmentDescription.storeOp = attach._storeOp;
                 resolveAttachmentDescription.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-                resolveAttachmentDescription.stencilStoreOp = attach._stensilStoreOp;
+                resolveAttachmentDescription.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+                resolveAttachmentDescription.initialLayout = attach._initialLayout;
+                resolveAttachmentDescription.finalLayout = attach._finalLayout;
 
-                depthStencilAttachmentReferences.attachment = index;
-                depthStencilAttachmentReferences.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-                index++;
+                if (VulkanImage::isColorFormat(attach._format))
+                {
+                    VkAttachmentReference2KHR msaaAttachmentReference = {};
+                    msaaAttachmentReference.sType = VK_STRUCTURE_TYPE_ATTACHMENT_REFERENCE_2_KHR;
+                    msaaAttachmentReference.pNext = nullptr;
+                    msaaAttachmentReference.aspectMask = 0;
+                    msaaAttachmentReference.attachment = index;
+                    msaaAttachmentReference.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+                    index++;
+                    colorAttachmentReferences.push_back(msaaAttachmentReference);
+
+                    VkAttachmentReference2KHR resolveAttachmentReference = {};
+                    resolveAttachmentReference.sType = VK_STRUCTURE_TYPE_ATTACHMENT_REFERENCE_2_KHR;
+                    resolveAttachmentReference.pNext = nullptr;
+                    resolveAttachmentReference.aspectMask = 0;
+                    resolveAttachmentReference.attachment = index;
+                    resolveAttachmentReference.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+                    index++;
+                    resolveAttachmentReferences.push_back(resolveAttachmentReference);
+                }
+                else
+                {
+                    msaaAttachmentDescription.stencilLoadOp = attach._stencilLoadOp;
+                    msaaAttachmentDescription.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+
+                    resolveAttachmentDescription.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+                    resolveAttachmentDescription.stencilStoreOp = attach._stensilStoreOp;
+
+                    depthStencilAttachmentReferences.attachment = index;
+                    depthStencilAttachmentReferences.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+                    index++;
 
 #ifdef VK_KHR_depth_stencil_resolve
-				if (VulkanDeviceCaps::getInstance()->supportDepthAutoResolve)
-				{
-					resolveDepthStencilAttachmentReferences.attachment = index;
-					resolveDepthStencilAttachmentReferences.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-					index++;
-				}
+                    if (VulkanDeviceCaps::getInstance()->supportDepthAutoResolve)
+                    {
+                        resolveDepthStencilAttachmentReferences.attachment = index;
+                        resolveDepthStencilAttachmentReferences.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+                        index++;
+                    }
 #endif //VK_KHR_depth_stencil_resolve
-                depthStencil = true;
+                    depthStencil = true;
+                }
+
+                attachmentDescriptions.push_back(msaaAttachmentDescription);
+                attachmentDescriptions.push_back(resolveAttachmentDescription);
+            }
+        }
+
+        u32 countSubpasses = 1;
+        std::vector<VkSubpassDescription2KHR> subpassDescriptions;
+        subpassDescriptions.reserve(countSubpasses);
+
+        for (u32 subpassIndex = 0; subpassIndex < countSubpasses; ++subpassIndex)
+        {
+            VkSubpassDescription2KHR subpassDescription = {};
+            subpassDescription.sType = VK_STRUCTURE_TYPE_SUBPASS_DESCRIPTION_2_KHR;
+#ifdef VK_KHR_depth_stencil_resolve
+            VkSubpassDescriptionDepthStencilResolveKHR subpassDescriptionDepthStencilResolve = {};
+            subpassDescriptionDepthStencilResolve.sType = VK_STRUCTURE_TYPE_SUBPASS_DESCRIPTION_DEPTH_STENCIL_RESOLVE_KHR;
+            subpassDescriptionDepthStencilResolve.pNext = nullptr;
+            if (VulkanDeviceCaps::getInstance()->supportDepthAutoResolve && depthStencil)
+            {
+                subpassDescriptionDepthStencilResolve.pDepthStencilResolveAttachment = &resolveDepthStencilAttachmentReferences;
+                subpassDescriptionDepthStencilResolve.depthResolveMode = VK_RESOLVE_MODE_AVERAGE_BIT_KHR;
+                subpassDescriptionDepthStencilResolve.stencilResolveMode = VK_RESOLVE_MODE_NONE_KHR;
+
+                subpassDescription.pNext = &subpassDescriptionDepthStencilResolve;
+            }
+            else
+#endif //VK_KHR_depth_stencil_resolve
+            {
+                subpassDescription.pNext = nullptr;
+            }
+            subpassDescription.flags = 0;
+            subpassDescription.viewMask = 0;
+            subpassDescription.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+            subpassDescription.inputAttachmentCount = 0;
+            subpassDescription.pInputAttachments = nullptr;
+            subpassDescription.colorAttachmentCount = static_cast<u32>(colorAttachmentReferences.size());
+            subpassDescription.pColorAttachments = colorAttachmentReferences.data();
+            subpassDescription.pResolveAttachments = !resolveAttachmentReferences.empty() ? resolveAttachmentReferences.data() : nullptr;
+            subpassDescription.pDepthStencilAttachment = depthStencil ? &depthStencilAttachmentReferences : nullptr;
+            subpassDescription.preserveAttachmentCount = 0;
+            subpassDescription.pPreserveAttachments = nullptr;
+
+            subpassDescriptions.push_back(subpassDescription);
+        }
+
+        VkRenderPassCreateInfo2KHR renderPassCreateInfo = {};
+        renderPassCreateInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO_2_KHR;
+        renderPassCreateInfo.pNext = nullptr;
+        renderPassCreateInfo.flags = 0;
+        renderPassCreateInfo.attachmentCount = static_cast<u32>(attachmentDescriptions.size());
+        renderPassCreateInfo.pAttachments = attachmentDescriptions.data();
+        renderPassCreateInfo.subpassCount = static_cast<u32>(subpassDescriptions.size());
+        renderPassCreateInfo.pSubpasses = subpassDescriptions.data();
+        renderPassCreateInfo.dependencyCount = 0;     //dependencies.size();
+        renderPassCreateInfo.pDependencies = nullptr; //ependencies.data();
+        renderPassCreateInfo.correlatedViewMaskCount = 0;
+        renderPassCreateInfo.pCorrelatedViewMasks = nullptr;
+
+        VkResult result = VulkanWrapper::CreateRenderPass2(m_device, &renderPassCreateInfo, VULKAN_ALLOCATOR, &m_renderpass);
+        if (result != VK_SUCCESS)
+        {
+            LOG_ERROR("VulkanRenderPass::create vkCreateRenderPass2 is failed. Error: %s", ErrorString(result).c_str());
+            return false;
+        }
+    }
+    else //renderpass
+    {
+        std::vector<VkAttachmentDescription> attachmentDescriptions;
+        attachmentDescriptions.reserve(m_descriptions.size());
+
+        std::vector<VkAttachmentReference> colorAttachmentReferences;
+        std::vector<VkAttachmentReference> resolveAttachmentReferences;
+
+        VkAttachmentReference depthStencilAttachmentReferences = {};
+
+        bool depthStencil = false;
+        u32 index = 0;
+        for (u32 descIndex = 0; descIndex < m_descriptions.size(); ++descIndex)
+        {
+            VulkanAttachmentDescription &attach = m_descriptions[descIndex];
+            ASSERT(attach._format != VK_FORMAT_UNDEFINED, "undefined format");
+
+            bool disableAutoresolve = !attach._autoResolve;
+            if (VulkanImage::isDepthStencilFormat(attach._format))
+            {
+                disableAutoresolve = VulkanDeviceCaps::getInstance()->supportDepthAutoResolve ? disableAutoresolve : true;
             }
 
-            attachmentDescriptions.push_back(msaaAttachmentDescription);
-            attachmentDescriptions.push_back(resolveAttachmentDescription);
+            if (attach._samples == VK_SAMPLE_COUNT_1_BIT || disableAutoresolve)
+            {
+                VkAttachmentDescription attachmentDescription = {};
+                attachmentDescription.format = attach._format;
+                attachmentDescription.samples = attach._samples;
+                attachmentDescription.flags = 0; // VK_ATTACHMENT_DESCRIPTION_MAY_ALIAS_BIT; //need check
+                attachmentDescription.loadOp = attach._loadOp;
+                attachmentDescription.storeOp = attach._storeOp;
+                attachmentDescription.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+                attachmentDescription.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+                attachmentDescription.initialLayout = attach._initialLayout;
+                attachmentDescription.finalLayout = attach._finalLayout;
+
+                if (VulkanImage::isColorFormat(attach._format))
+                {
+                    VkAttachmentReference attachmentReference = {};
+                    attachmentReference.attachment = index;
+                    attachmentReference.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+                    index++;
+                    colorAttachmentReferences.push_back(attachmentReference);
+                }
+                else
+                {
+                    attachmentDescription.stencilLoadOp = attach._stencilLoadOp;
+                    attachmentDescription.stencilStoreOp = attach._stensilStoreOp;
+
+                    depthStencilAttachmentReferences.attachment = index;
+                    depthStencilAttachmentReferences.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+                    index++;
+                    depthStencil = true;
+                }
+
+                attachmentDescriptions.push_back(attachmentDescription);
+            }
+            else
+            {
+                VkAttachmentDescription msaaAttachmentDescription = {};
+                msaaAttachmentDescription.flags = 0;
+                msaaAttachmentDescription.format = attach._format;
+                msaaAttachmentDescription.samples = attach._samples;
+                msaaAttachmentDescription.loadOp = attach._loadOp;
+                msaaAttachmentDescription.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+                msaaAttachmentDescription.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+                msaaAttachmentDescription.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+                msaaAttachmentDescription.initialLayout = attach._initialLayout;
+                msaaAttachmentDescription.finalLayout = attach._finalLayout;
+
+                VkAttachmentDescription resolveAttachmentDescription = {};
+                resolveAttachmentDescription.flags = 0;
+                resolveAttachmentDescription.format = attach._format;
+                resolveAttachmentDescription.samples = VK_SAMPLE_COUNT_1_BIT;
+                resolveAttachmentDescription.loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+                resolveAttachmentDescription.storeOp = attach._storeOp;
+                resolveAttachmentDescription.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+                resolveAttachmentDescription.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+                resolveAttachmentDescription.initialLayout = attach._initialLayout;
+                resolveAttachmentDescription.finalLayout = attach._finalLayout;
+
+                if (VulkanImage::isColorFormat(attach._format))
+                {
+                    VkAttachmentReference msaaAttachmentReference = {};
+                    msaaAttachmentReference.attachment = index;
+                    msaaAttachmentReference.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+                    index++;
+                    colorAttachmentReferences.push_back(msaaAttachmentReference);
+
+                    VkAttachmentReference resolveAttachmentReference = {};
+                    resolveAttachmentReference.attachment = index;
+                    resolveAttachmentReference.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+                    index++;
+                    resolveAttachmentReferences.push_back(resolveAttachmentReference);
+                }
+                else
+                {
+                    msaaAttachmentDescription.stencilLoadOp = attach._stencilLoadOp;
+                    msaaAttachmentDescription.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+
+                    resolveAttachmentDescription.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+                    resolveAttachmentDescription.stencilStoreOp = attach._stensilStoreOp;
+
+                    depthStencilAttachmentReferences.attachment = index;
+                    depthStencilAttachmentReferences.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+                    index++;
+
+                    depthStencil = true;
+                }
+
+                attachmentDescriptions.push_back(msaaAttachmentDescription);
+                attachmentDescriptions.push_back(resolveAttachmentDescription);
+            }
         }
 
-    }
+        u32 countSubpasses = 1;
+        std::vector<VkSubpassDescription> subpassDescriptions;
+        subpassDescriptions.reserve(countSubpasses);
 
-    u32 countSubpasses = 1;
-    std::vector<VkSubpassDescription2KHR> subpassDescriptions;
-    subpassDescriptions.reserve(countSubpasses);
-
-    for (u32 subpassIndex = 0; subpassIndex < countSubpasses; ++subpassIndex)
-    {
-        VkSubpassDescription2KHR subpassDescription = {};
-        subpassDescription.sType = VK_STRUCTURE_TYPE_SUBPASS_DESCRIPTION_2_KHR;
-#ifdef VK_KHR_depth_stencil_resolve
-		VkSubpassDescriptionDepthStencilResolveKHR subpassDescriptionDepthStencilResolve = {};
-		subpassDescriptionDepthStencilResolve.sType = VK_STRUCTURE_TYPE_SUBPASS_DESCRIPTION_DEPTH_STENCIL_RESOLVE_KHR;
-		subpassDescriptionDepthStencilResolve.pNext = nullptr;
-        if (VulkanDeviceCaps::getInstance()->supportDepthAutoResolve && depthStencil)
+        for (u32 subpassIndex = 0; subpassIndex < countSubpasses; ++subpassIndex)
         {
-            subpassDescriptionDepthStencilResolve.pDepthStencilResolveAttachment = &resolveDepthStencilAttachmentReferences;
-            subpassDescriptionDepthStencilResolve.depthResolveMode = VK_RESOLVE_MODE_AVERAGE_BIT_KHR;
-            subpassDescriptionDepthStencilResolve.stencilResolveMode = VK_RESOLVE_MODE_NONE_KHR;
+            VkSubpassDescription subpassDescription = {};
+            subpassDescription.flags = 0;
+            subpassDescription.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+            subpassDescription.inputAttachmentCount = 0;
+            subpassDescription.pInputAttachments = nullptr;
+            subpassDescription.colorAttachmentCount = static_cast<u32>(colorAttachmentReferences.size());
+            subpassDescription.pColorAttachments = colorAttachmentReferences.data();
+            subpassDescription.pResolveAttachments = !resolveAttachmentReferences.empty() ? resolveAttachmentReferences.data() : nullptr;
+            subpassDescription.pDepthStencilAttachment = depthStencil ? &depthStencilAttachmentReferences : nullptr;
+            subpassDescription.preserveAttachmentCount = 0;
+            subpassDescription.pPreserveAttachments = nullptr;
 
-            subpassDescription.pNext = &subpassDescriptionDepthStencilResolve;
+            subpassDescriptions.push_back(subpassDescription);
         }
-        else
-#endif //VK_KHR_depth_stencil_resolve
+
+        VkRenderPassCreateInfo renderPassCreateInfo = {};
+        renderPassCreateInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+        renderPassCreateInfo.pNext = nullptr;
+        renderPassCreateInfo.flags = 0;
+        renderPassCreateInfo.attachmentCount = static_cast<u32>(attachmentDescriptions.size());
+        renderPassCreateInfo.pAttachments = attachmentDescriptions.data();
+        renderPassCreateInfo.subpassCount = static_cast<u32>(subpassDescriptions.size());
+        renderPassCreateInfo.pSubpasses = subpassDescriptions.data();
+        renderPassCreateInfo.dependencyCount = 0;     //dependencies.size();
+        renderPassCreateInfo.pDependencies = nullptr; //ependencies.data();
+
+        VkResult result = VulkanWrapper::CreateRenderPass(m_device, &renderPassCreateInfo, VULKAN_ALLOCATOR, &m_renderpass);
+        if (result != VK_SUCCESS)
         {
-            subpassDescription.pNext = nullptr;
+            LOG_ERROR("VulkanRenderPass::create vkCreateRenderPass is failed. Error: %s", ErrorString(result).c_str());
+            return false;
         }
-        subpassDescription.flags = 0;
-        subpassDescription.viewMask = 0;
-        subpassDescription.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-        subpassDescription.inputAttachmentCount = 0;
-        subpassDescription.pInputAttachments = nullptr;
-        subpassDescription.colorAttachmentCount = static_cast<u32>(colorAttachmentReferences.size());
-        subpassDescription.pColorAttachments = colorAttachmentReferences.data();
-        subpassDescription.pResolveAttachments = !resolveAttachmentReferences.empty() ? resolveAttachmentReferences.data() : nullptr;
-        subpassDescription.pDepthStencilAttachment = depthStencil  ? &depthStencilAttachmentReferences : nullptr;
-        subpassDescription.preserveAttachmentCount = 0;
-        subpassDescription.pPreserveAttachments = nullptr;
-
-        subpassDescriptions.push_back(subpassDescription);
-    }
-
-    VkRenderPassCreateInfo2KHR renderPassCreateInfo = {};
-    renderPassCreateInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO_2_KHR;
-    renderPassCreateInfo.pNext = nullptr;
-    renderPassCreateInfo.flags = 0;
-    renderPassCreateInfo.attachmentCount = static_cast<u32>(attachmentDescriptions.size());
-    renderPassCreateInfo.pAttachments = attachmentDescriptions.data();
-    renderPassCreateInfo.subpassCount = static_cast<u32>(subpassDescriptions.size());
-    renderPassCreateInfo.pSubpasses = subpassDescriptions.data();
-    renderPassCreateInfo.dependencyCount = 0;//dependencies.size();
-    renderPassCreateInfo.pDependencies = nullptr;//ependencies.data();
-    renderPassCreateInfo.correlatedViewMaskCount = 0;
-    renderPassCreateInfo.pCorrelatedViewMasks = nullptr;
-
-    VkResult result = VulkanWrapper::CreateRenderPass2(m_device, &renderPassCreateInfo, VULKAN_ALLOCATOR, &m_renderpass);
-    if (result != VK_SUCCESS)
-    {
-        LOG_ERROR("VulkanRenderPass::create vkCreateRenderPass is failed. Error: %s", ErrorString(result).c_str());
-        return false;
     }
 
     return true;

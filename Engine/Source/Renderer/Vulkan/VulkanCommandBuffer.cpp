@@ -201,7 +201,7 @@ void VulkanCommandBuffer::beginCommandBuffer()
         VkCommandBufferInheritanceInfo commandBufferInheritanceInfo = {};
 
         commandBufferBeginInfo.flags = VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT;
-        commandBufferBeginInfo.pInheritanceInfo = nullptr;
+        commandBufferBeginInfo.pInheritanceInfo = &commandBufferInheritanceInfo;
     }
 
     VkResult result = VulkanWrapper::BeginCommandBuffer(m_command, &commandBufferBeginInfo);
@@ -294,7 +294,7 @@ void VulkanCommandBuffer::cmdSetScissor(const std::vector<VkRect2D>& scissors)
     }
 }
 
-void VulkanCommandBuffer::cmdBindVertexBuffers(u32 firstBinding, u32 countBindinng, const std::vector<Buffer*>& buffers, const std::vector<VkDeviceSize>& offests)
+void VulkanCommandBuffer::cmdBindVertexBuffers(u32 firstBinding, u32 countBindinng, const std::vector<Buffer*>& buffers, const std::vector<u64>& offests)
 {
     ASSERT(m_status == CommandBufferStatus::Begin, "not started");
 
@@ -310,7 +310,8 @@ void VulkanCommandBuffer::cmdBindVertexBuffers(u32 firstBinding, u32 countBindin
 
     if (m_level == CommandBufferLevel::PrimaryBuffer)
     {
-        VulkanWrapper::CmdBindVertexBuffers(m_command, firstBinding, countBindinng, vkBuffers.data(), offests.data());
+        static_assert(sizeof(VkDeviceSize) == sizeof(u64));
+        VulkanWrapper::CmdBindVertexBuffers(m_command, firstBinding, countBindinng, vkBuffers.data(), (const VkDeviceSize*)offests.data());
     }
     else
     {

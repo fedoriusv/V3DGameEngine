@@ -53,10 +53,10 @@ namespace vk
         BufferType m_type;
 
         u64 m_size;
-        bool m_mapped;
-
         VkBuffer m_buffer;
 
+        bool m_mapped;
+        
 #if VULKAN_DEBUG_MARKERS
         std::string m_debugName;
         static u32 s_debugNameGenerator;

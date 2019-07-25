@@ -26,12 +26,12 @@
 #include "android_native_app_glue.h"
 #include <android/log.h>
 
-#define LOGI(...) ((void)__android_log_print(ANDROID_LOG_INFO, "V3D", __VA_ARGS__))
-#define LOGE(...) ((void)__android_log_print(ANDROID_LOG_ERROR, "V3D", __VA_ARGS__))
+#define LOGI(...) ((void)__android_log_print(ANDROID_LOG_INFO, "V3D NDK", __VA_ARGS__))
+#define LOGE(...) ((void)__android_log_print(ANDROID_LOG_ERROR, "V3D NDK", __VA_ARGS__))
 
 /* For debug builds, always enable the debug traces in this library */
 #ifndef NDEBUG
-#  define LOGV(...)  ((void)__android_log_print(ANDROID_LOG_VERBOSE, "V3D", __VA_ARGS__))
+#  define LOGV(...)  ((void)__android_log_print(ANDROID_LOG_VERBOSE, "V3D NDK", __VA_ARGS__))
 #else
 #  define LOGV(...)  ((void)0)
 #endif
@@ -199,6 +199,7 @@ static void process_input(struct android_app* app, struct android_poll_source* s
 }
 
 static void process_cmd(struct android_app* app, struct android_poll_source* source) {
+    LOGV("call process_cmd");
     int8_t cmd = android_app_read_cmd(app);
     android_app_pre_exec_cmd(app, cmd);
     if (app->onAppCmd != NULL) app->onAppCmd(app, cmd);
@@ -219,6 +220,7 @@ static void* android_app_entry(void* param) {
     android_app->inputPollSource.id = LOOPER_ID_INPUT;
     android_app->inputPollSource.app = android_app;
     android_app->inputPollSource.process = process_input;
+    android_app->window = NULL;
 
     ALooper* looper = ALooper_prepare(ALOOPER_PREPARE_ALLOW_NON_CALLBACKS);
     ALooper_addFd(looper, android_app->msgread, LOOPER_ID_MAIN, ALOOPER_EVENT_INPUT, NULL,

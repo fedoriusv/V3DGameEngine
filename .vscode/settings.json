@@ -1,5 +1,6 @@
 {
     "files.associations": {
+        "*.json": "cpp",
         "algorithm": "cpp",
         "array": "cpp",
         "atomic": "cpp",
@@ -70,7 +71,16 @@
         "xstring": "cpp",
         "xtr1common": "cpp",
         "xtree": "cpp",
-        "xutility": "cpp"
+        "xutility": "cpp",
+        "*.tcc": "cpp",
+        "bitset": "cpp",
+        "cinttypes": "cpp",
+        "clocale": "cpp",
+        "condition_variable": "cpp",
+        "cwctype": "cpp",
+        "optional": "cpp",
+        "string_view": "cpp",
+        "android_native_app_glue.h": "c"
     },
     "C_Cpp.errorSquiggles": "Disabled"
 }

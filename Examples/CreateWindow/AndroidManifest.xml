@@ -6,7 +6,7 @@
         android:versionName="1.0">
 
     <!-- This is the platform API where NativeActivity was introduced. -->
-    <uses-sdk android:minSdkVersion="9" android:targetSdkVersion="21"/>
+    <uses-sdk android:minSdkVersion="22" android:targetSdkVersion="26"/>
 
     <!-- This .apk has no Java code itself, so set hasCode to false. -->
     <application android:label="CreateWindow" android:hasCode="false">
@@ -19,7 +19,7 @@
                 android:screenOrientation="sensorLandscape">
             <!-- Tell NativeActivity the name of our .so -->
             <meta-data android:name="android.app.lib_name"
-                    android:value="1.CreateWindow" />
+                    android:value="CreateWindow" />
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />

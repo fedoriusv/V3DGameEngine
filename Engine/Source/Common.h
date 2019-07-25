@@ -67,7 +67,7 @@ inline void crashFunc()
 #   define DEPRECATED
 #endif //
 
-#ifdef PLATFORM_WINDOWS
+#if defined(PLATFORM_WINDOWS)
 #   include <windows.h>
 typedef HINSTANCE NativeInstance;
 typedef HWND      NativeWindows;
@@ -75,6 +75,10 @@ typedef HWND      NativeWindows;
 #   undef min
 #   undef CreateSemaphore
 #   undef CreateEvent
+#elif defined (PLATFORM_ANDROID)
+#   include "Platform/AndroidNative.h"
+typedef ANativeWindow*   NativeWindows;
+typedef ANativeActivity* NativeInstance;
 #else //
 typedef void*     NativeInstance;
 typedef void*     NativeWindows;

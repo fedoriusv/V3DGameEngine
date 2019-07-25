@@ -2,6 +2,7 @@
 
 #ifdef VULKAN_RENDER
 #include "VulkanDebug.h"
+#include "Utils/Logger.h"
 
 namespace v3d
 {
@@ -922,6 +923,13 @@ VkBool32 VulkanWrapper::GetPhysicalDeviceWin32PresentationSupport(VkPhysicalDevi
 }
 #endif //VK_KHR_win32_surface
 
+#ifdef VK_KHR_android_surface
+VkResult VulkanWrapper::CreateAndroidSurface(VkInstance instance, const VkAndroidSurfaceCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkSurfaceKHR* pSurface) noexcept
+{
+    return vkCreateAndroidSurfaceKHR(instance, pCreateInfo, pAllocator, pSurface);
+}
+#endif //VK_KHR_android_surface
+;
 #ifdef VK_KHR_swapchain
 VkResult VulkanWrapper::CreateSwapchain(VkDevice device, const VkSwapchainCreateInfoKHR * pCreateInfo, const VkAllocationCallbacks * pAllocator, VkSwapchainKHR * pSwapchain) noexcept
 {

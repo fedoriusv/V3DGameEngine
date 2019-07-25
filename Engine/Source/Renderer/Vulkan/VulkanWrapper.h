@@ -198,6 +198,10 @@ namespace vk
         static VkBool32 GetPhysicalDeviceWin32PresentationSupport(VkPhysicalDevice physicalDevice, uint32_t queueFamilyIndex) noexcept;
 #endif //VK_KHR_win32_surface
 
+#ifdef VK_KHR_android_surface
+        static VkResult CreateAndroidSurface(VkInstance instance, const VkAndroidSurfaceCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkSurfaceKHR* pSurface) noexcept;
+#endif //VK_KHR_android_surface
+
 #ifdef VK_KHR_swapchain
         static VkResult CreateSwapchain(VkDevice device, const VkSwapchainCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkSwapchainKHR* pSwapchain) noexcept;
         static void     DestroySwapchain(VkDevice device, VkSwapchainKHR swapchain, const VkAllocationCallbacks* pAllocator) noexcept;

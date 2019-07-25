@@ -29,8 +29,8 @@ VulkanBuffer::VulkanBuffer(VulkanMemory::VulkanMemoryAllocator* memory, VkDevice
     , m_type(type)
 
     , m_size(size) //Check aligment
-
     , m_buffer(VK_NULL_HANDLE)
+    
     , m_mapped(false)
 {
     LOG_DEBUG("VulkanBuffer::VulkanBuffer constructor %llx", this);

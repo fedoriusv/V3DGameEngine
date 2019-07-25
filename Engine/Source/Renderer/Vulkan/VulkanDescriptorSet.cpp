@@ -23,8 +23,8 @@ VulkanPipelineLayout::VulkanPipelineLayout()
 
 VulkanDescriptorPool::VulkanDescriptorPool(VkDevice device, VkDescriptorPoolCreateFlags flag) noexcept
     : m_device(device)
-    , m_pool(VK_NULL_HANDLE)
     , m_flag(flag)
+    , m_pool(VK_NULL_HANDLE)
 {
     ASSERT(m_descriptorSets.empty(), "not empty");
     ASSERT(!m_pool, "not nullptr");

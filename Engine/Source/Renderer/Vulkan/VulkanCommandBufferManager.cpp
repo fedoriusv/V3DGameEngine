@@ -167,6 +167,10 @@ void VulkanCommandBufferManager::updateCommandBuffers()
 void VulkanCommandBufferManager::waitCompete()
 {
     VkResult result = VulkanWrapper::QueueWaitIdle(m_queue);
+    if (result != VK_SUCCESS)
+    {
+        LOG_ERROR("VulkanCommandBufferManager::waitCompete QueueWaitIdle. Error %s", ErrorString(result).c_str());
+    }
     VulkanCommandBufferManager::updateCommandBuffers();
 }
 

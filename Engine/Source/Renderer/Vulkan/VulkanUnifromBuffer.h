@@ -68,16 +68,16 @@ namespace vk
 
         VulkanUniformBufferPool* getNewPool(u64 size);
 
+        VkDevice m_device;
+
         std::deque<VulkanUniformBufferPool*> m_freePoolBuffers;
         std::deque<VulkanUniformBufferPool*> m_usedPoolBuffers;
         VulkanUniformBufferPool* m_currentPoolBuffer;
 
         std::map<VulkanBuffer*, VulkanUniformBufferPool*> m_uniformBuffers;
 
+        VulkanMemory::VulkanMemoryAllocator* m_memoryManager; 
         VulkanResourceDeleter& m_resourceDeleter;
-
-        VkDevice m_device;
-        VulkanMemory::VulkanMemoryAllocator* m_memoryManager;
 
         const u64 k_bufferPoolSize = 1 * 1024 * 1024;
     };

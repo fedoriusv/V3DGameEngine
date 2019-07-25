@@ -63,10 +63,9 @@ bool VulkanUniformBuffer::update(u32 offset, u32 size, const void * data)
 
 VulkanUniformBufferManager::VulkanUniformBufferManager(VkDevice device, VulkanResourceDeleter& resourceDeleter) noexcept
     : m_device(device)
-    , m_memoryManager(new SimpleVulkanMemoryAllocator(device))
-
     , m_currentPoolBuffer(nullptr)
 
+    , m_memoryManager(new SimpleVulkanMemoryAllocator(device))
     , m_resourceDeleter(resourceDeleter)
 {
 }

@@ -35,8 +35,8 @@ VulkanContextState::VulkanContextState(VkDevice device, VulkanDescriptorSetManag
 
     m_currentVertexBuffers.second = false;
 
-    m_renderPassArea = { 0, 0, 0, 0 };
-    m_renderPassClearValues.resize(1, { 0.0f, 0.0f, 0.0f, 0.0f });
+    m_renderPassArea = {{ 0, 0}, { 0, 0 }};
+    m_renderPassClearValues.resize(1, {0.0f, 0.0f, 0.0f, 0.0f});
 }
 
 void VulkanContextState::updateSwapchainIndex(u32 index)
@@ -159,7 +159,7 @@ VulkanFramebuffer * VulkanContextState::getCurrentFramebuffer() const
 
 VulkanGraphicPipeline * VulkanContextState::getCurrentPipeline() const
 {
-    ASSERT(m_currentPipeline.first, "nullptr");
+    //ASSERT(m_currentPipeline.first, "nullptr");
     return m_currentPipeline.first;
 }
 

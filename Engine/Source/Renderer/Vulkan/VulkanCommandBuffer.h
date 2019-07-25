@@ -73,7 +73,7 @@ namespace vk
         void cmdSetScissor(const std::vector<VkRect2D>& scissors);
 
         //binds
-        void cmdBindVertexBuffers(u32 firstBinding, u32 countBindinng, const std::vector<Buffer*>& buffers, const std::vector<VkDeviceSize>& offests);
+        void cmdBindVertexBuffers(u32 firstBinding, u32 countBindinng, const std::vector<Buffer*>& buffers, const std::vector<u64>& offests);
         void cmdBindIndexBuffers(VulkanBuffer* buffer, VkDeviceSize offest, VkIndexType type);
         void cmdBindPipeline(VulkanGraphicPipeline* pipeline);
         void cmdBindDescriptorSets(VulkanGraphicPipeline * pipeline, u32 firstSet, u32 countSets, const std::vector<VkDescriptorSet>& sets, const std::vector<u32>& offsets);

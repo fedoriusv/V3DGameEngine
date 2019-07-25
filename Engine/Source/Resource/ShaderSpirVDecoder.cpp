@@ -426,9 +426,6 @@ bool ShaderSpirVDecoder::parseReflections(const std::vector<u32>& spirv, stream:
             u32 location = glsl.get_decoration(outputChannel.id, spv::DecorationLocation);
 
             const spirv_cross::SPIRType& type = glsl.get_type(outputChannel.type_id);
-            u32 col = type.columns;
-            u32 row = type.vecsize;
-
             renderer::Shader::Attribute output;
             output._location = location;
             output._format = convertSPRIVTypeToFormat(type);
@@ -666,17 +663,17 @@ bool ShaderSpirVDecoder::parseReflections(const std::vector<u32>& spirv, stream:
             const spirv_cross::SPIRType& type = glsl.get_type(image.type_id);
             bool depth = type.image.depth;
 
-            renderer::Shader::SampledImage image;
-            image._set = set;
-            image._binding = binding;
-            image._target = convertSPRIVTypeToTextureData(type);
-            image._array = type.array.empty() ? 1 : type.array[0];
-            image._ms = type.image.ms;
-            image._depth = depth;
+            renderer::Shader::SampledImage sampledImage;
+            sampledImage._set = set;
+            sampledImage._binding = binding;
+            sampledImage._target = convertSPRIVTypeToTextureData(type);
+            sampledImage._array = type.array.empty() ? 1 : type.array[0];
+            sampledImage._ms = type.image.ms;
+            sampledImage._depth = depth;
 #if USE_STRING_ID_SHADER
-            image._name = name;
+            sampledImage._name = name;
 #endif
-            image >> stream;
+            sampledImage >> stream;
         }
 
         u32 pushConstantCount = static_cast<u32>(resources.push_constant_buffers.size());
@@ -690,7 +687,6 @@ bool ShaderSpirVDecoder::parseReflections(const std::vector<u32>& spirv, stream:
             u32 offset = glsl.get_decoration(pushConstant.id, spv::DecorationOffset);
 
             const spirv_cross::SPIRType& type = glsl.get_type(pushConstant.type_id);
-            bool depth = type.image.depth;
 
             renderer::Shader::PushConstant constant;
             constant._offset = offset;

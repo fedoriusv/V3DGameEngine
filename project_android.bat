@@ -42,9 +42,17 @@ if "%1" == "--pack" (
         echo Error. Name of pack is empty or not exist
         goto end
     )
-    
     set command=single
     goto pack
+)
+
+if "%1" == "--install" (
+if "%2" == "" (
+        echo Error. Name of pack is empty or not exist
+        goto end
+    )
+    set command=single
+    goto install
 )
 
 :help
@@ -53,6 +61,7 @@ if "%1" == "--pack" (
     echo --prepare        Generate ninja cmake project
     echo --build          Build Android .so file
     echo --pack "name"    Pack resources
+    echo --install "name" Install APK to device
     goto end
 
 :all
@@ -70,7 +79,7 @@ if "%1" == "--pack" (
     )
     cd Project\Android
 
-    cmake -DCMAKE_TOOLCHAIN_FILE=%C_ANDROID_TOOLCHAIN% -DANDROID_NDK=%C_ANDROID_NDK% -DANDROID_ABI=%C_ANDROID_ABI% -DANDROID_PLATFORM=%C_ANDROID_PLATFORM% -DCOMPILER_CLANG=ON -DTARGET_ANDROID=ON -DCMAKE_MAKE_PROGRAM=Ninja -GNinja -DCMAKE_BUILD_TYPE=%C_BUILD_TYPE% -DCRC32C_BUILD_TESTS=OFF -DCRC32C_BUILD_BENCHMARKS=OFF -DCRC32C_USE_GLOG=OFF -DCRC32C_INSTALL=OFF -DASSIMP_BUILD_TESTS=OFF -DBUILD_SHARED_LIBS=OFF -DASSIMP_BUILD_ASSIMP_TOOLS=OFF ../..
+    cmake -GNinja -DCMAKE_MAKE_PROGRAM=Ninja -DCMAKE_TOOLCHAIN_FILE=%C_ANDROID_TOOLCHAIN% -DANDROID_NDK=%C_ANDROID_NDK% -DANDROID_ABI=%C_ANDROID_ABI% -DANDROID_PLATFORM=%C_ANDROID_PLATFORM% -DCMAKE_BUILD_TYPE=%C_BUILD_TYPE% -DCOMPILER_CLANG=ON -DTARGET_ANDROID=ON  -DCRC32C_BUILD_TESTS=OFF -DCRC32C_BUILD_BENCHMARKS=OFF -DCRC32C_USE_GLOG=OFF -DCRC32C_INSTALL=OFF -DASSIMP_BUILD_TESTS=OFF -DBUILD_SHARED_LIBS=OFF -DASSIMP_BUILD_ASSIMP_TOOLS=OFF ../..
     cd ..\..
     if "%command%" == "single" goto end
     
@@ -84,7 +93,6 @@ if "%1" == "--pack" (
     
     cmake --build .
     cd ..\..
-rem    if "%command%" == "single" goto end
     goto end
     
 :pack
@@ -94,15 +102,24 @@ rem    if "%command%" == "single" goto end
         goto end
     )
     
-    xcopy Examples\%2\AndroidManifest.xml Project\Android\Examples\%2
-    xcopy Examples\%2\build.gradle Project\Android\Examples\%2
+    xcopy /Y Examples\%2\AndroidManifest.xml Project\Android\Examples\%2
+    xcopy /Y Examples\%2\build.gradle Project\Android\Examples\%2
     
-    xcopy "Project\Android\Examples\%2\lib%2.so" "Project\Android\Examples\%2\libs\%C_ANDROID_ABI%\"
+    xcopy /Y "Project\Android\Examples\%2\lib%2.so" "Project\Android\Examples\%2\libs\%C_ANDROID_ABI%\"
+    
+    REM fix build error
+    set ANDROID_NDK=""
+    set ANDROID_NDK_HOME=""
     
     cd Config
     call gradlew.bat -p ../Project/Android/Examples/%2 build
     cd ..
-    if "%command%" == "single" goto end
+    goto end
+    
+:install
+    echo Installing APK..
+    call adb install -r Project/Android/Examples/%2/build/outputs/apk/%2-debug.apk
+    goto end
     
 :end
 if "%command%" == "all" pause

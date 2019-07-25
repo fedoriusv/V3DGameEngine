@@ -63,6 +63,10 @@ std::tuple<VkAccessFlags, VkAccessFlags> VulkanImage::getAccessFlagsFromImageLay
     case VK_IMAGE_LAYOUT_PRESENT_SRC_KHR:
         dstFlag = VK_ACCESS_MEMORY_READ_BIT;
         break;
+
+     default:
+          ASSERT(false, "not handled");
+
     }
 
     switch (newLayout)
@@ -101,6 +105,13 @@ std::tuple<VkAccessFlags, VkAccessFlags> VulkanImage::getAccessFlagsFromImageLay
     case VK_IMAGE_LAYOUT_PRESENT_SRC_KHR:
         dstFlag = VK_ACCESS_MEMORY_READ_BIT;
         break;
+
+    case VK_IMAGE_LAYOUT_UNDEFINED:
+        dstFlag = 0;
+        break;
+
+     default:
+          ASSERT(false, "not handled");
     }
 
     return { srcFlag, dstFlag };
@@ -579,10 +590,10 @@ VulkanImage::VulkanImage(VulkanMemory::VulkanMemoryAllocator* memory, VkDevice d
     , m_mipsLevel(mipsLevel)
     , m_layersLevel(layers)
 
-    , m_aspectMask(VulkanImage::getImageAspectFlags(format))
-
     , m_samples(VK_SAMPLE_COUNT_1_BIT)
     , m_tiling(VK_IMAGE_TILING_OPTIMAL)
+
+    , m_aspectMask(VulkanImage::getImageAspectFlags(format))
 
     , m_image(VK_NULL_HANDLE)
 
@@ -613,10 +624,10 @@ VulkanImage::VulkanImage(VulkanMemory::VulkanMemoryAllocator* memory, VkDevice d
     , m_mipsLevel(1)
     , m_layersLevel(1)
 
-    , m_aspectMask(VulkanImage::getImageAspectFlags(format))
-
     , m_samples(samples)
     , m_tiling(VK_IMAGE_TILING_OPTIMAL)
+
+    , m_aspectMask(VulkanImage::getImageAspectFlags(format))
 
     , m_image(VK_NULL_HANDLE)
 
@@ -833,7 +844,7 @@ void VulkanImage::clear(Context * context, const core::Vector4D & color)
     }
 
     LOG_DEBUG("VulkanGraphicContext::clearColor [%f, %f, %f, %f]", color[0], color[1], color[2], color[3]);
-    VkClearColorValue clearColorValue = { color[0], color[1], color[2], color[3] };
+    VkClearColorValue clearColorValue = {{ color[0], color[1], color[2], color[3] }};
 
     VulkanGraphicContext* vulkanContext = static_cast<VulkanGraphicContext*>(context);
     VulkanCommandBuffer* commandBuffer = vulkanContext->getOrCreateAndStartCommandBuffer(CommandTargetType::CmdDrawBuffer);
@@ -1432,57 +1443,58 @@ VkImageAspectFlags VulkanImage::convertImageAspectFlagsToVk(VulkanImage::ImageAs
 
 bool VulkanImage::createViewImage()
 {
-    auto convertImageTypeToImageViewType = [](VkImageType type, bool cube = false, bool array = false) -> VkImageViewType
-    {
-        switch (type)
-        {
-        case VK_IMAGE_TYPE_1D:
+     auto convertImageTypeToImageViewType = [](VkImageType type, bool cube = false, bool array = false) -> VkImageViewType 
+     {
+          switch (type)
+          {
+          case VK_IMAGE_TYPE_1D:
+               if (array)
+               {
+                    return VK_IMAGE_VIEW_TYPE_1D_ARRAY;
+               }
+               return VK_IMAGE_VIEW_TYPE_1D;
 
-            if (array)
-            {
-                return VK_IMAGE_VIEW_TYPE_1D_ARRAY;
-            }
-            return VK_IMAGE_VIEW_TYPE_1D;
+          case VK_IMAGE_TYPE_2D:
+               if (cube)
+               {
+                    return VK_IMAGE_VIEW_TYPE_CUBE;
+               }
+               else if (array)
+               {
+                    return VK_IMAGE_VIEW_TYPE_2D_ARRAY;
+               }
+               return VK_IMAGE_VIEW_TYPE_2D;
 
-        case VK_IMAGE_TYPE_2D:
+          case VK_IMAGE_TYPE_3D:
+               return VK_IMAGE_VIEW_TYPE_3D;
 
-            if (cube)
-            {
-                return VK_IMAGE_VIEW_TYPE_CUBE;
-            }
-            else if (array)
-            {
-                return VK_IMAGE_VIEW_TYPE_2D_ARRAY;
-            }
-            return VK_IMAGE_VIEW_TYPE_2D;
+          default:
+               ASSERT(false, "not handle");
+          }
 
-        case VK_IMAGE_TYPE_3D:
-            return VK_IMAGE_VIEW_TYPE_3D;
-        }
+          return VK_IMAGE_VIEW_TYPE_2D;
+     };
 
-        return VK_IMAGE_VIEW_TYPE_2D;
-    };
+     switch (m_aspectMask)
+     {
+     case VK_IMAGE_ASPECT_COLOR_BIT:
+     {
+          VkImageViewCreateInfo imageViewCreateInfo = {};
+          imageViewCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+          imageViewCreateInfo.pNext = nullptr;
+          imageViewCreateInfo.flags = 0;
+          imageViewCreateInfo.image = m_image;
+          imageViewCreateInfo.viewType = convertImageTypeToImageViewType(m_type, m_layersLevel == 6U, m_layersLevel > 1);
+          imageViewCreateInfo.format = m_format;
+          imageViewCreateInfo.components = {VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A};
+          imageViewCreateInfo.subresourceRange = VulkanImage::makeImageSubresourceRangeWithAspect(this, -1, -1, ImageAspect::ImageAspect_Color);
 
-    switch (m_aspectMask)
-    {
-        case VK_IMAGE_ASPECT_COLOR_BIT:
-        {
-            VkImageViewCreateInfo imageViewCreateInfo = {};
-            imageViewCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-            imageViewCreateInfo.pNext = nullptr;
-            imageViewCreateInfo.flags = 0;
-            imageViewCreateInfo.image = m_image;
-            imageViewCreateInfo.viewType = convertImageTypeToImageViewType(m_type, m_layersLevel == 6U, m_layersLevel > 1);
-            imageViewCreateInfo.format = m_format;
-            imageViewCreateInfo.components = { VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A };
-            imageViewCreateInfo.subresourceRange = VulkanImage::makeImageSubresourceRangeWithAspect(this, -1, -1, ImageAspect::ImageAspect_Color);
-
-            VkResult result = VulkanWrapper::CreateImageView(m_device, &imageViewCreateInfo, VULKAN_ALLOCATOR, &m_generalImageView[ImageAspect::ImageAspect_Color]);
-            if (result != VK_SUCCESS)
-            {
-                LOG_ERROR("VulkanImage::createViewImage vkCreateImageView is failed. Error: %s", ErrorString(result).c_str());
-                return false;
-            }
+          VkResult result = VulkanWrapper::CreateImageView(m_device, &imageViewCreateInfo, VULKAN_ALLOCATOR, &m_generalImageView[ImageAspect::ImageAspect_Color]);
+          if (result != VK_SUCCESS)
+          {
+               LOG_ERROR("VulkanImage::createViewImage vkCreateImageView is failed. Error: %s", ErrorString(result).c_str());
+               return false;
+          }
         }
         break;
 

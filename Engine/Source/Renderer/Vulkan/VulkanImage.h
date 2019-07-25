@@ -102,13 +102,14 @@ namespace vk
 
         VkSampleCountFlagBits       m_samples;
         VkImageTiling               m_tiling;
+        
+        VkImageAspectFlags          m_aspectMask;
 
         VkImage                     m_image;
 
         VkImageView                 m_generalImageView[ImageAspect::ImageAspect_Count];
         std::vector<VkImageView>    m_imageView;
 
-        VkImageAspectFlags          m_aspectMask;
 
         std::vector<VkImageLayout>  m_layout;
 

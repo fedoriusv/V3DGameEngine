@@ -28,7 +28,7 @@ namespace vk
     {
         VulkanPipelineLayout();
 
-        u64 _key;
+        u64                                 _key;
         VkPipelineLayout                    _layout;
         std::vector<VkDescriptorSetLayout>  _descriptorSetLayouts;
     };

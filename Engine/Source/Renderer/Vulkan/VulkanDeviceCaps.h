@@ -31,6 +31,8 @@ namespace vk
         bool useStagingBuffers = false;
         bool useGlobalDescriptorPool = false;
 
+        bool supportRenderpass2 = false;
+
         //immediateResourceSubmit: 0 - not submit, 1 - submit, 2 - submit and wait complete
         u32 immediateResourceSubmit = 0; 
 

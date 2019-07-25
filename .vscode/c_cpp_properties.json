@@ -1,7 +1,7 @@
 {
     "configurations": [
         {
-            "name": "Windows",
+            "name": "Windows Vulkan",
             "defines": [
                 "WIN32",
                 "_WINDOWS",
@@ -10,7 +10,8 @@
                 "USE_LOGGER",
                 "_WINAPI",
                 "UNICODE",
-                "_UNICODE"
+                "_UNICODE",
+                "VULKAN_RENDER"
             ],
             "includePath": [
                 "${workspaceFolder}/Engine/Source"
@@ -20,7 +21,27 @@
             "externalConsole": true
         },
         {
-            "name": "Android",
+            "name": "Windows Direct3D",
+            "defines": [
+                "WIN32",
+                "_WINDOWS",
+                "_CRT_SECURE_NO_WARNINGS",
+                "DEBUG",
+                "USE_LOGGER",
+                "_WINAPI",
+                "UNICODE",
+                "_UNICODE",
+                "D3D_RENDER"
+            ],
+            "includePath": [
+                "${workspaceFolder}/Engine/Source"
+            ],
+            "intelliSenseMode": "msvc-x64",
+            "cppStandard": "c++17",
+            "externalConsole": true
+        },
+        {
+            "name": "Android Vulkan",
             "defines": [
                 "__ANDROID__",
                 "_ANDROID",
@@ -30,7 +51,9 @@
                 "UNICODE",
                 "_UNICODE",
                 "_WIN32 = 0",
-                "_WIN64 = 0"
+                "_WIN64 = 0",
+                "VULKAN_RENDER",
+                "VULKAN_DYNAMIC"
             ],
             "includePath": [
                 "${workspaceFolder}/Engine/Source",

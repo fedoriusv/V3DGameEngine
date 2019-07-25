@@ -133,10 +133,10 @@ namespace vk
 
         std::pair<StreamBufferDescription, bool> m_currentVertexBuffers;
 
-        VulkanDescriptorPool* m_currentPool;
         VulkanDescriptorSetManager* m_descriptorSetManager;
-
         VulkanUniformBufferManager* m_unifromBufferManager;
+        
+        VulkanDescriptorPool* m_currentPool;
 
         void setBinding(BindingInfo& binding);
 

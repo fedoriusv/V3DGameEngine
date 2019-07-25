@@ -27,6 +27,8 @@ WindowAndroid::WindowAndroid(const WindowParam& params, event::InputEventReceive
 
 bool WindowAndroid::initialize()
 {
+    LOG_DEBUG("WindowAndroid::WindowAndroid::initialize");
+
     app_dummy(); //needs for link libV3D.a to *.so file
     ASSERT(g_nativeAndroidApp, "nullptr");
 
@@ -45,7 +47,8 @@ bool WindowAndroid::initialize()
 		m_state = *reinterpret_cast<SavedState*>(g_nativeAndroidApp->savedState);
 	}
 
-    return true;
+    bool result = update();
+    return result;
 }
 
 bool WindowAndroid::update()
@@ -80,6 +83,7 @@ bool WindowAndroid::update()
             return false;
         }
     }
+
     return true;
 }
 
@@ -143,16 +147,20 @@ bool WindowAndroid::isFocused() const
 
 NativeInstance WindowAndroid::getInstance() const
 {
+    ASSERT(g_nativeAndroidApp, "nullptr");
     return nullptr;
+    //return g_nativeAndroidApp->activity;
 }
 
 NativeWindows WindowAndroid::getWindowHandle() const
 {
-    return nullptr;
+    ASSERT(g_nativeAndroidApp && g_nativeAndroidApp->window, "nullptr");
+    return g_nativeAndroidApp->window;
 }
 
 void WindowAndroid::handleCmdCallback(struct android_app* app, int32_t cmd)
 {
+    LOG_DEBUG("WindowAndroid::WindowAndroid::handleCmdCallback");
 	WindowAndroid* window = reinterpret_cast<WindowAndroid*>(app->userData);
 	switch (cmd) 
     {
@@ -180,6 +188,7 @@ void WindowAndroid::handleCmdCallback(struct android_app* app, int32_t cmd)
 		break;
 
 	case APP_CMD_GAINED_FOCUS:
+        window->m_params._isFocused = true;
 		// When our app gains focus, we start monitoring the accelerometer.
 		if (window->m_accelerometerSensor != NULL) 
         {
@@ -190,6 +199,7 @@ void WindowAndroid::handleCmdCallback(struct android_app* app, int32_t cmd)
 		break;
     
 	case APP_CMD_LOST_FOCUS:
+        window->m_params._isFocused = false;
 		// When our app loses focus, we stop monitoring the accelerometer.
 		// This is to avoid consuming battery while not being used.
 		if (window->m_accelerometerSensor != NULL) 
@@ -206,16 +216,23 @@ void WindowAndroid::handleCmdCallback(struct android_app* app, int32_t cmd)
 
 int32_t WindowAndroid::handleInputCallback(struct android_app* app, AInputEvent* event)
 {
+    LOG_DEBUG("WindowAndroid::WindowAndroid::handleInputCallback");
     WindowAndroid* window = reinterpret_cast<WindowAndroid*>(app->userData);
+    //TODO
     switch(AInputEvent_getType(event))
     {
         case AINPUT_EVENT_TYPE_MOTION:
-            {
-                f32 x = AMotionEvent_getX(event, 0);
-		        f32 y = AMotionEvent_getY(event, 0);
-                LOG_DEBUG("WindowAndroid::handleInputCallback: event AINPUT_EVENT_TYPE_MOTION: x: %f, y: %f", x, y);
-                return 1;
-            }
+        {
+            f32 x = AMotionEvent_getX(event, 0);
+            f32 y = AMotionEvent_getY(event, 0);
+            LOG_DEBUG("WindowAndroid::handleInputCallback: event AINPUT_EVENT_TYPE_MOTION: x: %f, y: %f", x, y);
+            return 1;
+        }
+
+        case AINPUT_EVENT_TYPE_KEY:
+        {
+            
+        }
 
         default:
             LOG_DEBUG("WindowAndroid::handleInputCallback: event %u", AInputEvent_getType(event));

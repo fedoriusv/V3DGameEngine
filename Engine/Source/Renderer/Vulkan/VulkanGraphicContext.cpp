@@ -42,6 +42,7 @@ const std::vector<const c8*> k_instanceExtensionsList =
 #endif
 #if VULKAN_LAYERS_CALLBACKS
     VK_EXT_DEBUG_UTILS_EXTENSION_NAME,
+    VK_EXT_DEBUG_REPORT_EXTENSION_NAME,
 #endif //VULKAN_LAYERS_CALLBACKS
 };
 
@@ -68,9 +69,9 @@ VulkanGraphicContext::VulkanGraphicContext(const platform::Window * window) noex
     , m_swapchain(nullptr)
     , m_cmdBufferManager(nullptr)
 
+    , m_descriptorSetManager(nullptr)
     , m_stagingBufferManager(nullptr)
     , m_uniformBufferManager(nullptr)
-    , m_descriptorSetManager(nullptr)
 
     , m_imageMemoryManager(nullptr)
     , m_bufferMemoryManager(nullptr)
@@ -345,11 +346,11 @@ void VulkanGraphicContext::setRenderTarget(const RenderPass::RenderPassInfo * re
         for (u32 clearIndex = 0; clearIndex < framebufferInfo->_clearInfo._color.size(); ++clearIndex)
         {
             VkClearValue clearColor = {};
-            clearColor.color = {
+            clearColor.color = {{
                 framebufferInfo->_clearInfo._color[clearIndex].x,
                 framebufferInfo->_clearInfo._color[clearIndex].y,
                 framebufferInfo->_clearInfo._color[clearIndex].z,
-                framebufferInfo->_clearInfo._color[clearIndex].w };
+                framebufferInfo->_clearInfo._color[clearIndex].w }};
 
             clearValues.push_back(clearColor);
             if (renderpassInfo->_value._desc._attachments[clearIndex]._autoResolve)
@@ -941,6 +942,20 @@ bool VulkanGraphicContext::createInstance()
     applicationInfo.engineVersion = 1;
     applicationInfo.apiVersion = VK_MAKE_VERSION(VULKAN_VERSION_MAJOR, VULKAN_VERSION_MINOR, 0);
 
+    {
+        u32 apiVersion = 0;
+        VkResult result = VulkanWrapper::EnumerateInstanceVersion(&apiVersion);
+        if (result != VK_SUCCESS)
+        {
+            LOG_ERROR("VulkanGraphicContext::createInstance: vkEnumerateInstanceVersion error %s", ErrorString(result).c_str());
+        }
+        else
+        {
+            LOG_INFO("Requested Vulkan Api: %u, supported: %u",  applicationInfo.apiVersion, apiVersion);
+        }
+        
+    }
+
     std::vector<std::string> supportedExtensions;
     VulkanDeviceCaps::listOfInstanceExtensions(supportedExtensions);
 
@@ -1016,34 +1031,40 @@ bool VulkanGraphicContext::createInstance()
     }
 
 #if VULKAN_LAYERS_CALLBACKS
-    VkDebugUtilsMessageSeverityFlagsEXT severityFlag = 0;
-    switch (VulkanDebug::k_severityDebugLevel)
+    if (VulkanDeviceCaps::checkInstanceExtension(VK_EXT_DEBUG_UTILS_EXTENSION_NAME))
     {
-    case 4:
-        severityFlag |= VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT;
-    case 3:
-        severityFlag |= VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT;
-    case 2:
-        severityFlag |= VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT;
-    case 1:
-        severityFlag |= VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
-    case 0:
-    default:
-        //turn off
-        break;
-    }
+        VkDebugUtilsMessageSeverityFlagsEXT severityFlag = 0;
+        switch (VulkanDebug::k_severityDebugLevel)
+        {
+        case 4:
+            severityFlag |= VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT;
+        case 3:
+            severityFlag |= VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT;
+        case 2:
+            severityFlag |= VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT;
+        case 1:
+            severityFlag |= VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
+        case 0:
+        default:
+            //turn off
+            break;
+        }
 
-    VkDebugUtilsMessageTypeFlagsEXT messageTypeFlag = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
+        VkDebugUtilsMessageTypeFlagsEXT messageTypeFlag = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
 #if VULKAN_VALIDATION_LAYERS_CALLBACK
-    messageTypeFlag |= VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT;
+        messageTypeFlag |= VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT;
 #endif //VULKAN_VALIDATION_LAYERS_CALLBACK
 
-    if(!VulkanDebug::createDebugUtilsMesseger(m_deviceInfo._instance, severityFlag, messageTypeFlag, nullptr, this))
+        if(!VulkanDebug::createDebugUtilsMesseger(m_deviceInfo._instance, severityFlag, messageTypeFlag, nullptr, this))
+        {
+            LOG_ERROR("VulkanGraphicContext::createInstance: createDebugUtilsMessager failed");
+        }
+    }
+    else if (VulkanDeviceCaps::checkInstanceExtension(VK_EXT_DEBUG_REPORT_EXTENSION_NAME))
     {
-        LOG_ERROR("VulkanGraphicContext::createInstance: createDebugUtilsMessager failed");
+        //TODO use debug report
     }
 #endif //VULKAN_LAYERS_CALLBACKS
-
     return true;
 }
 

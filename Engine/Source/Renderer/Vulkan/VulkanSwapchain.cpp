@@ -33,6 +33,26 @@ bool createSurfaceWinApi(VkInstance vkInstance, NativeInstance hInstance, Native
 }
 #endif //PLATFORM_WINDOWS
 
+#ifdef PLATFORM_ANDROID
+bool createSurfaceAndroidApi(VkInstance vkInstance, NativeInstance hInstance, NativeWindows hWnd, VkSurfaceKHR& surface)
+{
+    VkAndroidSurfaceCreateInfoKHR surfaceCreateInfo = {};
+	surfaceCreateInfo.sType = VK_STRUCTURE_TYPE_ANDROID_SURFACE_CREATE_INFO_KHR;
+    surfaceCreateInfo.pNext = nullptr;
+    surfaceCreateInfo.flags = 0;
+	surfaceCreateInfo.window = nullptr;
+
+    VkResult result = VulkanWrapper::CreateAndroidSurface(vkInstance, &surfaceCreateInfo, nullptr, &surface);
+    if (result != VK_SUCCESS)
+    {
+        LOG_FATAL("createSurfaceAndroidApi: vkCreateAndroidSurfaceKHR. Error %s", ErrorString(result).c_str());
+        return false;
+    }
+
+    return true;
+}
+#endif //PLATFORM_ANDROID
+
 VulkanSwapchain::VulkanSwapchain(const DeviceInfo* info, VkSurfaceKHR surface)
     : m_deviceInfo(info)
     , m_surface(surface)
@@ -60,10 +80,16 @@ VulkanSwapchain::~VulkanSwapchain()
 VkSurfaceKHR VulkanSwapchain::createSurface(VkInstance vkInstance, NativeInstance hInstance, NativeWindows hWnd)
 {
     VkSurfaceKHR surface = VK_NULL_HANDLE;
-#ifdef PLATFORM_WINDOWS
+#if defined(PLATFORM_WINDOWS)
     if (!createSurfaceWinApi(vkInstance, hInstance, hWnd, surface))
     {
         LOG_FATAL("VulkanSwapchain::createSurface: Create win surface is falied");
+        return VK_NULL_HANDLE;
+    }
+#elif defined (PLATFORM_ANDROID)
+    if (!createSurfaceAndroidApi(vkInstance, hInstance, hWnd, surface))
+    {
+        LOG_FATAL("VulkanSwapchain::createSurface: Create android surface is falied");
         return VK_NULL_HANDLE;
     }
 #else
@@ -291,7 +317,7 @@ bool VulkanSwapchain::createSwapchainImages(const SwapchainConfig& config)
 
     if (swapChainImageCount < 2)
     {
-        LOG_ERROR("VulkanSwapchain::createSurface: Not enough images supported in vulkan swapchain");
+        LOG_ERROR("VulkanSwapchain::createSwapchainImages: Not enough images supported in vulkan swapchain");
         return false;
     }
 
