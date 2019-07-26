@@ -20,9 +20,16 @@ WindowAndroid::WindowAndroid(const WindowParam& params, event::InputEventReceive
     , m_sensorManager(NULL)
     , m_accelerometerSensor(NULL)
     , m_sensorEventQueue(NULL)
+    , m_initialized(false)
 {
     LOG_DEBUG("WindowAndroid::WindowAndroid: Created Adroid window %llx", this);
     memset(&m_state, 0, sizeof(SavedState));
+
+    //For Android always constant
+    m_params._isFullscreen = true;
+    m_params._isResizable = false;
+    m_params._position = core::Point2D(0, 0);
+    m_params._caption = L"Android App";
 }
 
 bool WindowAndroid::initialize()
@@ -47,8 +54,17 @@ bool WindowAndroid::initialize()
 		m_state = *reinterpret_cast<SavedState*>(g_nativeAndroidApp->savedState);
 	}
 
-    bool result = update();
-    return result;
+    bool result = true;
+    while(!m_initialized)
+    {
+        result = update();
+        if (!result)
+        {
+            return false;
+        }
+    }
+
+    return true;
 }
 
 bool WindowAndroid::update()
@@ -90,6 +106,7 @@ bool WindowAndroid::update()
 void WindowAndroid::destroy()
 {
     LOG_DEBUG("WindowAndroid::destroy %llx", this);
+    m_initialized = false;
 }
 
 WindowAndroid::~WindowAndroid()
@@ -111,18 +128,22 @@ void WindowAndroid::restore()
 
 void WindowAndroid::setFullScreen(bool value)
 {
+    LOG_DEBUG("WindowAndroid::setFullScreen not supported");
 }
 
 void WindowAndroid::setResizeble(bool value)
 {
+    LOG_DEBUG("WindowAndroid::setResizeble not supported");
 }
 
 void WindowAndroid::setTextCaption(const std::string& text)
 {
+    LOG_DEBUG("WindowAndroid::setTextCaption not supported");
 }
 
 void WindowAndroid::setPosition(const core::Point2D& pos)
 {
+    LOG_DEBUG("WindowAndroid::setPosition not supported");
 }
 
 bool WindowAndroid::isMaximized() const
@@ -147,9 +168,8 @@ bool WindowAndroid::isFocused() const
 
 NativeInstance WindowAndroid::getInstance() const
 {
-    ASSERT(g_nativeAndroidApp, "nullptr");
-    return nullptr;
-    //return g_nativeAndroidApp->activity;
+    ASSERT(g_nativeAndroidApp && g_nativeAndroidApp->activity, "nullptr");
+    return g_nativeAndroidApp->activity;
 }
 
 NativeWindows WindowAndroid::getWindowHandle() const
@@ -173,18 +193,27 @@ void WindowAndroid::handleCmdCallback(struct android_app* app, int32_t cmd)
 
 	case APP_CMD_INIT_WINDOW:
 		// The window is being shown, get it ready.
-		if (g_nativeAndroidApp->window != NULL) 
+        ASSERT(g_nativeAndroidApp->window, "nullptr");
+		if (g_nativeAndroidApp->window != NULL &&  !window->m_initialized) 
         {
             LOG_DEBUG("WindowAndroid::handleCmdCallback: APP_CMD_INIT_WINDOW");
-			//engine_init_display(engine);
-			//engine_draw_frame(engine);
+
+            s32 width = ANativeWindow_getWidth(window->getWindowHandle());
+            s32 height = ANativeWindow_getHeight(window->getWindowHandle());
+            if (window->m_params._size.width != width || window->m_params._size.height != height)
+            {
+                LOG_WARNING("WindowAndroid::handleCmdCallback: different size: request: { %d, %d }, current { %d, %d }", window->m_params._size.width, window->m_params._size.height, width, height);
+                window->m_params._size = core::Dimension2D(width,  height);
+            }
+            LOG_INFO("WindowAndroid::handleCmdCallback: window size: width %d, height %d", width, height);
+            window->m_initialized = true;
 		}
 		break;
 
 	case APP_CMD_TERM_WINDOW:
 		// The window is being hidden or closed, clean it up.
         LOG_DEBUG("WindowAndroid::handleCmdCallback: APP_CMD_TERM_WINDOW");
-		//engine_term_display(engine);
+		window->m_initialized = false;
 		break;
 
 	case APP_CMD_GAINED_FOCUS:

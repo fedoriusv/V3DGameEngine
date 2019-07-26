@@ -929,7 +929,7 @@ VkResult VulkanWrapper::CreateAndroidSurface(VkInstance instance, const VkAndroi
     return vkCreateAndroidSurfaceKHR(instance, pCreateInfo, pAllocator, pSurface);
 }
 #endif //VK_KHR_android_surface
-;
+
 #ifdef VK_KHR_swapchain
 VkResult VulkanWrapper::CreateSwapchain(VkDevice device, const VkSwapchainCreateInfoKHR * pCreateInfo, const VkAllocationCallbacks * pAllocator, VkSwapchainKHR * pSwapchain) noexcept
 {

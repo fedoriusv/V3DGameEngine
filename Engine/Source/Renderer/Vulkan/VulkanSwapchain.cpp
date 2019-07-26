@@ -4,6 +4,12 @@
 #include "VulkanImage.h"
 #include "Utils/Logger.h"
 
+#ifdef PLATFORM_ANDROID
+    #include "Platform/android_native_app_glue.h"
+
+extern struct android_app* g_nativeAndroidApp;
+#endif //PLATFORM_ANDROID
+
 #ifdef VULKAN_RENDER
 namespace v3d
 {
@@ -40,9 +46,11 @@ bool createSurfaceAndroidApi(VkInstance vkInstance, NativeInstance hInstance, Na
 	surfaceCreateInfo.sType = VK_STRUCTURE_TYPE_ANDROID_SURFACE_CREATE_INFO_KHR;
     surfaceCreateInfo.pNext = nullptr;
     surfaceCreateInfo.flags = 0;
-	surfaceCreateInfo.window = nullptr;
+	surfaceCreateInfo.window = hWnd;
 
-    VkResult result = VulkanWrapper::CreateAndroidSurface(vkInstance, &surfaceCreateInfo, nullptr, &surface);
+    LOG_DEBUG("createSurfaceAndroidApi window %x", surfaceCreateInfo.window);
+
+    VkResult result = VulkanWrapper::CreateAndroidSurface(vkInstance, &surfaceCreateInfo, VULKAN_ALLOCATOR, &surface);
     if (result != VK_SUCCESS)
     {
         LOG_FATAL("createSurfaceAndroidApi: vkCreateAndroidSurfaceKHR. Error %s", ErrorString(result).c_str());
@@ -377,6 +385,10 @@ void VulkanSwapchain::destroy()
 
 void VulkanSwapchain::present(VkQueue queue, const std::vector<VkSemaphore>& waitSemaphores)
 {
+#ifdef PLATFORM_ANDROID
+    ASSERT(g_nativeAndroidApp->window, "nullptr, need to recreate surface");
+#endif //ANDROID_PLATFORM
+
     ASSERT(m_swapchain, "m_swapchain is nullptr");
 
     VkResult innerResults[1] = {};
@@ -410,6 +422,10 @@ void VulkanSwapchain::present(VkQueue queue, const std::vector<VkSemaphore>& wai
 
 u32 VulkanSwapchain::acquireImage()
 {
+#ifdef PLATFORM_ANDROID
+    ASSERT(g_nativeAndroidApp->window, "nullptr, need to recreate surface");
+#endif //ANDROID_PLATFORM
+
     VkSemaphore semaphore = m_acquireSemaphore[m_currentSemaphoreIndex];
     VkFence fence = VK_NULL_HANDLE;
 
