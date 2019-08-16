@@ -104,8 +104,10 @@ if "%2" == "" (
     
     xcopy /Y Examples\%2\AndroidManifest.xml Project\Android\Examples\%2
     xcopy /Y Examples\%2\build.gradle Project\Android\Examples\%2
+    xcopy /Y /F /S Examples\%2\res Project\Android\Examples\%2\res
     
     xcopy /Y "Project\Android\Examples\%2\lib%2.so" "Project\Android\Examples\%2\libs\%C_ANDROID_ABI%\"
+    
     
     REM fix build error
     set ANDROID_NDK=""

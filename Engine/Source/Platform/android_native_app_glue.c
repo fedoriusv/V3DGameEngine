@@ -131,8 +131,9 @@ void android_app_pre_exec_cmd(struct android_app* android_app, int8_t cmd) {
 
         case APP_CMD_CONFIG_CHANGED:
             LOGV("APP_CMD_CONFIG_CHANGED\n");
-            AConfiguration_fromAssetManager(android_app->config,
-                    android_app->activity->assetManager);
+            AConfiguration_fromAssetManager(android_app->config, android_app->activity->assetManager);
+            AConfiguration_setNavHidden(android_app->config,  ACONFIGURATION_NAVHIDDEN_YES);
+            AConfiguration_setKeysHidden(android_app->config, ACONFIGURATION_KEYSHIDDEN_YES);
             print_cur_config(android_app);
             break;
 
@@ -211,6 +212,8 @@ static void* android_app_entry(void* param) {
 
     android_app->config = AConfiguration_new();
     AConfiguration_fromAssetManager(android_app->config, android_app->activity->assetManager);
+    AConfiguration_setNavHidden(android_app->config,  ACONFIGURATION_NAVHIDDEN_YES);
+    AConfiguration_setKeysHidden(android_app->config, ACONFIGURATION_KEYSHIDDEN_YES);
 
     print_cur_config(android_app);
 

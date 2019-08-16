@@ -843,7 +843,7 @@ void VulkanImage::clear(Context * context, const core::Vector4D & color)
         return;
     }
 
-    LOG_DEBUG("VulkanGraphicContext::clearColor [%f, %f, %f, %f]", color[0], color[1], color[2], color[3]);
+    //LOG_DEBUG("VulkanGraphicContext::clearColor [%f, %f, %f, %f]", color[0], color[1], color[2], color[3]);
     VkClearColorValue clearColorValue = {{ color[0], color[1], color[2], color[3] }};
 
     VulkanGraphicContext* vulkanContext = static_cast<VulkanGraphicContext*>(context);

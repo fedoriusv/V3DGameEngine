@@ -566,7 +566,7 @@ void WindowWindows::fillKeyCodes()
     m_keyCodes.add(event::KeyCode::KeyReturn, 0x0D);
     m_keyCodes.add(event::KeyCode::KeyShift, 0x10);
     m_keyCodes.add(event::KeyCode::KeyControl, 0x11);
-    m_keyCodes.add(event::KeyCode::KeyMenu, 0x12);
+    m_keyCodes.add(event::KeyCode::KeyAlt, 0x12);
     m_keyCodes.add(event::KeyCode::KeyPause, 0x13);
     m_keyCodes.add(event::KeyCode::KeyCapital, 0x14);
     m_keyCodes.add(event::KeyCode::KeyKana, 0x15);
@@ -683,8 +683,8 @@ void WindowWindows::fillKeyCodes()
     m_keyCodes.add(event::KeyCode::KeyRShift, 0xA1);
     m_keyCodes.add(event::KeyCode::KeyLControl, 0xA2);
     m_keyCodes.add(event::KeyCode::KeyRControl, 0xA3);
-    m_keyCodes.add(event::KeyCode::KeyLMenu, 0xA4);
-    m_keyCodes.add(event::KeyCode::KeyRMenu, 0xA5);
+    m_keyCodes.add(event::KeyCode::KeyLAlt, 0xA4);
+    m_keyCodes.add(event::KeyCode::KeyRAlt, 0xA5);
     m_keyCodes.add(event::KeyCode::KeyPlus, 0xBB);
     m_keyCodes.add(event::KeyCode::KeyComma, 0xBC);
     m_keyCodes.add(event::KeyCode::KeyMinus, 0xBD);

@@ -7,10 +7,11 @@ namespace event
     enum KeyModifierCode : u8
     {
         KeyModifier_Uknown = 0x00,
-        KeyModifier_Ctrl = 0x01,
-        KeyModifier_Alt = 0x02,
-        KeyModifier_Shift = 0x04,
-        KeyModifier_CapsLock = 0x08
+        KeyModifier_Ctrl = 0x1,
+        KeyModifier_Alt = 0x2,
+        KeyModifier_Shift = 0x4,
+        KeyModifier_CapsLock = 0x8,
+        KeyModifier_Meta = 0x10
     };
 
     enum KeyCode : u32
@@ -24,13 +25,13 @@ namespace event
         KeyXButton1,  // Windows 2000/XP: X1 mouse button
         KeyXButton2,  // Windows 2000/XP: X2 mouse button
 
-        KeyBack,  // BACKSPACE key
+        KeyBackspace,  // BACKSPACE key
         KeyTab,  // TAB key
         KeyClear,  // CLEAR key
         KeyReturn,  // ENTER key
         KeyShift,  // SHIFT key
         KeyControl,  // CTRL key
-        KeyMenu,  // ALT key
+        KeyAlt,  // ALT key
         KeyPause,  // PAUSE key
         KeyCapital,  // CAPS LOCK key
         KeyKana,  // IME Kana mode
@@ -97,7 +98,7 @@ namespace event
         KeyKey_X,  // X key
         KeyKey_Y,  // Y key
         KeyKey_Z,  // Z key
-        KeyLWin,  // Left Windows key (Microsoft® Natural® keyboard)
+        KeyLWin,  // Left Windows key (Microsoftï¿½ Naturalï¿½ keyboard)
         KeyRWin,  // Right Windows key (Natural keyboard)
         KeyApps,  // Applications key (Natural keyboard)
         KeySleep,  // Computer Sleep key
@@ -147,8 +148,8 @@ namespace event
         KeyRShift,  // Right SHIFT key
         KeyLControl,  // Left CONTROL key
         KeyRControl,  // Right CONTROL key
-        KeyLMenu,  // Left MENU key
-        KeyRMenu,  // Right MENU key
+        KeyLAlt,  // Left ALT key
+        KeyRAlt,  // Right ALT key
         KeyPlus,  // Plus Key   (+)
         KeyComma,  // Comma Key  (,)
         KeyMinus,  // Minus Key  (-)

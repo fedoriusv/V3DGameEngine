@@ -20,6 +20,7 @@ InputEventHandler::~InputEventHandler()
     m_keyboardHandlerCallbacks.clear();
     m_mouseHandlerCallbacks.clear();
     m_gamepadHandlerCallbacks.clear();
+    m_touchHandlerCallbacks.clear();
 }
 
 void InputEventHandler::resetKeyPressed()
@@ -36,7 +37,7 @@ void InputEventHandler::resetKeyPressed()
 
 void InputEventHandler::applyModifiers(KeyboardInputEvent* event)
 {
-    if (InputEventHandler::isKeyPressed(KeyMenu))
+    if (InputEventHandler::isKeyPressed(KeyAlt))
     {
         event->_modifers |= KeyModifierCode::KeyModifier_Alt;
     }
@@ -59,7 +60,7 @@ void InputEventHandler::applyModifiers(KeyboardInputEvent* event)
 
 void InputEventHandler::applyModifiers(MouseInputEvent * event)
 {
-    if (InputEventHandler::isKeyPressed(KeyMenu))
+    if (InputEventHandler::isKeyPressed(KeyAlt))
     {
         event->_modifers |= KeyModifierCode::KeyModifier_Alt;
     }
@@ -80,6 +81,24 @@ void InputEventHandler::applyModifiers(MouseInputEvent * event)
     }
 
     event->_wheelValue = m_mouseWheel;
+}
+
+void InputEventHandler::applyModifiers(TouchInputEvent* event)
+{
+    if (InputEventHandler::isKeyPressed(KeyLAlt) || InputEventHandler::isKeyPressed(KeyRAlt))
+    {
+        event->_modifers |= KeyModifierCode::KeyModifier_Alt;
+    }
+
+    if (InputEventHandler::isKeyPressed(KeyLControl) || InputEventHandler::isKeyPressed(KeyRControl))
+    {
+        event->_modifers |= KeyModifierCode::KeyModifier_Ctrl;
+    }
+
+    if (InputEventHandler::isKeyPressed(KeyLShift) || InputEventHandler::isKeyPressed(KeyRShift))
+    {
+        event->_modifers |= KeyModifierCode::KeyModifier_Shift;
+    }
 }
 
 bool InputEventHandler::onEvent(Event* ev)
@@ -179,11 +198,57 @@ bool InputEventHandler::onEvent(Event* ev)
         const GamepadInputEvent* gamepadEvent = static_cast<const GamepadInputEvent*>(event);
         m_gamepadStates = gamepadEvent->_buttons;
 
-       for (std::vector<GamepadCallback>::const_iterator iter = m_gamepadHandlerCallbacks.cbegin(); iter != m_gamepadHandlerCallbacks.cend(); ++iter)
+        for (std::vector<GamepadCallback>::const_iterator iter = m_gamepadHandlerCallbacks.cbegin(); iter != m_gamepadHandlerCallbacks.cend(); ++iter)
         {
             if ((*iter))
             {
                 (*iter)(gamepadEvent);
+            }
+        }
+        return true;
+    };
+
+    case InputEvent::InputEventType::TouchInputEvent:
+    {
+        TouchInputEvent* touchEvent = static_cast<TouchInputEvent*>(event);
+        if (touchEvent->_event == TouchInputEvent::TouchKey)
+        {
+            switch (touchEvent->_keyEvent)
+            {
+            case TouchInputEvent::TouchKeyPressDown:
+            {
+                applyModifiers(touchEvent);
+                m_keysPressed[touchEvent->_key] = true;
+                break;
+            }
+
+            case TouchInputEvent::TouchKeyPressUp:
+            {
+                applyModifiers(touchEvent);
+                m_keysPressed[touchEvent->_key] = false;
+                break;
+            }
+
+            case TouchInputEvent::TouchKeyPressMultipress:
+            {
+                applyModifiers(touchEvent);
+                break;
+            }
+
+            default:
+                break;
+            };
+        } 
+        else if (touchEvent->_event == TouchInputEvent::TouchMotion)
+        {
+            m_mousePosition = touchEvent->_position;
+        }
+
+        for (std::vector<TouchScreenCallback>::const_iterator iter = m_touchHandlerCallbacks.cbegin(); iter != m_touchHandlerCallbacks.cend(); ++iter)
+        {
+            if ((*iter))
+            {
+                (*iter)(touchEvent);
             }
         }
         return true;
@@ -217,6 +282,14 @@ void InputEventHandler::connect(std::function<void(const GamepadInputEvent*)> ca
     if (callback)
     {
         m_gamepadHandlerCallbacks.push_back(callback);
+    }
+}
+
+void InputEventHandler::connect(std::function<void(const TouchInputEvent*)> callback)
+{
+    if (callback)
+    {
+        m_touchHandlerCallbacks.push_back(callback);
     }
 }
 

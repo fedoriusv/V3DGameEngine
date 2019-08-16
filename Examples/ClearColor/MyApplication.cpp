@@ -44,8 +44,29 @@ MyApplication::MyApplication(int& argc, char** argv)
         }
     });
 
+    m_InputEventHandler->connect([this](const TouchInputEvent* event)
+    {
+        if (event->_event == TouchInputEvent::TouchMotionDown || event->_event == TouchInputEvent::TouchKeyPressMultipress)
+        {
+            LOG_DEBUG("TouchInputEvent event");
+
+            s32 rvalue = std::rand();
+            f32 r = 1.0f / RAND_MAX * rvalue;
+
+            s32 gvalue = std::rand();
+            f32 g = 1.0f / RAND_MAX * gvalue;
+
+            s32 bvalue = std::rand();
+            f32 b = 1.0f / RAND_MAX * bvalue;
+
+            m_clearColor = {r, g, b, 1.0f };
+
+        }
+    });
+
     std::srand(u32(std::time(0)));
     m_Window->getInputEventReceiver()->attach(InputEvent::InputEventType::MouseInputEvent, m_InputEventHandler);
+    m_Window->getInputEventReceiver()->attach(InputEvent::InputEventType::TouchInputEvent, m_InputEventHandler);
 }
 
 int MyApplication::Execute()
@@ -93,6 +114,7 @@ bool MyApplication::Running(renderer::CommandList& commandList)
 void MyApplication::Exit()
 {
     m_Window->getInputEventReceiver()->dettach(InputEvent::InputEventType::MouseInputEvent);
+    m_Window->getInputEventReceiver()->dettach(InputEvent::InputEventType::TouchInputEvent);
 }
 
 MyApplication::~MyApplication()

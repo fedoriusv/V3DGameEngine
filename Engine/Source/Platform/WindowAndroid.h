@@ -56,6 +56,8 @@ namespace platform
         SavedState          m_state;
         bool                m_initialized;
 
+        void fillKeyCodes();
+
         static void handleCmdCallback(struct android_app* app, int32_t cmd);
         static int32_t handleInputCallback(struct android_app* app, AInputEvent* event);
     };

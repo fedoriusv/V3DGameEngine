@@ -7,7 +7,7 @@ namespace event
 {
 
 InputEventReceiver::InputEventReceiver()
-    : k_maxInputEventSize((u32)core::max(sizeof(MouseInputEvent), sizeof(GamepadInputEvent), sizeof(KeyboardInputEvent)))
+    : k_maxInputEventSize((u32)core::max(sizeof(MouseInputEvent), sizeof(KeyboardInputEvent), core::max(sizeof(GamepadInputEvent), sizeof(TouchInputEvent))))
     , m_eventPool(nullptr)
     , m_currentEventIndex(0)
 {
