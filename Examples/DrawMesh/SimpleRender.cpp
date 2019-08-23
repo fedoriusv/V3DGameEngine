@@ -19,6 +19,7 @@ SimpleRender::SimpleRender(renderer::CommandList& cmdList, const core::Dimension
 
     if (!image.empty())
     {
+		ASSERT(image[0], "nullptr");
         m_sampler = cmdList.createObject<SamplerState>(SamplerFilter::SamplerFilter_Bilinear, SamplerFilter::SamplerFilter_Bilinear, SamplerAnisotropic::SamplerAnisotropic_None);
         m_texture = cmdList.createObject<Texture2D>(TextureUsage::TextureUsage_Sampled | TextureUsage_Shared | TextureUsage_Write,
             image[0]->getFormat(), core::Dimension2D(image[0]->getDimension().width, image[0]->getDimension().height), 1, 1, image[0]->getRawData());

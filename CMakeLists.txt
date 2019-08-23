@@ -12,11 +12,11 @@ option(BUILD_DIRECTX_SDK "Use DirectX SDK" OFF)
 #ThirdParty
 #Crc32c lib is required"
 #https://github.com/google/crc32c.git
-option(ASSIMP_LIB "Use Assimp lib" OFF)
+option(ASSIMP_LIB "Use Assimp lib" ON)
 #https://github.com/assimp/assimp.git
-option(STB_LIB "Use Stb lib" OFF)
+option(STB_LIB "Use Stb lib" ON)
 #https://github.com/nothings/stb.git
-option(GIL_LIB "Use gli lib" OFF)
+option(GIL_LIB "Use gli lib" ON)
 #https://github.com/g-truc/gli.git
 option(SPIRV_INSTALL_FROM_GITHUB "implicity install SpirV" OFF)
 ##############################################################
@@ -325,6 +325,7 @@ if (BUILD_EXAMPLES)
     set(BUILD_PROJECTS 
         CreateWindow
         ClearColor
+		DrawMesh
     )
     #set(BUILD_PROJECTS #[[1.CreateWindow 2.ClearColor]] 3.DrawMesh 4.DrawScene 5.Test)
     message("-- Create Examples:")

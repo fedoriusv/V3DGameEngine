@@ -83,14 +83,14 @@ void MyApplication::Initialize()
     ASSERT(m_Context, "context is nullptr");
     m_CommandList = new renderer::CommandList(m_Context, renderer::CommandList::CommandListType::DelayedCommandList);
 
-    //Shader* vertShader = resource::ResourceLoaderManager::getInstance()->loadShader<Shader, resource::ShaderSourceFileLoader>(m_CommandList->getContext(), "examples/3.drawmesh/shaders/mesh.vert", {}, ShaderSource_OptimisationPerformance);
-    //Shader* fragShader = resource::ResourceLoaderManager::getInstance()->loadShader<Shader, resource::ShaderSourceFileLoader>(m_CommandList->getContext(), "examples/3.drawmesh/shaders/mesh.frag", {}, ShaderSource_OptimisationPerformance);
-    Shader* vertShader = resource::ResourceLoaderManager::getInstance()->loadShader<Shader, resource::ShaderBinaryFileLoader>(m_CommandList->getContext(), "examples/3.drawmesh/shaders/mesh.vspv", {});
-    Shader* fragShader = resource::ResourceLoaderManager::getInstance()->loadShader<Shader, resource::ShaderBinaryFileLoader>(m_CommandList->getContext(), "examples/3.drawmesh/shaders/mesh.fspv", {});
+    Shader* vertShader = resource::ResourceLoaderManager::getInstance()->loadShader<Shader, resource::ShaderSourceFileLoader>(m_CommandList->getContext(), "examples/drawmesh/shaders/mesh.vert", {}, ShaderSource_OptimisationPerformance);
+    Shader* fragShader = resource::ResourceLoaderManager::getInstance()->loadShader<Shader, resource::ShaderSourceFileLoader>(m_CommandList->getContext(), "examples/drawmesh/shaders/mesh.frag", {}, ShaderSource_OptimisationPerformance);
+    //Shader* vertShader = resource::ResourceLoaderManager::getInstance()->loadShader<Shader, resource::ShaderBinaryFileLoader>(m_CommandList->getContext(), "examples/drawmesh/shaders/mesh.vspv", {});
+    //Shader* fragShader = resource::ResourceLoaderManager::getInstance()->loadShader<Shader, resource::ShaderBinaryFileLoader>(m_CommandList->getContext(), "examples/drawmesh/shaders/mesh.fspv", {});
 
 
-    resource::Image* image = resource::ResourceLoaderManager::getInstance()->load<resource::Image, resource::ImageFileLoader>("examples/3.drawmesh/models/voyager/voyager_bc3_unorm.ktx");
-    Model* model = resource::ResourceLoaderManager::getInstance()->load<Model, resource::ModelFileLoader>("examples/3.drawmesh/models/voyager/voyager.dae");
+    resource::Image* image = resource::ResourceLoaderManager::getInstance()->load<resource::Image, resource::ImageFileLoader>("examples/drawmesh/models/voyager/voyager_bc3_unorm.ktx");
+    Model* model = resource::ResourceLoaderManager::getInstance()->load<Model, resource::ModelFileLoader>("examples/drawmesh/models/voyager/voyager.dae");
 
     m_Render = new renderer::SimpleRender(*m_CommandList, m_Window->getSize(), { vertShader, fragShader }, { image }, { model });
     m_Render->setCamera(&m_Camera->getCamera());
@@ -120,7 +120,7 @@ bool MyApplication::Running(renderer::CommandList& commandList)
     //Frame
     commandList.beginFrame();
 
-    m_Camera->update();
+    m_Camera->update(0);
     Update();
 
     m_Render->render(commandList);

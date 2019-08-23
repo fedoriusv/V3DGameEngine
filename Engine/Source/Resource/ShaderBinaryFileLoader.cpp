@@ -81,7 +81,7 @@ renderer::Shader * ShaderBinaryFileLoader::load(const std::string & name, const 
         }
     }
 
-    LOG_WARNING("ShaderBinaryFileLoader::load: File [%s] not found", name.c_str());
+    LOG_WARNING("ShaderBinaryFileLoader::load: File [%s] decoder hasn't found", name.c_str());
     return nullptr;
 }
 

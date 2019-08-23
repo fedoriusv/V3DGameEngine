@@ -1,9 +1,9 @@
 @echo off
 
-REM VS_VERSION set inside project_msvc*.bat
 REM vcvarsall.bat find it here: C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Auxiliary\Build
 
-REM set VS_VERSION="Visual Studio 15 2017 Win64"
+setlocal
+set VS_VERSION="Visual Studio 16 2019"
 
 if not exist shaderc (
 	git clone https://github.com/google/shaderc.git
@@ -20,8 +20,7 @@ cd shaderc
 
 mkdir build_windows
 cd build_windows
-REM cmake -DSHADERC_SKIP_TESTS=ON -G%VS_VERSION% ../
-cmake -A x64 -DSHADERC_SKIP_TESTS=ON ../
+cmake -G%VS_VERSION% -A x64 -DSHADERC_SKIP_TESTS=ON ../
 cmake --build . --config Debug
 cmake --build . --config Release
 cd ../
@@ -46,8 +45,7 @@ cd SPIRV-Cross
 
 mkdir build_windows
 cd build_windows
-REM cmake -DCMAKE_CXX_FLAGS_DEBUG="/Zi /MTd" -DCMAKE_CXX_FLAGS_RELEASE="/MT" -G%VS_VERSION% ../
-cmake -A x64 -DCMAKE_CXX_FLAGS_DEBUG="/Zi /MTd" -DCMAKE_CXX_FLAGS_RELEASE="/MT" ../
+cmake -G%VS_VERSION% -A x64 -DCMAKE_CXX_FLAGS_DEBUG="/Zi /MTd" -DCMAKE_CXX_FLAGS_RELEASE="/MT" ../
 cmake --build . --config Debug
 cmake --build . --config Release
 cd ../

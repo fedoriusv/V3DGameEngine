@@ -35,6 +35,7 @@ namespace stream
                 return nullptr;
             }
 
+			LOG_DEBUG("FileLoader::file [%s] has been found", stream::FileStream::absolutePath(filename).c_str());
             return file;
         }
 

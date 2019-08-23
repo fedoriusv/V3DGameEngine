@@ -560,7 +560,7 @@ void WindowWindows::fillKeyCodes()
     m_keyCodes.add(event::KeyCode::KeyMButton, 0x04);
     m_keyCodes.add(event::KeyCode::KeyXButton1, 0x05);
     m_keyCodes.add(event::KeyCode::KeyXButton2, 0x06);
-    m_keyCodes.add(event::KeyCode::KeyBack, 0x08);
+    m_keyCodes.add(event::KeyCode::KeyBackspace, 0x08);
     m_keyCodes.add(event::KeyCode::KeyTab, 0x09);
     m_keyCodes.add(event::KeyCode::KeyClear, 0x0C);
     m_keyCodes.add(event::KeyCode::KeyReturn, 0x0D);

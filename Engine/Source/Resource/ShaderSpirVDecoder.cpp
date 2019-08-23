@@ -281,8 +281,8 @@ Resource * ShaderSpirVDecoder::decode(const stream::Stream* stream, const std::s
             renderer::ShaderType type = getShaderType(name);
             ASSERT(validShaderType, "invalid type");
 #if DEBUG
-        utils::Timer timer;
-        timer.start();
+			utils::Timer timer;
+			timer.start();
 #endif
             std::vector<u32> bytecode(stream->size() / sizeof(u32));
             stream->read(&bytecode[0], stream->size(), sizeof(u32));

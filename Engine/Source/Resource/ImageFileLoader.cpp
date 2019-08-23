@@ -82,7 +82,7 @@ resource::Image* ImageFileLoader::load(const std::string & name, const std::stri
         }
     }
 
-    LOG_WARNING("ImageFileLoader::load: File [%s] not found", name.c_str());
+    LOG_WARNING("ImageFileLoader::load: File [%s] decoder hasn't found", name.c_str());
     return nullptr;
 }
 

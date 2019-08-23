@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.0.0)
 
-set (CURRENT_PROJECT "3.DrawMesh")
+set (CURRENT_PROJECT "DrawMesh")
 message("-- " ${CURRENT_PROJECT})
 
 project(${CURRENT_PROJECT})
@@ -17,9 +17,11 @@ if(TARGET_WIN)
 	add_executable(${CURRENT_PROJECT} WIN32 ${TEST_HEADERS}	${TEST_SOURCES})
 elseif (TARGET_ANDROID)
 	add_library(${CURRENT_PROJECT} SHARED ${TEST_HEADERS} ${TEST_SOURCES})
+	target_link_libraries(${CURRENT_PROJECT} 
+		log
+        android
+    )
 endif()
-
-
 
 target_link_libraries(${CURRENT_PROJECT} ${ENGINE_NAME})
 add_dependencies(${CURRENT_PROJECT} ${ENGINE_NAME})

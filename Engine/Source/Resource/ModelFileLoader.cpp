@@ -77,7 +77,7 @@ scene::Model* ModelFileLoader::load(const std::string & name, const std::string 
         }
     }
 
-    LOG_WARNING("ModelFileLoader::load: File [%s] not found", name.c_str());
+    LOG_WARNING("ModelFileLoader::load: File [%s] decoder hasn't found", name.c_str());
     return nullptr;
 }
 

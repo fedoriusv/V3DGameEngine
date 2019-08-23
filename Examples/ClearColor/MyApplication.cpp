@@ -72,11 +72,12 @@ MyApplication::MyApplication(int& argc, char** argv)
 int MyApplication::Execute()
 {
     MyApplication::Initialize();
-    bool running = true;
-    while (running)
+    while (true)
     {
-        running = Window::updateWindow(m_Window);
-
+		if (!Window::updateWindow(m_Window))
+		{
+			break;
+		}
         m_Window->getInputEventReceiver()->sendDeferredEvents();
 
         MyApplication::Running(*m_CommandList);

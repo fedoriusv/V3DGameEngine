@@ -1,6 +1,11 @@
 @echo off
 
 setlocal
+if "%ANDROID_NDK%" == "" (
+	echo Error. Variable ANDROID_NDK doesn't defined
+	pause
+	exit
+) 
 
 set C_ANDROID_TOOLCHAIN=%ANDROID_NDK%\build\cmake\android.toolchain.cmake
 set C_ANDROID_ABI=arm64-v8a
@@ -55,13 +60,13 @@ cd SPIRV-Cross
 
 mkdir build_android\Debug
 cd build_android\Debug
-cmake -GNinja -DCMAKE_BUILD_TYPE=Debug -DCMAKE_TOOLCHAIN_FILE=%C_ANDROID_TOOLCHAIN% -DANDROID_PLATFORM=%C_ANDROID_PLATFORM% -DANDROID_ABI=%C_ANDROID_ABI% ../..
+cmake -GNinja -DCMAKE_BUILD_TYPE=Debug -DCMAKE_TOOLCHAIN_FILE=%C_ANDROID_TOOLCHAIN% -DANDROID_PLATFORM=%C_ANDROID_PLATFORM% -DANDROID_ABI=%C_ANDROID_ABI% -DANDROID_STL=c++_shared ../..
 ninja
 cd ../..
 
 mkdir build_android\Release
 cd build_android\Release
-cmake -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_TOOLCHAIN_FILE=%C_ANDROID_TOOLCHAIN% -DANDROID_PLATFORM=%C_ANDROID_PLATFORM% -DANDROID_ABI=%C_ANDROID_ABI% ../..
+cmake -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_TOOLCHAIN_FILE=%C_ANDROID_TOOLCHAIN% -DANDROID_PLATFORM=%C_ANDROID_PLATFORM% -DANDROID_ABI=%C_ANDROID_ABI% -DANDROID_STL=c++_shared ../..
 ninja
 cd ../..
 
