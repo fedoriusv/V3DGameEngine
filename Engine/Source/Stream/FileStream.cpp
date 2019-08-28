@@ -366,29 +366,54 @@ const std::string& FileStream::getName() const
 
 bool FileStream::isExists(const std::string& file)
 {
+#ifndef _ANDROID
     return std::filesystem::exists(file);
+#else
+    ASSERT(false, "not implemented");
+    return false;
+#endif //_ANDROID
 }
 
 std::string FileStream::absolutePath(const std::string & file)
 {
+#ifndef _ANDROID
     std::filesystem::path path = file;
     return std::filesystem::absolute(path).string();
+#else
+    ASSERT(false, "not implemented");
+    return std::string("");
+#endif //_ANDROID
 }
 
 std::string FileStream::extension(const std::string & file)
 {
+#ifndef _ANDROID
     std::filesystem::path path = file;
     return path.extension().string();
+#else
+    ASSERT(false, "not implemented");
+    return std::string("");
+#endif //_ANDROID
 }
 
 bool FileStream::isDirectory(const std::string& path)
 {
+#ifndef _ANDROID
     return std::filesystem::is_directory(path);
+#else
+    ASSERT(false, "not implemented");
+    return false;
+#endif //_ANDROID
 }
 
 bool FileStream::remove(const std::string& file)
 {
+#ifndef _ANDROID
     return std::filesystem::remove(file.c_str());
+#else
+    ASSERT(false, "not implemented");
+    return false;
+#endif //_ANDROID
 }
 
 } //namespace stream

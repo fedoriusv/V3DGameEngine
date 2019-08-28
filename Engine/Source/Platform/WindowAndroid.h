@@ -37,6 +37,8 @@ namespace platform
         NativeInstance getInstance() const override;
         NativeWindows getWindowHandle() const override;
 
+        bool isValid() const override;
+
     private:
 
         bool initialize() override;

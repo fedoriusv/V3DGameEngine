@@ -477,6 +477,7 @@ u32 VulkanSwapchain::getSwapchainImageCount() const
     return static_cast<u32>(m_swapBuffers.size());
 }
 
+
 } //namespace vk
 } //namespace renderer
 } //namespace v3d

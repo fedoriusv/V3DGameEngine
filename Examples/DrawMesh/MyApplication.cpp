@@ -83,10 +83,10 @@ void MyApplication::Initialize()
     ASSERT(m_Context, "context is nullptr");
     m_CommandList = new renderer::CommandList(m_Context, renderer::CommandList::CommandListType::DelayedCommandList);
 
-    Shader* vertShader = resource::ResourceLoaderManager::getInstance()->loadShader<Shader, resource::ShaderSourceFileLoader>(m_CommandList->getContext(), "examples/drawmesh/shaders/mesh.vert", {}, ShaderSource_OptimisationPerformance);
-    Shader* fragShader = resource::ResourceLoaderManager::getInstance()->loadShader<Shader, resource::ShaderSourceFileLoader>(m_CommandList->getContext(), "examples/drawmesh/shaders/mesh.frag", {}, ShaderSource_OptimisationPerformance);
-    //Shader* vertShader = resource::ResourceLoaderManager::getInstance()->loadShader<Shader, resource::ShaderBinaryFileLoader>(m_CommandList->getContext(), "examples/drawmesh/shaders/mesh.vspv", {});
-    //Shader* fragShader = resource::ResourceLoaderManager::getInstance()->loadShader<Shader, resource::ShaderBinaryFileLoader>(m_CommandList->getContext(), "examples/drawmesh/shaders/mesh.fspv", {});
+    //Shader* vertShader = resource::ResourceLoaderManager::getInstance()->loadShader<Shader, resource::ShaderSourceFileLoader>(m_CommandList->getContext(), "examples/drawmesh/shaders/mesh.vert", {}, ShaderSource_OptimisationPerformance);
+    //Shader* fragShader = resource::ResourceLoaderManager::getInstance()->loadShader<Shader, resource::ShaderSourceFileLoader>(m_CommandList->getContext(), "examples/drawmesh/shaders/mesh.frag", {}, ShaderSource_OptimisationPerformance);
+    Shader* vertShader = resource::ResourceLoaderManager::getInstance()->loadShader<Shader, resource::ShaderBinaryFileLoader>(m_CommandList->getContext(), "examples/drawmesh/shaders/mesh.vspv", {});
+    Shader* fragShader = resource::ResourceLoaderManager::getInstance()->loadShader<Shader, resource::ShaderBinaryFileLoader>(m_CommandList->getContext(), "examples/drawmesh/shaders/mesh.fspv", {});
 
 
     resource::Image* image = resource::ResourceLoaderManager::getInstance()->load<resource::Image, resource::ImageFileLoader>("examples/drawmesh/models/voyager/voyager_bc3_unorm.ktx");

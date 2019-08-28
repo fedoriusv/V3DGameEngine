@@ -32,9 +32,9 @@ MeshAssimpDecoder::MeshAssimpDecoder(std::vector<std::string> supportedExtension
     //, m_generateTextureCoords(flags & ModelLoaderFlag::ModelLoaderFlag_GenerateTextureCoord)
     , m_generateNormals(flags & ModelLoaderFlag::ModelLoaderFlag_GenerateNormals)
     , m_generateTangents(flags & ModelLoaderFlag::ModelLoaderFlag_GenerateTangentAndBitangent)
+    , m_useBitangents(flags & ModelLoaderFlag_UseBitangent)
     , m_localTransform(flags & ModelLoaderFlag::ModelLoaderFlag_LocalTransform)
     , m_flipYPosition(flags & ModelLoaderFlag::ModelLoaderFlag_FlipYPosition)
-    , m_useBitangents(flags & ModelLoaderFlag_UseBitangent)
     //TODO add ModelLoaderFlag_SkipNormals
 {
 }
@@ -523,8 +523,6 @@ bool MeshAssimpDecoder::decodeMaterial(const aiScene * scene, stream::Stream * s
     newHeader->_materials.resize(scene->mNumMaterials);
     for (u32 m = 0; m < scene->mNumMaterials; m++)
     {
-        stream::Stream* materialStream = stream::StreamManager::createMemoryStream();
-
         aiMaterial* material = scene->mMaterials[m];
         scene::MaterialHeader& materialHeader = newHeader->_materials[m];
 

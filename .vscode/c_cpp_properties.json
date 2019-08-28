@@ -11,7 +11,8 @@
                 "_WINAPI",
                 "UNICODE",
                 "_UNICODE",
-                "VULKAN_RENDER"
+                "VULKAN_RENDER",
+                "USE_ASSIMP"
             ],
             "includePath": [
                 "${workspaceFolder}/Engine/Source"
@@ -31,7 +32,8 @@
                 "_WINAPI",
                 "UNICODE",
                 "_UNICODE",
-                "D3D_RENDER"
+                "D3D_RENDER",
+                "USE_ASSIMP"
             ],
             "includePath": [
                 "${workspaceFolder}/Engine/Source"
@@ -53,7 +55,8 @@
                 "_WIN32 = 0",
                 "_WIN64 = 0",
                 "VULKAN_RENDER",
-                "VULKAN_DYNAMIC"
+                "VULKAN_DYNAMIC",
+                "USE_ASSIMP"
             ],
             "includePath": [
                 "${workspaceFolder}/Engine/Source",

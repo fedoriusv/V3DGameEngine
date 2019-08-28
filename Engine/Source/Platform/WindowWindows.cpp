@@ -233,6 +233,11 @@ NativeWindows WindowWindows::getWindowHandle() const
     return m_hWnd;
 }
 
+bool WindowWindows::isValid() const
+{
+    return m_hWnd != NULL;
+}
+
 LRESULT WindowWindows::HandleMessage(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
     if (!m_receiver)

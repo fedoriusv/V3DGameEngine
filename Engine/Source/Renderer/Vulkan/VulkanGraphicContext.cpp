@@ -691,6 +691,7 @@ bool VulkanGraphicContext::initialize()
     {
         VulkanWrapper::GetDeviceQueue(m_deviceInfo._device, m_deviceInfo._queueFamilyIndex, queueIndex, &m_queueList[queueIndex]);
     }
+    m_deviceCaps.initialize();
 
     VkSurfaceKHR surface = VulkanSwapchain::createSurface(m_deviceInfo._instance, m_window->getInstance(), m_window->getWindowHandle());
     if (!surface)
@@ -699,8 +700,6 @@ bool VulkanGraphicContext::initialize()
         LOG_FATAL("VulkanGraphicContext::createContext: Can not create VkSurfaceKHR");
         return false;
     }
-
-    m_deviceCaps.initialize();
 
     VulkanSwapchain::SwapchainConfig config;
     config._size = m_window->getSize();
@@ -714,6 +713,7 @@ bool VulkanGraphicContext::initialize()
         LOG_FATAL("VulkanGraphicContext::createContext: Can not create VulkanSwapchain");
         return false;
     }
+    const_cast<platform::Window*>(m_window)->registerNotify(this);
 
     m_backufferDescription._size = config._size;
     m_backufferDescription._format = VulkanImage::convertVkImageFormatToFormat(m_swapchain->getSwapchainImage(0)->getFormat());
@@ -754,6 +754,7 @@ void VulkanGraphicContext::destroy()
 {
     //Called from game thread
     LOG_DEBUG("VulkanGraphicContext::destroy");
+    const_cast<platform::Window*>(m_window)->unregisterNotify(this);
 
     VkResult result = VulkanWrapper::DeviceWaitIdle(m_deviceInfo._device);
     if (result != VK_SUCCESS)
@@ -1270,6 +1271,25 @@ VulkanCommandBuffer * VulkanGraphicContext::CurrentCommandBufferState::getAcitve
 bool VulkanGraphicContext::CurrentCommandBufferState::isCurrentBufferAcitve(CommandTargetType type) const
 {
     return _currentCmdBuffer[type] != nullptr;
+}
+
+//Another thread
+void VulkanGraphicContext::handleNotify(utils::Observable* obj)
+{
+    const platform::Window* windows = reinterpret_cast<const platform::Window*>(obj);
+    if (windows->isValid())
+    {
+        LOG_WARNING("VulkanGraphicContext::create swapchain:");
+        //mark to terminate all renderer
+        //mark to delete swapchain & surface
+        //mark to delete related images and framebuffers
+
+    }
+    else
+    {
+        LOG_WARNING("VulkanGraphicContext::delete swapchain:");
+        //recreate swapchain & surface 
+    }
 }
 
 } //namespace vk

@@ -1,6 +1,11 @@
 @echo off
 
 setlocal
+if "%ANDROID_NDK%" == "" (
+	echo Error. Variable ANDROID_NDK doesn't defined
+	pause
+	exit
+) 
 
 set C_ANDROID_TOOLCHAIN=%ANDROID_NDK%\build\cmake\android.toolchain.cmake
 set C_ANDROID_NDK=%ANDROID_NDK%
@@ -9,13 +14,6 @@ set C_ANDROID_PLATFORM=android-26
 set C_BUILD_TYPE=Debug
 
 set command=all
-
-if "%ANDROID_NDK%" == "" (
-	echo Error. Variable ANDROID_NDK is NOT defined
-	pause
-	exit
-)
-
 if "%1" == "" goto all
 
 if "%1" == "--help" (
@@ -104,10 +102,14 @@ if "%2" == "" (
     
     xcopy /Y Examples\%2\AndroidManifest.xml Project\Android\Examples\%2
     xcopy /Y Examples\%2\build.gradle Project\Android\Examples\%2
-    xcopy /Y /F /S Examples\%2\res Project\Android\Examples\%2\res
+    xcopy /Y /F /S Examples\%2\res Project\Android\Examples\%2\res\
     
-    xcopy /Y "Project\Android\Examples\%2\lib%2.so" "Project\Android\Examples\%2\libs\%C_ANDROID_ABI%\"
-    
+	if "%C_BUILD_TYPE%" == "Debug" (
+		xcopy /Y "Project\Android\Examples\%2\lib%2d.so" "Project\Android\Examples\%2\libs\%C_ANDROID_ABI%\lib%2.so*"
+	) else (
+		xcopy /Y "Project\Android\Examples\%2\lib%2.so" "Project\Android\Examples\%2\libs\%C_ANDROID_ABI%\lib%2.so*"
+    )
+	
     
     REM fix build error
     set ANDROID_NDK=""

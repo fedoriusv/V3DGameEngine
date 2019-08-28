@@ -179,6 +179,11 @@ NativeWindows WindowAndroid::getWindowHandle() const
     return g_nativeAndroidApp->window;
 }
 
+bool WindowAndroid::isValid() const
+{
+    return m_initialized && g_nativeAndroidApp->window != nullptr;
+}
+
 void WindowAndroid::handleCmdCallback(struct android_app* app, int32_t cmd)
 {
     LOG_DEBUG("WindowAndroid::WindowAndroid::handleCmdCallback");
@@ -208,6 +213,7 @@ void WindowAndroid::handleCmdCallback(struct android_app* app, int32_t cmd)
             }
             LOG_INFO("WindowAndroid::handleCmdCallback: window size: width %d, height %d", width, height);
             window->m_initialized = true;
+            window->notifyObservers();
 		}
 		break;
 
@@ -215,6 +221,7 @@ void WindowAndroid::handleCmdCallback(struct android_app* app, int32_t cmd)
 		// The window is being hidden or closed, clean it up.
         LOG_DEBUG("WindowAndroid::handleCmdCallback: APP_CMD_TERM_WINDOW");
 		window->m_initialized = false;
+        window->notifyObservers();
 		break;
 
 	case APP_CMD_GAINED_FOCUS:

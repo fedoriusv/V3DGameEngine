@@ -248,8 +248,8 @@ add_library(${ENGINE_NAME} STATIC
     ${SCENE_HEADERS} ${SCENE_SOURCES}
     $<$<BOOL:BUILD_VULKAN_SDK>:${VULKAN_HEADERS} ${VULKAN_SOURCES}>
     $<$<BOOL:BUILD_DIRECTX_SDK>:${DIRECTX_HEADERS} ${DIRECTX_SOURCES}>
-	)
-	
+    )
+
 target_include_directories(${ENGINE_NAME} BEFORE 
 	PRIVATE ${LIB_INCLUDE_DIRECTORY}
 	PRIVATE $<$<BOOL:BUILD_VULKAN_SDK>:${VULKAN_SDK_INCLUDE_DIRECTORY}>)
@@ -302,14 +302,14 @@ message("-- Crc32 lib added")
 if (ASSIMP_LIB)
     message("-- Add Assimp lib")
     add_subdirectory(Engine/Libs/assimp)
+    target_compile_options(assimp PRIVATE -D_SILENCE_ALL_CXX17_DEPRECATION_WARNINGS -frtti)
+if(TARGET_WIN)
     set_target_properties(assimp PROPERTIES FOLDER Libs/assimp)
-    target_compile_options(assimp PRIVATE -D_SILENCE_ALL_CXX17_DEPRECATION_WARNINGS)
     set_target_properties(IrrXML PROPERTIES FOLDER Libs/assimp)
     set_target_properties(uninstall PROPERTIES FOLDER Libs/assimp)
-    set_target_properties(UpdateAssimpLibsDebugSymbolsAndDLLs PROPERTIES FOLDER Libs/assimp)
     set_target_properties(zlib PROPERTIES FOLDER Libs/assimp)  
     set_target_properties(zlibstatic PROPERTIES FOLDER Libs/assimp)
-if(TARGET_WIN)
+    set_target_properties(UpdateAssimpLibsDebugSymbolsAndDLLs PROPERTIES FOLDER Libs/assimp)
     target_compile_options(zlib PRIVATE $<$<CONFIG:DEBUG>:/MTd> $<$<CONFIG:RELEASE>:/MT>)
     target_compile_options(zlibstatic PRIVATE $<$<CONFIG:DEBUG>:/MTd> $<$<CONFIG:RELEASE>:/MT>)
 endif()

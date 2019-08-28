@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Common.h"
+#include "Utils/Observable.h"
 #include "Event/KeyCodes.h"
 
 namespace v3d
@@ -14,7 +15,7 @@ namespace platform
 {
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    class Window
+    class Window : public utils::Observable
     {
     public:
 
@@ -81,6 +82,8 @@ namespace platform
 
         virtual NativeInstance getInstance() const = 0;
         virtual NativeWindows getWindowHandle() const = 0;
+
+        virtual bool isValid() const = 0;
 
     protected:
 

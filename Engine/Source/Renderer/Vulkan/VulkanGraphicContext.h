@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Renderer/Context.h"
+#include "Utils/Observable.h"
 
 #ifdef VULKAN_RENDER
 #include "VulkanWrapper.h"
@@ -42,7 +43,7 @@ namespace vk
     /**
     * VulkanGraphicContext final class. Vulkan Render side
     */
-    class VulkanGraphicContext final : public Context
+    class VulkanGraphicContext final : public Context,  public utils::Observer 
     {
     public:
 
@@ -92,6 +93,8 @@ namespace vk
         static bool isDynamicState(VkDynamicState state);
 
         VulkanCommandBuffer* getOrCreateAndStartCommandBuffer(CommandTargetType type);
+
+        void handleNotify(utils::Observable* obj) override;
 
     private:
 

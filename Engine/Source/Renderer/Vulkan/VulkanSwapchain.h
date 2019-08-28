@@ -4,6 +4,7 @@
 #include "Platform/Window.h"
 #include "VulkanWrapper.h"
 
+
 #ifdef VULKAN_RENDER
 namespace v3d
 {
