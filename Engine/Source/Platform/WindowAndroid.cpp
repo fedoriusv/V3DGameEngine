@@ -19,7 +19,7 @@ WindowAndroid::WindowAndroid(const WindowParam& params, event::InputEventReceive
     , m_sensorManager(NULL)
     , m_accelerometerSensor(NULL)
     , m_sensorEventQueue(NULL)
-    , m_initialized(false)
+    , m_ready(false)
 {
     LOG_DEBUG("WindowAndroid::WindowAndroid: Created Adroid window %llx", this);
     memset(&m_state, 0, sizeof(SavedState));
@@ -54,7 +54,7 @@ bool WindowAndroid::initialize()
 	}
 
     bool result = true;
-    while(!m_initialized)
+    while(!m_ready)
     {
         result = update();
         if (!result)
@@ -107,7 +107,7 @@ bool WindowAndroid::update()
 void WindowAndroid::destroy()
 {
     LOG_DEBUG("WindowAndroid::destroy %llx", this);
-    m_initialized = false;
+    m_ready = false;
 }
 
 WindowAndroid::~WindowAndroid()
@@ -181,7 +181,7 @@ NativeWindows WindowAndroid::getWindowHandle() const
 
 bool WindowAndroid::isValid() const
 {
-    return m_initialized && g_nativeAndroidApp->window != nullptr;
+    return m_ready && g_nativeAndroidApp->window != nullptr;
 }
 
 void WindowAndroid::handleCmdCallback(struct android_app* app, int32_t cmd)
@@ -200,7 +200,7 @@ void WindowAndroid::handleCmdCallback(struct android_app* app, int32_t cmd)
 	case APP_CMD_INIT_WINDOW:
 		// The window is being shown, get it ready.
         ASSERT(g_nativeAndroidApp->window, "nullptr");
-		if (g_nativeAndroidApp->window != NULL &&  !window->m_initialized) 
+		if (g_nativeAndroidApp->window != NULL &&  !window->m_ready) 
         {
             LOG_DEBUG("WindowAndroid::handleCmdCallback: APP_CMD_INIT_WINDOW");
 
@@ -212,7 +212,7 @@ void WindowAndroid::handleCmdCallback(struct android_app* app, int32_t cmd)
                 window->m_params._size = core::Dimension2D(width,  height);
             }
             LOG_INFO("WindowAndroid::handleCmdCallback: window size: width %d, height %d", width, height);
-            window->m_initialized = true;
+            window->m_ready = true;
             window->notifyObservers();
 		}
 		break;
@@ -220,7 +220,7 @@ void WindowAndroid::handleCmdCallback(struct android_app* app, int32_t cmd)
 	case APP_CMD_TERM_WINDOW:
 		// The window is being hidden or closed, clean it up.
         LOG_DEBUG("WindowAndroid::handleCmdCallback: APP_CMD_TERM_WINDOW");
-		window->m_initialized = false;
+		window->m_ready = false;
         window->notifyObservers();
 		break;
 

@@ -61,13 +61,15 @@ bool createSurfaceAndroidApi(VkInstance vkInstance, NativeInstance hInstance, Na
 }
 #endif //PLATFORM_ANDROID
 
-VulkanSwapchain::VulkanSwapchain(const DeviceInfo* info, VkSurfaceKHR surface)
+VulkanSwapchain::VulkanSwapchain(const DeviceInfo* info)
     : m_deviceInfo(info)
-    , m_surface(surface)
+    , m_surface(VK_NULL_HANDLE)
     , m_swapchain(VK_NULL_HANDLE)
 
     , m_currentImageIndex((u32)-1)
     , m_currentSemaphoreIndex(0U)
+
+    , m_ready(false)
 {
     LOG_DEBUG("VulkanSwapchain constructor %llx", this);
 }
@@ -82,7 +84,8 @@ VulkanSwapchain::~VulkanSwapchain()
     }
     m_acquireSemaphore.clear();
 
-    ASSERT(m_swapchain == VK_NULL_HANDLE, "swapchain is not nullptr");
+    ASSERT(!m_surface, "surface isn't nullptr");
+    ASSERT(!m_swapchain, "swapchain is not nullptr");
 }
 
 VkSurfaceKHR VulkanSwapchain::createSurface(VkInstance vkInstance, NativeInstance hInstance, NativeWindows hWnd)
@@ -109,14 +112,24 @@ VkSurfaceKHR VulkanSwapchain::createSurface(VkInstance vkInstance, NativeInstanc
     return surface;
 }
 
-void VulkanSwapchain::detroySurface(VkInstance vkInstance, VkSurfaceKHR surface)
-{
-    VulkanWrapper::DestroySurface(vkInstance, surface, VULKAN_ALLOCATOR);
-}
-
 bool VulkanSwapchain::create(const SwapchainConfig& config)
 {
     LOG_DEBUG("VulkanSwapchain::create");
+    if (m_ready)
+    {
+        return true;
+    }
+
+    m_config = config;
+
+    ASSERT(!m_surface, "Already has created");
+    m_surface = VulkanSwapchain::createSurface(m_deviceInfo->_instance, config._window->getInstance(), config._window->getWindowHandle());
+    if (!m_surface)
+    {
+        VulkanSwapchain::destroy();
+        LOG_FATAL("VulkanGraphicContext::createContext: Can not create VkSurfaceKHR");
+        return false;
+    }
 
     VkResult result = VulkanWrapper::GetPhysicalDeviceSurfaceCapabilities(m_deviceInfo->_physicalDevice, m_surface, &m_surfaceCaps);
     if (result != VK_SUCCESS)
@@ -217,6 +230,7 @@ bool VulkanSwapchain::create(const SwapchainConfig& config)
         m_acquireSemaphore.push_back(semaphore);
     }
 
+    m_ready = true;
     return true;
 }
 
@@ -378,17 +392,23 @@ void VulkanSwapchain::destroy()
     }
     m_swapBuffers.clear();
 
+    if (m_swapchain)
+    {
+        VulkanWrapper::DestroySwapchain(m_deviceInfo->_device, m_swapchain, VULKAN_ALLOCATOR);
+        m_swapchain = VK_NULL_HANDLE;
+    }
 
-    VulkanWrapper::DestroySwapchain(m_deviceInfo->_device, m_swapchain, VULKAN_ALLOCATOR);
-    m_swapchain = VK_NULL_HANDLE;
+    if (m_surface)
+    {
+        VulkanWrapper::DestroySurface(m_deviceInfo->_instance, m_surface, VULKAN_ALLOCATOR);
+        m_surface = VK_NULL_HANDLE;
+    }
+
+    m_ready = false;
 }
 
 void VulkanSwapchain::present(VkQueue queue, const std::vector<VkSemaphore>& waitSemaphores)
 {
-#ifdef PLATFORM_ANDROID
-    ASSERT(g_nativeAndroidApp->window, "nullptr, need to recreate surface");
-#endif //ANDROID_PLATFORM
-
     ASSERT(m_swapchain, "m_swapchain is nullptr");
 
     VkResult innerResults[1] = {};
@@ -412,7 +432,20 @@ void VulkanSwapchain::present(VkQueue queue, const std::vector<VkSemaphore>& wai
     presentInfoKHR.pResults = innerResults;
 
     VkResult result = VulkanWrapper::QueuePresent(queue, &presentInfoKHR);
-    if (result != VK_SUCCESS)
+    if (result == VK_ERROR_SURFACE_LOST_KHR || result == VK_SUBOPTIMAL_KHR || result == VK_ERROR_OUT_OF_DATE_KHR)
+    {
+        VulkanWrapper::DeviceWaitIdle(m_deviceInfo->_device);
+
+#ifdef PLATFORM_ANDROID
+    ASSERT(g_nativeAndroidApp->window, "windows is nullptr");
+#endif //ANDROID_PLATFORM
+        //recreate
+        if (!VulkanSwapchain::recteate(m_config))
+        {
+            LOG_FATAL(" VulkanSwapchain::QueuePresent: recteate was failed");
+        }
+    }
+    else if (result != VK_SUCCESS)
     {
         //TODO:
         ASSERT(false, "vkQueuePresentKHR failed");
@@ -422,18 +455,37 @@ void VulkanSwapchain::present(VkQueue queue, const std::vector<VkSemaphore>& wai
 
 u32 VulkanSwapchain::acquireImage()
 {
-#ifdef PLATFORM_ANDROID
-    ASSERT(g_nativeAndroidApp->window, "nullptr, need to recreate surface");
-#endif //ANDROID_PLATFORM
-
     VkSemaphore semaphore = m_acquireSemaphore[m_currentSemaphoreIndex];
     VkFence fence = VK_NULL_HANDLE;
 
     u32 imageIndex = 0;
     VkResult result = VulkanWrapper::AcquireNextImage(m_deviceInfo->_device, m_swapchain, UINT64_MAX, semaphore, fence, &imageIndex);
-    if (result != VK_SUCCESS)
+    if (result == VK_ERROR_SURFACE_LOST_KHR || result == VK_SUBOPTIMAL_KHR || result == VK_ERROR_OUT_OF_DATE_KHR)
     {
-        //TODO:
+        VulkanWrapper::DeviceWaitIdle(m_deviceInfo->_device);
+        
+#ifdef PLATFORM_ANDROID
+    ASSERT(g_nativeAndroidApp->window, "windows is nullptr");
+#endif //ANDROID_PLATFORM
+
+        //recreate
+        if (!VulkanSwapchain::recteate(m_config))
+        {
+            LOG_FATAL(" VulkanSwapchain::AcquireNextImage: recteate was failed");
+        }
+
+        VkSemaphore semaphoreInner = m_acquireSemaphore[m_currentSemaphoreIndex];
+
+        VkResult resultInner = VulkanWrapper::AcquireNextImage(m_deviceInfo->_device, m_swapchain, UINT64_MAX, semaphoreInner, VK_NULL_HANDLE, &imageIndex);
+        if (resultInner != VK_SUCCESS)
+        {
+            LOG_FATAL(" VulkanSwapchain::AcquireNextImage: failed recreate with error %s", ErrorString(result).c_str());
+            ASSERT(false, "vkAcquireNextImageKHR failed recreate");
+        }
+    }
+    else if (result != VK_SUCCESS)
+    {
+        LOG_FATAL(" VulkanSwapchain::AcquireNextImage: failed with error %s", ErrorString(result).c_str());
         ASSERT(false, "vkAcquireNextImageKHR failed");
     }
 
@@ -441,23 +493,20 @@ u32 VulkanSwapchain::acquireImage()
     return imageIndex;
 }
 
-bool VulkanSwapchain::recteateSwapchain(const SwapchainConfig& config)
+bool VulkanSwapchain::recteate(const SwapchainConfig& config)
 {
-    VulkanSwapchain::destroy();
-    if (!VulkanSwapchain::createSwapchain(config))
+    if (!m_ready)
     {
-        LOG_FATAL("VulkanSwapchain::recteateSwapchain: is failed");
+        return false;
+    }
+
+    VulkanSwapchain::destroy();
+    if (!VulkanSwapchain::create(config))
+    {
+        LOG_FATAL("VulkanSwapchain::recteate: is failed");
         return false;
     }
     
-    if (!VulkanSwapchain::createSwapchainImages(config))
-    {
-        VulkanSwapchain::destroy();
-
-        LOG_FATAL(" VulkanSwapchain::recteateSwapchain: cannot create swapchain images");
-        return false;
-    }
-
     return true;
 }
 

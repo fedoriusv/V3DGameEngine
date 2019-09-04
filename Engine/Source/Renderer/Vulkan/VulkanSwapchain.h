@@ -25,12 +25,13 @@ namespace vk
 
         struct SwapchainConfig
         {
-            core::Dimension2D   _size;
-            u32                 _countSwapchainImages = 0;
-            bool                _vsync                = false;
+            const platform::Window* _window;
+            core::Dimension2D       _size;
+            u32                     _countSwapchainImages = 0;
+            bool                    _vsync                = false;
         };
 
-        VulkanSwapchain(const struct DeviceInfo* info, VkSurfaceKHR surface);
+        VulkanSwapchain(const struct DeviceInfo* info);
         ~VulkanSwapchain();
 
         bool create(const SwapchainConfig& config);
@@ -39,7 +40,7 @@ namespace vk
         void present(VkQueue queue, const std::vector<VkSemaphore>& waitSemaphores);
         u32  acquireImage();
 
-        bool recteateSwapchain(const SwapchainConfig& config);
+        bool recteate(const SwapchainConfig& config);
 
         VulkanImage* getBackbuffer() const;
         VulkanImage* getSwapchainImage(u32 index) const;
@@ -47,10 +48,7 @@ namespace vk
 
     private:
 
-        friend class VulkanGraphicContext;
-
         static VkSurfaceKHR createSurface(VkInstance vkInstance,  NativeInstance hInstance, NativeWindows hWnd);
-        static void detroySurface(VkInstance vkInstance, VkSurfaceKHR surface);
 
         bool createSwapchain(const SwapchainConfig& config);
         bool createSwapchainImages(const SwapchainConfig& config);
@@ -69,6 +67,9 @@ namespace vk
         std::vector<VkSemaphore> m_acquireSemaphore;
         std::vector<VkFence> m_acquireFence;
 
+        SwapchainConfig m_config;
+
+        bool m_ready;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

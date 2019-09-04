@@ -693,20 +693,13 @@ bool VulkanGraphicContext::initialize()
     }
     m_deviceCaps.initialize();
 
-    VkSurfaceKHR surface = VulkanSwapchain::createSurface(m_deviceInfo._instance, m_window->getInstance(), m_window->getWindowHandle());
-    if (!surface)
-    {
-        VulkanGraphicContext::destroy();
-        LOG_FATAL("VulkanGraphicContext::createContext: Can not create VkSurfaceKHR");
-        return false;
-    }
-
     VulkanSwapchain::SwapchainConfig config;
+    config._window =  m_window;
     config._size = m_window->getSize();
     config._vsync = false; //TODO
     config._countSwapchainImages = 3;
 
-    m_swapchain = new VulkanSwapchain(&m_deviceInfo, surface);
+    m_swapchain = new VulkanSwapchain(&m_deviceInfo);
     if (!m_swapchain->create(config))
     {
         VulkanGraphicContext::destroy();
@@ -841,8 +834,6 @@ void VulkanGraphicContext::destroy()
     if (m_swapchain)
     {
         m_swapchain->destroy();
-        VulkanSwapchain::detroySurface(m_deviceInfo._instance, m_swapchain->m_surface);
-
         delete m_swapchain;
         m_swapchain = nullptr;
     }
@@ -1280,15 +1271,13 @@ void VulkanGraphicContext::handleNotify(utils::Observable* obj)
     if (windows->isValid())
     {
         LOG_WARNING("VulkanGraphicContext::create swapchain:");
-        //mark to terminate all renderer
-        //mark to delete swapchain & surface
-        //mark to delete related images and framebuffers
+
+        //mark to delete related framebuffers and renderpasses
 
     }
     else
     {
         LOG_WARNING("VulkanGraphicContext::delete swapchain:");
-        //recreate swapchain & surface 
     }
 }
 

@@ -62,7 +62,6 @@ const std::vector<const c8*> VulkanDebug::s_validationLayerNames =
     "VK_LAYER_LUNARG_device_limits",
     "VK_LAYER_LUNARG_image",
     "VK_LAYER_LUNARG_swapchain",
-    "VK_LAYER_LUNARG_swapchain",
     "VK_LAYER_GOOGLE_unique_objects", // should be late in the list, gets data early from the driver
 #endif
 };

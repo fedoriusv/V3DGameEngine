@@ -56,7 +56,7 @@ namespace platform
 	    const ASensor*      m_accelerometerSensor;
 	    ASensorEventQueue*  m_sensorEventQueue;
         SavedState          m_state;
-        bool                m_initialized;
+        bool                m_ready;
 
         void fillKeyCodes();
 
