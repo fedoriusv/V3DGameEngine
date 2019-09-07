@@ -1,16 +1,14 @@
 cmake_minimum_required(VERSION 3.0.0)
 
-set (CURRENT_PROJECT "ClearColor")
+set (CURRENT_PROJECT "SimpleTriangle")
 message(STATUS ${CURRENT_PROJECT})
 
 project(${CURRENT_PROJECT})
 
 file(GLOB TEST_HEADERS *.h)
 file(GLOB TEST_SOURCES *.cpp)
-file(GLOB TEST_SHADERS "shaders/*.vert" "shaders/*.frag")
 
 source_group("project" FILES ${TEST_HEADERS} ${TEST_SOURCES})
-source_group("project\\shaders" FILES ${TEST_SHADERS})
 
 if(TARGET_WIN)
 	set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /SUBSYSTEM:CONSOLE")

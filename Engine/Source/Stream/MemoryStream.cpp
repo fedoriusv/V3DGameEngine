@@ -60,6 +60,7 @@ MemoryStream::MemoryStream(const void* data, u32 size, utils::MemoryPool* alloca
         MemoryStream::allocate(size);
         if (data)
         {
+            ASSERT(m_stream, "nullptr");
             memcpy(m_stream, data, m_length);
         }
     }

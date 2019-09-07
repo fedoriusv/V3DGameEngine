@@ -17,6 +17,16 @@ ShaderHeader::ShaderHeader() noexcept
 {
 }
 
+ShaderHeader::ShaderHeader(renderer::ShaderType type) noexcept
+    : _type(type)
+    , _contentType(ShaderResource::ShaderResource_Source)
+    , _shaderLang(ShaderLang::ShaderLang_GLSL)
+    , _apiVersion(0)
+    , _optLevel(0)
+    , _entyPoint("main")
+{
+}
+
 Shader::Shader(const ShaderHeader* header) noexcept
     : Resource(header)
     , m_hash(0)
@@ -223,6 +233,7 @@ Shader::UniformBuffer::Uniform::Uniform()
     : _bufferId(0)
     , _array(1)
     , _type(renderer::DataType::DataType_None)
+    , _size(0)
 #if USE_STRING_ID_SHADER
     , _name("")
 #endif

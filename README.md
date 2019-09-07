@@ -30,7 +30,7 @@ Required:
 ANDROID_NDK - need to define path to NDK
 To Build and compile start project_android.bat
 
--------------------------------------------------
+-------------------------------------------------  
 
 #### General
 Assimp(dae):

@@ -9,6 +9,7 @@ namespace v3d
 namespace renderer
 {
     class Context;
+    struct ShaderHeader;
 } //namespace renderer
 
 namespace resource
@@ -25,6 +26,9 @@ namespace resource
     public:
 
         ResourceLoaderManager() = default;
+
+        template<class TResource, class TResourceLoader>
+        TResource* composeShader(renderer::Context* context, const std::string name, const renderer::ShaderHeader* header, const stream::Stream* stream);
 
         template<class TResource, class TResourceLoader>
         TResource* loadShader(renderer::Context* context, std::string filename, std::vector<std::pair<std::string, std::string>> defines = {}, u32 flags = 0);
@@ -49,6 +53,50 @@ namespace resource
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    template<class TResource, class TResourceLoader>
+    TResource* ResourceLoaderManager::composeShader(renderer::Context* context, const std::string name, const renderer::ShaderHeader* header, const stream::Stream* stream)
+    {
+        std::string innerName(name);
+        std::transform(name.begin(), name.end(), innerName.begin(), ::tolower);
+
+        std::vector<std::pair<std::string, std::string>> innerDefines(header->_defines);
+        std::sort(innerDefines.begin(), innerDefines.end(), [](const std::pair<std::string, std::string>& macros1, const std::pair<std::string, std::string>& macros2) -> bool
+            {
+                return macros1.first < macros2.first;
+            });
+
+        auto composeResourceName = [](const std::string& name, const std::vector<std::pair<std::string, std::string>>& defines) -> std::string
+        {
+            std::string outString = name;
+            for (auto& define : defines)
+            {
+                outString.append("_");
+                outString.append(define.first);
+                outString.append(define.second);
+            }
+
+            return outString;
+        };
+        const std::string resourceName = composeResourceName(innerName, innerDefines);
+
+        auto resourceIter = m_resources.emplace(std::make_pair(resourceName, nullptr));
+        if (resourceIter.second)
+        {
+            TResourceLoader loader(context, header, stream, true);
+            Resource* res = loader.load(innerName);
+            if (!res)
+            {
+                m_resources.erase(resourceName);
+                return nullptr;
+            }
+
+            resourceIter.first->second = res;
+            return static_cast<TResource*>(res);
+        }
+
+        return static_cast<TResource*>(resourceIter.first->second);
+    }
 
     template<class TResource, class TResourceLoader>
     TResource* ResourceLoaderManager::loadShader(renderer::Context* context, std::string filename, std::vector<std::pair<std::string, std::string>> defines, u32 flags)

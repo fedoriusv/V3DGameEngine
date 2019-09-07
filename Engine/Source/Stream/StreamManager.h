@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Common.h"
 #include "MemoryStream.h"
 
 namespace v3d
@@ -21,6 +22,7 @@ namespace stream
     public:
 
         static MemoryStream* createMemoryStream(const void* data = nullptr, const u32 size = 0);
+        static MemoryStream* createMemoryStream(const std::string& string);
         static void clearPools();
 
     private:

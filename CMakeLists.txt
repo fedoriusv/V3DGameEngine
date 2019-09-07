@@ -30,21 +30,21 @@ project(${SOLUTION_NAME})
 ##############################################################
 
 if(COMPILER_MSVC)
-    message("-- Configuring MSVC Compiler")
+    message(STATUS "Configuring MSVC Compiler")
 elseif(COMPILER_GCC)
-    message("-- Configuring GCC Compiler")
+    message(STATUS "Configuring GCC Compiler")
 elseif(COMPILER_CLANG)
-    message("-- Configuring Clang Compiler")
+    message(STATUS "Configuring Clang Compiler")
 else()
     message(FATAL_ERROR "Unknown compiler. Only COMPILER_MSVC|COMPILER_GCC|COMPILER_CLANG supported")
 endif()
 
 if(TARGET_WIN AND WIN32)
-    message("-- Platform Windows")
+    message(STATUS "Platform Windows")
 	include(Config/Windows64.cmake)
     add_definitions(-D_WINAPI -DUNICODE -D_UNICODE)
 elseif(TARGET_ANDROID)
-    message("-- Platform Android")
+    message(STATUS "Platform Android")
 	include(Config/Android.cmake)
 	set(BUILD_DIRECTX_SDK OFF)
     add_definitions(-D_ANDROID -DUNICODE -D_UNICODE)
@@ -100,7 +100,7 @@ if(BUILD_VULKAN_SDK)
     endif()
     set(VULKAN_SDK_INCLUDE_DIRECTORY "${VULKAN_SDK_PATH}/Include")
     set(VULKAN_SDK_LIB_DIRECTORY ${VULKAN_SDK_PATH}/Lib)
-    message("-- Vulkan SDK Path " ${VULKAN_SDK_PATH})
+    message(STATUS "Vulkan SDK Path " ${VULKAN_SDK_PATH})
 
     #SpirV
     set(SPIRV_FOLDER ${ENGINE_PROJECT_DIR}/Engine/Libs/spirv)
@@ -292,15 +292,15 @@ link_directories(${ENGINE_NAME} ${VULKAN_SDK_LIB_DIRECTORY})
 
 #Libs
 ##############################################################
-message("-- Add Crc32 lib")
+message(STATUS "Add Crc32 lib")
 add_subdirectory(Engine/Libs/crc32c)
 set_target_properties(crc32c PROPERTIES FOLDER Libs/crc32c)
 set_target_properties(crc32c_arm64 PROPERTIES FOLDER Libs/crc32c)
 set_target_properties(crc32c_sse42 PROPERTIES FOLDER Libs/crc32c)
-message("-- Crc32 lib added")
+message(STATUS "Crc32 lib added")
 
 if (ASSIMP_LIB)
-    message("-- Add Assimp lib")
+    message(STATUS "Add Assimp lib")
     add_subdirectory(Engine/Libs/assimp)
     target_compile_options(assimp PRIVATE -D_SILENCE_ALL_CXX17_DEPRECATION_WARNINGS -frtti)
 if(TARGET_WIN)
@@ -314,7 +314,7 @@ if(TARGET_WIN)
     target_compile_options(zlibstatic PRIVATE $<$<CONFIG:DEBUG>:/MTd> $<$<CONFIG:RELEASE>:/MT>)
 endif()
 
-    message("-- Assimp lib added")
+    message(STATUS "Assimp lib added")
 endif()
 
 ##############################################################
@@ -322,21 +322,19 @@ endif()
 #Examples
 ##############################################################
 if (BUILD_EXAMPLES)
-    set(BUILD_PROJECTS 
-        CreateWindow
-        ClearColor
-		DrawMesh
-    )
-    #set(BUILD_PROJECTS #[[1.CreateWindow 2.ClearColor]] 3.DrawMesh 4.DrawScene 5.Test)
-    message("-- Create Examples:")
-    
-    foreach (PROJ ${BUILD_PROJECTS})
+#	set(BUILD_PROJECTS #[[1.CreateWindow 2.ClearColor]] 3.DrawMesh 4.DrawScene 5.Test)
+	file (READ "ExamplesList.txt" STRING_BUILD_EXAMPLES)
+	string(REPLACE "\n" ";" BUILD_EXAMPLES ${STRING_BUILD_EXAMPLES})
+	
+    message(STATUS "----------------")
+    message(STATUS "Create Examples:")
+    foreach (PROJ ${BUILD_EXAMPLES})
         add_subdirectory(Examples/${PROJ})
     endforeach(PROJ)
     
-    set_target_properties(${BUILD_PROJECTS} PROPERTIES FOLDER Examples)
-    set_target_properties(${BUILD_PROJECTS} PROPERTIES INCLUDE_DIRECTORIES ${ENGINE_PROJECT_DIR}/${SOURCE_DIR})
-    message("-- ----------------")
+    set_target_properties(${BUILD_EXAMPLES} PROPERTIES FOLDER Examples)
+    set_target_properties(${BUILD_EXAMPLES} PROPERTIES INCLUDE_DIRECTORIES ${ENGINE_PROJECT_DIR}/${SOURCE_DIR})
+    message(STATUS "----------------")
 endif ()
 ##############################################################
 
@@ -349,8 +347,8 @@ endif()
 ##############################################################
 
 if (WIN32 AND SPIRV_INSTALL_FROM_GITHUB)
-    message("-- Installing SPIRV:")
+    message(STATUS "Installing SPIRV:")
     execute_process(COMMAND ${SPIRV_FOLDER}/install.bat WORKING_DIRECTORY ${SPIRV_FOLDER})
-    message("-- SPIRV Installed")
+    message(STATUS "SPIRV Installed")
 endif()
 ##############################################################

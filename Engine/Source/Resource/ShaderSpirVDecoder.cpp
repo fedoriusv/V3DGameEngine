@@ -17,6 +17,7 @@ namespace resource
 ShaderSpirVDecoder::ShaderSpirVDecoder(const renderer::ShaderHeader& header, bool reflections) noexcept
     : m_header(header)
     , m_reflections(reflections)
+    , m_sourceVersion(0)
 {
 }
 
@@ -24,6 +25,7 @@ ShaderSpirVDecoder::ShaderSpirVDecoder(std::vector<std::string> supportedExtensi
     : ResourceDecoder(supportedExtensions)
     , m_header(header)
     , m_reflections(reflections)
+    , m_sourceVersion(0)
 {
 }
 
@@ -94,8 +96,9 @@ Resource * ShaderSpirVDecoder::decode(const stream::Stream* stream, const std::s
             }
 
             bool validShaderType = false;
-            renderer::ShaderType type = renderer::ShaderType::ShaderType_Undefined;
-            auto getShaderType = [&validShaderType, &type](const std::string& name) -> shaderc_shader_kind
+            renderer::ShaderType type = m_header._type;
+
+            auto getShaderTypeFromName = [&validShaderType, &type](const std::string& name) -> shaderc_shader_kind
             {
                 std::string fileExtension = stream::FileLoader::getFileExtension(name);
                 if (fileExtension == "vert" || fileExtension == "vs")
@@ -134,7 +137,34 @@ Resource * ShaderSpirVDecoder::decode(const stream::Stream* stream, const std::s
                 return shaderc_shader_kind::shaderc_vertex_shader;
             };
 
-            shaderc_shader_kind shaderType = getShaderType(name);
+            auto getShaderType = [&validShaderType](renderer::ShaderType type) -> shaderc_shader_kind
+            {
+                switch (type)
+                {
+                case renderer::ShaderType::ShaderType_Vertex:
+                {
+                    validShaderType = true;
+                    return  shaderc_shader_kind::shaderc_vertex_shader;
+                }
+
+                case renderer::ShaderType::ShaderType_Fragment:
+                {
+                    validShaderType = true;
+                    return  shaderc_shader_kind::shaderc_fragment_shader;
+                }
+
+                default:
+                {
+                    validShaderType = false;
+                    return shaderc_shader_kind::shaderc_vertex_shader;
+                }
+                };
+
+                validShaderType = false;
+                return shaderc_shader_kind::shaderc_vertex_shader;
+            };
+
+            shaderc_shader_kind shaderType = (type == renderer::ShaderType::ShaderType_Undefined)  ? getShaderTypeFromName(name) : getShaderType(type);
             if (!validShaderType)
             {
                 LOG_ERROR("ShaderSpirVDecoder::decode: Invalid shader type or unsupport");

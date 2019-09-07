@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.0.0)
 
 set (CURRENT_PROJECT "CreateWindow")
-message("-- " ${CURRENT_PROJECT})
+message(STATUS ${CURRENT_PROJECT})
 
 project(${CURRENT_PROJECT})
 

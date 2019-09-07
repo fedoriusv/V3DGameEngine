@@ -34,6 +34,7 @@ namespace renderer
         };
 
         ShaderHeader() noexcept;
+        explicit ShaderHeader(renderer::ShaderType type) noexcept;
 
         renderer::ShaderType _type;
         ShaderResource _contentType;
