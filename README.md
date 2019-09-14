@@ -19,7 +19,7 @@ Required:<br/>
 -- Python 3 (for building SPIRV)<br/>
 To create Visual Studio project execute project_msvc.bat<br/>
 
-#### Andtoid
+#### Android
 ###### Build in Windows:
 Required:<br/>
 -- NDK r20 or later<br/>
