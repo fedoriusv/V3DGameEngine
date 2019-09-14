@@ -1,11 +1,11 @@
 # V3DGameEngine
 V3DEngine 2.0 version
 
-Support render: Vulkan,DirectX
+Support render: Vulkan,DirectX\n
 Support platform: Windows, Android
 
-Required:
--- CMake 3
+Required:\n
+-- CMake 3\n
 -- C++17
 
 
