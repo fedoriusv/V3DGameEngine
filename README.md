@@ -39,7 +39,7 @@ For loading models used Assimp library, to enable it set option to ON in CMakeLi
 STB (jpg, png, bmp, tga):<br/>
 Used for loading images, to enable it set option to ON in CMakeLists.txt<br/>
 
-gIL (ktx, kmg, dds):<br/>
+gli (ktx, kmg, dds):<br/>
 Used for loading compressed images, to enable it set option to ON in CMakeLists.txt<br/>
 
 #### Vulkan
