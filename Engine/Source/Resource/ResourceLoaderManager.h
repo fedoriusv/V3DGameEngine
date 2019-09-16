@@ -3,13 +3,13 @@
 #include "Common.h"
 #include "Utils/Singleton.h"
 #include "Resource.h"
+#include "Renderer/Shader.h"
 
 namespace v3d
 {
 namespace renderer
 {
     class Context;
-    struct ShaderHeader;
 } //namespace renderer
 
 namespace resource
@@ -57,6 +57,7 @@ namespace resource
     template<class TResource, class TResourceLoader>
     TResource* ResourceLoaderManager::composeShader(renderer::Context* context, const std::string name, const renderer::ShaderHeader* header, const stream::Stream* stream)
     {
+        static_assert(std::is_same<TResource, renderer::Shader>(), "wrong type");
         std::string innerName(name);
         std::transform(name.begin(), name.end(), innerName.begin(), ::tolower);
 
@@ -101,6 +102,7 @@ namespace resource
     template<class TResource, class TResourceLoader>
     TResource* ResourceLoaderManager::loadShader(renderer::Context* context, std::string filename, std::vector<std::pair<std::string, std::string>> defines, u32 flags)
     {
+        static_assert(std::is_same<TResource, renderer::Shader>(), "wrong type");
         std::string innerName(filename);
         std::transform(filename.begin(), filename.end(), innerName.begin(), ::tolower);
 

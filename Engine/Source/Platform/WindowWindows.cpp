@@ -84,7 +84,9 @@ bool WindowWindows::initialize()
     }
 
     ShowWindow(m_hWnd, SW_SHOWNORMAL);
-
+#ifdef USE_LOGGER
+    ShowWindow(GetConsoleWindow(), SW_HIDE);
+#endif //USE_LOGGER
     LOG_DEBUG("WindowWindows::initialize: HWND created, window %llx, handle %llx", this, m_hWnd);
     return true;
 }
@@ -473,7 +475,6 @@ LRESULT WindowWindows::WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lP
         SetWindowLongPtr(hWnd, GWLP_USERDATA, (LONG_PTR)cs->lpCreateParams);
 
         SetTimer(hWnd, s_timer_ID, 1000, NULL); //milliseconds
-
         return TRUE;
     }
     else

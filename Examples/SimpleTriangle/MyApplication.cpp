@@ -9,7 +9,6 @@
 #include "Renderer/Object/RenderTargetState.h"
 #include "Renderer/Formats.h"
 
-
 using namespace v3d;
 using namespace v3d::platform;
 using namespace v3d::utils;
@@ -30,19 +29,12 @@ MyApplication::MyApplication(int& argc, char** argv)
     m_InputEventHandler = new InputEventHandler();
     m_InputEventHandler->connect([this](const MouseInputEvent* event)
     {
-        if (event->_event == MouseInputEvent::MousePressDown || event->_event == MouseInputEvent::MouseDoubleClick)
-        {
-
-        }
+            SimpleTriangle::dispachEvent(m_Triangle, m_InputEventHandler, event);
     });
 
     m_InputEventHandler->connect([this](const TouchInputEvent* event)
     {
-
-        if (event->_event == TouchInputEvent::TouchTypeEvent::TouchMotion && event->_motionEvent == TouchInputEvent::TouchMotionDown)
-        {
-
-        }
+            SimpleTriangle::dispachEvent(m_Triangle, m_InputEventHandler, event);
     });
 
     std::srand(u32(std::time(0)));
@@ -87,7 +79,7 @@ bool MyApplication::Running(renderer::CommandList& commandList)
     //Frame
     commandList.beginFrame();
 
-    m_Triangle->update();
+    m_Triangle->update(0);
     m_Triangle->render();
 
     commandList.endFrame();

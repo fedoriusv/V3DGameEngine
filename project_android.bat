@@ -102,6 +102,7 @@ if "%2" == "" (
     
     xcopy /Y Examples\%2\AndroidManifest.xml Project\Android\Examples\%2
     xcopy /Y Examples\%2\build.gradle Project\Android\Examples\%2
+    xcopy /Y Examples\%2\gradle.properties Project\Android\Examples\%2
     xcopy /Y /F /S Examples\%2\res Project\Android\Examples\%2\res\
     
 	if "%C_BUILD_TYPE%" == "Debug" (
