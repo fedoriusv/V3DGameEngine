@@ -57,7 +57,7 @@ void CameraArcballHelper::update(f32 deltaTime)
     }
 }
 
-void CameraArcballHelper::handlerCallback(v3d::event::InputEventHandler* handler, const event::MouseInputEvent* event)
+void CameraArcballHelper::handlerMouseCallback(v3d::event::InputEventHandler* handler, const event::MouseInputEvent* event)
 {
     static core::Point2D position = event->_cursorPosition;
     static f32 wheel = event->_wheelValue;
@@ -106,6 +106,46 @@ void CameraArcballHelper::handlerCallback(v3d::event::InputEventHandler* handler
 
     position = event->_cursorPosition;
     wheel = event->_wheelValue;
+}
+
+void CameraArcballHelper::handlerTouchCallback(v3d::event::InputEventHandler* handler, const event::TouchInputEvent* event)
+{
+    static core::Point2D position = event->_position;
+
+    if (event->_event == event::TouchInputEvent::TouchMotion)
+    {
+        if (event->_motionEvent == event::TouchInputEvent::TouchMotionMove && handler->isScreenTouched())
+        {
+            LOG_DEBUG("CameraArcballHelper Log: pos %d, %d, _motionEvent %d", event->_position.x, event->_position.y, event->_motionEvent);
+
+            if (!handler->isMultiScreenTouch())
+            {
+                core::Point2D positionDelta = position - event->_position;
+
+                core::Vector3D rotation = CameraArcballHelper::getRotation();
+                rotation.x += positionDelta.y * k_rotationSpeed;
+                rotation.y += positionDelta.x * k_rotationSpeed;
+                CameraArcballHelper::setRotation(rotation);
+            }
+            else if (handler->isMultiScreenTouch())
+            {
+                s32 positionDelta = position.y - event->_position.y;
+                core::Vector3D postion = CameraHelper::getPosition();
+                f32 newZPos = postion.z + (positionDelta * k_zoomSpeed * 0.1f);
+                if (k_signZ < 0)
+                {
+                    postion.z = std::clamp(newZPos, k_signZ * CameraHelper::getCamera().getFarValue(), k_signZ * CameraHelper::getCamera().getNearValue());
+                }
+                else
+                {
+                    postion.z = std::clamp(newZPos, CameraHelper::getCamera().getNearValue(), CameraHelper::getCamera().getFarValue());
+                }
+                CameraHelper::setPosition(postion);
+            }
+        }
+    }
+
+    position = event->_position;
 }
 
 } //namespace scene

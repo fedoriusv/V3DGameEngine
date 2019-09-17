@@ -283,6 +283,7 @@ bool VulkanSwapchain::createSwapchain(const SwapchainConfig& config)
         ASSERT(m_surfaceCaps.minImageCount <= config._countSwapchainImages && config._countSwapchainImages <= m_surfaceCaps.maxImageCount, "range out");
         desiredNumberOfSwapchainImages = std::clamp(config._countSwapchainImages, m_surfaceCaps.minImageCount, m_surfaceCaps.maxImageCount);
     }
+    LOG_DEBUG("SwapChainVK::createSwapChain swapchain images count(min %u, max: %u), chosen: %u", m_surfaceCaps.minImageCount, m_surfaceCaps.maxImageCount, desiredNumberOfSwapchainImages);
 
     // Find the transformation of the surface
     VkSurfaceTransformFlagBitsKHR preTransform;

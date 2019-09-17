@@ -264,14 +264,17 @@ int32_t WindowAndroid::handleInputCallback(struct android_app* app, AInputEvent*
     {
         case AINPUT_EVENT_TYPE_MOTION:
         {
+            s32 id = AMotionEvent_getPointerId(inputEvent, 0);
             s32 action = AMotionEvent_getAction(inputEvent);
+            u32 countPointers = AMotionEvent_getPointerCount(inputEvent);
+            u32 pointers = (action & AMOTION_EVENT_ACTION_POINTER_INDEX_MASK) >> AMOTION_EVENT_ACTION_POINTER_INDEX_SHIFT;
             f32 x = AMotionEvent_getX(inputEvent, 0);
             f32 y = AMotionEvent_getY(inputEvent, 0);
-            LOG_DEBUG("WindowAndroid::handleInputCallback: event AINPUT_EVENT_TYPE_MOTION: x: %f, y: %f, motion flag %d", x, y, action);
+            //LOG_DEBUG("WindowAndroid::handleInputCallback: ID: %d event AINPUT_EVENT_TYPE_MOTION: x: %f, y: %f, motion flag %d, count %d, pointers %d", id, x, y, action, countPointers, pointers);
 
             auto getMotionAction = [](s32 action) -> event::TouchInputEvent::TouchMotionEvent
             {
-                switch(action)
+                switch(action & AMOTION_EVENT_ACTION_MASK)
                 {
                     case AMOTION_EVENT_ACTION_DOWN:
                         return event::TouchInputEvent::TouchMotionDown;
@@ -279,7 +282,10 @@ int32_t WindowAndroid::handleInputCallback(struct android_app* app, AInputEvent*
                         return event::TouchInputEvent::TouchMotionUp;
                     case AMOTION_EVENT_ACTION_MOVE:
                         return event::TouchInputEvent::TouchMotionMove;
-
+                    case AMOTION_EVENT_ACTION_POINTER_DOWN:
+                        return event::TouchInputEvent::TouchMotionMultiTouchDown;
+                    case AMOTION_EVENT_ACTION_POINTER_UP:
+                        return event::TouchInputEvent::TouchMotionMultiTouchUp;
                     case AMOTION_EVENT_ACTION_SCROLL:
                         return event::TouchInputEvent::TouchMotionScroll;
 
@@ -293,6 +299,7 @@ int32_t WindowAndroid::handleInputCallback(struct android_app* app, AInputEvent*
             event->_motionEvent = getMotionAction(action);
             event->_position.x = static_cast<u32>(x);
             event->_position.y = static_cast<u32>(y);
+            event->_pointers = pointers;
 
             event->_keyEvent = event::TouchInputEvent::TouchKeyPressUnknown;
             event->_key = event::KeyCode::KeyUknown;

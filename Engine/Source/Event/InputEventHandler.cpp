@@ -11,6 +11,7 @@ InputEventHandler::InputEventHandler()
     : m_gamepadStates(0U)
     , m_mousePosition({ 0, 0 })
     , m_mouseWheel(0.0f)
+
 {
     resetKeyPressed();
 }
@@ -33,6 +34,13 @@ void InputEventHandler::resetKeyPressed()
     }
     m_mousePosition = { 0,0 };
     m_mouseWheel = 0.0f;
+
+    for (u32 index = 0; index < k_maxTouchScreenFingers; ++index)
+    {
+        m_touchScreenStates[index] = false;
+    }
+    m_touchScreen = false;
+    m_multiScreenTouch = false;
 }
 
 void InputEventHandler::applyModifiers(KeyboardInputEvent* event)
@@ -99,6 +107,19 @@ void InputEventHandler::applyModifiers(TouchInputEvent* event)
     {
         event->_modifers |= KeyModifierCode::KeyModifier_Shift;
     }
+}
+
+void InputEventHandler::applyTouches(u32 mask, bool isPressed)
+{
+    //TODO
+    /*u32 value = k_maxTouchScreenFingers - 1;
+    for (u32 index = 0; index < k_maxTouchScreenFingers; ++index)
+    {
+        if ((value & mask) == index)
+        {
+            m_touchScreenStates[index] = isPressed;
+        }
+    }*/
 }
 
 bool InputEventHandler::onEvent(Event* ev)
@@ -242,6 +263,29 @@ bool InputEventHandler::onEvent(Event* ev)
         else if (touchEvent->_event == TouchInputEvent::TouchMotion)
         {
             m_mousePosition = touchEvent->_position;
+            switch(touchEvent->_motionEvent)
+            {
+                case TouchInputEvent::TouchMotionEvent::TouchMotionDown:
+                    m_touchScreen = true;
+                    break;
+
+                case TouchInputEvent::TouchMotionEvent::TouchMotionMultiTouchDown:
+                    applyTouches(touchEvent->_pointers, true);
+                    m_multiScreenTouch = true;
+                    break;
+
+                case TouchInputEvent::TouchMotionEvent::TouchMotionUp:
+                    m_touchScreen = false;
+                    break;
+
+                case TouchInputEvent::TouchMotionEvent::TouchMotionMultiTouchUp:
+                    applyTouches(touchEvent->_pointers, false);
+                    m_multiScreenTouch = false;
+                    break;
+
+                default:
+                    break;
+            }
         }
 
         for (std::vector<TouchScreenCallback>::const_iterator iter = m_touchHandlerCallbacks.cbegin(); iter != m_touchHandlerCallbacks.cend(); ++iter)
@@ -321,6 +365,24 @@ bool InputEventHandler::isGamepadPressed(const GamepadInputEvent::GamepadButton&
     }
 
     return (m_gamepadStates & (1 << code)) ? true : false;
+}
+
+bool InputEventHandler::isScreenTouched(s16 pointer) const
+{
+    if (pointer < 0)
+    {
+        return m_touchScreen;
+    }
+    else
+    {
+        ASSERT(pointer < k_maxTouchScreenFingers, "range out");
+        return m_touchScreenStates[pointer];
+    }
+}
+
+bool InputEventHandler::isMultiScreenTouch() const
+{
+    return m_multiScreenTouch;
 }
 
 const core::Point2D& InputEventHandler::getCursorPosition() const

@@ -216,14 +216,14 @@ bool SimpleTriangle::handleInputEvent(v3d::event::InputEventHandler* handler, co
     if (event->_eventType == event::InputEvent::InputEventType::MouseInputEvent)
     {
         const event::MouseInputEvent* mouseEvent = static_cast<const event::MouseInputEvent*>(event);
-        m_Camera->handlerCallback(handler, mouseEvent);
+        m_Camera->handlerMouseCallback(handler, mouseEvent);
 
         return true;
     }
     else if (event->_eventType == event::InputEvent::InputEventType::TouchInputEvent)
     {
         const event::TouchInputEvent* touchEvent = static_cast<const event::TouchInputEvent*>(event);
-        //m_Camera->handlerCallback(handler, touchEvent);
+        m_Camera->handlerTouchCallback(handler, touchEvent);
 
         return true;
     }

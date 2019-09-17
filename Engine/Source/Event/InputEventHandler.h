@@ -41,10 +41,15 @@ namespace event
 
         bool isGamepadPressed(const GamepadInputEvent::GamepadButton& code) const;
 
+        bool isScreenTouched(s16 pointer = -1) const;
+        bool isMultiScreenTouch() const;
+
         const core::Point2D& getCursorPosition() const;
         f32 getMouseWheel() const;
 
     private:
+
+        static const u32 k_maxTouchScreenFingers = 8;
 
         bool onEvent(Event* event) override;
         void resetKeyPressed();
@@ -53,8 +58,15 @@ namespace event
         void applyModifiers(MouseInputEvent* event);
         void applyModifiers(TouchInputEvent * event);
 
+        void applyTouches(u32 mask, bool isPressed);
+
         bool                            m_keysPressed[Key_Codes_Count];
         bool                            m_mouseStates[MouseInputEvent::MouseCount];
+
+        bool                            m_touchScreenStates[k_maxTouchScreenFingers];
+        bool                            m_touchScreen;
+        bool                            m_multiScreenTouch;
+        
         u32                             m_gamepadStates;
 
         core::Point2D                   m_mousePosition;

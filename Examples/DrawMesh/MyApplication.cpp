@@ -47,11 +47,11 @@ MyApplication::MyApplication(int& argc, char** argv)
     m_Window = Window::createWindow(widowsSize, {800, 500}, false, new v3d::event::InputEventReceiver());
     ASSERT(m_Window, "windows is nullptr");
 
-    m_Camera = new CameraArcballHelper(new Camera(core::Vector3D(0.0f, 0.0f, 0.0f), core::Vector3D(0.0f, -1.0f, 0.0f)), 10.0f);
-    m_Camera->setPerspective(45.0f, widowsSize, 0.1f, 50.f);
+    m_Camera = new CameraArcballHelper(new Camera(core::Vector3D(0.0f, 0.0f, 0.0f), core::Vector3D(0.0f, -1.0f, 0.0f)), 5.0f);
+    m_Camera->setPerspective(45.0f, widowsSize, 1.f, 5.f);
 
     m_InputEventHandler = new InputEventHandler();
-    m_InputEventHandler->connect(std::bind(&CameraArcballHelper::handlerCallback, m_Camera, m_InputEventHandler, std::placeholders::_1));
+    m_InputEventHandler->connect(std::bind(&CameraArcballHelper::handlerMouseCallback, m_Camera, m_InputEventHandler, std::placeholders::_1));
 
     m_Window->getInputEventReceiver()->attach(InputEvent::InputEventType::MouseInputEvent, m_InputEventHandler);
 }

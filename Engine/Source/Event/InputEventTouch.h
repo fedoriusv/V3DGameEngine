@@ -37,6 +37,8 @@ namespace event
             TouchMotionDown,
             TouchMotionUp,
             TouchMotionMove,
+            TouchMotionMultiTouchDown,
+            TouchMotionMultiTouchUp,
             TouchMotionScroll,
 
             TouchMotionCount
@@ -52,6 +54,7 @@ namespace event
         TouchKeyPressEvent      _keyEvent;
         core::Point2D           _position;
         KeyCode                 _key;
+        u16                     _pointers;
         u8                      _modifers;
 
     };
