@@ -78,7 +78,7 @@ namespace renderer
         explicit FramebufferManager(Context *context) noexcept;
         ~FramebufferManager();
 
-        Framebuffer* acquireFramebuffer(const RenderPass* renderpass, const std::vector<Image*> images, const core::Dimension2D& area);
+        std::tuple<Framebuffer*, bool> acquireFramebuffer(const RenderPass* renderpass, const std::vector<Image*> images, const core::Dimension2D& area);
         bool removeFramebuffer(Framebuffer* framebufer);
         void clear();
 

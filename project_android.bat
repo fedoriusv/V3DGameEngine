@@ -91,8 +91,11 @@ if "%2" == "" (
     
     cmake --build .
     cd ..\..
-    goto end
     
+    echo Examples list:
+    for /F %%i in (ExamplesList.txt) do @echo -- %%i
+    goto end
+
 :pack
     echo Pack
     if not exist Project\Android\Examples\%2 (
@@ -112,7 +115,7 @@ if "%2" == "" (
     )
 	
     
-    REM fix build error
+    rem fix build error
     set ANDROID_NDK=""
     set ANDROID_NDK_HOME=""
     

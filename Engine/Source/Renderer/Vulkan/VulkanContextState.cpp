@@ -65,7 +65,7 @@ bool VulkanContextState::isCurrentFramebuffer(const VulkanFramebuffer * framebuf
     }
     else
     {
-        for (auto framebuff : m_currentFramebuffer.first)
+        for (auto& framebuff : m_currentFramebuffer.first)
         {
             if (framebuff == framebuffer)
             {
@@ -104,7 +104,7 @@ bool VulkanContextState::setCurrentFramebuffer(VulkanFramebuffer * framebuffer)
 
 bool VulkanContextState::setCurrentFramebuffer(std::vector<VulkanFramebuffer*>& framebuffers)
 {
-    bool changed = !VulkanContextState::isCurrentFramebuffer(framebuffers[0]);
+    bool changed = !VulkanContextState::isCurrentFramebuffer(framebuffers.back());
     m_currentFramebuffer.first = std::move(framebuffers);
     m_currentFramebuffer.second = changed;
 

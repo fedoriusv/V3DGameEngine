@@ -80,7 +80,8 @@
         "cwctype": "cpp",
         "optional": "cpp",
         "string_view": "cpp",
-        "android_native_app_glue.h": "c"
+        "android_native_app_glue.h": "c",
+        "memory_resource": "cpp"
     },
     "C_Cpp.errorSquiggles": "Disabled"
 }

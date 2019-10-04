@@ -188,7 +188,7 @@ void VulkanGraphicContext::presentFrame()
 
     invalidateStates();
 
-    m_frameCounter++;
+    ++m_frameCounter;
 }
 
 void VulkanGraphicContext::submit(bool wait)
@@ -282,6 +282,7 @@ void VulkanGraphicContext::setScissor(const core::Rect32 & scissor)
 
 void VulkanGraphicContext::setRenderTarget(const RenderPass::RenderPassInfo * renderpassInfo, const Framebuffer::FramebufferInfo* framebufferInfo)
 {
+    LOG_DEBUG("VulkanGraphicContext::setRenderTarget");
     ASSERT(renderpassInfo && framebufferInfo, "nullptr");
 
     RenderPass* renderpass = m_renderpassManager->acquireRenderPass(renderpassInfo->_value._desc);
@@ -289,15 +290,16 @@ void VulkanGraphicContext::setRenderTarget(const RenderPass::RenderPassInfo * re
     renderpassInfo->_tracker->attach(renderpass);
     VulkanRenderPass* vkRenderpass = static_cast<VulkanRenderPass*>(renderpass);
 
-    std::vector<VulkanFramebuffer*> vkFramebuffer;
-    bool swapchainPresnet = std::find(framebufferInfo->_images.cbegin(), framebufferInfo->_images.cend(), nullptr) != framebufferInfo->_images.cend();
-    if (swapchainPresnet)
+    std::vector<VulkanFramebuffer*> vkFramebuffers;
+    bool swapchainPresent = std::find(framebufferInfo->_images.cbegin(), framebufferInfo->_images.cend(), nullptr) != framebufferInfo->_images.cend();
+    if (swapchainPresent)
     {
         for (u32 index = 0; index < m_swapchain->getSwapchainImageCount(); ++index)
         {
             std::vector<Image*> images;
             images.reserve(framebufferInfo->_images.size());
             Image* swapchainImage = m_swapchain->getSwapchainImage(index);
+            LOG_DEBUG("VulkanGraphicContext::setRenderTarget: swapchainImage[%u] %llx", index, swapchainImage);
             for (auto iter = framebufferInfo->_images.begin(); iter < framebufferInfo->_images.end(); ++iter)
             {
                 if (*iter == nullptr)
@@ -308,21 +310,32 @@ void VulkanGraphicContext::setRenderTarget(const RenderPass::RenderPassInfo * re
                 images.push_back(*iter);
             }
 
-            Framebuffer* framebuffer = m_framebuferManager->acquireFramebuffer(renderpass, images, framebufferInfo->_clearInfo._size);
+            auto [framebuffer, isNewFramebuffer] = m_framebuferManager->acquireFramebuffer(renderpass, images, framebufferInfo->_clearInfo._size);
             ASSERT(framebuffer, "framebuffer is nullptr");
+
             framebufferInfo->_tracker->attach(framebuffer);
-            vkFramebuffer.push_back(static_cast<VulkanFramebuffer*>(framebuffer));
+            vkFramebuffers.push_back(static_cast<VulkanFramebuffer*>(framebuffer));
+            LOG_DEBUG("VulkanGraphicContext::setRenderTarget: Framebuffer %llx is isNewFramebuffer %d", framebuffer, isNewFramebuffer);
+            if (isNewFramebuffer)
+            {
+                m_swapchain->attachResource(static_cast<VulkanFramebuffer*>(framebuffer), std::bind(&VulkanGraphicContext::removeFramebuffer, this, framebuffer));
+            }
         }
     }
     else
     {
-        Framebuffer* framebuffer = m_framebuferManager->acquireFramebuffer(renderpass, framebufferInfo->_images, framebufferInfo->_clearInfo._size);
+        Framebuffer* framebuffer = nullptr;
+        std::tie(framebuffer, std::ignore) = m_framebuferManager->acquireFramebuffer(renderpass, framebufferInfo->_images, framebufferInfo->_clearInfo._size);
         ASSERT(framebuffer, "framebuffer is nullptr");
+
         framebufferInfo->_tracker->attach(framebuffer);
-        vkFramebuffer.push_back(static_cast<VulkanFramebuffer*>(framebuffer));
+        vkFramebuffers.push_back(static_cast<VulkanFramebuffer*>(framebuffer));
     }
 
-    if (!m_currentContextState->isCurrentRenderPass(vkRenderpass) || !m_currentContextState->isCurrentFramebuffer(vkFramebuffer.back()) /*|| clearInfo*/)
+#if VULKAN_DEBUG
+    LOG_DEBUG("VulkanGraphicContext::setRenderTarget: Renderpass %llx, Framebuffer %llx", vkRenderpass, vkFramebuffers.back());
+#endif //VULKAN_DEBUG
+    if (!m_currentContextState->isCurrentRenderPass(vkRenderpass) || !m_currentContextState->isCurrentFramebuffer(vkFramebuffers.back()) /*|| clearInfo*/)
     {
         if (m_currentBufferState.isCurrentBufferAcitve(CommandTargetType::CmdDrawBuffer))
         {
@@ -335,7 +348,7 @@ void VulkanGraphicContext::setRenderTarget(const RenderPass::RenderPassInfo * re
 
         //TODO use penging states
         m_currentContextState->setCurrentRenderPass(vkRenderpass);
-        m_currentContextState->setCurrentFramebuffer(vkFramebuffer);
+        m_currentContextState->setCurrentFramebuffer(vkFramebuffers);
 
         VkRect2D area;
         area.offset = { 0, 0 };
@@ -382,11 +395,13 @@ void VulkanGraphicContext::removeFramebuffer(Framebuffer * framebuffer)
     {
         m_resourceDeleter.addResourceToDelete(vkFramebuffer, [this, vkFramebuffer](VulkanResource* resource) -> void
         {
+             LOG_DEBUG("VulkanGraphicContext::removeFramebuffer: Framebuffer %llx delayed", vkFramebuffer);
             m_framebuferManager->removeFramebuffer(vkFramebuffer);
         });
     }
     else
     {
+        LOG_DEBUG("VulkanGraphicContext::removeFramebuffer: Framebuffer %llx", vkFramebuffer);
         m_framebuferManager->removeFramebuffer(vkFramebuffer);
     }
 }
@@ -450,6 +465,9 @@ void VulkanGraphicContext::removePipeline(Pipeline * pipeline)
 
 Image * VulkanGraphicContext::createImage(renderer::Format format, const core::Dimension3D& dimension, TextureSamples samples, TextureUsageFlags flags)
 {
+#if VULKAN_DEBUG
+    LOG_DEBUG("VulkanGraphicContext::createImage");
+#endif //VULKAN_DEBUG
     VkFormat vkFormat = VulkanImage::convertImageFormatToVkFormat(format);
     VkExtent3D vkExtent = { dimension.width, dimension.height, dimension.depth };
     VkSampleCountFlagBits vkSamples = VulkanImage::convertRenderTargetSamplesToVkSampleCount(samples);
@@ -459,6 +477,9 @@ Image * VulkanGraphicContext::createImage(renderer::Format format, const core::D
 
 Image * VulkanGraphicContext::createImage(TextureTarget target, renderer::Format format, const core::Dimension3D& dimension, u32 layers, u32 mipLevels, TextureUsageFlags flags)
 {
+#if VULKAN_DEBUG
+    LOG_DEBUG("VulkanGraphicContext::createImage");
+#endif //VULKAN_DEBUG
     VkImageType vkType = VulkanImage::convertTextureTargetToVkImageType(target);
     VkFormat vkFormat = VulkanImage::convertImageFormatToVkFormat(format);
     VkExtent3D vkExtent = { dimension.width, dimension.height, dimension.depth };
@@ -490,6 +511,9 @@ void VulkanGraphicContext::removeImage(Image * image)
 
 Buffer * VulkanGraphicContext::createBuffer(Buffer::BufferType type, u16 usageFlag, u64 size)
 {
+#if VULKAN_DEBUG
+    LOG_DEBUG("VulkanGraphicContext::createBuffer");
+#endif //VULKAN_DEBUG
     if (type == Buffer::BufferType::BufferType_VertexBuffer || type == Buffer::BufferType::BufferType_IndexBuffer || type == Buffer::BufferType::BufferType_UniformBuffer)
     {
         return new VulkanBuffer(m_bufferMemoryManager, m_deviceInfo._device, type, usageFlag, size);
@@ -557,6 +581,9 @@ void VulkanGraphicContext::transitionImages(const std::vector<Image*>& images, T
 
 void VulkanGraphicContext::draw(const StreamBufferDescription& desc, u32 firstVertex, u32 vertexCount, u32 firstInstance, u32 instanceCount)
 {
+#if VULKAN_DEBUG
+    LOG_DEBUG("VulkanGraphicContext::draw");
+#endif //VULKAN_DEBUG
     bool changed = m_currentContextState->setCurrentVertexBuffers(desc);
 
     ASSERT(m_currentBufferState.isCurrentBufferAcitve(CommandTargetType::CmdDrawBuffer), "nullptr");
@@ -580,6 +607,9 @@ void VulkanGraphicContext::draw(const StreamBufferDescription& desc, u32 firstVe
 
 void VulkanGraphicContext::drawIndexed(const StreamBufferDescription & desc, u32 firstIndex, u32 indexCount, u32 firstInstance, u32 instanceCount)
 {
+#if VULKAN_DEBUG
+    LOG_DEBUG("VulkanGraphicContext::drawIndexed");
+#endif //VULKAN_DEBUG
     bool changed = m_currentContextState->setCurrentVertexBuffers(desc);
 
     ASSERT(m_currentBufferState.isCurrentBufferAcitve(CommandTargetType::CmdDrawBuffer), "nullptr");
@@ -671,18 +701,18 @@ bool VulkanGraphicContext::initialize()
 
     if (!VulkanGraphicContext::createInstance())
     {
-        LOG_FATAL("VulkanGraphicContext::createInstance failed");
+        LOG_FATAL("VulkanGraphicContext::createInstance is failed");
 
-        ASSERT(false, "createInstance failed");
+        ASSERT(false, "createInstance is failed");
         return false;
     }
 
     if (!VulkanGraphicContext::createDevice())
     {
-        LOG_FATAL("VulkanGraphicContext::createDevice failed");
+        LOG_FATAL("VulkanGraphicContext::createDevice is failed");
         VulkanGraphicContext::destroy();
 
-        ASSERT(false, "createDevice failed");
+        ASSERT(false, "createDevice is failed");
         return false;
     }
 

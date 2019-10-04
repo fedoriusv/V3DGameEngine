@@ -41,12 +41,12 @@ endif()
 
 if(TARGET_WIN AND WIN32)
     message(STATUS "Platform Windows")
-	include(Config/Windows64.cmake)
+    include(Config/Windows64.cmake)
     add_definitions(-D_WINAPI -DUNICODE -D_UNICODE)
 elseif(TARGET_ANDROID)
     message(STATUS "Platform Android")
-	include(Config/Android.cmake)
-	set(BUILD_DIRECTX_SDK OFF)
+    include(Config/Android.cmake)
+    set(BUILD_DIRECTX_SDK OFF)
     add_definitions(-D_ANDROID -DUNICODE -D_UNICODE)
 else()
     message(FATAL_ERROR "Unknown platform. Only Platform Windows | Android supported")
@@ -62,8 +62,8 @@ endif()
 set(SOURCE_DIR Engine/Source)
 set(ENGINE_PROJECT_DIR ${PROJECT_SOURCE_DIR})
 set(LIB_INCLUDE_DIRECTORY 
-	${ENGINE_PROJECT_DIR}/${SOURCE_DIR} 
-	${ENGINE_PROJECT_DIR}/${SOURCE_DIR}/ThirdParty)
+    ${ENGINE_PROJECT_DIR}/${SOURCE_DIR} 
+    ${ENGINE_PROJECT_DIR}/${SOURCE_DIR}/ThirdParty)
 
 set(EXTRA_LIB_DEFINE "")
 #Crc32c	
@@ -71,18 +71,18 @@ set(LIB_INCLUDE_DIRECTORY ${LIB_INCLUDE_DIRECTORY} ${ENGINE_PROJECT_DIR}/Engine/
 
 #Assimp
 if(ASSIMP_LIB)
-	set(LIB_INCLUDE_DIRECTORY ${LIB_INCLUDE_DIRECTORY} ${ENGINE_PROJECT_DIR}/Engine/Libs/assimp/include)
-	set(EXTRA_LIB_DEFINE "${EXTRA_LIB_DEFINE} -DUSE_ASSIMP")
+    set(LIB_INCLUDE_DIRECTORY ${LIB_INCLUDE_DIRECTORY} ${ENGINE_PROJECT_DIR}/Engine/Libs/assimp/include)
+    set(EXTRA_LIB_DEFINE "${EXTRA_LIB_DEFINE} -DUSE_ASSIMP")
 endif()
 #Stb
 if(STB_LIB)
-	set(EXTRA_LIB_DEFINE "${EXTRA_LIB_DEFINE} -DUSE_STB")
+    set(EXTRA_LIB_DEFINE "${EXTRA_LIB_DEFINE} -DUSE_STB")
 endif()
 #Gli
 if(GIL_LIB)
-	set(EXTRA_LIB_DEFINE "${EXTRA_LIB_DEFINE} -DUSE_GLI")
+    set(EXTRA_LIB_DEFINE "${EXTRA_LIB_DEFINE} -DUSE_GLI")
 endif()
- 
+
 #Configuration
 ##############################################################
 set(INCLUDE_DIRECTORY_PATHES "")
@@ -137,13 +137,13 @@ endif()
 #DirectX
 if (BUILD_DIRECTX_SDK)
     set(DIRECTX_SDK_DEFINE "-DD3D_RENDER")
-#	set(DIRECTX_SDK_PATH $ENV{DXSDK_DIR})
-#	if ("${DIRECTX_SDK_PATH}" STREQUAL "")
-#		message(FATAL_ERROR "DirectX SDK not found. Please add DXSDK_DIR to system variable")
+#   set(DIRECTX_SDK_PATH $ENV{DXSDK_DIR})
+#   if ("${DIRECTX_SDK_PATH}" STREQUAL "")
+#       message(FATAL_ERROR "DirectX SDK not found. Please add DXSDK_DIR to system variable")
 #    endif()
-#	set(DIRECTX_SDK_INCLUDE_DIRECTORY "${DIRECTX_SDK_PATH}/Include")
-#    set(DIRECTX_SDK_LIB_DIRECTORY "${DIRECTX_SDK_PATH}/Lib")
-#    message("-- DirectX SDK Path " ${DIRECTX_SDK_PATH})
+#   set(DIRECTX_SDK_INCLUDE_DIRECTORY "${DIRECTX_SDK_PATH}/Include")
+#   set(DIRECTX_SDK_LIB_DIRECTORY "${DIRECTX_SDK_PATH}/Lib")
+#   message("-- DirectX SDK Path " ${DIRECTX_SDK_PATH})
 endif()
 
 #Compiler Flags
@@ -322,10 +322,10 @@ endif()
 #Examples
 ##############################################################
 if (BUILD_EXAMPLES)
-#	set(BUILD_PROJECTS #[[1.CreateWindow 2.ClearColor]] 3.DrawMesh 4.DrawScene 5.Test)
-	file (READ "ExamplesList.txt" STRING_BUILD_EXAMPLES)
-	string(REPLACE "\n" ";" BUILD_EXAMPLES ${STRING_BUILD_EXAMPLES})
-	
+#   set(BUILD_PROJECTS #[[1.CreateWindow 2.ClearColor]] 3.DrawMesh 4.DrawScene 5.Test)
+    file (READ "ExamplesList.txt" STRING_BUILD_EXAMPLES)
+    string(REPLACE "\n" ";" BUILD_EXAMPLES ${STRING_BUILD_EXAMPLES})
+
     message(STATUS "----------------")
     message(STATUS "Create Examples:")
     foreach (PROJ ${BUILD_EXAMPLES})
@@ -346,9 +346,13 @@ endif()
 #install external libs
 ##############################################################
 
-if (WIN32 AND SPIRV_INSTALL_FROM_GITHUB)
+if (SPIRV_INSTALL_FROM_GITHUB AND WIN32)
     message(STATUS "Installing SPIRV:")
-    execute_process(COMMAND ${SPIRV_FOLDER}/install.bat WORKING_DIRECTORY ${SPIRV_FOLDER})
+    if (TARGET_WIN)
+        execute_process(COMMAND ${SPIRV_FOLDER}/install_windows_platform.bat WORKING_DIRECTORY ${SPIRV_FOLDER})
+    elseif (TARGET_ANDROID)
+        execute_process(COMMAND ${SPIRV_FOLDER}/install_android_platform.bat WORKING_DIRECTORY ${SPIRV_FOLDER})
+    endif()
     message(STATUS "SPIRV Installed")
 endif()
 ##############################################################

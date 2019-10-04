@@ -12,6 +12,7 @@ namespace renderer
 {
 namespace vk
 {
+    class VulkanResource;
     class VulkanImage;
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -42,6 +43,8 @@ namespace vk
 
         bool recteate(const SwapchainConfig& config);
 
+        void attachResource(VulkanResource* resource, const std::function<void(VulkanResource* resource)>& deleter);
+
         VulkanImage* getBackbuffer() const;
         VulkanImage* getSwapchainImage(u32 index) const;
         u32 getSwapchainImageCount() const;
@@ -66,6 +69,9 @@ namespace vk
         u32 m_currentSemaphoreIndex;
         std::vector<VkSemaphore> m_acquireSemaphore;
         std::vector<VkFence> m_acquireFence;
+
+        void freeAttachedResources();
+        std::vector<std::tuple<VulkanResource*, const std::function<void(VulkanResource*)>>> m_swapchainResources;
 
         SwapchainConfig m_config;
 

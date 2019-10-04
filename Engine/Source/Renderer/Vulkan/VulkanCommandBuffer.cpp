@@ -221,7 +221,7 @@ void VulkanCommandBuffer::endCommandBuffer()
     m_status = CommandBufferStatus::End;
 }
 
-void VulkanCommandBuffer::cmdBeginRenderpass(VulkanRenderPass* pass, VulkanFramebuffer* framebuffer, VkRect2D area, std::vector<VkClearValue>& clearValues)
+void VulkanCommandBuffer::cmdBeginRenderpass(const VulkanRenderPass* pass, const VulkanFramebuffer* framebuffer, const VkRect2D& area, const std::vector<VkClearValue>& clearValues)
 {
     ASSERT(m_status == CommandBufferStatus::Begin, "not started");
 
@@ -232,6 +232,8 @@ void VulkanCommandBuffer::cmdBeginRenderpass(VulkanRenderPass* pass, VulkanFrame
         VulkanImage* vkImage = static_cast<VulkanImage*>(image);
         vkImage->captureInsideCommandBuffer(this, 0);
     }
+
+    LOG_ERROR("VulkanCommandBuffer::cmdBeginRenderpass framebuffer %llx, handle %llu", framebuffer, framebuffer->getHandle());
 
     VkRenderPassBeginInfo renderPassBeginInfo = {};
     renderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
@@ -255,7 +257,6 @@ void VulkanCommandBuffer::cmdBeginRenderpass(VulkanRenderPass* pass, VulkanFrame
 	{
 		VulkanWrapper::CmdBeginRenderPass(m_command, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
 	}
-
 
     m_isInsideRenderPass = true;
 }

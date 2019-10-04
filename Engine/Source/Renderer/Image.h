@@ -2,6 +2,7 @@
 
 #include "Common.h"
 #include "Utils/Observable.h"
+#include "Utils/IndexGenerator.h"
 
 namespace v3d
 {
@@ -14,7 +15,7 @@ namespace renderer
     /**
     * Image base class. Render side
     */
-    class Image : public utils::Observable
+    class Image : public utils::Observable, public utils::IndexGenerator
     {
     public:
 

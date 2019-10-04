@@ -1,7 +1,8 @@
 #include "VulkanSwapchain.h"
 #include "VulkanGraphicContext.h"
-#include "VulkanDebug.h"
 #include "VulkanImage.h"
+#include "VulkanResource.h"
+#include "VulkanDebug.h"
 #include "Utils/Logger.h"
 
 #ifdef PLATFORM_ANDROID
@@ -323,7 +324,7 @@ bool VulkanSwapchain::createSwapchain(const SwapchainConfig& config)
         LOG_FATAL("VulkanSwapchain::createSwapChain: vkCreateSwapchainKHR. Error %s", ErrorString(result).c_str());
         return false;
     }
-    LOG_DEBUG("SwapChainVK::createSwapChain created");
+    LOG_DEBUG("SwapChainVK::createSwapChain has been created");
 
     return true;
 }
@@ -436,7 +437,7 @@ void VulkanSwapchain::present(VkQueue queue, const std::vector<VkSemaphore>& wai
     if (result == VK_ERROR_SURFACE_LOST_KHR || result == VK_SUBOPTIMAL_KHR || result == VK_ERROR_OUT_OF_DATE_KHR)
     {
         VulkanWrapper::DeviceWaitIdle(m_deviceInfo->_device);
-
+        freeAttachedResources();
 #ifdef PLATFORM_ANDROID
     ASSERT(g_nativeAndroidApp->window, "windows is nullptr");
 #endif //ANDROID_PLATFORM
@@ -464,7 +465,7 @@ u32 VulkanSwapchain::acquireImage()
     if (result == VK_ERROR_SURFACE_LOST_KHR || result == VK_SUBOPTIMAL_KHR || result == VK_ERROR_OUT_OF_DATE_KHR)
     {
         VulkanWrapper::DeviceWaitIdle(m_deviceInfo->_device);
-        
+        freeAttachedResources();
 #ifdef PLATFORM_ANDROID
     ASSERT(g_nativeAndroidApp->window, "windows is nullptr");
 #endif //ANDROID_PLATFORM
@@ -527,6 +528,20 @@ u32 VulkanSwapchain::getSwapchainImageCount() const
     return static_cast<u32>(m_swapBuffers.size());
 }
 
+void VulkanSwapchain::attachResource(VulkanResource* resource, const std::function<void(VulkanResource* resource)>& deleter)
+{
+    m_swapchainResources.emplace_back(resource, deleter);
+}
+
+void VulkanSwapchain::freeAttachedResources()
+{
+    for (auto& [resource, deleter] : m_swapchainResources)
+    {
+        deleter(resource);
+    }
+
+    m_swapchainResources.clear();
+}
 
 } //namespace vk
 } //namespace renderer

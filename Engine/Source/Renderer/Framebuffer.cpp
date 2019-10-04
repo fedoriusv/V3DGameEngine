@@ -30,9 +30,15 @@ FramebufferManager::~FramebufferManager()
     FramebufferManager::clear();
 }
 
-Framebuffer * FramebufferManager::acquireFramebuffer(const RenderPass* renderpass, const std::vector<Image*> images, const core::Dimension2D& area)
+std::tuple<Framebuffer*, bool> FramebufferManager::acquireFramebuffer(const RenderPass* renderpass, const std::vector<Image*> images, const core::Dimension2D& area)
 {
-    u32 hash = crc32c::Crc32c((char*)images.data(), images.size() * sizeof(Image*));
+    std::vector<u64> indexes(images.size());
+    std::for_each(images.cbegin(), images.cend(), [&indexes](const Image* img) -> void
+    {
+        indexes.push_back(img->index());
+    });
+    u32 hash = crc32c::Crc32c((char*)indexes.data(), indexes.size() * sizeof(u64));
+    //u32 hash = crc32c::Crc32c((char*)images.data(), images.size() * sizeof(Image*));
 
     Framebuffer* framebuffer = nullptr;
     auto found = m_framebufferList.emplace(hash, framebuffer);
@@ -47,18 +53,18 @@ Framebuffer * FramebufferManager::acquireFramebuffer(const RenderPass* renderpas
             m_framebufferList.erase(hash);
 
             ASSERT(false, "can't create framebuffer");
-            return nullptr;
+            return std::make_tuple(nullptr, false);
         }
         found.first->second = framebuffer;
         framebuffer->registerNotify(this);
 
-        return framebuffer;
+        return std::make_tuple(framebuffer, true);
     }
 
-    return found.first->second;
+    return std::make_tuple(found.first->second, false);
 }
 
-bool FramebufferManager::removeFramebuffer(Framebuffer * frameBuffer)
+bool FramebufferManager::removeFramebuffer(Framebuffer* frameBuffer)
 {
 
     auto iter = m_framebufferList.find(frameBuffer->m_key);
