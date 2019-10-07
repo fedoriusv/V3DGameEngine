@@ -264,9 +264,9 @@ int32_t WindowAndroid::handleInputCallback(struct android_app* app, AInputEvent*
     {
         case AINPUT_EVENT_TYPE_MOTION:
         {
-            s32 id = AMotionEvent_getPointerId(inputEvent, 0);
+            //s32 id = AMotionEvent_getPointerId(inputEvent, 0);
+            //u32 countPointers = AMotionEvent_getPointerCount(inputEvent);
             s32 action = AMotionEvent_getAction(inputEvent);
-            u32 countPointers = AMotionEvent_getPointerCount(inputEvent);
             u32 pointers = (action & AMOTION_EVENT_ACTION_POINTER_INDEX_MASK) >> AMOTION_EVENT_ACTION_POINTER_INDEX_SHIFT;
             f32 x = AMotionEvent_getX(inputEvent, 0);
             f32 y = AMotionEvent_getY(inputEvent, 0);

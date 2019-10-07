@@ -16,16 +16,16 @@ namespace resource
 
 ShaderSpirVDecoder::ShaderSpirVDecoder(const renderer::ShaderHeader& header, bool reflections) noexcept
     : m_header(header)
-    , m_reflections(reflections)
     , m_sourceVersion(0)
+    , m_reflections(reflections)
 {
 }
 
 ShaderSpirVDecoder::ShaderSpirVDecoder(std::vector<std::string> supportedExtensions, const renderer::ShaderHeader& header, bool reflections) noexcept
     : ResourceDecoder(supportedExtensions)
     , m_header(header)
-    , m_reflections(reflections)
     , m_sourceVersion(0)
+    , m_reflections(reflections)
 {
 }
 
@@ -493,7 +493,7 @@ bool ShaderSpirVDecoder::parseReflections(const std::vector<u32>& spirv, stream:
 #if USE_STRING_ID_SHADER
             block._name = name;
 #endif
-            u32 posMembers = stream->tell();
+            //u32 posMembers = stream->tell();
             u32 countMembers = 0;
             u32 membersSize = 0;
             u32 index = 0;
@@ -649,7 +649,7 @@ bool ShaderSpirVDecoder::parseReflections(const std::vector<u32>& spirv, stream:
             block._size = membersSize;
             block >> stream;
 
-            u32 posCurr = stream->tell();
+            //u32 posCurr = stream->tell();
             countMembers = index;
 
             ++buffID;

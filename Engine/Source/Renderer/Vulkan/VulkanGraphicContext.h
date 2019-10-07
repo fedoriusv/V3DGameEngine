@@ -172,12 +172,9 @@ namespace vk
                 return std::exchange(m_pipeline, nullptr);
             }
 
-
-
         private:
 
             VulkanGraphicPipeline* m_pipeline;
-
         };
         
 

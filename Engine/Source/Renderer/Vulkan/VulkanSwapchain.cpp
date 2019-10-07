@@ -79,14 +79,12 @@ VulkanSwapchain::~VulkanSwapchain()
 {
     LOG_DEBUG("VulkanSwapchain destructor %llx", this);
 
-    for (auto& semaphore : m_acquireSemaphore)
-    {
-        VulkanWrapper::DestroySemaphore(m_deviceInfo->_device, semaphore, VULKAN_ALLOCATOR);
-    }
-    m_acquireSemaphore.clear();
+    ASSERT(!m_ready, "doesnt deleted");
 
-    ASSERT(!m_surface, "surface isn't nullptr");
+    ASSERT(m_swapBuffers.empty(), "not empty");
     ASSERT(!m_swapchain, "swapchain is not nullptr");
+    ASSERT(m_acquireSemaphore.empty(), "not empty");
+    ASSERT(!m_surface, "surface isn't nullptr");
 }
 
 VkSurfaceKHR VulkanSwapchain::createSurface(VkInstance vkInstance, NativeInstance hInstance, NativeWindows hWnd)
@@ -109,7 +107,7 @@ VkSurfaceKHR VulkanSwapchain::createSurface(VkInstance vkInstance, NativeInstanc
     return false;
 #endif
 
-    LOG_DEBUG("VulkanSwapchain::createSurface created %llu", surface);
+    LOG_DEBUG("VulkanSwapchain::createSurface created %llx", surface);
     return surface;
 }
 
@@ -182,7 +180,6 @@ bool VulkanSwapchain::create(const SwapchainConfig& config)
         LOG_INFO("SurfaceFormat supported format: %d, colorspace: %d", surfaceFormat.format, surfaceFormat.colorSpace);
     });
 
-    u32 surfaceFormatIndex = 0;
     // If the surface format list only includes one entry with VK_FORMAT_UNDEFINED,
     // there is no preferered format, so we assume VK_FORMAT_B8G8R8A8_UNORM
     if ((surfaceFormatCount == 1) && (surfaceFormats[0].format == VK_FORMAT_UNDEFINED)) //???
@@ -191,10 +188,6 @@ bool VulkanSwapchain::create(const SwapchainConfig& config)
     }
     else
     {
-        // Always select the first available color format
-        // If you need a specific format (e.g. SRGB) you'd need to
-        // iterate over the list of available surface format and
-        // check for it's presence
         m_surfaceFormat.format = surfaceFormats[0].format;
     }
     m_surfaceFormat.colorSpace = surfaceFormats[0].colorSpace;
@@ -202,6 +195,8 @@ bool VulkanSwapchain::create(const SwapchainConfig& config)
 
     if (!VulkanSwapchain::createSwapchain(config))
     {
+         VulkanSwapchain::destroy();
+
         LOG_FATAL("VulkanSwapchain::createSwapchain Can not create swapchain");
         return false;
     }
@@ -355,22 +350,47 @@ bool VulkanSwapchain::createSwapchainImages(const SwapchainConfig& config)
         return false;
     }
 
-    m_swapBuffers.reserve(swapChainImageCount);
-    for (auto& image : images)
+    if (m_swapBuffers.empty())
     {
-        VkExtent3D extent = { config._size.width, config._size.height, 1 };
-        VulkanImage* swapchainImage = new VulkanImage(nullptr, m_deviceInfo->_device, m_surfaceFormat.format, extent, VK_SAMPLE_COUNT_1_BIT, 
-            TextureUsage::TextureUsage_Attachment | TextureUsage::TextureUsage_Sampled | TextureUsage::TextureUsage_Read);
-        if (!swapchainImage->create(image))
+        m_swapBuffers.reserve(swapChainImageCount);
+        for (auto& image : images)
         {
-            LOG_FATAL("VulkanSwapchain::createSwapchainImages: can't create surface texture");
+            VkExtent3D extent = { config._size.width, config._size.height, 1 };
+            VulkanImage* swapchainImage = new VulkanImage(nullptr, m_deviceInfo->_device, m_surfaceFormat.format, extent, VK_SAMPLE_COUNT_1_BIT, 
+                TextureUsage::TextureUsage_Attachment | TextureUsage::TextureUsage_Sampled | TextureUsage::TextureUsage_Read);
+            if (!swapchainImage->create(image))
+            {
+                LOG_FATAL("VulkanSwapchain::createSwapchainImages: can't create surface texture");
 
-            swapchainImage->destroy();
-            delete swapchainImage;
+                swapchainImage->destroy();
+                delete swapchainImage;
+            }
+            else
+            {
+                m_swapBuffers.push_back(swapchainImage);
+            }
         }
-        else
+    }
+    else
+    {
+        ASSERT(m_swapBuffers.size() == swapChainImageCount, "different size");
+        std::vector<VkImage>::const_iterator imageIter = images.cbegin();
+        for (auto& swapchainImage : m_swapBuffers)
         {
-            m_swapBuffers.push_back(swapchainImage);
+            ASSERT(imageIter != images.cend(), "wrong iterrator");
+            if (!swapchainImage->create(*imageIter))
+            {
+                LOG_FATAL("VulkanSwapchain::createSwapchainImages: can't recreate surface image");
+                for (auto& deletedSwapchainImage : m_swapBuffers)
+                {
+                    deletedSwapchainImage->destroy();
+                    delete deletedSwapchainImage;
+                }
+                m_swapBuffers.clear();
+
+                return false;
+            }
+            imageIter = std::next(imageIter);
         }
     }
 
@@ -381,14 +401,15 @@ void VulkanSwapchain::destroy()
 {
     if (!m_swapBuffers.empty())
     {
-        for (std::vector<VulkanImage*>::iterator image = m_swapBuffers.begin(); image < m_swapBuffers.end(); ++image)
+        for (std::vector<VulkanImage*>::iterator imageIter = m_swapBuffers.begin(); imageIter < m_swapBuffers.end(); ++imageIter)
         {
-            if (*image)
+            VulkanImage* image = *imageIter;
+            if (image)
             {
-                (*image)->destroy();
+                image->destroy();
 
-                delete (*image);
-                (*image) = nullptr;
+                delete image;
+                image = nullptr;
             }
         }
     }
@@ -400,11 +421,19 @@ void VulkanSwapchain::destroy()
         m_swapchain = VK_NULL_HANDLE;
     }
 
+    for (auto& semaphore : m_acquireSemaphore)
+    {
+        VulkanWrapper::DestroySemaphore(m_deviceInfo->_device, semaphore, VULKAN_ALLOCATOR);
+    }
+    m_acquireSemaphore.clear();
+
     if (m_surface)
     {
         VulkanWrapper::DestroySurface(m_deviceInfo->_instance, m_surface, VULKAN_ALLOCATOR);
         m_surface = VK_NULL_HANDLE;
     }
+
+    m_swapchainResources.clear();
 
     m_ready = false;
 }
@@ -437,15 +466,17 @@ void VulkanSwapchain::present(VkQueue queue, const std::vector<VkSemaphore>& wai
     if (result == VK_ERROR_SURFACE_LOST_KHR || result == VK_SUBOPTIMAL_KHR || result == VK_ERROR_OUT_OF_DATE_KHR)
     {
         VulkanWrapper::DeviceWaitIdle(m_deviceInfo->_device);
-        freeAttachedResources();
 #ifdef PLATFORM_ANDROID
     ASSERT(g_nativeAndroidApp->window, "windows is nullptr");
 #endif //ANDROID_PLATFORM
         //recreate
+        LOG_WARNING("VulkanSwapchain::present: Swapchain need to recreate. Error: %s", ErrorString(result).c_str());
         if (!VulkanSwapchain::recteate(m_config))
         {
             LOG_FATAL(" VulkanSwapchain::QueuePresent: recteate was failed");
         }
+
+        recreateAttachedResources();
     }
     else if (result != VK_SUCCESS)
     {
@@ -465,16 +496,17 @@ u32 VulkanSwapchain::acquireImage()
     if (result == VK_ERROR_SURFACE_LOST_KHR || result == VK_SUBOPTIMAL_KHR || result == VK_ERROR_OUT_OF_DATE_KHR)
     {
         VulkanWrapper::DeviceWaitIdle(m_deviceInfo->_device);
-        freeAttachedResources();
 #ifdef PLATFORM_ANDROID
     ASSERT(g_nativeAndroidApp->window, "windows is nullptr");
 #endif //ANDROID_PLATFORM
 
         //recreate
+        LOG_WARNING(" VulkanSwapchain::acquireImage: Swapchain need to recreate. Error: %s", ErrorString(result).c_str());
         if (!VulkanSwapchain::recteate(m_config))
         {
             LOG_FATAL(" VulkanSwapchain::AcquireNextImage: recteate was failed");
         }
+        recreateAttachedResources();
 
         VkSemaphore semaphoreInner = m_acquireSemaphore[m_currentSemaphoreIndex];
 
@@ -502,13 +534,38 @@ bool VulkanSwapchain::recteate(const SwapchainConfig& config)
         return false;
     }
 
-    VulkanSwapchain::destroy();
+    for (std::vector<VulkanImage *>::iterator image = m_swapBuffers.begin(); image < m_swapBuffers.end(); ++image)
+    {
+        (*image)->destroy();
+    }
+
+    if (m_swapchain)
+    {
+        VulkanWrapper::DestroySwapchain(m_deviceInfo->_device, m_swapchain, VULKAN_ALLOCATOR);
+        m_swapchain = VK_NULL_HANDLE;
+    }
+
+    for (auto& semaphore : m_acquireSemaphore)
+    {
+        VulkanWrapper::DestroySemaphore(m_deviceInfo->_device, semaphore, VULKAN_ALLOCATOR);
+    }
+    m_acquireSemaphore.clear();
+
+    if (m_surface)
+    {
+        VulkanWrapper::DestroySurface(m_deviceInfo->_instance, m_surface, VULKAN_ALLOCATOR);
+        m_surface = VK_NULL_HANDLE;
+    }
+
+    m_ready = false;
+
+
     if (!VulkanSwapchain::create(config))
     {
         LOG_FATAL("VulkanSwapchain::recteate: is failed");
         return false;
     }
-    
+
     return true;
 }
 
@@ -528,19 +585,17 @@ u32 VulkanSwapchain::getSwapchainImageCount() const
     return static_cast<u32>(m_swapBuffers.size());
 }
 
-void VulkanSwapchain::attachResource(VulkanResource* resource, const std::function<void(VulkanResource* resource)>& deleter)
+void VulkanSwapchain::attachResource(VulkanResource* resource, const std::function<bool(VulkanResource*)>& recreator)
 {
-    m_swapchainResources.emplace_back(resource, deleter);
+    m_swapchainResources.emplace_back(resource, recreator);
 }
 
-void VulkanSwapchain::freeAttachedResources()
+void VulkanSwapchain::recreateAttachedResources()
 {
-    for (auto& [resource, deleter] : m_swapchainResources)
+    for (auto& [resource, recreator] : m_swapchainResources)
     {
-        deleter(resource);
+        recreator(resource);
     }
-
-    m_swapchainResources.clear();
 }
 
 } //namespace vk

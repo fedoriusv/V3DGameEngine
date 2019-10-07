@@ -37,10 +37,7 @@ namespace scene
 
     private:
 
-        renderer::CommandList& m_cmdList;
-
         Material* m_material;
-
         std::vector<utils::IntrusivePointer<renderer::Texture>> m_textures;
     };
 

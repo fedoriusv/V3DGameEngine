@@ -27,9 +27,9 @@ namespace resource
 
         bool parseReflections(const std::vector<u32>& spirv, stream::Stream* stream);
 
+        const renderer::ShaderHeader m_header;
         u32 m_sourceVersion;
 
-        const renderer::ShaderHeader m_header;
         bool m_reflections;
     };
 

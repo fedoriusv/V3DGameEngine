@@ -44,6 +44,7 @@ const std::vector<Image*>& VulkanFramebuffer::getImages() const
 
 bool VulkanFramebuffer::create(const RenderPass* pass)
 {
+    ASSERT(!m_framebuffer, "framebuffer is not nullptr");
     ASSERT(VulkanDeviceCaps::getInstance()->getPhysicalDeviceLimits().maxFramebufferWidth >= m_size.width &&
         VulkanDeviceCaps::getInstance()->getPhysicalDeviceLimits().maxFramebufferHeight >= m_size.height, "maxFramebufferSize is over range");
 
@@ -85,6 +86,7 @@ bool VulkanFramebuffer::create(const RenderPass* pass)
     framebufferCreateInfo.height = m_size.height;
     framebufferCreateInfo.layers = 1;
 
+    ASSERT(m_framebuffer == VK_NULL_HANDLE, "not empty");
     VkResult result = VulkanWrapper::CreateFramebuffer(m_device, &framebufferCreateInfo, VULKAN_ALLOCATOR, &m_framebuffer);
     if (result != VK_SUCCESS)
     {
@@ -97,6 +99,8 @@ bool VulkanFramebuffer::create(const RenderPass* pass)
 
 void VulkanFramebuffer::destroy()
 {
+    m_imageViews.clear();
+
     VulkanWrapper::DestroyFramebuffer(m_device, m_framebuffer, VULKAN_ALLOCATOR);
     m_framebuffer = VK_NULL_HANDLE;
 }

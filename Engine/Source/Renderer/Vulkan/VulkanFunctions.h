@@ -18,146 +18,146 @@
     //Base functions
 #   define ENUM_VK_ENTRYPOINTS_BASE_FUNCTIONS(Macro) \
     Macro(vkCreateInstance) \
-	Macro(vkGetInstanceProcAddr) \
-	Macro(vkGetDeviceProcAddr) \
-	Macro(vkEnumerateInstanceExtensionProperties) \
-	Macro(vkEnumerateInstanceLayerProperties) \
+    Macro(vkGetInstanceProcAddr) \
+    Macro(vkGetDeviceProcAddr) \
+    Macro(vkEnumerateInstanceExtensionProperties) \
+    Macro(vkEnumerateInstanceLayerProperties) \
     Macro(vkEnumerateInstanceVersion)
 
     //Core functions
 #   define ENUM_VK_ENTRYPOINTS_CORE_FUNCTIONS(Macro) \
     Macro(vkDestroyInstance) \
-	Macro(vkEnumeratePhysicalDevices) \
-	Macro(vkGetPhysicalDeviceFeatures) \
-	Macro(vkGetPhysicalDeviceFormatProperties) \
-	Macro(vkGetPhysicalDeviceImageFormatProperties) \
-	Macro(vkGetPhysicalDeviceProperties) \
-	Macro(vkGetPhysicalDeviceQueueFamilyProperties) \
-	Macro(vkGetPhysicalDeviceMemoryProperties) \
-	Macro(vkCreateDevice) \
-	Macro(vkDestroyDevice) \
-	Macro(vkEnumerateDeviceExtensionProperties) \
-	Macro(vkEnumerateDeviceLayerProperties) \
-	Macro(vkGetDeviceQueue) \
-	Macro(vkQueueSubmit) \
-	Macro(vkQueueWaitIdle) \
-	Macro(vkDeviceWaitIdle) \
-	Macro(vkAllocateMemory) \
-	Macro(vkFreeMemory) \
-	Macro(vkMapMemory) \
-	Macro(vkUnmapMemory) \
-	Macro(vkFlushMappedMemoryRanges) \
-	Macro(vkInvalidateMappedMemoryRanges) \
-	Macro(vkGetDeviceMemoryCommitment) \
-	Macro(vkBindBufferMemory) \
-	Macro(vkBindImageMemory) \
-	Macro(vkGetBufferMemoryRequirements) \
-	Macro(vkGetImageMemoryRequirements) \
-	Macro(vkGetImageSparseMemoryRequirements) \
-	Macro(vkGetPhysicalDeviceSparseImageFormatProperties) \
-	Macro(vkQueueBindSparse) \
-	Macro(vkCreateFence) \
-	Macro(vkDestroyFence) \
-	Macro(vkResetFences) \
-	Macro(vkGetFenceStatus) \
-	Macro(vkWaitForFences) \
-	Macro(vkCreateSemaphore) \
-	Macro(vkDestroySemaphore) \
-	Macro(vkCreateEvent) \
-	Macro(vkDestroyEvent) \
-	Macro(vkGetEventStatus) \
-	Macro(vkSetEvent) \
-	Macro(vkResetEvent) \
-	Macro(vkCreateQueryPool) \
-	Macro(vkDestroyQueryPool) \
-	Macro(vkGetQueryPoolResults) \
-	Macro(vkCreateBuffer) \
-	Macro(vkDestroyBuffer) \
-	Macro(vkCreateBufferView) \
-	Macro(vkDestroyBufferView) \
-	Macro(vkCreateImage) \
-	Macro(vkDestroyImage) \
-	Macro(vkGetImageSubresourceLayout) \
-	Macro(vkCreateImageView) \
-	Macro(vkDestroyImageView) \
-	Macro(vkCreateShaderModule) \
-	Macro(vkDestroyShaderModule) \
-	Macro(vkCreatePipelineCache) \
-	Macro(vkDestroyPipelineCache) \
-	Macro(vkGetPipelineCacheData) \
-	Macro(vkMergePipelineCaches) \
-	Macro(vkCreateGraphicsPipelines) \
-	Macro(vkCreateComputePipelines) \
-	Macro(vkDestroyPipeline) \
-	Macro(vkCreatePipelineLayout) \
-	Macro(vkDestroyPipelineLayout) \
-	Macro(vkCreateSampler) \
-	Macro(vkDestroySampler) \
-	Macro(vkCreateDescriptorSetLayout) \
-	Macro(vkDestroyDescriptorSetLayout) \
-	Macro(vkCreateDescriptorPool) \
-	Macro(vkDestroyDescriptorPool) \
-	Macro(vkResetDescriptorPool) \
-	Macro(vkAllocateDescriptorSets) \
-	Macro(vkFreeDescriptorSets) \
-	Macro(vkUpdateDescriptorSets) \
-	Macro(vkCreateFramebuffer) \
-	Macro(vkDestroyFramebuffer) \
-	Macro(vkCreateRenderPass) \
-	Macro(vkDestroyRenderPass) \
-	Macro(vkGetRenderAreaGranularity) \
-	Macro(vkCreateCommandPool) \
-	Macro(vkDestroyCommandPool) \
-	Macro(vkResetCommandPool) \
-	Macro(vkAllocateCommandBuffers) \
-	Macro(vkFreeCommandBuffers) \
-	Macro(vkBeginCommandBuffer) \
-	Macro(vkEndCommandBuffer) \
-	Macro(vkResetCommandBuffer) \
-	Macro(vkCmdBindPipeline) \
-	Macro(vkCmdSetViewport) \
-	Macro(vkCmdSetScissor) \
-	Macro(vkCmdSetLineWidth) \
-	Macro(vkCmdSetDepthBias) \
-	Macro(vkCmdSetBlendConstants) \
-	Macro(vkCmdSetDepthBounds) \
-	Macro(vkCmdSetStencilCompareMask) \
-	Macro(vkCmdSetStencilWriteMask) \
-	Macro(vkCmdSetStencilReference) \
-	Macro(vkCmdBindDescriptorSets) \
-	Macro(vkCmdBindIndexBuffer) \
-	Macro(vkCmdBindVertexBuffers) \
-	Macro(vkCmdDraw) \
-	Macro(vkCmdDrawIndexed) \
-	Macro(vkCmdDrawIndirect) \
-	Macro(vkCmdDrawIndexedIndirect) \
-	Macro(vkCmdDispatch) \
-	Macro(vkCmdDispatchIndirect) \
-	Macro(vkCmdCopyBuffer) \
-	Macro(vkCmdCopyImage) \
-	Macro(vkCmdBlitImage) \
-	Macro(vkCmdCopyBufferToImage) \
-	Macro(vkCmdCopyImageToBuffer) \
-	Macro(vkCmdUpdateBuffer) \
-	Macro(vkCmdFillBuffer) \
-	Macro(vkCmdClearColorImage) \
-	Macro(vkCmdClearDepthStencilImage) \
-	Macro(vkCmdClearAttachments) \
-	Macro(vkCmdResolveImage) \
-	Macro(vkCmdSetEvent) \
-	Macro(vkCmdResetEvent) \
-	Macro(vkCmdWaitEvents) \
-	Macro(vkCmdPipelineBarrier) \
-	Macro(vkCmdBeginQuery) \
-	Macro(vkCmdEndQuery) \
-	Macro(vkCmdResetQueryPool) \
-	Macro(vkCmdWriteTimestamp) \
-	Macro(vkCmdCopyQueryPoolResults) \
-	Macro(vkCmdPushConstants) \
-	Macro(vkCmdBeginRenderPass) \
-	Macro(vkCmdNextSubpass) \
-	Macro(vkCmdEndRenderPass) \
-	Macro(vkCmdExecuteCommands)
+    Macro(vkEnumeratePhysicalDevices) \
+    Macro(vkGetPhysicalDeviceFeatures) \
+    Macro(vkGetPhysicalDeviceFormatProperties) \
+    Macro(vkGetPhysicalDeviceImageFormatProperties) \
+    Macro(vkGetPhysicalDeviceProperties) \
+    Macro(vkGetPhysicalDeviceQueueFamilyProperties) \
+    Macro(vkGetPhysicalDeviceMemoryProperties) \
+    Macro(vkCreateDevice) \
+    Macro(vkDestroyDevice) \
+    Macro(vkEnumerateDeviceExtensionProperties) \
+    Macro(vkEnumerateDeviceLayerProperties) \
+    Macro(vkGetDeviceQueue) \
+    Macro(vkQueueSubmit) \
+    Macro(vkQueueWaitIdle) \
+    Macro(vkDeviceWaitIdle) \
+    Macro(vkAllocateMemory) \
+    Macro(vkFreeMemory) \
+    Macro(vkMapMemory) \
+    Macro(vkUnmapMemory) \
+    Macro(vkFlushMappedMemoryRanges) \
+    Macro(vkInvalidateMappedMemoryRanges) \
+    Macro(vkGetDeviceMemoryCommitment) \
+    Macro(vkBindBufferMemory) \
+    Macro(vkBindImageMemory) \
+    Macro(vkGetBufferMemoryRequirements) \
+    Macro(vkGetImageMemoryRequirements) \
+    Macro(vkGetImageSparseMemoryRequirements) \
+    Macro(vkGetPhysicalDeviceSparseImageFormatProperties) \
+    Macro(vkQueueBindSparse) \
+    Macro(vkCreateFence) \
+    Macro(vkDestroyFence) \
+    Macro(vkResetFences) \
+    Macro(vkGetFenceStatus) \
+    Macro(vkWaitForFences) \
+    Macro(vkCreateSemaphore) \
+    Macro(vkDestroySemaphore) \
+    Macro(vkCreateEvent) \
+    Macro(vkDestroyEvent) \
+    Macro(vkGetEventStatus) \
+    Macro(vkSetEvent) \
+    Macro(vkResetEvent) \
+    Macro(vkCreateQueryPool) \
+    Macro(vkDestroyQueryPool) \
+    Macro(vkGetQueryPoolResults) \
+    Macro(vkCreateBuffer) \
+    Macro(vkDestroyBuffer) \
+    Macro(vkCreateBufferView) \
+    Macro(vkDestroyBufferView) \
+    Macro(vkCreateImage) \
+    Macro(vkDestroyImage) \
+    Macro(vkGetImageSubresourceLayout) \
+    Macro(vkCreateImageView) \
+    Macro(vkDestroyImageView) \
+    Macro(vkCreateShaderModule) \
+    Macro(vkDestroyShaderModule) \
+    Macro(vkCreatePipelineCache) \
+    Macro(vkDestroyPipelineCache) \
+    Macro(vkGetPipelineCacheData) \
+    Macro(vkMergePipelineCaches) \
+    Macro(vkCreateGraphicsPipelines) \
+    Macro(vkCreateComputePipelines) \
+    Macro(vkDestroyPipeline) \
+    Macro(vkCreatePipelineLayout) \
+    Macro(vkDestroyPipelineLayout) \
+    Macro(vkCreateSampler) \
+    Macro(vkDestroySampler) \
+    Macro(vkCreateDescriptorSetLayout) \
+    Macro(vkDestroyDescriptorSetLayout) \
+    Macro(vkCreateDescriptorPool) \
+    Macro(vkDestroyDescriptorPool) \
+    Macro(vkResetDescriptorPool) \
+    Macro(vkAllocateDescriptorSets) \
+    Macro(vkFreeDescriptorSets) \
+    Macro(vkUpdateDescriptorSets) \
+    Macro(vkCreateFramebuffer) \
+    Macro(vkDestroyFramebuffer) \
+    Macro(vkCreateRenderPass) \
+    Macro(vkDestroyRenderPass) \
+    Macro(vkGetRenderAreaGranularity) \
+    Macro(vkCreateCommandPool) \
+    Macro(vkDestroyCommandPool) \
+    Macro(vkResetCommandPool) \
+    Macro(vkAllocateCommandBuffers) \
+    Macro(vkFreeCommandBuffers) \
+    Macro(vkBeginCommandBuffer) \
+    Macro(vkEndCommandBuffer) \
+    Macro(vkResetCommandBuffer) \
+    Macro(vkCmdBindPipeline) \
+    Macro(vkCmdSetViewport) \
+    Macro(vkCmdSetScissor) \
+    Macro(vkCmdSetLineWidth) \
+    Macro(vkCmdSetDepthBias) \
+    Macro(vkCmdSetBlendConstants) \
+    Macro(vkCmdSetDepthBounds) \
+    Macro(vkCmdSetStencilCompareMask) \
+    Macro(vkCmdSetStencilWriteMask) \
+    Macro(vkCmdSetStencilReference) \
+    Macro(vkCmdBindDescriptorSets) \
+    Macro(vkCmdBindIndexBuffer) \
+    Macro(vkCmdBindVertexBuffers) \
+    Macro(vkCmdDraw) \
+    Macro(vkCmdDrawIndexed) \
+    Macro(vkCmdDrawIndirect) \
+    Macro(vkCmdDrawIndexedIndirect) \
+    Macro(vkCmdDispatch) \
+    Macro(vkCmdDispatchIndirect) \
+    Macro(vkCmdCopyBuffer) \
+    Macro(vkCmdCopyImage) \
+    Macro(vkCmdBlitImage) \
+    Macro(vkCmdCopyBufferToImage) \
+    Macro(vkCmdCopyImageToBuffer) \
+    Macro(vkCmdUpdateBuffer) \
+    Macro(vkCmdFillBuffer) \
+    Macro(vkCmdClearColorImage) \
+    Macro(vkCmdClearDepthStencilImage) \
+    Macro(vkCmdClearAttachments) \
+    Macro(vkCmdResolveImage) \
+    Macro(vkCmdSetEvent) \
+    Macro(vkCmdResetEvent) \
+    Macro(vkCmdWaitEvents) \
+    Macro(vkCmdPipelineBarrier) \
+    Macro(vkCmdBeginQuery) \
+    Macro(vkCmdEndQuery) \
+    Macro(vkCmdResetQueryPool) \
+    Macro(vkCmdWriteTimestamp) \
+    Macro(vkCmdCopyQueryPoolResults) \
+    Macro(vkCmdPushConstants) \
+    Macro(vkCmdBeginRenderPass) \
+    Macro(vkCmdNextSubpass) \
+    Macro(vkCmdEndRenderPass) \
+    Macro(vkCmdExecuteCommands)
 
     //Vulkan core 1.1
 #   define ENUM_VK_ENTRYPOINTS_CORE_1_1_FUNCTIONS(Macro) \
@@ -192,21 +192,21 @@
     //Surface
 #   ifdef VK_KHR_surface
 #   define ENUM_VK_ENTRYPOINTS_SURFACE_FUNCTIONS(Macro) \
-	Macro(vkDestroySurfaceKHR) \
-	Macro(vkGetPhysicalDeviceSurfaceSupportKHR) \
-	Macro(vkGetPhysicalDeviceSurfaceCapabilitiesKHR) \
-	Macro(vkGetPhysicalDeviceSurfaceFormatsKHR) \
-	Macro(vkGetPhysicalDeviceSurfacePresentModesKHR)
+    Macro(vkDestroySurfaceKHR) \
+    Macro(vkGetPhysicalDeviceSurfaceSupportKHR) \
+    Macro(vkGetPhysicalDeviceSurfaceCapabilitiesKHR) \
+    Macro(vkGetPhysicalDeviceSurfaceFormatsKHR) \
+    Macro(vkGetPhysicalDeviceSurfacePresentModesKHR)
 #   endif //VK_KHR_surface
 
     //Swapchain
 #   ifdef VK_KHR_swapchain
 #   define ENUM_VK_ENTRYPOINTS_SWAPCHAIN_FUNCTIONS(Macro) \
-	Macro(vkCreateSwapchainKHR) \
-	Macro(vkDestroySwapchainKHR) \
-	Macro(vkGetSwapchainImagesKHR) \
-	Macro(vkAcquireNextImageKHR) \
-	Macro(vkQueuePresentKHR) \
+    Macro(vkCreateSwapchainKHR) \
+    Macro(vkDestroySwapchainKHR) \
+    Macro(vkGetSwapchainImagesKHR) \
+    Macro(vkAcquireNextImageKHR) \
+    Macro(vkQueuePresentKHR) \
     Macro(vkGetDeviceGroupPresentCapabilitiesKHR) \
     Macro(vkGetDeviceGroupSurfacePresentModesKHR) \
     Macro(vkGetPhysicalDevicePresentRectanglesKHR) \
@@ -216,10 +216,10 @@
     //Platform
 #   ifdef VK_KHR_win32_surface
 #   define ENUM_VK_ENTRYPOINTS_PLATFORM_FUNCTIONS(Macro) \
-	Macro(vkCreateWin32SurfaceKHR)
+    Macro(vkCreateWin32SurfaceKHR)
 #   elif VK_KHR_android_surface
 #   define ENUM_VK_ENTRYPOINTS_PLATFORM_FUNCTIONS(Macro) \
-	Macro(vkCreateAndroidSurfaceKHR)
+    Macro(vkCreateAndroidSurfaceKHR)
 #   else
 #   define ENUM_VK_ENTRYPOINTS_PLATFORM_FUNCTIONS(Macro)
 #   endif //VK_KHR_*_surface
@@ -232,44 +232,55 @@
 #   define ENUM_VK_ENTRYPOINTS_PLATFORM_FUNCTIONS(Macro)
 #endif //VK_NO_PROTOTYPES
 
+    //Debug Report
+#ifdef VK_EXT_debug_report
+#   define ENUM_VK_DEBUG_REPORT_FUNCTIONS(Macro) \
+    Macro(vkCreateDebugReportCallbackEXT) \
+    Macro(vkDestroyDebugReportCallbackEXT) \
+    Macro(vkDebugReportMessageEXT)
+#else
+#define ENUM_VK_DEBUG_REPORT_FUNCTIONS(Macro)
+#endif //VK_EXT_debug_report
+
     //Debug Utils
 #ifdef VK_EXT_debug_utils
-#	define ENUM_VK_DEBUG_UTILS_FUNCTIONS(Macro) \
- 	Macro(vkSetDebugUtilsObjectNameEXT) \
- 	Macro(vkSetDebugUtilsObjectTagEXT) \
- 	Macro(vkQueueBeginDebugUtilsLabelEXT) \
- 	Macro(vkQueueEndDebugUtilsLabelEXT) \
- 	Macro(vkQueueInsertDebugUtilsLabelEXT) \
- 	Macro(vkCmdBeginDebugUtilsLabelEXT) \
- 	Macro(vkCmdEndDebugUtilsLabelEXT) \
- 	Macro(vkCmdInsertDebugUtilsLabelEXT) \
- 	Macro(vkCreateDebugUtilsMessengerEXT) \
- 	Macro(vkDestroyDebugUtilsMessengerEXT) \
- 	Macro(vkSubmitDebugUtilsMessageEXT)
-#	else
-#	define ENUM_VK_DEBUG_UTILS_FUNCTIONS(Macro)
+#   define ENUM_VK_DEBUG_UTILS_FUNCTIONS(Macro) \
+    Macro(vkSetDebugUtilsObjectNameEXT) \
+    Macro(vkSetDebugUtilsObjectTagEXT) \
+    Macro(vkQueueBeginDebugUtilsLabelEXT) \
+    Macro(vkQueueEndDebugUtilsLabelEXT) \
+    Macro(vkQueueInsertDebugUtilsLabelEXT) \
+    Macro(vkCmdBeginDebugUtilsLabelEXT) \
+    Macro(vkCmdEndDebugUtilsLabelEXT) \
+    Macro(vkCmdInsertDebugUtilsLabelEXT) \
+    Macro(vkCreateDebugUtilsMessengerEXT) \
+    Macro(vkDestroyDebugUtilsMessengerEXT) \
+    Macro(vkSubmitDebugUtilsMessageEXT)
+#   else
+#   define ENUM_VK_DEBUG_UTILS_FUNCTIONS(Macro)
 #endif //VK_EXT_debug_utils
 
  //Renderpass2
 #ifdef VK_KHR_create_renderpass2
-#	define ENUM_VK_CREATE_RENDERPASS2_FUNCTIONS(Macro) \
- 	Macro(vkCreateRenderPass2KHR) \
- 	Macro(vkCmdBeginRenderPass2KHR) \
- 	Macro(vkCmdNextSubpass2KHR) \
- 	Macro(vkCmdEndRenderPass2KHR)
-#	else
-#	define ENUM_VK_CREATE_RENDERPASS2_FUNCTIONS(Macro)
+#   define ENUM_VK_CREATE_RENDERPASS2_FUNCTIONS(Macro) \
+    Macro(vkCreateRenderPass2KHR) \
+    Macro(vkCmdBeginRenderPass2KHR) \
+    Macro(vkCmdNextSubpass2KHR) \
+    Macro(vkCmdEndRenderPass2KHR)
+#   else
+#   define ENUM_VK_CREATE_RENDERPASS2_FUNCTIONS(Macro)
 #endif // VK_KHR_create_renderpass2
 
 #define ENUM_VK_ALL_FUNCTIONS(Macro) \
-        ENUM_VK_ENTRYPOINTS_BASE_FUNCTIONS(Macro) \
-        ENUM_VK_ENTRYPOINTS_CORE_FUNCTIONS(Macro) \
-        ENUM_VK_ENTRYPOINTS_CORE_1_1_FUNCTIONS(Macro) \
-        ENUM_VK_ENTRYPOINTS_SURFACE_FUNCTIONS(Macro) \
-        ENUM_VK_ENTRYPOINTS_SWAPCHAIN_FUNCTIONS(Macro) \
-        ENUM_VK_ENTRYPOINTS_PLATFORM_FUNCTIONS(Macro) \
-        ENUM_VK_DEBUG_UTILS_FUNCTIONS(Macro) \
-        ENUM_VK_CREATE_RENDERPASS2_FUNCTIONS(Macro)
+    ENUM_VK_ENTRYPOINTS_BASE_FUNCTIONS(Macro) \
+    ENUM_VK_ENTRYPOINTS_CORE_FUNCTIONS(Macro) \
+    ENUM_VK_ENTRYPOINTS_CORE_1_1_FUNCTIONS(Macro) \
+    ENUM_VK_ENTRYPOINTS_SURFACE_FUNCTIONS(Macro) \
+    ENUM_VK_ENTRYPOINTS_SWAPCHAIN_FUNCTIONS(Macro) \
+    ENUM_VK_ENTRYPOINTS_PLATFORM_FUNCTIONS(Macro) \
+    ENUM_VK_DEBUG_REPORT_FUNCTIONS(Macro) \
+    ENUM_VK_DEBUG_UTILS_FUNCTIONS(Macro) \
+    ENUM_VK_CREATE_RENDERPASS2_FUNCTIONS(Macro)
 
 #define DECLARE_VK_FUNCTIONS(Func) extern PFN_##Func Func;
 
@@ -279,7 +290,6 @@ namespace renderer
 {
 namespace vk
 {
-
     ENUM_VK_ALL_FUNCTIONS(DECLARE_VK_FUNCTIONS);
 
     bool LoadVulkanLibrary();
@@ -287,10 +297,10 @@ namespace vk
     bool LoadVulkanLibrary(VkDevice device);
     void FreeVulkanLibrary();
 
+    #undef DECLARE_VK_FUNCTIONS
+
 } //namespace vk
 } //namespace renderer
 } //namespace v3d
-
-#undef DECLARE_VK_FUNCTIONS
 
 #endif //VULKAN_RENDER

@@ -21,33 +21,73 @@ namespace vk
 #   define VULKAN_ALLOCATOR nullptr
 #endif //USE_VULKAN_ALLOCATOR
 
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    /*
+        Disable : 0,
+        Error : 1,
+        Warning : 2,
+        Info : 3: 
+        Debug : 4
+    */
+    constexpr u16 k_DebugLevel = 4U;
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
+
     std::string ErrorString(VkResult errorCode);
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    class VulkanDebug
+    class VulkanLayers
     {
     public:
 
-        VulkanDebug() = default;
-        VulkanDebug(const VulkanDebug&) = delete;
-
-        static const u16    k_severityDebugLevel = 2;
-
-        static bool         createDebugUtilsMesseger(VkInstance instance, VkDebugUtilsMessageSeverityFlagsEXT severityFlag, VkDebugUtilsMessageTypeFlagsEXT flags, PFN_vkDebugUtilsMessengerCallbackEXT callback, void* userData);
-        static void         destroyDebugUtilsMesseger(VkInstance instance);
-
-        static VkBool32 VKAPI_PTR defaultDebugUtilsMessegerCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageType, const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, void* pUserData);
-
-
-        static bool         checkInstanceLayerIsSupported(const c8* layerName);
-        static bool         checkDeviceLayerIsSupported(VkPhysicalDevice device, const c8* layerName);
+        static bool checkInstanceLayerIsSupported(const c8* layerName);
+        static bool checkDeviceLayerIsSupported(VkPhysicalDevice device, const c8* layerName);
 
         static const std::vector<const c8*> s_validationLayerNames;
+    };
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    class VulkanDebugUtils
+    {
+    public:
+
+        VulkanDebugUtils() = default;
+        VulkanDebugUtils(const VulkanDebugUtils&) = delete;
+
+        static const u16 k_severityDebugLevel = k_DebugLevel;
+
+        static bool createDebugUtilsMesseger(VkInstance instance, VkDebugUtilsMessageSeverityFlagsEXT severityFlag, VkDebugUtilsMessageTypeFlagsEXT flags, PFN_vkDebugUtilsMessengerCallbackEXT callback, void* userData = nullptr);
+        static void destroyDebugUtilsMesseger(VkInstance instance);
+
+        static VkBool32 VKAPI_PTR defaultDebugUtilsMessegerCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageType, const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, void* pUserData);
 
     private:
 
         static VkDebugUtilsMessengerEXT s_messeger;
+    };
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    class VulkanDebugReport
+    {
+    public:
+
+        static const u16 k_debugReportLevel = k_DebugLevel;
+
+        VulkanDebugReport() = default;
+        VulkanDebugReport(const VulkanDebugReport&) = delete;
+
+        static bool createDebugReportCallback(VkInstance instance, VkDebugReportFlagsEXT flags, PFN_vkDebugReportCallbackEXT callback, void* userData = nullptr);
+        static void destroyDebugReportCallback(VkInstance instance);
+
+        static VkBool32 VKAPI_PTR defaultDebugReportCallback(VkDebugReportFlagsEXT flags, VkDebugReportObjectTypeEXT objectType, uint64_t object, size_t location, int32_t messageCode, const char* pLayerPrefix, const char* pMessage, void* pUserData);
+
+    private:
+
+        static VkDebugReportCallbackEXT s_callback;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -91,16 +131,22 @@ namespace vk
         void dumpPostCreateImage(VkResult result, VkImage * pImage);
         void dumpDestroyImage(VkDevice device, VkImage image, const VkAllocationCallbacks * pAllocator);
 
+        void dumpPreCreateImageView(VkDevice device,  const VkImageViewCreateInfo * pCreateInfo, const VkAllocationCallbacks * pAllocator);
+        void dumpPostCreateImageView(VkResult result, VkImageView *pView);
+        void dumpDestroyImageView(VkDevice device, VkImageView view, const VkAllocationCallbacks * pAllocator);
+
         void dumpPreAllocateMemory(VkDevice device, const VkMemoryAllocateInfo* pAllocateInfo, const VkAllocationCallbacks* pAllocator);
         void dumpPostAllocateMemory(VkResult result, VkDeviceMemory* pMemory);
         void dumpFreeMemory(VkDevice device, VkDeviceMemory memory, const VkAllocationCallbacks* pAllocator);
+
+        void flush();
+
+    private:
 
         void flushToConsole();
 
         void clearFile(const std::string& file);
         void flushToFile(const std::string& file);
-
-    private:
 
         std::stringstream m_dump;
         static std::recursive_mutex s_mutex;

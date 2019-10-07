@@ -20,7 +20,7 @@ namespace scene
      std::vector<MaterialHelper*> materialHelpers;
      materialHelpers.reserve(materials.size());
 
-     for (auto material : materials)
+     for (auto& material : materials)
      {
          materialHelpers.push_back(new MaterialHelper(cmdList, material));
      }
@@ -28,9 +28,8 @@ namespace scene
      return materialHelpers;
  }
 
- MaterialHelper::MaterialHelper(renderer::CommandList & cmdList, Material * material) noexcept
-     : m_cmdList(cmdList)
-     , m_material(material)
+ MaterialHelper::MaterialHelper(renderer::CommandList& cmdList, Material * material) noexcept
+     : m_material(material)
  {
 
      std::map<scene::MaterialHeader::Property, resource::Image*> images;

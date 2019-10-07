@@ -91,7 +91,7 @@ VulkanGraphicContext::VulkanGraphicContext(const platform::Window * window) noex
     memset(&m_deviceInfo, 0, sizeof(DeviceInfo));
 
 #if VULKAN_DUMP
-    VulkanDump::getInstance()->init(VulkanDump::DumpFlag_Buffer);
+    VulkanDump::getInstance()->init(VulkanDump::DumpFlag_None);
 #endif
 }
 
@@ -221,7 +221,7 @@ void VulkanGraphicContext::submit(bool wait)
     }
 
 #if VULKAN_DUMP
-    VulkanDump::getInstance()->flushToFile(VULKAN_DUMP_FILE);
+    VulkanDump::getInstance()->flush();
 #endif
 }
 
@@ -299,7 +299,6 @@ void VulkanGraphicContext::setRenderTarget(const RenderPass::RenderPassInfo * re
             std::vector<Image*> images;
             images.reserve(framebufferInfo->_images.size());
             Image* swapchainImage = m_swapchain->getSwapchainImage(index);
-            LOG_DEBUG("VulkanGraphicContext::setRenderTarget: swapchainImage[%u] %llx", index, swapchainImage);
             for (auto iter = framebufferInfo->_images.begin(); iter < framebufferInfo->_images.end(); ++iter)
             {
                 if (*iter == nullptr)
@@ -315,10 +314,19 @@ void VulkanGraphicContext::setRenderTarget(const RenderPass::RenderPassInfo * re
 
             framebufferInfo->_tracker->attach(framebuffer);
             vkFramebuffers.push_back(static_cast<VulkanFramebuffer*>(framebuffer));
-            LOG_DEBUG("VulkanGraphicContext::setRenderTarget: Framebuffer %llx is isNewFramebuffer %d", framebuffer, isNewFramebuffer);
             if (isNewFramebuffer)
             {
-                m_swapchain->attachResource(static_cast<VulkanFramebuffer*>(framebuffer), std::bind(&VulkanGraphicContext::removeFramebuffer, this, framebuffer));
+                m_swapchain->attachResource(static_cast<VulkanFramebuffer*>(framebuffer), [renderpass](VulkanResource* resource) -> bool
+                {
+                    VulkanFramebuffer* framebuffer = static_cast<VulkanFramebuffer*>(resource);
+                    framebuffer->destroy();
+                    if (!framebuffer->create(renderpass))
+                    {
+                        return false;
+                    }
+
+                    return true;
+                });
             }
         }
     }
@@ -395,13 +403,11 @@ void VulkanGraphicContext::removeFramebuffer(Framebuffer * framebuffer)
     {
         m_resourceDeleter.addResourceToDelete(vkFramebuffer, [this, vkFramebuffer](VulkanResource* resource) -> void
         {
-             LOG_DEBUG("VulkanGraphicContext::removeFramebuffer: Framebuffer %llx delayed", vkFramebuffer);
             m_framebuferManager->removeFramebuffer(vkFramebuffer);
         });
     }
     else
     {
-        LOG_DEBUG("VulkanGraphicContext::removeFramebuffer: Framebuffer %llx", vkFramebuffer);
         m_framebuferManager->removeFramebuffer(vkFramebuffer);
     }
 }
@@ -876,7 +882,14 @@ void VulkanGraphicContext::destroy()
     }
 
 #if VULKAN_LAYERS_CALLBACKS
-    VulkanDebug::destroyDebugUtilsMesseger(m_deviceInfo._instance);
+    if (VulkanDeviceCaps::checkInstanceExtension(VK_EXT_DEBUG_UTILS_EXTENSION_NAME))
+    {
+        VulkanDebugUtils::destroyDebugUtilsMesseger(m_deviceInfo._instance);
+    }
+    else if (VulkanDeviceCaps::checkInstanceExtension(VK_EXT_DEBUG_REPORT_EXTENSION_NAME))
+    {
+        VulkanDebugReport::destroyDebugReportCallback(m_deviceInfo._instance);
+    }
 #endif //VULKAN_LAYERS_CALLBACKS
 
     if (m_deviceInfo._instance)
@@ -1018,9 +1031,9 @@ bool VulkanGraphicContext::createInstance()
 
     std::vector<const c8*> layerNames;
 #if VULKAN_VALIDATION_LAYERS_CALLBACK
-    for (auto layerName = VulkanDebug::s_validationLayerNames.cbegin(); layerName < VulkanDebug::s_validationLayerNames.cend(); ++layerName)
+    for (auto layerName = VulkanLayers::s_validationLayerNames.cbegin(); layerName < VulkanLayers::s_validationLayerNames.cend(); ++layerName)
     {
-        if (VulkanDebug::checkInstanceLayerIsSupported(*layerName))
+        if (VulkanLayers::checkInstanceLayerIsSupported(*layerName))
         {
             LOG_INFO("VulkanGraphicContext::createInstance: enable validation layer: [%s]", *layerName);
             layerNames.push_back(*layerName);
@@ -1030,7 +1043,7 @@ bool VulkanGraphicContext::createInstance()
 
 #if VULKAN_RENDERDOC_LAYER
     const c8* renderdocLayerName = "VK_LAYER_RENDERDOC_Capture";
-    if (VulkanDebug::checkLayerIsSupported(renderdocLayerName))
+    if (VulkanLayers::checkLayerIsSupported(renderdocLayerName))
     {
         LOG_INFO("VulkanGraphicContext::createInstance: enable layer: [%s]", renderdocLayerName);
         layerNames.push_back(renderdocLayerName);
@@ -1056,7 +1069,7 @@ bool VulkanGraphicContext::createInstance()
     if (VulkanDeviceCaps::checkInstanceExtension(VK_EXT_DEBUG_UTILS_EXTENSION_NAME))
     {
         VkDebugUtilsMessageSeverityFlagsEXT severityFlag = 0;
-        switch (VulkanDebug::k_severityDebugLevel)
+        switch (VulkanDebugUtils::k_severityDebugLevel)
         {
         case 4:
             severityFlag |= VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT;
@@ -1073,18 +1086,41 @@ bool VulkanGraphicContext::createInstance()
         }
 
         VkDebugUtilsMessageTypeFlagsEXT messageTypeFlag = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
-#if VULKAN_VALIDATION_LAYERS_CALLBACK
+#   if VULKAN_VALIDATION_LAYERS_CALLBACK
         messageTypeFlag |= VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT;
-#endif //VULKAN_VALIDATION_LAYERS_CALLBACK
-
-        if(!VulkanDebug::createDebugUtilsMesseger(m_deviceInfo._instance, severityFlag, messageTypeFlag, nullptr, this))
+#   endif //VULKAN_VALIDATION_LAYERS_CALLBACK
+        if(!VulkanDebugUtils::createDebugUtilsMesseger(m_deviceInfo._instance, severityFlag, messageTypeFlag, nullptr, this))
         {
             LOG_ERROR("VulkanGraphicContext::createInstance: createDebugUtilsMessager failed");
         }
     }
     else if (VulkanDeviceCaps::checkInstanceExtension(VK_EXT_DEBUG_REPORT_EXTENSION_NAME))
     {
-        //TODO use debug report
+        VkDebugReportFlagsEXT flags = 0;
+#   if VULKAN_VALIDATION_LAYERS_CALLBACK
+        switch (VulkanDebugReport::k_debugReportLevel)
+        {
+        case 4:
+            flags |= VK_DEBUG_REPORT_DEBUG_BIT_EXT;
+        case 3:
+            flags |= VK_DEBUG_REPORT_INFORMATION_BIT_EXT;
+        case 2:
+            flags |= VK_DEBUG_REPORT_WARNING_BIT_EXT | VK_DEBUG_REPORT_PERFORMANCE_WARNING_BIT_EXT;
+        case 1:
+            flags |= VK_DEBUG_REPORT_ERROR_BIT_EXT;
+        case 0:
+        default:
+            //turn off
+            break;
+        }
+#   else
+        flags |= (VulkanDebugReport::k_debugReportLevel == 4) ? VK_DEBUG_REPORT_DEBUG_BIT_EXT : 0;
+#   endif //VULKAN_VALIDATION_LAYERS_CALLBACK
+
+        if(!VulkanDebugReport::createDebugReportCallback(m_deviceInfo._instance, flags, nullptr, this))
+        {
+            LOG_ERROR("VulkanGraphicContext::createInstance: createDebugReportCallback failed");
+        }
     }
 #endif //VULKAN_LAYERS_CALLBACKS
     return true;
@@ -1188,9 +1224,9 @@ bool VulkanGraphicContext::createDevice()
 
     std::vector<const c8*> layerNames;
 #if VULKAN_VALIDATION_LAYERS_CALLBACK
-    for (auto layerName = VulkanDebug::s_validationLayerNames.cbegin(); layerName < VulkanDebug::s_validationLayerNames.cend(); ++layerName)
+    for (auto layerName = VulkanLayers::s_validationLayerNames.cbegin(); layerName < VulkanLayers::s_validationLayerNames.cend(); ++layerName)
     {
-        if (VulkanDebug::checkDeviceLayerIsSupported(m_deviceInfo._physicalDevice, *layerName))
+        if (VulkanLayers::checkDeviceLayerIsSupported(m_deviceInfo._physicalDevice, *layerName))
         {
             LOG_INFO("VulkanGraphicContext::createDevice: enable validation layer: [%s]", *layerName);
             layerNames.push_back(*layerName);
@@ -1300,14 +1336,11 @@ void VulkanGraphicContext::handleNotify(utils::Observable* obj)
     const platform::Window* windows = reinterpret_cast<const platform::Window*>(obj);
     if (windows->isValid())
     {
-        LOG_WARNING("VulkanGraphicContext::create swapchain:");
-
-        //mark to delete related framebuffers and renderpasses
-
+        LOG_WARNING("VulkanGraphicContext::create swapchain notify (from main)");
     }
     else
     {
-        LOG_WARNING("VulkanGraphicContext::delete swapchain:");
+        LOG_WARNING("VulkanGraphicContext::delete swapchain notify (from main)");
     }
 }
 

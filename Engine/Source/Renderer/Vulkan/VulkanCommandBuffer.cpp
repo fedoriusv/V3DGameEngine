@@ -233,8 +233,6 @@ void VulkanCommandBuffer::cmdBeginRenderpass(const VulkanRenderPass* pass, const
         vkImage->captureInsideCommandBuffer(this, 0);
     }
 
-    LOG_ERROR("VulkanCommandBuffer::cmdBeginRenderpass framebuffer %llx, handle %llu", framebuffer, framebuffer->getHandle());
-
     VkRenderPassBeginInfo renderPassBeginInfo = {};
     renderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
     renderPassBeginInfo.pNext = nullptr;

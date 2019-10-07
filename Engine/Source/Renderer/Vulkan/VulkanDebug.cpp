@@ -53,7 +53,8 @@ std::string ErrorString(VkResult errorCode)
     }
 }
 
-const std::vector<const c8*> VulkanDebug::s_validationLayerNames =
+#if 0
+const std::vector<const c8*> VulkanLayers::s_validationLayerNames =
 {
 #ifdef PLATFORM_WINDOWS
     // This is a meta layer that enables all of the standard
@@ -72,14 +73,92 @@ const std::vector<const c8*> VulkanDebug::s_validationLayerNames =
     "VK_LAYER_GOOGLE_unique_objects", // should be late in the list, gets data early from the driver
 #endif
 };
+#else
+const std::vector<const c8*> VulkanLayers::s_validationLayerNames =
+{
+    "VK_LAYER_KHRONOS_validation"
+};
+#endif
 
-VkDebugUtilsMessengerEXT VulkanDebug::s_messeger = VK_NULL_HANDLE;
+/////////////////////////////////////////////////////////////////////////////////////////////////////
 
-bool VulkanDebug::createDebugUtilsMesseger(VkInstance instance, VkDebugUtilsMessageSeverityFlagsEXT severityFlag, VkDebugUtilsMessageTypeFlagsEXT flags, PFN_vkDebugUtilsMessengerCallbackEXT callback, void * userData)
+bool VulkanLayers::checkInstanceLayerIsSupported(const c8* layerName)
+{
+    u32 instanceLayerPropertyCount = 0;
+    VkResult result = VulkanWrapper::EnumerateInstanceLayerProperties(&instanceLayerPropertyCount, nullptr);
+    if (result != VK_SUCCESS)
+    {
+        LOG_ERROR("VulkanLayers::checkInstanceLayerIsSupported: vkEnumerateInstanceLayerProperties count error %s", vk::ErrorString(result).c_str());
+        return false;
+    }
+
+    std::vector<VkLayerProperties> instanceLayerProperties(instanceLayerPropertyCount);
+    if (!instanceLayerProperties.empty())
+    {
+        result = VulkanWrapper::EnumerateInstanceLayerProperties(&instanceLayerPropertyCount, instanceLayerProperties.data());
+        if (result != VK_SUCCESS)
+        {
+            LOG_ERROR("VulkanLayers::checkInstanceLayerIsSupported: vkEnumerateInstanceLayerProperties list error %s", vk::ErrorString(result).c_str());
+            return false;
+        }
+
+        for (auto iter = instanceLayerProperties.cbegin(); iter < instanceLayerProperties.cend(); ++iter)
+        {
+            if (!strcmp((*iter).layerName, layerName))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    return false;
+}
+
+bool VulkanLayers::checkDeviceLayerIsSupported(VkPhysicalDevice device, const c8* layerName)
+{
+    u32 deviceLayerPropertyCount = 0;
+    VkResult result = VulkanWrapper::EnumerateDeviceLayerProperties(device, &deviceLayerPropertyCount, nullptr);
+    if (result != VK_SUCCESS)
+    {
+        LOG_ERROR("VulkanLayers::checkDeviceLayerIsSupported: vkEnumerateDeviceLayerProperties count error %s", vk::ErrorString(result).c_str());
+        return false;
+    }
+
+    std::vector<VkLayerProperties> deviceLayerProperties(deviceLayerPropertyCount);
+    if (!deviceLayerProperties.empty())
+    {
+        result = VulkanWrapper::EnumerateDeviceLayerProperties(device, &deviceLayerPropertyCount, deviceLayerProperties.data());
+        if (result != VK_SUCCESS)
+        {
+            LOG_ERROR("VulkanLayers::checkDeviceLayerIsSupported: vkEnumerateDeviceLayerProperties list error %s", vk::ErrorString(result).c_str());
+            return false;
+        }
+
+        for (auto iter = deviceLayerProperties.cbegin(); iter < deviceLayerProperties.cend(); ++iter)
+        {
+            if (!strcmp((*iter).layerName, layerName))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    return false;
+}
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////
+
+VkDebugUtilsMessengerEXT VulkanDebugUtils::s_messeger = VK_NULL_HANDLE;
+
+bool VulkanDebugUtils::createDebugUtilsMesseger(VkInstance instance, VkDebugUtilsMessageSeverityFlagsEXT severityFlag, VkDebugUtilsMessageTypeFlagsEXT flags, PFN_vkDebugUtilsMessengerCallbackEXT callback, void * userData)
 {
     if (s_messeger)
     {
-        LOG_WARNING("VulkanDebug::createDebugUtilsMessagerCallback: already exist");
+        LOG_WARNING("VulkanDebugUtils::createDebugUtilsMessagerCallback: already exist");
         return true;
     }
 
@@ -89,19 +168,19 @@ bool VulkanDebug::createDebugUtilsMesseger(VkInstance instance, VkDebugUtilsMess
     debugUtilsMessengerCreateInfo.flags = 0;
     debugUtilsMessengerCreateInfo.messageSeverity = severityFlag;
     debugUtilsMessengerCreateInfo.messageType = flags;
-    debugUtilsMessengerCreateInfo.pfnUserCallback = (callback) ? callback : VulkanDebug::defaultDebugUtilsMessegerCallback;
+    debugUtilsMessengerCreateInfo.pfnUserCallback = (callback) ? callback : VulkanDebugUtils::defaultDebugUtilsMessegerCallback;
     debugUtilsMessengerCreateInfo.pUserData = userData;
 
     VkResult result = VulkanWrapper::CreateDebugUtilsMessenger(instance, &debugUtilsMessengerCreateInfo, VULKAN_ALLOCATOR, &s_messeger);
     if (result != VK_SUCCESS)
     {
-        LOG_ERROR("VulkanDebug::createDebugUtilsMessagerCallback: vkCreateDebugUtilsMessengerEXT error %s", ErrorString(result).c_str());
+        LOG_ERROR("VulkanDebugUtils::createDebugUtilsMessagerCallback: vkCreateDebugUtilsMessengerEXT error %s", ErrorString(result).c_str());
         return false;
     }
     return true;
 }
 
-void VulkanDebug::destroyDebugUtilsMesseger(VkInstance instance)
+void VulkanDebugUtils::destroyDebugUtilsMesseger(VkInstance instance)
 {
     if (s_messeger)
     {
@@ -110,7 +189,7 @@ void VulkanDebug::destroyDebugUtilsMesseger(VkInstance instance)
     }
 }
 
-VkBool32 VulkanDebug::defaultDebugUtilsMessegerCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageType, const VkDebugUtilsMessengerCallbackDataEXT * pCallbackData, void * pUserData)
+VkBool32 VulkanDebugUtils::defaultDebugUtilsMessegerCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageType, const VkDebugUtilsMessengerCallbackDataEXT * pCallbackData, void * pUserData)
 {
     switch (messageType)
     {
@@ -172,72 +251,70 @@ VkBool32 VulkanDebug::defaultDebugUtilsMessegerCallback(VkDebugUtilsMessageSever
     return VK_FALSE;
 }
 
-bool VulkanDebug::checkInstanceLayerIsSupported(const c8* layerName)
+/////////////////////////////////////////////////////////////////////////////////////////////////////
+
+VkDebugReportCallbackEXT VulkanDebugReport::s_callback = VK_NULL_HANDLE;
+
+bool VulkanDebugReport::createDebugReportCallback(VkInstance instance, VkDebugReportFlagsEXT flags, PFN_vkDebugReportCallbackEXT callback, void* userData)
 {
-    u32 instanceLayerPropertyCount = 0;
-    VkResult result = VulkanWrapper::EnumerateInstanceLayerProperties(&instanceLayerPropertyCount, nullptr);
+    if (s_callback)
+    {
+        LOG_WARNING("VulkanDebugReport::createDebugReportCallback: already exist");
+        return true;
+    }
+
+    VkDebugReportCallbackCreateInfoEXT debugReportCallbackCreateInfo = {};
+    debugReportCallbackCreateInfo.sType = VK_STRUCTURE_TYPE_DEBUG_REPORT_CALLBACK_CREATE_INFO_EXT;
+    debugReportCallbackCreateInfo.pNext = nullptr;
+    debugReportCallbackCreateInfo.flags = flags;
+    debugReportCallbackCreateInfo.pfnCallback = (callback) ? callback : VulkanDebugReport::defaultDebugReportCallback;
+    debugReportCallbackCreateInfo.pUserData = userData;
+
+    VkResult result = VulkanWrapper::CreateDebugReportCallback(instance, &debugReportCallbackCreateInfo, VULKAN_ALLOCATOR, &s_callback);
     if (result != VK_SUCCESS)
     {
-        LOG_ERROR("VulkanDebug::checkInstanceLayerIsSupported: vkEnumerateInstanceLayerProperties count error %s", vk::ErrorString(result).c_str());
+        LOG_ERROR("VulkanDebugReport::createDebugReportCallback: vkCreateDebugReportCallbackEXT error %s", ErrorString(result).c_str());
         return false;
     }
-
-    std::vector<VkLayerProperties> instanceLayerProperties(instanceLayerPropertyCount);
-    if (!instanceLayerProperties.empty())
-    {
-        result = VulkanWrapper::EnumerateInstanceLayerProperties(&instanceLayerPropertyCount, instanceLayerProperties.data());
-        if (result != VK_SUCCESS)
-        {
-            LOG_ERROR("VulkanDebug::checkInstanceLayerIsSupported: vkEnumerateInstanceLayerProperties list error %s", vk::ErrorString(result).c_str());
-            return false;
-        }
-
-        for (auto iter = instanceLayerProperties.cbegin(); iter < instanceLayerProperties.cend(); ++iter)
-        {
-            if (!strcmp((*iter).layerName, layerName))
-            {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    return false;
+    return true;
 }
 
-bool VulkanDebug::checkDeviceLayerIsSupported(VkPhysicalDevice device, const c8* layerName)
+void VulkanDebugReport::destroyDebugReportCallback(VkInstance instance)
 {
-    u32 deviceLayerPropertyCount = 0;
-    VkResult result = VulkanWrapper::EnumerateDeviceLayerProperties(device, &deviceLayerPropertyCount, nullptr);
-    if (result != VK_SUCCESS)
+    if (s_callback != VK_NULL_HANDLE)
     {
-        LOG_ERROR("VulkanDebug::checkDeviceLayerIsSupported: vkEnumerateDeviceLayerProperties count error %s", vk::ErrorString(result).c_str());
-        return false;
+        VulkanWrapper::DestroyDebugReportCallback(instance, s_callback, VULKAN_ALLOCATOR);
+        s_callback = VK_NULL_HANDLE;
+    }
+}
+
+VkBool32 VKAPI_PTR VulkanDebugReport::defaultDebugReportCallback(VkDebugReportFlagsEXT flags, VkDebugReportObjectTypeEXT objectType, uint64_t object, size_t location, int32_t messageCode, const char* pLayerPrefix, const char* pMessage, void* pUserData)
+{
+    switch(flags)
+    {
+        case VK_DEBUG_REPORT_INFORMATION_BIT_EXT:
+            LOG_INFO("INFO(%u, %u, %u) Code %d: [%s] %s", objectType, object, location, messageCode, pLayerPrefix, pMessage);
+            return VK_TRUE;
+
+        case VK_DEBUG_REPORT_WARNING_BIT_EXT:
+            LOG_WARNING("WARNING(%u, %u, %u) Code %d: [%s] %s", objectType, object, location, messageCode, pLayerPrefix, pMessage);
+            return VK_TRUE;
+
+        case VK_DEBUG_REPORT_PERFORMANCE_WARNING_BIT_EXT:
+            LOG_WARNING("PERFORMANCE(%u, %u, %u) Code %d: [%s] %s", objectType, object, location, messageCode, pLayerPrefix, pMessage);
+            return VK_TRUE;
+
+        case VK_DEBUG_REPORT_ERROR_BIT_EXT:
+            LOG_ERROR("ERROR(%u, %u, %u) Code %d: [%s] %s", objectType, object, location, messageCode, pLayerPrefix, pMessage);
+            return VK_TRUE;
+
+        case VK_DEBUG_REPORT_DEBUG_BIT_EXT:
+            LOG_DEBUG("DEBUG(%u, %u, %u) Code %d: [%s] %s", objectType, object, location, messageCode, pLayerPrefix, pMessage);
+            return VK_TRUE;
     }
 
-    std::vector<VkLayerProperties> deviceLayerProperties(deviceLayerPropertyCount);
-    if (!deviceLayerProperties.empty())
-    {
-        result = VulkanWrapper::EnumerateDeviceLayerProperties(device, &deviceLayerPropertyCount, deviceLayerProperties.data());
-        if (result != VK_SUCCESS)
-        {
-            LOG_ERROR("VulkanDebug::checkDeviceLayerIsSupported: vkEnumerateDeviceLayerProperties list error %s", vk::ErrorString(result).c_str());
-            return false;
-        }
-
-        for (auto iter = deviceLayerProperties.cbegin(); iter < deviceLayerProperties.cend(); ++iter)
-        {
-            if (!strcmp((*iter).layerName, layerName))
-            {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    return false;
+    LOG_DEBUG("UNKNOWN CALLBACK(%u, %u, %u) Code %d: [%s] %s", objectType, object, location, messageCode, pLayerPrefix, pMessage);
+    return VK_FALSE;
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -264,7 +341,7 @@ void VulkanDump::dumpFrameNumber(u64 frame)
 
         if (k_forceFlush)
         {
-            VulkanDump::flushToFile(VULKAN_DUMP_FILE);
+            VulkanDump::flush();
         }
     }
 }
@@ -282,7 +359,7 @@ void VulkanDump::dumpPreGetBufferMemoryRequirements(VkDevice device, VkBuffer bu
 
         if (k_forceFlush)
         {
-            VulkanDump::flushToFile(VULKAN_DUMP_FILE);
+            VulkanDump::flush();
         }
     }
 }
@@ -303,7 +380,7 @@ void VulkanDump::dumpPostGetBufferMemoryRequirements(VkMemoryRequirements * pMem
 
         if (k_forceFlush)
         {
-            VulkanDump::flushToFile(VULKAN_DUMP_FILE);
+            VulkanDump::flush();
         }
     }
 }
@@ -321,7 +398,7 @@ void VulkanDump::dumpPreGetImageMemoryRequirements(VkDevice device, VkImage imag
 
         if (k_forceFlush)
         {
-            VulkanDump::flushToFile(VULKAN_DUMP_FILE);
+            VulkanDump::flush();
         }
     }
 }
@@ -342,7 +419,7 @@ void VulkanDump::dumpPostGetImageMemoryRequirements(VkMemoryRequirements * pMemo
 
         if (k_forceFlush)
         {
-            VulkanDump::flushToFile(VULKAN_DUMP_FILE);
+            VulkanDump::flush();
         }
     }
 }
@@ -370,7 +447,7 @@ void VulkanDump::dumpPreCreateBuffer(VkDevice device, const VkBufferCreateInfo *
 
         if (k_forceFlush)
         {
-            VulkanDump::flushToFile(VULKAN_DUMP_FILE);
+            VulkanDump::flush();
         }
     }
 }
@@ -386,7 +463,7 @@ void VulkanDump::dumpPostCreateBuffer(VkResult result, VkBuffer * pBuffer)
 
         if (k_forceFlush)
         {
-            VulkanDump::flushToFile(VULKAN_DUMP_FILE);
+            VulkanDump::flush();
         }
     }
 }
@@ -421,7 +498,7 @@ void VulkanDump::dumpPreCreateImage(VkDevice device, const VkImageCreateInfo * p
 
         if (k_forceFlush)
         {
-            VulkanDump::flushToFile(VULKAN_DUMP_FILE);
+            VulkanDump::flush();
         }
     }
 }
@@ -441,7 +518,7 @@ void VulkanDump::dumpDestroyBuffer(VkDevice device, VkBuffer buffer, const VkAll
 
         if (k_forceFlush)
         {
-            VulkanDump::flushToFile(VULKAN_DUMP_FILE);
+            VulkanDump::flush();
         }
     }
 }
@@ -458,7 +535,7 @@ void VulkanDump::dumpPostCreateImage(VkResult result, VkImage * pImage)
 
         if (k_forceFlush)
         {
-            VulkanDump::flushToFile(VULKAN_DUMP_FILE);
+            VulkanDump::flush();
         }
     }
 }
@@ -478,7 +555,78 @@ void VulkanDump::dumpDestroyImage(VkDevice device, VkImage image, const VkAlloca
 
         if (k_forceFlush)
         {
-            VulkanDump::flushToFile(VULKAN_DUMP_FILE);
+            VulkanDump::flush();
+        }
+    }
+}
+
+void VulkanDump::dumpPreCreateImageView(VkDevice device,  const VkImageViewCreateInfo * pCreateInfo, const VkAllocationCallbacks * pAllocator)
+{
+    if (m_flags & DumpFlag::DumpFlag_Image)
+    {
+        std::lock_guard<std::recursive_mutex> lock(s_mutex);
+
+        m_dump << "--CreateImage--" << std::endl;
+        m_dump << "PreCreateImageView(" << std::endl;
+        m_dump << "VkDevice device: " << std::hex << device << std::endl;
+        m_dump << "VkImageViewCreateInfo: pCreateInfo[" << std::endl;
+        m_dump << "     VkStructureType         sType: " << std::dec << pCreateInfo->sType << std::endl;
+        m_dump << "     const void*             pNext: " << std::hex << pCreateInfo->pNext << std::endl;
+        m_dump << "     VkImageViewCreateFlags  flags: " << std::dec << pCreateInfo->flags << std::endl;
+        m_dump << "     VkImage                 image: " << std::hex << pCreateInfo->image << std::endl;
+        m_dump << "     VkFormat                format: " << std::dec << pCreateInfo->format << std::endl;
+        m_dump << "     VkImageViewType         viewType: " << std::dec << pCreateInfo->viewType << std::endl;
+        m_dump << "     VkFormat                format: " << std::dec << pCreateInfo->format << std::endl;
+        m_dump << "     VkComponentMapping      components:[ " << std::dec << pCreateInfo->components.r << ", " << pCreateInfo->components.g << ", " << pCreateInfo->components.b << ", " << pCreateInfo->components.a <<std::endl;
+        m_dump << "     VkImageSubresourceRange subresourceRange: [ " << std::endl;
+        m_dump << "         VkImageAspectFlags  aspectMask: " << std::dec << pCreateInfo->subresourceRange.aspectMask << std::endl;
+        m_dump << "         uint32_t            baseMipLevel: " << std::dec << pCreateInfo->subresourceRange.baseMipLevel << std::endl;
+        m_dump << "         uint32_t            levelCount: " << std::dec << pCreateInfo->subresourceRange.levelCount << std::endl;
+        m_dump << "         uint32_t            baseArrayLayer: " << std::dec << pCreateInfo->subresourceRange.baseArrayLayer << std::endl;
+        m_dump << "         uint32_t            layerCount: " << std::dec << pCreateInfo->subresourceRange.layerCount << std::endl;
+        m_dump << "     ]," << std::endl;
+        m_dump << "]," << std::endl;
+        m_dump << "VkAllocationCallbacks pAllocator: " << std::hex << pAllocator << ")" << std::endl;
+
+        if (k_forceFlush)
+        {
+            VulkanDump::flush();
+        }
+    }
+}
+
+void VulkanDump::dumpPostCreateImageView(VkResult result, VkImageView *pView)
+{
+    if (m_flags & DumpFlag::DumpFlag_Image)
+    {
+        std::lock_guard<std::recursive_mutex> lock(s_mutex);
+
+        m_dump << "PostCreateImageView( VkResult: " << ErrorString(result) << ", VkImageView: " << std::hex << *pView << " )" << std::endl;
+        m_dump << "----------------" << std::endl;
+
+        if (k_forceFlush)
+        {
+            VulkanDump::flush();
+        }
+    }
+}
+
+void VulkanDump::dumpDestroyImageView(VkDevice device, VkImageView view, const VkAllocationCallbacks * pAllocator)
+{
+    if (m_flags & DumpFlag::DumpFlag_Image)
+    {
+        std::lock_guard<std::recursive_mutex> lock(s_mutex);
+
+        m_dump << "--DestroyImageView--" << std::endl;
+        m_dump << "DestroyImageView(" << std::endl;
+        m_dump << "VkDevice device: " << std::hex << device << std::endl;
+        m_dump << "VkImageView view: " << std::hex << view << std::endl;
+        m_dump << "VkAllocationCallbacks pAllocator: " << std::hex << pAllocator << " )" << std::endl;
+        m_dump << "----------------" << std::endl;
+
+        if (k_forceFlush)
+        {
+            VulkanDump::flush();
         }
     }
 }
@@ -502,7 +650,7 @@ void VulkanDump::dumpPreAllocateMemory(VkDevice device, const VkMemoryAllocateIn
 
         if (k_forceFlush)
         {
-            VulkanDump::flushToFile(VULKAN_DUMP_FILE);
+            VulkanDump::flush();
         }
     }
 }
@@ -518,7 +666,7 @@ void VulkanDump::dumpPostAllocateMemory(VkResult result, VkDeviceMemory* pMemory
 
         if (k_forceFlush)
         {
-            VulkanDump::flushToFile(VULKAN_DUMP_FILE);
+            VulkanDump::flush();
         }
     }
 }
@@ -537,9 +685,18 @@ void VulkanDump::dumpFreeMemory(VkDevice device, VkDeviceMemory memory, const Vk
 
         if (k_forceFlush)
         {
-            VulkanDump::flushToFile(VULKAN_DUMP_FILE);
+            VulkanDump::flush();
         }
     }
+}
+
+void VulkanDump::flush()
+{
+#if defined(PLATFORM_ANDROID)
+    VulkanDump::flushToConsole();
+#else
+    VulkanDump::flushToFile(VULKAN_DUMP_FILE);
+#endif //PLATFORM_ANDROID
 }
 
 void VulkanDump::flushToConsole()

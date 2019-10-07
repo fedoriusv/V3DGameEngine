@@ -43,7 +43,7 @@ namespace vk
 
         bool recteate(const SwapchainConfig& config);
 
-        void attachResource(VulkanResource* resource, const std::function<void(VulkanResource* resource)>& deleter);
+        void attachResource(VulkanResource* resource, const std::function<bool(VulkanResource*)>& recreator);
 
         VulkanImage* getBackbuffer() const;
         VulkanImage* getSwapchainImage(u32 index) const;
@@ -70,8 +70,8 @@ namespace vk
         std::vector<VkSemaphore> m_acquireSemaphore;
         std::vector<VkFence> m_acquireFence;
 
-        void freeAttachedResources();
-        std::vector<std::tuple<VulkanResource*, const std::function<void(VulkanResource*)>>> m_swapchainResources;
+        void recreateAttachedResources();
+        std::vector<std::tuple<VulkanResource*, const std::function<bool(VulkanResource*)>>> m_swapchainResources;
 
         SwapchainConfig m_config;
 

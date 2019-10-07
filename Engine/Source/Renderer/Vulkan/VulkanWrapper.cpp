@@ -132,10 +132,8 @@ void VulkanWrapper::FreeMemory(VkDevice device, VkDeviceMemory memory, const VkA
 {
 #if VULKAN_DUMP
     VulkanDump::getInstance()->dumpFreeMemory(device, memory, pAllocator);
-    vkFreeMemory(device, memory, pAllocator);
-#else
-    vkFreeMemory(device, memory, pAllocator);
 #endif //VULKAN_DUMP
+    vkFreeMemory(device, memory, pAllocator);
 }
 
 VkResult VulkanWrapper::MapMemory(VkDevice device, VkDeviceMemory memory, VkDeviceSize offset, VkDeviceSize size, VkMemoryMapFlags flags, void ** ppData) noexcept
@@ -301,10 +299,8 @@ void VulkanWrapper::DestroyBuffer(VkDevice device, VkBuffer buffer, const VkAllo
 {
 #if VULKAN_DUMP
     VulkanDump::getInstance()->dumpDestroyBuffer(device, buffer, pAllocator);
-    vkDestroyBuffer(device, buffer, pAllocator);
-#else
-    vkDestroyBuffer(device, buffer, pAllocator);
 #endif //VULKAN_DUMP
+    vkDestroyBuffer(device, buffer, pAllocator);
 }
 
 VkResult VulkanWrapper::CreateBufferView(VkDevice device, const VkBufferViewCreateInfo * pCreateInfo, const VkAllocationCallbacks * pAllocator, VkBufferView * pView) noexcept
@@ -333,10 +329,8 @@ void VulkanWrapper::DestroyImage(VkDevice device, VkImage image, const VkAllocat
 {
 #if VULKAN_DUMP
     VulkanDump::getInstance()->dumpDestroyImage(device, image, pAllocator);
-    vkDestroyImage(device, image, pAllocator);
-#else
-    vkDestroyImage(device, image, pAllocator);
 #endif //VULKAN_DUMP
+    vkDestroyImage(device, image, pAllocator);
 }
 
 void VulkanWrapper::GetImageSubresourceLayout(VkDevice device, VkImage image, const VkImageSubresource * pSubresource, VkSubresourceLayout * pLayout) noexcept
@@ -346,11 +340,21 @@ void VulkanWrapper::GetImageSubresourceLayout(VkDevice device, VkImage image, co
 
 VkResult VulkanWrapper::CreateImageView(VkDevice device, const VkImageViewCreateInfo * pCreateInfo, const VkAllocationCallbacks * pAllocator, VkImageView * pView) noexcept
 {
+#if VULKAN_DUMP
+    VulkanDump::getInstance()->dumpPreCreateImageView(device, pCreateInfo, pAllocator);
+    VkResult result = vkCreateImageView(device, pCreateInfo, pAllocator, pView);
+    VulkanDump::getInstance()->dumpPostCreateImageView(result, pView);
+    return result;
+#else
     return vkCreateImageView(device, pCreateInfo, pAllocator, pView);
+#endif //VULKAN_DUMP
 }
 
 void VulkanWrapper::DestroyImageView(VkDevice device, VkImageView imageView, const VkAllocationCallbacks * pAllocator) noexcept
 {
+#if VULKAN_DUMP
+    VulkanDump::getInstance()->dumpDestroyImageView(device, imageView, pAllocator);
+#endif //VULKAN_DUMP
     vkDestroyImageView(device, imageView, pAllocator);
 }
 
@@ -976,6 +980,23 @@ VkResult VulkanWrapper::AcquireNextImage2(VkDevice device, const VkAcquireNextIm
     return vkAcquireNextImage2KHR(device, pAcquireInfo, pImageIndex);
 }
 #endif //VK_KHR_swapchain
+
+#ifdef VK_EXT_debug_report
+VkResult VulkanWrapper::CreateDebugReportCallback(VkInstance instance, const VkDebugReportCallbackCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDebugReportCallbackEXT* pCallback)
+{
+    return vkCreateDebugReportCallbackEXT(instance, pCreateInfo, pAllocator, pCallback);
+}
+
+void VulkanWrapper::DestroyDebugReportCallback(VkInstance instance, VkDebugReportCallbackEXT callback, const VkAllocationCallbacks* pAllocator)
+{
+    vkDestroyDebugReportCallbackEXT(instance, callback, pAllocator);
+}
+
+void VulkanWrapper::DebugReportMessage(VkInstance instance, VkDebugReportFlagsEXT flags, VkDebugReportObjectTypeEXT objectType, uint64_t object, size_t location, int32_t messageCode, const char* pLayerPrefix, const char* pMessage)
+{
+    vkDebugReportMessageEXT(instance, flags, objectType, object, location, messageCode, pLayerPrefix, pMessage);
+}
+#endif //VK_EXT_debug_report
 
 #ifdef VK_EXT_debug_utils
 VkResult VulkanWrapper::SetDebugUtilsObjectName(VkDevice device, const VkDebugUtilsObjectNameInfoEXT * pNameInfo) noexcept

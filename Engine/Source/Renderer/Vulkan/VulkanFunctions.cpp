@@ -38,7 +38,7 @@ bool LoadVulkanLibrary()
     }
 
 #   define LOAD_VK_ENTRYPOINTS(Func) Func = (PFN_##Func)dlsym(g_libDynamicVulkan, #Func);
-	ENUM_VK_ENTRYPOINTS_BASE_FUNCTIONS(LOAD_VK_ENTRYPOINTS);
+    ENUM_VK_ENTRYPOINTS_BASE_FUNCTIONS(LOAD_VK_ENTRYPOINTS);
 #   undef LOAD_VK_ENTRYPOINTS
 
     bool validation = true;
@@ -76,6 +76,7 @@ bool LoadVulkanLibrary(VkInstance instance)
     ENUM_VK_ENTRYPOINTS_SWAPCHAIN_FUNCTIONS(GET_ADDRES_VK_FUNCTIONS);
     ENUM_VK_ENTRYPOINTS_PLATFORM_FUNCTIONS(GET_ADDRES_VK_FUNCTIONS);
     ENUM_VK_CREATE_RENDERPASS2_FUNCTIONS(GET_ADDRES_VK_FUNCTIONS);
+    ENUM_VK_DEBUG_REPORT_FUNCTIONS(GET_ADDRES_VK_FUNCTIONS);
     ENUM_VK_DEBUG_UTILS_FUNCTIONS(GET_ADDRES_VK_FUNCTIONS);
 #   undef GET_ADDRES_VK_FUNCTIONS
 
@@ -105,7 +106,7 @@ void FreeVulkanLibrary()
         LOG_INFO("FreeVulkanLibrary free libvulkan.so");
 
 #   define CLEAR_VK_ENTRYPOINTS(Func) Func = nullptr;
-		ENUM_VK_ALL_FUNCTIONS(CLEAR_VK_ENTRYPOINTS);
+        ENUM_VK_ALL_FUNCTIONS(CLEAR_VK_ENTRYPOINTS);
 #   undef CLEAR_VK_ENTRYPOINTS
 
         dlclose(g_libDynamicVulkan);
@@ -118,4 +119,5 @@ void FreeVulkanLibrary()
 } //namespace vk
 } //namespace renderer
 } //namespace v3d
+
 #endif //VULKAN_RENDER

@@ -180,7 +180,7 @@ bool MeshAssimpDecoder::decodeMesh(const aiScene* scene, stream::Stream* modelSt
         std::vector<renderer::VertexInputAttribDescription::InputAttribute> inputAttributes;
 
         scene::ModelHeader::VertexProperiesFlags contentFlag = 0;
-        auto buildVertexData = [&inputBindings, &inputAttributes, &contentFlag](const aiMesh* mesh, const scene::ModelHeader& header, bool useBitangent) -> u32
+        auto buildVertexData = [&inputAttributes, &contentFlag](const aiMesh* mesh, const scene::ModelHeader& header, bool useBitangent) -> u32
         {
             u32 vertexSize = 0;
             if (mesh->HasPositions())
