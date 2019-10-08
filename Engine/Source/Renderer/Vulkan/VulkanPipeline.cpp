@@ -351,11 +351,13 @@ VkVertexInputRate VulkanGraphicPipeline::covertInputRateToVk(VertexInputAttribDe
 
 VkPipeline VulkanGraphicPipeline::getHandle() const
 {
+    ASSERT(m_pipeline != VK_NULL_HANDLE, "nullptr");
     return m_pipeline;
 }
 
 VkPipelineLayout VulkanGraphicPipeline::getPipelineLayoutHandle() const
 {
+    ASSERT(m_pipelineLayout._layout != VK_NULL_HANDLE, "nullptr");
     return m_pipelineLayout._layout;
 }
 

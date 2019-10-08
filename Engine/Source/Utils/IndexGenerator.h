@@ -8,6 +8,9 @@ namespace utils
 {
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    /**
+    * IndexGenerator class. Use for hashing instead pointer addresses
+    */
     class IndexGenerator
     {
     public:

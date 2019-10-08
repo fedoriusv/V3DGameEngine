@@ -95,6 +95,7 @@ VulkanRenderPass::~VulkanRenderPass()
 
 VkRenderPass VulkanRenderPass::getHandle() const
 {
+    ASSERT(m_renderpass != VK_NULL_HANDLE, "nullptr");
     return m_renderpass;
 }
 
@@ -471,8 +472,11 @@ bool VulkanRenderPass::create()
 
 void VulkanRenderPass::destroy()
 {
-    VulkanWrapper::DestroyRenderPass(m_device, m_renderpass, VULKAN_ALLOCATOR);
-    m_renderpass = VK_NULL_HANDLE;
+    if (m_renderpass)
+    {
+        VulkanWrapper::DestroyRenderPass(m_device, m_renderpass, VULKAN_ALLOCATOR);
+        m_renderpass = VK_NULL_HANDLE;
+    }
 }
 
 } //namespace vk

@@ -1495,7 +1495,7 @@ u32 VulkanImage::calculateImageSize(const core::Dimension3D & size, u32 mipLevel
 
 VkImage VulkanImage::getHandle() const
 {
-    ASSERT(m_image, "nullptr");
+    ASSERT(m_image != VK_NULL_HANDLE, "nullptr");
     return m_image;
 }
 

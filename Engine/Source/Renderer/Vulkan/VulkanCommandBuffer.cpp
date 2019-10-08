@@ -56,6 +56,9 @@ VulkanCommandBuffer::~VulkanCommandBuffer()
 {
     LOG_DEBUG("~VulkanCommandBuffer destructor %llx", this);
 
+    //released form pool manager
+    m_command = VK_NULL_HANDLE;
+
     if (m_fence != VK_NULL_HANDLE)
     {
         VulkanWrapper::DestroyFence(m_device, m_fence, VULKAN_ALLOCATOR);
@@ -68,7 +71,7 @@ VulkanCommandBuffer::~VulkanCommandBuffer()
 
 VkCommandBuffer VulkanCommandBuffer::getHandle() const
 {
-    ASSERT(m_command, "m_command is nullptr");
+    ASSERT(m_command != VK_NULL_HANDLE, "nullptr");
     return m_command;
 }
 

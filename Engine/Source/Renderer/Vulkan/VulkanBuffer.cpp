@@ -141,6 +141,8 @@ bool VulkanBuffer::create()
         return false;
     }
 
+//TODO
+//Create buffer view
 /*if (!createViewBuffer())
 {
     VulkanBuffer::destroy();
@@ -156,11 +158,8 @@ void VulkanBuffer::destroy()
 {
     ASSERT(!m_mapped, "mapped");
 
-    /*if (m_imageView)
-    {
-        VulkanWrapper::DestroyImageView(m_device, m_imageView, VULKAN_ALLOCATOR);
-        m_imageView = VK_NULL_HANDLE;
-    }*/
+    //TODO
+    //destroy buffer view
 
     if (m_buffer)
     {
@@ -264,6 +263,7 @@ bool VulkanBuffer::upload(Context* context, u32 offset, u64 size, void * data)
 
 VkBuffer VulkanBuffer::getHandle() const
 {
+    ASSERT(m_buffer != VK_NULL_HANDLE, "nullptr");
     return m_buffer;
 }
 
@@ -298,7 +298,6 @@ void * VulkanBuffer::map()
         }
     }
     m_mapped = true;
-
 
     return m_memory._mapped;
 }

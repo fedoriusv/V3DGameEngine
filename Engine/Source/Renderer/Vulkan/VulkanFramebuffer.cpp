@@ -34,6 +34,7 @@ VulkanFramebuffer::~VulkanFramebuffer()
 
 VkFramebuffer VulkanFramebuffer::getHandle() const
 {
+    ASSERT(m_framebuffer != VK_NULL_HANDLE, "nullptr");
     return m_framebuffer;
 }
 
@@ -101,8 +102,11 @@ void VulkanFramebuffer::destroy()
 {
     m_imageViews.clear();
 
-    VulkanWrapper::DestroyFramebuffer(m_device, m_framebuffer, VULKAN_ALLOCATOR);
-    m_framebuffer = VK_NULL_HANDLE;
+    if (m_framebuffer)
+    {
+        VulkanWrapper::DestroyFramebuffer(m_device, m_framebuffer, VULKAN_ALLOCATOR);
+        m_framebuffer = VK_NULL_HANDLE;
+    }
 }
 
 } //namespace vk
