@@ -111,10 +111,11 @@ namespace renderer
     struct RenderPassDescription
     {
         RenderPassDescription() noexcept
+            : _countColorAttachments(0)
+            , _hasDepthStencilAttahment(false)
+            , _padding(0)
         {
             _attachments.fill(AttachmentDescription());
-            _countColorAttachments = 0;
-            _hasDepthStencilAttahment = false;
         }
 
         std::array<AttachmentDescription, k_maxFramebufferAttachments> _attachments; //32 bytes

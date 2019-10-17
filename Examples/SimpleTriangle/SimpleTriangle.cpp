@@ -100,9 +100,12 @@ void SimpleTriangle::init(v3d::renderer::CommandList* commandList, const core::D
     m_Program = m_CommandList->createObject<renderer::ShaderProgram, std::vector<const renderer::Shader*>>({ vertShader, fragShader });
 
     m_RenderTarget = m_CommandList->createObject<renderer::RenderTargetState>(size);
-    m_RenderTarget->setColorTexture(0, m_CommandList->getBackbuffer(), renderer::RenderTargetLoadOp::LoadOp_Clear, renderer::RenderTargetStoreOp::StoreOp_Store, core::Vector4D(0.0f));
+    m_RenderTarget->setColorTexture(0, m_CommandList->getBackbuffer(), { renderer::RenderTargetLoadOp::LoadOp_Clear, renderer::RenderTargetStoreOp::StoreOp_Store, core::Vector4D(0.0f) },
+        { renderer::TransitionOp::TransitionOp_Undefined, renderer::TransitionOp::TransitionOp_Present });
+
     renderer::Texture2D* depthAttachment = m_CommandList->createObject<renderer::Texture2D>(renderer::TextureUsage::TextureUsage_Attachment, renderer::Format::Format_D24_UNorm_S8_UInt, size, renderer::TextureSamples::TextureSamples_x1);
-    m_RenderTarget->setDepthStencilTexture(depthAttachment, renderer::RenderTargetLoadOp::LoadOp_Clear, renderer::RenderTargetStoreOp::StoreOp_DontCare, 1.0f);
+    m_RenderTarget->setDepthStencilTexture(depthAttachment, { renderer::RenderTargetLoadOp::LoadOp_Clear, renderer::RenderTargetStoreOp::StoreOp_DontCare, 1.0f}, { renderer::RenderTargetLoadOp::LoadOp_DontCare, renderer::RenderTargetStoreOp::StoreOp_DontCare, 0 },
+        { renderer::TransitionOp::TransitionOp_Undefined, renderer::TransitionOp::TransitionOp_DepthStencilAttachmet });
 
     std::vector<core::Vector3D> geometryData = 
     {
@@ -133,7 +136,7 @@ void SimpleTriangle::init(v3d::renderer::CommandList* commandList, const core::D
     m_CommandList->setPipelineState(m_Pipeline);
     m_CommandList->setRenderTarget(m_RenderTarget);
 
-    m_CommandList->sumitCommands();
+    m_CommandList->submitCommands();
     m_CommandList->flushCommands();
 }
 

@@ -467,7 +467,7 @@ void CommandList::flushCommands()
     CommandList::executeCommands();
 }
 
-void CommandList::sumitCommands(bool wait)
+void CommandList::submitCommands(bool wait)
 {
     if (CommandList::isImmediate())
     {

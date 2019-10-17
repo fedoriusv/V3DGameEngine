@@ -43,7 +43,7 @@ SimpleRender::SimpleRender(renderer::CommandList& cmdList, const core::Dimension
     cmdList.setPipelineState(m_pipeline.get());
     cmdList.setRenderTarget(m_renderTarget.get());
 
-    cmdList.sumitCommands();
+    cmdList.submitCommands();
     cmdList.flushCommands();
 }
 

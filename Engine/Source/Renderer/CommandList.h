@@ -67,7 +67,7 @@ namespace renderer
 
         void flushCommands();
 
-        void sumitCommands(bool wait = false);
+        void submitCommands(bool wait = false);
         void beginFrame();
         void endFrame();
         void presentFrame();
