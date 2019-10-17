@@ -84,7 +84,7 @@ bool WindowWindows::initialize()
     }
 
     ShowWindow(m_hWnd, SW_SHOWNORMAL);
-#ifdef USE_LOGGER
+#if !USE_LOGGER
     ShowWindow(GetConsoleWindow(), SW_HIDE);
 #endif //USE_LOGGER
     LOG_DEBUG("WindowWindows::initialize: HWND created, window %llx, handle %llx", this, m_hWnd);
