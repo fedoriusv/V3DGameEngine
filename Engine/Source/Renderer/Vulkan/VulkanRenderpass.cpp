@@ -122,6 +122,7 @@ bool VulkanRenderPass::create()
 #endif //VK_KHR_depth_stencil_resolve
 
         bool depthStencil = false;
+        bool depthStencilAutoresolve = false;
         u32 index = 0;
         for (u32 descIndex = 0; descIndex < m_descriptions.size(); ++descIndex)
         {
@@ -242,6 +243,7 @@ bool VulkanRenderPass::create()
                         resolveDepthStencilAttachmentReferences.attachment = index;
                         resolveDepthStencilAttachmentReferences.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
                         index++;
+                        depthStencilAutoresolve = true;
                     }
 #endif //VK_KHR_depth_stencil_resolve
                     depthStencil = true;
@@ -264,7 +266,7 @@ bool VulkanRenderPass::create()
             VkSubpassDescriptionDepthStencilResolveKHR subpassDescriptionDepthStencilResolve = {};
             subpassDescriptionDepthStencilResolve.sType = VK_STRUCTURE_TYPE_SUBPASS_DESCRIPTION_DEPTH_STENCIL_RESOLVE_KHR;
             subpassDescriptionDepthStencilResolve.pNext = nullptr;
-            if (VulkanDeviceCaps::getInstance()->supportDepthAutoResolve && depthStencil)
+            if (depthStencilAutoresolve)
             {
                 subpassDescriptionDepthStencilResolve.pDepthStencilResolveAttachment = &resolveDepthStencilAttachmentReferences;
                 subpassDescriptionDepthStencilResolve.depthResolveMode = VK_RESOLVE_MODE_AVERAGE_BIT_KHR;
