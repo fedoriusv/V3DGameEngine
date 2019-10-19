@@ -159,6 +159,8 @@ namespace renderer
 
                 , _colorWriteMask(ColorMask::ColorMask_All)
                 , _colorBlendEnable(false)
+
+                , _padding(0)
             {
             }
 

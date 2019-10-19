@@ -12,7 +12,7 @@ namespace renderer
 
     struct DeviceCaps
     {
-        enum TilingType
+        enum TilingType : u32
         {
             TilingType_Optimal = 0,
             TilingType_Linear = 1,
@@ -36,6 +36,9 @@ namespace renderer
         {
             return m_imageFormatSupport[format][type];
         }
+
+        DeviceCaps() = default;
+        ~DeviceCaps() = default;
 
     protected:
 

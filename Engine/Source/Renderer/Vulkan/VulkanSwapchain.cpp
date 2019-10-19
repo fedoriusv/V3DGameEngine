@@ -480,8 +480,8 @@ void VulkanSwapchain::present(VkQueue queue, const std::vector<VkSemaphore>& wai
     }
     else if (result != VK_SUCCESS)
     {
-        //TODO:
-        ASSERT(false, "vkQueuePresentKHR failed");
+        LOG_FATAL(" VulkanSwapchain::QueuePresent: failed with error %s", ErrorString(result).c_str());
+        ASSERT(false, "QueuePresent failed");
     }
     m_currentSemaphoreIndex = (m_currentSemaphoreIndex + 1) % m_acquireSemaphore.size();
 }
