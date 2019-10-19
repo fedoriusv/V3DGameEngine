@@ -10,6 +10,13 @@ namespace scene
 
 CameraArcballHelper::CameraArcballHelper(Camera* camera, f32 distance) noexcept
     : CameraHelper(camera, core::Vector3D(0.0f, 0.0f, k_signZ * distance))
+    , m_distanceLimits({ CameraHelper::getCamera().getNear(), CameraHelper::getCamera().getFar() })
+{
+}
+
+CameraArcballHelper::CameraArcballHelper(Camera* camera, f32 distance, f32 minDistance, f32 maxDistance) noexcept
+    : CameraHelper(camera, core::Vector3D(0.0f, 0.0f, k_signZ* distance))
+    , m_distanceLimits({ minDistance, maxDistance })
 {
 }
 
@@ -79,11 +86,11 @@ void CameraArcballHelper::handlerMouseCallback(v3d::event::InputEventHandler* ha
         f32 newZPos = postion.z + (positionDelta * k_zoomSpeed * 0.1f);
         if (k_signZ < 0)
         {
-            postion.z = std::clamp(newZPos, k_signZ * CameraHelper::getCamera().getFarValue(), k_signZ * CameraHelper::getCamera().getNearValue());
+            postion.z = std::clamp(newZPos, k_signZ * m_distanceLimits.y, k_signZ * m_distanceLimits.x);
         }
         else
         {
-            postion.z = std::clamp(newZPos, CameraHelper::getCamera().getNearValue(), CameraHelper::getCamera().getFarValue());
+            postion.z = std::clamp(newZPos, m_distanceLimits.x, m_distanceLimits.y);
         }
         CameraHelper::setPosition(postion);
     }
@@ -95,11 +102,11 @@ void CameraArcballHelper::handlerMouseCallback(v3d::event::InputEventHandler* ha
         f32 newZPos = postion.z + (wheelDelta * k_zoomSpeed);
         if (k_signZ < 0)
         {
-            postion.z = std::clamp(newZPos, k_signZ * CameraHelper::getCamera().getFarValue(), k_signZ * CameraHelper::getCamera().getNearValue());
+            postion.z = std::clamp(newZPos, k_signZ * m_distanceLimits.y, k_signZ * m_distanceLimits.x);
         }
         else
         {
-            postion.z = std::clamp(newZPos, CameraHelper::getCamera().getNearValue(), CameraHelper::getCamera().getFarValue());
+            postion.z = std::clamp(newZPos, m_distanceLimits.x, m_distanceLimits.y);
         }
         CameraHelper::setPosition(postion);
     }
@@ -134,11 +141,11 @@ void CameraArcballHelper::handlerTouchCallback(v3d::event::InputEventHandler* ha
                 f32 newZPos = postion.z + (positionDelta * k_zoomSpeed * 0.1f);
                 if (k_signZ < 0)
                 {
-                    postion.z = std::clamp(newZPos, k_signZ * CameraHelper::getCamera().getFarValue(), k_signZ * CameraHelper::getCamera().getNearValue());
+                    postion.z = std::clamp(newZPos, k_signZ * m_distanceLimits.y, k_signZ * m_distanceLimits.x);
                 }
                 else
                 {
-                    postion.z = std::clamp(newZPos, CameraHelper::getCamera().getNearValue(), CameraHelper::getCamera().getFarValue());
+                    postion.z = std::clamp(newZPos, m_distanceLimits.x, m_distanceLimits.y);
                 }
                 CameraHelper::setPosition(postion);
             }

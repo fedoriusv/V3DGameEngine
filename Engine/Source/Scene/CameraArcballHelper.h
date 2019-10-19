@@ -22,6 +22,7 @@ namespace scene
         CameraArcballHelper(const CameraArcballHelper&) = delete;
 
         explicit CameraArcballHelper(Camera* camera, f32 distance) noexcept;
+        explicit CameraArcballHelper(Camera* camera, f32 distance, f32 minDistance, f32 maxDistance) noexcept;
         ~CameraArcballHelper();
 
         void setRotation(const core::Vector3D& rotation);
@@ -34,8 +35,11 @@ namespace scene
 
     private:
 
-        const f32       k_rotationSpeed = 0.8f;
-        const f32       k_zoomSpeed = 1.0f;
+        const core::Vector2D m_distanceLimits;
+
+        const f32           k_rotationSpeed = 0.8f;
+        const f32           k_zoomSpeed = 1.0f;
+
 
         static constexpr f32 k_signZ = -1.0f;
 

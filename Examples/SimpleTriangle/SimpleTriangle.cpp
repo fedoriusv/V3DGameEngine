@@ -10,6 +10,9 @@
 
 using namespace v3d;
 
+const f32 k_nearValue = 0.01f;
+const f32 k_farValue = 30.0f;
+
 SimpleTriangle::SimpleTriangle()
     : m_CommandList(nullptr)
 
@@ -18,7 +21,7 @@ SimpleTriangle::SimpleTriangle()
     , m_Pipeline(nullptr)
     , m_Geometry(nullptr)
 
-    , m_Camera(new scene::CameraArcballHelper(new scene::Camera(core::Vector3D(0.0f, 0.0f, 0.0f), core::Vector3D(0.0f, -1.0f, 0.0f)), 3.0f))
+    , m_Camera(new scene::CameraArcballHelper(new scene::Camera(core::Vector3D(0.0f, 0.0f, 0.0f), core::Vector3D(0.0f, -1.0f, 0.0f)), 3.0f, k_nearValue + 2.0f, k_farValue - 10.0f))
 {
 }
 
@@ -30,7 +33,7 @@ void SimpleTriangle::init(v3d::renderer::CommandList* commandList, const core::D
 {
     m_CommandList = commandList;
     ASSERT(m_CommandList, "nullptr");
-    m_Camera->setPerspective(45.0f, size, 0.1f, 50.f);
+    m_Camera->setPerspective(45.0f, size, k_nearValue, k_farValue);
 
     renderer::Shader* vertShader = nullptr;
     {

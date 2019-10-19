@@ -28,8 +28,8 @@ void CameraHelper::setPerspective(f32 FOV, const core::Dimension2D& size, f32 zN
 
     ASSERT(m_camera, "nullptr");
     m_camera->setFOV(FOV);
-    m_camera->setNearValue(zNear);
-    m_camera->setFarValue(zFar);
+    m_camera->setNear(zNear);
+    m_camera->setFar(zFar);
     m_camera->m_orthogonal = false;
 
     m_needUpdate = true;
@@ -40,8 +40,8 @@ void CameraHelper::setOrtho(const core::RectU32& area, f32 zNear, f32 zFar)
     m_area = area;
 
     ASSERT(m_camera, "nullptr");
-    m_camera->setNearValue(zNear);
-    m_camera->setFarValue(zFar);
+    m_camera->setNear(zNear);
+    m_camera->setFar(zFar);
     m_camera->m_orthogonal = true;
 
     m_needUpdate = true;

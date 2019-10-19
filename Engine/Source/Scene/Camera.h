@@ -40,8 +40,8 @@ namespace scene
 
         void setTarget(const core::Vector3D& target);
         void setUpVector(const core::Vector3D& up);
-        void setNearValue(f32 value);
-        void setFarValue(f32 value);
+        void setNear(f32 value);
+        void setFar(f32 value);
         void setFOV(f32 value);
 
         const core::Vector3D& getTarget() const;
@@ -52,8 +52,8 @@ namespace scene
         void setViewMatrix(const core::Matrix4D& view);
         void setProjectionMatrix(const core::Matrix4D& projection);
 
-        f32 getNearValue() const;
-        f32 getFarValue() const;
+        f32 getNear() const;
+        f32 getFar() const;
         f32 getFOV() const;
 
         bool isOrthogonal() const;

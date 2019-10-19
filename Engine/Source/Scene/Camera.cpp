@@ -86,12 +86,12 @@ bool Camera::isOrthogonal() const
     return m_orthogonal;
 }
 
-f32 Camera::getNearValue() const
+f32 Camera::getNear() const
 {
     return m_zNear;
 }
 
-f32 Camera::getFarValue() const
+f32 Camera::getFar() const
 {
     return m_zFar;
 }
@@ -101,13 +101,13 @@ f32 Camera::getFOV() const
     return m_fieldOfView;
 }
 
-void Camera::setNearValue(f32 value)
+void Camera::setNear(f32 value)
 {
     m_zNear = value;
     m_matricesFlag |= CameraState::CameraState_Projection;
 }
 
-void Camera::setFarValue(f32 value)
+void Camera::setFar(f32 value)
 {
     m_zFar = value;
     m_matricesFlag |= CameraState::CameraState_Projection;
