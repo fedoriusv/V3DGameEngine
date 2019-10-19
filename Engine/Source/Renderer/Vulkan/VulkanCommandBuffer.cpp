@@ -50,6 +50,8 @@ VulkanCommandBuffer::VulkanCommandBuffer(VkDevice device, CommandBufferLevel lev
         ASSERT(primaryBuffer, "primaryBuffer is nullptr");
         m_primaryBuffer = primaryBuffer;
     }
+
+    memset(&m_renderpassState, 0, sizeof(RenderPassState));
 }
 
 VulkanCommandBuffer::~VulkanCommandBuffer()
@@ -82,7 +84,7 @@ VulkanCommandBuffer::CommandBufferStatus VulkanCommandBuffer::getStatus() const
 
 void VulkanCommandBuffer::addSemaphore(VkPipelineStageFlags mask, VkSemaphore semaphore)
 {
-    if (m_level == VulkanCommandBuffer::SecondaryBuffer)
+    if (m_level == CommandBufferLevel::SecondaryBuffer)
     {
         ASSERT(m_primaryBuffer, "m_primaryBuffer is nullptr");
         m_primaryBuffer->addSemaphore(mask, semaphore);
@@ -95,12 +97,12 @@ void VulkanCommandBuffer::addSemaphore(VkPipelineStageFlags mask, VkSemaphore se
 bool VulkanCommandBuffer::waitComplete(u64 timeout)
 {
     VulkanCommandBuffer::refreshFenceStatus();
-    if (m_status == VulkanCommandBuffer::CommandBufferStatus::Finished)
+    if (m_status == CommandBufferStatus::Finished)
     {
         return true;
     }
 
-    if (m_status == VulkanCommandBuffer::CommandBufferStatus::Submit)
+    if (m_status == CommandBufferStatus::Submit)
     {
         timeout = (timeout == 0) ? u64(~0ULL) : timeout;
         VkResult result = VulkanWrapper::WaitForFences(m_device, 1, &m_fence, VK_TRUE, timeout);
@@ -119,19 +121,19 @@ bool VulkanCommandBuffer::waitComplete(u64 timeout)
 
 void VulkanCommandBuffer::refreshFenceStatus()
 {
-    if (m_status == VulkanCommandBuffer::CommandBufferStatus::Submit)
+    if (m_status == CommandBufferStatus::Submit)
     {
-        if (m_level == VulkanCommandBuffer::PrimaryBuffer)
+        if (m_level == CommandBufferLevel::PrimaryBuffer)
         {
             VkResult result = VulkanWrapper::GetFenceStatus(m_device, m_fence);
             if (result == VK_SUCCESS)
             {
-                m_status = VulkanCommandBuffer::CommandBufferStatus::Finished;
+                m_status = CommandBufferStatus::Finished;
 
                 result = VulkanWrapper::ResetFences(m_device, 1, &m_fence);
                 if (result != VK_SUCCESS)
                 {
-                    m_status = VulkanCommandBuffer::CommandBufferStatus::Invalid;
+                    m_status = CommandBufferStatus::Invalid;
                     LOG_ERROR("VulkanCommandBuffer::refreshFenceStatus vkResetFences. Error %s", ErrorString(result).c_str());
                 }
 
@@ -187,7 +189,7 @@ void VulkanCommandBuffer::releaseResources()
 
 void VulkanCommandBuffer::beginCommandBuffer()
 {
-    ASSERT(m_status == VulkanCommandBuffer::CommandBufferStatus::Ready, "invalid state");
+    ASSERT(m_status == CommandBufferStatus::Ready, "invalid state");
 
     VkCommandBufferBeginInfo commandBufferBeginInfo = {};
     commandBufferBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -218,7 +220,7 @@ void VulkanCommandBuffer::beginCommandBuffer()
 
 void VulkanCommandBuffer::endCommandBuffer()
 {
-    ASSERT(m_status == VulkanCommandBuffer::CommandBufferStatus::Begin, "invalid state");
+    ASSERT(m_status == CommandBufferStatus::Begin, "invalid state");
     VulkanWrapper::EndCommandBuffer(m_command);
 
     m_status = CommandBufferStatus::End;
@@ -230,10 +232,20 @@ void VulkanCommandBuffer::cmdBeginRenderpass(const VulkanRenderPass* pass, const
 
     pass->captureInsideCommandBuffer(this, 0);
     framebuffer->captureInsideCommandBuffer(this, 0);
+
+    m_renderpassState._renderpass = pass;
+    m_renderpassState._framebuffer = framebuffer;
+
+    u32 index = 0;
     for (auto& image : framebuffer->getImages())
     {
         VulkanImage* vkImage = static_cast<VulkanImage*>(image);
         vkImage->captureInsideCommandBuffer(this, 0);
+
+        VkImageLayout layout = pass->getAttachmentLayout<0>(index);
+        vkImage->setLayout(layout);
+
+        ++index;
     }
 
     VkRenderPassBeginInfo renderPassBeginInfo = {};
@@ -245,37 +257,50 @@ void VulkanCommandBuffer::cmdBeginRenderpass(const VulkanRenderPass* pass, const
     renderPassBeginInfo.clearValueCount = static_cast<u32>(clearValues.size());
     renderPassBeginInfo.pClearValues = clearValues.data();
 
-	if (VulkanDeviceCaps::getInstance()->supportRenderpass2)
-	{
-		VkSubpassBeginInfoKHR subpassBeginInfo = {};
-		subpassBeginInfo.sType = VK_STRUCTURE_TYPE_SUBPASS_BEGIN_INFO_KHR;
-		subpassBeginInfo.pNext = nullptr;
-		subpassBeginInfo.contents = VK_SUBPASS_CONTENTS_INLINE;
+    if (VulkanDeviceCaps::getInstance()->supportRenderpass2)
+    {
+        VkSubpassBeginInfoKHR subpassBeginInfo = {};
+        subpassBeginInfo.sType = VK_STRUCTURE_TYPE_SUBPASS_BEGIN_INFO_KHR;
+        subpassBeginInfo.pNext = nullptr;
+        subpassBeginInfo.contents = VK_SUBPASS_CONTENTS_INLINE;
 
-		VulkanWrapper::CmdBeginRenderPass2(m_command, &renderPassBeginInfo, &subpassBeginInfo);
-	}
-	else
-	{
-		VulkanWrapper::CmdBeginRenderPass(m_command, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
-	}
+        VulkanWrapper::CmdBeginRenderPass2(m_command, &renderPassBeginInfo, &subpassBeginInfo);
+    }
+    else
+    {
+        VulkanWrapper::CmdBeginRenderPass(m_command, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+    }
 
     m_isInsideRenderPass = true;
 }
 
 void VulkanCommandBuffer::cmdEndRenderPass()
 {
-	if (VulkanDeviceCaps::getInstance()->supportRenderpass2)
-	{
-		VkSubpassEndInfoKHR subpassEndInfo = {};
-		subpassEndInfo.sType = VK_STRUCTURE_TYPE_SUBPASS_END_INFO_KHR;
-		subpassEndInfo.pNext = nullptr;
+    ASSERT(m_status == CommandBufferStatus::Begin && m_isInsideRenderPass, "invalid state");
 
-		VulkanWrapper::CmdEndRenderPass2(m_command, &subpassEndInfo);
-	}
-	else
-	{
-		VulkanWrapper::CmdEndRenderPass(m_command);
-	}
+    if (VulkanDeviceCaps::getInstance()->supportRenderpass2)
+    {
+        VkSubpassEndInfoKHR subpassEndInfo = {};
+        subpassEndInfo.sType = VK_STRUCTURE_TYPE_SUBPASS_END_INFO_KHR;
+        subpassEndInfo.pNext = nullptr;
+
+        VulkanWrapper::CmdEndRenderPass2(m_command, &subpassEndInfo);
+    }
+    else
+    {
+        VulkanWrapper::CmdEndRenderPass(m_command);
+    }
+
+    u32 index = 0;
+    for (auto& image : m_renderpassState._framebuffer->getImages())
+    {
+        VulkanImage* vkImage = static_cast<VulkanImage*>(image);
+
+        VkImageLayout layout = m_renderpassState._renderpass->getAttachmentLayout<1>(index);
+        vkImage->setLayout(layout);
+
+        ++index;
+    }
 
     m_isInsideRenderPass = false;
 }

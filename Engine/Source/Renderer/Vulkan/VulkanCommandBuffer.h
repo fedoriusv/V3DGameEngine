@@ -125,6 +125,14 @@ namespace vk
 
         std::recursive_mutex m_mutex;
         std::set<VulkanResource*> m_resources;
+
+        struct RenderPassState
+        {
+            const VulkanRenderPass*  _renderpass;
+            const VulkanFramebuffer* _framebuffer;
+        };
+
+        RenderPassState m_renderpassState;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

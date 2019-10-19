@@ -47,6 +47,15 @@ namespace vk
 
         VkRenderPass getHandle() const;
 
+        template<u32 status>
+        VkImageLayout getAttachmentLayout(u32 index) const
+        {
+            ASSERT(index < m_layout.size(), "range out");
+            static_assert(status < std::tuple_size<LayoutState>::value);
+
+            return std::get<status>(m_layout[index]);
+        }
+
         bool create() override;
         void destroy() override;
 
@@ -55,6 +64,8 @@ namespace vk
         VkDevice     m_device;
         VkRenderPass m_renderpass;
 
+        using LayoutState = std::tuple<VkImageLayout, VkImageLayout>;
+        std::vector<LayoutState> m_layout;
         std::vector<VulkanAttachmentDescription> m_descriptions;
     };
 

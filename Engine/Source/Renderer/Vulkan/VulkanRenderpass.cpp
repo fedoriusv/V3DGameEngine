@@ -101,6 +101,9 @@ VkRenderPass VulkanRenderPass::getHandle() const
 
 bool VulkanRenderPass::create()
 {
+    ASSERT(!m_renderpass, "not empty");
+    m_layout.resize(m_descriptions.size(), std::make_tuple(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_UNDEFINED));
+
     if (VulkanDeviceCaps::getInstance()->supportRenderpass2)
     {
         std::vector<VkAttachmentDescription2KHR> attachmentDescriptions;
@@ -159,18 +162,24 @@ bool VulkanRenderPass::create()
                     attachmentReference.aspectMask = 0;
                     attachmentReference.attachment = index;
                     attachmentReference.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-                    index++;
+
+                    m_layout[index] = { attachmentReference.layout, attach._finalLayout };
+                    ++index;
+
                     colorAttachmentReferences.push_back(attachmentReference);
                 }
                 else
                 {
+                    depthStencil = true;
+
                     attachmentDescription.stencilLoadOp = attach._stencilLoadOp;
                     attachmentDescription.stencilStoreOp = attach._stensilStoreOp;
 
                     depthStencilAttachmentReferences.attachment = index;
                     depthStencilAttachmentReferences.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-                    index++;
-                    depthStencil = true;
+
+                    m_layout[index] = { depthStencilAttachmentReferences.layout, attach._finalLayout };
+                    ++index;
                 }
 
                 attachmentDescriptions.push_back(attachmentDescription);
@@ -213,8 +222,12 @@ bool VulkanRenderPass::create()
                     msaaAttachmentReference.aspectMask = 0;
                     msaaAttachmentReference.attachment = index;
                     msaaAttachmentReference.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-                    index++;
+
+                    m_layout[index] = { msaaAttachmentReference.layout, attach._finalLayout };
+                    ++index;
+
                     colorAttachmentReferences.push_back(msaaAttachmentReference);
+
 
                     VkAttachmentReference2KHR resolveAttachmentReference = {};
                     resolveAttachmentReference.sType = VK_STRUCTURE_TYPE_ATTACHMENT_REFERENCE_2_KHR;
@@ -222,11 +235,16 @@ bool VulkanRenderPass::create()
                     resolveAttachmentReference.aspectMask = 0;
                     resolveAttachmentReference.attachment = index;
                     resolveAttachmentReference.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-                    index++;
+
+                    m_layout[index] = { resolveAttachmentReference.layout, attach._finalLayout };
+                    ++index;
+
                     resolveAttachmentReferences.push_back(resolveAttachmentReference);
                 }
                 else
                 {
+                    depthStencil = true;
+
                     msaaAttachmentDescription.stencilLoadOp = attach._stencilLoadOp;
                     msaaAttachmentDescription.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
 
@@ -235,18 +253,22 @@ bool VulkanRenderPass::create()
 
                     depthStencilAttachmentReferences.attachment = index;
                     depthStencilAttachmentReferences.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-                    index++;
+
+                    m_layout[index] = { depthStencilAttachmentReferences.layout, attach._finalLayout };
+                    ++index;
 
 #ifdef VK_KHR_depth_stencil_resolve
                     if (VulkanDeviceCaps::getInstance()->supportDepthAutoResolve)
                     {
+                        depthStencilAutoresolve = true;
+
                         resolveDepthStencilAttachmentReferences.attachment = index;
                         resolveDepthStencilAttachmentReferences.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-                        index++;
-                        depthStencilAutoresolve = true;
+
+                        m_layout[index] = { resolveDepthStencilAttachmentReferences.layout, attach._finalLayout };
+                        ++index;
                     }
 #endif //VK_KHR_depth_stencil_resolve
-                    depthStencil = true;
                 }
 
                 attachmentDescriptions.push_back(msaaAttachmentDescription);
@@ -355,18 +377,24 @@ bool VulkanRenderPass::create()
                     VkAttachmentReference attachmentReference = {};
                     attachmentReference.attachment = index;
                     attachmentReference.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+                    m_layout[index] = { attachmentReference.layout, attach._finalLayout };
                     index++;
+
                     colorAttachmentReferences.push_back(attachmentReference);
                 }
                 else
                 {
+                    depthStencil = true;
+
                     attachmentDescription.stencilLoadOp = attach._stencilLoadOp;
                     attachmentDescription.stencilStoreOp = attach._stensilStoreOp;
 
                     depthStencilAttachmentReferences.attachment = index;
                     depthStencilAttachmentReferences.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+
+                    m_layout[index] = { depthStencilAttachmentReferences.layout, attach._finalLayout };
                     index++;
-                    depthStencil = true;
                 }
 
                 attachmentDescriptions.push_back(attachmentDescription);
@@ -400,17 +428,26 @@ bool VulkanRenderPass::create()
                     VkAttachmentReference msaaAttachmentReference = {};
                     msaaAttachmentReference.attachment = index;
                     msaaAttachmentReference.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+                    m_layout[index] = { msaaAttachmentReference.layout, attach._finalLayout };
                     index++;
+
                     colorAttachmentReferences.push_back(msaaAttachmentReference);
+
 
                     VkAttachmentReference resolveAttachmentReference = {};
                     resolveAttachmentReference.attachment = index;
                     resolveAttachmentReference.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+                    m_layout[index] = { resolveAttachmentReference.layout, attach._finalLayout };
                     index++;
+
                     resolveAttachmentReferences.push_back(resolveAttachmentReference);
                 }
                 else
                 {
+                    depthStencil = true;
+
                     msaaAttachmentDescription.stencilLoadOp = attach._stencilLoadOp;
                     msaaAttachmentDescription.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
 
@@ -419,9 +456,9 @@ bool VulkanRenderPass::create()
 
                     depthStencilAttachmentReferences.attachment = index;
                     depthStencilAttachmentReferences.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-                    index++;
 
-                    depthStencil = true;
+                    m_layout[index] = { depthStencilAttachmentReferences.layout, attach._finalLayout };
+                    index++;
                 }
 
                 attachmentDescriptions.push_back(msaaAttachmentDescription);
@@ -479,6 +516,8 @@ void VulkanRenderPass::destroy()
         VulkanWrapper::DestroyRenderPass(m_device, m_renderpass, VULKAN_ALLOCATOR);
         m_renderpass = VK_NULL_HANDLE;
     }
+
+    m_layout.clear();
 }
 
 } //namespace vk
