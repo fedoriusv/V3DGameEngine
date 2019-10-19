@@ -793,7 +793,6 @@ VulkanImage::VulkanImage(VulkanMemory::VulkanMemoryAllocator* memory, VkDevice d
 
     , m_image(VK_NULL_HANDLE)
 
-    , m_layout((m_tiling == VK_IMAGE_TILING_OPTIMAL) ? VK_IMAGE_LAYOUT_UNDEFINED : VK_IMAGE_LAYOUT_PREINITIALIZED)
     , m_usage(usage)
     , m_resolveImage(nullptr)
 
@@ -803,7 +802,7 @@ VulkanImage::VulkanImage(VulkanMemory::VulkanMemoryAllocator* memory, VkDevice d
     , m_swapchainImage(false)
 {
     LOG_DEBUG("VulkanImage::VulkanImage constructor %llx", this);
-    m_layout.resize(static_cast<u64>(m_layersLevel) * static_cast<u64>(m_mipsLevel), VK_IMAGE_LAYOUT_UNDEFINED);
+    m_layout.resize(static_cast<u64>(m_layersLevel) * static_cast<u64>(m_mipsLevel), (m_tiling == VK_IMAGE_TILING_OPTIMAL) ? VK_IMAGE_LAYOUT_UNDEFINED : VK_IMAGE_LAYOUT_PREINITIALIZED);
 
     memset(&m_generalImageView[0], VK_NULL_HANDLE, sizeof(m_generalImageView));
 
@@ -1056,9 +1055,14 @@ void VulkanImage::clear(Context * context, const core::Vector4D & color)
     ASSERT(commandBuffer, "commandBuffer is nullptr");
 
     VkImageLayout layout = m_layout.front();
-    commandBuffer->cmdPipelineBarrier(this,VK_PIPELINE_STAGE_TRANSFER_BIT | VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+    if (layout == VK_IMAGE_LAYOUT_UNDEFINED || layout == VK_IMAGE_LAYOUT_PREINITIALIZED)
+    {
+        layout = m_swapchainImage ? VK_IMAGE_LAYOUT_PRESENT_SRC_KHR : VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+    }
+
+    commandBuffer->cmdPipelineBarrier(this, VK_PIPELINE_STAGE_TRANSFER_BIT | VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
     commandBuffer->cmdClearImage(this, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &clearColorValue);
-    commandBuffer->cmdPipelineBarrier(this,VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT | VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, layout);
+    commandBuffer->cmdPipelineBarrier(this, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT | VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, layout);
 }
 
 void VulkanImage::clear(Context * context, f32 depth, u32 stencil)
@@ -1071,6 +1075,11 @@ void VulkanImage::clear(Context * context, f32 depth, u32 stencil)
     ASSERT(commandBuffer, "commandBuffer is nullptr");
 
     VkImageLayout layout = m_layout.front();
+    if (layout == VK_IMAGE_LAYOUT_UNDEFINED || layout == VK_IMAGE_LAYOUT_PREINITIALIZED)
+    {
+        layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+    }
+
     commandBuffer->cmdPipelineBarrier(this, VK_PIPELINE_STAGE_TRANSFER_BIT | VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
     commandBuffer->cmdClearImage(this, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &clearDepthStencilValue);
     commandBuffer->cmdPipelineBarrier(this, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT | VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, layout);
