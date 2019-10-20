@@ -24,6 +24,9 @@ VulkanFramebuffer::VulkanFramebuffer(VkDevice device, const std::vector<Image*>&
     , m_framebuffer(VK_NULL_HANDLE)
 {
     LOG_DEBUG("VulkanFramebuffer::VulkanFramebuffer constructor %llx", this);
+#if VULKAN_DEBUG_MARKERS
+    m_debugName = std::to_string(reinterpret_cast<const u64>(this));
+#endif //VULKAN_DEBUG_MARKERS
 }
 
 VulkanFramebuffer::~VulkanFramebuffer()
@@ -94,6 +97,17 @@ bool VulkanFramebuffer::create(const RenderPass* pass)
         LOG_ERROR("VulkanFramebuffer::create vkCreateFramebuffer is failed. Error: %s", ErrorString(result).c_str());
         return false;
     }
+
+#if VULKAN_DEBUG_MARKERS
+    VkDebugUtilsObjectNameInfoEXT debugUtilsObjectNameInfo = {};
+    debugUtilsObjectNameInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT;
+    debugUtilsObjectNameInfo.pNext = nullptr;
+    debugUtilsObjectNameInfo.objectType = VK_OBJECT_TYPE_FRAMEBUFFER;
+    debugUtilsObjectNameInfo.objectHandle = reinterpret_cast<u64>(m_framebuffer);
+    debugUtilsObjectNameInfo.pObjectName = m_debugName.c_str();
+
+    VulkanWrapper::SetDebugUtilsObjectName(m_device, &debugUtilsObjectNameInfo);
+#endif //VULKAN_DEBUG_MARKERS
 
     return true;
 }

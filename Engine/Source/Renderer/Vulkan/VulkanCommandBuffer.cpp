@@ -52,6 +52,10 @@ VulkanCommandBuffer::VulkanCommandBuffer(VkDevice device, CommandBufferLevel lev
     }
 
     memset(&m_renderpassState, 0, sizeof(RenderPassState));
+
+#if VULKAN_DEBUG_MARKERS
+    m_debugName = std::to_string(reinterpret_cast<const u64>(this));
+#endif //VULKAN_DEBUG_MARKERS
 }
 
 VulkanCommandBuffer::~VulkanCommandBuffer()
@@ -215,6 +219,19 @@ void VulkanCommandBuffer::beginCommandBuffer()
         LOG_ERROR("VulkanCommandBuffer::beginCommandBuffer vkBeginCommandBuffer. Error %s", ErrorString(result).c_str());
     }
 
+#if VULKAN_DEBUG_MARKERS
+    VkDebugUtilsLabelEXT debugUtilsLabel = {};
+    debugUtilsLabel.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_LABEL_EXT;
+    debugUtilsLabel.pNext = nullptr;
+    debugUtilsLabel.pLabelName = m_debugName.c_str();
+    debugUtilsLabel.color[0] = 1.0f;
+    debugUtilsLabel.color[1] = 1.0f;
+    debugUtilsLabel.color[2] = 1.0f;
+    debugUtilsLabel.color[3] = 1.0f;
+
+    VulkanWrapper::CmdBeginDebugUtilsLabel(m_command, &debugUtilsLabel);
+#endif //VULKAN_DEBUG_MARKERS
+
     m_status = CommandBufferStatus::Begin;
 }
 
@@ -222,6 +239,10 @@ void VulkanCommandBuffer::endCommandBuffer()
 {
     ASSERT(m_status == CommandBufferStatus::Begin, "invalid state");
     VulkanWrapper::EndCommandBuffer(m_command);
+
+#if VULKAN_DEBUG_MARKERS
+    VulkanWrapper::CmdEndDebugUtilsLabel(m_command);
+#endif //VULKAN_DEBUG_MARKERS
 
     m_status = CommandBufferStatus::End;
 }

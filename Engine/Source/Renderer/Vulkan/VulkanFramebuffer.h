@@ -32,14 +32,17 @@ namespace vk
 
     private:
 
-        VkDevice      m_device;
+        VkDevice                    m_device;
 
         const std::vector<Image*>   m_images;
         std::vector<VkImageView>    m_imageViews;
-        core::Dimension2D m_size;
+        core::Dimension2D           m_size;
 
-        VkFramebuffer m_framebuffer;
+        VkFramebuffer               m_framebuffer;
 
+#if VULKAN_DEBUG_MARKERS
+        std::string m_debugName;
+#endif //VULKAN_DEBUG_MARKERS
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

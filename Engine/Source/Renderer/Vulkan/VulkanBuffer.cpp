@@ -15,10 +15,6 @@ namespace renderer
 {
 namespace vk
 {
-#if VULKAN_DEBUG_MARKERS
-u32 VulkanBuffer::s_debugNameGenerator = 0;
-#endif //VULKAN_DEBUG_MARKERS
-
 VulkanBuffer::VulkanBuffer(VulkanMemory::VulkanMemoryAllocator* memory, VkDevice device, Buffer::BufferType type, StreamBufferUsageFlags usageFlag, u64 size, const std::string& name) noexcept
     : m_device(device)
 
@@ -35,7 +31,7 @@ VulkanBuffer::VulkanBuffer(VulkanMemory::VulkanMemoryAllocator* memory, VkDevice
 {
     LOG_DEBUG("VulkanBuffer::VulkanBuffer constructor %llx", this);
 #if VULKAN_DEBUG_MARKERS
-    m_debugName = name.empty() ? "Buffer_" + std::to_string(s_debugNameGenerator++) : name;
+    m_debugName = name.empty() ? std::to_string(reinterpret_cast<const u64>(this)) : name;
 #endif //VULKAN_DEBUG_MARKERS
 }
 

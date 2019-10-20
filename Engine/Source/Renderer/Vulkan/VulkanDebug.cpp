@@ -3,6 +3,8 @@
 
 #ifdef VULKAN_RENDER
 #include "VulkanWrapper.h"
+#include "VulkanGraphicContext.h"
+#include "VulkanImage.h"
 namespace v3d
 {
 namespace renderer
@@ -222,21 +224,25 @@ VkBool32 VulkanDebugUtils::defaultDebugUtilsMessegerCallback(VkDebugUtilsMessage
         if (messageSeverity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT)
         {
             LOG_ERROR("Validation[%s]Code %d: %s", pCallbackData->pMessageIdName, pCallbackData->messageIdNumber, pCallbackData->pMessage);
+            VulkanDebugUtils::debugCallbackData(pCallbackData, pUserData);
         };
 
         if (messageSeverity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT)
         {
             LOG_WARNING("Validation[%s]Code %d: %s", pCallbackData->pMessageIdName, pCallbackData->messageIdNumber, pCallbackData->pMessage);
+            VulkanDebugUtils::debugCallbackData(pCallbackData, pUserData);
         };
 
         if (messageSeverity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT)
         {
             LOG_INFO("Validation[%s]Code %d: %s", pCallbackData->pMessageIdName, pCallbackData->messageIdNumber, pCallbackData->pMessage);
+            VulkanDebugUtils::debugCallbackData(pCallbackData, pUserData);
         }
 
         if (messageSeverity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT)
         {
             LOG_DEBUG("Validation[%s]Code %d: %s", pCallbackData->pMessageIdName, pCallbackData->messageIdNumber, pCallbackData->pMessage);
+            VulkanDebugUtils::debugCallbackData(pCallbackData, pUserData);
         }
         return VK_TRUE;
     }
@@ -249,6 +255,98 @@ VkBool32 VulkanDebugUtils::defaultDebugUtilsMessegerCallback(VkDebugUtilsMessage
 
     }
     return VK_FALSE;
+}
+
+void VulkanDebugUtils::debugCallbackData(const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, void* pUserData)
+{
+    VulkanGraphicContext* context = reinterpret_cast<VulkanGraphicContext*>(pUserData);
+
+    for (u32 i = 0; i < pCallbackData->objectCount; ++i)
+    {
+        const VkDebugUtilsObjectNameInfoEXT& objects = pCallbackData->pObjects[i];
+        switch (objects.objectType)
+        {
+        case VK_OBJECT_TYPE_IMAGE:
+        {
+            if (!objects.pObjectName)
+            {
+                break;
+            }
+
+            char* end;
+            const u64 addr = std::strtoull(objects.pObjectName, &end, 10);
+            VulkanImage* image = reinterpret_cast<VulkanImage*>(addr);
+
+            break;
+        }
+
+        case VK_OBJECT_TYPE_BUFFER:
+        {
+            if (!objects.pObjectName)
+            {
+                break;
+            }
+
+            char* end;
+            const u64 addr = std::strtoull(objects.pObjectName, &end, 10);
+            VulkanBuffer* buffer = reinterpret_cast<VulkanBuffer*>(addr);
+
+            break;
+        }
+
+        case VK_OBJECT_TYPE_FRAMEBUFFER:
+        {
+            if (!objects.pObjectName)
+            {
+                break;
+            }
+
+            char* end;
+            const u64 addr = std::strtoull(objects.pObjectName, &end, 10);
+            VulkanFramebuffer* framebuffer = reinterpret_cast<VulkanFramebuffer*>(addr);
+
+            break;
+        }
+
+        case VK_OBJECT_TYPE_RENDER_PASS:
+        {
+            if (!objects.pObjectName)
+            {
+                break;
+            }
+
+            char* end;
+            const u64 addr = std::strtoull(objects.pObjectName, &end, 10);
+            VulkanRenderPass* renderpass = reinterpret_cast<VulkanRenderPass*>(addr);
+
+            break;
+        }
+
+        case VK_OBJECT_TYPE_DEVICE_MEMORY:
+        {
+            const char* debugName = objects.pObjectName;
+            break;
+        }
+
+        default:
+            break;
+        };
+    }
+
+    for (u32 i = 0; i < pCallbackData->cmdBufLabelCount; ++i)
+    {
+        const VkDebugUtilsLabelEXT& bufferLabel = pCallbackData->pCmdBufLabels[i];
+        if (bufferLabel.pLabelName)
+        {
+            char* end;
+            const u64 addr = std::strtoull(bufferLabel.pLabelName, &end, 10);
+            VulkanCommandBuffer* cmdBuffer = reinterpret_cast<VulkanCommandBuffer*>(addr);
+
+            return;
+        }
+    }
+
+    u32 endOfDebug = 0;
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////

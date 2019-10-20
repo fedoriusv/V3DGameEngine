@@ -774,10 +774,6 @@ VkSampleCountFlagBits VulkanImage::convertRenderTargetSamplesToVkSampleCount(Tex
     return VK_SAMPLE_COUNT_1_BIT;
 }
 
-#if VULKAN_DEBUG_MARKERS
-u32 VulkanImage::s_debugNameGenerator = 0;
-#endif //VULKAN_DEBUG_MARKERS
-
 VulkanImage::VulkanImage(VulkanMemory::VulkanMemoryAllocator* memory, VkDevice device, VkImageType type, VkFormat format, VkExtent3D dimension, u32 layers, u32 mipsLevel, VkImageTiling tiling, TextureUsageFlags usage, const std::string& name) noexcept
     : m_device(device)
     , m_type(type)
@@ -807,7 +803,7 @@ VulkanImage::VulkanImage(VulkanMemory::VulkanMemoryAllocator* memory, VkDevice d
     memset(&m_generalImageView[0], VK_NULL_HANDLE, sizeof(m_generalImageView));
 
 #if VULKAN_DEBUG_MARKERS
-    m_debugName = name.empty() ? "Image_" + std::to_string(s_debugNameGenerator++) : name;
+    m_debugName = name.empty() ? std::to_string(reinterpret_cast<const u64>(this)) : name;
 #endif //VULKAN_DEBUG_MARKERS
 }
 
@@ -861,7 +857,7 @@ VulkanImage::VulkanImage(VulkanMemory::VulkanMemoryAllocator* memory, VkDevice d
     }
 
 #if VULKAN_DEBUG_MARKERS
-    m_debugName = name.empty() ? "Image_" + std::to_string(s_debugNameGenerator++) : name;
+    m_debugName = name.empty() ? std::to_string(reinterpret_cast<const u64>(this)) : name;
 #endif //VULKAN_DEBUG_MARKERS
 }
 
@@ -970,6 +966,17 @@ bool VulkanImage::create()
         return false;
     }
 
+#if VULKAN_DEBUG_MARKERS
+    VkDebugUtilsObjectNameInfoEXT debugUtilsObjectNameInfo = {};
+    debugUtilsObjectNameInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT;
+    debugUtilsObjectNameInfo.pNext = nullptr;
+    debugUtilsObjectNameInfo.objectType = VK_OBJECT_TYPE_IMAGE;
+    debugUtilsObjectNameInfo.objectHandle = reinterpret_cast<u64>(m_image);
+    debugUtilsObjectNameInfo.pObjectName = m_debugName.c_str();
+
+    VulkanWrapper::SetDebugUtilsObjectName(m_device, &debugUtilsObjectNameInfo);
+#endif //VULKAN_DEBUG_MARKERS
+
     VkMemoryPropertyFlags flag = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
     if (m_tiling == VK_IMAGE_TILING_LINEAR)
     {
@@ -989,17 +996,6 @@ bool VulkanImage::create()
         LOG_ERROR("VulkanImage::VulkanImage::create() is failed");
         return false;
     }
-
-#if VULKAN_DEBUG_MARKERS
-    VkDebugUtilsObjectNameInfoEXT debugUtilsObjectNameInfo = {};
-    debugUtilsObjectNameInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT;
-    debugUtilsObjectNameInfo.pNext = nullptr;
-    debugUtilsObjectNameInfo.objectType = VK_OBJECT_TYPE_IMAGE;
-    debugUtilsObjectNameInfo.objectHandle = reinterpret_cast<u64>(m_image);
-    debugUtilsObjectNameInfo.pObjectName = m_debugName.c_str();
-
-    VulkanWrapper::SetDebugUtilsObjectName(m_device, &debugUtilsObjectNameInfo);
-#endif //VULKAN_DEBUG_MARKERS
 
     if (!createViewImage())
     {
@@ -1029,6 +1025,17 @@ bool VulkanImage::create(VkImage image)
     ASSERT(!m_image, "m_image already exist");
     m_image = image;
     m_swapchainImage = true;
+
+#if VULKAN_DEBUG_MARKERS
+    VkDebugUtilsObjectNameInfoEXT debugUtilsObjectNameInfo = {};
+    debugUtilsObjectNameInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT;
+    debugUtilsObjectNameInfo.pNext = nullptr;
+    debugUtilsObjectNameInfo.objectType = VK_OBJECT_TYPE_IMAGE;
+    debugUtilsObjectNameInfo.objectHandle = reinterpret_cast<u64>(m_image);
+    debugUtilsObjectNameInfo.pObjectName = m_debugName.c_str();
+
+    VulkanWrapper::SetDebugUtilsObjectName(m_device, &debugUtilsObjectNameInfo);
+#endif //VULKAN_DEBUG_MARKERS
 
     if (!createViewImage())
     {

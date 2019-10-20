@@ -59,7 +59,6 @@ namespace vk
         
 #if VULKAN_DEBUG_MARKERS
         std::string m_debugName;
-        static u32 s_debugNameGenerator;
 #endif //VULKAN_DEBUG_MARKERS
     };
 

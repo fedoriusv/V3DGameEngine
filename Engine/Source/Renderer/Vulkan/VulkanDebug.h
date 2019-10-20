@@ -66,6 +66,8 @@ namespace vk
 
     private:
 
+        static void debugCallbackData(const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, void* pUserData);
+
         static VkDebugUtilsMessengerEXT s_messeger;
     };
 

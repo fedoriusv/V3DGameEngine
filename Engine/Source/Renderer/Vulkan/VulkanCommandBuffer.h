@@ -133,6 +133,10 @@ namespace vk
         };
 
         RenderPassState m_renderpassState;
+
+#if VULKAN_DEBUG_MARKERS
+        std::string m_debugName;
+#endif //VULKAN_DEBUG_MARKERS
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

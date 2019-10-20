@@ -67,6 +67,10 @@ namespace vk
         using LayoutState = std::tuple<VkImageLayout, VkImageLayout>;
         std::vector<LayoutState> m_layout;
         std::vector<VulkanAttachmentDescription> m_descriptions;
+
+#if VULKAN_DEBUG_MARKERS
+        std::string m_debugName;
+#endif //VULKAN_DEBUG_MARKERS
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

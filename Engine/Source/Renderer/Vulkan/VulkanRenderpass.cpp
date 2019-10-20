@@ -85,6 +85,9 @@ VulkanRenderPass::VulkanRenderPass(VkDevice device, const std::vector<VulkanAtta
     , m_descriptions(desc)
 {
     LOG_DEBUG("VulkanRenderPass::VulkanRenderPass constructor %llx", this);
+#if VULKAN_DEBUG_MARKERS
+    m_debugName = std::to_string(reinterpret_cast<const u64>(this));
+#endif //VULKAN_DEBUG_MARKERS
 }
 
 VulkanRenderPass::~VulkanRenderPass()
@@ -505,6 +508,17 @@ bool VulkanRenderPass::create()
             return false;
         }
     }
+
+#if VULKAN_DEBUG_MARKERS
+    VkDebugUtilsObjectNameInfoEXT debugUtilsObjectNameInfo = {};
+    debugUtilsObjectNameInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT;
+    debugUtilsObjectNameInfo.pNext = nullptr;
+    debugUtilsObjectNameInfo.objectType = VK_OBJECT_TYPE_RENDER_PASS;
+    debugUtilsObjectNameInfo.objectHandle = reinterpret_cast<u64>(m_renderpass);
+    debugUtilsObjectNameInfo.pObjectName = m_debugName.c_str();
+
+    VulkanWrapper::SetDebugUtilsObjectName(m_device, &debugUtilsObjectNameInfo);
+#endif //VULKAN_DEBUG_MARKERS
 
     return true;
 }
