@@ -118,16 +118,16 @@ void MyApplication::Exit()
     m_Window->getInputEventReceiver()->dettach(InputEvent::InputEventType::KeyboardInputEvent);
     m_Window->getInputEventReceiver()->dettach(InputEvent::InputEventType::MouseInputEvent);
 #endif //PLATFORM_WINDOWS
+}
 
+MyApplication::~MyApplication()
+{
     if (m_InputEventHandler)
     {
         delete m_InputEventHandler;
         m_InputEventHandler = nullptr;
     }
-}
 
-MyApplication::~MyApplication()
-{
     if (m_Window)
     {
         Window::detroyWindow(m_Window);

@@ -95,7 +95,7 @@ int MyApplication::Execute()
 
 void MyApplication::Initialize()
 {
-    m_Context = renderer::Context::createContext(m_Window, renderer::Context::RenderType::VulkanRender);
+    m_Context = renderer::Context::createContext(m_Window, renderer::Context::RenderType::D3DRender);
     ASSERT(m_Context, "context is nullptr");
 
     m_CommandList = new renderer::CommandList(m_Context, renderer::CommandList::CommandListType::DelayedCommandList);
@@ -120,12 +120,31 @@ void MyApplication::Exit()
 {
     m_Window->getInputEventReceiver()->dettach(InputEvent::InputEventType::MouseInputEvent);
     m_Window->getInputEventReceiver()->dettach(InputEvent::InputEventType::TouchInputEvent);
+
+    if (m_CommandList)
+    {
+        delete m_CommandList;
+        m_CommandList = nullptr;
+    }
+
+    if (m_Context)
+    {
+        renderer::Context::destroyContext(m_Context);
+        m_Context = nullptr;
+    }
 }
 
 MyApplication::~MyApplication()
 {
-    delete m_InputEventHandler;
-    m_InputEventHandler = nullptr;
+    if (m_InputEventHandler)
+    {
+        delete m_InputEventHandler;
+        m_InputEventHandler = nullptr;
+    }
 
-    Window::detroyWindow(m_Window);
+    if (m_Window)
+    {
+        Window::detroyWindow(m_Window);
+        m_Window = nullptr;
+    }
 }
