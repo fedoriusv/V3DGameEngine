@@ -7,7 +7,7 @@ option(BUILD_EXAMPLES "Generate Examples" ON)
 ##############################################################
 #Render SDK
 option(BUILD_VULKAN_SDK "Build use Vulkan SDK" ON)
-option(BUILD_DIRECTX_SDK "Use DirectX SDK" OFF)
+option(BUILD_DIRECTX_SDK "Use DirectX SDK" ON)
 ##############################################################
 #ThirdParty
 #Crc32c lib is required"
