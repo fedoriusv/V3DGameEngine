@@ -58,7 +58,6 @@ void D3DGraphicPipelineState::destroy()
 {
     if (m_pipelineState)
     {
-        m_pipelineState->Release();
         m_pipelineState = nullptr;
     }
 }

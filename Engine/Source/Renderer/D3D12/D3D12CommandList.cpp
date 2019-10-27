@@ -42,18 +42,11 @@ void D3DCommandList::destroy()
     D3DCommandList::resetFence();
     if (m_commandList)
     {
-        m_commandList->Release();
         m_commandList = nullptr;
     }
 
     if (m_commandAllocator)
     {
-        if (m_ownAllocator)
-        {
-            HRESULT result = m_commandAllocator->Reset();
-            ASSERT(SUCCEEDED(result), "error");
-        }
-        m_commandAllocator->Release();
         m_commandAllocator = nullptr;
     }
 }
@@ -78,17 +71,14 @@ D3DCommandList::~D3DCommandList()
     LOG_DEBUG("D3DCommandList::~D3DCommandList destructor %llx", this);
     ASSERT(m_status == Status::Finish, "not finished");
 
-    if (m_commandList)
-    {
-        m_commandList->Release();
-        m_commandList = nullptr;
-    }
+    ASSERT(!m_commandList, "not nullptr");
+    ASSERT(!m_commandAllocator, "not nullptr");
 }
 
 ID3D12CommandList* D3DCommandList::getHandle() const
 {
     ASSERT(m_commandList, "nullptr");
-    return m_commandList;
+    return m_commandList.Get();
 }
 
 void D3DCommandList::init(ID3D12CommandList* cmdList, ID3D12CommandAllocator* allocator, bool own)
@@ -126,11 +116,10 @@ void D3DGraphicsCommandList::prepare()
     }
 
     {
-        HRESULT result = D3DGraphicsCommandList::getHandle()->Reset(m_commandAllocator, nullptr);
+        HRESULT result = D3DGraphicsCommandList::getHandle()->Reset(m_commandAllocator.Get(), nullptr);
         ASSERT(SUCCEEDED(result), "error");
     }
 
-    
     m_status = Status::ReadyToRecord;
 }
 
@@ -161,7 +150,7 @@ void D3DGraphicsCommandList::transition(D3DImage* image, D3D12_RESOURCE_STATES s
 ID3D12GraphicsCommandList* D3DGraphicsCommandList::getHandle() const
 {
     ASSERT(m_commandList, "nullptr");
-    return static_cast<ID3D12GraphicsCommandList*>(m_commandList);
+    return static_cast<ID3D12GraphicsCommandList*>(m_commandList.Get());
 }
 
 void D3DGraphicsCommandList::clearRenderTarget(D3DImage* image, const f32 color[4], const std::vector<D3D12_RECT>& rect)

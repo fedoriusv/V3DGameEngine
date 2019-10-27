@@ -57,12 +57,12 @@ namespace d3d12
 
         friend D3DCommandListManager;
 
-        ID3D12Device* m_device;
+        ComPtr<ID3D12Device> m_device;
 
-        ID3D12CommandAllocator* m_commandAllocator;
+        ComPtr<ID3D12CommandAllocator> m_commandAllocator;
         bool m_ownAllocator;
 
-        ID3D12CommandList* m_commandList;
+        ComPtr<ID3D12CommandList> m_commandList;
 
         Status m_status;
         Type m_type;

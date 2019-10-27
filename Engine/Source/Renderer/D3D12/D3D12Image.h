@@ -48,7 +48,7 @@ namespace d3d12
 
     private:
 
-        ID3D12Resource* m_imageResource;
+        ComPtr<ID3D12Resource> m_imageResource;
         CD3DX12_CPU_DESCRIPTOR_HANDLE m_handle;
 
         D3D12_RESOURCE_STATES m_state;

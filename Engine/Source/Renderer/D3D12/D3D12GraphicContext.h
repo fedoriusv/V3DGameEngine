@@ -78,11 +78,11 @@ namespace d3d12
         Pipeline* createPipeline(Pipeline::PipelineType type) override;
         Sampler* createSampler() override;
 
-        IDXGIFactory4*      m_factory;
-        IDXGIAdapter1*      m_adapter;
-        ID3D12Device*       m_device;
+        ComPtr<IDXGIFactory4>      m_factory;
+        ComPtr<IDXGIAdapter1>      m_adapter;
+        ComPtr<ID3D12Device>       m_device;
 #if D3D_DEBUG_LAYERS
-        ID3D12Debug*        m_debugController;
+        ComPtr<ID3D12Debug>        m_debugController;
 #endif //D3D_DEBUG_LAYERS
 
         D3DSwapchain*                 m_swapchain;

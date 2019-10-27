@@ -8,6 +8,11 @@
 #   include <d3d12.h>
 #   include <dxgi1_4.h>
 
+#ifdef PLATFORM_WINDOWS
+#   include <wrl/client.h>
+using namespace Microsoft::WRL;
+#endif
+
 namespace v3d
 {
 namespace renderer

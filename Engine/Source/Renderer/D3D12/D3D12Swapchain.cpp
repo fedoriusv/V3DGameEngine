@@ -54,14 +54,20 @@ bool D3DSwapchain::create(const SwapchainConfig& config)
         swapChainDesc.SampleDesc.Quality = 0;
         swapChainDesc.Stereo = FALSE;
 
-        IDXGISwapChain1* swapChain;
+        ComPtr<IDXGISwapChain1> swapChain;
         HRESULT result = m_factory->CreateSwapChainForHwnd(config._commandQueue, config._window, &swapChainDesc, nullptr, nullptr, &swapChain);
         if (FAILED(result))
         {
             LOG_ERROR("D3DSwapchain::create CreateSwapChainForHwnd is failed. Error %s", D3DDebug::stringError(result).c_str());
             return false;
         }
-        m_swapChain = static_cast<IDXGISwapChain3*>(swapChain);
+
+        if (FAILED(swapChain.As(&m_swapChain)))
+        {
+            LOG_ERROR("D3DSwapchain::create cast fails is failed");
+            D3DSwapchain::destroy();
+            return false;
+        }
     }
 
     {
@@ -103,8 +109,8 @@ bool D3DSwapchain::create(const SwapchainConfig& config)
         // Create a RTV for each frame.
         for (u32 n = 0; n < config._countSwapchainImages; n++)
         {
-            ID3D12Resource* resource = nullptr;
-            HRESULT result = m_swapChain->GetBuffer(n, IID_PPV_ARGS(&resource));
+            ComPtr<ID3D12Resource> swapchainImage;
+            HRESULT result = m_swapChain->GetBuffer(n, IID_PPV_ARGS(&swapchainImage));
             if (FAILED(result))
             {
                 LOG_ERROR("D3DSwapchain::create GetBuffer is failed. Error %s", D3DDebug::stringError(result).c_str());
@@ -113,12 +119,12 @@ bool D3DSwapchain::create(const SwapchainConfig& config)
                 return false;
             }
 
-            m_device->CreateRenderTargetView(resource, nullptr, rtvHandle);
+            m_device->CreateRenderTargetView(swapchainImage.Get(), nullptr, rtvHandle);
             rtvHandle.Offset(1, rtvDescriptorSize);
 
             CD3DX12_CPU_DESCRIPTOR_HANDLE imageHandle(m_descriptorHeap->GetCPUDescriptorHandleForHeapStart(), n, rtvDescriptorSize);
             D3DImage* image = new D3DImage(format, config._size.width, config._size.height);
-            if (!image->create(resource, imageHandle))
+            if (!image->create(swapchainImage.Get(), imageHandle))
             {
                 LOG_ERROR("D3DSwapchain::create swapimage is failed");
                 D3DSwapchain::destroy();
@@ -147,13 +153,13 @@ void D3DSwapchain::destroy()
 
     if (m_descriptorHeap)
     {
-        m_descriptorHeap->Release();
         m_descriptorHeap = nullptr;
     }
 
     if (m_swapChain)
     {
-        m_swapChain->Release();
+        //TODO still used need wait
+        m_swapChain->AddRef();
         m_swapChain = nullptr;
     }
 }

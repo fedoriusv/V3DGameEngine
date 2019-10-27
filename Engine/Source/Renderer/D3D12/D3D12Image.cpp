@@ -128,7 +128,7 @@ namespace d3d12
  ID3D12Resource* D3DImage::getResource() const
  {
      ASSERT(m_imageResource, "nullptr");
-     return m_imageResource;
+     return m_imageResource.Get();
  }
 
 } //namespace d3d12

@@ -38,12 +38,10 @@ namespace d3d12
 
     private:
 
-        ID3D12Device* m_device;
+        ComPtr<ID3D12Device> m_device;
 
         HANDLE m_fenceEvent;
-        ID3D12Fence* m_fence;
-
-        u64 m_value;
+        ComPtr<ID3D12Fence> m_fence;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

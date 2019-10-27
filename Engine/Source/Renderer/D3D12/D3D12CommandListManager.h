@@ -38,9 +38,9 @@ namespace d3d12
 
     private:
 
-        ID3D12Device* m_device;
+        ComPtr<ID3D12Device> m_device;
 
-        ID3D12CommandQueue* m_commandQueue;
+        ComPtr<ID3D12CommandQueue> m_commandQueue;
         D3DFence* m_fence;
 
         std::queue<D3DCommandList*> m_freeCommandList[D3DCommandList::Type::CountTypes];

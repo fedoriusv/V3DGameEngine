@@ -113,7 +113,7 @@ bool D3DDebug::attachDevice(ID3D12Device* device, D3D12_DEBUG_FEATURE flags)
 
     {
         ASSERT(device, "nullptr");
-        HRESULT result = device->QueryInterface(&m_debugDevice);
+        HRESULT result = device->QueryInterface(IID_PPV_ARGS(&m_debugDevice));
         if (FAILED(result))
         {
             LOG_ERROR("D3DDebug::attachDevice DeviceQueryInterface is failed. Error %s", D3DDebug::stringError(result).c_str());

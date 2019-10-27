@@ -50,11 +50,11 @@ namespace d3d12
         u32 m_frameIndex;
         u32 m_syncInterval;
 
-        IDXGIFactory4* m_factory;
-        ID3D12Device* m_device;
+        ComPtr<IDXGIFactory4> m_factory;
+        ComPtr<ID3D12Device> m_device;
 
-        IDXGISwapChain3* m_swapChain;
-        ID3D12DescriptorHeap* m_descriptorHeap;
+        ComPtr<IDXGISwapChain3> m_swapChain;
+        ComPtr<ID3D12DescriptorHeap> m_descriptorHeap;
 
         std::vector<D3DImage*> m_renderTargets;
 

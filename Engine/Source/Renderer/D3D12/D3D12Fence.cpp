@@ -16,6 +16,7 @@ namespace d3d12
 
 D3DFence::D3DFence(ID3D12Device* device, u64 value) noexcept
     : m_device(device)
+
     , m_fenceEvent(NULL)
     , m_fence(nullptr)
 {
@@ -37,8 +38,6 @@ D3DFence::D3DFence(ID3D12Device* device, u64 value) noexcept
             LOG_ERROR("D3DFence::D3DFence CreateFence is failed. Error %s", D3DDebug::stringError(result).c_str());
         }
     }
-
-    m_value = m_fence->GetCompletedValue();
 }
 
 D3DFence::~D3DFence()
@@ -53,7 +52,6 @@ D3DFence::~D3DFence()
 
     if (m_fence)
     {
-        m_fence->Release();
         m_fence = nullptr;
     }
 }
@@ -68,15 +66,12 @@ bool D3DFence::signal(u64 value)
         return false;
     }
 
-    m_value = m_fence->GetCompletedValue();
     return true;
 }
 
 
 bool D3DFence::wait(u64 value)
 {
-    m_value = m_fence->GetCompletedValue();
-
     ASSERT(m_fence, "nullptr");
     if (!D3DFence::completed(value))
     {
@@ -120,8 +115,6 @@ void D3DFence::reset(u64 value)
 
 bool D3DFence::completed(u64 value)
 {
-    m_value = m_fence->GetCompletedValue();
-
     ASSERT(m_fence, "nullptr");
     const u64 fenceStatus = m_fence->GetCompletedValue();
     if (fenceStatus > value)
@@ -135,7 +128,7 @@ bool D3DFence::completed(u64 value)
 ID3D12Fence* D3DFence::getHandle() const
 {
     ASSERT(m_fence, "nullptr");
-    return m_fence;
+    return m_fence.Get();
 }
 
 
