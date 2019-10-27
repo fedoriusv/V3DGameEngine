@@ -108,12 +108,11 @@ if "%2" == "" (
     xcopy /Y Examples\%2\gradle.properties Project\Android\Examples\%2
     xcopy /Y /F /S Examples\%2\res Project\Android\Examples\%2\res\
     
-	if "%C_BUILD_TYPE%" == "Debug" (
-		xcopy /Y "Project\Android\Examples\%2\lib%2d.so" "Project\Android\Examples\%2\libs\%C_ANDROID_ABI%\lib%2.so*"
-	) else (
-		xcopy /Y "Project\Android\Examples\%2\lib%2.so" "Project\Android\Examples\%2\libs\%C_ANDROID_ABI%\lib%2.so*"
+    if "%C_BUILD_TYPE%" == "Debug" (
+        xcopy /Y "Project\Android\Examples\%2\lib%2d.so" "Project\Android\Examples\%2\libs\%C_ANDROID_ABI%\lib%2.so*"
+    ) else (
+        xcopy /Y "Project\Android\Examples\%2\lib%2.so" "Project\Android\Examples\%2\libs\%C_ANDROID_ABI%\lib%2.so*"
     )
-	
     
     rem fix build error
     set ANDROID_NDK=""
@@ -126,7 +125,11 @@ if "%2" == "" (
     
 :install
     echo Installing APK..
-    call adb install -r Project/Android/Examples/%2/build/outputs/apk/%2-debug.apk
+    if "%C_BUILD_TYPE%" == "Debug" (
+        call adb install -r Project/Android/Examples/%2/build/outputs/apk/%2-debug.apk
+    ) else (
+        call adb install -r Project/Android/Examples/%2/build/outputs/apk/%2.apk
+    )
     goto end
     
 :end

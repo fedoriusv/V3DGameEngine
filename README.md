@@ -28,6 +28,7 @@ Required:<br/>
 -- Python 3 (for building SPIRV)<br/>
 
 ANDROID_NDK - need to define path to NDK<br/>
+ANDROID_HOME - need to define path to SDK<br/>
 To Build and compile start project_android.bat<br/>
 
 -------------------------------------------------  
