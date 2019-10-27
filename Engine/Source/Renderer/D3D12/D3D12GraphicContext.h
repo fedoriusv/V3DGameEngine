@@ -5,6 +5,7 @@
 #ifdef D3D_RENDER
 #   include "D3D12Configuration.h"
 #   include "D3D12Swapchain.h"
+#   include "D3D12CommandListManager.h"
 
 namespace v3d
 {
@@ -61,6 +62,8 @@ namespace d3d12
 
         const DeviceCaps* getDeviceCaps() const override;
 
+        D3DCommandList* getCurrentCommandList() const;
+
     private:
 
         const std::string s_D3DApplicationName = "D3DGraphicContext";
@@ -78,7 +81,6 @@ namespace d3d12
         IDXGIFactory4*      m_factory;
         IDXGIAdapter1*      m_adapter;
         ID3D12Device*       m_device;
-        ID3D12CommandQueue* m_commandQueue;
 #if D3D_DEBUG_LAYERS
         ID3D12Debug*        m_debugController;
 #endif //D3D_DEBUG_LAYERS
@@ -87,9 +89,18 @@ namespace d3d12
         const platform::Window* const m_window;
 
 
+        D3DCommandListManager* m_commandListManager;
+
+
+        struct RenderState
+        {
+            D3DGraphicsCommandList* _commandList;
+        };
+        RenderState m_currentState;
+
         static D3D_FEATURE_LEVEL s_featureLevel;
 
-        static void GetHardwareAdapter(_In_ IDXGIFactory2* pFactory, _Outptr_result_maybenull_ IDXGIAdapter1** ppAdapter);
+        static void getHardwareAdapter(_In_ IDXGIFactory2* pFactory, _Outptr_result_maybenull_ IDXGIAdapter1** ppAdapter);
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

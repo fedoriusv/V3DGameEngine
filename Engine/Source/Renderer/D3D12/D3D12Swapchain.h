@@ -12,6 +12,8 @@ namespace renderer
 {
 namespace d3d12
 {
+    class D3DImage;
+
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
@@ -27,9 +29,10 @@ namespace d3d12
             u32                 _countSwapchainImages = 0;
             bool                _vsync                = false;
             NativeWindows       _window               = NULL;
+            ID3D12CommandQueue* _commandQueue         = nullptr;
         };
 
-        D3DSwapchain(IDXGIFactory4* factory, ID3D12Device* device, ID3D12CommandQueue* commandQueue);
+        explicit D3DSwapchain(IDXGIFactory4* factory, ID3D12Device* device) noexcept;
         ~D3DSwapchain();
 
         bool create(const SwapchainConfig& config);
@@ -40,6 +43,8 @@ namespace d3d12
 
         bool recteate(const SwapchainConfig& config);
 
+        D3DImage* getSwapchainImage() const;
+
     private:
 
         u32 m_frameIndex;
@@ -47,13 +52,11 @@ namespace d3d12
 
         IDXGIFactory4* m_factory;
         ID3D12Device* m_device;
-        ID3D12CommandQueue* m_commandQueue;
-
 
         IDXGISwapChain3* m_swapChain;
         ID3D12DescriptorHeap* m_descriptorHeap;
 
-        std::vector<ID3D12Resource*> m_renderTargets;
+        std::vector<D3DImage*> m_renderTargets;
 
         friend class D3DGraphicContext;
 
@@ -61,7 +64,7 @@ namespace d3d12
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-} //namespace vk
+} //namespace d3d12
 } //namespace renderer
-} //namespace v3d12
+} //namespace v3d
 #endif //VULKAN_RENDER

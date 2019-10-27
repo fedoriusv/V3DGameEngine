@@ -5,6 +5,7 @@
 #ifdef D3D_RENDER
 #   include <wrl.h>
 #   include "D3D12Debug.h"
+#   include "D3D12Image.h"
 
 namespace v3d
 {
@@ -13,10 +14,9 @@ namespace renderer
 namespace d3d12
 {
 
-D3DSwapchain::D3DSwapchain(IDXGIFactory4* factory, ID3D12Device* device, ID3D12CommandQueue* commandQueue)
+D3DSwapchain::D3DSwapchain(IDXGIFactory4* factory, ID3D12Device* device) noexcept
     : m_factory(factory)
     , m_device(device)
-    , m_commandQueue(commandQueue)
 
     , m_swapChain(nullptr)
     , m_descriptorHeap(nullptr)
@@ -37,6 +37,7 @@ D3DSwapchain::~D3DSwapchain()
 
 bool D3DSwapchain::create(const SwapchainConfig& config)
 {
+    DXGI_FORMAT format = DXGI_FORMAT_R8G8B8A8_UNORM;
     {
         // Describe and create the swap chain.
         DXGI_SWAP_CHAIN_DESC1 swapChainDesc = {};
@@ -45,7 +46,7 @@ bool D3DSwapchain::create(const SwapchainConfig& config)
         swapChainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
         swapChainDesc.Width = config._size.width;
         swapChainDesc.Height = config._size.height;
-        swapChainDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+        swapChainDesc.Format = format;
         swapChainDesc.AlphaMode = DXGI_ALPHA_MODE_UNSPECIFIED;
         swapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
         swapChainDesc.Scaling = DXGI_SCALING_NONE;
@@ -54,10 +55,10 @@ bool D3DSwapchain::create(const SwapchainConfig& config)
         swapChainDesc.Stereo = FALSE;
 
         IDXGISwapChain1* swapChain;
-        HRESULT result = m_factory->CreateSwapChainForHwnd(m_commandQueue, config._window, &swapChainDesc, nullptr, nullptr, &swapChain);
+        HRESULT result = m_factory->CreateSwapChainForHwnd(config._commandQueue, config._window, &swapChainDesc, nullptr, nullptr, &swapChain);
         if (FAILED(result))
         {
-            LOG_ERROR("D3DSwapchain::create CreateSwapChainForHwnd is failed. Error %s", StringError(result).c_str());
+            LOG_ERROR("D3DSwapchain::create CreateSwapChainForHwnd is failed. Error %s", D3DDebug::stringError(result).c_str());
             return false;
         }
         m_swapChain = static_cast<IDXGISwapChain3*>(swapChain);
@@ -67,7 +68,9 @@ bool D3DSwapchain::create(const SwapchainConfig& config)
         HRESULT result = m_factory->MakeWindowAssociation(config._window, DXGI_MWA_NO_ALT_ENTER);
         if (FAILED(result))
         {
-            LOG_ERROR("D3DSwapchain::create MakeWindowAssociation is failed. Error %s", StringError(result).c_str());
+            LOG_ERROR("D3DSwapchain::create MakeWindowAssociation is failed. Error %s", D3DDebug::stringError(result).c_str());
+            D3DSwapchain::destroy();
+
             return false;
         }
     }
@@ -83,7 +86,9 @@ bool D3DSwapchain::create(const SwapchainConfig& config)
         HRESULT result = m_device->CreateDescriptorHeap(&rtvHeapDesc, IID_PPV_ARGS(&m_descriptorHeap));
         if (FAILED(result))
         {
-            LOG_ERROR("D3DSwapchain::create CreateDescriptorHeap is failed. Error %s", StringError(result).c_str());
+            LOG_ERROR("D3DSwapchain::create CreateDescriptorHeap is failed. Error %s", D3DDebug::stringError(result).c_str());
+            D3DSwapchain::destroy();
+
             return false;
         }
     }
@@ -93,20 +98,35 @@ bool D3DSwapchain::create(const SwapchainConfig& config)
         u32 rtvDescriptorSize = m_device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
         CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(m_descriptorHeap->GetCPUDescriptorHandleForHeapStart());
 
-        m_renderTargets.resize(config._countSwapchainImages, nullptr);
+        m_renderTargets.reserve(config._countSwapchainImages);
 
         // Create a RTV for each frame.
         for (u32 n = 0; n < config._countSwapchainImages; n++)
         {
-            HRESULT result = m_swapChain->GetBuffer(n, IID_PPV_ARGS(&m_renderTargets[n]));
+            ID3D12Resource* resource = nullptr;
+            HRESULT result = m_swapChain->GetBuffer(n, IID_PPV_ARGS(&resource));
             if (FAILED(result))
             {
-                LOG_ERROR("D3DSwapchain::create GetBuffer is failed. Error %s", StringError(result).c_str());
+                LOG_ERROR("D3DSwapchain::create GetBuffer is failed. Error %s", D3DDebug::stringError(result).c_str());
+                D3DSwapchain::destroy();
+
                 return false;
             }
 
-            m_device->CreateRenderTargetView(m_renderTargets[n], nullptr, rtvHandle);
+            m_device->CreateRenderTargetView(resource, nullptr, rtvHandle);
             rtvHandle.Offset(1, rtvDescriptorSize);
+
+            CD3DX12_CPU_DESCRIPTOR_HANDLE imageHandle(m_descriptorHeap->GetCPUDescriptorHandleForHeapStart(), n, rtvDescriptorSize);
+            D3DImage* image = new D3DImage(format, config._size.width, config._size.height);
+            if (!image->create(resource, imageHandle))
+            {
+                LOG_ERROR("D3DSwapchain::create swapimage is failed");
+                D3DSwapchain::destroy();
+
+                return false;
+            }
+
+            m_renderTargets.push_back(image);
         }
     }
 
@@ -117,6 +137,14 @@ bool D3DSwapchain::create(const SwapchainConfig& config)
 
 void D3DSwapchain::destroy()
 {
+    for (auto& image : m_renderTargets)
+    {
+        image->destroy();
+        delete image;
+    }
+    m_renderTargets.clear();
+
+
     if (m_descriptorHeap)
     {
         m_descriptorHeap->Release();
@@ -135,7 +163,7 @@ void D3DSwapchain::present()
     HRESULT result = m_swapChain->Present(m_syncInterval, 0);
     if (FAILED(result))
     {
-        LOG_ERROR("D3DSwapchain::present Present is failed");
+        LOG_ERROR("D3DSwapchain::present Present is failed %s", D3DDebug::stringError(result).c_str());
         ASSERT(false, "present is failed");
     }
 }
@@ -156,6 +184,12 @@ bool D3DSwapchain::recteate(const SwapchainConfig& config)
     }
 
     return true;
+}
+
+D3DImage* D3DSwapchain::getSwapchainImage() const
+{
+    ASSERT(m_renderTargets[m_frameIndex], "nullptr");
+    return m_renderTargets[m_frameIndex];
 }
 
 } //namespace d3d12

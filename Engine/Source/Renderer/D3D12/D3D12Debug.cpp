@@ -1,4 +1,5 @@
 #include "D3D12Debug.h"
+#include "Utils/Logger.h"
 
 #ifdef D3D_RENDER
 namespace v3d
@@ -10,7 +11,7 @@ namespace d3d12
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-std::string StringError(HRESULT error)
+std::string D3DDebug::stringError(HRESULT error)
 {
     switch (error)
     {
@@ -91,6 +92,59 @@ std::string StringError(HRESULT error)
     }
 
     return std::string("empty");
+}
+
+D3DDebug::D3DDebug() noexcept
+    : m_debugDevice(nullptr)
+{
+}
+
+D3DDebug::~D3DDebug()
+{
+}
+
+bool D3DDebug::attachDevice(ID3D12Device* device, D3D12_DEBUG_FEATURE flags)
+{
+    if (m_debugDevice)
+    {
+        LOG_WARNING("D3DDebug::attachDevice device already has attached");
+        return true;
+    }
+
+    {
+        ASSERT(device, "nullptr");
+        HRESULT result = device->QueryInterface(&m_debugDevice);
+        if (FAILED(result))
+        {
+            LOG_ERROR("D3DDebug::attachDevice DeviceQueryInterface is failed. Error %s", D3DDebug::stringError(result).c_str());
+            ASSERT(!m_debugDevice, "not nullptr");
+            return false;
+        }
+    }
+
+    {
+        HRESULT result = m_debugDevice->SetFeatureMask(flags);
+        if (FAILED(result))
+        {
+            LOG_ERROR("D3DDebug::attachDevice SetFeatureMask is failed. Error %s", D3DDebug::stringError(result).c_str());
+            return false;
+        }
+    }
+
+    return true;
+}
+
+bool D3DDebug::report(D3D12_RLDO_FLAGS flags)
+{
+    ASSERT(m_debugDevice, "nullptr");
+    HRESULT result = m_debugDevice->ReportLiveDeviceObjects(flags);
+    if (FAILED(result))
+    {
+        LOG_ERROR("D3DDebug::report ReportLiveDeviceObjects is failed. Error %s", D3DDebug::stringError(result).c_str());
+        return false;
+    }
+
+    return true;
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////
