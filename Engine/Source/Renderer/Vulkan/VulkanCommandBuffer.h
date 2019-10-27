@@ -69,7 +69,7 @@ namespace vk
         bool isInsideRenderPass();
 
         //dynamic states
-        void cmdSetViewport(const std::vector <VkViewport>& viewports);
+        void cmdSetViewport(const std::vector<VkViewport>& viewports);
         void cmdSetScissor(const std::vector<VkRect2D>& scissors);
 
         //binds

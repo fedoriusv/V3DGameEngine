@@ -18,9 +18,6 @@
 
 
 #ifdef VULKAN_RENDER
-//#   ifdef PLATFORM_WINDOWS
-//#       pragma comment(lib, "vulkan-1.lib")
-//#   endif //PLATFORM_WINDOWS
 namespace v3d
 {
 namespace renderer
