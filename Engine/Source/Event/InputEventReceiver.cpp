@@ -33,7 +33,7 @@ void InputEventReceiver::sendDeferredEvents()
         return;
     }
 
-    std::queue<InputEvent*> temp(m_events);
+    std::queue<InputEvent*> temp(std::move(m_events));
     InputEventReceiver::reset();
 
     //LOG_DEBUG("InputEventReceiver queue size %u", temp.size());
