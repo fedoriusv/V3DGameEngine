@@ -57,22 +57,21 @@ namespace d3d12
 
         friend D3DCommandListManager;
 
-        ComPtr<ID3D12Device> m_device;
+        ID3D12Device* m_device;
 
-        ComPtr<ID3D12CommandAllocator> m_commandAllocator;
+        ID3D12CommandAllocator* m_commandAllocator;
         bool m_ownAllocator;
 
-        ComPtr<ID3D12CommandList> m_commandList;
+        ID3D12CommandList* m_commandList;
 
         Status m_status;
         Type m_type;
 
-        void resetFence();
-
     private:
 
         void init(ID3D12CommandList* cmdList, ID3D12CommandAllocator* allocator, bool own = true);
-        mutable std::atomic<u64> m_fenceValue;
+        
+        D3DFence* m_fence;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

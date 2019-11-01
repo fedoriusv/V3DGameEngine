@@ -13,7 +13,7 @@ namespace renderer
 namespace d3d12
 {
 
- D3DImage::D3DImage(DXGI_FORMAT format, u32 width, u32 height) noexcept
+ D3DImage::D3DImage(DXGI_FORMAT format, u32 width, u32 height, const std::string& name) noexcept
      : Image()
      , m_imageResource(nullptr)
      , m_state(D3D12_RESOURCE_STATE_COMMON)
@@ -22,6 +22,10 @@ namespace d3d12
      , m_size(width, height, 1)
 
      , m_swapchain(false)
+
+#if D3D_DEBUG
+     , m_debugName(name)
+#endif
  {
      LOG_DEBUG("D3DImage::D3DImage constructor %llx", this);
  }
@@ -43,6 +47,11 @@ namespace d3d12
  {
      ASSERT(resource, "nullptr");
      m_imageResource = resource;
+#if D3D_DEBUG
+     wchar_t wtext[20];
+     mbstowcs(wtext, m_debugName.c_str(), m_debugName.size() + 1);
+     m_imageResource->SetName(LPCWSTR(wtext));
+#endif
      m_handle = handle;
      m_swapchain = true;
 
@@ -53,9 +62,16 @@ namespace d3d12
  {
      if (m_swapchain)
      {
-         m_imageResource = nullptr;
+         if (m_imageResource)
+         {
+             u32 res = m_imageResource->Release();
+             m_imageResource = nullptr;
+         }
+
          return;
      }
+
+     SAFE_DELETE(m_imageResource);
  }
 
  void D3DImage::clear(Context* context, const core::Vector4D& color)
@@ -128,7 +144,7 @@ namespace d3d12
  ID3D12Resource* D3DImage::getResource() const
  {
      ASSERT(m_imageResource, "nullptr");
-     return m_imageResource.Get();
+     return m_imageResource;
  }
 
 } //namespace d3d12

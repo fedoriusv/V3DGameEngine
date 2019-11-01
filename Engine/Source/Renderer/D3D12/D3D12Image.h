@@ -24,7 +24,7 @@ namespace d3d12
     {
     public:
 
-        explicit D3DImage(DXGI_FORMAT format, u32 width, u32 height) noexcept;
+        explicit D3DImage(DXGI_FORMAT format, u32 width, u32 height, const std::string& name = "") noexcept;
         ~D3DImage();
 
         bool create() override;
@@ -48,7 +48,7 @@ namespace d3d12
 
     private:
 
-        ComPtr<ID3D12Resource> m_imageResource;
+        ID3D12Resource* m_imageResource;
         CD3DX12_CPU_DESCRIPTOR_HANDLE m_handle;
 
         D3D12_RESOURCE_STATES m_state;
@@ -57,6 +57,10 @@ namespace d3d12
         DXGI_FORMAT m_format;
 
         bool m_swapchain;
+
+#if D3D_DEBUG
+        std::string m_debugName;
+#endif
     };
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////

@@ -32,7 +32,7 @@ namespace d3d12
 
     private:
 
-        ComPtr<ID3D12DebugDevice> m_debugDevice;
+        ID3D12DebugDevice* m_debugDevice;
     };
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////

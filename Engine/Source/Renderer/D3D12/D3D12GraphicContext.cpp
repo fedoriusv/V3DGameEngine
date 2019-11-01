@@ -6,6 +6,7 @@
 #   include <wrl.h>
 #   include "D3D12Debug.h"
 #   include "D3D12Image.h"
+#   include "D3D12Buffer.h"
 
 namespace v3d
 {
@@ -33,6 +34,7 @@ D3DGraphicContext::D3DGraphicContext(const platform::Window* window) noexcept
 #if D3D_DEBUG_LAYERS
     , m_debugController(nullptr)
 #endif //D3D_DEBUG_LAYERS
+    , m_commandQueue(nullptr)
 
     , m_swapchain(nullptr)
     , m_window(window)
@@ -48,32 +50,37 @@ D3DGraphicContext::D3DGraphicContext(const platform::Window* window) noexcept
 D3DGraphicContext::~D3DGraphicContext()
 {
     LOG_DEBUG("D3DGraphicContext::D3DGraphicContext destructor %llx", this);
+    
+    ASSERT(!m_commandListManager, "not nullptr");
+
+    ASSERT(!m_commandQueue, "not nullptr");
 
     ASSERT(!m_swapchain, "not nullptr");
 
     ASSERT(!m_device, "not nullptr");
-
     ASSERT(!m_adapter, "not nullptr");
     ASSERT(!m_factory, "not nullptr");
-
 #if D3D_DEBUG_LAYERS
     ASSERT(!m_debugController, "not nullptr");
 #endif //D3D_DEBUG_LAYERS
-
-    ASSERT(!m_commandListManager, "not nullptr");
 }
 
 void D3DGraphicContext::beginFrame()
 {
     u32 indexFrame = m_swapchain->acquireImage();
+
+    m_commandListManager->sync(indexFrame, m_swapchain->vsync());
+    m_commandListManager->update();
+
 #if D3D_DEBUG
     LOG_DEBUG("D3DGraphicContext::beginFrame %d, index %d", m_frameCounter, indexFrame);
 #endif //D3D_DEBUG
-    D3DGraphicsCommandList* cmdList = m_commandListManager->acquireCommandList(D3DCommandList::Type::Direct);
-    cmdList->prepare();
-    m_currentState._commandList = cmdList;
 
-    m_currentState._commandList->transition(m_swapchain->getSwapchainImage(), D3D12_RESOURCE_STATE_RENDER_TARGET);
+    ASSERT(!m_currentState.commandList(), "not nullptr");
+    m_currentState._commandList = m_commandListManager->acquireCommandList(D3DCommandList::Type::Direct);
+    m_currentState.commandList()->prepare();
+
+    m_currentState.commandList()->transition(m_swapchain->getSwapchainImage(), D3D12_RESOURCE_STATE_RENDER_TARGET);
 }
 
 void D3DGraphicContext::endFrame()
@@ -82,12 +89,12 @@ void D3DGraphicContext::endFrame()
     LOG_DEBUG("D3DGraphicContext::endFrame %d", m_frameCounter);
 #endif //D3D_DEBUG
 
-    ASSERT(m_currentState._commandList, "nullptr");
+    ASSERT(m_currentState.commandList(), "nullptr");
+    m_currentState.commandList()->transition(m_swapchain->getSwapchainImage(), D3D12_RESOURCE_STATE_PRESENT);
+    m_currentState.commandList()->close();
 
-    m_currentState._commandList->transition(m_swapchain->getSwapchainImage(), D3D12_RESOURCE_STATE_PRESENT);
-
-    m_currentState._commandList->close();
-    m_commandListManager->execute(m_currentState._commandList, true);
+    m_commandListManager->execute(m_currentState.commandList(), false);
+    m_currentState.reset();
 }
 
 void D3DGraphicContext::presentFrame()
@@ -98,19 +105,18 @@ void D3DGraphicContext::presentFrame()
 
     m_swapchain->present();
 
-    m_commandListManager->update();
+    ASSERT(!m_currentState.commandList(), "not nullptr");
+    //m_commandListManager->update();
     ++m_frameCounter;
-
-    m_currentState._commandList = nullptr;
 }
 
 void D3DGraphicContext::submit(bool wait)
 {
-    ASSERT(m_currentState._commandList, "nullptr");
+    ASSERT(m_currentState.commandList(), "nullptr");
 
-    m_currentState._commandList->close();
-    m_commandListManager->execute(m_currentState._commandList, wait);
-    m_currentState._commandList = nullptr;
+    m_currentState.commandList()->close();
+    m_commandListManager->execute(m_currentState.commandList(), wait);
+    m_currentState.reset();
 }
 
 void D3DGraphicContext::draw(const StreamBufferDescription& desc, u32 firstVertex, u32 vertexCount, u32 firstInstance, u32 instanceCount)
@@ -211,11 +217,22 @@ void D3DGraphicContext::removeImage(Image* image)
 
 Buffer* D3DGraphicContext::createBuffer(Buffer::BufferType type, u16 usageFlag, u64 size)
 {
+#if D3D_DEBUG
+    LOG_DEBUG("VulkanGraphicContext::createBuffer");
+#endif //D3D_DEBUG
+    if (type == Buffer::BufferType::BufferType_VertexBuffer || type == Buffer::BufferType::BufferType_IndexBuffer || type == Buffer::BufferType::BufferType_UniformBuffer)
+    {
+        return new D3DBuffer(m_device, type, usageFlag, size);
+    }
+
+    ASSERT(false, "not supported");
     return nullptr;
 }
 
 void D3DGraphicContext::removeBuffer(Buffer* buffer)
 {
+    D3DBuffer* dxBuffer = static_cast<D3DBuffer*>(buffer);
+    //TODO remove
 }
 
 void D3DGraphicContext::removeSampler(Sampler* sampler)
@@ -255,11 +272,11 @@ bool D3DGraphicContext::initialize()
             return false;
         }
 
-        D3DGraphicContext::getHardwareAdapter(m_factory.Get(), &m_adapter);
+        D3DGraphicContext::getHardwareAdapter(m_factory, &m_adapter);
     }
 
     {
-        HRESULT result = D3D12CreateDevice(m_adapter.Get(), D3DGraphicContext::s_featureLevel, IID_PPV_ARGS(&m_device));
+        HRESULT result = D3D12CreateDevice(m_adapter, D3DGraphicContext::s_featureLevel, IID_PPV_ARGS(&m_device));
         if (FAILED(result))
         {
             LOG_ERROR("D3DGraphicContext::initialize D3D12CreateDevice is failed. Error %s", D3DDebug::stringError(result).c_str());
@@ -269,11 +286,10 @@ bool D3DGraphicContext::initialize()
         }
 
 #if D3D_DEBUG
-        D3DDebug::getInstance()->attachDevice(m_device.Get(), D3D12_DEBUG_FEATURE_NONE);
+        D3DDebug::getInstance()->attachDevice(m_device, D3D12_DEBUG_FEATURE_NONE);
 #endif
     }
 
-    ComPtr<ID3D12CommandQueue> commandQueue;
     {
         // Describe and create the command queue.
         D3D12_COMMAND_QUEUE_DESC queueDesc = {};
@@ -282,7 +298,7 @@ bool D3DGraphicContext::initialize()
         queueDesc.Priority = 0;
         queueDesc.NodeMask = 0;
 
-        HRESULT result = m_device->CreateCommandQueue(&queueDesc, IID_PPV_ARGS(&commandQueue));
+        HRESULT result = m_device->CreateCommandQueue(&queueDesc, IID_PPV_ARGS(&m_commandQueue));
         if (FAILED(result))
         {
             LOG_ERROR("D3DGraphicContext::initialize CreateCommandQueue is failed. Error %s", D3DDebug::stringError(result).c_str());
@@ -291,7 +307,7 @@ bool D3DGraphicContext::initialize()
             return false;
         }
 #if D3D_DEBUG
-        commandQueue->SetName(L"PresentCommandQueue");
+        m_commandQueue->SetName(L"PresentCommandQueue");
 #endif
     }
 
@@ -301,9 +317,10 @@ bool D3DGraphicContext::initialize()
         config._size = m_window->getSize();
         config._countSwapchainImages = 3;
         config._vsync = false;
-        config._commandQueue = commandQueue.Get();
+        config._fullscreen = false;
 
-        m_swapchain = new D3DSwapchain(m_factory.Get(), m_device.Get());
+        m_swapchain = new D3DSwapchain(m_factory, m_device, m_commandQueue);
+
         if (!m_swapchain->create(config))
         {
             LOG_ERROR("D3DGraphicContext::initialize D3DSwapchain::create is failed");
@@ -311,9 +328,9 @@ bool D3DGraphicContext::initialize()
 
             return false;
         }
-    }
 
-    m_commandListManager = new D3DCommandListManager(m_device.Get(), commandQueue.Get());
+        m_commandListManager = new D3DCommandListManager(m_device, m_commandQueue, config._countSwapchainImages);
+    }
 
 #if D3D_DEBUG
     D3DDebug::getInstance()->report(D3D12_RLDO_SUMMARY | D3D12_RLDO_IGNORE_INTERNAL);
@@ -324,10 +341,13 @@ bool D3DGraphicContext::initialize()
 
 void D3DGraphicContext::destroy()
 {
+#if D3D_DEBUG
+    D3DDebug::getInstance()->report(D3D12_RLDO_SUMMARY | D3D12_RLDO_IGNORE_INTERNAL);
+#endif
+
     if (m_commandListManager)
     {
-        m_commandListManager->wait();
-        m_commandListManager->clear();
+        m_commandListManager->waitAndClear();
 
         delete m_commandListManager;
         m_commandListManager = nullptr;
@@ -341,30 +361,20 @@ void D3DGraphicContext::destroy()
         m_swapchain = nullptr;
     }
 
-    if (m_device)
-    {
-        m_device = nullptr;
-    }
-
-    if (m_factory)
-    {
-        m_factory = nullptr;
-    }
-
-    if (m_adapter)
-    {
-        m_adapter = nullptr;
-    }
+    SAFE_DELETE(m_commandQueue);
 
 #if D3D_DEBUG
-    D3DDebug::getInstance()->report(D3D12_RLDO_SUMMARY | D3D12_RLDO_IGNORE_INTERNAL);
+    D3DDebug::getInstance()->freeInstance();
 #endif
+    SAFE_DELETE(m_device);
+
+    SAFE_DELETE(m_adapter);
+    SAFE_DELETE(m_factory);
 
 #if D3D_DEBUG_LAYERS
     if (m_debugController)
     {
-        D3DDebug::getInstance()->freeInstance();
-        m_debugController = nullptr;
+        SAFE_DELETE(m_debugController);
     }
 #endif //D3D_DEBUG_LAYERS
 }
@@ -399,7 +409,7 @@ Sampler* D3DGraphicContext::createSampler()
 _Use_decl_annotations_
 void D3DGraphicContext::getHardwareAdapter(IDXGIFactory2* pFactory, IDXGIAdapter1** ppAdapter)
 {
-    ComPtr<IDXGIAdapter1> adapter;
+    IDXGIAdapter1* adapter = nullptr;
     *ppAdapter = nullptr;
 
     for (UINT adapterIndex = 0; DXGI_ERROR_NOT_FOUND != pFactory->EnumAdapters1(adapterIndex, &adapter); ++adapterIndex)
@@ -416,14 +426,15 @@ void D3DGraphicContext::getHardwareAdapter(IDXGIFactory2* pFactory, IDXGIAdapter
 
         // Check to see if the adapter supports Direct3D 12, but don't create the
         // actual device yet.
-        HRESULT result = D3D12CreateDevice(adapter.Get(), D3DGraphicContext::s_featureLevel, _uuidof(ID3D12Device), nullptr);
+        HRESULT result = D3D12CreateDevice(adapter, D3DGraphicContext::s_featureLevel, _uuidof(ID3D12Device), nullptr);
         if (SUCCEEDED(result))
         {
             break;
         }
     }
 
-    *ppAdapter = adapter.Detach();
+    ASSERT(SUCCEEDED(adapter->QueryInterface(ppAdapter)), "false");
+    adapter->Release();
 }
 
 

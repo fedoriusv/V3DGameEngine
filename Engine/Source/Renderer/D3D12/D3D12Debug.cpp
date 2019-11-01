@@ -101,6 +101,11 @@ D3DDebug::D3DDebug() noexcept
 
 D3DDebug::~D3DDebug()
 {
+    if (m_debugDevice)
+    {
+        m_debugDevice->Release();
+        m_debugDevice = nullptr;
+    }
 }
 
 bool D3DDebug::attachDevice(ID3D12Device* device, D3D12_DEBUG_FEATURE flags)

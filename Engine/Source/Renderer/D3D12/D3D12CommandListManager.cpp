@@ -12,31 +12,22 @@ namespace renderer
 namespace d3d12
 {
 
-D3DCommandListManager::D3DCommandListManager(ID3D12Device* device, ID3D12CommandQueue* commandQueue) noexcept
+D3DCommandListManager::D3DCommandListManager(ID3D12Device* device, ID3D12CommandQueue* commandQueue, u32 swapImageCount) noexcept
     : m_device(device)
     , m_commandQueue(commandQueue)
 
-    , m_fence(new D3DFence(device, 1U))
+    , m_currentIndex(-1)
 {
     LOG_DEBUG("D3DCommandListManager::D3DCommandListManager constructor %llx", this);
     ASSERT(m_commandQueue, "nullptr");
+
+    m_usedCommandList.resize(swapImageCount);
 }
 
 D3DCommandListManager::~D3DCommandListManager()
 {
     LOG_DEBUG("D3DCommandListManager~D3DCommandListManager destructor %llx", this);
-
-    D3DCommandListManager::wait();
-    if (m_fence)
-    {
-        delete m_fence;
-        m_fence = nullptr;
-    }
-
-    if (m_commandQueue)
-    {
-        m_commandQueue = nullptr;
-    }
+    ASSERT(m_usedCommandList.empty(), "must be empty");
 }
 
 D3DGraphicsCommandList* D3DCommandListManager::acquireCommandList(D3DCommandList::Type type)
@@ -69,7 +60,7 @@ D3DGraphicsCommandList* D3DCommandListManager::acquireCommandList(D3DCommandList
         }
     }
 
-    D3DGraphicsCommandList* commandList = new D3DGraphicsCommandList(m_device.Get(), type);
+    D3DGraphicsCommandList* commandList = new D3DGraphicsCommandList(m_device, type);
     ID3D12GraphicsCommandList* d3dGraphicCommandList = static_cast<ID3D12GraphicsCommandList*>(d3dCommandList);
     {
         HRESULT result = d3dGraphicCommandList->Close();
@@ -86,10 +77,15 @@ D3DGraphicsCommandList* D3DCommandListManager::acquireCommandList(D3DCommandList
     return commandList;
 }
 
-void D3DCommandListManager::clear()
+void D3DCommandListManager::waitAndClear()
 {
-    D3DCommandListManager::update();
-    ASSERT(m_usedCommandList.empty(), "must be empty");
+    D3DCommandListManager::wait(true);
+    D3DCommandListManager::update(true);
+    for (u32 i = 0; i < m_usedCommandList.size(); ++i)
+    {
+        ASSERT(m_usedCommandList[i].empty(), "must be empty");
+    }
+    m_usedCommandList.clear();
 
     for (u32 i = 0; i < D3DCommandList::Type::CountTypes; ++i)
     {
@@ -104,29 +100,52 @@ void D3DCommandListManager::clear()
     }
 }
 
-void D3DCommandListManager::update()
+bool D3DCommandListManager::update(bool updateAll)
 {
-    for (std::list<D3DCommandList*>::iterator iter = m_usedCommandList.begin(); iter != m_usedCommandList.end();)
+    if (updateAll)
     {
-        D3DCommandList* list = *iter;
-
-        u64 value = list->m_fenceValue.load();
-        if (m_fence->completed(value))
+        for (u32 i = 0; i < m_usedCommandList.size(); ++i)
         {
-            ASSERT(list->m_status == D3DCommandList::Status::Execute, "wrong status");
-            list->m_status = D3DCommandList::Status::Finish;
+            for (std::list<D3DCommandList*>::iterator iter = m_usedCommandList[i].begin(); iter != m_usedCommandList[i].end();)
+            {
+                D3DCommandList* list = *iter;
 
-            iter = m_usedCommandList.erase(iter);
-            m_freeCommandList[list->m_type].push(list);
+                if (list->m_fence->completed())
+                {
+                    ASSERT(list->m_status == D3DCommandList::Status::Execute, "wrong status");
+                    list->m_status = D3DCommandList::Status::Finish;
 
-            continue;
+                    iter = m_usedCommandList[i].erase(iter);
+                    m_freeCommandList[list->m_type].push(list);
+
+                    continue;
+                }
+                ++iter;
+            }
+
         }
-        else
-        {
-            int test = 0;
-        }
-        ++iter;
     }
+    else
+    {
+        for (std::list<D3DCommandList*>::iterator iter = m_usedCommandList[m_currentIndex].begin(); iter != m_usedCommandList[m_currentIndex].end();)
+        {
+            D3DCommandList* list = *iter;
+
+            if (list->m_fence->completed())
+            {
+                ASSERT(list->m_status == D3DCommandList::Status::Execute, "wrong status");
+                list->m_status = D3DCommandList::Status::Finish;
+
+                iter = m_usedCommandList[m_currentIndex].erase(iter);
+                m_freeCommandList[list->m_type].push(list);
+
+                continue;
+            }
+            ++iter;
+        }
+    }
+
+    return true;
 }
 
 bool D3DCommandListManager::execute(D3DCommandList* cmdList, bool wait)
@@ -134,52 +153,69 @@ bool D3DCommandListManager::execute(D3DCommandList* cmdList, bool wait)
     ASSERT(cmdList->m_status == D3DCommandList::Status::Closed, "wrong status");
     cmdList->m_status = D3DCommandList::Status::Execute;
 
-    m_usedCommandList.push_back(cmdList);
+    m_usedCommandList[m_currentIndex].push_back(cmdList);
 
     ID3D12CommandList* dxCommandLists[] = { cmdList->getHandle() };
-    m_commandQueue->ExecuteCommandLists(_countof(dxCommandLists), dxCommandLists);
+    m_commandQueue->ExecuteCommandLists( 1, dxCommandLists );
 
-    ID3D12Fence* fence = m_fence->getHandle();
-
-    u64 value = fence->GetCompletedValue();
-    if (value == UINT64_MAX)
+    if (!cmdList->m_fence->signal(m_commandQueue))
     {
-        LOG_WARNING("D3DCommandListManager::execute device has been removed");
-        D3DCommandListManager::wait();
-
+        LOG_ERROR("D3DCommandListManager::execute Fence signal is failed");
         return false;
     }
 
-    cmdList->m_fenceValue.store(value);
-    ++value;
+    return true;
+}
 
-    HRESULT result = m_commandQueue->Signal(m_fence->getHandle(), value);
-    if (FAILED(result))
+bool D3DCommandListManager::wait(bool waitAll)
+{
+    if (waitAll)
     {
-        LOG_ERROR("D3DCommandListManager::execute QueueSignal is failed. Error %s", D3DDebug::stringError(result).c_str());
-        return false;
-    }
-
-    if (wait)
-    {
-        if (!m_fence->wait(value))
+        for (u32 i = 0; i < m_usedCommandList.size(); ++i)
         {
-            return false;
+            for (auto& list : m_usedCommandList[i])
+            {
+                if (!list->m_fence->wait())
+                {
+                    LOG_ERROR("D3DCommandListManager::wait is failed");
+                    return false;
+                }
+            }
+        }
+    }
+    else
+    {
+        for (auto& list : m_usedCommandList[m_currentIndex])
+        {
+            if (!list->m_fence->wait())
+            {
+                LOG_ERROR("D3DCommandListManager::wait is failed");
+                return false;
+            }
         }
     }
 
     return true;
 }
 
-bool D3DCommandListManager::wait()
+bool D3DCommandListManager::sync(u32 index, bool wait)
 {
-    for (auto& list : m_usedCommandList)
+    m_currentIndex = index;
+
+    if (wait)
     {
-        u64 value = list->m_fenceValue.load();
-        if (!m_fence->wait(value))
+        for (auto& list : m_usedCommandList[m_currentIndex])
         {
-            LOG_ERROR("D3DCommandListManager::wait is failed");
-            return false;
+            if (!list->m_fence->wait())
+            {
+                LOG_ERROR("D3DCommandListManager::sync is failed");
+                return false;
+            }
+
+            if (!list->m_fence->completed())
+            {
+                int error = 0;
+            }
         }
     }
 

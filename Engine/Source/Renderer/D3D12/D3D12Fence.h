@@ -28,20 +28,29 @@ namespace d3d12
         D3DFence(const D3DFence&) = delete;
 
         bool signal(u64 value);
+        bool signal(ID3D12CommandQueue* queue);
         bool wait(u64 value);
+        bool wait();
 
         void reset(u64 value = 0);
 
         bool completed(u64 value);
+        bool completed();
+
+        u64 incrementValue();
+        u64 getValue() const;
+        u64 getFenceValue() const;
 
         ID3D12Fence* getHandle() const;
 
     private:
 
-        ComPtr<ID3D12Device> m_device;
+        ID3D12Device* m_device;
 
         HANDLE m_fenceEvent;
-        ComPtr<ID3D12Fence> m_fence;
+        ID3D12Fence* m_fence;
+
+        std::atomic<u64> m_value;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

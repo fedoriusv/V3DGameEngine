@@ -2,9 +2,9 @@
 #include "Utils/Logger.h"
 
 #ifdef D3D_RENDER
-#   include "d3dx12.h"
 #   include "D3D12Debug.h"
 #   include "D3D12Image.h"
+#   include "D3D12Fence.h"
 
 namespace v3d
 {
@@ -39,7 +39,6 @@ D3D12_COMMAND_LIST_TYPE D3DCommandList::convertCommandListTypeToD3DType(Type typ
 void D3DCommandList::destroy()
 {
     ASSERT(m_status == Status::Finish, "not finished");
-    D3DCommandList::resetFence();
     if (m_commandList)
     {
         m_commandList = nullptr;
@@ -61,7 +60,7 @@ D3DCommandList::D3DCommandList(ID3D12Device* device, Type type) noexcept
     , m_status(Status::Initial)
     , m_type(type)
 
-    , m_fenceValue(0U)
+    , m_fence(new D3DFence(device, 1U))
 {
     LOG_DEBUG("D3DCommandList::D3DCommandList constructor %llx", this);
 }
@@ -78,7 +77,7 @@ D3DCommandList::~D3DCommandList()
 ID3D12CommandList* D3DCommandList::getHandle() const
 {
     ASSERT(m_commandList, "nullptr");
-    return m_commandList.Get();
+    return m_commandList;
 }
 
 void D3DCommandList::init(ID3D12CommandList* cmdList, ID3D12CommandAllocator* allocator, bool own)
@@ -88,12 +87,6 @@ void D3DCommandList::init(ID3D12CommandList* cmdList, ID3D12CommandAllocator* al
 
     m_commandList = cmdList;
 }
-
-void D3DCommandList::resetFence()
-{
-    m_fenceValue.store(0U);
-}
-
 
 D3DGraphicsCommandList::D3DGraphicsCommandList(ID3D12Device* device, Type type) noexcept
     : D3DCommandList(device, type)
@@ -116,7 +109,7 @@ void D3DGraphicsCommandList::prepare()
     }
 
     {
-        HRESULT result = D3DGraphicsCommandList::getHandle()->Reset(m_commandAllocator.Get(), nullptr);
+        HRESULT result = D3DGraphicsCommandList::getHandle()->Reset(m_commandAllocator, nullptr);
         ASSERT(SUCCEEDED(result), "error");
     }
 
@@ -143,22 +136,31 @@ void D3DGraphicsCommandList::transition(D3DImage* image, D3D12_RESOURCE_STATES s
         ID3D12GraphicsCommandList* cmdList = D3DGraphicsCommandList::getHandle();
 
         D3D12_RESOURCE_STATES oldState = image->setState(state);
-        cmdList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(image->getResource(), oldState, state));
+
+        D3D12_RESOURCE_BARRIER resourceBarrierDesc = {};
+        resourceBarrierDesc.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+        resourceBarrierDesc.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
+        resourceBarrierDesc.Transition.pResource = image->getResource();
+        resourceBarrierDesc.Transition.StateBefore = oldState;
+        resourceBarrierDesc.Transition.StateAfter = state;
+        resourceBarrierDesc.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+
+        cmdList->ResourceBarrier(1, &resourceBarrierDesc);
     }
 }
 
 ID3D12GraphicsCommandList* D3DGraphicsCommandList::getHandle() const
 {
     ASSERT(m_commandList, "nullptr");
-    return static_cast<ID3D12GraphicsCommandList*>(m_commandList.Get());
+    return static_cast<ID3D12GraphicsCommandList*>(m_commandList);
 }
 
 void D3DGraphicsCommandList::clearRenderTarget(D3DImage* image, const f32 color[4], const std::vector<D3D12_RECT>& rect)
 {
-    ASSERT(m_commandList, "nullptr");
     ASSERT(m_status == Status::ReadyToRecord, "not record");
     //TODO check color
     ID3D12GraphicsCommandList* cmdList = D3DGraphicsCommandList::getHandle();
+    ASSERT(cmdList, "nullptr");
 
     D3DGraphicsCommandList::transition(image, D3D12_RESOURCE_STATE_RENDER_TARGET);
     cmdList->ClearRenderTargetView(image->getDescriptorHandle(), color, static_cast<u32>(rect.size()), rect.data());
@@ -169,7 +171,9 @@ void D3DGraphicsCommandList::clearRenderTarget(D3DImage* image, f32 depth, u32 s
     ASSERT(m_commandList, "nullptr");
     ASSERT(m_status == Status::ReadyToRecord, "not record");
     //TODO check depth
-    D3DGraphicsCommandList::getHandle()->ClearDepthStencilView(image->getDescriptorHandle(), flags, depth, stencil, static_cast<u32>(rect.size()), rect.data());
+    ID3D12GraphicsCommandList* cmdList = D3DGraphicsCommandList::getHandle();
+
+    cmdList->ClearDepthStencilView(image->getDescriptorHandle(), flags, depth, stencil, static_cast<u32>(rect.size()), rect.data());
 }
 
 void D3DGraphicsCommandList::setViewport(const std::vector<D3D12_VIEWPORT>& viewport)

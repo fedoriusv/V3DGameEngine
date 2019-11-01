@@ -524,7 +524,6 @@ Buffer * VulkanGraphicContext::createBuffer(Buffer::BufferType type, u16 usageFl
 
     ASSERT(false, "not supported");
     return nullptr;
-
 }
 
 void VulkanGraphicContext::removeBuffer(Buffer * buffer)

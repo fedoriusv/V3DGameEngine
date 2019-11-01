@@ -25,14 +25,14 @@ namespace d3d12
 
         struct SwapchainConfig
         {
+            NativeWindows       _window               = NULL;
             core::Dimension2D   _size;
             u32                 _countSwapchainImages = 0;
             bool                _vsync                = false;
-            NativeWindows       _window               = NULL;
-            ID3D12CommandQueue* _commandQueue         = nullptr;
+            bool                _fullscreen           = false;
         };
 
-        explicit D3DSwapchain(IDXGIFactory4* factory, ID3D12Device* device) noexcept;
+        explicit D3DSwapchain(IDXGIFactory4* factory, ID3D12Device* device, ID3D12CommandQueue* cmdQueue) noexcept;
         ~D3DSwapchain();
 
         bool create(const SwapchainConfig& config);
@@ -41,22 +41,25 @@ namespace d3d12
         void present();
         u32  acquireImage();
 
-        bool recteate(const SwapchainConfig& config);
+        bool resize(const SwapchainConfig& config);
 
         D3DImage* getSwapchainImage() const;
 
+        bool vsync() const;
+
     private:
+
+        IDXGIFactory4* m_factory;
+        ID3D12Device* m_device;
+        ID3D12CommandQueue* m_commandQueue;
+
+        IDXGISwapChain3* m_swapChain;
+        ID3D12DescriptorHeap* m_descriptorHeap;
+
+        std::vector<D3DImage*> m_renderTargets;
 
         u32 m_frameIndex;
         u32 m_syncInterval;
-
-        ComPtr<IDXGIFactory4> m_factory;
-        ComPtr<ID3D12Device> m_device;
-
-        ComPtr<IDXGISwapChain3> m_swapChain;
-        ComPtr<ID3D12DescriptorHeap> m_descriptorHeap;
-
-        std::vector<D3DImage*> m_renderTargets;
 
         friend class D3DGraphicContext;
 

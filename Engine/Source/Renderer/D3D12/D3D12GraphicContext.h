@@ -78,12 +78,13 @@ namespace d3d12
         Pipeline* createPipeline(Pipeline::PipelineType type) override;
         Sampler* createSampler() override;
 
-        ComPtr<IDXGIFactory4>      m_factory;
-        ComPtr<IDXGIAdapter1>      m_adapter;
-        ComPtr<ID3D12Device>       m_device;
+        IDXGIFactory4*      m_factory;
+        IDXGIAdapter1*      m_adapter;
+        ID3D12Device*       m_device;
 #if D3D_DEBUG_LAYERS
-        ComPtr<ID3D12Debug>        m_debugController;
+        ID3D12Debug*        m_debugController;
 #endif //D3D_DEBUG_LAYERS
+        ID3D12CommandQueue* m_commandQueue;
 
         D3DSwapchain*                 m_swapchain;
         const platform::Window* const m_window;
@@ -94,6 +95,16 @@ namespace d3d12
 
         struct RenderState
         {
+            D3DGraphicsCommandList* commandList()
+            {
+                return _commandList;
+            }
+
+            void reset()
+            {
+                _commandList = nullptr;
+            }
+
             D3DGraphicsCommandList* _commandList;
         };
         RenderState m_currentState;

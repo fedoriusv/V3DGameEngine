@@ -24,30 +24,28 @@ namespace d3d12
     {
     public:
 
-        D3DCommandListManager(ID3D12Device* device, ID3D12CommandQueue* commandQueue) noexcept;
+        explicit D3DCommandListManager(ID3D12Device* device, ID3D12CommandQueue* commandQueue, u32 swapImageCount) noexcept;
         ~D3DCommandListManager();
 
         D3DGraphicsCommandList* acquireCommandList(D3DCommandList::Type type);
 
-        void clear();
+        void waitAndClear();
 
-        void update();
         bool execute(D3DCommandList* cmdList, bool wait = false);
 
-        bool wait();
+        bool update(bool updateAll = false);
+        bool wait(bool waitAll = false);
 
+        bool sync(u32 index, bool wait = false);
     private:
 
-        ComPtr<ID3D12Device> m_device;
-
-        ComPtr<ID3D12CommandQueue> m_commandQueue;
-        D3DFence* m_fence;
+        ID3D12Device* m_device;
+        ID3D12CommandQueue* m_commandQueue;
 
         std::queue<D3DCommandList*> m_freeCommandList[D3DCommandList::Type::CountTypes];
-        std::list<D3DCommandList*> m_usedCommandList;
 
-        //std::map<Pipeline*, D3DCommandList*> m_commandList;
-
+        u32 m_currentIndex;
+        std::vector<std::list<D3DCommandList*>> m_usedCommandList;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
