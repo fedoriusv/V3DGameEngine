@@ -104,6 +104,7 @@ Resource * MeshAssimpDecoder::decode(const stream::Stream* stream, const std::st
 
         u8* data = stream->map(stream->size());
         scene = Importer.ReadFileFromMemory(data, stream->size(), assimpFlags);
+        stream->unmap();
         if (!scene)
         {
             ASSERT(false, "nullptr");

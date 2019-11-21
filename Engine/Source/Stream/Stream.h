@@ -14,8 +14,9 @@ namespace stream
     class Stream
     {
     public:
-        Stream() noexcept {}
-        virtual ~Stream() {}
+
+        Stream() noexcept = default;
+        virtual ~Stream() = default;
 
         template <class T>
         u32 read(T& value) const;

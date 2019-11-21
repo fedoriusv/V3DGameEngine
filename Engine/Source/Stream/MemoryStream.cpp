@@ -24,27 +24,12 @@ MemoryStream::MemoryStream(const MemoryStream& stream, utils::MemoryPool* alloca
     , m_mapped(false)
     , m_allocator(allocator)
 {
-    ASSERT(!m_mapped, "data is mapped");
+    ASSERT(!stream.m_mapped, "data is mapped");
     if (stream.m_stream && m_allocated > 0)
     {
         MemoryStream::allocate(m_allocated);
         memcpy(m_stream, stream.m_stream, m_length);
     }
-}
-
-MemoryStream::MemoryStream(MemoryStream&& stream, utils::MemoryPool* allocator) noexcept
-    : m_stream(nullptr)
-    , m_length(0)
-    , m_allocated(0)
-    , m_pos(0)
-    , m_mapped(false)
-    , m_allocator(allocator)
-{
-    std::swap(m_stream, stream.m_stream);
-    std::swap(m_length, stream.m_length);
-    std::swap(m_allocated, stream.m_allocated);
-    std::swap(m_pos, stream.m_pos);
-    ASSERT(!m_mapped, "data is mapped");
 }
 
 MemoryStream::MemoryStream(const void* data, u32 size, utils::MemoryPool* allocator) noexcept
@@ -68,11 +53,12 @@ MemoryStream::MemoryStream(const void* data, u32 size, utils::MemoryPool* alloca
 
 MemoryStream::~MemoryStream()
 {
-    clear();
+    MemoryStream::clear();
 }
 
 void MemoryStream::close()
 {
+    //nothing
 }
 
 u32 MemoryStream::read(void* buffer, u32 size, u32 count) const
@@ -244,7 +230,7 @@ u32 MemoryStream::read(bool& value) const
 u32 MemoryStream::read(std::string& value) const
 {
     u32 size = 0;
-    read(size);
+    MemoryStream::read(size);
 
     if (size == 0)
     {
@@ -262,7 +248,7 @@ u32 MemoryStream::read(std::string& value) const
 
 u32 MemoryStream::write(const void* buffer, u32 size, u32 count)
 {
-    if (checkSize(size * count))
+    if (MemoryStream::checkSize(size * count))
     {
         memcpy(m_stream + m_pos, buffer, size * count);
         m_pos += size * count;
@@ -278,7 +264,7 @@ u32 MemoryStream::write(const void* buffer, u32 size, u32 count)
 
 u32 MemoryStream::write(u8 value)
 {
-    if (checkSize(sizeof(u8)))
+    if (MemoryStream::checkSize(sizeof(u8)))
     {
         m_stream[m_pos++] = value;
 
@@ -293,7 +279,7 @@ u32 MemoryStream::write(u8 value)
 
 u32 MemoryStream::write(s8 value)
 {
-    if (checkSize(sizeof(s8)))
+    if (MemoryStream::checkSize(sizeof(s8)))
     {
         m_stream[m_pos++] = value;
 
@@ -308,7 +294,7 @@ u32 MemoryStream::write(s8 value)
 
 u32 MemoryStream::write(u16 value)
 {
-    if (checkSize(sizeof(u16)))
+    if (MemoryStream::checkSize(sizeof(u16)))
     {
         m_stream[m_pos++] = (value >> 8) & 0xFF;
         m_stream[m_pos++] = value & 0xFF;
@@ -324,7 +310,7 @@ u32 MemoryStream::write(u16 value)
 
 u32 MemoryStream::write(s16 value)
 {
-    if (checkSize(sizeof(s16)))
+    if (MemoryStream::checkSize(sizeof(s16)))
     {
         m_stream[m_pos++] = (value >> 8) & 0xFF;
         m_stream[m_pos++] = value & 0xFF;
@@ -340,7 +326,7 @@ u32 MemoryStream::write(s16 value)
 
 u32 MemoryStream::write(u32 value)
 {
-    if (checkSize(sizeof(u32)))
+    if (MemoryStream::checkSize(sizeof(u32)))
     {
         m_stream[m_pos++] = (value >> 24) & 0xFF;
         m_stream[m_pos++] = (value >> 16) & 0xFF;
@@ -358,7 +344,7 @@ u32 MemoryStream::write(u32 value)
 
 u32 MemoryStream::write(s32 value)
 {
-    if (checkSize(sizeof(s32)))
+    if (MemoryStream::checkSize(sizeof(s32)))
     {
         m_stream[m_pos++] = (value >> 24) & 0xFF;
         m_stream[m_pos++] = (value >> 16) & 0xFF;
@@ -376,7 +362,7 @@ u32 MemoryStream::write(s32 value)
 
 u32 MemoryStream::write(u64 value)
 {
-    if (checkSize(sizeof(u64)))
+    if (MemoryStream::checkSize(sizeof(u64)))
     {
         m_stream[m_pos++] = (value >> 56) & 0xFFLL;
         m_stream[m_pos++] = (value >> 48) & 0xFFLL;
@@ -399,7 +385,7 @@ u32 MemoryStream::write(u64 value)
 
 u32 MemoryStream::write(s64 value)
 {
-    if (checkSize(sizeof(s64)))
+    if (MemoryStream::checkSize(sizeof(s64)))
     {
         m_stream[m_pos++] = (value >> 56) & 0xFFLL;
         m_stream[m_pos++] = (value >> 48) & 0xFFLL;
@@ -422,7 +408,7 @@ u32 MemoryStream::write(s64 value)
 
 u32 MemoryStream::write(f32 value)
 {
-    if (checkSize(sizeof(f32)))
+    if (MemoryStream::checkSize(sizeof(f32)))
     {
         s32& ival = *((s32*)&value);
 
@@ -442,7 +428,7 @@ u32 MemoryStream::write(f32 value)
 
 u32 MemoryStream::write(f64 value)
 {
-    if (checkSize(sizeof(f64)))
+    if (MemoryStream::checkSize(sizeof(f64)))
     {
         s64& ival = *((s64*)&value);
 
@@ -467,7 +453,7 @@ u32 MemoryStream::write(f64 value)
 
 u32 MemoryStream::write(f80 value)
 {
-    if (checkSize(sizeof(f80)))
+    if (MemoryStream::checkSize(sizeof(f80)))
     {
         s32& ival = *((s32*)&value);
 
@@ -487,7 +473,7 @@ u32 MemoryStream::write(f80 value)
 
 u32 MemoryStream::write(bool value)
 {
-    if (checkSize(sizeof(bool)))
+    if (MemoryStream::checkSize(sizeof(bool)))
     {
         m_stream[m_pos++] = value;
 
@@ -502,7 +488,7 @@ u32 MemoryStream::write(bool value)
 
 u32 MemoryStream::write(const std::string value)
 {
-    if (checkSize(sizeof(u32)))
+    if (MemoryStream::checkSize(sizeof(u32)))
     {
         MemoryStream::write(static_cast<u32>(value.size()));
     }
@@ -512,7 +498,7 @@ u32 MemoryStream::write(const std::string value)
         return m_pos;
     }
 
-    if (checkSize(static_cast<u32>(value.size())))
+    if (MemoryStream::checkSize(static_cast<u32>(value.size())))
     {
         memcpy(m_stream + m_pos, &value[0], value.size());
         m_pos += static_cast<u32>(value.size());
@@ -610,31 +596,20 @@ void MemoryStream::clear()
 
 void MemoryStream::allocate(u32 size)
 {
-    if (m_stream)
-    {
-        if (m_allocator)
-        {
-            m_allocator->freeMemory(m_stream);
-        }
-        else
-        {
-            delete[] m_stream;
-        }
-        m_stream = nullptr;
-    }
+    MemoryStream::clear();
 
     m_allocated = size;
     m_length = size;
+    m_pos = 0;
+
     if (m_allocator)
     {
-        m_stream = (u8*)m_allocator->getMemory(m_allocated);
+        m_stream = reinterpret_cast<u8*>(m_allocator->getMemory(m_allocated));
     }
     else
     {
         m_stream = new u8[m_allocated];
     }
-
-    MemoryStream::seekBeg(0);
 }
 
 bool MemoryStream::checkSize(u32 size)
@@ -651,7 +626,7 @@ bool MemoryStream::checkSize(u32 size)
         s32 newAllocated = 2 * (m_pos + size);
         if (m_allocator)
         {
-            m_stream = (u8*)m_allocator->getMemory(newAllocated);
+            m_stream = reinterpret_cast<u8*>(m_allocator->getMemory(newAllocated));
         }
         else
         {

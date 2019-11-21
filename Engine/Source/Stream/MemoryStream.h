@@ -5,6 +5,10 @@
 
 namespace v3d
 {
+namespace utils
+{
+    class MemoryPool;
+} //namespace utils
 namespace stream
 {
     /////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -12,14 +16,15 @@ namespace stream
     /**
     * MemoryStream class
     */
-    class MemoryStream : public Stream
+    class MemoryStream final : public Stream
     {
     public:
 
-        MemoryStream(utils::MemoryPool* allocator = nullptr) noexcept;
-        MemoryStream(const MemoryStream& stream, utils::MemoryPool* allocator = nullptr) noexcept;
-        MemoryStream(MemoryStream&& stream, utils::MemoryPool* allocator = nullptr) noexcept;
-        MemoryStream(const void* data, u32 size, utils::MemoryPool* allocator = nullptr) noexcept;
+        MemoryStream() = delete;
+
+        explicit MemoryStream(utils::MemoryPool* allocator = nullptr) noexcept;
+        explicit MemoryStream(const MemoryStream& stream, utils::MemoryPool* allocator = nullptr) noexcept;
+        explicit MemoryStream(const void* data, u32 size, utils::MemoryPool* allocator = nullptr) noexcept;
         ~MemoryStream();
 
         void clear();
@@ -80,7 +85,6 @@ namespace stream
         mutable bool    m_mapped;
 
         utils::MemoryPool *const m_allocator;
-         
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

@@ -1,5 +1,6 @@
 #include "FileStream.h"
 #include "Utils/Logger.h"
+#include "Utils/MemoryPool.h"
 
 #include <filesystem>
 
@@ -10,25 +11,27 @@ namespace stream
 
 using namespace core;
 
-FileStream::FileStream() noexcept
-    : m_fileHandler(nullptr)
-    , m_fileSize(0)
-    , m_isOpen(false)
-    , m_mappedMemory(nullptr)
+FileStream::FileStream(utils::MemoryPool* allocator) noexcept
+    : m_file(nullptr)
+    , m_size(0)
+    , m_open(false)
+    , m_memory(nullptr)
     , m_mapped(false)
+
+    , m_allocator(allocator)
 {
 }
 
-FileStream::FileStream(const std::string& file, OpenMode openMode) noexcept
-    : m_fileHandler(nullptr)
-    , m_fileSize(0)
-    , m_isOpen(false)
-    , m_mappedMemory(nullptr)
+FileStream::FileStream(const std::string& file, OpenMode openMode, utils::MemoryPool* allocator) noexcept
+    : m_file(nullptr)
+    , m_size(0)
+    , m_open(false)
+    , m_memory(nullptr)
     , m_mapped(false)
-{
-    open(file, openMode);
 
-    if (!m_isOpen)
+    , m_allocator(allocator)
+{
+    if (!open(file, openMode))
     {
         LOG_ERROR("Can not read file: %s", file.c_str());
     }
@@ -37,18 +40,17 @@ FileStream::FileStream(const std::string& file, OpenMode openMode) noexcept
 
 FileStream::~FileStream()
 {
-    close();
+    FileStream::close();
 }
 
 bool FileStream::open(const std::string& file, OpenMode openMode)
 {
-    if (m_isOpen)
+    if (m_open)
     {
         return true;
     }
 
     const char* mode = 0;
-
     if ((openMode & e_in) == openMode)
     {
         mode = "rb";
@@ -82,36 +84,36 @@ bool FileStream::open(const std::string& file, OpenMode openMode)
         mode = "rb";
     }
 
-    m_fileName = file;
-    m_fileHandler = fopen(m_fileName.c_str(), mode);
- 
-    m_isOpen = m_fileHandler != nullptr;
+    m_name = file;
+    m_file = fopen(m_name.c_str(), mode);
+    m_open = m_file != nullptr;
 
-    return m_isOpen;
+    return m_open;
 }
 
 void FileStream::close()
 {
-    if (m_fileHandler)
+    if (m_file)
     {
-        fclose(m_fileHandler);
-        m_fileHandler = nullptr;
+        fclose(m_file);
+        m_file = nullptr;
     }
-    m_fileSize = 0;
-    m_fileName = "";
-    m_isOpen = false;
-}
 
+    ASSERT(!m_mapped, "mapped");
+    m_size = 0;
+    m_name.clear();
+    m_open = false;
+}
 
 bool FileStream::isOpen() const
 {
-    return m_isOpen;
+    return m_open;
 }
 
 u32 FileStream::read(void* buffer, u32 size, u32 count) const
 {
-    ASSERT(m_fileHandler, "File Handler nullptr");
-    const u32 ret = (u32)fread(buffer, size, count, m_fileHandler);
+    ASSERT(m_file, "File Handler is nullptr");
+    const u32 ret = static_cast<u32>(fread(buffer, size, count, m_file));
     return ret;
 }
 
@@ -189,23 +191,23 @@ u32 FileStream::read(bool& value) const
 
 u32 FileStream::read(std::string& value) const
 {
-    ASSERT(m_fileHandler, "File Handler nullptr");
+    ASSERT(m_file, "File Handler is nullptr");
 
-    fseek(m_fileHandler, 0, SEEK_END);
-    m_fileSize = ftell(m_fileHandler);
-    rewind(m_fileHandler);
+    fseek(m_file, 0, SEEK_END);
+    m_size = static_cast<u32>(ftell(m_file));
+    rewind(m_file);
 
     value.clear();
-    value.resize(m_fileSize);
-    const u32 ret = FileStream::read((void*)value.data(), sizeof(c8), m_fileSize);
+    value.resize(m_size);
+    const u32 ret = FileStream::read(reinterpret_cast<void*>(value.data()), sizeof(c8), m_size);
 
     return ret;
 }
 
 u32 FileStream::write(const void* buffer, u32 size, u32 count)
 {
-    ASSERT(m_fileHandler, "File Handler nullptr");
-    const u32 ret = (u32)fwrite(buffer, size, count, m_fileHandler);
+    ASSERT(m_file, "File Handler is nullptr");
+    const u32 ret = static_cast<u32>(fwrite(buffer, size, count, m_file));
     return ret;
 }
 
@@ -283,7 +285,7 @@ u32 FileStream::write(bool value)
 
 u32 FileStream::write(const std::string value)
 {
-    const u32 strLen = (u32)value.length();
+    const u32 strLen = static_cast<u32>(value.length());
     u32 ret = FileStream::write(&strLen, sizeof(u32), 1);
     ret += FileStream::write(value.c_str(), sizeof(c8), strLen);
     return ret;
@@ -291,66 +293,81 @@ u32 FileStream::write(const std::string value)
 
 void FileStream::seekBeg(u32 offset) const
 {
-    ASSERT(m_fileHandler, "File Handler nullptr");
-    fseek(m_fileHandler, offset, SEEK_SET);
+    ASSERT(m_file, "File Handler is nullptr");
+    fseek(m_file, offset, SEEK_SET);
 }
 
 void FileStream::seekEnd(u32 offset) const
 {
-    ASSERT(m_fileHandler, "File Handler nullptr");
-    fseek(m_fileHandler, offset, SEEK_END);
+    ASSERT(m_file, "File Handler is nullptr");
+    fseek(m_file, offset, SEEK_END);
 }
 
 void FileStream::seekCur(u32 offset) const
 {
-    ASSERT(m_fileHandler, "File Handler nullptr");
-    fseek(m_fileHandler, offset, SEEK_CUR);
+    ASSERT(m_file, "File Handler is nullptr");
+    fseek(m_file, offset, SEEK_CUR);
 }
 
 u32 FileStream::tell() const
 {
-    ASSERT(m_fileHandler, "File Handler nullptr");
-    u32 tell = ftell(m_fileHandler);
+    ASSERT(m_file, "File Handler is nullptr");
+    u32 tell = static_cast<u32>(ftell(m_file));
     return tell;
 }
 
 u32 FileStream::size() const
 {
-    ASSERT(m_fileHandler, "File Handler nullptr");
-    if (m_fileSize == 0)
+    ASSERT(m_file, "File Handler nullptr");
+    if (m_size == 0)
     {
-        u32 currentPos = tell();
-        fseek(m_fileHandler, 0, SEEK_END);
-        m_fileSize = tell();
-        fseek(m_fileHandler, currentPos, SEEK_SET);
+        u32 currentPos = FileStream::tell();
+        fseek(m_file, 0, SEEK_END);
+        m_size = FileStream::tell();
+        fseek(m_file, currentPos, SEEK_SET);
     }
-    return m_fileSize;
+    return m_size;
 }
 
 u8* FileStream::map(u32 size) const
 {
-    ASSERT(size > 0 && tell() + size <= FileStream::size(), "Invalid file size");
-    u8* address = 0;
+    ASSERT(!m_mapped, "already mapped");
+    if (m_mapped)
+    {
+        return m_memory;
+    }
 
-     m_mappedMemory = new u8[size];
-     address = m_mappedMemory;
+    ASSERT(size > 0 && FileStream::tell() + size <= FileStream::size(), "Invalid file size");
+    if (m_allocator)
+    {
+        m_memory = reinterpret_cast<u8*>(m_allocator->getMemory(size));
+    }
+    else
+    {
+        m_memory = new u8[size];
+    }
 
-    read(address, size);
-
-    ASSERT(!m_mapped, "Memory not mapped");
+    FileStream::read(m_memory, size);
     m_mapped = true;
 
-    return address;
+    return m_memory;
 }
 
 void FileStream::unmap() const
 {
-    if (m_mappedMemory)
-    {
-        delete[] m_mappedMemory;
-        m_mappedMemory = nullptr;
-    }
     ASSERT(m_mapped, "Memory not mapped");
+    if (m_memory)
+    {
+        if (m_allocator)
+        {
+            m_allocator->freeMemory(m_memory);
+        }
+        else
+        {
+            delete[] m_memory;
+            m_memory = nullptr;
+        }
+    }
     m_mapped = false;
 }
 
@@ -361,7 +378,7 @@ bool FileStream::isMapped() const
 
 const std::string& FileStream::getName() const
 {
-    return m_fileName;
+    return m_name;
 }
 
 bool FileStream::isExists(const std::string& file)
