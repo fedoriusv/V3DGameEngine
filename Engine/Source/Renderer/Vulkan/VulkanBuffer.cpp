@@ -118,14 +118,17 @@ bool VulkanBuffer::create()
     }
 
 #if VULKAN_DEBUG_MARKERS
-    VkDebugUtilsObjectNameInfoEXT debugUtilsObjectNameInfo = {};
-    debugUtilsObjectNameInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT;
-    debugUtilsObjectNameInfo.pNext = nullptr;
-    debugUtilsObjectNameInfo.objectType = VK_OBJECT_TYPE_BUFFER;
-    debugUtilsObjectNameInfo.objectHandle = reinterpret_cast<u64>(m_buffer);
-    debugUtilsObjectNameInfo.pObjectName = m_debugName.c_str();
+    if (VulkanDeviceCaps::checkInstanceExtension(VK_EXT_DEBUG_UTILS_EXTENSION_NAME))
+    {
+        VkDebugUtilsObjectNameInfoEXT debugUtilsObjectNameInfo = {};
+        debugUtilsObjectNameInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT;
+        debugUtilsObjectNameInfo.pNext = nullptr;
+        debugUtilsObjectNameInfo.objectType = VK_OBJECT_TYPE_BUFFER;
+        debugUtilsObjectNameInfo.objectHandle = reinterpret_cast<u64>(m_buffer);
+        debugUtilsObjectNameInfo.pObjectName = m_debugName.c_str();
 
-    VulkanWrapper::SetDebugUtilsObjectName(m_device, &debugUtilsObjectNameInfo);
+        VulkanWrapper::SetDebugUtilsObjectName(m_device, &debugUtilsObjectNameInfo);
+    }
 #endif //VULKAN_DEBUG_MARKERS
 
     m_memory = VulkanMemory::allocateBufferMemory(*m_memoryAllocator, m_buffer, flag);

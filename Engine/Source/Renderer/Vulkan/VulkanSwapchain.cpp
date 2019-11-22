@@ -6,9 +6,10 @@
 #include "Utils/Logger.h"
 
 #ifdef PLATFORM_ANDROID
-    #include "Platform/android_native_app_glue.h"
+#   include "Platform/Android/AndroidCommon.h"
+#   include "Platform/Android/android_native_app_glue.h"
 
-extern struct android_app* g_nativeAndroidApp;
+extern android_app* g_nativeAndroidApp;
 #endif //PLATFORM_ANDROID
 
 #ifdef VULKAN_RENDER

@@ -220,16 +220,19 @@ void VulkanCommandBuffer::beginCommandBuffer()
     }
 
 #if VULKAN_DEBUG_MARKERS
-    VkDebugUtilsLabelEXT debugUtilsLabel = {};
-    debugUtilsLabel.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_LABEL_EXT;
-    debugUtilsLabel.pNext = nullptr;
-    debugUtilsLabel.pLabelName = m_debugName.c_str();
-    debugUtilsLabel.color[0] = 1.0f;
-    debugUtilsLabel.color[1] = 1.0f;
-    debugUtilsLabel.color[2] = 1.0f;
-    debugUtilsLabel.color[3] = 1.0f;
+    if (VulkanDeviceCaps::checkInstanceExtension(VK_EXT_DEBUG_UTILS_EXTENSION_NAME))
+    {
+        VkDebugUtilsLabelEXT debugUtilsLabel = {};
+        debugUtilsLabel.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_LABEL_EXT;
+        debugUtilsLabel.pNext = nullptr;
+        debugUtilsLabel.pLabelName = m_debugName.c_str();
+        debugUtilsLabel.color[0] = 1.0f;
+        debugUtilsLabel.color[1] = 1.0f;
+        debugUtilsLabel.color[2] = 1.0f;
+        debugUtilsLabel.color[3] = 1.0f;
 
-    VulkanWrapper::CmdBeginDebugUtilsLabel(m_command, &debugUtilsLabel);
+        VulkanWrapper::CmdBeginDebugUtilsLabel(m_command, &debugUtilsLabel);
+    }
 #endif //VULKAN_DEBUG_MARKERS
 
     m_status = CommandBufferStatus::Begin;
@@ -241,7 +244,10 @@ void VulkanCommandBuffer::endCommandBuffer()
     VulkanWrapper::EndCommandBuffer(m_command);
 
 #if VULKAN_DEBUG_MARKERS
-    VulkanWrapper::CmdEndDebugUtilsLabel(m_command);
+    if (VulkanDeviceCaps::checkInstanceExtension(VK_EXT_DEBUG_UTILS_EXTENSION_NAME))
+    {
+        VulkanWrapper::CmdEndDebugUtilsLabel(m_command);
+    }
 #endif //VULKAN_DEBUG_MARKERS
 
     m_status = CommandBufferStatus::End;

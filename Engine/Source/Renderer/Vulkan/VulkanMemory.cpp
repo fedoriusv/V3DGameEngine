@@ -229,16 +229,19 @@ VulkanMemory::VulkanAlloc SimpleVulkanMemoryAllocator::allocate(VkDeviceSize siz
     memory._mapped = nullptr;
 
 #if VULKAN_DEBUG_MARKERS
-    std::string debugName = "SimpleAlloc_Memory_" + std::to_string(s_debugNameGenerator++);
+    if (VulkanDeviceCaps::checkInstanceExtension(VK_EXT_DEBUG_UTILS_EXTENSION_NAME))
+    {
+        std::string debugName = "SimpleAlloc_Memory_" + std::to_string(s_debugNameGenerator++);
 
-    VkDebugUtilsObjectNameInfoEXT debugUtilsObjectNameInfo = {};
-    debugUtilsObjectNameInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT;
-    debugUtilsObjectNameInfo.pNext = nullptr;
-    debugUtilsObjectNameInfo.objectType = VK_OBJECT_TYPE_DEVICE_MEMORY;
-    debugUtilsObjectNameInfo.objectHandle = reinterpret_cast<u64>(memory._memory);
-    debugUtilsObjectNameInfo.pObjectName = debugName.c_str();
+        VkDebugUtilsObjectNameInfoEXT debugUtilsObjectNameInfo = {};
+        debugUtilsObjectNameInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT;
+        debugUtilsObjectNameInfo.pNext = nullptr;
+        debugUtilsObjectNameInfo.objectType = VK_OBJECT_TYPE_DEVICE_MEMORY;
+        debugUtilsObjectNameInfo.objectHandle = reinterpret_cast<u64>(memory._memory);
+        debugUtilsObjectNameInfo.pObjectName = debugName.c_str();
 
-    VulkanWrapper::SetDebugUtilsObjectName(m_device, &debugUtilsObjectNameInfo);
+        VulkanWrapper::SetDebugUtilsObjectName(m_device, &debugUtilsObjectNameInfo);
+    }
 #endif //VULKAN_DEBUG_MARKERS
 
     return memory;
