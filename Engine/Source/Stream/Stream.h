@@ -52,7 +52,7 @@ namespace stream
         virtual u32 write(f64 value) = 0;
         virtual u32 write(f80 value)  = 0;
         virtual u32 write(bool value) = 0;
-        virtual u32 write(const std::string value) = 0;
+        virtual u32 write(const std::string& value) = 0;
 
         virtual void close() = 0;
 
