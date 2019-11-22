@@ -28,7 +28,11 @@ SimpleRender::SimpleRender(renderer::CommandList& cmdList, const core::Dimension
 
     m_renderTarget = cmdList.createObject<RenderTargetState>(size);
     m_renderTarget->setColorTexture(0, cmdList.getBackbuffer(), RenderTargetLoadOp::LoadOp_Clear, RenderTargetStoreOp::StoreOp_Store, core::Vector4D(0.0f));
+#if defined(PLATFORM_ANDROID)
+    Texture2D* depthAttachment = cmdList.createObject<Texture2D>(TextureUsage::TextureUsage_Attachment, Format::Format_D24_UNorm_S8_UInt, size, TextureSamples::TextureSamples_x1);
+#else
     Texture2D* depthAttachment = cmdList.createObject<Texture2D>(TextureUsage::TextureUsage_Attachment, Format::Format_D32_SFloat_S8_UInt, size, TextureSamples::TextureSamples_x1);
+#endif
     m_renderTarget->setDepthStencilTexture(depthAttachment, RenderTargetLoadOp::LoadOp_Clear, RenderTargetStoreOp::StoreOp_DontCare, 1.0f);
 
     m_pipeline = cmdList.createObject<GraphicsPipelineState>(m_modelDrawer->getVertexInputAttribDescription(0, 0), m_program.get(), m_renderTarget.get());

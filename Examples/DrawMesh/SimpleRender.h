@@ -43,12 +43,12 @@ private:
     utils::IntrusivePointer<GraphicsPipelineState>  m_pipeline;
     utils::IntrusivePointer<RenderTargetState>      m_renderTarget;
 
-   utils::IntrusivePointer<Texture2D>    m_texture;
-   utils::IntrusivePointer<SamplerState> m_sampler;
+    utils::IntrusivePointer<Texture2D>    m_texture;
+    utils::IntrusivePointer<SamplerState> m_sampler;
 
-   scene::ModelHelper*      m_modelDrawer;
+    scene::ModelHelper*      m_modelDrawer;
 
-   scene::Camera*           m_camera;
+    scene::Camera*           m_camera;
 };
 
 } //namespace renderer

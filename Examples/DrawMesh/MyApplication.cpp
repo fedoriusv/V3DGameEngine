@@ -51,9 +51,18 @@ MyApplication::MyApplication(int& argc, char** argv)
     m_Camera->setPerspective(45.0f, widowsSize, 1.f, 50.f);
 
     m_InputEventHandler = new InputEventHandler();
-    m_InputEventHandler->connect(std::bind(&CameraArcballHelper::handlerMouseCallback, m_Camera, m_InputEventHandler, std::placeholders::_1));
+    m_InputEventHandler->connect([this](const MouseInputEvent* event)
+    {
+        m_Camera->handlerMouseCallback(m_InputEventHandler, event);
+    });
+
+    m_InputEventHandler->connect([this](const TouchInputEvent* event)
+    {
+        m_Camera->handlerTouchCallback(m_InputEventHandler, event);
+    });
 
     m_Window->getInputEventReceiver()->attach(InputEvent::InputEventType::MouseInputEvent, m_InputEventHandler);
+    m_Window->getInputEventReceiver()->attach(InputEvent::InputEventType::TouchInputEvent, m_InputEventHandler);
 }
 
 int MyApplication::Execute()
@@ -150,6 +159,7 @@ void MyApplication::Exit()
 
     Context::destroyContext(m_Context);
     m_Window->getInputEventReceiver()->dettach(InputEvent::InputEventType::MouseInputEvent);
+    m_Window->getInputEventReceiver()->dettach(InputEvent::InputEventType::TouchInputEvent);
 }
 
 MyApplication::~MyApplication()
