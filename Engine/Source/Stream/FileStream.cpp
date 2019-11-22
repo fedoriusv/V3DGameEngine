@@ -114,93 +114,79 @@ u32 FileStream::read(void* buffer, u32 size, u32 count) const
 {
     ASSERT(m_file, "File Handler is nullptr");
     const u32 ret = static_cast<u32>(fread(buffer, size, count, m_file));
-    return ret;
+    return ret * size;
 }
 
 u32 FileStream::read(u8& value) const
 {
-    const u32 ret = FileStream::read(&value, sizeof(value), 1);
-    return ret;
+    return FileStream::read(&value, sizeof(value), 1);
 }
 
 u32 FileStream::read(s8& value) const
 {
-    const u32 ret = FileStream::read(&value, sizeof(value), 1);
-    return ret;
+    return FileStream::read(&value, sizeof(value), 1);
 }
 
 u32 FileStream::read(u16& value) const
 {
-    const u32 ret = FileStream::read(&value, sizeof(value), 1);
-    return ret;
+    return FileStream::read(&value, sizeof(value), 1);
 }
 
 u32 FileStream::read(s16& value) const
 {
-    const u32 ret = FileStream::read(&value, sizeof(value), 1);
-    return ret;
+    return FileStream::read(&value, sizeof(value), 1);
 }
 
 u32 FileStream::read(u32& value) const
 {
-    const u32 ret = FileStream::read(&value, sizeof(value), 1);
-    return ret;
+    return FileStream::read(&value, sizeof(value), 1);
 }
 
 u32 FileStream::read(s32& value) const
 {
-    const u32 ret = FileStream::read(&value, sizeof(value), 1);
-    return ret;
+    return FileStream::read(&value, sizeof(value), 1);
 }
 
 u32 FileStream::read(u64& value) const
 {
-    const u32 ret = FileStream::read(&value, sizeof(value), 1);
-    return ret;
+    return FileStream::read(&value, sizeof(value), 1);
 }
 
 u32 FileStream::read(s64& value) const
 {
-    const u32 ret = FileStream::read(&value, sizeof(value), 1);
-    return ret;
+    return FileStream::read(&value, sizeof(value), 1);
 }
 
 u32 FileStream::read(f32& value) const
 {
-    const u32 ret = FileStream::read(&value, sizeof(value), 1);
-    return ret;
+    return FileStream::read(&value, sizeof(value), 1);
 }
 
 u32 FileStream::read(f64& value) const
 {
-    const u32 ret = FileStream::read(&value, sizeof(value), 1);
-    return ret;
+    return FileStream::read(&value, sizeof(value), 1);
 }
 
 u32 FileStream::read(f80& value) const
 {
-    const u32 ret = FileStream::read(&value, sizeof(value), 1);
-    return ret;
+    return FileStream::read(&value, sizeof(value), 1);
 }
 
 u32 FileStream::read(bool& value) const
 {
-    const u32 ret = FileStream::read(&value, sizeof(value), 1);
-    return ret;
+    return FileStream::read(&value, sizeof(value), 1);
 }
 
 u32 FileStream::read(std::string& value) const
 {
     ASSERT(m_file, "File Handler is nullptr");
-
-    fseek(m_file, 0, SEEK_END);
-    m_size = static_cast<u32>(ftell(m_file));
-    rewind(m_file);
+    u32 size = 0;
+    u32 ret = FileStream::read(size);
 
     value.clear();
-    value.resize(m_size);
-    const u32 ret = FileStream::read(reinterpret_cast<void*>(value.data()), sizeof(c8), m_size);
+    value.resize(size);
 
+    ret += FileStream::read(reinterpret_cast<void*>(value.data()), sizeof(c8), size);
     return ret;
 }
 
@@ -208,85 +194,79 @@ u32 FileStream::write(const void* buffer, u32 size, u32 count)
 {
     ASSERT(m_file, "File Handler is nullptr");
     const u32 ret = static_cast<u32>(fwrite(buffer, size, count, m_file));
-    return ret;
+    return ret * size;
 }
 
 u32 FileStream::write(u8 value)
 {
-    const u32 ret = FileStream::write(&value, sizeof(value), 1);
-    return ret;
+    return FileStream::write(&value, sizeof(value), 1);
 }
 
 u32 FileStream::write(s8 value)
 {
-    const u32 ret = FileStream::write(&value, sizeof(value), 1);
-    return ret;
+    return FileStream::write(&value, sizeof(value), 1);
 }
 
 u32 FileStream::write(u16 value)
 {
-    const u32 ret = FileStream::write(&value, sizeof(value), 1);
-    return ret;
+    return FileStream::write(&value, sizeof(value), 1);
 }
 
 u32 FileStream::write(s16 value)
 {
-    const u32 ret = FileStream::write(&value, sizeof(value), 1);
-    return ret;
+    return FileStream::write(&value, sizeof(value), 1);
 }
 
 u32 FileStream::write(u32 value)
 {
-    const u32 ret = FileStream::write(&value, sizeof(value), 1);
-    return ret;
+    return FileStream::write(&value, sizeof(value), 1);
 }
 
 u32 FileStream::write(s32 value)
 {
-    const u32 ret = FileStream::write(&value, sizeof(value), 1);
-    return ret;
+    return FileStream::write(&value, sizeof(value), 1);
 }
 
 u32 FileStream::write(u64 value)
 {
-    const u32 ret = FileStream::write(&value, sizeof(value), 1);
-    return ret;
+    return FileStream::write(&value, sizeof(value), 1);
 }
 
 u32 FileStream::write(s64 value)
 {
-    const u32 ret = FileStream::write(&value, sizeof(value), 1);
-    return ret;
+    return FileStream::write(&value, sizeof(value), 1);
 }
 
 u32 FileStream::write(f32 value)
 {
-    const u32 ret = FileStream::write(&value, sizeof(value), 1);
-    return ret;
+    return FileStream::write(&value, sizeof(value), 1);
 }
 
 u32 FileStream::write(f64 value)
 {
-    const u32 ret = (u32)write(&value, sizeof(value), 1);
-    return ret;
+    return FileStream::write(&value, sizeof(value), 1);
 }
 
 u32 FileStream::write(f80 value)
 {
-    const u32 ret = FileStream::write(&value, sizeof(value), 1);
-    return ret;
+    return FileStream::write(&value, sizeof(value), 1);
 }
 
 u32 FileStream::write(bool value)
 {
-    const u32 ret = FileStream::write(&value, sizeof(value), 1);
-    return ret;
+    return FileStream::write(&value, sizeof(value), 1);
 }
 
-u32 FileStream::write(const std::string value)
+u32 FileStream::write(const std::string& value)
 {
     const u32 strLen = static_cast<u32>(value.length());
-    u32 ret = FileStream::write(&strLen, sizeof(u32), 1);
+    u32 ret = FileStream::write(strLen);
+
+    if (strLen == 0)
+    {
+        return ret;
+    }
+
     ret += FileStream::write(value.c_str(), sizeof(c8), strLen);
     return ret;
 }
@@ -383,54 +363,58 @@ const std::string& FileStream::getName() const
 
 bool FileStream::isExists(const std::string& file)
 {
-#ifndef _ANDROID
-    return std::filesystem::exists(file);
-#else
+#if defined(PLATFORM_ANDROID)
     ASSERT(false, "not implemented");
     return false;
-#endif //_ANDROID
+#else
+    return std::filesystem::exists(file);
+#endif //PLATFORM_ANDROID
 }
 
 std::string FileStream::absolutePath(const std::string & file)
 {
-#ifndef _ANDROID
+#if defined(PLATFORM_ANDROID)
+    return std::string(file);
+#else
     std::filesystem::path path = file;
     return std::filesystem::absolute(path).string();
-#else
-    ASSERT(false, "not implemented");
-    return std::string("");
-#endif //_ANDROID
+#endif //PLATFORM_ANDROID
 }
 
 std::string FileStream::extension(const std::string & file)
 {
-#ifndef _ANDROID
+#if defined(PLATFORM_ANDROID)
+    std::string fileExtension;
+    const size_t pos = file.find_last_of('.');
+    if (pos != std::string::npos)
+    {
+        fileExtension = std::string(file.begin() + pos, file.end());
+    }
+    return fileExtension;
+#else
     std::filesystem::path path = file;
     return path.extension().string();
-#else
-    ASSERT(false, "not implemented");
-    return std::string("");
-#endif //_ANDROID
+#endif //PLATFORM_ANDROID
 }
 
 bool FileStream::isDirectory(const std::string& path)
 {
-#ifndef _ANDROID
-    return std::filesystem::is_directory(path);
-#else
+#if defined(PLATFORM_ANDROID)
     ASSERT(false, "not implemented");
     return false;
-#endif //_ANDROID
+#else
+    return std::filesystem::is_directory(path);
+#endif //PLATFORM_ANDROID
 }
 
 bool FileStream::remove(const std::string& file)
 {
-#ifndef _ANDROID
-    return std::filesystem::remove(file.c_str());
-#else
+#if defined(PLATFORM_ANDROID)
     ASSERT(false, "not implemented");
     return false;
-#endif //_ANDROID
+#else
+    return std::filesystem::remove(file.c_str());
+#endif //PLATFORM_ANDROID
 }
 
 } //namespace stream

@@ -486,7 +486,7 @@ u32 MemoryStream::write(bool value)
     return m_pos;
 }
 
-u32 MemoryStream::write(const std::string value)
+u32 MemoryStream::write(const std::string& value)
 {
     if (MemoryStream::checkSize(sizeof(u32)))
     {
@@ -568,7 +568,7 @@ bool MemoryStream::isMapped() const
     return m_mapped;
 }
 
-u8* MemoryStream::getData() const
+const u8* MemoryStream::data() const
 {
     ASSERT(!m_mapped, "Memory not mapped");
     return m_stream;

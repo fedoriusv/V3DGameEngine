@@ -76,7 +76,7 @@ namespace stream
         u32 write(f64 value) override;
         u32 write(f80 value) override;
         u32 write(bool value) override;
-        u32 write(const std::string value) override;
+        u32 write(const std::string& value) override;
         
         void seekBeg(u32 offset) const override;
         void seekEnd(u32 offset) const override;
