@@ -26,6 +26,9 @@ namespace resource
         void unregisterDecoder(ResourceDecoder* decoder);
         void unregisterAllDecoders();
 
+        void registerRoot(const std::string& path);
+        void unregisterRoot(const std::string& path);
+
         void registerPath(const std::string& path);
         void registerPathes(const std::vector<std::string> &pathes);
 
@@ -37,6 +40,8 @@ namespace resource
         ResourceDecoder* findDecoder(const std::string& extension);
 
         std::vector<ResourceDecoder*> m_decoders;
+
+        std::vector<std::string>      m_roots;
         std::vector<std::string>      m_pathes;
 
     };
@@ -51,6 +56,7 @@ namespace resource
     template<class T>
     inline ResourceLoader<T>::~ResourceLoader()
     {
+        m_roots.clear();
         m_pathes.clear();
         ResourceLoader<T>::unregisterAllDecoders();
     }
@@ -84,6 +90,29 @@ namespace resource
             delete decoder;
         }
         m_decoders.clear();
+    }
+
+    template<class T>
+    inline void ResourceLoader<T>::registerRoot(const std::string& path)
+    {
+        std::string innerRoot(path);
+        std::transform(innerRoot.begin(), innerRoot.end(), innerRoot.begin(), ::tolower);
+
+        auto it = std::find(m_roots.begin(), m_roots.end(), innerRoot);
+        if (it == m_roots.end())
+        {
+            m_roots.push_back(innerRoot);
+        }
+    }
+
+    template<class T>
+    inline void ResourceLoader<T>::unregisterRoot(const std::string& path)
+    {
+        auto it = std::find(m_roots.begin(), m_roots.end(), path);
+        if (it != m_roots.end())
+        {
+            m_roots.erase(std::remove(m_roots.begin(), m_roots.end(), *it), m_roots.end());
+        }
     }
 
     template<class T>

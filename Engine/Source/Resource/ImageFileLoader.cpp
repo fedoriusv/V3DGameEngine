@@ -35,9 +35,10 @@ ImageFileLoader::ImageFileLoader(u32 flags) noexcept
     }
 #endif //USE_GLI
 
-    ResourceLoader::registerPath("../../../../");
-    ResourceLoader::registerPath("../../../../../");
-    ResourceLoader::registerPath("../../../../engine/");
+    ResourceLoader::registerRoot("");
+    ResourceLoader::registerRoot("../../../../");
+
+    ResourceLoader::registerPath("");
     ResourceLoader::registerPathes(ResourceLoaderManager::getInstance()->getPathes());
 }
 
@@ -47,38 +48,41 @@ ImageFileLoader::~ImageFileLoader()
 
 resource::Image* ImageFileLoader::load(const std::string & name, const std::string & alias)
 {
-    for (std::string& path : m_pathes)
+    for (std::string& root : m_roots)
     {
-        const std::string fullPath = path + name;
-        stream::Stream* file = stream::FileLoader::load(fullPath);
-        if (!file)
+        for (std::string& path : m_pathes)
         {
-            continue;
-        }
+            const std::string fullPath = root + path + name;
+            stream::Stream* file = stream::FileLoader::load(fullPath);
+            if (!file)
+            {
+                continue;
+            }
 
-        std::string fileExtension = stream::FileLoader::getFileExtension(name);
-        ResourceDecoder* decoder = ResourceLoader::findDecoder(fileExtension);
-        if (decoder)
-        {
-           Resource* resource = decoder->decode(file, name);
-           file->close();
+            std::string fileExtension = stream::FileLoader::getFileExtension(name);
+            ResourceDecoder* decoder = ResourceLoader::findDecoder(fileExtension);
+            if (decoder)
+            {
+                Resource* resource = decoder->decode(file, name);
+                file->close();
 
-           delete file;
+                delete file;
 
-           if (!resource)
-           {
-               LOG_ERROR("ImageFileLoader: Streaming error read file [%s]", name.c_str());
-               return nullptr;
-           }
+                if (!resource)
+                {
+                    LOG_ERROR("ImageFileLoader: Streaming error read file [%s]", name.c_str());
+                    return nullptr;
+                }
 
-           if (!resource->load())
-           {
-               LOG_ERROR("ImageFileLoader: Streaming error read file [%s]", name.c_str());
-               return nullptr;
-           }
+                if (!resource->load())
+                {
+                    LOG_ERROR("ImageFileLoader: Streaming error read file [%s]", name.c_str());
+                    return nullptr;
+                }
 
-           LOG_INFO("ImageFileLoader::load Image [%s] is loaded", name.c_str());
-           return static_cast<resource::Image*>(resource);
+                LOG_INFO("ImageFileLoader::load Image [%s] is loaded", name.c_str());
+                return static_cast<resource::Image*>(resource);
+            }
         }
     }
 

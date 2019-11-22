@@ -18,9 +18,11 @@ ModelFileLoader::ModelFileLoader(u32 flags) noexcept
     scene::ModelHeader header;
     ResourceLoader::registerDecoder(new MeshAssimpDecoder({ "dae" }, header, flags));
 #endif //USE_ASSIMP
-    ResourceLoader::registerPath("../../../../");
-    ResourceLoader::registerPath("../../../../../");
-    ResourceLoader::registerPath("../../../../engine/");
+
+    ResourceLoader::registerRoot("");
+    ResourceLoader::registerRoot("../../../../");
+
+    ResourceLoader::registerPath("");
     ResourceLoader::registerPathes(ResourceLoaderManager::getInstance()->getPathes());
 }
 
@@ -30,9 +32,11 @@ ModelFileLoader::ModelFileLoader(const ResourceHeader* header, u32 flags) noexce
     scene::ModelHeader modelHeader = *static_cast<const scene::ModelHeader*>(header);
     ResourceLoader::registerDecoder(new MeshAssimpDecoder({ "dae" }, modelHeader, flags));
 #endif //USE_ASSIMP
-    ResourceLoader::registerPath("../../../../");
-    ResourceLoader::registerPath("../../../../../");
-    ResourceLoader::registerPath("../../../../engine/");
+
+    ResourceLoader::registerRoot("");
+    ResourceLoader::registerRoot("../../../../");
+
+    ResourceLoader::registerPath("");
     ResourceLoader::registerPathes(ResourceLoaderManager::getInstance()->getPathes());
 }
 
@@ -42,38 +46,41 @@ ModelFileLoader::~ModelFileLoader()
 
 scene::Model* ModelFileLoader::load(const std::string & name, const std::string & alias)
 {
-    for (std::string& path : m_pathes)
+    for (std::string& root : m_roots)
     {
-        const std::string fullPath = path + name;
-        stream::Stream* file = stream::FileLoader::load(fullPath);
-        if (!file)
+        for (std::string& path : m_pathes)
         {
-            continue;
-        }
+            const std::string fullPath = root + path + name;
+            stream::Stream* file = stream::FileLoader::load(fullPath);
+            if (!file)
+            {
+                continue;
+            }
 
-        std::string fileExtension = stream::FileLoader::getFileExtension(name);
-        ResourceDecoder* decoder = ResourceLoader::findDecoder(fileExtension);
-        if (decoder)
-        {
-           Resource* resource = decoder->decode(file, name);
-           file->close();
+            std::string fileExtension = stream::FileLoader::getFileExtension(name);
+            ResourceDecoder* decoder = ResourceLoader::findDecoder(fileExtension);
+            if (decoder)
+            {
+                Resource* resource = decoder->decode(file, name);
+                file->close();
 
-           delete file;
+                delete file;
 
-           if (!resource)
-           {
-               LOG_ERROR("ModelFileLoader: Streaming error read file [%s]", name.c_str());
-               return nullptr;
-           }
+                if (!resource)
+                {
+                    LOG_ERROR("ModelFileLoader: Streaming error read file [%s]", name.c_str());
+                    return nullptr;
+                }
 
-           if (!resource->load())
-           {
-               LOG_ERROR("ModelFileLoader: Streaming error read file [%s]", name.c_str());
-               return nullptr;
-           }
+                if (!resource->load())
+                {
+                    LOG_ERROR("ModelFileLoader: Streaming error read file [%s]", name.c_str());
+                    return nullptr;
+                }
 
-           LOG_INFO("ModelFileLoader::load Shader [%s] is loaded", name.c_str());
-           return static_cast<scene::Model*>(resource);
+                LOG_INFO("ModelFileLoader::load Shader [%s] is loaded", name.c_str());
+                return static_cast<scene::Model*>(resource);
+            }
         }
     }
 
