@@ -198,12 +198,12 @@ void VulkanDeviceCaps::fillCapabilitiesList(const DeviceInfo* info)
     LOG_INFO("VulkanDeviceCaps::initialize:  memoryHeapCount is %d", m_deviceMemoryProps.memoryHeapCount);
     for (u32 i = 0; i < m_deviceMemoryProps.memoryHeapCount; ++i)
     {
-        LOG_INFO("  VulkanDeviceCaps::initialize:  memoryHeap [flags %d, size %llu]", m_deviceMemoryProps.memoryHeaps[i].flags, m_deviceMemoryProps.memoryHeaps[i].size);
+        LOG_INFO("VulkanDeviceCaps::initialize:    memoryHeap [flags %d, size %llu]", m_deviceMemoryProps.memoryHeaps[i].flags, m_deviceMemoryProps.memoryHeaps[i].size);
     }
     LOG_INFO("VulkanDeviceCaps::initialize:  memoryTypeCount is %d", m_deviceMemoryProps.memoryTypeCount);
     for (u32 i = 0; i < m_deviceMemoryProps.memoryTypeCount; ++i)
     {
-        LOG_INFO("  VulkanDeviceCaps::initialize:  memoryType [heapIndex %u, propertyFlags %d]", m_deviceMemoryProps.memoryTypes[i].heapIndex, m_deviceMemoryProps.memoryTypes[i].propertyFlags);
+        LOG_INFO("VulkanDeviceCaps::initialize:    memoryType [heapIndex %u, propertyFlags %d]", m_deviceMemoryProps.memoryTypes[i].heapIndex, m_deviceMemoryProps.memoryTypes[i].propertyFlags);
     }
 
     u32 queueFamilyCount = 0;

@@ -29,12 +29,12 @@ MyApplication::MyApplication(int& argc, char** argv)
     m_InputEventHandler = new InputEventHandler();
     m_InputEventHandler->connect([this](const MouseInputEvent* event)
     {
-            SimpleTriangle::dispachEvent(m_Triangle, m_InputEventHandler, event);
+            SimpleTriangle::dispatchEvent(m_Triangle, m_InputEventHandler, event);
     });
 
     m_InputEventHandler->connect([this](const TouchInputEvent* event)
     {
-            SimpleTriangle::dispachEvent(m_Triangle, m_InputEventHandler, event);
+            SimpleTriangle::dispatchEvent(m_Triangle, m_InputEventHandler, event);
     });
 
     std::srand(u32(std::time(0)));

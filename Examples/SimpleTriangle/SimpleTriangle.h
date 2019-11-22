@@ -24,7 +24,7 @@ public:
     void render();
     void terminate();
 
-    static bool dispachEvent(SimpleTriangle* render, v3d::event::InputEventHandler* handler, const v3d::event::InputEvent* event);
+    static bool dispatchEvent(SimpleTriangle* render, v3d::event::InputEventHandler* handler, const v3d::event::InputEvent* event);
 
 private:
 

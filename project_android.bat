@@ -108,6 +108,10 @@ if "%2" == "" (
     xcopy /Y Examples\%2\gradle.properties Project\Android\Examples\%2
     xcopy /Y /F /S Examples\%2\res Project\Android\Examples\%2\res\
     
+    if exist Examples\%2\data (
+        xcopy /Y /F /S Examples\%2\data Project\Android\Examples\%2\assets\
+    )
+    
     if "%C_BUILD_TYPE%" == "Debug" (
         xcopy /Y "Project\Android\Examples\%2\lib%2d.so" "Project\Android\Examples\%2\libs\%C_ANDROID_ABI%\lib%2.so*"
     ) else (

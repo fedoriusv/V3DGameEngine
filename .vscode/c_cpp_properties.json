@@ -56,7 +56,8 @@
                 "_WIN64 = 0",
                 "VULKAN_RENDER",
                 "VULKAN_DYNAMIC",
-                "USE_ASSIMP"
+                "USE_ASSIMP",
+                "USE_SPIRV"
             ],
             "includePath": [
                 "${workspaceFolder}/Engine/Source",

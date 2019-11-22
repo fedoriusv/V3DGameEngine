@@ -6,7 +6,7 @@ using namespace termcolor;
 #endif //HIGHLIGHTING_LOGS
 
 #ifdef PLATFORM_ANDROID
-#   include "Platform/AndroidNative.h"
+#   include "Platform/Android/WindowAndroid.h"
 
 extern void android_log_arg(v3d::utils::Logger::LoggerType type, const char* message, va_list ap);
 extern void android_log(v3d::utils::Logger::LoggerType type, const char* message, ...);

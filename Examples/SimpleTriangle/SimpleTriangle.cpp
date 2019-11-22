@@ -237,7 +237,7 @@ bool SimpleTriangle::handleInputEvent(v3d::event::InputEventHandler* handler, co
     return false;
 }
 
-bool SimpleTriangle::dispachEvent(SimpleTriangle* render, v3d::event::InputEventHandler* handler, const v3d::event::InputEvent* event)
+bool SimpleTriangle::dispatchEvent(SimpleTriangle* render, v3d::event::InputEventHandler* handler, const v3d::event::InputEvent* event)
 {
     return render->handleInputEvent(handler, event);
 }
