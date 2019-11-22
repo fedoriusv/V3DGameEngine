@@ -62,7 +62,8 @@ endif()
 set(SOURCE_DIR Engine/Source)
 set(ENGINE_PROJECT_DIR ${PROJECT_SOURCE_DIR})
 set(LIB_INCLUDE_DIRECTORY 
-    ${ENGINE_PROJECT_DIR}/${SOURCE_DIR} 
+    ${ENGINE_PROJECT_DIR}/${SOURCE_DIR}
+    ${ENGINE_PROJECT_DIR}/${SOURCE_DIR}/Platform
     ${ENGINE_PROJECT_DIR}/${SOURCE_DIR}/ThirdParty)
 
 set(EXTRA_LIB_DEFINE "")
@@ -173,34 +174,14 @@ file(GLOB STREAM_SOURCES ${SOURCE_DIR}/Stream/*.cpp)
 file(GLOB SCENE_HEADERS ${SOURCE_DIR}/Scene/*.h)
 file(GLOB SCENE_SOURCES ${SOURCE_DIR}/Scene/*.cpp)
 
+file(GLOB COMMON_PLATFORM_HEADERS ${SOURCE_DIR}/Platform/*.h)
+file(GLOB COMMON_PLATFORM_SOURCES ${SOURCE_DIR}/Platform/*.cpp)
 if (TARGET_WIN)
-    file(GLOB PLATFORM_HEADERS 
-        ${SOURCE_DIR}/Platform/Platform.h 
-        ${SOURCE_DIR}/Platform/Window.h 
-        ${SOURCE_DIR}/Platform/WindowWindows.h
-    )
-    
-    file(GLOB PLATFORM_SOURCES 
-        ${SOURCE_DIR}/Platform/Platform.cpp 
-        ${SOURCE_DIR}/Platform/Window.cpp 
-        ${SOURCE_DIR}/Platform/WindowWindows.cpp
-    )
+    file(GLOB PLATFORM_HEADERS ${SOURCE_DIR}/Platform/Windows/*.h)
+    file(GLOB PLATFORM_SOURCES ${SOURCE_DIR}/Platform/Windows/*.cpp)
 elseif (TARGET_ANDROID)
-    file(GLOB PLATFORM_HEADERS 
-        ${SOURCE_DIR}/Platform/Platform.h 
-        ${SOURCE_DIR}/Platform/Window.h 
-        ${SOURCE_DIR}/Platform/WindowAndroid.h
-        ${SOURCE_DIR}/Platform/AndroidNative.h
-        ${SOURCE_DIR}/Platform/android_native_app_glue.h
-    )
-    
-    file(GLOB PLATFORM_SOURCES 
-        ${SOURCE_DIR}/Platform/Platform.cpp 
-        ${SOURCE_DIR}/Platform/Window.cpp 
-        ${SOURCE_DIR}/Platform/WindowAndroid.cpp
-        ${SOURCE_DIR}/Platform/AndroidNative.cpp
-        ${SOURCE_DIR}/Platform/android_native_app_glue.c
-    )
+    file(GLOB PLATFORM_HEADERS ${SOURCE_DIR}/Platform/Android/*.h)
+    file(GLOB PLATFORM_SOURCES ${SOURCE_DIR}/Platform/Android/*.cpp ${SOURCE_DIR}/Platform/Android/*.c)
 endif()
 
 if (BUILD_VULKAN_SDK)
@@ -218,7 +199,7 @@ endif()
 ##############################################################
 source_group("" FILES ${MAIN_HEADERS} ${MAIN_SOURCES})
 source_group("Core" FILES ${CORE_HEADERS} ${CORE_SOURCES})
-source_group("Platform" FILES ${PLATFORM_HEADERS} ${PLATFORM_SOURCES})
+source_group("Platform" FILES ${COMMON_PLATFORM_HEADERS} ${COMMON_PLATFORM_SOURCES} ${PLATFORM_HEADERS} ${PLATFORM_SOURCES})
 source_group("Utils" FILES ${UTILS_HEADERS} ${UTILS_SOURCES})
 source_group("Event" FILES ${EVENT_HEADERS} ${EVENT_SOURCES})
 source_group("Renderer" FILES ${RENDERER_HEADERS} ${RENDERER_SOURCES})
@@ -238,6 +219,7 @@ endif()
 add_library(${ENGINE_NAME} STATIC 
     ${MAIN_HEADERS} ${MAIN_SOURCES}
     ${CORE_HEADERS} ${CORE_SOURCES}
+    ${COMMON_PLATFORM_HEADERS} ${COMMON_PLATFORM_SOURCES}
     ${PLATFORM_HEADERS} ${PLATFORM_SOURCES}
     ${UTILS_HEADERS} ${UTILS_SOURCES}
     ${EVENT_HEADERS} ${EVENT_SOURCES}

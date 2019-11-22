@@ -3,11 +3,10 @@
 #include "Event/InputEventReceiver.h"
 #include "Utils/Logger.h"
 
-#ifdef PLATFORM_ANDROID
 #include "AndroidNative.h"
 #include "android_native_app_glue.h"
 
-extern struct android_app* g_nativeAndroidApp;
+extern android_app* g_nativeAndroidApp;
 
 namespace v3d
 {
@@ -72,14 +71,14 @@ bool WindowAndroid::update()
 {
     s32 ident;
     s32 events;
-	struct android_poll_source* source;
+    struct android_poll_source* source;
     while((ident = ALooper_pollAll(0, NULL, &events,(void**)&source)) >= 0) 
     {
         // Process this event.      
-		if (source != NULL) 
+        if (source != NULL) 
         {
-		    source->process(g_nativeAndroidApp, source);
-		}
+            source->process(g_nativeAndroidApp, source);
+        }
 
         // If a sensor has data, process it now.
         if (ident == LOOPER_ID_USER)
@@ -184,23 +183,23 @@ bool WindowAndroid::isValid() const
     return m_ready && g_nativeAndroidApp->window != nullptr;
 }
 
-void WindowAndroid::handleCmdCallback(struct android_app* app, int32_t cmd)
+void WindowAndroid::handleCmdCallback(android_app* app, int32_t cmd)
 {
     LOG_DEBUG("WindowAndroid::WindowAndroid::handleCmdCallback");
-	WindowAndroid* window = reinterpret_cast<WindowAndroid*>(app->userData);
-	switch (cmd) 
+    WindowAndroid* window = reinterpret_cast<WindowAndroid*>(app->userData);
+    switch (cmd) 
     {
-	case APP_CMD_SAVE_STATE:
-		// The system has asked us to save our current state.  Do so.
-		g_nativeAndroidApp->savedState = malloc(sizeof(SavedState));
-		*(reinterpret_cast<SavedState*>(g_nativeAndroidApp->savedState)) = window->m_state;
-		g_nativeAndroidApp->savedStateSize = sizeof(SavedState);
-		break;
+    case APP_CMD_SAVE_STATE:
+        // The system has asked us to save our current state.  Do so.
+        g_nativeAndroidApp->savedState = malloc(sizeof(SavedState));
+        *(reinterpret_cast<SavedState*>(g_nativeAndroidApp->savedState)) = window->m_state;
+        g_nativeAndroidApp->savedStateSize = sizeof(SavedState);
+        break;
 
-	case APP_CMD_INIT_WINDOW:
-		// The window is being shown, get it ready.
+    case APP_CMD_INIT_WINDOW:
+        // The window is being shown, get it ready.
         ASSERT(g_nativeAndroidApp->window, "nullptr");
-		if (g_nativeAndroidApp->window != NULL &&  !window->m_ready) 
+        if (g_nativeAndroidApp->window != NULL &&  !window->m_ready) 
         {
             LOG_DEBUG("WindowAndroid::handleCmdCallback: APP_CMD_INIT_WINDOW");
 
@@ -214,44 +213,44 @@ void WindowAndroid::handleCmdCallback(struct android_app* app, int32_t cmd)
             LOG_INFO("WindowAndroid::handleCmdCallback: window size: width %d, height %d", width, height);
             window->m_ready = true;
             window->notifyObservers();
-		}
-		break;
+        }
+        break;
 
-	case APP_CMD_TERM_WINDOW:
-		// The window is being hidden or closed, clean it up.
+    case APP_CMD_TERM_WINDOW:
+        // The window is being hidden or closed, clean it up.
         LOG_DEBUG("WindowAndroid::handleCmdCallback: APP_CMD_TERM_WINDOW");
-		window->m_ready = false;
+        window->m_ready = false;
         window->notifyObservers();
-		break;
+        break;
 
-	case APP_CMD_GAINED_FOCUS:
+    case APP_CMD_GAINED_FOCUS:
         window->m_params._isFocused = true;
-		// When our app gains focus, we start monitoring the accelerometer.
-		if (window->m_accelerometerSensor != NULL) 
+        // When our app gains focus, we start monitoring the accelerometer.
+        if (window->m_accelerometerSensor != NULL) 
         {
-			ASensorEventQueue_enableSensor(window->m_sensorEventQueue, window->m_accelerometerSensor);
-			// We'd like to get 60 events per second (in us).
-			ASensorEventQueue_setEventRate(window->m_sensorEventQueue, window->m_accelerometerSensor, (1000L / 60) * 1000);
-		}
-		break;
+            ASensorEventQueue_enableSensor(window->m_sensorEventQueue, window->m_accelerometerSensor);
+            // We'd like to get 60 events per second (in us).
+            ASensorEventQueue_setEventRate(window->m_sensorEventQueue, window->m_accelerometerSensor, (1000L / 60) * 1000);
+        }
+        break;
     
-	case APP_CMD_LOST_FOCUS:
+    case APP_CMD_LOST_FOCUS:
         window->m_params._isFocused = false;
-		// When our app loses focus, we stop monitoring the accelerometer.
-		// This is to avoid consuming battery while not being used.
-		if (window->m_accelerometerSensor != NULL) 
+        // When our app loses focus, we stop monitoring the accelerometer.
+        // This is to avoid consuming battery while not being used.
+        if (window->m_accelerometerSensor != NULL) 
         {
-			ASensorEventQueue_disableSensor(window->m_sensorEventQueue, window->m_accelerometerSensor);
-		}
-		// Also stop animating.
+            ASensorEventQueue_disableSensor(window->m_sensorEventQueue, window->m_accelerometerSensor);
+        }
+        // Also stop animating.
         LOG_DEBUG("WindowAndroid::handleCmdCallback: APP_CMD_LOST_FOCUS");
-		//engine->animating = 0;
-		//engine_draw_frame(engine);
-		break;
-	}
+        //engine->animating = 0;
+        //engine_draw_frame(engine);
+        break;
+    }
 }
 
-int32_t WindowAndroid::handleInputCallback(struct android_app* app, AInputEvent* inputEvent)
+int32_t WindowAndroid::handleInputCallback(android_app* app, AInputEvent* inputEvent)
 {
     LOG_DEBUG("WindowAndroid::WindowAndroid::handleInputCallback");
     WindowAndroid* window = reinterpret_cast<WindowAndroid*>(app->userData);
@@ -534,4 +533,3 @@ void WindowAndroid::fillKeyCodes()
 
 } //namespace platform
 } //namespace v3d
-#endif //PLATFORM_ANDROID

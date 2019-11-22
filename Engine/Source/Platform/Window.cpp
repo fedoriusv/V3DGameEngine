@@ -3,9 +3,9 @@
 #include "Utils/Logger.h"
 
 #if defined(PLATFORM_WINDOWS)
-#   include "WindowWindows.h"
+#   include "Windows/WindowWindows.h"
 #elif defined(PLATFORM_ANDROID)
-#   include "WindowAndroid.h"
+#   include "Android/WindowAndroid.h"
 #endif //
 
 namespace v3d

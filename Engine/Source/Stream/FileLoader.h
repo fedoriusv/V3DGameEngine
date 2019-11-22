@@ -2,6 +2,9 @@
 
 #include "FileStream.h"
 #include "Utils/Logger.h"
+#if defined(PLATFORM_ANDROID)
+#   include "Platform/Android/AssetStream.h"
+#endif
 
 namespace v3d
 {
@@ -12,48 +15,54 @@ namespace stream
     /**
     * FileLoader class
     */
-    class FileLoader
+    class FileLoader final
     {
     public:
-        FileLoader() = delete;
 
-        static stream::Stream* load(std::string filename)
+        FileLoader() = delete;
+        FileLoader(const FileLoader&) = delete;
+
+        static stream::Stream* load(const std::string& filename)
         {
 #if DEBUG
             LOG_DEBUG("FileLoader::try load [%s] file", stream::FileStream::absolutePath(filename).c_str());
 #endif //DEBUG
+
+#if defined(PLATFORM_ANDROID)
+            //Try to load form asset storage
+            android::AssetStream* asset = new android::AssetStream(filename, AASSET_MODE_STREAMING);
+            if (asset->isOpen())
+            {
+                LOG_DEBUG("FileLoader::asset [%s] has been found", filename.c_str());
+                return asset;
+            }
+
+            delete asset;
+#else //NOT PLATFORM_ANDROID
             if (!stream::FileStream::isExists(filename))
             {
                 return nullptr;
             }
-
+#endif //PLATFORM_ANDROID
             stream::FileStream* file = new stream::FileStream(filename, stream::FileStream::e_in);
             if (!file->isOpen())
             {
-                LOG_ERROR("File %s didn't load", filename.c_str());
+                LOG_ERROR("File %s hasn't loaded", filename.c_str());
                 delete file;
                 return nullptr;
             }
 
-			LOG_DEBUG("FileLoader::file [%s] has been found", stream::FileStream::absolutePath(filename).c_str());
+            LOG_DEBUG("FileLoader::file [%s] has been found", stream::FileStream::absolutePath(filename).c_str());
             return file;
         }
 
-        static std::string getFileExtension(std::string fileName)
+        static std::string getFileExtension(const std::string& fileName)
         {
-            std::string fileExtension;
-
-            /*const size_t pos = fileName.find_last_of('.');
-            if (pos != std::string::npos)
-            {
-                fileExtension = std::string(fileName.begin() + pos + 1, fileName.end());
-            }*/
             std::string extension = stream::FileStream::extension(fileName);
-            fileExtension = extension.substr(1, extension.size() - 1);
 
+            std::string fileExtension = extension.substr(1, extension.size() - 1);
             return fileExtension;
         }
-
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

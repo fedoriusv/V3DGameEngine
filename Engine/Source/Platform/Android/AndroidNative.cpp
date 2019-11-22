@@ -1,13 +1,13 @@
 #include "AndroidNative.h"
 #include "Utils/Logger.h"
 
-#ifdef PLATFORM_ANDROID
 #include <android/log.h>
+#include "android_native_app_glue.h"
 
 extern int main(int argc, char* argv[]);
 
-struct android_app* g_nativeAndroidApp;
-void android_main(struct android_app* state)
+android_app* g_nativeAndroidApp;
+void android_main(android_app* state)
 {
     LOG_INFO("Android main started");
     g_nativeAndroidApp = state;
@@ -47,5 +47,3 @@ void android_log(v3d::utils::Logger::LoggerType type, const char* message, ...)
     va_start(args, message);
     __android_log_print(logType[type], "V3D", message, args);
 }
-
-#endif //PLATFORM_ANDROID

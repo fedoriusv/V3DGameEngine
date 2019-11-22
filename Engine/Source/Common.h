@@ -76,7 +76,7 @@ typedef HWND      NativeWindows;
 #   undef CreateSemaphore
 #   undef CreateEvent
 #elif defined (PLATFORM_ANDROID)
-#   include "Platform/AndroidNative.h"
+#   include "Platform/Android/AndroidCommon.h"
 typedef ANativeWindow*   NativeWindows;
 typedef ANativeActivity* NativeInstance;
 #else //

@@ -1,7 +1,6 @@
 #pragma once
 
 #include "Window.h"
-#ifdef PLATFORM_ANDROID
 #include "AndroidNative.h"
 
 namespace v3d
@@ -47,25 +46,24 @@ namespace platform
 
         struct SavedState 
         {
-	        f32 _angle;
-	        u32 _x;
-	        u32 _y;
+            f32 _angle;
+            u32 _x;
+            u32 _y;
         };
 
         ASensorManager*     m_sensorManager;
-	    const ASensor*      m_accelerometerSensor;
-	    ASensorEventQueue*  m_sensorEventQueue;
+        const ASensor*      m_accelerometerSensor;
+        ASensorEventQueue*  m_sensorEventQueue;
         SavedState          m_state;
         bool                m_ready;
 
         void fillKeyCodes();
 
-        static void handleCmdCallback(struct android_app* app, int32_t cmd);
-        static int32_t handleInputCallback(struct android_app* app, AInputEvent* event);
+        static void handleCmdCallback(android_app* app, int32_t cmd);
+        static int32_t handleInputCallback(android_app* app, AInputEvent* event);
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
 } //namespace platform
 } //namespace v3d
-#endif //PLATFORM_ANDROID
