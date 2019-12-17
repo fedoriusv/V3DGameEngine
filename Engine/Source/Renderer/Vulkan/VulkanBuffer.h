@@ -44,9 +44,11 @@ namespace vk
 
         bool recreate();
 
+        bool isPresentBufferUsageFlag(StreamBufferUsage flag);
+
         VkDevice m_device;
 
-        VulkanMemory::VulkanAlloc m_memory;
+        VulkanMemory::VulkanAllocation m_memory;
         VulkanMemory::VulkanMemoryAllocator* m_memoryAllocator;
 
         StreamBufferUsageFlags m_usageFlags;

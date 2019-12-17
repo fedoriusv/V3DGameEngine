@@ -26,6 +26,7 @@ namespace vk
     public:
 
         VulkanImage() = delete;
+        VulkanImage(const VulkanImage&) = delete;
 
         VulkanImage(VulkanMemory::VulkanMemoryAllocator* memory, VkDevice device, VkImageType type, VkFormat format, VkExtent3D dimension, u32 layers, u32 mipsLevel, VkImageTiling tiling, TextureUsageFlags usage, const std::string& name = "") noexcept;
         VulkanImage(VulkanMemory::VulkanMemoryAllocator* memory, VkDevice device, VkFormat format, VkExtent3D dimension, VkSampleCountFlagBits samples, TextureUsageFlags usage, const std::string& name = "") noexcept;
@@ -92,6 +93,8 @@ namespace vk
 
         bool internalUpload(Context* context, const core::Dimension3D& offsets, const core::Dimension3D& size, u32 layers, u32 mips, u64 dataSize, const void* data);
 
+        bool isPresentTextureUsageFlag(TextureUsageFlags flag);
+
         VkDevice                    m_device;
 
         VkImageType                 m_type;
@@ -117,7 +120,7 @@ namespace vk
 
         VulkanImage*                m_resolveImage;
 
-        VulkanMemory::VulkanAlloc   m_memory;
+        VulkanMemory::VulkanAllocation   m_memory;
         VulkanMemory::VulkanMemoryAllocator* m_memoryAllocator;
 
         bool                        m_swapchainImage;

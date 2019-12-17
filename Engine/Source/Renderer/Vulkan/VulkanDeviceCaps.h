@@ -22,16 +22,23 @@ namespace vk
         VulkanDeviceCaps() = default;
 
         bool individuallyResetForCommandBuffers = false;
+
+        //coherent memmory
         bool supportDeviceCoherentMemory = false;
         bool supportHostCoherentMemory = false;
+
+        //cache memory
+        bool supportDeviceCacheMemory = false;
+        bool supportHostCacheMemory = false;
+
         bool supportDepthAutoResolve = false;
 
         bool useDynamicUniforms = false;
         bool unifiedMemoryManager = false;
-        bool useStagingBuffers = false;
         bool useGlobalDescriptorPool = false;
 
         bool supportRenderpass2 = false;
+        bool supportDedicatedAllocation = false;
 
         //immediateResourceSubmit: 0 - not submit, 1 - submit, 2 - submit and wait complete
         u32 immediateResourceSubmit = 0; 

@@ -49,53 +49,92 @@ bool VulkanBuffer::create()
 
     VkBufferUsageFlags usage = 0;
     VkMemoryPropertyFlags flag = 0;
-    if (m_type == Buffer::BufferType::BufferType_VertexBuffer)
+
+    switch (m_type)
+    {
+    case Buffer::BufferType::BufferType_VertexBuffer:
     {
         usage |= VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
-        if (m_usageFlags & StreamBuffer_Dynamic)
+
+        if (VulkanBuffer::isPresentBufferUsageFlag(StreamBuffer_Dynamic))
         {
             flag |= VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
-            flag |= VulkanDeviceCaps::getInstance()->supportHostCoherentMemory ? VK_MEMORY_PROPERTY_HOST_COHERENT_BIT : VK_MEMORY_PROPERTY_HOST_CACHED_BIT;
+            if (VulkanBuffer::isPresentBufferUsageFlag(StreamBufferUsage::StreamBuffer_Read))
+            {
+                flag |= VK_MEMORY_PROPERTY_HOST_CACHED_BIT;
+                ASSERT(VulkanDeviceCaps::getInstance()->supportHostCacheMemory, "unsupport coherent memory");
+
+            }
+            else if (VulkanBuffer::isPresentBufferUsageFlag(StreamBufferUsage::StreamBuffer_Write))
+            {
+                flag |= VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+                ASSERT(VulkanDeviceCaps::getInstance()->supportHostCoherentMemory, "unsupport coherent memory");
+            }
+            else
+            {
+                ASSERT(false, "fail");
+            }
         }
         else
         {
             flag |= VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
-            if (!VulkanDeviceCaps::getInstance()->useStagingBuffers)
+            if (VulkanDeviceCaps::getInstance()->supportDeviceCoherentMemory)
             {
-                flag |= VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
-                flag |= VulkanDeviceCaps::getInstance()->supportDeviceCoherentMemory ? VK_MEMORY_PROPERTY_HOST_COHERENT_BIT : VK_MEMORY_PROPERTY_HOST_CACHED_BIT;
+                flag |= VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+            }
+            else if (VulkanDeviceCaps::getInstance()->supportDeviceCacheMemory)
+            {
+                flag |= VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_CACHED_BIT;
             }
         }
+
+        break;
     }
-    else if (m_type == Buffer::BufferType::BufferType_IndexBuffer)
+
+    case Buffer::BufferType::BufferType_IndexBuffer:
     {
         ASSERT(m_usageFlags & ~StreamBuffer_Dynamic, "not support");
         usage |= VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
-        flag |= VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
 
-        if (!VulkanDeviceCaps::getInstance()->useStagingBuffers)
+        flag |= VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+        if (VulkanDeviceCaps::getInstance()->supportDeviceCoherentMemory)
         {
-            flag |= VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
-            flag |= VulkanDeviceCaps::getInstance()->supportDeviceCoherentMemory ? VK_MEMORY_PROPERTY_HOST_COHERENT_BIT : VK_MEMORY_PROPERTY_HOST_CACHED_BIT;
+            flag |= VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
         }
+        else if (VulkanDeviceCaps::getInstance()->supportDeviceCacheMemory)
+        {
+            flag |= VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_CACHED_BIT;
+        }
+
+        break;
     }
-    else if (m_type == Buffer::BufferType::BufferType_UniformBuffer)
+
+    case Buffer::BufferType::BufferType_UniformBuffer:
     {
         usage |= VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
-        flag |= VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
-        flag |= VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;//VulkanDeviceCaps::getInstance()->supportHostCoherentMemory ? VK_MEMORY_PROPERTY_HOST_COHERENT_BIT : VK_MEMORY_PROPERTY_HOST_CACHED_BIT;
-    }
-    else if (m_type == Buffer::BufferType::BufferType_StagingBuffer)
-    {
+
         flag |= VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+        ASSERT(VulkanDeviceCaps::getInstance()->supportHostCoherentMemory, "unsupport coherent memory");
+
+        break;
     }
 
-    if (m_usageFlags & StreamBufferUsage::StreamBuffer_Read)
+    case Buffer::BufferType::BufferType_StagingBuffer:
+    {
+        flag |= VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
+        break;
+    }
+
+    default:
+        ASSERT(false, "not impl");
+    }
+
+    if (VulkanBuffer::isPresentBufferUsageFlag(StreamBufferUsage::StreamBuffer_Read))
     {
         usage |= VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
     }
 
-    if (m_usageFlags & StreamBufferUsage::StreamBuffer_Write)
+    if (VulkanBuffer::isPresentBufferUsageFlag(StreamBufferUsage::StreamBuffer_Write))
     {
         usage |= VK_BUFFER_USAGE_TRANSFER_DST_BIT;
     }
@@ -201,11 +240,11 @@ bool VulkanBuffer::upload(Context* context, u32 offset, u64 size, void * data)
         }
     }
 
-    if (VulkanDeviceCaps::getInstance()->useStagingBuffers && !(m_usageFlags & StreamBufferUsage::StreamBuffer_Dynamic))
+    if (!VulkanBuffer::isPresentBufferUsageFlag(StreamBufferUsage::StreamBuffer_Dynamic))
     {
         VulkanGraphicContext* vkContext = static_cast<VulkanGraphicContext*>(context);
         VulkanCommandBuffer* uploadBuffer = vkContext->getOrCreateAndStartCommandBuffer(CommandTargetType::CmdUploadBuffer);
-        if (m_size <= 65536)
+        if (m_size <= 65'536)
         {
             ASSERT(!VulkanResource::isCaptured(), "still submitted");
             uploadBuffer->cmdUpdateBuffer(this, offset, m_size, data);
@@ -343,6 +382,11 @@ bool VulkanBuffer::recreate()
 
     ASSERT(false, "not implementing");
     return false;
+}
+
+bool VulkanBuffer::isPresentBufferUsageFlag(StreamBufferUsage flag)
+{
+    return m_usageFlags & flag;
 }
 
 } //namespace vk

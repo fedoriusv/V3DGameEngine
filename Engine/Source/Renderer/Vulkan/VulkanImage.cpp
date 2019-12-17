@@ -835,7 +835,7 @@ VulkanImage::VulkanImage(VulkanMemory::VulkanMemoryAllocator* memory, VkDevice d
 
     memset(&m_generalImageView[0], VK_NULL_HANDLE, sizeof(m_generalImageView));
 
-    if (usage & TextureUsage_Resolve)
+    if (VulkanImage::isPresentTextureUsageFlag(TextureUsage_Resolve))
     {
         if (VulkanImage::isColorFormat(m_format))
         {
@@ -883,8 +883,10 @@ bool VulkanImage::create()
         (m_tiling == VK_IMAGE_TILING_OPTIMAL) ? DeviceCaps::TilingType_Optimal : DeviceCaps::TilingType_Linear);
 
     bool unsupport = false;
-    VkImageUsageFlags usage = 0;
-    if (m_usage & TextureUsage::TextureUsage_Sampled)
+    VkImageUsageFlags imageUsage = 0;
+    VkImageCreateFlags imageFlags = 0;
+
+    if (VulkanImage::isPresentTextureUsageFlag(TextureUsage::TextureUsage_Sampled))
     {
         unsupport = !supportFormatInfo._supportSampled;
         if (!supportFormatInfo._supportSampled)
@@ -892,10 +894,10 @@ bool VulkanImage::create()
             LOG_ERROR("VulkanImage::create, supportFormatInfo._supportSampled format %s is not supported", ImageFormatString(m_format).c_str());
             ASSERT(supportFormatInfo._supportSampled, "format is not supported");
         }
-        usage |= VK_IMAGE_USAGE_SAMPLED_BIT;
+        imageUsage |= VK_IMAGE_USAGE_SAMPLED_BIT;
     }
 
-    if (m_usage & TextureUsage::TextureUsage_Attachment)
+    if (VulkanImage::isPresentTextureUsageFlag(TextureUsage::TextureUsage_Attachment))
     {
         unsupport |= !supportFormatInfo._supportAttachment;
         if (!supportFormatInfo._supportAttachment)
@@ -906,23 +908,40 @@ bool VulkanImage::create()
 
         if (VulkanImage::isColorFormat(m_format))
         {
-            usage |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+            imageUsage |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
         }
         else
         {
-            usage |= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+            ASSERT(VulkanImage::isDepthStencilFormat(m_format), "wrong format");
+            imageUsage |= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+        }
+
+        if (m_usage == TextureUsage::TextureUsage_Attachment)
+        {
+            imageUsage |= VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT;
         }
     }
 
-    if (m_usage & TextureUsage::TextureUsage_Write)
+    if (VulkanImage::isPresentTextureUsageFlag(TextureUsage::TextureUsage_Write))
     {
-        usage |= VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+        imageUsage |= VK_IMAGE_USAGE_TRANSFER_DST_BIT;
     }
 
-    if (m_usage & TextureUsage::TextureUsage_Read)
+    if (VulkanImage::isPresentTextureUsageFlag(TextureUsage::TextureUsage_Read))
     {
-        usage |= VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+        imageUsage |= VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
     }
+
+    if (m_layersLevel == 6U)
+    {
+        imageFlags |= VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
+    }
+
+    if (m_format == VK_FORMAT_UNDEFINED)
+    {
+        imageFlags |= VK_IMAGE_CREATE_MUTABLE_FORMAT_BIT;
+    }
+    //imageFlags |= VK_IMAGE_CREATE_PROTECTED_BIT;
 
     if (unsupport)
     {
@@ -933,30 +952,18 @@ bool VulkanImage::create()
     VkImageCreateInfo imageCreateInfo = {};
     imageCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
     imageCreateInfo.pNext = nullptr;
-    imageCreateInfo.flags = 0;
-    if (m_layersLevel == 6U)
-    {
-        imageCreateInfo.flags |= VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
-    }
-    if (m_format == VK_FORMAT_UNDEFINED)
-    {
-        imageCreateInfo.flags |= VK_IMAGE_CREATE_MUTABLE_FORMAT_BIT;
-    }
-
+    imageCreateInfo.flags = imageFlags;
     imageCreateInfo.imageType = m_type;
     imageCreateInfo.format = m_format;
     imageCreateInfo.extent = m_dimension;
     imageCreateInfo.mipLevels = m_mipsLevel;
     imageCreateInfo.arrayLayers = m_layersLevel;
-
     imageCreateInfo.samples = m_samples;
     imageCreateInfo.tiling = m_tiling;
-    imageCreateInfo.usage = usage;
-
+    imageCreateInfo.usage = imageUsage;
     imageCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
     imageCreateInfo.queueFamilyIndexCount = 0;
     imageCreateInfo.pQueueFamilyIndices = nullptr;
-
     imageCreateInfo.initialLayout = m_layout.front();
 
     VkResult result = VulkanWrapper::CreateImage(m_device, &imageCreateInfo, VULKAN_ALLOCATOR, &m_image);
@@ -980,18 +987,30 @@ bool VulkanImage::create()
     }
 #endif //VULKAN_DEBUG_MARKERS
 
-    VkMemoryPropertyFlags flag = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
-    if (m_tiling == VK_IMAGE_TILING_LINEAR)
+    VkMemoryPropertyFlags memoryFlags = 0;
+    if (m_tiling == VK_IMAGE_TILING_OPTIMAL)
     {
-        flag = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
-        flag |= VulkanDeviceCaps::getInstance()->supportHostCoherentMemory ? VK_MEMORY_PROPERTY_HOST_COHERENT_BIT : VK_MEMORY_PROPERTY_HOST_CACHED_BIT;
+        memoryFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+        if (imageUsage & VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT)
+        {
+            if (VulkanMemory::isSupportedMemoryType(memoryFlags | VK_MEMORY_PROPERTY_LAZILY_ALLOCATED_BIT, true))
+            {
+                memoryFlags |= VK_MEMORY_PROPERTY_LAZILY_ALLOCATED_BIT;
+            }
+        }
+
+        /*if (memoryFlags == VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT)
+        {
+            memoryFlags |= VK_MEMORY_PROPERTY_PROTECTED_BIT;
+        }*/
+    }
+    else
+    {
+        //TODO
+        ASSERT(false, "not impl");
     }
 
-    if (flag == VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT)
-    {
-        imageCreateInfo.flags |= VK_IMAGE_CREATE_PROTECTED_BIT;
-    }
-    m_memory = VulkanMemory::allocateImageMemory(*m_memoryAllocator, m_image, flag);
+    m_memory = VulkanMemory::allocateImageMemory(*m_memoryAllocator, m_image, memoryFlags);
     if (m_memory == VulkanMemory::s_invalidMemory)
     {
         VulkanImage::destroy();
@@ -1143,7 +1162,7 @@ bool VulkanImage::internalUpload(Context * context, const core::Dimension3D & of
         return false;
     }
 
-    if (VulkanDeviceCaps::getInstance()->useStagingBuffers)
+    if (m_tiling == VK_IMAGE_TILING_OPTIMAL)
     {
         VulkanGraphicContext* vkContext = static_cast<VulkanGraphicContext*>(context);
         VulkanCommandBuffer* uploadBuffer = vkContext->getOrCreateAndStartCommandBuffer(CommandTargetType::CmdUploadBuffer);
@@ -1218,7 +1237,7 @@ bool VulkanImage::internalUpload(Context * context, const core::Dimension3D & of
 
         ASSERT(m_usage & TextureUsage_Write, "should be write");
         VkPipelineStageFlags srcStageMask = 0;
-        if (m_layout.front() == VK_IMAGE_LAYOUT_UNDEFINED || m_layout.front() == VK_IMAGE_LAYOUT_PREINITIALIZED) //first time
+        if (m_layout.front() == VK_IMAGE_LAYOUT_UNDEFINED) //first time
         {
             srcStageMask = VK_PIPELINE_STAGE_TRANSFER_BIT;
         }
@@ -1263,10 +1282,14 @@ bool VulkanImage::internalUpload(Context * context, const core::Dimension3D & of
     else
     {
         ASSERT(false, "not impl");
-        //TODO
     }
 
     return true;
+}
+
+bool VulkanImage::isPresentTextureUsageFlag(TextureUsageFlags flag)
+{
+    return (m_usage & flag);
 }
 
 VkImageSubresourceRange VulkanImage::makeImageSubresourceRange(const VulkanImage * image, s32 layer, s32 mip)

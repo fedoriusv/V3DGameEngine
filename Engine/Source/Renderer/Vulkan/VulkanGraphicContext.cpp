@@ -28,6 +28,8 @@ const std::vector<const c8*> k_instanceExtensionsList =
 {
     VK_KHR_SURFACE_EXTENSION_NAME,
     VK_KHR_DISPLAY_EXTENSION_NAME,
+    VK_EXT_SWAPCHAIN_COLOR_SPACE_EXTENSION_NAME,
+
 #ifdef VK_KHR_win32_surface
     VK_KHR_WIN32_SURFACE_EXTENSION_NAME,
 #endif
@@ -37,18 +39,26 @@ const std::vector<const c8*> k_instanceExtensionsList =
 #ifdef VK_KHR_xlib_surface
     VK_KHR_XLIB_SURFACE_EXTENSION_NAME,
 #endif
+
 #if VULKAN_LAYERS_CALLBACKS
     VK_EXT_DEBUG_UTILS_EXTENSION_NAME,
     VK_EXT_DEBUG_REPORT_EXTENSION_NAME,
 #endif //VULKAN_LAYERS_CALLBACKS
+
+    VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME,
 };
 
 const std::vector<const c8*> k_deviceExtensionsList =
 {
     VK_KHR_SWAPCHAIN_EXTENSION_NAME,
-    VK_KHR_CREATE_RENDERPASS_2_EXTENSION_NAME,
+
+    VK_KHR_BIND_MEMORY_2_EXTENSION_NAME,
+    VK_KHR_DEDICATED_ALLOCATION_EXTENSION_NAME,
+    VK_KHR_GET_MEMORY_REQUIREMENTS_2_EXTENSION_NAME,
 
     VK_KHR_SAMPLER_MIRROR_CLAMP_TO_EDGE_EXTENSION_NAME,
+
+    VK_KHR_CREATE_RENDERPASS_2_EXTENSION_NAME,
     VK_KHR_DEPTH_STENCIL_RESOLVE_EXTENSION_NAME,
 };
 
@@ -176,10 +186,7 @@ void VulkanGraphicContext::presentFrame()
 
     m_cmdBufferManager->updateCommandBuffers();
     m_uniformBufferManager->updateUniformBuffers();
-    if (m_deviceCaps.useStagingBuffers)
-    {
-        m_stagingBufferManager->destroyStagingBuffers();
-    }
+    m_stagingBufferManager->destroyStagingBuffers();
     m_currentContextState->invalidateDescriptorSetsState();
     m_resourceDeleter.updateResourceDeleter();
 
@@ -672,7 +679,7 @@ const DeviceCaps* VulkanGraphicContext::getDeviceCaps() const
 
 VulkanStagingBufferManager * VulkanGraphicContext::getStagingManager()
 {
-    ASSERT(m_deviceCaps.useStagingBuffers, "enable feature");
+    ASSERT(m_stagingBufferManager, "enable feature");
     return m_stagingBufferManager;
 }
 
@@ -750,18 +757,15 @@ bool VulkanGraphicContext::initialize()
     }
     else
     {
-        m_imageMemoryManager = new SimpleVulkanMemoryAllocator(m_deviceInfo._device);
-        m_bufferMemoryManager = new SimpleVulkanMemoryAllocator(m_deviceInfo._device);
+        m_imageMemoryManager = new PoolVulkanMemoryAllocator(m_deviceInfo._device, 16 * 1024 * 1024); //16MB
+        m_bufferMemoryManager = new PoolVulkanMemoryAllocator(m_deviceInfo._device, 4 * 1024 * 1024); //4MB
     }
 
     m_cmdBufferManager = new VulkanCommandBufferManager(&m_deviceInfo, m_queueList[0]);
     //m_currentBufferState._currentDrawBuffer = m_drawCmdBufferManager->acquireNewCmdBuffer(VulkanCommandBuffer::PrimaryBuffer);
     //ASSERT(m_currentBufferState._currentDrawBuffer, "m_currentDrawBuffer is nullptr");
 
-    if (m_deviceCaps.useStagingBuffers)
-    {
-        m_stagingBufferManager = new VulkanStagingBufferManager(m_deviceInfo._device);
-    }
+    m_stagingBufferManager = new VulkanStagingBufferManager(m_deviceInfo._device);
     m_uniformBufferManager = new VulkanUniformBufferManager(m_deviceInfo._device, m_resourceDeleter);
     m_descriptorSetManager = new VulkanDescriptorSetManager(m_deviceInfo._device);
 
@@ -1190,7 +1194,7 @@ bool VulkanGraphicContext::createDevice()
     for (auto& requestedQueue : queueLists)
     {
         s32 requestedQueueFamalyIndex = std::get<0>(requestedQueue);
-        VkQueueFlags requestedQueueTypes = std::get<1>(requestedQueue);
+        [[maybe_unused]] VkQueueFlags requestedQueueTypes = std::get<1>(requestedQueue);
         const std::vector<f32>& queuePriority = std::get<2>(requestedQueue);
         s32 requestedQueueCount = static_cast<s32>(std::get<2>(requestedQueue).size());
 

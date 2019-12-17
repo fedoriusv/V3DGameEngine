@@ -786,12 +786,24 @@ VkResult VulkanWrapper::EnumeratePhysicalDeviceGroups(VkInstance instance, uint3
 
 void VulkanWrapper::GetImageMemoryRequirements2(VkDevice device, const VkImageMemoryRequirementsInfo2 * pInfo, VkMemoryRequirements2 * pMemoryRequirements) noexcept
 {
+#if VULKAN_DUMP
+    VulkanDump::getInstance()->dumpPreGetImageMemoryRequirements(device, pInfo->image);
     vkGetImageMemoryRequirements2(device, pInfo, pMemoryRequirements);
+    VulkanDump::getInstance()->dumpPostGetImageMemoryRequirements(&pMemoryRequirements->memoryRequirements);
+#else
+    vkGetImageMemoryRequirements2(device, pInfo, pMemoryRequirements);
+#endif //VULKAN_DUMP
 }
 
 void VulkanWrapper::GetBufferMemoryRequirements2(VkDevice device, const VkBufferMemoryRequirementsInfo2 * pInfo, VkMemoryRequirements2 * pMemoryRequirements) noexcept
 {
+#if VULKAN_DUMP
+    VulkanDump::getInstance()->dumpPreGetBufferMemoryRequirements(device, pInfo->buffer);
     vkGetBufferMemoryRequirements2(device, pInfo, pMemoryRequirements);
+    VulkanDump::getInstance()->dumpPostGetBufferMemoryRequirements(&pMemoryRequirements->memoryRequirements);
+#else
+    vkGetBufferMemoryRequirements2(device, pInfo, pMemoryRequirements);
+#endif //VULKAN_DUMP
 }
 
 void VulkanWrapper::GetImageSparseMemoryRequirements2(VkDevice device, const VkImageSparseMemoryRequirementsInfo2 * pInfo, uint32_t * pSparseMemoryRequirementCount, VkSparseImageMemoryRequirements2 * pSparseMemoryRequirements) noexcept
