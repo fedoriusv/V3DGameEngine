@@ -105,7 +105,16 @@ VkRenderPass VulkanRenderPass::getHandle() const
 bool VulkanRenderPass::create()
 {
     ASSERT(!m_renderpass, "not empty");
-    m_layout.resize(m_descriptions.size(), std::make_tuple(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_UNDEFINED));
+    u32 countLayouts = 0;
+    for (auto& desc : m_descriptions)
+    {
+        ++countLayouts;
+        if (desc._autoResolve && desc._samples > VK_SAMPLE_COUNT_1_BIT)
+        {
+            ++countLayouts;
+        }
+    }
+    m_layout.resize(countLayouts, std::make_tuple(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_UNDEFINED));
 
     if (VulkanDeviceCaps::getInstance()->supportRenderpass2)
     {
