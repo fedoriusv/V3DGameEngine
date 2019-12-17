@@ -13,35 +13,47 @@ namespace vk
 {
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    /**
+    * VulkanMemory class. Render side
+    * Menegment of alloc/dealloc vulkan memory
+    */
     class VulkanMemory final
     {
     public:
 
+        enum MemoryProperty
+        {
+            dedicatedMemory = 0x01,
+        };
+
         VulkanMemory() = delete;
         VulkanMemory(const VulkanMemory&) = delete;
 
-        struct VulkanAlloc
+        struct VulkanAllocation final
         {
             VkDeviceMemory          _memory;
-            VkMemoryPropertyFlags   _flag;
+            void*                   _mapped;
+            void*                   _metadata;
             VkDeviceSize            _size;
             VkDeviceSize            _offset;
-            void*                   _mapped;
+            VkMemoryPropertyFlags   _flag;
+            u32                     _property;
 
-            bool operator==(const VulkanAlloc& op)
+            bool operator==(const VulkanAllocation& op)
             {
-                return _memory == op._memory && _flag == op._flag &&
-                    _size == op._size && _offset == op._offset &&
-                    _mapped == op._mapped;
+                return (memcmp(this, &op, sizeof(VulkanAllocation)) == 0);
             }
 
-            bool operator!=(const VulkanAlloc& op)
+            bool operator!=(const VulkanAllocation& op)
             {
                 return !(*this == op);
             }
 
         };
 
+        /**
+        * VulkanMemoryAllocator class. Base allocator class
+        */
         class VulkanMemoryAllocator
         {
         public:
@@ -50,7 +62,7 @@ namespace vk
             VulkanMemoryAllocator(const VulkanMemoryAllocator&) = delete;
             VulkanMemoryAllocator& operator=(const VulkanMemoryAllocator&) = delete;
 
-            VulkanMemoryAllocator(VkDevice device);
+            explicit VulkanMemoryAllocator(VkDevice device) noexcept;
             virtual ~VulkanMemoryAllocator();
 
         protected:
@@ -59,8 +71,8 @@ namespace vk
 
         private:
 
-            virtual VulkanAlloc allocate(VkDeviceSize size, u32 memoryTypeIndex) = 0;
-            virtual void deallocate(VulkanMemory::VulkanAlloc& memory) = 0;
+            virtual VulkanAllocation allocate(VkDeviceSize size, VkDeviceSize align, u32 memoryTypeIndex, const void* extensions = nullptr) = 0;
+            virtual void deallocate(VulkanMemory::VulkanAllocation& memory) = 0;
 
             friend VulkanMemory;
         };
@@ -68,29 +80,36 @@ namespace vk
         static s32 findMemoryTypeIndex(const VkMemoryRequirements& memoryRequirements, VkMemoryPropertyFlags memoryPropertyFlags);
         static bool isSupportedMemoryType(VkMemoryPropertyFlags memoryPropertyFlags, bool isEqual);
 
-        static VulkanMemory::VulkanAlloc s_invalidMemory;
+        static VulkanMemory::VulkanAllocation s_invalidMemory;
 
-        static VulkanAlloc allocateImageMemory(VulkanMemoryAllocator& allocator, VkImage image, VkMemoryPropertyFlags flags);
-        static VulkanAlloc allocateBufferMemory(VulkanMemoryAllocator& allocator, VkBuffer buffer, VkMemoryPropertyFlags flags);
+        static VulkanAllocation allocateImageMemory(VulkanMemoryAllocator& allocator, VkImage image, VkMemoryPropertyFlags flags);
+        static VulkanAllocation allocateBufferMemory(VulkanMemoryAllocator& allocator, VkBuffer buffer, VkMemoryPropertyFlags flags);
 
-        static void freeMemory(VulkanMemoryAllocator& allocator, VulkanAlloc& memory);
+        static void freeMemory(VulkanMemoryAllocator& allocator, VulkanAllocation& memory);
 
     private:
 
+        static VulkanMemoryAllocator* getSimpleMemoryAllocator(VkDevice device);
+
+        static class SimpleVulkanMemoryAllocator* s_simpleVulkanMemoryAllocator;
         static std::recursive_mutex s_mutex;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    /**
+    * SimpleVulkanMemoryAllocator class. Simple allocation
+    */
     class SimpleVulkanMemoryAllocator final : public VulkanMemory::VulkanMemoryAllocator
     {
     public:
-        SimpleVulkanMemoryAllocator(VkDevice device);
+        SimpleVulkanMemoryAllocator(VkDevice device) noexcept;
         ~SimpleVulkanMemoryAllocator();
 
     private:
-        VulkanMemory::VulkanAlloc allocate(VkDeviceSize size, u32 memoryTypeIndex) override;
-        void deallocate(VulkanMemory::VulkanAlloc& memory) override;
+
+        VulkanMemory::VulkanAllocation allocate(VkDeviceSize size, VkDeviceSize align, u32 memoryTypeIndex, const void* extensions = nullptr) override;
+        void deallocate(VulkanMemory::VulkanAllocation& memory) override;
 
 #if VULKAN_DEBUG_MARKERS
         static u32 s_debugNameGenerator;
@@ -99,20 +118,73 @@ namespace vk
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    /**
+    * PoolVulkanMemoryAllocator class. Pool menegment allocation
+    */
     class PoolVulkanMemoryAllocator final : public VulkanMemory::VulkanMemoryAllocator
     {
     public:
-        PoolVulkanMemoryAllocator(VkDevice device, u64 initializeMemSize, u64 blockSize, u64 minAllocSize, u64 hugeAllocSize);
+
+        PoolVulkanMemoryAllocator(VkDevice device, u64 allocationSize) noexcept;
         ~PoolVulkanMemoryAllocator();
 
     private:
-        VulkanMemory::VulkanAlloc allocate(VkDeviceSize size, u32 memoryTypeIndex) override;
-        void deallocate(VulkanMemory::VulkanAlloc& memory) override;
 
-        const u64 m_initializeMemSize;
-        const u64 m_blockSize;
-        const u64 m_minAllocSize;
-        const u64 m_hugeAllocSize;
+        VulkanMemory::VulkanAllocation allocate(VkDeviceSize size, VkDeviceSize align, u32 memoryTypeIndex, const void* extensions = nullptr) override;
+        void deallocate(VulkanMemory::VulkanAllocation& memory) override;
+
+        struct MemoryChunck
+        {
+            VkDeviceSize _size;
+            VkDeviceSize _offset;
+        };
+
+        struct Pool final
+        {
+            struct ChunckSizeSort
+            {
+                bool operator()(const MemoryChunck& l, const MemoryChunck& r) const
+                {
+                    if (l._size < r._size)
+                    {
+                        return true;
+                    }
+                    else if (l._size > r._size)
+                    {
+                        return false;
+                    }
+
+                    return l._offset < r._offset;
+                }
+            };
+
+            struct ChunckOffsetSort
+            {
+                bool operator()(const MemoryChunck& l, const MemoryChunck& r) const
+                {
+                    return l._offset < r._offset;
+                }
+            };
+
+            Pool() noexcept;
+            ~Pool() = default;
+
+            std::set<MemoryChunck, ChunckOffsetSort>    _chunks;
+            std::set<MemoryChunck, ChunckSizeSort>      _freeChunks;
+            VkDeviceMemory                              _memory;
+            VkDeviceSize                                _size;
+            VkDeviceSize                                _chunkSize;
+            void*                                       _mapped;
+            u32                                         _memoryTypeIndex;
+        };
+
+        bool findAllocationFromPool(std::multimap<VkDeviceSize, Pool*>& heaps, VkDeviceSize size, VulkanMemory::VulkanAllocation& memory);
+        Pool* createPool(VkDeviceSize poolSize, VkDeviceSize requestedSize, u32 memoryTypeIndex);
+
+
+        VkDeviceSize m_allocationSize;
+        std::multimap<VkDeviceSize, Pool*> m_heaps[VK_MAX_MEMORY_TYPES];
+
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
