@@ -45,7 +45,7 @@ void ParticleSystemHelper::add(u32 particleCount, const core::Vector3D& pos, con
     ParticleSystem* particle = new ParticleSystem(particleCount, pos, minVel, maxVel);
     
     u32 bufferSize = particleCount * sizeof(ParticleSystem::Particle);
-    renderer::VertexStreamBuffer* vertexBuffer = m_cmdList.createObject<renderer::VertexStreamBuffer>(renderer::StreamBuffer_Dynamic,
+    renderer::VertexStreamBuffer* vertexBuffer = m_cmdList.createObject<renderer::VertexStreamBuffer>(renderer::StreamBuffer_Dynamic | renderer::StreamBuffer_Write,
         bufferSize, reinterpret_cast<u8*>(particle->getData()));
 
     m_particleSystems.push_back(std::make_pair(particle, vertexBuffer));
