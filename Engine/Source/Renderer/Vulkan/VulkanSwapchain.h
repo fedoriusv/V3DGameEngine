@@ -26,7 +26,7 @@ namespace vk
 
         struct SwapchainConfig
         {
-            const platform::Window* _window;
+            const platform::Window* _window               = nullptr;
             core::Dimension2D       _size;
             u32                     _countSwapchainImages = 0;
             bool                    _vsync                = false;

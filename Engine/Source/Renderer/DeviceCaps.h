@@ -38,7 +38,7 @@ namespace renderer
         }
 
         DeviceCaps() = default;
-        ~DeviceCaps() = default;
+        virtual ~DeviceCaps() = default;
 
     protected:
 

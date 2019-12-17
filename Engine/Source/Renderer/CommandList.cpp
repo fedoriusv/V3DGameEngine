@@ -249,8 +249,8 @@ public:
     }
 
 private:
-    u64     m_timeout;
-    bool    m_wait;
+    [[maybe_unused]] u64    m_timeout;
+    bool                    m_wait;
 };
 
     /*CommandDraw*/

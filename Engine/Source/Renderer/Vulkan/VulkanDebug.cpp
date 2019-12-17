@@ -275,7 +275,7 @@ void VulkanDebugUtils::debugCallbackData(const VkDebugUtilsMessengerCallbackData
 
             char* end;
             const u64 addr = std::strtoull(objects.pObjectName, &end, 10);
-            VulkanImage* image = reinterpret_cast<VulkanImage*>(addr);
+            [[maybe_unused]] VulkanImage* image = reinterpret_cast<VulkanImage*>(addr);
 
             break;
         }
@@ -289,7 +289,7 @@ void VulkanDebugUtils::debugCallbackData(const VkDebugUtilsMessengerCallbackData
 
             char* end;
             const u64 addr = std::strtoull(objects.pObjectName, &end, 10);
-            VulkanBuffer* buffer = reinterpret_cast<VulkanBuffer*>(addr);
+            [[maybe_unused]] VulkanBuffer* buffer = reinterpret_cast<VulkanBuffer*>(addr);
 
             break;
         }
@@ -303,7 +303,7 @@ void VulkanDebugUtils::debugCallbackData(const VkDebugUtilsMessengerCallbackData
 
             char* end;
             const u64 addr = std::strtoull(objects.pObjectName, &end, 10);
-            VulkanFramebuffer* framebuffer = reinterpret_cast<VulkanFramebuffer*>(addr);
+            [[maybe_unused]] VulkanFramebuffer* framebuffer = reinterpret_cast<VulkanFramebuffer*>(addr);
 
             break;
         }
@@ -317,14 +317,14 @@ void VulkanDebugUtils::debugCallbackData(const VkDebugUtilsMessengerCallbackData
 
             char* end;
             const u64 addr = std::strtoull(objects.pObjectName, &end, 10);
-            VulkanRenderPass* renderpass = reinterpret_cast<VulkanRenderPass*>(addr);
+            [[maybe_unused]] VulkanRenderPass* renderpass = reinterpret_cast<VulkanRenderPass*>(addr);
 
             break;
         }
 
         case VK_OBJECT_TYPE_DEVICE_MEMORY:
         {
-            const char* debugName = objects.pObjectName;
+            [[maybe_unused]] const char* debugName = objects.pObjectName;
             break;
         }
 
@@ -340,13 +340,13 @@ void VulkanDebugUtils::debugCallbackData(const VkDebugUtilsMessengerCallbackData
         {
             char* end;
             const u64 addr = std::strtoull(bufferLabel.pLabelName, &end, 10);
-            VulkanCommandBuffer* cmdBuffer = reinterpret_cast<VulkanCommandBuffer*>(addr);
+            [[maybe_unused]] VulkanCommandBuffer* cmdBuffer = reinterpret_cast<VulkanCommandBuffer*>(addr);
 
             return;
         }
     }
 
-    u32 endOfDebug = 0;
+    [[maybe_unused]] u32 endOfDebug = 0;
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////
