@@ -61,16 +61,16 @@ MyApplication::MyApplication(int& argc, char** argv)
 int MyApplication::Execute()
 {
     MyApplication::Initialize();
-	while (true)
-	{
-		if (!Window::updateWindow(m_Window))
-		{
-			break;
-		}
-		m_Window->getInputEventReceiver()->sendDeferredEvents();
+    while (true)
+    {
+        if (!Window::updateWindow(m_Window))
+        {
+            break;
+        }
+        m_Window->getInputEventReceiver()->sendDeferredEvents();
 
-		MyApplication::Running();
-	}
+        MyApplication::Running();
+    }
 
     Exit();
     delete this;

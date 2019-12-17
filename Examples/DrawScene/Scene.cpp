@@ -43,7 +43,6 @@ Scene::Scene(const core::Dimension2D& size) noexcept
     , m_SponzaModelDrawer(nullptr)
     , m_ParticleSystem(nullptr)
 {
-    resource::ResourceLoaderManager::getInstance()->addPath("../../../../examples/4.DrawScene/data/");
 }
 
 Scene::~Scene()
@@ -359,6 +358,7 @@ void Scene::onLoad(v3d::renderer::CommandList & cmd)
     m_Sampler = cmd.createObject<renderer::SamplerState>(renderer::SamplerFilter::SamplerFilter_Bilinear, renderer::SamplerFilter::SamplerFilter_Trilinear, renderer::SamplerAnisotropic::SamplerAnisotropic_8x);
 
     resource::Image* dummyImage = resource::ResourceLoaderManager::getInstance()->load<resource::Image, resource::ImageFileLoader>("sponza/dummy.dds");
+    ASSERT(dummyImage, "not found");
     m_DummyTexture = cmd.createObject<renderer::Texture2D>(renderer::TextureUsage_Sampled | renderer::TextureUsage_Write, dummyImage->getFormat(), core::Dimension2D(dummyImage->getDimension().width, dummyImage->getDimension().height), 1, 1, dummyImage->getRawData());
     
     //Load Sponza
@@ -438,8 +438,8 @@ void Scene::onLoad(v3d::renderer::CommandList & cmd)
         {
             std::vector<std::pair<std::string, std::string>> defines =
             {
-                { "NEAR_PLANE", std::to_string(m_camera->getNearValue()) },
-                { "FAR_PLANE", std::to_string(m_camera->getFarValue()) },
+                { "NEAR_PLANE", std::to_string(m_camera->getNear()) },
+                { "FAR_PLANE", std::to_string(m_camera->getFar()) },
                 { "ENABLE_DISCARD", std::to_string(0) }
             };
 
@@ -461,8 +461,8 @@ void Scene::onLoad(v3d::renderer::CommandList & cmd)
         {
             std::vector<std::pair<std::string, std::string>> defines =
             {
-                { "NEAR_PLANE", std::to_string(m_camera->getNearValue()) },
-                { "FAR_PLANE", std::to_string(m_camera->getFarValue()) },
+                { "NEAR_PLANE", std::to_string(m_camera->getNear()) },
+                { "FAR_PLANE", std::to_string(m_camera->getFar()) },
                 { "ENABLE_DISCARD", std::to_string(1) }
             };
 
@@ -482,8 +482,8 @@ void Scene::onLoad(v3d::renderer::CommandList & cmd)
 
         {
             //Load skysphere
-            Model* skysphereModel = resource::ResourceLoaderManager::getInstance()->load<Model, resource::ModelFileLoader>("examples/4.drawscene/data/skysphere.dae", resource::ModelLoaderFlag::ModelLoaderFlag_SeperateMesh);
-            resource::Image* skysphereImage = resource::ResourceLoaderManager::getInstance()->load<resource::Image, resource::ImageFileLoader>("examples/4.drawscene/data/textures/skysphere_night.ktx");
+            Model* skysphereModel = resource::ResourceLoaderManager::getInstance()->load<Model, resource::ModelFileLoader>("skysphere.dae", resource::ModelLoaderFlag::ModelLoaderFlag_SeperateMesh);
+            resource::Image* skysphereImage = resource::ResourceLoaderManager::getInstance()->load<resource::Image, resource::ImageFileLoader>("textures/skysphere_night.ktx");
             m_SkyTexture = cmd.createObject<renderer::Texture2D>(renderer::TextureUsage_Sampled | renderer::TextureUsage_Write, skysphereImage->getFormat(), core::Dimension2D(skysphereImage->getDimension().width, skysphereImage->getDimension().height), 1, 1, skysphereImage->getRawData());
             m_SkySphereVertexBuffer = cmd.createObject<renderer::VertexStreamBuffer>(renderer::StreamBufferUsage::StreamBuffer_Write, skysphereModel->getMeshByIndex(0)->getVertexSize(), skysphereModel->getMeshByIndex(0)->getVertexData());
             m_SkySphereIndexBuffer = cmd.createObject<renderer::IndexStreamBuffer>(renderer::StreamBufferUsage::StreamBuffer_Write, renderer::StreamIndexBufferType::IndexType_32, skysphereModel->getMeshByIndex(0)->getIndexCount(), skysphereModel->getMeshByIndex(0)->getIndexData());
@@ -604,8 +604,8 @@ void Scene::onLoad(v3d::renderer::CommandList & cmd)
         {
             std::vector<std::pair<std::string, std::string>> defines =
             {
-                { "NEAR_PLANE", std::to_string(m_camera->getNearValue()) },
-                { "FAR_PLANE", std::to_string(m_camera->getFarValue()) },
+                { "NEAR_PLANE", std::to_string(m_camera->getNear()) },
+                { "FAR_PLANE", std::to_string(m_camera->getFar()) },
             };
 
             resource::Image* particleFireImage = resource::ResourceLoaderManager::getInstance()->load<resource::Image, resource::ImageFileLoader>("textures/particle_fire.ktx", resource::ImageLoaderFlag::ImageLoaderFlag_FlipY);
@@ -646,7 +646,7 @@ void Scene::onLoad(v3d::renderer::CommandList & cmd)
 
 #endif
 
-    cmd.sumitCommands();
+    cmd.submitCommands();
     cmd.flushCommands();
 }
 

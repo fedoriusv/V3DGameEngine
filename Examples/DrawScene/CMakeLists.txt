@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.0.0)
 
-set (CURRENT_PROJECT "4.DrawScene")
+set (CURRENT_PROJECT "DrawScene")
 message("-- " ${CURRENT_PROJECT})
 
 project(${CURRENT_PROJECT})

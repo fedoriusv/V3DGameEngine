@@ -5,6 +5,7 @@
 #include "Event/InputEventReceiver.h"
 #include "Platform/Window.h"
 #include "Platform/Platform.h"
+#include "Resource/ResourceLoaderManager.h"
 
 using namespace v3d;
 using namespace v3d::platform;
@@ -72,6 +73,8 @@ int MyApplication::Execute()
 
 void MyApplication::Initialize()
 {
+    resource::ResourceLoaderManager::getInstance()->addPath("examples/drawscene/data/");
+
     m_Context = renderer::Context::createContext(m_Window, renderer::Context::RenderType::VulkanRender);
     ASSERT(m_Context, "context is nullptr");
     m_CommandList = new renderer::CommandList(m_Context, renderer::CommandList::CommandListType::ImmediateCommandList);
