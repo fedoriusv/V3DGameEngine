@@ -1,4 +1,4 @@
-// V3D Engine (c) 2018-2019 Fred Nekrasov
+// V3D Engine 2018-2020 Fred Nekrasov
 #pragma once
 
 //Version 2.0.0
@@ -15,8 +15,8 @@
 
 #if (defined(_WIN32) && _WIN32) || (defined(_WIN64) && _WIN64) || defined(WIN32) || defined(WIN64)
 #   define PLATFORM_WINDOWS
-#   if defined(_MSC_VER) && (_MSC_VER < 1910)
-#       error "Only Microsoft Visual Studio 2017 RTW (15.0) and later are supported."
+#   if defined(_MSC_VER) && (_MSC_VER < 1920)
+#       error "Only Microsoft Visual Studio 2019 RTW (16.0) and later are supported."
 #   endif
 #endif
 
@@ -59,7 +59,7 @@
 #   endif //VULKAN_LAYERS_CALLBACKS
 
 #   define VULKAN_STATISTICS 0
-#   define VULKAN_DUMP 1
+#   define VULKAN_DUMP 0
 #   if VULKAN_DUMP
 #   define VULKAN_DUMP_FILE "VulkanCommandsDump.log"
 #   endif //VULKAN_DUMP
