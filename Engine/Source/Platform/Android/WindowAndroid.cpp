@@ -71,10 +71,10 @@ bool WindowAndroid::update()
 {
     s32 ident;
     s32 events;
-    struct android_poll_source* source;
+    android_poll_source* source;
     while((ident = ALooper_pollAll(0, NULL, &events,(void**)&source)) >= 0) 
     {
-        // Process this event.      
+        // Process this event.
         if (source != NULL) 
         {
             source->process(g_nativeAndroidApp, source);

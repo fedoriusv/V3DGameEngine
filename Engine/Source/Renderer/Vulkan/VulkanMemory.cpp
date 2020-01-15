@@ -37,7 +37,7 @@ s32 VulkanMemory::findMemoryTypeIndex(const VkMemoryRequirements& memoryRequirem
     u32 memoryTypeBits = memoryRequirements.memoryTypeBits;
     for (u32 memoryTypeIndex = 0; memoryTypeIndex < physicalDeviceMemoryProperties.memoryTypeCount; ++memoryTypeIndex)
     {
-        if ((memoryTypeBits & 1) == 1)
+        if (memoryTypeBits & memoryTypeIndex)
         {
             if ((physicalDeviceMemoryProperties.memoryTypes[memoryTypeIndex].propertyFlags & memoryPropertyFlags) == memoryPropertyFlags)
             {

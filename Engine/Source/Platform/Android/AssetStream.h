@@ -81,7 +81,7 @@ namespace android
         AAsset*         m_asset;
         std::string     m_name;
 
-        mutable s32     m_pos;
+        mutable s64     m_pos;
         mutable u32     m_size;
         mutable bool    m_mapped;
     };

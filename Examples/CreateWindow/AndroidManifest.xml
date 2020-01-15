@@ -18,8 +18,7 @@
                 android:theme="@android:style/Theme.NoTitleBar.Fullscreen"
                 android:screenOrientation="sensorLandscape">
             <!-- Tell NativeActivity the name of our .so -->
-            <meta-data android:name="android.app.lib_name"
-                    android:value="CreateWindow" />
+            <meta-data android:name="android.app.lib_name" android:value="CreateWindow" />
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />

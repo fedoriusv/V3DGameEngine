@@ -305,7 +305,7 @@ endif()
 ##############################################################
 if (BUILD_EXAMPLES)
 #   set(BUILD_PROJECTS #[[1.CreateWindow 2.ClearColor]] 3.DrawMesh 4.DrawScene 5.Test)
-    file (READ "ExamplesList.txt" STRING_BUILD_EXAMPLES)
+    file(READ "ExamplesList.txt" STRING_BUILD_EXAMPLES)
     string(REPLACE "\n" ";" BUILD_EXAMPLES ${STRING_BUILD_EXAMPLES})
 
     message(STATUS "----------------")

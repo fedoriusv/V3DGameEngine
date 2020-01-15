@@ -683,7 +683,7 @@ void VulkanGraphicPipeline::destroy()
 
     if (m_pipelineLayout._layout)
     {
-        //release when manager will be destryoed
+        //release when manager will be destroyed
         //m_descriptorSetManager->removePipelineLayout(m_pipelineLayout);
         m_pipelineLayout._layout = VK_NULL_HANDLE;
     }

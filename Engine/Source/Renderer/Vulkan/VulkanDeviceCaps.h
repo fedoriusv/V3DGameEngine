@@ -40,6 +40,8 @@ namespace vk
         bool supportRenderpass2 = false;
         bool supportDedicatedAllocation = false;
 
+        bool supportPipelineExecutableProperties = false;
+
         //immediateResourceSubmit: 0 - not submit, 1 - submit, 2 - submit and wait complete
         u32 immediateResourceSubmit = 0; 
 

@@ -66,6 +66,8 @@ bool createSurfaceAndroidApi(VkInstance vkInstance, NativeInstance hInstance, Na
 VulkanSwapchain::VulkanSwapchain(const DeviceInfo* info)
     : m_deviceInfo(info)
     , m_surface(VK_NULL_HANDLE)
+    , m_surfaceCaps({})
+    , m_surfaceFormat({})
     , m_swapchain(VK_NULL_HANDLE)
 
     , m_currentImageIndex((u32)-1)

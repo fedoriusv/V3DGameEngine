@@ -60,6 +60,8 @@ const std::vector<const c8*> k_deviceExtensionsList =
 
     VK_KHR_CREATE_RENDERPASS_2_EXTENSION_NAME,
     VK_KHR_DEPTH_STENCIL_RESOLVE_EXTENSION_NAME,
+
+    VK_KHR_PIPELINE_EXECUTABLE_PROPERTIES_EXTENSION_NAME,
 };
 
 
@@ -1261,6 +1263,8 @@ bool VulkanGraphicContext::prepareDraw(VulkanCommandBuffer* drawBuffer)
         drawBuffer->cmdBeginRenderpass(m_currentContextState->getCurrentRenderpass(), m_currentContextState->getCurrentFramebuffer(), m_currentContextState->m_renderPassArea, m_currentContextState->m_renderPassClearValues);
     }
 
+    m_currentContextState->invokeDynamicStates();
+
     if (m_pendingState.isPipeline())
     {
         if (m_currentContextState->setCurrentPipeline(m_pendingState.takePipeline()))
@@ -1269,8 +1273,6 @@ bool VulkanGraphicContext::prepareDraw(VulkanCommandBuffer* drawBuffer)
         }
     }
     ASSERT(m_currentContextState->getCurrentPipeline(), "not bound");
-
-    m_currentContextState->invokeDynamicStates();
 
     std::vector<VkDescriptorSet> sets;
     std::vector<u32> offsets;
