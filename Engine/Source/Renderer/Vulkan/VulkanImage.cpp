@@ -1562,7 +1562,7 @@ VkImageView VulkanImage::getImageView(s32 layer, VkImageAspectFlags aspect) cons
         return m_generalImageView[convertVkImageAspectFlags(aspect ? aspect : m_aspectMask)];
     }
 
-    ASSERT(m_imageView.empty(), "empty");
+    ASSERT(!m_imageView.empty(), "empty");
     return m_imageView[layer];
 }
 

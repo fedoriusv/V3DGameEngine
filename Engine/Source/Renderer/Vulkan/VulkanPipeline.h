@@ -8,7 +8,7 @@
 #ifdef VULKAN_RENDER
 #include "VulkanWrapper.h"
 #include "VulkanResource.h"
-#include "VulkanDescriptorSet.h"
+#include "VulkanPipelineLayout.h"
 #include "VulkanRenderpass.h"
 
 namespace v3d
@@ -32,7 +32,7 @@ namespace vk
     {
     public:
 
-        VulkanGraphicPipeline(VkDevice device, RenderPassManager* renderpassManager, VulkanDescriptorSetManager* descriptorSetManager);
+        VulkanGraphicPipeline(VkDevice device, RenderPassManager* renderpassManager, VulkanPipelineLayoutManager* pipelineLayoutManager);
         ~VulkanGraphicPipeline();
 
         bool create(const PipelineGraphicInfo* pipelineInfo) override;
@@ -74,7 +74,7 @@ namespace vk
         VulkanPipelineLayout m_pipelineLayout;
 
         RenderPassManager* const m_renderpassManager;
-        VulkanDescriptorSetManager* const m_descriptorSetManager;
+        VulkanPipelineLayoutManager* const m_pipelineLayoutManager;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

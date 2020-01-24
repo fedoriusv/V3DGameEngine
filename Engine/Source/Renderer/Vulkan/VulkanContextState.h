@@ -61,62 +61,59 @@ namespace vk
 
         bool prepareDescriptorSets(VulkanCommandBuffer* cmdBuffer, std::vector<VkDescriptorSet>& sets, std::vector<u32>& offsets);
 
-        void bindTexture(const VulkanImage* image, const VulkanSampler* sampler, u32 arrayIndex, const Shader::SampledImage& reflaction);
-        void updateConstantBuffer(u32 arrayIndex, const Shader::UniformBuffer& reflaction, u32 offset, u32 size, const void* data);
+        void bindTexture(const VulkanImage* image, const VulkanSampler* sampler, u32 arrayIndex, const Shader::SampledImage& info);
+        void updateConstantBuffer(const Shader::UniformBuffer& info, u32 offset, u32 size, const void* data);
 
         void invalidateDescriptorSetsState();
+        void updateDescriptorStates();
 
         std::vector<VkClearValue> m_renderPassClearValues;
         VkRect2D m_renderPassArea;
 
     private:
 
-        bool updateDescriptorSet(VulkanCommandBuffer* cmdBuffer, std::vector<VkDescriptorSet>& sets);
-
-        enum BindingType
+        struct BindingSate
         {
-            BindingType_Unknown = 0,
-            BindingType_Uniform,
-            BindingType_DynamicUniform,
-            BindingType_Sampler,
-            BindingType_Texture,
-            BindingType_SamplerAndTexture,
+            BindingSate() noexcept = default;
 
-            //TODO
+            struct BindingData
+            {
+                struct BindingImageData
+                {
+                    const VulkanImage*      _image;
+                    const VulkanSampler*    _sampler;
+                };
+
+                struct BindingBufferData
+                {
+                    const VulkanBuffer*     _buffer;
+                    //VulkanUniformBuffer*    _uniform;
+                    u64                     _offset;
+                    u64                     _size;
+                };
+
+                std::variant<std::monostate, BindingImageData, BindingBufferData> _dataBinding;
+            };
+
+            std::array<std::tuple<BindingInfo, BindingData>, k_maxDescriptorBindingIndex> _set;
+            u64  _hash = 0;
+
+            u32  _activeBindingsFlags = 0;
+            bool _dirtyFlag = false;
+
+            void updateState(VulkanCommandBuffer* cmdBuffer, u64 frame, u64 layoutHash);
+            void reset();
+
+            bool isActiveBinding(u32 binding) const;
+            bool isDirty() const;
+
+            void bind(BindingType type, u32 binding, u32 arrayIndex, u32 layer, const VulkanImage* image, const VulkanSampler* sampler);
+            void bind(BindingType type, u32 binding, u32 arrayIndex, const VulkanBuffer* buffer, u64 offset, u64 range);
+
+            std::vector<const VulkanResource*> _usedResources;
         };
 
-        struct BindingInfo
-        {
-            struct BindingImageInfo
-            {
-                VkDescriptorImageInfo _imageInfo;
-                const VulkanImage*    _image;
-                const VulkanSampler*  _sampler;
-            };
-
-            struct BindingBufferInfo
-            {
-                VkDescriptorBufferInfo      _bufferInfo;
-                const VulkanBuffer*         _buffer;
-                VulkanUniformBuffer*        _uniform;
-            };
-
-            BindingInfo();
-            bool operator==(const BindingInfo& info) const;
-
-            union //32
-            {
-                BindingImageInfo  _imageBinding; 
-                BindingBufferInfo _bufferBinding;
-
-            };
-            //std::variant<BindingImageInfo, BindingBufferInfo> _descriptorBinding;
-
-            u32                 _set        : 16; //6
-            u32                 _binding    : 16; //6
-            BindingType         _type       : 16; //4
-            u32                 _arrayIndex : 16; //16
-        };
+        void updateDescriptorSet(VulkanCommandBuffer* cmdBuffer, VkDescriptorSet set, const BindingSate& info);
 
         static VkDescriptorBufferInfo makeVkDescriptorBufferInfo(const VulkanBuffer* buffer, u64 offset, u64 range);
         static VkDescriptorImageInfo makeVkDescriptorImageInfo(const VulkanImage* image, const VulkanSampler* sampler, VkImageLayout layout, s32 layer = -1);
@@ -125,84 +122,24 @@ namespace vk
 
         u32 m_swapchainIndex;
 
-        std::pair<VulkanRenderPass*, bool>          m_currentRenderpass;
-        std::pair <std::vector<VulkanFramebuffer*>, bool> m_currentFramebuffer;
-        std::pair <VulkanGraphicPipeline*, bool>    m_currentPipeline;
+        //Current State
+        std::pair<VulkanRenderPass*, bool>                  m_currentRenderpass;
+        std::pair<std::vector<VulkanFramebuffer*>, bool>    m_currentFramebuffer;
+        std::pair<VulkanGraphicPipeline*, bool>             m_currentPipeline;
 
-        std::map<VkDynamicState, std::function<void()>> m_stateCallbacks;
+        std::map<VkDynamicState, std::function<void()>>     m_stateCallbacks;
 
-        std::pair<StreamBufferDescription, bool> m_currentVertexBuffers;
+        std::pair<StreamBufferDescription, bool>            m_currentVertexBuffers;
+        std::array<VkDescriptorSet, k_maxDescriptorSetIndex> m_currentDesctiptorsSets;
+
 
         VulkanDescriptorSetManager* m_descriptorSetManager;
         VulkanUniformBufferManager* m_unifromBufferManager;
-        
-        VulkanDescriptorPool* m_currentPool;
 
-        void setBinding(BindingInfo& binding);
+        mutable BindingSate m_currentBindingSlots[k_maxDescriptorSetIndex];
 
-        std::vector<BindingInfo> m_updatedBindings;
-        std::map<u32, BindingInfo> m_currentBindingCache;
-
-
-        std::vector<VkDescriptorSet> m_currentSets;
-
+        //std::vector<VkDescriptorSet> m_currentSets;
         //std::array<std::vector<BindingInfo>, k_maxDescriptorSetIndex> m_descriptorSetsState;
-
-        class TransitionLayoutState
-        {
-        public:
-
-            struct TransitionImageLayout
-            {
-                VulkanImage*            _image;
-                VkImageSubresourceRange _subresource;
-                VkPipelineStageFlags    _srcStage;
-                VkPipelineStageFlags    _dstStage;
-                VkImageLayout           _layout;
-
-                bool operator==(const TransitionImageLayout& obj) const
-                {
-                    if (this == &obj)
-                    {
-                        return true;
-                    }
-
-                    if (_image != obj._image || memcmp(&_subresource, &obj._subresource, sizeof(VkImageSubresourceRange)))
-                    {
-                        return false;
-                    }
-
-                    return true;
-                }
-
-            };
-
-            bool pushImageLayout(const TransitionImageLayout& obj);
-            void flushImageLayout(VulkanCommandBuffer * cmdBuffer);
-
-        private:
-
-            struct ImageLayoutHash
-            {
-                size_t operator()(const TransitionImageLayout& obj) const
-                {
-                    //TODO
-                    return 0;
-                }
-            };
-
-            struct ImageLayoutEqual
-            {
-                bool operator()(const TransitionImageLayout& lhs, const TransitionImageLayout& rhs) const
-                {
-                    return lhs == rhs;
-                }
-            };
-
-            std::unordered_set<TransitionImageLayout, ImageLayoutHash, ImageLayoutEqual> m_transitionImageLayouts;
-        };
-
-        TransitionLayoutState m_transitionLayoutState;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

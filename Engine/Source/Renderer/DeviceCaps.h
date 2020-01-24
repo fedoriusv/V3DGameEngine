@@ -4,6 +4,7 @@
 #include "TextureProperties.h"
 #include "BufferProperties.h"
 
+
 namespace v3d
 {
 namespace renderer
@@ -20,7 +21,7 @@ namespace renderer
             TilingType_Count
         };
 
-        u32 maxColorattachments = k_maxFramebufferAttachments;
+        u32 maxColorAttachments = k_maxFramebufferAttachments;
         u32 maxVertexInputAttributes = k_maxVertexInputAttributes;
         u32 maxVertexInputBindings = k_maxVertexInputBindings;
 
@@ -42,7 +43,7 @@ namespace renderer
 
     protected:
 
-        ImageFormatSupport m_imageFormatSupport[Format::Format_Count][TilingType::TilingType_Count];
+        ImageFormatSupport m_imageFormatSupport[Format::Format_Count][TilingType::TilingType_Count] = {};
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

@@ -103,7 +103,6 @@ VulkanUniformBuffer * VulkanUniformBufferManager::acquireUnformBuffer(u32 reques
     u32 alingment = static_cast<u32>(VulkanDeviceCaps::getInstance()->getPhysicalDeviceLimits().minUniformBufferOffsetAlignment);
     u32 requirementSize = core::alignUp(requestedSize, alingment);
 
-
     if (!m_currentPoolBuffer)
     {
         if (m_freePoolBuffers.empty())
@@ -133,7 +132,7 @@ VulkanUniformBuffer * VulkanUniformBufferManager::acquireUnformBuffer(u32 reques
         }
     }
 
-    VulkanUniformBuffer * newUnifromBuffer = new VulkanUniformBuffer(m_currentPoolBuffer->_buffer, m_currentPoolBuffer->_usedSize, requirementSize);
+    VulkanUniformBuffer* newUnifromBuffer = new VulkanUniformBuffer(m_currentPoolBuffer->_buffer, m_currentPoolBuffer->_usedSize, requirementSize);
     m_currentPoolBuffer->addUniformBuffer(newUnifromBuffer, requirementSize);
 
     return newUnifromBuffer;

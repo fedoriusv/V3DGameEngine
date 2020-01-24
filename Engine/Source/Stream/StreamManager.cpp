@@ -15,10 +15,10 @@ MemoryStream* StreamManager::createMemoryStream(const void* data, const u32 size
     return new MemoryStream(data, size, nullptr);//m_memoryPool);
 }
 
-MemoryStream* StreamManager::createMemoryStream(const std::string& string)
+const MemoryStream* StreamManager::createMemoryStream(const std::string& string)
 {
-    MemoryStream* memory = StreamManager::createMemoryStream(nullptr, static_cast<u32>(string.length()) + sizeof(u32));
-    memory->write(static_cast<u32>(string.length()));
+    MemoryStream* memory = StreamManager::createMemoryStream(nullptr, static_cast<u32>(string.length())/* + sizeof(u32)*/);
+    //memory->write(static_cast<u32>(string.length()));
     memory->write(string.data(), static_cast<u32>(string.length()));
 
     return memory;

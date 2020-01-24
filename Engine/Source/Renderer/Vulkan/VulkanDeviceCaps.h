@@ -21,6 +21,10 @@ namespace vk
     {
         VulkanDeviceCaps() = default;
 
+        VulkanDeviceCaps(const VulkanDeviceCaps&) = delete;
+        VulkanDeviceCaps& operator=(const VulkanDeviceCaps&) = delete;
+
+
         bool individuallyResetForCommandBuffers = false;
 
         //coherent memmory
@@ -69,10 +73,10 @@ namespace vk
         void fillCapabilitiesList(const struct DeviceInfo* info);
         void initialize();
 
-        VkPhysicalDeviceFeatures            m_deviceFeatures;
-        VkPhysicalDeviceProperties          m_deviceProperties;
-        VkPhysicalDeviceMemoryProperties    m_deviceMemoryProps;
-        std::vector<VkQueueFamilyProperties> m_queueFamilyProperties;
+        VkPhysicalDeviceFeatures            m_deviceFeatures = {};
+        VkPhysicalDeviceProperties          m_deviceProperties = {};
+        VkPhysicalDeviceMemoryProperties    m_deviceMemoryProps = {};
+        std::vector<VkQueueFamilyProperties> m_queueFamilyProperties = {};
 
         static std::vector<const c8*>        s_enableExtensions;
     };

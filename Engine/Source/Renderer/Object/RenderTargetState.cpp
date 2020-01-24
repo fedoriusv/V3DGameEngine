@@ -141,7 +141,7 @@ RenderTargetState::~RenderTargetState()
 
 bool RenderTargetState::setColorTexture(u32 index, Texture2D* colorTexture, RenderTargetLoadOp loadOp, RenderTargetStoreOp storeOp, const core::Vector4D& clearColor)
 {
-    ASSERT(index < m_cmdList.getContext()->getDeviceCaps()->maxColorattachments, "index >= maxColorattachments");
+    ASSERT(index < m_cmdList.getContext()->getDeviceCaps()->maxColorAttachments, "index >= maxColorattachments");
     if (colorTexture)
     {
         renderer::AttachmentDescription attachmentDesc = {};
@@ -170,7 +170,7 @@ bool RenderTargetState::setColorTexture(u32 index, Texture2D* colorTexture, Rend
 
 bool RenderTargetState::setColorTexture(u32 index, Backbuffer* swapchainTexture, RenderTargetLoadOp loadOp, RenderTargetStoreOp storeOp, const core::Vector4D & clearColor)
 {
-    ASSERT(index < m_cmdList.getContext()->getDeviceCaps()->maxColorattachments, "index >= maxColorattachments");
+    ASSERT(index < m_cmdList.getContext()->getDeviceCaps()->maxColorAttachments, "index >= maxColorAttachments");
     if (swapchainTexture)
     {
         renderer::AttachmentDescription attachmentDesc = {};
@@ -227,7 +227,7 @@ bool RenderTargetState::setDepthStencilTexture(Texture2D* depthStencilTexture,
 
 bool RenderTargetState::setColorTexture(u32 index, Texture2D * colorTexture, const ColorOpState & colorOpState, const TransitionState & tansitionState)
 {
-    ASSERT(index < m_cmdList.getContext()->getDeviceCaps()->maxColorattachments, "index >= maxColorattachments");
+    ASSERT(index < m_cmdList.getContext()->getDeviceCaps()->maxColorAttachments, "index >= maxColorAttachments");
     if (colorTexture)
     {
         renderer::AttachmentDescription attachmentDesc = {};
@@ -255,7 +255,7 @@ bool RenderTargetState::setColorTexture(u32 index, Texture2D * colorTexture, con
 
 bool RenderTargetState::setColorTexture(u32 index, Backbuffer * swapchainTexture, const ColorOpState & colorOpState, const TransitionState & tansitionState)
 {
-    ASSERT(index < m_cmdList.getContext()->getDeviceCaps()->maxColorattachments, "index >= maxColorattachments");
+    ASSERT(index < m_cmdList.getContext()->getDeviceCaps()->maxColorAttachments, "index >= maxColorAttachments");
     if (swapchainTexture)
     {
         renderer::AttachmentDescription attachmentDesc = {};

@@ -27,9 +27,6 @@ namespace stream
         explicit MemoryStream(const void* data, u32 size, utils::MemoryPool* allocator = nullptr) noexcept;
         ~MemoryStream();
 
-        void clear();
-        void allocate(u32 size);
-
         void close() override;
 
         u32 read(void* buffer, u32 size, u32 count = 1) const override;
@@ -83,6 +80,10 @@ namespace stream
         u32             m_allocated;
         mutable u32     m_pos;
         mutable bool    m_mapped;
+
+
+        void clear();
+        u8* allocate(u32 size);
 
         utils::MemoryPool *const m_allocator;
     };

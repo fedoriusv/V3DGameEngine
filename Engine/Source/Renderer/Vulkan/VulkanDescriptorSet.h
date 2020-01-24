@@ -7,6 +7,7 @@
 #ifdef VULKAN_RENDER
 #include "VulkanWrapper.h"
 #include "VulkanResource.h"
+#include "VulkanPipelineLayout.h"
 
 namespace v3d
 {
@@ -14,23 +15,62 @@ namespace renderer
 {
 namespace vk
 {
+    class VulkanImage;
+    class VulkanBuffer;
+    class VulkanSampler;
+    class VulkanUniformBuffer;
+
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    constexpr u32 k_maxDescriptorSetIndex = 4;
-    constexpr u32 k_maxDescriptorBindingIndex = 8;
+    enum BindingType : u32
+    {
+        BindingType_Unknown = 0,
+        BindingType_Uniform,
+        BindingType_DynamicUniform,
+        BindingType_Sampler,
+        BindingType_Texture,
+        BindingType_SamplerAndTexture,
+    };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
-    * VulkanPipelineLayout struct. Vulkan Render side
+    * BindingInfo struct. Vulkan Render side
     */
-    struct VulkanPipelineLayout
+    struct BindingInfo
     {
-        VulkanPipelineLayout();
+        BindingInfo() noexcept;
+        bool operator==(const BindingInfo& info) const;
 
-        u64                                 _key;
-        VkPipelineLayout                    _layout;
-        std::vector<VkDescriptorSetLayout>  _descriptorSetLayouts;
+        union DescriptorInfo
+        {
+            VkDescriptorImageInfo   _imageInfo;
+            VkDescriptorBufferInfo  _bufferInfo;
+        };
+
+        DescriptorInfo  _info;            //32
+        BindingType     _type       : 16; //16
+        u32             _binding    : 16; //16
+        u32             _arrayIndex : 16; //16
+
+        u32             _padding    : 16;  //16
+    };
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    /**
+    * SetKey struct. Vulkan Render side
+    */
+    struct SetKey
+    {
+        SetKey(u64 hash, u32 set)
+            : _hash(hash)
+            , _set(set)
+        {
+        }
+
+        u64 _hash;
+        u32 _set;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -38,26 +78,32 @@ namespace vk
     /**
     * VulkanDescriptorPool class. Vulkan Render side
     */
-    class VulkanDescriptorPool : public VulkanResource
+    class VulkanDescriptorSetPool : public VulkanResource
     {
     public:
-        VulkanDescriptorPool(VkDevice device, VkDescriptorPoolCreateFlags flag) noexcept;
+        VulkanDescriptorSetPool(VkDevice device, VkDescriptorPoolCreateFlags flag) noexcept;
 
         bool create(u32 setsCount, const std::vector<VkDescriptorPoolSize>& sizes);
         void destroy();
 
         bool reset(VkDescriptorPoolResetFlags flag);
 
-        bool allocateDescriptorSet(const VulkanPipelineLayout& layout, std::vector<VkDescriptorSet>& descriptorSets);
-        bool freeDescriptorSet(std::vector<VkDescriptorSet>& descriptorSets);
+        VkDescriptorSet createDescriptorSet(u64 hash, VkDescriptorSetLayout layout);
+        VkDescriptorSet getDescriptorSet(u64 hash);
 
     private:
 
         bool createDescriptorPool(u32 setsCount, const std::vector<VkDescriptorPoolSize>& sizes);
 
+        bool allocateDescriptorSets(std::vector<VkDescriptorSetLayout>& layout, std::vector<VkDescriptorSet>& descriptorSets);
+        bool freeDescriptorSets(std::vector<VkDescriptorSet>& descriptorSets);
+
+        bool allocateDescriptorSet(VkDescriptorSetLayout layout, VkDescriptorSet& descriptorSet);
+        bool freeDescriptorSet(VkDescriptorSet& descriptorSet);
+
         VkDevice m_device;
         VkDescriptorPoolCreateFlags m_flag;
-        std::vector<VkDescriptorSet> m_descriptorSets;
+        std::unordered_map<u64, VkDescriptorSet> m_descriptorSets;
 
         VkDescriptorPool m_pool;
     };
@@ -71,50 +117,30 @@ namespace vk
     {
     public:
 
-        struct DescriptorSetDescription
-        {
-            DescriptorSetDescription(const std::array<const Shader*, ShaderType::ShaderType_Count>& shaders) noexcept;
-            DescriptorSetDescription() = delete;
-            DescriptorSetDescription(const DescriptorSetDescription&) = delete;
-
-            u64 _hash;
-            std::array<std::vector<VkDescriptorSetLayoutBinding>, k_maxDescriptorSetIndex> _descriptorSets;
-            std::vector<VkPushConstantRange> _pushConstant;
-        };
-
-        static VkShaderStageFlagBits convertShaderTypeToVkStage(ShaderType type);
-
-        VulkanDescriptorSetManager(VkDevice device) noexcept;
+        explicit VulkanDescriptorSetManager(VkDevice device) noexcept;
         ~VulkanDescriptorSetManager();
+
         VulkanDescriptorSetManager() = delete;
         VulkanDescriptorSetManager(const VulkanDescriptorSetManager&) = delete;
 
-        VulkanPipelineLayout acquirePipelineLayout(const DescriptorSetDescription& desc);
-        bool removePipelineLayout(const DescriptorSetDescription& desc);
-        bool removePipelineLayout(VulkanPipelineLayout& layout);
+        //DescriptorSets
+        VkDescriptorSet acquireDescriptorSet(const VulkanPipelineLayout& layout, const SetKey& key, VulkanDescriptorSetPool*& pool);
 
-        VulkanDescriptorPool* acquireDescriptorSets(const VulkanPipelineLayout& layout, std::vector<VkDescriptorSet>& sets, std::vector<u32>& offsets);
         void updateDescriptorPools();
-
         void clear();
 
     private:
 
-        VkPipelineLayout createPipelineLayout(const DescriptorSetDescription& desc, std::vector<VkDescriptorSetLayout>& descriptorSetLayouts);
-        void destroyPipelineLayout(VkPipelineLayout layout, std::vector<VkDescriptorSetLayout>& descriptorSetLayouts);
-
-        bool createDescriptorSetLayouts(const DescriptorSetDescription& desc, std::vector<VkDescriptorSetLayout>& descriptorSetLayouts);
-        void destroyDescriptorSetLayouts(std::vector<VkDescriptorSetLayout>& descriptorSetLayouts);
-
-        VulkanDescriptorPool* createPool(const VulkanPipelineLayout& layout, VkDescriptorPoolCreateFlags flag);
+        VulkanDescriptorSetPool* acquireFreePool(const VulkanPipelineLayout& layout, VkDescriptorPoolCreateFlags flag);
+        VulkanDescriptorSetPool* createPool(const VulkanPipelineLayout& layout, VkDescriptorPoolCreateFlags flag);
         void destroyPools();
+
 
         VkDevice m_device;
 
-        std::map<u64, VulkanPipelineLayout> m_pipelinesLayouts;
-        std::deque<VulkanDescriptorPool*> m_freeDescriptorPools;
-        std::deque<VulkanDescriptorPool*> m_usedDescriptorPools;
-        VulkanDescriptorPool*             m_currentDescriptorPool;
+        std::deque<VulkanDescriptorSetPool*> m_freeDescriptorPools;
+        std::deque<VulkanDescriptorSetPool*> m_usedDescriptorPools;
+        VulkanDescriptorSetPool* m_currentDescriptorPool;
 
         static std::vector<VkDescriptorPoolSize> s_poolSizes;
         static u32 s_maxSets;

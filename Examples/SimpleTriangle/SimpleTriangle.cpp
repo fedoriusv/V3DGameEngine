@@ -66,7 +66,7 @@ void SimpleTriangle::init(v3d::renderer::CommandList* commandList, const core::D
             Out.Col = float4(Input.Color, 1.0);\n\
             return Out;\n\
         }");
-        stream::Stream* vertexStream = stream::StreamManager::createMemoryStream(vertexSource);
+        const stream::Stream* vertexStream = stream::StreamManager::createMemoryStream(vertexSource);
 
         renderer::ShaderHeader vertexHeader(renderer::ShaderType::ShaderType_Vertex);
         vertexHeader._contentType = renderer::ShaderHeader::ShaderResource::ShaderResource_Source;
@@ -89,7 +89,7 @@ void SimpleTriangle::init(v3d::renderer::CommandList* commandList, const core::D
         {\n\
             return Input.Col;\n\
         }");
-        stream::Stream* fragmentStream = stream::StreamManager::createMemoryStream(fragmentSource);
+        const stream::Stream* fragmentStream = stream::StreamManager::createMemoryStream(fragmentSource);
 
         renderer::ShaderHeader fragmentHeader(renderer::ShaderType::ShaderType_Fragment);
         fragmentHeader._contentType = renderer::ShaderHeader::ShaderResource::ShaderResource_Source;

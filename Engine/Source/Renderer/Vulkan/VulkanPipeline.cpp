@@ -366,7 +366,7 @@ const VulkanPipelineLayout& VulkanGraphicPipeline::getDescriptorSetLayouts() con
     return m_pipelineLayout;
 }
 
-VulkanGraphicPipeline::VulkanGraphicPipeline(VkDevice device, RenderPassManager* renderpassManager, VulkanDescriptorSetManager* descriptorSetManager)
+VulkanGraphicPipeline::VulkanGraphicPipeline(VkDevice device, RenderPassManager* renderpassManager, VulkanPipelineLayoutManager* pipelineLayoutManager)
     : Pipeline(PipelineType::PipelineType_Graphic)
     , m_device(device)
     , m_pipeline(VK_NULL_HANDLE)
@@ -375,7 +375,7 @@ VulkanGraphicPipeline::VulkanGraphicPipeline(VkDevice device, RenderPassManager*
     , m_trackerRenderPass(nullptr, [](const std::vector<renderer::RenderPass*>&) {})
 
     , m_renderpassManager(renderpassManager)
-    , m_descriptorSetManager(descriptorSetManager)
+    , m_pipelineLayoutManager(pipelineLayoutManager)
 {
     LOG_DEBUG("VulkanGraphicPipeline::VulkanGraphicPipeline constructor %llx", this);
 }
@@ -420,8 +420,8 @@ bool VulkanGraphicPipeline::create(const PipelineGraphicInfo* pipelineInfo)
     graphicsPipelineCreateInfo.stageCount = static_cast<u32>(pipelineShaderStageCreateInfos.size());
     graphicsPipelineCreateInfo.pStages = pipelineShaderStageCreateInfos.data();
 
-    VulkanDescriptorSetManager::DescriptorSetDescription layoutDesc(programDesc._shaders);
-    m_pipelineLayout = m_descriptorSetManager->acquirePipelineLayout(layoutDesc);
+    VulkanPipelineLayoutManager::DescriptorSetDescription layoutDesc(programDesc._shaders);
+    m_pipelineLayout = m_pipelineLayoutManager->acquirePipelineLayout(layoutDesc);
     graphicsPipelineCreateInfo.layout = m_pipelineLayout._layout;
 
 

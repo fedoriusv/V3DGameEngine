@@ -265,8 +265,8 @@ void VulkanDeviceCaps::fillCapabilitiesList(const DeviceInfo* info)
 
 void VulkanDeviceCaps::initialize()
 {
-    maxDescriptorSetIndex = k_maxDescriptorSetIndex;
-    maxDescriptorBindingIndex = k_maxDescriptorBindingIndex;
+    maxDescriptorSetIndex = std::min(k_maxDescriptorSetIndex, m_deviceProperties.limits.maxBoundDescriptorSets);
+    maxDescriptorBindingIndex = k_maxDescriptorBindingIndex; // std::min(k_maxDescriptorBindingIndex, m_deviceProperties.limits.maxPerSetDescriptors);
 
     individuallyResetForCommandBuffers = true; //For PC
 
@@ -276,7 +276,7 @@ void VulkanDeviceCaps::initialize()
     supportDeviceCacheMemory = VulkanMemory::isSupportedMemoryType(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_CACHED_BIT, true);
     supportHostCacheMemory = VulkanMemory::isSupportedMemoryType(VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_CACHED_BIT, false);
 
-    useDynamicUniforms = false;
+    useDynamicUniforms = true;//false;
 
     unifiedMemoryManager = false;
 

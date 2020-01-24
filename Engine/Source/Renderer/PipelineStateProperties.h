@@ -134,7 +134,7 @@ namespace renderer
     {
         struct RasterizationState
         {
-            RasterizationState() 
+            RasterizationState() noexcept
                 : _polygonMode(PolygonMode::PolygonMode_Triangle)
                 , _frontFace(FrontFace::FrontFace_Clockwise)
                 , _cullMode(CullMode::CullMode_Back)
@@ -148,7 +148,7 @@ namespace renderer
 
         struct ColorBlendAttachmentState
         {
-            ColorBlendAttachmentState()
+            ColorBlendAttachmentState() noexcept
                 : _blendOp(BlendOperation::BlendOp_Add)
                 , _srcBlendFacor(BlendFactor::BlendFactor_SrcColor)
                 , _dscBlendFacor(BlendFactor::BlendFactor_DstColor)
@@ -160,7 +160,6 @@ namespace renderer
                 , _colorWriteMask(ColorMask::ColorMask_All)
                 , _colorBlendEnable(false)
 
-                , _padding(0)
             {
             }
 
@@ -175,12 +174,12 @@ namespace renderer
             ColorMaskFlags  _colorWriteMask;
             bool            _colorBlendEnable;
 
-            u8              _padding;
+            u8              _padding = {};
         };
 
         struct DepthStencilState
         {
-            DepthStencilState()
+            DepthStencilState() noexcept
                 : _compareOp(CompareOperation::CompareOp_Greater)
                 , _depthTestEnable(false)
                 , _depthWriteEnable(false)
@@ -202,7 +201,7 @@ namespace renderer
 
         struct BlendState
         {
-            BlendState()
+            BlendState() noexcept
                 : _constant(core::Vector4D(0.0f))
                 , _logicalOp(LogicalOperation::LogicalOp_And)
                 , _logicalOpEnable(false)
@@ -216,32 +215,28 @@ namespace renderer
             LogicalOperation    _logicalOp;
             bool                _logicalOpEnable;
 
-            u8                  _padding[3];
+            u8                  _padding[3] = {};
         };
 
         struct VertexInputState
         {
-            VertexInputState()
+            VertexInputState() noexcept
                 : _primitiveTopology(PrimitiveTopology::PrimitiveTopology_TriangleList)
             {
             }
 
             VertexInputAttribDescription _inputAttributes;
-            PrimitiveTopology           _primitiveTopology;
+            PrimitiveTopology            _primitiveTopology;
         };
 
-        GraphicsPipelineStateDescription()
-        {
-        }
+        GraphicsPipelineStateDescription() noexcept = default;
+        GraphicsPipelineStateDescription(const GraphicsPipelineStateDescription&) = default;
+        GraphicsPipelineStateDescription& operator=(const GraphicsPipelineStateDescription&) = default;
 
         VertexInputState    _vertexInputState;
         RasterizationState  _rasterizationState;
         BlendState          _blendState;
         DepthStencilState   _depthStencilState;
-
-
-
-
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

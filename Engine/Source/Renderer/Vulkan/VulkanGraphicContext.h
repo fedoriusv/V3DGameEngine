@@ -23,6 +23,7 @@ namespace vk
 
     class VulkanContextState;
 
+    class VulkanPipelineLayoutManager;
     class VulkanDescriptorSetManager;
     class VulkanStagingBufferManager;
     class VulkanUniformBufferManager;
@@ -122,6 +123,7 @@ namespace vk
         class VulkanSwapchain*      m_swapchain;
 
         VulkanCommandBufferManager* m_cmdBufferManager;
+        VulkanPipelineLayoutManager* m_pipelineLayoutManager;
         VulkanDescriptorSetManager* m_descriptorSetManager;
         VulkanStagingBufferManager* m_stagingBufferManager;
         VulkanUniformBufferManager* m_uniformBufferManager;

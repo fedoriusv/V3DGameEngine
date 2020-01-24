@@ -21,6 +21,8 @@ namespace renderer
     constexpr u32 k_maxVertexInputAttributes = 8;
     constexpr u32 k_maxVertexInputBindings = 4;
 
+    ///////////////////////////////////////////////////////////////////////////////////////////////////////
+
     /**
     * StreamBufferUsage enum. usageFlag inside StreamBuffer
     */
@@ -108,6 +110,7 @@ namespace renderer
     struct StreamBufferDescription
     {
         StreamBufferDescription() noexcept = default;
+
         explicit StreamBufferDescription(const StreamBufferDescription& desc) noexcept;
         explicit StreamBufferDescription(StreamBufferDescription&& desc) noexcept;
         StreamBufferDescription& operator=(const StreamBufferDescription& desc) noexcept;
@@ -127,9 +130,9 @@ namespace renderer
         std::vector<u32>     _streamsID;
         std::vector<u64>     _offsets;
 
-        Buffer*               _indices;
-        u32                   _indicesOffet;
-        StreamIndexBufferType _indexType;
+        Buffer*               _indices = nullptr;
+        u32                   _indicesOffet = 0;
+        StreamIndexBufferType _indexType = IndexType_16;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

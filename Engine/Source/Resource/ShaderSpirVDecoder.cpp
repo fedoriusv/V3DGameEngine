@@ -43,7 +43,6 @@ Resource * ShaderSpirVDecoder::decode(const stream::Stream* stream, const std::s
         {
             std::string source;
             source.resize(stream->size());
-
             stream->read(source.data(), stream->size());
 #if DEBUG
             utils::Timer timer;
