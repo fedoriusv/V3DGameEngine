@@ -67,6 +67,8 @@ VulkanUniformBufferManager::VulkanUniformBufferManager(VkDevice device, VulkanRe
 
     , m_memoryManager(new SimpleVulkanMemoryAllocator(device))
     , m_resourceDeleter(resourceDeleter)
+    , k_bufferPoolSize(VulkanDeviceCaps::getInstance()->useDynamicUniforms ? 
+        VulkanDeviceCaps::getInstance()->getPhysicalDeviceLimits().maxUniformBufferRange : 1 * 1024 * 1024)
 {
 }
 

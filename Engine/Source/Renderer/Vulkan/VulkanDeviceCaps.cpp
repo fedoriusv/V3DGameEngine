@@ -1,4 +1,4 @@
-#include "VulkanDeviceCaps.h"
+﻿#include "VulkanDeviceCaps.h"
 #include "Utils/Logger.h"
 
 #ifdef VULKAN_RENDER
@@ -171,46 +171,69 @@ void VulkanDeviceCaps::fillCapabilitiesList(const DeviceInfo* info)
 #endif
     supportPipelineExecutableProperties = isEnableExtension(VK_KHR_PIPELINE_EXECUTABLE_PROPERTIES_EXTENSION_NAME);
 
-    LOG_INFO("VulkanDeviceCaps::initialize:  supportRenderpass2 is %s", supportRenderpass2 ? "supported" : "unsupported");
-    LOG_INFO("VulkanDeviceCaps::initialize:  enableSamplerMirrorClampToEdge is %s", enableSamplerMirrorClampToEdge ? "supported" : "unsupported");
-    LOG_INFO("VulkanDeviceCaps::initialize:  supportDepthAutoResolve is %s", supportDepthAutoResolve ? "supported" : "unsupported");
-    LOG_INFO("VulkanDeviceCaps::initialize:  supportDedicatedAllocation is %s", supportDedicatedAllocation ? "supported" : "unsupported");
-
-    if (isEnableExtension(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME))
+    if (VulkanDeviceCaps::checkInstanceExtension(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME))
     {
+        {
+            void* vkExtensions = nullptr;
+
+            if (isEnableExtension(VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME))
+            {
+                m_physicalDeviceDescriptorIndexingFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES_EXT;
+                m_physicalDeviceDescriptorIndexingFeatures.pNext = nullptr;
+                vkExtensions = &m_physicalDeviceDescriptorIndexingFeatures;
+
+                supportDescriptorIndexing = true;
+            }
+
+            VkPhysicalDeviceFeatures2 physicalDeviceFeatures2 = {};
+            physicalDeviceFeatures2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+            physicalDeviceFeatures2.pNext = vkExtensions;
+
+            VulkanWrapper::GetPhysicalDeviceFeatures2(info->_physicalDevice, &physicalDeviceFeatures2);
+            memcpy(&m_deviceFeatures, &physicalDeviceFeatures2.features, sizeof(VkPhysicalDeviceFeatures));
+
+
+            supportDescriptorIndexing = m_physicalDeviceDescriptorIndexingFeatures.descriptorBindingUpdateUnusedWhilePending;
+        }
+
+        {
+            void* vkExtensions = nullptr;
+
+            VkPhysicalDeviceDescriptorIndexingPropertiesEXT physicalDeviceDescriptorIndexingProperties = {};
+            if (isEnableExtension(VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME))
+            {
+                physicalDeviceDescriptorIndexingProperties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_PROPERTIES_EXT;
+                physicalDeviceDescriptorIndexingProperties.pNext = nullptr;
+                vkExtensions = &physicalDeviceDescriptorIndexingProperties;
+            }
+
 #ifdef VK_KHR_depth_stencil_resolve
-    VkPhysicalDeviceDepthStencilResolvePropertiesKHR physicalDeviceDepthStencilResolveProperties = {};
-    physicalDeviceDepthStencilResolveProperties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEPTH_STENCIL_RESOLVE_PROPERTIES_KHR;
-    physicalDeviceDepthStencilResolveProperties.pNext = nullptr;
+            VkPhysicalDeviceDepthStencilResolvePropertiesKHR physicalDeviceDepthStencilResolveProperties = {};
+            if (isEnableExtension(VK_KHR_DEPTH_STENCIL_RESOLVE_EXTENSION_NAME))
+            {
+                physicalDeviceDepthStencilResolveProperties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEPTH_STENCIL_RESOLVE_PROPERTIES_KHR;
+                physicalDeviceDepthStencilResolveProperties.pNext = vkExtensions;
+                vkExtensions = &physicalDeviceDepthStencilResolveProperties;
+            }
 #endif // VK_KHR_depth_stencil_resolve
 
-        VkPhysicalDeviceProperties2 physicalDeviceProperties = {};
-        physicalDeviceProperties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
-#ifdef VK_KHR_depth_stencil_resolve
-        physicalDeviceProperties.pNext = &physicalDeviceDepthStencilResolveProperties;
-#else
-        physicalDeviceProperties.pNext = nullptr;
-#endif // VK_KHR_depth_stencil_resolve
+            VkPhysicalDeviceProperties2 physicalDeviceProperties = {};
+            physicalDeviceProperties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
+            physicalDeviceProperties.pNext = vkExtensions;
 
-        VulkanWrapper::GetPhysicalDeviceProperties2(info->_physicalDevice, &physicalDeviceProperties);
-        memcpy(&m_deviceProperties, &physicalDeviceProperties.properties, sizeof(VkPhysicalDeviceProperties));
+            VulkanWrapper::GetPhysicalDeviceProperties2(info->_physicalDevice, &physicalDeviceProperties);
+            memcpy(&m_deviceProperties, &physicalDeviceProperties.properties, sizeof(VkPhysicalDeviceProperties));
+
+
+#ifdef VK_KHR_depth_stencil_resolve
+            supportDepthAutoResolve = physicalDeviceDepthStencilResolveProperties.supportedDepthResolveModes != VK_RESOLVE_MODE_NONE_KHR;
+#endif // VK_KHR_depth_stencil_resolve
+        }
     }
     else
     {
         VulkanWrapper::GetPhysicalDeviceProperties(info->_physicalDevice, &m_deviceProperties);
-    }
-    VulkanWrapper::GetPhysicalDeviceFeatures(info->_physicalDevice, &m_deviceFeatures);
-    VulkanWrapper::GetPhysicalDeviceMemoryProperties(info->_physicalDevice, &m_deviceMemoryProps);
-
-    LOG_INFO("VulkanDeviceCaps::initialize:  memoryHeapCount is %d", m_deviceMemoryProps.memoryHeapCount);
-    for (u32 i = 0; i < m_deviceMemoryProps.memoryHeapCount; ++i)
-    {
-        LOG_INFO("VulkanDeviceCaps::initialize:    memoryHeap [flags %d, size %llu]", m_deviceMemoryProps.memoryHeaps[i].flags, m_deviceMemoryProps.memoryHeaps[i].size);
-    }
-    LOG_INFO("VulkanDeviceCaps::initialize:  memoryTypeCount is %d", m_deviceMemoryProps.memoryTypeCount);
-    for (u32 i = 0; i < m_deviceMemoryProps.memoryTypeCount; ++i)
-    {
-        LOG_INFO("VulkanDeviceCaps::initialize:    memoryType [heapIndex %u, propertyFlags %d]", m_deviceMemoryProps.memoryTypes[i].heapIndex, m_deviceMemoryProps.memoryTypes[i].propertyFlags);
+        VulkanWrapper::GetPhysicalDeviceFeatures(info->_physicalDevice, &m_deviceFeatures);
     }
 
     u32 queueFamilyCount = 0;
@@ -253,14 +276,30 @@ void VulkanDeviceCaps::fillCapabilitiesList(const DeviceInfo* info)
         }
     }
 
-
     //check !!!!
     immediateResourceSubmit = 2;
 
     //VK_EXT_memory_budget
     //VK_EXT_memory_priority
 
-    //TODO:
+    LOG_INFO("VulkanDeviceCaps::initialize:  supportRenderpass2 is %s", supportRenderpass2 ? "supported" : "unsupported");
+    LOG_INFO("VulkanDeviceCaps::initialize:  enableSamplerMirrorClampToEdge is %s", enableSamplerMirrorClampToEdge ? "supported" : "unsupported");
+    LOG_INFO("VulkanDeviceCaps::initialize:  supportDepthAutoResolve is %s", supportDepthAutoResolve ? "supported" : "unsupported");
+    LOG_INFO("VulkanDeviceCaps::initialize:  supportDedicatedAllocation is %s", supportDedicatedAllocation ? "supported" : "unsupported");
+
+    LOG_INFO("VulkanDeviceCaps::initialize:  useDynamicUniforms is %s", useDynamicUniforms ? "enable" : "disable");
+
+    VulkanWrapper::GetPhysicalDeviceMemoryProperties(info->_physicalDevice, &m_deviceMemoryProps);
+    LOG_INFO("VulkanDeviceCaps::initialize:  memoryHeapCount is %d", m_deviceMemoryProps.memoryHeapCount);
+    for (u32 i = 0; i < m_deviceMemoryProps.memoryHeapCount; ++i)
+    {
+        LOG_INFO("VulkanDeviceCaps::initialize:    memoryHeap [flags %d, size %llu]", m_deviceMemoryProps.memoryHeaps[i].flags, m_deviceMemoryProps.memoryHeaps[i].size);
+    }
+    LOG_INFO("VulkanDeviceCaps::initialize:  memoryTypeCount is %d", m_deviceMemoryProps.memoryTypeCount);
+    for (u32 i = 0; i < m_deviceMemoryProps.memoryTypeCount; ++i)
+    {
+        LOG_INFO("VulkanDeviceCaps::initialize:    memoryType [heapIndex %u, propertyFlags %d]", m_deviceMemoryProps.memoryTypes[i].heapIndex, m_deviceMemoryProps.memoryTypes[i].propertyFlags);
+    }
 }
 
 void VulkanDeviceCaps::initialize()
@@ -276,8 +315,6 @@ void VulkanDeviceCaps::initialize()
     supportDeviceCacheMemory = VulkanMemory::isSupportedMemoryType(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_CACHED_BIT, true);
     supportHostCacheMemory = VulkanMemory::isSupportedMemoryType(VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_CACHED_BIT, false);
 
-    useDynamicUniforms = true;//false;
-
     unifiedMemoryManager = false;
 
     ASSERT(k_maxFramebufferAttachments <= m_deviceProperties.limits.maxFragmentOutputAttachments, "maxFragmentOutputAttachments less than k_maxFramebufferAttachments");
@@ -285,6 +322,7 @@ void VulkanDeviceCaps::initialize()
     ASSERT(k_maxVertexInputBindings <= m_deviceProperties.limits.maxVertexInputBindings, "maxVertexInputBindings less than k_maxVertexInputBindings");
 
     useGlobalDescriptorPool = true;
+    useDynamicUniforms = supportDescriptorIndexing && true;
 }
 
 } //namespace vk

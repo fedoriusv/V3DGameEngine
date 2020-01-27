@@ -276,34 +276,51 @@ VulkanDescriptorSetManager::~VulkanDescriptorSetManager()
 
 void VulkanDescriptorSetManager::updateDescriptorPools()
 {
-    if (!VulkanDeviceCaps::getInstance()->useDynamicUniforms)
+    for (auto iter = m_usedDescriptorPools.begin(); iter != m_usedDescriptorPools.end();)
     {
-        for (auto iter = m_usedDescriptorPools.begin(); iter != m_usedDescriptorPools.end();)
+        VulkanDescriptorSetPool* pool = (*iter);
+        if (!pool->isCaptured())
         {
-            VulkanDescriptorSetPool* pool = (*iter);
-            if (!pool->isCaptured())
-            {
-                m_freeDescriptorPools.push_back(pool);
-                iter = m_usedDescriptorPools.erase(iter);
+            m_freeDescriptorPools.push_back(pool);
+            iter = m_usedDescriptorPools.erase(iter);
 
-                pool->reset(0);
-            }
-            else
-            {
-                ++iter;
-            }
+            pool->reset(0);
+        }
+        else
+        {
+            ++iter;
         }
     }
 }
 
 void VulkanDescriptorSetManager::clear()
 {
-    //TODO
+    ASSERT(m_usedDescriptorPools.empty(), "strill used");
+    for (auto& pool : m_freeDescriptorPools)
+    {
+        ASSERT(!pool->isCaptured(), "still used");
+        pool->destroy();
+        delete pool;
+    }
+    m_freeDescriptorPools.clear();
+
+    if (m_currentDescriptorPool)
+    {
+        ASSERT(!m_currentDescriptorPool->isCaptured(), "still used");
+        m_currentDescriptorPool->destroy();
+
+        delete m_currentDescriptorPool;
+        m_currentDescriptorPool = nullptr;
+    }
 }
 
 VkDescriptorSet VulkanDescriptorSetManager::acquireDescriptorSet(const VulkanPipelineLayout& layout, const SetKey& key, VulkanDescriptorSetPool*& pool)
 {
     VkDescriptorPoolCreateFlags flag = 0;
+    /*if (VulkanDeviceCaps::getInstance()->useDynamicUniforms)
+    {
+        flag |= VK_DESCRIPTOR_POOL_CREATE_UPDATE_AFTER_BIND_BIT_EXT;
+    }*/
 
     //finds in pools
     if (m_currentDescriptorPool)
@@ -317,6 +334,7 @@ VkDescriptorSet VulkanDescriptorSetManager::acquireDescriptorSet(const VulkanPip
     }
     else
     {
+        ASSERT(m_usedDescriptorPools.empty(), "not empty");
         m_currentDescriptorPool = VulkanDescriptorSetManager::acquireFreePool(layout, flag);
     }
 
@@ -342,11 +360,8 @@ VkDescriptorSet VulkanDescriptorSetManager::acquireDescriptorSet(const VulkanPip
         m_currentDescriptorPool = VulkanDescriptorSetManager::acquireFreePool(layout, flag);
         ASSERT(m_currentDescriptorPool, "nullptr");
 
-        if (!m_currentDescriptorPool->createDescriptorSet(key._hash, vkDescriptorSetLayout))
-        {
-            ASSERT(false, "fail");
-            return VK_NULL_HANDLE;
-        }
+        vkDescriptorSet = m_currentDescriptorPool->createDescriptorSet(key._hash, vkDescriptorSetLayout);
+        ASSERT(vkDescriptorSet != VK_NULL_HANDLE, "fail");
     }
 
     pool = m_currentDescriptorPool;

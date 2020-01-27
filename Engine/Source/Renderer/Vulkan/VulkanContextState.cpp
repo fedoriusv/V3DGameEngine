@@ -36,7 +36,7 @@ VulkanContextState::VulkanContextState(VkDevice device, VulkanDescriptorSetManag
     m_renderPassArea = {{ 0, 0 }, { 0, 0 }};
     m_renderPassClearValues.resize(1, {{{0.0f, 0.0f, 0.0f, 0.0f}}});
 
-    memset(&m_currentBindingSlots, 0, sizeof(m_currentBindingSlots));
+    VulkanContextState::invalidateDescriptorSetsState();
     m_currentDesctiptorsSets.fill(VK_NULL_HANDLE);
 }
 
@@ -212,6 +212,7 @@ bool VulkanContextState::prepareDescriptorSets(VulkanCommandBuffer* cmdBuffer, s
             VkDescriptorSet set = m_descriptorSetManager->acquireDescriptorSet(m_currentPipeline.first->getDescriptorSetLayouts(), SetKey(bindSet._hash, setId), pool);
             if (set == VK_NULL_HANDLE)
             {
+                ASSERT(false, "fail to allocate descriptor set");
                 return false;
             }
 
@@ -223,6 +224,7 @@ bool VulkanContextState::prepareDescriptorSets(VulkanCommandBuffer* cmdBuffer, s
                 m_currentDesctiptorsSets[setId] = set;
                 VulkanContextState::updateDescriptorSet(cmdBuffer, set, bindSet);
 
+                bindSet.extractBufferOffsets(offsets);
                 sets.push_back(set);
             }
 
@@ -263,13 +265,17 @@ void VulkanContextState::updateDescriptorSet(VulkanCommandBuffer* cmdBuffer, VkD
         switch (bindingInfo._type)
         {
         case BindingType::BindingType_Uniform:
-            writeDescriptorSet.pBufferInfo = &bindingInfo._info._bufferInfo;
+            ASSERT(bindingInfo._info._bufferInfo.range <= VulkanDeviceCaps::getInstance()->getPhysicalDeviceLimits().maxUniformBufferRange, "out of max range");
+            //writeDescriptorSet.pBufferInfo = &bindingInfo._info._bufferInfo;
+            writeDescriptorSet.pBufferInfo = new  VkDescriptorBufferInfo(bindingInfo._info._bufferInfo);
             writeDescriptorSet.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 
             break;
 
         case BindingType::BindingType_DynamicUniform:
-            writeDescriptorSet.pBufferInfo = &bindingInfo._info._bufferInfo;
+            ASSERT(bindingInfo._info._bufferInfo.range <= VulkanDeviceCaps::getInstance()->getPhysicalDeviceLimits().maxUniformBufferRange, "out of max range");
+            //writeDescriptorSet.pBufferInfo = &bindingInfo._info._bufferInfo;
+            writeDescriptorSet.pBufferInfo = new  VkDescriptorBufferInfo(bindingInfo._info._bufferInfo);
             writeDescriptorSet.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
 
             break;
@@ -277,7 +283,8 @@ void VulkanContextState::updateDescriptorSet(VulkanCommandBuffer* cmdBuffer, VkD
         case BindingType::BindingType_Sampler:
             ASSERT(bindingInfo._info._imageInfo.imageView == VK_NULL_HANDLE, "image present");
             ASSERT(bindingInfo._info._imageInfo.sampler != VK_NULL_HANDLE, "sampler");
-            writeDescriptorSet.pImageInfo = &bindingInfo._info._imageInfo;
+            //writeDescriptorSet.pImageInfo = &bindingInfo._info._imageInfo;
+            writeDescriptorSet.pImageInfo = new VkDescriptorImageInfo(bindingInfo._info._imageInfo);
             writeDescriptorSet.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLER;
 
             break;
@@ -285,7 +292,8 @@ void VulkanContextState::updateDescriptorSet(VulkanCommandBuffer* cmdBuffer, VkD
         case BindingType::BindingType_Texture:
             ASSERT(bindingInfo._info._imageInfo.sampler == VK_NULL_HANDLE, "sampler present");
             ASSERT(bindingInfo._info._imageInfo.imageView != VK_NULL_HANDLE, "image");
-            writeDescriptorSet.pImageInfo = &bindingInfo._info._imageInfo;
+            //writeDescriptorSet.pImageInfo = &bindingInfo._info._imageInfo;
+            writeDescriptorSet.pImageInfo = new VkDescriptorImageInfo(bindingInfo._info._imageInfo);
             writeDescriptorSet.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
 
             break;
@@ -293,7 +301,8 @@ void VulkanContextState::updateDescriptorSet(VulkanCommandBuffer* cmdBuffer, VkD
         case BindingType::BindingType_SamplerAndTexture:
             ASSERT(bindingInfo._info._imageInfo.imageView != VK_NULL_HANDLE, "image");
             //ASSERT(binding._imageBinding._imageInfo.sampler != VK_NULL_HANDLE, "sampler");
-            writeDescriptorSet.pImageInfo = &bindingInfo._info._imageInfo;
+            writeDescriptorSet.pImageInfo = new VkDescriptorImageInfo(bindingInfo._info._imageInfo);
+            //writeDescriptorSet.pImageInfo = &bindingInfo._info._imageInfo;
             writeDescriptorSet.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 
             break;
@@ -303,12 +312,13 @@ void VulkanContextState::updateDescriptorSet(VulkanCommandBuffer* cmdBuffer, VkD
         }
 
         writeDescriptorSets.push_back(writeDescriptorSet);
+        test_writeDescriptorSets.push_back(writeDescriptorSet);
     }
 
-    if (!writeDescriptorSets.empty())
+    /*if (!writeDescriptorSets.empty())
     {
         VulkanWrapper::UpdateDescriptorSets(m_device, static_cast<u32>(writeDescriptorSets.size()), writeDescriptorSets.data(), 0, nullptr);
-    }
+    }*/
 }
 
 void VulkanContextState::bindTexture(const VulkanImage* image, const VulkanSampler* sampler, u32 arrayIndex, const Shader::SampledImage& info)
@@ -337,7 +347,10 @@ void VulkanContextState::updateConstantBuffer(const Shader::UniformBuffer& info,
 
 void VulkanContextState::invalidateDescriptorSetsState()
 {
-    memset(&m_currentBindingSlots, 0, sizeof(m_currentBindingSlots));
+    for (auto& slot : m_currentBindingSlots)
+    {
+        slot.reset();
+    }
 }
 
 void VulkanContextState::updateDescriptorStates()
@@ -345,7 +358,20 @@ void VulkanContextState::updateDescriptorStates()
     VulkanContextState::invalidateDescriptorSetsState();
     m_currentDesctiptorsSets.fill(VK_NULL_HANDLE);
 
-    m_descriptorSetManager->updateDescriptorPools();
+    if (!VulkanDeviceCaps::getInstance()->useDynamicUniforms)
+    {
+        m_descriptorSetManager->updateDescriptorPools();
+    }
+
+    test_writeDescriptorSets.clear();
+}
+
+void VulkanContextState::testUpdateDesc()
+{
+    if (!test_writeDescriptorSets.empty())
+    {
+        VulkanWrapper::UpdateDescriptorSets(m_device, static_cast<u32>(test_writeDescriptorSets.size()), test_writeDescriptorSets.data(), 0, nullptr);
+    }
 }
 
 VkDescriptorBufferInfo VulkanContextState::makeVkDescriptorBufferInfo(const VulkanBuffer* buffer, u64 offset, u64 range)
@@ -389,7 +415,7 @@ void VulkanContextState::BindingSate::updateState(VulkanCommandBuffer* cmdBuffer
             continue;
         }
 
-        hash = crc32c::Extend(hash, reinterpret_cast<u8*>(&_set[bind]), sizeof(BindingInfo));
+        hash = crc32c::Extend(hash, reinterpret_cast<u8*>(&std::get<0>(_set[bind])), sizeof(BindingInfo));
     }
     _hash = hash;
 
@@ -404,7 +430,16 @@ void VulkanContextState::BindingSate::reset()
     _dirtyFlag = 0;
     _activeBindingsFlags = 0;
 
+    _hash = 0;
+    memset(&_set, 0, sizeof(_set));
+
     _usedResources.clear();
+    _offsets.clear();
+}
+
+void VulkanContextState::BindingSate::extractBufferOffsets(std::vector<u32>& offsets)
+{
+    offsets = std::move(_offsets);
 }
 
 bool VulkanContextState::BindingSate::isActiveBinding(u32 binding) const
@@ -431,8 +466,8 @@ void VulkanContextState::BindingSate::bind(BindingType type, u32 binding, u32 la
     _activeBindingsFlags |= 1 << binding;
     _dirtyFlag = true;
 
-    _usedResources.push_back(image);
-    _usedResources.push_back(sampler);
+    _usedResources.insert(image);
+    _usedResources.insert(sampler);
 }
 
 void VulkanContextState::BindingSate::bind(BindingType type, u32 binding, u32 arrayIndex, const VulkanBuffer* buffer, u64 offset, u64 range)
@@ -441,8 +476,7 @@ void VulkanContextState::BindingSate::bind(BindingType type, u32 binding, u32 ar
     bindingInfo._binding = binding;
     bindingInfo._arrayIndex = arrayIndex;
     bindingInfo._type = type;
-    bindingInfo._info._bufferInfo = VulkanContextState::makeVkDescriptorBufferInfo(buffer, 
-        type == BindingType::BindingType_DynamicUniform ? 0 : offset, range);
+    bindingInfo._info._bufferInfo = VulkanContextState::makeVkDescriptorBufferInfo(buffer, offset, range);
 
     BindingData& bindingData = std::get<1>(_set[binding]);
     bindingData._dataBinding = BindingData::BindingBufferData{ buffer, offset, range };
@@ -450,7 +484,13 @@ void VulkanContextState::BindingSate::bind(BindingType type, u32 binding, u32 ar
     _activeBindingsFlags |= 1 << binding;
     _dirtyFlag = true;
 
-    _usedResources.push_back(buffer);
+    if (type == BindingType::BindingType_DynamicUniform)
+    {
+        bindingInfo._info._bufferInfo.offset = 0;
+        _offsets.push_back(static_cast<u32>(offset));
+    }
+
+    _usedResources.insert(buffer);
 }
 
 } //namespace vk

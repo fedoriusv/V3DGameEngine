@@ -102,6 +102,18 @@ void MyApplication::Exit()
 
     m_Window->getInputEventReceiver()->dettach(InputEvent::InputEventType::MouseInputEvent);
     m_Window->getInputEventReceiver()->dettach(InputEvent::InputEventType::TouchInputEvent);
+
+    if (m_CommandList)
+    {
+        delete m_CommandList;
+        m_CommandList = nullptr;
+    }
+
+    if (m_Context)
+    {
+        renderer::Context::destroyContext(m_Context);
+        m_Context = nullptr;
+    }
 }
 
 MyApplication::~MyApplication()

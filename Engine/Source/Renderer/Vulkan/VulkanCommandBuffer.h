@@ -97,11 +97,12 @@ namespace vk
 
         void cmdPipelineBarrier(VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask, const VkMemoryBarrier& memoryBarrier);
 
+    private:
+
         void captureResource(VulkanResource* resource, u64 frame);
         void releaseResources();
 
-    private:
-
+        friend VulkanResource;
         friend class VulkanCommandBufferManager;
 
         void refreshFenceStatus();

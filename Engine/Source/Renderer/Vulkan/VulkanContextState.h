@@ -70,11 +70,14 @@ namespace vk
         std::vector<VkClearValue> m_renderPassClearValues;
         VkRect2D m_renderPassArea;
 
+        std::vector<VkWriteDescriptorSet> test_writeDescriptorSets;
+        void testUpdateDesc();
+
     private:
 
         struct BindingSate
         {
-            BindingSate() noexcept = default;
+            BindingSate() = default;
 
             struct BindingData
             {
@@ -104,13 +107,16 @@ namespace vk
             void updateState(VulkanCommandBuffer* cmdBuffer, u64 frame, u64 layoutHash);
             void reset();
 
+            void extractBufferOffsets(std::vector<u32>& offsets);
+
             bool isActiveBinding(u32 binding) const;
             bool isDirty() const;
 
             void bind(BindingType type, u32 binding, u32 arrayIndex, u32 layer, const VulkanImage* image, const VulkanSampler* sampler);
             void bind(BindingType type, u32 binding, u32 arrayIndex, const VulkanBuffer* buffer, u64 offset, u64 range);
 
-            std::vector<const VulkanResource*> _usedResources;
+            std::set<const VulkanResource*> _usedResources;
+            std::vector<u32> _offsets;
         };
 
         void updateDescriptorSet(VulkanCommandBuffer* cmdBuffer, VkDescriptorSet set, const BindingSate& info);

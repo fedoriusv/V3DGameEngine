@@ -52,14 +52,19 @@ const std::vector<const c8*> k_deviceExtensionsList =
 {
     VK_KHR_SWAPCHAIN_EXTENSION_NAME,
 
+    VK_KHR_GET_MEMORY_REQUIREMENTS_2_EXTENSION_NAME,
     VK_KHR_BIND_MEMORY_2_EXTENSION_NAME,
     VK_KHR_DEDICATED_ALLOCATION_EXTENSION_NAME,
-    VK_KHR_GET_MEMORY_REQUIREMENTS_2_EXTENSION_NAME,
 
     VK_KHR_SAMPLER_MIRROR_CLAMP_TO_EDGE_EXTENSION_NAME,
 
+    VK_KHR_MAINTENANCE2_EXTENSION_NAME,
+    VK_KHR_MULTIVIEW_EXTENSION_NAME,
     VK_KHR_CREATE_RENDERPASS_2_EXTENSION_NAME,
     VK_KHR_DEPTH_STENCIL_RESOLVE_EXTENSION_NAME,
+
+    VK_KHR_MAINTENANCE3_EXTENSION_NAME,
+    VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME,
 
     VK_KHR_PIPELINE_EXECUTABLE_PROPERTIES_EXTENSION_NAME,
 };
@@ -175,6 +180,8 @@ void VulkanGraphicContext::endFrame()
     //drawBuffer->cmdPipelineBarrier(m_swapchain->getBackbuffer(),VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
 
     drawBuffer->endCommandBuffer();
+
+    m_currentContextState->testUpdateDesc();
     m_cmdBufferManager->submit(drawBuffer, VK_NULL_HANDLE);
     m_currentBufferState.invalidateCommandBuffer(CommandTargetType::CmdDrawBuffer);
 }
@@ -288,7 +295,9 @@ void VulkanGraphicContext::setScissor(const core::Rect32 & scissor)
 
 void VulkanGraphicContext::setRenderTarget(const RenderPass::RenderPassInfo * renderpassInfo, const Framebuffer::FramebufferInfo* framebufferInfo)
 {
+#if VULKAN_DEBUG
     LOG_DEBUG("VulkanGraphicContext::setRenderTarget");
+#endif //VULKAN_DEBUG
     ASSERT(renderpassInfo && framebufferInfo, "nullptr");
 
     RenderPass* renderpass = m_renderpassManager->acquireRenderPass(renderpassInfo->_value._desc);
@@ -761,7 +770,7 @@ bool VulkanGraphicContext::initialize()
     }
     else
     {
-        m_imageMemoryManager = new PoolVulkanMemoryAllocator(m_deviceInfo._device, 16 * 1024 * 1024); //16MB
+        m_imageMemoryManager = new PoolVulkanMemoryAllocator(m_deviceInfo._device, 64 * 1024 * 1024); //32MB
         m_bufferMemoryManager = new PoolVulkanMemoryAllocator(m_deviceInfo._device, 4 * 1024 * 1024); //4MB
     }
 
@@ -1227,9 +1236,17 @@ bool VulkanGraphicContext::createDevice()
         queueCreateInfos.push_back(queueInfo);
     }
 
+    void* vkExtension = nullptr;
+#if VULKAN_VALIDATION_LAYERS_CALLBACK //needs for validations check
+    if (VulkanDeviceCaps::checkDeviceExtension(m_deviceInfo._physicalDevice, VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME))
+    {
+        vkExtension = &VulkanDeviceCaps::getInstance()->m_physicalDeviceDescriptorIndexingFeatures;
+    }
+#endif
+
     VkDeviceCreateInfo deviceCreateInfo = {};
     deviceCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
-    deviceCreateInfo.pNext = nullptr;
+    deviceCreateInfo.pNext = vkExtension;
     deviceCreateInfo.flags = 0;
     deviceCreateInfo.queueCreateInfoCount = static_cast<u32>(queueCreateInfos.size());;
     deviceCreateInfo.pQueueCreateInfos = queueCreateInfos.data();

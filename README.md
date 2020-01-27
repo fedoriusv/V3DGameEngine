@@ -27,9 +27,9 @@ Required:<br/>
 -- Ninja<br/>
 -- Python 3 (for building SPIRV)<br/>
 
-ANDROID_NDK - need to define path to NDK<br/>
-ANDROID_HOME - need to define path to SDK<br/>
-To Build and compile start project_android.bat<br/>
+ANDROID_NDK - define path to NDK<br/>
+ANDROID_HOME - define path to SDK<br/>
+For Build and Compile start project_android.bat<br/>
 
 -------------------------------------------------  
 
@@ -45,7 +45,7 @@ Used for loading compressed images, to enable it set option to ON in CMakeLists.
 
 #### Vulkan
 To enable set BUILD_VULKAN_SDK to ON in CMakeLists.txt file.<br/>
-Must be seted VK_SDK_PATH in system enviroments.<br/>
+Have to set VK_SDK_PATH in system enviroments.<br/>
 For using SPIRV for Vulkan start file:<br/>
 Engine\Libs\spirv\install_[windows][android]_platform.bat<br/>
 

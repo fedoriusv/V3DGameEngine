@@ -33,6 +33,7 @@ bool VulkanResource::isCaptured() const
 
 bool VulkanResource::waitComplete(u64 time)
 {
+    //TODO might be problem with mt
     if (isCaptured())
     {
         bool result = true;

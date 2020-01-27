@@ -421,11 +421,11 @@ void Scene::onLoad(v3d::renderer::CommandList & cmd)
 #else
     //MRT pass 1
     {
-        renderer::TextureUsageFlags attachmentsFlags = renderer::TextureUsage::TextureUsage_Attachment | renderer::TextureUsage::TextureUsage_Sampled | renderer::TextureUsage::TextureUsage_Resolve;
-        m_MRTRenderPass.colorTexture[0] = cmd.createObject<renderer::Texture2D>(attachmentsFlags, renderer::Format::Format_R32G32B32A32_SFloat, m_size, renderer::TextureSamples::TextureSamples_x8);
-        m_MRTRenderPass.colorTexture[1] = cmd.createObject<renderer::Texture2D>(attachmentsFlags, renderer::Format::Format_R8G8B8A8_UNorm, m_size, renderer::TextureSamples::TextureSamples_x8);
-        m_MRTRenderPass.colorTexture[2] = cmd.createObject<renderer::Texture2D>(attachmentsFlags, renderer::Format::Format_R32G32B32A32_UInt, m_size, renderer::TextureSamples::TextureSamples_x8);
-        m_MRTRenderPass.depthTexture = cmd.createObject<renderer::Texture2D>(renderer::TextureUsage::TextureUsage_Attachment, renderer::Format::Format_D32_SFloat_S8_UInt, m_size, renderer::TextureSamples::TextureSamples_x8);
+        renderer::TextureUsageFlags attachmentsFlags = renderer::TextureUsage::TextureUsage_Attachment | renderer::TextureUsage::TextureUsage_Sampled /*| renderer::TextureUsage::TextureUsage_Resolve*/;
+        m_MRTRenderPass.colorTexture[0] = cmd.createObject<renderer::Texture2D>(attachmentsFlags, renderer::Format::Format_R32G32B32A32_SFloat, m_size, renderer::TextureSamples::TextureSamples_x1);
+        m_MRTRenderPass.colorTexture[1] = cmd.createObject<renderer::Texture2D>(attachmentsFlags, renderer::Format::Format_R8G8B8A8_UNorm, m_size, renderer::TextureSamples::TextureSamples_x1);
+        m_MRTRenderPass.colorTexture[2] = cmd.createObject<renderer::Texture2D>(attachmentsFlags, renderer::Format::Format_R32G32B32A32_UInt, m_size, renderer::TextureSamples::TextureSamples_x1);
+        m_MRTRenderPass.depthTexture = cmd.createObject<renderer::Texture2D>(renderer::TextureUsage::TextureUsage_Attachment, renderer::Format::Format_D32_SFloat_S8_UInt, m_size, renderer::TextureSamples::TextureSamples_x1);
 
         renderer::RenderTargetState::ColorOpState colorOpState = { renderer::RenderTargetLoadOp::LoadOp_DontCare, renderer::RenderTargetStoreOp::StoreOp_Store, core::Vector4D(0.0f) };
         renderer::RenderTargetState::TransitionState tansitionState = { renderer::TransitionOp::TransitionOp_Undefined, renderer::TransitionOp::TransitionOp_ShaderRead };

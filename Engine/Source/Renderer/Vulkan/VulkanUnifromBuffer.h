@@ -79,7 +79,7 @@ namespace vk
         VulkanMemory::VulkanMemoryAllocator* m_memoryManager; 
         VulkanResourceDeleter& m_resourceDeleter;
 
-        const u64 k_bufferPoolSize = 1 * 1024 * 1024;
+        const u64 k_bufferPoolSize;
     };
 
 } //namespace vk

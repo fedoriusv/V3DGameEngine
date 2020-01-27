@@ -150,16 +150,17 @@ bool MyApplication::Running(renderer::CommandList& commandList)
 void MyApplication::Exit()
 {
     delete m_Camera;
-
     delete m_Render;
-    delete m_CommandList;
-    resource::ResourceLoaderManager::getInstance()->clear();
 
+    m_Window->getInputEventReceiver()->dettach(InputEvent::InputEventType::MouseInputEvent);
+    m_Window->getInputEventReceiver()->dettach(InputEvent::InputEventType::TouchInputEvent);
+
+    delete m_CommandList;
+
+    resource::ResourceLoaderManager::getInstance()->clear();
     stream::StreamManager::clearPools();
 
     Context::destroyContext(m_Context);
-    m_Window->getInputEventReceiver()->dettach(InputEvent::InputEventType::MouseInputEvent);
-    m_Window->getInputEventReceiver()->dettach(InputEvent::InputEventType::TouchInputEvent);
 }
 
 MyApplication::~MyApplication()

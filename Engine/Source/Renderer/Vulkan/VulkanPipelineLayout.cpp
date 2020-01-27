@@ -173,10 +173,33 @@ bool VulkanPipelineLayoutManager::createDescriptorSetLayouts(const DescriptorSet
             continue;
         }
 
+        void* vkExtensions = nullptr;
+
+        VkDescriptorSetLayoutBindingFlagsCreateInfoEXT descriptorSetLayoutBindingFlagsCreateInfo = {};
+        std::vector<VkDescriptorBindingFlagsEXT> descriptorBindingFlags(set.size(), 0);
+        if (VulkanDeviceCaps::getInstance()->useDynamicUniforms)
+        {
+            for (u32 i = 0; i < set.size(); ++i)
+            {
+                if (set[i].descriptorType == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC)
+                {
+                    descriptorBindingFlags[i] |= VK_DESCRIPTOR_BINDING_UPDATE_UNUSED_WHILE_PENDING_BIT_EXT;
+                }
+            }
+
+            descriptorSetLayoutBindingFlagsCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_BINDING_FLAGS_CREATE_INFO_EXT;
+            descriptorSetLayoutBindingFlagsCreateInfo.pNext = nullptr;
+            descriptorSetLayoutBindingFlagsCreateInfo.pBindingFlags = descriptorBindingFlags.data();
+            descriptorSetLayoutBindingFlagsCreateInfo.bindingCount = static_cast<u32>(descriptorBindingFlags.size());
+
+            vkExtensions = &descriptorSetLayoutBindingFlagsCreateInfo;
+        }
+
         VkDescriptorSetLayoutCreateInfo descriptorSetLayoutCreateInfo = {};
         descriptorSetLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-        descriptorSetLayoutCreateInfo.pNext = nullptr; //VkDescriptorSetLayoutBindingFlagsCreateInfoEXT
+        descriptorSetLayoutCreateInfo.pNext = vkExtensions;
         descriptorSetLayoutCreateInfo.flags = 0; //VK_DESCRIPTOR_SET_LAYOUT_CREATE_PUSH_DESCRIPTOR_BIT_KHR
+        //descriptorSetLayoutCreateInfo.flags = VulkanDeviceCaps::getInstance()->useDynamicUniforms ? VK_DESCRIPTOR_SET_LAYOUT_CREATE_UPDATE_AFTER_BIND_POOL_BIT_EXT : 0;
         descriptorSetLayoutCreateInfo.bindingCount = static_cast<u32>(set.size());
         descriptorSetLayoutCreateInfo.pBindings = set.data();
 

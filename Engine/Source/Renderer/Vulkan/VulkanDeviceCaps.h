@@ -46,6 +46,8 @@ namespace vk
 
         bool supportPipelineExecutableProperties = false;
 
+        bool supportDescriptorIndexing = false;
+
         //immediateResourceSubmit: 0 - not submit, 1 - submit, 2 - submit and wait complete
         u32 immediateResourceSubmit = 0; 
 
@@ -77,6 +79,8 @@ namespace vk
         VkPhysicalDeviceProperties          m_deviceProperties = {};
         VkPhysicalDeviceMemoryProperties    m_deviceMemoryProps = {};
         std::vector<VkQueueFamilyProperties> m_queueFamilyProperties = {};
+
+        VkPhysicalDeviceDescriptorIndexingFeaturesEXT m_physicalDeviceDescriptorIndexingFeatures = {};
 
         static std::vector<const c8*>        s_enableExtensions;
     };
