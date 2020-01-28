@@ -221,6 +221,11 @@ bool VulkanDescriptorSetPool::reset(VkDescriptorPoolResetFlags flag)
     return true;
 }
 
+u64 VulkanDescriptorSetPool::getCountDescriptorSets() const
+{
+    return m_descriptorSets.size();
+}
+
 bool VulkanDescriptorSetPool::createDescriptorPool(u32 setsCount, const std::vector<VkDescriptorPoolSize>& sizes)
 {
     VkDescriptorPoolCreateInfo descriptorPoolCreateInfo = {};

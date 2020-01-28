@@ -118,6 +118,10 @@ VulkanGraphicContext::~VulkanGraphicContext()
     ASSERT(!m_bufferMemoryManager, "m_bufferMemoryManager not nullptr");
     ASSERT(!m_stagingBufferManager, "m_stagingBufferManager not nullptr");
 
+    ASSERT(!m_pipelineLayoutManager, "m_pipelineLayoutManager not nullptr");
+    ASSERT(!m_descriptorSetManager, "m_descriptorSetManager not nullptr");
+    ASSERT(!m_stagingBufferManager, "m_stagingBufferManager not nullptr");
+    ASSERT(!m_uniformBufferManager, "m_uniformBufferManager not nullptr");
 
     ASSERT(!m_renderpassManager, "m_renderpassManager not nullptr");
     ASSERT(!m_framebuferManager, "m_framebuferManager not nullptr");
@@ -150,7 +154,6 @@ void VulkanGraphicContext::beginFrame()
         LOG_ERROR("VulkanGraphicContext::beginFrame CommandBufferStatus is Invalid");
     }
     drawBuffer->beginCommandBuffer();
-    //drawBuffer->cmdPipelineBarrier(m_swapchain->getBackbuffer(), VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 }
 
 void VulkanGraphicContext::endFrame()
@@ -166,7 +169,6 @@ void VulkanGraphicContext::endFrame()
             uploadBuffer->endCommandBuffer();
         }
         m_cmdBufferManager->submit(uploadBuffer, VK_NULL_HANDLE);
-        //uploadBuffer->waitComplete();
         m_currentBufferState.invalidateCommandBuffer(CommandTargetType::CmdUploadBuffer);
     }
 
@@ -177,11 +179,10 @@ void VulkanGraphicContext::endFrame()
         ASSERT(m_currentContextState->getCurrentPipeline(), "nullptr");
         drawBuffer->cmdEndRenderPass();
     }
-    //drawBuffer->cmdPipelineBarrier(m_swapchain->getBackbuffer(),VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
-
     drawBuffer->endCommandBuffer();
 
-    m_currentContextState->testUpdateDesc();
+    m_uniformBufferManager->markToUse(drawBuffer, 0);
+
     m_cmdBufferManager->submit(drawBuffer, VK_NULL_HANDLE);
     m_currentBufferState.invalidateCommandBuffer(CommandTargetType::CmdDrawBuffer);
 }
@@ -224,6 +225,8 @@ void VulkanGraphicContext::submit(bool wait)
         if (drawBuffer->getStatus() == VulkanCommandBuffer::CommandBufferStatus::Begin)
         {
             drawBuffer->endCommandBuffer();
+            m_uniformBufferManager->markToUse(drawBuffer, 0);
+
             m_cmdBufferManager->submit(drawBuffer, VK_NULL_HANDLE);
             if (wait)
             {
@@ -823,6 +826,8 @@ void VulkanGraphicContext::destroy()
 
     if (m_uniformBufferManager)
     {
+        m_uniformBufferManager->updateUniformBuffers();
+
         delete m_uniformBufferManager;
         m_uniformBufferManager = nullptr;
     }

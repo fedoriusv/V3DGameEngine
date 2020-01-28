@@ -88,6 +88,8 @@ namespace vk
 
         bool reset(VkDescriptorPoolResetFlags flag);
 
+        u64 getCountDescriptorSets() const;
+        
         VkDescriptorSet createDescriptorSet(u64 hash, VkDescriptorSetLayout layout);
         VkDescriptorSet getDescriptorSet(u64 hash);
 
@@ -134,7 +136,6 @@ namespace vk
         VulkanDescriptorSetPool* acquireFreePool(const VulkanPipelineLayout& layout, VkDescriptorPoolCreateFlags flag);
         VulkanDescriptorSetPool* createPool(const VulkanPipelineLayout& layout, VkDescriptorPoolCreateFlags flag);
         void destroyPools();
-
 
         VkDevice m_device;
 

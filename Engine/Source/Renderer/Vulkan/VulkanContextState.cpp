@@ -219,15 +219,15 @@ bool VulkanContextState::prepareDescriptorSets(VulkanCommandBuffer* cmdBuffer, s
             ASSERT(pool, "nullptr");
             pool->captureInsideCommandBuffer(cmdBuffer, 0);
 
-            //if (m_currentDesctiptorsSets[setId] != set)
+            if (m_currentDesctiptorsSets[setId] != set)
             {
                 m_currentDesctiptorsSets[setId] = set;
                 VulkanContextState::updateDescriptorSet(cmdBuffer, set, bindSet);
-
-                bindSet.extractBufferOffsets(offsets);
-                sets.push_back(set);
             }
 
+            sets.push_back(set);
+
+            bindSet.extractBufferOffsets(offsets);
             bindSet.reset();
         }
     }
@@ -312,13 +312,13 @@ void VulkanContextState::updateDescriptorSet(VulkanCommandBuffer* cmdBuffer, VkD
         }
 
         writeDescriptorSets.push_back(writeDescriptorSet);
-        test_writeDescriptorSets.push_back(writeDescriptorSet);
+        //test_writeDescriptorSets.push_back(writeDescriptorSet);
     }
 
-    /*if (!writeDescriptorSets.empty())
+    if (!writeDescriptorSets.empty())
     {
         VulkanWrapper::UpdateDescriptorSets(m_device, static_cast<u32>(writeDescriptorSets.size()), writeDescriptorSets.data(), 0, nullptr);
-    }*/
+    }
 }
 
 void VulkanContextState::bindTexture(const VulkanImage* image, const VulkanSampler* sampler, u32 arrayIndex, const Shader::SampledImage& info)
@@ -358,20 +358,7 @@ void VulkanContextState::updateDescriptorStates()
     VulkanContextState::invalidateDescriptorSetsState();
     m_currentDesctiptorsSets.fill(VK_NULL_HANDLE);
 
-    if (!VulkanDeviceCaps::getInstance()->useDynamicUniforms)
-    {
-        m_descriptorSetManager->updateDescriptorPools();
-    }
-
-    test_writeDescriptorSets.clear();
-}
-
-void VulkanContextState::testUpdateDesc()
-{
-    if (!test_writeDescriptorSets.empty())
-    {
-        VulkanWrapper::UpdateDescriptorSets(m_device, static_cast<u32>(test_writeDescriptorSets.size()), test_writeDescriptorSets.data(), 0, nullptr);
-    }
+    m_descriptorSetManager->updateDescriptorPools();
 }
 
 VkDescriptorBufferInfo VulkanContextState::makeVkDescriptorBufferInfo(const VulkanBuffer* buffer, u64 offset, u64 range)

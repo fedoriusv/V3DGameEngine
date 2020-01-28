@@ -131,7 +131,6 @@ namespace vk
         VulkanMemory::VulkanMemoryAllocator* m_imageMemoryManager;
         VulkanMemory::VulkanMemoryAllocator* m_bufferMemoryManager;
 
-
         RenderPassManager*          m_renderpassManager;
         FramebufferManager*         m_framebuferManager;
         PipelineManager*            m_pipelineManager;

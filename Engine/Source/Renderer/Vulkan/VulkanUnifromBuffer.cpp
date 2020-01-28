@@ -140,6 +140,17 @@ VulkanUniformBuffer * VulkanUniformBufferManager::acquireUnformBuffer(u32 reques
     return newUnifromBuffer;
 }
 
+void VulkanUniformBufferManager::markToUse(VulkanCommandBuffer* cmdBuffer, u64 frame)
+{
+    if (m_currentPoolBuffer && VulkanDeviceCaps::getInstance()->useDynamicUniforms)
+    {
+        m_currentPoolBuffer->_buffer->captureInsideCommandBuffer(cmdBuffer, frame);
+
+        m_usedPoolBuffers.push_back(m_currentPoolBuffer);
+        m_currentPoolBuffer = nullptr;
+    }
+}
+
 void VulkanUniformBufferManager::updateUniformBuffers()
 {
     for (auto iter = m_usedPoolBuffers.begin(); iter != m_usedPoolBuffers.end();)

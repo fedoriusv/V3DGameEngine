@@ -70,9 +70,6 @@ namespace vk
         std::vector<VkClearValue> m_renderPassClearValues;
         VkRect2D m_renderPassArea;
 
-        std::vector<VkWriteDescriptorSet> test_writeDescriptorSets;
-        void testUpdateDesc();
-
     private:
 
         struct BindingSate
@@ -90,7 +87,6 @@ namespace vk
                 struct BindingBufferData
                 {
                     const VulkanBuffer*     _buffer;
-                    //VulkanUniformBuffer*    _uniform;
                     u64                     _offset;
                     u64                     _size;
                 };
@@ -138,14 +134,10 @@ namespace vk
         std::pair<StreamBufferDescription, bool>            m_currentVertexBuffers;
         std::array<VkDescriptorSet, k_maxDescriptorSetIndex> m_currentDesctiptorsSets;
 
-
         VulkanDescriptorSetManager* m_descriptorSetManager;
         VulkanUniformBufferManager* m_unifromBufferManager;
 
         mutable BindingSate m_currentBindingSlots[k_maxDescriptorSetIndex];
-
-        //std::vector<VkDescriptorSet> m_currentSets;
-        //std::array<std::vector<BindingInfo>, k_maxDescriptorSetIndex> m_descriptorSetsState;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

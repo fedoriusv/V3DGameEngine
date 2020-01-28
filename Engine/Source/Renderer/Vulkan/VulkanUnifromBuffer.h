@@ -47,12 +47,16 @@ namespace vk
         ~VulkanUniformBufferManager();
 
         VulkanUniformBuffer* acquireUnformBuffer(u32 requestedSize);
+
+        void markToUse(VulkanCommandBuffer* cmdBuffer, u64 frame);
         void updateUniformBuffers();
 
     private:
 
         struct VulkanUniformBufferPool
         {
+            VulkanUniformBufferPool() noexcept = default;
+
             VulkanBuffer* _buffer;
             u64 _usedSize;
             u64 _freeSize;

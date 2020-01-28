@@ -146,7 +146,10 @@ void SimpleTriangle::init(v3d::renderer::CommandList* commandList, const core::D
 void SimpleTriangle::update(f32 dt)
 {
     m_Camera->update(dt);
+}
 
+void SimpleTriangle::render()
+{
     //update uniforms
     struct UBO
     {
@@ -155,16 +158,6 @@ void SimpleTriangle::update(f32 dt)
         core::Matrix4D viewMatrix;
     };
 
-    UBO ubo;
-    ubo.projectionMatrix = m_Camera->getCamera().getProjectionMatrix();
-    ubo.modelMatrix.setTranslation(core::Vector3D(0, 0, 0));
-    ubo.viewMatrix = m_Camera->getCamera().getViewMatrix();
-
-    m_Program->bindUniformsBuffer<renderer::ShaderType::ShaderType_Vertex>(0, 0, (u32)sizeof(UBO), &ubo);
-}
-
-void SimpleTriangle::render()
-{
     //render
     m_CommandList->setViewport(core::Rect32(0, 0, m_RenderTarget->getDimension().width, m_RenderTarget->getDimension().height));
     m_CommandList->setScissor(core::Rect32(0, 0, m_RenderTarget->getDimension().width, m_RenderTarget->getDimension().height));
@@ -172,6 +165,20 @@ void SimpleTriangle::render()
     m_CommandList->setRenderTarget(m_RenderTarget);
     m_CommandList->setPipelineState(m_Pipeline);
 
+    UBO ubo1;
+    ubo1.projectionMatrix = m_Camera->getCamera().getProjectionMatrix();
+    ubo1.modelMatrix.setTranslation(core::Vector3D(-1, 0, 0));
+    ubo1.viewMatrix = m_Camera->getCamera().getViewMatrix();
+
+    m_Program->bindUniformsBuffer<renderer::ShaderType::ShaderType_Vertex>(0, 0, (u32)sizeof(UBO), &ubo1);
+    m_CommandList->draw(renderer::StreamBufferDescription(m_Geometry, 0), 0, 3, 1);
+
+    UBO ubo2;
+    ubo2.projectionMatrix = m_Camera->getCamera().getProjectionMatrix();
+    ubo2.modelMatrix.setTranslation(core::Vector3D(1, 0, 0));
+    ubo2.viewMatrix = m_Camera->getCamera().getViewMatrix();
+
+    m_Program->bindUniformsBuffer<renderer::ShaderType::ShaderType_Vertex>(0, 0, (u32)sizeof(UBO), &ubo2);
     m_CommandList->draw(renderer::StreamBufferDescription(m_Geometry, 0), 0, 3, 1);
 }
 

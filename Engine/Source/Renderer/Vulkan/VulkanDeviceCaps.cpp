@@ -322,7 +322,7 @@ void VulkanDeviceCaps::initialize()
     ASSERT(k_maxVertexInputBindings <= m_deviceProperties.limits.maxVertexInputBindings, "maxVertexInputBindings less than k_maxVertexInputBindings");
 
     useGlobalDescriptorPool = true;
-    useDynamicUniforms = supportDescriptorIndexing && true;
+    useDynamicUniforms = true;
 }
 
 } //namespace vk

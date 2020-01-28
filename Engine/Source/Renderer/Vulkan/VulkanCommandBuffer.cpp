@@ -167,6 +167,7 @@ void VulkanCommandBuffer::captureResource(VulkanResource* resource, u64 frame)
     {
         resource->m_counter++;
         resource->m_cmdBuffers.push_back(this);
+        ASSERT(resource->m_cmdBuffers.size() >= 1, "multibuffer capture");
     }
     resource->m_status = VulkanResource::Status::Status_Captured;
     resource->m_frame = frame;
