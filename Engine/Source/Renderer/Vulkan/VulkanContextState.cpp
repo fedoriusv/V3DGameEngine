@@ -196,7 +196,7 @@ void VulkanContextState::invokeDynamicStates(bool clear)
 
 bool VulkanContextState::prepareDescriptorSets(VulkanCommandBuffer* cmdBuffer, std::vector<VkDescriptorSet>& sets, std::vector<u32>& offsets)
 {
-    if (m_currentPipeline.first->getDescriptorSetLayouts()._descriptorSetLayouts.empty())
+    if (m_currentPipeline.first->getDescriptorSetLayouts()._setLayouts.empty())
     {
         return false;
     }
@@ -206,7 +206,7 @@ bool VulkanContextState::prepareDescriptorSets(VulkanCommandBuffer* cmdBuffer, s
         BindingSate& bindSet = m_currentBindingSlots[setId];
         if (bindSet.isDirty())
         {
-            bindSet.updateState(cmdBuffer, 0, m_currentPipeline.first->getDescriptorSetLayouts()._key);
+            bindSet.updateState(cmdBuffer, 0, 0);
 
             VulkanDescriptorSetPool* pool = nullptr;
             VkDescriptorSet set = m_descriptorSetManager->acquireDescriptorSet(m_currentPipeline.first->getDescriptorSetLayouts(), SetKey(bindSet._hash, setId), pool);

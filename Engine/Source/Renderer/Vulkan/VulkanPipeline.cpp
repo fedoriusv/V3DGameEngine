@@ -357,8 +357,8 @@ VkPipeline VulkanGraphicPipeline::getHandle() const
 
 VkPipelineLayout VulkanGraphicPipeline::getPipelineLayoutHandle() const
 {
-    ASSERT(m_pipelineLayout._layout != VK_NULL_HANDLE, "nullptr");
-    return m_pipelineLayout._layout;
+    ASSERT(m_pipelineLayout._pipelineLayout != VK_NULL_HANDLE, "nullptr");
+    return m_pipelineLayout._pipelineLayout;
 }
 
 const VulkanPipelineLayout& VulkanGraphicPipeline::getDescriptorSetLayouts() const
@@ -420,9 +420,10 @@ bool VulkanGraphicPipeline::create(const PipelineGraphicInfo* pipelineInfo)
     graphicsPipelineCreateInfo.stageCount = static_cast<u32>(pipelineShaderStageCreateInfos.size());
     graphicsPipelineCreateInfo.pStages = pipelineShaderStageCreateInfos.data();
 
-    VulkanPipelineLayoutManager::DescriptorSetDescription layoutDesc(programDesc._shaders);
-    m_pipelineLayout = m_pipelineLayoutManager->acquirePipelineLayout(layoutDesc);
-    graphicsPipelineCreateInfo.layout = m_pipelineLayout._layout;
+    VulkanPipelineLayoutManager::DescriptorSetLayoutCreator layoutDesc(programDesc._shaders);
+    m_pielineLayoutDescription = layoutDesc._description;
+    m_pipelineLayout = m_pipelineLayoutManager->acquirePipelineLayout(m_pielineLayoutDescription);
+    graphicsPipelineCreateInfo.layout = m_pipelineLayout._pipelineLayout;
 
 
     ASSERT(!m_compatibilityRenderPass, "not nullptr");
@@ -681,11 +682,11 @@ void VulkanGraphicPipeline::destroy()
     }
     deleteShaderModules();
 
-    if (m_pipelineLayout._layout)
+    if (m_pipelineLayout._pipelineLayout)
     {
         //release when manager will be destroyed
         //m_descriptorSetManager->removePipelineLayout(m_pipelineLayout);
-        m_pipelineLayout._layout = VK_NULL_HANDLE;
+        m_pipelineLayout._pipelineLayout = VK_NULL_HANDLE;
     }
 
     if (m_compatibilityRenderPass)

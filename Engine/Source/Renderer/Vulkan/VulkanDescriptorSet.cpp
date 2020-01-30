@@ -355,7 +355,7 @@ VkDescriptorSet VulkanDescriptorSetManager::acquireDescriptorSet(const VulkanPip
     ASSERT(m_currentDescriptorPool, "nullptr");
 
     //create new
-    VkDescriptorSetLayout vkDescriptorSetLayout = layout._descriptorSetLayouts[key._set];
+    VkDescriptorSetLayout vkDescriptorSetLayout = layout._setLayouts[key._set];
     ASSERT(vkDescriptorSetLayout != VK_NULL_HANDLE, "nullptr");
     VkDescriptorSet vkDescriptorSet = m_currentDescriptorPool->createDescriptorSet(key._hash, vkDescriptorSetLayout);
     if (vkDescriptorSet == VK_NULL_HANDLE)
@@ -404,8 +404,8 @@ VulkanDescriptorSetPool* VulkanDescriptorSetManager::createPool(const VulkanPipe
     else
     {
         ASSERT(false, "not implemented");
-        setCount = static_cast<u32>(layout._descriptorSetLayouts.size());
-        for (auto& set : layout._descriptorSetLayouts)
+        setCount = static_cast<u32>(layout._setLayouts.size());
+        for (auto& set : layout._setLayouts)
         {
             //TODO: need shader
         }

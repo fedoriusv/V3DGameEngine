@@ -40,6 +40,7 @@ namespace vk
         bool useDynamicUniforms = false;
         bool unifiedMemoryManager = false;
         bool useGlobalDescriptorPool = false;
+        bool useLateDescriptorSetUpdate = false;
 
         bool supportRenderpass2 = false;
         bool supportDedicatedAllocation = false;

@@ -323,6 +323,7 @@ void VulkanDeviceCaps::initialize()
 
     useGlobalDescriptorPool = true;
     useDynamicUniforms = true;
+    useLateDescriptorSetUpdate = false;
 }
 
 } //namespace vk

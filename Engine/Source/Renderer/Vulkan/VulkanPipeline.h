@@ -71,6 +71,8 @@ namespace vk
         VkPipeline   m_pipeline;
         RenderPass*  m_compatibilityRenderPass;
         ObjectTracker<RenderPass> m_trackerRenderPass;
+
+        VulkanPipelineLayoutDescription m_pielineLayoutDescription;
         VulkanPipelineLayout m_pipelineLayout;
 
         RenderPassManager* const m_renderpassManager;
