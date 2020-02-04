@@ -20,20 +20,20 @@ BindingInfo::BindingInfo() noexcept
     memset(this, 0, sizeof(BindingInfo));
 }
 
-bool BindingInfo::operator==(const BindingInfo& info) const
+size_t SetInfo::Hash::operator()(const SetInfo& set) const
 {
-    if (this == &info)
-    {
-        return true;
-    }
+    ASSERT(set._key, "empty");
+    return set._key;
+}
 
-    if (_binding != info._binding || _type != info._type || _arrayIndex != info._arrayIndex)
+bool SetInfo::Equal::operator()(const SetInfo& set0, const SetInfo& set1) const
+{
+    if (set0._bindingsInfo.size() != set1._bindingsInfo.size())
     {
         return false;
     }
 
-    if (memcmp(&_info._bufferInfo, &info._info._bufferInfo, sizeof(VkDescriptorBufferInfo)) ||
-        memcmp(&_info._imageInfo, &info._info._imageInfo, sizeof(VkDescriptorImageInfo)))
+    if (set0._bindingsInfo.empty() && memcmp(set0._bindingsInfo.data(), set1._bindingsInfo.data(), sizeof(BindingInfo) * set0._bindingsInfo.size()) != 0)
     {
         return false;
     }
@@ -94,8 +94,6 @@ bool VulkanDescriptorSetPool::allocateDescriptorSets(std::vector<VkDescriptorSet
 #if VULKAN_DEBUG
         LOG_WARNING("VulkanDescriptorPool::createDescriptorSets vkAllocateDescriptorSets is failed. Error: %s", ErrorString(result).c_str());
 #endif //VULKAN_DEBUG
-        //VulkanDescriptorSetPool::freeDescriptorSets(descriptorSets);
-
         return false;
     }
     else if (result != VK_SUCCESS)
@@ -141,8 +139,6 @@ bool VulkanDescriptorSetPool::allocateDescriptorSet(VkDescriptorSetLayout layout
 #if VULKAN_DEBUG
         LOG_WARNING("VulkanDescriptorPool::createDescriptorSet vkAllocateDescriptorSets is failed. Error: %s", ErrorString(result).c_str());
 #endif //VULKAN_DEBUG
-        //VulkanDescriptorSetPool::freeDescriptorSet(descriptorSets);
-
         return false;
     }
     else if (result != VK_SUCCESS)
@@ -173,7 +169,7 @@ bool VulkanDescriptorSetPool::freeDescriptorSet(VkDescriptorSet& descriptorSet)
     return true;
 }
 
-VkDescriptorSet VulkanDescriptorSetPool::createDescriptorSet(u64 hash, VkDescriptorSetLayout layout)
+VkDescriptorSet VulkanDescriptorSetPool::createDescriptorSet(const SetInfo& info, VkDescriptorSetLayout layout)
 {
     VkDescriptorSet set = VK_NULL_HANDLE;
     bool result = VulkanDescriptorSetPool::allocateDescriptorSet(layout, set);
@@ -186,7 +182,7 @@ VkDescriptorSet VulkanDescriptorSetPool::createDescriptorSet(u64 hash, VkDescrip
         return VK_NULL_HANDLE;
     }
 
-    auto& insert = m_descriptorSets.emplace(hash, set);
+    auto& insert = m_descriptorSets.emplace(info, set);
     if (!insert.second)
     {
         ASSERT(false, "already present");
@@ -197,9 +193,9 @@ VkDescriptorSet VulkanDescriptorSetPool::createDescriptorSet(u64 hash, VkDescrip
     return set;
 }
 
-VkDescriptorSet VulkanDescriptorSetPool::getDescriptorSet(u64 hash)
+VkDescriptorSet VulkanDescriptorSetPool::getDescriptorSet(const SetInfo& info)
 {
-    auto found = m_descriptorSets.find(hash);
+    auto found = m_descriptorSets.find(info);
     if (found != m_descriptorSets.cend())
     {
         return found->second;
@@ -319,18 +315,14 @@ void VulkanDescriptorSetManager::clear()
     }
 }
 
-VkDescriptorSet VulkanDescriptorSetManager::acquireDescriptorSet(const VulkanPipelineLayout& layout, const SetKey& key, VulkanDescriptorSetPool*& pool)
+VkDescriptorSet VulkanDescriptorSetManager::acquireDescriptorSet(const VulkanDescriptorSetLayoutDescription& desc, const SetInfo& info, VkDescriptorSetLayout layoutSet, VulkanDescriptorSetPool*& pool)
 {
     VkDescriptorPoolCreateFlags flag = 0;
-    /*if (VulkanDeviceCaps::getInstance()->useDynamicUniforms)
-    {
-        flag |= VK_DESCRIPTOR_POOL_CREATE_UPDATE_AFTER_BIND_BIT_EXT;
-    }*/
 
     //finds in pools
     if (m_currentDescriptorPool)
     {
-        VkDescriptorSet set = m_currentDescriptorPool->getDescriptorSet(key._hash);
+        VkDescriptorSet set = m_currentDescriptorPool->getDescriptorSet(info);
         if (set != VK_NULL_HANDLE)
         {
             pool = m_currentDescriptorPool;
@@ -340,12 +332,12 @@ VkDescriptorSet VulkanDescriptorSetManager::acquireDescriptorSet(const VulkanPip
     else
     {
         ASSERT(m_usedDescriptorPools.empty(), "not empty");
-        m_currentDescriptorPool = VulkanDescriptorSetManager::acquireFreePool(layout, flag);
+        m_currentDescriptorPool = VulkanDescriptorSetManager::acquirePool(desc, flag);
     }
 
     for (auto& usedPool : m_usedDescriptorPools)
     {
-        VkDescriptorSet set = usedPool->getDescriptorSet(key._hash);
+        VkDescriptorSet set = usedPool->getDescriptorSet(info);
         if (set != VK_NULL_HANDLE)
         {
             pool = usedPool;
@@ -355,17 +347,15 @@ VkDescriptorSet VulkanDescriptorSetManager::acquireDescriptorSet(const VulkanPip
     ASSERT(m_currentDescriptorPool, "nullptr");
 
     //create new
-    VkDescriptorSetLayout vkDescriptorSetLayout = layout._setLayouts[key._set];
-    ASSERT(vkDescriptorSetLayout != VK_NULL_HANDLE, "nullptr");
-    VkDescriptorSet vkDescriptorSet = m_currentDescriptorPool->createDescriptorSet(key._hash, vkDescriptorSetLayout);
+    VkDescriptorSet vkDescriptorSet = m_currentDescriptorPool->createDescriptorSet(info, layoutSet);
     if (vkDescriptorSet == VK_NULL_HANDLE)
     {
         //try another pool
         m_usedDescriptorPools.push_back(m_currentDescriptorPool);
-        m_currentDescriptorPool = VulkanDescriptorSetManager::acquireFreePool(layout, flag);
+        m_currentDescriptorPool = VulkanDescriptorSetManager::acquirePool(desc, flag);
         ASSERT(m_currentDescriptorPool, "nullptr");
 
-        vkDescriptorSet = m_currentDescriptorPool->createDescriptorSet(key._hash, vkDescriptorSetLayout);
+        vkDescriptorSet = m_currentDescriptorPool->createDescriptorSet(info, layoutSet);
         ASSERT(vkDescriptorSet != VK_NULL_HANDLE, "fail");
     }
 
@@ -373,48 +363,42 @@ VkDescriptorSet VulkanDescriptorSetManager::acquireDescriptorSet(const VulkanPip
     return vkDescriptorSet;
 }
 
-VulkanDescriptorSetPool* VulkanDescriptorSetManager::acquireFreePool(const VulkanPipelineLayout& layout, VkDescriptorPoolCreateFlags flag)
+VulkanDescriptorSetPool* VulkanDescriptorSetManager::acquirePool(const VulkanDescriptorSetLayoutDescription& desc, VkDescriptorPoolCreateFlags flag)
 {
-    VulkanDescriptorSetPool* newPool = nullptr;
+    VulkanDescriptorSetPool* pool = nullptr;
     if (m_freeDescriptorPools.empty())
     {
-        newPool = VulkanDescriptorSetManager::createPool(layout, flag);
-    }
-    else
-    {
-        newPool = m_freeDescriptorPools.front();
-        m_freeDescriptorPools.pop_front();
-    }
+        pool = new VulkanDescriptorSetPool(m_device, flag);
+        ASSERT(pool, "nullptr");
 
-    return newPool;
-}
-
-VulkanDescriptorSetPool* VulkanDescriptorSetManager::createPool(const VulkanPipelineLayout& layout, VkDescriptorPoolCreateFlags flag)
-{
-    VulkanDescriptorSetPool* pool = new VulkanDescriptorSetPool(m_device, flag);
-    ASSERT(pool, "nullptr");
-
-    u32 setCount = 0;
-    std::vector<VkDescriptorPoolSize>* sizes = nullptr;
-    if (VulkanDeviceCaps::getInstance()->useGlobalDescriptorPool)
-    {
-        setCount = s_maxSets;
-        sizes = &VulkanDescriptorSetManager::s_poolSizes;
-    }
-    else
-    {
-        ASSERT(false, "not implemented");
-        setCount = static_cast<u32>(layout._setLayouts.size());
-        for (auto& set : layout._setLayouts)
+        u32 setCount = 0;
+        std::vector<VkDescriptorPoolSize>* sizes = nullptr;
+        if (VulkanDeviceCaps::getInstance()->useGlobalDescriptorPool)
         {
-            //TODO: need shader
+            setCount = s_maxSets;
+            sizes = &VulkanDescriptorSetManager::s_poolSizes;
+        }
+        else
+        {
+            ASSERT(false, "not implemented");
+
+            //setCount = static_cast<u32>(layout._setLayouts.size());
+            //for (auto& set : layout._setLayouts)
+            //{
+            //    //TODO: need shader
+            //}
+        }
+
+        if (!pool->create(setCount, *sizes))
+        {
+            ASSERT(false, "fail");
+            pool->destroy();
         }
     }
-
-    if (!pool->create(setCount, *sizes))
+    else
     {
-        ASSERT(false, "fail");
-        pool->destroy();
+        pool = m_freeDescriptorPools.front();
+        m_freeDescriptorPools.pop_front();
     }
 
     return pool;

@@ -40,7 +40,6 @@ namespace vk
     struct BindingInfo
     {
         BindingInfo() noexcept;
-        bool operator==(const BindingInfo& info) const;
 
         union DescriptorInfo
         {
@@ -48,29 +47,29 @@ namespace vk
             VkDescriptorBufferInfo  _bufferInfo;
         };
 
-        DescriptorInfo  _info;            //32
-        BindingType     _type       : 16; //16
-        u32             _binding    : 16; //16
-        u32             _arrayIndex : 16; //16
 
-        u32             _padding    : 16;  //16
+        DescriptorInfo  _info;            //24
+        BindingType     _type       : 16;
+        u32             _binding    : 16; //28
+        u32             _arrayIndex : 16;
+
+        u32             _padding    : 16; //32
     };
 
-    /////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    /**
-    * SetKey struct. Vulkan Render side
-    */
-    struct SetKey
+    struct SetInfo
     {
-        SetKey(u64 hash, u32 set)
-            : _hash(hash)
-            , _set(set)
+        struct Hash
         {
-        }
+            size_t operator()(const SetInfo& set) const;
+        };
 
-        u64 _hash;
-        u32 _set;
+        struct Equal
+        {
+            bool operator()(const SetInfo& set0, const SetInfo& set1) const;
+        };
+
+        u64 _key;
+        std::vector<BindingInfo> _bindingsInfo;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -78,6 +77,7 @@ namespace vk
     /**
     * VulkanDescriptorPool class. Vulkan Render side
     */
+
     class VulkanDescriptorSetPool : public VulkanResource
     {
     public:
@@ -90,8 +90,8 @@ namespace vk
 
         u64 getCountDescriptorSets() const;
         
-        VkDescriptorSet createDescriptorSet(u64 hash, VkDescriptorSetLayout layout);
-        VkDescriptorSet getDescriptorSet(u64 hash);
+        VkDescriptorSet createDescriptorSet(const SetInfo& info, VkDescriptorSetLayout layout);
+        VkDescriptorSet getDescriptorSet(const SetInfo& info);
 
     private:
 
@@ -104,10 +104,11 @@ namespace vk
         bool freeDescriptorSet(VkDescriptorSet& descriptorSet);
 
         VkDevice m_device;
-        VkDescriptorPoolCreateFlags m_flag;
-        std::unordered_map<u64, VkDescriptorSet> m_descriptorSets;
 
+        VkDescriptorPoolCreateFlags m_flag;
         VkDescriptorPool m_pool;
+
+        std::unordered_map<SetInfo, VkDescriptorSet, SetInfo::Hash, SetInfo::Equal> m_descriptorSets;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -126,15 +127,14 @@ namespace vk
         VulkanDescriptorSetManager(const VulkanDescriptorSetManager&) = delete;
 
         //DescriptorSets
-        VkDescriptorSet acquireDescriptorSet(const VulkanPipelineLayout& layout, const SetKey& key, VulkanDescriptorSetPool*& pool);
+        VkDescriptorSet acquireDescriptorSet(const VulkanDescriptorSetLayoutDescription& desc, const SetInfo& info, VkDescriptorSetLayout layoutSet, VulkanDescriptorSetPool*& pool);
 
         void updateDescriptorPools();
         void clear();
 
     private:
 
-        VulkanDescriptorSetPool* acquireFreePool(const VulkanPipelineLayout& layout, VkDescriptorPoolCreateFlags flag);
-        VulkanDescriptorSetPool* createPool(const VulkanPipelineLayout& layout, VkDescriptorPoolCreateFlags flag);
+        VulkanDescriptorSetPool* acquirePool(const VulkanDescriptorSetLayoutDescription& desc, VkDescriptorPoolCreateFlags flag);
         void destroyPools();
 
         VkDevice m_device;

@@ -366,6 +366,11 @@ const VulkanPipelineLayout& VulkanGraphicPipeline::getDescriptorSetLayouts() con
     return m_pipelineLayout;
 }
 
+const VulkanPipelineLayoutDescription& VulkanGraphicPipeline::getPipelineLayoutDescription() const
+{
+    return m_pielineLayoutDescription;
+}
+
 VulkanGraphicPipeline::VulkanGraphicPipeline(VkDevice device, RenderPassManager* renderpassManager, VulkanPipelineLayoutManager* pipelineLayoutManager)
     : Pipeline(PipelineType::PipelineType_Graphic)
     , m_device(device)

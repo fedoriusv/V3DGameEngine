@@ -72,9 +72,9 @@ namespace vk
 
     private:
 
-        struct BindingSate
+        struct BindingState
         {
-            BindingSate() = default;
+            BindingState() = default;
 
             struct BindingData
             {
@@ -95,12 +95,10 @@ namespace vk
             };
 
             std::array<std::tuple<BindingInfo, BindingData>, k_maxDescriptorBindingIndex> _set;
-            u64  _hash = 0;
 
             u32  _activeBindingsFlags = 0;
             bool _dirtyFlag = false;
 
-            void updateState(VulkanCommandBuffer* cmdBuffer, u64 frame, u64 layoutHash);
             void reset();
 
             void extractBufferOffsets(std::vector<u32>& offsets);
@@ -111,11 +109,13 @@ namespace vk
             void bind(BindingType type, u32 binding, u32 arrayIndex, u32 layer, const VulkanImage* image, const VulkanSampler* sampler);
             void bind(BindingType type, u32 binding, u32 arrayIndex, const VulkanBuffer* buffer, u64 offset, u64 range);
 
+            void apply(VulkanCommandBuffer* cmdBuffer, u64 frame, SetInfo& info);
+
             std::set<const VulkanResource*> _usedResources;
             std::vector<u32> _offsets;
         };
 
-        void updateDescriptorSet(VulkanCommandBuffer* cmdBuffer, VkDescriptorSet set, const BindingSate& info);
+        void updateDescriptorSet(VulkanCommandBuffer* cmdBuffer, VkDescriptorSet set, const BindingState& info);
 
         static VkDescriptorBufferInfo makeVkDescriptorBufferInfo(const VulkanBuffer* buffer, u64 offset, u64 range);
         static VkDescriptorImageInfo makeVkDescriptorImageInfo(const VulkanImage* image, const VulkanSampler* sampler, VkImageLayout layout, s32 layer = -1);
@@ -137,7 +137,7 @@ namespace vk
         VulkanDescriptorSetManager* m_descriptorSetManager;
         VulkanUniformBufferManager* m_unifromBufferManager;
 
-        mutable BindingSate m_currentBindingSlots[k_maxDescriptorSetIndex];
+        mutable BindingState m_currentBindingSlots[k_maxDescriptorSetIndex];
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
