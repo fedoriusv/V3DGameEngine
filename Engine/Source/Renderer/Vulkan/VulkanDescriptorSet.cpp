@@ -65,9 +65,8 @@ bool VulkanDescriptorSetPool::create(u32 setsCount, const std::vector<VkDescript
 
 void VulkanDescriptorSetPool::destroy()
 {
-    if (!m_descriptorSets.empty())
+    if (!m_descriptorSets.empty()/* & m_flag == VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT*/)
     {
-        //VulkanDescriptorSetPool::freeDescriptorSets(m_descriptorSets.);
         m_descriptorSets.clear();
     }
 
@@ -242,48 +241,245 @@ bool VulkanDescriptorSetPool::createDescriptorPool(u32 setsCount, const std::vec
     return true;
 }
 
-u32 VulkanDescriptorSetManager::s_maxSets = 256;
-
-std::vector<VkDescriptorPoolSize> VulkanDescriptorSetManager::s_poolSizes =
-{
-    { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,                 256 },
-    { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC,         64  },
-
-    { VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,         128 },
-    { VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,                  128 },
-    { VK_DESCRIPTOR_TYPE_SAMPLER,                        128 },
-
-    { VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,                  128 },
-    { VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,                 128 },
-
-    { VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER,           128 },
-    { VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER,           128 },
-
-    { VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT,               8   },
-};
-
 VulkanDescriptorSetManager::VulkanDescriptorSetManager(VkDevice device) noexcept
     : m_device(device)
-    , m_currentDescriptorPool(nullptr)
 {
 }
 
 VulkanDescriptorSetManager::~VulkanDescriptorSetManager()
 {
-    ASSERT(!m_currentDescriptorPool, "not nullptr");
-    ASSERT(m_freeDescriptorPools.empty(), "not empty");
-    ASSERT(m_usedDescriptorPools.empty(), "not empty");
+    if (VulkanDeviceCaps::getInstance()->useGlobalDescriptorPool)
+    {
+        m_genericPools.clearPools();
+    }
+    else
+    {
+        m_layoutPools.destroyPools();
+    }
 }
+
+VkDescriptorSet VulkanDescriptorSetManager::acquireDescriptorSet(const VulkanDescriptorSetLayoutDescription& desc, const SetInfo& info, VkDescriptorSetLayout layoutSet, VulkanDescriptorSetPool*& pool)
+{
+    VkDescriptorPoolCreateFlags flag = 0;
+    if (VulkanDeviceCaps::getInstance()->useGlobalDescriptorPool)
+    {
+        //finds in pools
+        if (m_genericPools._currentDescriptorPool)
+        {
+            VkDescriptorSet set = m_genericPools._currentDescriptorPool->getDescriptorSet(info);
+            if (set != VK_NULL_HANDLE)
+            {
+                pool = m_genericPools._currentDescriptorPool;
+                return set;
+            }
+        }
+        else
+        {
+            ASSERT(m_genericPools._usedDescriptorPools.empty(), "not empty");
+            m_genericPools._currentDescriptorPool = m_genericPools.acquirePool(m_device, flag);
+        }
+
+        for (auto& usedPool : m_genericPools._usedDescriptorPools)
+        {
+            VkDescriptorSet set = usedPool->getDescriptorSet(info);
+            if (set != VK_NULL_HANDLE)
+            {
+                pool = usedPool;
+                return set;
+            }
+        }
+        ASSERT(m_genericPools._currentDescriptorPool, "nullptr");
+
+        //create new
+        VkDescriptorSet vkDescriptorSet = m_genericPools._currentDescriptorPool->createDescriptorSet(info, layoutSet);
+        if (vkDescriptorSet == VK_NULL_HANDLE)
+        {
+            //try another pool
+            m_genericPools._usedDescriptorPools.push_back(m_genericPools._currentDescriptorPool);
+            m_genericPools._currentDescriptorPool = m_genericPools.acquirePool(m_device, flag);
+            ASSERT(m_genericPools._currentDescriptorPool, "nullptr");
+
+            vkDescriptorSet = m_genericPools._currentDescriptorPool->createDescriptorSet(info, layoutSet);
+            ASSERT(vkDescriptorSet != VK_NULL_HANDLE, "fail");
+        }
+
+        pool = m_genericPools._currentDescriptorPool;
+        return vkDescriptorSet;
+    }
+    else
+    {
+        VkDescriptorSet vkDescriptorSet = VK_NULL_HANDLE;
+        VulkanDescriptorSetPool* setPool = nullptr;
+
+        auto poolsIter = m_layoutPools._pools.emplace(desc, nullptr);
+        if (!poolsIter.second)
+        {
+            std::list<VulkanDescriptorSetPool*>& poolsList = *(poolsIter.first)->second;
+            for (VulkanDescriptorSetPool* usedPool : poolsList)
+            {
+
+                ASSERT(usedPool, "nullptr");
+                vkDescriptorSet = usedPool->getDescriptorSet(info);
+                if (vkDescriptorSet != VK_NULL_HANDLE)
+                {
+                    pool = usedPool;
+                    return vkDescriptorSet;
+                }
+
+                vkDescriptorSet = usedPool->createDescriptorSet(info, layoutSet);
+                if (vkDescriptorSet == VK_NULL_HANDLE)
+                {
+                    pool = usedPool;
+                    return vkDescriptorSet;
+                }
+            }
+        }
+
+        //create new
+        setPool = m_layoutPools.createPool(desc, m_device, flag);
+        ASSERT(setPool, "nullptr");
+
+
+        if (poolsIter.first->second)
+        {
+            poolsIter.first->second->push_back(setPool);
+        }
+        else
+        {
+            std::list<VulkanDescriptorSetPool*>* poolsList = new std::list<VulkanDescriptorSetPool*>();
+            poolsList->push_back(setPool);
+
+            poolsIter.first->second = poolsList;
+        }
+
+        vkDescriptorSet = setPool->createDescriptorSet(info, layoutSet);
+        ASSERT(vkDescriptorSet != VK_NULL_HANDLE, "fail");
+
+        pool = setPool;
+        return vkDescriptorSet;
+    }
+
+    ASSERT(false, "fail");
+    return nullptr;
+}
+
+
 
 void VulkanDescriptorSetManager::updateDescriptorPools()
 {
-    for (auto iter = m_usedDescriptorPools.begin(); iter != m_usedDescriptorPools.end();)
+    if (VulkanDeviceCaps::getInstance()->useGlobalDescriptorPool)
+    {
+        m_genericPools.updatePools();
+    }
+}
+
+std::vector<VkDescriptorPoolSize> VulkanDescriptorSetManager::GenericPools::s_poolSizes =
+{
+    { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,                 std::min(VulkanDescriptorSetManager::GenericPools::s_maxSets, 256U) },
+    { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC,         std::min(VulkanDescriptorSetManager::GenericPools::s_maxSets, 64U)  },
+
+    { VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,         std::min(VulkanDescriptorSetManager::GenericPools::s_maxSets, 128U) },
+    { VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,                  std::min(VulkanDescriptorSetManager::GenericPools::s_maxSets, 128U) },
+    { VK_DESCRIPTOR_TYPE_SAMPLER,                        std::min(VulkanDescriptorSetManager::GenericPools::s_maxSets, 128U) },
+
+    { VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,                  std::min(VulkanDescriptorSetManager::GenericPools::s_maxSets, 128U) },
+    { VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,                 std::min(VulkanDescriptorSetManager::GenericPools::s_maxSets, 128U) },
+
+    { VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER,           std::min(VulkanDescriptorSetManager::GenericPools::s_maxSets, 128U) },
+    { VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER,           std::min(VulkanDescriptorSetManager::GenericPools::s_maxSets, 128U) },
+
+    { VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT,               std::min(VulkanDescriptorSetManager::GenericPools::s_maxSets, 8U)   },
+};
+
+VulkanDescriptorSetManager::GenericPools::GenericPools() noexcept
+    : _currentDescriptorPool(nullptr)
+{
+}
+
+VulkanDescriptorSetPool* VulkanDescriptorSetManager::GenericPools::acquirePool(VkDevice device, VkDescriptorPoolCreateFlags flag)
+{
+    ASSERT(VulkanDeviceCaps::getInstance()->useGlobalDescriptorPool, "wrong strategy");
+    VulkanDescriptorSetPool* pool = nullptr;
+    if (_freeDescriptorPools.empty())
+    {
+        pool = new VulkanDescriptorSetPool(device, flag);
+        ASSERT(pool, "nullptr");
+
+        u32 setCount = 0;
+        std::vector<VkDescriptorPoolSize>* sizes = nullptr;
+
+        setCount = s_maxSets;
+        sizes = &s_poolSizes;
+
+
+        if (!pool->create(setCount, *sizes))
+        {
+            ASSERT(false, "fail");
+            pool->destroy();
+
+            delete pool;
+            pool = nullptr;
+        }
+    }
+    else
+    {
+        pool = _freeDescriptorPools.front();
+        _freeDescriptorPools.pop_front();
+    }
+
+    return pool;
+}
+
+void VulkanDescriptorSetManager::GenericPools::destroyPools()
+{
+    ASSERT(_usedDescriptorPools.empty(), "not enmpty");
+
+    if (_currentDescriptorPool)
+    {
+        ASSERT(!_currentDescriptorPool->isCaptured(), "still used");
+        _currentDescriptorPool->destroy();
+        delete _currentDescriptorPool;
+        _currentDescriptorPool = nullptr;
+    }
+
+    for (auto pool : _freeDescriptorPools)
+    {
+        pool->destroy();
+        delete pool;
+    }
+    _freeDescriptorPools.clear();
+}
+
+void VulkanDescriptorSetManager::GenericPools::clearPools()
+{
+    ASSERT(_usedDescriptorPools.empty(), "strill used");
+    for (auto& pool : _freeDescriptorPools)
+    {
+        ASSERT(!pool->isCaptured(), "still used");
+        pool->destroy();
+        delete pool;
+    }
+    _freeDescriptorPools.clear();
+
+    if (_currentDescriptorPool)
+    {
+        ASSERT(!_currentDescriptorPool->isCaptured(), "still used");
+        _currentDescriptorPool->destroy();
+
+        delete _currentDescriptorPool;
+        _currentDescriptorPool = nullptr;
+    }
+}
+
+void VulkanDescriptorSetManager::GenericPools::updatePools()
+{
+    for (auto iter = _usedDescriptorPools.begin(); iter != _usedDescriptorPools.end();)
     {
         VulkanDescriptorSetPool* pool = (*iter);
         if (!pool->isCaptured())
         {
-            m_freeDescriptorPools.push_back(pool);
-            iter = m_usedDescriptorPools.erase(iter);
+            _freeDescriptorPools.push_back(pool);
+            iter = _usedDescriptorPools.erase(iter);
 
             pool->reset(0);
         }
@@ -294,134 +490,91 @@ void VulkanDescriptorSetManager::updateDescriptorPools()
     }
 }
 
-void VulkanDescriptorSetManager::clear()
+VulkanDescriptorSetManager::GenericPools::~GenericPools()
 {
-    ASSERT(m_usedDescriptorPools.empty(), "strill used");
-    for (auto& pool : m_freeDescriptorPools)
+    ASSERT(!_currentDescriptorPool, "not nullptr");
+    ASSERT(_freeDescriptorPools.empty(), "not empty");
+    ASSERT(_usedDescriptorPools.empty(), "not empty");
+}
+
+VulkanDescriptorSetPool* VulkanDescriptorSetManager::LayoutPools::createPool(const VulkanDescriptorSetLayoutDescription& desc, VkDevice device, VkDescriptorPoolCreateFlags flag)
+{
+    ASSERT(!VulkanDeviceCaps::getInstance()->useGlobalDescriptorPool, "wrong strategy");
+    
+    VulkanDescriptorSetPool* pool = new VulkanDescriptorSetPool(device, flag);
+    ASSERT(pool, "nullptr");
+
+    std::array<VkDescriptorPoolSize, 11> sizesCount =
     {
-        ASSERT(!pool->isCaptured(), "still used");
+        VkDescriptorPoolSize({ VK_DESCRIPTOR_TYPE_SAMPLER, 0U }),
+        VkDescriptorPoolSize({ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 0U }),
+        VkDescriptorPoolSize({ VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 0U }),
+        VkDescriptorPoolSize({ VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 0U }),
+        VkDescriptorPoolSize({ VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, 0U }),
+        VkDescriptorPoolSize({ VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, 0U }),
+        VkDescriptorPoolSize({ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 0U }),
+        VkDescriptorPoolSize({ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 0U }),
+        VkDescriptorPoolSize({ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 0U }),
+        VkDescriptorPoolSize({ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC, 0U }),
+        VkDescriptorPoolSize({ VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 0U })
+    };
+
+    for (auto& layout : desc._bindings)
+    {
+        auto iter = std::find_if(sizesCount.begin(), sizesCount.end(), [&layout](const VkDescriptorPoolSize& s) -> bool
+            {
+                return layout.descriptorType == s.type;
+            });
+
+        if (iter != sizesCount.end())
+        {
+            ++iter->descriptorCount;
+        }
+    }
+
+    u32 setCount = LayoutPools::s_maxSets;
+    std::vector<VkDescriptorPoolSize> sizes;
+    for (auto& layout : sizesCount)
+    {
+        if (layout.descriptorCount > 0)
+        {
+            u32 count = std::min(layout.descriptorCount * LayoutPools::s_multipliers, LayoutPools::s_maxSets);
+            sizes.push_back({ layout.type, count });
+        }
+    }
+
+    if (!pool->create(setCount, sizes))
+    {
+        ASSERT(false, "fail");
         pool->destroy();
+
         delete pool;
-    }
-    m_freeDescriptorPools.clear();
-
-    if (m_currentDescriptorPool)
-    {
-        ASSERT(!m_currentDescriptorPool->isCaptured(), "still used");
-        m_currentDescriptorPool->destroy();
-
-        delete m_currentDescriptorPool;
-        m_currentDescriptorPool = nullptr;
-    }
-}
-
-VkDescriptorSet VulkanDescriptorSetManager::acquireDescriptorSet(const VulkanDescriptorSetLayoutDescription& desc, const SetInfo& info, VkDescriptorSetLayout layoutSet, VulkanDescriptorSetPool*& pool)
-{
-    VkDescriptorPoolCreateFlags flag = 0;
-
-    //finds in pools
-    if (m_currentDescriptorPool)
-    {
-        VkDescriptorSet set = m_currentDescriptorPool->getDescriptorSet(info);
-        if (set != VK_NULL_HANDLE)
-        {
-            pool = m_currentDescriptorPool;
-            return set;
-        }
-    }
-    else
-    {
-        ASSERT(m_usedDescriptorPools.empty(), "not empty");
-        m_currentDescriptorPool = VulkanDescriptorSetManager::acquirePool(desc, flag);
-    }
-
-    for (auto& usedPool : m_usedDescriptorPools)
-    {
-        VkDescriptorSet set = usedPool->getDescriptorSet(info);
-        if (set != VK_NULL_HANDLE)
-        {
-            pool = usedPool;
-            return set;
-        }
-    }
-    ASSERT(m_currentDescriptorPool, "nullptr");
-
-    //create new
-    VkDescriptorSet vkDescriptorSet = m_currentDescriptorPool->createDescriptorSet(info, layoutSet);
-    if (vkDescriptorSet == VK_NULL_HANDLE)
-    {
-        //try another pool
-        m_usedDescriptorPools.push_back(m_currentDescriptorPool);
-        m_currentDescriptorPool = VulkanDescriptorSetManager::acquirePool(desc, flag);
-        ASSERT(m_currentDescriptorPool, "nullptr");
-
-        vkDescriptorSet = m_currentDescriptorPool->createDescriptorSet(info, layoutSet);
-        ASSERT(vkDescriptorSet != VK_NULL_HANDLE, "fail");
-    }
-
-    pool = m_currentDescriptorPool;
-    return vkDescriptorSet;
-}
-
-VulkanDescriptorSetPool* VulkanDescriptorSetManager::acquirePool(const VulkanDescriptorSetLayoutDescription& desc, VkDescriptorPoolCreateFlags flag)
-{
-    VulkanDescriptorSetPool* pool = nullptr;
-    if (m_freeDescriptorPools.empty())
-    {
-        pool = new VulkanDescriptorSetPool(m_device, flag);
-        ASSERT(pool, "nullptr");
-
-        u32 setCount = 0;
-        std::vector<VkDescriptorPoolSize>* sizes = nullptr;
-        if (VulkanDeviceCaps::getInstance()->useGlobalDescriptorPool)
-        {
-            setCount = s_maxSets;
-            sizes = &VulkanDescriptorSetManager::s_poolSizes;
-        }
-        else
-        {
-            ASSERT(false, "not implemented");
-
-            //setCount = static_cast<u32>(layout._setLayouts.size());
-            //for (auto& set : layout._setLayouts)
-            //{
-            //    //TODO: need shader
-            //}
-        }
-
-        if (!pool->create(setCount, *sizes))
-        {
-            ASSERT(false, "fail");
-            pool->destroy();
-        }
-    }
-    else
-    {
-        pool = m_freeDescriptorPools.front();
-        m_freeDescriptorPools.pop_front();
+        pool = nullptr;
     }
 
     return pool;
 }
 
-void VulkanDescriptorSetManager::destroyPools()
+void VulkanDescriptorSetManager::LayoutPools::destroyPools()
 {
-    ASSERT(m_usedDescriptorPools.empty(), "not enmpty");
-
-    if (m_currentDescriptorPool)
+    for (auto& pools : _pools)
     {
-        ASSERT(!m_currentDescriptorPool->isCaptured(), "still used");
-        m_currentDescriptorPool->destroy();
-        delete m_currentDescriptorPool;
-        m_currentDescriptorPool = nullptr;
-    }
+        ASSERT(pools.second, "nullptr");
+        for (auto& pool : *pools.second)
+        {
+            pool->destroy();
+            delete pool;
+        }
+        pools.second->clear();
 
-    for (auto pool : m_freeDescriptorPools)
-    {
-        pool->destroy();
-        delete pool;
+        delete pools.second;
     }
-    m_freeDescriptorPools.clear();
+    _pools.clear();
+}
+
+VulkanDescriptorSetManager::LayoutPools::~LayoutPools()
+{
+    ASSERT(_pools.empty(), "not empty");
 }
 
 } //namespace vk

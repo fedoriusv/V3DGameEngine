@@ -130,21 +130,44 @@ namespace vk
         VkDescriptorSet acquireDescriptorSet(const VulkanDescriptorSetLayoutDescription& desc, const SetInfo& info, VkDescriptorSetLayout layoutSet, VulkanDescriptorSetPool*& pool);
 
         void updateDescriptorPools();
-        void clear();
 
     private:
 
-        VulkanDescriptorSetPool* acquirePool(const VulkanDescriptorSetLayoutDescription& desc, VkDescriptorPoolCreateFlags flag);
-        void destroyPools();
-
         VkDevice m_device;
 
-        std::deque<VulkanDescriptorSetPool*> m_freeDescriptorPools;
-        std::deque<VulkanDescriptorSetPool*> m_usedDescriptorPools;
-        VulkanDescriptorSetPool* m_currentDescriptorPool;
+        struct GenericPools
+        {
+            GenericPools() noexcept;
+            ~GenericPools();
 
-        static std::vector<VkDescriptorPoolSize> s_poolSizes;
-        static u32 s_maxSets;
+            VulkanDescriptorSetPool* acquirePool(VkDevice device, VkDescriptorPoolCreateFlags flag);
+            void destroyPools();
+
+            void clearPools();
+            void updatePools();
+
+            std::deque<VulkanDescriptorSetPool*> _freeDescriptorPools;
+            std::deque<VulkanDescriptorSetPool*> _usedDescriptorPools;
+            VulkanDescriptorSetPool* _currentDescriptorPool;
+
+            static std::vector<VkDescriptorPoolSize> s_poolSizes;
+            static const u32 s_maxSets = 256;
+        };
+        GenericPools m_genericPools;
+
+        struct LayoutPools
+        {
+            ~LayoutPools();
+
+            VulkanDescriptorSetPool* createPool(const VulkanDescriptorSetLayoutDescription& desc, VkDevice device, VkDescriptorPoolCreateFlags flag);
+            void destroyPools();
+
+            std::unordered_map<VulkanDescriptorSetLayoutDescription, std::list<VulkanDescriptorSetPool*>*, VulkanDescriptorSetLayoutDescription::Hash, VulkanDescriptorSetLayoutDescription::Equal> _pools;
+
+            static const u32 s_maxSets = 256;
+            static const u32 s_multipliers = 32;
+        };
+        LayoutPools m_layoutPools;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
