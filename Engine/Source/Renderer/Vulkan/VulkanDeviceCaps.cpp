@@ -316,7 +316,7 @@ void VulkanDeviceCaps::initialize()
     ASSERT(k_maxVertexInputAttributes <= m_deviceProperties.limits.maxVertexInputAttributes, "maxVertexInputAttributes less than k_maxVertexInputAttributes");
     ASSERT(k_maxVertexInputBindings <= m_deviceProperties.limits.maxVertexInputBindings, "maxVertexInputBindings less than k_maxVertexInputBindings");
 
-    useGlobalDescriptorPool = false;
+    useGlobalDescriptorPool = true;
     useDynamicUniforms = true;
     useLateDescriptorSetUpdate = false;
 

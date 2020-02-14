@@ -82,31 +82,37 @@ VkDescriptorSet VulkanDescriptorSetManager::acquireDescriptorSet(const VulkanDes
     u32 index = VulkanSwapchain::currentSwapchainIndex();
     ASSERT(m_currentPool.size() > index, "wrong index");
 
-    //finds in pools
-    if (!m_currentPool[index])
+    u32 secondTry = 0;
+    while (secondTry < 2)
     {
-        m_currentPool[index] = m_poolProvider->acquirePool(desc, flag);
+        if (!m_currentPool[index])
+        {
+            m_currentPool[index] = m_poolProvider->acquirePool(desc, flag);
+        }
+
+        VkDescriptorSet descriptorSet = m_currentPool[index]->getDescriptorSet(info);
+        if (descriptorSet != VK_NULL_HANDLE)
+        {
+            pool = m_currentPool[index];
+            return descriptorSet;
+        }
+        else
+        {
+            descriptorSet = m_currentPool[index]->createDescriptorSet(info, layoutSet);
+            if (descriptorSet != VK_NULL_HANDLE)
+            {
+                pool = m_currentPool[index];
+                return descriptorSet;
+            }
+        }
+
+        m_currentPool[index] = nullptr;
+        ++secondTry;
     }
+    ASSERT(false, "descriptor set is not created");
 
-    VkDescriptorSet descriptorSet = m_currentPool[index]->getDescriptorSet(info);
-    if (descriptorSet != VK_NULL_HANDLE)
-    {
-        pool = m_currentPool[index];
-        return descriptorSet;
-    }
-
-    //create new descriptor set
-    descriptorSet = m_currentPool[index]->createDescriptorSet(info, layoutSet);
-    if (descriptorSet == VK_NULL_HANDLE)
-    {
-        m_currentPool[index] = m_poolProvider->acquirePool(desc, flag);
-
-        descriptorSet = m_currentPool[index]->createDescriptorSet(info, layoutSet);
-        ASSERT(descriptorSet != VK_NULL_HANDLE, "fail");
-    }
-
-    pool = m_currentPool[index];
-    return descriptorSet;
+    pool = nullptr;
+    return VK_NULL_HANDLE;
 }
 
 void VulkanDescriptorSetManager::updateDescriptorPools()
