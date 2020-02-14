@@ -102,6 +102,8 @@ namespace vk
         void captureResource(VulkanResource* resource, u64 frame);
         void releaseResources();
 
+        bool isSafeFrame(u64 frame);
+
         friend VulkanResource;
         friend class VulkanCommandBufferManager;
 
@@ -118,6 +120,7 @@ namespace vk
         std::vector<VkSemaphore>            m_semaphores;
         std::vector<VkPipelineStageFlags>   m_stageMasks;
         VkFence                             m_fence;
+        u64                                 m_capturedFrameIndex;
 
         VulkanCommandBuffer*                m_primaryBuffer;
         std::vector<VulkanCommandBuffer*>   m_secondaryBuffers;
@@ -134,6 +137,7 @@ namespace vk
         };
 
         RenderPassState m_renderpassState;
+        Context* m_context;
 
 #if VULKAN_DEBUG_MARKERS
         std::string m_debugName;

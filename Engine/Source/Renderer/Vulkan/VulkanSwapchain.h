@@ -49,6 +49,8 @@ namespace vk
         VulkanImage* getSwapchainImage(u32 index) const;
         u32 getSwapchainImageCount() const;
 
+        static u32 currentSwapchainIndex();
+
     private:
 
         static VkSurfaceKHR createSurface(VkInstance vkInstance,  NativeInstance hInstance, NativeWindows hWnd);
@@ -65,8 +67,8 @@ namespace vk
         VkSwapchainKHR m_swapchain;
         std::vector<VulkanImage*> m_swapBuffers;
 
-        u32 m_currentImageIndex;
         u32 m_currentSemaphoreIndex;
+        static u32 s_currentImageIndex;
         std::vector<VkSemaphore> m_acquireSemaphore;
         std::vector<VkFence> m_acquireFence;
 

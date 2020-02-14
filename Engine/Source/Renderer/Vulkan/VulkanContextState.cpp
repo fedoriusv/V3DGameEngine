@@ -8,11 +8,13 @@
 #include "VulkanFramebuffer.h"
 #include "VulkanPipeline.h"
 #include "VulkanDescriptorSet.h"
+#include "VulkanDescriptorPool.h"
 #include "VulkanImage.h"
 #include "VulkanBuffer.h"
 #include "VulkanSampler.h"
 #include "VulkanUnifromBuffer.h"
 #include "VulkanDeviceCaps.h"
+#include "VulkanSwapchain.h"
 
 namespace v3d
 {
@@ -23,7 +25,6 @@ namespace vk
 
 VulkanContextState::VulkanContextState(VkDevice device, VulkanDescriptorSetManager* descriptorSetManager, VulkanUniformBufferManager* unifromBufferManager) noexcept
     : m_device(device)
-    , m_swapchainIndex(0)
     , m_descriptorSetManager(descriptorSetManager)
     , m_unifromBufferManager(unifromBufferManager)
 {
@@ -38,11 +39,6 @@ VulkanContextState::VulkanContextState(VkDevice device, VulkanDescriptorSetManag
 
     VulkanContextState::invalidateDescriptorSetsState();
     m_currentDesctiptorsSets.fill(VK_NULL_HANDLE);
-}
-
-void VulkanContextState::updateSwapchainIndex(u32 index)
-{
-    m_swapchainIndex = index;
 }
 
 void VulkanContextState::invalidateCommandBuffer(CommandTargetType type)
@@ -154,17 +150,17 @@ VulkanFramebuffer * VulkanContextState::getCurrentFramebuffer() const
     }
     else
     {
-        return m_currentFramebuffer.first[m_swapchainIndex];
+        return m_currentFramebuffer.first[VulkanSwapchain::currentSwapchainIndex()];
     }
 }
 
-VulkanGraphicPipeline * VulkanContextState::getCurrentPipeline() const
+VulkanGraphicPipeline* VulkanContextState::getCurrentPipeline() const
 {
     //ASSERT(m_currentPipeline.first, "nullptr");
     return m_currentPipeline.first;
 }
 
-const StreamBufferDescription & VulkanContextState::getStreamBufferDescription() const
+const StreamBufferDescription& VulkanContextState::getStreamBufferDescription() const
 {
     return m_currentVertexBuffers.first;
 }

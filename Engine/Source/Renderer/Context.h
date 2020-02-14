@@ -124,7 +124,6 @@ namespace renderer
         virtual bool initialize() = 0;
         virtual void destroy() = 0;
 
-
         struct BackbufferDesc
         {
             core::Dimension2D _size;

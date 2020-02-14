@@ -92,7 +92,7 @@ VulkanGraphicContext::VulkanGraphicContext(const platform::Window * window) noex
     , m_bufferMemoryManager(nullptr)
 
     , m_renderpassManager(nullptr)
-    , m_framebuferManager(nullptr)
+    , m_framebufferManager(nullptr)
     , m_pipelineManager(nullptr)
     , m_samplerManager(nullptr)
 
@@ -124,7 +124,7 @@ VulkanGraphicContext::~VulkanGraphicContext()
     ASSERT(!m_uniformBufferManager, "m_uniformBufferManager not nullptr");
 
     ASSERT(!m_renderpassManager, "m_renderpassManager not nullptr");
-    ASSERT(!m_framebuferManager, "m_framebuferManager not nullptr");
+    ASSERT(!m_framebufferManager, "m_framebufferManager not nullptr");
     ASSERT(!m_pipelineManager, "m_pipelineManager not nullptr");
     ASSERT(!m_samplerManager, "m_samplerManager not nullptr");
 
@@ -142,7 +142,6 @@ void VulkanGraphicContext::beginFrame()
 #endif
 
     u32 index = m_swapchain->acquireImage();
-    m_currentContextState->updateSwapchainIndex(index);
 #if VULKAN_DEBUG
     LOG_DEBUG("VulkanGraphicContext::beginFrame %llu, image index %u", m_frameCounter, index);
 #endif //VULKAN_DEBUG
@@ -327,7 +326,7 @@ void VulkanGraphicContext::setRenderTarget(const RenderPass::RenderPassInfo * re
                 images.push_back(*iter);
             }
 
-            auto [framebuffer, isNewFramebuffer] = m_framebuferManager->acquireFramebuffer(renderpass, images, framebufferInfo->_clearInfo._size);
+            auto [framebuffer, isNewFramebuffer] = m_framebufferManager->acquireFramebuffer(renderpass, images, framebufferInfo->_clearInfo._size);
             ASSERT(framebuffer, "framebuffer is nullptr");
 
             framebufferInfo->_tracker->attach(framebuffer);
@@ -351,7 +350,7 @@ void VulkanGraphicContext::setRenderTarget(const RenderPass::RenderPassInfo * re
     else
     {
         Framebuffer* framebuffer = nullptr;
-        std::tie(framebuffer, std::ignore) = m_framebuferManager->acquireFramebuffer(renderpass, framebufferInfo->_images, framebufferInfo->_clearInfo._size);
+        std::tie(framebuffer, std::ignore) = m_framebufferManager->acquireFramebuffer(renderpass, framebufferInfo->_images, framebufferInfo->_clearInfo._size);
         ASSERT(framebuffer, "framebuffer is nullptr");
 
         framebufferInfo->_tracker->attach(framebuffer);
@@ -421,12 +420,12 @@ void VulkanGraphicContext::removeFramebuffer(Framebuffer * framebuffer)
     {
         m_resourceDeleter.addResourceToDelete(vkFramebuffer, [this, vkFramebuffer](VulkanResource* resource) -> void
         {
-            m_framebuferManager->removeFramebuffer(vkFramebuffer);
+            m_framebufferManager->removeFramebuffer(vkFramebuffer);
         });
     }
     else
     {
-        m_framebuferManager->removeFramebuffer(vkFramebuffer);
+        m_framebufferManager->removeFramebuffer(vkFramebuffer);
     }
 }
 
@@ -777,17 +776,17 @@ bool VulkanGraphicContext::initialize()
         m_bufferMemoryManager = new PoolVulkanMemoryAllocator(m_deviceInfo._device, 4 * 1024 * 1024); //4MB
     }
 
-    m_cmdBufferManager = new VulkanCommandBufferManager(&m_deviceInfo, m_queueList[0]);
+    m_cmdBufferManager = new VulkanCommandBufferManager(this , &m_deviceInfo, m_queueList[0]);
     //m_currentBufferState._currentDrawBuffer = m_drawCmdBufferManager->acquireNewCmdBuffer(VulkanCommandBuffer::PrimaryBuffer);
     //ASSERT(m_currentBufferState._currentDrawBuffer, "m_currentDrawBuffer is nullptr");
 
     m_stagingBufferManager = new VulkanStagingBufferManager(m_deviceInfo._device);
     m_uniformBufferManager = new VulkanUniformBufferManager(m_deviceInfo._device, m_resourceDeleter);
     m_pipelineLayoutManager = new VulkanPipelineLayoutManager(m_deviceInfo._device);
-    m_descriptorSetManager = new VulkanDescriptorSetManager(m_deviceInfo._device);
+    m_descriptorSetManager = new VulkanDescriptorSetManager(m_deviceInfo._device, m_swapchain->getSwapchainImageCount());
 
     m_renderpassManager = new RenderPassManager(this);
-    m_framebuferManager = new FramebufferManager(this);
+    m_framebufferManager = new FramebufferManager(this);
     m_pipelineManager = new PipelineManager(this);
     m_samplerManager = new SamplerManager(this);
 
@@ -809,6 +808,8 @@ void VulkanGraphicContext::destroy()
         ASSERT(false, "error");
     }
 
+    //reset to max, need to skip all an safe frames
+    m_frameCounter = ~0U;
     if (m_cmdBufferManager)
     {
         m_cmdBufferManager->waitCompete();
@@ -875,10 +876,10 @@ void VulkanGraphicContext::destroy()
         m_renderpassManager = nullptr;
     }
 
-    if (m_framebuferManager)
+    if (m_framebufferManager)
     {
-        delete m_framebuferManager;
-        m_framebuferManager = nullptr;
+        delete m_framebufferManager;
+        m_framebufferManager = nullptr;
     }
 
     if (m_samplerManager)
@@ -1340,6 +1341,11 @@ VulkanCommandBuffer * VulkanGraphicContext::getOrCreateAndStartCommandBuffer(Com
 
     ASSERT(false, "wrong case");
     return nullptr;
+}
+
+VulkanSwapchain* VulkanGraphicContext::getSwapchain() const
+{
+    return m_swapchain;
 }
 
 

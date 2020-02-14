@@ -34,8 +34,6 @@ namespace vk
 
         explicit VulkanContextState(VkDevice device, VulkanDescriptorSetManager* descriptorSetManager, VulkanUniformBufferManager* unifromBufferManager) noexcept;
 
-        void updateSwapchainIndex(u32 index);
-
         void invalidateCommandBuffer(CommandTargetType type);
 
         bool isCurrentRenderPass(const VulkanRenderPass* pass) const;
@@ -121,8 +119,6 @@ namespace vk
         static VkDescriptorImageInfo makeVkDescriptorImageInfo(const VulkanImage* image, const VulkanSampler* sampler, VkImageLayout layout, s32 layer = -1);
 
         VkDevice m_device;
-
-        u32 m_swapchainIndex;
 
         //Current State
         std::pair<VulkanRenderPass*, bool>                  m_currentRenderpass;

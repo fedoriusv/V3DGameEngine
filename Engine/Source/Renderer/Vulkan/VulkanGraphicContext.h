@@ -22,6 +22,7 @@ namespace vk
     class VulkanGraphicPipeline;
 
     class VulkanContextState;
+    class VulkanSwapchain;
 
     class VulkanPipelineLayoutManager;
     class VulkanDescriptorSetManager;
@@ -86,16 +87,17 @@ namespace vk
 
         void removeSampler(Sampler* sampler) override;
 
-        const DeviceCaps* getDeviceCaps() const override;
-
-        VulkanStagingBufferManager* getStagingManager();
-
         static const std::vector<VkDynamicState>& getDynamicStates();
         static bool isDynamicState(VkDynamicState state);
 
-        VulkanCommandBuffer* getOrCreateAndStartCommandBuffer(CommandTargetType type);
+        const DeviceCaps* getDeviceCaps() const override;
 
         void handleNotify(utils::Observable* obj) override;
+
+        VulkanStagingBufferManager* getStagingManager();
+        VulkanCommandBuffer* getOrCreateAndStartCommandBuffer(CommandTargetType type);
+
+        VulkanSwapchain* getSwapchain() const;
 
     private:
 
@@ -132,7 +134,7 @@ namespace vk
         VulkanMemory::VulkanMemoryAllocator* m_bufferMemoryManager;
 
         RenderPassManager*          m_renderpassManager;
-        FramebufferManager*         m_framebuferManager;
+        FramebufferManager*         m_framebufferManager;
         PipelineManager*            m_pipelineManager;
         SamplerManager*             m_samplerManager;
 
@@ -186,7 +188,6 @@ namespace vk
         VulkanResourceDeleter       m_resourceDeleter;
 
         static std::vector<VkDynamicState>  s_dynamicStates;
-
         bool prepareDraw(VulkanCommandBuffer* drawBuffer);
 
         const platform::Window* m_window;

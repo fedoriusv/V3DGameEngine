@@ -1,4 +1,7 @@
 #include "VulkanCommandBuffer.h"
+#include "Utils/Logger.h"
+
+#ifdef VULKAN_RENDER
 #include "VulkanGraphicContext.h"
 #include "VulkanDebug.h"
 #include "VulkanImage.h"
@@ -6,9 +9,8 @@
 #include "VulkanRenderpass.h"
 #include "VulkanFramebuffer.h"
 #include "VulkanPipeline.h"
-#include "Utils/Logger.h"
+#include "VulkanSwapchain.h"
 
-#ifdef VULKAN_RENDER
 namespace v3d
 {
 namespace renderer
@@ -25,7 +27,10 @@ VulkanCommandBuffer::VulkanCommandBuffer(VkDevice device, CommandBufferLevel lev
     , m_level(level)
 
     , m_fence(VK_NULL_HANDLE)
+    , m_capturedFrameIndex(-1)
     , m_isInsideRenderPass(false)
+
+    , m_context(nullptr)
 {
     LOG_DEBUG("VulkanCommandBuffer constructor %llx", this);
     m_status = CommandBufferStatus::Invalid;
@@ -130,7 +135,8 @@ void VulkanCommandBuffer::refreshFenceStatus()
         if (m_level == CommandBufferLevel::PrimaryBuffer)
         {
             VkResult result = VulkanWrapper::GetFenceStatus(m_device, m_fence);
-            if (result == VK_SUCCESS)
+            ASSERT(m_context, "nullptr");
+            if (result == VK_SUCCESS && isSafeFrame(m_context->getCurrentFrameIndex()))
             {
                 m_status = CommandBufferStatus::Finished;
 
@@ -162,6 +168,7 @@ void VulkanCommandBuffer::captureResource(VulkanResource* resource, u64 frame)
 {
     std::lock_guard lock(m_mutex);
 
+    m_capturedFrameIndex = (frame == 0) ? m_context->getCurrentFrameIndex() : frame;
     auto iter = m_resources.insert(resource);
     if (iter.second)
     {
@@ -177,7 +184,7 @@ void VulkanCommandBuffer::releaseResources()
 {
     std::lock_guard lock(m_mutex);
 
-    for (auto res : m_resources)
+    for (auto& res : m_resources)
     {
         res->m_counter--;
         res->m_cmdBuffers.erase(std::remove(res->m_cmdBuffers.begin(), res->m_cmdBuffers.end(), this));
@@ -191,6 +198,14 @@ void VulkanCommandBuffer::releaseResources()
         }
     }
     m_resources.clear();
+}
+
+bool VulkanCommandBuffer::isSafeFrame(u64 frame)
+{
+    ASSERT(m_context, "nullptr");
+    static u64 countSwapchains = static_cast<VulkanGraphicContext*>(m_context)->getSwapchain()->getSwapchainImageCount();
+
+    return (m_capturedFrameIndex + countSwapchains) < frame;
 }
 
 void VulkanCommandBuffer::beginCommandBuffer()

@@ -12,10 +12,12 @@ namespace renderer
 namespace vk
 {
 
-VulkanCommandBufferManager::VulkanCommandBufferManager(const DeviceInfo* info, VkQueue queue)
+VulkanCommandBufferManager::VulkanCommandBufferManager(Context* const context, const DeviceInfo* info, VkQueue queue)
     : m_device(info->_device)
     , m_queue(queue)
     , m_familyIndex(info->_queueFamilyIndex)
+
+    , m_context(context)
 
     , m_poolFlag(0)
 {
@@ -78,6 +80,7 @@ VulkanCommandBuffer * VulkanCommandBufferManager::acquireNewCmdBuffer(VulkanComm
             cmdBuffer->m_pool = pool;
             cmdBuffer->m_command = buffer;
             cmdBuffer->m_status = VulkanCommandBuffer::CommandBufferStatus::Ready;
+            cmdBuffer->m_context = m_context;
 
             m_usedCmdBuffers.push_back(cmdBuffer);
 
@@ -101,6 +104,7 @@ VulkanCommandBuffer * VulkanCommandBufferManager::acquireNewCmdBuffer(VulkanComm
     cmdBuffer->m_pool = pool;
     cmdBuffer->m_command = buffer;
     cmdBuffer->m_status = VulkanCommandBuffer::CommandBufferStatus::Ready;
+    cmdBuffer->m_context = m_context;
 
     m_usedCmdBuffers.push_back(cmdBuffer);
 

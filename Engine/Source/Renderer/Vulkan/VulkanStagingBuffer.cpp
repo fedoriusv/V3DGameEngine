@@ -95,17 +95,24 @@ void VulkanStagingBufferManager::destroyAfterUse(VulkanStagingBuffer * buffer)
 void VulkanStagingBufferManager::destroyStagingBuffers()
 {
     std::lock_guard lock(m_mutex);
-    for (auto buff : m_stagingBuffers)
+
+    for (auto iter = m_stagingBuffers.begin(); iter != m_stagingBuffers.end();)
     {
-        if (buff->getBuffer()->isCaptured())
+        if ((*iter)->getBuffer()->isCaptured())
         {
-            ASSERT(false, "captured");
-            buff->getBuffer()->waitComplete();
+            //ASSERT(false, "captured");
+            //buff->getBuffer()->waitComplete();
+
+            ++iter;
+            continue;
         }
+
+        VulkanStagingBuffer* buff = *iter;
+        iter = m_stagingBuffers.erase(iter);
+
         buff->destroy();
         delete buff;
     }
-    m_stagingBuffers.clear();
 }
 
 } //namespace vk

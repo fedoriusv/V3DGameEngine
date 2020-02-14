@@ -47,10 +47,15 @@
 //Render
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 #ifdef VULKAN_RENDER
-#   define VULKAN_VERSION_MAJOR 1
-#   define VULKAN_VERSION_MINOR 1
+#   ifdef PLATFORM_ANDROID
+#       define VULKAN_VERSION_MAJOR 1
+#       define VULKAN_VERSION_MINOR 0
+#   else
+#       define VULKAN_VERSION_MAJOR 1
+#       define VULKAN_VERSION_MINOR 1
+#   endif
 
-#   define VULKAN_DEBUG 0
+#   define VULKAN_DEBUG 1
 #   define VULKAN_LAYERS_CALLBACKS 1
 #   if VULKAN_LAYERS_CALLBACKS
 #       define VULKAN_VALIDATION_LAYERS_CALLBACK 1
@@ -63,6 +68,10 @@
 #   if VULKAN_DUMP
 #   define VULKAN_DUMP_FILE "VulkanCommandsDump.log"
 #   endif //VULKAN_DUMP
+
+#define VULKAN_VERSION_1_0 (VULKAN_VERSION_MAJOR == 1 && VULKAN_VERSION_MINOR == 0)
+#define VULKAN_VERSION_1_1 (VULKAN_VERSION_MAJOR == 1 && VULKAN_VERSION_MINOR == 1)
+
 #endif //VULKAN_RENDER
 
 

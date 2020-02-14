@@ -918,7 +918,7 @@ bool VulkanImage::create()
 
         if (m_usage == TextureUsage::TextureUsage_Attachment)
         {
-            imageUsage |= VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT;
+            //imageUsage |= VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT;
         }
     }
 
@@ -948,7 +948,9 @@ bool VulkanImage::create()
         LOG_ERROR("VulkanImage::create, can't create image format unsupported");
         return false;
     }
-
+#if VULKAN_DEBUG
+    LOG_DEBUG("vkCreateImage: size [%u : %u : %u]; flags %u; usage %u; format %s", m_dimension.width, m_dimension.height, m_dimension.depth, imageFlags, imageUsage, ImageFormatString(m_format).c_str());
+#endif
     VkImageCreateInfo imageCreateInfo = {};
     imageCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
     imageCreateInfo.pNext = nullptr;
@@ -1071,7 +1073,7 @@ bool VulkanImage::create(VkImage image)
     return true;
 }
 
-void VulkanImage::clear(Context * context, const core::Vector4D & color)
+void VulkanImage::clear(Context* context, const core::Vector4D & color)
 {
     if (!m_image)
     {
@@ -1097,7 +1099,7 @@ void VulkanImage::clear(Context * context, const core::Vector4D & color)
     commandBuffer->cmdPipelineBarrier(this, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT | VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, layout);
 }
 
-void VulkanImage::clear(Context * context, f32 depth, u32 stencil)
+void VulkanImage::clear(Context* context, f32 depth, u32 stencil)
 {
     LOG_DEBUG("VulkanGraphicContext::clearDepthStencil [%f, %u]", depth, stencil);
     VkClearDepthStencilValue clearDepthStencilValue = { depth, stencil };
@@ -1148,7 +1150,7 @@ bool VulkanImage::upload(Context * context, const core::Dimension3D & offsets, c
     return VulkanImage::internalUpload(context, offsets, size, layers, 1, calculatedSize, data);
 }
 
-bool VulkanImage::internalUpload(Context * context, const core::Dimension3D & offsets, const core::Dimension3D & size, u32 layers, u32 mips, u64 dataSize, const void * data)
+bool VulkanImage::internalUpload(Context* context, const core::Dimension3D& offsets, const core::Dimension3D& size, u32 layers, u32 mips, u64 dataSize, const void* data)
 {
     if (!m_image)
     {

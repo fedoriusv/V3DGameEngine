@@ -110,11 +110,15 @@ VulkanMemory::VulkanAllocation VulkanMemory::allocateImageMemory(VulkanMemoryAll
             memoryTypeIndex = VulkanMemory::findMemoryTypeIndex(memoryRequirements2.memoryRequirements, flags);
             if (memoryTypeIndex < 0)
             {
-                LOG_ERROR("VulkanMemory::allocateImageMemory: invalid memoryTypeIndex %d, memoryRequirements %d, VkMemoryPropertyFlags %d", memoryTypeIndex, memoryRequirements2.memoryRequirements, flags);
+                LOG_ERROR("VulkanMemory::allocateImageMemory2: invalid memoryTypeIndex %d, memoryRequirements.memoryTypeBits %d, VkMemoryPropertyFlags %d", memoryTypeIndex, memoryRequirements2.memoryRequirements.memoryTypeBits, flags);
                 ASSERT(false, "invalid memoryTypeIndex");
 
                 return  VulkanMemory::s_invalidMemory;
             }
+#if VULKAN_DEBUG
+            LOG_DEBUG("VulkanMemory:GetImageMemoryRequirements2: memoryTypeIndex %d, memoryRequirements.memoryTypeBits %d, VkMemoryPropertyFlags %d", memoryTypeIndex, memoryRequirements2.memoryRequirements.memoryTypeBits, flags);
+            LOG_DEBUG("VulkanMemory:GetImageMemoryRequirements2 prefersDedicatedAllocation || requiresDedicatedAllocation %u", (memoryDedicatedRequirements.prefersDedicatedAllocation || memoryDedicatedRequirements.requiresDedicatedAllocation));
+#endif // VULKAN_DEBUG
 
             void* vkExtensions = nullptr;
 
@@ -152,11 +156,14 @@ VulkanMemory::VulkanAllocation VulkanMemory::allocateImageMemory(VulkanMemoryAll
             s32 memoryTypeIndex = VulkanMemory::findMemoryTypeIndex(memoryRequirements, flags);
             if (memoryTypeIndex < 0)
             {
-                LOG_ERROR("VulkanMemory::allocateImageMemory: invalid memoryTypeIndex %d, memoryRequirements %d, VkMemoryPropertyFlags %d", memoryTypeIndex, memoryRequirements, flags);
+                LOG_ERROR("VulkanMemory::allocateImageMemory: invalid memoryTypeIndex %d, memoryRequirements.memoryTypeBits %d, VkMemoryPropertyFlags %d", memoryTypeIndex, memoryRequirements.memoryTypeBits, flags);
                 ASSERT(false, "invalid memoryTypeIndex");
 
                 return  VulkanMemory::s_invalidMemory;
             }
+#if VULKAN_DEBUG
+            LOG_DEBUG("VulkanMemory:GetImageMemoryRequirements: memoryTypeIndex %d, memoryRequirements.memoryTypeBits %d, VkMemoryPropertyFlags %d", memoryTypeIndex, memoryRequirements.memoryTypeBits, flags);
+#endif // VULKAN_DEBUG
 
             memory = allocator.allocate(memoryRequirements.size, memoryRequirements.alignment, memoryTypeIndex, nullptr);
             if (memory._memory == VK_NULL_HANDLE)
@@ -205,11 +212,14 @@ VulkanMemory::VulkanAllocation VulkanMemory::allocateBufferMemory(VulkanMemoryAl
         s32 memoryTypeIndex = VulkanMemory::findMemoryTypeIndex(memoryRequirements, flags);
         if (memoryTypeIndex < 0)
         {
-            LOG_ERROR("VulkanMemory::allocateBufferMemory: invalid memoryTypeIndex %d, memoryRequirements %d, VkMemoryPropertyFlags %d", memoryTypeIndex, memoryRequirements, flags);
+            LOG_ERROR("VulkanMemory::allocateBufferMemory: invalid memoryTypeIndex %d, memoryRequirements.memoryTypeBits %d, VkMemoryPropertyFlags %d", memoryTypeIndex, memoryRequirements.memoryTypeBits, flags);
             ASSERT(false, "invalid memoryTypeIndex");
 
             return VulkanMemory::s_invalidMemory;
         }
+#if VULKAN_DEBUG
+        LOG_DEBUG("VulkanMemory:GetBufferMemoryRequirements: memoryTypeIndex %d, memoryRequirements.memoryTypeBits %d, VkMemoryPropertyFlags %d", memoryTypeIndex, memoryRequirements.memoryTypeBits, flags);
+#endif // VULKAN_DEBUG
 
         VulkanAllocation memory = allocator.allocate(memoryRequirements.size, memoryRequirements.alignment, memoryTypeIndex);
         if (memory._memory == VK_NULL_HANDLE)

@@ -259,8 +259,7 @@ VkBool32 VulkanDebugUtils::defaultDebugUtilsMessegerCallback(VkDebugUtilsMessage
 
 void VulkanDebugUtils::debugCallbackData(const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, void* pUserData)
 {
-    VulkanGraphicContext* context = reinterpret_cast<VulkanGraphicContext*>(pUserData);
-
+    [[maybe_unused]] VulkanGraphicContext* context = reinterpret_cast<VulkanGraphicContext*>(pUserData);
     for (u32 i = 0; i < pCallbackData->objectCount; ++i)
     {
         const VkDebugUtilsObjectNameInfoEXT& objects = pCallbackData->pObjects[i];

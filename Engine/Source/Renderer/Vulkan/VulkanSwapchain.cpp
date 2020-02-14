@@ -63,6 +63,8 @@ bool createSurfaceAndroidApi(VkInstance vkInstance, NativeInstance hInstance, Na
 }
 #endif //PLATFORM_ANDROID
 
+u32 VulkanSwapchain::s_currentImageIndex = ~0U;
+
 VulkanSwapchain::VulkanSwapchain(const DeviceInfo* info)
     : m_deviceInfo(info)
     , m_surface(VK_NULL_HANDLE)
@@ -70,7 +72,6 @@ VulkanSwapchain::VulkanSwapchain(const DeviceInfo* info)
     , m_surfaceFormat({})
     , m_swapchain(VK_NULL_HANDLE)
 
-    , m_currentImageIndex((u32)-1)
     , m_currentSemaphoreIndex(0U)
 
     , m_ready(false)
@@ -462,7 +463,7 @@ void VulkanSwapchain::present(VkQueue queue, const std::vector<VkSemaphore>& wai
     }
     presentInfoKHR.swapchainCount = 1;
     presentInfoKHR.pSwapchains = &m_swapchain;
-    presentInfoKHR.pImageIndices = &m_currentImageIndex;
+    presentInfoKHR.pImageIndices = &s_currentImageIndex;
     presentInfoKHR.pResults = innerResults;
 
     VkResult result = VulkanWrapper::QueuePresent(queue, &presentInfoKHR);
@@ -486,7 +487,7 @@ void VulkanSwapchain::present(VkQueue queue, const std::vector<VkSemaphore>& wai
         LOG_FATAL(" VulkanSwapchain::QueuePresent: failed with error %s", ErrorString(result).c_str());
         ASSERT(false, "QueuePresent failed");
     }
-    m_currentSemaphoreIndex = (m_currentSemaphoreIndex + 1) % m_acquireSemaphore.size();
+    m_currentSemaphoreIndex = (m_currentSemaphoreIndex + 1) % static_cast<u32>(m_acquireSemaphore.size());
 }
 
 u32 VulkanSwapchain::acquireImage()
@@ -526,7 +527,7 @@ u32 VulkanSwapchain::acquireImage()
         ASSERT(false, "vkAcquireNextImageKHR failed");
     }
 
-    m_currentImageIndex = imageIndex;
+    s_currentImageIndex = imageIndex;
     return imageIndex;
 }
 
@@ -537,7 +538,7 @@ bool VulkanSwapchain::recteate(const SwapchainConfig& config)
         return false;
     }
 
-    for (std::vector<VulkanImage *>::iterator image = m_swapBuffers.begin(); image < m_swapBuffers.end(); ++image)
+    for (std::vector<VulkanImage*>::iterator image = m_swapBuffers.begin(); image < m_swapBuffers.end(); ++image)
     {
         (*image)->destroy();
     }
@@ -572,20 +573,25 @@ bool VulkanSwapchain::recteate(const SwapchainConfig& config)
     return true;
 }
 
-VulkanImage * VulkanSwapchain::getSwapchainImage(u32 index) const
+VulkanImage* VulkanSwapchain::getSwapchainImage(u32 index) const
 {
     return m_swapBuffers[index];
 }
 
-VulkanImage * VulkanSwapchain::getBackbuffer() const
+VulkanImage* VulkanSwapchain::getBackbuffer() const
 {
-    ASSERT(m_currentImageIndex >= 0, "invalid index");
-    return m_swapBuffers[m_currentImageIndex];
+    ASSERT(s_currentImageIndex >= 0, "invalid index");
+    return m_swapBuffers[s_currentImageIndex];
 }
 
 u32 VulkanSwapchain::getSwapchainImageCount() const
 {
     return static_cast<u32>(m_swapBuffers.size());
+}
+
+u32 VulkanSwapchain::currentSwapchainIndex()
+{
+    return s_currentImageIndex;
 }
 
 void VulkanSwapchain::attachResource(VulkanResource* resource, const std::function<bool(VulkanResource*)>& recreator)

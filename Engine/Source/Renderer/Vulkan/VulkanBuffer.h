@@ -43,8 +43,7 @@ namespace vk
     private:
 
         bool recreate();
-
-        bool isPresentBufferUsageFlag(StreamBufferUsage flag);
+        bool isPresentingBufferUsageFlag(StreamBufferUsage flag);
 
         VkDevice m_device;
 

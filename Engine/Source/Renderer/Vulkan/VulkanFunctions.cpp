@@ -62,7 +62,7 @@ bool LoadVulkanLibrary()
 #   endif //VULKAN_DEBUG
     return validation;
 
-#endif //VULKAN_DYNAMIC    
+#endif //VULKAN_DYNAMIC
 }
 
 bool LoadVulkanLibrary(VkInstance instance)
@@ -94,6 +94,10 @@ bool LoadVulkanLibrary(VkInstance instance)
 
 bool LoadVulkanLibrary(VkDevice device)
 {
+#   define GET_ADDRES_VK_FUNCTIONS(Func) Func = reinterpret_cast<PFN_##Func>(vkGetDeviceProcAddr(device, #Func));
+//TODO
+#   undef GET_ADDRES_VK_FUNCTIONS
+
     return true;
 }
 
@@ -110,7 +114,7 @@ void FreeVulkanLibrary()
 #   undef CLEAR_VK_ENTRYPOINTS
 
         dlclose(g_libDynamicVulkan);
-        g_libDynamicVulkan = nullptr;   
+        g_libDynamicVulkan = nullptr;
     }
 #   endif //PLATFORM_ANDROID
 #endif //VULKAN_DYNAMIC

@@ -35,7 +35,7 @@ namespace vk
         VulkanCommandBufferManager(const VulkanCommandBufferManager&) = delete;
         VulkanCommandBufferManager& operator=(const VulkanCommandBufferManager&) = delete;
 
-        VulkanCommandBufferManager(const struct DeviceInfo* info, VkQueue queue);
+        VulkanCommandBufferManager(Context* const context, const struct DeviceInfo* info, VkQueue queue);
         ~VulkanCommandBufferManager();
 
         VulkanCommandBuffer* acquireNewCmdBuffer(VulkanCommandBuffer::CommandBufferLevel level);
@@ -51,6 +51,8 @@ namespace vk
         VkDevice m_device;
         VkQueue  m_queue;
         u32      m_familyIndex;
+
+        Context* const m_context;
 
         VkCommandPoolCreateFlags    m_poolFlag;
         std::vector<VkCommandPool>  m_commandPools;

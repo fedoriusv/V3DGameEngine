@@ -159,7 +159,37 @@
     Macro(vkCmdEndRenderPass) \
     Macro(vkCmdExecuteCommands)
 
-    //Vulkan core 1.1
+    //Vulkan core
+#   if VULKAN_VERSION_1_0
+#   define ENUM_VK_ENTRYPOINTS_CORE_1_1_FUNCTIONS(Macro) \
+    Macro(vkBindBufferMemory2KHR) \
+    Macro(vkBindImageMemory2KHR) \
+    Macro(vkGetDeviceGroupPeerMemoryFeaturesKHR) \
+    Macro(vkCmdSetDeviceMaskKHR) \
+    Macro(vkCmdDispatchBaseKHR) \
+    Macro(vkEnumeratePhysicalDeviceGroupsKHR) \
+    Macro(vkGetImageMemoryRequirements2KHR) \
+    Macro(vkGetBufferMemoryRequirements2KHR) \
+    Macro(vkGetImageSparseMemoryRequirements2KHR) \
+    Macro(vkGetPhysicalDeviceFeatures2KHR) \
+    Macro(vkGetPhysicalDeviceProperties2KHR) \
+    Macro(vkGetPhysicalDeviceFormatProperties2KHR) \
+    Macro(vkGetPhysicalDeviceImageFormatProperties2KHR) \
+    Macro(vkGetPhysicalDeviceQueueFamilyProperties2KHR) \
+    Macro(vkGetPhysicalDeviceMemoryProperties2KHR) \
+    Macro(vkGetPhysicalDeviceSparseImageFormatProperties2KHR) \
+    Macro(vkTrimCommandPoolKHR) \
+    Macro(vkGetDeviceQueue2) \
+    Macro(vkCreateSamplerYcbcrConversionKHR) \
+    Macro(vkDestroySamplerYcbcrConversionKHR) \
+    Macro(vkCreateDescriptorUpdateTemplateKHR) \
+    Macro(vkDestroyDescriptorUpdateTemplateKHR) \
+    Macro(vkUpdateDescriptorSetWithTemplateKHR) \
+    Macro(vkGetPhysicalDeviceExternalBufferPropertiesKHR) \
+    Macro(vkGetPhysicalDeviceExternalFencePropertiesKHR) \
+    Macro(vkGetPhysicalDeviceExternalSemaphorePropertiesKHR) \
+    Macro(vkGetDescriptorSetLayoutSupportKHR)
+#   else
 #   define ENUM_VK_ENTRYPOINTS_CORE_1_1_FUNCTIONS(Macro) \
     Macro(vkBindBufferMemory2) \
     Macro(vkBindImageMemory2) \
@@ -187,7 +217,8 @@
     Macro(vkGetPhysicalDeviceExternalBufferProperties) \
     Macro(vkGetPhysicalDeviceExternalFenceProperties) \
     Macro(vkGetPhysicalDeviceExternalSemaphoreProperties) \
-    Macro(vkGetDescriptorSetLayoutSupport) \
+    Macro(vkGetDescriptorSetLayoutSupport)
+#endif //VULKAN_VERSION_1_0
 
     //Surface
 #   ifdef VK_KHR_surface

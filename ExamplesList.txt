@@ -1,4 +1,3 @@
 ClearColor
 SimpleTriangle
 DrawMesh
-DrawScene

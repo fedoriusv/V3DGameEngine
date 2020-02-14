@@ -164,11 +164,7 @@ void VulkanDeviceCaps::fillCapabilitiesList(const DeviceInfo* info)
     supportRenderpass2 = false;//isEnableExtension(VK_KHR_CREATE_RENDERPASS_2_EXTENSION_NAME); //TODO temporary disabled because has validation layer errors bug
     enableSamplerMirrorClampToEdge = isEnableExtension(VK_KHR_SAMPLER_MIRROR_CLAMP_TO_EDGE_EXTENSION_NAME);
     supportDepthAutoResolve = isEnableExtension(VK_KHR_DEPTH_STENCIL_RESOLVE_EXTENSION_NAME);
-#if PLATFORM_ANDROID
-    supportDedicatedAllocation = false; //TODO temporary disabled because has crash on GetImageMemoryRequirements2
-#else
     supportDedicatedAllocation = false;//isEnableExtension(VK_KHR_DEDICATED_ALLOCATION_EXTENSION_NAME);
-#endif
     supportPipelineExecutableProperties = isEnableExtension(VK_KHR_PIPELINE_EXECUTABLE_PROPERTIES_EXTENSION_NAME);
 
     if (VulkanDeviceCaps::checkInstanceExtension(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME))
@@ -287,9 +283,8 @@ void VulkanDeviceCaps::fillCapabilitiesList(const DeviceInfo* info)
     LOG_INFO("VulkanDeviceCaps::initialize:  supportDepthAutoResolve is %s", supportDepthAutoResolve ? "supported" : "unsupported");
     LOG_INFO("VulkanDeviceCaps::initialize:  supportDedicatedAllocation is %s", supportDedicatedAllocation ? "supported" : "unsupported");
 
-    LOG_INFO("VulkanDeviceCaps::initialize:  useDynamicUniforms is %s", useDynamicUniforms ? "enable" : "disable");
-
     VulkanWrapper::GetPhysicalDeviceMemoryProperties(info->_physicalDevice, &m_deviceMemoryProps);
+    LOG_INFO("VulkanDeviceCaps Memory:");
     LOG_INFO("VulkanDeviceCaps::initialize:  memoryHeapCount is %d", m_deviceMemoryProps.memoryHeapCount);
     for (u32 i = 0; i < m_deviceMemoryProps.memoryHeapCount; ++i)
     {
@@ -324,6 +319,9 @@ void VulkanDeviceCaps::initialize()
     useGlobalDescriptorPool = false;
     useDynamicUniforms = true;
     useLateDescriptorSetUpdate = false;
+
+    LOG_INFO("VulkanDeviceCaps::initialize:  useDynamicUniforms is %s", useDynamicUniforms ? "enable" : "disable");
+    LOG_INFO("VulkanDeviceCaps::initialize:  useGlobalDescriptorPool is %s", useGlobalDescriptorPool ? "enable" : "disable");
 }
 
 } //namespace vk
