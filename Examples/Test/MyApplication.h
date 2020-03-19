@@ -23,6 +23,7 @@ private:
     void Exit();
 
     void Test_MemoryPool();
+    void Test_ShaderLoader();
 
     v3d::platform::Window* m_Window;
     v3d::event::InputEventHandler* m_InputEventHandler;

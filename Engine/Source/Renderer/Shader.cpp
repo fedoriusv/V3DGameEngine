@@ -122,14 +122,32 @@ bool Shader::load()
         }
         std::sort(m_reflectionInfo._uniformBuffers.begin(), m_reflectionInfo._uniformBuffers.end(), sortByDescriptorSet);
 
-        u32 countImages;
-        m_stream->read<u32>(countImages);
-        m_reflectionInfo._sampledImages.resize(countImages);
+        u32 countSampledImages;
+        m_stream->read<u32>(countSampledImages);
+        m_reflectionInfo._sampledImages.resize(countSampledImages);
         for (auto& image : m_reflectionInfo._sampledImages)
         {
             image << m_stream;
         }
         std::sort(m_reflectionInfo._sampledImages.begin(), m_reflectionInfo._sampledImages.end(), sortByDescriptorSet);
+
+        u32 countImages;
+        m_stream->read<u32>(countImages);
+        m_reflectionInfo._images.resize(countImages);
+        for (auto& image : m_reflectionInfo._images)
+        {
+            image << m_stream;
+        }
+        std::sort(m_reflectionInfo._images.begin(), m_reflectionInfo._images.end(), sortByDescriptorSet);
+
+        u32 countSamplers;
+        m_stream->read<u32>(countSamplers);
+        m_reflectionInfo._samplers.resize(countSamplers);
+        for (auto& sampler : m_reflectionInfo._samplers)
+        {
+            sampler << m_stream;
+        }
+        std::sort(m_reflectionInfo._samplers.begin(), m_reflectionInfo._samplers.end(), sortByDescriptorSet);
 
         u32 countPushConstant;
         m_stream->read<u32>(countPushConstant);
@@ -268,7 +286,7 @@ void Shader::UniformBuffer::Uniform::operator<<(const stream::Stream * stream)
 }
 
 
-Shader::SampledImage::SampledImage()
+Shader::Image::Image()
     : _set(0)
     , _binding(0)
     , _target(renderer::TextureTarget::Texture2D)
@@ -281,7 +299,7 @@ Shader::SampledImage::SampledImage()
 {
 }
 
-void Shader::SampledImage::operator>>(stream::Stream * stream) const
+void Shader::Image::operator>>(stream::Stream * stream) const
 {
     stream->write<u32>(_set);
     stream->write<u32>(_binding);
@@ -294,7 +312,7 @@ void Shader::SampledImage::operator>>(stream::Stream * stream) const
 #endif
 }
 
-void Shader::SampledImage::operator<<(const stream::Stream * stream)
+void Shader::Image::operator<<(const stream::Stream * stream)
 {
     stream->read<u32>(_set);
     stream->read<u32>(_binding);
@@ -302,6 +320,34 @@ void Shader::SampledImage::operator<<(const stream::Stream * stream)
     stream->read<u32>(_array);
     stream->read<bool>(_depth);
     stream->read<bool>(_ms);
+#if USE_STRING_ID_SHADER
+    stream->read(_name);
+#endif
+}
+
+
+Shader::Sampler::Sampler()
+    : _set(0)
+    , _binding(0)
+#if USE_STRING_ID_SHADER
+    , _name("")
+#endif
+{
+}
+
+void Shader::Sampler::operator>>(stream::Stream* stream) const
+{
+    stream->write<u32>(_set);
+    stream->write<u32>(_binding);
+#if USE_STRING_ID_SHADER
+    stream->write(_name);
+#endif
+}
+
+void Shader::Sampler::operator<<(const stream::Stream* stream)
+{
+    stream->read<u32>(_set);
+    stream->read<u32>(_binding);
 #if USE_STRING_ID_SHADER
     stream->read(_name);
 #endif

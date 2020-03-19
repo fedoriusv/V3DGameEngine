@@ -3,7 +3,7 @@
 #include "Common.h"
 #include "Formats.h"
 
-#define USE_STRING_ID_SHADER 0
+#define USE_STRING_ID_SHADER 1
 
 namespace v3d
 {

@@ -6,8 +6,12 @@
 #include "Renderer/Shader.h"
 
 #ifdef USE_SPIRV
-#include "ShaderSpirVDecoder.h"
+#   include "ShaderSpirVDecoder.h"
 #endif //USE_SPIRV
+
+#ifdef D3D_RENDER
+#   include "ShaderHLSLDecoder.h"
+#endif
 
 namespace v3d
 {
@@ -18,20 +22,32 @@ ShaderSourceStreamLoader::ShaderSourceStreamLoader(const renderer::Context* cont
     : m_stream(stream)
 {
     ASSERT(context, "context is nullptr");
-    if (context->getRenderType() == renderer::Context::RenderType::VulkanRender)
+    switch (context->getRenderType())
+    {
+    case renderer::Context::RenderType::VulkanRender:
     {
 #ifdef USE_SPIRV
-        {
-            ASSERT(header, "nullptr");
-            ResourceLoader::registerDecoder(new ShaderSpirVDecoder( *header, enableReflection));
-        }
-#else //USE_SPIRV
-        ASSERT(false, "not implemented");
+
+        ASSERT(header, "nullptr");
+        ResourceLoader::registerDecoder(new ShaderSpirVDecoder(*header, enableReflection));
+
+        break;
 #endif //USE_SPIRV
     }
-    else
+
+#ifdef D3D_RENDER
+    case renderer::Context::RenderType::DirectXRender:
+    {
+        ResourceLoader::registerDecoder(new ShaderHLSLDecoder(*header));
+
+        break;
+    }
+#endif //D3D_RENDER
+
+    default:
     {
         ASSERT(false, "not implemented");
+    }
     }
 }
 

@@ -5,6 +5,8 @@
 #ifdef D3D_RENDER
 #   include <wrl.h>
 #   include "D3D12Debug.h"
+#   include "D3D12Wrapper.h"
+
 #   include "D3D12Image.h"
 #   include "D3D12Buffer.h"
 
@@ -25,7 +27,6 @@ D3D_FEATURE_LEVEL D3DGraphicContext::s_featureLevel = D3D_FEATURE_LEVEL_12_1;
 
 #pragma comment(lib, "dxgi.lib")
 #pragma comment(lib, "d3d12.lib")
-#pragma comment(lib, "d3dcompiler.lib")
 
 D3DGraphicContext::D3DGraphicContext(const platform::Window* window) noexcept
     : m_factory(nullptr)
@@ -43,7 +44,7 @@ D3DGraphicContext::D3DGraphicContext(const platform::Window* window) noexcept
 {
     LOG_DEBUG("D3DGraphicContext::D3DGraphicContext constructor %llx", this);
 
-    m_renderType = RenderType::D3DRender;
+    m_renderType = RenderType::DirectXRender;
     memset(&m_currentState, 0, sizeof(RenderState));
 }
 
@@ -255,7 +256,7 @@ bool D3DGraphicContext::initialize()
     UINT dxgiFactoryFlags = 0;
 
 #if D3D_DEBUG_LAYERS
-    if (SUCCEEDED(D3D12GetDebugInterface(IID_PPV_ARGS(&m_debugController))))
+    if (SUCCEEDED(D3DWrapper::GetDebugInterface(IID_PPV_ARGS(&m_debugController))))
     {
         m_debugController->EnableDebugLayer();
 
@@ -276,7 +277,7 @@ bool D3DGraphicContext::initialize()
     }
 
     {
-        HRESULT result = D3D12CreateDevice(m_adapter, D3DGraphicContext::s_featureLevel, IID_PPV_ARGS(&m_device));
+        HRESULT result = D3DWrapper::CreateDevice(m_adapter, D3DGraphicContext::s_featureLevel, IID_PPV_ARGS(&m_device));
         if (FAILED(result))
         {
             LOG_ERROR("D3DGraphicContext::initialize D3D12CreateDevice is failed. Error %s", D3DDebug::stringError(result).c_str());
@@ -426,7 +427,7 @@ void D3DGraphicContext::getHardwareAdapter(IDXGIFactory2* pFactory, IDXGIAdapter
 
         // Check to see if the adapter supports Direct3D 12, but don't create the
         // actual device yet.
-        HRESULT result = D3D12CreateDevice(adapter, D3DGraphicContext::s_featureLevel, _uuidof(ID3D12Device), nullptr);
+        HRESULT result = D3DWrapper::CreateDevice(adapter, D3DGraphicContext::s_featureLevel, _uuidof(ID3D12Device), nullptr);
         if (SUCCEEDED(result))
         {
             break;

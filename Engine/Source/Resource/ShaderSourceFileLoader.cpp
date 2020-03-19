@@ -6,8 +6,13 @@
 #include "Renderer/Shader.h"
 
 #ifdef USE_SPIRV
-#include "ShaderSpirVDecoder.h"
+#   include "ShaderSpirVDecoder.h"
 #endif //USE_SPIRV
+
+#if D3D_RENDER
+#   include "ShaderHLSLDecoder.h"
+#endif // D3Dre
+
 
 namespace v3d
 {
@@ -43,6 +48,19 @@ ShaderSourceFileLoader::ShaderSourceFileLoader(const renderer::Context* context,
         ASSERT(false, "not implemented");
 #endif //USE_SPIRV
     }
+
+#if D3D_RENDER
+    else if (context->getRenderType() == renderer::Context::RenderType::DirectXRender)
+    {
+        renderer::ShaderHeader header;
+        header._contentType = renderer::ShaderHeader::ShaderResource::ShaderResource_Source;
+        header._shaderLang = renderer::ShaderHeader::ShaderLang::ShaderLang_HLSL;
+        header._optLevel = (flags & ShaderSourceBuildFlag::ShaderSource_OptimisationPerformance) ? 2 : (flags & ShaderSourceBuildFlag::ShaderSource_OptimisationSize) ? 1 : 0;
+        header._defines = defines;
+
+        ResourceLoader::registerDecoder(new ShaderHLSLDecoder({ "vs", "ps" }, header, !(flags & ShaderSourceBuildFlag::ShaderSource_DontUseReflaction)));
+    }
+#endif
 
     ResourceLoader::registerRoot("");
     ResourceLoader::registerRoot("../../../../");
@@ -96,7 +114,7 @@ renderer::Shader * ShaderSourceFileLoader::load(const std::string & name, const 
         }
     }
 
-    LOG_WARNING("ShaderSourceFileLoader::load: File [%s] decoder hasn't found", name.c_str());
+    LOG_WARNING("ShaderSourceFileLoader::load: File [%s] decoder oe file hasn't found", name.c_str());
     return nullptr;
 }
 

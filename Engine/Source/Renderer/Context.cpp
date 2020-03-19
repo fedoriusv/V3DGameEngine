@@ -51,7 +51,7 @@ Context* Context::createContext(const platform::Window* window,  RenderType type
 #endif //VULKAN_RENDER
 
 #ifdef D3D_RENDER
-    case RenderType::D3DRender:
+    case RenderType::DirectXRender:
         if (mask & DeviceMask::GraphicMask)
         {
             context = new d3d12::D3DGraphicContext(window);

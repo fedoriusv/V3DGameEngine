@@ -660,7 +660,7 @@ void VulkanGraphicContext::bindImage(const Shader* shader, u32 bindIndex, const 
     const VulkanImage* vkImage = static_cast<const VulkanImage*>(image);
 
     const Shader::ReflectionInfo& info = shader->getReflectionInfo();
-    const Shader::SampledImage& sampledData = info._sampledImages[bindIndex];
+    const Shader::Image& sampledData = info._images[bindIndex];
 
     m_currentContextState->bindTexture(vkImage, nullptr, 1, sampledData);
 }
@@ -682,7 +682,7 @@ void VulkanGraphicContext::bindSampledImage(const Shader* shader, u32 bindIndex,
     const VulkanSampler* vkSampler = static_cast<const VulkanSampler*>(sampler);
 
     const Shader::ReflectionInfo& info = shader->getReflectionInfo();
-    const Shader::SampledImage& sampledData = info._sampledImages[bindIndex];
+    const Shader::Image& sampledData = info._sampledImages[bindIndex];
 
     m_currentContextState->bindTexture(vkImage, vkSampler, 0, sampledData);
 }

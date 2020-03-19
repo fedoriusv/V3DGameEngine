@@ -103,9 +103,9 @@ namespace renderer
             void operator << (const stream::Stream * stream);
         };
 
-        struct SampledImage
+        struct Image
         {
-            SampledImage();
+            Image();
 
             u32                     _set;
             u32                     _binding;
@@ -118,6 +118,19 @@ namespace renderer
 #endif
             void operator >> (stream::Stream * stream) const;
             void operator << (const stream::Stream * stream);
+        };
+
+        struct Sampler
+        {
+            Sampler();
+
+            u32                     _set;
+            u32                     _binding;
+#if USE_STRING_ID_SHADER
+            std::string             _name;
+#endif
+            void operator >> (stream::Stream* stream) const;
+            void operator << (const stream::Stream* stream);
         };
 
         struct PushConstant
@@ -138,7 +151,9 @@ namespace renderer
             std::vector<Attribute>      _inputAttribute;
             std::vector<Attribute>      _outputAttribute;
             std::vector<UniformBuffer>  _uniformBuffers;
-            std::vector<SampledImage>   _sampledImages;
+            std::vector<Image>          _sampledImages;
+            std::vector<Image>          _images;
+            std::vector<Sampler>        _samplers;
             std::vector<PushConstant>   _pushConstant;
         };
 
