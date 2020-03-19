@@ -61,6 +61,7 @@ namespace resource
             if (m_header)
             {
                 delete m_header;
+                m_header = nullptr;
             }
 
             if (m_stream)

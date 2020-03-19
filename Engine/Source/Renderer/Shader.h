@@ -41,7 +41,7 @@ namespace renderer
         ShaderLang     _shaderLang;
         u32            _apiVersion;
         u32            _optLevel;
-        std::string    _entyPoint;
+        std::string    _entryPoint;
 
         std::vector<std::pair<std::string, std::string>> _defines;
         std::vector<std::string>                         _include;

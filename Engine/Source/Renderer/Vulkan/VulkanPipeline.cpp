@@ -746,7 +746,7 @@ bool VulkanGraphicPipeline::createShaderModule(const Shader* shader, VkPipelineS
     outPipelineShaderStageCreateInfo.flags = 0;
     outPipelineShaderStageCreateInfo.stage = convertShaderTypeToVkStage((ShaderType)header._type);
     outPipelineShaderStageCreateInfo.module = m_modules.back();
-    outPipelineShaderStageCreateInfo.pName = header._entyPoint.c_str();
+    outPipelineShaderStageCreateInfo.pName = header._entryPoint.c_str();
     outPipelineShaderStageCreateInfo.pSpecializationInfo = nullptr;
 
     return true;

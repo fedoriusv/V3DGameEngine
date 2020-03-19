@@ -1,4 +1,5 @@
 #include "Shader.h"
+#include "Utils/Logger.h"
 
 #include "crc32c/crc32c.h"
 
@@ -13,7 +14,7 @@ ShaderHeader::ShaderHeader() noexcept
     , _shaderLang(ShaderLang::ShaderLang_GLSL)
     , _apiVersion(0)
     , _optLevel(0)
-    , _entyPoint("main")
+    , _entryPoint("main")
 {
 }
 
@@ -23,7 +24,7 @@ ShaderHeader::ShaderHeader(renderer::ShaderType type) noexcept
     , _shaderLang(ShaderLang::ShaderLang_GLSL)
     , _apiVersion(0)
     , _optLevel(0)
-    , _entyPoint("main")
+    , _entryPoint("main")
 {
 }
 
@@ -33,13 +34,17 @@ Shader::Shader(const ShaderHeader* header) noexcept
     , m_size(0)
     , m_source(nullptr)
 {
+    LOG_DEBUG("Shader::Shader constructor");
 }
 
 Shader::~Shader()
 {
+    LOG_DEBUG("Shader::~Shader destructor");
+
     if (m_source)
     {
         free(m_source);
+        m_source = nullptr;
     }
     m_hash = 0;
     m_size = 0;
