@@ -29,7 +29,6 @@ namespace renderer
         {
             ShaderLang_GLSL,
             ShaderLang_HLSL,
-            ShaderLang_CG,
             ShaderLang_SpirV
         };
 
@@ -37,11 +36,11 @@ namespace renderer
         explicit ShaderHeader(renderer::ShaderType type) noexcept;
 
         renderer::ShaderType _type;
-        ShaderResource _contentType;
-        ShaderLang     _shaderLang;
-        u32            _apiVersion;
-        u32            _optLevel;
-        std::string    _entryPoint;
+        ShaderResource       _contentType;
+        ShaderLang           _shaderLang;
+        u32                  _apiVersion;
+        u32                  _optLevel;
+        std::string          _entryPoint;
 
         std::vector<std::pair<std::string, std::string>> _defines;
         std::vector<std::string>                         _include;
@@ -80,6 +79,7 @@ namespace renderer
                 u32                _array;
                 renderer::DataType _type;
                 u32                _size;
+                u32                _offset;
 #if USE_STRING_ID_SHADER
                 std::string        _name;
 #endif

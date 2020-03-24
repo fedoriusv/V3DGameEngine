@@ -17,9 +17,15 @@ namespace v3d
 namespace resource
 {
 
+const std::map<std::string, renderer::ShaderType> k_HLSL_ExtensionList =
+{
+    //hlsl
+    { "vs", renderer::ShaderType::ShaderType_Vertex },
+    { "ps", renderer::ShaderType::ShaderType_Fragment },
+};
+
 bool reflect(ID3DBlob* shader, stream::Stream* stream);
 void reflectConstantBuffers(ID3D11ShaderReflection* reflector, const std::vector<D3D11_SHADER_INPUT_BIND_DESC>& bindDescs, stream::Stream* stream);
-//void reflectTextures(ID3D11ShaderReflection* reflector, const std::vector<D3D11_SHADER_INPUT_BIND_DESC>& bindDescs, stream::Stream* stream);
 
 ShaderHLSLDecoder::ShaderHLSLDecoder(const renderer::ShaderHeader& header, bool reflections) noexcept
     : m_header(header)
@@ -62,12 +68,18 @@ Resource * ShaderHLSLDecoder::decode(const stream::Stream* stream, const std::st
             auto getShaderTypeFromName = [](const std::string& name) -> renderer::ShaderType
             {
                 std::string fileExtension = stream::FileLoader::getFileExtension(name);
-                if (fileExtension == "vs")
+                auto result = k_HLSL_ExtensionList.find(fileExtension);
+                if (result == k_HLSL_ExtensionList.cend())
                 {
-                    return renderer::ShaderType::ShaderType_Vertex;
+                    return renderer::ShaderType::ShaderType_Undefined;
                 }
-                else if (fileExtension == "ps")
+
+                switch (result->second)
                 {
+                case renderer::ShaderType::ShaderType_Vertex:
+                    return renderer::ShaderType::ShaderType_Vertex;
+
+                case renderer::ShaderType::ShaderType_Fragment:
                     return renderer::ShaderType::ShaderType_Fragment;
                 }
                 
@@ -83,13 +95,29 @@ Resource * ShaderHLSLDecoder::decode(const stream::Stream* stream, const std::st
                 {
                 case renderer::ShaderType::ShaderType_Vertex:
                 {
-                    shaderVersion = "vs_5_0";
+                    if (api == 51)
+                    {
+                        shaderVersion = "vs_5_1";
+                    }
+                    else
+                    {
+                        ASSERT(api >= 50, "min version ShaderModer5.0");
+                        shaderVersion = "vs_5_0";
+                    }
                     return true;
                 }
 
                 case renderer::ShaderType::ShaderType_Fragment:
                 {
-                    shaderVersion = "ps_5_0";
+                    if (api == 51)
+                    {
+                        shaderVersion = "ps_5_1";
+                    }
+                    else
+                    {
+                        ASSERT(api >= 50, "min version ShaderModer5.0");
+                        shaderVersion = "ps_5_0";
+                    }
                     return true;
                 }
 
@@ -120,7 +148,7 @@ Resource * ShaderHLSLDecoder::decode(const stream::Stream* stream, const std::st
             UINT compileFlags = D3DCOMPILE_OPTIMIZATION_LEVEL1;
             if (m_header._optLevel == 0)
             {
-                compileFlags |= D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION;
+                compileFlags = D3DCOMPILE_OPTIMIZATION_LEVEL0 | D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION;
             }
             else if (m_header._optLevel == 1)
             {
@@ -134,6 +162,7 @@ Resource * ShaderHLSLDecoder::decode(const stream::Stream* stream, const std::st
             compileFlags |= D3DCOMPILE_WARNINGS_ARE_ERRORS;
 #endif
 
+            LOG_DEBUG("Shader[%s]:\n %s\n", name.c_str(), source.c_str());
             ID3DBlob* shader = nullptr;
             {
                 ID3DBlob* debugInfo = nullptr;
@@ -161,18 +190,20 @@ Resource * ShaderHLSLDecoder::decode(const stream::Stream* stream, const std::st
 #if DEBUG
             timer.stop();
             u64 time = timer.getTime<utils::Timer::Duration_MilliSeconds>();
-            LOG_DEBUG("ShaderHLSLDecoder::decode, shader %s, is loaded. Time %.4f sec", name.c_str(), static_cast<f32>(time) / 1000.0f);
-            LOG_DEBUG("Shader[%s]: %s\n", name.c_str(), source.c_str());
+            LOG_DEBUG("ShaderHLSLDecoder::decode, shader %s is loaded. Time %.4f sec", name.c_str(), static_cast<f32>(time) / 1000.0f);
 #endif
 
             renderer::ShaderHeader* resourceHeader = new renderer::ShaderHeader(m_header);
-            resourceHeader->_apiVersion = 50;
             resourceHeader->_type = type;
 #if DEBUG
             resourceHeader->_debugName = name;
 #endif
-            stream::MemoryStream* resourceBinary = stream::StreamManager::createMemoryStream(shader->GetBufferPointer(), static_cast<u32>(shader->GetBufferSize()));
-            resourceBinary->write(static_cast<u32>(m_reflections));
+            u32 bytecodeSize = static_cast<u32>(shader->GetBufferSize());
+            stream::Stream* resourceBinary = stream::StreamManager::createMemoryStream(nullptr, bytecodeSize + sizeof(u32) + sizeof(bool));
+            resourceBinary->write<u32>(bytecodeSize);
+            resourceBinary->write(shader->GetBufferPointer(), bytecodeSize);
+
+            resourceBinary->write<bool>(m_reflections);
 
             if (m_reflections)
             {
@@ -226,6 +257,7 @@ bool reflect(ID3DBlob* shader, stream::Stream* stream)
             return false;
         }
     }
+    u64 requiresFlags = reflector->GetRequiresFlags();
 
     auto convertTypeToFormat = [](const D3D_REGISTER_COMPONENT_TYPE type, u8 componentsMask) -> renderer::Format
     {
@@ -298,7 +330,7 @@ bool reflect(ID3DBlob* shader, stream::Stream* stream)
             ASSERT(SUCCEEDED(result), "GetInputParameterDesc has failed");
 
             renderer::Shader::Attribute input;
-            input._location = parameterDesc.Register;
+            input._location = parameterDesc.Register;//parameterDesc.SemanticIndex;
             input._format = convertTypeToFormat(parameterDesc.ComponentType, parameterDesc.Mask);
 #if USE_STRING_ID_SHADER
             const std::string name(parameterDesc.SemanticName);
@@ -312,19 +344,28 @@ bool reflect(ID3DBlob* shader, stream::Stream* stream)
     //output parameters
     {
         u32 outputChannelCount = shaderDesc.OutputParameters;
-        stream->write<u32>(outputChannelCount);
-
+        std::vector<D3D11_SIGNATURE_PARAMETER_DESC> userOutputChannels;
         for (UINT outputChannelID = 0; outputChannelID < outputChannelCount; ++outputChannelID)
         {
             D3D11_SIGNATURE_PARAMETER_DESC parameterDesc = {};
             HRESULT result = reflector->GetOutputParameterDesc(outputChannelID, &parameterDesc);
             ASSERT(SUCCEEDED(result), "GetOutputParameterDesc has failed");
 
+            if (parameterDesc.SystemValueType == D3D_NAME_UNDEFINED || parameterDesc.SystemValueType == D3D_NAME_TARGET) //remove build-in
+            {
+                userOutputChannels.push_back(parameterDesc);
+            }
+        }
+
+        u32 userOutputChannelCount = static_cast<u32>(userOutputChannels.size());
+        stream->write<u32>(userOutputChannelCount);
+        for (UINT outputChannelID = 0; outputChannelID < userOutputChannelCount; ++outputChannelID)
+        {
             renderer::Shader::Attribute output;
-            output._location = parameterDesc.Register;
-            output._format = convertTypeToFormat(parameterDesc.ComponentType, parameterDesc.Mask);
+            output._location = outputChannelID;//parameterDesc.SemanticIndex;
+            output._format = convertTypeToFormat(userOutputChannels[outputChannelID].ComponentType, userOutputChannels[outputChannelID].Mask);
 #if USE_STRING_ID_SHADER
-            const std::string name(parameterDesc.SemanticName);
+            const std::string name(userOutputChannels[outputChannelID].SemanticName);
             ASSERT(!name.empty(), "empty name");
             output._name = name;
 #endif
@@ -332,7 +373,8 @@ bool reflect(ID3DBlob* shader, stream::Stream* stream)
         }
     }
 
-    std::array<std::vector<D3D11_SHADER_INPUT_BIND_DESC>, D3D_SIT_UAV_RWSTRUCTURED_WITH_COUNTER + 1> bindDescs;
+    const u32 countResources = D3D_SIT_UAV_RWSTRUCTURED_WITH_COUNTER + 1;
+    std::array<std::vector<D3D11_SHADER_INPUT_BIND_DESC>, countResources> bindDescs;
     for (UINT resourceID = 0; resourceID < shaderDesc.BoundResources; ++resourceID)
     {
         D3D11_SHADER_INPUT_BIND_DESC bindDesc = {};
@@ -345,6 +387,114 @@ bool reflect(ID3DBlob* shader, stream::Stream* stream)
 
     reflectConstantBuffers(reflector, bindDescs[D3D_SIT_CBUFFER], stream);
 
+    {
+        //dx is not supported
+        u32 sampledImagesCount = static_cast<u32>(0);
+        stream->write<u32>(sampledImagesCount);
+    }
+
+    {
+        bool ms = false;
+        auto convertDXTypeToTextureTarget = [&ms](const D3D_SRV_DIMENSION& dim) ->renderer::TextureTarget
+        {
+            switch (dim)
+            {
+            case D3D_SRV_DIMENSION_TEXTURE1D:
+                return renderer::TextureTarget::Texture1D;
+
+            case D3D_SRV_DIMENSION_TEXTURE1DARRAY:
+                return renderer::TextureTarget::Texture1DArray;
+
+            case D3D_SRV_DIMENSION_TEXTURE2D:
+            case D3D_SRV_DIMENSION_TEXTURE2DMS:
+                ms = (dim == D3D_SRV_DIMENSION_TEXTURE2DMS) ? true : false;
+                return renderer::TextureTarget::Texture2D;
+
+            case D3D_SRV_DIMENSION_TEXTURE2DARRAY:
+            case D3D_SRV_DIMENSION_TEXTURE2DMSARRAY:
+                ms = (dim == D3D_SRV_DIMENSION_TEXTURE2DMSARRAY) ? true : false;
+                return renderer::TextureTarget::Texture2DArray;
+
+            case D3D_SRV_DIMENSION_TEXTURE3D:
+                return renderer::TextureTarget::Texture3D;
+
+            case D3D_SRV_DIMENSION_TEXTURECUBE:
+                return renderer::TextureTarget::TextureCubeMap;
+
+            case D3D_SRV_DIMENSION_TEXTURECUBEARRAY:
+            case D3D_SRV_DIMENSION_UNKNOWN:
+            default:
+                ASSERT(false, "not found");
+                return renderer::TextureTarget::Texture2D;
+            }
+        };
+
+        const std::vector<D3D11_SHADER_INPUT_BIND_DESC>& boundTexturesDescs = bindDescs[D3D_SIT_TEXTURE];
+        u32 imagesCount = static_cast<u32>(boundTexturesDescs.size());
+        stream->write<u32>(imagesCount);
+
+        u32 currentSpace = 0;
+        std::vector<std::vector<u32>> textureTable;
+        textureTable.resize(4); //k_maxDescriptorSetIndex
+
+        for (u32 imageId = 0; imageId < imagesCount; ++imageId)
+        {
+            u32 currentBinding = boundTexturesDescs[imageId].BindPoint;
+            auto found = std::find(textureTable[currentSpace].begin(), textureTable[currentSpace].end(), currentBinding);
+            if (found != textureTable[currentSpace].end() || (!textureTable[currentSpace].empty() && currentBinding <= textureTable[currentSpace].back()))
+            {
+                ++currentSpace;
+            }
+            textureTable[currentSpace].push_back(currentBinding);
+
+            renderer::Shader::Image sepImage;
+            sepImage._set = currentSpace;
+            sepImage._binding = currentBinding;
+
+            sepImage._target = convertDXTypeToTextureTarget(boundTexturesDescs[imageId].Dimension);
+            sepImage._array = boundTexturesDescs[imageId].BindCount;
+            sepImage._ms = ms;
+            sepImage._depth = false;
+    #if USE_STRING_ID_SHADER
+            sepImage._name = std::string(boundTexturesDescs[imageId].Name);
+    #endif
+            sepImage >> stream;
+        }
+    }
+
+    {
+        u32 currentSpace = 0;
+        std::vector<std::vector<u32>> samplerTable;
+        samplerTable.resize(4); //k_maxDescriptorSetIndex
+
+        const std::vector<D3D11_SHADER_INPUT_BIND_DESC>& boundSamplersDescs = bindDescs[D3D_SIT_SAMPLER];
+        u32 samplersCount = static_cast<u32>(boundSamplersDescs.size());
+        stream->write<u32>(samplersCount);
+
+        for (u32 samplerId = 0; samplerId < samplersCount; ++samplerId)
+        {
+            u32 currentBinding = boundSamplersDescs[samplerId].BindPoint;
+            auto found = std::find(samplerTable[currentSpace].begin(), samplerTable[currentSpace].end(), currentBinding);
+            if (found != samplerTable[currentSpace].end() || (!samplerTable[currentSpace].empty() && currentBinding <= samplerTable[currentSpace].back()))
+            {
+                ++currentSpace;
+            }
+            samplerTable[currentSpace].push_back(currentBinding);
+
+            renderer::Shader::Sampler sampler;
+            sampler._set = currentSpace;
+            sampler._binding = currentBinding;
+#if USE_STRING_ID_SHADER
+            sampler._name = std::string(boundSamplersDescs[samplerId].Name);
+#endif
+            sampler >> stream;
+        }
+    }
+
+    {
+        u32 pushConstantCount = static_cast<u32>(0);
+        stream->write<u32>(pushConstantCount);
+    }
 
     return true;
 }
@@ -359,7 +509,7 @@ void reflectConstantBuffers(ID3D11ShaderReflection* reflector, const std::vector
         return;
     }
 
-    auto convertTypeToDataType = [](const D3D11_SHADER_TYPE_DESC& desc) -> renderer::DataType
+    auto convertTypeToDataType = [](const D3D11_SHADER_TYPE_DESC& desc) -> std::tuple<renderer::DataType, size_t>
     {
         u32 col = desc.Columns;
         u32 row = desc.Rows;
@@ -368,54 +518,44 @@ void reflectConstantBuffers(ID3D11ShaderReflection* reflector, const std::vector
         {
             switch (desc.Type)
             {
-            case D3D_SVT_BOOL:
             case D3D_SVT_INT:
-            case D3D_SVT_UINT8:
             case D3D_SVT_UINT:
-            case D3D_SVT_MIN12INT:
-            case D3D_SVT_MIN16INT:
-            case D3D_SVT_MIN16UINT:
-                return renderer::DataType::DataType_Int;
+                return { renderer::DataType::DataType_Int, sizeof(s32) };
 
             case D3D_SVT_FLOAT:
-            case D3D_SVT_MIN8FLOAT:
-            case D3D_SVT_MIN10FLOAT:
-            case D3D_SVT_MIN16FLOAT:
-                return renderer::DataType::DataType_Float;
+                return { renderer::DataType::DataType_Float, sizeof(f32) };
 
             case D3D_SVT_DOUBLE:
-                return renderer::DataType::DataType_Double;
+                return { renderer::DataType::DataType_Double, sizeof(f64) };
 
             case D3D_SVT_STRUCTURED_BUFFER:
-                return renderer::DataType::DataType_Struct;
+                return { renderer::DataType::DataType_Struct, 0 };
 
             default:
                 break;
             }
 
             ASSERT(false, "not support");
-            return  renderer::DataType::DataType_None;
+            return  { renderer::DataType::DataType_None, 0 };
         }
         else if (desc.Class == D3D_SVC_VECTOR) //vector
         {
             switch (desc.Type)
             {
             case D3D_SVT_FLOAT:
-            case D3D_SVT_MIN8FLOAT:
-            case D3D_SVT_MIN10FLOAT:
-            case D3D_SVT_MIN16FLOAT:
             {
+                u32 size = col * sizeof(f32);
                 if (col == 2)
                 {
-                    return renderer::DataType::DataType_Vector2;
+                    return { renderer::DataType::DataType_Vector2, size };
                 }
                 else if (col == 3)
                 {
-                    return renderer::DataType::DataType_Vector3;
+                    return { renderer::DataType::DataType_Vector3, size };
                 }
                 else if (col == 4)
                 {
-                    return renderer::DataType::DataType_Vector4;
+                    return { renderer::DataType::DataType_Vector4, size };
                 }
             }
 
@@ -424,24 +564,22 @@ void reflectConstantBuffers(ID3D11ShaderReflection* reflector, const std::vector
             }
 
             ASSERT(false, "not support");
-            return  renderer::DataType::DataType_None;
+            return  { renderer::DataType::DataType_None, 0 };
         }
         else if (desc.Class == D3D_SVC_MATRIX_ROWS || desc.Class == D3D_SVC_MATRIX_COLUMNS) //matrix
         {
             switch (desc.Type)
             {
             case D3D_SVT_FLOAT:
-            case D3D_SVT_MIN8FLOAT:
-            case D3D_SVT_MIN10FLOAT:
-            case D3D_SVT_MIN16FLOAT:
             {
+                u32 size = col * row * sizeof(f32);
                 if (col == 3 && row == 3)
                 {
-                    return renderer::DataType::DataType_Matrix3;
+                    return { renderer::DataType::DataType_Matrix3, size };
                 }
                 else if (col == 4 && row == 4)
                 {
-                    return renderer::DataType::DataType_Matrix4;
+                    return { renderer::DataType::DataType_Matrix4, size };
                 }
             }
 
@@ -450,20 +588,33 @@ void reflectConstantBuffers(ID3D11ShaderReflection* reflector, const std::vector
             }
 
             ASSERT(false, "not support");
-            return  renderer::DataType::DataType_None;
+            return { renderer::DataType::DataType_None, 0 };
         }
 
 
         ASSERT(false, "not support");
-        return  renderer::DataType::DataType_None;
+        return { renderer::DataType::DataType_None, 0 };
     };
 
     u32 unifromBufferCount = shaderDesc.ConstantBuffers;
     stream->write<u32>(unifromBufferCount);
 
+    std::map<ID3D11ShaderReflectionConstantBuffer*, u32> buffMap;
     for (UINT constantBufferID = 0; constantBufferID < unifromBufferCount; ++constantBufferID)
     {
         ID3D11ShaderReflectionConstantBuffer* buffer = reflector->GetConstantBufferByIndex(constantBufferID);
+        ASSERT(buffer, "ID3D11ShaderReflectionConstantBuffer is nullptr");
+
+        buffMap.emplace(buffer, constantBufferID);
+    }
+
+    u32 currentSpace = 0;
+    std::vector<std::vector<u32>> bufferTable;
+    bufferTable.resize(4); //k_maxDescriptorSetIndex
+
+    for (UINT constantBufferID = 0; constantBufferID < unifromBufferCount; ++constantBufferID)
+    {
+        ID3D11ShaderReflectionConstantBuffer* buffer = reflector->GetConstantBufferByName(bindDescs[constantBufferID].Name);
         ASSERT(buffer, "ID3D11ShaderReflectionConstantBuffer is nullptr");
 
         D3D11_SHADER_BUFFER_DESC bufferDesc = {};
@@ -472,43 +623,66 @@ void reflectConstantBuffers(ID3D11ShaderReflection* reflector, const std::vector
             ASSERT(SUCCEEDED(result), "GetDesc has failed");
         }
 
+        ASSERT(bufferDesc.Variables == 1, "not supported");
+        ID3D11ShaderReflectionVariable* structVariable = buffer->GetVariableByIndex(0);
+        ASSERT(structVariable, "ID3D11ShaderReflectionVariable is nullptr");
+
+        ID3D11ShaderReflectionType* structType = structVariable->GetType();
+        ASSERT(structType, "ID3D11ShaderReflectionType is nullptr");
+        D3D11_SHADER_TYPE_DESC structTypeDesc = {};
+        {
+            HRESULT result = structType->GetDesc(&structTypeDesc);
+            ASSERT(SUCCEEDED(result), "GetDesc has failed");
+        }
+        ASSERT(structTypeDesc.Class == D3D_SVC_STRUCT, "must be stucture");
+
+        auto foundID = buffMap.find(buffer);
+        ASSERT(foundID != buffMap.cend(), "not found");
+        u32 bufferID = foundID->second;
+
+        u32 currentBinding = bindDescs[constantBufferID].BindPoint;
+        auto found = std::find(bufferTable[currentSpace].begin(), bufferTable[currentSpace].end(), currentBinding);
+        if (found != bufferTable[currentSpace].end() || (!bufferTable[currentSpace].empty() && currentBinding <= bufferTable[currentSpace].back()))
+        {
+            ++currentSpace;
+        }
+        bufferTable[currentSpace].push_back(currentBinding);
+
         renderer::Shader::UniformBuffer constantBuffer;
-        constantBuffer._id = constantBufferID;
-        constantBuffer._set = 0;
-        constantBuffer._binding = bindDescs[constantBufferID].BindPoint;
-        constantBuffer._array = 1;
+        constantBuffer._id = bufferID;
+        constantBuffer._set = currentSpace;
+        constantBuffer._binding = currentBinding;
+        constantBuffer._array = bufferDesc.Variables;
         constantBuffer._size = bufferDesc.Size;
 #if USE_STRING_ID_SHADER
         constantBuffer._name = std::string(bufferDesc.Name);
 #endif
-        for (UINT var = 0; var < bufferDesc.Variables; ++var)
+        ID3D11ShaderReflectionConstantBuffer* structBuffer = structVariable->GetBuffer();
+        ASSERT(structBuffer, "ID3D11ShaderReflectionConstantBuffer is nullptr");
+
+        u32 offset = 0;
+        for (u32 mem = 0; mem < structTypeDesc.Members; ++mem)
         {
-            ID3D11ShaderReflectionVariable* varable = buffer->GetVariableByIndex(var);
-            ASSERT(varable, "ID3D11ShaderReflectionVariable is nullptr");
-            D3D11_SHADER_VARIABLE_DESC variableDesc = {};
+            ID3D11ShaderReflectionType* memberType = structType->GetMemberTypeByIndex(mem);
+            ASSERT(memberType, "ID3D11ShaderReflectionType is nullptr");
+            D3D11_SHADER_TYPE_DESC memberDesc = {};
             {
-                HRESULT result = varable->GetDesc(&variableDesc);
+                HRESULT result = memberType->GetDesc(&memberDesc);
                 ASSERT(SUCCEEDED(result), "GetDesc has failed");
             }
-
-            ID3D11ShaderReflectionType* type = varable->GetType();
-            ASSERT(type, "ID3D11ShaderReflectionType is nullptr");
-            D3D11_SHADER_TYPE_DESC typeDesc = {};
-            {
-                HRESULT result = type->GetDesc(&typeDesc);
-                ASSERT(SUCCEEDED(result), "GetDesc has failed");
-            }
-
-            ASSERT(typeDesc.Members == 0, "includeed structure is not supported");
+            const auto [type, size] = convertTypeToDataType(memberDesc);
 
             renderer::Shader::UniformBuffer::Uniform uniform;
-            uniform._bufferId = constantBufferID;
-            uniform._type = convertTypeToDataType(typeDesc);
-            uniform._array = typeDesc.Elements + 1;
-            uniform._size = variableDesc.Size;
+            uniform._bufferId = bufferID;
+            uniform._type = type;
+            uniform._array = (memberDesc.Elements == 0) ? 1 : memberDesc.Elements;
+            uniform._size = static_cast<u32>(size) * uniform._array;
+            uniform._offset = offset;
 #if USE_STRING_ID_SHADER
-            uniform._name = std::string(variableDesc.Name);
+            uniform._name = "var_" + std::to_string(mem);
 #endif
+            ASSERT(memberDesc.Members == 0, "not supported");
+            offset += uniform._size;
 
             constantBuffer._uniforms.push_back(uniform);
         }
@@ -516,25 +690,6 @@ void reflectConstantBuffers(ID3D11ShaderReflection* reflector, const std::vector
         constantBuffer >> stream;
     }
 }
-
-//void reflectTextures(ID3D11ShaderReflection* reflector, const D3D11_SHADER_INPUT_BIND_DESC& bindDesc, stream::Stream* stream)
-//{
-//    D3D11_SHADER_DESC shaderDesc = {};
-//    HRESULT result = reflector->GetDesc(&shaderDesc);
-//    if (FAILED(result))
-//    {
-//        ASSERT(false, "reflector is failed");
-//        return;
-//    }
-//
-//    //renderer::Shader::SampledImage texture;
-//    //texture._binding = bindDesc.BindPoint;
-//    //constantBuffer._set = 0;
-//    //constantBuffer._binding = bindDesc.BindPoint;
-//    //constantBuffer._array = 1;
-//    //constantBuffer._size = bufferDesc.Size;
-//
-//}
 
 } //namespace resource
 } //namespace v3d

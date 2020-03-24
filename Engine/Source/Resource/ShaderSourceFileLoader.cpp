@@ -57,6 +57,7 @@ ShaderSourceFileLoader::ShaderSourceFileLoader(const renderer::Context* context,
         header._shaderLang = renderer::ShaderHeader::ShaderLang::ShaderLang_HLSL;
         header._optLevel = (flags & ShaderSourceBuildFlag::ShaderSource_OptimisationPerformance) ? 2 : (flags & ShaderSourceBuildFlag::ShaderSource_OptimisationSize) ? 1 : 0;
         header._defines = defines;
+        header._apiVersion = 51; //ShaderModel 5.1
 
         ResourceLoader::registerDecoder(new ShaderHLSLDecoder({ "vs", "ps" }, header, !(flags & ShaderSourceBuildFlag::ShaderSource_DontUseReflaction)));
     }

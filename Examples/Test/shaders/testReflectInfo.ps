@@ -1,22 +1,22 @@
 struct PS_INPUT 
 {
-   float2 inAttribute0_vec2: IN_ATTRIBUTE0;
-   float4 inAttribute1_vec4: IN_ATTRIBUTE1;
+   float4 inAttribute0_vec4: IN_ATTRIBUTE0;
+   float2 inAttribute1_vec2: IN_ATTRIBUTE1;
 };
 
 SamplerState samplerColor00 : register(s0, space0);
 
-Texture2D textureColor02 	: register(t2, space0);
-Texture2D textureColor10 	: register(t0, space1);
-Texture2D textureColor01 	: register(t1, space0);
+Texture2D textureColor02    : register(t2, space0);
+Texture2D textureColor10    : register(t0, space1);
+Texture2D textureColor01    : register(t1, space0);
 
 float4 main(PS_INPUT Input) : SV_TARGET0
 {
-	float4 OutColor;
-	OutColor.r = textureColor02.Sample(samplerColor00, Input.inAttribute1_vec4.xy).r;
-	OutColor.g = textureColor10.Sample(samplerColor00, Input.inAttribute1_vec4.xy).g;
-	OutColor.b = textureColor01.Sample(samplerColor00, Input.inAttribute1_vec4.xy).b;
-	OutColor.a = 0.0;
-	
-	return OutColor;
+    float4 OutColor;
+    OutColor.r = textureColor02.Sample(samplerColor00, Input.inAttribute1_vec2).r;
+    OutColor.g = textureColor10.Sample(samplerColor00, Input.inAttribute1_vec2).g;
+    OutColor.b = textureColor01.Sample(samplerColor00, Input.inAttribute1_vec2).b;
+    OutColor.a = 0.0;
+
+    return OutColor;
 }

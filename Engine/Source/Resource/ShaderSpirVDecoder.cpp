@@ -14,7 +14,18 @@ namespace v3d
 namespace resource
 {
 
-ShaderSpirVDecoder::ShaderSpirVDecoder(const renderer::ShaderHeader& header, bool reflections) noexcept
+const std::map<std::string, renderer::ShaderType> k_SPIRV_ExtensionList =
+{
+    //glsl
+    { "vert", renderer::ShaderType::ShaderType_Vertex },
+    { "frag", renderer::ShaderType::ShaderType_Fragment },
+
+    //hlsl
+    { "vs", renderer::ShaderType::ShaderType_Vertex },
+    { "ps", renderer::ShaderType::ShaderType_Fragment },
+};
+
+ ShaderSpirVDecoder::ShaderSpirVDecoder(const renderer::ShaderHeader& header, bool reflections) noexcept
     : m_header(header)
     , m_sourceVersion(0)
     , m_reflections(reflections)
@@ -102,38 +113,30 @@ Resource * ShaderSpirVDecoder::decode(const stream::Stream* stream, const std::s
             auto getShaderTypeFromName = [&validShaderType, &type](const std::string& name) -> shaderc_shader_kind
             {
                 std::string fileExtension = stream::FileLoader::getFileExtension(name);
-                if (fileExtension == "vert" || fileExtension == "vs")
+                auto result = k_SPIRV_ExtensionList.find(fileExtension);
+                if (result == k_SPIRV_ExtensionList.cend())
                 {
-                    validShaderType = true;
-                    type = renderer::ShaderType::ShaderType_Vertex;
+                    validShaderType = false;
                     return shaderc_shader_kind::shaderc_vertex_shader;
                 }
-                else if (fileExtension == "frag" || fileExtension == "ps")
+
+                type = result->second;
+                switch (type)
                 {
+                case renderer::ShaderType::ShaderType_Vertex:
                     validShaderType = true;
-                    type = renderer::ShaderType::ShaderType_Fragment;
+                    return shaderc_shader_kind::shaderc_vertex_shader;
+
+                case renderer::ShaderType::ShaderType_Fragment:
+                    validShaderType = true;
                     return shaderc_shader_kind::shaderc_fragment_shader;
+
+
+                default:
+                    validShaderType = false;
+                    return shaderc_shader_kind::shaderc_vertex_shader;
                 }
-                else if (fileExtension == "geom" || fileExtension == "gs")
-                {
-                    validShaderType = true;
-                    return shaderc_shader_kind::shaderc_geometry_shader;
-                }
-                else if (fileExtension == "comp")
-                {
-                    validShaderType = true;
-                    return shaderc_shader_kind::shaderc_compute_shader;
-                }
-                else if (fileExtension == "tesc")
-                {
-                    validShaderType = true;
-                    return shaderc_shader_kind::shaderc_tess_control_shader;
-                }
-                else if (fileExtension == "tese")
-                {
-                    validShaderType = true;
-                    return shaderc_shader_kind::shaderc_tess_evaluation_shader;
-                }
+
                 validShaderType = false;
                 return shaderc_shader_kind::shaderc_vertex_shader;
             };
@@ -273,7 +276,7 @@ Resource * ShaderSpirVDecoder::decode(const stream::Stream* stream, const std::s
 #if DEBUG
             timer.stop();
             u64 time = timer.getTime<utils::Timer::Duration_MilliSeconds>();
-            LOG_DEBUG("ShaderSpirVDecoder::decode , shader %s, is loaded. Time %.4f sec", name.c_str(), static_cast<f32>(time) / 1000.0f);
+            LOG_DEBUG("ShaderSpirVDecoder::decode, shader %s, is loaded. Time %.4f sec", name.c_str(), static_cast<f32>(time) / 1000.0f);
 #endif
 
             renderer::ShaderHeader* resourceHeader = new renderer::ShaderHeader(m_header);
@@ -337,7 +340,7 @@ Resource * ShaderSpirVDecoder::decode(const stream::Stream* stream, const std::s
 #if DEBUG
             timer.stop();
             u64 time = timer.getTime<utils::Timer::Duration_MilliSeconds>();
-            LOG_DEBUG("ShaderSpirVDecoder::decode , shader %s, is loaded. Time %.4f sec", name.c_str(), static_cast<f32>(time) / 1000.0f);
+            LOG_DEBUG("ShaderSpirVDecoder::decode, shader %s, is loaded. Time %.4f sec", name.c_str(), static_cast<f32>(time) / 1000.0f);
 #endif
             renderer::ShaderHeader* resourceHeader = new renderer::ShaderHeader(m_header);
             resourceHeader->_type = type;
@@ -476,6 +479,7 @@ bool ShaderSpirVDecoder::parseReflections(const std::vector<u32>& spirv, stream:
             block._set = set;
             block._binding = binding;
             block._array = block_type.array.empty() ? 1 : block_type.array[0];
+            ASSERT(block._array == 1, "unsupported now");
 #if USE_STRING_ID_SHADER
             std::string name = glsl.get_name(buffer.id);
             if (m_header._shaderLang == renderer::ShaderHeader::ShaderLang::ShaderLang_HLSL && name.empty())
@@ -606,6 +610,7 @@ bool ShaderSpirVDecoder::parseReflections(const std::vector<u32>& spirv, stream:
             };
 
 
+            u32 offset = 0;
             while (index < block_type.member_types.size())
             {
                 const spirv_cross::SPIRType& type = glsl.get_type(block_type.member_types[index]);
@@ -626,20 +631,24 @@ bool ShaderSpirVDecoder::parseReflections(const std::vector<u32>& spirv, stream:
 #endif
                 if (uniform._type == renderer::DataType::DataType_Struct)
                 {
-                    uniform._size = calculateMemberSizeInsideStruct(type);
+                    uniform._size = calculateMemberSizeInsideStruct(type) * uniform._array;
                 }
                 else
                 {
                     u32 dataSize = (type.width == 32) ? 4 : 8;
-                    uniform._size = dataSize * col * row;
+                    uniform._size = dataSize * col * row * uniform._array;
                 }
+
+                uniform._offset = offset;
+                offset += uniform._size;
+
                 ++index;
 
                 block._uniforms.push_back(uniform);
-                membersSize += uniform._size * uniform._array;
+                membersSize += uniform._size;
             }
 
-            block._size = membersSize;
+            block._size = membersSize * block._array;
             block >> stream;
 
             //u32 posCurr = stream->tell();

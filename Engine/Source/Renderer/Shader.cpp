@@ -257,6 +257,7 @@ Shader::UniformBuffer::Uniform::Uniform()
     , _array(1)
     , _type(renderer::DataType::DataType_None)
     , _size(0)
+    , _offset(0)
 #if USE_STRING_ID_SHADER
     , _name("")
 #endif
@@ -269,6 +270,7 @@ void Shader::UniformBuffer::Uniform::operator>>(stream::Stream * stream) const
     stream->write<u32>(_array);
     stream->write<renderer::DataType>(_type);
     stream->write<u32>(_size);
+    stream->write<u32>(_offset);
 #if USE_STRING_ID_SHADER
     stream->write(_name);
 #endif
@@ -280,6 +282,7 @@ void Shader::UniformBuffer::Uniform::operator<<(const stream::Stream * stream)
     stream->read<u32>(_array);
     stream->read<renderer::DataType>(_type);
     stream->read<u32>(_size);
+    stream->read<u32>(_offset);
 #if USE_STRING_ID_SHADER
     stream->read(_name);
 #endif

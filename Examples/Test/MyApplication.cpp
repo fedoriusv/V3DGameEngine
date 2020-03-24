@@ -88,7 +88,6 @@ int MyApplication::Execute()
 void MyApplication::Initialize()
 {
     Context::RenderType renderTypes[2] = { Context::RenderType::VulkanRender, Context::RenderType::DirectXRender };
-    
     for (Context::RenderType renderType : renderTypes)
     {
         m_Context = Context::createContext(m_Window, renderType);
@@ -273,19 +272,21 @@ void MyApplication::Test_ShaderLoader()
 {
     auto checkVertexShaderReflection = [](const Shader::ReflectionInfo& info)
     {
+        return;
+
         ASSERT(info._inputAttribute.size() == 3, "wrong");
         ASSERT(info._inputAttribute[0]._location == 0, "wrong");
         ASSERT(info._inputAttribute[0]._format == Format::Format_R32G32B32_SFloat, "wrong");
         ASSERT(info._inputAttribute[1]._location == 1, "wrong");
-        ASSERT(info._inputAttribute[1]._format == Format::Format_R32G32_SFloat, "wrong");
+        ASSERT(info._inputAttribute[1]._format == Format::Format_R32G32B32A32_SFloat, "wrong");
         ASSERT(info._inputAttribute[2]._location == 2, "wrong");
-        ASSERT(info._inputAttribute[2]._format == Format::Format_R32G32B32A32_SFloat, "wrong");
+        ASSERT(info._inputAttribute[2]._format == Format::Format_R32G32_SFloat, "wrong");
 
         ASSERT(info._outputAttribute.size() == 2, "wrong");
         ASSERT(info._outputAttribute[0]._location == 0, "wrong");
-        ASSERT(info._outputAttribute[0]._format == Format::Format_R32G32_SFloat, "wrong");
+        ASSERT(info._outputAttribute[0]._format == Format::Format_R32G32B32A32_SFloat, "wrong");
         ASSERT(info._outputAttribute[1]._location == 1, "wrong");
-        ASSERT(info._outputAttribute[1]._format == Format::Format_R32G32B32A32_SFloat, "wrong");
+        ASSERT(info._outputAttribute[1]._format == Format::Format_R32G32_SFloat, "wrong");
 
         ASSERT(info._uniformBuffers.size() == 3, "wrong");
         ASSERT(info._uniformBuffers[0]._id == 1, "wrong");
@@ -293,31 +294,73 @@ void MyApplication::Test_ShaderLoader()
         ASSERT(info._uniformBuffers[0]._binding == 0, "wrong");
         ASSERT(info._uniformBuffers[0]._array == 1, "wrong");
         ASSERT(info._uniformBuffers[0]._size == 64, "wrong");
-        //ASSERT(info._uniformBuffers[]._name == 3, "wrong");
+        ASSERT(info._uniformBuffers[0]._name == "ubo00_size64", "wrong");
         ASSERT(info._uniformBuffers[0]._uniforms.size() == 1, "wrong");
+        {
+            ASSERT(info._uniformBuffers[0]._uniforms[0]._bufferId == 1, "wrong");
+            ASSERT(info._uniformBuffers[0]._uniforms[0]._array == 1, "wrong");
+            ASSERT(info._uniformBuffers[0]._uniforms[0]._type == DataType::DataType_Matrix4, "wrong");
+            ASSERT(info._uniformBuffers[0]._uniforms[0]._size == 64, "wrong");
+            ASSERT(info._uniformBuffers[0]._uniforms[0]._offset == 0, "wrong");
+            //ASSERT(info._uniformBuffers[0]._uniforms[0]._name == 0, "wrong");
+        }
         ASSERT(info._uniformBuffers[1]._id == 0, "wrong");
         ASSERT(info._uniformBuffers[1]._set == 0, "wrong");
         ASSERT(info._uniformBuffers[1]._binding == 1, "wrong");
         ASSERT(info._uniformBuffers[1]._array == 1, "wrong");
         ASSERT(info._uniformBuffers[1]._size == 192, "wrong");
-        //ASSERT(info._uniformBuffers[]._name == 3, "wrong");
+        ASSERT(info._uniformBuffers[1]._name == "ubo01_size192", "wrong");
         ASSERT(info._uniformBuffers[1]._uniforms.size() == 3, "wrong");
+        {
+            ASSERT(info._uniformBuffers[1]._uniforms[0]._bufferId == 0, "wrong");
+            ASSERT(info._uniformBuffers[1]._uniforms[0]._array == 1, "wrong");
+            ASSERT(info._uniformBuffers[1]._uniforms[0]._type == DataType::DataType_Matrix4, "wrong");
+            ASSERT(info._uniformBuffers[1]._uniforms[0]._size == 64, "wrong");
+            ASSERT(info._uniformBuffers[1]._uniforms[0]._offset == 0, "wrong");
+            //ASSERT(info._uniformBuffers[0]._uniforms[0]._name == 0, "wrong");
+            ASSERT(info._uniformBuffers[1]._uniforms[1]._bufferId == 0, "wrong");
+            ASSERT(info._uniformBuffers[1]._uniforms[1]._array == 1, "wrong");
+            ASSERT(info._uniformBuffers[1]._uniforms[1]._type == DataType::DataType_Matrix4, "wrong");
+            ASSERT(info._uniformBuffers[1]._uniforms[1]._size == 64, "wrong");
+            ASSERT(info._uniformBuffers[1]._uniforms[1]._offset == 64, "wrong");
+            //ASSERT(info._uniformBuffers[0]._uniforms[0]._name == 0, "wrong");
+            ASSERT(info._uniformBuffers[1]._uniforms[2]._bufferId == 0, "wrong");
+            ASSERT(info._uniformBuffers[1]._uniforms[2]._array == 1, "wrong");
+            ASSERT(info._uniformBuffers[1]._uniforms[2]._type == DataType::DataType_Matrix4, "wrong");
+            ASSERT(info._uniformBuffers[1]._uniforms[2]._size == 64, "wrong");
+            ASSERT(info._uniformBuffers[1]._uniforms[2]._offset == 128, "wrong");
+            //ASSERT(info._uniformBuffers[0]._uniforms[0]._name == 0, "wrong");
+        }
         ASSERT(info._uniformBuffers[2]._id == 2, "wrong");
         ASSERT(info._uniformBuffers[2]._set == 1, "wrong");
         ASSERT(info._uniformBuffers[2]._binding == 1, "wrong");
         ASSERT(info._uniformBuffers[2]._array == 1, "wrong");
-        ASSERT(info._uniformBuffers[2]._size == 128, "wrong");
-        //ASSERT(info._uniformBuffers[]._name == 3, "wrong");
+        ASSERT(info._uniformBuffers[2]._size == 128 * 2, "wrong");
+        ASSERT(info._uniformBuffers[2]._name == "ubo11_size128", "wrong");
         ASSERT(info._uniformBuffers[2]._uniforms.size() == 2, "wrong");
+        {
+            ASSERT(info._uniformBuffers[2]._uniforms[0]._bufferId == 2, "wrong");
+            ASSERT(info._uniformBuffers[2]._uniforms[0]._array == 2, "wrong");
+            ASSERT(info._uniformBuffers[2]._uniforms[0]._type == DataType::DataType_Matrix4, "wrong");
+            ASSERT(info._uniformBuffers[2]._uniforms[0]._size == 64 * 2, "wrong");
+            ASSERT(info._uniformBuffers[2]._uniforms[0]._offset == 0, "wrong");
+            //ASSERT(info._uniformBuffers[0]._uniforms[0]._name == 0, "wrong");
+            ASSERT(info._uniformBuffers[2]._uniforms[1]._bufferId == 2, "wrong");
+            ASSERT(info._uniformBuffers[2]._uniforms[1]._array == 2, "wrong");
+            ASSERT(info._uniformBuffers[2]._uniforms[1]._type == DataType::DataType_Matrix4, "wrong");
+            ASSERT(info._uniformBuffers[2]._uniforms[1]._size == 64 * 2, "wrong");
+            ASSERT(info._uniformBuffers[2]._uniforms[1]._offset == 64 * 2, "wrong");
+            //ASSERT(info._uniformBuffers[0]._uniforms[0]._name == 0, "wrong");
+        }
     };
 
     auto checkFragmentShaderReflection = [](const Shader::ReflectionInfo& info)
     {
         ASSERT(info._inputAttribute.size() == 2, "wrong");
         ASSERT(info._inputAttribute[0]._location == 0, "wrong");
-        ASSERT(info._inputAttribute[0]._format == Format::Format_R32G32_SFloat, "wrong");
+        ASSERT(info._inputAttribute[0]._format == Format::Format_R32G32B32A32_SFloat, "wrong");
         ASSERT(info._inputAttribute[1]._location == 1, "wrong");
-        ASSERT(info._inputAttribute[1]._format == Format::Format_R32G32B32A32_SFloat, "wrong");
+        ASSERT(info._inputAttribute[1]._format == Format::Format_R32G32_SFloat, "wrong");
 
         ASSERT(info._outputAttribute.size() == 1, "wrong");
         ASSERT(info._outputAttribute[0]._location == 0, "wrong");
@@ -326,6 +369,7 @@ void MyApplication::Test_ShaderLoader()
         ASSERT(info._samplers.size() == 1, "wrong");
         ASSERT(info._samplers[0]._set == 0, "wrong");
         ASSERT(info._samplers[0]._binding == 0, "wrong");
+        ASSERT(info._samplers[0]._name == "samplerColor00", "wrong");
 
         ASSERT(info._images.size() == 3, "wrong");
         ASSERT(info._images[0]._set == 0, "wrong");
@@ -334,21 +378,21 @@ void MyApplication::Test_ShaderLoader()
         ASSERT(info._images[0]._target == TextureTarget::Texture2D, "wrong");
         ASSERT(info._images[0]._ms == false, "wrong");
         ASSERT(info._images[0]._depth == false, "wrong");
-        //ASSERT(info._sampledImages[]._name == 0, "wrong");
+        ASSERT(info._images[0]._name == "textureColor01", "wrong");
         ASSERT(info._images[1]._set == 0, "wrong");
         ASSERT(info._images[1]._binding == 2, "wrong");
         ASSERT(info._images[1]._array == 1, "wrong");
         ASSERT(info._images[1]._target == TextureTarget::Texture2D, "wrong");
         ASSERT(info._images[1]._ms == false, "wrong");
         ASSERT(info._images[1]._depth == false, "wrong");
-        //ASSERT(info._sampledImages[1]._name == 0, "wrong");
+        ASSERT(info._images[1]._name == "textureColor02", "wrong");
         ASSERT(info._images[2]._set == 1, "wrong");
         ASSERT(info._images[2]._binding == 0, "wrong");
         ASSERT(info._images[2]._array == 1, "wrong");
         ASSERT(info._images[2]._target == TextureTarget::Texture2D, "wrong");
         ASSERT(info._images[2]._ms == false, "wrong");
         ASSERT(info._images[2]._depth == false, "wrong");
-        //ASSERT(info._sampledImages[0]._name == 0, "wrong");
+        ASSERT(info._images[2]._name == "textureColor10", "wrong");
     };
 
     //load source shaders from file
@@ -358,35 +402,37 @@ void MyApplication::Test_ShaderLoader()
         #version 450
 
         layout (location = 0) in vec3 inAttribute0_vec3;
-        layout (location = 1) in vec2 inAttribute1_vec2;
-        layout (location = 2) in vec4 inAttribute2_vec4;
+        layout (location = 1) in vec4 inAttribute1_vec4;
+        layout (location = 2) in vec2 inAttribute2_vec2;
 
         layout (set = 0, binding = 1, std140) uniform UBO01_size192
         {
             mat4 projectionMatrix;
             mat4 modelMatrix;
             mat4 viewMatrix;
-        } ubo192;
+        } ubo01_size192;
 
         layout (set = 0, binding = 0, std140) uniform UBO00_size64
         {
             mat4 projectionMatrix;
-        } ubo64;
+        } ubo00_size64;
 
         layout (set = 1, binding = 1, std140) uniform UBO11_size128
         {
-            mat4 modelMatrix;
-            mat4 viewMatrix;
-        } ubo128;
+            mat4 modelMatrix[2];
+            mat4 viewMatrix[2];
+        } ubo11_size128;
 
-        layout (location = 0) out vec2 outAttribute0_vec2;
-        layout (location = 1) out vec4 outAttribute1_vec4;
+        layout (location = 0) out vec4 outAttribute0_vec4;
+        layout (location = 1) out vec2 outAttribute1_vec2;
 
         void main()
         {
-            outAttribute0_vec2 = inAttribute1_vec2;
-            vec4 vertex   = ubo192.modelMatrix * vec4(inAttribute0_vec3, 1.0);
-            gl_Position = ubo64.projectionMatrix * ubo128.viewMatrix * vertex;
+            outAttribute1_vec2 = inAttribute2_vec2;
+            vec4 vertex = ubo01_size192.modelMatrix * vec4(inAttribute0_vec3, 1.0);
+            outAttribute0_vec4 = ubo00_size64.projectionMatrix * ubo11_size128.viewMatrix[1] * vertex;
+
+            gl_Position = outAttribute0_vec4;
         }
         */
         Shader* glslVShader = ResourceLoaderManager::getInstance()->loadShader<Shader, ShaderSourceFileLoader>(m_Context, "examples/test/shaders/testReflectInfo.vert");
@@ -399,8 +445,8 @@ void MyApplication::Test_ShaderLoader()
         /*
         #version 450
 
-        layout (location = 0) in vec2 inAttribute0_vec2;
-        layout (location = 1) in vec4 inAttribute1_vec4;
+        layout (location = 0) in vec4 inAttribute0_vec4;
+        layout (location = 1) in vec2 inAttribute1_vec2;
 
         layout (set = 0, binding = 0) uniform sampler samplerColor00;
 
@@ -412,9 +458,9 @@ void MyApplication::Test_ShaderLoader()
 
         void main()
         {
-            outFragColor.r = texture(sampler2D(textureColor02, samplerColor00), inAttribute1_vec4.xy).r;
-            outFragColor.g = texture(sampler2D(textureColor10, samplerColor00), inAttribute1_vec4.xy).g;
-            outFragColor.b = texture(sampler2D(textureColor01, samplerColor00), inAttribute1_vec4.xy).b;
+            outFragColor.r = texture(sampler2D(textureColor02, samplerColor00), inAttribute1_vec2).r;
+            outFragColor.g = texture(sampler2D(textureColor10, samplerColor00), inAttribute1_vec2).g;
+            outFragColor.b = texture(sampler2D(textureColor01, samplerColor00), inAttribute1_vec2).b;
             outFragColor.a = 0.0;
         }
         */
@@ -447,106 +493,111 @@ void MyApplication::Test_ShaderLoader()
         ResourceLoaderManager::getInstance()->remove(spirvFShader);
     }
 
-    //hlsl
-    /*
-    struct VS_INPUT
     {
-        float3 inAttribute0_vec3 : IN_ATTRIBUTE0;
-        float2 inAttribute1_vec2 : IN_ATTRIBUTE1;
-        float4 inAttribute3_vec4 : IN_ATTRIBUTE2;
-    };
+        //hlsl
+        /*
+        struct VS_INPUT
+        {
+            float3 inAttribute0_vec3 : IN_ATTRIBUTE0;
+            float4 inAttribute1_vec4 : IN_ATTRIBUTE1;
+            float2 inAttribute2_vec2 : IN_ATTRIBUTE2;
+        };
 
-    struct VS_OUTPUT
-    {
-       float2 outAttribute0_vec2: OUT_ATTRIBUTE0;
-       float4 outAttribute1_vec4: OUT_ATTRIBUTE1;
-    };
+        struct UBO01_size192
+        {
+            float4x4 projectionMatrix;
+            float4x4 modelMatrix;
+            float4x4 viewMatrix;
+        };
 
-    struct UBO01_size192
-    {
-        float4x4 projectionMatrix0;
-        float4x4 modelMatrix0;
-        float4x4 viewMatrix0;
-    };
+        struct UBO00_size64
+        {
+            float4x4 projectionMatrix;
+        };
 
-    struct UBO00_size64
-    {
-        float4x4 projectionMatrix1;
-    };
+        struct UBO11_size128
+        {
+            float4x4 modelMatrix[2];
+            float4x4 viewMatrix[2];
+        };
 
-    struct UBO11_size128
-    {
-        float4x4 modelMatrix2;
-        float4x4 viewMatrix2;
-    };
+        ConstantBuffer<UBO01_size192> ubo01_size192   : register(b1, space0);
+        ConstantBuffer<UBO00_size64>  ubo00_size64    : register(b0, space0);
+        ConstantBuffer<UBO11_size128> ubo11_size128   : register(b1, space1);
 
-    ConstantBuffer<UBO01_size192> ubo01_size192 : register(b1, space0);
-    ConstantBuffer<UBO00_size64>  ubo00_size64 	: register(b0, space0);
-    ConstantBuffer<UBO11_size128> ubo11_size128 : register(b1, space1);
 
-    VS_OUTPUT main(VS_INPUT Input)
-    {
-       VS_OUTPUT Output;
+        struct VS_OUTPUT 
+        {
+           float4 Position: SV_POSITION;
+           float4 outAttribute0_vec4: OUT_ATTRIBUTE0;
+           float2 outAttribute1_vec2: OUT_ATTRIBUTE1;
+        };
 
-       Output.outAttribute0_vec2 = Input.inAttribute1_vec2;
+        VS_OUTPUT main(VS_INPUT Input)
+        {
+           VS_OUTPUT Output;
+   
+           Output.outAttribute1_vec2 = Input.inAttribute2_vec2;
+   
+           float4 vertex = mul(ubo01_size192.modelMatrix, float4(Input.inAttribute0_vec3, 1.0));
+           Output.outAttribute0_vec4 = mul(ubo00_size64.projectionMatrix, vertex);
+           Output.outAttribute0_vec4 = mul(ubo11_size128.viewMatrix[1], Output.outAttribute0_vec4);
 
-       float4 vertex = mul(ubo01_size192.modelMatrix0, float4(Input.inAttribute0_vec3, 1.0));
-       Output.outAttribute1_vec4 = mul(ubo00_size64.projectionMatrix1, vertex);
-       Output.outAttribute1_vec4 = mul(ubo11_size128.viewMatrix2, Output.outAttribute1_vec4);
+           Output.Position = Output.outAttribute0_vec4;
 
-       return Output;
+           return Output;
+        }
+        */
+        Shader* hlslVShader = ResourceLoaderManager::getInstance()->loadShader<Shader, ShaderSourceFileLoader>(m_Context, "examples/test/shaders/testReflectInfo.vs");
+        ASSERT(hlslVShader != nullptr, "wrong");
+        {
+            const Shader::ReflectionInfo& info = hlslVShader->getReflectionInfo();
+            checkVertexShaderReflection(info);
+        }
+
+        /*
+        struct PS_INPUT
+        {
+           float4 inAttribute0_vec4: IN_ATTRIBUTE0;
+           float2 inAttribute1_vec2: IN_ATTRIBUTE1;
+        };
+
+        SamplerState samplerColor00 : register(s0, space0);
+
+        Texture2D textureColor02    : register(t2, space0);
+        Texture2D textureColor10    : register(t0, space1);
+        Texture2D textureColor01    : register(t1, space0);
+
+        float4 main(PS_INPUT Input) : SV_TARGET0
+        {
+            float4 OutColor;
+            OutColor.r = textureColor02.Sample(samplerColor00, Input.inAttribute1_vec2).r;
+            OutColor.g = textureColor10.Sample(samplerColor00, Input.inAttribute1_vec2).g;
+            OutColor.b = textureColor01.Sample(samplerColor00, Input.inAttribute1_vec2).b;
+            OutColor.a = 0.0;
+
+            return OutColor;
+        }
+        */
+        Shader* hlslPShader = ResourceLoaderManager::getInstance()->loadShader<Shader, ShaderSourceFileLoader>(m_Context, "examples/test/shaders/testReflectInfo.ps");
+        ASSERT(hlslPShader != nullptr, "wrong");
+        {
+            const Shader::ReflectionInfo& info = hlslPShader->getReflectionInfo();
+            checkFragmentShaderReflection(info);
+        }
+
+        ResourceLoaderManager::getInstance()->remove(hlslVShader);
+        ResourceLoaderManager::getInstance()->remove(hlslPShader);
     }
-    */
-    Shader* hlslVShader = ResourceLoaderManager::getInstance()->loadShader<Shader, ShaderSourceFileLoader>(m_Context, "examples/test/shaders/testReflectInfo.vs");
-    ASSERT(hlslVShader != nullptr, "wrong");
+
     {
-        const Shader::ReflectionInfo& info = hlslVShader->getReflectionInfo();
-        checkVertexShaderReflection(info);
-    }
-
-    /*
-    struct PS_INPUT
-    {
-       float2 inAttribute0_vec2: IN_ATTRIBUTE0;
-       float4 inAttribute1_vec4: IN_ATTRIBUTE1;
-    };
-
-    SamplerState samplerColor00 : register(s0, space0);
-
-    Texture2D textureColor02 	: register(t2, space0);
-    Texture2D textureColor10 	: register(t0, space1);
-    Texture2D textureColor01 	: register(t1, space0);
-
-    float4 main(PS_INPUT Input) : SV_TARGET0
-    {
-        float4 OutColor;
-        OutColor.r = textureColor02.Sample(samplerColor00, Input.inAttribute1_vec4.xy).r;
-        OutColor.g = textureColor10.Sample(samplerColor00, Input.inAttribute1_vec4.xy).g;
-        OutColor.b = textureColor01.Sample(samplerColor00, Input.inAttribute1_vec4.xy).b;
-        OutColor.a = 0.0;
-
-        return OutColor;
-    }
-    */
-    Shader* hlslPShader = ResourceLoaderManager::getInstance()->loadShader<Shader, ShaderSourceFileLoader>(m_Context, "examples/test/shaders/testReflectInfo.ps");
-    ASSERT(hlslPShader != nullptr, "wrong");
-    {
-        const Shader::ReflectionInfo& info = hlslPShader->getReflectionInfo();
-        checkFragmentShaderReflection(info);
-    }
-
-    ResourceLoaderManager::getInstance()->remove(hlslVShader);
-    ResourceLoaderManager::getInstance()->remove(hlslPShader);
-
-    //TODO
-
-    renderer::Shader* vertShader = nullptr;
-    {
-        const std::string vertexSource("\
+        renderer::Shader* vertShader = nullptr;
+        {
+            const std::string vertexSource("\
         struct VS_INPUT\n\
         {\n\
-            float3 Position;\n\
-            float3 Color;\n\
+            float3 Position : POSITION;\n\
+            float3 Color : COLOR;\n\
         };\n\
         \n\
         struct VS_OUTPUT\n\
@@ -571,18 +622,20 @@ void MyApplication::Test_ShaderLoader()
             Out.Col = float4(Input.Color, 1.0);\n\
             return Out;\n\
         }");
-        const stream::Stream* vertexStream = stream::StreamManager::createMemoryStream(vertexSource);
+            const stream::Stream* vertexStream = stream::StreamManager::createMemoryStream(vertexSource);
 
-        renderer::ShaderHeader vertexHeader(renderer::ShaderType::ShaderType_Vertex);
-        vertexHeader._contentType = renderer::ShaderHeader::ShaderResource::ShaderResource_Source;
-        vertexHeader._shaderLang = renderer::ShaderHeader::ShaderLang::ShaderLang_HLSL;
+            renderer::ShaderHeader vertexHeader(renderer::ShaderType::ShaderType_Vertex);
+            vertexHeader._contentType = renderer::ShaderHeader::ShaderResource::ShaderResource_Source;
+            vertexHeader._shaderLang = renderer::ShaderHeader::ShaderLang::ShaderLang_HLSL;
+            vertexHeader._apiVersion = 50;
 
-        vertShader = resource::ResourceLoaderManager::getInstance()->composeShader<renderer::Shader, resource::ShaderSourceStreamLoader>(m_Context, "vertex", &vertexHeader, vertexStream);
-    }
+            vertShader = resource::ResourceLoaderManager::getInstance()->composeShader<renderer::Shader, resource::ShaderSourceStreamLoader>(m_Context, "vertex", &vertexHeader, vertexStream);
+            ASSERT(vertShader, "nullptr");
+        }
 
-    renderer::Shader* fragShader = nullptr;
-    {
-        const std::string fragmentSource("\
+        renderer::Shader* fragShader = nullptr;
+        {
+            const std::string fragmentSource("\
         struct PS_INPUT\n\
         {\n\
             float4 Pos : SV_POSITION;\n\
@@ -593,17 +646,20 @@ void MyApplication::Test_ShaderLoader()
         {\n\
             return Input.Col;\n\
         }");
-        const stream::Stream* fragmentStream = stream::StreamManager::createMemoryStream(fragmentSource);
+            const stream::Stream* fragmentStream = stream::StreamManager::createMemoryStream(fragmentSource);
 
-        renderer::ShaderHeader fragmentHeader(renderer::ShaderType::ShaderType_Fragment);
-        fragmentHeader._contentType = renderer::ShaderHeader::ShaderResource::ShaderResource_Source;
-        fragmentHeader._shaderLang = renderer::ShaderHeader::ShaderLang::ShaderLang_HLSL;
+            renderer::ShaderHeader fragmentHeader(renderer::ShaderType::ShaderType_Fragment);
+            fragmentHeader._contentType = renderer::ShaderHeader::ShaderResource::ShaderResource_Source;
+            fragmentHeader._shaderLang = renderer::ShaderHeader::ShaderLang::ShaderLang_HLSL;
+            fragmentHeader._apiVersion = 50;
 
-        fragShader = resource::ResourceLoaderManager::getInstance()->composeShader<renderer::Shader, resource::ShaderSourceStreamLoader>(m_Context, "fragment", &fragmentHeader, fragmentStream);
+            fragShader = resource::ResourceLoaderManager::getInstance()->composeShader<renderer::Shader, resource::ShaderSourceStreamLoader>(m_Context, "fragment", &fragmentHeader, fragmentStream);
+            ASSERT(fragShader, "nullptr");
+        }
+
+        ResourceLoaderManager::getInstance()->remove(vertShader);
+        ResourceLoaderManager::getInstance()->remove(fragShader);
     }
-
-    ResourceLoaderManager::getInstance()->remove(vertShader);
-    ResourceLoaderManager::getInstance()->remove(fragShader);
 }
 
 MyApplication::~MyApplication()
