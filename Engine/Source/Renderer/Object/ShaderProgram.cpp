@@ -66,7 +66,7 @@ public:
     }
 
 private:
-    const Shader* m_shader;
+    const Shader* const m_shader;
     u32 m_bindIndex;
 
     u32 m_offset;
@@ -108,10 +108,48 @@ public:
     }
 
 private:
-    const Shader* m_shader;
+    const Shader* const m_shader;
     u32 m_bindIndex;
 
     Image* m_image;
+};
+
+    /*CommandBindSampler*/
+class CommandBindSampler : public Command
+{
+    public:
+    CommandBindSampler(const Shader* shader, u32 bindIndex, const Sampler::SamplerInfo& samplerInfo) noexcept
+        : m_shader(shader)
+        , m_bindIndex(bindIndex)
+        , m_sampler(samplerInfo)
+    {
+#if DEBUG_COMMAND_LIST
+        LOG_DEBUG("CommandBindSampler constructor");
+#endif //DEBUG_COMMAND_LIST
+    };
+    CommandBindSampler() = delete;
+    CommandBindSampler(CommandBindSampler&) = delete;
+
+    ~CommandBindSampler()
+    {
+#if DEBUG_COMMAND_LIST
+        LOG_DEBUG("CommandBindSampler destructor");
+#endif //DEBUG_COMMAND_LIST
+    };
+
+    void execute(const CommandList& cmdList)
+    {
+#if DEBUG_COMMAND_LIST
+        LOG_DEBUG("CommandBindSampler execute");
+#endif //DEBUG_COMMAND_LIST
+        cmdList.getContext()->bindSampler(m_shader, m_bindIndex, &m_sampler);
+    }
+
+private:
+    const Shader* const m_shader;
+    u32 m_bindIndex;
+
+    const Sampler::SamplerInfo m_sampler;
 };
 
     /*CommandBindSampledImage*/
@@ -147,7 +185,7 @@ public:
     }
 
 private:
-    const Shader* m_shader;
+    const Shader* const m_shader;
     u32 m_bindIndex;
 
     Image* m_image;
@@ -166,7 +204,7 @@ const ShaderProgramDescription& ShaderProgram::getShaderDesc() const
     return m_programInfo;
 }
 
-ShaderProgram::ShaderProgram(renderer::CommandList & cmdList, std::vector<const Shader*> shaders) noexcept
+ShaderProgram::ShaderProgram(renderer::CommandList& cmdList, const std::vector<const Shader*>& shaders) noexcept
     : m_cmdList(cmdList)
 {
     for (auto shader : shaders)
@@ -198,156 +236,67 @@ void ShaderProgram::composeProgramData(const std::vector<const Shader*>& shaders
         for (auto& buffer : shader->m_reflectionInfo._uniformBuffers)
         {
             ASSERT(!buffer._name.empty(), "empty name");
-            auto iter = prameters.emplace(buffer._name, uniformIndex);
+            ShaderParam param(buffer._name);
+            auto iter = prameters.emplace(param._id, uniformIndex);
             if (!iter.second)
             {
                 ASSERT(false, "already present inside map");
             }
+            ++uniformIndex;
         }
-        ++uniformIndex;
 
-        u32 imageIndex = 0;
+        u32 sampledImageIndex = 0;
         for (auto& image : shader->m_reflectionInfo._sampledImages)
         {
 
             ASSERT(!image._name.empty(), "empty name");
-            auto iter = prameters.emplace(image._name, imageIndex);
+            ShaderParam param(image._name);
+            auto iter = prameters.emplace(param._id, sampledImageIndex);
+            if (!iter.second)
+            {
+                ASSERT(false, "already present inside map");
+            }
+            ++sampledImageIndex;
+        }
+
+        u32 imageIndex = 0;
+        for (auto& image : shader->m_reflectionInfo._images)
+        {
+
+            ASSERT(!image._name.empty(), "empty name");
+            ShaderParam param(image._name);
+            auto iter = prameters.emplace(param._id, imageIndex);
             if (!iter.second)
             {
                 ASSERT(false, "already present inside map");
             }
             ++imageIndex;
         }
+
+        u32 samplerIndex = 0;
+        for (auto& sampler : shader->m_reflectionInfo._samplers)
+        {
+
+            ASSERT(!sampler._name.empty(), "empty name");
+            ShaderParam param(sampler._name);
+            auto iter = prameters.emplace(param._id, samplerIndex);
+            if (!iter.second)
+            {
+                ASSERT(false, "already present inside map");
+            }
+            ++samplerIndex;
+        }
 #endif //USE_STRING_ID_SHADER
     }
 }
 
-#if USE_STRING_ID_SHADER
-bool ShaderProgram::bindUniformsBuffer(ShaderType shaderType, std::string& name, u32 offset, u32 size, const void* data)
-{
-    const Shader* shader = m_programInfo._shaders[shaderType];
-    ASSERT(shader, "fail");
-    ASSERT(!m_shaderParameters[shaderType].empty(), "fail");
-    auto iter = m_shaderParameters[shaderType].find(name);
-    if (iter == m_shaderParameters[shaderType].cend())
-    {
-        LOG_WARNING("ShaderProgram::bindUniformsBuffer: binding for buffer [%s] not found ", name.c_str());
-        ASSERT(false, "not found");
-        return false;
-    }
-
-    if (m_cmdList.isImmediate())
-    {
-        m_cmdList.getContext()->bindUniformsBuffer(shader, iter->second, offset, size, data);
-    }
-    else
-    {
-        m_cmdList.pushCommand(new CommandUpdateUniformsBuffer(shader, iter->second, offset, size, const_cast<void*>(data), false));
-    }
-
-    return true;
-}
-
-bool ShaderProgram::bindTexture(ShaderType shaderType, std::string& name, TextureTarget target, const Texture* texture)
-{
-    ASSERT(texture, "nullptr");
-    Image* image = nullptr;
-    switch (target)
-    {
-    case TextureTarget::Texture2D:
-        image = static_cast<const Texture2D*>(texture)->m_image;
-
-    default:
-        break;
-    }
-
-    if (!image)
-    {
-        ASSERT(false, "image nullptr");
-        return false;
-    }
-
-    const Shader* shader = m_programInfo._shaders[shaderType];
-    ASSERT(shader, "fail");
-
-    ASSERT(!m_shaderParameters[shaderType].empty(), "fail");
-    auto iter = m_shaderParameters[shaderType].find(name);
-    if (iter == m_shaderParameters[shaderType].cend())
-    {
-        LOG_WARNING("ShaderProgram::setTexture: binding for texture [%s] not found ", name.c_str());
-        ASSERT(false, "not found");
-        return false;
-    }
-
-    if (m_cmdList.isImmediate())
-    {
-        m_cmdList.getContext()->bindImage(shader, iter->second, image);
-    }
-    else
-    {
-        m_cmdList.pushCommand(new CommandBindImage(shader, iter->second, image));
-    }
-
-    return false;
-}
-
-bool ShaderProgram::bindSampledTexture(ShaderType shaderType, std::string& name, TextureTarget target, const Texture* texture, const SamplerState* sampler)
-{
-    ASSERT(texture, "nullptr");
-    Image* image = nullptr;
-    switch (target)
-    {
-    case TextureTarget::Texture2D:
-        image = static_cast<const Texture2D*>(texture)->m_image;
-
-    default:
-        break;
-    }
-
-    if (!image)
-    {
-        ASSERT(false, "image nullptr");
-        return false;
-    }
-
-    const Shader* shader = m_programInfo._shaders[shaderType];
-    ASSERT(shader, "fail");
-
-    ASSERT(!m_shaderParameters[shaderType].empty(), "fail");
-    auto iter = m_shaderParameters[shaderType].find(name);
-    if (iter == m_shaderParameters[shaderType].cend())
-    {
-        LOG_WARNING("ShaderProgram::bindSampledTexture: binding for sampled texture [%s] not found ", name.c_str());
-        ASSERT(false, "not found");
-        return false;
-    }
-
-    Sampler::SamplerInfo samplerInfo;
-    samplerInfo._tracker = const_cast<ObjectTracker<Sampler>*>(&sampler->m_trackerSampler);
-    samplerInfo._value._desc = sampler->m_samplerDesc;
-
-    if (m_cmdList.isImmediate())
-    {
-        m_cmdList.getContext()->bindSampledImage(shader, iter->second, image, &samplerInfo);
-    }
-    else
-    {
-        m_cmdList.pushCommand(new CommandBindSampledImage(shader, iter->second, image, samplerInfo));
-    }
-
-    return false;
-}
-
-bool ShaderProgram::bindSampledTexture(ShaderType shaderType, std::string& name, TextureTarget target, const Texture* texture, const SamplerDescription& desc)
-{
-    ASSERT(false, "not implemented");
-    //m_cmdList.createObject<SamplerState>();
-    //return ShaderProgram::bindSampledTexture(shaderType, name, target, texture, sampler->m_samplerDesc);
-    return false;
-}
-#else //USE_STRING_ID_SHADER
 bool ShaderProgram::bindTexture(ShaderType shaderType, u32 index, TextureTarget target, const Texture * texture)
 {
+#if USE_STRING_ID_SHADER
+    auto param = m_shaderParameters[shaderType].find(index);
+    ASSERT(param != m_shaderParameters[shaderType].cend(), "not found");
+    index = param->second;
+#endif //USE_STRING_ID_SHADER
     ASSERT(texture, "nullptr");
     Image* image = nullptr;
     switch (target)
@@ -368,7 +317,7 @@ bool ShaderProgram::bindTexture(ShaderType shaderType, u32 index, TextureTarget 
 
     const Shader* shader = m_programInfo._shaders[shaderType];
     ASSERT(shader, "fail");
-    ASSERT(index < shader->getReflectionInfo()._sampledImages.size(), "range out");
+    ASSERT(index < shader->getReflectionInfo()._images.size(), "range out");
 
     if (m_cmdList.isImmediate())
     {
@@ -379,11 +328,45 @@ bool ShaderProgram::bindTexture(ShaderType shaderType, u32 index, TextureTarget 
         m_cmdList.pushCommand(new CommandBindImage(shader, index, image));
     }
 
-    return false;
+    return true;
 }
 
-bool ShaderProgram::bindSampledTexture(ShaderType shaderType, u32 index, TextureTarget target, const Texture * texture, const SamplerState * sampler)
+bool ShaderProgram::bindSampler(ShaderType shaderType, u32 index, const SamplerState* sampler)
 {
+#if USE_STRING_ID_SHADER
+    auto param = m_shaderParameters[shaderType].find(index);
+    ASSERT(param != m_shaderParameters[shaderType].cend(), "not found");
+    index = param->second;
+#endif //USE_STRING_ID_SHADER
+    ASSERT(sampler, "nullptr");
+
+    const Shader* shader = m_programInfo._shaders[shaderType];
+    ASSERT(shader, "fail");
+    ASSERT(index < shader->getReflectionInfo()._images.size(), "range out");
+
+    Sampler::SamplerInfo samplerInfo;
+    samplerInfo._tracker = const_cast<ObjectTracker<Sampler>*>(&sampler->m_trackerSampler);
+    samplerInfo._value._desc = sampler->m_samplerDesc;
+
+    if (m_cmdList.isImmediate())
+    {
+        m_cmdList.getContext()->bindSampler(shader, index, &samplerInfo);
+    }
+    else
+    {
+        m_cmdList.pushCommand(new CommandBindSampler(shader, index, samplerInfo));
+    }
+
+    return true;
+}
+
+bool ShaderProgram::bindSampledTexture(ShaderType shaderType, u32 index, TextureTarget target, const Texture * texture, const SamplerState* sampler)
+{
+#if USE_STRING_ID_SHADER
+    auto param = m_shaderParameters[shaderType].find(index);
+    ASSERT(param != m_shaderParameters[shaderType].cend(), "not found");
+    index = param->second;
+#endif //USE_STRING_ID_SHADER
     ASSERT(texture, "nullptr");
     Image* image = nullptr;
     switch (target)
@@ -418,11 +401,17 @@ bool ShaderProgram::bindSampledTexture(ShaderType shaderType, u32 index, Texture
         m_cmdList.pushCommand(new CommandBindSampledImage(shader, index, image, samplerInfo));
     }
 
-    return false;
+    return true;
 }
 
 bool ShaderProgram::bindUniformsBuffer(ShaderType shaderType, u32 index, u32 offset, u32 size, const void * data)
 {
+#if USE_STRING_ID_SHADER
+    auto param = m_shaderParameters[shaderType].find(index);
+    ASSERT(param != m_shaderParameters[shaderType].cend(), "not found");
+    index = param->second;
+#endif //USE_STRING_ID_SHADER
+
     const Shader* shader = m_programInfo._shaders[shaderType];
     ASSERT(shader, "fail");
     ASSERT(index < shader->getReflectionInfo()._uniformBuffers.size(), "range out");
@@ -438,7 +427,6 @@ bool ShaderProgram::bindUniformsBuffer(ShaderType shaderType, u32 index, u32 off
 
     return true;
 }
-#endif //USE_STRING_ID_SHADER
 
 ShaderProgram::~ShaderProgram()
 {

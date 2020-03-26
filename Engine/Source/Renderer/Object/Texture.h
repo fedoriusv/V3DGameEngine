@@ -54,11 +54,11 @@ namespace renderer
         Texture2D(const Texture2D&) = delete;
         virtual ~Texture2D();
 
-        renderer::TextureTarget  getTarget() const;
-        renderer::TextureSamples getSampleCount() const;
+        TextureTarget            getTarget() const;
+        TextureSamples           getSampleCount() const;
         u32                      getMipmaps() const;
         const core::Dimension2D& getDimension() const;
-        renderer::Format         getFormat() const;
+        Format                   getFormat() const;
 
         void update(const core::Dimension2D& offset, const core::Dimension2D& size, u32 mipLevel, const void* data);
         void read(const core::Dimension2D& offset, const core::Dimension2D& size, u32 mipLevel, void* const data);
@@ -67,28 +67,28 @@ namespace renderer
 
     private:
 
-        Texture2D(renderer::CommandList& cmdList, TextureUsageFlags usage, renderer::Format format, const core::Dimension2D& dimension, u32 layers = 1, u32 mipmapCount = 1, const void* data = nullptr) noexcept;
-        Texture2D(renderer::CommandList& cmdList, TextureUsageFlags usage, renderer::Format format, const core::Dimension2D& dimension, renderer::TextureSamples samples) noexcept;
+        Texture2D(CommandList& cmdList, TextureUsageFlags usage, Format format, const core::Dimension2D& dimension, u32 layers = 1, u32 mipmapCount = 1, const void* data = nullptr) noexcept;
+        Texture2D(CommandList& cmdList, TextureUsageFlags usage, Format format, const core::Dimension2D& dimension, TextureSamples samples) noexcept;
 
         bool isTextureUsageFlagsContains(TextureUsageFlags usage) const;
         void handleNotify(utils::Observable* ob) override;
 
         void createTexture2D(const void* data = nullptr);
 
-        renderer::Image* getImage() const;
+        Image* getImage() const;
 
         friend CommandList;
         CommandList& m_cmdList;
 
-        const  renderer::TextureTarget      m_target;
-        const renderer::Format              m_format;
-        const core::Dimension2D             m_dimension;
-        const u32                           m_mipmaps;
-        const u32                           m_layers;
-        renderer::TextureSamples            m_samples;
+        const TextureTarget      m_target;
+        const Format             m_format;
+        const core::Dimension2D  m_dimension;
+        const u32                m_mipmaps;
+        const u32                m_layers;
+        TextureSamples           m_samples;
 
-        TextureUsageFlags                   m_usage;
-        renderer::Image*                    m_image;
+        TextureUsageFlags        m_usage;
+        Image*                   m_image;
 
         friend ShaderProgram;
         friend RenderTargetState;

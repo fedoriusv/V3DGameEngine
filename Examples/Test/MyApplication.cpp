@@ -10,6 +10,8 @@
 #include "Renderer/Object/StreamBuffer.h"
 #include "Renderer/Object/PipelineState.h"
 #include "Renderer/Object/RenderTargetState.h"
+#include "Renderer/Object/ShaderProgram.h"
+#include "Renderer/Object/SamplerState.h"
 #include "Renderer/Formats.h"
 #include "Renderer/Shader.h"
 
@@ -96,6 +98,8 @@ void MyApplication::Initialize()
         m_CommandList = new renderer::CommandList(m_Context, renderer::CommandList::CommandListType::DelayedCommandList);
 
         Test_ShaderLoader();
+        Test_CreateShaderProgram();
+        Test_ShaderParam();
 
         delete m_CommandList;
         Context::destroyContext(m_Context);
@@ -335,8 +339,8 @@ void MyApplication::Test_ShaderLoader()
         ASSERT(info._uniformBuffers[2]._set == 1, "wrong");
         ASSERT(info._uniformBuffers[2]._binding == 1, "wrong");
         ASSERT(info._uniformBuffers[2]._array == 1, "wrong");
-        ASSERT(info._uniformBuffers[2]._size == 128 * 2, "wrong");
-        ASSERT(info._uniformBuffers[2]._name == "ubo11_size128", "wrong");
+        ASSERT(info._uniformBuffers[2]._size == 256, "wrong");
+        ASSERT(info._uniformBuffers[2]._name == "ubo11_size256", "wrong");
         ASSERT(info._uniformBuffers[2]._uniforms.size() == 2, "wrong");
         {
             ASSERT(info._uniformBuffers[2]._uniforms[0]._bufferId == 2, "wrong");
@@ -417,11 +421,11 @@ void MyApplication::Test_ShaderLoader()
             mat4 projectionMatrix;
         } ubo00_size64;
 
-        layout (set = 1, binding = 1, std140) uniform UBO11_size128
+        layout (set = 1, binding = 1, std140) uniform UBO11_size256
         {
             mat4 modelMatrix[2];
             mat4 viewMatrix[2];
-        } ubo11_size128;
+        } ubo11_size256;
 
         layout (location = 0) out vec4 outAttribute0_vec4;
         layout (location = 1) out vec2 outAttribute1_vec2;
@@ -430,7 +434,7 @@ void MyApplication::Test_ShaderLoader()
         {
             outAttribute1_vec2 = inAttribute2_vec2;
             vec4 vertex = ubo01_size192.modelMatrix * vec4(inAttribute0_vec3, 1.0);
-            outAttribute0_vec4 = ubo00_size64.projectionMatrix * ubo11_size128.viewMatrix[1] * vertex;
+            outAttribute0_vec4 = ubo00_size64.projectionMatrix * ubo11_size256.viewMatrix[1] * vertex;
 
             gl_Position = outAttribute0_vec4;
         }
@@ -515,7 +519,7 @@ void MyApplication::Test_ShaderLoader()
             float4x4 projectionMatrix;
         };
 
-        struct UBO11_size128
+        struct UBO11_size256
         {
             float4x4 modelMatrix[2];
             float4x4 viewMatrix[2];
@@ -523,7 +527,7 @@ void MyApplication::Test_ShaderLoader()
 
         ConstantBuffer<UBO01_size192> ubo01_size192   : register(b1, space0);
         ConstantBuffer<UBO00_size64>  ubo00_size64    : register(b0, space0);
-        ConstantBuffer<UBO11_size128> ubo11_size128   : register(b1, space1);
+        ConstantBuffer<UBO11_size256> ubo11_size256   : register(b1, space1);
 
 
         struct VS_OUTPUT 
@@ -541,7 +545,7 @@ void MyApplication::Test_ShaderLoader()
    
            float4 vertex = mul(ubo01_size192.modelMatrix, float4(Input.inAttribute0_vec3, 1.0));
            Output.outAttribute0_vec4 = mul(ubo00_size64.projectionMatrix, vertex);
-           Output.outAttribute0_vec4 = mul(ubo11_size128.viewMatrix[1], Output.outAttribute0_vec4);
+           Output.outAttribute0_vec4 = mul(ubo11_size256.viewMatrix[1], Output.outAttribute0_vec4);
 
            Output.Position = Output.outAttribute0_vec4;
 
@@ -591,7 +595,17 @@ void MyApplication::Test_ShaderLoader()
     }
 
     {
-        renderer::Shader* vertShader = nullptr;
+        //TODO
+        //auto [hlslVShader, hlslPShader] = ResourceLoaderManager::getInstance()->loadShaders<Shader, ShaderSourceFileLoader>(m_Context, "examples/test/shaders/testReflectInfo.hlsl");
+        //ASSERT(hlslVShader != nullptr, "wrong");
+        //ASSERT(hlslPShader != nullptr, "wrong");
+    }
+}
+
+void MyApplication::Test_CreateShaderProgram()
+{
+    {
+        Shader* vertShader = nullptr;
         {
             const std::string vertexSource("\
         struct VS_INPUT\n\
@@ -624,16 +638,16 @@ void MyApplication::Test_ShaderLoader()
         }");
             const stream::Stream* vertexStream = stream::StreamManager::createMemoryStream(vertexSource);
 
-            renderer::ShaderHeader vertexHeader(renderer::ShaderType::ShaderType_Vertex);
-            vertexHeader._contentType = renderer::ShaderHeader::ShaderResource::ShaderResource_Source;
-            vertexHeader._shaderLang = renderer::ShaderHeader::ShaderLang::ShaderLang_HLSL;
+            ShaderHeader vertexHeader(ShaderType::ShaderType_Vertex);
+            vertexHeader._contentType = ShaderHeader::ShaderResource::ShaderResource_Source;
+            vertexHeader._shaderLang = ShaderHeader::ShaderLang::ShaderLang_HLSL;
             vertexHeader._apiVersion = 50;
 
-            vertShader = resource::ResourceLoaderManager::getInstance()->composeShader<renderer::Shader, resource::ShaderSourceStreamLoader>(m_Context, "vertex", &vertexHeader, vertexStream);
+            vertShader = resource::ResourceLoaderManager::getInstance()->composeShader<Shader, resource::ShaderSourceStreamLoader>(m_Context, "vertex", &vertexHeader, vertexStream);
             ASSERT(vertShader, "nullptr");
         }
 
-        renderer::Shader* fragShader = nullptr;
+        Shader* fragShader = nullptr;
         {
             const std::string fragmentSource("\
         struct PS_INPUT\n\
@@ -648,17 +662,178 @@ void MyApplication::Test_ShaderLoader()
         }");
             const stream::Stream* fragmentStream = stream::StreamManager::createMemoryStream(fragmentSource);
 
-            renderer::ShaderHeader fragmentHeader(renderer::ShaderType::ShaderType_Fragment);
-            fragmentHeader._contentType = renderer::ShaderHeader::ShaderResource::ShaderResource_Source;
-            fragmentHeader._shaderLang = renderer::ShaderHeader::ShaderLang::ShaderLang_HLSL;
+            ShaderHeader fragmentHeader(ShaderType::ShaderType_Fragment);
+            fragmentHeader._contentType = ShaderHeader::ShaderResource::ShaderResource_Source;
+            fragmentHeader._shaderLang = ShaderHeader::ShaderLang::ShaderLang_HLSL;
             fragmentHeader._apiVersion = 50;
 
-            fragShader = resource::ResourceLoaderManager::getInstance()->composeShader<renderer::Shader, resource::ShaderSourceStreamLoader>(m_Context, "fragment", &fragmentHeader, fragmentStream);
+            fragShader = resource::ResourceLoaderManager::getInstance()->composeShader<Shader, resource::ShaderSourceStreamLoader>(m_Context, "fragment", &fragmentHeader, fragmentStream);
             ASSERT(fragShader, "nullptr");
         }
 
+
+        CommandList* commandList = new renderer::CommandList(m_Context, CommandList::CommandListType::ImmediateCommandList);
+        ASSERT(commandList, "nullptr");
+
+        ShaderProgram* singleProgram = commandList->createObject<renderer::ShaderProgram>(std::vector<const Shader*>({ vertShader }));
+        ASSERT(singleProgram, "wrong");
+        renderer::ShaderProgram* twoShaderProgram = commandList->createObject<ShaderProgram, std::vector<const Shader*>>({ {vertShader, fragShader} });
+        ASSERT(twoShaderProgram, "wrong");
+
+        delete singleProgram;
+        delete twoShaderProgram;
+
+        delete commandList;
+
         ResourceLoaderManager::getInstance()->remove(vertShader);
         ResourceLoaderManager::getInstance()->remove(fragShader);
+    }
+}
+
+void MyApplication::Test_ShaderParam()
+{
+    {
+        //hlsl
+        /*
+        struct VS_INPUT
+        {
+            float3 inAttribute0_vec3 : IN_ATTRIBUTE0;
+            float4 inAttribute1_vec4 : IN_ATTRIBUTE1;
+            float2 inAttribute2_vec2 : IN_ATTRIBUTE2;
+        };
+
+        struct UBO01_size192
+        {
+            float4x4 projectionMatrix;
+            float4x4 modelMatrix;
+            float4x4 viewMatrix;
+        };
+
+        struct UBO00_size64
+        {
+            float4x4 projectionMatrix;
+        };
+
+        struct UBO11_size256
+        {
+            float4x4 modelMatrix[2];
+            float4x4 viewMatrix[2];
+        };
+
+        ConstantBuffer<UBO01_size192> ubo01_size192   : register(b1, space0);
+        ConstantBuffer<UBO00_size64>  ubo00_size64    : register(b0, space0);
+        ConstantBuffer<UBO11_size256> ubo11_size256   : register(b1, space1);
+
+
+        struct VS_OUTPUT
+        {
+           float4 Position: SV_POSITION;
+           float4 outAttribute0_vec4: OUT_ATTRIBUTE0;
+           float2 outAttribute1_vec2: OUT_ATTRIBUTE1;
+        };
+
+        VS_OUTPUT main(VS_INPUT Input)
+        {
+           VS_OUTPUT Output;
+
+           Output.outAttribute1_vec2 = Input.inAttribute2_vec2;
+
+           float4 vertex = mul(ubo01_size192.modelMatrix, float4(Input.inAttribute0_vec3, 1.0));
+           Output.outAttribute0_vec4 = mul(ubo00_size64.projectionMatrix, vertex);
+           Output.outAttribute0_vec4 = mul(ubo11_size256.viewMatrix[1], Output.outAttribute0_vec4);
+
+           Output.Position = Output.outAttribute0_vec4;
+
+           return Output;
+        }
+        */
+        Shader* hlslVShader = ResourceLoaderManager::getInstance()->loadShader<Shader, ShaderSourceFileLoader>(m_Context, "examples/test/shaders/testReflectInfo.vs");
+        ASSERT(hlslVShader != nullptr, "wrong");
+
+        /*
+        struct PS_INPUT
+        {
+           float4 inAttribute0_vec4: IN_ATTRIBUTE0;
+           float2 inAttribute1_vec2: IN_ATTRIBUTE1;
+        };
+
+        SamplerState samplerColor00 : register(s0, space0);
+
+        Texture2D textureColor02    : register(t2, space0);
+        Texture2D textureColor10    : register(t0, space1);
+        Texture2D textureColor01    : register(t1, space0);
+
+        float4 main(PS_INPUT Input) : SV_TARGET0
+        {
+            float4 OutColor;
+            OutColor.r = textureColor02.Sample(samplerColor00, Input.inAttribute1_vec2).r;
+            OutColor.g = textureColor10.Sample(samplerColor00, Input.inAttribute1_vec2).g;
+            OutColor.b = textureColor01.Sample(samplerColor00, Input.inAttribute1_vec2).b;
+            OutColor.a = 0.0;
+
+            return OutColor;
+        }
+        */
+        Shader* hlslPShader = ResourceLoaderManager::getInstance()->loadShader<Shader, ShaderSourceFileLoader>(m_Context, "examples/test/shaders/testReflectInfo.ps");
+        ASSERT(hlslPShader != nullptr, "wrong");
+
+        CommandList* commandList = new CommandList(m_Context, CommandList::CommandListType::ImmediateCommandList);
+        ASSERT(commandList, "nullptr");
+
+        ShaderProgram* shaderProgram = commandList->createObject<ShaderProgram, std::vector<const Shader*>>({ {hlslVShader, hlslPShader} });
+        ASSERT(shaderProgram, "shaderProgram");
+
+        {
+            struct UBO11_size256
+            {
+                core::Matrix4D _modelMatrix[2];
+                core::Matrix4D _viewMatrix[2];
+            } ubo11_size256;
+            ASSERT(sizeof(ubo11_size256) == 256, "wrong");
+
+            ShaderParam param256("ubo11_size256");
+            ASSERT(param256._id == crc32c::Crc32c("ubo11_size256"), "wrong");
+            shaderProgram->bindUniformsBuffer<ShaderType::ShaderType_Vertex>(param256, 0, sizeof(UBO11_size256), & ubo11_size256);
+
+            struct UBO01_size192
+            {
+                core::Matrix4D _projectionMatrix;
+                core::Matrix4D _modelMatrix;
+                core::Matrix4D _viewMatrix;
+            } ubo01_size192;
+            ASSERT(sizeof(ubo01_size192) == 192, "wrong");
+
+            ShaderParam param192("ubo01_size192");
+            ASSERT(param192._id == crc32c::Crc32c("ubo01_size192"), "wrong");
+            shaderProgram->bindUniformsBuffer<ShaderType::ShaderType_Vertex>(param192, 0, sizeof(UBO01_size192), &ubo01_size192);
+        }
+
+        {
+            Texture2D* texture = commandList->createObject<Texture2D>(TextureUsage::TextureUsage_Sampled, Format::Format_R32G32B32A32_UInt, core::Dimension2D(1,1));
+            ASSERT(texture, "nullptr");
+
+            SamplerState* sampler = commandList->createObject<SamplerState>();
+
+            ShaderParam textureColor01("textureColor01");
+            ASSERT(textureColor01._id == crc32c::Crc32c("textureColor01"), "wrong");
+            ShaderParam textureColor10("textureColor10");
+            ASSERT(textureColor10._id == crc32c::Crc32c("textureColor10"), "wrong");
+            ShaderParam samplerColor00("samplerColor00");
+            ASSERT(samplerColor00._id == crc32c::Crc32c("samplerColor00"), "wrong");
+
+            shaderProgram->bindTexture<ShaderType::ShaderType_Fragment>(textureColor01, texture);
+            shaderProgram->bindTexture<ShaderType::ShaderType_Fragment>(textureColor10, texture);
+            shaderProgram->bindSampler<ShaderType::ShaderType_Fragment>(samplerColor00, sampler);
+
+            delete sampler;
+            delete texture;
+        }
+        delete shaderProgram;
+
+        delete commandList;
+
+        ResourceLoaderManager::getInstance()->remove(hlslVShader);
+        ResourceLoaderManager::getInstance()->remove(hlslPShader);
     }
 }
 

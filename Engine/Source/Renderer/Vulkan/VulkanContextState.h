@@ -60,6 +60,8 @@ namespace vk
         bool prepareDescriptorSets(VulkanCommandBuffer* cmdBuffer, std::vector<VkDescriptorSet>& sets, std::vector<u32>& offsets);
 
         void bindTexture(const VulkanImage* image, const VulkanSampler* sampler, u32 arrayIndex, const Shader::Image& info);
+        void bindTexture(const VulkanImage* image, u32 arrayIndex, const Shader::Image& info);
+        void bindSampler(const VulkanSampler* sampler, const Shader::Sampler& info);
         void updateConstantBuffer(const Shader::UniformBuffer& info, u32 offset, u32 size, const void* data);
 
         void invalidateDescriptorSetsState();

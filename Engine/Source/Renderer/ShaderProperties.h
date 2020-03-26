@@ -2,6 +2,7 @@
 
 #include "Common.h"
 #include "Formats.h"
+#include "crc32c/crc32c.h"
 
 #define USE_STRING_ID_SHADER 1
 
@@ -58,6 +59,21 @@ namespace renderer
 
         u32 _hash;
         std::array<const Shader*, ShaderType::ShaderType_Count> _shaders;
+    };
+
+    /**
+    * ShaderParam
+    */
+    struct ShaderParam
+    {
+        ShaderParam(const std::string& name) noexcept
+            : _name(name)
+            , _id(crc32c::Crc32c(name))
+        {
+        }
+
+        std::string _name;
+        u32         _id;
     };
 
 

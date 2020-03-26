@@ -17,7 +17,7 @@ struct UBO00_size64
     float4x4 projectionMatrix;
 };
 
-struct UBO11_size128
+struct UBO11_size256
 {
     float4x4 modelMatrix[2];
     float4x4 viewMatrix[2];
@@ -25,7 +25,7 @@ struct UBO11_size128
 
 ConstantBuffer<UBO01_size192> ubo01_size192   : register(b1, space0);
 ConstantBuffer<UBO00_size64>  ubo00_size64    : register(b0, space0);
-ConstantBuffer<UBO11_size128> ubo11_size128   : register(b1, space1);
+ConstantBuffer<UBO11_size256> ubo11_size256   : register(b1, space1);
 
 
 struct PS_INPUT 
@@ -56,7 +56,7 @@ VS_OUTPUT mainVS(VS_INPUT Input)
    
    float4 vertex = mul(ubo01_size192.modelMatrix, float4(Input.inAttribute0_vec3, 1.0));
    Output.outAttribute0_vec4 = mul(ubo00_size64.projectionMatrix, vertex);
-   Output.outAttribute0_vec4 = mul(ubo11_size128.viewMatrix[1], Output.outAttribute0_vec4);
+   Output.outAttribute0_vec4 = mul(ubo11_size256.viewMatrix[1], Output.outAttribute0_vec4);
 
    Output.Position = Output.outAttribute0_vec4;
 
