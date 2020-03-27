@@ -12,7 +12,7 @@ ShaderHeader::ShaderHeader() noexcept
     : _type(renderer::ShaderType::ShaderType_Undefined)
     , _contentType(ShaderResource::ShaderResource_Source)
     , _shaderLang(ShaderLang::ShaderLang_GLSL)
-    , _apiVersion(0)
+    , _shaderVersion(ShaderModel::ShaderModel_Default)
     , _optLevel(0)
     , _entryPoint("main")
 {
@@ -22,7 +22,7 @@ ShaderHeader::ShaderHeader(renderer::ShaderType type) noexcept
     : _type(type)
     , _contentType(ShaderResource::ShaderResource_Source)
     , _shaderLang(ShaderLang::ShaderLang_GLSL)
-    , _apiVersion(0)
+    , _shaderVersion(ShaderModel::ShaderModel_Default)
     , _optLevel(0)
     , _entryPoint("main")
 {

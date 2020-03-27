@@ -5,7 +5,7 @@ namespace v3d
 {
 namespace renderer
 {
-namespace d3d12
+namespace dx3d
 {
 
 HRESULT D3DWrapper::CreateDevice(IUnknown* pAdapter, D3D_FEATURE_LEVEL MinimumFeatureLevel, REFIID riid, void** ppDevice) noexcept
@@ -18,7 +18,7 @@ HRESULT D3DWrapper::GetDebugInterface(REFIID riid, void** ppvDebug) noexcept
     return  D3D12GetDebugInterface(riid, ppvDebug);
 }
 
-} //namespace d3d12
+} //namespace dx3d
 } //namespace renderer
 } //namespace v3d
 #endif //D3D_RENDER

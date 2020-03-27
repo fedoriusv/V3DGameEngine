@@ -32,13 +32,22 @@ namespace renderer
             ShaderLang_SpirV
         };
 
+        enum class ShaderModel : u32
+        {
+            ShaderModel_Default,
+
+            ShaderModel_GLSL_450,
+            ShaderModel_HLSL_5_0,
+            ShaderModel_HLSL_5_1,
+        };
+
         ShaderHeader() noexcept;
         explicit ShaderHeader(renderer::ShaderType type) noexcept;
 
         renderer::ShaderType _type;
         ShaderResource       _contentType;
         ShaderLang           _shaderLang;
-        u32                  _apiVersion;
+        ShaderModel          _shaderVersion;
         u32                  _optLevel;
         std::string          _entryPoint;
 

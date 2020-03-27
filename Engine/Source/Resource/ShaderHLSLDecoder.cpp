@@ -89,19 +89,23 @@ Resource * ShaderHLSLDecoder::decode(const stream::Stream* stream, const std::st
             renderer::ShaderType type = m_header._type == renderer::ShaderType::ShaderType_Undefined ? getShaderTypeFromName(name) : m_header._type;
 
             std::string shaderVersion = "";
-            auto getShaderType = [&shaderVersion](renderer::ShaderType type, u32 api) -> bool
+            renderer::ShaderHeader::ShaderModel shaderModel = renderer::ShaderHeader::ShaderModel::ShaderModel_Default;
+            auto getShaderType = [&shaderVersion, &shaderModel](renderer::ShaderType type, renderer::ShaderHeader::ShaderModel model) -> bool
             {
                 switch (type)
                 {
                 case renderer::ShaderType::ShaderType_Vertex:
                 {
-                    if (api == 51)
+                    if (model == renderer::ShaderHeader::ShaderModel::ShaderModel_Default ||
+                        model == renderer::ShaderHeader::ShaderModel::ShaderModel_HLSL_5_1)
                     {
+                        shaderModel = renderer::ShaderHeader::ShaderModel::ShaderModel_HLSL_5_1;
                         shaderVersion = "vs_5_1";
                     }
                     else
                     {
-                        ASSERT(api >= 50, "min version ShaderModer5.0");
+                        ASSERT(model >= renderer::ShaderHeader::ShaderModel::ShaderModel_HLSL_5_0, "min version ShaderModer5.0");
+                        shaderModel = renderer::ShaderHeader::ShaderModel::ShaderModel_HLSL_5_0;
                         shaderVersion = "vs_5_0";
                     }
                     return true;
@@ -109,13 +113,16 @@ Resource * ShaderHLSLDecoder::decode(const stream::Stream* stream, const std::st
 
                 case renderer::ShaderType::ShaderType_Fragment:
                 {
-                    if (api == 51)
+                    if (model == renderer::ShaderHeader::ShaderModel::ShaderModel_Default ||
+                        model == renderer::ShaderHeader::ShaderModel::ShaderModel_HLSL_5_1)
                     {
+                        shaderModel = renderer::ShaderHeader::ShaderModel::ShaderModel_HLSL_5_1;
                         shaderVersion = "ps_5_1";
                     }
                     else
                     {
-                        ASSERT(api >= 50, "min version ShaderModer5.0");
+                        ASSERT(model >= renderer::ShaderHeader::ShaderModel::ShaderModel_HLSL_5_0, "min version ShaderModer5.0");
+                        shaderModel = renderer::ShaderHeader::ShaderModel::ShaderModel_HLSL_5_0;
                         shaderVersion = "ps_5_0";
                     }
                     return true;
@@ -131,7 +138,7 @@ Resource * ShaderHLSLDecoder::decode(const stream::Stream* stream, const std::st
                 return false;
             };
 
-            if (!getShaderType(type, m_header._apiVersion))
+            if (!getShaderType(type, m_header._shaderVersion))
             {
                 LOG_ERROR("ShaderHLSLDecoder::decode wrong version: %s", shaderVersion.c_str());
                 return nullptr;
@@ -177,7 +184,7 @@ Resource * ShaderHLSLDecoder::decode(const stream::Stream* stream, const std::st
 
                 if (FAILED(result))
                 {
-                    LOG_ERROR("ShaderHLSLDecoder::decode D3DCompile2 is failed. Error %s", renderer::d3d12::D3DDebug::stringError(result).c_str());
+                    LOG_ERROR("ShaderHLSLDecoder::decode D3DCompile2 is failed. Error %s", renderer::dx3d::D3DDebug::stringError(result).c_str());
                     if (shader)
                     {
                         shader->Release();
@@ -195,6 +202,7 @@ Resource * ShaderHLSLDecoder::decode(const stream::Stream* stream, const std::st
 
             renderer::ShaderHeader* resourceHeader = new renderer::ShaderHeader(m_header);
             resourceHeader->_type = type;
+            resourceHeader->_shaderVersion = shaderModel;
 #if DEBUG
             resourceHeader->_debugName = name;
 #endif
@@ -253,7 +261,7 @@ bool reflect(ID3DBlob* shader, stream::Stream* stream)
         HRESULT result = D3DReflect(shader->GetBufferPointer(), shader->GetBufferSize(), IID_PPV_ARGS(&reflector));//IID_ID3D11ShaderReflection, &reflector);
         if (FAILED(result))
         {
-            LOG_ERROR("ShaderHLSLDecoder::reflect D3DReflect is failed. Error %s", renderer::d3d12::D3DDebug::stringError(result).c_str());
+            LOG_ERROR("ShaderHLSLDecoder::reflect D3DReflect is failed. Error %s", renderer::dx3d::D3DDebug::stringError(result).c_str());
             return false;
         }
     }

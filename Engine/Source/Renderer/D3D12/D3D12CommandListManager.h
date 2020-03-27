@@ -11,7 +11,7 @@ namespace v3d
 {
 namespace renderer
 {
-namespace d3d12
+namespace dx3d
 {
     class D3DFence;
 
@@ -50,7 +50,7 @@ namespace d3d12
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-} //namespace d3d12
+} //namespace dx3d
 } //namespace renderer
 } //namespace v3d
 

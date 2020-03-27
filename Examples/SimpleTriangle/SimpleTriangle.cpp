@@ -40,8 +40,8 @@ void SimpleTriangle::init(v3d::renderer::CommandList* commandList, const core::D
         const std::string vertexSource("\
         struct VS_INPUT\n\
         {\n\
-            float3 Position;\n\
-            float3 Color;\n\
+            float3 Position : POSITION;\n\
+            float3 Color    : COLOR;\n\
         };\n\
         \n\
         struct VS_OUTPUT\n\
@@ -50,19 +50,21 @@ void SimpleTriangle::init(v3d::renderer::CommandList* commandList, const core::D
             float4 Col : COLOR;\n\
         };\n\
         \n\
-        cbuffer ConstantBuffer\n\
+        struct CBuffer\n\
         {\n\
             matrix projectionMatrix;\n\
-            matrix modelMatrix;\n\
-            matrix viewMatrix;\n\
-        };\n\
+            matrix modelMatrix; \n\
+            matrix viewMatrix; \n\
+        }; \n\
+        \n\
+        ConstantBuffer<CBuffer> buffer;\n\
         \n\
         VS_OUTPUT main(VS_INPUT Input)\n\
         {\n\
             VS_OUTPUT Out;\n\
-            Out.Pos = mul(modelMatrix, float4(Input.Position, 1.0));\n\
-            Out.Pos = mul(viewMatrix, Out.Pos);\n\
-            Out.Pos = mul(projectionMatrix, Out.Pos);\n\
+            Out.Pos = mul(buffer.modelMatrix, float4(Input.Position, 1.0));\n\
+            Out.Pos = mul(buffer.viewMatrix, Out.Pos);\n\
+            Out.Pos = mul(buffer.projectionMatrix, Out.Pos);\n\
             Out.Col = float4(Input.Color, 1.0);\n\
             return Out;\n\
         }");
@@ -71,6 +73,7 @@ void SimpleTriangle::init(v3d::renderer::CommandList* commandList, const core::D
         renderer::ShaderHeader vertexHeader(renderer::ShaderType::ShaderType_Vertex);
         vertexHeader._contentType = renderer::ShaderHeader::ShaderResource::ShaderResource_Source;
         vertexHeader._shaderLang = renderer::ShaderHeader::ShaderLang::ShaderLang_HLSL;
+        vertexHeader._shaderVersion = renderer::ShaderHeader::ShaderModel::ShaderModel_HLSL_5_1;
 
         vertShader = resource::ResourceLoaderManager::getInstance()->composeShader<renderer::Shader, resource::ShaderSourceStreamLoader>(
             m_CommandList->getContext(), "vertex", &vertexHeader, vertexStream);
@@ -170,7 +173,7 @@ void SimpleTriangle::render()
     ubo1.modelMatrix.setTranslation(core::Vector3D(-1, 0, 0));
     ubo1.viewMatrix = m_Camera->getCamera().getViewMatrix();
 
-    m_Program->bindUniformsBuffer<renderer::ShaderType::ShaderType_Vertex>(0, 0, (u32)sizeof(UBO), &ubo1);
+    m_Program->bindUniformsBuffer<renderer::ShaderType::ShaderType_Vertex>({"buffer"}, 0, (u32)sizeof(UBO), &ubo1);
     m_CommandList->draw(renderer::StreamBufferDescription(m_Geometry, 0), 0, 3, 1);
 
     UBO ubo2;
@@ -178,7 +181,7 @@ void SimpleTriangle::render()
     ubo2.modelMatrix.setTranslation(core::Vector3D(1, 0, 0));
     ubo2.viewMatrix = m_Camera->getCamera().getViewMatrix();
 
-    m_Program->bindUniformsBuffer<renderer::ShaderType::ShaderType_Vertex>(0, 0, (u32)sizeof(UBO), &ubo2);
+    m_Program->bindUniformsBuffer<renderer::ShaderType::ShaderType_Vertex>({ "buffer" }, 0, (u32)sizeof(UBO), &ubo2);
     m_CommandList->draw(renderer::StreamBufferDescription(m_Geometry, 0), 0, 3, 1);
 }
 

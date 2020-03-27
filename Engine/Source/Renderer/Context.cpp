@@ -54,12 +54,12 @@ Context* Context::createContext(const platform::Window* window,  RenderType type
     case RenderType::DirectXRender:
         if (mask & DeviceMask::GraphicMask)
         {
-            context = new d3d12::D3DGraphicContext(window);
+            context = new dx3d::D3DGraphicContext(window);
         }
         else
         {
             LOG_ERROR("Context::createContext mask %x is not supported for this render type %u. Set default bit", mask, type);
-            context = new d3d12::D3DGraphicContext(window);
+            context = new dx3d::D3DGraphicContext(window);
         }
         break;
 #endif //D3D_RENDER

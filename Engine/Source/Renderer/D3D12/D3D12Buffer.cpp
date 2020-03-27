@@ -11,7 +11,7 @@ namespace v3d
 {
 namespace renderer
 {
-namespace d3d12
+namespace dx3d
 {
 
 D3DBuffer::D3DBuffer(ID3D12Device* device, Buffer::BufferType type, StreamBufferUsageFlags usageFlag, u64 size, const std::string& name) noexcept
@@ -82,7 +82,7 @@ ID3D12Resource* D3DBuffer::getResource() const
     return m_bufferResource;
 }
 
-} //namespace d3d12
+} //namespace dx3d
 } //namespace renderer
 } //namespace v3d12
 #endif //D3D_RENDER

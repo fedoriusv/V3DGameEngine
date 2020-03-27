@@ -9,7 +9,7 @@ namespace v3d
 {
 namespace renderer
 {
-namespace d3d12
+namespace dx3d
 {
 
 D3DCommandListManager::D3DCommandListManager(ID3D12Device* device, ID3D12CommandQueue* commandQueue, u32 swapImageCount) noexcept
@@ -222,7 +222,7 @@ bool D3DCommandListManager::sync(u32 index, bool wait)
     return true;
 }
 
-} //namespace d3d12
+} //namespace dx3d
 } //namespace renderer
 } //namespace v3d
 #endif //D3D_RENDER

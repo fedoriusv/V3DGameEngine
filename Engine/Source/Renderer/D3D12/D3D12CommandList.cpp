@@ -10,10 +10,10 @@ namespace v3d
 {
 namespace renderer
 {
-namespace d3d12
+namespace dx3d
 {
 
-D3D12_COMMAND_LIST_TYPE D3DCommandList::convertCommandListTypeToD3DType(Type type)
+D3D12_COMMAND_LIST_TYPE D3DCommandList::convertCommandListTypeToD3DType(D3DCommandList::Type type)
 {
     switch (type)
     {
@@ -192,7 +192,7 @@ void D3DGraphicsCommandList::setScissor(const std::vector<D3D12_RECT>& scissors)
     D3DGraphicsCommandList::getHandle()->RSSetScissorRects(static_cast<u32>(scissors.size()), scissors.data());
 }
 
-} //namespace d3d12
+} //namespace dx3d
 } //namespace renderer
 } //namespace v3d
 #endif //D3D_RENDER

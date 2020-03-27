@@ -12,7 +12,7 @@ namespace v3d
 {
 namespace renderer
 {
-namespace d3d12
+namespace dx3d
 {
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -20,11 +20,12 @@ namespace d3d12
     /**
     * D3DImage final class. DirectX Render side
     */
-    class D3DImage : public Image
+    class D3DImage final : public Image
     {
     public:
 
-        explicit D3DImage(DXGI_FORMAT format, u32 width, u32 height, const std::string& name = "") noexcept;
+        explicit D3DImage(ID3D12Device* device, DXGI_FORMAT format, u32 width, u32 height, u32 samples, TextureUsageFlags flags, const std::string& name = "") noexcept;
+        explicit D3DImage(ID3D12Device* device, D3D12_RESOURCE_DIMENSION dimension, DXGI_FORMAT format, const core::Dimension3D& size, u32 arrays, u32 mipmap, TextureUsageFlags flags, const std::string& name = "") noexcept;
         ~D3DImage();
 
         bool create() override;
@@ -46,15 +47,24 @@ namespace d3d12
         D3D12_RESOURCE_STATES getState() const;
         D3D12_RESOURCE_STATES setState(D3D12_RESOURCE_STATES state);
 
+        static DXGI_FORMAT convertImageFormatToD3DFormat(Format format);
+        static D3D12_RESOURCE_DIMENSION convertImageTargetToD3DDimension(TextureTarget target);
+
     private:
+
+        ID3D12Device* m_device;
 
         ID3D12Resource* m_imageResource;
         CD3DX12_CPU_DESCRIPTOR_HANDLE m_handle;
-
         D3D12_RESOURCE_STATES m_state;
 
-        core::Dimension3D m_size;
+        D3D12_RESOURCE_DIMENSION m_dimension;
         DXGI_FORMAT m_format;
+        core::Dimension3D m_size;
+        u32 m_mipmaps;
+        u32 m_arrays;
+
+        u32 m_samples;
 
         bool m_swapchain;
 
@@ -65,7 +75,7 @@ namespace d3d12
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-} //namespace d3d12
+} //namespace dx3d
 } //namespace renderer
 } //namespace v3d
 #endif //D3D_RENDER

@@ -34,9 +34,4 @@ private:
     v3d::renderer::CommandList* m_CommandList;
 
     v3d::core::Vector4D m_clearColor;
-
-    //
-    class v3d::renderer::RenderTargetState* renderTarget0;
-    class v3d::renderer::RenderTargetState* renderTarget1;
-    //
 };

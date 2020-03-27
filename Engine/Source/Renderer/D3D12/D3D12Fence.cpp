@@ -11,7 +11,7 @@ namespace v3d
 {
 namespace renderer
 {
-namespace d3d12
+namespace dx3d
 {
 
 D3DFence::D3DFence(ID3D12Device* device, u64 value) noexcept
@@ -204,7 +204,7 @@ ID3D12Fence* D3DFence::getHandle() const
 }
 
 
-} //namespace d3d12
+} //namespace dx3d
 } //namespace renderer
-} //namespace v3d12
+} //namespace v3d
 #endif //D3D_RENDER

@@ -641,7 +641,7 @@ void MyApplication::Test_CreateShaderProgram()
             ShaderHeader vertexHeader(ShaderType::ShaderType_Vertex);
             vertexHeader._contentType = ShaderHeader::ShaderResource::ShaderResource_Source;
             vertexHeader._shaderLang = ShaderHeader::ShaderLang::ShaderLang_HLSL;
-            vertexHeader._apiVersion = 50;
+            vertexHeader._shaderVersion = renderer::ShaderHeader::ShaderModel::ShaderModel_HLSL_5_0;
 
             vertShader = resource::ResourceLoaderManager::getInstance()->composeShader<Shader, resource::ShaderSourceStreamLoader>(m_Context, "vertex", &vertexHeader, vertexStream);
             ASSERT(vertShader, "nullptr");
@@ -665,7 +665,7 @@ void MyApplication::Test_CreateShaderProgram()
             ShaderHeader fragmentHeader(ShaderType::ShaderType_Fragment);
             fragmentHeader._contentType = ShaderHeader::ShaderResource::ShaderResource_Source;
             fragmentHeader._shaderLang = ShaderHeader::ShaderLang::ShaderLang_HLSL;
-            fragmentHeader._apiVersion = 50;
+            fragmentHeader._shaderVersion = renderer::ShaderHeader::ShaderModel::ShaderModel_HLSL_5_0;
 
             fragShader = resource::ResourceLoaderManager::getInstance()->composeShader<Shader, resource::ShaderSourceStreamLoader>(m_Context, "fragment", &fragmentHeader, fragmentStream);
             ASSERT(fragShader, "nullptr");

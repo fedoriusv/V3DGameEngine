@@ -60,7 +60,6 @@ Resource * ShaderSpirVDecoder::decode(const stream::Stream* stream, const std::s
             timer.start();
 #endif
             shaderc::CompileOptions options;
-            options.SetTargetEnvironment(shaderc_target_env_vulkan, 0);
             switch (m_header._optLevel)
             {
             case 0:
@@ -84,15 +83,25 @@ Resource * ShaderSpirVDecoder::decode(const stream::Stream* stream, const std::s
             {
             case renderer::ShaderHeader::ShaderLang::ShaderLang_GLSL:
                 options.SetSourceLanguage(shaderc_source_language_glsl);
+                options.SetTargetEnvironment(shaderc_target_env_vulkan, shaderc_env_version_vulkan_1_1);
+
+                ASSERT(m_header._shaderVersion == renderer::ShaderHeader::ShaderModel::ShaderModel_Default ||
+                    m_header._shaderVersion == renderer::ShaderHeader::ShaderModel::ShaderModel_GLSL_450, "wrong version");
                 break;
 
             case renderer::ShaderHeader::ShaderLang::ShaderLang_HLSL:
                 options.SetSourceLanguage(shaderc_source_language_hlsl);
+                options.SetTargetEnvironment(shaderc_target_env_vulkan, shaderc_env_version_vulkan_1_1);
+
+                ASSERT(m_header._shaderVersion == renderer::ShaderHeader::ShaderModel::ShaderModel_Default ||
+                    m_header._shaderVersion == renderer::ShaderHeader::ShaderModel::ShaderModel_HLSL_5_0 ||
+                    m_header._shaderVersion == renderer::ShaderHeader::ShaderModel::ShaderModel_HLSL_5_1, "wrong version");
                 break;
 
             default:
                 ASSERT(false, "shader lang doesn't support");
                 options.SetSourceLanguage(shaderc_source_language_glsl);
+                options.SetTargetEnvironment(shaderc_target_env_vulkan, 0);
             }
 
             for (auto& define : m_header._defines)
@@ -281,7 +290,7 @@ Resource * ShaderSpirVDecoder::decode(const stream::Stream* stream, const std::s
 
             renderer::ShaderHeader* resourceHeader = new renderer::ShaderHeader(m_header);
             resourceHeader->_type = type;
-            resourceHeader->_apiVersion = m_sourceVersion;
+            resourceHeader->_shaderVersion = renderer::ShaderHeader::ShaderModel::ShaderModel_GLSL_450;
 #if DEBUG
             resourceHeader->_debugName = name;
 #endif
@@ -344,7 +353,7 @@ Resource * ShaderSpirVDecoder::decode(const stream::Stream* stream, const std::s
 #endif
             renderer::ShaderHeader* resourceHeader = new renderer::ShaderHeader(m_header);
             resourceHeader->_type = type;
-            resourceHeader->_apiVersion = m_sourceVersion;
+            resourceHeader->_shaderVersion = renderer::ShaderHeader::ShaderModel::ShaderModel_GLSL_450;
 #if DEBUG
             resourceHeader->_debugName = name;
 #endif

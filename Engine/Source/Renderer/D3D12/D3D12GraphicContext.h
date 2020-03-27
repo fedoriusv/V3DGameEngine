@@ -11,9 +11,12 @@ namespace v3d
 {
 namespace renderer
 {
-namespace d3d12
+
+    class PipelineManager;
+
+namespace dx3d
 {
-     /////////////////////////////////////////////////////////////////////////////////////////////////////
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
     * D3DGraphicContext final class. DirectX Render side
@@ -92,6 +95,8 @@ namespace d3d12
 
         D3DCommandListManager* m_commandListManager;
 
+        PipelineManager* m_pipelineManager;
+
 
         struct RenderState
         {
@@ -106,6 +111,8 @@ namespace d3d12
             }
 
             D3DGraphicsCommandList* _commandList;
+
+            D3DGraphicPipelineState* _pipeline;
         };
         RenderState m_currentState;
 
@@ -116,7 +123,7 @@ namespace d3d12
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-} //namespace d3d12
+} //namespace dx3d
 } //namespace renderer
 } //namespace v3d
 #endif //D3D_RENDER

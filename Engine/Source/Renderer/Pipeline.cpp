@@ -36,6 +36,11 @@ bool Pipeline::createShader(const Shader * shader)
     return compileShader(&shader->getShaderHeader(), shader->m_source, shader->m_size);
 }
 
+bool Pipeline::compileShader(const ShaderHeader* header, const void* source, u32 size)
+{
+    return false;
+}
+
 PipelineManager::PipelineManager(Context * context) noexcept
     : m_context(context)
 {

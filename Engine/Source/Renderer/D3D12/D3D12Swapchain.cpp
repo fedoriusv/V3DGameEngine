@@ -10,7 +10,7 @@ namespace v3d
 {
 namespace renderer
 {
-namespace d3d12
+namespace dx3d
 {
 
 D3DSwapchain::D3DSwapchain(IDXGIFactory4* factory, ID3D12Device* device, ID3D12CommandQueue* cmdQueue) noexcept
@@ -122,7 +122,8 @@ bool D3DSwapchain::create(const SwapchainConfig& config)
             rtvHandle.Offset(1, rtvDescriptorSize);
 
             CD3DX12_CPU_DESCRIPTOR_HANDLE imageHandle(m_descriptorHeap->GetCPUDescriptorHandleForHeapStart(), n, rtvDescriptorSize);
-            D3DImage* image = new D3DImage(format, config._size.width, config._size.height, "SwapchainImage_" + std::to_string(n));
+            D3DImage* image = new D3DImage(m_device, format, config._size.width, config._size.height, 1, 
+                TextureUsage::TextureUsage_Attachment | TextureUsage::TextureUsage_Sampled | TextureUsage::TextureUsage_Read, "SwapchainImage_" + std::to_string(n));
             if (!image->create(swapchainImage, imageHandle))
             {
                 LOG_ERROR("D3DSwapchain::create swapimage is failed");
@@ -192,7 +193,7 @@ bool D3DSwapchain::vsync() const
     return m_syncInterval > 0;
 }
 
-} //namespace d3d12
+} //namespace dx3d
 } //namespace renderer
 } //namespace v3d
 #endif //D3D_RENDER

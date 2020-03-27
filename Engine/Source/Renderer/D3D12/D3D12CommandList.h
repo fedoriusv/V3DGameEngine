@@ -7,7 +7,7 @@ namespace v3d
 {
 namespace renderer
 {
-namespace d3d12
+namespace dx3d
 {
     class D3DCommandListManager;
     class D3DImage;
@@ -49,7 +49,7 @@ namespace d3d12
         virtual void prepare() = 0;
         virtual void close() = 0;
 
-        static D3D12_COMMAND_LIST_TYPE convertCommandListTypeToD3DType(Type type);
+        static D3D12_COMMAND_LIST_TYPE convertCommandListTypeToD3DType(D3DCommandList::Type type);
 
         void destroy();
 
@@ -108,7 +108,7 @@ namespace d3d12
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-} //namespace d3d12
+} //namespace dx3d
 } //namespace renderer
 } //namespace v3d
 

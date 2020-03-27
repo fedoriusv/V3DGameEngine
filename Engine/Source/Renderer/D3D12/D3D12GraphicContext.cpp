@@ -3,18 +3,21 @@
 #include "Utils/Logger.h"
 
 #ifdef D3D_RENDER
+#   include "Renderer/Pipeline.h"
+
 #   include <wrl.h>
 #   include "D3D12Debug.h"
 #   include "D3D12Wrapper.h"
-
 #   include "D3D12Image.h"
 #   include "D3D12Buffer.h"
+#   include "D3D12DeviceCaps.h"
+#   include "D3D12PipelineState.h"
 
 namespace v3d
 {
 namespace renderer
 {
-namespace d3d12
+namespace dx3d
 {
 
 #if (D3D_VERSION_MAJOR == 12 && D3D_VERSION_MINOR == 0)
@@ -41,6 +44,7 @@ D3DGraphicContext::D3DGraphicContext(const platform::Window* window) noexcept
     , m_window(window)
 
     , m_commandListManager(nullptr)
+    , m_pipelineManager(nullptr)
 {
     LOG_DEBUG("D3DGraphicContext::D3DGraphicContext constructor %llx", this);
 
@@ -52,6 +56,7 @@ D3DGraphicContext::~D3DGraphicContext()
 {
     LOG_DEBUG("D3DGraphicContext::D3DGraphicContext destructor %llx", this);
     
+    ASSERT(!m_pipelineManager, "not nullptr");
     ASSERT(!m_commandListManager, "not nullptr");
 
     ASSERT(!m_commandQueue, "not nullptr");
@@ -178,6 +183,8 @@ void D3DGraphicContext::setRenderTarget(const RenderPass::RenderPassInfo* render
     LOG_DEBUG("D3DGraphicContext::setRenderTarget");
     ASSERT(renderpassInfo && framebufferInfo, "nullptr");
 
+
+
     //D3DCommandList* commandList = getCurrentCommandList();
     //commandList->OMSetRenderTargets(1, &rtvHandle, FALSE, nullptr);
 }
@@ -196,24 +203,56 @@ void D3DGraphicContext::invalidateRenderPass()
 
 void D3DGraphicContext::setPipeline(const Pipeline::PipelineGraphicInfo* pipelineInfo)
 {
+#if D3D_DEBUG
+    LOG_DEBUG("D3DGraphicContext::setPipeline");
+#endif
+    ASSERT(pipelineInfo, "nullptr");
+
+    Pipeline* pipeline = m_pipelineManager->acquireGraphicPipeline(*pipelineInfo);
+    ASSERT(pipeline, "nullptr");
+    pipelineInfo->_tracker->attach(pipeline);
+#if VULKAN_DEBUG
+    LOG_DEBUG("VulkanGraphicContext::setPipeline %xll", pipeline);
+#endif //VULKAN_DEBUG
+
+    D3DGraphicPipelineState* dxPipeline = static_cast<D3DGraphicPipelineState*>(pipeline);
+    m_currentState._pipeline = dxPipeline;
 }
 
 void D3DGraphicContext::removePipeline(Pipeline* pipeline)
 {
 }
 
-Image* D3DGraphicContext::createImage(TextureTarget target, renderer::Format format, const core::Dimension3D& dimension, u32 layers, u32 mipmapLevel, TextureUsageFlags flags)
+Image* D3DGraphicContext::createImage(TextureTarget target, Format format, const core::Dimension3D& dimension, u32 layers, u32 mipmapLevel, TextureUsageFlags flags)
 {
-    return nullptr;
+#if D3D_DEBUG
+    LOG_DEBUG("D3DGraphicContext::createImage");
+#endif //D3D_DEBUG
+    DXGI_FORMAT dxFormat = D3DImage::convertImageFormatToD3DFormat(format);
+    D3D12_RESOURCE_DIMENSION dxDimension = D3DImage::convertImageTargetToD3DDimension(target);
+
+    return new D3DImage(m_device, dxDimension, dxFormat, dimension, layers, mipmapLevel, flags);
 }
 
-Image* D3DGraphicContext::createImage(renderer::Format format, const core::Dimension3D& dimension, TextureSamples samples, TextureUsageFlags flags)
+Image* D3DGraphicContext::createImage(Format format, const core::Dimension3D& dimension, TextureSamples samples, TextureUsageFlags flags)
 {
-    return nullptr;
+#if D3D_DEBUG
+    LOG_DEBUG("D3DGraphicContext::createImage");
+#endif //D3D_DEBUG
+    DXGI_FORMAT dxFormat = D3DImage::convertImageFormatToD3DFormat(format);
+    u32 dxSamples = (u32)samples << 2;
+    ASSERT(dimension.depth == 1, "must be 1");
+
+    return new D3DImage(m_device, dxFormat, dimension.width, dimension.height, dxSamples, flags);
 }
 
 void D3DGraphicContext::removeImage(Image* image)
 {
+    D3DImage* dxImage = static_cast<D3DImage*>(image);
+    dxImage->notifyObservers();
+
+    dxImage->destroy();
+    delete dxImage;
 }
 
 Buffer* D3DGraphicContext::createBuffer(Buffer::BufferType type, u16 usageFlag, u64 size)
@@ -242,7 +281,7 @@ void D3DGraphicContext::removeSampler(Sampler* sampler)
 
 const DeviceCaps* D3DGraphicContext::getDeviceCaps() const
 {
-    return nullptr;
+    return D3DDeviceCaps::getInstance();
 }
 
 D3DCommandList* D3DGraphicContext::getCurrentCommandList() const
@@ -312,6 +351,9 @@ bool D3DGraphicContext::initialize()
 #endif
     }
 
+    D3DDeviceCaps* caps = D3DDeviceCaps::getInstance();
+    caps->initialize();
+
     {
         D3DSwapchain::SwapchainConfig config;
         config._window = m_window->getWindowHandle();
@@ -333,10 +375,11 @@ bool D3DGraphicContext::initialize()
         m_commandListManager = new D3DCommandListManager(m_device, m_commandQueue, config._countSwapchainImages);
     }
 
+    m_pipelineManager = new PipelineManager(this);
+
 #if D3D_DEBUG
     D3DDebug::getInstance()->report(D3D12_RLDO_SUMMARY | D3D12_RLDO_IGNORE_INTERNAL);
 #endif
-
     return true;
 }
 
@@ -345,6 +388,12 @@ void D3DGraphicContext::destroy()
 #if D3D_DEBUG
     D3DDebug::getInstance()->report(D3D12_RLDO_SUMMARY | D3D12_RLDO_IGNORE_INTERNAL);
 #endif
+
+    if (m_pipelineManager)
+    {
+        delete m_pipelineManager;
+        m_pipelineManager = nullptr;
+    }
 
     if (m_commandListManager)
     {
@@ -397,6 +446,12 @@ RenderPass* D3DGraphicContext::createRenderPass(const RenderPassDescription* ren
 
 Pipeline* D3DGraphicContext::createPipeline(Pipeline::PipelineType type)
 {
+    if (type == Pipeline::PipelineType::PipelineType_Graphic)
+    {
+        return new D3DGraphicPipelineState(m_device);
+    }
+    
+    ASSERT(false, "not impl");
     return nullptr;
 }
 
@@ -439,7 +494,7 @@ void D3DGraphicContext::getHardwareAdapter(IDXGIFactory2* pFactory, IDXGIAdapter
 }
 
 
-} //namespace d3d12
+} //namespace dx3d
 } //namespace renderer
 } //namespace v3d
 

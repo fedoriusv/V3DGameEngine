@@ -55,7 +55,7 @@ namespace renderer
     protected:
 
         bool createShader(const Shader* shader);
-        virtual bool compileShader(const ShaderHeader* header, const void* source, u32 size) = 0;
+        virtual bool compileShader(const ShaderHeader* header, const void* source, u32 size);
 
     private:
 

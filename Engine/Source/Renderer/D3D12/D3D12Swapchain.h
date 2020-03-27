@@ -10,7 +10,7 @@ namespace v3d
 {
 namespace renderer
 {
-namespace d3d12
+namespace dx3d
 {
     class D3DImage;
 
@@ -67,7 +67,7 @@ namespace d3d12
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-} //namespace d3d12
+} //namespace dx3d
 } //namespace renderer
 } //namespace v3d
 #endif //VULKAN_RENDER
