@@ -4,6 +4,7 @@
 #include "Utils/Singleton.h"
 
 #ifdef D3D_RENDER
+#   include "D3D12Configuration.h"
 
 namespace v3d
 {
@@ -23,11 +24,13 @@ namespace dx3d
         D3DDeviceCaps(const D3DDeviceCaps&) = delete;
         D3DDeviceCaps& operator=(const D3DDeviceCaps&) = delete;
 
+        D3D12_FEATURE_DATA_ROOT_SIGNATURE rootSignatureVersion;
+
     private:
 
         friend class D3DGraphicContext;
 
-        void initialize();
+        void initialize(ID3D12Device* device);
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

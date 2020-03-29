@@ -440,14 +440,14 @@ D3D12_RESOURCE_DIMENSION D3DImage::convertImageTargetToD3DDimension(TextureTarge
     return D3D12_RESOURCE_DIMENSION_TEXTURE2D;
 }
 
-D3DImage::D3DImage(ID3D12Device* device, DXGI_FORMAT format, u32 width, u32 height, u32 samples, TextureUsageFlags flags, const std::string& name) noexcept
+D3DImage::D3DImage(ID3D12Device* device, Format format, u32 width, u32 height, u32 samples, TextureUsageFlags flags, const std::string& name) noexcept
     : Image()
     , m_device(device)
     , m_imageResource(nullptr)
     , m_state(D3D12_RESOURCE_STATE_COMMON)
 
     , m_dimension(D3D12_RESOURCE_DIMENSION_TEXTURE2D)
-    , m_format(format)
+    , m_format(convertImageFormatToD3DFormat(format))
 
     , m_size({ width, height , 1})
     , m_arrays(1)
@@ -456,6 +456,7 @@ D3DImage::D3DImage(ID3D12Device* device, DXGI_FORMAT format, u32 width, u32 heig
 
     , m_swapchain(false)
 
+    , m_originFormat(format)
 #if D3D_DEBUG
     , m_debugName(name)
 #endif
@@ -463,14 +464,14 @@ D3DImage::D3DImage(ID3D12Device* device, DXGI_FORMAT format, u32 width, u32 heig
     LOG_DEBUG("D3DImage::D3DImage constructor %llx", this);
 }
 
-D3DImage::D3DImage(ID3D12Device* device, D3D12_RESOURCE_DIMENSION dimension, DXGI_FORMAT format, const core::Dimension3D& size, u32 arrays, u32 mipmap, TextureUsageFlags flags, const std::string& name) noexcept
+D3DImage::D3DImage(ID3D12Device* device, D3D12_RESOURCE_DIMENSION dimension, Format format, const core::Dimension3D& size, u32 arrays, u32 mipmap, TextureUsageFlags flags, const std::string& name) noexcept
     : Image()
     , m_device(device)
     , m_imageResource(nullptr)
     , m_state(D3D12_RESOURCE_STATE_COMMON)
 
     , m_dimension(dimension)
-    , m_format(format)
+    , m_format(convertImageFormatToD3DFormat(format))
 
     , m_size(size)
     , m_arrays(arrays)
@@ -479,6 +480,7 @@ D3DImage::D3DImage(ID3D12Device* device, D3D12_RESOURCE_DIMENSION dimension, DXG
 
     , m_swapchain(false)
 
+    , m_originFormat(format)
 #if D3D_DEBUG
     , m_debugName(name)
 #endif
@@ -632,6 +634,16 @@ bool D3DImage::upload(Context* context, const core::Dimension3D& offsets, const 
 const core::Dimension3D& D3DImage::getSize() const
 {
     return m_size;
+}
+
+DXGI_FORMAT D3DImage::getFormat() const
+{
+    return m_format;
+}
+
+Format D3DImage::getOriginFormat() const
+{
+    return m_originFormat;
 }
 
 D3D12_RESOURCE_STATES D3DImage::getState() const

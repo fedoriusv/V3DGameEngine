@@ -16,8 +16,8 @@ namespace resource
     {
     public:
 
-        ShaderHLSLDecoder(const renderer::ShaderHeader& header, bool reflections = false) noexcept;
-        ShaderHLSLDecoder(std::vector<std::string> supportedExtensions, const renderer::ShaderHeader& header, bool reflections = false) noexcept;
+        ShaderHLSLDecoder(const renderer::ShaderHeader& header, bool reflections = true) noexcept;
+        ShaderHLSLDecoder(std::vector<std::string> supportedExtensions, const renderer::ShaderHeader& header, bool reflections = true) noexcept;
 
         ~ShaderHLSLDecoder();
 
@@ -27,6 +27,8 @@ namespace resource
 
         const renderer::ShaderHeader m_header;
         const bool m_reflections;
+
+        u32 m_version;
     };
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////

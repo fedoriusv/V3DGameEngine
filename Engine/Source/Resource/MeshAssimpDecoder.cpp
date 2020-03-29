@@ -97,7 +97,7 @@ Resource * MeshAssimpDecoder::decode(const stream::Stream* stream, const std::st
             }
 
             newHeader->_vertexContentFlags = 0;
-            newHeader->_mode = renderer::PolygonMode::PolygonMode_Triangle;
+            newHeader->_mode = renderer::PolygonMode::PolygonMode_Fill;
             newHeader->_frontFace = renderer::FrontFace::FrontFace_Clockwise;
             newHeader->_localTransform = false;
         }

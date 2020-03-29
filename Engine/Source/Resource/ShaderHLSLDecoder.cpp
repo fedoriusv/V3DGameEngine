@@ -24,12 +24,13 @@ const std::map<std::string, renderer::ShaderType> k_HLSL_ExtensionList =
     { "ps", renderer::ShaderType::ShaderType_Fragment },
 };
 
-bool reflect(ID3DBlob* shader, stream::Stream* stream);
-void reflectConstantBuffers(ID3D11ShaderReflection* reflector, const std::vector<D3D11_SHADER_INPUT_BIND_DESC>& bindDescs, stream::Stream* stream);
+bool reflect(ID3DBlob* shader, stream::Stream* stream, u32 version);
+void reflectConstantBuffers(ID3D11ShaderReflection* reflector, const std::vector<D3D11_SHADER_INPUT_BIND_DESC>& bindDescs, stream::Stream* stream, u32 version);
 
 ShaderHLSLDecoder::ShaderHLSLDecoder(const renderer::ShaderHeader& header, bool reflections) noexcept
     : m_header(header)
     , m_reflections(reflections)
+    , m_version(0)
 {
 }
 
@@ -37,6 +38,7 @@ ShaderHLSLDecoder::ShaderHLSLDecoder(std::vector<std::string> supportedExtension
     : ResourceDecoder(supportedExtensions)
     , m_header(header)
     , m_reflections(reflections)
+    , m_version(0)
 {
 }
 
@@ -213,9 +215,10 @@ Resource * ShaderHLSLDecoder::decode(const stream::Stream* stream, const std::st
 
             resourceBinary->write<bool>(m_reflections);
 
+            m_version = (shaderModel == renderer::ShaderHeader::ShaderModel::ShaderModel_HLSL_5_1) ? 51 : 50;
             if (m_reflections)
             {
-                if (!reflect(shader, resourceBinary))
+                if (!reflect(shader, resourceBinary, m_version))
                 {
                     LOG_ERROR("ShaderHLSLDecoder::decode relect parse is failed. Shader %s", name.c_str());
 
@@ -254,7 +257,7 @@ Resource * ShaderHLSLDecoder::decode(const stream::Stream* stream, const std::st
     return nullptr;
 }
 
-bool reflect(ID3DBlob* shader, stream::Stream* stream)
+bool reflect(ID3DBlob* shader, stream::Stream* stream, u32 version)
 {
     ID3D11ShaderReflection* reflector = nullptr;
     {
@@ -338,12 +341,12 @@ bool reflect(ID3DBlob* shader, stream::Stream* stream)
             ASSERT(SUCCEEDED(result), "GetInputParameterDesc has failed");
 
             renderer::Shader::Attribute input;
-            input._location = parameterDesc.Register;//parameterDesc.SemanticIndex;
+            input._location = parameterDesc.Register;
             input._format = convertTypeToFormat(parameterDesc.ComponentType, parameterDesc.Mask);
 #if USE_STRING_ID_SHADER
             const std::string name(parameterDesc.SemanticName);
             ASSERT(!name.empty(), "empty name");
-            input._name = name;
+            input._name = name + std::to_string(parameterDesc.SemanticIndex);
 #endif
             input >> stream;
         }
@@ -375,7 +378,7 @@ bool reflect(ID3DBlob* shader, stream::Stream* stream)
 #if USE_STRING_ID_SHADER
             const std::string name(userOutputChannels[outputChannelID].SemanticName);
             ASSERT(!name.empty(), "empty name");
-            output._name = name;
+            output._name = name + std::to_string(userOutputChannels[outputChannelID].SemanticIndex);
 #endif
             output >> stream;
         }
@@ -393,7 +396,7 @@ bool reflect(ID3DBlob* shader, stream::Stream* stream)
 
     }
 
-    reflectConstantBuffers(reflector, bindDescs[D3D_SIT_CBUFFER], stream);
+    reflectConstantBuffers(reflector, bindDescs[D3D_SIT_CBUFFER], stream, version);
 
     {
         //dx is not supported
@@ -507,7 +510,7 @@ bool reflect(ID3DBlob* shader, stream::Stream* stream)
     return true;
 }
 
-void reflectConstantBuffers(ID3D11ShaderReflection* reflector, const std::vector<D3D11_SHADER_INPUT_BIND_DESC>& bindDescs, stream::Stream* stream)
+void reflectConstantBuffers(ID3D11ShaderReflection* reflector, const std::vector<D3D11_SHADER_INPUT_BIND_DESC>& bindDescs, stream::Stream* stream, u32 version)
 {
     D3D11_SHADER_DESC shaderDesc = {};
     HRESULT result = reflector->GetDesc(&shaderDesc);
@@ -631,7 +634,7 @@ void reflectConstantBuffers(ID3D11ShaderReflection* reflector, const std::vector
             ASSERT(SUCCEEDED(result), "GetDesc has failed");
         }
 
-        ASSERT(bufferDesc.Variables == 1, "not supported");
+        ASSERT(version == 50 || (version == 51 && bufferDesc.Variables == 1) , "not supported");
         ID3D11ShaderReflectionVariable* structVariable = buffer->GetVariableByIndex(0);
         ASSERT(structVariable, "ID3D11ShaderReflectionVariable is nullptr");
 
@@ -642,7 +645,7 @@ void reflectConstantBuffers(ID3D11ShaderReflection* reflector, const std::vector
             HRESULT result = structType->GetDesc(&structTypeDesc);
             ASSERT(SUCCEEDED(result), "GetDesc has failed");
         }
-        ASSERT(structTypeDesc.Class == D3D_SVC_STRUCT, "must be stucture");
+        ASSERT(version == 50 || (version == 51 && structTypeDesc.Class == D3D_SVC_STRUCT), "must be stucture");
 
         auto foundID = buffMap.find(buffer);
         ASSERT(foundID != buffMap.cend(), "not found");

@@ -13,7 +13,7 @@ namespace renderer
 
     enum class PolygonMode : u32
     {
-        PolygonMode_Triangle,
+        PolygonMode_Fill,
         PolygonMode_Line,
         PolygonMode_Point
     };
@@ -111,7 +111,7 @@ namespace renderer
         CompareOp_Always = 7,
     };
 
-    enum ColorMask : u16
+    enum ColorMask : u8
     {
         ColorMask_None = 0,
         ColorMask_R = 0x1,
@@ -123,7 +123,7 @@ namespace renderer
 
     };
 
-    typedef u16 ColorMaskFlags;
+    typedef u8 ColorMaskFlags;
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -135,7 +135,7 @@ namespace renderer
         struct RasterizationState
         {
             RasterizationState() noexcept
-                : _polygonMode(PolygonMode::PolygonMode_Triangle)
+                : _polygonMode(PolygonMode::PolygonMode_Fill)
                 , _frontFace(FrontFace::FrontFace_Clockwise)
                 , _cullMode(CullMode::CullMode_Back)
             {
@@ -174,7 +174,7 @@ namespace renderer
             ColorMaskFlags  _colorWriteMask;
             bool            _colorBlendEnable;
 
-            u8              _padding = {};
+            u16             _padding = {};
         };
 
         struct DepthStencilState

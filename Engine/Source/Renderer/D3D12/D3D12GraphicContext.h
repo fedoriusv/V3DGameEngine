@@ -16,6 +16,8 @@ namespace renderer
 
 namespace dx3d
 {
+    class D3DRootSignatureManager;
+
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
@@ -96,6 +98,7 @@ namespace dx3d
         D3DCommandListManager* m_commandListManager;
 
         PipelineManager* m_pipelineManager;
+        D3DRootSignatureManager* m_rootSignatureManager;
 
 
         struct RenderState

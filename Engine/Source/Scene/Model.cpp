@@ -12,7 +12,7 @@ namespace scene
 ModelHeader::ModelHeader() noexcept
     : _modelContentFlags(ModelContent::ModelContext_Empty)
     , _vertexContentFlags(VertexProperies::VertexProperies_Empty)
-    , _mode(renderer::PolygonMode::PolygonMode_Triangle)
+    , _mode(renderer::PolygonMode::PolygonMode_Fill)
     , _frontFace(renderer::FrontFace::FrontFace_Clockwise)
     , _localTransform(false)
 {

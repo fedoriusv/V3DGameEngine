@@ -12,6 +12,7 @@
 #   include "D3D12Buffer.h"
 #   include "D3D12DeviceCaps.h"
 #   include "D3D12PipelineState.h"
+#   include "D3D12RootSignature.h"
 
 namespace v3d
 {
@@ -45,6 +46,8 @@ D3DGraphicContext::D3DGraphicContext(const platform::Window* window) noexcept
 
     , m_commandListManager(nullptr)
     , m_pipelineManager(nullptr)
+
+    , m_rootSignatureManager(nullptr)
 {
     LOG_DEBUG("D3DGraphicContext::D3DGraphicContext constructor %llx", this);
 
@@ -56,6 +59,8 @@ D3DGraphicContext::~D3DGraphicContext()
 {
     LOG_DEBUG("D3DGraphicContext::D3DGraphicContext destructor %llx", this);
     
+    ASSERT(!m_rootSignatureManager, "not nullptr");
+
     ASSERT(!m_pipelineManager, "not nullptr");
     ASSERT(!m_commandListManager, "not nullptr");
 
@@ -118,35 +123,56 @@ void D3DGraphicContext::presentFrame()
 
 void D3DGraphicContext::submit(bool wait)
 {
-    ASSERT(m_currentState.commandList(), "nullptr");
-
-    m_currentState.commandList()->close();
-    m_commandListManager->execute(m_currentState.commandList(), wait);
+    if (m_currentState.commandList())
+    {
+        m_currentState.commandList()->close();
+        m_commandListManager->execute(m_currentState.commandList(), wait);
+    }
     m_currentState.reset();
 }
 
 void D3DGraphicContext::draw(const StreamBufferDescription& desc, u32 firstVertex, u32 vertexCount, u32 firstInstance, u32 instanceCount)
 {
+#if D3D_DEBUG
+    LOG_DEBUG("D3DGraphicContext::draw");
+#endif //D3D_DEBUG
+    //TODO
 }
 
 void D3DGraphicContext::drawIndexed(const StreamBufferDescription& desc, u32 firstIndex, u32 indexCount, u32 firstInstance, u32 instanceCount)
 {
+#if D3D_DEBUG
+    LOG_DEBUG("D3DGraphicContext::drawIndexed");
+#endif //D3D_DEBUG
 }
 
 void D3DGraphicContext::bindImage(const Shader* shader, u32 bindIndex, const Image* image)
 {
+#if D3D_DEBUG
+    LOG_DEBUG("D3DGraphicContext::bindImage");
+#endif //D3D_DEBUG
 }
 
 void D3DGraphicContext::bindSampler(const Shader* shader, u32 bindIndex, const Sampler::SamplerInfo* samplerInfo)
 {
+#if D3D_DEBUG
+    LOG_DEBUG("D3DGraphicContext::bindSampler");
+#endif //D3D_DEBUG
 }
 
 void D3DGraphicContext::bindSampledImage(const Shader* shader, u32 bindIndex, const Image* image, const Sampler::SamplerInfo* samplerInfo)
 {
+#if D3D_DEBUG
+    LOG_DEBUG("D3DGraphicContext::bindSampledImage");
+    ASSERT(false, "unsupported");
+#endif //D3D_DEBUG
 }
 
 void D3DGraphicContext::bindUniformsBuffer(const Shader* shader, u32 bindIndex, u32 offset, u32 size, const void* data)
 {
+#if D3D_DEBUG
+    LOG_DEBUG("D3DGraphicContext::bindUniformsBuffer");
+#endif //D3D_DEBUG
 }
 
 void D3DGraphicContext::transitionImages(const std::vector<Image*>& images, TransitionOp transition, s32 layer)
@@ -228,10 +254,9 @@ Image* D3DGraphicContext::createImage(TextureTarget target, Format format, const
 #if D3D_DEBUG
     LOG_DEBUG("D3DGraphicContext::createImage");
 #endif //D3D_DEBUG
-    DXGI_FORMAT dxFormat = D3DImage::convertImageFormatToD3DFormat(format);
     D3D12_RESOURCE_DIMENSION dxDimension = D3DImage::convertImageTargetToD3DDimension(target);
 
-    return new D3DImage(m_device, dxDimension, dxFormat, dimension, layers, mipmapLevel, flags);
+    return new D3DImage(m_device, dxDimension, format, dimension, layers, mipmapLevel, flags);
 }
 
 Image* D3DGraphicContext::createImage(Format format, const core::Dimension3D& dimension, TextureSamples samples, TextureUsageFlags flags)
@@ -239,11 +264,10 @@ Image* D3DGraphicContext::createImage(Format format, const core::Dimension3D& di
 #if D3D_DEBUG
     LOG_DEBUG("D3DGraphicContext::createImage");
 #endif //D3D_DEBUG
-    DXGI_FORMAT dxFormat = D3DImage::convertImageFormatToD3DFormat(format);
-    u32 dxSamples = (u32)samples << 2;
+    u32 dxSamples = (samples > TextureSamples::TextureSamples_x1) ? 2 << (u32)samples : 1;
     ASSERT(dimension.depth == 1, "must be 1");
 
-    return new D3DImage(m_device, dxFormat, dimension.width, dimension.height, dxSamples, flags);
+    return new D3DImage(m_device, format, dimension.width, dimension.height, dxSamples, flags);
 }
 
 void D3DGraphicContext::removeImage(Image* image)
@@ -352,7 +376,7 @@ bool D3DGraphicContext::initialize()
     }
 
     D3DDeviceCaps* caps = D3DDeviceCaps::getInstance();
-    caps->initialize();
+    caps->initialize(m_device);
 
     {
         D3DSwapchain::SwapchainConfig config;
@@ -371,11 +395,14 @@ bool D3DGraphicContext::initialize()
 
             return false;
         }
+        m_backufferDescription._size = config._size;
+        m_backufferDescription._format = m_swapchain->getSwapchainImage()->getOriginFormat();
 
         m_commandListManager = new D3DCommandListManager(m_device, m_commandQueue, config._countSwapchainImages);
     }
 
     m_pipelineManager = new PipelineManager(this);
+    m_rootSignatureManager = new D3DRootSignatureManager(m_device);
 
 #if D3D_DEBUG
     D3DDebug::getInstance()->report(D3D12_RLDO_SUMMARY | D3D12_RLDO_IGNORE_INTERNAL);
@@ -388,6 +415,12 @@ void D3DGraphicContext::destroy()
 #if D3D_DEBUG
     D3DDebug::getInstance()->report(D3D12_RLDO_SUMMARY | D3D12_RLDO_IGNORE_INTERNAL);
 #endif
+
+    if (m_rootSignatureManager)
+    {
+        delete m_rootSignatureManager;
+        m_rootSignatureManager = nullptr;
+    }
 
     if (m_pipelineManager)
     {
@@ -448,7 +481,7 @@ Pipeline* D3DGraphicContext::createPipeline(Pipeline::PipelineType type)
 {
     if (type == Pipeline::PipelineType::PipelineType_Graphic)
     {
-        return new D3DGraphicPipelineState(m_device);
+        return new D3DGraphicPipelineState(m_device, m_rootSignatureManager);
     }
     
     ASSERT(false, "not impl");

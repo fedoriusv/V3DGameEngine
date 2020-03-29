@@ -22,7 +22,7 @@ VkPolygonMode VulkanGraphicPipeline::convertPolygonModeToVk(PolygonMode mode)
 {
     switch (mode)
     {
-    case PolygonMode::PolygonMode_Triangle:
+    case PolygonMode::PolygonMode_Fill:
         return VK_POLYGON_MODE_FILL;
 
     case PolygonMode::PolygonMode_Line:
