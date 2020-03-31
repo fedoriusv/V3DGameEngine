@@ -30,9 +30,11 @@ namespace dx3d
         void destroy() override;
 
         ID3D12PipelineState* getHandle() const;
+        ID3D12RootSignature* getSignatureHandle() const;
 
         static D3D12_INPUT_CLASSIFICATION convertInputRateToD3DClassification(VertexInputAttribDescription::InputRate rate);
-        static D3D12_PRIMITIVE_TOPOLOGY_TYPE convertPrimitiveTopologyToD3DTopology(PrimitiveTopology topology);
+        static D3D12_PRIMITIVE_TOPOLOGY_TYPE convertPrimitiveTopologyTypeToD3DTopology(PrimitiveTopology topology);
+        static D3D_PRIMITIVE_TOPOLOGY convertPrimitiveTopologyToD3DTopology(PrimitiveTopology topology, u32 patch);
         static D3D12_FILL_MODE convertPolygonModeToD3DMode(PolygonMode mode);
         static D3D12_CULL_MODE convertCulModeToD3D(CullMode mode);
         static BOOL convertCounterClockwiseToD3D(FrontFace face);
@@ -41,6 +43,9 @@ namespace dx3d
         static D3D12_BLEND convertBlendFacorToD3D(BlendFactor factor);
         static D3D12_COMPARISON_FUNC convertDepthFunctionToD3D(CompareOperation op);
         static D3D12_DEPTH_WRITE_MASK convertWriteDepthToD3D(bool enable);
+
+        const std::vector<u32>& getBuffersStrides() const;
+        D3D12_PRIMITIVE_TOPOLOGY getTopology() const;
 
     private:
 
@@ -55,6 +60,9 @@ namespace dx3d
 
         ID3D12PipelineState* m_pipelineState;
         ID3D12RootSignature* m_rootSignature;
+
+        std::vector<u32> m_buffersStride; //Vertex stride/size
+        D3D12_PRIMITIVE_TOPOLOGY m_topology;
 
     };
 

@@ -30,7 +30,7 @@ D3D12_INPUT_CLASSIFICATION D3DGraphicPipelineState::convertInputRateToD3DClassif
     return D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA;
 }
 
-D3D12_PRIMITIVE_TOPOLOGY_TYPE D3DGraphicPipelineState::convertPrimitiveTopologyToD3DTopology(PrimitiveTopology topology)
+D3D12_PRIMITIVE_TOPOLOGY_TYPE D3DGraphicPipelineState::convertPrimitiveTopologyTypeToD3DTopology(PrimitiveTopology topology)
 {
     switch (topology)
     {
@@ -56,6 +56,51 @@ D3D12_PRIMITIVE_TOPOLOGY_TYPE D3DGraphicPipelineState::convertPrimitiveTopologyT
 
     ASSERT(false, "nuknown");
     return D3D12_PRIMITIVE_TOPOLOGY_TYPE_UNDEFINED;
+}
+
+D3D_PRIMITIVE_TOPOLOGY D3DGraphicPipelineState::convertPrimitiveTopologyToD3DTopology(PrimitiveTopology topology, u32 patch)
+{
+    switch (topology)
+    {
+    case PrimitiveTopology::PrimitiveTopology_PointList:
+        return D3D_PRIMITIVE_TOPOLOGY_POINTLIST;
+
+    case PrimitiveTopology::PrimitiveTopology_LineList:
+        return D3D_PRIMITIVE_TOPOLOGY_LINELIST;
+
+    case PrimitiveTopology::PrimitiveTopology_LineStrip:
+        return D3D_PRIMITIVE_TOPOLOGY_LINESTRIP;
+
+    case PrimitiveTopology::PrimitiveTopology_TriangleList:
+        return D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+
+    case PrimitiveTopology::PrimitiveTopology_TriangleStrip:
+        return D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP;
+
+    case PrimitiveTopology::PrimitiveTopology_TriangleFan:
+        return D3D_PRIMITIVE_TOPOLOGY_UNDEFINED;
+
+    case PrimitiveTopology::PrimitiveTopology_LineListWithAdjacency:
+        return D3D_PRIMITIVE_TOPOLOGY_LINELIST_ADJ;
+
+    case PrimitiveTopology::PrimitiveTopology_LineStripWithAdjacency:
+        return D3D_PRIMITIVE_TOPOLOGY_LINESTRIP_ADJ;
+
+    case PrimitiveTopology::PrimitiveTopology_TriangleListWithAdjacency:
+        return D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST_ADJ;
+
+    case PrimitiveTopology::PrimitiveTopology_TriangleStripWithAdjacency:
+        return D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP_ADJ;
+
+    case PrimitiveTopology::PrimitiveTopology_PatchList:
+        return (D3D_PRIMITIVE_TOPOLOGY)((u32)D3D_PRIMITIVE_TOPOLOGY_1_CONTROL_POINT_PATCHLIST + patch);
+
+    default:
+        return D3D_PRIMITIVE_TOPOLOGY_UNDEFINED;
+    }
+
+    ASSERT(false, "not found");
+    return D3D_PRIMITIVE_TOPOLOGY_UNDEFINED;
 }
 
 D3D12_FILL_MODE D3DGraphicPipelineState::convertPolygonModeToD3DMode(PolygonMode mode)
@@ -284,6 +329,16 @@ D3D12_DEPTH_WRITE_MASK D3DGraphicPipelineState::convertWriteDepthToD3D(bool enab
     return (enable) ? D3D12_DEPTH_WRITE_MASK_ALL : D3D12_DEPTH_WRITE_MASK_ZERO;
 }
 
+const std::vector<u32>& D3DGraphicPipelineState::getBuffersStrides() const
+{
+    return m_buffersStride;
+}
+
+D3D12_PRIMITIVE_TOPOLOGY D3DGraphicPipelineState::getTopology() const
+{
+    return m_topology;
+}
+
 D3DGraphicPipelineState::D3DGraphicPipelineState(ID3D12Device* device, D3DRootSignatureManager* const sigManager) noexcept
     : Pipeline(PipelineType::PipelineType_Graphic)
     , m_device(device)
@@ -291,6 +346,8 @@ D3DGraphicPipelineState::D3DGraphicPipelineState(ID3D12Device* device, D3DRootSi
 
     , m_pipelineState(nullptr)
     , m_rootSignature(nullptr)
+
+    , m_topology(D3D_PRIMITIVE_TOPOLOGY_UNDEFINED)
 {
     LOG_DEBUG("D3DGraphicPipelineState::D3DGraphicPipelineState constructor %llx", this);
 
@@ -372,11 +429,14 @@ bool D3DGraphicPipelineState::create(const PipelineGraphicInfo* pipelineInfo)
 
             elementDesc.InputSlotClass = convertInputRateToD3DClassification(inputBinding._rate);
             elementDesc.InstanceDataStepRate = inputBinding._rate == VertexInputAttribDescription::InputRate_Instance ? inputBinding._stride : 0;
+
+            m_buffersStride.push_back(inputBinding._stride);
         }
         psoDesc.InputLayout.NumElements = static_cast<UINT>(inputElementsDesc.size());
         psoDesc.InputLayout.pInputElementDescs = inputElementsDesc.data();
 
-        psoDesc.PrimitiveTopologyType = convertPrimitiveTopologyToD3DTopology(inputState._primitiveTopology);
+        psoDesc.PrimitiveTopologyType = convertPrimitiveTopologyTypeToD3DTopology(inputState._primitiveTopology);
+        m_topology = convertPrimitiveTopologyToD3DTopology(inputState._primitiveTopology, 0);
     }
 
     //Rasterizer State
@@ -497,6 +557,12 @@ ID3D12PipelineState* D3DGraphicPipelineState::getHandle() const
 {
     ASSERT(m_pipelineState, "nullptr");
     return m_pipelineState;
+}
+
+ID3D12RootSignature* D3DGraphicPipelineState::getSignatureHandle() const
+{
+    ASSERT(m_rootSignature, "nullptr");
+    return m_rootSignature;
 }
 
 bool D3DGraphicPipelineState::compileShader(const ShaderHeader* header, const void* source, u32 size)

@@ -4,7 +4,10 @@
 #ifdef D3D_RENDER
 #   include "D3D12Debug.h"
 #   include "D3D12Image.h"
+#   include "D3D12Buffer.h"
 #   include "D3D12Fence.h"
+#   include "D3D12PipelineState.h"
+#   include "D3D12GraphicContext.h"
 
 namespace v3d
 {
@@ -126,6 +129,42 @@ void D3DGraphicsCommandList::close()
     m_status = Status::Closed;
 }
 
+void D3DGraphicsCommandList::setPipelineState(D3DGraphicPipelineState* pipeline)
+{
+    ASSERT(m_commandList, "nullptr");
+    ASSERT(m_status == Status::ReadyToRecord, "not record");
+
+    ID3D12GraphicsCommandList* cmdList = D3DGraphicsCommandList::getHandle();
+    cmdList->SetPipelineState(pipeline->getHandle());
+
+    cmdList->IASetPrimitiveTopology(pipeline->getTopology());
+    cmdList->SetGraphicsRootSignature(pipeline->getSignatureHandle());
+}
+
+void D3DGraphicsCommandList::setVertexState(u32 startSlot, const std::vector<u32>& strides, const std::vector<Buffer*>& buffers)
+{
+    ASSERT(m_commandList, "nullptr");
+    ASSERT(m_status == Status::ReadyToRecord, "not record");
+
+    std::vector<D3D12_VERTEX_BUFFER_VIEW> dxBuffers(buffers.size());
+    for (u32 index = 0; index < buffers.size(); ++index)
+    {
+        D3DBuffer* dxBuffer = static_cast<D3DBuffer*>(buffers[index]);
+
+        D3D12_VERTEX_BUFFER_VIEW& view = dxBuffers[index];
+        view.BufferLocation = dxBuffer->getGPUAddress();
+        view.SizeInBytes = dxBuffer->getSize();
+        view.StrideInBytes = strides[index];
+    }
+
+    ID3D12GraphicsCommandList* cmdList = D3DGraphicsCommandList::getHandle();
+    cmdList->IASetVertexBuffers(startSlot, static_cast<u32>(dxBuffers.size()), dxBuffers.data());
+}
+
+void D3DGraphicsCommandList::setIndexState()
+{
+}
+
 void D3DGraphicsCommandList::transition(D3DImage* image, D3D12_RESOURCE_STATES state)
 {
     ASSERT(m_commandList, "nullptr");
@@ -174,6 +213,24 @@ void D3DGraphicsCommandList::clearRenderTarget(D3DImage* image, f32 depth, u32 s
     ID3D12GraphicsCommandList* cmdList = D3DGraphicsCommandList::getHandle();
 
     cmdList->ClearDepthStencilView(image->getDescriptorHandle(), flags, depth, stencil, static_cast<u32>(rect.size()), rect.data());
+}
+
+void D3DGraphicsCommandList::draw(u32 vertexCountPerInstance, u32 instanceCount, u32 startVertexLocation, u32 startInstanceLocation)
+{
+    ASSERT(m_commandList, "nullptr");
+    ASSERT(m_status == Status::ReadyToRecord, "not record");
+    ID3D12GraphicsCommandList* cmdList = D3DGraphicsCommandList::getHandle();
+
+    cmdList->DrawInstanced(vertexCountPerInstance, instanceCount, startVertexLocation, startInstanceLocation);
+}
+
+void D3DGraphicsCommandList::drawIndexed()
+{
+    ASSERT(m_commandList, "nullptr");
+    ASSERT(m_status == Status::ReadyToRecord, "not record");
+    ID3D12GraphicsCommandList* cmdList = D3DGraphicsCommandList::getHandle();
+
+    //cmdList->DrawIndexedInstanced();
 }
 
 void D3DGraphicsCommandList::setViewport(const std::vector<D3D12_VIEWPORT>& viewport)

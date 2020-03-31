@@ -7,11 +7,14 @@ namespace v3d
 {
 namespace renderer
 {
+    class Buffer;
+
 namespace dx3d
 {
     class D3DCommandListManager;
     class D3DImage;
     class D3DFence;
+    class D3DGraphicPipelineState;
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -92,10 +95,17 @@ namespace dx3d
         void clearRenderTarget(D3DImage* image, const f32 color[4], const std::vector<D3D12_RECT>& rect);
         void clearRenderTarget(D3DImage* image, f32 depth, u32 stencil, D3D12_CLEAR_FLAGS flags, const std::vector<D3D12_RECT>& rect);
 
+        void draw(u32 vertexCountPerInstance,u32 instanceCount, u32 startVertexLocation, u32 startInstanceLocation);
+        void drawIndexed();
+
         void setViewport(const std::vector<D3D12_VIEWPORT>& viewport);
         void setScissor(const std::vector<D3D12_RECT>& scissors);
 
         void setRenderTarget();
+        void setPipelineState(D3DGraphicPipelineState* pipeline);
+
+        void setVertexState(u32 startSlot, const std::vector<u32>& strides, const std::vector<Buffer*>& buffers);
+        void setIndexState();
 
         void transition(D3DImage* image, D3D12_RESOURCE_STATES state);
 

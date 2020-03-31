@@ -52,6 +52,9 @@ namespace dx3d
         static DXGI_FORMAT convertImageFormatToD3DFormat(Format format);
         static D3D12_RESOURCE_DIMENSION convertImageTargetToD3DDimension(TextureTarget target);
 
+        static bool isDepthStencilFormat(DXGI_FORMAT format);
+        static bool isColorFormat(DXGI_FORMAT format);
+
     private:
 
         ID3D12Device* m_device;

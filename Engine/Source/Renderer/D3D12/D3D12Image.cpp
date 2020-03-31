@@ -440,6 +440,28 @@ D3D12_RESOURCE_DIMENSION D3DImage::convertImageTargetToD3DDimension(TextureTarge
     return D3D12_RESOURCE_DIMENSION_TEXTURE2D;
 }
 
+bool D3DImage::isDepthStencilFormat(DXGI_FORMAT format)
+{
+    switch (format)
+    {
+    case DXGI_FORMAT_D32_FLOAT_S8X24_UINT:
+    case DXGI_FORMAT_D32_FLOAT:
+    case DXGI_FORMAT_D24_UNORM_S8_UINT:
+    case DXGI_FORMAT_D16_UNORM:
+        return true;
+
+    default:
+        return false;
+    }
+
+    return false;
+}
+
+bool D3DImage::isColorFormat(DXGI_FORMAT format)
+{
+    return !D3DImage::isDepthStencilFormat(format);
+}
+
 D3DImage::D3DImage(ID3D12Device* device, Format format, u32 width, u32 height, u32 samples, TextureUsageFlags flags, const std::string& name) noexcept
     : Image()
     , m_device(device)

@@ -53,6 +53,7 @@ D3DGraphicContext::D3DGraphicContext(const platform::Window* window) noexcept
 
     m_renderType = RenderType::DirectXRender;
     memset(&m_currentState, 0, sizeof(RenderState));
+    memset(&m_boundState, 0, sizeof(RenderState));
 }
 
 D3DGraphicContext::~D3DGraphicContext()
@@ -136,7 +137,19 @@ void D3DGraphicContext::draw(const StreamBufferDescription& desc, u32 firstVerte
 #if D3D_DEBUG
     LOG_DEBUG("D3DGraphicContext::draw");
 #endif //D3D_DEBUG
-    //TODO
+    ASSERT(m_currentState.commandList(), "nullptr");
+    D3DGraphicsCommandList* cmdList = m_currentState.commandList();
+
+    if (perpareDraw(cmdList))
+    {
+        if (m_boundState._bufferDesc != desc)
+        {
+            cmdList->setVertexState(0, m_currentState._pipeline->getBuffersStrides(), desc._vertices);
+            m_boundState._bufferDesc = desc;
+        }
+
+        cmdList->draw(vertexCount, instanceCount, firstVertex, firstInstance);
+    }
 }
 
 void D3DGraphicContext::drawIndexed(const StreamBufferDescription& desc, u32 firstIndex, u32 indexCount, u32 firstInstance, u32 instanceCount)
@@ -177,6 +190,7 @@ void D3DGraphicContext::bindUniformsBuffer(const Shader* shader, u32 bindIndex, 
 
 void D3DGraphicContext::transitionImages(const std::vector<Image*>& images, TransitionOp transition, s32 layer)
 {
+    ASSERT(false, "not impl");
 }
 
 void D3DGraphicContext::setViewport(const core::Rect32& viewport, const core::Vector2D& depth)
@@ -217,10 +231,12 @@ void D3DGraphicContext::setRenderTarget(const RenderPass::RenderPassInfo* render
 
 void D3DGraphicContext::removeFramebuffer(Framebuffer* framebuffer)
 {
+    ASSERT(false, "not impl");
 }
 
 void D3DGraphicContext::removeRenderPass(RenderPass* renderpass)
 {
+    ASSERT(false, "not impl");
 }
 
 void D3DGraphicContext::invalidateRenderPass()
@@ -247,6 +263,7 @@ void D3DGraphicContext::setPipeline(const Pipeline::PipelineGraphicInfo* pipelin
 
 void D3DGraphicContext::removePipeline(Pipeline* pipeline)
 {
+    ASSERT(false, "not impl");
 }
 
 Image* D3DGraphicContext::createImage(TextureTarget target, Format format, const core::Dimension3D& dimension, u32 layers, u32 mipmapLevel, TextureUsageFlags flags)
@@ -296,11 +313,15 @@ Buffer* D3DGraphicContext::createBuffer(Buffer::BufferType type, u16 usageFlag, 
 void D3DGraphicContext::removeBuffer(Buffer* buffer)
 {
     D3DBuffer* dxBuffer = static_cast<D3DBuffer*>(buffer);
-    //TODO remove
+    dxBuffer->notifyObservers();
+
+    dxBuffer->destroy();
+    delete dxBuffer;
 }
 
 void D3DGraphicContext::removeSampler(Sampler* sampler)
 {
+    ASSERT(false, "not impl");
 }
 
 const DeviceCaps* D3DGraphicContext::getDeviceCaps() const
@@ -491,6 +512,17 @@ Pipeline* D3DGraphicContext::createPipeline(Pipeline::PipelineType type)
 Sampler* D3DGraphicContext::createSampler()
 {
     return nullptr;
+}
+
+bool D3DGraphicContext::perpareDraw(D3DGraphicsCommandList* cmdList)
+{
+    if (m_boundState._pipeline != m_currentState._pipeline)
+    {
+        cmdList->setPipelineState(m_currentState._pipeline);
+        m_boundState._pipeline = m_currentState._pipeline;
+    }
+
+    return true;
 }
 
 // Helper function for acquiring the first available hardware adapter that supports Direct3D 12.

@@ -32,10 +32,14 @@ namespace dx3d
         bool create() override;
         void destroy() override;
 
+        u64 getSize() const;
+
         bool upload(Context* context, u32 offset, u64 size, void* data) override;
 
         const CD3DX12_CPU_DESCRIPTOR_HANDLE& getDescriptorHandle() const;
         ID3D12Resource* getResource() const;
+
+        D3D12_GPU_VIRTUAL_ADDRESS getGPUAddress() const;
 
     private:
 

@@ -83,6 +83,8 @@ namespace dx3d
         Pipeline* createPipeline(Pipeline::PipelineType type) override;
         Sampler* createSampler() override;
 
+        bool perpareDraw(D3DGraphicsCommandList* cmdList);
+
         IDXGIFactory4*      m_factory;
         IDXGIAdapter1*      m_adapter;
         ID3D12Device*       m_device;
@@ -116,8 +118,11 @@ namespace dx3d
             D3DGraphicsCommandList* _commandList;
 
             D3DGraphicPipelineState* _pipeline;
+
+            StreamBufferDescription _bufferDesc;
         };
         RenderState m_currentState;
+        RenderState m_boundState;
 
         static D3D_FEATURE_LEVEL s_featureLevel;
 
