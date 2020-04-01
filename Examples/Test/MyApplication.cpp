@@ -22,7 +22,10 @@
 
 #include "Stream/StreamManager.h"
 
+#include "crc32c/crc32c.h"
+
 #include <random>
+
 
 
 using namespace v3d;
@@ -792,7 +795,7 @@ void MyApplication::Test_ShaderParam()
             ASSERT(sizeof(ubo11_size256) == 256, "wrong");
 
             ShaderParam param256("ubo11_size256");
-            ASSERT(param256._id == crc32c::Crc32c("ubo11_size256"), "wrong");
+            ASSERT(param256._id == crc32c::Crc32c(std::string("ubo11_size256")), "wrong");
             shaderProgram->bindUniformsBuffer<ShaderType::ShaderType_Vertex>(param256, 0, sizeof(UBO11_size256), & ubo11_size256);
 
             struct UBO01_size192
@@ -804,7 +807,7 @@ void MyApplication::Test_ShaderParam()
             ASSERT(sizeof(ubo01_size192) == 192, "wrong");
 
             ShaderParam param192("ubo01_size192");
-            ASSERT(param192._id == crc32c::Crc32c("ubo01_size192"), "wrong");
+            ASSERT(param192._id == crc32c::Crc32c(std::string("ubo01_size192")), "wrong");
             shaderProgram->bindUniformsBuffer<ShaderType::ShaderType_Vertex>(param192, 0, sizeof(UBO01_size192), &ubo01_size192);
         }
 
@@ -815,11 +818,11 @@ void MyApplication::Test_ShaderParam()
             SamplerState* sampler = commandList->createObject<SamplerState>();
 
             ShaderParam textureColor01("textureColor01");
-            ASSERT(textureColor01._id == crc32c::Crc32c("textureColor01"), "wrong");
+            ASSERT(textureColor01._id == crc32c::Crc32c(std::string("textureColor01")), "wrong");
             ShaderParam textureColor10("textureColor10");
-            ASSERT(textureColor10._id == crc32c::Crc32c("textureColor10"), "wrong");
+            ASSERT(textureColor10._id == crc32c::Crc32c(std::string("textureColor10")), "wrong");
             ShaderParam samplerColor00("samplerColor00");
-            ASSERT(samplerColor00._id == crc32c::Crc32c("samplerColor00"), "wrong");
+            ASSERT(samplerColor00._id == crc32c::Crc32c(std::string("samplerColor00")), "wrong");
 
             shaderProgram->bindTexture<ShaderType::ShaderType_Fragment>(textureColor01, texture);
             shaderProgram->bindTexture<ShaderType::ShaderType_Fragment>(textureColor10, texture);
