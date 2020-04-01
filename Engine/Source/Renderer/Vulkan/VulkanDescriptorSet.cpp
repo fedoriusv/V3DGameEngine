@@ -36,7 +36,7 @@ bool SetInfo::Equal::operator()(const SetInfo& set0, const SetInfo& set1) const
         return false;
     }
 
-    if (set0._bindingsInfo.empty() && memcmp(set0._bindingsInfo.data(), set1._bindingsInfo.data(), sizeof(BindingInfo) * set0._bindingsInfo.size()) != 0)
+    if (!set0._bindingsInfo.empty() && memcmp(set0._bindingsInfo.data(), set1._bindingsInfo.data(), sizeof(BindingInfo) * set0._bindingsInfo.size()) != 0)
     {
         return false;
     }
