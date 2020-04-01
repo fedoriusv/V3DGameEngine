@@ -2,12 +2,15 @@
 
 #include "Renderer/Context.h"
 #include "Utils/Observable.h"
+#include "Utils/Semaphore.h"
 
 #ifdef VULKAN_RENDER
 #include "VulkanWrapper.h"
 #include "VulkanDeviceCaps.h"
 #include "VulkanCommandBufferManager.h"
 #include "VulkanMemory.h"
+
+#define THREADED_PRESENT 0
 
 namespace v3d
 {
@@ -45,7 +48,7 @@ namespace vk
     /**
     * VulkanGraphicContext final class. Vulkan Render side
     */
-    class VulkanGraphicContext final : public Context,  public utils::Observer 
+    class VulkanGraphicContext final : public Context,  public utils::Observer
     {
     public:
 
@@ -191,9 +194,44 @@ namespace vk
         bool prepareDraw(VulkanCommandBuffer* drawBuffer);
 
         const platform::Window* m_window;
+#if THREADED_PRESENT
+        class PresentThread* m_presentThread;
+#endif //THREADED_PRESENT
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
+
+#if THREADED_PRESENT
+    class PresentThread
+    {
+    public:
+
+        explicit PresentThread(class VulkanSwapchain* swapchain);
+        ~PresentThread();
+
+        void requestAcquireImage(u32& index);
+        void requestPresent(VkQueue queue, VkSemaphore semaphore);
+
+    private:
+
+        void internalPresent();
+        void internalAcquire();
+
+        static void presentLoop(void* data);
+
+        std::thread m_thread;
+        std::atomic_bool m_run;
+
+        utils::Semaphore m_wakeupSemaphore;
+        utils::Semaphore m_waitSemaphore;
+
+        class VulkanSwapchain* m_swapchain;
+        VkQueue m_queue;
+        VkSemaphore m_semaphore;
+
+        u32 m_index;
+    };
+#endif //THREADED_PRESENT
 
 } //namespace vk
 } //namespace renderer

@@ -16,6 +16,9 @@
 
 #include "Utils/Logger.h"
 
+#include <chrono>
+#include <thread>
+
 
 #ifdef VULKAN_RENDER
 namespace v3d
@@ -137,11 +140,17 @@ VulkanGraphicContext::~VulkanGraphicContext()
 
 void VulkanGraphicContext::beginFrame()
 {
+
 #if VULKAN_DUMP
     VulkanDump::getInstance()->dumpFrameNumber(m_frameCounter);
 #endif
 
+#if THREADED_PRESENT
+    u32 index = 0;
+    m_presentThread->requestAcquireImage(index);
+#else
     u32 index = m_swapchain->acquireImage();
+#endif //THREADED_PRESENT
 #if VULKAN_DEBUG
     LOG_DEBUG("VulkanGraphicContext::beginFrame %llu, image index %u", m_frameCounter, index);
 #endif //VULKAN_DEBUG
@@ -192,8 +201,11 @@ void VulkanGraphicContext::presentFrame()
     LOG_DEBUG("VulkanGraphicContext::presentFrame %llu", m_frameCounter);
 #endif //VULKAN_DEBUG
     std::vector<VkSemaphore> semaphores;
+#if THREADED_PRESENT
+    m_presentThread->requestPresent(m_queueList[0], 0);
+#else
     m_swapchain->present(m_queueList[0], semaphores);
-
+#endif //THREADED_PRESENT
     m_cmdBufferManager->updateCommandBuffers();
     m_uniformBufferManager->updateUniformBuffers();
     m_stagingBufferManager->destroyStagingBuffers();
@@ -757,8 +769,13 @@ bool VulkanGraphicContext::initialize()
     VulkanSwapchain::SwapchainConfig config;
     config._window =  m_window;
     config._size = m_window->getSize();
+#ifdef PLATFORM_ANDROID
+    config._vsync = true;
+    config._countSwapchainImages = 3;
+#else
     config._vsync = false; //TODO
     config._countSwapchainImages = 3;
+#endif
 
     m_swapchain = new VulkanSwapchain(&m_deviceInfo);
     if (!m_swapchain->create(config))
@@ -768,7 +785,9 @@ bool VulkanGraphicContext::initialize()
         return false;
     }
     const_cast<platform::Window*>(m_window)->registerNotify(this);
-
+#if THREADED_PRESENT
+    m_presentThread = new PresentThread(m_swapchain);
+#endif //THREADED_PRESENT
     m_backufferDescription._size = config._size;
     m_backufferDescription._format = VulkanImage::convertVkImageFormatToFormat(m_swapchain->getSwapchainImage(0)->getFormat());
 
@@ -815,6 +834,9 @@ void VulkanGraphicContext::destroy()
         ASSERT(false, "error");
     }
 
+#if THREADED_PRESENT
+    delete m_presentThread;
+#endif //THREADED_PRESENT
     //reset to max, need to skip all an safe frames
     m_frameCounter = ~0U;
     if (m_cmdBufferManager)
@@ -1393,6 +1415,61 @@ void VulkanGraphicContext::handleNotify(utils::Observable* obj)
     }
 }
 
+#if THREADED_PRESENT
+PresentThread::PresentThread(VulkanSwapchain* swapchain)
+    : m_thread(&PresentThread::presentLoop, this)
+    , m_swapchain(swapchain)
+{
+    m_index = m_swapchain->acquireImage();
+    m_waitSemaphore.notify();
+}
+
+PresentThread::~PresentThread()
+{
+    m_run.store(false, std::memory_order::memory_order_relaxed);
+    m_thread.join();
+}
+
+void PresentThread::requestAcquireImage(u32& index)
+{
+    m_waitSemaphore.wait();
+    index = m_index;
+}
+
+void PresentThread::requestPresent(VkQueue queue, VkSemaphore semaphore)
+{
+    m_queue = queue;
+    m_semaphore = semaphore;
+
+    m_wakeupSemaphore.notify();
+}
+
+void PresentThread::internalPresent()
+{
+    m_waitSemaphore.reset();
+    m_swapchain->present(m_queue, {});
+}
+
+void PresentThread::internalAcquire()
+{
+    m_index = m_swapchain->acquireImage();
+    m_waitSemaphore.notify();
+}
+
+void PresentThread::presentLoop(void* data)
+{
+    PresentThread* thiz = reinterpret_cast<PresentThread*>(data);
+    thiz->m_run.store(true, std::memory_order::memory_order_relaxed);
+
+    while (thiz->m_run.load(std::memory_order::memory_order_relaxed))
+    {
+        thiz->m_wakeupSemaphore.wait();
+        thiz->internalPresent();
+        thiz->internalAcquire();
+        thiz->m_wakeupSemaphore.reset();
+    }
+}
+#endif //THREADED_PRESENT
 } //namespace vk
 } //namespace renderer
 } //namespace v3d

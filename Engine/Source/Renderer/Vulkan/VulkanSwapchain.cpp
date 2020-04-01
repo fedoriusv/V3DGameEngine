@@ -467,7 +467,7 @@ void VulkanSwapchain::present(VkQueue queue, const std::vector<VkSemaphore>& wai
     presentInfoKHR.pResults = innerResults;
 
     VkResult result = VulkanWrapper::QueuePresent(queue, &presentInfoKHR);
-    if (result == VK_ERROR_SURFACE_LOST_KHR || result == VK_SUBOPTIMAL_KHR || result == VK_ERROR_OUT_OF_DATE_KHR)
+    if (result == VK_ERROR_SURFACE_LOST_KHR || result == VK_ERROR_OUT_OF_DATE_KHR)
     {
         VulkanWrapper::DeviceWaitIdle(m_deviceInfo->_device);
 #ifdef PLATFORM_ANDROID
@@ -481,6 +481,11 @@ void VulkanSwapchain::present(VkQueue queue, const std::vector<VkSemaphore>& wai
         }
 
         recreateAttachedResources();
+    }
+    else if (result == VK_SUBOPTIMAL_KHR)
+    {
+        //Android: One of problem is no used pre-transform
+        LOG_WARNING("VulkanSwapchain::present: Swapchain Error: VK_SUBOPTIMAL_KHR");
     }
     else if (result != VK_SUCCESS)
     {
@@ -497,7 +502,7 @@ u32 VulkanSwapchain::acquireImage()
 
     u32 imageIndex = 0;
     VkResult result = VulkanWrapper::AcquireNextImage(m_deviceInfo->_device, m_swapchain, UINT64_MAX, semaphore, fence, &imageIndex);
-    if (result == VK_ERROR_SURFACE_LOST_KHR || result == VK_SUBOPTIMAL_KHR || result == VK_ERROR_OUT_OF_DATE_KHR)
+    if (result == VK_ERROR_SURFACE_LOST_KHR || result == VK_ERROR_OUT_OF_DATE_KHR)
     {
         VulkanWrapper::DeviceWaitIdle(m_deviceInfo->_device);
 #ifdef PLATFORM_ANDROID
@@ -520,6 +525,11 @@ u32 VulkanSwapchain::acquireImage()
             LOG_FATAL(" VulkanSwapchain::AcquireNextImage: failed recreate with error %s", ErrorString(result).c_str());
             ASSERT(false, "vkAcquireNextImageKHR failed recreate");
         }
+    }
+    else if (result == VK_SUBOPTIMAL_KHR)
+    {
+        //Android: One of problem is no used pre-transform
+        LOG_WARNING("VulkanSwapchain::acquireImage: Swapchain Error: VK_SUBOPTIMAL_KHR");
     }
     else if (result != VK_SUCCESS)
     {
