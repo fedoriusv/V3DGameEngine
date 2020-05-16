@@ -32,7 +32,7 @@ namespace renderer
         virtual bool create() = 0;
         virtual void destroy() = 0;
 
-        virtual bool upload(Context* context, u32 offset, u64 size, void* data) = 0;
+        virtual bool upload(Context* context, u32 offset, u64 size, const void* data) = 0;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

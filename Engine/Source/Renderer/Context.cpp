@@ -1,16 +1,14 @@
 #include "Context.h"
 #include "Platform/Window.h"
-
 #include "EmptyContext.h"
-#ifdef VULKAN_RENDER
-#   include "Vulkan/VulkanGraphicContext.h"
-#endif //VULKAN_RENDER
-
-#ifdef D3D_RENDER
-#   include "D3D12/D3D12GraphicContext.h"
-#endif //D3D_RENDER
-
 #include "Utils/Logger.h"
+
+#ifdef VULKAN_RENDER
+#include "Vulkan/VulkanGraphicContext.h"
+#endif //VULKAN_RENDER
+#ifdef D3D_RENDER
+#include "D3D12/D3DGraphicContext.h"
+#endif //D3D_RENDER
 
 namespace v3d
 {

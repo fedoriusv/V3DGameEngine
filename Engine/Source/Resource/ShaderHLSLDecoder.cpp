@@ -6,9 +6,8 @@
 #include "Utils/Timer.h"
 
 #ifdef D3D_RENDER
-#   include <d3dcompiler.h>
-
-#include "Renderer/D3D12/D3D12Debug.h"
+#include <d3dcompiler.h>
+#include "Renderer/D3D12/D3DDebug.h"
 
 #pragma comment(lib, "d3dcompiler.lib")
 

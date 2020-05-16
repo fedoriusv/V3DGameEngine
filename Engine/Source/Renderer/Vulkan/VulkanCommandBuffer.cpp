@@ -538,7 +538,7 @@ void VulkanCommandBuffer::cmdResolveImage(VulkanImage* src, VkImageLayout srcLay
     }
 }
 
-void VulkanCommandBuffer::cmdUpdateBuffer(VulkanBuffer * src, u32 offset, u64 size, void * data)
+void VulkanCommandBuffer::cmdUpdateBuffer(VulkanBuffer* src, u32 offset, u64 size, const void* data)
 {
     ASSERT(m_status == CommandBufferStatus::Begin, "not started");
     ASSERT(!isInsideRenderPass(), "outside render pass");

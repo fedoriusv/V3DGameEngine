@@ -121,6 +121,8 @@ namespace renderer
 
         explicit StreamBufferDescription(IndexStreamBuffer* index, u32 indexOffset, VertexStreamBuffer* vertex, u32 vertexOffset, u32 stream) noexcept;
 
+        void clear();
+
         ~StreamBufferDescription();
 
         bool operator==(const StreamBufferDescription& desc);

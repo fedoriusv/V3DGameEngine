@@ -432,6 +432,7 @@ renderer::Format Backbuffer::getFormat() const
 
 void Backbuffer::read(const core::Dimension2D & offset, const core::Dimension2D & size, void * const data)
 {
+    NOT_IMPL;
 }
 
 void Backbuffer::clear(const core::Vector4D & color)

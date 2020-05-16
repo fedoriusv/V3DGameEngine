@@ -33,7 +33,7 @@ namespace vk
         bool create() override;
         void destroy() override;
 
-        bool upload(Context* context, u32 offset, u64 size, void* data) override;
+        bool upload(Context* context, u32 offset, u64 size, const void* data) override;
 
         VkBuffer getHandle() const;
 

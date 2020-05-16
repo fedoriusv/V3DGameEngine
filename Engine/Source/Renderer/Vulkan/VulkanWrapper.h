@@ -1,8 +1,8 @@
 #pragma once
 
+#ifdef VULKAN_RENDER
 #include "VulkanFunctions.h"
 
-#ifdef VULKAN_RENDER
 namespace v3d
 {
 namespace renderer

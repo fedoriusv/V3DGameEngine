@@ -91,9 +91,7 @@ namespace vk
 
     private:
 
-        VkDevice m_device;
         VulkanDescriptorPoolProvider* m_poolProvider;
-
         std::vector<VulkanDescriptorSetPool*> m_currentPool;
     };
 

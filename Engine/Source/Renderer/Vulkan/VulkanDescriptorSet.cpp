@@ -59,8 +59,7 @@ auto DescriptorPoolStrategy = []() -> GenericDescriptorPools *
 };
 
 VulkanDescriptorSetManager::VulkanDescriptorSetManager(VkDevice device, u32 swapchainImages) noexcept
-    : m_device(device)
-    , m_poolProvider(new VulkanDescriptorPoolProvider(device, DescriptorPoolStrategy()))
+    : m_poolProvider(new VulkanDescriptorPoolProvider(device, DescriptorPoolStrategy()))
 {
     m_currentPool.resize(swapchainImages, nullptr);
 }

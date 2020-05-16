@@ -115,7 +115,7 @@ VkSurfaceKHR VulkanSwapchain::createSurface(VkInstance vkInstance, NativeInstanc
     return surface;
 }
 
-bool VulkanSwapchain::create(const SwapchainConfig& config)
+bool VulkanSwapchain::create(const SwapchainConfig& config, VkSwapchainKHR oldSwapchain)
 {
     LOG_DEBUG("VulkanSwapchain::create");
     if (m_ready)
@@ -197,7 +197,7 @@ bool VulkanSwapchain::create(const SwapchainConfig& config)
     m_surfaceFormat.colorSpace = surfaceFormats[0].colorSpace;
 
 
-    if (!VulkanSwapchain::createSwapchain(config))
+    if (!VulkanSwapchain::createSwapchain(config, oldSwapchain))
     {
          VulkanSwapchain::destroy();
 
@@ -234,7 +234,7 @@ bool VulkanSwapchain::create(const SwapchainConfig& config)
     return true;
 }
 
-bool VulkanSwapchain::createSwapchain(const SwapchainConfig& config)
+bool VulkanSwapchain::createSwapchain(const SwapchainConfig& config, VkSwapchainKHR oldSwapchain)
 {
     ASSERT(m_surface, "surface is nullptr");
 
@@ -313,7 +313,7 @@ bool VulkanSwapchain::createSwapchain(const SwapchainConfig& config)
     swapChainInfo.queueFamilyIndexCount = 0;
     swapChainInfo.pQueueFamilyIndices = nullptr;
     swapChainInfo.presentMode = swapchainPresentMode;
-    swapChainInfo.oldSwapchain = VK_NULL_HANDLE;
+    swapChainInfo.oldSwapchain = oldSwapchain;
     swapChainInfo.clipped = VK_TRUE; // Setting clipped to VK_TRUE allows the implementation to discard rendering outside of the surface area
     swapChainInfo.compositeAlpha = (m_surfaceCaps.supportedCompositeAlpha & VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR) ? VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR : VK_COMPOSITE_ALPHA_INHERIT_BIT_KHR;;
 
@@ -553,10 +553,10 @@ bool VulkanSwapchain::recteate(const SwapchainConfig& config)
         (*image)->destroy();
     }
 
+    VkSwapchainKHR oldSwapchain = VK_NULL_HANDLE;
     if (m_swapchain)
     {
-        VulkanWrapper::DestroySwapchain(m_deviceInfo->_device, m_swapchain, VULKAN_ALLOCATOR);
-        m_swapchain = VK_NULL_HANDLE;
+        std::swap(m_swapchain, oldSwapchain);
     }
 
     for (auto& semaphore : m_acquireSemaphore)
@@ -574,10 +574,15 @@ bool VulkanSwapchain::recteate(const SwapchainConfig& config)
     m_ready = false;
 
 
-    if (!VulkanSwapchain::create(config))
+    if (!VulkanSwapchain::create(config, VK_NULL_HANDLE/*oldSwapchain*/))
     {
         LOG_FATAL("VulkanSwapchain::recteate: is failed");
         return false;
+    }
+
+    if (oldSwapchain)
+    {
+        VulkanWrapper::DestroySwapchain(m_deviceInfo->_device, oldSwapchain, VULKAN_ALLOCATOR);
     }
 
     return true;

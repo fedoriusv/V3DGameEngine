@@ -75,7 +75,7 @@ void CameraArcballHelper::handlerMouseCallback(v3d::event::InputEventHandler* ha
 
         core::Vector3D rotation = CameraArcballHelper::getRotation();
         rotation.x += positionDelta.y * k_rotationSpeed;
-        rotation.y += positionDelta.x * k_rotationSpeed;
+        rotation.y -= positionDelta.x * k_rotationSpeed;
         CameraArcballHelper::setRotation(rotation);
     }
 

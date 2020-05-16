@@ -35,6 +35,7 @@ std::tuple<Framebuffer*, bool> FramebufferManager::acquireFramebuffer(const Rend
     std::vector<u64> indexes(images.size());
     std::for_each(images.cbegin(), images.cend(), [&indexes](const Image* img) -> void
     {
+        ASSERT(img, "nullptr");
         indexes.push_back(img->index());
     });
     u32 hash = crc32c::Crc32c((char*)indexes.data(), indexes.size() * sizeof(u64));

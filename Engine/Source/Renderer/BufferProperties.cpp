@@ -13,7 +13,7 @@ StreamBufferDescription::StreamBufferDescription(VertexStreamBuffer* vertex, u32
     
     , _indices(nullptr)
     , _indicesOffet(0)
-    , _indexType(StreamIndexBufferType::IndexType_32)
+    , _indexType(StreamIndexBufferType::IndexType_16)
 {
     _offsets.resize(_vertices.size(), 0 );
 }
@@ -25,7 +25,7 @@ StreamBufferDescription::StreamBufferDescription(VertexStreamBuffer* vertex, u32
 
     , _indices(nullptr)
     , _indicesOffet(0)
-    , _indexType(StreamIndexBufferType::IndexType_32)
+    , _indexType(StreamIndexBufferType::IndexType_16)
 {
 }
 
@@ -38,6 +38,17 @@ StreamBufferDescription::StreamBufferDescription(IndexStreamBuffer* index, u32 i
     , _indicesOffet(indexOffset)
     , _indexType(index->m_type)
 {
+}
+
+void StreamBufferDescription::clear()
+{
+    _vertices.clear();
+    _streamsID.clear();
+    _offsets.clear();
+
+    _indices = nullptr;
+    _indicesOffet = 0U;
+    _indexType = StreamIndexBufferType::IndexType_16;
 }
 
 StreamBufferDescription::~StreamBufferDescription()

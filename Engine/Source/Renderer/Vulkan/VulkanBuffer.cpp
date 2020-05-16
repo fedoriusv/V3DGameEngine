@@ -212,7 +212,7 @@ void VulkanBuffer::destroy()
     }
 }
 
-bool VulkanBuffer::upload(Context* context, u32 offset, u64 size, void * data)
+bool VulkanBuffer::upload(Context* context, u32 offset, u64 size, const void * data)
 {
     if (!m_buffer)
     {

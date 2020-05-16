@@ -268,9 +268,9 @@ void VulkanGraphicContext::setViewport(const core::Rect32& viewport, const core:
     {
         VkViewport vkViewport = {};
         vkViewport.x = static_cast<f32>(viewport.getLeftX());
-        vkViewport.y = static_cast<f32>(viewport.getTopY());
+        vkViewport.y = static_cast<f32>(viewport.getTopY() + viewport.getHeight());
         vkViewport.width = static_cast<f32>(viewport.getWidth());
-        vkViewport.height = static_cast<f32>(viewport.getHeight());
+        vkViewport.height = -static_cast<f32>(viewport.getHeight());
         vkViewport.minDepth = depth.x;
         vkViewport.maxDepth = depth.y;
         std::vector<VkViewport> viewports = { vkViewport };
@@ -459,7 +459,7 @@ void VulkanGraphicContext::removeRenderPass(RenderPass * renderpass)
 
 void VulkanGraphicContext::invalidateRenderPass()
 {
-    ASSERT(m_currentContextState->getCurrentRenderpass(), "nuulptr");
+    ASSERT(m_currentContextState->getCurrentRenderpass(), "nullptr");
     VulkanCommandBuffer* drawBuffer = m_currentBufferState.getAcitveBuffer(CommandTargetType::CmdDrawBuffer);
     if (drawBuffer->isInsideRenderPass())
     {
@@ -498,7 +498,7 @@ void VulkanGraphicContext::removePipeline(Pipeline * pipeline)
     }
 }
 
-Image * VulkanGraphicContext::createImage(renderer::Format format, const core::Dimension3D& dimension, TextureSamples samples, TextureUsageFlags flags)
+Image* VulkanGraphicContext::createImage(renderer::Format format, const core::Dimension3D& dimension, TextureSamples samples, TextureUsageFlags flags)
 {
 #if VULKAN_DEBUG
     LOG_DEBUG("VulkanGraphicContext::createImage");
@@ -510,7 +510,7 @@ Image * VulkanGraphicContext::createImage(renderer::Format format, const core::D
     return new VulkanImage(m_imageMemoryManager, m_deviceInfo._device, vkFormat, vkExtent, vkSamples, flags);
 }
 
-Image * VulkanGraphicContext::createImage(TextureTarget target, renderer::Format format, const core::Dimension3D& dimension, u32 layers, u32 mipLevels, TextureUsageFlags flags)
+Image* VulkanGraphicContext::createImage(TextureTarget target, renderer::Format format, const core::Dimension3D& dimension, u32 layers, u32 mipLevels, TextureUsageFlags flags)
 {
 #if VULKAN_DEBUG
     LOG_DEBUG("VulkanGraphicContext::createImage");
@@ -522,7 +522,7 @@ Image * VulkanGraphicContext::createImage(TextureTarget target, renderer::Format
     return new VulkanImage(m_imageMemoryManager, m_deviceInfo._device, vkType, vkFormat, vkExtent, layers, mipLevels, VK_IMAGE_TILING_OPTIMAL, flags);
 }
 
-void VulkanGraphicContext::removeImage(Image * image)
+void VulkanGraphicContext::removeImage(Image* image)
 {
     VulkanImage* vkImage = static_cast<VulkanImage*>(image);
     if (vkImage->isCaptured())
@@ -558,7 +558,7 @@ Buffer * VulkanGraphicContext::createBuffer(Buffer::BufferType type, u16 usageFl
     return nullptr;
 }
 
-void VulkanGraphicContext::removeBuffer(Buffer * buffer)
+void VulkanGraphicContext::removeBuffer(Buffer* buffer)
 {
     VulkanBuffer* vkBuffer = static_cast<VulkanBuffer*>(buffer);
     if (vkBuffer->isCaptured())
@@ -580,7 +580,7 @@ void VulkanGraphicContext::removeBuffer(Buffer * buffer)
     }
 }
 
-void VulkanGraphicContext::removeSampler(Sampler * sampler)
+void VulkanGraphicContext::removeSampler(Sampler* sampler)
 {
     VulkanSampler* vkSampler = static_cast<VulkanSampler*>(sampler);
     if (vkSampler->isCaptured())
@@ -639,7 +639,7 @@ void VulkanGraphicContext::draw(const StreamBufferDescription& desc, u32 firstVe
     m_currentContextState->invalidateDescriptorSetsState();
 }
 
-void VulkanGraphicContext::drawIndexed(const StreamBufferDescription & desc, u32 firstIndex, u32 indexCount, u32 firstInstance, u32 instanceCount)
+void VulkanGraphicContext::drawIndexed(const StreamBufferDescription& desc, u32 firstIndex, u32 indexCount, u32 firstInstance, u32 instanceCount)
 {
 #if VULKAN_DEBUG
     LOG_DEBUG("VulkanGraphicContext::drawIndexed");
@@ -955,12 +955,12 @@ void VulkanGraphicContext::destroy()
     }
 }
 
-Framebuffer * VulkanGraphicContext::createFramebuffer(const std::vector<Image*>& images, const core::Dimension2D & size)
+Framebuffer* VulkanGraphicContext::createFramebuffer(const std::vector<Image*>& images, const core::Dimension2D& size)
 {
     return new VulkanFramebuffer(m_deviceInfo._device, images, size);
 }
 
-RenderPass * VulkanGraphicContext::createRenderPass(const RenderPassDescription* renderpassDesc)
+RenderPass* VulkanGraphicContext::createRenderPass(const RenderPassDescription* renderpassDesc)
 {
     u32 countAttachments = (renderpassDesc->_hasDepthStencilAttahment) ? renderpassDesc->_countColorAttachments + 1 : renderpassDesc->_countColorAttachments;
     std::vector<VulkanRenderPass::VulkanAttachmentDescription> descs(countAttachments);
@@ -1244,7 +1244,7 @@ bool VulkanGraphicContext::createDevice()
     //index family, queue bits, priority list 
     const std::list<std::tuple<u32, VkQueueFlags, std::vector<f32>>> queueLists =
     {
-        { familyIndex, VK_QUEUE_GRAPHICS_BIT,{ 0.0f } },
+        { familyIndex, VK_QUEUE_GRAPHICS_BIT, { 0.0f } },
     };
     m_queueList.resize(queueLists.size(), VK_NULL_HANDLE);
 
@@ -1419,6 +1419,8 @@ void VulkanGraphicContext::handleNotify(utils::Observable* obj)
 PresentThread::PresentThread(VulkanSwapchain* swapchain)
     : m_thread(&PresentThread::presentLoop, this)
     , m_swapchain(swapchain)
+    , m_queue(VK_NULL_HANDLE)
+    , m_semaphore()
 {
     m_index = m_swapchain->acquireImage();
     m_waitSemaphore.notify();

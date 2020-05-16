@@ -21,7 +21,7 @@ SimpleTriangle::SimpleTriangle()
     , m_Pipeline(nullptr)
     , m_Geometry(nullptr)
 
-    , m_Camera(new scene::CameraArcballHelper(new scene::Camera(core::Vector3D(0.0f, 0.0f, 0.0f), core::Vector3D(0.0f, -1.0f, 0.0f)), 3.0f, k_nearValue + 2.0f, k_farValue - 10.0f))
+    , m_Camera(new scene::CameraArcballHelper(new scene::Camera(core::Vector3D(0.0f, 0.0f, 0.0f), core::Vector3D(0.0f, 1.0f, 0.0f)), 3.0f, k_nearValue + 2.0f, k_farValue - 10.0f))
 {
 }
 
@@ -135,7 +135,7 @@ void SimpleTriangle::init(v3d::renderer::CommandList* commandList, const core::D
     m_Pipeline->setFrontFace(renderer::FrontFace::FrontFace_CounterClockwise);
     m_Pipeline->setCullMode(renderer::CullMode::CullMode_None);
     m_Pipeline->setColorMask(renderer::ColorMask::ColorMask_All);
-    m_Pipeline->setDepthCompareOp(renderer::CompareOperation::CompareOp_Less);
+    m_Pipeline->setDepthCompareOp(renderer::CompareOperation::CompareOp_Always);
     m_Pipeline->setDepthWrite(true);
     m_Pipeline->setDepthTest(true);
 

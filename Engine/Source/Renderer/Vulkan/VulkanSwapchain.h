@@ -2,10 +2,10 @@
 
 #include "Common.h"
 #include "Platform/Window.h"
-#include "VulkanWrapper.h"
-
 
 #ifdef VULKAN_RENDER
+#include "VulkanWrapper.h"
+
 namespace v3d
 {
 namespace renderer
@@ -35,7 +35,7 @@ namespace vk
         VulkanSwapchain(const struct DeviceInfo* info);
         ~VulkanSwapchain();
 
-        bool create(const SwapchainConfig& config);
+        bool create(const SwapchainConfig& config, VkSwapchainKHR oldSwapchain = VK_NULL_HANDLE);
         void destroy();
 
         void present(VkQueue queue, const std::vector<VkSemaphore>& waitSemaphores);
@@ -55,7 +55,7 @@ namespace vk
 
         static VkSurfaceKHR createSurface(VkInstance vkInstance,  NativeInstance hInstance, NativeWindows hWnd);
 
-        bool createSwapchain(const SwapchainConfig& config);
+        bool createSwapchain(const SwapchainConfig& config, VkSwapchainKHR oldSwapchain = VK_NULL_HANDLE);
         bool createSwapchainImages(const SwapchainConfig& config);
 
         const DeviceInfo* m_deviceInfo;

@@ -83,3 +83,5 @@ typedef ANativeActivity* NativeInstance;
 typedef void*     NativeInstance;
 typedef void*     NativeWindows;
 #endif //
+
+#define NOT_IMPL ASSERT(false, "not impl")

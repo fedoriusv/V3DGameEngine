@@ -1,5 +1,4 @@
 #include "Semaphore.h"
-#include "utils/Logger.h"
 
 namespace v3d
 {

@@ -31,6 +31,14 @@ namespace renderer
             {
             }
 
+            void clear()
+            {
+                _size = core::Dimension2D(0, 0);
+                _color.clear();
+                _depth = 0.0f;
+                _stencil = 0U;
+            }
+
             core::Dimension2D           _size;
             std::vector<core::Vector4D> _color;
             f32                         _depth;

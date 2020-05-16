@@ -347,7 +347,7 @@ void VulkanContextState::updateConstantBuffer(const Shader::UniformBuffer& info,
 
     ASSERT(size <= info._size * info._array, "over size");
     VulkanUniformBuffer* uniformBuffer = m_unifromBufferManager->acquireUnformBuffer(info._size);
-    bool updated = uniformBuffer->update(offset, size, data);
+    [[maybe_unused]] bool updated = uniformBuffer->update(offset, size, data);
 
     BindingType type = VulkanDeviceCaps::getInstance()->useDynamicUniforms ? BindingType::BindingType_DynamicUniform : BindingType::BindingType_Uniform;
 
