@@ -13,6 +13,8 @@ namespace renderer
 {
 namespace dx3d
 {
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
+
     class D3DFence;
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -42,6 +44,8 @@ namespace dx3d
 
         ID3D12Device* const m_device;
         ID3D12CommandQueue* m_commandQueue;
+
+        ID3D12CommandAllocator* m_commandAllocator[D3DCommandList::Type::CountTypes];
 
         std::queue<D3DCommandList*> m_freeCommandList[D3DCommandList::Type::CountTypes];
 

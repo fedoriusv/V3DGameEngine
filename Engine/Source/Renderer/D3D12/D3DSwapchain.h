@@ -12,7 +12,11 @@ namespace renderer
 {
 namespace dx3d
 {
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
+
     class D3DImage;
+    class D3DDescriptorHeap;
+    class D3DDescriptorHeapManager;
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -32,7 +36,7 @@ namespace dx3d
             bool                _fullscreen           = false;
         };
 
-        explicit D3DSwapchain(IDXGIFactory4* factory, ID3D12Device* device, ID3D12CommandQueue* cmdQueue) noexcept;
+        explicit D3DSwapchain(IDXGIFactory4* factory, ID3D12Device* device, ID3D12CommandQueue* cmdQueue, D3DDescriptorHeapManager* heapMgr) noexcept;
         ~D3DSwapchain();
 
         bool create(const SwapchainConfig& config);
@@ -52,9 +56,10 @@ namespace dx3d
         IDXGIFactory4* const m_factory;
         ID3D12Device* const m_device;
         ID3D12CommandQueue* m_commandQueue;
+        D3DDescriptorHeapManager* const m_heapManager;
 
         IDXGISwapChain3* m_swapChain;
-        ID3D12DescriptorHeap* m_descriptorHeap;
+        D3DDescriptorHeap* m_descriptorHeap;
 
         std::vector<D3DImage*> m_renderTargets;
 

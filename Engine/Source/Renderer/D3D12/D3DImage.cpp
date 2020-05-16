@@ -644,7 +644,7 @@ void D3DImage::destroy()
 
 void D3DImage::clear(Context* context, const core::Vector4D& color)
 {
-    D3DCommandList* commandlist = static_cast<D3DGraphicContext*>(context)->getCurrentCommandList();
+    D3DGraphicsCommandList* commandlist = (D3DGraphicsCommandList*)static_cast<D3DGraphicContext*>(context)->getCurrentCommandList();
     ASSERT(commandlist, "nullptr");
 
     const FLOAT dxClearColor[] = { color.x, color.y, color.z, color.w };
@@ -656,13 +656,24 @@ void D3DImage::clear(Context* context, const core::Vector4D& color)
         static_cast<LONG>(m_size.height)
     };
 
-    //TODO
-    //static_cast<D3DGraphicsCommandList*>(commandlist)->clearRenderTarget(this, dxClearColor, { dxRect });
+    D3D12_RESOURCE_STATES oldState = m_state;
+    commandlist->transition(this, D3D12_RESOURCE_STATE_RENDER_TARGET);
+
+    if (m_swapchain)
+    {
+        commandlist->clearRenderTarget(m_handle, dxClearColor, { dxRect });
+    }
+    else
+    {
+        ASSERT(false, "no impl");
+    }
+
+    commandlist->transition(this, oldState);
 }
 
 void D3DImage::clear(Context* context, f32 depth, u32 stencil)
 {
-    D3DCommandList* commandlist = static_cast<D3DGraphicContext*>(context)->getCurrentCommandList();
+    D3DGraphicsCommandList* commandlist = (D3DGraphicsCommandList*)static_cast<D3DGraphicContext*>(context)->getCurrentCommandList();
     ASSERT(commandlist, "nullptr");
 
     D3D12_CLEAR_FLAGS flags = D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL;
@@ -674,8 +685,19 @@ void D3DImage::clear(Context* context, f32 depth, u32 stencil)
         static_cast<LONG>(m_size.height)
     };
 
-    //TODO
-    //static_cast<D3DGraphicsCommandList*>(commandlist)->clearRenderTarget(this, depth, stencil, flags, { dxRect });
+    D3D12_RESOURCE_STATES oldState = m_state;
+    commandlist->transition(this, D3D12_RESOURCE_STATE_RENDER_TARGET);
+
+    if (m_swapchain)
+    {
+        commandlist->clearRenderTarget(m_handle, depth, stencil, flags, { dxRect });
+    }
+    else
+    {
+        ASSERT(false, "no impl");
+    }
+
+    commandlist->transition(this, oldState);
 }
 
 bool D3DImage::upload(Context* context, const core::Dimension3D& size, u32 layers, u32 mips, const void* data)

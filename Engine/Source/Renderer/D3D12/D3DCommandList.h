@@ -17,6 +17,7 @@ namespace dx3d
     class D3DGraphicPipelineState;
     class D3DRenderTarget;
     class D3DRenderResource;
+    struct D3DDescriptor;
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -110,7 +111,7 @@ namespace dx3d
         void setRenderTarget(D3DRenderTarget* target);
         void setPipelineState(D3DGraphicPipelineState* pipeline);
 
-        void setDescriptorTables(std::vector<ID3D12DescriptorHeap*> heaps);
+        void setDescriptorTables(const std::vector<ID3D12DescriptorHeap*>& heaps, const std::map<u32, D3DDescriptor*>& desc);
 
         void setVertexState(u32 startSlot, const std::vector<u32>& strides, const std::vector<Buffer*>& buffers);
         void setIndexState();

@@ -5,6 +5,7 @@
 #ifdef D3D_RENDER
 #include "D3DDebug.h"
 #include "D3DImage.h"
+#include "D3DDescriptorHeap.h"
 
 namespace v3d
 {
@@ -13,10 +14,11 @@ namespace renderer
 namespace dx3d
 {
 
-D3DSwapchain::D3DSwapchain(IDXGIFactory4* factory, ID3D12Device* device, ID3D12CommandQueue* cmdQueue) noexcept
+D3DSwapchain::D3DSwapchain(IDXGIFactory4* factory, ID3D12Device* device, ID3D12CommandQueue* cmdQueue, D3DDescriptorHeapManager* heapMgr) noexcept
     : m_factory(factory)
     , m_device(device)
     , m_commandQueue(cmdQueue)
+    , m_heapManager(heapMgr)
 
     , m_swapChain(nullptr)
     , m_descriptorHeap(nullptr)
@@ -81,35 +83,16 @@ bool D3DSwapchain::create(const SwapchainConfig& config)
     }
 
     {
-        // Create descriptor heaps.
-        // Describe and create a render target view (RTV) descriptor heap.
-        D3D12_DESCRIPTOR_HEAP_DESC rtvHeapDesc = {};
-        rtvHeapDesc.NumDescriptors = config._countSwapchainImages;
-        rtvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
-        rtvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
-        rtvHeapDesc.NodeMask = 0;
-        HRESULT result = m_device->CreateDescriptorHeap(&rtvHeapDesc, IID_PPV_ARGS(&m_descriptorHeap));
-        if (FAILED(result))
-        {
-            LOG_ERROR("D3DSwapchain::create CreateDescriptorHeap is failed. Error %s", D3DDebug::stringError(result).c_str());
-            D3DSwapchain::destroy();
+        m_descriptorHeap = m_heapManager->allocateDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_RTV, config._countSwapchainImages, D3D12_DESCRIPTOR_HEAP_FLAG_NONE);
+        ASSERT(m_descriptorHeap, "nullptr");
 
-            return false;
-        }
-    }
-
-    {
-        // Create frame resources.
-        u32 rtvDescriptorSize = m_device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
-        CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(m_descriptorHeap->GetCPUDescriptorHandleForHeapStart());
-
+        CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(m_descriptorHeap->getCPUHandle());
         m_renderTargets.reserve(config._countSwapchainImages);
 
-        // Create a RTV for each frame.
-        for (u32 n = 0; n < config._countSwapchainImages; n++)
+        for (u32 index = 0; index < config._countSwapchainImages; index++)
         {
             ID3D12Resource* swapchainImage;
-            HRESULT result = m_swapChain->GetBuffer(n, IID_PPV_ARGS(&swapchainImage));
+            HRESULT result = m_swapChain->GetBuffer(index, IID_PPV_ARGS(&swapchainImage));
             if (FAILED(result))
             {
                 LOG_ERROR("D3DSwapchain::create GetBuffer is failed. Error %s", D3DDebug::stringError(result).c_str());
@@ -119,11 +102,11 @@ bool D3DSwapchain::create(const SwapchainConfig& config)
             }
 
             m_device->CreateRenderTargetView(swapchainImage, nullptr, rtvHandle);
-            rtvHandle.Offset(1, rtvDescriptorSize);
+            rtvHandle.Offset(1, m_descriptorHeap->getIncrement());
 
-            CD3DX12_CPU_DESCRIPTOR_HANDLE imageHandle(m_descriptorHeap->GetCPUDescriptorHandleForHeapStart(), n, rtvDescriptorSize);
+            CD3DX12_CPU_DESCRIPTOR_HANDLE imageHandle(m_descriptorHeap->getCPUHandle(), index, m_descriptorHeap->getIncrement());
             D3DImage* image = new D3DImage(m_device, format, config._size.width, config._size.height, 1,
-                TextureUsage::TextureUsage_Attachment | TextureUsage::TextureUsage_Sampled | TextureUsage::TextureUsage_Read, "SwapchainImage_" + std::to_string(n));
+                TextureUsage::TextureUsage_Attachment | TextureUsage::TextureUsage_Sampled | TextureUsage::TextureUsage_Read, "SwapchainImage_" + std::to_string(index));
             if (!image->create(swapchainImage, imageHandle))
             {
                 LOG_ERROR("D3DSwapchain::create swapimage is failed");
@@ -149,8 +132,8 @@ void D3DSwapchain::destroy()
         delete image;
     }
     m_renderTargets.clear();
+    m_heapManager->deallocDescriptorHeap(m_descriptorHeap);
 
-    SAFE_DELETE(m_descriptorHeap);
     SAFE_DELETE(m_swapChain);
 }
 

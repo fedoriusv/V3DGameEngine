@@ -125,5 +125,10 @@ const core::Point2D & Window::getPosition() const
     return m_params._position;
 }
 
+bool Window::isFullscreen() const
+{
+    return m_params._isFullscreen;
+}
+
 } //namespace platform
 } //namespace v3d

@@ -47,12 +47,23 @@ void D3DCommandList::destroy()
     ASSERT(m_status == Status::Finish, "not finished");
     if (m_commandList)
     {
-        m_commandList = nullptr;
+        SAFE_DELETE(m_commandList);
     }
 
     if (m_commandAllocator)
     {
+        if (m_ownAllocator)
+        {
+            m_commandAllocator->Reset();
+            SAFE_DELETE(m_commandAllocator);
+        }
         m_commandAllocator = nullptr;
+    }
+
+    if (m_fence)
+    {
+        delete m_fence;
+        m_fence = nullptr;
     }
 }
 
@@ -121,12 +132,12 @@ bool D3DCommandList::checkOnComplete()
 D3DGraphicsCommandList::D3DGraphicsCommandList(ID3D12Device* device, Type type) noexcept
     : D3DCommandList(device, type)
 {
-    LOG_DEBUG("D3DGraphicsCommandList constructor %llx", this);
+    LOG_DEBUG("D3DGraphicsCommandList::D3DGraphicsCommandList constructor %llx", this);
 }
 
 D3DGraphicsCommandList::~D3DGraphicsCommandList()
 {
-    LOG_DEBUG("D3DGraphicsCommandList destructor %llx", this);
+    LOG_DEBUG("D3DGraphicsCommandList::~D3DGraphicsCommandList destructor %llx", this);
 }
 
 void D3DGraphicsCommandList::prepare()
@@ -188,7 +199,7 @@ void D3DGraphicsCommandList::setPipelineState(D3DGraphicPipelineState* pipeline)
     this->setUsed(pipeline, 0);
 }
 
-void D3DGraphicsCommandList::setDescriptorTables(std::vector<ID3D12DescriptorHeap*> heaps)
+void D3DGraphicsCommandList::setDescriptorTables(const std::vector<ID3D12DescriptorHeap*>& heaps, const std::map<u32, D3DDescriptor*>& desc)
 {
     ASSERT(m_commandList, "nullptr");
     ASSERT(m_status == Status::ReadyToRecord, "not record");
@@ -196,9 +207,10 @@ void D3DGraphicsCommandList::setDescriptorTables(std::vector<ID3D12DescriptorHea
     ID3D12GraphicsCommandList* cmdList = D3DGraphicsCommandList::getHandle();
 
     cmdList->SetDescriptorHeaps(static_cast<UINT>(heaps.size()), heaps.data());
-    for (UINT index = 0; index < heaps.size(); ++index)
+    for (auto iter : desc)
     {
-        cmdList->SetGraphicsRootDescriptorTable(index, heaps[index]->GetGPUDescriptorHandleForHeapStart());
+        CD3DX12_GPU_DESCRIPTOR_HANDLE handle(D3DDescriptor::createGPUDescriptorHandle(iter.second));
+        cmdList->SetGraphicsRootDescriptorTable(iter.first, handle);
     }
 }
 

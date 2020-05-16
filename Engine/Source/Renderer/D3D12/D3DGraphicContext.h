@@ -138,12 +138,18 @@ namespace dx3d
                 _bufferDesc.clear();
                 _clearInfo.clear();
 
+                resetDescriptorsState();
+            }
+
+            void resetDescriptorsState()
+            {
                 _descriptorHeaps.clear();
+                _descriptorsList.clear();
             }
 
             void update(D3DDescriptorHeapManager* descriptorHeapManager)
             {
-                for (auto iter = _descriptorsList.begin(); iter != _descriptorsList.end();)
+                for (auto iter = _descriptorsGeneric.begin(); iter != _descriptorsGeneric.end();)
                 {
                     if ((*iter)->isUsed())
                     {
@@ -154,27 +160,32 @@ namespace dx3d
                         D3DDescriptor* desc = *iter;
                         descriptorHeapManager->freeDescriptor(desc);
 
-                        iter = _descriptorsList.erase(iter);
+                        iter = _descriptorsGeneric.erase(iter);
                     }
                 }
             }
 
-            void bindDescriptor(D3DDescriptor* desc, D3DGraphicsCommandList* cmdList)
+            void bindDescriptor(D3DDescriptor* desc, u32 bindIndex)
             {
                 _descriptorHeaps.insert(desc->_heap->getHandle());
+                _descriptorsList.emplace(bindIndex, desc);
 
-                _descriptorsList.push_back(desc);
-                cmdList->setUsed(desc, 0);
+                _descriptorsGeneric.push_back(desc);
+
+                ASSERT(_commandList, "nullptr");
+                _commandList->setUsed(desc, 0);
             }
 
             D3DGraphicsCommandList* _commandList;
 
             std::set<ID3D12DescriptorHeap*> _descriptorHeaps;
-            std::list<D3DDescriptor*> _descriptorsList;
+            std::map<u32, D3DDescriptor*> _descriptorsList;
+
+            std::list<D3DDescriptor*> _descriptorsGeneric;
 
             D3DGraphicPipelineState* _pipeline;
-            D3DRenderTarget* _renderTarget;
-            StreamBufferDescription _bufferDesc;
+            D3DRenderTarget*         _renderTarget;
+            StreamBufferDescription  _bufferDesc;
 
             Framebuffer::ClearValueInfo _clearInfo;
         };

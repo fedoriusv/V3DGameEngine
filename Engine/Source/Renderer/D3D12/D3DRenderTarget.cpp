@@ -37,7 +37,8 @@ D3DRenderTarget::D3DRenderTarget(ID3D12Device* device, D3DDescriptorHeapManager*
     , m_renderState(nullptr)
     , m_images(images)
 
-    , m_descriptorDepthStencil(nullptr)
+    , m_colorDescriptorHeap(nullptr)
+    , m_depthStencilDescriptorHeap(nullptr)
 {
     LOG_DEBUG("D3DRenderTarget::D3DRenderTarget constructor %llx", this);
 }
@@ -54,7 +55,10 @@ bool D3DRenderTarget::create(const RenderPass* pass)
 
     u32 countColor = m_renderState->getDescription()._countColorAttachments;
     m_colorRenderTargets.resize(countColor);
-    m_colorDescriptors.resize(countColor);
+
+    m_colorDescriptorHeap = m_heapManager->allocateDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_RTV, countColor, D3D12_DESCRIPTOR_HEAP_FLAG_NONE);
+    ASSERT(m_colorDescriptorHeap, "nullptr");
+
     for (auto image : m_images)
     {
         u32 index = 0;
@@ -75,15 +79,10 @@ bool D3DRenderTarget::create(const RenderPass* pass)
                 viewDesc.Texture2DMS = {};
             }
 
-            D3DDescriptor* descriptor = m_heapManager->acquireDescriptor(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
-            ASSERT(descriptor, "nullptr");
-
-            CD3DX12_CPU_DESCRIPTOR_HANDLE colorHandle(D3DDescriptor::createCPUDescriptorHandle(descriptor));
+            CD3DX12_CPU_DESCRIPTOR_HANDLE colorHandle(m_colorDescriptorHeap->getCPUHandle(), index, m_colorDescriptorHeap->getIncrement());
             m_device->CreateRenderTargetView(dxImage->getResource(), &viewDesc, colorHandle);
-            //colorHandle.Offset(1, index); //TODO change index to offset
 
             m_colorRenderTargets[index] = colorHandle;
-            m_colorDescriptors[index] = descriptor;
         }
         else
         {
@@ -111,12 +110,12 @@ bool D3DRenderTarget::create(const RenderPass* pass)
                 viewDesc.Texture2DMS = {};
             }
 
-            m_descriptorDepthStencil = m_heapManager->acquireDescriptor(D3D12_DESCRIPTOR_HEAP_TYPE_DSV);
+            m_depthStencilDescriptorHeap = m_heapManager->allocateDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_DSV, 1, D3D12_DESCRIPTOR_HEAP_FLAG_NONE);
+            ASSERT(m_depthStencilDescriptorHeap, "nullptr");
+            CD3DX12_CPU_DESCRIPTOR_HANDLE depthStencilHandle(m_depthStencilDescriptorHeap->getCPUHandle());
+            m_device->CreateDepthStencilView(dxImage->getResource(), &viewDesc, depthStencilHandle);
 
-            CD3DX12_CPU_DESCRIPTOR_HANDLE despthStencilHandle(D3DDescriptor::createCPUDescriptorHandle(m_descriptorDepthStencil));
-            m_device->CreateDepthStencilView(dxImage->getResource(), &viewDesc, despthStencilHandle);
-
-            m_depthStensilRenderTarget = despthStencilHandle;
+            m_depthStensilRenderTarget = depthStencilHandle;
         }
 
         ++index;
@@ -127,15 +126,8 @@ bool D3DRenderTarget::create(const RenderPass* pass)
 
 void D3DRenderTarget::destroy()
 {
-    for (auto desc : m_colorDescriptors)
-    {
-        m_heapManager->freeDescriptor(desc);
-    }
-
-    if (m_descriptorDepthStencil)
-    {
-        m_heapManager->freeDescriptor(m_descriptorDepthStencil);
-    }
+    m_heapManager->deallocDescriptorHeap(m_colorDescriptorHeap);
+    m_heapManager->deallocDescriptorHeap(m_depthStencilDescriptorHeap);
 }
 
 const std::vector<D3D12_CPU_DESCRIPTOR_HANDLE>& D3DRenderTarget::getColorDescHandles() const

@@ -16,7 +16,7 @@ namespace dx3d
 {
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    struct D3DDescriptor;
+    class D3DDescriptorHeap;
     class D3DDescriptorHeapManager;
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -70,10 +70,10 @@ namespace dx3d
 
         std::vector<Image*> m_images;
 
-        std::vector<D3DDescriptor*> m_colorDescriptors;
+        D3DDescriptorHeap* m_colorDescriptorHeap;
         std::vector<D3D12_CPU_DESCRIPTOR_HANDLE> m_colorRenderTargets;
 
-        D3DDescriptor* m_descriptorDepthStencil;
+        D3DDescriptorHeap* m_depthStencilDescriptorHeap;
         D3D12_CPU_DESCRIPTOR_HANDLE m_depthStensilRenderTarget;
     };
 

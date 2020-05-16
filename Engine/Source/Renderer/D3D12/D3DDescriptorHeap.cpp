@@ -13,12 +13,18 @@ namespace dx3d
 
 CD3DX12_CPU_DESCRIPTOR_HANDLE D3DDescriptor::createCPUDescriptorHandle(D3DDescriptor* desc)
 {
-    return CD3DX12_CPU_DESCRIPTOR_HANDLE(desc->_heap->getCPUHandle(), desc->_offset, desc->_increment);
+    return CD3DX12_CPU_DESCRIPTOR_HANDLE(desc->_heap->getCPUHandle(), desc->_offset, desc->_heap->getIncrement());
+}
+
+CD3DX12_GPU_DESCRIPTOR_HANDLE D3DDescriptor::createGPUDescriptorHandle(D3DDescriptor* desc)
+{
+    return CD3DX12_GPU_DESCRIPTOR_HANDLE(desc->_heap->getGPUHandle(), desc->_offset, desc->_heap->getIncrement());
 }
 
 D3DDescriptorHeap::D3DDescriptorHeap(ID3D12DescriptorHeap* heap, D3D12_DESCRIPTOR_HEAP_DESC& desc) noexcept
     : m_heap(heap)
     , m_desc(desc)
+    , m_increment(0)
     , m_ptr(nullptr)
 {
     LOG_DEBUG("D3DDescriptorHeap::D3DDescriptorHeap constructor %llx", this);
@@ -60,6 +66,11 @@ D3D12_GPU_DESCRIPTOR_HANDLE D3DDescriptorHeap::getGPUHandle() const
     return m_heap->GetGPUDescriptorHandleForHeapStart();
 }
 
+u32 D3DDescriptorHeap::getIncrement() const
+{
+    return m_increment;
+}
+
 
 D3DDescriptorHeapManager::D3DDescriptorHeapManager(ID3D12Device* device) noexcept
     : m_device(device)
@@ -73,12 +84,12 @@ D3DDescriptorHeapManager::~D3DDescriptorHeapManager()
     freeDescriptorHeaps();
 }
 
-D3DDescriptor* D3DDescriptorHeapManager::acquireDescriptor(D3D12_DESCRIPTOR_HEAP_TYPE type, D3D12_DESCRIPTOR_HEAP_FLAGS flags, u32 countDescriptors)
+D3DDescriptor* D3DDescriptorHeapManager::acquireDescriptor(D3D12_DESCRIPTOR_HEAP_TYPE type, D3D12_DESCRIPTOR_HEAP_FLAGS flags)
 {
     D3DDescriptor* descripror = getFreeDescriptor(type);
     if (!descripror)
     {
-        D3DDescriptorHeap* newHeap = createDescriptorHeap(type, (countDescriptors == 0) ? 1/*D3DDescriptorHeapManager::getDescriptorNumSize(type)*/ : countDescriptors, flags);
+        D3DDescriptorHeap* newHeap = allocateDescriptorHeap(type, D3DDescriptorHeapManager::getDescriptorNumSize(type), flags);
         ASSERT(newHeap, "nullptr");
         m_heapList[type].push_back(newHeap);
 
@@ -129,7 +140,7 @@ u32 D3DDescriptorHeapManager::getDescriptorNumSize(D3D12_DESCRIPTOR_HEAP_TYPE ty
     return 0;
 }
 
-D3DDescriptorHeap* D3DDescriptorHeapManager::createDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE type, u32 countDescriptors, D3D12_DESCRIPTOR_HEAP_FLAGS flags)
+D3DDescriptorHeap* D3DDescriptorHeapManager::allocateDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE type, u32 countDescriptors, D3D12_DESCRIPTOR_HEAP_FLAGS flags)
 {
     D3D12_DESCRIPTOR_HEAP_DESC heapDesc = {};
     heapDesc.NumDescriptors = countDescriptors;
@@ -149,6 +160,7 @@ D3DDescriptorHeap* D3DDescriptorHeapManager::createDescriptorHeap(D3D12_DESCRIPT
     u8* heap = reinterpret_cast<u8*>(malloc(heapDesc.NumDescriptors * sizeof(D3DDescriptor)));
 
     D3DDescriptorHeap* descriptorHeap = new D3DDescriptorHeap(dxDescriptorHeap, heapDesc);
+    descriptorHeap->m_increment = m_device->GetDescriptorHandleIncrementSize(type);
     descriptorHeap->m_ptr = heap;
 
     for (u32 i = 0; i < heapDesc.NumDescriptors; ++i)
@@ -156,7 +168,6 @@ D3DDescriptorHeap* D3DDescriptorHeapManager::createDescriptorHeap(D3D12_DESCRIPT
         D3DDescriptor* desc = new(reinterpret_cast<D3DDescriptor*>(heap + (i * sizeof(D3DDescriptor)))) D3DDescriptor();
         desc->_heap = descriptorHeap;
         desc->_offset = i;
-        desc->_increment = m_device->GetDescriptorHandleIncrementSize(type);
 
         descriptorHeap->m_freeDescriptors.insert(desc);
     }
@@ -164,17 +175,10 @@ D3DDescriptorHeap* D3DDescriptorHeapManager::createDescriptorHeap(D3D12_DESCRIPT
     return descriptorHeap;
 }
 
-bool D3DDescriptorHeapManager::destroyDescriptorHeap(D3DDescriptorHeap* heap)
+void D3DDescriptorHeapManager::deallocDescriptorHeap(D3DDescriptorHeap* heap)
 {
-    //auto found = m_heapList[heap->_desc.Type].find(heap);
-    //if (found == m_heapList[heap->_desc.Type].end())
-    //{
-    //    ASSERT(false, "not found");
-    //    return false;
-    //}
-    //m_heapList[heap->_desc.Type].erase(found);
-
-    return true;
+    ASSERT(heap->m_usedDescriptors.empty(), "still used");
+    SAFE_DELETE(heap->m_heap);
 }
 
 D3DDescriptor* D3DDescriptorHeapManager::getFreeDescriptor(D3D12_DESCRIPTOR_HEAP_TYPE type)

@@ -45,6 +45,7 @@ D3DGraphicContext::D3DGraphicContext(const platform::Window* window) noexcept
 #endif //D3D_DEBUG_LAYERS
     , m_commandQueue(nullptr)
 
+    , m_descriptorHeapManager(nullptr)
     , m_swapchain(nullptr)
     , m_window(window)
 
@@ -53,7 +54,6 @@ D3DGraphicContext::D3DGraphicContext(const platform::Window* window) noexcept
     , m_constantBufferManager(nullptr)
 
     , m_rootSignatureManager(nullptr)
-    , m_descriptorHeapManager(nullptr)
 {
     LOG_DEBUG("D3DGraphicContext::D3DGraphicContext constructor %llx", this);
     m_renderType = RenderType::DirectXRender;
@@ -75,6 +75,7 @@ D3DGraphicContext::~D3DGraphicContext()
     ASSERT(!m_commandQueue, "not nullptr");
 
     ASSERT(!m_swapchain, "not nullptr");
+    ASSERT(!m_descriptorHeapManager, "not nullptr");
 
     ASSERT(!m_device, "not nullptr");
     ASSERT(!m_adapter, "not nullptr");
@@ -211,7 +212,6 @@ void D3DGraphicContext::bindUniformsBuffer(const Shader* shader, u32 bindIndex, 
     D3DGraphicsCommandList* cmdList = m_currentState.commandList();
     cmdList->setUsed(constantBuffer, 0);
 
-
     D3DDescriptor* descriptor = m_descriptorHeapManager->acquireDescriptor(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE);
     ASSERT(descriptor, "nullptr");
 
@@ -222,7 +222,7 @@ void D3DGraphicContext::bindUniformsBuffer(const Shader* shader, u32 bindIndex, 
     CD3DX12_CPU_DESCRIPTOR_HANDLE cbvHandle(D3DDescriptor::createCPUDescriptorHandle(descriptor));
     m_device->CreateConstantBufferView(&cbvDesc, cbvHandle);
 
-    m_currentState.bindDescriptor(descriptor, cmdList);
+    m_currentState.bindDescriptor(descriptor, bindIndex);
 }
 
 void D3DGraphicContext::transitionImages(const std::vector<Image*>& images, TransitionOp transition, s32 layer)
@@ -468,16 +468,16 @@ bool D3DGraphicContext::initialize()
     D3DDeviceCaps* caps = D3DDeviceCaps::getInstance();
     caps->initialize(m_device);
 
+    m_descriptorHeapManager = new D3DDescriptorHeapManager(m_device);
     {
         D3DSwapchain::SwapchainConfig config;
         config._window = m_window->getWindowHandle();
         config._size = m_window->getSize();
         config._countSwapchainImages = 3;
         config._vsync = false;
-        config._fullscreen = false;
+        config._fullscreen = m_window->isFullscreen();
 
-        m_swapchain = new D3DSwapchain(m_factory, m_device, m_commandQueue);
-
+        m_swapchain = new D3DSwapchain(m_factory, m_device, m_commandQueue, m_descriptorHeapManager);
         if (!m_swapchain->create(config))
         {
             LOG_ERROR("D3DGraphicContext::initialize D3DSwapchain::create is failed");
@@ -495,7 +495,6 @@ bool D3DGraphicContext::initialize()
     m_renderTargetManager = std::make_tuple(new RenderPassManager(this), new FramebufferManager(this));
 
     m_rootSignatureManager = new D3DRootSignatureManager(m_device);
-    m_descriptorHeapManager = new D3DDescriptorHeapManager(m_device);
     m_constantBufferManager = new D3DConstantBufferManager(m_device);
 
 #if D3D_DEBUG
@@ -510,10 +509,10 @@ void D3DGraphicContext::destroy()
     D3DDebug::getInstance()->report(D3D12_RLDO_SUMMARY | D3D12_RLDO_IGNORE_INTERNAL);
 #endif
 
-    if (m_rootSignatureManager)
+    if (m_constantBufferManager)
     {
-        delete m_rootSignatureManager;
-        m_rootSignatureManager = nullptr;
+        delete m_constantBufferManager;
+        m_constantBufferManager = nullptr;
     }
 
     //RenderPassManager
@@ -528,16 +527,16 @@ void D3DGraphicContext::destroy()
         delete std::get<1>(m_renderTargetManager);
     }
 
-    if (m_constantBufferManager)
-    {
-        delete m_constantBufferManager;
-        m_constantBufferManager = nullptr;
-    }
-
     if (m_pipelineManager)
     {
         delete m_pipelineManager;
         m_pipelineManager = nullptr;
+    }
+
+    if (m_rootSignatureManager)
+    {
+        delete m_rootSignatureManager;
+        m_rootSignatureManager = nullptr;
     }
 
     if (m_commandListManager)
@@ -548,12 +547,21 @@ void D3DGraphicContext::destroy()
         m_commandListManager = nullptr;
     }
 
+#if D3D_DEBUG
+    D3DDebug::getInstance()->report(D3D12_RLDO_SUMMARY | D3D12_RLDO_IGNORE_INTERNAL);
+#endif
     if (m_swapchain)
     {
         m_swapchain->destroy();
 
         delete m_swapchain;
         m_swapchain = nullptr;
+    }
+
+    if (m_descriptorHeapManager)
+    {
+        delete m_descriptorHeapManager;
+        m_descriptorHeapManager = nullptr;
     }
 
     SAFE_DELETE(m_commandQueue);
@@ -614,7 +622,7 @@ bool D3DGraphicContext::perpareDraw(D3DGraphicsCommandList* cmdList)
     }
 
     std::vector<ID3D12DescriptorHeap*> heaps(m_currentState._descriptorHeaps.cbegin(), m_currentState._descriptorHeaps.cend());
-    cmdList->setDescriptorTables(heaps);
+    cmdList->setDescriptorTables(heaps, m_currentState._descriptorsList);
 
     if (m_boundState._renderTarget != m_currentState._renderTarget)
     {
@@ -631,7 +639,7 @@ bool D3DGraphicContext::perpareDraw(D3DGraphicsCommandList* cmdList)
         D3DGraphicContext::clearRenderTargets(cmdList, m_currentState._renderTarget, m_currentState._clearInfo);
     }
 
-    m_currentState._descriptorHeaps.clear();
+    m_currentState.resetDescriptorsState();
     return true;
 }
 

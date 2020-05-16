@@ -26,9 +26,9 @@ namespace dx3d
     {
         D3DDescriptorHeap* _heap;
         u32 _offset;
-        u32 _increment;
 
         static CD3DX12_CPU_DESCRIPTOR_HANDLE createCPUDescriptorHandle(D3DDescriptor* desc);
+        static CD3DX12_GPU_DESCRIPTOR_HANDLE createGPUDescriptorHandle(D3DDescriptor* desc);
 
         struct OffsetSort
         {
@@ -55,10 +55,13 @@ namespace dx3d
         D3D12_CPU_DESCRIPTOR_HANDLE getCPUHandle() const;
         D3D12_GPU_DESCRIPTOR_HANDLE getGPUHandle() const;
 
+        u32 getIncrement() const;
+
     private:
 
         ID3D12DescriptorHeap* m_heap;
         D3D12_DESCRIPTOR_HEAP_DESC m_desc;
+        u32 m_increment;
         void* m_ptr;
 
         std::set<D3DDescriptor*, D3DDescriptor::OffsetSort> m_freeDescriptors;
@@ -80,17 +83,17 @@ namespace dx3d
         explicit D3DDescriptorHeapManager(ID3D12Device* device) noexcept;
         ~D3DDescriptorHeapManager();
 
-        D3DDescriptor* acquireDescriptor(D3D12_DESCRIPTOR_HEAP_TYPE type, D3D12_DESCRIPTOR_HEAP_FLAGS flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE, u32 countDescriptors = 0);
+        D3DDescriptor* acquireDescriptor(D3D12_DESCRIPTOR_HEAP_TYPE type, D3D12_DESCRIPTOR_HEAP_FLAGS flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE);
         bool freeDescriptor(D3DDescriptor* desc);
+
+        D3DDescriptorHeap* allocateDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE type, u32 countDescriptors, D3D12_DESCRIPTOR_HEAP_FLAGS flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE);
+        void deallocDescriptorHeap(D3DDescriptorHeap* heap);
 
         void freeDescriptorHeaps();
 
     private:
 
         static u32 getDescriptorNumSize(D3D12_DESCRIPTOR_HEAP_TYPE type);
-
-        D3DDescriptorHeap* createDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE type, u32 countDescriptors, D3D12_DESCRIPTOR_HEAP_FLAGS flags);
-        bool destroyDescriptorHeap(D3DDescriptorHeap* heap);
 
         D3DDescriptor* getFreeDescriptor(D3D12_DESCRIPTOR_HEAP_TYPE type);
 
