@@ -4,6 +4,7 @@
 #ifdef D3D_RENDER
 #include "D3DDebug.h"
 #include "D3DFence.h"
+#include "D3DDeviceCaps.h"
 
 namespace v3d
 {
@@ -50,8 +51,47 @@ D3DGraphicsCommandList* D3DCommandListManager::acquireCommandList(D3DCommandList
         return static_cast<D3DGraphicsCommandList*>(commandList);
     }
 
-    bool useOwnAllocator = false;
-    if (useOwnAllocator)
+    if (D3DDeviceCaps::getInstance()->globalComandListAllocator)
+    {
+        if (!m_commandAllocator[type])
+        {
+            HRESULT result = m_device->CreateCommandAllocator(D3DCommandList::convertCommandListTypeToD3DType(type), IID_PPV_ARGS(&m_commandAllocator[type]));
+            if (FAILED(result))
+            {
+                LOG_ERROR("D3DCommandListManager::acquireCommandList CreateCommandAllocator is failed. Error %s", D3DDebug::stringError(result).c_str());
+                return nullptr;
+            }
+        }
+
+        ID3D12CommandList* d3dCommandList = nullptr;
+        {
+            HRESULT result = m_device->CreateCommandList(0, D3DCommandList::convertCommandListTypeToD3DType(type), m_commandAllocator[type], nullptr, IID_PPV_ARGS(&d3dCommandList));
+            if (FAILED(result))
+            {
+                LOG_ERROR("D3DCommandListManager::acquireCommandList CreateCommandList is failed. Error %s", D3DDebug::stringError(result).c_str());
+
+                return nullptr;
+            }
+        }
+
+        D3DGraphicsCommandList* commandList = new D3DGraphicsCommandList(m_device, type);
+        ID3D12GraphicsCommandList* d3dGraphicCommandList = static_cast<ID3D12GraphicsCommandList*>(d3dCommandList);
+        {
+            HRESULT result = d3dGraphicCommandList->Close();
+            if (FAILED(result))
+            {
+                LOG_ERROR("D3DCommandListManager::acquireCommandList Close commandList is failed. Error %s", D3DDebug::stringError(result).c_str());
+
+                return nullptr;
+            }
+        }
+
+        commandList->init(d3dGraphicCommandList, m_commandAllocator[type], false);
+        commandList->m_status = D3DCommandList::Status::Initial;
+
+        return commandList;
+    }
+    else
     {
         ID3D12CommandAllocator* d3dCommandAllocator = nullptr;
         {
@@ -90,46 +130,6 @@ D3DGraphicsCommandList* D3DCommandListManager::acquireCommandList(D3DCommandList
         }
 
         commandList->init(d3dGraphicCommandList, d3dCommandAllocator, true);
-        commandList->m_status = D3DCommandList::Status::Initial;
-
-        return commandList;
-    }
-    else
-    {
-        if (!m_commandAllocator[type])
-        {
-            HRESULT result = m_device->CreateCommandAllocator(D3DCommandList::convertCommandListTypeToD3DType(type), IID_PPV_ARGS(&m_commandAllocator[type]));
-            if (FAILED(result))
-            {
-                LOG_ERROR("D3DCommandListManager::acquireCommandList CreateCommandAllocator is failed. Error %s", D3DDebug::stringError(result).c_str());
-                return nullptr;
-            }
-        }
-
-        ID3D12CommandList* d3dCommandList = nullptr;
-        {
-            HRESULT result = m_device->CreateCommandList(0, D3DCommandList::convertCommandListTypeToD3DType(type), m_commandAllocator[type], nullptr, IID_PPV_ARGS(&d3dCommandList));
-            if (FAILED(result))
-            {
-                LOG_ERROR("D3DCommandListManager::acquireCommandList CreateCommandList is failed. Error %s", D3DDebug::stringError(result).c_str());
-
-                return nullptr;
-            }
-        }
-
-        D3DGraphicsCommandList* commandList = new D3DGraphicsCommandList(m_device, type);
-        ID3D12GraphicsCommandList* d3dGraphicCommandList = static_cast<ID3D12GraphicsCommandList*>(d3dCommandList);
-        {
-            HRESULT result = d3dGraphicCommandList->Close();
-            if (FAILED(result))
-            {
-                LOG_ERROR("D3DCommandListManager::acquireCommandList Close commandList is failed. Error %s", D3DDebug::stringError(result).c_str());
-
-                return nullptr;
-            }
-        }
-
-        commandList->init(d3dGraphicCommandList, m_commandAllocator[type], false);
         commandList->m_status = D3DCommandList::Status::Initial;
 
         return commandList;

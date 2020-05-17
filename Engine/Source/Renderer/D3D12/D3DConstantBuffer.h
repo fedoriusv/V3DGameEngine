@@ -30,6 +30,7 @@ namespace dx3d
         D3DBuffer* acquireConstanBuffer(u64 requestSize);
 
         void updateStatus();
+        void destroyConstantBuffers();
 
     private:
 

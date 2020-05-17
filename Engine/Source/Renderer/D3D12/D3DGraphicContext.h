@@ -4,6 +4,7 @@
 
 #ifdef D3D_RENDER
 #include "D3DConfiguration.h"
+#include "D3DRenderResource.h"
 #include "D3DSwapchain.h"
 #include "D3DCommandListManager.h"
 #include "D3DDescriptorHeap.h"
@@ -121,8 +122,15 @@ namespace dx3d
         D3DDescriptorHeapManager* m_descriptorHeapManager;
         D3DConstantBufferManager* m_constantBufferManager;
 
+        D3DResourceDeleter m_delayedDeleter;
+
         struct RenderState
         {
+            RenderState() noexcept
+            {
+                reset();
+            }
+
             D3DGraphicsCommandList* commandList()
             {
                 return _commandList;

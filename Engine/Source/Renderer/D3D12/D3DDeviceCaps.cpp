@@ -31,6 +31,8 @@ void D3DDeviceCaps::initialize(ID3D12Device* device)
             LOG_WARNING("D3DDeviceCaps::initialize: CheckFeatureSupport D3D12_FEATURE_D3D12_OPTIONS is failed. Error %s", D3DDebug::stringError(result).c_str());
         }
     }
+
+    globalComandListAllocator = false; //has memory leak when command lists reset
 }
 
 } //namespace dx3d

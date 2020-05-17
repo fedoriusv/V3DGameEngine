@@ -137,6 +137,8 @@ void D3DGraphicContext::presentFrame()
     //m_commandListManager->update();
 
     ++m_frameCounter;
+
+    m_delayedDeleter.update(false);
 }
 
 void D3DGraphicContext::submit(bool wait)
@@ -301,12 +303,36 @@ void D3DGraphicContext::setRenderTarget(const RenderPass::RenderPassInfo* render
 
 void D3DGraphicContext::removeFramebuffer(Framebuffer* framebuffer)
 {
-    ASSERT(false, "not impl");
+    D3DRenderTarget* dxRenderTarget = static_cast<D3DRenderTarget*>(framebuffer);
+    FramebufferManager* framebufferMgr = std::get<1>(m_renderTargetManager);
+    if (dxRenderTarget->isUsed())
+    {
+        m_delayedDeleter.requestToDelete(dxRenderTarget, [framebufferMgr, framebuffer]() -> void
+            {
+                framebufferMgr->removeFramebuffer(framebuffer);
+            });
+    }
+    else
+    {
+        framebufferMgr->removeFramebuffer(framebuffer);
+    }
 }
 
 void D3DGraphicContext::removeRenderPass(RenderPass* renderpass)
 {
-    ASSERT(false, "not impl");
+    D3DRenderState* dxRenderState = static_cast<D3DRenderState*>(renderpass);
+    RenderPassManager* renderpassMgr = std::get<0>(m_renderTargetManager);
+    if (dxRenderState->isUsed())
+    {
+        m_delayedDeleter.requestToDelete(dxRenderState, [renderpassMgr, renderpass]() -> void
+            {
+                renderpassMgr->removeRenderPass(renderpass);
+            });
+    }
+    else
+    {
+        renderpassMgr->removeRenderPass(renderpass);
+    }
 }
 
 void D3DGraphicContext::invalidateRenderPass()
@@ -330,7 +356,18 @@ void D3DGraphicContext::setPipeline(const Pipeline::PipelineGraphicInfo* pipelin
 
 void D3DGraphicContext::removePipeline(Pipeline* pipeline)
 {
-    ASSERT(false, "not impl");
+    D3DGraphicPipelineState* dxPipeline = static_cast<D3DGraphicPipelineState*>(pipeline);
+    if (dxPipeline->isUsed())
+    {
+        m_delayedDeleter.requestToDelete(dxPipeline, [this, pipeline]() -> void
+            {
+                m_pipelineManager->removePipeline(pipeline);
+            });
+    }
+    else
+    {
+        m_pipelineManager->removePipeline(pipeline);
+    }
 }
 
 Image* D3DGraphicContext::createImage(TextureTarget target, Format format, const core::Dimension3D& dimension, u32 layers, u32 mipmapLevel, TextureUsageFlags flags)
@@ -357,11 +394,23 @@ Image* D3DGraphicContext::createImage(Format format, const core::Dimension3D& di
 void D3DGraphicContext::removeImage(Image* image)
 {
     D3DImage* dxImage = static_cast<D3DImage*>(image);
-    ASSERT(!dxImage->isUsed(), "still used");
-    dxImage->notifyObservers();
+    if (dxImage->isUsed())
+    {
+        m_delayedDeleter.requestToDelete(dxImage, [dxImage]() -> void
+            {
+                dxImage->notifyObservers();
 
-    dxImage->destroy();
-    delete dxImage;
+                dxImage->destroy();
+                delete dxImage;
+            });
+    }
+    else
+    {
+        dxImage->notifyObservers();
+
+        dxImage->destroy();
+        delete dxImage;
+    }
 }
 
 Buffer* D3DGraphicContext::createBuffer(Buffer::BufferType type, u16 usageFlag, u64 size)
@@ -381,11 +430,23 @@ Buffer* D3DGraphicContext::createBuffer(Buffer::BufferType type, u16 usageFlag, 
 void D3DGraphicContext::removeBuffer(Buffer* buffer)
 {
     D3DBuffer* dxBuffer = static_cast<D3DBuffer*>(buffer);
-    ASSERT(!dxBuffer->isUsed(), "still used");
-    dxBuffer->notifyObservers();
+    if (dxBuffer->isUsed())
+    {
+        m_delayedDeleter.requestToDelete(dxBuffer, [dxBuffer]() -> void
+            {
+                dxBuffer->notifyObservers();
 
-    dxBuffer->destroy();
-    delete dxBuffer;
+                dxBuffer->destroy();
+                delete dxBuffer;
+            });
+    }
+    else
+    {
+        dxBuffer->notifyObservers();
+
+        dxBuffer->destroy();
+        delete dxBuffer;
+    }
 }
 
 void D3DGraphicContext::removeSampler(Sampler* sampler)
@@ -509,22 +570,32 @@ void D3DGraphicContext::destroy()
     D3DDebug::getInstance()->report(D3D12_RLDO_SUMMARY | D3D12_RLDO_IGNORE_INTERNAL);
 #endif
 
+    if (m_commandListManager)
+    {
+        m_commandListManager->waitAndClear();
+    }
+    m_delayedDeleter.update(true);
+
+
     if (m_constantBufferManager)
     {
+        m_constantBufferManager->updateStatus();
+        m_constantBufferManager->destroyConstantBuffers();
+
         delete m_constantBufferManager;
         m_constantBufferManager = nullptr;
-    }
-
-    //RenderPassManager
-    if (std::get<0>(m_renderTargetManager))
-    {
-        delete std::get<0>(m_renderTargetManager);
     }
 
     //FramebufferManager
     if (std::get<1>(m_renderTargetManager))
     {
         delete std::get<1>(m_renderTargetManager);
+    }
+
+    //RenderPassManager
+    if (std::get<0>(m_renderTargetManager))
+    {
+        delete std::get<0>(m_renderTargetManager);
     }
 
     if (m_pipelineManager)
@@ -535,21 +606,18 @@ void D3DGraphicContext::destroy()
 
     if (m_rootSignatureManager)
     {
+        m_rootSignatureManager->removeAllRootSignatures();
+
         delete m_rootSignatureManager;
         m_rootSignatureManager = nullptr;
     }
 
     if (m_commandListManager)
     {
-        m_commandListManager->waitAndClear();
-
         delete m_commandListManager;
         m_commandListManager = nullptr;
     }
 
-#if D3D_DEBUG
-    D3DDebug::getInstance()->report(D3D12_RLDO_SUMMARY | D3D12_RLDO_IGNORE_INTERNAL);
-#endif
     if (m_swapchain)
     {
         m_swapchain->destroy();

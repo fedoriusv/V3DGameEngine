@@ -546,11 +546,7 @@ bool D3DGraphicPipelineState::create(const PipelineGraphicInfo* pipelineInfo)
 void D3DGraphicPipelineState::destroy()
 {
     memset(m_bytecode, 0, sizeof(m_bytecode[ShaderType::ShaderType_Count]));
-
-    if (m_pipelineState)
-    {
-        m_pipelineState = nullptr;
-    }
+    SAFE_DELETE(m_pipelineState);
 }
 
 ID3D12PipelineState* D3DGraphicPipelineState::getHandle() const

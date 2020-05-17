@@ -139,7 +139,7 @@ D3DRootSignatureManager::D3DRootSignatureManager(ID3D12Device* device) noexcept
 D3DRootSignatureManager::~D3DRootSignatureManager()
 {
     LOG_DEBUG("D3DRootSignatureManager::~D3DRootSignatureManager destructor %llx", this);
-    //remove all sig
+    ASSERT(m_rootSignatures.empty(), "not empty");
 }
 
 ID3D12RootSignature* D3DRootSignatureManager::acquireRootSignature(const ShaderProgramDescription& desc)
@@ -162,6 +162,15 @@ ID3D12RootSignature* D3DRootSignatureManager::acquireRootSignature(const ShaderP
 
         return rootSignature;
     }
+}
+
+void D3DRootSignatureManager::removeAllRootSignatures()
+{
+    for (auto sig : m_rootSignatures)
+    {
+        SAFE_DELETE(sig.second);
+    }
+    m_rootSignatures.clear();
 }
 
 } //namespace dx3d

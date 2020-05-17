@@ -21,10 +21,7 @@ D3DConstantBufferManager::~D3DConstantBufferManager()
 {
     LOG_DEBUG("D3DConstantBufferManager::~D3DConstantBufferManager destructor %llx", this);
     ASSERT(m_usedConstantBuffers.empty(), "not empty");
-
-    //TODO
     ASSERT(m_freeConstantBuffers.empty(), "not empty");
-
 }
 
 D3DBuffer* D3DConstantBufferManager::acquireConstanBuffer(u64 requestSize)
@@ -69,6 +66,20 @@ void D3DConstantBufferManager::updateStatus()
             iter = m_usedConstantBuffers.erase(iter);
             m_freeConstantBuffers.push(buffer);
         }
+    }
+}
+
+void D3DConstantBufferManager::destroyConstantBuffers()
+{
+    ASSERT(m_usedConstantBuffers.empty(), "not empty");
+    while(!m_freeConstantBuffers.empty())
+    {
+        auto cbuffer = m_freeConstantBuffers.front();
+        m_freeConstantBuffers.pop();
+
+        ASSERT(!cbuffer->isUsed(), "still used");
+        cbuffer->destroy();
+        delete cbuffer;
     }
 }
 

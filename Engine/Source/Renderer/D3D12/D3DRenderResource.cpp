@@ -1,6 +1,8 @@
 #include "D3DRenderResource.h"
 
 #ifdef D3D_RENDER
+#include "D3DFence.h"
+
 namespace v3d
 {
 namespace renderer
@@ -48,6 +50,78 @@ void D3DRenderResource::releaseFences()
 bool D3DRenderResource::isUsed() const
 {
     return !m_fences.empty();
+}
+
+void D3DRenderResource::waitToComplete()
+{
+    for (auto fence : m_fences)
+    {
+        fence->wait();
+    }
+
+    releaseFences();
+}
+
+
+D3DResourceDeleter::~D3DResourceDeleter()
+{
+    ASSERT(m_delayedList.empty(), "should be empty");
+    ASSERT(m_deleterList.empty(), "should be empty");
+}
+
+void D3DResourceDeleter::requestToDelete(D3DRenderResource* resource, const std::function<void(void)>& deleter)
+{
+    m_delayedList.emplace(resource, deleter);
+}
+
+void D3DResourceDeleter::update(bool wait)
+{
+    ASSERT(m_deleterList.empty(), "should be empty");
+    std::queue<std::pair<D3DRenderResource*, std::function<void(void)>>> delayedList;
+    while (!m_delayedList.empty())
+    {
+        auto iter = m_delayedList.front();
+        m_delayedList.pop();
+
+        if (iter.first->isUsed())
+        {
+            if (wait)
+            {
+                iter.first->waitToComplete();
+                m_deleterList.push(iter);
+            }
+            else
+            {
+                delayedList.push(iter);
+            }
+        }
+        else
+        {
+            m_deleterList.push(iter);
+        }
+    }
+
+    ASSERT(m_delayedList.empty(), "should be empty");
+    m_delayedList.swap(delayedList);
+#if DEBUG
+    if (wait)
+    {
+        ASSERT(m_delayedList.empty(), "should be empty");
+    }
+#endif //DEBUG
+
+    garbageCollect();
+}
+
+void D3DResourceDeleter::garbageCollect()
+{
+    while (!m_deleterList.empty())
+    {
+        auto iter = m_deleterList.front();
+        m_deleterList.pop();
+
+        iter.second();
+    }
 }
 
 } //namespace dx3d

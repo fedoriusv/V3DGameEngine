@@ -30,6 +30,7 @@ namespace dx3d
         ~D3DRenderResource();
 
         bool isUsed() const;
+        void waitToComplete();
 
     private:
 
@@ -41,6 +42,30 @@ namespace dx3d
         friend D3DCommandList;
 
         std::set<D3DFence*> m_fences;
+    };
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    /**
+    * D3DResourceDeleter class. Vulkan Render side
+    */
+    class D3DResourceDeleter final
+    {
+    public:
+
+        D3DResourceDeleter() = default;
+        D3DResourceDeleter(const D3DResourceDeleter&) = delete;
+        ~D3DResourceDeleter();
+
+        void requestToDelete(D3DRenderResource* resource, const std::function<void(void)>& deleter);
+        void update(bool wait = false);
+
+    private:
+
+        void garbageCollect();
+
+        std::queue<std::pair<D3DRenderResource*, std::function<void(void)>>> m_delayedList;
+        std::queue<std::pair<D3DRenderResource*, std::function<void(void)>>> m_deleterList;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

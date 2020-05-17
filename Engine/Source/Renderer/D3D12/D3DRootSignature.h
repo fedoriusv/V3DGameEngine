@@ -41,6 +41,7 @@ namespace dx3d
         ~D3DRootSignatureManager();
 
         ID3D12RootSignature* acquireRootSignature(const ShaderProgramDescription& desc);
+        void removeAllRootSignatures();
 
     private:
 

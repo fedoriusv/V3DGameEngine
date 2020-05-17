@@ -27,6 +27,8 @@ namespace dx3d
         D3D12_FEATURE_DATA_ROOT_SIGNATURE rootSignatureVersion = {};
         D3D12_FEATURE_DATA_D3D12_OPTIONS featureOptions = {};
 
+        bool globalComandListAllocator = false;
+
     private:
 
         friend class D3DGraphicContext;
