@@ -6,7 +6,7 @@
 
 #ifdef D3D_RENDER
 #include "D3DConfiguration.h"
-#include "D3DRenderResource.h"
+#include "D3DResource.h"
 
 namespace v3d
 {
@@ -24,7 +24,7 @@ namespace dx3d
     /**
     * D3DRenderState final class. DirectX Render side
     */
-    class D3DRenderState final : public RenderPass, public D3DRenderResource
+    class D3DRenderState final : public RenderPass, public D3DResource
     {
     public:
 
@@ -46,7 +46,7 @@ namespace dx3d
     /**
     * D3DRenderTarget final class. DirectX Render side
     */
-    class D3DRenderTarget final : public Framebuffer, public D3DRenderResource
+    class D3DRenderTarget final : public Framebuffer, public D3DResource
     {
     public:
 
@@ -57,7 +57,7 @@ namespace dx3d
         void destroy() override;
 
         const std::vector<D3D12_CPU_DESCRIPTOR_HANDLE>& getColorDescHandles() const;
-        const D3D12_CPU_DESCRIPTOR_HANDLE& getDepthStensilDescHandles() const;
+        const D3D12_CPU_DESCRIPTOR_HANDLE& getDepthStencilDescHandles() const;
 
         const RenderPassDescription& getDescription() const;
         const std::vector<Image*>& getImages() const;
@@ -74,7 +74,7 @@ namespace dx3d
         std::vector<D3D12_CPU_DESCRIPTOR_HANDLE> m_colorRenderTargets;
 
         D3DDescriptorHeap* m_depthStencilDescriptorHeap;
-        D3D12_CPU_DESCRIPTOR_HANDLE m_depthStensilRenderTarget;
+        D3D12_CPU_DESCRIPTOR_HANDLE m_depthStencilRenderTarget;
     };
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////

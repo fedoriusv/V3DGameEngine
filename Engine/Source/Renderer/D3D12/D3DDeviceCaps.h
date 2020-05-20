@@ -28,6 +28,7 @@ namespace dx3d
         D3D12_FEATURE_DATA_D3D12_OPTIONS featureOptions = {};
 
         bool globalComandListAllocator = false;
+        bool immediateSubmitUpload = false;
 
     private:
 

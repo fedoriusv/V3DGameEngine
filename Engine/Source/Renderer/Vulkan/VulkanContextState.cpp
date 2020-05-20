@@ -337,7 +337,7 @@ void VulkanContextState::bindSampler(const VulkanSampler* sampler, const Shader:
     ASSERT(info._binding < VulkanDeviceCaps::getInstance()->maxDescriptorBindingIndex, "Binding index. Out of range");
 
     BindingState& bindingSlot = m_currentBindingSlots[info._set];
-    bindingSlot.bind(BindingType::BindingType_Sampler, info._binding, -1, 1, nullptr, sampler);
+    bindingSlot.bind(BindingType::BindingType_Sampler, info._binding, -1, 0, nullptr, sampler);
 }
 
 void VulkanContextState::updateConstantBuffer(const Shader::UniformBuffer& info, u32 offset, u32 size, const void* data)

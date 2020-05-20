@@ -38,7 +38,8 @@ D3DRootSignatureCreator::D3DRootSignatureCreator(const ShaderProgramDescription&
     if (D3DDeviceCaps::getInstance()->rootSignatureVersion.HighestVersion == D3D_ROOT_SIGNATURE_VERSION_1_1)
     {
         std::vector<CD3DX12_ROOT_PARAMETER1> rootParameters;
-        std::vector<CD3DX12_DESCRIPTOR_RANGE1> descRanges[ShaderType::ShaderType_Count];
+        std::vector<CD3DX12_DESCRIPTOR_RANGE1> shareDescRanges[ShaderType::ShaderType_Count];
+        std::vector<CD3DX12_DESCRIPTOR_RANGE1> samplerDescRanges[ShaderType::ShaderType_Count];
         for (auto shader : desc._shaders)
         {
             const Shader::ReflectionInfo& info = shader->getReflectionInfo();
@@ -48,7 +49,7 @@ D3DRootSignatureCreator::D3DRootSignatureCreator(const ShaderProgramDescription&
                 CD3DX12_DESCRIPTOR_RANGE1 range = {};
                 range.Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, cbBuffer._array, cbBuffer._binding, cbBuffer._set, D3D12_DESCRIPTOR_RANGE_FLAG_DATA_STATIC);
 
-                descRanges[shaderType].push_back(range);
+                shareDescRanges[shaderType].push_back(range);
             }
 
             for (auto image : info._images)
@@ -56,7 +57,7 @@ D3DRootSignatureCreator::D3DRootSignatureCreator(const ShaderProgramDescription&
                 CD3DX12_DESCRIPTOR_RANGE1 range = {};
                 range.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, image._array, image._binding, image._set, D3D12_DESCRIPTOR_RANGE_FLAG_DATA_STATIC);
 
-                descRanges[shaderType].push_back(range);
+                shareDescRanges[shaderType].push_back(range);
             }
 
             for (auto image : info._samplers)
@@ -64,15 +65,23 @@ D3DRootSignatureCreator::D3DRootSignatureCreator(const ShaderProgramDescription&
                 CD3DX12_DESCRIPTOR_RANGE1 range = {};
                 range.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER, 1, image._binding, image._set, D3D12_DESCRIPTOR_RANGE_FLAG_NONE);
 
-                descRanges[shaderType].push_back(range);
+                samplerDescRanges[shaderType].push_back(range);
             }
 
             ASSERT(info._sampledImages.empty(), "not supported");
 
-            if (!descRanges[shaderType].empty())
+            if (!shareDescRanges[shaderType].empty())
             {
                 CD3DX12_ROOT_PARAMETER1 param = {};
-                param.InitAsDescriptorTable(static_cast<UINT>(descRanges[shaderType].size()), descRanges[shaderType].data(), shaderVisibility(shaderType));
+                param.InitAsDescriptorTable(static_cast<UINT>(shareDescRanges[shaderType].size()), shareDescRanges[shaderType].data(), shaderVisibility(shaderType));
+
+                rootParameters.push_back(param);
+            }
+
+            if (!samplerDescRanges[shaderType].empty()) //saparate desc table
+            {
+                CD3DX12_ROOT_PARAMETER1 param = {};
+                param.InitAsDescriptorTable(static_cast<UINT>(samplerDescRanges[shaderType].size()), samplerDescRanges[shaderType].data(), shaderVisibility(shaderType));
 
                 rootParameters.push_back(param);
             }
@@ -96,7 +105,7 @@ D3DRootSignatureCreator::D3DRootSignatureCreator(const ShaderProgramDescription&
             {
                 layoutFlags &= ~D3D12_ROOT_SIGNATURE_FLAG_DENY_VERTEX_SHADER_ROOT_ACCESS;
             }
-            else if (param.ShaderVisibility == D3D12_SHADER_VISIBILITY_VERTEX)
+            else if (param.ShaderVisibility == D3D12_SHADER_VISIBILITY_PIXEL)
             {
                 layoutFlags &= ~D3D12_ROOT_SIGNATURE_FLAG_DENY_PIXEL_SHADER_ROOT_ACCESS;
             }
@@ -146,13 +155,9 @@ ID3D12RootSignature* D3DRootSignatureManager::acquireRootSignature(const ShaderP
 {
     D3DRootSignatureCreator signatureCreator(desc);
     auto rooSignature = m_rootSignatures.emplace(signatureCreator.m_hash, nullptr);
-    if (!rooSignature.second)
+    if (rooSignature.second)
     {
-        return rooSignature.first->second;
-    }
-    else
-    {
-        ID3D12RootSignature* rootSignature = rooSignature.first->second;
+        ID3D12RootSignature* rootSignature = nullptr;
         HRESULT result = m_device->CreateRootSignature(0, signatureCreator.m_signature->GetBufferPointer(), signatureCreator.m_signature->GetBufferSize(), IID_PPV_ARGS(&rootSignature));
         if (FAILED(result))
         {
@@ -160,8 +165,10 @@ ID3D12RootSignature* D3DRootSignatureManager::acquireRootSignature(const ShaderP
             return nullptr;
         }
 
-        return rootSignature;
+        rooSignature.first->second = rootSignature;
     }
+
+    return rooSignature.first->second;
 }
 
 void D3DRootSignatureManager::removeAllRootSignatures()

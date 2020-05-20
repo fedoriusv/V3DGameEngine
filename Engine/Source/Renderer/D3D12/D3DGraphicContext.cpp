@@ -97,10 +97,7 @@ void D3DGraphicContext::beginFrame()
 #endif //D3D_DEBUG
 
     ASSERT(!m_currentState.commandList(), "not nullptr");
-    m_currentState._commandList = m_commandListManager->acquireCommandList(D3DCommandList::Type::Direct);
-    m_currentState.commandList()->prepare();
-
-    //m_currentState.commandList()->transition(m_swapchain->getSwapchainImage(), D3D12_RESOURCE_STATE_RENDER_TARGET);
+   D3DGraphicContext::getOrAcquireCurrentCommandList();
 }
 
 void D3DGraphicContext::endFrame()
@@ -115,11 +112,10 @@ void D3DGraphicContext::endFrame()
     {
         D3DGraphicContext::switchRenderTargetTransitionToFinal(cmdList, m_boundState._renderTarget);
     }
-    //cmdList->transition(m_swapchain->getSwapchainImage(), D3D12_RESOURCE_STATE_PRESENT);
     cmdList->close();
 
     m_commandListManager->execute(cmdList, false);
-    m_currentState.reset();
+    m_currentState.setCommandList(nullptr);
 }
 
 void D3DGraphicContext::presentFrame()
@@ -127,18 +123,15 @@ void D3DGraphicContext::presentFrame()
 #if D3D_DEBUG
     LOG_DEBUG("D3DGraphicContext::presentFrame %d", m_frameCounter);
 #endif //D3D_DEBUG
-
     m_swapchain->present();
 
     m_boundState.reset();
     m_currentState.update(m_descriptorHeapManager);
     ASSERT(!m_currentState.commandList(), "not nullptr");
     m_constantBufferManager->updateStatus();
-    //m_commandListManager->update();
+    m_delayedDeleter.update(false);
 
     ++m_frameCounter;
-
-    m_delayedDeleter.update(false);
 }
 
 void D3DGraphicContext::submit(bool wait)
@@ -148,8 +141,8 @@ void D3DGraphicContext::submit(bool wait)
         D3DGraphicsCommandList* cmdList = m_currentState.commandList();
         cmdList->close();
         m_commandListManager->execute(cmdList, wait);
+        m_currentState.setCommandList(nullptr);
     }
-    m_currentState.reset();
 }
 
 void D3DGraphicContext::draw(const StreamBufferDescription& desc, u32 firstVertex, u32 vertexCount, u32 firstInstance, u32 instanceCount)
@@ -177,6 +170,21 @@ void D3DGraphicContext::drawIndexed(const StreamBufferDescription& desc, u32 fir
 #if D3D_DEBUG
     LOG_DEBUG("D3DGraphicContext::drawIndexed");
 #endif //D3D_DEBUG
+    ASSERT(m_currentState.commandList(), "nullptr");
+    D3DGraphicsCommandList* cmdList = m_currentState.commandList();
+
+    if (perpareDraw(cmdList))
+    {
+        if (m_boundState._bufferDesc != desc)
+        {
+            cmdList->setIndexState(desc._indices, desc._indexType == IndexType_32 ? DXGI_FORMAT_R32_UINT : DXGI_FORMAT_R16_UINT);
+            cmdList->setVertexState(0, m_currentState._pipeline->getBuffersStrides(), desc._vertices);
+
+            m_boundState._bufferDesc = desc;
+        }
+
+        cmdList->drawIndexed(indexCount, instanceCount, firstIndex, 0, firstInstance);
+    }
 }
 
 void D3DGraphicContext::bindImage(const Shader* shader, u32 bindIndex, const Image* image)
@@ -184,6 +192,7 @@ void D3DGraphicContext::bindImage(const Shader* shader, u32 bindIndex, const Ima
 #if D3D_DEBUG
     LOG_DEBUG("D3DGraphicContext::bindImage");
 #endif //D3D_DEBUG
+    //TODO
 }
 
 void D3DGraphicContext::bindSampler(const Shader* shader, u32 bindIndex, const Sampler::SamplerInfo* samplerInfo)
@@ -191,6 +200,7 @@ void D3DGraphicContext::bindSampler(const Shader* shader, u32 bindIndex, const S
 #if D3D_DEBUG
     LOG_DEBUG("D3DGraphicContext::bindSampler");
 #endif //D3D_DEBUG
+    //TODO
 }
 
 void D3DGraphicContext::bindSampledImage(const Shader* shader, u32 bindIndex, const Image* image, const Sampler::SamplerInfo* samplerInfo)
@@ -206,12 +216,15 @@ void D3DGraphicContext::bindUniformsBuffer(const Shader* shader, u32 bindIndex, 
 #if D3D_DEBUG
     LOG_DEBUG("D3DGraphicContext::bindUniformsBuffer");
 #endif //D3D_DEBUG
+    D3DGraphicsCommandList* cmdList = m_currentState.commandList();
+    if (!cmdList)
+    {
+        return;
+    }
 
     D3DBuffer* constantBuffer = m_constantBufferManager->acquireConstanBuffer(size);
     ASSERT(constantBuffer, "nulllptr");
     constantBuffer->upload(this, offset, size, data);
-
-    D3DGraphicsCommandList* cmdList = m_currentState.commandList();
     cmdList->setUsed(constantBuffer, 0);
 
     D3DDescriptor* descriptor = m_descriptorHeapManager->acquireDescriptor(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE);
@@ -459,10 +472,26 @@ const DeviceCaps* D3DGraphicContext::getDeviceCaps() const
     return D3DDeviceCaps::getInstance();
 }
 
-D3DCommandList* D3DGraphicContext::getCurrentCommandList() const
+D3DCommandList* D3DGraphicContext::getOrAcquireCurrentCommandList(D3DCommandList::Type type)
 {
-    ASSERT(m_currentState._commandList, "nullptr");
-    return m_currentState._commandList;
+    if (!m_currentState.commandList())
+    {
+        m_currentState.setCommandList(m_commandListManager->acquireCommandList(type));
+        m_currentState.commandList()->prepare();
+    }
+
+    ASSERT(m_currentState.commandList(), "nullptr");
+    return m_currentState.commandList();
+}
+
+D3DCommandListManager* D3DGraphicContext::getCommandListManager() const
+{
+    return m_commandListManager;
+}
+
+D3DResourceDeleter& D3DGraphicContext::getResourceDeleter()
+{
+    return m_delayedDeleter;
 }
 
 bool D3DGraphicContext::initialize()
@@ -569,13 +598,10 @@ void D3DGraphicContext::destroy()
 #if D3D_DEBUG
     D3DDebug::getInstance()->report(D3D12_RLDO_SUMMARY | D3D12_RLDO_IGNORE_INTERNAL);
 #endif
-
     if (m_commandListManager)
     {
         m_commandListManager->waitAndClear();
     }
-    m_delayedDeleter.update(true);
-
 
     if (m_constantBufferManager)
     {
@@ -585,6 +611,8 @@ void D3DGraphicContext::destroy()
         delete m_constantBufferManager;
         m_constantBufferManager = nullptr;
     }
+    m_currentState.update(m_descriptorHeapManager);
+    m_delayedDeleter.update(true);
 
     //FramebufferManager
     if (std::get<1>(m_renderTargetManager))
@@ -625,15 +653,16 @@ void D3DGraphicContext::destroy()
         delete m_swapchain;
         m_swapchain = nullptr;
     }
+    SAFE_DELETE(m_commandQueue);
 
     if (m_descriptorHeapManager)
     {
         delete m_descriptorHeapManager;
         m_descriptorHeapManager = nullptr;
     }
-
-    SAFE_DELETE(m_commandQueue);
-
+#if D3D_DEBUG
+    D3DDebug::getInstance()->report(D3D12_RLDO_DETAIL | D3D12_RLDO_IGNORE_INTERNAL);
+#endif
 #if D3D_DEBUG
     D3DDebug::getInstance()->freeInstance();
 #endif
@@ -794,7 +823,7 @@ void D3DGraphicContext::clearRenderTargets(D3DGraphicsCommandList* cmdList, D3DR
                 };
 
                 D3D12_CLEAR_FLAGS flag = (D3D12_CLEAR_FLAGS)clearFlags;
-                cmdList->clearRenderTarget(target->getDepthStensilDescHandles(), clearInfo._depth, clearInfo._stencil, flag, rect);
+                cmdList->clearRenderTarget(target->getDepthStencilDescHandles(), clearInfo._depth, clearInfo._stencil, flag, rect);
                 cmdList->setUsed(target, 0);
             }
         }

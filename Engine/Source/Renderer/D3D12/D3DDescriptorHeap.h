@@ -4,7 +4,7 @@
 
 #ifdef D3D_RENDER
 #include "D3DConfiguration.h"
-#include "D3DRenderResource.h"
+#include "D3DResource.h"
 
 namespace v3d
 {
@@ -22,7 +22,7 @@ namespace dx3d
     /**
     * D3DDescriptorHeapHandle struct. DirectX Render side
     */
-    struct D3DDescriptor : public D3DRenderResource
+    struct D3DDescriptor : public D3DResource
     {
         D3DDescriptorHeap* _heap;
         u32 _offset;

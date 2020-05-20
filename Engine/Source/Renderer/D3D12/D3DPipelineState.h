@@ -5,7 +5,7 @@
 
 #ifdef D3D_RENDER
 #include "D3DConfiguration.h"
-#include "D3DRenderResource.h"
+#include "D3DResource.h"
 
 namespace v3d
 {
@@ -22,7 +22,7 @@ namespace dx3d
     /**
     * D3DGraphicPipelineState final class. DirectX Render side
     */
-    class D3DGraphicPipelineState final : public Pipeline, public D3DRenderResource
+    class D3DGraphicPipelineState final : public Pipeline, public D3DResource
     {
     public:
 

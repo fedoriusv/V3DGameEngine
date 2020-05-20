@@ -16,7 +16,7 @@ namespace dx3d
     class D3DFence;
     class D3DGraphicPipelineState;
     class D3DRenderTarget;
-    class D3DRenderResource;
+    class D3DResource;
     struct D3DDescriptor;
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -59,7 +59,7 @@ namespace dx3d
 
         void destroy();
 
-        void setUsed(D3DRenderResource* resource, u64 frame);
+        void setUsed(D3DResource* resource, u64 frame);
 
     protected:
 
@@ -81,7 +81,7 @@ namespace dx3d
         bool checkOnComplete();
         
         D3DFence* m_fence;
-        std::list<D3DRenderResource*> m_resources;
+        std::list<D3DResource*> m_resources;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -103,7 +103,7 @@ namespace dx3d
         void clearRenderTarget(D3D12_CPU_DESCRIPTOR_HANDLE renderTargetView, f32 depth, u32 stencil, D3D12_CLEAR_FLAGS flags, const std::vector<D3D12_RECT>& rect);
 
         void draw(u32 vertexCountPerInstance,u32 instanceCount, u32 startVertexLocation, u32 startInstanceLocation);
-        void drawIndexed();
+        void drawIndexed(u32 indexCountPerInstance, u32 instanceCount, u32 startIndexLocation, u32 baseVertexLocation, u32 startInstanceLocation);
 
         void setViewport(const std::vector<D3D12_VIEWPORT>& viewport);
         void setScissor(const std::vector<D3D12_RECT>& scissors);
@@ -114,7 +114,7 @@ namespace dx3d
         void setDescriptorTables(const std::vector<ID3D12DescriptorHeap*>& heaps, const std::map<u32, D3DDescriptor*>& desc);
 
         void setVertexState(u32 startSlot, const std::vector<u32>& strides, const std::vector<Buffer*>& buffers);
-        void setIndexState();
+        void setIndexState(Buffer* buffer, DXGI_FORMAT format);
 
         void transition(D3DImage* image, D3D12_RESOURCE_STATES state);
 

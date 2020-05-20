@@ -26,6 +26,9 @@ ShaderSourceFileLoader::ShaderSourceFileLoader(const renderer::Context* context,
     {
 #ifdef USE_SPIRV
         {
+#if USE_STRING_ID_SHADER
+            ASSERT(!(flags & ShaderSourceBuildFlag::ShaderSource_OptimisationPerformance), "define can't work with the flag because optimisation removes names from spirv");
+#endif
             renderer::ShaderHeader header;
             header._contentType = renderer::ShaderHeader::ShaderResource::ShaderResource_Source;
             header._shaderLang = renderer::ShaderHeader::ShaderLang::ShaderLang_GLSL;

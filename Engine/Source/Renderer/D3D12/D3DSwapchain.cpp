@@ -133,6 +133,7 @@ void D3DSwapchain::destroy()
     }
     m_renderTargets.clear();
     m_heapManager->deallocDescriptorHeap(m_descriptorHeap);
+    m_descriptorHeap = nullptr;
 
 #if D3D_DEBUG
     D3DDebug::getInstance()->report(D3D12_RLDO_SUMMARY | D3D12_RLDO_IGNORE_INTERNAL);

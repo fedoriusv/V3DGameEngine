@@ -39,6 +39,8 @@ D3DRenderTarget::D3DRenderTarget(ID3D12Device* device, D3DDescriptorHeapManager*
 
     , m_colorDescriptorHeap(nullptr)
     , m_depthStencilDescriptorHeap(nullptr)
+
+    , m_depthStencilRenderTarget()
 {
     LOG_DEBUG("D3DRenderTarget::D3DRenderTarget constructor %llx", this);
 }
@@ -115,7 +117,7 @@ bool D3DRenderTarget::create(const RenderPass* pass)
             CD3DX12_CPU_DESCRIPTOR_HANDLE depthStencilHandle(m_depthStencilDescriptorHeap->getCPUHandle());
             m_device->CreateDepthStencilView(dxImage->getResource(), &viewDesc, depthStencilHandle);
 
-            m_depthStensilRenderTarget = depthStencilHandle;
+            m_depthStencilRenderTarget = depthStencilHandle;
         }
 
         ++index;
@@ -135,9 +137,9 @@ const std::vector<D3D12_CPU_DESCRIPTOR_HANDLE>& D3DRenderTarget::getColorDescHan
     return m_colorRenderTargets;
 }
 
-const D3D12_CPU_DESCRIPTOR_HANDLE& D3DRenderTarget::getDepthStensilDescHandles() const
+const D3D12_CPU_DESCRIPTOR_HANDLE& D3DRenderTarget::getDepthStencilDescHandles() const
 {
-    return m_depthStensilRenderTarget;
+    return m_depthStencilRenderTarget;
 }
 
 const RenderPassDescription& D3DRenderTarget::getDescription() const

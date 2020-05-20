@@ -101,7 +101,8 @@ D3DDebug::D3DDebug() noexcept
 
 D3DDebug::~D3DDebug()
 {
-    SAFE_DELETE(m_debugDevice);
+    //The last ptr inside ID3D12Device
+    m_debugDevice->Release();
 }
 
 bool D3DDebug::attachDevice(ID3D12Device* device, D3D12_DEBUG_FEATURE flags)

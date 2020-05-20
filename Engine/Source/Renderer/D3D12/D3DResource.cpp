@@ -1,4 +1,4 @@
-#include "D3DRenderResource.h"
+#include "D3DResource.h"
 
 #ifdef D3D_RENDER
 #include "D3DFence.h"
@@ -10,16 +10,16 @@ namespace renderer
 namespace dx3d
 {
 
-D3DRenderResource::D3DRenderResource() noexcept
+D3DResource::D3DResource() noexcept
 {
 }
 
-D3DRenderResource::~D3DRenderResource()
+D3DResource::~D3DResource()
 {
     ASSERT(!isUsed(), "still is used");
 }
 
-bool D3DRenderResource::attachFence(D3DFence* fence, u64 frame)
+bool D3DResource::attachFence(D3DFence* fence, u64 frame)
 {
     auto iter = m_fences.insert(fence);
     if (iter.second)
@@ -30,7 +30,7 @@ bool D3DRenderResource::attachFence(D3DFence* fence, u64 frame)
     return false;
 }
 
-bool D3DRenderResource::detachFence(D3DFence* fence)
+bool D3DResource::detachFence(D3DFence* fence)
 {
     auto iter = m_fences.find(fence);
     if (iter != m_fences.end())
@@ -42,17 +42,17 @@ bool D3DRenderResource::detachFence(D3DFence* fence)
     return false;
 }
 
-void D3DRenderResource::releaseFences()
+void D3DResource::releaseFences()
 {
     m_fences.clear();
 }
 
-bool D3DRenderResource::isUsed() const
+bool D3DResource::isUsed() const
 {
     return !m_fences.empty();
 }
 
-void D3DRenderResource::waitToComplete()
+void D3DResource::waitToComplete()
 {
     for (auto fence : m_fences)
     {
@@ -69,7 +69,7 @@ D3DResourceDeleter::~D3DResourceDeleter()
     ASSERT(m_deleterList.empty(), "should be empty");
 }
 
-void D3DResourceDeleter::requestToDelete(D3DRenderResource* resource, const std::function<void(void)>& deleter)
+void D3DResourceDeleter::requestToDelete(D3DResource* resource, const std::function<void(void)>& deleter)
 {
     m_delayedList.emplace(resource, deleter);
 }
@@ -77,7 +77,7 @@ void D3DResourceDeleter::requestToDelete(D3DRenderResource* resource, const std:
 void D3DResourceDeleter::update(bool wait)
 {
     ASSERT(m_deleterList.empty(), "should be empty");
-    std::queue<std::pair<D3DRenderResource*, std::function<void(void)>>> delayedList;
+    std::queue<std::pair<D3DResource*, std::function<void(void)>>> delayedList;
     while (!m_delayedList.empty())
     {
         auto iter = m_delayedList.front();
@@ -122,6 +122,18 @@ void D3DResourceDeleter::garbageCollect()
 
         iter.second();
     }
+}
+
+
+UploadResource::UploadResource(ID3D12Resource* resource) noexcept
+    : m_resource(resource)
+{
+}
+
+UploadResource::~UploadResource()
+{
+    ASSERT(!isUsed(), "still is used");
+    SAFE_DELETE(m_resource);
 }
 
 } //namespace dx3d

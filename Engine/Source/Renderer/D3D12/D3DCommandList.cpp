@@ -2,7 +2,7 @@
 #include "Utils/Logger.h"
 
 #ifdef D3D_RENDER
-#include "D3DRenderResource.h"
+#include "D3DResource.h"
 #include "D3DDebug.h"
 #include "D3DImage.h"
 #include "D3DBuffer.h"
@@ -67,7 +67,7 @@ void D3DCommandList::destroy()
     }
 }
 
-void D3DCommandList::setUsed(D3DRenderResource* resource, u64 frame)
+void D3DCommandList::setUsed(D3DResource* resource, u64 frame)
 {
     resource->attachFence(m_fence, frame);
     m_resources.push_back(resource);
@@ -117,7 +117,7 @@ bool D3DCommandList::checkOnComplete()
 {
     if (m_fence->completed())
     {
-        for (D3DRenderResource* resource : m_resources)
+        for (D3DResource* resource : m_resources)
         {
             resource->detachFence(m_fence);
         }
@@ -175,7 +175,7 @@ void D3DGraphicsCommandList::setRenderTarget(D3DRenderTarget* target)
     ID3D12GraphicsCommandList* cmdList = D3DGraphicsCommandList::getHandle();
     if (target->getDescription()._hasDepthStencilAttahment)
     {
-        cmdList->OMSetRenderTargets(static_cast<UINT>(target->getColorDescHandles().size()), target->getColorDescHandles().data(), true, &target->getDepthStensilDescHandles());
+        cmdList->OMSetRenderTargets(static_cast<UINT>(target->getColorDescHandles().size()), target->getColorDescHandles().data(), true, &target->getDepthStencilDescHandles());
     }
     else
     {
@@ -234,8 +234,20 @@ void D3DGraphicsCommandList::setVertexState(u32 startSlot, const std::vector<u32
     cmdList->IASetVertexBuffers(startSlot, static_cast<u32>(dxBuffers.size()), dxBuffers.data());
 }
 
-void D3DGraphicsCommandList::setIndexState()
+void D3DGraphicsCommandList::setIndexState(Buffer* buffer, DXGI_FORMAT format)
 {
+    ASSERT(m_commandList, "nullptr");
+    ASSERT(m_status == Status::ReadyToRecord, "not record");
+
+    D3DBuffer* dxBuffer = static_cast<D3DBuffer*>(buffer);
+
+    D3D12_INDEX_BUFFER_VIEW bufferView = {};
+    bufferView.BufferLocation = dxBuffer->getGPUAddress();
+    bufferView.SizeInBytes = static_cast<UINT>(dxBuffer->getSize());
+    bufferView.Format = format;
+
+    ID3D12GraphicsCommandList* cmdList = D3DGraphicsCommandList::getHandle();
+    cmdList->IASetIndexBuffer(&bufferView);
 }
 
 void D3DGraphicsCommandList::transition(D3DImage* image, D3D12_RESOURCE_STATES state)
@@ -295,13 +307,13 @@ void D3DGraphicsCommandList::draw(u32 vertexCountPerInstance, u32 instanceCount,
     cmdList->DrawInstanced(vertexCountPerInstance, instanceCount, startVertexLocation, startInstanceLocation);
 }
 
-void D3DGraphicsCommandList::drawIndexed()
+void D3DGraphicsCommandList::drawIndexed(u32 indexCountPerInstance, u32 instanceCount, u32 startIndexLocation, u32 baseVertexLocation, u32 startInstanceLocation)
 {
     ASSERT(m_commandList, "nullptr");
     ASSERT(m_status == Status::ReadyToRecord, "not record");
     ID3D12GraphicsCommandList* cmdList = D3DGraphicsCommandList::getHandle();
 
-    //cmdList->DrawIndexedInstanced();
+    cmdList->DrawIndexedInstanced( indexCountPerInstance, instanceCount, startIndexLocation, baseVertexLocation, startInstanceLocation);
 }
 
 void D3DGraphicsCommandList::setViewport(const std::vector<D3D12_VIEWPORT>& viewport)

@@ -4,7 +4,7 @@
 
 #ifdef D3D_RENDER
 #include "D3DConfiguration.h"
-#include "D3DRenderResource.h"
+#include "D3DResource.h"
 #include "D3DSwapchain.h"
 #include "D3DCommandListManager.h"
 #include "D3DDescriptorHeap.h"
@@ -79,7 +79,10 @@ namespace dx3d
 
         const DeviceCaps* getDeviceCaps() const override;
 
-        D3DCommandList* getCurrentCommandList() const;
+        D3DCommandList* getOrAcquireCurrentCommandList(D3DCommandList::Type type = D3DCommandList::Direct);
+        D3DCommandListManager* getCommandListManager() const;
+
+        D3DResourceDeleter& getResourceDeleter();
 
     private:
 
@@ -100,7 +103,7 @@ namespace dx3d
 
         static void switchRenderTargetTransitionToWrite(D3DGraphicsCommandList* cmdList, D3DRenderTarget* target);
         static void switchRenderTargetTransitionToFinal(D3DGraphicsCommandList* cmdList, D3DRenderTarget* target);
-        
+
         IDXGIFactory4*      m_factory;
         IDXGIAdapter1*      m_adapter;
         ID3D12Device*       m_device;
@@ -134,6 +137,11 @@ namespace dx3d
             D3DGraphicsCommandList* commandList()
             {
                 return _commandList;
+            }
+
+            void setCommandList(D3DGraphicsCommandList* cmdList)
+            {
+                _commandList = cmdList;
             }
 
             void reset()
@@ -184,18 +192,21 @@ namespace dx3d
                 _commandList->setUsed(desc, 0);
             }
 
-            D3DGraphicsCommandList* _commandList;
+            D3DGraphicPipelineState* _pipeline;
+            D3DRenderTarget*         _renderTarget;
+            StreamBufferDescription  _bufferDesc;
+
+            Framebuffer::ClearValueInfo _clearInfo;
 
             std::set<ID3D12DescriptorHeap*> _descriptorHeaps;
             std::map<u32, D3DDescriptor*> _descriptorsList;
 
             std::list<D3DDescriptor*> _descriptorsGeneric;
 
-            D3DGraphicPipelineState* _pipeline;
-            D3DRenderTarget*         _renderTarget;
-            StreamBufferDescription  _bufferDesc;
+        private:
 
-            Framebuffer::ClearValueInfo _clearInfo;
+            D3DGraphicsCommandList* _commandList;
+
         };
         RenderState m_currentState;
         RenderState m_boundState;

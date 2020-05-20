@@ -6,7 +6,7 @@
 
 #ifdef D3D_RENDER
 #include "D3DConfiguration.h"
-#include "D3DRenderResource.h"
+#include "D3DResource.h"
 
 namespace v3d
 {
@@ -19,7 +19,7 @@ namespace dx3d
     /**
     * D3DBuffer final class. DirectX Render side
     */
-    class D3DBuffer final : public Buffer, public D3DRenderResource
+    class D3DBuffer final : public Buffer, public D3DResource
     {
     public:
 

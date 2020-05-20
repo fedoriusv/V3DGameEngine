@@ -337,7 +337,41 @@ VulkanPipelineLayoutManager::DescriptorSetLayoutCreator::DescriptorSetLayoutCrea
                 descriptorSetLayoutBindings.push_back(descriptorSetLayoutBinding);
             }
 
-            for (auto& image : info._sampledImages)
+            for (auto& sampledImage : info._sampledImages)
+            {
+                if (sampledImage._set != setIndex)
+                {
+                    continue;
+                }
+
+                VkDescriptorSetLayoutBinding descriptorSetLayoutBinding;
+                descriptorSetLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+                descriptorSetLayoutBinding.binding = sampledImage._binding;
+                descriptorSetLayoutBinding.stageFlags = convertShaderTypeToVkStage((ShaderType)type);
+                descriptorSetLayoutBinding.descriptorCount = sampledImage._array;
+                descriptorSetLayoutBinding.pImmutableSamplers = nullptr;
+
+                descriptorSetLayoutBindings.push_back(descriptorSetLayoutBinding);
+            }
+
+            for (auto& sampler : info._samplers)
+            {
+                if (sampler._set != setIndex)
+                {
+                    continue;
+                }
+
+                VkDescriptorSetLayoutBinding descriptorSetLayoutBinding;
+                descriptorSetLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLER;
+                descriptorSetLayoutBinding.binding = sampler._binding;
+                descriptorSetLayoutBinding.stageFlags = convertShaderTypeToVkStage((ShaderType)type);
+                descriptorSetLayoutBinding.descriptorCount = 1;
+                descriptorSetLayoutBinding.pImmutableSamplers = nullptr;
+
+                descriptorSetLayoutBindings.push_back(descriptorSetLayoutBinding);
+            }
+
+            for (auto& image : info._images)
             {
                 if (image._set != setIndex)
                 {
@@ -345,7 +379,7 @@ VulkanPipelineLayoutManager::DescriptorSetLayoutCreator::DescriptorSetLayoutCrea
                 }
 
                 VkDescriptorSetLayoutBinding descriptorSetLayoutBinding;
-                descriptorSetLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER; //VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE
+                descriptorSetLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
                 descriptorSetLayoutBinding.binding = image._binding;
                 descriptorSetLayoutBinding.stageFlags = convertShaderTypeToVkStage((ShaderType)type);
                 descriptorSetLayoutBinding.descriptorCount = image._array;

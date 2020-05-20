@@ -3,6 +3,7 @@
 
 #ifdef D3D_RENDER
 #include "D3DDebug.h"
+#include "D3DImage.h"
 
 namespace v3d
 {
@@ -32,7 +33,29 @@ void D3DDeviceCaps::initialize(ID3D12Device* device)
         }
     }
 
+    for (u32 i = 0; i < Format::Format_Count; ++i)
+    {
+        D3D12_FEATURE_DATA_FORMAT_SUPPORT featureData = {};
+        featureData.Format = D3DImage::convertImageFormatToD3DFormat((Format)i);
+        if (featureData.Format == DXGI_FORMAT_UNKNOWN)
+        {
+            continue;
+        }
+
+        HRESULT result = device->CheckFeatureSupport(D3D12_FEATURE_FORMAT_SUPPORT, &featureData, sizeof(featureData));
+        if (FAILED(result))
+        {
+            LOG_WARNING("D3DDeviceCaps::initialize: CheckFeatureSupport D3D12_FEATURE_FORMAT_SUPPORT is failed. Error %s", D3DDebug::stringError(result).c_str());
+        }
+        else
+        {
+            m_imageFormatSupport[i][TilingType_Optimal]._supportSampled = (featureData.Support1 & D3D12_FORMAT_SUPPORT1_SHADER_SAMPLE) ? true : false;
+            m_imageFormatSupport[i][TilingType_Optimal]._supportAttachment = ((featureData.Support1 & D3D12_FORMAT_SUPPORT1_RENDER_TARGET) || (featureData.Support1 & D3D12_FORMAT_SUPPORT1_DEPTH_STENCIL)) ? true : false;
+        }
+    }
+
     globalComandListAllocator = false; //has memory leak when command lists reset
+    ASSERT(!immediateSubmitUpload, "not impl");
 }
 
 } //namespace dx3d

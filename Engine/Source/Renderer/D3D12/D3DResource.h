@@ -19,15 +19,15 @@ namespace dx3d
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
-    * D3DRenderResource final class. DirectX Render side
+    * D3DResource final class. DirectX Render side
     */
-    class D3DRenderResource
+    class D3DResource
     {
 
     public:
 
-        explicit D3DRenderResource() noexcept;
-        ~D3DRenderResource();
+        explicit D3DResource() noexcept;
+        ~D3DResource();
 
         bool isUsed() const;
         void waitToComplete();
@@ -57,15 +57,29 @@ namespace dx3d
         D3DResourceDeleter(const D3DResourceDeleter&) = delete;
         ~D3DResourceDeleter();
 
-        void requestToDelete(D3DRenderResource* resource, const std::function<void(void)>& deleter);
+        void requestToDelete(D3DResource* resource, const std::function<void(void)>& deleter);
         void update(bool wait = false);
 
     private:
 
         void garbageCollect();
 
-        std::queue<std::pair<D3DRenderResource*, std::function<void(void)>>> m_delayedList;
-        std::queue<std::pair<D3DRenderResource*, std::function<void(void)>>> m_deleterList;
+        std::queue<std::pair<D3DResource*, std::function<void(void)>>> m_delayedList;
+        std::queue<std::pair<D3DResource*, std::function<void(void)>>> m_deleterList;
+    };
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    class UploadResource : public D3DResource
+    {
+    public:
+
+        explicit  UploadResource(ID3D12Resource* resource) noexcept;
+        ~UploadResource();
+
+    private:
+
+        ID3D12Resource* m_resource;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

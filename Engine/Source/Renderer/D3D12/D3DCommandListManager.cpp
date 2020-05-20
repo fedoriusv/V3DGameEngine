@@ -17,7 +17,7 @@ D3DCommandListManager::D3DCommandListManager(ID3D12Device* device, ID3D12Command
     : m_device(device)
     , m_commandQueue(commandQueue)
 
-    , m_currentIndex(-1)
+    , m_currentIndex(0) //init to use before frames loop start
 {
     LOG_DEBUG("D3DCommandListManager::D3DCommandListManager constructor %llx", this);
     ASSERT(m_commandQueue, "nullptr");
@@ -153,6 +153,7 @@ void D3DCommandListManager::waitAndClear()
             D3DCommandList* list = m_freeCommandList->front();
             m_freeCommandList->pop();
 
+            D3DCommandListManager::validateFenceGPUCompete(list->m_fence);
             list->destroy();
             delete list;
         }
@@ -233,6 +234,7 @@ bool D3DCommandListManager::wait(bool waitAll)
         {
             for (auto& list : m_usedCommandList[i])
             {
+                list->m_fence->signal(m_commandQueue);
                 if (!list->m_fence->wait())
                 {
                     LOG_ERROR("D3DCommandListManager::wait is failed");
@@ -278,6 +280,12 @@ bool D3DCommandListManager::sync(u32 index, bool wait)
     }
 
     return true;
+}
+
+void D3DCommandListManager::validateFenceGPUCompete(D3DFence* fence)
+{
+    //fence->signal(m_commandQueue);
+    //m_commandQueue->Signal(fence->getHandle(), fence->getValue());
 }
 
 } //namespace dx3d

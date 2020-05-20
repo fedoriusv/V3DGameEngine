@@ -42,6 +42,8 @@ namespace dx3d
 
     private:
 
+        void validateFenceGPUCompete(D3DFence* fence);
+
         ID3D12Device* const m_device;
         ID3D12CommandQueue* m_commandQueue;
 

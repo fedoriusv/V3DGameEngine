@@ -4,9 +4,11 @@
 #ifdef D3D_RENDER
 #include "d3dx12.h"
 #include "D3DDebug.h"
-#include "D3DGraphicContext.h"
+#include "D3DDeviceCaps.h"
+#include "D3DResource.h"
 #include "D3DCommandList.h"
 #include "D3DCommandListManager.h"
+#include "D3DGraphicContext.h"
 
 namespace v3d
 {
@@ -296,7 +298,7 @@ DXGI_FORMAT D3DImage::convertImageFormatToD3DFormat(Format format)
     case v3d::renderer::Format_D24_UNorm_S8_UInt:
         return DXGI_FORMAT_D24_UNORM_S8_UINT;
     case v3d::renderer::Format_D32_SFloat_S8_UInt:
-        return DXGI_FORMAT_UNKNOWN;
+        return DXGI_FORMAT_D32_FLOAT_S8X24_UINT;
 
     case v3d::renderer::Format_BC1_RGB_UNorm_Block:
         return DXGI_FORMAT_UNKNOWN;
@@ -474,7 +476,7 @@ bool D3DImage::isStencilFormatOnly(DXGI_FORMAT format)
 D3DImage::D3DImage(ID3D12Device* device, Format format, u32 width, u32 height, u32 samples, TextureUsageFlags flags, const std::string& name) noexcept
     : Image()
     , m_device(device)
-    , m_imageResource(nullptr)
+    , m_resource(nullptr)
     , m_state(D3D12_RESOURCE_STATE_COMMON)
     , m_flags(D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE)
 
@@ -512,7 +514,7 @@ D3DImage::D3DImage(ID3D12Device* device, Format format, u32 width, u32 height, u
 D3DImage::D3DImage(ID3D12Device* device, D3D12_RESOURCE_DIMENSION dimension, Format format, const core::Dimension3D& size, u32 arrays, u32 mipmap, TextureUsageFlags flags, const std::string& name) noexcept
     : Image()
     , m_device(device)
-    , m_imageResource(nullptr)
+    , m_resource(nullptr)
     , m_state(D3D12_RESOURCE_STATE_COMMON)
     , m_flags(D3D12_RESOURCE_FLAG_NONE)
 
@@ -549,12 +551,31 @@ D3DImage::D3DImage(ID3D12Device* device, D3D12_RESOURCE_DIMENSION dimension, For
 D3DImage::~D3DImage()
 {
     LOG_DEBUG("D3DImage::~D3DImage destructor %llx", this);
-    ASSERT(!m_imageResource, "not nullptr");
+    ASSERT(!m_resource, "not nullptr");
 }
 
 bool D3DImage::create()
 {
-    ASSERT(!m_imageResource, "image already created");
+    ASSERT(!m_resource, "image already created");
+    if ((m_flags & D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET) || (m_flags & D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL))
+    {
+        if (!D3DDeviceCaps::getInstance()->getImageFormatSupportInfo(m_originFormat, DeviceCaps::TilingType_Optimal)._supportAttachment)
+        {
+            LOG_ERROR("Format %d is not supported to attachmnet", m_originFormat);
+            ASSERT(false, "not support");
+            return false;
+        }
+    }
+
+    if (!(m_flags & D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE))
+    {
+        if (!D3DDeviceCaps::getInstance()->getImageFormatSupportInfo(m_originFormat, DeviceCaps::TilingType_Optimal)._supportSampled)
+        {
+            LOG_ERROR("Format %d is not supported to sampled image", m_originFormat);
+            ASSERT(false, "not support");
+            return false;
+        }
+    }
 
     D3D12_RESOURCE_DESC textureDesc = {};
     textureDesc.Dimension = m_dimension;
@@ -568,7 +589,7 @@ bool D3DImage::create()
     textureDesc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
     textureDesc.Flags = m_flags;
 
-    HRESULT result = m_device->CreateCommittedResource(&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT), D3D12_HEAP_FLAG_NONE, &textureDesc, m_state, nullptr, IID_PPV_ARGS(&m_imageResource));
+    HRESULT result = m_device->CreateCommittedResource(&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT), D3D12_HEAP_FLAG_NONE, &textureDesc, m_state, nullptr, IID_PPV_ARGS(&m_resource));
     if (FAILED(result))
     {
         LOG_ERROR("D3DImage::create CreateCommittedResource is failed. Error %s", D3DDebug::stringError(result).c_str());
@@ -605,8 +626,7 @@ bool D3DImage::create()
         ASSERT(false, "not impl");
     }
 
-
-    //m_device->CreateShaderResourceView(m_imageResource, &srvDesc, m_srvHeap->GetCPUDescriptorHandleForHeapStart());
+    //m_device->CreateShaderResourceView(m_resource, &srvDesc, m_srvHeap->GetCPUDescriptorHandleForHeapStart());
 
     return true;
 }
@@ -614,11 +634,11 @@ bool D3DImage::create()
 bool D3DImage::create(ID3D12Resource* resource, CD3DX12_CPU_DESCRIPTOR_HANDLE& handle)
 {
     ASSERT(resource, "nullptr");
-    m_imageResource = resource;
+    m_resource = resource;
 #if D3D_DEBUG
     wchar_t wtext[20];
     mbstowcs(wtext, m_debugName.c_str(), m_debugName.size() + 1);
-    m_imageResource->SetName(LPCWSTR(wtext));
+    m_resource->SetName(LPCWSTR(wtext));
 #endif
     m_handle = handle;
     m_swapchain = true;
@@ -630,21 +650,22 @@ void D3DImage::destroy()
 {
     if (m_swapchain)
     {
-        if (m_imageResource)
+        if (m_resource)
         {
-            u32 res = m_imageResource->Release();
-            m_imageResource = nullptr;
+            //TODO
+            u32 res = m_resource->Release();
+            m_resource = nullptr;
         }
 
         return;
     }
 
-    SAFE_DELETE(m_imageResource);
+    SAFE_DELETE(m_resource);
 }
 
 void D3DImage::clear(Context* context, const core::Vector4D& color)
 {
-    D3DGraphicsCommandList* commandlist = (D3DGraphicsCommandList*)static_cast<D3DGraphicContext*>(context)->getCurrentCommandList();
+    D3DGraphicsCommandList* commandlist = (D3DGraphicsCommandList*)static_cast<D3DGraphicContext*>(context)->getOrAcquireCurrentCommandList();
     ASSERT(commandlist, "nullptr");
 
     const FLOAT dxClearColor[] = { color.x, color.y, color.z, color.w };
@@ -673,7 +694,7 @@ void D3DImage::clear(Context* context, const core::Vector4D& color)
 
 void D3DImage::clear(Context* context, f32 depth, u32 stencil)
 {
-    D3DGraphicsCommandList* commandlist = (D3DGraphicsCommandList*)static_cast<D3DGraphicContext*>(context)->getCurrentCommandList();
+    D3DGraphicsCommandList* commandlist = (D3DGraphicsCommandList*)static_cast<D3DGraphicContext*>(context)->getOrAcquireCurrentCommandList();
     ASSERT(commandlist, "nullptr");
 
     D3D12_CLEAR_FLAGS flags = D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL;
@@ -700,16 +721,109 @@ void D3DImage::clear(Context* context, f32 depth, u32 stencil)
     commandlist->transition(this, oldState);
 }
 
-bool D3DImage::upload(Context* context, const core::Dimension3D& size, u32 layers, u32 mips, const void* data)
+bool D3DImage::upload(Context* context, const core::Dimension3D& size, u32 slices, u32 mips, const void* data)
 {
-    ASSERT(false, "not impl");
-    return false;
+    return D3DImage::internalUpdate(context, core::Dimension3D(0, 0, 0), size, slices, mips, data);
 }
 
-bool D3DImage::upload(Context* context, const core::Dimension3D& offsets, const core::Dimension3D& size, u32 layers, const void* data)
+bool D3DImage::upload(Context* context, const core::Dimension3D& offsets, const core::Dimension3D& size, u32 slices, const void* data)
 {
-    ASSERT(false, "not impl");
-    return false;
+    return D3DImage::internalUpdate(context, offsets, size, slices, 1, data);
+}
+
+bool D3DImage::internalUpdate(Context* context, const core::Dimension3D& offsets, const core::Dimension3D& size, u32 slices, u32 mips, const void* data)
+{
+    D3DGraphicContext* gContext = static_cast<D3DGraphicContext*>(context);
+    ASSERT(gContext, "nullptr");
+
+    D3DGraphicsCommandList* commandlist = static_cast<D3DGraphicsCommandList*>(gContext->getOrAcquireCurrentCommandList(D3DCommandList::Type::Direct));
+    ASSERT(commandlist, "nullptr");
+
+    const UINT64 uploadBufferSize = GetRequiredIntermediateSize(m_resource, 0, 1);
+
+    ID3D12Resource* uploadResource = nullptr;
+    {
+        HRESULT result = m_device->CreateCommittedResource(&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD), D3D12_HEAP_FLAG_NONE, &CD3DX12_RESOURCE_DESC::Buffer(uploadBufferSize), D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, IID_PPV_ARGS(&uploadResource));
+        if (FAILED(result))
+        {
+            LOG_ERROR("D3DImage::upload CreateCommittedResource is failed. Error %s", D3DDebug::stringError(result).c_str());
+            SAFE_DELETE(uploadResource);
+
+            return false;
+        }
+    }
+
+    auto calculateMipSize = [](const core::Dimension3D& size) -> core::Dimension3D
+    {
+        core::Dimension3D mipSize;
+        mipSize.width = std::max(size.width / 2, 1U);
+        mipSize.height = std::max(size.height / 2, 1U);
+        mipSize.depth = std::max(size.depth / 2, 1U);
+
+        return mipSize;
+    };
+
+    auto calculateSubresourceRowPitch = [](const core::Dimension3D& size, u32 mipLevel, Format format) -> u64
+    {
+        u32 width = std::max(size.width >> mipLevel, 1U);
+
+        u32 blockArea = ImageFormat::getBlockDimension(format).getArea();
+        f32 sizePerPixel = (f32)blockArea / (f32)ImageFormat::getFormatBlockSize(format);
+
+        return u64(width * sizePerPixel);
+    };
+
+    auto calculateSubresourceSlicePitch = [](u64 rowPitch, const core::Dimension3D& size, u32 mipLevel, Format format) -> u64
+    {
+        u32 height = std::max(size.height >> mipLevel, 1U);
+
+        u32 blockArea = ImageFormat::getBlockDimension(format).getArea();
+        f32 sizePerPixel = (f32)blockArea / (f32)ImageFormat::getFormatBlockSize(format);
+
+        return u64(height * sizePerPixel * rowPitch * size.depth);
+    };
+
+    std::vector<D3D12_SUBRESOURCE_DATA> subresource;
+    subresource.reserve(slices * mips);
+
+    ASSERT(offsets.width == 0 && offsets.height == 0 && offsets.depth == 0, "not impl");
+    for (u32 slice = 0; slice < slices; ++slice)
+    {
+        core::Dimension3D mipsSize = size;
+        for (u32 mip = 0; mip < mips; ++mip)
+        {
+            UINT offset = D3D12CalcSubresource(mip, 0, slice, mips, slices);
+            //TODO
+            D3D12_SUBRESOURCE_DATA textureData = {};
+            textureData.pData = reinterpret_cast<const u8*>(data) + offset;
+            textureData.RowPitch = calculateSubresourceRowPitch(size, mip, m_originFormat);
+            textureData.SlicePitch = calculateSubresourceSlicePitch(textureData.RowPitch, size, mip, m_originFormat);
+
+            subresource.push_back(textureData);
+
+            mipsSize = calculateMipSize(size);
+        }
+    }
+
+    UpdateSubresources(commandlist->getHandle(), m_resource, uploadResource, 0, 0, static_cast<UINT>(subresource.size()), subresource.data());
+
+    UploadResource* upload = new UploadResource(uploadResource);
+    commandlist->setUsed(upload, 0);
+
+    bool result = true;
+    if (D3DDeviceCaps::getInstance()->immediateSubmitUpload)
+    {
+        commandlist->close();
+        result = gContext->getCommandListManager()->execute(commandlist);
+        ASSERT(result, "fail");
+    }
+
+    gContext->getResourceDeleter().requestToDelete(upload, [upload]() -> void
+        {
+            delete upload;
+        });
+
+    return result;
 }
 
 const core::Dimension3D& D3DImage::getSize() const
@@ -755,8 +869,8 @@ const CD3DX12_CPU_DESCRIPTOR_HANDLE& D3DImage::getDescriptorHandle() const
 
 ID3D12Resource* D3DImage::getResource() const
 {
-    ASSERT(m_imageResource, "nullptr");
-    return m_imageResource;
+    ASSERT(m_resource, "nullptr");
+    return m_resource;
 }
 
 } //namespace dx3d

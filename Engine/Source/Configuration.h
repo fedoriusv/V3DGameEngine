@@ -18,6 +18,8 @@
 #   if defined(_MSC_VER) && (_MSC_VER < 1920)
 #       error "Only Microsoft Visual Studio 2019 RTW (16.0) and later are supported."
 #   endif
+
+#   pragma warning(disable: 26812)
 #endif
 
 #if defined(__APPLE__) || defined(MACOSX)

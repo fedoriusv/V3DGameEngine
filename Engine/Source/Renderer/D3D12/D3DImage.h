@@ -7,7 +7,7 @@
 
 #ifdef D3D_RENDER
 #include "D3DConfiguration.h"
-#include "D3DRenderResource.h"
+#include "D3DResource.h"
 
 namespace v3d
 {
@@ -20,7 +20,7 @@ namespace dx3d
     /**
     * D3DImage final class. DirectX Render side
     */
-    class D3DImage final : public Image, public D3DRenderResource
+    class D3DImage final : public Image, public D3DResource
     {
     public:
 
@@ -36,8 +36,8 @@ namespace dx3d
         void clear(Context* context, const core::Vector4D& color) override;
         void clear(Context* context, f32 depth, u32 stencil) override;
 
-        bool upload(Context* context, const core::Dimension3D& size, u32 layers, u32 mips, const void* data) override;
-        bool upload(Context* context, const core::Dimension3D& offsets, const core::Dimension3D& size, u32 layers, const void* data) override;
+        bool upload(Context* context, const core::Dimension3D& size, u32 slices, u32 mips, const void* data) override;
+        bool upload(Context* context, const core::Dimension3D& offsets, const core::Dimension3D& size, u32 slices, const void* data) override;
 
         const CD3DX12_CPU_DESCRIPTOR_HANDLE& getDescriptorHandle() const;
         ID3D12Resource* getResource() const;
@@ -61,9 +61,11 @@ namespace dx3d
 
     private:
 
+        bool internalUpdate(Context* context, const core::Dimension3D& offsets, const core::Dimension3D& size, u32 layers, u32 mips, const void* data);
+
         ID3D12Device* const m_device;
 
-        ID3D12Resource* m_imageResource;
+        ID3D12Resource* m_resource;
         CD3DX12_CPU_DESCRIPTOR_HANDLE m_handle;
         D3D12_RESOURCE_STATES m_state;
         D3D12_RESOURCE_FLAGS m_flags;
