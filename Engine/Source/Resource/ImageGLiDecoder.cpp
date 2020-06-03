@@ -13,7 +13,7 @@ namespace v3d
 namespace resource
 {
 
-ImageGLiDecoder::ImageGLiDecoder(std::vector<std::string> supportedExtensions, const resource::ImageHeader & header, bool readHeader) noexcept
+ImageGLiDecoder::ImageGLiDecoder(std::vector<std::string> supportedExtensions, const resource::ImageHeader& header, bool readHeader) noexcept
     : ResourceDecoder(supportedExtensions)
     , m_header(header)
     , m_readHeader(readHeader)
@@ -24,7 +24,7 @@ ImageGLiDecoder::~ImageGLiDecoder()
 {
 }
 
-Resource * ImageGLiDecoder::decode(const stream::Stream * stream, const std::string & name)
+Resource* ImageGLiDecoder::decode(const stream::Stream* stream, const std::string& name)
 {
     if (stream->size() > 0)
     {
@@ -45,7 +45,7 @@ Resource * ImageGLiDecoder::decode(const stream::Stream * stream, const std::str
             return nullptr;
         }
 
-        bool flipY = gli::is_s3tc_compressed(texture.format());
+        bool flipY = false;
         if (m_readHeader)
         {
             flipY = m_header._flipY;

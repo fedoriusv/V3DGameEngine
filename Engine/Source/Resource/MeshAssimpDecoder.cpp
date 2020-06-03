@@ -35,6 +35,8 @@ MeshAssimpDecoder::MeshAssimpDecoder(std::vector<std::string> supportedExtension
     , m_useBitangents(flags & ModelLoaderFlag_UseBitangent)
     , m_localTransform(flags & ModelLoaderFlag::ModelLoaderFlag_LocalTransform)
     , m_flipYPosition(flags & ModelLoaderFlag::ModelLoaderFlag_FlipYPosition)
+    , m_flipYTexCoord(flags & ModelLoaderFlag::ModelLoaderFlag_FlipYTextureCoord)
+
     //TODO add ModelLoaderFlag_SkipNormals
 {
 }
@@ -404,7 +406,7 @@ bool MeshAssimpDecoder::decodeMesh(const aiScene* scene, stream::Stream* modelSt
                 {
                     core::Vector2D coord;
                     coord.x = mesh->mTextureCoords[uv][v].x;
-                    coord.y = mesh->mTextureCoords[uv][v].y;
+                    coord.y = (m_flipYTexCoord) ? -mesh->mTextureCoords[uv][v].y : mesh->mTextureCoords[uv][v].y;
                     meshStream->write<core::Vector2D>(coord);
 #ifdef DEBUG
                     memorySize += sizeof(core::Vector2D);

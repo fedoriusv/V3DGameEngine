@@ -32,6 +32,7 @@ namespace resource
         ModelLoaderFlag_ReadHeader = 1 << 8,
         ModelLoaderFlag_LocalTransform = 1 << 9,
         ModelLoaderFlag_FlipYPosition = 1 << 10,
+        ModelLoaderFlag_FlipYTextureCoord = 1 << 11,
     };
     typedef u32 ModelLoaderFlags;
 

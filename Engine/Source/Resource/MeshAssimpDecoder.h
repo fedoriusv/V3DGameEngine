@@ -40,6 +40,7 @@ namespace resource
         bool m_useBitangents;
         bool m_localTransform;
         bool m_flipYPosition;
+        bool m_flipYTexCoord;
     };
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
