@@ -8,7 +8,7 @@ namespace v3d
 namespace scene
 {
 
-ModelHelper::ModelHelper(renderer::CommandList & cmdList, const std::vector<const Model*>& models) noexcept
+ModelHelper::ModelHelper(renderer::CommandList& cmdList, const std::vector<const Model*>& models) noexcept
     : m_cmdList(cmdList)
     , m_models(models)
 {
@@ -30,12 +30,12 @@ ModelHelper::ModelHelper(renderer::CommandList & cmdList, const std::vector<cons
                 renderer::IndexStreamBuffer* indexBuffer = cmdList.createObject<renderer::IndexStreamBuffer>(renderer::StreamBuffer_Write | renderer::StreamBuffer_Shared, renderer::StreamIndexBufferType::IndexType_32, count, data);
                 m_buffers.push_back(indexBuffer);
 
-                DrawProps props = { 0, count, 0, 1, true };
+                renderer::DrawProperties props = { 0, count, 0, 1, true };
                 m_drawState.push_back(std::make_tuple(renderer::StreamBufferDescription(indexBuffer, 0, vertexBuffer, 0, 0), props));
             }
             else
             {
-                DrawProps props = { 0, model->getMeshByIndex(meshIndex)->getVertexCount(), 0, 1, false };
+                renderer::DrawProperties props = { 0, model->getMeshByIndex(meshIndex)->getVertexCount(), 0, 1, false };
                 m_drawState.push_back(std::make_tuple(renderer::StreamBufferDescription(vertexBuffer, 0, 0), props));
             }
         }
@@ -55,9 +55,9 @@ const renderer::VertexInputAttribDescription& ModelHelper::getVertexInputAttribD
     return m_models[modelIndex]->getMeshByIndex(meshIndex)->getVertexInputAttribDesc();
 }
 
-Transform & ModelHelper::getTransform()
+const std::vector<std::tuple<renderer::StreamBufferDescription, renderer::DrawProperties>> ModelHelper::getDrawStates() const
 {
-    return m_tramsform;
+    return m_drawState;
 }
 
 u32 ModelHelper::getDrawStatesCount() const
@@ -65,7 +65,7 @@ u32 ModelHelper::getDrawStatesCount() const
     return static_cast<u32>(m_drawState.size());
 }
 
-ModelHelper * ModelHelper::createModelHelper(renderer::CommandList & cmdList, const std::vector<const Model*>& models)
+ModelHelper* ModelHelper::createModelHelper(renderer::CommandList & cmdList, const std::vector<const Model*>& models)
 {
     return new ModelHelper(cmdList, models);
 }
@@ -76,7 +76,7 @@ void ModelHelper::draw(s32 index)
     {
         for (auto& buffer : m_drawState)
         {
-            const DrawProps& props = std::get<1>(buffer);
+            const  renderer::DrawProperties& props = std::get<1>(buffer);
             if (props._indexDraws)
             {
                 m_cmdList.drawIndexed(std::get<0>(buffer), props._start, props._count, props._countInstance);
@@ -89,7 +89,7 @@ void ModelHelper::draw(s32 index)
     }
     else
     {
-        const DrawProps& props = std::get<1>(m_drawState[index]);
+        const  renderer::DrawProperties& props = std::get<1>(m_drawState[index]);
         if (props._indexDraws)
         {
             m_cmdList.drawIndexed(std::get<0>(m_drawState[index]), props._start, props._count, props._countInstance);

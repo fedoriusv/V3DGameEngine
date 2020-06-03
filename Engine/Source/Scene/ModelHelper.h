@@ -37,29 +37,17 @@ namespace scene
         u32 getDrawStatesCount() const;
 
         const renderer::VertexInputAttribDescription& getVertexInputAttribDescription(u32 modelIndex, u32 meshIndex) const;
-        Transform& getTransform();
+        const std::vector<std::tuple<renderer::StreamBufferDescription, renderer::DrawProperties>> getDrawStates() const;
 
         static ModelHelper* createModelHelper(renderer::CommandList& cmdList, const std::vector<const Model*>& models);
 
     private:
 
-        struct DrawProps
-        {
-            u32 _start;
-            u32 _count;
-            u32 _startInstance;
-            u32 _countInstance;
-
-            bool _indexDraws;
-        };
-
         renderer::CommandList& m_cmdList;
 
         std::vector<const Model*> m_models;
-        std::vector<std::tuple<renderer::StreamBufferDescription, DrawProps>> m_drawState;
+        std::vector<std::tuple<renderer::StreamBufferDescription, renderer::DrawProperties>> m_drawState;
         std::vector<utils::IntrusivePointer<renderer::StreamBuffer>> m_buffers;
-
-        Transform m_tramsform;
     };
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
