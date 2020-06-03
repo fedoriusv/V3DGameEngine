@@ -118,7 +118,7 @@ renderer::Shader * ShaderSourceFileLoader::load(const std::string & name, const 
         }
     }
 
-    LOG_WARNING("ShaderSourceFileLoader::load: File [%s] decoder oe file hasn't found", name.c_str());
+    LOG_WARNING("ShaderSourceFileLoader::load: File [%s] decoder file hasn't found", name.c_str());
     return nullptr;
 }
 
