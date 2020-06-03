@@ -161,7 +161,7 @@ void VulkanDeviceCaps::fillCapabilitiesList(const DeviceInfo* info)
         return false;
     };
 
-    supportRenderpass2 = false;//isEnableExtension(VK_KHR_CREATE_RENDERPASS_2_EXTENSION_NAME); //TODO temporary disabled because has validation layer errors bug
+    supportRenderpass2 = isEnableExtension(VK_KHR_CREATE_RENDERPASS_2_EXTENSION_NAME);
     enableSamplerMirrorClampToEdge = isEnableExtension(VK_KHR_SAMPLER_MIRROR_CLAMP_TO_EDGE_EXTENSION_NAME);
     supportDepthAutoResolve = isEnableExtension(VK_KHR_DEPTH_STENCIL_RESOLVE_EXTENSION_NAME);
     supportDedicatedAllocation = false;//isEnableExtension(VK_KHR_DEDICATED_ALLOCATION_EXTENSION_NAME);
