@@ -76,7 +76,7 @@ namespace renderer
     template<ShaderType shaderType, class TTexture>
     inline bool ShaderProgram::bindTexture(const ShaderParam& param, const TTexture* texture)
     {
-        static_assert(std::is_base_of<Texture, TTexture>(), "wrong type");
+        static_assert(std::is_base_of<Texture, TTexture>(), "ShaderProgram::bindTexture wrong type");
         return bindTexture(shaderType, param._id, texture->m_target, texture);
     }
 
@@ -89,7 +89,7 @@ namespace renderer
     template<ShaderType shaderType, class TTexture>
     inline bool ShaderProgram::bindSampledTexture(const ShaderParam& param, const TTexture* texture, const SamplerState* sampler)
     {
-        static_assert(std::is_base_of<Texture, TTexture>(), "wrong type");
+        static_assert(std::is_base_of<Texture, TTexture>(), "ShaderProgram::bindSampledTexture wrong type");
         return bindSampledTexture(shaderType, param._id, texture->m_target, texture, sampler);
     }
 

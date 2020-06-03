@@ -94,5 +94,15 @@ u64 Context::getCurrentFrameIndex() const
     return m_frameCounter;
 }
 
+const core::Dimension2D& Context::getBackbufferSize() const
+{
+    return m_backufferDescription._size;
+}
+
+Format Context::getBackbufferFormat() const
+{
+    return m_backufferDescription._format;
+}
+
 } //namespace renderer
 } //namespace v3d

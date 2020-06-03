@@ -342,7 +342,7 @@ bool ShaderProgram::bindSampler(ShaderType shaderType, u32 index, const SamplerS
 
     const Shader* shader = m_programInfo._shaders[shaderType];
     ASSERT(shader, "fail");
-    ASSERT(index < shader->getReflectionInfo()._images.size(), "range out");
+    ASSERT(index < shader->getReflectionInfo()._samplers.size(), "range out");
 
     Sampler::SamplerInfo samplerInfo;
     samplerInfo._tracker = const_cast<ObjectTracker<Sampler>*>(&sampler->m_trackerSampler);

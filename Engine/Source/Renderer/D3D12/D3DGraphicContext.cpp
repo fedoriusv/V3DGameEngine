@@ -192,7 +192,21 @@ void D3DGraphicContext::bindImage(const Shader* shader, u32 bindIndex, const Ima
 #if D3D_DEBUG
     LOG_DEBUG("D3DGraphicContext::bindImage");
 #endif //D3D_DEBUG
-    //TODO
+    D3DGraphicsCommandList* cmdList = m_currentState.commandList();
+    if (!cmdList)
+    {
+        return;
+    }
+
+    D3DDescriptor* descriptor = m_descriptorHeapManager->acquireDescriptor(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE);
+    ASSERT(descriptor, "nullptr");
+
+    CD3DX12_CPU_DESCRIPTOR_HANDLE cbvHandle(D3DDescriptor::createCPUDescriptorHandle(descriptor));
+
+    const D3DImage* dxImage = static_cast<const D3DImage*>(image);
+    m_device->CreateShaderResourceView(dxImage->getResource(), &dxImage->getView(), cbvHandle);
+
+    m_currentState.bindDescriptor(descriptor, bindIndex);
 }
 
 void D3DGraphicContext::bindSampler(const Shader* shader, u32 bindIndex, const Sampler::SamplerInfo* samplerInfo)
@@ -200,7 +214,19 @@ void D3DGraphicContext::bindSampler(const Shader* shader, u32 bindIndex, const S
 #if D3D_DEBUG
     LOG_DEBUG("D3DGraphicContext::bindSampler");
 #endif //D3D_DEBUG
-    //TODO
+    D3DGraphicsCommandList* cmdList = m_currentState.commandList();
+    if (!cmdList)
+    {
+        return;
+    }
+
+    D3DDescriptor* descriptor = m_descriptorHeapManager->acquireDescriptor(D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE);
+    ASSERT(descriptor, "nullptr");
+
+    CD3DX12_CPU_DESCRIPTOR_HANDLE cbvHandle(D3DDescriptor::createCPUDescriptorHandle(descriptor));
+    //m_device->CreateSampler(&m_SamplerManager->getSampler(samplerInfo), cbvHandle);
+
+    m_currentState.bindDescriptor(descriptor, bindIndex);
 }
 
 void D3DGraphicContext::bindSampledImage(const Shader* shader, u32 bindIndex, const Image* image, const Sampler::SamplerInfo* samplerInfo)

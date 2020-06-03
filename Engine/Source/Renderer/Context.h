@@ -107,6 +107,9 @@ namespace renderer
         u64 getCurrentFrameIndex() const;
         virtual const DeviceCaps* getDeviceCaps() const = 0;
 
+        const core::Dimension2D& getBackbufferSize() const;
+        Format getBackbufferFormat() const;
+
     protected:
 
         friend RenderPassManager;

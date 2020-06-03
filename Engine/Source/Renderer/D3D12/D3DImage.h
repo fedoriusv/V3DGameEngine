@@ -42,6 +42,8 @@ namespace dx3d
         const CD3DX12_CPU_DESCRIPTOR_HANDLE& getDescriptorHandle() const;
         ID3D12Resource* getResource() const;
 
+        const D3D12_SHADER_RESOURCE_VIEW_DESC& getView() const;
+
         const core::Dimension3D& getSize() const;
         D3D12_RESOURCE_DIMENSION getDimension() const;
         DXGI_FORMAT getFormat() const;
@@ -69,6 +71,8 @@ namespace dx3d
         CD3DX12_CPU_DESCRIPTOR_HANDLE m_handle;
         D3D12_RESOURCE_STATES m_state;
         D3D12_RESOURCE_FLAGS m_flags;
+
+        D3D12_SHADER_RESOURCE_VIEW_DESC m_view;
 
         D3D12_RESOURCE_DIMENSION m_dimension;
         DXGI_FORMAT m_format;

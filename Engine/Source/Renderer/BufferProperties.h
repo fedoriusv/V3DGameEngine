@@ -139,5 +139,20 @@ namespace renderer
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    /**
+    * DrawProperties struct
+    */
+    struct DrawProperties
+    {
+        u32 _start;
+        u32 _count;
+        u32 _startInstance;
+        u32 _countInstance;
+
+        bool _indexDraws;
+    };
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
+
 } //namespace renderer
 } //namespace v3d

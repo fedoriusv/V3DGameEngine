@@ -509,6 +509,8 @@ D3DImage::D3DImage(ID3D12Device* device, Format format, u32 width, u32 height, u
     {
         m_flags &= ~D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE;
     }
+
+    memset(&m_view, 0, sizeof(D3D12_SHADER_RESOURCE_VIEW_DESC));
 }
 
 D3DImage::D3DImage(ID3D12Device* device, D3D12_RESOURCE_DIMENSION dimension, Format format, const core::Dimension3D& size, u32 arrays, u32 mipmap, TextureUsageFlags flags, const std::string& name) noexcept
@@ -545,6 +547,8 @@ D3DImage::D3DImage(ID3D12Device* device, D3D12_RESOURCE_DIMENSION dimension, For
             m_flags |= D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
         }
     }
+
+    memset(&m_view, 0, sizeof(D3D12_SHADER_RESOURCE_VIEW_DESC));
 }
 
 
@@ -596,9 +600,8 @@ bool D3DImage::create()
         return false;
     }
 
-    D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
-    srvDesc.Format = textureDesc.Format;
-    srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+    m_view.Format = textureDesc.Format;
+    m_view.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
    
     switch (textureDesc.Dimension)
     {
@@ -606,12 +609,12 @@ bool D3DImage::create()
     {
         if (m_arrays == 1)
         {
-            srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
+            m_view.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
 
-            srvDesc.Texture2D.MostDetailedMip = 0;
-            srvDesc.Texture2D.MipLevels = m_mipmaps;
-            srvDesc.Texture2D.PlaneSlice = 1;
-            srvDesc.Texture2D.ResourceMinLODClamp = 0.0f;
+            m_view.Texture2D.MostDetailedMip = 0;
+            m_view.Texture2D.MipLevels = m_mipmaps;
+            m_view.Texture2D.PlaneSlice = 1;
+            m_view.Texture2D.ResourceMinLODClamp = 0.0f;
         }
         else
         {
@@ -625,8 +628,6 @@ bool D3DImage::create()
     default:
         ASSERT(false, "not impl");
     }
-
-    //m_device->CreateShaderResourceView(m_resource, &srvDesc, m_srvHeap->GetCPUDescriptorHandleForHeapStart());
 
     return true;
 }
@@ -733,10 +734,10 @@ bool D3DImage::upload(Context* context, const core::Dimension3D& offsets, const 
 
 bool D3DImage::internalUpdate(Context* context, const core::Dimension3D& offsets, const core::Dimension3D& size, u32 slices, u32 mips, const void* data)
 {
-    D3DGraphicContext* gContext = static_cast<D3DGraphicContext*>(context);
-    ASSERT(gContext, "nullptr");
+    D3DGraphicContext* dxContext = static_cast<D3DGraphicContext*>(context);
+    ASSERT(dxContext, "nullptr");
 
-    D3DGraphicsCommandList* commandlist = static_cast<D3DGraphicsCommandList*>(gContext->getOrAcquireCurrentCommandList(D3DCommandList::Type::Direct));
+    D3DGraphicsCommandList* commandlist = static_cast<D3DGraphicsCommandList*>(dxContext->getOrAcquireCurrentCommandList(D3DCommandList::Type::Direct));
     ASSERT(commandlist, "nullptr");
 
     const UINT64 uploadBufferSize = GetRequiredIntermediateSize(m_resource, 0, 1);
@@ -814,11 +815,11 @@ bool D3DImage::internalUpdate(Context* context, const core::Dimension3D& offsets
     if (D3DDeviceCaps::getInstance()->immediateSubmitUpload)
     {
         commandlist->close();
-        result = gContext->getCommandListManager()->execute(commandlist);
+        result = dxContext->getCommandListManager()->execute(commandlist);
         ASSERT(result, "fail");
     }
 
-    gContext->getResourceDeleter().requestToDelete(upload, [upload]() -> void
+    dxContext->getResourceDeleter().requestToDelete(upload, [upload]() -> void
         {
             delete upload;
         });
@@ -871,6 +872,11 @@ ID3D12Resource* D3DImage::getResource() const
 {
     ASSERT(m_resource, "nullptr");
     return m_resource;
+}
+
+const D3D12_SHADER_RESOURCE_VIEW_DESC& D3DImage::getView() const
+{
+    return m_view;
 }
 
 } //namespace dx3d
