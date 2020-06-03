@@ -5,6 +5,6 @@
 
 int main(int argc, char* argv[])
 {
-    MyApplication* application = new MyApplication(argc, argv);
+    app::MyApplication* application = new app::MyApplication(argc, argv);
     return application->Execute();
 }
