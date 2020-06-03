@@ -112,7 +112,7 @@ void Scene::LoadVoyager()
     }
 
     {
-        scene::Model* model = resource::ResourceLoaderManager::getInstance()->load<scene::Model, resource::ModelFileLoader>("models/voyager/voyager.dae");
+        scene::Model* model = resource::ResourceLoaderManager::getInstance()->load<scene::Model, resource::ModelFileLoader>("models/voyager/voyager.dae", resource::ModelLoaderFlag::ModelLoaderFlag_FlipYTextureCoord);
         m_Voyager.m_Model = new scene::ModelHelper(*m_CommandList, { model });
     }
 }
