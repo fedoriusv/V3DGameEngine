@@ -44,7 +44,7 @@ Sampler * SamplerManager::acquireSampler(const SamplerDescription& samplerInfo)
             sampler->destroy();
             m_samplerList.erase(info._hash);
 
-            ASSERT(false, "can't create renderpass");
+            ASSERT(false, "can't create sampler");
             return nullptr;
         }
         found.first->second = sampler;
