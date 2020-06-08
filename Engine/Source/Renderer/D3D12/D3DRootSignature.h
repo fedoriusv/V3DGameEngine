@@ -25,6 +25,8 @@ namespace dx3d
 
         u32 m_hash;
         ID3DBlob* m_signature;
+
+        std::map<u32, u32> m_signatureParameters;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -40,7 +42,7 @@ namespace dx3d
         explicit D3DRootSignatureManager(ID3D12Device* device) noexcept;
         ~D3DRootSignatureManager();
 
-        ID3D12RootSignature* acquireRootSignature(const ShaderProgramDescription& desc);
+        std::tuple<ID3D12RootSignature*, std::map<u32, u32>> acquireRootSignature(const ShaderProgramDescription& desc);
         void removeAllRootSignatures();
 
     private:

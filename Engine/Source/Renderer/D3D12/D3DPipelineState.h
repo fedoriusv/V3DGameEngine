@@ -34,6 +34,7 @@ namespace dx3d
 
         ID3D12PipelineState* getHandle() const;
         ID3D12RootSignature* getSignatureHandle() const;
+        s32 getSignatureParameterIndex(u32 space, u32 binding) const;
 
         static D3D12_INPUT_CLASSIFICATION convertInputRateToD3DClassification(VertexInputAttribDescription::InputRate rate);
         static D3D12_PRIMITIVE_TOPOLOGY_TYPE convertPrimitiveTopologyTypeToD3DTopology(PrimitiveTopology topology);
@@ -63,6 +64,7 @@ namespace dx3d
 
         ID3D12PipelineState* m_pipelineState;
         ID3D12RootSignature* m_rootSignature;
+        std::map<u32, u32> m_signatureParameters;
 
         std::vector<u32> m_buffersStride; //Vertex stride
         D3D12_PRIMITIVE_TOPOLOGY m_topology;

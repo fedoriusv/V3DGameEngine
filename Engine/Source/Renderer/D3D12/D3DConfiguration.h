@@ -38,7 +38,7 @@ namespace renderer
 namespace dx3d
 {
 
-} //namespace v3d12
+} //namespace dx3d
 } //namespace renderer
 } //namespace v3d
 

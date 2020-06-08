@@ -145,7 +145,7 @@ D3D12_CULL_MODE D3DGraphicPipelineState::convertCulModeToD3D(CullMode mode)
 
 BOOL D3DGraphicPipelineState::convertCounterClockwiseToD3D(FrontFace face)
 {
-    return (face == FrontFace::FrontFace_CounterClockwise) ? false : true;
+    return (face == FrontFace::FrontFace_CounterClockwise) ? true : false;
 }
 
 D3D12_LOGIC_OP D3DGraphicPipelineState::convertLogicOperationToD3D(LogicalOperation op)
@@ -364,7 +364,7 @@ bool D3DGraphicPipelineState::create(const PipelineGraphicInfo* pipelineInfo)
 {
     D3D12_GRAPHICS_PIPELINE_STATE_DESC psoDesc = {};
 
-    m_rootSignature = m_sigatureManager->acquireRootSignature(pipelineInfo->_programDesc);
+    std::tie(m_rootSignature, m_signatureParameters) = m_sigatureManager->acquireRootSignature(pipelineInfo->_programDesc);
     ASSERT(m_rootSignature, "nullptr");
     psoDesc.pRootSignature = m_rootSignature;
 
@@ -559,6 +559,18 @@ ID3D12RootSignature* D3DGraphicPipelineState::getSignatureHandle() const
 {
     ASSERT(m_rootSignature, "nullptr");
     return m_rootSignature;
+}
+
+s32 D3DGraphicPipelineState::getSignatureParameterIndex(u32 space, u32 binding) const
+{
+    ASSERT(space == 0, "not impl");
+    auto iter = m_signatureParameters.find(binding);
+    if (iter != m_signatureParameters.end())
+    {
+        return iter->second;
+    }
+
+    return -1;
 }
 
 bool D3DGraphicPipelineState::compileShader(const ShaderHeader* header, const void* source, u32 size)
