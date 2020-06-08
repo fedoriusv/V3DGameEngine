@@ -49,7 +49,7 @@ bool MyApplication::Initialize()
     }
     m_InputEventHandler = new event::InputEventHandler();
 
-    m_Context = renderer::Context::createContext(m_Window, renderer::Context::RenderType::DirectXRender);
+    m_Context = renderer::Context::createContext(m_Window, renderer::Context::RenderType::VulkanRender);
     if (!m_Context)
     {
         return false;
