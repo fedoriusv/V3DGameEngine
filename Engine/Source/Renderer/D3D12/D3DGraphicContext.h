@@ -8,6 +8,7 @@
 #include "D3DSwapchain.h"
 #include "D3DCommandListManager.h"
 #include "D3DDescriptorHeap.h"
+#include "D3DDescriptorSet.h"
 
 namespace v3d
 {
@@ -119,6 +120,7 @@ namespace dx3d
         D3DCommandListManager* m_commandListManager;
 
         PipelineManager* m_pipelineManager;
+        SamplerManager* m_samplerManager;
         std::tuple<RenderPassManager*, FramebufferManager*> m_renderTargetManager;
 
         D3DRootSignatureManager* m_rootSignatureManager;
@@ -154,16 +156,16 @@ namespace dx3d
                 _bufferDesc.clear();
                 _clearInfo.clear();
 
-                resetDescriptorsState();
+                //resetDescriptorsState();
             }
 
-            void resetDescriptorsState()
+            /*void resetDescriptorsState()
             {
                 _descriptorHeaps.clear();
                 _descriptorsList.clear();
-            }
+            }*/
 
-            void update(D3DDescriptorHeapManager* descriptorHeapManager)
+            /*void update(D3DDescriptorHeapManager* descriptorHeapManager)
             {
                 for (auto iter = _descriptorsGeneric.begin(); iter != _descriptorsGeneric.end();)
                 {
@@ -179,18 +181,18 @@ namespace dx3d
                         iter = _descriptorsGeneric.erase(iter);
                     }
                 }
-            }
+            }*/
 
-            void bindDescriptor(D3DDescriptor* desc, u32 bindIndex)
-            {
-                _descriptorHeaps.insert(desc->_heap->getHandle());
-                _descriptorsList.emplace(bindIndex, desc);
+            //void bindDescriptor(D3DDescriptor* desc, u32 bindIndex)
+            //{
+            //    _descriptorHeaps.insert(desc->_heap->getHandle());
+            //    _descriptorsList.emplace(bindIndex, desc);
 
-                _descriptorsGeneric.push_back(desc);
+            //    _descriptorsGeneric.push_back(desc);
 
-                ASSERT(_commandList, "nullptr");
-                _commandList->setUsed(desc, 0);
-            }
+            //    ASSERT(_commandList, "nullptr");
+            //    _commandList->setUsed(desc, 0);
+            //}
 
             D3DGraphicPipelineState* _pipeline;
             D3DRenderTarget*         _renderTarget;
@@ -198,10 +200,10 @@ namespace dx3d
 
             Framebuffer::ClearValueInfo _clearInfo;
 
-            std::set<ID3D12DescriptorHeap*> _descriptorHeaps;
-            std::map<u32, D3DDescriptor*> _descriptorsList;
+            //std::set<ID3D12DescriptorHeap*> _descriptorHeaps;
+            //std::multimap<u32, D3DDescriptor*> _descriptorsList;
 
-            std::list<D3DDescriptor*> _descriptorsGeneric;
+            //std::list<D3DDescriptor*> _descriptorsGeneric;
 
         private:
 
@@ -210,6 +212,7 @@ namespace dx3d
         };
         RenderState m_currentState;
         RenderState m_boundState;
+        D3DDescriptorSetState* m_descriptorState;
 
         static D3D_FEATURE_LEVEL s_featureLevel;
 

@@ -4,12 +4,14 @@
 #include "Renderer/Pipeline.h"
 #include "Renderer/RenderPass.h"
 #include "Renderer/Framebuffer.h"
+#include "Renderer/Shader.h"
 
 #ifdef D3D_RENDER
 #include <wrl.h>
 #include "D3DDebug.h"
 #include "D3DWrapper.h"
 #include "D3DImage.h"
+#include "D3DSampler.h"
 #include "D3DBuffer.h"
 #include "D3DDeviceCaps.h"
 #include "D3DPipelineState.h"
@@ -51,9 +53,11 @@ D3DGraphicContext::D3DGraphicContext(const platform::Window* window) noexcept
 
     , m_commandListManager(nullptr)
     , m_pipelineManager(nullptr)
+    , m_samplerManager(nullptr)
     , m_constantBufferManager(nullptr)
 
     , m_rootSignatureManager(nullptr)
+    , m_descriptorState(nullptr)
 {
     LOG_DEBUG("D3DGraphicContext::D3DGraphicContext constructor %llx", this);
     m_renderType = RenderType::DirectXRender;
@@ -66,8 +70,10 @@ D3DGraphicContext::~D3DGraphicContext()
 {
     LOG_DEBUG("D3DGraphicContext::D3DGraphicContext destructor %llx", this);
     
+    ASSERT(!m_descriptorState, "not nullptr");
     ASSERT(!m_rootSignatureManager, "not nullptr");
 
+    ASSERT(!m_samplerManager, "not nullptr");
     ASSERT(!m_pipelineManager, "not nullptr");
     ASSERT(!m_commandListManager, "not nullptr");
     ASSERT(!m_constantBufferManager, "not nullptr");
@@ -126,7 +132,7 @@ void D3DGraphicContext::presentFrame()
     m_swapchain->present();
 
     m_boundState.reset();
-    m_currentState.update(m_descriptorHeapManager);
+    m_descriptorState->updateStatus();
     ASSERT(!m_currentState.commandList(), "not nullptr");
     m_constantBufferManager->updateStatus();
     m_delayedDeleter.update(false);
@@ -198,15 +204,26 @@ void D3DGraphicContext::bindImage(const Shader* shader, u32 bindIndex, const Ima
         return;
     }
 
-    D3DDescriptor* descriptor = m_descriptorHeapManager->acquireDescriptor(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE);
-    ASSERT(descriptor, "nullptr");
-
-    CD3DX12_CPU_DESCRIPTOR_HANDLE cbvHandle(D3DDescriptor::createCPUDescriptorHandle(descriptor));
+    ASSERT(bindIndex < shader->getReflectionInfo()._images.size(), "range out");
+    u32 space = shader->getReflectionInfo()._images[bindIndex]._set;
+    u32 binding = shader->getReflectionInfo()._images[bindIndex]._binding;
 
     const D3DImage* dxImage = static_cast<const D3DImage*>(image);
-    m_device->CreateShaderResourceView(dxImage->getResource(), &dxImage->getView(), cbvHandle);
+    cmdList->setUsed(const_cast<D3DImage*>(dxImage), 0);
 
-    m_currentState.bindDescriptor(descriptor, bindIndex);
+    m_descriptorState->bindDescriptor<D3DImage>(space, binding, dxImage);
+
+
+    ////
+    //{
+    //    D3DDescriptor* descriptor = m_descriptorHeapManager->acquireDescriptor(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE);
+    //    ASSERT(descriptor, "nullptr");
+
+    //    CD3DX12_CPU_DESCRIPTOR_HANDLE cbvHandle(D3DDescriptor::createCPUDescriptorHandle(descriptor));
+    //    m_device->CreateShaderResourceView(dxImage->getResource(), &dxImage->getView(), cbvHandle);
+
+    //    m_currentState.bindDescriptor(descriptor, 1);
+    //}
 }
 
 void D3DGraphicContext::bindSampler(const Shader* shader, u32 bindIndex, const Sampler::SamplerInfo* samplerInfo)
@@ -220,13 +237,26 @@ void D3DGraphicContext::bindSampler(const Shader* shader, u32 bindIndex, const S
         return;
     }
 
-    D3DDescriptor* descriptor = m_descriptorHeapManager->acquireDescriptor(D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE);
-    ASSERT(descriptor, "nullptr");
+    ASSERT(bindIndex < shader->getReflectionInfo()._samplers.size(), "range out");
+    u32 space = shader->getReflectionInfo()._samplers[bindIndex]._set;
+    u32 binding = shader->getReflectionInfo()._samplers[bindIndex]._binding;
 
-    CD3DX12_CPU_DESCRIPTOR_HANDLE cbvHandle(D3DDescriptor::createCPUDescriptorHandle(descriptor));
-    //m_device->CreateSampler(&m_SamplerManager->getSampler(samplerInfo), cbvHandle);
+    D3DSampler* dxSampler = static_cast<D3DSampler*>(m_samplerManager->acquireSampler(samplerInfo->_value._desc));
+    cmdList->setUsed(dxSampler, 0);
 
-    m_currentState.bindDescriptor(descriptor, bindIndex);
+    m_descriptorState->bindDescriptor<D3DSampler>(space, binding, dxSampler);
+
+
+    /////
+    //{
+    //    D3DDescriptor* descriptor = m_descriptorHeapManager->acquireDescriptor(D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE);
+    //    ASSERT(descriptor, "nullptr");
+
+    //    CD3DX12_CPU_DESCRIPTOR_HANDLE cbvHandle(D3DDescriptor::createCPUDescriptorHandle(descriptor));
+    //    m_device->CreateSampler(&dxSampler->getDesc(), cbvHandle);
+
+    //    m_currentState.bindDescriptor(descriptor, 2);
+    //}
 }
 
 void D3DGraphicContext::bindSampledImage(const Shader* shader, u32 bindIndex, const Image* image, const Sampler::SamplerInfo* samplerInfo)
@@ -248,22 +278,31 @@ void D3DGraphicContext::bindUniformsBuffer(const Shader* shader, u32 bindIndex, 
         return;
     }
 
+    ASSERT(bindIndex < shader->getReflectionInfo()._uniformBuffers.size(), "range out");
+    u32 space = shader->getReflectionInfo()._uniformBuffers[bindIndex]._set;
+    u32 binding = shader->getReflectionInfo()._uniformBuffers[bindIndex]._binding;
+
     D3DBuffer* constantBuffer = m_constantBufferManager->acquireConstanBuffer(size);
     ASSERT(constantBuffer, "nulllptr");
     constantBuffer->upload(this, offset, size, data);
     cmdList->setUsed(constantBuffer, 0);
 
-    D3DDescriptor* descriptor = m_descriptorHeapManager->acquireDescriptor(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE);
-    ASSERT(descriptor, "nullptr");
+    m_descriptorState->bindDescriptor<D3DBuffer>(space, binding, constantBuffer, 0, size);
 
-    D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc = {};
-    cbvDesc.BufferLocation = constantBuffer->getGPUAddress();
-    cbvDesc.SizeInBytes = core::alignUp<UINT>(size, 256);
+    /////
+    //{
+    //    D3DDescriptor* descriptor = m_descriptorHeapManager->acquireDescriptor(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE);
+    //    ASSERT(descriptor, "nullptr");
 
-    CD3DX12_CPU_DESCRIPTOR_HANDLE cbvHandle(D3DDescriptor::createCPUDescriptorHandle(descriptor));
-    m_device->CreateConstantBufferView(&cbvDesc, cbvHandle);
+    //    D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc = {};
+    //    cbvDesc.BufferLocation = constantBuffer->getGPUAddress();
+    //    cbvDesc.SizeInBytes = core::alignUp<UINT>(size, 256);
 
-    m_currentState.bindDescriptor(descriptor, bindIndex);
+    //    CD3DX12_CPU_DESCRIPTOR_HANDLE cbvHandle(D3DDescriptor::createCPUDescriptorHandle(descriptor));
+    //    m_device->CreateConstantBufferView(&cbvDesc, cbvHandle);
+
+    //    m_currentState.bindDescriptor(descriptor, 0);
+    //}
 }
 
 void D3DGraphicContext::transitionImages(const std::vector<Image*>& images, TransitionOp transition, s32 layer)
@@ -608,11 +647,13 @@ bool D3DGraphicContext::initialize()
     }
 
     m_pipelineManager = new PipelineManager(this);
+    m_samplerManager = new SamplerManager(this);
     m_renderTargetManager = std::make_tuple(new RenderPassManager(this), new FramebufferManager(this));
 
     m_rootSignatureManager = new D3DRootSignatureManager(m_device);
     m_constantBufferManager = new D3DConstantBufferManager(m_device);
 
+    m_descriptorState = new D3DDescriptorSetState(m_device, m_descriptorHeapManager);
 #if D3D_DEBUG
     D3DDebug::getInstance()->report(D3D12_RLDO_SUMMARY | D3D12_RLDO_IGNORE_INTERNAL);
 #endif
@@ -637,8 +678,14 @@ void D3DGraphicContext::destroy()
         delete m_constantBufferManager;
         m_constantBufferManager = nullptr;
     }
-    m_currentState.update(m_descriptorHeapManager);
+    m_descriptorState->updateStatus();
     m_delayedDeleter.update(true);
+
+    if (m_descriptorState)
+    {
+        delete m_descriptorState;
+        m_descriptorState = nullptr;
+    }
 
     //FramebufferManager
     if (std::get<1>(m_renderTargetManager))
@@ -650,6 +697,12 @@ void D3DGraphicContext::destroy()
     if (std::get<0>(m_renderTargetManager))
     {
         delete std::get<0>(m_renderTargetManager);
+    }
+
+    if (m_samplerManager)
+    {
+        delete m_samplerManager;
+        m_samplerManager = nullptr;
     }
 
     if (m_pipelineManager)
@@ -733,7 +786,7 @@ Pipeline* D3DGraphicContext::createPipeline(Pipeline::PipelineType type)
 
 Sampler* D3DGraphicContext::createSampler()
 {
-    return nullptr;
+    return new D3DSampler();
 }
 
 bool D3DGraphicContext::perpareDraw(D3DGraphicsCommandList* cmdList)
@@ -744,8 +797,9 @@ bool D3DGraphicContext::perpareDraw(D3DGraphicsCommandList* cmdList)
         m_boundState._pipeline = m_currentState._pipeline;
     }
 
-    std::vector<ID3D12DescriptorHeap*> heaps(m_currentState._descriptorHeaps.cbegin(), m_currentState._descriptorHeaps.cend());
-    cmdList->setDescriptorTables(heaps, m_currentState._descriptorsList);
+    m_descriptorState->updateDescriptorSets(cmdList, m_currentState._pipeline);
+    //std::vector<ID3D12DescriptorHeap*> heaps(m_currentState._descriptorHeaps.cbegin(), m_currentState._descriptorHeaps.cend());
+    //cmdList->setDescriptorTables(heaps, m_currentState._descriptorsList);
 
     if (m_boundState._renderTarget != m_currentState._renderTarget)
     {
@@ -762,7 +816,7 @@ bool D3DGraphicContext::perpareDraw(D3DGraphicsCommandList* cmdList)
         D3DGraphicContext::clearRenderTargets(cmdList, m_currentState._renderTarget, m_currentState._clearInfo);
     }
 
-    m_currentState.resetDescriptorsState();
+    m_descriptorState->invalidateDescriptorSetTable();
     return true;
 }
 
@@ -771,9 +825,9 @@ void D3DGraphicContext::clearRenderTargets(D3DGraphicsCommandList* cmdList, D3DR
     for (u32 i = 0; i < target->getImages().size(); ++i)
     {
         D3DImage* dxImage = static_cast<D3DImage*>(target->getImages()[i]);
-        const AttachmentDescription& attachment = target->getDescription()._attachments[i];
         if (D3DImage::isColorFormat(dxImage->getFormat()))
         {
+            const AttachmentDescription& attachment = target->getDescription()._attachments[i];
             switch (attachment._loadOp)
             {
             case RenderTargetLoadOp::LoadOp_DontCare:
@@ -808,6 +862,7 @@ void D3DGraphicContext::clearRenderTargets(D3DGraphicsCommandList* cmdList, D3DR
                 DepthStencilClearFlag_Stencil = D3D12_CLEAR_FLAG_STENCIL
             };
 
+            const AttachmentDescription& attachment = target->getDescription()._attachments.back();
             u32 clearFlags = DepthStencilClearFlag::DepthStencilClearFlag_None;
             switch (attachment._loadOp)
             {

@@ -22,7 +22,7 @@ namespace dx3d
     /**
     * D3DDescriptorHeapHandle struct. DirectX Render side
     */
-    struct D3DDescriptor : public D3DResource
+    struct [[deprecated]]  D3DDescriptor : public D3DResource
     {
         D3DDescriptorHeap* _heap;
         u32 _offset;
@@ -42,7 +42,7 @@ namespace dx3d
     /**
     * D3DDescriptorHeap class. DirectX Render side
     */
-    class D3DDescriptorHeap final
+    class D3DDescriptorHeap final : public D3DResource
     {
     public:
 
@@ -103,7 +103,7 @@ namespace dx3d
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-} //namespace v3d12
+} //namespace d3d
 } //namespace renderer
 } //namespace v3d
 #endif //D3D_RENDER

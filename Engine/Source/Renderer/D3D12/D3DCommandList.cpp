@@ -199,7 +199,7 @@ void D3DGraphicsCommandList::setPipelineState(D3DGraphicPipelineState* pipeline)
     this->setUsed(pipeline, 0);
 }
 
-void D3DGraphicsCommandList::setDescriptorTables(const std::vector<ID3D12DescriptorHeap*>& heaps, const std::map<u32, D3DDescriptor*>& desc)
+void D3DGraphicsCommandList::setDescriptorTables(const std::vector<ID3D12DescriptorHeap*>& heaps, const std::map<u32, std::tuple<D3DDescriptorHeap*, u32>>& desc)
 {
     ASSERT(m_commandList, "nullptr");
     ASSERT(m_status == Status::ReadyToRecord, "not record");
@@ -207,10 +207,11 @@ void D3DGraphicsCommandList::setDescriptorTables(const std::vector<ID3D12Descrip
     ID3D12GraphicsCommandList* cmdList = D3DGraphicsCommandList::getHandle();
 
     cmdList->SetDescriptorHeaps(static_cast<UINT>(heaps.size()), heaps.data());
-    for (auto iter : desc)
+    for (auto& [paramIndex, descHeap] : desc)
     {
-        CD3DX12_GPU_DESCRIPTOR_HANDLE handle(D3DDescriptor::createGPUDescriptorHandle(iter.second));
-        cmdList->SetGraphicsRootDescriptorTable(iter.first, handle);
+        auto& [heap, index] = descHeap;
+        CD3DX12_GPU_DESCRIPTOR_HANDLE dtHandle(heap->getGPUHandle(), index, heap->getIncrement());
+        cmdList->SetGraphicsRootDescriptorTable(paramIndex, dtHandle);
     }
 }
 
@@ -281,8 +282,8 @@ ID3D12GraphicsCommandList* D3DGraphicsCommandList::getHandle() const
 
 void D3DGraphicsCommandList::clearRenderTarget(D3D12_CPU_DESCRIPTOR_HANDLE renderTargetView, const f32 color[4], const std::vector<D3D12_RECT>& rect)
 {
+    ASSERT(m_commandList, "nullptr");
     ASSERT(m_status == Status::ReadyToRecord, "not record");
-    //TODO check color
     ID3D12GraphicsCommandList* cmdList = D3DGraphicsCommandList::getHandle();
     ASSERT(cmdList, "nullptr");
 
@@ -293,8 +294,9 @@ void D3DGraphicsCommandList::clearRenderTarget(D3D12_CPU_DESCRIPTOR_HANDLE rende
 {
     ASSERT(m_commandList, "nullptr");
     ASSERT(m_status == Status::ReadyToRecord, "not record");
-    //TODO check depth
     ID3D12GraphicsCommandList* cmdList = D3DGraphicsCommandList::getHandle();
+    ASSERT(cmdList, "nullptr");
+
     cmdList->ClearDepthStencilView(renderTargetView, flags, depth, stencil, static_cast<u32>(rect.size()), rect.data());
 }
 
