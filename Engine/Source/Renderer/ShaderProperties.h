@@ -54,7 +54,7 @@ namespace renderer
         ShaderProgramDescription() noexcept
             : _hash(0)
         {
-            memset(&_shaders, 0, sizeof(_shaders));
+            _shaders.fill(nullptr);
         }
 
         u32 _hash;
