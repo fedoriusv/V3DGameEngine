@@ -36,22 +36,20 @@ namespace dx3d
 
         bool upload(Context* context, u32 offset, u64 size, const void* data) override;
 
-        const CD3DX12_CPU_DESCRIPTOR_HANDLE& getDescriptorHandle() const;
         ID3D12Resource* getResource() const;
-
         D3D12_GPU_VIRTUAL_ADDRESS getGPUAddress() const;
 
     private:
 
         ID3D12Device* m_device;
 
-        ID3D12Resource* m_bufferResource;
-        D3D12_VERTEX_BUFFER_VIEW m_bufferView;
-
-        CD3DX12_CPU_DESCRIPTOR_HANDLE m_handle;
-
+        ID3D12Resource* m_resource;
         BufferType m_type;
         u64 m_size;
+
+#if D3D_DEBUG
+        std::string m_debugName;
+#endif
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

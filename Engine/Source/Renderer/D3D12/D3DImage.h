@@ -39,9 +39,7 @@ namespace dx3d
         bool upload(Context* context, const core::Dimension3D& size, u32 slices, u32 mips, const void* data) override;
         bool upload(Context* context, const core::Dimension3D& offsets, const core::Dimension3D& size, u32 slices, const void* data) override;
 
-        const CD3DX12_CPU_DESCRIPTOR_HANDLE& getDescriptorHandle() const;
         ID3D12Resource* getResource() const;
-
         const D3D12_SHADER_RESOURCE_VIEW_DESC& getView() const;
 
         const core::Dimension3D& getSize() const;

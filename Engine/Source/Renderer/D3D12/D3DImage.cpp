@@ -599,6 +599,19 @@ bool D3DImage::create()
         LOG_ERROR("D3DImage::create CreateCommittedResource is failed. Error %s", D3DDebug::stringError(result).c_str());
         return false;
     }
+#if D3D_DEBUG
+    wchar_t wtext[64];
+    if (!m_debugName.empty())
+    {
+        mbstowcs(wtext, m_debugName.c_str(), m_debugName.size() + 1);
+    }
+    else
+    {
+        std::string debugName = "ImageResource: " + std::to_string(reinterpret_cast<const u64>(this));
+        mbstowcs(wtext, debugName.c_str(), debugName.size() + 1);
+    }
+    m_resource->SetName(LPCWSTR(wtext));
+#endif
 
     m_view.Format = textureDesc.Format;
     m_view.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
@@ -613,7 +626,7 @@ bool D3DImage::create()
 
             m_view.Texture2D.MostDetailedMip = 0;
             m_view.Texture2D.MipLevels = m_mipmaps;
-            m_view.Texture2D.PlaneSlice = 1;
+            m_view.Texture2D.PlaneSlice = 0;
             m_view.Texture2D.ResourceMinLODClamp = 0.0f;
         }
         else
@@ -637,8 +650,16 @@ bool D3DImage::create(ID3D12Resource* resource, CD3DX12_CPU_DESCRIPTOR_HANDLE& h
     ASSERT(resource, "nullptr");
     m_resource = resource;
 #if D3D_DEBUG
-    wchar_t wtext[20];
-    mbstowcs(wtext, m_debugName.c_str(), m_debugName.size() + 1);
+    wchar_t wtext[64];
+    if (!m_debugName.empty())
+    {
+        mbstowcs(wtext, m_debugName.c_str(), m_debugName.size() + 1);
+    }
+    else
+    {
+        std::string debugName = "SwapchainImageResource: " + std::to_string(reinterpret_cast<const u64>(this));
+        mbstowcs(wtext, debugName.c_str(), debugName.size() + 1);
+    }
     m_resource->SetName(LPCWSTR(wtext));
 #endif
     m_handle = handle;
@@ -752,6 +773,12 @@ bool D3DImage::internalUpdate(Context* context, const core::Dimension3D& offsets
 
             return false;
         }
+#if D3D_DEBUG
+        wchar_t wtext[64];
+        std::string debugName = "UploadBufferResource: " + std::to_string(reinterpret_cast<const u64>(this));
+        mbstowcs(wtext, debugName.c_str(), debugName.size() + 1);
+        uploadResource->SetName(LPCWSTR(wtext));
+#endif
     }
 
     auto calculateMipSize = [](const core::Dimension3D& size) -> core::Dimension3D
@@ -766,22 +793,32 @@ bool D3DImage::internalUpdate(Context* context, const core::Dimension3D& offsets
 
     auto calculateSubresourceRowPitch = [](const core::Dimension3D& size, u32 mipLevel, Format format) -> u64
     {
-        u32 width = std::max(size.width >> mipLevel, 1U);
+        const u32 width = std::max(size.width >> mipLevel, 1U);
+        if (ImageFormat::isFormatCompressed(format))
+        {
+            const core::Dimension2D& blockDim = ImageFormat::getBlockDimension(format);
+            const u32 widthSize = (width + blockDim.width - 1) / blockDim.width;
 
-        u32 blockArea = ImageFormat::getBlockDimension(format).getArea();
-        f32 sizePerPixel = (f32)blockArea / (f32)ImageFormat::getFormatBlockSize(format);
+            return u64(widthSize * ImageFormat::getFormatBlockSize(format));
+        }
 
-        return u64(width * sizePerPixel);
+        return u64(width * ImageFormat::getFormatBlockSize(format));
     };
 
     auto calculateSubresourceSlicePitch = [](u64 rowPitch, const core::Dimension3D& size, u32 mipLevel, Format format) -> u64
     {
         u32 height = std::max(size.height >> mipLevel, 1U);
+        if (ImageFormat::isFormatCompressed(format))
+        {
+            const core::Dimension2D& blockDim = ImageFormat::getBlockDimension(format);
+            const u32 heightSize = (height + blockDim.height - 1) / blockDim.height;
 
+            return rowPitch * u64(heightSize * ImageFormat::getFormatBlockSize(format) * size.depth);
+        }
         u32 blockArea = ImageFormat::getBlockDimension(format).getArea();
-        f32 sizePerPixel = (f32)blockArea / (f32)ImageFormat::getFormatBlockSize(format);
+        f32 sizePerPixel = (f32)ImageFormat::getFormatBlockSize(format) / (f32)blockArea;
 
-        return u64(height * sizePerPixel * rowPitch * size.depth);
+        return rowPitch * u64(height * ImageFormat::getFormatBlockSize(format) * size.depth);
     };
 
     std::vector<D3D12_SUBRESOURCE_DATA> subresource;
@@ -806,10 +843,22 @@ bool D3DImage::internalUpdate(Context* context, const core::Dimension3D& offsets
         }
     }
 
+    D3D12_RESOURCE_STATES oldState = getState();
+    commandlist->transition(this, D3D12_RESOURCE_STATE_COPY_DEST);
+
     UpdateSubresources(commandlist->getHandle(), m_resource, uploadResource, 0, 0, static_cast<UINT>(subresource.size()), subresource.data());
 
     UploadResource* upload = new UploadResource(uploadResource);
     commandlist->setUsed(upload, 0);
+
+    if (!(m_flags & D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE))
+    {
+        commandlist->transition(this, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+    }
+    else
+    {
+        commandlist->transition(this, oldState);
+    }
 
     bool result = true;
     if (D3DDeviceCaps::getInstance()->immediateSubmitUpload)
@@ -861,11 +910,6 @@ D3D12_RESOURCE_STATES D3DImage::setState(D3D12_RESOURCE_STATES state)
 {
     D3D12_RESOURCE_STATES oldState = std::exchange(m_state, state);
     return oldState;
-}
-
-const CD3DX12_CPU_DESCRIPTOR_HANDLE& D3DImage::getDescriptorHandle() const
-{
-    return m_handle;
 }
 
 ID3D12Resource* D3DImage::getResource() const
