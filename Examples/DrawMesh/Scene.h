@@ -64,8 +64,12 @@ private:
         v3d::scene::ModelHelper* m_Model;
     };
     Model m_Voyager;
+    Model m_Test;
+
+    Model* m_CurrentModel;
 
     void LoadVoyager();
+    void LoadTest();
 };
 
 } //namespace app
