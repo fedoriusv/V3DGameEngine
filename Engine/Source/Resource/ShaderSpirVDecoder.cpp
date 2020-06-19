@@ -83,7 +83,13 @@ Resource * ShaderSpirVDecoder::decode(const stream::Stream* stream, const std::s
             {
             case renderer::ShaderHeader::ShaderLang::ShaderLang_GLSL:
                 options.SetSourceLanguage(shaderc_source_language_glsl);
+#if VULKAN_VERSION_1_0
+                options.SetTargetEnvironment(shaderc_target_env_vulkan, shaderc_env_version_vulkan_1_0);
+                options.SetTargetSpirv(shaderc_spirv_version_1_0);
+#else
                 options.SetTargetEnvironment(shaderc_target_env_vulkan, shaderc_env_version_vulkan_1_1);
+                options.SetTargetSpirv(shaderc_spirv_version_1_3);
+#endif
 
                 ASSERT(m_header._shaderVersion == renderer::ShaderHeader::ShaderModel::ShaderModel_Default ||
                     m_header._shaderVersion == renderer::ShaderHeader::ShaderModel::ShaderModel_GLSL_450, "wrong version");
@@ -91,7 +97,13 @@ Resource * ShaderSpirVDecoder::decode(const stream::Stream* stream, const std::s
 
             case renderer::ShaderHeader::ShaderLang::ShaderLang_HLSL:
                 options.SetSourceLanguage(shaderc_source_language_hlsl);
+#if VULKAN_VERSION_1_0
+                options.SetTargetEnvironment(shaderc_target_env_vulkan, shaderc_env_version_vulkan_1_0);
+                options.SetTargetSpirv(shaderc_spirv_version_1_0);
+#else
                 options.SetTargetEnvironment(shaderc_target_env_vulkan, shaderc_env_version_vulkan_1_1);
+                options.SetTargetSpirv(shaderc_spirv_version_1_3);
+#endif
 
                 ASSERT(m_header._shaderVersion == renderer::ShaderHeader::ShaderModel::ShaderModel_Default ||
                     m_header._shaderVersion == renderer::ShaderHeader::ShaderModel::ShaderModel_HLSL_5_0 ||
