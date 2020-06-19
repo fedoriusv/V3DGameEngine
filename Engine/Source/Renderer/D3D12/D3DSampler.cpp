@@ -112,6 +112,11 @@ D3D12_COMPARISON_FUNC D3DSampler::convertSamplerCompareOpD3D(CompareOperation op
     return D3D12_COMPARISON_FUNC_NEVER;
 }
 
+D3DSampler::D3DSampler() noexcept
+    : m_desc()
+{
+}
+
 bool D3DSampler::create(const SamplerDescription& info)
 {
     m_desc = {};

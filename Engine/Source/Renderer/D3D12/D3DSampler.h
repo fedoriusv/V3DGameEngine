@@ -27,7 +27,7 @@ namespace dx3d
         static D3D12_TEXTURE_ADDRESS_MODE convertSamplerWrapToAddressModeD3D(SamplerWrap wrap);
         static D3D12_COMPARISON_FUNC convertSamplerCompareOpD3D(CompareOperation op);
 
-        D3DSampler() noexcept = default;
+        D3DSampler() noexcept;
         D3DSampler(const D3DSampler&) = delete;
         ~D3DSampler() = default;
 
