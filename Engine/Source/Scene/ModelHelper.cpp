@@ -55,7 +55,7 @@ const renderer::VertexInputAttribDescription& ModelHelper::getVertexInputAttribD
     return m_models[modelIndex]->getMeshByIndex(meshIndex)->getVertexInputAttribDesc();
 }
 
-const std::vector<std::tuple<renderer::StreamBufferDescription, renderer::DrawProperties>> ModelHelper::getDrawStates() const
+const std::vector<std::tuple<renderer::StreamBufferDescription, renderer::DrawProperties>>& ModelHelper::getDrawStates() const
 {
     return m_drawState;
 }

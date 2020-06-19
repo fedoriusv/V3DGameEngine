@@ -33,7 +33,7 @@ namespace scene
         core::Vector4D getVectorParameter(MaterialHeader::Property property) const;
 
         static MaterialHelper* createMaterialHelper(renderer::CommandList& cmdList, Material* material);
-        static std::vector<MaterialHelper*> createMaterialHelpers(renderer::CommandList & cmdList, std::vector<Material*> materials);
+        static std::vector<MaterialHelper*> createMaterialHelpers(renderer::CommandList& cmdList, std::vector<Material*> materials);
 
     private:
 

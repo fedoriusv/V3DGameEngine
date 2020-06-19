@@ -26,6 +26,8 @@ namespace scene
         Camera& getCamera();
         void setPosition(const core::Vector3D& position);
         const core::Vector3D& getPosition() const;
+        const core::Matrix4D& getProjectionMatrix() const;
+        const core::Matrix4D& getViewMatrix() const;
 
         void setPerspective(f32 FOV, const core::Dimension2D& size, f32 zNear, f32 zFar);
         void setOrtho(const core::RectU32& area, f32 zNear, f32 zFar);

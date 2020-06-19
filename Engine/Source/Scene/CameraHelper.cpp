@@ -67,6 +67,18 @@ const core::Vector3D& CameraHelper::getPosition() const
     return m_transform.getPosition();
 }
 
+const core::Matrix4D& CameraHelper::getProjectionMatrix() const
+{
+    ASSERT(m_camera, "nullptr");
+    return m_camera->getProjectionMatrix();
+}
+
+const core::Matrix4D& CameraHelper::getViewMatrix() const
+{
+    ASSERT(m_camera, "nullptr");
+    return m_camera->getViewMatrix();
+}
+
 void CameraHelper::update(f32 deltaTime)
 {
     ASSERT(m_camera, "nullptr");

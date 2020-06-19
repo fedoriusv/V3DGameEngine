@@ -10,12 +10,12 @@ namespace v3d
 namespace scene
 {
 
- MaterialHelper * MaterialHelper::createMaterialHelper(renderer::CommandList & cmdList, Material * material)
+ MaterialHelper * MaterialHelper::createMaterialHelper(renderer::CommandList& cmdList, Material* material)
  {
      return new MaterialHelper(cmdList, material);
  }
 
- std::vector<MaterialHelper*> MaterialHelper::createMaterialHelpers(renderer::CommandList & cmdList, std::vector<Material*> materials)
+ std::vector<MaterialHelper*> MaterialHelper::createMaterialHelpers(renderer::CommandList& cmdList, std::vector<Material*> materials)
  {
      std::vector<MaterialHelper*> materialHelpers;
      materialHelpers.reserve(materials.size());
