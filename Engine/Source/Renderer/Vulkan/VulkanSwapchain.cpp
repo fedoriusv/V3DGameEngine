@@ -286,17 +286,22 @@ bool VulkanSwapchain::createSwapchain(const SwapchainConfig& config, VkSwapchain
     LOG_DEBUG("SwapChainVK::createSwapChain swapchain images count(min %u, max: %u), chosen: %u", m_surfaceCaps.minImageCount, m_surfaceCaps.maxImageCount, desiredNumberOfSwapchainImages);
 
     // Find the transformation of the surface
-    VkSurfaceTransformFlagBitsKHR preTransform;
-    if (m_surfaceCaps.supportedTransforms & VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR)
+    VkSurfaceTransformFlagBitsKHR preTransform = VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR;
+    VkExtent2D imageExtent = { config._size.width, config._size.height };
     {
-        // We prefer a non-rotated transform
-        preTransform = VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR;
+        if (m_surfaceCaps.supportedTransforms & VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR)
+        {
+            preTransform = VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR;
+        }
+        else
+        {
+            VulkanSwapchain::correctViewByOrientation<u32>(this, imageExtent.width, imageExtent.height);
+            ASSERT(preTransform == VK_SURFACE_TRANSFORM_ROTATE_90_BIT_KHR || preTransform == VK_SURFACE_TRANSFORM_ROTATE_180_BIT_KHR || preTransform == VK_SURFACE_TRANSFORM_ROTATE_270_BIT_KHR, "unsupported transform");
+            preTransform = m_surfaceCaps.currentTransform;
+        }
     }
-    else
-    {
-        preTransform = m_surfaceCaps.currentTransform;
-    }
-
+    LOG_DEBUG("SwapChainVK::createSwapChain android transform swapchain: (width %u, height %u), currentTransform: %u, supportedTransforms: %u, selectedTransform: %u", imageExtent.width, imageExtent.height, m_surfaceCaps.currentTransform, m_surfaceCaps.supportedTransforms, preTransform);
+    
     VkSwapchainCreateInfoKHR swapChainInfo = {};
     swapChainInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
     swapChainInfo.pNext = nullptr;
@@ -305,7 +310,7 @@ bool VulkanSwapchain::createSwapchain(const SwapchainConfig& config, VkSwapchain
     swapChainInfo.minImageCount = desiredNumberOfSwapchainImages;
     swapChainInfo.imageFormat = m_surfaceFormat.format;
     swapChainInfo.imageColorSpace = m_surfaceFormat.colorSpace;
-    swapChainInfo.imageExtent = { config._size.width, config._size.height };
+    swapChainInfo.imageExtent = imageExtent;
     swapChainInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
     swapChainInfo.preTransform = preTransform;
     swapChainInfo.imageArrayLayers = 1;
@@ -357,9 +362,10 @@ bool VulkanSwapchain::createSwapchainImages(const SwapchainConfig& config)
     if (m_swapBuffers.empty())
     {
         m_swapBuffers.reserve(swapChainImageCount);
+        VkExtent3D extent = { config._size.width, config._size.height, 1 };
+        VulkanSwapchain::correctViewByOrientation<u32>(this, extent.width, extent.height);
         for (auto& image : images)
         {
-            VkExtent3D extent = { config._size.width, config._size.height, 1 };
             VulkanImage* swapchainImage = new VulkanImage(nullptr, m_deviceInfo->_device, m_surfaceFormat.format, extent, VK_SAMPLE_COUNT_1_BIT, 
                 TextureUsage::TextureUsage_Attachment | TextureUsage::TextureUsage_Sampled | TextureUsage::TextureUsage_Read);
             if (!swapchainImage->create(image))
@@ -607,6 +613,11 @@ u32 VulkanSwapchain::getSwapchainImageCount() const
 u32 VulkanSwapchain::currentSwapchainIndex()
 {
     return s_currentImageIndex;
+}
+
+VkSurfaceTransformFlagBitsKHR VulkanSwapchain::getTransformFlag() const
+{
+    return m_surfaceCaps.currentTransform;
 }
 
 void VulkanSwapchain::attachResource(VulkanResource* resource, const std::function<bool(VulkanResource*)>& recreator)

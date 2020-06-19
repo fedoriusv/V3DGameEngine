@@ -3,7 +3,8 @@
 #include "VulkanRenderpass.h"
 #include "VulkanImage.h"
 #include "VulkanDebug.h"
-
+#include "VulkanGraphicContext.h"
+#include "VulkanSwapchain.h"
 
 
 #include "Utils/Logger.h"
@@ -16,8 +17,9 @@ namespace renderer
 namespace vk
 {
 
-VulkanFramebuffer::VulkanFramebuffer(VkDevice device, const std::vector<Image*>& images, const core::Dimension2D& size)
+VulkanFramebuffer::VulkanFramebuffer(VkDevice device, const Context* context, const std::vector<Image*>& images, const core::Dimension2D& size) noexcept
     : m_device(device)
+    , m_context(context)
     , m_images(images)
     , m_size(size)
 

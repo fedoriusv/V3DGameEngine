@@ -72,6 +72,8 @@ namespace vk
 
         VulkanImage*          getResolveImage() const;
 
+        bool                  isSwapchain() const;
+
     private:
 
         enum ImageAspect : s32

@@ -10,6 +10,11 @@ namespace v3d
 {
 namespace renderer
 {
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    class Context;
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
 namespace vk
 {
     /////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -21,7 +26,7 @@ namespace vk
     {
     public:
 
-        VulkanFramebuffer(VkDevice device, const std::vector<Image*>& images, const core::Dimension2D& size);
+        VulkanFramebuffer(VkDevice device, const Context* context, const std::vector<Image*>& images, const core::Dimension2D& size) noexcept;
         ~VulkanFramebuffer();
 
         VkFramebuffer getHandle() const;
@@ -33,6 +38,7 @@ namespace vk
     private:
 
         VkDevice                    m_device;
+        const Context* const        m_context;
 
         const std::vector<Image*>   m_images;
         std::vector<VkImageView>    m_imageViews;

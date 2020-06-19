@@ -1647,6 +1647,11 @@ void VulkanImage::destroy()
     }
 }
 
+bool VulkanImage::isSwapchain() const
+{
+    return m_swapchainImage;
+}
+
 VulkanImage::ImageAspect VulkanImage::convertVkImageAspectFlags(VkImageAspectFlags aspect)
 {
     switch (aspect)

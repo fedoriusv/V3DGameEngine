@@ -5,6 +5,7 @@
 
 #ifdef VULKAN_RENDER
 #include "VulkanWrapper.h"
+#include "VulkanDeviceCaps.h"
 
 namespace v3d
 {
@@ -12,6 +13,8 @@ namespace renderer
 {
 namespace vk
 {
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
+    
     class VulkanResource;
     class VulkanImage;
 
@@ -50,6 +53,19 @@ namespace vk
         u32 getSwapchainImageCount() const;
 
         static u32 currentSwapchainIndex();
+
+        template<typename Type>
+        static bool correctViewByOrientation(const VulkanSwapchain* swapchain, Type& width, Type& height)
+        {
+            if (swapchain->getTransformFlag() == VK_SURFACE_TRANSFORM_ROTATE_90_BIT_KHR || swapchain->getTransformFlag() == VK_SURFACE_TRANSFORM_ROTATE_270_BIT_KHR)
+            {
+                std::swap(width, height);
+                return true;
+            }
+            return false;
+        }
+
+        VkSurfaceTransformFlagBitsKHR getTransformFlag() const;
 
     private:
 

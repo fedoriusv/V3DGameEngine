@@ -161,10 +161,11 @@ void VulkanDeviceCaps::fillCapabilitiesList(const DeviceInfo* info)
         return false;
     };
 
+    ASSERT(isEnableExtension(VK_KHR_MAINTENANCE2_EXTENSION_NAME), "required VK_KHR_maintenance2 extension");
     supportRenderpass2 = isEnableExtension(VK_KHR_CREATE_RENDERPASS_2_EXTENSION_NAME);
     enableSamplerMirrorClampToEdge = isEnableExtension(VK_KHR_SAMPLER_MIRROR_CLAMP_TO_EDGE_EXTENSION_NAME);
     supportDepthAutoResolve = isEnableExtension(VK_KHR_DEPTH_STENCIL_RESOLVE_EXTENSION_NAME);
-    supportDedicatedAllocation = false;//isEnableExtension(VK_KHR_DEDICATED_ALLOCATION_EXTENSION_NAME);
+    supportDedicatedAllocation = false;//isEnableExtension(VK_KHR_DEDICATED_ALLOCATION_EXTENSION_NAME); //TODO
     supportPipelineExecutableProperties = isEnableExtension(VK_KHR_PIPELINE_EXECUTABLE_PROPERTIES_EXTENSION_NAME);
 
     if (VulkanDeviceCaps::checkInstanceExtension(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME))
@@ -277,6 +278,12 @@ void VulkanDeviceCaps::fillCapabilitiesList(const DeviceInfo* info)
 
     //VK_EXT_memory_budget
     //VK_EXT_memory_priority
+
+    LOG_INFO("VulkanDeviceCaps::initialize: API version: %u", m_deviceProperties.apiVersion);
+    LOG_INFO("VulkanDeviceCaps::initialize: Driver version: %u", m_deviceProperties.driverVersion);
+    LOG_INFO("VulkanDeviceCaps::initialize: Vendor ID: %u", m_deviceProperties.vendorID);
+    LOG_INFO("VulkanDeviceCaps::initialize: Device ID: %u", m_deviceProperties.deviceID);
+    LOG_INFO("VulkanDeviceCaps::initialize: Device Name: %s", m_deviceProperties.deviceName);
 
     LOG_INFO("VulkanDeviceCaps::initialize:  supportRenderpass2 is %s", supportRenderpass2 ? "supported" : "unsupported");
     LOG_INFO("VulkanDeviceCaps::initialize:  enableSamplerMirrorClampToEdge is %s", enableSamplerMirrorClampToEdge ? "supported" : "unsupported");

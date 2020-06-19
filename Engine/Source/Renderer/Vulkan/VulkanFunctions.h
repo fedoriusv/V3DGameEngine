@@ -14,6 +14,10 @@
 
 #include <vulkan/vulkan.h>
 
+#if defined(PLATFORM_ANDROID)
+#   include "Android/AndroidVulkanExtension.h"
+#endif
+
 #ifdef VK_NO_PROTOTYPES
     //Base functions
 #   define ENUM_VK_ENTRYPOINTS_BASE_FUNCTIONS(Macro) \

@@ -141,7 +141,7 @@ bool VulkanRenderPass::create()
         u32 index = 0;
         for (u32 descIndex = 0; descIndex < m_descriptions.size(); ++descIndex)
         {
-            VulkanAttachmentDescription &attach = m_descriptions[descIndex];
+            VulkanAttachmentDescription& attach = m_descriptions[descIndex];
             ASSERT(attach._format != VK_FORMAT_UNDEFINED, "undefined format");
 
             bool disableAutoresolve = !attach._autoResolve;

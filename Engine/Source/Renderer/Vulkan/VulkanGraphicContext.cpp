@@ -252,7 +252,7 @@ void VulkanGraphicContext::submit(bool wait)
 #endif
 }
 
-void VulkanGraphicContext::clearBackbuffer(const core::Vector4D & color)
+void VulkanGraphicContext::clearBackbuffer(const core::Vector4D& color)
 {
     ASSERT(m_swapchain, "m_swapchain is nullptr");
     m_swapchain->getBackbuffer()->clear(this, color);
@@ -268,13 +268,17 @@ void VulkanGraphicContext::setViewport(const core::Rect32& viewport, const core:
     {
         VkViewport vkViewport = {};
         vkViewport.x = static_cast<f32>(viewport.getLeftX());
-        vkViewport.y = static_cast<f32>(viewport.getTopY() + viewport.getHeight());
+        vkViewport.y = static_cast<f32>(viewport.getTopY());
         vkViewport.width = static_cast<f32>(viewport.getWidth());
-        vkViewport.height = -static_cast<f32>(viewport.getHeight());
+        vkViewport.height = static_cast<f32>(viewport.getHeight());
         vkViewport.minDepth = depth.x;
         vkViewport.maxDepth = depth.y;
+
+        vkViewport.y = vkViewport.y + vkViewport.height;
+        vkViewport.height = -vkViewport.height;
+      
         std::vector<VkViewport> viewports = { vkViewport };
- 
+
         VulkanCommandBuffer* drawBuffer = m_currentBufferState.getAcitveBuffer(CommandTargetType::CmdDrawBuffer);
         m_currentContextState->setDynamicState(VK_DYNAMIC_STATE_VIEWPORT, std::bind(&VulkanCommandBuffer::cmdSetViewport, drawBuffer, viewports));
     }
@@ -284,7 +288,7 @@ void VulkanGraphicContext::setViewport(const core::Rect32& viewport, const core:
     }
 }
 
-void VulkanGraphicContext::setScissor(const core::Rect32 & scissor)
+void VulkanGraphicContext::setScissor(const core::Rect32& scissor)
 {
     ASSERT(m_currentBufferState.isCurrentBufferAcitve(CommandTargetType::CmdDrawBuffer), "nullptr");
 #if VULKAN_DEBUG
@@ -295,7 +299,6 @@ void VulkanGraphicContext::setScissor(const core::Rect32 & scissor)
         VkRect2D vkScissor = {};
         vkScissor.offset = { scissor.getLeftX(), scissor.getTopY() };
         vkScissor.extent = { static_cast<u32>(scissor.getWidth()), static_cast<u32>(scissor.getHeight()) };
-
         std::vector<VkRect2D> scissors = { vkScissor };
 
         VulkanCommandBuffer* drawBuffer = m_currentBufferState.getAcitveBuffer(CommandTargetType::CmdDrawBuffer);
@@ -773,7 +776,7 @@ bool VulkanGraphicContext::initialize()
     config._vsync = true;
     config._countSwapchainImages = 3;
 #else
-    config._vsync = false; //TODO
+    config._vsync = false; //TODO need config from high level
     config._countSwapchainImages = 3;
 #endif
 
@@ -957,7 +960,7 @@ void VulkanGraphicContext::destroy()
 
 Framebuffer* VulkanGraphicContext::createFramebuffer(const std::vector<Image*>& images, const core::Dimension2D& size)
 {
-    return new VulkanFramebuffer(m_deviceInfo._device, images, size);
+    return new VulkanFramebuffer(m_deviceInfo._device, this, images, size);
 }
 
 RenderPass* VulkanGraphicContext::createRenderPass(const RenderPassDescription* renderpassDesc)
@@ -1320,8 +1323,13 @@ bool VulkanGraphicContext::createDevice()
 bool VulkanGraphicContext::prepareDraw(VulkanCommandBuffer* drawBuffer)
 {
     ASSERT(drawBuffer, "nullptr");
-    m_currentContextState->invokeDynamicStates();
+    ASSERT(m_currentContextState->getCurrentRenderpass(), "not bound");
+    if (!drawBuffer->isInsideRenderPass())
+    {
+        drawBuffer->cmdBeginRenderpass(m_currentContextState->getCurrentRenderpass(), m_currentContextState->getCurrentFramebuffer(), m_currentContextState->m_renderPassArea, m_currentContextState->m_renderPassClearValues);
+    }
 
+    m_currentContextState->invokeDynamicStates();
     if (m_pendingState.isPipeline())
     {
         if (m_currentContextState->setCurrentPipeline(m_pendingState.takePipeline()))
@@ -1336,13 +1344,6 @@ bool VulkanGraphicContext::prepareDraw(VulkanCommandBuffer* drawBuffer)
     if (m_currentContextState->prepareDescriptorSets(drawBuffer, sets, offsets))
     {
         drawBuffer->cmdBindDescriptorSets(m_currentContextState->getCurrentPipeline(), 0, static_cast<u32>(sets.size()), sets, offsets);
-    }
-
-
-    ASSERT(m_currentContextState->getCurrentRenderpass(), "not bound");
-    if (!drawBuffer->isInsideRenderPass())
-    {
-        drawBuffer->cmdBeginRenderpass(m_currentContextState->getCurrentRenderpass(), m_currentContextState->getCurrentFramebuffer(), m_currentContextState->m_renderPassArea, m_currentContextState->m_renderPassClearValues);
     }
 
     return true;
