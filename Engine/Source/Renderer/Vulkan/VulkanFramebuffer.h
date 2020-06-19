@@ -38,7 +38,7 @@ namespace vk
     private:
 
         VkDevice                    m_device;
-        const Context* const        m_context;
+        [[maybe_unused]] const Context* const m_context;
 
         const std::vector<Image*>   m_images;
         std::vector<VkImageView>    m_imageViews;

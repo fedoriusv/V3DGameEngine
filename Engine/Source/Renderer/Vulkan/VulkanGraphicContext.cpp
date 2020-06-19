@@ -621,7 +621,7 @@ void VulkanGraphicContext::draw(const StreamBufferDescription& desc, u32 firstVe
 #if VULKAN_DEBUG
     LOG_DEBUG("VulkanGraphicContext::draw");
 #endif //VULKAN_DEBUG
-    bool changed = m_currentContextState->setCurrentVertexBuffers(desc);
+    [[maybe_unused]] bool changed = m_currentContextState->setCurrentVertexBuffers(desc);
 
     ASSERT(m_currentBufferState.isCurrentBufferAcitve(CommandTargetType::CmdDrawBuffer), "nullptr");
     VulkanCommandBuffer* drawBuffer = m_currentBufferState.getAcitveBuffer(CommandTargetType::CmdDrawBuffer);
@@ -647,7 +647,7 @@ void VulkanGraphicContext::drawIndexed(const StreamBufferDescription& desc, u32 
 #if VULKAN_DEBUG
     LOG_DEBUG("VulkanGraphicContext::drawIndexed");
 #endif //VULKAN_DEBUG
-    bool changed = m_currentContextState->setCurrentVertexBuffers(desc);
+    [[maybe_unused]] bool changed = m_currentContextState->setCurrentVertexBuffers(desc);
 
     ASSERT(m_currentBufferState.isCurrentBufferAcitve(CommandTargetType::CmdDrawBuffer), "nullptr");
     VulkanCommandBuffer* drawBuffer = m_currentBufferState.getAcitveBuffer(CommandTargetType::CmdDrawBuffer);
