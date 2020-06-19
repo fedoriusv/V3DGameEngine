@@ -42,7 +42,7 @@ int MyApplication::Execute()
 
 bool MyApplication::Initialize()
 {
-    m_Window = platform::Window::createWindow({ 1280, 720 }, { 800, 500 }, false, new event::InputEventReceiver());
+    m_Window = platform::Window::createWindow({ 1920, 1080 }, { 400, 200 }, false, new event::InputEventReceiver());
     if (!m_Window)
     {
         return false;

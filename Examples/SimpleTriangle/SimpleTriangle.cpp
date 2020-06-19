@@ -75,8 +75,7 @@ void SimpleTriangle::init(v3d::renderer::CommandList* commandList, const core::D
         vertexHeader._shaderLang = renderer::ShaderHeader::ShaderLang::ShaderLang_HLSL;
         vertexHeader._shaderVersion = renderer::ShaderHeader::ShaderModel::ShaderModel_HLSL_5_1;
 
-        vertShader = resource::ResourceLoaderManager::getInstance()->composeShader<renderer::Shader, resource::ShaderSourceStreamLoader>(
-            m_CommandList->getContext(), "vertex", &vertexHeader, vertexStream);
+        vertShader = resource::ResourceLoaderManager::getInstance()->composeShader<renderer::Shader, resource::ShaderSourceStreamLoader>(m_CommandList->getContext(), "vertex", &vertexHeader, vertexStream);
     }
 
     const renderer::Shader* fragShader = nullptr;
@@ -98,20 +97,32 @@ void SimpleTriangle::init(v3d::renderer::CommandList* commandList, const core::D
         fragmentHeader._contentType = renderer::ShaderHeader::ShaderResource::ShaderResource_Source;
         fragmentHeader._shaderLang = renderer::ShaderHeader::ShaderLang::ShaderLang_HLSL;
 
-        fragShader = resource::ResourceLoaderManager::getInstance()->composeShader<renderer::Shader, resource::ShaderSourceStreamLoader>(
-            m_CommandList->getContext(), "fragment", &fragmentHeader, fragmentStream);
+        fragShader = resource::ResourceLoaderManager::getInstance()->composeShader<renderer::Shader, resource::ShaderSourceStreamLoader>(m_CommandList->getContext(), "fragment", &fragmentHeader, fragmentStream);
     }
 
     ASSERT(vertShader && fragShader, "nullptr");
     m_Program = m_CommandList->createObject<renderer::ShaderProgram, std::vector<const renderer::Shader*>>({ vertShader, fragShader });
 
     m_RenderTarget = m_CommandList->createObject<renderer::RenderTargetState>(size);
-    m_RenderTarget->setColorTexture(0, m_CommandList->getBackbuffer(), { renderer::RenderTargetLoadOp::LoadOp_Clear, renderer::RenderTargetStoreOp::StoreOp_Store, core::Vector4D(0.0f) },
-        { renderer::TransitionOp::TransitionOp_Undefined, renderer::TransitionOp::TransitionOp_Present });
+    m_RenderTarget->setColorTexture(0, m_CommandList->getBackbuffer(),
+        {
+            renderer::RenderTargetLoadOp::LoadOp_Clear, renderer::RenderTargetStoreOp::StoreOp_Store, core::Vector4D(0.0f)
+        },
+        {
+            renderer::TransitionOp::TransitionOp_Undefined, renderer::TransitionOp::TransitionOp_Present
+        });
 
     renderer::Texture2D* depthAttachment = m_CommandList->createObject<renderer::Texture2D>(renderer::TextureUsage::TextureUsage_Attachment, renderer::Format::Format_D24_UNorm_S8_UInt, size, renderer::TextureSamples::TextureSamples_x1);
-    m_RenderTarget->setDepthStencilTexture(depthAttachment, { renderer::RenderTargetLoadOp::LoadOp_Clear, renderer::RenderTargetStoreOp::StoreOp_DontCare, 1.0f}, { renderer::RenderTargetLoadOp::LoadOp_DontCare, renderer::RenderTargetStoreOp::StoreOp_DontCare, 0 },
-        { renderer::TransitionOp::TransitionOp_Undefined, renderer::TransitionOp::TransitionOp_DepthStencilAttachmet });
+    m_RenderTarget->setDepthStencilTexture(depthAttachment, 
+        {
+            renderer::RenderTargetLoadOp::LoadOp_Clear, renderer::RenderTargetStoreOp::StoreOp_DontCare, 1.0f
+        },
+        {
+            renderer::RenderTargetLoadOp::LoadOp_DontCare, renderer::RenderTargetStoreOp::StoreOp_DontCare, 0
+        },
+        {
+            renderer::TransitionOp::TransitionOp_Undefined, renderer::TransitionOp::TransitionOp_DepthStencilAttachmet
+        });
 
     std::vector<core::Vector3D> geometryData = 
     {
@@ -173,7 +184,7 @@ void SimpleTriangle::render()
     ubo1.modelMatrix.setTranslation(core::Vector3D(-1, 0, 0));
     ubo1.viewMatrix = m_Camera->getCamera().getViewMatrix();
 
-    m_Program->bindUniformsBuffer<renderer::ShaderType::ShaderType_Vertex>({"buffer"}, 0, (u32)sizeof(UBO), &ubo1);
+    m_Program->bindUniformsBuffer<renderer::ShaderType::ShaderType_Vertex>({ "buffer" }, 0, (u32)sizeof(UBO), &ubo1);
     m_CommandList->draw(renderer::StreamBufferDescription(m_Geometry, 0), 0, 3, 1);
 
     UBO ubo2;
