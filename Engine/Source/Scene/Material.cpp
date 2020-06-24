@@ -18,12 +18,12 @@ MaterialHeader::PropertyInfo::PropertyInfo()
 Material::Material(MaterialHeader* header) noexcept
     : Resource(header)
 {
-    LOG_DEBUG("Mesh constructor %xll", this);
+    LOG_DEBUG("Material constructor %xll", this);
 }
 
 Material::~Material()
 {
-    LOG_DEBUG("Mesh destructor %xll", this);
+    LOG_DEBUG("Material destructor %xll", this);
 }
 
 void Material::init(stream::Stream * stream)

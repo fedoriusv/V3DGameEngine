@@ -29,8 +29,8 @@ namespace scene
 
         void update(f32 deltaTime) override;
 
-        void rotateHandlerCallback(v3d::event::InputEventHandler* handler, const event::MouseInputEvent* event, bool mouseCapture);
-        void moveHandlerCallback(v3d::event::InputEventHandler* handler, const event::KeyboardInputEvent* event);
+        void rotateHandlerCallback(const v3d::event::InputEventHandler* handler, const event::MouseInputEvent* event, bool mouseCapture);
+        void moveHandlerCallback(const v3d::event::InputEventHandler* handler, const event::KeyboardInputEvent* event);
 
     private:
 
