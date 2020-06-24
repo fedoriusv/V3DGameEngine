@@ -38,19 +38,19 @@ bool WindowAndroid::initialize()
     ASSERT(g_nativeAndroidApp, "nullptr");
 
     g_nativeAndroidApp->userData = this;
-	g_nativeAndroidApp->onAppCmd = WindowAndroid::handleCmdCallback;
-	g_nativeAndroidApp->onInputEvent = WindowAndroid::handleInputCallback;
+    g_nativeAndroidApp->onAppCmd = WindowAndroid::handleCmdCallback;
+    g_nativeAndroidApp->onInputEvent = WindowAndroid::handleInputCallback;
 
     // Prepare to monitor accelerometer
-	m_sensorManager = ASensorManager_getInstance();
-	m_accelerometerSensor = ASensorManager_getDefaultSensor(m_sensorManager, ASENSOR_TYPE_ACCELEROMETER);
-	m_sensorEventQueue = ASensorManager_createEventQueue(m_sensorManager, g_nativeAndroidApp->looper, LOOPER_ID_USER, NULL, NULL);
+    m_sensorManager = ASensorManager_getInstance();
+    m_accelerometerSensor = ASensorManager_getDefaultSensor(m_sensorManager, ASENSOR_TYPE_ACCELEROMETER);
+    m_sensorEventQueue = ASensorManager_createEventQueue(m_sensorManager, g_nativeAndroidApp->looper, LOOPER_ID_USER, NULL, NULL);
 
-	if (g_nativeAndroidApp->savedState != NULL) 
+    if (g_nativeAndroidApp->savedState != NULL)
     {
-		// We are starting with a previous saved state; restore from it.
-		m_state = *reinterpret_cast<SavedState*>(g_nativeAndroidApp->savedState);
-	}
+        // We are starting with a previous saved state; restore from it.
+        m_state = *reinterpret_cast<SavedState *>(g_nativeAndroidApp->savedState);
+    }
 
     bool result = true;
     while(!m_ready)
