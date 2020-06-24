@@ -249,7 +249,7 @@ private:
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-Texture2D::Texture2D(renderer::CommandList& cmdList, TextureUsageFlags usage, renderer::Format format, const core::Dimension2D& dimension, u32 layers, u32 mipmapCount, const void * data) noexcept
+Texture2D::Texture2D(renderer::CommandList& cmdList, TextureUsageFlags usage, renderer::Format format, const core::Dimension2D& dimension, u32 layers, u32 mipmapCount, const void* data, const std::string& name) noexcept
     : m_cmdList(cmdList)
     , m_target(renderer::TextureTarget::Texture2D)
     , m_format(format)
@@ -263,14 +263,14 @@ Texture2D::Texture2D(renderer::CommandList& cmdList, TextureUsageFlags usage, re
 
 {
     core::Dimension3D dim = { m_dimension.width, m_dimension.height, 1 };
-    m_image = m_cmdList.getContext()->createImage(m_target, m_format, dim, m_layers, m_mipmaps, m_usage);
+    m_image = m_cmdList.getContext()->createImage(m_target, m_format, dim, m_layers, m_mipmaps, m_usage, name);
     ASSERT(m_image, "m_image is nullptr");
     m_image->registerNotify(this);
 
     createTexture2D(data);
 }
 
-Texture2D::Texture2D(renderer::CommandList & cmdList, TextureUsageFlags usage, renderer::Format format, const core::Dimension2D & dimension, renderer::TextureSamples samples) noexcept
+Texture2D::Texture2D(renderer::CommandList & cmdList, TextureUsageFlags usage, renderer::Format format, const core::Dimension2D & dimension, renderer::TextureSamples samples, const std::string& name) noexcept
     : m_cmdList(cmdList)
     , m_target(renderer::TextureTarget::Texture2D)
     , m_format(format)
@@ -284,7 +284,7 @@ Texture2D::Texture2D(renderer::CommandList & cmdList, TextureUsageFlags usage, r
 {
     core::Dimension3D dim = { m_dimension.width, m_dimension.height, 1 };
 
-    m_image = m_cmdList.getContext()->createImage(m_format, dim, m_samples, m_usage);
+    m_image = m_cmdList.getContext()->createImage(m_format, dim, m_samples, m_usage, name);
     ASSERT(m_image, "m_image is nullptr");
     m_image->registerNotify(this);
 
@@ -337,7 +337,7 @@ void Texture2D::createTexture2D(const void * data)
     }
 }
 
-renderer::Image * Texture2D::getImage() const
+renderer::Image* Texture2D::getImage() const
 {
     ASSERT(m_image, "nullptr");
     return m_image;
@@ -345,6 +345,7 @@ renderer::Image * Texture2D::getImage() const
 
 Texture2D::~Texture2D()
 {
+    LOG_DEBUG("Texture2D::Texture2D destructor %llx", this);
     ASSERT(m_image, "image nullptr");
     m_image->unregisterNotify(this);
     if (m_cmdList.isImmediate())

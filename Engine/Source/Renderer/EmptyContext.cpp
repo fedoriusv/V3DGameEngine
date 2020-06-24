@@ -52,13 +52,13 @@ void EmptyContext::setScissor(const core::Rect32 & scissor)
     LOG_DEBUG("EmptyContext::setScissor");
 }
 
-Image * EmptyContext::createImage(TextureTarget target, renderer::Format format, const core::Dimension3D& dimension, u32 layers, u32 mipmapLevel, TextureUsageFlags flags)
+Image * EmptyContext::createImage(TextureTarget target, renderer::Format format, const core::Dimension3D& dimension, u32 layers, u32 mipmapLevel, TextureUsageFlags flags, const std::string& name)
 {
     LOG_DEBUG("EmptyContext::createImage");
     return nullptr;
 }
 
-Image* EmptyContext::createImage(renderer::Format format, const core::Dimension3D& dimension, TextureSamples samples, TextureUsageFlags flags)
+Image* EmptyContext::createImage(renderer::Format format, const core::Dimension3D& dimension, TextureSamples samples, TextureUsageFlags flags, const std::string& name)
 {
     LOG_DEBUG("EmptyContext::createImage");
     return nullptr;
@@ -163,7 +163,7 @@ Sampler * EmptyContext::createSampler()
     return nullptr;
 }
 
-Buffer * EmptyContext::createBuffer(Buffer::BufferType type, u16 usageFlag, u64 size)
+Buffer * EmptyContext::createBuffer(Buffer::BufferType type, u16 usageFlag, u64 size, const std::string& name)
 {
     LOG_DEBUG("EmptyContext::createBuffer");
     return nullptr;

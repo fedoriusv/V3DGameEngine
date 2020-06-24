@@ -448,17 +448,17 @@ void D3DGraphicContext::removePipeline(Pipeline* pipeline)
     }
 }
 
-Image* D3DGraphicContext::createImage(TextureTarget target, Format format, const core::Dimension3D& dimension, u32 layers, u32 mipmapLevel, TextureUsageFlags flags)
+Image* D3DGraphicContext::createImage(TextureTarget target, Format format, const core::Dimension3D& dimension, u32 layers, u32 mipmapLevel, TextureUsageFlags flags, const std::string& name)
 {
 #if D3D_DEBUG
     LOG_DEBUG("D3DGraphicContext::createImage");
 #endif //D3D_DEBUG
     D3D12_RESOURCE_DIMENSION dxDimension = D3DImage::convertImageTargetToD3DDimension(target);
 
-    return new D3DImage(m_device, dxDimension, format, dimension, layers, mipmapLevel, flags);
+    return new D3DImage(m_device, dxDimension, format, dimension, layers, mipmapLevel, flags, name);
 }
 
-Image* D3DGraphicContext::createImage(Format format, const core::Dimension3D& dimension, TextureSamples samples, TextureUsageFlags flags)
+Image* D3DGraphicContext::createImage(Format format, const core::Dimension3D& dimension, TextureSamples samples, TextureUsageFlags flags, const std::string& name)
 {
 #if D3D_DEBUG
     LOG_DEBUG("D3DGraphicContext::createImage");
@@ -466,7 +466,7 @@ Image* D3DGraphicContext::createImage(Format format, const core::Dimension3D& di
     u32 dxSamples = (samples > TextureSamples::TextureSamples_x1) ? 2 << (u32)samples : 1;
     ASSERT(dimension.depth == 1, "must be 1");
 
-    return new D3DImage(m_device, format, dimension.width, dimension.height, dxSamples, flags);
+    return new D3DImage(m_device, format, dimension.width, dimension.height, dxSamples, flags, name);
 }
 
 void D3DGraphicContext::removeImage(Image* image)
@@ -491,14 +491,14 @@ void D3DGraphicContext::removeImage(Image* image)
     }
 }
 
-Buffer* D3DGraphicContext::createBuffer(Buffer::BufferType type, u16 usageFlag, u64 size)
+Buffer* D3DGraphicContext::createBuffer(Buffer::BufferType type, u16 usageFlag, u64 size, const std::string& name)
 {
 #if D3D_DEBUG
     LOG_DEBUG("D3DGraphicContext::createBuffer");
 #endif //D3D_DEBUG
     if (type == Buffer::BufferType::BufferType_VertexBuffer || type == Buffer::BufferType::BufferType_IndexBuffer || type == Buffer::BufferType::BufferType_UniformBuffer)
     {
-        return new D3DBuffer(m_device, type, usageFlag, size);
+        return new D3DBuffer(m_device, type, usageFlag, size, name);
     }
 
     ASSERT(false, "not supported");

@@ -83,6 +83,7 @@ void SamplerState::destroySamplers(const std::vector<Sampler*>& samplers)
 
 SamplerState::~SamplerState()
 {
+    LOG_DEBUG("SamplerState::SamplerState destructor %llx", this);
     m_trackerSampler.release();
 }
 

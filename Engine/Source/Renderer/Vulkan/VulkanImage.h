@@ -28,8 +28,8 @@ namespace vk
         VulkanImage() = delete;
         VulkanImage(const VulkanImage&) = delete;
 
-        VulkanImage(VulkanMemory::VulkanMemoryAllocator* memory, VkDevice device, VkImageType type, VkFormat format, VkExtent3D dimension, u32 layers, u32 mipsLevel, VkImageTiling tiling, TextureUsageFlags usage, const std::string& name = "") noexcept;
-        VulkanImage(VulkanMemory::VulkanMemoryAllocator* memory, VkDevice device, VkFormat format, VkExtent3D dimension, VkSampleCountFlagBits samples, TextureUsageFlags usage, const std::string& name = "") noexcept;
+        VulkanImage(VulkanMemory::VulkanMemoryAllocator* memory, VkDevice device, VkImageType type, VkFormat format, VkExtent3D dimension, u32 layers, u32 mipsLevel, VkImageTiling tiling, TextureUsageFlags usage, [[maybe_unused]] const std::string& name = "") noexcept;
+        VulkanImage(VulkanMemory::VulkanMemoryAllocator* memory, VkDevice device, VkFormat format, VkExtent3D dimension, VkSampleCountFlagBits samples, TextureUsageFlags usage, [[maybe_unused]] const std::string& name = "") noexcept;
         ~VulkanImage();
 
         bool create() override;
@@ -73,6 +73,10 @@ namespace vk
         VulkanImage*          getResolveImage() const;
 
         bool                  isSwapchain() const;
+
+#if DEBUG_OBJECT_MEMORY
+        static std::set<VulkanImage*> s_objects;
+#endif //DEBUG_OBJECT_MEMORY
 
     private:
 

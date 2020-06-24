@@ -36,6 +36,7 @@ namespace renderer
     StreamBufferUsageFlags usage
     u64 size - in bytes
     const u8* data
+    const std::string& name
     */
     class VertexStreamBuffer : public StreamBuffer, public utils::Observer
     {
@@ -52,7 +53,7 @@ namespace renderer
 
         void handleNotify(utils::Observable* ob) override;
 
-        explicit VertexStreamBuffer(CommandList& cmdList, StreamBufferUsageFlags usage, u64 size, const u8* data) noexcept;
+        explicit VertexStreamBuffer(CommandList& cmdList, StreamBufferUsageFlags usage, u64 size, const u8* data, [[maybe_unused]] const std::string& name = "") noexcept;
 
         friend CommandList;
         CommandList& m_cmdList;
@@ -76,6 +77,7 @@ namespace renderer
     StreamIndexBufferType type
     u32 count
     const u8* data
+    const std::string& name
     */
     class IndexStreamBuffer : public StreamBuffer, public utils::Observer
     {
@@ -90,7 +92,7 @@ namespace renderer
 
     private:
 
-        explicit IndexStreamBuffer(CommandList& cmdList, StreamBufferUsageFlags usage, StreamIndexBufferType type, u32 count, const u8* data) noexcept;
+        explicit IndexStreamBuffer(CommandList& cmdList, StreamBufferUsageFlags usage, StreamIndexBufferType type, u32 count, const u8* data, [[maybe_unused]] const std::string& name = "") noexcept;
 
         void handleNotify(utils::Observable* ob) override;
 

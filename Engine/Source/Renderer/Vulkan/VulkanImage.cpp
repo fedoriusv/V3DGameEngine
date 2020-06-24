@@ -774,6 +774,10 @@ VkSampleCountFlagBits VulkanImage::convertRenderTargetSamplesToVkSampleCount(Tex
     return VK_SAMPLE_COUNT_1_BIT;
 }
 
+#if DEBUG_OBJECT_MEMORY
+std::set<VulkanImage*> VulkanImage::s_objects;
+#endif //DEBUG_OBJECT_MEMORY
+
 VulkanImage::VulkanImage(VulkanMemory::VulkanMemoryAllocator* memory, VkDevice device, VkImageType type, VkFormat format, VkExtent3D dimension, u32 layers, u32 mipsLevel, VkImageTiling tiling, TextureUsageFlags usage, const std::string& name) noexcept
     : m_device(device)
     , m_type(type)
@@ -805,6 +809,9 @@ VulkanImage::VulkanImage(VulkanMemory::VulkanMemoryAllocator* memory, VkDevice d
 #if VULKAN_DEBUG_MARKERS
     m_debugName = name.empty() ? std::to_string(reinterpret_cast<const u64>(this)) : name;
 #endif //VULKAN_DEBUG_MARKERS
+#if DEBUG_OBJECT_MEMORY
+    s_objects.insert(this);
+#endif //DEBUG_OBJECT_MEMORY
 }
 
 VulkanImage::VulkanImage(VulkanMemory::VulkanMemoryAllocator* memory, VkDevice device, VkFormat format, VkExtent3D dimension, VkSampleCountFlagBits samples, TextureUsageFlags usage, const std::string& name) noexcept
@@ -859,11 +866,17 @@ VulkanImage::VulkanImage(VulkanMemory::VulkanMemoryAllocator* memory, VkDevice d
 #if VULKAN_DEBUG_MARKERS
     m_debugName = name.empty() ? std::to_string(reinterpret_cast<const u64>(this)) : name;
 #endif //VULKAN_DEBUG_MARKERS
+#if DEBUG_OBJECT_MEMORY
+    s_objects.insert(this);
+#endif //DEBUG_OBJECT_MEMORY
 }
 
 VulkanImage::~VulkanImage()
 {
     LOG_DEBUG("VulkanImage::VulkanImage destructor %llx", this);
+#if DEBUG_OBJECT_MEMORY
+    s_objects.erase(this);
+#endif //DEBUG_OBJECT_MEMORY
 
     ASSERT(!m_resolveImage, "m_resolveImage nullptr");
     for (u32 i = 0; i < ImageAspect::ImageAspect_Count; ++i)

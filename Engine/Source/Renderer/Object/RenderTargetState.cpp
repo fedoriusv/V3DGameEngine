@@ -135,6 +135,7 @@ RenderTargetState::RenderTargetState(renderer::CommandList& cmdList, const core:
 
 RenderTargetState::~RenderTargetState()
 {
+    LOG_DEBUG("RenderTargetState::RenderTargetState destructor %llx", this);
     m_trackerRenderpass.release();
     m_trackerFramebuffer.release();
 }

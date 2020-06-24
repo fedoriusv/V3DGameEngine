@@ -501,7 +501,7 @@ void VulkanGraphicContext::removePipeline(Pipeline * pipeline)
     }
 }
 
-Image* VulkanGraphicContext::createImage(renderer::Format format, const core::Dimension3D& dimension, TextureSamples samples, TextureUsageFlags flags)
+Image* VulkanGraphicContext::createImage(renderer::Format format, const core::Dimension3D& dimension, TextureSamples samples, TextureUsageFlags flags, const std::string& name)
 {
 #if VULKAN_DEBUG
     LOG_DEBUG("VulkanGraphicContext::createImage");
@@ -510,10 +510,10 @@ Image* VulkanGraphicContext::createImage(renderer::Format format, const core::Di
     VkExtent3D vkExtent = { dimension.width, dimension.height, dimension.depth };
     VkSampleCountFlagBits vkSamples = VulkanImage::convertRenderTargetSamplesToVkSampleCount(samples);
 
-    return new VulkanImage(m_imageMemoryManager, m_deviceInfo._device, vkFormat, vkExtent, vkSamples, flags);
+    return new VulkanImage(m_imageMemoryManager, m_deviceInfo._device, vkFormat, vkExtent, vkSamples, flags, name);
 }
 
-Image* VulkanGraphicContext::createImage(TextureTarget target, renderer::Format format, const core::Dimension3D& dimension, u32 layers, u32 mipLevels, TextureUsageFlags flags)
+Image* VulkanGraphicContext::createImage(TextureTarget target, renderer::Format format, const core::Dimension3D& dimension, u32 layers, u32 mipLevels, TextureUsageFlags flags, const std::string& name)
 {
 #if VULKAN_DEBUG
     LOG_DEBUG("VulkanGraphicContext::createImage");
@@ -522,7 +522,7 @@ Image* VulkanGraphicContext::createImage(TextureTarget target, renderer::Format 
     VkFormat vkFormat = VulkanImage::convertImageFormatToVkFormat(format);
     VkExtent3D vkExtent = { dimension.width, dimension.height, dimension.depth };
 
-    return new VulkanImage(m_imageMemoryManager, m_deviceInfo._device, vkType, vkFormat, vkExtent, layers, mipLevels, VK_IMAGE_TILING_OPTIMAL, flags);
+    return new VulkanImage(m_imageMemoryManager, m_deviceInfo._device, vkType, vkFormat, vkExtent, layers, mipLevels, VK_IMAGE_TILING_OPTIMAL, flags, name);
 }
 
 void VulkanGraphicContext::removeImage(Image* image)
@@ -547,14 +547,14 @@ void VulkanGraphicContext::removeImage(Image* image)
     }
 }
 
-Buffer * VulkanGraphicContext::createBuffer(Buffer::BufferType type, u16 usageFlag, u64 size)
+Buffer * VulkanGraphicContext::createBuffer(Buffer::BufferType type, u16 usageFlag, u64 size, const std::string& name)
 {
 #if VULKAN_DEBUG
     LOG_DEBUG("VulkanGraphicContext::createBuffer");
 #endif //VULKAN_DEBUG
     if (type == Buffer::BufferType::BufferType_VertexBuffer || type == Buffer::BufferType::BufferType_IndexBuffer || type == Buffer::BufferType::BufferType_UniformBuffer)
     {
-        return new VulkanBuffer(m_bufferMemoryManager, m_deviceInfo._device, type, usageFlag, size);
+        return new VulkanBuffer(m_bufferMemoryManager, m_deviceInfo._device, type, usageFlag, size, name);
     }
 
     ASSERT(false, "not supported");
@@ -932,6 +932,10 @@ void VulkanGraphicContext::destroy()
         delete m_swapchain;
         m_swapchain = nullptr;
     }
+#if DEBUG_OBJECT_MEMORY
+    ASSERT(VulkanBuffer::s_objects.empty(), "buffer objects still exist");
+    ASSERT(VulkanImage::s_objects.empty(), "image objects still exist");
+#endif //DEBUG_OBJECT_MEMORY
 
     if (m_deviceInfo._device)
     {

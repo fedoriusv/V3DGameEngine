@@ -194,16 +194,6 @@ private:
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-const Shader * ShaderProgram::getShader(ShaderType type) const
-{
-    return m_programInfo._shaders[type];
-}
-
-const ShaderProgramDescription& ShaderProgram::getShaderDesc() const
-{
-    return m_programInfo;
-}
-
 ShaderProgram::ShaderProgram(renderer::CommandList& cmdList, const std::vector<const Shader*>& shaders) noexcept
     : m_cmdList(cmdList)
 {
@@ -222,6 +212,21 @@ ShaderProgram::ShaderProgram(renderer::CommandList& cmdList, const std::vector<c
     {
         ASSERT(false, "unknown program");
     }
+}
+
+ShaderProgram::~ShaderProgram()
+{
+    LOG_DEBUG("ShaderProgram::ShaderProgram destructor %llx", this);
+}
+
+const Shader* ShaderProgram::getShader(ShaderType type) const
+{
+    return m_programInfo._shaders[type];
+}
+
+const ShaderProgramDescription& ShaderProgram::getShaderDesc() const
+{
+    return m_programInfo;
 }
 
 void ShaderProgram::composeProgramData(const std::vector<const Shader*>& shaders)
@@ -294,7 +299,7 @@ bool ShaderProgram::bindTexture(ShaderType shaderType, u32 index, TextureTarget 
 {
 #if USE_STRING_ID_SHADER
     auto param = m_shaderParameters[shaderType].find(index);
-    ASSERT(param != m_shaderParameters[shaderType].cend(), "not found");
+    ASSERT(param != m_shaderParameters[shaderType].cend(), "bindTexture: bind index not found");
     index = param->second;
 #endif //USE_STRING_ID_SHADER
     ASSERT(texture, "nullptr");
@@ -335,7 +340,7 @@ bool ShaderProgram::bindSampler(ShaderType shaderType, u32 index, const SamplerS
 {
 #if USE_STRING_ID_SHADER
     auto param = m_shaderParameters[shaderType].find(index);
-    ASSERT(param != m_shaderParameters[shaderType].cend(), "not found");
+    ASSERT(param != m_shaderParameters[shaderType].cend(), "bindSampler: bind index not found");
     index = param->second;
 #endif //USE_STRING_ID_SHADER
     ASSERT(sampler, "nullptr");
@@ -360,11 +365,11 @@ bool ShaderProgram::bindSampler(ShaderType shaderType, u32 index, const SamplerS
     return true;
 }
 
-bool ShaderProgram::bindSampledTexture(ShaderType shaderType, u32 index, TextureTarget target, const Texture * texture, const SamplerState* sampler)
+bool ShaderProgram::bindSampledTexture(ShaderType shaderType, u32 index, TextureTarget target, const Texture* texture, const SamplerState* sampler)
 {
 #if USE_STRING_ID_SHADER
     auto param = m_shaderParameters[shaderType].find(index);
-    ASSERT(param != m_shaderParameters[shaderType].cend(), "not found");
+    ASSERT(param != m_shaderParameters[shaderType].cend(), "bindSampledTexture: bind index not found");
     index = param->second;
 #endif //USE_STRING_ID_SHADER
     ASSERT(texture, "nullptr");
@@ -426,10 +431,6 @@ bool ShaderProgram::bindUniformsBuffer(ShaderType shaderType, u32 index, u32 off
     }
 
     return true;
-}
-
-ShaderProgram::~ShaderProgram()
-{
 }
 
 } //renderer

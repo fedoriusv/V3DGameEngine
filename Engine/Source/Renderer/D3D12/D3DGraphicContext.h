@@ -69,11 +69,11 @@ namespace dx3d
         void setPipeline(const Pipeline::PipelineGraphicInfo* pipelineInfo) override;
         void removePipeline(Pipeline* pipeline) override;
 
-        Image* createImage(TextureTarget target, renderer::Format format, const core::Dimension3D& dimension, u32 layers, u32 mipmapLevel, TextureUsageFlags flags) override;
-        Image* createImage(renderer::Format format, const core::Dimension3D& dimension, TextureSamples samples, TextureUsageFlags flags) override;
+        Image* createImage(TextureTarget target, renderer::Format format, const core::Dimension3D& dimension, u32 layers, u32 mipmapLevel, TextureUsageFlags flags, [[maybe_unused]] const std::string& name = "") override;
+        Image* createImage(renderer::Format format, const core::Dimension3D& dimension, TextureSamples samples, TextureUsageFlags flags, [[maybe_unused]] const std::string& name = "") override;
         void removeImage(Image* image) override;
 
-        Buffer* createBuffer(Buffer::BufferType type, u16 usageFlag, u64 size) override;
+        Buffer* createBuffer(Buffer::BufferType type, u16 usageFlag, u64 size, [[maybe_unused]] const std::string& name = "") override;
         void removeBuffer(Buffer* buffer) override;
 
         void removeSampler(Sampler* sampler) override;

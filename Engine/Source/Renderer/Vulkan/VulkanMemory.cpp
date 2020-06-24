@@ -665,8 +665,6 @@ PoolVulkanMemoryAllocator::Pool* PoolVulkanMemoryAllocator::createPool(VkDeviceS
     return newPool;
 }
 
-
-
 } //namespace vk
 } //namespace renderer
 } //namespace v3d

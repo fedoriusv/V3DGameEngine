@@ -168,7 +168,7 @@ private:
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-VertexStreamBuffer::VertexStreamBuffer(renderer::CommandList& cmdList, StreamBufferUsageFlags usage, u64 size, const u8* data) noexcept
+VertexStreamBuffer::VertexStreamBuffer(renderer::CommandList& cmdList, StreamBufferUsageFlags usage, u64 size, const u8* data, const std::string& name) noexcept
     : m_cmdList(cmdList)
 
     , m_size(size)
@@ -183,7 +183,7 @@ VertexStreamBuffer::VertexStreamBuffer(renderer::CommandList& cmdList, StreamBuf
         memcpy(m_data, data, size);
     }
 
-    m_buffer = m_cmdList.getContext()->createBuffer(Buffer::BufferType::BufferType_VertexBuffer, m_usage, m_size);
+    m_buffer = m_cmdList.getContext()->createBuffer(Buffer::BufferType::BufferType_VertexBuffer, m_usage, m_size, name);
     ASSERT(m_buffer, "m_buffer is nullptr");
 
     if (m_cmdList.isImmediate())
@@ -212,6 +212,7 @@ VertexStreamBuffer::VertexStreamBuffer(renderer::CommandList& cmdList, StreamBuf
 
 VertexStreamBuffer::~VertexStreamBuffer()
 {
+    LOG_DEBUG("VertexStreamBuffer::VertexStreamBuffer destructor %llx", this);
     ASSERT(m_buffer, "buffer nullptr");
     m_buffer->unregisterNotify(this);
 
@@ -295,7 +296,7 @@ bool VertexStreamBuffer::read(u32 offset, u64 size, u8 * data)
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-IndexStreamBuffer::IndexStreamBuffer(CommandList & cmdList, StreamBufferUsageFlags usage, StreamIndexBufferType type, u32 count, const u8 * data) noexcept
+IndexStreamBuffer::IndexStreamBuffer(CommandList & cmdList, StreamBufferUsageFlags usage, StreamIndexBufferType type, u32 count, const u8* data, const std::string& name) noexcept
     : m_cmdList(cmdList)
     , m_type(type)
 
@@ -312,7 +313,7 @@ IndexStreamBuffer::IndexStreamBuffer(CommandList & cmdList, StreamBufferUsageFla
         memcpy(m_data, data, size);
     }
 
-    m_buffer = m_cmdList.getContext()->createBuffer(Buffer::BufferType::BufferType_IndexBuffer, m_usage, size);
+    m_buffer = m_cmdList.getContext()->createBuffer(Buffer::BufferType::BufferType_IndexBuffer, m_usage, size, name);
     ASSERT(m_buffer, "m_buffer is nullptr");
 
     if (m_cmdList.isImmediate())
@@ -341,6 +342,7 @@ IndexStreamBuffer::IndexStreamBuffer(CommandList & cmdList, StreamBufferUsageFla
 
 IndexStreamBuffer::~IndexStreamBuffer()
 {
+    LOG_DEBUG("IndexStreamBuffer::IndexStreamBuffer destructor %llx", this);
     ASSERT(m_buffer, "buffer nullptr");
     m_buffer->unregisterNotify(this);
 

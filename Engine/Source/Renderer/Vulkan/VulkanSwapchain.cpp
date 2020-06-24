@@ -364,11 +364,11 @@ bool VulkanSwapchain::createSwapchainImages(const SwapchainConfig& config)
         m_swapBuffers.reserve(swapChainImageCount);
         VkExtent3D extent = { config._size.width, config._size.height, 1 };
         VulkanSwapchain::correctViewByOrientation<u32>(this, extent.width, extent.height);
-        for (auto& image : images)
+        for (u32 index = 0; index < images.size(); ++index)
         {
             VulkanImage* swapchainImage = new VulkanImage(nullptr, m_deviceInfo->_device, m_surfaceFormat.format, extent, VK_SAMPLE_COUNT_1_BIT, 
-                TextureUsage::TextureUsage_Attachment | TextureUsage::TextureUsage_Sampled | TextureUsage::TextureUsage_Read);
-            if (!swapchainImage->create(image))
+                TextureUsage::TextureUsage_Attachment | TextureUsage::TextureUsage_Sampled | TextureUsage::TextureUsage_Read, "SwapchainImage_" + std::to_string(index));
+            if (!swapchainImage->create(images[index]))
             {
                 LOG_FATAL("VulkanSwapchain::createSwapchainImages: can't create surface texture");
 

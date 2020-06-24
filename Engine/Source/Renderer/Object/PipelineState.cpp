@@ -65,6 +65,7 @@ GraphicsPipelineState::GraphicsPipelineState(CommandList& cmdList, const Graphic
 
 GraphicsPipelineState::~GraphicsPipelineState()
 {
+    LOG_DEBUG("GraphicsPipelineState::GraphicsPipelineState destructor %llx", this);
     m_tracker.release();
 }
 

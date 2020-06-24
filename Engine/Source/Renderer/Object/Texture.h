@@ -37,14 +37,16 @@ namespace renderer
     TextureUsageFlags usage
     Format format
     const Dimension2D& dimension
-    u32 mipmapCount = 1
-    const void* data = nullptr
+    u32 mipmapCount
+    const void* data
+    const std::string& name
     *\n
     * Constructor param:
     TextureUsageFlags usage
     Format format
     const Dimension2D& dimension
     TextureSamples samples
+    const std::string& name
     */
     class Texture2D : public Texture, public utils::Observer
     {
@@ -67,8 +69,8 @@ namespace renderer
 
     private:
 
-        Texture2D(CommandList& cmdList, TextureUsageFlags usage, Format format, const core::Dimension2D& dimension, u32 layers = 1, u32 mipmapCount = 1, const void* data = nullptr) noexcept;
-        Texture2D(CommandList& cmdList, TextureUsageFlags usage, Format format, const core::Dimension2D& dimension, TextureSamples samples) noexcept;
+        Texture2D(CommandList& cmdList, TextureUsageFlags usage, Format format, const core::Dimension2D& dimension, u32 layers = 1, u32 mipmapCount = 1, const void* data = nullptr, [[maybe_unused]] const std::string& name = "") noexcept;
+        Texture2D(CommandList& cmdList, TextureUsageFlags usage, Format format, const core::Dimension2D& dimension, TextureSamples samples, [[maybe_unused]] const std::string& name = "") noexcept;
 
         bool isTextureUsageFlagsContains(TextureUsageFlags usage) const;
         void handleNotify(utils::Observable* ob) override;

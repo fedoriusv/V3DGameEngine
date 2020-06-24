@@ -40,6 +40,10 @@ namespace vk
         void* map();
         void unmap();
 
+#if DEBUG_OBJECT_MEMORY
+        static std::set<VulkanBuffer*> s_objects;
+#endif //DEBUG_OBJECT_MEMORY
+
     private:
 
         bool recreate();
