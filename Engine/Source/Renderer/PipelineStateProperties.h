@@ -136,7 +136,7 @@ namespace renderer
         {
             RasterizationState() noexcept
                 : _polygonMode(PolygonMode::PolygonMode_Fill)
-                , _frontFace(FrontFace::FrontFace_Clockwise)
+                , _frontFace(FrontFace::FrontFace_CounterClockwise)
                 , _cullMode(CullMode::CullMode_Back)
             {
             }
