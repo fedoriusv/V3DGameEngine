@@ -128,8 +128,15 @@ bool D3DRenderTarget::create(const RenderPass* pass)
 
 void D3DRenderTarget::destroy()
 {
-    m_heapManager->deallocDescriptorHeap(m_colorDescriptorHeap);
-    m_heapManager->deallocDescriptorHeap(m_depthStencilDescriptorHeap);
+    if (m_colorDescriptorHeap)
+    {
+        m_heapManager->deallocDescriptorHeap(m_colorDescriptorHeap);
+    }
+
+    if (m_depthStencilDescriptorHeap)
+    {
+        m_heapManager->deallocDescriptorHeap(m_depthStencilDescriptorHeap);
+    }
 }
 
 const std::vector<D3D12_CPU_DESCRIPTOR_HANDLE>& D3DRenderTarget::getColorDescHandles() const
