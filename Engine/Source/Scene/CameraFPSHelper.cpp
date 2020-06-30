@@ -117,7 +117,7 @@ void CameraFPSHelper::rotateHandlerCallback(const v3d::event::InputEventHandler*
         {
             core::Vector3D rotation = CameraFPSHelper::getRotation();
             rotation.x += positionDelta.y * k_rotationSpeed;
-            rotation.y += positionDelta.x * k_rotationSpeed;
+            rotation.y -= positionDelta.x * k_rotationSpeed;
 
             rotation.x = std::clamp(rotation.x, -k_constrainPitch, k_constrainPitch);
             CameraFPSHelper::setRotation(rotation);
