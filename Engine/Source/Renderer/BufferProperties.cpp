@@ -7,7 +7,7 @@ namespace v3d
 namespace renderer
 {
 
-StreamBufferDescription::StreamBufferDescription(VertexStreamBuffer* vertex, u32 stream) noexcept
+StreamBufferDescription::StreamBufferDescription(const VertexStreamBuffer* vertex, u32 stream) noexcept
     : _vertices(vertex ? std::vector<Buffer*>({ vertex->m_buffer }) : std::vector<Buffer*>())
     , _streamsID({ stream })
     
@@ -18,7 +18,7 @@ StreamBufferDescription::StreamBufferDescription(VertexStreamBuffer* vertex, u32
     _offsets.resize(_vertices.size(), 0 );
 }
 
-StreamBufferDescription::StreamBufferDescription(VertexStreamBuffer* vertex, u32 stream, u32 offset) noexcept
+StreamBufferDescription::StreamBufferDescription(const VertexStreamBuffer* vertex, u32 stream, u32 offset) noexcept
     : _vertices(vertex ? std::vector<Buffer*>({ vertex->m_buffer }) : std::vector<Buffer*>())
     , _streamsID({ stream })
     , _offsets({ offset })
@@ -29,7 +29,7 @@ StreamBufferDescription::StreamBufferDescription(VertexStreamBuffer* vertex, u32
 {
 }
 
-StreamBufferDescription::StreamBufferDescription(IndexStreamBuffer* index, u32 indexOffset, VertexStreamBuffer* vertex, u32 vertexOffset, u32 stream) noexcept
+StreamBufferDescription::StreamBufferDescription(const IndexStreamBuffer* index, u32 indexOffset, const VertexStreamBuffer* vertex, u32 vertexOffset, u32 stream) noexcept
     : _vertices(vertex ? std::vector<Buffer*>({ vertex->m_buffer }) : std::vector<Buffer*>())
     , _streamsID({ stream })
     , _offsets({ vertexOffset })

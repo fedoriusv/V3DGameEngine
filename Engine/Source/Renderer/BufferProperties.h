@@ -116,10 +116,10 @@ namespace renderer
         StreamBufferDescription& operator=(const StreamBufferDescription& desc) noexcept;
         StreamBufferDescription& operator=(StreamBufferDescription&& desc) noexcept;
 
-        explicit StreamBufferDescription(VertexStreamBuffer* vertex, u32 stream) noexcept;
-        explicit StreamBufferDescription(VertexStreamBuffer* vertex, u32 stream, u32 offset) noexcept;
+        explicit StreamBufferDescription(const VertexStreamBuffer* vertex, u32 stream) noexcept;
+        explicit StreamBufferDescription(const VertexStreamBuffer* vertex, u32 stream, u32 offset) noexcept;
 
-        explicit StreamBufferDescription(IndexStreamBuffer* index, u32 indexOffset, VertexStreamBuffer* vertex, u32 vertexOffset, u32 stream) noexcept;
+        explicit StreamBufferDescription(const IndexStreamBuffer* index, u32 indexOffset, const VertexStreamBuffer* vertex, u32 vertexOffset, u32 stream) noexcept;
 
         void clear();
 
