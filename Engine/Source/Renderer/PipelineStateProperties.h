@@ -35,8 +35,8 @@ namespace renderer
 
     enum class FrontFace : u32
     {
-        FrontFace_CounterClockwise,
-        FrontFace_Clockwise
+        FrontFace_Clockwise,
+        FrontFace_CounterClockwise
     };
 
     enum class CullMode : u32
@@ -136,8 +136,8 @@ namespace renderer
         {
             RasterizationState() noexcept
                 : _polygonMode(PolygonMode::PolygonMode_Fill)
-                , _frontFace(FrontFace::FrontFace_CounterClockwise)
-                , _cullMode(CullMode::CullMode_Back)
+                , _frontFace(FrontFace::FrontFace_Clockwise)
+                , _cullMode(CullMode::CullMode_None)
             {
             }
 

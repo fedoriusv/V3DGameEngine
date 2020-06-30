@@ -112,18 +112,6 @@ void SimpleTriangle::init(v3d::renderer::CommandList* commandList, const core::D
             renderer::TransitionOp::TransitionOp_Undefined, renderer::TransitionOp::TransitionOp_Present
         });
 
-    renderer::Texture2D* depthAttachment = m_CommandList->createObject<renderer::Texture2D>(renderer::TextureUsage::TextureUsage_Attachment, renderer::Format::Format_D24_UNorm_S8_UInt, size, renderer::TextureSamples::TextureSamples_x1);
-    m_RenderTarget->setDepthStencilTexture(depthAttachment, 
-        {
-            renderer::RenderTargetLoadOp::LoadOp_Clear, renderer::RenderTargetStoreOp::StoreOp_DontCare, 1.0f
-        },
-        {
-            renderer::RenderTargetLoadOp::LoadOp_DontCare, renderer::RenderTargetStoreOp::StoreOp_DontCare, 0
-        },
-        {
-            renderer::TransitionOp::TransitionOp_Undefined, renderer::TransitionOp::TransitionOp_DepthStencilAttachmet
-        });
-
     std::vector<core::Vector3D> geometryData = 
     {
         {-1.0f,-1.0f, 0.0f },  { 1.0f, 0.0f, 0.0f },
@@ -143,12 +131,10 @@ void SimpleTriangle::init(v3d::renderer::CommandList* commandList, const core::D
 
     m_Pipeline = m_CommandList->createObject<renderer::GraphicsPipelineState>(vertexDesc, m_Program, m_RenderTarget);
     m_Pipeline->setPrimitiveTopology(renderer::PrimitiveTopology::PrimitiveTopology_TriangleList);
-    m_Pipeline->setFrontFace(renderer::FrontFace::FrontFace_CounterClockwise);
+    m_Pipeline->setFrontFace(renderer::FrontFace::FrontFace_Clockwise);
     m_Pipeline->setCullMode(renderer::CullMode::CullMode_None);
     m_Pipeline->setColorMask(renderer::ColorMask::ColorMask_All);
-    m_Pipeline->setDepthCompareOp(renderer::CompareOperation::CompareOp_Always);
-    m_Pipeline->setDepthWrite(true);
-    m_Pipeline->setDepthTest(true);
+    m_Pipeline->setDepthWrite(false);
 
     m_CommandList->setPipelineState(m_Pipeline);
     m_CommandList->setRenderTarget(m_RenderTarget);
