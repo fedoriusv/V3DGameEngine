@@ -43,6 +43,6 @@ namespace dx3d
 } //namespace v3d
 
 #else
-#   error "DirectX version not supported"
+#   error "DirectX version is not supported"
 #endif //(D3D_VERSION_MAJOR == 12)
 #endif //D3D_RENDER

@@ -122,7 +122,7 @@ private:
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-RenderTargetState::RenderTargetState(renderer::CommandList& cmdList, const core::Dimension2D& size) noexcept
+RenderTargetState::RenderTargetState(renderer::CommandList& cmdList, const core::Dimension2D& size, const std::string& name) noexcept
     : m_cmdList(cmdList)
     , m_size(size)
 

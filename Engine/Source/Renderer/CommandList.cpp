@@ -592,7 +592,7 @@ void CommandList::setPipelineState(GraphicsPipelineState * pipeline)
 {
     if (!pipeline || !pipeline->m_renderTaget || !pipeline->m_program)
     {
-        ASSERT(false, "nullptr");
+        ASSERT(false, "setPipelineState is nullptr");
         return;
     }
 

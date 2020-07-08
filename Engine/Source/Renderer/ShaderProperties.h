@@ -70,6 +70,7 @@ namespace renderer
             : _name(name)
             , _id(crc32c::Crc32c(name))
         {
+            //TODO: add id manager and id generator to preventing collisions
         }
 
         std::string _name;

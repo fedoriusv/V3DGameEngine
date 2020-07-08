@@ -136,7 +136,7 @@ namespace renderer
 
     private:
 
-        RenderTargetState(renderer::CommandList& cmdList, const core::Dimension2D& size) noexcept;
+        RenderTargetState(renderer::CommandList& cmdList, const core::Dimension2D& size, [[maybe_unused]] const std::string& name = "") noexcept;
 
         void extractRenderTargetInfo(RenderPassDescription& renderpassDesc, std::vector<Image*>& attachments, Framebuffer::ClearValueInfo& clearInfo) const;
         void destroyFramebuffers(const std::vector<Framebuffer*>& framebuffers);
