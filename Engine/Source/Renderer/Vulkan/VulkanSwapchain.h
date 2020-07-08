@@ -33,6 +33,7 @@ namespace vk
             core::Dimension2D       _size;
             u32                     _countSwapchainImages = 0;
             bool                    _vsync                = false;
+            bool                    _forceSRGB            = false;
         };
 
         VulkanSwapchain(const struct DeviceInfo* info);

@@ -772,6 +772,7 @@ bool VulkanGraphicContext::initialize()
     VulkanSwapchain::SwapchainConfig config;
     config._window =  m_window;
     config._size = m_window->getSize();
+    config._forceSRGB = false;
 #ifdef PLATFORM_ANDROID
     config._vsync = true;
     config._countSwapchainImages = 3;
@@ -806,8 +807,6 @@ bool VulkanGraphicContext::initialize()
     }
 
     m_cmdBufferManager = new VulkanCommandBufferManager(this , &m_deviceInfo, m_queueList[0]);
-    //m_currentBufferState._currentDrawBuffer = m_drawCmdBufferManager->acquireNewCmdBuffer(VulkanCommandBuffer::PrimaryBuffer);
-    //ASSERT(m_currentBufferState._currentDrawBuffer, "m_currentDrawBuffer is nullptr");
 
     m_stagingBufferManager = new VulkanStagingBufferManager(m_deviceInfo._device);
     m_uniformBufferManager = new VulkanUniformBufferManager(m_deviceInfo._device, m_resourceDeleter);
@@ -1353,9 +1352,9 @@ bool VulkanGraphicContext::prepareDraw(VulkanCommandBuffer* drawBuffer)
     return true;
 }
 
-VulkanCommandBuffer * VulkanGraphicContext::getOrCreateAndStartCommandBuffer(CommandTargetType type)
+VulkanCommandBuffer* VulkanGraphicContext::getOrCreateAndStartCommandBuffer(CommandTargetType type)
 {
-    VulkanCommandBuffer * currentBuffer = m_currentBufferState._currentCmdBuffer[type];
+    VulkanCommandBuffer* currentBuffer = m_currentBufferState._currentCmdBuffer[type];
     if (!currentBuffer)
     {
         currentBuffer = m_cmdBufferManager->acquireNewCmdBuffer(VulkanCommandBuffer::PrimaryBuffer);

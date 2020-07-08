@@ -186,15 +186,41 @@ bool VulkanSwapchain::create(const SwapchainConfig& config, VkSwapchainKHR oldSw
 
     // If the surface format list only includes one entry with VK_FORMAT_UNDEFINED,
     // there is no preferered format, so we assume VK_FORMAT_B8G8R8A8_UNORM
-    if ((surfaceFormatCount == 1) && (surfaceFormats[0].format == VK_FORMAT_UNDEFINED)) //???
+    if ((surfaceFormatCount == 1) && (surfaceFormats[0].format == VK_FORMAT_UNDEFINED))
     {
         m_surfaceFormat.format = VK_FORMAT_B8G8R8A8_UNORM;
     }
     else
     {
-        m_surfaceFormat.format = surfaceFormats[0].format;
+        auto findSRGBSurfaceFormat = [&surfaceFormats](VkSurfaceFormatKHR& format) -> bool
+        {
+            for (auto& colorFormat : surfaceFormats)
+            {
+                if (VulkanImage::isSRGBFormat(colorFormat.format))
+                {
+                    format.format = colorFormat.format;
+                    format.colorSpace = colorFormat.colorSpace;
+
+                    return true;
+                }
+            }
+
+            format.format = surfaceFormats[0].format;
+            format.colorSpace = surfaceFormats[0].colorSpace;
+
+            return false;
+        };
+
+        if (config._forceSRGB)
+        {
+            findSRGBSurfaceFormat(m_surfaceFormat);
+        }
+        else
+        {
+            m_surfaceFormat.format = surfaceFormats[0].format;
+            m_surfaceFormat.colorSpace = surfaceFormats[0].colorSpace;
+        }
     }
-    m_surfaceFormat.colorSpace = surfaceFormats[0].colorSpace;
 
 
     if (!VulkanSwapchain::createSwapchain(config, oldSwapchain))
