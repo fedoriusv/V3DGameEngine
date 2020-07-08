@@ -21,12 +21,12 @@ namespace vk
     {
     public:
         VulkanDescriptorSetPool(VkDevice device, VkDescriptorPoolCreateFlags flag) noexcept;
+        ~VulkanDescriptorSetPool();
 
         bool create(u32 setsCount, const std::vector<VkDescriptorPoolSize>& sizes);
         void destroy();
 
         bool reset();
-
         u64 getCountDescriptorSets() const;
 
         VkDescriptorSet createDescriptorSet(const SetInfo& info, VkDescriptorSetLayout layout);

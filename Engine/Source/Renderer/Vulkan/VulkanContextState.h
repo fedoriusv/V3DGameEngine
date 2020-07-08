@@ -131,6 +131,7 @@ namespace vk
 
         std::pair<StreamBufferDescription, bool>            m_currentVertexBuffers;
         std::array<VkDescriptorSet, k_maxDescriptorSetIndex> m_currentDesctiptorsSets;
+        std::set<VkDescriptorSet>                           m_updatedDescriptorsSets;
 
         VulkanDescriptorSetManager* m_descriptorSetManager;
         VulkanUniformBufferManager* m_unifromBufferManager;

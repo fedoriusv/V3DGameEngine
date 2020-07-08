@@ -220,7 +220,18 @@ bool VulkanContextState::prepareDescriptorSets(VulkanCommandBuffer* cmdBuffer, s
             if (m_currentDesctiptorsSets[setId] != set)
             {
                 m_currentDesctiptorsSets[setId] = set;
-                VulkanContextState::updateDescriptorSet(cmdBuffer, set, bindSet);
+                if (VulkanDeviceCaps::getInstance()->useDynamicUniforms)
+                {
+                    auto updatedSet = m_updatedDescriptorsSets.insert(set);
+                    if (updatedSet.second)
+                    {
+                        VulkanContextState::updateDescriptorSet(cmdBuffer, set, bindSet);
+                    }
+                }
+                else
+                {
+                    VulkanContextState::updateDescriptorSet(cmdBuffer, set, bindSet);
+                }
             }
 
             sets.push_back(set);
@@ -271,6 +282,10 @@ void VulkanContextState::updateDescriptorSet(VulkanCommandBuffer* cmdBuffer, VkD
 
         case BindingType::BindingType_DynamicUniform:
             ASSERT(bindingInfo._info._bufferInfo.range <= VulkanDeviceCaps::getInstance()->getPhysicalDeviceLimits().maxUniformBufferRange, "out of max range");
+            //TODO Will update range if it gets errors
+            /*VkDescriptorBufferInfo bufferInfo(bindingInfo._info._bufferInfo);
+            bufferInfo.offset = 0;
+            bufferInfo.range = state._offsets[index] + bufferInfo.range;*/
             writeDescriptorSet.pBufferInfo = &bindingInfo._info._bufferInfo;
             writeDescriptorSet.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
 
@@ -369,6 +384,7 @@ void VulkanContextState::updateDescriptorStates()
     m_currentDesctiptorsSets.fill(VK_NULL_HANDLE);
 
     m_descriptorSetManager->updateDescriptorPools();
+    m_updatedDescriptorsSets.clear();
 }
 
 VkDescriptorBufferInfo VulkanContextState::makeVkDescriptorBufferInfo(const VulkanBuffer* buffer, u64 offset, u64 range)

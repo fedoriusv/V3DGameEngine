@@ -17,6 +17,10 @@ VulkanDescriptorSetPool::VulkanDescriptorSetPool(VkDevice device, VkDescriptorPo
     , m_flag(flag)
     , m_pool(VK_NULL_HANDLE)
 {
+}
+
+VulkanDescriptorSetPool::~VulkanDescriptorSetPool()
+{
     ASSERT(m_descriptorSets.empty(), "not empty");
     ASSERT(!m_pool, "not nullptr");
 }
@@ -194,7 +198,7 @@ bool VulkanDescriptorSetPool::createDescriptorPool(u32 setsCount, const std::vec
 {
     VkDescriptorPoolCreateInfo descriptorPoolCreateInfo = {};
     descriptorPoolCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-    descriptorPoolCreateInfo.pNext = nullptr; //VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO
+    descriptorPoolCreateInfo.pNext = nullptr;
     descriptorPoolCreateInfo.flags = m_flag;
     descriptorPoolCreateInfo.maxSets = setsCount;
     descriptorPoolCreateInfo.poolSizeCount = static_cast<u32>(sizes.size());
