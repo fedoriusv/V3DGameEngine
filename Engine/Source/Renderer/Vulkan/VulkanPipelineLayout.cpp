@@ -24,7 +24,7 @@ VulkanDescriptorSetLayoutDescription::VulkanDescriptorSetLayoutDescription(const
     : _key(0)
     , _bindings(bindings)
 {
-    _key = crc32c::Extend(static_cast<u32>(_bindings.size()), reinterpret_cast<u8*>(_bindings.data()), _bindings.size());
+    _key = crc32c::Extend(static_cast<u32>(_bindings.size()), reinterpret_cast<u8*>(_bindings.data()), _bindings.size() * sizeof(VkDescriptorSetLayoutBinding));
 }
 
 bool VulkanDescriptorSetLayoutDescription::Equal::operator()(const VulkanDescriptorSetLayoutDescription& descl, const VulkanDescriptorSetLayoutDescription& descr) const
@@ -34,7 +34,7 @@ bool VulkanDescriptorSetLayoutDescription::Equal::operator()(const VulkanDescrip
         return false;
     }
 
-    if (descl._bindings.empty() && memcmp(descl._bindings.data(), descr._bindings.data(), descl._bindings.size() * sizeof(VkDescriptorSetLayoutBinding)) != 0)
+    if (!descl._bindings.empty() && memcmp(descl._bindings.data(), descr._bindings.data(), descl._bindings.size() * sizeof(VkDescriptorSetLayoutBinding)) != 0)
     {
         return false;
     }
@@ -65,7 +65,7 @@ bool VulkanPipelineLayoutDescription::Equal::operator()(const VulkanPipelineLayo
             return false;
         }
 
-        if (descl._bindingsSet[i].empty() && memcmp(descl._bindingsSet[i].data(), descr._bindingsSet[i].data(), descl._bindingsSet[i].size() * sizeof(VkDescriptorSetLayoutBinding)) != 0)
+        if (!descl._bindingsSet[i].empty() && memcmp(descl._bindingsSet[i].data(), descr._bindingsSet[i].data(), descl._bindingsSet[i].size() * sizeof(VkDescriptorSetLayoutBinding)) != 0)
         {
             return false;
         }
@@ -76,7 +76,7 @@ bool VulkanPipelineLayoutDescription::Equal::operator()(const VulkanPipelineLayo
         return false;
     }
 
-    if (descl._pushConstant.empty() && memcmp(descl._pushConstant.data(), descr._pushConstant.data(), descl._pushConstant.size() * sizeof(VkPushConstantRange))!= 0)
+    if (!descl._pushConstant.empty() && memcmp(descl._pushConstant.data(), descr._pushConstant.data(), descl._pushConstant.size() * sizeof(VkPushConstantRange))!= 0)
     {
         return false;
     }
