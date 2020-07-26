@@ -34,6 +34,7 @@ MyApplication::MyApplication(int& argc, char** argv)
     , m_UnLit(nullptr)
     , m_Lambert(nullptr)
     , m_PhongTextureless(nullptr)
+    , m_Phong(nullptr)
 
     , m_ArcballCameraHelper(nullptr)
     , m_FPSCameraHelper(nullptr)
@@ -212,6 +213,7 @@ void MyApplication::Initialize()
     m_UnLit = new UnlitTextureTest(*m_CommandList);
     m_Lambert = new ForwardDirectionalLightTextureTest(*m_CommandList);
     m_PhongTextureless = new ForwardPointLightTest(*m_CommandList);
+    m_Phong = new ForwardPointLightTextureTest(*m_CommandList);
 
     Load();
 }
@@ -283,41 +285,7 @@ void MyApplication::Load()
     m_UnLit->Load(m_RenderTarget.get(), m_Geometry.front()->getVertexInputAttribDescription(0, 0));
     m_Lambert->Load(m_RenderTarget.get(), m_Geometry.front()->getVertexInputAttribDescription(0, 0), (u32)m_Lights.size());
     m_PhongTextureless->Load(m_RenderTarget.get(), m_Geometry.front()->getVertexInputAttribDescription(0, 0), (u32)m_Lights.size());
-
-    {
-        m_Phong.m_Sampler = m_CommandList->createObject<renderer::SamplerState>(renderer::SamplerFilter::SamplerFilter_Bilinear, renderer::SamplerFilter::SamplerFilter_Trilinear, renderer::SamplerAnisotropic::SamplerAnisotropic_4x);
-        m_Phong.m_Sampler->setWrap(renderer::SamplerWrap::TextureWrap_MirroredRepeat);
-
-        resource::Image* imageDiffuse = resource::ResourceLoaderManager::getInstance()->load<resource::Image, resource::ImageFileLoader>("resources/phong/container2.png");
-        ASSERT(imageDiffuse, "not found");
-        m_Phong.m_TextureDiffuse = m_CommandList->createObject<renderer::Texture2D>(renderer::TextureUsage_Sampled | renderer::TextureUsage_Write,
-            imageDiffuse->getFormat(), core::Dimension2D(imageDiffuse->getDimension().width, imageDiffuse->getDimension().height), 1, 1, imageDiffuse->getRawData(), "PhongDiffuse");
-
-        resource::Image* imageSpecular = resource::ResourceLoaderManager::getInstance()->load<resource::Image, resource::ImageFileLoader>("resources/phong/container2_specular.png");
-        ASSERT(imageSpecular, "not found");
-        m_Phong.m_TextureSpecular = m_CommandList->createObject<renderer::Texture2D>(renderer::TextureUsage_Sampled | renderer::TextureUsage_Write,
-            imageSpecular->getFormat(), core::Dimension2D(imageSpecular->getDimension().width, imageSpecular->getDimension().height), 1, 1, imageSpecular->getRawData(), "PhongSpecular");
-
-        std::vector<std::pair<std::string, std::string>> constants =
-        {
-            { "CONSTANT", std::to_string(1.0) },
-            { "LINEAR", std::to_string(0.09) },
-            { "QUADRATIC", std::to_string(0.032) }
-        };
-
-        renderer::Shader* vertShader = resource::ResourceLoaderManager::getInstance()->loadShader<renderer::Shader, resource::ShaderSourceFileLoader>(m_Context, "resources/phong/pointLight.vert");
-        renderer::Shader* fragShader = resource::ResourceLoaderManager::getInstance()->loadShader<renderer::Shader, resource::ShaderSourceFileLoader>(m_Context, "resources/phong/pointLight.frag", constants);
-
-        m_Phong.m_Program = m_CommandList->createObject<renderer::ShaderProgram, std::vector<const renderer::Shader*>>({ vertShader, fragShader });
-        m_Phong.m_Pipeline = m_CommandList->createObject<renderer::GraphicsPipelineState>(m_Geometry.front()->getVertexInputAttribDescription(0, 0), m_Phong.m_Program.get(), m_RenderTarget.get());
-        m_Phong.m_Pipeline->setPrimitiveTopology(renderer::PrimitiveTopology::PrimitiveTopology_TriangleList);
-        m_Phong.m_Pipeline->setFrontFace(renderer::FrontFace::FrontFace_CounterClockwise);
-        m_Phong.m_Pipeline->setCullMode(renderer::CullMode::CullMode_Back);
-        m_Phong.m_Pipeline->setColorMask(renderer::ColorMask::ColorMask_All);
-        m_Phong.m_Pipeline->setDepthCompareOp(renderer::CompareOperation::CompareOp_Less);
-        m_Phong.m_Pipeline->setDepthWrite(true);
-        m_Phong.m_Pipeline->setDepthTest(true);
-    }
+    m_Phong->Load(m_RenderTarget.get(), m_Geometry.front()->getVertexInputAttribDescription(0, 0), (u32)m_Lights.size());
 
     {
         m_Normalmap.m_SamplerColor = m_CommandList->createObject<renderer::SamplerState>(renderer::SamplerFilter::SamplerFilter_Bilinear, renderer::SamplerFilter::SamplerFilter_Trilinear, renderer::SamplerAnisotropic::SamplerAnisotropic_4x);
@@ -381,7 +349,7 @@ bool MyApplication::Running()
 
     case 3:
         m_LightDebug.Draw(m_CommandList, m_Geometry[0], &m_CameraHelper->getCamera(), m_Lights);
-        m_Phong.Draw(m_CommandList, m_Geometry[m_GeometryIndex], m_CameraHelper, m_LightPosition, m_LightColor);
+        m_Phong->Draw(m_Geometry[m_GeometryIndex], m_CameraHelper, m_Transform, m_Lights);
         break;
 
     case 4:
@@ -429,7 +397,14 @@ void MyApplication::Exit()
         delete m_Lambert;
         m_Lambert = nullptr;
 
-        m_Phong.Free();
+        m_PhongTextureless->Free();
+        delete m_PhongTextureless;
+        m_PhongTextureless = nullptr;
+
+        m_Phong->Free();
+        delete m_Phong;
+        m_Phong = nullptr;
+
         m_Normalmap.Free();
 
         m_LightDebug.Free();
@@ -570,60 +545,6 @@ void MyApplication::LightDebug::Free()
     m_Pipeline = nullptr;
     m_Program = nullptr;
 }
-
-void MyApplication::Phong::Draw(v3d::renderer::CommandList* commandList, v3d::scene::ModelHelper* geometry, v3d::scene::CameraHelper* camera, const v3d::core::Vector3D& lightPosition, const v3d::core::Vector4D& lightColor)
-{
-    commandList->setPipelineState(m_Pipeline.get());
-
-    {
-        struct UBO
-        {
-            core::Matrix4D projectionMatrix;
-            core::Matrix4D modelMatrix;
-            core::Matrix4D normalMatrix;
-            core::Matrix4D viewMatrix;
-        } ubo;
-
-        ubo.projectionMatrix = camera->getProjectionMatrix();
-        ubo.modelMatrix.makeIdentity();
-        ubo.modelMatrix.setScale({ 100.0, 100.0, 100.0 });
-        ubo.modelMatrix.getInverse(ubo.normalMatrix);
-        ubo.normalMatrix.makeTransposed();
-        ubo.viewMatrix = camera->getViewMatrix();
-
-        m_Program->bindUniformsBuffer<renderer::ShaderType::ShaderType_Vertex>({ "ubo" }, 0, sizeof(UBO), &ubo);
-    }
-
-    {
-        struct UBO
-        {
-            core::Vector4D viewPosition;
-            core::Vector4D lightPosition;
-            core::Vector4D lightColor;
-        } ubo;
-
-        ubo.lightColor = lightColor;
-        ubo.lightPosition = { lightPosition, 1.0 };
-        ubo.viewPosition = { camera->getPosition(), 1.0 };
-
-        m_Program->bindUniformsBuffer<renderer::ShaderType::ShaderType_Fragment>({ "ubo" }, 0, sizeof(UBO), &ubo);
-        m_Program->bindSampler<renderer::ShaderType::ShaderType_Fragment>({ "samplerColor" }, m_Sampler.get());
-        m_Program->bindTexture<renderer::ShaderType::ShaderType_Fragment, renderer::Texture2D>({ "textureDiffuse" }, m_TextureDiffuse.get());
-        m_Program->bindTexture<renderer::ShaderType::ShaderType_Fragment, renderer::Texture2D>({ "textureSpecular" }, m_TextureSpecular.get());
-    }
-
-    geometry->draw();
-}
-
-void MyApplication::Phong::Free()
-{
-    m_Sampler = nullptr;
-    m_TextureDiffuse = nullptr;
-    m_TextureSpecular = nullptr;
-    m_Pipeline = nullptr;
-    m_Program = nullptr;
-}
-
 
 void MyApplication::NormalMap::Draw(v3d::renderer::CommandList* commandList, v3d::scene::ModelHelper* geometry, v3d::scene::CameraHelper* camera, const v3d::core::Vector3D& lightPosition, const v3d::core::Vector4D& lightColor)
 {

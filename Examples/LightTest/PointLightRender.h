@@ -43,7 +43,7 @@ namespace v3d
 
         void Load(renderer::RenderTargetState* renderTarget, const renderer::VertexInputAttribDescription& desc, u32 countLights);
 
-        void Draw(scene::ModelHelper* geometry, v3d::scene::CameraHelper* camera, const std::vector<std::tuple<v3d::core::Vector3D, v3d::core::Vector4D>>& lights);
+        void Draw(scene::ModelHelper* geometry, v3d::scene::CameraHelper* camera, const v3d::scene::Transform& transform, const std::vector<std::tuple<v3d::core::Vector3D, v3d::core::Vector4D>>& lights);
         void Free();
 
     private:
