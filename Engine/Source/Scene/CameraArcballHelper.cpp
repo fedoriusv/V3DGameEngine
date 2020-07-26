@@ -1,5 +1,6 @@
 #include "CameraArcballHelper.h"
 #include "Camera.h"
+#include "Renderer/DeviceCaps.h"
 
 #include "Utils/Logger.h"
 
@@ -15,7 +16,7 @@ CameraArcballHelper::CameraArcballHelper(Camera* camera, f32 distance) noexcept
 }
 
 CameraArcballHelper::CameraArcballHelper(Camera* camera, f32 distance, f32 minDistance, f32 maxDistance) noexcept
-    : CameraHelper(camera, core::Vector3D(0.0f, 0.0f, k_signZ* distance))
+    : CameraHelper(camera, core::Vector3D(0.0f, 0.0f, k_signZ * distance))
     , m_distanceLimits({ minDistance, maxDistance })
 {
 }
@@ -60,6 +61,13 @@ void CameraArcballHelper::update(f32 deltaTime)
         core::Matrix4D view = look * rotate;*/
 
         getCamera().setViewMatrix(view);
+
+        view.setTranslation(core::Vector3D(0.0));
+        core::Vector4D position = view * core::Vector4D(m_transform.getPosition(), 1.0);
+        m_viewPosition.x = position.x;
+        m_viewPosition.y = position.y;
+        m_viewPosition.z = position.z * k_signZ;
+
         m_needUpdate = false;
     }
 }

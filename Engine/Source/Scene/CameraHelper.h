@@ -28,6 +28,7 @@ namespace scene
         const core::Vector3D& getPosition() const;
         const core::Matrix4D& getProjectionMatrix() const;
         const core::Matrix4D& getViewMatrix() const;
+        const core::Vector3D& getViewPosition() const;
 
         void setPerspective(f32 FOV, const core::Dimension2D& size, f32 zNear, f32 zFar);
         void setOrtho(const core::RectU32& area, f32 zNear, f32 zFar);
@@ -45,6 +46,8 @@ namespace scene
 
         Transform       m_transform;
         bool            m_needUpdate;
+
+        core::Vector3D  m_viewPosition;
     };
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////

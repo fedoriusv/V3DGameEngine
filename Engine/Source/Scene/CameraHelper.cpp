@@ -79,6 +79,11 @@ const core::Matrix4D& CameraHelper::getViewMatrix() const
     return m_camera->getViewMatrix();
 }
 
+const core::Vector3D& CameraHelper::getViewPosition() const
+{
+    return m_viewPosition;
+}
+
 void CameraHelper::update(f32 deltaTime)
 {
     ASSERT(m_camera, "nullptr");
