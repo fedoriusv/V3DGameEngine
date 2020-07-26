@@ -14,20 +14,20 @@ namespace core
     public:
 
         TRect();
-        TRect(T x, T y, T x2, T y2);
+        TRect(const T& x1, const T& y1, const T& x2, const T& y2);
         TRect(const TVector2D<T>& upperLeft, const TVector2D<T>& lowerRight);
 
-        TRect<T>    operator + (const TVector2D<T>& pos) const;
-        TRect<T>    operator - (const TVector2D<T>& pos) const;
-        TRect<T>&   operator +=(const TVector2D<T>& pos);
-        TRect<T>&   operator -=(const TVector2D<T>& pos);
-        TRect<T>&   operator +=(const TRect<T>& other);
+        TRect<T>    operator+(const TVector2D<T>& pos)  const;
+        TRect<T>    operator-(const TVector2D<T>& pos)  const;
+        TRect<T>&   operator+=(const TVector2D<T>& pos);
+        TRect<T>&   operator-=(const TVector2D<T>& pos);
+        TRect<T>&   operator+=(const TRect<T>& other);
 
-        bool        operator ==(const TRect<T>& other) const;
-        bool        operator !=(const TRect<T>& other) const;
-        bool        operator <(const TRect<T>& other)  const;
+        bool        operator==(const TRect<T>& other)   const;
+        bool        operator!=(const TRect<T>& other)   const;
+        bool        operator<(const TRect<T>& other)    const;
 
-        void        set(T x, T y, T x2, T y2);
+        void        set(const T& x1, const T& y1, const T& x2, const T& y2);
         void        set(const TVector2D<T>& upperLeft, const TVector2D<T>& lowerRight);
 
         void        scale(T scale);
@@ -42,7 +42,7 @@ namespace core
         void        clipAgainst(const TRect<T>& other);
         bool        constrainTo(const TRect<T>& other);
         
-        Vector2D    getClosestPoint(const TVector2D<T>& pt);
+        Vector2D    getClosestPoint(const TVector2D<T>& point);
 
         T           getWidth()      const;
         T           getHeight()     const;
@@ -58,8 +58,8 @@ namespace core
         TVector2D<T> getCenter()    const;
         TVector2D<T> getSize()      const;
 
-        void        addInternalPoint(const TVector2D<T>& p);
-        void        addInternalPoint(T x, T y);
+        void        addInternalPoint(const TVector2D<T>& point);
+        void        addInternalPoint(const T& x, const T& y);
 
     private:
 

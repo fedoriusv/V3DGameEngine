@@ -3,7 +3,7 @@
 #include "Vector3D.h"
 #include "Vector4D.h"
 
-#define DEPTH_ZERO_TO_ONE 1
+#define DEPTH_ZERO_TO_ONE 1 //[0..1]
 
 namespace v3d
 {
@@ -18,63 +18,69 @@ namespace core
 
         TMatrix4D();
         TMatrix4D(const TMatrix4D<T>& other);
-        TMatrix4D(const TVector4D<T>& col0,
-            const TVector4D<T>& col1,
-            const TVector4D<T>& col2,
-            const TVector4D<T>& col3);
+        TMatrix4D(const TVector4D<T>& col0, const TVector4D<T>& col1, const TVector4D<T>& col2, const TVector4D<T>& col3);
         TMatrix4D(const T* matrix);
-        TMatrix4D(T m0, T m1, T m2, T m3,
-            T m4, T m5, T m6, T m7,
-            T m8, T m9, T m10, T m11,
-            T m12, T m13, T m14, T m15);
+        TMatrix4D(const T& m0, const T& m1, const T& m2, const T& m3,
+            const T& m4, const T& m5, const T& m6, const T& m7,
+            const T& m8, const T& m9, const T& m10, const T& m11,
+            const T& m12, const T& m13, const T& m14, const T& m15);
 
-        T&              operator () (u32 row, u32 col);
-        const T&        operator () (u32 row, u32 col)              const;
-        T&              operator [] (u32 index);
-        const T&        operator [] (u32 index)                     const;
-        TMatrix4D<T>&   operator =  (const T& scalar);
-        bool            operator == (const TMatrix4D<T>& other)     const;
-        bool            operator != (const TMatrix4D<T>& other)     const;
-        TMatrix4D<T>    operator +  (const TMatrix4D<T>& other)     const;
-        TMatrix4D<T>&   operator += (const TMatrix4D<T>& other);
-        TMatrix4D<T>    operator -  (const TMatrix4D<T>& other)     const;
-        TMatrix4D<T>&   operator -= (const TMatrix4D<T>& other);
-        TMatrix4D<T>    operator *  (const TMatrix4D<T>& other)     const;
-        TMatrix4D<T>&   operator *= (const TMatrix4D<T>& other);
-        TMatrix4D<T>    operator *  (const T& scalar)               const;
-        TMatrix4D<T>&   operator *= (const T& scalar);
+        T&              operator()(u32 row, u32 col);
+        const T&        operator()(u32 row, u32 col)            const;
+        T&              operator[](u32 index);
+        const T&        operator[](u32 index)                   const;
+
+        TMatrix4D<T>&   operator=(const T& scalar);
+        bool            operator==(const TMatrix4D<T>& other)   const;
+        bool            operator!=(const TMatrix4D<T>& other)   const;
+        TMatrix4D<T>    operator+(const TMatrix4D<T>& other)    const;
+        TMatrix4D<T>&   operator+=(const TMatrix4D<T>& other);
+        TMatrix4D<T>    operator-(const TMatrix4D<T>& other)    const;
+        TMatrix4D<T>&   operator-=(const TMatrix4D<T>& other);
+        TMatrix4D<T>    operator*(const TMatrix4D<T>& other)    const;
+        TMatrix4D<T>&   operator*=(const TMatrix4D<T>& other);
+        TMatrix4D<T>    operator*(const T& scalar)              const;
+        TMatrix4D<T>&   operator*=(const T& scalar);
+        TVector4D<T>    operator*(const TVector4D<T>& vector)   const;
 
         void            set(const T* matrix);
 
         T*              getPtr();
-        const T*        getPtr()                                    const;
+        const T*        getPtr()                                const;
 
         void            makeIdentity();
-        bool            isIdentity()                                const;
+        bool            isIdentity()                            const;
 
         void            makeTransposed();
-        TMatrix4D<T>    getTransposed()                             const;
+        TMatrix4D<T>    getTransposed()                         const;
 
         void            setTranslation(const TVector3D<T>& translation);
-        TVector3D<T>    getTranslation()                            const;
+        TVector3D<T>    getTranslation()                        const;
 
         void            setRotation(const TVector3D<T>& rotation);
-        TVector3D<T>    getRotation()                               const;
+        TVector3D<T>    getRotation()                           const;
 
         void            preScale(const TVector3D<T>& scale);
         void            postScale(const TVector3D<T>& scale);
         void            setScale(const TVector3D<T>& scale);
 
-        TVector3D<T>    getScale()                                  const;
+        TVector3D<T>    getScale()                              const;
 
         bool            makeInverse();
-        bool            getInverse(TMatrix4D<T>& outMatrix)         const;
+        bool            getInverse(TMatrix4D<T>& outMatrix)     const;
 
     private:
 
         T m_matrix[16];
-
     };
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    template <class T>
+    TMatrix4D<T> operator*(const T& scalar, const TMatrix4D<T>& matrix)
+    {
+        return matrix * scalar;
+    }
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 

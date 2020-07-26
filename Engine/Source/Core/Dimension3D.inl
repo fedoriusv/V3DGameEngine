@@ -29,7 +29,7 @@ namespace core
     }
 
     template <class T>
-    TDimension3D<T>& TDimension3D<T>::operator = (const TDimension3D<T>& other)
+    TDimension3D<T>& TDimension3D<T>::operator=(const TDimension3D<T>& other)
     {
         if (this == &other)
         {
@@ -44,7 +44,7 @@ namespace core
     }
 
     template <class T>
-    bool TDimension3D<T>::operator == (const TDimension3D<T>& other) const
+    bool TDimension3D<T>::operator==(const TDimension3D<T>& other) const
     {
         const bool isEquals = 
             core::isEquals(width, other.width) &&
@@ -55,31 +55,31 @@ namespace core
     }
 
     template <class T>
-    bool TDimension3D<T>::operator != (const TDimension3D<T>& other) const
+    bool TDimension3D<T>::operator!=(const TDimension3D<T>& other) const
     {
         return !(*this == other);
     }
 
     template<class T>
-    inline bool TDimension3D<T>::operator >= (const TDimension3D<T>& other) const
+    inline bool TDimension3D<T>::operator>=(const TDimension3D<T>& other) const
     {
         return !(*this <= other);
     }
 
     template<class T>
-    inline bool TDimension3D<T>::operator <= (const TDimension3D<T>& other) const
+    inline bool TDimension3D<T>::operator<=(const TDimension3D<T>& other) const
     {
         return (*this < other) || (*this == other);
     }
 
     template<class T>
-    inline bool TDimension3D<T>::operator > (const TDimension3D<T>& other) const
+    inline bool TDimension3D<T>::operator>(const TDimension3D<T>& other) const
     {
         return !(*this < other);
     }
 
     template<class T>
-    inline bool TDimension3D<T>::operator < (const TDimension3D<T>& other) const
+    inline bool TDimension3D<T>::operator<(const TDimension3D<T>& other) const
     {
         return width < other.width && height < other.height && depth < other.depth;
     }
@@ -95,7 +95,7 @@ namespace core
     }
 
     template <class T>
-    TDimension3D<T>& TDimension3D<T>::operator /= (const T& scale)
+    TDimension3D<T>& TDimension3D<T>::operator/=(const T& scale)
     {
         width /= scale;
         height /= scale;
@@ -105,7 +105,7 @@ namespace core
     }
 
     template <class T>
-    TDimension3D<T> TDimension3D<T>::operator / (const T& scale) const
+    TDimension3D<T> TDimension3D<T>::operator/(const T& scale) const
     {
         return TDimension3D<T>(width / scale, height / scale, depth / scale);
     }
@@ -121,13 +121,13 @@ namespace core
     }
 
     template <class T>
-    TDimension3D<T> TDimension3D<T>::operator * (const T& scale) const
+    TDimension3D<T> TDimension3D<T>::operator*(const T& scale) const
     {
         return TDimension3D<T>(width * scale, height * scale, depth * scale);
     }
 
     template <class T>
-    TDimension3D<T>& TDimension3D<T>::operator += (const TDimension3D<T>& other)
+    TDimension3D<T>& TDimension3D<T>::operator+=(const TDimension3D<T>& other)
     {
         width += other.width;
         height += other.height;
@@ -137,7 +137,7 @@ namespace core
     }
 
     template <class T>
-    TDimension3D<T>& TDimension3D<T>::operator -= (const TDimension3D<T>& other)
+    TDimension3D<T>& TDimension3D<T>::operator-=(const TDimension3D<T>& other)
     {
         width -= other.width;
         height -= other.height;
@@ -147,13 +147,13 @@ namespace core
     }
 
     template <class T>
-    TDimension3D<T> TDimension3D<T>::operator + (const TDimension3D<T>& other) const
+    TDimension3D<T> TDimension3D<T>::operator+(const TDimension3D<T>& other) const
     {
         return TDimension3D<T>(width + other.width, height + other.height, depth + other.depth);
     }
 
     template<class T>
-    inline TDimension3D<T> TDimension3D<T>::operator - (const TDimension3D<T>& other) const
+    inline TDimension3D<T> TDimension3D<T>::operator-(const TDimension3D<T>& other) const
     {
         return TDimension3D<T>(width - other.width, height - other.height, depth - other.depth);
     }

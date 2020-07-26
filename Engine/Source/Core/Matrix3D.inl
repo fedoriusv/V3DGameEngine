@@ -1,3 +1,4 @@
+#include "Matrix3D.h"
 namespace v3d
 {
 namespace core
@@ -13,6 +14,20 @@ namespace core
     TMatrix3D<T>::TMatrix3D(const T* matrix)
     {
         memcpy(m_matrix, matrix, sizeof(T)* 9);
+    }
+
+    template <class T>
+    TMatrix3D<T>::TMatrix3D(const TVector3D<T>& col0, const TVector3D<T>& col1,  const TVector3D<T>& col2)
+    {
+        m_matrix[0] = col0.x;
+        m_matrix[1] = col0.y;
+        m_matrix[2] = col0.z;
+        m_matrix[3] = col1.x;
+        m_matrix[4] = col1.y;
+        m_matrix[5] = col1.z;
+        m_matrix[6] = col2.x;
+        m_matrix[7] = col2.y;
+        m_matrix[8] = col2.z;
     }
 
     template <class T>
@@ -38,31 +53,31 @@ namespace core
     }
 
     template <class T>
-    T& TMatrix3D<T>::operator () (u32 row, u32 col)
+    T& TMatrix3D<T>::operator()(u32 row, u32 col)
     {
         return m_matrix[row * 3 + col];
     }
 
     template <class T>
-    const T& TMatrix3D<T>::operator () (u32 row, u32 col) const
+    const T& TMatrix3D<T>::operator()(u32 row, u32 col) const
     {
         return m_matrix[row * 3 + col];
     }
 
     template <class T>
-    T& TMatrix3D<T>::operator [] (u32 index)
+    T& TMatrix3D<T>::operator[](u32 index)
     {
         return m_matrix[index];
     }
 
     template <class T>
-    const T& TMatrix3D<T>::operator [] (u32 index) const
+    const T& TMatrix3D<T>::operator[](u32 index) const
     {
         return m_matrix[index];
     }
 
     template <class T>
-    TMatrix3D<T>& TMatrix3D<T>::operator = (const T& scalar)
+    TMatrix3D<T>& TMatrix3D<T>::operator=(const T& scalar)
     {
         for (s32 i = 0; i < 9; ++i)
         {
@@ -84,7 +99,7 @@ namespace core
     }
 
     template <class T>
-    bool TMatrix3D<T>::operator == (const TMatrix3D<T> &other) const
+    bool TMatrix3D<T>::operator==(const TMatrix3D<T> &other) const
     {
         for (s32 i = 0; i < 9; ++i)
         {
@@ -97,13 +112,13 @@ namespace core
     }
 
     template <class T>
-    bool TMatrix3D<T>::operator != (const TMatrix3D<T> &other) const
+    bool TMatrix3D<T>::operator!=(const TMatrix3D<T> &other) const
     {
         return !(*this == other);
     }
 
     template <class T>
-    TMatrix3D<T> TMatrix3D<T>::operator + (const TMatrix3D<T>& other) const
+    TMatrix3D<T> TMatrix3D<T>::operator+(const TMatrix3D<T>& other) const
     {
         TMatrix3D<T> temp;
 
@@ -121,7 +136,7 @@ namespace core
     }
 
     template <class T>
-    TMatrix3D<T>& TMatrix3D<T>::operator += (const TMatrix3D<T>& other)
+    TMatrix3D<T>& TMatrix3D<T>::operator+=(const TMatrix3D<T>& other)
     {
         m_matrix[0] += other[0];
         m_matrix[1] += other[1];
@@ -137,7 +152,7 @@ namespace core
     }
 
     template <class T>
-    TMatrix3D<T> TMatrix3D<T>::operator - (const TMatrix3D<T>& other) const
+    TMatrix3D<T> TMatrix3D<T>::operator-(const TMatrix3D<T>& other) const
     {
         TMatrix3D<T> temp;
 
@@ -155,7 +170,7 @@ namespace core
     }
 
     template <class T>
-    TMatrix3D<T>& TMatrix3D<T>::operator -= (const TMatrix3D<T>& other)
+    TMatrix3D<T>& TMatrix3D<T>::operator-=(const TMatrix3D<T>& other)
     {
         m_matrix[0] -= other[0];
         m_matrix[1] -= other[1];
@@ -171,7 +186,7 @@ namespace core
     }
 
     template <class T>
-    TMatrix3D<T> TMatrix3D<T>::operator * (const TMatrix3D<T>& other) const
+    TMatrix3D<T> TMatrix3D<T>::operator*(const TMatrix3D<T>& other) const
     {
         TMatrix3D<T> temp;
 
@@ -192,7 +207,7 @@ namespace core
     }
 
     template <class T>
-    TMatrix3D<T>& TMatrix3D<T>::operator *= (const TMatrix3D<T>& other)
+    TMatrix3D<T>& TMatrix3D<T>::operator*=(const TMatrix3D<T>& other)
     {
         TMatrix3D<T> temp(*this);
 
@@ -213,7 +228,7 @@ namespace core
     }
 
     template <class T>
-    TMatrix3D<T> TMatrix3D<T>::operator * (const T& scalar) const
+    TMatrix3D<T> TMatrix3D<T>::operator*(const T& scalar) const
     {
         TMatrix3D<T> temp;
 
@@ -231,7 +246,7 @@ namespace core
     }
 
     template <class T>
-    TMatrix3D<T>& TMatrix3D<T>::operator *= (const T& scalar)
+    TMatrix3D<T>& TMatrix3D<T>::operator*=(const T& scalar)
     {
         m_matrix[0] *= scalar;
         m_matrix[1] *= scalar;
@@ -244,6 +259,16 @@ namespace core
         m_matrix[8] *= scalar;
 
         return *this;
+    }
+
+    template<class T>
+    TVector3D<T> TMatrix3D<T>::operator*(const TVector3D<T>& vector) const
+    {
+        T x = m_matrix[0] * vector.x + m_matrix[3] * vector.y + m_matrix[6] * vector.z;
+        T y = m_matrix[1] * vector.x + m_matrix[4] * vector.y + m_matrix[7] * vector.z;
+        T z = m_matrix[2] * vector.x + m_matrix[5] * vector.y + m_matrix[8] * vector.z;
+
+        return TVector3D<T>(x, y, z);
     }
 
     template <class T>

@@ -1,3 +1,4 @@
+#include "Matrix4D.h"
 namespace v3d
 {
 namespace core
@@ -46,10 +47,10 @@ namespace core
     }
 
     template <class T>
-    TMatrix4D<T>::TMatrix4D(T m0, T m1, T m2, T m3,
-        T m4, T m5, T m6, T m7,
-        T m8, T m9, T m10, T m11,
-        T m12, T m13, T m14, T m15)
+    TMatrix4D<T>::TMatrix4D(const T& m0, const T& m1, const T& m2, const T& m3,
+        const T& m4, const T& m5, const T& m6, const T& m7,
+        const T& m8, const T& m9, const T& m10, const T& m11,
+        const T& m12, const T& m13, const T& m14, const T& m15)
     {
         m_matrix[0] = m0;
         m_matrix[1] = m1;
@@ -70,32 +71,32 @@ namespace core
     }
 
     template <class T>
-    T& TMatrix4D<T>::operator () (u32 row, u32 col)
+    T& TMatrix4D<T>::operator()(u32 row, u32 col)
     {
         return m_matrix[row * 4 + col];
     }
 
     template <class T>
-    const T& TMatrix4D<T>::operator () (u32 row, u32 col) const
+    const T& TMatrix4D<T>::operator()(u32 row, u32 col) const
     {
         return m_matrix[row * 4 + col];
     }
 
     template <class T>
-    T& TMatrix4D<T>::operator [] (u32 index)
+    T& TMatrix4D<T>::operator[](u32 index)
     {
         return m_matrix[index];
     }
 
     template <class T>
-    const T& TMatrix4D<T>::operator [] (u32 index) const
+    const T& TMatrix4D<T>::operator[](u32 index) const
     {
         return m_matrix[index];
     }
 
 
     template <class T>
-    TMatrix4D<T> TMatrix4D<T>::operator + (const TMatrix4D<T>& other) const
+    TMatrix4D<T> TMatrix4D<T>::operator+(const TMatrix4D<T>& other) const
     {
         TMatrix4D<T> temp;
 
@@ -120,7 +121,7 @@ namespace core
     }
 
     template <class T>
-    TMatrix4D<T>& TMatrix4D<T>::operator += (const TMatrix4D<T>& other)
+    TMatrix4D<T>& TMatrix4D<T>::operator+=(const TMatrix4D<T>& other)
     {
         m_matrix[0] += other[0];
         m_matrix[1] += other[1];
@@ -143,7 +144,7 @@ namespace core
     }
 
     template <class T>
-    TMatrix4D<T> TMatrix4D<T>::operator - (const TMatrix4D<T>& other) const
+    TMatrix4D<T> TMatrix4D<T>::operator-(const TMatrix4D<T>& other) const
     {
         TMatrix4D<T> temp;
 
@@ -168,7 +169,7 @@ namespace core
     }
 
     template <class T>
-    TMatrix4D<T>& TMatrix4D<T>::operator -= (const TMatrix4D<T>& other)
+    TMatrix4D<T>& TMatrix4D<T>::operator-=(const TMatrix4D<T>& other)
     {
 
         m_matrix[0] -= other[0];
@@ -192,7 +193,7 @@ namespace core
     }
 
     template <class T>
-    TMatrix4D<T> TMatrix4D<T>::operator * (const T& scalar) const
+    TMatrix4D<T> TMatrix4D<T>::operator*(const T& scalar) const
     {
         TMatrix4D<T> temp;
 
@@ -217,7 +218,7 @@ namespace core
     }
 
     template <class T>
-    TMatrix4D<T>& TMatrix4D<T>::operator *= (const T& scalar)
+    TMatrix4D<T>& TMatrix4D<T>::operator*=(const T& scalar)
     {
         m_matrix[0] *= scalar;
         m_matrix[1] *= scalar;
@@ -240,7 +241,7 @@ namespace core
     }
 
     template <class T>
-    TMatrix4D<T>& TMatrix4D<T>::operator *= (const TMatrix4D<T>& other)
+    TMatrix4D<T>& TMatrix4D<T>::operator*=(const TMatrix4D<T>& other)
     {
         TMatrix4D<T> temp(*this);
 
@@ -268,7 +269,7 @@ namespace core
     }
 
     template <class T>
-    TMatrix4D<T> TMatrix4D<T>::operator * (const TMatrix4D<T>& other) const
+    TMatrix4D<T> TMatrix4D<T>::operator*(const TMatrix4D<T>& other) const
     {
         TMatrix4D<T> temp;
 
@@ -293,6 +294,17 @@ namespace core
         temp.m_matrix[15] = m1[3] * m2[12] + m1[7] * m2[13] + m1[11] * m2[14] + m1[15] * m2[15];
 
         return temp;
+    }
+
+    template<class T>
+    TVector4D<T> TMatrix4D<T>::operator*(const TVector4D<T>& vector) const
+    {
+        T x = m_matrix[0] * vector.x + m_matrix[4] * vector.y + m_matrix[8] * vector.z + m_matrix[12] * vector.w;
+        T y = m_matrix[1] * vector.x + m_matrix[5] * vector.y + m_matrix[9] * vector.z + m_matrix[13] * vector.w;
+        T z = m_matrix[2] * vector.x + m_matrix[6] * vector.y + m_matrix[10] * vector.z + m_matrix[14] * vector.w;
+        T w = m_matrix[3] * vector.x + m_matrix[7] * vector.y + m_matrix[11] * vector.z + m_matrix[15] * vector.w;
+
+        return TVector4D<T>(x, y, z, w);
     }
 
     template <class T>
@@ -548,7 +560,7 @@ namespace core
     }
 
     template <class T>
-    TMatrix4D<T>& TMatrix4D<T>::operator = (const T& scalar)
+    TMatrix4D<T>& TMatrix4D<T>::operator=(const T& scalar)
     {
         for (s32 i = 0; i < 16; ++i)
         {
@@ -558,7 +570,7 @@ namespace core
     }
 
     template <class T>
-    bool TMatrix4D<T>::operator == (const TMatrix4D<T> &other) const
+    bool TMatrix4D<T>::operator==(const TMatrix4D<T> &other) const
     {
         for (s32 i = 0; i < 16; ++i)
         {
@@ -571,7 +583,7 @@ namespace core
     }
 
     template <class T>
-    bool TMatrix4D<T>::operator != (const TMatrix4D<T> &other) const
+    bool TMatrix4D<T>::operator!=(const TMatrix4D<T> &other) const
     {
         return !(*this == other);
     }
@@ -647,12 +659,6 @@ namespace core
     T* TMatrix4D<T>::getPtr()
     {
         return m_matrix;
-    }
-
-    template <class T>
-    TMatrix4D<T> operator * (const T scalar, const TMatrix4D<T>& mat)
-    {
-        return mat * scalar;
     }
 
 } //namespace core

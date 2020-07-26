@@ -26,7 +26,7 @@ namespace core
     }
 
     template <class T>
-    TDimension2D<T>& TDimension2D<T>::operator = (const TDimension2D<T>& other)
+    TDimension2D<T>& TDimension2D<T>::operator=(const TDimension2D<T>& other)
     {
         if (this == &other)
         {
@@ -40,7 +40,7 @@ namespace core
     }
 
     template <class T>
-    bool TDimension2D<T>::operator == (const TDimension2D<T>& other) const
+    bool TDimension2D<T>::operator==(const TDimension2D<T>& other) const
     {
         const bool isEquals = 
             core::isEquals(width, other.width) &&
@@ -50,7 +50,7 @@ namespace core
     }
 
     template <class T>
-    bool TDimension2D<T>::operator != (const TDimension2D<T>& other) const
+    bool TDimension2D<T>::operator!=(const TDimension2D<T>& other) const
     {
         return !(*this == other);
     }
@@ -65,7 +65,7 @@ namespace core
     }
 
     template <class T>
-    TDimension2D<T>& TDimension2D<T>::operator /= (const T& scale)
+    TDimension2D<T>& TDimension2D<T>::operator/=(const T& scale)
     {
         width /= scale;
         height /= scale;
@@ -74,13 +74,13 @@ namespace core
     }
 
     template <class T>
-    TDimension2D<T> TDimension2D<T>::operator / (const T& scale) const
+    TDimension2D<T> TDimension2D<T>::operator/(const T& scale) const
     {
         return TDimension2D<T>(width / scale, height / scale);
     }
 
     template <class T>
-    TDimension2D<T>& TDimension2D<T>::operator *= (const T& scale)
+    TDimension2D<T>& TDimension2D<T>::operator*=(const T& scale)
     {
         width *= scale;
         height *= scale;
@@ -89,13 +89,13 @@ namespace core
     }
 
     template <class T>
-    TDimension2D<T> TDimension2D<T>::operator * (const T& scale) const
+    TDimension2D<T> TDimension2D<T>::operator*(const T& scale) const
     {
         return TDimension2D<T>(width * scale, height * scale);
     }
 
     template <class T>
-    TDimension2D<T>& TDimension2D<T>::operator += (const TDimension2D<T>& other)
+    TDimension2D<T>& TDimension2D<T>::operator+=(const TDimension2D<T>& other)
     {
         width += other.width;
         height += other.height;
@@ -104,7 +104,7 @@ namespace core
     }
 
     template <class T>
-    TDimension2D<T>& TDimension2D<T>::operator -= (const TDimension2D<T>& other)
+    TDimension2D<T>& TDimension2D<T>::operator-=(const TDimension2D<T>& other)
     {
         width -= other.width;
         height -= other.height;

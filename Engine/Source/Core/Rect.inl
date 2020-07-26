@@ -12,8 +12,8 @@ namespace core
 
 
     template <class T>
-    TRect<T>::TRect(T x, T y, T x2, T y2)
-        : upperLeftCorner(x, y)
+    TRect<T>::TRect(const T& x1, const T& y1, const T& x2, const T& y2)
+        : upperLeftCorner(x1, y1)
         , lowerRightCorner(x2, y2)
     {
     }
@@ -27,14 +27,14 @@ namespace core
     }
 
     template<class T>
-    TRect<T> TRect<T>::operator + (const TVector2D<T>& pos) const
+    TRect<T> TRect<T>::operator+(const TVector2D<T>& pos) const
     {
         TRect<T> ret(*this);
         return ret += pos;
     }
 
     template<class T>
-    TRect<T>& TRect<T>::operator += (const TVector2D<T>& pos)
+    TRect<T>& TRect<T>::operator+=(const TVector2D<T>& pos)
     {
         upperLeftCorner += pos;
         lowerRightCorner += pos;
@@ -42,9 +42,9 @@ namespace core
     }
 
     template<class T>
-    void TRect<T>::set(T x, T y, T x2, T y2)
+    void TRect<T>::set(const T& x1, const T& y1, const T& x2, const T& y2)
     {
-        upperLeftCorner.Set(x, y);
+        upperLeftCorner.Set(x1, y1);
         lowerRightCorner.Set(x2, y2);
     }
 
@@ -56,14 +56,14 @@ namespace core
     }
 
     template<class T>
-    TRect<T> TRect<T>::operator - (const TVector2D<T>& pos) const
+    TRect<T> TRect<T>::operator-(const TVector2D<T>& pos) const
     {
         TRect<T> ret(*this);
         return ret -= pos;
     }
 
     template<class T>
-    TRect<T>& TRect<T>::operator -= (const TVector2D<T>& pos)
+    TRect<T>& TRect<T>::operator-=(const TVector2D<T>& pos)
     {
         upperLeftCorner -= pos;
         lowerRightCorner -= pos;
@@ -78,7 +78,7 @@ namespace core
     }
 
     template<class T>
-    bool TRect<T>::operator == (const TRect<T>& other) const
+    bool TRect<T>::operator==(const TRect<T>& other) const
     {
         return (upperLeftCorner == other.upperLeftCorner  &&
             lowerRightCorner == other.lowerRightCorner);
@@ -92,14 +92,14 @@ namespace core
     }
 
     template<class T>
-    bool TRect<T>::operator != (const TRect<T>& other) const
+    bool TRect<T>::operator!=(const TRect<T>& other) const
     {
         return (upperLeftCorner != other.upperLeftCorner ||
             lowerRightCorner != other.lowerRightCorner);
     }
 
     template<class T>
-    TRect<T>& TRect<T>::operator += (const TRect<T>& other)
+    TRect<T>& TRect<T>::operator+=(const TRect<T>& other)
     {
         addInternalPoint(other.upperLeftCorner);
         addInternalPoint(other.lowerRightCorner);
@@ -307,7 +307,7 @@ namespace core
     }
 
     template<class T>
-    void TRect<T>::addInternalPoint(T x, T y)
+    void TRect<T>::addInternalPoint(const T& x, const T& y)
     {
         if (x > lowerRightCorner.x)
         {

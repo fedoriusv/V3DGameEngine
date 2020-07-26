@@ -23,7 +23,8 @@ namespace core
     }
 
     template <class T>
-    TMatrix2D<T>::TMatrix2D(T m0, T m1, T m2, T m3)
+    TMatrix2D<T>::TMatrix2D(const T& m0, const T& m1,
+        const T& m2, const T& m3)
     {
         m_matrix[0] = m0;
         m_matrix[1] = m1;
@@ -32,31 +33,31 @@ namespace core
     }
 
     template <class T>
-    T& TMatrix2D<T>::operator () (u32 row, u32 col)
+    T& TMatrix2D<T>::operator()(u32 row, u32 col)
     {
         return m_matrix[row * 2 + col];
     }
 
     template <class T>
-    const T& TMatrix2D<T>::operator () (u32 row, u32 col) const
+    const T& TMatrix2D<T>::operator()(u32 row, u32 col) const
     {
         return m_matrix[row * 2 + col];
     }
 
     template <class T>
-    T& TMatrix2D<T>::operator [] (u32 index)
+    T& TMatrix2D<T>::operator[](u32 index)
     {
         return m_matrix[index];
     }
 
     template <class T>
-    const T& TMatrix2D<T>::operator [] (u32 index) const
+    const T& TMatrix2D<T>::operator[](u32 index) const
     {
         return m_matrix[index];
     }
 
     template <class T>
-    TMatrix2D<T>& TMatrix2D<T>::operator = (const T& scalar)
+    TMatrix2D<T>& TMatrix2D<T>::operator=(const T& scalar)
     {
         for (s32 i = 0; i < 4; ++i)
         {
@@ -78,7 +79,7 @@ namespace core
     }
 
     template <class T>
-    bool TMatrix2D<T>::operator == (const TMatrix2D<T> &other) const
+    bool TMatrix2D<T>::operator==(const TMatrix2D<T> &other) const
     {
         for (s32 i = 0; i < 4; ++i)
         {
@@ -91,13 +92,13 @@ namespace core
     }
 
     template <class T>
-    bool TMatrix2D<T>::operator != (const TMatrix2D<T> &other) const
+    bool TMatrix2D<T>::operator!=(const TMatrix2D<T> &other) const
     {
         return !(*this == other);
     }
 
     template <class T>
-    TMatrix2D<T> TMatrix2D<T>::operator + (const TMatrix2D<T>& other) const
+    TMatrix2D<T> TMatrix2D<T>::operator+(const TMatrix2D<T>& other) const
     {
         TMatrix2D<T> temp;
 
@@ -110,7 +111,7 @@ namespace core
     }
 
     template <class T>
-    TMatrix2D<T>& TMatrix2D<T>::operator += (const TMatrix2D<T>& other)
+    TMatrix2D<T>& TMatrix2D<T>::operator+=(const TMatrix2D<T>& other)
     {
         m_matrix[0] += other[0];
         m_matrix[1] += other[1];
@@ -121,7 +122,7 @@ namespace core
     }
 
     template <class T>
-    TMatrix2D<T> TMatrix2D<T>::operator - (const TMatrix2D<T>& other) const
+    TMatrix2D<T> TMatrix2D<T>::operator-(const TMatrix2D<T>& other) const
     {
         TMatrix2D<T> temp;
 
@@ -134,7 +135,7 @@ namespace core
     }
 
     template <class T>
-    TMatrix2D<T>& TMatrix2D<T>::operator -= (const TMatrix2D<T>& other)
+    TMatrix2D<T>& TMatrix2D<T>::operator-=(const TMatrix2D<T>& other)
     {
         m_matrix[0] -= other[0];
         m_matrix[1] -= other[1];
@@ -144,7 +145,7 @@ namespace core
         return *this;
     }
     template <class T>
-    TMatrix2D<T> TMatrix2D<T>::operator * (const TMatrix2D<T>& other) const
+    TMatrix2D<T> TMatrix2D<T>::operator*(const TMatrix2D<T>& other) const
     {
         TMatrix2D<T> temp;
 
@@ -160,7 +161,7 @@ namespace core
     }
 
     template <class T>
-    TMatrix2D<T>& TMatrix2D<T>::operator *= (const TMatrix2D<T>& other)
+    TMatrix2D<T>& TMatrix2D<T>::operator*=(const TMatrix2D<T>& other)
     {
         TMatrix2D<T> temp(*this);
 
@@ -176,7 +177,7 @@ namespace core
     }
 
     template <class T>
-    TMatrix2D<T> TMatrix2D<T>::operator * (const T& scalar) const
+    TMatrix2D<T> TMatrix2D<T>::operator*(const T& scalar) const
     {
         TMatrix2D<T> temp;
 
@@ -189,7 +190,7 @@ namespace core
     }
 
     template <class T>
-    TMatrix2D<T>& TMatrix2D<T>::operator *= (const T& scalar)
+    TMatrix2D<T>& TMatrix2D<T>::operator*=(const T& scalar)
     {
         m_matrix[0] *= scalar;
         m_matrix[1] *= scalar;
@@ -346,14 +347,11 @@ namespace core
     TMatrix2D<T>& TMatrix2D<T>::set(const T* data)
     {
         if (data)
+        {
             memcpy(m_matrix, data, 4 * sizeof(T));
-        return *this;
-    }
+        }
 
-    template <class T>
-    TMatrix2D<T> operator * (const T scalar, const TMatrix2D<T>& mat)
-    {
-        return mat * scalar;
+        return *this;
     }
 
 } //namespace core
