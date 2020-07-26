@@ -500,7 +500,7 @@ bool ShaderSpirVDecoder::parseReflections(const std::vector<u32>& spirv, stream:
             block._set = set;
             block._binding = binding;
             block._array = block_type.array.empty() ? 1 : block_type.array[0];
-            ASSERT(block._array == 1, "unsupported now");
+            ASSERT(block._array == 1, "unsupported now. Use arrays inside uniform block");
 #if USE_STRING_ID_SHADER
             std::string name = glsl.get_name(buffer.id);
             if (m_header._shaderLang == renderer::ShaderHeader::ShaderLang::ShaderLang_HLSL && name.empty())
