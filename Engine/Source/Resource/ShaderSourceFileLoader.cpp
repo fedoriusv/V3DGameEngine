@@ -27,15 +27,16 @@ ShaderSourceFileLoader::ShaderSourceFileLoader(const renderer::Context* context,
 #ifdef USE_SPIRV
         {
 #if USE_STRING_ID_SHADER
-            ASSERT(!(flags & ShaderSourceBuildFlag::ShaderSource_OptimisationPerformance), "define can't work with the flag because optimisation removes names from spirv");
+            ASSERT(!(flags & ShaderSourceBuildFlag::ShaderSource_OptimisationSize || flags & ShaderSourceBuildFlag::ShaderSource_OptimisationPerformance), "define can't work with the flag because optimisation removes names from spirv");
 #endif
             renderer::ShaderHeader header;
             header._contentType = renderer::ShaderHeader::ShaderResource::ShaderResource_Source;
             header._shaderLang = renderer::ShaderHeader::ShaderLang::ShaderLang_GLSL;
             header._optLevel = (flags & ShaderSourceBuildFlag::ShaderSource_OptimisationPerformance) ? 2 : (flags & ShaderSourceBuildFlag::ShaderSource_OptimisationSize) ? 1 : 0;
             header._defines = defines;
+            header._flags |= (flags & ShaderSourceBuildFlag::ShaderSource_Patched) ? ShaderSourceBuildFlag::ShaderSource_Patched : header._flags;
 
-            ResourceLoader::registerDecoder(new ShaderSpirVDecoder( { "vert", "frag" }, header, !(flags & ShaderSourceBuildFlag::ShaderSource_DontUseReflaction) ));
+            ResourceLoader::registerDecoder(new ShaderSpirVDecoder( { "vert", "frag" }, header, !(flags & ShaderSourceBuildFlag::ShaderSource_DontUseReflection) ));
         }
 
         {
@@ -44,8 +45,9 @@ ShaderSourceFileLoader::ShaderSourceFileLoader(const renderer::Context* context,
             header._shaderLang = renderer::ShaderHeader::ShaderLang::ShaderLang_HLSL;
             header._optLevel = (flags & ShaderSourceBuildFlag::ShaderSource_OptimisationPerformance) ? 2 : (flags & ShaderSourceBuildFlag::ShaderSource_OptimisationSize) ? 1 : 0;
             header._defines = defines;
+            header._flags |= (flags & ShaderSourceBuildFlag::ShaderSource_Patched) ? ShaderSourceBuildFlag::ShaderSource_Patched : header._flags;
 
-            ResourceLoader::registerDecoder(new ShaderSpirVDecoder( { "vs", "ps" }, header, !(flags & ShaderSourceBuildFlag::ShaderSource_DontUseReflaction) ));
+            ResourceLoader::registerDecoder(new ShaderSpirVDecoder( { "vs", "ps" }, header, !(flags & ShaderSourceBuildFlag::ShaderSource_DontUseReflection) ));
         }
 #else //USE_SPIRV
         ASSERT(false, "not implemented");
@@ -62,7 +64,7 @@ ShaderSourceFileLoader::ShaderSourceFileLoader(const renderer::Context* context,
         header._defines = defines;
         header._shaderVersion = renderer::ShaderHeader::ShaderModel::ShaderModel_HLSL_5_1;
 
-        ResourceLoader::registerDecoder(new ShaderHLSLDecoder({ "vs", "ps" }, header, !(flags & ShaderSourceBuildFlag::ShaderSource_DontUseReflaction)));
+        ResourceLoader::registerDecoder(new ShaderHLSLDecoder({ "vs", "ps" }, header, !(flags & ShaderSourceBuildFlag::ShaderSource_DontUseReflection)));
     }
 #endif
 

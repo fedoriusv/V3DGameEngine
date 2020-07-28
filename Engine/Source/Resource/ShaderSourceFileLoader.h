@@ -17,9 +17,10 @@ namespace resource
 
     enum ShaderSourceBuildFlag
     {
-        ShaderSource_DontUseReflaction = 1 << 0,
+        ShaderSource_DontUseReflection = 1 << 0,
         ShaderSource_OptimisationSize = 1 << 1,
         ShaderSource_OptimisationPerformance = 1 << 2,
+        ShaderSource_Patched = 1 << 3,
     };
 
     typedef u32 ShaderSourceBuildFlags;

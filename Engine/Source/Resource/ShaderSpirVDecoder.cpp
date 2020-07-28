@@ -9,6 +9,8 @@
 #   include <shaderc/libshaderc/include/shaderc/shaderc.hpp>
 #   include <SPIRV-Cross/spirv_glsl.hpp>
 
+#   include "ShaderPatchSpirV.h"
+
 namespace v3d
 {
 namespace resource
@@ -277,15 +279,34 @@ Resource * ShaderSpirVDecoder::decode(const stream::Stream* stream, const std::s
             LOG_DEBUG("%s", assambleSPIRV.c_str());
 #endif //(DEBUG & VULKAN_DEBUG)
 
-            u32 size = (u32)(result.cend() - result.cbegin()) * sizeof(u32);
+            std::vector<u32> spirvBinary{ result.cbegin(), result.cend() };
+#if PATCH_SYSTEM
+            if (shaderType == shaderc_fragment_shader && m_header._flags & 0x08) //patched
+            {
+                std::vector<u32> spirvBinaryPatched;
+                PatchDriverBugOptimisation patch(m_header._flags);
+
+                ShaderPatcherSpirV patcher;
+                if (patcher.process(&patch, spirvBinary, spirvBinaryPatched))
+                {
+                    std::swap(spirvBinary, spirvBinaryPatched);
+                }
+                else
+                {
+                    ASSERT(false, "patch is failed");
+                }
+            }
+#endif //PATCH_SYSTEM
+
+            u32 size = static_cast<u32>(spirvBinary.size()) * sizeof(u32);
             stream::Stream* resourceSpirvBinary = stream::StreamManager::createMemoryStream(nullptr, size + sizeof(u32) + sizeof(bool));
             resourceSpirvBinary->write<u32>(size);
-            resourceSpirvBinary->write(result.cbegin(), size);
+            resourceSpirvBinary->write(spirvBinary.data(), size);
 
             resourceSpirvBinary->write<bool>(m_reflections);
             if (m_reflections)
             {
-                if (!ShaderSpirVDecoder::parseReflections({ result.cbegin(), result.cend() }, resourceSpirvBinary))
+                if (!ShaderSpirVDecoder::parseReflections(spirvBinary, resourceSpirvBinary))
                 {
                     LOG_ERROR("ShaderSpirVDecoder::decode: parseReflections failed for shader: %s", name.c_str());
                     delete resourceSpirvBinary;
@@ -343,6 +364,23 @@ Resource * ShaderSpirVDecoder::decode(const stream::Stream* stream, const std::s
             stream->read(bytecode.data(), sizeof(u32), static_cast<u32>(bytecode.size()));
             ASSERT(bytecode[0] == 0x07230203, "invalid spirv magic number in head");
 
+#if PATCH_SYSTEM
+            if (type == renderer::ShaderType::ShaderType_Fragment && m_header._flags & 0x08) //patched
+            {
+                std::vector<u32> spirvBinaryPatched;
+                PatchDriverBugOptimisation patch(m_header._flags);
+
+                ShaderPatcherSpirV patcher;
+                if (patcher.process(&patch, bytecode, spirvBinaryPatched))
+                {
+                    std::swap(bytecode, spirvBinaryPatched);
+                }
+                else
+                {
+                    ASSERT(false, "patch is failed");
+                }
+            }
+#endif
             stream::Stream* resourceSpirvBinary = stream::StreamManager::createMemoryStream(nullptr, static_cast<u32>(bytecode.size()) + sizeof(u32) + sizeof(bool));
             resourceSpirvBinary->write<u32>(stream->size());
             resourceSpirvBinary->write(bytecode.data(), stream->size());
