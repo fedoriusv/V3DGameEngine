@@ -24,10 +24,9 @@ ShaderSourceStreamLoader::ShaderSourceStreamLoader(const renderer::Context* cont
     ASSERT(context, "context is nullptr");
     switch (context->getRenderType())
     {
+#ifdef USE_SPIRV
     case renderer::Context::RenderType::VulkanRender:
     {
-#ifdef USE_SPIRV
-
         ASSERT(header, "nullptr");
         ResourceLoader::registerDecoder(new ShaderSpirVDecoder(*header, enableReflection));
 

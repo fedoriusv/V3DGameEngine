@@ -14,7 +14,7 @@ namespace renderer
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    enum ShaderType : s32
+    enum ShaderType : s16
     {
         ShaderType_Undefined = -1,
         ShaderType_Vertex = 0,

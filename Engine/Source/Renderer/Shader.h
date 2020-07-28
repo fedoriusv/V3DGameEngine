@@ -19,20 +19,20 @@ namespace renderer
     */
     struct ShaderHeader : resource::ResourceHeader
     {
-        enum class ShaderResource : u32
+        enum class ShaderResource : u16
         {
             ShaderResource_Source,
             ShaderResource_SpirVBytecode,
         };
 
-        enum class ShaderLang : u32
+        enum class ShaderLang : u16
         {
             ShaderLang_GLSL,
             ShaderLang_HLSL,
             ShaderLang_SpirV
         };
 
-        enum class ShaderModel : u32
+        enum class ShaderModel : u16
         {
             ShaderModel_Default,
 
