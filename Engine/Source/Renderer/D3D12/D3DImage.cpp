@@ -561,6 +561,9 @@ D3DImage::~D3DImage()
 bool D3DImage::create()
 {
     ASSERT(!m_resource, "image already created");
+
+    D3D12_CLEAR_VALUE* optimizedClearValue = nullptr;
+    D3D12_CLEAR_VALUE defaultClearValue = {};
     if ((m_flags & D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET) || (m_flags & D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL))
     {
         if (!D3DDeviceCaps::getInstance()->getImageFormatSupportInfo(m_originFormat, DeviceCaps::TilingType_Optimal)._supportAttachment)
@@ -569,6 +572,21 @@ bool D3DImage::create()
             ASSERT(false, "not support");
             return false;
         }
+
+        defaultClearValue.Format = m_format;
+        if (isColorFormat(m_format))
+        {
+            defaultClearValue.Color[0] = 0.f;
+            defaultClearValue.Color[1] = 0.f;
+            defaultClearValue.Color[2] = 0.f;
+            defaultClearValue.Color[3] = 0.f;
+        }
+        else
+        {
+            defaultClearValue.DepthStencil.Depth = 1.f;
+            defaultClearValue.DepthStencil.Stencil = 0U;
+        }
+        optimizedClearValue = &defaultClearValue;
     }
 
     if (!(m_flags & D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE))
@@ -593,7 +611,7 @@ bool D3DImage::create()
     textureDesc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
     textureDesc.Flags = m_flags;
 
-    HRESULT result = m_device->CreateCommittedResource(&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT), D3D12_HEAP_FLAG_NONE, &textureDesc, m_state, nullptr, IID_PPV_ARGS(&m_resource));
+    HRESULT result = m_device->CreateCommittedResource(&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT), D3D12_HEAP_FLAG_NONE, &textureDesc, m_state, optimizedClearValue, IID_PPV_ARGS(&m_resource));
     if (FAILED(result))
     {
         LOG_ERROR("D3DImage::create CreateCommittedResource is failed. Error %s", D3DDebug::stringError(result).c_str());
