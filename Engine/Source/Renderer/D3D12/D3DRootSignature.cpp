@@ -35,6 +35,11 @@ D3DRootSignatureCreator::D3DRootSignatureCreator(const ShaderProgramDescription&
         return D3D12_SHADER_VISIBILITY_ALL;
     };
 
+    auto descriptorRangeSort = [](const CD3DX12_DESCRIPTOR_RANGE1& range0, const CD3DX12_DESCRIPTOR_RANGE1& range1) -> bool
+    {
+        return range0.BaseShaderRegister < range1.BaseShaderRegister;
+    };
+
     if (D3DDeviceCaps::getInstance()->rootSignatureVersion.HighestVersion == D3D_ROOT_SIGNATURE_VERSION_1_1)
     {
         std::vector<CD3DX12_ROOT_PARAMETER1> rootParameters;
@@ -69,6 +74,8 @@ D3DRootSignatureCreator::D3DRootSignatureCreator(const ShaderProgramDescription&
                 ASSERT(info._sampledImages.empty(), "not supported");
                 if (!shareDescRanges[shaderType].empty())
                 {
+                    std::sort(shareDescRanges[shaderType].begin(), shareDescRanges[shaderType].end(), descriptorRangeSort);
+
                     CD3DX12_ROOT_PARAMETER1 param = {};
                     param.InitAsDescriptorTable(static_cast<UINT>(shareDescRanges[shaderType].size()), shareDescRanges[shaderType].data(), shaderVisibility(shaderType));
 
@@ -90,6 +97,8 @@ D3DRootSignatureCreator::D3DRootSignatureCreator(const ShaderProgramDescription&
 
                 if (!samplerDescRanges[shaderType].empty())
                 {
+                    std::sort(shareDescRanges[shaderType].begin(), shareDescRanges[shaderType].end(), descriptorRangeSort);
+
                     CD3DX12_ROOT_PARAMETER1 param = {};
                     param.InitAsDescriptorTable(static_cast<UINT>(samplerDescRanges[shaderType].size()), samplerDescRanges[shaderType].data(), shaderVisibility(shaderType));
 
