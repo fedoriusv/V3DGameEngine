@@ -5,6 +5,8 @@
 #include "Utils/Logger.h"
 #include "Utils/Timer.h"
 
+#define PATCH_SYSTEM 0
+
 #ifdef USE_SPIRV
 #   include <shaderc/libshaderc/include/shaderc/shaderc.hpp>
 #   include <SPIRV-Cross/spirv_glsl.hpp>

@@ -2,13 +2,18 @@
 
 #include "Common.h"
 
-#define PATCH_SYSTEM 0
-
 #ifdef USE_SPIRV
 namespace v3d
 {
 namespace resource
 {
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    u32 getOpCode(u32 word);
+    u32 getCountWords(u32 word);
+    constexpr u32 getWordInstruction(u32 op, u32 count);
+    [[maybe_unused]] std::string getLiteralString(u32 word, u32& byteSize);
+
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
@@ -38,27 +43,6 @@ namespace resource
 
         bool process(PatchSpirvCode* patch, const std::vector<u32>& spirvIn, std::vector<u32>& spirvOut);
     };
-
-    /////////////////////////////////////////////////////////////////////////////////////////////////////
-
-
-    /////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    class PatchDriverBugOptimisation final : public PatchSpirvCode
-    {
-    public:
-
-        explicit PatchDriverBugOptimisation(u32 flags = 0) noexcept;
-        ~PatchDriverBugOptimisation() = default;
-
-        bool patch(std::vector<u32>& spirv, u32 flags = 0) override;
-
-    private:
-
-        bool composePatch(std::function<bool(std::vector<u32>& subSpirv)> func, std::vector<u32>& subSpirv);
-        u32 m_flags;
-    };
-
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
