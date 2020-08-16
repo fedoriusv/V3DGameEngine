@@ -25,10 +25,15 @@ struct TextureUniformParameters
         core::Matrix4D _projectionMatrix;
         core::Matrix4D _modelMatrix;
         core::Matrix4D _viewMatrix;
+    };
+
+    struct Light
+    {
         core::Vector4D _lightPos;
     };
 
-    UniformBuffer           _constantBuffer;
+    UniformBuffer           _constantBufferVS;
+    Light                   _constantBufferFS;
     renderer::Texture2D*    _texture;
     renderer::SamplerState* _sampler;
 

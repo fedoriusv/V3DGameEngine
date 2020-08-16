@@ -80,7 +80,7 @@ void Scene::Init()
     //init camera
     m_Camera = new scene::CameraArcballHelper(new scene::Camera(core::Vector3D(0.0f, 0.0f, 0.0f), core::Vector3D(0.0f, 1.0f, 0.0f)), 5.0f, 4.0f, 20.0f);
     m_Camera->setPerspective(45.0f, m_Context->getBackbufferSize(), 1.f, 50.f);
-    m_Camera->setRotation(core::Vector3D(0.0f, 90.0f, 0.0f));
+    m_Camera->setRotation(core::Vector3D(0.0f, -90.0f, 0.0f));
 }
 
 void Scene::Load()
@@ -147,10 +147,11 @@ void Scene::Update()
     m_Render->updateParameters(*m_CommandList, [this](TextureUniformParameters& params) -> void
     {
         //vs
-        params._constantBuffer._projectionMatrix = m_Camera->getCamera().getProjectionMatrix();
-        params._constantBuffer._modelMatrix.setTranslation(core::Vector3D(0, 0, 0));
-        params._constantBuffer._viewMatrix = m_Camera->getCamera().getViewMatrix();
-        params._constantBuffer._lightPos = core::Vector4D(25.0f, 5.0f, 5.0f, 1.0f);
+        params._constantBufferVS._projectionMatrix = m_Camera->getCamera().getProjectionMatrix();
+        params._constantBufferVS._modelMatrix.setTranslation(core::Vector3D(0, 0, 0));
+        params._constantBufferVS._viewMatrix = m_Camera->getCamera().getViewMatrix();
+
+        params._constantBufferFS._lightPos = core::Vector4D(25.0f, 0.0f, 5.0f, 1.0f);
 
         //ps
         params._texture = m_CurrentModel->m_Texture.get();

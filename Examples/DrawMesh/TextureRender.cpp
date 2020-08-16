@@ -17,8 +17,9 @@ TextureUniformParameters::TextureUniformParameters() noexcept
 void TextureUniformParameters::bindUniformParameters(CommandList& cmdList, ShaderProgram* program)
 {
 #if USE_STRING_ID_SHADER
-    program->bindUniformsBuffer<ShaderType::ShaderType_Vertex>({ "ubo" }, 0, sizeof(UniformBuffer), &_constantBuffer);
+    program->bindUniformsBuffer<ShaderType::ShaderType_Vertex>({ "ubo" }, 0, sizeof(UniformBuffer), &_constantBufferVS);
 
+    program->bindUniformsBuffer<ShaderType::ShaderType_Fragment>({ "light" }, 0, sizeof(Light), &_constantBufferFS);
     program->bindTexture<ShaderType::ShaderType_Fragment, Texture2D>({ "textureColor" }, _texture);
     program->bindSampler<ShaderType::ShaderType_Fragment>({ "samplerColor" }, _sampler);
 #else
