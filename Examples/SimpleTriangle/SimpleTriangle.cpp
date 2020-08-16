@@ -115,8 +115,8 @@ void SimpleTriangle::init(v3d::renderer::CommandList* commandList, const core::D
     std::vector<core::Vector3D> geometryData = 
     {
         {-1.0f,-1.0f, 0.0f },  { 1.0f, 0.0f, 0.0f },
-        { 1.0f,-1.0f, 0.0f },  { 0.0f, 1.0f, 0.0f },
-        { 0.0f, 1.0f, 0.0f },  { 0.0f, 0.0f, 1.0f },
+        { 0.0f, 1.0f, 0.0f },  { 0.0f, 1.0f, 0.0f },
+        { 1.0f,-1.0f, 0.0f },  { 0.0f, 0.0f, 1.0f },
     };
     m_Geometry = m_CommandList->createObject<renderer::VertexStreamBuffer>(renderer::StreamBuffer_Write, static_cast<u32>(geometryData.size() * sizeof(core::Vector3D)), reinterpret_cast<u8*>(geometryData.data()));
 
