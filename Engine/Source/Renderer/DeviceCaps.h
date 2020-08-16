@@ -25,7 +25,7 @@ namespace renderer
         u32 maxVertexInputAttributes = k_maxVertexInputAttributes;
         u32 maxVertexInputBindings = k_maxVertexInputBindings;
 
-        bool invertZ = true;
+        bool invertZ = false; //invertZ is false - toward: -1.f, backward: +1.f
 
         struct ImageFormatSupport
         {

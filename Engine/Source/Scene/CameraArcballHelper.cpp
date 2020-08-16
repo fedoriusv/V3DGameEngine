@@ -82,7 +82,7 @@ void CameraArcballHelper::handlerMouseCallback(v3d::event::InputEventHandler* ha
         core::Point2D positionDelta = position - event->_cursorPosition;
 
         core::Vector3D rotation = CameraArcballHelper::getRotation();
-        rotation.x += positionDelta.y * k_rotationSpeed;
+        rotation.x -= positionDelta.y * k_rotationSpeed * k_signZ;
         rotation.y -= positionDelta.x * k_rotationSpeed;
         CameraArcballHelper::setRotation(rotation);
     }
@@ -107,7 +107,7 @@ void CameraArcballHelper::handlerMouseCallback(v3d::event::InputEventHandler* ha
         f32 wheelDelta = wheel - event->_wheelValue;
 
         core::Vector3D postion = CameraHelper::getPosition();
-        f32 newZPos = postion.z + (wheelDelta * k_zoomSpeed);
+        f32 newZPos = postion.z - (wheelDelta * k_zoomSpeed);
         if (k_signZ < 0)
         {
             postion.z = std::clamp(newZPos, k_signZ * m_distanceLimits.y, k_signZ * m_distanceLimits.x);

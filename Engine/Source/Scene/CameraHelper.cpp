@@ -6,7 +6,7 @@ namespace v3d
 namespace scene
 {
 
-CameraHelper::CameraHelper(Camera* camera, const core::Vector3D & position) noexcept
+CameraHelper::CameraHelper(Camera* camera, const core::Vector3D& position) noexcept
     : m_camera(camera)
     , m_needUpdate(true)
 {
