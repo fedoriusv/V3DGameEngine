@@ -3,7 +3,9 @@
 #include "Vector3D.h"
 #include "Vector4D.h"
 
-#define DEPTH_ZERO_TO_ONE 1 //[0..1]
+//0: [-1..1]
+//1: [0..1]
+#define DEPTH_ZERO_TO_ONE 1 
 
 namespace v3d
 {
