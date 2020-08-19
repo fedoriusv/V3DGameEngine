@@ -839,7 +839,7 @@ void VulkanGraphicContext::destroy()
 #if THREADED_PRESENT
     delete m_presentThread;
 #endif //THREADED_PRESENT
-    //reset to max, need to skip all an safe frames
+    //reset to max, need to skip all safe frames
     m_frameCounter = ~0U;
     if (m_cmdBufferManager)
     {
