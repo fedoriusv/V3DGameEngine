@@ -8,14 +8,14 @@ layout (binding = 2) uniform texture2D textureColor;
 
 struct Light
 {
-    vec4 position;
-    vec4 color;
+    vec4 direction;
+    vec4 diffuse;
 };
 
-layout (binding = 3) uniform UBO 
+layout (binding = 3) uniform LIGHT 
 {
     Light lights[LIGHT_COUNT];
-} ubo;
+} light;
 
 layout (location = 0) out vec4 outFragColor;
 
@@ -24,10 +24,10 @@ void main()
     vec4 colorDiffuse = texture(sampler2D(textureColor, samplerColor), inUV);
     vec3 normal = normalize(inNormal);
     
-    outFragColor = vec4(0.0);
+    outFragColor = vec4(0.0, 0.0, 0.0, 1.0);
     for (int l = 0; l < LIGHT_COUNT; ++l)
     {
-        vec3 lightDir = normalize(ubo.lights[l].position.xyz);
-        outFragColor += colorDiffuse * max(dot(normal, lightDir), 0.01) * ubo.lights[l].color;
+        vec3 lightDir = normalize(light.lights[l].direction.xyz);
+        outFragColor += colorDiffuse * max(dot(normal, lightDir), 0.01) * light.lights[l].diffuse;
     }
 }

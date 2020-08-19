@@ -32,7 +32,7 @@ void UnlitTextureTest::Load(renderer::RenderTargetState* renderTarget, const ren
     m_Program = m_CommandList.createObject<renderer::ShaderProgram, std::vector<const renderer::Shader*>>({ vertShader, fragShader });
     m_Pipeline = m_CommandList.createObject<renderer::GraphicsPipelineState>(desc, m_Program.get(), renderTarget);
     m_Pipeline->setPrimitiveTopology(renderer::PrimitiveTopology::PrimitiveTopology_TriangleList);
-    m_Pipeline->setFrontFace(renderer::FrontFace::FrontFace_CounterClockwise);
+    m_Pipeline->setFrontFace(renderer::FrontFace::FrontFace_Clockwise);
     m_Pipeline->setCullMode(renderer::CullMode::CullMode_Back);
     m_Pipeline->setColorMask(renderer::ColorMask::ColorMask_All);
     m_Pipeline->setDepthCompareOp(renderer::CompareOperation::CompareOp_Less);

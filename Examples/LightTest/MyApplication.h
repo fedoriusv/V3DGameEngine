@@ -23,6 +23,7 @@
 #include "UnlitRender.h"
 #include "DirectionalLightRender.h"
 #include "PointLightRender.h"
+#include "BumpmapRender.h"
 
 class MyApplication
 {
@@ -90,25 +91,9 @@ private:
 
 
     v3d::UnlitTextureTest* m_UnLit;
-    v3d::ForwardDirectionalLightTextureTest* m_Lambert;
-    v3d::ForwardPointLightTest* m_PhongTextureless;
-    v3d::ForwardPointLightTextureTest* m_Phong;
-
-    struct NormalMap
-    {
-        v3d::utils::IntrusivePointer<v3d::renderer::GraphicsPipelineState> m_Pipeline;
-        v3d::utils::IntrusivePointer<v3d::renderer::ShaderProgram> m_Program;
-
-        v3d::utils::IntrusivePointer<v3d::renderer::SamplerState> m_SamplerColor;
-        v3d::utils::IntrusivePointer<v3d::renderer::Texture2D> m_TextureColor;
-
-        v3d::utils::IntrusivePointer<v3d::renderer::SamplerState> m_SamplerNormalmap;
-        v3d::utils::IntrusivePointer<v3d::renderer::Texture2D> m_TextureNormalmap;
-
-        v3d::core::Vector4D m_LightPosition = { 110.0, 110.0, -110.0, 0.0 };
-
-        void Draw(v3d::renderer::CommandList* commandList, v3d::scene::ModelHelper* geometry, v3d::scene::CameraHelper* camera, const v3d::core::Vector3D& lightPosition, const v3d::core::Vector4D& lightColor);
-        void Free();
-
-    } m_Normalmap;
+    v3d::ForwardDirectionalLightTextureTest* m_DirectionalLight;
+    v3d::ForwardPointLightTest* m_PointLightTextureless;
+    v3d::ForwardPointLightTextureTest* m_PointLight;
+    v3d::ForwardNormalMapTest* m_NormalMap;
+    v3d::ForwardParallaxMappingTest* m_ParallaxMap;
 };

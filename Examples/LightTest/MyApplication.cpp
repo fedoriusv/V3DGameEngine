@@ -22,7 +22,8 @@ using namespace v3d::utils;
 using namespace v3d::event;
 using namespace v3d::resource;
 
-constexpr u32 k_maxDrawModeIndex = 3;
+constexpr u32 k_maxDrawModeIndex = 5; //unlit = 0, directional = 1, phong = 2, phongTexture = 3, normal = 4, parallax = 5
+constexpr u32 k_countGeometryModels = 3; //cube , torus, teapot
 
 MyApplication::MyApplication(int& argc, char** argv)
     : m_Window(Window::createWindow({ 1280, 720 }, { 400, 200 }, false, new v3d::event::InputEventReceiver()))
@@ -32,9 +33,11 @@ MyApplication::MyApplication(int& argc, char** argv)
     , m_CommandList(nullptr)
 
     , m_UnLit(nullptr)
-    , m_Lambert(nullptr)
-    , m_PhongTextureless(nullptr)
-    , m_Phong(nullptr)
+    , m_DirectionalLight(nullptr)
+    , m_PointLightTextureless(nullptr)
+    , m_PointLight(nullptr)
+    , m_NormalMap(nullptr)
+    , m_ParallaxMap(nullptr)
 
     , m_ArcballCameraHelper(nullptr)
     , m_FPSCameraHelper(nullptr)
@@ -77,7 +80,7 @@ void MyApplication::Initialize()
 
     m_ArcballCameraHelper = new v3d::scene::CameraArcballHelper(new scene::Camera(core::Vector3D(0.0f, 0.0f, 0.0f), core::Vector3D(0.0f, 1.0f, 0.0f)), 5.0f, 4.0f, 20.0f);
     m_ArcballCameraHelper->setPerspective(45.0f, m_Window->getSize(), 0.1f, 40.f);
-    m_FPSCameraHelper = new v3d::scene::CameraFPSHelper(new v3d::scene::Camera(core::Vector3D(0.0f, 0.0f, 0.0f), core::Vector3D(0.0f, 1.0f, 0.0f)), core::Vector3D(0.0f, 0.0f, -10.0f));
+    m_FPSCameraHelper = new v3d::scene::CameraFPSHelper(new v3d::scene::Camera(core::Vector3D(0.0f, 0.0f, 0.0f), core::Vector3D(0.0f, 1.0f, 0.0f)), core::Vector3D(0.0f, 0.0f, 5.0f));
     m_FPSCameraHelper->setPerspective(45.0f, m_Window->getSize(), 0.1f, 40.f);
     m_CameraHelper = m_ArcballCameraHelper;
 
@@ -123,22 +126,22 @@ void MyApplication::Initialize()
 
                 if (m_InputEventHandler->isKeyPressed(event::KeyCode::KeyKey_A))
                 {
-                    lightPosition.x += moveSpeed;
+                    lightPosition.x -= moveSpeed;
                 }
 
                 if (m_InputEventHandler->isKeyPressed(event::KeyCode::KeyKey_D))
                 {
-                    lightPosition.x -= moveSpeed;
+                    lightPosition.x += moveSpeed;
                 }
 
                 if (m_InputEventHandler->isKeyPressed(event::KeyCode::KeyKey_Q))
                 {
-                    lightPosition.z += moveSpeed;
+                    lightPosition.z -= moveSpeed;
                 }
 
                 if (m_InputEventHandler->isKeyPressed(event::KeyCode::KeyKey_E))
                 {
-                    lightPosition.z -= moveSpeed;
+                    lightPosition.z += moveSpeed;
                 }
             }
             else
@@ -147,25 +150,25 @@ void MyApplication::Initialize()
             }
 
             {
-                f32 roatateSpeed = 5.0f;
+                f32 rotateSpeed = 5.0f;
                 if (m_InputEventHandler->isKeyPressed(event::KeyCode::KeyLeft))
                 {
-                    m_Transform.setRotation({ m_Transform.getRotation().x, m_Transform.getRotation().y - roatateSpeed, m_Transform.getRotation().z });
+                    m_Transform.setRotation({ m_Transform.getRotation().x, m_Transform.getRotation().y - rotateSpeed, m_Transform.getRotation().z });
                 }
 
                 if (m_InputEventHandler->isKeyPressed(event::KeyCode::KeyRight))
                 {
-                    m_Transform.setRotation({ m_Transform.getRotation().x, m_Transform.getRotation().y + roatateSpeed, m_Transform.getRotation().z });
+                    m_Transform.setRotation({ m_Transform.getRotation().x, m_Transform.getRotation().y + rotateSpeed, m_Transform.getRotation().z });
                 }
 
                 if (m_InputEventHandler->isKeyPressed(event::KeyCode::KeyUp))
                 {
-                    m_Transform.setRotation({ m_Transform.getRotation().x + roatateSpeed, m_Transform.getRotation().y, m_Transform.getRotation().z });
+                    m_Transform.setRotation({ m_Transform.getRotation().x - rotateSpeed, m_Transform.getRotation().y, m_Transform.getRotation().z });
                 }
 
                 if (m_InputEventHandler->isKeyPressed(event::KeyCode::KeyDown))
                 {
-                    m_Transform.setRotation({ m_Transform.getRotation().x - roatateSpeed, m_Transform.getRotation().y, m_Transform.getRotation().z });
+                    m_Transform.setRotation({ m_Transform.getRotation().x + rotateSpeed, m_Transform.getRotation().y, m_Transform.getRotation().z });
                 }
 
                 if (m_InputEventHandler->isKeyPressed(event::KeyCode::KeyKey_R))
@@ -188,7 +191,7 @@ void MyApplication::Initialize()
                 if (event->_key == event::KeyCode::KeyKey_G)
                 {
                     m_GeometryIndex++;
-                    if (m_GeometryIndex > 2)
+                    if (m_GeometryIndex >= k_countGeometryModels)
                     {
                         m_GeometryIndex = 0;
                     }
@@ -206,25 +209,26 @@ void MyApplication::Initialize()
                     }
                 }
             }
-
         });
 
 
     m_UnLit = new UnlitTextureTest(*m_CommandList);
-    m_Lambert = new ForwardDirectionalLightTextureTest(*m_CommandList);
-    m_PhongTextureless = new ForwardPointLightTest(*m_CommandList);
-    m_Phong = new ForwardPointLightTextureTest(*m_CommandList);
+    m_DirectionalLight = new ForwardDirectionalLightTextureTest(*m_CommandList);
+    m_PointLightTextureless = new ForwardPointLightTest(*m_CommandList);
+    m_PointLight = new ForwardPointLightTextureTest(*m_CommandList);
+    m_NormalMap = new ForwardNormalMapTest(*m_CommandList);
+    m_ParallaxMap = new ForwardParallaxMappingTest(*m_CommandList);
 
     Load();
 }
 
 void MyApplication::Load()
 {
-    m_Lights.push_back({ { 0.0, 0.0, -2.0 }, { 1.0, 1.0, 1.0, 1.0 } });
-    m_Lights.push_back({ { 1.0, 1.0, -2.0 }, { 1.0, 0.0, 0.0, 1.0 } });
-    m_Lights.push_back({ { -1.0, -1.0, -2.0 }, { 0.0, 0.0, 1.0, 1.0 } });
-    m_Lights.push_back({ { -1.0, 1.0, -2.0 }, { 0.0, 1.0, 0.0, 1.0 } });
-    m_Lights.push_back({ { 1.0, -1.0, -2.0 }, { 1.0, 1.0, 0.0, 1.0 } });
+    m_Lights.push_back({ { 0.0, 0.0, 2.0 }, { 1.0, 1.0, 1.0, 1.0 } });
+    m_Lights.push_back({ { 1.0, 1.0, 2.0 }, { 1.0, 0.0, 0.0, 1.0 } });
+    m_Lights.push_back({ { -1.0, -1.0, 2.0 }, { 0.0, 0.0, 1.0, 1.0 } });
+    m_Lights.push_back({ { -1.0, 1.0, 2.0 }, { 0.0, 1.0, 0.0, 1.0 } });
+    m_Lights.push_back({ { 1.0, -1.0, 2.0 }, { 1.0, 1.0, 0.0, 1.0 } });
 
     resource::ResourceLoaderManager::getInstance()->addPath("examples/lighttest/");
 
@@ -283,39 +287,11 @@ void MyApplication::Load()
     }
 
     m_UnLit->Load(m_RenderTarget.get(), m_Geometry.front()->getVertexInputAttribDescription(0, 0));
-    m_Lambert->Load(m_RenderTarget.get(), m_Geometry.front()->getVertexInputAttribDescription(0, 0), (u32)m_Lights.size());
-    m_PhongTextureless->Load(m_RenderTarget.get(), m_Geometry.front()->getVertexInputAttribDescription(0, 0), (u32)m_Lights.size());
-    m_Phong->Load(m_RenderTarget.get(), m_Geometry.front()->getVertexInputAttribDescription(0, 0), (u32)m_Lights.size());
-
-    {
-        m_Normalmap.m_SamplerColor = m_CommandList->createObject<renderer::SamplerState>(renderer::SamplerFilter::SamplerFilter_Bilinear, renderer::SamplerFilter::SamplerFilter_Trilinear, renderer::SamplerAnisotropic::SamplerAnisotropic_4x);
-        m_Normalmap.m_SamplerColor->setWrap(renderer::SamplerWrap::TextureWrap_MirroredRepeat);
-
-        resource::Image* imageColor = resource::ResourceLoaderManager::getInstance()->load<resource::Image, resource::ImageFileLoader>("resources/normalmap/brickwall.jpg");
-        ASSERT(imageColor, "not found");
-        m_Normalmap.m_TextureColor = m_CommandList->createObject<renderer::Texture2D>(renderer::TextureUsage_Sampled | renderer::TextureUsage_Write,
-            imageColor->getFormat(), core::Dimension2D(imageColor->getDimension().width, imageColor->getDimension().height), 1, 1, imageColor->getRawData(), "DiffuseColor");
-
-        m_Normalmap.m_SamplerNormalmap = m_CommandList->createObject<renderer::SamplerState>(renderer::SamplerFilter::SamplerFilter_Nearest, renderer::SamplerFilter::SamplerFilter_Nearest, renderer::SamplerAnisotropic::SamplerAnisotropic_None);
-
-        resource::Image* imageNormal = resource::ResourceLoaderManager::getInstance()->load<resource::Image, resource::ImageFileLoader>("resources/normalmap/brickwall_normal.jpg");
-        ASSERT(imageNormal, "not found");
-        m_Normalmap.m_TextureNormalmap = m_CommandList->createObject<renderer::Texture2D>(renderer::TextureUsage_Sampled | renderer::TextureUsage_Write,
-            imageNormal->getFormat(), core::Dimension2D(imageNormal->getDimension().width, imageNormal->getDimension().height), 1, 1, imageNormal->getRawData(), "NormalMap");
-
-        renderer::Shader* vertShader = resource::ResourceLoaderManager::getInstance()->loadShader<renderer::Shader, resource::ShaderSourceFileLoader>(m_Context, "resources/normalmap/pointLight.vert");
-        renderer::Shader* fragShader = resource::ResourceLoaderManager::getInstance()->loadShader<renderer::Shader, resource::ShaderSourceFileLoader>(m_Context, "resources/normalmap/pointLight.frag");
-
-        m_Normalmap.m_Program = m_CommandList->createObject<renderer::ShaderProgram, std::vector<const renderer::Shader*>>({ vertShader, fragShader });
-        m_Normalmap.m_Pipeline = m_CommandList->createObject<renderer::GraphicsPipelineState>(m_Geometry.front()->getVertexInputAttribDescription(0, 0), m_Normalmap.m_Program.get(), m_RenderTarget.get());
-        m_Normalmap.m_Pipeline->setPrimitiveTopology(renderer::PrimitiveTopology::PrimitiveTopology_TriangleList);
-        m_Normalmap.m_Pipeline->setFrontFace(renderer::FrontFace::FrontFace_CounterClockwise);
-        m_Normalmap.m_Pipeline->setCullMode(renderer::CullMode::CullMode_Back);
-        m_Normalmap.m_Pipeline->setColorMask(renderer::ColorMask::ColorMask_All);
-        m_Normalmap.m_Pipeline->setDepthCompareOp(renderer::CompareOperation::CompareOp_Less);
-        m_Normalmap.m_Pipeline->setDepthWrite(true);
-        m_Normalmap.m_Pipeline->setDepthTest(true);
-    }
+    m_DirectionalLight->Load(m_RenderTarget.get(), m_Geometry.front()->getVertexInputAttribDescription(0, 0), (u32)m_Lights.size());
+    m_PointLightTextureless->Load(m_RenderTarget.get(), m_Geometry.front()->getVertexInputAttribDescription(0, 0), (u32)m_Lights.size());
+    m_PointLight->Load(m_RenderTarget.get(), m_Geometry.front()->getVertexInputAttribDescription(0, 0), (u32)m_Lights.size());
+    m_NormalMap->Load(m_RenderTarget.get(), m_Geometry.front()->getVertexInputAttribDescription(0, 0), (u32)m_Lights.size());
+    m_ParallaxMap->Load(m_RenderTarget.get(), m_Geometry.front()->getVertexInputAttribDescription(0, 0), (u32)m_Lights.size());
 }
 
 bool MyApplication::Running()
@@ -339,25 +315,27 @@ bool MyApplication::Running()
 
     case 1:
         m_LightDebug.Draw(m_CommandList, m_Geometry[0], &m_CameraHelper->getCamera(), m_Lights);
-        m_Lambert->Draw(m_Geometry[m_GeometryIndex], &m_CameraHelper->getCamera(), m_Transform, m_Lights);
+        m_DirectionalLight->Draw(m_Geometry[m_GeometryIndex], &m_CameraHelper->getCamera(), m_Transform, m_Lights);
         break;
 
     case 2:
         m_LightDebug.Draw(m_CommandList, m_Geometry[0], &m_CameraHelper->getCamera(), m_Lights);
-        m_PhongTextureless->Draw(m_Geometry[m_GeometryIndex], m_CameraHelper, m_Transform, m_Lights);
+        m_PointLightTextureless->Draw(m_Geometry[m_GeometryIndex], m_CameraHelper, m_Transform, m_Lights);
         break;
 
     case 3:
         m_LightDebug.Draw(m_CommandList, m_Geometry[0], &m_CameraHelper->getCamera(), m_Lights);
-        m_Phong->Draw(m_Geometry[m_GeometryIndex], m_CameraHelper, m_Transform, m_Lights);
+        m_PointLight->Draw(m_Geometry[m_GeometryIndex], m_CameraHelper, m_Transform, m_Lights);
         break;
 
     case 4:
         m_LightDebug.Draw(m_CommandList, m_Geometry[0], &m_CameraHelper->getCamera(), m_Lights);
-        m_Normalmap.Draw(m_CommandList, m_Geometry[m_GeometryIndex], m_CameraHelper, m_LightPosition, m_LightColor);
+        m_NormalMap->Draw(m_Geometry[m_GeometryIndex], m_CameraHelper, m_Transform, m_Lights);
         break;
 
     case 5:
+        m_LightDebug.Draw(m_CommandList, m_Geometry[0], &m_CameraHelper->getCamera(), m_Lights);
+        m_ParallaxMap->Draw(m_Geometry[m_GeometryIndex], m_CameraHelper, m_Transform, m_Lights);
         break;
     }
     
@@ -393,19 +371,25 @@ void MyApplication::Exit()
         delete m_UnLit;
         m_UnLit = nullptr;
 
-        m_Lambert->Free();
-        delete m_Lambert;
-        m_Lambert = nullptr;
+        m_DirectionalLight->Free();
+        delete m_DirectionalLight;
+        m_DirectionalLight = nullptr;
 
-        m_PhongTextureless->Free();
-        delete m_PhongTextureless;
-        m_PhongTextureless = nullptr;
+        m_PointLightTextureless->Free();
+        delete m_PointLightTextureless;
+        m_PointLightTextureless = nullptr;
 
-        m_Phong->Free();
-        delete m_Phong;
-        m_Phong = nullptr;
+        m_PointLight->Free();
+        delete m_PointLight;
+        m_PointLight = nullptr;
 
-        m_Normalmap.Free();
+        m_NormalMap->Free();
+        delete m_NormalMap;
+        m_NormalMap = nullptr;
+
+        m_ParallaxMap->Free();
+        delete m_ParallaxMap;
+        m_ParallaxMap = nullptr;
 
         m_LightDebug.Free();
         m_AxisDebug.Free();
@@ -542,61 +526,6 @@ void MyApplication::LightDebug::Draw(v3d::renderer::CommandList* commandList, v3
 
 void MyApplication::LightDebug::Free()
 {
-    m_Pipeline = nullptr;
-    m_Program = nullptr;
-}
-
-void MyApplication::NormalMap::Draw(v3d::renderer::CommandList* commandList, v3d::scene::ModelHelper* geometry, v3d::scene::CameraHelper* camera, const v3d::core::Vector3D& lightPosition, const v3d::core::Vector4D& lightColor)
-{
-    commandList->setPipelineState(m_Pipeline.get());
-
-    {
-        struct UBO
-        {
-            core::Matrix4D projectionMatrix;
-            core::Matrix4D modelMatrix;
-            core::Matrix4D normalMatrix;
-            core::Matrix4D viewMatrix;
-        } ubo;
-
-        ubo.projectionMatrix = camera->getProjectionMatrix();
-        ubo.modelMatrix.makeIdentity();
-        ubo.modelMatrix.setScale({ 100.0, 100.0, 100.0 });
-        ubo.modelMatrix.getInverse(ubo.normalMatrix);
-        ubo.normalMatrix.makeTransposed();
-        ubo.viewMatrix = camera->getViewMatrix();
-
-        m_Program->bindUniformsBuffer<renderer::ShaderType::ShaderType_Vertex>({ "ubo" }, 0, sizeof(UBO), &ubo);
-    }
-
-    {
-        struct UBO
-        {
-            core::Vector4D viewPosition;
-            core::Vector4D lightPosition;
-            core::Vector4D lightColor;
-        } ubo;
-
-        ubo.lightColor = lightColor;
-        ubo.lightPosition = { lightPosition, 1.0 };
-        ubo.viewPosition = { camera->getPosition(), 1.0 };
-
-        m_Program->bindUniformsBuffer<renderer::ShaderType::ShaderType_Fragment>({ "ubo" }, 0, sizeof(UBO), &ubo);
-        m_Program->bindSampler<renderer::ShaderType::ShaderType_Fragment>({ "samplerColor" }, m_SamplerColor.get());
-        m_Program->bindSampler<renderer::ShaderType::ShaderType_Fragment>({ "samplerNormal" }, m_SamplerNormalmap.get());
-        m_Program->bindTexture<renderer::ShaderType::ShaderType_Fragment, renderer::Texture2D>({ "textureColor" }, m_TextureColor.get());
-        m_Program->bindTexture<renderer::ShaderType::ShaderType_Fragment, renderer::Texture2D>({ "textureNormal" }, m_TextureNormalmap.get());
-    }
-
-    geometry->draw();
-}
-
-void MyApplication::NormalMap::Free()
-{
-    m_SamplerColor = nullptr;
-    m_TextureColor = nullptr;
-    m_SamplerNormalmap = nullptr;
-    m_TextureNormalmap = nullptr;
     m_Pipeline = nullptr;
     m_Program = nullptr;
 }

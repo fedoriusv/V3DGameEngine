@@ -14,14 +14,17 @@ layout (binding = 0) uniform UBO
     mat4 viewMatrix;
 } ubo;
 
-layout (location = 0) out vec3 outNormal;
-layout (location = 1) out vec2 outUV;
+layout (location = 0) out vec3 outPosition;
+layout (location = 1) out vec3 outNormal;
+layout (location = 2) out vec2 outUV;
 
 void main() 
 {
+    vec4 position = ubo.modelMatrix *  vec4(inPosition.xyz, 1.0);
+    
+    outPosition = position.xyz;
     outNormal = (ubo.normalMatrix * vec4(inNormal, 0.0)).xyz;
     outUV = inUV;
     
-    vec4 position = ubo.modelMatrix *  vec4(inPosition.xyz, 1.0);
     gl_Position = ubo.projectionMatrix * ubo.viewMatrix * position;
 }

@@ -30,13 +30,13 @@ void ForwardPointLightTest::Load(renderer::RenderTargetState* renderTarget, cons
         { "LIGHT_COUNT", std::to_string(countLights) }
     };
 
-    renderer::Shader* vertShader = resource::ResourceLoaderManager::getInstance()->loadShader<renderer::Shader, resource::ShaderSourceFileLoader>(m_CommandList.getContext(), "resources/phong/pointLightTextureless.vert");
-    renderer::Shader* fragShader = resource::ResourceLoaderManager::getInstance()->loadShader<renderer::Shader, resource::ShaderSourceFileLoader>(m_CommandList.getContext(), "resources/phong/pointLightTextureless.frag", constants);
+    renderer::Shader* vertShader = resource::ResourceLoaderManager::getInstance()->loadShader<renderer::Shader, resource::ShaderSourceFileLoader>(m_CommandList.getContext(), "resources/point/phongTextureless.vert");
+    renderer::Shader* fragShader = resource::ResourceLoaderManager::getInstance()->loadShader<renderer::Shader, resource::ShaderSourceFileLoader>(m_CommandList.getContext(), "resources/point/phongTextureless.frag", constants);
 
     m_Program = m_CommandList.createObject<renderer::ShaderProgram, std::vector<const renderer::Shader*>>({ vertShader, fragShader });
     m_Pipeline = m_CommandList.createObject<renderer::GraphicsPipelineState>(desc, m_Program.get(), renderTarget);
     m_Pipeline->setPrimitiveTopology(renderer::PrimitiveTopology::PrimitiveTopology_TriangleList);
-    m_Pipeline->setFrontFace(renderer::FrontFace::FrontFace_CounterClockwise);
+    m_Pipeline->setFrontFace(renderer::FrontFace::FrontFace_Clockwise);
     m_Pipeline->setCullMode(renderer::CullMode::CullMode_Back);
     m_Pipeline->setColorMask(renderer::ColorMask::ColorMask_All);
     m_Pipeline->setDepthCompareOp(renderer::CompareOperation::CompareOp_Less);
@@ -105,7 +105,6 @@ void ForwardPointLightTest::Free()
 }
 
 
-
 ForwardPointLightTextureTest::ForwardPointLightTextureTest(renderer::CommandList& commandList) noexcept
     : m_CommandList(commandList)
 {
@@ -120,12 +119,12 @@ void ForwardPointLightTextureTest::Load(renderer::RenderTargetState* renderTarge
     m_Sampler = m_CommandList.createObject<renderer::SamplerState>(renderer::SamplerFilter::SamplerFilter_Bilinear, renderer::SamplerFilter::SamplerFilter_Trilinear, renderer::SamplerAnisotropic::SamplerAnisotropic_4x);
     m_Sampler->setWrap(renderer::SamplerWrap::TextureWrap_MirroredRepeat);
 
-    resource::Image* imageDiffuse = resource::ResourceLoaderManager::getInstance()->load<resource::Image, resource::ImageFileLoader>("resources/phong/container2.png");
+    resource::Image* imageDiffuse = resource::ResourceLoaderManager::getInstance()->load<resource::Image, resource::ImageFileLoader>("resources/point/container2.png");
     ASSERT(imageDiffuse, "not found");
     m_TextureDiffuse = m_CommandList.createObject<renderer::Texture2D>(renderer::TextureUsage_Sampled | renderer::TextureUsage_Write,
         imageDiffuse->getFormat(), core::Dimension2D(imageDiffuse->getDimension().width, imageDiffuse->getDimension().height), 1, 1, imageDiffuse->getRawData(), "PhongDiffuse");
 
-    resource::Image* imageSpecular = resource::ResourceLoaderManager::getInstance()->load<resource::Image, resource::ImageFileLoader>("resources/phong/container2_specular.png");
+    resource::Image* imageSpecular = resource::ResourceLoaderManager::getInstance()->load<resource::Image, resource::ImageFileLoader>("resources/point/container2_specular.png");
     ASSERT(imageSpecular, "not found");
     m_TextureSpecular = m_CommandList.createObject<renderer::Texture2D>(renderer::TextureUsage_Sampled | renderer::TextureUsage_Write,
         imageSpecular->getFormat(), core::Dimension2D(imageSpecular->getDimension().width, imageSpecular->getDimension().height), 1, 1, imageSpecular->getRawData(), "PhongSpecular");
@@ -139,13 +138,13 @@ void ForwardPointLightTextureTest::Load(renderer::RenderTargetState* renderTarge
         { "LIGHT_COUNT", std::to_string(countLights) }
     };
 
-    renderer::Shader* vertShader = resource::ResourceLoaderManager::getInstance()->loadShader<renderer::Shader, resource::ShaderSourceFileLoader>(m_CommandList.getContext(), "resources/phong/pointLight.vert");
-    renderer::Shader* fragShader = resource::ResourceLoaderManager::getInstance()->loadShader<renderer::Shader, resource::ShaderSourceFileLoader>(m_CommandList.getContext(), "resources/phong/pointLight.frag", constants);
+    renderer::Shader* vertShader = resource::ResourceLoaderManager::getInstance()->loadShader<renderer::Shader, resource::ShaderSourceFileLoader>(m_CommandList.getContext(), "resources/point/phong.vert");
+    renderer::Shader* fragShader = resource::ResourceLoaderManager::getInstance()->loadShader<renderer::Shader, resource::ShaderSourceFileLoader>(m_CommandList.getContext(), "resources/point/phong.frag", constants);
 
     m_Program = m_CommandList.createObject<renderer::ShaderProgram, std::vector<const renderer::Shader*>>({ vertShader, fragShader });
     m_Pipeline = m_CommandList.createObject<renderer::GraphicsPipelineState>(desc, m_Program.get(), renderTarget);
     m_Pipeline->setPrimitiveTopology(renderer::PrimitiveTopology::PrimitiveTopology_TriangleList);
-    m_Pipeline->setFrontFace(renderer::FrontFace::FrontFace_CounterClockwise);
+    m_Pipeline->setFrontFace(renderer::FrontFace::FrontFace_Clockwise);
     m_Pipeline->setCullMode(renderer::CullMode::CullMode_Back);
     m_Pipeline->setColorMask(renderer::ColorMask::ColorMask_All);
     m_Pipeline->setDepthCompareOp(renderer::CompareOperation::CompareOp_Less);
@@ -214,11 +213,12 @@ void ForwardPointLightTextureTest::Draw(scene::ModelHelper* geometry, v3d::scene
 
 void ForwardPointLightTextureTest::Free()
 {
+    m_Pipeline = nullptr;
+    m_Program = nullptr;
+
     m_Sampler = nullptr;
     m_TextureDiffuse = nullptr;
     m_TextureSpecular = nullptr;
-    m_Pipeline = nullptr;
-    m_Program = nullptr;
 }
 
 } //namespace v3d
