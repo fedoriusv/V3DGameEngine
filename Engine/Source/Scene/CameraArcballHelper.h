@@ -41,7 +41,7 @@ namespace scene
         const f32           k_zoomSpeed = 1.0f;
 
 
-        static constexpr f32 k_signZ = 1.0f; //Caps invertZ
+        static constexpr f32 k_signZ = 1.0f;
 
     };
 

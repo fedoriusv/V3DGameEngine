@@ -25,7 +25,7 @@ CameraArcballHelper::~CameraArcballHelper()
 {
 }
 
-void CameraArcballHelper::setRotation(const core::Vector3D & rotation)
+void CameraArcballHelper::setRotation(const core::Vector3D& rotation)
 {
     m_transform.setRotation(rotation);
     m_needUpdate = true;
@@ -63,11 +63,11 @@ void CameraArcballHelper::update(f32 deltaTime)
         getCamera().setViewMatrix(view);
 
         view.setTranslation(core::Vector3D(0.0));
-        core::Vector4D position = view * core::Vector4D(m_transform.getPosition(), 1.0);
+        core::Vector4D position = view * core::Vector4D(-m_transform.getPosition(), 1.0);
         m_viewPosition.x = position.x;
         m_viewPosition.y = position.y;
-        m_viewPosition.z = position.z * k_signZ;
-
+        m_viewPosition.z = -position.z;
+        
         m_needUpdate = false;
     }
 }
@@ -82,7 +82,7 @@ void CameraArcballHelper::handlerMouseCallback(v3d::event::InputEventHandler* ha
         core::Point2D positionDelta = position - event->_cursorPosition;
 
         core::Vector3D rotation = CameraArcballHelper::getRotation();
-        rotation.x -= positionDelta.y * k_rotationSpeed * k_signZ;
+        rotation.x -= positionDelta.y * k_rotationSpeed;
         rotation.y -= positionDelta.x * k_rotationSpeed;
         CameraArcballHelper::setRotation(rotation);
     }

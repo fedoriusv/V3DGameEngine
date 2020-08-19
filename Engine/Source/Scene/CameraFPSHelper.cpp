@@ -4,8 +4,6 @@
 #include "Platform/Platform.h"
 #include "Utils/Logger.h"
 
-#define NEW_CAMERA 1
-
 namespace v3d
 {
 namespace scene
@@ -45,9 +43,9 @@ void CameraFPSHelper::update(f32 deltaTime)
     if (m_needUpdate)
     {
         core::Vector3D camFront;
-        camFront.x = -cos(CameraFPSHelper::getRotation().x * core::k_degToRad) * sin(CameraFPSHelper::getRotation().y * core::k_degToRad);
+        camFront.x = cos(CameraFPSHelper::getRotation().x * core::k_degToRad) * sin(CameraFPSHelper::getRotation().y * core::k_degToRad);
         camFront.y = sin(CameraFPSHelper::getRotation().x * core::k_degToRad);
-        camFront.z = cos(CameraFPSHelper::getRotation().x * core::k_degToRad) * cos(CameraFPSHelper::getRotation().y * core::k_degToRad);
+        camFront.z = -cos(CameraFPSHelper::getRotation().x * core::k_degToRad) * cos(CameraFPSHelper::getRotation().y * core::k_degToRad);
         camFront.normalize();
         //LOG_DEBUG("rotation: x= %f, y=%f, z=%f", CameraFPSHelper::getRotation().x, CameraFPSHelper::getRotation().y, CameraFPSHelper::getRotation().z);
 

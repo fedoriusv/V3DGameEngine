@@ -14,8 +14,6 @@ namespace dx3d
 
 void D3DDeviceCaps::initialize(ID3D12Device* device)
 {
-    invertZ = true;
-
     {
         rootSignatureVersion.HighestVersion = D3D_ROOT_SIGNATURE_VERSION_1_1;
         HRESULT result = device->CheckFeatureSupport(D3D12_FEATURE_ROOT_SIGNATURE, &rootSignatureVersion, sizeof(rootSignatureVersion));
