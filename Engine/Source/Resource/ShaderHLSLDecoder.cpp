@@ -174,7 +174,11 @@ Resource * ShaderHLSLDecoder::decode(const stream::Stream* stream, const std::st
             ID3DBlob* shader = nullptr;
             {
                 ID3DBlob* debugInfo = nullptr;
+#if DEBUG
                 HRESULT result = D3DCompile2(source.c_str(), source.size(), m_header._debugName.c_str(), nullptr, nullptr, m_header._entryPoint.c_str(), shaderVersion.c_str(), compileFlags, 0, 0, nullptr, 0, &shader, &debugInfo);
+#else
+                HRESULT result = D3DCompile2(source.c_str(), source.size(), name.c_str(), nullptr, nullptr, m_header._entryPoint.c_str(), shaderVersion.c_str(), compileFlags, 0, 0, nullptr, 0, &shader, &debugInfo);
+#endif
                 if (debugInfo)
                 {
                     std::string error(reinterpret_cast<c8*>(debugInfo->GetBufferSize(), debugInfo->GetBufferPointer()));
