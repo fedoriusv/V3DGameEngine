@@ -119,7 +119,7 @@ namespace vk
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
-    * PoolVulkanMemoryAllocator class. Pool menegment allocation
+    * PoolVulkanMemoryAllocator class. Pool management allocation
     */
     class PoolVulkanMemoryAllocator final : public VulkanMemory::VulkanMemoryAllocator
     {
