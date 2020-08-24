@@ -412,6 +412,11 @@ bool VulkanGraphicPipeline::create(const PipelineGraphicInfo* pipelineInfo)
     const ShaderProgramDescription& programDesc = pipelineInfo->_programDesc;
     for (u32 type = ShaderType::ShaderType_Vertex; type < ShaderType_Count; ++type)
     {
+        if (!programDesc._shaders[type])
+        {
+            continue;
+        }
+
         VkPipelineShaderStageCreateInfo pipelineShaderStageCreateInfo = {};
         if (!createShaderModule(programDesc._shaders[type], pipelineShaderStageCreateInfo))
         {
