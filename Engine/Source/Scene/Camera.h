@@ -35,7 +35,7 @@ namespace scene
 
         typedef u16 CameraStateFlags;
 
-        explicit Camera(const core::Vector3D& target = core::Vector3D(0.0f, 0.0f, 1.0f), const core::Vector3D& up = core::Vector3D(0.0f, -1.0f, 0.0f), bool orthogonal = false) noexcept;
+        explicit Camera(const core::Vector3D& target = core::Vector3D(0.0f, 0.0f, 1.0f), const core::Vector3D& up = core::Vector3D(0.0f, 1.0f, 0.0f), bool orthogonal = false) noexcept;
         virtual ~Camera();
 
         void setTarget(const core::Vector3D& target);
@@ -63,7 +63,7 @@ namespace scene
 
     protected:
 
-        void recalculateProjectionMatrix(const core::RectU32& size) const;
+        void recalculateProjectionMatrix(const core::Rect32& size) const;
         void recalculateViewMatrix(const core::Vector3D& position) const;
 
         mutable core::Matrix4D m_transform[TransformMatrix_Count];

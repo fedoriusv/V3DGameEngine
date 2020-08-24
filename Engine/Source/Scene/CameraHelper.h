@@ -31,18 +31,18 @@ namespace scene
         const core::Vector3D& getViewPosition() const;
 
         void setPerspective(f32 FOV, const core::Dimension2D& size, f32 zNear, f32 zFar);
-        void setOrtho(const core::RectU32& area, f32 zNear, f32 zFar);
+        void setOrtho(const core::Rect32& area, f32 zNear, f32 zFar);
 
         virtual void update(f32 deltaTime);
 
     private:
 
         Camera*         m_camera;
-        core::RectU32   m_area;
+        core::Rect32    m_area;
 
     protected:
 
-        const core::RectU32& getArea() const;
+        const core::Rect32& getArea() const;
 
         Transform       m_transform;
         bool            m_needUpdate;

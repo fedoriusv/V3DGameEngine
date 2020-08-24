@@ -5,7 +5,7 @@
 
 //0: [-1..1]
 //1: [0..1]
-#define DEPTH_ZERO_TO_ONE 1 
+#define DEPTH_ZERO_TO_ONE 1
 
 namespace v3d
 {
@@ -94,39 +94,38 @@ namespace core
     inline Matrix4D buildProjectionMatrixPerspective(f32 fieldOfViewRadians, f32 aspectRatio, f32 zNear, f32 zFar)
     {
         Matrix4D outMatrix;
-
         f32* matrix = outMatrix.getPtr();
 
-        const f32 yFac = tanf(fieldOfViewRadians / 2.0f);
+        const f32 yFac = tanf(fieldOfViewRadians / 2.f);
         const f32 xFac = yFac * aspectRatio;
 
-        matrix[0] = 1 / xFac;
-        matrix[1] = 0;
-        matrix[2] = 0;
-        matrix[3] = 0;
+        matrix[0] = 1.f / xFac;
+        matrix[1] = 0.f;
+        matrix[2] = 0.f;
+        matrix[3] = 0.f;
 
-        matrix[4] = 0;
-        matrix[5] = 1 / yFac;
-        matrix[6] = 0;
-        matrix[7] = 0;
+        matrix[4] = 0.f;
+        matrix[5] = 1.f / yFac;
+        matrix[6] = 0.f;
+        matrix[7] = 0.f;
 
-        matrix[8] = 0;
-        matrix[9] = 0;
+        matrix[8] = 0.f;
+        matrix[9] = 0.f;
 #if DEPTH_ZERO_TO_ONE
         matrix[10] = zFar / (zNear - zFar);
 #else
         matrix[10] = - (zFar + zNear) / (zFar - zNear);
 #endif //DEPTH_ZERO_TO_ONE
-        matrix[11] = -1;
+        matrix[11] = -1.f;
 
-        matrix[12] = 0;
-        matrix[13] = 0;
+        matrix[12] = 0.f;
+        matrix[13] = 0.f;
 #if DEPTH_ZERO_TO_ONE
         matrix[14] = - (zFar * zNear) / (zFar - zNear);
 #else
-        matrix[14] = - (2 * zFar * zNear) / (zFar - zNear);
+        matrix[14] = - (2.f * zFar * zNear) / (zFar - zNear);
 #endif //DEPTH_ZERO_TO_ONE
-        matrix[15] = 0;
+        matrix[15] = 0.f;
 
         return outMatrix;
     }
@@ -134,7 +133,6 @@ namespace core
     inline Matrix4D buildProjectionMatrixOrtho(f32 left, f32 right, f32 top, f32 bottom, f32 zNear, f32 zFar)
     {
         Matrix4D outMatrix;
-
         f32* matrix = outMatrix.getPtr();
 
         matrix[0] = 2.f / (right - left);
@@ -150,7 +148,7 @@ namespace core
         matrix[8] = 0.f;
         matrix[9] = 0.f;
 #if DEPTH_ZERO_TO_ONE
-        matrix[10] = 1.f / (zFar - zNear);
+        matrix[10] = 1.f / (zNear - zFar);
 #else
         matrix[10] = 2.f / (zFar - zNear);
 #endif //DEPTH_ZERO_TO_ONE
@@ -159,8 +157,8 @@ namespace core
         matrix[12] = - (right + left) / (right - left) /*0.f*/;
         matrix[13] = - (top + bottom) / (top - bottom) /*0.f*/;
 #if DEPTH_ZERO_TO_ONE
-        matrix[14] = - zNear / (zFar - zNear);
-#else	
+        matrix[14] = - zNear / (zNear - zFar);
+#else
         matrix[14] = - (zFar + zNear) / (zFar - zNear);
 #endif //DEPTH_ZERO_TO_ONE
         matrix[15] = 1.f;

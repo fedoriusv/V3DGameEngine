@@ -24,7 +24,7 @@ CameraHelper::~CameraHelper()
 
 void CameraHelper::setPerspective(f32 FOV, const core::Dimension2D& size, f32 zNear, f32 zFar)
 {
-    m_area = core::RectU32(0, 0, size.width, size.height);
+    m_area = core::Rect32(0, 0, static_cast<s32>(size.width), static_cast<s32>(size.height));
 
     ASSERT(m_camera, "nullptr");
     m_camera->setFOV(FOV);
@@ -35,7 +35,7 @@ void CameraHelper::setPerspective(f32 FOV, const core::Dimension2D& size, f32 zN
     m_needUpdate = true;
 }
 
-void CameraHelper::setOrtho(const core::RectU32& area, f32 zNear, f32 zFar)
+void CameraHelper::setOrtho(const core::Rect32& area, f32 zNear, f32 zFar)
 {
     m_area = area;
 
@@ -96,7 +96,7 @@ void CameraHelper::update(f32 deltaTime)
     }
 }
 
-const core::RectU32 & CameraHelper::getArea() const
+const core::Rect32& CameraHelper::getArea() const
 {
     return m_area;
 }

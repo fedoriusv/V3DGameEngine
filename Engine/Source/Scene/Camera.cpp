@@ -119,7 +119,7 @@ void Camera::setFOV(f32 value)
     m_matricesFlag |= CameraState::CameraState_Projection;
 }
 
-void Camera::recalculateProjectionMatrix(const core::RectU32& size) const
+void Camera::recalculateProjectionMatrix(const core::Rect32& size) const
 {
     if (m_matricesFlag & CameraState::CameraState_Projection)
     {
