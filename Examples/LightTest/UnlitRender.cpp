@@ -44,7 +44,7 @@ void UnlitTextureTest::Load(renderer::RenderTargetState* renderTarget, const ren
     resource::ResourceLoaderManager::getInstance()->remove(image);
 }
 
-void UnlitTextureTest::Draw(scene::ModelHelper* geometry, scene::Camera* camera, const v3d::scene::Transform& transform)
+void UnlitTextureTest::Draw(scene::ModelHelper* geometry, scene::CameraHelper* camera, const v3d::scene::Transform& transform)
 {
     m_CommandList.setPipelineState(m_Pipeline.get());
 

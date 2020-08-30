@@ -9,7 +9,7 @@
 #include "Renderer/Object/SamplerState.h"
 
 #include "Scene/ModelHelper.h"
-#include "Scene/Camera.h"
+#include "Scene/CameraHelper.h"
 
 namespace v3d
 {
@@ -22,7 +22,7 @@ namespace v3d
 
         void Load(renderer::RenderTargetState* renderTarget, const renderer::VertexInputAttribDescription& desc);
 
-        void Draw(scene::ModelHelper* geometry, scene::Camera* camera, const v3d::scene::Transform& transform);
+        void Draw(scene::ModelHelper* geometry, scene::CameraHelper* camera, const v3d::scene::Transform& transform);
         void Free();
 
     private:

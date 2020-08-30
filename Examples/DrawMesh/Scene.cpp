@@ -78,7 +78,7 @@ void Scene::Init()
     m_CommandList = new renderer::CommandList(m_Context, renderer::CommandList::CommandListType::DelayedCommandList);
 
     //init camera
-    m_Camera = new scene::CameraArcballHelper(new scene::Camera(core::Vector3D(0.0f, 0.0f, 0.0f), core::Vector3D(0.0f, 1.0f, 0.0f)), 5.0f, 4.0f, 20.0f);
+    m_Camera = new scene::CameraArcballHelper(new scene::Camera(core::Vector3D(0.0f, 0.0f, 0.0f), core::Vector3D(0.0f, 1.0f, 0.0f)), 8.0f, 4.0f, 20.0f);
     m_Camera->setPerspective(45.0f, m_Context->getBackbufferSize(), 1.f, 50.f);
     m_Camera->setRotation(core::Vector3D(0.0f, -90.0f, 0.0f));
 }

@@ -79,9 +79,9 @@ void MyApplication::Initialize()
     m_CommandList = new renderer::CommandList(m_Context, renderer::CommandList::CommandListType::ImmediateCommandList);
 
     m_ArcballCameraHelper = new v3d::scene::CameraArcballHelper(new scene::Camera(core::Vector3D(0.0f, 0.0f, 0.0f), core::Vector3D(0.0f, 1.0f, 0.0f)), 5.0f, 4.0f, 20.0f);
-    m_ArcballCameraHelper->setPerspective(45.0f, m_Window->getSize(), 0.1f, 40.f);
-    m_FPSCameraHelper = new v3d::scene::CameraFPSHelper(new v3d::scene::Camera(core::Vector3D(0.0f, 0.0f, 0.0f), core::Vector3D(0.0f, 1.0f, 0.0f)), core::Vector3D(0.0f, 0.0f, 5.0f));
-    m_FPSCameraHelper->setPerspective(45.0f, m_Window->getSize(), 0.1f, 40.f);
+    m_ArcballCameraHelper->setPerspective(45.0f, m_Window->getSize(), 0.1f, 30.f);
+    m_FPSCameraHelper = new v3d::scene::CameraFPSHelper(new v3d::scene::Camera(core::Vector3D(0.0f, 0.0f, 0.0f), core::Vector3D(0.0f, 1.0f, 0.0f)), core::Vector3D(0.0f, 0.0f, -5.0f));
+    m_FPSCameraHelper->setPerspective(45.0f, m_Window->getSize(), 0.1f, 30.f);
     m_CameraHelper = m_ArcballCameraHelper;
 
     m_InputEventHandler->connect([this](const MouseInputEvent* event)
@@ -224,11 +224,11 @@ void MyApplication::Initialize()
 
 void MyApplication::Load()
 {
-    m_Lights.push_back({ { 0.0, 0.0, 2.0 }, { 1.0, 1.0, 1.0, 1.0 } });
-    m_Lights.push_back({ { 1.0, 1.0, 2.0 }, { 1.0, 0.0, 0.0, 1.0 } });
-    m_Lights.push_back({ { -1.0, -1.0, 2.0 }, { 0.0, 0.0, 1.0, 1.0 } });
-    m_Lights.push_back({ { -1.0, 1.0, 2.0 }, { 0.0, 1.0, 0.0, 1.0 } });
-    m_Lights.push_back({ { 1.0, -1.0, 2.0 }, { 1.0, 1.0, 0.0, 1.0 } });
+    m_Lights.push_back({ { 0.0, 0.0, -2.0 }, { 1.0, 1.0, 1.0, 1.0 } });
+    m_Lights.push_back({ { 1.0, 1.0, -2.0 }, { 1.0, 0.0, 0.0, 1.0 } });
+    m_Lights.push_back({ { -1.0, -1.0, -2.0 }, { 0.0, 0.0, 1.0, 1.0 } });
+    m_Lights.push_back({ { -1.0, 1.0, -2.0 }, { 0.0, 1.0, 0.0, 1.0 } });
+    m_Lights.push_back({ { 1.0, -1.0, -2.0 }, { 1.0, 1.0, 0.0, 1.0 } });
 
     resource::ResourceLoaderManager::getInstance()->addPath("examples/lighttest/");
 
@@ -253,7 +253,7 @@ void MyApplication::Load()
         v3d::scene::Model* teapot = resource::ResourceLoaderManager::getInstance()->load<v3d::scene::Model, resource::ModelFileLoader>("resources/teapot.dae", resource::ModelLoaderFlag_GenerateTangentAndBitangent | resource::ModelLoaderFlag::ModelLoaderFlag_UseBitangent);
         m_Geometry[2] = v3d::scene::ModelHelper::createModelHelper(*m_CommandList, { teapot });
 
-        m_Transform.setScale({ 100.0, 100.0, 100.0 });
+        m_Transform.setScale({ 100.0f, 100.0f, 100.0f });
     }
 
     {
@@ -263,7 +263,7 @@ void MyApplication::Load()
         m_AxisDebug.m_Program = m_CommandList->createObject<renderer::ShaderProgram, std::vector<const renderer::Shader*>>({ vertShader, fragShader });
         m_AxisDebug.m_Pipeline = m_CommandList->createObject<renderer::GraphicsPipelineState>(renderer::VertexInputAttribDescription(), m_AxisDebug.m_Program.get(), m_RenderTarget.get());
         m_AxisDebug.m_Pipeline->setPrimitiveTopology(renderer::PrimitiveTopology::PrimitiveTopology_LineList);
-        m_AxisDebug.m_Pipeline->setFrontFace(renderer::FrontFace::FrontFace_CounterClockwise);
+        m_AxisDebug.m_Pipeline->setFrontFace(renderer::FrontFace::FrontFace_Clockwise);
         m_AxisDebug.m_Pipeline->setCullMode(renderer::CullMode::CullMode_None);
         m_AxisDebug.m_Pipeline->setColorMask(renderer::ColorMask::ColorMask_All);
         m_AxisDebug.m_Pipeline->setDepthCompareOp(renderer::CompareOperation::CompareOp_Always);
@@ -278,8 +278,8 @@ void MyApplication::Load()
         m_LightDebug.m_Program = m_CommandList->createObject<renderer::ShaderProgram, std::vector<const renderer::Shader*>>({ vertShader, fragShader });
         m_LightDebug.m_Pipeline = m_CommandList->createObject<renderer::GraphicsPipelineState>(m_Geometry.front()->getVertexInputAttribDescription(0, 0), m_LightDebug.m_Program.get(), m_RenderTarget.get());
         m_LightDebug.m_Pipeline->setPrimitiveTopology(renderer::PrimitiveTopology::PrimitiveTopology_TriangleList);
-        m_LightDebug.m_Pipeline->setFrontFace(renderer::FrontFace::FrontFace_CounterClockwise);
-        m_LightDebug.m_Pipeline->setCullMode(renderer::CullMode::CullMode_None);
+        m_LightDebug.m_Pipeline->setFrontFace(renderer::FrontFace::FrontFace_Clockwise);
+        m_LightDebug.m_Pipeline->setCullMode(renderer::CullMode::CullMode_Back);
         m_LightDebug.m_Pipeline->setColorMask(renderer::ColorMask::ColorMask_All);
         m_LightDebug.m_Pipeline->setDepthCompareOp(renderer::CompareOperation::CompareOp_Less);
         m_LightDebug.m_Pipeline->setDepthWrite(true);
@@ -310,7 +310,7 @@ bool MyApplication::Running()
     {
     default:
     case 0:
-        m_UnLit->Draw(m_Geometry[m_GeometryIndex], &m_CameraHelper->getCamera(), m_Transform);
+        m_UnLit->Draw(m_Geometry[m_GeometryIndex], m_CameraHelper, m_Transform);
         break;
 
     case 1:
@@ -355,7 +355,7 @@ bool MyApplication::Running()
 void MyApplication::Update()
 {
     m_CameraHelper->update(0.0001f);
-    m_Window->setTextCaption("View [" + std::to_string(m_CameraHelper->getViewPosition().x) + "; " + std::to_string(m_CameraHelper->getViewPosition().y) + "; " + std::to_string(m_CameraHelper->getViewPosition().z) + "]");
+    m_Window->setTextCaption("Target [" + std::to_string(m_CameraHelper->getViewPosition().x) + "; " + std::to_string(m_CameraHelper->getViewPosition().y) + "; " + std::to_string(m_CameraHelper->getViewPosition().z) + "]");
 }
 
 void MyApplication::Exit()
@@ -480,7 +480,7 @@ void MyApplication::AxisDebug::Draw(v3d::renderer::CommandList* commandList, v3d
 
     {
         ubo.projectionMatrix = camera->getProjectionMatrix();
-        ubo.modelMatrix.setRotation({ 0.0, 90.0, 0.0 });
+        ubo.modelMatrix.setRotation({ 0.0, -90.0, 0.0 });
         ubo.viewMatrix = camera->getViewMatrix();
 
         const core::Vector4D blue = { 0.0, 0.0, 1.0, 1.0 };
