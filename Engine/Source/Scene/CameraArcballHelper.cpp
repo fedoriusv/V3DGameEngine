@@ -125,15 +125,15 @@ void CameraArcballHelper::handlerTouchCallback(v3d::event::InputEventHandler* ha
                 core::Point2D positionDelta = position - event->_position;
 
                 core::Vector3D rotation = CameraArcballHelper::getRotation();
-                rotation.x += positionDelta.y * k_rotationSpeed;
-                rotation.y += positionDelta.x * k_rotationSpeed;
+                rotation.x -= positionDelta.y * k_rotationSpeed;
+                rotation.y -= positionDelta.x * k_rotationSpeed;
                 CameraArcballHelper::setRotation(rotation);
             }
             else if (handler->isMultiScreenTouch())
             {
                 s32 positionDelta = position.y - event->_position.y;
                 core::Vector3D postion = CameraHelper::getPosition();
-                f32 newZPos = postion.z - (positionDelta * k_zoomSpeed * 0.1f);
+                f32 newZPos = postion.z + (positionDelta * k_zoomSpeed * 0.1f);
                 if (k_signZ < 0)
                 {
                     postion.z = std::clamp(newZPos, k_signZ * m_distanceLimits.y, k_signZ * m_distanceLimits.x);
