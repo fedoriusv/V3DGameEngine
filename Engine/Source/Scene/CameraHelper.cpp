@@ -9,6 +9,7 @@ namespace scene
 CameraHelper::CameraHelper(Camera* camera, const core::Vector3D& position) noexcept
     : m_camera(camera)
     , m_needUpdate(true)
+    , m_viewPosition(position)
 {
     m_transform.setPosition(position);
 }
@@ -53,7 +54,13 @@ Camera& CameraHelper::getCamera()
     return *m_camera;
 }
 
-void CameraHelper::setPosition(const core::Vector3D & position)
+const Camera& CameraHelper::getCamera() const
+{
+    ASSERT(m_camera, "nullptr");
+    return *m_camera;
+}
+
+void CameraHelper::setPosition(const core::Vector3D& position)
 {
     m_transform.setPosition(position);
     m_needUpdate = true;

@@ -24,6 +24,8 @@ namespace scene
         virtual ~CameraHelper();
 
         Camera& getCamera();
+        const Camera& getCamera() const;
+
         void setPosition(const core::Vector3D& position);
         const core::Vector3D& getPosition() const;
         const core::Matrix4D& getProjectionMatrix() const;

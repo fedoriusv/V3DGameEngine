@@ -42,32 +42,19 @@ void CameraArcballHelper::update(f32 deltaTime)
     {
         CameraHelper::update(deltaTime);
 
-        core::Matrix4D rotateX;
-        rotateX.makeIdentity();
-        rotateX.setRotation(core::Vector3D(m_transform.getRotation().x, 0.0f, 0.0f));
+        core::Matrix4D rotate;
+        rotate.setRotation(core::Vector3D(m_transform.getRotation().x, m_transform.getRotation().y, 0.0f));
+        //LOG_DEBUG("rotation: x= %f, y=%f, z=%f", rotate.getRotation().x, rotate.getRotation().y, rotate.getRotation().z);
 
-        core::Matrix4D rotateY;
-        rotateY.makeIdentity();
-        rotateY.setRotation(core::Vector3D(0.0f, m_transform.getRotation().y, 0.0f));
+        core::Vector4D position = rotate * core::Vector4D(m_transform.getPosition(), 1.0);
+        m_viewPosition = { position.x, position.y, position.z };
 
-        core::Matrix4D rotate = rotateX * rotateY;
-
+        rotate.makeTransposed();
         core::Matrix4D look = core::buildLookAtMatrix(m_transform.getPosition(), getCamera().getTarget(), getCamera().getUpVector());
         core::Matrix4D view = look * rotate;
 
-        /*core::Matrix4D position;
-        position.makeIdentity();
-        position.setTranslation(-m_transform.getPosition());
-        core::Matrix4D view = look * rotate;*/
-
         getCamera().setViewMatrix(view);
 
-        view.setTranslation(core::Vector3D(0.0));
-        core::Vector4D position = view * core::Vector4D(-m_transform.getPosition(), 1.0);
-        m_viewPosition.x = position.x;
-        m_viewPosition.y = position.y;
-        m_viewPosition.z = -position.z;
-        
         m_needUpdate = false;
     }
 }
@@ -91,7 +78,7 @@ void CameraArcballHelper::handlerMouseCallback(v3d::event::InputEventHandler* ha
     {
         s32 positionDelta = position.y - event->_cursorPosition.y;
         core::Vector3D postion = CameraHelper::getPosition();
-        f32 newZPos = postion.z + (positionDelta * k_zoomSpeed * 0.1f);
+        f32 newZPos = postion.z - (positionDelta * k_zoomSpeed * 0.1f);
         if (k_signZ < 0)
         {
             postion.z = std::clamp(newZPos, k_signZ * m_distanceLimits.y, k_signZ * m_distanceLimits.x);
@@ -107,7 +94,7 @@ void CameraArcballHelper::handlerMouseCallback(v3d::event::InputEventHandler* ha
         f32 wheelDelta = wheel - event->_wheelValue;
 
         core::Vector3D postion = CameraHelper::getPosition();
-        f32 newZPos = postion.z - (wheelDelta * k_zoomSpeed);
+        f32 newZPos = postion.z + (wheelDelta * k_zoomSpeed);
         if (k_signZ < 0)
         {
             postion.z = std::clamp(newZPos, k_signZ * m_distanceLimits.y, k_signZ * m_distanceLimits.x);
@@ -146,7 +133,7 @@ void CameraArcballHelper::handlerTouchCallback(v3d::event::InputEventHandler* ha
             {
                 s32 positionDelta = position.y - event->_position.y;
                 core::Vector3D postion = CameraHelper::getPosition();
-                f32 newZPos = postion.z + (positionDelta * k_zoomSpeed * 0.1f);
+                f32 newZPos = postion.z - (positionDelta * k_zoomSpeed * 0.1f);
                 if (k_signZ < 0)
                 {
                     postion.z = std::clamp(newZPos, k_signZ * m_distanceLimits.y, k_signZ * m_distanceLimits.x);
