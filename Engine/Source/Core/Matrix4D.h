@@ -3,10 +3,6 @@
 #include "Vector3D.h"
 #include "Vector4D.h"
 
-//0: [-1..1]
-//1: [0..1]
-#define DEPTH_ZERO_TO_ONE 1
-
 namespace v3d
 {
 namespace core
@@ -91,12 +87,12 @@ namespace core
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    inline Matrix4D buildProjectionMatrixPerspective(f32 fieldOfViewRadians, f32 aspectRatio, f32 zNear, f32 zFar)
+    inline Matrix4D buildProjectionMatrixPerspective(f32 fieldOfView, f32 aspectRatio, f32 zNear, f32 zFar)
     {
         Matrix4D outMatrix;
         f32* matrix = outMatrix.getPtr();
 
-        const f32 yFac = tanf(fieldOfViewRadians / 2.f);
+        const f32 yFac = tanf(fieldOfView * k_degToRad / 2.f);
         const f32 xFac = yFac * aspectRatio;
 
         matrix[0] = 1.f / xFac;
@@ -111,21 +107,41 @@ namespace core
 
         matrix[8] = 0.f;
         matrix[9] = 0.f;
-#if DEPTH_ZERO_TO_ONE
-        matrix[10] = zFar / (zNear - zFar);
-#else
-        matrix[10] = - (zFar + zNear) / (zFar - zNear);
-#endif //DEPTH_ZERO_TO_ONE
-        matrix[11] = -1.f;
+        matrix[10] = zFar / (zFar - zNear);
+        matrix[11] = 1.f;
 
         matrix[12] = 0.f;
         matrix[13] = 0.f;
-#if DEPTH_ZERO_TO_ONE
-        matrix[14] = - (zFar * zNear) / (zFar - zNear);
-#else
-        matrix[14] = - (2.f * zFar * zNear) / (zFar - zNear);
-#endif //DEPTH_ZERO_TO_ONE
+        matrix[14] = -(zFar * zNear) / (zFar - zNear);
         matrix[15] = 0.f;
+
+        return outMatrix;
+    }
+
+    inline Matrix4D buildProjectionMatrixFrustum(f32 left, f32 right, f32 top, f32 bottom, f32 zNear, f32 zFar)
+    {
+        Matrix4D outMatrix;
+        f32* matrix = outMatrix.getPtr();
+
+        matrix[0] = 2.f * zNear / (right - left);
+        matrix[1] = 0.f;
+        matrix[2] = 0.f;
+        matrix[3] = 0.f;
+
+        matrix[4] = 0.f;
+        matrix[5] = 2.f * zNear / (top - bottom);
+        matrix[6] = 0.f;
+        matrix[7] = 0.f;
+
+        matrix[8] = (right + left) / (right - left);
+        matrix[9] = (top + bottom) / (top - bottom);
+        matrix[10] = zFar / (zFar - zNear);
+        matrix[11] = 1.f;
+
+        matrix[12] = 0.f;
+        matrix[13] = 0.f;
+        matrix[14] = -(zFar * zNear) / (zFar - zNear);
+        matrix[15] = 1.f;
 
         return outMatrix;
     }
@@ -147,42 +163,34 @@ namespace core
 
         matrix[8] = 0.f;
         matrix[9] = 0.f;
-#if DEPTH_ZERO_TO_ONE
-        matrix[10] = 1.f / (zNear - zFar);
-#else
-        matrix[10] = 2.f / (zFar - zNear);
-#endif //DEPTH_ZERO_TO_ONE
+        matrix[10] = 1.f / (zFar - zNear);
         matrix[11] = 0.f;
 
-        matrix[12] = - (right + left) / (right - left) /*0.f*/;
-        matrix[13] = - (top + bottom) / (top - bottom) /*0.f*/;
-#if DEPTH_ZERO_TO_ONE
-        matrix[14] = - zNear / (zNear - zFar);
-#else
-        matrix[14] = - (zFar + zNear) / (zFar - zNear);
-#endif //DEPTH_ZERO_TO_ONE
+        matrix[12] = -(right + left) / (right - left) /*0.f*/;
+        matrix[13] = -(top + bottom) / (top - bottom) /*0.f*/;
+        matrix[14] = -zNear / (zFar - zNear);
         matrix[15] = 1.f;
 
         return outMatrix;
     }
 
-    inline Matrix4D buildLookAtMatrix(const Vector3D& position, const Vector3D& target, const Vector3D& upVector)
+    inline core::Matrix4D buildLookAtMatrix(const core::Vector3D& position, const core::Vector3D& target, const core::Vector3D& upVector)
     {
-        Vector3D v3X, v3Y, v3Z;
-        v3Y = upVector;
-        v3Y.normalize();
+        core::Vector3D forward = target - position;
+        forward.normalize();
 
-        v3Z = position - target;
-        v3Z.normalize();
+        core::Vector3D right = crossProduct(upVector, forward);
+        right.normalize();
 
-        v3X = crossProduct(v3Y, v3Z);
-        v3X.normalize();
+        core::Vector3D up = crossProduct(forward, right);
 
-        v3Y = crossProduct(v3Z, v3X);
+        core::Vector3D pos;
+        pos.x = -dotProduct(right, position);
+        pos.y = -dotProduct(up, position);
+        pos.z = -dotProduct(forward, position);
 
-        Matrix4D outMatrix;
-        outMatrix = Matrix4D(Vector4D(v3X), Vector4D(v3Y), Vector4D(v3Z), Vector4D(position, 1.0f));
-        outMatrix.makeInverse();
+        core::Matrix4D outMatrix(core::Vector4D(right, pos.x), core::Vector4D(up, pos.y), core::Vector4D(forward, pos.z), core::Vector4D(core::Vector3D(0.f), 1.f));
+        outMatrix.makeTransposed();
 
         return outMatrix;
     }

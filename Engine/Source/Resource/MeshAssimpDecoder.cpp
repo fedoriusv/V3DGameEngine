@@ -66,7 +66,7 @@ Resource * MeshAssimpDecoder::decode(const stream::Stream* stream, const std::st
         }
         else
         {
-            assimpFlags = aiProcess_FlipUVs | aiProcess_FlipWindingOrder | aiProcess_Triangulate;
+            assimpFlags = aiProcess_ConvertToLeftHanded | aiProcess_Triangulate;
 
             if (!m_localTransform)
             {
