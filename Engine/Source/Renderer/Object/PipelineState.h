@@ -48,6 +48,8 @@ namespace renderer
         void setFrontFace(FrontFace frontFace);
         void setCullMode(CullMode cullMode);
 
+        void setDepthBias(f32 constantFactor, f32 clamp, f32 slopeFactor);
+
         PolygonMode getPolygonMode() const;
         FrontFace getFrontFace() const;
         CullMode getCullMode() const;

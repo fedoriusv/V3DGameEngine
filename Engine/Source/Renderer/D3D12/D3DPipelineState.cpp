@@ -447,9 +447,18 @@ bool D3DGraphicPipelineState::create(const PipelineGraphicInfo* pipelineInfo)
         state.FillMode = convertPolygonModeToD3DMode(rasterState._polygonMode);
         state.CullMode = convertCulModeToD3D(rasterState._cullMode);
         state.FrontCounterClockwise = convertCounterClockwiseToD3D(rasterState._frontFace);
-        state.DepthBias = D3D12_DEFAULT_DEPTH_BIAS;
-        state.DepthBiasClamp = D3D12_DEFAULT_DEPTH_BIAS_CLAMP;
-        state.SlopeScaledDepthBias = D3D12_DEFAULT_SLOPE_SCALED_DEPTH_BIAS;
+        if (rasterState._depthBiasConstant != 0.f || rasterState._depthBiasClamp != 0.f || rasterState._depthBiasSlope != 0.f)
+        {
+            state.DepthBias = static_cast<INT>(std::roundf(rasterState._depthBiasConstant));
+            state.DepthBiasClamp = rasterState._depthBiasClamp;
+            state.SlopeScaledDepthBias = rasterState._depthBiasSlope;
+        }
+        else
+        {
+            state.DepthBias = D3D12_DEFAULT_DEPTH_BIAS;
+            state.DepthBiasClamp = D3D12_DEFAULT_DEPTH_BIAS_CLAMP;
+            state.SlopeScaledDepthBias = D3D12_DEFAULT_SLOPE_SCALED_DEPTH_BIAS;
+        }
         state.DepthClipEnable = TRUE;
         state.MultisampleEnable = FALSE; //TODO
         state.AntialiasedLineEnable = FALSE;

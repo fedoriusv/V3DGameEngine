@@ -138,12 +138,20 @@ namespace renderer
                 : _polygonMode(PolygonMode::PolygonMode_Fill)
                 , _frontFace(FrontFace::FrontFace_Clockwise)
                 , _cullMode(CullMode::CullMode_None)
+
+                , _depthBiasConstant(0.f)
+                , _depthBiasClamp(0.f)
+                , _depthBiasSlope(0.f)
             {
             }
 
             PolygonMode _polygonMode;
             FrontFace   _frontFace;
             CullMode    _cullMode;
+
+            f32         _depthBiasConstant;
+            f32         _depthBiasClamp;
+            f32         _depthBiasSlope;
         };
 
         struct ColorBlendAttachmentState

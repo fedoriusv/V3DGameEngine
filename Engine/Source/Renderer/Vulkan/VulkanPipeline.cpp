@@ -457,12 +457,17 @@ bool VulkanGraphicPipeline::create(const PipelineGraphicInfo* pipelineInfo)
     rasterizationStateCreateInfo.polygonMode = VulkanGraphicPipeline::convertPolygonModeToVk(rasterizationState._polygonMode);
     rasterizationStateCreateInfo.cullMode = VulkanGraphicPipeline::convertCullModeToVk(rasterizationState._cullMode);
     rasterizationStateCreateInfo.frontFace = VulkanGraphicPipeline::convertFrontFaceToVk(rasterizationState._frontFace);
-    rasterizationStateCreateInfo.depthBiasEnable = VK_FALSE;
     if (!VulkanGraphicContext::isDynamicState(VK_DYNAMIC_STATE_DEPTH_BIAS))
     {
-        rasterizationStateCreateInfo.depthBiasConstantFactor = 0.0f;
-        rasterizationStateCreateInfo.depthBiasClamp = 0.0f;
-        rasterizationStateCreateInfo.depthBiasSlopeFactor = 0.0f;
+        rasterizationStateCreateInfo.depthBiasEnable = (rasterizationState._depthBiasConstant != 0.f || rasterizationState._depthBiasClamp != 0.f || rasterizationState._depthBiasSlope != 0.f) ? VK_TRUE : VK_FALSE;
+        rasterizationStateCreateInfo.depthBiasConstantFactor = rasterizationState._depthBiasConstant;
+        rasterizationStateCreateInfo.depthBiasClamp = rasterizationState._depthBiasClamp;
+        rasterizationStateCreateInfo.depthBiasSlopeFactor = rasterizationState._depthBiasSlope;
+    }
+    else
+    {
+        rasterizationStateCreateInfo.depthBiasEnable = VK_FALSE;
+        ASSERT(false, "not impl");
     }
 
     if (!VulkanGraphicContext::isDynamicState(VK_DYNAMIC_STATE_LINE_WIDTH))

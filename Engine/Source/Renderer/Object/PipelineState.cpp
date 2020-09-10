@@ -84,6 +84,13 @@ void GraphicsPipelineState::setCullMode(CullMode cullMode)
     m_pipelineStateDesc._rasterizationState._cullMode = cullMode;
 }
 
+void GraphicsPipelineState::setDepthBias(f32 constantFactor, f32 clamp, f32 slopeFactor)
+{
+    m_pipelineStateDesc._rasterizationState._depthBiasConstant = constantFactor;
+    m_pipelineStateDesc._rasterizationState._depthBiasClamp = clamp;
+    m_pipelineStateDesc._rasterizationState._depthBiasSlope = slopeFactor;
+}
+
 PolygonMode GraphicsPipelineState::getPolygonMode() const
 {
     return m_pipelineStateDesc._rasterizationState._polygonMode;
