@@ -122,7 +122,7 @@ namespace renderer
         virtual Framebuffer* createFramebuffer(const std::vector<Image*>& attachments, const core::Dimension2D& size) = 0;
         virtual RenderPass* createRenderPass(const RenderPassDescription* renderpassDesc) = 0;
         virtual Pipeline* createPipeline(Pipeline::PipelineType type) = 0;
-        virtual Sampler* createSampler() = 0;
+        virtual Sampler* createSampler(const SamplerDescription& desc) = 0;
 
         virtual bool initialize() = 0;
         virtual void destroy() = 0;

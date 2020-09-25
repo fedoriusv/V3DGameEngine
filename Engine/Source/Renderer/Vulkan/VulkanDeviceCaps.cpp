@@ -182,6 +182,13 @@ void VulkanDeviceCaps::fillCapabilitiesList(const DeviceInfo* info)
                 supportDescriptorIndexing = true;
             }
 
+            if (isEnableExtension(VK_EXT_CUSTOM_BORDER_COLOR_EXTENSION_NAME))
+            {
+                m_physicalDeviceCustomBorderColorFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_CUSTOM_BORDER_COLOR_FEATURES_EXT;
+                m_physicalDeviceCustomBorderColorFeatures.pNext = vkExtensions;
+                vkExtensions = &m_physicalDeviceCustomBorderColorFeatures;
+            }
+
             VkPhysicalDeviceFeatures2 physicalDeviceFeatures2 = {};
             physicalDeviceFeatures2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
             physicalDeviceFeatures2.pNext = vkExtensions;
@@ -191,6 +198,7 @@ void VulkanDeviceCaps::fillCapabilitiesList(const DeviceInfo* info)
 
 
             supportDescriptorIndexing = m_physicalDeviceDescriptorIndexingFeatures.descriptorBindingUpdateUnusedWhilePending;
+            supportSamplerBorderColor = m_physicalDeviceCustomBorderColorFeatures.customBorderColors && m_physicalDeviceCustomBorderColorFeatures.customBorderColorWithoutFormat;
         }
 
         {

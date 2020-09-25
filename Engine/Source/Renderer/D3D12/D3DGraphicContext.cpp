@@ -241,7 +241,7 @@ void D3DGraphicContext::bindSampler(const Shader* shader, u32 bindIndex, const S
     u32 space = shader->getReflectionInfo()._samplers[bindIndex]._set;
     u32 binding = shader->getReflectionInfo()._samplers[bindIndex]._binding;
 
-    D3DSampler* dxSampler = static_cast<D3DSampler*>(m_samplerManager->acquireSampler(samplerInfo->_value._desc));
+    D3DSampler* dxSampler = static_cast<D3DSampler*>(m_samplerManager->acquireSampler(samplerInfo->_desc));
     cmdList->setUsed(dxSampler, 0);
 
     m_descriptorState->bindDescriptor<D3DSampler>(space, binding, dxSampler);
@@ -784,9 +784,9 @@ Pipeline* D3DGraphicContext::createPipeline(Pipeline::PipelineType type)
     return nullptr;
 }
 
-Sampler* D3DGraphicContext::createSampler()
+Sampler* D3DGraphicContext::createSampler(const SamplerDescription& desc)
 {
-    return new D3DSampler();
+    return new D3DSampler(desc);
 }
 
 bool D3DGraphicContext::perpareDraw(D3DGraphicsCommandList* cmdList)

@@ -42,28 +42,31 @@ private:
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-SamplerState::SamplerState(renderer::CommandList & cmdList) noexcept
+SamplerState::SamplerState(renderer::CommandList& cmdList) noexcept
     : m_cmdList(cmdList)
     , m_trackerSampler(this, std::bind(&SamplerState::destroySamplers, this, std::placeholders::_1))
 {
+    m_samplerDesc.dirty();
 }
 
-SamplerState::SamplerState(renderer::CommandList & cmdList, SamplerFilter filter, SamplerAnisotropic aniso) noexcept
+SamplerState::SamplerState(renderer::CommandList& cmdList, SamplerFilter filter, SamplerAnisotropic aniso) noexcept
     : m_cmdList(cmdList)
     , m_trackerSampler(this, std::bind(&SamplerState::destroySamplers, this, std::placeholders::_1))
 {
-    m_samplerDesc._minFilter = filter;
-    m_samplerDesc._magFilter = filter;
-    m_samplerDesc._anisotropic = aniso;
+    m_samplerDesc._desc._minFilter = filter;
+    m_samplerDesc._desc._magFilter = filter;
+    m_samplerDesc._desc._anisotropic = aniso;
+    m_samplerDesc.dirty();
 }
 
-SamplerState::SamplerState(renderer::CommandList & cmdList, SamplerFilter mag, SamplerFilter min, SamplerAnisotropic aniso) noexcept
+SamplerState::SamplerState(renderer::CommandList& cmdList, SamplerFilter mag, SamplerFilter min, SamplerAnisotropic aniso) noexcept
     : m_cmdList(cmdList)
     , m_trackerSampler(this, std::bind(&SamplerState::destroySamplers, this, std::placeholders::_1))
 {
-    m_samplerDesc._minFilter = min;
-    m_samplerDesc._magFilter = mag;
-    m_samplerDesc._anisotropic = aniso;
+    m_samplerDesc._desc._minFilter = min;
+    m_samplerDesc._desc._magFilter = mag;
+    m_samplerDesc._desc._anisotropic = aniso;
+    m_samplerDesc.dirty();
 }
 
 void SamplerState::destroySamplers(const std::vector<Sampler*>& samplers)
@@ -89,86 +92,105 @@ SamplerState::~SamplerState()
 
 renderer::SamplerFilter SamplerState::getMinFilter() const
 {
-    return m_samplerDesc._minFilter;
+    return m_samplerDesc._desc._minFilter;
 }
 
 renderer::SamplerFilter SamplerState::getMagFilter() const
 {
-    return m_samplerDesc._magFilter;
+    return m_samplerDesc._desc._magFilter;
 }
 
 SamplerWrap SamplerState::getWrapU() const
 {
-    return m_samplerDesc._wrapU;
+    return m_samplerDesc._desc._wrapU;
 }
 
 SamplerWrap SamplerState::getWrapV() const
 {
-    return m_samplerDesc._wrapV;
+    return m_samplerDesc._desc._wrapV;
 }
 
 SamplerWrap SamplerState::getWrapW() const
 {
-    return m_samplerDesc._wrapW;
+    return m_samplerDesc._desc._wrapW;
 }
 
 SamplerAnisotropic SamplerState::getAnisotropic() const
 {
-    return m_samplerDesc._anisotropic;
+    return m_samplerDesc._desc._anisotropic;
 }
 
 CompareOperation SamplerState::getCompareOp() const
 {
-    return m_samplerDesc._compareOp;
+    return m_samplerDesc._desc._compareOp;
+}
+
+const core::Vector4D& SamplerState::getBorderColor() const
+{
+    return m_samplerDesc._desc._borderColor;
 }
 
 bool SamplerState::isEnableCompareOp() const
 {
-    return m_samplerDesc._enableCompOp;
+    return m_samplerDesc._desc._enableCompOp;
 }
 
 void SamplerState::setMinFilter(SamplerFilter filter)
 {
-    m_samplerDesc._minFilter = filter;
+    m_samplerDesc._desc._minFilter = filter;
+    m_samplerDesc.dirty();
 }
 
 void SamplerState::setMagFilter(SamplerFilter filter)
 {
-    m_samplerDesc._magFilter = filter;
+    m_samplerDesc._desc._magFilter = filter;
+    m_samplerDesc.dirty();
 }
 
 void SamplerState::setWrap(SamplerWrap uvw)
 {
-    m_samplerDesc._wrapU = uvw;
-    m_samplerDesc._wrapV = uvw;
-    m_samplerDesc._wrapW = uvw;
+    m_samplerDesc._desc._wrapU = uvw;
+    m_samplerDesc._desc._wrapV = uvw;
+    m_samplerDesc._desc._wrapW = uvw;
+    m_samplerDesc.dirty();
 }
 
 void SamplerState::setWrap(SamplerWrap u, SamplerWrap v, SamplerWrap w)
 {
-    m_samplerDesc._wrapU = u;
-    m_samplerDesc._wrapV = v;
-    m_samplerDesc._wrapW = w;
+    m_samplerDesc._desc._wrapU = u;
+    m_samplerDesc._desc._wrapV = v;
+    m_samplerDesc._desc._wrapW = w;
+    m_samplerDesc.dirty();
 }
 
 void SamplerState::setAnisotropic(SamplerAnisotropic level)
 {
-    m_samplerDesc._anisotropic = level;
+    m_samplerDesc._desc._anisotropic = level;
+    m_samplerDesc.dirty();
 }
 
 void SamplerState::setLodBias(f32 value)
 {
-    m_samplerDesc._lodBias = value;
+    m_samplerDesc._desc._lodBias = value;
+    m_samplerDesc.dirty();
 }
 
 void SamplerState::setCompareOp(CompareOperation op)
 {
-    m_samplerDesc._compareOp = op;
+    m_samplerDesc._desc._compareOp = op;
+    m_samplerDesc.dirty();
 }
 
 void SamplerState::setEnableCompareOp(bool enable)
 {
-    m_samplerDesc._enableCompOp = enable;
+    m_samplerDesc._desc._enableCompOp = enable;
+    m_samplerDesc.dirty();
+}
+
+void SamplerState::setBorderColor(const core::Vector4D& color)
+{
+    m_samplerDesc._desc._borderColor = color;
+    m_samplerDesc.dirty();
 }
 
 } //namespace renderer

@@ -39,27 +39,51 @@ namespace renderer
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
-    * SamplerDescription. struct
+    * SamplerDescription. The struct describes sampler parameters
     */
     struct SamplerDescription
     {
-        SamplerDescription() noexcept
+        SamplerDescription() noexcept;
+        bool operator==(const SamplerDescription& other) const;
+
+        struct SamplerDesc
         {
-            memset(this, 0, sizeof(SamplerDescription));
-        }
+            core::Vector4D          _borderColor;
+            f32                     _lodBias;
 
-        SamplerAnisotropic _anisotropic  : 5;
-        SamplerWrap        _wrapU        : 3;
-        SamplerWrap        _wrapV        : 3;
-        SamplerWrap        _wrapW        : 3;
-        SamplerFilter      _magFilter    : 2;
-        SamplerFilter      _minFilter    : 2;
-        CompareOperation   _compareOp    : 3;
-        bool               _enableCompOp : 1;
+            SamplerAnisotropic      _anisotropic  : 5;
+            SamplerWrap             _wrapU        : 3;
+            SamplerWrap             _wrapV        : 3;
+            SamplerWrap             _wrapW        : 3;
+            SamplerFilter           _magFilter    : 2;
+            SamplerFilter           _minFilter    : 2;
+            CompareOperation        _compareOp    : 3;
+            u32                     _enableCompOp : 1;
 
-        u32                _padding      : 10;
-                                         
-        f32                _lodBias; //  : 32
+            u32                     _padding      : 10;
+        };
+
+        SamplerDesc                 _desc;
+
+        struct Hash
+        {
+            u64 operator()(const SamplerDescription& other) const;
+        };
+
+        struct Compare
+        {
+            bool operator()(const SamplerDescription& op1, const SamplerDescription& op2) const;
+        };
+
+        void dirty();
+
+    private:
+
+        mutable u64                 _hash;
+        mutable bool                _dirty;
+
+        void recalculateHash() const;
+
 
     };
 

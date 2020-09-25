@@ -29,30 +29,19 @@ namespace renderer
             {
             }
 
-            union SamplerDesc
-            {
-                SamplerDesc() noexcept
-                {
-                    memset(this, 0, sizeof(SamplerDesc));
-                }
-
-                SamplerDescription    _desc;
-                u64                   _hash;
-            };
-            SamplerDesc             _value;
+            SamplerDescription      _desc;
             ObjectTracker<Sampler>* _tracker;
         };
 
-        Sampler() noexcept;
+        Sampler(const SamplerDescription& desc) noexcept;
         virtual ~Sampler();
 
-        virtual bool create(const SamplerDescription& info) = 0;
+        virtual bool create() = 0;
         virtual void destroy() = 0;
 
-    private:
+    protected:
 
-        u64 m_key;
-
+        const SamplerDescription m_desc;
         friend SamplerManager;
     };
 
@@ -72,15 +61,14 @@ namespace renderer
 
         void handleNotify(utils::Observable* ob) override;
 
-        Sampler* acquireSampler(const SamplerDescription& samplerInfo);
+        Sampler* acquireSampler(const SamplerDescription& samplerDesc);
         bool removeSampler(Sampler* sampler);
         void clear();
 
     private:
 
-        Context*                   m_context;
-        std::map<u64, Sampler*>    m_samplerList;
-        //TODO hash map
+        Context* m_context;
+        std::unordered_map<SamplerDescription, Sampler*, SamplerDescription::Hash, SamplerDescription::Compare> m_samplerList;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

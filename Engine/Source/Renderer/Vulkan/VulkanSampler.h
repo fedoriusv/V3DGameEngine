@@ -28,10 +28,13 @@ namespace vk
         static f32 convertAnisotropyCount(SamplerAnisotropic level);
         static VkSamplerAddressMode convertSamplerWrapToVkSamplerAddressMode(SamplerWrap wrap);
 
-        explicit VulkanSampler(VkDevice device) noexcept;
+        VulkanSampler() = delete;
+        VulkanSampler(const VulkanSampler&) = delete;
+
+        explicit VulkanSampler(VkDevice device, const SamplerDescription& desc) noexcept;
         ~VulkanSampler();
 
-        bool create(const SamplerDescription& info) override;
+        bool create() override;
         void destroy() override;
 
         VkSampler getHandle() const;

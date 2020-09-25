@@ -33,6 +33,7 @@ namespace renderer
 
         SamplerState() = delete;
         SamplerState(const SamplerState &) = delete;
+
         ~SamplerState();
 
         SamplerFilter         getMinFilter() const;
@@ -42,6 +43,7 @@ namespace renderer
         SamplerWrap           getWrapW() const;
         SamplerAnisotropic    getAnisotropic() const;
         CompareOperation      getCompareOp() const;
+        const core::Vector4D& getBorderColor() const;
         bool                  isEnableCompareOp() const;
 
         void setMinFilter(SamplerFilter filter);
@@ -52,6 +54,7 @@ namespace renderer
         void setLodBias(f32 value);
         void setCompareOp(CompareOperation op);
         void setEnableCompareOp(bool enable);
+        void setBorderColor(const core::Vector4D& color);
 
     private:
 
@@ -65,7 +68,6 @@ namespace renderer
         void destroySamplers(const std::vector<Sampler*>& samplers);
 
         SamplerDescription m_samplerDesc;
-
         ObjectTracker<Sampler> m_trackerSampler;
 
         friend ShaderProgram;

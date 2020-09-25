@@ -59,6 +59,7 @@ const std::vector<const c8*> k_deviceExtensionsList =
     VK_KHR_BIND_MEMORY_2_EXTENSION_NAME,
     VK_KHR_DEDICATED_ALLOCATION_EXTENSION_NAME,
 
+    VK_EXT_CUSTOM_BORDER_COLOR_EXTENSION_NAME,
     VK_KHR_SAMPLER_MIRROR_CLAMP_TO_EDGE_EXTENSION_NAME,
 
     VK_KHR_MAINTENANCE2_EXTENSION_NAME,
@@ -77,6 +78,7 @@ std::vector<VkDynamicState> VulkanGraphicContext::s_dynamicStates =
 {
     VK_DYNAMIC_STATE_VIEWPORT,
     VK_DYNAMIC_STATE_SCISSOR,
+    //VK_DYNAMIC_STATE_DEPTH_BIAS,
     //VK_DYNAMIC_STATE_BLEND_CONSTANTS,
     //VK_DYNAMIC_STATE_STENCIL_REFERENCE
 };
@@ -682,7 +684,7 @@ void VulkanGraphicContext::bindImage(const Shader* shader, u32 bindIndex, const 
 
 void VulkanGraphicContext::bindSampler(const Shader* shader, u32 bindIndex, const Sampler::SamplerInfo* samplerInfo)
 {
-    Sampler* sampler = m_samplerManager->acquireSampler(samplerInfo->_value._desc);
+    Sampler* sampler = m_samplerManager->acquireSampler(samplerInfo->_desc);
     ASSERT(sampler, "nullptr");
     samplerInfo->_tracker->attach(sampler);
     const VulkanSampler* vkSampler = static_cast<const VulkanSampler*>(sampler);
@@ -698,7 +700,7 @@ void VulkanGraphicContext::bindSampledImage(const Shader* shader, u32 bindIndex,
     ASSERT(image && samplerInfo, "nullptr");
     const VulkanImage* vkImage = static_cast<const VulkanImage*>(image);
 
-    Sampler* sampler = m_samplerManager->acquireSampler(samplerInfo->_value._desc);
+    Sampler* sampler = m_samplerManager->acquireSampler(samplerInfo->_desc);
     ASSERT(sampler, "nullptr");
     samplerInfo->_tracker->attach(sampler);
     const VulkanSampler* vkSampler = static_cast<const VulkanSampler*>(sampler);
@@ -1013,9 +1015,9 @@ Pipeline* VulkanGraphicContext::createPipeline(Pipeline::PipelineType type)
     return nullptr;
 }
 
-Sampler * VulkanGraphicContext::createSampler()
+Sampler* VulkanGraphicContext::createSampler(const SamplerDescription& desc)
 {
-    return new VulkanSampler(m_deviceInfo._device);
+    return new VulkanSampler(m_deviceInfo._device, desc);
 }
 
 void VulkanGraphicContext::invalidateStates()
@@ -1137,12 +1139,16 @@ bool VulkanGraphicContext::createInstance()
         {
         case 4:
             severityFlag |= VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT;
+            [[fallthrough]];
         case 3:
             severityFlag |= VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT;
+            [[fallthrough]];
         case 2:
             severityFlag |= VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT;
+            [[fallthrough]];
         case 1:
             severityFlag |= VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
+            [[fallthrough]];
         case 0:
         default:
             //turn off
@@ -1166,12 +1172,16 @@ bool VulkanGraphicContext::createInstance()
         {
         case 4:
             flags |= VK_DEBUG_REPORT_DEBUG_BIT_EXT;
+            [[fallthrough]];
         case 3:
             flags |= VK_DEBUG_REPORT_INFORMATION_BIT_EXT;
+            [[fallthrough]];
         case 2:
             flags |= VK_DEBUG_REPORT_WARNING_BIT_EXT | VK_DEBUG_REPORT_PERFORMANCE_WARNING_BIT_EXT;
+            [[fallthrough]];
         case 1:
             flags |= VK_DEBUG_REPORT_ERROR_BIT_EXT;
+            [[fallthrough]];
         case 0:
         default:
             //turn off

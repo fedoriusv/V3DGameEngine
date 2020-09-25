@@ -117,7 +117,7 @@ namespace vk
         Framebuffer* createFramebuffer(const std::vector<Image*>& images, const core::Dimension2D& size) override;
         RenderPass* createRenderPass(const RenderPassDescription* renderpassDesc) override;
         Pipeline* createPipeline(Pipeline::PipelineType type) override;
-        Sampler* createSampler() override;
+        Sampler* createSampler(const SamplerDescription& desc) override;
 
         void invalidateStates();
 

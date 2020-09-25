@@ -56,6 +56,7 @@ namespace vk
         u32 maxDescriptorBindingIndex = 0;
 
         bool enableSamplerMirrorClampToEdge = false;
+        bool supportSamplerBorderColor = false;
 
         static bool checkInstanceExtension(const c8* extensionName);
         static bool checkDeviceExtension(VkPhysicalDevice physicalDevice, const c8* extensionName);
@@ -82,6 +83,7 @@ namespace vk
         std::vector<VkQueueFamilyProperties> m_queueFamilyProperties = {};
 
         VkPhysicalDeviceDescriptorIndexingFeaturesEXT m_physicalDeviceDescriptorIndexingFeatures = {};
+        VkPhysicalDeviceCustomBorderColorFeaturesEXT m_physicalDeviceCustomBorderColorFeatures = {};
 
         static std::vector<const c8*>        s_enableExtensions;
     };

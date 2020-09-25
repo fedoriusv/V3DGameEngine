@@ -351,7 +351,7 @@ bool ShaderProgram::bindSampler(ShaderType shaderType, u32 index, const SamplerS
 
     Sampler::SamplerInfo samplerInfo;
     samplerInfo._tracker = const_cast<ObjectTracker<Sampler>*>(&sampler->m_trackerSampler);
-    samplerInfo._value._desc = sampler->m_samplerDesc;
+    samplerInfo._desc = sampler->m_samplerDesc;
 
     if (m_cmdList.isImmediate())
     {
@@ -395,7 +395,7 @@ bool ShaderProgram::bindSampledTexture(ShaderType shaderType, u32 index, Texture
 
     Sampler::SamplerInfo samplerInfo;
     samplerInfo._tracker = const_cast<ObjectTracker<Sampler>*>(&sampler->m_trackerSampler);
-    samplerInfo._value._desc = sampler->m_samplerDesc;
+    samplerInfo._desc = sampler->m_samplerDesc;
 
     if (m_cmdList.isImmediate())
     {

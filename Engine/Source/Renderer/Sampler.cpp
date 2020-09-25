@@ -1,15 +1,16 @@
 #include "Sampler.h"
 #include "Renderer/Context.h"
-
 #include "Utils/Logger.h"
+
+#include "crc32c/crc32c.h"
 
 namespace v3d
 {
 namespace renderer
 {
 
-Sampler::Sampler() noexcept
-    : m_key(0)
+Sampler::Sampler(const SamplerDescription& desc) noexcept
+    : m_desc(desc)
 {
 }
 
@@ -27,22 +28,17 @@ SamplerManager::~SamplerManager()
     SamplerManager::clear();
 }
 
-Sampler * SamplerManager::acquireSampler(const SamplerDescription& samplerInfo)
+Sampler* SamplerManager::acquireSampler(const SamplerDescription& samplerDesc)
 {
-    Sampler::SamplerInfo::SamplerDesc info;
-    info._desc = samplerInfo;
-
     Sampler* sampler = nullptr;
-    auto found = m_samplerList.emplace(info._hash, sampler);
+    auto found = m_samplerList.emplace(samplerDesc, sampler);
     if (found.second)
     {
-        sampler = m_context->createSampler();
-        sampler->m_key = info._hash;
-
-        if (!sampler->create(info._desc))
+        sampler = m_context->createSampler(samplerDesc);
+        if (!sampler->create())
         {
             sampler->destroy();
-            m_samplerList.erase(info._hash);
+            m_samplerList.erase(found.first);
 
             ASSERT(false, "can't create sampler");
             return nullptr;
@@ -56,9 +52,9 @@ Sampler * SamplerManager::acquireSampler(const SamplerDescription& samplerInfo)
     return found.first->second;
 }
 
-bool SamplerManager::removeSampler(Sampler * sampler)
+bool SamplerManager::removeSampler(Sampler* sampler)
 {
-    auto iter = m_samplerList.find(sampler->m_key);
+    auto iter = m_samplerList.find(sampler->m_desc);
     if (iter == m_samplerList.cend())
     {
         LOG_DEBUG("SamplerManager sampler not found");

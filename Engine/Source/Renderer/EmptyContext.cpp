@@ -157,7 +157,7 @@ Pipeline * EmptyContext::createPipeline(Pipeline::PipelineType type)
     return nullptr;
 }
 
-Sampler * EmptyContext::createSampler()
+Sampler * EmptyContext::createSampler(const SamplerDescription& desc)
 {
     LOG_DEBUG("EmptyContext::createSampler");
     return nullptr;

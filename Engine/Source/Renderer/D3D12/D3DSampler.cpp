@@ -112,27 +112,28 @@ D3D12_COMPARISON_FUNC D3DSampler::convertSamplerCompareOpD3D(CompareOperation op
     return D3D12_COMPARISON_FUNC_NEVER;
 }
 
-D3DSampler::D3DSampler() noexcept
-    : m_desc()
+D3DSampler::D3DSampler(const SamplerDescription& desc) noexcept
+    : Sampler(desc)
+    , m_sampler()
 {
 }
 
-bool D3DSampler::create(const SamplerDescription& info)
+bool D3DSampler::create()
 {
-    m_desc = {};
-    m_desc.Filter = D3DSampler::convertSamplerFilterToD3D(info._minFilter, info._magFilter);
-    m_desc.AddressU = D3DSampler::convertSamplerWrapToAddressModeD3D(info._wrapU);
-    m_desc.AddressV = D3DSampler::convertSamplerWrapToAddressModeD3D(info._wrapV);
-    m_desc.AddressW = D3DSampler::convertSamplerWrapToAddressModeD3D(info._wrapW);
-    m_desc.MipLODBias = info._lodBias;
-    m_desc.MaxAnisotropy = static_cast<UINT>(info._anisotropic);
-    m_desc.ComparisonFunc = (info._enableCompOp) ? D3DSampler::convertSamplerCompareOpD3D(info._compareOp) : D3D12_COMPARISON_FUNC_NEVER;
-    m_desc.BorderColor[0] = 0.0f;
-    m_desc.BorderColor[1] = 0.0f;
-    m_desc.BorderColor[2] = 0.0f;
-    m_desc.BorderColor[3] = 0.0f;
-    m_desc.MinLOD = 0.0f;
-    m_desc.MaxLOD = FLT_MAX;
+    m_sampler = {};
+    m_sampler.Filter = D3DSampler::convertSamplerFilterToD3D(m_desc._desc._minFilter, m_desc._desc._magFilter);
+    m_sampler.AddressU = D3DSampler::convertSamplerWrapToAddressModeD3D(m_desc._desc._wrapU);
+    m_sampler.AddressV = D3DSampler::convertSamplerWrapToAddressModeD3D(m_desc._desc._wrapV);
+    m_sampler.AddressW = D3DSampler::convertSamplerWrapToAddressModeD3D(m_desc._desc._wrapW);
+    m_sampler.MipLODBias = m_desc._desc._lodBias;
+    m_sampler.MaxAnisotropy = static_cast<UINT>(m_desc._desc._anisotropic);
+    m_sampler.ComparisonFunc = (m_desc._desc._enableCompOp) ? D3DSampler::convertSamplerCompareOpD3D(m_desc._desc._compareOp) : D3D12_COMPARISON_FUNC_NEVER;
+    m_sampler.BorderColor[0] = m_desc._desc._borderColor[0];
+    m_sampler.BorderColor[1] = m_desc._desc._borderColor[1];
+    m_sampler.BorderColor[2] = m_desc._desc._borderColor[2];
+    m_sampler.BorderColor[3] = m_desc._desc._borderColor[3];
+    m_sampler.MinLOD = 0.0f;
+    m_sampler.MaxLOD = FLT_MAX;
 
     return true;
 }
@@ -144,7 +145,7 @@ void D3DSampler::destroy()
 
 const D3D12_SAMPLER_DESC& D3DSampler::getDesc() const
 {
-    return m_desc;
+    return m_sampler;
 }
 
 } //namespace dx3d
