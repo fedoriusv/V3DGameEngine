@@ -9,18 +9,23 @@ namespace v3d
 {
 namespace renderer
 {
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
+
     class Context;
     class RenderPassManager;
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
-    * RenderPass base class. Render side
+    * @brief RenderPass base class. Render side
     */
     class RenderPass : public RenderObject<RenderPass>, public utils::Observable
     {
     public:
 
+        /**
+        * @brief RenderPassInfo struct
+        */
         struct RenderPassInfo
         {
             RenderPassInfo() noexcept
@@ -28,37 +33,28 @@ namespace renderer
             {
             }
 
-            union RenderPassDesc
-            {
-                RenderPassDesc() noexcept
-                {
-                    memset(this, 0, sizeof(RenderPassDesc));
-                }
-
-                RenderPassDescription _desc;
-                u32                   _hash;
-            };
-            RenderPassDesc             _value;
-            ObjectTracker<RenderPass>* _tracker;
+            RenderPassDescription       _desc;
+            ObjectTracker<RenderPass>*  _tracker;
         };
 
-        RenderPass() noexcept;
+        explicit RenderPass(const RenderPassDescription& desc) noexcept;
         virtual ~RenderPass();
 
         virtual bool create() = 0;
         virtual void destroy() = 0;
 
-    private:
+        const RenderPassDescription::RenderPassDesc& getDescription() const;
 
-        u32 m_key;
+    protected:
 
+        const RenderPassDescription m_desc;
         friend RenderPassManager;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
-    * RenderPassManager class
+    * @brief RenderPassManager class
     */
     class RenderPassManager final : utils::Observer
     {
@@ -79,8 +75,8 @@ namespace renderer
     private:
 
         Context* m_context;
-        std::map<u32, RenderPass*> m_renderPassList;
-        //std::unordered_map<u32, RenderPass*> m_renderPasses; TODO
+        //std::map<u32, RenderPass*> m_renderPassList;
+        std::unordered_map<RenderPassDescription, RenderPass*, RenderPassDescription::Hash, RenderPassDescription::Compare> m_renderPassList;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

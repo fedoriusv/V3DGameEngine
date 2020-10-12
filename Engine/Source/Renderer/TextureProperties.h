@@ -10,7 +10,7 @@ namespace renderer
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
-    * TextureUsage enum. usageFlag inside Texture
+    * @brief TextureUsage enum. Flags describe a texture purposes
     */
     enum TextureUsage : u16
     {
@@ -25,10 +25,16 @@ namespace renderer
         TextureUsage_Shared = 0x40,
     };
 
+    /**
+    * @brief TextureUsageFlags. Combination of TextureUsage enum
+    */
     typedef u16 TextureUsageFlags;
 
     ///////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    /**
+    * @brief TextureTarget enum. Contain a texture target
+    */
     enum class TextureTarget : u16
     {
         Texture1D,
@@ -39,6 +45,9 @@ namespace renderer
         TextureCubeMap,
     };
 
+    /**
+    * @brief TextureSamples enum. Count of samples
+    */
     enum class TextureSamples : u32
     {
         TextureSamples_x1 = 0,
@@ -50,6 +59,9 @@ namespace renderer
         TextureSamples_x64 = 6,
     };
 
+    /**
+    * @brief RenderTargetLoadOp enum. Load operations for a render target
+    */
     enum class RenderTargetLoadOp : u32
     {
         LoadOp_DontCare,
@@ -57,12 +69,19 @@ namespace renderer
         LoadOp_Load,
     };
 
+    /**
+    * @brief RenderTargetStoreOp enum. Store operations for a render target
+    */
     enum class RenderTargetStoreOp : u32
     {
         StoreOp_DontCare,
         StoreOp_Store,
     };
 
+    /**
+    * @brief TransitionOp enum. A transition operation detects how texture will be used.
+    * Helps switch memory barriers for attachments internally
+    */
     enum class TransitionOp : u32
     {
         TransitionOp_Undefined,
@@ -75,13 +94,16 @@ namespace renderer
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    constexpr u32 k_maxFramebufferAttachments = 8;
+    /**
+    * @brief maximum color attachments inside a render target
+    */
+    constexpr u32 k_maxColorAttachments = 8;
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
-    * AttachmentDescription struct
-    * 4 byte size
+    * @brief AttachmentDescription struct. Uses inside a render target.
+    * 4 bytes size
     */
     struct AttachmentDescription
     {
@@ -100,29 +122,45 @@ namespace renderer
         TransitionOp          _finalTransition  : 3;
         u32                   _internalTarget   : 1;
         u32                   _autoResolve      : 1;
+        u32                   _layer            : 3;
 
-        u32                   _padding          : 5;
+        u32                   _padding          : 2;
+
+        static s32 uncompressLayer(u32 layer)
+        {
+            return (layer == 0x07) ? -1 : static_cast<s32>(layer);
+        }
     };
 
     /**
-    * RenderPassInfo struct
-    * 36 byte size
+    * @brief RenderPassDescription struct. Uses inside a render pass.
+    * 40 bytes size
     */
     struct RenderPassDescription
     {
-        RenderPassDescription() noexcept
-            : _countColorAttachments(0)
-            , _hasDepthStencilAttahment(false)
-            , _padding(0)
+        RenderPassDescription() noexcept;
+        bool operator==(const RenderPassDescription& other) const;
+
+        struct RenderPassDesc
         {
-            _attachments.fill(AttachmentDescription());
-        }
+            std::array<AttachmentDescription, k_maxColorAttachments + 1> _attachments; //36 bytes
+            u32 _countColorAttachments      : 4;
+            u32 _hasDepthStencilAttahment   : 1;
 
-        std::array<AttachmentDescription, k_maxFramebufferAttachments> _attachments; //32 bytes
-        u32 _countColorAttachments      : 4;
-        u32 _hasDepthStencilAttahment   : 1;
+            u32 _padding                    : 27;
+        };
 
-        u32 _padding                    : 27;
+        RenderPassDesc _desc;
+
+        struct Hash
+        {
+            u32 operator()(const RenderPassDescription& desc) const;
+        };
+
+        struct Compare
+        {
+            bool operator()(const RenderPassDescription& op1, const RenderPassDescription& op2) const;
+        };
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

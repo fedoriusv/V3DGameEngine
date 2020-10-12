@@ -21,7 +21,7 @@ namespace renderer
             TilingType_Count
         };
 
-        u32 maxColorAttachments = k_maxFramebufferAttachments;
+        u32 maxColorAttachments = k_maxColorAttachments;
         u32 maxVertexInputAttributes = k_maxVertexInputAttributes;
         u32 maxVertexInputBindings = k_maxVertexInputBindings;
 

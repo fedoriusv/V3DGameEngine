@@ -249,18 +249,74 @@ private:
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-Texture2D::Texture2D(renderer::CommandList& cmdList, TextureUsageFlags usage, renderer::Format format, const core::Dimension2D& dimension, u32 layers, u32 mipmapCount, const void* data, const std::string& name) noexcept
+Texture::Texture(CommandList& cmdList, TextureTarget target, Format format, TextureSamples samples, u32 layers, u32 mipmaps, TextureUsageFlags usage) noexcept
     : m_cmdList(cmdList)
-    , m_target(renderer::TextureTarget::Texture2D)
+    , m_target(target)
     , m_format(format)
-    , m_dimension(dimension)
-    , m_mipmaps(mipmapCount)
+    , m_samples(samples)
     , m_layers(layers)
-    , m_samples(renderer::TextureSamples::TextureSamples_x1)
+    , m_mipmaps(mipmaps)
 
     , m_usage(usage)
     , m_image(nullptr)
+{
+}
 
+Texture::~Texture()
+{
+    //m_image may exists, because render still holds the resource
+    //ASSERT(!m_image, "image isn't nullptr");
+}
+
+TextureTarget Texture::getTarget() const
+{
+    return m_target;
+}
+
+Format Texture::getFormat() const
+{
+    return m_format;
+}
+
+TextureSamples Texture::getSamples() const
+{
+    return m_samples;
+}
+
+u32 Texture::getLayersCount() const
+{
+    return m_layers;
+}
+
+u32 Texture::getMipmapsCount() const
+{
+    return m_mipmaps;
+}
+
+Image* Texture::getImage() const
+{
+    ASSERT(m_image, "nullptr");
+    return m_image;
+}
+
+bool Texture::isTextureUsageFlagsContains(TextureUsageFlags usage) const
+{
+    return m_usage & usage;
+}
+
+void Texture::handleNotify(utils::Observable* ob)
+{
+    LOG_DEBUG("Texture::handleNotify to delete image %xll", this);
+    ASSERT(m_image == ob, "not same");
+
+    m_image = nullptr;
+}
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////
+
+Texture2D::Texture2D(renderer::CommandList& cmdList, TextureUsageFlags usage, Format format, const core::Dimension2D& dimension, u32 layers, u32 mipmaps, const void* data, const std::string& name) noexcept
+    : Texture(cmdList, TextureTarget::Texture2D, format, TextureSamples::TextureSamples_x1, layers, mipmaps, usage)
+    , m_dimension(dimension)
 {
     core::Dimension3D dim = { m_dimension.width, m_dimension.height, 1 };
     m_image = m_cmdList.getContext()->createImage(m_target, m_format, dim, m_layers, m_mipmaps, m_usage, name);
@@ -270,33 +326,17 @@ Texture2D::Texture2D(renderer::CommandList& cmdList, TextureUsageFlags usage, re
     createTexture2D(data);
 }
 
-Texture2D::Texture2D(renderer::CommandList & cmdList, TextureUsageFlags usage, renderer::Format format, const core::Dimension2D & dimension, renderer::TextureSamples samples, const std::string& name) noexcept
-    : m_cmdList(cmdList)
-    , m_target(renderer::TextureTarget::Texture2D)
-    , m_format(format)
+Texture2D::Texture2D(renderer::CommandList & cmdList, TextureUsageFlags usage, renderer::Format format, const core::Dimension2D& dimension, TextureSamples samples, const std::string& name) noexcept
+    : Texture(cmdList, TextureTarget::Texture2D, format, samples, 1, 1, usage)
     , m_dimension(dimension)
-    , m_mipmaps(1)
-    , m_layers(1)
-    , m_samples(samples)
-
-    , m_usage(usage)
-    , m_image(nullptr)
 {
     core::Dimension3D dim = { m_dimension.width, m_dimension.height, 1 };
 
-    m_image = m_cmdList.getContext()->createImage(m_format, dim, m_samples, m_usage, name);
+    m_image = m_cmdList.getContext()->createImage(TextureTarget::Texture2D, m_format, dim, m_samples, m_usage, name);
     ASSERT(m_image, "m_image is nullptr");
     m_image->registerNotify(this);
 
     createTexture2D(nullptr);
-}
-
-void Texture2D::handleNotify(utils::Observable* ob)
-{
-    LOG_DEBUG("Texture2D::handleNotify to delete image %xll", this);
-    ASSERT(m_image == ob, "not same");
-
-    m_image = nullptr;
 }
 
 void Texture2D::createTexture2D(const void * data)
@@ -337,12 +377,6 @@ void Texture2D::createTexture2D(const void * data)
     }
 }
 
-renderer::Image* Texture2D::getImage() const
-{
-    ASSERT(m_image, "nullptr");
-    return m_image;
-}
-
 Texture2D::~Texture2D()
 {
     LOG_DEBUG("Texture2D::Texture2D destructor %llx", this);
@@ -358,32 +392,12 @@ Texture2D::~Texture2D()
     }
 }
 
-renderer::TextureTarget Texture2D::getTarget() const
-{
-    return m_target;
-}
-
-renderer::TextureSamples Texture2D::getSampleCount() const
-{
-    return m_samples;
-}
-
-u32 Texture2D::getMipmaps() const
-{
-    return m_mipmaps;
-}
-
 const core::Dimension2D& Texture2D::getDimension() const
 {
     return m_dimension;
 }
 
-renderer::Format Texture2D::getFormat() const
-{
-    return m_format;
-}
-
-void Texture2D::update(const core::Dimension2D & offset, const core::Dimension2D & size, u32 mipLevel, const void * data)
+void Texture2D::update(const core::Dimension2D& offset, const core::Dimension2D& size, u32 mipLevel, const void* data)
 {
     ASSERT(m_image, "m_image is nullptr");
     if (m_image)
@@ -392,7 +406,7 @@ void Texture2D::update(const core::Dimension2D & offset, const core::Dimension2D
     }
 }
 
-void Texture2D::read(const core::Dimension2D & offset, const core::Dimension2D & size, u32 mipLevel, void * const data)
+void Texture2D::read(const core::Dimension2D& offset, const core::Dimension2D& size, u32 mipLevel, void* const data)
 {
     ASSERT(m_image, "m_image is nullptr");
     if (m_image)
@@ -401,7 +415,7 @@ void Texture2D::read(const core::Dimension2D & offset, const core::Dimension2D &
     }
 }
 
-void Texture2D::clear(const core::Vector4D & color)
+void Texture2D::clear(const core::Vector4D& color)
 {
     ASSERT(m_image, "m_image is nullptr");
     if (m_image)
@@ -433,10 +447,53 @@ void Texture2D::clear(f32 depth, u32 stencil)
     }
 }
 
-bool Texture2D::isTextureUsageFlagsContains(TextureUsageFlags usage) const
+/////////////////////////////////////////////////////////////////////////////////////////////////////
+
+TextureCube::TextureCube(CommandList& cmdList, TextureUsageFlags usage, Format format, const core::Dimension2D& dimension, TextureSamples samples, const std::string& name) noexcept
+    : Texture(cmdList, TextureTarget::TextureCubeMap, format, samples, 6, 1, usage)
+    , m_dimension(dimension)
 {
-    return m_usage & usage;
+    m_image = m_cmdList.getContext()->createImage(TextureTarget::TextureCubeMap, m_format, { m_dimension.width, m_dimension.height, 1 }, m_samples, m_usage, name);
+    ASSERT(m_image, "m_image is nullptr");
+    m_image->registerNotify(this);
+
+    createTextureCube();
 }
+
+void TextureCube::createTextureCube()
+{
+    if (m_cmdList.isImmediate())
+    {
+        if (!m_image->create())
+        {
+            m_image->destroy();
+
+            delete m_image;
+            m_image = nullptr;
+        }
+    }
+    else
+    {
+        m_cmdList.pushCommand(
+            new CreateTextureCommand(m_image, core::Dimension3D(0, 0, 0), core::Dimension3D(m_dimension.width, m_dimension.height, 1), m_mipmaps, m_layers, 0, nullptr, (m_usage & TextureUsage_Shared)));
+    }
+}
+
+TextureCube::~TextureCube()
+{
+    LOG_DEBUG("TextureCube::TextureCube destructor %llx", this);
+    ASSERT(m_image, "image nullptr");
+    m_image->unregisterNotify(this);
+    if (m_cmdList.isImmediate())
+    {
+        m_cmdList.getContext()->removeImage(m_image);
+    }
+    else
+    {
+        m_cmdList.pushCommand(new CommandDestroyImage(m_image));
+    }
+}
+
 
 } //namespace renderer
 } //namespace v3d

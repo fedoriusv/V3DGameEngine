@@ -342,7 +342,7 @@ void D3DGraphicContext::setRenderTarget(const RenderPass::RenderPassInfo* render
     LOG_DEBUG("D3DGraphicContext::setRenderTarget");
     ASSERT(renderpassInfo && framebufferInfo, "nullptr");
 
-    D3DRenderState* renderState = static_cast<D3DRenderState*>(std::get<0>(m_renderTargetManager)->acquireRenderPass(renderpassInfo->_value._desc));
+    D3DRenderState* renderState = static_cast<D3DRenderState*>(std::get<0>(m_renderTargetManager)->acquireRenderPass(renderpassInfo->_desc));
     ASSERT(renderState, "nullptr");
     renderpassInfo->_tracker->attach(renderState);
 
@@ -458,11 +458,12 @@ Image* D3DGraphicContext::createImage(TextureTarget target, Format format, const
     return new D3DImage(m_device, dxDimension, format, dimension, layers, mipmapLevel, flags, name);
 }
 
-Image* D3DGraphicContext::createImage(Format format, const core::Dimension3D& dimension, TextureSamples samples, TextureUsageFlags flags, const std::string& name)
+Image* D3DGraphicContext::createImage(TextureTarget target, Format format, const core::Dimension3D& dimension, TextureSamples samples, TextureUsageFlags flags, const std::string& name)
 {
 #if D3D_DEBUG
     LOG_DEBUG("D3DGraphicContext::createImage");
 #endif //D3D_DEBUG
+    D3D12_RESOURCE_DIMENSION dxDimension = D3DImage::convertImageTargetToD3DDimension(target); //TODO
     u32 dxSamples = (samples > TextureSamples::TextureSamples_x1) ? 2 << (u32)samples : 1;
     ASSERT(dimension.depth == 1, "must be 1");
 

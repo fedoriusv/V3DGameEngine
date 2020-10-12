@@ -52,13 +52,13 @@ void EmptyContext::setScissor(const core::Rect32 & scissor)
     LOG_DEBUG("EmptyContext::setScissor");
 }
 
-Image * EmptyContext::createImage(TextureTarget target, renderer::Format format, const core::Dimension3D& dimension, u32 layers, u32 mipmapLevel, TextureUsageFlags flags, const std::string& name)
+Image * EmptyContext::createImage(TextureTarget target, Format format, const core::Dimension3D& dimension, u32 layers, u32 mipmapLevel, TextureUsageFlags flags, const std::string& name)
 {
     LOG_DEBUG("EmptyContext::createImage");
     return nullptr;
 }
 
-Image* EmptyContext::createImage(renderer::Format format, const core::Dimension3D& dimension, TextureSamples samples, TextureUsageFlags flags, const std::string& name)
+Image* EmptyContext::createImage(TextureTarget target, Format format, const core::Dimension3D& dimension, TextureSamples samples, TextureUsageFlags flags, const std::string& name)
 {
     LOG_DEBUG("EmptyContext::createImage");
     return nullptr;

@@ -8,8 +8,8 @@ namespace v3d
 namespace renderer
 {
 
-RenderPass::RenderPass() noexcept
-    : m_key(0)
+RenderPass::RenderPass(const RenderPassDescription& desc) noexcept
+    : m_desc(desc)
 {
 }
 
@@ -17,7 +17,12 @@ RenderPass::~RenderPass()
 {
 }
 
-RenderPassManager::RenderPassManager(Context * context) noexcept
+const RenderPassDescription::RenderPassDesc& RenderPass::getDescription() const
+{
+    return m_desc._desc;
+}
+
+RenderPassManager::RenderPassManager(Context* context) noexcept
     : m_context(context)
 {
 }
@@ -29,20 +34,15 @@ RenderPassManager::~RenderPassManager()
 
 RenderPass* RenderPassManager::acquireRenderPass(const RenderPassDescription& renderPassInfo)
 {
-    RenderPass::RenderPassInfo::RenderPassDesc info;
-    info._desc = renderPassInfo;
-
     RenderPass* renderpass = nullptr;
-    auto found = m_renderPassList.emplace(info._hash, renderpass);
+    auto found = m_renderPassList.emplace(renderPassInfo, renderpass);
     if (found.second)
     {
-        renderpass = m_context->createRenderPass(&info._desc);
-        renderpass->m_key = info._hash;
-
+        renderpass = m_context->createRenderPass(&renderPassInfo);
         if (!renderpass->create())
         {
             renderpass->destroy();
-            m_renderPassList.erase(info._hash);
+            m_renderPassList.erase(found.first);
 
             ASSERT(false, "can't create renderpass");
             return nullptr;
@@ -56,9 +56,9 @@ RenderPass* RenderPassManager::acquireRenderPass(const RenderPassDescription& re
     return found.first->second;
 }
 
-bool RenderPassManager::removeRenderPass(const RenderPass * renderPass)
+bool RenderPassManager::removeRenderPass(const RenderPass* renderPass)
 {
-    auto iter = m_renderPassList.find(renderPass->m_key);
+    auto iter = m_renderPassList.find(renderPass->m_desc);
     if (iter == m_renderPassList.cend())
     {
         LOG_DEBUG("RenderPassManager renderpass not found");
@@ -105,7 +105,7 @@ void RenderPassManager::clear()
 
 void RenderPassManager::handleNotify(utils::Observable* ob)
 {
-    LOG_DEBUG("RenderPassManager renderpass %x has been deleted, hash %d", ob, static_cast<RenderPass*>(ob)->m_key);
+    LOG_DEBUG("RenderPassManager::handleNotify renderpass %llx has been deleted", ob);
 }
 
 } //namespace renderer

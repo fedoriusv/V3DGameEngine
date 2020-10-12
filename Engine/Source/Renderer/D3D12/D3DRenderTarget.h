@@ -33,12 +33,6 @@ namespace dx3d
 
         bool create() override;
         void destroy() override;
-
-        const RenderPassDescription& getDescription() const;
-
-    private:
-
-        RenderPassDescription m_renderStateInfo;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -59,7 +53,7 @@ namespace dx3d
         const std::vector<D3D12_CPU_DESCRIPTOR_HANDLE>& getColorDescHandles() const;
         const D3D12_CPU_DESCRIPTOR_HANDLE& getDepthStencilDescHandles() const;
 
-        const RenderPassDescription& getDescription() const;
+        const RenderPassDescription::RenderPassDesc& getDescription() const;
         const std::vector<Image*>& getImages() const;
 
     private:

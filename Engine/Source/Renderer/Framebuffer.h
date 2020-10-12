@@ -9,6 +9,8 @@ namespace v3d
 {
 namespace renderer
 {
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
+
     class Context;
     class RenderPass;
     class Image;
@@ -17,12 +19,15 @@ namespace renderer
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
-    * Framebuffer base class. Render side
+    * @brief Framebuffer base class. Render side
     */
     class Framebuffer : public RenderObject<Framebuffer>, public utils::Observable
     {
     public:
 
+        /**
+        * @brief ClearValueInfo struct
+        */
         struct ClearValueInfo
         {
             ClearValueInfo()
@@ -45,6 +50,9 @@ namespace renderer
             u32                         _stencil;
         };
 
+        /**
+        * @brief FramebufferInfo struct
+        */
         struct FramebufferInfo
         {
             FramebufferInfo() noexcept
@@ -66,15 +74,34 @@ namespace renderer
 
     private:
 
-        u32 m_key;
+        struct FramebufferDescription
+        {
+            FramebufferDescription() = default;
+            FramebufferDescription(u64 size) noexcept;
+            bool operator==(const FramebufferDescription& desc) const;
 
+            struct Hash
+            {
+                u64 operator()(const FramebufferDescription& desc) const;
+            };
+
+            struct Compare
+            {
+                bool operator()(const FramebufferDescription& op1, const FramebufferDescription& op2) const;
+            };
+
+            u64 _hash;
+            std::vector<std::tuple<const Image*, s32>> _imagesDesc;
+        };
+
+        FramebufferDescription m_desc;
         friend FramebufferManager;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
-    * FramebufferManager class
+    * @brief FramebufferManager class
     */
     class FramebufferManager final : utils::Observer
     {
@@ -86,7 +113,7 @@ namespace renderer
         explicit FramebufferManager(Context *context) noexcept;
         ~FramebufferManager();
 
-        std::tuple<Framebuffer*, bool> acquireFramebuffer(const RenderPass* renderpass, const std::vector<Image*> images, const core::Dimension2D& area);
+        std::tuple<Framebuffer*, bool> acquireFramebuffer(const RenderPass* renderpass, const std::vector<Image*>& images, const core::Dimension2D& area);
         bool removeFramebuffer(Framebuffer* framebufer);
         void clear();
 
@@ -95,8 +122,8 @@ namespace renderer
     private:
 
         Context* m_context;
-        std::map<u32, Framebuffer*> m_framebufferList;
-        //std::unordered_map<u32, Framebuffer*> m_framebufferList; TODO
+        //std::map<u32, Framebuffer*> m_framebufferList;
+        std::unordered_map<Framebuffer::FramebufferDescription, Framebuffer*, Framebuffer::FramebufferDescription::Hash, Framebuffer::FramebufferDescription::Compare> m_framebufferList;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

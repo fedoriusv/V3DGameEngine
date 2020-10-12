@@ -392,7 +392,7 @@ bool VulkanSwapchain::createSwapchainImages(const SwapchainConfig& config)
         VulkanSwapchain::correctViewByOrientation<u32>(this, extent.width, extent.height);
         for (u32 index = 0; index < images.size(); ++index)
         {
-            VulkanImage* swapchainImage = new VulkanImage(nullptr, m_deviceInfo->_device, m_surfaceFormat.format, extent, VK_SAMPLE_COUNT_1_BIT, 
+            VulkanImage* swapchainImage = new VulkanImage(nullptr, m_deviceInfo->_device, m_surfaceFormat.format, extent, VK_SAMPLE_COUNT_1_BIT, 1U,
                 TextureUsage::TextureUsage_Attachment | TextureUsage::TextureUsage_Sampled | TextureUsage::TextureUsage_Read, "SwapchainImage_" + std::to_string(index));
             if (!swapchainImage->create(images[index]))
             {

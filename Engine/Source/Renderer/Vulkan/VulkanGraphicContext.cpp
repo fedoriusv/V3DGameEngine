@@ -142,11 +142,9 @@ VulkanGraphicContext::~VulkanGraphicContext()
 
 void VulkanGraphicContext::beginFrame()
 {
-
 #if VULKAN_DUMP
     VulkanDump::getInstance()->dumpFrameNumber(m_frameCounter);
 #endif
-
 #if THREADED_PRESENT
     u32 index = 0;
     m_presentThread->requestAcquireImage(index);
@@ -157,13 +155,7 @@ void VulkanGraphicContext::beginFrame()
     LOG_DEBUG("VulkanGraphicContext::beginFrame %llu, image index %u", m_frameCounter, index);
 #endif //VULKAN_DEBUG
     ASSERT(!m_currentBufferState.isCurrentBufferAcitve(CommandTargetType::CmdDrawBuffer), "buffer exist");
-    VulkanCommandBuffer* drawBuffer = m_currentBufferState._currentCmdBuffer[CommandTargetType::CmdDrawBuffer] = m_cmdBufferManager->acquireNewCmdBuffer(VulkanCommandBuffer::PrimaryBuffer);
-
-    if (drawBuffer->getStatus() != VulkanCommandBuffer::CommandBufferStatus::Ready)
-    {
-        LOG_ERROR("VulkanGraphicContext::beginFrame CommandBufferStatus is Invalid");
-    }
-    drawBuffer->beginCommandBuffer();
+    m_currentBufferState.acquireAndStartCommandBuffer(CommandTargetType::CmdDrawBuffer);
 }
 
 void VulkanGraphicContext::endFrame()
@@ -195,6 +187,8 @@ void VulkanGraphicContext::endFrame()
 
     m_cmdBufferManager->submit(drawBuffer, VK_NULL_HANDLE);
     m_currentBufferState.invalidateCommandBuffer(CommandTargetType::CmdDrawBuffer);
+
+    VulkanGraphicContext::finalizeCommandBufferSubmit();
 }
 
 void VulkanGraphicContext::presentFrame()
@@ -208,13 +202,6 @@ void VulkanGraphicContext::presentFrame()
 #else
     m_swapchain->present(m_queueList[0], semaphores);
 #endif //THREADED_PRESENT
-    m_cmdBufferManager->updateCommandBuffers();
-    m_uniformBufferManager->updateUniformBuffers();
-    m_stagingBufferManager->destroyStagingBuffers();
-    
-    invalidateStates();
-
-    m_resourceDeleter.updateResourceDeleter();
     ++m_frameCounter;
 }
 
@@ -237,6 +224,11 @@ void VulkanGraphicContext::submit(bool wait)
         VulkanCommandBuffer* drawBuffer = m_currentBufferState.getAcitveBuffer(CommandTargetType::CmdDrawBuffer);
         if (drawBuffer->getStatus() == VulkanCommandBuffer::CommandBufferStatus::Begin)
         {
+            if (drawBuffer->isInsideRenderPass())
+            {
+                drawBuffer->cmdEndRenderPass();
+            }
+
             drawBuffer->endCommandBuffer();
             m_uniformBufferManager->markToUse(drawBuffer, 0);
 
@@ -248,6 +240,8 @@ void VulkanGraphicContext::submit(bool wait)
             m_currentBufferState.invalidateCommandBuffer(CommandTargetType::CmdDrawBuffer);
         }
     }
+
+    VulkanGraphicContext::finalizeCommandBufferSubmit();
 
 #if VULKAN_DUMP
     VulkanDump::getInstance()->flush();
@@ -262,7 +256,6 @@ void VulkanGraphicContext::clearBackbuffer(const core::Vector4D& color)
 
 void VulkanGraphicContext::setViewport(const core::Rect32& viewport, const core::Vector2D& depth)
 {
-    ASSERT(m_currentBufferState.isCurrentBufferAcitve(CommandTargetType::CmdDrawBuffer), "nullptr");
 #if VULKAN_DEBUG
     LOG_DEBUG("VulkanGraphicContext::setViewport [%u, %u; %u, %u]", viewport.getLeftX(), viewport.getTopY(), viewport.getWidth(), viewport.getHeight());
 #endif //VULKAN_DEBUG
@@ -281,7 +274,7 @@ void VulkanGraphicContext::setViewport(const core::Rect32& viewport, const core:
       
         std::vector<VkViewport> viewports = { vkViewport };
 
-        VulkanCommandBuffer* drawBuffer = m_currentBufferState.getAcitveBuffer(CommandTargetType::CmdDrawBuffer);
+        VulkanCommandBuffer* drawBuffer = m_currentBufferState.acquireAndStartCommandBuffer(CommandTargetType::CmdDrawBuffer);
         m_currentContextState->setDynamicState(VK_DYNAMIC_STATE_VIEWPORT, std::bind(&VulkanCommandBuffer::cmdSetViewport, drawBuffer, viewports));
     }
     else
@@ -292,7 +285,6 @@ void VulkanGraphicContext::setViewport(const core::Rect32& viewport, const core:
 
 void VulkanGraphicContext::setScissor(const core::Rect32& scissor)
 {
-    ASSERT(m_currentBufferState.isCurrentBufferAcitve(CommandTargetType::CmdDrawBuffer), "nullptr");
 #if VULKAN_DEBUG
     LOG_DEBUG("VulkanGraphicContext::setScissor [%u, %u; %u, %u]", scissor.getLeftX(), scissor.getTopY(), scissor.getWidth(), scissor.getHeight());
 #endif //VULKAN_DEBUG
@@ -303,7 +295,7 @@ void VulkanGraphicContext::setScissor(const core::Rect32& scissor)
         vkScissor.extent = { static_cast<u32>(scissor.getWidth()), static_cast<u32>(scissor.getHeight()) };
         std::vector<VkRect2D> scissors = { vkScissor };
 
-        VulkanCommandBuffer* drawBuffer = m_currentBufferState.getAcitveBuffer(CommandTargetType::CmdDrawBuffer);
+        VulkanCommandBuffer* drawBuffer = m_currentBufferState.acquireAndStartCommandBuffer(CommandTargetType::CmdDrawBuffer);
         m_currentContextState->setDynamicState(VK_DYNAMIC_STATE_SCISSOR, std::bind(&VulkanCommandBuffer::cmdSetScissor, drawBuffer, scissors));
     }
     else
@@ -312,14 +304,14 @@ void VulkanGraphicContext::setScissor(const core::Rect32& scissor)
     }
 }
 
-void VulkanGraphicContext::setRenderTarget(const RenderPass::RenderPassInfo * renderpassInfo, const Framebuffer::FramebufferInfo* framebufferInfo)
+void VulkanGraphicContext::setRenderTarget(const RenderPass::RenderPassInfo* renderpassInfo, const Framebuffer::FramebufferInfo* framebufferInfo)
 {
 #if VULKAN_DEBUG
     LOG_DEBUG("VulkanGraphicContext::setRenderTarget");
 #endif //VULKAN_DEBUG
     ASSERT(renderpassInfo && framebufferInfo, "nullptr");
 
-    RenderPass* renderpass = m_renderpassManager->acquireRenderPass(renderpassInfo->_value._desc);
+    RenderPass* renderpass = m_renderpassManager->acquireRenderPass(renderpassInfo->_desc);
     ASSERT(renderpass, "renderpass is nullptr");
     renderpassInfo->_tracker->attach(renderpass);
     VulkanRenderPass* vkRenderpass = static_cast<VulkanRenderPass*>(renderpass);
@@ -408,20 +400,20 @@ void VulkanGraphicContext::setRenderTarget(const RenderPass::RenderPassInfo * re
                 framebufferInfo->_clearInfo._color[clearIndex].w }};
 
             clearValues.push_back(clearColor);
-            if (renderpassInfo->_value._desc._attachments[clearIndex]._autoResolve)
+            if (renderpassInfo->_desc._desc._attachments[clearIndex]._autoResolve)
             {
                 clearValues.push_back(clearColor);
             }
         }
 
-        if (renderpassInfo->_value._desc._hasDepthStencilAttahment)
+        if (renderpassInfo->_desc._desc._hasDepthStencilAttahment)
         {
             VkClearValue depthClear = {};
             depthClear.depthStencil.depth = framebufferInfo->_clearInfo._depth;
             depthClear.depthStencil.stencil = framebufferInfo->_clearInfo._stencil;
 
             clearValues.push_back(depthClear);
-            if (VulkanDeviceCaps::getInstance()->supportDepthAutoResolve && renderpassInfo->_value._desc._attachments.back()._autoResolve)
+            if (VulkanDeviceCaps::getInstance()->supportDepthAutoResolve && renderpassInfo->_desc._desc._attachments.back()._autoResolve)
             {
                 clearValues.push_back(depthClear);
             }
@@ -503,19 +495,21 @@ void VulkanGraphicContext::removePipeline(Pipeline * pipeline)
     }
 }
 
-Image* VulkanGraphicContext::createImage(renderer::Format format, const core::Dimension3D& dimension, TextureSamples samples, TextureUsageFlags flags, const std::string& name)
+Image* VulkanGraphicContext::createImage(TextureTarget target, Format format, const core::Dimension3D& dimension, TextureSamples samples, TextureUsageFlags flags, const std::string& name)
 {
 #if VULKAN_DEBUG
     LOG_DEBUG("VulkanGraphicContext::createImage");
 #endif //VULKAN_DEBUG
+    VkImageType vkType = VulkanImage::convertTextureTargetToVkImageType(target);
     VkFormat vkFormat = VulkanImage::convertImageFormatToVkFormat(format);
     VkExtent3D vkExtent = { dimension.width, dimension.height, dimension.depth };
     VkSampleCountFlagBits vkSamples = VulkanImage::convertRenderTargetSamplesToVkSampleCount(samples);
+    const u32 layersCount = (target == TextureTarget::TextureCubeMap) ? 6U : 1U;
 
-    return new VulkanImage(m_imageMemoryManager, m_deviceInfo._device, vkFormat, vkExtent, vkSamples, flags, name);
+    return new VulkanImage(m_imageMemoryManager, m_deviceInfo._device, vkFormat, vkExtent, vkSamples, layersCount, flags, name);
 }
 
-Image* VulkanGraphicContext::createImage(TextureTarget target, renderer::Format format, const core::Dimension3D& dimension, u32 layers, u32 mipLevels, TextureUsageFlags flags, const std::string& name)
+Image* VulkanGraphicContext::createImage(TextureTarget target, Format format, const core::Dimension3D& dimension, u32 layers, u32 mipLevels, TextureUsageFlags flags, const std::string& name)
 {
 #if VULKAN_DEBUG
     LOG_DEBUG("VulkanGraphicContext::createImage");
@@ -625,8 +619,7 @@ void VulkanGraphicContext::draw(const StreamBufferDescription& desc, u32 firstVe
 #endif //VULKAN_DEBUG
     [[maybe_unused]] bool changed = m_currentContextState->setCurrentVertexBuffers(desc);
 
-    ASSERT(m_currentBufferState.isCurrentBufferAcitve(CommandTargetType::CmdDrawBuffer), "nullptr");
-    VulkanCommandBuffer* drawBuffer = m_currentBufferState.getAcitveBuffer(CommandTargetType::CmdDrawBuffer);
+    VulkanCommandBuffer* drawBuffer = m_currentBufferState.acquireAndStartCommandBuffer(CommandTargetType::CmdDrawBuffer);
     if (prepareDraw(drawBuffer))
     {
         //if (changed)
@@ -651,8 +644,7 @@ void VulkanGraphicContext::drawIndexed(const StreamBufferDescription& desc, u32 
 #endif //VULKAN_DEBUG
     [[maybe_unused]] bool changed = m_currentContextState->setCurrentVertexBuffers(desc);
 
-    ASSERT(m_currentBufferState.isCurrentBufferAcitve(CommandTargetType::CmdDrawBuffer), "nullptr");
-    VulkanCommandBuffer* drawBuffer = m_currentBufferState.getAcitveBuffer(CommandTargetType::CmdDrawBuffer);
+    VulkanCommandBuffer* drawBuffer = m_currentBufferState.acquireAndStartCommandBuffer(CommandTargetType::CmdDrawBuffer);
     if (prepareDraw(drawBuffer))
     {
         //if (changed)
@@ -809,6 +801,7 @@ bool VulkanGraphicContext::initialize()
     }
 
     m_cmdBufferManager = new VulkanCommandBufferManager(this , &m_deviceInfo, m_queueList[0]);
+    m_currentBufferState._commandBufferMgr = m_cmdBufferManager;
 
     m_stagingBufferManager = new VulkanStagingBufferManager(m_deviceInfo._device);
     m_uniformBufferManager = new VulkanUniformBufferManager(m_deviceInfo._device, m_resourceDeleter);
@@ -970,38 +963,7 @@ Framebuffer* VulkanGraphicContext::createFramebuffer(const std::vector<Image*>& 
 
 RenderPass* VulkanGraphicContext::createRenderPass(const RenderPassDescription* renderpassDesc)
 {
-    u32 countAttachments = (renderpassDesc->_hasDepthStencilAttahment) ? renderpassDesc->_countColorAttachments + 1 : renderpassDesc->_countColorAttachments;
-    std::vector<VulkanRenderPass::VulkanAttachmentDescription> descs(countAttachments);
-    std::vector<VulkanRenderPass::VulkanAttachmentDescription> resolves;
-    for (u32 index = 0; index < renderpassDesc->_countColorAttachments; ++index)
-    {
-        VulkanRenderPass::VulkanAttachmentDescription& desc = descs[index];
-        desc._format = VulkanImage::convertImageFormatToVkFormat(renderpassDesc->_attachments[index]._format);
-        desc._samples = VulkanImage::convertRenderTargetSamplesToVkSampleCount(renderpassDesc->_attachments[index]._samples);
-        desc._loadOp = VulkanRenderPass::convertAttachLoadOpToVkAttachmentLoadOp(renderpassDesc->_attachments[index]._loadOp);
-        desc._storeOp = VulkanRenderPass::convertAttachStoreOpToVkAttachmentStoreOp(renderpassDesc->_attachments[index]._storeOp);
-        desc._initialLayout = VulkanRenderPass::convertTransitionStateToImageLayout(renderpassDesc->_attachments[index]._initTransition);
-        desc._finalLayout = VulkanRenderPass::convertTransitionStateToImageLayout(renderpassDesc->_attachments[index]._finalTransition);
-        desc._swapchainImage = (renderpassDesc->_attachments[index]._internalTarget) ? true : false;
-        desc._autoResolve = (renderpassDesc->_attachments[index]._autoResolve) ? true : false;
-    }
-
-    if (renderpassDesc->_hasDepthStencilAttahment)
-    {
-        VulkanRenderPass::VulkanAttachmentDescription& desc = descs.back();
-        desc._format = VulkanImage::convertImageFormatToVkFormat(renderpassDesc->_attachments.back()._format);
-        desc._samples = VulkanImage::convertRenderTargetSamplesToVkSampleCount(renderpassDesc->_attachments.back()._samples);
-        desc._loadOp = VulkanRenderPass::convertAttachLoadOpToVkAttachmentLoadOp(renderpassDesc->_attachments.back()._loadOp);
-        desc._storeOp = VulkanRenderPass::convertAttachStoreOpToVkAttachmentStoreOp(renderpassDesc->_attachments.back()._storeOp);
-        desc._stencilLoadOp = VulkanRenderPass::convertAttachLoadOpToVkAttachmentLoadOp(renderpassDesc->_attachments.back()._stencilLoadOp);
-        desc._stensilStoreOp = VulkanRenderPass::convertAttachStoreOpToVkAttachmentStoreOp(renderpassDesc->_attachments.back()._stencilStoreOp);
-        desc._initialLayout = VulkanRenderPass::convertTransitionStateToImageLayout(renderpassDesc->_attachments.back()._initTransition);
-        desc._finalLayout = VulkanRenderPass::convertTransitionStateToImageLayout(renderpassDesc->_attachments.back()._finalTransition);
-        desc._swapchainImage = (renderpassDesc->_attachments.back()._internalTarget) ? true : false;
-        desc._autoResolve = (renderpassDesc->_attachments.back()._autoResolve) ? true : false;
-    }
-
-    return new VulkanRenderPass(m_deviceInfo._device, descs);
+    return new VulkanRenderPass(m_deviceInfo._device, *renderpassDesc);
 }
 
 Pipeline* VulkanGraphicContext::createPipeline(Pipeline::PipelineType type)
@@ -1362,6 +1324,16 @@ bool VulkanGraphicContext::prepareDraw(VulkanCommandBuffer* drawBuffer)
     return true;
 }
 
+void VulkanGraphicContext::finalizeCommandBufferSubmit()
+{
+    m_cmdBufferManager->updateCommandBuffers();
+    m_uniformBufferManager->updateUniformBuffers();
+    m_stagingBufferManager->destroyStagingBuffers();
+
+    invalidateStates();
+    m_resourceDeleter.updateResourceDeleter();
+}
+
 VulkanCommandBuffer* VulkanGraphicContext::getOrCreateAndStartCommandBuffer(CommandTargetType type)
 {
     VulkanCommandBuffer* currentBuffer = m_currentBufferState._currentCmdBuffer[type];
@@ -1392,10 +1364,28 @@ VulkanSwapchain* VulkanGraphicContext::getSwapchain() const
 }
 
 
-VulkanGraphicContext::CurrentCommandBufferState::CurrentCommandBufferState()
+VulkanGraphicContext::CurrentCommandBufferState::CurrentCommandBufferState() noexcept
+    : _commandBufferMgr(nullptr)
 {
-    _currentCmdBuffer[CommandTargetType::CmdDrawBuffer] = nullptr;
-    _currentCmdBuffer[CommandTargetType::CmdUploadBuffer] = nullptr;
+    memset(&_currentCmdBuffer, 0, sizeof(_currentCmdBuffer));
+}
+
+VulkanCommandBuffer* VulkanGraphicContext::CurrentCommandBufferState::acquireAndStartCommandBuffer(CommandTargetType type)
+{
+    if (CurrentCommandBufferState::isCurrentBufferAcitve(type))
+    {
+        return CurrentCommandBufferState::getAcitveBuffer(type);
+    }
+
+    ASSERT(_commandBufferMgr, "nullptr");
+    _currentCmdBuffer[type] = _commandBufferMgr->acquireNewCmdBuffer(VulkanCommandBuffer::PrimaryBuffer);
+    if (_currentCmdBuffer[type]->getStatus() != VulkanCommandBuffer::CommandBufferStatus::Ready)
+    {
+        LOG_ERROR("VulkanGraphicContext::CurrentCommandBufferState::acquireAndStartCommandBuffer CommandBufferStatus is Invalid");
+    }
+    _currentCmdBuffer[type]->beginCommandBuffer();
+
+    return _currentCmdBuffer[type];
 }
 
 void VulkanGraphicContext::CurrentCommandBufferState::invalidateCommandBuffer(CommandTargetType type)
@@ -1403,9 +1393,9 @@ void VulkanGraphicContext::CurrentCommandBufferState::invalidateCommandBuffer(Co
     _currentCmdBuffer[type] = nullptr;
 }
 
-VulkanCommandBuffer * VulkanGraphicContext::CurrentCommandBufferState::getAcitveBuffer(CommandTargetType type)
+VulkanCommandBuffer* VulkanGraphicContext::CurrentCommandBufferState::getAcitveBuffer(CommandTargetType type)
 {
-    VulkanCommandBuffer * currentBuffer = _currentCmdBuffer[type];
+    VulkanCommandBuffer* currentBuffer = _currentCmdBuffer[type];
     ASSERT(currentBuffer, "nullptr");
     return currentBuffer;
 }

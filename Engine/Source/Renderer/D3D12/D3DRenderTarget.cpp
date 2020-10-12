@@ -13,7 +13,7 @@ namespace dx3d
 {
 
 D3DRenderState::D3DRenderState(const RenderPassDescription& desc) noexcept
-    : m_renderStateInfo(desc)
+    : RenderPass(desc)
 {
 }
 
@@ -24,11 +24,6 @@ bool D3DRenderState::create()
 
 void D3DRenderState::destroy()
 {
-}
-
-const RenderPassDescription& D3DRenderState::getDescription() const
-{
-    return m_renderStateInfo;
 }
 
 D3DRenderTarget::D3DRenderTarget(ID3D12Device* device, D3DDescriptorHeapManager* manager, const std::vector<Image*>& images) noexcept
@@ -149,7 +144,7 @@ const D3D12_CPU_DESCRIPTOR_HANDLE& D3DRenderTarget::getDepthStencilDescHandles()
     return m_depthStencilRenderTarget;
 }
 
-const RenderPassDescription& D3DRenderTarget::getDescription() const
+const RenderPassDescription::RenderPassDesc& D3DRenderTarget::getDescription() const
 {
     ASSERT(m_renderState, "nullptr");
     return m_renderState->getDescription();

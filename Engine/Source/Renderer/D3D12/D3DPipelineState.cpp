@@ -474,9 +474,9 @@ bool D3DGraphicPipelineState::create(const PipelineGraphicInfo* pipelineInfo)
         blendDesc.AlphaToCoverageEnable = FALSE;
         blendDesc.IndependentBlendEnable = FALSE;
 
-        ASSERT(sizeof(blendDesc.RenderTarget) / sizeof(blendDesc.RenderTarget[0]) == k_maxFramebufferAttachments, "different max");
+        ASSERT(sizeof(blendDesc.RenderTarget) / sizeof(blendDesc.RenderTarget[0]) == k_maxColorAttachments, "different max");
         memset(blendDesc.RenderTarget, 0, sizeof(blendDesc.RenderTarget));
-        for (u32 i = 0; i < pipelineInfo->_renderpassDesc._countColorAttachments; ++i)
+        for (u32 i = 0; i < pipelineInfo->_renderpassDesc._desc._countColorAttachments; ++i)
         {
             blendDesc.RenderTarget[i].LogicOpEnable = blendState._logicalOpEnable;
             blendDesc.RenderTarget[i].LogicOp = convertLogicOperationToD3D(blendState._logicalOp);
@@ -512,15 +512,15 @@ bool D3DGraphicPipelineState::create(const PipelineGraphicInfo* pipelineInfo)
 
     //Render Targets
     {
-        psoDesc.NumRenderTargets = pipelineInfo->_renderpassDesc._countColorAttachments;
-        for (u32 i = 0; i < pipelineInfo->_renderpassDesc._countColorAttachments; ++i)
+        psoDesc.NumRenderTargets = pipelineInfo->_renderpassDesc._desc._countColorAttachments;
+        for (u32 i = 0; i < pipelineInfo->_renderpassDesc._desc._countColorAttachments; ++i)
         {
-            psoDesc.RTVFormats[i] = D3DImage::convertImageFormatToD3DFormat(pipelineInfo->_renderpassDesc._attachments[i]._format);
+            psoDesc.RTVFormats[i] = D3DImage::convertImageFormatToD3DFormat(pipelineInfo->_renderpassDesc._desc._attachments[i]._format);
         }
 
-        if (pipelineInfo->_renderpassDesc._hasDepthStencilAttahment)
+        if (pipelineInfo->_renderpassDesc._desc._hasDepthStencilAttahment)
         {
-            psoDesc.DSVFormat = D3DImage::convertImageFormatToD3DFormat(pipelineInfo->_renderpassDesc._attachments.back()._format);
+            psoDesc.DSVFormat = D3DImage::convertImageFormatToD3DFormat(pipelineInfo->_renderpassDesc._desc._attachments.back()._format);
         }
         else
         {
@@ -532,9 +532,9 @@ bool D3DGraphicPipelineState::create(const PipelineGraphicInfo* pipelineInfo)
     {
         psoDesc.SampleMask = UINT_MAX;
         psoDesc.SampleDesc.Quality = 0;
-        if (pipelineInfo->_renderpassDesc._attachments[0]._samples > TextureSamples::TextureSamples_x1)
+        if (pipelineInfo->_renderpassDesc._desc._attachments[0]._samples > TextureSamples::TextureSamples_x1)
         {
-            psoDesc.SampleDesc.Count = 2 << (u32)(pipelineInfo->_renderpassDesc._attachments[0]._samples);
+            psoDesc.SampleDesc.Count = 2 << (u32)(pipelineInfo->_renderpassDesc._desc._attachments[0]._samples);
         }
         else
         {

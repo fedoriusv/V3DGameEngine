@@ -16,12 +16,15 @@ namespace vk
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
-    * VulkanRenderPass final class. Vulkan Render side
+    * @brief VulkanRenderPass final class. Vulkan Render side
     */
     class VulkanRenderPass final : public RenderPass, public VulkanResource
     {
     public:
 
+        /**
+        * @brief VulkanAttachmentDescription struct
+        */
         struct VulkanAttachmentDescription
         {
             VkFormat              _format;
@@ -34,6 +37,8 @@ namespace vk
             VkImageLayout         _initialLayout;
             VkImageLayout         _finalLayout;
 
+            s32                   _layer;
+
             bool                  _autoResolve;
             bool                  _swapchainImage;
         };
@@ -42,16 +47,18 @@ namespace vk
         static VkAttachmentStoreOp convertAttachStoreOpToVkAttachmentStoreOp(RenderTargetStoreOp storeOp);
         static VkImageLayout convertTransitionStateToImageLayout(TransitionOp state);
 
-        VulkanRenderPass(VkDevice device, const std::vector<VulkanAttachmentDescription>& desc);
+        explicit VulkanRenderPass(VkDevice device, const RenderPassDescription& description) noexcept;
         ~VulkanRenderPass();
 
         VkRenderPass getHandle() const;
+
+        const VulkanAttachmentDescription& getAttachmentDescription(u32 index) const;
 
         template<u32 status>
         VkImageLayout getAttachmentLayout(u32 index) const
         {
             ASSERT(index < m_layout.size(), "range out");
-            static_assert(status < std::tuple_size<LayoutState>::value);
+            static_assert(status <std::tuple_size<LayoutState>::value);
 
             return std::get<status>(m_layout[index]);
         }

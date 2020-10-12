@@ -557,7 +557,7 @@ bool VulkanGraphicPipeline::create(const PipelineGraphicInfo* pipelineInfo)
 
     //bool independentBlend = VulkanDeviceCaps::getInstance()->getPhysicalDeviceFeatures().independentBlend;
     std::vector<VkPipelineColorBlendAttachmentState> pipelineColorBlendAttachmentStates;
-    for (u32 index = 0; index < pipelineInfo->_renderpassDesc._countColorAttachments; ++index)
+    for (u32 index = 0; index < pipelineInfo->_renderpassDesc._desc._countColorAttachments; ++index)
     {
         const GraphicsPipelineStateDescription::ColorBlendAttachmentState& colorBlendState = blendState._colorBlendAttachments;
         VkPipelineColorBlendAttachmentState pipelineColorBlendAttachmentState = {};
@@ -657,9 +657,9 @@ bool VulkanGraphicPipeline::create(const PipelineGraphicInfo* pipelineInfo)
     pipelineMultisampleStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
     pipelineMultisampleStateCreateInfo.pNext = nullptr; //VkPipelineSampleLocationsStateCreateInfoEXT
     pipelineMultisampleStateCreateInfo.flags = 0;
-    if (pipelineInfo->_renderpassDesc._attachments[0]._samples > TextureSamples::TextureSamples_x1)
+    if (pipelineInfo->_renderpassDesc._desc._attachments[0]._samples > TextureSamples::TextureSamples_x1)
     {
-        pipelineMultisampleStateCreateInfo.rasterizationSamples = VulkanImage::convertRenderTargetSamplesToVkSampleCount(pipelineInfo->_renderpassDesc._attachments[0]._samples);
+        pipelineMultisampleStateCreateInfo.rasterizationSamples = VulkanImage::convertRenderTargetSamplesToVkSampleCount(pipelineInfo->_renderpassDesc._desc._attachments[0]._samples);
         pipelineMultisampleStateCreateInfo.sampleShadingEnable = VK_FALSE;
         pipelineMultisampleStateCreateInfo.minSampleShading = 0.0f;
         pipelineMultisampleStateCreateInfo.pSampleMask = nullptr;
@@ -774,24 +774,24 @@ void VulkanGraphicPipeline::deleteShaderModules()
 bool VulkanGraphicPipeline::createCompatibilityRenderPass(const RenderPassDescription& renderpassDesc, RenderPass* &compatibilityRenderPass)
 {
     RenderPassDescription compatibilityRenderpassDesc(renderpassDesc);
-    for (u32 index = 0; index < renderpassDesc._countColorAttachments; ++index)
+    for (u32 index = 0; index < renderpassDesc._desc._countColorAttachments; ++index)
     {
-        compatibilityRenderpassDesc._attachments[index]._loadOp = RenderTargetLoadOp::LoadOp_DontCare;
-        compatibilityRenderpassDesc._attachments[index]._storeOp = RenderTargetStoreOp::StoreOp_DontCare;
-        compatibilityRenderpassDesc._attachments[index]._stencilLoadOp = RenderTargetLoadOp::LoadOp_DontCare;
-        compatibilityRenderpassDesc._attachments[index]._stencilStoreOp = RenderTargetStoreOp::StoreOp_DontCare;
-        compatibilityRenderpassDesc._attachments[index]._initTransition = TransitionOp::TransitionOp_Undefined;
-        compatibilityRenderpassDesc._attachments[index]._finalTransition = TransitionOp::TransitionOp_ColorAttachmet;
+        compatibilityRenderpassDesc._desc._attachments[index]._loadOp = RenderTargetLoadOp::LoadOp_DontCare;
+        compatibilityRenderpassDesc._desc._attachments[index]._storeOp = RenderTargetStoreOp::StoreOp_DontCare;
+        compatibilityRenderpassDesc._desc._attachments[index]._stencilLoadOp = RenderTargetLoadOp::LoadOp_DontCare;
+        compatibilityRenderpassDesc._desc._attachments[index]._stencilStoreOp = RenderTargetStoreOp::StoreOp_DontCare;
+        compatibilityRenderpassDesc._desc._attachments[index]._initTransition = TransitionOp::TransitionOp_Undefined;
+        compatibilityRenderpassDesc._desc._attachments[index]._finalTransition = TransitionOp::TransitionOp_ColorAttachmet;
     }
 
-    if (compatibilityRenderpassDesc._hasDepthStencilAttahment)
+    if (compatibilityRenderpassDesc._desc._hasDepthStencilAttahment)
     {
-        compatibilityRenderpassDesc._attachments.back()._loadOp = RenderTargetLoadOp::LoadOp_DontCare;
-        compatibilityRenderpassDesc._attachments.back()._storeOp = RenderTargetStoreOp::StoreOp_DontCare;
-        compatibilityRenderpassDesc._attachments.back()._stencilLoadOp = RenderTargetLoadOp::LoadOp_DontCare;
-        compatibilityRenderpassDesc._attachments.back()._stencilStoreOp = RenderTargetStoreOp::StoreOp_DontCare;
-        compatibilityRenderpassDesc._attachments.back()._initTransition = TransitionOp::TransitionOp_Undefined;
-        compatibilityRenderpassDesc._attachments.back()._finalTransition = TransitionOp::TransitionOp_DepthStencilAttachmet;
+        compatibilityRenderpassDesc._desc._attachments.back()._loadOp = RenderTargetLoadOp::LoadOp_DontCare;
+        compatibilityRenderpassDesc._desc._attachments.back()._storeOp = RenderTargetStoreOp::StoreOp_DontCare;
+        compatibilityRenderpassDesc._desc._attachments.back()._stencilLoadOp = RenderTargetLoadOp::LoadOp_DontCare;
+        compatibilityRenderpassDesc._desc._attachments.back()._stencilStoreOp = RenderTargetStoreOp::StoreOp_DontCare;
+        compatibilityRenderpassDesc._desc._attachments.back()._initTransition = TransitionOp::TransitionOp_Undefined;
+        compatibilityRenderpassDesc._desc._attachments.back()._finalTransition = TransitionOp::TransitionOp_DepthStencilAttachmet;
     }
 
     compatibilityRenderPass = m_renderpassManager->acquireRenderPass(compatibilityRenderpassDesc);

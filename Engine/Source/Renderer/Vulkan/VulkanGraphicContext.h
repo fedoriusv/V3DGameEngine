@@ -18,6 +18,8 @@ namespace renderer
 {
 namespace vk
 {
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
+
     class VulkanImage;
     class VulkanSampler;
     class VulkanRenderPass;
@@ -46,7 +48,7 @@ namespace vk
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
-    * VulkanGraphicContext final class. Vulkan Render side
+    * @brief VulkanGraphicContext final class. Vulkan Render side
     */
     class VulkanGraphicContext final : public Context,  public utils::Observer
     {
@@ -81,8 +83,8 @@ namespace vk
         void setPipeline(const Pipeline::PipelineGraphicInfo* pipelineInfo) override;
         void removePipeline(Pipeline* pipeline) override;
 
-        Image* createImage(TextureTarget target, renderer::Format format, const core::Dimension3D& dimension, u32 layers, u32 mipmapLevel, TextureUsageFlags flags, [[maybe_unused]] const std::string& name = "") override;
-        Image* createImage(renderer::Format format, const core::Dimension3D& dimension, TextureSamples samples, TextureUsageFlags flags, [[maybe_unused]] const std::string& name = "") override;
+        Image* createImage(TextureTarget target, Format format, const core::Dimension3D& dimension, u32 layers, u32 mipmapLevel, TextureUsageFlags flags, [[maybe_unused]] const std::string& name = "") override;
+        Image* createImage(TextureTarget target, Format format, const core::Dimension3D& dimension, TextureSamples samples, TextureUsageFlags flags, [[maybe_unused]] const std::string& name = "") override;
         void removeImage(Image* image) override;
 
         Buffer* createBuffer(Buffer::BufferType type, u16 usageFlag, u64 size, [[maybe_unused]] const std::string& name = "") override;
@@ -143,7 +145,8 @@ namespace vk
 
         struct CurrentCommandBufferState
         {
-            CurrentCommandBufferState();
+            CurrentCommandBufferState() noexcept;
+            VulkanCommandBuffer* acquireAndStartCommandBuffer(CommandTargetType type);
 
             void invalidateCommandBuffer(CommandTargetType type);
 
@@ -151,7 +154,7 @@ namespace vk
             bool isCurrentBufferAcitve(CommandTargetType type) const;
 
             VulkanCommandBuffer* _currentCmdBuffer[CommandTargetType::CommandTarget_Count];
-
+            VulkanCommandBufferManager* _commandBufferMgr;
         };
 
         struct PendingState
@@ -192,6 +195,8 @@ namespace vk
 
         static std::vector<VkDynamicState>  s_dynamicStates;
         bool prepareDraw(VulkanCommandBuffer* drawBuffer);
+
+        void finalizeCommandBufferSubmit();
 
         const platform::Window* m_window;
 #if THREADED_PRESENT

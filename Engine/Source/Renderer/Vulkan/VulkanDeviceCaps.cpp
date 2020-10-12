@@ -316,6 +316,7 @@ void VulkanDeviceCaps::initialize()
 {
     maxDescriptorSetIndex = std::min(k_maxDescriptorSetIndex, m_deviceProperties.limits.maxBoundDescriptorSets);
     maxDescriptorBindingIndex = k_maxDescriptorBindingIndex; // std::min(k_maxDescriptorBindingIndex, m_deviceProperties.limits.maxPerSetDescriptors);
+    maxColorAttachments = std::min(k_maxColorAttachments, m_deviceProperties.limits.maxColorAttachments);
 
     individuallyResetForCommandBuffers = true; //For PC
 
@@ -327,7 +328,7 @@ void VulkanDeviceCaps::initialize()
 
     unifiedMemoryManager = false;
 
-    ASSERT(k_maxFramebufferAttachments <= m_deviceProperties.limits.maxFragmentOutputAttachments, "maxFragmentOutputAttachments less than k_maxFramebufferAttachments");
+    ASSERT(maxColorAttachments <= m_deviceProperties.limits.maxFragmentOutputAttachments, "maxFragmentOutputAttachments less than maxColorAttachments");
     ASSERT(k_maxVertexInputAttributes <= m_deviceProperties.limits.maxVertexInputAttributes, "maxVertexInputAttributes less than k_maxVertexInputAttributes");
     ASSERT(k_maxVertexInputBindings <= m_deviceProperties.limits.maxVertexInputBindings, "maxVertexInputBindings less than k_maxVertexInputBindings");
 

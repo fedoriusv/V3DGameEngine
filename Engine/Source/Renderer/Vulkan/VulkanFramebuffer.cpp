@@ -54,12 +54,13 @@ bool VulkanFramebuffer::create(const RenderPass* pass)
     ASSERT(VulkanDeviceCaps::getInstance()->getPhysicalDeviceLimits().maxFramebufferWidth >= m_size.width &&
         VulkanDeviceCaps::getInstance()->getPhysicalDeviceLimits().maxFramebufferHeight >= m_size.height, "maxFramebufferSize is over range");
 
-    VkRenderPass vkPass = static_cast<const VulkanRenderPass*>(pass)->getHandle();
+
+    const VulkanRenderPass* vkPass = static_cast<const VulkanRenderPass*>(pass);
     m_imageViews.reserve(m_images.size());
-    for (auto& attach : m_images)
+    for (u32 attach = 0; attach < m_images.size(); ++attach)
     {
-        const VulkanImage* vkImage = static_cast<const VulkanImage*>(attach);
-        m_imageViews.push_back(vkImage->getImageView());
+        const VulkanImage* vkImage = static_cast<const VulkanImage*>(m_images[attach]);
+        m_imageViews.push_back(vkImage->getImageView(vkPass->getAttachmentDescription(attach)._layer));
 
         if (VulkanImage::isColorFormat(vkImage->getFormat()))
         {
@@ -85,7 +86,7 @@ bool VulkanFramebuffer::create(const RenderPass* pass)
     framebufferCreateInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
     framebufferCreateInfo.pNext = nullptr;
     framebufferCreateInfo.flags = 0;
-    framebufferCreateInfo.renderPass = vkPass;
+    framebufferCreateInfo.renderPass = vkPass->getHandle();
     framebufferCreateInfo.attachmentCount = static_cast<u32>(m_imageViews.size());
     framebufferCreateInfo.pAttachments = m_imageViews.data();
     framebufferCreateInfo.width = m_size.width;

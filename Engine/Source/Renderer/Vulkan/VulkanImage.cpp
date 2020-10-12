@@ -814,13 +814,13 @@ VulkanImage::VulkanImage(VulkanMemory::VulkanMemoryAllocator* memory, VkDevice d
 #endif //DEBUG_OBJECT_MEMORY
 }
 
-VulkanImage::VulkanImage(VulkanMemory::VulkanMemoryAllocator* memory, VkDevice device, VkFormat format, VkExtent3D dimension, VkSampleCountFlagBits samples, TextureUsageFlags usage, const std::string& name) noexcept
+VulkanImage::VulkanImage(VulkanMemory::VulkanMemoryAllocator* memory, VkDevice device, VkFormat format, VkExtent3D dimension, VkSampleCountFlagBits samples, u32 layers, TextureUsageFlags usage, const std::string& name) noexcept
     : m_device(device)
     , m_type(VK_IMAGE_TYPE_2D)
     , m_format(format)
     , m_dimension(dimension)
     , m_mipsLevel(1)
-    , m_layersLevel(1)
+    , m_layersLevel(layers)
 
     , m_samples(samples)
     , m_tiling(VK_IMAGE_TILING_OPTIMAL)
@@ -847,14 +847,14 @@ VulkanImage::VulkanImage(VulkanMemory::VulkanMemoryAllocator* memory, VkDevice d
         if (VulkanImage::isColorFormat(m_format))
         {
             ASSERT(samples > VkSampleCountFlagBits::VK_SAMPLE_COUNT_1_BIT, "wrong sample count");
-            m_resolveImage = new VulkanImage(memory, device, format, dimension, VkSampleCountFlagBits::VK_SAMPLE_COUNT_1_BIT, usage & ~TextureUsage_Resolve);
+            m_resolveImage = new VulkanImage(memory, device, format, dimension, VkSampleCountFlagBits::VK_SAMPLE_COUNT_1_BIT, layers, usage & ~TextureUsage_Resolve);
         }
         else
         {
             if (VulkanDeviceCaps::getInstance()->supportDepthAutoResolve)
             {
                 ASSERT(samples > VkSampleCountFlagBits::VK_SAMPLE_COUNT_1_BIT, "wrong sample count");
-                m_resolveImage = new VulkanImage(memory, device, format, dimension, VkSampleCountFlagBits::VK_SAMPLE_COUNT_1_BIT, usage & ~TextureUsage_Resolve);
+                m_resolveImage = new VulkanImage(memory, device, format, dimension, VkSampleCountFlagBits::VK_SAMPLE_COUNT_1_BIT, layers, usage & ~TextureUsage_Resolve);
             }
             else
             {
@@ -1874,7 +1874,7 @@ bool VulkanImage::createViewImage()
             imageViewCreateInfo.pNext = nullptr;
             imageViewCreateInfo.flags = 0;
             imageViewCreateInfo.image = m_image;
-            imageViewCreateInfo.viewType = convertImageTypeToImageViewType(m_type, m_layersLevel == 6U, m_layersLevel > 1);
+            imageViewCreateInfo.viewType = convertImageTypeToImageViewType(m_type, false, m_layersLevel > 1);
             imageViewCreateInfo.format = m_format;
             imageViewCreateInfo.components = { VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A };
             imageViewCreateInfo.subresourceRange = VulkanImage::makeImageSubresourceRange(this, layer);

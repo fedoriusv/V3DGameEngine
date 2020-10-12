@@ -572,7 +572,7 @@ void CommandList::setRenderTarget(RenderTargetState* rendertarget)
         RenderPass::RenderPassInfo& renderPassInfo = renderTargetInfo._renderpassInfo;
         renderPassInfo._tracker = &rendertarget->m_trackerRenderpass;
         renderTargetInfo._framebufferInfo._tracker = &rendertarget->m_trackerFramebuffer;
-        rendertarget->extractRenderTargetInfo(renderPassInfo._value._desc, renderTargetInfo._framebufferInfo._images, renderTargetInfo._framebufferInfo._clearInfo);
+        rendertarget->extractRenderTargetInfo(renderPassInfo._desc, renderTargetInfo._framebufferInfo._images, renderTargetInfo._framebufferInfo._clearInfo);
 
         if (CommandList::isImmediate())
         {

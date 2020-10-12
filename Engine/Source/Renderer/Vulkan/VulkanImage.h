@@ -19,7 +19,7 @@ namespace vk
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
-    * VulkanImage final class. Vulkan Render side
+    * @brief VulkanImage final class. Vulkan Render side
     */
     class VulkanImage final : public Image, public VulkanResource
     {
@@ -29,7 +29,7 @@ namespace vk
         VulkanImage(const VulkanImage&) = delete;
 
         VulkanImage(VulkanMemory::VulkanMemoryAllocator* memory, VkDevice device, VkImageType type, VkFormat format, VkExtent3D dimension, u32 layers, u32 mipsLevel, VkImageTiling tiling, TextureUsageFlags usage, [[maybe_unused]] const std::string& name = "") noexcept;
-        VulkanImage(VulkanMemory::VulkanMemoryAllocator* memory, VkDevice device, VkFormat format, VkExtent3D dimension, VkSampleCountFlagBits samples, TextureUsageFlags usage, [[maybe_unused]] const std::string& name = "") noexcept;
+        VulkanImage(VulkanMemory::VulkanMemoryAllocator* memory, VkDevice device, VkFormat format, VkExtent3D dimension, VkSampleCountFlagBits samples, u32 layers, TextureUsageFlags usage, [[maybe_unused]] const std::string& name = "") noexcept;
         ~VulkanImage();
 
         bool create() override;

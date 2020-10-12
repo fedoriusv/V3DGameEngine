@@ -78,13 +78,45 @@ VkImageLayout VulkanRenderPass::convertTransitionStateToImageLayout(TransitionOp
 }
 
 
-VulkanRenderPass::VulkanRenderPass(VkDevice device, const std::vector<VulkanAttachmentDescription>& desc)
-    : m_device(device)
+VulkanRenderPass::VulkanRenderPass(VkDevice device, const RenderPassDescription& description) noexcept
+    : RenderPass(description)
+    , m_device(device)
     , m_renderpass(VK_NULL_HANDLE)
-
-    , m_descriptions(desc)
 {
     LOG_DEBUG("VulkanRenderPass::VulkanRenderPass constructor %llx", this);
+
+    u32 countAttachments = (description._desc._hasDepthStencilAttahment) ? description._desc._countColorAttachments + 1 : description._desc._countColorAttachments;
+    m_descriptions.resize(countAttachments);
+    for (u32 index = 0; index < description._desc._countColorAttachments; ++index)
+    {
+        VulkanRenderPass::VulkanAttachmentDescription& desc = m_descriptions[index];
+        desc._format = VulkanImage::convertImageFormatToVkFormat(description._desc._attachments[index]._format);
+        desc._samples = VulkanImage::convertRenderTargetSamplesToVkSampleCount(description._desc._attachments[index]._samples);
+        desc._loadOp = VulkanRenderPass::convertAttachLoadOpToVkAttachmentLoadOp(description._desc._attachments[index]._loadOp);
+        desc._storeOp = VulkanRenderPass::convertAttachStoreOpToVkAttachmentStoreOp(description._desc._attachments[index]._storeOp);
+        desc._initialLayout = VulkanRenderPass::convertTransitionStateToImageLayout(description._desc._attachments[index]._initTransition);
+        desc._finalLayout = VulkanRenderPass::convertTransitionStateToImageLayout(description._desc._attachments[index]._finalTransition);
+        desc._layer = AttachmentDescription::uncompressLayer(description._desc._attachments[index]._layer);
+        desc._swapchainImage = (description._desc._attachments[index]._internalTarget) ? true : false;
+        desc._autoResolve = (description._desc._attachments[index]._autoResolve) ? true : false;
+    }
+
+    if (description._desc._hasDepthStencilAttahment)
+    {
+        VulkanRenderPass::VulkanAttachmentDescription& desc = m_descriptions.back();
+        desc._format = VulkanImage::convertImageFormatToVkFormat(description._desc._attachments.back()._format);
+        desc._samples = VulkanImage::convertRenderTargetSamplesToVkSampleCount(description._desc._attachments.back()._samples);
+        desc._loadOp = VulkanRenderPass::convertAttachLoadOpToVkAttachmentLoadOp(description._desc._attachments.back()._loadOp);
+        desc._storeOp = VulkanRenderPass::convertAttachStoreOpToVkAttachmentStoreOp(description._desc._attachments.back()._storeOp);
+        desc._stencilLoadOp = VulkanRenderPass::convertAttachLoadOpToVkAttachmentLoadOp(description._desc._attachments.back()._stencilLoadOp);
+        desc._stensilStoreOp = VulkanRenderPass::convertAttachStoreOpToVkAttachmentStoreOp(description._desc._attachments.back()._stencilStoreOp);
+        desc._initialLayout = VulkanRenderPass::convertTransitionStateToImageLayout(description._desc._attachments.back()._initTransition);
+        desc._finalLayout = VulkanRenderPass::convertTransitionStateToImageLayout(description._desc._attachments.back()._finalTransition);
+        desc._layer = AttachmentDescription::uncompressLayer(description._desc._attachments.back()._layer);
+        desc._swapchainImage = (description._desc._attachments.back()._internalTarget) ? true : false;
+        desc._autoResolve = (description._desc._attachments.back()._autoResolve) ? true : false;
+    }
+
 #if VULKAN_DEBUG_MARKERS
     m_debugName = std::to_string(reinterpret_cast<const u64>(this));
 #endif //VULKAN_DEBUG_MARKERS
@@ -100,6 +132,12 @@ VkRenderPass VulkanRenderPass::getHandle() const
 {
     ASSERT(m_renderpass != VK_NULL_HANDLE, "nullptr");
     return m_renderpass;
+}
+
+const VulkanRenderPass::VulkanAttachmentDescription& VulkanRenderPass::getAttachmentDescription(u32 index) const
+{
+    ASSERT(index < m_descriptions.size(), "range out");
+    return m_descriptions[index];
 }
 
 bool VulkanRenderPass::create()

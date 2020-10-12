@@ -12,13 +12,16 @@ namespace v3d
 {
 namespace renderer
 {
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
+
     class Texture2D;
+    class TextureCube;
     class Backbuffer;
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
-    * RenderTargetState class. Game side
+    * @brief RenderTargetState class. Game side
     */
     class RenderTargetState : public Object
     {
@@ -28,6 +31,9 @@ namespace renderer
         RenderTargetState(const RenderTargetState&) = delete;
         ~RenderTargetState();
 
+        /**
+        * @brief ColorOpState struct
+        */
         struct ColorOpState
         {
             ColorOpState()
@@ -49,6 +55,9 @@ namespace renderer
             const core::Vector4D    _clearColor;
         };
 
+        /**
+        * @brief DepthOpState struct
+        */
         struct DepthOpState
         {
             DepthOpState()
@@ -70,6 +79,9 @@ namespace renderer
             f32                  _clearDepth;
         };
 
+        /**
+        * @brief StencilOpState struct
+        */
         struct StencilOpState
         {
             StencilOpState()
@@ -91,6 +103,9 @@ namespace renderer
             u32                  _clearStencil;
         };
 
+        /**
+        * @brief TransitionState struct
+        */
         struct TransitionState
         {
             TransitionState(TransitionOp initialState, TransitionOp finalState)
@@ -104,31 +119,185 @@ namespace renderer
         };
 
 
+        /**
+        * @brief setColorTexture method. Used to adding a color attachment to a render target
+        *
+        * @param u32 index [required]. Attaches the texture to index slot in a shader
+        * @param Texture2D* colorTexture [required]
+        * @param RenderTargetLoadOp loadOp [optional]
+        * @param RenderTargetStoreOp storeOp [optional]
+        * @param const core::Vector4D& clearColor [optional]
+        * 
+        * @return true if compatibility is successed
+        */
         bool setColorTexture(u32 index, Texture2D* colorTexture,
             RenderTargetLoadOp loadOp = RenderTargetLoadOp::LoadOp_Clear, RenderTargetStoreOp storeOp = RenderTargetStoreOp::StoreOp_Store,
             const core::Vector4D& clearColor = core::Vector4D(0.f));
 
+        /**
+        * @brief setColorTexture method. Used to adding a backbuffer to a render target
+        *
+        * @param u32 index [required]. Attaches the backbuffer to index slot in a shader
+        * @param Backbuffer* swapchainTexture [required]
+        * @param RenderTargetLoadOp loadOp [optional]
+        * @param RenderTargetStoreOp storeOp [optional]
+        * @param const core::Vector4D& clearColor [optional]
+        *
+        * @return true if compatibility is successed
+        */
         bool setColorTexture(u32 index, Backbuffer* swapchainTexture,
             RenderTargetLoadOp loadOp = RenderTargetLoadOp::LoadOp_Clear, RenderTargetStoreOp storeOp = RenderTargetStoreOp::StoreOp_Store,
             const core::Vector4D& clearColor = core::Vector4D(0.f));
 
+        /**
+        * @brief setColorTexture method. Used to adding a color attachment of cubemap to render target
+        *
+        * @param u32 index [required]. Attaches the cubemap texture to index slot in a shader
+        * @param Texture2D* colorCubeTexture [required]
+        * @param s32 layer [required]
+        * @param RenderTargetLoadOp loadOp [optional]
+        * @param RenderTargetStoreOp storeOp [optional]
+        * @param const core::Vector4D& clearColor [optional]
+        *
+        * @return true if compatibility is successed
+        */
+        bool setColorTexture(u32 index, TextureCube* colorCubeTexture, s32 layer,
+            RenderTargetLoadOp loadOp = RenderTargetLoadOp::LoadOp_Clear, RenderTargetStoreOp storeOp = RenderTargetStoreOp::StoreOp_Store,
+            const core::Vector4D& clearColor = core::Vector4D(0.f));
+
+        /**
+        * @brief setDepthStencilTexture method. Used to adding a depth-stencil attachment to a render target
+        *
+        * @param Texture2D* depthStencilTexture [required]
+        * @param RenderTargetLoadOp depthLoadOp [optional]
+        * @param RenderTargetStoreOp depthStoreOp [optional]
+        * @param f32 clearDepth [optional]
+        * @param RenderTargetLoadOp stencilLoadOp [optional]
+        * @param RenderTargetStoreOp stencilStoreOp [optional]
+        * @param f32 clearStencil [optional]
+        * 
+        * @return true if compatibility is successed
+        */
         bool setDepthStencilTexture(Texture2D* depthStencilTexture, 
             RenderTargetLoadOp depthLoadOp = RenderTargetLoadOp::LoadOp_DontCare, RenderTargetStoreOp depthStoreOp = RenderTargetStoreOp::StoreOp_DontCare,
             f32 clearDepth = 1.0f,
             RenderTargetLoadOp stencilLoadOp = RenderTargetLoadOp::LoadOp_DontCare, RenderTargetStoreOp stencilStoreOp = RenderTargetStoreOp::StoreOp_DontCare,
             u32 clearStencil = 0);
 
+        /**
+        * @brief setDepthStencilTexture method. Used to adding a depth-stencil attachment of cubemap to a render target
+        *
+        * @param TextureCube* depthStencilCubeTexture [required]
+        * @param s32 layer [required]
+        * @param RenderTargetLoadOp depthLoadOp [optional]
+        * @param RenderTargetStoreOp depthStoreOp [optional]
+        * @param f32 clearDepth [optional]
+        * @param RenderTargetLoadOp stencilLoadOp [optional]
+        * @param RenderTargetStoreOp stencilStoreOp [optional]
+        * @param f32 clearStencil [optional]
+        *
+        * @return true if compatibility is successed
+        */
+        bool setDepthStencilTexture(TextureCube* depthStencilCubeTexture, s32 layer,
+            RenderTargetLoadOp depthLoadOp = RenderTargetLoadOp::LoadOp_DontCare, RenderTargetStoreOp depthStoreOp = RenderTargetStoreOp::StoreOp_DontCare,
+            f32 clearDepth = 1.0f,
+            RenderTargetLoadOp stencilLoadOp = RenderTargetLoadOp::LoadOp_DontCare, RenderTargetStoreOp stencilStoreOp = RenderTargetStoreOp::StoreOp_DontCare,
+            u32 clearStencil = 0);
+
+        /**
+        * @brief setColorTexture method. Used to adding a color attachment to a render target
+        *
+        * @param u32 index [required]. Attaches the texture to index slot in a shader
+        * @param Texture2D* colorTexture [required]
+        * @param const ColorOpState& colorOpState [required]
+        * @param const TransitionState& tansitionState [required]
+        * @see TransitionState
+        *
+        * @return true if compatibility is successed
+        */
         bool setColorTexture(u32 index, Texture2D* colorTexture, 
             const ColorOpState& colorOpState, const TransitionState& tansitionState);
 
+        /**
+        * @brief setColorTexture method. Used to adding a backbuffer to a render target
+        *
+        * @param u32 index [required]. Attaches the backbuffer to index slot in a shader
+        * @param Backbuffer* swapchainTexture [required]
+        * @param const ColorOpState& colorOpState [required]
+        * @param const TransitionState& tansitionState [required]
+        * @see TransitionState
+        *
+        * @return true if compatibility is successed
+        */
         bool setColorTexture(u32 index, Backbuffer* swapchainTexture,
             const ColorOpState& colorOpState, const TransitionState& tansitionState);
 
+        /**
+        * @brief setColorTexture method. Used to adding a color attachment of cubemap layer to a render target
+        *
+        * @param u32 index [required]. Attaches the texture to index slot in a shader
+        * @param TextureCube* colorCubeTexture [required]
+        * @param s32 layer [required]
+        * @param const ColorOpState& colorOpState [required]
+        * @param const TransitionState& tansitionState [required]
+        * @see TransitionState
+        *
+        * @return true if compatibility is successed
+        */
+        bool setColorTexture(u32 index, TextureCube* colorCubeTexture, s32 layer,
+            const ColorOpState& colorOpState, const TransitionState& tansitionState);
+
+        /**
+        * @brief setDepthStencilTexture method. Used to adding a depth-stencil attachment to a render target
+        *
+        * @param Texture2D* depthStencilTexture [required]
+        * @param const DepthOpState& depthOpState [required]
+        * @param const StencilOpState& stencilOpState [required]
+        * @param const TransitionState& tansitionState [required]
+        * @see TransitionState
+        *
+        * @return true if compatibility is successed
+        */
         bool setDepthStencilTexture(Texture2D* depthStencilTexture,
             const DepthOpState& depthOpState, const StencilOpState& stencilOpState, const TransitionState& tansitionState);
 
-        Texture2D* getColorTexture(u32 index) const;
-        Texture2D* getDepthStencilTexture() const;
+        /**
+        * @brief setDepthStencilTexture method. Used to adding a depth-stencil attachment of cubemap layer to a render target
+        *
+        * @param Texture2D* depthStencilTexture [required]
+        * @param s32 layer [required]
+        * @param const DepthOpState& depthOpState [required]
+        * @param const StencilOpState& stencilOpState [required]
+        * @param const TransitionState& tansitionState [required]
+        * @see TransitionState
+        *
+        * @return true if compatibility is successed
+        */
+        bool setDepthStencilTexture(TextureCube* depthStencilCubeTexture, s32 layer,
+            const DepthOpState& depthOpState, const StencilOpState& stencilOpState, const TransitionState& tansitionState);
+
+        template<class TTexture>
+        TTexture* getColorTexture(u32 index) const
+        {
+            ASSERT(index < m_colorTextures.size(), "out of range");
+
+            static_assert(std::is_base_of<Texture, TTexture>(), "wrong type");
+            auto attachment = m_colorTextures.find(index);
+            if (attachment == m_colorTextures.cend())
+            {
+                return nullptr;
+            }
+
+            return static_cast<TTexture*>(std::get<0>((*attachment).second));
+        }
+        
+        template<class TTexture>
+        TTexture* getDepthStencilTexture() const
+        {
+            static_assert(std::is_base_of<Texture, TTexture>(), "wrong type");
+            return static_cast<TTexture*>(std::get<0>(m_depthStencilTexture));
+        }
+
         const core::Dimension2D& getDimension() const;
 
         u32 getColorTextureCount() const;
@@ -136,19 +305,28 @@ namespace renderer
 
     private:
 
-        RenderTargetState(renderer::CommandList& cmdList, const core::Dimension2D& size, [[maybe_unused]] const std::string& name = "") noexcept;
+        /**
+        * @brief RenderTargetState constructor. Used for creating a render target
+        * Private method. Use createObject interface inside CommandList class to call.
+        *
+        * @param const core::Dimension2D& size [required]
+        * @param const std::string& name [optional]
+        */
+        RenderTargetState(CommandList& cmdList, const core::Dimension2D& size, [[maybe_unused]] const std::string& name = "") noexcept;
 
         void extractRenderTargetInfo(RenderPassDescription& renderpassDesc, std::vector<Image*>& attachments, Framebuffer::ClearValueInfo& clearInfo) const;
         void destroyFramebuffers(const std::vector<Framebuffer*>& framebuffers);
         void destroyRenderPasses(const std::vector<RenderPass*>& renderPasses);
+
+        bool checkCompatibility(Texture* texture, AttachmentDescription& desc);
 
         friend CommandList;
         CommandList& m_cmdList;
 
         core::Dimension2D m_size;
 
-        std::map<u32, std::tuple<Texture2D*, renderer::AttachmentDescription, core::Vector4D>>   m_colorTextures;
-        std::tuple<Texture2D*, renderer::AttachmentDescription, f32, u32>                        m_depthStencilTexture;
+        std::map<u32, std::tuple<Texture*, renderer::AttachmentDescription, core::Vector4D>> m_colorTextures;
+        std::tuple<Texture*, renderer::AttachmentDescription, f32, u32>                      m_depthStencilTexture;
 
         ObjectTracker<Framebuffer>  m_trackerFramebuffer;
         ObjectTracker<RenderPass>   m_trackerRenderpass;
@@ -157,14 +335,15 @@ namespace renderer
      /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
-    * Backbuffer class
+    * @brief Backbuffer class. Wraps swapchain images
     */
     class Backbuffer : public Object
     {
     public:
 
-        ~Backbuffer();
+        Backbuffer() = delete;
         Backbuffer(const Backbuffer&) = delete;
+        ~Backbuffer();
 
         const core::Dimension2D& getDimension() const;
         renderer::Format         getFormat() const;
@@ -174,6 +353,10 @@ namespace renderer
 
     private:
 
+        /**
+        * @brief Backbuffer constructor. Used for creating a backbuffer.
+        * Private method. Creates inside CommandList object.
+        */
         Backbuffer(renderer::CommandList& cmdList) noexcept;
 
         friend CommandList;

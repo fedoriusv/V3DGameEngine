@@ -303,17 +303,7 @@ bool ShaderProgram::bindTexture(ShaderType shaderType, u32 index, TextureTarget 
     index = param->second;
 #endif //USE_STRING_ID_SHADER
     ASSERT(texture, "nullptr");
-    Image* image = nullptr;
-    switch (target)
-    {
-    case TextureTarget::Texture2D:
-        image = static_cast<const Texture2D*>(texture)->m_image;
-        break;
-
-    default:
-        break;
-    }
-
+    Image* image = texture->getImage();
     if (!image)
     {
         ASSERT(false, "image nullptr");
@@ -373,17 +363,7 @@ bool ShaderProgram::bindSampledTexture(ShaderType shaderType, u32 index, Texture
     index = param->second;
 #endif //USE_STRING_ID_SHADER
     ASSERT(texture, "nullptr");
-    Image* image = nullptr;
-    switch (target)
-    {
-    case TextureTarget::Texture2D:
-        image = static_cast<const Texture2D*>(texture)->m_image;
-        break;
-
-    default:
-        break;
-    }
-
+    Image* image = texture->getImage();
     if (!image)
     {
         ASSERT(false, "image nullptr");

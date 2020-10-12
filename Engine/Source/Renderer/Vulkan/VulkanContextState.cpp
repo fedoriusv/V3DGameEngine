@@ -108,7 +108,7 @@ bool VulkanContextState::setCurrentFramebuffer(std::vector<VulkanFramebuffer*>& 
     return changed;
 }
 
-bool VulkanContextState::setCurrentPipeline(VulkanGraphicPipeline * pipeline)
+bool VulkanContextState::setCurrentPipeline(VulkanGraphicPipeline* pipeline)
 {
     bool changed = !VulkanContextState::isCurrentPipeline(pipeline);
     m_currentPipeline.first = pipeline;
