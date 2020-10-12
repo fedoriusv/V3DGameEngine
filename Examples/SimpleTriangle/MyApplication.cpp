@@ -67,9 +67,9 @@ int MyApplication::Execute()
 
 void MyApplication::Initialize()
 {
-    m_Context = renderer::Context::createContext(m_Window, renderer::Context::RenderType::VulkanRender);
+    m_Context = renderer::Context::createContext(m_Window, renderer::Context::RenderType::DirectXRender);
     ASSERT(m_Context, "context is nullptr");
-    m_CommandList = new renderer::CommandList(m_Context, renderer::CommandList::CommandListType::DelayedCommandList);
+    m_CommandList = new renderer::CommandList(m_Context, renderer::CommandList::CommandListType::ImmediateCommandList);
 
     m_Triangle->init(m_CommandList, m_Window->getSize());
 }

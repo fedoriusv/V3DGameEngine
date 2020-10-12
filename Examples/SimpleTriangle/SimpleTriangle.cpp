@@ -76,6 +76,7 @@ void SimpleTriangle::init(v3d::renderer::CommandList* commandList, const core::D
         vertexHeader._shaderVersion = renderer::ShaderHeader::ShaderModel::ShaderModel_HLSL_5_1;
 
         vertShader = resource::ResourceLoaderManager::getInstance()->composeShader<renderer::Shader, resource::ShaderSourceStreamLoader>(m_CommandList->getContext(), "vertex", &vertexHeader, vertexStream);
+        delete vertexStream;
     }
 
     const renderer::Shader* fragShader = nullptr;
@@ -98,6 +99,7 @@ void SimpleTriangle::init(v3d::renderer::CommandList* commandList, const core::D
         fragmentHeader._shaderLang = renderer::ShaderHeader::ShaderLang::ShaderLang_HLSL;
 
         fragShader = resource::ResourceLoaderManager::getInstance()->composeShader<renderer::Shader, resource::ShaderSourceStreamLoader>(m_CommandList->getContext(), "fragment", &fragmentHeader, fragmentStream);
+        delete fragmentStream;
     }
 
     ASSERT(vertShader && fragShader, "nullptr");
@@ -184,7 +186,7 @@ void SimpleTriangle::render()
 
 void SimpleTriangle::terminate()
 {
-    renderer::Texture2D* depthAttachment = m_RenderTarget->getDepthStencilTexture();
+    renderer::Texture2D* depthAttachment = m_RenderTarget->getDepthStencilTexture<renderer::Texture2D>();
     if (depthAttachment)
     {
         delete depthAttachment;

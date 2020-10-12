@@ -394,9 +394,9 @@ void MyApplication::Exit()
         m_LightDebug.Free();
         m_AxisDebug.Free();
     }
-    if (m_RenderTarget->getDepthStencilTexture())
+    if (m_RenderTarget->hasDepthStencilTexture())
     {
-        renderer::Texture2D* depthAttachment = m_RenderTarget->getDepthStencilTexture();
+        renderer::Texture2D* depthAttachment = m_RenderTarget->getDepthStencilTexture<renderer::Texture2D>();
         delete depthAttachment;
     }
     m_RenderTarget = nullptr;
