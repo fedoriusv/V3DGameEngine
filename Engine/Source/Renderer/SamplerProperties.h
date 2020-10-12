@@ -10,6 +10,9 @@ namespace renderer
 {
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    /**
+    * @brief SamplerFilter enum
+    */
     enum SamplerFilter : u32
     {
         SamplerFilter_Nearest = 0,
@@ -18,6 +21,9 @@ namespace renderer
         SamplerFilter_Cubic
     };
 
+    /**
+    * @brief SamplerAnisotropic enum class
+    */
     enum class SamplerAnisotropic : u32
     {
         SamplerAnisotropic_None = 0,
@@ -27,6 +33,9 @@ namespace renderer
         SamplerAnisotropic_16x = 1 << 4,
     };
 
+    /**
+    * @brief SamplerWrap enum class
+    */
     enum class SamplerWrap : u32
     {
         TextureWrap_Repeat = 0,
@@ -39,7 +48,7 @@ namespace renderer
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
-    * SamplerDescription. The struct describes sampler parameters
+    * @brief SamplerDescription. The struct describes sampler parameters
     */
     struct SamplerDescription
     {
@@ -67,7 +76,7 @@ namespace renderer
 
         struct Hash
         {
-            u64 operator()(const SamplerDescription& other) const;
+            u32 operator()(const SamplerDescription& desc) const;
         };
 
         struct Compare
@@ -79,12 +88,10 @@ namespace renderer
 
     private:
 
-        mutable u64                 _hash;
+        mutable u32                 _hash;
         mutable bool                _dirty;
 
         void recalculateHash() const;
-
-
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

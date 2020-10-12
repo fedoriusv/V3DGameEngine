@@ -10,18 +10,23 @@ namespace v3d
 {
 namespace renderer
 {
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
+
     class Context;
     class SamplerManager;
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
-    * Sampler base class. Render side
+    * @brief Sampler base class. Render side
     */
     class Sampler : public RenderObject<Sampler>, public utils::Observable
     {
     public:
 
+        /**
+        * @brief SamplerInfo struct
+        */
         struct SamplerInfo
         {
             SamplerInfo() noexcept
@@ -33,7 +38,7 @@ namespace renderer
             ObjectTracker<Sampler>* _tracker;
         };
 
-        Sampler(const SamplerDescription& desc) noexcept;
+        explicit Sampler(const SamplerDescription& desc) noexcept;
         virtual ~Sampler();
 
         virtual bool create() = 0;
@@ -47,8 +52,8 @@ namespace renderer
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-     /**
-    * SamplerManager class
+    /**
+    * @brief SamplerManager class
     */
     class SamplerManager final : utils::Observer
     {

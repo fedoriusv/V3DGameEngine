@@ -31,18 +31,18 @@ void SamplerDescription::dirty()
 
 void SamplerDescription::recalculateHash() const
 {
-    _hash = crc32c::Crc32c(reinterpret_cast<const u8*>(&_desc), sizeof(GraphicsPipelineStateDescription));
+    _hash = crc32c::Crc32c(reinterpret_cast<const u8*>(&_desc), sizeof(SamplerDescription::SamplerDesc));
     _dirty = false;
 }
 
-u64 SamplerDescription::Hash::operator()(const SamplerDescription& other) const
+u32 SamplerDescription::Hash::operator()(const SamplerDescription& desc) const
 {
-    if (other._dirty)
+    if (desc._dirty)
     {
-        other.recalculateHash();
+        desc.recalculateHash();
     }
 
-    return other._hash;
+    return desc._hash;
 }
 
 bool SamplerDescription::Compare::operator()(const SamplerDescription& op1, const SamplerDescription& op2) const
