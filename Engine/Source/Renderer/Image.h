@@ -2,20 +2,22 @@
 
 #include "Common.h"
 #include "Utils/Observable.h"
-#include "Utils/IndexGenerator.h"
+#include "Utils/ResourceID.h"
 
 namespace v3d
 {
 namespace renderer
 {
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
+
     class Context;
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
-    * Image base class. Render side
+    * @brief Image base class. Render side
     */
-    class Image : public utils::Observable, public utils::IndexGenerator
+    class Image : public utils::Observable, public utils::ResourceID<Image, u64>
     {
     public:
 
