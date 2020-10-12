@@ -69,9 +69,23 @@ void CameraHelper::setPosition(const core::Vector3D& position)
     m_camera->m_matricesFlag |= Camera::CameraState::CameraState_View;
 }
 
+void CameraHelper::setTarget(const core::Vector3D& target)
+{
+    ASSERT(m_camera, "nullptr");
+    m_camera->setTarget(target);
+
+    m_needUpdate = true;
+}
+
 const core::Vector3D& CameraHelper::getPosition() const
 {
     return m_transform.getPosition();
+}
+
+const core::Vector3D& CameraHelper::getTarget() const
+{
+    ASSERT(m_camera, "nullptr");
+    return m_camera->getTarget();
 }
 
 const core::Matrix4D& CameraHelper::getProjectionMatrix() const

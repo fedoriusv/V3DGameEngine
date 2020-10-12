@@ -27,7 +27,11 @@ namespace scene
         const Camera& getCamera() const;
 
         void setPosition(const core::Vector3D& position);
+        void setTarget(const core::Vector3D& target);
+
         const core::Vector3D& getPosition() const;
+        const core::Vector3D& getTarget() const;
+
         const core::Matrix4D& getProjectionMatrix() const;
         const core::Matrix4D& getViewMatrix() const;
         const core::Vector3D& getViewPosition() const;
