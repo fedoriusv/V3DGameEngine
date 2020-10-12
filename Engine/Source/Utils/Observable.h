@@ -10,17 +10,24 @@ namespace utils
 
     class Observable;
 
+    /**
+    * @brief Observer interface.
+    */
     class Observer
     {
     public:
 
         Observer() = default;
         virtual ~Observer() = default;
+
         virtual void handleNotify(Observable* obj) = 0;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    /**
+    * @brief Observable class.
+    */
     class Observable
     {
     public:
@@ -34,7 +41,6 @@ namespace utils
         void unregisterAll();
 
         void notifyObservers();
-
 
     private:
 
