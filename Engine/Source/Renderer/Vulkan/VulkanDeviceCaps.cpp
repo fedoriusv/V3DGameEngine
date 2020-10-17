@@ -162,7 +162,7 @@ void VulkanDeviceCaps::fillCapabilitiesList(const DeviceInfo* info)
     };
 
     ASSERT(isEnableExtension(VK_KHR_MAINTENANCE2_EXTENSION_NAME), "required VK_KHR_maintenance2 extension");
-    supportRenderpass2 = isEnableExtension(VK_KHR_CREATE_RENDERPASS_2_EXTENSION_NAME);
+    supportRenderpass2 = false;//isEnableExtension(VK_KHR_CREATE_RENDERPASS_2_EXTENSION_NAME);
     enableSamplerMirrorClampToEdge = isEnableExtension(VK_KHR_SAMPLER_MIRROR_CLAMP_TO_EDGE_EXTENSION_NAME);
     supportDepthAutoResolve = isEnableExtension(VK_KHR_DEPTH_STENCIL_RESOLVE_EXTENSION_NAME);
     supportDedicatedAllocation = false;//isEnableExtension(VK_KHR_DEDICATED_ALLOCATION_EXTENSION_NAME); //TODO
@@ -231,7 +231,7 @@ void VulkanDeviceCaps::fillCapabilitiesList(const DeviceInfo* info)
 
 
 #ifdef VK_KHR_depth_stencil_resolve
-            supportDepthAutoResolve = physicalDeviceDepthStencilResolveProperties.supportedDepthResolveModes != VK_RESOLVE_MODE_NONE_KHR;
+            supportDepthAutoResolve = supportRenderpass2 && physicalDeviceDepthStencilResolveProperties.supportedDepthResolveModes != VK_RESOLVE_MODE_NONE_KHR;
 #endif // VK_KHR_depth_stencil_resolve
         }
     }
@@ -287,7 +287,7 @@ void VulkanDeviceCaps::fillCapabilitiesList(const DeviceInfo* info)
     //VK_EXT_memory_budget
     //VK_EXT_memory_priority
 
-    LOG_INFO("VulkanDeviceCaps::initialize: API version: %u", m_deviceProperties.apiVersion);
+    LOG_INFO("VulkanDeviceCaps::initialize: API version: %u (%u.%u.%u)", m_deviceProperties.apiVersion, VK_VERSION_MAJOR(m_deviceProperties.apiVersion), VK_VERSION_MINOR(m_deviceProperties.apiVersion), VK_VERSION_PATCH(m_deviceProperties.apiVersion));
     LOG_INFO("VulkanDeviceCaps::initialize: Driver version: %u", m_deviceProperties.driverVersion);
     LOG_INFO("VulkanDeviceCaps::initialize: Vendor ID: %u", m_deviceProperties.vendorID);
     LOG_INFO("VulkanDeviceCaps::initialize: Device ID: %u", m_deviceProperties.deviceID);
@@ -310,6 +310,13 @@ void VulkanDeviceCaps::fillCapabilitiesList(const DeviceInfo* info)
     {
         LOG_INFO("VulkanDeviceCaps::initialize:    memoryType [heapIndex %u, propertyFlags %d]", m_deviceMemoryProps.memoryTypes[i].heapIndex, m_deviceMemoryProps.memoryTypes[i].propertyFlags);
     }
+
+#if defined(PLATFORM_ANDROID)
+#   ifdef VK_QCOM_render_pass_transform
+    renderpassTransformQCOM = isEnableExtension(VK_QCOM_RENDER_PASS_TRANSFORM_EXTENSION_NAME);
+    LOG_INFO("VulkanDeviceCaps::initialize renderpassTransformQCOM is %u", renderpassTransformQCOM);
+#   endif //VK_QCOM_render_pass_transform
+#endif
 }
 
 void VulkanDeviceCaps::initialize()

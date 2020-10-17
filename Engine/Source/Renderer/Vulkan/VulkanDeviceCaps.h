@@ -58,6 +58,8 @@ namespace vk
         bool enableSamplerMirrorClampToEdge = false;
         bool supportSamplerBorderColor = false;
 
+        bool renderpassTransformQCOM = false;
+
         static bool checkInstanceExtension(const c8* extensionName);
         static bool checkDeviceExtension(VkPhysicalDevice physicalDevice, const c8* extensionName);
 

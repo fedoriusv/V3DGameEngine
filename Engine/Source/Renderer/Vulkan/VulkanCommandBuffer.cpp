@@ -301,6 +301,27 @@ void VulkanCommandBuffer::cmdBeginRenderpass(const VulkanRenderPass* pass, const
     renderPassBeginInfo.clearValueCount = static_cast<u32>(clearValues.size());
     renderPassBeginInfo.pClearValues = clearValues.data();
 
+
+#if defined(PLATFORM_ANDROID)
+#   ifdef VK_QCOM_render_pass_transform
+    VkRenderPassTransformBeginInfoQCOM renderPassTransformBeginInfoQCOM = {};
+    if (VulkanDeviceCaps::getInstance()->renderpassTransformQCOM &&
+        pass->getDescription()._countColorAttachments == 1 && pass->getAttachmentDescription(0)._swapchainImage)
+    {
+        VkSurfaceTransformFlagBitsKHR preTransform = static_cast<VulkanGraphicContext*>(m_context)->getSwapchain()->getTransformFlag();
+        if (preTransform != VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR)
+        {
+            renderPassTransformBeginInfoQCOM.sType = (VkStructureType)VK_STRUCTURE_TYPE_RENDER_PASS_TRANSFORM_BEGIN_INFO_QCOM_;
+            renderPassTransformBeginInfoQCOM.pNext = nullptr;
+            renderPassTransformBeginInfoQCOM.transform = preTransform;
+
+            renderPassBeginInfo.pNext = &renderPassTransformBeginInfoQCOM;
+
+            LOG_DEBUG("VulkanCommandBuffer::VkRenderPassTransformBeginInfoQCOM, transform %d", preTransform);
+        }
+    }
+#   endif
+#endif
     if (VulkanDeviceCaps::getInstance()->supportRenderpass2)
     {
         VkSubpassBeginInfoKHR subpassBeginInfo = {};
@@ -309,10 +330,16 @@ void VulkanCommandBuffer::cmdBeginRenderpass(const VulkanRenderPass* pass, const
         subpassBeginInfo.contents = VK_SUBPASS_CONTENTS_INLINE;
 
         VulkanWrapper::CmdBeginRenderPass2(m_command, &renderPassBeginInfo, &subpassBeginInfo);
+#if VULKAN_DEBUG
+        LOG_DEBUG("VulkanFramebuffer::CmdBeginRenderPass2 area (width %u, height %u)", area.extent.width, area.extent.height);
+#endif
     }
     else
     {
         VulkanWrapper::CmdBeginRenderPass(m_command, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+#if VULKAN_DEBUG
+        LOG_DEBUG("VulkanFramebuffer::CmdBeginRenderPass area (width %u, height %u)", area.extent.width, area.extent.height);
+#endif
     }
 
     m_isInsideRenderPass = true;

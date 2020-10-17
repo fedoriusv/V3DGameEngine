@@ -49,7 +49,7 @@ class TextureRender
 {
 public:
 
-    TextureRender(renderer::CommandList& cmdList, const std::vector<const renderer::Shader*>& shaders, const renderer::VertexInputAttribDescription& vertex) noexcept;
+    TextureRender(renderer::CommandList& cmdList, const v3d::core::Dimension2D& viewport, const std::vector<const renderer::Shader*>& shaders, const renderer::VertexInputAttribDescription& vertex) noexcept;
     ~TextureRender();
 
     void process(renderer::CommandList& cmdList, const std::vector<std::tuple<renderer::StreamBufferDescription, renderer::DrawProperties>>& props);

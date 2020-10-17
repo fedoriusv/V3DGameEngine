@@ -42,13 +42,21 @@ bool createSurfaceWinApi(VkInstance vkInstance, NativeInstance hInstance, Native
 #endif //PLATFORM_WINDOWS
 
 #ifdef PLATFORM_ANDROID
-bool createSurfaceAndroidApi(VkInstance vkInstance, NativeInstance hInstance, NativeWindows hWnd, VkSurfaceKHR& surface)
+bool createSurfaceAndroidApi(VkInstance vkInstance, NativeInstance hInstance, NativeWindows hWnd, VkSurfaceKHR& surface, const core::Dimension2D& size)
 {
+    s32 error = ANativeWindow_setBuffersGeometry(hWnd, size.width, size.height, WINDOW_FORMAT_RGBA_8888);
+    LOG_DEBUG("createSurfaceAndroidApi: ANativeWindow_setBuffersGeometry: { %d, %d } error %d", size.height, size.width, error);
+    if (error)
+    {
+        LOG_FATAL("createSurfaceAndroidApi: ANativeWindow_setBuffersGeometry. Error %d", error);
+        return false;
+    }
+
     VkAndroidSurfaceCreateInfoKHR surfaceCreateInfo = {};
-	surfaceCreateInfo.sType = VK_STRUCTURE_TYPE_ANDROID_SURFACE_CREATE_INFO_KHR;
+    surfaceCreateInfo.sType = VK_STRUCTURE_TYPE_ANDROID_SURFACE_CREATE_INFO_KHR;
     surfaceCreateInfo.pNext = nullptr;
     surfaceCreateInfo.flags = 0;
-	surfaceCreateInfo.window = hWnd;
+    surfaceCreateInfo.window = hWnd;
 
     LOG_DEBUG("createSurfaceAndroidApi window %x", surfaceCreateInfo.window);
 
@@ -91,7 +99,7 @@ VulkanSwapchain::~VulkanSwapchain()
     ASSERT(!m_surface, "surface isn't nullptr");
 }
 
-VkSurfaceKHR VulkanSwapchain::createSurface(VkInstance vkInstance, NativeInstance hInstance, NativeWindows hWnd)
+VkSurfaceKHR VulkanSwapchain::createSurface(VkInstance vkInstance, NativeInstance hInstance, NativeWindows hWnd, const core::Dimension2D& size)
 {
     VkSurfaceKHR surface = VK_NULL_HANDLE;
 #if defined(PLATFORM_WINDOWS)
@@ -101,7 +109,7 @@ VkSurfaceKHR VulkanSwapchain::createSurface(VkInstance vkInstance, NativeInstanc
         return VK_NULL_HANDLE;
     }
 #elif defined (PLATFORM_ANDROID)
-    if (!createSurfaceAndroidApi(vkInstance, hInstance, hWnd, surface))
+    if (!createSurfaceAndroidApi(vkInstance, hInstance, hWnd, surface, size))
     {
         LOG_FATAL("VulkanSwapchain::createSurface: Create android surface is falied");
         return VK_NULL_HANDLE;
@@ -126,12 +134,35 @@ bool VulkanSwapchain::create(const SwapchainConfig& config, VkSwapchainKHR oldSw
     m_config = config;
 
     ASSERT(!m_surface, "Already has created");
-    m_surface = VulkanSwapchain::createSurface(m_deviceInfo->_instance, config._window->getInstance(), config._window->getWindowHandle());
+    m_surface = VulkanSwapchain::createSurface(m_deviceInfo->_instance, m_config._window->getInstance(), m_config._window->getWindowHandle(), m_config._size);
     if (!m_surface)
     {
-        VulkanSwapchain::destroy();
         LOG_FATAL("VulkanGraphicContext::createContext: Can not create VkSurfaceKHR");
         return false;
+    }
+
+    if (VulkanDeviceCaps::getInstance()->renderpassTransformQCOM)
+    {
+        VkSurfaceCapabilitiesKHR surfaceCapabilities = {};
+        VkResult result = VulkanWrapper::GetPhysicalDeviceSurfaceCapabilities(m_deviceInfo->_physicalDevice, m_surface, &surfaceCapabilities);
+        if (result != VK_SUCCESS)
+        {
+            LOG_ERROR("VulkanSwapchain::create: vkGetPhysicalDeviceSurfaceCapabilitiesKHR. Error %s", ErrorString(result).c_str());
+            return false;
+        }
+
+        if (surfaceCapabilities.currentTransform & (VK_SURFACE_TRANSFORM_ROTATE_90_BIT_KHR | VK_SURFACE_TRANSFORM_ROTATE_270_BIT_KHR))
+        {
+            VulkanSwapchain::destroy();
+
+            std::swap(m_config._size.width, m_config._size.height);
+            m_surface = VulkanSwapchain::createSurface(m_deviceInfo->_instance, m_config._window->getInstance(), m_config._window->getWindowHandle(), m_config._size);
+            if (!m_surface)
+            {
+                LOG_FATAL("VulkanGraphicContext::createContext: Can not create VkSurfaceKHR");
+                return false;
+            }
+        }
     }
 
     VkResult result = VulkanWrapper::GetPhysicalDeviceSurfaceCapabilities(m_deviceInfo->_physicalDevice, m_surface, &m_surfaceCaps);
@@ -141,11 +172,11 @@ bool VulkanSwapchain::create(const SwapchainConfig& config, VkSwapchainKHR oldSw
         return false;
     }
 
-    if ((config._size.width < m_surfaceCaps.minImageExtent.width || config._size.width > m_surfaceCaps.maxImageExtent.width) ||
-        (config._size.height < m_surfaceCaps.minImageExtent.height || config._size.height > m_surfaceCaps.maxImageExtent.height))
+    if ((m_config._size.width < m_surfaceCaps.minImageExtent.width || m_config._size.width > m_surfaceCaps.maxImageExtent.width) ||
+        (m_config._size.height < m_surfaceCaps.minImageExtent.height || m_config._size.height > m_surfaceCaps.maxImageExtent.height))
     {
         LOG_ERROR("VulkanSwapchain::create: Not support swapchain size min[%d, %d], max[%d, %d], requested [%d, %d]", 
-            m_surfaceCaps.minImageExtent.width, m_surfaceCaps.minImageExtent.height, m_surfaceCaps.maxImageExtent.width, m_surfaceCaps.maxImageExtent.height, config._size.width, config._size.height);
+            m_surfaceCaps.minImageExtent.width, m_surfaceCaps.minImageExtent.height, m_surfaceCaps.maxImageExtent.width, m_surfaceCaps.maxImageExtent.height, m_config._size.width, m_config._size.height);
         return false;
     }
 
@@ -211,7 +242,7 @@ bool VulkanSwapchain::create(const SwapchainConfig& config, VkSwapchainKHR oldSw
             return false;
         };
 
-        if (config._forceSRGB)
+        if (m_config._forceSRGB)
         {
             findSRGBSurfaceFormat(m_surfaceFormat);
         }
@@ -223,18 +254,14 @@ bool VulkanSwapchain::create(const SwapchainConfig& config, VkSwapchainKHR oldSw
     }
 
 
-    if (!VulkanSwapchain::createSwapchain(config, oldSwapchain))
+    if (!VulkanSwapchain::createSwapchain(m_config, oldSwapchain))
     {
-         VulkanSwapchain::destroy();
-
         LOG_FATAL("VulkanSwapchain::createSwapchain Can not create swapchain");
         return false;
     }
 
-    if (!VulkanSwapchain::createSwapchainImages(config))
+    if (!VulkanSwapchain::createSwapchainImages(m_config))
     {
-        VulkanSwapchain::destroy();
-
         LOG_FATAL(" VulkanSwapchain::createSwapchainImages: cannot create swapchain images");
         return false;
     }
@@ -309,11 +336,16 @@ bool VulkanSwapchain::createSwapchain(const SwapchainConfig& config, VkSwapchain
         ASSERT(m_surfaceCaps.minImageCount <= config._countSwapchainImages && config._countSwapchainImages <= m_surfaceCaps.maxImageCount, "range out");
         desiredNumberOfSwapchainImages = std::clamp(config._countSwapchainImages, m_surfaceCaps.minImageCount, m_surfaceCaps.maxImageCount);
     }
-    LOG_DEBUG("SwapChainVK::createSwapChain swapchain images count(min %u, max: %u), chosen: %u", m_surfaceCaps.minImageCount, m_surfaceCaps.maxImageCount, desiredNumberOfSwapchainImages);
+    LOG_DEBUG("VulkanSwapchain::createSwapChain swapchain images count(min %u, max: %u), chosen: %u", m_surfaceCaps.minImageCount, m_surfaceCaps.maxImageCount, desiredNumberOfSwapchainImages);
+    VkExtent2D imageExtent = m_surfaceCaps.currentExtent;
 
     // Find the transformation of the surface
     VkSurfaceTransformFlagBitsKHR preTransform = VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR;
-    VkExtent2D imageExtent = { config._size.width, config._size.height };
+    if (VulkanDeviceCaps::getInstance()->renderpassTransformQCOM)
+    {
+        preTransform = m_surfaceCaps.currentTransform;
+    }
+    else
     {
         if (m_surfaceCaps.supportedTransforms & VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR)
         {
@@ -321,12 +353,10 @@ bool VulkanSwapchain::createSwapchain(const SwapchainConfig& config, VkSwapchain
         }
         else
         {
-            VulkanSwapchain::correctViewByOrientation<u32>(this, imageExtent.width, imageExtent.height);
-            ASSERT(preTransform == VK_SURFACE_TRANSFORM_ROTATE_90_BIT_KHR || preTransform == VK_SURFACE_TRANSFORM_ROTATE_180_BIT_KHR || preTransform == VK_SURFACE_TRANSFORM_ROTATE_270_BIT_KHR, "unsupported transform");
             preTransform = m_surfaceCaps.currentTransform;
         }
     }
-    LOG_DEBUG("SwapChainVK::createSwapChain android transform swapchain: (width %u, height %u), currentTransform: %u, supportedTransforms: %u, selectedTransform: %u", imageExtent.width, imageExtent.height, m_surfaceCaps.currentTransform, m_surfaceCaps.supportedTransforms, preTransform);
+    LOG_DEBUG("VulkanSwapchain::createSwapChain android transform swapchain: (width %u, height %u), currentTransform: %u, supportedTransforms: %u, selectedTransform: %u", imageExtent.width, imageExtent.height, m_surfaceCaps.currentTransform, m_surfaceCaps.supportedTransforms, preTransform);
     
     VkSwapchainCreateInfoKHR swapChainInfo = {};
     swapChainInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
@@ -354,7 +384,7 @@ bool VulkanSwapchain::createSwapchain(const SwapchainConfig& config, VkSwapchain
         LOG_FATAL("VulkanSwapchain::createSwapChain: vkCreateSwapchainKHR. Error %s", ErrorString(result).c_str());
         return false;
     }
-    LOG_DEBUG("SwapChainVK::createSwapChain has been created");
+    LOG_DEBUG("VulkanSwapchain::createSwapChain has been created");
 
     return true;
 }
@@ -375,7 +405,7 @@ bool VulkanSwapchain::createSwapchainImages(const SwapchainConfig& config)
         return false;
     }
 
-    LOG_DEBUG("SwapChainVK::createSwapchainImages: Count images %d", swapChainImageCount);
+    LOG_DEBUG("VulkanSwapchain::createSwapchainImages: Count images %d", swapChainImageCount);
 
     std::vector<VkImage> images(swapChainImageCount);
     result = vkGetSwapchainImagesKHR(m_deviceInfo->_device, m_swapchain, &swapChainImageCount, images.data());
@@ -389,7 +419,6 @@ bool VulkanSwapchain::createSwapchainImages(const SwapchainConfig& config)
     {
         m_swapBuffers.reserve(swapChainImageCount);
         VkExtent3D extent = { config._size.width, config._size.height, 1 };
-        VulkanSwapchain::correctViewByOrientation<u32>(this, extent.width, extent.height);
         for (u32 index = 0; index < images.size(); ++index)
         {
             VulkanImage* swapchainImage = new VulkanImage(nullptr, m_deviceInfo->_device, m_surfaceFormat.format, extent, VK_SAMPLE_COUNT_1_BIT, 1U,

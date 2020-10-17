@@ -15,7 +15,7 @@
 #include <vulkan/vulkan.h>
 
 #if defined(PLATFORM_ANDROID)
-#   include "Android/AndroidVulkanExtension.h"
+#   include "Platform/Android/AndroidVulkanExtension.h"
 #endif
 
 #ifdef VK_NO_PROTOTYPES

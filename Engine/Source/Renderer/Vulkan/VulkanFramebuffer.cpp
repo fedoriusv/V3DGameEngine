@@ -115,6 +115,9 @@ bool VulkanFramebuffer::create(const RenderPass* pass)
     }
 #endif //VULKAN_DEBUG_MARKERS
 
+#if VULKAN_DEBUG
+    LOG_DEBUG("VulkanFramebuffer::create Framebuffer has been created %llx. Size (width %u, height %u) ", m_framebuffer, m_size.width, m_size.height);
+#endif
     return true;
 }
 

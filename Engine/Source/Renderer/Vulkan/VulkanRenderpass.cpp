@@ -385,12 +385,22 @@ bool VulkanRenderPass::create()
         renderPassCreateInfo.correlatedViewMaskCount = 0;
         renderPassCreateInfo.pCorrelatedViewMasks = nullptr;
 
+#ifdef VK_QCOM_render_pass_transform
+        if (VulkanDeviceCaps::getInstance()->renderpassTransformQCOM)
+        {
+            renderPassCreateInfo.flags |= VK_RENDER_PASS_CREATE_TRANSFORM_BIT_QCOM;
+        }
+#endif
+
         VkResult result = VulkanWrapper::CreateRenderPass2(m_device, &renderPassCreateInfo, VULKAN_ALLOCATOR, &m_renderpass);
         if (result != VK_SUCCESS)
         {
             LOG_ERROR("VulkanRenderPass::create vkCreateRenderPass2 is failed. Error: %s", ErrorString(result).c_str());
             return false;
         }
+#if VULKAN_DEBUG
+        LOG_DEBUG("VulkanCommandBuffer::create RenderPass2 has been created %llx. Flags %d", m_renderpass, renderPassCreateInfo.flags);
+#endif
     }
     else //renderpass
     {
@@ -559,12 +569,22 @@ bool VulkanRenderPass::create()
         renderPassCreateInfo.dependencyCount = 0;     //dependencies.size();
         renderPassCreateInfo.pDependencies = nullptr; //ependencies.data();
 
+#ifdef VK_QCOM_render_pass_transform
+        if (VulkanDeviceCaps::getInstance()->renderpassTransformQCOM)
+        {
+            renderPassCreateInfo.flags |= VK_RENDER_PASS_CREATE_TRANSFORM_BIT_QCOM;
+        }
+#endif
+
         VkResult result = VulkanWrapper::CreateRenderPass(m_device, &renderPassCreateInfo, VULKAN_ALLOCATOR, &m_renderpass);
         if (result != VK_SUCCESS)
         {
             LOG_ERROR("VulkanRenderPass::create vkCreateRenderPass is failed. Error: %s", ErrorString(result).c_str());
             return false;
         }
+#if VULKAN_DEBUG
+    LOG_DEBUG("VulkanCommandBuffer::create RenderPass has been created %llx. Flags %d", m_renderpass, renderPassCreateInfo.flags);
+#endif
     }
 
 #if VULKAN_DEBUG_MARKERS

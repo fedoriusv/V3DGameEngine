@@ -13,9 +13,10 @@ namespace app
 
 using namespace v3d;
 
-Scene::Scene(renderer::Context* context) noexcept
+Scene::Scene(renderer::Context* context, const v3d::core::Dimension2D& size) noexcept
     : m_Context(context)
     , m_CommandList(nullptr)
+    , m_Viewport(size)
 
     , m_CurrentState(States::StateInit)
 
@@ -104,7 +105,7 @@ void Scene::Load()
         //renderer::Shader* fragShader = resource::ResourceLoaderManager::getInstance()->loadShader<renderer::Shader, resource::ShaderSourceFileLoader>(m_Context, "shaders/mesh.frag", {});
         renderer::Shader* vertShader = resource::ResourceLoaderManager::getInstance()->loadShader<renderer::Shader, resource::ShaderSourceFileLoader>(m_Context, "shaders/mesh.vs", {});
         renderer::Shader* fragShader = resource::ResourceLoaderManager::getInstance()->loadShader<renderer::Shader, resource::ShaderSourceFileLoader>(m_Context, "shaders/mesh.ps", {});
-        m_Render = new v3d::TextureRender(*m_CommandList, { vertShader, fragShader }, m_CurrentModel->m_Model->getVertexInputAttribDescription(0, 0));
+        m_Render = new v3d::TextureRender(*m_CommandList, m_Viewport, { vertShader, fragShader }, m_CurrentModel->m_Model->getVertexInputAttribDescription(0, 0));
     }
 
     m_CommandList->submitCommands(true);

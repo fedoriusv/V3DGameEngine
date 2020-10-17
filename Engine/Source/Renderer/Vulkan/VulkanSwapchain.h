@@ -54,23 +54,12 @@ namespace vk
         u32 getSwapchainImageCount() const;
 
         static u32 currentSwapchainIndex();
-
-        template<typename Type>
-        static bool correctViewByOrientation(const VulkanSwapchain* swapchain, Type& width, Type& height)
-        {
-            if (swapchain->getTransformFlag() == VK_SURFACE_TRANSFORM_ROTATE_90_BIT_KHR || swapchain->getTransformFlag() == VK_SURFACE_TRANSFORM_ROTATE_270_BIT_KHR)
-            {
-                std::swap(width, height);
-                return true;
-            }
-            return false;
-        }
-
+        
         VkSurfaceTransformFlagBitsKHR getTransformFlag() const;
 
     private:
 
-        static VkSurfaceKHR createSurface(VkInstance vkInstance,  NativeInstance hInstance, NativeWindows hWnd);
+        static VkSurfaceKHR createSurface(VkInstance vkInstance,  NativeInstance hInstance, NativeWindows hWnd, [[maybe_unused]] const core::Dimension2D& size);
 
         bool createSwapchain(const SwapchainConfig& config, VkSwapchainKHR oldSwapchain = VK_NULL_HANDLE);
         bool createSwapchainImages(const SwapchainConfig& config);

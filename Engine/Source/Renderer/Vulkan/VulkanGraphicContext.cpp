@@ -71,6 +71,10 @@ const std::vector<const c8*> k_deviceExtensionsList =
     VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME,
 
     VK_KHR_PIPELINE_EXECUTABLE_PROPERTIES_EXTENSION_NAME,
+
+#ifdef VK_QCOM_render_pass_transform
+    VK_QCOM_RENDER_PASS_TRANSFORM_EXTENSION_NAME,
+#endif
 };
 
 
@@ -149,7 +153,7 @@ void VulkanGraphicContext::beginFrame()
     u32 index = 0;
     m_presentThread->requestAcquireImage(index);
 #else
-    u32 index = m_swapchain->acquireImage();
+    [[maybe_unused]] u32 index = m_swapchain->acquireImage();
 #endif //THREADED_PRESENT
 #if VULKAN_DEBUG
     LOG_DEBUG("VulkanGraphicContext::beginFrame %llu, image index %u", m_frameCounter, index);
@@ -320,6 +324,13 @@ void VulkanGraphicContext::setRenderTarget(const RenderPass::RenderPassInfo* ren
     bool swapchainPresent = std::find(framebufferInfo->_images.cbegin(), framebufferInfo->_images.cend(), nullptr) != framebufferInfo->_images.cend();
     if (swapchainPresent)
     {
+        core::Dimension2D transformedArea(framebufferInfo->_clearInfo._size);
+        if (VulkanDeviceCaps::getInstance()->renderpassTransformQCOM && vkRenderpass->getDescription()._countColorAttachments == 1 &&
+            m_swapchain->getTransformFlag() & (VK_SURFACE_TRANSFORM_ROTATE_90_BIT_KHR | VK_SURFACE_TRANSFORM_ROTATE_270_BIT_KHR))
+        {
+            std::swap(transformedArea.width, transformedArea.height);
+        }
+
         for (u32 index = 0; index < m_swapchain->getSwapchainImageCount(); ++index)
         {
             std::vector<Image*> images;
@@ -335,7 +346,7 @@ void VulkanGraphicContext::setRenderTarget(const RenderPass::RenderPassInfo* ren
                 images.push_back(*iter);
             }
 
-            auto [framebuffer, isNewFramebuffer] = m_framebufferManager->acquireFramebuffer(renderpass, images, framebufferInfo->_clearInfo._size);
+            auto [framebuffer, isNewFramebuffer] = m_framebufferManager->acquireFramebuffer(renderpass, images, transformedArea);
             ASSERT(framebuffer, "framebuffer is nullptr");
 
             framebufferInfo->_tracker->attach(framebuffer);
@@ -387,7 +398,6 @@ void VulkanGraphicContext::setRenderTarget(const RenderPass::RenderPassInfo* ren
         VkRect2D area;
         area.offset = { 0, 0 };
         area.extent = { framebufferInfo->_clearInfo._size.width, framebufferInfo->_clearInfo._size.height };
-
 
         std::vector<VkClearValue> clearValues;
         for (u32 clearIndex = 0; clearIndex < framebufferInfo->_clearInfo._color.size(); ++clearIndex)
@@ -500,7 +510,6 @@ Image* VulkanGraphicContext::createImage(TextureTarget target, Format format, co
 #if VULKAN_DEBUG
     LOG_DEBUG("VulkanGraphicContext::createImage");
 #endif //VULKAN_DEBUG
-    VkImageType vkType = VulkanImage::convertTextureTargetToVkImageType(target);
     VkFormat vkFormat = VulkanImage::convertImageFormatToVkFormat(format);
     VkExtent3D vkExtent = { dimension.width, dimension.height, dimension.depth };
     VkSampleCountFlagBits vkSamples = VulkanImage::convertRenderTargetSamplesToVkSampleCount(samples);
@@ -786,7 +795,7 @@ bool VulkanGraphicContext::initialize()
 #if THREADED_PRESENT
     m_presentThread = new PresentThread(m_swapchain);
 #endif //THREADED_PRESENT
-    m_backufferDescription._size = config._size;
+    m_backufferDescription._size = { m_swapchain->getSwapchainImage(0)->getSize().width, m_swapchain->getSwapchainImage(0)->getSize().height };
     m_backufferDescription._format = VulkanImage::convertVkImageFormatToFormat(m_swapchain->getSwapchainImage(0)->getFormat());
 
     if (m_deviceCaps.unifiedMemoryManager)
@@ -1014,7 +1023,8 @@ bool VulkanGraphicContext::createInstance()
         }
         else
         {
-            LOG_INFO("Requested Vulkan Api: %u, supported: %u",  applicationInfo.apiVersion, apiVersion);
+            LOG_INFO("Requested Vulkan Api: %u (%u.%u.%u), supported: %u (%u.%u.%u)",  applicationInfo.apiVersion, VK_VERSION_MAJOR(applicationInfo.apiVersion), VK_VERSION_MINOR(applicationInfo.apiVersion), VK_VERSION_PATCH(applicationInfo.apiVersion),
+                apiVersion, VK_VERSION_MAJOR(apiVersion), VK_VERSION_MINOR(apiVersion), VK_VERSION_PATCH(apiVersion));
         }
         
     }

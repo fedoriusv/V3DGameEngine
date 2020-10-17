@@ -51,7 +51,7 @@
 #ifdef VULKAN_RENDER
 #   ifdef PLATFORM_ANDROID
 #       define VULKAN_VERSION_MAJOR 1
-#       define VULKAN_VERSION_MINOR 0
+#       define VULKAN_VERSION_MINOR 1
 #   else
 #       define VULKAN_VERSION_MAJOR 1
 #       define VULKAN_VERSION_MINOR 2

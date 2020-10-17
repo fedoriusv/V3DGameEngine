@@ -55,7 +55,7 @@ bool MyApplication::Initialize()
         return false;
     }
 
-    m_Scene = new Scene(m_Context);
+    m_Scene = new Scene(m_Context, m_Window->getSize());
     m_InputEventHandler->connect([this](const event::MouseInputEvent* event)
         {
             Scene::MouseCallback(m_Scene, m_InputEventHandler, event);

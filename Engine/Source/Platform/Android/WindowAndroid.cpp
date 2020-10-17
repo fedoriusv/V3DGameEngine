@@ -107,6 +107,12 @@ void WindowAndroid::destroy()
 {
     LOG_DEBUG("WindowAndroid::destroy %llx", this);
     m_ready = false;
+
+    if (g_nativeAndroidApp->savedState)
+    {
+        free(g_nativeAndroidApp->savedState);
+        g_nativeAndroidApp->savedState = nullptr;
+    }
 }
 
 WindowAndroid::~WindowAndroid()
@@ -191,6 +197,7 @@ void WindowAndroid::handleCmdCallback(android_app* app, int32_t cmd)
     {
     case APP_CMD_SAVE_STATE:
         // The system has asked us to save our current state.  Do so.
+        ASSERT(!g_nativeAndroidApp->savedState, "not nullptr");
         g_nativeAndroidApp->savedState = malloc(sizeof(SavedState));
         *(reinterpret_cast<SavedState*>(g_nativeAndroidApp->savedState)) = window->m_state;
         g_nativeAndroidApp->savedStateSize = sizeof(SavedState);
@@ -199,18 +206,16 @@ void WindowAndroid::handleCmdCallback(android_app* app, int32_t cmd)
     case APP_CMD_INIT_WINDOW:
         // The window is being shown, get it ready.
         ASSERT(g_nativeAndroidApp->window, "nullptr");
-        if (g_nativeAndroidApp->window != NULL &&  !window->m_ready) 
+        if (g_nativeAndroidApp->window != NULL && !window->m_ready)
         {
             LOG_DEBUG("WindowAndroid::handleCmdCallback: APP_CMD_INIT_WINDOW");
 
+            s32 error = ANativeWindow_setBuffersGeometry(window->getWindowHandle(), window->m_params._size.width, window->m_params._size.height, WINDOW_FORMAT_RGBA_8888);
             s32 width = ANativeWindow_getWidth(window->getWindowHandle());
             s32 height = ANativeWindow_getHeight(window->getWindowHandle());
-            if (window->m_params._size.width != width || window->m_params._size.height != height)
-            {
-                LOG_WARNING("WindowAndroid::handleCmdCallback: different size: request: { %d, %d }, current { %d, %d }", window->m_params._size.width, window->m_params._size.height, width, height);
-                window->m_params._size = core::Dimension2D(width,  height);
-            }
-            LOG_INFO("WindowAndroid::handleCmdCallback: window size: width %d, height %d", width, height);
+            LOG_INFO("WindowAndroid::handleCmdCallback: window requested size: { %d, %d } = %d, current size { %d, %d }", window->m_params._size.width, window->m_params._size.height, error, width, height);
+
+            window->m_params._size = core::Dimension2D(width,  height);
             window->m_ready = true;
             window->notifyObservers();
         }

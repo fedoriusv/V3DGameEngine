@@ -28,13 +28,13 @@ void TextureUniformParameters::bindUniformParameters(CommandList& cmdList, Shade
 }
 
 
-TextureRender::TextureRender(CommandList& cmdList, const std::vector<const Shader*>& shaders, const VertexInputAttribDescription& vertex) noexcept
+TextureRender::TextureRender(CommandList& cmdList, const v3d::core::Dimension2D& viewport, const std::vector<const Shader*>& shaders, const VertexInputAttribDescription& vertex) noexcept
 {
     m_program = cmdList.createObject<ShaderProgram>(shaders);
 
-    core::Dimension2D size = cmdList.getContext()->getBackbufferSize();
-    m_renderTarget = cmdList.createObject<RenderTargetState>(size);
+    m_renderTarget = cmdList.createObject<RenderTargetState>(viewport);
     m_renderTarget->setColorTexture(0, cmdList.getBackbuffer(), RenderTargetLoadOp::LoadOp_Clear, RenderTargetStoreOp::StoreOp_Store, core::Vector4D(0.0f));
+    core::Dimension2D size = cmdList.getContext()->getBackbufferSize();
 #if defined(PLATFORM_ANDROID)
     Texture2D* depthAttachment = cmdList.createObject<Texture2D>(TextureUsage::TextureUsage_Attachment, Format::Format_D24_UNorm_S8_UInt, size, TextureSamples::TextureSamples_x1);
 #else
@@ -54,7 +54,7 @@ TextureRender::TextureRender(CommandList& cmdList, const std::vector<const Shade
 
 TextureRender::~TextureRender()
 {
-    Texture2D* depthAttachment = m_renderTarget->getDepthStencilTexture();
+    Texture2D* depthAttachment = m_renderTarget->getDepthStencilTexture<Texture2D>();
     if (depthAttachment)
     {
         delete depthAttachment;

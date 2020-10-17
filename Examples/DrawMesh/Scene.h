@@ -24,7 +24,7 @@ class Scene
 {
 public:
 
-    Scene(v3d::renderer::Context* context) noexcept;
+    Scene(v3d::renderer::Context* context, const v3d::core::Dimension2D& size) noexcept;
     ~Scene();
 
     bool Run();
@@ -37,6 +37,7 @@ private:
 
     v3d::renderer::Context*     m_Context;
     v3d::renderer::CommandList* m_CommandList;
+    v3d::core::Dimension2D      m_Viewport;
 
     enum class States
     {
