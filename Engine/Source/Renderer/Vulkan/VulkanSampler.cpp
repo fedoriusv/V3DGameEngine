@@ -127,7 +127,7 @@ bool VulkanSampler::create()
 {
     void* vkExtension = nullptr;
     VkSamplerCustomBorderColorCreateInfoEXT samplerCustomBorderColorCreateInfoEXT = {};
-
+    bool enableCustomBorderColor = false;
     if (VulkanDeviceCaps::getInstance()->supportSamplerBorderColor && 
         (m_desc._desc._wrapU == SamplerWrap::TextureWrap_ClampToBorder || m_desc._desc._wrapV == SamplerWrap::TextureWrap_ClampToBorder || m_desc._desc._wrapW == SamplerWrap::TextureWrap_ClampToBorder))
     {
@@ -140,6 +140,7 @@ bool VulkanSampler::create()
         samplerCustomBorderColorCreateInfoEXT.customBorderColor.float32[3] = m_desc._desc._borderColor[3];
 
         vkExtension = &samplerCustomBorderColorCreateInfoEXT;
+        enableCustomBorderColor = true;
     }
 
     VkSamplerCreateInfo samplerCreateInfo = {};
@@ -160,7 +161,7 @@ bool VulkanSampler::create()
     samplerCreateInfo.maxLod = FLT_MAX;
     samplerCreateInfo.compareEnable = (m_desc._desc._enableCompOp) ? VK_TRUE : VK_FALSE;
     samplerCreateInfo.compareOp = VulkanGraphicPipeline::convertCompareOperationToVk(m_desc._desc._compareOp);
-    samplerCreateInfo.borderColor = VulkanDeviceCaps::getInstance()->supportSamplerBorderColor ? VK_BORDER_COLOR_FLOAT_CUSTOM_EXT : VK_BORDER_COLOR_FLOAT_TRANSPARENT_BLACK;
+    samplerCreateInfo.borderColor = enableCustomBorderColor ? VK_BORDER_COLOR_FLOAT_CUSTOM_EXT : VK_BORDER_COLOR_FLOAT_TRANSPARENT_BLACK;
     samplerCreateInfo.unnormalizedCoordinates = VK_FALSE;
 
     VkResult result = VulkanWrapper::CreateSampler(m_device, &samplerCreateInfo, VULKAN_ALLOCATOR, &m_sampler);
