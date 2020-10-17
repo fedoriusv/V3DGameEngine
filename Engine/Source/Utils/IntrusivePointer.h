@@ -1,11 +1,16 @@
 #pragma once
 
+#include "Common.h"
+
 namespace v3d
 {
 namespace utils
 {
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    /**
+    * @brief IntrusivePointer interface. Smart pointer
+    */
     template <class T>
     class IntrusivePointer
     {
@@ -16,7 +21,7 @@ namespace utils
     public:
 
         IntrusivePointer();
-        IntrusivePointer(T* p, bool add_ref = true);
+        IntrusivePointer(T* p, bool addRef = true);
         IntrusivePointer(IntrusivePointer const& rhs);
         ~IntrusivePointer();
 
@@ -46,10 +51,10 @@ namespace utils
     }
 
     template <class T>
-    IntrusivePointer<T>::IntrusivePointer(T* p, bool add_ref)
+    IntrusivePointer<T>::IntrusivePointer(T* p, bool addRef)
         : m_px(p)
     {
-        if (m_px != nullptr && add_ref)
+        if (m_px != nullptr && addRef)
         {
             intrusivePtrAddRef(m_px);
         }
@@ -135,43 +140,43 @@ namespace utils
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     template<class T, class U> 
-    inline bool operator==(IntrusivePointer<T> const& a, IntrusivePointer<U> const& b)
+    bool operator==(IntrusivePointer<T> const& a, IntrusivePointer<U> const& b)
     {
         return a.get() == b.get();
     }
 
     template<class T, class U>
-    inline bool operator!=(IntrusivePointer<T> const& a, IntrusivePointer<U> const& b)
+    bool operator!=(IntrusivePointer<T> const& a, IntrusivePointer<U> const& b)
     {
         return a.get() != b.get();
     }
 
     template<class T, class U>
-    inline bool operator==(IntrusivePointer<T> const& a, U* b)
+    bool operator==(IntrusivePointer<T> const& a, U* b)
     {
         return a.get() == b;
     }
 
     template<class T, class U>
-    inline bool operator!=(IntrusivePointer<T> const& a, U* b)
+    bool operator!=(IntrusivePointer<T> const& a, U* b)
     {
         return a.get() != b;
     }
 
     template<class T, class U>
-    inline bool operator==(T* a, IntrusivePointer<U> const& b)
+    bool operator==(T* a, IntrusivePointer<U> const& b)
     {
         return a == b.get();
     }
 
     template<class T, class U>
-    inline bool operator!=(T* a, IntrusivePointer<U> const& b)
+    bool operator!=(T* a, IntrusivePointer<U> const& b)
     {
         return a != b.get();
     }
 
     template<class T>
-    inline bool operator<(IntrusivePointer<T> const& a, IntrusivePointer<T> const& b)
+    bool operator<(IntrusivePointer<T> const& a, IntrusivePointer<T> const& b)
     {
         return std::less<T*>()(a.get(), b.get());
     }
@@ -183,7 +188,7 @@ namespace utils
     }
 
     template<class T>
-    T * get_pointer(IntrusivePointer<T> const& p)
+    T* get_pointer(IntrusivePointer<T> const& p)
     {
         return p.get();
     }

@@ -23,7 +23,7 @@ namespace resource
     private:
 
         bool composePatch(std::function<bool(std::vector<u32>& subSpirv)> func, std::vector<u32>& subSpirv);
-        u32 m_flags;
+        [[maybe_unused]] u32 m_flags;
     };
 
 

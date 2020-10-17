@@ -71,7 +71,6 @@ bool PatchDriverBugOptimisation::patch(std::vector<u32>& spirv, u32 flags)
     u32 entryPoint = ~0;
 
     bool declarationBlock = false;
-    bool conditionBlock = false;
 
     std::tuple<bool, TypeFloat> floatType(false, {});
     std::tuple<bool, TypeBool> boolType(false, {});
@@ -423,7 +422,7 @@ bool PatchDriverBugOptimisation::patch(std::vector<u32>& spirv, u32 flags)
 
             case spv::Op::OpLabel:
             {
-                u32 resultID = *std::next(word, 1);
+                [[maybe_unused]] u32 resultID = *std::next(word, 1);
                 if (!declarationBlock)
                 {
                     ASSERT(false, "somthing is wrong");

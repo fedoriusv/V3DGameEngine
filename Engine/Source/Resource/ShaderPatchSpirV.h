@@ -11,7 +11,7 @@ namespace resource
 
     u32 getOpCode(u32 word);
     u32 getCountWords(u32 word);
-    constexpr u32 getWordInstruction(u32 op, u32 count);
+    u32 getWordInstruction(u32 op, u32 count);
     [[maybe_unused]] std::string getLiteralString(u32 word, u32& byteSize);
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

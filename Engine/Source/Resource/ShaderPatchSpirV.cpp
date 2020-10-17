@@ -19,7 +19,7 @@ u32 getCountWords(u32 word)
     return word >> 16;
 }
 
-constexpr u32 getWordInstruction(u32 op, u32 count)
+u32 getWordInstruction(u32 op, u32 count)
 {
     return count << 16 | op;
 }
