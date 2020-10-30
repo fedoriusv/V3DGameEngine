@@ -26,7 +26,7 @@ void CameraFPSHelper::update(f32 deltaTime)
     if (m_needUpdate)
     {
         core::Vector3D frontDirection;
-        frontDirection.x = -cos(CameraFPSHelper::getRotation().x * core::k_degToRad) * sin(CameraFPSHelper::getRotation().y * core::k_degToRad);
+        frontDirection.x = cos(CameraFPSHelper::getRotation().x * core::k_degToRad) * sin(CameraFPSHelper::getRotation().y * core::k_degToRad);
         frontDirection.y = sin(CameraFPSHelper::getRotation().x * core::k_degToRad);
         frontDirection.z = cos(CameraFPSHelper::getRotation().x * core::k_degToRad) * cos(CameraFPSHelper::getRotation().y * core::k_degToRad);
         frontDirection.normalize();
@@ -99,7 +99,7 @@ void CameraFPSHelper::rotateHandlerCallback(const v3d::event::InputEventHandler*
         {
             core::Vector3D rotation = CameraFPSHelper::getRotation();
             rotation.x += positionDelta.y * k_rotationSpeed;
-            rotation.y += positionDelta.x * k_rotationSpeed;
+            rotation.y -= positionDelta.x * k_rotationSpeed;
 
             rotation.x = std::clamp(rotation.x, -k_constrainPitch, k_constrainPitch);
             CameraFPSHelper::setRotation(rotation);
