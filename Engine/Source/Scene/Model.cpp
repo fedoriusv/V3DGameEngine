@@ -1,6 +1,6 @@
 #include "Model.h"
 #include "Stream/StreamManager.h"
-#include "Scene/Mesh.h"
+#include "Scene/Geometry.h"
 
 #include "Utils/Logger.h"
 
@@ -48,12 +48,12 @@ const ModelHeader& Model::getModelHeader() const
     return *(static_cast<const scene::ModelHeader*>(m_header));
 }
 
-std::vector<Mesh*> Model::getMeshes() const
+std::vector<Geometry*> Model::getMeshes() const
 {
     return m_meshes;
 }
 
-Mesh * Model::getMeshByIndex(u32 index) const
+Geometry* Model::getMeshByIndex(u32 index) const
 {
     ASSERT(index < m_meshes.size(), "range out");
     return m_meshes[index];
@@ -101,7 +101,7 @@ bool Model::load()
     u32 countMeshes = static_cast<u32>(header._meshes.size());
     for (u32 i = 0; i < countMeshes; ++i)
     {
-        const MeshHeader& meshHeader = header._meshes[i];
+        const GeometryHeader& meshHeader = header._meshes[i];
 
         ASSERT(meshHeader._size > 0, "empty size");
         u32 size = static_cast<u32>(meshHeader._size) + sizeof(renderer::VertexInputAttribDescription);
@@ -112,9 +112,9 @@ bool Model::load()
         meshStream->write(data, size, 1);
         m_stream->unmap();
 
-        MeshHeader* newMeshHeader = new MeshHeader(header._meshes[i]);
+        GeometryHeader* newMeshHeader = new GeometryHeader(header._meshes[i]);
 
-        Mesh* mesh = new Mesh(newMeshHeader);
+        Geometry* mesh = new Geometry(newMeshHeader);
         mesh->init(meshStream);
 
         if (!mesh->load())

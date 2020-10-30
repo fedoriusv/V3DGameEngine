@@ -5,15 +5,13 @@
 #include "Resource/Resource.h"
 #include "Renderer/PipelineStateProperties.h"
 #include "Renderer/BufferProperties.h"
-#include "Mesh.h"
 #include "Material.h"
+#include "Geometry.h"
 
 namespace v3d
 {
 namespace scene
 {
-    class Mesh;
-
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
@@ -57,7 +55,7 @@ namespace scene
         renderer::FrontFace     _frontFace;
         bool                    _localTransform;
 
-        std::vector<MeshHeader>     _meshes;
+        std::vector<GeometryHeader> _meshes;
         std::vector<MaterialHeader> _materials;
 
     };
@@ -79,8 +77,8 @@ namespace scene
 
         const ModelHeader& getModelHeader() const;
 
-        std::vector<Mesh*> getMeshes() const;
-        Mesh* getMeshByIndex(u32 index) const;
+        std::vector<Geometry*> getMeshes() const;
+        Geometry* getMeshByIndex(u32 index) const;
         u32   getMeshCount() const;
 
         std::vector<Material*> getMaterials() const;
@@ -92,7 +90,7 @@ namespace scene
 
     private:
 
-        std::vector<Mesh*> m_meshes;
+        std::vector<Geometry*> m_meshes;
         std::vector<Material*> m_materials;
 
         friend class ModelHelper;

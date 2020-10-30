@@ -300,11 +300,11 @@ bool MeshAssimpDecoder::decodeMesh(const aiScene* scene, stream::Stream* modelSt
 
             newHeader->_meshes[m]._size = meshSize;
             newHeader->_meshes[m]._offset = globalVertexSize;
-            newHeader->_meshes[m]._indexPresent = m_generateIndices;
+            newHeader->_meshes[m]._flags |= m_generateIndices ? scene::GeometryHeader::GeometryFlag_PresentIndex : 0;
 #if DEBUG
             newHeader->_meshes[m]._debugName = mesh->mName.C_Str();
 #endif
-            scene::MeshHeader::GeometryInfo& vertexInfo = newHeader->_meshes[m]._vertex;
+            scene::GeometryHeader::GeometryInfo& vertexInfo = newHeader->_meshes[m]._vertex;
             vertexInfo._subData.push_back({ globalVertexSize, meshSize, mesh->mNumVertices });
             vertexInfo._count = mesh->mNumVertices;
             vertexInfo._size = meshSize;
@@ -316,7 +316,7 @@ bool MeshAssimpDecoder::decodeMesh(const aiScene* scene, stream::Stream* modelSt
                 attribDescriptionList.front() >> modelStream;
 
                 newHeader->_meshes.front()._offset = 0;
-                newHeader->_meshes.front()._indexPresent = m_generateIndices;
+                newHeader->_meshes.front()._flags |= m_generateIndices ? scene::GeometryHeader::GeometryFlag_PresentIndex : 0;
 #if DEBUG
                 newHeader->_meshes.front()._debugName = scene->mMeshes[0]->mName.C_Str();
 #endif
@@ -325,7 +325,7 @@ bool MeshAssimpDecoder::decodeMesh(const aiScene* scene, stream::Stream* modelSt
 
             newHeader->_meshes.front()._size += meshSize;
 
-            scene::MeshHeader::GeometryInfo& vertexInfo = newHeader->_meshes.front()._vertex;
+            scene::GeometryHeader::GeometryInfo& vertexInfo = newHeader->_meshes.front()._vertex;
             vertexInfo._subData.push_back({ globalVertexSize, meshSize, mesh->mNumVertices });
             vertexInfo._count += mesh->mNumVertices;
             vertexInfo._size += meshSize;
@@ -494,7 +494,7 @@ bool MeshAssimpDecoder::decodeMesh(const aiScene* scene, stream::Stream* modelSt
                 newHeader->_meshes[m]._size += indexSize;
                 newHeader->_meshes[m]._offset += globalIndexSize;
 
-                scene::MeshHeader::GeometryInfo& indexInfo = newHeader->_meshes[m]._index;
+                scene::GeometryHeader::GeometryInfo& indexInfo = newHeader->_meshes[m]._index;
                 indexInfo._size = indexSize;
                 indexInfo._count = indexCount;
                 indexInfo._subData.push_back({ globalIndexSize, indexSize, indexCount });
@@ -503,7 +503,7 @@ bool MeshAssimpDecoder::decodeMesh(const aiScene* scene, stream::Stream* modelSt
             {
                 newHeader->_meshes.front()._size += indexSize;
 
-                scene::MeshHeader::GeometryInfo& indexInfo = newHeader->_meshes.front()._index;
+                scene::GeometryHeader::GeometryInfo& indexInfo = newHeader->_meshes.front()._index;
                 indexInfo._size += indexSize;
                 indexInfo._count += indexCount;
                 indexInfo._subData.push_back({ globalIndexSize, indexSize, indexCount });

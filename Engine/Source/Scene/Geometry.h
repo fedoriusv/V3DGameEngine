@@ -12,11 +12,11 @@ namespace scene
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
-    * MeshHeader meta info about Mesh
+    * @brief GeometryHeader meta info of Geometry
     */
-    struct MeshHeader : resource::ResourceHeader
+    struct GeometryHeader : resource::ResourceHeader
     {
-        MeshHeader();
+        GeometryHeader() noexcept;
 
         struct GeometryInfo
         {
@@ -33,8 +33,8 @@ namespace scene
             u64                  _size;
             std::vector<SubData> _subData;
 
-            void operator >> (stream::Stream * stream) const;
-            void operator << (const stream::Stream * stream);
+            void operator>>(stream::Stream* stream) const;
+            void operator<<(const stream::Stream* stream);
         };
 
         GeometryInfo    _index;
@@ -43,31 +43,36 @@ namespace scene
         u64             _size;
         u64             _offset;
 
-        bool            _indexPresent;
+        enum GeometryFlag
+        {
+            GeometryFlag_PresentIndex = 1 << 0,
+        };
+
+        u16 _flags;
     };
 
     /**
-    * Mesh class. Component, Resource
+    * @brief Geometry class. Contains mesh geometry.
     */
-    class Mesh : public Component, public resource::Resource
+    class Geometry : public resource::Resource
     {
     public:
 
-        explicit Mesh(MeshHeader* header) noexcept;
-        ~Mesh();
+        explicit Geometry(GeometryHeader* header) noexcept;
+        ~Geometry();
 
         void init(stream::Stream* stream) override;
         bool load() override;
 
         const renderer::VertexInputAttribDescription& getVertexInputAttribDesc() const;
 
-        u8* getVertexData(s32 subMesh = -1) const;
-        u32 getVertexCount(s32 subMesh = -1) const;
-        u64 getVertexSize(s32 subMesh = -1) const;
+        u8* getVertexData(s32 subGeometry = -1) const;
+        u32 getVertexCount(s32 subGeometry = -1) const;
+        u64 getVertexSize(s32 subGeometry = -1) const;
 
-        u8* getIndexData(s32 subMesh = -1) const;
-        u32 getIndexCount(s32 subMesh = -1) const;
-        u64 getIndexSize(s32 subMesh = -1) const;
+        u8* getIndexData(s32 subGeometry = -1) const;
+        u32 getIndexCount(s32 subGeometry = -1) const;
+        u64 getIndexSize(s32 subGeometry = -1) const;
 
     private:
 
@@ -77,12 +82,12 @@ namespace scene
             u64 _size;
         };
 
-        class SubMesh final
+        class SubGeometry final
         {
         public:
 
-            SubMesh() noexcept;
-            ~SubMesh();
+            SubGeometry() noexcept;
+            ~SubGeometry() = default;
 
             u8* getVertexData() const;
             u32 getVertexCount() const;
@@ -103,10 +108,10 @@ namespace scene
             u32 m_vertexCount;
             BufferData m_vertexData;
 
-            friend Mesh;
+            friend Geometry;
         };
 
-        const MeshHeader& getMeshHeader() const;
+        const GeometryHeader& getGeometryHeader() const;
         void fillVertexData(u32 count, u8* data, u64 size);
         void fillIndexData(u32 count, u8* data, u64 size);
 
@@ -121,7 +126,7 @@ namespace scene
         u32 m_vertexCount;
         BufferData m_vertexData;
 
-        std::vector<SubMesh*> m_subMeshes;
+        std::vector<SubGeometry*> m_subGeometry;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
