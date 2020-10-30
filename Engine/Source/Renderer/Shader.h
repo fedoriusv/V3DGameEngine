@@ -15,23 +15,22 @@ namespace renderer
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
-    * ShaderHeader meta info about Shader
+    * @brief ShaderHeader meta info about Shader
     */
     struct ShaderHeader : resource::ResourceHeader
     {
+        /**
+        * @brief enum class ShaderResource
+        */
         enum class ShaderResource : u16
         {
             ShaderResource_Source,
-            ShaderResource_SpirVBytecode,
+            ShaderResource_Bytecode,
         };
 
-        enum class ShaderLang : u16
-        {
-            ShaderLang_GLSL,
-            ShaderLang_HLSL,
-            ShaderLang_SpirV
-        };
-
+        /**
+        * @brief enum class ShaderModel
+        */
         enum class ShaderModel : u16
         {
             ShaderModel_Default,
@@ -39,6 +38,7 @@ namespace renderer
             ShaderModel_GLSL_450,
             ShaderModel_HLSL_5_0,
             ShaderModel_HLSL_5_1,
+            ShaderModel_SpirV,
         };
 
         ShaderHeader() noexcept;
@@ -46,8 +46,7 @@ namespace renderer
 
         renderer::ShaderType _type;
         ShaderResource       _contentType;
-        ShaderLang           _shaderLang;
-        ShaderModel          _shaderVersion;
+        ShaderModel          _shaderModel;
         u32                  _optLevel;
         std::string          _entryPoint;
 
@@ -58,13 +57,16 @@ namespace renderer
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
-    * Shader class. 
+    * @brief Shader class.
     * Resource, present on Render and Game thread
     */
     class Shader : public resource::Resource
     {
     public:
 
+        /**
+        * @brief struct Attribute
+        */
         struct Attribute
         {
             Attribute();
@@ -74,10 +76,13 @@ namespace renderer
 #if USE_STRING_ID_SHADER
             std::string      _name;
 #endif
-            void operator >> (stream::Stream * stream) const;
-            void operator << (const stream::Stream * stream);
+            void operator>>(stream::Stream* stream) const;
+            void operator<<(const stream::Stream* stream);
         };
 
+        /**
+        * @brief struct UniformBuffer
+        */
         struct UniformBuffer
         {
             struct Uniform
@@ -92,8 +97,8 @@ namespace renderer
 #if USE_STRING_ID_SHADER
                 std::string        _name;
 #endif
-                void operator >> (stream::Stream * stream) const;
-                void operator << (const stream::Stream * stream);
+                void operator>>(stream::Stream* stream) const;
+                void operator<<(const stream::Stream* stream);
             };
 
             UniformBuffer();
@@ -108,10 +113,13 @@ namespace renderer
 #endif
             std::vector<Uniform> _uniforms;
 
-            void operator >> (stream::Stream * stream) const;
-            void operator << (const stream::Stream * stream);
+            void operator>>(stream::Stream* stream) const;
+            void operator<<(const stream::Stream* stream);
         };
 
+        /**
+        * @brief struct Image
+        */
         struct Image
         {
             Image();
@@ -125,10 +133,13 @@ namespace renderer
 #if USE_STRING_ID_SHADER
             std::string             _name;
 #endif
-            void operator >> (stream::Stream * stream) const;
-            void operator << (const stream::Stream * stream);
+            void operator>>(stream::Stream* stream) const;
+            void operator<<(const stream::Stream* stream);
         };
 
+        /**
+        * @brief struct Sampler
+        */
         struct Sampler
         {
             Sampler();
@@ -138,10 +149,13 @@ namespace renderer
 #if USE_STRING_ID_SHADER
             std::string             _name;
 #endif
-            void operator >> (stream::Stream* stream) const;
-            void operator << (const stream::Stream* stream);
+            void operator>>(stream::Stream* stream) const;
+            void operator<<(const stream::Stream* stream);
         };
 
+        /**
+        * @brief struct PushConstant
+        */
         struct PushConstant
         {
             PushConstant();
@@ -151,10 +165,13 @@ namespace renderer
 #if USE_STRING_ID_SHADER
             std::string _name;
 #endif
-            void operator >> (stream::Stream * stream) const;
-            void operator << (const stream::Stream * stream);
+            void operator>>(stream::Stream* stream) const;
+            void operator<<(const stream::Stream* stream);
         };
 
+        /**
+        * @brief struct ReflectionInfo
+        */
         struct ReflectionInfo
         {
             std::vector<Attribute>      _inputAttribute;

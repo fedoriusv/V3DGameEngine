@@ -8,7 +8,7 @@ namespace v3d
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
-    * Object base game class. Game side
+    * @brief Object base game class. Game side
     */
     class Object : public utils::RefCounted
     {
@@ -19,11 +19,13 @@ namespace v3d
 
         void* operator new(size_t size) noexcept
         {
+            //TODO use memory pool
             return malloc(size);
         }
         
         void operator delete(void* ptr) noexcept
         {
+            //TODO use memory pool
             free(ptr);
         }
     };

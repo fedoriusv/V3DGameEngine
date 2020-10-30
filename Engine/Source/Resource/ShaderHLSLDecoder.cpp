@@ -45,13 +45,18 @@ ShaderHLSLDecoder::~ShaderHLSLDecoder()
 {
 }
 
-Resource * ShaderHLSLDecoder::decode(const stream::Stream* stream, const std::string& name)
+Resource* ShaderHLSLDecoder::decode(const stream::Stream* stream, const std::string& name)
 {
     if (stream->size() > 0)
     {
         stream->seekBeg(0);
 
-        if (m_header._shaderLang != renderer::ShaderHeader::ShaderLang::ShaderLang_HLSL)
+        auto isHLSL = [](renderer::ShaderHeader::ShaderModel model) -> bool
+        {
+            return model == renderer::ShaderHeader::ShaderModel::ShaderModel_HLSL_5_0 || model == renderer::ShaderHeader::ShaderModel::ShaderModel_HLSL_5_1;
+        };
+
+        if (!isHLSL(m_header._shaderModel))
         {
             LOG_ERROR("ShaderHLSLDecoder::decode support only HLSL language");
             return nullptr;
@@ -139,7 +144,7 @@ Resource * ShaderHLSLDecoder::decode(const stream::Stream* stream, const std::st
                 return false;
             };
 
-            if (!getShaderType(type, m_header._shaderVersion))
+            if (!getShaderType(type, m_header._shaderModel))
             {
                 LOG_ERROR("ShaderHLSLDecoder::decode wrong version: %s", shaderVersion.c_str());
                 return nullptr;
@@ -207,7 +212,7 @@ Resource * ShaderHLSLDecoder::decode(const stream::Stream* stream, const std::st
 
             renderer::ShaderHeader* resourceHeader = new renderer::ShaderHeader(m_header);
             resourceHeader->_type = type;
-            resourceHeader->_shaderVersion = shaderModel;
+            resourceHeader->_shaderModel = shaderModel;
 #if DEBUG
             resourceHeader->_debugName = name;
 #endif

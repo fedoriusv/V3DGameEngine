@@ -22,8 +22,8 @@ ShaderBinaryFileLoader::ShaderBinaryFileLoader(const renderer::Context* context,
 #ifdef USE_SPIRV
         {
             renderer::ShaderHeader header;
-            header._contentType = renderer::ShaderHeader::ShaderResource::ShaderResource_SpirVBytecode;
-            header._shaderLang = renderer::ShaderHeader::ShaderLang::ShaderLang_SpirV;
+            header._contentType = renderer::ShaderHeader::ShaderResource::ShaderResource_Bytecode;
+            header._shaderModel = renderer::ShaderHeader::ShaderModel::ShaderModel_SpirV;
             header._optLevel = 0;
             ASSERT(defines.empty(), "cant use defines, should be finaly compiled already");
 

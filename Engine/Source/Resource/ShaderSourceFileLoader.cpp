@@ -31,7 +31,7 @@ ShaderSourceFileLoader::ShaderSourceFileLoader(const renderer::Context* context,
 #endif
             renderer::ShaderHeader header;
             header._contentType = renderer::ShaderHeader::ShaderResource::ShaderResource_Source;
-            header._shaderLang = renderer::ShaderHeader::ShaderLang::ShaderLang_GLSL;
+            header._shaderModel = renderer::ShaderHeader::ShaderModel::ShaderModel_GLSL_450;
             header._optLevel = (flags & ShaderSourceBuildFlag::ShaderSource_OptimisationPerformance) ? 2 : (flags & ShaderSourceBuildFlag::ShaderSource_OptimisationSize) ? 1 : 0;
             header._defines = defines;
             header._flags |= (flags & ShaderSourceBuildFlag::ShaderSource_Patched) ? ShaderSourceBuildFlag::ShaderSource_Patched : header._flags;
@@ -42,7 +42,7 @@ ShaderSourceFileLoader::ShaderSourceFileLoader(const renderer::Context* context,
         {
             renderer::ShaderHeader header;
             header._contentType = renderer::ShaderHeader::ShaderResource::ShaderResource_Source;
-            header._shaderLang = renderer::ShaderHeader::ShaderLang::ShaderLang_HLSL;
+            header._shaderModel = renderer::ShaderHeader::ShaderModel::ShaderModel_HLSL_5_1;
             header._optLevel = (flags & ShaderSourceBuildFlag::ShaderSource_OptimisationPerformance) ? 2 : (flags & ShaderSourceBuildFlag::ShaderSource_OptimisationSize) ? 1 : 0;
             header._defines = defines;
             header._flags |= (flags & ShaderSourceBuildFlag::ShaderSource_Patched) ? ShaderSourceBuildFlag::ShaderSource_Patched : header._flags;
@@ -59,10 +59,9 @@ ShaderSourceFileLoader::ShaderSourceFileLoader(const renderer::Context* context,
     {
         renderer::ShaderHeader header;
         header._contentType = renderer::ShaderHeader::ShaderResource::ShaderResource_Source;
-        header._shaderLang = renderer::ShaderHeader::ShaderLang::ShaderLang_HLSL;
+        header._shaderModel = renderer::ShaderHeader::ShaderModel::ShaderModel_HLSL_5_1;
         header._optLevel = (flags & ShaderSourceBuildFlag::ShaderSource_OptimisationPerformance) ? 2 : (flags & ShaderSourceBuildFlag::ShaderSource_OptimisationSize) ? 1 : 0;
         header._defines = defines;
-        header._shaderVersion = renderer::ShaderHeader::ShaderModel::ShaderModel_HLSL_5_1;
 
         ResourceLoader::registerDecoder(new ShaderHLSLDecoder({ "vs", "ps" }, header, !(flags & ShaderSourceBuildFlag::ShaderSource_DontUseReflection)));
     }
