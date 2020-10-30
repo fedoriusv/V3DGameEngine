@@ -11,28 +11,21 @@ namespace v3d
 {
 namespace renderer
 {
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
+
     class ShaderProgram;
 
-     /////////////////////////////////////////////////////////////////////////////////////////////////////
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
-    * SamplerState class. Game side
-    *\n
-    * Constructor param:
-    SamplerFilter mag
-    SamplerFilter min
-    SamplerAnisotropic aniso
-    *\n
-    * Constructor param:
-    SamplerFilter filter
-    SamplerAnisotropic aniso
+    * @brief SamplerState class. Game side
     */
     class SamplerState : public Object
     {
     public:
 
         SamplerState() = delete;
-        SamplerState(const SamplerState &) = delete;
+        SamplerState(const SamplerState&) = delete;
 
         ~SamplerState();
 
@@ -43,8 +36,8 @@ namespace renderer
         SamplerWrap           getWrapW() const;
         SamplerAnisotropic    getAnisotropic() const;
         CompareOperation      getCompareOp() const;
-        const core::Vector4D& getBorderColor() const;
         bool                  isEnableCompareOp() const;
+        const core::Vector4D& getBorderColor() const;
 
         void setMinFilter(SamplerFilter filter);
         void setMagFilter(SamplerFilter filter);
@@ -58,12 +51,33 @@ namespace renderer
 
     private:
 
+        /**
+        * @briefSamplerState constructor. Used for creating sampler.
+        * Private method. Use createObject interface inside CommandList class to call.
+        */
         explicit SamplerState(renderer::CommandList& cmdList) noexcept;
+
+        /**
+        * @brief SamplerState constructor. Used for creating sampler.
+        * Private method. Use createObject interface inside CommandList class to call.
+        *
+        * @param SamplerFilter filter [required]
+        * @param SamplerAnisotropic aniso [required]
+        */
         explicit SamplerState(renderer::CommandList& cmdList, SamplerFilter filter, SamplerAnisotropic aniso) noexcept;
+
+        /**
+        * @brief SamplerState constructor. Used for creating sampler.
+        * Private method. Use createObject interface inside CommandList class to call.
+        *
+        * @param SamplerFilter mag [required]
+        * @param SamplerFilter min [required]
+        * @param SamplerAnisotropic aniso [required]
+        */
         explicit SamplerState(renderer::CommandList& cmdList, SamplerFilter mag, SamplerFilter min, SamplerAnisotropic aniso) noexcept;
 
-        renderer::CommandList& m_cmdList;
-        friend renderer::CommandList;
+        CommandList& m_cmdList;
+        friend CommandList;
 
         void destroySamplers(const std::vector<Sampler*>& samplers);
 
