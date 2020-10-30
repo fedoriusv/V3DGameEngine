@@ -72,8 +72,7 @@ void SimpleTriangle::init(v3d::renderer::CommandList* commandList, const core::D
 
         renderer::ShaderHeader vertexHeader(renderer::ShaderType::ShaderType_Vertex);
         vertexHeader._contentType = renderer::ShaderHeader::ShaderResource::ShaderResource_Source;
-        vertexHeader._shaderLang = renderer::ShaderHeader::ShaderLang::ShaderLang_HLSL;
-        vertexHeader._shaderVersion = renderer::ShaderHeader::ShaderModel::ShaderModel_HLSL_5_1;
+        vertexHeader._shaderModel = renderer::ShaderHeader::ShaderModel::ShaderModel_HLSL_5_1;
 
         vertShader = resource::ResourceLoaderManager::getInstance()->composeShader<renderer::Shader, resource::ShaderSourceStreamLoader>(m_CommandList->getContext(), "vertex", &vertexHeader, vertexStream);
         delete vertexStream;
@@ -96,7 +95,7 @@ void SimpleTriangle::init(v3d::renderer::CommandList* commandList, const core::D
 
         renderer::ShaderHeader fragmentHeader(renderer::ShaderType::ShaderType_Fragment);
         fragmentHeader._contentType = renderer::ShaderHeader::ShaderResource::ShaderResource_Source;
-        fragmentHeader._shaderLang = renderer::ShaderHeader::ShaderLang::ShaderLang_HLSL;
+        fragmentHeader._shaderModel = renderer::ShaderHeader::ShaderModel::ShaderModel_HLSL_5_1;
 
         fragShader = resource::ResourceLoaderManager::getInstance()->composeShader<renderer::Shader, resource::ShaderSourceStreamLoader>(m_CommandList->getContext(), "fragment", &fragmentHeader, fragmentStream);
         delete fragmentStream;

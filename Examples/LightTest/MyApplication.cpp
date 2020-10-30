@@ -32,15 +32,15 @@ MyApplication::MyApplication(int& argc, char** argv)
     , m_Context(nullptr)
     , m_CommandList(nullptr)
 
+    , m_ArcballCameraHelper(nullptr)
+    , m_FPSCameraHelper(nullptr)
+
     , m_UnLit(nullptr)
     , m_DirectionalLight(nullptr)
     , m_PointLightTextureless(nullptr)
     , m_PointLight(nullptr)
     , m_NormalMap(nullptr)
     , m_ParallaxMap(nullptr)
-
-    , m_ArcballCameraHelper(nullptr)
-    , m_FPSCameraHelper(nullptr)
 {
     ASSERT(m_Window, "windows is nullptr");
     m_Window->getInputEventReceiver()->attach(InputEvent::InputEventType::KeyboardInputEvent, m_InputEventHandler);

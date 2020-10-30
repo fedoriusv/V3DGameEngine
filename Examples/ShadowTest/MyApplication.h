@@ -18,7 +18,7 @@
 #include "Renderer/Object/Texture.h"
 
 #include "ShadowMap.h"
-
+#include "Debug.h"
 
 class MyApplication
 {
@@ -51,26 +51,30 @@ private:
     v3d::utils::IntrusivePointer<v3d::renderer::Texture2D> m_ColorTexture;
 
     v3d::utils::IntrusivePointer<v3d::renderer::RenderTargetState> m_RenderTarget;
-    v3d::utils::IntrusivePointer<v3d::renderer::GraphicsPipelineState> m_Pipeline;
-    v3d::utils::IntrusivePointer<v3d::renderer::ShaderProgram> m_Program;
 
-
-    v3d::core::Vector3D m_LightPosition = { -1.0f, 3.0f, 5.0f };
+    v3d::core::Vector3D m_LightPosition = { 1.0f, 3.0f, 5.0f };
     v3d::scene::Transform m_Transform;
 
-    struct LightDebug
-    {
-        void Init(v3d::renderer::CommandList* commandList, v3d::renderer::RenderTargetState* renderTarget);
-        void Draw(v3d::renderer::CommandList* commandList, v3d::scene::Camera* camera, const v3d::core::Vector3D& light);
-        void Free();
-
-        v3d::utils::IntrusivePointer<v3d::renderer::GraphicsPipelineState> m_Pipeline;
-        v3d::utils::IntrusivePointer<v3d::renderer::ShaderProgram> m_Program;
-
-        v3d::scene::ModelHelper* m_Geometry = nullptr;
-        v3d::core::Vector4D m_lightColor = { 1.0f, 1.0f, 0.0f, 1.0f };
-    };
-    LightDebug m_LightDebug;
+    void DrawDirectionLightMode();
 
     v3d::ShadowMapping* m_ShadowMapping;
+    v3d::utils::IntrusivePointer<v3d::renderer::GraphicsPipelineState> m_ShadowMappingPipeline;
+    v3d::utils::IntrusivePointer<v3d::renderer::ShaderProgram> m_ShadowMappingProgram;
+    v3d::core::Vector3D m_SunDirection = { 0.0f, 5.0f, 5.0f };
+
+    v3d::ShadowMappingPoint* m_ShadowMappingPoint;
+    v3d::utils::IntrusivePointer<v3d::renderer::GraphicsPipelineState> m_ShadowMappingPointPipeline;
+    v3d::utils::IntrusivePointer<v3d::renderer::ShaderProgram> m_ShadowMappingPointProgram;
+
+    enum 
+    {
+        DirectionLight,
+        DirectionLightPCF,
+        PointLight
+    } m_Mode;
+
+    v3d::DirectionLightDebug m_DirectionLightDebug;
+    v3d::LightDebug m_LightDebug;
+
+    bool m_Debug;
 };

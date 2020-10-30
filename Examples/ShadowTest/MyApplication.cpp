@@ -38,6 +38,10 @@ MyApplication::MyApplication(int& argc, char** argv)
     , m_Scene(nullptr)
 
     , m_ShadowMapping(nullptr)
+    , m_ShadowMappingPoint(nullptr)
+
+    , m_Mode(DirectionLight)
+    , m_Debug(true)
 {
     ASSERT(m_Window, "windows is nullptr");
     m_Window->getInputEventReceiver()->attach(InputEvent::InputEventType::KeyboardInputEvent, m_InputEventHandler);
@@ -73,7 +77,7 @@ void MyApplication::Initialize()
     ASSERT(m_Context, "context is nullptr");
     m_CommandList = new renderer::CommandList(m_Context, renderer::CommandList::CommandListType::ImmediateCommandList);
 
-    m_FPSCameraHelper = new v3d::scene::CameraFPSHelper(new v3d::scene::Camera(core::Vector3D(0.0f, 0.0f, 0.0f), core::Vector3D(0.0f, 1.0f, 0.0f)), core::Vector3D(0.0f, 1.0f, -4.0f));
+    m_FPSCameraHelper = new v3d::scene::CameraFPSHelper(new v3d::scene::Camera(core::Vector3D(0.0f, 0.0f, -8.0f), core::Vector3D(0.0f, 1.0f, 0.0f)), core::Vector3D(0.0f, 1.0f, -4.0f));
     m_FPSCameraHelper->setPerspective(45.0f, m_Window->getSize(), 0.01f, 256.f);
 
     m_InputEventHandler->connect([this](const MouseInputEvent* event)
@@ -138,11 +142,11 @@ void MyApplication::Load()
     m_RenderTarget->setDepthStencilTexture(depthAttachment, renderer::RenderTargetLoadOp::LoadOp_Clear, renderer::RenderTargetStoreOp::StoreOp_DontCare, 1.0f);
 
     m_ShadowSampler = m_CommandList->createObject<renderer::SamplerState>(renderer::SamplerFilter::SamplerFilter_Bilinear, renderer::SamplerFilter::SamplerFilter_Bilinear, renderer::SamplerAnisotropic::SamplerAnisotropic_None);
-    m_ShadowSampler->setWrap(renderer::SamplerWrap::TextureWrap_ClampToEdge);
+    m_ShadowSampler->setWrap(renderer::SamplerWrap::TextureWrap_ClampToBorder);
 
 
     {
-        v3d::scene::Model* scene = resource::ResourceLoaderManager::getInstance()->load<v3d::scene::Model, resource::ModelFileLoader>("resources/scene_t.dae");
+        v3d::scene::Model* scene = resource::ResourceLoaderManager::getInstance()->load<v3d::scene::Model, resource::ModelFileLoader>("resources/big_field.dae");
         m_Scene = v3d::scene::ModelHelper::createModelHelper(*m_CommandList, { scene });
     }
 
@@ -159,23 +163,101 @@ void MyApplication::Load()
         renderer::Shader* vertShader = resource::ResourceLoaderManager::getInstance()->loadShader<renderer::Shader, resource::ShaderSourceFileLoader>(m_CommandList->getContext(), "resources/solid.vert");
         renderer::Shader* fragShader = resource::ResourceLoaderManager::getInstance()->loadShader<renderer::Shader, resource::ShaderSourceFileLoader>(m_CommandList->getContext(), "resources/solid.frag");
 
-        m_Program = m_CommandList->createObject<renderer::ShaderProgram, std::vector<const renderer::Shader*>>({ vertShader, fragShader });
-        m_Pipeline = m_CommandList->createObject<renderer::GraphicsPipelineState>(m_Scene->getVertexInputAttribDescription(0, 0), m_Program.get(), m_RenderTarget.get());
-        m_Pipeline->setPrimitiveTopology(renderer::PrimitiveTopology::PrimitiveTopology_TriangleList);
-        m_Pipeline->setFrontFace(renderer::FrontFace::FrontFace_Clockwise);
-        m_Pipeline->setCullMode(renderer::CullMode::CullMode_None);
-        m_Pipeline->setColorMask(renderer::ColorMask::ColorMask_All);
-        m_Pipeline->setDepthCompareOp(renderer::CompareOperation::CompareOp_Less);
-        m_Pipeline->setDepthWrite(true);
-        m_Pipeline->setDepthTest(true);
-
-        m_CommandList->flushCommands();
+        m_ShadowMappingProgram = m_CommandList->createObject<renderer::ShaderProgram, std::vector<const renderer::Shader*>>({ vertShader, fragShader });
+        m_ShadowMappingPipeline = m_CommandList->createObject<renderer::GraphicsPipelineState>(m_Scene->getVertexInputAttribDescription(0, 0), m_ShadowMappingProgram.get(), m_RenderTarget.get());
+        m_ShadowMappingPipeline->setPrimitiveTopology(renderer::PrimitiveTopology::PrimitiveTopology_TriangleList);
+        m_ShadowMappingPipeline->setFrontFace(renderer::FrontFace::FrontFace_Clockwise);
+        m_ShadowMappingPipeline->setCullMode(renderer::CullMode::CullMode_None);
+        m_ShadowMappingPipeline->setColorMask(renderer::ColorMask::ColorMask_All);
+        m_ShadowMappingPipeline->setDepthCompareOp(renderer::CompareOperation::CompareOp_Less);
+        m_ShadowMappingPipeline->setDepthWrite(true);
+        m_ShadowMappingPipeline->setDepthTest(true);
     }
 
-    m_LightDebug.Init(m_CommandList, m_RenderTarget.get());
+    {
+        renderer::Shader* vertShader = resource::ResourceLoaderManager::getInstance()->loadShader<renderer::Shader, resource::ShaderSourceFileLoader>(m_CommandList->getContext(), "resources/shadowPointLight.vert");
+        renderer::Shader* fragShader = resource::ResourceLoaderManager::getInstance()->loadShader<renderer::Shader, resource::ShaderSourceFileLoader>(m_CommandList->getContext(), "resources/shadowPointLight.frag");
+
+        m_ShadowMappingPointProgram = m_CommandList->createObject<renderer::ShaderProgram, std::vector<const renderer::Shader*>>({ vertShader, fragShader });
+        m_ShadowMappingPointPipeline = m_CommandList->createObject<renderer::GraphicsPipelineState>(m_Scene->getVertexInputAttribDescription(0, 0), m_ShadowMappingPointProgram.get(), m_RenderTarget.get());
+        m_ShadowMappingPointPipeline->setPrimitiveTopology(renderer::PrimitiveTopology::PrimitiveTopology_TriangleList);
+        m_ShadowMappingPointPipeline->setFrontFace(renderer::FrontFace::FrontFace_Clockwise);
+        m_ShadowMappingPointPipeline->setCullMode(renderer::CullMode::CullMode_None);
+        m_ShadowMappingPointPipeline->setColorMask(renderer::ColorMask::ColorMask_All);
+        m_ShadowMappingPointPipeline->setDepthCompareOp(renderer::CompareOperation::CompareOp_Less);
+        m_ShadowMappingPointPipeline->setDepthWrite(true);
+        m_ShadowMappingPointPipeline->setDepthTest(true);
+    }
+
+    m_CommandList->flushCommands();
 
     m_ShadowMapping = new ShadowMapping(m_CommandList);
     m_ShadowMapping->Init(m_Scene->getVertexInputAttribDescription(0, 0));
+
+    m_ShadowMappingPoint = new ShadowMappingPoint(m_CommandList);
+    m_ShadowMappingPoint->Init(m_Scene->getVertexInputAttribDescription(0, 0));
+
+    if (m_Debug)
+    {
+        //m_DirectionLightDebug.Init(m_CommandList, m_RenderTarget.get());
+
+        m_LightDebug.Init(m_CommandList, m_RenderTarget.get());
+    }
+}
+
+void MyApplication::DrawDirectionLightMode()
+{
+    m_ShadowMapping->Draw(m_Scene, m_Transform);
+
+    m_CommandList->setViewport(core::Rect32(0, 0, m_RenderTarget->getDimension().width, m_RenderTarget->getDimension().height));
+    m_CommandList->setScissor(core::Rect32(0, 0, m_RenderTarget->getDimension().width, m_RenderTarget->getDimension().height));
+    m_CommandList->setRenderTarget(m_RenderTarget.get());
+
+    m_CommandList->setPipelineState(m_ShadowMappingPipeline.get());
+    {
+        struct UBO
+        {
+            core::Matrix4D projectionMatrix;
+            core::Matrix4D modelMatrix;
+            core::Matrix4D normalMatrix;
+            core::Matrix4D viewMatrix;
+            core::Matrix4D lightSpaceMatrix;
+        } ubo;
+
+
+        ubo.projectionMatrix = m_FPSCameraHelper->getProjectionMatrix();
+        ubo.modelMatrix = m_Transform.getTransform();
+        ubo.modelMatrix.getInverse(ubo.normalMatrix);
+        ubo.normalMatrix.makeTransposed();
+        ubo.viewMatrix = m_FPSCameraHelper->getViewMatrix();
+        ubo.lightSpaceMatrix = m_ShadowMapping->GetLightSpaceMatrix();
+
+        m_ShadowMappingProgram->bindUniformsBuffer<renderer::ShaderType::ShaderType_Vertex>({ "ubo" }, 0, (u32)sizeof(UBO), &ubo);
+    }
+
+    {
+        struct UBO
+        {
+            core::Vector4D lightDirection;
+            core::Vector4D viewPosition;
+        } ubo;
+
+        ubo.lightDirection = m_SunDirection;
+        ubo.lightDirection.normalize();
+        ubo.viewPosition = m_FPSCameraHelper->getPosition();
+
+        m_ShadowMappingProgram->bindUniformsBuffer<renderer::ShaderType::ShaderType_Fragment>({ "ubo" }, 0, (u32)sizeof(UBO), &ubo);
+        m_ShadowMappingProgram->bindSampler<renderer::ShaderType::ShaderType_Fragment>({ "shadowSampler" }, m_ShadowSampler.get());
+        m_ShadowMappingProgram->bindTexture<renderer::ShaderType::ShaderType_Fragment, renderer::Texture2D>({ "shadowMap" }, m_ShadowMapping->GetDepthMap());
+    }
+
+    m_Scene->draw();
+
+    if (m_Debug)
+    {
+        //m_LightDebug.Draw(m_CommandList, &m_FPSCameraHelper->getCamera(), m_Light.getPosition());
+        //m_DirectionLightDebug.Draw(m_CommandList, &m_FPSCameraHelper->getCamera(), m_LightAngleDirection, { 1.f, 1.f, 1.f });
+    }
 }
 
 bool MyApplication::Running()
@@ -185,14 +267,18 @@ bool MyApplication::Running()
     //Frame
     m_CommandList->beginFrame();
 
-    m_ShadowMapping->Draw(m_Scene, m_Transform);
-
-    m_CommandList->setViewport(core::Rect32(0, 0, m_RenderTarget->getDimension().width, m_RenderTarget->getDimension().height));
-    m_CommandList->setScissor(core::Rect32(0, 0, m_RenderTarget->getDimension().width, m_RenderTarget->getDimension().height));
-    m_CommandList->setRenderTarget(m_RenderTarget.get());
-
+    if (m_Mode == DirectionLight)
     {
-        m_CommandList->setPipelineState(m_Pipeline.get());
+        MyApplication::DrawDirectionLightMode();
+    }
+    else if (m_Mode == 1)
+    {
+        m_ShadowMappingPoint->Draw(m_Scene, m_Transform);
+
+        m_CommandList->setViewport(core::Rect32(0, 0, m_RenderTarget->getDimension().width, m_RenderTarget->getDimension().height));
+        m_CommandList->setScissor(core::Rect32(0, 0, m_RenderTarget->getDimension().width, m_RenderTarget->getDimension().height));
+        m_CommandList->setRenderTarget(m_RenderTarget.get());
+        m_CommandList->setPipelineState(m_ShadowMappingPointPipeline.get());
 
         {
             struct UBO
@@ -201,7 +287,8 @@ bool MyApplication::Running()
                 core::Matrix4D modelMatrix;
                 core::Matrix4D normalMatrix;
                 core::Matrix4D viewMatrix;
-                core::Matrix4D lightSpaceMatrix;
+                core::Vector4D lightPosition;
+                core::Vector4D viewPosition;
             } ubo;
 
 
@@ -210,32 +297,19 @@ bool MyApplication::Running()
             ubo.modelMatrix.getInverse(ubo.normalMatrix);
             ubo.normalMatrix.makeTransposed();
             ubo.viewMatrix = m_FPSCameraHelper->getViewMatrix();
-            ubo.lightSpaceMatrix = m_ShadowMapping->GetLightSpaceMatrix();
-
-            m_Program->bindUniformsBuffer<renderer::ShaderType::ShaderType_Vertex>({ "ubo" }, 0, (u32)sizeof(UBO), &ubo);
-        }
-
-        {
-            struct UBO
-            {
-                core::Vector4D lightPosition;
-                core::Vector4D viewPosition;
-            } ubo;
-
             ubo.lightPosition = m_LightPosition;
             ubo.viewPosition = m_FPSCameraHelper->getPosition();
 
-            m_Program->bindUniformsBuffer<renderer::ShaderType::ShaderType_Fragment>({ "ubo" }, 0, (u32)sizeof(UBO), &ubo);
-            //m_Program->bindSampler<renderer::ShaderType::ShaderType_Fragment>({ "colorSampler" }, m_ColorSampler.get());
-            //m_Program->bindTexture<renderer::ShaderType::ShaderType_Fragment, renderer::Texture2D>({ "colorTexture" }, m_ColorTexture.get());
-            m_Program->bindSampler<renderer::ShaderType::ShaderType_Fragment>({ "shadowSampler" }, m_ShadowSampler.get());
-            m_Program->bindTexture<renderer::ShaderType::ShaderType_Fragment, renderer::Texture2D>({ "shadowMap" }, m_ShadowMapping->GetDepthMap());
+            m_ShadowMappingPointProgram->bindUniformsBuffer<renderer::ShaderType::ShaderType_Vertex>({ "ubo" }, 0, (u32)sizeof(UBO), &ubo);
         }
 
-        m_Scene->draw();
+        {
+            //m_Program->bindSampler<renderer::ShaderType::ShaderType_Fragment>({ "shadowSampler" }, m_ShadowSampler.get());
+            //m_Program->bindTexture<renderer::ShaderType::ShaderType_Fragment, renderer::Texture2D>({ "shadowMap" }, m_ShadowMapping->GetDepthMap());
+        }
     }
 
-    m_LightDebug.Draw(m_CommandList, &m_FPSCameraHelper->getCamera(), m_LightPosition);
+
 
     m_CommandList->endFrame();
     m_CommandList->presentFrame();
@@ -248,7 +322,39 @@ bool MyApplication::Running()
 void MyApplication::Update(f32 dt)
 {
     m_FPSCameraHelper->update(dt);
-    m_ShadowMapping->Update(dt, m_LightPosition, core::Vector3D(0.0f, 0.0f, 0.0f));
+    if (m_Mode == DirectionLight)
+    {
+        const f32 k_sunConstant = 5.0f;
+        const f32 k_sunKoeff = m_SunDirection.z > 0.f ? 1.0f : -1.0f;
+        v3d::core::Vector3D testSunOffest(0, 0, k_sunConstant * k_sunKoeff);
+
+        v3d::scene::Transform testSunPivot;
+        testSunPivot.setPosition(m_FPSCameraHelper->getPosition() + testSunOffest);
+        testSunPivot.setRotation(m_FPSCameraHelper->getRotation());
+
+        v3d::scene::Transform testSunPosition;
+        testSunPosition.setPosition(testSunOffest * k_sunKoeff);
+        testSunPosition.setTransform(testSunPivot.getTransform() * testSunPosition.getTransform());
+        testSunPosition.setPosition(core::Vector3D(testSunPosition.getPosition().x, m_SunDirection.y, testSunPosition.getPosition().z));
+
+        v3d::core::Vector3D lightTarget;
+        lightTarget = testSunPosition.getPosition() - m_SunDirection;
+        lightTarget.y = 0.0f;
+
+        m_ShadowMapping->Update(dt, testSunPosition.getPosition(), lightTarget);
+
+        //m_Window->setTextCaption("Target [" + std::to_string(m_FPSCameraHelper->getRotation().x) + "; " + std::to_string(m_FPSCameraHelper->getRotation().y) + "; " + std::to_string(m_FPSCameraHelper->getRotation().z) + "]");
+        m_Window->setTextCaption(
+            " CAMERA POS [" + std::to_string(m_FPSCameraHelper->getPosition().x) + "; " + std::to_string(m_FPSCameraHelper->getPosition().y) + "; " + std::to_string(m_FPSCameraHelper->getPosition().z) + "]" + 
+            " CAMERA ROT [" + std::to_string(testSunPivot.getRotation().x) + "; " + std::to_string(testSunPivot.getRotation().y) + "; " + std::to_string(testSunPivot.getRotation().z) + "]" +
+            " PIVOT [" + std::to_string(testSunPivot.getPosition().x) + "; " + std::to_string(testSunPivot.getPosition().y) + "; " + std::to_string(testSunPivot.getPosition().z) + "]" +
+            " LIGHT [" + std::to_string(testSunPosition.getPosition().x) + "; " + std::to_string(testSunPosition.getPosition().y) + "; " + std::to_string(testSunPosition.getPosition().z) + "]" +
+            " TARGET POS [" + std::to_string(lightTarget.x) + "; " + std::to_string(lightTarget.y) + "; " + std::to_string(lightTarget.z) + "]");
+    }
+    else if (m_Mode == PointLight)
+    {
+        m_ShadowMappingPoint->Update(dt, m_LightPosition);
+    }
 
     core::Matrix4D transform;
     transform.makeIdentity();
@@ -256,19 +362,22 @@ void MyApplication::Update(f32 dt)
    /* transform.setTranslation({ m_lightPosition .x, m_lightPosition.y, m_lightPosition.z});
     transform.setScale({40.0, 40.0, 40.0 });*/
     m_Transform.setTransform(transform);
-    m_Window->setTextCaption("Target [" + std::to_string(transform.getTranslation().x) + "; " + std::to_string(transform.getTranslation().y) + "; " + std::to_string(transform.getTranslation().z) + "]");
 }
 
 void MyApplication::Exit()
 {
     m_ShadowMapping->Free();
     delete m_ShadowMapping;
+    //m_LightDebug.Free();
 
-    m_LightDebug.Free();
+    m_ShadowMappingPoint->Free();
+    delete m_ShadowMappingPoint;
+    m_DirectionLightDebug.Free();
 
-    if (m_RenderTarget->getDepthStencilTexture())
+
+    if (m_RenderTarget->hasDepthStencilTexture())
     {
-        renderer::Texture2D* depthAttachment = m_RenderTarget->getDepthStencilTexture();
+        renderer::Texture2D* depthAttachment = m_RenderTarget->getDepthStencilTexture<renderer::Texture2D>();
         delete depthAttachment;
     }
 
@@ -277,8 +386,12 @@ void MyApplication::Exit()
     m_ShadowSampler = nullptr;
 
     m_RenderTarget = nullptr;
-    m_Pipeline = nullptr;
-    m_Program = nullptr;
+
+    m_ShadowMappingPipeline = nullptr;
+    m_ShadowMappingProgram = nullptr;
+
+    m_ShadowMappingPointPipeline = nullptr;
+    m_ShadowMappingPointProgram = nullptr;
 
     resource::ResourceLoaderManager::getInstance()->clear();
 
@@ -319,55 +432,4 @@ void MyApplication::Exit()
 MyApplication::~MyApplication()
 {
     Window::detroyWindow(m_Window);
-}
-
-
-void MyApplication::LightDebug::Init(v3d::renderer::CommandList* commandList, v3d::renderer::RenderTargetState* renderTarget)
-{
-    v3d::scene::Model* cube = resource::ResourceLoaderManager::getInstance()->load<v3d::scene::Model, resource::ModelFileLoader>("resources/cube.dae");
-    m_Geometry = v3d::scene::ModelHelper::createModelHelper(*commandList, { cube });
-
-    renderer::Shader* vertShader = resource::ResourceLoaderManager::getInstance()->loadShader<renderer::Shader, resource::ShaderSourceFileLoader>(commandList->getContext(), "resources/debug.vert");
-    renderer::Shader* fragShader = resource::ResourceLoaderManager::getInstance()->loadShader<renderer::Shader, resource::ShaderSourceFileLoader>(commandList->getContext(), "resources/debug.frag");
-
-    m_Program = commandList->createObject<renderer::ShaderProgram, std::vector<const renderer::Shader*>>({ vertShader, fragShader });
-    m_Pipeline = commandList->createObject<renderer::GraphicsPipelineState>(m_Geometry->getVertexInputAttribDescription(0, 0), m_Program.get(), renderTarget);
-    m_Pipeline->setPrimitiveTopology(renderer::PrimitiveTopology::PrimitiveTopology_TriangleList);
-    m_Pipeline->setFrontFace(renderer::FrontFace::FrontFace_CounterClockwise);
-    m_Pipeline->setCullMode(renderer::CullMode::CullMode_None);
-    m_Pipeline->setColorMask(renderer::ColorMask::ColorMask_All);
-    m_Pipeline->setDepthCompareOp(renderer::CompareOperation::CompareOp_Less);
-    m_Pipeline->setDepthWrite(true);
-    m_Pipeline->setDepthTest(true);
-}
-
-void MyApplication::LightDebug::Draw(v3d::renderer::CommandList* commandList, v3d::scene::Camera* camera, const v3d::core::Vector3D& light)
-{
-    commandList->setPipelineState(m_Pipeline.get());
-
-    struct UBO
-    {
-        core::Matrix4D projectionMatrix;
-        core::Matrix4D modelMatrix;
-        core::Matrix4D viewMatrix;
-    } ubo;
-
-    ubo.projectionMatrix = camera->getProjectionMatrix();
-    ubo.modelMatrix.makeIdentity();
-    ubo.modelMatrix.setTranslation(light);
-    ubo.viewMatrix = camera->getViewMatrix();
-
-    m_Program->bindUniformsBuffer<renderer::ShaderType::ShaderType_Vertex>({ "ubo" }, 0, sizeof(UBO), &ubo);
-    m_Program->bindUniformsBuffer<renderer::ShaderType::ShaderType_Fragment>({ "debugColor" }, 0, sizeof(core::Vector4D), &m_lightColor);
-
-    m_Geometry->draw();
-}
-
-void MyApplication::LightDebug::Free()
-{
-    m_Pipeline = nullptr;
-    m_Program = nullptr;
-
-    delete m_Geometry;
-    m_Geometry = nullptr;
 }

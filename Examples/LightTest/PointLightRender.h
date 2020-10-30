@@ -9,7 +9,7 @@
 #include "Renderer/Object/SamplerState.h"
 
 #include "Scene/ModelHelper.h"
-#include "Scene/Camera.h"
+#include "Scene/CameraHelper.h"
 
 namespace v3d
 {

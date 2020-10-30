@@ -12,9 +12,10 @@
 #include "Scene/CameraHelper.h"
 #include "Scene/ModelHelper.h"
 
+#include "Node.h"
+
 namespace v3d
 {
-
     class ShadowMapping
     {
     public:
@@ -23,6 +24,7 @@ namespace v3d
 
         void Init(const renderer::VertexInputAttribDescription& desc);
         void Update(f32 dt, const core::Vector3D& position, const core::Vector3D& target);
+        void Update(f32 dt, const scene::CameraHelper* worldCamera);
         void Draw(scene::ModelHelper* geometry, const scene::Transform& transform);
         void Free();
 
@@ -41,9 +43,36 @@ namespace v3d
 
         scene::CameraHelper* m_ShadowCamera = nullptr;
         core::Rect32 m_Size = { 0, 0, 2048, 2048 };
-        s32 m_Scale = 2;
+        s32 m_Scale = 5;
 
         core::Matrix4D m_LightSpaceMatrix;
+    };
+
+    class ShadowMappingPoint
+    {
+    public:
+
+        ShadowMappingPoint(renderer::CommandList* cmdList) noexcept;
+
+        void Init(const renderer::VertexInputAttribDescription& desc);
+        void Update(f32 dt, const core::Vector3D& position);
+        void Draw(scene::ModelHelper* geometry, const scene::Transform& transform);
+        void Free();
+
+    private:
+
+        renderer::CommandList* const m_CmdList;
+
+        utils::IntrusivePointer<renderer::RenderTargetState> m_RenderTarget[6];
+        utils::IntrusivePointer<renderer::TextureCube> m_DepthAttachment;
+
+        utils::IntrusivePointer<renderer::GraphicsPipelineState> m_Pipeline;
+        utils::IntrusivePointer<renderer::ShaderProgram> m_Program;
+
+        scene::CameraHelper* m_ShadowCamera = nullptr;
+        core::Dimension2D m_Size = { 1024, 1024 };
+
+        std::array<core::Matrix4D, 6> m_LightSpaceMatrices;
     };
 
 } //namespace v3d
