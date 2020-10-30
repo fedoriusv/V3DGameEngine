@@ -1,6 +1,6 @@
 #include "ModelHelper.h"
 #include "Model.h"
-#include "Mesh.h"
+
 #include "Renderer/Object/StreamBuffer.h"
 
 namespace v3d
