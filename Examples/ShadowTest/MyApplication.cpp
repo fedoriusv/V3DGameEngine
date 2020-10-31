@@ -160,8 +160,8 @@ void MyApplication::Load()
     }
 
     {
-        renderer::Shader* vertShader = resource::ResourceLoaderManager::getInstance()->loadShader<renderer::Shader, resource::ShaderSourceFileLoader>(m_CommandList->getContext(), "resources/solid.vert");
-        renderer::Shader* fragShader = resource::ResourceLoaderManager::getInstance()->loadShader<renderer::Shader, resource::ShaderSourceFileLoader>(m_CommandList->getContext(), "resources/solid.frag");
+        renderer::Shader* vertShader = resource::ResourceLoaderManager::getInstance()->loadShader<renderer::Shader, resource::ShaderSourceFileLoader>(m_CommandList->getContext(), "resources/solid_SunShadow.vert");
+        renderer::Shader* fragShader = resource::ResourceLoaderManager::getInstance()->loadShader<renderer::Shader, resource::ShaderSourceFileLoader>(m_CommandList->getContext(), "resources/solid_SunShadow.frag");
 
         m_ShadowMappingProgram = m_CommandList->createObject<renderer::ShaderProgram, std::vector<const renderer::Shader*>>({ vertShader, fragShader });
         m_ShadowMappingPipeline = m_CommandList->createObject<renderer::GraphicsPipelineState>(m_Scene->getVertexInputAttribDescription(0, 0), m_ShadowMappingProgram.get(), m_RenderTarget.get());
@@ -240,11 +240,13 @@ void MyApplication::DrawDirectionLightMode()
         {
             core::Vector4D lightDirection;
             core::Vector4D viewPosition;
+            u32 enablePCF;
         } ubo;
 
         ubo.lightDirection = m_SunDirection;
         ubo.lightDirection.normalize();
         ubo.viewPosition = m_FPSCameraHelper->getPosition();
+        ubo.enablePCF = 1;
 
         m_ShadowMappingProgram->bindUniformsBuffer<renderer::ShaderType::ShaderType_Fragment>({ "ubo" }, 0, (u32)sizeof(UBO), &ubo);
         m_ShadowMappingProgram->bindSampler<renderer::ShaderType::ShaderType_Fragment>({ "shadowSampler" }, m_ShadowSampler.get());

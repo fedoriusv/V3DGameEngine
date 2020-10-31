@@ -82,7 +82,7 @@ void ShadowMapping::Init(const renderer::VertexInputAttribDescription& desc)
     m_Pipeline->setDepthCompareOp(renderer::CompareOperation::CompareOp_Less);
     m_Pipeline->setDepthWrite(true);
     m_Pipeline->setDepthTest(true);
-    m_Pipeline->setDepthBias(0.0f, 0.0f, 1.75f);
+    m_Pipeline->setDepthBias(0.0f, 0.0f, 5.0f);
 
     m_CmdList->flushCommands();
 }
