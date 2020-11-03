@@ -161,12 +161,15 @@ void VulkanDeviceCaps::fillCapabilitiesList(const DeviceInfo* info)
         return false;
     };
 
+    ASSERT(isEnableExtension(VK_KHR_MAINTENANCE1_EXTENSION_NAME), "required VK_KHR_maintenance1 extension");
     ASSERT(isEnableExtension(VK_KHR_MAINTENANCE2_EXTENSION_NAME), "required VK_KHR_maintenance2 extension");
-    supportRenderpass2 = false;//isEnableExtension(VK_KHR_CREATE_RENDERPASS_2_EXTENSION_NAME);
+    supportRenderpass2 = isEnableExtension(VK_KHR_CREATE_RENDERPASS_2_EXTENSION_NAME);
     enableSamplerMirrorClampToEdge = isEnableExtension(VK_KHR_SAMPLER_MIRROR_CLAMP_TO_EDGE_EXTENSION_NAME);
     supportDepthAutoResolve = isEnableExtension(VK_KHR_DEPTH_STENCIL_RESOLVE_EXTENSION_NAME);
-    supportDedicatedAllocation = false;//isEnableExtension(VK_KHR_DEDICATED_ALLOCATION_EXTENSION_NAME); //TODO
+    supportDedicatedAllocation = isEnableExtension(VK_KHR_DEDICATED_ALLOCATION_EXTENSION_NAME);
     supportPipelineExecutableProperties = isEnableExtension(VK_KHR_PIPELINE_EXECUTABLE_PROPERTIES_EXTENSION_NAME);
+
+    supportMultiview = isEnableExtension(VK_KHR_MULTIVIEW_EXTENSION_NAME);
 
     if (VulkanDeviceCaps::checkInstanceExtension(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME))
     {
@@ -198,7 +201,7 @@ void VulkanDeviceCaps::fillCapabilitiesList(const DeviceInfo* info)
 
 
             supportDescriptorIndexing = m_physicalDeviceDescriptorIndexingFeatures.descriptorBindingUpdateUnusedWhilePending;
-            supportSamplerBorderColor = m_physicalDeviceCustomBorderColorFeatures.customBorderColors && m_physicalDeviceCustomBorderColorFeatures.customBorderColorWithoutFormat;
+            supportSamplerBorderColor = false;//m_physicalDeviceCustomBorderColorFeatures.customBorderColors && m_physicalDeviceCustomBorderColorFeatures.customBorderColorWithoutFormat; - validation bug
         }
 
         {
@@ -211,6 +214,16 @@ void VulkanDeviceCaps::fillCapabilitiesList(const DeviceInfo* info)
                 physicalDeviceDescriptorIndexingProperties.pNext = nullptr;
                 vkExtensions = &physicalDeviceDescriptorIndexingProperties;
             }
+
+#if VULKAN_DEBUG
+            VkPhysicalDeviceDriverProperties physicalDeviceDriverProperties = {};
+            if (isEnableExtension(VK_KHR_DRIVER_PROPERTIES_EXTENSION_NAME))
+            {
+                physicalDeviceDriverProperties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ID_PROPERTIES;
+                physicalDeviceDriverProperties.pNext = vkExtensions;
+                vkExtensions = &physicalDeviceDriverProperties;
+            }
+#endif //VULKAN_DEBUG
 
 #ifdef VK_KHR_depth_stencil_resolve
             VkPhysicalDeviceDepthStencilResolvePropertiesKHR physicalDeviceDepthStencilResolveProperties = {};
@@ -229,6 +242,15 @@ void VulkanDeviceCaps::fillCapabilitiesList(const DeviceInfo* info)
             VulkanWrapper::GetPhysicalDeviceProperties2(info->_physicalDevice, &physicalDeviceProperties);
             memcpy(&m_deviceProperties, &physicalDeviceProperties.properties, sizeof(VkPhysicalDeviceProperties));
 
+#if VULKAN_DEBUG
+            if (isEnableExtension(VK_KHR_DRIVER_PROPERTIES_EXTENSION_NAME) && 0)
+            {
+                LOG_INFO("VulkanDeviceCaps::initialize: Device Driver Properties:");
+                LOG_INFO("VulkanDeviceCaps::initialize: DriverName : %s", physicalDeviceDriverProperties.driverName);
+                LOG_INFO("VulkanDeviceCaps::initialize: DriverInfo: %s", physicalDeviceDriverProperties.driverInfo);
+                LOG_INFO("VulkanDeviceCaps::initialize: DriverID: %d", physicalDeviceDriverProperties.driverID);
+            }
+#endif //VULKAN_DEBUG
 
 #ifdef VK_KHR_depth_stencil_resolve
             supportDepthAutoResolve = supportRenderpass2 && physicalDeviceDepthStencilResolveProperties.supportedDepthResolveModes != VK_RESOLVE_MODE_NONE_KHR;
@@ -284,9 +306,11 @@ void VulkanDeviceCaps::fillCapabilitiesList(const DeviceInfo* info)
     //check !!!!
     immediateResourceSubmit = 2;
 
+    //TODO add
     //VK_EXT_memory_budget
     //VK_EXT_memory_priority
 
+    vendorID = VendorID(m_deviceProperties.vendorID);
     LOG_INFO("VulkanDeviceCaps::initialize: API version: %u (%u.%u.%u)", m_deviceProperties.apiVersion, VK_VERSION_MAJOR(m_deviceProperties.apiVersion), VK_VERSION_MINOR(m_deviceProperties.apiVersion), VK_VERSION_PATCH(m_deviceProperties.apiVersion));
     LOG_INFO("VulkanDeviceCaps::initialize: Driver version: %u", m_deviceProperties.driverVersion);
     LOG_INFO("VulkanDeviceCaps::initialize: Vendor ID: %u", m_deviceProperties.vendorID);
@@ -297,6 +321,7 @@ void VulkanDeviceCaps::fillCapabilitiesList(const DeviceInfo* info)
     LOG_INFO("VulkanDeviceCaps::initialize:  enableSamplerMirrorClampToEdge is %s", enableSamplerMirrorClampToEdge ? "supported" : "unsupported");
     LOG_INFO("VulkanDeviceCaps::initialize:  supportDepthAutoResolve is %s", supportDepthAutoResolve ? "supported" : "unsupported");
     LOG_INFO("VulkanDeviceCaps::initialize:  supportDedicatedAllocation is %s", supportDedicatedAllocation ? "supported" : "unsupported");
+    LOG_INFO("VulkanDeviceCaps::initialize:  supportMultiview is %s", supportMultiview ? "supported" : "unsupported");
 
     VulkanWrapper::GetPhysicalDeviceMemoryProperties(info->_physicalDevice, &m_deviceMemoryProps);
     LOG_INFO("VulkanDeviceCaps Memory:");
