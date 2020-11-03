@@ -40,7 +40,7 @@ MyApplication::MyApplication(int& argc, char** argv)
     , m_ShadowMapping(nullptr)
     , m_ShadowMappingPoint(nullptr)
 
-    , m_Mode(DirectionLight)
+    , m_Mode(DirectionLightPCF)
     , m_Debug(true)
 {
     ASSERT(m_Window, "windows is nullptr");
@@ -199,13 +199,11 @@ void MyApplication::Load()
 
     if (m_Debug)
     {
-        //m_DirectionLightDebug.Init(m_CommandList, m_RenderTarget.get());
-
         m_LightDebug.Init(m_CommandList, m_RenderTarget.get());
     }
 }
 
-void MyApplication::DrawDirectionLightMode()
+void MyApplication::DrawDirectionLightMode(bool enablePCF)
 {
     m_ShadowMapping->Draw(m_Scene, m_Transform);
 
@@ -246,7 +244,7 @@ void MyApplication::DrawDirectionLightMode()
         ubo.lightDirection = m_SunDirection;
         ubo.lightDirection.normalize();
         ubo.viewPosition = m_FPSCameraHelper->getPosition();
-        ubo.enablePCF = 1;
+        ubo.enablePCF = (u32)enablePCF;
 
         m_ShadowMappingProgram->bindUniformsBuffer<renderer::ShaderType::ShaderType_Fragment>({ "ubo" }, 0, (u32)sizeof(UBO), &ubo);
         m_ShadowMappingProgram->bindSampler<renderer::ShaderType::ShaderType_Fragment>({ "shadowSampler" }, m_ShadowSampler.get());
@@ -254,11 +252,43 @@ void MyApplication::DrawDirectionLightMode()
     }
 
     m_Scene->draw();
+}
 
-    if (m_Debug)
+void MyApplication::DrawPointLightMode()
+{
+    m_ShadowMappingPoint->Draw(m_Scene, m_Transform);
+
+    m_CommandList->setViewport(core::Rect32(0, 0, m_RenderTarget->getDimension().width, m_RenderTarget->getDimension().height));
+    m_CommandList->setScissor(core::Rect32(0, 0, m_RenderTarget->getDimension().width, m_RenderTarget->getDimension().height));
+    m_CommandList->setRenderTarget(m_RenderTarget.get());
+    m_CommandList->setPipelineState(m_ShadowMappingPointPipeline.get());
+
     {
-        //m_LightDebug.Draw(m_CommandList, &m_FPSCameraHelper->getCamera(), m_Light.getPosition());
-        //m_DirectionLightDebug.Draw(m_CommandList, &m_FPSCameraHelper->getCamera(), m_LightAngleDirection, { 1.f, 1.f, 1.f });
+        struct UBO
+        {
+            core::Matrix4D projectionMatrix;
+            core::Matrix4D modelMatrix;
+            core::Matrix4D normalMatrix;
+            core::Matrix4D viewMatrix;
+            core::Vector4D lightPosition;
+            core::Vector4D viewPosition;
+        } ubo;
+
+
+        ubo.projectionMatrix = m_FPSCameraHelper->getProjectionMatrix();
+        ubo.modelMatrix = m_Transform.getTransform();
+        ubo.modelMatrix.getInverse(ubo.normalMatrix);
+        ubo.normalMatrix.makeTransposed();
+        ubo.viewMatrix = m_FPSCameraHelper->getViewMatrix();
+        ubo.lightPosition = m_LightPosition;
+        ubo.viewPosition = m_FPSCameraHelper->getPosition();
+
+        m_ShadowMappingPointProgram->bindUniformsBuffer<renderer::ShaderType::ShaderType_Vertex>({ "ubo" }, 0, (u32)sizeof(UBO), &ubo);
+    }
+
+    {
+        //m_Program->bindSampler<renderer::ShaderType::ShaderType_Fragment>({ "shadowSampler" }, m_ShadowSampler.get());
+        //m_Program->bindTexture<renderer::ShaderType::ShaderType_Fragment, renderer::Texture2D>({ "shadowMap" }, m_ShadowMapping->GetDepthMap());
     }
 }
 
@@ -269,49 +299,14 @@ bool MyApplication::Running()
     //Frame
     m_CommandList->beginFrame();
 
-    if (m_Mode == DirectionLight)
+    if (m_Mode == DirectionLight || m_Mode == DirectionLightPCF)
     {
-        MyApplication::DrawDirectionLightMode();
+        MyApplication::DrawDirectionLightMode(m_Mode == DirectionLightPCF);
     }
-    else if (m_Mode == 1)
+    else if (m_Mode == PointLight)
     {
-        m_ShadowMappingPoint->Draw(m_Scene, m_Transform);
-
-        m_CommandList->setViewport(core::Rect32(0, 0, m_RenderTarget->getDimension().width, m_RenderTarget->getDimension().height));
-        m_CommandList->setScissor(core::Rect32(0, 0, m_RenderTarget->getDimension().width, m_RenderTarget->getDimension().height));
-        m_CommandList->setRenderTarget(m_RenderTarget.get());
-        m_CommandList->setPipelineState(m_ShadowMappingPointPipeline.get());
-
-        {
-            struct UBO
-            {
-                core::Matrix4D projectionMatrix;
-                core::Matrix4D modelMatrix;
-                core::Matrix4D normalMatrix;
-                core::Matrix4D viewMatrix;
-                core::Vector4D lightPosition;
-                core::Vector4D viewPosition;
-            } ubo;
-
-
-            ubo.projectionMatrix = m_FPSCameraHelper->getProjectionMatrix();
-            ubo.modelMatrix = m_Transform.getTransform();
-            ubo.modelMatrix.getInverse(ubo.normalMatrix);
-            ubo.normalMatrix.makeTransposed();
-            ubo.viewMatrix = m_FPSCameraHelper->getViewMatrix();
-            ubo.lightPosition = m_LightPosition;
-            ubo.viewPosition = m_FPSCameraHelper->getPosition();
-
-            m_ShadowMappingPointProgram->bindUniformsBuffer<renderer::ShaderType::ShaderType_Vertex>({ "ubo" }, 0, (u32)sizeof(UBO), &ubo);
-        }
-
-        {
-            //m_Program->bindSampler<renderer::ShaderType::ShaderType_Fragment>({ "shadowSampler" }, m_ShadowSampler.get());
-            //m_Program->bindTexture<renderer::ShaderType::ShaderType_Fragment, renderer::Texture2D>({ "shadowMap" }, m_ShadowMapping->GetDepthMap());
-        }
+        MyApplication::DrawPointLightMode();
     }
-
-
 
     m_CommandList->endFrame();
     m_CommandList->presentFrame();
@@ -324,7 +319,7 @@ bool MyApplication::Running()
 void MyApplication::Update(f32 dt)
 {
     m_FPSCameraHelper->update(dt);
-    if (m_Mode == DirectionLight)
+    if (m_Mode == DirectionLight || m_Mode == DirectionLightPCF)
     {
         const f32 k_sunConstant = 5.0f;
         const f32 k_sunKoeff = m_SunDirection.z > 0.f ? 1.0f : -1.0f;
@@ -370,12 +365,14 @@ void MyApplication::Exit()
 {
     m_ShadowMapping->Free();
     delete m_ShadowMapping;
-    //m_LightDebug.Free();
 
     m_ShadowMappingPoint->Free();
     delete m_ShadowMappingPoint;
-    m_DirectionLightDebug.Free();
 
+    if (m_Debug)
+    {
+        m_LightDebug.Free();
+    }
 
     if (m_RenderTarget->hasDepthStencilTexture())
     {

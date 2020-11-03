@@ -55,7 +55,8 @@ private:
     v3d::core::Vector3D m_LightPosition = { 1.0f, 3.0f, 5.0f };
     v3d::scene::Transform m_Transform;
 
-    void DrawDirectionLightMode();
+    void DrawDirectionLightMode(bool enablePCF);
+    void DrawPointLightMode();
 
     v3d::ShadowMapping* m_ShadowMapping;
     v3d::utils::IntrusivePointer<v3d::renderer::GraphicsPipelineState> m_ShadowMappingPipeline;
@@ -73,8 +74,6 @@ private:
         PointLight
     } m_Mode;
 
-    v3d::DirectionLightDebug m_DirectionLightDebug;
     v3d::LightDebug m_LightDebug;
-
     bool m_Debug;
 };

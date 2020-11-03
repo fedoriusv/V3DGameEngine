@@ -12,8 +12,6 @@
 #include "Scene/CameraHelper.h"
 #include "Scene/ModelHelper.h"
 
-#include "Node.h"
-
 namespace v3d
 {
     class ShadowMapping
