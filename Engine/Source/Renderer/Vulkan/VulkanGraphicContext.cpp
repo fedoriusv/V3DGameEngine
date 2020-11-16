@@ -1266,7 +1266,16 @@ bool VulkanGraphicContext::createDevice()
 #if VULKAN_VALIDATION_LAYERS_CALLBACK //needs for validations check
     if (VulkanDeviceCaps::checkDeviceExtension(m_deviceInfo._physicalDevice, VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME))
     {
-        vkExtension = &VulkanDeviceCaps::getInstance()->m_physicalDeviceDescriptorIndexingFeatures;
+        VkPhysicalDeviceDescriptorIndexingFeaturesEXT& physicalDeviceDescriptorIndexingFeatures = VulkanDeviceCaps::getInstance()->m_physicalDeviceDescriptorIndexingFeatures;
+        physicalDeviceDescriptorIndexingFeatures.pNext = vkExtension;
+        vkExtension = &physicalDeviceDescriptorIndexingFeatures;
+    }
+
+    if (VulkanDeviceCaps::checkDeviceExtension(m_deviceInfo._physicalDevice, VK_EXT_CUSTOM_BORDER_COLOR_EXTENSION_NAME))
+    {
+        VkPhysicalDeviceCustomBorderColorFeaturesEXT& physicalDeviceCustomBorderColorFeatures = VulkanDeviceCaps::getInstance()->m_physicalDeviceCustomBorderColorFeatures;
+        physicalDeviceCustomBorderColorFeatures.pNext = vkExtension;
+        vkExtension = &physicalDeviceCustomBorderColorFeatures;
     }
 #endif
 

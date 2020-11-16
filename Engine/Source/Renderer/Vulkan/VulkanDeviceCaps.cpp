@@ -201,7 +201,7 @@ void VulkanDeviceCaps::fillCapabilitiesList(const DeviceInfo* info)
 
 
             supportDescriptorIndexing = m_physicalDeviceDescriptorIndexingFeatures.descriptorBindingUpdateUnusedWhilePending;
-            supportSamplerBorderColor = false;//m_physicalDeviceCustomBorderColorFeatures.customBorderColors && m_physicalDeviceCustomBorderColorFeatures.customBorderColorWithoutFormat; - validation bug
+            supportSamplerBorderColor = m_physicalDeviceCustomBorderColorFeatures.customBorderColors && m_physicalDeviceCustomBorderColorFeatures.customBorderColorWithoutFormat; //- validation bug
         }
 
         {
