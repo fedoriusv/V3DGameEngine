@@ -8,44 +8,21 @@ namespace renderer
 namespace dx3d
 {
 
-D3D12_FILTER D3DSampler::convertSamplerFilterToD3D(SamplerFilter min, SamplerFilter mag)
+D3D12_FILTER D3DSampler::convertSamplerFilterToD3D(SamplerFilter filter)
 {
-    switch (mag)
+    switch (filter)
     {
     case SamplerFilter::SamplerFilter_Nearest:
-        switch (min)
-        {
-            case SamplerFilter::SamplerFilter_Nearest:
-            default:
-                return D3D12_FILTER_MIN_MAG_MIP_POINT;
-
-            case SamplerFilter::SamplerFilter_Bilinear:
-                return D3D12_FILTER_MIN_MAG_POINT_MIP_LINEAR;
-
-            case SamplerFilter::SamplerFilter_Trilinear:
-            case SamplerFilter::SamplerFilter_Cubic:
-                return D3D12_FILTER_MIN_LINEAR_MAG_POINT_MIP_LINEAR;
-        }
-        break;
+        return D3D12_FILTER_MIN_MAG_MIP_POINT;
 
     case SamplerFilter::SamplerFilter_Bilinear:
+        return D3D12_FILTER_MIN_MAG_LINEAR_MIP_POINT;
+
     case SamplerFilter::SamplerFilter_Trilinear:
-    case SamplerFilter::SamplerFilter_Cubic:
-    {
-        switch (min)
-        {
-        case SamplerFilter::SamplerFilter_Nearest:
-            return D3D12_FILTER_MIN_POINT_MAG_LINEAR_MIP_POINT;
+        return D3D12_FILTER_MIN_MAG_MIP_LINEAR;
 
-        case SamplerFilter::SamplerFilter_Bilinear:
-            return D3D12_FILTER_MIN_MAG_LINEAR_MIP_POINT;
-
-        case SamplerFilter::SamplerFilter_Trilinear:
-        case SamplerFilter::SamplerFilter_Cubic:
-            return D3D12_FILTER_MIN_MAG_MIP_LINEAR;
-        }
-        break;
-    }
+    default:
+        ASSERT(false, "not found");
     }
 
     return D3D12_FILTER_MIN_MAG_MIP_POINT;
@@ -121,7 +98,7 @@ D3DSampler::D3DSampler(const SamplerDescription& desc) noexcept
 bool D3DSampler::create()
 {
     m_sampler = {};
-    m_sampler.Filter = D3DSampler::convertSamplerFilterToD3D(m_desc._desc._minFilter, m_desc._desc._magFilter);
+    m_sampler.Filter = D3DSampler::convertSamplerFilterToD3D(m_desc._desc._filter);
     m_sampler.AddressU = D3DSampler::convertSamplerWrapToAddressModeD3D(m_desc._desc._wrapU);
     m_sampler.AddressV = D3DSampler::convertSamplerWrapToAddressModeD3D(m_desc._desc._wrapV);
     m_sampler.AddressW = D3DSampler::convertSamplerWrapToAddressModeD3D(m_desc._desc._wrapW);

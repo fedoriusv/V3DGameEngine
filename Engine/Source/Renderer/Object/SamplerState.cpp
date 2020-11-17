@@ -53,18 +53,7 @@ SamplerState::SamplerState(renderer::CommandList& cmdList, SamplerFilter filter,
     : m_cmdList(cmdList)
     , m_trackerSampler(this, std::bind(&SamplerState::destroySamplers, this, std::placeholders::_1))
 {
-    m_samplerDesc._desc._minFilter = filter;
-    m_samplerDesc._desc._magFilter = filter;
-    m_samplerDesc._desc._anisotropic = aniso;
-    m_samplerDesc.dirty();
-}
-
-SamplerState::SamplerState(renderer::CommandList& cmdList, SamplerFilter mag, SamplerFilter min, SamplerAnisotropic aniso) noexcept
-    : m_cmdList(cmdList)
-    , m_trackerSampler(this, std::bind(&SamplerState::destroySamplers, this, std::placeholders::_1))
-{
-    m_samplerDesc._desc._minFilter = min;
-    m_samplerDesc._desc._magFilter = mag;
+    m_samplerDesc._desc._filter = filter;
     m_samplerDesc._desc._anisotropic = aniso;
     m_samplerDesc.dirty();
 }
@@ -90,14 +79,9 @@ SamplerState::~SamplerState()
     m_trackerSampler.release();
 }
 
-renderer::SamplerFilter SamplerState::getMinFilter() const
+renderer::SamplerFilter SamplerState::getFiltering() const
 {
-    return m_samplerDesc._desc._minFilter;
-}
-
-renderer::SamplerFilter SamplerState::getMagFilter() const
-{
-    return m_samplerDesc._desc._magFilter;
+    return m_samplerDesc._desc._filter;
 }
 
 SamplerWrap SamplerState::getWrapU() const
@@ -135,15 +119,9 @@ bool SamplerState::isEnableCompareOp() const
     return m_samplerDesc._desc._enableCompOp;
 }
 
-void SamplerState::setMinFilter(SamplerFilter filter)
+void SamplerState::setFiltering(SamplerFilter filter)
 {
-    m_samplerDesc._desc._minFilter = filter;
-    m_samplerDesc.dirty();
-}
-
-void SamplerState::setMagFilter(SamplerFilter filter)
-{
-    m_samplerDesc._desc._magFilter = filter;
+    m_samplerDesc._desc._filter = filter;
     m_samplerDesc.dirty();
 }
 

@@ -23,7 +23,7 @@ namespace dx3d
     {
     public:
 
-        static D3D12_FILTER convertSamplerFilterToD3D(SamplerFilter min, SamplerFilter mag);
+        static D3D12_FILTER convertSamplerFilterToD3D(SamplerFilter filter);
         static D3D12_TEXTURE_ADDRESS_MODE convertSamplerWrapToAddressModeD3D(SamplerWrap wrap);
         static D3D12_COMPARISON_FUNC convertSamplerCompareOpD3D(CompareOperation op);
 

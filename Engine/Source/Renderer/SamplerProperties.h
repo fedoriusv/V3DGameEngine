@@ -15,10 +15,9 @@ namespace renderer
     */
     enum SamplerFilter : u32
     {
-        SamplerFilter_Nearest = 0,
-        SamplerFilter_Bilinear,
-        SamplerFilter_Trilinear,
-        SamplerFilter_Cubic
+        SamplerFilter_Nearest = 0, //min, mag, mipmaps - no filtering
+        SamplerFilter_Bilinear,    //min, mag - linear filtering, mipmaps - no filtering
+        SamplerFilter_Trilinear,   //min, mag, mipmaps - linear filtering
     };
 
     /**
@@ -64,12 +63,11 @@ namespace renderer
             SamplerWrap             _wrapU        : 3;
             SamplerWrap             _wrapV        : 3;
             SamplerWrap             _wrapW        : 3;
-            SamplerFilter           _magFilter    : 2;
-            SamplerFilter           _minFilter    : 2;
+            SamplerFilter           _filter       : 2;
             CompareOperation        _compareOp    : 3;
             u32                     _enableCompOp : 1;
 
-            u32                     _padding      : 10;
+            u32                     _padding      : 12;
         };
 
         SamplerDesc                 _desc;

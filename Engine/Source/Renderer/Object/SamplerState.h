@@ -29,8 +29,7 @@ namespace renderer
 
         ~SamplerState();
 
-        SamplerFilter         getMinFilter() const;
-        SamplerFilter         getMagFilter() const;
+        SamplerFilter         getFiltering() const;
         SamplerWrap           getWrapU() const;
         SamplerWrap           getWrapV() const;
         SamplerWrap           getWrapW() const;
@@ -39,8 +38,7 @@ namespace renderer
         bool                  isEnableCompareOp() const;
         const core::Vector4D& getBorderColor() const;
 
-        void setMinFilter(SamplerFilter filter);
-        void setMagFilter(SamplerFilter filter);
+        void setFiltering(SamplerFilter filter);
         void setWrap(SamplerWrap uvw);
         void setWrap(SamplerWrap u, SamplerWrap v, SamplerWrap w = SamplerWrap::TextureWrap_Repeat);
         void setAnisotropic(SamplerAnisotropic level);
@@ -65,16 +63,6 @@ namespace renderer
         * @param SamplerAnisotropic aniso [required]
         */
         explicit SamplerState(renderer::CommandList& cmdList, SamplerFilter filter, SamplerAnisotropic aniso) noexcept;
-
-        /**
-        * @brief SamplerState constructor. Used for creating sampler.
-        * Private method. Use createObject interface inside CommandList class to call.
-        *
-        * @param SamplerFilter mag [required]
-        * @param SamplerFilter min [required]
-        * @param SamplerAnisotropic aniso [required]
-        */
-        explicit SamplerState(renderer::CommandList& cmdList, SamplerFilter mag, SamplerFilter min, SamplerAnisotropic aniso) noexcept;
 
         CommandList& m_cmdList;
         friend CommandList;

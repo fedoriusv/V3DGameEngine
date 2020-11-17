@@ -25,9 +25,6 @@ VkFilter VulkanSampler::convertSamplerFilterToVk(SamplerFilter filter)
     case SamplerFilter_Trilinear:
         return VK_FILTER_LINEAR;
 
-    case SamplerFilter_Cubic:
-        return VK_FILTER_CUBIC_IMG;
-
     default:
         break;
     }
@@ -42,7 +39,6 @@ VkSamplerMipmapMode VulkanSampler::convertMipmapSamplerFilterToVk(SamplerFilter 
     {
     case SamplerFilter_Nearest:
     case SamplerFilter_Bilinear:
-    case SamplerFilter_Cubic:
         return VK_SAMPLER_MIPMAP_MODE_NEAREST;
 
     case SamplerFilter_Trilinear:
@@ -147,9 +143,9 @@ bool VulkanSampler::create()
     samplerCreateInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
     samplerCreateInfo.pNext = vkExtension;
     samplerCreateInfo.flags = 0;
-    samplerCreateInfo.magFilter = VulkanSampler::convertSamplerFilterToVk(m_desc._desc._magFilter);
-    samplerCreateInfo.minFilter = VulkanSampler::convertSamplerFilterToVk(m_desc._desc._minFilter);
-    samplerCreateInfo.mipmapMode = VulkanSampler::convertMipmapSamplerFilterToVk(m_desc._desc._minFilter);
+    samplerCreateInfo.magFilter = VulkanSampler::convertSamplerFilterToVk(m_desc._desc._filter);
+    samplerCreateInfo.minFilter = VulkanSampler::convertSamplerFilterToVk(m_desc._desc._filter);
+    samplerCreateInfo.mipmapMode = VulkanSampler::convertMipmapSamplerFilterToVk(m_desc._desc._filter);
     samplerCreateInfo.anisotropyEnable = (VulkanSampler::convertAnisotropyCount(m_desc._desc._anisotropic) > 0) ? VK_TRUE : VK_FALSE;
     samplerCreateInfo.maxAnisotropy = VulkanSampler::convertAnisotropyCount(m_desc._desc._anisotropic);
     ASSERT(samplerCreateInfo.maxAnisotropy <= VulkanDeviceCaps::getInstance()->getPhysicalDeviceLimits().maxSamplerAnisotropy, "max aniso");
