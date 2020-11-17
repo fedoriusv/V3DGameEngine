@@ -80,5 +80,27 @@ namespace renderer
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    inline std::string ShaderTypeString(ShaderType type)
+    {
+        switch (type)
+        {
+        case ShaderType_Undefined:
+            return "undefined";
+
+        case ShaderType_Vertex:
+            return "vertex";
+
+        case ShaderType_Fragment:
+            return "fragment";
+
+        default:
+            ASSERT(false, "not found");
+        }
+
+        return "unknown";
+    }
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
+
 } //namespace renderer
 } //namespace v3d

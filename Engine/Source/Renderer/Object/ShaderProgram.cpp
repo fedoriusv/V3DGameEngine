@@ -197,7 +197,7 @@ private:
 ShaderProgram::ShaderProgram(renderer::CommandList& cmdList, const std::vector<const Shader*>& shaders) noexcept
     : m_cmdList(cmdList)
 {
-    for (auto shader : shaders)
+    for (auto& shader : shaders)
     {
         ASSERT(shader, "nullptr");
         m_programInfo._shaders[shader->getShaderHeader()._type] = shader;

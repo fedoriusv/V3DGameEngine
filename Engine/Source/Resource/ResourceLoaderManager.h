@@ -14,12 +14,14 @@ namespace renderer
 
 namespace resource
 {
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
+
     struct ResourceHeader;
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
     
     /**
-    * ResourceLoaderManager
+    * @brief ResourceLoaderManager, Singleton
     */
     class ResourceLoaderManager : public utils::Singleton<ResourceLoaderManager>
     {
@@ -27,19 +29,81 @@ namespace resource
 
         ResourceLoaderManager() = default;
 
+        /**
+        * @brief composeShader
+        * Create shader from steam data
+        *
+        * @param renderer::Context* context [required]
+        * @param const std::string name [required]
+        * @param const renderer::ShaderHeader* header name [required]
+        * @param const stream::Stream* stream [required]
+        * @return Shader resource, nullptr if failed
+        */
         template<class TResource, class TResourceLoader>
         TResource* composeShader(renderer::Context* context, const std::string name, const renderer::ShaderHeader* header, const stream::Stream* stream);
 
+        /**
+        * @brief loadShader
+        * Create shader from file
+        *
+        * @param renderer::Context* context [required]
+        * @param const std::string filename [required]
+        * @param std::vector<std::pair<std::string, std::string>> defines [optional]
+        * @param u32 flags [optional]
+        * @return Shader resource, nullptr if failed
+        */
         template<class TResource, class TResourceLoader>
         TResource* loadShader(renderer::Context* context, std::string filename, std::vector<std::pair<std::string, std::string>> defines = {}, u32 flags = 0);
 
+        /**
+        * @brief loadHLSLShader
+        * Create list of HLSL shaders from file
+        *
+        * @param renderer::Context* context [required]
+        * @param const std::string filename [required]
+        * @param const std::vector<std::pair<std::string, std::string>>& entryPoint/Type [required]
+        * @param std::vector<std::pair<std::string, std::string>> defines [optional]
+        * @param u32 flags [optional]
+        * @return list of shader resources
+        */
+        template<class TResource, class TResourceLoader>
+        std::vector<const TResource*> loadHLSLShader(renderer::Context* context, std::string filename, const std::vector<std::tuple<std::string, renderer::ShaderType>>& entryPoints, std::vector<std::pair<std::string, std::string>> defines = {}, u32 flags = 0);
+
+        /**
+        * @brief load
+        * Create resource from file
+        *
+        * @param std::string filename [required]
+        * @param u32 flags [optional]
+        * @return current resource, nullptr if failed
+        */
         template<class TResource, class TResourceLoader>
         TResource* load(std::string filename, u32 flags = 0);
 
+        /**
+        * @brief load
+        * Create resource from file by header
+        *
+        * @param std::string filename [required]
+        * @param const ResourceHeader* header [required]
+        * @param u32 flags [optional]
+        * @return current resource, nullptr if failed
+        */
         template<class TResource, class TResourceLoader>
         TResource* load(std::string filename, const ResourceHeader* header, u32 flags = 0);
 
+        /**
+        * @brief clear
+        * Remove all created resources
+        */
         void clear();
+
+        /**
+        * @brief clear
+        * Remove single Resource
+        * @param Resource* resource [required]
+        * @retrun true if resurce has bound and deleted
+        */
         bool remove(Resource* resource);
 
         void addPath(const std::string& path);
@@ -88,7 +152,7 @@ namespace resource
             Resource* res = loader.load(innerName);
             if (!res)
             {
-                m_resources.erase(resourceName);
+                m_resources.erase(resourceIter.first);
                 return nullptr;
             }
 
@@ -132,7 +196,7 @@ namespace resource
             Resource* res = loader.load(innerName);
             if (!res)
             {
-                m_resources.erase(resourceName);
+                m_resources.erase(resourceIter.first);
                 return nullptr;
             }
 
@@ -141,6 +205,56 @@ namespace resource
         }
 
         return static_cast<TResource*>(resourceIter.first->second);
+    }
+
+    template<class TResource, class TResourceLoader>
+    std::vector<const TResource*> ResourceLoaderManager::loadHLSLShader(renderer::Context* context, std::string filename, const std::vector<std::tuple<std::string, renderer::ShaderType>>& entryPoints, std::vector<std::pair<std::string, std::string>> defines, u32 flags)
+    {
+        static_assert(std::is_same<TResource, renderer::Shader>(), "wrong type");
+        std::string innerName(filename);
+        std::transform(filename.begin(), filename.end(), innerName.begin(), ::tolower);
+
+        std::sort(defines.begin(), defines.end(), [](const std::pair<std::string, std::string>& macros1, const std::pair<std::string, std::string>& macros2) -> bool
+            {
+                return macros1.first < macros2.first;
+            });
+
+        auto composeResourceName = [](const std::string& name, const std::vector<std::pair<std::string, std::string>>& defines) -> std::string
+        {
+            std::string outString = name;
+            for (auto& define : defines)
+            {
+                outString.append("_");
+                outString.append(define.first);
+                outString.append(define.second);
+            }
+
+            return outString;
+        };
+
+        std::vector<const TResource*> resources;
+        for (auto& entryPoint : entryPoints)
+        {
+            const std::string resourceName = composeResourceName(innerName, defines) + "_" + renderer::ShaderTypeString(std::get<1>(entryPoint));
+            auto resourceIter = m_resources.emplace(std::make_pair(resourceName, nullptr));
+            if (resourceIter.second)
+            {
+                TResourceLoader loader(context, std::get<1>(entryPoint), std::get<0>(entryPoint), defines, flags);
+                Resource* res = loader.load(innerName);
+                if (!res)
+                {
+                    m_resources.erase(resourceIter.first);
+                    resources.push_back(nullptr);
+
+                    continue;
+                }
+
+                resourceIter.first->second = res;
+                resources.push_back(static_cast<TResource*>(res));
+            }
+        }
+
+        return resources;
     }
 
     template<class TResource, class TResourceLoader>
@@ -156,7 +270,7 @@ namespace resource
             Resource* res = loader.load(innerName);
             if (!res)
             {
-                m_resources.erase(innerName);
+                m_resources.erase(resourceIter.first);
                 return nullptr;
             }
 
@@ -180,7 +294,7 @@ namespace resource
             Resource* res = loader.load(innerName);
             if (!res)
             {
-                m_resources.erase(innerName);
+                m_resources.erase(resourceIter.first);
                 return nullptr;
             }
 

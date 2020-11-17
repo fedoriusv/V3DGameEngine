@@ -74,12 +74,39 @@ ShaderSourceFileLoader::ShaderSourceFileLoader(const renderer::Context* context,
     ResourceLoader::registerPathes(ResourceLoaderManager::getInstance()->getPathes());
 }
 
+ShaderSourceFileLoader::ShaderSourceFileLoader(const renderer::Context* context, renderer::ShaderType type, const std::string& entryPoint, const std::vector<std::pair<std::string, std::string>>& defines, ShaderSourceBuildFlags flags) noexcept
+{
+    ASSERT(context, "context is nullptr");
+
+    renderer::ShaderHeader header(type);
+    header._contentType = renderer::ShaderHeader::ShaderResource::ShaderResource_Source;
+    header._shaderModel = renderer::ShaderHeader::ShaderModel::ShaderModel_HLSL_5_1;
+    header._optLevel = (flags & ShaderSourceBuildFlag::ShaderSource_OptimisationPerformance) ? 2 : (flags & ShaderSourceBuildFlag::ShaderSource_OptimisationSize) ? 1 : 0;
+    header._defines = defines;
+    header._entryPoint = entryPoint;
+
+    if (context->getRenderType() == renderer::Context::RenderType::VulkanRender)
+    {
+        ResourceLoader::registerDecoder(new ShaderSpirVDecoder({ "hlsl" }, header, !(flags & ShaderSourceBuildFlag::ShaderSource_DontUseReflection)));
+    }
+    else if (context->getRenderType() == renderer::Context::RenderType::DirectXRender)
+    {
+        ResourceLoader::registerDecoder(new ShaderHLSLDecoder({ "hlsl" }, header, !(flags & ShaderSourceBuildFlag::ShaderSource_DontUseReflection)));
+    }
+
+    ResourceLoader::registerRoot("");
+    ResourceLoader::registerRoot("../../../../");
+
+    ResourceLoader::registerPath("");
+    ResourceLoader::registerPathes(ResourceLoaderManager::getInstance()->getPathes());
+}
+
 ShaderSourceFileLoader::~ShaderSourceFileLoader()
 {
 
 }
 
-renderer::Shader * ShaderSourceFileLoader::load(const std::string & name, const std::string & alias)
+renderer::Shader* ShaderSourceFileLoader::load(const std::string& name, const std::string& alias)
 {
     for (std::string& root : m_roots)
     {

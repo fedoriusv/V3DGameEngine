@@ -539,6 +539,7 @@ void reflectConstantBuffers(ID3D11ShaderReflection* reflector, const std::vector
             {
             case D3D_SVT_INT:
             case D3D_SVT_UINT:
+            case D3D_SVT_BOOL:
                 return { renderer::DataType::DataType_Int, sizeof(s32) };
 
             case D3D_SVT_FLOAT:

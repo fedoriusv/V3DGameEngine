@@ -197,7 +197,7 @@ Resource * ShaderSpirVDecoder::decode(const stream::Stream* stream, const std::s
             LOG_DEBUG("Compile Shader %s to SpirV:\n %s\n", name.c_str(), source.c_str());
 
             shaderc::Compiler compiler;
-            shaderc::SpvCompilationResult result = compiler.CompileGlslToSpv(source, shaderType, "shader", options);
+            shaderc::SpvCompilationResult result = compiler.CompileGlslToSpv(source, shaderType, "shader", m_header._entryPoint.c_str(), options);
             if (!compiler.IsValid())
             {
                 LOG_ERROR("ShaderSpirVDecoder::decode: CompileGlslToSpv is invalid");
@@ -266,7 +266,7 @@ Resource * ShaderSpirVDecoder::decode(const stream::Stream* stream, const std::s
                 LOG_WARNING("ShaderSpirVDecoder::decode: header [%s]%s shader warnings messages:\n%s", stringType.c_str(), name.c_str(), result.GetErrorMessage().c_str());
             }
 #if (DEBUG & VULKAN_DEBUG)
-            shaderc::AssemblyCompilationResult assambleResult = compiler.CompileGlslToSpvAssembly(source, shaderType, "shader", options);
+            shaderc::AssemblyCompilationResult assambleResult = compiler.CompileGlslToSpvAssembly(source, shaderType, "shader", m_header._entryPoint.c_str(), options);
             ASSERT(compiler.IsValid(), "error");
             shaderc_compilation_status assambleStatus = assambleResult.GetCompilationStatus();
             ASSERT(assambleStatus == shaderc_compilation_status_success, "error");
