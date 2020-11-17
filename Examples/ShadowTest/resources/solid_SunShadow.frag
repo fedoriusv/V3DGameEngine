@@ -17,7 +17,7 @@ layout (binding = 5, std140) uniform UBO
     vec4 lightDirection;
     vec4 viewPosition;
     bool enablePCF;
-} ubo;
+} fs_buffer;
 
 layout (location = 0) out vec4 outFragColor;
 
@@ -58,7 +58,7 @@ float percentageCloserFiltering(vec4 shadowCoord)
 float shadowMask(vec4 lightSpace)
 {
     vec3 shadowCoord = lightSpace.xyz / lightSpace.w;
-    if (ubo.enablePCF)
+    if (fs_buffer.enablePCF)
     {
         return percentageCloserFiltering(vec4(shadowCoord, lightSpace.w));
     }
@@ -70,7 +70,7 @@ void main()
 {
     vec4 diffuseColor = vec4(1.0); //texture(sampler2D(colorTexture, colorSampler), inUV);
     vec3 normal = normalize(inNormal);
-    vec3 lightDir = normalize(ubo.lightDirection.xyz);
+    vec3 lightDir = normalize(fs_buffer.lightDirection.xyz);
     float diffuseKoeff = max(dot(normal, lightDir), 0.01);
     outFragColor = diffuseKoeff * diffuseColor;
 
@@ -78,7 +78,7 @@ void main()
     {
         vec4 specularColor = vec4(1.0);
         vec3 reflectDir = reflect(-lightDir, normal);
-        vec3 viewDir = normalize(ubo.viewPosition.xyz - inPosition);
+        vec3 viewDir = normalize(fs_buffer.viewPosition.xyz - inPosition);
         outFragColor += specularColor * pow(max(dot(reflectDir, viewDir), 0.0), 512.0);
     }
     

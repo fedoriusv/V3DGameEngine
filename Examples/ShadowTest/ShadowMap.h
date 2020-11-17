@@ -57,6 +57,8 @@ namespace v3d
         void Draw(scene::ModelHelper* geometry, const scene::Transform& transform);
         void Free();
 
+        const renderer::TextureCube* GetDepthMap() const;
+
     private:
 
         renderer::CommandList* const m_CmdList;

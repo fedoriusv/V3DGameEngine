@@ -21,6 +21,8 @@
 
 #include "Stream/StreamManager.h"
 
+#define VULKAN_ONLY 0
+
 using namespace v3d;
 using namespace v3d::platform;
 using namespace v3d::utils;
@@ -141,9 +143,9 @@ void MyApplication::Load()
     renderer::Texture2D* depthAttachment = m_CommandList->createObject<renderer::Texture2D>(renderer::TextureUsage::TextureUsage_Attachment, renderer::Format::Format_D32_SFloat_S8_UInt, m_Window->getSize(), renderer::TextureSamples::TextureSamples_x1, "DepthAttachment");
     m_RenderTarget->setDepthStencilTexture(depthAttachment, renderer::RenderTargetLoadOp::LoadOp_Clear, renderer::RenderTargetStoreOp::StoreOp_DontCare, 1.0f);
 
-    m_ShadowSampler = m_CommandList->createObject<renderer::SamplerState>(renderer::SamplerFilter::SamplerFilter_Bilinear, renderer::SamplerFilter::SamplerFilter_Bilinear, renderer::SamplerAnisotropic::SamplerAnisotropic_None);
+    m_ShadowSampler = m_CommandList->createObject<renderer::SamplerState>(renderer::SamplerFilter::SamplerFilter_Nearest, renderer::SamplerAnisotropic::SamplerAnisotropic_None);
     m_ShadowSampler->setWrap(renderer::SamplerWrap::TextureWrap_ClampToBorder);
-
+    m_ShadowSampler->setBorderColor({ 1.0f, 1.0f, 1.0f, 1.0f });
 
     {
         v3d::scene::Model* scene = resource::ResourceLoaderManager::getInstance()->load<v3d::scene::Model, resource::ModelFileLoader>("resources/big_field.dae");
@@ -151,7 +153,7 @@ void MyApplication::Load()
     }
 
     {
-        m_ColorSampler = m_CommandList->createObject<renderer::SamplerState>(renderer::SamplerFilter::SamplerFilter_Bilinear, renderer::SamplerFilter::SamplerFilter_Trilinear, renderer::SamplerAnisotropic::SamplerAnisotropic_4x);
+        m_ColorSampler = m_CommandList->createObject<renderer::SamplerState>(renderer::SamplerFilter::SamplerFilter_Trilinear, renderer::SamplerAnisotropic::SamplerAnisotropic_4x);
         m_ColorSampler->setWrap(renderer::SamplerWrap::TextureWrap_MirroredRepeat);
 
         resource::Image* image = resource::ResourceLoaderManager::getInstance()->load<resource::Image, resource::ImageFileLoader>("resources/brickwall.jpg");
@@ -160,10 +162,20 @@ void MyApplication::Load()
     }
 
     {
-        renderer::Shader* vertShader = resource::ResourceLoaderManager::getInstance()->loadShader<renderer::Shader, resource::ShaderSourceFileLoader>(m_CommandList->getContext(), "resources/solid_SunShadow.vert");
-        renderer::Shader* fragShader = resource::ResourceLoaderManager::getInstance()->loadShader<renderer::Shader, resource::ShaderSourceFileLoader>(m_CommandList->getContext(), "resources/solid_SunShadow.frag");
+#if VULKAN_ONLY
+        const renderer::Shader* vertShader = resource::ResourceLoaderManager::getInstance()->loadShader<renderer::Shader, resource::ShaderSourceFileLoader>(m_CommandList->getContext(), "resources/solid_SunShadow.vert");
+        const renderer::Shader* fragShader = resource::ResourceLoaderManager::getInstance()->loadShader<renderer::Shader, resource::ShaderSourceFileLoader>(m_CommandList->getContext(), "resources/solid_SunShadow.frag");
 
         m_ShadowMappingProgram = m_CommandList->createObject<renderer::ShaderProgram, std::vector<const renderer::Shader*>>({ vertShader, fragShader });
+#else
+        std::vector<const renderer::Shader*> shaders = resource::ResourceLoaderManager::getInstance()->loadHLSLShader<renderer::Shader, resource::ShaderSourceFileLoader>(m_CommandList->getContext(), "resources/solid_SunShadow.hlsl",
+            {
+                {"main_VS", renderer::ShaderType_Vertex },
+                {"main_FS", renderer::ShaderType_Fragment }
+            });
+
+        m_ShadowMappingProgram = m_CommandList->createObject<renderer::ShaderProgram>(shaders);
+#endif
         m_ShadowMappingPipeline = m_CommandList->createObject<renderer::GraphicsPipelineState>(m_Scene->getVertexInputAttribDescription(0, 0), m_ShadowMappingProgram.get(), m_RenderTarget.get());
         m_ShadowMappingPipeline->setPrimitiveTopology(renderer::PrimitiveTopology::PrimitiveTopology_TriangleList);
         m_ShadowMappingPipeline->setFrontFace(renderer::FrontFace::FrontFace_Clockwise);
@@ -175,8 +187,8 @@ void MyApplication::Load()
     }
 
     {
-        renderer::Shader* vertShader = resource::ResourceLoaderManager::getInstance()->loadShader<renderer::Shader, resource::ShaderSourceFileLoader>(m_CommandList->getContext(), "resources/shadowPointLight.vert");
-        renderer::Shader* fragShader = resource::ResourceLoaderManager::getInstance()->loadShader<renderer::Shader, resource::ShaderSourceFileLoader>(m_CommandList->getContext(), "resources/shadowPointLight.frag");
+        renderer::Shader* vertShader = resource::ResourceLoaderManager::getInstance()->loadShader<renderer::Shader, resource::ShaderSourceFileLoader>(m_CommandList->getContext(), "resources/solid_ShadowPointLight.vert");
+        renderer::Shader* fragShader = resource::ResourceLoaderManager::getInstance()->loadShader<renderer::Shader, resource::ShaderSourceFileLoader>(m_CommandList->getContext(), "resources/solid_ShadowPointLight.frag");
 
         m_ShadowMappingPointProgram = m_CommandList->createObject<renderer::ShaderProgram, std::vector<const renderer::Shader*>>({ vertShader, fragShader });
         m_ShadowMappingPointPipeline = m_CommandList->createObject<renderer::GraphicsPipelineState>(m_Scene->getVertexInputAttribDescription(0, 0), m_ShadowMappingPointProgram.get(), m_RenderTarget.get());
@@ -230,7 +242,7 @@ void MyApplication::DrawDirectionLightMode(bool enablePCF)
         ubo.viewMatrix = m_FPSCameraHelper->getViewMatrix();
         ubo.lightSpaceMatrix = m_ShadowMapping->GetLightSpaceMatrix();
 
-        m_ShadowMappingProgram->bindUniformsBuffer<renderer::ShaderType::ShaderType_Vertex>({ "ubo" }, 0, (u32)sizeof(UBO), &ubo);
+        m_ShadowMappingProgram->bindUniformsBuffer<renderer::ShaderType::ShaderType_Vertex>({ "vs_buffer" }, 0, (u32)sizeof(UBO), &ubo);
     }
 
     {
@@ -246,7 +258,7 @@ void MyApplication::DrawDirectionLightMode(bool enablePCF)
         ubo.viewPosition = m_FPSCameraHelper->getPosition();
         ubo.enablePCF = (u32)enablePCF;
 
-        m_ShadowMappingProgram->bindUniformsBuffer<renderer::ShaderType::ShaderType_Fragment>({ "ubo" }, 0, (u32)sizeof(UBO), &ubo);
+        m_ShadowMappingProgram->bindUniformsBuffer<renderer::ShaderType::ShaderType_Fragment>({ "fs_buffer" }, 0, (u32)sizeof(UBO), &ubo);
         m_ShadowMappingProgram->bindSampler<renderer::ShaderType::ShaderType_Fragment>({ "shadowSampler" }, m_ShadowSampler.get());
         m_ShadowMappingProgram->bindTexture<renderer::ShaderType::ShaderType_Fragment, renderer::Texture2D>({ "shadowMap" }, m_ShadowMapping->GetDepthMap());
     }
@@ -284,11 +296,15 @@ void MyApplication::DrawPointLightMode()
         ubo.viewPosition = m_FPSCameraHelper->getPosition();
 
         m_ShadowMappingPointProgram->bindUniformsBuffer<renderer::ShaderType::ShaderType_Vertex>({ "ubo" }, 0, (u32)sizeof(UBO), &ubo);
+        m_ShadowMappingPointProgram->bindSampler<renderer::ShaderType::ShaderType_Fragment>({ "shadowSampler" }, m_ShadowSampler.get());
+        m_ShadowMappingProgram->bindTexture<renderer::ShaderType::ShaderType_Fragment, renderer::TextureCube>({ "shadowMap" }, m_ShadowMappingPoint->GetDepthMap());
     }
 
+    m_Scene->draw();
+
+    if (m_Debug)
     {
-        //m_Program->bindSampler<renderer::ShaderType::ShaderType_Fragment>({ "shadowSampler" }, m_ShadowSampler.get());
-        //m_Program->bindTexture<renderer::ShaderType::ShaderType_Fragment, renderer::Texture2D>({ "shadowMap" }, m_ShadowMapping->GetDepthMap());
+        m_LightDebug.Draw(m_CommandList, &m_FPSCameraHelper->getCamera(), m_LightPosition);
     }
 }
 

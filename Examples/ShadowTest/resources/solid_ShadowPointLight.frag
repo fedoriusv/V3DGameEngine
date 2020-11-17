@@ -6,7 +6,7 @@ layout (location = 2) in vec3 inLightPos;
 layout (location = 3) in vec3 inViewDir;
 layout (location = 4) in vec2 inUV;
 
-layout (binding = 3) uniform samplerCube shadowSampler;
+layout (binding = 3) uniform sampler shadowSampler;
 layout (binding = 4) uniform textureCube shadowCubeMap;
 
 layout (location = 0) out vec4 outFragColor;
@@ -28,15 +28,10 @@ void main()
     }
     
     // Shadow
-	//vec3 lightCoord = inPosition - inLightPos;
-    //float sampledDist = texture(samplerCube(shadowCubeMap, shadowSampler), lightCoord).r;
-    //float dist = length(lightCoord);
+    vec3 lightCoord = inPosition - inLightPos;
+    float sampledDist = texture(samplerCube(shadowCubeMap, shadowSampler), lightCoord).r;
+    float dist = length(lightCoord);
 
-	// Check if fragment is in shadow
-    //float shadow = (dist <= sampledDist + EPSILON) ? 1.0 : SHADOW_OPACITY;
-    		
-	//outFragColor.rgb *= shadow;
-    
-    //float shadow = shadowCalculation(inLightSpace); 
-    //outFragColor = shadow * outFragColor;
+    float shadow = (dist <= sampledDist + 1.2) ? 1.0 : 0.2;
+    outFragColor = vec4(outFragColor.rgb * shadow, 1.0);
 }

@@ -11,7 +11,7 @@ layout (binding = 0) uniform UBO
     mat4 normalMatrix;
     mat4 viewMatrix;
     mat4 lightSpaceMatrix;
-} ubo;
+} vs_buffer;
 
 layout (location = 0) out vec4 outLightSpace;
 layout (location = 1) out vec3 outPosition;
@@ -28,12 +28,12 @@ const mat4 biasMatrix = mat4
     
 void main() 
 {
-    vec4 position = ubo.modelMatrix *  vec4(inPosition.xyz, 1.0);
+    vec4 position = vs_buffer.modelMatrix *  vec4(inPosition.xyz, 1.0);
  
     outPosition = position.xyz; 
-    outNormal = (ubo.normalMatrix * vec4(inNormal, 0.0)).xyz;
-    outLightSpace = biasMatrix * ubo.lightSpaceMatrix * position;
+    outNormal = (vs_buffer.normalMatrix * vec4(inNormal, 0.0)).xyz;
+    outLightSpace = biasMatrix * vs_buffer.lightSpaceMatrix * position;
     outUV = inUV;
     
-    gl_Position = ubo.projectionMatrix * ubo.viewMatrix * position;
+    gl_Position = vs_buffer.projectionMatrix * vs_buffer.viewMatrix * position;
 }
