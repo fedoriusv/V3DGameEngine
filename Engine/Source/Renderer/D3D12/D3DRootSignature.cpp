@@ -48,6 +48,11 @@ D3DRootSignatureCreator::D3DRootSignatureCreator(const ShaderProgramDescription&
         u32 signatureParameterIndex = 0;
         for (auto shader : desc._shaders)
         {
+            if (!shader)
+            {
+                continue;
+            }
+
             const Shader::ReflectionInfo& info = shader->getReflectionInfo();
             ShaderType shaderType = shader->getShaderHeader()._type;
             {

@@ -370,12 +370,18 @@ bool D3DGraphicPipelineState::create(const PipelineGraphicInfo* pipelineInfo)
 
     //Shaders
     {
+        memset(m_bytecode, 0, sizeof(m_bytecode));
         for (auto& shader : pipelineInfo->_programDesc._shaders)
         {
+            if (!shader)
+            {
+                continue;
+            }
+
             if (!createShader(shader))
             {
                 LOG_ERROR("D3DGraphicPipelineState::create is failed to create shader");
-                memset(m_bytecode, 0, sizeof(m_bytecode[ShaderType::ShaderType_Count]));
+                memset(m_bytecode, 0, sizeof(m_bytecode));
 
                 return false;
             }
