@@ -62,55 +62,19 @@ bool D3DRenderTarget::create(const RenderPass* pass)
         D3DImage* dxImage = static_cast<D3DImage*>(image);
         if (D3DImage::isColorFormat(dxImage->getFormat()))
         {
-            D3D12_RENDER_TARGET_VIEW_DESC viewDesc = {};
-            viewDesc.Format = dxImage->getFormat();
-            ASSERT(dxImage->getDimension() == D3D12_RESOURCE_DIMENSION_TEXTURE2D, "wrong dimension");
-            viewDesc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2D;
-            if (dxImage->getCountSamples() == 1)
-            {
-                viewDesc.Texture2D.MipSlice = 0;
-                viewDesc.Texture2D.PlaneSlice = 0;
-            }
-            else
-            {
-                viewDesc.Texture2DMS = {};
-            }
-
             CD3DX12_CPU_DESCRIPTOR_HANDLE colorHandle(m_colorDescriptorHeap->getCPUHandle(), index, m_colorDescriptorHeap->getIncrement());
-            m_device->CreateRenderTargetView(dxImage->getResource(), &viewDesc, colorHandle);
+            const D3D12_RENDER_TARGET_VIEW_DESC& targetView = dxImage->getView<D3D12_RENDER_TARGET_VIEW_DESC>();
+            m_device->CreateRenderTargetView(dxImage->getResource(), &targetView, colorHandle);
 
             m_colorRenderTargets[index] = colorHandle;
         }
         else
         {
-            D3D12_DSV_FLAGS flag = D3D12_DSV_FLAG_NONE;
-            if (D3DImage::isDepthFormatOnly(dxImage->getFormat()))
-            {
-                flag = D3D12_DSV_FLAG_READ_ONLY_DEPTH;
-            }
-            else if (D3DImage::isStencilFormatOnly(dxImage->getFormat()))
-            {
-                flag = D3D12_DSV_FLAG_READ_ONLY_STENCIL;
-            }
-
-            D3D12_DEPTH_STENCIL_VIEW_DESC viewDesc = {};
-            viewDesc.Format = dxImage->getFormat();
-            ASSERT(dxImage->getDimension() == D3D12_RESOURCE_DIMENSION_TEXTURE2D, "wrong dimension");
-            viewDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
-            viewDesc.Flags = D3D12_DSV_FLAG_NONE;
-            if (dxImage->getCountSamples() == 1)
-            {
-                viewDesc.Texture2D = {};
-            }
-            else
-            {
-                viewDesc.Texture2DMS = {};
-            }
-
             m_depthStencilDescriptorHeap = m_heapManager->allocateDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_DSV, 1, D3D12_DESCRIPTOR_HEAP_FLAG_NONE);
             ASSERT(m_depthStencilDescriptorHeap, "nullptr");
             CD3DX12_CPU_DESCRIPTOR_HANDLE depthStencilHandle(m_depthStencilDescriptorHeap->getCPUHandle());
-            m_device->CreateDepthStencilView(dxImage->getResource(), &viewDesc, depthStencilHandle);
+            const D3D12_DEPTH_STENCIL_VIEW_DESC& targetView = dxImage->getView<D3D12_DEPTH_STENCIL_VIEW_DESC>();
+            m_device->CreateDepthStencilView(dxImage->getResource(), &targetView, depthStencilHandle);
 
             m_depthStencilRenderTarget = depthStencilHandle;
         }

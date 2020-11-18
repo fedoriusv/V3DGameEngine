@@ -31,7 +31,7 @@ DXGI_FORMAT D3DImage::convertImageFormatToD3DFormat(Format format)
     case v3d::renderer::Format_B4G4R4A4_UNorm_Pack16:
         return DXGI_FORMAT_UNKNOWN;
     case v3d::renderer::Format_R5G6B5_UNorm_Pack16:
-        return DXGI_FORMAT_UNKNOWN;
+        return DXGI_FORMAT_B5G6R5_UNORM;
     case v3d::renderer::Format_B5G6R5_UNorm_Pack16:
         return DXGI_FORMAT_UNKNOWN;
     case v3d::renderer::Format_R5G5B5A1_UNorm_Pack16:
@@ -39,7 +39,7 @@ DXGI_FORMAT D3DImage::convertImageFormatToD3DFormat(Format format)
     case v3d::renderer::Format_B5G5R5A1_UNorm_Pack16:
         return DXGI_FORMAT_UNKNOWN;
     case v3d::renderer::Format_A1R5G5B5_UNorm_Pack16:
-        return DXGI_FORMAT_UNKNOWN;
+        return DXGI_FORMAT_B5G5R5A1_UNORM;
 
     case v3d::renderer::Format_R8_UNorm:
         return DXGI_FORMAT_R8_UNORM;
@@ -325,13 +325,13 @@ DXGI_FORMAT D3DImage::convertImageFormatToD3DFormat(Format format)
     case v3d::renderer::Format_BC5_SNorm_Block:
         return DXGI_FORMAT_BC5_SNORM;
     case v3d::renderer::Format_BC6H_UFloat_Block:
-        return DXGI_FORMAT_UNKNOWN;
+        return DXGI_FORMAT_BC6H_UF16;
     case v3d::renderer::Format_BC6H_SFloat_Block:
-        return DXGI_FORMAT_UNKNOWN;
+        return DXGI_FORMAT_BC6H_SF16;
     case v3d::renderer::Format_BC7_UNorm_Block:
         return DXGI_FORMAT_BC7_UNORM;
     case v3d::renderer::Format_BC7_SRGB_Block:
-        return DXGI_FORMAT_UNKNOWN;
+        return DXGI_FORMAT_BC7_UNORM_SRGB;
 
     case v3d::renderer::Format_ETC2_R8G8B8_UNorm_Block:
         return DXGI_FORMAT_UNKNOWN;
@@ -413,6 +413,200 @@ DXGI_FORMAT D3DImage::convertImageFormatToD3DFormat(Format format)
 
     default:
         ASSERT(false, "unknown");
+    }
+
+    return DXGI_FORMAT_UNKNOWN;
+}
+
+DXGI_FORMAT D3DImage::convertToTypelessFormat(DXGI_FORMAT format)
+{
+    switch (format)
+    {
+    case DXGI_FORMAT_UNKNOWN:
+        return DXGI_FORMAT_UNKNOWN;
+
+    case DXGI_FORMAT_R32G32B32A32_TYPELESS:
+    case DXGI_FORMAT_R32G32B32A32_FLOAT:
+    case DXGI_FORMAT_R32G32B32A32_UINT:
+    case DXGI_FORMAT_R32G32B32A32_SINT:
+        return DXGI_FORMAT_R32G32B32A32_TYPELESS;
+
+    case DXGI_FORMAT_R32G32B32_TYPELESS:
+    case DXGI_FORMAT_R32G32B32_FLOAT:
+    case DXGI_FORMAT_R32G32B32_UINT:
+    case DXGI_FORMAT_R32G32B32_SINT:
+        return DXGI_FORMAT_R32G32B32_TYPELESS;
+
+    case DXGI_FORMAT_R16G16B16A16_TYPELESS:
+    case DXGI_FORMAT_R16G16B16A16_FLOAT:
+    case DXGI_FORMAT_R16G16B16A16_UNORM:
+    case DXGI_FORMAT_R16G16B16A16_UINT:
+    case DXGI_FORMAT_R16G16B16A16_SNORM:
+    case DXGI_FORMAT_R16G16B16A16_SINT:
+        return DXGI_FORMAT_R16G16B16A16_TYPELESS;
+
+    case DXGI_FORMAT_R32G32_TYPELESS:
+    case DXGI_FORMAT_R32G32_FLOAT:
+    case DXGI_FORMAT_R32G32_UINT:
+    case DXGI_FORMAT_R32G32_SINT:
+        return DXGI_FORMAT_R32G32_TYPELESS;
+
+    case DXGI_FORMAT_R32G8X24_TYPELESS:
+    case DXGI_FORMAT_D32_FLOAT_S8X24_UINT:
+        return DXGI_FORMAT_R32G8X24_TYPELESS;
+
+    case DXGI_FORMAT_R32_FLOAT_X8X24_TYPELESS:
+    case DXGI_FORMAT_X32_TYPELESS_G8X24_UINT:
+        return DXGI_FORMAT_R32_FLOAT_X8X24_TYPELESS;
+
+    case DXGI_FORMAT_R10G10B10A2_TYPELESS:
+    case DXGI_FORMAT_R10G10B10A2_UNORM:
+    case DXGI_FORMAT_R10G10B10A2_UINT:
+    case DXGI_FORMAT_R11G11B10_FLOAT:
+        return DXGI_FORMAT_R10G10B10A2_TYPELESS;
+
+    case DXGI_FORMAT_R8G8B8A8_TYPELESS:
+    case DXGI_FORMAT_R8G8B8A8_UNORM:
+    case DXGI_FORMAT_R8G8B8A8_UNORM_SRGB:
+    case DXGI_FORMAT_R8G8B8A8_UINT:
+    case DXGI_FORMAT_R8G8B8A8_SNORM:
+    case DXGI_FORMAT_R8G8B8A8_SINT:
+        return DXGI_FORMAT_R8G8B8A8_TYPELESS;
+
+    case DXGI_FORMAT_R16G16_TYPELESS:
+    case DXGI_FORMAT_R16G16_FLOAT:
+    case DXGI_FORMAT_R16G16_UNORM:
+    case DXGI_FORMAT_R16G16_UINT:
+    case DXGI_FORMAT_R16G16_SNORM:
+    case DXGI_FORMAT_R16G16_SINT:
+        return DXGI_FORMAT_R16G16_TYPELESS;
+
+    case DXGI_FORMAT_R32_TYPELESS:
+    case DXGI_FORMAT_D32_FLOAT:
+    case DXGI_FORMAT_R32_FLOAT:
+    case DXGI_FORMAT_R32_UINT:
+    case DXGI_FORMAT_R32_SINT:
+        return DXGI_FORMAT_R32_TYPELESS;
+
+    case DXGI_FORMAT_R24G8_TYPELESS:
+    case DXGI_FORMAT_D24_UNORM_S8_UINT:
+        return DXGI_FORMAT_R24G8_TYPELESS;
+
+    case DXGI_FORMAT_R24_UNORM_X8_TYPELESS:
+    case DXGI_FORMAT_X24_TYPELESS_G8_UINT:
+        return DXGI_FORMAT_R24_UNORM_X8_TYPELESS;
+
+    case DXGI_FORMAT_R8G8_TYPELESS:
+    case DXGI_FORMAT_R8G8_UNORM:
+    case DXGI_FORMAT_R8G8_UINT:
+    case DXGI_FORMAT_R8G8_SNORM:
+    case DXGI_FORMAT_R8G8_SINT:
+        return DXGI_FORMAT_R8G8_TYPELESS;
+
+    case DXGI_FORMAT_R16_TYPELESS:
+    case DXGI_FORMAT_R16_FLOAT:
+    case DXGI_FORMAT_D16_UNORM:
+    case DXGI_FORMAT_R16_UNORM:
+    case DXGI_FORMAT_R16_UINT:
+    case DXGI_FORMAT_R16_SNORM:
+    case DXGI_FORMAT_R16_SINT:
+        return DXGI_FORMAT_R16_TYPELESS;
+
+    case DXGI_FORMAT_R8_TYPELESS:
+    case DXGI_FORMAT_R8_UNORM:
+    case DXGI_FORMAT_R8_UINT:
+    case DXGI_FORMAT_R8_SNORM:
+    case DXGI_FORMAT_R8_SINT:
+    case DXGI_FORMAT_A8_UNORM:
+    case DXGI_FORMAT_R1_UNORM:
+    case DXGI_FORMAT_R9G9B9E5_SHAREDEXP:
+    case DXGI_FORMAT_R8G8_B8G8_UNORM:
+    case DXGI_FORMAT_G8R8_G8B8_UNORM:
+        return DXGI_FORMAT_R8_TYPELESS;
+
+    case DXGI_FORMAT_BC1_TYPELESS:
+    case DXGI_FORMAT_BC1_UNORM:
+    case DXGI_FORMAT_BC1_UNORM_SRGB:
+        return DXGI_FORMAT_BC1_TYPELESS;
+
+    case DXGI_FORMAT_BC2_TYPELESS:
+    case DXGI_FORMAT_BC2_UNORM:
+    case DXGI_FORMAT_BC2_UNORM_SRGB:
+        return DXGI_FORMAT_BC2_TYPELESS;
+
+    case DXGI_FORMAT_BC3_TYPELESS:
+    case DXGI_FORMAT_BC3_UNORM:
+    case DXGI_FORMAT_BC3_UNORM_SRGB:
+        return DXGI_FORMAT_BC3_TYPELESS;
+
+    case DXGI_FORMAT_BC4_TYPELESS:
+    case DXGI_FORMAT_BC4_UNORM:
+    case DXGI_FORMAT_BC4_SNORM:
+        return DXGI_FORMAT_BC4_TYPELESS;
+
+    case DXGI_FORMAT_BC5_TYPELESS:
+    case DXGI_FORMAT_BC5_UNORM:
+    case DXGI_FORMAT_BC5_SNORM:
+    case DXGI_FORMAT_B5G6R5_UNORM:
+    case DXGI_FORMAT_B5G5R5A1_UNORM:
+    case DXGI_FORMAT_B8G8R8A8_UNORM:
+    case DXGI_FORMAT_B8G8R8X8_UNORM:
+    case DXGI_FORMAT_R10G10B10_XR_BIAS_A2_UNORM:
+        return DXGI_FORMAT_BC5_TYPELESS;
+
+    case DXGI_FORMAT_B8G8R8A8_TYPELESS:
+    case DXGI_FORMAT_B8G8R8A8_UNORM_SRGB:
+        return DXGI_FORMAT_B8G8R8A8_TYPELESS;
+
+    case DXGI_FORMAT_B8G8R8X8_TYPELESS:
+    case DXGI_FORMAT_B8G8R8X8_UNORM_SRGB:
+        return DXGI_FORMAT_B8G8R8X8_TYPELESS;
+
+    case DXGI_FORMAT_BC6H_TYPELESS:
+    case DXGI_FORMAT_BC6H_UF16:
+    case DXGI_FORMAT_BC6H_SF16:
+        return DXGI_FORMAT_BC6H_TYPELESS;
+
+    case DXGI_FORMAT_BC7_TYPELESS:
+    case DXGI_FORMAT_BC7_UNORM:
+    case DXGI_FORMAT_BC7_UNORM_SRGB:
+    case DXGI_FORMAT_AYUV:
+    case DXGI_FORMAT_Y410:
+    case DXGI_FORMAT_Y416:
+    case DXGI_FORMAT_NV12:
+    case DXGI_FORMAT_P010:
+    case DXGI_FORMAT_P016:
+    case DXGI_FORMAT_420_OPAQUE:
+    case DXGI_FORMAT_YUY2:
+    case DXGI_FORMAT_Y210:
+    case DXGI_FORMAT_Y216:
+    case DXGI_FORMAT_NV11:
+    case DXGI_FORMAT_AI44:
+    case DXGI_FORMAT_IA44:
+    case DXGI_FORMAT_P8:
+    case DXGI_FORMAT_A8P8:
+    case DXGI_FORMAT_B4G4R4A4_UNORM:
+    case DXGI_FORMAT_P208:
+    case DXGI_FORMAT_V208:
+    case DXGI_FORMAT_V408:
+        return DXGI_FORMAT_BC7_TYPELESS;
+
+    default:
+        ASSERT(false, "format unknown");
+    }
+
+    return DXGI_FORMAT_UNKNOWN;
+}
+
+DXGI_FORMAT D3DImage::getCompatibilityFormat(DXGI_FORMAT format)
+{
+    switch (format)
+    {
+    case DXGI_FORMAT_D32_FLOAT:
+        return DXGI_FORMAT_R32_FLOAT;
+
+    default:
+        ASSERT(false, "format not found");
     }
 
     return DXGI_FORMAT_UNKNOWN;
@@ -509,8 +703,6 @@ D3DImage::D3DImage(ID3D12Device* device, Format format, u32 width, u32 height, u
     {
         m_flags &= ~D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE;
     }
-
-    memset(&m_view, 0, sizeof(D3D12_SHADER_RESOURCE_VIEW_DESC));
 }
 
 D3DImage::D3DImage(ID3D12Device* device, D3D12_RESOURCE_DIMENSION dimension, Format format, const core::Dimension3D& size, u32 arrays, u32 mipmap, TextureUsageFlags flags, const std::string& name) noexcept
@@ -547,8 +739,6 @@ D3DImage::D3DImage(ID3D12Device* device, D3D12_RESOURCE_DIMENSION dimension, For
             m_flags |= D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
         }
     }
-
-    memset(&m_view, 0, sizeof(D3D12_SHADER_RESOURCE_VIEW_DESC));
 }
 
 
@@ -589,13 +779,19 @@ bool D3DImage::create()
         optimizedClearValue = &defaultClearValue;
     }
 
+    DXGI_FORMAT sampledFormat = m_format;
     if (!(m_flags & D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE))
     {
         if (!D3DDeviceCaps::getInstance()->getImageFormatSupportInfo(m_originFormat, DeviceCaps::TilingType_Optimal)._supportSampled)
         {
-            LOG_ERROR("Format %d is not supported to sampled image", m_originFormat);
-            ASSERT(false, "not support");
-            return false;
+            sampledFormat = getCompatibilityFormat(m_format);
+            if (sampledFormat == DXGI_FORMAT_UNKNOWN)
+            {
+                ASSERT(false, "can't find supportd format");
+                return false;
+            }
+
+            LOG_WARNING("Format %d(DX %d) is not supported sampled flag, replace to DX %d", m_originFormat, m_format, sampledFormat);
         }
     }
 
@@ -606,7 +802,7 @@ bool D3DImage::create()
     textureDesc.Height = m_size.height;
     textureDesc.DepthOrArraySize = m_size.depth * m_arrays;
     textureDesc.MipLevels = m_mipmaps;
-    textureDesc.Format = m_format;
+    textureDesc.Format = D3DImage::convertToTypelessFormat(m_format);
     textureDesc.SampleDesc = { 1, 0 };
     textureDesc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
     textureDesc.Flags = m_flags;
@@ -617,6 +813,9 @@ bool D3DImage::create()
         LOG_ERROR("D3DImage::create CreateCommittedResource is failed. Error %s", D3DDebug::stringError(result).c_str());
         return false;
     }
+
+    createResourceView(sampledFormat);
+
 #if D3D_DEBUG
     wchar_t wtext[64];
     if (!m_debugName.empty())
@@ -631,42 +830,90 @@ bool D3DImage::create()
     m_resource->SetName(LPCWSTR(wtext));
 #endif
 
-    m_view.Format = textureDesc.Format;
-    m_view.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-   
-    switch (textureDesc.Dimension)
-    {
-    case D3D12_RESOURCE_DIMENSION_TEXTURE2D:
-    {
-        if (m_arrays == 1)
-        {
-            m_view.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
+    return true;
+}
 
-            m_view.Texture2D.MostDetailedMip = 0;
-            m_view.Texture2D.MipLevels = m_mipmaps;
-            m_view.Texture2D.PlaneSlice = 0;
-            m_view.Texture2D.ResourceMinLODClamp = 0.0f;
+void D3DImage::createResourceView(DXGI_FORMAT shaderResourceFormat)
+{
+    if (!(m_flags & D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE))
+    {
+        D3D12_SHADER_RESOURCE_VIEW_DESC& view = std::get<0>(m_views);
+
+        view.Format = shaderResourceFormat;
+        view.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+
+        switch (m_dimension)
+        {
+        case D3D12_RESOURCE_DIMENSION_TEXTURE2D:
+        {
+            if (m_arrays == 1)
+            {
+                view.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
+
+                view.Texture2D.MostDetailedMip = 0;
+                view.Texture2D.MipLevels = m_mipmaps;
+                view.Texture2D.PlaneSlice = 0;
+                view.Texture2D.ResourceMinLODClamp = 0.0f;
+            }
+            else
+            {
+                ASSERT(false, "not impl");
+            }
+            break;
+        }
+
+        case D3D12_RESOURCE_DIMENSION_TEXTURE1D:
+        case D3D12_RESOURCE_DIMENSION_TEXTURE3D:
+        default:
+            ASSERT(false, "not impl");
+        }
+    }
+
+    if (m_flags & D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET)
+    {
+        D3D12_RENDER_TARGET_VIEW_DESC& view = std::get<1>(m_views);
+
+        view.Format = m_format;
+        ASSERT(m_dimension == D3D12_RESOURCE_DIMENSION_TEXTURE2D, "wrong dimension");
+        view.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2D;
+
+        if (m_samples == 1U)
+        {
+            view.Texture2D.MipSlice = 0;
+            view.Texture2D.PlaneSlice = 0;
         }
         else
         {
-            ASSERT(false, "not impl");
+            view.Texture2DMS = {};
         }
-        break;
     }
 
-    case D3D12_RESOURCE_DIMENSION_TEXTURE1D:
-    case D3D12_RESOURCE_DIMENSION_TEXTURE3D:
-    default:
-        ASSERT(false, "not impl");
-    }
+    if (m_flags & D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL)
+    {
+        D3D12_DEPTH_STENCIL_VIEW_DESC& view = std::get<2>(m_views);
 
-    return true;
+        view.Format = m_format;
+        ASSERT(m_dimension == D3D12_RESOURCE_DIMENSION_TEXTURE2D, "wrong dimension");
+        view.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
+        view.Flags = D3D12_DSV_FLAG_NONE;
+
+        if (m_samples == 1U)
+        {
+            view.Texture2D = {};
+        }
+        else
+        {
+            view.Texture2DMS = {};
+        }
+    }
 }
 
 bool D3DImage::create(ID3D12Resource* resource, CD3DX12_CPU_DESCRIPTOR_HANDLE& handle)
 {
     ASSERT(resource, "nullptr");
     m_resource = resource;
+    D3DImage::createResourceView(m_format);
+
 #if D3D_DEBUG
     wchar_t wtext[64];
     if (!m_debugName.empty())
@@ -934,11 +1181,6 @@ ID3D12Resource* D3DImage::getResource() const
 {
     ASSERT(m_resource, "nullptr");
     return m_resource;
-}
-
-const D3D12_SHADER_RESOURCE_VIEW_DESC& D3DImage::getView() const
-{
-    return m_view;
 }
 
 } //namespace dx3d

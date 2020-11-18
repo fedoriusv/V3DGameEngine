@@ -154,7 +154,7 @@ void D3DDescriptorSetState::updateDescriptorTable(D3DDescriptorHeap* heap, const
                     const D3DImage* image = param._resource._image._image;
 
                     CD3DX12_CPU_DESCRIPTOR_HANDLE imgHandle(heap->getCPUHandle(), descriptorIndex, heap->getIncrement());
-                    m_device->CreateShaderResourceView(image->getResource(), &image->getView(), imgHandle);
+                    m_device->CreateShaderResourceView(image->getResource(), &image->getView<D3D12_SHADER_RESOURCE_VIEW_DESC>(), imgHandle);
                     ++descriptorIndex;
 
                     break;

@@ -40,7 +40,27 @@ namespace dx3d
         bool upload(Context* context, const core::Dimension3D& offsets, const core::Dimension3D& size, u32 slices, const void* data) override;
 
         ID3D12Resource* getResource() const;
-        const D3D12_SHADER_RESOURCE_VIEW_DESC& getView() const;
+
+        template<typename VIEW_DESC_TYPE>
+        const VIEW_DESC_TYPE& getView() const
+        {
+            if constexpr (std::is_same<VIEW_DESC_TYPE, D3D12_SHADER_RESOURCE_VIEW_DESC>())
+            {
+                ASSERT(!(m_flags & D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE), "must be shader resource flag support");
+                return std::get<0>(m_views);
+            }
+            else if constexpr (std::is_same<VIEW_DESC_TYPE, D3D12_RENDER_TARGET_VIEW_DESC>())
+            {
+                ASSERT((m_flags & D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET), "must be shader render target flag support");
+                return std::get<1>(m_views);
+            }
+            else if constexpr (std::is_same<VIEW_DESC_TYPE, D3D12_DEPTH_STENCIL_VIEW_DESC>())
+            {
+                ASSERT((m_flags & D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL), "must be shader depth-stencil flag support");
+                return std::get<2>(m_views);
+            }
+        }
+
 
         const core::Dimension3D& getSize() const;
         D3D12_RESOURCE_DIMENSION getDimension() const;
@@ -61,7 +81,12 @@ namespace dx3d
 
     private:
 
+        static DXGI_FORMAT convertToTypelessFormat(DXGI_FORMAT format);
+        static DXGI_FORMAT getCompatibilityFormat(DXGI_FORMAT format);
+
         bool internalUpdate(Context* context, const core::Dimension3D& offsets, const core::Dimension3D& size, u32 layers, u32 mips, const void* data);
+
+        void createResourceView(DXGI_FORMAT shaderResourceFormat);
 
         ID3D12Device* const m_device;
 
@@ -70,7 +95,7 @@ namespace dx3d
         D3D12_RESOURCE_STATES m_state;
         D3D12_RESOURCE_FLAGS m_flags;
 
-        D3D12_SHADER_RESOURCE_VIEW_DESC m_view;
+        std::tuple<D3D12_SHADER_RESOURCE_VIEW_DESC, D3D12_RENDER_TARGET_VIEW_DESC, D3D12_DEPTH_STENCIL_VIEW_DESC> m_views;
 
         D3D12_RESOURCE_DIMENSION m_dimension;
         DXGI_FORMAT m_format;
