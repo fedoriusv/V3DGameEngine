@@ -212,18 +212,6 @@ void D3DGraphicContext::bindImage(const Shader* shader, u32 bindIndex, const Ima
     cmdList->setUsed(const_cast<D3DImage*>(dxImage), 0);
 
     m_descriptorState->bindDescriptor<D3DImage>(space, binding, dxImage);
-
-
-    ////
-    //{
-    //    D3DDescriptor* descriptor = m_descriptorHeapManager->acquireDescriptor(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE);
-    //    ASSERT(descriptor, "nullptr");
-
-    //    CD3DX12_CPU_DESCRIPTOR_HANDLE cbvHandle(D3DDescriptor::createCPUDescriptorHandle(descriptor));
-    //    m_device->CreateShaderResourceView(dxImage->getResource(), &dxImage->getView(), cbvHandle);
-
-    //    m_currentState.bindDescriptor(descriptor, 1);
-    //}
 }
 
 void D3DGraphicContext::bindSampler(const Shader* shader, u32 bindIndex, const Sampler::SamplerInfo* samplerInfo)
@@ -245,18 +233,6 @@ void D3DGraphicContext::bindSampler(const Shader* shader, u32 bindIndex, const S
     cmdList->setUsed(dxSampler, 0);
 
     m_descriptorState->bindDescriptor<D3DSampler>(space, binding, dxSampler);
-
-
-    /////
-    //{
-    //    D3DDescriptor* descriptor = m_descriptorHeapManager->acquireDescriptor(D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE);
-    //    ASSERT(descriptor, "nullptr");
-
-    //    CD3DX12_CPU_DESCRIPTOR_HANDLE cbvHandle(D3DDescriptor::createCPUDescriptorHandle(descriptor));
-    //    m_device->CreateSampler(&dxSampler->getDesc(), cbvHandle);
-
-    //    m_currentState.bindDescriptor(descriptor, 2);
-    //}
 }
 
 void D3DGraphicContext::bindSampledImage(const Shader* shader, u32 bindIndex, const Image* image, const Sampler::SamplerInfo* samplerInfo)
@@ -288,21 +264,6 @@ void D3DGraphicContext::bindUniformsBuffer(const Shader* shader, u32 bindIndex, 
     cmdList->setUsed(constantBuffer, 0);
 
     m_descriptorState->bindDescriptor<D3DBuffer>(space, binding, constantBuffer, 0, size);
-
-    /////
-    //{
-    //    D3DDescriptor* descriptor = m_descriptorHeapManager->acquireDescriptor(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE);
-    //    ASSERT(descriptor, "nullptr");
-
-    //    D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc = {};
-    //    cbvDesc.BufferLocation = constantBuffer->getGPUAddress();
-    //    cbvDesc.SizeInBytes = core::alignUp<UINT>(size, 256);
-
-    //    CD3DX12_CPU_DESCRIPTOR_HANDLE cbvHandle(D3DDescriptor::createCPUDescriptorHandle(descriptor));
-    //    m_device->CreateConstantBufferView(&cbvDesc, cbvHandle);
-
-    //    m_currentState.bindDescriptor(descriptor, 0);
-    //}
 }
 
 void D3DGraphicContext::transitionImages(const std::vector<Image*>& images, TransitionOp transition, s32 layer)
@@ -798,10 +759,6 @@ bool D3DGraphicContext::perpareDraw(D3DGraphicsCommandList* cmdList)
         m_boundState._pipeline = m_currentState._pipeline;
     }
 
-    m_descriptorState->updateDescriptorSets(cmdList, m_currentState._pipeline);
-    //std::vector<ID3D12DescriptorHeap*> heaps(m_currentState._descriptorHeaps.cbegin(), m_currentState._descriptorHeaps.cend());
-    //cmdList->setDescriptorTables(heaps, m_currentState._descriptorsList);
-
     if (m_boundState._renderTarget != m_currentState._renderTarget)
     {
         //change layout
@@ -817,7 +774,9 @@ bool D3DGraphicContext::perpareDraw(D3DGraphicsCommandList* cmdList)
         D3DGraphicContext::clearRenderTargets(cmdList, m_currentState._renderTarget, m_currentState._clearInfo);
     }
 
+    m_descriptorState->updateDescriptorSets(cmdList, m_currentState._pipeline);
     m_descriptorState->invalidateDescriptorSetTable();
+
     return true;
 }
 
@@ -964,6 +923,10 @@ void D3DGraphicContext::switchRenderTargetTransitionToFinal(D3DGraphicsCommandLi
         if (attachment._finalTransition == TransitionOp::TransitionOp_DepthStencilAttachmet)
         {
             cmdList->transition(dxImage, D3D12_RESOURCE_STATE_DEPTH_READ);
+        }
+        else if (attachment._finalTransition == TransitionOp::TransitionOp_ShaderRead)
+        {
+            cmdList->transition(dxImage, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
         }
     }
 }

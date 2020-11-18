@@ -251,23 +251,23 @@ void D3DGraphicsCommandList::setIndexState(Buffer* buffer, DXGI_FORMAT format)
     cmdList->IASetIndexBuffer(&bufferView);
 }
 
-void D3DGraphicsCommandList::transition(D3DImage* image, D3D12_RESOURCE_STATES state)
+void D3DGraphicsCommandList::transition(D3DImage* image, D3D12_RESOURCE_STATES states)
 {
     ASSERT(m_commandList, "nullptr");
     ASSERT(m_status == Status::ReadyToRecord, "not record");
 
-    if (image->getState() != state)
+    if (image->getState() != states)
     {
         ID3D12GraphicsCommandList* cmdList = D3DGraphicsCommandList::getHandle();
 
-        D3D12_RESOURCE_STATES oldState = image->setState(state);
+        D3D12_RESOURCE_STATES oldState = image->setState(states);
 
         D3D12_RESOURCE_BARRIER resourceBarrierDesc = {};
         resourceBarrierDesc.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
         resourceBarrierDesc.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
         resourceBarrierDesc.Transition.pResource = image->getResource();
         resourceBarrierDesc.Transition.StateBefore = oldState;
-        resourceBarrierDesc.Transition.StateAfter = state;
+        resourceBarrierDesc.Transition.StateAfter = states;
         resourceBarrierDesc.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
 
         cmdList->ResourceBarrier(1, &resourceBarrierDesc);
