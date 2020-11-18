@@ -931,7 +931,7 @@ bool VulkanImage::create()
 
         if (m_usage == TextureUsage::TextureUsage_Attachment)
         {
-            //imageUsage |= VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT;
+            imageUsage |= VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT;
         }
     }
 
