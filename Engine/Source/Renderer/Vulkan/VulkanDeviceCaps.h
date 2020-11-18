@@ -72,6 +72,8 @@ namespace vk
         const VkPhysicalDeviceMemoryProperties&  getDeviceMemoryProperties() const;
         const VkPhysicalDeviceFeatures& getPhysicalDeviceFeatures() const;
 
+        bool debugUtilsObjectNameEnabled = false;
+
     private:
 
         friend class VulkanGraphicContext;

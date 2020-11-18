@@ -237,7 +237,7 @@ void VulkanCommandBuffer::beginCommandBuffer()
     }
 
 #if VULKAN_DEBUG_MARKERS
-    if (VulkanDeviceCaps::checkInstanceExtension(VK_EXT_DEBUG_UTILS_EXTENSION_NAME))
+    if (VulkanDeviceCaps::getInstance()->debugUtilsObjectNameEnabled)
     {
         VkDebugUtilsLabelEXT debugUtilsLabel = {};
         debugUtilsLabel.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_LABEL_EXT;
@@ -261,7 +261,7 @@ void VulkanCommandBuffer::endCommandBuffer()
     VulkanWrapper::EndCommandBuffer(m_command);
 
 #if VULKAN_DEBUG_MARKERS
-    if (VulkanDeviceCaps::checkInstanceExtension(VK_EXT_DEBUG_UTILS_EXTENSION_NAME))
+    if (VulkanDeviceCaps::getInstance()->debugUtilsObjectNameEnabled)
     {
         VulkanWrapper::CmdEndDebugUtilsLabel(m_command);
     }

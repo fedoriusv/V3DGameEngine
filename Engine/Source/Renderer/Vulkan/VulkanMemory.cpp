@@ -334,7 +334,7 @@ VulkanMemory::VulkanAllocation SimpleVulkanMemoryAllocator::allocate(VkDeviceSiz
     }
 
 #if VULKAN_DEBUG_MARKERS
-    if (VulkanDeviceCaps::checkInstanceExtension(VK_EXT_DEBUG_UTILS_EXTENSION_NAME))
+    if (VulkanDeviceCaps::getInstance()->debugUtilsObjectNameEnabled)
     {
         std::string debugName = "SimpleAlloc_Memory_" + std::to_string(s_debugNameGenerator++);
 

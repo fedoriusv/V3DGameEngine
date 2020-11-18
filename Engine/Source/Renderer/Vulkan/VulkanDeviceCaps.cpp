@@ -161,6 +161,8 @@ void VulkanDeviceCaps::fillCapabilitiesList(const DeviceInfo* info)
         return false;
     };
 
+    debugUtilsObjectNameEnabled = VulkanDeviceCaps::checkInstanceExtension(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+
     ASSERT(isEnableExtension(VK_KHR_MAINTENANCE1_EXTENSION_NAME), "required VK_KHR_maintenance1 extension");
     ASSERT(isEnableExtension(VK_KHR_MAINTENANCE2_EXTENSION_NAME), "required VK_KHR_maintenance2 extension");
     supportRenderpass2 = isEnableExtension(VK_KHR_CREATE_RENDERPASS_2_EXTENSION_NAME);

@@ -989,7 +989,7 @@ bool VulkanImage::create()
     }
 
 #if VULKAN_DEBUG_MARKERS
-    if (VulkanDeviceCaps::checkInstanceExtension(VK_EXT_DEBUG_UTILS_EXTENSION_NAME))
+    if (VulkanDeviceCaps::getInstance()->debugUtilsObjectNameEnabled)
     {
         VkDebugUtilsObjectNameInfoEXT debugUtilsObjectNameInfo = {};
         debugUtilsObjectNameInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT;
@@ -1064,7 +1064,7 @@ bool VulkanImage::create(VkImage image)
     m_swapchainImage = true;
 
 #if VULKAN_DEBUG_MARKERS
-    if (VulkanDeviceCaps::checkInstanceExtension(VK_EXT_DEBUG_UTILS_EXTENSION_NAME))
+    if (VulkanDeviceCaps::getInstance()->debugUtilsObjectNameEnabled)
     {
         VkDebugUtilsObjectNameInfoEXT debugUtilsObjectNameInfo = {};
         debugUtilsObjectNameInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT;

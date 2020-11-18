@@ -102,7 +102,7 @@ bool VulkanFramebuffer::create(const RenderPass* pass)
     }
 
 #if VULKAN_DEBUG_MARKERS
-    if (VulkanDeviceCaps::checkInstanceExtension(VK_EXT_DEBUG_UTILS_EXTENSION_NAME))
+    if (VulkanDeviceCaps::getInstance()->debugUtilsObjectNameEnabled)
     {
         VkDebugUtilsObjectNameInfoEXT debugUtilsObjectNameInfo = {};
         debugUtilsObjectNameInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT;
