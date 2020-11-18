@@ -154,11 +154,11 @@ bool VulkanLayers::checkDeviceLayerIsSupported(VkPhysicalDevice device, const c8
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-VkDebugUtilsMessengerEXT VulkanDebugUtils::s_messeger = VK_NULL_HANDLE;
+VkDebugUtilsMessengerEXT VulkanDebugUtils::s_messenger = VK_NULL_HANDLE;
 
-bool VulkanDebugUtils::createDebugUtilsMesseger(VkInstance instance, VkDebugUtilsMessageSeverityFlagsEXT severityFlag, VkDebugUtilsMessageTypeFlagsEXT flags, PFN_vkDebugUtilsMessengerCallbackEXT callback, void * userData)
+bool VulkanDebugUtils::createDebugUtilsMessenger(VkInstance instance, VkDebugUtilsMessageSeverityFlagsEXT severityFlag, VkDebugUtilsMessageTypeFlagsEXT flags, PFN_vkDebugUtilsMessengerCallbackEXT callback, void * userData)
 {
-    if (s_messeger)
+    if (s_messenger)
     {
         LOG_WARNING("VulkanDebugUtils::createDebugUtilsMessagerCallback: already exist");
         return true;
@@ -170,10 +170,10 @@ bool VulkanDebugUtils::createDebugUtilsMesseger(VkInstance instance, VkDebugUtil
     debugUtilsMessengerCreateInfo.flags = 0;
     debugUtilsMessengerCreateInfo.messageSeverity = severityFlag;
     debugUtilsMessengerCreateInfo.messageType = flags;
-    debugUtilsMessengerCreateInfo.pfnUserCallback = (callback) ? callback : VulkanDebugUtils::defaultDebugUtilsMessegerCallback;
+    debugUtilsMessengerCreateInfo.pfnUserCallback = (callback) ? callback : VulkanDebugUtils::defaultDebugUtilsMessengerCallback;
     debugUtilsMessengerCreateInfo.pUserData = userData;
 
-    VkResult result = VulkanWrapper::CreateDebugUtilsMessenger(instance, &debugUtilsMessengerCreateInfo, VULKAN_ALLOCATOR, &s_messeger);
+    VkResult result = VulkanWrapper::CreateDebugUtilsMessenger(instance, &debugUtilsMessengerCreateInfo, VULKAN_ALLOCATOR, &s_messenger);
     if (result != VK_SUCCESS)
     {
         LOG_ERROR("VulkanDebugUtils::createDebugUtilsMessagerCallback: vkCreateDebugUtilsMessengerEXT error %s", ErrorString(result).c_str());
@@ -182,16 +182,16 @@ bool VulkanDebugUtils::createDebugUtilsMesseger(VkInstance instance, VkDebugUtil
     return true;
 }
 
-void VulkanDebugUtils::destroyDebugUtilsMesseger(VkInstance instance)
+void VulkanDebugUtils::destroyDebugUtilsMessenger(VkInstance instance)
 {
-    if (s_messeger)
+    if (s_messenger)
     {
-        VulkanWrapper::DestroyDebugUtilsMessenger(instance, s_messeger, VULKAN_ALLOCATOR);
-        s_messeger = VK_NULL_HANDLE;
+        VulkanWrapper::DestroyDebugUtilsMessenger(instance, s_messenger, VULKAN_ALLOCATOR);
+        s_messenger = VK_NULL_HANDLE;
     }
 }
 
-VkBool32 VulkanDebugUtils::defaultDebugUtilsMessegerCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageType, const VkDebugUtilsMessengerCallbackDataEXT * pCallbackData, void * pUserData)
+VkBool32 VulkanDebugUtils::defaultDebugUtilsMessengerCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageType, const VkDebugUtilsMessengerCallbackDataEXT * pCallbackData, void * pUserData)
 {
     switch (messageType)
     {

@@ -59,16 +59,16 @@ namespace vk
 
         static const u16 k_severityDebugLevel = k_DebugLevel;
 
-        static bool createDebugUtilsMesseger(VkInstance instance, VkDebugUtilsMessageSeverityFlagsEXT severityFlag, VkDebugUtilsMessageTypeFlagsEXT flags, PFN_vkDebugUtilsMessengerCallbackEXT callback, void* userData = nullptr);
-        static void destroyDebugUtilsMesseger(VkInstance instance);
+        static bool createDebugUtilsMessenger(VkInstance instance, VkDebugUtilsMessageSeverityFlagsEXT severityFlag, VkDebugUtilsMessageTypeFlagsEXT flags, PFN_vkDebugUtilsMessengerCallbackEXT callback, void* userData = nullptr);
+        static void destroyDebugUtilsMessenger(VkInstance instance);
 
-        static VkBool32 VKAPI_PTR defaultDebugUtilsMessegerCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageType, const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, void* pUserData);
+        static VkBool32 VKAPI_PTR defaultDebugUtilsMessengerCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageType, const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, void* pUserData);
 
     private:
 
         static void debugCallbackData(const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, void* pUserData);
 
-        static VkDebugUtilsMessengerEXT s_messeger;
+        static VkDebugUtilsMessengerEXT s_messenger;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

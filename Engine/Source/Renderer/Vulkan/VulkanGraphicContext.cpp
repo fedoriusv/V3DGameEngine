@@ -954,7 +954,7 @@ void VulkanGraphicContext::destroy()
 #if VULKAN_LAYERS_CALLBACKS
     if (VulkanDeviceCaps::checkInstanceExtension(VK_EXT_DEBUG_UTILS_EXTENSION_NAME))
     {
-        VulkanDebugUtils::destroyDebugUtilsMesseger(m_deviceInfo._instance);
+        VulkanDebugUtils::destroyDebugUtilsMessenger(m_deviceInfo._instance);
     }
     else if (VulkanDeviceCaps::checkInstanceExtension(VK_EXT_DEBUG_REPORT_EXTENSION_NAME))
     {
@@ -1135,7 +1135,7 @@ bool VulkanGraphicContext::createInstance()
 #   if VULKAN_VALIDATION_LAYERS_CALLBACK
         messageTypeFlag |= VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT;
 #   endif //VULKAN_VALIDATION_LAYERS_CALLBACK
-        if(!VulkanDebugUtils::createDebugUtilsMesseger(m_deviceInfo._instance, severityFlag, messageTypeFlag, nullptr, this))
+        if(!VulkanDebugUtils::createDebugUtilsMessenger(m_deviceInfo._instance, severityFlag, messageTypeFlag, nullptr, this))
         {
             LOG_ERROR("VulkanGraphicContext::createInstance: createDebugUtilsMessager failed");
         }
