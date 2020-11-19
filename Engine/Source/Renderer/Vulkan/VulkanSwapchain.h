@@ -73,8 +73,10 @@ namespace vk
         VkSwapchainKHR m_swapchain;
         std::vector<VulkanImage*> m_swapBuffers;
 
-        u32 m_currentSemaphoreIndex;
         static u32 s_currentImageIndex;
+        std::tuple<u32, VkSemaphore> m_presentInfo;
+
+        u32 m_currentSemaphoreIndex;
         std::vector<VkSemaphore> m_acquireSemaphore;
         std::vector<VkFence> m_acquireFence;
 

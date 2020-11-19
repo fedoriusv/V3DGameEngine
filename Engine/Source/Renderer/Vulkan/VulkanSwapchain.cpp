@@ -12,6 +12,8 @@
 extern android_app* g_nativeAndroidApp;
 #endif //PLATFORM_ANDROID
 
+#define SWAPCHAIN_ON_ADVANCE 0
+
 #ifdef VULKAN_RENDER
 namespace v3d
 {
@@ -283,6 +285,11 @@ bool VulkanSwapchain::create(const SwapchainConfig& config, VkSwapchainKHR oldSw
         m_acquireSemaphore.push_back(semaphore);
     }
 
+#if SWAPCHAIN_ON_ADVANCE
+    u32 initialImageIndex = VulkanSwapchain::acquireImage();
+    m_presentInfo = { initialImageIndex, m_acquireSemaphore[m_currentSemaphoreIndex] };
+    m_currentSemaphoreIndex = (m_currentSemaphoreIndex + 1) % static_cast<u32>(m_acquireSemaphore.size());
+#endif
     m_ready = true;
     return true;
 }
@@ -515,7 +522,7 @@ void VulkanSwapchain::present(VkQueue queue, const std::vector<VkSemaphore>& wai
     if (waitSemaphores.empty())
     {
         presentInfoKHR.waitSemaphoreCount = 1;
-        presentInfoKHR.pWaitSemaphores = &m_acquireSemaphore[m_currentSemaphoreIndex];
+        presentInfoKHR.pWaitSemaphores = &std::get<1>(m_presentInfo);
     }
     else
     {
@@ -524,7 +531,7 @@ void VulkanSwapchain::present(VkQueue queue, const std::vector<VkSemaphore>& wai
     }
     presentInfoKHR.swapchainCount = 1;
     presentInfoKHR.pSwapchains = &m_swapchain;
-    presentInfoKHR.pImageIndices = &s_currentImageIndex;
+    presentInfoKHR.pImageIndices = &std::get<0>(m_presentInfo);
     presentInfoKHR.pResults = innerResults;
 
     VkResult result = VulkanWrapper::QueuePresent(queue, &presentInfoKHR);
@@ -553,6 +560,10 @@ void VulkanSwapchain::present(VkQueue queue, const std::vector<VkSemaphore>& wai
         LOG_FATAL(" VulkanSwapchain::QueuePresent: failed with error %s", ErrorString(result).c_str());
         ASSERT(false, "QueuePresent failed");
     }
+
+#if SWAPCHAIN_ON_ADVANCE
+    m_presentInfo = { VulkanSwapchain::currentSwapchainIndex(), m_acquireSemaphore[m_currentSemaphoreIndex] };
+#endif
     m_currentSemaphoreIndex = (m_currentSemaphoreIndex + 1) % static_cast<u32>(m_acquireSemaphore.size());
 }
 
@@ -599,6 +610,9 @@ u32 VulkanSwapchain::acquireImage()
     }
 
     s_currentImageIndex = imageIndex;
+#if !SWAPCHAIN_ON_ADVANCE
+    m_presentInfo = { VulkanSwapchain::currentSwapchainIndex(), m_acquireSemaphore[m_currentSemaphoreIndex] };
+#endif
     return imageIndex;
 }
 
