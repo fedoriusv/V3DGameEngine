@@ -26,11 +26,35 @@ namespace renderer
     {
     public:
 
-        TextureTarget   getTarget() const;
-        Format          getFormat() const;
-        TextureSamples  getSamples() const;
-        u32             getLayersCount() const;
-        u32             getMipmapsCount() const;
+        /**
+        * @brief getTarget method
+        * @return TextureTarget of texture
+        */
+        TextureTarget getTarget() const;
+
+        /**
+        * @brief getFormat method
+        * @return Format of texture
+        */
+        Format getFormat() const;
+
+        /**
+        * @brief getSamples method
+        * @return TextureSamples of texture
+        */
+        TextureSamples getSamples() const;
+
+        /**
+        * @brief getLayersCount method
+        * @return count layers of texture
+        */
+        u32 getLayersCount() const;
+
+        /**
+        * @brief getMipmapsCount method
+        * @return count mipmaps of texture
+        */
+        u32 getMipmapsCount() const;
 
     protected:
 
@@ -38,6 +62,8 @@ namespace renderer
         virtual ~Texture();
 
         Image* getImage() const;
+
+        bool isBackbuffer() const;
 
         void handleNotify(utils::Observable* ob) override;
         bool isTextureUsageFlagsContains(TextureUsageFlags usage) const;
@@ -53,8 +79,12 @@ namespace renderer
         TextureUsageFlags   m_usage;
         Image*              m_image;
 
+        bool                m_backbuffer;
+
         friend RenderTargetState;
         friend ShaderProgram;
+
+        void createTexture(const core::Dimension3D& dimension, const void* data);
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -70,6 +100,10 @@ namespace renderer
         Texture2D(const Texture2D&) = delete;
         ~Texture2D();
 
+        /**
+        * @brief getDimension method.
+        * @return const core::Dimension2D& dimention of texture
+        */
         const core::Dimension2D& getDimension() const;
 
         void update(const core::Dimension2D& offset, const core::Dimension2D& size, u32 mipLevel, const void* data);
@@ -90,7 +124,7 @@ namespace renderer
         * @param const void* data [optional]
         * @param const std::string& name [optional]
         */
-        Texture2D(CommandList& cmdList, TextureUsageFlags usage, Format format, const core::Dimension2D& dimension, u32 layers = 1, u32 mipmaps = 1, const void* data = nullptr, [[maybe_unused]] const std::string& name = "") noexcept;
+        explicit Texture2D(CommandList& cmdList, TextureUsageFlags usage, Format format, const core::Dimension2D& dimension, u32 mipmaps = 1, const void* data = nullptr, [[maybe_unused]] const std::string& name = "") noexcept;
 
         /**
         * @brief Texture2D constructor. Used for creating attachments
@@ -103,12 +137,61 @@ namespace renderer
         * @param const void* data [optional]
         * @param const std::string& name [optional]
         */
-        Texture2D(CommandList& cmdList, TextureUsageFlags usage, Format format, const core::Dimension2D& dimension, TextureSamples samples, [[maybe_unused]] const std::string& name = "") noexcept;
-
-        void createTexture2D(const void* data = nullptr);
+        explicit Texture2D(CommandList& cmdList, TextureUsageFlags usage, Format format, const core::Dimension2D& dimension, TextureSamples samples, [[maybe_unused]] const std::string& name = "") noexcept;
 
         const core::Dimension2D m_dimension;
+        friend CommandList;
+    };
 
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    /**
+    * @brief Texture2DArray class. Game side
+    */
+    class Texture2DArray : public Texture
+    {
+    public:
+
+        Texture2DArray() = delete;
+        Texture2DArray(const Texture2DArray&) = delete;
+        ~Texture2DArray();
+
+        /**
+        * @brief getDimension method.
+        * @return const core::Dimension2D& dimention of texture
+        */
+        const core::Dimension2D& getDimension() const;
+
+    private:
+
+        /**
+        * @brief Texture2DArray constructor. Used for creating 2D array of attachments
+        * Private method. Use createObject interface inside CommandList class to call.
+        *
+        * @param TextureUsageFlags usage [required]
+        * @param Format format [required]
+        * @param const Dimension2D& dimension [required]
+        * @param u32 layer [required]
+        * @param TextureSamples samples [optional]
+        * @param const std::string& name [optional]
+        */
+        explicit Texture2DArray(CommandList& cmdList, TextureUsageFlags usage, Format format, const core::Dimension2D& dimension, u32 layer, TextureSamples samples, [[maybe_unused]] const std::string& name = "") noexcept;
+
+        /**
+        * @brief Texture2DArray constructor. Used for creating array of 2D textures
+        * Private method. Use createObject interface inside CommandList class to call.
+        *
+        * @param TextureUsageFlags usage [required]
+        * @param Format format [required]
+        * @param const Dimension2D& dimension [required]
+        * @param u32 layer [required]
+        * @param u32 mipmaps [optional]
+        * @param const void* data [optional]
+        * @param const std::string& name [optional]
+        */
+        explicit Texture2DArray(CommandList& cmdList, TextureUsageFlags usage, Format format, const core::Dimension2D& dimension, u32 layer, u32 mipmaps = 1, const void* data = nullptr, [[maybe_unused]] const std::string& name = "") noexcept;
+
+        const core::Dimension2D m_dimension;
         friend CommandList;
     };
 
@@ -126,6 +209,14 @@ namespace renderer
         ~TextureCube();
 
         /**
+        * @brief getDimension method.
+        * @return const core::Dimension2D& dimention of texture
+        */
+        const core::Dimension2D& getDimension() const;
+
+    private:
+
+        /**
         * @brief TextureCube constructor. Used for creating cubemap attachments
         * Private method. Use createObject interface inside CommandList class to call.
         *
@@ -135,13 +226,41 @@ namespace renderer
         * @param TextureSamples samples [optional]
         * @param const std::string& name [optional]
         */
-        TextureCube(CommandList& cmdList, TextureUsageFlags usage, Format format, const core::Dimension2D& dimension, TextureSamples samples, [[maybe_unused]] const std::string& name = "") noexcept;
+        explicit TextureCube(CommandList& cmdList, TextureUsageFlags usage, Format format, const core::Dimension2D& dimension, TextureSamples samples, [[maybe_unused]] const std::string& name = "") noexcept;
+
+        const core::Dimension2D m_dimension;
+        friend CommandList;
+    };
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    /**
+    * @brief Backbuffer class. Wraps swapchain images
+    */
+    class Backbuffer : public Texture
+    {
+    public:
+
+        Backbuffer() = delete;
+        Backbuffer(const Backbuffer&) = delete;
+        ~Backbuffer();
+
+        /**
+        * @brief getDimension method.
+        * @return const core::Dimension2D& dimention of backbuffer
+        */
+        const core::Dimension2D& getDimension() const;
+
+        void read(const core::Dimension2D& offset, const core::Dimension2D& size, void* const data);
+        void clear(const core::Vector4D& color);
 
     private:
 
-        void createTextureCube();
-
-        const core::Dimension2D m_dimension;
+        /**
+        * @brief Backbuffer constructor. Used for creating a backbuffer.
+        * Private method. Creates inside CommandList object.
+        */
+        explicit Backbuffer(renderer::CommandList& cmdList) noexcept;
 
         friend CommandList;
     };

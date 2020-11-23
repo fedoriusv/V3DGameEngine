@@ -120,7 +120,7 @@ namespace renderer
         TextureSamples        _samples          : 3;
         TransitionOp          _initTransition   : 3;
         TransitionOp          _finalTransition  : 3;
-        u32                   _internalTarget   : 1;
+        u32                   _backbuffer       : 1;
         u32                   _autoResolve      : 1;
         u32                   _layer            : 3;
 

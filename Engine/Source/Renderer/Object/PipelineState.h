@@ -11,12 +11,14 @@ namespace v3d
 {
 namespace renderer
 {
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
+
     class ShaderProgram;
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
-    * PipelineState base class. Game side
+    * @brief PipelineState base class. Game side
     */
     class PipelineState : public Object
     {
@@ -29,12 +31,8 @@ namespace renderer
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
-    * GraphicsPipelineState class. Game side
-    *\n
-    * Constructor param:
-    const VertexInputAttribDescription& vertex
-    const ShaderProgram* const program
-    const RenderTargetState* const renderTaget
+    * @brief GraphicsPipelineState class. Game side.
+    * Includes a shader program and render states
     */
     class GraphicsPipelineState : public PipelineState
     {
@@ -87,11 +85,28 @@ namespace renderer
 
     private:
 
+        /**
+        * @brief GraphicsPipelineState constructor.
+        * Private method. Use createObject interface inside CommandList class to call.
+        * 
+        * @param const VertexInputAttribDescription& vertex [required]
+        * @param const ShaderProgram* const program [required]
+        * @param onst RenderTargetState* const renderTaget [required]
+        */
         explicit GraphicsPipelineState(CommandList& cmdList, const VertexInputAttribDescription& vertex, const ShaderProgram* const program, const RenderTargetState* const renderTaget) noexcept;
+
+        /**
+        * @brief GraphicsPipelineState constructor.
+        * Private method. Use createObject interface inside CommandList class to call.
+        *
+        * @param const GraphicsPipelineStateDescription& desc [required]
+        * @param const ShaderProgram* const program [required]
+        * @param onst RenderTargetState* const renderTaget [required]
+        */
         explicit GraphicsPipelineState(CommandList& cmdList, const GraphicsPipelineStateDescription& desc, const ShaderProgram* const program, const RenderTargetState* const renderTaget) noexcept;
 
-        void setShaderProgram(const ShaderProgram * program);
-        void setRenderTaget(const RenderTargetState * target);
+        void setShaderProgram(const ShaderProgram* program);
+        void setRenderTaget(const RenderTargetState* target);
 
         void destroyPipelines(const std::vector<Pipeline*>& pipelines);
 

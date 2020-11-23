@@ -18,7 +18,8 @@ namespace renderer
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
-    * @brief SamplerState class. Game side
+    * @brief SamplerState class. Game side.
+    * Describes how texture will be filtered, etc.
     */
     class SamplerState : public Object
     {

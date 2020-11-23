@@ -50,8 +50,11 @@ MaterialHelper::MaterialHelper(renderer::CommandList& cmdList, Material * materi
     for (auto& iter : images)
     {
         resource::Image* image = std::get<1>(iter.second);
-        renderer::Texture2D* texture = cmdList.createObject<renderer::Texture2D>(renderer::TextureUsage_Sampled | renderer::TextureUsage_Shared | renderer::TextureUsage_Write, 
-            image->getFormat(), core::Dimension2D(image->getDimension().width, image->getDimension().height), image->getLayersCount(), image->getMipMapsCount(), image->getRawData(), std::get<0>(iter.second));
+        ASSERT(image->getLayersCount() == 1, "not handled");
+
+        renderer::Texture2D* texture = cmdList.createObject<renderer::Texture2D>(renderer::TextureUsage_Sampled | renderer::TextureUsage_Shared | renderer::TextureUsage_Write,
+            image->getFormat(), core::Dimension2D(image->getDimension().width, image->getDimension().height), image->getMipMapsCount(), image->getRawData(), std::get<0>(iter.second));
+
 
         material->setParameter<renderer::Texture*>(iter.first, texture);
 
