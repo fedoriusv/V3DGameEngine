@@ -122,12 +122,12 @@ void ForwardPointLightTextureTest::Load(renderer::RenderTargetState* renderTarge
     resource::Image* imageDiffuse = resource::ResourceLoaderManager::getInstance()->load<resource::Image, resource::ImageFileLoader>("resources/point/container2.png");
     ASSERT(imageDiffuse, "not found");
     m_TextureDiffuse = m_CommandList.createObject<renderer::Texture2D>(renderer::TextureUsage_Sampled | renderer::TextureUsage_Write,
-        imageDiffuse->getFormat(), core::Dimension2D(imageDiffuse->getDimension().width, imageDiffuse->getDimension().height), 1, 1, imageDiffuse->getRawData(), "PhongDiffuse");
+        imageDiffuse->getFormat(), core::Dimension2D(imageDiffuse->getDimension().width, imageDiffuse->getDimension().height), 1, imageDiffuse->getRawData(), "PhongDiffuse");
 
     resource::Image* imageSpecular = resource::ResourceLoaderManager::getInstance()->load<resource::Image, resource::ImageFileLoader>("resources/point/container2_specular.png");
     ASSERT(imageSpecular, "not found");
     m_TextureSpecular = m_CommandList.createObject<renderer::Texture2D>(renderer::TextureUsage_Sampled | renderer::TextureUsage_Write,
-        imageSpecular->getFormat(), core::Dimension2D(imageSpecular->getDimension().width, imageSpecular->getDimension().height), 1, 1, imageSpecular->getRawData(), "PhongSpecular");
+        imageSpecular->getFormat(), core::Dimension2D(imageSpecular->getDimension().width, imageSpecular->getDimension().height), 1, imageSpecular->getRawData(), "PhongSpecular");
 
     std::vector<std::pair<std::string, std::string>> constants =
     {

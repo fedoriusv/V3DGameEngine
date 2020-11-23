@@ -21,12 +21,12 @@ void ForwardNormalMapTest::Load(renderer::RenderTargetState* renderTarget, const
 {
     resource::Image* imageColor = resource::ResourceLoaderManager::getInstance()->load<resource::Image, resource::ImageFileLoader>("resources/bumpmap/brickwall.jpg");
     ASSERT(imageColor, "not found");
-    m_TextureColor = m_CommandList.createObject<renderer::Texture2D>(renderer::TextureUsage_Sampled | renderer::TextureUsage_Write,imageColor->getFormat(), core::Dimension2D(imageColor->getDimension().width, imageColor->getDimension().height), 1, 1, imageColor->getRawData(), "DiffuseColor");
+    m_TextureColor = m_CommandList.createObject<renderer::Texture2D>(renderer::TextureUsage_Sampled | renderer::TextureUsage_Write,imageColor->getFormat(), core::Dimension2D(imageColor->getDimension().width, imageColor->getDimension().height), 1, imageColor->getRawData(), "DiffuseColor");
     m_SamplerColor = m_CommandList.createObject<renderer::SamplerState>(renderer::SamplerFilter::SamplerFilter_Trilinear, renderer::SamplerAnisotropic::SamplerAnisotropic_4x);
 
     resource::Image* imageNormal = resource::ResourceLoaderManager::getInstance()->load<resource::Image, resource::ImageFileLoader>("resources/bumpmap/brickwall_normal.jpg");
     ASSERT(imageNormal, "not found");
-    m_TextureNormalmap = m_CommandList.createObject<renderer::Texture2D>(renderer::TextureUsage_Sampled | renderer::TextureUsage_Write, imageNormal->getFormat(), core::Dimension2D(imageNormal->getDimension().width, imageNormal->getDimension().height), 1, 1, imageNormal->getRawData(), "NormalMap");
+    m_TextureNormalmap = m_CommandList.createObject<renderer::Texture2D>(renderer::TextureUsage_Sampled | renderer::TextureUsage_Write, imageNormal->getFormat(), core::Dimension2D(imageNormal->getDimension().width, imageNormal->getDimension().height), 1, imageNormal->getRawData(), "NormalMap");
     m_SamplerNormalmap = m_CommandList.createObject<renderer::SamplerState>(renderer::SamplerFilter::SamplerFilter_Nearest, renderer::SamplerAnisotropic::SamplerAnisotropic_None);
 
     std::vector<std::pair<std::string, std::string>> constants =
@@ -132,16 +132,16 @@ void ForwardParallaxMappingTest::Load(renderer::RenderTargetState* renderTarget,
 {
     resource::Image* imageColor = resource::ResourceLoaderManager::getInstance()->load<resource::Image, resource::ImageFileLoader>("resources/bumpmap/bricks2.jpg");
     ASSERT(imageColor, "not found");
-    m_TextureColor = m_CommandList.createObject<renderer::Texture2D>(renderer::TextureUsage_Sampled | renderer::TextureUsage_Write, imageColor->getFormat(), core::Dimension2D(imageColor->getDimension().width, imageColor->getDimension().height), 1, 1, imageColor->getRawData(), "DiffuseColor");
+    m_TextureColor = m_CommandList.createObject<renderer::Texture2D>(renderer::TextureUsage_Sampled | renderer::TextureUsage_Write, imageColor->getFormat(), core::Dimension2D(imageColor->getDimension().width, imageColor->getDimension().height), 1, imageColor->getRawData(), "DiffuseColor");
     m_SamplerColor = m_CommandList.createObject<renderer::SamplerState>(renderer::SamplerFilter::SamplerFilter_Trilinear, renderer::SamplerAnisotropic::SamplerAnisotropic_4x);
 
     resource::Image* imageNormal = resource::ResourceLoaderManager::getInstance()->load<resource::Image, resource::ImageFileLoader>("resources/bumpmap/bricks2_normal.jpg");
     ASSERT(imageNormal, "not found");
-    m_TextureNormalmap = m_CommandList.createObject<renderer::Texture2D>(renderer::TextureUsage_Sampled | renderer::TextureUsage_Write, imageNormal->getFormat(), core::Dimension2D(imageNormal->getDimension().width, imageNormal->getDimension().height), 1, 1, imageNormal->getRawData(), "NormalMap");
+    m_TextureNormalmap = m_CommandList.createObject<renderer::Texture2D>(renderer::TextureUsage_Sampled | renderer::TextureUsage_Write, imageNormal->getFormat(), core::Dimension2D(imageNormal->getDimension().width, imageNormal->getDimension().height), 1, imageNormal->getRawData(), "NormalMap");
 
     resource::Image* imageHeight = resource::ResourceLoaderManager::getInstance()->load<resource::Image, resource::ImageFileLoader>("resources/bumpmap/bricks2_disp.jpg");
     ASSERT(imageHeight, "not found");
-    m_TextureHeightmap = m_CommandList.createObject<renderer::Texture2D>(renderer::TextureUsage_Sampled | renderer::TextureUsage_Write, imageNormal->getFormat(), core::Dimension2D(imageNormal->getDimension().width, imageNormal->getDimension().height), 1, 1, imageNormal->getRawData(), "ParallaxMapping");
+    m_TextureHeightmap = m_CommandList.createObject<renderer::Texture2D>(renderer::TextureUsage_Sampled | renderer::TextureUsage_Write, imageNormal->getFormat(), core::Dimension2D(imageNormal->getDimension().width, imageNormal->getDimension().height), 1, imageNormal->getRawData(), "ParallaxMapping");
     
     m_SamplerFilter = m_CommandList.createObject<renderer::SamplerState>(renderer::SamplerFilter::SamplerFilter_Nearest, renderer::SamplerAnisotropic::SamplerAnisotropic_None);
 

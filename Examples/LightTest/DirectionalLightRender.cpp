@@ -24,7 +24,7 @@ void ForwardDirectionalLightTextureTest::Load(renderer::RenderTargetState* rende
 
     resource::Image* image = resource::ResourceLoaderManager::getInstance()->load<resource::Image, resource::ImageFileLoader>("resources/directional/box.jpg");
     ASSERT(image, "not found");
-    m_Texture = m_CommandList.createObject<renderer::Texture2D>(renderer::TextureUsage_Sampled | renderer::TextureUsage_Write, image->getFormat(), core::Dimension2D(image->getDimension().width, image->getDimension().height), 1, 1, image->getRawData(), "LambertTexture");
+    m_Texture = m_CommandList.createObject<renderer::Texture2D>(renderer::TextureUsage_Sampled | renderer::TextureUsage_Write, image->getFormat(), core::Dimension2D(image->getDimension().width, image->getDimension().height), 1, image->getRawData(), "LambertTexture");
 
 
     std::vector<std::pair<std::string, std::string>> constants =

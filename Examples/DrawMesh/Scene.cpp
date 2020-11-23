@@ -128,7 +128,7 @@ void Scene::LoadVoyager()
         m_Voyager.m_Sampler = m_CommandList->createObject<renderer::SamplerState>(renderer::SamplerFilter::SamplerFilter_Bilinear, renderer::SamplerAnisotropic::SamplerAnisotropic_None);
         m_Voyager.m_Sampler->setWrap(renderer::SamplerWrap::TextureWrap_Repeat);
         m_Voyager.m_Texture = m_CommandList->createObject<renderer::Texture2D>(renderer::TextureUsage::TextureUsage_Sampled | renderer::TextureUsage_Shared | renderer::TextureUsage_Write,
-            image->getFormat(), core::Dimension2D(image->getDimension().width, image->getDimension().height), 1, 1, image->getRawData());
+            image->getFormat(), core::Dimension2D(image->getDimension().width, image->getDimension().height), 1, image->getRawData());
     }
 
     {
@@ -141,7 +141,7 @@ void Scene::LoadTest()
 {
     resource::Image* image = resource::ResourceLoaderManager::getInstance()->load<resource::Image, resource::ImageFileLoader>("engine/data/textures/test_basetex.jpg");
     m_Test.m_Texture = m_CommandList->createObject<renderer::Texture2D>(renderer::TextureUsage::TextureUsage_Sampled | renderer::TextureUsage_Shared | renderer::TextureUsage_Write,
-        image->getFormat(), core::Dimension2D(image->getDimension().width, image->getDimension().height), 1, 1, image->getRawData());
+        image->getFormat(), core::Dimension2D(image->getDimension().width, image->getDimension().height), 1, image->getRawData());
     m_Test.m_Sampler = m_CommandList->createObject<renderer::SamplerState>(renderer::SamplerFilter::SamplerFilter_Bilinear, renderer::SamplerAnisotropic::SamplerAnisotropic_None);
     m_Test.m_Sampler->setWrap(renderer::SamplerWrap::TextureWrap_MirroredRepeat);
 
