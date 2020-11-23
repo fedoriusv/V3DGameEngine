@@ -272,9 +272,13 @@ void VulkanDebugUtils::debugCallbackData(const VkDebugUtilsMessengerCallbackData
                 break;
             }
 
+            [[maybe_unused]] VulkanImage* image = nullptr;
             char* end;
             const u64 addr = std::strtoull(objects.pObjectName, &end, 10);
-            [[maybe_unused]] VulkanImage* image = reinterpret_cast<VulkanImage*>(addr);
+            if (addr != 0ULL && addr != ULLONG_MAX)
+            {
+                image = reinterpret_cast<VulkanImage*>(addr);
+            }
 
             break;
         }
@@ -286,9 +290,13 @@ void VulkanDebugUtils::debugCallbackData(const VkDebugUtilsMessengerCallbackData
                 break;
             }
 
+            [[maybe_unused]] VulkanBuffer* buffer = nullptr;
             char* end;
             const u64 addr = std::strtoull(objects.pObjectName, &end, 10);
-            [[maybe_unused]] VulkanBuffer* buffer = reinterpret_cast<VulkanBuffer*>(addr);
+            if (addr != 0ULL && addr != ULLONG_MAX)
+            {
+                buffer = reinterpret_cast<VulkanBuffer*>(addr);
+            }
 
             break;
         }
@@ -300,9 +308,13 @@ void VulkanDebugUtils::debugCallbackData(const VkDebugUtilsMessengerCallbackData
                 break;
             }
 
+            [[maybe_unused]] VulkanFramebuffer* framebuffer = nullptr;
             char* end;
             const u64 addr = std::strtoull(objects.pObjectName, &end, 10);
-            [[maybe_unused]] VulkanFramebuffer* framebuffer = reinterpret_cast<VulkanFramebuffer*>(addr);
+            if (addr != 0ULL && addr != ULLONG_MAX)
+            {
+                framebuffer = reinterpret_cast<VulkanFramebuffer*>(addr);
+            }
 
             break;
         }
@@ -314,9 +326,13 @@ void VulkanDebugUtils::debugCallbackData(const VkDebugUtilsMessengerCallbackData
                 break;
             }
 
+            [[maybe_unused]] VulkanRenderPass* renderpass = nullptr;
             char* end;
             const u64 addr = std::strtoull(objects.pObjectName, &end, 10);
-            [[maybe_unused]] VulkanRenderPass* renderpass = reinterpret_cast<VulkanRenderPass*>(addr);
+            if (addr != 0ULL && addr != ULLONG_MAX)
+            {
+                renderpass = reinterpret_cast<VulkanRenderPass*>(addr);
+            }
 
             break;
         }
@@ -337,9 +353,13 @@ void VulkanDebugUtils::debugCallbackData(const VkDebugUtilsMessengerCallbackData
         const VkDebugUtilsLabelEXT& bufferLabel = pCallbackData->pCmdBufLabels[i];
         if (bufferLabel.pLabelName)
         {
+            [[maybe_unused]] VulkanCommandBuffer* cmdBuffer = nullptr;
             char* end;
             const u64 addr = std::strtoull(bufferLabel.pLabelName, &end, 10);
-            [[maybe_unused]] VulkanCommandBuffer* cmdBuffer = reinterpret_cast<VulkanCommandBuffer*>(addr);
+            if (addr != 0ULL && addr != ULLONG_MAX)
+            {
+                cmdBuffer = reinterpret_cast<VulkanCommandBuffer*>(addr);
+            }
 
             return;
         }
