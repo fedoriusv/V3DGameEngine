@@ -17,6 +17,136 @@ namespace renderer
 namespace dx3d
 {
 
+std::string ImageFormatStringDX(DXGI_FORMAT format)
+{
+    switch (format)
+    {
+#define STR(r) case DXGI_ ##r: return #r
+        STR(FORMAT_UNKNOWN);
+        STR(FORMAT_R32G32B32A32_TYPELESS);
+        STR(FORMAT_R32G32B32A32_FLOAT);
+        STR(FORMAT_R32G32B32A32_UINT);
+        STR(FORMAT_R32G32B32A32_SINT);
+        STR(FORMAT_R32G32B32_TYPELESS);
+        STR(FORMAT_R32G32B32_FLOAT);
+        STR(FORMAT_R32G32B32_UINT);
+        STR(FORMAT_R32G32B32_SINT);
+        STR(FORMAT_R16G16B16A16_TYPELESS);
+        STR(FORMAT_R16G16B16A16_FLOAT);
+        STR(FORMAT_R16G16B16A16_UNORM);
+        STR(FORMAT_R16G16B16A16_UINT);
+        STR(FORMAT_R16G16B16A16_SNORM);
+        STR(FORMAT_R16G16B16A16_SINT);
+        STR(FORMAT_R32G32_TYPELESS);
+        STR(FORMAT_R32G32_FLOAT);
+        STR(FORMAT_R32G32_UINT);
+        STR(FORMAT_R32G32_SINT);
+        STR(FORMAT_R32G8X24_TYPELESS);
+        STR(FORMAT_D32_FLOAT_S8X24_UINT);
+        STR(FORMAT_R32_FLOAT_X8X24_TYPELESS);
+        STR(FORMAT_X32_TYPELESS_G8X24_UINT);
+        STR(FORMAT_R10G10B10A2_TYPELESS);
+        STR(FORMAT_R10G10B10A2_UNORM);
+        STR(FORMAT_R10G10B10A2_UINT);
+        STR(FORMAT_R11G11B10_FLOAT);
+        STR(FORMAT_R8G8B8A8_TYPELESS);
+        STR(FORMAT_R8G8B8A8_UNORM);
+        STR(FORMAT_R8G8B8A8_UNORM_SRGB);
+        STR(FORMAT_R8G8B8A8_UINT);
+        STR(FORMAT_R8G8B8A8_SNORM);
+        STR(FORMAT_R8G8B8A8_SINT);
+        STR(FORMAT_R16G16_TYPELESS);
+        STR(FORMAT_R16G16_FLOAT);
+        STR(FORMAT_R16G16_UNORM);
+        STR(FORMAT_R16G16_UINT);
+        STR(FORMAT_R16G16_SNORM);
+        STR(FORMAT_R16G16_SINT);
+        STR(FORMAT_R32_TYPELESS);
+        STR(FORMAT_D32_FLOAT);
+        STR(FORMAT_R32_FLOAT);
+        STR(FORMAT_R32_UINT);
+        STR(FORMAT_R32_SINT);
+        STR(FORMAT_R24G8_TYPELESS);
+        STR(FORMAT_D24_UNORM_S8_UINT);
+        STR(FORMAT_R24_UNORM_X8_TYPELESS);
+        STR(FORMAT_X24_TYPELESS_G8_UINT);
+        STR(FORMAT_R8G8_TYPELESS);
+        STR(FORMAT_R8G8_UNORM);
+        STR(FORMAT_R8G8_UINT);
+        STR(FORMAT_R8G8_SNORM);
+        STR(FORMAT_R8G8_SINT);
+        STR(FORMAT_R16_TYPELESS);
+        STR(FORMAT_R16_FLOAT);
+        STR(FORMAT_D16_UNORM);
+        STR(FORMAT_R16_UNORM);
+        STR(FORMAT_R16_UINT);
+        STR(FORMAT_R16_SNORM);
+        STR(FORMAT_R16_SINT);
+        STR(FORMAT_R8_TYPELESS);
+        STR(FORMAT_R8_UNORM);
+        STR(FORMAT_R8_UINT);
+        STR(FORMAT_R8_SNORM);
+        STR(FORMAT_R8_SINT);
+        STR(FORMAT_A8_UNORM);
+        STR(FORMAT_R1_UNORM);
+        STR(FORMAT_R9G9B9E5_SHAREDEXP);
+        STR(FORMAT_R8G8_B8G8_UNORM);
+        STR(FORMAT_G8R8_G8B8_UNORM);
+        STR(FORMAT_BC1_TYPELESS);
+        STR(FORMAT_BC1_UNORM);
+        STR(FORMAT_BC1_UNORM_SRGB);
+        STR(FORMAT_BC2_TYPELESS);
+        STR(FORMAT_BC2_UNORM);
+        STR(FORMAT_BC2_UNORM_SRGB);
+        STR(FORMAT_BC3_TYPELESS);
+        STR(FORMAT_BC3_UNORM);
+        STR(FORMAT_BC3_UNORM_SRGB);
+        STR(FORMAT_BC4_TYPELESS);
+        STR(FORMAT_BC4_UNORM);
+        STR(FORMAT_BC4_SNORM);
+        STR(FORMAT_BC5_TYPELESS);
+        STR(FORMAT_BC5_UNORM);
+        STR(FORMAT_BC5_SNORM);
+        STR(FORMAT_B5G6R5_UNORM);
+        STR(FORMAT_B5G5R5A1_UNORM);
+        STR(FORMAT_B8G8R8A8_UNORM);
+        STR(FORMAT_B8G8R8X8_UNORM);
+        STR(FORMAT_R10G10B10_XR_BIAS_A2_UNORM);
+        STR(FORMAT_B8G8R8A8_TYPELESS);
+        STR(FORMAT_B8G8R8A8_UNORM_SRGB);
+        STR(FORMAT_B8G8R8X8_TYPELESS);
+        STR(FORMAT_B8G8R8X8_UNORM_SRGB);
+        STR(FORMAT_BC6H_TYPELESS);
+        STR(FORMAT_BC6H_UF16);
+        STR(FORMAT_BC6H_SF16);
+        STR(FORMAT_BC7_TYPELESS);
+        STR(FORMAT_BC7_UNORM);
+        STR(FORMAT_BC7_UNORM_SRGB);
+        STR(FORMAT_AYUV);
+        STR(FORMAT_Y410);
+        STR(FORMAT_Y416);
+        STR(FORMAT_NV12);
+        STR(FORMAT_P010);
+        STR(FORMAT_P016);
+        STR(FORMAT_420_OPAQUE);
+        STR(FORMAT_YUY2);
+        STR(FORMAT_Y210);
+        STR(FORMAT_Y216);
+        STR(FORMAT_NV11);
+        STR(FORMAT_AI44);
+        STR(FORMAT_IA44);
+        STR(FORMAT_P8);
+        STR(FORMAT_A8P8);
+        STR(FORMAT_B4G4R4A4_UNORM);
+        STR(FORMAT_P208);
+        STR(FORMAT_V208);
+        STR(FORMAT_V408);
+#undef STR
+    default:
+        return "UNKNOWN_FORMAT";
+    }
+}
+
 DXGI_FORMAT D3DImage::convertImageFormatToD3DFormat(Format format)
 {
     switch (format)
@@ -667,7 +797,7 @@ bool D3DImage::isStencilFormatOnly(DXGI_FORMAT format)
     return format == DXGI_FORMAT_D16_UNORM;
 }
 
-D3DImage::D3DImage(ID3D12Device* device, Format format, u32 width, u32 height, u32 samples, TextureUsageFlags flags, const std::string& name) noexcept
+D3DImage::D3DImage(ID3D12Device* device, Format format, u32 width, u32 height, u32 arrays, u32 samples, TextureUsageFlags flags, const std::string& name) noexcept
     : Image()
     , m_device(device)
     , m_resource(nullptr)
@@ -678,7 +808,7 @@ D3DImage::D3DImage(ID3D12Device* device, Format format, u32 width, u32 height, u
     , m_format(convertImageFormatToD3DFormat(format))
 
     , m_size({ width, height , 1})
-    , m_arrays(1)
+    , m_arrays(arrays)
     , m_mipmaps(1)
     , m_samples(samples)
 
@@ -758,7 +888,7 @@ bool D3DImage::create()
     {
         if (!D3DDeviceCaps::getInstance()->getImageFormatSupportInfo(m_originFormat, DeviceCaps::TilingType_Optimal)._supportAttachment)
         {
-            LOG_ERROR("Format %d is not supported to attachmnet", m_originFormat);
+            LOG_ERROR("Format %d is not supported to attachmnet", ImageFormatStringDX(m_format));
             ASSERT(false, "not support");
             return false;
         }
@@ -791,7 +921,7 @@ bool D3DImage::create()
                 return false;
             }
 
-            LOG_WARNING("Format %d(DX %d) is not supported sampled flag, replace to DX %d", m_originFormat, m_format, sampledFormat);
+            LOG_WARNING("Format %d is not supported sampled flag, replace to %d", ImageFormatStringDX(m_format), ImageFormatStringDX(sampledFormat));
         }
     }
 

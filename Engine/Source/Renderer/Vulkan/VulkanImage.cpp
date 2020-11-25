@@ -14,7 +14,7 @@ namespace renderer
 namespace vk
 {
 
-std::string ImageFormatString(VkFormat format)
+std::string ImageFormatStringVK(VkFormat format)
 {
     switch (format)
     {
@@ -904,7 +904,7 @@ bool VulkanImage::create()
         unsupport = !supportFormatInfo._supportSampled;
         if (!supportFormatInfo._supportSampled)
         {
-            LOG_ERROR("VulkanImage::create, supportFormatInfo._supportSampled format %s is not supported", ImageFormatString(m_format).c_str());
+            LOG_ERROR("VulkanImage::create, supportFormatInfo._supportSampled format %s is not supported", ImageFormatStringVK(m_format).c_str());
             ASSERT(supportFormatInfo._supportSampled, "format is not supported");
         }
         imageUsage |= VK_IMAGE_USAGE_SAMPLED_BIT;
@@ -915,7 +915,7 @@ bool VulkanImage::create()
         unsupport |= !supportFormatInfo._supportAttachment;
         if (!supportFormatInfo._supportAttachment)
         {
-            LOG_ERROR("VulkanImage::create, supportFormatInfo._supportAttachment format %s is not supported", ImageFormatString(m_format).c_str());
+            LOG_ERROR("VulkanImage::create, supportFormatInfo._supportAttachment format %s is not supported", ImageFormatStringVK(m_format).c_str());
             ASSERT(supportFormatInfo._supportAttachment, "format is not supported");
         }
 
@@ -962,7 +962,7 @@ bool VulkanImage::create()
         return false;
     }
 #if VULKAN_DEBUG
-    LOG_DEBUG("vkCreateImage: size [%u : %u : %u]; flags %u; usage %u; format %s", m_dimension.width, m_dimension.height, m_dimension.depth, imageFlags, imageUsage, ImageFormatString(m_format).c_str());
+    LOG_DEBUG("vkCreateImage: size [%u : %u : %u]; flags %u; usage %u; format %s", m_dimension.width, m_dimension.height, m_dimension.depth, imageFlags, imageUsage, ImageFormatStringVK(m_format).c_str());
 #endif
     VkImageCreateInfo imageCreateInfo = {};
     imageCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
