@@ -111,6 +111,7 @@ namespace renderer
     {
         AttachmentDescription() noexcept
         {
+            static_assert(sizeof(AttachmentDescription) == 4, "wrong size");
             memset(this, 0, sizeof(AttachmentDescription));
         }
 

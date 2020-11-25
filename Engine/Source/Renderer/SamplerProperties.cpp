@@ -11,6 +11,7 @@ SamplerDescription::SamplerDescription() noexcept
     : _hash(0)
     , _dirty(true)
 {
+    static_assert(sizeof(SamplerDescription::SamplerDesc) == 24, "wrong size");
     memset(&_desc, 0, sizeof(SamplerDescription::SamplerDesc));
 }
 

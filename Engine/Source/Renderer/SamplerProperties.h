@@ -54,6 +54,9 @@ namespace renderer
         SamplerDescription() noexcept;
         bool operator==(const SamplerDescription& other) const;
 
+        /**
+        * @brief SamplerDesc struct. Size 24 bytes
+        */
         struct SamplerDesc
         {
             core::Vector4D          _borderColor;

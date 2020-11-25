@@ -75,7 +75,6 @@ namespace renderer
     private:
 
         Context* m_context;
-        //std::map<u32, RenderPass*> m_renderPassList;
         std::unordered_map<RenderPassDescription, RenderPass*, RenderPassDescription::Hash, RenderPassDescription::Compare> m_renderPassList;
     };
 

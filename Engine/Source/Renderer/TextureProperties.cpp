@@ -9,6 +9,7 @@ namespace renderer
 
 RenderPassDescription::RenderPassDescription() noexcept
 {
+    static_assert(sizeof(RenderPassDescription) == 40, "wrong size");
     memset(&_desc, 0, sizeof(RenderPassDescription::RenderPassDesc));
 }
 
