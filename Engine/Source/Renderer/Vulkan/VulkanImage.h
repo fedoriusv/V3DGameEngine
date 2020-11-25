@@ -48,8 +48,8 @@ namespace vk
         static VkImageType convertTextureTargetToVkImageType(TextureTarget target);
         static VkSampleCountFlagBits convertRenderTargetSamplesToVkSampleCount(TextureSamples samples);
 
-        static VkImageSubresourceRange makeImageSubresourceRange(const VulkanImage* image, s32 layer = -1, s32 mip = -1);
-        static VkImageSubresourceLayers makeImageSubresourceLayers(const VulkanImage* image, s32 layer = -1, s32 mip = 0);
+        static VkImageSubresourceRange makeImageSubresourceRange(const VulkanImage* image, s32 layer = k_generalLayer, s32 mip = -1);
+        static VkImageSubresourceLayers makeImageSubresourceLayers(const VulkanImage* image, s32 layer = k_generalLayer, s32 mip = 0);
 
         static VkImageAspectFlags getImageAspectFlags(VkFormat format);
         static bool isColorFormat(VkFormat format);
@@ -58,18 +58,18 @@ namespace vk
         static bool isSRGBFormat(VkFormat format);
         static std::tuple<VkAccessFlags, VkAccessFlags> getAccessFlagsFromImageLayout(VkImageLayout oldLayout, VkImageLayout newLayout);
 
-        static bool isAttachmentLayout(const VulkanImage* image, s32 layer = -1);
+        static bool isAttachmentLayout(const VulkanImage* image, s32 layer = k_generalLayer);
         static u32 calculateImageSize(const core::Dimension3D& size, u32 mipLevel, VkFormat format);
 
         VkImage               getHandle() const;
         VkImageAspectFlags    getImageAspectFlags() const;
         VkSampleCountFlagBits getSampleCount() const;
-        VkImageView           getImageView(s32 layer = -1, VkImageAspectFlags aspect  = 0) const;
+        VkImageView           getImageView(s32 layer = k_generalLayer, VkImageAspectFlags aspect = 0) const;
         VkFormat              getFormat() const;
         VkExtent3D            getSize() const;
 
-        VkImageLayout         getLayout(s32 layer = -1, s32 mip = -1) const;
-        VkImageLayout         setLayout(VkImageLayout layout, s32 layer = -1, s32 mip = -1);
+        VkImageLayout         getLayout(s32 layer = k_generalLayer, s32 mip = -1) const;
+        VkImageLayout         setLayout(VkImageLayout layout, s32 layer = k_generalLayer, s32 mip = -1);
 
         VulkanImage*          getResolveImage() const;
 
@@ -94,7 +94,7 @@ namespace vk
 
         static ImageAspect convertVkImageAspectFlags(VkImageAspectFlags aspect);
         static VkImageAspectFlags convertImageAspectFlagsToVk(ImageAspect aspect);
-        static VkImageSubresourceRange makeImageSubresourceRangeWithAspect(const VulkanImage* image, s32 layer = -1, s32 mip = -1, ImageAspect aspect = ImageAspect::ImageAspect_General);
+        static VkImageSubresourceRange makeImageSubresourceRangeWithAspect(const VulkanImage* image, s32 layer = k_generalLayer, s32 mip = -1, ImageAspect aspect = ImageAspect::ImageAspect_General);
 
         bool createViewImage();
 

@@ -101,6 +101,8 @@ namespace renderer
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    constexpr s32 k_generalLayer = -1;
+
     /**
     * @brief AttachmentDescription struct. Uses inside a render target.
     * 4 bytes size
@@ -128,7 +130,7 @@ namespace renderer
 
         static s32 uncompressLayer(u32 layer)
         {
-            return (layer == 0x07) ? -1 : static_cast<s32>(layer);
+            return (layer == 0x07) ? k_generalLayer : static_cast<s32>(layer);
         }
     };
 

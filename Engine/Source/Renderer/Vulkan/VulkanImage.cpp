@@ -1311,7 +1311,7 @@ VkImageSubresourceRange VulkanImage::makeImageSubresourceRange(const VulkanImage
 {
     VkImageSubresourceRange imageSubresourceRange = {};
     imageSubresourceRange.aspectMask = image->m_aspectMask;
-    if (layer == -1)
+    if (layer == k_generalLayer)
     {
         imageSubresourceRange.baseArrayLayer = 0;
         imageSubresourceRange.layerCount = image->m_layersLevel;
@@ -1341,7 +1341,7 @@ VkImageSubresourceLayers VulkanImage::makeImageSubresourceLayers(const VulkanIma
     VkImageSubresourceLayers imageSubresourceLayers = {};
     imageSubresourceLayers.aspectMask = image->m_aspectMask;
     imageSubresourceLayers.mipLevel = 0;
-    if (layer == -1)
+    if (layer == k_generalLayer)
     {
         imageSubresourceLayers.baseArrayLayer = 0;
         imageSubresourceLayers.layerCount = image->m_layersLevel;
@@ -1360,14 +1360,14 @@ VkImageSubresourceRange VulkanImage::makeImageSubresourceRangeWithAspect(const V
     VkImageSubresourceRange imageSubresourceRange = {};
     if (aspect == ImageAspect::ImageAspect_General)
     {
-        imageSubresourceRange.aspectMask = aspect;
+        imageSubresourceRange.aspectMask = image->getImageAspectFlags();
     }
     else
     {
         imageSubresourceRange.aspectMask = VulkanImage::convertImageAspectFlagsToVk(aspect);
     }
 
-    if (layer == -1)
+    if (layer == k_generalLayer)
     {
         imageSubresourceRange.baseArrayLayer = 0;
         imageSubresourceRange.layerCount = image->m_layersLevel;
@@ -1613,7 +1613,7 @@ VkSampleCountFlagBits VulkanImage::getSampleCount() const
 
 VkImageView VulkanImage::getImageView(s32 layer, VkImageAspectFlags aspect) const
 {
-    if (layer == -1)
+    if (layer == k_generalLayer)
     {
         ASSERT(m_generalImageView[convertVkImageAspectFlags(aspect ? aspect : m_aspectMask)], "null handle");
         return m_generalImageView[convertVkImageAspectFlags(aspect ? aspect : m_aspectMask)];
@@ -1635,7 +1635,7 @@ VkExtent3D VulkanImage::getSize() const
 
 VkImageLayout VulkanImage::getLayout(s32 layer, s32 mip) const
 {
-    if (layer == -1 && mip == -1)
+    if (layer == k_generalLayer && mip == -1)
     {
         return m_layout.front();
     }
@@ -1799,7 +1799,7 @@ bool VulkanImage::createViewImage()
         imageViewCreateInfo.viewType = convertImageTypeToImageViewType(m_type, m_layersLevel == 6U, m_layersLevel > 1);
         imageViewCreateInfo.format = m_format;
         imageViewCreateInfo.components = { VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A };
-        imageViewCreateInfo.subresourceRange = VulkanImage::makeImageSubresourceRangeWithAspect(this, -1, -1, ImageAspect::ImageAspect_Color);
+        imageViewCreateInfo.subresourceRange = VulkanImage::makeImageSubresourceRangeWithAspect(this, k_generalLayer, -1, ImageAspect::ImageAspect_Color);
 
         ASSERT(m_generalImageView[ImageAspect::ImageAspect_Color] == VK_NULL_HANDLE, "not empty");
         VkResult result = VulkanWrapper::CreateImageView(m_device, &imageViewCreateInfo, VULKAN_ALLOCATOR, &m_generalImageView[ImageAspect::ImageAspect_Color]);
@@ -1821,7 +1821,7 @@ bool VulkanImage::createViewImage()
         imageViewCreateInfo.viewType = convertImageTypeToImageViewType(m_type, m_layersLevel == 6U, m_layersLevel > 1);
         imageViewCreateInfo.format = m_format;
         imageViewCreateInfo.components = { VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A };
-        imageViewCreateInfo.subresourceRange = VulkanImage::makeImageSubresourceRangeWithAspect(this, -1, -1, ImageAspect::ImageAspect_Depth);
+        imageViewCreateInfo.subresourceRange = VulkanImage::makeImageSubresourceRangeWithAspect(this, k_generalLayer, -1, ImageAspect::ImageAspect_Depth);
 
         ASSERT(m_generalImageView[ImageAspect::ImageAspect_Depth] == VK_NULL_HANDLE, "not empty");
         VkResult result = VulkanWrapper::CreateImageView(m_device, &imageViewCreateInfo, VULKAN_ALLOCATOR, &m_generalImageView[ImageAspect::ImageAspect_Depth]);
@@ -1845,7 +1845,7 @@ bool VulkanImage::createViewImage()
             imageViewCreateInfo.viewType = convertImageTypeToImageViewType(m_type, m_layersLevel == 6U, m_layersLevel > 1);
             imageViewCreateInfo.format = m_format;
             imageViewCreateInfo.components = { VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A };
-            imageViewCreateInfo.subresourceRange = VulkanImage::makeImageSubresourceRangeWithAspect(this, -1, -1, (ImageAspect)i);
+            imageViewCreateInfo.subresourceRange = VulkanImage::makeImageSubresourceRangeWithAspect(this, k_generalLayer, -1, (ImageAspect)i);
 
             ASSERT(m_generalImageView[i] == VK_NULL_HANDLE, "not empty");
             VkResult result = VulkanWrapper::CreateImageView(m_device, &imageViewCreateInfo, VULKAN_ALLOCATOR, &m_generalImageView[i]);
