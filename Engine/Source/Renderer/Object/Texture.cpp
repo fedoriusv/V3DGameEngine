@@ -406,14 +406,14 @@ Texture2D::Texture2D(renderer::CommandList& cmdList, TextureUsageFlags usage, Fo
 }
 
 Texture2D::Texture2D(renderer::CommandList & cmdList, TextureUsageFlags usage, renderer::Format format, const core::Dimension2D& dimension, TextureSamples samples, const std::string& name) noexcept
-    : Texture(cmdList, TextureTarget::Texture2D, format, samples, 1, 1, usage)
+    : Texture(cmdList, TextureTarget::Texture2D, format, samples, 1U, 1U, usage)
     , m_dimension(dimension)
 {
     LOG_DEBUG("Texture2D::Texture2D constructor %llx", this);
 
     core::Dimension3D dim = { m_dimension.width, m_dimension.height, 1 };
 
-    m_image = m_cmdList.getContext()->createImage(TextureTarget::Texture2D, m_format, dim, m_samples, m_usage, name);
+    m_image = m_cmdList.getContext()->createImage(TextureTarget::Texture2D, m_format, dim, 1U, m_samples, m_usage, name);
     ASSERT(m_image, "m_image is nullptr");
     m_image->registerNotify(this);
 
@@ -501,7 +501,7 @@ Texture2DArray::Texture2DArray(CommandList& cmdList, TextureUsageFlags usage, Fo
 
     core::Dimension3D dim = { m_dimension.width, m_dimension.height, 1 };
 
-    m_image = m_cmdList.getContext()->createImage(TextureTarget::Texture2DArray, m_format, dim, m_samples, m_usage, name);
+    m_image = m_cmdList.getContext()->createImage(TextureTarget::Texture2DArray, m_format, dim, m_layers, m_samples, m_usage, name);
     ASSERT(m_image, "m_image is nullptr");
     m_image->registerNotify(this);
 
@@ -516,7 +516,7 @@ Texture2DArray::Texture2DArray(CommandList& cmdList, TextureUsageFlags usage, Fo
 
     core::Dimension3D dim = { m_dimension.width, m_dimension.height, 1 };
 
-    m_image = m_cmdList.getContext()->createImage(TextureTarget::Texture2DArray, m_format, { m_dimension.width, m_dimension.height, 1 }, m_samples, m_usage, name);
+    m_image = m_cmdList.getContext()->createImage(TextureTarget::Texture2DArray, m_format, dim, m_layers, m_mipmaps, m_usage, name);
     ASSERT(m_image, "m_image is nullptr");
     m_image->registerNotify(this);
 
@@ -552,11 +552,23 @@ TextureCube::TextureCube(CommandList& cmdList, TextureUsageFlags usage, Format f
 {
     LOG_DEBUG("TextureCube::TextureCube constructor %llx", this);
 
-    m_image = m_cmdList.getContext()->createImage(TextureTarget::TextureCubeMap, m_format, { m_dimension.width, m_dimension.height, 1 }, m_samples, m_usage, name);
+    m_image = m_cmdList.getContext()->createImage(TextureTarget::TextureCubeMap, m_format, { m_dimension.width, m_dimension.height, 1 }, 6U, m_samples, m_usage, name);
     ASSERT(m_image, "m_image is nullptr");
     m_image->registerNotify(this);
 
     createTexture({ m_dimension.width, m_dimension.height, 1 }, nullptr);
+}
+
+TextureCube::TextureCube(CommandList& cmdList, TextureUsageFlags usage, Format format, const core::Dimension2D& dimension, u32 mipmaps, const void* data, const std::string& name) noexcept
+    : Texture(cmdList, TextureTarget::TextureCubeMap, format, TextureSamples::TextureSamples_x1, 6U, mipmaps, usage)
+{
+    LOG_DEBUG("TextureCube::TextureCube constructor %llx", this);
+
+    m_image = m_cmdList.getContext()->createImage(TextureTarget::TextureCubeMap, m_format, { m_dimension.width, m_dimension.height, 1 }, 6U, m_mipmaps, m_usage, name);
+    ASSERT(m_image, "m_image is nullptr");
+    m_image->registerNotify(this);
+
+    createTexture({ m_dimension.width, m_dimension.height, 1 }, data);
 }
 
 TextureCube::~TextureCube()

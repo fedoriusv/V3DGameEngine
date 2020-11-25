@@ -37,49 +37,49 @@ void EmptyContext::submit(bool wait)
     LOG_DEBUG("EmptyContext::submit");
 }
 
-void EmptyContext::clearBackbuffer(const core::Vector4D & color)
+void EmptyContext::clearBackbuffer(const core::Vector4D& color)
 {
     LOG_DEBUG("EmptyContext::clearBackbuffer");
 }
 
-void EmptyContext::setViewport(const core::Rect32 & viewport, const core::Vector2D& depth)
+void EmptyContext::setViewport(const core::Rect32& viewport, const core::Vector2D& depth)
 {
     LOG_DEBUG("EmptyContext::setViewport");
 }
 
-void EmptyContext::setScissor(const core::Rect32 & scissor)
+void EmptyContext::setScissor(const core::Rect32& scissor)
 {
     LOG_DEBUG("EmptyContext::setScissor");
 }
 
-Image * EmptyContext::createImage(TextureTarget target, Format format, const core::Dimension3D& dimension, u32 layers, u32 mipmapLevel, TextureUsageFlags flags, const std::string& name)
+Image* EmptyContext::createImage(TextureTarget target, Format format, const core::Dimension3D& dimension, u32 layers, u32 mipmapLevel, TextureUsageFlags flags, const std::string& name)
 {
     LOG_DEBUG("EmptyContext::createImage");
     return nullptr;
 }
 
-Image* EmptyContext::createImage(TextureTarget target, Format format, const core::Dimension3D& dimension, TextureSamples samples, TextureUsageFlags flags, const std::string& name)
+Image* EmptyContext::createImage(TextureTarget target, Format format, const core::Dimension3D& dimension, u32 layers, TextureSamples samples, TextureUsageFlags flags, const std::string& name)
 {
     LOG_DEBUG("EmptyContext::createImage");
     return nullptr;
 }
 
-void EmptyContext::removeImage(Image * image)
+void EmptyContext::removeImage(Image* image)
 {
     LOG_DEBUG("EmptyContext::removeImage");
 }
 
-void EmptyContext::setRenderTarget(const RenderPass::RenderPassInfo * renderpassInfo, const Framebuffer::FramebufferInfo* framebufferInfo)
+void EmptyContext::setRenderTarget(const RenderPass::RenderPassInfo* renderpassInfo, const Framebuffer::FramebufferInfo* framebufferInfo)
 {
     LOG_DEBUG("EmptyContext::setRenderTarget");
 }
 
-void EmptyContext::removeFramebuffer(Framebuffer * framebuffer)
+void EmptyContext::removeFramebuffer(Framebuffer* framebuffer)
 {
     LOG_DEBUG("EmptyContext::removeFramebuffer");
 }
 
-void EmptyContext::removeRenderPass(RenderPass * renderpass)
+void EmptyContext::removeRenderPass(RenderPass* renderpass)
 {
     LOG_DEBUG("EmptyContext::removeRenderPass");
 }

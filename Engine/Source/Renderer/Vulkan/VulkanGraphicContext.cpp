@@ -509,23 +509,30 @@ void VulkanGraphicContext::removePipeline(Pipeline * pipeline)
     }
 }
 
-Image* VulkanGraphicContext::createImage(TextureTarget target, Format format, const core::Dimension3D& dimension, TextureSamples samples, TextureUsageFlags flags, const std::string& name)
+Image* VulkanGraphicContext::createImage(TextureTarget target, Format format, const core::Dimension3D& dimension, u32 layers, TextureSamples samples, TextureUsageFlags flags, const std::string& name)
 {
 #if VULKAN_DEBUG
     LOG_DEBUG("VulkanGraphicContext::createImage");
+    if (target == TextureTarget::TextureCubeMap)
+    {
+        ASSERT(layers == 6U, "must be 6 layers");
+    }
 #endif //VULKAN_DEBUG
     VkFormat vkFormat = VulkanImage::convertImageFormatToVkFormat(format);
     VkExtent3D vkExtent = { dimension.width, dimension.height, dimension.depth };
     VkSampleCountFlagBits vkSamples = VulkanImage::convertRenderTargetSamplesToVkSampleCount(samples);
-    const u32 layersCount = (target == TextureTarget::TextureCubeMap) ? 6U : 1U;
 
-    return new VulkanImage(m_imageMemoryManager, m_deviceInfo._device, vkFormat, vkExtent, vkSamples, layersCount, flags, name);
+    return new VulkanImage(m_imageMemoryManager, m_deviceInfo._device, vkFormat, vkExtent, vkSamples, layers, flags, name);
 }
 
 Image* VulkanGraphicContext::createImage(TextureTarget target, Format format, const core::Dimension3D& dimension, u32 layers, u32 mipLevels, TextureUsageFlags flags, const std::string& name)
 {
 #if VULKAN_DEBUG
     LOG_DEBUG("VulkanGraphicContext::createImage");
+    if (target == TextureTarget::TextureCubeMap)
+    {
+        ASSERT(layers == 6U, "must be 6 layers");
+    }
 #endif //VULKAN_DEBUG
     VkImageType vkType = VulkanImage::convertTextureTargetToVkImageType(target);
     VkFormat vkFormat = VulkanImage::convertImageFormatToVkFormat(format);
@@ -809,7 +816,7 @@ bool VulkanGraphicContext::initialize()
     }
     else
     {
-        m_imageMemoryManager = new PoolVulkanMemoryAllocator(m_deviceInfo._device, 64 * 1024 * 1024); //32MB
+        m_imageMemoryManager = new PoolVulkanMemoryAllocator(m_deviceInfo._device, 64 * 1024 * 1024); //64MB
         m_bufferMemoryManager = new PoolVulkanMemoryAllocator(m_deviceInfo._device, 4 * 1024 * 1024); //4MB
     }
 

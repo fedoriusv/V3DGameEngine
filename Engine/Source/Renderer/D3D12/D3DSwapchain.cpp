@@ -105,7 +105,7 @@ bool D3DSwapchain::create(const SwapchainConfig& config)
             rtvHandle.Offset(1, m_descriptorHeap->getIncrement());
 
             CD3DX12_CPU_DESCRIPTOR_HANDLE imageHandle(m_descriptorHeap->getCPUHandle(), index, m_descriptorHeap->getIncrement());
-            D3DImage* image = new D3DImage(m_device, format, config._size.width, config._size.height, 1,
+            D3DImage* image = new D3DImage(m_device, format, config._size.width, config._size.height, 1U, 1U,
                 TextureUsage::TextureUsage_Attachment | TextureUsage::TextureUsage_Sampled | TextureUsage::TextureUsage_Read, "SwapchainImage_" + std::to_string(index));
             if (!image->create(swapchainImage, imageHandle))
             {

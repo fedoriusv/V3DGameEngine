@@ -217,7 +217,7 @@ namespace renderer
     private:
 
         /**
-        * @brief TextureCube constructor. Used for creating cubemap attachments
+        * @brief TextureCube constructor. Used for creating a cubemap attachments
         * Private method. Use createObject interface inside CommandList class to call.
         *
         * @param TextureUsageFlags usage [required]
@@ -227,6 +227,19 @@ namespace renderer
         * @param const std::string& name [optional]
         */
         explicit TextureCube(CommandList& cmdList, TextureUsageFlags usage, Format format, const core::Dimension2D& dimension, TextureSamples samples, [[maybe_unused]] const std::string& name = "") noexcept;
+
+        /**
+        * @brief TextureCube constructor. Used for creating a cubemap texture
+        * Private method. Use createObject interface inside CommandList class to call.
+        *
+        * @param TextureUsageFlags usage [required]
+        * @param Format format [required]
+        * @param const Dimension2D& dimension [required]
+        * @param u32 mipmaps [optional]
+        * @param const void* data [optional]
+        * @param const std::string& name [optional]
+        */
+        explicit TextureCube(CommandList& cmdList, TextureUsageFlags usage, Format format, const core::Dimension2D& dimension, u32 mipmaps = 1, const void* data = nullptr, [[maybe_unused]] const std::string& name = "") noexcept;
 
         const core::Dimension2D m_dimension;
         friend CommandList;
