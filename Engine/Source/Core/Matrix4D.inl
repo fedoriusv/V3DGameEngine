@@ -522,25 +522,55 @@ namespace core
         const T ft10 = (T)(t10 * det);
         const T ft11 = (T)(t11 * det);
 
-        outMatrix.m_matrix[0] = m_matrix[5] * ft0 - m_matrix[9] * ft1 + m_matrix[13] * ft2;
-        outMatrix.m_matrix[1] = m_matrix[9] * ft3 - m_matrix[1] * ft0 - m_matrix[13] * ft4;
-        outMatrix.m_matrix[2] = m_matrix[1] * ft1 - m_matrix[5] * ft3 + m_matrix[13] * ft5;
-        outMatrix.m_matrix[3] = m_matrix[5] * ft4 - m_matrix[1] * ft2 - m_matrix[9] * ft5;
 
-        outMatrix.m_matrix[4] = m_matrix[8] * ft1 - m_matrix[4] * ft0 - m_matrix[12] * ft2;
-        outMatrix.m_matrix[5] = m_matrix[0] * ft0 - m_matrix[8] * ft3 + m_matrix[12] * ft4;
-        outMatrix.m_matrix[6] = m_matrix[4] * ft3 - m_matrix[0] * ft1 - m_matrix[12] * ft5;
-        outMatrix.m_matrix[7] = m_matrix[0] * ft2 - m_matrix[4] * ft4 + m_matrix[8] * ft5;
+        if (this == &outMatrix)
+        {
+            TMatrix4D<T> tempMatrix;
 
-        outMatrix.m_matrix[8] = m_matrix[7] * ft6 - m_matrix[11] * ft7 + m_matrix[15] * ft8;
-        outMatrix.m_matrix[9] = m_matrix[11] * ft9 - m_matrix[3] * ft6 - m_matrix[15] * ft10;
-        outMatrix.m_matrix[10] = m_matrix[3] * ft7 - m_matrix[7] * ft9 + m_matrix[15] * ft11;
-        outMatrix.m_matrix[11] = m_matrix[7] * ft10 - m_matrix[3] * ft8 - m_matrix[11] * ft11;
+            tempMatrix.m_matrix[0] = m_matrix[5] * ft0 - m_matrix[9] * ft1 + m_matrix[13] * ft2;
+            tempMatrix.m_matrix[1] = m_matrix[9] * ft3 - m_matrix[1] * ft0 - m_matrix[13] * ft4;
+            tempMatrix.m_matrix[2] = m_matrix[1] * ft1 - m_matrix[5] * ft3 + m_matrix[13] * ft5;
+            tempMatrix.m_matrix[3] = m_matrix[5] * ft4 - m_matrix[1] * ft2 - m_matrix[9] * ft5;
 
-        outMatrix.m_matrix[12] = m_matrix[10] * ft7 - m_matrix[6] * ft6 - m_matrix[14] * ft8;
-        outMatrix.m_matrix[13] = m_matrix[2] * ft6 - m_matrix[10] * ft9 + m_matrix[14] * ft10;
-        outMatrix.m_matrix[14] = m_matrix[6] * ft9 - m_matrix[2] * ft7 - m_matrix[14] * ft11;
-        outMatrix.m_matrix[15] = m_matrix[2] * ft8 - m_matrix[6] * ft10 + m_matrix[10] * ft11;
+            tempMatrix.m_matrix[4] = m_matrix[8] * ft1 - m_matrix[4] * ft0 - m_matrix[12] * ft2;
+            tempMatrix.m_matrix[5] = m_matrix[0] * ft0 - m_matrix[8] * ft3 + m_matrix[12] * ft4;
+            tempMatrix.m_matrix[6] = m_matrix[4] * ft3 - m_matrix[0] * ft1 - m_matrix[12] * ft5;
+            tempMatrix.m_matrix[7] = m_matrix[0] * ft2 - m_matrix[4] * ft4 + m_matrix[8] * ft5;
+
+            tempMatrix.m_matrix[8] = m_matrix[7] * ft6 - m_matrix[11] * ft7 + m_matrix[15] * ft8;
+            tempMatrix.m_matrix[9] = m_matrix[11] * ft9 - m_matrix[3] * ft6 - m_matrix[15] * ft10;
+            tempMatrix.m_matrix[10] = m_matrix[3] * ft7 - m_matrix[7] * ft9 + m_matrix[15] * ft11;
+            tempMatrix.m_matrix[11] = m_matrix[7] * ft10 - m_matrix[3] * ft8 - m_matrix[11] * ft11;
+
+            tempMatrix.m_matrix[12] = m_matrix[10] * ft7 - m_matrix[6] * ft6 - m_matrix[14] * ft8;
+            tempMatrix.m_matrix[13] = m_matrix[2] * ft6 - m_matrix[10] * ft9 + m_matrix[14] * ft10;
+            tempMatrix.m_matrix[14] = m_matrix[6] * ft9 - m_matrix[2] * ft7 - m_matrix[14] * ft11;
+            tempMatrix.m_matrix[15] = m_matrix[2] * ft8 - m_matrix[6] * ft10 + m_matrix[10] * ft11;
+
+            outMatrix = tempMatrix;
+        }
+        else
+        {
+            outMatrix.m_matrix[0] = m_matrix[5] * ft0 - m_matrix[9] * ft1 + m_matrix[13] * ft2;
+            outMatrix.m_matrix[1] = m_matrix[9] * ft3 - m_matrix[1] * ft0 - m_matrix[13] * ft4;
+            outMatrix.m_matrix[2] = m_matrix[1] * ft1 - m_matrix[5] * ft3 + m_matrix[13] * ft5;
+            outMatrix.m_matrix[3] = m_matrix[5] * ft4 - m_matrix[1] * ft2 - m_matrix[9] * ft5;
+
+            outMatrix.m_matrix[4] = m_matrix[8] * ft1 - m_matrix[4] * ft0 - m_matrix[12] * ft2;
+            outMatrix.m_matrix[5] = m_matrix[0] * ft0 - m_matrix[8] * ft3 + m_matrix[12] * ft4;
+            outMatrix.m_matrix[6] = m_matrix[4] * ft3 - m_matrix[0] * ft1 - m_matrix[12] * ft5;
+            outMatrix.m_matrix[7] = m_matrix[0] * ft2 - m_matrix[4] * ft4 + m_matrix[8] * ft5;
+
+            outMatrix.m_matrix[8] = m_matrix[7] * ft6 - m_matrix[11] * ft7 + m_matrix[15] * ft8;
+            outMatrix.m_matrix[9] = m_matrix[11] * ft9 - m_matrix[3] * ft6 - m_matrix[15] * ft10;
+            outMatrix.m_matrix[10] = m_matrix[3] * ft7 - m_matrix[7] * ft9 + m_matrix[15] * ft11;
+            outMatrix.m_matrix[11] = m_matrix[7] * ft10 - m_matrix[3] * ft8 - m_matrix[11] * ft11;
+
+            outMatrix.m_matrix[12] = m_matrix[10] * ft7 - m_matrix[6] * ft6 - m_matrix[14] * ft8;
+            outMatrix.m_matrix[13] = m_matrix[2] * ft6 - m_matrix[10] * ft9 + m_matrix[14] * ft10;
+            outMatrix.m_matrix[14] = m_matrix[6] * ft9 - m_matrix[2] * ft7 - m_matrix[14] * ft11;
+            outMatrix.m_matrix[15] = m_matrix[2] * ft8 - m_matrix[6] * ft10 + m_matrix[10] * ft11;
+        }
 
         return true;
     }
