@@ -12,7 +12,7 @@ namespace scene
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
-    * CameraFPSHelper
+    * @brief CameraArcballHelper class
     */
     class CameraFPSHelper final : public CameraHelper
     {

@@ -11,30 +11,19 @@ namespace scene
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
-    * Camera class. Component, Resource
+    * @brief Camera class. Component, Resource. Game side.
+    * Calculates View and Projection matrices
     */
     class Camera : public Component, public resource::Resource
     {
     public:
 
-        enum TransformMatrix
-        {
-            TransformMatrix_ViewMatrix = 0,
-            TransformMatrix_ProjectionMatrix = 1,
-
-            TransformMatrix_Count
-        };
-
-        enum CameraState
-        {
-            CameraState_View       = 1 << 0,
-            CameraState_Projection = 1 << 1,
-
-            CameraState_All = CameraState_View | CameraState_Projection,
-        };
-
-        typedef u16 CameraStateFlags;
-
+        /**
+        * @brief Camera constructor.
+        * @param const core::Vector3D& target [optional]
+        * @param const core::Vector3D& up [optional]
+        * @param bool orthogonal [optional]
+        */
         explicit Camera(const core::Vector3D& target = core::Vector3D(0.0f, 0.0f, 1.0f), const core::Vector3D& up = core::Vector3D(0.0f, 1.0f, 0.0f), bool orthogonal = false) noexcept;
         virtual ~Camera();
 
@@ -62,6 +51,24 @@ namespace scene
         bool load() override;
 
     protected:
+
+        enum TransformMatrix
+        {
+            TransformMatrix_ViewMatrix = 0,
+            TransformMatrix_ProjectionMatrix = 1,
+
+            TransformMatrix_Count
+        };
+
+        enum CameraState
+        {
+            CameraState_View = 1 << 0,
+            CameraState_Projection = 1 << 1,
+
+            CameraState_All = CameraState_View | CameraState_Projection,
+        };
+
+        typedef u16 CameraStateFlags;
 
         void recalculateProjectionMatrix(const core::Rect32& size) const;
         void recalculateViewMatrix(const core::Vector3D& position) const;

@@ -11,6 +11,9 @@ namespace renderer
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    /**
+    * @brief enum class PolygonMode
+    */
     enum class PolygonMode : u32
     {
         PolygonMode_Fill,
@@ -18,6 +21,9 @@ namespace renderer
         PolygonMode_Point
     };
 
+    /**
+    * @brief enum class PrimitiveTopology
+    */
     enum class PrimitiveTopology : u32
     {
         PrimitiveTopology_PointList,
@@ -33,12 +39,18 @@ namespace renderer
         PrimitiveTopology_PatchList
     };
 
+    /**
+    * @brief enum class FrontFace
+    */
     enum class FrontFace : u32
     {
         FrontFace_Clockwise,
         FrontFace_CounterClockwise
     };
 
+    /**
+    * @brief enum class CullMode
+    */
     enum class CullMode : u32
     {
         CullMode_None,
@@ -47,6 +59,9 @@ namespace renderer
         CullMode_FrontAndBack,
     };
 
+    /**
+    * @brief enum class BlendOperation
+    */
     enum class BlendOperation : u32
     {
         BlendOp_Add = 0,
@@ -56,6 +71,9 @@ namespace renderer
         BlendOp_Max = 4,
     };
 
+    /**
+    * @brief enum class BlendFactor
+    */
     enum class BlendFactor : u32
     {
         BlendFactor_Zero = 0,
@@ -79,6 +97,9 @@ namespace renderer
         BlendFactor_OneMinusSrc1Alpha = 18,
     };
 
+    /**
+    * @brief enum class LogicalOperation
+    */
     enum class LogicalOperation : u32
     {
         LogicalOp_Clear = 0,
@@ -99,6 +120,9 @@ namespace renderer
         LogicalOp_Set = 15,
     };
 
+    /**
+    * @brief enum class CompareOperation
+    */
     enum class CompareOperation : u32
     {
         CompareOp_Never = 0,
@@ -111,6 +135,9 @@ namespace renderer
         CompareOp_Always = 7,
     };
 
+    /**
+    * @brief enum class ColorMask
+    */
     enum ColorMask : u8
     {
         ColorMask_None = 0,
@@ -128,10 +155,13 @@ namespace renderer
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
-    * GraphicsPipelineStateDescription
+    * @brief GraphicsPipelineStateDescription struct
     */
     struct GraphicsPipelineStateDescription
     {
+        /**
+        * @brief RasterizationState struct
+        */
         struct RasterizationState
         {
             RasterizationState() noexcept
@@ -154,6 +184,9 @@ namespace renderer
             f32         _depthBiasSlope;
         };
 
+        /**
+        * @brief ColorBlendAttachmentState struct
+        */
         struct ColorBlendAttachmentState
         {
             ColorBlendAttachmentState() noexcept
@@ -185,6 +218,9 @@ namespace renderer
             u16             _padding = {};
         };
 
+        /**
+        * @brief DepthStencilState struct
+        */
         struct DepthStencilState
         {
             DepthStencilState() noexcept
@@ -207,6 +243,9 @@ namespace renderer
             core::Vector2D      _depthBounds;
         };
 
+        /**
+        * @brief BlendState struct
+        */
         struct BlendState
         {
             BlendState() noexcept
@@ -226,6 +265,9 @@ namespace renderer
             u8                  _padding[3] = {};
         };
 
+        /**
+        * @brief VertexInputState struct
+        */
         struct VertexInputState
         {
             VertexInputState() noexcept

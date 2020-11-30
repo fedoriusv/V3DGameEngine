@@ -166,8 +166,7 @@ bool Camera::load()
     }
     ASSERT(m_stream, "nullptr");
     
-    //TODO:
-    ASSERT(false, "not implemented");
+    NOT_IMPL;
 
     m_loaded = true;
     return false;

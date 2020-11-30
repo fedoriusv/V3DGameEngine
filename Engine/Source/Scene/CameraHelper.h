@@ -11,7 +11,7 @@ namespace scene
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
-    * CameraHelper
+    * @brief CameraArcballHelper class. Game side.
     */
     class CameraHelper
     {
