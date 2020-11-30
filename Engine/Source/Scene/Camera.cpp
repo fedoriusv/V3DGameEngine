@@ -125,7 +125,7 @@ void Camera::recalculateProjectionMatrix(const core::Rect32& size) const
     {
         if (Camera::isOrthogonal())
         {
-            m_transform[TransformMatrix::TransformMatrix_ProjectionMatrix] = core::buildProjectionMatrixOrtho(static_cast<f32>(size.getLeftX()), static_cast<f32>(size.getRightX()), static_cast<f32>(size.getTopY()), static_cast<f32>(size.getBottomY()), m_zNear, m_zFar);
+            m_transform[TransformMatrix::TransformMatrix_ProjectionMatrix] = core::buildProjectionMatrixOrtho(static_cast<f32>(size.getLeftX()), static_cast<f32>(size.getRightX()), static_cast<f32>(size.getBottomY()), static_cast<f32>(size.getTopY()), m_zNear, m_zFar);
         }
         else
         {
