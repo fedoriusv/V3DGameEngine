@@ -50,8 +50,8 @@ VS_OUTPUT main_VS(VS_INPUT input)
 }
 
 
-SamplerState shadowSampler  : register(s1, space0);
-Texture2D shadowMap         : register(t2, space0);
+SamplerComparisonState shadowSampler  : register(s1, space0);
+Texture2D shadowMap                   : register(t2, space0);
 
 struct FS_Buffer
 {
@@ -66,7 +66,7 @@ float depthTextureProj(float4 shadowCoord, float2 offset)
     float shadow = 1.0;
     if (shadowCoord.z > -1.0 && shadowCoord.z < 1.0) 
     {
-        float dist = shadowMap.Sample(shadowSampler, shadowCoord.xy + offset).r;
+        float dist = shadowMap.SampleCmpLevelZero(shadowSampler, shadowCoord.xy + offset, shadowCoord.z);
         if ( shadowCoord.w > 0.0 && dist < shadowCoord.z ) 
         {
             shadow = 0.2;
@@ -116,7 +116,8 @@ float4 main_FS(VS_OUTPUT input) : SV_TARGET0
     float diffuseKoeff = max(dot(normal, lightDir), 0.01);
     float4 outFragColor = diffuseKoeff * diffuseColor;
 
-    if (diffuseKoeff > 0.01)
+    float shadow = shadowMask(input.LightSpace);
+    if (shadow == 1.0 && diffuseKoeff > 0.01)
     {
         float4 specularColor = float4(1.0, 1.0, 1.0, 1.0);
         float3 reflectDir = reflect(-lightDir, normal);
@@ -124,8 +125,6 @@ float4 main_FS(VS_OUTPUT input) : SV_TARGET0
         outFragColor += specularColor * pow(max(dot(reflectDir, viewDir), 0.0), 512.0);
     }
     
-    float shadow = shadowMask(input.LightSpace);
     outFragColor = float4((outFragColor.xyz * shadow), 1.0);
-        
     return outFragColor;
 }

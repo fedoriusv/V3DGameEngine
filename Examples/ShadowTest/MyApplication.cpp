@@ -143,9 +143,11 @@ void MyApplication::Load()
     renderer::Texture2D* depthAttachment = m_CommandList->createObject<renderer::Texture2D>(renderer::TextureUsage::TextureUsage_Attachment, renderer::Format::Format_D32_SFloat_S8_UInt, m_Window->getSize(), renderer::TextureSamples::TextureSamples_x1, "DepthAttachment");
     m_RenderTarget->setDepthStencilTexture(depthAttachment, renderer::RenderTargetLoadOp::LoadOp_Clear, renderer::RenderTargetStoreOp::StoreOp_DontCare, 1.0f);
 
-    m_ShadowSampler = m_CommandList->createObject<renderer::SamplerState>(renderer::SamplerFilter::SamplerFilter_Nearest, renderer::SamplerAnisotropic::SamplerAnisotropic_None);
+    m_ShadowSampler = m_CommandList->createObject<renderer::SamplerState>(renderer::SamplerFilter::SamplerFilter_Bilinear, renderer::SamplerAnisotropic::SamplerAnisotropic_None);
     m_ShadowSampler->setWrap(renderer::SamplerWrap::TextureWrap_ClampToBorder);
-    m_ShadowSampler->setBorderColor({ 1.0f, 1.0f, 1.0f, 1.0f });
+    m_ShadowSampler->setEnableCompareOp(true);
+    m_ShadowSampler->setCompareOp(renderer::CompareOperation::CompareOp_Less);
+    m_ShadowSampler->setBorderColor({ 0.0f, 1.0f, 1.0f, 1.0f });
 
     {
         v3d::scene::Model* scene = resource::ResourceLoaderManager::getInstance()->load<v3d::scene::Model, resource::ModelFileLoader>("resources/big_field.dae");
