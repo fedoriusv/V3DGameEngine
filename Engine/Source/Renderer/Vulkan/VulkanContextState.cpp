@@ -197,6 +197,14 @@ bool VulkanContextState::prepareDescriptorSets(VulkanCommandBuffer* cmdBuffer, s
         return false;
     }
 
+#if VULKAN_DEBUG
+    if (!checkBindingsAndPipelineLayout())
+    {
+        ASSERT(false, "not same");
+        return false;
+    }
+#endif
+
     for (u32 setId = 0; setId < k_maxDescriptorSetIndex; ++setId)
     {
         BindingState& bindSet = m_currentBindingSlots[setId];
@@ -424,6 +432,11 @@ VkDescriptorImageInfo VulkanContextState::makeVkDescriptorImageInfo(const Vulkan
     return descriptorImageInfo;
 }
 
+bool VulkanContextState::checkBindingsAndPipelineLayout()
+{
+    //TODO compare m_currentPipeline.first->getDescriptorSetLayouts()._setLayouts and m_currentBindingSlots
+    return true;
+}
 
 void VulkanContextState::BindingState::reset()
 {
