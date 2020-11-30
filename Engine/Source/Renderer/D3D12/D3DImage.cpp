@@ -21,7 +21,7 @@ std::string ImageFormatStringDX(DXGI_FORMAT format)
 {
     switch (format)
     {
-#define STR(r) case DXGI_ ##r: return #r
+#define STR(r) case DXGI_##r: return #r
         STR(FORMAT_UNKNOWN);
         STR(FORMAT_R32G32B32A32_TYPELESS);
         STR(FORMAT_R32G32B32A32_FLOAT);
@@ -142,9 +142,11 @@ std::string ImageFormatStringDX(DXGI_FORMAT format)
         STR(FORMAT_V208);
         STR(FORMAT_V408);
 #undef STR
-    default:
-        return "UNKNOWN_FORMAT";
+        default:
+            ASSERT(false, "not found");
     }
+
+    return "UNKNOWN_FORMAT";
 }
 
 DXGI_FORMAT D3DImage::convertImageFormatToD3DFormat(Format format)
@@ -888,7 +890,7 @@ bool D3DImage::create()
     {
         if (!D3DDeviceCaps::getInstance()->getImageFormatSupportInfo(m_originFormat, DeviceCaps::TilingType_Optimal)._supportAttachment)
         {
-            LOG_ERROR("Format %d is not supported to attachmnet", ImageFormatStringDX(m_format));
+            LOG_ERROR("Format %s is not supported to attachmnet", ImageFormatStringDX(m_format).c_str());
             ASSERT(false, "not support");
             return false;
         }
@@ -921,9 +923,10 @@ bool D3DImage::create()
                 return false;
             }
 
-            LOG_WARNING("Format %d is not supported sampled flag, replace to %d", ImageFormatStringDX(m_format), ImageFormatStringDX(sampledFormat));
+            LOG_WARNING("Format %s is not supported sampled flag, replace to %s", ImageFormatStringDX(m_format).c_str(), ImageFormatStringDX(sampledFormat).c_str());
         }
     }
+
 
     D3D12_RESOURCE_DESC textureDesc = {};
     textureDesc.Dimension = m_dimension;
@@ -937,6 +940,9 @@ bool D3DImage::create()
     textureDesc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
     textureDesc.Flags = m_flags;
 
+#if D3D_DEBUG
+    LOG_DEBUG("CreateCommittedResource: Image [Size %u : %u : %u]; flags %u; format %s", textureDesc.Width, textureDesc.Height, textureDesc.DepthOrArraySize, textureDesc.Flags, ImageFormatStringDX(textureDesc.Format).c_str());
+#endif
     HRESULT result = m_device->CreateCommittedResource(&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT), D3D12_HEAP_FLAG_NONE, &textureDesc, m_state, optimizedClearValue, IID_PPV_ARGS(&m_resource));
     if (FAILED(result))
     {
@@ -976,7 +982,7 @@ void D3DImage::createResourceView(DXGI_FORMAT shaderResourceFormat)
         {
         case D3D12_RESOURCE_DIMENSION_TEXTURE2D:
         {
-            if (m_arrays == 1)
+            if (m_arrays == 1U)
             {
                 view.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
 
@@ -984,6 +990,28 @@ void D3DImage::createResourceView(DXGI_FORMAT shaderResourceFormat)
                 view.Texture2D.MipLevels = m_mipmaps;
                 view.Texture2D.PlaneSlice = 0;
                 view.Texture2D.ResourceMinLODClamp = 0.0f;
+            }
+            else if (m_arrays > 1U)
+            {
+                if (m_arrays == 6U)
+                {
+                    view.ViewDimension = D3D12_SRV_DIMENSION_TEXTURECUBE;
+
+                    view.TextureCube.MostDetailedMip = 0;
+                    view.TextureCube.MipLevels = m_mipmaps;
+                    view.TextureCube.ResourceMinLODClamp = 0.0f;
+                }
+                else
+                {
+                    view.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2DARRAY;
+
+                    view.Texture2DArray.MostDetailedMip = 0;
+                    view.Texture2DArray.MipLevels = m_mipmaps;
+                    view.Texture2DArray.FirstArraySlice = 0;
+                    view.Texture2DArray.ArraySize = m_arrays;
+                    view.Texture2DArray.PlaneSlice = 0;
+                    view.Texture2DArray.ResourceMinLODClamp = 0.0f;
+                }
             }
             else
             {

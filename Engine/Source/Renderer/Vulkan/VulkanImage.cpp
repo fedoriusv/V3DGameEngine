@@ -14,11 +14,27 @@ namespace renderer
 namespace vk
 {
 
+std::string ImageTypeStringVK(VkImageType format)
+{
+    switch (format)
+    {
+#define STR(r) case VK_##r: return #r
+        STR(IMAGE_TYPE_1D);
+        STR(IMAGE_TYPE_2D);
+        STR(IMAGE_TYPE_3D);
+#undef STR
+        default:
+            ASSERT(false, "not found");
+    }
+
+    return "UNKNOWN_TYPE";
+}
+
 std::string ImageFormatStringVK(VkFormat format)
 {
     switch (format)
     {
-#define STR(r) case VK_ ##r: return #r
+#define STR(r) case VK_##r: return #r
         STR(FORMAT_UNDEFINED);
         STR(FORMAT_R4G4_UNORM_PACK8);
         STR(FORMAT_R4G4B4A4_UNORM_PACK16);
@@ -206,8 +222,10 @@ std::string ImageFormatStringVK(VkFormat format)
         STR(FORMAT_ASTC_12x12_SRGB_BLOCK);
 #undef STR
     default:
-        return "UNKNOWN_FORMAT";
+        ASSERT(false, "not found");
     }
+
+    return "UNKNOWN_FORMAT";
 }
 
 std::tuple<VkAccessFlags, VkAccessFlags> VulkanImage::getAccessFlagsFromImageLayout(VkImageLayout oldLayout, VkImageLayout newLayout)
@@ -961,9 +979,7 @@ bool VulkanImage::create()
         LOG_ERROR("VulkanImage::create, can't create image format unsupported");
         return false;
     }
-#if VULKAN_DEBUG
-    LOG_DEBUG("vkCreateImage: size [%u : %u : %u]; flags %u; usage %u; format %s", m_dimension.width, m_dimension.height, m_dimension.depth, imageFlags, imageUsage, ImageFormatStringVK(m_format).c_str());
-#endif
+
     VkImageCreateInfo imageCreateInfo = {};
     imageCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
     imageCreateInfo.pNext = nullptr;
@@ -981,6 +997,9 @@ bool VulkanImage::create()
     imageCreateInfo.pQueueFamilyIndices = nullptr;
     imageCreateInfo.initialLayout = m_layout.front();
 
+#if VULKAN_DEBUG
+    LOG_DEBUG("vkCreateImage: [Type %s][Size %u : %u : %u [%u]]; flags %u; usage %u; format %s", ImageTypeStringVK(m_type).c_str(), m_dimension.width, m_dimension.height, m_dimension.depth, m_layersLevel, imageFlags, imageUsage, ImageFormatStringVK(m_format).c_str());
+#endif
     VkResult result = VulkanWrapper::CreateImage(m_device, &imageCreateInfo, VULKAN_ALLOCATOR, &m_image);
     if (result != VK_SUCCESS)
     {
