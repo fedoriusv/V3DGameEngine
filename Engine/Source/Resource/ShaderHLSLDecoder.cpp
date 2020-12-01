@@ -110,7 +110,7 @@ Resource* ShaderHLSLDecoder::decode(const stream::Stream* stream, const std::str
                     }
                     else
                     {
-                        ASSERT(model >= renderer::ShaderHeader::ShaderModel::ShaderModel_HLSL_5_0, "min version ShaderModer5.0");
+                        ASSERT(model >= renderer::ShaderHeader::ShaderModel::ShaderModel_HLSL_5_0, "min version of ShaderModel5.0");
                         shaderModel = renderer::ShaderHeader::ShaderModel::ShaderModel_HLSL_5_0;
                         shaderVersion = "vs_5_0";
                     }
@@ -127,7 +127,7 @@ Resource* ShaderHLSLDecoder::decode(const stream::Stream* stream, const std::str
                     }
                     else
                     {
-                        ASSERT(model >= renderer::ShaderHeader::ShaderModel::ShaderModel_HLSL_5_0, "min version ShaderModer5.0");
+                        ASSERT(model >= renderer::ShaderHeader::ShaderModel::ShaderModel_HLSL_5_0, "min version of ShaderModel5.0");
                         shaderModel = renderer::ShaderHeader::ShaderModel::ShaderModel_HLSL_5_0;
                         shaderVersion = "ps_5_0";
                     }
@@ -179,7 +179,7 @@ Resource* ShaderHLSLDecoder::decode(const stream::Stream* stream, const std::str
             ID3DBlob* shader = nullptr;
             {
                 ID3DBlob* debugInfo = nullptr;
-#if DEBUG
+#if D3D_DEBUG
                 HRESULT result = D3DCompile2(source.c_str(), source.size(), m_header._debugName.c_str(), macros.data(), nullptr, m_header._entryPoint.c_str(), shaderVersion.c_str(), compileFlags, 0, 0, nullptr, 0, &shader, &debugInfo);
 #else
                 HRESULT result = D3DCompile2(source.c_str(), source.size(), name.c_str(), macros.data(), nullptr, m_header._entryPoint.c_str(), shaderVersion.c_str(), compileFlags, 0, 0, nullptr, 0, &shader, &debugInfo);
@@ -203,6 +203,25 @@ Resource* ShaderHLSLDecoder::decode(const stream::Stream* stream, const std::str
                     return nullptr;
                 }
             }
+#if (DEBUG & D3D_DEBUG)
+            {
+                ID3DBlob* disassambleShader = nullptr;
+
+                ASSERT(shader, "nullptr");
+                UINT flags = D3D_DISASM_ENABLE_INSTRUCTION_OFFSET;
+                HRESULT result = D3DDisassemble(shader->GetBufferPointer(), shader->GetBufferSize(), flags, "", &disassambleShader);
+                if (SUCCEEDED(result))
+                {
+                    std::string disassambleShaderCode(reinterpret_cast<c8*>(disassambleShader->GetBufferSize(), disassambleShader->GetBufferPointer()));
+                    LOG_DEBUG("Disassemble [%s]: \n %s", name.c_str(), disassambleShaderCode.c_str());
+                }
+
+                if (disassambleShader)
+                {
+                    disassambleShader->Release();
+                }
+            }
+#endif
 
 #if DEBUG
             timer.stop();
