@@ -22,7 +22,6 @@ namespace v3d
 
         void Init(const renderer::VertexInputAttribDescription& desc);
         void Update(f32 dt, const core::Vector3D& position, const core::Vector3D& target);
-        void Update(f32 dt, const scene::CameraHelper* worldCamera);
         void Draw(scene::ModelHelper* geometry, const scene::Transform& transform);
         void Free();
 
@@ -40,10 +39,46 @@ namespace v3d
         utils::IntrusivePointer<renderer::ShaderProgram> m_Program;
 
         scene::CameraHelper* m_ShadowCamera = nullptr;
-        core::Rect32 m_Size = { 0, 0, 2048, 2048 };
-        s32 m_Scale = 5;
+        const core::Rect32 m_Size = { 0, 0, 2048, 2048 };
+        const s32 m_Extent = 4;
 
         core::Matrix4D m_LightSpaceMatrix;
+    };
+
+
+    class CascadedShadowMapping
+    {
+    public:
+
+        CascadedShadowMapping(renderer::CommandList* cmdList) noexcept;
+
+        void Init(const renderer::VertexInputAttribDescription& desc);
+        void Update(f32 dt, const scene::Camera& camera, const core::Vector3D& position, const core::Vector3D& target);
+        void Draw(scene::ModelHelper* geometry, const scene::Transform& transform);
+        void Free();
+
+        const renderer::Texture2DArray* GetDepthMap() const;
+        const std::vector<f32>& GetCascadeSplits() const;
+        const std::vector<core::Matrix4D>& GetLightSpaceMatrix() const;
+
+        static const u32 s_CascadeCount = 4;
+
+    private:
+
+        void CalculateShadowCascades(const v3d::scene::Camera& camera, const core::Vector3D& light);
+
+        renderer::CommandList* const m_CmdList;
+
+        std::vector<utils::IntrusivePointer<renderer::RenderTargetState>> m_RenderTargets;
+        utils::IntrusivePointer<renderer::Texture2DArray> m_DepthAttachment;
+
+        utils::IntrusivePointer<renderer::GraphicsPipelineState> m_Pipeline;
+        utils::IntrusivePointer<renderer::ShaderProgram> m_Program;
+
+        const core::Rect32 m_Size = { 0, 0, 2048, 2048 };
+
+        std::vector<core::Matrix4D> m_LightSpaceMatrices;
+        std::vector<f32> m_CascadeSplits;
     };
 
     class ShadowMappingPoint

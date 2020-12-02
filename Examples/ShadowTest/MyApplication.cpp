@@ -21,8 +21,6 @@
 
 #include "Stream/StreamManager.h"
 
-#define VULKAN_ONLY 0
-
 using namespace v3d;
 using namespace v3d::platform;
 using namespace v3d::utils;
@@ -40,9 +38,10 @@ MyApplication::MyApplication(int& argc, char** argv)
     , m_Scene(nullptr)
 
     , m_ShadowMapping(nullptr)
+    , m_CascadeShadowMapping(nullptr)
     , m_ShadowMappingPoint(nullptr)
 
-    , m_Mode(DirectionLightPCF)
+    , m_Mode(DirectionLightCascadeShadowing)
     , m_Debug(true)
 {
     ASSERT(m_Window, "windows is nullptr");
@@ -164,12 +163,6 @@ void MyApplication::Load()
     }
 
     {
-#if VULKAN_ONLY
-        const renderer::Shader* vertShader = resource::ResourceLoaderManager::getInstance()->loadShader<renderer::Shader, resource::ShaderSourceFileLoader>(m_CommandList->getContext(), "resources/solid_SunShadow.vert");
-        const renderer::Shader* fragShader = resource::ResourceLoaderManager::getInstance()->loadShader<renderer::Shader, resource::ShaderSourceFileLoader>(m_CommandList->getContext(), "resources/solid_SunShadow.frag");
-
-        m_ShadowMappingProgram = m_CommandList->createObject<renderer::ShaderProgram, std::vector<const renderer::Shader*>>({ vertShader, fragShader });
-#else
         std::vector<const renderer::Shader*> shaders = resource::ResourceLoaderManager::getInstance()->loadHLSLShader<renderer::Shader, resource::ShaderSourceFileLoader>(m_CommandList->getContext(), "resources/solid_SunShadow.hlsl",
             {
                 {"main_VS", renderer::ShaderType_Vertex },
@@ -177,7 +170,6 @@ void MyApplication::Load()
             });
 
         m_ShadowMappingProgram = m_CommandList->createObject<renderer::ShaderProgram>(shaders);
-#endif
         m_ShadowMappingPipeline = m_CommandList->createObject<renderer::GraphicsPipelineState>(m_Scene->getVertexInputAttribDescription(0, 0), m_ShadowMappingProgram.get(), m_RenderTarget.get());
         m_ShadowMappingPipeline->setPrimitiveTopology(renderer::PrimitiveTopology::PrimitiveTopology_TriangleList);
         m_ShadowMappingPipeline->setFrontFace(renderer::FrontFace::FrontFace_Clockwise);
@@ -189,6 +181,20 @@ void MyApplication::Load()
     }
 
     {
+        std::vector<const renderer::Shader*> shaders = resource::ResourceLoaderManager::getInstance()->loadHLSLShader<renderer::Shader, resource::ShaderSourceFileLoader>(m_CommandList->getContext(), "resources/solid_SunCascadedShadow.hlsl",
+            {
+                {"main_VS", renderer::ShaderType_Vertex },
+                {"main_FS", renderer::ShaderType_Fragment }
+            }, 
+            { 
+                { "SHADOWMAP_CASCADE_COUNT", std::to_string(CascadedShadowMapping::s_CascadeCount) },
+                { "SHADER_DEBUG", std::to_string(0) }
+            });
+
+        m_CascadeShadowMappingProgram = m_CommandList->createObject<renderer::ShaderProgram>(shaders);
+        m_CascadeShadowMappingPipeline = m_CommandList->createObject<renderer::GraphicsPipelineState>(m_ShadowMappingPipeline->getGraphicsPipelineStateDesc(), m_CascadeShadowMappingProgram.get(), m_RenderTarget.get());
+    }
+    /*{
         renderer::Shader* vertShader = resource::ResourceLoaderManager::getInstance()->loadShader<renderer::Shader, resource::ShaderSourceFileLoader>(m_CommandList->getContext(), "resources/solid_ShadowPointLight.vert");
         renderer::Shader* fragShader = resource::ResourceLoaderManager::getInstance()->loadShader<renderer::Shader, resource::ShaderSourceFileLoader>(m_CommandList->getContext(), "resources/solid_ShadowPointLight.frag");
 
@@ -201,15 +207,18 @@ void MyApplication::Load()
         m_ShadowMappingPointPipeline->setDepthCompareOp(renderer::CompareOperation::CompareOp_Less);
         m_ShadowMappingPointPipeline->setDepthWrite(true);
         m_ShadowMappingPointPipeline->setDepthTest(true);
-    }
+    }*/
 
     m_CommandList->flushCommands();
 
     m_ShadowMapping = new ShadowMapping(m_CommandList);
     m_ShadowMapping->Init(m_Scene->getVertexInputAttribDescription(0, 0));
 
-    m_ShadowMappingPoint = new ShadowMappingPoint(m_CommandList);
-    m_ShadowMappingPoint->Init(m_Scene->getVertexInputAttribDescription(0, 0));
+    m_CascadeShadowMapping = new CascadedShadowMapping(m_CommandList);
+    m_CascadeShadowMapping->Init(m_Scene->getVertexInputAttribDescription(0, 0));
+
+    //m_ShadowMappingPoint = new ShadowMappingPoint(m_CommandList);
+    //m_ShadowMappingPoint->Init(m_Scene->getVertexInputAttribDescription(0, 0));
 
     if (m_Debug)
     {
@@ -217,52 +226,112 @@ void MyApplication::Load()
     }
 }
 
-void MyApplication::DrawDirectionLightMode(bool enablePCF)
+void MyApplication::DrawDirectionLightMode(bool enablePCF, bool cascaded)
 {
-    m_ShadowMapping->Draw(m_Scene, m_Transform);
-
-    m_CommandList->setViewport(core::Rect32(0, 0, m_RenderTarget->getDimension().width, m_RenderTarget->getDimension().height));
-    m_CommandList->setScissor(core::Rect32(0, 0, m_RenderTarget->getDimension().width, m_RenderTarget->getDimension().height));
-    m_CommandList->setRenderTarget(m_RenderTarget.get());
-
-    m_CommandList->setPipelineState(m_ShadowMappingPipeline.get());
+    if (cascaded)
     {
-        struct UBO
+        m_CascadeShadowMapping->Draw(m_Scene, m_Transform);
+
+        m_CommandList->setViewport(core::Rect32(0, 0, m_RenderTarget->getDimension().width, m_RenderTarget->getDimension().height));
+        m_CommandList->setScissor(core::Rect32(0, 0, m_RenderTarget->getDimension().width, m_RenderTarget->getDimension().height));
+        m_CommandList->setRenderTarget(m_RenderTarget.get());
+
+        m_CommandList->setPipelineState(m_CascadeShadowMappingPipeline.get());
         {
-            core::Matrix4D projectionMatrix;
-            core::Matrix4D modelMatrix;
-            core::Matrix4D normalMatrix;
-            core::Matrix4D viewMatrix;
-            core::Matrix4D lightSpaceMatrix;
-        } ubo;
+            {
+                struct UBO
+                {
+                    core::Matrix4D projectionMatrix;
+                    core::Matrix4D modelMatrix;
+                    core::Matrix4D normalMatrix;
+                    core::Matrix4D viewMatrix;
+                    core::Matrix4D lightSpaceMatrix[v3d::CascadedShadowMapping::s_CascadeCount];
+                } ubo;
 
+                ubo.projectionMatrix = m_FPSCameraHelper->getProjectionMatrix();
+                ubo.modelMatrix = m_Transform.getTransform();
+                ubo.modelMatrix.getInverse(ubo.normalMatrix);
+                ubo.normalMatrix.makeTransposed();
+                ubo.viewMatrix = m_FPSCameraHelper->getViewMatrix();
+                for (u32 i = 0; i < v3d::CascadedShadowMapping::s_CascadeCount; ++i)
+                {
+                    ubo.lightSpaceMatrix[i] = m_CascadeShadowMapping->GetLightSpaceMatrix()[i];
+                }
 
-        ubo.projectionMatrix = m_FPSCameraHelper->getProjectionMatrix();
-        ubo.modelMatrix = m_Transform.getTransform();
-        ubo.modelMatrix.getInverse(ubo.normalMatrix);
-        ubo.normalMatrix.makeTransposed();
-        ubo.viewMatrix = m_FPSCameraHelper->getViewMatrix();
-        ubo.lightSpaceMatrix = m_ShadowMapping->GetLightSpaceMatrix();
+                m_CascadeShadowMappingProgram->bindUniformsBuffer<renderer::ShaderType::ShaderType_Vertex>({ "vs_buffer" }, 0, (u32)sizeof(UBO), &ubo);
+            }
 
-        m_ShadowMappingProgram->bindUniformsBuffer<renderer::ShaderType::ShaderType_Vertex>({ "vs_buffer" }, 0, (u32)sizeof(UBO), &ubo);
+            {
+                struct UBO
+                {
+                    core::Vector4D lightDirection;
+                    core::Vector4D viewPosition;
+                    core::Vector4D casadeSplits;
+                    
+                } ubo;
+
+                ubo.lightDirection = m_SunDirection;
+                ubo.lightDirection.normalize();
+                ubo.viewPosition = m_FPSCameraHelper->getPosition();
+                for (u32 i = 0; i < v3d::CascadedShadowMapping::s_CascadeCount; ++i)
+                {
+                    ubo.casadeSplits[i] = m_CascadeShadowMapping->GetCascadeSplits()[i];
+                }
+
+                m_CascadeShadowMappingProgram->bindUniformsBuffer<renderer::ShaderType::ShaderType_Fragment>({ "fs_buffer" }, 0, (u32)sizeof(UBO), &ubo);
+            }
+
+            m_CascadeShadowMappingProgram->bindSampler<renderer::ShaderType::ShaderType_Fragment>({ "shadowSampler" }, m_ShadowSampler.get());
+            m_CascadeShadowMappingProgram->bindTexture<renderer::ShaderType::ShaderType_Fragment, renderer::Texture2DArray>({ "cascadedShadowMap" }, m_CascadeShadowMapping->GetDepthMap());
+        }
     }
-
+    else
     {
-        struct UBO
+        m_ShadowMapping->Draw(m_Scene, m_Transform);
+
+        m_CommandList->setViewport(core::Rect32(0, 0, m_RenderTarget->getDimension().width, m_RenderTarget->getDimension().height));
+        m_CommandList->setScissor(core::Rect32(0, 0, m_RenderTarget->getDimension().width, m_RenderTarget->getDimension().height));
+        m_CommandList->setRenderTarget(m_RenderTarget.get());
+
+        m_CommandList->setPipelineState(m_ShadowMappingPipeline.get());
         {
-            core::Vector4D lightDirection;
-            core::Vector4D viewPosition;
-            u32 enablePCF;
-        } ubo;
+            struct UBO
+            {
+                core::Matrix4D projectionMatrix;
+                core::Matrix4D modelMatrix;
+                core::Matrix4D normalMatrix;
+                core::Matrix4D viewMatrix;
+                core::Matrix4D lightSpaceMatrix;
+            } ubo;
 
-        ubo.lightDirection = m_SunDirection;
-        ubo.lightDirection.normalize();
-        ubo.viewPosition = m_FPSCameraHelper->getPosition();
-        ubo.enablePCF = (u32)enablePCF;
 
-        m_ShadowMappingProgram->bindUniformsBuffer<renderer::ShaderType::ShaderType_Fragment>({ "fs_buffer" }, 0, (u32)sizeof(UBO), &ubo);
-        m_ShadowMappingProgram->bindSampler<renderer::ShaderType::ShaderType_Fragment>({ "shadowSampler" }, m_ShadowSampler.get());
-        m_ShadowMappingProgram->bindTexture<renderer::ShaderType::ShaderType_Fragment, renderer::Texture2D>({ "shadowMap" }, m_ShadowMapping->GetDepthMap());
+            ubo.projectionMatrix = m_FPSCameraHelper->getProjectionMatrix();
+            ubo.modelMatrix = m_Transform.getTransform();
+            ubo.modelMatrix.getInverse(ubo.normalMatrix);
+            ubo.normalMatrix.makeTransposed();
+            ubo.viewMatrix = m_FPSCameraHelper->getViewMatrix();
+            ubo.lightSpaceMatrix = m_ShadowMapping->GetLightSpaceMatrix();
+
+            m_ShadowMappingProgram->bindUniformsBuffer<renderer::ShaderType::ShaderType_Vertex>({ "vs_buffer" }, 0, (u32)sizeof(UBO), &ubo);
+        }
+
+        {
+            struct UBO
+            {
+                core::Vector4D lightDirection;
+                core::Vector4D viewPosition;
+                u32 enablePCF;
+            } ubo;
+
+            ubo.lightDirection = m_SunDirection;
+            ubo.lightDirection.normalize();
+            ubo.viewPosition = m_FPSCameraHelper->getPosition();
+            ubo.enablePCF = (u32)enablePCF;
+
+            m_ShadowMappingProgram->bindUniformsBuffer<renderer::ShaderType::ShaderType_Fragment>({ "fs_buffer" }, 0, (u32)sizeof(UBO), &ubo);
+            m_ShadowMappingProgram->bindSampler<renderer::ShaderType::ShaderType_Fragment>({ "shadowSampler" }, m_ShadowSampler.get());
+            m_ShadowMappingProgram->bindTexture<renderer::ShaderType::ShaderType_Fragment, renderer::Texture2D>({ "shadowMap" }, m_ShadowMapping->GetDepthMap());
+        }
     }
 
     m_Scene->draw();
@@ -317,9 +386,9 @@ bool MyApplication::Running()
     //Frame
     m_CommandList->beginFrame();
 
-    if (m_Mode == DirectionLight || m_Mode == DirectionLightPCF)
+    if (m_Mode == DirectionLight || m_Mode == DirectionLightPCF || m_Mode == DirectionLightCascadeShadowing)
     {
-        MyApplication::DrawDirectionLightMode(m_Mode == DirectionLightPCF);
+        MyApplication::DrawDirectionLightMode(m_Mode == DirectionLightPCF, m_Mode == DirectionLightCascadeShadowing);
     }
     else if (m_Mode == PointLight)
     {
@@ -356,7 +425,8 @@ void MyApplication::Update(f32 dt)
         lightTarget = testSunPosition.getPosition() - m_SunDirection;
         lightTarget.y = 0.0f;
 
-        m_ShadowMapping->Update(dt, testSunPosition.getPosition(), lightTarget);
+        //m_ShadowMapping->Update(dt, testSunPosition.getPosition(), lightTarget);
+        m_ShadowMapping->Update(dt, m_SunDirection, {0,0,0});
 
         //m_Window->setTextCaption("Target [" + std::to_string(m_FPSCameraHelper->getRotation().x) + "; " + std::to_string(m_FPSCameraHelper->getRotation().y) + "; " + std::to_string(m_FPSCameraHelper->getRotation().z) + "]");
         m_Window->setTextCaption(
@@ -365,6 +435,10 @@ void MyApplication::Update(f32 dt)
             " PIVOT [" + std::to_string(testSunPivot.getPosition().x) + "; " + std::to_string(testSunPivot.getPosition().y) + "; " + std::to_string(testSunPivot.getPosition().z) + "]" +
             " LIGHT [" + std::to_string(testSunPosition.getPosition().x) + "; " + std::to_string(testSunPosition.getPosition().y) + "; " + std::to_string(testSunPosition.getPosition().z) + "]" +
             " TARGET POS [" + std::to_string(lightTarget.x) + "; " + std::to_string(lightTarget.y) + "; " + std::to_string(lightTarget.z) + "]");
+    }
+    else if (m_Mode == DirectionLightCascadeShadowing)
+    {
+        m_CascadeShadowMapping->Update(dt, m_FPSCameraHelper->getCamera(), m_SunDirection, { 0,0,0 });
     }
     else if (m_Mode == PointLight)
     {
@@ -383,6 +457,9 @@ void MyApplication::Exit()
 {
     m_ShadowMapping->Free();
     delete m_ShadowMapping;
+
+    m_CascadeShadowMapping->Free();
+    delete m_CascadeShadowMapping;
 
     m_ShadowMappingPoint->Free();
     delete m_ShadowMappingPoint;

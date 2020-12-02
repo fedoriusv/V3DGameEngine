@@ -53,13 +53,20 @@ private:
     v3d::utils::IntrusivePointer<v3d::renderer::RenderTargetState> m_RenderTarget;
     v3d::scene::Transform m_Transform;
 
-    void DrawDirectionLightMode(bool enablePCF);
+    void DrawDirectionLightMode(bool enablePCF, bool cascaded);
     void DrawPointLightMode();
+
+    v3d::core::Vector3D m_SunDirection = { 5.0f, 5.0f, 5.0f };
 
     v3d::ShadowMapping* m_ShadowMapping;
     v3d::utils::IntrusivePointer<v3d::renderer::GraphicsPipelineState> m_ShadowMappingPipeline;
     v3d::utils::IntrusivePointer<v3d::renderer::ShaderProgram> m_ShadowMappingProgram;
-    v3d::core::Vector3D m_SunDirection = { 0.0f, 5.0f, 5.0f };
+
+    v3d::CascadedShadowMapping* m_CascadeShadowMapping;
+    v3d::utils::IntrusivePointer<v3d::renderer::GraphicsPipelineState> m_CascadeShadowMappingPipeline;
+    v3d::utils::IntrusivePointer<v3d::renderer::ShaderProgram> m_CascadeShadowMappingProgram;
+
+
 
     v3d::ShadowMappingPoint* m_ShadowMappingPoint;
     v3d::utils::IntrusivePointer<v3d::renderer::GraphicsPipelineState> m_ShadowMappingPointPipeline;
@@ -70,7 +77,7 @@ private:
     {
         DirectionLight,
         DirectionLightPCF,
-        DirectionLightCascadeShadowingPCF,
+        DirectionLightCascadeShadowing,
         PointLight
     } m_Mode;
 
