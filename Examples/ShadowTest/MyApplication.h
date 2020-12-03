@@ -47,8 +47,6 @@ private:
     v3d::scene::ModelHelper* m_Scene;
 
     v3d::utils::IntrusivePointer<v3d::renderer::SamplerState> m_ShadowSampler;
-    v3d::utils::IntrusivePointer<v3d::renderer::SamplerState> m_ColorSampler;
-    v3d::utils::IntrusivePointer<v3d::renderer::Texture2D> m_ColorTexture;
 
     v3d::utils::IntrusivePointer<v3d::renderer::RenderTargetState> m_RenderTarget;
     v3d::scene::Transform m_Transform;

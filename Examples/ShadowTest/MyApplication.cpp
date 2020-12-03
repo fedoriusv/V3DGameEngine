@@ -154,15 +154,6 @@ void MyApplication::Load()
     }
 
     {
-        m_ColorSampler = m_CommandList->createObject<renderer::SamplerState>(renderer::SamplerFilter::SamplerFilter_Trilinear, renderer::SamplerAnisotropic::SamplerAnisotropic_4x);
-        m_ColorSampler->setWrap(renderer::SamplerWrap::TextureWrap_MirroredRepeat);
-
-        resource::Image* image = resource::ResourceLoaderManager::getInstance()->load<resource::Image, resource::ImageFileLoader>("resources/brickwall.jpg");
-        ASSERT(image, "not found");
-        m_ColorTexture = m_CommandList->createObject<renderer::Texture2D>(renderer::TextureUsage_Sampled | renderer::TextureUsage_Write, image->getFormat(), core::Dimension2D(image->getDimension().width, image->getDimension().height), 1, image->getRawData(), "ColorTexture");
-    }
-
-    {
         std::vector<const renderer::Shader*> shaders = resource::ResourceLoaderManager::getInstance()->loadHLSLShader<renderer::Shader, resource::ShaderSourceFileLoader>(m_CommandList->getContext(), "resources/solid_SunShadow.hlsl",
             {
                 {"main_VS", renderer::ShaderType_Vertex },
@@ -408,6 +399,7 @@ void MyApplication::Update(f32 dt)
     m_FPSCameraHelper->update(dt);
     if (m_Mode == DirectionLight || m_Mode == DirectionLightPCF)
     {
+        /*
         const f32 k_sunConstant = 5.0f;
         const f32 k_sunKoeff = m_SunDirection.z > 0.f ? 1.0f : -1.0f;
         v3d::core::Vector3D testSunOffest(0, 0, k_sunConstant * k_sunKoeff);
@@ -425,16 +417,9 @@ void MyApplication::Update(f32 dt)
         lightTarget = testSunPosition.getPosition() - m_SunDirection;
         lightTarget.y = 0.0f;
 
-        //m_ShadowMapping->Update(dt, testSunPosition.getPosition(), lightTarget);
+        m_ShadowMapping->Update(dt, testSunPosition.getPosition(), lightTarget);
+        */
         m_ShadowMapping->Update(dt, m_SunDirection, {0,0,0});
-
-        //m_Window->setTextCaption("Target [" + std::to_string(m_FPSCameraHelper->getRotation().x) + "; " + std::to_string(m_FPSCameraHelper->getRotation().y) + "; " + std::to_string(m_FPSCameraHelper->getRotation().z) + "]");
-        m_Window->setTextCaption(
-            " CAMERA POS [" + std::to_string(m_FPSCameraHelper->getPosition().x) + "; " + std::to_string(m_FPSCameraHelper->getPosition().y) + "; " + std::to_string(m_FPSCameraHelper->getPosition().z) + "]" + 
-            " CAMERA ROT [" + std::to_string(testSunPivot.getRotation().x) + "; " + std::to_string(testSunPivot.getRotation().y) + "; " + std::to_string(testSunPivot.getRotation().z) + "]" +
-            " PIVOT [" + std::to_string(testSunPivot.getPosition().x) + "; " + std::to_string(testSunPivot.getPosition().y) + "; " + std::to_string(testSunPivot.getPosition().z) + "]" +
-            " LIGHT [" + std::to_string(testSunPosition.getPosition().x) + "; " + std::to_string(testSunPosition.getPosition().y) + "; " + std::to_string(testSunPosition.getPosition().z) + "]" +
-            " TARGET POS [" + std::to_string(lightTarget.x) + "; " + std::to_string(lightTarget.y) + "; " + std::to_string(lightTarget.z) + "]");
     }
     else if (m_Mode == DirectionLightCascadeShadowing)
     {
@@ -448,8 +433,6 @@ void MyApplication::Update(f32 dt)
     core::Matrix4D transform;
     transform.makeIdentity();
     //transform.setScale({0.05, 0.05, 0.05 });
-   /* transform.setTranslation({ m_lightPosition .x, m_lightPosition.y, m_lightPosition.z});
-    transform.setScale({40.0, 40.0, 40.0 });*/
     m_Transform.setTransform(transform);
 }
 
@@ -475,8 +458,6 @@ void MyApplication::Exit()
         delete depthAttachment;
     }
 
-    m_ColorSampler = nullptr;
-    m_ColorTexture = nullptr;
     m_ShadowSampler = nullptr;
 
     m_RenderTarget = nullptr;
