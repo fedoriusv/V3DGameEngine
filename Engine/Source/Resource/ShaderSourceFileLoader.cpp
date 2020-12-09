@@ -89,10 +89,12 @@ ShaderSourceFileLoader::ShaderSourceFileLoader(const renderer::Context* context,
     {
         ResourceLoader::registerDecoder(new ShaderSpirVDecoder({ "hlsl" }, header, !(flags & ShaderSourceBuildFlag::ShaderSource_DontUseReflection)));
     }
+#if D3D_RENDER
     else if (context->getRenderType() == renderer::Context::RenderType::DirectXRender)
     {
         ResourceLoader::registerDecoder(new ShaderHLSLDecoder({ "hlsl" }, header, !(flags & ShaderSourceBuildFlag::ShaderSource_DontUseReflection)));
     }
+#endif
 
     ResourceLoader::registerRoot("");
     ResourceLoader::registerRoot("../../../../");

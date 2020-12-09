@@ -62,6 +62,12 @@ Resource* ShaderHLSLDecoder::decode(const stream::Stream* stream, const std::str
             return nullptr;
         }
 
+#if DEBUG
+        const std::string shaderName = m_header._debugName.empty() ? name : m_header._debugName;
+#else
+        const std::string shaderName = name;
+#endif
+
         if (m_header._contentType == renderer::ShaderHeader::ShaderResource::ShaderResource_Source)
         {
             std::string source;
@@ -178,20 +184,19 @@ Resource* ShaderHLSLDecoder::decode(const stream::Stream* stream, const std::str
             LOG_DEBUG("Shader[%s]:\n %s\n", name.c_str(), source.c_str());
             ID3DBlob* shader = nullptr;
             {
-                ID3DBlob* debugInfo = nullptr;
 #if D3D_DEBUG
-                HRESULT result = D3DCompile2(source.c_str(), source.size(), m_header._debugName.c_str(), macros.data(), nullptr, m_header._entryPoint.c_str(), shaderVersion.c_str(), compileFlags, 0, 0, nullptr, 0, &shader, &debugInfo);
-#else
-                HRESULT result = D3DCompile2(source.c_str(), source.size(), name.c_str(), macros.data(), nullptr, m_header._entryPoint.c_str(), shaderVersion.c_str(), compileFlags, 0, 0, nullptr, 0, &shader, &debugInfo);
-#endif
+                ID3DBlob* debugInfo = nullptr;
+                HRESULT result = D3DCompile2(source.c_str(), source.size(), shaderName.c_str(), macros.data(), nullptr, m_header._entryPoint.c_str(), shaderVersion.c_str(), compileFlags, 0, 0, nullptr, 0, &shader, &debugInfo);
                 if (debugInfo)
                 {
                     std::string error(reinterpret_cast<c8*>(debugInfo->GetBufferSize(), debugInfo->GetBufferPointer()));
-                    LOG_ERROR("Info: \n %s", error.c_str());
+                    LOG_WARNING("Info: \n %s", error.c_str());
 
                     debugInfo->Release();
                 }
-
+#else
+                HRESULT result = D3DCompile2(source.c_str(), source.size(), shaderName.c_str(), macros.data(), nullptr, m_header._entryPoint.c_str(), shaderVersion.c_str(), compileFlags, 0, 0, nullptr, 0, &shader, nullptr);
+#endif
                 if (FAILED(result))
                 {
                     LOG_ERROR("ShaderHLSLDecoder::decode D3DCompile2 is failed. Error %s", renderer::dx3d::D3DDebug::stringError(result).c_str());
