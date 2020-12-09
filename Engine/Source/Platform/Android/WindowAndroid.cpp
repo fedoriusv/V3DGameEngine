@@ -42,7 +42,7 @@ bool WindowAndroid::initialize()
     g_nativeAndroidApp->onInputEvent = WindowAndroid::handleInputCallback;
 
     // Prepare to monitor accelerometer
-    m_sensorManager = ASensorManager_getInstance();
+    m_sensorManager = ASensorManager_getInstanceForPackage("");
     m_accelerometerSensor = ASensorManager_getDefaultSensor(m_sensorManager, ASENSOR_TYPE_ACCELEROMETER);
     m_sensorEventQueue = ASensorManager_createEventQueue(m_sensorManager, g_nativeAndroidApp->looper, LOOPER_ID_USER, NULL, NULL);
 
