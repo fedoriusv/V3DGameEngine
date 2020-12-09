@@ -125,7 +125,7 @@ bool RenderTargetState::setColorTexture_Impl(u32 index, Texture* colorTexture, R
             attachmentDesc._stencilStoreOp = RenderTargetStoreOp::StoreOp_DontCare;
             attachmentDesc._backbuffer = true;
             attachmentDesc._autoResolve = false;
-            attachmentDesc._layer = k_generalLayer;
+            attachmentDesc._layer = AttachmentDescription::compressLayer(k_generalLayer);
 
             attachmentDesc._initTransition = TransitionOp::TransitionOp_Undefined;
             attachmentDesc._finalTransition = TransitionOp::TransitionOp_Present;
@@ -143,7 +143,7 @@ bool RenderTargetState::setColorTexture_Impl(u32 index, Texture* colorTexture, R
             attachmentDesc._stencilStoreOp = RenderTargetStoreOp::StoreOp_DontCare;
             attachmentDesc._backbuffer = false;
             attachmentDesc._autoResolve = colorTexture->isTextureUsageFlagsContains(TextureUsage::TextureUsage_Resolve);
-            attachmentDesc._layer = k_generalLayer;
+            attachmentDesc._layer = AttachmentDescription::compressLayer(k_generalLayer);
 
             attachmentDesc._initTransition = TransitionOp::TransitionOp_Undefined;
             attachmentDesc._finalTransition = TransitionOp::TransitionOp_ColorAttachmet;
@@ -198,7 +198,7 @@ bool RenderTargetState::setDepthStencilTexture_Impl(Texture* depthStencilTexture
         attachmentDesc._stencilStoreOp = stencilStoreOp;
         attachmentDesc._backbuffer = false;
         attachmentDesc._autoResolve = depthStencilTexture->isTextureUsageFlagsContains(TextureUsage::TextureUsage_Resolve);
-        attachmentDesc._layer = k_generalLayer;
+        attachmentDesc._layer = AttachmentDescription::compressLayer(k_generalLayer);
 
         attachmentDesc._initTransition = TransitionOp::TransitionOp_Undefined;
         attachmentDesc._finalTransition = TransitionOp::TransitionOp_DepthStencilAttachmet;
@@ -254,7 +254,7 @@ bool RenderTargetState::setColorTexture_Impl(u32 index, Texture* colorTexture, c
             attachmentDesc._stencilStoreOp = RenderTargetStoreOp::StoreOp_DontCare;
             attachmentDesc._backbuffer = true;
             attachmentDesc._autoResolve = false;
-            attachmentDesc._layer = k_generalLayer;
+            attachmentDesc._layer = AttachmentDescription::compressLayer(k_generalLayer);
 
             attachmentDesc._initTransition = tansitionState._initialState;
             attachmentDesc._finalTransition = tansitionState._finalState;
@@ -272,7 +272,7 @@ bool RenderTargetState::setColorTexture_Impl(u32 index, Texture* colorTexture, c
             attachmentDesc._stencilStoreOp = RenderTargetStoreOp::StoreOp_DontCare;
             attachmentDesc._backbuffer = false;
             attachmentDesc._autoResolve = colorTexture->isTextureUsageFlagsContains(TextureUsage::TextureUsage_Resolve);
-            attachmentDesc._layer = k_generalLayer;
+            attachmentDesc._layer = AttachmentDescription::compressLayer(k_generalLayer);
 
             attachmentDesc._initTransition = tansitionState._initialState;
             attachmentDesc._finalTransition = tansitionState._finalState;
@@ -327,7 +327,7 @@ bool RenderTargetState::setDepthStencilTexture_Impl(Texture* depthStencilTexture
         attachmentDesc._stencilStoreOp = stencilOpState._storeOp;
         attachmentDesc._backbuffer = false;
         attachmentDesc._autoResolve = depthStencilTexture->isTextureUsageFlagsContains(TextureUsage::TextureUsage_Resolve);
-        attachmentDesc._layer = k_generalLayer;
+        attachmentDesc._layer = AttachmentDescription::compressLayer(k_generalLayer);
 
         attachmentDesc._initTransition = tansitionState._initialState;
         attachmentDesc._finalTransition = tansitionState._finalState;

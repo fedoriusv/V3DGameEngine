@@ -133,6 +133,11 @@ namespace renderer
         {
             return (layer == 0x07) ? k_generalLayer : static_cast<s32>(layer);
         }
+
+        static u32 compressLayer(s32 layer)
+        {
+            return static_cast<u32>(layer);
+        }
     };
 
     /**
