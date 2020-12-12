@@ -23,8 +23,9 @@ struct TextureUniformParameters
     struct UniformBuffer
     {
         core::Matrix4D _projectionMatrix;
-        core::Matrix4D _modelMatrix;
         core::Matrix4D _viewMatrix;
+        core::Matrix4D _modelMatrix;
+        core::Matrix4D _normalMatrix;
     };
 
     struct Light

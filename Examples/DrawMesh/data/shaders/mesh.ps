@@ -1,13 +1,12 @@
 struct PS_INPUT 
 {
-    float4 Position  : SV_POSITION;
-    float3 Pos       : POSITION;
+    float3 Position  : POSITION;
     float3 Normal    : NORMAL;
     float2 UV        : TEXTURE;
 };
 
 SamplerState samplerColor : register(s1);
-Texture2D textureColor    : register(t2);
+Texture2D textureColor : register(t2);
 
 struct LIGHT
 {
@@ -21,17 +20,9 @@ float4 main(PS_INPUT Input) : SV_TARGET0
     float4 OutColor = textureColor.Sample(samplerColor, Input.UV);
 
     float3 N = normalize(Input.Normal);
-    float3 L = normalize(light.lightPosition.xyz - Input.Pos);
+    float3 L = normalize(light.lightPosition.xyz - Input.Position);
     float diffuseKoeff = max(dot(N, L), 0.01);
     OutColor = float4(diffuseKoeff * OutColor.rgb, 1.0);
-    
-    if (diffuseKoeff > 0.01)
-    {
-        float3 V = normalize(-Input.Pos);
-        float3 R = reflect(-L, N);
-        float specularKoeff = pow(max(dot(R, V), 0.0), 64.0);
-        OutColor.xyz += specularKoeff * float3(0.75, 0.75, 0.75);
-    }
     
     return OutColor;
 }

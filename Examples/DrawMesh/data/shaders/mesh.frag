@@ -22,12 +22,4 @@ void main()
     vec3 L = normalize(light.lightPosition.xyz - inPosition);
     float diffuseKoeff = max(dot(N, L), 0.01);
     outFragColor = vec4(diffuseKoeff * color.rgb, 1.0);
-  
-    if (diffuseKoeff > 0.01)
-    {
-        vec3 V = normalize(-inPosition);
-        vec3 R = reflect(-L, N);
-        float specularKoeff = pow(max(dot(R, V), 0.0), 64.0);
-        outFragColor.xyz += specularKoeff * vec3(0.75);
-    }
 }

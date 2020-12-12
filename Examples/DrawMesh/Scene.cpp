@@ -155,8 +155,10 @@ void Scene::Update()
     {
         //vs
         params._constantBufferVS._projectionMatrix = m_Camera->getCamera().getProjectionMatrix();
-        params._constantBufferVS._modelMatrix.setTranslation(core::Vector3D(0, 0, 0));
         params._constantBufferVS._viewMatrix = m_Camera->getCamera().getViewMatrix();
+        params._constantBufferVS._modelMatrix.setTranslation(core::Vector3D(0, 0, 0));
+        params._constantBufferVS._normalMatrix = params._constantBufferVS._modelMatrix;
+        params._constantBufferVS._normalMatrix.makeTransposed();
 
         params._constantBufferFS._lightPos = core::Vector4D(25.0f, 0.0f, 5.0f, 1.0f);
 
