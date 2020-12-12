@@ -15,3 +15,6 @@
 [submodule "Engine/Source/ThirdParty/gli"]
 	path = Engine/Source/ThirdParty/gli
 	url = https://github.com/g-truc/gli.git
+[submodule "Engine/Source/ThirdParty/termcolor"]
+	path = Engine/Source/ThirdParty/termcolor
+	url = https://github.com/ikalnytskyi/termcolor.git
