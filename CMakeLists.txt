@@ -10,15 +10,7 @@ option(BUILD_VULKAN_SDK "Build use Vulkan SDK" ON)
 option(BUILD_DIRECTX_SDK "Use DirectX SDK" ON)
 ##############################################################
 #ThirdParty
-#Crc32c lib is required"
-#https://github.com/google/crc32c.git
-option(ASSIMP_LIB "Use Assimp lib" ON)
-#https://github.com/assimp/assimp.git
-option(STB_LIB "Use Stb lib" ON)
-#https://github.com/nothings/stb.git
-option(GIL_LIB "Use gli lib" ON)
-#https://github.com/g-truc/gli.git
-option(SPIRV_INSTALL_FROM_GITHUB "implicity install SpirV" OFF)
+include(Config/ThirdParty.cmake)
 ##############################################################
 
 #Project
@@ -66,7 +58,10 @@ set(LIB_INCLUDE_DIRECTORY
     ${ENGINE_PROJECT_DIR}/${SOURCE_DIR}/Platform
     ${ENGINE_PROJECT_DIR}/${SOURCE_DIR}/ThirdParty)
 
-set(EXTRA_LIB_DEFINE "")
+foreach(INCLUDE_SUFFIX ${EXTRA_LIB_INCLUDE_SUFFIX})
+    set(LIB_INCLUDE_DIRECTORY ${LIB_INCLUDE_DIRECTORY} ${ENGINE_PROJECT_DIR}/${SOURCE_DIR}/ThirdParty/${INCLUDE_SUFFIX})
+endforeach()
+
 #Crc32c	
 set(LIB_INCLUDE_DIRECTORY ${LIB_INCLUDE_DIRECTORY} ${ENGINE_PROJECT_DIR}/Engine/Libs/crc32c/include)
 
@@ -75,18 +70,8 @@ if(ASSIMP_LIB)
     set(LIB_INCLUDE_DIRECTORY ${LIB_INCLUDE_DIRECTORY} ${ENGINE_PROJECT_DIR}/Engine/Libs/assimp/include)
     set(EXTRA_LIB_DEFINE "${EXTRA_LIB_DEFINE} -DUSE_ASSIMP")
 endif()
-#Stb
-if(STB_LIB)
-    set(EXTRA_LIB_DEFINE "${EXTRA_LIB_DEFINE} -DUSE_STB")
-endif()
-#Gli
-if(GIL_LIB)
-    set(EXTRA_LIB_DEFINE "${EXTRA_LIB_DEFINE} -DUSE_GLI")
-endif()
 
-#Configuration
 ##############################################################
-set(INCLUDE_DIRECTORY_PATHES "")
 
 #Vulkan
 if(BUILD_VULKAN_SDK)
@@ -138,13 +123,7 @@ endif()
 #DirectX
 if (BUILD_DIRECTX_SDK)
     set(DIRECTX_SDK_DEFINE "-DD3D_RENDER")
-#   set(DIRECTX_SDK_PATH $ENV{DXSDK_DIR})
-#   if ("${DIRECTX_SDK_PATH}" STREQUAL "")
-#       message(FATAL_ERROR "DirectX SDK not found. Please add DXSDK_DIR to system variable")
-#    endif()
-#   set(DIRECTX_SDK_INCLUDE_DIRECTORY "${DIRECTX_SDK_PATH}/Include")
-#   set(DIRECTX_SDK_LIB_DIRECTORY "${DIRECTX_SDK_PATH}/Lib")
-#   message("-- DirectX SDK Path " ${DIRECTX_SDK_PATH})
+    message(STATUS "DirectX SDK Path " ${DirectX_PREFIX_PATH})
 endif()
 
 #Compiler Flags
@@ -292,6 +271,7 @@ if(TARGET_WIN)
     set_target_properties(zlib PROPERTIES FOLDER Libs/assimp)  
     set_target_properties(zlibstatic PROPERTIES FOLDER Libs/assimp)
     set_target_properties(UpdateAssimpLibsDebugSymbolsAndDLLs PROPERTIES FOLDER Libs/assimp)
+    
     target_compile_options(zlib PRIVATE $<$<CONFIG:DEBUG>:/MTd> $<$<CONFIG:RELEASE>:/MT>)
     target_compile_options(zlibstatic PRIVATE $<$<CONFIG:DEBUG>:/MTd> $<$<CONFIG:RELEASE>:/MT>)
 endif()
