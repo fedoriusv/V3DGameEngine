@@ -8,6 +8,10 @@ namespace utils
 {
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    /**
+    * @brief RefCounted class.
+    * @see IntrusivePointer
+    */
     class RefCounted
     {
     public:
@@ -34,6 +38,7 @@ namespace utils
     {
         obj->grab();
     }
+
     inline void intrusivePtrRelease(const RefCounted* obj)
     {
         obj->drop();

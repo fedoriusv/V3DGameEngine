@@ -6,7 +6,7 @@
 #include "Utils/Timer.h"
 
 #ifdef USE_GLI
-#   include <gli/gli.hpp>
+#   include "ThirdParty/gli/gli/gli.hpp"
 
 namespace v3d
 {

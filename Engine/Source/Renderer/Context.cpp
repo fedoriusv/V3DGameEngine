@@ -25,7 +25,7 @@ Context::~Context()
 {
 }
 
-Context* Context::createContext(const platform::Window* window,  RenderType type, DeviceMask mask)
+Context* Context::createContext(const platform::Window* window, RenderType type, DeviceMask mask)
 {
     Context* context = nullptr;
     switch (type)

@@ -23,7 +23,7 @@ MyApplication::MyApplication(int& argc, char** argv)
 
     , m_Triangle(new SimpleTriangle())
 {
-    m_Window = Window::createWindow({ 1280, 720 }, {400, 200}, false, new v3d::event::InputEventReceiver());
+    m_Window = Window::createWindow({ 1280, 720 }, { 400, 200 }, false, new v3d::event::InputEventReceiver());
     ASSERT(m_Window, "windows is nullptr");
 
     m_InputEventHandler = new InputEventHandler();
