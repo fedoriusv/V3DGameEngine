@@ -22,10 +22,15 @@ private:
     bool Running(v3d::renderer::CommandList& cmd);
     void Exit();
 
+    void Test_Timer();
+
     void Test_MemoryPool();
+
+
     void Test_ShaderLoader();
     void Test_CreateShaderProgram();
     void Test_ShaderParam();
+    void Test_CreatePipeline();
 
     v3d::platform::Window* m_Window;
     v3d::event::InputEventHandler* m_InputEventHandler;

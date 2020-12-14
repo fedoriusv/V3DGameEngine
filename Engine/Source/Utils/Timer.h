@@ -58,7 +58,7 @@ namespace utils
         if (!Timer::isStopped())
         {
             m_endTime = std::chrono::high_resolution_clock::now();
-            m_duration += (m_endTime - m_beginTime);
+            return Timer::convertDuration<duration>(m_duration + (m_endTime - m_beginTime));
         }
 
         return Timer::convertDuration<duration>(m_duration);

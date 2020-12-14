@@ -1,6 +1,7 @@
 #include "MyApplication.h"
 #include "Utils/Logger.h"
 #include "Utils/MemoryPool.h"
+#include "Utils/Timer.h"
 
 #include "Renderer/Context.h"
 #include "Event/InputEventReceiver.h"
@@ -25,7 +26,7 @@
 #include "crc32c/crc32c.h"
 
 #include <random>
-
+#include <thread>
 
 
 using namespace v3d;
@@ -92,6 +93,14 @@ int MyApplication::Execute()
 
 void MyApplication::Initialize()
 {
+    std::thread test_timer([this]() -> void
+        {
+            Test_Timer();
+        });
+
+    test_timer.join();
+
+    //Render test
     Context::RenderType renderTypes[2] = { Context::RenderType::VulkanRender, Context::RenderType::DirectXRender };
     for (Context::RenderType renderType : renderTypes)
     {
@@ -103,6 +112,7 @@ void MyApplication::Initialize()
         Test_ShaderLoader();
         Test_CreateShaderProgram();
         Test_ShaderParam();
+        Test_CreatePipeline();
 
         delete m_CommandList;
         Context::destroyContext(m_Context);
@@ -189,6 +199,121 @@ bool MyApplication::Running(renderer::CommandList& commandList)
 void MyApplication::Exit()
 {
     m_Window->getInputEventReceiver()->dettach(InputEvent::InputEventType::MouseInputEvent);
+}
+
+void MyApplication::Test_Timer()
+{
+    LOG_DEBUG("Test_Timer");
+
+    {
+        LOG_DEBUG("Test_Timer test 1");
+
+        utils::Timer timer;
+        ASSERT(timer.getTime<utils::Timer::Duration_NanoSeconds>() == 0, "Must be 0");
+
+        timer.start();
+        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+        timer.stop();
+
+        u64 value0 = timer.getTime<utils::Timer::Duration_MilliSeconds>();
+        ASSERT(value0 == 10, "Must be 10");
+
+        timer.reset();
+        ASSERT(timer.getTime<utils::Timer::Duration_NanoSeconds>() == 0, "Must be 0");
+
+        timer.start();
+        std::this_thread::sleep_for(std::chrono::seconds(2));
+        timer.stop();
+
+        u64 value1 = timer.getTime<utils::Timer::Duration_Seconds>();
+        ASSERT(value1 == 2, "Must be 2");
+
+        timer.start();
+        std::this_thread::sleep_for(std::chrono::seconds(3));
+        timer.stop();
+
+        u64 value2 = timer.getTime<utils::Timer::Duration_Seconds>();
+        ASSERT(value2 == value1 + 3, "Must be 5");
+    }
+
+    {
+        LOG_DEBUG("Test_Timer test 2");
+
+        const u64 resetTime = 1000; //1 sec
+
+        {
+            auto start_time_w = std::chrono::high_resolution_clock::now();
+
+            auto start_time = std::chrono::high_resolution_clock::now();
+            auto end_time = start_time;
+
+            u64 miliseconds = 0;
+            while (true)
+            {
+                end_time = std::chrono::high_resolution_clock::now();
+                u64 duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time).count();
+                if (resetTime <= duration)
+                {
+                    miliseconds += duration;
+                    start_time = std::chrono::high_resolution_clock::now();
+                    LOG_DEBUG("Test_Timer chrono %d miliseconds are passed. Summary %d", duration, miliseconds);
+                }
+
+                if (miliseconds >= resetTime * 10)
+                {
+                    break;
+                }
+            }
+
+            auto end_time_w = std::chrono::high_resolution_clock::now();
+            u64 duration_w = std::chrono::duration_cast<std::chrono::milliseconds>(end_time_w - start_time_w).count();
+
+            u64 error = miliseconds - (resetTime * 10);
+            LOG_DEBUG("Test_Timer chrono duration %d = 10 sec. Error %d ms", miliseconds, error);
+        }
+
+        {
+            auto start_time_w = std::chrono::high_resolution_clock::now();
+
+            auto start_time = std::chrono::high_resolution_clock::now();
+            auto end_time = start_time;
+
+            utils::Timer timer;
+            timer.start();
+
+            u64 miliseconds = 0;
+            [[maybe_unused]] u32 loopsCount = 0;
+            while (true)
+            {
+                u64 duration = timer.getTime<utils::Timer::Duration_MilliSeconds>();
+                if (resetTime <= duration)
+                {
+                    miliseconds += duration;
+                    timer.reset();
+                    LOG_DEBUG("Test_Timer timer %d miliseconds are passed. Summary %d", duration, miliseconds);
+                }
+
+                end_time = std::chrono::high_resolution_clock::now();
+                if (miliseconds >= resetTime * 10)
+                {
+                    break;
+                }
+
+                ++loopsCount;
+            }
+
+            timer.stop();
+
+            auto end_time_w = std::chrono::high_resolution_clock::now();
+            u64 duration_w = std::chrono::duration_cast<std::chrono::milliseconds>(end_time_w - start_time_w).count();
+
+            u64 error = miliseconds - (resetTime * 10);
+            LOG_DEBUG("Test_Timer timer duration %d = 10 sec. Error %d ms", miliseconds, error);
+            ASSERT(miliseconds == resetTime * 10, "Must be 10 sec");
+        }
+    }
+
+    [[maybe_unused]] u32 endTest = 0;
 }
 
 void MyApplication::Test_MemoryPool()
@@ -643,8 +768,7 @@ void MyApplication::Test_CreateShaderProgram()
 
             ShaderHeader vertexHeader(ShaderType::ShaderType_Vertex);
             vertexHeader._contentType = ShaderHeader::ShaderResource::ShaderResource_Source;
-            vertexHeader._shaderLang = ShaderHeader::ShaderLang::ShaderLang_HLSL;
-            vertexHeader._shaderVersion = renderer::ShaderHeader::ShaderModel::ShaderModel_HLSL_5_0;
+            vertexHeader._shaderModel = renderer::ShaderHeader::ShaderModel::ShaderModel_HLSL_5_0;
 
             vertShader = resource::ResourceLoaderManager::getInstance()->composeShader<Shader, resource::ShaderSourceStreamLoader>(m_Context, "vertex", &vertexHeader, vertexStream);
             ASSERT(vertShader, "nullptr");
@@ -667,8 +791,7 @@ void MyApplication::Test_CreateShaderProgram()
 
             ShaderHeader fragmentHeader(ShaderType::ShaderType_Fragment);
             fragmentHeader._contentType = ShaderHeader::ShaderResource::ShaderResource_Source;
-            fragmentHeader._shaderLang = ShaderHeader::ShaderLang::ShaderLang_HLSL;
-            fragmentHeader._shaderVersion = renderer::ShaderHeader::ShaderModel::ShaderModel_HLSL_5_0;
+            fragmentHeader._shaderModel = renderer::ShaderHeader::ShaderModel::ShaderModel_HLSL_5_0;
 
             fragShader = resource::ResourceLoaderManager::getInstance()->composeShader<Shader, resource::ShaderSourceStreamLoader>(m_Context, "fragment", &fragmentHeader, fragmentStream);
             ASSERT(fragShader, "nullptr");
@@ -838,6 +961,11 @@ void MyApplication::Test_ShaderParam()
         ResourceLoaderManager::getInstance()->remove(hlslVShader);
         ResourceLoaderManager::getInstance()->remove(hlslPShader);
     }
+}
+
+void MyApplication::Test_CreatePipeline()
+{
+    //TODO
 }
 
 MyApplication::~MyApplication()

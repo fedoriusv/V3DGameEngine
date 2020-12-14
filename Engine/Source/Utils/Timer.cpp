@@ -38,7 +38,12 @@ void Timer::stop()
 
 void Timer::reset()
 {
-    m_isStopped = true;
+    if (!Timer::isStopped())
+    {
+        m_beginTime = std::chrono::high_resolution_clock::now();
+        m_endTime = m_beginTime;
+    }
+
     m_duration = std::chrono::duration_values<std::chrono::nanoseconds>::zero();
 }
 
