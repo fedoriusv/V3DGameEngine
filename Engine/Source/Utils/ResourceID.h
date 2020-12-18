@@ -9,7 +9,7 @@ namespace utils
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
-    * ResourceID class. Use for hashing instead pointer addresses
+    * @brief ResourceID class. Use for hashing instead pointer addresses
     */
     template<class TResource, typename Type>
     class ResourceID

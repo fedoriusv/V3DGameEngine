@@ -11,7 +11,7 @@ namespace utils
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
-    * @brief Profiler class.
+    * @brief Profiler class. Uses for render profiler
     */
     class Profiler
     {

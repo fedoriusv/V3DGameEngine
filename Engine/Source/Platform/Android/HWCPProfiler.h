@@ -12,6 +12,14 @@ namespace android
 {
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    /**
+    * @brief HWCPProfiler class.
+    * Uses only for ARM devices.
+    * @see hwcpipe lib
+    * If counters isn't enabled use the next command:
+    * adb shell setprop security.perf_harden 0
+    * @see utils::Profiler
+    */
     class HWCPProfiler : public utils::Profiler
     {
     public:

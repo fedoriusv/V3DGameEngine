@@ -14,7 +14,7 @@ namespace android
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
-    * AssetStream class. Android only. Only read from .apk
+    @breaf AssetStream class. Android only. Only read from .apk
     */
     class AssetStream final : public stream::Stream
     {

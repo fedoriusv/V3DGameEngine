@@ -9,12 +9,16 @@ namespace utils
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
-    * Timer class
+    * @brief Timer class.
+    * Uses for time counting
     */
     class Timer
     {
     public:
 
+        /**
+        * @brief Duration enum
+        */
         enum Duration
         {
             Duration_NanoSeconds,
@@ -26,22 +30,48 @@ namespace utils
         Timer() noexcept;
         virtual ~Timer();
 
+        /**
+        * @brief getTime method.
+        * @return passed time form called start method
+        */
         template<typename Timer::Duration duration = Duration_MilliSeconds>
-        u64         getTime() const;
+        u64 getTime() const;
 
-        void        start();
-        void        stop();
-        void        reset();
+        /**
+        * @brief start method.
+        * Start point. If duration is not zero, time will be added
+        */
+        void start();
 
-        bool        isStopped() const;
+        /**
+        * @brief stop method.
+        * Stop point. Gets duartion form start call to stop call. Will be added to previos duration
+        */
+        void stop();
 
+        /**
+        * @brief reset method.
+        * Reset timer. All duration resets to zero.
+        */
+        void reset();
+
+        /**
+        * @brief isStopped method.
+        * @return status of timer
+        */
+        bool isStopped() const;
+
+        /**
+        * @brief getCurrentTime function.
+        * @return return current time
+        */
         template<typename Timer::Duration duration = Duration_MilliSeconds>
         static u64 getCurrentTime();
 
     private:
 
         template<typename Timer::Duration duration>
-        static u64 convertDuration(std::chrono::nanoseconds& time);
+        static u64 convertDuration(const std::chrono::nanoseconds& time);
 
         mutable std::chrono::nanoseconds m_duration;
         mutable std::chrono::time_point<std::chrono::high_resolution_clock> m_beginTime;
@@ -72,7 +102,7 @@ namespace utils
     }
 
     template<typename Timer::Duration duration>
-    inline u64 Timer::convertDuration(std::chrono::nanoseconds& time)
+    inline u64 Timer::convertDuration(const std::chrono::nanoseconds& time)
     {
         switch (duration)
         {
