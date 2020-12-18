@@ -3,7 +3,7 @@
         {
             "name": "Windows Vulkan",
             "defines": [
-                "WIN32",
+                "WIN64",
                 "_WINDOWS",
                 "_CRT_SECURE_NO_WARNINGS",
                 "DEBUG",
@@ -12,19 +12,38 @@
                 "UNICODE",
                 "_UNICODE",
                 "VULKAN_RENDER",
-                "USE_ASSIMP"
+                "USE_ASSIMP",
+                "USE_STB",
+                "USE_GLI",
+                "USE_SPIRV"
             ],
             "includePath": [
-                "${workspaceFolder}/Engine/Source"
+                "${workspaceFolder}/Engine/Source",
+                "${workspaceFolder}/Engine/Libs"
             ],
             "intelliSenseMode": "msvc-x64",
             "cppStandard": "c++17",
-            "externalConsole": true
+            "macFrameworkPath": [],
+            "compilerArgs": [
+                "/std:c++17"
+            ],
+            "cStandard": "c17",
+            "intelliSenseModeIsExplicit": true,
+            "cStandardIsExplicit": true,
+            "cppStandardIsExplicit": true,
+            "browse": {
+                "path": [
+                    "${workspaceFolder}/Engine/Source",
+                    "${workspaceFolder}/Engine/Libs",
+                    "${workspaceFolder}"
+                ],
+                "limitSymbolsToIncludedHeaders": true
+            }
         },
         {
             "name": "Windows Direct3D",
             "defines": [
-                "WIN32",
+                "WIN64",
                 "_WINDOWS",
                 "_CRT_SECURE_NO_WARNINGS",
                 "DEBUG",
@@ -33,39 +52,59 @@
                 "UNICODE",
                 "_UNICODE",
                 "D3D_RENDER",
-                "USE_ASSIMP"
+                "USE_ASSIMP",
+                "USE_STB",
+                "USE_GLI"
             ],
             "includePath": [
-                "${workspaceFolder}/Engine/Source"
+                "${workspaceFolder}/Engine/Source",
+                "${workspaceFolder}/Engine/Libs"
             ],
             "intelliSenseMode": "msvc-x64",
             "cppStandard": "c++17",
-            "externalConsole": true
+            "macFrameworkPath": [],
+            "compilerArgs": [
+                "/std:c++17"
+            ],
+            "cStandard": "c17",
+            "intelliSenseModeIsExplicit": true,
+            "cStandardIsExplicit": true,
+            "cppStandardIsExplicit": true,
+            "browse": {
+                "path": [
+                    "${workspaceFolder}/Engine/Source",
+                    "${workspaceFolder}/Engine/Libs",
+                    "${workspaceFolder}"
+                ],
+                "limitSymbolsToIncludedHeaders": true
+            }
         },
         {
             "name": "Android Vulkan",
             "defines": [
                 "__ANDROID__",
                 "_ANDROID",
-                "_CRT_SECURE_NO_WARNINGS",
                 "DEBUG",
                 "USE_LOGGER",
                 "UNICODE",
                 "_UNICODE",
-                "_WIN32 = 0",
-                "_WIN64 = 0",
                 "VULKAN_RENDER",
                 "VULKAN_DYNAMIC",
                 "USE_ASSIMP",
-                "USE_SPIRV"
+                "USE_STB",
+                "USE_GLI",
+                "USE_SPIRV",
+                "USE_HWC_PIPE"
             ],
             "includePath": [
                 "${workspaceFolder}/Engine/Source",
-                "${env:ANDROID_NDK}/sysroot/usr/include",
-                "${env:ANDROID_NDK}/sources/android/native_app_glue"
+                "${workspaceFolder}/Engine/Libs",
+                "${env:ANDROID_NDK_HOME}/sysroot/usr/include"
             ],
             "cppStandard": "c++17",
-            "intelliSenseMode": "clang-x64"
+            "intelliSenseMode": "clang-x64",
+            "cStandard": "c17",
+            "compileCommands": "${workspaceFolder}/Engine/Libs/spirv/shaderc/build_android/Debug/compile_commands.json"
         }
     ],
     "version": 4
