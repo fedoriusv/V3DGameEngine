@@ -1273,7 +1273,7 @@ bool VulkanImage::internalUpload(Context* context, const core::Dimension3D& offs
         VkPipelineStageFlags srcStageMask = 0;
         if (m_layout.front() == VK_IMAGE_LAYOUT_UNDEFINED) //first time
         {
-            srcStageMask = VK_PIPELINE_STAGE_TRANSFER_BIT;
+            srcStageMask = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
         }
         else
         {
