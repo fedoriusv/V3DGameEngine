@@ -31,6 +31,13 @@ namespace renderer
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
+    * @brief Cover all atttachments
+    */
+    const s32 k_allAttachments = -1;
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    /**
     * @brief GraphicsPipelineState class. Game side.
     * Includes a shader program and render states
     */
@@ -60,24 +67,24 @@ namespace renderer
         bool isDepthTestEnable() const;
         bool isDepthWriteEnable() const;
 
-        void setBlendEnable(bool enable, s32 attachment = -1);
-        void setColorBlendFactor(BlendFactor src, BlendFactor dst, s32 attachment = -1);
-        void setColorBlendOp(BlendOperation op, s32 attachment = -1);
-        void setAlphaBlendFactor(BlendFactor src, BlendFactor dst, s32 attachment = -1);
-        void setAlphaBlendOp(BlendOperation op, s32 attachment = -1);
+        void setBlendEnable(bool enable, s32 attachment = k_allAttachments);
+        void setColorBlendFactor(BlendFactor src, BlendFactor dst, s32 attachment = k_allAttachments);
+        void setColorBlendOp(BlendOperation op, s32 attachment = k_allAttachments);
+        void setAlphaBlendFactor(BlendFactor src, BlendFactor dst, s32 attachment = k_allAttachments);
+        void setAlphaBlendOp(BlendOperation op, s32 attachment = k_allAttachments);
 
-        bool isBlendEnable(s32 attachment = -1) const;
-        BlendFactor getSrcColorBlendFactor(s32 attachment = -1) const;
-        BlendFactor getDstColorBlendFactor(s32 attachment = -1) const;
-        BlendOperation getColorBlendOp(s32 attachment = -1) const;
-        BlendFactor getSrcAlphaBlendFactor(s32 attachment = -1) const;
-        BlendFactor getDstAlphaBlendFactor(s32 attachment = -1) const;
-        BlendOperation getAlphaBlendOp(s32 attachment = -1) const;
+        bool isBlendEnable(s32 attachment = k_allAttachments) const;
+        BlendFactor getSrcColorBlendFactor(s32 attachment = k_allAttachments) const;
+        BlendFactor getDstColorBlendFactor(s32 attachment = k_allAttachments) const;
+        BlendOperation getColorBlendOp(s32 attachment = k_allAttachments) const;
+        BlendFactor getSrcAlphaBlendFactor(s32 attachment = k_allAttachments) const;
+        BlendFactor getDstAlphaBlendFactor(s32 attachment = k_allAttachments) const;
+        BlendOperation getAlphaBlendOp(s32 attachment = k_allAttachments) const;
 
-        void setColorMask(ColorMaskFlags colormask, s32 attachment = -1);
+        void setColorMask(ColorMaskFlags colormask, s32 attachment = k_allAttachments);
         void setPrimitiveTopology(PrimitiveTopology primitiveTopology);
 
-        ColorMaskFlags getColorMask(s32 attachment = -1) const;
+        ColorMaskFlags getColorMask(s32 attachment = k_allAttachments) const;
         PrimitiveTopology getPrimitiveTopology() const;
 
         const GraphicsPipelineStateDescription& getGraphicsPipelineStateDesc() const;
