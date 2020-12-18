@@ -201,9 +201,8 @@ void VulkanDeviceCaps::fillCapabilitiesList(const DeviceInfo* info)
             VulkanWrapper::GetPhysicalDeviceFeatures2(info->_physicalDevice, &physicalDeviceFeatures2);
             memcpy(&m_deviceFeatures, &physicalDeviceFeatures2.features, sizeof(VkPhysicalDeviceFeatures));
 
-
             supportDescriptorIndexing = m_physicalDeviceDescriptorIndexingFeatures.descriptorBindingUpdateUnusedWhilePending;
-            supportSamplerBorderColor = m_physicalDeviceCustomBorderColorFeatures.customBorderColors && m_physicalDeviceCustomBorderColorFeatures.customBorderColorWithoutFormat; //- validation bug
+            supportSamplerBorderColor = m_physicalDeviceCustomBorderColorFeatures.customBorderColors && m_physicalDeviceCustomBorderColorFeatures.customBorderColorWithoutFormat;
         }
 
         {
@@ -305,13 +304,6 @@ void VulkanDeviceCaps::fillCapabilitiesList(const DeviceInfo* info)
         }
     }
 
-    //check !!!!
-    immediateResourceSubmit = 2;
-
-    //TODO add
-    //VK_EXT_memory_budget
-    //VK_EXT_memory_priority
-
     vendorID = VendorID(m_deviceProperties.vendorID);
     LOG_INFO("VulkanDeviceCaps::initialize: API version: %u (%u.%u.%u)", m_deviceProperties.apiVersion, VK_VERSION_MAJOR(m_deviceProperties.apiVersion), VK_VERSION_MINOR(m_deviceProperties.apiVersion), VK_VERSION_PATCH(m_deviceProperties.apiVersion));
     LOG_INFO("VulkanDeviceCaps::initialize: Driver version: %u", m_deviceProperties.driverVersion);
@@ -372,6 +364,20 @@ void VulkanDeviceCaps::initialize()
 
     LOG_INFO("VulkanDeviceCaps::initialize:  useDynamicUniforms is %s", useDynamicUniforms ? "enable" : "disable");
     LOG_INFO("VulkanDeviceCaps::initialize:  useGlobalDescriptorPool is %s", useGlobalDescriptorPool ? "enable" : "disable");
+
+    //check !!!!
+    immediateResourceSubmit = 2;
+
+#if defined(PLATFORM_ANDROID)
+#   ifdef VK_QCOM_render_pass_transform
+    auto makeAdrenoDriverVersion = [](u32 major, u32 minor, u32 patch) -> u32
+    {
+        return (((major) << 22) | ((minor) << 12) | (patch));
+    };
+
+    fixRenderPassTransformQCOMDriverIssue = (m_deviceProperties.driverVersion < makeAdrenoDriverVersion(512, 469, 0)) ? true : false;
+#   endif //VK_QCOM_render_pass_transform
+#endif
 }
 
 } //namespace vk

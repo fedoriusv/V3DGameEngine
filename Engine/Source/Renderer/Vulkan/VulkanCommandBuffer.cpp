@@ -311,7 +311,7 @@ void VulkanCommandBuffer::cmdBeginRenderpass(const VulkanRenderPass* pass, const
         VkSurfaceTransformFlagBitsKHR preTransform = static_cast<VulkanGraphicContext*>(m_context)->getSwapchain()->getTransformFlag();
         if (preTransform != VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR)
         {
-            renderPassTransformBeginInfoQCOM.sType = (VkStructureType)VK_STRUCTURE_TYPE_RENDER_PASS_TRANSFORM_BEGIN_INFO_QCOM_;
+            renderPassTransformBeginInfoQCOM.sType = VulkanDeviceCaps::getInstance()->fixRenderPassTransformQCOMDriverIssue ? (VkStructureType)1000282000 : (VkStructureType)VK_STRUCTURE_TYPE_RENDER_PASS_TRANSFORM_BEGIN_INFO_QCOM;
             renderPassTransformBeginInfoQCOM.pNext = nullptr;
             renderPassTransformBeginInfoQCOM.transform = preTransform;
 

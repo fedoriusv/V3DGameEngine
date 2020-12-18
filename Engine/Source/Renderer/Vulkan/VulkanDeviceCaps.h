@@ -15,7 +15,7 @@ namespace vk
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
-    * VulkanDeviceCaps struct. Vulkan Render side
+    * @brief VulkanDeviceCaps struct. Vulkan Render side
     */
     struct VulkanDeviceCaps : DeviceCaps, utils::Singleton<VulkanDeviceCaps>
     {
@@ -59,6 +59,7 @@ namespace vk
         bool supportSamplerBorderColor = false;
 
         bool renderpassTransformQCOM = false;
+        bool fixRenderPassTransformQCOMDriverIssue = false;
 
         static bool checkInstanceExtension(const c8* extensionName);
         static bool checkDeviceExtension(VkPhysicalDevice physicalDevice, const c8* extensionName);

@@ -11,6 +11,9 @@ namespace renderer
 {
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    /**
+    * @brief VendorID enums
+    */
     enum VendorID
     {
         VendorID_Empty              = 0x0000,
@@ -29,6 +32,9 @@ namespace renderer
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    /**
+    * @brief DeviceCaps struct. Game/Render side.
+    */
     struct DeviceCaps
     {
         enum TilingType : u32
