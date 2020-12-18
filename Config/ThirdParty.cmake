@@ -10,26 +10,15 @@ option(GIL_HEADERS "Use gli headers. Uses glm" ON)
 
 ##############################################################
 
-set(EXTRA_LIB_DEFINE "")
-set(EXTRA_LIB_INCLUDE_SUFFIX "")
+set(THIRD_PARTY_LIB_DEFINE "")
+set(THIRD_PARTY_LIB_INCLUDE_SUFFIX "")
 #Stb
 if(STB_HEADERS)
-    set(EXTRA_LIB_DEFINE "${EXTRA_LIB_DEFINE} -DUSE_STB")
+    set(THIRD_PARTY_LIB_DEFINE "${THIRD_PARTY_LIB_DEFINE} -DUSE_STB")
 endif()
 
 #Gli
 if(GIL_HEADERS)
-    set(EXTRA_LIB_DEFINE "${EXTRA_LIB_DEFINE} -DUSE_GLI")
-    set(EXTRA_LIB_INCLUDE_SUFFIX "${EXTRA_LIB_INCLUDE_SUFFIX}"  "glm")
+    set(THIRD_PARTY_LIB_DEFINE "${THIRD_PARTY_LIB_DEFINE} -DUSE_GLI")
+    set(THIRD_PARTY_LIB_INCLUDE_SUFFIX "${THIRD_PARTY_LIB_INCLUDE_SUFFIX}"  "glm")
 endif()
-
-#Crc32c lib is required"
-#https://github.com/google/crc32c.git
-
-option(ASSIMP_LIB "Use Assimp lib" ON)
-#https://github.com/assimp/assimp.git
-
-#option(HWCPipe_LIB "Use HWCPipe lib(Only for Android Target)" ON)
-#https://github.com/ARM-software/HWCPipe.git
-
-option(SPIRV_INSTALL_FROM_GITHUB "implicity install SpirV" OFF)

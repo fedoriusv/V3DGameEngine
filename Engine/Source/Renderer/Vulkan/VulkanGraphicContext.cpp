@@ -15,10 +15,14 @@
 #include "VulkanUnifromBuffer.h"
 
 #include "Utils/Logger.h"
+#include "Utils/Profiler.h"
 
 #include <chrono>
 #include <thread>
 
+#ifdef PLATFORM_ANDROID
+#   include "Platform/Android/HWCPProfiler.h"
+#endif //PLATFORM_ANDROID
 
 #ifdef VULKAN_RENDER
 namespace v3d
@@ -150,24 +154,36 @@ VulkanGraphicContext::~VulkanGraphicContext()
 
 void VulkanGraphicContext::beginFrame()
 {
-#if VULKAN_DUMP
-    VulkanDump::getInstance()->dumpFrameNumber(m_frameCounter);
-#endif
 #if THREADED_PRESENT
     u32 index = 0;
     m_presentThread->requestAcquireImage(index);
 #else
     [[maybe_unused]] u32 index = m_swapchain->acquireImage();
 #endif //THREADED_PRESENT
+
 #if VULKAN_DEBUG
     LOG_DEBUG("VulkanGraphicContext::beginFrame %llu, image index %u", m_frameCounter, index);
 #endif //VULKAN_DEBUG
+
+#if VULKAN_DUMP
+    VulkanDump::getInstance()->dumpFrameNumber(m_frameCounter);
+#endif
+
     ASSERT(!m_currentBufferState.isCurrentBufferAcitve(CommandTargetType::CmdDrawBuffer), "buffer exist");
     m_currentBufferState.acquireAndStartCommandBuffer(CommandTargetType::CmdDrawBuffer);
+
+#if FRAME_PROFILER_ENABLE
+    utils::ProfileManager::getInstance()->update();
+    utils::ProfileManager::getInstance()->start();
+#endif //FRAME_PROFILER_ENABLE
 }
 
 void VulkanGraphicContext::endFrame()
 {
+#if FRAME_PROFILER_ENABLE
+    utils::ProfileManager::getInstance()->stop();
+#endif //FRAME_PROFILER_ENABLE
+
 #if VULKAN_DEBUG
     LOG_DEBUG("VulkanGraphicContext::endFrame %llu", m_frameCounter);
 #endif //VULKAN_DEBUG
@@ -835,6 +851,57 @@ bool VulkanGraphicContext::initialize()
 
     m_currentContextState = new VulkanContextState(m_deviceInfo._device, m_descriptorSetManager, m_uniformBufferManager);
 
+#if defined(PLATFORM_ANDROID) && FRAME_PROFILER_ENABLE
+    utils::ProfileManager::getInstance()->attach(new android::HWCPProfiler(
+        { 
+            android::HWCPProfiler::CpuCounter::Cycles,
+            android::HWCPProfiler::CpuCounter::Instructions,
+            android::HWCPProfiler::CpuCounter::CacheReferences,
+            android::HWCPProfiler::CpuCounter::CacheMisses,
+            android::HWCPProfiler::CpuCounter::BranchInstructions,
+            android::HWCPProfiler::CpuCounter::BranchMisses,
+            android::HWCPProfiler::CpuCounter::L1Accesses,
+            android::HWCPProfiler::CpuCounter::InstrRetired,
+            android::HWCPProfiler::CpuCounter::L2Accesses,
+            android::HWCPProfiler::CpuCounter::L3Accesses,
+            android::HWCPProfiler::CpuCounter::BusReads,
+            android::HWCPProfiler::CpuCounter::BusWrites,
+            android::HWCPProfiler::CpuCounter::MemReads,
+            android::HWCPProfiler::CpuCounter::MemWrites,
+            android::HWCPProfiler::CpuCounter::ASESpec,
+            android::HWCPProfiler::CpuCounter::VFPSpec,
+            android::HWCPProfiler::CpuCounter::CryptoSpec
+        },
+        {
+            android::HWCPProfiler::GpuCounter::GpuCycles,
+            android::HWCPProfiler::GpuCounter::VertexComputeCycles,
+            android::HWCPProfiler::GpuCounter::FragmentCycles,
+            android::HWCPProfiler::GpuCounter::TilerCycles,
+            android::HWCPProfiler::GpuCounter::VertexComputeJobs,
+            android::HWCPProfiler::GpuCounter::FragmentJobs,
+            android::HWCPProfiler::GpuCounter::Pixels,
+            android::HWCPProfiler::GpuCounter::Tiles,
+            android::HWCPProfiler::GpuCounter::TransactionEliminations,
+            android::HWCPProfiler::GpuCounter::EarlyZTests,
+            android::HWCPProfiler::GpuCounter::EarlyZKilled,
+            android::HWCPProfiler::GpuCounter::LateZTests,
+            android::HWCPProfiler::GpuCounter::LateZKilled,
+            android::HWCPProfiler::GpuCounter::Instructions,
+            android::HWCPProfiler::GpuCounter::DivergedInstructions,
+            android::HWCPProfiler::GpuCounter::ShaderCycles,
+            android::HWCPProfiler::GpuCounter::ShaderArithmeticCycles,
+            android::HWCPProfiler::GpuCounter::ShaderLoadStoreCycles,
+            android::HWCPProfiler::GpuCounter::ShaderTextureCycles,
+            android::HWCPProfiler::GpuCounter::CacheReadLookups,
+            android::HWCPProfiler::GpuCounter::CacheWriteLookups,
+            android::HWCPProfiler::GpuCounter::ExternalMemoryReadAccesses,
+            android::HWCPProfiler::GpuCounter::ExternalMemoryWriteAccesses,
+            android::HWCPProfiler::GpuCounter::ExternalMemoryReadStalls,
+            android::HWCPProfiler::GpuCounter::ExternalMemoryWriteStalls,
+            android::HWCPProfiler::GpuCounter::ExternalMemoryReadBytes,
+            android::HWCPProfiler::GpuCounter::ExternalMemoryWriteBytes
+        }));
+#endif //PLATFORM_ANDROID && FRAME_PROFILER_ENABLE
     return true;
 }
 
@@ -850,6 +917,11 @@ void VulkanGraphicContext::destroy()
         LOG_ERROR("VulkanGraphicContext::destroy DeviceWaitIdle is failed. Error: %s", ErrorString(result).c_str());
         ASSERT(false, "error");
     }
+
+#if FRAME_PROFILER_ENABLE
+    //deletes all profilers internaly
+    utils::ProfileManager::getInstance()->freeInstance();
+#endif //FRAME_PROFILER_ENABLE
 
 #if THREADED_PRESENT
     delete m_presentThread;

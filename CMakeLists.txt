@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.0.0 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.0.2 FATAL_ERROR)
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
 ##############################################################
@@ -9,8 +9,23 @@ option(BUILD_EXAMPLES "Generate Examples" ON)
 option(BUILD_VULKAN_SDK "Build use Vulkan SDK" ON)
 option(BUILD_DIRECTX_SDK "Use DirectX SDK" ON)
 ##############################################################
+
 #ThirdParty
 include(Config/ThirdParty.cmake)
+##############################################################
+
+#External Libs
+##############################################################
+#Crc32c lib is required"
+#https://github.com/google/crc32c.git
+
+option(ASSIMP_LIB "Use Assimp lib" ON)
+#https://github.com/assimp/assimp.git
+
+option(HWCPipe_LIB "Use HWCPipe lib(Only for Android Target)" ON)
+#https://github.com/ARM-software/HWCPipe.git
+
+option(SPIRV_INSTALL_FROM_GITHUB "implicity install SpirV" OFF)
 ##############################################################
 
 #Project
@@ -56,21 +71,22 @@ set(ENGINE_PROJECT_DIR ${PROJECT_SOURCE_DIR})
 set(LIB_INCLUDE_DIRECTORY 
     ${ENGINE_PROJECT_DIR}/${SOURCE_DIR}
     ${ENGINE_PROJECT_DIR}/${SOURCE_DIR}/Platform
+    ${ENGINE_PROJECT_DIR}/Engine/Libs
     ${ENGINE_PROJECT_DIR}/${SOURCE_DIR}/ThirdParty)
 
-foreach(INCLUDE_SUFFIX ${EXTRA_LIB_INCLUDE_SUFFIX})
+foreach(INCLUDE_SUFFIX ${THIRD_PARTY_LIB_INCLUDE_SUFFIX})
     set(LIB_INCLUDE_DIRECTORY ${LIB_INCLUDE_DIRECTORY} ${ENGINE_PROJECT_DIR}/${SOURCE_DIR}/ThirdParty/${INCLUDE_SUFFIX})
 endforeach()
 
-#Crc32c	
-set(LIB_INCLUDE_DIRECTORY ${LIB_INCLUDE_DIRECTORY} ${ENGINE_PROJECT_DIR}/Engine/Libs/crc32c/include)
-
 #Assimp
 if(ASSIMP_LIB)
-    set(LIB_INCLUDE_DIRECTORY ${LIB_INCLUDE_DIRECTORY} ${ENGINE_PROJECT_DIR}/Engine/Libs/assimp/include)
-    set(EXTRA_LIB_DEFINE "${EXTRA_LIB_DEFINE} -DUSE_ASSIMP")
+    set(THIRD_PARTY_LIB_DEFINE "${THIRD_PARTY_LIB_DEFINE} -DUSE_ASSIMP")
 endif()
 
+#HWCPipe
+if (HWCPipe_LIB AND TARGET_ANDROID)
+    set(THIRD_PARTY_LIB_DEFINE "${THIRD_PARTY_LIB_DEFINE} -DUSE_HWC_PIPE")
+endif()
 ##############################################################
 
 #Vulkan
@@ -128,8 +144,8 @@ endif()
 
 #Compiler Flags
 set(CMAKE_CONFIGURATION_TYPES "Debug;Release" CACHE STRING "" FORCE)
-set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DDEBUG -DUSE_LOGGER ${VULKAN_SDK_DEFINE} ${DIRECTX_SDK_DEFINE} ${EXTRA_LIB_DEFINE}")
-set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -DUSE_LOGGER ${VULKAN_SDK_DEFINE} ${DIRECTX_SDK_DEFINE} ${EXTRA_LIB_DEFINE}")
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DDEBUG -DUSE_LOGGER ${VULKAN_SDK_DEFINE} ${DIRECTX_SDK_DEFINE} ${THIRD_PARTY_LIB_DEFINE}")
+set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -DUSE_LOGGER ${VULKAN_SDK_DEFINE} ${DIRECTX_SDK_DEFINE} ${THIRD_PARTY_LIB_DEFINE}")
 ##############################################################
 
 #Source
@@ -214,9 +230,9 @@ add_library(${ENGINE_NAME} STATIC
 target_include_directories(${ENGINE_NAME} BEFORE 
 	PRIVATE ${LIB_INCLUDE_DIRECTORY}
 	PRIVATE $<$<BOOL:BUILD_VULKAN_SDK>:${VULKAN_SDK_INCLUDE_DIRECTORY}>)
-    
-set(BUILD_DEPENDENCIES "")
+##############################################################
 
+set(BUILD_DEPENDENCIES "")
 #Link Libs
 ##############################################################
 #Crc32c	
@@ -227,6 +243,12 @@ set(BUILD_DEPENDENCIES ${BUILD_DEPENDENCIES} crc32c)
 if (ASSIMP_LIB)
     target_link_libraries(${ENGINE_NAME} assimp)
     set(BUILD_DEPENDENCIES ${BUILD_DEPENDENCIES} assimp)
+endif()
+
+#HWCPipe
+if (HWCPipe_LIB AND TARGET_ANDROID)
+    target_link_libraries(${ENGINE_NAME} hwcpipe)
+    set(BUILD_DEPENDENCIES ${BUILD_DEPENDENCIES} hwcpipe)
 endif()
 
 #Spirv
@@ -248,11 +270,11 @@ if (BUILD_VULKAN_SDK)
 endif()
 
 link_directories(${ENGINE_NAME} ${VULKAN_SDK_LIB_DIRECTORY})
-    
 ##############################################################
 
 #Libs
 ##############################################################
+#Crc32
 message(STATUS "Add Crc32 lib")
 add_subdirectory(Engine/Libs/crc32c)
 set_target_properties(crc32c PROPERTIES FOLDER Libs/crc32c)
@@ -260,6 +282,7 @@ set_target_properties(crc32c_arm64 PROPERTIES FOLDER Libs/crc32c)
 set_target_properties(crc32c_sse42 PROPERTIES FOLDER Libs/crc32c)
 message(STATUS "Crc32 lib added")
 
+#Assimp
 if (ASSIMP_LIB)
     message(STATUS "Add Assimp lib")
     add_subdirectory(Engine/Libs/assimp)
@@ -275,10 +298,15 @@ if(TARGET_WIN)
     target_compile_options(zlib PRIVATE $<$<CONFIG:DEBUG>:/MTd> $<$<CONFIG:RELEASE>:/MT>)
     target_compile_options(zlibstatic PRIVATE $<$<CONFIG:DEBUG>:/MTd> $<$<CONFIG:RELEASE>:/MT>)
 endif()
-
     message(STATUS "Assimp lib added")
 endif()
 
+#HWCPipe
+if (HWCPipe_LIB AND TARGET_ANDROID)
+    message(STATUS "Add HWCPipe lib")
+    add_subdirectory(Engine/Libs/HWCPipe)
+    message(STATUS "HWCPipe lib added")
+endif()
 ##############################################################
 
 #Examples

@@ -1,4 +1,4 @@
-// V3D Engine 2018-2020 Fred Nekrasov
+// V3D Engine 2018-2021 Fred Nekrasov
 #pragma once
 
 //Version 2.0.0
@@ -13,7 +13,11 @@
 //PLatform
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-#if (defined(_WIN32) && _WIN32) || (defined(_WIN64) && _WIN64) || defined(WIN32) || defined(WIN64)
+#if defined(_WIN32) && _WIN32
+#   error Unsupported platform. Used x64 only.
+#endif
+
+#if defined(_WIN64) && _WIN64
 #   define PLATFORM_WINDOWS
 #   if defined(_MSC_VER) && (_MSC_VER < 1920)
 #       error "Only Microsoft Visual Studio 2019 RTW (16.0) and later are supported."
@@ -27,17 +31,19 @@
 #   error Unsupported platform
 #endif
 
-#if defined(LINUX) || defined(_LINUX)
-#   define PLATFORM_LINUX
-#   error Unsupported platform
-#endif
-
-#if (defined(_ANDROID) && _ANDROID)
+#if defined(__ANDROID__) || defined(ANDROID)
 #   define PLATFORM_ANDROID
 #   if defined(__ANDROID_API__) && (__ANDROID_API__ < 26)
 #       error "Support Android NDK R18b and later"
 #   endif
 #endif
+
+#if (defined(__LINUX__) || defined(LINUX))
+#   define PLATFORM_LINUX
+#   error Unsupported platform
+#endif
+
+
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #ifdef USE_LOGGER
@@ -88,5 +94,6 @@
 
 #define DEBUG_COMMAND_LIST 0
 #define DEBUG_OBJECT_MEMORY 1
+#define FRAME_PROFILER_ENABLE 1
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////
