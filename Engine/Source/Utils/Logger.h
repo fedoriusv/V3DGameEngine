@@ -87,7 +87,7 @@ namespace utils
         /**
         * @brief maximum size of a message
         */
-        const static u32\ k_maxMessageSize = 1024;
+        const static u32 k_maxMessageSize = 1024;
 #endif
 
         bool m_immediateFlush;
