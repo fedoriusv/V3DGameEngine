@@ -4,6 +4,8 @@
 #include "Singleton.h"
 #include "Timer.h"
 
+#define PRINT_TO_LOG 1
+
 namespace v3d
 {
 namespace utils
@@ -34,6 +36,8 @@ namespace utils
 
         virtual void update(f32 dt) = 0;
         virtual void reset() = 0;
+
+        virtual void printToLog() const = 0;
 
     protected:
 

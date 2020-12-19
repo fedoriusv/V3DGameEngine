@@ -80,6 +80,9 @@ void ProfileManager::update()
         m_timer.reset();
         for (auto& profiler : m_profilers)
         {
+#if PRINT_TO_LOG
+            profiler->printToLog();
+#endif
             profiler->reset();
         }
     }

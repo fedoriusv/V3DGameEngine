@@ -207,7 +207,6 @@ void HWCPProfiler::update(f32 dt)
 void HWCPProfiler::reset()
 {
     //LOG_DEBUG("HWCPProfiler: call every 1 sec");
-    printToLog();
 }
 
 void HWCPProfiler::printToLog() const

@@ -95,9 +95,8 @@ namespace android
         void update(f32 dt) override;
         void reset() override;
 
+        void printToLog() const override;
     private:
-
-        void printToLog() const;
 
         hwcpipe::HWCPipe m_HWCPipe;
 

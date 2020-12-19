@@ -1,6 +1,7 @@
 #include "D3DGraphicContext.h"
 
 #include "Utils/Logger.h"
+#include "Utils/Profiler.h"
 #include "Renderer/Pipeline.h"
 #include "Renderer/RenderPass.h"
 #include "Renderer/Framebuffer.h"
@@ -19,6 +20,8 @@
 #include "D3DRenderTarget.h"
 #include "D3DDescriptorHeap.h"
 #include "D3DConstantBuffer.h"
+
+#include "Renderer/FrameTimeProfiler.h"
 
 namespace v3d
 {
@@ -104,6 +107,11 @@ void D3DGraphicContext::beginFrame()
 
     ASSERT(!m_currentState.commandList(), "not nullptr");
    D3DGraphicContext::getOrAcquireCurrentCommandList();
+
+#if FRAME_PROFILER_ENABLE
+   utils::ProfileManager::getInstance()->update();
+   utils::ProfileManager::getInstance()->start();
+#endif //FRAME_PROFILER_ENABLE
 }
 
 void D3DGraphicContext::endFrame()
@@ -126,6 +134,10 @@ void D3DGraphicContext::endFrame()
 
 void D3DGraphicContext::presentFrame()
 {
+#if FRAME_PROFILER_ENABLE
+    utils::ProfileManager::getInstance()->stop();
+#endif //FRAME_PROFILER_ENABLE
+
 #if D3D_DEBUG
     LOG_DEBUG("D3DGraphicContext::presentFrame %d", m_frameCounter);
 #endif //D3D_DEBUG
@@ -558,7 +570,7 @@ bool D3DGraphicContext::initialize()
 
 #if D3D_DEBUG
         D3DDebug::getInstance()->attachDevice(m_device, D3D12_DEBUG_FEATURE_NONE);
-#endif
+#endif //D3D_DEBUG
     }
 
     {
@@ -579,7 +591,7 @@ bool D3DGraphicContext::initialize()
         }
 #if D3D_DEBUG
         m_commandQueue->SetName(L"PresentCommandQueue");
-#endif
+#endif //D3D_DEBUG
     }
 
     D3DDeviceCaps* caps = D3DDeviceCaps::getInstance();
@@ -618,7 +630,12 @@ bool D3DGraphicContext::initialize()
     m_descriptorState = new D3DDescriptorSetState(m_device, m_descriptorHeapManager);
 #if D3D_DEBUG
     D3DDebug::getInstance()->report(D3D12_RLDO_SUMMARY | D3D12_RLDO_IGNORE_INTERNAL);
-#endif
+#endif //D3D_DEBUG
+
+#if FRAME_PROFILER_ENABLE
+    utils::ProfileManager::getInstance()->attach(new FrameTimeProfiler());
+#endif //FRAME_PROFILER_ENABLE
+
     return true;
 }
 

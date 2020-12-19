@@ -20,6 +20,7 @@
 #include <chrono>
 #include <thread>
 
+#include "Renderer/FrameTimeProfiler.h"
 #ifdef PLATFORM_ANDROID
 #   include "Platform/Android/HWCPProfiler.h"
 #endif //PLATFORM_ANDROID
@@ -851,7 +852,9 @@ bool VulkanGraphicContext::initialize()
 
     m_currentContextState = new VulkanContextState(m_deviceInfo._device, m_descriptorSetManager, m_uniformBufferManager);
 
-#if defined(PLATFORM_ANDROID) && FRAME_PROFILER_ENABLE
+#if FRAME_PROFILER_ENABLE
+    utils::ProfileManager::getInstance()->attach(new FrameTimeProfiler());
+#   if defined(PLATFORM_ANDROID)
     utils::ProfileManager::getInstance()->attach(new android::HWCPProfiler(
         { 
             android::HWCPProfiler::CpuCounter::Cycles,
@@ -901,7 +904,8 @@ bool VulkanGraphicContext::initialize()
             android::HWCPProfiler::GpuCounter::ExternalMemoryReadBytes,
             android::HWCPProfiler::GpuCounter::ExternalMemoryWriteBytes
         }));
-#endif //PLATFORM_ANDROID && FRAME_PROFILER_ENABLE
+#   endif //PLATFORM_ANDROID
+#endif //FRAME_PROFILER_ENABLE
     return true;
 }
 
