@@ -13,7 +13,7 @@
 //PLatform
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-#if defined(_WIN32) && _WIN32
+#if (defined(_WIN32) && _WIN32) && (!defined(_WIN64) && _WIN64 == 0)
 #   error Unsupported platform. Used x64 only.
 #endif
 
