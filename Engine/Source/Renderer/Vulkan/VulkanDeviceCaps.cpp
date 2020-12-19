@@ -14,6 +14,28 @@ namespace renderer
 namespace vk
 {
 
+u32 makeDriverVersion(VendorID vendor, u32 major, u32 minor, u32 patch = 0)
+{
+    if (vendor == VendorID::VendorID_NVIDIA)
+    {
+        return (((major) << 22) | ((minor) << 14) | (patch));
+    }
+
+    return (((major) << 22) | ((minor) << 12) | (patch));
+}
+
+
+template <u32 index>
+u32 getDriverVersion(VendorID vendor, u32 version)
+{
+    if (vendor == VendorID::VendorID_NVIDIA)
+    {
+        return std::get<index>(std::make_tuple((u32)(version) >> 22, (((u32)(version) >> 14) & 0x3ff), 0));
+    }
+
+    return std::get<index>(std::make_tuple((u32)(version) >> 22, (((u32)(version) >> 12) & 0x3ff), ((u32)(version) & 0xfff)));
+}
+
 std::vector<const c8*> VulkanDeviceCaps::s_enableExtensions = {};
 
 bool VulkanDeviceCaps::checkInstanceExtension(const c8 * extensionName)
@@ -304,19 +326,6 @@ void VulkanDeviceCaps::fillCapabilitiesList(const DeviceInfo* info)
         }
     }
 
-    vendorID = VendorID(m_deviceProperties.vendorID);
-    LOG_INFO("VulkanDeviceCaps::initialize: API version: %u (%u.%u.%u)", m_deviceProperties.apiVersion, VK_VERSION_MAJOR(m_deviceProperties.apiVersion), VK_VERSION_MINOR(m_deviceProperties.apiVersion), VK_VERSION_PATCH(m_deviceProperties.apiVersion));
-    LOG_INFO("VulkanDeviceCaps::initialize: Driver version: %u", m_deviceProperties.driverVersion);
-    LOG_INFO("VulkanDeviceCaps::initialize: Vendor ID: %u", m_deviceProperties.vendorID);
-    LOG_INFO("VulkanDeviceCaps::initialize: Device ID: %u", m_deviceProperties.deviceID);
-    LOG_INFO("VulkanDeviceCaps::initialize: Device Name: %s", m_deviceProperties.deviceName);
-
-    LOG_INFO("VulkanDeviceCaps::initialize:  supportRenderpass2 is %s", supportRenderpass2 ? "supported" : "unsupported");
-    LOG_INFO("VulkanDeviceCaps::initialize:  enableSamplerMirrorClampToEdge is %s", enableSamplerMirrorClampToEdge ? "supported" : "unsupported");
-    LOG_INFO("VulkanDeviceCaps::initialize:  supportDepthAutoResolve is %s", supportDepthAutoResolve ? "supported" : "unsupported");
-    LOG_INFO("VulkanDeviceCaps::initialize:  supportDedicatedAllocation is %s", supportDedicatedAllocation ? "supported" : "unsupported");
-    LOG_INFO("VulkanDeviceCaps::initialize:  supportMultiview is %s", supportMultiview ? "supported" : "unsupported");
-
     VulkanWrapper::GetPhysicalDeviceMemoryProperties(info->_physicalDevice, &m_deviceMemoryProps);
     LOG_INFO("VulkanDeviceCaps Memory:");
     LOG_INFO("VulkanDeviceCaps::initialize:  memoryHeapCount is %d", m_deviceMemoryProps.memoryHeapCount);
@@ -329,6 +338,25 @@ void VulkanDeviceCaps::fillCapabilitiesList(const DeviceInfo* info)
     {
         LOG_INFO("VulkanDeviceCaps::initialize:    memoryType [heapIndex %u, propertyFlags %d]", m_deviceMemoryProps.memoryTypes[i].heapIndex, m_deviceMemoryProps.memoryTypes[i].propertyFlags);
     }
+
+    supportDeviceCoherentMemory = VulkanMemory::isSupportedMemoryType(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, true);
+    supportHostCoherentMemory = VulkanMemory::isSupportedMemoryType(VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, false);
+
+    supportDeviceCacheMemory = VulkanMemory::isSupportedMemoryType(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_CACHED_BIT, true);
+    supportHostCacheMemory = VulkanMemory::isSupportedMemoryType(VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_CACHED_BIT, false);
+
+    vendorID = VendorID(m_deviceProperties.vendorID);
+    LOG_INFO("VulkanDeviceCaps::initialize: API version: %u (%u.%u.%u)", m_deviceProperties.apiVersion, VK_VERSION_MAJOR(m_deviceProperties.apiVersion), VK_VERSION_MINOR(m_deviceProperties.apiVersion), VK_VERSION_PATCH(m_deviceProperties.apiVersion));
+    LOG_INFO("VulkanDeviceCaps::initialize: Driver version: %u (%u.%u.%u)", m_deviceProperties.driverVersion, getDriverVersion<0>(vendorID, m_deviceProperties.driverVersion), getDriverVersion<1>(vendorID, m_deviceProperties.driverVersion), getDriverVersion<2>(vendorID, m_deviceProperties.driverVersion));
+    LOG_INFO("VulkanDeviceCaps::initialize: Vendor ID: %u", m_deviceProperties.vendorID);
+    LOG_INFO("VulkanDeviceCaps::initialize: Device ID: %u", m_deviceProperties.deviceID);
+    LOG_INFO("VulkanDeviceCaps::initialize: Device Name: %s", m_deviceProperties.deviceName);
+
+    LOG_INFO("VulkanDeviceCaps::initialize:  supportRenderpass2 is %s", supportRenderpass2 ? "supported" : "unsupported");
+    LOG_INFO("VulkanDeviceCaps::initialize:  enableSamplerMirrorClampToEdge is %s", enableSamplerMirrorClampToEdge ? "supported" : "unsupported");
+    LOG_INFO("VulkanDeviceCaps::initialize:  supportDepthAutoResolve is %s", supportDepthAutoResolve ? "supported" : "unsupported");
+    LOG_INFO("VulkanDeviceCaps::initialize:  supportDedicatedAllocation is %s", supportDedicatedAllocation ? "supported" : "unsupported");
+    LOG_INFO("VulkanDeviceCaps::initialize:  supportMultiview is %s", supportMultiview ? "supported" : "unsupported");
 
 #if defined(PLATFORM_ANDROID)
 #   ifdef VK_QCOM_render_pass_transform
@@ -344,19 +372,13 @@ void VulkanDeviceCaps::initialize()
     maxDescriptorBindingIndex = k_maxDescriptorBindingIndex; // std::min(k_maxDescriptorBindingIndex, m_deviceProperties.limits.maxPerSetDescriptors);
     maxColorAttachments = std::min(k_maxColorAttachments, m_deviceProperties.limits.maxColorAttachments);
 
-    individuallyResetForCommandBuffers = true; //For PC
-
-    supportDeviceCoherentMemory = VulkanMemory::isSupportedMemoryType(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, true);
-    supportHostCoherentMemory = VulkanMemory::isSupportedMemoryType(VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, false);
-
-    supportDeviceCacheMemory = VulkanMemory::isSupportedMemoryType(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_CACHED_BIT, true);
-    supportHostCacheMemory = VulkanMemory::isSupportedMemoryType(VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_CACHED_BIT, false);
-
-    unifiedMemoryManager = false;
-
     ASSERT(maxColorAttachments <= m_deviceProperties.limits.maxFragmentOutputAttachments, "maxFragmentOutputAttachments less than maxColorAttachments");
     ASSERT(k_maxVertexInputAttributes <= m_deviceProperties.limits.maxVertexInputAttributes, "maxVertexInputAttributes less than k_maxVertexInputAttributes");
     ASSERT(k_maxVertexInputBindings <= m_deviceProperties.limits.maxVertexInputBindings, "maxVertexInputBindings less than k_maxVertexInputBindings");
+
+    individuallyResetForCommandBuffers = true; //For PC
+
+    unifiedMemoryManager = false;
 
     useGlobalDescriptorPool = true;
     useDynamicUniforms = true;
@@ -370,12 +392,7 @@ void VulkanDeviceCaps::initialize()
 
 #if defined(PLATFORM_ANDROID)
 #   ifdef VK_QCOM_render_pass_transform
-    auto makeAdrenoDriverVersion = [](u32 major, u32 minor, u32 patch) -> u32
-    {
-        return (((major) << 22) | ((minor) << 12) | (patch));
-    };
-
-    fixRenderPassTransformQCOMDriverIssue = (m_deviceProperties.driverVersion < makeAdrenoDriverVersion(512, 469, 0)) ? true : false;
+    fixRenderPassTransformQCOMDriverIssue = (m_deviceProperties.driverVersion < makeDriverVersion(vendorID, 512, 469, 0)) ? true : false;
 #   endif //VK_QCOM_render_pass_transform
 #endif
 }
