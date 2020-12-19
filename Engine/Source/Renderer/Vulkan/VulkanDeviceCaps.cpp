@@ -170,7 +170,7 @@ void VulkanDeviceCaps::fillCapabilitiesList(const DeviceInfo* info)
     ASSERT(info->_physicalDevice != VK_NULL_HANDLE, "PhysicalDevice is nullptr");
 
     //extetions
-    auto isEnableExtension = [](const c8* extension) -> bool
+    auto isEnabledExtension = [](const c8* extension) -> bool
     {
         for (auto& iter : s_enableExtensions)
         {
@@ -185,22 +185,22 @@ void VulkanDeviceCaps::fillCapabilitiesList(const DeviceInfo* info)
 
     debugUtilsObjectNameEnabled = VulkanDeviceCaps::checkInstanceExtension(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
 
-    ASSERT(isEnableExtension(VK_KHR_MAINTENANCE1_EXTENSION_NAME), "required VK_KHR_maintenance1 extension");
-    ASSERT(isEnableExtension(VK_KHR_MAINTENANCE2_EXTENSION_NAME), "required VK_KHR_maintenance2 extension");
-    supportRenderpass2 = isEnableExtension(VK_KHR_CREATE_RENDERPASS_2_EXTENSION_NAME);
-    enableSamplerMirrorClampToEdge = isEnableExtension(VK_KHR_SAMPLER_MIRROR_CLAMP_TO_EDGE_EXTENSION_NAME);
-    supportDepthAutoResolve = isEnableExtension(VK_KHR_DEPTH_STENCIL_RESOLVE_EXTENSION_NAME);
-    supportDedicatedAllocation = isEnableExtension(VK_KHR_DEDICATED_ALLOCATION_EXTENSION_NAME);
-    supportPipelineExecutableProperties = isEnableExtension(VK_KHR_PIPELINE_EXECUTABLE_PROPERTIES_EXTENSION_NAME);
+    ASSERT(isEnabledExtension(VK_KHR_MAINTENANCE1_EXTENSION_NAME), "required VK_KHR_maintenance1 extension");
+    ASSERT(isEnabledExtension(VK_KHR_MAINTENANCE2_EXTENSION_NAME), "required VK_KHR_maintenance2 extension");
+    supportRenderpass2 = isEnabledExtension(VK_KHR_CREATE_RENDERPASS_2_EXTENSION_NAME);
+    enableSamplerMirrorClampToEdge = isEnabledExtension(VK_KHR_SAMPLER_MIRROR_CLAMP_TO_EDGE_EXTENSION_NAME);
+    supportDepthAutoResolve = isEnabledExtension(VK_KHR_DEPTH_STENCIL_RESOLVE_EXTENSION_NAME);
+    supportDedicatedAllocation = isEnabledExtension(VK_KHR_DEDICATED_ALLOCATION_EXTENSION_NAME);
+    supportPipelineExecutableProperties = isEnabledExtension(VK_KHR_PIPELINE_EXECUTABLE_PROPERTIES_EXTENSION_NAME);
 
-    supportMultiview = isEnableExtension(VK_KHR_MULTIVIEW_EXTENSION_NAME);
+    supportMultiview = isEnabledExtension(VK_KHR_MULTIVIEW_EXTENSION_NAME);
 
     if (VulkanDeviceCaps::checkInstanceExtension(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME))
     {
+        //PhysicalDeviceFeatures2
         {
             void* vkExtensions = nullptr;
-
-            if (isEnableExtension(VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME))
+            if (isEnabledExtension(VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME))
             {
                 m_physicalDeviceDescriptorIndexingFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES_EXT;
                 m_physicalDeviceDescriptorIndexingFeatures.pNext = nullptr;
@@ -209,11 +209,19 @@ void VulkanDeviceCaps::fillCapabilitiesList(const DeviceInfo* info)
                 supportDescriptorIndexing = true;
             }
 
-            if (isEnableExtension(VK_EXT_CUSTOM_BORDER_COLOR_EXTENSION_NAME))
+            if (isEnabledExtension(VK_EXT_CUSTOM_BORDER_COLOR_EXTENSION_NAME))
             {
                 m_physicalDeviceCustomBorderColorFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_CUSTOM_BORDER_COLOR_FEATURES_EXT;
                 m_physicalDeviceCustomBorderColorFeatures.pNext = vkExtensions;
                 vkExtensions = &m_physicalDeviceCustomBorderColorFeatures;
+            }
+
+            VkPhysicalDevicePipelineExecutablePropertiesFeaturesKHR physicalDevicePipelineExecutablePropertiesFeatures = {};
+            if (isEnabledExtension(VK_KHR_PIPELINE_EXECUTABLE_PROPERTIES_EXTENSION_NAME))
+            {
+                physicalDevicePipelineExecutablePropertiesFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PIPELINE_EXECUTABLE_PROPERTIES_FEATURES_KHR;
+                physicalDevicePipelineExecutablePropertiesFeatures.pNext = nullptr;
+                vkExtensions = &physicalDevicePipelineExecutablePropertiesFeatures;
             }
 
             VkPhysicalDeviceFeatures2 physicalDeviceFeatures2 = {};
@@ -225,13 +233,16 @@ void VulkanDeviceCaps::fillCapabilitiesList(const DeviceInfo* info)
 
             supportDescriptorIndexing = m_physicalDeviceDescriptorIndexingFeatures.descriptorBindingUpdateUnusedWhilePending;
             supportSamplerBorderColor = m_physicalDeviceCustomBorderColorFeatures.customBorderColors && m_physicalDeviceCustomBorderColorFeatures.customBorderColorWithoutFormat;
+
+            pipelineExecutablePropertiesEnabled = physicalDevicePipelineExecutablePropertiesFeatures.pipelineExecutableInfo;
         }
 
+        //PhysicalDeviceProperties2
         {
             void* vkExtensions = nullptr;
 
             VkPhysicalDeviceDescriptorIndexingPropertiesEXT physicalDeviceDescriptorIndexingProperties = {};
-            if (isEnableExtension(VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME))
+            if (isEnabledExtension(VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME))
             {
                 physicalDeviceDescriptorIndexingProperties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_PROPERTIES_EXT;
                 physicalDeviceDescriptorIndexingProperties.pNext = nullptr;
@@ -240,7 +251,7 @@ void VulkanDeviceCaps::fillCapabilitiesList(const DeviceInfo* info)
 
 #if VULKAN_DEBUG
             VkPhysicalDeviceDriverProperties physicalDeviceDriverProperties = {};
-            if (isEnableExtension(VK_KHR_DRIVER_PROPERTIES_EXTENSION_NAME))
+            if (isEnabledExtension(VK_KHR_DRIVER_PROPERTIES_EXTENSION_NAME))
             {
                 physicalDeviceDriverProperties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ID_PROPERTIES;
                 physicalDeviceDriverProperties.pNext = vkExtensions;
@@ -248,15 +259,13 @@ void VulkanDeviceCaps::fillCapabilitiesList(const DeviceInfo* info)
             }
 #endif //VULKAN_DEBUG
 
-#ifdef VK_KHR_depth_stencil_resolve
             VkPhysicalDeviceDepthStencilResolvePropertiesKHR physicalDeviceDepthStencilResolveProperties = {};
-            if (isEnableExtension(VK_KHR_DEPTH_STENCIL_RESOLVE_EXTENSION_NAME))
+            if (isEnabledExtension(VK_KHR_DEPTH_STENCIL_RESOLVE_EXTENSION_NAME))
             {
                 physicalDeviceDepthStencilResolveProperties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEPTH_STENCIL_RESOLVE_PROPERTIES_KHR;
                 physicalDeviceDepthStencilResolveProperties.pNext = vkExtensions;
                 vkExtensions = &physicalDeviceDepthStencilResolveProperties;
             }
-#endif // VK_KHR_depth_stencil_resolve
 
             VkPhysicalDeviceProperties2 physicalDeviceProperties = {};
             physicalDeviceProperties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
@@ -266,7 +275,7 @@ void VulkanDeviceCaps::fillCapabilitiesList(const DeviceInfo* info)
             memcpy(&m_deviceProperties, &physicalDeviceProperties.properties, sizeof(VkPhysicalDeviceProperties));
 
 #if VULKAN_DEBUG
-            if (isEnableExtension(VK_KHR_DRIVER_PROPERTIES_EXTENSION_NAME) && 0)
+            if (isEnabledExtension(VK_KHR_DRIVER_PROPERTIES_EXTENSION_NAME) && 0)
             {
                 LOG_INFO("VulkanDeviceCaps::initialize: Device Driver Properties:");
                 LOG_INFO("VulkanDeviceCaps::initialize: DriverName : %s", physicalDeviceDriverProperties.driverName);
@@ -275,9 +284,7 @@ void VulkanDeviceCaps::fillCapabilitiesList(const DeviceInfo* info)
             }
 #endif //VULKAN_DEBUG
 
-#ifdef VK_KHR_depth_stencil_resolve
             supportDepthAutoResolve = supportRenderpass2 && physicalDeviceDepthStencilResolveProperties.supportedDepthResolveModes != VK_RESOLVE_MODE_NONE_KHR;
-#endif // VK_KHR_depth_stencil_resolve
         }
     }
     else
@@ -360,7 +367,7 @@ void VulkanDeviceCaps::fillCapabilitiesList(const DeviceInfo* info)
 
 #if defined(PLATFORM_ANDROID)
 #   ifdef VK_QCOM_render_pass_transform
-    renderpassTransformQCOM = isEnableExtension(VK_QCOM_RENDER_PASS_TRANSFORM_EXTENSION_NAME);
+    renderpassTransformQCOM = isEnabledExtension(VK_QCOM_RENDER_PASS_TRANSFORM_EXTENSION_NAME);
     LOG_INFO("VulkanDeviceCaps::initialize renderpassTransformQCOM is %u", renderpassTransformQCOM);
 #   endif //VK_QCOM_render_pass_transform
 #endif

@@ -24,13 +24,13 @@ namespace vk
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /*
-        Disable : 0,
-        Error : 1,
-        Warning : 2,
-        Info : 3: 
-        Debug : 4
+        Disable : 0
+        Error   : 1
+        Warning : 2
+        Info    : 3
+        Debug   : 4
     */
-    constexpr u16 k_DebugLevel = 4U;
+    constexpr u16 k_debugLevel = 4U;
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -57,7 +57,7 @@ namespace vk
         VulkanDebugUtils() = default;
         VulkanDebugUtils(const VulkanDebugUtils&) = delete;
 
-        static const u16 k_severityDebugLevel = k_DebugLevel;
+        static const u16 k_severityDebugLevel = k_debugLevel;
 
         static bool createDebugUtilsMessenger(VkInstance instance, VkDebugUtilsMessageSeverityFlagsEXT severityFlag, VkDebugUtilsMessageTypeFlagsEXT flags, PFN_vkDebugUtilsMessengerCallbackEXT callback, void* userData = nullptr);
         static void destroyDebugUtilsMessenger(VkInstance instance);
@@ -77,7 +77,7 @@ namespace vk
     {
     public:
 
-        static const u16 k_debugReportLevel = k_DebugLevel;
+        static const u16 k_debugReportLevel = k_debugLevel;
 
         VulkanDebugReport() = default;
         VulkanDebugReport(const VulkanDebugReport&) = delete;

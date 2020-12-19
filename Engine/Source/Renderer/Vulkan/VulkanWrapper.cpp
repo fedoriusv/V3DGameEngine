@@ -756,78 +756,78 @@ VkResult VulkanWrapper::EnumerateInstanceVersion(uint32_t * pApiVersion) noexcep
 
 VkResult VulkanWrapper::BindBufferMemory2(VkDevice device, uint32_t bindInfoCount, const VkBindBufferMemoryInfo * pBindInfos) noexcept
 {
-#if VULKAN_VERSION_1_0
+#if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_1)
 #   define vkBindBufferMemory2 vkBindBufferMemory2KHR
-#endif //VULKAN_VERSION_1_0
+#endif
     VkResult result = vkBindBufferMemory2(device, bindInfoCount, pBindInfos);
-#if VULKAN_VERSION_1_0
+#if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_1)
 #   undef vkBindBufferMemory2
-#endif //VULKAN_VERSION_1_0
+#endif
     return result;
 }
 
 VkResult VulkanWrapper::BindImageMemory2(VkDevice device, uint32_t bindInfoCount, const VkBindImageMemoryInfo * pBindInfos) noexcept
 {
-#if VULKAN_VERSION_1_0
+#if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_1)
 #   define vkBindImageMemory2 vkBindImageMemory2KHR
-#endif //VULKAN_VERSION_1_0
+#endif
     VkResult result = vkBindImageMemory2(device, bindInfoCount, pBindInfos);
-#if VULKAN_VERSION_1_0
+#if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_1)
 #   undef vkBindImageMemory2
-#endif //VULKAN_VERSION_1_0
+#endif
     return result;
 }
 
 void VulkanWrapper::GetDeviceGroupPeerMemoryFeatures(VkDevice device, uint32_t heapIndex, uint32_t localDeviceIndex, uint32_t remoteDeviceIndex, VkPeerMemoryFeatureFlags * pPeerMemoryFeatures) noexcept
 {
-#if VULKAN_VERSION_1_0
+#if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_1)
 #   define vkGetDeviceGroupPeerMemoryFeatures vkGetDeviceGroupPeerMemoryFeaturesKHR
-#endif //VULKAN_VERSION_1_0
+#endif
     vkGetDeviceGroupPeerMemoryFeatures(device, heapIndex, localDeviceIndex, remoteDeviceIndex, pPeerMemoryFeatures);
-#if VULKAN_VERSION_1_0
+#if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_1)
 #   undef vkGetDeviceGroupPeerMemoryFeatures
-#endif //VULKAN_VERSION_1_0
+#endif
 }
 
 void VulkanWrapper::CmdSetDeviceMask(VkCommandBuffer commandBuffer, uint32_t deviceMask) noexcept
 {
-#if VULKAN_VERSION_1_0
+#if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_1)
 #   define vkCmdSetDeviceMask vkCmdSetDeviceMaskKHR
-#endif //VULKAN_VERSION_1_0
+#endif
     vkCmdSetDeviceMask(commandBuffer, deviceMask);
-#if VULKAN_VERSION_1_0
+#if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_1)
 #   undef vkCmdSetDeviceMask
-#endif //VULKAN_VERSION_1_0
+#endif
 }
 
 void VulkanWrapper::CmdDispatchBase(VkCommandBuffer commandBuffer, uint32_t baseGroupX, uint32_t baseGroupY, uint32_t baseGroupZ, uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ) noexcept
 {
-#if VULKAN_VERSION_1_0
+#if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_1)
 #   define vkCmdDispatchBase vkCmdDispatchBaseKHR
-#endif //VULKAN_VERSION_1_0
+#endif
     vkCmdDispatchBase(commandBuffer, baseGroupX, baseGroupY, baseGroupZ, groupCountX, groupCountY, groupCountZ);
-#if VULKAN_VERSION_1_0
+#if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_1)
 #   undef vkCmdDispatchBase
-#endif //VULKAN_VERSION_1_0
+#endif
 }
 
 VkResult VulkanWrapper::EnumeratePhysicalDeviceGroups(VkInstance instance, uint32_t* pPhysicalDeviceGroupCount, VkPhysicalDeviceGroupProperties* pPhysicalDeviceGroupProperties) noexcept
 {
-#if VULKAN_VERSION_1_0
+#if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_1)
 #   define vkEnumeratePhysicalDeviceGroups vkEnumeratePhysicalDeviceGroupsKHR
-#endif //VULKAN_VERSION_1_0
+#endif
     VkResult result = vkEnumeratePhysicalDeviceGroups(instance, pPhysicalDeviceGroupCount, pPhysicalDeviceGroupProperties);
-#if VULKAN_VERSION_1_0
+#if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_1)
 #   undef vkEnumeratePhysicalDeviceGroups
-#endif //VULKAN_VERSION_1_0
+#endif
     return result;
 }
 
 void VulkanWrapper::GetImageMemoryRequirements2(VkDevice device, const VkImageMemoryRequirementsInfo2 * pInfo, VkMemoryRequirements2 * pMemoryRequirements) noexcept
 {
-#if VULKAN_VERSION_1_0
+#if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_1)
 #   define vkGetImageMemoryRequirements2 vkGetImageMemoryRequirements2KHR
-#endif //VULKAN_VERSION_1_0
+#endif
 
 #if VULKAN_DUMP
     VulkanDump::getInstance()->dumpPreGetImageMemoryRequirements(device, pInfo->image);
@@ -837,16 +837,16 @@ void VulkanWrapper::GetImageMemoryRequirements2(VkDevice device, const VkImageMe
     vkGetImageMemoryRequirements2(device, pInfo, pMemoryRequirements);
 #endif //VULKAN_DUMP
 
-#if VULKAN_VERSION_1_0
+#if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_1)
 #   undef vkGetImageMemoryRequirements2
-#endif //VULKAN_VERSION_1_0
+#endif
 }
 
 void VulkanWrapper::GetBufferMemoryRequirements2(VkDevice device, const VkBufferMemoryRequirementsInfo2 * pInfo, VkMemoryRequirements2 * pMemoryRequirements) noexcept
 {
-#if VULKAN_VERSION_1_0
+#if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_1)
 #   define vkGetBufferMemoryRequirements2 vkGetBufferMemoryRequirements2KHR
-#endif //VULKAN_VERSION_1_0
+#endif
 
 #if VULKAN_DUMP
     VulkanDump::getInstance()->dumpPreGetBufferMemoryRequirements(device, pInfo->buffer);
@@ -856,109 +856,109 @@ void VulkanWrapper::GetBufferMemoryRequirements2(VkDevice device, const VkBuffer
     vkGetBufferMemoryRequirements2(device, pInfo, pMemoryRequirements);
 #endif //VULKAN_DUMP
 
-#if VULKAN_VERSION_1_0
+#if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_1)
 #   undef vkGetBufferMemoryRequirements2
-#endif //VULKAN_VERSION_1_0
+#endif
 }
 
 void VulkanWrapper::GetImageSparseMemoryRequirements2(VkDevice device, const VkImageSparseMemoryRequirementsInfo2 * pInfo, uint32_t * pSparseMemoryRequirementCount, VkSparseImageMemoryRequirements2 * pSparseMemoryRequirements) noexcept
 {
-#if VULKAN_VERSION_1_0
+#if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_1)
 #   define vkGetImageSparseMemoryRequirements2 vkGetImageSparseMemoryRequirements2KHR
-#endif //VULKAN_VERSION_1_0
+#endif
     vkGetImageSparseMemoryRequirements2(device, pInfo, pSparseMemoryRequirementCount, pSparseMemoryRequirements);
-#if VULKAN_VERSION_1_0
+#if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_1)
 #   undef vkGetImageSparseMemoryRequirements2
-#endif //VULKAN_VERSION_1_0
+#endif
 }
 
 void VulkanWrapper::GetPhysicalDeviceFeatures2(VkPhysicalDevice physicalDevice, VkPhysicalDeviceFeatures2 * pFeatures) noexcept
 {
-#if VULKAN_VERSION_1_0
+#if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_1)
 #   define vkGetPhysicalDeviceFeatures2 vkGetPhysicalDeviceFeatures2KHR
-#endif //VULKAN_VERSION_1_0
+#endif
     vkGetPhysicalDeviceFeatures2(physicalDevice, pFeatures);
-#if VULKAN_VERSION_1_0
+#if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_1)
 #   undef vkGetPhysicalDeviceFeatures2
-#endif //VULKAN_VERSION_1_0
+#endif
 }
 
 void VulkanWrapper::GetPhysicalDeviceProperties2(VkPhysicalDevice physicalDevice, VkPhysicalDeviceProperties2 * pProperties) noexcept
 {
-#if VULKAN_VERSION_1_0
+#if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_1)
 #   define vkGetPhysicalDeviceProperties2 vkGetPhysicalDeviceProperties2KHR
-#endif //VULKAN_VERSION_1_0
+#endif
     vkGetPhysicalDeviceProperties2(physicalDevice, pProperties);
-#if VULKAN_VERSION_1_0
+#if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_1)
 #   undef vkGetPhysicalDeviceProperties2
-#endif //VULKAN_VERSION_1_0
+#endif
 }
 
 void VulkanWrapper::GetPhysicalDeviceFormatProperties2(VkPhysicalDevice physicalDevice, VkFormat format, VkFormatProperties2 * pFormatProperties) noexcept
 {
-#if VULKAN_VERSION_1_0
+#if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_1)
 #   define vkGetPhysicalDeviceFormatProperties2 vkGetPhysicalDeviceFormatProperties2KHR
-#endif //VULKAN_VERSION_1_0
+#endif
     vkGetPhysicalDeviceFormatProperties2(physicalDevice, format, pFormatProperties);
-#if VULKAN_VERSION_1_0
+#if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_1)
 #   undef vkGetPhysicalDeviceFormatProperties2
-#endif //VULKAN_VERSION_1_0
+#endif
 }
 
 VkResult VulkanWrapper::GetPhysicalDeviceImageFormatProperties2(VkPhysicalDevice physicalDevice, const VkPhysicalDeviceImageFormatInfo2 * pImageFormatInfo, VkImageFormatProperties2 * pImageFormatProperties) noexcept
 {
-#if VULKAN_VERSION_1_0
+#if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_1)
 #   define vkGetPhysicalDeviceImageFormatProperties2 vkGetPhysicalDeviceImageFormatProperties2KHR
-#endif //VULKAN_VERSION_1_0
+#endif
     VkResult result = vkGetPhysicalDeviceImageFormatProperties2(physicalDevice, pImageFormatInfo, pImageFormatProperties);
-#if VULKAN_VERSION_1_0
+#if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_1)
 #   undef vkGetPhysicalDeviceImageFormatProperties2
-#endif //VULKAN_VERSION_1_0
+#endif
     return result;
 }
 
 void VulkanWrapper::GetPhysicalDeviceQueueFamilyProperties2(VkPhysicalDevice physicalDevice, uint32_t * pQueueFamilyPropertyCount, VkQueueFamilyProperties2 * pQueueFamilyProperties) noexcept
 {
-#if VULKAN_VERSION_1_0
+#if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_1)
 #   define vkGetPhysicalDeviceQueueFamilyProperties2 vkGetPhysicalDeviceQueueFamilyProperties2KHR
-#endif //VULKAN_VERSION_1_0
+#endif
     vkGetPhysicalDeviceQueueFamilyProperties2(physicalDevice, pQueueFamilyPropertyCount, pQueueFamilyProperties);
-#if VULKAN_VERSION_1_0
+#if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_1)
 #   undef vkGetPhysicalDeviceQueueFamilyProperties2
-#endif //VULKAN_VERSION_1_0
+#endif
 }
 
 void VulkanWrapper::GetPhysicalDeviceMemoryProperties2(VkPhysicalDevice physicalDevice, VkPhysicalDeviceMemoryProperties2 * pMemoryProperties) noexcept
 {
-#if VULKAN_VERSION_1_0
+#if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_1)
 #   define vkGetPhysicalDeviceMemoryProperties2 vkGetPhysicalDeviceMemoryProperties2KHR
-#endif //VULKAN_VERSION_1_0
+#endif
     vkGetPhysicalDeviceMemoryProperties2(physicalDevice, pMemoryProperties);
-#if VULKAN_VERSION_1_0
+#if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_1)
 #   undef vkGetPhysicalDeviceMemoryProperties2
-#endif //VULKAN_VERSION_1_0
+#endif
 }
 
 void VulkanWrapper::GetPhysicalDeviceSparseImageFormatProperties2(VkPhysicalDevice physicalDevice, const VkPhysicalDeviceSparseImageFormatInfo2 * pFormatInfo, uint32_t * pPropertyCount, VkSparseImageFormatProperties2 * pProperties) noexcept
 {
-#if VULKAN_VERSION_1_0
+#if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_1)
 #   define vkGetPhysicalDeviceSparseImageFormatProperties2 vkGetPhysicalDeviceSparseImageFormatProperties2KHR
-#endif //VULKAN_VERSION_1_0
+#endif
     vkGetPhysicalDeviceSparseImageFormatProperties2(physicalDevice, pFormatInfo, pPropertyCount, pProperties);
-#if VULKAN_VERSION_1_0
+#if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_1)
 #   undef vkGetPhysicalDeviceSparseImageFormatProperties2
-#endif //VULKAN_VERSION_1_0
+#endif
 }
 
 void VulkanWrapper::TrimCommandPool(VkDevice device, VkCommandPool commandPool, VkCommandPoolTrimFlags flags) noexcept
 {
-#if VULKAN_VERSION_1_0
+#if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_1)
 #   define vkTrimCommandPool vkTrimCommandPoolKHR
-#endif //VULKAN_VERSION_1_0
+#endif
     vkTrimCommandPool(device, commandPool, flags);
-#if VULKAN_VERSION_1_0
+#if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_1)
 #   undef vkTrimCommandPool
-#endif //VULKAN_VERSION_1_0
+#endif
 }
 
 void VulkanWrapper::GetDeviceQueue2(VkDevice device, const VkDeviceQueueInfo2 * pQueueInfo, VkQueue * pQueue) noexcept
@@ -968,103 +968,241 @@ void VulkanWrapper::GetDeviceQueue2(VkDevice device, const VkDeviceQueueInfo2 * 
 
 VkResult VulkanWrapper::CreateSamplerYcbcrConversion(VkDevice device, const VkSamplerYcbcrConversionCreateInfo * pCreateInfo, const VkAllocationCallbacks * pAllocator, VkSamplerYcbcrConversion * pYcbcrConversion) noexcept
 {
-#if VULKAN_VERSION_1_0
+#if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_1)
 #   define vkCreateSamplerYcbcrConversion vkCreateSamplerYcbcrConversionKHR
-#endif //VULKAN_VERSION_1_0
+#endif
     return vkCreateSamplerYcbcrConversion(device, pCreateInfo, pAllocator, pYcbcrConversion);
-#if VULKAN_VERSION_1_0
+#if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_1)
 #   undef vkCreateSamplerYcbcrConversion
-#endif //VULKAN_VERSION_1_0
+#endif
 }
 
 void VulkanWrapper::DestroySamplerYcbcrConversion(VkDevice device, VkSamplerYcbcrConversion ycbcrConversion, const VkAllocationCallbacks * pAllocator) noexcept
 {
-#if VULKAN_VERSION_1_0
+#if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_1)
 #   define vkDestroySamplerYcbcrConversion vkDestroySamplerYcbcrConversionKHR
-#endif //VULKAN_VERSION_1_0
+#endif
     vkDestroySamplerYcbcrConversion(device, ycbcrConversion, pAllocator);
-#if VULKAN_VERSION_1_0
+#if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_1)
 #   undef vkDestroySamplerYcbcrConversion
-#endif //VULKAN_VERSION_1_0
+#endif
 }
 
 VkResult VulkanWrapper::CreateDescriptorUpdateTemplate(VkDevice device, const VkDescriptorUpdateTemplateCreateInfo * pCreateInfo, const VkAllocationCallbacks * pAllocator, VkDescriptorUpdateTemplate * pDescriptorUpdateTemplate) noexcept
 {
-#if VULKAN_VERSION_1_0
+#if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_1)
 #   define vkCreateDescriptorUpdateTemplate vkCreateDescriptorUpdateTemplateKHR
-#endif //VULKAN_VERSION_1_0
+#endif
     VkResult result = vkCreateDescriptorUpdateTemplate(device, pCreateInfo, pAllocator, pDescriptorUpdateTemplate);
-#if VULKAN_VERSION_1_0
+#if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_1)
 #   undef vkCreateDescriptorUpdateTemplate
-#endif //VULKAN_VERSION_1_0
+#endif
     return result;
 }
 
 void VulkanWrapper::DestroyDescriptorUpdateTemplate(VkDevice device, VkDescriptorUpdateTemplate descriptorUpdateTemplate, const VkAllocationCallbacks * pAllocator) noexcept
 {
-#if VULKAN_VERSION_1_0
+#if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_1)
 #   define vkDestroyDescriptorUpdateTemplate vkDestroyDescriptorUpdateTemplateKHR
-#endif //VULKAN_VERSION_1_0
+#endif
     vkDestroyDescriptorUpdateTemplate(device, descriptorUpdateTemplate, pAllocator);
-#if VULKAN_VERSION_1_0
+#if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_1)
 #   undef vkDestroyDescriptorUpdateTemplate
-#endif //VULKAN_VERSION_1_0
+#endif
 }
 
 void VulkanWrapper::UpdateDescriptorSetWithTemplate(VkDevice device, VkDescriptorSet descriptorSet, VkDescriptorUpdateTemplate descriptorUpdateTemplate, const void * pData) noexcept
 {
-#if VULKAN_VERSION_1_0
+#if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_1)
 #   define vkUpdateDescriptorSetWithTemplate vkUpdateDescriptorSetWithTemplateKHR
-#endif //VULKAN_VERSION_1_0
+#endif
     vkUpdateDescriptorSetWithTemplate(device, descriptorSet, descriptorUpdateTemplate, pData);
-#if VULKAN_VERSION_1_0
+#if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_1)
 #   undef vkUpdateDescriptorSetWithTemplate
-#endif //VULKAN_VERSION_1_0
+#endif
 }
 
 void VulkanWrapper::GetPhysicalDeviceExternalBufferProperties(VkPhysicalDevice physicalDevice, const VkPhysicalDeviceExternalBufferInfo * pExternalBufferInfo, VkExternalBufferProperties * pExternalBufferProperties) noexcept
 {
-#if VULKAN_VERSION_1_0
+#if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_1)
 #   define vkGetPhysicalDeviceExternalBufferProperties vkGetPhysicalDeviceExternalBufferPropertiesKHR
-#endif //VULKAN_VERSION_1_0
+#endif
     vkGetPhysicalDeviceExternalBufferProperties(physicalDevice, pExternalBufferInfo, pExternalBufferProperties);
-#if VULKAN_VERSION_1_0
+#if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_1)
 #   undef vkGetPhysicalDeviceExternalBufferProperties
-#endif //VULKAN_VERSION_1_0
+#endif
 }
 
 void VulkanWrapper::GetPhysicalDeviceExternalFenceProperties(VkPhysicalDevice physicalDevice, const VkPhysicalDeviceExternalFenceInfo * pExternalFenceInfo, VkExternalFenceProperties * pExternalFenceProperties) noexcept
 {
-#if VULKAN_VERSION_1_0
+#if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_1)
 #   define vkGetPhysicalDeviceExternalFenceProperties vkGetPhysicalDeviceExternalFencePropertiesKHR
-#endif //VULKAN_VERSION_1_0
+#endif
     vkGetPhysicalDeviceExternalFenceProperties(physicalDevice, pExternalFenceInfo, pExternalFenceProperties);
-#if VULKAN_VERSION_1_0
+#if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_1)
 #   undef vkGetPhysicalDeviceExternalFenceProperties
-#endif //VULKAN_VERSION_1_0
+#endif
 }
 
 void VulkanWrapper::GetPhysicalDeviceExternalSemaphoreProperties(VkPhysicalDevice physicalDevice, const VkPhysicalDeviceExternalSemaphoreInfo * pExternalSemaphoreInfo, VkExternalSemaphoreProperties * pExternalSemaphoreProperties) noexcept
 {
-#if VULKAN_VERSION_1_0
+#if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_1)
 #   define vkGetPhysicalDeviceExternalSemaphoreProperties vkGetPhysicalDeviceExternalSemaphorePropertiesKHR
-#endif //VULKAN_VERSION_1_0
+#endif
     vkGetPhysicalDeviceExternalSemaphoreProperties(physicalDevice, pExternalSemaphoreInfo, pExternalSemaphoreProperties);
-#if VULKAN_VERSION_1_0
+#if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_1)
 #   undef vkGetPhysicalDeviceExternalSemaphoreProperties
-#endif //VULKAN_VERSION_1_0
+#endif
 }
 
 void VulkanWrapper::GetDescriptorSetLayoutSupport(VkDevice device, const VkDescriptorSetLayoutCreateInfo * pCreateInfo, VkDescriptorSetLayoutSupport * pSupport) noexcept
 {
-#if VULKAN_VERSION_1_0
+#if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_1)
 #   define vkGetDescriptorSetLayoutSupport vkGetDescriptorSetLayoutSupportKHR
-#endif //VULKAN_VERSION_1_0
+#endif
     vkGetDescriptorSetLayoutSupport(device, pCreateInfo, pSupport);
-#if VULKAN_VERSION_1_0
+#if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_1)
 #   undef vkGetDescriptorSetLayoutSupport
-#endif //VULKAN_VERSION_1_0
+#endif
 }
+
+void VulkanWrapper::CmdDrawIndirectCount(VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset, VkBuffer countBuffer, VkDeviceSize countBufferOffset, uint32_t maxDrawCount, uint32_t stride) noexcept
+{
+#if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_2)
+#   define vkCmdDrawIndirectCount vkCmdDrawIndirectCountKHR
+#endif
+    vkCmdDrawIndirectCount(commandBuffer, buffer, offset, countBuffer, countBufferOffset, maxDrawCount, stride);
+#if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_2)
+#   undef vkCmdDrawIndirectCount
+#endif
+}
+
+void VulkanWrapper::CmdDrawIndexedIndirectCount(VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset, VkBuffer countBuffer, VkDeviceSize countBufferOffset, uint32_t maxDrawCount, uint32_t stride) noexcept
+{
+#if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_2)
+#   define vkCmdDrawIndexedIndirectCount vkCmdDrawIndexedIndirectCountKHR
+#endif
+    vkCmdDrawIndexedIndirectCount(commandBuffer, buffer, offset, countBuffer, countBufferOffset, maxDrawCount, stride);
+#if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_2)
+#   undef vkCmdDrawIndexedIndirectCount
+#endif
+}
+
+VkResult VulkanWrapper::CreateRenderPass2(VkDevice device, const VkRenderPassCreateInfo2* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkRenderPass* pRenderPass) noexcept
+{
+#if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_2)
+#   define vkCreateRenderPass2 vkCreateRenderPass2KHR
+#endif
+    return vkCreateRenderPass2(device, pCreateInfo, pAllocator, pRenderPass);
+#if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_2)
+#   undef vkCreateRenderPass2
+#endif
+}
+
+void VulkanWrapper::CmdBeginRenderPass2(VkCommandBuffer commandBuffer, const VkRenderPassBeginInfo* pRenderPassBegin, const VkSubpassBeginInfo* pSubpassBeginInfo) noexcept
+{
+#if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_2)
+#   define vkCmdBeginRenderPass2 vkCmdBeginRenderPass2KHR
+#endif
+    vkCmdBeginRenderPass2(commandBuffer, pRenderPassBegin, pSubpassBeginInfo);
+#if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_2)
+#   undef vkCmdBeginRenderPass2
+#endif
+}
+
+void VulkanWrapper::CmdNextSubpass2(VkCommandBuffer commandBuffer, const VkSubpassBeginInfo* pSubpassBeginInfo, const VkSubpassEndInfo* pSubpassEndInfo) noexcept
+{
+#if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_2)
+#   define vkCmdNextSubpass2 vkCmdNextSubpass2KHR
+#endif
+    vkCmdNextSubpass2(commandBuffer, pSubpassBeginInfo, pSubpassEndInfo);
+#if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_2)
+#   undef vkCmdNextSubpass2
+#endif
+}
+
+void VulkanWrapper::CmdEndRenderPass2(VkCommandBuffer commandBuffer, const VkSubpassEndInfo* pSubpassEndInfo) noexcept
+{
+#if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_2)
+#   define vkCmdEndRenderPass2 vkCmdEndRenderPass2KHR
+#endif
+    vkCmdEndRenderPass2(commandBuffer, pSubpassEndInfo);
+#if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_2)
+#   undef vkCmdEndRenderPass2
+#endif
+}
+
+void VulkanWrapper::ResetQueryPool(VkDevice device, VkQueryPool queryPool, uint32_t firstQuery, uint32_t queryCount) noexcept
+{
+    vkResetQueryPool(device, queryPool, firstQuery, queryCount);
+}
+
+VkResult VulkanWrapper::GetSemaphoreCounterValue(VkDevice device, VkSemaphore semaphore, uint64_t* pValue) noexcept
+{
+#if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_2)
+#   define vkGetSemaphoreCounterValue vkGetSemaphoreCounterValueKHR
+#endif
+    return vkGetSemaphoreCounterValue(device, semaphore, pValue);
+#if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_2)
+#   undef vkGetSemaphoreCounterValue
+#endif
+}
+
+VkResult VulkanWrapper::WaitSemaphores(VkDevice device, const VkSemaphoreWaitInfo* pWaitInfo, uint64_t timeout) noexcept
+{
+#if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_2)
+#   define vkWaitSemaphores vkWaitSemaphoresKHR
+#endif
+    return vkWaitSemaphores(device, pWaitInfo, timeout);
+#if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_2)
+#   undef vkWaitSemaphores
+#endif
+}
+
+VkResult VulkanWrapper::SignalSemaphore(VkDevice device, const VkSemaphoreSignalInfo* pSignalInfo) noexcept
+{
+#if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_2)
+#   define vkSignalSemaphore vkSignalSemaphoreKHR
+#endif
+    return vkSignalSemaphore(device, pSignalInfo);
+#if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_2)
+#   undef vkSignalSemaphore
+#endif
+}
+
+VkDeviceAddress VulkanWrapper::GetBufferDeviceAddress(VkDevice device, const VkBufferDeviceAddressInfo* pInfo) noexcept
+{
+#if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_2)
+#   define vkGetBufferDeviceAddress vkGetBufferDeviceAddressKHR
+#endif
+    return vkGetBufferDeviceAddress(device, pInfo);
+#if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_2)
+#   undef vkGetBufferDeviceAddress
+#endif
+}
+
+uint64_t VulkanWrapper::GetBufferOpaqueCaptureAddress(VkDevice device, const VkBufferDeviceAddressInfo* pInfo) noexcept
+{
+#if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_2)
+#   define vkGetBufferOpaqueCaptureAddress vkGetBufferOpaqueCaptureAddressKHR
+#endif
+    return vkGetBufferOpaqueCaptureAddress(device, pInfo);
+#if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_2)
+#   undef vkGetBufferOpaqueCaptureAddress
+#endif
+}
+
+uint64_t VulkanWrapper::GetDeviceMemoryOpaqueCaptureAddress(VkDevice device, const VkDeviceMemoryOpaqueCaptureAddressInfo* pInfo) noexcept
+{
+#if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_2)
+#   define vkGetDeviceMemoryOpaqueCaptureAddress vkGetDeviceMemoryOpaqueCaptureAddressKHR
+#endif
+    return vkGetDeviceMemoryOpaqueCaptureAddress(device, pInfo);
+#if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_2)
+#   undef vkGetDeviceMemoryOpaqueCaptureAddress
+#endif
+}
+
 
 #ifdef VK_KHR_surface
 void VulkanWrapper::DestroySurface(VkInstance instance, VkSurfaceKHR surface, const VkAllocationCallbacks * pAllocator) noexcept
@@ -1232,27 +1370,22 @@ void VulkanWrapper::SubmitDebugUtilsMessage(VkInstance instance, VkDebugUtilsMes
 }
 #endif //VK_EXT_debug_utils
 
-#ifdef VK_KHR_create_renderpass2
-VkResult VulkanWrapper::CreateRenderPass2(VkDevice device, const VkRenderPassCreateInfo2KHR * pCreateInfo, const VkAllocationCallbacks * pAllocator, VkRenderPass * pRenderPass) noexcept
+#ifdef VK_KHR_pipeline_executable_properties
+VkResult VulkanWrapper::GetPipelineExecutableProperties(VkDevice device, const VkPipelineInfoKHR* pPipelineInfo, uint32_t* pExecutableCount, VkPipelineExecutablePropertiesKHR* pProperties) noexcept
 {
-    return vkCreateRenderPass2KHR(device, pCreateInfo, pAllocator, pRenderPass);
+    return vkGetPipelineExecutablePropertiesKHR(device, pPipelineInfo, pExecutableCount, pProperties);
 }
 
-void VulkanWrapper::CmdBeginRenderPass2(VkCommandBuffer commandBuffer, const VkRenderPassBeginInfo * pRenderPassBegin, const VkSubpassBeginInfoKHR * pSubpassBeginInfo) noexcept
+VkResult VulkanWrapper::GetPipelineExecutableStatistics(VkDevice device, const VkPipelineExecutableInfoKHR* pExecutableInfo, uint32_t* pStatisticCount, VkPipelineExecutableStatisticKHR* pStatistics) noexcept
 {
-    vkCmdBeginRenderPass2KHR(commandBuffer, pRenderPassBegin, pSubpassBeginInfo);
+    return vkGetPipelineExecutableStatisticsKHR(device, pExecutableInfo, pStatisticCount, pStatistics);
 }
 
-void VulkanWrapper::CmdNextSubpass2(VkCommandBuffer commandBuffer, const VkSubpassBeginInfoKHR * pSubpassBeginInfo, const VkSubpassEndInfoKHR * pSubpassEndInfo) noexcept
+VkResult VulkanWrapper::GetPipelineExecutableInternalRepresentations(VkDevice device, const VkPipelineExecutableInfoKHR* pExecutableInfo, uint32_t* pInternalRepresentationCount, VkPipelineExecutableInternalRepresentationKHR* pInternalRepresentations) noexcept
 {
-    vkCmdNextSubpass2KHR(commandBuffer, pSubpassBeginInfo, pSubpassEndInfo);
+    return vkGetPipelineExecutableInternalRepresentationsKHR(device, pExecutableInfo, pInternalRepresentationCount, pInternalRepresentations);
 }
-
-void VulkanWrapper::CmdEndRenderPass2(VkCommandBuffer commandBuffer, const VkSubpassEndInfoKHR * pSubpassEndInfo) noexcept
-{
-    vkCmdEndRenderPass2KHR(commandBuffer, pSubpassEndInfo);
-}
-#endif // VK_KHR_create_renderpass2
+#endif //VK_KHR_pipeline_executable_properties
 
 } //namespace vk
 } //namespace renderer

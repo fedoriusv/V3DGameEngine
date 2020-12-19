@@ -17,9 +17,6 @@
 #include "Utils/Logger.h"
 #include "Utils/Profiler.h"
 
-#include <chrono>
-#include <thread>
-
 #include "Renderer/FrameTimeProfiler.h"
 #ifdef PLATFORM_ANDROID
 #   include "Platform/Android/HWCPProfiler.h"
@@ -1360,7 +1357,16 @@ bool VulkanGraphicContext::createDevice()
         physicalDeviceCustomBorderColorFeatures.pNext = vkExtension;
         vkExtension = &physicalDeviceCustomBorderColorFeatures;
     }
-#endif
+
+    if (VulkanDeviceCaps::checkDeviceExtension(m_deviceInfo._physicalDevice, VK_KHR_PIPELINE_EXECUTABLE_PROPERTIES_EXTENSION_NAME))
+    {
+        VkPhysicalDevicePipelineExecutablePropertiesFeaturesKHR physicalDevicePipelineExecutablePropertiesFeatures = {};
+        physicalDevicePipelineExecutablePropertiesFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PIPELINE_EXECUTABLE_PROPERTIES_FEATURES_KHR;
+        physicalDevicePipelineExecutablePropertiesFeatures.pNext = nullptr;
+        physicalDevicePipelineExecutablePropertiesFeatures.pipelineExecutableInfo = VulkanDeviceCaps::getInstance()->pipelineExecutablePropertiesEnabled;
+        vkExtension = &physicalDevicePipelineExecutablePropertiesFeatures;
+    }
+#endif //VULKAN_VALIDATION_LAYERS_CALLBACK
 
     VkDeviceCreateInfo deviceCreateInfo = {};
     deviceCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;

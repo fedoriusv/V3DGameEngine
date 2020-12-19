@@ -67,6 +67,8 @@ namespace vk
 
         bool createCompatibilityRenderPass(const RenderPassDescription& renderpassDesc, RenderPass* &compatibilityRenderPass);
 
+        bool pipelineStatistic() const;
+
         std::vector<VkShaderModule> m_modules;
 
         VkDevice     m_device;

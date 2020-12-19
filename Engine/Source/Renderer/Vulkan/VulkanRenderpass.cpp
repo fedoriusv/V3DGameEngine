@@ -166,11 +166,9 @@ bool VulkanRenderPass::create()
         depthStencilAttachmentReferences.sType = VK_STRUCTURE_TYPE_ATTACHMENT_REFERENCE_2_KHR;
         depthStencilAttachmentReferences.pNext = nullptr;
 
-#ifdef VK_KHR_depth_stencil_resolve
         VkAttachmentReference2KHR resolveDepthStencilAttachmentReferences = {};
         resolveDepthStencilAttachmentReferences.sType = VK_STRUCTURE_TYPE_ATTACHMENT_REFERENCE_2_KHR;
         resolveDepthStencilAttachmentReferences.pNext = nullptr;
-#endif //VK_KHR_depth_stencil_resolve
 
         bool depthStencil = false;
         bool depthStencilAutoresolve = false;
@@ -312,7 +310,6 @@ bool VulkanRenderPass::create()
                     m_layout[index] = { depthStencilAttachmentReferences.layout, attach._finalLayout };
                     ++index;
 
-#ifdef VK_KHR_depth_stencil_resolve
                     if (VulkanDeviceCaps::getInstance()->supportDepthAutoResolve)
                     {
                         depthStencilAutoresolve = true;
@@ -325,7 +322,6 @@ bool VulkanRenderPass::create()
                         m_layout[index] = { resolveDepthStencilAttachmentReferences.layout, attach._finalLayout };
                         ++index;
                     }
-#endif //VK_KHR_depth_stencil_resolve
                 }
 
                 attachmentDescriptions.push_back(msaaAttachmentDescription);
@@ -341,7 +337,7 @@ bool VulkanRenderPass::create()
         {
             VkSubpassDescription2KHR subpassDescription = {};
             subpassDescription.sType = VK_STRUCTURE_TYPE_SUBPASS_DESCRIPTION_2_KHR;
-#ifdef VK_KHR_depth_stencil_resolve
+
             VkSubpassDescriptionDepthStencilResolveKHR subpassDescriptionDepthStencilResolve = {};
             subpassDescriptionDepthStencilResolve.sType = VK_STRUCTURE_TYPE_SUBPASS_DESCRIPTION_DEPTH_STENCIL_RESOLVE_KHR;
             subpassDescriptionDepthStencilResolve.pNext = nullptr;
@@ -354,7 +350,6 @@ bool VulkanRenderPass::create()
                 subpassDescription.pNext = &subpassDescriptionDepthStencilResolve;
             }
             else
-#endif //VK_KHR_depth_stencil_resolve
             {
                 subpassDescription.pNext = nullptr;
             }

@@ -74,6 +74,7 @@ namespace vk
         const VkPhysicalDeviceFeatures& getPhysicalDeviceFeatures() const;
 
         bool debugUtilsObjectNameEnabled = false;
+        bool pipelineExecutablePropertiesEnabled = false;
 
     private:
 

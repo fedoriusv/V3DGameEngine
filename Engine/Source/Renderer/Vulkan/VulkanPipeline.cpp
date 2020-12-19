@@ -404,7 +404,12 @@ bool VulkanGraphicPipeline::create(const PipelineGraphicInfo* pipelineInfo)
     graphicsPipelineCreateInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
     graphicsPipelineCreateInfo.pNext = nullptr;
     graphicsPipelineCreateInfo.flags = 0; //VkPipelineDiscardRectangleStateCreateInfoEXT
-
+#if VULKAN_DEBUG
+    if (VulkanDeviceCaps::getInstance()->pipelineExecutablePropertiesEnabled)
+    {
+        graphicsPipelineCreateInfo.flags |= VK_PIPELINE_CREATE_CAPTURE_STATISTICS_BIT_KHR;
+    }
+#endif //VULKAN_DEBUG
     graphicsPipelineCreateInfo.basePipelineIndex = 0;
     graphicsPipelineCreateInfo.basePipelineHandle = VK_NULL_HANDLE;
 
@@ -685,6 +690,9 @@ bool VulkanGraphicPipeline::create(const PipelineGraphicInfo* pipelineInfo)
         return false;
     }
 
+#if VULKAN_DEBUG
+    VulkanGraphicPipeline::pipelineStatistic();
+#endif
     return true;
 }
 
@@ -803,6 +811,62 @@ bool VulkanGraphicPipeline::createCompatibilityRenderPass(const RenderPassDescri
 
     m_trackerRenderPass.attach(compatibilityRenderPass);
     return true;
+}
+
+bool VulkanGraphicPipeline::pipelineStatistic() const
+{
+    if (VulkanDeviceCaps::getInstance()->pipelineExecutablePropertiesEnabled)
+    {
+        VkPipelineExecutableInfoKHR executableInfo = {};
+        executableInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_EXECUTABLE_INFO_KHR;
+        executableInfo.pNext = nullptr;
+        executableInfo.pipeline = m_pipeline;
+        executableInfo.executableIndex = 0;
+
+        u32 statisticCount = 0;
+        {
+            VkResult result = VulkanWrapper::GetPipelineExecutableStatistics(m_device, &executableInfo, &statisticCount, nullptr);
+            if (result != VK_SUCCESS)
+            {
+                LOG_WARNING("VulkanGraphicPipeline::pipelineStatistic vkGetPipelineExecutableStatistics count is failed. Error: %s", ErrorString(result).c_str());
+                return false;
+            }
+        }
+        LOG_DEBUG("VulkanGraphicPipeline::pipelineStatistic: PipelineExecutableStatistics count %u", statisticCount);
+
+        if (statisticCount > 0)
+        {
+            std::vector<VkPipelineExecutableStatisticKHR> statistics;
+            statistics.resize(statisticCount, { VK_STRUCTURE_TYPE_PIPELINE_EXECUTABLE_STATISTIC_KHR, nullptr });
+            VkResult result = VulkanWrapper::GetPipelineExecutableStatistics(m_device, &executableInfo, &statisticCount, statistics.data());
+            if (result != VK_SUCCESS)
+            {
+                LOG_WARNING("VulkanGraphicPipeline::pipelineStatistic vkGetPipelineExecutableStatistics is failed. Error: %s", ErrorString(result).c_str());
+                return false;
+            }
+
+            for (auto& statistic : statistics)
+            {
+                switch (statistic.format)
+                {
+                case VK_PIPELINE_EXECUTABLE_STATISTIC_FORMAT_BOOL32_KHR:
+                case VK_PIPELINE_EXECUTABLE_STATISTIC_FORMAT_INT64_KHR:
+                case VK_PIPELINE_EXECUTABLE_STATISTIC_FORMAT_UINT64_KHR:
+                default:
+                    LOG_DEBUG("VulkanGraphicPipeline::pipelineStatistic: [%s] %s: %u", statistic.name, statistic.description, statistic.value.i64);
+                    break;
+
+                case VK_PIPELINE_EXECUTABLE_STATISTIC_FORMAT_FLOAT64_KHR:
+                    LOG_DEBUG("VulkanGraphicPipeline::pipelineStatistic: [%s] %s: %f", statistic.name, statistic.description, statistic.value.f64);
+                    break;
+                }
+            }
+        }
+
+        return true;
+    }
+
+    return false;
 }
 
 } //namespace vk
