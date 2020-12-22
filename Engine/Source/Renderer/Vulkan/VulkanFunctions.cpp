@@ -39,6 +39,7 @@ bool LoadVulkanLibrary()
 
 #   define LOAD_VK_ENTRYPOINTS(Func) Func = (PFN_##Func)dlsym(g_libDynamicVulkan, #Func);
     ENUM_VK_ENTRYPOINTS_BASE_FUNCTIONS(LOAD_VK_ENTRYPOINTS);
+
 #   undef LOAD_VK_ENTRYPOINTS
 
     bool validation = true;
@@ -83,12 +84,18 @@ bool LoadVulkanLibrary(VkInstance instance)
 
     bool validation = true;
 #   if VULKAN_DEBUG
-#       define CHECK_VK_FUNKTIONS(Func) if (!Func) { LOG_WARNING("LoadVulkanLibrary(VkInstance instance) funtion can't get address %s", #Func); validation = true; }
+#   define CHECK_VK_FUNKTIONS(Func) if (!Func) { LOG_WARNING("LoadVulkanLibrary(VkInstance instance) funtion can't get address %s", #Func); validation = true; }
     ENUM_VK_ENTRYPOINTS_CORE_FUNCTIONS(CHECK_VK_FUNKTIONS);
+#       if (VULKAN_CURRENT_VERSION >= VULKAN_VERSION_1_1)
+    ENUM_VK_ENTRYPOINTS_CORE_1_1_FUNCTIONS(CHECK_VK_FUNKTIONS);
+#       endif
+#       if (VULKAN_CURRENT_VERSION >= VULKAN_VERSION_1_2)
+    ENUM_VK_ENTRYPOINTS_CORE_1_2_FUNCTIONS(CHECK_VK_FUNKTIONS);
+#       endif
     ENUM_VK_ENTRYPOINTS_SURFACE_FUNCTIONS(CHECK_VK_FUNKTIONS);
     ENUM_VK_ENTRYPOINTS_SWAPCHAIN_FUNCTIONS(CHECK_VK_FUNKTIONS);
     ENUM_VK_ENTRYPOINTS_PLATFORM_FUNCTIONS(CHECK_VK_FUNKTIONS);
-#       undef CHECK_VK_FUNKTIONS
+#   undef CHECK_VK_FUNKTIONS
 #   endif //VULKAN_DEBUG
     return validation;
 }
