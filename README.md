@@ -19,7 +19,7 @@ git clone --recursive https://github.com/fedoriusv/V3DGameEngine.git
 >Required:<br/>
 >-- Visual Studio 16 2019 x64<br/>
 >-- Python 3 (for building SPIRV)<br/>
->To create Visual Studio project execute `project_msvc.bat`<br/>
+To create Visual Studio project execute `project_msvc.bat`<br/>
 
 #### Linux
 TODO<br/>
@@ -32,9 +32,16 @@ TODO<br/>
 >-- Ninja<br/>
 >-- Python 3 (for building SPIRV)<br/>
 
-ANDROID_NDK_HOME - define path to NDK<br/>
-ANDROID_HOME - define path to SDK<br/>
+`ANDROID_NDK_HOME` - define path to NDK<br/>
+`ANDROID_HOME` - define path to SDK<br/>
 For Build and Compile start `project_android.bat`<br/>
+
+To enable profiling HWCPipe set option to ON in `CMakeLists.txt`<br/>
+>Profiling can be enabled via adb:
+```
+adb shell setprop security.perf_harden 0
+```
+>visit: https://github.com/ARM-software/HWCPipe
 
 -------------------------------------------------  
 
@@ -46,23 +53,15 @@ STB (jpg, png, bmp, tga):<br/>
 Used for loading images, to enable it set option to ON in `CMakeLists.txt`<br/>
 
 gli (ktx, kmg, dds):<br/>
->Used for loading compressed images, to enable it set option to ON in `CMakeLists.txt`<br/>
-
->Profiling can be enabled via adb:
-```
-adb shell setprop security.perf_harden 0
-```
-> Performance data is captured using HWCPipe.
-> For details on this project and how to integrate it in your pipeline,
-> visit: https://github.com/ARM-software/HWCPipe
+Used for loading compressed images, to enable it set option to ON in `CMakeLists.txt`<br/>
 
 #### Vulkan
-To enable set BUILD_VULKAN_SDK to ON in `CMakeLists.txt` file.
-Have to set VK_SDK_PATH in system enviroments.<br/>
+To enable set `BUILD_VULKAN_SDK` to ON in `CMakeLists.txt` file.
+`VK_SDK_PATH` must be setted in system enviroments.<br/>
 For using SPIRV for Vulkan start file:<br/>
 Engine\Libs\spirv\install_[windows][android]_platform.bat
 Required Python 3
 
 #### DirectX
-To enable set BUILD_DIRECTX_SDK to ON in `CMakeLists.txt` file
+To enable set `BUILD_DIRECTX_SDK` to ON in `CMakeLists.txt` file
 
