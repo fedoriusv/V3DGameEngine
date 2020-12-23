@@ -5,9 +5,8 @@ Support render: Vulkan, DirectX<br/>
 Support platform: Windows, Android<br/>
 
 >Required:<br/>
->-- CMake 3<br/>
+>-- CMake 3.10<br/>
 >-- C++17<br/>
->-- Gradle 3.5<br/>
 
 ## Install
 ```
@@ -31,6 +30,7 @@ TODO<br/>
 >-- NDK r20 or later<br/>
 >-- SDK 26 or later<br/>
 >-- Ninja<br/>
+>-- Gradle 3.5<br/>
 >-- Python 3 (for building SPIRV)<br/>
 
 `ANDROID_NDK_HOME` - define path to NDK<br/>
@@ -38,11 +38,11 @@ TODO<br/>
 For Build and Compile start `project_android.bat`<br/>
 
 To enable profiling HWCPipe set option to ON in `CMakeLists.txt`<br/>
->Profiling can be enabled via adb:
+Profiling can be enabled via adb:
 ```
 adb shell setprop security.perf_harden 0
 ```
->visit: https://github.com/ARM-software/HWCPipe
+visit: https://github.com/ARM-software/HWCPipe
 
 -------------------------------------------------  
 
