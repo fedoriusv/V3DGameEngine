@@ -19,6 +19,7 @@ git clone --recursive https://github.com/fedoriusv/V3DGameEngine.git
 >Required:<br/>
 >-- Visual Studio 16 2019 x64<br/>
 >-- Python 3 (for building SPIRV)<br/>
+
 To create Visual Studio project execute `project_msvc.bat`<br/>
 
 #### Linux
