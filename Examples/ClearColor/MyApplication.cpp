@@ -22,7 +22,7 @@ MyApplication::MyApplication(int& argc, char** argv)
     , m_Context(nullptr)
     , m_CommandList(nullptr)
 {
-    m_Window = Window::createWindow({ 1024, 768 }, {800, 500}, false, new v3d::event::InputEventReceiver());
+    m_Window = Window::createWindow({ 1024, 768 }, { 800, 500 }, false, new v3d::event::InputEventReceiver());
     ASSERT(m_Window, "windows is nullptr");
 
     m_InputEventHandler = new InputEventHandler();
@@ -95,7 +95,7 @@ int MyApplication::Execute()
 
 void MyApplication::Initialize()
 {
-    m_Context = renderer::Context::createContext(m_Window, renderer::Context::RenderType::DirectXRender);
+    m_Context = renderer::Context::createContext(m_Window, renderer::Context::RenderType::VulkanRender);
     ASSERT(m_Context, "context is nullptr");
 
     m_CommandList = new renderer::CommandList(m_Context, renderer::CommandList::CommandListType::DelayedCommandList);

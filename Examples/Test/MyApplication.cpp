@@ -44,7 +44,7 @@ MyApplication::MyApplication(int& argc, char** argv)
     , m_Context(nullptr)
     , m_CommandList(nullptr)
 {
-    m_Window = Window::createWindow({ 1024, 768 }, {800, 500}, false, new v3d::event::InputEventReceiver());
+    m_Window = Window::createWindow({ 1024, 768 }, { 800, 500 }, false, new v3d::event::InputEventReceiver());
     ASSERT(m_Window, "windows is nullptr");
 
     m_InputEventHandler = new InputEventHandler();
@@ -93,12 +93,13 @@ int MyApplication::Execute()
 
 void MyApplication::Initialize()
 {
-    std::thread test_timer([this]() -> void
+    std::thread test_thread([this]() -> void
         {
             Test_Timer();
+            //Test_MemoryPool(); TODO
         });
 
-    test_timer.join();
+    test_thread.join();
 
     //Render test
     Context::RenderType renderTypes[2] = { Context::RenderType::VulkanRender, Context::RenderType::DirectXRender };
