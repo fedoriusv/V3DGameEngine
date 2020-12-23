@@ -7,10 +7,11 @@ if "%ANDROID_NDK_HOME%" == "" (
 	exit
 ) 
 
+rem Configure paltform settings
 set C_ANDROID_TOOLCHAIN=%ANDROID_NDK_HOME%\build\cmake\android.toolchain.cmake
 set C_ANDROID_NDK=%ANDROID_NDK_HOME%
 set C_ANDROID_ABI=arm64-v8a
-set C_ANDROID_PLATFORM=android-26
+set C_ANDROID_PLATFORM=android-28
 set C_BUILD_TYPE=Debug
 
 set command=all
@@ -125,9 +126,6 @@ if "%2" == "" (
         goto end
     )
     
-    xcopy /Y Examples\%2\AndroidManifest.xml Project\Android\Examples\%2
-    xcopy /Y Examples\%2\build.gradle Project\Android\Examples\%2
-    xcopy /Y Examples\%2\gradle.properties Project\Android\Examples\%2
     xcopy /Y /F /S Examples\%2\res Project\Android\Examples\%2\res\
     
     if exist Examples\%2\data (
@@ -141,11 +139,12 @@ if "%2" == "" (
     )
     
     rem fix build error
-    set ANDROID_NDK=""
     set ANDROID_NDK_HOME=""
     
-    cd Config
-    call gradlew.bat -p ../Project/Android/Examples/%2 build
+    rem cd Config
+    rem call gradlew.bat -p ../Project/Android/Examples/%2 build
+    cd Project\Android
+    call gradle assembleDebug -p Examples/%2 build
     cd ..
     
     if "%command%" == "buildAndRun" goto install
@@ -154,9 +153,9 @@ if "%2" == "" (
 :install
     echo Installing APK..
     if "%C_BUILD_TYPE%" == "Debug" (
-        call adb install -r Project/Android/Examples/%2/build/outputs/apk/%2-debug.apk
+        call adb install -r Project/Android/Examples/%2/build/outputs/apk/debug/%2-debug.apk
     ) else (
-        call adb install -r Project/Android/Examples/%2/build/outputs/apk/%2.apk
+        call adb install -r Project/Android/Examples/%2/build/outputs/apk/release/%2-release.apk
     )
     
     if "%command%" == "buildAndRun" goto run
