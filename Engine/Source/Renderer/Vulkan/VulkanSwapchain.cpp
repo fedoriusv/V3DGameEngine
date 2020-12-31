@@ -177,9 +177,15 @@ bool VulkanSwapchain::create(const SwapchainConfig& config, VkSwapchainKHR oldSw
     if ((m_config._size.width < m_surfaceCaps.minImageExtent.width || m_config._size.width > m_surfaceCaps.maxImageExtent.width) ||
         (m_config._size.height < m_surfaceCaps.minImageExtent.height || m_config._size.height > m_surfaceCaps.maxImageExtent.height))
     {
-        LOG_ERROR("VulkanSwapchain::create: Not support swapchain size min[%d, %d], max[%d, %d], requested [%d, %d]", 
-            m_surfaceCaps.minImageExtent.width, m_surfaceCaps.minImageExtent.height, m_surfaceCaps.maxImageExtent.width, m_surfaceCaps.maxImageExtent.height, m_config._size.width, m_config._size.height);
-        return false;
+        u32 newWidth = std::clamp(m_config._size.width, m_surfaceCaps.minImageExtent.width, m_surfaceCaps.maxImageExtent.width);
+        u32 newHeight = std::clamp(m_config._size.height, m_surfaceCaps.minImageExtent.height, m_surfaceCaps.maxImageExtent.height);
+
+        LOG_WARNING("VulkanSwapchain::create: Is not supported swapchain size. min[%u, %u], max[%u, %u], requested[%u, %u], chosen[%u, %u]", 
+            m_surfaceCaps.minImageExtent.width, m_surfaceCaps.minImageExtent.height, m_surfaceCaps.maxImageExtent.width, m_surfaceCaps.maxImageExtent.height, 
+            m_config._size.width, m_config._size.height, newWidth, newHeight);
+
+        m_config._size.width = newWidth;
+        m_config._size.height = newHeight;
     }
 
     if (m_surfaceCaps.maxImageCount < 2)
@@ -363,8 +369,8 @@ bool VulkanSwapchain::createSwapchain(const SwapchainConfig& config, VkSwapchain
             preTransform = m_surfaceCaps.currentTransform;
         }
     }
-    LOG_DEBUG("VulkanSwapchain::createSwapChain android transform swapchain: (width %u, height %u), currentTransform: %u, supportedTransforms: %u, selectedTransform: %u", imageExtent.width, imageExtent.height, m_surfaceCaps.currentTransform, m_surfaceCaps.supportedTransforms, preTransform);
-    
+    LOG_DEBUG("VulkanSwapchain::createSwapChain transform swapchain: (width %u, height %u), currentTransform: %u, supportedTransforms: %u, selectedTransform: %u", imageExtent.width, imageExtent.height, m_surfaceCaps.currentTransform, m_surfaceCaps.supportedTransforms, preTransform);
+
     VkSwapchainCreateInfoKHR swapChainInfo = {};
     swapChainInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
     swapChainInfo.pNext = nullptr;

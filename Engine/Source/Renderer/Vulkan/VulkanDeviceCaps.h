@@ -89,7 +89,9 @@ namespace vk
         std::vector<VkQueueFamilyProperties> m_queueFamilyProperties = {};
 
         VkPhysicalDeviceDescriptorIndexingFeaturesEXT m_physicalDeviceDescriptorIndexingFeatures = {};
+#ifdef VK_EXT_custom_border_color
         VkPhysicalDeviceCustomBorderColorFeaturesEXT m_physicalDeviceCustomBorderColorFeatures = {};
+#endif
 
         static std::vector<const c8*>        s_enableExtensions;
     };

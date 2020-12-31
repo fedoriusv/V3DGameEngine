@@ -76,8 +76,9 @@ const std::vector<const c8*> k_deviceExtensionsList =
     VK_KHR_PIPELINE_EXECUTABLE_PROPERTIES_EXTENSION_NAME,
 
     VK_KHR_SAMPLER_MIRROR_CLAMP_TO_EDGE_EXTENSION_NAME,
+#ifdef VK_EXT_custom_border_color
     VK_EXT_CUSTOM_BORDER_COLOR_EXTENSION_NAME,
-
+#endif
 #ifdef VK_QCOM_render_pass_transform
     VK_QCOM_RENDER_PASS_TRANSFORM_EXTENSION_NAME,
 #endif
@@ -1351,12 +1352,14 @@ bool VulkanGraphicContext::createDevice()
         vkExtension = &physicalDeviceDescriptorIndexingFeatures;
     }
 
+#ifdef VK_EXT_custom_border_color
     if (VulkanDeviceCaps::checkDeviceExtension(m_deviceInfo._physicalDevice, VK_EXT_CUSTOM_BORDER_COLOR_EXTENSION_NAME))
     {
         VkPhysicalDeviceCustomBorderColorFeaturesEXT& physicalDeviceCustomBorderColorFeatures = VulkanDeviceCaps::getInstance()->m_physicalDeviceCustomBorderColorFeatures;
         physicalDeviceCustomBorderColorFeatures.pNext = vkExtension;
         vkExtension = &physicalDeviceCustomBorderColorFeatures;
     }
+#endif
 
     if (VulkanDeviceCaps::checkDeviceExtension(m_deviceInfo._physicalDevice, VK_KHR_PIPELINE_EXECUTABLE_PROPERTIES_EXTENSION_NAME))
     {

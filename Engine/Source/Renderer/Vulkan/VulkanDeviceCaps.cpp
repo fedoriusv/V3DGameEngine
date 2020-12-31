@@ -209,12 +209,14 @@ void VulkanDeviceCaps::fillCapabilitiesList(const DeviceInfo* info)
                 supportDescriptorIndexing = true;
             }
 
+#ifdef VK_EXT_custom_border_color
             if (isEnabledExtension(VK_EXT_CUSTOM_BORDER_COLOR_EXTENSION_NAME))
             {
                 m_physicalDeviceCustomBorderColorFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_CUSTOM_BORDER_COLOR_FEATURES_EXT;
                 m_physicalDeviceCustomBorderColorFeatures.pNext = vkExtensions;
                 vkExtensions = &m_physicalDeviceCustomBorderColorFeatures;
             }
+#endif
 
             VkPhysicalDevicePipelineExecutablePropertiesFeaturesKHR physicalDevicePipelineExecutablePropertiesFeatures = {};
             if (isEnabledExtension(VK_KHR_PIPELINE_EXECUTABLE_PROPERTIES_EXTENSION_NAME))
@@ -232,8 +234,9 @@ void VulkanDeviceCaps::fillCapabilitiesList(const DeviceInfo* info)
             memcpy(&m_deviceFeatures, &physicalDeviceFeatures2.features, sizeof(VkPhysicalDeviceFeatures));
 
             supportDescriptorIndexing = m_physicalDeviceDescriptorIndexingFeatures.descriptorBindingUpdateUnusedWhilePending;
+#ifdef VK_EXT_custom_border_color
             supportSamplerBorderColor = m_physicalDeviceCustomBorderColorFeatures.customBorderColors && m_physicalDeviceCustomBorderColorFeatures.customBorderColorWithoutFormat;
-
+#endif
             pipelineExecutablePropertiesEnabled = physicalDevicePipelineExecutablePropertiesFeatures.pipelineExecutableInfo;
         }
 
@@ -250,7 +253,7 @@ void VulkanDeviceCaps::fillCapabilitiesList(const DeviceInfo* info)
             }
 
 #if VULKAN_DEBUG
-            VkPhysicalDeviceDriverProperties physicalDeviceDriverProperties = {};
+            VkPhysicalDeviceDriverPropertiesKHR physicalDeviceDriverProperties = {};
             if (isEnabledExtension(VK_KHR_DRIVER_PROPERTIES_EXTENSION_NAME))
             {
                 physicalDeviceDriverProperties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ID_PROPERTIES;
