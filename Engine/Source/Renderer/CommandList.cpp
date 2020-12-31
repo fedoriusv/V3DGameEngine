@@ -20,19 +20,55 @@ utils::MemoryPool g_commandMemoryPool(2048, 64, 2048, utils::MemoryPool::getDefa
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 
+Command::Command() noexcept
+{
+#if DEBUG_COMMAND_LIST
+    LOG_DEBUG("Command constructor");
+#endif //DEBUG_COMMAND_LIST
+}
+
+Command::~Command()
+{
+#if DEBUG_COMMAND_LIST
+    LOG_DEBUG("Command destructor");
+#endif //DEBUG_COMMAND_LIST
+}
+
+void* Command::operator new(size_t size) noexcept
+{
+#if DEBUG_COMMAND_LIST
+    static size_t s_sizeMax = 0;
+    s_sizeMax = std::max(s_sizeMax, size);
+    LOG_DEBUG("Command new allocate size %u, maxSize %u", size, s_sizeMax);
+#endif //DEBUG_COMMAND_LIST
+
+    //void* ptr = g_commandMemoryPool.getMemory(size);
+    void* ptr = malloc(size);
+    return ptr;
+}
+
+void Command::operator delete(void* memory) noexcept
+{
+    free(memory);
+    //g_commandMemoryPool.freeMemory(memory);
+}
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////
+
     /*CommandBeginFrame*/
 class CommandBeginFrame final : public Command
 {
 public:
+
+    CommandBeginFrame(CommandBeginFrame&) = delete;
     CommandBeginFrame() noexcept
     {
 #if DEBUG_COMMAND_LIST
         LOG_DEBUG("CommandBeginFrame constructor");
 #endif //DEBUG_COMMAND_LIST
     };
-    CommandBeginFrame(CommandBeginFrame&) = delete;
 
-    ~CommandBeginFrame() 
+    ~CommandBeginFrame()
     {
 #if DEBUG_COMMAND_LIST
         LOG_DEBUG("CommandBeginFrame destructor");
@@ -52,13 +88,14 @@ public:
 class CommandEndFrame final : public Command
 {
 public:
+
+    CommandEndFrame(CommandEndFrame&) = delete;
     CommandEndFrame() noexcept
     {
 #if DEBUG_COMMAND_LIST
         LOG_DEBUG("CommandEndFrame constructor");
 #endif //DEBUG_COMMAND_LIST
     };
-    CommandEndFrame(CommandEndFrame&) = delete;
 
     ~CommandEndFrame() 
     {
@@ -80,13 +117,14 @@ public:
 class CommandPresentFrame final : public Command
 {
 public:
+
+    CommandPresentFrame(CommandPresentFrame&) = delete;
     CommandPresentFrame() noexcept
     {
 #if DEBUG_COMMAND_LIST
         LOG_DEBUG("CommandPresentFrame constructor");
 #endif //DEBUG_COMMAND_LIST
     };
-    CommandPresentFrame(CommandPresentFrame&) = delete;
 
     ~CommandPresentFrame()
     {
@@ -108,6 +146,9 @@ public:
 class CommandSetContextState final : public Command
 {
 public:
+
+    CommandSetContextState() = delete;
+    CommandSetContextState(CommandSetContextState&) = delete;
     explicit CommandSetContextState(const CommandList::ContextStates& pendingStates) noexcept
         : m_pendingStates(pendingStates)
     {
@@ -115,8 +156,6 @@ public:
         LOG_DEBUG("CommandSetContextState constructor");
 #endif //DEBUG_COMMAND_LIST
     };
-    CommandSetContextState() = delete;
-    CommandSetContextState(CommandSetContextState&) = delete;
 
     ~CommandSetContextState()
     {
@@ -135,6 +174,7 @@ public:
     }
 
 private:
+
     CommandList::ContextStates m_pendingStates;
 };
 
@@ -142,7 +182,10 @@ private:
 class CommandSetRenderTarget final : public Command
 {
 public:
-    CommandSetRenderTarget(const RenderPass::RenderPassInfo& renderpassInfo, const Framebuffer::FramebufferInfo& framebufferInfo) noexcept
+
+    CommandSetRenderTarget() = delete;
+    CommandSetRenderTarget(CommandSetRenderTarget&) = delete;
+    explicit CommandSetRenderTarget(const RenderPass::RenderPassInfo& renderpassInfo, const Framebuffer::FramebufferInfo& framebufferInfo) noexcept
         : m_renderpassInfo(renderpassInfo)
         , m_framebufferInfo(framebufferInfo)
     {
@@ -150,8 +193,6 @@ public:
         LOG_DEBUG("CommandSetRenderTarget constructor");
 #endif //DEBUG_COMMAND_LIST
     };
-    CommandSetRenderTarget() = delete;
-    CommandSetRenderTarget(CommandSetRenderTarget&) = delete;
 
     ~CommandSetRenderTarget()
     {
@@ -169,6 +210,7 @@ public:
     }
 
 private:
+
     RenderPass::RenderPassInfo  m_renderpassInfo;
     Framebuffer::FramebufferInfo m_framebufferInfo;
 };
@@ -177,7 +219,10 @@ private:
 class CommandSetGraphicPipeline final : public Command
 {
 public:
-    CommandSetGraphicPipeline(const RenderPassDescription& renderpassInfo, const ShaderProgramDescription& shaderProgramInfo, const GraphicsPipelineStateDescription& pipelineInfo, ObjectTracker<Pipeline>* tracker) noexcept
+
+    CommandSetGraphicPipeline() = delete;
+    CommandSetGraphicPipeline(CommandSetGraphicPipeline&) = delete;
+    explicit CommandSetGraphicPipeline(const RenderPassDescription& renderpassInfo, const ShaderProgramDescription& shaderProgramInfo, const GraphicsPipelineStateDescription& pipelineInfo, ObjectTracker<Pipeline>* tracker) noexcept
         : m_pipelineDesc(pipelineInfo)
         , m_programDesc(shaderProgramInfo)
         , m_renderpassDesc(renderpassInfo)
@@ -187,8 +232,6 @@ public:
         LOG_DEBUG("CommandSetGraphicPipeline constructor");
 #endif //DEBUG_COMMAND_LIST
     };
-    CommandSetGraphicPipeline() = delete;
-    CommandSetGraphicPipeline(CommandSetGraphicPipeline&) = delete;
 
     ~CommandSetGraphicPipeline()
     {
@@ -212,6 +255,7 @@ public:
     }
 
 private:
+
     GraphicsPipelineStateDescription         m_pipelineDesc;
     ShaderProgramDescription                 m_programDesc;
     RenderPassDescription                    m_renderpassDesc;
@@ -222,7 +266,10 @@ private:
 class CommandSubmit : public Command
 {
 public:
-    CommandSubmit(bool wait, u64 timeout) noexcept
+
+    CommandSubmit() = delete;
+    CommandSubmit(CommandSubmit&) = delete;
+    explicit CommandSubmit(bool wait, u64 timeout) noexcept
         : m_timeout(timeout)
         , m_wait(wait)
     {
@@ -230,8 +277,6 @@ public:
         LOG_DEBUG("CommandSubmit constructor");
 #endif //DEBUG_COMMAND_LIST
     }
-    CommandSubmit() = delete;
-    CommandSubmit(CommandSubmit&) = delete;
 
     ~CommandSubmit()
     {
@@ -249,6 +294,7 @@ public:
     }
 
 private:
+
     [[maybe_unused]] u64    m_timeout;
     bool                    m_wait;
 };
@@ -257,7 +303,10 @@ private:
 class CommandDraw : public Command
 {
 public:
-    CommandDraw(const StreamBufferDescription& desc, u32 firstVertex, u32 countVertex, u32 firtsInstance, u32 instanceCount) noexcept
+
+    CommandDraw() = delete;
+    CommandDraw(CommandDraw&) = delete;
+    explicit CommandDraw(const StreamBufferDescription& desc, u32 firstVertex, u32 countVertex, u32 firtsInstance, u32 instanceCount) noexcept
         : m_buffersDesc(desc)
         , m_firtsInstance(firtsInstance)
         , m_instanceCount(instanceCount)
@@ -268,8 +317,6 @@ public:
         LOG_DEBUG("CommandDraw constructor");
 #endif //DEBUG_COMMAND_LIST
     }
-    CommandDraw() = delete;
-    CommandDraw(CommandDraw&) = delete;
 
     ~CommandDraw()
     {
@@ -287,6 +334,7 @@ public:
     }
 
 private:
+
     StreamBufferDescription m_buffersDesc;
     u32 m_firtsInstance;
     u32 m_instanceCount;
@@ -298,7 +346,10 @@ private:
 class CommandDrawIndexed : public Command
 {
 public:
-    CommandDrawIndexed(const StreamBufferDescription& desc, u32 firstIndex, u32 countIndex, u32 firtsInstance, u32 instanceCount) noexcept
+
+    CommandDrawIndexed() = delete;
+    CommandDrawIndexed(CommandDrawIndexed&) = delete;
+    explicit CommandDrawIndexed(const StreamBufferDescription& desc, u32 firstIndex, u32 countIndex, u32 firtsInstance, u32 instanceCount) noexcept
         : m_buffersDesc(desc)
         , m_firtsInstance(firtsInstance)
         , m_instanceCount(instanceCount)
@@ -310,8 +361,6 @@ public:
 #endif //DEBUG_COMMAND_LIST
         ASSERT(!m_buffersDesc._vertices.empty() && m_buffersDesc._indices, "buffers is empty");
     }
-    CommandDrawIndexed() = delete;
-    CommandDrawIndexed(CommandDrawIndexed&) = delete;
 
     ~CommandDrawIndexed()
     {
@@ -329,6 +378,7 @@ public:
     }
 
 private:
+
     StreamBufferDescription m_buffersDesc;
     u32 m_firtsInstance;
     u32 m_instanceCount;
@@ -340,13 +390,14 @@ private:
 class CommandInvalidateRenderPass : public Command
 {
 public:
+
+    CommandInvalidateRenderPass(CommandInvalidateRenderPass&) = delete;
     CommandInvalidateRenderPass() noexcept
     {
 #if DEBUG_COMMAND_LIST
         LOG_DEBUG("CommandInvalidateRenderPass constructor");
 #endif //DEBUG_COMMAND_LIST
     }
-    CommandInvalidateRenderPass(CommandInvalidateRenderPass&) = delete;
 
     ~CommandInvalidateRenderPass()
     {
@@ -368,7 +419,9 @@ public:
 class CommandTransitionImage : public Command
 {
 public:
-    CommandTransitionImage(const std::vector<Image*>& images, TransitionOp state, s32 layer) noexcept
+
+    CommandTransitionImage(CommandTransitionImage&) = delete;
+    explicit CommandTransitionImage(const std::vector<Image*>& images, TransitionOp state, s32 layer) noexcept
         : m_images(images)
         , m_state(state)
         , m_layer(layer)
@@ -377,7 +430,6 @@ public:
         LOG_DEBUG("CommandTransitionImage constructor");
 #endif //DEBUG_COMMAND_LIST
     }
-    CommandTransitionImage(CommandTransitionImage&) = delete;
 
     ~CommandTransitionImage()
     {
@@ -400,44 +452,6 @@ private:
     TransitionOp        m_state;
     s32                 m_layer;
 };
-
-/////////////////////////////////////////////////////////////////////////////////////////////////////
-
-Command::Command() noexcept
-{
-#if DEBUG_COMMAND_LIST
-    LOG_DEBUG("Command constructor");
-#endif //DEBUG_COMMAND_LIST
-
-}
-
-Command::~Command()
-{
-#if DEBUG_COMMAND_LIST
-    LOG_DEBUG("Command destructor");
-#endif //DEBUG_COMMAND_LIST
-}
-
-void* Command::operator new(size_t size) noexcept
-{
-#if DEBUG_COMMAND_LIST
-    static size_t s_sizeMax = 0;
-    s_sizeMax = std::max(s_sizeMax, size);
-    LOG_DEBUG("Command new allocate size %u, maxSize %u", size, s_sizeMax);
-#endif //DEBUG_COMMAND_LIST
-
-    //void* ptr = g_commandMemoryPool.getMemory(size);
-    void* ptr = malloc(size);
-    return ptr;
-
-
-}
-
-void Command::operator delete(void* memory) noexcept
-{
-    free(memory);
-    //g_commandMemoryPool.freeMemory(memory);
-}
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 
