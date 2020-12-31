@@ -24,19 +24,19 @@ ShaderSourceStreamLoader::ShaderSourceStreamLoader(const renderer::Context* cont
     ASSERT(context, "context is nullptr");
     switch (context->getRenderType())
     {
-#ifdef USE_SPIRV
     case renderer::Context::RenderType::VulkanRender:
     {
         ASSERT(header, "nullptr");
+#ifdef USE_SPIRV
         ResourceLoader::registerDecoder(new ShaderSpirVDecoder(*header, enableReflection));
-
-        break;
 #endif //USE_SPIRV
+        break;
     }
 
 #ifdef D3D_RENDER
     case renderer::Context::RenderType::DirectXRender:
     {
+        ASSERT(header, "nullptr");
         ResourceLoader::registerDecoder(new ShaderHLSLDecoder(*header));
 
         break;

@@ -87,7 +87,9 @@ ShaderSourceFileLoader::ShaderSourceFileLoader(const renderer::Context* context,
 
     if (context->getRenderType() == renderer::Context::RenderType::VulkanRender)
     {
+#ifdef USE_SPIRV
         ResourceLoader::registerDecoder(new ShaderSpirVDecoder({ "hlsl" }, header, !(flags & ShaderSourceBuildFlag::ShaderSource_DontUseReflection)));
+#endif
     }
 #if D3D_RENDER
     else if (context->getRenderType() == renderer::Context::RenderType::DirectXRender)
