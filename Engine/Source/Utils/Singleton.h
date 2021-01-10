@@ -56,6 +56,7 @@ namespace utils
             s_instance = new T;
         });
 
+        ASSERT(s_instance, "nullptr");
         return s_instance;
     }
 

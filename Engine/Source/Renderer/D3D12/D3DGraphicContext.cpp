@@ -644,6 +644,10 @@ void D3DGraphicContext::destroy()
 #if D3D_DEBUG
     D3DDebug::getInstance()->report(D3D12_RLDO_SUMMARY | D3D12_RLDO_IGNORE_INTERNAL);
 #endif
+
+#if FRAME_PROFILER_ENABLE
+    utils::ProfileManager::getInstance()->freeAllProfilers();
+#endif //FRAME_PROFILER_ENABLE
     if (m_commandListManager)
     {
         m_commandListManager->waitAndClear();

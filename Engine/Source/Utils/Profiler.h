@@ -60,6 +60,8 @@ namespace utils
 
         void update();
 
+        void freeAllProfilers();
+
     private:
 
         /**

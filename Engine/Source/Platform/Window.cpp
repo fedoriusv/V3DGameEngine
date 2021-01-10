@@ -1,6 +1,7 @@
 #include "Window.h"
 #include "Event/InputEventReceiver.h"
 #include "Utils/Logger.h"
+#include "Utils/Profiler.h"
 
 #if defined(PLATFORM_WINDOWS)
 #   include "Windows/WindowWindows.h"
@@ -97,6 +98,10 @@ bool Window::updateWindow(Window* window)
 
 void Window::detroyWindow(Window* window)
 {
+#if FRAME_PROFILER_ENABLE
+    utils::ProfileManager::freeInstance();
+#endif //FRAME_PROFILER_ENABLE
+
     ASSERT(window, "window is nullptr");
     window->destroy();
 

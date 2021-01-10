@@ -12,12 +12,7 @@ bool Profiler::isActive() const
 
 ProfileManager::~ProfileManager()
 {
-    for (auto& profiler : m_profilers)
-    {
-        ASSERT(!profiler->isActive(), "still active");
-        delete profiler;
-    }
-    m_profilers.clear();
+    freeAllProfilers();
 }
 
 void ProfileManager::attach(Profiler* profiler)
@@ -88,6 +83,16 @@ void ProfileManager::update()
     }
 
     s_prevTime = currentTime;
+}
+
+void ProfileManager::freeAllProfilers()
+{
+    for (auto& profiler : m_profilers)
+    {
+        ASSERT(!profiler->isActive(), "still active");
+        delete profiler;
+    }
+    m_profilers.clear();
 }
 
 } //namespace utils

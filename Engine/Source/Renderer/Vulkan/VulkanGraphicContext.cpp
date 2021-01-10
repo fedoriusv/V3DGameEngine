@@ -921,8 +921,7 @@ void VulkanGraphicContext::destroy()
     }
 
 #if FRAME_PROFILER_ENABLE
-    //deletes all profilers internaly
-    utils::ProfileManager::getInstance()->freeInstance();
+    utils::ProfileManager::getInstance()->freeAllProfilers();
 #endif //FRAME_PROFILER_ENABLE
 
 #if THREADED_PRESENT
