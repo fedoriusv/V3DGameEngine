@@ -2,6 +2,7 @@
 
 layout (location = 0) in vec4 inAttribute0_vec4;
 layout (location = 1) in vec2 inAttribute1_vec2;
+layout (location = 2) in vec3 inAttribute2_vec3;
 
 layout (set = 0, binding = 0) uniform sampler samplerColor00;
 

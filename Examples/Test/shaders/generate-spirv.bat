@@ -1,2 +1,2 @@
-glslangvalidator -V testReflectInfo.vert -o testReflectInfo.vspv
-glslangvalidator -V testReflectInfo.frag -o testReflectInfo.fspv
+glslangvalidator -V testReflectInfoWithNames.vert -o testReflectInfoWithNames.vspv
+glslangvalidator -V testReflectInfoWithNames.frag -o testReflectInfoWithNames.fspv

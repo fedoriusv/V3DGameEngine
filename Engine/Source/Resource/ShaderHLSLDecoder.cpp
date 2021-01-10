@@ -364,16 +364,37 @@ bool reflect(ID3DBlob* shader, stream::Stream* stream, u32 version)
     //input parameters
     {
         u32 inputChannelCount = shaderDesc.InputParameters;
-        stream->write<u32>(inputChannelCount);
-
+        u32 inputPositionRegister = -1;
+        std::vector<D3D11_SIGNATURE_PARAMETER_DESC> userInputChannels;
         for (UINT inputChannelID = 0; inputChannelID < inputChannelCount; ++inputChannelID)
         {
             D3D11_SIGNATURE_PARAMETER_DESC parameterDesc = {};
             HRESULT result = reflector->GetInputParameterDesc(inputChannelID, &parameterDesc);
-            ASSERT(SUCCEEDED(result), "GetInputParameterDesc has failed");
+            ASSERT(SUCCEEDED(result), "GetOutputParameterDesc has failed");
+
+            if (parameterDesc.SystemValueType == D3D_NAME_POSITION)
+            {
+                inputPositionRegister = parameterDesc.Register;
+            }
+
+            if (parameterDesc.SystemValueType == D3D_NAME_UNDEFINED) //remove build-in position
+            {
+                userInputChannels.push_back(parameterDesc);
+            }
+        }
+
+        u32 userInputChannelCount = static_cast<u32>(userInputChannels.size());
+        stream->write<u32>(userInputChannelCount);
+        for (UINT inputChannelID = 0; inputChannelID < userInputChannelCount; ++inputChannelID)
+        {
+            const D3D11_SIGNATURE_PARAMETER_DESC& parameterDesc = userInputChannels[inputChannelID];
 
             renderer::Shader::Attribute input;
             input._location = parameterDesc.Register;
+            if (inputPositionRegister != -1 && inputPositionRegister < input._location) //remove register offset
+            {
+                input._location = input._location - 1;
+            }
             input._format = convertTypeToFormat(parameterDesc.ComponentType, parameterDesc.Mask);
 #if USE_STRING_ID_SHADER
             const std::string name(parameterDesc.SemanticName);
@@ -387,12 +408,18 @@ bool reflect(ID3DBlob* shader, stream::Stream* stream, u32 version)
     //output parameters
     {
         u32 outputChannelCount = shaderDesc.OutputParameters;
+        u32 outputPositionRegister = -1;
         std::vector<D3D11_SIGNATURE_PARAMETER_DESC> userOutputChannels;
         for (UINT outputChannelID = 0; outputChannelID < outputChannelCount; ++outputChannelID)
         {
             D3D11_SIGNATURE_PARAMETER_DESC parameterDesc = {};
             HRESULT result = reflector->GetOutputParameterDesc(outputChannelID, &parameterDesc);
             ASSERT(SUCCEEDED(result), "GetOutputParameterDesc has failed");
+
+            if (parameterDesc.SystemValueType == D3D_NAME_POSITION)
+            {
+                outputPositionRegister = parameterDesc.Register;
+            }
 
             if (parameterDesc.SystemValueType == D3D_NAME_UNDEFINED || parameterDesc.SystemValueType == D3D_NAME_TARGET) //remove build-in
             {
@@ -404,13 +431,19 @@ bool reflect(ID3DBlob* shader, stream::Stream* stream, u32 version)
         stream->write<u32>(userOutputChannelCount);
         for (UINT outputChannelID = 0; outputChannelID < userOutputChannelCount; ++outputChannelID)
         {
+            const D3D11_SIGNATURE_PARAMETER_DESC& parameterDesc = userOutputChannels[outputChannelID];
+
             renderer::Shader::Attribute output;
-            output._location = outputChannelID;//parameterDesc.SemanticIndex;
-            output._format = convertTypeToFormat(userOutputChannels[outputChannelID].ComponentType, userOutputChannels[outputChannelID].Mask);
+            output._location = parameterDesc.Register;
+            if (outputPositionRegister != -1 && outputPositionRegister < output._location) //remove register offset
+            {
+                output._location = output._location - 1;
+            }
+            output._format = convertTypeToFormat(parameterDesc.ComponentType, parameterDesc.Mask);
 #if USE_STRING_ID_SHADER
-            const std::string name(userOutputChannels[outputChannelID].SemanticName);
+            const std::string name(parameterDesc.SemanticName);
             ASSERT(!name.empty(), "empty name");
-            output._name = name + std::to_string(userOutputChannels[outputChannelID].SemanticIndex);
+            output._name = name + std::to_string(parameterDesc.SemanticIndex);
 #endif
             output >> stream;
         }

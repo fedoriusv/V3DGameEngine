@@ -39,7 +39,7 @@ namespace resource
         * @param const stream::Stream* stream [required]
         * @return Shader resource, nullptr if failed
         */
-        template<class TResource, class TResourceLoader>
+        template<class TResource = Shader, class TResourceLoader>
         TResource* composeShader(renderer::Context* context, const std::string name, const renderer::ShaderHeader* header, const stream::Stream* stream);
 
         /**
@@ -52,7 +52,7 @@ namespace resource
         * @param u32 flags [optional]
         * @return Shader resource, nullptr if failed
         */
-        template<class TResource, class TResourceLoader>
+        template<class TResource = Shader, class TResourceLoader>
         TResource* loadShader(renderer::Context* context, std::string filename, std::vector<std::pair<std::string, std::string>> defines = {}, u32 flags = 0);
 
         /**
@@ -66,8 +66,8 @@ namespace resource
         * @param u32 flags [optional]
         * @return list of shader resources
         */
-        template<class TResource, class TResourceLoader>
-        std::vector<const TResource*> loadHLSLShader(renderer::Context* context, std::string filename, const std::vector<std::tuple<std::string, renderer::ShaderType>>& entryPoints, std::vector<std::pair<std::string, std::string>> defines = {}, u32 flags = 0);
+        template<class TResource = Shader, class TResourceLoader>
+        std::vector<TResource*> loadHLSLShader(renderer::Context* context, std::string filename, const std::vector<std::tuple<std::string, renderer::ShaderType>>& entryPoints, std::vector<std::pair<std::string, std::string>> defines = {}, u32 flags = 0);
 
         /**
         * @brief load
@@ -208,7 +208,7 @@ namespace resource
     }
 
     template<class TResource, class TResourceLoader>
-    std::vector<const TResource*> ResourceLoaderManager::loadHLSLShader(renderer::Context* context, std::string filename, const std::vector<std::tuple<std::string, renderer::ShaderType>>& entryPoints, std::vector<std::pair<std::string, std::string>> defines, u32 flags)
+    std::vector<TResource*> ResourceLoaderManager::loadHLSLShader(renderer::Context* context, std::string filename, const std::vector<std::tuple<std::string, renderer::ShaderType>>& entryPoints, std::vector<std::pair<std::string, std::string>> defines, u32 flags)
     {
         static_assert(std::is_same<TResource, renderer::Shader>(), "wrong type");
         std::string innerName(filename);
@@ -232,7 +232,7 @@ namespace resource
             return outString;
         };
 
-        std::vector<const TResource*> resources;
+        std::vector<TResource*> resources;
         for (auto& entryPoint : entryPoints)
         {
             const std::string resourceName = composeResourceName(innerName, defines) + "_" + renderer::ShaderTypeString(std::get<1>(entryPoint));

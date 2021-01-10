@@ -93,13 +93,12 @@ int MyApplication::Execute()
 
 void MyApplication::Initialize()
 {
-    std::thread test_thread([this]() -> void
+    /*std::thread test_thread([this]() -> void
         {
             Test_Timer();
-            //Test_MemoryPool(); TODO
         });
 
-    test_thread.join();
+    test_thread.join();*/
 
     //Render test
     Context::RenderType renderTypes[2] = { Context::RenderType::VulkanRender, Context::RenderType::DirectXRender };
@@ -165,6 +164,8 @@ void MyApplication::Initialize()
     //}*/
 
     m_clearColor = { 1.0, 0.0, 0.0, 1.0 };
+
+    LOG_DEBUG("Tests have finished");
 }
 
 bool MyApplication::Running(renderer::CommandList& commandList)
@@ -270,7 +271,7 @@ void MyApplication::Test_Timer()
             u64 duration_w = std::chrono::duration_cast<std::chrono::milliseconds>(end_time_w - start_time_w).count();
 
             u64 error = miliseconds - (resetTime * 10);
-            LOG_DEBUG("Test_Timer chrono duration %d = 10 sec. Error %d ms", miliseconds, error);
+            LOG_WARNING("Test_Timer chrono duration %d = 10 sec. Error %d ms", miliseconds, error);
         }
 
         {
@@ -309,7 +310,7 @@ void MyApplication::Test_Timer()
             u64 duration_w = std::chrono::duration_cast<std::chrono::milliseconds>(end_time_w - start_time_w).count();
 
             u64 error = miliseconds - (resetTime * 10);
-            LOG_DEBUG("Test_Timer timer duration %d = 10 sec. Error %d ms", miliseconds, error);
+            LOG_WARNING("Test_Timer timer duration %d = 10 sec. Error %d ms", miliseconds, error);
             ASSERT(miliseconds == resetTime * 10, "Must be 10 sec");
         }
     }
@@ -405,8 +406,6 @@ void MyApplication::Test_ShaderLoader()
 {
     auto checkVertexShaderReflection = [](const Shader::ReflectionInfo& info)
     {
-        return;
-
         ASSERT(info._inputAttribute.size() == 3, "wrong");
         ASSERT(info._inputAttribute[0]._location == 0, "wrong");
         ASSERT(info._inputAttribute[0]._format == Format::Format_R32G32B32_SFloat, "wrong");
@@ -415,11 +414,13 @@ void MyApplication::Test_ShaderLoader()
         ASSERT(info._inputAttribute[2]._location == 2, "wrong");
         ASSERT(info._inputAttribute[2]._format == Format::Format_R32G32_SFloat, "wrong");
 
-        ASSERT(info._outputAttribute.size() == 2, "wrong");
+        ASSERT(info._outputAttribute.size() == 3, "wrong");
         ASSERT(info._outputAttribute[0]._location == 0, "wrong");
         ASSERT(info._outputAttribute[0]._format == Format::Format_R32G32B32A32_SFloat, "wrong");
         ASSERT(info._outputAttribute[1]._location == 1, "wrong");
         ASSERT(info._outputAttribute[1]._format == Format::Format_R32G32_SFloat, "wrong");
+        ASSERT(info._outputAttribute[2]._location == 2, "wrong");
+        ASSERT(info._outputAttribute[2]._format == Format::Format_R32G32B32_SFloat, "wrong");
 
         ASSERT(info._uniformBuffers.size() == 3, "wrong");
         ASSERT(info._uniformBuffers[0]._id == 1, "wrong");
@@ -435,7 +436,7 @@ void MyApplication::Test_ShaderLoader()
             ASSERT(info._uniformBuffers[0]._uniforms[0]._type == DataType::DataType_Matrix4, "wrong");
             ASSERT(info._uniformBuffers[0]._uniforms[0]._size == 64, "wrong");
             ASSERT(info._uniformBuffers[0]._uniforms[0]._offset == 0, "wrong");
-            //ASSERT(info._uniformBuffers[0]._uniforms[0]._name == 0, "wrong");
+            //ASSERT(info._uniformBuffers[0]._uniforms[0]._name == "matrix0_00", "wrong");
         }
         ASSERT(info._uniformBuffers[1]._id == 0, "wrong");
         ASSERT(info._uniformBuffers[1]._set == 0, "wrong");
@@ -450,19 +451,19 @@ void MyApplication::Test_ShaderLoader()
             ASSERT(info._uniformBuffers[1]._uniforms[0]._type == DataType::DataType_Matrix4, "wrong");
             ASSERT(info._uniformBuffers[1]._uniforms[0]._size == 64, "wrong");
             ASSERT(info._uniformBuffers[1]._uniforms[0]._offset == 0, "wrong");
-            //ASSERT(info._uniformBuffers[0]._uniforms[0]._name == 0, "wrong");
+            //ASSERT(info._uniformBuffers[1]._uniforms[0]._name == "matrix0_01", "wrong");
             ASSERT(info._uniformBuffers[1]._uniforms[1]._bufferId == 0, "wrong");
             ASSERT(info._uniformBuffers[1]._uniforms[1]._array == 1, "wrong");
             ASSERT(info._uniformBuffers[1]._uniforms[1]._type == DataType::DataType_Matrix4, "wrong");
             ASSERT(info._uniformBuffers[1]._uniforms[1]._size == 64, "wrong");
             ASSERT(info._uniformBuffers[1]._uniforms[1]._offset == 64, "wrong");
-            //ASSERT(info._uniformBuffers[0]._uniforms[0]._name == 0, "wrong");
+            //ASSERT(info._uniformBuffers[1]._uniforms[1]._name == "matrix1_01", "wrong");
             ASSERT(info._uniformBuffers[1]._uniforms[2]._bufferId == 0, "wrong");
             ASSERT(info._uniformBuffers[1]._uniforms[2]._array == 1, "wrong");
             ASSERT(info._uniformBuffers[1]._uniforms[2]._type == DataType::DataType_Matrix4, "wrong");
             ASSERT(info._uniformBuffers[1]._uniforms[2]._size == 64, "wrong");
             ASSERT(info._uniformBuffers[1]._uniforms[2]._offset == 128, "wrong");
-            //ASSERT(info._uniformBuffers[0]._uniforms[0]._name == 0, "wrong");
+            //ASSERT(info._uniformBuffers[1]._uniforms[2]._name == "matrix2_01", "wrong");
         }
         ASSERT(info._uniformBuffers[2]._id == 2, "wrong");
         ASSERT(info._uniformBuffers[2]._set == 1, "wrong");
@@ -477,23 +478,25 @@ void MyApplication::Test_ShaderLoader()
             ASSERT(info._uniformBuffers[2]._uniforms[0]._type == DataType::DataType_Matrix4, "wrong");
             ASSERT(info._uniformBuffers[2]._uniforms[0]._size == 64 * 2, "wrong");
             ASSERT(info._uniformBuffers[2]._uniforms[0]._offset == 0, "wrong");
-            //ASSERT(info._uniformBuffers[0]._uniforms[0]._name == 0, "wrong");
+            //ASSERT(info._uniformBuffers[2]._uniforms[0]._name == "matrix0_11", "wrong");
             ASSERT(info._uniformBuffers[2]._uniforms[1]._bufferId == 2, "wrong");
             ASSERT(info._uniformBuffers[2]._uniforms[1]._array == 2, "wrong");
             ASSERT(info._uniformBuffers[2]._uniforms[1]._type == DataType::DataType_Matrix4, "wrong");
             ASSERT(info._uniformBuffers[2]._uniforms[1]._size == 64 * 2, "wrong");
             ASSERT(info._uniformBuffers[2]._uniforms[1]._offset == 64 * 2, "wrong");
-            //ASSERT(info._uniformBuffers[0]._uniforms[0]._name == 0, "wrong");
+            //ASSERT(info._uniformBuffers[2]._uniforms[1]._name == "matrix1_11", "wrong");
         }
     };
 
     auto checkFragmentShaderReflection = [](const Shader::ReflectionInfo& info)
     {
-        ASSERT(info._inputAttribute.size() == 2, "wrong");
+        ASSERT(info._inputAttribute.size() == 3, "wrong");
         ASSERT(info._inputAttribute[0]._location == 0, "wrong");
         ASSERT(info._inputAttribute[0]._format == Format::Format_R32G32B32A32_SFloat, "wrong");
         ASSERT(info._inputAttribute[1]._location == 1, "wrong");
         ASSERT(info._inputAttribute[1]._format == Format::Format_R32G32_SFloat, "wrong");
+        ASSERT(info._inputAttribute[2]._location == 2, "wrong");
+        ASSERT(info._inputAttribute[2]._format == Format::Format_R32G32B32_SFloat, "wrong");
 
         ASSERT(info._outputAttribute.size() == 1, "wrong");
         ASSERT(info._outputAttribute[0]._location == 0, "wrong");
@@ -528,76 +531,18 @@ void MyApplication::Test_ShaderLoader()
         ASSERT(info._images[2]._name == "textureColor10", "wrong");
     };
 
-    //load source shaders from file
+    //vulkan only
     if (m_Context->getRenderType() == Context::RenderType::VulkanRender)
     {
-        /*
-        #version 450
-
-        layout (location = 0) in vec3 inAttribute0_vec3;
-        layout (location = 1) in vec4 inAttribute1_vec4;
-        layout (location = 2) in vec2 inAttribute2_vec2;
-
-        layout (set = 0, binding = 1, std140) uniform UBO01_size192
-        {
-            mat4 projectionMatrix;
-            mat4 modelMatrix;
-            mat4 viewMatrix;
-        } ubo01_size192;
-
-        layout (set = 0, binding = 0, std140) uniform UBO00_size64
-        {
-            mat4 projectionMatrix;
-        } ubo00_size64;
-
-        layout (set = 1, binding = 1, std140) uniform UBO11_size256
-        {
-            mat4 modelMatrix[2];
-            mat4 viewMatrix[2];
-        } ubo11_size256;
-
-        layout (location = 0) out vec4 outAttribute0_vec4;
-        layout (location = 1) out vec2 outAttribute1_vec2;
-
-        void main()
-        {
-            outAttribute1_vec2 = inAttribute2_vec2;
-            vec4 vertex = ubo01_size192.modelMatrix * vec4(inAttribute0_vec3, 1.0);
-            outAttribute0_vec4 = ubo00_size64.projectionMatrix * ubo11_size256.viewMatrix[1] * vertex;
-
-            gl_Position = outAttribute0_vec4;
-        }
-        */
-        Shader* glslVShader = ResourceLoaderManager::getInstance()->loadShader<Shader, ShaderSourceFileLoader>(m_Context, "examples/test/shaders/testReflectInfo.vert");
+        //load source shaders from file
+        Shader* glslVShader = ResourceLoaderManager::getInstance()->loadShader<Shader, ShaderSourceFileLoader>(m_Context, "examples/test/shaders/testReflectInfoWithNames.vert");
         ASSERT(glslVShader != nullptr, "wrong");
         {
             const Shader::ReflectionInfo& info = glslVShader->getReflectionInfo();
             checkVertexShaderReflection(info);
         }
 
-        /*
-        #version 450
-
-        layout (location = 0) in vec4 inAttribute0_vec4;
-        layout (location = 1) in vec2 inAttribute1_vec2;
-
-        layout (set = 0, binding = 0) uniform sampler samplerColor00;
-
-        layout (set = 0, binding = 2) uniform texture2D textureColor02;
-        layout (set = 1, binding = 0) uniform texture2D textureColor10;
-        layout (set = 0, binding = 1) uniform texture2D textureColor01;
-
-        layout (location = 0) out vec4 outFragColor;
-
-        void main()
-        {
-            outFragColor.r = texture(sampler2D(textureColor02, samplerColor00), inAttribute1_vec2).r;
-            outFragColor.g = texture(sampler2D(textureColor10, samplerColor00), inAttribute1_vec2).g;
-            outFragColor.b = texture(sampler2D(textureColor01, samplerColor00), inAttribute1_vec2).b;
-            outFragColor.a = 0.0;
-        }
-        */
-        Shader* glslFShader = ResourceLoaderManager::getInstance()->loadShader<Shader, ShaderSourceFileLoader>(m_Context, "examples/test/shaders/testReflectInfo.frag");
+        Shader* glslFShader = ResourceLoaderManager::getInstance()->loadShader<Shader, ShaderSourceFileLoader>(m_Context, "examples/test/shaders/testReflectInfoWithNames.frag");
         ASSERT(glslFShader != nullptr, "wrong");
         {
             const Shader::ReflectionInfo& info = glslFShader->getReflectionInfo();
@@ -608,14 +553,14 @@ void MyApplication::Test_ShaderLoader()
         ResourceLoaderManager::getInstance()->remove(glslFShader);
 
         //load spirv
-        Shader* spirvVShader = ResourceLoaderManager::getInstance()->loadShader<Shader, ShaderBinaryFileLoader>(m_Context, "examples/test/shaders/testReflectInfo.vspv");
+        Shader* spirvVShader = ResourceLoaderManager::getInstance()->loadShader<Shader, ShaderBinaryFileLoader>(m_Context, "examples/test/shaders/testReflectInfoWithNames.vspv");
         ASSERT(spirvVShader != nullptr, "wrong");
         {
             const Shader::ReflectionInfo& info = spirvVShader->getReflectionInfo();
             checkVertexShaderReflection(info);
         }
 
-        Shader* spirvFShader = ResourceLoaderManager::getInstance()->loadShader<Shader, ShaderBinaryFileLoader>(m_Context, "examples/test/shaders/testReflectInfo.fspv");
+        Shader* spirvFShader = ResourceLoaderManager::getInstance()->loadShader<Shader, ShaderBinaryFileLoader>(m_Context, "examples/test/shaders/testReflectInfoWithNames.fspv");
         ASSERT(spirvFShader != nullptr, "wrong");
         {
             const Shader::ReflectionInfo& info = spirvFShader->getReflectionInfo();
@@ -627,92 +572,14 @@ void MyApplication::Test_ShaderLoader()
     }
 
     {
-        //hlsl
-        /*
-        struct VS_INPUT
-        {
-            float3 inAttribute0_vec3 : IN_ATTRIBUTE0;
-            float4 inAttribute1_vec4 : IN_ATTRIBUTE1;
-            float2 inAttribute2_vec2 : IN_ATTRIBUTE2;
-        };
-
-        struct UBO01_size192
-        {
-            float4x4 projectionMatrix;
-            float4x4 modelMatrix;
-            float4x4 viewMatrix;
-        };
-
-        struct UBO00_size64
-        {
-            float4x4 projectionMatrix;
-        };
-
-        struct UBO11_size256
-        {
-            float4x4 modelMatrix[2];
-            float4x4 viewMatrix[2];
-        };
-
-        ConstantBuffer<UBO01_size192> ubo01_size192   : register(b1, space0);
-        ConstantBuffer<UBO00_size64>  ubo00_size64    : register(b0, space0);
-        ConstantBuffer<UBO11_size256> ubo11_size256   : register(b1, space1);
-
-
-        struct VS_OUTPUT 
-        {
-           float4 Position: SV_POSITION;
-           float4 outAttribute0_vec4: OUT_ATTRIBUTE0;
-           float2 outAttribute1_vec2: OUT_ATTRIBUTE1;
-        };
-
-        VS_OUTPUT main(VS_INPUT Input)
-        {
-           VS_OUTPUT Output;
-   
-           Output.outAttribute1_vec2 = Input.inAttribute2_vec2;
-   
-           float4 vertex = mul(ubo01_size192.modelMatrix, float4(Input.inAttribute0_vec3, 1.0));
-           Output.outAttribute0_vec4 = mul(ubo00_size64.projectionMatrix, vertex);
-           Output.outAttribute0_vec4 = mul(ubo11_size256.viewMatrix[1], Output.outAttribute0_vec4);
-
-           Output.Position = Output.outAttribute0_vec4;
-
-           return Output;
-        }
-        */
-        Shader* hlslVShader = ResourceLoaderManager::getInstance()->loadShader<Shader, ShaderSourceFileLoader>(m_Context, "examples/test/shaders/testReflectInfo.vs");
+        Shader* hlslVShader = ResourceLoaderManager::getInstance()->loadShader<Shader, ShaderSourceFileLoader>(m_Context, "examples/test/shaders/testReflectInfoWithNames.vs");
         ASSERT(hlslVShader != nullptr, "wrong");
         {
             const Shader::ReflectionInfo& info = hlslVShader->getReflectionInfo();
             checkVertexShaderReflection(info);
         }
 
-        /*
-        struct PS_INPUT
-        {
-           float4 inAttribute0_vec4: IN_ATTRIBUTE0;
-           float2 inAttribute1_vec2: IN_ATTRIBUTE1;
-        };
-
-        SamplerState samplerColor00 : register(s0, space0);
-
-        Texture2D textureColor02    : register(t2, space0);
-        Texture2D textureColor10    : register(t0, space1);
-        Texture2D textureColor01    : register(t1, space0);
-
-        float4 main(PS_INPUT Input) : SV_TARGET0
-        {
-            float4 OutColor;
-            OutColor.r = textureColor02.Sample(samplerColor00, Input.inAttribute1_vec2).r;
-            OutColor.g = textureColor10.Sample(samplerColor00, Input.inAttribute1_vec2).g;
-            OutColor.b = textureColor01.Sample(samplerColor00, Input.inAttribute1_vec2).b;
-            OutColor.a = 0.0;
-
-            return OutColor;
-        }
-        */
-        Shader* hlslPShader = ResourceLoaderManager::getInstance()->loadShader<Shader, ShaderSourceFileLoader>(m_Context, "examples/test/shaders/testReflectInfo.ps");
+        Shader* hlslPShader = ResourceLoaderManager::getInstance()->loadShader<Shader, ShaderSourceFileLoader>(m_Context, "examples/test/shaders/testReflectInfoWithNames.ps");
         ASSERT(hlslPShader != nullptr, "wrong");
         {
             const Shader::ReflectionInfo& info = hlslPShader->getReflectionInfo();
@@ -724,11 +591,27 @@ void MyApplication::Test_ShaderLoader()
     }
 
     {
-        //TODO
-        //auto [hlslVShader, hlslPShader] = ResourceLoaderManager::getInstance()->loadShaders<Shader, ShaderSourceFileLoader>(m_Context, "examples/test/shaders/testReflectInfo.hlsl");
-        //ASSERT(hlslVShader != nullptr, "wrong");
-        //ASSERT(hlslPShader != nullptr, "wrong");
+        std::vector<Shader*> hlslShaders = ResourceLoaderManager::getInstance()->loadHLSLShader<Shader, ShaderSourceFileLoader>(m_Context, "examples/test/shaders/testReflectInfoWithNames.hlsl", { {"mainVS", ShaderType::ShaderType_Vertex}, {"mainPS", ShaderType::ShaderType_Fragment} });
+        ASSERT(!hlslShaders.empty(), "wrong");
+
+        {
+            ASSERT(hlslShaders[0] != nullptr, "wrong");
+            const Shader::ReflectionInfo& info = hlslShaders[0]->getReflectionInfo();
+            checkVertexShaderReflection(info);
+        }
+
+        {
+            ASSERT(hlslShaders[1] != nullptr, "wrong");
+            const Shader::ReflectionInfo& info = hlslShaders[1]->getReflectionInfo();
+            checkFragmentShaderReflection(info);
+        }
+
+        ResourceLoaderManager::getInstance()->remove(hlslShaders[0]);
+        ResourceLoaderManager::getInstance()->remove(hlslShaders[1]);
+        hlslShaders.clear();
     }
+
+    [[maybe_unused]] u32 endTest = 0;
 }
 
 void MyApplication::Test_CreateShaderProgram()
@@ -820,88 +703,10 @@ void MyApplication::Test_CreateShaderProgram()
 void MyApplication::Test_ShaderParam()
 {
     {
-        //hlsl
-        /*
-        struct VS_INPUT
-        {
-            float3 inAttribute0_vec3 : IN_ATTRIBUTE0;
-            float4 inAttribute1_vec4 : IN_ATTRIBUTE1;
-            float2 inAttribute2_vec2 : IN_ATTRIBUTE2;
-        };
-
-        struct UBO01_size192
-        {
-            float4x4 projectionMatrix;
-            float4x4 modelMatrix;
-            float4x4 viewMatrix;
-        };
-
-        struct UBO00_size64
-        {
-            float4x4 projectionMatrix;
-        };
-
-        struct UBO11_size256
-        {
-            float4x4 modelMatrix[2];
-            float4x4 viewMatrix[2];
-        };
-
-        ConstantBuffer<UBO01_size192> ubo01_size192   : register(b1, space0);
-        ConstantBuffer<UBO00_size64>  ubo00_size64    : register(b0, space0);
-        ConstantBuffer<UBO11_size256> ubo11_size256   : register(b1, space1);
-
-
-        struct VS_OUTPUT
-        {
-           float4 Position: SV_POSITION;
-           float4 outAttribute0_vec4: OUT_ATTRIBUTE0;
-           float2 outAttribute1_vec2: OUT_ATTRIBUTE1;
-        };
-
-        VS_OUTPUT main(VS_INPUT Input)
-        {
-           VS_OUTPUT Output;
-
-           Output.outAttribute1_vec2 = Input.inAttribute2_vec2;
-
-           float4 vertex = mul(ubo01_size192.modelMatrix, float4(Input.inAttribute0_vec3, 1.0));
-           Output.outAttribute0_vec4 = mul(ubo00_size64.projectionMatrix, vertex);
-           Output.outAttribute0_vec4 = mul(ubo11_size256.viewMatrix[1], Output.outAttribute0_vec4);
-
-           Output.Position = Output.outAttribute0_vec4;
-
-           return Output;
-        }
-        */
-        Shader* hlslVShader = ResourceLoaderManager::getInstance()->loadShader<Shader, ShaderSourceFileLoader>(m_Context, "examples/test/shaders/testReflectInfo.vs");
+        Shader* hlslVShader = ResourceLoaderManager::getInstance()->loadShader<Shader, ShaderSourceFileLoader>(m_Context, "examples/test/shaders/testReflectInfoWithNames.vs");
         ASSERT(hlslVShader != nullptr, "wrong");
 
-        /*
-        struct PS_INPUT
-        {
-           float4 inAttribute0_vec4: IN_ATTRIBUTE0;
-           float2 inAttribute1_vec2: IN_ATTRIBUTE1;
-        };
-
-        SamplerState samplerColor00 : register(s0, space0);
-
-        Texture2D textureColor02    : register(t2, space0);
-        Texture2D textureColor10    : register(t0, space1);
-        Texture2D textureColor01    : register(t1, space0);
-
-        float4 main(PS_INPUT Input) : SV_TARGET0
-        {
-            float4 OutColor;
-            OutColor.r = textureColor02.Sample(samplerColor00, Input.inAttribute1_vec2).r;
-            OutColor.g = textureColor10.Sample(samplerColor00, Input.inAttribute1_vec2).g;
-            OutColor.b = textureColor01.Sample(samplerColor00, Input.inAttribute1_vec2).b;
-            OutColor.a = 0.0;
-
-            return OutColor;
-        }
-        */
-        Shader* hlslPShader = ResourceLoaderManager::getInstance()->loadShader<Shader, ShaderSourceFileLoader>(m_Context, "examples/test/shaders/testReflectInfo.ps");
+        Shader* hlslPShader = ResourceLoaderManager::getInstance()->loadShader<Shader, ShaderSourceFileLoader>(m_Context, "examples/test/shaders/testReflectInfoWithNames.ps");
         ASSERT(hlslPShader != nullptr, "wrong");
 
         CommandList* commandList = new CommandList(m_Context, CommandList::CommandListType::ImmediateCommandList);
@@ -913,8 +718,8 @@ void MyApplication::Test_ShaderParam()
         {
             struct UBO11_size256
             {
-                core::Matrix4D _modelMatrix[2];
-                core::Matrix4D _viewMatrix[2];
+                core::Matrix4D matrix0_11[2];
+                core::Matrix4D matrix1_11[2];
             } ubo11_size256;
             ASSERT(sizeof(ubo11_size256) == 256, "wrong");
 
@@ -924,9 +729,9 @@ void MyApplication::Test_ShaderParam()
 
             struct UBO01_size192
             {
-                core::Matrix4D _projectionMatrix;
-                core::Matrix4D _modelMatrix;
-                core::Matrix4D _viewMatrix;
+                core::Matrix4D matrix0_01;
+                core::Matrix4D matrix1_01;
+                core::Matrix4D matrix2_01;
             } ubo01_size192;
             ASSERT(sizeof(ubo01_size192) == 192, "wrong");
 
@@ -936,7 +741,7 @@ void MyApplication::Test_ShaderParam()
         }
 
         {
-            Texture2D* texture = commandList->createObject<Texture2D>(TextureUsage::TextureUsage_Sampled, Format::Format_R32G32B32A32_UInt, core::Dimension2D(1,1));
+            Texture2D* texture = commandList->createObject<Texture2D>(TextureUsage::TextureUsage_Sampled, Format::Format_R32G32B32A32_SFloat, core::Dimension2D(1,1));
             ASSERT(texture, "nullptr");
 
             SamplerState* sampler = commandList->createObject<SamplerState>();
