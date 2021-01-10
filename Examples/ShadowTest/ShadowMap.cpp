@@ -67,7 +67,7 @@ void ShadowMapping::Init(const renderer::VertexInputAttribDescription& desc)
     renderer::ShaderHeader vertexHeader(renderer::ShaderType::ShaderType_Vertex);
     vertexHeader._contentType = renderer::ShaderHeader::ShaderResource::ShaderResource_Source;
     vertexHeader._shaderModel = renderer::ShaderHeader::ShaderModel::ShaderModel_HLSL_5_1;
-    renderer::Shader* vertShader = resource::ResourceLoaderManager::getInstance()->composeShader<renderer::Shader, resource::ShaderSourceStreamLoader>(m_CmdList->getContext(), "shadowmap", &vertexHeader, vertexStream);
+    const renderer::Shader* vertShader = resource::ResourceLoaderManager::getInstance()->composeShader<renderer::Shader, resource::ShaderSourceStreamLoader>(m_CmdList->getContext(), "shadowmap", &vertexHeader, vertexStream);
 
     m_Program = m_CmdList->createObject<renderer::ShaderProgram, std::vector<const renderer::Shader*>>({ vertShader });
     m_Pipeline = m_CmdList->createObject<renderer::GraphicsPipelineState>(desc, m_Program.get(), m_RenderTarget.get());
@@ -179,7 +179,7 @@ void CascadedShadowMapping::Init(const renderer::VertexInputAttribDescription& d
     renderer::ShaderHeader vertexHeader(renderer::ShaderType::ShaderType_Vertex);
     vertexHeader._contentType = renderer::ShaderHeader::ShaderResource::ShaderResource_Source;
     vertexHeader._shaderModel = renderer::ShaderHeader::ShaderModel::ShaderModel_HLSL_5_1;
-    renderer::Shader* vertShader = resource::ResourceLoaderManager::getInstance()->composeShader<renderer::Shader, resource::ShaderSourceStreamLoader>(m_CmdList->getContext(), "shadowmap", &vertexHeader, vertexStream);
+    const renderer::Shader* vertShader = resource::ResourceLoaderManager::getInstance()->composeShader<renderer::Shader, resource::ShaderSourceStreamLoader>(m_CmdList->getContext(), "shadowmap", &vertexHeader, vertexStream);
 
     m_Program = m_CmdList->createObject<renderer::ShaderProgram, std::vector<const renderer::Shader*>>({ vertShader });
     m_Pipeline = m_CmdList->createObject<renderer::GraphicsPipelineState>(desc, m_Program.get(), m_RenderTargets[0].get());
@@ -373,7 +373,7 @@ void ShadowMappingPoint::Init(const renderer::VertexInputAttribDescription& desc
             });
     }
 
-    renderer::Shader* vertShader = nullptr;
+    const renderer::Shader* vertShader = nullptr;
     {
         const std::string vertexSource("\
         struct VS_INPUT\n\
@@ -417,7 +417,7 @@ void ShadowMappingPoint::Init(const renderer::VertexInputAttribDescription& desc
         vertShader = resource::ResourceLoaderManager::getInstance()->composeShader<renderer::Shader, resource::ShaderSourceStreamLoader>(m_CmdList->getContext(), "shadowmap_vetex", &vertexHeader, vertexStream);
     }
 
-    renderer::Shader* fragShader = nullptr;
+    const renderer::Shader* fragShader = nullptr;
     {
         const std::string fragmentSource("\
         struct PS_INPUT\n\

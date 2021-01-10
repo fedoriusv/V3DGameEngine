@@ -69,7 +69,6 @@ private:
     v3d::ShadowMappingPoint* m_ShadowMappingPoint;
     v3d::utils::IntrusivePointer<v3d::renderer::GraphicsPipelineState> m_ShadowMappingPointPipeline;
     v3d::utils::IntrusivePointer<v3d::renderer::ShaderProgram> m_ShadowMappingPointProgram;
-    v3d::core::Vector3D m_LightPosition = { 0.0f, 1.0f, 0.0f };
 
     enum 
     {

@@ -93,13 +93,6 @@ int MyApplication::Execute()
 
 void MyApplication::Initialize()
 {
-    /*std::thread test_thread([this]() -> void
-        {
-            Test_Timer();
-        });
-
-    test_thread.join();*/
-
     //Render test
     Context::RenderType renderTypes[2] = { Context::RenderType::VulkanRender, Context::RenderType::DirectXRender };
     for (Context::RenderType renderType : renderTypes)
@@ -119,51 +112,12 @@ void MyApplication::Initialize()
     }
     //Test_MemoryPool();
 
-    //Texture2D* texture = m_CommandList->createObject<Texture2D>(renderer::Format::Format_R8G8B8A8_UInt, core::Dimension2D(1024, 768), renderer::TextureSamples::TextureSamples_x1);
-    //renderTarget0 = m_CommandList->createObject<RenderTarget>(texture->getDimension());
-    //bool success = renderTarget0->setColorTexture(0, texture, renderer::RenderTargetLoadOp::LoadOp_Clear, renderer::RenderTargetStoreOp::StoreOp_Store);
-    //m_CommandList->setRenderTarget(renderTarget0);
+    std::thread test_thread([this]() -> void
+        {
+            Test_Timer();
+        });
 
-    ///*Texture2D* texture2 = m_CommandList->createObject<Texture2D>(renderer::Format::Format_R8G8B8A8_UInt, core::Dimension2D(80, 80), renderer::TextureSamples::TextureSamples_x1);
-    //renderTarget1 = m_CommandList->createObject<RenderTarget>(core::Dimension2D(80, 80));
-    //bool success1 = renderTarget1->setColorTexture(0, texture2, renderer::RenderTargetLoadOp::LoadOp_DontCare, renderer::RenderTargetStoreOp::StoreOp_Store);
-    //m_CommandList->setRenderTarget(renderTarget1);*/
-
-    //Shader* vertShader = ResourceLoaderManager::getInstance()->loadShader<Shader, ShaderSourceFileLoader>(m_Context, "Shaders/mrt.vert");
-    //Shader* fragShader = ResourceLoaderManager::getInstance()->loadShader<Shader, ShaderSourceFileLoader>(m_Context, "Shaders/mrt.frag");
-    ////Shader* fragShader = ResourceLoaderManager::getInstance()->loadResource<Shader, ShaderSourceFileLoader(m_Context, name, header, defines)>();
-    //
-    //ShaderProgram* program = m_CommandList->createObject<ShaderProgram>(std::vector<Shader*>{vertShader, fragShader});
-    //renderer::VertexInputAttribDescription vertexDesc;
-
-    //GraphicsPipelineState* pipeline = m_CommandList->createObject<GraphicsPipelineState>(vertexDesc, program, renderTarget0);
-
-    //pipeline->setPrimitiveTopology(PrimitiveTopology::PrimitiveTopology_TriangleList);
-    //m_CommandList->setPipelineState(pipeline);
-
-    //core::Matrix4D projection;
-
-    //program->bindTexture<Texture2D, ShaderType::ShaderType_Fragment>("samplerColor", texture);
-    //program->bindUniform<core::Matrix4D, ShaderType::ShaderType_Fragment>("projection", projection);
-
-    //std::vector<f32> vertexBuffer =
-    //{
-    //     1.0f,  1.0f, 0.0f,
-    //     -1.0f,  1.0f, 0.0f,
-    //      0.0f, -1.0f, 0.0f
-    //};
-    //u64 vertexBufferSize = vertexBuffer.size() * sizeof(f32);
-    //VertexStreamBuffer* streamBuffer = m_CommandList->createObject<VertexStreamBuffer>(StreamBuffer_Write | StreamBuffer_Shared,  vertexBufferSize, (u8*)vertexBuffer.data());
-    //
-    ///*Geometry geometry;
-    //Image image;
-    //Pipeline pipe;
-    //{
-    //    texture.upload(image);
-    //    geometry.upload(data);
-    //}*/
-
-    m_clearColor = { 1.0, 0.0, 0.0, 1.0 };
+    test_thread.join();
 
     LOG_DEBUG("Tests have finished");
 }
@@ -171,30 +125,6 @@ void MyApplication::Initialize()
 bool MyApplication::Running(renderer::CommandList& commandList)
 {
     //Frame
-    //commandList.beginFrame();
-    //commandList.clearBackbuffer(m_clearColor);
-
-    ////m_CommandList->draw(StreamBufferDescription(streamBuffer, 0, 3), 1);
-
-    ////m_CommandList->setRenderTarget(renderTarget0);
-    ////commandList.flushCommands();
-    ////m_CommandList->setRenderTarget(renderTarget1);
-
-    ///*commandList.set(pipe1);
-    //commandList.set(texture1);
-    //commandList.set(uniform1);
-    //commandList.draw(geometry1);
-
-    //commandList.set(pipe2);
-    //commandList.set(texture2);
-    //commandList.set(uniform2);
-    //commandList.draw(geometry2);*/
-
-    //commandList.endFrame();
-    //commandList.presentFrame();
-    //
-    //commandList.flushCommands();
-
     return true;
 }
 
@@ -340,24 +270,24 @@ void MyApplication::Test_MemoryPool()
         u64 ofse = pool.getOffsetInBlock(e);
         char* f = (char*)pool.getMemory(253);
         memset(f, 'f', 10);
-        u64 ofsf = pool.getOffsetInBlock(f);
+        [[maybe_unused]] u64 ofsf = pool.getOffsetInBlock(f);
         ////
 
         pool.freeMemory((void*)b);
-        char* nb = (char*)pool.getMemory(253);
+        [[maybe_unused]] char* nb = (char*)pool.getMemory(253);
         memset(b, 'B', 253);
-        u64 nofsb = pool.getOffsetInBlock(b);
+        [[maybe_unused]] u64 nofsb = pool.getOffsetInBlock(b);
 
         void* hugeData = pool.getMemory(1024 * 1024 * 4);
-        u64 ofhugeData = pool.getOffsetInBlock(hugeData);
+        [[maybe_unused]]  u64 ofhugeData = pool.getOffsetInBlock(hugeData);
 
         void* hugeData1 = pool.getMemory(1024 * 1024 * 40);
-        u64 ofhugeData1 = pool.getOffsetInBlock(hugeData1);
+        [[maybe_unused]] u64 ofhugeData1 = pool.getOffsetInBlock(hugeData1);
 
         pool.freeMemory(hugeData1);
 
         void* hugeData2 = pool.getMemory(1024 * 1024 * 400);
-        u64 ofhugeData2 = pool.getOffsetInBlock(hugeData2);
+        [[maybe_unused]] u64 ofhugeData2 = pool.getOffsetInBlock(hugeData2);
 
         pool.clearPools();
     }
@@ -398,8 +328,6 @@ void MyApplication::Test_MemoryPool()
 
         //pool.clearPools();
     }
-
-    int test;
 }
 
 void MyApplication::Test_ShaderLoader()
@@ -535,14 +463,14 @@ void MyApplication::Test_ShaderLoader()
     if (m_Context->getRenderType() == Context::RenderType::VulkanRender)
     {
         //load source shaders from file
-        Shader* glslVShader = ResourceLoaderManager::getInstance()->loadShader<Shader, ShaderSourceFileLoader>(m_Context, "examples/test/shaders/testReflectInfoWithNames.vert");
+        const Shader* glslVShader = ResourceLoaderManager::getInstance()->loadShader<Shader, ShaderSourceFileLoader>(m_Context, "examples/test/shaders/testReflectInfoWithNames.vert");
         ASSERT(glslVShader != nullptr, "wrong");
         {
             const Shader::ReflectionInfo& info = glslVShader->getReflectionInfo();
             checkVertexShaderReflection(info);
         }
 
-        Shader* glslFShader = ResourceLoaderManager::getInstance()->loadShader<Shader, ShaderSourceFileLoader>(m_Context, "examples/test/shaders/testReflectInfoWithNames.frag");
+        const Shader* glslFShader = ResourceLoaderManager::getInstance()->loadShader<Shader, ShaderSourceFileLoader>(m_Context, "examples/test/shaders/testReflectInfoWithNames.frag");
         ASSERT(glslFShader != nullptr, "wrong");
         {
             const Shader::ReflectionInfo& info = glslFShader->getReflectionInfo();
@@ -553,14 +481,14 @@ void MyApplication::Test_ShaderLoader()
         ResourceLoaderManager::getInstance()->remove(glslFShader);
 
         //load spirv
-        Shader* spirvVShader = ResourceLoaderManager::getInstance()->loadShader<Shader, ShaderBinaryFileLoader>(m_Context, "examples/test/shaders/testReflectInfoWithNames.vspv");
+        const Shader* spirvVShader = ResourceLoaderManager::getInstance()->loadShader<Shader, ShaderBinaryFileLoader>(m_Context, "examples/test/shaders/testReflectInfoWithNames.vspv");
         ASSERT(spirvVShader != nullptr, "wrong");
         {
             const Shader::ReflectionInfo& info = spirvVShader->getReflectionInfo();
             checkVertexShaderReflection(info);
         }
 
-        Shader* spirvFShader = ResourceLoaderManager::getInstance()->loadShader<Shader, ShaderBinaryFileLoader>(m_Context, "examples/test/shaders/testReflectInfoWithNames.fspv");
+        const Shader* spirvFShader = ResourceLoaderManager::getInstance()->loadShader<Shader, ShaderBinaryFileLoader>(m_Context, "examples/test/shaders/testReflectInfoWithNames.fspv");
         ASSERT(spirvFShader != nullptr, "wrong");
         {
             const Shader::ReflectionInfo& info = spirvFShader->getReflectionInfo();
@@ -572,14 +500,14 @@ void MyApplication::Test_ShaderLoader()
     }
 
     {
-        Shader* hlslVShader = ResourceLoaderManager::getInstance()->loadShader<Shader, ShaderSourceFileLoader>(m_Context, "examples/test/shaders/testReflectInfoWithNames.vs");
+        const Shader* hlslVShader = ResourceLoaderManager::getInstance()->loadShader<Shader, ShaderSourceFileLoader>(m_Context, "examples/test/shaders/testReflectInfoWithNames.vs");
         ASSERT(hlslVShader != nullptr, "wrong");
         {
             const Shader::ReflectionInfo& info = hlslVShader->getReflectionInfo();
             checkVertexShaderReflection(info);
         }
 
-        Shader* hlslPShader = ResourceLoaderManager::getInstance()->loadShader<Shader, ShaderSourceFileLoader>(m_Context, "examples/test/shaders/testReflectInfoWithNames.ps");
+        const Shader* hlslPShader = ResourceLoaderManager::getInstance()->loadShader<Shader, ShaderSourceFileLoader>(m_Context, "examples/test/shaders/testReflectInfoWithNames.ps");
         ASSERT(hlslPShader != nullptr, "wrong");
         {
             const Shader::ReflectionInfo& info = hlslPShader->getReflectionInfo();
@@ -591,7 +519,7 @@ void MyApplication::Test_ShaderLoader()
     }
 
     {
-        std::vector<Shader*> hlslShaders = ResourceLoaderManager::getInstance()->loadHLSLShader<Shader, ShaderSourceFileLoader>(m_Context, "examples/test/shaders/testReflectInfoWithNames.hlsl", { {"mainVS", ShaderType::ShaderType_Vertex}, {"mainPS", ShaderType::ShaderType_Fragment} });
+        std::vector<const Shader*> hlslShaders = ResourceLoaderManager::getInstance()->loadHLSLShader<Shader, ShaderSourceFileLoader>(m_Context, "examples/test/shaders/testReflectInfoWithNames.hlsl", { {"mainVS", ShaderType::ShaderType_Vertex}, {"mainPS", ShaderType::ShaderType_Fragment} });
         ASSERT(!hlslShaders.empty(), "wrong");
 
         {
@@ -617,7 +545,7 @@ void MyApplication::Test_ShaderLoader()
 void MyApplication::Test_CreateShaderProgram()
 {
     {
-        Shader* vertShader = nullptr;
+        const Shader* vertShader = nullptr;
         {
             const std::string vertexSource("\
         struct VS_INPUT\n\
@@ -658,7 +586,7 @@ void MyApplication::Test_CreateShaderProgram()
             ASSERT(vertShader, "nullptr");
         }
 
-        Shader* fragShader = nullptr;
+        const Shader* fragShader = nullptr;
         {
             const std::string fragmentSource("\
         struct PS_INPUT\n\
@@ -703,10 +631,10 @@ void MyApplication::Test_CreateShaderProgram()
 void MyApplication::Test_ShaderParam()
 {
     {
-        Shader* hlslVShader = ResourceLoaderManager::getInstance()->loadShader<Shader, ShaderSourceFileLoader>(m_Context, "examples/test/shaders/testReflectInfoWithNames.vs");
+        const Shader* hlslVShader = ResourceLoaderManager::getInstance()->loadShader<Shader, ShaderSourceFileLoader>(m_Context, "examples/test/shaders/testReflectInfoWithNames.vs");
         ASSERT(hlslVShader != nullptr, "wrong");
 
-        Shader* hlslPShader = ResourceLoaderManager::getInstance()->loadShader<Shader, ShaderSourceFileLoader>(m_Context, "examples/test/shaders/testReflectInfoWithNames.ps");
+        const Shader* hlslPShader = ResourceLoaderManager::getInstance()->loadShader<Shader, ShaderSourceFileLoader>(m_Context, "examples/test/shaders/testReflectInfoWithNames.ps");
         ASSERT(hlslPShader != nullptr, "wrong");
 
         CommandList* commandList = new CommandList(m_Context, CommandList::CommandListType::ImmediateCommandList);

@@ -59,14 +59,14 @@ void DirectionLightDebug::Init(renderer::CommandList* commandList, renderer::Ren
     renderer::ShaderHeader vertexHeader(renderer::ShaderType::ShaderType_Vertex);
     vertexHeader._contentType = renderer::ShaderHeader::ShaderResource::ShaderResource_Source;
     vertexHeader._shaderModel = renderer::ShaderHeader::ShaderModel::ShaderModel_HLSL_5_1;
-    renderer::Shader* vertShader = resource::ResourceLoaderManager::getInstance()->composeShader<renderer::Shader, resource::ShaderSourceStreamLoader>(commandList->getContext(), "vertex", &vertexHeader, vertexStream);
+    const renderer::Shader* vertShader = resource::ResourceLoaderManager::getInstance()->composeShader<renderer::Shader, resource::ShaderSourceStreamLoader>(commandList->getContext(), "vertex", &vertexHeader, vertexStream);
     delete vertexStream;
 
     const stream::Stream* fragmentStream = stream::StreamManager::createMemoryStream(k_fragmentDebug);
     renderer::ShaderHeader fragmentHeader(renderer::ShaderType::ShaderType_Fragment);
     fragmentHeader._contentType = renderer::ShaderHeader::ShaderResource::ShaderResource_Source;
     fragmentHeader._shaderModel = renderer::ShaderHeader::ShaderModel::ShaderModel_HLSL_5_1;
-    renderer::Shader* fragShader = resource::ResourceLoaderManager::getInstance()->composeShader<renderer::Shader, resource::ShaderSourceStreamLoader>(commandList->getContext(), "fragment", &fragmentHeader, fragmentStream);
+    const renderer::Shader* fragShader = resource::ResourceLoaderManager::getInstance()->composeShader<renderer::Shader, resource::ShaderSourceStreamLoader>(commandList->getContext(), "fragment", &fragmentHeader, fragmentStream);
     delete fragmentStream;
 
     std::vector<core::Vector3D> geometryData =
@@ -169,14 +169,14 @@ void LightDebug::Init(v3d::renderer::CommandList* commandList, v3d::renderer::Re
     renderer::ShaderHeader vertexHeader(renderer::ShaderType::ShaderType_Vertex);
     vertexHeader._contentType = renderer::ShaderHeader::ShaderResource::ShaderResource_Source;
     vertexHeader._shaderModel = renderer::ShaderHeader::ShaderModel::ShaderModel_HLSL_5_1;
-    renderer::Shader* vertShader = resource::ResourceLoaderManager::getInstance()->composeShader<renderer::Shader, resource::ShaderSourceStreamLoader>(commandList->getContext(), "vertex", &vertexHeader, vertexStream);
+    const renderer::Shader* vertShader = resource::ResourceLoaderManager::getInstance()->composeShader<renderer::Shader, resource::ShaderSourceStreamLoader>(commandList->getContext(), "vertex", &vertexHeader, vertexStream);
     delete vertexStream;
 
     const stream::Stream* fragmentStream = stream::StreamManager::createMemoryStream(k_fragmentDebug);
     renderer::ShaderHeader fragmentHeader(renderer::ShaderType::ShaderType_Fragment);
     fragmentHeader._contentType = renderer::ShaderHeader::ShaderResource::ShaderResource_Source;
     fragmentHeader._shaderModel = renderer::ShaderHeader::ShaderModel::ShaderModel_HLSL_5_1;
-    renderer::Shader* fragShader = resource::ResourceLoaderManager::getInstance()->composeShader<renderer::Shader, resource::ShaderSourceStreamLoader>(commandList->getContext(), "fragment", &fragmentHeader, fragmentStream);
+    const renderer::Shader* fragShader = resource::ResourceLoaderManager::getInstance()->composeShader<renderer::Shader, resource::ShaderSourceStreamLoader>(commandList->getContext(), "fragment", &fragmentHeader, fragmentStream);
     delete fragmentStream;
 
     m_Program = commandList->createObject<renderer::ShaderProgram, std::vector<const renderer::Shader*>>({ vertShader, fragShader });

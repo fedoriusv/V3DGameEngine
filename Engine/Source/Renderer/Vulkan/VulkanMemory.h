@@ -14,8 +14,8 @@ namespace vk
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
-    * VulkanMemory class. Render side
-    * Menegment of alloc/dealloc vulkan memory
+    * @brief VulkanMemory class. Render side.
+    * Management of alloc/dealloc vulkan memory
     */
     class VulkanMemory final
     {
@@ -52,7 +52,7 @@ namespace vk
         };
 
         /**
-        * VulkanMemoryAllocator class. Base allocator class
+        * @brief VulkanMemoryAllocator class. Base allocator class
         */
         class VulkanMemoryAllocator
         {
@@ -98,7 +98,7 @@ namespace vk
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
-    * SimpleVulkanMemoryAllocator class. Simple allocation
+    * @brief SimpleVulkanMemoryAllocator class. Simple allocation
     */
     class SimpleVulkanMemoryAllocator final : public VulkanMemory::VulkanMemoryAllocator
     {
@@ -119,7 +119,7 @@ namespace vk
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
-    * PoolVulkanMemoryAllocator class. Pool management allocation
+    * @brief PoolVulkanMemoryAllocator class. Pool management allocation
     */
     class PoolVulkanMemoryAllocator final : public VulkanMemory::VulkanMemoryAllocator
     {

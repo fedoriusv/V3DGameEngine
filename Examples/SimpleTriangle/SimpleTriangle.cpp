@@ -35,7 +35,7 @@ void SimpleTriangle::init(v3d::renderer::CommandList* commandList, const core::D
     ASSERT(m_CommandList, "nullptr");
     m_Camera->setPerspective(45.0f, size, k_nearValue, k_farValue);
 
-    renderer::Shader* vertShader = nullptr;
+    const renderer::Shader* vertShader = nullptr;
     {
         const std::string vertexSource("\
         struct VS_INPUT\n\

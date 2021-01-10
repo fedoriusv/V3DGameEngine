@@ -1,4 +1,4 @@
-#include "MyApplication.h"
+﻿#include "MyApplication.h"
 #include "Utils/Logger.h"
 
 #include "Renderer/Context.h"
@@ -41,7 +41,7 @@ MyApplication::MyApplication(int& argc, char** argv)
     , m_CascadeShadowMapping(nullptr)
     , m_ShadowMappingPoint(nullptr)
 
-    , m_Mode(DirectionLightCascadeShadowing)
+    , m_Mode(PointLight)
     , m_Debug(true)
 {
     ASSERT(m_Window, "windows is nullptr");
@@ -89,7 +89,7 @@ void MyApplication::Initialize()
     m_InputEventHandler->connect([this](const KeyboardInputEvent* event)
         {
             f32 moveSpeed = 0.1f;
-            v3d::core::Vector3D& lightPosition = m_LightPosition;
+            v3d::core::Vector3D& lightPosition = m_SunDirection;
             if (m_InputEventHandler->isKeyPressed(event::KeyCode::KeyKey_I))
             {
                 lightPosition.y += moveSpeed;
@@ -146,7 +146,7 @@ void MyApplication::Load()
     m_ShadowSampler->setWrap(renderer::SamplerWrap::TextureWrap_ClampToBorder);
     m_ShadowSampler->setEnableCompareOp(true);
     m_ShadowSampler->setCompareOp(renderer::CompareOperation::CompareOp_Less);
-    m_ShadowSampler->setBorderColor({ 0.0f, 1.0f, 1.0f, 1.0f });
+    m_ShadowSampler->setBorderColor({ 1.0f, 1.0f, 1.0f, 1.0f });
 
     {
         v3d::scene::Model* scene = resource::ResourceLoaderManager::getInstance()->load<v3d::scene::Model, resource::ModelFileLoader>("resources/big_field.dae");
@@ -185,20 +185,17 @@ void MyApplication::Load()
         m_CascadeShadowMappingProgram = m_CommandList->createObject<renderer::ShaderProgram>(shaders);
         m_CascadeShadowMappingPipeline = m_CommandList->createObject<renderer::GraphicsPipelineState>(m_ShadowMappingPipeline->getGraphicsPipelineStateDesc(), m_CascadeShadowMappingProgram.get(), m_RenderTarget.get());
     }
-    /*{
-        renderer::Shader* vertShader = resource::ResourceLoaderManager::getInstance()->loadShader<renderer::Shader, resource::ShaderSourceFileLoader>(m_CommandList->getContext(), "resources/solid_ShadowPointLight.vert");
-        renderer::Shader* fragShader = resource::ResourceLoaderManager::getInstance()->loadShader<renderer::Shader, resource::ShaderSourceFileLoader>(m_CommandList->getContext(), "resources/solid_ShadowPointLight.frag");
 
-        m_ShadowMappingPointProgram = m_CommandList->createObject<renderer::ShaderProgram, std::vector<const renderer::Shader*>>({ vertShader, fragShader });
-        m_ShadowMappingPointPipeline = m_CommandList->createObject<renderer::GraphicsPipelineState>(m_Scene->getVertexInputAttribDescription(0, 0), m_ShadowMappingPointProgram.get(), m_RenderTarget.get());
-        m_ShadowMappingPointPipeline->setPrimitiveTopology(renderer::PrimitiveTopology::PrimitiveTopology_TriangleList);
-        m_ShadowMappingPointPipeline->setFrontFace(renderer::FrontFace::FrontFace_Clockwise);
-        m_ShadowMappingPointPipeline->setCullMode(renderer::CullMode::CullMode_None);
-        m_ShadowMappingPointPipeline->setColorMask(renderer::ColorMask::ColorMask_All);
-        m_ShadowMappingPointPipeline->setDepthCompareOp(renderer::CompareOperation::CompareOp_Less);
-        m_ShadowMappingPointPipeline->setDepthWrite(true);
-        m_ShadowMappingPointPipeline->setDepthTest(true);
-    }*/
+    {
+        std::vector<const renderer::Shader*> shaders = resource::ResourceLoaderManager::getInstance()->loadHLSLShader<renderer::Shader, resource::ShaderSourceFileLoader>(m_CommandList->getContext(), "resources/solid_ShadowPointLight.hlsl",
+            {
+                {"main_VS", renderer::ShaderType_Vertex },
+                {"main_FS", renderer::ShaderType_Fragment }
+            });
+
+        m_ShadowMappingPointProgram = m_CommandList->createObject<renderer::ShaderProgram>(shaders);
+        m_ShadowMappingPointPipeline = m_CommandList->createObject<renderer::GraphicsPipelineState>(m_ShadowMappingPipeline->getGraphicsPipelineStateDesc(), m_ShadowMappingPointProgram.get(), m_RenderTarget.get());
+    }
 
     m_CommandList->flushCommands();
 
@@ -208,8 +205,8 @@ void MyApplication::Load()
     m_CascadeShadowMapping = new CascadedShadowMapping(m_CommandList);
     m_CascadeShadowMapping->Init(m_Scene->getVertexInputAttribDescription(0, 0));
 
-    //m_ShadowMappingPoint = new ShadowMappingPoint(m_CommandList);
-    //m_ShadowMappingPoint->Init(m_Scene->getVertexInputAttribDescription(0, 0));
+    m_ShadowMappingPoint = new ShadowMappingPoint(m_CommandList);
+    m_ShadowMappingPoint->Init(m_Scene->getVertexInputAttribDescription(0, 0));
 
     if (m_Debug)
     {
@@ -344,8 +341,6 @@ void MyApplication::DrawPointLightMode()
             core::Matrix4D modelMatrix;
             core::Matrix4D normalMatrix;
             core::Matrix4D viewMatrix;
-            core::Vector4D lightPosition;
-            core::Vector4D viewPosition;
         } ubo;
 
 
@@ -354,20 +349,24 @@ void MyApplication::DrawPointLightMode()
         ubo.modelMatrix.getInverse(ubo.normalMatrix);
         ubo.normalMatrix.makeTransposed();
         ubo.viewMatrix = m_FPSCameraHelper->getViewMatrix();
-        ubo.lightPosition = m_LightPosition;
+
+        m_ShadowMappingPointProgram->bindUniformsBuffer<renderer::ShaderType::ShaderType_Vertex>({ "vs_buffer" }, 0, (u32)sizeof(UBO), &ubo);
+    }
+
+    {
+        struct UBO
+        {
+            core::Vector4D lightPosition;
+            core::Vector4D viewPosition;
+        } ubo;
+
+        ubo.lightPosition = m_SunDirection;
         ubo.viewPosition = m_FPSCameraHelper->getPosition();
 
-        m_ShadowMappingPointProgram->bindUniformsBuffer<renderer::ShaderType::ShaderType_Vertex>({ "ubo" }, 0, (u32)sizeof(UBO), &ubo);
-        m_ShadowMappingPointProgram->bindSampler<renderer::ShaderType::ShaderType_Fragment>({ "shadowSampler" }, m_ShadowSampler.get());
-        m_ShadowMappingProgram->bindTexture<renderer::ShaderType::ShaderType_Fragment, renderer::TextureCube>({ "shadowMap" }, m_ShadowMappingPoint->GetDepthMap());
+        m_ShadowMappingPointProgram->bindUniformsBuffer<renderer::ShaderType::ShaderType_Fragment>({ "fs_buffer" }, 0, (u32)sizeof(UBO), &ubo);
     }
 
     m_Scene->draw();
-
-    if (m_Debug)
-    {
-        m_LightDebug.Draw(m_CommandList, &m_FPSCameraHelper->getCamera(), m_LightPosition);
-    }
 }
 
 bool MyApplication::Running()
@@ -384,6 +383,11 @@ bool MyApplication::Running()
     else if (m_Mode == PointLight)
     {
         MyApplication::DrawPointLightMode();
+    }
+
+    if (m_Debug)
+    {
+        m_LightDebug.Draw(m_CommandList, &m_FPSCameraHelper->getCamera(), m_SunDirection);
     }
 
     m_CommandList->endFrame();
@@ -427,7 +431,7 @@ void MyApplication::Update(f32 dt)
     }
     else if (m_Mode == PointLight)
     {
-        m_ShadowMappingPoint->Update(dt, m_LightPosition);
+        m_ShadowMappingPoint->Update(dt, m_SunDirection);
     }
 
     core::Matrix4D transform;
@@ -438,15 +442,6 @@ void MyApplication::Update(f32 dt)
 
 void MyApplication::Exit()
 {
-    m_ShadowMapping->Free();
-    delete m_ShadowMapping;
-
-    m_CascadeShadowMapping->Free();
-    delete m_CascadeShadowMapping;
-
-    m_ShadowMappingPoint->Free();
-    delete m_ShadowMappingPoint;
-
     if (m_Debug)
     {
         m_LightDebug.Free();
@@ -457,14 +452,23 @@ void MyApplication::Exit()
         renderer::Texture2D* depthAttachment = m_RenderTarget->getDepthStencilTexture<renderer::Texture2D>();
         delete depthAttachment;
     }
+    m_RenderTarget = nullptr;
 
     m_ShadowSampler = nullptr;
 
-    m_RenderTarget = nullptr;
 
+    m_ShadowMapping->Free();
+    delete m_ShadowMapping;
     m_ShadowMappingPipeline = nullptr;
     m_ShadowMappingProgram = nullptr;
 
+    m_CascadeShadowMapping->Free();
+    delete m_CascadeShadowMapping;
+    m_CascadeShadowMappingPipeline = nullptr;
+    m_CascadeShadowMappingProgram = nullptr;
+
+    m_ShadowMappingPoint->Free();
+    delete m_ShadowMappingPoint;
     m_ShadowMappingPointPipeline = nullptr;
     m_ShadowMappingPointProgram = nullptr;
 
