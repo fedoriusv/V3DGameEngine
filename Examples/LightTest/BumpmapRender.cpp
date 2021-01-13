@@ -19,14 +19,14 @@ ForwardNormalMapTest::~ForwardNormalMapTest()
 
 void ForwardNormalMapTest::Load(renderer::RenderTargetState* renderTarget, const renderer::VertexInputAttribDescription& desc, u32 countLights)
 {
-    resource::Image* imageColor = resource::ResourceLoaderManager::getInstance()->load<resource::Image, resource::ImageFileLoader>("resources/bumpmap/brickwall.jpg");
+    resource::Image* imageColor = resource::ResourceLoaderManager::getInstance()->load<resource::Image, resource::ImageFileLoader>("resources/bumpmap/brickwall.jpg", resource::ImageLoaderFlag_GenerateMipmaps);
     ASSERT(imageColor, "not found");
-    m_TextureColor = m_CommandList.createObject<renderer::Texture2D>(renderer::TextureUsage_Sampled | renderer::TextureUsage_Write,imageColor->getFormat(), core::Dimension2D(imageColor->getDimension().width, imageColor->getDimension().height), 1, imageColor->getRawData(), "DiffuseColor");
+    m_TextureColor = m_CommandList.createObject<renderer::Texture2D>(renderer::TextureUsage_Sampled | renderer::TextureUsage_Write,imageColor->getFormat(), core::Dimension2D(imageColor->getDimension().width, imageColor->getDimension().height), imageColor->getMipMapsCount(), imageColor->getRawData(), "DiffuseColor");
     m_SamplerColor = m_CommandList.createObject<renderer::SamplerState>(renderer::SamplerFilter::SamplerFilter_Trilinear, renderer::SamplerAnisotropic::SamplerAnisotropic_4x);
 
-    resource::Image* imageNormal = resource::ResourceLoaderManager::getInstance()->load<resource::Image, resource::ImageFileLoader>("resources/bumpmap/brickwall_normal.jpg");
+    resource::Image* imageNormal = resource::ResourceLoaderManager::getInstance()->load<resource::Image, resource::ImageFileLoader>("resources/bumpmap/brickwall_normal.jpg", resource::ImageLoaderFlag_GenerateMipmaps);
     ASSERT(imageNormal, "not found");
-    m_TextureNormalmap = m_CommandList.createObject<renderer::Texture2D>(renderer::TextureUsage_Sampled | renderer::TextureUsage_Write, imageNormal->getFormat(), core::Dimension2D(imageNormal->getDimension().width, imageNormal->getDimension().height), 1, imageNormal->getRawData(), "NormalMap");
+    m_TextureNormalmap = m_CommandList.createObject<renderer::Texture2D>(renderer::TextureUsage_Sampled | renderer::TextureUsage_Write, imageNormal->getFormat(), core::Dimension2D(imageNormal->getDimension().width, imageNormal->getDimension().height), imageNormal->getMipMapsCount(), imageNormal->getRawData(), "NormalMap");
     m_SamplerNormalmap = m_CommandList.createObject<renderer::SamplerState>(renderer::SamplerFilter::SamplerFilter_Nearest, renderer::SamplerAnisotropic::SamplerAnisotropic_None);
 
     std::vector<std::pair<std::string, std::string>> constants =
@@ -34,8 +34,8 @@ void ForwardNormalMapTest::Load(renderer::RenderTargetState* renderTarget, const
         { "LIGHT_COUNT", std::to_string(countLights) }
     };
 
-    renderer::Shader* vertShader = resource::ResourceLoaderManager::getInstance()->loadShader<renderer::Shader, resource::ShaderSourceFileLoader>(m_CommandList.getContext(), "resources/bumpmap/normalmap.vert");
-    renderer::Shader* fragShader = resource::ResourceLoaderManager::getInstance()->loadShader<renderer::Shader, resource::ShaderSourceFileLoader>(m_CommandList.getContext(), "resources/bumpmap/normalmap.frag", constants);
+    const renderer::Shader* vertShader = resource::ResourceLoaderManager::getInstance()->loadShader<renderer::Shader, resource::ShaderSourceFileLoader>(m_CommandList.getContext(), "resources/bumpmap/normalmap.vert");
+    const renderer::Shader* fragShader = resource::ResourceLoaderManager::getInstance()->loadShader<renderer::Shader, resource::ShaderSourceFileLoader>(m_CommandList.getContext(), "resources/bumpmap/normalmap.frag", constants);
 
     m_Program = m_CommandList.createObject<renderer::ShaderProgram, std::vector<const renderer::Shader*>>({ vertShader, fragShader });
     m_Pipeline = m_CommandList.createObject<renderer::GraphicsPipelineState>(desc, m_Program.get(), renderTarget);
@@ -130,18 +130,18 @@ ForwardParallaxMappingTest::~ForwardParallaxMappingTest()
 
 void ForwardParallaxMappingTest::Load(renderer::RenderTargetState* renderTarget, const renderer::VertexInputAttribDescription& desc, u32 countLights)
 {
-    resource::Image* imageColor = resource::ResourceLoaderManager::getInstance()->load<resource::Image, resource::ImageFileLoader>("resources/bumpmap/bricks2.jpg");
+    resource::Image* imageColor = resource::ResourceLoaderManager::getInstance()->load<resource::Image, resource::ImageFileLoader>("resources/bumpmap/bricks2.jpg", resource::ImageLoaderFlag_GenerateMipmaps);
     ASSERT(imageColor, "not found");
-    m_TextureColor = m_CommandList.createObject<renderer::Texture2D>(renderer::TextureUsage_Sampled | renderer::TextureUsage_Write, imageColor->getFormat(), core::Dimension2D(imageColor->getDimension().width, imageColor->getDimension().height), 1, imageColor->getRawData(), "DiffuseColor");
+    m_TextureColor = m_CommandList.createObject<renderer::Texture2D>(renderer::TextureUsage_Sampled | renderer::TextureUsage_Write, imageColor->getFormat(), core::Dimension2D(imageColor->getDimension().width, imageColor->getDimension().height), imageColor->getMipMapsCount(), imageColor->getRawData(), "DiffuseColor");
     m_SamplerColor = m_CommandList.createObject<renderer::SamplerState>(renderer::SamplerFilter::SamplerFilter_Trilinear, renderer::SamplerAnisotropic::SamplerAnisotropic_4x);
 
-    resource::Image* imageNormal = resource::ResourceLoaderManager::getInstance()->load<resource::Image, resource::ImageFileLoader>("resources/bumpmap/bricks2_normal.jpg");
+    resource::Image* imageNormal = resource::ResourceLoaderManager::getInstance()->load<resource::Image, resource::ImageFileLoader>("resources/bumpmap/bricks2_normal.jpg", resource::ImageLoaderFlag_GenerateMipmaps);
     ASSERT(imageNormal, "not found");
-    m_TextureNormalmap = m_CommandList.createObject<renderer::Texture2D>(renderer::TextureUsage_Sampled | renderer::TextureUsage_Write, imageNormal->getFormat(), core::Dimension2D(imageNormal->getDimension().width, imageNormal->getDimension().height), 1, imageNormal->getRawData(), "NormalMap");
+    m_TextureNormalmap = m_CommandList.createObject<renderer::Texture2D>(renderer::TextureUsage_Sampled | renderer::TextureUsage_Write, imageNormal->getFormat(), core::Dimension2D(imageNormal->getDimension().width, imageNormal->getDimension().height), imageNormal->getMipMapsCount(), imageNormal->getRawData(), "NormalMap");
 
-    resource::Image* imageHeight = resource::ResourceLoaderManager::getInstance()->load<resource::Image, resource::ImageFileLoader>("resources/bumpmap/bricks2_disp.jpg");
+    resource::Image* imageHeight = resource::ResourceLoaderManager::getInstance()->load<resource::Image, resource::ImageFileLoader>("resources/bumpmap/bricks2_disp.jpg", resource::ImageLoaderFlag_GenerateMipmaps);
     ASSERT(imageHeight, "not found");
-    m_TextureHeightmap = m_CommandList.createObject<renderer::Texture2D>(renderer::TextureUsage_Sampled | renderer::TextureUsage_Write, imageNormal->getFormat(), core::Dimension2D(imageNormal->getDimension().width, imageNormal->getDimension().height), 1, imageNormal->getRawData(), "ParallaxMapping");
+    m_TextureHeightmap = m_CommandList.createObject<renderer::Texture2D>(renderer::TextureUsage_Sampled | renderer::TextureUsage_Write, imageHeight->getFormat(), core::Dimension2D(imageHeight->getDimension().width, imageHeight->getDimension().height), imageHeight->getMipMapsCount(), imageHeight->getRawData(), "ParallaxMapping");
     
     m_SamplerFilter = m_CommandList.createObject<renderer::SamplerState>(renderer::SamplerFilter::SamplerFilter_Nearest, renderer::SamplerAnisotropic::SamplerAnisotropic_None);
 
@@ -155,8 +155,8 @@ void ForwardParallaxMappingTest::Load(renderer::RenderTargetState* renderTarget,
         { "QUADRATIC", std::to_string(0.032) }
     };
 
-    renderer::Shader* vertShader = resource::ResourceLoaderManager::getInstance()->loadShader<renderer::Shader, resource::ShaderSourceFileLoader>(m_CommandList.getContext(), "resources/bumpmap/parallaxmap.vert");
-    renderer::Shader* fragShader = resource::ResourceLoaderManager::getInstance()->loadShader<renderer::Shader, resource::ShaderSourceFileLoader>(m_CommandList.getContext(), "resources/bumpmap/parallaxmap.frag", constants);
+    const renderer::Shader* vertShader = resource::ResourceLoaderManager::getInstance()->loadShader<renderer::Shader, resource::ShaderSourceFileLoader>(m_CommandList.getContext(), "resources/bumpmap/parallaxmap.vert");
+    const renderer::Shader* fragShader = resource::ResourceLoaderManager::getInstance()->loadShader<renderer::Shader, resource::ShaderSourceFileLoader>(m_CommandList.getContext(), "resources/bumpmap/parallaxmap.frag", constants);
 
     m_Program = m_CommandList.createObject<renderer::ShaderProgram, std::vector<const renderer::Shader*>>({ vertShader, fragShader });
     m_Pipeline = m_CommandList.createObject<renderer::GraphicsPipelineState>(desc, m_Program.get(), renderTarget);

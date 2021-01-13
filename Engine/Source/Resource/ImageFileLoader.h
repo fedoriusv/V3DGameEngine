@@ -22,20 +22,27 @@ namespace resource
     enum ImageLoaderFlag : u32
     {
         ImageLoaderFlag_FlipY = 1 << 0,
+        ImageLoaderFlag_GenerateMipmaps = 1 << 1,
     };
 
     typedef u32 ImageLoaderFlags;
 
     /**
-    * ImageFileLoader class. Loader from file
+    * @brief ImageFileLoader class. Loader from file
     */
     class ImageFileLoader : public ResourceLoader<resource::Image*>
     {
     public:
 
-        ImageFileLoader(u32 flags) noexcept;
-        ~ImageFileLoader();
+        explicit ImageFileLoader(u32 flags) noexcept;
+        ~ImageFileLoader() = default;
 
+        /**
+        * @brief Load image resource by name from file
+        * @param const std::string& name [required]
+        * @param const std::string& alias [optional]
+        * @return Image pointer
+        */
         resource::Image* load(const std::string& name, const std::string& alias = "") override;
 
     };

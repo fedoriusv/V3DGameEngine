@@ -40,7 +40,7 @@ namespace resource
         ~Image();
 
         renderer::Format getFormat() const;
-        core::Dimension3D getDimension() const;
+        const core::Dimension3D& getDimension() const;
         u32 getLayersCount() const;
         u32 getMipMapsCount() const;
 

@@ -23,7 +23,9 @@ ImageFileLoader::ImageFileLoader(u32 flags) noexcept
     {
         resource::ImageHeader header;
         header._flipY = (flags & ImageLoaderFlag::ImageLoaderFlag_FlipY);
-        ResourceLoader::registerDecoder(new ImageStbDecoder({ "jpg", "png", "bmp", "tga" }, header, !!flags));
+        bool generateMipmaps = (flags & ImageLoaderFlag::ImageLoaderFlag_GenerateMipmaps);
+
+        ResourceLoader::registerDecoder(new ImageStbDecoder({ "jpg", "png", "bmp", "tga" }, header, !!flags, generateMipmaps));
     }
 #endif //USE_STB
 
@@ -42,11 +44,7 @@ ImageFileLoader::ImageFileLoader(u32 flags) noexcept
     ResourceLoader::registerPathes(ResourceLoaderManager::getInstance()->getPathes());
 }
 
-ImageFileLoader::~ImageFileLoader()
-{
-}
-
-resource::Image* ImageFileLoader::load(const std::string & name, const std::string & alias)
+resource::Image* ImageFileLoader::load(const std::string& name, const std::string& alias)
 {
     for (std::string& root : m_roots)
     {

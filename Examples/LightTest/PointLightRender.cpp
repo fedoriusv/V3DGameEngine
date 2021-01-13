@@ -30,8 +30,8 @@ void ForwardPointLightTest::Load(renderer::RenderTargetState* renderTarget, cons
         { "LIGHT_COUNT", std::to_string(countLights) }
     };
 
-    renderer::Shader* vertShader = resource::ResourceLoaderManager::getInstance()->loadShader<renderer::Shader, resource::ShaderSourceFileLoader>(m_CommandList.getContext(), "resources/point/phongTextureless.vert");
-    renderer::Shader* fragShader = resource::ResourceLoaderManager::getInstance()->loadShader<renderer::Shader, resource::ShaderSourceFileLoader>(m_CommandList.getContext(), "resources/point/phongTextureless.frag", constants);
+    const renderer::Shader* vertShader = resource::ResourceLoaderManager::getInstance()->loadShader<renderer::Shader, resource::ShaderSourceFileLoader>(m_CommandList.getContext(), "resources/point/phongTextureless.vert");
+    const renderer::Shader* fragShader = resource::ResourceLoaderManager::getInstance()->loadShader<renderer::Shader, resource::ShaderSourceFileLoader>(m_CommandList.getContext(), "resources/point/phongTextureless.frag", constants);
 
     m_Program = m_CommandList.createObject<renderer::ShaderProgram, std::vector<const renderer::Shader*>>({ vertShader, fragShader });
     m_Pipeline = m_CommandList.createObject<renderer::GraphicsPipelineState>(desc, m_Program.get(), renderTarget);
@@ -119,15 +119,15 @@ void ForwardPointLightTextureTest::Load(renderer::RenderTargetState* renderTarge
     m_Sampler = m_CommandList.createObject<renderer::SamplerState>(renderer::SamplerFilter::SamplerFilter_Trilinear, renderer::SamplerAnisotropic::SamplerAnisotropic_4x);
     m_Sampler->setWrap(renderer::SamplerWrap::TextureWrap_MirroredRepeat);
 
-    resource::Image* imageDiffuse = resource::ResourceLoaderManager::getInstance()->load<resource::Image, resource::ImageFileLoader>("resources/point/container2.png");
+    resource::Image* imageDiffuse = resource::ResourceLoaderManager::getInstance()->load<resource::Image, resource::ImageFileLoader>("resources/point/container2.png", resource::ImageLoaderFlag_GenerateMipmaps);
     ASSERT(imageDiffuse, "not found");
     m_TextureDiffuse = m_CommandList.createObject<renderer::Texture2D>(renderer::TextureUsage_Sampled | renderer::TextureUsage_Write,
-        imageDiffuse->getFormat(), core::Dimension2D(imageDiffuse->getDimension().width, imageDiffuse->getDimension().height), 1, imageDiffuse->getRawData(), "PhongDiffuse");
+        imageDiffuse->getFormat(), core::Dimension2D(imageDiffuse->getDimension().width, imageDiffuse->getDimension().height), imageDiffuse->getMipMapsCount(), imageDiffuse->getRawData(), "PhongDiffuse");
 
-    resource::Image* imageSpecular = resource::ResourceLoaderManager::getInstance()->load<resource::Image, resource::ImageFileLoader>("resources/point/container2_specular.png");
+    resource::Image* imageSpecular = resource::ResourceLoaderManager::getInstance()->load<resource::Image, resource::ImageFileLoader>("resources/point/container2_specular.png", resource::ImageLoaderFlag_GenerateMipmaps);
     ASSERT(imageSpecular, "not found");
     m_TextureSpecular = m_CommandList.createObject<renderer::Texture2D>(renderer::TextureUsage_Sampled | renderer::TextureUsage_Write,
-        imageSpecular->getFormat(), core::Dimension2D(imageSpecular->getDimension().width, imageSpecular->getDimension().height), 1, imageSpecular->getRawData(), "PhongSpecular");
+        imageSpecular->getFormat(), core::Dimension2D(imageSpecular->getDimension().width, imageSpecular->getDimension().height), imageSpecular->getMipMapsCount(), imageSpecular->getRawData(), "PhongSpecular");
 
     std::vector<std::pair<std::string, std::string>> constants =
     {
@@ -138,8 +138,8 @@ void ForwardPointLightTextureTest::Load(renderer::RenderTargetState* renderTarge
         { "LIGHT_COUNT", std::to_string(countLights) }
     };
 
-    renderer::Shader* vertShader = resource::ResourceLoaderManager::getInstance()->loadShader<renderer::Shader, resource::ShaderSourceFileLoader>(m_CommandList.getContext(), "resources/point/phong.vert");
-    renderer::Shader* fragShader = resource::ResourceLoaderManager::getInstance()->loadShader<renderer::Shader, resource::ShaderSourceFileLoader>(m_CommandList.getContext(), "resources/point/phong.frag", constants);
+    const renderer::Shader* vertShader = resource::ResourceLoaderManager::getInstance()->loadShader<renderer::Shader, resource::ShaderSourceFileLoader>(m_CommandList.getContext(), "resources/point/phong.vert");
+    const renderer::Shader* fragShader = resource::ResourceLoaderManager::getInstance()->loadShader<renderer::Shader, resource::ShaderSourceFileLoader>(m_CommandList.getContext(), "resources/point/phong.frag", constants);
 
     m_Program = m_CommandList.createObject<renderer::ShaderProgram, std::vector<const renderer::Shader*>>({ vertShader, fragShader });
     m_Pipeline = m_CommandList.createObject<renderer::GraphicsPipelineState>(desc, m_Program.get(), renderTarget);
