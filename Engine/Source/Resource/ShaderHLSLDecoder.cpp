@@ -45,7 +45,7 @@ ShaderHLSLDecoder::~ShaderHLSLDecoder()
 {
 }
 
-Resource* ShaderHLSLDecoder::decode(const stream::Stream* stream, const std::string& name)
+Resource* ShaderHLSLDecoder::decode(const stream::Stream* stream, const std::string& name) const
 {
     if (stream->size() > 0)
     {

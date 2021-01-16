@@ -120,7 +120,7 @@ namespace resource
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     template<class TResource, class TResourceLoader>
-    const TResource* ResourceLoaderManager::composeShader(renderer::Context* context, const std::string name, const renderer::ShaderHeader* header, const stream::Stream* stream)
+    inline const TResource* ResourceLoaderManager::composeShader(renderer::Context* context, const std::string name, const renderer::ShaderHeader* header, const stream::Stream* stream)
     {
         static_assert(std::is_same<TResource, renderer::Shader>(), "wrong type");
         std::string innerName(name);
@@ -165,7 +165,7 @@ namespace resource
     }
 
     template<class TResource, class TResourceLoader>
-    const TResource* ResourceLoaderManager::loadShader(renderer::Context* context, std::string filename, std::vector<std::pair<std::string, std::string>> defines, u32 flags)
+    inline const TResource* ResourceLoaderManager::loadShader(renderer::Context* context, std::string filename, std::vector<std::pair<std::string, std::string>> defines, u32 flags)
     {
         static_assert(std::is_same<TResource, renderer::Shader>(), "wrong type");
         std::string innerName(filename);
@@ -209,7 +209,7 @@ namespace resource
     }
 
     template<class TResource, class TResourceLoader>
-    std::vector<const TResource*> ResourceLoaderManager::loadHLSLShader(renderer::Context* context, std::string filename, const std::vector<std::tuple<std::string, renderer::ShaderType>>& entryPoints, std::vector<std::pair<std::string, std::string>> defines, u32 flags)
+    inline std::vector<const TResource*> ResourceLoaderManager::loadHLSLShader(renderer::Context* context, std::string filename, const std::vector<std::tuple<std::string, renderer::ShaderType>>& entryPoints, std::vector<std::pair<std::string, std::string>> defines, u32 flags)
     {
         static_assert(std::is_same<TResource, renderer::Shader>(), "wrong type");
         std::string innerName(filename);
@@ -259,7 +259,7 @@ namespace resource
     }
 
     template<class TResource, class TResourceLoader>
-    TResource* ResourceLoaderManager::load(std::string filename, u32 flags)
+    inline TResource* ResourceLoaderManager::load(std::string filename, u32 flags)
     {
         std::string innerName(filename);
         std::transform(filename.begin(), filename.end(), innerName.begin(), ::tolower);
@@ -283,7 +283,7 @@ namespace resource
     }
 
     template<class TResource, class TResourceLoader>
-    TResource* ResourceLoaderManager::load(std::string filename, const ResourceHeader* header, u32 flags)
+    inline TResource* ResourceLoaderManager::load(std::string filename, const ResourceHeader* header, u32 flags)
     {
         std::string innerName(filename);
         std::transform(filename.begin(), filename.end(), innerName.begin(), ::tolower);

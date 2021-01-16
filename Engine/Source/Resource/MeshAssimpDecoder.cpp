@@ -45,7 +45,7 @@ MeshAssimpDecoder::~MeshAssimpDecoder()
 {
 }
 
-Resource * MeshAssimpDecoder::decode(const stream::Stream* stream, const std::string& name)
+Resource * MeshAssimpDecoder::decode(const stream::Stream* stream, const std::string& name) const
 {
     if (stream->size() > 0)
     {
@@ -164,7 +164,7 @@ Resource * MeshAssimpDecoder::decode(const stream::Stream* stream, const std::st
 }
 
 
-bool MeshAssimpDecoder::decodeMesh(const aiScene* scene, stream::Stream* modelStream, scene::ModelHeader* newHeader)
+bool MeshAssimpDecoder::decodeMesh(const aiScene* scene, stream::Stream* modelStream, scene::ModelHeader* newHeader) const
 {
     u64 globalVertexSize = 0;
     u64 globalIndexSize = 0;
@@ -522,7 +522,7 @@ bool MeshAssimpDecoder::decodeMesh(const aiScene* scene, stream::Stream* modelSt
     return true;
 }
 
-bool MeshAssimpDecoder::decodeMaterial(const aiScene * scene, stream::Stream * stream, scene::ModelHeader * newHeader)
+bool MeshAssimpDecoder::decodeMaterial(const aiScene * scene, stream::Stream * stream, scene::ModelHeader * newHeader) const
 {
     newHeader->_materials.resize(scene->mNumMaterials);
     for (u32 m = 0; m < scene->mNumMaterials; m++)

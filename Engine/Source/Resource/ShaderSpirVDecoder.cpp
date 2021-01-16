@@ -48,7 +48,7 @@ ShaderSpirVDecoder::~ShaderSpirVDecoder()
 {
 }
 
-Resource * ShaderSpirVDecoder::decode(const stream::Stream* stream, const std::string& name)
+Resource * ShaderSpirVDecoder::decode(const stream::Stream* stream, const std::string& name) const
 {
     if (stream->size() > 0)
     {
@@ -415,7 +415,7 @@ Resource * ShaderSpirVDecoder::decode(const stream::Stream* stream, const std::s
     return nullptr;
 }
 
-bool ShaderSpirVDecoder::parseReflections(const std::vector<u32>& spirv, stream::Stream* stream)
+bool ShaderSpirVDecoder::parseReflections(const std::vector<u32>& spirv, stream::Stream* stream) const
 {
     auto convertSPRIVTypeToFormat = [](const spirv_cross::SPIRType& type) -> renderer::Format
     {

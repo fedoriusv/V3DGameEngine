@@ -1,14 +1,10 @@
 #pragma once
 
 #include "ResourceLoader.h"
+#include "ResourceDecoderRegistration.h"
 
 namespace v3d
 {
-namespace renderer
-{
-    class Context;
-} //namespace renderer
-
 namespace resource
 {
     class Image;
@@ -16,9 +12,11 @@ namespace resource
 
 namespace resource
 {
-
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    /**
+    * @brief ImageLoaderFlag enum
+    */
     enum ImageLoaderFlag : u32
     {
         ImageLoaderFlag_FlipY = 1 << 0,
@@ -29,13 +27,23 @@ namespace resource
 
     /**
     * @brief ImageFileLoader class. Loader from file
+    * @see ImageStbDecoder
+    * @see ImageGLiDecoder
     */
-    class ImageFileLoader : public ResourceLoader<resource::Image*>
+    class ImageFileLoader : public ResourceLoader<resource::Image*>, public ResourceDecoderRegistration
     {
     public:
 
-        explicit ImageFileLoader(u32 flags) noexcept;
+        ImageFileLoader() = delete;
+        ImageFileLoader(const ImageFileLoader&) = delete;
         ~ImageFileLoader() = default;
+
+        /**
+        * @brief ImageFileLoader constructor
+        * @param ImageLoaderFlags flags [required]
+        * @see ImageLoaderFlag
+        */
+        explicit ImageFileLoader(ImageLoaderFlags flags) noexcept;
 
         /**
         * @brief Load image resource by name from file
@@ -44,7 +52,6 @@ namespace resource
         * @return Image pointer
         */
         resource::Image* load(const std::string& name, const std::string& alias = "") override;
-
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

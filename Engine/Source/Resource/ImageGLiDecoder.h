@@ -13,21 +13,24 @@ namespace resource
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
-    * ImageGLiDecoder decoder. Support formats: "ktx", "kmg", "dds"
+    * @brief ImageGLiDecoder decoder.
+    * Support formats: "ktx", "kmg", "dds"
     */
     class ImageGLiDecoder final : public ResourceDecoder
     {
     public:
 
-        ImageGLiDecoder(std::vector<std::string> supportedExtensions, const resource::ImageHeader& header, bool readHeader) noexcept;
+        ImageGLiDecoder(std::vector<std::string> supportedExtensions, const resource::ImageHeader& header, bool readHeader, u32 flags = 0) noexcept;
         ~ImageGLiDecoder();
 
-        Resource* decode(const stream::Stream* stream, const std::string& name = "") override;
+        Resource* decode(const stream::Stream* stream, const std::string& name = "") const override;
 
     private:
 
         const resource::ImageHeader m_header;
         bool m_readHeader;
+
+        bool m_generateMipmaps;
     };
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////

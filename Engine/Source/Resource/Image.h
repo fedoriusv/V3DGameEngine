@@ -11,7 +11,7 @@ namespace resource
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
-    * ImageHeader struct.
+    * @brief ImageHeader struct.
     */
     struct ImageHeader : ResourceHeader
     {
@@ -30,7 +30,7 @@ namespace resource
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
-    * Image. Resource class
+    * @brief Image. Resource class
     */
     class Image : public Resource
     {

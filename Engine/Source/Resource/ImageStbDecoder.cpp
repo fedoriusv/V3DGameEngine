@@ -38,7 +38,7 @@ ImageStbDecoder::~ImageStbDecoder()
 {
 }
 
-Resource* ImageStbDecoder::decode(const stream::Stream* stream, const std::string& name)
+Resource* ImageStbDecoder::decode(const stream::Stream* stream, const std::string& name) const
 {
     if (stream->size() > 0)
     {
@@ -250,7 +250,7 @@ Resource* ImageStbDecoder::decode(const stream::Stream* stream, const std::strin
     return nullptr;
 }
 
-stream::Stream* ImageStbDecoder::generateMipMaps(void* baseMipmap, u32 width, u32 height, u32 componentsCount, u32 componentSize, u32 componentType, u32& mipmapsCount)
+stream::Stream* ImageStbDecoder::generateMipMaps(void* baseMipmap, u32 width, u32 height, u32 componentsCount, u32 componentSize, u32 componentType, u32& mipmapsCount) const
 {
     ASSERT(baseMipmap, "nullptr");
 

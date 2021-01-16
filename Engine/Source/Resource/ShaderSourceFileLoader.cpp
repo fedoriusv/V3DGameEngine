@@ -36,7 +36,7 @@ ShaderSourceFileLoader::ShaderSourceFileLoader(const renderer::Context* context,
             header._defines = defines;
             header._flags |= (flags & ShaderSourceBuildFlag::ShaderSource_Patched) ? ShaderSourceBuildFlag::ShaderSource_Patched : header._flags;
 
-            ResourceLoader::registerDecoder(new ShaderSpirVDecoder( { "vert", "frag" }, header, !(flags & ShaderSourceBuildFlag::ShaderSource_DontUseReflection) ));
+            ResourceDecoderRegistration::registerDecoder(new ShaderSpirVDecoder( { "vert", "frag" }, header, !(flags & ShaderSourceBuildFlag::ShaderSource_DontUseReflection) ));
         }
 
         {
@@ -47,7 +47,7 @@ ShaderSourceFileLoader::ShaderSourceFileLoader(const renderer::Context* context,
             header._defines = defines;
             header._flags |= (flags & ShaderSourceBuildFlag::ShaderSource_Patched) ? ShaderSourceBuildFlag::ShaderSource_Patched : header._flags;
 
-            ResourceLoader::registerDecoder(new ShaderSpirVDecoder( { "vs", "ps" }, header, !(flags & ShaderSourceBuildFlag::ShaderSource_DontUseReflection) ));
+            ResourceDecoderRegistration::registerDecoder(new ShaderSpirVDecoder( { "vs", "ps" }, header, !(flags & ShaderSourceBuildFlag::ShaderSource_DontUseReflection) ));
         }
 #else //USE_SPIRV
         ASSERT(false, "not implemented");
@@ -63,7 +63,7 @@ ShaderSourceFileLoader::ShaderSourceFileLoader(const renderer::Context* context,
         header._optLevel = (flags & ShaderSourceBuildFlag::ShaderSource_OptimisationPerformance) ? 2 : (flags & ShaderSourceBuildFlag::ShaderSource_OptimisationSize) ? 1 : 0;
         header._defines = defines;
 
-        ResourceLoader::registerDecoder(new ShaderHLSLDecoder({ "vs", "ps" }, header, !(flags & ShaderSourceBuildFlag::ShaderSource_DontUseReflection)));
+        ResourceDecoderRegistration::registerDecoder(new ShaderHLSLDecoder({ "vs", "ps" }, header, !(flags & ShaderSourceBuildFlag::ShaderSource_DontUseReflection)));
     }
 #endif
 
@@ -88,13 +88,13 @@ ShaderSourceFileLoader::ShaderSourceFileLoader(const renderer::Context* context,
     if (context->getRenderType() == renderer::Context::RenderType::VulkanRender)
     {
 #ifdef USE_SPIRV
-        ResourceLoader::registerDecoder(new ShaderSpirVDecoder({ "hlsl" }, header, !(flags & ShaderSourceBuildFlag::ShaderSource_DontUseReflection)));
+        ResourceDecoderRegistration::registerDecoder(new ShaderSpirVDecoder({ "hlsl" }, header, !(flags & ShaderSourceBuildFlag::ShaderSource_DontUseReflection)));
 #endif
     }
 #if D3D_RENDER
     else if (context->getRenderType() == renderer::Context::RenderType::DirectXRender)
     {
-        ResourceLoader::registerDecoder(new ShaderHLSLDecoder({ "hlsl" }, header, !(flags & ShaderSourceBuildFlag::ShaderSource_DontUseReflection)));
+        ResourceDecoderRegistration::registerDecoder(new ShaderHLSLDecoder({ "hlsl" }, header, !(flags & ShaderSourceBuildFlag::ShaderSource_DontUseReflection)));
     }
 #endif
 
@@ -103,11 +103,6 @@ ShaderSourceFileLoader::ShaderSourceFileLoader(const renderer::Context* context,
 
     ResourceLoader::registerPath("");
     ResourceLoader::registerPathes(ResourceLoaderManager::getInstance()->getPathes());
-}
-
-ShaderSourceFileLoader::~ShaderSourceFileLoader()
-{
-
 }
 
 renderer::Shader* ShaderSourceFileLoader::load(const std::string& name, const std::string& alias)
@@ -124,7 +119,7 @@ renderer::Shader* ShaderSourceFileLoader::load(const std::string& name, const st
             }
 
             std::string fileExtension = stream::FileLoader::getFileExtension(name);
-            ResourceDecoder* decoder = ResourceLoader::findDecoder(fileExtension);
+            const ResourceDecoder* decoder = findDecoder(fileExtension);
             if (decoder)
             {
                 Resource* resource = decoder->decode(file, name);

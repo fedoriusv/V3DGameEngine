@@ -7,16 +7,19 @@
 
 #ifdef USE_GLI
 #   include "ThirdParty/gli/gli/gli.hpp"
+#   include "ThirdParty/gli/gli/generate_mipmaps.hpp"
 
 namespace v3d
 {
 namespace resource
 {
 
-ImageGLiDecoder::ImageGLiDecoder(std::vector<std::string> supportedExtensions, const resource::ImageHeader& header, bool readHeader) noexcept
+ImageGLiDecoder::ImageGLiDecoder(std::vector<std::string> supportedExtensions, const resource::ImageHeader& header, bool readHeader, u32 flags) noexcept
     : ResourceDecoder(supportedExtensions)
     , m_header(header)
     , m_readHeader(readHeader)
+
+    , m_generateMipmaps(flags &/* ImageLoaderFlag::ImageLoaderFlag_GenerateMipmaps*/0x02)
 {
 }
 
@@ -24,7 +27,7 @@ ImageGLiDecoder::~ImageGLiDecoder()
 {
 }
 
-Resource* ImageGLiDecoder::decode(const stream::Stream* stream, const std::string& name)
+Resource* ImageGLiDecoder::decode(const stream::Stream* stream, const std::string& name) const
 {
     if (stream->size() > 0)
     {
@@ -201,6 +204,21 @@ Resource* ImageGLiDecoder::decode(const stream::Stream* stream, const std::strin
             return renderer::Format::Format_Undefined;
         };
 
+        if (m_generateMipmaps)
+        {
+            if (gli::is_compressed(texture.format()))
+            {
+                LOG_WARNING("ImageGLiDecoder::decode. Can't generate mipmaps, image has compressed format");
+                ASSERT(false, "error");
+            }
+            else
+            {
+                //TODO: check
+                //texture = gli::generate_mipmaps(texture, gli::filter::FILTER_LINEAR);
+                NOT_IMPL;
+            }
+        }
+
 #if DEBUG
         timer.stop();
         u64 time = timer.getTime<utils::Timer::Duration_MilliSeconds>();
@@ -219,15 +237,12 @@ Resource* ImageGLiDecoder::decode(const stream::Stream* stream, const std::strin
 #if DEBUG
         newHeader->_debugName = name;
 #endif
-        //ASSERT(false, "need test");
-        stream::Stream* imageStream = stream::StreamManager::createMemoryStream(texture.data(), static_cast<u32>(newHeader->_size));
-        //stream::Stream* imageStream = new stream::MemoryStream(texture.data(), static_cast<u32>(newHeader->_size), nullptr);
+        stream::Stream* imageStream = stream::StreamManager::createMemoryStream(texture.data(), static_cast<u32>(texture.size()));
 
         resource::Image* image = new resource::Image(newHeader);
         image->init(imageStream);
 
         return image;
-
     }
 
     return nullptr;

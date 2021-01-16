@@ -1,6 +1,7 @@
 #pragma once
 
 #include "ResourceLoader.h"
+#include "ResourceDecoderRegistration.h"
 #include "Renderer/ShaderProperties.h"
 
 namespace v3d
@@ -33,10 +34,16 @@ namespace resource
     /**
     * @brief ShaderSourceFileLoader class. Resource loader.
     * Loads shaders for source file
+    * @see ShaderSpirVDecoder
+    * @see ShaderHLSLDecoder
     */
-    class ShaderSourceFileLoader : public ResourceLoader<renderer::Shader*>
+    class ShaderSourceFileLoader : public ResourceLoader<renderer::Shader*>, public ResourceDecoderRegistration
     {
     public:
+
+        ShaderSourceFileLoader() = delete;
+        ShaderSourceFileLoader(const ShaderSourceFileLoader&) = delete;
+        ~ShaderSourceFileLoader() = default;
 
         /**
         * @brief ShaderSourceFileLoader constructor.
@@ -57,10 +64,14 @@ namespace resource
         */
         ShaderSourceFileLoader(const renderer::Context* context, renderer::ShaderType type, const std::string& entryPoint = "main", const std::vector<std::pair<std::string, std::string>>& defines = {}, ShaderSourceBuildFlags flags = 0) noexcept;
 
-        ~ShaderSourceFileLoader();
-
+        /**
+        * @brief Load a Shader source by name from file
+        * @see Shader
+        * @param const std::string& name [required]
+        * @param const std::string& alias [optional]
+        * @return a Shader pointer
+        */
         renderer::Shader* load(const std::string& name, const std::string& alias = "") override;
-
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

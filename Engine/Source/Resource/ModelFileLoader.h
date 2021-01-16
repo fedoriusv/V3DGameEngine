@@ -1,14 +1,10 @@
 #pragma once
 
 #include "ResourceLoader.h"
+#include "ResourceDecoderRegistration.h"
 
 namespace v3d
 {
-namespace renderer
-{
-    class Context;
-} //namespace renderer
-
 namespace scene
 {
     class Model;
@@ -20,6 +16,9 @@ namespace resource
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    /**
+    * @brief ModelLoaderFlag enum
+    */
     enum ModelLoaderFlag : u32
     {
         ModelLoaderFlag_SeperateMesh = 1 << 0,
@@ -37,18 +36,40 @@ namespace resource
     typedef u32 ModelLoaderFlags;
 
     /**
-    * ModelFileLoader class. Loader from file
+    * @brief ModelFileLoader class. Loader from file
+    * @see MeshAssimpDecoder
     */
-    class ModelFileLoader : public ResourceLoader<scene::Model*>
+    class ModelFileLoader : public ResourceLoader<scene::Model*>, public ResourceDecoderRegistration
     {
     public:
 
-        ModelFileLoader(u32 flags) noexcept;
-        ModelFileLoader(const ResourceHeader* header, u32 flags) noexcept;
-        ~ModelFileLoader();
+        ModelFileLoader() = delete;
+        ModelFileLoader(const ModelFileLoader&) = delete;
+        ~ModelFileLoader() = default;
 
+        /**
+        * @brief ModelFileLoader constructor
+        * @param ModelLoaderFlags flags [required]
+        * @see ModelLoaderFlags
+        */
+        ModelFileLoader(ModelLoaderFlags flags) noexcept;
+
+        /**
+        * @brief ModelFileLoader constructor. Create a Model by Header
+        * @param const ResourceHeader* header [required]
+        * @param ModelLoaderFlags flags [required]
+        * @see ModelLoaderFlags
+        */
+        ModelFileLoader(const ResourceHeader* header, ModelLoaderFlags flags) noexcept;
+
+        /**
+        * @brief Load model resource by name from file
+        * @see Model
+        * @param const std::string& name [required]
+        * @param const std::string& alias [optional]
+        * @return Model pointer
+        */
         scene::Model* load(const std::string& name, const std::string& alias = "") override;
-
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

@@ -28,7 +28,7 @@ ShaderSourceStreamLoader::ShaderSourceStreamLoader(const renderer::Context* cont
     {
         ASSERT(header, "nullptr");
 #ifdef USE_SPIRV
-        ResourceLoader::registerDecoder(new ShaderSpirVDecoder(*header, enableReflection));
+        ResourceDecoderRegistration::registerDecoder(new ShaderSpirVDecoder(*header, enableReflection));
 #endif //USE_SPIRV
         break;
     }
@@ -37,7 +37,7 @@ ShaderSourceStreamLoader::ShaderSourceStreamLoader(const renderer::Context* cont
     case renderer::Context::RenderType::DirectXRender:
     {
         ASSERT(header, "nullptr");
-        ResourceLoader::registerDecoder(new ShaderHLSLDecoder(*header));
+        ResourceDecoderRegistration::registerDecoder(new ShaderHLSLDecoder(*header));
 
         break;
     }
@@ -55,9 +55,9 @@ ShaderSourceStreamLoader::~ShaderSourceStreamLoader()
     m_stream = nullptr;
 }
 
-renderer::Shader * ShaderSourceStreamLoader::load(const std::string & name, const std::string & alias)
+renderer::Shader* ShaderSourceStreamLoader::load(const std::string& name, const std::string& alias)
 {
-    if (m_decoders.empty())
+    if (getDecoders().empty())
     {
         LOG_ERROR("ShaderSourceStreamLoader: Decoder is missing");
         return nullptr;
@@ -68,7 +68,7 @@ renderer::Shader * ShaderSourceStreamLoader::load(const std::string & name, cons
         return nullptr;
     }
 
-    ResourceDecoder* decoder = m_decoders.front();
+    const ResourceDecoder* decoder = getDecoders().front();
     if (decoder)
     {
         Resource* resource = decoder->decode(m_stream, name);

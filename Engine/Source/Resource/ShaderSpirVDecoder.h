@@ -12,6 +12,11 @@ namespace resource
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    /**
+    * @brief ShaderSpirVDecoder decoder.
+    * Support source formats: "vert", "frag", "ps", "vs", "hlsl"
+    * Support binary formats: "vspv", "fspv"
+    */
     class ShaderSpirVDecoder final : public ResourceDecoder
     {
     public:
@@ -21,14 +26,14 @@ namespace resource
 
         ~ShaderSpirVDecoder();
 
-        Resource* decode(const stream::Stream* stream, const std::string& name = "") override;
+        Resource* decode(const stream::Stream* stream, const std::string& name = "") const override;
 
     private:
 
-        bool parseReflections(const std::vector<u32>& spirv, stream::Stream* stream);
+        bool parseReflections(const std::vector<u32>& spirv, stream::Stream* stream) const;
 
         const renderer::ShaderHeader m_header;
-        u32 m_sourceVersion;
+        mutable u32 m_sourceVersion;
 
         bool m_reflections;
     };

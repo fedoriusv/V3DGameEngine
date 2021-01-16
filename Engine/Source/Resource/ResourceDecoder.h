@@ -11,7 +11,7 @@ namespace resource
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
-    * Base class ResourceDecoder
+    * @brief Base class ResourceDecoder
     */
     class ResourceDecoder
     {
@@ -24,13 +24,13 @@ namespace resource
         explicit ResourceDecoder(std::vector<std::string> supportedExtensions) noexcept;
         virtual  ~ResourceDecoder();
 
-        virtual Resource* decode(const stream::Stream* stream, const std::string& name = "") = 0;
+        virtual Resource* decode(const stream::Stream* stream, const std::string& name = "") const = 0;
 
         bool isExtensionSupported(const std::string& extension) const;
         void setSupportedExtensions(const std::vector<std::string> supportedExtensions);
         const std::vector<std::string>& getSupportedExtensions() const;
 
-    protected:
+    private:
 
         std::vector<std::string> m_supportedExtensions;
     };

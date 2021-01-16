@@ -27,7 +27,7 @@ ShaderBinaryFileLoader::ShaderBinaryFileLoader(const renderer::Context* context,
             header._optLevel = 0;
             ASSERT(defines.empty(), "cant use defines, should be finaly compiled already");
 
-            ResourceLoader::registerDecoder(new ShaderSpirVDecoder( { "vspv", "fspv" }, header, !(flags & ShaderBinaryBuildFlag::ShaderBinary_DontUseReflaction) ));
+            ResourceDecoderRegistration::registerDecoder(new ShaderSpirVDecoder( { "vspv", "fspv" }, header, !(flags & ShaderBinaryBuildFlag::ShaderBinary_DontUseReflaction) ));
         }
 #else //USE_SPIRV
         ASSERT(false, "not implemented");
@@ -41,11 +41,7 @@ ShaderBinaryFileLoader::ShaderBinaryFileLoader(const renderer::Context* context,
     ResourceLoader::registerPathes(ResourceLoaderManager::getInstance()->getPathes());
 }
 
-ShaderBinaryFileLoader::~ShaderBinaryFileLoader()
-{
-}
-
-renderer::Shader * ShaderBinaryFileLoader::load(const std::string & name, const std::string & alias)
+renderer::Shader* ShaderBinaryFileLoader::load(const std::string& name, const std::string& alias)
 {
     for (std::string& root : m_roots)
     {
@@ -59,7 +55,7 @@ renderer::Shader * ShaderBinaryFileLoader::load(const std::string & name, const 
             }
 
             std::string fileExtension = stream::FileLoader::getFileExtension(name);
-            ResourceDecoder* decoder = ResourceLoader::findDecoder(fileExtension);
+            const ResourceDecoder* decoder = findDecoder(fileExtension);
             if (decoder)
             {
                 Resource* resource = decoder->decode(file, name);

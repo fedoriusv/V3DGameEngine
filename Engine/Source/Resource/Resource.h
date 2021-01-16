@@ -9,7 +9,7 @@ namespace resource
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
-    * ResourceHeader meta info about Resource
+    * @brief ResourceHeader meta info about Resource
     */
     struct ResourceHeader
     {
@@ -20,7 +20,7 @@ namespace resource
         {
         }
 
-        virtual ~ResourceHeader() {};
+        virtual ~ResourceHeader() = default;
 
         u32 _size;
         u32 _version;
@@ -33,7 +33,7 @@ namespace resource
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
-    * Base Interface for Resource class
+    * @brief Base Interface for Resource class
     */
     class Resource
     {

@@ -26,6 +26,7 @@ private:
 
     void Test_MemoryPool();
 
+    void Test_ImageLoadStore();
 
     void Test_ShaderLoader();
     void Test_CreateShaderProgram();
@@ -37,6 +38,4 @@ private:
 
     v3d::renderer::Context* m_Context;
     v3d::renderer::CommandList* m_CommandList;
-
-    v3d::core::Vector4D m_clearColor;
 };

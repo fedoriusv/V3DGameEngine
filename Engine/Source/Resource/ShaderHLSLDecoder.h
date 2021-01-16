@@ -12,6 +12,10 @@ namespace resource
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    /**
+    * @brief ShaderHLSLDecoder decoder.
+    * Support source formats: "vs", "ps", "hlsl"
+    */
     class ShaderHLSLDecoder final : public ResourceDecoder
     {
     public:
@@ -21,14 +25,14 @@ namespace resource
 
         ~ShaderHLSLDecoder();
 
-        Resource* decode(const stream::Stream* stream, const std::string& name = "") override;
+        Resource* decode(const stream::Stream* stream, const std::string& name = "") const override;
 
     private:
 
         const renderer::ShaderHeader m_header;
         const bool m_reflections;
 
-        u32 m_version;
+        mutable u32 m_version;
     };
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////

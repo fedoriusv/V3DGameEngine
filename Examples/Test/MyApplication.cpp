@@ -14,12 +14,17 @@
 #include "Renderer/Object/ShaderProgram.h"
 #include "Renderer/Object/SamplerState.h"
 #include "Renderer/Formats.h"
-#include "Renderer/Shader.h"
 
 #include "Resource/ResourceLoaderManager.h"
+
+#include "Renderer/Shader.h"
 #include "Resource/ShaderSourceFileLoader.h"
 #include "Resource/ShaderSourceStreamLoader.h"
 #include "Resource/ShaderBinaryFileLoader.h"
+
+#include "Resource/Image.h"
+#include "Resource/ImageFileLoader.h"
+
 
 #include "Stream/StreamManager.h"
 
@@ -52,17 +57,6 @@ MyApplication::MyApplication(int& argc, char** argv)
     {
         if (event->_event == MouseInputEvent::MousePressDown || event->_event == MouseInputEvent::MouseDoubleClick)
         {
-            s32 rvalue = std::rand();
-            f32 r = 1.0f / RAND_MAX * rvalue;
-
-            s32 gvalue = std::rand();
-            f32 g = 1.0f / RAND_MAX * gvalue;
-
-            s32 bvalue = std::rand();
-            f32 b = 1.0f / RAND_MAX * bvalue;
-
-            m_clearColor = {r, g, b, 1.0f };
-
         }
     });
 
@@ -93,6 +87,8 @@ int MyApplication::Execute()
 
 void MyApplication::Initialize()
 {
+    Test_ImageLoadStore();
+
     //Render test
     Context::RenderType renderTypes[2] = { Context::RenderType::VulkanRender, Context::RenderType::DirectXRender };
     for (Context::RenderType renderType : renderTypes)
@@ -131,6 +127,17 @@ bool MyApplication::Running(renderer::CommandList& commandList)
 void MyApplication::Exit()
 {
     m_Window->getInputEventReceiver()->dettach(InputEvent::InputEventType::MouseInputEvent);
+}
+
+void MyApplication::Test_ImageLoadStore()
+{
+    LOG_DEBUG("Test_ImageLoad");
+    resource::Image* image = resource::ResourceLoaderManager::getInstance()->load<resource::Image, resource::ImageFileLoader>("examples/test/data/textures/basetex.jpg");
+    ASSERT(image, "nullptr");
+    resource::ResourceLoaderManager::getInstance()->remove(image);
+
+    //TODO
+    [[maybe_unused]] u32 endTest = 0;
 }
 
 void MyApplication::Test_Timer()
@@ -205,8 +212,6 @@ void MyApplication::Test_Timer()
         }
 
         {
-            auto start_time_w = std::chrono::high_resolution_clock::now();
-
             auto start_time = std::chrono::high_resolution_clock::now();
             auto end_time = start_time;
 
@@ -235,9 +240,6 @@ void MyApplication::Test_Timer()
             }
 
             timer.stop();
-
-            auto end_time_w = std::chrono::high_resolution_clock::now();
-            u64 duration_w = std::chrono::duration_cast<std::chrono::milliseconds>(end_time_w - start_time_w).count();
 
             u64 error = miliseconds - (resetTime * 10);
             LOG_WARNING("Test_Timer timer duration %d = 10 sec. Error %d ms", miliseconds, error);
@@ -463,14 +465,14 @@ void MyApplication::Test_ShaderLoader()
     if (m_Context->getRenderType() == Context::RenderType::VulkanRender)
     {
         //load source shaders from file
-        const Shader* glslVShader = ResourceLoaderManager::getInstance()->loadShader<Shader, ShaderSourceFileLoader>(m_Context, "examples/test/shaders/testReflectInfoWithNames.vert");
+        const Shader* glslVShader = ResourceLoaderManager::getInstance()->loadShader<Shader, ShaderSourceFileLoader>(m_Context, "examples/test/data/shaders/testReflectInfoWithNames.vert");
         ASSERT(glslVShader != nullptr, "wrong");
         {
             const Shader::ReflectionInfo& info = glslVShader->getReflectionInfo();
             checkVertexShaderReflection(info);
         }
 
-        const Shader* glslFShader = ResourceLoaderManager::getInstance()->loadShader<Shader, ShaderSourceFileLoader>(m_Context, "examples/test/shaders/testReflectInfoWithNames.frag");
+        const Shader* glslFShader = ResourceLoaderManager::getInstance()->loadShader<Shader, ShaderSourceFileLoader>(m_Context, "examples/test/data/shaders/testReflectInfoWithNames.frag");
         ASSERT(glslFShader != nullptr, "wrong");
         {
             const Shader::ReflectionInfo& info = glslFShader->getReflectionInfo();
@@ -481,14 +483,14 @@ void MyApplication::Test_ShaderLoader()
         ResourceLoaderManager::getInstance()->remove(glslFShader);
 
         //load spirv
-        const Shader* spirvVShader = ResourceLoaderManager::getInstance()->loadShader<Shader, ShaderBinaryFileLoader>(m_Context, "examples/test/shaders/testReflectInfoWithNames.vspv");
+        const Shader* spirvVShader = ResourceLoaderManager::getInstance()->loadShader<Shader, ShaderBinaryFileLoader>(m_Context, "examples/test/data/shaders/testReflectInfoWithNames.vspv");
         ASSERT(spirvVShader != nullptr, "wrong");
         {
             const Shader::ReflectionInfo& info = spirvVShader->getReflectionInfo();
             checkVertexShaderReflection(info);
         }
 
-        const Shader* spirvFShader = ResourceLoaderManager::getInstance()->loadShader<Shader, ShaderBinaryFileLoader>(m_Context, "examples/test/shaders/testReflectInfoWithNames.fspv");
+        const Shader* spirvFShader = ResourceLoaderManager::getInstance()->loadShader<Shader, ShaderBinaryFileLoader>(m_Context, "examples/test/data/shaders/testReflectInfoWithNames.fspv");
         ASSERT(spirvFShader != nullptr, "wrong");
         {
             const Shader::ReflectionInfo& info = spirvFShader->getReflectionInfo();
@@ -500,14 +502,14 @@ void MyApplication::Test_ShaderLoader()
     }
 
     {
-        const Shader* hlslVShader = ResourceLoaderManager::getInstance()->loadShader<Shader, ShaderSourceFileLoader>(m_Context, "examples/test/shaders/testReflectInfoWithNames.vs");
+        const Shader* hlslVShader = ResourceLoaderManager::getInstance()->loadShader<Shader, ShaderSourceFileLoader>(m_Context, "examples/test/data/shaders/testReflectInfoWithNames.vs");
         ASSERT(hlslVShader != nullptr, "wrong");
         {
             const Shader::ReflectionInfo& info = hlslVShader->getReflectionInfo();
             checkVertexShaderReflection(info);
         }
 
-        const Shader* hlslPShader = ResourceLoaderManager::getInstance()->loadShader<Shader, ShaderSourceFileLoader>(m_Context, "examples/test/shaders/testReflectInfoWithNames.ps");
+        const Shader* hlslPShader = ResourceLoaderManager::getInstance()->loadShader<Shader, ShaderSourceFileLoader>(m_Context, "examples/test/data/shaders/testReflectInfoWithNames.ps");
         ASSERT(hlslPShader != nullptr, "wrong");
         {
             const Shader::ReflectionInfo& info = hlslPShader->getReflectionInfo();
@@ -519,7 +521,7 @@ void MyApplication::Test_ShaderLoader()
     }
 
     {
-        std::vector<const Shader*> hlslShaders = ResourceLoaderManager::getInstance()->loadHLSLShader<Shader, ShaderSourceFileLoader>(m_Context, "examples/test/shaders/testReflectInfoWithNames.hlsl", { {"mainVS", ShaderType::ShaderType_Vertex}, {"mainPS", ShaderType::ShaderType_Fragment} });
+        std::vector<const Shader*> hlslShaders = ResourceLoaderManager::getInstance()->loadHLSLShader<Shader, ShaderSourceFileLoader>(m_Context, "examples/test/data/shaders/testReflectInfoWithNames.hlsl", { {"mainVS", ShaderType::ShaderType_Vertex}, {"mainPS", ShaderType::ShaderType_Fragment} });
         ASSERT(!hlslShaders.empty(), "wrong");
 
         {
@@ -631,10 +633,10 @@ void MyApplication::Test_CreateShaderProgram()
 void MyApplication::Test_ShaderParam()
 {
     {
-        const Shader* hlslVShader = ResourceLoaderManager::getInstance()->loadShader<Shader, ShaderSourceFileLoader>(m_Context, "examples/test/shaders/testReflectInfoWithNames.vs");
+        const Shader* hlslVShader = ResourceLoaderManager::getInstance()->loadShader<Shader, ShaderSourceFileLoader>(m_Context, "examples/test/data/shaders/testReflectInfoWithNames.vs");
         ASSERT(hlslVShader != nullptr, "wrong");
 
-        const Shader* hlslPShader = ResourceLoaderManager::getInstance()->loadShader<Shader, ShaderSourceFileLoader>(m_Context, "examples/test/shaders/testReflectInfoWithNames.ps");
+        const Shader* hlslPShader = ResourceLoaderManager::getInstance()->loadShader<Shader, ShaderSourceFileLoader>(m_Context, "examples/test/data/shaders/testReflectInfoWithNames.ps");
         ASSERT(hlslPShader != nullptr, "wrong");
 
         CommandList* commandList = new CommandList(m_Context, CommandList::CommandListType::ImmediateCommandList);

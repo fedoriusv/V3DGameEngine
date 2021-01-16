@@ -10,7 +10,7 @@ namespace resource
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
-    * Interface of ResourceLoader
+    * @brief Interface of ResourceLoader
     */
     template <class T>
     class ResourceLoader
@@ -20,11 +20,13 @@ namespace resource
         ResourceLoader() noexcept;
         virtual ~ResourceLoader();
 
+        /**
+        * @brief load interface
+        * @param const std::string& name [required]
+        * @param const std::string& alias [optional]
+        * @return T
+        */
         virtual T load(const std::string& name, const std::string& alias = "") = 0;
-
-        void registerDecoder(ResourceDecoder* decoder);
-        void unregisterDecoder(ResourceDecoder* decoder);
-        void unregisterAllDecoders();
 
         void registerRoot(const std::string& path);
         void unregisterRoot(const std::string& path);
@@ -37,12 +39,8 @@ namespace resource
 
     protected:
 
-        ResourceDecoder* findDecoder(const std::string& extension);
-
-        std::vector<ResourceDecoder*> m_decoders;
-
-        std::vector<std::string>      m_roots;
-        std::vector<std::string>      m_pathes;
+        std::vector<std::string> m_roots;
+        std::vector<std::string> m_pathes;
 
     };
 
@@ -58,38 +56,6 @@ namespace resource
     {
         m_roots.clear();
         m_pathes.clear();
-        ResourceLoader<T>::unregisterAllDecoders();
-    }
-
-    template<class T>
-    inline void ResourceLoader<T>::registerDecoder(ResourceDecoder * decoder)
-    {
-        auto it = std::find(m_decoders.begin(), m_decoders.end(), decoder);
-        if (it == m_decoders.end())
-        {
-            m_decoders.push_back(decoder);
-        }
-    }
-
-    template<class T>
-    inline void ResourceLoader<T>::unregisterDecoder(ResourceDecoder * decoder)
-    {
-        auto it = std::find(m_decoders.begin(), m_decoders.end(), decoder);
-        if (it != m_decoders.end())
-        {
-            m_decoders.erase(std::remove(m_decoders.begin(), m_decoders.end(), *it), m_decoders.end());
-            delete *it;
-        }
-    }
-
-    template<class T>
-    inline void ResourceLoader<T>::unregisterAllDecoders()
-    {
-        for (auto decoder : m_decoders)
-        {
-            delete decoder;
-        }
-        m_decoders.clear();
     }
 
     template<class T>
@@ -165,23 +131,6 @@ namespace resource
                 m_pathes.erase(std::remove(m_pathes.begin(), m_pathes.end(), *it), m_pathes.end());
             }
         }
-    }
-
-    template<class T>
-    inline ResourceDecoder * ResourceLoader<T>::findDecoder(const std::string & extension)
-    {
-        auto predCanDecode = [extension](const ResourceDecoder* decoder) -> bool
-        {
-            return decoder->isExtensionSupported(extension);
-        };
-
-        auto iter = std::find_if(m_decoders.begin(), m_decoders.end(), predCanDecode);
-        if (iter == m_decoders.end())
-        {
-            return nullptr;
-        }
-
-        return (*iter);
     }
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
