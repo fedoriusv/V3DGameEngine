@@ -1520,7 +1520,7 @@ bool VulkanGraphicContext::CurrentCommandBufferState::isCurrentBufferAcitve(Comm
 }
 
 //Another thread
-void VulkanGraphicContext::handleNotify(utils::Observable* obj)
+void VulkanGraphicContext::handleNotify(const utils::Observable* obj)
 {
     const platform::Window* windows = reinterpret_cast<const platform::Window*>(obj);
     if (windows->isValid())

@@ -23,7 +23,7 @@ void Observable::unregisterAll()
     m_observers.clear();
 }
 
-void Observable::notifyObservers()
+void Observable::notifyObservers() const
 {
     std::lock_guard<std::recursive_mutex> lock(m_mutex);
     for (auto& observer : m_observers)

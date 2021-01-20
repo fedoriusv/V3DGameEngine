@@ -147,7 +147,7 @@ public:
         }
     }
 
-    void handleNotify(utils::Observable* ob) override
+    void handleNotify(const utils::Observable* ob) override
     {
         LOG_ERROR("UploadTextureCommand image %llx was deleted", m_image);
         m_image = nullptr;
@@ -190,7 +190,7 @@ public:
         }
     }
 
-    void handleNotify(utils::Observable* ob) override
+    void handleNotify(const utils::Observable* ob) override
     {
         LOG_ERROR("UploadTextureCommand image %llx was deleted", m_image);
         m_image = nullptr;
@@ -235,7 +235,7 @@ public:
         }
     }
 
-    void handleNotify(utils::Observable* ob) override
+    void handleNotify(const utils::Observable* ob) override
     {
         LOG_ERROR("UploadTextureCommand image %llx was deleted", m_image);
         m_image = nullptr;
@@ -342,7 +342,7 @@ bool Texture::isTextureUsageFlagsContains(TextureUsageFlags usage) const
     return m_usage & usage;
 }
 
-void Texture::handleNotify(utils::Observable* ob)
+void Texture::handleNotify(const utils::Observable* ob)
 {
     LOG_DEBUG("Texture::handleNotify to delete image %xll", this);
     ASSERT(m_image == ob, "not same");

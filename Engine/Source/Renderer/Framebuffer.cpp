@@ -166,7 +166,7 @@ void FramebufferManager::clear()
     m_framebufferList.clear();
 }
 
-void FramebufferManager::handleNotify(utils::Observable* ob)
+void FramebufferManager::handleNotify(const utils::Observable* ob)
 {
     LOG_DEBUG("FramebufferManager framebuffer %x has been deleted", ob);
 }

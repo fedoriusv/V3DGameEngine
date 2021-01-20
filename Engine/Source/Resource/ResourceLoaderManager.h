@@ -323,7 +323,9 @@ namespace resource
             Resource* res = iter.second;
             if (resource == res)
             {
+                res->notifyObservers();
                 delete res;
+
                 m_resources.erase(iter.first);
 
                 return true;
@@ -340,7 +342,9 @@ namespace resource
             const Resource* res = iter.second;
             if (resource == res)
             {
+                res->notifyObservers();
                 delete res;
+
                 m_resources.erase(iter.first);
 
                 return true;

@@ -97,7 +97,7 @@ namespace vk
 
         const DeviceCaps* getDeviceCaps() const override;
 
-        void handleNotify(utils::Observable* obj) override;
+        void handleNotify(const utils::Observable* obj) override;
 
         VulkanStagingBufferManager* getStagingManager();
         VulkanCommandBuffer* getOrCreateAndStartCommandBuffer(CommandTargetType type);

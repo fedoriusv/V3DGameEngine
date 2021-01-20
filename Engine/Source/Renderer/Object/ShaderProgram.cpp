@@ -234,6 +234,8 @@ void ShaderProgram::composeProgramData(const std::vector<const Shader*>& shaders
     m_programInfo._hash = 0;
     for (auto shader : shaders)
     {
+        const_cast<Shader*>(shader)->registerNotify(this);
+
         m_programInfo._hash = crc32c::Extend(m_programInfo._hash, reinterpret_cast<const u8*>(&shader->m_hash), sizeof(u32));
 #if USE_STRING_ID_SHADER
         auto& prameters = m_shaderParameters[shader->getShaderHeader()._type];
@@ -411,6 +413,17 @@ bool ShaderProgram::bindUniformsBuffer(ShaderType shaderType, u32 index, u32 off
     }
 
     return true;
+}
+
+void ShaderProgram::handleNotify(const utils::Observable* obj)
+{
+    //remove shader from list
+    auto found = std::find(m_programInfo._shaders.begin(), m_programInfo._shaders.end(), static_cast<const renderer::Shader*>(obj));
+    ASSERT(found != m_programInfo._shaders.end(), "nuot found");
+    if (found != m_programInfo._shaders.end())
+    {
+        *found = nullptr;
+    }
 }
 
 } //renderer

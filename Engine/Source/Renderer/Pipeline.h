@@ -84,7 +84,7 @@ namespace renderer
         bool removePipeline(Pipeline* pipeline);
         void clear();
 
-        void handleNotify(utils::Observable* ob) override;
+        void handleNotify(const utils::Observable* ob) override;
 
     private:
 

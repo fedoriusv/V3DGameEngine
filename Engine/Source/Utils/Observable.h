@@ -20,7 +20,7 @@ namespace utils
         Observer() = default;
         virtual ~Observer() = default;
 
-        virtual void handleNotify(Observable* obj) = 0;
+        virtual void handleNotify(const Observable* obj) = 0;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -40,11 +40,11 @@ namespace utils
         void unregisterNotify(Observer* obj);
         void unregisterAll();
 
-        void notifyObservers();
+        void notifyObservers() const;
 
     private:
 
-        std::recursive_mutex m_mutex;
+        mutable std::recursive_mutex m_mutex;
         std::set<Observer*> m_observers;
     };
 

@@ -70,7 +70,7 @@ namespace renderer
         bool removeRenderPass(const RenderPass* renderPass);
         void clear();
 
-        void handleNotify(utils::Observable* ob) override;
+        void handleNotify(const utils::Observable* ob) override;
 
     private:
 

@@ -105,7 +105,7 @@ void D3DGraphicContext::beginFrame()
     LOG_DEBUG("D3DGraphicContext::beginFrame %d, index %d", m_frameCounter, indexFrame);
 #endif //D3D_DEBUG
 
-    ASSERT(!m_currentState.commandList(), "not nullptr");
+   ASSERT(!m_currentState.commandList(), "not nullptr");
    D3DGraphicContext::getOrAcquireCurrentCommandList();
 
 #if FRAME_PROFILER_ENABLE

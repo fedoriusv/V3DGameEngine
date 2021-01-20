@@ -53,7 +53,7 @@ namespace renderer
 
     private:
 
-        void handleNotify(utils::Observable* ob) override;
+        void handleNotify(const utils::Observable* ob) override;
 
         explicit VertexStreamBuffer(CommandList& cmdList, StreamBufferUsageFlags usage, u64 size, const u8* data, [[maybe_unused]] const std::string& name = "") noexcept;
 
@@ -96,7 +96,7 @@ namespace renderer
 
         explicit IndexStreamBuffer(CommandList& cmdList, StreamBufferUsageFlags usage, StreamIndexBufferType type, u32 count, const u8* data, [[maybe_unused]] const std::string& name = "") noexcept;
 
-        void handleNotify(utils::Observable* ob) override;
+        void handleNotify(const utils::Observable* ob) override;
 
         friend CommandList;
         CommandList& m_cmdList;

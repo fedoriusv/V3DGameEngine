@@ -1,5 +1,8 @@
 #pragma once
 
+#include "Common.h"
+
+#include "Utils/Observable.h"
 #include "Stream/Stream.h"
 
 namespace v3d
@@ -35,7 +38,7 @@ namespace resource
     /**
     * @brief Base Interface for Resource class
     */
-    class Resource
+    class Resource : public utils::Observable
     {
     public:
 

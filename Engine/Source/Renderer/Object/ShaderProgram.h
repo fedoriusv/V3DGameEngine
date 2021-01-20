@@ -2,6 +2,7 @@
 
 #include "Common.h"
 #include "Object.h"
+#include "Utils/Observable.h"
 #include "Renderer/TextureProperties.h"
 #include "Renderer/SamplerProperties.h"
 #include "Renderer/ShaderProperties.h"
@@ -19,7 +20,7 @@ namespace renderer
     /**
     * ShaderProgram class. Game side
     */
-    class ShaderProgram : public Object
+    class ShaderProgram : public Object, public utils::Observer
     {
     public:
 
@@ -69,6 +70,8 @@ namespace renderer
         bool bindUniformsBuffer(ShaderType shaderType, u32 index, u32 offset, u32 size, const void* data);
 
         std::map<u32, u32> m_shaderParameters[ShaderType::ShaderType_Count];
+
+        void handleNotify(const utils::Observable* obj) override;
     };
 
 

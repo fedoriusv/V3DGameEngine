@@ -65,7 +65,7 @@ namespace renderer
 
         bool isBackbuffer() const;
 
-        void handleNotify(utils::Observable* ob) override;
+        void handleNotify(const utils::Observable* ob) override;
         bool isTextureUsageFlagsContains(TextureUsageFlags usage) const;
 
         CommandList&        m_cmdList;

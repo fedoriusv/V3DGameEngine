@@ -64,7 +64,7 @@ namespace renderer
         explicit SamplerManager(Context *context) noexcept;
         ~SamplerManager();
 
-        void handleNotify(utils::Observable* ob) override;
+        void handleNotify(const utils::Observable* ob) override;
 
         Sampler* acquireSampler(const SamplerDescription& samplerDesc);
         bool removeSampler(Sampler* sampler);

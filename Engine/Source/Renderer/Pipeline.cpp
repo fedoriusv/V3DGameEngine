@@ -134,7 +134,7 @@ void PipelineManager::clear()
     m_pipelineGraphicList.clear();
 }
 
-void PipelineManager::handleNotify(utils::Observable * ob)
+void PipelineManager::handleNotify(const utils::Observable * ob)
 {
     LOG_DEBUG("PipelineManager pipeline %x has been deleted", ob);
 }

@@ -117,12 +117,11 @@ namespace renderer
         bool removeFramebuffer(Framebuffer* framebufer);
         void clear();
 
-        void handleNotify(utils::Observable* object) override;
+        void handleNotify(const utils::Observable* object) override;
 
     private:
 
         Context* m_context;
-        //std::map<u32, Framebuffer*> m_framebufferList;
         std::unordered_map<Framebuffer::FramebufferDescription, Framebuffer*, Framebuffer::FramebufferDescription::Hash, Framebuffer::FramebufferDescription::Compare> m_framebufferList;
     };
 

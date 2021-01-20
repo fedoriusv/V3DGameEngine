@@ -435,6 +435,7 @@ VkDescriptorImageInfo VulkanContextState::makeVkDescriptorImageInfo(const Vulkan
 bool VulkanContextState::checkBindingsAndPipelineLayout()
 {
     //TODO compare m_currentPipeline.first->getDescriptorSetLayouts()._setLayouts and m_currentBindingSlots
+    //TODO check image usage flags
     return true;
 }
 

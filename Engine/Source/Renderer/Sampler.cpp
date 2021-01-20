@@ -98,7 +98,7 @@ void SamplerManager::clear()
     m_samplerList.clear();
 }
 
-void SamplerManager::handleNotify(utils::Observable* ob)
+void SamplerManager::handleNotify(const utils::Observable* ob)
 {
     LOG_DEBUG("SamplerManager::handleNotify sampler %llx has been deleted", ob);
 }
