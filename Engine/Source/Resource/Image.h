@@ -22,8 +22,6 @@ namespace resource
         u32                 _layers;
         u32                 _mips;
 
-        u64                 _size;
-
         bool                _flipY;
     };
 

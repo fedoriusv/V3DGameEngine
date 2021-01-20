@@ -57,6 +57,7 @@ namespace renderer
         {
             bool _supportAttachment;
             bool _supportSampled;
+            bool _supportMip;
         };
 
         const ImageFormatSupport& getImageFormatSupportInfo(Format format, TilingType type)

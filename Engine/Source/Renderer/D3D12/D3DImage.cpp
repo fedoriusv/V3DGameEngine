@@ -927,6 +927,11 @@ bool D3DImage::create()
         }
     }
 
+    if (!D3DDeviceCaps::getInstance()->getImageFormatSupportInfo(m_originFormat, DeviceCaps::TilingType_Optimal)._supportMip)
+    {
+        LOG_WARNING("Format %s is not supported mip levels", ImageFormatStringDX(m_format).c_str());
+        m_mipmaps = 1;
+    }
 
     D3D12_RESOURCE_DESC textureDesc = {};
     textureDesc.Dimension = m_dimension;
@@ -1184,7 +1189,14 @@ bool D3DImage::internalUpdate(Context* context, const core::Dimension3D& offsets
     D3DGraphicsCommandList* commandlist = static_cast<D3DGraphicsCommandList*>(dxContext->getOrAcquireCurrentCommandList(D3DCommandList::Type::Direct));
     ASSERT(commandlist, "nullptr");
 
-    const UINT64 uploadBufferSize = GetRequiredIntermediateSize(m_resource, 0, 1);
+    ASSERT(m_resource, "nullptr");
+    UINT64 uploadBufferSize = 0;
+    UINT64 subResourceCount = slices * mips;
+    std::vector<D3D12_SUBRESOURCE_DATA> subResources(subResourceCount);
+    std::vector<D3D12_PLACED_SUBRESOURCE_FOOTPRINT> subResourceFootPrints(subResourceCount);
+    std::vector<UINT> subResourcesNumRows(subResourceCount);
+    std::vector<UINT64> subResourcesNumRowsSize(subResourceCount);
+    m_device->GetCopyableFootprints(&m_resource->GetDesc(), 0, static_cast<UINT>(subResources.size()), 0, subResourceFootPrints.data(), subResourcesNumRows.data(), subResourcesNumRowsSize.data(), &uploadBufferSize);
 
     ID3D12Resource* uploadResource = nullptr;
     {
@@ -1204,16 +1216,6 @@ bool D3DImage::internalUpdate(Context* context, const core::Dimension3D& offsets
 #endif
     }
 
-    auto calculateMipSize = [](const core::Dimension3D& size) -> core::Dimension3D
-    {
-        core::Dimension3D mipSize;
-        mipSize.width = std::max(size.width / 2, 1U);
-        mipSize.height = std::max(size.height / 2, 1U);
-        mipSize.depth = std::max(size.depth / 2, 1U);
-
-        return mipSize;
-    };
-
     auto calculateSubresourceRowPitch = [](const core::Dimension3D& size, u32 mipLevel, Format format) -> u64
     {
         const u32 width = std::max(size.width >> mipLevel, 1U);
@@ -1228,48 +1230,45 @@ bool D3DImage::internalUpdate(Context* context, const core::Dimension3D& offsets
         return u64(width * ImageFormat::getFormatBlockSize(format));
     };
 
-    auto calculateSubresourceSlicePitch = [](u64 rowPitch, const core::Dimension3D& size, u32 mipLevel, Format format) -> u64
+    auto calculateMipmapSize = [](const core::Dimension3D& size, u32 mipLevel, Format format) -> u64
     {
-        u32 height = std::max(size.height >> mipLevel, 1U);
+        const u32 width = std::max(size.width >> mipLevel, 1U);
+        const u32 height = std::max(size.height >> mipLevel, 1U);
         if (ImageFormat::isFormatCompressed(format))
         {
             const core::Dimension2D& blockDim = ImageFormat::getBlockDimension(format);
-            const u32 heightSize = (height + blockDim.height - 1) / blockDim.height;
+            const u32 widthSize = (width + blockDim.width - 1) / blockDim.width;
+            const u32 heightSize = (width + blockDim.height - 1) / blockDim.height;
 
-            return rowPitch * u64(heightSize * ImageFormat::getFormatBlockSize(format) * size.depth);
+            return u64(widthSize * heightSize * ImageFormat::getFormatBlockSize(format));
         }
-        u32 blockArea = ImageFormat::getBlockDimension(format).getArea();
-        f32 sizePerPixel = (f32)ImageFormat::getFormatBlockSize(format) / (f32)blockArea;
 
-        return rowPitch * u64(height * ImageFormat::getFormatBlockSize(format) * size.depth);
+        return u64(width * height * ImageFormat::getFormatBlockSize(format));
     };
-
-    std::vector<D3D12_SUBRESOURCE_DATA> subresource;
-    subresource.reserve(slices * mips);
 
     ASSERT(offsets.width == 0 && offsets.height == 0 && offsets.depth == 0, "not impl");
     for (u32 slice = 0; slice < slices; ++slice)
     {
-        core::Dimension3D mipsSize = size;
+        UINT64 dataOffset = 0;
         for (u32 mip = 0; mip < mips; ++mip)
         {
-            UINT offset = D3D12CalcSubresource(mip, 0, slice, mips, slices);
-            //TODO
-            D3D12_SUBRESOURCE_DATA textureData = {};
-            textureData.pData = reinterpret_cast<const u8*>(data) + offset;
-            textureData.RowPitch = calculateSubresourceRowPitch(size, mip, m_originFormat);
-            textureData.SlicePitch = calculateSubresourceSlicePitch(textureData.RowPitch, size, mip, m_originFormat);
+            UINT index = D3D12CalcSubresource(mip, 0, slice, mips, slices);
 
-            subresource.push_back(textureData);
+            const u32 width = std::max(m_size.width >> mip, 1U);
 
-            mipsSize = calculateMipSize(size);
+            D3D12_SUBRESOURCE_DATA& textureData = subResources[index];
+            textureData.pData = reinterpret_cast<const BYTE*>(data) + dataOffset;
+            textureData.RowPitch = calculateSubresourceRowPitch(m_size, mip, m_originFormat);
+            textureData.SlicePitch = textureData.RowPitch * subResourceFootPrints[index].Footprint.Height;
+
+            dataOffset += calculateMipmapSize(m_size, mip, m_originFormat);
         }
     }
 
     D3D12_RESOURCE_STATES oldState = getState();
     commandlist->transition(this, D3D12_RESOURCE_STATE_COPY_DEST);
 
-    UpdateSubresources(commandlist->getHandle(), m_resource, uploadResource, 0, 0, static_cast<UINT>(subresource.size()), subresource.data());
+    UpdateSubresources(commandlist->getHandle(), m_resource, uploadResource, 0, static_cast<UINT>(subResources.size()), uploadBufferSize, subResourceFootPrints.data(), subResourcesNumRows.data(), subResourcesNumRowsSize.data(), subResources.data());
 
     UploadResource* upload = new UploadResource(uploadResource);
     commandlist->setUsed(upload, 0);

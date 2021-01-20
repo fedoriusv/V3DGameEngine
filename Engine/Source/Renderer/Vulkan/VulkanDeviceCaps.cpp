@@ -307,6 +307,7 @@ void VulkanDeviceCaps::fillCapabilitiesList(const DeviceInfo* info)
     {
         {
             ImageFormatSupport& support = m_imageFormatSupport[index][TilingType::TilingType_Optimal];
+            support._supportMip = true;
 
             VkImageFormatProperties imageFormatProperties = {};
             VkFormat vkFormat = VulkanImage::convertImageFormatToVkFormat((Format)index);
@@ -322,6 +323,7 @@ void VulkanDeviceCaps::fillCapabilitiesList(const DeviceInfo* info)
 
         {
             ImageFormatSupport& support = m_imageFormatSupport[index][TilingType::TilingType_Linear];
+            support._supportMip = true;
 
             VkImageFormatProperties imageFormatProperties = {};
             VkFormat vkFormat = VulkanImage::convertImageFormatToVkFormat((Format)index);

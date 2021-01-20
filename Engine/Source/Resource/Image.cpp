@@ -11,7 +11,6 @@ ImageHeader::ImageHeader() noexcept
     , _layers(1)
     , _mips(1)
 
-    , _size(0)
     , _flipY(false)
 {
 }

@@ -49,10 +49,11 @@ void D3DDeviceCaps::initialize(ID3D12Device* device)
         {
             m_imageFormatSupport[i][TilingType_Optimal]._supportSampled = (featureData.Support1 & D3D12_FORMAT_SUPPORT1_SHADER_SAMPLE) ? true : false;
             m_imageFormatSupport[i][TilingType_Optimal]._supportAttachment = ((featureData.Support1 & D3D12_FORMAT_SUPPORT1_RENDER_TARGET) || (featureData.Support1 & D3D12_FORMAT_SUPPORT1_DEPTH_STENCIL)) ? true : false;
+            m_imageFormatSupport[i][TilingType_Optimal]._supportMip = (featureData.Support1 & D3D12_FORMAT_SUPPORT1_MIP) ? true : false;
         }
     }
 
-    globalComandListAllocator = false; //has memory leak when command lists reset
+    globalComandListAllocator = false; //TODO has memory leak when command lists reset
     ASSERT(!immediateSubmitUpload, "not impl");
 }
 

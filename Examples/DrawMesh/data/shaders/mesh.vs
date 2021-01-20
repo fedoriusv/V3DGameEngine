@@ -1,8 +1,8 @@
 struct VS_INPUT
 {
-    float3 Position : POSITION;
-    float3 Normal   : NORMAL;
-    float2 UV       : TEXTURE;
+    float3 Position : IN_POSITION;
+    float3 Normal   : IN_NORMAL;
+    float2 UV       : IN_TEXTURE;
 };
 
 struct UBO
@@ -15,7 +15,7 @@ struct UBO
 
 ConstantBuffer<UBO> ubo : register(b0);
 
-struct PS_INPUT 
+struct PS_INPUT
 {
     float4 Pos       : SV_POSITION;
     
