@@ -197,19 +197,21 @@ void VulkanGraphicContext::endFrame()
         m_currentBufferState.invalidateCommandBuffer(CommandTargetType::CmdUploadBuffer);
     }
 
-    ASSERT(m_currentBufferState.isCurrentBufferAcitve(CommandTargetType::CmdDrawBuffer), "m_currentDrawBuffer is nullptr");
-    VulkanCommandBuffer* drawBuffer = m_currentBufferState.getAcitveBuffer(CommandTargetType::CmdDrawBuffer);
-    if (drawBuffer->isInsideRenderPass())
+    if (m_currentBufferState.isCurrentBufferAcitve(CommandTargetType::CmdDrawBuffer))
     {
-        ASSERT(m_currentContextState->getCurrentPipeline(), "nullptr");
-        drawBuffer->cmdEndRenderPass();
+        VulkanCommandBuffer* drawBuffer = m_currentBufferState.getAcitveBuffer(CommandTargetType::CmdDrawBuffer);
+        if (drawBuffer->isInsideRenderPass())
+        {
+            ASSERT(m_currentContextState->getCurrentPipeline(), "nullptr");
+            drawBuffer->cmdEndRenderPass();
+        }
+        drawBuffer->endCommandBuffer();
+
+        m_uniformBufferManager->markToUse(drawBuffer, 0);
+
+        m_cmdBufferManager->submit(drawBuffer, VK_NULL_HANDLE);
+        m_currentBufferState.invalidateCommandBuffer(CommandTargetType::CmdDrawBuffer);
     }
-    drawBuffer->endCommandBuffer();
-
-    m_uniformBufferManager->markToUse(drawBuffer, 0);
-
-    m_cmdBufferManager->submit(drawBuffer, VK_NULL_HANDLE);
-    m_currentBufferState.invalidateCommandBuffer(CommandTargetType::CmdDrawBuffer);
 
     VulkanGraphicContext::finalizeCommandBufferSubmit();
 }
