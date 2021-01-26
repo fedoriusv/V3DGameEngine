@@ -104,7 +104,7 @@ void EmptyContext::bindUniformsBuffer(const Shader* shader, u32 bindIndex, u32 o
     LOG_DEBUG("EmptyContext::bindUniformsBuffer");
 }
 
-void EmptyContext::transitionImages(const std::vector<Image*>& images, TransitionOp transition, s32 layer)
+void EmptyContext::transitionImages(std::vector<const Image*>& images, TransitionOp transition, s32 layer)
 {
     LOG_DEBUG("EmptyContext::transitionImages");
 }

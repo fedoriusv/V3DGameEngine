@@ -1159,30 +1159,23 @@ void VulkanImage::clear(Context* context, f32 depth, u32 stencil)
 
 bool VulkanImage::upload(Context* context, const core::Dimension3D& size, u32 layers, u32 mips, const void* data)
 {
-    ASSERT(m_mipsLevel == mips, "should be same");
+    ASSERT(m_mipLevels == mips, "should be same");
     ASSERT(m_layersLevel == layers, "should be same");
     ASSERT(m_samples == VkSampleCountFlagBits::VK_SAMPLE_COUNT_1_BIT, "wrong sample count");
 
-    u64 calculatedSize = 0;
-    for (u32 mip = 0; mip < mips; ++mip)
-    {
-        u32 mipSize = VulkanImage::calculateImageSize(size, mip, m_format);
-        calculatedSize += static_cast<u64>(mipSize) * static_cast<u64>(layers);
-    }
-    ASSERT(calculatedSize > 0, "wrong size");
-
+    u64 calculatedSize = ImageFormat::calculateImageSize(size, mips, layers, VulkanImage::convertVkImageFormatToFormat(m_format));
     return VulkanImage::internalUpload(context, core::Dimension3D(0, 0, 0), size, layers, mips, calculatedSize, data);
 }
 
-bool VulkanImage::upload(Context * context, const core::Dimension3D & offsets, const core::Dimension3D & size, u32 layers, const void * data)
+bool VulkanImage::upload(Context* context, const core::Dimension3D& offsets, const core::Dimension3D& size, u32 layers, const void* data)
 {
-    ASSERT(m_mipsLevel == 1, "should be 1");
+    ASSERT(m_mipLevels == 1, "should be 1");
     ASSERT(m_layersLevel == layers, "should be same");
     ASSERT(m_samples == VkSampleCountFlagBits::VK_SAMPLE_COUNT_1_BIT, "wrong sample count");
 
     ASSERT(size > offsets, "wrong offset");
     core::Dimension3D diffSize = (size - offsets);
-    u32 calculatedSize = VulkanImage::calculateImageSize(diffSize, 0, m_format) * layers;
+    u64 calculatedSize = ImageFormat::calculateImageMipSize(diffSize, 0, VulkanImage::convertVkImageFormatToFormat(m_format)) * layers;
     ASSERT(calculatedSize > 0, "wrong size");
 
     return VulkanImage::internalUpload(context, offsets, size, layers, 1, calculatedSize, data);
@@ -1592,33 +1585,6 @@ bool VulkanImage::isAttachmentLayout(const VulkanImage* image, s32 layer)
     }
 
     return false;
-}
-
-
-u32 VulkanImage::calculateImageSize(const core::Dimension3D & size, u32 mipLevel, VkFormat format)
-{
-    core::Dimension3D mipSize;
-    mipSize.width = std::max(size.width >> mipLevel, 1U);
-    mipSize.height = std::max(size.height >> mipLevel, 1U);
-    mipSize.depth = std::max(size.depth >> mipLevel, 1U);
-
-    Format globalFormat = VulkanImage::convertVkImageFormatToFormat(format);
-    u32 calculatedSize = ImageFormat::getFormatBlockSize(globalFormat);
-    if (isCompressedFormat(format))
-    {
-        auto roundToBlocksLayer = [](const core::Dimension3D& size, const core::Dimension2D& blockDim, u32 blockSize)
-        {
-            const u32 widthSize = (size.width + blockDim.width - 1) / blockDim.width;
-            const u32 heightSize = (size.height + blockDim.height - 1) / blockDim.height;
-            return widthSize * heightSize * blockSize;
-        };
-
-        calculatedSize = roundToBlocksLayer(mipSize, ImageFormat::getBlockDimension(globalFormat), calculatedSize);
-        return calculatedSize * mipSize.depth;
-    }
-
-    calculatedSize *=  mipSize.getArea();
-    return calculatedSize;
 }
 
 VkImage VulkanImage::getHandle() const

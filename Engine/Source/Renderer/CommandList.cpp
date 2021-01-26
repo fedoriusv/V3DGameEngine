@@ -421,10 +421,9 @@ class CommandTransitionImage : public Command
 public:
 
     CommandTransitionImage(CommandTransitionImage&) = delete;
-    explicit CommandTransitionImage(const std::vector<Image*>& images, TransitionOp state, s32 layer) noexcept
+    explicit CommandTransitionImage(const std::vector<const Image*>& images, TransitionOp state) noexcept
         : m_images(images)
         , m_state(state)
-        , m_layer(layer)
     {
 #if DEBUG_COMMAND_LIST
         LOG_DEBUG("CommandTransitionImage constructor");
@@ -443,14 +442,13 @@ public:
 #if DEBUG_COMMAND_LIST
         LOG_DEBUG("CommandTransitionImage execute");
 #endif //DEBUG_COMMAND_LIST
-        cmdList.getContext()->transitionImages(m_images, m_state, m_layer);
+        cmdList.getContext()->transitionImages(m_images, m_state);
     }
 
 private:
 
-    std::vector<Image*> m_images;
-    TransitionOp        m_state;
-    s32                 m_layer;
+    std::vector<const Image*> m_images;
+    TransitionOp m_state;
 };
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -722,18 +720,46 @@ CommandList::PendingFlushMaskFlags CommandList::flushPendingCommands(PendingFlus
         pendingFlushMask &= ~PendingFlush_UpdateGraphicsPipeline;
     }
 
+    if (pendingFlushMask & PendingFlush_UpdateTransitions)
+    {
+        TransitionOp state = m_pendingTransitions._transitions.cbegin()->first;
+        std::vector<const Image*> images;
+        for (auto st : m_pendingTransitions._transitions)
+        {
+            if (state != st.first)
+            {
+                CommandList::pushCommand(new CommandTransitionImage(images, state));
+
+                images.clear();
+                state = st.first;
+            }
+
+            images.push_back(st.second);
+        }
+
+        if (!images.empty())
+        {
+            CommandList::pushCommand(new CommandTransitionImage(images, state));
+        }
+
+        m_pendingTransitions._transitions.clear();
+        pendingFlushMask &= ~PendingFlush_UpdateTransitions;
+    }
+
     return pendingFlushMask;
 }
 
-void CommandList::transfer(const std::vector<Image*>& image, TransitionOp state, s32 layer)
+void CommandList::transitions(const Image* image, TransitionOp state)
 {
     if (CommandList::isImmediate())
     {
-        m_context->transitionImages(image, state, layer);
+        std::vector<const Image*> images(1, image);
+        m_context->transitionImages(images, state);
     }
     else
     {
-        CommandList::pushCommand(new CommandTransitionImage(image, state, layer));
+        m_pendingTransitions._transitions.insert({ state, image });
+        m_pendingFlushMask |= PendingFlush_UpdateTransitions;
     }
 }
 

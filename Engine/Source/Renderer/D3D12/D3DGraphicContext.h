@@ -56,7 +56,7 @@ namespace dx3d
         void bindSampledImage(const Shader* shader, u32 bindIndex, const Image* image, const Sampler::SamplerInfo* samplerInfo) override;
         void bindUniformsBuffer(const Shader* shader, u32 bindIndex, u32 offset, u32 size, const void* data) override;
 
-        void transitionImages(const std::vector<Image*>& images, TransitionOp transition, s32 layer = -1) override;
+        void transitionImages(std::vector<const Image*>& images, TransitionOp transition, s32 layer = -1) override;
 
         void setViewport(const core::Rect32& viewport, const core::Vector2D& depth = { 0.0f, 1.0f }) override;
         void setScissor(const core::Rect32& scissor) override;
@@ -134,6 +134,13 @@ namespace dx3d
             RenderState() noexcept
             {
                 reset();
+            }
+
+            D3DGraphicsCommandList* acquireCommandList()
+            {
+                //TODO create if nullptr
+                ASSERT(_commandList, "nullptr");
+                return _commandList;
             }
 
             D3DGraphicsCommandList* commandList()

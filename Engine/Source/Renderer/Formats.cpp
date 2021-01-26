@@ -238,6 +238,42 @@ namespace renderer
         return k_formatList[format][4];
     }
 
+    u64 ImageFormat::calculateImageMipSize(const core::Dimension3D& size, u32 mipLevel, Format format)
+    {
+        core::Dimension3D mipSize;
+        mipSize.width = std::max(size.width >> mipLevel, 1U);
+        mipSize.height = std::max(size.height >> mipLevel, 1U);
+        mipSize.depth = std::max(size.depth >> mipLevel, 1U);
+
+        u64 calculatedSize = static_cast<u64>(ImageFormat::getFormatBlockSize(format));
+        if (ImageFormat::isFormatCompressed(format))
+        {
+            auto roundToBlocksLayer = [](const core::Dimension3D& size, const core::Dimension2D& blockDim, u64 blockSize) -> u64
+            {
+                const u64 widthSize = (size.width + blockDim.width - 1) / blockDim.width;
+                const u64 heightSize = (size.height + blockDim.height - 1) / blockDim.height;
+                return widthSize * heightSize * blockSize;
+            };
+
+            calculatedSize = roundToBlocksLayer(mipSize, ImageFormat::getBlockDimension(format), calculatedSize);
+            return calculatedSize * mipSize.depth;
+        }
+
+        calculatedSize *= mipSize.getArea();
+        return calculatedSize;
+    }
+
+    u64 ImageFormat::calculateImageSize(const core::Dimension3D& size, u32 mips, u32 layers, Format format)
+    {
+        u64 calculatedSize = 0;
+        for (u32 mip = 0; mip < mips; ++mip)
+        {
+            u64 mipSize = ImageFormat::calculateImageMipSize(size, mip, format);
+            calculatedSize += mipSize * static_cast<u64>(layers);
+        }
+
+        return calculatedSize;
+    }
 
 } //namespace renderer
 } //namespace v3d

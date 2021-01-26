@@ -278,7 +278,7 @@ void D3DGraphicContext::bindUniformsBuffer(const Shader* shader, u32 bindIndex, 
     m_descriptorState->bindDescriptor<D3DBuffer>(space, binding, constantBuffer, 0, size);
 }
 
-void D3DGraphicContext::transitionImages(const std::vector<Image*>& images, TransitionOp transition, s32 layer)
+void D3DGraphicContext::transitionImages(std::vector<const Image*>& images, TransitionOp transition, s32 layer)
 {
     ASSERT(false, "not impl");
 }
@@ -295,7 +295,7 @@ void D3DGraphicContext::setViewport(const core::Rect32& viewport, const core::Ve
         depth.y
     };
 
-    D3DGraphicsCommandList* cmdList = m_currentState.commandList();
+    D3DGraphicsCommandList* cmdList = m_currentState.acquireCommandList();
     cmdList->setViewport({ dxViewport });
 }
 
@@ -306,7 +306,7 @@ void D3DGraphicContext::setScissor(const core::Rect32& scissor)
         scissor.getLeftX(), scissor.getTopY(), scissor.getRightX(), scissor.getBottomY()
     };
 
-    D3DGraphicsCommandList* cmdList = m_currentState.commandList();
+    D3DGraphicsCommandList* cmdList = m_currentState.acquireCommandList();
     cmdList->setScissor({ dxScissor });
 }
 

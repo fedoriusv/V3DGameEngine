@@ -85,10 +85,17 @@ namespace renderer
         void setScissor(const core::Rect32& scissor);
 
         template<class TTexture>
-        void transfer(TTexture* texture, TransitionOp state)
+        void transition(TTexture* texture, TransitionOp state)
         {
             static_assert(std::is_base_of<Texture, TTexture>(), "CommandList::transfer wrong type");
-            transfer({ texture->getImage() }, state);
+            if constexpr (std::is_same<Backbuffer, TTexture>())
+            {
+                CommandList::transitions(nullptr, state);
+            }
+            else
+            {
+                CommandList::transitions(texture->getImage(), state);
+            }
         }
 
         Context* getContext() const;
@@ -109,6 +116,7 @@ namespace renderer
             PendingFlush_UpdateRenderTarget = 0x1,
             PendingFlush_UpdateContextState = 0x2,
             PendingFlush_UpdateGraphicsPipeline = 0x4,
+            PendingFlush_UpdateTransitions = 0x8
         };
 
         typedef u16 PendingFlushMaskFlags;
@@ -124,7 +132,7 @@ namespace renderer
 
     private:
 
-        void transfer(const std::vector<Image*>& image, TransitionOp state, s32 layer = -1);
+        void transitions(const Image* image, TransitionOp state);
 
         struct RenderTargetPendingState
         {
@@ -135,6 +143,11 @@ namespace renderer
         struct PipelinePendingState
         {
             Pipeline::PipelineGraphicInfo _pipelineInfo;
+        };
+
+        struct TransitionPendingState
+        {
+            std::multimap<TransitionOp, const Image*> _transitions;
         };
 
         void executeCommands();
@@ -148,10 +161,11 @@ namespace renderer
         ContextStates               m_pendingStates;
         RenderTargetPendingState    m_pendingRenderTargetInfo;
         PipelinePendingState        m_pendingPipelineStateInfo;
+        TransitionPendingState      m_pendingTransitions;
 
         PendingFlushMaskFlags       m_pendingFlushMask;
 
-        Backbuffer*                 m_swapchainTexture;
+        Backbuffer*                 m_swapchainTexture; //TODO replace to Context
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

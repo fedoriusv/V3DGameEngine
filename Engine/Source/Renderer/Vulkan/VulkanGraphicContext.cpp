@@ -412,6 +412,12 @@ void VulkanGraphicContext::setRenderTarget(const RenderPass::RenderPassInfo* ren
             }
         }
 
+        /*if (m_currentBufferState.isCurrentBufferAcitve(CommandTargetType::CmdTransitionBuffer))
+        {
+            VulkanCommandBuffer* transitionBuffer = m_currentBufferState.getAcitveBuffer(CommandTargetType::CmdTransitionBuffer);
+
+        }*/
+
         //TODO use penging states
         m_currentContextState->setCurrentRenderPass(vkRenderpass);
         m_currentContextState->setCurrentFramebuffer(vkFramebuffers);
@@ -644,9 +650,21 @@ void VulkanGraphicContext::bindUniformsBuffer(const Shader* shader, u32 bindInde
     m_currentContextState->updateConstantBuffer(bufferData, offset, size, data);
 }
 
-void VulkanGraphicContext::transitionImages(const std::vector<Image*>& images, TransitionOp transition, s32 layer)
+void VulkanGraphicContext::transitionImages(std::vector<const Image*>& images, TransitionOp transition, s32 layer)
 {
-    ASSERT(false, "impl");
+    VulkanCommandBuffer* drawBuffer = m_currentBufferState.acquireAndStartCommandBuffer(CommandTargetType::CmdDrawBuffer);
+    if (drawBuffer->isInsideRenderPass())
+    {
+        drawBuffer->cmdEndRenderPass();
+    }
+
+    std::vector<const Image*> transitionImages(std::move(images));
+
+    const Image* swapchainImage = (VulkanSwapchain::currentSwapchainIndex() == ~0U) ? m_swapchain->getSwapchainImage(0) : m_swapchain->getBackbuffer();
+    const Image* replacedImage = nullptr;
+    std::replace(transitionImages.begin(), transitionImages.end(), replacedImage, swapchainImage);
+
+    m_currentTransitionState.transitionImages(drawBuffer, transitionImages, transition);
 }
 
 void VulkanGraphicContext::draw(const StreamBufferDescription& desc, u32 firstVertex, u32 vertexCount, u32 firstInstance, u32 instanceCount)

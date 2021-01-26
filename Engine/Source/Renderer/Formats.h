@@ -9,7 +9,7 @@ namespace renderer
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
-    * Format enum
+    * @brief Format enum
     */
     enum Format : u32
     {
@@ -264,29 +264,60 @@ namespace renderer
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    class ImageFormat
+    /**
+    * @brief ImageFormat class
+    */
+    class ImageFormat final
     {
     public:
         /**
-        * Format functions. Return count bytes per block
+        * @brief Format functions.
+        * @param Format format
+        * @return count bytes per block
         */
         static u32 getFormatBlockSize(Format format);
 
         /**
-        * Format functions. Return count components
+        * @brief Format functions.
+        * @param Format format
+        * @return count components
         */
         static u32 getFormatCountComponent(Format format);
 
         /**
-        * Format functions. Return check compressed format
+        * @brief Format functions.
+        * @param Format format
+        * @return true if is compressed format
         */
         static bool isFormatCompressed(Format format);
 
         /**
-        * Format functions. Return width, hegit inside compression format
+        * @brief Format functions. 
+        * @param Format format
+        * @return width, heigt inside compression format
         */
         static core::Dimension2D getBlockDimension(Format format);
+
+        /**
+        * @brief calculateImageSize function.
+        * @param const core::Dimension3D& size
+        * @param u32 mipLevel
+        * @param Format format
+        * @return mip level szie of image in bytes
+        */
+        static u64 calculateImageMipSize(const core::Dimension3D& size, u32 mipLevel, Format format);
+
+        /**
+        * @brief calculateImageSize function.
+        * @param const core::Dimension3D& size
+        * @param u32 mips
+        * @param u32 layers
+        * @param Format format
+        * @return image size with mips in bytes
+        */
+        static u64 calculateImageSize(const core::Dimension3D& size, u32 mips, u32 layers, Format format);
     };
+
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
 } //namespace renderer

@@ -14,7 +14,7 @@ namespace renderer
 class CreateTextureCommand : public renderer::Command
 {
 public:
-    CreateTextureCommand(renderer::Image* image, const core::Dimension3D & offsets, const core::Dimension3D & dim, u32 mips, u32 layers, u32 size, void * data, bool shared) noexcept
+    CreateTextureCommand(renderer::Image* image, const core::Dimension3D& offsets, const core::Dimension3D& dim, u32 mips, u32 layers, u64 size, void* data, bool shared) noexcept
         : m_image(image)
         , m_offsets(offsets)
         , m_dimension(dim)
@@ -369,22 +369,8 @@ void Texture::createTexture(const core::Dimension3D& dimension, const void* data
     }
     else
     {
-        u32 calculatedSize = 0;
-        if (data && (m_usage & TextureUsage_Shared) == 0)
-        {
-            //TODO
-            ASSERT(m_mipmaps == 1, "impl");
-
-            calculatedSize = ImageFormat::getFormatBlockSize(m_format) * dimension.getArea() * m_layers;
-            if (ImageFormat::isFormatCompressed(m_format))
-            {
-                calculatedSize /= 16;
-            }
-            ASSERT(calculatedSize > 0, "size is 0");
-        }
-
-        m_cmdList.pushCommand(
-            new CreateTextureCommand(m_image, core::Dimension3D(0, 0, 0), dimension, m_mipmaps, m_layers, calculatedSize, const_cast<void*>(data), (m_usage & TextureUsage_Shared)));
+        u64 calculatedSize = ImageFormat::calculateImageSize(dimension, m_mipmaps, m_layers, m_format);
+        m_cmdList.pushCommand(new CreateTextureCommand(m_image, core::Dimension3D(0, 0, 0), dimension, m_mipmaps, m_layers, calculatedSize, const_cast<void*>(data), (m_usage & TextureUsage_Shared)));
     }
 }
 
