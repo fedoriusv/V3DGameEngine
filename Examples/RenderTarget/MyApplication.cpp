@@ -71,7 +71,7 @@ void MyApplication::Initialize()
 {
     m_Context = renderer::Context::createContext(m_Window, renderer::Context::RenderType::VulkanRender);
     ASSERT(m_Context, "context is nullptr");
-    m_CommandList = new renderer::CommandList(m_Context, renderer::CommandList::CommandListType::ImmediateCommandList);
+    m_CommandList = new renderer::CommandList(m_Context, renderer::CommandList::CommandListType::DelayedCommandList);
 
     m_Camera = new v3d::scene::CameraArcballHelper(new scene::Camera(core::Vector3D(0.0f, 0.0f, 0.0f), core::Vector3D(0.0f, 1.0f, 0.0f)), 5.0f, 4.0f, 20.0f);
     m_Camera->setPerspective(45.0f, m_Window->getSize(), 0.1f, 256.f);
@@ -97,16 +97,18 @@ void MyApplication::Initialize()
         m_Geometry = v3d::scene::ModelHelper::createModelHelper(*m_CommandList, { cube });
 
         m_RenderTarget = m_CommandList->createObject<renderer::RenderTargetState>(m_Window->getSize(), "RenderTarget");
-        m_ColorAttachment = m_CommandList->createObject<renderer::Texture2D>(renderer::TextureUsage::TextureUsage_Attachment | renderer::TextureUsage::TextureUsage_Sampled, renderer::Format::Format_R8G8B8A8_UNorm, m_Window->getSize(), renderer::TextureSamples::TextureSamples_x1);
+
+        m_ColorAttachment = m_CommandList->createObject<renderer::Texture2D>(renderer::TextureUsage::TextureUsage_Attachment | renderer::TextureUsage::TextureUsage_Sampled, 
+            renderer::Format::Format_R8G8B8A8_UNorm, m_Window->getSize(), renderer::TextureSamples::TextureSamples_x1, "ColorAttachment");
         m_RenderTarget->setColorTexture(0, m_ColorAttachment,
             { 
                 renderer::RenderTargetLoadOp::LoadOp_Clear, renderer::RenderTargetStoreOp::StoreOp_Store, core::Vector4D(0.0f) 
             }, 
             { 
-                renderer::TransitionOp::TransitionOp_Undefined, renderer::TransitionOp::TransitionOp_ShaderRead 
+                renderer::TransitionOp::TransitionOp_Undefined, renderer::TransitionOp::TransitionOp_ShaderRead
             });
 
-        m_DepthAttachment = m_CommandList->createObject<renderer::Texture2D>(renderer::TextureUsage::TextureUsage_Attachment, renderer::Format::Format_D32_SFloat_S8_UInt, m_Window->getSize(), renderer::TextureSamples::TextureSamples_x1);
+        m_DepthAttachment = m_CommandList->createObject<renderer::Texture2D>(renderer::TextureUsage::TextureUsage_Attachment, renderer::Format::Format_D32_SFloat_S8_UInt, m_Window->getSize(), renderer::TextureSamples::TextureSamples_x1, "DepthAttachment");
         m_RenderTarget->setDepthStencilTexture(m_DepthAttachment, 
             { 
                 renderer::RenderTargetLoadOp::LoadOp_Clear, renderer::RenderTargetStoreOp::StoreOp_DontCare, 1.0f 
@@ -115,7 +117,7 @@ void MyApplication::Initialize()
                 renderer::RenderTargetLoadOp::LoadOp_DontCare, renderer::RenderTargetStoreOp::StoreOp_DontCare, 0U 
             },
             { 
-                renderer::TransitionOp::TransitionOp_Undefined, renderer::TransitionOp::TransitionOp_DepthStencilAttachmet 
+                renderer::TransitionOp::TransitionOp_Undefined, renderer::TransitionOp::TransitionOp_DepthStencilAttachmet
             });
 
         m_Program = m_CommandList->createObject<renderer::ShaderProgram>(shaders);
@@ -188,6 +190,7 @@ bool MyApplication::Running()
         ubo.modelMatrix.setScale({ 100.0f, 100.0f, 100.0f });
 
         m_Program->bindUniformsBuffer<renderer::ShaderType::ShaderType_Vertex>({ "vs_buffer" }, 0, (u32)sizeof(UBO), &ubo);
+
         m_Program->bindSampler<renderer::ShaderType::ShaderType_Fragment>({ "colorSampler" }, m_Sampler);
         m_Program->bindTexture<renderer::ShaderType::ShaderType_Fragment, renderer::Texture2D>({ "colorTexture" }, m_Texture);
 
@@ -221,11 +224,8 @@ void MyApplication::Exit()
     delete m_Pipeline;
     delete m_Program;
 
-    auto depthTexture = m_RenderTarget->getDepthStencilTexture<renderer::Texture2D>();
-    delete depthTexture;
-    auto colorTexture = m_RenderTarget->getColorTexture<renderer::Texture2D>(0);
-    delete colorTexture;
-
+    delete m_DepthAttachment;
+    delete m_ColorAttachment;
     delete m_RenderTarget;
 
     delete m_Geometry;
