@@ -107,11 +107,16 @@ VkSamplerAddressMode VulkanSampler::convertSamplerWrapToVkSamplerAddressMode(Sam
     return VK_SAMPLER_ADDRESS_MODE_REPEAT;
 }
 
-VulkanSampler::VulkanSampler(VkDevice device, const SamplerDescription& desc) noexcept
+VulkanSampler::VulkanSampler(VkDevice device, const SamplerDescription& desc, const std::string& name) noexcept
     : Sampler(desc)
     , m_device(device)
     , m_sampler(VK_NULL_HANDLE)
 {
+#if VULKAN_DEBUG_MARKERS
+    m_debugName = name.empty() ? "Sampler" : name;
+    m_debugName.append(VulkanDebugUtils::k_addressPreffix);
+    m_debugName.append(std::to_string(reinterpret_cast<const u64>(this)));
+#endif //VULKAN_DEBUG_MARKERS
 }
 
 VulkanSampler::~VulkanSampler()
@@ -173,6 +178,20 @@ bool VulkanSampler::create()
         LOG_ERROR("VulkanSampler::create vkCreateSampler is failed. Error: %s", ErrorString(result).c_str());
         return false;
     }
+
+#if VULKAN_DEBUG_MARKERS
+    if (VulkanDeviceCaps::getInstance()->debugUtilsObjectNameEnabled)
+    {
+        VkDebugUtilsObjectNameInfoEXT debugUtilsObjectNameInfo = {};
+        debugUtilsObjectNameInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT;
+        debugUtilsObjectNameInfo.pNext = nullptr;
+        debugUtilsObjectNameInfo.objectType = VK_OBJECT_TYPE_SAMPLER;
+        debugUtilsObjectNameInfo.objectHandle = reinterpret_cast<u64>(m_sampler);
+        debugUtilsObjectNameInfo.pObjectName = m_debugName.c_str();
+
+        VulkanWrapper::SetDebugUtilsObjectName(m_device, &debugUtilsObjectNameInfo);
+    }
+#endif //VULKAN_DEBUG_MARKERS
 
     return true;
 }

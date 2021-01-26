@@ -18,11 +18,11 @@ namespace renderer
 namespace vk
 {
 
-VulkanCommandBuffer::VulkanCommandBuffer(VkDevice device, CommandBufferLevel level, VulkanCommandBuffer* primaryBuffer)
+VulkanCommandBuffer::VulkanCommandBuffer(Context* context, VkDevice device, CommandBufferLevel level, VulkanCommandBuffer* primaryBuffer)
     : m_device(device)
 
     , m_pool(VK_NULL_HANDLE)
-    , m_command(VK_NULL_HANDLE)
+    , m_commands(VK_NULL_HANDLE)
 
     , m_level(level)
 
@@ -30,7 +30,7 @@ VulkanCommandBuffer::VulkanCommandBuffer(VkDevice device, CommandBufferLevel lev
     , m_capturedFrameIndex(-1)
     , m_isInsideRenderPass(false)
 
-    , m_context(nullptr)
+    , m_context(context)
 {
     LOG_DEBUG("VulkanCommandBuffer constructor %llx", this);
     m_status = CommandBufferStatus::Invalid;
@@ -59,7 +59,9 @@ VulkanCommandBuffer::VulkanCommandBuffer(VkDevice device, CommandBufferLevel lev
     memset(&m_renderpassState, 0, sizeof(RenderPassState));
 
 #if VULKAN_DEBUG_MARKERS
-    m_debugName = std::to_string(reinterpret_cast<const u64>(this));
+    m_debugName = "CommandBuffer";
+    m_debugName.append(VulkanDebugUtils::k_addressPreffix);
+    m_debugName.append(std::to_string(reinterpret_cast<const u64>(this)));
 #endif //VULKAN_DEBUG_MARKERS
 }
 
@@ -68,7 +70,7 @@ VulkanCommandBuffer::~VulkanCommandBuffer()
     LOG_DEBUG("~VulkanCommandBuffer destructor %llx", this);
 
     //released form pool manager
-    m_command = VK_NULL_HANDLE;
+    m_commands = VK_NULL_HANDLE;
 
     if (m_fence != VK_NULL_HANDLE)
     {
@@ -80,10 +82,10 @@ VulkanCommandBuffer::~VulkanCommandBuffer()
     m_secondaryBuffers.clear();
 }
 
-VkCommandBuffer VulkanCommandBuffer::getHandle() const
+VkCommandBuffer VulkanCommandBuffer::getHandle1() const
 {
-    ASSERT(m_command != VK_NULL_HANDLE, "nullptr");
-    return m_command;
+    ASSERT(m_commands != VK_NULL_HANDLE, "nullptr");
+    return m_commands;
 }
 
 VulkanCommandBuffer::CommandBufferStatus VulkanCommandBuffer::getStatus() const
@@ -164,6 +166,28 @@ void VulkanCommandBuffer::refreshFenceStatus()
     }
 }
 
+void VulkanCommandBuffer::init(VkCommandPool pool, VkCommandBuffer buffer)
+{
+    m_pool = pool;
+    m_commands = buffer;
+    m_status = VulkanCommandBuffer::CommandBufferStatus::Ready;
+
+    //Has crash inside renderdoc
+/*#if VULKAN_DEBUG_MARKERS
+    if (VulkanDeviceCaps::getInstance()->debugUtilsObjectNameEnabled)
+    {
+        VkDebugUtilsObjectNameInfoEXT debugUtilsObjectNameInfo = {};
+        debugUtilsObjectNameInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT;
+        debugUtilsObjectNameInfo.pNext = nullptr;
+        debugUtilsObjectNameInfo.objectType = VK_OBJECT_TYPE_IMAGE;
+        debugUtilsObjectNameInfo.objectHandle = reinterpret_cast<u64>(m_commands);
+        debugUtilsObjectNameInfo.pObjectName = m_debugName.c_str();
+
+        VulkanWrapper::SetDebugUtilsObjectName(m_device, &debugUtilsObjectNameInfo);
+    }
+#endif //VULKAN_DEBUG_MARKERS*/
+}
+
 void VulkanCommandBuffer::captureResource(VulkanResource* resource, u64 frame)
 {
     std::lock_guard lock(m_mutex);
@@ -230,7 +254,7 @@ void VulkanCommandBuffer::beginCommandBuffer()
         commandBufferBeginInfo.pInheritanceInfo = &commandBufferInheritanceInfo;
     }
 
-    VkResult result = VulkanWrapper::BeginCommandBuffer(m_command, &commandBufferBeginInfo);
+    VkResult result = VulkanWrapper::BeginCommandBuffer(m_commands, &commandBufferBeginInfo);
     if (result != VK_SUCCESS)
     {
         LOG_ERROR("VulkanCommandBuffer::beginCommandBuffer vkBeginCommandBuffer. Error %s", ErrorString(result).c_str());
@@ -248,7 +272,7 @@ void VulkanCommandBuffer::beginCommandBuffer()
         debugUtilsLabel.color[2] = 1.0f;
         debugUtilsLabel.color[3] = 1.0f;
 
-        VulkanWrapper::CmdBeginDebugUtilsLabel(m_command, &debugUtilsLabel);
+        VulkanWrapper::CmdBeginDebugUtilsLabel(m_commands, &debugUtilsLabel);
     }
 #endif //VULKAN_DEBUG_MARKERS
 
@@ -258,12 +282,12 @@ void VulkanCommandBuffer::beginCommandBuffer()
 void VulkanCommandBuffer::endCommandBuffer()
 {
     ASSERT(m_status == CommandBufferStatus::Begin, "invalid state");
-    VulkanWrapper::EndCommandBuffer(m_command);
+    VulkanWrapper::EndCommandBuffer(m_commands);
 
 #if VULKAN_DEBUG_MARKERS
     if (VulkanDeviceCaps::getInstance()->debugUtilsObjectNameEnabled)
     {
-        VulkanWrapper::CmdEndDebugUtilsLabel(m_command);
+        VulkanWrapper::CmdEndDebugUtilsLabel(m_commands);
     }
 #endif //VULKAN_DEBUG_MARKERS
 
@@ -329,14 +353,14 @@ void VulkanCommandBuffer::cmdBeginRenderpass(const VulkanRenderPass* pass, const
         subpassBeginInfo.pNext = nullptr;
         subpassBeginInfo.contents = VK_SUBPASS_CONTENTS_INLINE;
 
-        VulkanWrapper::CmdBeginRenderPass2(m_command, &renderPassBeginInfo, &subpassBeginInfo);
+        VulkanWrapper::CmdBeginRenderPass2(m_commands, &renderPassBeginInfo, &subpassBeginInfo);
 #if VULKAN_DEBUG
         LOG_DEBUG("VulkanFramebuffer::CmdBeginRenderPass2 area (width %u, height %u)", area.extent.width, area.extent.height);
 #endif
     }
     else
     {
-        VulkanWrapper::CmdBeginRenderPass(m_command, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+        VulkanWrapper::CmdBeginRenderPass(m_commands, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
 #if VULKAN_DEBUG
         LOG_DEBUG("VulkanFramebuffer::CmdBeginRenderPass area (width %u, height %u)", area.extent.width, area.extent.height);
 #endif
@@ -355,11 +379,11 @@ void VulkanCommandBuffer::cmdEndRenderPass()
         subpassEndInfo.sType = VK_STRUCTURE_TYPE_SUBPASS_END_INFO_KHR;
         subpassEndInfo.pNext = nullptr;
 
-        VulkanWrapper::CmdEndRenderPass2(m_command, &subpassEndInfo);
+        VulkanWrapper::CmdEndRenderPass2(m_commands, &subpassEndInfo);
     }
     else
     {
-        VulkanWrapper::CmdEndRenderPass(m_command);
+        VulkanWrapper::CmdEndRenderPass(m_commands);
     }
 
     u32 index = 0;
@@ -387,7 +411,7 @@ void VulkanCommandBuffer::cmdSetViewport(const std::vector<VkViewport>& viewport
 
     if (m_level == CommandBufferLevel::PrimaryBuffer)
     {
-        VulkanWrapper::CmdSetViewport(m_command, 0, static_cast<u32>(viewports.size()), viewports.data());
+        VulkanWrapper::CmdSetViewport(m_commands, 0, static_cast<u32>(viewports.size()), viewports.data());
     }
     else
     {
@@ -401,7 +425,7 @@ void VulkanCommandBuffer::cmdSetScissor(const std::vector<VkRect2D>& scissors)
 
     if (m_level == CommandBufferLevel::PrimaryBuffer)
     {
-        VulkanWrapper::CmdSetScissor(m_command, 0, static_cast<u32>(scissors.size()), scissors.data());
+        VulkanWrapper::CmdSetScissor(m_commands, 0, static_cast<u32>(scissors.size()), scissors.data());
     }
     else
     {
@@ -426,7 +450,7 @@ void VulkanCommandBuffer::cmdBindVertexBuffers(u32 firstBinding, u32 countBindin
     if (m_level == CommandBufferLevel::PrimaryBuffer)
     {
         static_assert(sizeof(VkDeviceSize) == sizeof(u64));
-        VulkanWrapper::CmdBindVertexBuffers(m_command, firstBinding, countBindinng, vkBuffers.data(), (const VkDeviceSize*)offests.data());
+        VulkanWrapper::CmdBindVertexBuffers(m_commands, firstBinding, countBindinng, vkBuffers.data(), (const VkDeviceSize*)offests.data());
     }
     else
     {
@@ -441,7 +465,7 @@ void VulkanCommandBuffer::cmdBindIndexBuffers(VulkanBuffer* buffer, VkDeviceSize
 
     if (m_level == CommandBufferLevel::PrimaryBuffer)
     {
-        VulkanWrapper::CmdBindIndexBuffer(m_command, buffer->getHandle(), offest, type);
+        VulkanWrapper::CmdBindIndexBuffer(m_commands, buffer->getHandle(), offest, type);
     }
     else
     {
@@ -455,7 +479,7 @@ void VulkanCommandBuffer::cmdBindPipeline(VulkanGraphicPipeline * pipeline)
     pipeline->captureInsideCommandBuffer(this, 0);
     if (m_level == CommandBufferLevel::PrimaryBuffer)
     {
-        VulkanWrapper::CmdBindPipeline(m_command, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->getHandle());
+        VulkanWrapper::CmdBindPipeline(m_commands, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->getHandle());
     }
     else
     {
@@ -469,7 +493,7 @@ void VulkanCommandBuffer::cmdBindDescriptorSets(VulkanGraphicPipeline * pipeline
     pipeline->captureInsideCommandBuffer(this, 0);
     if (m_level == CommandBufferLevel::PrimaryBuffer)
     {
-        VulkanWrapper::CmdBindDescriptorSets(m_command, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->getPipelineLayoutHandle(), firstSet, countSets, sets.data(), static_cast<u32>(offsets.size()), offsets.data());
+        VulkanWrapper::CmdBindDescriptorSets(m_commands, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->getPipelineLayoutHandle(), firstSet, countSets, sets.data(), static_cast<u32>(offsets.size()), offsets.data());
     }
     else
     {
@@ -484,7 +508,7 @@ void VulkanCommandBuffer::cmdDraw(u32 firstVertex, u32 vertexCount, u32 firstIns
 
     if (m_level == CommandBufferLevel::PrimaryBuffer)
     {
-        VulkanWrapper::CmdDraw(m_command, vertexCount, instanceCount, firstVertex, firstInstance);
+        VulkanWrapper::CmdDraw(m_commands, vertexCount, instanceCount, firstVertex, firstInstance);
     }
     else
     {
@@ -499,7 +523,7 @@ void VulkanCommandBuffer::cmdDrawIndexed(u32 firstIndex, u32 indexCount, u32 fir
 
     if (m_level == CommandBufferLevel::PrimaryBuffer)
     {
-        VulkanWrapper::CmdDrawIndexed(m_command, indexCount, instanceCount, firstIndex, vertexOffest, firstInstance);
+        VulkanWrapper::CmdDrawIndexed(m_commands, indexCount, instanceCount, firstIndex, vertexOffest, firstInstance);
     }
     else
     {
@@ -518,7 +542,7 @@ void VulkanCommandBuffer::cmdClearImage(VulkanImage* image, VkImageLayout imageL
     if (m_level == CommandBufferLevel::PrimaryBuffer)
     {
         VkImageSubresourceRange imageSubresourceRange = VulkanImage::makeImageSubresourceRange(image);
-        VulkanWrapper::CmdClearColorImage(m_command, image->getHandle(), imageLayout, pColor, 1, &imageSubresourceRange);
+        VulkanWrapper::CmdClearColorImage(m_commands, image->getHandle(), imageLayout, pColor, 1, &imageSubresourceRange);
     }
     else
     {
@@ -536,7 +560,7 @@ void VulkanCommandBuffer::cmdClearImage(VulkanImage * image, VkImageLayout image
     if (m_level == CommandBufferLevel::PrimaryBuffer)
     {
         VkImageSubresourceRange imageSubresourceRange = VulkanImage::makeImageSubresourceRange(image);
-        VulkanWrapper::CmdClearDepthStencilImage(m_command, image->getHandle(), imageLayout, pDepthStencil, 1, &imageSubresourceRange);
+        VulkanWrapper::CmdClearDepthStencilImage(m_commands, image->getHandle(), imageLayout, pDepthStencil, 1, &imageSubresourceRange);
     }
     else
     {
@@ -557,7 +581,7 @@ void VulkanCommandBuffer::cmdResolveImage(VulkanImage* src, VkImageLayout srcLay
 
     if (m_level == CommandBufferLevel::PrimaryBuffer)
     {
-        VulkanWrapper::CmdResolveImage(m_command, src->getHandle(), srcLayout, dst->getHandle(), dstLayout, static_cast<u32>(regions.size()), regions.data());
+        VulkanWrapper::CmdResolveImage(m_commands, src->getHandle(), srcLayout, dst->getHandle(), dstLayout, static_cast<u32>(regions.size()), regions.data());
     }
     else
     {
@@ -573,7 +597,7 @@ void VulkanCommandBuffer::cmdUpdateBuffer(VulkanBuffer* src, u32 offset, u64 siz
     src->captureInsideCommandBuffer(this, 0);
     if (m_level == CommandBufferLevel::PrimaryBuffer)
     {
-        VulkanWrapper::CmdUpdateBuffer(m_command, src->getHandle(), offset, size, data);
+        VulkanWrapper::CmdUpdateBuffer(m_commands, src->getHandle(), offset, size, data);
     }
     else
     {
@@ -590,7 +614,7 @@ void VulkanCommandBuffer::cmdCopyBufferToImage(VulkanBuffer* src, VulkanImage* d
     dst->captureInsideCommandBuffer(this, 0);
     if (m_level == CommandBufferLevel::PrimaryBuffer)
     {
-        VulkanWrapper::CmdCopyBufferToImage(m_command, src->getHandle(), dst->getHandle(), layout, static_cast<u32>(regions.size()), regions.data());
+        VulkanWrapper::CmdCopyBufferToImage(m_commands, src->getHandle(), dst->getHandle(), layout, static_cast<u32>(regions.size()), regions.data());
     }
     else
     {
@@ -607,7 +631,7 @@ void VulkanCommandBuffer::cmdCopyBufferToBuffer(VulkanBuffer* src, VulkanBuffer*
     dst->captureInsideCommandBuffer(this, 0);
     if (m_level == CommandBufferLevel::PrimaryBuffer)
     {
-        VulkanWrapper::CmdCopyBuffer(m_command, src->getHandle(), dst->getHandle(), static_cast<u32>(regions.size()), regions.data());
+        VulkanWrapper::CmdCopyBuffer(m_commands, src->getHandle(), dst->getHandle(), static_cast<u32>(regions.size()), regions.data());
     }
     else
     {
@@ -615,13 +639,15 @@ void VulkanCommandBuffer::cmdCopyBufferToBuffer(VulkanBuffer* src, VulkanBuffer*
     }
 }
 
-void VulkanCommandBuffer::cmdPipelineBarrier(VulkanImage * image, VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask, VkImageLayout layout, s32 layer, s32 mip)
+void VulkanCommandBuffer::cmdPipelineBarrier(const VulkanImage* image, VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask, VkImageLayout layout, s32 layer, s32 mip)
 {
     ASSERT(m_status == CommandBufferStatus::Begin, "not started");
+    ASSERT(!VulkanCommandBuffer::isInsideRenderPass(), "can't be inside render pass");
 
-    image->captureInsideCommandBuffer(this, 0);
     if (m_level == CommandBufferLevel::PrimaryBuffer)
     {
+        image->captureInsideCommandBuffer(this, 0);
+
         auto accessMasks = VulkanImage::getAccessFlagsFromImageLayout(image->getLayout(layer, mip), layout);
 
         VkImageMemoryBarrier imageMemoryBarrier = {};
@@ -636,9 +662,9 @@ void VulkanCommandBuffer::cmdPipelineBarrier(VulkanImage * image, VkPipelineStag
         imageMemoryBarrier.image = image->getHandle();
         imageMemoryBarrier.subresourceRange = VulkanImage::makeImageSubresourceRange(image, layer, mip);
 
-        image->setLayout(layout, layer, mip);
+        const_cast<VulkanImage*>(image)->setLayout(layout, layer, mip);
 
-        VulkanWrapper::CmdPipelineBarrier(m_command, srcStageMask, dstStageMask, VK_DEPENDENCY_BY_REGION_BIT, 0, nullptr, 0, nullptr, 1, &imageMemoryBarrier);
+        VulkanWrapper::CmdPipelineBarrier(m_commands, srcStageMask, dstStageMask, VK_DEPENDENCY_BY_REGION_BIT, 0, nullptr, 0, nullptr, 1, &imageMemoryBarrier);
     }
     else
     {
@@ -656,7 +682,7 @@ void VulkanCommandBuffer::cmdPipelineBarrier(VulkanBuffer* buffer, VkPipelineSta
         VkBufferMemoryBarrier bufferMemoryBarrier = {};
         //TODO:
 
-        VulkanWrapper::CmdPipelineBarrier(m_command, srcStageMask, dstStageMask, VK_DEPENDENCY_BY_REGION_BIT, 0, nullptr, 1, &bufferMemoryBarrier, 0, nullptr);
+        VulkanWrapper::CmdPipelineBarrier(m_commands, srcStageMask, dstStageMask, VK_DEPENDENCY_BY_REGION_BIT, 0, nullptr, 1, &bufferMemoryBarrier, 0, nullptr);
     }
     else
     {
@@ -670,7 +696,7 @@ void VulkanCommandBuffer::cmdPipelineBarrier(VkPipelineStageFlags srcStageMask, 
 
     if (m_level == CommandBufferLevel::PrimaryBuffer)
     {
-        VulkanWrapper::CmdPipelineBarrier(m_command, srcStageMask, dstStageMask, VK_DEPENDENCY_BY_REGION_BIT, 1, &memoryBarrier, 0, nullptr, 0, nullptr);
+        VulkanWrapper::CmdPipelineBarrier(m_commands, srcStageMask, dstStageMask, VK_DEPENDENCY_BY_REGION_BIT, 1, &memoryBarrier, 0, nullptr, 0, nullptr);
     }
     else
     {

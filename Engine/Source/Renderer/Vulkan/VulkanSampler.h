@@ -31,7 +31,7 @@ namespace vk
         VulkanSampler() = delete;
         VulkanSampler(const VulkanSampler&) = delete;
 
-        explicit VulkanSampler(VkDevice device, const SamplerDescription& desc) noexcept;
+        explicit VulkanSampler(VkDevice device, const SamplerDescription& desc, [[maybe_unused]] const std::string& name = "") noexcept;
         ~VulkanSampler();
 
         bool create() override;
@@ -43,6 +43,9 @@ namespace vk
 
         VkDevice  m_device;
         VkSampler m_sampler;
+#if VULKAN_DEBUG_MARKERS
+        std::string m_debugName;
+#endif //VULKAN_DEBUG_MARKERS
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

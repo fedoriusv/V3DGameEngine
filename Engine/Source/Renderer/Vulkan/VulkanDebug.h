@@ -59,6 +59,8 @@ namespace vk
 
         static const u16 k_severityDebugLevel = k_debugLevel;
 
+        static const std::string k_addressPreffix;
+
         static bool createDebugUtilsMessenger(VkInstance instance, VkDebugUtilsMessageSeverityFlagsEXT severityFlag, VkDebugUtilsMessageTypeFlagsEXT flags, PFN_vkDebugUtilsMessengerCallbackEXT callback, void* userData = nullptr);
         static void destroyDebugUtilsMessenger(VkInstance instance);
 

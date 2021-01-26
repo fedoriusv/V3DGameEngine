@@ -17,7 +17,7 @@ namespace renderer
 namespace vk
 {
 
-VulkanFramebuffer::VulkanFramebuffer(VkDevice device, const Context* context, const std::vector<Image*>& images, const core::Dimension2D& size) noexcept
+VulkanFramebuffer::VulkanFramebuffer(VkDevice device, const Context* context, const std::vector<Image*>& images, const core::Dimension2D& size, const std::string& name) noexcept
     : m_device(device)
     , m_context(context)
     , m_images(images)
@@ -27,7 +27,9 @@ VulkanFramebuffer::VulkanFramebuffer(VkDevice device, const Context* context, co
 {
     LOG_DEBUG("VulkanFramebuffer::VulkanFramebuffer constructor %llx", this);
 #if VULKAN_DEBUG_MARKERS
-    m_debugName = std::to_string(reinterpret_cast<const u64>(this));
+    m_debugName = name.empty() ? "Framebuffer" : name;
+    m_debugName.append(VulkanDebugUtils::k_addressPreffix);
+    m_debugName.append(std::to_string(reinterpret_cast<const u64>(this)));
 #endif //VULKAN_DEBUG_MARKERS
 }
 

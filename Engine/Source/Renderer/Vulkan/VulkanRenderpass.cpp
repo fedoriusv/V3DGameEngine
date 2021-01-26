@@ -78,7 +78,7 @@ VkImageLayout VulkanRenderPass::convertTransitionStateToImageLayout(TransitionOp
 }
 
 
-VulkanRenderPass::VulkanRenderPass(VkDevice device, const RenderPassDescription& description) noexcept
+VulkanRenderPass::VulkanRenderPass(VkDevice device, const RenderPassDescription& description, const std::string& name) noexcept
     : RenderPass(description)
     , m_device(device)
     , m_renderpass(VK_NULL_HANDLE)
@@ -118,7 +118,9 @@ VulkanRenderPass::VulkanRenderPass(VkDevice device, const RenderPassDescription&
     }
 
 #if VULKAN_DEBUG_MARKERS
-    m_debugName = std::to_string(reinterpret_cast<const u64>(this));
+    m_debugName = name.empty() ? "Renderpass" : name;
+    m_debugName.append(VulkanDebugUtils::k_addressPreffix);
+    m_debugName.append(std::to_string(reinterpret_cast<const u64>(this)));
 #endif //VULKAN_DEBUG_MARKERS
 }
 
@@ -208,7 +210,6 @@ bool VulkanRenderPass::create()
                     attachmentReference.aspectMask = VulkanImage::getImageAspectFlags(attach._format);
                     attachmentReference.attachment = index;
                     attachmentReference.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-                    ASSERT(attach._initialLayout == VK_IMAGE_LAYOUT_UNDEFINED || attach._initialLayout == attachmentReference.layout, "must be same");
 
                     m_layout[index] = { attachmentReference.layout, attach._finalLayout };
                     ++index;
@@ -225,7 +226,6 @@ bool VulkanRenderPass::create()
                     depthStencilAttachmentReferences.attachment = index;
                     depthStencilAttachmentReferences.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
                     depthStencilAttachmentReferences.aspectMask = VulkanImage::getImageAspectFlags(attach._format);
-                    ASSERT(attach._initialLayout == VK_IMAGE_LAYOUT_UNDEFINED || attach._initialLayout == depthStencilAttachmentReferences.layout, "must be same");
 
                     m_layout[index] = { depthStencilAttachmentReferences.layout, attach._finalLayout };
                     ++index;
@@ -271,7 +271,6 @@ bool VulkanRenderPass::create()
                     msaaAttachmentReference.aspectMask = 0;
                     msaaAttachmentReference.attachment = index;
                     msaaAttachmentReference.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-                    ASSERT(attach._initialLayout == VK_IMAGE_LAYOUT_UNDEFINED || attach._initialLayout == msaaAttachmentReference.layout, "must be same");
 
                     m_layout[index] = { msaaAttachmentReference.layout, attach._finalLayout };
                     ++index;
@@ -285,7 +284,6 @@ bool VulkanRenderPass::create()
                     resolveAttachmentReference.aspectMask = 0;
                     resolveAttachmentReference.attachment = index;
                     resolveAttachmentReference.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-                    ASSERT(attach._initialLayout == VK_IMAGE_LAYOUT_UNDEFINED || attach._initialLayout == resolveAttachmentReference.layout, "must be same");
 
                     m_layout[index] = { resolveAttachmentReference.layout, attach._finalLayout };
                     ++index;
@@ -305,7 +303,6 @@ bool VulkanRenderPass::create()
                     depthStencilAttachmentReferences.attachment = index;
                     depthStencilAttachmentReferences.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
                     depthStencilAttachmentReferences.aspectMask = VulkanImage::getImageAspectFlags(attach._format);
-                    ASSERT(attach._initialLayout == VK_IMAGE_LAYOUT_UNDEFINED || attach._initialLayout == depthStencilAttachmentReferences.layout, "must be same");
 
                     m_layout[index] = { depthStencilAttachmentReferences.layout, attach._finalLayout };
                     ++index;
@@ -317,7 +314,6 @@ bool VulkanRenderPass::create()
                         resolveDepthStencilAttachmentReferences.attachment = index;
                         resolveDepthStencilAttachmentReferences.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
                         resolveDepthStencilAttachmentReferences.aspectMask = VulkanImage::getImageAspectFlags(attach._format);
-                        ASSERT(attach._initialLayout == VK_IMAGE_LAYOUT_UNDEFINED || attach._initialLayout == resolveDepthStencilAttachmentReferences.layout, "must be same");
 
                         m_layout[index] = { resolveDepthStencilAttachmentReferences.layout, attach._finalLayout };
                         ++index;
@@ -439,7 +435,6 @@ bool VulkanRenderPass::create()
                     VkAttachmentReference attachmentReference = {};
                     attachmentReference.attachment = index;
                     attachmentReference.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-                    ASSERT(attach._initialLayout == VK_IMAGE_LAYOUT_UNDEFINED || attach._initialLayout == attachmentReference.layout, "must be same");
 
                     m_layout[index] = { attachmentReference.layout, attach._finalLayout };
                     index++;
@@ -455,7 +450,6 @@ bool VulkanRenderPass::create()
 
                     depthStencilAttachmentReferences.attachment = index;
                     depthStencilAttachmentReferences.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-                    ASSERT(attach._initialLayout == VK_IMAGE_LAYOUT_UNDEFINED || attach._initialLayout == depthStencilAttachmentReferences.layout, "must be same");
 
                     m_layout[index] = { depthStencilAttachmentReferences.layout, attach._finalLayout };
                     index++;
@@ -492,7 +486,6 @@ bool VulkanRenderPass::create()
                     VkAttachmentReference msaaAttachmentReference = {};
                     msaaAttachmentReference.attachment = index;
                     msaaAttachmentReference.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-                    ASSERT(attach._initialLayout == VK_IMAGE_LAYOUT_UNDEFINED || attach._initialLayout == msaaAttachmentReference.layout, "must be same");
 
                     m_layout[index] = { msaaAttachmentReference.layout, attach._finalLayout };
                     index++;
@@ -503,7 +496,6 @@ bool VulkanRenderPass::create()
                     VkAttachmentReference resolveAttachmentReference = {};
                     resolveAttachmentReference.attachment = index;
                     resolveAttachmentReference.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-                    ASSERT(attach._initialLayout == VK_IMAGE_LAYOUT_UNDEFINED || attach._initialLayout == resolveAttachmentReference.layout, "must be same");
 
                     m_layout[index] = { resolveAttachmentReference.layout, attach._finalLayout };
                     index++;
@@ -522,7 +514,6 @@ bool VulkanRenderPass::create()
 
                     depthStencilAttachmentReferences.attachment = index;
                     depthStencilAttachmentReferences.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-                    ASSERT(attach._initialLayout == VK_IMAGE_LAYOUT_UNDEFINED || attach._initialLayout == depthStencilAttachmentReferences.layout, "must be same");
 
                     m_layout[index] = { depthStencilAttachmentReferences.layout, attach._finalLayout };
                     index++;

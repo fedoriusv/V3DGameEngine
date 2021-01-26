@@ -26,7 +26,7 @@ namespace vk
     {
     public:
 
-        VulkanFramebuffer(VkDevice device, const Context* context, const std::vector<Image*>& images, const core::Dimension2D& size) noexcept;
+        VulkanFramebuffer(VkDevice device, const Context* context, const std::vector<Image*>& images, const core::Dimension2D& size, [[maybe_unused]] const std::string& name = "") noexcept;
         ~VulkanFramebuffer();
 
         VkFramebuffer getHandle() const;

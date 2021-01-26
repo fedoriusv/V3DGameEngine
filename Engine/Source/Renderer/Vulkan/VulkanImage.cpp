@@ -801,7 +801,7 @@ VulkanImage::VulkanImage(VulkanMemory::VulkanMemoryAllocator* memory, VkDevice d
     , m_type(type)
     , m_format(format)
     , m_dimension(dimension)
-    , m_mipsLevel(mipsLevel)
+    , m_mipLevels(mipsLevel)
     , m_layersLevel(layers)
 
     , m_samples(VK_SAMPLE_COUNT_1_BIT)
@@ -820,13 +820,16 @@ VulkanImage::VulkanImage(VulkanMemory::VulkanMemoryAllocator* memory, VkDevice d
     , m_swapchainImage(false)
 {
     LOG_DEBUG("VulkanImage::VulkanImage constructor %llx", this);
-    m_layout.resize(static_cast<u64>(m_layersLevel) * static_cast<u64>(m_mipsLevel), (m_tiling == VK_IMAGE_TILING_OPTIMAL) ? VK_IMAGE_LAYOUT_UNDEFINED : VK_IMAGE_LAYOUT_PREINITIALIZED);
+    m_layout.resize(static_cast<u64>(m_layersLevel) * static_cast<u64>(m_mipLevels), (m_tiling == VK_IMAGE_TILING_OPTIMAL) ? VK_IMAGE_LAYOUT_UNDEFINED : VK_IMAGE_LAYOUT_PREINITIALIZED);
 
     memset(&m_generalImageView[0], VK_NULL_HANDLE, sizeof(m_generalImageView));
 
 #if VULKAN_DEBUG_MARKERS
-    m_debugName = name.empty() ? std::to_string(reinterpret_cast<const u64>(this)) : name;
+    m_debugName = name.empty() ? "Image" : name;
+    m_debugName.append(VulkanDebugUtils::k_addressPreffix);
+    m_debugName.append(std::to_string(reinterpret_cast<const u64>(this)));
 #endif //VULKAN_DEBUG_MARKERS
+
 #if DEBUG_OBJECT_MEMORY
     s_objects.insert(this);
 #endif //DEBUG_OBJECT_MEMORY
@@ -837,7 +840,7 @@ VulkanImage::VulkanImage(VulkanMemory::VulkanMemoryAllocator* memory, VkDevice d
     , m_type(VK_IMAGE_TYPE_2D)
     , m_format(format)
     , m_dimension(dimension)
-    , m_mipsLevel(1)
+    , m_mipLevels(1)
     , m_layersLevel(layers)
 
     , m_samples(samples)
@@ -856,7 +859,7 @@ VulkanImage::VulkanImage(VulkanMemory::VulkanMemoryAllocator* memory, VkDevice d
     , m_swapchainImage(false)
 {
     LOG_DEBUG("VulkanImage::VulkanImage constructor %llx", this);
-    m_layout.resize(static_cast<u64>(m_layersLevel) * static_cast<u64>(m_mipsLevel), VK_IMAGE_LAYOUT_UNDEFINED);
+    m_layout.resize(static_cast<u64>(m_layersLevel) * static_cast<u64>(m_mipLevels), VK_IMAGE_LAYOUT_UNDEFINED);
 
     memset(&m_generalImageView[0], VK_NULL_HANDLE, sizeof(m_generalImageView));
 
@@ -882,8 +885,11 @@ VulkanImage::VulkanImage(VulkanMemory::VulkanMemoryAllocator* memory, VkDevice d
     }
 
 #if VULKAN_DEBUG_MARKERS
-    m_debugName = name.empty() ? std::to_string(reinterpret_cast<const u64>(this)) : name;
+    m_debugName = name.empty() ? "Image" : name;
+    m_debugName.append(VulkanDebugUtils::k_addressPreffix);
+    m_debugName.append(std::to_string(reinterpret_cast<const u64>(this)));
 #endif //VULKAN_DEBUG_MARKERS
+
 #if DEBUG_OBJECT_MEMORY
     s_objects.insert(this);
 #endif //DEBUG_OBJECT_MEMORY
@@ -987,7 +993,7 @@ bool VulkanImage::create()
     imageCreateInfo.imageType = m_type;
     imageCreateInfo.format = m_format;
     imageCreateInfo.extent = m_dimension;
-    imageCreateInfo.mipLevels = m_mipsLevel;
+    imageCreateInfo.mipLevels = m_mipLevels;
     imageCreateInfo.arrayLayers = m_layersLevel;
     imageCreateInfo.samples = m_samples;
     imageCreateInfo.tiling = m_tiling;
@@ -1246,7 +1252,7 @@ bool VulkanImage::internalUpload(Context* context, const core::Dimension3D& offs
 
             for (u32 mip = 0; mip < mips; ++mip)
             {
-                bufferDataSize = VulkanImage::calculateImageSize(size, mip, m_format);
+                bufferDataSize = ImageFormat::calculateImageMipSize(size, mip, VulkanImage::convertVkImageFormatToFormat(m_format));
 
                 VkBufferImageCopy regions;
                 regions.imageOffset = { static_cast<s32>(mipOffset.width), static_cast<s32>(mipOffset.height), static_cast<s32>(mipOffset.depth) };
@@ -1300,6 +1306,7 @@ bool VulkanImage::internalUpload(Context* context, const core::Dimension3D& offs
         {
             newLayout = prevLayout;
         }
+
         if (m_usage & TextureUsage_Sampled)
         {
             dstStageMask |= VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
@@ -1344,7 +1351,7 @@ VkImageSubresourceRange VulkanImage::makeImageSubresourceRange(const VulkanImage
     if (mip == -1)
     {
         imageSubresourceRange.baseMipLevel = 0;
-        imageSubresourceRange.levelCount = image->m_mipsLevel;
+        imageSubresourceRange.levelCount = image->m_mipLevels;
     }
     else
     {
@@ -1400,7 +1407,7 @@ VkImageSubresourceRange VulkanImage::makeImageSubresourceRangeWithAspect(const V
     if (mip == -1)
     {
         imageSubresourceRange.baseMipLevel = 0;
-        imageSubresourceRange.levelCount = image->m_mipsLevel;
+        imageSubresourceRange.levelCount = image->m_mipLevels;
     }
     else
     {

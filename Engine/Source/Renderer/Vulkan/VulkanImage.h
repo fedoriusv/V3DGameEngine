@@ -107,7 +107,7 @@ namespace vk
         VkImageType                 m_type;
         VkFormat                    m_format;
         VkExtent3D                  m_dimension;
-        u32                         m_mipsLevel;
+        u32                         m_mipLevels;
         u32                         m_layersLevel;
 
         VkSampleCountFlagBits       m_samples;

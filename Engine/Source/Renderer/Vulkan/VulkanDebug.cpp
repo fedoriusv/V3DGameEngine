@@ -156,6 +156,8 @@ bool VulkanLayers::checkDeviceLayerIsSupported(VkPhysicalDevice device, const c8
 
 VkDebugUtilsMessengerEXT VulkanDebugUtils::s_messenger = VK_NULL_HANDLE;
 
+const std::string VulkanDebugUtils::k_addressPreffix = "_ptr:";
+
 bool VulkanDebugUtils::createDebugUtilsMessenger(VkInstance instance, VkDebugUtilsMessageSeverityFlagsEXT severityFlag, VkDebugUtilsMessageTypeFlagsEXT flags, PFN_vkDebugUtilsMessengerCallbackEXT callback, void * userData)
 {
     if (s_messenger)
@@ -263,6 +265,22 @@ void VulkanDebugUtils::debugCallbackData(const VkDebugUtilsMessengerCallbackData
     for (u32 i = 0; i < pCallbackData->objectCount; ++i)
     {
         const VkDebugUtilsObjectNameInfoEXT& objects = pCallbackData->pObjects[i];
+
+        u64 addr = 0;
+        std::string name;
+        if (objects.pObjectName)
+        {
+            std::string_view view(objects.pObjectName);
+            auto found = view.find(VulkanDebugUtils::k_addressPreffix);
+            if (found != std::string::npos)
+            {
+                name = view.substr(0, found);
+
+                char* end;
+                addr = std::strtoull(view.substr(found + VulkanDebugUtils::k_addressPreffix.size()).data(), &end, 10);
+            }
+        }
+
         switch (objects.objectType)
         {
         case VK_OBJECT_TYPE_IMAGE:
@@ -273,8 +291,6 @@ void VulkanDebugUtils::debugCallbackData(const VkDebugUtilsMessengerCallbackData
             }
 
             [[maybe_unused]] VulkanImage* image = nullptr;
-            char* end;
-            const u64 addr = std::strtoull(objects.pObjectName, &end, 10);
             if (addr != 0ULL && addr != ULLONG_MAX)
             {
                 image = reinterpret_cast<VulkanImage*>(addr);
@@ -291,8 +307,6 @@ void VulkanDebugUtils::debugCallbackData(const VkDebugUtilsMessengerCallbackData
             }
 
             [[maybe_unused]] VulkanBuffer* buffer = nullptr;
-            char* end;
-            const u64 addr = std::strtoull(objects.pObjectName, &end, 10);
             if (addr != 0ULL && addr != ULLONG_MAX)
             {
                 buffer = reinterpret_cast<VulkanBuffer*>(addr);
@@ -309,8 +323,6 @@ void VulkanDebugUtils::debugCallbackData(const VkDebugUtilsMessengerCallbackData
             }
 
             [[maybe_unused]] VulkanFramebuffer* framebuffer = nullptr;
-            char* end;
-            const u64 addr = std::strtoull(objects.pObjectName, &end, 10);
             if (addr != 0ULL && addr != ULLONG_MAX)
             {
                 framebuffer = reinterpret_cast<VulkanFramebuffer*>(addr);
@@ -327,8 +339,6 @@ void VulkanDebugUtils::debugCallbackData(const VkDebugUtilsMessengerCallbackData
             }
 
             [[maybe_unused]] VulkanRenderPass* renderpass = nullptr;
-            char* end;
-            const u64 addr = std::strtoull(objects.pObjectName, &end, 10);
             if (addr != 0ULL && addr != ULLONG_MAX)
             {
                 renderpass = reinterpret_cast<VulkanRenderPass*>(addr);
@@ -340,6 +350,12 @@ void VulkanDebugUtils::debugCallbackData(const VkDebugUtilsMessengerCallbackData
         case VK_OBJECT_TYPE_DEVICE_MEMORY:
         {
             [[maybe_unused]] const char* debugName = objects.pObjectName;
+            break;
+        }
+
+        case VK_OBJECT_TYPE_COMMAND_BUFFER:
+        {
+            //To get cmd buffer use pCmdBufLabels. see below
             break;
         }
 

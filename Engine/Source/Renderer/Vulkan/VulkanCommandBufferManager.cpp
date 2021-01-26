@@ -75,12 +75,8 @@ VulkanCommandBuffer * VulkanCommandBufferManager::acquireNewCmdBuffer(VulkanComm
         VkCommandBuffer buffer = VulkanCommandBufferManager::allocateCommandBuffer(m_device, pool, (level == VulkanCommandBuffer::PrimaryBuffer) ? VK_COMMAND_BUFFER_LEVEL_PRIMARY : VK_COMMAND_BUFFER_LEVEL_SECONDARY);
         if (buffer)
         {
-            VulkanCommandBuffer* cmdBuffer = new VulkanCommandBuffer(m_device, level);
-
-            cmdBuffer->m_pool = pool;
-            cmdBuffer->m_command = buffer;
-            cmdBuffer->m_status = VulkanCommandBuffer::CommandBufferStatus::Ready;
-            cmdBuffer->m_context = m_context;
+            VulkanCommandBuffer* cmdBuffer = new VulkanCommandBuffer(m_context, m_device, level);
+            cmdBuffer->init(pool, buffer);
 
             m_usedCmdBuffers.push_back(cmdBuffer);
 
@@ -99,12 +95,8 @@ VulkanCommandBuffer * VulkanCommandBufferManager::acquireNewCmdBuffer(VulkanComm
     VkCommandBuffer buffer = VulkanCommandBufferManager::allocateCommandBuffer(m_device, pool, (level == VulkanCommandBuffer::PrimaryBuffer) ? VK_COMMAND_BUFFER_LEVEL_PRIMARY : VK_COMMAND_BUFFER_LEVEL_SECONDARY);
     ASSERT(buffer, "buffer is nullptr");
 
-    VulkanCommandBuffer* cmdBuffer = new VulkanCommandBuffer(m_device, level);
-
-    cmdBuffer->m_pool = pool;
-    cmdBuffer->m_command = buffer;
-    cmdBuffer->m_status = VulkanCommandBuffer::CommandBufferStatus::Ready;
-    cmdBuffer->m_context = m_context;
+    VulkanCommandBuffer* cmdBuffer = new VulkanCommandBuffer(m_context, m_device, level);
+    cmdBuffer->init(pool, buffer);
 
     m_usedCmdBuffers.push_back(cmdBuffer);
 
@@ -121,7 +113,7 @@ bool VulkanCommandBufferManager::submit(VulkanCommandBuffer* buffer, VkSemaphore
         return false;
     }
 
-    VkCommandBuffer cmdBuffer = buffer->getHandle();
+    VkCommandBuffer cmdBuffer = buffer->getHandle1();
 
     VkSubmitInfo submitInfo = {};
     submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -189,7 +181,7 @@ void VulkanCommandBufferManager::resetPools()
             VulkanCommandBuffer* cmdBuffer = m_freeCmdBuffers[level].front();
             m_freeCmdBuffers[level].pop_front();
 
-            VulkanCommandBufferManager::freeCommandBuffer(m_device, cmdBuffer->m_pool, cmdBuffer->m_command);
+            VulkanCommandBufferManager::freeCommandBuffer(m_device, cmdBuffer->m_pool, cmdBuffer->m_commands);
             delete cmdBuffer;
         }
     }

@@ -36,8 +36,11 @@ VulkanBuffer::VulkanBuffer(VulkanMemory::VulkanMemoryAllocator* memory, VkDevice
 {
     LOG_DEBUG("VulkanBuffer::VulkanBuffer constructor %llx", this);
 #if VULKAN_DEBUG_MARKERS
-    m_debugName = name.empty() ? std::to_string(reinterpret_cast<const u64>(this)) : name;
+    m_debugName = name.empty() ? "Buffer" : name;
+    m_debugName.append(VulkanDebugUtils::k_addressPreffix);
+    m_debugName.append(std::to_string(reinterpret_cast<const u64>(this)));
 #endif //VULKAN_DEBUG_MARKERS
+
 #if DEBUG_OBJECT_MEMORY
     s_objects.insert(this);
 #endif //DEBUG_OBJECT_MEMORY

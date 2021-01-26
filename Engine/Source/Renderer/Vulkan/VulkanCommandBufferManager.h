@@ -16,16 +16,22 @@ namespace vk
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    /**
+    * @brief CommandTargetType enum
+    */
     enum CommandTargetType
     {
         CmdDrawBuffer = 0,
         CmdUploadBuffer = 1,
+        CmdTransitionBuffer = 2,
 
         CommandTarget_Count
     };
 
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
+
     /**
-    * VulkanCommandBufferManager class. Vulkan Render side
+    * @brief VulkanCommandBufferManager class. Vulkan Render side
     */
     class VulkanCommandBufferManager final
     {
