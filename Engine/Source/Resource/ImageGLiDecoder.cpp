@@ -232,7 +232,7 @@ Resource* ImageGLiDecoder::decode(const stream::Stream* stream, const std::strin
         newHeader->_layers = static_cast<u32>(texture.layers());
         newHeader->_mips = static_cast<u32>(texture.levels());
         newHeader->_format = covertFormat(texture.format());
-        newHeader->_size = texture.size();
+        newHeader->_size = static_cast<u32>(texture.size());
         newHeader->_flipY = flipY;
 #if DEBUG
         newHeader->_debugName = name;
