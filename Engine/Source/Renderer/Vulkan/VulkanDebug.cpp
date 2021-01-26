@@ -369,9 +369,19 @@ void VulkanDebugUtils::debugCallbackData(const VkDebugUtilsMessengerCallbackData
         const VkDebugUtilsLabelEXT& bufferLabel = pCallbackData->pCmdBufLabels[i];
         if (bufferLabel.pLabelName)
         {
+            u64 addr = 0;
+            std::string name;
+            std::string_view view(bufferLabel.pLabelName);
+            auto found = view.find(VulkanDebugUtils::k_addressPreffix);
+            if (found != std::string::npos)
+            {
+                name = view.substr(0, found);
+
+                char* end;
+                addr = std::strtoull(view.substr(found + VulkanDebugUtils::k_addressPreffix.size()).data(), &end, 10);
+            }
+
             [[maybe_unused]] VulkanCommandBuffer* cmdBuffer = nullptr;
-            char* end;
-            const u64 addr = std::strtoull(bufferLabel.pLabelName, &end, 10);
             if (addr != 0ULL && addr != ULLONG_MAX)
             {
                 cmdBuffer = reinterpret_cast<VulkanCommandBuffer*>(addr);
