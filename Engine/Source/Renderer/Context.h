@@ -29,20 +29,16 @@ namespace renderer
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
-    * Context interface class
+    * @brief Context interface class
     */
     class Context
     {
 
     public:
 
-        enum DeviceMask
-        {
-            GraphicMask = 0x1,
-            ComputeMask = 0x2,
-            TransferMask = 0x4
-        };
-
+        /**
+        * @brief RenderType enum
+        */
         enum class RenderType
         {
             EmptyRender,
@@ -50,13 +46,34 @@ namespace renderer
             DirectXRender
         };
 
+        /**
+        * @brief DeviceMask enum
+        */
+        enum DeviceMask
+        {
+            GraphicMask = 0x1,
+            ComputeMask = 0x2,
+            TransferMask = 0x4
+        };
+
         Context(const Context&) = delete;
         Context& operator=(const Context&) = delete;
 
-        Context() noexcept;
-        virtual ~Context();
-
+        /**
+        * @brief createContext static function. Used for create context.
+        * Must be called in game thread
+        * @param const platform::Window* window [required]
+        * @param RenderType type [required]
+        * @param DeviceMask mask [optional]
+        * @return Context pointer
+        */
         static Context* createContext(const platform::Window* window, RenderType type, DeviceMask mask = DeviceMask::GraphicMask);
+
+        /**
+        * @brief destroyContext static function. Used for destroy context.
+        * Must be called in game thread
+        * @param Context* context [required]
+        */
         static void destroyContext(Context* context);
 
         RenderType getRenderType() const;
@@ -111,6 +128,9 @@ namespace renderer
         Format getBackbufferFormat() const;
 
     protected:
+
+        Context() noexcept;
+        virtual ~Context();
 
         friend RenderPassManager;
         friend FramebufferManager;

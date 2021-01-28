@@ -165,7 +165,7 @@ namespace renderer
 
         PendingFlushMaskFlags       m_pendingFlushMask;
 
-        Backbuffer*                 m_swapchainTexture; //TODO replace to Context
+        Backbuffer*                 m_swapchainTexture;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

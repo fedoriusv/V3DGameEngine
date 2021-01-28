@@ -74,7 +74,7 @@
 #   define VULKAN_STATISTICS 0
 #   define VULKAN_DUMP 0
 #   if VULKAN_DUMP
-#   define VULKAN_DUMP_FILE "VulkanCommandsDump.log"
+#       define VULKAN_DUMP_FILE "VulkanCommandsDump.log"
 #   endif //VULKAN_DUMP
 
 #   define VULKAN_MAKE_VERSION(major, minor) (((major) << 22) | ((minor) << 12))
