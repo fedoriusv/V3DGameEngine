@@ -429,7 +429,7 @@ void ShadowMappingPoint::Init(const renderer::VertexInputAttribDescription& desc
         float main(PS_INPUT Input) : SV_DEPTH\n\
         {\n\
             float3 lightVec = Input.Position.xyz - Input.Light.xyz;\n\
-            return length(lightVec);\n\
+            return length(lightVec) / (FAR_PLANE - NEAR_PLANE);\n\
         }");
 
         const stream::Stream* fragmentStream = stream::StreamManager::createMemoryStream(fragmentSource);
@@ -437,6 +437,8 @@ void ShadowMappingPoint::Init(const renderer::VertexInputAttribDescription& desc
         renderer::ShaderHeader fragmentHeader(renderer::ShaderType::ShaderType_Fragment);
         fragmentHeader._contentType = renderer::ShaderHeader::ShaderResource::ShaderResource_Source;
         fragmentHeader._shaderModel = renderer::ShaderHeader::ShaderModel::ShaderModel_HLSL_5_1;
+        fragmentHeader._defines.push_back({ "FAR_PLANE", std::to_string(m_ShadowCamera->getCamera().getFar()) });
+        fragmentHeader._defines.push_back({ "NEAR_PLANE", std::to_string(m_ShadowCamera->getCamera().getNear()) });
 
         fragShader = resource::ResourceLoaderManager::getInstance()->composeShader<renderer::Shader, resource::ShaderSourceStreamLoader>(m_CmdList->getContext(), "shadowmap_fragment", &fragmentHeader, fragmentStream);
     }

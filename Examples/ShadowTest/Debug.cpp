@@ -162,7 +162,7 @@ void DirectionLightDebug::Free()
 
 void LightDebug::Init(v3d::renderer::CommandList* commandList, v3d::renderer::RenderTargetState* renderTarget)
 {
-    v3d::scene::Model* cube = resource::ResourceLoaderManager::getInstance()->load<v3d::scene::Model, resource::ModelFileLoader>("resources/cube.dae");
+    v3d::scene::Model* cube = resource::ResourceLoaderManager::getInstance()->load<v3d::scene::Model, resource::ModelFileLoader>("data/cube.dae");
     m_Geometry = v3d::scene::ModelHelper::createModelHelper(*commandList, { cube });
 
     const stream::Stream* vertexStream = stream::StreamManager::createMemoryStream(k_vertexDebug);

@@ -41,8 +41,8 @@ MyApplication::MyApplication(int& argc, char** argv)
     , m_CascadeShadowMapping(nullptr)
     , m_ShadowMappingPoint(nullptr)
 
-    , m_Mode(PointLight)
-    , m_Debug(true)
+    , m_Mode(DirectionLightCascadeShadowing)
+    , m_Debug(false)
 {
     ASSERT(m_Window, "windows is nullptr");
     m_Window->getInputEventReceiver()->attach(InputEvent::InputEventType::KeyboardInputEvent, m_InputEventHandler);
@@ -121,6 +121,21 @@ void MyApplication::Initialize()
             }
 
 
+            if (m_InputEventHandler->isKeyPressed(event::KeyCode::KeyKey_B))
+            {
+                m_Debug = !m_Debug;
+            }
+
+            if (m_InputEventHandler->isKeyPressed(event::KeyCode::KeyKey_M))
+            {
+                m_Mode = (ShadowMode)(m_Mode + 1);
+                if (m_Mode == ShadowMode::MaxMode)
+                {
+                    m_Mode = ShadowMode::FirstMode;
+                }
+            }
+            
+
             m_FPSCameraHelper->moveHandlerCallback(m_InputEventHandler, event);
         });
 
@@ -149,12 +164,12 @@ void MyApplication::Load()
     m_ShadowSampler->setBorderColor({ 1.0f, 1.0f, 1.0f, 1.0f });
 
     {
-        v3d::scene::Model* scene = resource::ResourceLoaderManager::getInstance()->load<v3d::scene::Model, resource::ModelFileLoader>("resources/big_field.dae");
+        v3d::scene::Model* scene = resource::ResourceLoaderManager::getInstance()->load<v3d::scene::Model, resource::ModelFileLoader>("data/big_field.dae");
         m_Scene = v3d::scene::ModelHelper::createModelHelper(*m_CommandList, { scene });
     }
 
     {
-        std::vector<const renderer::Shader*> shaders = resource::ResourceLoaderManager::getInstance()->loadHLSLShader<renderer::Shader, resource::ShaderSourceFileLoader>(m_CommandList->getContext(), "resources/solid_SunShadow.hlsl",
+        std::vector<const renderer::Shader*> shaders = resource::ResourceLoaderManager::getInstance()->loadHLSLShader<renderer::Shader, resource::ShaderSourceFileLoader>(m_CommandList->getContext(), "data/solid_SunShadow.hlsl",
             {
                 {"main_VS", renderer::ShaderType_Vertex },
                 {"main_FS", renderer::ShaderType_Fragment }
@@ -172,7 +187,7 @@ void MyApplication::Load()
     }
 
     {
-        std::vector<const renderer::Shader*> shaders = resource::ResourceLoaderManager::getInstance()->loadHLSLShader<renderer::Shader, resource::ShaderSourceFileLoader>(m_CommandList->getContext(), "resources/solid_SunCascadedShadow.hlsl",
+        std::vector<const renderer::Shader*> shaders = resource::ResourceLoaderManager::getInstance()->loadHLSLShader<renderer::Shader, resource::ShaderSourceFileLoader>(m_CommandList->getContext(), "data/solid_SunCascadedShadow.hlsl",
             {
                 {"main_VS", renderer::ShaderType_Vertex },
                 {"main_FS", renderer::ShaderType_Fragment }
@@ -184,10 +199,24 @@ void MyApplication::Load()
 
         m_CascadeShadowMappingProgram = m_CommandList->createObject<renderer::ShaderProgram>(shaders);
         m_CascadeShadowMappingPipeline = m_CommandList->createObject<renderer::GraphicsPipelineState>(m_ShadowMappingPipeline->getGraphicsPipelineStateDesc(), m_CascadeShadowMappingProgram.get(), m_RenderTarget.get());
+
+
+        std::vector<const renderer::Shader*> shadersDebug = resource::ResourceLoaderManager::getInstance()->loadHLSLShader<renderer::Shader, resource::ShaderSourceFileLoader>(m_CommandList->getContext(), "data/solid_SunCascadedShadow.hlsl",
+            {
+                {"main_VS", renderer::ShaderType_Vertex },
+                {"main_FS", renderer::ShaderType_Fragment }
+            },
+            {
+                { "SHADOWMAP_CASCADE_COUNT", std::to_string(CascadedShadowMapping::s_CascadeCount) },
+                { "SHADER_DEBUG", std::to_string(1) }
+            });
+
+        m_CascadeShadowMappingProgramDebug = m_CommandList->createObject<renderer::ShaderProgram>(shadersDebug);
+        m_CascadeShadowMappingPipelineDebug = m_CommandList->createObject<renderer::GraphicsPipelineState>(m_ShadowMappingPipeline->getGraphicsPipelineStateDesc(), m_CascadeShadowMappingProgramDebug.get(), m_RenderTarget.get());
     }
 
     {
-        std::vector<const renderer::Shader*> shaders = resource::ResourceLoaderManager::getInstance()->loadHLSLShader<renderer::Shader, resource::ShaderSourceFileLoader>(m_CommandList->getContext(), "resources/solid_ShadowPointLight.hlsl",
+        std::vector<const renderer::Shader*> shaders = resource::ResourceLoaderManager::getInstance()->loadHLSLShader<renderer::Shader, resource::ShaderSourceFileLoader>(m_CommandList->getContext(), "data/solid_ShadowPointLight.hlsl",
             {
                 {"main_VS", renderer::ShaderType_Vertex },
                 {"main_FS", renderer::ShaderType_Fragment }
@@ -208,10 +237,7 @@ void MyApplication::Load()
     m_ShadowMappingPoint = new ShadowMappingPoint(m_CommandList);
     m_ShadowMappingPoint->Init(m_Scene->getVertexInputAttribDescription(0, 0));
 
-    if (m_Debug)
-    {
-        m_LightDebug.Init(m_CommandList, m_RenderTarget.get());
-    }
+    m_LightDebug.Init(m_CommandList, m_RenderTarget.get());
 }
 
 void MyApplication::DrawDirectionLightMode(bool enablePCF, bool cascaded)
@@ -224,7 +250,8 @@ void MyApplication::DrawDirectionLightMode(bool enablePCF, bool cascaded)
         m_CommandList->setScissor(core::Rect32(0, 0, m_RenderTarget->getDimension().width, m_RenderTarget->getDimension().height));
         m_CommandList->setRenderTarget(m_RenderTarget.get());
 
-        m_CommandList->setPipelineState(m_CascadeShadowMappingPipeline.get());
+        m_CommandList->setPipelineState(m_Debug ? m_CascadeShadowMappingPipelineDebug.get() : m_CascadeShadowMappingPipeline.get());
+        v3d::renderer::ShaderProgram* const cascadeShadowMappingProgram = m_Debug ? m_CascadeShadowMappingProgramDebug.get() : m_CascadeShadowMappingProgram.get();
         {
             {
                 struct UBO
@@ -246,7 +273,7 @@ void MyApplication::DrawDirectionLightMode(bool enablePCF, bool cascaded)
                     ubo.lightSpaceMatrix[i] = m_CascadeShadowMapping->GetLightSpaceMatrix()[i];
                 }
 
-                m_CascadeShadowMappingProgram->bindUniformsBuffer<renderer::ShaderType::ShaderType_Vertex>({ "vs_buffer" }, 0, (u32)sizeof(UBO), &ubo);
+                cascadeShadowMappingProgram->bindUniformsBuffer<renderer::ShaderType::ShaderType_Vertex>({ "vs_buffer" }, 0, (u32)sizeof(UBO), &ubo);
             }
 
             {
@@ -266,11 +293,11 @@ void MyApplication::DrawDirectionLightMode(bool enablePCF, bool cascaded)
                     ubo.casadeSplits[i] = m_CascadeShadowMapping->GetCascadeSplits()[i];
                 }
 
-                m_CascadeShadowMappingProgram->bindUniformsBuffer<renderer::ShaderType::ShaderType_Fragment>({ "fs_buffer" }, 0, (u32)sizeof(UBO), &ubo);
+                cascadeShadowMappingProgram->bindUniformsBuffer<renderer::ShaderType::ShaderType_Fragment>({ "fs_buffer" }, 0, (u32)sizeof(UBO), &ubo);
             }
 
-            m_CascadeShadowMappingProgram->bindSampler<renderer::ShaderType::ShaderType_Fragment>({ "shadowSampler" }, m_ShadowSampler.get());
-            m_CascadeShadowMappingProgram->bindTexture<renderer::ShaderType::ShaderType_Fragment, renderer::Texture2DArray>({ "cascadedShadowMap" }, m_CascadeShadowMapping->GetDepthMap());
+            cascadeShadowMappingProgram->bindSampler<renderer::ShaderType::ShaderType_Fragment>({ "shadowSampler" }, m_ShadowSampler.get());
+            cascadeShadowMappingProgram->bindTexture<renderer::ShaderType::ShaderType_Fragment, renderer::Texture2DArray>({ "cascadedShadowMap" }, m_CascadeShadowMapping->GetDepthMap());
         }
     }
     else
@@ -442,10 +469,7 @@ void MyApplication::Update(f32 dt)
 
 void MyApplication::Exit()
 {
-    if (m_Debug)
-    {
-        m_LightDebug.Free();
-    }
+    m_LightDebug.Free();
 
     if (m_RenderTarget->hasDepthStencilTexture())
     {
@@ -466,6 +490,8 @@ void MyApplication::Exit()
     delete m_CascadeShadowMapping;
     m_CascadeShadowMappingPipeline = nullptr;
     m_CascadeShadowMappingProgram = nullptr;
+    m_CascadeShadowMappingPipelineDebug = nullptr;
+    m_CascadeShadowMappingProgramDebug = nullptr;
 
     m_ShadowMappingPoint->Free();
     delete m_ShadowMappingPoint;

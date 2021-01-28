@@ -64,19 +64,26 @@ private:
     v3d::utils::IntrusivePointer<v3d::renderer::GraphicsPipelineState> m_CascadeShadowMappingPipeline;
     v3d::utils::IntrusivePointer<v3d::renderer::ShaderProgram> m_CascadeShadowMappingProgram;
 
+    v3d::utils::IntrusivePointer<v3d::renderer::GraphicsPipelineState> m_CascadeShadowMappingPipelineDebug;
+    v3d::utils::IntrusivePointer<v3d::renderer::ShaderProgram> m_CascadeShadowMappingProgramDebug;
 
 
     v3d::ShadowMappingPoint* m_ShadowMappingPoint;
     v3d::utils::IntrusivePointer<v3d::renderer::GraphicsPipelineState> m_ShadowMappingPointPipeline;
     v3d::utils::IntrusivePointer<v3d::renderer::ShaderProgram> m_ShadowMappingPointProgram;
 
-    enum 
+    enum ShadowMode
     {
-        DirectionLight,
+        DirectionLight = 0,
         DirectionLightPCF,
         DirectionLightCascadeShadowing,
-        PointLight
-    } m_Mode;
+        PointLight,
+
+        MaxMode,
+        FirstMode = DirectionLight
+
+    };
+    ShadowMode m_Mode;
 
     v3d::LightDebug m_LightDebug;
     bool m_Debug;
