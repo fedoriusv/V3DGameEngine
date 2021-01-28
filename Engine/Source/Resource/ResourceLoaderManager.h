@@ -251,8 +251,9 @@ namespace resource
                 }
 
                 resourceIter.first->second = res;
-                resources.push_back(static_cast<TResource*>(res));
             }
+
+            resources.push_back(static_cast<TResource*>(resourceIter.first->second));
         }
 
         return resources;
