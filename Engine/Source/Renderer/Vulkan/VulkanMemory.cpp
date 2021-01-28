@@ -186,7 +186,7 @@ VulkanMemory::VulkanAllocation VulkanMemory::allocateImageMemory(VulkanMemoryAll
                 allocator.deallocate(memory);
             }
 
-            return VulkanMemory::s_invalidMemory;;
+            return VulkanMemory::s_invalidMemory;
         }
 
         return memory;
@@ -664,6 +664,24 @@ PoolVulkanMemoryAllocator::Pool* PoolVulkanMemoryAllocator::createPool(VkDeviceS
 
     return newPool;
 }
+
+#if VULKAN_DEBUG
+void PoolVulkanMemoryAllocator::linkVulkanObject(const VulkanMemory::VulkanAllocation& allocation, const VulkanResource* object)
+{
+    if (allocation._metadata)
+    {
+        reinterpret_cast<Pool*>(allocation._metadata)->_objectList.insert(object);
+    }
+}
+
+void PoolVulkanMemoryAllocator::unlinkVulkanObject(const VulkanMemory::VulkanAllocation& allocation, const VulkanResource* object)
+{
+    if (allocation._metadata)
+    {
+        reinterpret_cast<Pool*>(allocation._metadata)->_objectList.erase(object);
+    }
+}
+#endif //VULKAN_DEBUG
 
 } //namespace vk
 } //namespace renderer

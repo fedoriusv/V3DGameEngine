@@ -1058,6 +1058,9 @@ bool VulkanImage::create()
         LOG_ERROR("VulkanImage::VulkanImage::create() is failed");
         return false;
     }
+#if VULKAN_DEBUG
+    m_memoryAllocator->linkVulkanObject(m_memory, this);
+#endif //VULKAN_DEBUG
 
     if (!createViewImage())
     {
@@ -1689,6 +1692,9 @@ void VulkanImage::destroy()
 
         if (m_memory != VulkanMemory::s_invalidMemory)
         {
+#if VULKAN_DEBUG
+            m_memoryAllocator->unlinkVulkanObject(m_memory, this);
+#endif //VULKAN_DEBUG
             VulkanMemory::freeMemory(*m_memoryAllocator, m_memory);
         }
     }

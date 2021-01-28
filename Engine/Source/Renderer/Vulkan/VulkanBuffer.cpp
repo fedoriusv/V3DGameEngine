@@ -192,6 +192,9 @@ bool VulkanBuffer::create()
         LOG_ERROR("VulkanBuffer::VulkanBuffer::create() is failed");
         return false;
     }
+#if VULKAN_DEBUG
+    m_memoryAllocator->linkVulkanObject(m_memory, this);
+#endif //VULKAN_DEBUG
 
 //TODO
 //Create buffer view
@@ -221,6 +224,9 @@ void VulkanBuffer::destroy()
 
     if (m_memory != VulkanMemory::s_invalidMemory)
     {
+#if VULKAN_DEBUG
+        m_memoryAllocator->unlinkVulkanObject(m_memory, this);
+#endif //VULKAN_DEBUG
         VulkanMemory::freeMemory(*m_memoryAllocator, m_memory);
     }
 }

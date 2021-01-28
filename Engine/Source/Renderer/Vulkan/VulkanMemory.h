@@ -11,6 +11,8 @@ namespace renderer
 {
 namespace vk
 {
+    class VulkanResource;
+
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
@@ -64,6 +66,11 @@ namespace vk
 
             explicit VulkanMemoryAllocator(VkDevice device) noexcept;
             virtual ~VulkanMemoryAllocator();
+
+#if VULKAN_DEBUG
+            virtual void linkVulkanObject(const VulkanAllocation& allocation, const VulkanResource* object) {};
+            virtual void unlinkVulkanObject(const VulkanAllocation& allocation, const VulkanResource* object) {};
+#endif //VULKAN_DEBUG
 
         protected:
 
@@ -128,6 +135,11 @@ namespace vk
         PoolVulkanMemoryAllocator(VkDevice device, u64 allocationSize) noexcept;
         ~PoolVulkanMemoryAllocator();
 
+#if VULKAN_DEBUG
+        void linkVulkanObject(const VulkanMemory::VulkanAllocation& allocation, const VulkanResource* object) override;
+        void unlinkVulkanObject(const VulkanMemory::VulkanAllocation& allocation, const VulkanResource* object) override;
+#endif //VULKAN_DEBUG
+
     private:
 
         VulkanMemory::VulkanAllocation allocate(VkDeviceSize size, VkDeviceSize align, u32 memoryTypeIndex, const void* extensions = nullptr) override;
@@ -176,6 +188,9 @@ namespace vk
             VkDeviceSize                                _chunkSize;
             void*                                       _mapped;
             u32                                         _memoryTypeIndex;
+#if VULKAN_DEBUG
+            std::set<const VulkanResource*>            _objectList;
+#endif //VULKAN_DEBUG
         };
 
         bool findAllocationFromPool(std::multimap<VkDeviceSize, Pool*>& heaps, VkDeviceSize size, VulkanMemory::VulkanAllocation& memory);
