@@ -7,6 +7,8 @@
 #include "VulkanWrapper.h"
 #include "VulkanDeviceCaps.h"
 
+#define SWAPCHAIN_ON_ADVANCE 1
+
 namespace v3d
 {
 namespace renderer

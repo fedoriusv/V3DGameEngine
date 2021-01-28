@@ -12,8 +12,6 @@
 extern android_app* g_nativeAndroidApp;
 #endif //PLATFORM_ANDROID
 
-#define SWAPCHAIN_ON_ADVANCE 0
-
 #ifdef VULKAN_RENDER
 namespace v3d
 {

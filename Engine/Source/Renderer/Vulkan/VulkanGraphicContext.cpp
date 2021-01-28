@@ -157,6 +157,7 @@ void VulkanGraphicContext::beginFrame()
     u32 index = 0;
     m_presentThread->requestAcquireImage(index);
 #else
+    [[maybe_unused]] u32 prevImageIndex = VulkanSwapchain::currentSwapchainIndex();
     [[maybe_unused]] u32 index = m_swapchain->acquireImage();
 #endif //THREADED_PRESENT
 
@@ -169,7 +170,11 @@ void VulkanGraphicContext::beginFrame()
 #endif
 
     ASSERT(!m_currentBufferState.isCurrentBufferAcitve(CommandTargetType::CmdDrawBuffer), "buffer exist");
-    m_currentBufferState.acquireAndStartCommandBuffer(CommandTargetType::CmdDrawBuffer);
+    [[maybe_unused]] VulkanCommandBuffer* drawBuffer = m_currentBufferState.acquireAndStartCommandBuffer(CommandTargetType::CmdDrawBuffer);
+#if SWAPCHAIN_ON_ADVANCE
+    ASSERT(prevImageIndex != ~0U, "wrong index");
+    m_currentTransitionState.transitionImages(drawBuffer, { m_swapchain->getSwapchainImage(prevImageIndex) }, TransitionOp::TransitionOp_Present);
+#endif //SWAPCHAIN_ON_ADVANCE
 
 #if FRAME_PROFILER_ENABLE
     utils::ProfileManager::getInstance()->update();
