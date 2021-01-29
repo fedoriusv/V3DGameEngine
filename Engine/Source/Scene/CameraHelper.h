@@ -28,6 +28,7 @@ namespace scene
 
         void setPosition(const core::Vector3D& position);
         void setTarget(const core::Vector3D& target);
+        void setUp(const core::Vector3D& up);
 
         const core::Vector3D& getPosition() const;
         const core::Vector3D& getTarget() const;

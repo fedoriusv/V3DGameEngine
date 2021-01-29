@@ -139,13 +139,14 @@ void Camera::recalculateViewMatrix(const core::Vector3D& position) const
 {
     if (m_matricesFlag & CameraState::CameraState_View)
     {
-        /*core::Vector3D tgtv = m_target - position;
+        core::Vector3D forward = m_target - position;
         core::Vector3D up = m_up;
-        f32 dp = core::dotProduct(tgtv.normalize(), up.normalize());
+        f32 dp = core::dotProduct(forward.normalize(), up.normalize());
         if (core::isEquals(fabs(dp), 1.f))
         {
-            up.x = (up.x + 0.5f);
-        }*/
+            ASSERT(false, "up and forward vectors are lie parallel");
+            //up.x = (up.x + 0.5f);
+        }
 
         m_transform[TransformMatrix::TransformMatrix_ViewMatrix] = core::buildLookAtMatrix(position, m_target, m_up);
         m_matricesFlag &= ~CameraState::CameraState_View;

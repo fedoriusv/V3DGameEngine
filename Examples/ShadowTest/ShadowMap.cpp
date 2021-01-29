@@ -463,31 +463,37 @@ void ShadowMappingPoint::Update(f32 dt, const core::Vector3D& position)
 
     //X+
     m_ShadowCamera->setTarget(position + core::Vector3D(1.f, 0.f, 0.f));
+    m_ShadowCamera->setUp(core::Vector3D(0.f, 1.f, 0.f));
     m_ShadowCamera->update(dt);
     m_LightSpaceMatrices[0] = m_ShadowCamera->getProjectionMatrix() * m_ShadowCamera->getViewMatrix();
 
     //X-
     m_ShadowCamera->setTarget(position + core::Vector3D(-1.f, 0.f, 0.f));
+    m_ShadowCamera->setUp(core::Vector3D(0.f, 1.f, 0.f));
     m_ShadowCamera->update(dt);
     m_LightSpaceMatrices[1] = m_ShadowCamera->getProjectionMatrix() * m_ShadowCamera->getViewMatrix();
 
     //Y+
     m_ShadowCamera->setTarget(position + core::Vector3D(0.f, 1.f, 0.f));
+    m_ShadowCamera->setUp(core::Vector3D(0.f, 0.f, -1.f));
     m_ShadowCamera->update(dt);
     m_LightSpaceMatrices[2] = m_ShadowCamera->getProjectionMatrix() * m_ShadowCamera->getViewMatrix();
 
     //Y-
     m_ShadowCamera->setTarget(position + core::Vector3D(0.f, -1.f, 0.f));
+    m_ShadowCamera->setUp(core::Vector3D(0.f, 0.f, 1.f));
     m_ShadowCamera->update(dt);
     m_LightSpaceMatrices[3] = m_ShadowCamera->getProjectionMatrix() * m_ShadowCamera->getViewMatrix();
 
     //Z+
     m_ShadowCamera->setTarget(position + core::Vector3D(0.f, 0.f, 1.f));
+    m_ShadowCamera->setUp(core::Vector3D(0.f, 1.f, 0.f));
     m_ShadowCamera->update(dt);
     m_LightSpaceMatrices[4] = m_ShadowCamera->getProjectionMatrix() * m_ShadowCamera->getViewMatrix();
 
     //Z-
     m_ShadowCamera->setTarget(position + core::Vector3D(0.f, 0.f, -1.f));
+    m_ShadowCamera->setUp(core::Vector3D(0.f, 1.f, 0.f));
     m_ShadowCamera->update(dt);
     m_LightSpaceMatrices[5] = m_ShadowCamera->getProjectionMatrix() * m_ShadowCamera->getViewMatrix();
 }

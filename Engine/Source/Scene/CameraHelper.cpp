@@ -77,6 +77,12 @@ void CameraHelper::setTarget(const core::Vector3D& target)
     m_needUpdate = true;
 }
 
+void CameraHelper::setUp(const core::Vector3D& up)
+{
+    ASSERT(m_camera, "nullptr");
+    m_camera->setUpVector(up);
+}
+
 const core::Vector3D& CameraHelper::getPosition() const
 {
     return m_transform.getPosition();
