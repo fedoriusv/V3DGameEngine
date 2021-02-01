@@ -168,6 +168,17 @@ void MyApplication::Load()
         m_Scene = v3d::scene::ModelHelper::createModelHelper(*m_CommandList, { scene });
     }
 
+    m_ShadowMapping = new ShadowMapping(m_CommandList);
+    m_ShadowMapping->Init(m_Scene->getVertexInputAttribDescription(0, 0));
+
+    m_CascadeShadowMapping = new CascadedShadowMapping(m_CommandList);
+    m_CascadeShadowMapping->Init(m_Scene->getVertexInputAttribDescription(0, 0));
+
+    m_ShadowMappingPoint = new ShadowMappingPoint(m_CommandList);
+    m_ShadowMappingPoint->Init(m_Scene->getVertexInputAttribDescription(0, 0));
+
+    m_LightDebug.Init(m_CommandList, m_RenderTarget.get());
+
     {
         std::vector<const renderer::Shader*> shaders = resource::ResourceLoaderManager::getInstance()->loadHLSLShader<renderer::Shader, resource::ShaderSourceFileLoader>(m_CommandList->getContext(), "data/solid_SunShadow.hlsl",
             {
@@ -220,6 +231,10 @@ void MyApplication::Load()
             {
                 {"main_VS", renderer::ShaderType_Vertex },
                 {"main_FS", renderer::ShaderType_Fragment }
+            },
+            {
+                { "NEAR_PLANE", std::to_string(m_ShadowMappingPoint->GetCamera().getNear()) },
+                { "FAR_PLANE", std::to_string(m_ShadowMappingPoint->GetCamera().getFar()) }
             });
 
         m_ShadowMappingPointProgram = m_CommandList->createObject<renderer::ShaderProgram>(shaders);
@@ -227,17 +242,6 @@ void MyApplication::Load()
     }
 
     m_CommandList->flushCommands();
-
-    m_ShadowMapping = new ShadowMapping(m_CommandList);
-    m_ShadowMapping->Init(m_Scene->getVertexInputAttribDescription(0, 0));
-
-    m_CascadeShadowMapping = new CascadedShadowMapping(m_CommandList);
-    m_CascadeShadowMapping->Init(m_Scene->getVertexInputAttribDescription(0, 0));
-
-    m_ShadowMappingPoint = new ShadowMappingPoint(m_CommandList);
-    m_ShadowMappingPoint->Init(m_Scene->getVertexInputAttribDescription(0, 0));
-
-    m_LightDebug.Init(m_CommandList, m_RenderTarget.get());
 }
 
 void MyApplication::DrawDirectionLightMode(bool enablePCF, bool cascaded)
@@ -281,8 +285,7 @@ void MyApplication::DrawDirectionLightMode(bool enablePCF, bool cascaded)
                 {
                     core::Vector4D lightDirection;
                     core::Vector4D viewPosition;
-                    core::Vector4D casadeSplits;
-                    
+                    core::Vector4D casadeSplits[CascadedShadowMapping::s_CascadeCount];
                 } ubo;
 
                 ubo.lightDirection = m_SunDirection;
@@ -290,7 +293,7 @@ void MyApplication::DrawDirectionLightMode(bool enablePCF, bool cascaded)
                 ubo.viewPosition = m_FPSCameraHelper->getPosition();
                 for (u32 i = 0; i < v3d::CascadedShadowMapping::s_CascadeCount; ++i)
                 {
-                    ubo.casadeSplits[i] = m_CascadeShadowMapping->GetCascadeSplits()[i];
+                    ubo.casadeSplits[i].x = m_CascadeShadowMapping->GetCascadeSplits()[i];
                 }
 
                 cascadeShadowMappingProgram->bindUniformsBuffer<renderer::ShaderType::ShaderType_Fragment>({ "fs_buffer" }, 0, (u32)sizeof(UBO), &ubo);
@@ -391,6 +394,9 @@ void MyApplication::DrawPointLightMode()
         ubo.viewPosition = m_FPSCameraHelper->getPosition();
 
         m_ShadowMappingPointProgram->bindUniformsBuffer<renderer::ShaderType::ShaderType_Fragment>({ "fs_buffer" }, 0, (u32)sizeof(UBO), &ubo);
+
+        m_ShadowMappingPointProgram->bindSampler<renderer::ShaderType::ShaderType_Fragment>({ "shadowSampler" }, m_ShadowSampler.get());
+        m_ShadowMappingPointProgram->bindTexture<renderer::ShaderType::ShaderType_Fragment, renderer::TextureCube>({ "shadowMapCube" }, m_ShadowMappingPoint->GetDepthMap());
     }
 
     m_Scene->draw();

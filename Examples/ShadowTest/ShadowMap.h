@@ -93,6 +93,7 @@ namespace v3d
         void Free();
 
         const renderer::TextureCube* GetDepthMap() const;
+        const scene::Camera& GetCamera() const;
 
     private:
 
@@ -105,7 +106,7 @@ namespace v3d
         utils::IntrusivePointer<renderer::ShaderProgram> m_Program;
 
         scene::CameraHelper* m_ShadowCamera = nullptr;
-        core::Dimension2D m_Size = { 1024, 1024 };
+        core::Dimension2D m_Size = { 2048, 2048 };
 
         std::array<core::Matrix4D, 6> m_LightSpaceMatrices;
     };

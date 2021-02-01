@@ -46,7 +46,7 @@ PS_ATTRIBUTES main_VS(VS_ATTRIBUTES input)
     output.Normal = mul(vs_buffer.normalMatrix, float4(input.Normal, 1.0)).xyz;
     output.UV = input.UV;
     
-    for (uint i = 0; i < SHADOWMAP_CASCADE_COUNT; ++i )
+    [unroll] for (uint i = 0; i < SHADOWMAP_CASCADE_COUNT; ++i )
     {
         output.LightModelViewProj[i] = mul(biasMatrix, mul(vs_buffer.lightSpaceMatrix[i], position));
     }
@@ -62,7 +62,7 @@ struct FS_Buffer
 {
     float4 lightDirection;
     float4 viewPosition;
-    float4 cascadeSplits;
+    float4 cascadeSplits[SHADOWMAP_CASCADE_COUNT];
 };
 ConstantBuffer<FS_Buffer> fs_buffer : register(b3, space0);
 
@@ -98,7 +98,7 @@ float4 main_FS(PS_ATTRIBUTES input) : SV_TARGET0
     uint cascadeIndex = 0;
     for (uint i = 0; i < SHADOWMAP_CASCADE_COUNT; ++i)
     {
-        if (input.PositionModelView.z <= fs_buffer.cascadeSplits[i])
+        if (input.PositionModelView.z <= fs_buffer.cascadeSplits[i].x)
         {
             cascadeIndex = i;
             break;

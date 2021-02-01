@@ -383,7 +383,7 @@ void ShadowMappingPoint::Init(const renderer::VertexInputAttribDescription& desc
             float2 Texture  : TEXTURE;\n\
         };\n\
         \n\
-        struct VS_OUTPUT\n\
+        struct PS_INPUT\n\
         {\n\
             float4 Pos      : SV_POSITION;\n\
             float4 Position : POSITION;\n\
@@ -399,9 +399,9 @@ void ShadowMappingPoint::Init(const renderer::VertexInputAttribDescription& desc
         \n\
         ConstantBuffer<CBuffer> ubo;\n\
         \n\
-        VS_OUTPUT main(VS_INPUT Input)\n\
+        PS_INPUT main(VS_INPUT Input)\n\
         {\n\
-            VS_OUTPUT Out;\n\
+            PS_INPUT Out;\n\
             Out.Position = mul(ubo.modelMatrix, float4(Input.Position, 1.0));\n\
             Out.Pos = mul(ubo.lightSpaceMatrix, Out.Position);\n\
             Out.Light = ubo.lightPosition;\n\
@@ -422,6 +422,7 @@ void ShadowMappingPoint::Init(const renderer::VertexInputAttribDescription& desc
         const std::string fragmentSource("\
         struct PS_INPUT\n\
         {\n\
+            float4 Pos      : SV_POSITION;\n\
             float4 Position : POSITION;\n\
             float4 Light    : LIGHT;\n\
         };\n\
@@ -452,7 +453,7 @@ void ShadowMappingPoint::Init(const renderer::VertexInputAttribDescription& desc
     m_Pipeline->setDepthCompareOp(renderer::CompareOperation::CompareOp_Less);
     m_Pipeline->setDepthWrite(true);
     m_Pipeline->setDepthTest(true);
-    m_Pipeline->setDepthBias(0.0f, 0.0f, 1.75f);
+    m_Pipeline->setDepthBias(0.0f, 0.0f, 5.0f);
 
     m_CmdList->flushCommands();
 }
@@ -547,6 +548,11 @@ void ShadowMappingPoint::Free()
 const renderer::TextureCube* ShadowMappingPoint::GetDepthMap() const
 {
     return m_DepthAttachment.get();
+}
+
+const scene::Camera& v3d::ShadowMappingPoint::GetCamera() const
+{
+    return m_ShadowCamera->getCamera();
 }
 
 } //namespace v3d

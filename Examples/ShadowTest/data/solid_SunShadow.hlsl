@@ -78,7 +78,7 @@ float depthTextureProj(float4 shadowCoord, float2 offset)
 
 float percentageCloserFiltering(float4 shadowCoord)
 {
-    float width, height;
+    float width = 0, height = 0;
     shadowMap.GetDimensions(width, height);
     float2 texelSize = 1.0 / float2(width, height);
     
@@ -99,13 +99,18 @@ float percentageCloserFiltering(float4 shadowCoord)
 
 float shadowMask(float4 lightSpace)
 {
+    float shadow = 1.0;
     float3 shadowCoord = lightSpace.xyz / lightSpace.w;
     if (fs_buffer.enablePCF)
     {
-        return percentageCloserFiltering(float4(shadowCoord, lightSpace.w));
+        shadow = percentageCloserFiltering(float4(shadowCoord, lightSpace.w));
     }
-
-    return depthTextureProj(float4(shadowCoord, lightSpace.w), float2(0.0, 0.0));
+    else
+    {
+        shadow = depthTextureProj(float4(shadowCoord, lightSpace.w), float2(0.0, 0.0));
+    }
+    
+    return shadow;
 }
 
 float4 main_FS(VS_OUTPUT input) : SV_TARGET0
