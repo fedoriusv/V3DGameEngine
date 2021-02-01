@@ -978,95 +978,195 @@ void D3DImage::createResourceView(DXGI_FORMAT shaderResourceFormat)
 {
     if (!(m_flags & D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE))
     {
-        D3D12_SHADER_RESOURCE_VIEW_DESC& view = std::get<0>(m_views);
-
-        view.Format = shaderResourceFormat;
-        view.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-
-        switch (m_dimension)
+        auto viewShaderSubresource = [this](DXGI_FORMAT shaderResourceFormat, u32 slice, u32 arrays) -> D3D12_SHADER_RESOURCE_VIEW_DESC
         {
-        case D3D12_RESOURCE_DIMENSION_TEXTURE2D:
-        {
-            if (m_arrays == 1U)
-            {
-                view.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
+            D3D12_SHADER_RESOURCE_VIEW_DESC view = {};
 
-                view.Texture2D.MostDetailedMip = 0;
-                view.Texture2D.MipLevels = m_mipmaps;
-                view.Texture2D.PlaneSlice = 0;
-                view.Texture2D.ResourceMinLODClamp = 0.0f;
-            }
-            else if (m_arrays > 1U)
+            view.Format = shaderResourceFormat;
+            view.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+
+            switch (m_dimension)
             {
-                if (m_arrays == 6U)
+            case D3D12_RESOURCE_DIMENSION_TEXTURE2D:
+            {
+                if (m_arrays == 1U)
                 {
-                    view.ViewDimension = D3D12_SRV_DIMENSION_TEXTURECUBE;
+                    view.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
 
-                    view.TextureCube.MostDetailedMip = 0;
-                    view.TextureCube.MipLevels = m_mipmaps;
-                    view.TextureCube.ResourceMinLODClamp = 0.0f;
+                    view.Texture2D.MostDetailedMip = 0;
+                    view.Texture2D.MipLevels = m_mipmaps;
+                    view.Texture2D.PlaneSlice = 0;
+                    view.Texture2D.ResourceMinLODClamp = 0.0f;
+                }
+                else if (m_arrays > 1U)
+                {
+                    if (m_arrays == 6U)
+                    {
+                        view.ViewDimension = D3D12_SRV_DIMENSION_TEXTURECUBE;
+
+                        view.TextureCube.MostDetailedMip = 0;
+                        view.TextureCube.MipLevels = m_mipmaps;
+                        view.TextureCube.ResourceMinLODClamp = 0.0f;
+                    }
+                    else
+                    {
+                        view.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2DARRAY;
+
+                        view.Texture2DArray.MostDetailedMip = 0;
+                        view.Texture2DArray.MipLevels = m_mipmaps;
+                        view.Texture2DArray.FirstArraySlice = slice;
+                        view.Texture2DArray.ArraySize = arrays;
+                        view.Texture2DArray.PlaneSlice = 0;
+                        view.Texture2DArray.ResourceMinLODClamp = 0.0f;
+                    }
                 }
                 else
                 {
-                    view.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2DARRAY;
-
-                    view.Texture2DArray.MostDetailedMip = 0;
-                    view.Texture2DArray.MipLevels = m_mipmaps;
-                    view.Texture2DArray.FirstArraySlice = 0;
-                    view.Texture2DArray.ArraySize = m_arrays;
-                    view.Texture2DArray.PlaneSlice = 0;
-                    view.Texture2DArray.ResourceMinLODClamp = 0.0f;
+                    ASSERT(false, "not impl");
                 }
+                break;
             }
-            else
-            {
+
+            case D3D12_RESOURCE_DIMENSION_TEXTURE1D:
+            case D3D12_RESOURCE_DIMENSION_TEXTURE3D:
+            default:
                 ASSERT(false, "not impl");
             }
-            break;
-        }
 
-        case D3D12_RESOURCE_DIMENSION_TEXTURE1D:
-        case D3D12_RESOURCE_DIMENSION_TEXTURE3D:
-        default:
-            ASSERT(false, "not impl");
+            return view;
+        };
+
+        std::vector<D3D12_SHADER_RESOURCE_VIEW_DESC>& views = std::get<0>(m_views);
+        views.resize(m_arrays + 1);
+
+        //base view
+        u32 index = D3D12CalcSubresource(0, 0, 0, m_mipmaps, m_arrays);
+        views[index] = viewShaderSubresource(shaderResourceFormat, 0, m_arrays);
+
+        //slice view
+        for (u32 slice = 0; slice < m_arrays; ++slice)
+        {
+            u32 index = D3D12CalcSubresource(0, slice, 0, m_mipmaps, 1) + 1;
+            ASSERT(views.size() >= index, "range out");
+            views[index] = viewShaderSubresource(shaderResourceFormat, slice, 1);
         }
     }
 
     if (m_flags & D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET)
     {
-        D3D12_RENDER_TARGET_VIEW_DESC& view = std::get<1>(m_views);
-
-        view.Format = m_format;
-        ASSERT(m_dimension == D3D12_RESOURCE_DIMENSION_TEXTURE2D, "wrong dimension");
-        view.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2D;
-
-        if (m_samples == 1U)
+        auto viewRenderTargetSubresource = [this](u32 slice, u32 arrays)-> D3D12_RENDER_TARGET_VIEW_DESC
         {
-            view.Texture2D.MipSlice = 0;
-            view.Texture2D.PlaneSlice = 0;
-        }
-        else
+            D3D12_RENDER_TARGET_VIEW_DESC view = {};
+
+            view.Format = m_format;
+            ASSERT(m_dimension == D3D12_RESOURCE_DIMENSION_TEXTURE2D, "wrong dimension");
+            if (m_arrays == 1U)
+            {
+                if (m_samples == 1U)
+                {
+                    view.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2D;
+                    view.Texture2D.MipSlice = 0;
+                    view.Texture2D.PlaneSlice = 0;
+                }
+                else
+                {
+                    view.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2DMS;
+                    view.Texture2DMS = {};
+                }
+            }
+            else
+            {
+                if (m_samples == 1U)
+                {
+                    view.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2DARRAY;
+                    view.Texture2DArray.MipSlice = 0;
+                    view.Texture2DArray.FirstArraySlice = slice;
+                    view.Texture2DArray.ArraySize = arrays;
+                    view.Texture2DArray.PlaneSlice = 0;
+                }
+                else
+                {
+                    view.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2DMSARRAY;
+                    view.Texture2DMSArray.FirstArraySlice = slice;
+                    view.Texture2DMSArray.ArraySize = arrays;
+                }
+            }
+
+            return view;
+        };
+
+        std::vector<D3D12_RENDER_TARGET_VIEW_DESC>& views = std::get<1>(m_views);
+        views.resize(m_arrays + 1);
+        
+        //base view
+        u32 index = D3D12CalcSubresource(0, 0, 0, m_mipmaps, m_arrays);
+        views[index] = viewRenderTargetSubresource(0, m_arrays);
+
+        //slice view
+        for (u32 slice = 0; slice < m_arrays; ++slice)
         {
-            view.Texture2DMS = {};
+            u32 index = D3D12CalcSubresource(0, slice, 0, m_mipmaps, 1) + 1;
+            ASSERT(views.size() >= index, "range out");
+            views[index] = viewRenderTargetSubresource(slice, 1);
         }
     }
 
     if (m_flags & D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL)
     {
-        D3D12_DEPTH_STENCIL_VIEW_DESC& view = std::get<2>(m_views);
-
-        view.Format = m_format;
-        ASSERT(m_dimension == D3D12_RESOURCE_DIMENSION_TEXTURE2D, "wrong dimension");
-        view.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
-        view.Flags = D3D12_DSV_FLAG_NONE;
-
-        if (m_samples == 1U)
+        auto viewDepthStencilSubresource = [this](u32 slice, u32 arrays)-> D3D12_DEPTH_STENCIL_VIEW_DESC
         {
-            view.Texture2D = {};
-        }
-        else
+            D3D12_DEPTH_STENCIL_VIEW_DESC view = {};
+
+            view.Format = m_format;
+            view.Flags = D3D12_DSV_FLAG_NONE;
+            ASSERT(m_dimension == D3D12_RESOURCE_DIMENSION_TEXTURE2D, "wrong dimension");
+
+            if (m_arrays == 1U)
+            {
+                if (m_samples == 1U)
+                {
+                    view.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
+                    view.Texture2D.MipSlice = 0;
+                }
+                else
+                {
+                    view.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2DMS;
+                    view.Texture2DMS = {};
+                }
+            }
+            else
+            {
+                if (m_samples == 1U)
+                {
+                    view.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2DARRAY;
+                    view.Texture2DArray.MipSlice = 0;
+                    view.Texture2DArray.FirstArraySlice = slice;
+                    view.Texture2DArray.ArraySize = arrays;
+                }
+                else
+                {
+                    view.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2DMSARRAY;
+                    view.Texture2DMSArray.FirstArraySlice = slice;
+                    view.Texture2DMSArray.ArraySize = arrays;
+                }
+            }
+
+            return view;
+        };
+
+        std::vector<D3D12_DEPTH_STENCIL_VIEW_DESC>& views = std::get<2>(m_views);
+        views.resize(m_arrays + 1);
+
+        //base view
+        u32 index = D3D12CalcSubresource(0, 0, 0, m_mipmaps, m_arrays);
+        views[index] = viewDepthStencilSubresource(0, m_arrays);
+
+        //slice view
+        for (u32 slice = 0; slice < m_arrays; ++slice)
         {
-            view.Texture2DMS = {};
+            u32 index = D3D12CalcSubresource(0, slice, 0, m_mipmaps, 1) + 1;
+            ASSERT(views.size() >= index, "range out");
+            views[index] = viewDepthStencilSubresource(slice, 1);
         }
     }
 }

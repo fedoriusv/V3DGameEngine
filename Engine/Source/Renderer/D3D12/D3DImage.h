@@ -42,22 +42,31 @@ namespace dx3d
         ID3D12Resource* getResource() const;
 
         template<typename VIEW_DESC_TYPE>
-        const VIEW_DESC_TYPE& getView() const
+        const VIEW_DESC_TYPE& getView(s32 slice = k_generalLayer, s32 mip = -1) const
         {
+            u32 index = D3D12CalcSubresource((mip == -1) ? 0 : mip, (slice == k_generalLayer) ? 0 : slice, 0, (mip == -1) ? m_mipmaps : 1, (slice == k_generalLayer) ? m_arrays : 1) + 1;
+            if (slice == k_generalLayer && mip == -1)
+            {
+                index = D3D12CalcSubresource(0, 0, 0, m_mipmaps, m_arrays);
+            }
+           
             if constexpr (std::is_same<VIEW_DESC_TYPE, D3D12_SHADER_RESOURCE_VIEW_DESC>())
             {
                 ASSERT(!(m_flags & D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE), "must be shader resource flag support");
-                return std::get<0>(m_views);
+                ASSERT(std::get<0>(m_views).size() >= index, "range out");
+                return std::get<0>(m_views)[index];
             }
             else if constexpr (std::is_same<VIEW_DESC_TYPE, D3D12_RENDER_TARGET_VIEW_DESC>())
             {
                 ASSERT((m_flags & D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET), "must be shader render target flag support");
-                return std::get<1>(m_views);
+                ASSERT(std::get<1>(m_views).size() >= index, "range out");
+                return std::get<1>(m_views)[index];
             }
             else if constexpr (std::is_same<VIEW_DESC_TYPE, D3D12_DEPTH_STENCIL_VIEW_DESC>())
             {
                 ASSERT((m_flags & D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL), "must be shader depth-stencil flag support");
-                return std::get<2>(m_views);
+                ASSERT(std::get<2>(m_views).size() >= index, "range out");
+                return std::get<2>(m_views)[index];
             }
         }
 
@@ -95,7 +104,7 @@ namespace dx3d
         D3D12_RESOURCE_STATES m_state;
         D3D12_RESOURCE_FLAGS m_flags;
 
-        std::tuple<D3D12_SHADER_RESOURCE_VIEW_DESC, D3D12_RENDER_TARGET_VIEW_DESC, D3D12_DEPTH_STENCIL_VIEW_DESC> m_views;
+        std::tuple<std::vector<D3D12_SHADER_RESOURCE_VIEW_DESC>, std::vector<D3D12_RENDER_TARGET_VIEW_DESC>, std::vector<D3D12_DEPTH_STENCIL_VIEW_DESC>> m_views;
 
         D3D12_RESOURCE_DIMENSION m_dimension;
         DXGI_FORMAT m_format;

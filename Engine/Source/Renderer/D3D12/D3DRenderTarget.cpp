@@ -63,7 +63,9 @@ bool D3DRenderTarget::create(const RenderPass* pass)
         if (D3DImage::isColorFormat(dxImage->getFormat()))
         {
             CD3DX12_CPU_DESCRIPTOR_HANDLE colorHandle(m_colorDescriptorHeap->getCPUHandle(), index, m_colorDescriptorHeap->getIncrement());
-            const D3D12_RENDER_TARGET_VIEW_DESC& targetView = dxImage->getView<D3D12_RENDER_TARGET_VIEW_DESC>();
+            s32 layer = AttachmentDescription::uncompressLayer(m_renderState->getDescription()._attachments[index]._layer);
+
+            const D3D12_RENDER_TARGET_VIEW_DESC& targetView = dxImage->getView<D3D12_RENDER_TARGET_VIEW_DESC>(layer);
             m_device->CreateRenderTargetView(dxImage->getResource(), &targetView, colorHandle);
 
             m_colorRenderTargets[index] = colorHandle;
@@ -73,7 +75,9 @@ bool D3DRenderTarget::create(const RenderPass* pass)
             m_depthStencilDescriptorHeap = m_heapManager->allocateDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_DSV, 1, D3D12_DESCRIPTOR_HEAP_FLAG_NONE);
             ASSERT(m_depthStencilDescriptorHeap, "nullptr");
             CD3DX12_CPU_DESCRIPTOR_HANDLE depthStencilHandle(m_depthStencilDescriptorHeap->getCPUHandle());
-            const D3D12_DEPTH_STENCIL_VIEW_DESC& targetView = dxImage->getView<D3D12_DEPTH_STENCIL_VIEW_DESC>();
+            s32 layer = AttachmentDescription::uncompressLayer(m_renderState->getDescription()._attachments.back()._layer);
+
+            const D3D12_DEPTH_STENCIL_VIEW_DESC& targetView = dxImage->getView<D3D12_DEPTH_STENCIL_VIEW_DESC>(layer);
             m_device->CreateDepthStencilView(dxImage->getResource(), &targetView, depthStencilHandle);
 
             m_depthStencilRenderTarget = depthStencilHandle;
