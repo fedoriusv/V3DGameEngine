@@ -156,13 +156,16 @@ Resource* ShaderHLSLDecoder::decode(const stream::Stream* stream, const std::str
                 return nullptr;
             }
 
-            std::vector<D3D_SHADER_MACRO> macros(m_header._defines.size());
+            std::vector<D3D_SHADER_MACRO> macros(m_header._defines.size() + 1);
             u32 index = 0;
             for (auto& def : m_header._defines)
             {
                 macros[index].Name = def.first.c_str();
                 macros[index].Definition = def.second.c_str();
+                ++index;
             }
+            macros.back().Name = nullptr;
+            macros.back().Definition = nullptr;
 
             UINT compileFlags = D3DCOMPILE_OPTIMIZATION_LEVEL1;
             if (m_header._optLevel == 0)
@@ -190,7 +193,7 @@ Resource* ShaderHLSLDecoder::decode(const stream::Stream* stream, const std::str
                 if (debugInfo)
                 {
                     std::string error(reinterpret_cast<c8*>(debugInfo->GetBufferSize(), debugInfo->GetBufferPointer()));
-                    LOG_WARNING("Info: \n %s", error.c_str());
+                    LOG_ERROR("Info: \n %s", error.c_str());
 
                     debugInfo->Release();
                 }
