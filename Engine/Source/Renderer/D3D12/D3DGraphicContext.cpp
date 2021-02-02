@@ -722,12 +722,12 @@ void D3DGraphicContext::destroy()
         delete m_descriptorHeapManager;
         m_descriptorHeapManager = nullptr;
     }
+
 #if D3D_DEBUG
     D3DDebug::getInstance()->report(D3D12_RLDO_DETAIL | D3D12_RLDO_IGNORE_INTERNAL);
-#endif
-#if D3D_DEBUG
     D3DDebug::getInstance()->freeInstance();
 #endif
+
     SAFE_DELETE(m_device);
 
     SAFE_DELETE(m_adapter);
