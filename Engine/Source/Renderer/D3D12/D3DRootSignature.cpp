@@ -201,7 +201,9 @@ void D3DRootSignatureManager::removeAllRootSignatures()
 {
     for (auto sig : m_rootSignatures)
     {
-        SAFE_DELETE(sig.second);
+        //Possible DX can caches state and return a same signature for different keys.
+        //That is why need to call Release instead SAFE_DELETE
+        sig.second->Release();
     }
     m_rootSignatures.clear();
 }
