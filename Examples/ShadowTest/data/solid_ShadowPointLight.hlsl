@@ -54,9 +54,8 @@ float shadowMask(float3 fragPos, float3 lightPos)
     float lightDistance = length(lightDirection) / (FAR_PLANE - NEAR_PLANE);
     
     float shadow = 1.0;
-    float bias = 0.00;
     float depth = shadowMapCube.SampleCmpLevelZero(shadowSampler, lightDirection, lightDistance);
-    if (depth < lightDistance - bias)
+    if (depth < lightDistance)
     {
         shadow = 0.2;
     }

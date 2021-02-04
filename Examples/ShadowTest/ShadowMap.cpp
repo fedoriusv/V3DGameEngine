@@ -430,7 +430,7 @@ void ShadowMappingPoint::Init(const renderer::VertexInputAttribDescription& desc
         float main(PS_INPUT Input) : SV_DEPTH\n\
         {\n\
             float3 lightVec = Input.Position.xyz - Input.Light.xyz;\n\
-            return length(lightVec) / (FAR_PLANE - NEAR_PLANE);\n\
+            return (length(lightVec) / (FAR_PLANE - NEAR_PLANE)) + DEPTH_BIAS;\n\
         }");
 
         const stream::Stream* fragmentStream = stream::StreamManager::createMemoryStream(fragmentSource);
@@ -440,6 +440,7 @@ void ShadowMappingPoint::Init(const renderer::VertexInputAttribDescription& desc
         fragmentHeader._shaderModel = renderer::ShaderHeader::ShaderModel::ShaderModel_HLSL_5_1;
         fragmentHeader._defines.push_back({ "FAR_PLANE", std::to_string(m_ShadowCamera->getCamera().getFar()) });
         fragmentHeader._defines.push_back({ "NEAR_PLANE", std::to_string(m_ShadowCamera->getCamera().getNear()) });
+        fragmentHeader._defines.push_back({ "DEPTH_BIAS", std::to_string(0.0001) });
 
         fragShader = resource::ResourceLoaderManager::getInstance()->composeShader<renderer::Shader, resource::ShaderSourceStreamLoader>(m_CmdList->getContext(), "shadowmap_fragment", &fragmentHeader, fragmentStream);
     }
@@ -453,7 +454,6 @@ void ShadowMappingPoint::Init(const renderer::VertexInputAttribDescription& desc
     m_Pipeline->setDepthCompareOp(renderer::CompareOperation::CompareOp_Less);
     m_Pipeline->setDepthWrite(true);
     m_Pipeline->setDepthTest(true);
-    m_Pipeline->setDepthBias(0.0f, 0.0f, 5.0f);
 
     m_CmdList->flushCommands();
 }
