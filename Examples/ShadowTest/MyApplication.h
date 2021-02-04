@@ -52,7 +52,7 @@ private:
     v3d::scene::Transform m_Transform;
 
     void DrawDirectionLightMode(bool enablePCF, bool cascaded);
-    void DrawPointLightMode();
+    void DrawPointLightMode(bool enablePCF);
 
     v3d::core::Vector3D m_SunDirection = { 5.0f, 5.0f, 5.0f };
 
@@ -75,7 +75,6 @@ private:
     enum ShadowMode
     {
         DirectionLight = 0,
-        DirectionLightPCF,
         DirectionLightCascadeShadowing,
         PointLight,
 
@@ -84,6 +83,7 @@ private:
 
     };
     ShadowMode m_Mode;
+    bool m_PercentageCloserFiltering;
 
     v3d::LightDebug m_LightDebug;
     bool m_Debug;

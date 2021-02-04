@@ -41,7 +41,8 @@ MyApplication::MyApplication(int& argc, char** argv)
     , m_CascadeShadowMapping(nullptr)
     , m_ShadowMappingPoint(nullptr)
 
-    , m_Mode(DirectionLightCascadeShadowing)
+    , m_Mode(PointLight)
+    , m_PercentageCloserFiltering(true)
     , m_Debug(false)
 {
     ASSERT(m_Window, "windows is nullptr");
@@ -74,7 +75,7 @@ int MyApplication::Execute()
 
 void MyApplication::Initialize()
 {
-    m_Context = renderer::Context::createContext(m_Window, renderer::Context::RenderType::VulkanRender);
+    m_Context = renderer::Context::createContext(m_Window, renderer::Context::RenderType::DirectXRender);
     ASSERT(m_Context, "context is nullptr");
     m_CommandList = new renderer::CommandList(m_Context, renderer::CommandList::CommandListType::ImmediateCommandList);
 
@@ -134,8 +135,12 @@ void MyApplication::Initialize()
                     m_Mode = ShadowMode::FirstMode;
                 }
             }
-            
 
+            if (m_InputEventHandler->isKeyPressed(event::KeyCode::KeyKey_P))
+            {
+                m_PercentageCloserFiltering = !m_PercentageCloserFiltering;
+            }
+            
             m_FPSCameraHelper->moveHandlerCallback(m_InputEventHandler, event);
         });
 
@@ -355,7 +360,7 @@ void MyApplication::DrawDirectionLightMode(bool enablePCF, bool cascaded)
     m_Scene->draw();
 }
 
-void MyApplication::DrawPointLightMode()
+void MyApplication::DrawPointLightMode(bool enablePCF)
 {
     m_ShadowMappingPoint->Draw(m_Scene, m_Transform);
 
@@ -388,10 +393,12 @@ void MyApplication::DrawPointLightMode()
         {
             core::Vector4D lightPosition;
             core::Vector4D viewPosition;
+            u32 enablePCF;
         } ubo;
 
         ubo.lightPosition = m_SunDirection;
         ubo.viewPosition = m_FPSCameraHelper->getPosition();
+        ubo.enablePCF = (u32)enablePCF;
 
         m_ShadowMappingPointProgram->bindUniformsBuffer<renderer::ShaderType::ShaderType_Fragment>({ "fs_buffer" }, 0, (u32)sizeof(UBO), &ubo);
 
@@ -409,13 +416,13 @@ bool MyApplication::Running()
     //Frame
     m_CommandList->beginFrame();
 
-    if (m_Mode == DirectionLight || m_Mode == DirectionLightPCF || m_Mode == DirectionLightCascadeShadowing)
+    if (m_Mode == DirectionLight  || m_Mode == DirectionLightCascadeShadowing)
     {
-        MyApplication::DrawDirectionLightMode(m_Mode == DirectionLightPCF, m_Mode == DirectionLightCascadeShadowing);
+        MyApplication::DrawDirectionLightMode(m_PercentageCloserFiltering, m_Mode == DirectionLightCascadeShadowing);
     }
     else if (m_Mode == PointLight)
     {
-        MyApplication::DrawPointLightMode();
+        MyApplication::DrawPointLightMode(m_PercentageCloserFiltering);
     }
 
     if (m_Debug)
@@ -434,7 +441,7 @@ bool MyApplication::Running()
 void MyApplication::Update(f32 dt)
 {
     m_FPSCameraHelper->update(dt);
-    if (m_Mode == DirectionLight || m_Mode == DirectionLightPCF)
+    if (m_Mode == DirectionLight)
     {
         /*
         const f32 k_sunConstant = 5.0f;
