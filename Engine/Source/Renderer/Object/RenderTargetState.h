@@ -288,9 +288,10 @@ namespace renderer
         * Private method. Use createObject interface inside CommandList class to call.
         *
         * @param const core::Dimension2D& size [required]
+        * @param u32 viewsMask [optional]. Use 0 if only one view or mask by bits if multiview feature is supported.
         * @param const std::string& name [optional]
         */
-        explicit RenderTargetState(CommandList& cmdList, const core::Dimension2D& size, [[maybe_unused]] const std::string& name = "") noexcept;
+        explicit RenderTargetState(CommandList& cmdList, const core::Dimension2D& size, u32 viewsMask = 0, [[maybe_unused]] const std::string& name = "") noexcept;
 
         bool setColorTexture_Impl(u32 index, Texture* colorTexture, RenderTargetLoadOp loadOp, RenderTargetStoreOp storeOp, const core::Vector4D& clearColor);
         bool setColorTexture_Impl(u32 index, Texture* colorTexture, u32 layer, RenderTargetLoadOp loadOp, RenderTargetStoreOp storeOp, const core::Vector4D& clearColor);
@@ -312,6 +313,7 @@ namespace renderer
         CommandList& m_cmdList;
 
         core::Dimension2D m_size;
+        u32 m_viewsMask;
 
         std::map<u32, std::tuple<Texture*, renderer::AttachmentDescription, core::Vector4D>> m_colorTextures;
         std::tuple<Texture*, renderer::AttachmentDescription, f32, u32>                      m_depthStencilTexture;
@@ -366,7 +368,7 @@ namespace renderer
     template<class TTexture>
     bool RenderTargetState::setDepthStencilTexture(TTexture* depthStencilTexture, const DepthOpState& depthOpState, const StencilOpState& stencilOpState, const TransitionState& tansitionState)
     {
-        static_assert(std::is_same<TTexture, Texture2D>(), "wrong type");
+        static_assert(std::is_same<TTexture, Texture2D>() || std::is_same<TTexture, TextureCube>() || std::is_same<TTexture, Texture2DArray>(), "wrong type");
         return setDepthStencilTexture_Impl(depthStencilTexture, depthOpState, stencilOpState, tansitionState);
     }
 

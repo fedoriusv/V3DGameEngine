@@ -154,8 +154,9 @@ namespace renderer
             std::array<AttachmentDescription, k_maxColorAttachments + 1> _attachments; //36 bytes
             u32 _countColorAttachments      : 4;
             u32 _hasDepthStencilAttahment   : 1;
+            u32 _viewsMask                  : 8;
 
-            u32 _padding                    : 27;
+            u32 _padding                    : 19;
         };
 
         RenderPassDesc _desc;

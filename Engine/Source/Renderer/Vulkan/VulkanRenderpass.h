@@ -68,6 +68,9 @@ namespace vk
 
     private:
 
+        bool createRenderpass();
+        bool createRenderpass2();
+
         VkDevice     m_device;
         VkRenderPass m_renderpass;
 

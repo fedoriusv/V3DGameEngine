@@ -91,9 +91,10 @@ private:
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-RenderTargetState::RenderTargetState(renderer::CommandList& cmdList, const core::Dimension2D& size, const std::string& name) noexcept
+RenderTargetState::RenderTargetState(renderer::CommandList& cmdList, const core::Dimension2D& size, u32 viewsMask, const std::string& name) noexcept
     : m_cmdList(cmdList)
     , m_size(size)
+    , m_viewsMask(viewsMask)
 
     , m_trackerFramebuffer(this, std::bind(&RenderTargetState::destroyFramebuffers, this, std::placeholders::_1))
     , m_trackerRenderpass(this, std::bind(&RenderTargetState::destroyRenderPasses, this, std::placeholders::_1))
@@ -418,6 +419,8 @@ void RenderTargetState::extractRenderTargetInfo(RenderPassDescription& renderpas
         clearValuesInfo._depth = std::get<2>(m_depthStencilTexture);
         clearValuesInfo._stencil = std::get<3>(m_depthStencilTexture);
     }
+
+    renderpassDesc._desc._viewsMask = m_viewsMask;
 }
 
 void RenderTargetState::destroyFramebuffers(const std::vector<Framebuffer*>& framebuffers)
@@ -452,7 +455,8 @@ void RenderTargetState::destroyRenderPasses(const std::vector<RenderPass*>& rend
 
 bool RenderTargetState::checkCompatibility(Texture* texture, AttachmentDescription& desc)
 {
-    if (desc._layer >= texture->getLayersCount())
+    s32 layer = AttachmentDescription::uncompressLayer(desc._layer);
+    if (layer != -1 && static_cast<u32>(layer) >= texture->getLayersCount())
     {
         return false;
     }
@@ -463,6 +467,21 @@ bool RenderTargetState::checkCompatibility(Texture* texture, AttachmentDescripti
         {
             return false;
         }
+    }
+
+    u32 countLayers = 0;
+    for (u32 i = 0; i < sizeof(u32); ++i)
+    {
+        if ((m_viewsMask >> i) & 0x1)
+        {
+            countLayers = i;
+        }
+
+    }
+
+    if (countLayers > texture->getLayersCount())
+    {
+        return false;
     }
 
     //TODO check format support
