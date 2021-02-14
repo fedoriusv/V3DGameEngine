@@ -53,7 +53,7 @@ namespace vk
         VulkanCommandBuffer(Context* context, VkDevice device, CommandBufferLevel type, VulkanCommandBuffer* primaryBuffer = nullptr);
         ~VulkanCommandBuffer();
 
-        VkCommandBuffer getHandle1() const;
+        VkCommandBuffer getHandle() const;
 
         CommandBufferStatus getStatus() const;
 

@@ -113,7 +113,7 @@ bool VulkanCommandBufferManager::submit(VulkanCommandBuffer* buffer, VkSemaphore
         return false;
     }
 
-    VkCommandBuffer cmdBuffer = buffer->getHandle1();
+    VkCommandBuffer cmdBuffer = buffer->getHandle();
 
     VkSubmitInfo submitInfo = {};
     submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -135,7 +135,8 @@ bool VulkanCommandBufferManager::submit(VulkanCommandBuffer* buffer, VkSemaphore
         buffer->m_status = VulkanCommandBuffer::CommandBufferStatus::Invalid;
         return false;
     }
-
+    //Uncomment for debug
+    //vkDeviceWaitIdle(m_device);
 
     buffer->m_status = VulkanCommandBuffer::CommandBufferStatus::Submit;
     return true;

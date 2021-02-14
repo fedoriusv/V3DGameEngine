@@ -82,7 +82,7 @@ VulkanCommandBuffer::~VulkanCommandBuffer()
     m_secondaryBuffers.clear();
 }
 
-VkCommandBuffer VulkanCommandBuffer::getHandle1() const
+VkCommandBuffer VulkanCommandBuffer::getHandle() const
 {
     ASSERT(m_commands != VK_NULL_HANDLE, "nullptr");
     return m_commands;

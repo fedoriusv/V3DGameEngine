@@ -191,6 +191,7 @@ void VulkanGraphicContext::endFrame()
 #if VULKAN_DEBUG
     LOG_DEBUG("VulkanGraphicContext::endFrame %llu", m_frameCounter);
 #endif //VULKAN_DEBUG
+    VkSemaphore uploadSemaphore = VK_NULL_HANDLE; //TODO create semaphore if needed
     if (m_currentBufferState.isCurrentBufferAcitve(CommandTargetType::CmdUploadBuffer))
     {
         VulkanCommandBuffer* uploadBuffer = m_currentBufferState.getAcitveBuffer(CommandTargetType::CmdUploadBuffer);
@@ -198,7 +199,7 @@ void VulkanGraphicContext::endFrame()
         {
             uploadBuffer->endCommandBuffer();
         }
-        m_cmdBufferManager->submit(uploadBuffer, VK_NULL_HANDLE);
+        m_cmdBufferManager->submit(uploadBuffer, uploadSemaphore);
         m_currentBufferState.invalidateCommandBuffer(CommandTargetType::CmdUploadBuffer);
     }
 
@@ -211,6 +212,10 @@ void VulkanGraphicContext::endFrame()
             drawBuffer->cmdEndRenderPass();
         }
         drawBuffer->endCommandBuffer();
+        if (uploadSemaphore != VK_NULL_HANDLE)
+        {
+            drawBuffer->addSemaphore(VK_PIPELINE_STAGE_TRANSFER_BIT, uploadSemaphore);
+        }
 
         m_uniformBufferManager->markToUse(drawBuffer, 0);
 
