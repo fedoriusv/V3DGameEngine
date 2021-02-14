@@ -96,7 +96,7 @@ void MyApplication::Initialize()
         v3d::scene::Model* cube = resource::ResourceLoaderManager::getInstance()->load<v3d::scene::Model, resource::ModelFileLoader>("data/cube.dae");
         m_Geometry = v3d::scene::ModelHelper::createModelHelper(*m_CommandList, { cube });
 
-        m_RenderTarget = m_CommandList->createObject<renderer::RenderTargetState>(m_Window->getSize(), "RenderTarget");
+        m_RenderTarget = m_CommandList->createObject<renderer::RenderTargetState>(m_Window->getSize(), 0, "RenderTarget");
 
         m_ColorAttachment = m_CommandList->createObject<renderer::Texture2D>(renderer::TextureUsage::TextureUsage_Attachment | renderer::TextureUsage::TextureUsage_Sampled, 
             renderer::Format::Format_R8G8B8A8_UNorm, m_Window->getSize(), renderer::TextureSamples::TextureSamples_x1, "ColorAttachment");
@@ -139,7 +139,7 @@ void MyApplication::Initialize()
                 {"main_FS", renderer::ShaderType_Fragment }
             });
 
-        m_OffscreenRenderTarget = m_CommandList->createObject<renderer::RenderTargetState>(m_Window->getSize(), "OffscreenTarget");
+        m_OffscreenRenderTarget = m_CommandList->createObject<renderer::RenderTargetState>(m_Window->getSize(), 0, "OffscreenTarget");
         m_OffscreenRenderTarget->setColorTexture(0, m_CommandList->getBackbuffer(),
             {
                 renderer::RenderTargetLoadOp::LoadOp_DontCare, renderer::RenderTargetStoreOp::StoreOp_Store, core::Vector4D(0.0f)

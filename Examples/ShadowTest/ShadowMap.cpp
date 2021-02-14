@@ -1,5 +1,8 @@
 #include "ShadowMap.h"
 
+#include "Renderer/Context.h"
+#include "Renderer/DeviceCaps.h"
+
 #include "Resource/ResourceLoaderManager.h"
 #include "Resource/ShaderSourceStreamLoader.h"
 
@@ -50,7 +53,7 @@ void ShadowMapping::Init(const renderer::VertexInputAttribDescription& desc)
     m_DepthAttachment = m_CmdList->createObject<renderer::Texture2D>(renderer::TextureUsage::TextureUsage_Attachment | renderer::TextureUsage::TextureUsage_Sampled,
         renderer::Format::Format_D32_SFloat, core::Dimension2D((u32)m_Size.getWidth(), (u32)m_Size.getHeight()), renderer::TextureSamples::TextureSamples_x1, "DepthShadow");
 
-    m_RenderTarget = m_CmdList->createObject<renderer::RenderTargetState>(core::Dimension2D((u32)m_Size.getWidth(), (u32)m_Size.getHeight()), "ShadowTarget");
+    m_RenderTarget = m_CmdList->createObject<renderer::RenderTargetState>(core::Dimension2D((u32)m_Size.getWidth(), (u32)m_Size.getHeight()), 0, "ShadowTarget");
     m_RenderTarget->setDepthStencilTexture(m_DepthAttachment.get(),
         {
             renderer::RenderTargetLoadOp::LoadOp_Clear, renderer::RenderTargetStoreOp::StoreOp_Store, 1.0f, 
@@ -358,6 +361,20 @@ void ShadowMappingPoint::Init(const renderer::VertexInputAttribDescription& desc
 
     m_DepthAttachment = m_CmdList->createObject<renderer::TextureCube>(renderer::TextureUsage::TextureUsage_Attachment | renderer::TextureUsage::TextureUsage_Sampled, renderer::Format::Format_D32_SFloat, m_Size, renderer::TextureSamples::TextureSamples_x1, "CubeDepthShadow");
 
+    if (m_CmdList->getContext()->getDeviceCaps()->supportMultiview && m_UseMultiview)
+    {
+        PrepareMuiltiviewShadowMap(desc);
+    }
+    else
+    {
+        PrepareShadowMap(desc);
+    }
+
+    m_CmdList->flushCommands();
+}
+
+void ShadowMappingPoint::PrepareShadowMap(const renderer::VertexInputAttribDescription& desc)
+{
     for (u32 side = 0; side < 6U; ++side)
     {
         m_RenderTarget[side] = m_CmdList->createObject<renderer::RenderTargetState>(m_Size);
@@ -372,6 +389,7 @@ void ShadowMappingPoint::Init(const renderer::VertexInputAttribDescription& desc
                 renderer::TransitionOp::TransitionOp_Undefined, renderer::TransitionOp::TransitionOp_ShaderRead
             });
     }
+
 
     const renderer::Shader* vertShader = nullptr;
     {
@@ -454,8 +472,131 @@ void ShadowMappingPoint::Init(const renderer::VertexInputAttribDescription& desc
     m_Pipeline->setDepthCompareOp(renderer::CompareOperation::CompareOp_Less);
     m_Pipeline->setDepthWrite(true);
     m_Pipeline->setDepthTest(true);
+}
 
-    m_CmdList->flushCommands();
+void ShadowMappingPoint::PrepareMuiltiviewShadowMap(const renderer::VertexInputAttribDescription& desc)
+{
+    m_RenderTarget[0] = m_CmdList->createObject<renderer::RenderTargetState>(m_Size, 0b00111111);
+    m_RenderTarget[0]->setDepthStencilTexture(m_DepthAttachment.get(),
+        {
+            renderer::RenderTargetLoadOp::LoadOp_Clear, renderer::RenderTargetStoreOp::StoreOp_Store, 1.0f,
+        },
+        {
+             renderer::RenderTargetLoadOp::LoadOp_DontCare, renderer::RenderTargetStoreOp::StoreOp_DontCare, 0U,
+        },
+        {
+            renderer::TransitionOp::TransitionOp_Undefined, renderer::TransitionOp::TransitionOp_ShaderRead
+        });
+
+    const renderer::Shader* vertShader = nullptr;
+    {
+        const std::string vertexSource("\
+        struct VS_INPUT\n\
+        {\n\
+            float3 Position : POSITION;\n\
+            float3 Normal   : NORMAL;\n\
+            float2 Texture  : TEXTURE;\n\
+        };\n\
+        \n\
+        struct PS_INPUT\n\
+        {\n\
+            float4 Pos      : SV_Position;\n\
+            float4 Position : POSITION;\n\
+            float4 Light    : LIGHT;\n\
+        };\n\
+        \n\
+        struct CBuffer\n\
+        {\n\
+            matrix lightSpaceMatrix[6];\n\
+            matrix modelMatrix;\n\
+            float4 lightPosition;\n\
+        }; \n\
+        \n\
+        ConstantBuffer<CBuffer> ubo;\n\
+        \n\
+        PS_INPUT main(VS_INPUT Input, uint ViewId : SV_ViewID)\n\
+        {\n\
+            PS_INPUT Out;\n\
+            Out.Position = mul(ubo.modelMatrix, float4(Input.Position, 1.0));\n\
+            Out.Pos = mul(ubo.lightSpaceMatrix[ViewId], Out.Position);\n\
+            Out.Light = ubo.lightPosition;\n\
+            return Out;\n\
+        }");
+
+        const std::string vertexSourceGL("\
+        #version 450\n\
+        #extension GL_EXT_multiview : enable\n\
+        \n\
+        layout(location = 0) in vec3 inPosition;\n\
+        layout(location = 1) in vec3 inNormal;\n\
+        layout(location = 2) in vec2 inUV;\n\
+        \n\
+        layout(binding = 0) uniform UBO\n\
+        {\n\
+            mat4 projectionMatrix[6];\n\
+            mat4 modelMatrix;\n\
+            vec4 lightPosition;\n\
+        } ubo;\n\
+        \n\
+        layout(location = 0) out vec4 outPosition;\n\
+        layout(location = 1) out vec4 outLight;\n\
+        \n\
+        void main()\n\
+        {\n\
+            vec4 position = ubo.modelMatrix * vec4(inPosition.xyz, 1.0);\n\
+            \n\
+            outPosition = position;\n\
+            outLight = ubo.lightPosition;\n\
+            \n\
+            gl_Position = ubo.projectionMatrix[gl_ViewIndex] * position;\n\
+        }");
+
+        const stream::Stream* vertexStream = stream::StreamManager::createMemoryStream(vertexSourceGL);
+
+        renderer::ShaderHeader vertexHeader(renderer::ShaderType::ShaderType_Vertex);
+        vertexHeader._contentType = renderer::ShaderHeader::ShaderResource::ShaderResource_Source;
+        vertexHeader._shaderModel = renderer::ShaderHeader::ShaderModel::ShaderModel_GLSL_450;
+
+        vertShader = resource::ResourceLoaderManager::getInstance()->composeShader<renderer::Shader, resource::ShaderSourceStreamLoader>(m_CmdList->getContext(), "shadowmap_vetex_view", &vertexHeader, vertexStream);
+    }
+
+    const renderer::Shader* fragShader = nullptr;
+    {
+        const std::string fragmentSource("\
+        struct PS_INPUT\n\
+        {\n\
+            float4 Pos      : SV_POSITION;\n\
+            float4 Position : POSITION;\n\
+            float4 Light    : LIGHT;\n\
+        };\n\
+        \n\
+        float main(PS_INPUT Input) : SV_DEPTH\n\
+        {\n\
+            float3 lightVec = Input.Position.xyz - Input.Light.xyz;\n\
+            return (length(lightVec) / (FAR_PLANE - NEAR_PLANE)) + DEPTH_BIAS;\n\
+        }");
+
+        const stream::Stream* fragmentStream = stream::StreamManager::createMemoryStream(fragmentSource);
+
+        renderer::ShaderHeader fragmentHeader(renderer::ShaderType::ShaderType_Fragment);
+        fragmentHeader._contentType = renderer::ShaderHeader::ShaderResource::ShaderResource_Source;
+        fragmentHeader._shaderModel = renderer::ShaderHeader::ShaderModel::ShaderModel_HLSL_5_1;
+        fragmentHeader._defines.push_back({ "FAR_PLANE", std::to_string(m_ShadowCamera->getCamera().getFar()) });
+        fragmentHeader._defines.push_back({ "NEAR_PLANE", std::to_string(m_ShadowCamera->getCamera().getNear()) });
+        fragmentHeader._defines.push_back({ "DEPTH_BIAS", std::to_string(0.0001) });
+
+        fragShader = resource::ResourceLoaderManager::getInstance()->composeShader<renderer::Shader, resource::ShaderSourceStreamLoader>(m_CmdList->getContext(), "shadowmap_fragment", &fragmentHeader, fragmentStream);
+    }
+
+    m_Program = m_CmdList->createObject<renderer::ShaderProgram, std::vector<const renderer::Shader*>>({ vertShader, fragShader });
+    m_Pipeline = m_CmdList->createObject<renderer::GraphicsPipelineState>(desc, m_Program.get(), m_RenderTarget[0].get());
+    m_Pipeline->setPrimitiveTopology(renderer::PrimitiveTopology::PrimitiveTopology_TriangleList);
+    m_Pipeline->setFrontFace(renderer::FrontFace::FrontFace_Clockwise);
+    m_Pipeline->setCullMode(renderer::CullMode::CullMode_Back);
+    m_Pipeline->setColorMask(renderer::ColorMask::ColorMask_None);
+    m_Pipeline->setDepthCompareOp(renderer::CompareOperation::CompareOp_Less);
+    m_Pipeline->setDepthWrite(true);
+    m_Pipeline->setDepthTest(true);
 }
 
 void ShadowMappingPoint::Update(f32 dt, const core::Vector3D& position)
@@ -501,28 +642,53 @@ void ShadowMappingPoint::Update(f32 dt, const core::Vector3D& position)
 
 void ShadowMappingPoint::Draw(scene::ModelHelper* geometry, const scene::Transform& transform)
 {
-    for (u32 side = 0; side < 6U; ++side)
+    if (m_CmdList->getContext()->getDeviceCaps()->supportMultiview && m_UseMultiview)
     {
         m_CmdList->setViewport(core::Rect32(0, 0, m_Size.width, m_Size.height));
         m_CmdList->setScissor(core::Rect32(0, 0, m_Size.width, m_Size.height));
-        m_CmdList->setPipelineState(m_Pipeline.get());
-        m_CmdList->setRenderTarget(m_RenderTarget[side].get());
 
+        m_CmdList->setRenderTarget(m_RenderTarget[0].get());
+        m_CmdList->setPipelineState(m_Pipeline.get());
+        
         struct UBO
         {
-            core::Matrix4D lightSpaceMatrix;
+            core::Matrix4D lightSpaceMatrix[6];
             core::Matrix4D modelMatrix;
             core::Vector4D lightPosition;
         } ubo;
 
-
-        ubo.lightSpaceMatrix = m_LightSpaceMatrices[side];
+        memcpy(&ubo.lightSpaceMatrix, m_LightSpaceMatrices.data(), sizeof(core::Matrix4D) * 6);
         ubo.modelMatrix = transform.getTransform();
         ubo.lightPosition = { m_ShadowCamera->getPosition(), 0.0f };
 
         m_Program->bindUniformsBuffer<renderer::ShaderType::ShaderType_Vertex>({ "ubo" }, 0, (u32)sizeof(UBO), &ubo);
 
         geometry->draw();
+    }
+    else
+    {
+        for (u32 side = 0; side < 6U; ++side)
+        {
+            m_CmdList->setViewport(core::Rect32(0, 0, m_Size.width, m_Size.height));
+            m_CmdList->setScissor(core::Rect32(0, 0, m_Size.width, m_Size.height));
+            m_CmdList->setPipelineState(m_Pipeline.get());
+            m_CmdList->setRenderTarget(m_RenderTarget[side].get());
+
+            struct UBO
+            {
+                core::Matrix4D lightSpaceMatrix;
+                core::Matrix4D modelMatrix;
+                core::Vector4D lightPosition;
+            } ubo;
+
+            ubo.lightSpaceMatrix = m_LightSpaceMatrices[side];
+            ubo.modelMatrix = transform.getTransform();
+            ubo.lightPosition = { m_ShadowCamera->getPosition(), 0.0f };
+
+            m_Program->bindUniformsBuffer<renderer::ShaderType::ShaderType_Vertex>({ "ubo" }, 0, (u32)sizeof(UBO), &ubo);
+
+            geometry->draw();
+        }
     }
 }
 

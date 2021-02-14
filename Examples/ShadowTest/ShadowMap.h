@@ -97,6 +97,9 @@ namespace v3d
 
     private:
 
+        void PrepareShadowMap(const renderer::VertexInputAttribDescription& desc);
+        void PrepareMuiltiviewShadowMap(const renderer::VertexInputAttribDescription& desc);
+
         renderer::CommandList* const m_CmdList;
 
         utils::IntrusivePointer<renderer::RenderTargetState> m_RenderTarget[6];
@@ -109,6 +112,8 @@ namespace v3d
         core::Dimension2D m_Size = { 2048, 2048 };
 
         std::array<core::Matrix4D, 6> m_LightSpaceMatrices;
+
+        bool m_UseMultiview = true;
     };
 
 } //namespace v3d
