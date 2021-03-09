@@ -13,6 +13,11 @@ HRESULT D3DWrapper::CreateDevice(IUnknown* pAdapter, D3D_FEATURE_LEVEL MinimumFe
     return D3D12CreateDevice(pAdapter, MinimumFeatureLevel, riid, ppDevice);
 }
 
+HRESULT D3DWrapper::EnableExperimentalFeatures(UINT NumFeatures, const IID* pIIDs, void* pConfigurationStructs, UINT* pConfigurationStructSizes) noexcept
+{
+    return D3D12EnableExperimentalFeatures(NumFeatures, pIIDs, pConfigurationStructs, pConfigurationStructSizes);
+}
+
 HRESULT D3DWrapper::GetDebugInterface(REFIID riid, void** ppvDebug) noexcept
 {
     return  D3D12GetDebugInterface(riid, ppvDebug);

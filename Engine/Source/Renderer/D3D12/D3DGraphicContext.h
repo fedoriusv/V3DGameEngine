@@ -107,7 +107,7 @@ namespace dx3d
 
         IDXGIFactory4*      m_factory;
         IDXGIAdapter1*      m_adapter;
-        ID3D12Device*       m_device;
+        ID3D12Device2*      m_device;
 #if D3D_DEBUG_LAYERS
         ID3D12Debug*        m_debugController;
 #endif //D3D_DEBUG_LAYERS
@@ -222,6 +222,7 @@ namespace dx3d
         D3DDescriptorSetState* m_descriptorState;
 
         static D3D_FEATURE_LEVEL s_featureLevel;
+        static bool s_supportExerimentalShaderModelFeature;
 
         static void getHardwareAdapter(_In_ IDXGIFactory2* pFactory, _Outptr_result_maybenull_ IDXGIAdapter1** ppAdapter);
     };

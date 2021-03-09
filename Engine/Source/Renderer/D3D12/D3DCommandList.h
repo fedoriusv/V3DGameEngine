@@ -116,9 +116,11 @@ namespace dx3d
         void setVertexState(u32 startSlot, const std::vector<u32>& strides, const std::vector<Buffer*>& buffers);
         void setIndexState(Buffer* buffer, DXGI_FORMAT format);
 
+        void setViewInstanceMask(u32 mask);
+
         void transition(D3DImage* image, D3D12_RESOURCE_STATES states);
 
-        ID3D12GraphicsCommandList* getHandle() const;
+        ID3D12GraphicsCommandList1* getHandle() const;
 
     private:
 

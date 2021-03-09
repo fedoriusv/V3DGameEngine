@@ -274,10 +274,10 @@ void D3DGraphicsCommandList::transition(D3DImage* image, D3D12_RESOURCE_STATES s
     }
 }
 
-ID3D12GraphicsCommandList* D3DGraphicsCommandList::getHandle() const
+ID3D12GraphicsCommandList1* D3DGraphicsCommandList::getHandle() const
 {
     ASSERT(m_commandList, "nullptr");
-    return static_cast<ID3D12GraphicsCommandList*>(m_commandList);
+    return static_cast<ID3D12GraphicsCommandList1*>(m_commandList);
 }
 
 void D3DGraphicsCommandList::clearRenderTarget(D3D12_CPU_DESCRIPTOR_HANDLE renderTargetView, const f32 color[4], const std::vector<D3D12_RECT>& rect)
@@ -332,6 +332,13 @@ void D3DGraphicsCommandList::setScissor(const std::vector<D3D12_RECT>& scissors)
     ASSERT(m_status == Status::ReadyToRecord, "not record");
 
     D3DGraphicsCommandList::getHandle()->RSSetScissorRects(static_cast<u32>(scissors.size()), scissors.data());
+}
+
+void D3DGraphicsCommandList::setViewInstanceMask(u32 mask)
+{
+    ASSERT(m_commandList, "nullptr");
+    ASSERT(m_status == Status::ReadyToRecord, "not record");
+    D3DGraphicsCommandList::getHandle()->SetViewInstanceMask(mask);
 }
 
 } //namespace dx3d

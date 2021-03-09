@@ -26,7 +26,7 @@ namespace dx3d
     {
     public:
 
-        explicit D3DGraphicPipelineState(ID3D12Device* device, D3DRootSignatureManager* const sigManager) noexcept;
+        explicit D3DGraphicPipelineState(ID3D12Device2* device, D3DRootSignatureManager* const signatureManager) noexcept;
         ~D3DGraphicPipelineState();
 
         bool create(const PipelineGraphicInfo* pipelineInfo) override;
@@ -59,7 +59,7 @@ namespace dx3d
 
         D3D12_SHADER_BYTECODE m_bytecode[ShaderType::ShaderType_Count];
 
-        ID3D12Device* const m_device;
+        ID3D12Device2* const m_device;
         D3DRootSignatureManager* const m_sigatureManager;
 
         ID3D12PipelineState* m_pipelineState;

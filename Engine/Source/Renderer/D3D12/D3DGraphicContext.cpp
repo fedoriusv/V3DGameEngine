@@ -35,11 +35,13 @@ D3D_FEATURE_LEVEL D3DGraphicContext::s_featureLevel = D3D_FEATURE_LEVEL_12_0;
 #elif (D3D_VERSION_MAJOR == 12 && D3D_VERSION_MINOR == 1)
 D3D_FEATURE_LEVEL D3DGraphicContext::s_featureLevel = D3D_FEATURE_LEVEL_12_1;
 #else
-#error "DirectX version not supported"
+#error "DirectX version is not supported"
 #endif 
 
 #pragma comment(lib, "dxgi.lib")
 #pragma comment(lib, "d3d12.lib")
+
+bool D3DGraphicContext::s_supportExerimentalShaderModelFeature = true;
 
 D3DGraphicContext::D3DGraphicContext(const platform::Window* window) noexcept
     : m_factory(nullptr)
@@ -559,6 +561,20 @@ bool D3DGraphicContext::initialize()
     }
 
     {
+        std::vector<UUID> experimentalFeatures;
+        if (D3DGraphicContext::s_supportExerimentalShaderModelFeature)
+        {
+            experimentalFeatures.push_back(D3D12ExperimentalShaderModels);
+        }
+
+        if (!experimentalFeatures.empty())
+        {
+            HRESULT result = D3DWrapper::EnableExperimentalFeatures(static_cast<UINT>(experimentalFeatures.size()), experimentalFeatures.data(), nullptr, nullptr);
+            ASSERT(SUCCEEDED(result), "failed");
+        }
+    }
+
+    {
         HRESULT result = D3DWrapper::CreateDevice(m_adapter, D3DGraphicContext::s_featureLevel, IID_PPV_ARGS(&m_device));
         if (FAILED(result))
         {
@@ -791,6 +807,10 @@ bool D3DGraphicContext::perpareDraw(D3DGraphicsCommandList* cmdList)
 
         cmdList->setRenderTarget(m_currentState._renderTarget);
         m_boundState._renderTarget = m_currentState._renderTarget;
+        if (D3DDeviceCaps::getInstance()->supportMultiview && m_currentState._renderTarget->getDescription()._viewsMask)
+        {
+            cmdList->setViewInstanceMask(m_currentState._renderTarget->getDescription()._viewsMask);
+        }
 
         D3DGraphicContext::clearRenderTargets(cmdList, m_currentState._renderTarget, m_currentState._clearInfo);
     }

@@ -16,6 +16,8 @@ namespace dx3d
     public:
 
         static HRESULT CreateDevice(IUnknown* pAdapter, D3D_FEATURE_LEVEL MinimumFeatureLevel, REFIID riid, void** ppDevice) noexcept;
+
+        static HRESULT EnableExperimentalFeatures(UINT NumFeatures, const IID* pIIDs, void* pConfigurationStructs, UINT* pConfigurationStructSizes) noexcept;
         static HRESULT GetDebugInterface(REFIID riid, void** ppvDebug) noexcept;
     };
 

@@ -5,9 +5,12 @@
 
 #ifdef D3D_RENDER
 #include "d3dx12.h"
+//#include "d3d12umddi.h"
+
 #include "D3DDebug.h"
 #include "D3DImage.h"
 #include "D3DRootSignature.h"
+#include "D3DDeviceCaps.h"
 
 namespace v3d
 {
@@ -339,10 +342,10 @@ D3D12_PRIMITIVE_TOPOLOGY D3DGraphicPipelineState::getTopology() const
     return m_topology;
 }
 
-D3DGraphicPipelineState::D3DGraphicPipelineState(ID3D12Device* device, D3DRootSignatureManager* const sigManager) noexcept
+D3DGraphicPipelineState::D3DGraphicPipelineState(ID3D12Device2* device, D3DRootSignatureManager* const signatureManager) noexcept
     : Pipeline(PipelineType::PipelineType_Graphic)
     , m_device(device)
-    , m_sigatureManager(sigManager)
+    , m_sigatureManager(signatureManager)
 
     , m_pipelineState(nullptr)
     , m_rootSignature(nullptr)
@@ -362,7 +365,9 @@ D3DGraphicPipelineState::~D3DGraphicPipelineState()
 
 bool D3DGraphicPipelineState::create(const PipelineGraphicInfo* pipelineInfo)
 {
-    D3D12_GRAPHICS_PIPELINE_STATE_DESC psoDesc = {};
+    CD3DX12_PIPELINE_STATE_STREAM1 psoDesc = {};
+    psoDesc.Flags = D3D12_PIPELINE_STATE_FLAG_NONE;
+    psoDesc.NodeMask = 0;
 
     std::tie(m_rootSignature, m_signatureParameters) = m_sigatureManager->acquireRootSignature(pipelineInfo->_programDesc);
     ASSERT(m_rootSignature, "nullptr");
@@ -438,8 +443,12 @@ bool D3DGraphicPipelineState::create(const PipelineGraphicInfo* pipelineInfo)
 
             m_buffersStride.push_back(inputBinding._stride);
         }
-        psoDesc.InputLayout.NumElements = static_cast<UINT>(inputElementsDesc.size());
-        psoDesc.InputLayout.pInputElementDescs = inputElementsDesc.data();
+
+        D3D12_INPUT_LAYOUT_DESC inputLayout = {};
+        inputLayout.NumElements = static_cast<UINT>(inputElementsDesc.size());
+        inputLayout.pInputElementDescs = inputElementsDesc.data();
+
+        psoDesc.InputLayout = inputLayout;
 
         psoDesc.PrimitiveTopologyType = convertPrimitiveTopologyTypeToD3DTopology(inputState._primitiveTopology);
         m_topology = convertPrimitiveTopologyToD3DTopology(inputState._primitiveTopology, 0);
@@ -503,10 +512,10 @@ bool D3DGraphicPipelineState::create(const PipelineGraphicInfo* pipelineInfo)
     {
         auto& depthStencilState = pipelineInfo->_pipelineDesc._depthStencilState;
 
-        D3D12_DEPTH_STENCIL_DESC& depthStencilDesc = psoDesc.DepthStencilState;
+        CD3DX12_DEPTH_STENCIL_DESC1 depthStencilDesc = {};
         depthStencilDesc.DepthEnable = depthStencilState._depthTestEnable;
-        depthStencilDesc.DepthFunc = convertDepthFunctionToD3D(depthStencilState._compareOp);
         depthStencilDesc.DepthWriteMask = convertWriteDepthToD3D(depthStencilState._depthWriteEnable);
+        depthStencilDesc.DepthFunc = convertDepthFunctionToD3D(depthStencilState._compareOp);
 
         //TODO
         depthStencilDesc.StencilEnable = depthStencilState._stencilTestEnable;
@@ -514,15 +523,23 @@ bool D3DGraphicPipelineState::create(const PipelineGraphicInfo* pipelineInfo)
         depthStencilDesc.StencilWriteMask = 0;
         depthStencilDesc.FrontFace = {};
         depthStencilDesc.BackFace = {};
+
+        depthStencilDesc.DepthBoundsTestEnable = FALSE;
+
+        psoDesc.DepthStencilState = depthStencilDesc;
     }
 
     //Render Targets
     {
-        psoDesc.NumRenderTargets = pipelineInfo->_renderpassDesc._desc._countColorAttachments;
+        D3D12_RT_FORMAT_ARRAY renderTargets = {};
+
+        renderTargets.NumRenderTargets = pipelineInfo->_renderpassDesc._desc._countColorAttachments;
         for (u32 i = 0; i < pipelineInfo->_renderpassDesc._desc._countColorAttachments; ++i)
         {
-            psoDesc.RTVFormats[i] = D3DImage::convertImageFormatToD3DFormat(pipelineInfo->_renderpassDesc._desc._attachments[i]._format);
+            renderTargets.RTFormats[i] = D3DImage::convertImageFormatToD3DFormat(pipelineInfo->_renderpassDesc._desc._attachments[i]._format);
         }
+
+        psoDesc.RTVFormats = renderTargets;
 
         if (pipelineInfo->_renderpassDesc._desc._hasDepthStencilAttahment)
         {
@@ -537,18 +554,58 @@ bool D3DGraphicPipelineState::create(const PipelineGraphicInfo* pipelineInfo)
     //Sample State
     {
         psoDesc.SampleMask = UINT_MAX;
-        psoDesc.SampleDesc.Quality = 0;
+
+        DXGI_SAMPLE_DESC sampleDesc = {};
+
+        sampleDesc.Quality = 0;
         if (pipelineInfo->_renderpassDesc._desc._attachments[0]._samples > TextureSamples::TextureSamples_x1)
         {
-            psoDesc.SampleDesc.Count = 2 << (u32)(pipelineInfo->_renderpassDesc._desc._attachments[0]._samples);
+            sampleDesc.Count = 2 << (u32)(pipelineInfo->_renderpassDesc._desc._attachments[0]._samples);
         }
         else
         {
-            psoDesc.SampleDesc.Count = 1;
+            sampleDesc.Count = 1;
         }
+
+        psoDesc.SampleDesc = sampleDesc;
     }
 
-    HRESULT result = m_device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&m_pipelineState));
+    //View instancing
+    std::vector<D3D12_VIEW_INSTANCE_LOCATION> viewsIndexes;
+    {
+        u32 viewsMask = pipelineInfo->_renderpassDesc._desc._viewsMask;
+
+        u32 countActiveViews = RenderPassDescription::countActiveViews(viewsMask);
+        viewsIndexes.reserve(countActiveViews);
+
+        CD3DX12_VIEW_INSTANCING_DESC viewInstancingDesc = {};
+        if (viewsMask && D3DDeviceCaps::getInstance()->supportMultiview)
+        {
+            for (u32 i = 0; i < std::numeric_limits<u32>::digits; ++i)
+            {
+                if (RenderPassDescription::isActiveViewByIndex(viewsMask, i))
+                {
+                    viewsIndexes.push_back({ 0, i });
+                }
+            }
+
+            viewInstancingDesc.Flags = D3D12_VIEW_INSTANCING_FLAG_ENABLE_VIEW_INSTANCE_MASKING;
+            viewInstancingDesc.ViewInstanceCount =static_cast<UINT>(viewsIndexes.size());
+            viewInstancingDesc.pViewInstanceLocations = viewsIndexes.data();
+        }
+
+        ASSERT(viewInstancingDesc.ViewInstanceCount <= D3D12_MAX_VIEW_INSTANCE_COUNT, "over max");
+        psoDesc.ViewInstancingDesc = viewInstancingDesc;
+    }
+
+    //TODO
+    psoDesc.CachedPSO = {};
+
+    D3D12_PIPELINE_STATE_STREAM_DESC streamDesc;
+    streamDesc.SizeInBytes = sizeof(psoDesc);
+    streamDesc.pPipelineStateSubobjectStream = &psoDesc;
+
+    HRESULT result = m_device->CreatePipelineState(&streamDesc, IID_PPV_ARGS(&m_pipelineState));
     if (FAILED(result))
     {
         LOG_ERROR("D3DGraphicPipelineState::create CreateGraphicsPipelineState is failed. Error %s", D3DDebug::stringError(result).c_str());

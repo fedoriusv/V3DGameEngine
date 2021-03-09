@@ -470,7 +470,7 @@ bool RenderTargetState::checkCompatibility(Texture* texture, AttachmentDescripti
     }
 
     u32 countLayers = 0;
-    for (u32 i = 0; i < sizeof(u32); ++i)
+    for (u32 i = 0; i < std::numeric_limits<u32>::digits; ++i)
     {
         if ((m_viewsMask >> i) & 0x1)
         {

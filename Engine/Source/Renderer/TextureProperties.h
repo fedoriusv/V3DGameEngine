@@ -161,6 +161,9 @@ namespace renderer
 
         RenderPassDesc _desc;
 
+        static u32 countActiveViews(u32 viewsMask);
+        static bool isActiveViewByIndex(u32 viewsMask, u32 index);
+
         struct Hash
         {
             u32 operator()(const RenderPassDescription& desc) const;
