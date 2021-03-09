@@ -8,6 +8,8 @@
 
 #include "Stream/StreamManager.h"
 
+#define FORCE_USE_DX_COMPILER 0
+
 namespace v3d
 {
 
@@ -375,7 +377,7 @@ void ShadowMappingPoint::Init(const renderer::VertexInputAttribDescription& desc
 
 void ShadowMappingPoint::PrepareShadowMap(const renderer::VertexInputAttribDescription& desc)
 {
-    for (u32 side = 0; side < 6U; ++side)
+    for (u32 side = 0; side < s_PointSidesCount; ++side)
     {
         m_RenderTarget[side] = m_CmdList->createObject<renderer::RenderTargetState>(m_Size);
         m_RenderTarget[side]->setDepthStencilTexture(m_DepthAttachment.get(), side,
@@ -490,12 +492,14 @@ void ShadowMappingPoint::PrepareMuiltiviewShadowMap(const renderer::VertexInputA
 
     const renderer::Shader* vertShader = nullptr;
     {
-        const std::string vertexSource("\
+#if FORCE_USE_DX_COMPILER
+        ASSERT(m_CmdList->getContext()->getRenderType() == renderer::Context::RenderType::DirectXRender, "must be dx");
+        const std::string vertexSourceDXC("\
         struct VS_INPUT\n\
         {\n\
-            float3 Position : POSITION;\n\
-            float3 Normal   : NORMAL;\n\
-            float2 Texture  : TEXTURE;\n\
+            [[vk::location(4)]] float3 Position : POSITION;\n\
+            [[vk::location(5)]] float3 Normal   : NORMAL;\n\
+            [[vk::location(6)]] float2 Texture  : TEXTURE;\n\
         };\n\
         \n\
         struct PS_INPUT\n\
@@ -523,6 +527,16 @@ void ShadowMappingPoint::PrepareMuiltiviewShadowMap(const renderer::VertexInputA
             return Out;\n\
         }");
 
+        const stream::Stream* vertexStream = stream::StreamManager::createMemoryStream(vertexSourceDXC);
+
+        renderer::ShaderHeader vertexHeader(renderer::ShaderType::ShaderType_Vertex);
+        vertexHeader._contentType = renderer::ShaderHeader::ShaderResource::ShaderResource_Source;
+        vertexHeader._shaderModel = renderer::ShaderHeader::ShaderModel::ShaderModel_HLSL_6_1;
+        vertexHeader._defines.push_back({ "SIDES_COUNT", std::to_string(s_PointSidesCount) });
+
+        vertShader = resource::ResourceLoaderManager::getInstance()->composeShader<renderer::Shader, resource::ShaderSourceStreamLoader>(m_CmdList->getContext(), "shadowmap_vetex_view", &vertexHeader, vertexStream, resource::ShaderSource_UseDXCompiler);
+#else
+        ASSERT(m_CmdList->getContext()->getRenderType() == renderer::Context::RenderType::VulkanRender, "must be vulkan");
         const std::string vertexSourceGL("\
         #version 450\n\
         #extension GL_EXT_multiview : enable\n\
@@ -533,7 +547,7 @@ void ShadowMappingPoint::PrepareMuiltiviewShadowMap(const renderer::VertexInputA
         \n\
         layout(binding = 0) uniform UBO\n\
         {\n\
-            mat4 projectionMatrix[6];\n\
+            mat4 projectionMatrix[SIDES_COUNT];\n\
             mat4 modelMatrix;\n\
             vec4 lightPosition;\n\
         } ubo;\n\
@@ -556,8 +570,10 @@ void ShadowMappingPoint::PrepareMuiltiviewShadowMap(const renderer::VertexInputA
         renderer::ShaderHeader vertexHeader(renderer::ShaderType::ShaderType_Vertex);
         vertexHeader._contentType = renderer::ShaderHeader::ShaderResource::ShaderResource_Source;
         vertexHeader._shaderModel = renderer::ShaderHeader::ShaderModel::ShaderModel_GLSL_450;
+        vertexHeader._defines.push_back({ "SIDES_COUNT", std::to_string(s_PointSidesCount) });
 
         vertShader = resource::ResourceLoaderManager::getInstance()->composeShader<renderer::Shader, resource::ShaderSourceStreamLoader>(m_CmdList->getContext(), "shadowmap_vetex_view", &vertexHeader, vertexStream);
+#endif
     }
 
     const renderer::Shader* fragShader = nullptr;
@@ -581,11 +597,18 @@ void ShadowMappingPoint::PrepareMuiltiviewShadowMap(const renderer::VertexInputA
         renderer::ShaderHeader fragmentHeader(renderer::ShaderType::ShaderType_Fragment);
         fragmentHeader._contentType = renderer::ShaderHeader::ShaderResource::ShaderResource_Source;
         fragmentHeader._shaderModel = renderer::ShaderHeader::ShaderModel::ShaderModel_HLSL_5_1;
+#if FORCE_USE_DX_COMPILER
+        fragmentHeader._shaderModel = renderer::ShaderHeader::ShaderModel::ShaderModel_HLSL_6_1;
+#endif
         fragmentHeader._defines.push_back({ "FAR_PLANE", std::to_string(m_ShadowCamera->getCamera().getFar()) });
         fragmentHeader._defines.push_back({ "NEAR_PLANE", std::to_string(m_ShadowCamera->getCamera().getNear()) });
         fragmentHeader._defines.push_back({ "DEPTH_BIAS", std::to_string(0.0001) });
 
-        fragShader = resource::ResourceLoaderManager::getInstance()->composeShader<renderer::Shader, resource::ShaderSourceStreamLoader>(m_CmdList->getContext(), "shadowmap_fragment", &fragmentHeader, fragmentStream);
+        fragShader = resource::ResourceLoaderManager::getInstance()->composeShader<renderer::Shader, resource::ShaderSourceStreamLoader>(m_CmdList->getContext(), "shadowmap_fragment", &fragmentHeader, fragmentStream
+#if FORCE_USE_DX_COMPILER
+            , resource::ShaderSource_UseDXCompiler
+#endif
+            );
     }
 
     m_Program = m_CmdList->createObject<renderer::ShaderProgram, std::vector<const renderer::Shader*>>({ vertShader, fragShader });
@@ -652,12 +675,12 @@ void ShadowMappingPoint::Draw(scene::ModelHelper* geometry, const scene::Transfo
         
         struct UBO
         {
-            core::Matrix4D lightSpaceMatrix[6];
+            core::Matrix4D lightSpaceMatrix[s_PointSidesCount];
             core::Matrix4D modelMatrix;
             core::Vector4D lightPosition;
         } ubo;
 
-        memcpy(&ubo.lightSpaceMatrix, m_LightSpaceMatrices.data(), sizeof(core::Matrix4D) * 6);
+        memcpy(&ubo.lightSpaceMatrix, m_LightSpaceMatrices.data(), sizeof(core::Matrix4D) * s_PointSidesCount);
         ubo.modelMatrix = transform.getTransform();
         ubo.lightPosition = { m_ShadowCamera->getPosition(), 0.0f };
 
@@ -667,7 +690,7 @@ void ShadowMappingPoint::Draw(scene::ModelHelper* geometry, const scene::Transfo
     }
     else
     {
-        for (u32 side = 0; side < 6U; ++side)
+        for (u32 side = 0; side < s_PointSidesCount; ++side)
         {
             m_CmdList->setViewport(core::Rect32(0, 0, m_Size.width, m_Size.height));
             m_CmdList->setScissor(core::Rect32(0, 0, m_Size.width, m_Size.height));
@@ -702,7 +725,7 @@ void ShadowMappingPoint::Free()
 
     m_Pipeline = nullptr;
 
-    for (u32 side = 0; side < 6U; ++side)
+    for (u32 side = 0; side < s_PointSidesCount; ++side)
     {
         m_RenderTarget[side] = nullptr;
     }

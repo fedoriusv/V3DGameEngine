@@ -102,7 +102,9 @@ namespace v3d
 
         renderer::CommandList* const m_CmdList;
 
-        utils::IntrusivePointer<renderer::RenderTargetState> m_RenderTarget[6];
+        static const u32 s_PointSidesCount = 6;
+
+        utils::IntrusivePointer<renderer::RenderTargetState> m_RenderTarget[s_PointSidesCount];
         utils::IntrusivePointer<renderer::TextureCube> m_DepthAttachment;
 
         utils::IntrusivePointer<renderer::GraphicsPipelineState> m_Pipeline;
@@ -111,9 +113,10 @@ namespace v3d
         scene::CameraHelper* m_ShadowCamera = nullptr;
         core::Dimension2D m_Size = { 2048, 2048 };
 
-        std::array<core::Matrix4D, 6> m_LightSpaceMatrices;
+        std::array<core::Matrix4D, s_PointSidesCount> m_LightSpaceMatrices;
 
         bool m_UseMultiview = true;
+
     };
 
 } //namespace v3d
