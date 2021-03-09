@@ -14,9 +14,6 @@ namespace renderer
 {
 namespace vk
 {
-    constexpr u32 k_maxDescriptorSetIndex = 4;
-    constexpr u32 k_maxDescriptorBindingIndex = 8;
-
     /////////////////////////////////////////////////////////////////////////////////////////////////////
    
     /**
