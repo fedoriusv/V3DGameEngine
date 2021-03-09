@@ -37,10 +37,11 @@ namespace resource
         * @param const std::string name [required]
         * @param const renderer::ShaderHeader* header name [required]
         * @param const stream::Stream* stream [required]
+        * @param u32 flags [optional]
         * @return Shader resource, nullptr if failed
         */
         template<class TResource = renderer::Shader, class TResourceLoader>
-        const TResource* composeShader(renderer::Context* context, const std::string name, const renderer::ShaderHeader* header, const stream::Stream* stream);
+        const TResource* composeShader(renderer::Context* context, const std::string name, const renderer::ShaderHeader* header, const stream::Stream* stream, u32 flags = 0);
 
         /**
         * @brief loadShader
@@ -120,7 +121,7 @@ namespace resource
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     template<class TResource, class TResourceLoader>
-    inline const TResource* ResourceLoaderManager::composeShader(renderer::Context* context, const std::string name, const renderer::ShaderHeader* header, const stream::Stream* stream)
+    inline const TResource* ResourceLoaderManager::composeShader(renderer::Context* context, const std::string name, const renderer::ShaderHeader* header, const stream::Stream* stream, u32 flags)
     {
         static_assert(std::is_same<TResource, renderer::Shader>(), "wrong type");
         std::string innerName(name);
@@ -149,7 +150,7 @@ namespace resource
         auto resourceIter = m_resources.emplace(std::make_pair(resourceName, nullptr));
         if (resourceIter.second)
         {
-            TResourceLoader loader(context, header, stream, true);
+            TResourceLoader loader(context, header, stream, flags);
             Resource* res = loader.load(innerName);
             if (!res)
             {

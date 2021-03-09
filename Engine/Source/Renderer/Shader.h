@@ -38,6 +38,8 @@ namespace renderer
             ShaderModel_GLSL_450,
             ShaderModel_HLSL_5_0,
             ShaderModel_HLSL_5_1,
+            ShaderModel_HLSL_6_0,
+            ShaderModel_HLSL_6_1,
             ShaderModel_SpirV,
         };
 

@@ -25,7 +25,11 @@ namespace dx3d
         D3DDeviceCaps& operator=(const D3DDeviceCaps&) = delete;
 
         D3D12_FEATURE_DATA_ROOT_SIGNATURE rootSignatureVersion = {};
+
         D3D12_FEATURE_DATA_D3D12_OPTIONS featureOptions = {};
+        D3D12_FEATURE_DATA_D3D12_OPTIONS3 featureOptions3 = {};
+
+        D3D_SHADER_MODEL supportedShaderModel = D3D_SHADER_MODEL_5_1;
 
         bool globalComandListAllocator = false;
         bool immediateSubmitUpload = false;

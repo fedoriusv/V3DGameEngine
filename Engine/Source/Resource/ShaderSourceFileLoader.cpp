@@ -11,6 +11,7 @@
 
 #if D3D_RENDER
 #   include "ShaderHLSLDecoder.h"
+#   include "ShaderDXCDecoder.h"
 #endif // D3Dre
 
 
@@ -60,9 +61,26 @@ ShaderSourceFileLoader::ShaderSourceFileLoader(const renderer::Context* context,
         renderer::ShaderHeader header;
         header._contentType = renderer::ShaderHeader::ShaderResource::ShaderResource_Source;
         header._shaderModel = renderer::ShaderHeader::ShaderModel::ShaderModel_HLSL_5_1;
-        header._optLevel = (flags & ShaderSourceBuildFlag::ShaderSource_OptimisationPerformance) ? 2 : (flags & ShaderSourceBuildFlag::ShaderSource_OptimisationSize) ? 1 : 0;
         header._defines = defines;
 
+        header._optLevel = 0;
+        if (flags & (ShaderSourceBuildFlag::ShaderSource_OptimisationSize | ShaderSourceBuildFlag::ShaderSource_OptimisationPerformance))
+        {
+            header._optLevel = 3;
+        }
+        else if (flags & ShaderSourceBuildFlag::ShaderSource_OptimisationPerformance)
+        {
+            header._optLevel = 2;
+        }
+        else if (flags & ShaderSourceBuildFlag::ShaderSource_OptimisationSize)
+        {
+            header._optLevel = 1;
+        }
+
+        if (flags & ShaderSourceBuildFlag::ShaderSource_UseDXCompiler)
+        {
+            ResourceDecoderRegistration::registerDecoder(new ShaderDXCDecoder({ "vs", "ps" }, header, header._shaderModel, !(flags & ShaderSourceBuildFlag::ShaderSource_DontUseReflection)));
+        }
         ResourceDecoderRegistration::registerDecoder(new ShaderHLSLDecoder({ "vs", "ps" }, header, !(flags & ShaderSourceBuildFlag::ShaderSource_DontUseReflection)));
     }
 #endif
@@ -81,12 +99,13 @@ ShaderSourceFileLoader::ShaderSourceFileLoader(const renderer::Context* context,
     renderer::ShaderHeader header(type);
     header._contentType = renderer::ShaderHeader::ShaderResource::ShaderResource_Source;
     header._shaderModel = renderer::ShaderHeader::ShaderModel::ShaderModel_HLSL_5_1;
-    header._optLevel = (flags & ShaderSourceBuildFlag::ShaderSource_OptimisationPerformance) ? 2 : (flags & ShaderSourceBuildFlag::ShaderSource_OptimisationSize) ? 1 : 0;
     header._defines = defines;
     header._entryPoint = entryPoint;
+    header._optLevel = 0;
 
     if (context->getRenderType() == renderer::Context::RenderType::VulkanRender)
     {
+        header._optLevel = (flags & ShaderSourceBuildFlag::ShaderSource_OptimisationPerformance) ? 2 : (flags & ShaderSourceBuildFlag::ShaderSource_OptimisationSize) ? 1 : 0;
 #ifdef USE_SPIRV
         ResourceDecoderRegistration::registerDecoder(new ShaderSpirVDecoder({ "hlsl" }, header, !(flags & ShaderSourceBuildFlag::ShaderSource_DontUseReflection)));
 #endif
@@ -94,6 +113,24 @@ ShaderSourceFileLoader::ShaderSourceFileLoader(const renderer::Context* context,
 #if D3D_RENDER
     else if (context->getRenderType() == renderer::Context::RenderType::DirectXRender)
     {
+        if (flags & (ShaderSourceBuildFlag::ShaderSource_OptimisationSize | ShaderSourceBuildFlag::ShaderSource_OptimisationPerformance))
+        {
+            header._optLevel = 3;
+        }
+        else if (flags & ShaderSourceBuildFlag::ShaderSource_OptimisationPerformance)
+        {
+            header._optLevel = 2;
+        }
+        else if (flags & ShaderSourceBuildFlag::ShaderSource_OptimisationSize)
+        {
+            header._optLevel = 1;
+        }
+
+        if (flags & ShaderSourceBuildFlag::ShaderSource_UseDXCompiler)
+        {
+            header._shaderModel = renderer::ShaderHeader::ShaderModel::ShaderModel_HLSL_6_0;
+            ResourceDecoderRegistration::registerDecoder(new ShaderDXCDecoder({ "hlsl" }, header, header._shaderModel, !(flags & ShaderSourceBuildFlag::ShaderSource_DontUseReflection)));
+        }
         ResourceDecoderRegistration::registerDecoder(new ShaderHLSLDecoder({ "hlsl" }, header, !(flags & ShaderSourceBuildFlag::ShaderSource_DontUseReflection)));
     }
 #endif

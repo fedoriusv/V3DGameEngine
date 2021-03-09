@@ -76,6 +76,7 @@ Resource * ShaderSpirVDecoder::decode(const stream::Stream* stream, const std::s
                 break;
 
             case 2:
+            case 3:
                 options.SetOptimizationLevel(shaderc_optimization_level_performance);
                 break;
             }

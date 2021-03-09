@@ -11,6 +11,7 @@
 
 #ifdef D3D_RENDER
 #   include "ShaderHLSLDecoder.h"
+#   include "ShaderDXCDecoder.h"
 #endif
 
 namespace v3d
@@ -18,7 +19,7 @@ namespace v3d
 namespace resource
 {
 
-ShaderSourceStreamLoader::ShaderSourceStreamLoader(const renderer::Context* context, const renderer::ShaderHeader* header, const stream::Stream* stream, bool enableReflection) noexcept
+ShaderSourceStreamLoader::ShaderSourceStreamLoader(const renderer::Context* context, const renderer::ShaderHeader* header, const stream::Stream* stream, ShaderSourceBuildFlags flags) noexcept
     : m_stream(stream)
 {
     ASSERT(context, "context is nullptr");
@@ -28,7 +29,12 @@ ShaderSourceStreamLoader::ShaderSourceStreamLoader(const renderer::Context* cont
     {
         ASSERT(header, "nullptr");
 #ifdef USE_SPIRV
-        ResourceDecoderRegistration::registerDecoder(new ShaderSpirVDecoder(*header, enableReflection));
+        if (flags & ShaderSource_UseDXCompiler)
+        {
+            ASSERT(header->_shaderModel != renderer::ShaderHeader::ShaderModel::ShaderModel_GLSL_450, "Works only with HLSL lang");
+            ResourceDecoderRegistration::registerDecoder(new ShaderDXCDecoder(*header, renderer::ShaderHeader::ShaderModel::ShaderModel_SpirV, !(flags & ShaderSource_DontUseReflection)));
+        }
+        ResourceDecoderRegistration::registerDecoder(new ShaderSpirVDecoder(*header, !(flags & ShaderSource_DontUseReflection)));
 #endif //USE_SPIRV
         break;
     }
@@ -37,6 +43,10 @@ ShaderSourceStreamLoader::ShaderSourceStreamLoader(const renderer::Context* cont
     case renderer::Context::RenderType::DirectXRender:
     {
         ASSERT(header, "nullptr");
+        if (flags & ShaderSource_UseDXCompiler)
+        {
+            ResourceDecoderRegistration::registerDecoder(new ShaderDXCDecoder(*header, header->_shaderModel, !(flags & ShaderSource_DontUseReflection)));
+        }
         ResourceDecoderRegistration::registerDecoder(new ShaderHLSLDecoder(*header));
 
         break;

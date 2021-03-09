@@ -8,12 +8,46 @@
 
 namespace v3d
 {
+namespace resource
+{
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    /**
+    * @brief ShaderSourceBuildFlag enum.
+    * Flags uses inside childs of ResourceLoader
+    */
+    enum ShaderSourceBuildFlag
+    {
+        ShaderSource_DontUseReflection = 1 << 0,
+        ShaderSource_OptimisationSize = 1 << 1,
+        ShaderSource_OptimisationPerformance = 1 << 2,
+
+        ShaderSource_Patched = 1 << 3,
+        ShaderSource_UseDXCompiler = 1 << 4, //For D3D shader should be signed or feature ExperimentalShaderModels is enabled
+    };
+
+    using ShaderSourceBuildFlags = u32;
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
+
+} //namespace resource
+
 namespace renderer
 {
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    constexpr u32 k_maxDescriptorSetIndex = 4;
+    constexpr u32 k_maxDescriptorBindingIndex = 8;
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
+
     class Shader;
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    /**
+    * @brief ShaderType enum
+    */
     enum ShaderType : s16
     {
         ShaderType_Undefined = -1,
@@ -24,6 +58,9 @@ namespace renderer
     };
 
 
+    /**
+    * @brief DataType enum
+    */
     enum DataType : s32
     {
         DataType_None = -1,
@@ -47,7 +84,7 @@ namespace renderer
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
-    * ShaderProgramDescription
+    * @brief ShaderProgramDescription struct
     */
     struct ShaderProgramDescription
     {
@@ -62,7 +99,7 @@ namespace renderer
     };
 
     /**
-    * ShaderParam
+    * @brief ShaderParam struct
     */
     struct ShaderParam
     {
@@ -80,6 +117,11 @@ namespace renderer
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    /**
+    * @brief ShaderTypeString function
+    * @param ShaderType type
+    * @return shader string name
+    */
     inline std::string ShaderTypeString(ShaderType type)
     {
         switch (type)

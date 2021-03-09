@@ -31,26 +31,52 @@ void D3DDeviceCaps::initialize(ID3D12Device* device)
         }
     }
 
+    {
+        HRESULT result = device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS3, &featureOptions3, sizeof(featureOptions3));
+        if (FAILED(result))
+        {
+            LOG_WARNING("D3DDeviceCaps::initialize: CheckFeatureSupport D3D12_FEATURE_D3D12_OPTIONS3 is failed. Error %s", D3DDebug::stringError(result).c_str());
+        }
+    }
+
     for (u32 i = 0; i < Format::Format_Count; ++i)
     {
-        D3D12_FEATURE_DATA_FORMAT_SUPPORT featureData = {};
-        featureData.Format = D3DImage::convertImageFormatToD3DFormat((Format)i);
-        if (featureData.Format == DXGI_FORMAT_UNKNOWN)
+        D3D12_FEATURE_DATA_FORMAT_SUPPORT formatSupport = {};
+        formatSupport.Format = D3DImage::convertImageFormatToD3DFormat((Format)i);
+        if (formatSupport.Format == DXGI_FORMAT_UNKNOWN)
         {
             continue;
         }
 
-        HRESULT result = device->CheckFeatureSupport(D3D12_FEATURE_FORMAT_SUPPORT, &featureData, sizeof(featureData));
+        HRESULT result = device->CheckFeatureSupport(D3D12_FEATURE_FORMAT_SUPPORT, &formatSupport, sizeof(formatSupport));
         if (FAILED(result))
         {
             LOG_WARNING("D3DDeviceCaps::initialize: CheckFeatureSupport D3D12_FEATURE_FORMAT_SUPPORT is failed. Error %s", D3DDebug::stringError(result).c_str());
         }
         else
         {
-            m_imageFormatSupport[i][TilingType_Optimal]._supportSampled = (featureData.Support1 & D3D12_FORMAT_SUPPORT1_SHADER_SAMPLE) ? true : false;
-            m_imageFormatSupport[i][TilingType_Optimal]._supportAttachment = ((featureData.Support1 & D3D12_FORMAT_SUPPORT1_RENDER_TARGET) || (featureData.Support1 & D3D12_FORMAT_SUPPORT1_DEPTH_STENCIL)) ? true : false;
-            m_imageFormatSupport[i][TilingType_Optimal]._supportMip = (featureData.Support1 & D3D12_FORMAT_SUPPORT1_MIP) ? true : false;
+            m_imageFormatSupport[i][TilingType_Optimal]._supportSampled = (formatSupport.Support1 & D3D12_FORMAT_SUPPORT1_SHADER_SAMPLE) ? true : false;
+            m_imageFormatSupport[i][TilingType_Optimal]._supportAttachment = ((formatSupport.Support1 & D3D12_FORMAT_SUPPORT1_RENDER_TARGET) || (formatSupport.Support1 & D3D12_FORMAT_SUPPORT1_DEPTH_STENCIL)) ? true : false;
+            m_imageFormatSupport[i][TilingType_Optimal]._supportMip = (formatSupport.Support1 & D3D12_FORMAT_SUPPORT1_MIP) ? true : false;
         }
+    }
+
+    {
+        D3D12_FEATURE_DATA_SHADER_MODEL shaderModel = {};
+        shaderModel.HighestShaderModel = D3D_SHADER_MODEL_6_5; //set max
+        HRESULT result = device->CheckFeatureSupport(D3D12_FEATURE_SHADER_MODEL, &shaderModel, sizeof(shaderModel));
+        if (SUCCEEDED(result))
+        {
+            supportedShaderModel = shaderModel.HighestShaderModel;
+        }
+    }
+
+
+    //set features
+
+    if ((supportedShaderModel >= D3D_SHADER_MODEL_6_1) && (featureOptions3.ViewInstancingTier >= D3D12_VIEW_INSTANCING_TIER_2) && (D3D12_MAX_VIEW_INSTANCE_COUNT >= 6U)) //TODO D3D12_MAX_VIEW_INSTANCE_COUNT remove condition after api update
+    {
+        supportMultiview = true;
     }
 
     globalComandListAllocator = false; //TODO has memory leak when command lists reset

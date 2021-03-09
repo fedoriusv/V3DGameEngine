@@ -45,7 +45,7 @@ MeshAssimpDecoder::~MeshAssimpDecoder()
 {
 }
 
-Resource * MeshAssimpDecoder::decode(const stream::Stream* stream, const std::string& name) const
+Resource* MeshAssimpDecoder::decode(const stream::Stream* stream, const std::string& name) const
 {
     if (stream->size() > 0)
     {

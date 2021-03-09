@@ -41,10 +41,6 @@ ShaderHLSLDecoder::ShaderHLSLDecoder(std::vector<std::string> supportedExtension
 {
 }
 
-ShaderHLSLDecoder::~ShaderHLSLDecoder()
-{
-}
-
 Resource* ShaderHLSLDecoder::decode(const stream::Stream* stream, const std::string& name) const
 {
     if (stream->size() > 0)
@@ -58,7 +54,7 @@ Resource* ShaderHLSLDecoder::decode(const stream::Stream* stream, const std::str
 
         if (!isHLSL(m_header._shaderModel))
         {
-            LOG_ERROR("ShaderHLSLDecoder::decode support only HLSL language");
+            LOG_ERROR("ShaderHLSLDecoder::decode support SM5.0 and SM5.1 HLSL language only");
             return nullptr;
         }
 
@@ -98,6 +94,7 @@ Resource* ShaderHLSLDecoder::decode(const stream::Stream* stream, const std::str
                 return renderer::ShaderType::ShaderType_Undefined;
             };
 
+            static_assert(renderer::ShaderType::ShaderType_Count == 2, "diff size. Add new types");
             renderer::ShaderType type = m_header._type == renderer::ShaderType::ShaderType_Undefined ? getShaderTypeFromName(name) : m_header._type;
 
             std::string shaderVersion = "";
@@ -108,36 +105,44 @@ Resource* ShaderHLSLDecoder::decode(const stream::Stream* stream, const std::str
                 {
                 case renderer::ShaderType::ShaderType_Vertex:
                 {
-                    if (model == renderer::ShaderHeader::ShaderModel::ShaderModel_Default ||
-                        model == renderer::ShaderHeader::ShaderModel::ShaderModel_HLSL_5_1)
+                    switch (model)
                     {
-                        shaderModel = renderer::ShaderHeader::ShaderModel::ShaderModel_HLSL_5_1;
-                        shaderVersion = "vs_5_1";
-                    }
-                    else
-                    {
-                        ASSERT(model >= renderer::ShaderHeader::ShaderModel::ShaderModel_HLSL_5_0, "min version of ShaderModel5.0");
+                    case renderer::ShaderHeader::ShaderModel::ShaderModel_HLSL_5_0:
                         shaderModel = renderer::ShaderHeader::ShaderModel::ShaderModel_HLSL_5_0;
                         shaderVersion = "vs_5_0";
+                        return true;
+
+                    case renderer::ShaderHeader::ShaderModel::ShaderModel_Default:
+                    case renderer::ShaderHeader::ShaderModel::ShaderModel_HLSL_5_1:
+                        shaderModel = renderer::ShaderHeader::ShaderModel::ShaderModel_HLSL_5_1;
+                        shaderVersion = "vs_5_1";
+                        return true;
+
+                    default:
+                        shaderVersion = "vs_x_x";
+                        return false;
                     }
-                    return true;
                 }
 
                 case renderer::ShaderType::ShaderType_Fragment:
                 {
-                    if (model == renderer::ShaderHeader::ShaderModel::ShaderModel_Default ||
-                        model == renderer::ShaderHeader::ShaderModel::ShaderModel_HLSL_5_1)
+                    switch (model)
                     {
-                        shaderModel = renderer::ShaderHeader::ShaderModel::ShaderModel_HLSL_5_1;
-                        shaderVersion = "ps_5_1";
-                    }
-                    else
-                    {
-                        ASSERT(model >= renderer::ShaderHeader::ShaderModel::ShaderModel_HLSL_5_0, "min version of ShaderModel5.0");
+                    case renderer::ShaderHeader::ShaderModel::ShaderModel_HLSL_5_0:
                         shaderModel = renderer::ShaderHeader::ShaderModel::ShaderModel_HLSL_5_0;
                         shaderVersion = "ps_5_0";
+                        return true;
+
+                    case renderer::ShaderHeader::ShaderModel::ShaderModel_Default:
+                    case renderer::ShaderHeader::ShaderModel::ShaderModel_HLSL_5_1:
+                        shaderModel = renderer::ShaderHeader::ShaderModel::ShaderModel_HLSL_5_1;
+                        shaderVersion = "ps_5_1";
+                        return true;
+
+                    default:
+                        shaderVersion = "ps_x_x";
+                        return false;
                     }
-                    return true;
                 }
 
                 default:
@@ -213,20 +218,20 @@ Resource* ShaderHLSLDecoder::decode(const stream::Stream* stream, const std::str
             }
 #if (DEBUG & D3D_DEBUG)
             {
-                ID3DBlob* disassambleShader = nullptr;
+                ID3DBlob* disassembleShader = nullptr;
 
                 ASSERT(shader, "nullptr");
                 UINT flags = D3D_DISASM_ENABLE_INSTRUCTION_OFFSET;
-                HRESULT result = D3DDisassemble(shader->GetBufferPointer(), shader->GetBufferSize(), flags, "", &disassambleShader);
+                HRESULT result = D3DDisassemble(shader->GetBufferPointer(), shader->GetBufferSize(), flags, "", &disassembleShader);
                 if (SUCCEEDED(result))
                 {
-                    std::string disassambleShaderCode(reinterpret_cast<c8*>(disassambleShader->GetBufferSize(), disassambleShader->GetBufferPointer()));
-                    LOG_DEBUG("Disassemble [%s]: \n %s", name.c_str(), disassambleShaderCode.c_str());
+                    std::string disassembleShaderCode(reinterpret_cast<c8*>(disassembleShader->GetBufferSize(), disassembleShader->GetBufferPointer()));
+                    LOG_DEBUG("Disassemble [%s]: \n %s", name.c_str(), disassembleShaderCode.c_str());
                 }
 
-                if (disassambleShader)
+                if (disassembleShader)
                 {
-                    disassambleShader->Release();
+                    disassembleShader->Release();
                 }
             }
 #endif
@@ -269,6 +274,7 @@ Resource* ShaderHLSLDecoder::decode(const stream::Stream* stream, const std::str
             Resource* resource = new renderer::Shader(resourceHeader);
             resource->init(resourceBinary);
 
+            shader->Release();
             return resource;
         }
         else
@@ -277,11 +283,11 @@ Resource* ShaderHLSLDecoder::decode(const stream::Stream* stream, const std::str
             utils::Timer timer;
             timer.start();
 #endif
-            //TODO
+            //TODO binary data
 #if DEBUG
             timer.stop();
             u64 time = timer.getTime<utils::Timer::Duration_MilliSeconds>();
-            LOG_DEBUG("ShaderSpirVDecoder::decode , shader %s, is loaded. Time %.4f sec", name.c_str(), static_cast<f32>(time) / 1000.0f);
+            LOG_DEBUG("ShaderSpirVDecoder::decode, shader %s, is loaded. Time %.4f sec", name.c_str(), static_cast<f32>(time) / 1000.0f);
 #endif
             ASSERT(false, "not impl");
             return nullptr;

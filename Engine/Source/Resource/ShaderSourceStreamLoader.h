@@ -2,6 +2,7 @@
 
 #include "ResourceLoader.h"
 #include "ResourceDecoderRegistration.h"
+#include "Renderer/ShaderProperties.h"
 #include "Stream/Stream.h"
 
 namespace v3d
@@ -37,7 +38,7 @@ namespace resource
         * @param const stream::Stream* stream [required]
         * @param bool enableReflection [optional]
         */
-        ShaderSourceStreamLoader(const renderer::Context* context, const renderer::ShaderHeader* header, const stream::Stream* stream, bool enableReflection = true) noexcept;
+        ShaderSourceStreamLoader(const renderer::Context* context, const renderer::ShaderHeader* header, const stream::Stream* stream, ShaderSourceBuildFlags flags = 0) noexcept;
         ~ShaderSourceStreamLoader();
 
         /**

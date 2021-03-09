@@ -14,7 +14,8 @@ namespace resource
 
     /**
     * @brief ShaderHLSLDecoder decoder.
-    * Support source formats: "vs", "ps", "hlsl"
+    * Support source formats: "vs", "ps", "hlsl".
+    * Support shader model 5.0, 5.1
     */
     class ShaderHLSLDecoder final : public ResourceDecoder
     {
@@ -23,7 +24,7 @@ namespace resource
         ShaderHLSLDecoder(const renderer::ShaderHeader& header, bool reflections = true) noexcept;
         ShaderHLSLDecoder(std::vector<std::string> supportedExtensions, const renderer::ShaderHeader& header, bool reflections = true) noexcept;
 
-        ~ShaderHLSLDecoder();
+        ~ShaderHLSLDecoder() = default;
 
         Resource* decode(const stream::Stream* stream, const std::string& name = "") const override;
 
@@ -37,6 +38,6 @@ namespace resource
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-} //namespace decoders
+} //namespace resource
 } //namespace v3d
 #endif //D3D_RENDER
