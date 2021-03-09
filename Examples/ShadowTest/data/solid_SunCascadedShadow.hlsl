@@ -10,7 +10,7 @@ struct PS_ATTRIBUTES
     float4 Pos : SV_POSITION;
     
     float4 LightModelViewProj[SHADOWMAP_CASCADE_COUNT] : LIGHTSPACE;
-    float4 PositionModelView : POSITION0;       
+    float4 PositionModelView : POSITION0;
     float3 PositionModel : POSITION1;
     float3 Normal : NORMAL;
     float2 UV : TEXTURE;
@@ -66,12 +66,12 @@ struct FS_Buffer
 };
 ConstantBuffer<FS_Buffer> fs_buffer : register(b3, space0);
 
-float depthTextureProj(float4 shadowCoord, float2 offset, uint cascadeIndex)
+float depthTextureProj(float4 shadowCoord, uint cascadeIndex)
 {
     float shadow = 1.0;
     if (shadowCoord.z > -1.0 && shadowCoord.z < 1.0) 
     {
-        float dist = cascadedShadowMap.SampleCmpLevelZero(shadowSampler, float3(shadowCoord.xy, cascadeIndex), shadowCoord.z, offset);
+        float dist = cascadedShadowMap.SampleCmpLevelZero(shadowSampler, float3(shadowCoord.xy, (float)cascadeIndex), shadowCoord.z);
         if ( shadowCoord.w > 0.0 && dist < shadowCoord.z ) 
         {
             shadow = 0.2;
@@ -84,7 +84,7 @@ float depthTextureProj(float4 shadowCoord, float2 offset, uint cascadeIndex)
 float shadowMask(float4 lightSpace, uint cascadeIndex)
 {
     float3 shadowCoord = lightSpace.xyz / lightSpace.w;
-    return depthTextureProj(float4(shadowCoord, lightSpace.w), float2(0.0, 0.0), cascadeIndex);
+    return depthTextureProj(float4(shadowCoord, lightSpace.w), cascadeIndex);
 }
 
 float4 main_FS(PS_ATTRIBUTES input) : SV_TARGET0
@@ -134,4 +134,5 @@ float4 main_FS(PS_ATTRIBUTES input) : SV_TARGET0
     }
 #endif
     return outFragColor;
+
 }
