@@ -1,6 +1,10 @@
 #Android Config
 cmake_minimum_required(VERSION 3.10)
 
+if(NOT TARGET_ANDROID)
+    message(FATAL_ERROR "Platform Android must be enabled for this config")
+endif()
+
 #set(CMAKE_TOOLCHAIN_FILE "${CMAKE_SOURCE_DIR}/scripts/android.toolchain.cmake" CACHE STRING "The Android toolchain file")
 
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -O0 -g -std=c++17")
@@ -11,6 +15,8 @@ set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fno-rtti")
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O2 -std=c++17")
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Wall")
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -fno-rtti -llog -landroid")
+
+add_definitions(-D_ANDROID -DUNICODE -D_UNICODE)
 
 message(STATUS "---------------------------")
 message(STATUS "Toolchain       : ${CMAKE_TOOLCHAIN_FILE}")

@@ -6,8 +6,8 @@ set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 option(BUILD_EXAMPLES "Generate Examples" ON)
 ##############################################################
 #Render SDK
-option(BUILD_VULKAN_SDK "Build use Vulkan SDK" ON)
-option(BUILD_DIRECTX_SDK "Use DirectX SDK" ON)
+option(BUILD_VULKAN_SDK_OPTION "Build use Vulkan SDK" ON)
+option(BUILD_DIRECTX_SDK_OPTION "Use DirectX SDK(Only for Windows Target)" ON)
 ##############################################################
 
 #ThirdParty
@@ -22,10 +22,16 @@ include(Config/ThirdParty.cmake)
 option(ASSIMP_LIB "Use Assimp lib" ON)
 #https://github.com/assimp/assimp.git
 
-option(HWCPipe_LIB "Use HWCPipe lib(Only for Android Target)" ON)
+option(HWCPipe_LIB_OPTION "Use HWCPipe lib(Only for Android Target)" ON)
 #https://github.com/ARM-software/HWCPipe.git
 
 option(SPIRV_INSTALL_FROM_GITHUB "implicity install SpirV" OFF)
+#https://github.com/google/shaderc.git
+#https://github.com/KhronosGroup/SPIRV-Cross.git
+
+option (DXCompiler_LIB_OPTION "Use custom DirectXShaderCompiler lib" OFF)
+#https://github.com/microsoft/DirectXShaderCompiler.git
+
 ##############################################################
 
 #Project
@@ -49,12 +55,15 @@ endif()
 if(TARGET_WIN AND WIN32)
     message(STATUS "Platform Windows")
     include(Config/Windows64.cmake)
-    add_definitions(-D_WINAPI -DUNICODE -D_UNICODE)
+    set(BUILD_VULKAN_SDK ${BUILD_VULKAN_SDK_OPTION})    
+    set(BUILD_DIRECTX_SDK ${BUILD_DIRECTX_SDK_OPTION})
+    set(DXCompiler_LIB ${DXCompiler_LIB_OPTION})
 elseif(TARGET_ANDROID)
     message(STATUS "Platform Android")
     include(Config/Android.cmake)
-    set(BUILD_DIRECTX_SDK OFF)
-    add_definitions(-D_ANDROID -DUNICODE -D_UNICODE)
+    set(BUILD_VULKAN_SDK ${BUILD_VULKAN_SDK_OPTION})
+    set(HWCPipe_LIB ${HWCPipe_LIB_OPTION})
+    set(DXCompiler_LIB ON)   
 else()
     message(FATAL_ERROR "Unknown platform. Only Platform Windows | Android supported")
 endif()
@@ -84,15 +93,20 @@ if(ASSIMP_LIB)
 endif()
 
 #HWCPipe
-if (HWCPipe_LIB AND TARGET_ANDROID)
+if(HWCPipe_LIB)
     set(THIRD_PARTY_LIB_DEFINE "${THIRD_PARTY_LIB_DEFINE} -DUSE_HWC_PIPE")
+endif()
+
+#DirectXShaderCompiler
+if(DXCompiler_LIB)
+    set(THIRD_PARTY_LIB_DEFINE "${THIRD_PARTY_LIB_DEFINE} -DUSE_CUSTOM_DXC")
 endif()
 ##############################################################
 
 #Vulkan
 if(BUILD_VULKAN_SDK)
     set(VULKAN_SDK_DEFINE "-DVULKAN_RENDER")
-    if (TARGET_ANDROID)
+    if(TARGET_ANDROID)
          set(VULKAN_SDK_DEFINE "${VULKAN_SDK_DEFINE} -DVULKAN_DYNAMIC")
     endif()
     #VK_SDK_PATH - must be added to system variables
@@ -137,7 +151,7 @@ if(BUILD_VULKAN_SDK)
 endif()
 
 #DirectX
-if (BUILD_DIRECTX_SDK)
+if(BUILD_DIRECTX_SDK)
     set(DIRECTX_SDK_DEFINE "-DD3D_RENDER")
     message(STATUS "DirectX SDK Path " ${DirectX_PREFIX_PATH})
 endif()
@@ -171,10 +185,10 @@ file(GLOB SCENE_SOURCES ${SOURCE_DIR}/Scene/*.cpp)
 
 file(GLOB COMMON_PLATFORM_HEADERS ${SOURCE_DIR}/Platform/*.h)
 file(GLOB COMMON_PLATFORM_SOURCES ${SOURCE_DIR}/Platform/*.cpp)
-if (TARGET_WIN)
+if(TARGET_WIN)
     file(GLOB PLATFORM_HEADERS ${SOURCE_DIR}/Platform/Windows/*.h)
     file(GLOB PLATFORM_SOURCES ${SOURCE_DIR}/Platform/Windows/*.cpp)
-elseif (TARGET_ANDROID)
+elseif(TARGET_ANDROID)
     file(GLOB PLATFORM_HEADERS ${SOURCE_DIR}/Platform/Android/*.h)
     file(GLOB PLATFORM_SOURCES ${SOURCE_DIR}/Platform/Android/*.cpp ${SOURCE_DIR}/Platform/Android/*.c)
 endif()
@@ -184,7 +198,7 @@ if (BUILD_VULKAN_SDK)
     file(GLOB VULKAN_SOURCES ${SOURCE_DIR}/Renderer/Vulkan/*.cpp)
 endif()
 
-if (BUILD_DIRECTX_SDK)
+if(BUILD_DIRECTX_SDK)
     file(GLOB DIRECTX_HEADERS ${SOURCE_DIR}/Renderer/D3D12/*.h)
     file(GLOB DIRECTX_SOURCES ${SOURCE_DIR}/Renderer/D3D12/*.cpp)
 endif()
@@ -203,11 +217,11 @@ source_group("Resource" FILES ${RESOURCE_HEADERS} ${RESOURCE_SOURCES})
 source_group("Stream" FILES ${STREAM_HEADERS} ${STREAM_SOURCES})
 source_group("Scene" FILES ${SCENE_HEADERS} ${SCENE_SOURCES})
 
-if (BUILD_VULKAN_SDK)
+if(BUILD_VULKAN_SDK)
     source_group("Renderer\\Vulkan" FILES ${VULKAN_HEADERS} ${VULKAN_SOURCES})
 endif()
 
-if (BUILD_DIRECTX_SDK)
+if(BUILD_DIRECTX_SDK)
     source_group("Renderer\\D3D12" FILES ${DIRECTX_HEADERS} ${DIRECTX_SOURCES})
 endif()
 
@@ -240,21 +254,27 @@ target_link_libraries(${ENGINE_NAME} crc32c)
 set(BUILD_DEPENDENCIES ${BUILD_DEPENDENCIES} crc32c)
 
 #Assimp	
-if (ASSIMP_LIB)
+if(ASSIMP_LIB)
     target_link_libraries(${ENGINE_NAME} assimp)
     set(BUILD_DEPENDENCIES ${BUILD_DEPENDENCIES} assimp)
 endif()
 
 #HWCPipe
-if (HWCPipe_LIB AND TARGET_ANDROID)
+if(HWCPipe_LIB)
     target_link_libraries(${ENGINE_NAME} hwcpipe)
     set(BUILD_DEPENDENCIES ${BUILD_DEPENDENCIES} hwcpipe)
 endif()
 
+# DXCompiler
+if(DXCompiler_LIB AND TARGET_WIN)
+    message(STATUS "Link DXCompiler dxcompiler.lib")
+    target_link_libraries(${ENGINE_NAME} ${ENGINE_PROJECT_DIR}/Engine/Libs/dxc/lib/x64/dxcompiler.lib)
+endif()
+
 #Spirv
-if (BUILD_VULKAN_SDK)
-    if ((IS_DIRECTORY ${SPIRV_FOLDER}/shaderc AND IS_DIRECTORY ${SPIRV_FOLDER}/SPIRV-Cross) OR SPIRV_INSTALL_FROM_GITHUB)
-        if (TARGET_ANDROID)
+if(BUILD_VULKAN_SDK)
+    if((IS_DIRECTORY ${SPIRV_FOLDER}/shaderc AND IS_DIRECTORY ${SPIRV_FOLDER}/SPIRV-Cross) OR SPIRV_INSTALL_FROM_GITHUB)
+        if(TARGET_ANDROID)
             target_link_libraries(${ENGINE_NAME} ${SHADERC_COMBINED_LIB_FILE_RELEASE})
             target_link_libraries(${ENGINE_NAME} ${SPIRV_CROSS_CPP_RELEASE})
             target_link_libraries(${ENGINE_NAME} ${SPIRV_CROSS_CORE_RELEASE})
@@ -283,7 +303,7 @@ set_target_properties(crc32c_sse42 PROPERTIES FOLDER Libs/crc32c)
 message(STATUS "Crc32 lib added")
 
 #Assimp
-if (ASSIMP_LIB)
+if(ASSIMP_LIB)
     message(STATUS "Add Assimp lib")
     add_subdirectory(Engine/Libs/assimp)
     if(TARGET_WIN)
@@ -297,18 +317,19 @@ if (ASSIMP_LIB)
         target_compile_options(assimp PRIVATE -D_SILENCE_ALL_CXX17_DEPRECATION_WARNINGS)   
         target_compile_options(zlib PRIVATE $<$<CONFIG:DEBUG>:/MTd> $<$<CONFIG:RELEASE>:/MT>)
         target_compile_options(zlibstatic PRIVATE $<$<CONFIG:DEBUG>:/MTd> $<$<CONFIG:RELEASE>:/MT>)
-    elseif (TARGET_ANDROID)
+    elseif(TARGET_ANDROID)
         target_compile_options(assimp PRIVATE -D_SILENCE_ALL_CXX17_DEPRECATION_WARNINGS -frtti)
     endif()
     message(STATUS "Assimp lib added")
 endif()
 
 #HWCPipe
-if (HWCPipe_LIB AND TARGET_ANDROID)
+if(HWCPipe_LIB)
     message(STATUS "Add HWCPipe lib")
     add_subdirectory(Engine/Libs/HWCPipe)
     message(STATUS "HWCPipe lib added")
 endif()
+
 ##############################################################
 
 #Examples

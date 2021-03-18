@@ -183,6 +183,10 @@ Resource* ShaderHLSLDecoder::decode(const stream::Stream* stream, const std::str
             }
             else if (m_header._optLevel == 2)
             {
+                compileFlags |= D3DCOMPILE_OPTIMIZATION_LEVEL2;
+            }
+            else if (m_header._optLevel == 3)
+            {
                 compileFlags |= D3DCOMPILE_OPTIMIZATION_LEVEL3;
             }
 #ifndef DEBUG

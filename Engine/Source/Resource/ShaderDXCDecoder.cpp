@@ -6,10 +6,15 @@
 #ifdef D3D_RENDER
 #include "Renderer/D3D12/D3DDebug.h"
 
-#include <dxcapi.h>
-#include <d3d12shader.h>
-#pragma comment(lib, "dxcompiler.lib")
-//#pragma comment(lib, "dxil.lib")
+#if USE_CUSTOM_DXC
+#   include "dxc/inc/dxcapi.h"
+#   include "dxc/inc/d3d12shader.h"
+#else
+#   include <dxcapi.h>
+#   include <d3d12shader.h>
+#   pragma comment(lib, "dxcompiler.lib")
+//#    pragma comment(lib, "dxil.lib")
+#endif
 
 namespace v3d
 {
@@ -57,7 +62,7 @@ Resource* ShaderDXCDecoder::decode(const stream::Stream* stream, const std::stri
 
     if (!isHLSL_ShaderModel6(m_header._shaderModel))
     {
-        LOG_ERROR("ShaderHLSLDecoder::decode support HLSL language only");
+        LOG_ERROR("ShaderDXCDecoder::decode support HLSL SM 6.0 and above");
         return nullptr;
     }
 
@@ -131,42 +136,6 @@ Resource* ShaderDXCDecoder::decode(const stream::Stream* stream, const std::stri
 
 bool ShaderDXCDecoder::compile(const std::string& source, const std::wstring& name, IDxcBlob*& shader) const
 {
-    IDxcCompiler* DXCompiler = nullptr;
-    {
-        HRESULT result = DxcCreateInstance(CLSID_DxcCompiler, IID_PPV_ARGS(&DXCompiler));
-        if (FAILED(result))
-        {
-            LOG_FATAL("ShaderDXCDecoder DxcCreateInstance can't create IDxcCompiler. Error: %s", renderer::dx3d::D3DDebug::stringError(result).c_str());
-            return false;
-        }
-    }
-
-    IDxcLibrary* DXLibrary = nullptr;
-    {
-        HRESULT result = DxcCreateInstance(CLSID_DxcLibrary, IID_PPV_ARGS(&DXLibrary));
-        if (FAILED(result))
-        {
-            DXCompiler->Release();
-
-            LOG_FATAL("ShaderDXCDecoder DxcCreateInstance can't create IDxcLibrary. Error: %s", renderer::dx3d::D3DDebug::stringError(result).c_str());
-            return false;
-        }
-    }
-
-    IDxcBlobEncoding* DXSource = nullptr;
-    LOG_DEBUG("Shader[%s]:\n %s\n", name.c_str(), source.c_str());
-    {
-        HRESULT result = DXLibrary->CreateBlobWithEncodingFromPinned(source.c_str(), static_cast<u32>(source.size()), CP_UTF8, &DXSource);
-        if (FAILED(result))
-        {
-            DXLibrary->Release();
-            DXCompiler->Release();
-
-            LOG_ERROR("ShaderDXCDecoder CreateBlobWithEncodingFromPinned can't create IDxcBlobEncoding. Error: %s", renderer::dx3d::D3DDebug::stringError(result).c_str());
-            return false;
-        }
-    }
-
     std::vector<LPCWSTR> arguments;
     if (m_output == renderer::ShaderHeader::ShaderModel::ShaderModel_SpirV)
     {
@@ -177,7 +146,8 @@ bool ShaderDXCDecoder::compile(const std::string& source, const std::wstring& na
     {
         arguments.push_back(L"-Od");
         arguments.push_back(L"-Vd");
-        //arguments.push_back(L"-Zi");
+        arguments.push_back(L"-Zi");
+
         //arguments.push_back(L"-Qembed_debug");
     }
     else if (m_header._optLevel == 1)
@@ -186,10 +156,14 @@ bool ShaderDXCDecoder::compile(const std::string& source, const std::wstring& na
     }
     else if (m_header._optLevel == 2)
     {
+        arguments.push_back(L"-O2");
+    }
+    else if (m_header._optLevel == 3)
+    {
         arguments.push_back(L"-O3");
     }
 #ifndef DEBUG
-    arguments.push_back(L"-WX");
+    arguments.push_back(L"-no-warnings");
 #endif
 
     auto getShaderTarget = [](renderer::ShaderType type, renderer::ShaderHeader::ShaderModel model) -> std::wstring
@@ -250,23 +224,150 @@ bool ShaderDXCDecoder::compile(const std::string& source, const std::wstring& na
         }
     };
 
+    const std::wstring entryPoint = m_header._entryPoint.empty() ? L"main" : std::wstring(m_header._entryPoint.cbegin(), m_header._entryPoint.cend());
+    const std::wstring target = getShaderTarget(m_header._type, m_header._shaderModel);
+
+#if USE_CUSTOM_DXC
+    IDxcCompiler3* DXCompiler = nullptr;
+    {
+        HRESULT result = DxcCreateInstance(CLSID_DxcCompiler, IID_PPV_ARGS(&DXCompiler));
+        if (FAILED(result))
+        {
+            LOG_FATAL("ShaderDXCDecoder DxcCreateInstance can't create IDxcCompiler. Error: %s", renderer::dx3d::D3DDebug::stringError(result).c_str());
+            return false;
+        }
+    }
+
+    for (u32 i = 0; i < m_header._defines.size(); ++i)
+    {
+        std::wstring defineArg = (L"-D");
+        defineArg.append(std::move(std::wstring(m_header._defines[i].first.cbegin(), m_header._defines[i].first.cend())));
+        defineArg.append(L" ");
+        defineArg.append(std::move(std::wstring(m_header._defines[i].second.cbegin(), m_header._defines[i].second.cend())));
+
+        arguments.push_back(defineArg.c_str());
+    }
+
+    std::wstring entryPointArg(L"-E " + entryPoint);
+    arguments.push_back(entryPointArg.c_str());
+
+    std::wstring targetArg(L"-T " + target);
+    arguments.push_back(targetArg.c_str()); //has compile error
+    ASSERT(false, "need implement");
+
+    DxcBuffer dxBuffer = {};
+    dxBuffer.Ptr = source.c_str();
+    dxBuffer.Size = static_cast<u32>(source.size());
+    dxBuffer.Encoding = CP_UTF8;
+
+    IDxcResult* compileResult = nullptr;
+    {
+        HRESULT result = DXCompiler->Compile(&dxBuffer, arguments.data(), static_cast<u32>(arguments.size()), nullptr, IID_PPV_ARGS(&compileResult));
+        if (FAILED(result))
+        {
+            DXCompiler->Release();
+
+            LOG_ERROR("ShaderDXCDecoder Compile can't create IDxcResult. Error: %s", renderer::dx3d::D3DDebug::stringError(result).c_str());
+            return false;
+        }
+    }
+
+    {
+        IDxcBlobUtf16* compileName = nullptr;
+        IDxcBlob* compileErrors = nullptr;
+        HRESULT result = compileResult->GetOutput(DXC_OUT_ERRORS, IID_PPV_ARGS(&compileErrors), &compileName);
+        if (FAILED(result))
+        {
+            LOG_ERROR("ShaderDXCDecoder GetOutput. Can't get an error buffer. Error: %s", renderer::dx3d::D3DDebug::stringError(result).c_str());
+            ASSERT(false, "wrong");
+        }
+
+        if (compileErrors && compileErrors->GetBufferSize() > 0)
+        {
+            std::string compileErrorString(reinterpret_cast<c8*>(compileErrors->GetBufferSize(), compileErrors->GetBufferPointer()));
+            LOG_ERROR("ShaderDXCDecoder Compile Error: %s", compileErrorString.c_str());
+        }
+
+        if (compileErrors)
+        {
+            compileErrors->Release();
+            compileErrors = nullptr;
+        }
+    }
+
+    {
+        IDxcBlobUtf16* compileName = nullptr;
+        IDxcBlob* compileBinary = nullptr;
+        HRESULT result = compileResult->GetOutput(DXC_OUT_OBJECT, IID_PPV_ARGS(&compileBinary), &compileName);
+        if (FAILED(result))
+        {
+            LOG_ERROR("ShaderDXCDecoder GetOutput. Can't get an binary buffer. Error: %s", renderer::dx3d::D3DDebug::stringError(result).c_str());
+            ASSERT(false, "wrong");
+        }
+
+        if (!compileBinary || compileBinary->GetBufferSize() == 0)
+        {
+            LOG_ERROR("ShaderDXCDecoder Compile is failed");
+            compileResult->Release();
+            DXCompiler->Release();
+
+            return false;
+        }
+    }
+    //TODO
+
+    return true;
+#else
+    IDxcCompiler2* DXCompiler = nullptr;
+    {
+        HRESULT result = DxcCreateInstance(CLSID_DxcCompiler, IID_PPV_ARGS(&DXCompiler));
+        if (FAILED(result))
+        {
+            LOG_FATAL("ShaderDXCDecoder DxcCreateInstance can't create IDxcCompiler. Error: %s", renderer::dx3d::D3DDebug::stringError(result).c_str());
+            return false;
+        }
+    }
+
+    IDxcLibrary* DXLibrary = nullptr;
+    {
+        HRESULT result = DxcCreateInstance(CLSID_DxcLibrary, IID_PPV_ARGS(&DXLibrary));
+        if (FAILED(result))
+        {
+            DXCompiler->Release();
+
+            LOG_FATAL("ShaderDXCDecoder DxcCreateInstance can't create IDxcLibrary. Error: %s", renderer::dx3d::D3DDebug::stringError(result).c_str());
+            return false;
+        }
+    }
+
+    IDxcBlobEncoding* DXSource = nullptr;
+    LOG_DEBUG("Shader[%s]:\n %s\n", name.c_str(), source.c_str());
+    {
+        HRESULT result = DXLibrary->CreateBlobWithEncodingFromPinned(source.c_str(), static_cast<u32>(source.size()), CP_UTF8, &DXSource);
+        if (FAILED(result))
+        {
+            DXLibrary->Release();
+            DXCompiler->Release();
+
+            LOG_ERROR("ShaderDXCDecoder CreateBlobWithEncodingFromPinned can't create IDxcBlobEncoding. Error: %s", renderer::dx3d::D3DDebug::stringError(result).c_str());
+            return false;
+        }
+    }
+
     std::vector<std::pair<std::wstring, std::wstring>> wsDefines(m_header._defines.size());
-    for (size_t i = 0; i < wsDefines.size(); ++i)
+    for (u32 i = 0; i < wsDefines.size(); ++i)
     {
         wsDefines[i].first = std::move(std::wstring(m_header._defines[i].first.cbegin(), m_header._defines[i].first.cend()));
         wsDefines[i].second = std::move(std::wstring(m_header._defines[i].second.cbegin(), m_header._defines[i].second.cend()));
     }
 
     std::vector<DxcDefine> dxcDefines(wsDefines.size());
-    for (size_t i = 0; i < m_header._defines.size(); ++i)
+    for (u32 i = 0; i < m_header._defines.size(); ++i)
     {
         DxcDefine& m = dxcDefines[i];
         m.Name = wsDefines[i].first.c_str();
         m.Value = wsDefines[i].second.c_str();
     }
-
-    const std::wstring entryPoint = m_header._entryPoint.empty() ? L"main" : std::wstring(m_header._entryPoint.cbegin(), m_header._entryPoint.cend());
-    const std::wstring target = getShaderTarget(m_header._type, m_header._shaderModel);
 
     IDxcOperationResult* compileResult = nullptr;
     HRESULT result = DXCompiler->Compile(DXSource, name.c_str(), entryPoint.c_str(), target.c_str(), arguments.data(), static_cast<u32>(arguments.size()), dxcDefines.data(), static_cast<u32>(dxcDefines.size()), nullptr, &compileResult);
@@ -277,7 +378,7 @@ bool ShaderDXCDecoder::compile(const std::string& source, const std::wstring& na
         DXLibrary->Release();
         DXCompiler->Release();
 
-        LOG_ERROR("ShaderDXCDecoder CreateBlobWithEncodingFromPinned can't create IDxcBlobEncoding. Error: %s", renderer::dx3d::D3DDebug::stringError(result).c_str());
+        LOG_ERROR("ShaderDXCDecoder Compile can't create IDxcBlobEncoding. Error: %s", renderer::dx3d::D3DDebug::stringError(result).c_str());
         return false;
     }
     DXSource->Release();
@@ -327,12 +428,15 @@ bool ShaderDXCDecoder::compile(const std::string& source, const std::wstring& na
     {
         IDxcBlobEncoding* disassembleShader = nullptr;
         ASSERT(DXSource, "nullptr");
-        HRESULT result = DXCompiler->Disassemble(shader, &disassembleShader);
-        if (SUCCEEDED(result))
+        if (m_output != renderer::ShaderHeader::ShaderModel::ShaderModel_SpirV)
         {
-            ASSERT(disassembleShader, "nullptr");
-            std::string disassembleShaderCode(reinterpret_cast<c8*>(disassembleShader->GetBufferSize(), disassembleShader->GetBufferPointer()));
-            LOG_DEBUG("Disassemble [%s]: \n %s", name.c_str(), disassembleShaderCode.c_str());
+            HRESULT result = DXCompiler->Disassemble(shader, &disassembleShader);
+            if (SUCCEEDED(result))
+            {
+                ASSERT(disassembleShader, "nullptr");
+                std::string disassembleShaderCode(reinterpret_cast<c8*>(disassembleShader->GetBufferSize(), disassembleShader->GetBufferPointer()));
+                LOG_DEBUG("Disassemble [%s]: \n %s", name.c_str(), disassembleShaderCode.c_str());
+            }
         }
 
         if (disassembleShader)
@@ -392,6 +496,7 @@ bool ShaderDXCDecoder::compile(const std::string& source, const std::wstring& na
     DXCompiler->Release();
 
     return true;
+#endif //USE_CUSTOM_DXC
 }
 
 bool ShaderDXCDecoder::reflect(stream::Stream* stream, IDxcBlob* shader) const

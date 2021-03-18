@@ -48,6 +48,12 @@ ShaderSourceFileLoader::ShaderSourceFileLoader(const renderer::Context* context,
             header._defines = defines;
             header._flags |= (flags & ShaderSourceBuildFlag::ShaderSource_Patched) ? ShaderSourceBuildFlag::ShaderSource_Patched : header._flags;
 
+            /*if (flags & ShaderSourceBuildFlag::ShaderSource_UseDXCompiler)
+            {
+                ASSERT(false, "assamble and reflaction is not supported now for spirv");
+                header._shaderModel = renderer::ShaderHeader::ShaderModel::ShaderModel_HLSL_6_1;
+                ResourceDecoderRegistration::registerDecoder(new ShaderDXCDecoder({ "vs", "ps" }, header, renderer::ShaderHeader::ShaderModel::ShaderModel_SpirV, !(flags & ShaderSourceBuildFlag::ShaderSource_DontUseReflection)));
+            }*/
             ResourceDecoderRegistration::registerDecoder(new ShaderSpirVDecoder( { "vs", "ps" }, header, !(flags & ShaderSourceBuildFlag::ShaderSource_DontUseReflection) ));
         }
 #else //USE_SPIRV
@@ -79,6 +85,7 @@ ShaderSourceFileLoader::ShaderSourceFileLoader(const renderer::Context* context,
 
         if (flags & ShaderSourceBuildFlag::ShaderSource_UseDXCompiler)
         {
+            header._shaderModel = renderer::ShaderHeader::ShaderModel::ShaderModel_HLSL_6_1;
             ResourceDecoderRegistration::registerDecoder(new ShaderDXCDecoder({ "vs", "ps" }, header, header._shaderModel, !(flags & ShaderSourceBuildFlag::ShaderSource_DontUseReflection)));
         }
         ResourceDecoderRegistration::registerDecoder(new ShaderHLSLDecoder({ "vs", "ps" }, header, !(flags & ShaderSourceBuildFlag::ShaderSource_DontUseReflection)));
@@ -107,6 +114,12 @@ ShaderSourceFileLoader::ShaderSourceFileLoader(const renderer::Context* context,
     {
         header._optLevel = (flags & ShaderSourceBuildFlag::ShaderSource_OptimisationPerformance) ? 2 : (flags & ShaderSourceBuildFlag::ShaderSource_OptimisationSize) ? 1 : 0;
 #ifdef USE_SPIRV
+        /*if (flags & ShaderSourceBuildFlag::ShaderSource_UseDXCompiler)
+        {
+            ASSERT(false, "assamble and reflaction is not supported now for spirv");
+            header._shaderModel = renderer::ShaderHeader::ShaderModel::ShaderModel_HLSL_6_1;
+            ResourceDecoderRegistration::registerDecoder(new ShaderDXCDecoder({ "hlsl" }, header, renderer::ShaderHeader::ShaderModel::ShaderModel_SpirV, !(flags & ShaderSourceBuildFlag::ShaderSource_DontUseReflection)));
+        }*/
         ResourceDecoderRegistration::registerDecoder(new ShaderSpirVDecoder({ "hlsl" }, header, !(flags & ShaderSourceBuildFlag::ShaderSource_DontUseReflection)));
 #endif
     }
@@ -128,7 +141,7 @@ ShaderSourceFileLoader::ShaderSourceFileLoader(const renderer::Context* context,
 
         if (flags & ShaderSourceBuildFlag::ShaderSource_UseDXCompiler)
         {
-            header._shaderModel = renderer::ShaderHeader::ShaderModel::ShaderModel_HLSL_6_0;
+            header._shaderModel = renderer::ShaderHeader::ShaderModel::ShaderModel_HLSL_6_1;
             ResourceDecoderRegistration::registerDecoder(new ShaderDXCDecoder({ "hlsl" }, header, header._shaderModel, !(flags & ShaderSourceBuildFlag::ShaderSource_DontUseReflection)));
         }
         ResourceDecoderRegistration::registerDecoder(new ShaderHLSLDecoder({ "hlsl" }, header, !(flags & ShaderSourceBuildFlag::ShaderSource_DontUseReflection)));

@@ -1,15 +1,15 @@
 @echo off
 
 setlocal
-if "%ANDROID_NDK%" == "" (
-	echo Error. Variable ANDROID_NDK doesn't defined
+if "%ANDROID_NDK_HOME%" == "" (
+	echo Error. Variable ANDROID_NDK_HOME doesn't defined
 	pause
 	exit
 ) 
 
-set C_ANDROID_TOOLCHAIN=%ANDROID_NDK%\build\cmake\android.toolchain.cmake
+set C_ANDROID_TOOLCHAIN=%ANDROID_NDK_HOME%\build\cmake\android.toolchain.cmake
 set C_ANDROID_ABI=arm64-v8a
-set C_ANDROID_PLATFORM=android-26
+set C_ANDROID_PLATFORM=android-28
 
 if not exist shaderc (
 	git clone https://github.com/google/shaderc.git
