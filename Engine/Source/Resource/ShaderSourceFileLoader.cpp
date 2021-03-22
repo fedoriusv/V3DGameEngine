@@ -48,12 +48,14 @@ ShaderSourceFileLoader::ShaderSourceFileLoader(const renderer::Context* context,
             header._defines = defines;
             header._flags |= (flags & ShaderSourceBuildFlag::ShaderSource_Patched) ? ShaderSourceBuildFlag::ShaderSource_Patched : header._flags;
 
+#ifdef PLATFORM_WINDOWS
             /*if (flags & ShaderSourceBuildFlag::ShaderSource_UseDXCompiler)
             {
                 ASSERT(false, "assamble and reflaction is not supported now for spirv");
                 header._shaderModel = renderer::ShaderHeader::ShaderModel::ShaderModel_HLSL_6_1;
                 ResourceDecoderRegistration::registerDecoder(new ShaderDXCDecoder({ "vs", "ps" }, header, renderer::ShaderHeader::ShaderModel::ShaderModel_SpirV, !(flags & ShaderSourceBuildFlag::ShaderSource_DontUseReflection)));
             }*/
+#endif //PLATFORM_WINDOWS
             ResourceDecoderRegistration::registerDecoder(new ShaderSpirVDecoder( { "vs", "ps" }, header, !(flags & ShaderSourceBuildFlag::ShaderSource_DontUseReflection) ));
         }
 #else //USE_SPIRV

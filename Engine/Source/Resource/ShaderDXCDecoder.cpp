@@ -3,7 +3,7 @@
 #include "Utils/Logger.h"
 #include "Utils//Timer.h"
 
-#ifdef D3D_RENDER
+#ifdef PLATFORM_WINDOWS
 #include "Renderer/D3D12/D3DDebug.h"
 
 #if USE_CUSTOM_DXC
@@ -1048,6 +1048,6 @@ bool checkBytecodeSigning(IDxcBlob* bytecode)
     return isSigned;
 }
 
-#endif //D3D_RENDER
 } //namespace resource
 } //namespace v3d
+#endif //PLATFORM_WINDOWS

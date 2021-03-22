@@ -29,11 +29,13 @@ ShaderSourceStreamLoader::ShaderSourceStreamLoader(const renderer::Context* cont
     {
         ASSERT(header, "nullptr");
 #ifdef USE_SPIRV
+#   ifdef PLATFORM_WINDOWS
         if (flags & ShaderSource_UseDXCompiler)
         {
             ASSERT(header->_shaderModel != renderer::ShaderHeader::ShaderModel::ShaderModel_GLSL_450, "Works only with HLSL lang");
             ResourceDecoderRegistration::registerDecoder(new ShaderDXCDecoder(*header, renderer::ShaderHeader::ShaderModel::ShaderModel_SpirV, !(flags & ShaderSource_DontUseReflection)));
         }
+#   endif //PLATFORM_WINDOWS
         ResourceDecoderRegistration::registerDecoder(new ShaderSpirVDecoder(*header, !(flags & ShaderSource_DontUseReflection)));
 #endif //USE_SPIRV
         break;

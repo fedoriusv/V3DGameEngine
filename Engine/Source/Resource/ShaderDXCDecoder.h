@@ -3,7 +3,7 @@
 #include "ResourceDecoder.h"
 #include "Renderer/Shader.h"
 
-#ifdef D3D_RENDER
+#ifdef PLATFORM_WINDOWS
 
 struct IDxcBlob;
 
@@ -45,4 +45,4 @@ namespace resource
 
 } //namespace resource
 } //namespace v3d
-#endif //D3D_RENDER
+#endif //PLATFORM_WINDOWS
