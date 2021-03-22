@@ -61,6 +61,8 @@ namespace vk
         bool renderpassTransformQCOM = false;
         bool fixRenderPassTransformQCOMDriverIssue = false;
 
+        bool ASTC_TexturesDecompressed = false;
+
         static bool checkInstanceExtension(const c8* extensionName);
         static bool checkDeviceExtension(VkPhysicalDevice physicalDevice, const c8* extensionName);
 

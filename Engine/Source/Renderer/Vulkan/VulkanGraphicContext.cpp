@@ -82,6 +82,9 @@ const std::vector<const c8*> k_deviceExtensionsList =
 #ifdef VK_QCOM_render_pass_transform
     VK_QCOM_RENDER_PASS_TRANSFORM_EXTENSION_NAME,
 #endif
+#ifdef VK_EXT_astc_decode_mode
+    VK_EXT_ASTC_DECODE_MODE_EXTENSION_NAME,
+#endif
 };
 
 

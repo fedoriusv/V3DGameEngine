@@ -1521,12 +1521,51 @@ bool VulkanImage::isCompressedFormat(VkFormat format)
     case VK_FORMAT_ASTC_12x10_SRGB_BLOCK:
     case VK_FORMAT_ASTC_12x12_UNORM_BLOCK:
     case VK_FORMAT_ASTC_12x12_SRGB_BLOCK:
-
         return true;
 
     default:
         return false;
     }
+}
+
+bool VulkanImage::isASTCFormat(VkFormat format)
+{
+    switch (format)
+    {
+    case VK_FORMAT_ASTC_4x4_UNORM_BLOCK:
+    case VK_FORMAT_ASTC_4x4_SRGB_BLOCK:
+    case VK_FORMAT_ASTC_5x4_UNORM_BLOCK:
+    case VK_FORMAT_ASTC_5x4_SRGB_BLOCK:
+    case VK_FORMAT_ASTC_5x5_UNORM_BLOCK:
+    case VK_FORMAT_ASTC_5x5_SRGB_BLOCK:
+    case VK_FORMAT_ASTC_6x5_UNORM_BLOCK:
+    case VK_FORMAT_ASTC_6x5_SRGB_BLOCK:
+    case VK_FORMAT_ASTC_6x6_UNORM_BLOCK:
+    case VK_FORMAT_ASTC_6x6_SRGB_BLOCK:
+    case VK_FORMAT_ASTC_8x5_UNORM_BLOCK:
+    case VK_FORMAT_ASTC_8x5_SRGB_BLOCK:
+    case VK_FORMAT_ASTC_8x6_UNORM_BLOCK:
+    case VK_FORMAT_ASTC_8x6_SRGB_BLOCK:
+    case VK_FORMAT_ASTC_8x8_UNORM_BLOCK:
+    case VK_FORMAT_ASTC_8x8_SRGB_BLOCK:
+    case VK_FORMAT_ASTC_10x5_UNORM_BLOCK:
+    case VK_FORMAT_ASTC_10x5_SRGB_BLOCK:
+    case VK_FORMAT_ASTC_10x6_UNORM_BLOCK:
+    case VK_FORMAT_ASTC_10x6_SRGB_BLOCK:
+    case VK_FORMAT_ASTC_10x8_UNORM_BLOCK:
+    case VK_FORMAT_ASTC_10x8_SRGB_BLOCK:
+    case VK_FORMAT_ASTC_10x10_UNORM_BLOCK:
+    case VK_FORMAT_ASTC_10x10_SRGB_BLOCK:
+    case VK_FORMAT_ASTC_12x10_UNORM_BLOCK:
+    case VK_FORMAT_ASTC_12x10_SRGB_BLOCK:
+    case VK_FORMAT_ASTC_12x12_UNORM_BLOCK:
+    case VK_FORMAT_ASTC_12x12_SRGB_BLOCK:
+        return true;
+
+    default:
+        return false;
+    }
+
 }
 
 bool VulkanImage::isSRGBFormat(VkFormat format)
@@ -1785,13 +1824,26 @@ bool VulkanImage::createViewImage()
         return VK_IMAGE_VIEW_TYPE_2D;
     };
 
+    void* vkExtensions = nullptr;
+#ifdef VK_EXT_astc_decode_mode
+    VkImageViewASTCDecodeModeEXT imageViewASTCDecodeModeEXT = {};
+    if (VulkanImage::isASTCFormat(m_format) && VulkanDeviceCaps::getInstance()->ASTC_TexturesDecompressed)
+    {
+        imageViewASTCDecodeModeEXT.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_ASTC_DECODE_MODE_EXT;
+        imageViewASTCDecodeModeEXT.pNext = nullptr;
+        imageViewASTCDecodeModeEXT.decodeMode = VK_FORMAT_R8G8B8A8_UNORM; //LDR only
+
+        vkExtensions = &imageViewASTCDecodeModeEXT;
+    }
+#endif //VK_EXT_astc_decode_mode
+
     switch (m_aspectMask)
     {
     case VK_IMAGE_ASPECT_COLOR_BIT:
     {
         VkImageViewCreateInfo imageViewCreateInfo = {};
         imageViewCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-        imageViewCreateInfo.pNext = nullptr;
+        imageViewCreateInfo.pNext = vkExtensions;
         imageViewCreateInfo.flags = 0;
         imageViewCreateInfo.image = m_image;
         imageViewCreateInfo.viewType = convertImageTypeToImageViewType(m_type, m_layersLevel == 6U, m_layersLevel > 1);
@@ -1813,7 +1865,7 @@ bool VulkanImage::createViewImage()
     {
         VkImageViewCreateInfo imageViewCreateInfo = {};
         imageViewCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-        imageViewCreateInfo.pNext = nullptr;
+        imageViewCreateInfo.pNext = vkExtensions;
         imageViewCreateInfo.flags = 0;
         imageViewCreateInfo.image = m_image;
         imageViewCreateInfo.viewType = convertImageTypeToImageViewType(m_type, m_layersLevel == 6U, m_layersLevel > 1);
@@ -1837,7 +1889,7 @@ bool VulkanImage::createViewImage()
         {
             VkImageViewCreateInfo imageViewCreateInfo = {};
             imageViewCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-            imageViewCreateInfo.pNext = nullptr;
+            imageViewCreateInfo.pNext = vkExtensions;
             imageViewCreateInfo.flags = 0;
             imageViewCreateInfo.image = m_image;
             imageViewCreateInfo.viewType = convertImageTypeToImageViewType(m_type, m_layersLevel == 6U, m_layersLevel > 1);
@@ -1869,7 +1921,7 @@ bool VulkanImage::createViewImage()
         {
             VkImageViewCreateInfo imageViewCreateInfo = {};
             imageViewCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-            imageViewCreateInfo.pNext = nullptr;
+            imageViewCreateInfo.pNext = vkExtensions;
             imageViewCreateInfo.flags = 0;
             imageViewCreateInfo.image = m_image;
             imageViewCreateInfo.viewType = convertImageTypeToImageViewType(m_type, false, m_layersLevel > 1);

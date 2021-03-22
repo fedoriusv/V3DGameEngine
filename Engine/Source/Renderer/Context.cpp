@@ -27,6 +27,14 @@ Context::~Context()
 
 Context* Context::createContext(const platform::Window* window, RenderType type, DeviceMask mask)
 {
+#ifdef PLATFORM_ANDROID
+    if (type == RenderType::DirectXRender)
+    {
+        LOG_WARNING("Context::createContext type cant be %d for Android. Force switch to Vulkan", type);
+        type = RenderType::VulkanRender;
+    }
+#endif //PLATFORM_ANDROID
+
     Context* context = nullptr;
     switch (type)
     {

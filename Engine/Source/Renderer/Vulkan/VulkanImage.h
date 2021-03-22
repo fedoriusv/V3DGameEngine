@@ -55,6 +55,7 @@ namespace vk
         static bool isColorFormat(VkFormat format);
         static bool isDepthStencilFormat(VkFormat format);
         static bool isCompressedFormat(VkFormat format);
+        static bool isASTCFormat(VkFormat format);
         static bool isSRGBFormat(VkFormat format);
         static std::tuple<VkAccessFlags, VkAccessFlags> getAccessFlagsFromImageLayout(VkImageLayout oldLayout, VkImageLayout newLayout);
 
