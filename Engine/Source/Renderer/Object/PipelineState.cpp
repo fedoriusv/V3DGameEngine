@@ -43,30 +43,49 @@ private:
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-GraphicsPipelineState::GraphicsPipelineState(CommandList& cmdList, const VertexInputAttribDescription& vertex, const ShaderProgram* const program, const RenderTargetState* const renderTaget) noexcept
+PipelineState::PipelineState(CommandList& cmdList) noexcept
     : m_cmdList(cmdList)
+    , m_tracker(this, std::bind(&GraphicsPipelineState::destroyPipelines, this, std::placeholders::_1))
+{
+}
+
+PipelineState::~PipelineState()
+{
+    LOG_DEBUG("PipelineState::PipelineState destructor %llx", this);
+    m_tracker.release();
+}
+
+void PipelineState::destroyPipelines(const std::vector<Pipeline*>& pipelines)
+{
+    if (m_cmdList.isImmediate())
+    {
+        for (auto& pipeline : pipelines)
+        {
+            m_cmdList.getContext()->removePipeline(pipeline);
+        }
+    }
+    else
+    {
+        m_cmdList.pushCommand(new CommandRemovePipelines(pipelines));
+    }
+}
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////
+
+GraphicsPipelineState::GraphicsPipelineState(CommandList& cmdList, const VertexInputAttribDescription& vertex, const ShaderProgram* const program, const RenderTargetState* const renderTaget) noexcept
+    : PipelineState(cmdList)
     , m_program(program)
     , m_renderTaget(renderTaget)
-
-    , m_tracker(this, std::bind(&GraphicsPipelineState::destroyPipelines, this, std::placeholders::_1))
 {
     m_pipelineStateDesc._vertexInputState._inputAttributes = vertex;
 }
 
 GraphicsPipelineState::GraphicsPipelineState(CommandList& cmdList, const GraphicsPipelineStateDescription& desc, const ShaderProgram* const program, const RenderTargetState* const renderTaget) noexcept
-    : m_cmdList(cmdList)
+    : PipelineState(cmdList)
     , m_pipelineStateDesc(desc)
     , m_program(program)
     , m_renderTaget(renderTaget)
-
-    , m_tracker(this, std::bind(&GraphicsPipelineState::destroyPipelines, this, std::placeholders::_1))
 {
-}
-
-GraphicsPipelineState::~GraphicsPipelineState()
-{
-    LOG_DEBUG("GraphicsPipelineState::GraphicsPipelineState destructor %llx", this);
-    m_tracker.release();
 }
 
 void GraphicsPipelineState::setPolygonMode(PolygonMode polygonMode)
@@ -243,7 +262,7 @@ PrimitiveTopology GraphicsPipelineState::getPrimitiveTopology() const
     return m_pipelineStateDesc._vertexInputState._primitiveTopology;
 }
 
-const GraphicsPipelineStateDescription & GraphicsPipelineState::getGraphicsPipelineStateDesc() const
+const GraphicsPipelineStateDescription& GraphicsPipelineState::getGraphicsPipelineStateDesc() const
 {
     return m_pipelineStateDesc;
 }
@@ -253,29 +272,22 @@ GraphicsPipelineStateDescription& GraphicsPipelineState::getGraphicsPipelineStat
     return m_pipelineStateDesc;
 }
 
-void GraphicsPipelineState::setShaderProgram(const ShaderProgram * program)
+void GraphicsPipelineState::setShaderProgram(const ShaderProgram* program)
 {
     m_program = program;
 }
 
-void GraphicsPipelineState::setRenderTaget(const RenderTargetState * target)
+void GraphicsPipelineState::setRenderTaget(const RenderTargetState* target)
 {
     m_renderTaget = target;
 }
 
-void GraphicsPipelineState::destroyPipelines(const std::vector<Pipeline*>& pipelines)
+/////////////////////////////////////////////////////////////////////////////////////////////////////
+
+ComputePipelineState::ComputePipelineState(CommandList& cmdList, const ShaderProgram* const program) noexcept
+    : PipelineState(cmdList)
+    , m_program(program)
 {
-    if (m_cmdList.isImmediate())
-    {
-        for (auto& pipeline : pipelines)
-        {
-            m_cmdList.getContext()->removePipeline(pipeline);
-        }
-    }
-    else
-    {
-        m_cmdList.pushCommand(new CommandRemovePipelines(pipelines));
-    }
 }
 
 } //renderer

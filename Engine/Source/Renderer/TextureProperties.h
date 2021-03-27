@@ -86,8 +86,8 @@ namespace renderer
     {
         TransitionOp_Undefined,
         TransitionOp_ShaderRead,
-        TransitionOp_ColorAttachmet,
-        TransitionOp_DepthStencilAttachmet,
+        TransitionOp_ColorAttachment,
+        TransitionOp_DepthStencilAttachment,
 
         TransitionOp_Present,
     };
@@ -101,7 +101,15 @@ namespace renderer
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    /**
+    * @brief k_generalLayer index for all layers
+    */
     constexpr s32 k_generalLayer = -1;
+
+    /**
+    * @brief k_allMipmapsLevels index for all mipmaps
+    */
+    constexpr s32 k_allMipmapsLevels = -1;
 
     /**
     * @brief AttachmentDescription struct. Uses inside a render target.

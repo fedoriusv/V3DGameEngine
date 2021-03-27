@@ -147,7 +147,7 @@ bool RenderTargetState::setColorTexture_Impl(u32 index, Texture* colorTexture, R
             attachmentDesc._layer = AttachmentDescription::compressLayer(k_generalLayer);
 
             attachmentDesc._initTransition = TransitionOp::TransitionOp_Undefined;
-            attachmentDesc._finalTransition = TransitionOp::TransitionOp_ColorAttachmet;
+            attachmentDesc._finalTransition = TransitionOp::TransitionOp_ColorAttachment;
 
             m_colorTextures[index] = std::make_tuple(colorTexture, attachmentDesc, clearColor);
         }
@@ -176,7 +176,7 @@ bool RenderTargetState::setColorTexture_Impl(u32 index, Texture* colorTexture, u
         attachmentDesc._layer = layer;
 
         attachmentDesc._initTransition = TransitionOp::TransitionOp_Undefined;
-        attachmentDesc._finalTransition = TransitionOp::TransitionOp_ColorAttachmet;
+        attachmentDesc._finalTransition = TransitionOp::TransitionOp_ColorAttachment;
 
         m_colorTextures[index] = std::make_tuple(colorTexture, attachmentDesc, clearColor);
 
@@ -202,7 +202,7 @@ bool RenderTargetState::setDepthStencilTexture_Impl(Texture* depthStencilTexture
         attachmentDesc._layer = AttachmentDescription::compressLayer(k_generalLayer);
 
         attachmentDesc._initTransition = TransitionOp::TransitionOp_Undefined;
-        attachmentDesc._finalTransition = TransitionOp::TransitionOp_DepthStencilAttachmet;
+        attachmentDesc._finalTransition = TransitionOp::TransitionOp_DepthStencilAttachment;
 
         m_depthStencilTexture = std::make_tuple(depthStencilTexture, attachmentDesc, clearDepth, clearStencil);
 
@@ -229,7 +229,7 @@ bool RenderTargetState::setDepthStencilTexture_Impl(Texture* depthStencilTexture
         attachmentDesc._layer = layer;
 
         attachmentDesc._initTransition = TransitionOp::TransitionOp_Undefined;
-        attachmentDesc._finalTransition = TransitionOp::TransitionOp_DepthStencilAttachmet;
+        attachmentDesc._finalTransition = TransitionOp::TransitionOp_DepthStencilAttachment;
 
         m_depthStencilTexture = std::make_tuple(depthStencilTexture, attachmentDesc, clearDepth, clearStencil);
 

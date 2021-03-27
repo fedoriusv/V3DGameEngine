@@ -26,7 +26,7 @@ Pipeline::PipelineType Pipeline::getType() const
     return m_pipelineType;
 }
 
-bool Pipeline::createShader(const Shader * shader)
+bool Pipeline::createShader(const Shader* shader)
 {
     if (!shader)
     {
@@ -36,7 +36,29 @@ bool Pipeline::createShader(const Shader * shader)
     return compileShader(&shader->getShaderHeader(), shader->m_source, shader->m_size);
 }
 
+bool Pipeline::createProgram(const ShaderProgramDescription& desc)
+{
+    std::vector<std::tuple<const ShaderHeader*, const void*, u32>> shadersData;
+    for (u32 type = ShaderType::ShaderType_Vertex; type < ShaderType_Count; ++type)
+    {
+        const Shader* shader = desc._shaders[type];
+        if (!shader)
+        {
+            continue;
+        }
+
+        shadersData.push_back({ &shader->getShaderHeader(), shader->m_source, shader->m_size });
+    }
+
+    return compileShaders(shadersData);
+}
+
 bool Pipeline::compileShader(const ShaderHeader* header, const void* source, u32 size)
+{
+    return false;
+}
+
+bool Pipeline::compileShaders(std::vector<std::tuple<const ShaderHeader*, const void*, u32>>& shaders)
 {
     return false;
 }

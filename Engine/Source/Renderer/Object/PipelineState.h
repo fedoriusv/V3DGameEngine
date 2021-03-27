@@ -24,8 +24,20 @@ namespace renderer
     {
     public:
 
-        PipelineState() = default;
-        virtual ~PipelineState() {};
+        PipelineState() = delete;
+        PipelineState(const PipelineState&) = delete;
+
+        explicit PipelineState(CommandList& cmdList) noexcept;
+        virtual ~PipelineState();
+
+    protected:
+
+        void destroyPipelines(const std::vector<Pipeline*>& pipelines);
+
+        friend CommandList;
+        CommandList& m_cmdList;
+
+        ObjectTracker<Pipeline> m_tracker;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -47,7 +59,7 @@ namespace renderer
 
         GraphicsPipelineState() = delete;
         GraphicsPipelineState(const GraphicsPipelineState&) = delete;
-        ~GraphicsPipelineState();
+        ~GraphicsPipelineState() = default;
 
         void setPolygonMode(PolygonMode polygonMode);
         void setFrontFace(FrontFace frontFace);
@@ -115,16 +127,13 @@ namespace renderer
         void setShaderProgram(const ShaderProgram* program);
         void setRenderTaget(const RenderTargetState* target);
 
-        void destroyPipelines(const std::vector<Pipeline*>& pipelines);
-
         friend CommandList;
-        CommandList& m_cmdList;
 
         GraphicsPipelineStateDescription m_pipelineStateDesc;
         const ShaderProgram*             m_program;
         const RenderTargetState*         m_renderTaget;
+    };
 
-        ObjectTracker<Pipeline> m_tracker;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

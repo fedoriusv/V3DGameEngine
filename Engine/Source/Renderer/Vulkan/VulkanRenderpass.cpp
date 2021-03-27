@@ -61,10 +61,10 @@ VkImageLayout VulkanRenderPass::convertTransitionStateToImageLayout(TransitionOp
     case TransitionOp::TransitionOp_ShaderRead:
         return VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
-    case TransitionOp::TransitionOp_ColorAttachmet:
+    case TransitionOp::TransitionOp_ColorAttachment:
         return VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
-    case TransitionOp::TransitionOp_DepthStencilAttachmet:
+    case TransitionOp::TransitionOp_DepthStencilAttachment:
         return VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
     case TransitionOp::TransitionOp_Present:

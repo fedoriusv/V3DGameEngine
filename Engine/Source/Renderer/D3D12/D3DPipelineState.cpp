@@ -429,8 +429,11 @@ bool D3DGraphicPipelineState::create(const PipelineGraphicInfo* pipelineInfo)
             const Shader::Attribute& attribute = pipelineInfo->_programDesc._shaders[ShaderType::ShaderType_Vertex]->getReflectionInfo()._inputAttribute[i];
 
             u32 semanticIndex = 0;
+#if USE_STRING_ID_SHADER
             separateSematic(attribute._name, semanticNames[i], semanticIndex);
-
+#else
+            ASSERT(false, "not impl");
+#endif
             D3D12_INPUT_ELEMENT_DESC& elementDesc = inputElementsDesc[i];
             elementDesc.SemanticName = semanticNames[i].data();
             elementDesc.SemanticIndex = semanticIndex;

@@ -472,8 +472,9 @@ void VulkanGraphicContext::setRenderTarget(const RenderPass::RenderPassInfo* ren
     }
 }
 
-void VulkanGraphicContext::removeFramebuffer(Framebuffer * framebuffer)
+void VulkanGraphicContext::removeFramebuffer(Framebuffer* framebuffer)
 {
+    ASSERT(framebuffer, "nullptr");
     VulkanFramebuffer* vkFramebuffer = static_cast<VulkanFramebuffer*>(framebuffer);
     if (m_currentContextState->isCurrentFramebuffer(vkFramebuffer) || vkFramebuffer->isCaptured())
     {
@@ -488,8 +489,9 @@ void VulkanGraphicContext::removeFramebuffer(Framebuffer * framebuffer)
     }
 }
 
-void VulkanGraphicContext::removeRenderPass(RenderPass * renderpass)
+void VulkanGraphicContext::removeRenderPass(RenderPass* renderpass)
 {
+    ASSERT(renderpass, "nullptr");
     VulkanRenderPass* vkRenderpass = static_cast<VulkanRenderPass*>(renderpass);
     if (m_currentContextState->isCurrentRenderPass(vkRenderpass) || vkRenderpass->isCaptured())
     {
@@ -579,6 +581,7 @@ Image* VulkanGraphicContext::createImage(TextureTarget target, Format format, co
 
 void VulkanGraphicContext::removeImage(Image* image)
 {
+    ASSERT(image, "nullptr");
     VulkanImage* vkImage = static_cast<VulkanImage*>(image);
     if (vkImage->isCaptured())
     {
@@ -599,7 +602,7 @@ void VulkanGraphicContext::removeImage(Image* image)
     }
 }
 
-Buffer * VulkanGraphicContext::createBuffer(Buffer::BufferType type, u16 usageFlag, u64 size, const std::string& name)
+Buffer* VulkanGraphicContext::createBuffer(Buffer::BufferType type, u16 usageFlag, u64 size, const std::string& name)
 {
 #if VULKAN_DEBUG
     LOG_DEBUG("VulkanGraphicContext::createBuffer");
@@ -615,6 +618,7 @@ Buffer * VulkanGraphicContext::createBuffer(Buffer::BufferType type, u16 usageFl
 
 void VulkanGraphicContext::removeBuffer(Buffer* buffer)
 {
+    ASSERT(buffer, "nullptr");
     VulkanBuffer* vkBuffer = static_cast<VulkanBuffer*>(buffer);
     if (vkBuffer->isCaptured())
     {
@@ -637,6 +641,7 @@ void VulkanGraphicContext::removeBuffer(Buffer* buffer)
 
 void VulkanGraphicContext::removeSampler(Sampler* sampler)
 {
+    ASSERT(sampler, "nullptr");
     VulkanSampler* vkSampler = static_cast<VulkanSampler*>(sampler);
     if (vkSampler->isCaptured())
     {

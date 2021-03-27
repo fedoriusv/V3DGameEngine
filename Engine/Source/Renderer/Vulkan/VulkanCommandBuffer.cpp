@@ -8,7 +8,7 @@
 #include "VulkanBuffer.h"
 #include "VulkanRenderpass.h"
 #include "VulkanFramebuffer.h"
-#include "VulkanPipeline.h"
+#include "VulkanGraphicPipeline.h"
 #include "VulkanSwapchain.h"
 
 namespace v3d
@@ -325,12 +325,9 @@ void VulkanCommandBuffer::cmdBeginRenderpass(const VulkanRenderPass* pass, const
     renderPassBeginInfo.clearValueCount = static_cast<u32>(clearValues.size());
     renderPassBeginInfo.pClearValues = clearValues.data();
 
-
-#if defined(PLATFORM_ANDROID)
-#   ifdef VK_QCOM_render_pass_transform
+#ifdef VK_QCOM_render_pass_transform
     VkRenderPassTransformBeginInfoQCOM renderPassTransformBeginInfoQCOM = {};
-    if (VulkanDeviceCaps::getInstance()->renderpassTransformQCOM &&
-        pass->getDescription()._countColorAttachments == 1 && pass->getAttachmentDescription(0)._swapchainImage)
+    if (VulkanDeviceCaps::getInstance()->renderpassTransformQCOM && pass->getDescription()._countColorAttachments == 1 && pass->getAttachmentDescription(0)._swapchainImage)
     {
         VkSurfaceTransformFlagBitsKHR preTransform = static_cast<VulkanGraphicContext*>(m_context)->getSwapchain()->getTransformFlag();
         if (preTransform != VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR)
@@ -340,12 +337,11 @@ void VulkanCommandBuffer::cmdBeginRenderpass(const VulkanRenderPass* pass, const
             renderPassTransformBeginInfoQCOM.transform = preTransform;
 
             renderPassBeginInfo.pNext = &renderPassTransformBeginInfoQCOM;
-
             LOG_DEBUG("VulkanCommandBuffer::VkRenderPassTransformBeginInfoQCOM, transform %d", preTransform);
         }
     }
-#   endif
 #endif
+
     if (VulkanDeviceCaps::getInstance()->supportRenderpass2)
     {
         VkSubpassBeginInfoKHR subpassBeginInfo = {};

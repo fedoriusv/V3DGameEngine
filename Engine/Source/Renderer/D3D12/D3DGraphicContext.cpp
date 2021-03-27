@@ -939,7 +939,7 @@ void D3DGraphicContext::switchRenderTargetTransitionToFinal(D3DGraphicsCommandLi
         const AttachmentDescription& attachment = target->getDescription()._attachments[i];
         switch (attachment._finalTransition)
         {
-        case TransitionOp::TransitionOp_ColorAttachmet:
+        case TransitionOp::TransitionOp_ColorAttachment:
             cmdList->transition(dxImage, D3D12_RESOURCE_STATE_RENDER_TARGET);
             break;
 
@@ -961,7 +961,7 @@ void D3DGraphicContext::switchRenderTargetTransitionToFinal(D3DGraphicsCommandLi
         D3DImage* dxImage = static_cast<D3DImage*>(target->getImages().back());
         const AttachmentDescription& attachment = target->getDescription()._attachments.back();
 
-        if (attachment._finalTransition == TransitionOp::TransitionOp_DepthStencilAttachmet)
+        if (attachment._finalTransition == TransitionOp::TransitionOp_DepthStencilAttachment)
         {
             cmdList->transition(dxImage, D3D12_RESOURCE_STATE_DEPTH_READ);
         }

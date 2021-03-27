@@ -111,12 +111,11 @@ namespace renderer
         virtual void setPipeline(const Pipeline::PipelineGraphicInfo* pipelineInfo) = 0;
         virtual void removePipeline(Pipeline* pipeline) = 0;
 
-        virtual void removeSampler(Sampler* sampler) = 0;
-
         //objects
         virtual Image* createImage(TextureTarget target, Format format, const core::Dimension3D& dimension, u32 layers, u32 mipmapLevel, TextureUsageFlags flags, [[maybe_unused]] const std::string& name = "") = 0;
         virtual Image* createImage(TextureTarget target, Format format, const core::Dimension3D& dimension, u32 layers, TextureSamples samples, TextureUsageFlags flags, [[maybe_unused]] const std::string& name = "") = 0;
         virtual void removeImage(Image* image) = 0;
+        virtual void removeSampler(Sampler* sampler) = 0;
 
         virtual Buffer* createBuffer(Buffer::BufferType type, u16 usageFlag, u64 size, [[maybe_unused]] const std::string& name = "") = 0;
         virtual void removeBuffer(Buffer* buffer) = 0;

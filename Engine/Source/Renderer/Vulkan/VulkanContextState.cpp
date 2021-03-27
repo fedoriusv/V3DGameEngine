@@ -6,7 +6,7 @@
 #ifdef VULKAN_RENDER
 #include "VulkanRenderpass.h"
 #include "VulkanFramebuffer.h"
-#include "VulkanPipeline.h"
+#include "VulkanGraphicPipeline.h"
 #include "VulkanDescriptorSet.h"
 #include "VulkanDescriptorPool.h"
 #include "VulkanImage.h"

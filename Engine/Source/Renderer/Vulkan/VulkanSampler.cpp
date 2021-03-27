@@ -5,7 +5,7 @@
 #ifdef VULKAN_RENDER
 #include "VulkanDebug.h"
 #include "VulkanDeviceCaps.h"
-#include "VulkanPipeline.h"
+#include "VulkanGraphicPipeline.h"
 
 namespace v3d
 {

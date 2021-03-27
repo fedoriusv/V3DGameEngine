@@ -44,6 +44,14 @@ void VulkanTransitionState::transitionImages(VulkanCommandBuffer* cmdBuffer, con
             }
         }
 
+        //to color attachment
+        if (newLayout == VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL)
+        {
+            ASSERT(VulkanImage::isColorFormat(vulkanImage->getFormat()), "wrong layout");
+            srcStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+            dstStage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+        }
+
         //to preset form attachment
         if (oldLayout == VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL && newLayout == VK_IMAGE_LAYOUT_PRESENT_SRC_KHR)
         {
