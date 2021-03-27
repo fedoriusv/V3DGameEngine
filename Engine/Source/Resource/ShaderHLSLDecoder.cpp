@@ -783,4 +783,4 @@ void reflectConstantBuffers(ID3D11ShaderReflection* reflector, const std::vector
 
 } //namespace resource
 } //namespace v3d
-#endif //USE_SPIRV
+#endif //D3D_RENDER

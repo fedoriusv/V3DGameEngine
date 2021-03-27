@@ -6,6 +6,7 @@
 #include "Utils/Timer.h"
 
 #define PATCH_SYSTEM 0
+#include "ShaderPatcher.h"
 
 #ifdef USE_SPIRV
 #   include <shaderc/libshaderc/include/shaderc/shaderc.hpp>
@@ -277,6 +278,7 @@ Resource * ShaderSpirVDecoder::decode(const stream::Stream* stream, const std::s
 #endif //(DEBUG & VULKAN_DEBUG)
 
             std::vector<u32> spirvBinary{ result.cbegin(), result.cend() };
+
 #if PATCH_SYSTEM
             if (shaderType == shaderc_fragment_shader && m_header._flags & 0x08) //patched
             {

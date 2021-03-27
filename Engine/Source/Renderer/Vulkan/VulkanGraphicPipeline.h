@@ -26,7 +26,7 @@ namespace vk
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
-    * VulkanGraphicPipeline final class. Vulkan Render side
+    * @brief VulkanGraphicPipeline final class. Vulkan Render side
     */
     class VulkanGraphicPipeline final : public Pipeline, public VulkanResource
     {
@@ -34,9 +34,6 @@ namespace vk
 
         VulkanGraphicPipeline(VkDevice device, RenderPassManager* renderpassManager, VulkanPipelineLayoutManager* pipelineLayoutManager);
         ~VulkanGraphicPipeline();
-
-        bool create(const PipelineGraphicInfo* pipelineInfo) override;
-        void destroy() override;
 
         static VkPolygonMode convertPolygonModeToVk(PolygonMode mode);
         static VkCullModeFlags convertCullModeToVk(CullMode mode);
@@ -60,9 +57,12 @@ namespace vk
 
     private:
 
-        bool compileShader(const ShaderHeader* header, const void* source, u32 size) override;
+        bool create(const PipelineGraphicInfo* pipelineInfo) override;
+        bool create(const PipelineComputeInfo* pipelineInfo) override;
 
-        bool createShaderModule(const Shader* shader, VkPipelineShaderStageCreateInfo& outPipelineShaderStageCreateInfo);
+        void destroy() override;
+
+        bool compileShaders(std::vector<std::tuple<const ShaderHeader*, const void*, u32>>& shaders) override;
         void deleteShaderModules();
 
         bool createCompatibilityRenderPass(const RenderPassDescription& renderpassDesc, RenderPass* &compatibilityRenderPass);
@@ -76,7 +76,7 @@ namespace vk
         RenderPass*  m_compatibilityRenderPass;
         ObjectTracker<RenderPass> m_trackerRenderPass;
 
-        VulkanPipelineLayoutDescription m_pielineLayoutDescription;
+        VulkanPipelineLayoutDescription m_pipelineLayoutDescription;
         VulkanPipelineLayout m_pipelineLayout;
 
         RenderPassManager* const m_renderpassManager;

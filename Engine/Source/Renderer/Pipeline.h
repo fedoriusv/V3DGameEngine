@@ -10,6 +10,8 @@ namespace v3d
 {
 namespace renderer
 {
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
+
     struct ShaderHeader;
 
     class Context;
@@ -19,17 +21,24 @@ namespace renderer
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
-    * Pipeline base class. Render side
+    * @brief Pipeline base class. Render side
     */
     class Pipeline : public RenderObject<Pipeline>, public utils::Observable
     {
     public:
+
+        /**
+        * @brief Pipeline PipelineType enum
+        */
         enum class PipelineType : u32
         {
             PipelineType_Graphic,
             PipelineType_Compute
         };
 
+        /**
+        * @brief PipelineGraphicInfo struct
+        */
         struct PipelineGraphicInfo
         {
             PipelineGraphicInfo() noexcept
@@ -44,18 +53,37 @@ namespace renderer
             ObjectTracker<Pipeline>*         _tracker;
         };
 
-        explicit Pipeline(PipelineType type) noexcept;
-        virtual ~Pipeline();
+        /**
+        * @brief PipelineComputeInfo struct
+        */
+        struct PipelineComputeInfo
+        {
+            PipelineComputeInfo() noexcept
+                : _tracker(nullptr)
+            {
+            }
 
-        virtual bool create(const PipelineGraphicInfo* pipelineInfo) = 0;
-        virtual void destroy() = 0;
+            ShaderProgramDescription _programDesc;
+
+            ObjectTracker<Pipeline>* _tracker;
+        };
 
         PipelineType getType() const;
 
     protected:
 
+        explicit Pipeline(PipelineType type) noexcept;
+        virtual ~Pipeline();
+
+        virtual bool create(const PipelineGraphicInfo* pipelineInfo) = 0;
+        virtual bool create(const PipelineComputeInfo* pipelineInfo) = 0;
+
+        virtual void destroy() = 0;
+
         bool createShader(const Shader* shader);
+        bool createProgram(const ShaderProgramDescription& desc);
         virtual bool compileShader(const ShaderHeader* header, const void* source, u32 size);
+        virtual bool compileShaders(std::vector<std::tuple<const ShaderHeader*, const void*, u32>>& shaders);
 
     private:
 
@@ -68,7 +96,7 @@ namespace renderer
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
-    * PipelineManager class
+    * @brief PipelineManager class
     */
     class PipelineManager final : utils::Observer
     {

@@ -232,7 +232,7 @@ void MyApplication::Load()
 
     resource::ResourceLoaderManager::getInstance()->addPath("examples/lighttest/");
 
-    m_RenderTarget = m_CommandList->createObject<renderer::RenderTargetState>(m_Window->getSize(), "RenderTarget");
+    m_RenderTarget = m_CommandList->createObject<renderer::RenderTargetState>(m_Window->getSize(), 0, "RenderTarget");
     m_RenderTarget->setColorTexture(0, m_CommandList->getBackbuffer(), 
         { 
             renderer::RenderTargetLoadOp::LoadOp_Clear, renderer::RenderTargetStoreOp::StoreOp_Store, core::Vector4D(0.0f) 

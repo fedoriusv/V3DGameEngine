@@ -12,7 +12,7 @@ namespace resource
     u32 getOpCode(u32 word);
     u32 getCountWords(u32 word);
     u32 getWordInstruction(u32 op, u32 count);
-    [[maybe_unused]] std::string getLiteralString(u32 word, u32& byteSize);
+    [[maybe_unused]] std::string getLiteralString(const u32& word, u32& byteSize);
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -34,7 +34,7 @@ namespace resource
     /**
     * ShaderPatcherSpirV class. Patcher
     */
-    class ShaderPatcherSpirV final
+    class ShaderPatcherSpirV
     {
     public:
 

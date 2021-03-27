@@ -19,11 +19,13 @@ namespace resource
     enum ShaderSourceBuildFlag
     {
         ShaderSource_DontUseReflection = 1 << 0,
-        ShaderSource_OptimisationSize = 1 << 1,
-        ShaderSource_OptimisationPerformance = 1 << 2,
 
-        ShaderSource_Patched = 1 << 3,
-        ShaderSource_UseDXCompiler = 1 << 4, //For D3D shader should be signed or feature ExperimentalShaderModels is enabled
+        ShaderSource_OptimizationSize = 1 << 1,
+        ShaderSource_OptimizationPerformance = 1 << 2,
+        ShaderSource_OptimizationFull = 1 << 3,
+
+        ShaderSource_Patched = 1 << 4,
+        ShaderSource_UseDXCompiler = 1 << 5, //For D3D shader should be signed or feature ExperimentalShaderModels is enabled
     };
 
     using ShaderSourceBuildFlags = u32;

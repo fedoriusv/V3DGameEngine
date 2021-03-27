@@ -24,13 +24,13 @@ u32 getWordInstruction(u32 op, u32 count)
     return count << 16 | op;
 }
 
-[[maybe_unused]] std::string getLiteralString(u32 word, u32& byteSize)
+[[maybe_unused]] std::string getLiteralString(const u32& word, u32& byteSize)
 {
     const c8* ch = reinterpret_cast<const c8*>(&word);
     std::string str(ch);
-    str.back() = '\0';
 
-    byteSize = (static_cast<u32>(str.size()) - 1) / 8 + 1;
+    u32 countBytes = static_cast<u32>(str.size()) + 1; //'\0'
+    byteSize = static_cast<u32>(ceilf(static_cast<f32>(countBytes) / static_cast<f32>(sizeof(u32)))) - 1;
 
     return str;
 }

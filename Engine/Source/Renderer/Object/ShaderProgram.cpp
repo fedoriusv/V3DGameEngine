@@ -214,6 +214,21 @@ ShaderProgram::ShaderProgram(renderer::CommandList& cmdList, const std::vector<c
     }
 }
 
+ShaderProgram::ShaderProgram(renderer::CommandList& cmdList, const Shader* computeShader) noexcept
+    : m_cmdList(cmdList)
+{
+    ASSERT(computeShader, "nullptr");
+    m_programInfo._shaders[computeShader->getShaderHeader()._type] = computeShader;
+    if (getShader(ShaderType::ShaderType_Compute))
+    {
+        composeProgramData({ computeShader });
+    }
+    else
+    {
+        ASSERT(false, "wrong program");
+    }
+}
+
 ShaderProgram::~ShaderProgram()
 {
     LOG_DEBUG("ShaderProgram::ShaderProgram destructor %llx", this);

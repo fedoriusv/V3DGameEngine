@@ -3,11 +3,14 @@
 #include "VulkanDebug.h"
 #include "VulkanDeviceCaps.h"
 #include "VulkanGraphicContext.h"
-#include "VulkanPipeline.h"
+#include "VulkanGraphicPipeline.h"
 #include "VulkanDescriptorSet.h"
 #include "Renderer/Shader.h"
 
 #include "Utils/Logger.h"
+
+#define PATCH_SYSTEM 0
+#include "Resource/ShaderPatcher.h"
 
 
 #ifdef VULKAN_RENDER
@@ -368,7 +371,7 @@ const VulkanPipelineLayout& VulkanGraphicPipeline::getDescriptorSetLayouts() con
 
 const VulkanPipelineLayoutDescription& VulkanGraphicPipeline::getPipelineLayoutDescription() const
 {
-    return m_pielineLayoutDescription;
+    return m_pipelineLayoutDescription;
 }
 
 VulkanGraphicPipeline::VulkanGraphicPipeline(VkDevice device, RenderPassManager* renderpassManager, VulkanPipelineLayoutManager* pipelineLayoutManager)
@@ -415,6 +418,15 @@ bool VulkanGraphicPipeline::create(const PipelineGraphicInfo* pipelineInfo)
 
     std::vector<VkPipelineShaderStageCreateInfo> pipelineShaderStageCreateInfos;
     const ShaderProgramDescription& programDesc = pipelineInfo->_programDesc;
+
+    if (!Pipeline::createProgram(programDesc))
+    {
+        LOG_ERROR("VulkanGraphicPipeline::create can't create modules for pipeline");
+        deleteShaderModules();
+        return false;
+    }
+
+    u32 moduleIndex = 0;
     for (u32 type = ShaderType::ShaderType_Vertex; type < ShaderType_Count; ++type)
     {
         if (!programDesc._shaders[type])
@@ -423,12 +435,15 @@ bool VulkanGraphicPipeline::create(const PipelineGraphicInfo* pipelineInfo)
         }
 
         VkPipelineShaderStageCreateInfo pipelineShaderStageCreateInfo = {};
-        if (!createShaderModule(programDesc._shaders[type], pipelineShaderStageCreateInfo))
-        {
-            LOG_ERROR("VulkanGraphicPipeline::create couldn't create modules for pipeline");
-            deleteShaderModules();
-            return false;
-        }
+        pipelineShaderStageCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+        pipelineShaderStageCreateInfo.pNext = nullptr;
+        pipelineShaderStageCreateInfo.flags = 0;
+        pipelineShaderStageCreateInfo.stage = convertShaderTypeToVkStage((ShaderType)type);
+        pipelineShaderStageCreateInfo.module = m_modules[moduleIndex];
+        pipelineShaderStageCreateInfo.pName = programDesc._shaders[type]->getShaderHeader()._entryPoint.c_str();
+        pipelineShaderStageCreateInfo.pSpecializationInfo = nullptr;
+
+        ++moduleIndex;
 
         pipelineShaderStageCreateInfos.push_back(pipelineShaderStageCreateInfo);
     }
@@ -436,8 +451,8 @@ bool VulkanGraphicPipeline::create(const PipelineGraphicInfo* pipelineInfo)
     graphicsPipelineCreateInfo.pStages = pipelineShaderStageCreateInfos.data();
 
     VulkanPipelineLayoutManager::DescriptorSetLayoutCreator layoutDesc(programDesc._shaders);
-    m_pielineLayoutDescription = layoutDesc._description;
-    m_pipelineLayout = m_pipelineLayoutManager->acquirePipelineLayout(m_pielineLayoutDescription);
+    m_pipelineLayoutDescription = layoutDesc._description;
+    m_pipelineLayout = m_pipelineLayoutManager->acquirePipelineLayout(m_pipelineLayoutDescription);
     graphicsPipelineCreateInfo.layout = m_pipelineLayout._pipelineLayout;
 
 
@@ -723,49 +738,68 @@ void VulkanGraphicPipeline::destroy()
     }
 }
 
-bool VulkanGraphicPipeline::compileShader(const ShaderHeader* header, const void * source, u32 size)
+bool VulkanGraphicPipeline::compileShaders(std::vector<std::tuple<const ShaderHeader*, const void*, u32>>& shaders)
 {
-    if (!source || size == 0)
-    {
-        ASSERT(false, "invalid source");
-        return false;
-    }
-
-    VkShaderModuleCreateInfo shaderModuleCreateInfo = {};
-    shaderModuleCreateInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-    shaderModuleCreateInfo.pNext = nullptr; //VkShaderModuleValidationCacheCreateInfoEXT
-    shaderModuleCreateInfo.flags = 0;
-    shaderModuleCreateInfo.pCode = reinterpret_cast<const u32*>(source);
-    shaderModuleCreateInfo.codeSize = size;
-
-    VkShaderModule module = VK_NULL_HANDLE;
-    VkResult result = VulkanWrapper::CreateShaderModule(m_device, &shaderModuleCreateInfo, VULKAN_ALLOCATOR, &module); //manager
-    if (result != VK_SUCCESS)
-    {
-        LOG_ERROR("VulkanGraphicPipeline::compileShader vkCreateShaderModule is failed. Error: %s", ErrorString(result).c_str());
-        return false;
-    }
-    m_modules.push_back(module);
-
-    return true;
-}
-
-bool VulkanGraphicPipeline::createShaderModule(const Shader* shader, VkPipelineShaderStageCreateInfo& outPipelineShaderStageCreateInfo)
-{
-    if (!shader || !VulkanGraphicPipeline::createShader(shader))
+    if (shaders.empty())
     {
         return false;
     }
 
-    const ShaderHeader& header = shader->getShaderHeader();
+#if PATCH_SYSTEM
+    resource::PatchRemoveUnusedLocations patch;
+    for (auto& shader : shaders)
+    {
+        std::vector<u32> spirv;
+        spirv.resize(std::get<2>(shader) / sizeof(u32));
+        memcpy(spirv.data(), std::get<1>(shader), std::get<2>(shader));
 
-    outPipelineShaderStageCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-    outPipelineShaderStageCreateInfo.pNext = nullptr;
-    outPipelineShaderStageCreateInfo.flags = 0;
-    outPipelineShaderStageCreateInfo.stage = convertShaderTypeToVkStage((ShaderType)header._type);
-    outPipelineShaderStageCreateInfo.module = m_modules.back();
-    outPipelineShaderStageCreateInfo.pName = header._entryPoint.c_str();
-    outPipelineShaderStageCreateInfo.pSpecializationInfo = nullptr;
+        patch.collectDataFromSpirv(spirv);
+    }
+#endif //PATCH_SYSTEM
+
+    for (auto& shader : shaders)
+    {
+        const void* source = std::get<1>(shader);
+        u32 size = std::get<2>(shader);
+        if (!source || size == 0)
+        {
+            ASSERT(false, "invalid source");
+            return false;
+        }
+
+#if PATCH_SYSTEM
+        std::vector<u32> patchedSpirv;
+        if (std::get<0>(shader)->_type == ShaderType::ShaderType_Vertex)
+        {
+            std::vector<u32> spirv;
+            spirv.resize(size / sizeof(u32));
+            memcpy(spirv.data(), source, size);
+
+            resource::ShaderPatcherSpirV patcher;
+            if (patcher.process(&patch, spirv, patchedSpirv))
+            {
+                source = patchedSpirv.data();
+                size = static_cast<u32>(patchedSpirv.size()) * sizeof(u32);
+            }
+        }
+#endif //PATCH_SYSTEM
+
+        VkShaderModuleCreateInfo shaderModuleCreateInfo = {};
+        shaderModuleCreateInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+        shaderModuleCreateInfo.pNext = nullptr; //VkShaderModuleValidationCacheCreateInfoEXT
+        shaderModuleCreateInfo.flags = 0;
+        shaderModuleCreateInfo.pCode = reinterpret_cast<const u32*>(source);
+        shaderModuleCreateInfo.codeSize = size;
+
+        VkShaderModule module = VK_NULL_HANDLE;
+        VkResult result = VulkanWrapper::CreateShaderModule(m_device, &shaderModuleCreateInfo, VULKAN_ALLOCATOR, &module); //manager
+        if (result != VK_SUCCESS)
+        {
+            LOG_ERROR("VulkanGraphicPipeline::compileShaders vkCreateShaderModule is failed. Error: %s", ErrorString(result).c_str());
+            return false;
+        }
+        m_modules.push_back(module);
+    }
 
     return true;
 }
@@ -789,7 +823,7 @@ bool VulkanGraphicPipeline::createCompatibilityRenderPass(const RenderPassDescri
         compatibilityRenderpassDesc._desc._attachments[index]._stencilLoadOp = RenderTargetLoadOp::LoadOp_DontCare;
         compatibilityRenderpassDesc._desc._attachments[index]._stencilStoreOp = RenderTargetStoreOp::StoreOp_DontCare;
         compatibilityRenderpassDesc._desc._attachments[index]._initTransition = TransitionOp::TransitionOp_Undefined;
-        compatibilityRenderpassDesc._desc._attachments[index]._finalTransition = TransitionOp::TransitionOp_ColorAttachmet;
+        compatibilityRenderpassDesc._desc._attachments[index]._finalTransition = TransitionOp::TransitionOp_ColorAttachment;
 
         compatibilityRenderpassDesc._desc._attachments[index]._backbuffer = false;
         compatibilityRenderpassDesc._desc._attachments[index]._layer = 0;
@@ -802,7 +836,7 @@ bool VulkanGraphicPipeline::createCompatibilityRenderPass(const RenderPassDescri
         compatibilityRenderpassDesc._desc._attachments.back()._stencilLoadOp = RenderTargetLoadOp::LoadOp_DontCare;
         compatibilityRenderpassDesc._desc._attachments.back()._stencilStoreOp = RenderTargetStoreOp::StoreOp_DontCare;
         compatibilityRenderpassDesc._desc._attachments.back()._initTransition = TransitionOp::TransitionOp_Undefined;
-        compatibilityRenderpassDesc._desc._attachments.back()._finalTransition = TransitionOp::TransitionOp_DepthStencilAttachmet;
+        compatibilityRenderpassDesc._desc._attachments.back()._finalTransition = TransitionOp::TransitionOp_DepthStencilAttachment;
 
         compatibilityRenderpassDesc._desc._attachments.back()._backbuffer = false;
         compatibilityRenderpassDesc._desc._attachments.back()._layer = 0;
@@ -872,6 +906,12 @@ bool VulkanGraphicPipeline::pipelineStatistic() const
         return true;
     }
 
+    return false;
+}
+
+bool VulkanGraphicPipeline::create(const PipelineComputeInfo* pipelineInfo)
+{
+    ASSERT(false, "cant be compute");
     return false;
 }
 

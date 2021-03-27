@@ -23,17 +23,32 @@ namespace resource
 ShaderSourceFileLoader::ShaderSourceFileLoader(const renderer::Context* context, const std::vector<std::pair<std::string, std::string>>& defines, ShaderSourceBuildFlags flags) noexcept
 {
     ASSERT(context, "context is nullptr");
+
+    u32 optimizationLevel = 0;
+    if (flags & ShaderSourceBuildFlag::ShaderSource_OptimizationFull)
+    {
+        optimizationLevel = 3;
+    }
+    else if (flags & ShaderSourceBuildFlag::ShaderSource_OptimizationPerformance)
+    {
+        optimizationLevel = 2;
+    }
+    else if (flags & ShaderSourceBuildFlag::ShaderSource_OptimizationSize)
+    {
+        optimizationLevel = 1;
+    }
+
     if (context->getRenderType() == renderer::Context::RenderType::VulkanRender)
     {
 #ifdef USE_SPIRV
         {
 #if USE_STRING_ID_SHADER
-            ASSERT(!(flags & ShaderSourceBuildFlag::ShaderSource_OptimisationSize || flags & ShaderSourceBuildFlag::ShaderSource_OptimisationPerformance), "define can't work with the flag because optimisation removes names from spirv");
+            ASSERT(!(flags & ShaderSourceBuildFlag::ShaderSource_OptimizationSize || flags & ShaderSourceBuildFlag::ShaderSource_OptimizationPerformance || flags & ShaderSourceBuildFlag::ShaderSource_OptimizationFull), "define can't work with the flag because optimization removes names from spirv");
 #endif
             renderer::ShaderHeader header;
             header._contentType = renderer::ShaderHeader::ShaderResource::ShaderResource_Source;
             header._shaderModel = renderer::ShaderHeader::ShaderModel::ShaderModel_GLSL_450;
-            header._optLevel = (flags & ShaderSourceBuildFlag::ShaderSource_OptimisationPerformance) ? 2 : (flags & ShaderSourceBuildFlag::ShaderSource_OptimisationSize) ? 1 : 0;
+            header._optLevel = optimizationLevel;
             header._defines = defines;
             header._flags |= (flags & ShaderSourceBuildFlag::ShaderSource_Patched) ? ShaderSourceBuildFlag::ShaderSource_Patched : header._flags;
 
@@ -44,7 +59,7 @@ ShaderSourceFileLoader::ShaderSourceFileLoader(const renderer::Context* context,
             renderer::ShaderHeader header;
             header._contentType = renderer::ShaderHeader::ShaderResource::ShaderResource_Source;
             header._shaderModel = renderer::ShaderHeader::ShaderModel::ShaderModel_HLSL_5_1;
-            header._optLevel = (flags & ShaderSourceBuildFlag::ShaderSource_OptimisationPerformance) ? 2 : (flags & ShaderSourceBuildFlag::ShaderSource_OptimisationSize) ? 1 : 0;
+            header._optLevel = optimizationLevel;
             header._defines = defines;
             header._flags |= (flags & ShaderSourceBuildFlag::ShaderSource_Patched) ? ShaderSourceBuildFlag::ShaderSource_Patched : header._flags;
 
@@ -69,21 +84,8 @@ ShaderSourceFileLoader::ShaderSourceFileLoader(const renderer::Context* context,
         renderer::ShaderHeader header;
         header._contentType = renderer::ShaderHeader::ShaderResource::ShaderResource_Source;
         header._shaderModel = renderer::ShaderHeader::ShaderModel::ShaderModel_HLSL_5_1;
+        header._optLevel = optimizationLevel;
         header._defines = defines;
-
-        header._optLevel = 0;
-        if (flags & (ShaderSourceBuildFlag::ShaderSource_OptimisationSize | ShaderSourceBuildFlag::ShaderSource_OptimisationPerformance))
-        {
-            header._optLevel = 3;
-        }
-        else if (flags & ShaderSourceBuildFlag::ShaderSource_OptimisationPerformance)
-        {
-            header._optLevel = 2;
-        }
-        else if (flags & ShaderSourceBuildFlag::ShaderSource_OptimisationSize)
-        {
-            header._optLevel = 1;
-        }
 
         if (flags & ShaderSourceBuildFlag::ShaderSource_UseDXCompiler)
         {
@@ -111,10 +113,22 @@ ShaderSourceFileLoader::ShaderSourceFileLoader(const renderer::Context* context,
     header._defines = defines;
     header._entryPoint = entryPoint;
     header._optLevel = 0;
+    if (flags & ShaderSourceBuildFlag::ShaderSource_OptimizationFull)
+    {
+        header._optLevel = 3;
+    }
+    else if (flags & ShaderSourceBuildFlag::ShaderSource_OptimizationPerformance)
+    {
+        header._optLevel = 2;
+    }
+    else if (flags & ShaderSourceBuildFlag::ShaderSource_OptimizationSize)
+    {
+        header._optLevel = 1;
+    }
 
     if (context->getRenderType() == renderer::Context::RenderType::VulkanRender)
     {
-        header._optLevel = (flags & ShaderSourceBuildFlag::ShaderSource_OptimisationPerformance) ? 2 : (flags & ShaderSourceBuildFlag::ShaderSource_OptimisationSize) ? 1 : 0;
+        header._optLevel = (flags & ShaderSourceBuildFlag::ShaderSource_OptimizationPerformance) ? 2 : (flags & ShaderSourceBuildFlag::ShaderSource_OptimizationSize) ? 1 : 0;
 #ifdef USE_SPIRV
         /*if (flags & ShaderSourceBuildFlag::ShaderSource_UseDXCompiler)
         {
@@ -128,19 +142,6 @@ ShaderSourceFileLoader::ShaderSourceFileLoader(const renderer::Context* context,
 #if D3D_RENDER
     else if (context->getRenderType() == renderer::Context::RenderType::DirectXRender)
     {
-        if (flags & (ShaderSourceBuildFlag::ShaderSource_OptimisationSize | ShaderSourceBuildFlag::ShaderSource_OptimisationPerformance))
-        {
-            header._optLevel = 3;
-        }
-        else if (flags & ShaderSourceBuildFlag::ShaderSource_OptimisationPerformance)
-        {
-            header._optLevel = 2;
-        }
-        else if (flags & ShaderSourceBuildFlag::ShaderSource_OptimisationSize)
-        {
-            header._optLevel = 1;
-        }
-
         if (flags & ShaderSourceBuildFlag::ShaderSource_UseDXCompiler)
         {
             header._shaderModel = renderer::ShaderHeader::ShaderModel::ShaderModel_HLSL_6_1;
