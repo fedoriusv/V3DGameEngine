@@ -498,8 +498,8 @@ void ShadowMappingPoint::PrepareMuiltiviewShadowMap(const renderer::VertexInputA
         struct VS_INPUT\n\
         {\n\
             [[vk::location(4)]] float3 Position : POSITION;\n\
-            [[vk::location(5)]] float3 Normal   : NORMAL;\n\
-            [[vk::location(6)]] float2 Texture  : TEXTURE;\n\
+            [[vk::location(5)]] float3 Normal : NORMAL;\n\
+            [[vk::location(6)]] float2 Texture : TEXTURE;\n\
         };\n\
         \n\
         struct PS_INPUT\n\

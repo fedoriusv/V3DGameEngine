@@ -19,6 +19,6 @@ Texture2D colorTexture : register(t1, space0);
 
 float4 main_FS(VS_OUTPUT input) : SV_TARGET0
 {
-    float4 outFragColor = colorTexture.Sample(colorSampler, input.UV);
+    float4 outFragColor = colorTexture.SampleLevel(colorSampler, input.UV, MIP_LEVEL);
     return outFragColor;
 }

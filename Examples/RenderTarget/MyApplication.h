@@ -59,4 +59,9 @@ private:
 
     v3d::renderer::GraphicsPipelineState* m_OffscreenPipeline;
     v3d::renderer::ShaderProgram* m_OffscreenProgram;
+
+    //compute
+    v3d::renderer::ComputePipelineState* m_DownsamplePipeline;
+    v3d::renderer::ShaderProgram* m_DownsampleProgram;
+    bool m_ComputeDownsampling = false;
 };

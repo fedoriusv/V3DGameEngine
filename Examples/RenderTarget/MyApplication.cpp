@@ -76,39 +76,42 @@ void MyApplication::Initialize()
     m_Camera = new v3d::scene::CameraArcballHelper(new scene::Camera(core::Vector3D(0.0f, 0.0f, 0.0f), core::Vector3D(0.0f, 1.0f, 0.0f)), 5.0f, 4.0f, 20.0f);
     m_Camera->setPerspective(45.0f, m_Window->getSize(), 0.1f, 256.f);
 
-    resource::ResourceLoaderManager::getInstance()->addPath("examples/rendertarget/");
+    resource::ResourceLoaderManager::getInstance()->addPath("examples/rendertarget/data/");
 
     //Pass 0
     {
         m_Sampler = m_CommandList->createObject<renderer::SamplerState>(renderer::SamplerFilter::SamplerFilter_Trilinear, renderer::SamplerAnisotropic::SamplerAnisotropic_4x);
         m_Sampler->setWrap(renderer::SamplerWrap::TextureWrap_MirroredRepeat);
 
-        resource::Image* image = resource::ResourceLoaderManager::getInstance()->load<resource::Image, resource::ImageFileLoader>("data/basetex.jpg", resource::ImageLoaderFlag_GenerateMipmaps);
+        resource::Image* image = resource::ResourceLoaderManager::getInstance()->load<resource::Image, resource::ImageFileLoader>("basetex.jpg", resource::ImageLoaderFlag_GenerateMipmaps);
         ASSERT(image, "not found");
         m_Texture = m_CommandList->createObject<renderer::Texture2D>(renderer::TextureUsage_Sampled | renderer::TextureUsage_Write, image->getFormat(), core::Dimension2D(image->getDimension().width, image->getDimension().height), image->getMipMapsCount(), image->getRawData(), "UnlitTexture");
 
-        std::vector<const renderer::Shader*> shaders = resource::ResourceLoaderManager::getInstance()->loadHLSLShader<renderer::Shader, resource::ShaderSourceFileLoader>(m_CommandList->getContext(), "data/texture.hlsl",
+        std::vector<const renderer::Shader*> shaders = resource::ResourceLoaderManager::getInstance()->loadHLSLShader<renderer::Shader, resource::ShaderSourceFileLoader>(m_CommandList->getContext(), "texture.hlsl",
             {
                 {"main_VS", renderer::ShaderType_Vertex },
                 {"main_FS", renderer::ShaderType_Fragment }
-            });
+            }, {}, resource::ShaderSource_UseDXCompiler);
 
-        v3d::scene::Model* cube = resource::ResourceLoaderManager::getInstance()->load<v3d::scene::Model, resource::ModelFileLoader>("data/cube.dae");
+        v3d::scene::Model* cube = resource::ResourceLoaderManager::getInstance()->load<v3d::scene::Model, resource::ModelFileLoader>("cube.dae");
         m_Geometry = v3d::scene::ModelHelper::createModelHelper(*m_CommandList, { cube });
 
         m_RenderTarget = m_CommandList->createObject<renderer::RenderTargetState>(m_Window->getSize(), 0, "RenderTarget");
 
-        m_ColorAttachment = m_CommandList->createObject<renderer::Texture2D>(renderer::TextureUsage::TextureUsage_Attachment | renderer::TextureUsage::TextureUsage_Sampled, 
+        m_ColorAttachment = m_CommandList->createObject<renderer::Texture2D>(renderer::TextureUsage::TextureUsage_Attachment | renderer::TextureUsage::TextureUsage_Sampled | renderer::TextureUsage::TextureUsage_GenerateMipmaps,
             renderer::Format::Format_R8G8B8A8_UNorm, m_Window->getSize(), renderer::TextureSamples::TextureSamples_x1, "ColorAttachment");
         m_RenderTarget->setColorTexture(0, m_ColorAttachment,
             { 
                 renderer::RenderTargetLoadOp::LoadOp_Clear, renderer::RenderTargetStoreOp::StoreOp_Store, core::Vector4D(0.0f) 
             }, 
             { 
-                renderer::TransitionOp::TransitionOp_Undefined, renderer::TransitionOp::TransitionOp_ShaderRead
+                renderer::TransitionOp::TransitionOp_Undefined, renderer::TransitionOp::TransitionOp_ColorAttachment
             });
-
+#if defined(PLATFORM_ANDROID)
+        m_DepthAttachment = m_CommandList->createObject<renderer::Texture2D>(renderer::TextureUsage::TextureUsage_Attachment, renderer::Format::Format_D24_UNorm_S8_UInt, m_Window->getSize(), renderer::TextureSamples::TextureSamples_x1, "DepthAttachment");
+#else
         m_DepthAttachment = m_CommandList->createObject<renderer::Texture2D>(renderer::TextureUsage::TextureUsage_Attachment, renderer::Format::Format_D32_SFloat_S8_UInt, m_Window->getSize(), renderer::TextureSamples::TextureSamples_x1, "DepthAttachment");
+#endif
         m_RenderTarget->setDepthStencilTexture(m_DepthAttachment, 
             { 
                 renderer::RenderTargetLoadOp::LoadOp_Clear, renderer::RenderTargetStoreOp::StoreOp_DontCare, 1.0f 
@@ -117,7 +120,7 @@ void MyApplication::Initialize()
                 renderer::RenderTargetLoadOp::LoadOp_DontCare, renderer::RenderTargetStoreOp::StoreOp_DontCare, 0U 
             },
             { 
-                renderer::TransitionOp::TransitionOp_Undefined, renderer::TransitionOp::TransitionOp_DepthStencilAttachmet
+                renderer::TransitionOp::TransitionOp_Undefined, renderer::TransitionOp::TransitionOp_DepthStencilAttachment
             });
 
         m_Program = m_CommandList->createObject<renderer::ShaderProgram>(shaders);
@@ -131,13 +134,18 @@ void MyApplication::Initialize()
         m_Pipeline->setDepthTest(true);
     }
 
-    //pass 1
+    //Pass 1
     {
-        std::vector<const renderer::Shader*> shaders = resource::ResourceLoaderManager::getInstance()->loadHLSLShader<renderer::Shader, resource::ShaderSourceFileLoader>(m_CommandList->getContext(), "data/offscreen.hlsl",
+        const u32 k_mipLevel = 3;
+        std::vector<const renderer::Shader*> shaders = resource::ResourceLoaderManager::getInstance()->loadHLSLShader<renderer::Shader, resource::ShaderSourceFileLoader>(m_CommandList->getContext(), "offscreen.hlsl",
             {
                 {"main_VS", renderer::ShaderType_Vertex },
                 {"main_FS", renderer::ShaderType_Fragment }
-            });
+
+            }, 
+            {
+                { "MIP_LEVEL", std::to_string(k_mipLevel) }
+            }, resource::ShaderSource_UseDXCompiler);
 
         m_OffscreenRenderTarget = m_CommandList->createObject<renderer::RenderTargetState>(m_Window->getSize(), 0, "OffscreenTarget");
         m_OffscreenRenderTarget->setColorTexture(0, m_CommandList->getBackbuffer(),
@@ -157,6 +165,15 @@ void MyApplication::Initialize()
         m_OffscreenPipeline->setDepthCompareOp(renderer::CompareOperation::CompareOp_Always);
         m_OffscreenPipeline->setDepthWrite(false);
         m_OffscreenPipeline->setDepthTest(false);
+    }
+
+    //Compute
+    if (m_ComputeDownsampling)
+    {
+        //const renderer::Shader* shader = resource::ResourceLoaderManager::getInstance()->loadShader<renderer::Shader, resource::ShaderSourceFileLoader>(m_CommandList->getContext(), "downsampling.cs");
+        //m_DownsampleProgram = m_CommandList->createObject<renderer::ShaderProgram>(shader);
+
+        //m_DownsamplePipeline = m_CommandList->createObject<renderer::ComputePipelineState>(m_DownsampleProgram);
     }
 
     m_CommandList->submitCommands(true);
@@ -195,6 +212,18 @@ bool MyApplication::Running()
         m_Program->bindTexture<renderer::ShaderType::ShaderType_Fragment, renderer::Texture2D>({ "colorTexture" }, m_Texture);
 
         m_Geometry->draw();
+    }
+
+    if (m_ComputeDownsampling)
+    {
+        //compute
+        //m_CommandList->setPipelineState(m_DownsamplePipeline);
+        //m_DownsampleProgram->bindTexture<renderer::ShaderType::ShaderType_Compute, renderer::Texture2D>({ "colorTexture" }, m_Texture);
+        //m_CommandList->dispatch();
+    }
+    else
+    {
+        m_CommandList->generateMipmaps(m_ColorAttachment, renderer::TransitionOp::TransitionOp_ShaderRead);
     }
 
     //pass 1
