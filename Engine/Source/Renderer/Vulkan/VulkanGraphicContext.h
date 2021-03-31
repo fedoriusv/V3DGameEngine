@@ -108,6 +108,8 @@ namespace vk
 
         VulkanSwapchain* getSwapchain() const;
 
+        void generateMipmaps(Image* image, u32 layer, TransitionOp state) override;
+
     private:
 
         VulkanDeviceCaps&   m_deviceCaps;

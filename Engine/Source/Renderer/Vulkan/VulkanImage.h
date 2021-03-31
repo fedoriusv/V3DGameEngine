@@ -43,12 +43,14 @@ namespace vk
         bool upload(Context* context, const core::Dimension3D& size, u32 layers, u32 mips, const void* data) override;
         bool upload(Context* context, const core::Dimension3D& offsets, const core::Dimension3D& size, u32 layers, const void* data) override;
 
+        bool generateMipmaps(Context* context, u32 layer);
+
         static VkFormat convertImageFormatToVkFormat(Format format);
         static Format convertVkImageFormatToFormat(VkFormat format);
         static VkImageType convertTextureTargetToVkImageType(TextureTarget target);
         static VkSampleCountFlagBits convertRenderTargetSamplesToVkSampleCount(TextureSamples samples);
 
-        static VkImageSubresourceRange makeImageSubresourceRange(const VulkanImage* image, s32 layer = k_generalLayer, s32 mip = -1);
+        static VkImageSubresourceRange makeImageSubresourceRange(const VulkanImage* image, s32 layer = k_generalLayer, s32 mip = k_allMipmapsLevels);
         static VkImageSubresourceLayers makeImageSubresourceLayers(const VulkanImage* image, s32 layer = k_generalLayer, s32 mip = 0);
 
         static VkImageAspectFlags getImageAspectFlags(VkFormat format);
@@ -65,15 +67,18 @@ namespace vk
         VkImageAspectFlags    getImageAspectFlags() const;
         VkSampleCountFlagBits getSampleCount() const;
         VkImageView           getImageView(s32 layer = k_generalLayer, VkImageAspectFlags aspect = 0) const;
+        VkImageView           getAttachmentImageView(s32 layer = k_generalLayer, s32 mip = 0) const;
         VkFormat              getFormat() const;
         VkExtent3D            getSize() const;
+        u32                   getMipmapsCount() const;
 
-        VkImageLayout         getLayout(s32 layer = k_generalLayer, s32 mip = -1) const;
-        VkImageLayout         setLayout(VkImageLayout layout, s32 layer = k_generalLayer, s32 mip = -1);
+        VkImageLayout         getLayout(s32 layer = k_generalLayer, s32 mip = k_allMipmapsLevels) const;
+        VkImageLayout         setLayout(VkImageLayout layout, s32 layer = k_generalLayer, s32 mip = k_allMipmapsLevels);
 
         VulkanImage*          getResolveImage() const;
 
         bool                  isSwapchain() const;
+
 
 #if DEBUG_OBJECT_MEMORY
         static std::set<VulkanImage*> s_objects;
@@ -94,7 +99,9 @@ namespace vk
 
         static ImageAspect convertVkImageAspectFlags(VkImageAspectFlags aspect);
         static VkImageAspectFlags convertImageAspectFlagsToVk(ImageAspect aspect);
-        static VkImageSubresourceRange makeImageSubresourceRangeWithAspect(const VulkanImage* image, s32 layer = k_generalLayer, s32 mip = -1, ImageAspect aspect = ImageAspect::ImageAspect_General);
+        static VkImageSubresourceRange makeImageSubresourceRangeWithAspect(const VulkanImage* image, s32 layer = k_generalLayer, s32 mip = k_allMipmapsLevels, ImageAspect aspect = ImageAspect::ImageAspect_General);
+
+        static u32 calculateMipmapCount(const core::Dimension3D& size);
 
         bool createViewImage();
 
@@ -118,6 +125,7 @@ namespace vk
         VkImage                     m_image;
 
         VkImageView                 m_generalImageView[ImageAspect::ImageAspect_Count];
+        std::vector<VkImageView>    m_attachmentImageView;
         std::vector<VkImageView>    m_imageView;
 
 

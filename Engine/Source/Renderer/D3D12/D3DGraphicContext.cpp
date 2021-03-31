@@ -513,6 +513,10 @@ const DeviceCaps* D3DGraphicContext::getDeviceCaps() const
     return D3DDeviceCaps::getInstance();
 }
 
+void D3DGraphicContext::generateMipmaps(Image* image, u32 layer, TransitionOp state)
+{
+}
+
 D3DCommandList* D3DGraphicContext::getOrAcquireCurrentCommandList(D3DCommandList::Type type)
 {
     if (!m_currentState.commandList())

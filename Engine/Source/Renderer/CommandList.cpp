@@ -451,6 +451,44 @@ private:
     TransitionOp m_state;
 };
 
+    /*CommandGenerateMipmaps*/
+class CommandGenerateMipmaps : public Command
+{
+public:
+
+    CommandGenerateMipmaps(CommandGenerateMipmaps&) = delete;
+    explicit CommandGenerateMipmaps(Image* image, u32 layer, TransitionOp state)
+        : m_image(image)
+        , m_layer(layer)
+        , m_state(state)
+    {
+#if DEBUG_COMMAND_LIST
+        LOG_DEBUG("CommandGenerateMipmaps constructor");
+#endif //DEBUG_COMMAND_LIST
+    }
+
+    ~CommandGenerateMipmaps()
+    {
+#if DEBUG_COMMAND_LIST
+        LOG_DEBUG("CommandGenerateMipmaps constructor");
+#endif //DEBUG_COMMAND_LIST
+    }
+
+    void execute(const CommandList& cmdList)
+    {
+#if DEBUG_COMMAND_LIST
+        LOG_DEBUG("CommandGenerateMipmaps execute");
+#endif //DEBUG_COMMAND_LIST
+        cmdList.getContext()->generateMipmaps(m_image, m_layer, m_state);
+    }
+
+private:
+
+    Image* m_image;
+    u32 m_layer;
+    TransitionOp m_state;
+};
+
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 
 CommandList::CommandList(Context* context, CommandListType type) noexcept
@@ -600,7 +638,7 @@ void CommandList::setRenderTarget(RenderTargetState* rendertarget)
     }
 }
 
-void CommandList::setPipelineState(GraphicsPipelineState * pipeline)
+void CommandList::setPipelineState(GraphicsPipelineState* pipeline)
 {
     if (!pipeline || !pipeline->m_renderTaget || !pipeline->m_program)
     {
@@ -760,6 +798,24 @@ void CommandList::transitions(const Image* image, TransitionOp state)
     {
         m_pendingTransitions._transitions.insert({ state, image });
         m_pendingFlushMask |= PendingFlush_UpdateTransitions;
+    }
+}
+
+void CommandList::generateMipmaps(Texture2D* texute, TransitionOp state)
+{
+    if (!texute)
+    {
+        return;
+    }
+
+    ASSERT(texute->getLayersCount() == 1, "must be 1");
+    if (CommandList::isImmediate())
+    {
+        m_context->generateMipmaps(texute->getImage(), 0, state);
+    }
+    else
+    {
+        CommandList::pushCommand(new CommandGenerateMipmaps(texute->getImage(), 0, state));
     }
 }
 

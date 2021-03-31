@@ -97,6 +97,7 @@ VulkanRenderPass::VulkanRenderPass(VkDevice device, const RenderPassDescription&
         desc._initialLayout = VulkanRenderPass::convertTransitionStateToImageLayout(description._desc._attachments[index]._initTransition);
         desc._finalLayout = VulkanRenderPass::convertTransitionStateToImageLayout(description._desc._attachments[index]._finalTransition);
         desc._layer = AttachmentDescription::uncompressLayer(description._desc._attachments[index]._layer);
+        desc._mip = 0;
 
         desc._swapchainImage = (description._desc._attachments[index]._backbuffer) ? true : false;
         desc._autoResolve = (description._desc._attachments[index]._autoResolve) ? true : false;
@@ -114,6 +115,7 @@ VulkanRenderPass::VulkanRenderPass(VkDevice device, const RenderPassDescription&
         desc._initialLayout = VulkanRenderPass::convertTransitionStateToImageLayout(description._desc._attachments.back()._initTransition);
         desc._finalLayout = VulkanRenderPass::convertTransitionStateToImageLayout(description._desc._attachments.back()._finalTransition);
         desc._layer = AttachmentDescription::uncompressLayer(description._desc._attachments.back()._layer);
+        desc._mip = 0;
 
         desc._swapchainImage = false;
         desc._autoResolve = (description._desc._attachments.back()._autoResolve) ? true : false;

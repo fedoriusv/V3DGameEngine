@@ -126,6 +126,8 @@ namespace renderer
         const core::Dimension2D& getBackbufferSize() const;
         Format getBackbufferFormat() const;
 
+        virtual void generateMipmaps(Image* image, u32 layer, TransitionOp state) = 0;
+
     protected:
 
         Context() noexcept;

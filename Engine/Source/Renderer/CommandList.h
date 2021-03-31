@@ -20,6 +20,7 @@ namespace renderer
     class CommandList;
 
     class Texture;
+    class Texture2D;
     class Backbuffer;
     class RenderTargetState;
     class GraphicsPipelineState;
@@ -97,6 +98,8 @@ namespace renderer
                 CommandList::transitions(texture->getImage(), state);
             }
         }
+
+        void generateMipmaps(Texture2D* texture, TransitionOp state);
 
         Context* getContext() const;
         bool isThreaded() const;

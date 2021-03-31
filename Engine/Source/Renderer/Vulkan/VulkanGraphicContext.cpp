@@ -1,4 +1,9 @@
 #include "VulkanGraphicContext.h"
+
+#include "Utils/Logger.h"
+#include "Utils/Profiler.h"
+
+#ifdef VULKAN_RENDER
 #include "VulkanDebug.h"
 #include "VulkanCommandBufferManager.h"
 #include "VulkanDescriptorSet.h"
@@ -14,15 +19,11 @@
 #include "VulkanContextState.h"
 #include "VulkanUnifromBuffer.h"
 
-#include "Utils/Logger.h"
-#include "Utils/Profiler.h"
-
 #include "Renderer/FrameTimeProfiler.h"
 #ifdef PLATFORM_ANDROID
 #   include "Platform/Android/HWCPProfiler.h"
 #endif //PLATFORM_ANDROID
 
-#ifdef VULKAN_RENDER
 namespace v3d
 {
 namespace renderer
@@ -176,7 +177,7 @@ void VulkanGraphicContext::beginFrame()
     [[maybe_unused]] VulkanCommandBuffer* drawBuffer = m_currentBufferState.acquireAndStartCommandBuffer(CommandTargetType::CmdDrawBuffer);
 #if SWAPCHAIN_ON_ADVANCE
     ASSERT(prevImageIndex != ~0U, "wrong index");
-    m_currentTransitionState.transitionImages(drawBuffer, { m_swapchain->getSwapchainImage(prevImageIndex) }, TransitionOp::TransitionOp_Present);
+    m_currentTransitionState.transitionImages(drawBuffer, { m_swapchain->getSwapchainImage(prevImageIndex) }, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
 #endif //SWAPCHAIN_ON_ADVANCE
 
 #if FRAME_PROFILER_ENABLE
@@ -682,7 +683,8 @@ void VulkanGraphicContext::transitionImages(std::vector<const Image*>& images, T
     const Image* replacedImage = nullptr;
     std::replace(transitionImages.begin(), transitionImages.end(), replacedImage, swapchainImage);
 
-    m_currentTransitionState.transitionImages(drawBuffer, transitionImages, transition);
+    VkImageLayout newLayout = VulkanRenderPass::convertTransitionStateToImageLayout(transition);
+    m_currentTransitionState.transitionImages(drawBuffer, transitionImages, newLayout);
 }
 
 void VulkanGraphicContext::draw(const StreamBufferDescription& desc, u32 firstVertex, u32 vertexCount, u32 firstInstance, u32 instanceCount)
@@ -1515,6 +1517,41 @@ VulkanSwapchain* VulkanGraphicContext::getSwapchain() const
     return m_swapchain;
 }
 
+void VulkanGraphicContext::generateMipmaps(Image* image, u32 layer, TransitionOp state)
+{
+    if (!image)
+    {
+        return;
+    }
+
+    VulkanCommandBuffer* drawBuffer = m_currentBufferState.getAcitveBuffer(CommandTargetType::CmdDrawBuffer);
+    if (drawBuffer->isInsideRenderPass())
+    {
+        drawBuffer->cmdEndRenderPass();
+    }
+
+    ASSERT(image, "nullptr");
+    VulkanImage* vkImage = static_cast<VulkanImage*>(image);
+    vkImage->generateMipmaps(this, layer);
+
+    VkImageLayout newLayout = VulkanRenderPass::convertTransitionStateToImageLayout(state);
+    drawBuffer->cmdPipelineBarrier(vkImage, VK_PIPELINE_STAGE_TRANSFER_BIT, VulkanTransitionState::selectStageFlagsByImageLayout(newLayout), newLayout);
+}
+
+//Another thread
+void VulkanGraphicContext::handleNotify(const utils::Observable* obj)
+{
+    const platform::Window* windows = reinterpret_cast<const platform::Window*>(obj);
+    if (windows->isValid())
+    {
+        LOG_WARNING("VulkanGraphicContext::create swapchain notify (from main)");
+    }
+    else
+    {
+        LOG_WARNING("VulkanGraphicContext::delete swapchain notify (from main)");
+    }
+}
+
 
 VulkanGraphicContext::CurrentCommandBufferState::CurrentCommandBufferState() noexcept
     : _commandBufferMgr(nullptr)
@@ -1555,20 +1592,6 @@ VulkanCommandBuffer* VulkanGraphicContext::CurrentCommandBufferState::getAcitveB
 bool VulkanGraphicContext::CurrentCommandBufferState::isCurrentBufferAcitve(CommandTargetType type) const
 {
     return _currentCmdBuffer[type] != nullptr;
-}
-
-//Another thread
-void VulkanGraphicContext::handleNotify(const utils::Observable* obj)
-{
-    const platform::Window* windows = reinterpret_cast<const platform::Window*>(obj);
-    if (windows->isValid())
-    {
-        LOG_WARNING("VulkanGraphicContext::create swapchain notify (from main)");
-    }
-    else
-    {
-        LOG_WARNING("VulkanGraphicContext::delete swapchain notify (from main)");
-    }
 }
 
 #if THREADED_PRESENT

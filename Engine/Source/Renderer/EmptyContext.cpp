@@ -179,6 +179,11 @@ void EmptyContext::removeSampler(Sampler * sampler)
     LOG_DEBUG("EmptyContext::removeSampler");
 }
 
+void EmptyContext::generateMipmaps(Image* image, u32 layer, TransitionOp state)
+{
+    LOG_DEBUG("EmptyContext::generateMipmaps");
+}
+
 bool EmptyContext::initialize()
 {
     LOG_DEBUG("EmptyContext::initialize");

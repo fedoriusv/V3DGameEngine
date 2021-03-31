@@ -311,7 +311,7 @@ void VulkanCommandBuffer::cmdBeginRenderpass(const VulkanRenderPass* pass, const
         vkImage->captureInsideCommandBuffer(this, 0);
 
         VkImageLayout layout = pass->getAttachmentLayout<0>(index);
-        vkImage->setLayout(layout);
+        vkImage->setLayout(layout, pass->getAttachmentDescription(index)._layer, pass->getAttachmentDescription(index)._mip);
 
         ++index;
     }
@@ -382,13 +382,17 @@ void VulkanCommandBuffer::cmdEndRenderPass()
         VulkanWrapper::CmdEndRenderPass(m_commands);
     }
 
+    const VulkanRenderPass* pass = m_renderpassState._renderpass;
+    const VulkanFramebuffer* framebuffer = m_renderpassState._framebuffer;
+
     u32 index = 0;
-    for (auto& image : m_renderpassState._framebuffer->getImages())
+    ASSERT(pass && framebuffer, "nullptr");
+    for (auto& image : framebuffer->getImages())
     {
         VulkanImage* vkImage = static_cast<VulkanImage*>(image);
 
         VkImageLayout layout = m_renderpassState._renderpass->getAttachmentLayout<1>(index);
-        vkImage->setLayout(layout);
+        vkImage->setLayout(layout, pass->getAttachmentDescription(index)._layer, pass->getAttachmentDescription(index)._mip);
 
         ++index;
     }
@@ -585,6 +589,30 @@ void VulkanCommandBuffer::cmdResolveImage(VulkanImage* src, VkImageLayout srcLay
     }
 }
 
+void VulkanCommandBuffer::cmdBlitImage(VulkanImage* src, VkImageLayout srcLayout, VulkanImage* dst, VkImageLayout dstLayout, const std::vector<VkImageBlit>& regions)
+{
+    ASSERT(m_status == CommandBufferStatus::Begin, "not started");
+    ASSERT(!isInsideRenderPass(), "should be outside render pass");
+
+    src->captureInsideCommandBuffer(this, 0);
+    dst->captureInsideCommandBuffer(this, 0);
+
+    if (m_level == CommandBufferLevel::PrimaryBuffer)
+    {
+        VulkanWrapper::CmdBlitImage(m_commands, src->getHandle(), srcLayout, dst->getHandle(), dstLayout, static_cast<u32>(regions.size()), regions.data(), VK_FILTER_LINEAR);
+
+        for (const VkImageBlit& blit : regions)
+        {
+            ASSERT(blit.dstSubresource.layerCount == 1, "TODO");
+            dst->setLayout(dstLayout, k_generalLayer, blit.dstSubresource.mipLevel);
+        }
+    }
+    else
+    {
+        ASSERT(false, "not implemented");
+    }
+}
+
 void VulkanCommandBuffer::cmdUpdateBuffer(VulkanBuffer* src, u32 offset, u64 size, const void* data)
 {
     ASSERT(m_status == CommandBufferStatus::Begin, "not started");
@@ -658,9 +686,48 @@ void VulkanCommandBuffer::cmdPipelineBarrier(const VulkanImage* image, VkPipelin
         imageMemoryBarrier.image = image->getHandle();
         imageMemoryBarrier.subresourceRange = VulkanImage::makeImageSubresourceRange(image, layer, mip);
 
+        VulkanWrapper::CmdPipelineBarrier(m_commands, srcStageMask, dstStageMask, VK_DEPENDENCY_BY_REGION_BIT, 0, nullptr, 0, nullptr, 1, &imageMemoryBarrier);
+
         const_cast<VulkanImage*>(image)->setLayout(layout, layer, mip);
+    }
+    else
+    {
+        ASSERT(false, "not implemented");
+    }
+}
+
+void VulkanCommandBuffer::cmdPipelineBarrier(const VulkanImage* image, VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask, VkImageLayout oldLayout, VkImageLayout newLayout, const VkImageSubresourceRange& subresource)
+{
+    ASSERT(m_status == CommandBufferStatus::Begin, "not started");
+    ASSERT(!VulkanCommandBuffer::isInsideRenderPass(), "can't be inside render pass");
+
+    if (m_level == CommandBufferLevel::PrimaryBuffer)
+    {
+        image->captureInsideCommandBuffer(this, 0);
+
+        auto accessMasks = VulkanImage::getAccessFlagsFromImageLayout(oldLayout, newLayout);
+
+        VkImageMemoryBarrier imageMemoryBarrier = {};
+        imageMemoryBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+        imageMemoryBarrier.pNext = nullptr;
+        imageMemoryBarrier.srcAccessMask = std::get<0>(accessMasks);
+        imageMemoryBarrier.dstAccessMask = std::get<1>(accessMasks);
+        imageMemoryBarrier.oldLayout = oldLayout;
+        imageMemoryBarrier.newLayout = newLayout;
+        imageMemoryBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+        imageMemoryBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+        imageMemoryBarrier.image = image->getHandle();
+        imageMemoryBarrier.subresourceRange = subresource;
 
         VulkanWrapper::CmdPipelineBarrier(m_commands, srcStageMask, dstStageMask, VK_DEPENDENCY_BY_REGION_BIT, 0, nullptr, 0, nullptr, 1, &imageMemoryBarrier);
+
+        for (u32 layer = subresource.baseArrayLayer; layer < subresource.layerCount; ++layer)
+        {
+            for (u32 mip = subresource.baseMipLevel; mip < subresource.levelCount; ++mip)
+            {
+                const_cast<VulkanImage*>(image)->setLayout(newLayout, layer, mip);
+            }
+        }
     }
     else
     {

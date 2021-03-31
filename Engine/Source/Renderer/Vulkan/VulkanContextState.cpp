@@ -406,7 +406,7 @@ VkDescriptorBufferInfo VulkanContextState::makeVkDescriptorBufferInfo(const Vulk
     return descriptorBufferInfo;
 }
 
-VkDescriptorImageInfo VulkanContextState::makeVkDescriptorImageInfo(const VulkanImage* image, const VulkanSampler* sampler, VkImageLayout layout, s32 layer)
+VkDescriptorImageInfo VulkanContextState::makeVkDescriptorImageInfo(const VulkanImage* image, const VulkanSampler* sampler, VkImageLayout layout, s32 layer, s32 mip)
 {
     VkDescriptorImageInfo descriptorImageInfo = {};
     descriptorImageInfo.imageLayout = layout;
