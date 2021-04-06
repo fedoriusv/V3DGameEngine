@@ -89,6 +89,11 @@ VkDescriptorSet VulkanDescriptorSetManager::acquireDescriptorSet(const VulkanDes
             m_currentPool[index] = m_poolProvider->acquirePool(desc, flag);
         }
 
+        if (m_currentPool[index]->isCaptured())
+        {
+            m_currentPool[index] = m_poolProvider->acquirePool(desc, flag);
+        }
+
         VkDescriptorSet descriptorSet = m_currentPool[index]->getDescriptorSet(info);
         if (descriptorSet != VK_NULL_HANDLE)
         {
