@@ -14,16 +14,19 @@ namespace renderer
 {
 namespace vk
 {
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
+
     class VulkanImage;
     class VulkanBuffer;
     class VulkanRenderPass;
     class VulkanFramebuffer;
     class VulkanGraphicPipeline;
+    class VulkanComputePipeline;
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
-    * brief VulkanCommandBuffer class. Vulkan Render side
+    * @brief VulkanCommandBuffer class. Vulkan Render side
     */
     class VulkanCommandBuffer final
     {
@@ -77,7 +80,9 @@ namespace vk
         void cmdBindVertexBuffers(u32 firstBinding, u32 countBindinng, const std::vector<Buffer*>& buffers, const std::vector<u64>& offests);
         void cmdBindIndexBuffers(VulkanBuffer* buffer, VkDeviceSize offest, VkIndexType type);
         void cmdBindPipeline(VulkanGraphicPipeline* pipeline);
-        void cmdBindDescriptorSets(VulkanGraphicPipeline * pipeline, u32 firstSet, u32 countSets, const std::vector<VkDescriptorSet>& sets, const std::vector<u32>& offsets);
+        void cmdBindPipeline(VulkanComputePipeline* pipeline);
+        void cmdBindDescriptorSets(VulkanGraphicPipeline* pipeline, u32 firstSet, u32 countSets, const std::vector<VkDescriptorSet>& sets, const std::vector<u32>& offsets);
+        void cmdBindDescriptorSets(VulkanComputePipeline* pipeline, u32 firstSet, u32 countSets, const std::vector<VkDescriptorSet>& sets);
 
         //inside renderpass
         void cmdDraw(u32 firstVertex, u32 vertexCount, u32 firstInstance, u32 instanceCount);
@@ -88,17 +93,19 @@ namespace vk
         void cmdClearImage(VulkanImage* image, VkImageLayout imageLayout, const VkClearDepthStencilValue* pDepthStencil);
         void cmdResolveImage(VulkanImage* src, VkImageLayout srcLayout, VulkanImage* dst, VkImageLayout dstLayout, const std::vector<VkImageResolve>& regions);
         void cmdBlitImage(VulkanImage* src, VkImageLayout srcLayout, VulkanImage* dst, VkImageLayout dstLayout, const std::vector<VkImageBlit>& regions);
-
-        //TODO: cmd list
         void cmdUpdateBuffer(VulkanBuffer* src, u32 offset, u64 size, const void* data);
         void cmdCopyBufferToImage(VulkanBuffer* src, VulkanImage* dst, VkImageLayout layout, const std::vector<VkBufferImageCopy>& regions);
         void cmdCopyBufferToBuffer(VulkanBuffer* src, VulkanBuffer* dst, const std::vector<VkBufferCopy>& regions);
 
+        //sync
         void cmdPipelineBarrier(const VulkanImage* image, VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask, VkImageLayout layout, s32 layer = k_generalLayer, s32 mip = k_allMipmapsLevels);
         void cmdPipelineBarrier(const VulkanImage* image, VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask, VkImageLayout oldLayout, VkImageLayout newLayout, const VkImageSubresourceRange& subresource);
-        void cmdPipelineBarrier(VulkanBuffer* buffer, VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask, VkImageLayout layout);
+        void cmdPipelineBarrier(VulkanBuffer* buffer, VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask);
 
         void cmdPipelineBarrier(VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask, const VkMemoryBarrier& memoryBarrier);
+
+        //compute
+        void cmdDispatch(const core::Dimension3D& groups);
 
     private:
 

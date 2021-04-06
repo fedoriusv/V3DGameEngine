@@ -109,6 +109,8 @@ namespace renderer
         ~PipelineManager();
 
         Pipeline* acquireGraphicPipeline(const Pipeline::PipelineGraphicInfo& pipelineInfo);
+        Pipeline* acquireComputePipeline(const Pipeline::PipelineComputeInfo& pipelineInfo);
+
         bool removePipeline(Pipeline* pipeline);
         void clear();
 
@@ -117,8 +119,8 @@ namespace renderer
     private:
 
         Context*                    m_context;
-        std::map<u64, Pipeline*>    m_pipelineGraphicList;
-        //std::unordered_map<u64, Pipeline*> m_pipelineGraphicList; TODO
+        std::map<u64, Pipeline*>    m_pipelineGraphicList; //TODO std::unordered_map
+        std::map<u64, Pipeline*>    m_pipelineComputeList; //TODO std::unordered_map
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

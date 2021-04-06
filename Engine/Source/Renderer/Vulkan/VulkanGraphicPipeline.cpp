@@ -1,19 +1,18 @@
 #include "VulkanRenderpass.h"
-#include "VulkanImage.h"
-#include "VulkanDebug.h"
-#include "VulkanDeviceCaps.h"
-#include "VulkanGraphicContext.h"
-#include "VulkanGraphicPipeline.h"
-#include "VulkanDescriptorSet.h"
-#include "Renderer/Shader.h"
 
 #include "Utils/Logger.h"
+#include "Renderer/Shader.h"
 
 #define PATCH_SYSTEM 0
 #include "Resource/ShaderPatcher.h"
 
-
 #ifdef VULKAN_RENDER
+#include "VulkanDebug.h"
+#include "VulkanContext.h"
+#include "VulkanImage.h"
+#include "VulkanGraphicPipeline.h"
+#include "VulkanDescriptorSet.h"
+
 namespace v3d
 {
 namespace renderer

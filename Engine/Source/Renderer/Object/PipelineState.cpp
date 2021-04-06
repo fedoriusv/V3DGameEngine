@@ -9,40 +9,6 @@ namespace v3d
 namespace renderer
 {
 
-/////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    /*CommandRemovePipelines*/
-class CommandRemovePipelines final : public Command
-{
-public:
-    CommandRemovePipelines(const std::vector<Pipeline*>& pipelines) noexcept
-        : m_pipelines(pipelines)
-    {
-        LOG_DEBUG("CommandRemovePipelines constructor");
-    };
-    CommandRemovePipelines() = delete;
-    CommandRemovePipelines(CommandRemovePipelines&) = delete;
-
-    ~CommandRemovePipelines()
-    {
-        LOG_DEBUG("CommandRemovePipelines destructor");
-    };
-
-    void execute(const CommandList& cmdList)
-    {
-        LOG_DEBUG("CommandRemovePipelines execute");
-        for (auto& pipeline : m_pipelines)
-        {
-            cmdList.getContext()->removePipeline(pipeline);
-        }
-    }
-
-private:
-    const std::vector<Pipeline*> m_pipelines;
-};
-
-/////////////////////////////////////////////////////////////////////////////////////////////////////
-
 PipelineState::PipelineState(CommandList& cmdList) noexcept
     : m_cmdList(cmdList)
     , m_tracker(this, std::bind(&GraphicsPipelineState::destroyPipelines, this, std::placeholders::_1))
@@ -66,6 +32,39 @@ void PipelineState::destroyPipelines(const std::vector<Pipeline*>& pipelines)
     }
     else
     {
+        /*CommandRemovePipelines*/
+        class CommandRemovePipelines final : public Command
+        {
+        public:
+
+            explicit CommandRemovePipelines(const std::vector<Pipeline*>& pipelines) noexcept
+                : m_pipelines(pipelines)
+            {
+                LOG_DEBUG("CommandRemovePipelines constructor");
+            };
+
+            CommandRemovePipelines() = delete;
+            CommandRemovePipelines(CommandRemovePipelines&) = delete;
+
+            ~CommandRemovePipelines()
+            {
+                LOG_DEBUG("CommandRemovePipelines destructor");
+            };
+
+            void execute(const CommandList& cmdList)
+            {
+                LOG_DEBUG("CommandRemovePipelines execute");
+                for (auto& pipeline : m_pipelines)
+                {
+                    cmdList.getContext()->removePipeline(pipeline);
+                }
+            }
+
+        private:
+
+            const std::vector<Pipeline*> m_pipelines;
+        };
+
         m_cmdList.pushCommand(new CommandRemovePipelines(pipelines));
     }
 }

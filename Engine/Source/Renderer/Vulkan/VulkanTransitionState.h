@@ -22,12 +22,15 @@ namespace vk
     {
     public:
 
+        static VkImageLayout convertTransitionStateToImageLayout(TransitionOp state);
+
         static VkPipelineStageFlags selectStageFlagsByImageLayout(VkImageLayout layout);
+        static std::tuple<VkAccessFlags, VkAccessFlags> getAccessFlagsFromImageLayout(VkImageLayout oldLayout, VkImageLayout newLayout);
 
         VulkanTransitionState() noexcept = default;
         ~VulkanTransitionState() = default;
 
-        void transitionImages(VulkanCommandBuffer* cmdBuffer, const std::vector<const Image*>& images, VkImageLayout layout);
+        void transitionImages(VulkanCommandBuffer* cmdBuffer, const std::vector<const Image*>& images, VkImageLayout layout, s32 layer = k_generalLayer, s32 mip = k_allMipmapsLevels, bool toCompute = false);
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

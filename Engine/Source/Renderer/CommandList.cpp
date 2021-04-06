@@ -215,7 +215,7 @@ private:
     Framebuffer::FramebufferInfo m_framebufferInfo;
 };
 
-    /*CommandSetRenderTarget*/
+    /*CommandSetGraphicPipeline*/
 class CommandSetGraphicPipeline final : public Command
 {
 public:
@@ -260,6 +260,47 @@ private:
     ShaderProgramDescription                 m_programDesc;
     RenderPassDescription                    m_renderpassDesc;
     ObjectTracker<Pipeline>*                 m_tracker;
+};
+
+    /*CommandSetComputePipeline*/
+class CommandSetComputePipeline final : public Command
+{
+public:
+
+    CommandSetComputePipeline() = delete;
+    CommandSetComputePipeline(CommandSetComputePipeline&) = delete;
+    explicit CommandSetComputePipeline(const ShaderProgramDescription& shaderProgramInfo, ObjectTracker<Pipeline>* tracker) noexcept
+        : m_programDesc(shaderProgramInfo)
+        , m_tracker(tracker)
+    {
+#if DEBUG_COMMAND_LIST
+        LOG_DEBUG("CommandSetComputePipeline constructor");
+#endif //DEBUG_COMMAND_LIST
+    };
+
+    ~CommandSetComputePipeline()
+    {
+#if DEBUG_COMMAND_LIST
+        LOG_DEBUG("CommandSetComputePipeline destructor");
+#endif //DEBUG_COMMAND_LIST
+    };
+
+    void execute(const CommandList& cmdList)
+    {
+#if DEBUG_COMMAND_LIST
+        LOG_DEBUG("CommandSetComputePipeline execute");
+#endif //DEBUG_COMMAND_LIST
+        Pipeline::PipelineComputeInfo pipelineComputeInfo;
+        pipelineComputeInfo._programDesc = m_programDesc;
+        pipelineComputeInfo._tracker = m_tracker;
+
+        cmdList.getContext()->setPipeline(&pipelineComputeInfo);
+    }
+
+private:
+
+    ShaderProgramDescription m_programDesc;
+    ObjectTracker<Pipeline>* m_tracker;
 };
 
     /*CommandSubmit*/
@@ -386,6 +427,42 @@ private:
     u32 m_countIndex;
 };
 
+    /*CommandDispatchCompute*/
+class CommandDispatchCompute : public Command
+{
+public:
+
+    CommandDispatchCompute() = delete;
+    CommandDispatchCompute(CommandDispatchCompute&) = delete;
+
+    explicit CommandDispatchCompute(const core::Dimension3D& groups) noexcept
+        : m_groups(groups)
+    {
+#if DEBUG_COMMAND_LIST
+        LOG_DEBUG("CommandDispatchCompute constructor");
+#endif //DEBUG_COMMAND_LIST
+    }
+
+    ~CommandDispatchCompute()
+    {
+#if DEBUG_COMMAND_LIST
+        LOG_DEBUG("CommandDispatchCompute constructor");
+#endif //DEBUG_COMMAND_LIST
+    }
+
+    void execute(const CommandList& cmdList)
+    {
+#if DEBUG_COMMAND_LIST
+        LOG_DEBUG("CommandDispatchCompute execute");
+#endif //DEBUG_COMMAND_LIST
+        cmdList.getContext()->dispatchCompute(m_groups);
+    }
+
+private:
+
+    core::Dimension3D m_groups;
+};
+
     /*CommandInvalidateRenderPass*/
 class CommandInvalidateRenderPass : public Command
 {
@@ -413,80 +490,6 @@ public:
 #endif //DEBUG_COMMAND_LIST
         cmdList.getContext()->invalidateRenderPass();
     }
-};
-
-    /*CommandTransitionImage*/
-class CommandTransitionImage : public Command
-{
-public:
-
-    CommandTransitionImage(CommandTransitionImage&) = delete;
-    explicit CommandTransitionImage(const std::vector<const Image*>& images, TransitionOp state) noexcept
-        : m_images(images)
-        , m_state(state)
-    {
-#if DEBUG_COMMAND_LIST
-        LOG_DEBUG("CommandTransitionImage constructor");
-#endif //DEBUG_COMMAND_LIST
-    }
-
-    ~CommandTransitionImage()
-    {
-#if DEBUG_COMMAND_LIST
-        LOG_DEBUG("CommandTransitionImage constructor");
-#endif //DEBUG_COMMAND_LIST
-    }
-
-    void execute(const CommandList& cmdList)
-    {
-#if DEBUG_COMMAND_LIST
-        LOG_DEBUG("CommandTransitionImage execute");
-#endif //DEBUG_COMMAND_LIST
-        cmdList.getContext()->transitionImages(m_images, m_state);
-    }
-
-private:
-
-    std::vector<const Image*> m_images;
-    TransitionOp m_state;
-};
-
-    /*CommandGenerateMipmaps*/
-class CommandGenerateMipmaps : public Command
-{
-public:
-
-    CommandGenerateMipmaps(CommandGenerateMipmaps&) = delete;
-    explicit CommandGenerateMipmaps(Image* image, u32 layer, TransitionOp state)
-        : m_image(image)
-        , m_layer(layer)
-        , m_state(state)
-    {
-#if DEBUG_COMMAND_LIST
-        LOG_DEBUG("CommandGenerateMipmaps constructor");
-#endif //DEBUG_COMMAND_LIST
-    }
-
-    ~CommandGenerateMipmaps()
-    {
-#if DEBUG_COMMAND_LIST
-        LOG_DEBUG("CommandGenerateMipmaps constructor");
-#endif //DEBUG_COMMAND_LIST
-    }
-
-    void execute(const CommandList& cmdList)
-    {
-#if DEBUG_COMMAND_LIST
-        LOG_DEBUG("CommandGenerateMipmaps execute");
-#endif //DEBUG_COMMAND_LIST
-        cmdList.getContext()->generateMipmaps(m_image, m_layer, m_state);
-    }
-
-private:
-
-    Image* m_image;
-    u32 m_layer;
-    TransitionOp m_state;
 };
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -596,6 +599,19 @@ void CommandList::drawIndexed(const StreamBufferDescription& desc, u32 firstInde
     }
 }
 
+void CommandList::dispatchCompute(const core::Dimension3D& groups)
+{
+    if (CommandList::isImmediate())
+    {
+        m_context->dispatchCompute(groups);
+    }
+    else
+    {
+        m_pendingFlushMask = CommandList::flushPendingCommands(m_pendingFlushMask);
+        CommandList::pushCommand(new CommandDispatchCompute(groups));
+    }
+}
+
 void CommandList::clearBackbuffer(const core::Vector4D & color)
 {
     m_swapchainTexture->clear(color);
@@ -662,8 +678,31 @@ void CommandList::setPipelineState(GraphicsPipelineState* pipeline)
     }
     else
     {
-        m_pendingPipelineStateInfo._pipelineInfo = std::move(pipelineGraphicInfo);
+        m_pendingPipelineStateInfo._pipelineGraphicInfo = std::move(pipelineGraphicInfo);
         m_pendingFlushMask |= PendingFlush_UpdateGraphicsPipeline;
+    }
+}
+
+void CommandList::setPipelineState(ComputePipelineState* pipeline)
+{
+    if (!pipeline || !pipeline->m_program)
+    {
+        ASSERT(false, "setPipelineState is nullptr");
+        return;
+    }
+
+    Pipeline::PipelineComputeInfo pipelineComputeInfo;
+    pipelineComputeInfo._programDesc = pipeline->m_program->getShaderDesc();
+    pipelineComputeInfo._tracker = &pipeline->m_tracker;
+
+    if (CommandList::isImmediate())
+    {
+        m_context->setPipeline(&pipelineComputeInfo);
+    }
+    else
+    {
+        m_pendingPipelineStateInfo._pipelineComputeInfo = std::move(pipelineComputeInfo);
+        m_pendingFlushMask |= PendingFlush_UpdateComputePipeline;
     }
 }
 
@@ -752,32 +791,84 @@ CommandList::PendingFlushMaskFlags CommandList::flushPendingCommands(PendingFlus
 
     if (pendingFlushMask & PendingFlush_UpdateGraphicsPipeline)
     {
-        Pipeline::PipelineGraphicInfo& info = m_pendingPipelineStateInfo._pipelineInfo;
+        Pipeline::PipelineGraphicInfo& info = m_pendingPipelineStateInfo._pipelineGraphicInfo;
         CommandList::pushCommand(new CommandSetGraphicPipeline(info._renderpassDesc, info._programDesc, info._pipelineDesc, info._tracker));
+
+        pendingFlushMask &= ~PendingFlush_UpdateGraphicsPipeline;
+    }
+
+    if (pendingFlushMask & PendingFlush_UpdateComputePipeline)
+    {
+        Pipeline::PipelineComputeInfo& info = m_pendingPipelineStateInfo._pipelineComputeInfo;
+        CommandList::pushCommand(new CommandSetComputePipeline(info._programDesc, info._tracker));
 
         pendingFlushMask &= ~PendingFlush_UpdateGraphicsPipeline;
     }
 
     if (pendingFlushMask & PendingFlush_UpdateTransitions)
     {
-        TransitionOp state = m_pendingTransitions._transitions.cbegin()->first;
-        std::vector<const Image*> images;
-        for (auto st : m_pendingTransitions._transitions)
+        /*CommandTransitionImage*/
+        class CommandTransitionImage : public Command
         {
-            if (state != st.first)
+        public:
+
+            explicit CommandTransitionImage(const std::vector<const Image*>& images, TransitionOp state, s32 layer, s32 mip) noexcept
+                : m_images(images)
+                , m_layer(layer)
+                , m_mip(mip)
+                , m_state(state)
             {
-                CommandList::pushCommand(new CommandTransitionImage(images, state));
+#if DEBUG_COMMAND_LIST
+                LOG_DEBUG("CommandTransitionImage constructor");
+#endif //DEBUG_COMMAND_LIST
+            }
+
+            CommandTransitionImage() = delete;
+            CommandTransitionImage(CommandTransitionImage&) = delete;
+
+            ~CommandTransitionImage()
+            {
+#if DEBUG_COMMAND_LIST
+                LOG_DEBUG("CommandTransitionImage constructor");
+#endif //DEBUG_COMMAND_LIST
+            }
+
+            void execute(const CommandList& cmdList)
+            {
+#if DEBUG_COMMAND_LIST
+                LOG_DEBUG("CommandTransitionImage execute");
+#endif //DEBUG_COMMAND_LIST
+                cmdList.getContext()->transitionImages(m_images, m_state);
+            }
+
+        private:
+
+            std::vector<const Image*> m_images;
+            s32 m_layer;
+            s32 m_mip;
+            TransitionOp m_state;
+        };
+
+        auto state = m_pendingTransitions._transitions.cbegin()->first;
+        auto& sub = m_pendingTransitions._transitions.cbegin()->second;
+        std::vector<const Image*> images;
+        for (auto& st : m_pendingTransitions._transitions)
+        {
+            if (state != st.first //transition
+                && std::get<1>(sub) == std::get<1>(st.second) && std::get<2>(sub) == std::get<2>(st.second)) //layer & mip
+            {
+                CommandList::pushCommand(new CommandTransitionImage(images, state, std::get<1>(st.second), std::get<2>(st.second)));
 
                 images.clear();
                 state = st.first;
             }
 
-            images.push_back(st.second);
+            images.push_back(std::get<0>(st.second));
         }
 
         if (!images.empty())
         {
-            CommandList::pushCommand(new CommandTransitionImage(images, state));
+            CommandList::pushCommand(new CommandTransitionImage(images, state, std::get<1>(sub), std::get<2>(sub)));
         }
 
         m_pendingTransitions._transitions.clear();
@@ -787,16 +878,16 @@ CommandList::PendingFlushMaskFlags CommandList::flushPendingCommands(PendingFlus
     return pendingFlushMask;
 }
 
-void CommandList::transitions(const Image* image, TransitionOp state)
+void CommandList::transitions(const Image* image, TransitionOp state, s32 layer, s32 mip)
 {
     if (CommandList::isImmediate())
     {
         std::vector<const Image*> images(1, image);
-        m_context->transitionImages(images, state);
+        m_context->transitionImages(images, state, layer, mip);
     }
     else
     {
-        m_pendingTransitions._transitions.insert({ state, image });
+        m_pendingTransitions._transitions.insert({ state, { image, layer, mip } });
         m_pendingFlushMask |= PendingFlush_UpdateTransitions;
     }
 }
@@ -815,6 +906,46 @@ void CommandList::generateMipmaps(Texture2D* texute, TransitionOp state)
     }
     else
     {
+        /*CommandGenerateMipmaps*/
+        class CommandGenerateMipmaps : public Command
+        {
+        public:
+
+            explicit CommandGenerateMipmaps(Image* image, u32 layer, TransitionOp state)
+                : m_image(image)
+                , m_layer(layer)
+                , m_state(state)
+            {
+#if DEBUG_COMMAND_LIST
+                LOG_DEBUG("CommandGenerateMipmaps constructor");
+#endif //DEBUG_COMMAND_LIST
+            }
+
+            CommandGenerateMipmaps() = delete;
+            CommandGenerateMipmaps(CommandGenerateMipmaps&) = delete;
+
+            ~CommandGenerateMipmaps()
+            {
+#if DEBUG_COMMAND_LIST
+                LOG_DEBUG("CommandGenerateMipmaps constructor");
+#endif //DEBUG_COMMAND_LIST
+            }
+
+            void execute(const CommandList& cmdList)
+            {
+#if DEBUG_COMMAND_LIST
+                LOG_DEBUG("CommandGenerateMipmaps execute");
+#endif //DEBUG_COMMAND_LIST
+                cmdList.getContext()->generateMipmaps(m_image, m_layer, m_state);
+            }
+
+        private:
+
+            Image* m_image;
+            u32 m_layer;
+            TransitionOp m_state;
+        };
+
         CommandList::pushCommand(new CommandGenerateMipmaps(texute->getImage(), 0, state));
     }
 }

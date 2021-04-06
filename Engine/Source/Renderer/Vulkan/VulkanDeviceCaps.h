@@ -69,7 +69,7 @@ namespace vk
         static void listOfInstanceExtensions(std::vector<std::string>& extensionsList);
         static void listOfDeviceExtensions(VkPhysicalDevice physicalDevice, std::vector<std::string>& extensionsList);
 
-        u32 getQueueFamiliyIndex(VkQueueFlagBits queueFlags);
+        u32 getQueueFamiliyIndex(VkQueueFlags queueFlags);
 
         const VkPhysicalDeviceLimits& getPhysicalDeviceLimits() const;
         const VkPhysicalDeviceMemoryProperties&  getDeviceMemoryProperties() const;

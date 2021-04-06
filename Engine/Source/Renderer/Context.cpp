@@ -4,10 +4,10 @@
 #include "Utils/Logger.h"
 
 #ifdef VULKAN_RENDER
-#include "Vulkan/VulkanGraphicContext.h"
+#   include "Vulkan/VulkanContext.h"
 #endif //VULKAN_RENDER
 #ifdef D3D_RENDER
-#include "D3D12/D3DGraphicContext.h"
+#   include "D3D12/D3DGraphicContext.h"
 #endif //D3D_RENDER
 
 namespace v3d
@@ -44,15 +44,7 @@ Context* Context::createContext(const platform::Window* window, RenderType type,
 
 #ifdef VULKAN_RENDER
     case RenderType::VulkanRender:
-        if (mask & DeviceMask::GraphicMask)
-        {
-            context = new vk::VulkanGraphicContext(window);
-        }
-        else
-        {
-            LOG_ERROR("Context::createContext mask %x is not supported for this render type %u. Set default bit", mask, type);
-            context = new vk::VulkanGraphicContext(window);
-        }
+        context = new vk::VulkanGraphicContext(window, mask);
         break;
 #endif //VULKAN_RENDER
 

@@ -7,11 +7,15 @@ namespace v3d
 {
 namespace renderer
 {
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////
+
     /*CommandCreateBuffer*/
 class CommandCreateBuffer : public Command
 {
 public:
-    CommandCreateBuffer(Buffer* buffer, u64 dataSize, void * data, bool shared) noexcept
+
+    explicit CommandCreateBuffer(Buffer* buffer, u64 dataSize, void * data, bool shared) noexcept
         : m_buffer(buffer)
         , m_size(0)
         , m_data(nullptr)
@@ -67,79 +71,19 @@ public:
     }
 
 private:
+
     Buffer* m_buffer;
     u64     m_size;
     void*   m_data;
     bool    m_shadred;
 };
 
-    /*CommandUpdateBuffer*/
-class CommandUpdateBuffer : public Command
-{
-public:
-    CommandUpdateBuffer(Buffer* buffer, u32 dataOffset, u64 dataSize, void * data, bool shared) noexcept
-        : m_buffer(buffer)
-        , m_offest(0)
-        , m_size(0)
-        , m_data(nullptr)
-        , m_shadred(shared)
-    {
-#if DEBUG_COMMAND_LIST
-        LOG_DEBUG("CommandUpdateBuffer constructor");
-#endif //DEBUG_COMMAND_LIST
-
-        if (data && dataSize > 0)
-        {
-            m_offest = dataOffset;
-            m_size = dataSize;
-            if (m_shadred)
-            {
-                m_data = data;
-            }
-            else
-            {
-                m_data = malloc(m_size); //TODO: get from pool
-                memcpy(m_data, data, m_size);
-            }
-        }
-    }
-
-    ~CommandUpdateBuffer()
-    {
-#if DEBUG_COMMAND_LIST
-        LOG_DEBUG("CommandUpdateBuffer destructor");
-#endif //DEBUG_COMMAND_LIST
-        if (m_data && !m_shadred)
-        {
-            free(m_data); //TODO: return to pool
-            m_data = nullptr;
-        }
-    }
-
-    void execute(const renderer::CommandList& cmdList) override
-    {
-#if DEBUG_COMMAND_LIST
-        LOG_DEBUG("CommandUpdateBuffer execute");
-#endif //DEBUG_COMMAND_LIST
-        if (m_data && m_size > 0)
-        {
-            m_buffer->upload(cmdList.getContext(), m_offest, m_size, m_data);
-        }
-    }
-
-private:
-    Buffer* m_buffer;
-    u32     m_offest;
-    u64     m_size;
-    void*   m_data;
-    bool    m_shadred;
-};
-
-    /*CommandDestroyBuffer*/
+/*CommandDestroyBuffer*/
 class CommandDestroyBuffer : public Command
 {
 public:
-    CommandDestroyBuffer(Buffer* buffer) noexcept
+
+    explicit CommandDestroyBuffer(Buffer* buffer) noexcept
         : m_buffer(buffer)
     {
 #if DEBUG_COMMAND_LIST
@@ -163,6 +107,7 @@ public:
     }
 
 private:
+
     Buffer* m_buffer;
 };
 
@@ -274,6 +219,70 @@ bool VertexStreamBuffer::update(u32 offset, u64 size, const u8* data)
         }
         else
         {
+            /*CommandUpdateBuffer*/
+            class CommandUpdateBuffer : public Command
+            {
+            public:
+
+                explicit CommandUpdateBuffer(Buffer* buffer, u32 dataOffset, u64 dataSize, void* data, bool shared) noexcept
+                    : m_buffer(buffer)
+                    , m_offest(0)
+                    , m_size(0)
+                    , m_data(nullptr)
+                    , m_shadred(shared)
+                {
+#if DEBUG_COMMAND_LIST
+                    LOG_DEBUG("CommandUpdateBuffer constructor");
+#endif //DEBUG_COMMAND_LIST
+
+                    if (data && dataSize > 0)
+                    {
+                        m_offest = dataOffset;
+                        m_size = dataSize;
+                        if (m_shadred)
+                        {
+                            m_data = data;
+                        }
+                        else
+                        {
+                            m_data = malloc(m_size); //TODO: get from pool
+                            memcpy(m_data, data, m_size);
+                        }
+                    }
+                }
+
+                ~CommandUpdateBuffer()
+                {
+#if DEBUG_COMMAND_LIST
+                    LOG_DEBUG("CommandUpdateBuffer destructor");
+#endif //DEBUG_COMMAND_LIST
+                    if (m_data && !m_shadred)
+                    {
+                        free(m_data); //TODO: return to pool
+                        m_data = nullptr;
+                    }
+                }
+
+                void execute(const renderer::CommandList& cmdList) override
+                {
+#if DEBUG_COMMAND_LIST
+                    LOG_DEBUG("CommandUpdateBuffer execute");
+#endif //DEBUG_COMMAND_LIST
+                    if (m_data && m_size > 0)
+                    {
+                        m_buffer->upload(cmdList.getContext(), m_offest, m_size, m_data);
+                    }
+                }
+
+            private:
+
+                Buffer* m_buffer;
+                u32     m_offest;
+                u64     m_size;
+                void* m_data;
+                bool    m_shadred;
+            };
+
             m_cmdList.pushCommand(new CommandUpdateBuffer(m_buffer, offset, m_size, m_data, (m_usage & StreamBuffer_Shared)));
             return true;
         }

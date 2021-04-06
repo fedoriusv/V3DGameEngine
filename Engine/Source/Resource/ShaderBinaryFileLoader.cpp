@@ -27,7 +27,7 @@ ShaderBinaryFileLoader::ShaderBinaryFileLoader(const renderer::Context* context,
             header._optLevel = 0;
             ASSERT(defines.empty(), "cant use defines, should be finaly compiled already");
 
-            ResourceDecoderRegistration::registerDecoder(new ShaderSpirVDecoder( { "vspv", "fspv" }, header, !(flags & ShaderBinaryBuildFlag::ShaderBinary_DontUseReflaction) ));
+            ResourceDecoderRegistration::registerDecoder(new ShaderSpirVDecoder( { "vspv", "fspv", "cspv" }, header, !(flags & ShaderBinaryBuildFlag::ShaderBinary_DontUseReflaction) ));
         }
 #else //USE_SPIRV
         ASSERT(false, "not implemented");

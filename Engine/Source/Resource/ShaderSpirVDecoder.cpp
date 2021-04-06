@@ -24,10 +24,12 @@ const std::map<std::string, renderer::ShaderType> k_SPIRV_ExtensionList =
     //glsl
     { "vert", renderer::ShaderType::ShaderType_Vertex },
     { "frag", renderer::ShaderType::ShaderType_Fragment },
+    { "comp", renderer::ShaderType::ShaderType_Compute },
 
     //hlsl
     { "vs", renderer::ShaderType::ShaderType_Vertex },
     { "ps", renderer::ShaderType::ShaderType_Fragment },
+    { "cs", renderer::ShaderType::ShaderType_Compute },
 };
 
  ShaderSpirVDecoder::ShaderSpirVDecoder(const renderer::ShaderHeader& header, bool reflections) noexcept
@@ -45,11 +47,7 @@ ShaderSpirVDecoder::ShaderSpirVDecoder(std::vector<std::string> supportedExtensi
 {
 }
 
-ShaderSpirVDecoder::~ShaderSpirVDecoder()
-{
-}
-
-Resource * ShaderSpirVDecoder::decode(const stream::Stream* stream, const std::string& name) const
+Resource* ShaderSpirVDecoder::decode(const stream::Stream* stream, const std::string& name) const
 {
     if (stream->size() > 0)
     {
@@ -92,9 +90,12 @@ Resource * ShaderSpirVDecoder::decode(const stream::Stream* stream, const std::s
 #if (VULKAN_CURRENT_VERSION == VULKAN_VERSION_1_0)
                 options.SetTargetEnvironment(shaderc_target_env_vulkan, shaderc_env_version_vulkan_1_0);
                 options.SetTargetSpirv(shaderc_spirv_version_1_0);
-#else
+#elif (VULKAN_CURRENT_VERSION == VULKAN_VERSION_1_1)
                 options.SetTargetEnvironment(shaderc_target_env_vulkan, shaderc_env_version_vulkan_1_1);
                 options.SetTargetSpirv(shaderc_spirv_version_1_3);
+#else
+                options.SetTargetEnvironment(shaderc_target_env_vulkan, shaderc_env_version_vulkan_1_2);
+                options.SetTargetSpirv(shaderc_spirv_version_1_5);
 #endif
                 break;
 
@@ -104,16 +105,19 @@ Resource * ShaderSpirVDecoder::decode(const stream::Stream* stream, const std::s
 #if (VULKAN_CURRENT_VERSION == VULKAN_VERSION_1_0)
                 options.SetTargetEnvironment(shaderc_target_env_vulkan, shaderc_env_version_vulkan_1_0);
                 options.SetTargetSpirv(shaderc_spirv_version_1_0);
-#else
+#elif (VULKAN_CURRENT_VERSION == VULKAN_VERSION_1_1)
                 options.SetTargetEnvironment(shaderc_target_env_vulkan, shaderc_env_version_vulkan_1_1);
                 options.SetTargetSpirv(shaderc_spirv_version_1_3);
+#else
+                options.SetTargetEnvironment(shaderc_target_env_vulkan, shaderc_env_version_vulkan_1_2);
+                options.SetTargetSpirv(shaderc_spirv_version_1_5);
 #endif
                 break;
 
             default:
                 ASSERT(false, "shader lang doesn't support");
-                options.SetSourceLanguage(shaderc_source_language_glsl);
-                options.SetTargetEnvironment(shaderc_target_env_vulkan, 0);
+                LOG_ERROR("ShaderSpirVDecoder::decode: shader model %d is not supported", m_header._shaderModel);
+                return nullptr;
             }
 
             for (auto& define : m_header._defines)
@@ -142,16 +146,17 @@ Resource * ShaderSpirVDecoder::decode(const stream::Stream* stream, const std::s
                 }
 
                 type = result->second;
+                validShaderType = true;
                 switch (type)
                 {
                 case renderer::ShaderType::ShaderType_Vertex:
-                    validShaderType = true;
                     return shaderc_shader_kind::shaderc_vertex_shader;
 
                 case renderer::ShaderType::ShaderType_Fragment:
-                    validShaderType = true;
                     return shaderc_shader_kind::shaderc_fragment_shader;
 
+                case renderer::ShaderType::ShaderType_Compute:
+                    return shaderc_shader_kind::shaderc_compute_shader;
 
                 default:
                     validShaderType = false;
@@ -164,26 +169,22 @@ Resource * ShaderSpirVDecoder::decode(const stream::Stream* stream, const std::s
 
             auto getShaderType = [&validShaderType](renderer::ShaderType type) -> shaderc_shader_kind
             {
+                validShaderType = true;
                 switch (type)
                 {
                 case renderer::ShaderType::ShaderType_Vertex:
-                {
-                    validShaderType = true;
                     return  shaderc_shader_kind::shaderc_vertex_shader;
-                }
 
                 case renderer::ShaderType::ShaderType_Fragment:
-                {
-                    validShaderType = true;
                     return  shaderc_shader_kind::shaderc_fragment_shader;
-                }
+
+                case renderer::ShaderType::ShaderType_Compute:
+                    return  shaderc_shader_kind::shaderc_compute_shader;
 
                 default:
-                {
                     validShaderType = false;
                     return shaderc_shader_kind::shaderc_vertex_shader;
                 }
-                };
 
                 validShaderType = false;
                 return shaderc_shader_kind::shaderc_vertex_shader;
@@ -206,9 +207,8 @@ Resource * ShaderSpirVDecoder::decode(const stream::Stream* stream, const std::s
                 return nullptr;
             }
 
-
             shaderc_compilation_status status = result.GetCompilationStatus();
-            auto getCompileError = [](shaderc_compilation_status status) -> std::string
+            auto getCompileStatusError = [](shaderc_compilation_status status) -> std::string
             {
                 switch (status)
                 {
@@ -250,7 +250,7 @@ Resource * ShaderSpirVDecoder::decode(const stream::Stream* stream, const std::s
             std::string stringType = getStringType(shaderType);
             if (status != shaderc_compilation_status_success)
             {
-                LOG_ERROR("ShaderSpirVDecoder::decode: Shader [%s]%s, compile error %s", stringType.c_str(), name.c_str(), getCompileError(status).c_str());
+                LOG_ERROR("ShaderSpirVDecoder::decode: Shader [%s]%s, compile error %s", stringType.c_str(), name.c_str(), getCompileStatusError(status).c_str());
                 if (result.GetNumErrors() == 0)
                 {
                     return nullptr;
@@ -332,7 +332,7 @@ Resource * ShaderSpirVDecoder::decode(const stream::Stream* stream, const std::s
 
             return resource;
         }
-        else
+        else //ShaderResource_Bytecode
         {
             bool validShaderType = false;
             auto getShaderType = [&validShaderType](const std::string& name) -> renderer::ShaderType
@@ -347,6 +347,11 @@ Resource * ShaderSpirVDecoder::decode(const stream::Stream* stream, const std::s
                 {
                     validShaderType = true;
                     return renderer::ShaderType::ShaderType_Fragment;
+                }
+                else if (fileExtension == "cspv")
+                {
+                    validShaderType = true;
+                    return renderer::ShaderType::ShaderType_Compute;
                 }
 
                 validShaderType = false;
@@ -437,6 +442,7 @@ bool ShaderSpirVDecoder::parseReflections(const std::vector<u32>& spirv, stream:
                 if (type.vecsize == 4)
                     return renderer::Format_R32G32B32A32_SFloat;
             }
+            break;
         }
 
         case spirv_cross::SPIRType::Int:
@@ -452,6 +458,7 @@ bool ShaderSpirVDecoder::parseReflections(const std::vector<u32>& spirv, stream:
                 if (type.vecsize == 4)
                     return renderer::Format_R32G32B32A32_SInt;
             }
+            break;
         }
 
         case spirv_cross::SPIRType::UInt:
@@ -467,10 +474,52 @@ bool ShaderSpirVDecoder::parseReflections(const std::vector<u32>& spirv, stream:
                 if (type.vecsize == 4)
                     return renderer::Format_R32G32B32A32_UInt;
             }
+            break;
         }
 
         default:
             ASSERT(false, "format not found");
+        }
+
+        return renderer::Format_Undefined;
+    };
+
+    auto convertSPRIVTypeToImageFormat = [](const spirv_cross::SPIRType& type)->renderer::Format
+    {
+        ASSERT(type.basetype == spirv_cross::SPIRType::Image, "wrong type");
+        switch (type.image.format)
+        {
+            case spv::ImageFormat::ImageFormatRgba32f:
+                return renderer::Format_R32G32B32A32_SFloat;
+
+            case spv::ImageFormat::ImageFormatRg32f:
+                return renderer::Format_R32G32_SFloat;
+
+            case spv::ImageFormat::ImageFormatR32f:
+                return renderer::Format_R32_SFloat;
+
+            case spv::ImageFormat::ImageFormatRgba8:
+                return renderer::Format_R8G8B8A8_UNorm;
+
+            case spv::ImageFormat::ImageFormatRgba8Snorm:
+                return renderer::Format_R8G8B8A8_SNorm;
+
+            case spv::ImageFormat::ImageFormatRg8:
+                return renderer::Format_R8G8_UNorm;
+
+            case spv::ImageFormat::ImageFormatRg8Snorm:
+                return renderer::Format_R8G8_SNorm;
+
+            case spv::ImageFormat::ImageFormatR8:
+                return renderer::Format_R8_UNorm;
+
+            case spv::ImageFormat::ImageFormatR8Snorm:
+                return renderer::Format_R8_SNorm;
+
+            case spv::ImageFormat::ImageFormatUnknown:
+            default:
+                ASSERT(false, "format not found");
+                break;
         }
 
         return renderer::Format_Undefined;
@@ -481,8 +530,7 @@ bool ShaderSpirVDecoder::parseReflections(const std::vector<u32>& spirv, stream:
         return model == renderer::ShaderHeader::ShaderModel::ShaderModel_HLSL_5_0 || model == renderer::ShaderHeader::ShaderModel::ShaderModel_HLSL_5_1;
     };
 
-    if (isHLSL(m_header._shaderModel) || m_header._shaderModel == renderer::ShaderHeader::ShaderModel::ShaderModel_GLSL_450 ||
-        m_header._shaderModel == renderer::ShaderHeader::ShaderModel::ShaderModel_SpirV)
+    if (isHLSL(m_header._shaderModel) || m_header._shaderModel == renderer::ShaderHeader::ShaderModel::ShaderModel_GLSL_450 || m_header._shaderModel == renderer::ShaderHeader::ShaderModel::ShaderModel_SpirV)
     {
         spirv_cross::CompilerGLSL glsl(spirv);
         spirv_cross::ShaderResources resources = glsl.get_shader_resources();
@@ -809,6 +857,48 @@ bool ShaderSpirVDecoder::parseReflections(const std::vector<u32>& spirv, stream:
             samplerImage._name = name;
 #endif
             samplerImage >> stream;
+        }
+
+        u32 storageImages = static_cast<u32>(resources.storage_images.size());
+        stream->write<u32>(storageImages);
+        for (auto& image : resources.storage_images)
+        {
+            u32 binding = glsl.get_decoration(image.id, spv::DecorationBinding);
+            u32 set = glsl.get_decoration(image.id, spv::DecorationDescriptorSet);
+
+            const spirv_cross::SPIRType& type = glsl.get_type(image.type_id);
+
+            renderer::Shader::StorageImage storageImage;
+            storageImage._set = set;
+            storageImage._binding = binding;
+            storageImage._array = type.array.empty() ? 1 : type.array[0];
+            storageImage._target = convertSPRIVTypeToTextureData(type);
+            storageImage._format = convertSPRIVTypeToImageFormat(type);
+            storageImage._readonly = glsl.get_decoration(image.id, spv::DecorationNonWritable);
+#if USE_STRING_ID_SHADER
+            const std::string& name = glsl.get_name(image.id);
+            ASSERT(!name.empty(), "empty name");
+            storageImage._name = name;
+#endif
+            storageImage >> stream;
+        }
+
+        u32 storageBuffers = static_cast<u32>(resources.storage_buffers.size());
+        stream->write<u32>(storageBuffers);
+        for (auto& buffer : resources.storage_buffers)
+        {
+            u32 binding = glsl.get_decoration(buffer.id, spv::DecorationBinding);
+            u32 set = glsl.get_decoration(buffer.id, spv::DecorationDescriptorSet);
+
+            renderer::Shader::StorageBuffer storageBuffer;
+            storageBuffer._set = set;
+            storageBuffer._binding = binding;
+#if USE_STRING_ID_SHADER
+            const std::string& name = glsl.get_name(buffer.id);
+            ASSERT(!name.empty(), "empty name");
+            storageBuffer._name = name;
+#endif
+            storageBuffer >> stream;
         }
 
         u32 pushConstantCount = static_cast<u32>(resources.push_constant_buffers.size());

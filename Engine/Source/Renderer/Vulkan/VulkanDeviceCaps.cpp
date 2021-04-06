@@ -2,7 +2,7 @@
 #include "Utils/Logger.h"
 
 #ifdef VULKAN_RENDER
-#include "VulkanGraphicContext.h"
+#include "VulkanContext.h"
 #include "VulkanMemory.h"
 #include "VulkanImage.h"
 #include "VulkanDescriptorSet.h"
@@ -104,7 +104,7 @@ void VulkanDeviceCaps::listOfDeviceExtensions(VkPhysicalDevice physicalDevice, s
     }
 }
 
-u32 VulkanDeviceCaps::getQueueFamiliyIndex(VkQueueFlagBits queueFlags)
+u32 VulkanDeviceCaps::getQueueFamiliyIndex(VkQueueFlags queueFlags)
 {
     // Dedicated queue for compute
     // Try to find a queue family index that supports compute but not graphics
@@ -306,19 +306,31 @@ void VulkanDeviceCaps::fillCapabilitiesList(const DeviceInfo* info)
     for (u32 index = 0; index < Format::Format_Count; ++index)
     {
         {
-            ImageFormatSupport& support = m_imageFormatSupport[index][TilingType::TilingType_Optimal];
-            support._supportMip = true;
-
             VkImageFormatProperties imageFormatProperties = {};
             VkFormat vkFormat = VulkanImage::convertImageFormatToVkFormat((Format)index);
 
-            VkResult result = VulkanWrapper::GetPhysicalDeviceImageFormatProperties(info->_physicalDevice, vkFormat, VK_IMAGE_TYPE_2D, VK_IMAGE_TILING_OPTIMAL,
-                VulkanImage::isColorFormat(vkFormat) ? VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT : VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, 0, &imageFormatProperties);
-            support._supportAttachment = (result == VK_SUCCESS) ? true : false;
+            VkFormatProperties foramtProperties = {};
+            VulkanWrapper::GetPhysicalDeviceFormatProperties(info->_physicalDevice, vkFormat, &foramtProperties);
 
-            result = VulkanWrapper::GetPhysicalDeviceImageFormatProperties(info->_physicalDevice, vkFormat, VK_IMAGE_TYPE_2D, VK_IMAGE_TILING_OPTIMAL,
-                VK_IMAGE_USAGE_SAMPLED_BIT, 0, &imageFormatProperties);
-            support._supportSampled = (result == VK_SUCCESS) ? true : false;
+            ImageFormatSupport& support = m_imageFormatSupport[index][TilingType::TilingType_Optimal];
+            support._supportMip = true;
+
+            {
+                VkImageUsageFlags attachmentUsage =  VulkanImage::isColorFormat(vkFormat) ? VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT : VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+                VkFormatFeatureFlags attachmentFeature = VulkanImage::isColorFormat(vkFormat) ? VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT : VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT;
+                VkResult result = VulkanWrapper::GetPhysicalDeviceImageFormatProperties(info->_physicalDevice, vkFormat, VK_IMAGE_TYPE_2D, VK_IMAGE_TILING_OPTIMAL, attachmentUsage, 0, &imageFormatProperties);
+                support._supportAttachment = (result == VK_SUCCESS && foramtProperties.optimalTilingFeatures & attachmentFeature) ? true : false;
+            }
+
+            {
+                VkResult result = VulkanWrapper::GetPhysicalDeviceImageFormatProperties(info->_physicalDevice, vkFormat, VK_IMAGE_TYPE_2D, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_SAMPLED_BIT, 0, &imageFormatProperties);
+                support._supportSampled = (result == VK_SUCCESS && foramtProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT) ? true : false;
+            }
+
+            {
+                VkResult result = VulkanWrapper::GetPhysicalDeviceImageFormatProperties(info->_physicalDevice, vkFormat, VK_IMAGE_TYPE_2D, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_STORAGE_BIT, 0, &imageFormatProperties);
+                support._supportStorage = (result == VK_SUCCESS && foramtProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT) ? true : false;
+            }
         }
 
         {
@@ -328,13 +340,21 @@ void VulkanDeviceCaps::fillCapabilitiesList(const DeviceInfo* info)
             VkImageFormatProperties imageFormatProperties = {};
             VkFormat vkFormat = VulkanImage::convertImageFormatToVkFormat((Format)index);
 
-            VkResult result = VulkanWrapper::GetPhysicalDeviceImageFormatProperties(info->_physicalDevice, vkFormat, VK_IMAGE_TYPE_2D, VK_IMAGE_TILING_LINEAR,
-                VulkanImage::isColorFormat(vkFormat) ? VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT : VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, 0, &imageFormatProperties);
-            support._supportAttachment = (result == VK_SUCCESS) ? true : false;
+            {
+                VkResult result = VulkanWrapper::GetPhysicalDeviceImageFormatProperties(info->_physicalDevice, vkFormat, VK_IMAGE_TYPE_2D, VK_IMAGE_TILING_LINEAR, 
+                    VulkanImage::isColorFormat(vkFormat) ? VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT : VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, 0, &imageFormatProperties);
+                support._supportAttachment = (result == VK_SUCCESS) ? true : false;
+            }
 
-            result = VulkanWrapper::GetPhysicalDeviceImageFormatProperties(info->_physicalDevice, vkFormat, VK_IMAGE_TYPE_2D, VK_IMAGE_TILING_LINEAR,
-                VK_IMAGE_USAGE_SAMPLED_BIT, 0, &imageFormatProperties);
-            support._supportSampled = (result == VK_SUCCESS) ? true : false;
+            {
+                VkResult result = VulkanWrapper::GetPhysicalDeviceImageFormatProperties(info->_physicalDevice, vkFormat, VK_IMAGE_TYPE_2D, VK_IMAGE_TILING_LINEAR, VK_IMAGE_USAGE_SAMPLED_BIT, 0, &imageFormatProperties);
+                support._supportSampled = (result == VK_SUCCESS) ? true : false;
+            }
+
+            {
+                VkResult result = VulkanWrapper::GetPhysicalDeviceImageFormatProperties(info->_physicalDevice, vkFormat, VK_IMAGE_TYPE_2D, VK_IMAGE_TILING_LINEAR, VK_IMAGE_USAGE_STORAGE_BIT, 0, &imageFormatProperties);
+                support._supportStorage = (result == VK_SUCCESS) ? true : false;
+            }
         }
     }
 

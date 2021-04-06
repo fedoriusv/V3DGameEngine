@@ -1,9 +1,12 @@
 #include "VulkanSwapchain.h"
-#include "VulkanGraphicContext.h"
+
+#include "Utils/Logger.h"
+
+#ifdef VULKAN_RENDER
+#include "VulkanDebug.h"
+#include "VulkanContext.h"
 #include "VulkanImage.h"
 #include "VulkanResource.h"
-#include "VulkanDebug.h"
-#include "Utils/Logger.h"
 
 #ifdef PLATFORM_ANDROID
 #   include "Platform/Android/AndroidCommon.h"
@@ -12,7 +15,6 @@
 extern android_app* g_nativeAndroidApp;
 #endif //PLATFORM_ANDROID
 
-#ifdef VULKAN_RENDER
 namespace v3d
 {
 namespace renderer

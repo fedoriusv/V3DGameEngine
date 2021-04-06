@@ -207,7 +207,12 @@ void D3DGraphicContext::drawIndexed(const StreamBufferDescription& desc, u32 fir
     }
 }
 
-void D3DGraphicContext::bindImage(const Shader* shader, u32 bindIndex, const Image* image)
+void D3DGraphicContext::dispatchCompute(const core::Dimension3D& groups)
+{
+    //TODO
+}
+
+void D3DGraphicContext::bindImage(const Shader* shader, u32 bindIndex, const Image* image, s32 layer, s32 mip)
 {
 #if D3D_DEBUG
     LOG_DEBUG("D3DGraphicContext::bindImage");
@@ -249,7 +254,7 @@ void D3DGraphicContext::bindSampler(const Shader* shader, u32 bindIndex, const S
     m_descriptorState->bindDescriptor<D3DSampler>(space, binding, dxSampler);
 }
 
-void D3DGraphicContext::bindSampledImage(const Shader* shader, u32 bindIndex, const Image* image, const Sampler::SamplerInfo* samplerInfo)
+void D3DGraphicContext::bindSampledImage(const Shader* shader, u32 bindIndex, const Image* image, const Sampler::SamplerInfo* samplerInfo, s32 layer, s32 mip)
 {
 #if D3D_DEBUG
     LOG_DEBUG("D3DGraphicContext::bindSampledImage");
@@ -280,7 +285,12 @@ void D3DGraphicContext::bindUniformsBuffer(const Shader* shader, u32 bindIndex, 
     m_descriptorState->bindDescriptor<D3DBuffer>(space, binding, constantBuffer, 0, size);
 }
 
-void D3DGraphicContext::transitionImages(std::vector<const Image*>& images, TransitionOp transition, s32 layer)
+void D3DGraphicContext::bindStorageImage(const Shader* shader, u32 bindIndex, const Image* image, s32 layer, s32 mip)
+{
+    //TODO
+}
+
+void D3DGraphicContext::transitionImages(std::vector<const Image*>& images, TransitionOp transition, s32 layer, s32 mip)
 {
     ASSERT(false, "not impl");
 }
@@ -407,6 +417,11 @@ void D3DGraphicContext::setPipeline(const Pipeline::PipelineGraphicInfo* pipelin
     m_currentState._pipeline = dxPipeline;
 }
 
+void D3DGraphicContext::setPipeline(const Pipeline::PipelineComputeInfo* pipelineInfo)
+{
+    //TODO
+}
+
 void D3DGraphicContext::removePipeline(Pipeline* pipeline)
 {
     D3DGraphicPipelineState* dxPipeline = static_cast<D3DGraphicPipelineState*>(pipeline);
@@ -515,6 +530,7 @@ const DeviceCaps* D3DGraphicContext::getDeviceCaps() const
 
 void D3DGraphicContext::generateMipmaps(Image* image, u32 layer, TransitionOp state)
 {
+    ASSERT(false, "not impl");
 }
 
 D3DCommandList* D3DGraphicContext::getOrAcquireCurrentCommandList(D3DCommandList::Type type)

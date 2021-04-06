@@ -681,6 +681,12 @@ bool D3DGraphicPipelineState::separateSematic(const std::string& str, std::strin
     return false;
 }
 
+bool D3DGraphicPipelineState::create(const PipelineComputeInfo* pipelineInfo)
+{
+    ASSERT(false, "must be graphic");
+    return false;
+}
+
 } //namespace dx3d
 } //namespace renderer
 } //namespace v3d

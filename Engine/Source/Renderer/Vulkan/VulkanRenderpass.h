@@ -46,7 +46,6 @@ namespace vk
 
         static VkAttachmentLoadOp convertAttachLoadOpToVkAttachmentLoadOp(RenderTargetLoadOp loadOp);
         static VkAttachmentStoreOp convertAttachStoreOpToVkAttachmentStoreOp(RenderTargetStoreOp storeOp);
-        static VkImageLayout convertTransitionStateToImageLayout(TransitionOp state);
 
         explicit VulkanRenderPass(VkDevice device, const RenderPassDescription& description, [[maybe_unused]] const std::string& name = "") noexcept;
         ~VulkanRenderPass();

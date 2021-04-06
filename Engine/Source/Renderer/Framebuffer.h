@@ -66,8 +66,8 @@ namespace renderer
             ObjectTracker<Framebuffer>* _tracker;
         };
 
-        Framebuffer() noexcept;
-        virtual ~Framebuffer();
+        Framebuffer() noexcept = default;
+        virtual ~Framebuffer() = default;
 
         virtual bool create(const RenderPass* pass) = 0;
         virtual void destroy() = 0;
@@ -76,7 +76,7 @@ namespace renderer
 
         struct FramebufferDescription
         {
-            FramebufferDescription() = default;
+            FramebufferDescription() noexcept;
             FramebufferDescription(u64 size) noexcept;
             bool operator==(const FramebufferDescription& desc) const;
 

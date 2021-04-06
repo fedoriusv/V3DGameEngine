@@ -275,5 +275,20 @@ namespace renderer
         return calculatedSize;
     }
 
+    u32 ImageFormat::calculateMipmapCount(const core::Dimension3D& size)
+    {
+        if (size.getArea() > 1)
+        {
+            core::Dimension3D mipSize(size);
+            mipSize.width = std::max(size.width / 2, 1U);
+            mipSize.height = std::max(size.height / 2, 1U);
+            mipSize.depth = std::max(size.depth / 2, 1U);
+
+            return ImageFormat::calculateMipmapCount(mipSize) + 1;
+        }
+
+        return 1U;
+    }
+
 } //namespace renderer
 } //namespace v3d

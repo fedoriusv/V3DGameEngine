@@ -71,7 +71,7 @@ namespace renderer
         */
         struct Attribute
         {
-            Attribute();
+            Attribute() noexcept;
 
             u32              _location;
             renderer::Format _format;
@@ -89,7 +89,7 @@ namespace renderer
         {
             struct Uniform
             {
-                Uniform();
+                Uniform() noexcept;
 
                 u32                _bufferId;
                 u32                _array;
@@ -103,7 +103,7 @@ namespace renderer
                 void operator<<(const stream::Stream* stream);
             };
 
-            UniformBuffer();
+            UniformBuffer() noexcept;
 
             u32                  _id;
             u32                  _set;
@@ -124,7 +124,7 @@ namespace renderer
         */
         struct Image
         {
-            Image();
+            Image() noexcept;
 
             u32                     _set;
             u32                     _binding;
@@ -144,7 +144,7 @@ namespace renderer
         */
         struct Sampler
         {
-            Sampler();
+            Sampler() noexcept;
 
             u32                     _set;
             u32                     _binding;
@@ -156,11 +156,49 @@ namespace renderer
         };
 
         /**
+        * @brief struct StorageImage
+        */
+        struct StorageImage
+        {
+            StorageImage() noexcept;
+
+            u32                     _set;
+            u32                     _binding;
+            renderer::TextureTarget _target;
+            renderer::Format        _format;
+            u32                     _array;
+            bool                    _readonly;
+#if USE_STRING_ID_SHADER
+            std::string             _name;
+#endif
+
+            void operator>>(stream::Stream* stream) const;
+            void operator<<(const stream::Stream* stream);
+        };
+
+        /**
+        * @brief struct StorageBuffer
+        */
+        struct StorageBuffer
+        {
+            StorageBuffer() noexcept;
+
+            u32                     _set;
+            u32                     _binding;
+#if USE_STRING_ID_SHADER
+            std::string             _name;
+#endif
+
+            void operator>>(stream::Stream* stream) const;
+            void operator<<(const stream::Stream* stream);
+        };
+
+        /**
         * @brief struct PushConstant
         */
         struct PushConstant
         {
-            PushConstant();
+            PushConstant() noexcept;
 
             u32         _offset;
             u32         _size;
@@ -182,6 +220,8 @@ namespace renderer
             std::vector<Image>          _sampledImages;
             std::vector<Image>          _images;
             std::vector<Sampler>        _samplers;
+            std::vector<StorageImage>   _storageImages;
+            std::vector<StorageBuffer>  _storageBuffers;
             std::vector<PushConstant>   _pushConstant;
         };
 

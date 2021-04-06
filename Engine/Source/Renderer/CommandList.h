@@ -24,6 +24,7 @@ namespace renderer
     class Backbuffer;
     class RenderTargetState;
     class GraphicsPipelineState;
+    class ComputePipelineState;
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -76,17 +77,21 @@ namespace renderer
         void draw(const StreamBufferDescription& desc, u32 firstVertex, u32 countVertex, u32 countInstance);
         void drawIndexed(const StreamBufferDescription& desc, u32 firstIndex, u32 countIndex, u32 countInstance);
 
+        void dispatchCompute(const core::Dimension3D& groups = { 1, 1, 1});
+
         void pushCommand(Command* cmd);
 
         void clearBackbuffer(const core::Vector4D& color);
 
         void setRenderTarget(RenderTargetState* rendertarget);
         void setPipelineState(GraphicsPipelineState* pipeline);
+        void setPipelineState(ComputePipelineState* pipeline);
+
         void setViewport(const core::Rect32& viewport, const core::Vector2D& depth = {0.0f, 1.0f});
         void setScissor(const core::Rect32& scissor);
 
         template<class TTexture>
-        void transition(TTexture* texture, TransitionOp state)
+        void transition(TTexture* texture, TransitionOp state, s32 layer = k_generalLayer, s32 mip = k_allMipmapsLevels)
         {
             static_assert(std::is_base_of<Texture, TTexture>(), "CommandList::transfer wrong type");
             if constexpr (std::is_same<Backbuffer, TTexture>())
@@ -95,7 +100,7 @@ namespace renderer
             }
             else
             {
-                CommandList::transitions(texture->getImage(), state);
+                CommandList::transitions(texture->getImage(), state, layer, mip);
             }
         }
 
@@ -119,7 +124,8 @@ namespace renderer
             PendingFlush_UpdateRenderTarget = 0x1,
             PendingFlush_UpdateContextState = 0x2,
             PendingFlush_UpdateGraphicsPipeline = 0x4,
-            PendingFlush_UpdateTransitions = 0x8
+            PendingFlush_UpdateComputePipeline = 0x8,
+            PendingFlush_UpdateTransitions = 0x10
         };
 
         typedef u16 PendingFlushMaskFlags;
@@ -135,7 +141,7 @@ namespace renderer
 
     private:
 
-        void transitions(const Image* image, TransitionOp state);
+        void transitions(const Image* image, TransitionOp state, s32 layer = k_generalLayer, s32 mip = k_allMipmapsLevels);
 
         struct RenderTargetPendingState
         {
@@ -145,12 +151,13 @@ namespace renderer
 
         struct PipelinePendingState
         {
-            Pipeline::PipelineGraphicInfo _pipelineInfo;
+            Pipeline::PipelineGraphicInfo _pipelineGraphicInfo;
+            Pipeline::PipelineComputeInfo _pipelineComputeInfo;
         };
 
         struct TransitionPendingState
         {
-            std::multimap<TransitionOp, const Image*> _transitions;
+            std::multimap<TransitionOp, std::tuple<const Image*, s32, s32>> _transitions;
         };
 
         void executeCommands();

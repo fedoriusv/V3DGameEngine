@@ -316,6 +316,13 @@ namespace renderer
         * @return image size with mips in bytes
         */
         static u64 calculateImageSize(const core::Dimension3D& size, u32 mips, u32 layers, Format format);
+
+        /**
+        * @brief calculateMipmapCount function.
+        * @param const core::Dimension3D& size
+        * @return count mipmap levels
+        */
+        static u32 calculateMipmapCount(const core::Dimension3D& size);
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

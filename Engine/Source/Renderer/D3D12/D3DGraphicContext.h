@@ -51,12 +51,15 @@ namespace dx3d
         void draw(const StreamBufferDescription& desc, u32 firstVertex, u32 vertexCount, u32 firstInstance, u32 instanceCount) override;
         void drawIndexed(const StreamBufferDescription& desc, u32 firstIndex, u32 indexCount, u32 firstInstance, u32 instanceCount) override;
 
-        void bindImage(const Shader* shader, u32 bindIndex, const Image* image) override;
-        void bindSampler(const Shader* shader, u32 bindIndex, const Sampler::SamplerInfo* samplerInfo) override;
-        void bindSampledImage(const Shader* shader, u32 bindIndex, const Image* image, const Sampler::SamplerInfo* samplerInfo) override;
-        void bindUniformsBuffer(const Shader* shader, u32 bindIndex, u32 offset, u32 size, const void* data) override;
+        void dispatchCompute(const core::Dimension3D& groups) override;
 
-        void transitionImages(std::vector<const Image*>& images, TransitionOp transition, s32 layer = -1) override;
+        void bindImage(const Shader* shader, u32 bindIndex, const Image* image, s32 layer = k_generalLayer, s32 mip = k_allMipmapsLevels) override;
+        void bindSampler(const Shader* shader, u32 bindIndex, const Sampler::SamplerInfo* samplerInfo) override;
+        void bindSampledImage(const Shader* shader, u32 bindIndex, const Image* image, const Sampler::SamplerInfo* samplerInfo, s32 layer = k_generalLayer, s32 mip = k_allMipmapsLevels) override;
+        void bindUniformsBuffer(const Shader* shader, u32 bindIndex, u32 offset, u32 size, const void* data) override;
+        void bindStorageImage(const Shader* shader, u32 bindIndex, const Image* image, s32 layer = k_generalLayer, s32 mip = k_allMipmapsLevels) override;
+
+        void transitionImages(std::vector<const Image*>& images, TransitionOp transition, s32 layer = k_generalLayer, s32 mip = k_allMipmapsLevels) override;
 
         void setViewport(const core::Rect32& viewport, const core::Vector2D& depth = { 0.0f, 1.0f }) override;
         void setScissor(const core::Rect32& scissor) override;
@@ -67,6 +70,7 @@ namespace dx3d
         void invalidateRenderPass() override;
 
         void setPipeline(const Pipeline::PipelineGraphicInfo* pipelineInfo) override;
+        void setPipeline(const Pipeline::PipelineComputeInfo* pipelineInfo) override;
         void removePipeline(Pipeline* pipeline) override;
 
         Image* createImage(TextureTarget target, Format format, const core::Dimension3D& dimension, u32 layers, u32 mipmapLevel, TextureUsageFlags flags, [[maybe_unused]] const std::string& name = "") override;

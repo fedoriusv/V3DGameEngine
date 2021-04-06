@@ -29,9 +29,6 @@ namespace dx3d
         explicit D3DGraphicPipelineState(ID3D12Device2* device, D3DRootSignatureManager* const signatureManager) noexcept;
         ~D3DGraphicPipelineState();
 
-        bool create(const PipelineGraphicInfo* pipelineInfo) override;
-        void destroy() override;
-
         ID3D12PipelineState* getHandle() const;
         ID3D12RootSignature* getSignatureHandle() const;
         s32 getSignatureParameterIndex(u32 space, u32 binding) const;
@@ -52,6 +49,10 @@ namespace dx3d
         D3D12_PRIMITIVE_TOPOLOGY getTopology() const;
 
     private:
+
+        bool create(const PipelineGraphicInfo* pipelineInfo) override;
+        bool create(const PipelineComputeInfo* pipelineInfo) override;
+        void destroy() override;
 
         bool compileShader(const ShaderHeader* header, const void* source, u32 size) override;
 

@@ -1,8 +1,9 @@
 #include "VulkanWrapper.h"
 
+#include "Utils/Logger.h"
+
 #ifdef VULKAN_RENDER
 #include "VulkanDebug.h"
-#include "Utils/Logger.h"
 
 namespace v3d
 {

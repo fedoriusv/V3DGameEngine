@@ -8,40 +8,6 @@ namespace v3d
 namespace renderer
 {
 
-/////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    /*CommandRemoveSamplers*/
-class CommandRemoveSamplers final : public Command
-{
-public:
-    CommandRemoveSamplers(const std::vector<Sampler*>& sampler) noexcept
-        : m_samplers(sampler)
-    {
-        LOG_DEBUG("CommandRemoveSamplers constructor");
-    };
-    CommandRemoveSamplers() = delete;
-    CommandRemoveSamplers(CommandRemoveSamplers&) = delete;
-
-    ~CommandRemoveSamplers()
-    {
-        LOG_DEBUG("CommandRemoveSamplers destructor");
-    };
-
-    void execute(const CommandList& cmdList)
-    {
-        LOG_DEBUG("CommandRemoveSamplers execute");
-        for (auto& sampler : m_samplers)
-        {
-            cmdList.getContext()->removeSampler(sampler);
-        }
-    }
-
-private:
-    const std::vector<Sampler*> m_samplers;
-};
-
-/////////////////////////////////////////////////////////////////////////////////////////////////////
-
 SamplerState::SamplerState(renderer::CommandList& cmdList) noexcept
     : m_cmdList(cmdList)
     , m_trackerSampler(this, std::bind(&SamplerState::destroySamplers, this, std::placeholders::_1))
@@ -69,6 +35,39 @@ void SamplerState::destroySamplers(const std::vector<Sampler*>& samplers)
     }
     else
     {
+        /*CommandRemoveSamplers*/
+        class CommandRemoveSamplers final : public Command
+        {
+        public:
+
+            explicit CommandRemoveSamplers(const std::vector<Sampler*>& sampler) noexcept
+                : m_samplers(sampler)
+            {
+                LOG_DEBUG("CommandRemoveSamplers constructor");
+            };
+
+            CommandRemoveSamplers() = delete;
+            CommandRemoveSamplers(CommandRemoveSamplers&) = delete;
+
+            ~CommandRemoveSamplers()
+            {
+                LOG_DEBUG("CommandRemoveSamplers destructor");
+            };
+
+            void execute(const CommandList& cmdList)
+            {
+                LOG_DEBUG("CommandRemoveSamplers execute");
+                for (auto& sampler : m_samplers)
+                {
+                    cmdList.getContext()->removeSampler(sampler);
+                }
+            }
+
+        private:
+
+            const std::vector<Sampler*> m_samplers;
+        };
+
         m_cmdList.pushCommand(new CommandRemoveSamplers(samplers));
     }
 }

@@ -2,6 +2,7 @@
 
 #ifdef VULKAN_RENDER
 #include "VulkanCommandBuffer.h"
+
 namespace v3d
 {
 namespace renderer

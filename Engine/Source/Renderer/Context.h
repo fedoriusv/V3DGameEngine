@@ -90,14 +90,18 @@ namespace renderer
         virtual void draw(const StreamBufferDescription& desc, u32 firstVertex, u32 vertexCount, u32 firstInstance, u32 instanceCount) = 0;
         virtual void drawIndexed(const StreamBufferDescription& desc, u32 firstIndex, u32 indexCount, u32 firstInstance, u32 instanceCount) = 0;
 
+        //compute
+        virtual void dispatchCompute(const core::Dimension3D& groups) = 0;
+
         //program bind
-        virtual void bindImage(const Shader* shader, u32 bindIndex, const Image* image) = 0;
+        virtual void bindImage(const Shader* shader, u32 bindIndex, const Image* image, s32 layer = k_generalLayer, s32 mip = k_allMipmapsLevels) = 0;
         virtual void bindSampler(const Shader* shader, u32 bindIndex, const Sampler::SamplerInfo* samplerInfo) = 0;
-        virtual void bindSampledImage(const Shader* shader, u32 bindIndex, const Image* image, const Sampler::SamplerInfo* samplerInfo) = 0;
+        virtual void bindSampledImage(const Shader* shader, u32 bindIndex, const Image* image, const Sampler::SamplerInfo* samplerInfo, s32 layer = k_generalLayer, s32 mip = k_allMipmapsLevels) = 0;
         virtual void bindUniformsBuffer(const Shader* shader, u32 bindIndex, u32 offset, u32 size, const void* data) = 0;
+        virtual void bindStorageImage(const Shader* shader, u32 bindIndex, const Image* image, s32 layer = k_generalLayer, s32 mip = k_allMipmapsLevels) = 0;
 
         //transfer
-        virtual void transitionImages(std::vector<const Image*>& images, TransitionOp transition, s32 layer = -1) = 0;
+        virtual void transitionImages(std::vector<const Image*>& images, TransitionOp transition, s32 layer = k_generalLayer, s32 mip = k_allMipmapsLevels) = 0;
 
         //state
         virtual void setViewport(const core::Rect32& viewport, const core::Vector2D& depth = { 0.0f, 1.0f }) = 0;
@@ -109,6 +113,7 @@ namespace renderer
         virtual void invalidateRenderPass() = 0;
 
         virtual void setPipeline(const Pipeline::PipelineGraphicInfo* pipelineInfo) = 0;
+        virtual void setPipeline(const Pipeline::PipelineComputeInfo* pipelineInfo) = 0;
         virtual void removePipeline(Pipeline* pipeline) = 0;
 
         //objects

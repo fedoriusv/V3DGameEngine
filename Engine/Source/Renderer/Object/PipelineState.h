@@ -134,6 +134,25 @@ namespace renderer
         const RenderTargetState*         m_renderTaget;
     };
 
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    /**
+    * @brief ComputePipelineState class. Game side.
+    * Includes a shader program
+    */
+    class ComputePipelineState : public PipelineState
+    {
+    public:
+
+        ComputePipelineState() = delete;
+        ComputePipelineState(const ComputePipelineState&) = delete;
+        ~ComputePipelineState() = default;
+
+        explicit ComputePipelineState(CommandList& cmdList, const ShaderProgram* const program) noexcept;
+
+        friend CommandList;
+
+        const ShaderProgram* m_program;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

@@ -4,16 +4,14 @@
 #include "crc32c/crc32c.h"
 
 #ifdef VULKAN_RENDER
+#include "VulkanDeviceCaps.h"
 #include "VulkanRenderpass.h"
 #include "VulkanFramebuffer.h"
 #include "VulkanGraphicPipeline.h"
-#include "VulkanDescriptorSet.h"
-#include "VulkanDescriptorPool.h"
 #include "VulkanImage.h"
 #include "VulkanBuffer.h"
 #include "VulkanSampler.h"
 #include "VulkanUnifromBuffer.h"
-#include "VulkanDeviceCaps.h"
 #include "VulkanSwapchain.h"
 
 namespace v3d
@@ -76,7 +74,7 @@ bool VulkanContextState::isCurrentFramebuffer(const VulkanFramebuffer * framebuf
     return false;
 }
 
-bool VulkanContextState::isCurrentPipeline(const VulkanGraphicPipeline * pipeline) const
+bool VulkanContextState::isCurrentPipeline(const Pipeline* pipeline) const
 {
     return m_currentPipeline.first == pipeline;
 }
@@ -108,7 +106,7 @@ bool VulkanContextState::setCurrentFramebuffer(std::vector<VulkanFramebuffer*>& 
     return changed;
 }
 
-bool VulkanContextState::setCurrentPipeline(VulkanGraphicPipeline* pipeline)
+bool VulkanContextState::setCurrentPipeline(Pipeline* pipeline)
 {
     bool changed = !VulkanContextState::isCurrentPipeline(pipeline);
     m_currentPipeline.first = pipeline;
@@ -154,9 +152,8 @@ VulkanFramebuffer * VulkanContextState::getCurrentFramebuffer() const
     }
 }
 
-VulkanGraphicPipeline* VulkanContextState::getCurrentPipeline() const
+Pipeline* VulkanContextState::getCurrentPipeline() const
 {
-    //ASSERT(m_currentPipeline.first, "nullptr");
     return m_currentPipeline.first;
 }
 
@@ -190,73 +187,6 @@ void VulkanContextState::invokeDynamicStates(bool clear)
     }
 }
 
-bool VulkanContextState::prepareDescriptorSets(VulkanCommandBuffer* cmdBuffer, std::vector<VkDescriptorSet>& sets, std::vector<u32>& offsets)
-{
-    if (m_currentPipeline.first->getDescriptorSetLayouts()._setLayouts.empty())
-    {
-        return false;
-    }
-
-#if VULKAN_DEBUG
-    if (!checkBindingsAndPipelineLayout())
-    {
-        ASSERT(false, "not same");
-        return false;
-    }
-#endif
-
-    for (u32 setId = 0; setId < k_maxDescriptorSetIndex; ++setId)
-    {
-        BindingState& bindSet = m_currentBindingSlots[setId];
-        if (bindSet.isDirty())
-        {
-            SetInfo info;
-            bindSet.apply(cmdBuffer, 0, info);
-
-            VulkanDescriptorSetPool* pool = nullptr;
-            VkDescriptorSet set = m_descriptorSetManager->acquireDescriptorSet(VulkanDescriptorSetLayoutDescription(m_currentPipeline.first->getPipelineLayoutDescription()._bindingsSet[setId]), info,
-                m_currentPipeline.first->getDescriptorSetLayouts()._setLayouts[setId], pool);
-            if (set == VK_NULL_HANDLE)
-            {
-                ASSERT(false, "fail to allocate descriptor set");
-                return false;
-            }
-
-            ASSERT(pool, "nullptr");
-            pool->captureInsideCommandBuffer(cmdBuffer, 0);
-
-            if (m_currentDesctiptorsSets[setId] != set)
-            {
-                m_currentDesctiptorsSets[setId] = set;
-                if (VulkanDeviceCaps::getInstance()->useDynamicUniforms)
-                {
-                    auto updatedSet = m_updatedDescriptorsSets.insert(set);
-                    if (updatedSet.second)
-                    {
-                        VulkanContextState::updateDescriptorSet(cmdBuffer, set, bindSet);
-                    }
-                }
-                else
-                {
-                    VulkanContextState::updateDescriptorSet(cmdBuffer, set, bindSet);
-                }
-            }
-
-            sets.push_back(set);
-
-            bindSet.extractBufferOffsets(offsets);
-            bindSet.reset();
-        }
-    }
-
-    if (sets.empty())
-    {
-        return false;
-    }
-
-    return true;
-}
-
 void VulkanContextState::updateDescriptorSet(VulkanCommandBuffer* cmdBuffer, VkDescriptorSet set, const BindingState& state)
 {
     std::vector<VkWriteDescriptorSet> writeDescriptorSets;
@@ -285,7 +215,6 @@ void VulkanContextState::updateDescriptorSet(VulkanCommandBuffer* cmdBuffer, VkD
             ASSERT(bindingInfo._info._bufferInfo.range <= VulkanDeviceCaps::getInstance()->getPhysicalDeviceLimits().maxUniformBufferRange, "out of max range");
             writeDescriptorSet.pBufferInfo = &bindingInfo._info._bufferInfo;
             writeDescriptorSet.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-
             break;
 
         case BindingType::BindingType_DynamicUniform:
@@ -296,7 +225,6 @@ void VulkanContextState::updateDescriptorSet(VulkanCommandBuffer* cmdBuffer, VkD
             bufferInfo.range = state._offsets[index] + bufferInfo.range;*/
             writeDescriptorSet.pBufferInfo = &bindingInfo._info._bufferInfo;
             writeDescriptorSet.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
-
             break;
 
         case BindingType::BindingType_Sampler:
@@ -304,7 +232,6 @@ void VulkanContextState::updateDescriptorSet(VulkanCommandBuffer* cmdBuffer, VkD
             ASSERT(bindingInfo._info._imageInfo.sampler != VK_NULL_HANDLE, "sampler");
             writeDescriptorSet.pImageInfo = &bindingInfo._info._imageInfo;
             writeDescriptorSet.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLER;
-
             break;
 
         case BindingType::BindingType_Texture:
@@ -312,7 +239,6 @@ void VulkanContextState::updateDescriptorSet(VulkanCommandBuffer* cmdBuffer, VkD
             ASSERT(bindingInfo._info._imageInfo.imageView != VK_NULL_HANDLE, "image");
             writeDescriptorSet.pImageInfo = &bindingInfo._info._imageInfo;
             writeDescriptorSet.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
-
             break;
 
         case BindingType::BindingType_SamplerAndTexture:
@@ -320,7 +246,13 @@ void VulkanContextState::updateDescriptorSet(VulkanCommandBuffer* cmdBuffer, VkD
             //ASSERT(binding._imageBinding._imageInfo.sampler != VK_NULL_HANDLE, "sampler");
             writeDescriptorSet.pImageInfo = &bindingInfo._info._imageInfo;
             writeDescriptorSet.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+            break;
 
+        case BindingType::BindingType_StorageImage:
+            ASSERT(bindingInfo._info._imageInfo.sampler == VK_NULL_HANDLE, "sampler present");
+            ASSERT(bindingInfo._info._imageInfo.imageView != VK_NULL_HANDLE, "image");
+            writeDescriptorSet.pImageInfo = &bindingInfo._info._imageInfo;
+            writeDescriptorSet.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
             break;
 
         default:
@@ -336,22 +268,22 @@ void VulkanContextState::updateDescriptorSet(VulkanCommandBuffer* cmdBuffer, VkD
     }
 }
 
-void VulkanContextState::bindTexture(const VulkanImage* image, const VulkanSampler* sampler, u32 arrayIndex, const Shader::Image& info)
+void VulkanContextState::bindTexture(const VulkanImage* image, const VulkanSampler* sampler, u32 arrayIndex, const Shader::Image& info, s32 layer, s32 mip)
 {
     ASSERT(info._set < VulkanDeviceCaps::getInstance()->maxDescriptorSetIndex, "Set index. Out of range");
     ASSERT(info._binding < VulkanDeviceCaps::getInstance()->maxDescriptorBindingIndex, "Binding index. Out of range");
 
     BindingState& bindingSlot = m_currentBindingSlots[info._set];
-    bindingSlot.bind(BindingType::BindingType_SamplerAndTexture, info._binding, -1, arrayIndex, image, sampler);
+    bindingSlot.bind(BindingType::BindingType_SamplerAndTexture, info._binding, arrayIndex, image, layer, mip, sampler);
 }
 
-void VulkanContextState::bindTexture(const VulkanImage* image, u32 arrayIndex, const Shader::Image& info)
+void VulkanContextState::bindTexture(const VulkanImage* image, u32 arrayIndex, const Shader::Image& info, s32 layer, s32 mip)
 {
     ASSERT(info._set < VulkanDeviceCaps::getInstance()->maxDescriptorSetIndex, "Set index. Out of range");
     ASSERT(info._binding < VulkanDeviceCaps::getInstance()->maxDescriptorBindingIndex, "Binding index. Out of range");
 
     BindingState& bindingSlot = m_currentBindingSlots[info._set];
-    bindingSlot.bind(BindingType::BindingType_Texture, info._binding, -1, arrayIndex, image, nullptr);
+    bindingSlot.bind(BindingType::BindingType_Texture, info._binding, arrayIndex, image, layer, mip, nullptr);
 }
 
 void VulkanContextState::bindSampler(const VulkanSampler* sampler, const Shader::Sampler& info)
@@ -360,7 +292,16 @@ void VulkanContextState::bindSampler(const VulkanSampler* sampler, const Shader:
     ASSERT(info._binding < VulkanDeviceCaps::getInstance()->maxDescriptorBindingIndex, "Binding index. Out of range");
 
     BindingState& bindingSlot = m_currentBindingSlots[info._set];
-    bindingSlot.bind(BindingType::BindingType_Sampler, info._binding, -1, 0, nullptr, sampler);
+    bindingSlot.bind(BindingType::BindingType_Sampler, info._binding, 0, nullptr, k_generalLayer, k_allMipmapsLevels, sampler);
+}
+
+void VulkanContextState::bindStorageImage(const VulkanImage* image, u32 arrayIndex, const Shader::StorageImage& info, s32 layer, s32 mip)
+{
+    ASSERT(info._set < VulkanDeviceCaps::getInstance()->maxDescriptorSetIndex, "Set index. Out of range");
+    ASSERT(info._binding < VulkanDeviceCaps::getInstance()->maxDescriptorBindingIndex, "Binding index. Out of range");
+
+    BindingState& bindingSlot = m_currentBindingSlots[info._set];
+    bindingSlot.bind(BindingType::BindingType_StorageImage, info._binding, arrayIndex, image, layer, mip, nullptr);
 }
 
 void VulkanContextState::updateConstantBuffer(const Shader::UniformBuffer& info, u32 offset, u32 size, const void* data)
@@ -421,11 +362,11 @@ VkDescriptorImageInfo VulkanContextState::makeVkDescriptorImageInfo(const Vulkan
         const VulkanImage* vkImage = (image->getResolveImage()) ? image->getResolveImage() : image;
         if (vkImage->getImageAspectFlags() & VK_IMAGE_ASPECT_DEPTH_BIT)
         {
-            descriptorImageInfo.imageView = vkImage->getImageView(layer, VK_IMAGE_ASPECT_DEPTH_BIT);
+            descriptorImageInfo.imageView = vkImage->getImageView(VK_IMAGE_ASPECT_DEPTH_BIT, layer, mip);
         }
         else
         {
-            descriptorImageInfo.imageView = vkImage->getImageView(layer, VK_IMAGE_ASPECT_COLOR_BIT);
+            descriptorImageInfo.imageView = vkImage->getImageView(VK_IMAGE_ASPECT_COLOR_BIT, layer, mip);
         }
     }
 
@@ -465,13 +406,13 @@ bool VulkanContextState::BindingState::isDirty() const
     return _dirtyFlag;
 }
 
-void VulkanContextState::BindingState::bind(BindingType type, u32 binding, u32 layer, u32 arrayIndex, const VulkanImage* image, const VulkanSampler* sampler)
+void VulkanContextState::BindingState::bind(BindingType type, u32 binding, u32 arrayIndex, const VulkanImage* image, s32 layer, s32 mip, const VulkanSampler* sampler)
 {
     BindingInfo& bindingInfo = std::get<0>(_set[binding]);
     bindingInfo._binding = binding;
     bindingInfo._arrayIndex = arrayIndex;
     bindingInfo._type = type;
-    bindingInfo._info._imageInfo = VulkanContextState::makeVkDescriptorImageInfo(image, sampler, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, layer);
+    bindingInfo._info._imageInfo = VulkanContextState::makeVkDescriptorImageInfo(image, sampler, (type == BindingType::BindingType_StorageImage) ? VK_IMAGE_LAYOUT_GENERAL : VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, layer, mip);
 
     BindingData& bindingData = std::get<1>(_set[binding]);
     bindingData._dataBinding = BindingData::BindingImageData { image, sampler };

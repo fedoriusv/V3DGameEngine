@@ -17,7 +17,7 @@ namespace vk
     /////////////////////////////////////////////////////////////////////////////////////////////////////
    
     /**
-    * VulkanPipelineLayoutDescription struct. Vulkan Render side
+    * @brief VulkanPipelineLayoutDescription struct. Vulkan Render side
     */
     struct VulkanDescriptorSetLayoutDescription
     {
@@ -41,7 +41,7 @@ namespace vk
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
-    * VulkanPipelineLayoutDescription struct. Vulkan Render side
+    * @brief VulkanPipelineLayoutDescription struct. Vulkan Render side
     */
     struct VulkanPipelineLayoutDescription
     {
@@ -63,7 +63,7 @@ namespace vk
     };
 
     /**
-    * VulkanPipelineLayout struct. Vulkan Render side
+    * @brief VulkanPipelineLayout struct. Vulkan Render side
     */
     struct VulkanPipelineLayout
     {
@@ -76,7 +76,7 @@ namespace vk
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
-    * VulkanPipelineLayoutManager class. Vulkan Render side
+    * @brief VulkanPipelineLayoutManager class. Vulkan Render side
     */
     class VulkanPipelineLayoutManager final
     {
@@ -84,7 +84,7 @@ namespace vk
 
         struct DescriptorSetLayoutCreator
         {
-            DescriptorSetLayoutCreator(const std::array<const Shader*, ShaderType::ShaderType_Count>& shaders) noexcept;
+            explicit DescriptorSetLayoutCreator(const std::array<const Shader*, ShaderType::ShaderType_Count>& shaders) noexcept;
 
             DescriptorSetLayoutCreator() = delete;
             DescriptorSetLayoutCreator(const DescriptorSetLayoutCreator&) = delete;

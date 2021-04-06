@@ -6,6 +6,7 @@
 #include "VulkanWrapper.h"
 #include "VulkanCommandBufferManager.h"
 #include "VulkanDescriptorSet.h"
+#include "VulkanDescriptorPool.h"
 
 namespace v3d
 {
@@ -13,6 +14,8 @@ namespace renderer
 {
 namespace vk
 {
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
+
     class VulkanRenderPass;
     class VulkanFramebuffer;
     class VulkanGraphicPipeline;
@@ -21,12 +24,11 @@ namespace vk
     class VulkanImage;
     class VulkanSampler;
     class VulkanUniformBuffer;
-    class VulkanDescriptorPool;
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
-    * VulkanContextState class. Vulkan Render side
+    * @brief VulkanContextState class. Vulkan Render side
     */
     class VulkanContextState
     {
@@ -38,30 +40,106 @@ namespace vk
 
         bool isCurrentRenderPass(const VulkanRenderPass* pass) const;
         bool isCurrentFramebuffer(const VulkanFramebuffer* framebuffer) const;
-        bool isCurrentPipeline(const VulkanGraphicPipeline* pipeline) const;
+        bool isCurrentPipeline(const Pipeline* pipeline) const;
 
         bool setCurrentRenderPass(VulkanRenderPass* pass);
         bool setCurrentFramebuffer(VulkanFramebuffer* framebuffer);
         bool setCurrentFramebuffer(std::vector<VulkanFramebuffer*>& framebuffers);
-        bool setCurrentPipeline(VulkanGraphicPipeline* pipeline);
+        bool setCurrentPipeline(Pipeline* pipeline);
 
         bool setCurrentVertexBuffers(const StreamBufferDescription& desc);
         void setClearValues(const VkRect2D& area, std::vector <VkClearValue>& clearValues);
 
         VulkanRenderPass *getCurrentRenderpass() const;
         VulkanFramebuffer* getCurrentFramebuffer() const;
-        VulkanGraphicPipeline* getCurrentPipeline() const;
+        Pipeline* getCurrentPipeline() const;
+
+        template<class Type>
+        Type* getCurrentTypedPipeline() const
+        {
+            static_assert(std::is_same<Type, VulkanGraphicPipeline>() || std::is_same<Type, VulkanComputePipeline>(), "wrong type");
+            return static_cast<Type*>(m_currentPipeline.first);
+        }
 
         const StreamBufferDescription& getStreamBufferDescription() const;
 
         bool setDynamicState(VkDynamicState state, const std::function<void()>& callback);
         void invokeDynamicStates(bool clear = true);
 
-        bool prepareDescriptorSets(VulkanCommandBuffer* cmdBuffer, std::vector<VkDescriptorSet>& sets, std::vector<u32>& offsets);
+        template<class Type>
+        bool prepareDescriptorSets(VulkanCommandBuffer* cmdBuffer, std::vector<VkDescriptorSet>& sets, [[maybe_unused]] std::vector<u32>& offsets)
+        {
+            static_assert(std::is_same<Type, VulkanGraphicPipeline>() || std::is_same<Type, VulkanComputePipeline>(), "wrong type");
+            if (VulkanContextState::getCurrentTypedPipeline<Type>()->getDescriptorSetLayouts()._setLayouts.empty())
+            {
+                return false;
+            }
 
-        void bindTexture(const VulkanImage* image, const VulkanSampler* sampler, u32 arrayIndex, const Shader::Image& info);
-        void bindTexture(const VulkanImage* image, u32 arrayIndex, const Shader::Image& info);
+#if VULKAN_DEBUG
+            if (!checkBindingsAndPipelineLayout())
+            {
+                ASSERT(false, "not same");
+                return false;
+            }
+#endif
+
+            for (u32 setId = 0; setId < k_maxDescriptorSetIndex; ++setId)
+            {
+                BindingState& bindSet = m_currentBindingSlots[setId];
+                if (bindSet.isDirty())
+                {
+                    SetInfo info;
+                    bindSet.apply(cmdBuffer, 0, info);
+
+                    VulkanDescriptorSetPool* pool = nullptr;
+                    VkDescriptorSet set = m_descriptorSetManager->acquireDescriptorSet(VulkanDescriptorSetLayoutDescription(VulkanContextState::getCurrentTypedPipeline<Type>()->getPipelineLayoutDescription()._bindingsSet[setId]), info,
+                        VulkanContextState::getCurrentTypedPipeline<Type>()->getDescriptorSetLayouts()._setLayouts[setId], pool);
+                    if (set == VK_NULL_HANDLE)
+                    {
+                        ASSERT(false, "fail to allocate descriptor set");
+                        return false;
+                    }
+
+                    ASSERT(pool, "nullptr");
+                    ASSERT(!pool->isCaptured(), "caputred");
+                    pool->captureInsideCommandBuffer(cmdBuffer, 0);
+
+                    if (m_currentDesctiptorsSets[setId] != set)
+                    {
+                        m_currentDesctiptorsSets[setId] = set;
+                        if (VulkanDeviceCaps::getInstance()->useDynamicUniforms)
+                        {
+                            auto updatedSet = m_updatedDescriptorsSets.insert(set);
+                            if (updatedSet.second)
+                            {
+                                VulkanContextState::updateDescriptorSet(cmdBuffer, set, bindSet);
+                            }
+                        }
+                        else
+                        {
+                            VulkanContextState::updateDescriptorSet(cmdBuffer, set, bindSet);
+                        }
+                    }
+
+                    sets.push_back(set);
+
+                    bindSet.extractBufferOffsets(offsets);
+                    bindSet.reset();
+                }
+            }
+
+            if (sets.empty())
+            {
+                return false;
+            }
+
+            return true;
+        }
+
+        void bindTexture(const VulkanImage* image, const VulkanSampler* sampler, u32 arrayIndex, const Shader::Image& info, s32 layer, s32 mip);
+        void bindTexture(const VulkanImage* image, u32 arrayIndex, const Shader::Image& info, s32 layer, s32 mip);
         void bindSampler(const VulkanSampler* sampler, const Shader::Sampler& info);
+        void bindStorageImage(const VulkanImage* image, u32 arrayIndex, const Shader::StorageImage& info, s32 layer, s32 mip);
         void updateConstantBuffer(const Shader::UniformBuffer& info, u32 offset, u32 size, const void* data);
 
         void invalidateDescriptorSetsState();
@@ -106,7 +184,7 @@ namespace vk
             bool isActiveBinding(u32 binding) const;
             bool isDirty() const;
 
-            void bind(BindingType type, u32 binding, u32 arrayIndex, u32 layer, const VulkanImage* image, const VulkanSampler* sampler);
+            void bind(BindingType type, u32 binding, u32 arrayIndex, const VulkanImage* image, s32 layer, s32 mip, const VulkanSampler* sampler);
             void bind(BindingType type, u32 binding, u32 arrayIndex, const VulkanBuffer* buffer, u64 offset, u64 range);
 
             void apply(VulkanCommandBuffer* cmdBuffer, u64 frame, SetInfo& info);
@@ -127,7 +205,7 @@ namespace vk
         //Current State
         std::pair<VulkanRenderPass*, bool>                  m_currentRenderpass;
         std::pair<std::vector<VulkanFramebuffer*>, bool>    m_currentFramebuffer;
-        std::pair<VulkanGraphicPipeline*, bool>             m_currentPipeline;
+        std::pair<Pipeline*, bool>                          m_currentPipeline;
 
         std::map<VkDynamicState, std::function<void()>>     m_stateCallbacks;
 

@@ -17,13 +17,14 @@ namespace renderer
         TextureUsage_Write = 0x01,          //Write to texture
         TextureUsage_Read = 0x02,           //Read from texture
 
-        TextureUsage_Sampled = 0x04,        //Shader visible
-        TextureUsage_Attachment = 0x08,     //Render target
+        TextureUsage_Sampled = 0x04,        //Texture is shader visible, read only
+        TextureUsage_Attachment = 0x08,     //Texture is render target
+        TextureUsage_Storage = 0x10,        //Shader storage
 
-        TextureUsage_Resolve = 0x10,        //Multisample render target
-        TextureUsage_GenerateMipmaps = 0x20,//Internaly generate mipmaps for rendertarget
+        TextureUsage_Resolve = 0x20,        //Multisample render target
+        TextureUsage_GenerateMipmaps = 0x40,//Internaly generate mipmaps for rendertarget
 
-        TextureUsage_Shared = 0x40,         //Share data between Game/Render side
+        TextureUsage_Shared = 0x80,         //Share data between Game/Render side
     };
 
     /**
@@ -86,9 +87,13 @@ namespace renderer
     enum class TransitionOp : u32
     {
         TransitionOp_Undefined,
+
         TransitionOp_ShaderRead,
         TransitionOp_ColorAttachment,
         TransitionOp_DepthStencilAttachment,
+
+        TransitionOp_GeneralGraphic,
+        TransitionOp_GeneralCompute,
 
         TransitionOp_Present,
     };

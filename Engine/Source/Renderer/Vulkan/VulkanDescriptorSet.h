@@ -28,6 +28,7 @@ namespace vk
         BindingType_Sampler,
         BindingType_Texture,
         BindingType_SamplerAndTexture,
+        BindingType_StorageImage,
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

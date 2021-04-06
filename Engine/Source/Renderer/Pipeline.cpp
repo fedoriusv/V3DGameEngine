@@ -105,37 +105,63 @@ Pipeline* PipelineManager::acquireGraphicPipeline(const Pipeline::PipelineGraphi
     return found.first->second;
 }
 
-bool PipelineManager::removePipeline(Pipeline* pipeLine)
+Pipeline* PipelineManager::acquireComputePipeline(const Pipeline::PipelineComputeInfo& pipelineInfo)
 {
-    if (pipeLine->getType() == Pipeline::PipelineType::PipelineType_Graphic)
+    u64 hash = pipelineInfo._programDesc._hash;
+
+    Pipeline* pipeline = nullptr;
+    auto found = m_pipelineComputeList.emplace(hash, pipeline);
+    if (found.second)
     {
-        auto iter = m_pipelineGraphicList.find(pipeLine->m_key);
-        if (iter == m_pipelineGraphicList.cend())
+        pipeline = m_context->createPipeline(Pipeline::PipelineType::PipelineType_Compute);
+        pipeline->m_key = hash;
+
+        if (!pipeline->create(&pipelineInfo))
         {
-            LOG_DEBUG("PipelineManager pipeline not found");
-            ASSERT(false, "pipeline");
-            return false;
+            pipeline->destroy();
+            m_pipelineComputeList.erase(hash);
+
+            ASSERT(false, "can't create pipeline");
+            return nullptr;
         }
+        found.first->second = pipeline;
+        pipeline->registerNotify(this);
 
-        Pipeline* pipeline = iter->second;
-        ASSERT(pipeline == pipeLine, "Different pointers");
-        if (pipeline->linked())
-        {
-            LOG_WARNING("PipelineManager::removePipeline pipleline still linked, but reqested to delete");
-            ASSERT(false, "pipeline");
-            //return false;
-        }
-        m_pipelineGraphicList.erase(iter);
-
-        pipeline->notifyObservers();
-
-        pipeline->destroy();
-        delete  pipeline;
-
-        return true;
+        return pipeline;
     }
 
-    return false;
+    return found.first->second;
+}
+
+bool PipelineManager::removePipeline(Pipeline* pipeLine)
+{
+    ASSERT(pipeLine->getType() == Pipeline::PipelineType::PipelineType_Graphic || pipeLine->getType() == Pipeline::PipelineType::PipelineType_Compute, "wrong type");
+    auto& pipelineList = (pipeLine->getType() == Pipeline::PipelineType::PipelineType_Compute) ? m_pipelineComputeList : m_pipelineGraphicList;
+
+    auto iter = pipelineList.find(pipeLine->m_key);
+    if (iter == pipelineList.cend())
+    {
+        LOG_DEBUG("PipelineManager pipeline not found");
+        ASSERT(false, "pipeline");
+        return false;
+    }
+
+    Pipeline* pipeline = iter->second;
+    ASSERT(pipeline == pipeLine, "Different pointers");
+    if (pipeline->linked())
+    {
+        LOG_WARNING("PipelineManager::removePipeline pipleline still linked, but reqested to delete");
+        ASSERT(false, "pipeline");
+        //return false;
+    }
+    pipelineList.erase(iter);
+
+    pipeline->notifyObservers();
+
+    pipeline->destroy();
+    delete  pipeline;
+
+    return true;
 }
 
 void PipelineManager::clear()
@@ -154,6 +180,21 @@ void PipelineManager::clear()
         delete pipeline;
     }
     m_pipelineGraphicList.clear();
+
+    for (auto& iter : m_pipelineComputeList)
+    {
+        Pipeline* pipeline = iter.second;
+        if (pipeline->linked())
+        {
+            LOG_WARNING("PipelineManager::clear pipleline still linked, but reqested to delete");
+            ASSERT(false, "pipeline");
+        }
+        pipeline->notifyObservers();
+
+        pipeline->destroy();
+        delete pipeline;
+    }
+    m_pipelineComputeList.clear();
 }
 
 void PipelineManager::handleNotify(const utils::Observable * ob)

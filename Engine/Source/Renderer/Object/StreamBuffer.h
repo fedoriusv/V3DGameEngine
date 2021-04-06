@@ -19,7 +19,7 @@ namespace renderer
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
-    * StreamBuffer base class. Game side
+    * @brief StreamBuffer base class. Game side
     */
     class StreamBuffer : public Object
     {
@@ -32,13 +32,7 @@ namespace renderer
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
-    * VertexStreamBuffer class. Game side
-    *\n
-    * Constructor param:
-    StreamBufferUsageFlags usage
-    u64 size - in bytes
-    const u8* data
-    const std::string& name
+    * @brief VertexStreamBuffer class. Game side
     */
     class VertexStreamBuffer : public StreamBuffer, public utils::Observer
     {
@@ -49,19 +43,26 @@ namespace renderer
         ~VertexStreamBuffer();
 
         bool update(u32 offset, u64 size, const u8* data);
-        bool read(u32 offset, u64 size, u8* data); //TODO: maybe add callback for async
+        bool read(u32 offset, u64 size, u8* data); //TODO: add callback for async
 
     private:
 
         void handleNotify(const utils::Observable* ob) override;
 
+        /**
+        * @brief VertexStreamBuffer constructor. Used to create buffer data objects.
+        * @param StreamBufferUsageFlags usage [required]
+        * @param u64 size [required] in bytes
+        * @param  const u8* data [required]
+        * @param const std::string& name [optional]
+        */
         explicit VertexStreamBuffer(CommandList& cmdList, StreamBufferUsageFlags usage, u64 size, const u8* data, [[maybe_unused]] const std::string& name = "") noexcept;
 
         friend CommandList;
         CommandList& m_cmdList;
 
-        u64     m_size;
-        void*   m_data;
+        u64 m_size;
+        void* m_data;
                 
         StreamBufferUsageFlags m_usage;
         Buffer* m_buffer;
@@ -72,14 +73,7 @@ namespace renderer
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
-    * IndexStreamBuffer class. Game side
-    *\n
-    * Constructor param:
-    StreamBufferUsageFlags usage
-    StreamIndexBufferType type
-    u32 count
-    const u8* data
-    const std::string& name
+    * @brief IndexStreamBuffer class. Game side
     */
     class IndexStreamBuffer : public StreamBuffer, public utils::Observer
     {
@@ -94,6 +88,14 @@ namespace renderer
 
     private:
 
+        /**
+        * @brief IndexStreamBuffer constructor. Used to create buffer index objects.
+        * @param StreamBufferUsageFlags usage [required]
+        * @param StreamIndexBufferType type [required]
+        * @param u32 count [required]
+        * @param  const u8* data [required]
+        * @param const std::string& name [optional]
+        */
         explicit IndexStreamBuffer(CommandList& cmdList, StreamBufferUsageFlags usage, StreamIndexBufferType type, u32 count, const u8* data, [[maybe_unused]] const std::string& name = "") noexcept;
 
         void handleNotify(const utils::Observable* ob) override;
@@ -101,9 +103,9 @@ namespace renderer
         friend CommandList;
         CommandList& m_cmdList;
 
-        StreamIndexBufferType   m_type;
-        u32         m_count;
-        void*       m_data;
+        StreamIndexBufferType m_type;
+        u32 m_count;
+        void* m_data;
 
         StreamBufferUsageFlags m_usage;
         Buffer* m_buffer;

@@ -1,13 +1,14 @@
 #include "VulkanPipelineLayout.h"
-#include "VulkanDebug.h"
-#include "VulkanDeviceCaps.h"
-#include "Renderer/Shader.h"
-
-#include "Utils/Logger.h"
 
 #include "crc32c/crc32c.h"
 
+#include "Utils/Logger.h"
+#include "Renderer/Shader.h"
+
 #ifdef VULKAN_RENDER
+#include "VulkanDebug.h"
+#include "VulkanDeviceCaps.h"
+
 namespace v3d
 {
 namespace renderer
@@ -107,6 +108,9 @@ VkShaderStageFlagBits VulkanPipelineLayoutManager::convertShaderTypeToVkStage(Sh
 
     case ShaderType_Fragment:
         return VK_SHADER_STAGE_FRAGMENT_BIT;
+
+    case ShaderType_Compute:
+        return VK_SHADER_STAGE_COMPUTE_BIT;
 
     default:
         break;
@@ -383,6 +387,23 @@ VulkanPipelineLayoutManager::DescriptorSetLayoutCreator::DescriptorSetLayoutCrea
                 descriptorSetLayoutBinding.binding = image._binding;
                 descriptorSetLayoutBinding.stageFlags = convertShaderTypeToVkStage((ShaderType)type);
                 descriptorSetLayoutBinding.descriptorCount = image._array;
+                descriptorSetLayoutBinding.pImmutableSamplers = nullptr;
+
+                descriptorSetLayoutBindings.push_back(descriptorSetLayoutBinding);
+            }
+
+            for (auto& storageImage : info._storageImages)
+            {
+                if (storageImage._set != setIndex)
+                {
+                    continue;
+                }
+
+                VkDescriptorSetLayoutBinding descriptorSetLayoutBinding;
+                descriptorSetLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+                descriptorSetLayoutBinding.binding = storageImage._binding;
+                descriptorSetLayoutBinding.stageFlags = convertShaderTypeToVkStage((ShaderType)type);
+                descriptorSetLayoutBinding.descriptorCount = storageImage._array;
                 descriptorSetLayoutBinding.pImmutableSamplers = nullptr;
 
                 descriptorSetLayoutBindings.push_back(descriptorSetLayoutBinding);

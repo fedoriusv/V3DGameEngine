@@ -1,13 +1,13 @@
 #include "VulkanDescriptorSet.h"
-#include "VulkanDebug.h"
-#include "VulkanDeviceCaps.h"
-#include "Renderer/Shader.h"
-
-#include "Utils/Logger.h"
 
 #include "crc32c/crc32c.h"
 
+#include "Utils/Logger.h"
+#include "Renderer/Shader.h"
+
 #ifdef VULKAN_RENDER
+#include "VulkanDebug.h"
+#include "VulkanDeviceCaps.h"
 #include "VulkanDescriptorPool.h"
 #include "VulkanSwapchain.h"
 

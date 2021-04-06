@@ -21,6 +21,8 @@ const std::map<std::string, renderer::ShaderType> k_HLSL_ExtensionList =
     //hlsl
     { "vs", renderer::ShaderType::ShaderType_Vertex },
     { "ps", renderer::ShaderType::ShaderType_Fragment },
+
+    { "cs", renderer::ShaderType::ShaderType_Compute },
 };
 
 bool reflect(ID3DBlob* shader, stream::Stream* stream, u32 version);
@@ -89,12 +91,15 @@ Resource* ShaderHLSLDecoder::decode(const stream::Stream* stream, const std::str
 
                 case renderer::ShaderType::ShaderType_Fragment:
                     return renderer::ShaderType::ShaderType_Fragment;
+
+                case renderer::ShaderType::ShaderType_Compute:
+                    return renderer::ShaderType::ShaderType_Compute;
                 }
                 
                 return renderer::ShaderType::ShaderType_Undefined;
             };
 
-            static_assert(renderer::ShaderType::ShaderType_Count == 2, "diff size. Add new types");
+            static_assert(renderer::ShaderType::ShaderType_Count == 3, "diff size. Add new types");
             renderer::ShaderType type = m_header._type == renderer::ShaderType::ShaderType_Undefined ? getShaderTypeFromName(name) : m_header._type;
 
             std::string shaderVersion = "";
@@ -141,6 +146,27 @@ Resource* ShaderHLSLDecoder::decode(const stream::Stream* stream, const std::str
 
                     default:
                         shaderVersion = "ps_x_x";
+                        return false;
+                    }
+                }
+
+                case renderer::ShaderType::ShaderType_Compute:
+                {
+                    switch (model)
+                    {
+                    case renderer::ShaderHeader::ShaderModel::ShaderModel_HLSL_5_0:
+                        shaderModel = renderer::ShaderHeader::ShaderModel::ShaderModel_HLSL_5_0;
+                        shaderVersion = "cs_5_0";
+                        return true;
+
+                    case renderer::ShaderHeader::ShaderModel::ShaderModel_Default:
+                    case renderer::ShaderHeader::ShaderModel::ShaderModel_HLSL_5_1:
+                        shaderModel = renderer::ShaderHeader::ShaderModel::ShaderModel_HLSL_5_1;
+                        shaderVersion = "cs_5_1";
+                        return true;
+
+                    default:
+                        shaderVersion = "cs_x_x";
                         return false;
                     }
                 }

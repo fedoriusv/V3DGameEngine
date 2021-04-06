@@ -1,15 +1,14 @@
 #include "VulkanFramebuffer.h"
-#include "VulkanDeviceCaps.h"
-#include "VulkanRenderpass.h"
-#include "VulkanImage.h"
-#include "VulkanDebug.h"
-#include "VulkanGraphicContext.h"
-#include "VulkanSwapchain.h"
-
 
 #include "Utils/Logger.h"
 
 #ifdef VULKAN_RENDER
+#include "VulkanDebug.h"
+#include "VulkanContext.h"
+#include "VulkanImage.h"
+#include "VulkanRenderpass.h"
+#include "VulkanSwapchain.h"
+
 namespace v3d
 {
 namespace renderer
@@ -62,7 +61,7 @@ bool VulkanFramebuffer::create(const RenderPass* pass)
     for (u32 attach = 0; attach < m_images.size(); ++attach)
     {
         const VulkanImage* vkImage = static_cast<const VulkanImage*>(m_images[attach]);
-        m_imageViews.push_back(vkImage->getAttachmentImageView(vkPass->getAttachmentDescription(attach)._layer, vkPass->getAttachmentDescription(attach)._mip));
+        m_imageViews.push_back(vkImage->getImageView(0, vkPass->getAttachmentDescription(attach)._layer, vkPass->getAttachmentDescription(attach)._mip));
 
         if (VulkanImage::isColorFormat(vkImage->getFormat()))
         {
@@ -70,7 +69,7 @@ bool VulkanFramebuffer::create(const RenderPass* pass)
             {
                 ASSERT(vkImage->getSampleCount() > VK_SAMPLE_COUNT_1_BIT, "wrong sample count");
                 const VulkanImage* vkResolveImage = vkImage->getResolveImage();
-                m_imageViews.push_back(vkResolveImage->getAttachmentImageView(vkPass->getAttachmentDescription(attach)._layer, vkPass->getAttachmentDescription(attach)._mip));
+                m_imageViews.push_back(vkResolveImage->getImageView(VK_IMAGE_ASPECT_COLOR_BIT, vkPass->getAttachmentDescription(attach)._layer, vkPass->getAttachmentDescription(attach)._mip));
             }
         }
         else
@@ -79,7 +78,7 @@ bool VulkanFramebuffer::create(const RenderPass* pass)
             {
                 ASSERT(vkImage->getSampleCount() > VK_SAMPLE_COUNT_1_BIT, "wrong sample count");
                 const VulkanImage* vkResolveImage = vkImage->getResolveImage();
-                m_imageViews.push_back(vkResolveImage->getAttachmentImageView(vkPass->getAttachmentDescription(attach)._layer, vkPass->getAttachmentDescription(attach)._mip));
+                m_imageViews.push_back(vkResolveImage->getImageView(0, vkPass->getAttachmentDescription(attach)._layer, vkPass->getAttachmentDescription(attach)._mip));
             }
         }
     }

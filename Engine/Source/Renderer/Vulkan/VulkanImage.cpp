@@ -1,12 +1,14 @@
 #include "VulkanImage.h"
-#include "VulkanGraphicContext.h"
-#include "VulkanCommandBufferManager.h"
-#include "VulkanStagingBuffer.h"
-#include "VulkanDebug.h"
 
+#include "crc32c/crc32c.h"
 #include "Utils/Logger.h"
 
 #ifdef VULKAN_RENDER
+#include "VulkanDebug.h"
+#include "VulkanContext.h"
+#include "VulkanCommandBufferManager.h"
+#include "VulkanStagingBuffer.h"
+
 namespace v3d
 {
 namespace renderer
@@ -226,109 +228,6 @@ std::string ImageFormatStringVK(VkFormat format)
     }
 
     return "UNKNOWN_FORMAT";
-}
-
-std::tuple<VkAccessFlags, VkAccessFlags> VulkanImage::getAccessFlagsFromImageLayout(VkImageLayout oldLayout, VkImageLayout newLayout)
-{
-    VkAccessFlags srcFlag = 0;
-    VkAccessFlags dstFlag = 0;
-
-    switch (oldLayout)
-    {
-    case VK_IMAGE_LAYOUT_UNDEFINED:
-        srcFlag = 0;
-        break;
-
-    case VK_IMAGE_LAYOUT_PREINITIALIZED:
-        srcFlag = VK_ACCESS_HOST_WRITE_BIT;
-        break;
-
-    case VK_IMAGE_LAYOUT_GENERAL:
-        srcFlag |= VK_ACCESS_COLOR_ATTACHMENT_READ_BIT;
-        srcFlag |= VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-        srcFlag |= VK_ACCESS_TRANSFER_WRITE_BIT;
-        srcFlag |= VK_ACCESS_TRANSFER_READ_BIT;
-        srcFlag |= VK_ACCESS_SHADER_READ_BIT;
-        srcFlag |= VK_ACCESS_SHADER_WRITE_BIT;
-        break;
-
-    case VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL:
-        srcFlag |= VK_ACCESS_TRANSFER_READ_BIT;
-        srcFlag |= VK_ACCESS_TRANSFER_WRITE_BIT;
-        break;
-
-    case VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL:
-        srcFlag |= VK_ACCESS_TRANSFER_READ_BIT;
-        srcFlag |= VK_ACCESS_TRANSFER_WRITE_BIT;
-        break;
-
-    case VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL:
-        srcFlag = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-        break;
-
-    case VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL:
-        srcFlag = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
-        break;
-
-    case VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL:
-        srcFlag = VK_ACCESS_SHADER_READ_BIT;
-        break;
-
-    case VK_IMAGE_LAYOUT_PRESENT_SRC_KHR:
-        dstFlag = VK_ACCESS_MEMORY_READ_BIT;
-        break;
-
-     default:
-          ASSERT(false, "not handled");
-
-    }
-
-    switch (newLayout)
-    {
-    case VK_IMAGE_LAYOUT_GENERAL:
-        dstFlag |= VK_ACCESS_COLOR_ATTACHMENT_READ_BIT;
-        dstFlag |= VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-        dstFlag |= VK_ACCESS_TRANSFER_WRITE_BIT;
-        dstFlag |= VK_ACCESS_TRANSFER_READ_BIT;
-        dstFlag |= VK_ACCESS_SHADER_READ_BIT;
-        dstFlag |= VK_ACCESS_SHADER_WRITE_BIT;
-        break;
-
-    case VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL:
-        dstFlag |= VK_ACCESS_TRANSFER_WRITE_BIT;
-        dstFlag |= VK_ACCESS_TRANSFER_READ_BIT;
-        break;
-
-    case VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL:
-        dstFlag |= VK_ACCESS_TRANSFER_WRITE_BIT;
-        dstFlag |= VK_ACCESS_TRANSFER_READ_BIT;
-        break;
-
-    case VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL:
-        dstFlag = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-        break;
-
-    case VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL:
-        dstFlag = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
-        break;
-
-    case VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL:
-        dstFlag = VK_ACCESS_SHADER_READ_BIT;
-        break;
-
-    case VK_IMAGE_LAYOUT_PRESENT_SRC_KHR:
-        dstFlag = VK_ACCESS_MEMORY_READ_BIT;
-        break;
-
-    case VK_IMAGE_LAYOUT_UNDEFINED:
-        dstFlag = 0;
-        break;
-
-     default:
-          ASSERT(false, "not handled");
-    }
-
-    return { srcFlag, dstFlag };
 }
 
 VkFormat VulkanImage::convertImageFormatToVkFormat(renderer::Format format)
@@ -792,20 +691,219 @@ VkSampleCountFlagBits VulkanImage::convertRenderTargetSamplesToVkSampleCount(Tex
     return VK_SAMPLE_COUNT_1_BIT;
 }
 
-u32 VulkanImage::calculateMipmapCount(const core::Dimension3D& size)
+VkImageAspectFlags VulkanImage::getImageAspectFlags(VkFormat format)
 {
-    if (size.getArea() > 1)
+    switch (format)
     {
+    case VK_FORMAT_D16_UNORM:
+    case VK_FORMAT_X8_D24_UNORM_PACK32:
+    case VK_FORMAT_D32_SFLOAT:
+        return VK_IMAGE_ASPECT_DEPTH_BIT;
 
-        core::Dimension3D mipSize(size);
-        mipSize.width = std::max(size.width / 2, 1U);
-        mipSize.height = std::max(size.height / 2, 1U);
-        mipSize.depth = std::max(size.depth / 2, 1U);
+    case VK_FORMAT_S8_UINT:
+        return VK_IMAGE_ASPECT_STENCIL_BIT;
 
-        return VulkanImage::calculateMipmapCount(mipSize) + 1;
+    case VK_FORMAT_D16_UNORM_S8_UINT:
+    case VK_FORMAT_D24_UNORM_S8_UINT:
+    case VK_FORMAT_D32_SFLOAT_S8_UINT:
+        return VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT;
+
+    default:
+        return VK_IMAGE_ASPECT_COLOR_BIT;
+    }
+}
+
+bool VulkanImage::isColorFormat(VkFormat format)
+{
+    return !isDepthStencilFormat(format);
+}
+
+bool VulkanImage::isDepthStencilFormat(VkFormat format)
+{
+    switch (format)
+    {
+    case VK_FORMAT_D16_UNORM:
+    case VK_FORMAT_X8_D24_UNORM_PACK32:
+    case VK_FORMAT_D32_SFLOAT:
+
+    case VK_FORMAT_S8_UINT:
+
+    case VK_FORMAT_D16_UNORM_S8_UINT:
+    case VK_FORMAT_D24_UNORM_S8_UINT:
+    case VK_FORMAT_D32_SFLOAT_S8_UINT:
+        return true;
+
+    default:
+        return false;
+    }
+}
+
+bool VulkanImage::isCompressedFormat(VkFormat format)
+{
+    switch (format)
+    {
+    case VK_FORMAT_BC1_RGB_UNORM_BLOCK:
+    case VK_FORMAT_BC1_RGB_SRGB_BLOCK:
+    case VK_FORMAT_BC1_RGBA_UNORM_BLOCK:
+    case VK_FORMAT_BC1_RGBA_SRGB_BLOCK:
+    case VK_FORMAT_BC2_UNORM_BLOCK:
+    case VK_FORMAT_BC2_SRGB_BLOCK:
+    case VK_FORMAT_BC3_UNORM_BLOCK:
+    case VK_FORMAT_BC3_SRGB_BLOCK:
+    case VK_FORMAT_BC4_UNORM_BLOCK:
+    case VK_FORMAT_BC4_SNORM_BLOCK:
+    case VK_FORMAT_BC5_UNORM_BLOCK:
+    case VK_FORMAT_BC5_SNORM_BLOCK:
+    case VK_FORMAT_BC6H_UFLOAT_BLOCK:
+    case VK_FORMAT_BC6H_SFLOAT_BLOCK:
+    case VK_FORMAT_BC7_UNORM_BLOCK:
+    case VK_FORMAT_BC7_SRGB_BLOCK:
+
+    case VK_FORMAT_ETC2_R8G8B8_UNORM_BLOCK:
+    case VK_FORMAT_ETC2_R8G8B8_SRGB_BLOCK:
+    case VK_FORMAT_ETC2_R8G8B8A1_UNORM_BLOCK:
+    case VK_FORMAT_ETC2_R8G8B8A1_SRGB_BLOCK:
+    case VK_FORMAT_ETC2_R8G8B8A8_UNORM_BLOCK:
+    case VK_FORMAT_ETC2_R8G8B8A8_SRGB_BLOCK:
+    case VK_FORMAT_EAC_R11_UNORM_BLOCK:
+    case VK_FORMAT_EAC_R11_SNORM_BLOCK:
+    case VK_FORMAT_EAC_R11G11_UNORM_BLOCK:
+    case VK_FORMAT_EAC_R11G11_SNORM_BLOCK:
+
+    case VK_FORMAT_ASTC_4x4_UNORM_BLOCK:
+    case VK_FORMAT_ASTC_4x4_SRGB_BLOCK:
+    case VK_FORMAT_ASTC_5x4_UNORM_BLOCK:
+    case VK_FORMAT_ASTC_5x4_SRGB_BLOCK:
+    case VK_FORMAT_ASTC_5x5_UNORM_BLOCK:
+    case VK_FORMAT_ASTC_5x5_SRGB_BLOCK:
+    case VK_FORMAT_ASTC_6x5_UNORM_BLOCK:
+    case VK_FORMAT_ASTC_6x5_SRGB_BLOCK:
+    case VK_FORMAT_ASTC_6x6_UNORM_BLOCK:
+    case VK_FORMAT_ASTC_6x6_SRGB_BLOCK:
+    case VK_FORMAT_ASTC_8x5_UNORM_BLOCK:
+    case VK_FORMAT_ASTC_8x5_SRGB_BLOCK:
+    case VK_FORMAT_ASTC_8x6_UNORM_BLOCK:
+    case VK_FORMAT_ASTC_8x6_SRGB_BLOCK:
+    case VK_FORMAT_ASTC_8x8_UNORM_BLOCK:
+    case VK_FORMAT_ASTC_8x8_SRGB_BLOCK:
+    case VK_FORMAT_ASTC_10x5_UNORM_BLOCK:
+    case VK_FORMAT_ASTC_10x5_SRGB_BLOCK:
+    case VK_FORMAT_ASTC_10x6_UNORM_BLOCK:
+    case VK_FORMAT_ASTC_10x6_SRGB_BLOCK:
+    case VK_FORMAT_ASTC_10x8_UNORM_BLOCK:
+    case VK_FORMAT_ASTC_10x8_SRGB_BLOCK:
+    case VK_FORMAT_ASTC_10x10_UNORM_BLOCK:
+    case VK_FORMAT_ASTC_10x10_SRGB_BLOCK:
+    case VK_FORMAT_ASTC_12x10_UNORM_BLOCK:
+    case VK_FORMAT_ASTC_12x10_SRGB_BLOCK:
+    case VK_FORMAT_ASTC_12x12_UNORM_BLOCK:
+    case VK_FORMAT_ASTC_12x12_SRGB_BLOCK:
+        return true;
+
+    default:
+        return false;
+    }
+}
+
+bool VulkanImage::isASTCFormat(VkFormat format)
+{
+    switch (format)
+    {
+    case VK_FORMAT_ASTC_4x4_UNORM_BLOCK:
+    case VK_FORMAT_ASTC_4x4_SRGB_BLOCK:
+    case VK_FORMAT_ASTC_5x4_UNORM_BLOCK:
+    case VK_FORMAT_ASTC_5x4_SRGB_BLOCK:
+    case VK_FORMAT_ASTC_5x5_UNORM_BLOCK:
+    case VK_FORMAT_ASTC_5x5_SRGB_BLOCK:
+    case VK_FORMAT_ASTC_6x5_UNORM_BLOCK:
+    case VK_FORMAT_ASTC_6x5_SRGB_BLOCK:
+    case VK_FORMAT_ASTC_6x6_UNORM_BLOCK:
+    case VK_FORMAT_ASTC_6x6_SRGB_BLOCK:
+    case VK_FORMAT_ASTC_8x5_UNORM_BLOCK:
+    case VK_FORMAT_ASTC_8x5_SRGB_BLOCK:
+    case VK_FORMAT_ASTC_8x6_UNORM_BLOCK:
+    case VK_FORMAT_ASTC_8x6_SRGB_BLOCK:
+    case VK_FORMAT_ASTC_8x8_UNORM_BLOCK:
+    case VK_FORMAT_ASTC_8x8_SRGB_BLOCK:
+    case VK_FORMAT_ASTC_10x5_UNORM_BLOCK:
+    case VK_FORMAT_ASTC_10x5_SRGB_BLOCK:
+    case VK_FORMAT_ASTC_10x6_UNORM_BLOCK:
+    case VK_FORMAT_ASTC_10x6_SRGB_BLOCK:
+    case VK_FORMAT_ASTC_10x8_UNORM_BLOCK:
+    case VK_FORMAT_ASTC_10x8_SRGB_BLOCK:
+    case VK_FORMAT_ASTC_10x10_UNORM_BLOCK:
+    case VK_FORMAT_ASTC_10x10_SRGB_BLOCK:
+    case VK_FORMAT_ASTC_12x10_UNORM_BLOCK:
+    case VK_FORMAT_ASTC_12x10_SRGB_BLOCK:
+    case VK_FORMAT_ASTC_12x12_UNORM_BLOCK:
+    case VK_FORMAT_ASTC_12x12_SRGB_BLOCK:
+        return true;
+
+    default:
+        return false;
     }
 
-    return 1U;
+}
+
+bool VulkanImage::isSRGBFormat(VkFormat format)
+{
+    switch (format)
+    {
+    case VK_FORMAT_R8_SRGB:
+    case VK_FORMAT_R8G8_SRGB:
+    case VK_FORMAT_R8G8B8_SRGB:
+    case VK_FORMAT_B8G8R8_SRGB:
+    case VK_FORMAT_R8G8B8A8_SRGB:
+    case VK_FORMAT_B8G8R8A8_SRGB:
+    case VK_FORMAT_A8B8G8R8_SRGB_PACK32:
+    case VK_FORMAT_BC1_RGB_SRGB_BLOCK:
+    case VK_FORMAT_BC1_RGBA_SRGB_BLOCK:
+    case VK_FORMAT_BC2_SRGB_BLOCK:
+    case VK_FORMAT_BC3_SRGB_BLOCK:
+    case VK_FORMAT_BC7_SRGB_BLOCK:
+    case VK_FORMAT_ETC2_R8G8B8_SRGB_BLOCK:
+    case VK_FORMAT_ETC2_R8G8B8A1_SRGB_BLOCK:
+    case VK_FORMAT_ETC2_R8G8B8A8_SRGB_BLOCK:
+    case VK_FORMAT_ASTC_4x4_SRGB_BLOCK:
+    case VK_FORMAT_ASTC_5x4_SRGB_BLOCK:
+    case VK_FORMAT_ASTC_5x5_SRGB_BLOCK:
+    case VK_FORMAT_ASTC_6x5_SRGB_BLOCK:
+    case VK_FORMAT_ASTC_6x6_SRGB_BLOCK:
+    case VK_FORMAT_ASTC_8x5_SRGB_BLOCK:
+    case VK_FORMAT_ASTC_8x6_SRGB_BLOCK:
+    case VK_FORMAT_ASTC_8x8_SRGB_BLOCK:
+    case VK_FORMAT_ASTC_10x5_SRGB_BLOCK:
+    case VK_FORMAT_ASTC_10x6_SRGB_BLOCK:
+    case VK_FORMAT_ASTC_10x8_SRGB_BLOCK:
+    case VK_FORMAT_ASTC_10x10_SRGB_BLOCK:
+    case VK_FORMAT_ASTC_12x10_SRGB_BLOCK:
+    case VK_FORMAT_ASTC_12x12_SRGB_BLOCK:
+        return true;
+
+    default:
+        return false;
+    }
+
+    return false;
+}
+
+bool VulkanImage::isAttachmentLayout(const VulkanImage* image, s32 layer)
+{
+    VkImageLayout layout = image->getLayout(layer);
+    switch (layout)
+    {
+    case VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL:
+    case VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL:
+    case VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL:
+    case VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL:
+    case VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL:
+        return true;
+
+    default:
+        return false;
+    }
+
+    return false;
 }
 
 #if DEBUG_OBJECT_MEMORY
@@ -818,7 +916,7 @@ VulkanImage::VulkanImage(VulkanMemory::VulkanMemoryAllocator* memory, VkDevice d
     , m_format(format)
     , m_dimension(dimension)
     , m_mipLevels(mipsLevel)
-    , m_layersLevel(layers)
+    , m_layerLevels(layers)
 
     , m_samples(VK_SAMPLE_COUNT_1_BIT)
     , m_tiling(VK_IMAGE_TILING_OPTIMAL)
@@ -837,8 +935,7 @@ VulkanImage::VulkanImage(VulkanMemory::VulkanMemoryAllocator* memory, VkDevice d
 {
     LOG_DEBUG("VulkanImage::VulkanImage constructor %llx", this);
 
-    m_layout.resize(1 + static_cast<u64>(m_layersLevel) * static_cast<u64>(m_mipLevels), (m_tiling == VK_IMAGE_TILING_OPTIMAL) ? VK_IMAGE_LAYOUT_UNDEFINED : VK_IMAGE_LAYOUT_PREINITIALIZED);
-    memset(&m_generalImageView[0], VK_NULL_HANDLE, sizeof(m_generalImageView));
+    m_layout.resize(1 + static_cast<u64>(m_layerLevels) * static_cast<u64>(m_mipLevels), (m_tiling == VK_IMAGE_TILING_OPTIMAL) ? VK_IMAGE_LAYOUT_UNDEFINED : VK_IMAGE_LAYOUT_PREINITIALIZED);
 
 #if VULKAN_DEBUG_MARKERS
     m_debugName = name.empty() ? "Image" : name;
@@ -857,7 +954,7 @@ VulkanImage::VulkanImage(VulkanMemory::VulkanMemoryAllocator* memory, VkDevice d
     , m_format(format)
     , m_dimension(dimension)
     , m_mipLevels(1)
-    , m_layersLevel(layers)
+    , m_layerLevels(layers)
 
     , m_samples(samples)
     , m_tiling(VK_IMAGE_TILING_OPTIMAL)
@@ -879,11 +976,9 @@ VulkanImage::VulkanImage(VulkanMemory::VulkanMemoryAllocator* memory, VkDevice d
     if (isPresentTextureUsageFlag(TextureUsage::TextureUsage_GenerateMipmaps))
     {
         ASSERT(isPresentTextureUsageFlag(TextureUsage::TextureUsage_Attachment), "must be attachment");
-        m_mipLevels = VulkanImage::calculateMipmapCount({ m_dimension.width, m_dimension.height, m_dimension.depth });
+        m_mipLevels = ImageFormat::calculateMipmapCount({ m_dimension.width, m_dimension.height, m_dimension.depth });
     }
-    m_layout.resize(1 + static_cast<u64>(m_layersLevel) * static_cast<u64>(m_mipLevels), VK_IMAGE_LAYOUT_UNDEFINED);
-
-    memset(&m_generalImageView[0], VK_NULL_HANDLE, sizeof(m_generalImageView));
+    m_layout.resize(1 + static_cast<u64>(m_layerLevels) * static_cast<u64>(m_mipLevels), VK_IMAGE_LAYOUT_UNDEFINED);
 
     if (VulkanImage::isPresentTextureUsageFlag(TextureUsage_Resolve))
     {
@@ -925,12 +1020,7 @@ VulkanImage::~VulkanImage()
 #endif //DEBUG_OBJECT_MEMORY
 
     ASSERT(!m_resolveImage, "m_resolveImage nullptr");
-    for (u32 i = 0; i < ImageAspect::ImageAspect_Count; ++i)
-    {
-        ASSERT(!m_generalImageView[i], "image view not nullptr");
-    }
-    ASSERT(m_attachmentImageView.empty(), "m_attachmentImageView is not empty");
-    ASSERT(m_imageView.empty(), "m_imageView is not empty");
+    ASSERT(m_imageViews.empty(), "m_imageViews is not empty");
 
     ASSERT(!m_image, "image not nullptr");
 }
@@ -997,7 +1087,18 @@ bool VulkanImage::create()
         imageUsage |= VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
     }
 
-    if (m_layersLevel == 6U)
+    if (VulkanImage::isPresentTextureUsageFlag(TextureUsage::TextureUsage_Storage))
+    {
+        unsupport |= !supportFormatInfo._supportStorage;
+        if (!supportFormatInfo._supportStorage)
+        {
+            LOG_ERROR("VulkanImage::create, supportFormatInfo._supportStorage format %s is not supported", ImageFormatStringVK(m_format).c_str());
+            ASSERT(supportFormatInfo._supportStorage, "format is not supported");
+        }
+        imageUsage |= VK_IMAGE_USAGE_STORAGE_BIT;
+    }
+
+    if (m_layerLevels == 6U)
     {
         imageFlags |= VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
     }
@@ -1022,7 +1123,7 @@ bool VulkanImage::create()
     imageCreateInfo.format = m_format;
     imageCreateInfo.extent = m_dimension;
     imageCreateInfo.mipLevels = m_mipLevels;
-    imageCreateInfo.arrayLayers = m_layersLevel;
+    imageCreateInfo.arrayLayers = m_layerLevels;
     imageCreateInfo.samples = m_samples;
     imageCreateInfo.tiling = m_tiling;
     imageCreateInfo.usage = imageUsage;
@@ -1032,7 +1133,7 @@ bool VulkanImage::create()
     imageCreateInfo.initialLayout = m_layout.front();
 
 #if VULKAN_DEBUG
-    LOG_DEBUG("vkCreateImage: [Type %s][Size %u : %u : %u [%u]]; flags %u; usage %u; format %s", ImageTypeStringVK(m_type).c_str(), m_dimension.width, m_dimension.height, m_dimension.depth, m_layersLevel, imageFlags, imageUsage, ImageFormatStringVK(m_format).c_str());
+    LOG_DEBUG("vkCreateImage: [Type %s][Size %u : %u : %u [%u]]; flags %u; usage %u; format %s", ImageTypeStringVK(m_type).c_str(), m_dimension.width, m_dimension.height, m_dimension.depth, m_layerLevels, imageFlags, imageUsage, ImageFormatStringVK(m_format).c_str());
 #endif
     VkResult result = VulkanWrapper::CreateImage(m_device, &imageCreateInfo, VULKAN_ALLOCATOR, &m_image);
     if (result != VK_SUCCESS)
@@ -1191,7 +1292,7 @@ void VulkanImage::clear(Context* context, f32 depth, u32 stencil)
 bool VulkanImage::upload(Context* context, const core::Dimension3D& size, u32 layers, u32 mips, const void* data)
 {
     ASSERT(m_mipLevels == mips, "should be same");
-    ASSERT(m_layersLevel == layers, "should be same");
+    ASSERT(m_layerLevels == layers, "should be same");
     ASSERT(m_samples == VkSampleCountFlagBits::VK_SAMPLE_COUNT_1_BIT, "wrong sample count");
 
     u64 calculatedSize = ImageFormat::calculateImageSize(size, mips, layers, VulkanImage::convertVkImageFormatToFormat(m_format));
@@ -1201,7 +1302,7 @@ bool VulkanImage::upload(Context* context, const core::Dimension3D& size, u32 la
 bool VulkanImage::upload(Context* context, const core::Dimension3D& offsets, const core::Dimension3D& size, u32 layers, const void* data)
 {
     ASSERT(m_mipLevels == 1, "should be 1");
-    ASSERT(m_layersLevel == layers, "should be same");
+    ASSERT(m_layerLevels == layers, "should be same");
     ASSERT(m_samples == VkSampleCountFlagBits::VK_SAMPLE_COUNT_1_BIT, "wrong sample count");
 
     ASSERT(size > offsets, "wrong offset");
@@ -1375,7 +1476,7 @@ bool VulkanImage::generateMipmaps(Context* context, u32 layer)
     VkImageSubresourceRange subresourceMips = {};
     subresourceMips.aspectMask = m_aspectMask;
     subresourceMips.baseArrayLayer = 0;
-    subresourceMips.layerCount = m_layersLevel;
+    subresourceMips.layerCount = m_layerLevels;
     subresourceMips.baseMipLevel = 1;
     subresourceMips.levelCount = m_mipLevels - 1;
 
@@ -1403,7 +1504,7 @@ bool VulkanImage::generateMipmaps(Context* context, u32 layer)
     return true;
 }
 
-bool VulkanImage::isPresentTextureUsageFlag(TextureUsageFlags flag)
+bool VulkanImage::isPresentTextureUsageFlag(TextureUsageFlags flag) const
 {
     return (m_usage & flag);
 }
@@ -1415,7 +1516,7 @@ VkImageSubresourceRange VulkanImage::makeImageSubresourceRange(const VulkanImage
     if (layer == k_generalLayer)
     {
         imageSubresourceRange.baseArrayLayer = 0;
-        imageSubresourceRange.layerCount = image->m_layersLevel;
+        imageSubresourceRange.layerCount = image->m_layerLevels;
     }
     else
     {
@@ -1445,7 +1546,7 @@ VkImageSubresourceLayers VulkanImage::makeImageSubresourceLayers(const VulkanIma
     if (layer == k_generalLayer)
     {
         imageSubresourceLayers.baseArrayLayer = 0;
-        imageSubresourceLayers.layerCount = image->m_layersLevel;
+        imageSubresourceLayers.layerCount = image->m_layerLevels;
     }
     else
     {
@@ -1456,22 +1557,22 @@ VkImageSubresourceLayers VulkanImage::makeImageSubresourceLayers(const VulkanIma
     return imageSubresourceLayers;
 }
 
-VkImageSubresourceRange VulkanImage::makeImageSubresourceRangeWithAspect(const VulkanImage* image, s32 layer, s32 mip, ImageAspect aspect)
+VkImageSubresourceRange VulkanImage::makeImageSubresourceRangeWithAspect(const VulkanImage* image, VkImageAspectFlags aspect, s32 layer, s32 mip)
 {
     VkImageSubresourceRange imageSubresourceRange = {};
-    if (aspect == ImageAspect::ImageAspect_General)
+    if (!aspect)
     {
         imageSubresourceRange.aspectMask = image->getImageAspectFlags();
     }
     else
     {
-        imageSubresourceRange.aspectMask = VulkanImage::convertImageAspectFlagsToVk(aspect);
+        imageSubresourceRange.aspectMask = aspect;
     }
 
     if (layer == k_generalLayer)
     {
         imageSubresourceRange.baseArrayLayer = 0;
-        imageSubresourceRange.layerCount = image->m_layersLevel;
+        imageSubresourceRange.layerCount = image->m_layerLevels;
     }
     else
     {
@@ -1493,221 +1594,6 @@ VkImageSubresourceRange VulkanImage::makeImageSubresourceRangeWithAspect(const V
     return imageSubresourceRange;
 }
 
-VkImageAspectFlags VulkanImage::getImageAspectFlags(VkFormat format)
-{
-    switch (format)
-    {
-    case VK_FORMAT_D16_UNORM:
-    case VK_FORMAT_X8_D24_UNORM_PACK32:
-    case VK_FORMAT_D32_SFLOAT:
-        return VK_IMAGE_ASPECT_DEPTH_BIT;
-
-    case VK_FORMAT_S8_UINT:
-        return VK_IMAGE_ASPECT_STENCIL_BIT;
-
-    case VK_FORMAT_D16_UNORM_S8_UINT:
-    case VK_FORMAT_D24_UNORM_S8_UINT:
-    case VK_FORMAT_D32_SFLOAT_S8_UINT:
-        return VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT;
-
-    default:
-        return VK_IMAGE_ASPECT_COLOR_BIT;
-    }
-}
-
-bool VulkanImage::isColorFormat(VkFormat format)
-{
-    return !isDepthStencilFormat(format);
-}
-
-bool VulkanImage::isDepthStencilFormat(VkFormat format)
-{
-    switch (format)
-    {
-    case VK_FORMAT_D16_UNORM:
-    case VK_FORMAT_X8_D24_UNORM_PACK32:
-    case VK_FORMAT_D32_SFLOAT:
-
-    case VK_FORMAT_S8_UINT:
-
-    case VK_FORMAT_D16_UNORM_S8_UINT:
-    case VK_FORMAT_D24_UNORM_S8_UINT:
-    case VK_FORMAT_D32_SFLOAT_S8_UINT:
-        return true;
-
-    default:
-        return false;
-    }
-}
-
-bool VulkanImage::isCompressedFormat(VkFormat format)
-{
-    switch (format)
-    {
-    case VK_FORMAT_BC1_RGB_UNORM_BLOCK:
-    case VK_FORMAT_BC1_RGB_SRGB_BLOCK:
-    case VK_FORMAT_BC1_RGBA_UNORM_BLOCK:
-    case VK_FORMAT_BC1_RGBA_SRGB_BLOCK:
-    case VK_FORMAT_BC2_UNORM_BLOCK:
-    case VK_FORMAT_BC2_SRGB_BLOCK:
-    case VK_FORMAT_BC3_UNORM_BLOCK:
-    case VK_FORMAT_BC3_SRGB_BLOCK:
-    case VK_FORMAT_BC4_UNORM_BLOCK:
-    case VK_FORMAT_BC4_SNORM_BLOCK:
-    case VK_FORMAT_BC5_UNORM_BLOCK:
-    case VK_FORMAT_BC5_SNORM_BLOCK:
-    case VK_FORMAT_BC6H_UFLOAT_BLOCK:
-    case VK_FORMAT_BC6H_SFLOAT_BLOCK:
-    case VK_FORMAT_BC7_UNORM_BLOCK:
-    case VK_FORMAT_BC7_SRGB_BLOCK:
-
-    case VK_FORMAT_ETC2_R8G8B8_UNORM_BLOCK:
-    case VK_FORMAT_ETC2_R8G8B8_SRGB_BLOCK:
-    case VK_FORMAT_ETC2_R8G8B8A1_UNORM_BLOCK:
-    case VK_FORMAT_ETC2_R8G8B8A1_SRGB_BLOCK:
-    case VK_FORMAT_ETC2_R8G8B8A8_UNORM_BLOCK:
-    case VK_FORMAT_ETC2_R8G8B8A8_SRGB_BLOCK:
-    case VK_FORMAT_EAC_R11_UNORM_BLOCK:
-    case VK_FORMAT_EAC_R11_SNORM_BLOCK:
-    case VK_FORMAT_EAC_R11G11_UNORM_BLOCK:
-    case VK_FORMAT_EAC_R11G11_SNORM_BLOCK:
-
-    case VK_FORMAT_ASTC_4x4_UNORM_BLOCK:
-    case VK_FORMAT_ASTC_4x4_SRGB_BLOCK:
-    case VK_FORMAT_ASTC_5x4_UNORM_BLOCK:
-    case VK_FORMAT_ASTC_5x4_SRGB_BLOCK:
-    case VK_FORMAT_ASTC_5x5_UNORM_BLOCK:
-    case VK_FORMAT_ASTC_5x5_SRGB_BLOCK:
-    case VK_FORMAT_ASTC_6x5_UNORM_BLOCK:
-    case VK_FORMAT_ASTC_6x5_SRGB_BLOCK:
-    case VK_FORMAT_ASTC_6x6_UNORM_BLOCK:
-    case VK_FORMAT_ASTC_6x6_SRGB_BLOCK:
-    case VK_FORMAT_ASTC_8x5_UNORM_BLOCK:
-    case VK_FORMAT_ASTC_8x5_SRGB_BLOCK:
-    case VK_FORMAT_ASTC_8x6_UNORM_BLOCK:
-    case VK_FORMAT_ASTC_8x6_SRGB_BLOCK:
-    case VK_FORMAT_ASTC_8x8_UNORM_BLOCK:
-    case VK_FORMAT_ASTC_8x8_SRGB_BLOCK:
-    case VK_FORMAT_ASTC_10x5_UNORM_BLOCK:
-    case VK_FORMAT_ASTC_10x5_SRGB_BLOCK:
-    case VK_FORMAT_ASTC_10x6_UNORM_BLOCK:
-    case VK_FORMAT_ASTC_10x6_SRGB_BLOCK:
-    case VK_FORMAT_ASTC_10x8_UNORM_BLOCK:
-    case VK_FORMAT_ASTC_10x8_SRGB_BLOCK:
-    case VK_FORMAT_ASTC_10x10_UNORM_BLOCK:
-    case VK_FORMAT_ASTC_10x10_SRGB_BLOCK:
-    case VK_FORMAT_ASTC_12x10_UNORM_BLOCK:
-    case VK_FORMAT_ASTC_12x10_SRGB_BLOCK:
-    case VK_FORMAT_ASTC_12x12_UNORM_BLOCK:
-    case VK_FORMAT_ASTC_12x12_SRGB_BLOCK:
-        return true;
-
-    default:
-        return false;
-    }
-}
-
-bool VulkanImage::isASTCFormat(VkFormat format)
-{
-    switch (format)
-    {
-    case VK_FORMAT_ASTC_4x4_UNORM_BLOCK:
-    case VK_FORMAT_ASTC_4x4_SRGB_BLOCK:
-    case VK_FORMAT_ASTC_5x4_UNORM_BLOCK:
-    case VK_FORMAT_ASTC_5x4_SRGB_BLOCK:
-    case VK_FORMAT_ASTC_5x5_UNORM_BLOCK:
-    case VK_FORMAT_ASTC_5x5_SRGB_BLOCK:
-    case VK_FORMAT_ASTC_6x5_UNORM_BLOCK:
-    case VK_FORMAT_ASTC_6x5_SRGB_BLOCK:
-    case VK_FORMAT_ASTC_6x6_UNORM_BLOCK:
-    case VK_FORMAT_ASTC_6x6_SRGB_BLOCK:
-    case VK_FORMAT_ASTC_8x5_UNORM_BLOCK:
-    case VK_FORMAT_ASTC_8x5_SRGB_BLOCK:
-    case VK_FORMAT_ASTC_8x6_UNORM_BLOCK:
-    case VK_FORMAT_ASTC_8x6_SRGB_BLOCK:
-    case VK_FORMAT_ASTC_8x8_UNORM_BLOCK:
-    case VK_FORMAT_ASTC_8x8_SRGB_BLOCK:
-    case VK_FORMAT_ASTC_10x5_UNORM_BLOCK:
-    case VK_FORMAT_ASTC_10x5_SRGB_BLOCK:
-    case VK_FORMAT_ASTC_10x6_UNORM_BLOCK:
-    case VK_FORMAT_ASTC_10x6_SRGB_BLOCK:
-    case VK_FORMAT_ASTC_10x8_UNORM_BLOCK:
-    case VK_FORMAT_ASTC_10x8_SRGB_BLOCK:
-    case VK_FORMAT_ASTC_10x10_UNORM_BLOCK:
-    case VK_FORMAT_ASTC_10x10_SRGB_BLOCK:
-    case VK_FORMAT_ASTC_12x10_UNORM_BLOCK:
-    case VK_FORMAT_ASTC_12x10_SRGB_BLOCK:
-    case VK_FORMAT_ASTC_12x12_UNORM_BLOCK:
-    case VK_FORMAT_ASTC_12x12_SRGB_BLOCK:
-        return true;
-
-    default:
-        return false;
-    }
-
-}
-
-bool VulkanImage::isSRGBFormat(VkFormat format)
-{
-    switch (format)
-    {
-    case VK_FORMAT_R8_SRGB:
-    case VK_FORMAT_R8G8_SRGB:
-    case VK_FORMAT_R8G8B8_SRGB:
-    case VK_FORMAT_B8G8R8_SRGB:
-    case VK_FORMAT_R8G8B8A8_SRGB:
-    case VK_FORMAT_B8G8R8A8_SRGB:
-    case VK_FORMAT_A8B8G8R8_SRGB_PACK32:
-    case VK_FORMAT_BC1_RGB_SRGB_BLOCK:
-    case VK_FORMAT_BC1_RGBA_SRGB_BLOCK:
-    case VK_FORMAT_BC2_SRGB_BLOCK: 
-    case VK_FORMAT_BC3_SRGB_BLOCK:
-    case VK_FORMAT_BC7_SRGB_BLOCK:
-    case VK_FORMAT_ETC2_R8G8B8_SRGB_BLOCK:
-    case VK_FORMAT_ETC2_R8G8B8A1_SRGB_BLOCK:
-    case VK_FORMAT_ETC2_R8G8B8A8_SRGB_BLOCK:
-    case VK_FORMAT_ASTC_4x4_SRGB_BLOCK:
-    case VK_FORMAT_ASTC_5x4_SRGB_BLOCK:
-    case VK_FORMAT_ASTC_5x5_SRGB_BLOCK:
-    case VK_FORMAT_ASTC_6x5_SRGB_BLOCK:
-    case VK_FORMAT_ASTC_6x6_SRGB_BLOCK:
-    case VK_FORMAT_ASTC_8x5_SRGB_BLOCK:
-    case VK_FORMAT_ASTC_8x6_SRGB_BLOCK:
-    case VK_FORMAT_ASTC_8x8_SRGB_BLOCK:
-    case VK_FORMAT_ASTC_10x5_SRGB_BLOCK:
-    case VK_FORMAT_ASTC_10x6_SRGB_BLOCK:
-    case VK_FORMAT_ASTC_10x8_SRGB_BLOCK:
-    case VK_FORMAT_ASTC_10x10_SRGB_BLOCK:
-    case VK_FORMAT_ASTC_12x10_SRGB_BLOCK:
-    case VK_FORMAT_ASTC_12x12_SRGB_BLOCK:
-        return true;
-
-    default:
-        return false;
-    }
-
-    return false;
-}
-
-bool VulkanImage::isAttachmentLayout(const VulkanImage* image, s32 layer)
-{
-    VkImageLayout layout = image->getLayout(layer);
-    switch (layout)
-    {
-    case VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL:
-    case VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL:
-    case VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL:
-    case VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL:
-    case VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL:
-        return true;
-
-    default:
-        return false;
-    }
-
-    return false;
-}
-
 VkImage VulkanImage::getHandle() const
 {
     ASSERT(m_image != VK_NULL_HANDLE, "nullptr");
@@ -1724,28 +1610,44 @@ VkSampleCountFlagBits VulkanImage::getSampleCount() const
     return m_samples;
 }
 
-VkImageView VulkanImage::getImageView(s32 layer, VkImageAspectFlags aspect) const
+VkImageView VulkanImage::getImageView(VkImageAspectFlags aspects, s32 layer, s32 mip) const
 {
-    if (layer == k_generalLayer)
+    VkImageSubresourceRange imageSubresourceRange = {};
+    imageSubresourceRange.aspectMask = aspects;
+    if (!aspects)
     {
-        ASSERT(m_generalImageView[convertVkImageAspectFlags(aspect ? aspect : m_aspectMask)], "null handle");
-        return m_generalImageView[convertVkImageAspectFlags(aspect ? aspect : m_aspectMask)];
+        imageSubresourceRange.aspectMask = m_aspectMask;
     }
 
-    ASSERT(!m_imageView.empty(), "empty");
-    return m_imageView[layer];
-}
-
-VkImageView VulkanImage::getAttachmentImageView(s32 layer, s32 mip) const
-{
-    ASSERT(mip == 0, "not impl");
-    ASSERT(!m_attachmentImageView.empty(), "empty");
     if (layer == k_generalLayer)
     {
-        return m_attachmentImageView.front();
+        imageSubresourceRange.baseArrayLayer = 0;
+        imageSubresourceRange.layerCount = m_layerLevels;
+    }
+    else
+    {
+        imageSubresourceRange.baseArrayLayer = layer;
+        imageSubresourceRange.layerCount = 1;
     }
 
-    return m_attachmentImageView[layer];
+    if (mip == k_allMipmapsLevels)
+    {
+        imageSubresourceRange.baseMipLevel = 0;
+        imageSubresourceRange.levelCount = m_mipLevels;
+    }
+    else
+    {
+        imageSubresourceRange.baseMipLevel = mip;
+        imageSubresourceRange.levelCount = 1;
+    }
+
+    auto found = m_imageViews.find(ImageViewKey(imageSubresourceRange));
+    if (found == m_imageViews.cend())
+    {
+        ASSERT(false, "view isn't found");
+    }
+
+    return found->second;
 }
 
 VkFormat VulkanImage::getFormat() const
@@ -1798,7 +1700,7 @@ VkImageLayout VulkanImage::setLayout(VkImageLayout layout, s32 layer, s32 mip)
     if (layer == k_generalLayer)
     {
         VkImageLayout oldLayout = m_layout[1];
-        for (u32 layer = 0; layer < m_layersLevel; ++layer)
+        for (u32 layer = 0; layer < m_layerLevels; ++layer)
         {
             m_layout[1 + (layer * m_mipLevels + mip)] = layout;
         }
@@ -1836,26 +1738,11 @@ void VulkanImage::destroy()
         m_resolveImage = nullptr;
     }
 
-    for (u32 i = 0; i < ImageAspect::ImageAspect_Count; ++i)
+    for (auto& view : m_imageViews)
     {
-        if (m_generalImageView[i])
-        {
-            VulkanWrapper::DestroyImageView(m_device, m_generalImageView[i], VULKAN_ALLOCATOR);
-            m_generalImageView[i] = VK_NULL_HANDLE;
-        }
+        VulkanWrapper::DestroyImageView(m_device, view.second, VULKAN_ALLOCATOR);
     }
-
-    for (auto& view : m_attachmentImageView)
-    {
-        VulkanWrapper::DestroyImageView(m_device, view, VULKAN_ALLOCATOR);
-    }
-    m_attachmentImageView.clear();
-
-    for (auto& view : m_imageView)
-    {
-        VulkanWrapper::DestroyImageView(m_device, view, VULKAN_ALLOCATOR);
-    }
-    m_imageView.clear();
+    m_imageViews.clear();
 
     if (m_swapchainImage)
     {
@@ -1883,52 +1770,6 @@ void VulkanImage::destroy()
 bool VulkanImage::isSwapchain() const
 {
     return m_swapchainImage;
-}
-
-VulkanImage::ImageAspect VulkanImage::convertVkImageAspectFlags(VkImageAspectFlags aspect)
-{
-    switch (aspect)
-    {
-    case VK_IMAGE_ASPECT_COLOR_BIT:
-        return ImageAspect::ImageAspect_Color;
-
-    case VK_IMAGE_ASPECT_DEPTH_BIT:
-        return ImageAspect::ImageAspect_Depth;
-
-    case VK_IMAGE_ASPECT_STENCIL_BIT:
-        return ImageAspect::ImageAspect_Stencil;
-
-    case VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT:
-        return ImageAspect::ImageAspect_DepthStencil;
-
-    default:
-        ASSERT(false, "not found");
-    }
-
-    return ImageAspect::ImageAspect_Color;
-}
-
-VkImageAspectFlags VulkanImage::convertImageAspectFlagsToVk(VulkanImage::ImageAspect aspect)
-{
-    switch (aspect)
-    {
-    case ImageAspect::ImageAspect_Color:
-        return VK_IMAGE_ASPECT_COLOR_BIT;
-
-    case ImageAspect::ImageAspect_Depth:
-        return VK_IMAGE_ASPECT_DEPTH_BIT;
-
-    case ImageAspect::ImageAspect_Stencil:
-        return VK_IMAGE_ASPECT_STENCIL_BIT;
-
-    case ImageAspect::ImageAspect_DepthStencil:
-        return VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT;
-
-    default:
-        ASSERT(false, "not found");
-    }
-
-    return VK_IMAGE_ASPECT_COLOR_BIT;
 }
 
 bool VulkanImage::createViewImage()
@@ -1978,132 +1819,84 @@ bool VulkanImage::createViewImage()
     }
 #endif //VK_EXT_astc_decode_mode
 
-    switch (m_aspectMask)
-    {
-    case VK_IMAGE_ASPECT_COLOR_BIT:
+    if (VulkanImage::isPresentTextureUsageFlag(TextureUsage::TextureUsage_Sampled))
     {
         VkImageViewCreateInfo imageViewCreateInfo = {};
         imageViewCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
         imageViewCreateInfo.pNext = vkExtensions;
         imageViewCreateInfo.flags = 0;
         imageViewCreateInfo.image = m_image;
-        imageViewCreateInfo.viewType = convertImageTypeToImageViewType(m_type, m_layersLevel == 6U, m_layersLevel > 1);
+        imageViewCreateInfo.viewType = convertImageTypeToImageViewType(m_type, m_layerLevels == 6U, m_layerLevels > 1);
         imageViewCreateInfo.format = m_format;
         imageViewCreateInfo.components = { VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A };
-        imageViewCreateInfo.subresourceRange = VulkanImage::makeImageSubresourceRangeWithAspect(this, k_generalLayer, k_allMipmapsLevels, ImageAspect::ImageAspect_Color);
+        imageViewCreateInfo.subresourceRange = VulkanImage::makeImageSubresourceRangeWithAspect(this, m_aspectMask, k_generalLayer, k_allMipmapsLevels);
 
-        ASSERT(m_generalImageView[ImageAspect::ImageAspect_Color] == VK_NULL_HANDLE, "not empty");
-        VkResult result = VulkanWrapper::CreateImageView(m_device, &imageViewCreateInfo, VULKAN_ALLOCATOR, &m_generalImageView[ImageAspect::ImageAspect_Color]);
+        VkImageView view = VK_NULL_HANDLE;
+        VkResult result = VulkanWrapper::CreateImageView(m_device, &imageViewCreateInfo, VULKAN_ALLOCATOR, &view);
         if (result != VK_SUCCESS)
         {
             LOG_ERROR("VulkanImage::createViewImage vkCreateImageView is failed. Error: %s", ErrorString(result).c_str());
             return false;
         }
-    }
-    break;
 
-    case VK_IMAGE_ASPECT_DEPTH_BIT:
-    {
-        VkImageViewCreateInfo imageViewCreateInfo = {};
-        imageViewCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-        imageViewCreateInfo.pNext = vkExtensions;
-        imageViewCreateInfo.flags = 0;
-        imageViewCreateInfo.image = m_image;
-        imageViewCreateInfo.viewType = convertImageTypeToImageViewType(m_type, m_layersLevel == 6U, m_layersLevel > 1);
-        imageViewCreateInfo.format = m_format;
-        imageViewCreateInfo.components = { VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A };
-        imageViewCreateInfo.subresourceRange = VulkanImage::makeImageSubresourceRangeWithAspect(this, k_generalLayer, k_allMipmapsLevels, ImageAspect::ImageAspect_Depth);
-
-        ASSERT(m_generalImageView[ImageAspect::ImageAspect_Depth] == VK_NULL_HANDLE, "not empty");
-        VkResult result = VulkanWrapper::CreateImageView(m_device, &imageViewCreateInfo, VULKAN_ALLOCATOR, &m_generalImageView[ImageAspect::ImageAspect_Depth]);
-        if (result != VK_SUCCESS)
-        {
-            LOG_ERROR("VulkanImage::createViewImage vkCreateImageView is failed. Error: %s", ErrorString(result).c_str());
-            return false;
-        }
-    }
-    break;
-
-    case VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT:
-    {
-        for (u32 i = ImageAspect::ImageAspect_Depth; i <= ImageAspect::ImageAspect_DepthStencil; ++i)
-        {
-            VkImageViewCreateInfo imageViewCreateInfo = {};
-            imageViewCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-            imageViewCreateInfo.pNext = vkExtensions;
-            imageViewCreateInfo.flags = 0;
-            imageViewCreateInfo.image = m_image;
-            imageViewCreateInfo.viewType = convertImageTypeToImageViewType(m_type, m_layersLevel == 6U, m_layersLevel > 1);
-            imageViewCreateInfo.format = m_format;
-            imageViewCreateInfo.components = { VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A };
-            imageViewCreateInfo.subresourceRange = VulkanImage::makeImageSubresourceRangeWithAspect(this, k_generalLayer, k_allMipmapsLevels, (ImageAspect)i);
-
-            ASSERT(m_generalImageView[i] == VK_NULL_HANDLE, "not empty");
-            VkResult result = VulkanWrapper::CreateImageView(m_device, &imageViewCreateInfo, VULKAN_ALLOCATOR, &m_generalImageView[i]);
-            if (result != VK_SUCCESS)
-            {
-                LOG_ERROR("VulkanImage::createViewImage vkCreateImageView is failed. Error: %s", ErrorString(result).c_str());
-                return false;
-            }
-        }
-    }
-    break;
-
-    default:
-
-        ASSERT(false, "m_aspectMask doesn't found");
-        break;
+        [[maybe_unused]] auto viewIter = m_imageViews.insert({ ImageViewKey(imageViewCreateInfo.subresourceRange), view });
+        ASSERT(viewIter.second, "already exsist");
     }
 
     if (VulkanImage::isPresentTextureUsageFlag(TextureUsage::TextureUsage_Attachment))
     {
-        m_attachmentImageView.resize(m_layersLevel, VK_NULL_HANDLE);
-        for (u32 layer = 0; layer < m_layersLevel; ++layer)
+        for (u32 layer = 0; layer < m_layerLevels; ++layer)
         {
             VkImageViewCreateInfo imageViewCreateInfo = {};
             imageViewCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
             imageViewCreateInfo.pNext = vkExtensions;
             imageViewCreateInfo.flags = 0;
             imageViewCreateInfo.image = m_image;
-            imageViewCreateInfo.viewType = convertImageTypeToImageViewType(m_type, false, m_layersLevel > 1);
+            imageViewCreateInfo.viewType = convertImageTypeToImageViewType(m_type, false, m_layerLevels > 1);
             imageViewCreateInfo.format = m_format;
             imageViewCreateInfo.components = { VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A };
             imageViewCreateInfo.subresourceRange = VulkanImage::makeImageSubresourceRange(this, layer, 0);
 
-            ASSERT(m_attachmentImageView[layer] == VK_NULL_HANDLE, "not empty");
-            VkResult result = VulkanWrapper::CreateImageView(m_device, &imageViewCreateInfo, VULKAN_ALLOCATOR, &m_attachmentImageView[layer]);
-            if (result != VK_SUCCESS)
+            auto viewIter = m_imageViews.insert({ ImageViewKey(imageViewCreateInfo.subresourceRange), VK_NULL_HANDLE });
+            if (viewIter.second)
             {
-                LOG_ERROR("VulkanImage::createViewImage vkCreateImageView is failed. Error: %s", ErrorString(result).c_str());
-                return false;
+                VkResult result = VulkanWrapper::CreateImageView(m_device, &imageViewCreateInfo, VULKAN_ALLOCATOR, &viewIter.first->second);
+                if (result != VK_SUCCESS)
+                {
+                    LOG_ERROR("VulkanImage::createViewImage vkCreateImageView is failed. Error: %s", ErrorString(result).c_str());
+                    return false;
+                }
             }
-        }
-    }
-
-    m_imageView.resize(m_layersLevel, VK_NULL_HANDLE);
-    for (u32 layer = 0; layer < m_layersLevel; ++layer)
-    {
-        VkImageViewCreateInfo imageViewCreateInfo = {};
-        imageViewCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-        imageViewCreateInfo.pNext = vkExtensions;
-        imageViewCreateInfo.flags = 0;
-        imageViewCreateInfo.image = m_image;
-        imageViewCreateInfo.viewType = convertImageTypeToImageViewType(m_type, false, m_layersLevel > 1);
-        imageViewCreateInfo.format = m_format;
-        imageViewCreateInfo.components = { VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A };
-        imageViewCreateInfo.subresourceRange = VulkanImage::makeImageSubresourceRange(this, layer);
-
-        ASSERT(m_imageView[layer] == VK_NULL_HANDLE, "not empty");
-        VkResult result = VulkanWrapper::CreateImageView(m_device, &imageViewCreateInfo, VULKAN_ALLOCATOR, &m_imageView[layer]);
-        if (result != VK_SUCCESS)
-        {
-            LOG_ERROR("VulkanImage::createViewImage vkCreateImageView is failed. Error: %s", ErrorString(result).c_str());
-            return false;
         }
     }
 
     return true;
 }
+
+VulkanImage::ImageViewKey::ImageViewKey() noexcept
+    : _desc({})
+    , _hash(0)
+{
+}
+
+VulkanImage::ImageViewKey::ImageViewKey(VkImageSubresourceRange& desc) noexcept
+    : _desc(desc)
+    , _hash(crc32c::Crc32c(reinterpret_cast<const char*>(&desc), sizeof(VkImageSubresourceRange)))
+{
+}
+
+u32 VulkanImage::ImageViewKey::Hash::operator()(const ImageViewKey& desc) const
+{
+    ASSERT(desc._hash != 0, "empty hash");
+    return desc._hash;
+}
+
+bool VulkanImage::ImageViewKey::Compare::operator()(const ImageViewKey& op1, const ImageViewKey& op2) const
+{
+    return memcmp(&op1._desc, &op2._desc, sizeof(VkImageSubresourceRange)) == 0;
+}
+
+
 
 } //namespace vk
 } //namespace renderer

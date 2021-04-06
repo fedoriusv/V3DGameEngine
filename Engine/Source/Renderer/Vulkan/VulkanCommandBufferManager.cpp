@@ -1,10 +1,11 @@
 #include "VulkanCommandBufferManager.h"
-#include "VulkanDebug.h"
-#include "VulkanGraphicContext.h"
-#include "VulkanDeviceCaps.h"
+
 #include "Utils/Logger.h"
 
 #ifdef VULKAN_RENDER
+#include "VulkanDebug.h"
+#include "VulkanContext.h"
+
 namespace v3d
 {
 namespace renderer

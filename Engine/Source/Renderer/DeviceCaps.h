@@ -57,6 +57,7 @@ namespace renderer
         {
             bool _supportAttachment;
             bool _supportSampled;
+            bool _supportStorage;
             bool _supportMip;
         };
 

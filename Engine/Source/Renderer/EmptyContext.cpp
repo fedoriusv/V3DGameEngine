@@ -94,7 +94,12 @@ void EmptyContext::setPipeline(const Pipeline::PipelineGraphicInfo* pipelineInfo
     LOG_DEBUG("EmptyContext::setPipeline");
 }
 
-void EmptyContext::removePipeline(Pipeline * pipeline)
+void EmptyContext::setPipeline(const Pipeline::PipelineComputeInfo* pipelineInfo)
+{
+    LOG_DEBUG("EmptyContext::setPipeline");
+}
+
+void EmptyContext::removePipeline(Pipeline* pipeline)
 {
     LOG_DEBUG("EmptyContext::removePipeline");
 }
@@ -104,7 +109,12 @@ void EmptyContext::bindUniformsBuffer(const Shader* shader, u32 bindIndex, u32 o
     LOG_DEBUG("EmptyContext::bindUniformsBuffer");
 }
 
-void EmptyContext::transitionImages(std::vector<const Image*>& images, TransitionOp transition, s32 layer)
+void EmptyContext::bindStorageImage(const Shader* shader, u32 bindIndex, const Image* image, s32 layer, s32 mip)
+{
+    LOG_DEBUG("EmptyContext::bindStorageImage");
+}
+
+void EmptyContext::transitionImages(std::vector<const Image*>& images, TransitionOp transition, s32 layer, s32 mip)
 {
     LOG_DEBUG("EmptyContext::transitionImages");
 }
@@ -114,22 +124,27 @@ void EmptyContext::draw(const StreamBufferDescription& desc, u32 firstVertex, u3
     LOG_DEBUG("EmptyContext::draw");
 }
 
-void EmptyContext::drawIndexed(const StreamBufferDescription & desc, u32 firstIndex, u32 indexCount, u32 firstInstance, u32 instanceCount)
+void EmptyContext::drawIndexed(const StreamBufferDescription& desc, u32 firstIndex, u32 indexCount, u32 firstInstance, u32 instanceCount)
 {
     LOG_DEBUG("EmptyContext::drawIndexed");
 }
 
-void EmptyContext::bindImage(const Shader * shader, u32 bindIndex, const Image * image)
+void EmptyContext::dispatchCompute(const core::Dimension3D& groups)
+{
+    LOG_DEBUG("EmptyContext::dispatchCompute");
+}
+
+void EmptyContext::bindImage(const Shader* shader, u32 bindIndex, const Image* image, s32 layer, s32 mip)
 {
     LOG_DEBUG("EmptyContext::bindImage");
 }
 
-void EmptyContext::bindSampler(const Shader * shader, u32 bindIndex, const Sampler::SamplerInfo* samplerInfo)
+void EmptyContext::bindSampler(const Shader* shader, u32 bindIndex, const Sampler::SamplerInfo* samplerInfo)
 {
     LOG_DEBUG("EmptyContext::bindSampler");
 }
 
-void EmptyContext::bindSampledImage(const Shader * shader, u32 bindIndex, const Image * image, const Sampler::SamplerInfo* samplerInfo)
+void EmptyContext::bindSampledImage(const Shader* shader, u32 bindIndex, const Image* image, const Sampler::SamplerInfo* samplerInfo, s32 layer, s32 mip)
 {
     LOG_DEBUG("EmptyContext::bindSampledImage");
 }
@@ -139,13 +154,13 @@ const DeviceCaps* EmptyContext::getDeviceCaps() const
     return nullptr;
 }
 
-Framebuffer * EmptyContext::createFramebuffer(const std::vector<Image*>& images, const core::Dimension2D & size)
+Framebuffer * EmptyContext::createFramebuffer(const std::vector<Image*>& images, const core::Dimension2D& size)
 {
     LOG_DEBUG("EmptyContext::createFramebuffer");
     return nullptr;
 }
 
-RenderPass * EmptyContext::createRenderPass(const RenderPassDescription * renderpassDesc)
+RenderPass * EmptyContext::createRenderPass(const RenderPassDescription* renderpassDesc)
 {
     LOG_DEBUG("EmptyContext::createRenderPass");
     return nullptr;
@@ -169,12 +184,12 @@ Buffer * EmptyContext::createBuffer(Buffer::BufferType type, u16 usageFlag, u64 
     return nullptr;
 }
 
-void EmptyContext::removeBuffer(Buffer * buffer)
+void EmptyContext::removeBuffer(Buffer* buffer)
 {
     LOG_DEBUG("EmptyContext::removeBuffer");
 }
 
-void EmptyContext::removeSampler(Sampler * sampler)
+void EmptyContext::removeSampler(Sampler* sampler)
 {
     LOG_DEBUG("EmptyContext::removeSampler");
 }

@@ -53,8 +53,11 @@ namespace renderer
     enum ShaderType : s16
     {
         ShaderType_Undefined = -1,
+
         ShaderType_Vertex = 0,
-        ShaderType_Fragment,
+        ShaderType_Fragment = 1,
+
+        ShaderType_Compute = 2,
 
         ShaderType_Count,
     };

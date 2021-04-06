@@ -10,85 +10,12 @@ namespace renderer
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    /*CreateTextureCommand*/
-class CreateTextureCommand : public renderer::Command
-{
-public:
-    CreateTextureCommand(renderer::Image* image, const core::Dimension3D& offsets, const core::Dimension3D& dim, u32 mips, u32 layers, u64 size, void* data, bool shared) noexcept
-        : m_image(image)
-        , m_offsets(offsets)
-        , m_dimension(dim)
-        , m_mipmaps(mips)
-        , m_layers(layers)
-        , m_data(nullptr)
-
-        , m_shared(shared)
-    {
-#if DEBUG_COMMAND_LIST
-        LOG_DEBUG("CreateTextureCommand constructor");
-#endif
-        if (data)
-        {
-            if (m_shared)
-            {
-                m_data = data;
-            }
-            else
-            {
-                m_data = malloc(size); //TODO: get from pool
-                memcpy(m_data, data, size);
-            }
-        }
-    }
-
-    ~CreateTextureCommand()
-    {
-#if DEBUG_COMMAND_LIST
-        LOG_DEBUG("CreateTextureCommand destructor");
-#endif
-        if (m_data && !m_shared)
-        {
-            free(m_data); //TODO: return to pool
-            m_data = nullptr;
-        }
-    }
-
-    void execute(const renderer::CommandList& cmdList) override
-    {
-#if DEBUG_COMMAND_LIST
-        LOG_DEBUG("CreateTextureCommand execute");
-#endif
-        if (!m_image->create())
-        {
-            m_image->notifyObservers();
-
-            m_image->destroy();
-            return;
-        }
-
-        if (m_data)
-        {
-            m_image->upload(cmdList.getContext(), m_dimension, m_layers, m_mipmaps, m_data);
-        }
-    }
-
-private:
-    renderer::Image*            m_image;
-    core::Dimension3D           m_offsets;
-    core::Dimension3D           m_dimension;
-    u32                         m_mipmaps;
-    u32                         m_layers;
-
-    void*                       m_data;
-
-    bool                        m_shared;
-};
-
     /*CommandDestroyImage*/
 class CommandDestroyImage : public Command
 {
 public:
-    CommandDestroyImage(Image* image) noexcept
+
+    explicit CommandDestroyImage(Image* image) noexcept
         : m_image(image)
     {
 #if DEBUG_COMMAND_LIST
@@ -112,6 +39,7 @@ public:
     }
 
 private:
+
     Image* m_image;
 };
 
@@ -119,7 +47,8 @@ private:
 class UploadTextureCommand : public renderer::Command, utils::Observer
 {
 public:
-    UploadTextureCommand(renderer::Image* image) noexcept
+
+    explicit UploadTextureCommand(renderer::Image* image) noexcept
         : m_image(image)
     {
 #if DEBUG_COMMAND_LIST
@@ -154,128 +83,8 @@ public:
     }
 
 private:
+
     renderer::Image* m_image;
-};
-
-    /*CommandClearColor*/
-class CommandClearColor : public renderer::Command, utils::Observer
-{
-public:
-    CommandClearColor(renderer::Image* image, const core::Vector4D& color) noexcept
-        : m_image(image)
-        , m_clearColor(color)
-    {
-#if DEBUG_COMMAND_LIST
-        LOG_DEBUG("CommandClearColor constructor");
-#endif
-        m_image->registerNotify(this);
-    };
-
-    ~CommandClearColor()
-    {
-#if DEBUG_COMMAND_LIST
-        LOG_DEBUG("CommandClearColor destructor");
-#endif
-        m_image->unregisterNotify(this);
-    };
-
-    void execute(const renderer::CommandList& cmdList) override
-    {
-#if DEBUG_COMMAND_LIST
-        LOG_DEBUG("CommandClearColor execute");
-#endif
-        if (m_image)
-        {
-            m_image->clear(cmdList.getContext(), m_clearColor);
-        }
-    }
-
-    void handleNotify(const utils::Observable* ob) override
-    {
-        LOG_ERROR("UploadTextureCommand image %llx was deleted", m_image);
-        m_image = nullptr;
-    }
-
-private:
-    renderer::Image*    m_image;
-    core::Vector4D      m_clearColor;
-};
-
-    /*CommandClearDepthStencil*/
-class CommandClearDepthStencil : public renderer::Command, utils::Observer
-{
-public:
-    CommandClearDepthStencil(renderer::Image* image, f32 depth, u32 stencil) noexcept
-        : m_image(image)
-        , m_depth(depth)
-        , m_stencil(stencil)
-    {
-#if DEBUG_COMMAND_LIST
-        LOG_DEBUG("CommandClearDepthStencil constructor");
-#endif
-        m_image->registerNotify(this);
-    };
-
-    ~CommandClearDepthStencil()
-    {
-#if DEBUG_COMMAND_LIST
-        LOG_DEBUG("CommandClearDepthStencil destructor");
-#endif
-        m_image->unregisterNotify(this);
-    };
-
-    void execute(const renderer::CommandList& cmdList) override
-    {
-#if DEBUG_COMMAND_LIST
-        LOG_DEBUG("CommandClearDepthStencil execute");
-#endif
-        if (m_image)
-        {
-            m_image->clear(cmdList.getContext(), m_depth, m_stencil);
-        }
-    }
-
-    void handleNotify(const utils::Observable* ob) override
-    {
-        LOG_ERROR("UploadTextureCommand image %llx was deleted", m_image);
-        m_image = nullptr;
-    }
-
-private:
-    renderer::Image*    m_image;
-    f32                 m_depth;
-    u32                 m_stencil;
-};
-
-/*CommandClearBackbuffer*/
-class CommandClearBackbuffer : public renderer::Command
-{
-public:
-    CommandClearBackbuffer(const core::Vector4D& color) noexcept
-        : m_clearColor(color)
-    {
-#if DEBUG_COMMAND_LIST
-        LOG_DEBUG("CommandClearBackbuffer constructor");
-#endif //DEBUG_COMMAND_LIST
-    };
-
-    ~CommandClearBackbuffer()
-    {
-#if DEBUG_COMMAND_LIST
-        LOG_DEBUG("CommandClearBackbuffer destructor");
-#endif //DEBUG_COMMAND_LIST
-    };
-
-    void execute(const renderer::CommandList& cmdList)
-    {
-#if DEBUG_COMMAND_LIST
-        LOG_DEBUG("CommandClearBackbuffer execute");
-#endif //DEBUG_COMMAND_LIST
-        cmdList.getContext()->clearBackbuffer(m_clearColor);
-    }
-
-private:
-    core::Vector4D m_clearColor;
 };
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -369,6 +178,80 @@ void Texture::createTexture(const core::Dimension3D& dimension, const void* data
     }
     else
     {
+        /*CreateTextureCommand*/
+        class CreateTextureCommand : public renderer::Command
+        {
+        public:
+
+            explicit CreateTextureCommand(renderer::Image* image, const core::Dimension3D& offsets, const core::Dimension3D& dim, u32 mips, u32 layers, u64 size, void* data, bool shared) noexcept
+                : m_image(image)
+                , m_offsets(offsets)
+                , m_dimension(dim)
+                , m_mipmaps(mips)
+                , m_layers(layers)
+                , m_data(nullptr)
+
+                , m_shared(shared)
+            {
+#if DEBUG_COMMAND_LIST
+                LOG_DEBUG("CreateTextureCommand constructor");
+#endif
+                if (data)
+                {
+                    if (m_shared)
+                    {
+                        m_data = data;
+                    }
+                    else
+                    {
+                        m_data = malloc(size); //TODO: get from pool
+                        memcpy(m_data, data, size);
+                    }
+                }
+            }
+
+            ~CreateTextureCommand()
+            {
+#if DEBUG_COMMAND_LIST
+                LOG_DEBUG("CreateTextureCommand destructor");
+#endif
+                if (m_data && !m_shared)
+                {
+                    free(m_data); //TODO: return to pool
+                    m_data = nullptr;
+                }
+            }
+
+            void execute(const renderer::CommandList& cmdList) override
+            {
+#if DEBUG_COMMAND_LIST
+                LOG_DEBUG("CreateTextureCommand execute");
+#endif
+                if (!m_image->create())
+                {
+                    m_image->notifyObservers();
+
+                    m_image->destroy();
+                    return;
+                }
+
+                if (m_data)
+                {
+                    m_image->upload(cmdList.getContext(), m_dimension, m_layers, m_mipmaps, m_data);
+                }
+            }
+
+        private:
+
+            renderer::Image* m_image;
+            core::Dimension3D m_offsets;
+            core::Dimension3D m_dimension;
+            u32 m_mipmaps;
+            u32 m_layers;
+            void* m_data;
+            bool m_shared;
+        };
+
         u64 calculatedSize = ImageFormat::calculateImageSize(dimension, m_mipmaps, m_layers, m_format);
         m_cmdList.pushCommand(new CreateTextureCommand(m_image, core::Dimension3D(0, 0, 0), dimension, m_mipmaps, m_layers, calculatedSize, const_cast<void*>(data), (m_usage & TextureUsage_Shared)));
     }
@@ -456,6 +339,52 @@ void Texture2D::clear(const core::Vector4D& color)
         }
         else
         {
+            /*CommandClearColor*/
+            class CommandClearColor : public renderer::Command, utils::Observer
+            {
+            public:
+
+                explicit CommandClearColor(renderer::Image* image, const core::Vector4D& color) noexcept
+                    : m_image(image)
+                    , m_clearColor(color)
+                {
+#if DEBUG_COMMAND_LIST
+                    LOG_DEBUG("CommandClearColor constructor");
+#endif
+                    m_image->registerNotify(this);
+                };
+
+                ~CommandClearColor()
+                {
+#if DEBUG_COMMAND_LIST
+                    LOG_DEBUG("CommandClearColor destructor");
+#endif
+                    m_image->unregisterNotify(this);
+                };
+
+                void execute(const renderer::CommandList& cmdList) override
+                {
+#if DEBUG_COMMAND_LIST
+                    LOG_DEBUG("CommandClearColor execute");
+#endif
+                    if (m_image)
+                    {
+                        m_image->clear(cmdList.getContext(), m_clearColor);
+                    }
+                }
+
+                void handleNotify(const utils::Observable* ob) override
+                {
+                    LOG_ERROR("CommandClearColor image %llx was deleted", m_image);
+                    m_image = nullptr;
+                }
+
+            private:
+
+                renderer::Image* m_image;
+                core::Vector4D m_clearColor;
+            };
+
             m_cmdList.pushCommand(new CommandClearColor(m_image, color));
         }
     }
@@ -472,6 +401,53 @@ void Texture2D::clear(f32 depth, u32 stencil)
         }
         else
         {
+            /*CommandClearDepthStencil*/
+            class CommandClearDepthStencil : public renderer::Command, utils::Observer
+            {
+            public:
+
+                explicit CommandClearDepthStencil(renderer::Image* image, f32 depth, u32 stencil) noexcept
+                    : m_image(image)
+                    , m_depth(depth)
+                    , m_stencil(stencil)
+                {
+#if DEBUG_COMMAND_LIST
+                    LOG_DEBUG("CommandClearDepthStencil constructor");
+#endif
+                    m_image->registerNotify(this);
+                };
+
+                ~CommandClearDepthStencil()
+                {
+#if DEBUG_COMMAND_LIST
+                    LOG_DEBUG("CommandClearDepthStencil destructor");
+#endif
+                    m_image->unregisterNotify(this);
+                };
+
+                void execute(const renderer::CommandList& cmdList) override
+                {
+#if DEBUG_COMMAND_LIST
+                    LOG_DEBUG("CommandClearDepthStencil execute");
+#endif
+                    if (m_image)
+                    {
+                        m_image->clear(cmdList.getContext(), m_depth, m_stencil);
+                    }
+                }
+
+                void handleNotify(const utils::Observable* ob) override
+                {
+                    LOG_ERROR("CommandClearDepthStencil image %llx was deleted", m_image);
+                    m_image = nullptr;
+                }
+
+            private:
+                renderer::Image* m_image;
+                f32 m_depth;
+                u32 m_stencil;
+            };
+
             m_cmdList.pushCommand(new CommandClearDepthStencil(m_image, depth, stencil));
         }
     }
@@ -611,6 +587,39 @@ void Backbuffer::clear(const core::Vector4D& color)
     }
     else
     {
+        /*CommandClearBackbuffer*/
+        class CommandClearBackbuffer : public renderer::Command
+        {
+        public:
+
+            explicit CommandClearBackbuffer(const core::Vector4D& color) noexcept
+                : m_clearColor(color)
+            {
+#if DEBUG_COMMAND_LIST
+                LOG_DEBUG("CommandClearBackbuffer constructor");
+#endif //DEBUG_COMMAND_LIST
+            };
+
+            ~CommandClearBackbuffer()
+            {
+#if DEBUG_COMMAND_LIST
+                LOG_DEBUG("CommandClearBackbuffer destructor");
+#endif //DEBUG_COMMAND_LIST
+            };
+
+            void execute(const renderer::CommandList& cmdList)
+            {
+#if DEBUG_COMMAND_LIST
+                LOG_DEBUG("CommandClearBackbuffer execute");
+#endif //DEBUG_COMMAND_LIST
+                cmdList.getContext()->clearBackbuffer(m_clearColor);
+            }
+
+        private:
+
+            core::Vector4D m_clearColor;
+        };
+
         m_cmdList.pushCommand(new CommandClearBackbuffer(color));
     }
 }

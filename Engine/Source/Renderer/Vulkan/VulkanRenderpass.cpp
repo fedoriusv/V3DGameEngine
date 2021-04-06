@@ -1,13 +1,13 @@
 #include "VulkanRenderpass.h"
-#include "VulkanImage.h"
-#include "VulkanDebug.h"
-#include "VulkanDeviceCaps.h"
-
 
 #include "Utils/Logger.h"
 
-
 #ifdef VULKAN_RENDER
+#include "VulkanDebug.h"
+#include "VulkanDeviceCaps.h"
+#include "VulkanTransitionState.h"
+#include "VulkanImage.h"
+
 namespace v3d
 {
 namespace renderer
@@ -51,33 +51,6 @@ VkAttachmentStoreOp VulkanRenderPass::convertAttachStoreOpToVkAttachmentStoreOp(
     return VK_ATTACHMENT_STORE_OP_STORE;
 }
 
-VkImageLayout VulkanRenderPass::convertTransitionStateToImageLayout(TransitionOp state)
-{
-    switch (state)
-    {
-    case TransitionOp::TransitionOp_Undefined:
-        return VK_IMAGE_LAYOUT_UNDEFINED;
-
-    case TransitionOp::TransitionOp_ShaderRead:
-        return VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-
-    case TransitionOp::TransitionOp_ColorAttachment:
-        return VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-
-    case TransitionOp::TransitionOp_DepthStencilAttachment:
-        return VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-
-    case TransitionOp::TransitionOp_Present:
-        return VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
-
-    default:
-        ASSERT(false, "unknown");
-    }
-
-    return VK_IMAGE_LAYOUT_UNDEFINED;
-}
-
-
 VulkanRenderPass::VulkanRenderPass(VkDevice device, const RenderPassDescription& description, const std::string& name) noexcept
     : RenderPass(description)
     , m_device(device)
@@ -94,8 +67,8 @@ VulkanRenderPass::VulkanRenderPass(VkDevice device, const RenderPassDescription&
         desc._samples = VulkanImage::convertRenderTargetSamplesToVkSampleCount(description._desc._attachments[index]._samples);
         desc._loadOp = VulkanRenderPass::convertAttachLoadOpToVkAttachmentLoadOp(description._desc._attachments[index]._loadOp);
         desc._storeOp = VulkanRenderPass::convertAttachStoreOpToVkAttachmentStoreOp(description._desc._attachments[index]._storeOp);
-        desc._initialLayout = VulkanRenderPass::convertTransitionStateToImageLayout(description._desc._attachments[index]._initTransition);
-        desc._finalLayout = VulkanRenderPass::convertTransitionStateToImageLayout(description._desc._attachments[index]._finalTransition);
+        desc._initialLayout = VulkanTransitionState::convertTransitionStateToImageLayout(description._desc._attachments[index]._initTransition);
+        desc._finalLayout = VulkanTransitionState::convertTransitionStateToImageLayout(description._desc._attachments[index]._finalTransition);
         desc._layer = AttachmentDescription::uncompressLayer(description._desc._attachments[index]._layer);
         desc._mip = 0;
 
@@ -112,8 +85,8 @@ VulkanRenderPass::VulkanRenderPass(VkDevice device, const RenderPassDescription&
         desc._storeOp = VulkanRenderPass::convertAttachStoreOpToVkAttachmentStoreOp(description._desc._attachments.back()._storeOp);
         desc._stencilLoadOp = VulkanRenderPass::convertAttachLoadOpToVkAttachmentLoadOp(description._desc._attachments.back()._stencilLoadOp);
         desc._stensilStoreOp = VulkanRenderPass::convertAttachStoreOpToVkAttachmentStoreOp(description._desc._attachments.back()._stencilStoreOp);
-        desc._initialLayout = VulkanRenderPass::convertTransitionStateToImageLayout(description._desc._attachments.back()._initTransition);
-        desc._finalLayout = VulkanRenderPass::convertTransitionStateToImageLayout(description._desc._attachments.back()._finalTransition);
+        desc._initialLayout = VulkanTransitionState::convertTransitionStateToImageLayout(description._desc._attachments.back()._initTransition);
+        desc._finalLayout = VulkanTransitionState::convertTransitionStateToImageLayout(description._desc._attachments.back()._finalTransition);
         desc._layer = AttachmentDescription::uncompressLayer(description._desc._attachments.back()._layer);
         desc._mip = 0;
 

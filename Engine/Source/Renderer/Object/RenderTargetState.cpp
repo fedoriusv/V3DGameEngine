@@ -15,82 +15,6 @@ namespace v3d
 namespace renderer
 {
 
-/////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    /*CommandRemoveFramebuffers*/
-class CommandRemoveFramebuffers final : public Command
-{
-public:
-    CommandRemoveFramebuffers(const std::vector<Framebuffer*>& framebuffers) noexcept
-        : m_framebuffers(framebuffers)
-    {
-#if DEBUG_COMMAND_LIST
-        LOG_DEBUG("CommandRemoveFramebuffers constructor");
-#endif //DEBUG_COMMAND_LIST
-    };
-    CommandRemoveFramebuffers() = delete;
-    CommandRemoveFramebuffers(CommandRemoveFramebuffers&) = delete;
-
-    ~CommandRemoveFramebuffers()
-    {
-#if DEBUG_COMMAND_LIST
-        LOG_DEBUG("CommandRemoveFramebuffers destructor");
-#endif //DEBUG_COMMAND_LIST
-    };
-
-    void execute(const CommandList& cmdList)
-    {
-#if DEBUG_COMMAND_LIST
-        LOG_DEBUG("CommandRemoveFramebuffers execute");
-#endif //DEBUG_COMMAND_LIST
-        for (auto& framebuffer : m_framebuffers)
-        {
-            cmdList.getContext()->removeFramebuffer(framebuffer);
-        }
-    }
-
-private:
-    std::vector<Framebuffer*> m_framebuffers;
-};
-
-    /*CommandRemoveRenderPasses*/
-class CommandRemoveRenderPasses final : public Command
-{
-public:
-    CommandRemoveRenderPasses(const std::vector<RenderPass*>& renderpasses) noexcept
-        : m_renderpasses(renderpasses)
-    {
-#if DEBUG_COMMAND_LIST
-        LOG_DEBUG("CommandRemoveRenderPasses constructor");
-#endif //DEBUG_COMMAND_LIST
-    };
-    CommandRemoveRenderPasses() = delete;
-    CommandRemoveRenderPasses(CommandRemoveRenderPasses&) = delete;
-
-    ~CommandRemoveRenderPasses()
-    {
-#if DEBUG_COMMAND_LIST
-        LOG_DEBUG("CommandRemoveRenderPasses destructor");
-#endif //DEBUG_COMMAND_LIST
-    };
-
-    void execute(const CommandList& cmdList)
-    {
-#if DEBUG_COMMAND_LIST
-        LOG_DEBUG("CommandRemoveRenderPasses execute");
-#endif //DEBUG_COMMAND_LIST
-        for (auto& renderpass : m_renderpasses)
-        {
-            cmdList.getContext()->removeRenderPass(renderpass);
-        }
-    }
-
-private:
-    std::vector<RenderPass*> m_renderpasses;
-};
-
-/////////////////////////////////////////////////////////////////////////////////////////////////////
-
 RenderTargetState::RenderTargetState(renderer::CommandList& cmdList, const core::Dimension2D& size, u32 viewsMask, const std::string& name) noexcept
     : m_cmdList(cmdList)
     , m_size(size)
@@ -434,6 +358,45 @@ void RenderTargetState::destroyFramebuffers(const std::vector<Framebuffer*>& fra
     }
     else
     {
+        /*CommandRemoveFramebuffers*/
+        class CommandRemoveFramebuffers final : public Command
+        {
+        public:
+
+            explicit CommandRemoveFramebuffers(const std::vector<Framebuffer*>& framebuffers) noexcept
+                : m_framebuffers(framebuffers)
+            {
+#if DEBUG_COMMAND_LIST
+                LOG_DEBUG("CommandRemoveFramebuffers constructor");
+#endif //DEBUG_COMMAND_LIST
+            };
+
+            CommandRemoveFramebuffers() = delete;
+            CommandRemoveFramebuffers(CommandRemoveFramebuffers&) = delete;
+
+            ~CommandRemoveFramebuffers()
+            {
+#if DEBUG_COMMAND_LIST
+                LOG_DEBUG("CommandRemoveFramebuffers destructor");
+#endif //DEBUG_COMMAND_LIST
+            };
+
+            void execute(const CommandList& cmdList)
+            {
+#if DEBUG_COMMAND_LIST
+                LOG_DEBUG("CommandRemoveFramebuffers execute");
+#endif //DEBUG_COMMAND_LIST
+                for (auto& framebuffer : m_framebuffers)
+                {
+                    cmdList.getContext()->removeFramebuffer(framebuffer);
+                }
+            }
+
+        private:
+
+            std::vector<Framebuffer*> m_framebuffers;
+        };
+
         m_cmdList.pushCommand(new CommandRemoveFramebuffers(framebuffers));
     }
 }
@@ -449,6 +412,44 @@ void RenderTargetState::destroyRenderPasses(const std::vector<RenderPass*>& rend
     }
     else
     {
+        /*CommandRemoveRenderPasses*/
+        class CommandRemoveRenderPasses final : public Command
+        {
+        public:
+            explicit CommandRemoveRenderPasses(const std::vector<RenderPass*>& renderpasses) noexcept
+                : m_renderpasses(renderpasses)
+            {
+#if DEBUG_COMMAND_LIST
+                LOG_DEBUG("CommandRemoveRenderPasses constructor");
+#endif //DEBUG_COMMAND_LIST
+            };
+
+            CommandRemoveRenderPasses() = delete;
+            CommandRemoveRenderPasses(CommandRemoveRenderPasses&) = delete;
+
+            ~CommandRemoveRenderPasses()
+            {
+#if DEBUG_COMMAND_LIST
+                LOG_DEBUG("CommandRemoveRenderPasses destructor");
+#endif //DEBUG_COMMAND_LIST
+            };
+
+            void execute(const CommandList& cmdList)
+            {
+#if DEBUG_COMMAND_LIST
+                LOG_DEBUG("CommandRemoveRenderPasses execute");
+#endif //DEBUG_COMMAND_LIST
+                for (auto& renderpass : m_renderpasses)
+                {
+                    cmdList.getContext()->removeRenderPass(renderpass);
+                }
+            }
+
+        private:
+
+            std::vector<RenderPass*> m_renderpasses;
+        };
+
         m_cmdList.pushCommand(new CommandRemoveRenderPasses(renderPasses));
     }
 }

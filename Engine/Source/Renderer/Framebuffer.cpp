@@ -10,12 +10,8 @@ namespace v3d
 namespace renderer
 {
 
-Framebuffer::Framebuffer() noexcept
-{
-    m_desc._hash = 0;
-}
-
-Framebuffer::~Framebuffer()
+Framebuffer::FramebufferDescription::FramebufferDescription() noexcept
+    : _hash(0)
 {
 }
 
