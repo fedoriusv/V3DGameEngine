@@ -1,0 +1,43 @@
+#version 450
+
+layout(local_size_x = 4, local_size_y = 4) in;
+layout(binding = 0, rgba8) uniform readonly image2D inputImage;
+layout(binding = 1, rgba8) uniform image2D resultImage;
+
+/*vec4 texture2DBiLinear(image2D image, ivec2 texCoord)
+{
+    const ivec2 size = imageSize(image);
+    const ivec2 texelSize = 1.0 / size;
+    
+    vec4 p0q0 = imageLoad(image, texCoord);
+    vec4 p1q0 = imageLoad(image, texCoord + ivec2(texelSize.x, 0));
+
+    vec4 p0q1 = imageLoad(image, texCoord + ivec2(0, texelSize.y));
+    vec4 p1q1 = imageLoad(image, texCoord + ivec2(texelSize.x , texelSize.y));
+
+    float a = fract(texCoord.x * size.x);
+
+    vec4 interpq0 = mix(p0q0, p1q0, a);
+    vec4 interpq1 = mix(p0q1, p1q1, a);
+
+    float b = fract(texCoord.y * size.y);
+    return mix(interpq0, interpq1, b);
+}*/
+
+void main() 
+{
+    /*ivec2 size = imageSize(inputImage);
+    for (int x = 0; x < size.x; ++x)
+        for (int y = 0; y < size.y; ++y)
+        {
+            vec3 value = imageLoad(inputImage, ivec2(x, y)).rgb;
+            imageStore(resultImage, ivec2(x, y), vec4(value.b, value.g, value.r, 1.0));
+        }*/
+        
+    //vec3 value = texture2DBiLinear(inputImage, ivec2(gl_GlobalInvocationID.x, gl_GlobalInvocationID.y)).rgb;
+    vec3 value = imageLoad(inputImage, ivec2(gl_GlobalInvocationID.x, gl_GlobalInvocationID.y)).rgb;
+    imageStore(resultImage, ivec2(gl_GlobalInvocationID.xy), vec4(value.b, value.g, value.r, 1.0));
+    
+    //vec3 value = imageLoad(inputImage, ivec2(gl_WorkGroupID.x * gl_LocalInvocationID.x, gl_WorkGroupID.y * gl_LocalInvocationID.x)).rgb;
+    //imageStore(resultImage, ivec2(gl_WorkGroupID.xy * gl_LocalInvocationID.xy), vec4(value.b, value.g, value.r, 1.0));
+}

@@ -71,7 +71,7 @@ void MyApplication::Initialize()
 {
     m_Context = renderer::Context::createContext(m_Window, renderer::Context::RenderType::VulkanRender);
     ASSERT(m_Context, "context is nullptr");
-    m_CommandList = new renderer::CommandList(m_Context, renderer::CommandList::CommandListType::DelayedCommandList);
+    m_CommandList = new renderer::CommandList(m_Context, renderer::CommandList::CommandListType::ImmediateCommandList);
 
     m_Camera = new v3d::scene::CameraArcballHelper(new scene::Camera(core::Vector3D(0.0f, 0.0f, 0.0f), core::Vector3D(0.0f, 1.0f, 0.0f)), 5.0f, 4.0f, 20.0f);
     m_Camera->setPerspective(45.0f, m_Window->getSize(), 0.1f, 256.f);
@@ -85,7 +85,8 @@ void MyApplication::Initialize()
 
         resource::Image* image = resource::ResourceLoaderManager::getInstance()->load<resource::Image, resource::ImageFileLoader>("basetex.jpg", resource::ImageLoaderFlag_GenerateMipmaps);
         ASSERT(image, "not found");
-        m_Texture = m_CommandList->createObject<renderer::Texture2D>(renderer::TextureUsage_Sampled | renderer::TextureUsage_Write, image->getFormat(), core::Dimension2D(image->getDimension().width, image->getDimension().height), image->getMipMapsCount(), image->getRawData(), "UnlitTexture");
+        m_Texture = m_CommandList->createObject<renderer::Texture2D>(renderer::TextureUsage_Sampled | renderer::TextureUsage_Write, 
+            image->getFormat(), core::Dimension2D(image->getDimension().width, image->getDimension().height), image->getMipMapsCount(), image->getRawData(), "UnlitTexture");
 
         std::vector<const renderer::Shader*> shaders = resource::ResourceLoaderManager::getInstance()->loadHLSLShader<renderer::Shader, resource::ShaderSourceFileLoader>(m_CommandList->getContext(), "texture.hlsl",
             {
@@ -98,7 +99,7 @@ void MyApplication::Initialize()
 
         m_RenderTarget = m_CommandList->createObject<renderer::RenderTargetState>(m_Window->getSize(), 0, "RenderTarget");
 
-        m_ColorAttachment = m_CommandList->createObject<renderer::Texture2D>(renderer::TextureUsage::TextureUsage_Attachment | renderer::TextureUsage::TextureUsage_Sampled | renderer::TextureUsage::TextureUsage_GenerateMipmaps,
+        m_ColorAttachment = m_CommandList->createObject<renderer::Texture2D>(renderer::TextureUsage::TextureUsage_Attachment | renderer::TextureUsage::TextureUsage_Sampled | renderer::TextureUsage::TextureUsage_GenerateMipmaps | renderer::TextureUsage::TextureUsage_Storage,
             renderer::Format::Format_R8G8B8A8_UNorm, m_Window->getSize(), renderer::TextureSamples::TextureSamples_x1, "ColorAttachment");
         m_RenderTarget->setColorTexture(0, m_ColorAttachment,
             { 
@@ -136,7 +137,7 @@ void MyApplication::Initialize()
 
     //Pass 1
     {
-        const u32 k_mipLevel = 3;
+        const u32 k_mipLevel = 0;
         std::vector<const renderer::Shader*> shaders = resource::ResourceLoaderManager::getInstance()->loadHLSLShader<renderer::Shader, resource::ShaderSourceFileLoader>(m_CommandList->getContext(), "offscreen.hlsl",
             {
                 {"main_VS", renderer::ShaderType_Vertex },
@@ -170,10 +171,12 @@ void MyApplication::Initialize()
     //Compute
     if (m_ComputeDownsampling)
     {
-        //const renderer::Shader* shader = resource::ResourceLoaderManager::getInstance()->loadShader<renderer::Shader, resource::ShaderSourceFileLoader>(m_CommandList->getContext(), "downsampling.cs");
-        //m_DownsampleProgram = m_CommandList->createObject<renderer::ShaderProgram>(shader);
+        const renderer::Shader* shader = resource::ResourceLoaderManager::getInstance()->loadShader<renderer::Shader, resource::ShaderSourceFileLoader>(m_CommandList->getContext(), "downsampling.comp");
+        m_DownsampleProgram = m_CommandList->createObject<renderer::ShaderProgram>(shader);
+        m_DownsamplePipeline = m_CommandList->createObject<renderer::ComputePipelineState>(m_DownsampleProgram);
 
-        //m_DownsamplePipeline = m_CommandList->createObject<renderer::ComputePipelineState>(m_DownsampleProgram);
+        m_testTexture = m_CommandList->createObject<renderer::Texture2D>(renderer::TextureUsage_Sampled | renderer::TextureUsage_Write | renderer::TextureUsage::TextureUsage_Storage,
+            m_ColorAttachment->getFormat(), core::Dimension2D(m_ColorAttachment->getDimension().width, m_ColorAttachment->getDimension().height), 1, nullptr, "TestTexture");
     }
 
     m_CommandList->submitCommands(true);
@@ -214,17 +217,28 @@ bool MyApplication::Running()
         m_Geometry->draw();
     }
 
-    if (m_ComputeDownsampling)
+    //m_CommandList->submitCommands(true);
+
+    if (m_ComputeDownsampling) //compute
     {
-        //compute
-        //m_CommandList->setPipelineState(m_DownsamplePipeline);
-        //m_DownsampleProgram->bindTexture<renderer::ShaderType::ShaderType_Compute, renderer::Texture2D>({ "colorTexture" }, m_Texture);
-        //m_CommandList->dispatch();
+        m_CommandList->transition<renderer::Texture2D>(m_ColorAttachment, renderer::TransitionOp::TransitionOp_GeneralCompute, 0, 0);
+        m_CommandList->transition<renderer::Texture2D>(m_testTexture, renderer::TransitionOp::TransitionOp_GeneralCompute, 0, 0);
+
+        m_CommandList->setPipelineState(m_DownsamplePipeline);
+
+        m_DownsampleProgram->bindStorageImage<renderer::ShaderType::ShaderType_Compute, renderer::Texture2D>({ "inputImage" }, m_ColorAttachment, 0, 0);
+        m_DownsampleProgram->bindStorageImage<renderer::ShaderType::ShaderType_Compute, renderer::Texture2D>({ "resultImage" }, m_testTexture, 0, 0);
+
+        m_CommandList->dispatchCompute({ m_ColorAttachment->getDimension().width / 4, m_ColorAttachment->getDimension().height / 4, 1 });
+
+        m_CommandList->transition<renderer::Texture2D>(m_testTexture, renderer::TransitionOp::TransitionOp_ShaderRead, 0, 0);
     }
     else
     {
         m_CommandList->generateMipmaps(m_ColorAttachment, renderer::TransitionOp::TransitionOp_ShaderRead);
     }
+
+    //m_CommandList->submitCommands(true);
 
     //pass 1
     {
@@ -234,7 +248,7 @@ bool MyApplication::Running()
         m_CommandList->setPipelineState(m_OffscreenPipeline);
 
         m_OffscreenProgram->bindSampler<renderer::ShaderType::ShaderType_Fragment>({ "colorSampler" }, m_Sampler);
-        m_OffscreenProgram->bindTexture<renderer::ShaderType::ShaderType_Fragment, renderer::Texture2D>({ "colorTexture" }, m_ColorAttachment);
+        m_OffscreenProgram->bindTexture<renderer::ShaderType::ShaderType_Fragment, renderer::Texture2D>({ "colorTexture" }, m_testTexture, 0, 0);
 
         m_CommandList->draw(renderer::StreamBufferDescription(nullptr, 0), 0, 3, 1);
     }

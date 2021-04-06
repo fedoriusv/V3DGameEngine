@@ -63,5 +63,7 @@ private:
     //compute
     v3d::renderer::ComputePipelineState* m_DownsamplePipeline;
     v3d::renderer::ShaderProgram* m_DownsampleProgram;
-    bool m_ComputeDownsampling = false;
+    bool m_ComputeDownsampling = true;
+
+    v3d::renderer::Texture2D* m_testTexture;
 };
