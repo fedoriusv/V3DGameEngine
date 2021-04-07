@@ -79,7 +79,7 @@ bool VulkanContextState::isCurrentPipeline(const Pipeline* pipeline) const
     return m_currentPipeline.first == pipeline;
 }
 
-bool VulkanContextState::setCurrentRenderPass(VulkanRenderPass * pass)
+bool VulkanContextState::setCurrentRenderPass(VulkanRenderPass* pass)
 {
     bool changed = !VulkanContextState::isCurrentRenderPass(pass);
     m_currentRenderpass.first = pass;
@@ -88,7 +88,7 @@ bool VulkanContextState::setCurrentRenderPass(VulkanRenderPass * pass)
     return changed;
 }
 
-bool VulkanContextState::setCurrentFramebuffer(VulkanFramebuffer * framebuffer)
+bool VulkanContextState::setCurrentFramebuffer(VulkanFramebuffer* framebuffer)
 {
     bool changed = !VulkanContextState::isCurrentFramebuffer(framebuffer);
     m_currentFramebuffer.first[0] = framebuffer;
@@ -133,13 +133,13 @@ void VulkanContextState::setClearValues(const VkRect2D & area, std::vector<VkCle
     m_renderPassClearValues = std::move(clearValues);
 }
 
-VulkanRenderPass * VulkanContextState::getCurrentRenderpass() const
+VulkanRenderPass* VulkanContextState::getCurrentRenderpass() const
 {
     ASSERT(m_currentRenderpass.first, "nullptr");
     return m_currentRenderpass.first;
 }
 
-VulkanFramebuffer * VulkanContextState::getCurrentFramebuffer() const
+VulkanFramebuffer* VulkanContextState::getCurrentFramebuffer() const
 {
     ASSERT(!m_currentFramebuffer.first.empty(), "nullptr");
     if (m_currentFramebuffer.first.size() == 1)

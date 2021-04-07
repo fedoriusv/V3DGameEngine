@@ -390,7 +390,7 @@ void VulkanDeviceCaps::fillCapabilitiesList(const DeviceInfo* info)
     LOG_INFO("VulkanDeviceCaps::initialize:  supportDedicatedAllocation is %s", supportDedicatedAllocation ? "supported" : "unsupported");
     LOG_INFO("VulkanDeviceCaps::initialize:  supportMultiview is %s", supportMultiview ? "supported" : "unsupported");
 
-#if defined(PLATFORM_ANDROID)
+#ifdef PLATFORM_ANDROID
 #   ifdef VK_QCOM_render_pass_transform
     renderpassTransformQCOM = isEnabledExtension(VK_QCOM_RENDER_PASS_TRANSFORM_EXTENSION_NAME);
     renderpassTransformQCOM = false; //Feature has render artifacts. Need to check
@@ -401,7 +401,7 @@ void VulkanDeviceCaps::fillCapabilitiesList(const DeviceInfo* info)
     ASTC_TexturesDecompressed = isEnabledExtension(VK_EXT_ASTC_DECODE_MODE_EXTENSION_NAME);
     LOG_INFO("VulkanDeviceCaps::initialize ASTC_TexturesDecompressed is %u", ASTC_TexturesDecompressed);
 #   endif //VK_EXT_astc_decode_mode
-#endif
+#endif //PLATFORM_ANDROID
 }
 
 void VulkanDeviceCaps::initialize()

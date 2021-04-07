@@ -4,6 +4,7 @@
 
 #ifdef VULKAN_RENDER
 #include "VulkanWrapper.h"
+#include "VulkanDeviceCaps.h"
 #include "VulkanCommandBufferManager.h"
 #include "VulkanDescriptorSet.h"
 #include "VulkanDescriptorPool.h"

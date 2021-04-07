@@ -838,7 +838,7 @@ CommandList::PendingFlushMaskFlags CommandList::flushPendingCommands(PendingFlus
 #if DEBUG_COMMAND_LIST
                 LOG_DEBUG("CommandTransitionImage execute");
 #endif //DEBUG_COMMAND_LIST
-                cmdList.getContext()->transitionImages(m_images, m_state);
+                cmdList.getContext()->transitionImages(m_images, m_state, m_layer, m_mip);
             }
 
         private:
