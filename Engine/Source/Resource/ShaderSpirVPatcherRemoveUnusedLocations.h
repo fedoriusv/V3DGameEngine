@@ -20,7 +20,7 @@ namespace resource
 
         bool collectDataFromSpirv(const std::vector<u32>& spirv);
 
-        bool patch(std::vector<u32>& spirv, u32 flags = 0) override;
+        bool patch(const std::vector<u32>& spirv, std::vector<u32>& patchedSpirv, u32 flags = 0) override;
 
     private:
 

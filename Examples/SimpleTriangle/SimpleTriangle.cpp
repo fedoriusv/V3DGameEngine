@@ -48,6 +48,7 @@ void SimpleTriangle::init(v3d::renderer::CommandList* commandList, const core::D
         {\n\
             float4 Pos : SV_POSITION;\n\
             float4 Col : COLOR;\n\
+            float4 Test : Test;\n\
         };\n\
         \n\
         struct CBuffer\n\
@@ -66,6 +67,7 @@ void SimpleTriangle::init(v3d::renderer::CommandList* commandList, const core::D
             Out.Pos = mul(buffer.viewMatrix, Out.Pos);\n\
             Out.Pos = mul(buffer.projectionMatrix, Out.Pos);\n\
             Out.Col = float4(Input.Color, 1.0);\n\
+            Out.Test = Out.Pos;\n\
             return Out;\n\
         }");
         const stream::Stream* vertexStream = stream::StreamManager::createMemoryStream(vertexSource);

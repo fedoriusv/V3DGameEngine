@@ -23,6 +23,7 @@ ShaderSourceStreamLoader::ShaderSourceStreamLoader(const renderer::Context* cont
     : m_stream(stream)
 {
     ASSERT(context, "context is nullptr");
+    ASSERT(!(flags & ShaderSourceBuildFlag::ShaderSource_OptimizationFull) && !(flags & ShaderSourceBuildFlag::ShaderSource_OptimizationPerformance) || !(flags & ShaderSourceBuildFlag::ShaderSource_OptimizationSize), "set inside header");
     switch (context->getRenderType())
     {
     case renderer::Context::RenderType::VulkanRender:

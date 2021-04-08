@@ -52,17 +52,13 @@ struct Composite
     std::array<u32, Dim> constituents;
 };
 
-PatchDriverBugOptimization::PatchDriverBugOptimization(u32 flags) noexcept
-    : m_flags(flags)
-{
-}
 
-bool PatchDriverBugOptimization::patch(std::vector<u32>& spirv, u32 flags)
+bool PatchDriverBugOptimization::patch(const std::vector<u32>& spirv1, std::vector<u32>& patchedSpirv, u32 flags)
 {
     //outFragColor = (color == vec4(1.0)) ? vec4(0.99) : color;
     bool result = false;
 
-    auto word = spirv.begin();
+    auto word = patchedSpirv.begin();
     u32 boundIDs = *std::next(word, 3);
     word = std::next(word, 5);
 
@@ -87,7 +83,7 @@ bool PatchDriverBugOptimization::patch(std::vector<u32>& spirv, u32 flags)
     std::get<1>(constantCompositeFloat99).constituents.fill((u32)~0);
 
 
-    while (word != spirv.end())
+    while (word != patchedSpirv.end())
     {
         u32 op = getOpCode(*word);
         u32 count = getCountWords(*word);
@@ -413,7 +409,7 @@ bool PatchDriverBugOptimization::patch(std::vector<u32>& spirv, u32 flags)
 
                 if (!declarationSubSpirv.empty())
                 {
-                    word = spirv.insert(word, declarationSubSpirv.cbegin(), declarationSubSpirv.cend());
+                    word = patchedSpirv.insert(word, declarationSubSpirv.cbegin(), declarationSubSpirv.cend());
                     std::advance(word, declarationSubSpirv.size());
                 }
 
@@ -541,10 +537,10 @@ bool PatchDriverBugOptimization::patch(std::vector<u32>& spirv, u32 flags)
                     {
                         object = selectResult;
 
-                        word = spirv.insert(word, conditionSubSpirv.cbegin(), conditionSubSpirv.cend());
+                        word = patchedSpirv.insert(word, conditionSubSpirv.cbegin(), conditionSubSpirv.cend());
                         std::advance(word, conditionSubSpirv.size());
 
-                        u32& remapBoundID = *(spirv.begin() + 3);
+                        u32& remapBoundID = *(patchedSpirv.begin() + 3);
                         remapBoundID = boundIDs;
 
                         return true;

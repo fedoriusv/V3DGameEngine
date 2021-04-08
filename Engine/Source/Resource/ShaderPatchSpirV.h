@@ -27,7 +27,7 @@ namespace resource
         PatchSpirvCode() noexcept = default;
         virtual ~PatchSpirvCode() = default;
 
-        virtual bool patch(std::vector<u32>& spirv, u32 flags = 0) = 0;
+        virtual bool patch(const std::vector<u32>& spirv, std::vector<u32>& patchedSpirv, u32 flags = 0) = 0;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -39,10 +39,14 @@ namespace resource
     {
     public:
 
-        ShaderPatcherSpirV() noexcept = default;
+        explicit ShaderPatcherSpirV(u32 flags = 0) noexcept;
         ~ShaderPatcherSpirV() = default;
 
-        bool process(PatchSpirvCode* patch, const std::vector<u32>& spirvIn, std::vector<u32>& spirvOut);
+        bool process(PatchSpirvCode* patch, std::vector<u32>& spirv);
+
+    private:
+
+        u32 m_flags;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

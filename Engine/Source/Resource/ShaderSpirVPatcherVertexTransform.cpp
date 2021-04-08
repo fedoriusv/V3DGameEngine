@@ -48,7 +48,7 @@ PatchVertexTransform::PatchVertexTransform(f32 angle) noexcept
 {
 }
 
-bool PatchVertexTransform::patch(std::vector<u32>& spirv, u32 flags)
+bool PatchVertexTransform::patch(const std::vector<u32>& spirv, std::vector<u32>& patchedSpirv, u32 flags)
 {
     //gl_Position = vec4(gl_Position.x * cos(rad) - gl_Position.y * sin(rad), gl_Position.x * sin(rad) + gl_Position.y * cos(rad), gl_Position.z, gl_Position.w);
 
@@ -81,13 +81,12 @@ bool PatchVertexTransform::patch(std::vector<u32>& spirv, u32 flags)
     u32 float32PointerTypeID = (u32)~0;
 
     bool insideEntryPointFunction = false;
-
-    std::vector<u32> patchedSpirv;
-
     auto word = spirv.begin();
     auto lastPatchedWord = word;
 
     u32 boundIDs = *std::next(word, 3);
+
+    patchedSpirv.clear();
     word = std::next(word, 5);
     while (word != spirv.end())
     {
@@ -482,7 +481,6 @@ bool PatchVertexTransform::patch(std::vector<u32>& spirv, u32 flags)
                 patchedSpirv.push_back(opLoadResultId_W);
 
                 u32 opStore = getWordInstruction(spv::Op::OpStore, 3);
-                u32 opStoreResultId = boundIDs++;
                 patchedSpirv.push_back(opStore);
                 patchedSpirv.push_back(buildInPositionID);
                 patchedSpirv.push_back(opCompositeConstructResultId);
@@ -500,7 +498,10 @@ bool PatchVertexTransform::patch(std::vector<u32>& spirv, u32 flags)
     patchedSpirv.insert(patchedSpirv.end(), lastPatchedWord, spirv.end());
     patchedSpirv[3] = boundIDs;
 
-    std::swap(spirv, patchedSpirv);
+    if (!insideEntryPointFunction)
+    {
+        return false;
+    }
 
     return true;
 }

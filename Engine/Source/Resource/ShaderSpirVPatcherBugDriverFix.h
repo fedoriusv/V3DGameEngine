@@ -15,10 +15,10 @@ namespace resource
     {
     public:
 
-        explicit PatchDriverBugOptimization(u32 flags = 0) noexcept;
+        PatchDriverBugOptimization() noexcept = default;
         ~PatchDriverBugOptimization() = default;
 
-        bool patch(std::vector<u32>& spirv, u32 flags = 0) override;
+        bool patch(const std::vector<u32>& spirv, std::vector<u32>& patchedSpirv, u32 flags = 0) override;
 
     private:
 

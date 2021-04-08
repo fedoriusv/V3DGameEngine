@@ -1,6 +1,9 @@
 #include "ShaderPatchSpirV.h"
-#include "Renderer/Context.h"
 
+#include "Utils/Timer.h"
+#include "Utils/Logger.h"
+
+#include "Renderer/Context.h"
 #ifdef USE_SPIRV
 # include <shaderc/third_party/glslang/SPIRV/spirv.hpp>
 
@@ -39,14 +42,19 @@ u32 getWordInstruction(u32 op, u32 count)
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-bool ShaderPatcherSpirV::process(PatchSpirvCode* patch, const std::vector<u32>& spirvIn, std::vector<u32>& spirvOut)
+ShaderPatcherSpirV::ShaderPatcherSpirV(u32 flags) noexcept
+    : m_flags(flags)
 {
-    if (spirvIn.empty())
+}
+
+bool ShaderPatcherSpirV::process(PatchSpirvCode* patch, std::vector<u32>& spirv)
+{
+    if (spirv.empty())
     {
         return false;
     }
 
-    auto word = spirvIn.begin();
+    auto word = spirv.begin();
 
     u32 magicNumber = *word;
     if (magicNumber != 0x07230203)
@@ -58,8 +66,25 @@ bool ShaderPatcherSpirV::process(PatchSpirvCode* patch, const std::vector<u32>& 
     [[maybe_unused]] u32 generator = *std::next(word, 2);
     [[maybe_unused]] u32 boundIDs = *std::next(word, 3);
 
-    spirvOut = spirvIn;
-    return patch->patch(spirvOut);
+#if DEBUG
+    utils::Timer timer;
+    timer.start();
+#endif
+
+    std::vector<u32> patchedSpirv(spirv);
+    bool result = patch->patch(spirv, patchedSpirv, m_flags);
+    if (result)
+    {
+        std::swap(spirv, patchedSpirv);
+    }
+
+#if DEBUG
+    timer.stop();
+    u64 time = timer.getTime<utils::Timer::Duration_MilliSeconds>();
+    LOG_DEBUG("ShaderPatcherSpirV::process, spirv patch time %.4f sec", static_cast<f32>(time) / 1000.0f);
+#endif
+
+    return result;
 }
 
 } //namespace resource

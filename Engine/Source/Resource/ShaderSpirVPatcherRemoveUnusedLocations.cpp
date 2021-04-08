@@ -148,7 +148,7 @@ bool PatchRemoveUnusedLocations::collectDataFromSpirv(const std::vector<u32>& sp
     return true;
 }
 
-bool PatchRemoveUnusedLocations::patch(std::vector<u32>& spirv, u32 flags)
+bool PatchRemoveUnusedLocations::patch(const std::vector<u32>& spirv, std::vector<u32>& patchedSpirv, u32 flags)
 {
     //[ UNASSIGNED-CoreValidation-Shader-OutputNotConsumed ] Object: 0x0 (Type = 15) | vertex shader writes to output location 0.0 which is not consumed by fragment shader
 
@@ -166,8 +166,7 @@ bool PatchRemoveUnusedLocations::patch(std::vector<u32>& spirv, u32 flags)
         LOG_WARNING("PatchRemoveUnusedLocations::patch: Present in a Vertex shader location %u, but is not used in a Fragment shader", loc.location);
     }
 
-    std::vector<u32> patchedSpirv;
-
+    patchedSpirv.clear();
     auto word = spirv.begin();
     auto lastPatchedWord = word;
 
@@ -219,6 +218,23 @@ bool PatchRemoveUnusedLocations::patch(std::vector<u32>& spirv, u32 flags)
             }
             ASSERT(interfaceAdded == interfaceCount - unusedVertexLocations.size(), "must be new size");
             lastPatchedWord = std::next(word, count);
+        }
+        break;
+
+        case spv::Op::OpName:
+        {
+            u32 targetID = *std::next(word, 1);
+            auto found = std::find_if(unusedVertexLocations.begin(), unusedVertexLocations.end(), [targetID](const Location& location) -> bool
+                {
+                    return location.bindID == targetID;
+                });
+
+            if (found != unusedVertexLocations.end())
+            {
+                //just skip
+                patchedSpirv.insert(patchedSpirv.end(), lastPatchedWord, word);
+                lastPatchedWord = std::next(word, count);
+            }
         }
         break;
 
@@ -284,10 +300,9 @@ bool PatchRemoveUnusedLocations::patch(std::vector<u32>& spirv, u32 flags)
 
             patchedSpirv.insert(patchedSpirv.end(), lastPatchedWord, word);
 
-
-            u32 newBindId = *std::next(patchedSpirv.begin(), 3);
+            /*u32 newBindId = *std::next(patchedSpirv.begin(), 3);
             patchedSpirv[3] = newBindId + 1;
-            //OpTypePointer 
+            //OpTypePointer
             {
                 u32 newOp = getWordInstruction(spv::Op::OpTypePointer, 4);
                 patchedSpirv.push_back(newOp);
@@ -304,7 +319,7 @@ bool PatchRemoveUnusedLocations::patch(std::vector<u32>& spirv, u32 flags)
                 patchedSpirv.push_back(newBindId);
                 patchedSpirv.push_back(resultID);
                 patchedSpirv.push_back(spv::StorageClass::StorageClassPrivate);
-            }
+            }*/
 
             lastPatchedWord = std::next(word, count);
         }
@@ -331,6 +346,23 @@ bool PatchRemoveUnusedLocations::patch(std::vector<u32>& spirv, u32 flags)
         }
         break;
 
+        case spv::Op::OpStore:
+        {
+            u32 pointerID = *std::next(word, 1);
+            auto found = std::find_if(unusedVertexLocations.begin(), unusedVertexLocations.end(), [pointerID](const Location& location) -> bool
+                {
+                    return location.bindID == pointerID;
+                });
+
+            if (found != unusedVertexLocations.end())
+            {
+                //just skip
+                patchedSpirv.insert(patchedSpirv.end(), lastPatchedWord, word);
+                lastPatchedWord = std::next(word, count);
+            }
+        }
+        break;
+
         default:
             break;
         }
@@ -339,8 +371,7 @@ bool PatchRemoveUnusedLocations::patch(std::vector<u32>& spirv, u32 flags)
     }
 
     patchedSpirv.insert(patchedSpirv.end(), lastPatchedWord, spirv.end());
-    std::swap(spirv, patchedSpirv);
-
+    
     LOG_WARNING("PatchRemoveUnusedLocations::patch: Shader has been patched");
     return true;
 }
