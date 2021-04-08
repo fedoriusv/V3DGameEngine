@@ -3,6 +3,7 @@
 #include "Common.h"
 
 #ifdef USE_SPIRV
+
 namespace v3d
 {
 namespace resource

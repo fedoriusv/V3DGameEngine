@@ -11,23 +11,6 @@ namespace resource
 {
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    class PatchDriverBugOptimization final : public PatchSpirvCode
-    {
-    public:
-
-        explicit PatchDriverBugOptimization(u32 flags = 0) noexcept;
-        ~PatchDriverBugOptimization() = default;
-
-        bool patch(std::vector<u32>& spirv, u32 flags = 0) override;
-
-    private:
-
-        bool composePatch(std::function<bool(std::vector<u32>& subSpirv)> func, std::vector<u32>& subSpirv);
-        [[maybe_unused]] u32 m_flags;
-    };
-
-    /////////////////////////////////////////////////////////////////////////////////////////////////////
-
     class PatchRemoveUnusedLocations final : public PatchSpirvCode
     {
     public:

@@ -58,6 +58,7 @@ namespace vk
         bool enableSamplerMirrorClampToEdge = false;
         bool supportSamplerBorderColor = false;
 
+        bool preTransform = false;
         bool renderpassTransformQCOM = false;
         bool fixRenderPassTransformQCOMDriverIssue = false;
 

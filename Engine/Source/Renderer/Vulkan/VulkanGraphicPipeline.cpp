@@ -3,15 +3,17 @@
 #include "Utils/Logger.h"
 #include "Renderer/Shader.h"
 
-#define PATCH_SYSTEM 0
-#include "Resource/ShaderPatcher.h"
-
 #ifdef VULKAN_RENDER
 #include "VulkanDebug.h"
 #include "VulkanContext.h"
+#include "VulkanSwapchain.h"
 #include "VulkanImage.h"
 #include "VulkanGraphicPipeline.h"
 #include "VulkanDescriptorSet.h"
+
+#define PATCH_SPIRV_REMOVE_UNUSED_LOCATIONS 0
+#include "Resource/ShaderSpirVPatcherRemoveUnusedLocations.h"
+#include "Resource/ShaderSpirVPatcherVertexTransform.h"
 
 namespace v3d
 {
@@ -373,7 +375,7 @@ const VulkanPipelineLayoutDescription& VulkanGraphicPipeline::getPipelineLayoutD
     return m_pipelineLayoutDescription;
 }
 
-VulkanGraphicPipeline::VulkanGraphicPipeline(VkDevice device, RenderPassManager* renderpassManager, VulkanPipelineLayoutManager* pipelineLayoutManager)
+VulkanGraphicPipeline::VulkanGraphicPipeline(VkDevice device, Context* context, RenderPassManager* renderpassManager, VulkanPipelineLayoutManager * pipelineLayoutManager)
     : Pipeline(PipelineType::PipelineType_Graphic)
     , m_device(device)
     , m_pipeline(VK_NULL_HANDLE)
@@ -381,6 +383,7 @@ VulkanGraphicPipeline::VulkanGraphicPipeline(VkDevice device, RenderPassManager*
     , m_compatibilityRenderPass(nullptr)
     , m_trackerRenderPass(nullptr, [](const std::vector<renderer::RenderPass*>&) {})
 
+    , m_context(context)
     , m_renderpassManager(renderpassManager)
     , m_pipelineLayoutManager(pipelineLayoutManager)
 {
@@ -415,9 +418,19 @@ bool VulkanGraphicPipeline::create(const PipelineGraphicInfo* pipelineInfo)
     graphicsPipelineCreateInfo.basePipelineIndex = 0;
     graphicsPipelineCreateInfo.basePipelineHandle = VK_NULL_HANDLE;
 
+    ASSERT(!m_compatibilityRenderPass, "not nullptr");
+    if (!createCompatibilityRenderPass(pipelineInfo->_renderpassDesc, m_compatibilityRenderPass))
+    {
+        LOG_ERROR("VulkanGraphicPipeline::create couldn't create renderpass for pipline");
+        return false;
+    }
+
+    graphicsPipelineCreateInfo.renderPass = static_cast<VulkanRenderPass*>(m_compatibilityRenderPass)->getHandle();
+    graphicsPipelineCreateInfo.subpass = 0; //TODO
+
+
     std::vector<VkPipelineShaderStageCreateInfo> pipelineShaderStageCreateInfos;
     const ShaderProgramDescription& programDesc = pipelineInfo->_programDesc;
-
     if (!Pipeline::createProgram(programDesc))
     {
         LOG_ERROR("VulkanGraphicPipeline::create can't create modules for pipeline");
@@ -454,15 +467,6 @@ bool VulkanGraphicPipeline::create(const PipelineGraphicInfo* pipelineInfo)
     m_pipelineLayout = m_pipelineLayoutManager->acquirePipelineLayout(m_pipelineLayoutDescription);
     graphicsPipelineCreateInfo.layout = m_pipelineLayout._pipelineLayout;
 
-
-    ASSERT(!m_compatibilityRenderPass, "not nullptr");
-    if (!createCompatibilityRenderPass(pipelineInfo->_renderpassDesc, m_compatibilityRenderPass))
-    {
-        LOG_ERROR("VulkanGraphicPipeline::create couldn't create renderpass for pipline");
-        return false;
-    }
-    graphicsPipelineCreateInfo.renderPass = static_cast<VulkanRenderPass*>(m_compatibilityRenderPass)->getHandle();
-    graphicsPipelineCreateInfo.subpass = 0; //TODO
 
     const GraphicsPipelineStateDescription::RasterizationState& rasterizationState = pipelineDesc._rasterizationState;
 
@@ -744,17 +748,17 @@ bool VulkanGraphicPipeline::compileShaders(std::vector<std::tuple<const ShaderHe
         return false;
     }
 
-#if PATCH_SYSTEM
-    resource::PatchRemoveUnusedLocations patch;
+#if PATCH_SPIRV_REMOVE_UNUSED_LOCATIONS
+    resource::PatchRemoveUnusedLocations removeUnusedLocationPatch;
     for (auto& shader : shaders)
     {
         std::vector<u32> spirv;
         spirv.resize(std::get<2>(shader) / sizeof(u32));
         memcpy(spirv.data(), std::get<1>(shader), std::get<2>(shader));
 
-        patch.collectDataFromSpirv(spirv);
+        removeUnusedLocationPatch.collectDataFromSpirv(spirv);
     }
-#endif //PATCH_SYSTEM
+#endif //PATCH_SPIRV_REMOVE_UNUSED_LOCATIONS
 
     for (auto& shader : shaders)
     {
@@ -766,7 +770,6 @@ bool VulkanGraphicPipeline::compileShaders(std::vector<std::tuple<const ShaderHe
             return false;
         }
 
-#if PATCH_SYSTEM
         std::vector<u32> patchedSpirv;
         if (std::get<0>(shader)->_type == ShaderType::ShaderType_Vertex)
         {
@@ -774,14 +777,35 @@ bool VulkanGraphicPipeline::compileShaders(std::vector<std::tuple<const ShaderHe
             spirv.resize(size / sizeof(u32));
             memcpy(spirv.data(), source, size);
 
-            resource::ShaderPatcherSpirV patcher;
-            if (patcher.process(&patch, spirv, patchedSpirv))
+            [[maybe_unused]] resource::ShaderPatcherSpirV patcher;
+#if PATCH_SPIRV_REMOVE_UNUSED_LOCATIONS
+            if (patcher.process(&removeUnusedLocationPatch, spirv, patchedSpirv))
             {
                 source = patchedSpirv.data();
                 size = static_cast<u32>(patchedSpirv.size()) * sizeof(u32);
+
+                spirv = patchedSpirv;
             }
+#endif //PATCH_SPIRV_REMOVE_UNUSED_LOCATIONS
+
+#ifdef PLATFORM_ANDROID
+            ASSERT(m_compatibilityRenderPass, "nullptr");
+            if (VulkanDeviceCaps::getInstance()->preTransform && static_cast<VulkanRenderPass*>(m_compatibilityRenderPass)->isDrawingToSwapchain())
+            {
+                VkSurfaceTransformFlagBitsKHR preTransform = static_cast<VulkanGraphicContext*>(m_context)->getSwapchain()->getTransformFlag();
+                if (preTransform & (VK_SURFACE_TRANSFORM_ROTATE_90_BIT_KHR | VK_SURFACE_TRANSFORM_ROTATE_270_BIT_KHR))
+                {
+                    f32 angleDegree = (preTransform == VK_SURFACE_TRANSFORM_ROTATE_90_BIT_KHR) ? 90.0f : 270.0f;
+                    resource::PatchVertexTransform vertexTransform(angleDegree);
+                    if (patcher.process(&vertexTransform, spirv, patchedSpirv))
+                    {
+                        source = patchedSpirv.data();
+                        size = static_cast<u32>(patchedSpirv.size()) * sizeof(u32);
+                    }
+                }
+            }
+#endif //PLATFORM_ANDROID
         }
-#endif //PATCH_SYSTEM
 
         VkShaderModuleCreateInfo shaderModuleCreateInfo = {};
         shaderModuleCreateInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
@@ -814,33 +838,7 @@ void VulkanGraphicPipeline::deleteShaderModules()
 
 bool VulkanGraphicPipeline::createCompatibilityRenderPass(const RenderPassDescription& renderpassDesc, RenderPass* &compatibilityRenderPass)
 {
-    RenderPassDescription compatibilityRenderpassDesc(renderpassDesc);
-    for (u32 index = 0; index < renderpassDesc._desc._countColorAttachments; ++index)
-    {
-        compatibilityRenderpassDesc._desc._attachments[index]._loadOp = RenderTargetLoadOp::LoadOp_DontCare;
-        compatibilityRenderpassDesc._desc._attachments[index]._storeOp = RenderTargetStoreOp::StoreOp_DontCare;
-        compatibilityRenderpassDesc._desc._attachments[index]._stencilLoadOp = RenderTargetLoadOp::LoadOp_DontCare;
-        compatibilityRenderpassDesc._desc._attachments[index]._stencilStoreOp = RenderTargetStoreOp::StoreOp_DontCare;
-        compatibilityRenderpassDesc._desc._attachments[index]._initTransition = TransitionOp::TransitionOp_Undefined;
-        compatibilityRenderpassDesc._desc._attachments[index]._finalTransition = TransitionOp::TransitionOp_ColorAttachment;
-
-        compatibilityRenderpassDesc._desc._attachments[index]._backbuffer = false;
-        compatibilityRenderpassDesc._desc._attachments[index]._layer = 0;
-    }
-
-    if (compatibilityRenderpassDesc._desc._hasDepthStencilAttahment)
-    {
-        compatibilityRenderpassDesc._desc._attachments.back()._loadOp = RenderTargetLoadOp::LoadOp_DontCare;
-        compatibilityRenderpassDesc._desc._attachments.back()._storeOp = RenderTargetStoreOp::StoreOp_DontCare;
-        compatibilityRenderpassDesc._desc._attachments.back()._stencilLoadOp = RenderTargetLoadOp::LoadOp_DontCare;
-        compatibilityRenderpassDesc._desc._attachments.back()._stencilStoreOp = RenderTargetStoreOp::StoreOp_DontCare;
-        compatibilityRenderpassDesc._desc._attachments.back()._initTransition = TransitionOp::TransitionOp_Undefined;
-        compatibilityRenderpassDesc._desc._attachments.back()._finalTransition = TransitionOp::TransitionOp_DepthStencilAttachment;
-
-        compatibilityRenderpassDesc._desc._attachments.back()._backbuffer = false;
-        compatibilityRenderpassDesc._desc._attachments.back()._layer = 0;
-    }
-
+    RenderPassDescription compatibilityRenderpassDesc(Pipeline::createCompatibilityRenderPassDescription(renderpassDesc));
     compatibilityRenderPass = m_renderpassManager->acquireRenderPass(compatibilityRenderpassDesc);
     if (!compatibilityRenderPass)
     {

@@ -5,14 +5,13 @@
 #include "Utils/Logger.h"
 #include "Utils/Timer.h"
 
-#define PATCH_SYSTEM 0
-#include "ShaderPatcher.h"
-
 #ifdef USE_SPIRV
 #   include <shaderc/libshaderc/include/shaderc/shaderc.hpp>
 #   include <SPIRV-Cross/spirv_glsl.hpp>
 
+#   define PATCH_SYSTEM 0
 #   include "ShaderPatchSpirV.h"
+#   include "ShaderSpirVPatcherBugDriverFix.h"
 
 namespace v3d
 {

@@ -63,6 +63,8 @@ namespace vk
             return std::get<status>(m_layout[index]);
         }
 
+        bool isDrawingToSwapchain() const;
+
         bool create() override;
         void destroy() override;
 

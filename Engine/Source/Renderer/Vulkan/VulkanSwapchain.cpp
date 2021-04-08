@@ -143,7 +143,7 @@ bool VulkanSwapchain::create(const SwapchainConfig& config, VkSwapchainKHR oldSw
         return false;
     }
 
-    if (VulkanDeviceCaps::getInstance()->renderpassTransformQCOM)
+    if (VulkanDeviceCaps::getInstance()->preTransform || VulkanDeviceCaps::getInstance()->renderpassTransformQCOM)
     {
         VkSurfaceCapabilitiesKHR surfaceCapabilities = {};
         VkResult result = VulkanWrapper::GetPhysicalDeviceSurfaceCapabilities(m_deviceInfo->_physicalDevice, m_surface, &surfaceCapabilities);
@@ -158,6 +158,7 @@ bool VulkanSwapchain::create(const SwapchainConfig& config, VkSwapchainKHR oldSw
             VulkanSwapchain::destroy();
 
             std::swap(m_config._size.width, m_config._size.height);
+            ASSERT(m_surface == VK_NULL_HANDLE, "must be nullptr");
             m_surface = VulkanSwapchain::createSurface(m_deviceInfo->_instance, m_config._window->getInstance(), m_config._window->getWindowHandle(), m_config._size);
             if (!m_surface)
             {
@@ -354,7 +355,7 @@ bool VulkanSwapchain::createSwapchain(const SwapchainConfig& config, VkSwapchain
 
     // Find the transformation of the surface
     VkSurfaceTransformFlagBitsKHR preTransform = VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR;
-    if (VulkanDeviceCaps::getInstance()->renderpassTransformQCOM)
+    if (VulkanDeviceCaps::getInstance()->preTransform || VulkanDeviceCaps::getInstance()->renderpassTransformQCOM)
     {
         preTransform = m_surfaceCaps.currentTransform;
     }

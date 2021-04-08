@@ -32,7 +32,7 @@ namespace vk
     {
     public:
 
-        VulkanGraphicPipeline(VkDevice device, RenderPassManager* renderpassManager, VulkanPipelineLayoutManager* pipelineLayoutManager);
+        VulkanGraphicPipeline(VkDevice device, Context* context, RenderPassManager* renderpassManager, VulkanPipelineLayoutManager* pipelineLayoutManager);
         ~VulkanGraphicPipeline();
 
         static VkPolygonMode convertPolygonModeToVk(PolygonMode mode);
@@ -71,6 +71,7 @@ namespace vk
 
         std::vector<VkShaderModule> m_modules;
 
+
         VkDevice     m_device;
         VkPipeline   m_pipeline;
         RenderPass*  m_compatibilityRenderPass;
@@ -79,6 +80,7 @@ namespace vk
         VulkanPipelineLayoutDescription m_pipelineLayoutDescription;
         VulkanPipelineLayout m_pipelineLayout;
 
+        Context* const m_context;
         RenderPassManager* const m_renderpassManager;
         VulkanPipelineLayoutManager* const m_pipelineLayoutManager;
     };

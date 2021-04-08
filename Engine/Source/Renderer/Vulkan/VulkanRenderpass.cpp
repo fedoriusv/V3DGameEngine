@@ -119,6 +119,11 @@ const VulkanRenderPass::VulkanAttachmentDescription& VulkanRenderPass::getAttach
     return m_descriptions[index];
 }
 
+bool VulkanRenderPass::isDrawingToSwapchain() const
+{
+    return (VulkanRenderPass::getDescription()._countColorAttachments == 1) && (VulkanRenderPass::getDescription()._attachments[0]._backbuffer);
+}
+
 bool VulkanRenderPass::create()
 {
     ASSERT(!m_renderpass, "not empty");

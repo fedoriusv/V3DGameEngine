@@ -2,12 +2,14 @@
 #include "Renderer/Context.h"
 
 #ifdef USE_SPIRV
-#   include <shaderc/third_party/glslang/SPIRV/spirv.hpp>
+# include <shaderc/third_party/glslang/SPIRV/spirv.hpp>
 
 namespace v3d
 {
 namespace resource
 {
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////
 
 u32 getOpCode(u32 word)
 {

@@ -22,8 +22,9 @@ const RenderPassDescription Pipeline::createCompatibilityRenderPassDescription(c
         compatibilityRenderpassDesc._desc._attachments[index]._stencilStoreOp = RenderTargetStoreOp::StoreOp_DontCare;
         compatibilityRenderpassDesc._desc._attachments[index]._initTransition = TransitionOp::TransitionOp_Undefined;
         compatibilityRenderpassDesc._desc._attachments[index]._finalTransition = TransitionOp::TransitionOp_ColorAttachment;
-
+#ifndef PLATFORM_ANDROID //used for pretransform
         compatibilityRenderpassDesc._desc._attachments[index]._backbuffer = false;
+#endif
         compatibilityRenderpassDesc._desc._attachments[index]._layer = 0;
     }
 
@@ -35,8 +36,9 @@ const RenderPassDescription Pipeline::createCompatibilityRenderPassDescription(c
         compatibilityRenderpassDesc._desc._attachments.back()._stencilStoreOp = RenderTargetStoreOp::StoreOp_DontCare;
         compatibilityRenderpassDesc._desc._attachments.back()._initTransition = TransitionOp::TransitionOp_Undefined;
         compatibilityRenderpassDesc._desc._attachments.back()._finalTransition = TransitionOp::TransitionOp_DepthStencilAttachment;
-
+#ifndef PLATFORM_ANDROID //used for pretransform
         compatibilityRenderpassDesc._desc._attachments.back()._backbuffer = false;
+#endif
         compatibilityRenderpassDesc._desc._attachments.back()._layer = 0;
     }
 

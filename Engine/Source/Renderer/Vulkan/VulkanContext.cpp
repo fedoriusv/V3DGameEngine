@@ -916,13 +916,46 @@ void VulkanGraphicContext::setViewport(const core::Rect32& viewport, const core:
         vkViewport.minDepth = depth.x;
         vkViewport.maxDepth = depth.y;
 
+#ifdef PLATFORM_ANDROID
+        std::vector<VkViewport> viewports = { vkViewport };
+
+        m_currentContextState->setDynamicState(VK_DYNAMIC_STATE_VIEWPORT, std::bind([this](std::vector<VkViewport>& viewports) -> void
+            {
+                ASSERT(m_currentContextState->getCurrentRenderpass(), "nullptr");
+                if (m_currentContextState->getCurrentRenderpass()->isDrawingToSwapchain() && VulkanDeviceCaps::getInstance()->preTransform)
+                {
+                    VkSurfaceTransformFlagBitsKHR preTransform = m_swapchain->getTransformFlag();
+                    if (preTransform & (VK_SURFACE_TRANSFORM_ROTATE_90_BIT_KHR | VK_SURFACE_TRANSFORM_ROTATE_270_BIT_KHR))
+                    {
+                        for (auto& viewports : viewports)
+                        {
+                            std::swap(viewports.x, viewports.y);
+                            std::swap(viewports.width, viewports.height);
+                        }
+                    }
+                    else
+                    {
+                        for (auto& viewports : viewports)
+                        {
+                            viewports.y = viewports.y + viewports.height;
+                            viewports.height = -viewports.height;
+                        }
+                    }
+                }
+
+                VulkanCommandBuffer* drawBuffer = m_currentBufferState.acquireAndStartCommandBuffer(CommandTargetType::CmdDrawBuffer);
+                drawBuffer->cmdSetViewport(viewports);
+
+            }, viewports));
+#else
         vkViewport.y = vkViewport.y + vkViewport.height;
         vkViewport.height = -vkViewport.height;
-      
+
         std::vector<VkViewport> viewports = { vkViewport };
 
         VulkanCommandBuffer* drawBuffer = m_currentBufferState.acquireAndStartCommandBuffer(CommandTargetType::CmdDrawBuffer);
         m_currentContextState->setDynamicState(VK_DYNAMIC_STATE_VIEWPORT, std::bind(&VulkanCommandBuffer::cmdSetViewport, drawBuffer, viewports));
+#endif
     }
     else
     {
@@ -942,8 +975,31 @@ void VulkanGraphicContext::setScissor(const core::Rect32& scissor)
         vkScissor.extent = { static_cast<u32>(scissor.getWidth()), static_cast<u32>(scissor.getHeight()) };
         std::vector<VkRect2D> scissors = { vkScissor };
 
+#ifdef PLATFORM_ANDROID
+        m_currentContextState->setDynamicState(VK_DYNAMIC_STATE_SCISSOR, std::bind([this](std::vector<VkRect2D>& scissors) -> void
+            {
+                ASSERT(m_currentContextState->getCurrentRenderpass(), "nullptr");
+                if (m_currentContextState->getCurrentRenderpass()->isDrawingToSwapchain() && VulkanDeviceCaps::getInstance()->preTransform)
+                {
+                    VkSurfaceTransformFlagBitsKHR preTransform = m_swapchain->getTransformFlag();
+                    if (preTransform & (VK_SURFACE_TRANSFORM_ROTATE_90_BIT_KHR | VK_SURFACE_TRANSFORM_ROTATE_270_BIT_KHR))
+                    {
+                        for (auto& scissor : scissors)
+                        {
+                            std::swap(scissor.offset.x, scissor.offset.y);
+                            std::swap(scissor.extent.width, scissor.extent.height);
+                        }
+                    }
+                }
+
+                VulkanCommandBuffer* drawBuffer = m_currentBufferState.acquireAndStartCommandBuffer(CommandTargetType::CmdDrawBuffer);
+                drawBuffer->cmdSetScissor(scissors);
+
+            }, scissors));
+#else
         VulkanCommandBuffer* drawBuffer = m_currentBufferState.acquireAndStartCommandBuffer(CommandTargetType::CmdDrawBuffer);
         m_currentContextState->setDynamicState(VK_DYNAMIC_STATE_SCISSOR, std::bind(&VulkanCommandBuffer::cmdSetScissor, drawBuffer, scissors));
+#endif
     }
     else
     {
@@ -968,12 +1024,14 @@ void VulkanGraphicContext::setRenderTarget(const RenderPass::RenderPassInfo* ren
     if (swapchainPresent)
     {
         core::Dimension2D transformedArea(framebufferInfo->_clearInfo._size);
-        if (VulkanDeviceCaps::getInstance()->renderpassTransformQCOM && vkRenderpass->getDescription()._countColorAttachments == 1 &&
-            m_swapchain->getTransformFlag() & (VK_SURFACE_TRANSFORM_ROTATE_90_BIT_KHR | VK_SURFACE_TRANSFORM_ROTATE_270_BIT_KHR))
+#ifdef PLATFORM_ANDROID
+        if ((VulkanDeviceCaps::getInstance()->preTransform || VulkanDeviceCaps::getInstance()->renderpassTransformQCOM)
+            && m_swapchain->getTransformFlag() & (VK_SURFACE_TRANSFORM_ROTATE_90_BIT_KHR | VK_SURFACE_TRANSFORM_ROTATE_270_BIT_KHR))
         {
+            ASSERT(vkRenderpass->isDrawingToSwapchain(), "must be only swapchain image");
             std::swap(transformedArea.width, transformedArea.height);
         }
-
+#endif
         for (u32 index = 0; index < m_swapchain->getSwapchainImageCount(); ++index)
         {
             std::vector<Image*> images;
@@ -1473,7 +1531,7 @@ Pipeline* VulkanGraphicContext::createPipeline(Pipeline::PipelineType type)
 {
     if (type == Pipeline::PipelineType::PipelineType_Graphic)
     {
-        return new VulkanGraphicPipeline(m_deviceInfo._device, m_renderpassManager, m_pipelineLayoutManager);
+        return new VulkanGraphicPipeline(m_deviceInfo._device, this, m_renderpassManager, m_pipelineLayoutManager);
     }
     else if (type == Pipeline::PipelineType::PipelineType_Compute)
     {
