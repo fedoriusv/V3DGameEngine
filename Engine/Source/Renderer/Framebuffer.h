@@ -62,7 +62,6 @@ namespace renderer
 
             std::vector<Image*>         _images;
             ClearValueInfo              _clearInfo;
-
             ObjectTracker<Framebuffer>* _tracker;
         };
 

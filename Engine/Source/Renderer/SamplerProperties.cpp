@@ -43,11 +43,18 @@ u32 SamplerDescription::Hash::operator()(const SamplerDescription& desc) const
         desc.recalculateHash();
     }
 
+    ASSERT(desc._hash != 0, "must be not 0");
     return desc._hash;
 }
 
 bool SamplerDescription::Compare::operator()(const SamplerDescription& op1, const SamplerDescription& op2) const
 {
+    ASSERT(op1._hash != 0 && op2._hash != 0, "must be not 0");
+    if (op1._hash != op2._hash)
+    {
+        return false;
+    }
+
     return op1 == op2;
 }
 

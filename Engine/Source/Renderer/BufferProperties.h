@@ -24,7 +24,7 @@ namespace renderer
     ///////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
-    * StreamBufferUsage enum. usageFlag inside StreamBuffer
+    * @brief StreamBufferUsage enum. usageFlag inside StreamBuffer
     */
     enum StreamBufferUsage
     {
@@ -46,7 +46,7 @@ namespace renderer
     ///////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
-    * VertexInputAttributeDesc struct
+    * @brief VertexInputAttributeDesc struct
     */
     struct VertexInputAttribDescription
     {
@@ -56,6 +56,9 @@ namespace renderer
             InputRate_Instance = 1
         };
 
+        /**
+        * @brief InputBinding struct
+        */
         struct InputBinding
         {
             InputBinding() noexcept;
@@ -69,6 +72,9 @@ namespace renderer
             u32       _stride;
         };
 
+        /**
+        * @brief InputAttribute struct
+        */
         struct InputAttribute
         {
             InputAttribute() noexcept;
@@ -105,11 +111,12 @@ namespace renderer
     ///////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
-    * StreamBufferDescription struct
+    * @brief StreamBufferDescription struct
     */
     struct StreamBufferDescription
     {
-        StreamBufferDescription() noexcept = default;
+        StreamBufferDescription() = default;
+        ~StreamBufferDescription() = default;
 
         explicit StreamBufferDescription(const StreamBufferDescription& desc) noexcept;
         explicit StreamBufferDescription(StreamBufferDescription&& desc) noexcept;
@@ -122,8 +129,6 @@ namespace renderer
         explicit StreamBufferDescription(const IndexStreamBuffer* index, u32 indexOffset, const VertexStreamBuffer* vertex, u32 vertexOffset, u32 stream) noexcept;
 
         void clear();
-
-        ~StreamBufferDescription();
 
         bool operator==(const StreamBufferDescription& desc);
         bool operator!=(const StreamBufferDescription& desc);
@@ -140,7 +145,7 @@ namespace renderer
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
-    * DrawProperties struct
+    * @brief DrawProperties struct
     */
     struct DrawProperties
     {

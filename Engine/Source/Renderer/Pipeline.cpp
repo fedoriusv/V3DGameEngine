@@ -11,9 +11,40 @@ namespace v3d
 namespace renderer
 {
 
+const RenderPassDescription Pipeline::createCompatibilityRenderPassDescription(const RenderPassDescription& renderpassDesc)
+{
+    RenderPassDescription compatibilityRenderpassDesc(renderpassDesc);
+    for (u32 index = 0; index < renderpassDesc._desc._countColorAttachments; ++index)
+    {
+        compatibilityRenderpassDesc._desc._attachments[index]._loadOp = RenderTargetLoadOp::LoadOp_DontCare;
+        compatibilityRenderpassDesc._desc._attachments[index]._storeOp = RenderTargetStoreOp::StoreOp_DontCare;
+        compatibilityRenderpassDesc._desc._attachments[index]._stencilLoadOp = RenderTargetLoadOp::LoadOp_DontCare;
+        compatibilityRenderpassDesc._desc._attachments[index]._stencilStoreOp = RenderTargetStoreOp::StoreOp_DontCare;
+        compatibilityRenderpassDesc._desc._attachments[index]._initTransition = TransitionOp::TransitionOp_Undefined;
+        compatibilityRenderpassDesc._desc._attachments[index]._finalTransition = TransitionOp::TransitionOp_ColorAttachment;
+
+        compatibilityRenderpassDesc._desc._attachments[index]._backbuffer = false;
+        compatibilityRenderpassDesc._desc._attachments[index]._layer = 0;
+    }
+
+    if (compatibilityRenderpassDesc._desc._hasDepthStencilAttahment)
+    {
+        compatibilityRenderpassDesc._desc._attachments.back()._loadOp = RenderTargetLoadOp::LoadOp_DontCare;
+        compatibilityRenderpassDesc._desc._attachments.back()._storeOp = RenderTargetStoreOp::StoreOp_DontCare;
+        compatibilityRenderpassDesc._desc._attachments.back()._stencilLoadOp = RenderTargetLoadOp::LoadOp_DontCare;
+        compatibilityRenderpassDesc._desc._attachments.back()._stencilStoreOp = RenderTargetStoreOp::StoreOp_DontCare;
+        compatibilityRenderpassDesc._desc._attachments.back()._initTransition = TransitionOp::TransitionOp_Undefined;
+        compatibilityRenderpassDesc._desc._attachments.back()._finalTransition = TransitionOp::TransitionOp_DepthStencilAttachment;
+
+        compatibilityRenderpassDesc._desc._attachments.back()._backbuffer = false;
+        compatibilityRenderpassDesc._desc._attachments.back()._layer = 0;
+    }
+
+    return compatibilityRenderpassDesc;
+}
+
 Pipeline::Pipeline(PipelineType type) noexcept
-    : m_key(0)
-    , m_pipelineType(type)
+    : m_pipelineType(type)
 {
 }
 
@@ -63,7 +94,62 @@ bool Pipeline::compileShaders(std::vector<std::tuple<const ShaderHeader*, const 
     return false;
 }
 
-PipelineManager::PipelineManager(Context * context) noexcept
+/////////////////////////////////////////////////////////////////////////////////////////////////////
+
+Pipeline::PipelineDescription::PipelineDescription() noexcept
+    : _pipelineType(Pipeline::PipelineType::PipelineType_Graphic)
+    , _hash(0)
+{
+}
+
+Pipeline::PipelineDescription::PipelineDescription(const PipelineGraphicInfo& pipelineInfo) noexcept
+    : _pipelineDesc(pipelineInfo._pipelineDesc)
+    , _renderpassDesc(Pipeline::createCompatibilityRenderPassDescription(pipelineInfo._renderpassDesc))
+    , _programDesc(pipelineInfo._programDesc)
+    , _pipelineType(Pipeline::PipelineType::PipelineType_Graphic)
+    , _hash(0)
+{
+    u32 hash = crc32c::Crc32c((u8*)&_pipelineDesc, sizeof(GraphicsPipelineStateDescription));
+    hash = crc32c::Extend(hash, (u8*)&_renderpassDesc, sizeof(RenderPass::RenderPassInfo));
+
+    _hash = _programDesc._hash;
+    _hash = hash | _hash << 32;
+}
+
+Pipeline::PipelineDescription::PipelineDescription(const PipelineComputeInfo& pipelineInfo) noexcept
+    : _programDesc(pipelineInfo._programDesc)
+    , _pipelineType(Pipeline::PipelineType::PipelineType_Compute)
+    , _hash(0)
+{
+    _hash = pipelineInfo._programDesc._hash;
+}
+
+u64 Pipeline::PipelineDescription::Hash::operator()(const PipelineDescription& desc) const
+{
+    ASSERT(desc._hash, "must be not 0");
+    return desc._hash;
+}
+
+bool Pipeline::PipelineDescription::Compare::operator()(const PipelineDescription& op1, const PipelineDescription& op2) const
+{
+    ASSERT(op1._hash != 0 && op2._hash != 0, "must be not 0");
+    if (op1._hash != op2._hash)
+    {
+        return false;
+    }
+
+    ASSERT(op1._pipelineType == op2._pipelineType, "diff types");
+    if (op1._pipelineType == Pipeline::PipelineType::PipelineType_Graphic)
+    {
+        return op1._pipelineDesc == op2._pipelineDesc && op1._renderpassDesc == op2._renderpassDesc && op1._programDesc._shaders == op2._programDesc._shaders;
+    }
+    else //Pipeline::PipelineType::PipelineType_Compute
+    {
+        return op1._programDesc._shaders == op2._programDesc._shaders;
+    }
+}
+
+PipelineManager::PipelineManager(Context* context) noexcept
     : m_context(context)
 {
 }
@@ -75,27 +161,24 @@ PipelineManager::~PipelineManager()
 
 Pipeline* PipelineManager::acquireGraphicPipeline(const Pipeline::PipelineGraphicInfo& pipelineInfo)
 {
-    u32 hash = crc32c::Crc32c((u8*)&pipelineInfo._pipelineDesc, sizeof(GraphicsPipelineStateDescription));
-    hash = crc32c::Extend(hash, (u8*)&pipelineInfo._renderpassDesc, sizeof(RenderPass::RenderPassInfo));
-
-    u64 pipelineHash = pipelineInfo._programDesc._hash;
-    pipelineHash = hash | pipelineHash << 32;
+    Pipeline::PipelineDescription desc(pipelineInfo);
 
     Pipeline* pipeline = nullptr;
-    auto found = m_pipelineGraphicList.emplace(pipelineHash, pipeline);
+    auto found = m_pipelineGraphicList.emplace(desc, pipeline);
     if (found.second)
     {
         pipeline = m_context->createPipeline(Pipeline::PipelineType::PipelineType_Graphic);
-        pipeline->m_key = pipelineHash;
+        pipeline->m_desc = desc;
 
         if (!pipeline->create(&pipelineInfo))
         {
             pipeline->destroy();
-            m_pipelineGraphicList.erase(pipelineHash);
+            m_pipelineGraphicList.erase(desc);
 
             ASSERT(false, "can't create pipeline");
             return nullptr;
         }
+
         found.first->second = pipeline;
         pipeline->registerNotify(this);
 
@@ -107,19 +190,19 @@ Pipeline* PipelineManager::acquireGraphicPipeline(const Pipeline::PipelineGraphi
 
 Pipeline* PipelineManager::acquireComputePipeline(const Pipeline::PipelineComputeInfo& pipelineInfo)
 {
-    u64 hash = pipelineInfo._programDesc._hash;
+    Pipeline::PipelineDescription desc(pipelineInfo);
 
     Pipeline* pipeline = nullptr;
-    auto found = m_pipelineComputeList.emplace(hash, pipeline);
+    auto found = m_pipelineComputeList.emplace(desc, pipeline);
     if (found.second)
     {
         pipeline = m_context->createPipeline(Pipeline::PipelineType::PipelineType_Compute);
-        pipeline->m_key = hash;
+        pipeline->m_desc = desc;
 
         if (!pipeline->create(&pipelineInfo))
         {
             pipeline->destroy();
-            m_pipelineComputeList.erase(hash);
+            m_pipelineComputeList.erase(desc);
 
             ASSERT(false, "can't create pipeline");
             return nullptr;
@@ -138,7 +221,7 @@ bool PipelineManager::removePipeline(Pipeline* pipeLine)
     ASSERT(pipeLine->getType() == Pipeline::PipelineType::PipelineType_Graphic || pipeLine->getType() == Pipeline::PipelineType::PipelineType_Compute, "wrong type");
     auto& pipelineList = (pipeLine->getType() == Pipeline::PipelineType::PipelineType_Compute) ? m_pipelineComputeList : m_pipelineGraphicList;
 
-    auto iter = pipelineList.find(pipeLine->m_key);
+    auto iter = pipelineList.find(pipeLine->m_desc);
     if (iter == pipelineList.cend())
     {
         LOG_DEBUG("PipelineManager pipeline not found");

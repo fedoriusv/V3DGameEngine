@@ -51,10 +51,6 @@ void StreamBufferDescription::clear()
     _indexType = StreamIndexBufferType::IndexType_16;
 }
 
-StreamBufferDescription::~StreamBufferDescription()
-{
-}
-
 StreamBufferDescription::StreamBufferDescription(const StreamBufferDescription & desc) noexcept
     : _vertices(desc._vertices)
     , _streamsID(desc._streamsID)
@@ -66,7 +62,7 @@ StreamBufferDescription::StreamBufferDescription(const StreamBufferDescription &
 {
 }
 
-StreamBufferDescription::StreamBufferDescription(StreamBufferDescription && desc) noexcept
+StreamBufferDescription::StreamBufferDescription(StreamBufferDescription&& desc) noexcept
 {
     _vertices = std::move(desc._vertices);
     _streamsID = std::move(desc._streamsID);
@@ -97,7 +93,7 @@ StreamBufferDescription& StreamBufferDescription::operator=(const StreamBufferDe
     return *this;
 }
 
-StreamBufferDescription& StreamBufferDescription::operator=(StreamBufferDescription && desc) noexcept
+StreamBufferDescription& StreamBufferDescription::operator=(StreamBufferDescription&& desc) noexcept
 {
     if (this == &desc)
     {
@@ -117,7 +113,7 @@ StreamBufferDescription& StreamBufferDescription::operator=(StreamBufferDescript
     return *this;
 }
 
-bool StreamBufferDescription::operator==(const StreamBufferDescription & desc)
+bool StreamBufferDescription::operator==(const StreamBufferDescription& desc)
 {
     if (this == &desc)
     {
@@ -137,7 +133,7 @@ bool StreamBufferDescription::operator==(const StreamBufferDescription & desc)
     return false;
 }
 
-bool StreamBufferDescription::operator!=(const StreamBufferDescription & desc)
+bool StreamBufferDescription::operator!=(const StreamBufferDescription& desc)
 {
     return !StreamBufferDescription::operator==(desc);
 }
@@ -146,6 +142,7 @@ VertexInputAttribDescription::VertexInputAttribDescription() noexcept
     : _countInputBindings(0)
     , _countInputAttributes(0)
 {
+    static_assert(sizeof(VertexInputAttribDescription) == sizeof(_inputBindings) + sizeof(_inputAttributes) + 8, "wrong size");
 }
 
 VertexInputAttribDescription::VertexInputAttribDescription(const VertexInputAttribDescription& desc) noexcept
@@ -154,6 +151,7 @@ VertexInputAttribDescription::VertexInputAttribDescription(const VertexInputAttr
     , _countInputAttributes(desc._countInputAttributes)
     , _inputAttributes(desc._inputAttributes)
 {
+    static_assert(sizeof(VertexInputAttribDescription) == sizeof(_inputBindings) + sizeof(_inputAttributes) + 8, "wrong size");
 }
 
 VertexInputAttribDescription::VertexInputAttribDescription(std::vector<InputBinding> inputBindings, std::vector<VertexInputAttribDescription::InputAttribute> inputAttributes) noexcept
@@ -175,7 +173,7 @@ VertexInputAttribDescription::VertexInputAttribDescription(std::vector<InputBind
     _countInputAttributes = index;
 }
 
-VertexInputAttribDescription & VertexInputAttribDescription::operator=(const VertexInputAttribDescription & desc) noexcept
+VertexInputAttribDescription& VertexInputAttribDescription::operator=(const VertexInputAttribDescription& desc) noexcept
 {
     _countInputBindings = desc._countInputBindings;
     _inputBindings = desc._inputBindings;
@@ -235,6 +233,7 @@ void VertexInputAttribDescription::operator<<(const stream::Stream * stream)
 
 VertexInputAttribDescription::InputAttribute::InputAttribute() noexcept
 {
+    static_assert(sizeof(InputAttribute) == 16, "wrong size");
     memset(this, 0, sizeof(InputAttribute));
 }
 
@@ -244,6 +243,7 @@ VertexInputAttribDescription::InputAttribute::InputAttribute(u32 binding, u32 st
     , _format(format)
     , _offest(offset)
 {
+    static_assert(sizeof(InputAttribute) == 16, "wrong size");
 }
 
 void VertexInputAttribDescription::InputAttribute::operator>>(stream::Stream * stream)
@@ -264,6 +264,7 @@ void VertexInputAttribDescription::InputAttribute::operator<<(const stream::Stre
 
 VertexInputAttribDescription::InputBinding::InputBinding() noexcept
 {
+    static_assert(sizeof(InputBinding) == 12, "wrong size");
     memset(this, 0, sizeof(InputBinding));
 }
 
@@ -272,6 +273,7 @@ VertexInputAttribDescription::InputBinding::InputBinding(u32 index, InputRate ra
     , _rate(rate)
     , _stride(stride)
 {
+    static_assert(sizeof(InputBinding) == 12, "wrong size");
 }
 
 void VertexInputAttribDescription::InputBinding::operator>>(stream::Stream * stream)

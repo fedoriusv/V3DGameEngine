@@ -39,7 +39,7 @@ namespace renderer
         };
 
         explicit Sampler(const SamplerDescription& desc) noexcept;
-        virtual ~Sampler();
+        virtual ~Sampler() = default;
 
         virtual bool create() = 0;
         virtual void destroy() = 0;

@@ -39,6 +39,12 @@ u64 Framebuffer::FramebufferDescription::Hash::operator()(const FramebufferDescr
 
 bool Framebuffer::FramebufferDescription::Compare::operator()(const FramebufferDescription& op1, const FramebufferDescription& op2) const
 {
+    ASSERT(op1._hash != 0 && op2._hash != 0, "must be not 0");
+    if (op1._hash != op2._hash)
+    {
+        return false;
+    }
+
     return op1._imagesDesc == op2._imagesDesc;
 }
 

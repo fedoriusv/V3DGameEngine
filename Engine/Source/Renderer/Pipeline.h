@@ -27,6 +27,8 @@ namespace renderer
     {
     public:
 
+        static const RenderPassDescription createCompatibilityRenderPassDescription(const RenderPassDescription& renderpassDesc);
+
         /**
         * @brief Pipeline PipelineType enum
         */
@@ -49,7 +51,6 @@ namespace renderer
             GraphicsPipelineStateDescription _pipelineDesc;
             RenderPassDescription            _renderpassDesc;
             ShaderProgramDescription         _programDesc;
-
             ObjectTracker<Pipeline>*         _tracker;
         };
 
@@ -64,7 +65,6 @@ namespace renderer
             }
 
             ShaderProgramDescription _programDesc;
-
             ObjectTracker<Pipeline>* _tracker;
         };
 
@@ -87,7 +87,33 @@ namespace renderer
 
     private:
 
-        u64          m_key;
+        struct PipelineDescription
+        {
+            PipelineDescription() noexcept;
+            explicit PipelineDescription(const PipelineGraphicInfo& pipelineInfo) noexcept;
+            explicit PipelineDescription(const PipelineComputeInfo& pipelineInfo) noexcept;
+            ~PipelineDescription() = default;
+
+            struct Hash
+            {
+                u64 operator()(const PipelineDescription& desc) const;
+            };
+
+            struct Compare
+            {
+                bool operator()(const PipelineDescription& op1, const PipelineDescription& op2) const;
+            };
+
+            GraphicsPipelineStateDescription _pipelineDesc;
+            RenderPassDescription            _renderpassDesc;
+            ShaderProgramDescription         _programDesc;
+
+            PipelineType _pipelineType;
+            u64 _hash;
+            ;
+        };
+
+        PipelineDescription m_desc;
         PipelineType m_pipelineType;
 
         friend PipelineManager;
@@ -118,9 +144,9 @@ namespace renderer
 
     private:
 
-        Context*                    m_context;
-        std::map<u64, Pipeline*>    m_pipelineGraphicList; //TODO std::unordered_map
-        std::map<u64, Pipeline*>    m_pipelineComputeList; //TODO std::unordered_map
+        Context* m_context;
+        std::unordered_map<Pipeline::PipelineDescription, Pipeline*, Pipeline::PipelineDescription::Hash, Pipeline::PipelineDescription::Compare> m_pipelineGraphicList;
+        std::unordered_map<Pipeline::PipelineDescription, Pipeline*, Pipeline::PipelineDescription::Hash, Pipeline::PipelineDescription::Compare> m_pipelineComputeList;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

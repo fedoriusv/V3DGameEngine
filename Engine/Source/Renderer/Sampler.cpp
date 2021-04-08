@@ -14,10 +14,6 @@ Sampler::Sampler(const SamplerDescription& desc) noexcept
 {
 }
 
-Sampler::~Sampler()
-{
-}
-
 SamplerManager::SamplerManager(Context * context) noexcept
     : m_context(context)
 {

@@ -173,6 +173,7 @@ namespace renderer
                 , _depthBiasClamp(0.f)
                 , _depthBiasSlope(0.f)
             {
+                static_assert(sizeof(RasterizationState) == 24, "wrong size");
             }
 
             PolygonMode _polygonMode;
@@ -202,6 +203,7 @@ namespace renderer
                 , _colorBlendEnable(false)
 
             {
+                static_assert(sizeof(ColorBlendAttachmentState) == 32, "wrong size");
             }
 
             BlendOperation  _blendOp;
@@ -215,7 +217,7 @@ namespace renderer
             ColorMaskFlags  _colorWriteMask;
             bool            _colorBlendEnable;
 
-            u16             _padding = {};
+            u8             _padding[3] = {};
         };
 
         /**
@@ -231,6 +233,7 @@ namespace renderer
                 , _depthBoundsTestEnable(false)
                 , _depthBounds(core::Vector2D(0.0f))
             {
+                static_assert(sizeof(DepthStencilState) == sizeof(core::Vector2D) + 8, "wrong size");
             }
 
             CompareOperation    _compareOp;
@@ -253,6 +256,7 @@ namespace renderer
                 , _logicalOp(LogicalOperation::LogicalOp_And)
                 , _logicalOpEnable(false)
             {
+                static_assert(sizeof(BlendState) == sizeof(ColorBlendAttachmentState) + sizeof(core::Vector4D) + 8, "wrong size");
             }
 
             ColorBlendAttachmentState _colorBlendAttachments;
@@ -273,6 +277,7 @@ namespace renderer
             VertexInputState() noexcept
                 : _primitiveTopology(PrimitiveTopology::PrimitiveTopology_TriangleList)
             {
+                static_assert(sizeof(VertexInputState) == sizeof(VertexInputAttribDescription) + 4, "wrong size");
             }
 
             VertexInputAttribDescription _inputAttributes;
@@ -282,6 +287,17 @@ namespace renderer
         GraphicsPipelineStateDescription() noexcept = default;
         GraphicsPipelineStateDescription(const GraphicsPipelineStateDescription&) = default;
         GraphicsPipelineStateDescription& operator=(const GraphicsPipelineStateDescription&) = default;
+
+        bool operator==(const GraphicsPipelineStateDescription& op) const
+        {
+            if (this == &op)
+            {
+                return true;
+            }
+
+            static_assert(sizeof(GraphicsPipelineStateDescription) == sizeof(VertexInputState) + sizeof(RasterizationState) + sizeof(BlendState) + sizeof(DepthStencilState), "wrong size");
+            return memcmp(this, &op, sizeof(GraphicsPipelineStateDescription)) == 0;
+        }
 
         VertexInputState    _vertexInputState;
         RasterizationState  _rasterizationState;
