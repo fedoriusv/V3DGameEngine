@@ -75,10 +75,13 @@ bool PatchVertexTransform::patch(const std::vector<u32>& spirv, std::vector<u32>
     const f32 constantSin = std::sin(m_angle * core::k_degToRad);
     std::tuple<bool, Constant<f32>> constantSinOp(false, { getWordInstruction(spv::Op::OpConstant, 3 + 1), (u32)~0, (u32)~0, constantSin });
 
-    u32 buildInPositionID = (u32)~0;
     u32 entryPointID = (u32)~0;
+    u32 buildInPositionID = (u32)~0;
+    u32 buildInVertexBlockID = (u32)~0;
 
+    u32 blockTypeID = (u32)~0;
     u32 float32PointerTypeID = (u32)~0;
+    u32 vectorFloat32PointerTypeID = (u32)~0;
 
     bool insideEntryPointFunction = false;
     auto word = spirv.begin();
@@ -123,7 +126,8 @@ bool PatchVertexTransform::patch(const std::vector<u32>& spirv, std::vector<u32>
                 u32 builtIn = *std::next(word, 3);
                 if (builtIn == spv::BuiltIn::BuiltInPosition)
                 {
-                    buildInPositionID = target;
+                    buildInPositionID = target; //first way
+                    buildInVertexBlockID = target;
                 }
             }
         }
@@ -131,21 +135,21 @@ bool PatchVertexTransform::patch(const std::vector<u32>& spirv, std::vector<u32>
 
         case spv::Op::OpMemberDecorate:
         {
-            /*if (buildInPositionID != ~0)
+            if (buildInPositionID != ~0 || buildInVertexBlockID != ~0)
             {
                 break;
             }
 
             u32 structType = *std::next(word, 1);
-            u32 decoration = *std::next(word, 2);
+            u32 decoration = *std::next(word, 3);
             if (decoration == spv::Decoration::DecorationBuiltIn)
             {
-                u32 builtIn = *std::next(word, 3);
+                u32 builtIn = *std::next(word, 4);
                 if (builtIn == spv::BuiltIn::BuiltInPosition)
                 {
-                    buildInPositionID = structType;
+                    buildInVertexBlockID = structType;
                 }
-            }*/
+            }
         }
         break;
 
@@ -201,6 +205,54 @@ bool PatchVertexTransform::patch(const std::vector<u32>& spirv, std::vector<u32>
         }
         break;
 
+        case spv::Op::OpTypePointer:
+        {
+            if (buildInPositionID != ~0 || blockTypeID != ~0)
+            {
+                break;
+            }
+
+            if (buildInVertexBlockID == ~0)
+            {
+                break;
+            }
+
+            u32 result = *std::next(word, 1);
+            u32 storageClass = *std::next(word, 2);
+            u32 type = *std::next(word, 3);
+
+            if (storageClass == spv::StorageClass::StorageClassOutput && type == buildInVertexBlockID)
+            {
+                blockTypeID = result;
+            }
+
+        }
+        break;
+
+        case spv::Op::OpVariable:
+        {
+            if (buildInPositionID != ~0)
+            {
+                break;
+            }
+
+            u32 resultType = *std::next(word, 1);
+            u32 result = *std::next(word, 2);
+            u32 storageClass = *std::next(word, 3);
+
+            if (blockTypeID == ~0)
+            {
+                break;
+            }
+
+            if (storageClass == spv::StorageClass::StorageClassOutput && resultType == blockTypeID)
+            {
+                buildInPositionID = result; //second way
+            }
+
+        }
+        break;
+
         case spv::Op::OpFunction:
         {
             [[maybe_unused]] u32 resultType = *std::next(word, 1);
@@ -229,6 +281,15 @@ bool PatchVertexTransform::patch(const std::vector<u32>& spirv, std::vector<u32>
                     patchedSpirv.push_back(float32PointerTypeID);
                     patchedSpirv.push_back(spv::StorageClass::StorageClassOutput);
                     patchedSpirv.push_back(std::get<1>(float32Type).result);
+                }
+
+                {
+                    u32 opTypePointer = getWordInstruction(spv::Op::OpTypePointer, 4);
+                    vectorFloat32PointerTypeID = boundIDs++;
+                    patchedSpirv.push_back(opTypePointer);
+                    patchedSpirv.push_back(vectorFloat32PointerTypeID);
+                    patchedSpirv.push_back(spv::StorageClass::StorageClassOutput);
+                    patchedSpirv.push_back(std::get<1>(vectorFloat32Type).result);
                 }
 
                 {
@@ -283,7 +344,14 @@ bool PatchVertexTransform::patch(const std::vector<u32>& spirv, std::vector<u32>
                 patchedSpirv.insert(patchedSpirv.end(), lastPatchedWord, word);
                 lastPatchedWord = word;
 
-                if (buildInPositionID == ~0 || float32PointerTypeID == ~0 || !std::get<0>(float32Type) || !std::get<0>(int32Type) || !std::get<0>(vectorFloat32Type))
+                if (float32PointerTypeID == ~0 && (blockTypeID == ~0 || vectorFloat32PointerTypeID == ~0))
+                {
+                    ASSERT(false, "one of may must be known");
+                    return false;
+                }
+
+
+                if (buildInPositionID == ~0 || !std::get<0>(float32Type) || !std::get<0>(int32Type) || !std::get<0>(vectorFloat32Type))
                 {
                     ASSERT(false, "must be known");
                     return false;
@@ -295,17 +363,22 @@ bool PatchVertexTransform::patch(const std::vector<u32>& spirv, std::vector<u32>
                     return false;
                 }
 
+                u32 blockPresent = (blockTypeID != ~0) ? 1 : 0;
                 u32 opFSubResultId_X = (u32)~0;
                 {
                     u32 opFMulResultId0 = (u32)~0;
                     //gl_Position.x * cos(rad)
                     {
-                        u32 opAccessChain = getWordInstruction(spv::Op::OpAccessChain, 4 + 1);
+                        u32 opAccessChain = getWordInstruction(spv::Op::OpAccessChain, 4 + 1 + blockPresent);
                         u32 opAccessChainResultId = boundIDs++;
                         patchedSpirv.push_back(opAccessChain);
                         patchedSpirv.push_back(float32PointerTypeID);
                         patchedSpirv.push_back(opAccessChainResultId);
                         patchedSpirv.push_back(buildInPositionID);
+                        if (blockPresent)
+                        {
+                            patchedSpirv.push_back(std::get<1>(constantIntOp[0]).result);
+                        }
                         patchedSpirv.push_back(std::get<1>(constantIntOp[0]).result);
 
                         u32 opLoad = getWordInstruction(spv::Op::OpLoad, 4);
@@ -327,12 +400,16 @@ bool PatchVertexTransform::patch(const std::vector<u32>& spirv, std::vector<u32>
                     u32 opFMulResultId1 = (u32)~0;
                     //gl_Position.y * sin(rad)
                     {
-                        u32 opAccessChain = getWordInstruction(spv::Op::OpAccessChain, 4 + 1);
+                        u32 opAccessChain = getWordInstruction(spv::Op::OpAccessChain, 4 + 1 + blockPresent);
                         u32 opAccessChainResultId = boundIDs++;
                         patchedSpirv.push_back(opAccessChain);
                         patchedSpirv.push_back(float32PointerTypeID);
                         patchedSpirv.push_back(opAccessChainResultId);
                         patchedSpirv.push_back(buildInPositionID);
+                        if (blockPresent)
+                        {
+                            patchedSpirv.push_back(std::get<1>(constantIntOp[0]).result);
+                        }
                         patchedSpirv.push_back(std::get<1>(constantIntOp[1]).result);
 
                         u32 opLoad = getWordInstruction(spv::Op::OpLoad, 4);
@@ -368,12 +445,16 @@ bool PatchVertexTransform::patch(const std::vector<u32>& spirv, std::vector<u32>
                     u32 opFMulResultId0 = (u32)~0;
                     //gl_Position.x * sin(rad)
                     {
-                        u32 opAccessChain = getWordInstruction(spv::Op::OpAccessChain, 4 + 1);
+                        u32 opAccessChain = getWordInstruction(spv::Op::OpAccessChain, 4 + 1 + blockPresent);
                         u32 opAccessChainResultId = boundIDs++;
                         patchedSpirv.push_back(opAccessChain);
                         patchedSpirv.push_back(float32PointerTypeID);
                         patchedSpirv.push_back(opAccessChainResultId);
                         patchedSpirv.push_back(buildInPositionID);
+                        if (blockPresent)
+                        {
+                            patchedSpirv.push_back(std::get<1>(constantIntOp[0]).result);
+                        }
                         patchedSpirv.push_back(std::get<1>(constantIntOp[0]).result);
 
                         u32 opLoad = getWordInstruction(spv::Op::OpLoad, 4);
@@ -395,12 +476,16 @@ bool PatchVertexTransform::patch(const std::vector<u32>& spirv, std::vector<u32>
                     u32 opFMulResultId1 = (u32)~0;
                     //gl_Position.y * cos(rad)
                     {
-                        u32 opAccessChain = getWordInstruction(spv::Op::OpAccessChain, 4 + 1);
+                        u32 opAccessChain = getWordInstruction(spv::Op::OpAccessChain, 4 + 1 + blockPresent);
                         u32 opAccessChainResultId = boundIDs++;
                         patchedSpirv.push_back(opAccessChain);
                         patchedSpirv.push_back(float32PointerTypeID);
                         patchedSpirv.push_back(opAccessChainResultId);
                         patchedSpirv.push_back(buildInPositionID);
+                        if (blockPresent)
+                        {
+                            patchedSpirv.push_back(std::get<1>(constantIntOp[0]).result);
+                        }
                         patchedSpirv.push_back(std::get<1>(constantIntOp[1]).result);
 
                         u32 opLoad = getWordInstruction(spv::Op::OpLoad, 4);
@@ -434,12 +519,16 @@ bool PatchVertexTransform::patch(const std::vector<u32>& spirv, std::vector<u32>
                 u32 opLoadResultId_Z = (u32)~0;
                 //gl_Position.z
                 {
-                    u32 opAccessChain = getWordInstruction(spv::Op::OpAccessChain, 4 + 1);
+                    u32 opAccessChain = getWordInstruction(spv::Op::OpAccessChain, 4 + 1 + blockPresent);
                     u32 opAccessChainResultId = boundIDs++;
                     patchedSpirv.push_back(opAccessChain);
                     patchedSpirv.push_back(float32PointerTypeID);
                     patchedSpirv.push_back(opAccessChainResultId);
                     patchedSpirv.push_back(buildInPositionID);
+                    if (blockPresent)
+                    {
+                        patchedSpirv.push_back(std::get<1>(constantIntOp[0]).result);
+                    }
                     patchedSpirv.push_back(std::get<1>(constantIntOp[2]).result);
 
                     u32 opLoad = getWordInstruction(spv::Op::OpLoad, 4);
@@ -453,12 +542,16 @@ bool PatchVertexTransform::patch(const std::vector<u32>& spirv, std::vector<u32>
                 u32 opLoadResultId_W = (u32)~0;
                 //gl_Position.w
                 {
-                    u32 opAccessChain = getWordInstruction(spv::Op::OpAccessChain, 4 + 1);
+                    u32 opAccessChain = getWordInstruction(spv::Op::OpAccessChain, 4 + 1 + blockPresent);
                     u32 opAccessChainResultId = boundIDs++;
                     patchedSpirv.push_back(opAccessChain);
                     patchedSpirv.push_back(float32PointerTypeID);
                     patchedSpirv.push_back(opAccessChainResultId);
                     patchedSpirv.push_back(buildInPositionID);
+                    if (blockPresent)
+                    {
+                        patchedSpirv.push_back(std::get<1>(constantIntOp[0]).result);
+                    }
                     patchedSpirv.push_back(std::get<1>(constantIntOp[3]).result);
 
                     u32 opLoad = getWordInstruction(spv::Op::OpLoad, 4);
@@ -479,6 +572,19 @@ bool PatchVertexTransform::patch(const std::vector<u32>& spirv, std::vector<u32>
                 patchedSpirv.push_back(opFAddResultId_Y);
                 patchedSpirv.push_back(opLoadResultId_Z);
                 patchedSpirv.push_back(opLoadResultId_W);
+
+                if (blockPresent)
+                {
+                    u32 opAccessChain = getWordInstruction(spv::Op::OpAccessChain, 4 + 1);
+                    u32 opAccessChainResultId = boundIDs++;
+                    patchedSpirv.push_back(opAccessChain);
+                    patchedSpirv.push_back(vectorFloat32PointerTypeID);
+                    patchedSpirv.push_back(opAccessChainResultId);
+                    patchedSpirv.push_back(buildInPositionID);
+                    patchedSpirv.push_back(std::get<1>(constantIntOp[0]).result);
+
+                    buildInPositionID = opAccessChainResultId;
+                }
 
                 u32 opStore = getWordInstruction(spv::Op::OpStore, 3);
                 patchedSpirv.push_back(opStore);
