@@ -794,7 +794,7 @@ bool VulkanGraphicPipeline::compileShaders(std::vector<std::tuple<const ShaderHe
                 {
                     f32 angleDegree = (preTransform == VK_SURFACE_TRANSFORM_ROTATE_90_BIT_KHR) ? 90.0f : 270.0f;
                     resource::PatchVertexTransform vertexTransform(angleDegree);
-                    if (patcher.process(&vertexTransform, spirv, patchedSpirv))
+                    if (patcher.process(&vertexTransform, patchedSpirv))
                     {
                         source = patchedSpirv.data();
                         size = static_cast<u32>(patchedSpirv.size()) * sizeof(u32);
