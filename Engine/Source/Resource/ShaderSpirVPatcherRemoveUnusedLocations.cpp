@@ -260,7 +260,7 @@ bool PatchRemoveUnusedLocations::patch(const std::vector<u32>& spirv, std::vecto
         }
         break;
 
-        case spv::Op::OpVariable:
+        /*case spv::Op::OpVariable:
         {
             [[maybe_unused]] u32 resultType = *std::next(word, 1);
             u32 resultID = *std::next(word, 2);
@@ -300,7 +300,7 @@ bool PatchRemoveUnusedLocations::patch(const std::vector<u32>& spirv, std::vecto
 
             patchedSpirv.insert(patchedSpirv.end(), lastPatchedWord, word);
 
-            /*u32 newBindId = *std::next(patchedSpirv.begin(), 3);
+            u32 newBindId = *std::next(patchedSpirv.begin(), 3);
             patchedSpirv[3] = newBindId + 1;
             //OpTypePointer
             {
@@ -319,11 +319,11 @@ bool PatchRemoveUnusedLocations::patch(const std::vector<u32>& spirv, std::vecto
                 patchedSpirv.push_back(newBindId);
                 patchedSpirv.push_back(resultID);
                 patchedSpirv.push_back(spv::StorageClass::StorageClassPrivate);
-            }*/
+            }
 
             lastPatchedWord = std::next(word, count);
         }
-        break;
+        break;*/
 
         case spv::Op::OpTypePointer:
         {
