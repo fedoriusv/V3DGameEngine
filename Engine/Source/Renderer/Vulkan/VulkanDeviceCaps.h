@@ -81,7 +81,7 @@ namespace vk
 
     private:
 
-        friend class VulkanGraphicContext;
+        friend class VulkanContext;
 
         void fillCapabilitiesList(const struct DeviceInfo* info);
         void initialize();

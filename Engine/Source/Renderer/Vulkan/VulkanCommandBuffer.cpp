@@ -228,7 +228,7 @@ void VulkanCommandBuffer::releaseResources()
 bool VulkanCommandBuffer::isSafeFrame(u64 frame)
 {
     ASSERT(m_context, "nullptr");
-    static u64 countSwapchains = static_cast<VulkanGraphicContext*>(m_context)->getSwapchain()->getSwapchainImageCount();
+    static u64 countSwapchains = static_cast<VulkanContext*>(m_context)->getSwapchain()->getSwapchainImageCount();
 
     return (m_capturedFrameIndex + countSwapchains) < frame;
 }
@@ -329,7 +329,7 @@ void VulkanCommandBuffer::cmdBeginRenderpass(const VulkanRenderPass* pass, const
 #ifdef PLATFORM_ANDROID
     if (pass->isDrawingToSwapchain() && VulkanDeviceCaps::getInstance()->preTransform)
     {
-        VkSurfaceTransformFlagBitsKHR preTransform = static_cast<VulkanGraphicContext*>(m_context)->getSwapchain()->getTransformFlag();
+        VkSurfaceTransformFlagBitsKHR preTransform = static_cast<VulkanContext*>(m_context)->getSwapchain()->getTransformFlag();
         if (preTransform & (VK_SURFACE_TRANSFORM_ROTATE_90_BIT_KHR | VK_SURFACE_TRANSFORM_ROTATE_270_BIT_KHR))
         {
             std::swap(renderPassBeginInfo.renderArea.offset.x, renderPassBeginInfo.renderArea.offset.y);
@@ -341,7 +341,7 @@ void VulkanCommandBuffer::cmdBeginRenderpass(const VulkanRenderPass* pass, const
     VkRenderPassTransformBeginInfoQCOM renderPassTransformBeginInfoQCOM = {};
     if (pass->isDrawingToSwapchain() && VulkanDeviceCaps::getInstance()->renderpassTransformQCOM)
     {
-        VkSurfaceTransformFlagBitsKHR preTransform = static_cast<VulkanGraphicContext*>(m_context)->getSwapchain()->getTransformFlag();
+        VkSurfaceTransformFlagBitsKHR preTransform = static_cast<VulkanContext*>(m_context)->getSwapchain()->getTransformFlag();
         if (preTransform != VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR)
         {
             renderPassTransformBeginInfoQCOM.sType = VulkanDeviceCaps::getInstance()->fixRenderPassTransformQCOMDriverIssue ? (VkStructureType)1000282000 : (VkStructureType)VK_STRUCTURE_TYPE_RENDER_PASS_TRANSFORM_BEGIN_INFO_QCOM;

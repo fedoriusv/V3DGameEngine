@@ -1245,16 +1245,18 @@ bool VulkanImage::create(VkImage image)
 
 void VulkanImage::clear(Context* context, const core::Vector4D& color)
 {
+#if VULKAN_DEBUG
+    LOG_DEBUG("VulkanContext::clearColor [%f, %f, %f, %f]", color[0], color[1], color[2], color[3]);
+#endif
     if (!m_image)
     {
         ASSERT(false, "nullptr");
         return;
     }
 
-    //LOG_DEBUG("VulkanGraphicContext::clearColor [%f, %f, %f, %f]", color[0], color[1], color[2], color[3]);
     VkClearColorValue clearColorValue = {{ color[0], color[1], color[2], color[3] }};
 
-    VulkanGraphicContext* vulkanContext = static_cast<VulkanGraphicContext*>(context);
+    VulkanContext* vulkanContext = static_cast<VulkanContext*>(context);
     VulkanCommandBuffer* commandBuffer = vulkanContext->getOrCreateAndStartCommandBuffer(CommandTargetType::CmdDrawBuffer);
     ASSERT(commandBuffer, "commandBuffer is nullptr");
 
@@ -1271,10 +1273,18 @@ void VulkanImage::clear(Context* context, const core::Vector4D& color)
 
 void VulkanImage::clear(Context* context, f32 depth, u32 stencil)
 {
-    LOG_DEBUG("VulkanGraphicContext::clearDepthStencil [%f, %u]", depth, stencil);
+#if VULKAN_DEBUG
+    LOG_DEBUG("VulkanContext::clearDepthStencil [%f, %u]", depth, stencil);
+#endif
+    if (!m_image)
+    {
+        ASSERT(false, "nullptr");
+        return;
+    }
+
     VkClearDepthStencilValue clearDepthStencilValue = { depth, stencil };
 
-    VulkanGraphicContext* vulkanContext = static_cast<VulkanGraphicContext*>(context);
+    VulkanContext* vulkanContext = static_cast<VulkanContext*>(context);
     VulkanCommandBuffer* commandBuffer = vulkanContext->getOrCreateAndStartCommandBuffer(CommandTargetType::CmdDrawBuffer);
     ASSERT(commandBuffer, "commandBuffer is nullptr");
 
@@ -1329,7 +1339,7 @@ bool VulkanImage::internalUpload(Context* context, const core::Dimension3D& offs
 
     if (m_tiling == VK_IMAGE_TILING_OPTIMAL)
     {
-        VulkanGraphicContext* vkContext = static_cast<VulkanGraphicContext*>(context);
+        VulkanContext* vkContext = static_cast<VulkanContext*>(context);
         VulkanCommandBuffer* uploadBuffer = vkContext->getOrCreateAndStartCommandBuffer(CommandTargetType::CmdUploadBuffer);
 
         VulkanStagingBuffer* stagingBuffer = vkContext->getStagingManager()->createStagingBuffer(dataSize, StreamBufferUsage::StreamBuffer_Read);
@@ -1469,7 +1479,7 @@ bool VulkanImage::generateMipmaps(Context* context, u32 layer)
 
     ASSERT(m_mipLevels > 1, "image must be created with mipmaps");
 
-    VulkanGraphicContext* vkContext = static_cast<VulkanGraphicContext*>(context);
+    VulkanContext* vkContext = static_cast<VulkanContext*>(context);
     VulkanCommandBuffer* drawBuffer = vkContext->getOrCreateAndStartCommandBuffer(CommandTargetType::CmdDrawBuffer);
 
     VkImageLayout layoutMips = VulkanImage::getLayout(k_generalLayer, 1);

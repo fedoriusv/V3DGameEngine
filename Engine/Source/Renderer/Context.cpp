@@ -21,11 +21,7 @@ Context::Context() noexcept
     memset(&m_backufferDescription, 0, sizeof(BackbufferDesc));
 }
 
-Context::~Context()
-{
-}
-
-Context* Context::createContext(const platform::Window* window, RenderType type, DeviceMask mask)
+Context* Context::createContext(platform::Window* window, RenderType type, DeviceMask mask)
 {
 #ifdef PLATFORM_ANDROID
     if (type == RenderType::DirectXRender)
@@ -44,7 +40,7 @@ Context* Context::createContext(const platform::Window* window, RenderType type,
 
 #ifdef VULKAN_RENDER
     case RenderType::VulkanRender:
-        context = new vk::VulkanGraphicContext(window, mask);
+        context = new vk::VulkanContext(window, mask);
         break;
 #endif //VULKAN_RENDER
 

@@ -19,6 +19,7 @@
 #include "VulkanGraphicPipeline.h"
 #include "VulkanComputePipeline.h"
 #include "VulkanContextState.h"
+#include "VulkanSemaphore.h"
 
 #include "Renderer/FrameTimeProfiler.h"
 #ifdef PLATFORM_ANDROID
@@ -89,7 +90,7 @@ const std::vector<const c8*> k_deviceExtensionsList =
 #endif
 };
 
-std::vector<VkDynamicState> VulkanGraphicContext::s_dynamicStates =
+std::vector<VkDynamicState> VulkanContext::s_dynamicStates =
 {
     VK_DYNAMIC_STATE_VIEWPORT,
     VK_DYNAMIC_STATE_SCISSOR,
@@ -98,7 +99,7 @@ std::vector<VkDynamicState> VulkanGraphicContext::s_dynamicStates =
     //VK_DYNAMIC_STATE_STENCIL_REFERENCE
 };
 
-VulkanGraphicContext::VulkanGraphicContext(const platform::Window* window, DeviceMask mask) noexcept
+VulkanContext::VulkanContext(platform::Window* window, DeviceMask mask) noexcept
     : m_deviceCaps(*VulkanDeviceCaps::getInstance())
     , m_swapchain(nullptr)
     , m_cmdBufferManager(nullptr)
@@ -115,12 +116,14 @@ VulkanGraphicContext::VulkanGraphicContext(const platform::Window* window, Devic
     , m_framebufferManager(nullptr)
     , m_pipelineManager(nullptr)
     , m_samplerManager(nullptr)
+    , m_semaphoreManager(nullptr)
 
     , m_currentContextState(nullptr)
 
+    , m_insideFrame(false)
     , m_window(window)
 {
-    LOG_DEBUG("VulkanGraphicContext created this %llx", this);
+    LOG_DEBUG("VulkanContext created this %llx", this);
 
     m_renderType = RenderType::VulkanRender;
     memset(&m_deviceInfo, 0, sizeof(DeviceInfo));
@@ -131,9 +134,9 @@ VulkanGraphicContext::VulkanGraphicContext(const platform::Window* window, Devic
 #endif
 }
 
-VulkanGraphicContext::~VulkanGraphicContext()
+VulkanContext::~VulkanContext()
 {
-    LOG_DEBUG("~VulkanGraphicContext destructor this %llx", this);
+    LOG_DEBUG("~VulkanContext destructor this %llx", this);
 
     ASSERT(!m_imageMemoryManager, "m_imageMemoryManager not nullptr");
     ASSERT(!m_bufferMemoryManager, "m_bufferMemoryManager not nullptr");
@@ -143,6 +146,7 @@ VulkanGraphicContext::~VulkanGraphicContext()
     ASSERT(!m_descriptorSetManager, "m_descriptorSetManager not nullptr");
     ASSERT(!m_stagingBufferManager, "m_stagingBufferManager not nullptr");
     ASSERT(!m_uniformBufferManager, "m_uniformBufferManager not nullptr");
+    ASSERT(!m_semaphoreManager, "m_semaphoreManager not nullptr");
 
     ASSERT(!m_renderpassManager, "m_renderpassManager not nullptr");
     ASSERT(!m_framebufferManager, "m_framebufferManager not nullptr");
@@ -156,33 +160,33 @@ VulkanGraphicContext::~VulkanGraphicContext()
     ASSERT(m_deviceInfo._instance == VK_NULL_HANDLE, "Instance is not nullptr");
 }
 
-bool VulkanGraphicContext::initialize()
+bool VulkanContext::initialize()
 {
     //Called from game thread
-    LOG_DEBUG("VulkanGraphicContext::initialize");
+    LOG_DEBUG("VulkanContext::initialize");
     if (!LoadVulkanLibrary())
     {
-        LOG_WARNING("VulkanGraphicContext::initialize: LoadVulkanLibrary is falied");
+        LOG_WARNING("VulkanContext::initialize: LoadVulkanLibrary is falied");
 }
 
-    if (!VulkanGraphicContext::createInstance())
+    if (!VulkanContext::createInstance())
     {
-        LOG_FATAL("VulkanGraphicContext::createInstance is failed");
+        LOG_FATAL("VulkanContext::createInstance is failed");
 
         ASSERT(false, "createInstance is failed");
         return false;
     }
 
-    if (!VulkanGraphicContext::createDevice())
+    if (!VulkanContext::createDevice())
     {
-        LOG_FATAL("VulkanGraphicContext::createDevice is failed");
-        VulkanGraphicContext::destroy();
+        LOG_FATAL("VulkanContext::createDevice is failed");
+        VulkanContext::destroy();
 
         ASSERT(false, "createDevice is failed");
         return false;
     }
 
-    LOG_INFO("VulkanGraphicContext::initialize count Queue %u", m_queueList.size());
+    LOG_INFO("VulkanContext::initialize count Queue %u", m_queueList.size());
     for (u32 queueIndex = 0; queueIndex < m_queueList.size(); ++queueIndex)
     {
         VulkanWrapper::GetDeviceQueue(m_deviceInfo._device, m_deviceInfo._queueFamilyIndex, queueIndex, &m_queueList[queueIndex]);
@@ -204,11 +208,11 @@ bool VulkanGraphicContext::initialize()
     m_swapchain = new VulkanSwapchain(&m_deviceInfo);
     if (!m_swapchain->create(config))
     {
-        VulkanGraphicContext::destroy();
-        LOG_FATAL("VulkanGraphicContext::createContext: Can not create VulkanSwapchain");
+        VulkanContext::destroy();
+        LOG_FATAL("VulkanContext::createContext: Can not create VulkanSwapchain");
         return false;
     }
-    const_cast<platform::Window*>(m_window)->registerNotify(this);
+    m_window->registerNotify(this);
 #if THREADED_PRESENT
     m_presentThread = new PresentThread(m_swapchain);
 #endif //THREADED_PRESENT
@@ -233,6 +237,7 @@ bool VulkanGraphicContext::initialize()
     m_uniformBufferManager = new VulkanUniformBufferManager(m_deviceInfo._device, m_resourceDeleter);
     m_pipelineLayoutManager = new VulkanPipelineLayoutManager(m_deviceInfo._device);
     m_descriptorSetManager = new VulkanDescriptorSetManager(m_deviceInfo._device, m_swapchain->getSwapchainImageCount());
+    m_semaphoreManager = new VulkanSemaphoreManager(m_deviceInfo._device);
 
     m_renderpassManager = new RenderPassManager(this);
     m_framebufferManager = new FramebufferManager(this);
@@ -298,7 +303,7 @@ bool VulkanGraphicContext::initialize()
     return true;
 }
 
-bool VulkanGraphicContext::createInstance()
+bool VulkanContext::createInstance()
 {
     VkApplicationInfo applicationInfo = {};
     applicationInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
@@ -314,7 +319,7 @@ bool VulkanGraphicContext::createInstance()
         VkResult result = VulkanWrapper::EnumerateInstanceVersion(&apiVersion);
         if (result != VK_SUCCESS)
         {
-            LOG_ERROR("VulkanGraphicContext::createInstance: vkEnumerateInstanceVersion error %s", ErrorString(result).c_str());
+            LOG_ERROR("VulkanContext::createInstance: vkEnumerateInstanceVersion error %s", ErrorString(result).c_str());
         }
         else
         {
@@ -330,7 +335,7 @@ bool VulkanGraphicContext::createInstance()
 #if VULKAN_DEBUG
     for (auto iter = supportedExtensions.cbegin(); iter != supportedExtensions.cend(); ++iter)
     {
-        LOG_INFO("VulkanGraphicContext::createInstance: extention: [%s]", (*iter).c_str());
+        LOG_INFO("VulkanContext::createInstance: extention: [%s]", (*iter).c_str());
     }
 #endif //VULKAN_DEBUG
     std::vector<const c8*> enabledExtensions;
@@ -341,7 +346,7 @@ bool VulkanGraphicContext::createInstance()
         {
             if (!(*iter).compare(*extentionName))
             {
-                LOG_INFO("VulkanGraphicContext::createInstance: enable extention: [%s]", (*iter).c_str());
+                LOG_INFO("VulkanContext::createInstance: enable extention: [%s]", (*iter).c_str());
                 enabledExtensions.push_back(*extentionName);
                 found = true;
                 break;
@@ -350,7 +355,7 @@ bool VulkanGraphicContext::createInstance()
 
         if (!found)
         {
-            LOG_ERROR("VulkanGraphicContext::createInstance: extention [%s] is not supported", *extentionName);
+            LOG_ERROR("VulkanContext::createInstance: extention [%s] is not supported", *extentionName);
         }
     }
 
@@ -368,7 +373,7 @@ bool VulkanGraphicContext::createInstance()
     {
         if (VulkanLayers::checkInstanceLayerIsSupported(*layerName))
         {
-            LOG_INFO("VulkanGraphicContext::createInstance: enable validation layer: [%s]", *layerName);
+            LOG_INFO("VulkanContext::createInstance: enable validation layer: [%s]", *layerName);
             layerNames.push_back(*layerName);
         }
     }
@@ -378,7 +383,7 @@ bool VulkanGraphicContext::createInstance()
     const c8* renderdocLayerName = "VK_LAYER_RENDERDOC_Capture";
     if (VulkanLayers::checkLayerIsSupported(renderdocLayerName))
     {
-        LOG_INFO("VulkanGraphicContext::createInstance: enable layer: [%s]", renderdocLayerName);
+        LOG_INFO("VulkanContext::createInstance: enable layer: [%s]", renderdocLayerName);
         layerNames.push_back(renderdocLayerName);
     }
 #endif //VULKAN_RENDERDOC_LAYER
@@ -389,13 +394,13 @@ bool VulkanGraphicContext::createInstance()
     VkResult result = VulkanWrapper::CreateInstance(&instanceCreateInfo, VULKAN_ALLOCATOR, &m_deviceInfo._instance);
     if (result != VK_SUCCESS)
     {
-        LOG_FATAL("VulkanGraphicContext::createInstance: vkCreateInstance error %s", ErrorString(result).c_str());
+        LOG_FATAL("VulkanContext::createInstance: vkCreateInstance error %s", ErrorString(result).c_str());
         return false;
     }
 
     if (!LoadVulkanLibrary(m_deviceInfo._instance))
     {
-        LOG_WARNING("VulkanGraphicContext::createInstance: LoadVulkanLibrary is falied");
+        LOG_WARNING("VulkanContext::createInstance: LoadVulkanLibrary is falied");
     }
 
 #if VULKAN_LAYERS_CALLBACKS
@@ -428,7 +433,7 @@ bool VulkanGraphicContext::createInstance()
 #   endif //VULKAN_VALIDATION_LAYERS_CALLBACK
         if (!VulkanDebugUtils::createDebugUtilsMessenger(m_deviceInfo._instance, severityFlag, messageTypeFlag, nullptr, this))
         {
-            LOG_ERROR("VulkanGraphicContext::createInstance: createDebugUtilsMessager failed");
+            LOG_ERROR("VulkanContext::createInstance: createDebugUtilsMessager failed");
         }
     }
     else if (VulkanDeviceCaps::checkInstanceExtension(VK_EXT_DEBUG_REPORT_EXTENSION_NAME))
@@ -460,14 +465,14 @@ bool VulkanGraphicContext::createInstance()
 
         if (!VulkanDebugReport::createDebugReportCallback(m_deviceInfo._instance, flags, nullptr, this))
         {
-            LOG_ERROR("VulkanGraphicContext::createInstance: createDebugReportCallback failed");
+            LOG_ERROR("VulkanContext::createInstance: createDebugReportCallback failed");
         }
     }
 #endif //VULKAN_LAYERS_CALLBACKS
     return true;
 }
 
-bool VulkanGraphicContext::createDevice()
+bool VulkanContext::createDevice()
 {
     ASSERT(m_deviceInfo._instance != VK_NULL_HANDLE, "instance is nullptr");
 
@@ -476,19 +481,19 @@ bool VulkanGraphicContext::createDevice()
     VkResult result = VulkanWrapper::EnumeratePhysicalDevices(m_deviceInfo._instance, &gpuCount, nullptr);
     if (result != VK_SUCCESS)
     {
-        LOG_FATAL("VulkanGraphicContext::createDevice: Error %s", ErrorString(result).c_str());
+        LOG_FATAL("VulkanContext::createDevice: Error %s", ErrorString(result).c_str());
         return false;
     }
-    LOG_INFO("VulkanGraphicContext::createDevice: count GPU: %u", gpuCount);
+    LOG_INFO("VulkanContext::createDevice: count GPU: %u", gpuCount);
 
     std::vector<VkPhysicalDevice> physicalDevices(gpuCount);
     result = VulkanWrapper::EnumeratePhysicalDevices(m_deviceInfo._instance, &gpuCount, physicalDevices.data());
     if (result != VK_SUCCESS)
     {
-        LOG_ERROR("VulkanGraphicContext::createDevice: Can not enumerate phyiscal devices. vkEnumeratePhysicalDevices Error %s", ErrorString(result).c_str());
+        LOG_ERROR("VulkanContext::createDevice: Can not enumerate phyiscal devices. vkEnumeratePhysicalDevices Error %s", ErrorString(result).c_str());
         return false;
     }
-    LOG_INFO("VulkanGraphicContext::createDevice: count GPU: %u, use first", gpuCount);
+    LOG_INFO("VulkanContext::createDevice: count GPU: %u, use first", gpuCount);
     m_deviceInfo._physicalDevice = physicalDevices.front();
 
     std::vector<std::string> supportedExtensions;
@@ -496,7 +501,7 @@ bool VulkanGraphicContext::createDevice()
 #if VULKAN_DEBUG
     for (auto iter = supportedExtensions.cbegin(); iter != supportedExtensions.cend(); ++iter)
     {
-        LOG_INFO("VulkanGraphicContext::createDevice: extention: [%s]", (*iter).c_str());
+        LOG_INFO("VulkanContext::createDevice: extention: [%s]", (*iter).c_str());
     }
 #endif //VULKAN_DEBUG
     std::vector<const c8*> enabledExtensions;
@@ -507,7 +512,7 @@ bool VulkanGraphicContext::createDevice()
         {
             if (!(*iter).compare(*extentionName))
             {
-                LOG_INFO("VulkanGraphicContext::createDevice: enable extention: [%s]", (*iter).c_str());
+                LOG_INFO("VulkanContext::createDevice: enable extention: [%s]", (*iter).c_str());
                 enabledExtensions.push_back(*extentionName);
                 found = true;
                 break;
@@ -516,7 +521,7 @@ bool VulkanGraphicContext::createDevice()
 
         if (!found)
         {
-            LOG_ERROR("VulkanGraphicContext::createDevice: extention [%s] is not supported", *extentionName);
+            LOG_ERROR("VulkanContext::createDevice: extention [%s] is not supported", *extentionName);
         }
     }
     VulkanDeviceCaps::s_enableExtensions = enabledExtensions;
@@ -598,7 +603,7 @@ bool VulkanGraphicContext::createDevice()
     {
         if (VulkanLayers::checkDeviceLayerIsSupported(m_deviceInfo._physicalDevice, *layerName))
         {
-            LOG_INFO("VulkanGraphicContext::createDevice: enable validation layer: [%s]", *layerName);
+            LOG_INFO("VulkanContext::createDevice: enable validation layer: [%s]", *layerName);
             layerNames.push_back(*layerName);
         }
     }
@@ -609,28 +614,28 @@ bool VulkanGraphicContext::createDevice()
     result = VulkanWrapper::CreateDevice(m_deviceInfo._physicalDevice, &deviceCreateInfo, VULKAN_ALLOCATOR, &m_deviceInfo._device);
     if (result != VK_SUCCESS)
     {
-        LOG_FATAL("VulkanGraphicContext::createDevice: vkCreateDevice Error %s", ErrorString(result).c_str());
+        LOG_FATAL("VulkanContext::createDevice: vkCreateDevice Error %s", ErrorString(result).c_str());
         return false;
     }
 
     if (!LoadVulkanLibrary(m_deviceInfo._device))
     {
-        LOG_WARNING("VulkanGraphicContext::createDevice: LoadVulkanLibrary is falied");
+        LOG_WARNING("VulkanContext::createDevice: LoadVulkanLibrary is falied");
     }
 
     return true;
 }
 
-void VulkanGraphicContext::destroy()
+void VulkanContext::destroy()
 {
     //Called from game thread
-    LOG_DEBUG("VulkanGraphicContext::destroy");
+    LOG_DEBUG("VulkanContext::destroy");
     const_cast<platform::Window*>(m_window)->unregisterNotify(this);
 
     VkResult result = VulkanWrapper::DeviceWaitIdle(m_deviceInfo._device);
     if (result != VK_SUCCESS)
     {
-        LOG_ERROR("VulkanGraphicContext::destroy DeviceWaitIdle is failed. Error: %s", ErrorString(result).c_str());
+        LOG_ERROR("VulkanContext::destroy DeviceWaitIdle is failed. Error: %s", ErrorString(result).c_str());
         ASSERT(false, "error");
     }
 
@@ -721,6 +726,14 @@ void VulkanGraphicContext::destroy()
         m_samplerManager = nullptr;
     }
 
+    if (m_semaphoreManager)
+    {
+        m_semaphoreManager->updateSemaphores();
+        m_semaphoreManager->clear();
+        delete m_semaphoreManager;
+        m_semaphoreManager = nullptr;
+    }
+
     if (m_currentContextState)
     {
         delete m_currentContextState;
@@ -763,8 +776,11 @@ void VulkanGraphicContext::destroy()
     }
 }
 
-void VulkanGraphicContext::beginFrame()
+void VulkanContext::beginFrame()
 {
+    ASSERT(!m_insideFrame, "must be outside");
+    m_insideFrame = true;
+
 #if THREADED_PRESENT
     u32 index = 0;
     m_presentThread->requestAcquireImage(index);
@@ -774,7 +790,7 @@ void VulkanGraphicContext::beginFrame()
 #endif //THREADED_PRESENT
 
 #if VULKAN_DEBUG
-    LOG_DEBUG("VulkanGraphicContext::beginFrame %llu, image index %u", m_frameCounter, index);
+    LOG_DEBUG("VulkanContext::beginFrame %llu, image index %u", m_frameCounter, index);
 #endif //VULKAN_DEBUG
 
 #if VULKAN_DUMP
@@ -794,16 +810,44 @@ void VulkanGraphicContext::beginFrame()
 #endif //FRAME_PROFILER_ENABLE
 }
 
-void VulkanGraphicContext::endFrame()
+void VulkanContext::endFrame()
 {
+    ASSERT(m_insideFrame, "must be inside");
+    m_insideFrame = false;
+
 #if FRAME_PROFILER_ENABLE
     utils::ProfileManager::getInstance()->stop();
 #endif //FRAME_PROFILER_ENABLE
 
 #if VULKAN_DEBUG
-    LOG_DEBUG("VulkanGraphicContext::endFrame %llu", m_frameCounter);
+    LOG_DEBUG("VulkanContext::endFrame %llu", m_frameCounter);
 #endif //VULKAN_DEBUG
-    VkSemaphore uploadSemaphore = VK_NULL_HANDLE; //TODO create semaphore if needed
+}
+
+void VulkanContext::presentFrame()
+{
+    ASSERT(!m_insideFrame, "must be outside");
+
+#if VULKAN_DEBUG
+    LOG_DEBUG("VulkanContext::presentFrame %llu", m_frameCounter);
+#endif //VULKAN_DEBUG
+
+    VulkanContext::submit();
+
+    std::vector<VkSemaphore> semaphores;
+    std::swap(semaphores, m_submitSemaphores);
+    ASSERT(m_submitSemaphores.empty(), "must be empty");
+#if THREADED_PRESENT
+    m_presentThread->requestPresent(m_queueList[0], 0);
+#else
+    m_swapchain->present(m_queueList[0], semaphores);
+#endif //THREADED_PRESENT
+    ++m_frameCounter;
+}
+
+void VulkanContext::submit(bool wait)
+{
+    VkSemaphore uploadSemaphore = VK_NULL_HANDLE;
     if (m_currentBufferState.isCurrentBufferAcitve(CommandTargetType::CmdUploadBuffer))
     {
         VulkanCommandBuffer* uploadBuffer = m_currentBufferState.getAcitveBuffer(CommandTargetType::CmdUploadBuffer);
@@ -811,7 +855,17 @@ void VulkanGraphicContext::endFrame()
         {
             uploadBuffer->endCommandBuffer();
         }
-        m_cmdBufferManager->submit(uploadBuffer, uploadSemaphore);
+
+        std::vector<VkSemaphore> uploadSemaphores;
+        if (m_currentBufferState.isCurrentBufferAcitve(CommandTargetType::CmdDrawBuffer))
+        {
+            VulkanSemaphore* semaphore = m_semaphoreManager->acquireSemaphore();
+            semaphore->captureInsideCommandBuffer(uploadBuffer, 0);
+            uploadSemaphore = semaphore->getHandle();
+
+            uploadSemaphores.push_back(uploadSemaphore);
+        }
+        m_cmdBufferManager->submit(uploadBuffer, uploadSemaphores);
         m_currentBufferState.invalidateCommandBuffer(CommandTargetType::CmdUploadBuffer);
     }
 
@@ -823,90 +877,43 @@ void VulkanGraphicContext::endFrame()
             ASSERT(m_currentContextState->getCurrentTypedPipeline<VulkanGraphicPipeline>(), "nullptr");
             drawBuffer->cmdEndRenderPass();
         }
+
         drawBuffer->endCommandBuffer();
+        m_uniformBufferManager->markToUse(drawBuffer, 0);
+
         if (uploadSemaphore != VK_NULL_HANDLE)
         {
             drawBuffer->addSemaphore(VK_PIPELINE_STAGE_TRANSFER_BIT, uploadSemaphore);
         }
 
-        m_uniformBufferManager->markToUse(drawBuffer, 0);
+        m_cmdBufferManager->submit(drawBuffer, m_submitSemaphores);
+        if (wait)
+        {
+            drawBuffer->waitComplete();
+        }
 
-        m_cmdBufferManager->submit(drawBuffer, VK_NULL_HANDLE);
         m_currentBufferState.invalidateCommandBuffer(CommandTargetType::CmdDrawBuffer);
     }
 
-    VulkanGraphicContext::finalizeCommandBufferSubmit();
-}
-
-void VulkanGraphicContext::presentFrame()
-{
-#if VULKAN_DEBUG
-    LOG_DEBUG("VulkanGraphicContext::presentFrame %llu", m_frameCounter);
-#endif //VULKAN_DEBUG
-    std::vector<VkSemaphore> semaphores;
-#if THREADED_PRESENT
-    m_presentThread->requestPresent(m_queueList[0], 0);
-#else
-    m_swapchain->present(m_queueList[0], semaphores);
-#endif //THREADED_PRESENT
-    ++m_frameCounter;
-}
-
-void VulkanGraphicContext::submit(bool wait)
-{
-    if (m_currentBufferState.isCurrentBufferAcitve(CommandTargetType::CmdUploadBuffer))
-    {
-        VulkanCommandBuffer* uploadBuffer = m_currentBufferState.getAcitveBuffer(CommandTargetType::CmdUploadBuffer);
-        if (uploadBuffer->getStatus() == VulkanCommandBuffer::CommandBufferStatus::Begin)
-        {
-            uploadBuffer->endCommandBuffer();
-        }
-        m_cmdBufferManager->submit(uploadBuffer, VK_NULL_HANDLE);
-        uploadBuffer->waitComplete();
-        m_currentBufferState.invalidateCommandBuffer(CommandTargetType::CmdUploadBuffer);
-    }
-
-    if (m_currentBufferState.isCurrentBufferAcitve(CommandTargetType::CmdDrawBuffer))
-    {
-        VulkanCommandBuffer* drawBuffer = m_currentBufferState.getAcitveBuffer(CommandTargetType::CmdDrawBuffer);
-        if (drawBuffer->getStatus() == VulkanCommandBuffer::CommandBufferStatus::Begin)
-        {
-            if (drawBuffer->isInsideRenderPass())
-            {
-                drawBuffer->cmdEndRenderPass();
-            }
-
-            drawBuffer->endCommandBuffer();
-            m_uniformBufferManager->markToUse(drawBuffer, 0);
-
-            m_cmdBufferManager->submit(drawBuffer, VK_NULL_HANDLE);
-            if (wait)
-            {
-                drawBuffer->waitComplete();
-            }
-            m_currentBufferState.invalidateCommandBuffer(CommandTargetType::CmdDrawBuffer);
-        }
-    }
-
-    VulkanGraphicContext::finalizeCommandBufferSubmit();
+    VulkanContext::finalizeCommandBufferSubmit();
 
 #if VULKAN_DUMP
     VulkanDump::getInstance()->flush();
 #endif
 }
 
-void VulkanGraphicContext::clearBackbuffer(const core::Vector4D& color)
+void VulkanContext::clearBackbuffer(const core::Vector4D& color)
 {
     ASSERT(m_swapchain, "m_swapchain is nullptr");
     m_swapchain->getBackbuffer()->clear(this, color);
 }
 
-void VulkanGraphicContext::setViewport(const core::Rect32& viewport, const core::Vector2D& depth)
+void VulkanContext::setViewport(const core::Rect32& viewport, const core::Vector2D& depth)
 {
 #if VULKAN_DEBUG
-    LOG_DEBUG("VulkanGraphicContext::setViewport [%u, %u; %u, %u]", viewport.getLeftX(), viewport.getTopY(), viewport.getWidth(), viewport.getHeight());
+    LOG_DEBUG("VulkanContext::setViewport [%u, %u; %u, %u]", viewport.getLeftX(), viewport.getTopY(), viewport.getWidth(), viewport.getHeight());
 #endif //VULKAN_DEBUG
-    if (VulkanGraphicContext::isDynamicState(VK_DYNAMIC_STATE_VIEWPORT))
+    if (VulkanContext::isDynamicState(VK_DYNAMIC_STATE_VIEWPORT))
     {
         VkViewport vkViewport = {};
         vkViewport.x = static_cast<f32>(viewport.getLeftX());
@@ -915,47 +922,14 @@ void VulkanGraphicContext::setViewport(const core::Rect32& viewport, const core:
         vkViewport.height = static_cast<f32>(viewport.getHeight());
         vkViewport.minDepth = depth.x;
         vkViewport.maxDepth = depth.y;
-
-#ifdef PLATFORM_ANDROID
-        std::vector<VkViewport> viewports = { vkViewport };
-
-        m_currentContextState->setDynamicState(VK_DYNAMIC_STATE_VIEWPORT, std::bind([this](std::vector<VkViewport>& viewports) -> void
-            {
-                ASSERT(m_currentContextState->getCurrentRenderpass(), "nullptr");
-                if (m_currentContextState->getCurrentRenderpass()->isDrawingToSwapchain() && VulkanDeviceCaps::getInstance()->preTransform)
-                {
-                    VkSurfaceTransformFlagBitsKHR preTransform = m_swapchain->getTransformFlag();
-                    if (preTransform & (VK_SURFACE_TRANSFORM_ROTATE_90_BIT_KHR | VK_SURFACE_TRANSFORM_ROTATE_270_BIT_KHR))
-                    {
-                        for (auto& viewports : viewports)
-                        {
-                            std::swap(viewports.x, viewports.y);
-                            std::swap(viewports.width, viewports.height);
-                        }
-                    }
-                    else
-                    {
-                        for (auto& viewports : viewports)
-                        {
-                            viewports.y = viewports.y + viewports.height;
-                            viewports.height = -viewports.height;
-                        }
-                    }
-                }
-
-                VulkanCommandBuffer* drawBuffer = m_currentBufferState.acquireAndStartCommandBuffer(CommandTargetType::CmdDrawBuffer);
-                drawBuffer->cmdSetViewport(viewports);
-
-            }, viewports));
-#else
+#ifndef PLATFORM_ANDROID
         vkViewport.y = vkViewport.y + vkViewport.height;
         vkViewport.height = -vkViewport.height;
-
+#endif
         std::vector<VkViewport> viewports = { vkViewport };
 
         VulkanCommandBuffer* drawBuffer = m_currentBufferState.acquireAndStartCommandBuffer(CommandTargetType::CmdDrawBuffer);
         m_currentContextState->setDynamicState(VK_DYNAMIC_STATE_VIEWPORT, std::bind(&VulkanCommandBuffer::cmdSetViewport, drawBuffer, viewports));
-#endif
     }
     else
     {
@@ -963,43 +937,20 @@ void VulkanGraphicContext::setViewport(const core::Rect32& viewport, const core:
     }
 }
 
-void VulkanGraphicContext::setScissor(const core::Rect32& scissor)
+void VulkanContext::setScissor(const core::Rect32& scissor)
 {
 #if VULKAN_DEBUG
-    LOG_DEBUG("VulkanGraphicContext::setScissor [%u, %u; %u, %u]", scissor.getLeftX(), scissor.getTopY(), scissor.getWidth(), scissor.getHeight());
+    LOG_DEBUG("VulkanContext::setScissor [%u, %u; %u, %u]", scissor.getLeftX(), scissor.getTopY(), scissor.getWidth(), scissor.getHeight());
 #endif //VULKAN_DEBUG
-    if (VulkanGraphicContext::isDynamicState(VK_DYNAMIC_STATE_SCISSOR))
+    if (VulkanContext::isDynamicState(VK_DYNAMIC_STATE_SCISSOR))
     {
         VkRect2D vkScissor = {};
         vkScissor.offset = { scissor.getLeftX(), scissor.getTopY() };
         vkScissor.extent = { static_cast<u32>(scissor.getWidth()), static_cast<u32>(scissor.getHeight()) };
         std::vector<VkRect2D> scissors = { vkScissor };
 
-#ifdef PLATFORM_ANDROID
-        m_currentContextState->setDynamicState(VK_DYNAMIC_STATE_SCISSOR, std::bind([this](std::vector<VkRect2D>& scissors) -> void
-            {
-                ASSERT(m_currentContextState->getCurrentRenderpass(), "nullptr");
-                if (m_currentContextState->getCurrentRenderpass()->isDrawingToSwapchain() && VulkanDeviceCaps::getInstance()->preTransform)
-                {
-                    VkSurfaceTransformFlagBitsKHR preTransform = m_swapchain->getTransformFlag();
-                    if (preTransform & (VK_SURFACE_TRANSFORM_ROTATE_90_BIT_KHR | VK_SURFACE_TRANSFORM_ROTATE_270_BIT_KHR))
-                    {
-                        for (auto& scissor : scissors)
-                        {
-                            std::swap(scissor.offset.x, scissor.offset.y);
-                            std::swap(scissor.extent.width, scissor.extent.height);
-                        }
-                    }
-                }
-
-                VulkanCommandBuffer* drawBuffer = m_currentBufferState.acquireAndStartCommandBuffer(CommandTargetType::CmdDrawBuffer);
-                drawBuffer->cmdSetScissor(scissors);
-
-            }, scissors));
-#else
         VulkanCommandBuffer* drawBuffer = m_currentBufferState.acquireAndStartCommandBuffer(CommandTargetType::CmdDrawBuffer);
         m_currentContextState->setDynamicState(VK_DYNAMIC_STATE_SCISSOR, std::bind(&VulkanCommandBuffer::cmdSetScissor, drawBuffer, scissors));
-#endif
     }
     else
     {
@@ -1007,10 +958,10 @@ void VulkanGraphicContext::setScissor(const core::Rect32& scissor)
     }
 }
 
-void VulkanGraphicContext::setRenderTarget(const RenderPass::RenderPassInfo* renderpassInfo, const Framebuffer::FramebufferInfo* framebufferInfo)
+void VulkanContext::setRenderTarget(const RenderPass::RenderPassInfo* renderpassInfo, const Framebuffer::FramebufferInfo* framebufferInfo)
 {
 #if VULKAN_DEBUG
-    LOG_DEBUG("VulkanGraphicContext::setRenderTarget");
+    LOG_DEBUG("VulkanContext::setRenderTarget");
 #endif //VULKAN_DEBUG
     ASSERT(renderpassInfo && framebufferInfo, "nullptr");
 
@@ -1023,15 +974,15 @@ void VulkanGraphicContext::setRenderTarget(const RenderPass::RenderPassInfo* ren
     bool swapchainPresent = std::find(framebufferInfo->_images.cbegin(), framebufferInfo->_images.cend(), nullptr) != framebufferInfo->_images.cend();
     if (swapchainPresent)
     {
-        core::Dimension2D transformedArea(framebufferInfo->_clearInfo._size);
-#ifdef PLATFORM_ANDROID
-        if ((VulkanDeviceCaps::getInstance()->preTransform || VulkanDeviceCaps::getInstance()->renderpassTransformQCOM)
-            && m_swapchain->getTransformFlag() & (VK_SURFACE_TRANSFORM_ROTATE_90_BIT_KHR | VK_SURFACE_TRANSFORM_ROTATE_270_BIT_KHR))
+        ASSERT(vkRenderpass->isDrawingToSwapchain(), "must be true");
+        if (m_currentBufferState.isCurrentBufferAcitve(CommandTargetType::CmdDrawBuffer))
         {
-            ASSERT(vkRenderpass->isDrawingToSwapchain(), "must be only swapchain image");
-            std::swap(transformedArea.width, transformedArea.height);
+            VulkanCommandBuffer* drawBuffer = m_currentBufferState.getAcitveBuffer(CommandTargetType::CmdDrawBuffer);
+            drawBuffer->addSemaphore(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, m_swapchain->getAcquireSemaphore());
+            VulkanSemaphore* semaphore = m_semaphoreManager->acquireSemaphore();
+            m_submitSemaphores.push_back(semaphore->getHandle());
         }
-#endif
+
         for (u32 index = 0; index < m_swapchain->getSwapchainImageCount(); ++index)
         {
             std::vector<Image*> images;
@@ -1047,7 +998,7 @@ void VulkanGraphicContext::setRenderTarget(const RenderPass::RenderPassInfo* ren
                 images.push_back(*iter);
             }
 
-            auto [framebuffer, isNewFramebuffer] = m_framebufferManager->acquireFramebuffer(renderpass, images, transformedArea);
+            auto [framebuffer, isNewFramebuffer] = m_framebufferManager->acquireFramebuffer(renderpass, images, framebufferInfo->_clearInfo._size);
             ASSERT(framebuffer, "framebuffer is nullptr");
 
             framebufferInfo->_tracker->attach(framebuffer);
@@ -1079,7 +1030,7 @@ void VulkanGraphicContext::setRenderTarget(const RenderPass::RenderPassInfo* ren
     }
 
 #if VULKAN_DEBUG
-    LOG_DEBUG("VulkanGraphicContext::setRenderTarget: Renderpass %llx, Framebuffer %llx", vkRenderpass, vkFramebuffers.back());
+    LOG_DEBUG("VulkanContext::setRenderTarget: Renderpass %llx, Framebuffer %llx", vkRenderpass, vkFramebuffers.back());
 #endif //VULKAN_DEBUG
     if (!m_currentContextState->isCurrentRenderPass(vkRenderpass) || !m_currentContextState->isCurrentFramebuffer(vkFramebuffers.back()) /*|| clearInfo*/)
     {
@@ -1092,12 +1043,6 @@ void VulkanGraphicContext::setRenderTarget(const RenderPass::RenderPassInfo* ren
             }
         }
 
-        /*if (m_currentBufferState.isCurrentBufferAcitve(CommandTargetType::CmdTransitionBuffer))
-        {
-            VulkanCommandBuffer* transitionBuffer = m_currentBufferState.getAcitveBuffer(CommandTargetType::CmdTransitionBuffer);
-
-        }*/
-
         //TODO use penging states
         m_currentContextState->setCurrentRenderPass(vkRenderpass);
         m_currentContextState->setCurrentFramebuffer(vkFramebuffers);
@@ -1105,16 +1050,21 @@ void VulkanGraphicContext::setRenderTarget(const RenderPass::RenderPassInfo* ren
         VkRect2D area;
         area.offset = { 0, 0 };
         area.extent = { framebufferInfo->_clearInfo._size.width, framebufferInfo->_clearInfo._size.height };
+#if VULKAN_DEBUG
+    LOG_DEBUG("VulkanContext::setRenderTarget: render area (%d, %d, %d, %d)", area.offset.x, area.offset.y, area.extent.width, area.extent.height);
+#endif //VULKAN_DEBUG
 
         std::vector<VkClearValue> clearValues;
         for (u32 clearIndex = 0; clearIndex < framebufferInfo->_clearInfo._color.size(); ++clearIndex)
         {
             VkClearValue clearColor = {};
-            clearColor.color = {{
+            clearColor.color = 
+            {{
                 framebufferInfo->_clearInfo._color[clearIndex].x,
                 framebufferInfo->_clearInfo._color[clearIndex].y,
                 framebufferInfo->_clearInfo._color[clearIndex].z,
-                framebufferInfo->_clearInfo._color[clearIndex].w }};
+                framebufferInfo->_clearInfo._color[clearIndex].w 
+            }};
 
             clearValues.push_back(clearColor);
             if (renderpassInfo->_desc._desc._attachments[clearIndex]._autoResolve)
@@ -1139,7 +1089,7 @@ void VulkanGraphicContext::setRenderTarget(const RenderPass::RenderPassInfo* ren
     }
 }
 
-void VulkanGraphicContext::removeFramebuffer(Framebuffer* framebuffer)
+void VulkanContext::removeFramebuffer(Framebuffer* framebuffer)
 {
     ASSERT(framebuffer, "nullptr");
     VulkanFramebuffer* vkFramebuffer = static_cast<VulkanFramebuffer*>(framebuffer);
@@ -1156,7 +1106,7 @@ void VulkanGraphicContext::removeFramebuffer(Framebuffer* framebuffer)
     }
 }
 
-void VulkanGraphicContext::removeRenderPass(RenderPass* renderpass)
+void VulkanContext::removeRenderPass(RenderPass* renderpass)
 {
     ASSERT(renderpass, "nullptr");
     VulkanRenderPass* vkRenderpass = static_cast<VulkanRenderPass*>(renderpass);
@@ -1173,7 +1123,7 @@ void VulkanGraphicContext::removeRenderPass(RenderPass* renderpass)
     }
 }
 
-void VulkanGraphicContext::invalidateRenderPass()
+void VulkanContext::invalidateRenderPass()
 {
     ASSERT(m_currentContextState->getCurrentRenderpass(), "nullptr");
     VulkanCommandBuffer* drawBuffer = m_currentBufferState.getAcitveBuffer(CommandTargetType::CmdDrawBuffer);
@@ -1183,7 +1133,7 @@ void VulkanGraphicContext::invalidateRenderPass()
     }
 }
 
-void VulkanGraphicContext::setPipeline(const Pipeline::PipelineGraphicInfo* pipelineInfo)
+void VulkanContext::setPipeline(const Pipeline::PipelineGraphicInfo* pipelineInfo)
 {
     ASSERT(pipelineInfo, "nullptr");
 
@@ -1191,13 +1141,13 @@ void VulkanGraphicContext::setPipeline(const Pipeline::PipelineGraphicInfo* pipe
     ASSERT(pipeline, "nullptr");
     pipelineInfo->_tracker->attach(pipeline);
 #if VULKAN_DEBUG
-    LOG_DEBUG("VulkanGraphicContext::setPipeline %xll", pipeline);
+    LOG_DEBUG("VulkanContext::setPipeline %xll", pipeline);
 #endif //VULKAN_DEBUG
 
     m_pendingState.setPendingPipeline(pipeline);
 }
 
-void VulkanGraphicContext::setPipeline(const Pipeline::PipelineComputeInfo* pipelineInfo)
+void VulkanContext::setPipeline(const Pipeline::PipelineComputeInfo* pipelineInfo)
 {
     ASSERT(pipelineInfo, "nullptr");
 
@@ -1205,13 +1155,13 @@ void VulkanGraphicContext::setPipeline(const Pipeline::PipelineComputeInfo* pipe
     ASSERT(pipeline, "nullptr");
     pipelineInfo->_tracker->attach(pipeline);
 #if VULKAN_DEBUG
-    LOG_DEBUG("VulkanGraphicContext::setPipeline %xll", pipeline);
+    LOG_DEBUG("VulkanContext::setPipeline %xll", pipeline);
 #endif //VULKAN_DEBUG
 
     m_pendingState.setPendingPipeline(pipeline);
 }
 
-void VulkanGraphicContext::removePipeline(Pipeline* pipeline)
+void VulkanContext::removePipeline(Pipeline* pipeline)
 {
     ASSERT(pipeline, "nullptr");
     VulkanResource* vkResource = nullptr;
@@ -1238,10 +1188,10 @@ void VulkanGraphicContext::removePipeline(Pipeline* pipeline)
     }
 }
 
-Image* VulkanGraphicContext::createImage(TextureTarget target, Format format, const core::Dimension3D& dimension, u32 layers, TextureSamples samples, TextureUsageFlags flags, const std::string& name)
+Image* VulkanContext::createImage(TextureTarget target, Format format, const core::Dimension3D& dimension, u32 layers, TextureSamples samples, TextureUsageFlags flags, const std::string& name)
 {
 #if VULKAN_DEBUG
-    LOG_DEBUG("VulkanGraphicContext::createImage");
+    LOG_DEBUG("VulkanContext::createImage");
     if (target == TextureTarget::TextureCubeMap)
     {
         ASSERT(layers == 6U, "must be 6 layers");
@@ -1254,10 +1204,10 @@ Image* VulkanGraphicContext::createImage(TextureTarget target, Format format, co
     return new VulkanImage(m_imageMemoryManager, m_deviceInfo._device, vkFormat, vkExtent, vkSamples, layers, flags, name);
 }
 
-Image* VulkanGraphicContext::createImage(TextureTarget target, Format format, const core::Dimension3D& dimension, u32 layers, u32 mipLevels, TextureUsageFlags flags, const std::string& name)
+Image* VulkanContext::createImage(TextureTarget target, Format format, const core::Dimension3D& dimension, u32 layers, u32 mipLevels, TextureUsageFlags flags, const std::string& name)
 {
 #if VULKAN_DEBUG
-    LOG_DEBUG("VulkanGraphicContext::createImage");
+    LOG_DEBUG("VulkanContext::createImage");
     if (target == TextureTarget::TextureCubeMap)
     {
         ASSERT(layers == 6U, "must be 6 layers");
@@ -1270,7 +1220,7 @@ Image* VulkanGraphicContext::createImage(TextureTarget target, Format format, co
     return new VulkanImage(m_imageMemoryManager, m_deviceInfo._device, vkType, vkFormat, vkExtent, layers, mipLevels, VK_IMAGE_TILING_OPTIMAL, flags, name);
 }
 
-void VulkanGraphicContext::removeImage(Image* image)
+void VulkanContext::removeImage(Image* image)
 {
     ASSERT(image, "nullptr");
     VulkanImage* vkImage = static_cast<VulkanImage*>(image);
@@ -1293,10 +1243,10 @@ void VulkanGraphicContext::removeImage(Image* image)
     }
 }
 
-Buffer* VulkanGraphicContext::createBuffer(Buffer::BufferType type, u16 usageFlag, u64 size, const std::string& name)
+Buffer* VulkanContext::createBuffer(Buffer::BufferType type, u16 usageFlag, u64 size, const std::string& name)
 {
 #if VULKAN_DEBUG
-    LOG_DEBUG("VulkanGraphicContext::createBuffer");
+    LOG_DEBUG("VulkanContext::createBuffer");
 #endif //VULKAN_DEBUG
     if (type == Buffer::BufferType::BufferType_VertexBuffer || type == Buffer::BufferType::BufferType_IndexBuffer || type == Buffer::BufferType::BufferType_UniformBuffer)
     {
@@ -1307,7 +1257,7 @@ Buffer* VulkanGraphicContext::createBuffer(Buffer::BufferType type, u16 usageFla
     return nullptr;
 }
 
-void VulkanGraphicContext::removeBuffer(Buffer* buffer)
+void VulkanContext::removeBuffer(Buffer* buffer)
 {
     ASSERT(buffer, "nullptr");
     VulkanBuffer* vkBuffer = static_cast<VulkanBuffer*>(buffer);
@@ -1330,7 +1280,7 @@ void VulkanGraphicContext::removeBuffer(Buffer* buffer)
     }
 }
 
-void VulkanGraphicContext::removeSampler(Sampler* sampler)
+void VulkanContext::removeSampler(Sampler* sampler)
 {
     ASSERT(sampler, "nullptr");
     VulkanSampler* vkSampler = static_cast<VulkanSampler*>(sampler);
@@ -1347,7 +1297,7 @@ void VulkanGraphicContext::removeSampler(Sampler* sampler)
     }
 }
 
-void VulkanGraphicContext::bindUniformsBuffer(const Shader* shader, u32 bindIndex, u32 offset, u32 size, const void* data)
+void VulkanContext::bindUniformsBuffer(const Shader* shader, u32 bindIndex, u32 offset, u32 size, const void* data)
 {
     const Shader::ReflectionInfo& info = shader->getReflectionInfo();
     const Shader::UniformBuffer& bufferData = info._uniformBuffers[bindIndex];
@@ -1359,7 +1309,7 @@ void VulkanGraphicContext::bindUniformsBuffer(const Shader* shader, u32 bindInde
     m_currentContextState->updateConstantBuffer(bufferData, offset, size, data);
 }
 
-void VulkanGraphicContext::bindStorageImage(const Shader* shader, u32 bindIndex, const Image* image, s32 layer, s32 mip)
+void VulkanContext::bindStorageImage(const Shader* shader, u32 bindIndex, const Image* image, s32 layer, s32 mip)
 {
     const VulkanImage* vkImage = static_cast<const VulkanImage*>(image);
 
@@ -1369,7 +1319,7 @@ void VulkanGraphicContext::bindStorageImage(const Shader* shader, u32 bindIndex,
     m_currentContextState->bindStorageImage(vkImage, 0, storageData, layer, mip);
 }
 
-void VulkanGraphicContext::transitionImages(std::vector<const Image*>& images, TransitionOp transition, s32 layer, s32 mip)
+void VulkanContext::transitionImages(std::vector<const Image*>& images, TransitionOp transition, s32 layer, s32 mip)
 {
     VulkanCommandBuffer* drawBuffer = m_currentBufferState.acquireAndStartCommandBuffer(CommandTargetType::CmdDrawBuffer);
     if (drawBuffer->isInsideRenderPass())
@@ -1387,10 +1337,10 @@ void VulkanGraphicContext::transitionImages(std::vector<const Image*>& images, T
     m_currentTransitionState.transitionImages(drawBuffer, transitionImages, newLayout, layer, mip, transition == TransitionOp::TransitionOp_GeneralCompute);
 }
 
-void VulkanGraphicContext::draw(const StreamBufferDescription& desc, u32 firstVertex, u32 vertexCount, u32 firstInstance, u32 instanceCount)
+void VulkanContext::draw(const StreamBufferDescription& desc, u32 firstVertex, u32 vertexCount, u32 firstInstance, u32 instanceCount)
 {
 #if VULKAN_DEBUG
-    LOG_DEBUG("VulkanGraphicContext::draw");
+    LOG_DEBUG("VulkanContext::draw");
 #endif //VULKAN_DEBUG
     [[maybe_unused]] bool changed = m_currentContextState->setCurrentVertexBuffers(desc);
 
@@ -1412,10 +1362,10 @@ void VulkanGraphicContext::draw(const StreamBufferDescription& desc, u32 firstVe
     m_currentContextState->invalidateDescriptorSetsState();
 }
 
-void VulkanGraphicContext::drawIndexed(const StreamBufferDescription& desc, u32 firstIndex, u32 indexCount, u32 firstInstance, u32 instanceCount)
+void VulkanContext::drawIndexed(const StreamBufferDescription& desc, u32 firstIndex, u32 indexCount, u32 firstInstance, u32 instanceCount)
 {
 #if VULKAN_DEBUG
-    LOG_DEBUG("VulkanGraphicContext::drawIndexed");
+    LOG_DEBUG("VulkanContext::drawIndexed");
 #endif //VULKAN_DEBUG
     [[maybe_unused]] bool changed = m_currentContextState->setCurrentVertexBuffers(desc);
 
@@ -1439,7 +1389,7 @@ void VulkanGraphicContext::drawIndexed(const StreamBufferDescription& desc, u32 
     m_currentContextState->invalidateDescriptorSetsState();
 }
 
-void VulkanGraphicContext::dispatchCompute(const core::Dimension3D& groups)
+void VulkanContext::dispatchCompute(const core::Dimension3D& groups)
 {
     VulkanCommandBuffer* drawBuffer = m_currentBufferState.acquireAndStartCommandBuffer(CommandTargetType::CmdDrawBuffer); //TODO compute buffer
     if (prepareDispatch(drawBuffer))
@@ -1451,7 +1401,7 @@ void VulkanGraphicContext::dispatchCompute(const core::Dimension3D& groups)
     m_currentContextState->invalidateDescriptorSetsState();
 }
 
-void VulkanGraphicContext::bindImage(const Shader* shader, u32 bindIndex, const Image* image, s32 layer, s32 mip)
+void VulkanContext::bindImage(const Shader* shader, u32 bindIndex, const Image* image, s32 layer, s32 mip)
 {
     const VulkanImage* vkImage = static_cast<const VulkanImage*>(image);
 
@@ -1461,7 +1411,7 @@ void VulkanGraphicContext::bindImage(const Shader* shader, u32 bindIndex, const 
     m_currentContextState->bindTexture(vkImage, 0, imageData, layer, mip);
 }
 
-void VulkanGraphicContext::bindSampler(const Shader* shader, u32 bindIndex, const Sampler::SamplerInfo* samplerInfo)
+void VulkanContext::bindSampler(const Shader* shader, u32 bindIndex, const Sampler::SamplerInfo* samplerInfo)
 {
     Sampler* sampler = m_samplerManager->acquireSampler(samplerInfo->_desc);
     ASSERT(sampler, "nullptr");
@@ -1474,7 +1424,7 @@ void VulkanGraphicContext::bindSampler(const Shader* shader, u32 bindIndex, cons
     m_currentContextState->bindSampler(vkSampler, samplerData);
 }
 
-void VulkanGraphicContext::bindSampledImage(const Shader* shader, u32 bindIndex, const Image* image, const Sampler::SamplerInfo* samplerInfo, s32 layer, s32 mip)
+void VulkanContext::bindSampledImage(const Shader* shader, u32 bindIndex, const Image* image, const Sampler::SamplerInfo* samplerInfo, s32 layer, s32 mip)
 {
     ASSERT(image && samplerInfo, "nullptr");
     const VulkanImage* vkImage = static_cast<const VulkanImage*>(image);
@@ -1490,23 +1440,23 @@ void VulkanGraphicContext::bindSampledImage(const Shader* shader, u32 bindIndex,
     m_currentContextState->bindTexture(vkImage, vkSampler, 0, sampledData, layer, mip);
 }
 
-const DeviceCaps* VulkanGraphicContext::getDeviceCaps() const
+const DeviceCaps* VulkanContext::getDeviceCaps() const
 {
     return &m_deviceCaps;
 }
 
-VulkanStagingBufferManager * VulkanGraphicContext::getStagingManager()
+VulkanStagingBufferManager * VulkanContext::getStagingManager()
 {
     ASSERT(m_stagingBufferManager, "enable feature");
     return m_stagingBufferManager;
 }
 
-const std::vector<VkDynamicState>& VulkanGraphicContext::getDynamicStates()
+const std::vector<VkDynamicState>& VulkanContext::getDynamicStates()
 {
     return s_dynamicStates;
 }
 
-bool VulkanGraphicContext::isDynamicState(VkDynamicState state)
+bool VulkanContext::isDynamicState(VkDynamicState state)
 {
     auto iter = std::find(s_dynamicStates.cbegin(), s_dynamicStates.cend(), state);
     if (iter != s_dynamicStates.cend())
@@ -1517,17 +1467,17 @@ bool VulkanGraphicContext::isDynamicState(VkDynamicState state)
     return false;
 }
 
-Framebuffer* VulkanGraphicContext::createFramebuffer(const std::vector<Image*>& images, const core::Dimension2D& size)
+Framebuffer* VulkanContext::createFramebuffer(const std::vector<Image*>& images, const core::Dimension2D& size)
 {
     return new VulkanFramebuffer(m_deviceInfo._device, this, images, size);
 }
 
-RenderPass* VulkanGraphicContext::createRenderPass(const RenderPassDescription* renderpassDesc)
+RenderPass* VulkanContext::createRenderPass(const RenderPassDescription* renderpassDesc)
 {
     return new VulkanRenderPass(m_deviceInfo._device, *renderpassDesc);
 }
 
-Pipeline* VulkanGraphicContext::createPipeline(Pipeline::PipelineType type)
+Pipeline* VulkanContext::createPipeline(Pipeline::PipelineType type)
 {
     if (type == Pipeline::PipelineType::PipelineType_Graphic)
     {
@@ -1542,12 +1492,12 @@ Pipeline* VulkanGraphicContext::createPipeline(Pipeline::PipelineType type)
     return nullptr;
 }
 
-Sampler* VulkanGraphicContext::createSampler(const SamplerDescription& desc)
+Sampler* VulkanContext::createSampler(const SamplerDescription& desc)
 {
     return new VulkanSampler(m_deviceInfo._device, desc);
 }
 
-void VulkanGraphicContext::invalidateStates()
+void VulkanContext::invalidateStates()
 {
     m_currentContextState->updateDescriptorStates();
 
@@ -1559,7 +1509,7 @@ void VulkanGraphicContext::invalidateStates()
     }
 }
 
-bool VulkanGraphicContext::prepareDraw(VulkanCommandBuffer* drawBuffer)
+bool VulkanContext::prepareDraw(VulkanCommandBuffer* drawBuffer)
 {
     ASSERT(drawBuffer, "nullptr");
     ASSERT(m_currentContextState->getCurrentRenderpass(), "not bound");
@@ -1588,7 +1538,7 @@ bool VulkanGraphicContext::prepareDraw(VulkanCommandBuffer* drawBuffer)
     return true;
 }
 
-bool v3d::renderer::vk::VulkanGraphicContext::prepareDispatch(VulkanCommandBuffer* drawBuffer)
+bool v3d::renderer::vk::VulkanContext::prepareDispatch(VulkanCommandBuffer* drawBuffer)
 {
     ASSERT(drawBuffer, "nullptr");
     if (drawBuffer->isInsideRenderPass())
@@ -1615,17 +1565,19 @@ bool v3d::renderer::vk::VulkanGraphicContext::prepareDispatch(VulkanCommandBuffe
     return true;
 }
 
-void VulkanGraphicContext::finalizeCommandBufferSubmit()
+void VulkanContext::finalizeCommandBufferSubmit()
 {
     m_cmdBufferManager->updateCommandBuffers();
     m_uniformBufferManager->updateUniformBuffers();
+    m_semaphoreManager->updateSemaphores();
+
     m_stagingBufferManager->destroyStagingBuffers();
 
     invalidateStates();
     m_resourceDeleter.updateResourceDeleter();
 }
 
-VulkanCommandBuffer* VulkanGraphicContext::getOrCreateAndStartCommandBuffer(CommandTargetType type)
+VulkanCommandBuffer* VulkanContext::getOrCreateAndStartCommandBuffer(CommandTargetType type)
 {
     VulkanCommandBuffer* currentBuffer = m_currentBufferState._currentCmdBuffer[type];
     if (!currentBuffer)
@@ -1649,12 +1601,12 @@ VulkanCommandBuffer* VulkanGraphicContext::getOrCreateAndStartCommandBuffer(Comm
     return nullptr;
 }
 
-VulkanSwapchain* VulkanGraphicContext::getSwapchain() const
+VulkanSwapchain* VulkanContext::getSwapchain() const
 {
     return m_swapchain;
 }
 
-void VulkanGraphicContext::generateMipmaps(Image* image, u32 layer, TransitionOp state)
+void VulkanContext::generateMipmaps(Image* image, u32 layer, TransitionOp state)
 {
     if (!image)
     {
@@ -1676,27 +1628,27 @@ void VulkanGraphicContext::generateMipmaps(Image* image, u32 layer, TransitionOp
 }
 
 //Another thread
-void VulkanGraphicContext::handleNotify(const utils::Observable* obj)
+void VulkanContext::handleNotify(const utils::Observable* obj)
 {
     const platform::Window* windows = reinterpret_cast<const platform::Window*>(obj);
     if (windows->isValid())
     {
-        LOG_WARNING("VulkanGraphicContext::create swapchain notify (from main)");
+        LOG_WARNING("VulkanContext::notify, native window %llx (from main)", windows->getWindowHandle());
     }
     else
     {
-        LOG_WARNING("VulkanGraphicContext::delete swapchain notify (from main)");
+        LOG_WARNING("VulkanContext::notify native window %llx (from main)", windows->getWindowHandle());
     }
 }
 
 
-VulkanGraphicContext::CurrentCommandBufferState::CurrentCommandBufferState() noexcept
+VulkanContext::CurrentCommandBufferState::CurrentCommandBufferState() noexcept
     : _commandBufferMgr(nullptr)
 {
     memset(&_currentCmdBuffer, 0, sizeof(_currentCmdBuffer));
 }
 
-VulkanCommandBuffer* VulkanGraphicContext::CurrentCommandBufferState::acquireAndStartCommandBuffer(CommandTargetType type)
+VulkanCommandBuffer* VulkanContext::CurrentCommandBufferState::acquireAndStartCommandBuffer(CommandTargetType type)
 {
     if (CurrentCommandBufferState::isCurrentBufferAcitve(type))
     {
@@ -1707,26 +1659,26 @@ VulkanCommandBuffer* VulkanGraphicContext::CurrentCommandBufferState::acquireAnd
     _currentCmdBuffer[type] = _commandBufferMgr->acquireNewCmdBuffer(VulkanCommandBuffer::PrimaryBuffer);
     if (_currentCmdBuffer[type]->getStatus() != VulkanCommandBuffer::CommandBufferStatus::Ready)
     {
-        LOG_ERROR("VulkanGraphicContext::CurrentCommandBufferState::acquireAndStartCommandBuffer CommandBufferStatus is Invalid");
+        LOG_ERROR("VulkanContext::CurrentCommandBufferState::acquireAndStartCommandBuffer CommandBufferStatus is Invalid");
     }
     _currentCmdBuffer[type]->beginCommandBuffer();
 
     return _currentCmdBuffer[type];
 }
 
-void VulkanGraphicContext::CurrentCommandBufferState::invalidateCommandBuffer(CommandTargetType type)
+void VulkanContext::CurrentCommandBufferState::invalidateCommandBuffer(CommandTargetType type)
 {
     _currentCmdBuffer[type] = nullptr;
 }
 
-VulkanCommandBuffer* VulkanGraphicContext::CurrentCommandBufferState::getAcitveBuffer(CommandTargetType type)
+VulkanCommandBuffer* VulkanContext::CurrentCommandBufferState::getAcitveBuffer(CommandTargetType type)
 {
     VulkanCommandBuffer* currentBuffer = _currentCmdBuffer[type];
     ASSERT(currentBuffer, "nullptr");
     return currentBuffer;
 }
 
-bool VulkanGraphicContext::CurrentCommandBufferState::isCurrentBufferAcitve(CommandTargetType type) const
+bool VulkanContext::CurrentCommandBufferState::isCurrentBufferAcitve(CommandTargetType type) const
 {
     return _currentCmdBuffer[type] != nullptr;
 }

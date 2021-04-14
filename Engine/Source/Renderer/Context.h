@@ -67,7 +67,7 @@ namespace renderer
         * @param DeviceMask mask [optional]
         * @return Context pointer
         */
-        static Context* createContext(const platform::Window* window, RenderType type, DeviceMask mask = DeviceMask::GraphicMask);
+        static Context* createContext(platform::Window* window, RenderType type, DeviceMask mask = DeviceMask::GraphicMask);
 
         /**
         * @brief destroyContext static function. Used for destroy context.
@@ -136,7 +136,7 @@ namespace renderer
     protected:
 
         Context() noexcept;
-        virtual ~Context();
+        virtual ~Context() = default;
 
         friend RenderPassManager;
         friend FramebufferManager;

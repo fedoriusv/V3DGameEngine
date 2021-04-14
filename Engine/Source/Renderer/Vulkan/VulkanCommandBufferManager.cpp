@@ -104,7 +104,7 @@ VulkanCommandBuffer * VulkanCommandBufferManager::acquireNewCmdBuffer(VulkanComm
     return cmdBuffer;
 }
 
-bool VulkanCommandBufferManager::submit(VulkanCommandBuffer* buffer, VkSemaphore signalSemaphore)
+bool VulkanCommandBufferManager::submit(VulkanCommandBuffer* buffer, std::vector<VkSemaphore>& signalSemaphores)
 {
     ASSERT(buffer, "buffer is nullptr");
     if (buffer->getStatus() != VulkanCommandBuffer::CommandBufferStatus::End)
@@ -124,8 +124,16 @@ bool VulkanCommandBufferManager::submit(VulkanCommandBuffer* buffer, VkSemaphore
     submitInfo.pWaitDstStageMask = buffer->m_stageMasks.data();
     submitInfo.commandBufferCount = 1;
     submitInfo.pCommandBuffers = &cmdBuffer;
-    submitInfo.signalSemaphoreCount = (signalSemaphore != VK_NULL_HANDLE) ? 1 : 0;
-    submitInfo.pSignalSemaphores = &signalSemaphore;
+    if (signalSemaphores.empty())
+    {
+        submitInfo.signalSemaphoreCount = 0;
+        submitInfo.pSignalSemaphores = VK_NULL_HANDLE;
+    }
+    else
+    {
+        submitInfo.signalSemaphoreCount = static_cast<u32>(signalSemaphores.size());
+        submitInfo.pSignalSemaphores = signalSemaphores.data();
+    }
 
     VkResult result = VulkanWrapper::QueueSubmit(m_queue, 1, &submitInfo, buffer->m_fence);
     if (result != VK_SUCCESS)

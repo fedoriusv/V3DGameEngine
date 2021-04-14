@@ -27,6 +27,7 @@ namespace vk
     class VulkanRenderPass;
     class VulkanFramebuffer;
     class VulkanGraphicPipeline;
+    class VulkanSemaphore;
 
     class VulkanContextState;
     class VulkanSwapchain;
@@ -36,6 +37,7 @@ namespace vk
     class VulkanStagingBufferManager;
     class VulkanUniformBufferManager;
     class VulkanSamplerManager;
+    class VulkanSemaphoreManager;
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -51,17 +53,17 @@ namespace vk
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
-    * @brief VulkanGraphicContext final class. Vulkan Render side
+    * @brief VulkanContext final class. Vulkan Render side
     */
-    class VulkanGraphicContext final : public Context,  public utils::Observer
+    class VulkanContext final : public Context,  public utils::Observer
     {
     public:
 
-        VulkanGraphicContext() = delete;
-        VulkanGraphicContext(const VulkanGraphicContext&) = delete;
+        VulkanContext() = delete;
+        VulkanContext(const VulkanContext&) = delete;
 
-        explicit VulkanGraphicContext(const platform::Window* window, DeviceMask mask) noexcept;
-        ~VulkanGraphicContext();
+        explicit VulkanContext(platform::Window* window, DeviceMask mask) noexcept;
+        ~VulkanContext();
 
         void beginFrame() override;
         void endFrame() override;
@@ -117,15 +119,15 @@ namespace vk
 
     private:
 
-        VulkanDeviceCaps&   m_deviceCaps;
-        DeviceInfo          m_deviceInfo;
-
-        const std::string s_vulkanApplicationName = "VulkanGraphicContext";
+        const std::string s_vulkanApplicationName = "VulkanContext";
 
         bool initialize() override;
         void destroy() override;
 
         void clearBackbuffer(const core::Vector4D & color) override;
+
+        bool prepareDraw(VulkanCommandBuffer* drawBuffer);
+        bool prepareDispatch(VulkanCommandBuffer* drawBuffer);
 
         Framebuffer* createFramebuffer(const std::vector<Image*>& images, const core::Dimension2D& size) override;
         RenderPass* createRenderPass(const RenderPassDescription* renderpassDesc) override;
@@ -137,6 +139,9 @@ namespace vk
         bool createInstance();
         bool createDevice();
 
+        VulkanDeviceCaps& m_deviceCaps;
+        DeviceInfo m_deviceInfo;
+
         std::vector<VkQueue>        m_queueList;
         class VulkanSwapchain*      m_swapchain;
 
@@ -145,6 +150,7 @@ namespace vk
         VulkanDescriptorSetManager* m_descriptorSetManager;
         VulkanStagingBufferManager* m_stagingBufferManager;
         VulkanUniformBufferManager* m_uniformBufferManager;
+        VulkanSemaphoreManager*     m_semaphoreManager;
 
         VulkanMemory::VulkanMemoryAllocator* m_imageMemoryManager;
         VulkanMemory::VulkanMemoryAllocator* m_bufferMemoryManager;
@@ -203,26 +209,24 @@ namespace vk
 
             Pipeline* m_pipeline;
         };
-        
 
         PendingState                m_pendingState;
         CurrentCommandBufferState   m_currentBufferState;
         VulkanContextState*         m_currentContextState;
         VulkanTransitionState       m_currentTransitionState;
 
-        VulkanResourceDeleter       m_resourceDeleter;
-
-        static std::vector<VkDynamicState>  s_dynamicStates;
-
-        bool prepareDraw(VulkanCommandBuffer* drawBuffer);
-        bool prepareDispatch(VulkanCommandBuffer* drawBuffer);
-
+        std::vector<VkSemaphore> m_submitSemaphores;
         void finalizeCommandBufferSubmit();
 
-        const platform::Window* m_window;
+        VulkanResourceDeleter m_resourceDeleter;
+
+        bool m_insideFrame;
+        platform::Window* const m_window;
 #if THREADED_PRESENT
         class PresentThread* m_presentThread;
 #endif //THREADED_PRESENT
+
+        static std::vector<VkDynamicState> s_dynamicStates;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

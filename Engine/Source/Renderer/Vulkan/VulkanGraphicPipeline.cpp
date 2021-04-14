@@ -480,7 +480,7 @@ bool VulkanGraphicPipeline::create(const PipelineGraphicInfo* pipelineInfo)
     rasterizationStateCreateInfo.polygonMode = VulkanGraphicPipeline::convertPolygonModeToVk(rasterizationState._polygonMode);
     rasterizationStateCreateInfo.cullMode = VulkanGraphicPipeline::convertCullModeToVk(rasterizationState._cullMode);
     rasterizationStateCreateInfo.frontFace = VulkanGraphicPipeline::convertFrontFaceToVk(rasterizationState._frontFace);
-    if (!VulkanGraphicContext::isDynamicState(VK_DYNAMIC_STATE_DEPTH_BIAS))
+    if (!VulkanContext::isDynamicState(VK_DYNAMIC_STATE_DEPTH_BIAS))
     {
         rasterizationStateCreateInfo.depthBiasEnable = (rasterizationState._depthBiasConstant != 0.f || rasterizationState._depthBiasClamp != 0.f || rasterizationState._depthBiasSlope != 0.f) ? VK_TRUE : VK_FALSE;
         rasterizationStateCreateInfo.depthBiasConstantFactor = rasterizationState._depthBiasConstant;
@@ -493,7 +493,7 @@ bool VulkanGraphicPipeline::create(const PipelineGraphicInfo* pipelineInfo)
         ASSERT(false, "not impl");
     }
 
-    if (!VulkanGraphicContext::isDynamicState(VK_DYNAMIC_STATE_LINE_WIDTH))
+    if (!VulkanContext::isDynamicState(VK_DYNAMIC_STATE_LINE_WIDTH))
     {
         rasterizationStateCreateInfo.lineWidth = 1.0f; //wideLines
     }
@@ -570,7 +570,7 @@ bool VulkanGraphicPipeline::create(const PipelineGraphicInfo* pipelineInfo)
         ASSERT(blendState._logicalOpEnable == VK_FALSE, "feature logicOp not supported");
     }
 
-    if (!VulkanGraphicContext::isDynamicState(VK_DYNAMIC_STATE_BLEND_CONSTANTS))
+    if (!VulkanContext::isDynamicState(VK_DYNAMIC_STATE_BLEND_CONSTANTS))
     {
         pipelineColorBlendStateCreateInfo.blendConstants[0] = blendState._constant.x;
         pipelineColorBlendStateCreateInfo.blendConstants[1] = blendState._constant.y;
@@ -614,7 +614,7 @@ bool VulkanGraphicPipeline::create(const PipelineGraphicInfo* pipelineInfo)
     if (VulkanDeviceCaps::getInstance()->getPhysicalDeviceFeatures().depthBounds)
     {
         pipelineDepthStencilStateCreateInfo.depthBoundsTestEnable = depthBlendState._depthBoundsTestEnable;
-        if (!VulkanGraphicContext::isDynamicState(VK_DYNAMIC_STATE_DEPTH_BOUNDS))
+        if (!VulkanContext::isDynamicState(VK_DYNAMIC_STATE_DEPTH_BOUNDS))
         {
             pipelineDepthStencilStateCreateInfo.minDepthBounds = depthBlendState._depthBounds.x;
             pipelineDepthStencilStateCreateInfo.maxDepthBounds = depthBlendState._depthBounds.y;
@@ -638,8 +638,8 @@ bool VulkanGraphicPipeline::create(const PipelineGraphicInfo* pipelineInfo)
     pipelineDynamicStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
     pipelineDynamicStateCreateInfo.pNext = nullptr;
     pipelineDynamicStateCreateInfo.flags = 0;
-    pipelineDynamicStateCreateInfo.dynamicStateCount = static_cast<u32>(VulkanGraphicContext::getDynamicStates().size());
-    pipelineDynamicStateCreateInfo.pDynamicStates = VulkanGraphicContext::getDynamicStates().data();
+    pipelineDynamicStateCreateInfo.dynamicStateCount = static_cast<u32>(VulkanContext::getDynamicStates().size());
+    pipelineDynamicStateCreateInfo.pDynamicStates = VulkanContext::getDynamicStates().data();
     graphicsPipelineCreateInfo.pDynamicState = &pipelineDynamicStateCreateInfo;
 
     //VkPipelineViewportStateCreateInfo
@@ -648,7 +648,7 @@ bool VulkanGraphicPipeline::create(const PipelineGraphicInfo* pipelineInfo)
     pipelineViewportStateCreateInfo.pNext = nullptr;
     pipelineViewportStateCreateInfo.flags = 0;
 
-    if (!VulkanGraphicContext::isDynamicState(VK_DYNAMIC_STATE_VIEWPORT))
+    if (!VulkanContext::isDynamicState(VK_DYNAMIC_STATE_VIEWPORT))
     {
         VkViewport viewport = {};
         pipelineViewportStateCreateInfo.viewportCount = 1;
@@ -661,7 +661,7 @@ bool VulkanGraphicPipeline::create(const PipelineGraphicInfo* pipelineInfo)
         pipelineViewportStateCreateInfo.viewportCount = 1;
     }
 
-    if (!VulkanGraphicContext::isDynamicState(VK_DYNAMIC_STATE_SCISSOR))
+    if (!VulkanContext::isDynamicState(VK_DYNAMIC_STATE_SCISSOR))
     {
         VkRect2D scissor = {};
         pipelineViewportStateCreateInfo.scissorCount = 1;
@@ -789,7 +789,7 @@ bool VulkanGraphicPipeline::compileShaders(std::vector<std::tuple<const ShaderHe
             ASSERT(m_compatibilityRenderPass, "nullptr");
             if (VulkanDeviceCaps::getInstance()->preTransform && static_cast<VulkanRenderPass*>(m_compatibilityRenderPass)->isDrawingToSwapchain())
             {
-                VkSurfaceTransformFlagBitsKHR preTransform = static_cast<VulkanGraphicContext*>(m_context)->getSwapchain()->getTransformFlag();
+                VkSurfaceTransformFlagBitsKHR preTransform = static_cast<VulkanContext*>(m_context)->getSwapchain()->getTransformFlag();
                 if (preTransform & (VK_SURFACE_TRANSFORM_ROTATE_90_BIT_KHR | VK_SURFACE_TRANSFORM_ROTATE_270_BIT_KHR))
                 {
                     f32 angleDegree = (preTransform == VK_SURFACE_TRANSFORM_ROTATE_90_BIT_KHR) ? 90.0f : 270.0f;

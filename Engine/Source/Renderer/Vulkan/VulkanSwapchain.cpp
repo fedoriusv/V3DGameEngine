@@ -8,6 +8,8 @@
 #include "VulkanImage.h"
 #include "VulkanResource.h"
 
+#define DEBUG_FENCE_ACQUIRE 0
+
 #ifdef PLATFORM_ANDROID
 #   include "Platform/Android/AndroidCommon.h"
 #   include "Platform/Android/android_native_app_glue.h"
@@ -46,13 +48,10 @@ bool createSurfaceWinApi(VkInstance vkInstance, NativeInstance hInstance, Native
 #ifdef PLATFORM_ANDROID
 bool createSurfaceAndroidApi(VkInstance vkInstance, NativeInstance hInstance, NativeWindows hWnd, VkSurfaceKHR& surface, const core::Dimension2D& size)
 {
-    s32 error = ANativeWindow_setBuffersGeometry(hWnd, size.width, size.height, WINDOW_FORMAT_RGBA_8888);
-    LOG_DEBUG("createSurfaceAndroidApi: ANativeWindow_setBuffersGeometry: { %d, %d } error %d", size.height, size.width, error);
-    if (error)
-    {
-        LOG_FATAL("createSurfaceAndroidApi: ANativeWindow_setBuffersGeometry. Error %d", error);
-        return false;
-    }
+    s32 error = 0;//ANativeWindow_setBuffersGeometry(hWnd, size.width, size.height, WINDOW_FORMAT_RGBA_8888);
+    s32 width = ANativeWindow_getWidth(hWnd);
+    s32 height = ANativeWindow_getHeight(hWnd);
+    LOG_DEBUG("createSurfaceAndroidApi: createSurfaceAndroidApi: { %d, %d } = %d, current size { %d, %d }",  size.width, size.height, error, width, height);
 
     VkAndroidSurfaceCreateInfoKHR surfaceCreateInfo = {};
     surfaceCreateInfo.sType = VK_STRUCTURE_TYPE_ANDROID_SURFACE_CREATE_INFO_KHR;
@@ -60,7 +59,7 @@ bool createSurfaceAndroidApi(VkInstance vkInstance, NativeInstance hInstance, Na
     surfaceCreateInfo.flags = 0;
     surfaceCreateInfo.window = hWnd;
 
-    LOG_DEBUG("createSurfaceAndroidApi window %x", surfaceCreateInfo.window);
+    LOG_DEBUG("createSurfaceAndroidApi native window %llx", surfaceCreateInfo.window);
 
     VkResult result = VulkanWrapper::CreateAndroidSurface(vkInstance, &surfaceCreateInfo, VULKAN_ALLOCATOR, &surface);
     if (result != VK_SUCCESS)
@@ -110,7 +109,7 @@ VkSurfaceKHR VulkanSwapchain::createSurface(VkInstance vkInstance, NativeInstanc
         LOG_FATAL("VulkanSwapchain::createSurface: Create win surface is falied");
         return VK_NULL_HANDLE;
     }
-#elif defined (PLATFORM_ANDROID)
+#elif defined(PLATFORM_ANDROID)
     if (!createSurfaceAndroidApi(vkInstance, hInstance, hWnd, surface, size))
     {
         LOG_FATAL("VulkanSwapchain::createSurface: Create android surface is falied");
@@ -139,7 +138,7 @@ bool VulkanSwapchain::create(const SwapchainConfig& config, VkSwapchainKHR oldSw
     m_surface = VulkanSwapchain::createSurface(m_deviceInfo->_instance, m_config._window->getInstance(), m_config._window->getWindowHandle(), m_config._size);
     if (!m_surface)
     {
-        LOG_FATAL("VulkanGraphicContext::createContext: Can not create VkSurfaceKHR");
+        LOG_FATAL("VulkanContext::createContext: Can not create VkSurfaceKHR");
         return false;
     }
 
@@ -162,7 +161,7 @@ bool VulkanSwapchain::create(const SwapchainConfig& config, VkSwapchainKHR oldSw
             m_surface = VulkanSwapchain::createSurface(m_deviceInfo->_instance, m_config._window->getInstance(), m_config._window->getWindowHandle(), m_config._size);
             if (!m_surface)
             {
-                LOG_FATAL("VulkanGraphicContext::createContext: Can not create VkSurfaceKHR");
+                LOG_FATAL("VulkanContext::createContext: Can not create VkSurfaceKHR");
                 return false;
             }
         }
@@ -290,6 +289,22 @@ bool VulkanSwapchain::create(const SwapchainConfig& config, VkSwapchainKHR oldSw
             LOG_ERROR(" VulkanSwapchain::create Acquire Semaphore vkCreateSemaphore is failed. Error %s", ErrorString(result).c_str());
         }
         m_acquireSemaphore.push_back(semaphore);
+
+#if VULKAN_DEBUG_MARKERS
+        if (VulkanDeviceCaps::getInstance()->debugUtilsObjectNameEnabled)
+        {
+            std::string semaphoreName("AcquireSemaphore_" + std::to_string(index));
+
+            VkDebugUtilsObjectNameInfoEXT debugUtilsObjectNameInfo = {};
+            debugUtilsObjectNameInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT;
+            debugUtilsObjectNameInfo.pNext = nullptr;
+            debugUtilsObjectNameInfo.objectType = VK_OBJECT_TYPE_SEMAPHORE;
+            debugUtilsObjectNameInfo.objectHandle = reinterpret_cast<u64>(semaphore);
+            debugUtilsObjectNameInfo.pObjectName = semaphoreName.c_str();
+
+            VulkanWrapper::SetDebugUtilsObjectName(m_deviceInfo->_device, &debugUtilsObjectNameInfo);
+        }
+#endif //VULKAN_DEBUG_MARKERS
     }
 
 #if SWAPCHAIN_ON_ADVANCE
@@ -303,6 +318,7 @@ bool VulkanSwapchain::create(const SwapchainConfig& config, VkSwapchainKHR oldSw
 
 bool VulkanSwapchain::createSwapchain(const SwapchainConfig& config, VkSwapchainKHR oldSwapchain)
 {
+    LOG_DEBUG("VulkanSwapchain::createSwapchain size { %d, %d }", config._size.width, config._size.height);
     ASSERT(m_surface, "surface is nullptr");
 
     // Select a present mode for the swapchain
@@ -351,7 +367,6 @@ bool VulkanSwapchain::createSwapchain(const SwapchainConfig& config, VkSwapchain
         desiredNumberOfSwapchainImages = std::clamp(config._countSwapchainImages, m_surfaceCaps.minImageCount, m_surfaceCaps.maxImageCount);
     }
     LOG_DEBUG("VulkanSwapchain::createSwapChain swapchain images count(min %u, max: %u), chosen: %u", m_surfaceCaps.minImageCount, m_surfaceCaps.maxImageCount, desiredNumberOfSwapchainImages);
-    VkExtent2D imageExtent = m_surfaceCaps.currentExtent;
 
     // Find the transformation of the surface
     VkSurfaceTransformFlagBitsKHR preTransform = VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR;
@@ -370,7 +385,9 @@ bool VulkanSwapchain::createSwapchain(const SwapchainConfig& config, VkSwapchain
             preTransform = m_surfaceCaps.currentTransform;
         }
     }
-    LOG_DEBUG("VulkanSwapchain::createSwapChain transform swapchain: (width %u, height %u), currentTransform: %u, supportedTransforms: %u, selectedTransform: %u", imageExtent.width, imageExtent.height, m_surfaceCaps.currentTransform, m_surfaceCaps.supportedTransforms, preTransform);
+
+    const VkExtent2D imageExtent = { config._size.width, config._size.height };
+    LOG_DEBUG("VulkanSwapchain::createSwapChain (width %u, height %u), currentTransform: %u, supportedTransforms: %u, selectedTransform: %u", imageExtent.width, imageExtent.height, m_surfaceCaps.currentTransform, m_surfaceCaps.supportedTransforms, preTransform);
 
     VkSwapchainCreateInfoKHR swapChainInfo = {};
     swapChainInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
@@ -497,6 +514,7 @@ void VulkanSwapchain::destroy()
     if (m_swapchain)
     {
         VulkanWrapper::DestroySwapchain(m_deviceInfo->_device, m_swapchain, VULKAN_ALLOCATOR);
+        LOG_DEBUG("VulkanSwapchain::destroy swapchain destroyed");
         m_swapchain = VK_NULL_HANDLE;
     }
 
@@ -509,6 +527,7 @@ void VulkanSwapchain::destroy()
     if (m_surface)
     {
         VulkanWrapper::DestroySurface(m_deviceInfo->_instance, m_surface, VULKAN_ALLOCATOR);
+        LOG_DEBUG("VulkanSwapchain::destroy surface destroyed");
         m_surface = VK_NULL_HANDLE;
     }
 
@@ -519,6 +538,9 @@ void VulkanSwapchain::destroy()
 
 void VulkanSwapchain::present(VkQueue queue, const std::vector<VkSemaphore>& waitSemaphores)
 {
+#if VULKAN_DEBUG
+    LOG_DEBUG("VulkanSwapchain::present");
+#endif //VULKAN_DEBUG
     ASSERT(m_swapchain, "m_swapchain is nullptr");
 
     VkResult innerResults[1] = {};
@@ -576,11 +598,37 @@ void VulkanSwapchain::present(VkQueue queue, const std::vector<VkSemaphore>& wai
 
 u32 VulkanSwapchain::acquireImage()
 {
+#if VULKAN_DEBUG
+    LOG_DEBUG("VulkanSwapchain::acquireImage");
+#endif //VULKAN_DEBUG
     VkSemaphore semaphore = m_acquireSemaphore[m_currentSemaphoreIndex];
     VkFence fence = VK_NULL_HANDLE;
 
+#if DEBUG_FENCE_ACQUIRE
+    VkFenceCreateInfo fenceCreateInfo = {};
+    {
+        fenceCreateInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+        fenceCreateInfo.pNext = nullptr;
+        fenceCreateInfo.flags = 0;
+        VkResult result = vkCreateFence(m_deviceInfo->_device, &fenceCreateInfo, VULKAN_ALLOCATOR, &fence);
+        ASSERT(result == VK_SUCCESS, "error");
+    }
+#endif
+    
     u32 imageIndex = 0;
     VkResult result = VulkanWrapper::AcquireNextImage(m_deviceInfo->_device, m_swapchain, UINT64_MAX, semaphore, fence, &imageIndex);
+
+#if DEBUG_FENCE_ACQUIRE
+    {
+        VkResult result = vkWaitForFences(m_deviceInfo->_device, 1, &fence, VK_TRUE, u64(~0ULL));
+        ASSERT(result == VK_SUCCESS, "wrong");
+        if (result == VK_SUCCESS)
+        {
+            vkDestroyFence(m_deviceInfo->_device, fence, VULKAN_ALLOCATOR);
+        }
+    }
+#endif
+
     if (result == VK_ERROR_SURFACE_LOST_KHR || result == VK_ERROR_OUT_OF_DATE_KHR)
     {
         VulkanWrapper::DeviceWaitIdle(m_deviceInfo->_device);
@@ -589,10 +637,10 @@ u32 VulkanSwapchain::acquireImage()
 #endif //ANDROID_PLATFORM
 
         //recreate
-        LOG_WARNING(" VulkanSwapchain::acquireImage: Swapchain need to recreate. Error: %s", ErrorString(result).c_str());
+        LOG_WARNING("VulkanSwapchain::acquireImage: Swapchain need to recreate. Error: %s", ErrorString(result).c_str());
         if (!VulkanSwapchain::recteate(m_config))
         {
-            LOG_FATAL(" VulkanSwapchain::AcquireNextImage: recteate was failed");
+            LOG_FATAL("VulkanSwapchain::AcquireNextImage: recteate was failed");
         }
         recreateAttachedResources();
 
@@ -679,6 +727,12 @@ VulkanImage* VulkanSwapchain::getBackbuffer() const
 {
     ASSERT(s_currentImageIndex >= 0, "invalid index");
     return m_swapBuffers[s_currentImageIndex];
+}
+
+VkSemaphore VulkanSwapchain::getAcquireSemaphore() const
+{
+    ASSERT(s_currentImageIndex >= 0, "invalid index");
+    return m_acquireSemaphore[m_currentSemaphoreIndex];
 }
 
 u32 VulkanSwapchain::getSwapchainImageCount() const

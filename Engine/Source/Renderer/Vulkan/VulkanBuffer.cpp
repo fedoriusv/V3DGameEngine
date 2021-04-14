@@ -261,7 +261,7 @@ bool VulkanBuffer::upload(Context* context, u32 offset, u64 size, const void * d
 
     if (!VulkanBuffer::isPresentingBufferUsageFlag(StreamBufferUsage::StreamBuffer_Dynamic))
     {
-        VulkanGraphicContext* vkContext = static_cast<VulkanGraphicContext*>(context);
+        VulkanContext* vkContext = static_cast<VulkanContext*>(context);
         VulkanCommandBuffer* uploadBuffer = vkContext->getOrCreateAndStartCommandBuffer(CommandTargetType::CmdUploadBuffer);
         if (m_size <= 65'536)
         {

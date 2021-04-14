@@ -15,10 +15,16 @@ namespace platform
 {
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    /**
+    * @brief Window class. Base class of window
+    */
     class Window : public utils::Observable
     {
     public:
 
+        /**
+        * @brief WindowParam struct
+        */
         struct WindowParam
         {
             std::wstring            _caption;
@@ -47,10 +53,37 @@ namespace platform
             }
         };
 
-        static Window*  createWindow(const core::Dimension2D& size = { 1024U, 768U }, const core::Point2D& pos = { 100U, 100U }, bool fullscreen = false, bool resizable = false);
-        static Window*  createWindow(const core::Dimension2D& size = { 1024U, 768U }, const core::Point2D& pos = { 100U, 100U }, bool fullscreen = false, event::InputEventReceiver* receiver = nullptr);
-        static bool     updateWindow(Window* window);
-        static void     detroyWindow(Window* window);
+        /**
+        * @brief createWindow function. Create new window.
+        * @param const core::Dimension2D& size [optional]
+        * @param const core::Point2D& pos [optional]
+        * @param bool fullscreen [optional]
+        * @param bool resizable [optional]
+        * @return pointer of created window
+        */
+        static Window* createWindow(const core::Dimension2D& size = { 1024U, 768U }, const core::Point2D& pos = { 100U, 100U }, bool fullscreen = false, bool resizable = false);
+
+        /**
+        * @brief createWindow function. Create new window.
+        * @param const core::Dimension2D& size [optional]
+        * @param const core::Point2D& pos [optional]
+        * @param bool fullscreen [optional]
+        * @param event::InputEventReceiver* receiver [optional]
+        * @return pointer of created window
+        */
+        static Window* createWindow(const core::Dimension2D& size = { 1024U, 768U }, const core::Point2D& pos = { 100U, 100U }, bool fullscreen = false, event::InputEventReceiver* receiver = nullptr);
+
+        /**
+        * @brief updateWindow function. Updates window
+        * @param Window* window [required]
+        */
+        static bool updateWindow(Window* window);
+
+        /**
+        * @brief detroyWindow function. Removes window
+        * @param Window* window [required]
+        */
+        static void detroyWindow(Window* window);
 
         Window(const WindowParam& params, event::InputEventReceiver* receiver);
         virtual ~Window();

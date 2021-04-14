@@ -7,7 +7,7 @@
 #include "VulkanWrapper.h"
 #include "VulkanDeviceCaps.h"
 
-#define SWAPCHAIN_ON_ADVANCE 1
+#define SWAPCHAIN_ON_ADVANCE 0
 
 namespace v3d
 {
@@ -31,7 +31,7 @@ namespace vk
 
         struct SwapchainConfig
         {
-            const platform::Window* _window               = nullptr;
+            platform::Window*       _window               = nullptr;
             core::Dimension2D       _size;
             u32                     _countSwapchainImages = 0;
             bool                    _vsync                = false;
@@ -54,6 +54,8 @@ namespace vk
         VulkanImage* getBackbuffer() const;
         VulkanImage* getSwapchainImage(u32 index) const;
         u32 getSwapchainImageCount() const;
+
+        VkSemaphore getAcquireSemaphore() const;
 
         static u32 currentSwapchainIndex();
         

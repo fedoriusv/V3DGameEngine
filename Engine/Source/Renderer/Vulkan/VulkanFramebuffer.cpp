@@ -61,7 +61,12 @@ bool VulkanFramebuffer::create(const RenderPass* pass)
     for (u32 attach = 0; attach < m_images.size(); ++attach)
     {
         const VulkanImage* vkImage = static_cast<const VulkanImage*>(m_images[attach]);
-        m_imageViews.push_back(vkImage->getImageView(0, vkPass->getAttachmentDescription(attach)._layer, vkPass->getAttachmentDescription(attach)._mip));
+        s32 layer = vkPass->getAttachmentDescription(attach)._layer;
+        s32 mip = vkPass->getAttachmentDescription(attach)._mip;
+        m_imageViews.push_back(vkImage->getImageView(0, layer, mip));
+#if VULKAN_DEBUG
+        LOG_DEBUG("VulkanFramebuffer::create Framebuffer area (width %u, height %u), image (width %u, height %u)", m_size.width, m_size.height, vkImage->getSize().width, vkImage->getSize().height);
+#endif
 
         if (VulkanImage::isColorFormat(vkImage->getFormat()))
         {
@@ -69,7 +74,7 @@ bool VulkanFramebuffer::create(const RenderPass* pass)
             {
                 ASSERT(vkImage->getSampleCount() > VK_SAMPLE_COUNT_1_BIT, "wrong sample count");
                 const VulkanImage* vkResolveImage = vkImage->getResolveImage();
-                m_imageViews.push_back(vkResolveImage->getImageView(VK_IMAGE_ASPECT_COLOR_BIT, vkPass->getAttachmentDescription(attach)._layer, vkPass->getAttachmentDescription(attach)._mip));
+                m_imageViews.push_back(vkResolveImage->getImageView(VK_IMAGE_ASPECT_COLOR_BIT, layer, mip));
             }
         }
         else
@@ -78,7 +83,7 @@ bool VulkanFramebuffer::create(const RenderPass* pass)
             {
                 ASSERT(vkImage->getSampleCount() > VK_SAMPLE_COUNT_1_BIT, "wrong sample count");
                 const VulkanImage* vkResolveImage = vkImage->getResolveImage();
-                m_imageViews.push_back(vkResolveImage->getImageView(0, vkPass->getAttachmentDescription(attach)._layer, vkPass->getAttachmentDescription(attach)._mip));
+                m_imageViews.push_back(vkResolveImage->getImageView(0, layer, mip));
             }
         }
     }

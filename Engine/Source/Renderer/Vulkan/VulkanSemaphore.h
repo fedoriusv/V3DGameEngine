@@ -1,0 +1,78 @@
+#pragma once
+
+#include "Common.h"
+
+#ifdef VULKAN_RENDER
+#include "VulkanWrapper.h"
+#include "VulkanResource.h"
+
+namespace v3d
+{
+namespace renderer
+{
+namespace vk
+{
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    /**
+    * @brief VulkanSemaphore class
+    */
+    class VulkanSemaphore : public VulkanResource
+    {
+    public:
+
+        enum SemaphoreStatus
+        {
+            Free,
+            Signaled,
+        };
+
+        VulkanSemaphore() noexcept;
+        ~VulkanSemaphore();
+
+        VkSemaphore getHandle() const;
+
+    private:
+
+        friend class VulkanSemaphoreManager;
+
+        SemaphoreStatus m_semaphoreStatus;
+        VkSemaphore m_semaphore;
+    };
+
+    /**
+    * @brief VulkanSemaphoreManager class
+    */
+    class VulkanSemaphoreManager final
+    {
+    public:
+
+        VulkanSemaphoreManager() = delete;
+        VulkanSemaphoreManager(const VulkanSemaphoreManager&) = delete;
+        VulkanSemaphoreManager& operator=(const VulkanSemaphoreManager&) = delete;
+
+        explicit VulkanSemaphoreManager(VkDevice device) noexcept;
+        ~VulkanSemaphoreManager();
+
+        VulkanSemaphore* acquireSemaphore();
+
+        void clear();
+        void updateSemaphores();
+
+    private:
+
+        VulkanSemaphore* createSemaphore();
+        void deleteSemaphore(VulkanSemaphore* sem);
+
+        VkDevice  m_device;
+
+        std::deque<VulkanSemaphore*> m_freePools;
+        std::deque<VulkanSemaphore*> m_usedPools;
+    };
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
+
+} //namespace vk
+} //namespace renderer
+} //namespace v3d
+#endif //VULKAN_RENDER
