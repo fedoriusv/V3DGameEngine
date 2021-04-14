@@ -150,15 +150,15 @@ namespace vk
         VulkanDescriptorSetManager* m_descriptorSetManager;
         VulkanStagingBufferManager* m_stagingBufferManager;
         VulkanUniformBufferManager* m_uniformBufferManager;
-        VulkanSemaphoreManager*     m_semaphoreManager;
-
-        VulkanMemory::VulkanMemoryAllocator* m_imageMemoryManager;
-        VulkanMemory::VulkanMemoryAllocator* m_bufferMemoryManager;
+        VulkanSemaphoreManager* m_semaphoreManager;
 
         RenderPassManager*          m_renderpassManager;
         FramebufferManager*         m_framebufferManager;
         PipelineManager*            m_pipelineManager;
         SamplerManager*             m_samplerManager;
+
+        VulkanMemory::VulkanMemoryAllocator* m_imageMemoryManager;
+        VulkanMemory::VulkanMemoryAllocator* m_bufferMemoryManager;
 
         struct CurrentCommandBufferState
         {

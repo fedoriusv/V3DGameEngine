@@ -108,15 +108,15 @@ VulkanContext::VulkanContext(platform::Window* window, DeviceMask mask) noexcept
     , m_descriptorSetManager(nullptr)
     , m_stagingBufferManager(nullptr)
     , m_uniformBufferManager(nullptr)
-
-    , m_imageMemoryManager(nullptr)
-    , m_bufferMemoryManager(nullptr)
+    , m_semaphoreManager(nullptr)
 
     , m_renderpassManager(nullptr)
     , m_framebufferManager(nullptr)
     , m_pipelineManager(nullptr)
     , m_samplerManager(nullptr)
-    , m_semaphoreManager(nullptr)
+
+    , m_imageMemoryManager(nullptr)
+    , m_bufferMemoryManager(nullptr)
 
     , m_currentContextState(nullptr)
 

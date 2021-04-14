@@ -36,8 +36,8 @@ namespace vk
 
         friend class VulkanSemaphoreManager;
 
-        SemaphoreStatus m_semaphoreStatus;
         VkSemaphore m_semaphore;
+        SemaphoreStatus m_semaphoreStatus;
     };
 
     /**
