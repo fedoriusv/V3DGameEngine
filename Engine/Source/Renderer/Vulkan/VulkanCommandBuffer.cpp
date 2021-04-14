@@ -298,6 +298,9 @@ void VulkanCommandBuffer::endCommandBuffer()
 void VulkanCommandBuffer::cmdBeginRenderpass(const VulkanRenderPass* pass, const VulkanFramebuffer* framebuffer, const VkRect2D& area, const std::vector<VkClearValue>& clearValues)
 {
     ASSERT(m_status == CommandBufferStatus::Begin, "not started");
+#if VULKAN_DEBUG
+        LOG_DEBUG("VulkanCommandBuffer::cmdBeginRenderpass area (x %d, y %d, width %u, height %u), framebuffer area (width %u, height %u)", area.offset.x, area.offset.y, area.extent.width, area.extent.height, framebuffer->getArea().width, framebuffer->getArea().height);
+#endif
 
     pass->captureInsideCommandBuffer(this, 0);
     framebuffer->captureInsideCommandBuffer(this, 0);
@@ -315,6 +318,10 @@ void VulkanCommandBuffer::cmdBeginRenderpass(const VulkanRenderPass* pass, const
         vkImage->setLayout(layout, pass->getAttachmentDescription(index)._layer, pass->getAttachmentDescription(index)._mip);
 
         ++index;
+
+#if VULKAN_DEBUG
+        LOG_DEBUG("VulkanCommandBuffer::cmdBeginRenderpass framebuffer image (width %u, height %u)", vkImage->getSize().width, vkImage->getSize().height);
+#endif
     }
 
     VkRenderPassBeginInfo renderPassBeginInfo = {};
@@ -327,16 +334,6 @@ void VulkanCommandBuffer::cmdBeginRenderpass(const VulkanRenderPass* pass, const
     renderPassBeginInfo.pClearValues = clearValues.data();
 
 #ifdef PLATFORM_ANDROID
-    if (pass->isDrawingToSwapchain() && VulkanDeviceCaps::getInstance()->preTransform)
-    {
-        VkSurfaceTransformFlagBitsKHR preTransform = static_cast<VulkanContext*>(m_context)->getSwapchain()->getTransformFlag();
-        if (preTransform & (VK_SURFACE_TRANSFORM_ROTATE_90_BIT_KHR | VK_SURFACE_TRANSFORM_ROTATE_270_BIT_KHR))
-        {
-            std::swap(renderPassBeginInfo.renderArea.offset.x, renderPassBeginInfo.renderArea.offset.y);
-            std::swap(renderPassBeginInfo.renderArea.extent.width, renderPassBeginInfo.renderArea.extent.height);
-        }
-    }
-
 #   ifdef VK_QCOM_render_pass_transform
     VkRenderPassTransformBeginInfoQCOM renderPassTransformBeginInfoQCOM = {};
     if (pass->isDrawingToSwapchain() && VulkanDeviceCaps::getInstance()->renderpassTransformQCOM)
@@ -349,7 +346,7 @@ void VulkanCommandBuffer::cmdBeginRenderpass(const VulkanRenderPass* pass, const
             renderPassTransformBeginInfoQCOM.transform = preTransform;
 
             renderPassBeginInfo.pNext = &renderPassTransformBeginInfoQCOM;
-            LOG_DEBUG("VulkanCommandBuffer::VkRenderPassTransformBeginInfoQCOM, transform %d", preTransform);
+            LOG_DEBUG("VulkanCommandBuffer::cmdBeginRenderpass VkRenderPassTransformBeginInfoQCOM, transform %d", preTransform);
         }
     }
 #   endif //VK_QCOM_render_pass_transform
@@ -362,17 +359,17 @@ void VulkanCommandBuffer::cmdBeginRenderpass(const VulkanRenderPass* pass, const
         subpassBeginInfo.pNext = nullptr;
         subpassBeginInfo.contents = VK_SUBPASS_CONTENTS_INLINE;
 
-        VulkanWrapper::CmdBeginRenderPass2(m_commands, &renderPassBeginInfo, &subpassBeginInfo);
 #if VULKAN_DEBUG
-        LOG_DEBUG("VulkanFramebuffer::CmdBeginRenderPass2 area (width %u, height %u)", area.extent.width, area.extent.height);
+        LOG_DEBUG("VulkanCommandBuffer::CmdBeginRenderPass2 area (width %u, height %u)", renderPassBeginInfo.renderArea.extent.width, renderPassBeginInfo.renderArea.extent.height);
 #endif
+        VulkanWrapper::CmdBeginRenderPass2(m_commands, &renderPassBeginInfo, &subpassBeginInfo);
     }
     else
     {
-        VulkanWrapper::CmdBeginRenderPass(m_commands, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
 #if VULKAN_DEBUG
-        LOG_DEBUG("VulkanFramebuffer::CmdBeginRenderPass area (width %u, height %u)", area.extent.width, area.extent.height);
+        LOG_DEBUG("VulkanCommandBuffer::CmdBeginRenderPass area (width %u, height %u)", renderPassBeginInfo.renderArea.extent.width, renderPassBeginInfo.renderArea.extent.height);
 #endif
+        VulkanWrapper::CmdBeginRenderPass(m_commands, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
     }
 
     m_isInsideRenderPass = true;

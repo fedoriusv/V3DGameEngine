@@ -49,6 +49,11 @@ const std::vector<Image*>& VulkanFramebuffer::getImages() const
     return m_images;
 }
 
+const core::Dimension2D& VulkanFramebuffer::getArea() const
+{
+    return m_size;
+}
+
 bool VulkanFramebuffer::create(const RenderPass* pass)
 {
     ASSERT(!m_framebuffer, "framebuffer is not nullptr");

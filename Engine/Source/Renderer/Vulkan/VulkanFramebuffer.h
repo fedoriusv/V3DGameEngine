@@ -32,6 +32,8 @@ namespace vk
         VkFramebuffer getHandle() const;
         const std::vector<Image*>& getImages() const;
 
+        const core::Dimension2D& getArea() const;
+
         bool create(const RenderPass* pass) override;
         void destroy() override;
 
