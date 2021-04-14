@@ -118,18 +118,22 @@ void WindowAndroid::destroy()
 WindowAndroid::~WindowAndroid()
 {
     LOG_DEBUG("WindowAndroid::~WindowAndroid");
+    ASSERT(!m_ready, "must be false");
 }
 
 void WindowAndroid::minimize()
 {
+    LOG_DEBUG("WindowAndroid::minimize not supported");
 }
 
 void WindowAndroid::maximize()
 {
+    LOG_DEBUG("WindowAndroid::maximize not supported");
 }
 
 void WindowAndroid::restore()
 {
+    LOG_DEBUG("WindowAndroid::restore not supported");
 }
 
 void WindowAndroid::setFullScreen(bool value)
@@ -164,12 +168,12 @@ bool WindowAndroid::isMinimized() const
 
 bool WindowAndroid::isActive() const
 {
-    return false;
+    return m_params._isActive;
 }
 
 bool WindowAndroid::isFocused() const
 {
-    return false;
+    return m_params._isFocused;
 }
 
 NativeInstance WindowAndroid::getInstance() const
@@ -204,6 +208,7 @@ void WindowAndroid::handleCmdCallback(android_app* app, int32_t cmd)
         break;
 
     case APP_CMD_INIT_WINDOW:
+    {
         // The window is being shown, get it ready.
         ASSERT(g_nativeAndroidApp->window, "nullptr");
         if (g_nativeAndroidApp->window != NULL && !window->m_ready)
@@ -213,17 +218,43 @@ void WindowAndroid::handleCmdCallback(android_app* app, int32_t cmd)
             s32 error = ANativeWindow_setBuffersGeometry(window->getWindowHandle(), window->m_params._size.width, window->m_params._size.height, WINDOW_FORMAT_RGBA_8888);
             s32 width = ANativeWindow_getWidth(window->getWindowHandle());
             s32 height = ANativeWindow_getHeight(window->getWindowHandle());
-            LOG_INFO("WindowAndroid::handleCmdCallback: window requested size: { %d, %d } = %d, current size { %d, %d }", window->m_params._size.width, window->m_params._size.height, error, width, height);
+            LOG_INFO("WindowAndroid::handleCmdCallback: window requested size: { %d, %d } = %d, current size { %d, %d },", window->m_params._size.width, window->m_params._size.height, error, width, height);
 
             window->m_params._size = core::Dimension2D(width,  height);
             window->m_ready = true;
             window->notifyObservers();
         }
         break;
+    }
+
+    case APP_CMD_CONTENT_RECT_CHANGED:
+    {
+        LOG_DEBUG("WindowAndroid::handleCmdCallback: APP_CMD_CONTENT_RECT_CHANGED");
+
+        s32 width = ANativeWindow_getWidth(window->getWindowHandle());
+        s32 height = ANativeWindow_getHeight(window->getWindowHandle());
+        LOG_INFO("WindowAndroid::handleCmdCallback: window current size { %d, %d } Rect { %d, %d; %d, %d}", width, height, app->contentRect.left, app->contentRect.top, app->contentRect.right, app->contentRect.bottom);
+
+        break;
+    }
+
+    case APP_CMD_WINDOW_RESIZED:
+    {
+        LOG_DEBUG("WindowAndroid::handleCmdCallback: APP_CMD_WINDOW_RESIZED");
+
+        s32 width = ANativeWindow_getWidth(window->getWindowHandle());
+        s32 height = ANativeWindow_getHeight(window->getWindowHandle());
+        LOG_INFO("WindowAndroid::handleCmdCallback: window current size { %d, %d }", width, height);
+
+        window->m_params._size = core::Dimension2D(width,  height);
+        window->notifyObservers();
+        break;
+    }
 
     case APP_CMD_TERM_WINDOW:
         // The window is being hidden or closed, clean it up.
         LOG_DEBUG("WindowAndroid::handleCmdCallback: APP_CMD_TERM_WINDOW");
+        
         window->m_ready = false;
         window->notifyObservers();
         break;
@@ -250,7 +281,6 @@ void WindowAndroid::handleCmdCallback(android_app* app, int32_t cmd)
         // Also stop animating.
         LOG_DEBUG("WindowAndroid::handleCmdCallback: APP_CMD_LOST_FOCUS");
         //engine->animating = 0;
-        //engine_draw_frame(engine);
         break;
     }
 }

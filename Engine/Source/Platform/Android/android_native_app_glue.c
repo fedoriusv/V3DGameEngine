@@ -137,6 +137,16 @@ void android_app_pre_exec_cmd(struct android_app* android_app, int8_t cmd) {
             print_cur_config(android_app);
             break;
 
+        case APP_CMD_WINDOW_RESIZED:
+            LOGV("APP_CMD_WINDOW_RESIZED\n");
+            android_app->windowsResized = 1;
+            break;
+
+        case APP_CMD_CONTENT_RECT_CHANGED:
+            LOGV("APP_CMD_CONTENT_RECT_CHANGED\n");
+            android_app->windowsResized = 1;
+            break;
+
         case APP_CMD_DESTROY:
             LOGV("APP_CMD_DESTROY\n");
             android_app->destroyRequested = 1;
@@ -425,9 +435,20 @@ static void onInputQueueDestroyed(ANativeActivity* activity, AInputQueue* queue)
     android_app_set_input((struct android_app*)activity->instance, NULL);
 }
 
+static void onResizeWindows(ANativeActivity* activity, ANativeWindow* window) {
+    LOGV("ResizeWindows: %p -- %p\n", activity, window);
+    android_app_write_cmd((struct android_app*)activity->instance, APP_CMD_WINDOW_RESIZED);
+}
+
+static void onContentRectChanged(ANativeActivity* activity, const ARect* rect) {
+    LOGV("ContentRectChanged: %p -- [%d, %d; %d, %d]\n", activity, rect->left, rect->top, rect->right, rect->bottom);
+    struct android_app* app = (struct android_app*)activity->instance;
+    app->contentRect = *rect;
+    android_app_write_cmd((struct android_app*)activity->instance, APP_CMD_CONTENT_RECT_CHANGED);
+}
+
 JNIEXPORT
-void ANativeActivity_onCreate(ANativeActivity* activity, void* savedState,
-                              size_t savedStateSize) {
+void ANativeActivity_onCreate(ANativeActivity* activity, void* savedState, size_t savedStateSize) {
     LOGV("Creating: %p\n", activity);
     activity->callbacks->onDestroy = onDestroy;
     activity->callbacks->onStart = onStart;
@@ -442,6 +463,8 @@ void ANativeActivity_onCreate(ANativeActivity* activity, void* savedState,
     activity->callbacks->onNativeWindowDestroyed = onNativeWindowDestroyed;
     activity->callbacks->onInputQueueCreated = onInputQueueCreated;
     activity->callbacks->onInputQueueDestroyed = onInputQueueDestroyed;
+    activity->callbacks->onNativeWindowResized = onResizeWindows;
+    activity->callbacks->onContentRectChanged = onContentRectChanged;
 
     activity->instance = android_app_create(activity, savedState, savedStateSize);
 }

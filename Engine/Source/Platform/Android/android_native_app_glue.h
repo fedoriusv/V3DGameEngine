@@ -161,6 +161,8 @@ struct android_app {
     // destroyed and waiting for the app thread to complete.
     int destroyRequested;
 
+    int windowsResized;
+
     // -------------------------------------------------
     // Below are "private" implementation of the glue code.
 
