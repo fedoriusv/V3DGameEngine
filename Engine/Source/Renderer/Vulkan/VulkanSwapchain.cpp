@@ -48,10 +48,7 @@ bool createSurfaceWinApi(VkInstance vkInstance, NativeInstance hInstance, Native
 #ifdef PLATFORM_ANDROID
 bool createSurfaceAndroidApi(VkInstance vkInstance, NativeInstance hInstance, NativeWindows hWnd, VkSurfaceKHR& surface, const core::Dimension2D& size)
 {
-    s32 error = 0;//ANativeWindow_setBuffersGeometry(hWnd, size.width, size.height, WINDOW_FORMAT_RGBA_8888);
-    s32 width = ANativeWindow_getWidth(hWnd);
-    s32 height = ANativeWindow_getHeight(hWnd);
-    LOG_DEBUG("createSurfaceAndroidApi: createSurfaceAndroidApi: { %d, %d } = %d, current size { %d, %d }",  size.width, size.height, error, width, height);
+    LOG_DEBUG("createSurfaceAndroidApi: createSurfaceAndroidApi: { %d, %d } ", size.width, size.height);
 
     VkAndroidSurfaceCreateInfoKHR surfaceCreateInfo = {};
     surfaceCreateInfo.sType = VK_STRUCTURE_TYPE_ANDROID_SURFACE_CREATE_INFO_KHR;
@@ -599,7 +596,7 @@ void VulkanSwapchain::present(VkQueue queue, const std::vector<VkSemaphore>& wai
 u32 VulkanSwapchain::acquireImage()
 {
 #if VULKAN_DEBUG
-    LOG_DEBUG("VulkanSwapchain::acquireImage");
+    LOG_DEBUG("VulkanSwapchain::acquireImage, semaphore Index %d", m_currentSemaphoreIndex);
 #endif //VULKAN_DEBUG
     VkSemaphore semaphore = m_acquireSemaphore[m_currentSemaphoreIndex];
     VkFence fence = VK_NULL_HANDLE;
@@ -610,7 +607,7 @@ u32 VulkanSwapchain::acquireImage()
         fenceCreateInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
         fenceCreateInfo.pNext = nullptr;
         fenceCreateInfo.flags = 0;
-        VkResult result = vkCreateFence(m_deviceInfo->_device, &fenceCreateInfo, VULKAN_ALLOCATOR, &fence);
+        VkResult result = VulkanWrapper::CreateFence(m_deviceInfo->_device, &fenceCreateInfo, VULKAN_ALLOCATOR, &fence);
         ASSERT(result == VK_SUCCESS, "error");
     }
 #endif
@@ -620,11 +617,11 @@ u32 VulkanSwapchain::acquireImage()
 
 #if DEBUG_FENCE_ACQUIRE
     {
-        VkResult result = vkWaitForFences(m_deviceInfo->_device, 1, &fence, VK_TRUE, u64(~0ULL));
+        VkResult result = VulkanWrapper::WaitForFences(m_deviceInfo->_device, 1, &fence, VK_TRUE, u64(~0ULL));
         ASSERT(result == VK_SUCCESS, "wrong");
         if (result == VK_SUCCESS)
         {
-            vkDestroyFence(m_deviceInfo->_device, fence, VULKAN_ALLOCATOR);
+            VulkanWrapper::DestroyFence(m_deviceInfo->_device, fence, VULKAN_ALLOCATOR);
         }
     }
 #endif
@@ -732,7 +729,12 @@ VulkanImage* VulkanSwapchain::getBackbuffer() const
 VkSemaphore VulkanSwapchain::getAcquireSemaphore() const
 {
     ASSERT(s_currentImageIndex >= 0, "invalid index");
+#if SWAPCHAIN_ON_ADVANCE
+    ASSERT(std::get<1>(m_presentInfo) != VK_NULL_HANDLE, "must be known");
+    return std::get<1>(m_presentInfo);
+#else
     return m_acquireSemaphore[m_currentSemaphoreIndex];
+#endif
 }
 
 u32 VulkanSwapchain::getSwapchainImageCount() const
