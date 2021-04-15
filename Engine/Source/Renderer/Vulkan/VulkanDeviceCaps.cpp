@@ -393,10 +393,10 @@ void VulkanDeviceCaps::fillCapabilitiesList(const DeviceInfo* info)
 #ifdef PLATFORM_ANDROID
 #   ifdef VK_QCOM_render_pass_transform
     renderpassTransformQCOM = isEnabledExtension(VK_QCOM_RENDER_PASS_TRANSFORM_EXTENSION_NAME);
-    renderpassTransformQCOM = false; //Feature has render artifacts
+    renderpassTransformQCOM = false; //TODO has conflict with preTransform, need check
     LOG_INFO("VulkanDeviceCaps::initialize renderpassTransformQCOM is %u", renderpassTransformQCOM);
 
-    preTransform = true && !renderpassTransformQCOM; //Feature has render artifacts
+    preTransform = true && !renderpassTransformQCOM;
     LOG_INFO("VulkanDeviceCaps::initialize preTransform is %u", preTransform);
 #   endif //VK_QCOM_render_pass_transform
 

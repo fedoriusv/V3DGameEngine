@@ -336,7 +336,7 @@ void VulkanCommandBuffer::cmdBeginRenderpass(const VulkanRenderPass* pass, const
 #ifdef PLATFORM_ANDROID
 #   ifdef VK_QCOM_render_pass_transform
     VkRenderPassTransformBeginInfoQCOM renderPassTransformBeginInfoQCOM = {};
-    if (pass->isDrawingToSwapchain() && VulkanDeviceCaps::getInstance()->renderpassTransformQCOM)
+    if (VulkanDeviceCaps::getInstance()->renderpassTransformQCOM && pass->isDrawingToSwapchain())
     {
         VkSurfaceTransformFlagBitsKHR preTransform = static_cast<VulkanContext*>(m_context)->getSwapchain()->getTransformFlag();
         if (preTransform != VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR)
