@@ -18,7 +18,7 @@ using namespace v3d;
 Scene::Scene(renderer::Context* context, const v3d::core::Dimension2D& size) noexcept
     : m_Context(context)
     , m_CommandList(nullptr)
-    , m_Viewport(size)
+    , m_Size(size)
 
     , m_CurrentState(States::StateInit)
 
@@ -82,7 +82,7 @@ void Scene::Init()
 
     //init camera
     m_Camera = new scene::CameraArcballHelper(new scene::Camera(core::Vector3D(0.0f, 0.0f, 0.0f), core::Vector3D(0.0f, 1.0f, 0.0f)), 8.0f, 4.0f, 20.0f);
-    m_Camera->setPerspective(45.0f, m_Context->getBackbufferSize(), 1.f, 50.f);
+    m_Camera->setPerspective(45.0f, m_Size, 1.f, 50.f);
     m_Camera->setRotation(core::Vector3D(0.0f, -90.0f, 0.0f));
 }
 
@@ -110,7 +110,7 @@ void Scene::Load()
         const renderer::Shader* vertShader = resource::ResourceLoaderManager::getInstance()->loadShader<renderer::Shader, resource::ShaderSourceFileLoader>(m_Context, "shaders/mesh.vs", {});
         const renderer::Shader* fragShader = resource::ResourceLoaderManager::getInstance()->loadShader<renderer::Shader, resource::ShaderSourceFileLoader>(m_Context, "shaders/mesh.ps", {});
 #endif
-        m_Render = new v3d::TextureRender(*m_CommandList, m_CommandList->getBackbuffer()->getDimension(), { vertShader, fragShader }, m_CurrentModel->m_Model->getVertexInputAttribDescription(0, 0));
+        m_Render = new v3d::TextureRender(*m_CommandList, m_Context->getBackbufferSize(), { vertShader, fragShader }, m_CurrentModel->m_Model->getVertexInputAttribDescription(0, 0));
     }
 
     m_CommandList->submitCommands(true);

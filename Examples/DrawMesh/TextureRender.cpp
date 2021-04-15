@@ -34,11 +34,10 @@ TextureRender::TextureRender(CommandList& cmdList, const v3d::core::Dimension2D&
 
     m_renderTarget = cmdList.createObject<RenderTargetState>(viewport);
     m_renderTarget->setColorTexture(0, cmdList.getBackbuffer(), RenderTargetLoadOp::LoadOp_Clear, RenderTargetStoreOp::StoreOp_Store, core::Vector4D(0.0f));
-    core::Dimension2D size = cmdList.getContext()->getBackbufferSize();
 #if defined(PLATFORM_ANDROID)
-    Texture2D* depthAttachment = cmdList.createObject<Texture2D>(TextureUsage::TextureUsage_Attachment, Format::Format_D24_UNorm_S8_UInt, size, TextureSamples::TextureSamples_x1);
+    Texture2D* depthAttachment = cmdList.createObject<Texture2D>(TextureUsage::TextureUsage_Attachment, Format::Format_D24_UNorm_S8_UInt, viewport, TextureSamples::TextureSamples_x1);
 #else
-    Texture2D* depthAttachment = cmdList.createObject<Texture2D>(TextureUsage::TextureUsage_Attachment, Format::Format_D32_SFloat_S8_UInt, size, TextureSamples::TextureSamples_x1);
+    Texture2D* depthAttachment = cmdList.createObject<Texture2D>(TextureUsage::TextureUsage_Attachment, Format::Format_D32_SFloat_S8_UInt, viewport, TextureSamples::TextureSamples_x1);
 #endif
     m_renderTarget->setDepthStencilTexture(depthAttachment, RenderTargetLoadOp::LoadOp_Clear, RenderTargetStoreOp::StoreOp_DontCare, 1.0f);
 

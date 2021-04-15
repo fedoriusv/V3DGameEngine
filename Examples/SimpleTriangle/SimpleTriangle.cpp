@@ -106,7 +106,7 @@ void SimpleTriangle::init(v3d::renderer::CommandList* commandList, const core::D
     ASSERT(vertShader && fragShader, "nullptr");
     m_Program = m_CommandList->createObject<renderer::ShaderProgram, std::vector<const renderer::Shader*>>({ vertShader, fragShader });
 
-    m_RenderTarget = m_CommandList->createObject<renderer::RenderTargetState>(size);
+    m_RenderTarget = m_CommandList->createObject<renderer::RenderTargetState>(m_CommandList->getBackbuffer()->getDimension());
     m_RenderTarget->setColorTexture(0, m_CommandList->getBackbuffer(),
         {
             renderer::RenderTargetLoadOp::LoadOp_Clear, renderer::RenderTargetStoreOp::StoreOp_Store, core::Vector4D(0.0f)

@@ -37,7 +37,7 @@ private:
 
     v3d::renderer::Context*     m_Context;
     v3d::renderer::CommandList* m_CommandList;
-    v3d::core::Dimension2D      m_Viewport;
+    v3d::core::Dimension2D      m_Size;
 
     enum class States
     {
