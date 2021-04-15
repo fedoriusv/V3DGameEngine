@@ -84,6 +84,7 @@ bool ShaderPatcherSpirV::process(PatchSpirvCode* patch, std::vector<u32>& spirv)
     LOG_DEBUG("ShaderPatcherSpirV::process, spirv patch time %.4f sec", static_cast<f32>(time) / 1000.0f);
 #endif
 
+    LOG_DEBUG("ShaderPatcherSpirV::process result %d", result);
     return result;
 }
 

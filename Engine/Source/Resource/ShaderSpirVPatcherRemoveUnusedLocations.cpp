@@ -151,6 +151,7 @@ bool PatchRemoveUnusedLocations::collectDataFromSpirv(const std::vector<u32>& sp
 bool PatchRemoveUnusedLocations::patch(const std::vector<u32>& spirv, std::vector<u32>& patchedSpirv, u32 flags)
 {
     //[ UNASSIGNED-CoreValidation-Shader-OutputNotConsumed ] Object: 0x0 (Type = 15) | vertex shader writes to output location 0.0 which is not consumed by fragment shader
+    LOG_DEBUG("PatchRemoveUnusedLocations::patch");
 
     std::vector<Location> unusedVertexLocations;
     PatchRemoveUnusedLocations::extractUnusedLocations(unusedVertexLocations);

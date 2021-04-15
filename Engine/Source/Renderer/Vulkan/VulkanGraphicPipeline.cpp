@@ -14,6 +14,7 @@
 #define PATCH_SPIRV_REMOVE_UNUSED_LOCATIONS 1
 #include "Resource/ShaderSpirVPatcherRemoveUnusedLocations.h"
 #include "Resource/ShaderSpirVPatcherVertexTransform.h"
+#include "Resource/ShaderSpirVPatcherInvertOrdinate.h"
 
 namespace v3d
 {
@@ -786,6 +787,13 @@ bool VulkanGraphicPipeline::compileShaders(std::vector<std::tuple<const ShaderHe
 #endif //PATCH_SPIRV_REMOVE_UNUSED_LOCATIONS
 
 #ifdef PLATFORM_ANDROID
+            resource::PatchInvertOrdinate patchInvertOrdinate;
+            if (patcher.process(&patchInvertOrdinate, patchedSpirv))
+            {
+                source = patchedSpirv.data();
+                size = static_cast<u32>(patchedSpirv.size()) * sizeof(u32);
+            }
+
             ASSERT(m_compatibilityRenderPass, "nullptr");
             if (VulkanDeviceCaps::getInstance()->preTransform && static_cast<VulkanRenderPass*>(m_compatibilityRenderPass)->isDrawingToSwapchain())
             {

@@ -51,6 +51,7 @@ PatchVertexTransform::PatchVertexTransform(f32 angle) noexcept
 bool PatchVertexTransform::patch(const std::vector<u32>& spirv, std::vector<u32>& patchedSpirv, u32 flags)
 {
     //gl_Position = vec4(gl_Position.x * cos(rad) - gl_Position.y * sin(rad), gl_Position.x * sin(rad) + gl_Position.y * cos(rad), gl_Position.z, gl_Position.w);
+    LOG_DEBUG("PatchVertexTransform::patch");
 
     if (spirv.empty())
     {
