@@ -55,7 +55,8 @@ namespace vk
         VulkanImage* getSwapchainImage(u32 index) const;
         u32 getSwapchainImageCount() const;
 
-        VkSemaphore getAcquireSemaphore() const;
+        VkSemaphore getAcquireSemaphore(u32 index) const;
+        u32 currentAcquireSemaphoreIndex() const;
 
         static u32 currentSwapchainIndex();
         

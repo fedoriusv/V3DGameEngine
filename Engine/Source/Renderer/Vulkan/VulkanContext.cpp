@@ -802,6 +802,12 @@ void VulkanContext::beginFrame()
 #if SWAPCHAIN_ON_ADVANCE
     ASSERT(prevImageIndex != ~0U, "wrong index");
     m_currentTransitionState.transitionImages(drawBuffer, { m_swapchain->getSwapchainImage(prevImageIndex) }, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
+    static bool s_ones = true;
+    if (s_ones) //only for 1st a semaphore of swapchain image
+    {
+        drawBuffer->addSemaphore(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, m_swapchain->getAcquireSemaphore(0));
+        s_ones = false;
+    }
 #endif //SWAPCHAIN_ON_ADVANCE
 
 #if FRAME_PROFILER_ENABLE
@@ -978,7 +984,7 @@ void VulkanContext::setRenderTarget(const RenderPass::RenderPassInfo* renderpass
         if (m_currentBufferState.isCurrentBufferAcitve(CommandTargetType::CmdDrawBuffer))
         {
             VulkanCommandBuffer* drawBuffer = m_currentBufferState.getAcitveBuffer(CommandTargetType::CmdDrawBuffer);
-            drawBuffer->addSemaphore(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, m_swapchain->getAcquireSemaphore());
+            drawBuffer->addSemaphore(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, m_swapchain->getAcquireSemaphore(m_swapchain->currentAcquireSemaphoreIndex()));
             VulkanSemaphore* semaphore = m_semaphoreManager->acquireSemaphore();
             m_submitSemaphores.push_back(semaphore->getHandle());
         }

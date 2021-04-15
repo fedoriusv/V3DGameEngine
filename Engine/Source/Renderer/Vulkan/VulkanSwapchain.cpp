@@ -726,15 +726,15 @@ VulkanImage* VulkanSwapchain::getBackbuffer() const
     return m_swapBuffers[s_currentImageIndex];
 }
 
-VkSemaphore VulkanSwapchain::getAcquireSemaphore() const
+VkSemaphore VulkanSwapchain::getAcquireSemaphore(u32 index) const
 {
-    ASSERT(s_currentImageIndex >= 0, "invalid index");
-#if SWAPCHAIN_ON_ADVANCE
-    ASSERT(std::get<1>(m_presentInfo) != VK_NULL_HANDLE, "must be known");
-    return std::get<1>(m_presentInfo);
-#else
-    return m_acquireSemaphore[m_currentSemaphoreIndex];
-#endif
+    ASSERT(index < m_acquireSemaphore.size(), "invalid index");
+    return m_acquireSemaphore[index];
+}
+
+u32 VulkanSwapchain::currentAcquireSemaphoreIndex() const
+{
+    return m_currentSemaphoreIndex;
 }
 
 u32 VulkanSwapchain::getSwapchainImageCount() const
