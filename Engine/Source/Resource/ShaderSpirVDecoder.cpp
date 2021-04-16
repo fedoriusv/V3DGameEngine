@@ -281,11 +281,11 @@ Resource* ShaderSpirVDecoder::decode(const stream::Stream* stream, const std::st
 #if PATCH_SYSTEM
             if (shaderType == shaderc_fragment_shader && m_header._flags & 0x08) //patched
             {
-                std::vector<u32> spirvBinaryPatched;
-                PatchDriverBugOptimisation patch(m_header._flags);
+                std::vector<u32> spirvBinaryPatched(spirvBinary);
+                PatchDriverBugOptimization patch;
 
                 ShaderPatcherSpirV patcher;
-                if (patcher.process(&patch, spirvBinary, spirvBinaryPatched))
+                if (patcher.process(&patch, spirvBinaryPatched))
                 {
                     std::swap(spirvBinary, spirvBinaryPatched);
                 }
@@ -367,23 +367,6 @@ Resource* ShaderSpirVDecoder::decode(const stream::Stream* stream, const std::st
             stream->read(bytecode.data(), sizeof(u32), static_cast<u32>(bytecode.size()));
             ASSERT(bytecode[0] == 0x07230203, "invalid spirv magic number in head");
 
-#if PATCH_SYSTEM
-            if (type == renderer::ShaderType::ShaderType_Fragment && m_header._flags & 0x08) //patched
-            {
-                std::vector<u32> spirvBinaryPatched;
-                PatchDriverBugOptimisation patch(m_header._flags);
-
-                ShaderPatcherSpirV patcher;
-                if (patcher.process(&patch, bytecode, spirvBinaryPatched))
-                {
-                    std::swap(bytecode, spirvBinaryPatched);
-                }
-                else
-                {
-                    ASSERT(false, "patch is failed");
-                }
-            }
-#endif
             stream::Stream* resourceSpirvBinary = stream::StreamManager::createMemoryStream(nullptr, static_cast<u32>(bytecode.size()) + sizeof(u32) + sizeof(bool));
             resourceSpirvBinary->write<u32>(stream->size());
             resourceSpirvBinary->write(bytecode.data(), stream->size());

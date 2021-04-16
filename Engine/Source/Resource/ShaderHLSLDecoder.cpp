@@ -5,6 +5,8 @@
 #include "Utils/Logger.h"
 #include "Utils/Timer.h"
 
+#include "Renderer/ShaderProperties.h"
+
 #ifdef D3D_RENDER
 #include <d3dcompiler.h>
 #include "Renderer/D3D12/D3DDebug.h"
@@ -550,7 +552,7 @@ bool reflect(ID3DBlob* shader, stream::Stream* stream, u32 version)
 
         u32 currentSpace = 0;
         std::vector<std::vector<u32>> textureTable;
-        textureTable.resize(4); //k_maxDescriptorSetIndex
+        textureTable.resize(renderer::k_maxDescriptorSetIndex);
 
         for (u32 imageId = 0; imageId < imagesCount; ++imageId)
         {
@@ -570,9 +572,9 @@ bool reflect(ID3DBlob* shader, stream::Stream* stream, u32 version)
             sepImage._array = boundTexturesDescs[imageId].BindCount;
             sepImage._ms = ms;
             sepImage._depth = false;
-    #if USE_STRING_ID_SHADER
+#if USE_STRING_ID_SHADER
             sepImage._name = std::string(boundTexturesDescs[imageId].Name);
-    #endif
+#endif
             sepImage >> stream;
         }
     }
@@ -580,7 +582,7 @@ bool reflect(ID3DBlob* shader, stream::Stream* stream, u32 version)
     {
         u32 currentSpace = 0;
         std::vector<std::vector<u32>> samplerTable;
-        samplerTable.resize(4); //k_maxDescriptorSetIndex
+        samplerTable.resize(renderer::k_maxDescriptorSetIndex);
 
         const std::vector<D3D11_SHADER_INPUT_BIND_DESC>& boundSamplersDescs = bindDescs[D3D_SIT_SAMPLER];
         u32 samplersCount = static_cast<u32>(boundSamplersDescs.size());
@@ -604,6 +606,16 @@ bool reflect(ID3DBlob* shader, stream::Stream* stream, u32 version)
 #endif
             sampler >> stream;
         }
+    }
+
+    {
+        u32 countStorageImage = static_cast<u32>(0);
+        stream->write<u32>(countStorageImage);
+    }
+
+    {
+        u32 countStorageBuffers = static_cast<u32>(0);
+        stream->write<u32>(countStorageBuffers);
     }
 
     {
@@ -726,7 +738,7 @@ void reflectConstantBuffers(ID3D11ShaderReflection* reflector, const std::vector
 
     u32 currentSpace = 0;
     std::vector<std::vector<u32>> bufferTable;
-    bufferTable.resize(4); //k_maxDescriptorSetIndex
+    bufferTable.resize(renderer::k_maxDescriptorSetIndex);
 
     for (UINT constantBufferID = 0; constantBufferID < unifromBufferCount; ++constantBufferID)
     {

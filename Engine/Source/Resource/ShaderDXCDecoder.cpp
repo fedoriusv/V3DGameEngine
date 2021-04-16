@@ -585,6 +585,16 @@ bool ShaderDXCDecoder::reflect(stream::Stream* stream, IDxcBlob* shader) const
     reflectSamplers(shaderReflection, bindDescs[D3D_SIT_SAMPLER], stream);
 
     {
+        u32 countStorageImage = static_cast<u32>(0);
+        stream->write<u32>(countStorageImage);
+    }
+
+    {
+        u32 countStorageBuffers = static_cast<u32>(0);
+        stream->write<u32>(countStorageBuffers);
+    }
+
+    {
         u32 pushConstantCount = static_cast<u32>(0);
         stream->write<u32>(pushConstantCount);
     }
