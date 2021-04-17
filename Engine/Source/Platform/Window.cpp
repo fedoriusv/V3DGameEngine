@@ -22,6 +22,7 @@ Window::Window(const WindowParam& params, event::InputEventReceiver* receiver)
 
 Window::~Window()
 {
+    ASSERT(!m_receiver, "must be nullptr");
 }
 
 Window* Window::createWindow(const core::Dimension2D& size, const core::Point2D& pos, bool fullscreen, bool resizable)
@@ -133,6 +134,11 @@ const core::Point2D & Window::getPosition() const
 bool Window::isFullscreen() const
 {
     return m_params._isFullscreen;
+}
+
+bool Window::isResizable() const
+{
+    return m_params._isResizable;
 }
 
 } //namespace platform
