@@ -30,7 +30,7 @@ public:
     virtual ~BaseRender() = default;
 
     virtual void Init(v3d::renderer::CommandList* commandList) = 0;
-    virtual void Render(v3d::renderer::CommandList* commandList, DrawPolicy* draw) = 0;
+    virtual void Render(v3d::renderer::CommandList* commandList, DrawPolicy* draw = nullptr) = 0;
 };
 
 class SceneRenderer final
@@ -52,6 +52,7 @@ private:
     v3d::scene::CameraArcballHelper* m_Camera;
 
     BaseRender* m_BasePass;
+    BaseRender* m_DownsamplePass;
     BaseRender* m_OffcreenPass;
 
     DrawPolicy* m_Draws;
