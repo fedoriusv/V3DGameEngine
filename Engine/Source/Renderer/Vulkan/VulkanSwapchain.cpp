@@ -545,12 +545,14 @@ void VulkanSwapchain::present(VkQueue queue, const std::vector<VkSemaphore>& wai
     VkPresentInfoKHR presentInfoKHR = {};
     presentInfoKHR.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
     presentInfoKHR.pNext = nullptr;
+#if !SWAPCHAIN_ON_ADVANCE
     if (waitSemaphores.empty())
     {
         presentInfoKHR.waitSemaphoreCount = 1;
         presentInfoKHR.pWaitSemaphores = &std::get<1>(m_presentInfo);
     }
     else
+#endif
     {
         presentInfoKHR.waitSemaphoreCount = static_cast<u32>(waitSemaphores.size());
         presentInfoKHR.pWaitSemaphores = waitSemaphores.data();
