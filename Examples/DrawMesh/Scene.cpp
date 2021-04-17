@@ -133,7 +133,7 @@ void Scene::LoadVoyager()
 
     {
         scene::Model* model = resource::ResourceLoaderManager::getInstance()->load<scene::Model, resource::ModelFileLoader>("models/voyager/voyager.dae", resource::ModelLoaderFlag::ModelLoaderFlag_FlipYTextureCoord);
-        m_Voyager.m_Model = new scene::ModelHelper(*m_CommandList, { model });
+        m_Voyager.m_Model = new scene::ModelHelper(m_CommandList, { model });
     }
 }
 
@@ -146,7 +146,7 @@ void Scene::LoadTest()
     m_Test.m_Sampler->setWrap(renderer::SamplerWrap::TextureWrap_MirroredRepeat);
 
     scene::Model* model = resource::ResourceLoaderManager::getInstance()->load<scene::Model, resource::ModelFileLoader>("engine/data/models/test_blender.dae", resource::ModelLoaderFlag::ModelLoaderFlag_FlipYTextureCoord);
-    m_Test.m_Model = new scene::ModelHelper(*m_CommandList, { model });
+    m_Test.m_Model = new scene::ModelHelper(m_CommandList, { model });
 }
 
 void Scene::Update()
