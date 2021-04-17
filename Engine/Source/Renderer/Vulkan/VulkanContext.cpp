@@ -982,13 +982,10 @@ void VulkanContext::setRenderTarget(const RenderPass::RenderPassInfo* renderpass
     if (swapchainPresent)
     {
         ASSERT(vkRenderpass->isDrawingToSwapchain(), "must be true");
-        if (m_currentBufferState.isCurrentBufferAcitve(CommandTargetType::CmdDrawBuffer))
-        {
-            VulkanCommandBuffer* drawBuffer = m_currentBufferState.getAcitveBuffer(CommandTargetType::CmdDrawBuffer);
-            drawBuffer->addSemaphore(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, m_swapchain->getAcquireSemaphore(m_swapchain->currentAcquireSemaphoreIndex()));
-            VulkanSemaphore* semaphore = m_semaphoreManager->acquireSemaphore();
-            m_submitSemaphores.push_back(semaphore->getHandle());
-        }
+        VulkanCommandBuffer* drawBuffer = m_currentBufferState.acquireAndStartCommandBuffer(CommandTargetType::CmdDrawBuffer);
+        drawBuffer->addSemaphore(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, m_swapchain->getAcquireSemaphore(m_swapchain->currentAcquireSemaphoreIndex()));
+        VulkanSemaphore* semaphore = m_semaphoreManager->acquireSemaphore();
+        m_submitSemaphores.push_back(semaphore->getHandle());
 
         for (u32 index = 0; index < m_swapchain->getSwapchainImageCount(); ++index)
         {
