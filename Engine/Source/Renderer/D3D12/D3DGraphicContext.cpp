@@ -121,17 +121,6 @@ void D3DGraphicContext::endFrame()
 #if D3D_DEBUG
     LOG_DEBUG("D3DGraphicContext::endFrame %d", m_frameCounter);
 #endif //D3D_DEBUG
-
-    ASSERT(m_currentState.commandList(), "nullptr");
-    D3DGraphicsCommandList* cmdList = m_currentState.commandList();
-    if (m_boundState._renderTarget)
-    {
-        D3DGraphicContext::switchRenderTargetTransitionToFinal(cmdList, m_boundState._renderTarget);
-    }
-    cmdList->close();
-
-    m_commandListManager->execute(cmdList, false);
-    m_currentState.setCommandList(nullptr);
 }
 
 void D3DGraphicContext::presentFrame()
@@ -143,6 +132,19 @@ void D3DGraphicContext::presentFrame()
 #if D3D_DEBUG
     LOG_DEBUG("D3DGraphicContext::presentFrame %d", m_frameCounter);
 #endif //D3D_DEBUG
+
+    if (D3DGraphicsCommandList* cmdList = m_currentState.commandList(); cmdList)
+    {
+        if (m_boundState._renderTarget)
+        {
+            D3DGraphicContext::switchRenderTargetTransitionToFinal(cmdList, m_boundState._renderTarget);
+        }
+        cmdList->close();
+
+        m_commandListManager->execute(cmdList, false);
+        m_currentState.setCommandList(nullptr);
+    }
+
     m_swapchain->present();
 
     m_boundState.reset();
@@ -307,7 +309,7 @@ void D3DGraphicContext::setViewport(const core::Rect32& viewport, const core::Ve
         depth.y
     };
 
-    D3DGraphicsCommandList* cmdList = m_currentState.acquireCommandList();
+    D3DGraphicsCommandList* cmdList = static_cast<D3DGraphicsCommandList*>(D3DGraphicContext::getOrAcquireCurrentCommandList());
     cmdList->setViewport({ dxViewport });
 }
 
@@ -318,7 +320,7 @@ void D3DGraphicContext::setScissor(const core::Rect32& scissor)
         scissor.getLeftX(), scissor.getTopY(), scissor.getRightX(), scissor.getBottomY()
     };
 
-    D3DGraphicsCommandList* cmdList = m_currentState.acquireCommandList();
+    D3DGraphicsCommandList* cmdList = static_cast<D3DGraphicsCommandList*>(D3DGraphicContext::getOrAcquireCurrentCommandList());
     cmdList->setScissor({ dxScissor });
 }
 
