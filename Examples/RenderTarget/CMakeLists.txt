@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.0.0)
 
 set(CURRENT_PROJECT "RenderTarget")
-message(STATUS ${CURRENT_PROJECT})
+message("-- " ${CURRENT_PROJECT})
 
 project(${CURRENT_PROJECT})
 
