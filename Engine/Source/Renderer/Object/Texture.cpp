@@ -260,7 +260,7 @@ void Texture::createTexture(const core::Dimension3D& dimension, const void* data
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 
 Texture2D::Texture2D(renderer::CommandList& cmdList, TextureUsageFlags usage, Format format, const core::Dimension2D& dimension, u32 mipmaps, const void* data, const std::string& name) noexcept
-    : Texture(cmdList, TextureTarget::Texture2D, format, TextureSamples::TextureSamples_x1, 1U, mipmaps, usage)
+    : Texture(cmdList, TextureTarget::Texture2D, format, TextureSamples::TextureSamples_x1, 1U, (usage& TextureUsage::TextureUsage_GenerateMipmaps) ? ImageFormat::calculateMipmapCount({ dimension.width, dimension.height, 1 }) : mipmaps, usage)
     , m_dimension(dimension)
 {
     LOG_DEBUG("Texture2D::Texture2D constructor %llx", this);
@@ -275,7 +275,7 @@ Texture2D::Texture2D(renderer::CommandList& cmdList, TextureUsageFlags usage, Fo
 }
 
 Texture2D::Texture2D(renderer::CommandList & cmdList, TextureUsageFlags usage, renderer::Format format, const core::Dimension2D& dimension, TextureSamples samples, const std::string& name) noexcept
-    : Texture(cmdList, TextureTarget::Texture2D, format, samples, 1U, 1U, usage)
+    : Texture(cmdList, TextureTarget::Texture2D, format, samples, 1U, (usage& TextureUsage::TextureUsage_GenerateMipmaps) ? ImageFormat::calculateMipmapCount({ dimension.width, dimension.height, 1 }) : 1U, usage)
     , m_dimension(dimension)
 {
     LOG_DEBUG("Texture2D::Texture2D constructor %llx", this);

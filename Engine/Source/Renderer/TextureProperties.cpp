@@ -1,4 +1,5 @@
 #include "TextureProperties.h"
+#include "Object/Texture.h"
 
 #include "crc32c/crc32c.h"
 
@@ -6,6 +7,38 @@ namespace v3d
 {
 namespace renderer
 {
+
+TextureView::TextureView(const Texture* texture, u32 layer, u32 mip) noexcept
+    : _texture(texture)
+    , _baseLayer(layer)
+    , _layers(1)
+    , _baseMip(mip)
+    , _mips(1)
+{
+    ASSERT(texture, "nullptr");
+    if (layer == k_generalLayer)
+    {
+        _baseLayer = 0;
+        _layers = _texture->getLayersCount();
+    }
+
+    if (mip == k_allMipmapsLevels)
+    {
+        _baseMip = 0;
+        _mips = texture->getMipmapsCount();
+    }
+}
+
+TextureView::TextureView(const Texture* texture, u32 baseLayer, u32 layers, u32 baseMip, u32 mips) noexcept
+    : _texture(texture)
+    , _baseLayer(baseLayer)
+    , _layers(layers)
+    , _baseMip(baseMip)
+    , _mips(mips)
+{
+    ASSERT(texture, "nullptr");
+}
+
 
 RenderPassDescription::RenderPassDescription() noexcept
 {

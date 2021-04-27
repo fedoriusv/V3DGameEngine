@@ -105,17 +105,37 @@ namespace renderer
     */
     constexpr u32 k_maxColorAttachments = 8;
 
-    /////////////////////////////////////////////////////////////////////////////////////////////////////
-
     /**
     * @brief k_generalLayer index for all layers
     */
-    constexpr s32 k_generalLayer = -1;
+    constexpr u32 k_generalLayer = ~0;
 
     /**
     * @brief k_allMipmapsLevels index for all mipmaps
     */
-    constexpr s32 k_allMipmapsLevels = -1;
+    constexpr u32 k_allMipmapsLevels = ~0;
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    class Texture;
+
+    /**
+    * @brief TextureView struct
+    */
+    struct TextureView
+    {
+        TextureView(const Texture* texture, u32 layer = k_generalLayer, u32 mip = k_allMipmapsLevels) noexcept;
+        TextureView(const Texture* texture, u32 baseLayer, u32 layers, u32 baseMip, u32 mips) noexcept;
+
+        const Texture* _texture;
+        u32 _baseLayer;
+        u32 _layers;
+        u32 _baseMip;
+        u32 _mips;
+    };
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
+
 
     /**
     * @brief AttachmentDescription struct. Uses inside a render target.

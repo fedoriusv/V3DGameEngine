@@ -81,6 +81,7 @@ namespace renderer
 
         bool                m_backbuffer;
 
+        friend CommandList;
         friend RenderTargetState;
         friend ShaderProgram;
 
