@@ -17,7 +17,7 @@ namespace event
         InputEventReceiver(const InputEventReceiver&) = delete;
         InputEventReceiver& operator=(const InputEventReceiver&) = delete;
 
-        InputEventReceiver();
+        InputEventReceiver() noexcept;
         ~InputEventReceiver();
 
         void reset();

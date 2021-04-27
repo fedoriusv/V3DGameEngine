@@ -6,17 +6,19 @@ namespace v3d
 namespace event
 {
 
-InputEventReceiver::InputEventReceiver()
+InputEventReceiver::InputEventReceiver() noexcept
     : k_maxInputEventSize((u32)core::max(sizeof(MouseInputEvent), sizeof(KeyboardInputEvent), core::max(sizeof(GamepadInputEvent), sizeof(TouchInputEvent))))
     , m_eventPool(nullptr)
     , m_currentEventIndex(0)
 {
-    m_eventPool = reinterpret_cast<InputEvent*>(malloc(k_maxInputEventSize * s_eventPoolSize));
+    m_eventPool = reinterpret_cast<InputEvent*>(malloc(k_maxInputEventSize * s_eventPoolSize)); //TODO pool
     resetInputEventPool();
+    LOG_DEBUG("InputEventReceiver::InputEventReceiver constructor %llx, event pool %llx", this, m_eventPool);
  }
 
 InputEventReceiver::~InputEventReceiver()
 {
+    LOG_DEBUG("InputEventReceiver::InputEventReceiver destructor %llx event pool %llx", this, m_eventPool);
     InputEventReceiver::reset();
     m_receivers.clear();
 
