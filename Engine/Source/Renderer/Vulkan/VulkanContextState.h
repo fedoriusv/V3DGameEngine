@@ -137,10 +137,10 @@ namespace vk
             return true;
         }
 
-        void bindTexture(const VulkanImage* image, const VulkanSampler* sampler, u32 arrayIndex, const Shader::Image& info, s32 layer, s32 mip);
-        void bindTexture(const VulkanImage* image, u32 arrayIndex, const Shader::Image& info, s32 layer, s32 mip);
+        void bindTexture(const VulkanImage* image, const VulkanSampler* sampler, u32 arrayIndex, const Shader::Image& info, const Image::Subresource& subresource);
+        void bindTexture(const VulkanImage* image, u32 arrayIndex, const Shader::Image& info, const Image::Subresource& subresource);
         void bindSampler(const VulkanSampler* sampler, const Shader::Sampler& info);
-        void bindStorageImage(const VulkanImage* image, u32 arrayIndex, const Shader::StorageImage& info, s32 layer, s32 mip);
+        void bindStorageImage(const VulkanImage* image, u32 arrayIndex, const Shader::StorageImage& info, const Image::Subresource& subresource);
         void updateConstantBuffer(const Shader::UniformBuffer& info, u32 offset, u32 size, const void* data);
 
         void invalidateDescriptorSetsState();
@@ -185,7 +185,7 @@ namespace vk
             bool isActiveBinding(u32 binding) const;
             bool isDirty() const;
 
-            void bind(BindingType type, u32 binding, u32 arrayIndex, const VulkanImage* image, s32 layer, s32 mip, const VulkanSampler* sampler);
+            void bind(BindingType type, u32 binding, u32 arrayIndex, const VulkanImage* image, const Image::Subresource& subresource, const VulkanSampler* sampler);
             void bind(BindingType type, u32 binding, u32 arrayIndex, const VulkanBuffer* buffer, u64 offset, u64 range);
 
             void apply(VulkanCommandBuffer* cmdBuffer, u64 frame, SetInfo& info);
@@ -197,7 +197,7 @@ namespace vk
         void updateDescriptorSet(VulkanCommandBuffer* cmdBuffer, VkDescriptorSet set, const BindingState& info);
 
         static VkDescriptorBufferInfo makeVkDescriptorBufferInfo(const VulkanBuffer* buffer, u64 offset, u64 range);
-        static VkDescriptorImageInfo makeVkDescriptorImageInfo(const VulkanImage* image, const VulkanSampler* sampler, VkImageLayout layout, s32 layer = k_generalLayer, s32 mip = k_allMipmapsLevels);
+        static VkDescriptorImageInfo makeVkDescriptorImageInfo(const VulkanImage* image, const VulkanSampler* sampler, VkImageLayout layout, const Image::Subresource& subresource);
 
         bool checkBindingsAndPipelineLayout();
 

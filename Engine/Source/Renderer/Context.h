@@ -96,12 +96,12 @@ namespace renderer
         //program bind
         virtual void bindImage(const Shader* shader, u32 bindIndex, const Image* image, s32 layer = k_generalLayer, s32 mip = k_allMipmapsLevels) = 0;
         virtual void bindSampler(const Shader* shader, u32 bindIndex, const Sampler::SamplerInfo* samplerInfo) = 0;
-        virtual void bindSampledImage(const Shader* shader, u32 bindIndex, const Image* image, const Sampler::SamplerInfo* samplerInfo, s32 layer = k_generalLayer, s32 mip = k_allMipmapsLevels) = 0;
+        virtual void bindSampledImage(const Shader* shader, u32 bindIndex, const Image* image, const Sampler::SamplerInfo* samplerInfo, s32 layer = k_generalLayer, s32 mip = k_allMipmapsLevels) = 0; //TODO remove
         virtual void bindUniformsBuffer(const Shader* shader, u32 bindIndex, u32 offset, u32 size, const void* data) = 0;
         virtual void bindStorageImage(const Shader* shader, u32 bindIndex, const Image* image, s32 layer = k_generalLayer, s32 mip = k_allMipmapsLevels) = 0;
 
         //transfer
-        virtual void transitionImages(std::vector<const Image*>& images, TransitionOp transition, s32 layer = k_generalLayer, s32 mip = k_allMipmapsLevels) = 0;
+        virtual void transitionImages(std::vector<std::tuple<const Image*, Image::Subresource>>& images, TransitionOp transition) = 0;
 
         //state
         virtual void setViewport(const core::Rect32& viewport, const core::Vector2D& depth = { 0.0f, 1.0f }) = 0;

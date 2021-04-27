@@ -185,15 +185,15 @@ std::tuple<VkAccessFlags, VkAccessFlags> VulkanTransitionState::getAccessFlagsFr
     return { srcFlag, dstFlag };
 }
 
-void VulkanTransitionState::transitionImages(VulkanCommandBuffer* cmdBuffer, const std::vector<const Image*>& images, VkImageLayout layout, s32 layer, s32 mip, bool toCompute)
+void VulkanTransitionState::transitionImages(VulkanCommandBuffer* cmdBuffer, const std::vector<std::tuple<const Image*, Image::Subresource>>& images, VkImageLayout layout, bool toCompute)
 {
     for (auto image : images)
     {
-        const VulkanImage* vulkanImage = static_cast<const VulkanImage*>(image);
+        const VulkanImage* vulkanImage = static_cast<const VulkanImage*>(std::get<0>(image));
 
         VkPipelineStageFlags srcStage = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
         VkPipelineStageFlags dstStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
-        VkImageLayout oldLayout = vulkanImage->getLayout();
+        VkImageLayout oldLayout = vulkanImage->getLayout(std::get<1>(image));
 
         //to general
         if (layout == VK_IMAGE_LAYOUT_GENERAL)
@@ -258,7 +258,7 @@ void VulkanTransitionState::transitionImages(VulkanCommandBuffer* cmdBuffer, con
             dstStage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
         }
 
-        cmdBuffer->cmdPipelineBarrier(vulkanImage, srcStage, dstStage, layout, layer, mip);
+        cmdBuffer->cmdPipelineBarrier(vulkanImage, srcStage, dstStage, layout, std::get<1>(image));
     }
 }
 

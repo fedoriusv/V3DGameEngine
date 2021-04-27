@@ -42,10 +42,10 @@ namespace dx3d
         ID3D12Resource* getResource() const;
 
         template<typename VIEW_DESC_TYPE>
-        const VIEW_DESC_TYPE& getView(s32 slice = k_generalLayer, s32 mip = -1) const
+        const VIEW_DESC_TYPE& getView(u32 slice = k_generalLayer, u32 mip = k_allMipmapsLevels) const
         {
-            u32 index = D3D12CalcSubresource((mip == -1) ? 0 : mip, (slice == k_generalLayer) ? 0 : slice, 0, (mip == -1) ? m_mipmaps : 1, (slice == k_generalLayer) ? m_arrays : 1) + 1;
-            if (slice == k_generalLayer && mip == -1)
+            u32 index = D3D12CalcSubresource((mip == k_allMipmapsLevels) ? 0 : mip, (slice == k_generalLayer) ? 0 : slice, 0, (mip == k_allMipmapsLevels) ? m_mipmaps : 1, (slice == k_generalLayer) ? m_arrays : 1) + 1;
+            if (slice == k_generalLayer && mip == k_allMipmapsLevels)
             {
                 index = D3D12CalcSubresource(0, 0, 0, m_mipmaps, m_arrays);
             }

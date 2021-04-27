@@ -802,7 +802,7 @@ CommandList::PendingFlushMaskFlags CommandList::flushPendingCommands(PendingFlus
         Pipeline::PipelineComputeInfo& info = m_pendingPipelineStateInfo._pipelineComputeInfo;
         CommandList::pushCommand(new CommandSetComputePipeline(info._programDesc, info._tracker));
 
-        pendingFlushMask &= ~PendingFlush_UpdateGraphicsPipeline;
+        pendingFlushMask &= ~PendingFlush_UpdateComputePipeline;
     }
 
     if (pendingFlushMask & PendingFlush_UpdateTransitions)
@@ -812,10 +812,8 @@ CommandList::PendingFlushMaskFlags CommandList::flushPendingCommands(PendingFlus
         {
         public:
 
-            explicit CommandTransitionImage(const std::vector<const Image*>& images, TransitionOp state, s32 layer, s32 mip) noexcept
+            explicit CommandTransitionImage(const std::vector<std::tuple<const Image*, Image::Subresource>>& images, TransitionOp state) noexcept
                 : m_images(images)
-                , m_layer(layer)
-                , m_mip(mip)
                 , m_state(state)
             {
 #if DEBUG_COMMAND_LIST
@@ -838,37 +836,34 @@ CommandList::PendingFlushMaskFlags CommandList::flushPendingCommands(PendingFlus
 #if DEBUG_COMMAND_LIST
                 LOG_DEBUG("CommandTransitionImage execute");
 #endif //DEBUG_COMMAND_LIST
-                cmdList.getContext()->transitionImages(m_images, m_state, m_layer, m_mip);
+                cmdList.getContext()->transitionImages(m_images, m_state);
             }
 
         private:
 
-            std::vector<const Image*> m_images;
-            s32 m_layer;
-            s32 m_mip;
+            std::vector<std::tuple<const Image*, Image::Subresource>> m_images;
             TransitionOp m_state;
         };
 
         auto state = m_pendingTransitions._transitions.cbegin()->first;
         auto& sub = m_pendingTransitions._transitions.cbegin()->second;
-        std::vector<const Image*> images;
+        std::vector<std::tuple<const Image*, Image::Subresource>> images;
         for (auto& st : m_pendingTransitions._transitions)
         {
-            if (state != st.first //transition
-                && std::get<1>(sub) == std::get<1>(st.second) && std::get<2>(sub) == std::get<2>(st.second)) //layer & mip
+            if (state != st.first)
             {
-                CommandList::pushCommand(new CommandTransitionImage(images, state, std::get<1>(st.second), std::get<2>(st.second)));
+                CommandList::pushCommand(new CommandTransitionImage(images, state));
 
                 images.clear();
                 state = st.first;
             }
 
-            images.push_back(std::get<0>(st.second));
+            images.emplace_back(st.second._texture->getImage(), Image::makeImageSubresource(st.second._baseLayer, st.second._layers, st.second._baseMip, st.second._mips));
         }
 
         if (!images.empty())
         {
-            CommandList::pushCommand(new CommandTransitionImage(images, state, std::get<1>(sub), std::get<2>(sub)));
+            CommandList::pushCommand(new CommandTransitionImage(images, state));
         }
 
         m_pendingTransitions._transitions.clear();
@@ -878,16 +873,17 @@ CommandList::PendingFlushMaskFlags CommandList::flushPendingCommands(PendingFlus
     return pendingFlushMask;
 }
 
-void CommandList::transitions(const Image* image, TransitionOp state, s32 layer, s32 mip)
+void CommandList::transition(const TextureView& texture, TransitionOp state)
 {
+     ASSERT(texture._texture, "nullptr");
     if (CommandList::isImmediate())
     {
-        std::vector<const Image*> images(1, image);
-        m_context->transitionImages(images, state, layer, mip);
+        std::vector<std::tuple<const Image*, Image::Subresource>> images(1, { texture._texture->getImage(), Image::makeImageSubresource(texture._baseLayer, texture._layers, texture._baseMip, texture._mips) });
+        m_context->transitionImages(images, state);
     }
     else
     {
-        m_pendingTransitions._transitions.insert({ state, { image, layer, mip } });
+        m_pendingTransitions._transitions.insert({ state, texture });
         m_pendingFlushMask |= PendingFlush_UpdateTransitions;
     }
 }

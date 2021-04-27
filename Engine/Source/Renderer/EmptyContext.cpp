@@ -114,7 +114,7 @@ void EmptyContext::bindStorageImage(const Shader* shader, u32 bindIndex, const I
     LOG_DEBUG("EmptyContext::bindStorageImage");
 }
 
-void EmptyContext::transitionImages(std::vector<const Image*>& images, TransitionOp transition, s32 layer, s32 mip)
+void EmptyContext::transitionImages(std::vector<std::tuple<const Image*, Image::Subresource>>& images, TransitionOp transition)
 {
     LOG_DEBUG("EmptyContext::transitionImages");
 }

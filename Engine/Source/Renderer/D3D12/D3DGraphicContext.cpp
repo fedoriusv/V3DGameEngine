@@ -292,7 +292,7 @@ void D3DGraphicContext::bindStorageImage(const Shader* shader, u32 bindIndex, co
     //TODO
 }
 
-void D3DGraphicContext::transitionImages(std::vector<const Image*>& images, TransitionOp transition, s32 layer, s32 mip)
+void D3DGraphicContext::transitionImages(std::vector<std::tuple<const Image*, Image::Subresource>>& images, TransitionOp transition)
 {
     ASSERT(false, "not impl");
 }

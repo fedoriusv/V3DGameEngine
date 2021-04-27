@@ -10,12 +10,14 @@
 #include "Sampler.h"
 #include "Image.h"
 #include "Buffer.h"
-
+#include "TextureProperties.h"
 
 namespace v3d
 {
 namespace renderer
 {
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
+
     class Context;
     class CommandList;
 
@@ -90,19 +92,7 @@ namespace renderer
         void setViewport(const core::Rect32& viewport, const core::Vector2D& depth = {0.0f, 1.0f});
         void setScissor(const core::Rect32& scissor);
 
-        template<class TTexture>
-        void transition(TTexture* texture, TransitionOp state, s32 layer = k_generalLayer, s32 mip = k_allMipmapsLevels)
-        {
-            static_assert(std::is_base_of<Texture, TTexture>(), "CommandList::transfer wrong type");
-            if constexpr (std::is_same<Backbuffer, TTexture>())
-            {
-                CommandList::transitions(nullptr, state);
-            }
-            else
-            {
-                CommandList::transitions(texture->getImage(), state, layer, mip);
-            }
-        }
+        void transition(const TextureView& texture, TransitionOp state);
 
         void generateMipmaps(Texture2D* texture, TransitionOp state);
 
@@ -141,8 +131,6 @@ namespace renderer
 
     private:
 
-        void transitions(const Image* image, TransitionOp state, s32 layer = k_generalLayer, s32 mip = k_allMipmapsLevels);
-
         struct RenderTargetPendingState
         {
             RenderPass::RenderPassInfo   _renderpassInfo;
@@ -157,7 +145,7 @@ namespace renderer
 
         struct TransitionPendingState
         {
-            std::multimap<TransitionOp, std::tuple<const Image*, s32, s32>> _transitions;
+            std::multimap<TransitionOp, TextureView> _transitions;
         };
 
         void executeCommands();

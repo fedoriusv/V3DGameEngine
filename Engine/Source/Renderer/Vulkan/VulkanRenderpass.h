@@ -37,8 +37,8 @@ namespace vk
             VkImageLayout         _initialLayout;
             VkImageLayout         _finalLayout;
 
-            s32                   _layer;
-            s32                   _mip;
+            u32                   _layer;
+            u32                   _mip;
 
             bool                  _autoResolve;
             bool                  _swapchainImage;

@@ -25,6 +25,22 @@ namespace vk
     {
     public:
 
+        static VkFormat convertImageFormatToVkFormat(Format format);
+        static Format convertVkImageFormatToFormat(VkFormat format);
+        static VkImageType convertTextureTargetToVkImageType(TextureTarget target);
+        static VkSampleCountFlagBits convertRenderTargetSamplesToVkSampleCount(TextureSamples samples);
+
+        static Image::Subresource makeVulkanImageSubresource(const VulkanImage* image, u32 layer = k_generalLayer, u32 mip = k_allMipmapsLevels);
+        static VkImageSubresourceRange makeImageSubresourceRange(const VulkanImage* image, const Image::Subresource& resource);
+
+        static VkImageAspectFlags getImageAspectFlags(VkFormat format);
+        static bool isColorFormat(VkFormat format);
+        static bool isDepthStencilFormat(VkFormat format);
+        static bool isCompressedFormat(VkFormat format);
+        static bool isASTCFormat(VkFormat format);
+        static bool isSRGBFormat(VkFormat format);
+        static bool isAttachmentLayout(const VulkanImage* image, u32 layer);
+
         VulkanImage() = delete;
         VulkanImage(const VulkanImage&) = delete;
 
@@ -45,33 +61,15 @@ namespace vk
 
         bool generateMipmaps(Context* context, u32 layer);
 
-        static VkFormat convertImageFormatToVkFormat(Format format);
-        static Format convertVkImageFormatToFormat(VkFormat format);
-        static VkImageType convertTextureTargetToVkImageType(TextureTarget target);
-        static VkSampleCountFlagBits convertRenderTargetSamplesToVkSampleCount(TextureSamples samples);
-
-        static VkImageSubresourceRange makeImageSubresourceRange(const VulkanImage* image, s32 layer = k_generalLayer, s32 mip = k_allMipmapsLevels);
-        static VkImageSubresourceLayers makeImageSubresourceLayers(const VulkanImage* image, s32 layer = k_generalLayer, s32 mip = 0);
-
-        static VkImageAspectFlags getImageAspectFlags(VkFormat format);
-        static bool isColorFormat(VkFormat format);
-        static bool isDepthStencilFormat(VkFormat format);
-        static bool isCompressedFormat(VkFormat format);
-        static bool isASTCFormat(VkFormat format);
-        static bool isSRGBFormat(VkFormat format);
-
-        static bool isAttachmentLayout(const VulkanImage* image, s32 layer = k_generalLayer);
-
         VkImage               getHandle() const;
         VkImageAspectFlags    getImageAspectFlags() const;
         VkSampleCountFlagBits getSampleCount() const;
-        VkImageView           getImageView(VkImageAspectFlags aspects = 0, s32 layer = k_generalLayer, s32 mip = k_allMipmapsLevels) const;
+        VkImageView           getImageView(const Image::Subresource& resource, VkImageAspectFlags aspects = 0) const;
         VkFormat              getFormat() const;
         VkExtent3D            getSize() const;
-        u32                   getMipmapsCount() const;
 
-        VkImageLayout         getLayout(s32 layer = k_generalLayer, s32 mip = k_allMipmapsLevels) const;
-        VkImageLayout         setLayout(VkImageLayout layout, s32 layer = k_generalLayer, s32 mip = k_allMipmapsLevels);
+        VkImageLayout         getLayout(const Image::Subresource& resource) const;
+        VkImageLayout         setLayout(VkImageLayout layout, const Image::Subresource& resource);
 
         VulkanImage*          getResolveImage() const;
 
@@ -83,7 +81,7 @@ namespace vk
 
     private:
 
-        static VkImageSubresourceRange makeImageSubresourceRangeWithAspect(const VulkanImage* image, VkImageAspectFlags aspect, s32 layer = k_generalLayer, s32 mip = k_allMipmapsLevels);
+        static VkImageSubresourceRange makeImageSubresourceRangeWithAspect(const VulkanImage* image, const Image::Subresource& resource, VkImageAspectFlags aspect);
 
         bool createViewImage();
         bool internalUpload(Context* context, const core::Dimension3D& offsets, const core::Dimension3D& size, u32 layers, u32 mips, u64 dataSize, const void* data);

@@ -55,7 +55,7 @@ namespace vk
     /**
     * @brief VulkanContext final class. Vulkan Render side
     */
-    class VulkanContext final : public Context,  public utils::Observer
+    class VulkanContext final : public Context, public utils::Observer
     {
     public:
 
@@ -81,7 +81,7 @@ namespace vk
         void bindUniformsBuffer(const Shader* shader, u32 bindIndex, u32 offset, u32 size, const void* data) override;
         void bindStorageImage(const Shader* shader, u32 bindIndex, const Image* image, s32 layer = k_generalLayer, s32 mip = k_allMipmapsLevels) override;
 
-        void transitionImages(std::vector<const Image*>& images, TransitionOp transition, s32 layer = k_generalLayer, s32 mip = k_allMipmapsLevels) override;
+        void transitionImages(std::vector<std::tuple<const Image*, Image::Subresource>>& images, TransitionOp transition) override;
 
         void setViewport(const core::Rect32& viewport, const core::Vector2D& depth = { 0.0f, 1.0f }) override;
         void setScissor(const core::Rect32& scissor) override;
@@ -195,6 +195,11 @@ namespace vk
             bool isGraphicPipeline()
             {
                 return m_pipeline != nullptr && m_pipeline->getType() == Pipeline::PipelineType::PipelineType_Graphic;
+            }
+
+            bool isComputePipeline()
+            {
+                return m_pipeline != nullptr && m_pipeline->getType() == Pipeline::PipelineType::PipelineType_Compute;
             }
 
             template<class Type>

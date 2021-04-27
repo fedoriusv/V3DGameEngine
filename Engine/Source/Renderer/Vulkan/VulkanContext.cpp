@@ -802,7 +802,7 @@ void VulkanContext::beginFrame()
     [[maybe_unused]] VulkanCommandBuffer* drawBuffer = m_currentBufferState.acquireAndStartCommandBuffer(CommandTargetType::CmdDrawBuffer);
 #if SWAPCHAIN_ON_ADVANCE
     ASSERT(prevImageIndex != ~0U, "wrong index");
-    m_currentTransitionState.transitionImages(drawBuffer, { m_swapchain->getSwapchainImage(prevImageIndex) }, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
+    m_currentTransitionState.transitionImages(drawBuffer, { { m_swapchain->getSwapchainImage(prevImageIndex), { 0, 1, 0, 1} } }, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
     static bool s_ones = true;
     if (s_ones) //only for 1st a semaphore of swapchain image
     {
@@ -1320,10 +1320,10 @@ void VulkanContext::bindStorageImage(const Shader* shader, u32 bindIndex, const 
     const Shader::ReflectionInfo& info = shader->getReflectionInfo();
     const Shader::StorageImage& storageData = info._storageImages[bindIndex];
 
-    m_currentContextState->bindStorageImage(vkImage, 0, storageData, layer, mip);
+    m_currentContextState->bindStorageImage(vkImage, 0, storageData, VulkanImage::makeVulkanImageSubresource(vkImage, layer, mip));
 }
 
-void VulkanContext::transitionImages(std::vector<const Image*>& images, TransitionOp transition, s32 layer, s32 mip)
+void VulkanContext::transitionImages(std::vector<std::tuple<const Image*, Image::Subresource>>& images, TransitionOp transition)
 {
     VulkanCommandBuffer* drawBuffer = m_currentBufferState.acquireAndStartCommandBuffer(CommandTargetType::CmdDrawBuffer);
     if (drawBuffer->isInsideRenderPass())
@@ -1331,14 +1331,19 @@ void VulkanContext::transitionImages(std::vector<const Image*>& images, Transiti
         drawBuffer->cmdEndRenderPass();
     }
 
-    std::vector<const Image*> transitionImages(std::move(images));
-
     const Image* swapchainImage = (VulkanSwapchain::currentSwapchainIndex() == ~0U) ? m_swapchain->getSwapchainImage(0) : m_swapchain->getBackbuffer();
-    const Image* replacedImage = nullptr;
-    std::replace(transitionImages.begin(), transitionImages.end(), replacedImage, swapchainImage);
+
+    auto transitionImages(std::move(images));
+    for (auto& view : transitionImages)
+    {
+        if (std::get<0>(view) == nullptr)
+        {
+            std::get<0>(view) = swapchainImage;
+        }
+    }
 
     VkImageLayout newLayout = VulkanTransitionState::convertTransitionStateToImageLayout(transition);
-    m_currentTransitionState.transitionImages(drawBuffer, transitionImages, newLayout, layer, mip, transition == TransitionOp::TransitionOp_GeneralCompute);
+    m_currentTransitionState.transitionImages(drawBuffer, transitionImages, newLayout, transition == TransitionOp::TransitionOp_GeneralCompute);
 }
 
 void VulkanContext::draw(const StreamBufferDescription& desc, u32 firstVertex, u32 vertexCount, u32 firstInstance, u32 instanceCount)
@@ -1412,7 +1417,7 @@ void VulkanContext::bindImage(const Shader* shader, u32 bindIndex, const Image* 
     const Shader::ReflectionInfo& info = shader->getReflectionInfo();
     const Shader::Image& imageData = info._images[bindIndex];
 
-    m_currentContextState->bindTexture(vkImage, 0, imageData, layer, mip);
+    m_currentContextState->bindTexture(vkImage, 0, imageData, VulkanImage::makeVulkanImageSubresource(vkImage, layer, mip));
 }
 
 void VulkanContext::bindSampler(const Shader* shader, u32 bindIndex, const Sampler::SamplerInfo* samplerInfo)
@@ -1441,7 +1446,7 @@ void VulkanContext::bindSampledImage(const Shader* shader, u32 bindIndex, const 
     const Shader::ReflectionInfo& info = shader->getReflectionInfo();
     const Shader::Image& sampledData = info._sampledImages[bindIndex];
 
-    m_currentContextState->bindTexture(vkImage, vkSampler, 0, sampledData, layer, mip);
+    m_currentContextState->bindTexture(vkImage, vkSampler, 0, sampledData, VulkanImage::makeVulkanImageSubresource(vkImage, layer, mip));
 }
 
 const DeviceCaps* VulkanContext::getDeviceCaps() const
@@ -1550,7 +1555,7 @@ bool v3d::renderer::vk::VulkanContext::prepareDispatch(VulkanCommandBuffer* draw
         drawBuffer->cmdEndRenderPass();
     }
 
-    if (!m_pendingState.isGraphicPipeline())
+    if (m_pendingState.isComputePipeline())
     {
         if (m_currentContextState->setCurrentPipeline(m_pendingState.takePipeline<VulkanComputePipeline>()))
         {

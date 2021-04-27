@@ -315,7 +315,8 @@ void VulkanCommandBuffer::cmdBeginRenderpass(const VulkanRenderPass* pass, const
         vkImage->captureInsideCommandBuffer(this, 0);
 
         VkImageLayout layout = pass->getAttachmentLayout<0>(index);
-        vkImage->setLayout(layout, pass->getAttachmentDescription(index)._layer, pass->getAttachmentDescription(index)._mip);
+        const VulkanRenderPass::VulkanAttachmentDescription& attach = pass->getAttachmentDescription(index);
+        vkImage->setLayout(layout, VulkanImage::makeVulkanImageSubresource(vkImage, attach._layer, attach._mip));
 
         ++index;
 
@@ -402,7 +403,8 @@ void VulkanCommandBuffer::cmdEndRenderPass()
         VulkanImage* vkImage = static_cast<VulkanImage*>(image);
 
         VkImageLayout layout = m_renderpassState._renderpass->getAttachmentLayout<1>(index);
-        vkImage->setLayout(layout, pass->getAttachmentDescription(index)._layer, pass->getAttachmentDescription(index)._mip);
+        const VulkanRenderPass::VulkanAttachmentDescription& attach = pass->getAttachmentDescription(index);
+        vkImage->setLayout(layout, VulkanImage::makeVulkanImageSubresource(vkImage, attach._layer, attach._mip));
 
         ++index;
     }
@@ -573,7 +575,7 @@ void VulkanCommandBuffer::cmdDrawIndexed(u32 firstIndex, u32 indexCount, u32 fir
     }
 }
 
-void VulkanCommandBuffer::cmdClearImage(VulkanImage* image, VkImageLayout imageLayout, const VkClearColorValue * pColor)
+void VulkanCommandBuffer::cmdClearImage(VulkanImage* image, VkImageLayout imageLayout, const VkClearColorValue* pColor)
 {
     ASSERT(m_status == CommandBufferStatus::Begin, "not started");
     ASSERT(!isInsideRenderPass(), "outside render pass");
@@ -583,7 +585,7 @@ void VulkanCommandBuffer::cmdClearImage(VulkanImage* image, VkImageLayout imageL
     image->captureInsideCommandBuffer(this, 0);
     if (m_level == CommandBufferLevel::PrimaryBuffer)
     {
-        VkImageSubresourceRange imageSubresourceRange = VulkanImage::makeImageSubresourceRange(image);
+        VkImageSubresourceRange imageSubresourceRange = VulkanImage::makeImageSubresourceRange(image, VulkanImage::makeVulkanImageSubresource(image));
         VulkanWrapper::CmdClearColorImage(m_commands, image->getHandle(), imageLayout, pColor, 1, &imageSubresourceRange);
     }
     else
@@ -592,7 +594,7 @@ void VulkanCommandBuffer::cmdClearImage(VulkanImage* image, VkImageLayout imageL
     }
 }
 
-void VulkanCommandBuffer::cmdClearImage(VulkanImage * image, VkImageLayout imageLayout, const VkClearDepthStencilValue * pDepthStencil)
+void VulkanCommandBuffer::cmdClearImage(VulkanImage * image, VkImageLayout imageLayout, const VkClearDepthStencilValue* pDepthStencil)
 {
     ASSERT(m_status == CommandBufferStatus::Begin, "not started");
     ASSERT(!isInsideRenderPass(), "outside render pass");
@@ -601,7 +603,7 @@ void VulkanCommandBuffer::cmdClearImage(VulkanImage * image, VkImageLayout image
 
     if (m_level == CommandBufferLevel::PrimaryBuffer)
     {
-        VkImageSubresourceRange imageSubresourceRange = VulkanImage::makeImageSubresourceRange(image);
+        VkImageSubresourceRange imageSubresourceRange = VulkanImage::makeImageSubresourceRange(image, VulkanImage::makeVulkanImageSubresource(image));
         VulkanWrapper::CmdClearDepthStencilImage(m_commands, image->getHandle(), imageLayout, pDepthStencil, 1, &imageSubresourceRange);
     }
     else
@@ -646,7 +648,7 @@ void VulkanCommandBuffer::cmdBlitImage(VulkanImage* src, VkImageLayout srcLayout
         for (const VkImageBlit& blit : regions)
         {
             ASSERT(blit.dstSubresource.layerCount == 1, "TODO");
-            dst->setLayout(dstLayout, k_generalLayer, blit.dstSubresource.mipLevel);
+            dst->setLayout(dstLayout, VulkanImage::makeVulkanImageSubresource(dst, k_generalLayer, blit.dstSubresource.mipLevel));
         }
     }
     else
@@ -707,12 +709,17 @@ void VulkanCommandBuffer::cmdCopyBufferToBuffer(VulkanBuffer* src, VulkanBuffer*
     }
 }
 
-void VulkanCommandBuffer::cmdPipelineBarrier(const VulkanImage* image, VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask, VkImageLayout layout, s32 layer, s32 mip)
+void VulkanCommandBuffer::cmdPipelineBarrier(const VulkanImage* image, VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask, VkImageLayout layout)
+{
+    VulkanCommandBuffer::cmdPipelineBarrier(image, srcStageMask, dstStageMask, layout, VulkanImage::makeVulkanImageSubresource(image));
+}
+
+void VulkanCommandBuffer::cmdPipelineBarrier(const VulkanImage* image, VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask, VkImageLayout layout, const Image::Subresource& resource)
 {
     ASSERT(m_status == CommandBufferStatus::Begin, "not started");
     ASSERT(!VulkanCommandBuffer::isInsideRenderPass(), "can't be inside render pass");
 
-    VkImageLayout oldLayout = image->getLayout(layer, mip);
+    VkImageLayout oldLayout = image->getLayout(resource);
     if (oldLayout == layout)
     {
         return;
@@ -722,40 +729,7 @@ void VulkanCommandBuffer::cmdPipelineBarrier(const VulkanImage* image, VkPipelin
     {
         image->captureInsideCommandBuffer(this, 0);
 
-        auto accessMasks = VulkanTransitionState::getAccessFlagsFromImageLayout(image->getLayout(layer, mip), layout);
-
-        VkImageMemoryBarrier imageMemoryBarrier = {};
-        imageMemoryBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-        imageMemoryBarrier.pNext = nullptr;
-        imageMemoryBarrier.srcAccessMask = std::get<0>(accessMasks);
-        imageMemoryBarrier.dstAccessMask = std::get<1>(accessMasks);
-        imageMemoryBarrier.oldLayout = image->getLayout(layer, mip);
-        imageMemoryBarrier.newLayout = layout;
-        imageMemoryBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-        imageMemoryBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-        imageMemoryBarrier.image = image->getHandle();
-        imageMemoryBarrier.subresourceRange = VulkanImage::makeImageSubresourceRange(image, layer, mip);
-
-        VulkanWrapper::CmdPipelineBarrier(m_commands, srcStageMask, dstStageMask, VK_DEPENDENCY_BY_REGION_BIT, 0, nullptr, 0, nullptr, 1, &imageMemoryBarrier);
-
-        const_cast<VulkanImage*>(image)->setLayout(layout, layer, mip);
-    }
-    else
-    {
-        ASSERT(false, "not implemented");
-    }
-}
-
-void VulkanCommandBuffer::cmdPipelineBarrier(const VulkanImage* image, VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask, VkImageLayout oldLayout, VkImageLayout newLayout, const VkImageSubresourceRange& subresource)
-{
-    ASSERT(m_status == CommandBufferStatus::Begin, "not started");
-    ASSERT(!VulkanCommandBuffer::isInsideRenderPass(), "can't be inside render pass");
-
-    if (m_level == CommandBufferLevel::PrimaryBuffer)
-    {
-        image->captureInsideCommandBuffer(this, 0);
-
-        auto accessMasks = VulkanTransitionState::getAccessFlagsFromImageLayout(oldLayout, newLayout);
+        auto accessMasks = VulkanTransitionState::getAccessFlagsFromImageLayout(oldLayout, layout);
 
         VkImageMemoryBarrier imageMemoryBarrier = {};
         imageMemoryBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
@@ -763,21 +737,15 @@ void VulkanCommandBuffer::cmdPipelineBarrier(const VulkanImage* image, VkPipelin
         imageMemoryBarrier.srcAccessMask = std::get<0>(accessMasks);
         imageMemoryBarrier.dstAccessMask = std::get<1>(accessMasks);
         imageMemoryBarrier.oldLayout = oldLayout;
-        imageMemoryBarrier.newLayout = newLayout;
+        imageMemoryBarrier.newLayout = layout;
         imageMemoryBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
         imageMemoryBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
         imageMemoryBarrier.image = image->getHandle();
-        imageMemoryBarrier.subresourceRange = subresource;
+        imageMemoryBarrier.subresourceRange = VulkanImage::makeImageSubresourceRange(image, resource);
 
         VulkanWrapper::CmdPipelineBarrier(m_commands, srcStageMask, dstStageMask, VK_DEPENDENCY_BY_REGION_BIT, 0, nullptr, 0, nullptr, 1, &imageMemoryBarrier);
 
-        for (u32 layer = subresource.baseArrayLayer; layer < subresource.layerCount; ++layer)
-        {
-            for (u32 mip = subresource.baseMipLevel; mip < subresource.levelCount; ++mip)
-            {
-                const_cast<VulkanImage*>(image)->setLayout(newLayout, layer, mip);
-            }
-        }
+        const_cast<VulkanImage*>(image)->setLayout(layout, resource);
     }
     else
     {

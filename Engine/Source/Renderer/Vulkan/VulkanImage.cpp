@@ -887,9 +887,9 @@ bool VulkanImage::isSRGBFormat(VkFormat format)
     return false;
 }
 
-bool VulkanImage::isAttachmentLayout(const VulkanImage* image, s32 layer)
+bool VulkanImage::isAttachmentLayout(const VulkanImage* image, u32 layer)
 {
-    VkImageLayout layout = image->getLayout(layer);
+    VkImageLayout layout = image->getLayout(Image::makeImageSubresource(layer, 1, 0, 1));
     switch (layout)
     {
     case VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL:
@@ -1482,18 +1482,11 @@ bool VulkanImage::generateMipmaps(Context* context, u32 layer)
     VulkanContext* vkContext = static_cast<VulkanContext*>(context);
     VulkanCommandBuffer* drawBuffer = vkContext->getOrCreateAndStartCommandBuffer(CommandTargetType::CmdDrawBuffer);
 
-    VkImageLayout layoutMips = VulkanImage::getLayout(k_generalLayer, 1);
-    VkImageSubresourceRange subresourceMips = {};
-    subresourceMips.aspectMask = m_aspectMask;
-    subresourceMips.baseArrayLayer = 0;
-    subresourceMips.layerCount = m_layerLevels;
-    subresourceMips.baseMipLevel = 1;
-    subresourceMips.levelCount = m_mipLevels - 1;
+    VkImageLayout layoutMips = VulkanImage::getLayout(Image::makeImageSubresource(layer, 1, 1, m_mipLevels - 1));
+    drawBuffer->cmdPipelineBarrier(this, VulkanTransitionState::selectStageFlagsByImageLayout(layoutMips), VK_PIPELINE_STAGE_TRANSFER_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, { layer, 1, 1, m_mipLevels - 1 });
 
-    drawBuffer->cmdPipelineBarrier(this, VulkanTransitionState::selectStageFlagsByImageLayout(layoutMips), VK_PIPELINE_STAGE_TRANSFER_BIT, layoutMips, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, subresourceMips);
-    drawBuffer->cmdPipelineBarrier(this, VulkanTransitionState::selectStageFlagsByImageLayout(VulkanImage::getLayout(k_generalLayer, 0)), VK_PIPELINE_STAGE_TRANSFER_BIT, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, k_generalLayer, 0);
-    /*drawBuffer->cmdPipelineBarrier(this, VulkanTransitionState::selectStageFlagsByImageLayout(VulkanImage::getLayout()), VK_PIPELINE_STAGE_TRANSFER_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, k_generalLayer);
-    drawBuffer->cmdPipelineBarrier(this, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, k_generalLayer, 0);*/
+    VkImageLayout baseMip = VulkanImage::getLayout({ layer, 1, 0, 1 });
+    drawBuffer->cmdPipelineBarrier(this, VulkanTransitionState::selectStageFlagsByImageLayout(baseMip), VK_PIPELINE_STAGE_TRANSFER_BIT, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, { layer, 1, 0, 1 });
 
     for (u32 mip = 1; mip < m_mipLevels; ++mip)
     {
@@ -1508,7 +1501,7 @@ bool VulkanImage::generateMipmaps(Context* context, u32 layer)
         region.dstOffsets[1] = { std::max(static_cast<s32>(m_dimension.width >> mip), 1), std::max(static_cast<s32>(m_dimension.height >> mip), 1), 1 };
 
         drawBuffer->cmdBlitImage(this, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, this, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, { region });
-        drawBuffer->cmdPipelineBarrier(this, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, k_generalLayer, mip);
+        drawBuffer->cmdPipelineBarrier(this, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, { layer, 1, mip, 1 });
     }
 
     return true;
@@ -1519,89 +1512,68 @@ bool VulkanImage::isPresentTextureUsageFlag(TextureUsageFlags flag) const
     return (m_usage & flag);
 }
 
-VkImageSubresourceRange VulkanImage::makeImageSubresourceRange(const VulkanImage * image, s32 layer, s32 mip)
+VkImageSubresourceRange VulkanImage::makeImageSubresourceRange(const VulkanImage* image, const Image::Subresource& resource)
 {
     VkImageSubresourceRange imageSubresourceRange = {};
     imageSubresourceRange.aspectMask = image->m_aspectMask;
-    if (layer == k_generalLayer)
-    {
-        imageSubresourceRange.baseArrayLayer = 0;
-        imageSubresourceRange.layerCount = image->m_layerLevels;
-    }
-    else
-    {
-        imageSubresourceRange.baseArrayLayer = layer;
-        imageSubresourceRange.layerCount = 1;
-    }
-
-    if (mip == k_allMipmapsLevels)
-    {
-        imageSubresourceRange.baseMipLevel = 0;
-        imageSubresourceRange.levelCount = image->m_mipLevels;
-    }
-    else
-    {
-        imageSubresourceRange.baseMipLevel = mip;
-        imageSubresourceRange.levelCount = 1;
-    }
+    imageSubresourceRange.baseArrayLayer = resource._baseLayer;
+    imageSubresourceRange.layerCount = resource._layers;
+    imageSubresourceRange.baseMipLevel = resource._baseMip;
+    imageSubresourceRange.levelCount = resource._mips;
 
     return imageSubresourceRange;
 }
 
-VkImageSubresourceLayers VulkanImage::makeImageSubresourceLayers(const VulkanImage* image, s32 layer, s32 mip)
+Image::Subresource VulkanImage::makeVulkanImageSubresource(const VulkanImage* image, u32 layer, u32 mip)
 {
-    VkImageSubresourceLayers imageSubresourceLayers = {};
-    imageSubresourceLayers.aspectMask = image->m_aspectMask;
-    imageSubresourceLayers.mipLevel = 0;
+    Image::Subresource resource = { layer, 1, mip, 1 };
+
     if (layer == k_generalLayer)
     {
-        imageSubresourceLayers.baseArrayLayer = 0;
-        imageSubresourceLayers.layerCount = image->m_layerLevels;
-    }
-    else
-    {
-        imageSubresourceLayers.baseArrayLayer = layer;
-        imageSubresourceLayers.layerCount = 1;
+        resource._baseLayer = 0;
+        resource._layers = image->m_layerLevels;
     }
 
-    return imageSubresourceLayers;
+    if (mip == k_allMipmapsLevels)
+    {
+        resource._baseMip = 0;
+        resource._mips = image->m_mipLevels;
+    }
+
+    return resource;
 }
 
-VkImageSubresourceRange VulkanImage::makeImageSubresourceRangeWithAspect(const VulkanImage* image, VkImageAspectFlags aspect, s32 layer, s32 mip)
+VkImageSubresourceRange VulkanImage::makeImageSubresourceRangeWithAspect(const VulkanImage* image, const Image::Subresource& resource, VkImageAspectFlags aspect)
 {
     VkImageSubresourceRange imageSubresourceRange = {};
     if (!aspect)
     {
-        imageSubresourceRange.aspectMask = image->getImageAspectFlags();
+        imageSubresourceRange.aspectMask = image->m_aspectMask;
     }
     else
     {
+        ASSERT(image->m_aspectMask & aspect, "must be present");
         imageSubresourceRange.aspectMask = aspect;
     }
 
-    if (layer == k_generalLayer)
-    {
-        imageSubresourceRange.baseArrayLayer = 0;
-        imageSubresourceRange.layerCount = image->m_layerLevels;
-    }
-    else
-    {
-        imageSubresourceRange.baseArrayLayer = layer;
-        imageSubresourceRange.layerCount = 1;
-    }
-
-    if (mip == k_allMipmapsLevels)
-    {
-        imageSubresourceRange.baseMipLevel = 0;
-        imageSubresourceRange.levelCount = image->m_mipLevels;
-    }
-    else
-    {
-        imageSubresourceRange.baseMipLevel = mip;
-        imageSubresourceRange.levelCount = 1;
-    }
+    imageSubresourceRange.baseArrayLayer = resource._baseLayer;
+    imageSubresourceRange.layerCount = resource._layers;
+    imageSubresourceRange.baseMipLevel = resource._baseMip;
+    imageSubresourceRange.levelCount = resource._mips;
 
     return imageSubresourceRange;
+}
+
+VkImageView VulkanImage::getImageView(const Image::Subresource& resource, VkImageAspectFlags aspects) const
+{
+    VkImageSubresourceRange imageSubresourceRange = VulkanImage::makeImageSubresourceRangeWithAspect(this, resource, aspects);
+    auto found = m_imageViews.find(ImageViewKey(imageSubresourceRange));
+    if (found == m_imageViews.cend())
+    {
+        ASSERT(false, "view isn't found");
+    }
+
+    return found->second;
 }
 
 VkImage VulkanImage::getHandle() const
@@ -1612,128 +1584,63 @@ VkImage VulkanImage::getHandle() const
 
 VkImageAspectFlags VulkanImage::getImageAspectFlags() const
 {
+    ASSERT(m_image != VK_NULL_HANDLE, "nullptr");
     return m_aspectMask;
 }
 
 VkSampleCountFlagBits VulkanImage::getSampleCount() const
 {
+    ASSERT(m_image != VK_NULL_HANDLE, "nullptr");
     return m_samples;
-}
-
-VkImageView VulkanImage::getImageView(VkImageAspectFlags aspects, s32 layer, s32 mip) const
-{
-    VkImageSubresourceRange imageSubresourceRange = {};
-    imageSubresourceRange.aspectMask = aspects;
-    if (!aspects)
-    {
-        imageSubresourceRange.aspectMask = m_aspectMask;
-    }
-
-    if (layer == k_generalLayer)
-    {
-        imageSubresourceRange.baseArrayLayer = 0;
-        imageSubresourceRange.layerCount = m_layerLevels;
-    }
-    else
-    {
-        imageSubresourceRange.baseArrayLayer = layer;
-        imageSubresourceRange.layerCount = 1;
-    }
-
-    if (mip == k_allMipmapsLevels)
-    {
-        imageSubresourceRange.baseMipLevel = 0;
-        imageSubresourceRange.levelCount = m_mipLevels;
-    }
-    else
-    {
-        imageSubresourceRange.baseMipLevel = mip;
-        imageSubresourceRange.levelCount = 1;
-    }
-
-    auto found = m_imageViews.find(ImageViewKey(imageSubresourceRange));
-    if (found == m_imageViews.cend())
-    {
-        ASSERT(false, "view isn't found");
-    }
-
-    return found->second;
 }
 
 VkFormat VulkanImage::getFormat() const
 {
+    ASSERT(m_image != VK_NULL_HANDLE, "nullptr");
     return m_format;
 }
 
 VkExtent3D VulkanImage::getSize() const
 {
+    ASSERT(m_image != VK_NULL_HANDLE, "nullptr");
     return m_dimension;
 }
 
-u32 VulkanImage::getMipmapsCount() const
+//u32 VulkanImage::getLayersCount() const
+//{
+//    return m_layerLevels;
+//}
+//
+//u32 VulkanImage::getMipmapsCount() const
+//{
+//    return m_mipLevels;
+//}
+
+VkImageLayout VulkanImage::getLayout(const Image::Subresource& resource) const
 {
-    return m_mipLevels;
+    u32 index = 1 + (resource._baseLayer * m_mipLevels + resource._baseMip);
+    ASSERT(index < m_layout.size(), "out of range");
+    return m_layout[index];
 }
 
-VkImageLayout VulkanImage::getLayout(s32 layer, s32 mip) const
+VkImageLayout VulkanImage::setLayout(VkImageLayout newlayout, const Image::Subresource& resource)
 {
-    if (layer == k_generalLayer && mip == k_allMipmapsLevels)
+    VkImageLayout oldLayout = m_layout.front();
+    for (u32 layerIndex = 0; layerIndex < resource._layers; ++layerIndex)
     {
-        return m_layout.front();
-    }
-
-    if (layer == k_generalLayer)
-    {
-        return m_layout[1 + mip];
-    }
-
-    if (mip == k_allMipmapsLevels)
-    {
-        return m_layout[1 + (layer * m_mipLevels)];
-    }
-
-    return m_layout[1 + (layer * m_mipLevels + mip)];
-}
-
-VkImageLayout VulkanImage::setLayout(VkImageLayout layout, s32 layer, s32 mip)
-{
-    m_layout.front() = layout; //General layout. Need do for every layer and mip
-
-    if (layer == k_generalLayer && mip == k_allMipmapsLevels)
-    {
-        VkImageLayout oldLayout = m_layout.front();
-        std::fill(m_layout.begin(), m_layout.end(), layout);
-
-        return oldLayout;
-    }
-
-    if (layer == k_generalLayer)
-    {
-        VkImageLayout oldLayout = m_layout[1];
-        for (u32 layer = 0; layer < m_layerLevels; ++layer)
+        for (u32 mipIndex = 0; mipIndex < resource._mips; ++mipIndex)
         {
-            m_layout[1 + (layer * m_mipLevels + mip)] = layout;
+            u32 index = 1 + ((resource._baseLayer + layerIndex) * m_mipLevels + (resource._baseMip + mipIndex));
+            ASSERT(index < m_layout.size(), "out of range");
+            VkImageLayout layout = std::exchange(m_layout[index], newlayout);
         }
-
-        return oldLayout;
     }
 
-    if (mip == k_allMipmapsLevels)
-    {
-        VkImageLayout oldLayout = m_layout[1 + mip];
-        for (u32 mipmap = 0; mipmap < m_mipLevels; ++mipmap)
-        {
-            m_layout[1 + (layer * m_mipLevels + mipmap)] = layout;
-        }
-
-        return oldLayout;
-    }
-
-    VkImageLayout oldLayout = std::exchange(m_layout[1 + (layer * m_mipLevels + mip)], layout);
+    m_layout.front() = newlayout; //General layout. Need do for every layer and mip
     return oldLayout;
 }
 
-VulkanImage * VulkanImage::getResolveImage() const
+VulkanImage* VulkanImage::getResolveImage() const
 {
     return m_resolveImage;
 }
@@ -1839,7 +1746,7 @@ bool VulkanImage::createViewImage()
         imageViewCreateInfo.viewType = convertImageTypeToImageViewType(m_type, m_layerLevels == 6U, m_layerLevels > 1);
         imageViewCreateInfo.format = m_format;
         imageViewCreateInfo.components = { VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A };
-        imageViewCreateInfo.subresourceRange = VulkanImage::makeImageSubresourceRangeWithAspect(this, m_aspectMask, k_generalLayer, k_allMipmapsLevels);
+        imageViewCreateInfo.subresourceRange = VulkanImage::makeImageSubresourceRangeWithAspect(this, VulkanImage::makeVulkanImageSubresource(this), m_aspectMask);
 
         VkImageView view = VK_NULL_HANDLE;
         VkResult result = VulkanWrapper::CreateImageView(m_device, &imageViewCreateInfo, VULKAN_ALLOCATOR, &view);
@@ -1865,7 +1772,7 @@ bool VulkanImage::createViewImage()
             imageViewCreateInfo.viewType = convertImageTypeToImageViewType(m_type, false, m_layerLevels > 1);
             imageViewCreateInfo.format = m_format;
             imageViewCreateInfo.components = { VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A };
-            imageViewCreateInfo.subresourceRange = VulkanImage::makeImageSubresourceRange(this, layer, 0);
+            imageViewCreateInfo.subresourceRange = VulkanImage::makeImageSubresourceRange(this, VulkanImage::makeVulkanImageSubresource(this, static_cast<s32>(layer), 0));
 
             auto viewIter = m_imageViews.insert({ ImageViewKey(imageViewCreateInfo.subresourceRange), VK_NULL_HANDLE });
             if (viewIter.second)
@@ -1875,6 +1782,33 @@ bool VulkanImage::createViewImage()
                 {
                     LOG_ERROR("VulkanImage::createViewImage vkCreateImageView is failed. Error: %s", ErrorString(result).c_str());
                     return false;
+                }
+            }
+
+            if (VulkanImage::isPresentTextureUsageFlag(TextureUsage::TextureUsage_GenerateMipmaps))
+            {
+                for (u32 mip = 0; mip < m_mipLevels; ++mip)
+                {
+                    VkImageViewCreateInfo imageViewCreateInfo = {};
+                    imageViewCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+                    imageViewCreateInfo.pNext = vkExtensions;
+                    imageViewCreateInfo.flags = 0;
+                    imageViewCreateInfo.image = m_image;
+                    imageViewCreateInfo.viewType = convertImageTypeToImageViewType(m_type, false, m_layerLevels > 1);
+                    imageViewCreateInfo.format = m_format;
+                    imageViewCreateInfo.components = { VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A };
+                    imageViewCreateInfo.subresourceRange = VulkanImage::makeImageSubresourceRange(this, VulkanImage::makeVulkanImageSubresource(this, static_cast<s32>(layer), static_cast<s32>(mip)));
+
+                    auto viewIter = m_imageViews.insert({ ImageViewKey(imageViewCreateInfo.subresourceRange), VK_NULL_HANDLE });
+                    if (viewIter.second)
+                    {
+                        VkResult result = VulkanWrapper::CreateImageView(m_device, &imageViewCreateInfo, VULKAN_ALLOCATOR, &viewIter.first->second);
+                        if (result != VK_SUCCESS)
+                        {
+                            LOG_ERROR("VulkanImage::createViewImage vkCreateImageView is failed. Error: %s", ErrorString(result).c_str());
+                            return false;
+                        }
+                    }
                 }
             }
         }

@@ -2,6 +2,7 @@
 
 #include "Common.h"
 #include "Renderer/TextureProperties.h"
+#include "Renderer/Image.h"
 
 #ifdef VULKAN_RENDER
 #include "VulkanFunctions.h"
@@ -10,14 +11,17 @@ namespace v3d
 {
 namespace renderer
 {
-    class Image;
-
 namespace vk
 {
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
+
     class VulkanCommandBuffer;
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    /**
+    * @brief VulkanTransitionState class. Render side
+    */
     class VulkanTransitionState final
     {
     public:
@@ -30,7 +34,7 @@ namespace vk
         VulkanTransitionState() noexcept = default;
         ~VulkanTransitionState() = default;
 
-        void transitionImages(VulkanCommandBuffer* cmdBuffer, const std::vector<const Image*>& images, VkImageLayout layout, s32 layer = k_generalLayer, s32 mip = k_allMipmapsLevels, bool toCompute = false);
+        void transitionImages(VulkanCommandBuffer* cmdBuffer, const std::vector<std::tuple<const Image*, Image::Subresource>>& images, VkImageLayout layout, bool toCompute = false);
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
