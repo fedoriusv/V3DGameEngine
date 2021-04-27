@@ -17,6 +17,8 @@
 #include "Scene/Model.h"
 #include "Scene/ModelHelper.h"
 
+#define USE_DOWNSAMPLE 1
+
 using namespace v3d;
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -28,8 +30,8 @@ public:
     explicit DrawTexturedCube(SceneRenderer* scene) noexcept
         : m_Scene(scene)
 
-        , m_Program(nullptr)
         , m_Pipeline(nullptr)
+        , m_Program(nullptr)
 
         , m_Sampler(nullptr)
         , m_Texture(nullptr)
@@ -199,27 +201,35 @@ class DownsampleRender : public BaseRender
 public:
 
     explicit DownsampleRender(v3d::renderer::Texture2D* texture) noexcept
-        : m_Texture(texture)
+        : m_DownsamplePipeline(nullptr)
+        , m_DownsampleProgram(nullptr)
+
+        , m_InputTexture(texture)
+        , m_OuputTexture(texture)
     {
     }
 
     ~DownsampleRender()
     {
-        m_Texture = nullptr;
+        m_InputTexture = nullptr;
+        m_OuputTexture = nullptr;
+
+        delete m_DownsampleProgram;
+        delete m_DownsamplePipeline;
     }
 
     void Init(v3d::renderer::CommandList* commandList) override
     {
-
         //Compute
         if (m_ComputeDownsampling)
         {
-            //const renderer::Shader* shader = resource::ResourceLoaderManager::getInstance()->loadShader<renderer::Shader, resource::ShaderSourceFileLoader>(m_CommandList->getContext(), "downsampling.comp");
-            //m_DownsampleProgram = m_CommandList->createObject<renderer::ShaderProgram>(shader);
-            //m_DownsamplePipeline = m_CommandList->createObject<renderer::ComputePipelineState>(m_DownsampleProgram);
+            resource::ResourceLoaderManager::getInstance()->addPath("examples/rendertarget/data/");
 
-            //m_testTexture = m_CommandList->createObject<renderer::Texture2D>(renderer::TextureUsage_Sampled | renderer::TextureUsage_Write | renderer::TextureUsage::TextureUsage_Storage,
-            //    m_ColorAttachment->getFormat(), core::Dimension2D(m_ColorAttachment->getDimension().width, m_ColorAttachment->getDimension().height), 1, nullptr, "TestTexture");
+            const renderer::Shader* shader = resource::ResourceLoaderManager::getInstance()->loadShader<renderer::Shader, resource::ShaderSourceFileLoader>(commandList->getContext(), "downsampling.comp");
+            m_DownsampleProgram = commandList->createObject<renderer::ShaderProgram>(shader);
+            m_DownsamplePipeline = commandList->createObject<renderer::ComputePipelineState>(m_DownsampleProgram);
+
+            m_OuputTexture = m_InputTexture;
         }
     }
 
@@ -228,34 +238,44 @@ public:
 
         if (m_ComputeDownsampling) //compute
         {
-            /*m_CommandList->transition<renderer::Texture2D>(m_ColorAttachment, renderer::TransitionOp::TransitionOp_GeneralCompute, 0, 0);
-            m_CommandList->transition<renderer::Texture2D>(m_testTexture, renderer::TransitionOp::TransitionOp_GeneralCompute, 0, 0);
+            ASSERT(m_InputTexture->getMipmapsCount() > 1, "must be alloc");
+            commandList->setPipelineState(m_DownsamplePipeline);
 
-            m_CommandList->setPipelineState(m_DownsamplePipeline);
+            commandList->transition({ m_InputTexture, 0, 0 }, renderer::TransitionOp::TransitionOp_GeneralCompute);
 
-            m_DownsampleProgram->bindStorageImage<renderer::ShaderType::ShaderType_Compute, renderer::Texture2D>({ "inputImage" }, m_ColorAttachment, 0, 0);
-            m_DownsampleProgram->bindStorageImage<renderer::ShaderType::ShaderType_Compute, renderer::Texture2D>({ "resultImage" }, m_testTexture, 0, 0);
+            u32 width = m_InputTexture->getDimension().width;
+            u32 height = m_InputTexture->getDimension().height;
+            for (u32 mip = 1; mip < m_InputTexture->getMipmapsCount(); ++mip)
+            {
+                commandList->transition({ m_InputTexture, 0, mip }, renderer::TransitionOp::TransitionOp_GeneralCompute);
 
-            m_CommandList->dispatchCompute({ m_ColorAttachment->getDimension().width / 4, m_ColorAttachment->getDimension().height / 4, 1 });
+                m_DownsampleProgram->bindStorageImage<renderer::ShaderType::ShaderType_Compute, renderer::Texture2D>({ "inputImage" }, m_InputTexture, 0, mip - 1);
+                m_DownsampleProgram->bindStorageImage<renderer::ShaderType::ShaderType_Compute, renderer::Texture2D>({ "resultImage" }, m_InputTexture, 0, mip);
 
-            m_CommandList->transition<renderer::Texture2D>(m_testTexture, renderer::TransitionOp::TransitionOp_ShaderRead, 0, 0);*/
+                commandList->dispatchCompute({ std::max<u32>(width / 4, 1), std::max<u32>(height / 4, 1), 1 });
+                width = std::max(m_InputTexture->getDimension().width >> mip, 1U);
+                height = std::max(m_InputTexture->getDimension().height >> mip, 1U);
+            }
+
+            commandList->transition(m_InputTexture, renderer::TransitionOp::TransitionOp_ShaderRead);
+            m_OuputTexture = m_InputTexture;
         }
         else
         {
-            commandList->generateMipmaps(m_Texture, renderer::TransitionOp::TransitionOp_ShaderRead);
+            commandList->generateMipmaps(m_InputTexture, renderer::TransitionOp::TransitionOp_ShaderRead);
+            m_OuputTexture = m_InputTexture;
         }
     }
 
-private:
+public:
 
     //Compute
     bool m_ComputeDownsampling = false;
     v3d::renderer::ComputePipelineState* m_DownsamplePipeline;
     v3d::renderer::ShaderProgram* m_DownsampleProgram;
 
-    v3d::renderer::Texture2D* m_Texture;
-
-    //v3d::renderer::Texture2D* m_testTexture;
+    v3d::renderer::Texture2D* m_InputTexture;
+    v3d::renderer::Texture2D* m_OuputTexture;
 };
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -331,7 +351,11 @@ public:
         commandList->setPipelineState(m_OffscreenPipeline);
 
         m_OffscreenProgram->bindSampler<renderer::ShaderType::ShaderType_Fragment>({ "colorSampler" }, m_Sampler);
+#if USE_DOWNSAMPLE
         m_OffscreenProgram->bindTexture<renderer::ShaderType::ShaderType_Fragment, renderer::Texture2D>({ "colorTexture" }, m_OffscreenAttachment);
+#else
+        m_OffscreenProgram->bindTexture<renderer::ShaderType::ShaderType_Fragment, renderer::Texture2D>({ "colorTexture" }, m_OffscreenAttachment, 0, 0);
+#endif
 
         commandList->draw(renderer::StreamBufferDescription(nullptr, 0), 0, 3, 1);
     }
@@ -370,6 +394,7 @@ SceneRenderer::~SceneRenderer()
 
     delete m_BasePass;
     delete m_OffcreenPass;
+    delete m_DownsamplePass;
 
     delete m_Draws;
 }
@@ -388,7 +413,7 @@ void SceneRenderer::Prepare(const core::Dimension2D& size)
     downsampleTexture->Init(&m_CommandList);
     m_DownsamplePass = downsampleTexture;
 
-    OffscreenRender* offscreen = new OffscreenRender(mainRender->m_ColorAttachment);
+    OffscreenRender* offscreen = new OffscreenRender(downsampleTexture->m_OuputTexture);
     offscreen->Init(&m_CommandList);
     m_OffcreenPass = offscreen;
 
@@ -408,10 +433,13 @@ void SceneRenderer::Render(f32 dt)
 
     m_BasePass->Render(&m_CommandList, m_Draws);
     //m_CommandList.submitCommands(true);
+    //m_CommandList.flushCommands();
 
+#if USE_DOWNSAMPLE
     m_DownsamplePass->Render(&m_CommandList);
     //m_CommandList.submitCommands(true);
-
+    //m_CommandList.flushCommands();
+#endif
     m_OffcreenPass->Render(&m_CommandList);
 
     m_CommandList.endFrame();
