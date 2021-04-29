@@ -95,7 +95,7 @@ void ForwardPointLightTest::Draw(scene::ModelHelper* geometry, v3d::scene::Camer
         m_Program->bindUniformsBuffer<renderer::ShaderType::ShaderType_Fragment>({ "ubo" }, 0, sizeof(UBO), &ubo);
     }
 
-    geometry->draw();
+    geometry->draw(&m_CommandList);
 }
 
 void ForwardPointLightTest::Free()
@@ -208,7 +208,7 @@ void ForwardPointLightTextureTest::Draw(scene::ModelHelper* geometry, v3d::scene
         m_Program->bindTexture<renderer::ShaderType::ShaderType_Fragment, renderer::Texture2D>({ "textureSpecular" }, m_TextureSpecular.get());
     }
 
-    geometry->draw();
+    geometry->draw(&m_CommandList);
 }
 
 void ForwardPointLightTextureTest::Free()

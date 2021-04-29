@@ -92,7 +92,7 @@ void ForwardDirectionalLightTextureTest::Draw(scene::ModelHelper* geometry, scen
     m_Program->bindSampler<renderer::ShaderType::ShaderType_Fragment>({ "samplerColor" }, m_Sampler.get());
     m_Program->bindTexture<renderer::ShaderType::ShaderType_Fragment, renderer::Texture2D>({ "textureColor" }, m_Texture.get());
 
-    geometry->draw();
+    geometry->draw(&m_CommandList);
 }
 
 void ForwardDirectionalLightTextureTest::Free()

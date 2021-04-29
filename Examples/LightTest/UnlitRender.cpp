@@ -63,7 +63,7 @@ void UnlitTextureTest::Draw(scene::ModelHelper* geometry, scene::CameraHelper* c
     m_Program->bindSampler<renderer::ShaderType::ShaderType_Fragment>({ "samplerColor" }, m_Sampler.get());
     m_Program->bindTexture<renderer::ShaderType::ShaderType_Fragment, renderer::Texture2D>({ "textureColor" }, m_Texture.get());
 
-    geometry->draw();
+    geometry->draw(&m_CommandList);
 }
 
 void UnlitTextureTest::Free()

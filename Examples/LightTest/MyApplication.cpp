@@ -245,13 +245,13 @@ void MyApplication::Load()
 
     {
         v3d::scene::Model* cube = resource::ResourceLoaderManager::getInstance()->load<v3d::scene::Model, resource::ModelFileLoader>("resources/cube.dae", resource::ModelLoaderFlag_GenerateTangentAndBitangent | resource::ModelLoaderFlag::ModelLoaderFlag_UseBitangent);
-        m_Geometry[0] = v3d::scene::ModelHelper::createModelHelper(*m_CommandList, { cube });
+        m_Geometry[0] = v3d::scene::ModelHelper::createModelHelper(m_CommandList, { cube });
 
         v3d::scene::Model* torus = resource::ResourceLoaderManager::getInstance()->load<v3d::scene::Model, resource::ModelFileLoader>("resources/torus.dae", resource::ModelLoaderFlag_GenerateTangentAndBitangent | resource::ModelLoaderFlag::ModelLoaderFlag_UseBitangent);
-        m_Geometry[1] = v3d::scene::ModelHelper::createModelHelper(*m_CommandList, { torus });
+        m_Geometry[1] = v3d::scene::ModelHelper::createModelHelper(m_CommandList, { torus });
 
         v3d::scene::Model* teapot = resource::ResourceLoaderManager::getInstance()->load<v3d::scene::Model, resource::ModelFileLoader>("resources/teapot.dae", resource::ModelLoaderFlag_GenerateTangentAndBitangent | resource::ModelLoaderFlag::ModelLoaderFlag_UseBitangent);
-        m_Geometry[2] = v3d::scene::ModelHelper::createModelHelper(*m_CommandList, { teapot });
+        m_Geometry[2] = v3d::scene::ModelHelper::createModelHelper(m_CommandList, { teapot });
 
         m_Transform.setScale({ 100.0f, 100.0f, 100.0f });
     }
@@ -520,7 +520,7 @@ void MyApplication::LightDebug::Draw(v3d::renderer::CommandList* commandList, v3
         m_Program->bindUniformsBuffer<renderer::ShaderType::ShaderType_Vertex>({ "ubo" }, 0, sizeof(UBO), &ubo);
         m_Program->bindUniformsBuffer<renderer::ShaderType::ShaderType_Fragment>({ "debugColor" }, 0, sizeof(core::Vector4D), &std::get<1>(light));
 
-        geometry->draw();
+        geometry->draw(commandList);
     }
 }
 

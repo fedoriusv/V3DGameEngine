@@ -163,7 +163,7 @@ void DirectionLightDebug::Free()
 void LightDebug::Init(v3d::renderer::CommandList* commandList, v3d::renderer::RenderTargetState* renderTarget)
 {
     v3d::scene::Model* cube = resource::ResourceLoaderManager::getInstance()->load<v3d::scene::Model, resource::ModelFileLoader>("data/cube.dae");
-    m_Geometry = v3d::scene::ModelHelper::createModelHelper(*commandList, { cube });
+    m_Geometry = v3d::scene::ModelHelper::createModelHelper(commandList, { cube });
 
     const stream::Stream* vertexStream = stream::StreamManager::createMemoryStream(k_vertexDebug);
     renderer::ShaderHeader vertexHeader(renderer::ShaderType::ShaderType_Vertex);
@@ -211,7 +211,7 @@ void LightDebug::Draw(v3d::renderer::CommandList* commandList, v3d::scene::Camer
     m_Program->bindUniformsBuffer<renderer::ShaderType::ShaderType_Vertex>({ "buffer" }, 0, sizeof(UBO), &ubo);
     m_Program->bindUniformsBuffer<renderer::ShaderType::ShaderType_Fragment>({ "color" }, 0, sizeof(core::Vector4D), &m_lightColor);
 
-    m_Geometry->draw();
+    m_Geometry->draw(commandList);
 }
 
 void LightDebug::Free()

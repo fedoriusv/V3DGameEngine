@@ -170,7 +170,7 @@ void MyApplication::Load()
 
     {
         v3d::scene::Model* scene = resource::ResourceLoaderManager::getInstance()->load<v3d::scene::Model, resource::ModelFileLoader>("data/big_field.dae");
-        m_Scene = v3d::scene::ModelHelper::createModelHelper(*m_CommandList, { scene });
+        m_Scene = v3d::scene::ModelHelper::createModelHelper(m_CommandList, { scene });
     }
 
     m_ShadowMapping = new ShadowMapping(m_CommandList);
@@ -357,7 +357,7 @@ void MyApplication::DrawDirectionLightMode(bool enablePCF, bool cascaded)
         }
     }
 
-    m_Scene->draw();
+    m_Scene->draw(m_CommandList);
 }
 
 void MyApplication::DrawPointLightMode(bool enablePCF)
@@ -406,7 +406,7 @@ void MyApplication::DrawPointLightMode(bool enablePCF)
         m_ShadowMappingPointProgram->bindTexture<renderer::ShaderType::ShaderType_Fragment, renderer::TextureCube>({ "shadowMapCube" }, m_ShadowMappingPoint->GetDepthMap());
     }
 
-    m_Scene->draw();
+    m_Scene->draw(m_CommandList);
 }
 
 bool MyApplication::Running()

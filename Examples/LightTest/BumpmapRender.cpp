@@ -104,7 +104,7 @@ void ForwardNormalMapTest::Draw(scene::ModelHelper* geometry, v3d::scene::Camera
         m_Program->bindTexture<renderer::ShaderType::ShaderType_Fragment, renderer::Texture2D>({ "textureNormal" }, m_TextureNormalmap.get());
     }
 
-    geometry->draw();
+    geometry->draw(&m_CommandList);
 }
 
 void ForwardNormalMapTest::Free()
@@ -231,7 +231,7 @@ void ForwardParallaxMappingTest::Draw(scene::ModelHelper* geometry, v3d::scene::
         m_Program->bindTexture<renderer::ShaderType::ShaderType_Fragment, renderer::Texture2D>({ "textureHeight" }, m_TextureHeightmap.get());
     }
 
-    geometry->draw();
+    geometry->draw(&m_CommandList);
 }
 
 void ForwardParallaxMappingTest::Free()

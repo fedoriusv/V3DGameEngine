@@ -119,7 +119,7 @@ void ShadowMapping::Draw(scene::ModelHelper* geometry, const scene::Transform& t
 
         m_Program->bindUniformsBuffer<renderer::ShaderType::ShaderType_Vertex>({ "ubo" }, 0, (u32)sizeof(UBO), &ubo);
     }
-    geometry->draw();
+    geometry->draw(m_CmdList);
 }
 
 void ShadowMapping::Free()
@@ -227,7 +227,7 @@ void CascadedShadowMapping::Draw(scene::ModelHelper* geometry, const scene::Tran
 
         m_Program->bindUniformsBuffer<renderer::ShaderType::ShaderType_Vertex>({ "ubo" }, 0, (u32)sizeof(UBO), &ubo);
 
-        geometry->draw();
+        geometry->draw(m_CmdList);
     }
 }
 
@@ -686,7 +686,7 @@ void ShadowMappingPoint::Draw(scene::ModelHelper* geometry, const scene::Transfo
 
         m_Program->bindUniformsBuffer<renderer::ShaderType::ShaderType_Vertex>({ "ubo" }, 0, (u32)sizeof(UBO), &ubo);
 
-        geometry->draw();
+        geometry->draw(m_CmdList);
     }
     else
     {
@@ -710,7 +710,7 @@ void ShadowMappingPoint::Draw(scene::ModelHelper* geometry, const scene::Transfo
 
             m_Program->bindUniformsBuffer<renderer::ShaderType::ShaderType_Vertex>({ "ubo" }, 0, (u32)sizeof(UBO), &ubo);
 
-            geometry->draw();
+            geometry->draw(m_CmdList);
         }
     }
 }
