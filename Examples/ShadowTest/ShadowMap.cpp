@@ -147,6 +147,7 @@ const renderer::Texture2D* ShadowMapping::GetDepthMap() const
     return m_DepthAttachment.get();
 }
 
+const u32 CascadedShadowMapping::s_CascadeCount;
 
 CascadedShadowMapping::CascadedShadowMapping(renderer::CommandList* cmdList) noexcept
     : m_CmdList(cmdList)
