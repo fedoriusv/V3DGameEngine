@@ -24,6 +24,8 @@ namespace vk
         enum SemaphoreStatus
         {
             Free,
+            AssignToWaiting,
+            AssignToSignal,
             Signaled,
         };
 
@@ -38,6 +40,9 @@ namespace vk
 
         VkSemaphore m_semaphore;
         SemaphoreStatus m_semaphoreStatus;
+#if VULKAN_DEBUG_MARKERS
+        std::string m_debugName;
+#endif
     };
 
     /**
@@ -59,10 +64,12 @@ namespace vk
         void clear();
         void updateSemaphores();
 
-    private:
+        bool markSemaphore(VulkanSemaphore* semaphore, VulkanSemaphore::SemaphoreStatus status);
 
-        VulkanSemaphore* createSemaphore();
+        VulkanSemaphore* createSemaphore([[maybe_unused]] const std::string& name = "");
         void deleteSemaphore(VulkanSemaphore* sem);
+
+    private:
 
         VkDevice  m_device;
 

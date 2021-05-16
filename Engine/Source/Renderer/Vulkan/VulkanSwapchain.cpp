@@ -7,6 +7,7 @@
 #include "VulkanContext.h"
 #include "VulkanImage.h"
 #include "VulkanResource.h"
+#include "VulkanSemaphore.h"
 
 #define DEBUG_FENCE_ACQUIRE 0
 
@@ -71,13 +72,14 @@ bool createSurfaceAndroidApi(VkInstance vkInstance, NativeInstance hInstance, Na
 
 u32 VulkanSwapchain::s_currentImageIndex = ~0U;
 
-VulkanSwapchain::VulkanSwapchain(const DeviceInfo* info)
+VulkanSwapchain::VulkanSwapchain(const DeviceInfo* info, VulkanSemaphoreManager* const semaphoreManager)
     : m_deviceInfo(info)
     , m_surface(VK_NULL_HANDLE)
     , m_surfaceCaps({})
     , m_surfaceFormat({})
     , m_swapchain(VK_NULL_HANDLE)
 
+    , m_semaphoreManager(semaphoreManager)
     , m_currentSemaphoreIndex(0U)
 
     , m_ready(false)
@@ -135,7 +137,7 @@ bool VulkanSwapchain::create(const SwapchainConfig& config, VkSwapchainKHR oldSw
     m_surface = VulkanSwapchain::createSurface(m_deviceInfo->_instance, m_config._window->getInstance(), m_config._window->getWindowHandle(), m_config._size);
     if (!m_surface)
     {
-        LOG_FATAL("VulkanContext::createContext: Can not create VkSurfaceKHR");
+        LOG_FATAL("VulkanSwapchain::createSurface: Can not create VkSurfaceKHR");
         return false;
     }
 
@@ -158,7 +160,7 @@ bool VulkanSwapchain::create(const SwapchainConfig& config, VkSwapchainKHR oldSw
             m_surface = VulkanSwapchain::createSurface(m_deviceInfo->_instance, m_config._window->getInstance(), m_config._window->getWindowHandle(), m_config._size);
             if (!m_surface)
             {
-                LOG_FATAL("VulkanContext::createContext: Can not create VkSurfaceKHR");
+                LOG_FATAL("VulkanSwapchain::createSurface: Can not create VkSurfaceKHR");
                 return false;
             }
         }
@@ -271,37 +273,11 @@ bool VulkanSwapchain::create(const SwapchainConfig& config, VkSwapchainKHR oldSw
         return false;
     }
 
-    m_acquireSemaphore.reserve(m_swapBuffers.size());
+    m_acquireSemaphore.resize(m_swapBuffers.size(), nullptr);
     for (u32 index = 0; index < m_swapBuffers.size(); ++index)
     {
-        VkSemaphoreCreateInfo semaphoreCreateInfo = {};
-        semaphoreCreateInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
-        semaphoreCreateInfo.pNext = nullptr;
-        semaphoreCreateInfo.flags = 0;
-
-        VkSemaphore semaphore = VK_NULL_HANDLE;
-        VkResult result = VulkanWrapper::CreateSemaphore(m_deviceInfo->_device, &semaphoreCreateInfo, VULKAN_ALLOCATOR, &semaphore);
-        if (result != VK_SUCCESS)
-        {
-            LOG_ERROR(" VulkanSwapchain::create Acquire Semaphore vkCreateSemaphore is failed. Error %s", ErrorString(result).c_str());
-        }
-        m_acquireSemaphore.push_back(semaphore);
-
-#if VULKAN_DEBUG_MARKERS
-        if (VulkanDeviceCaps::getInstance()->debugUtilsObjectNameEnabled)
-        {
-            std::string semaphoreName("AcquireSemaphore_" + std::to_string(index));
-
-            VkDebugUtilsObjectNameInfoEXT debugUtilsObjectNameInfo = {};
-            debugUtilsObjectNameInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT;
-            debugUtilsObjectNameInfo.pNext = nullptr;
-            debugUtilsObjectNameInfo.objectType = VK_OBJECT_TYPE_SEMAPHORE;
-            debugUtilsObjectNameInfo.objectHandle = reinterpret_cast<u64>(semaphore);
-            debugUtilsObjectNameInfo.pObjectName = semaphoreName.c_str();
-
-            VulkanWrapper::SetDebugUtilsObjectName(m_deviceInfo->_device, &debugUtilsObjectNameInfo);
-        }
-#endif //VULKAN_DEBUG_MARKERS
+        std::string semaphoreName("AcquireSemaphore_" + std::to_string(index));
+        m_acquireSemaphore[index] = m_semaphoreManager->createSemaphore(semaphoreName);
     }
 
 #if SWAPCHAIN_ON_ADVANCE
@@ -517,7 +493,8 @@ void VulkanSwapchain::destroy()
 
     for (auto& semaphore : m_acquireSemaphore)
     {
-        VulkanWrapper::DestroySemaphore(m_deviceInfo->_device, semaphore, VULKAN_ALLOCATOR);
+        m_semaphoreManager->deleteSemaphore(semaphore);
+        delete semaphore;
     }
     m_acquireSemaphore.clear();
 
@@ -533,7 +510,7 @@ void VulkanSwapchain::destroy()
     m_ready = false;
 }
 
-void VulkanSwapchain::present(VkQueue queue, const std::vector<VkSemaphore>& waitSemaphores)
+void VulkanSwapchain::present(VkQueue queue, const std::vector<VulkanSemaphore*>& waitSemaphores)
 {
 #if VULKAN_DEBUG
     LOG_DEBUG("VulkanSwapchain::present");
@@ -542,20 +519,30 @@ void VulkanSwapchain::present(VkQueue queue, const std::vector<VkSemaphore>& wai
 
     VkResult innerResults[1] = {};
 
+    std::vector<VkSemaphore> vkWaitSemaphores;
+    vkWaitSemaphores.reserve(waitSemaphores.size());
+
     VkPresentInfoKHR presentInfoKHR = {};
     presentInfoKHR.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
     presentInfoKHR.pNext = nullptr;
 #if !SWAPCHAIN_ON_ADVANCE
+    VkSemaphore acquireSemaphore = std::get<1>(m_presentInfo)->getHandle();
     if (waitSemaphores.empty())
     {
         presentInfoKHR.waitSemaphoreCount = 1;
-        presentInfoKHR.pWaitSemaphores = &std::get<1>(m_presentInfo);
+        presentInfoKHR.pWaitSemaphores = &acquireSemaphore;
     }
     else
 #endif
     {
-        presentInfoKHR.waitSemaphoreCount = static_cast<u32>(waitSemaphores.size());
-        presentInfoKHR.pWaitSemaphores = waitSemaphores.data();
+        for (VulkanSemaphore* semaphore : waitSemaphores)
+        {
+            vkWaitSemaphores.push_back(semaphore->getHandle());
+            m_semaphoreManager->markSemaphore(semaphore, VulkanSemaphore::SemaphoreStatus::AssignToWaiting);
+        }
+
+        presentInfoKHR.waitSemaphoreCount = static_cast<u32>(vkWaitSemaphores.size());
+        presentInfoKHR.pWaitSemaphores = vkWaitSemaphores.data();
     }
     presentInfoKHR.swapchainCount = 1;
     presentInfoKHR.pSwapchains = &m_swapchain;
@@ -598,9 +585,9 @@ void VulkanSwapchain::present(VkQueue queue, const std::vector<VkSemaphore>& wai
 u32 VulkanSwapchain::acquireImage()
 {
 #if VULKAN_DEBUG
-    LOG_DEBUG("VulkanSwapchain::acquireImage, semaphore Index %d", m_currentSemaphoreIndex);
+    LOG_DEBUG("VulkanSwapchain::acquireImage");
 #endif //VULKAN_DEBUG
-    VkSemaphore semaphore = m_acquireSemaphore[m_currentSemaphoreIndex];
+    VulkanSemaphore* semaphore = m_acquireSemaphore[m_currentSemaphoreIndex];
     VkFence fence = VK_NULL_HANDLE;
 
 #if DEBUG_FENCE_ACQUIRE
@@ -615,7 +602,7 @@ u32 VulkanSwapchain::acquireImage()
 #endif
     
     u32 imageIndex = 0;
-    VkResult result = VulkanWrapper::AcquireNextImage(m_deviceInfo->_device, m_swapchain, UINT64_MAX, semaphore, fence, &imageIndex);
+    VkResult result = VulkanWrapper::AcquireNextImage(m_deviceInfo->_device, m_swapchain, UINT64_MAX, semaphore->getHandle(), fence, &imageIndex);
 
 #if DEBUG_FENCE_ACQUIRE
     {
@@ -643,9 +630,7 @@ u32 VulkanSwapchain::acquireImage()
         }
         recreateAttachedResources();
 
-        VkSemaphore semaphoreInner = m_acquireSemaphore[m_currentSemaphoreIndex];
-
-        VkResult resultInner = VulkanWrapper::AcquireNextImage(m_deviceInfo->_device, m_swapchain, UINT64_MAX, semaphoreInner, VK_NULL_HANDLE, &imageIndex);
+        VkResult resultInner = VulkanWrapper::AcquireNextImage(m_deviceInfo->_device, m_swapchain, UINT64_MAX, semaphore->getHandle(), VK_NULL_HANDLE, &imageIndex);
         if (resultInner != VK_SUCCESS)
         {
             LOG_FATAL(" VulkanSwapchain::AcquireNextImage: failed recreate with error %s", ErrorString(result).c_str());
@@ -663,6 +648,7 @@ u32 VulkanSwapchain::acquireImage()
         ASSERT(false, "vkAcquireNextImageKHR failed");
     }
 
+    m_semaphoreManager->markSemaphore(semaphore, VulkanSemaphore::SemaphoreStatus::AssignToSignal);
     s_currentImageIndex = imageIndex;
 #if !SWAPCHAIN_ON_ADVANCE
     m_presentInfo = { VulkanSwapchain::currentSwapchainIndex(), m_acquireSemaphore[m_currentSemaphoreIndex] };
@@ -690,7 +676,8 @@ bool VulkanSwapchain::recteate(const SwapchainConfig& config)
 
     for (auto& semaphore : m_acquireSemaphore)
     {
-        VulkanWrapper::DestroySemaphore(m_deviceInfo->_device, semaphore, VULKAN_ALLOCATOR);
+        m_semaphoreManager->deleteSemaphore(semaphore);
+        delete semaphore;
     }
     m_acquireSemaphore.clear();
 
@@ -728,15 +715,10 @@ VulkanImage* VulkanSwapchain::getBackbuffer() const
     return m_swapBuffers[s_currentImageIndex];
 }
 
-VkSemaphore VulkanSwapchain::getAcquireSemaphore(u32 index) const
+VulkanSemaphore* VulkanSwapchain::getAcquireSemaphore(u32 index) const
 {
     ASSERT(index < m_acquireSemaphore.size(), "invalid index");
     return m_acquireSemaphore[index];
-}
-
-u32 VulkanSwapchain::currentAcquireSemaphoreIndex() const
-{
-    return m_currentSemaphoreIndex;
 }
 
 u32 VulkanSwapchain::getSwapchainImageCount() const

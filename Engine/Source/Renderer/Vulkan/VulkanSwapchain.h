@@ -7,6 +7,9 @@
 #include "VulkanWrapper.h"
 #include "VulkanDeviceCaps.h"
 
+/**
+* SWAPCHAIN_ON_ADVANCE feature
+*/
 #define SWAPCHAIN_ON_ADVANCE 1
 
 namespace v3d
@@ -19,6 +22,8 @@ namespace vk
     
     class VulkanResource;
     class VulkanImage;
+    class VulkanSemaphore;
+    class VulkanSemaphoreManager;
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -38,13 +43,13 @@ namespace vk
             bool                    _forceSRGB            = false;
         };
 
-        VulkanSwapchain(const struct DeviceInfo* info);
+        VulkanSwapchain(const struct DeviceInfo* info, VulkanSemaphoreManager* const semaphoreManager);
         ~VulkanSwapchain();
 
         bool create(const SwapchainConfig& config, VkSwapchainKHR oldSwapchain = VK_NULL_HANDLE);
         void destroy();
 
-        void present(VkQueue queue, const std::vector<VkSemaphore>& waitSemaphores);
+        void present(VkQueue queue, const std::vector<VulkanSemaphore*>& waitSemaphores);
         u32  acquireImage();
 
         bool recteate(const SwapchainConfig& config);
@@ -54,9 +59,7 @@ namespace vk
         VulkanImage* getBackbuffer() const;
         VulkanImage* getSwapchainImage(u32 index) const;
         u32 getSwapchainImageCount() const;
-
-        VkSemaphore getAcquireSemaphore(u32 index) const;
-        u32 currentAcquireSemaphoreIndex() const;
+        VulkanSemaphore* getAcquireSemaphore(u32 index) const;
 
         static u32 currentSwapchainIndex();
         
@@ -78,12 +81,13 @@ namespace vk
         VkSwapchainKHR m_swapchain;
         std::vector<VulkanImage*> m_swapBuffers;
 
-        static u32 s_currentImageIndex;
-        std::tuple<u32, VkSemaphore> m_presentInfo;
+        VulkanSemaphoreManager* const m_semaphoreManager;
 
+        static u32 s_currentImageIndex;
+
+        std::tuple<u32, VulkanSemaphore*> m_presentInfo;
         u32 m_currentSemaphoreIndex;
-        std::vector<VkSemaphore> m_acquireSemaphore;
-        std::vector<VkFence> m_acquireFence;
+        std::vector<VulkanSemaphore*> m_acquireSemaphore;
 
         void recreateAttachedResources();
         std::vector<std::tuple<VulkanResource*, const std::function<bool(VulkanResource*)>>> m_swapchainResources;

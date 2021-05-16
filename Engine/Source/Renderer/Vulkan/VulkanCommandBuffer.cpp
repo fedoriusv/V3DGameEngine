@@ -11,6 +11,7 @@
 #include "VulkanGraphicPipeline.h"
 #include "VulkanComputePipeline.h"
 #include "VulkanSwapchain.h"
+#include "VulkanSemaphore.h"
 
 namespace v3d
 {
@@ -94,7 +95,7 @@ VulkanCommandBuffer::CommandBufferStatus VulkanCommandBuffer::getStatus() const
     return m_status;
 }
 
-void VulkanCommandBuffer::addSemaphore(VkPipelineStageFlags mask, VkSemaphore semaphore)
+void VulkanCommandBuffer::addSemaphore(VkPipelineStageFlags mask, VulkanSemaphore* semaphore)
 {
     if (m_level == CommandBufferLevel::SecondaryBuffer)
     {
@@ -102,8 +103,18 @@ void VulkanCommandBuffer::addSemaphore(VkPipelineStageFlags mask, VkSemaphore se
         m_primaryBuffer->addSemaphore(mask, semaphore);
     }
 
+    ASSERT(std::find(m_semaphores.cbegin(), m_semaphores.cend(), semaphore) == m_semaphores.cend(), "added multiply times");
+    semaphore->captureInsideCommandBuffer(this, 0);
     m_stageMasks.push_back(mask);
     m_semaphores.push_back(semaphore);
+}
+
+void VulkanCommandBuffer::addSemaphores(VkPipelineStageFlags mask, const std::vector<VulkanSemaphore*>& semaphores)
+{
+    for (VulkanSemaphore* semaphore : semaphores)
+    {
+        VulkanCommandBuffer::addSemaphore(mask, semaphore);
+    }
 }
 
 bool VulkanCommandBuffer::waitComplete(u64 timeout)
@@ -165,6 +176,16 @@ void VulkanCommandBuffer::refreshFenceStatus()
             }
         }
     }
+}
+
+bool VulkanCommandBuffer::isBackbufferPresented() const
+{
+    if (m_renderpassState._renderpass)
+    {
+        return m_renderpassState._renderpass->isDrawingToSwapchain();
+    }
+
+    return false;
 }
 
 void VulkanCommandBuffer::init(VkCommandPool pool, VkCommandBuffer buffer)

@@ -220,7 +220,9 @@ namespace vk
         VulkanContextState*         m_currentContextState;
         VulkanTransitionState       m_currentTransitionState;
 
-        std::vector<VkSemaphore> m_submitSemaphores;
+        std::vector<VulkanSemaphore*> m_waitSemaphores;
+        std::vector<VulkanSemaphore*> m_submitSemaphores;
+        std::vector<VulkanSemaphore*> m_presentSemaphores;
         void finalizeCommandBufferSubmit();
 
         VulkanResourceDeleter m_resourceDeleter;

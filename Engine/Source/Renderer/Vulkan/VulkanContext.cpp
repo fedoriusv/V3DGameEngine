@@ -206,17 +206,24 @@ bool VulkanContext::initialize()
     config._countSwapchainImages = 3;
 #endif
 
-    m_swapchain = new VulkanSwapchain(&m_deviceInfo);
+    m_semaphoreManager = new VulkanSemaphoreManager(m_deviceInfo._device);
+    m_swapchain = new VulkanSwapchain(&m_deviceInfo, m_semaphoreManager);
     if (!m_swapchain->create(config))
     {
         VulkanContext::destroy();
         LOG_FATAL("VulkanContext::createContext: Can not create VulkanSwapchain");
         return false;
     }
+
     m_window->registerNotify(this);
+#if SWAPCHAIN_ON_ADVANCE
+    m_presentSemaphores.push_back(m_swapchain->getAcquireSemaphore(0));
+#endif
+
 #if THREADED_PRESENT
     m_presentThread = new PresentThread(m_swapchain);
 #endif //THREADED_PRESENT
+
     m_backufferDescription._size = { m_swapchain->getSwapchainImage(0)->getSize().width, m_swapchain->getSwapchainImage(0)->getSize().height };
     m_backufferDescription._format = VulkanImage::convertVkImageFormatToFormat(m_swapchain->getSwapchainImage(0)->getFormat());
 
@@ -231,14 +238,13 @@ bool VulkanContext::initialize()
         m_bufferMemoryManager = new PoolVulkanMemoryAllocator(m_deviceInfo._device, 4 * 1024 * 1024); //4MB
     }
 
-    m_cmdBufferManager = new VulkanCommandBufferManager(this, &m_deviceInfo, m_queueList[0]);
+    m_cmdBufferManager = new VulkanCommandBufferManager(this, &m_deviceInfo, m_semaphoreManager, m_queueList[0]);
     m_currentBufferState._commandBufferMgr = m_cmdBufferManager;
 
     m_stagingBufferManager = new VulkanStagingBufferManager(m_deviceInfo._device);
     m_uniformBufferManager = new VulkanUniformBufferManager(m_deviceInfo._device, m_resourceDeleter);
     m_pipelineLayoutManager = new VulkanPipelineLayoutManager(m_deviceInfo._device);
     m_descriptorSetManager = new VulkanDescriptorSetManager(m_deviceInfo._device, m_swapchain->getSwapchainImageCount());
-    m_semaphoreManager = new VulkanSemaphoreManager(m_deviceInfo._device);
 
     m_renderpassManager = new RenderPassManager(this);
     m_framebufferManager = new FramebufferManager(this);
@@ -727,14 +733,6 @@ void VulkanContext::destroy()
         m_samplerManager = nullptr;
     }
 
-    if (m_semaphoreManager)
-    {
-        m_semaphoreManager->updateSemaphores();
-        m_semaphoreManager->clear();
-        delete m_semaphoreManager;
-        m_semaphoreManager = nullptr;
-    }
-
     if (m_currentContextState)
     {
         delete m_currentContextState;
@@ -746,6 +744,14 @@ void VulkanContext::destroy()
         m_swapchain->destroy();
         delete m_swapchain;
         m_swapchain = nullptr;
+    }
+
+    if (m_semaphoreManager)
+    {
+        m_semaphoreManager->updateSemaphores();
+        m_semaphoreManager->clear();
+        delete m_semaphoreManager;
+        m_semaphoreManager = nullptr;
     }
 #if DEBUG_OBJECT_MEMORY
     ASSERT(VulkanBuffer::s_objects.empty(), "buffer objects still exist");
@@ -803,12 +809,6 @@ void VulkanContext::beginFrame()
 #if SWAPCHAIN_ON_ADVANCE
     ASSERT(prevImageIndex != ~0U, "wrong index");
     m_currentTransitionState.transitionImages(drawBuffer, { { m_swapchain->getSwapchainImage(prevImageIndex), { 0, 1, 0, 1} } }, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
-    static bool s_ones = true;
-    if (s_ones) //only for 1st a semaphore of swapchain image
-    {
-        drawBuffer->addSemaphore(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, m_swapchain->getAcquireSemaphore(0));
-        s_ones = false;
-    }
 #endif //SWAPCHAIN_ON_ADVANCE
 
 #if FRAME_PROFILER_ENABLE
@@ -841,9 +841,12 @@ void VulkanContext::presentFrame()
 
     VulkanContext::submit();
 
-    std::vector<VkSemaphore> semaphores;
-    std::swap(semaphores, m_submitSemaphores);
-    ASSERT(m_submitSemaphores.empty(), "must be empty");
+    std::vector<VulkanSemaphore*> semaphores;
+    semaphores.insert(semaphores.end(), m_waitSemaphores.begin(), m_waitSemaphores.end());
+    semaphores.insert(semaphores.end(), m_presentSemaphores.begin(), m_presentSemaphores.end());
+    m_waitSemaphores.clear();
+    m_presentSemaphores.clear();
+
 #if THREADED_PRESENT
     m_presentThread->requestPresent(m_queueList[0], 0);
 #else
@@ -854,7 +857,8 @@ void VulkanContext::presentFrame()
 
 void VulkanContext::submit(bool wait)
 {
-    VkSemaphore uploadSemaphore = VK_NULL_HANDLE;
+    //Uploads commands
+    VulkanSemaphore* uploadSemaphore = nullptr;
     if (m_currentBufferState.isCurrentBufferAcitve(CommandTargetType::CmdUploadBuffer))
     {
         VulkanCommandBuffer* uploadBuffer = m_currentBufferState.getAcitveBuffer(CommandTargetType::CmdUploadBuffer);
@@ -863,19 +867,24 @@ void VulkanContext::submit(bool wait)
             uploadBuffer->endCommandBuffer();
         }
 
-        std::vector<VkSemaphore> uploadSemaphores;
+        std::vector<VulkanSemaphore*> uploadSemaphores;
         if (m_currentBufferState.isCurrentBufferAcitve(CommandTargetType::CmdDrawBuffer))
         {
-            VulkanSemaphore* semaphore = m_semaphoreManager->acquireSemaphore();
-            semaphore->captureInsideCommandBuffer(uploadBuffer, 0);
-            uploadSemaphore = semaphore->getHandle();
-
+            uploadSemaphore = m_semaphoreManager->acquireSemaphore();
             uploadSemaphores.push_back(uploadSemaphore);
         }
+
+        if (!m_waitSemaphores.empty())
+        {
+            uploadBuffer->addSemaphores(VK_PIPELINE_STAGE_TRANSFER_BIT, m_waitSemaphores);
+            m_waitSemaphores.clear();
+        }
+
         m_cmdBufferManager->submit(uploadBuffer, uploadSemaphores);
         m_currentBufferState.invalidateCommandBuffer(CommandTargetType::CmdUploadBuffer);
     }
 
+    //Draw commands
     if (m_currentBufferState.isCurrentBufferAcitve(CommandTargetType::CmdDrawBuffer))
     {
         VulkanCommandBuffer* drawBuffer = m_currentBufferState.getAcitveBuffer(CommandTargetType::CmdDrawBuffer);
@@ -888,9 +897,24 @@ void VulkanContext::submit(bool wait)
         drawBuffer->endCommandBuffer();
         m_uniformBufferManager->markToUse(drawBuffer, 0);
 
-        if (uploadSemaphore != VK_NULL_HANDLE)
         {
-            drawBuffer->addSemaphore(VK_PIPELINE_STAGE_TRANSFER_BIT, uploadSemaphore);
+            if (uploadSemaphore != nullptr)
+            {
+                drawBuffer->addSemaphore(VK_PIPELINE_STAGE_TRANSFER_BIT, uploadSemaphore);
+            }
+
+            if (drawBuffer->isBackbufferPresented())
+            {
+                drawBuffer->addSemaphore(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, m_swapchain->getAcquireSemaphore(m_swapchain->currentSwapchainIndex()));
+                VulkanSemaphore* semaphore = m_semaphoreManager->acquireSemaphore();
+                m_submitSemaphores.push_back(semaphore);
+            }
+
+            if (!m_waitSemaphores.empty())
+            {
+                drawBuffer->addSemaphores(VK_PIPELINE_STAGE_TRANSFER_BIT, m_waitSemaphores);
+                m_waitSemaphores.clear();
+            }
         }
 
         m_cmdBufferManager->submit(drawBuffer, m_submitSemaphores);
@@ -903,6 +927,7 @@ void VulkanContext::submit(bool wait)
     }
 
     VulkanContext::finalizeCommandBufferSubmit();
+    std::swap(m_waitSemaphores, m_submitSemaphores);
 
 #if VULKAN_DUMP
     VulkanDump::getInstance()->flush();
@@ -982,11 +1007,6 @@ void VulkanContext::setRenderTarget(const RenderPass::RenderPassInfo* renderpass
     if (swapchainPresent)
     {
         ASSERT(vkRenderpass->isDrawingToSwapchain(), "must be true");
-        VulkanCommandBuffer* drawBuffer = m_currentBufferState.acquireAndStartCommandBuffer(CommandTargetType::CmdDrawBuffer);
-        drawBuffer->addSemaphore(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, m_swapchain->getAcquireSemaphore(m_swapchain->currentAcquireSemaphoreIndex()));
-        VulkanSemaphore* semaphore = m_semaphoreManager->acquireSemaphore();
-        m_submitSemaphores.push_back(semaphore->getHandle());
-
         for (u32 index = 0; index < m_swapchain->getSwapchainImageCount(); ++index)
         {
             std::vector<Image*> images;

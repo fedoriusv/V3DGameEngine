@@ -12,7 +12,11 @@ namespace renderer
 {
 namespace vk
 {
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
+
     class VulkanCommandBuffer;
+    class VulkanSemaphore;
+    class VulkanSemaphoreManager;
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -41,12 +45,12 @@ namespace vk
         VulkanCommandBufferManager(const VulkanCommandBufferManager&) = delete;
         VulkanCommandBufferManager& operator=(const VulkanCommandBufferManager&) = delete;
 
-        VulkanCommandBufferManager(Context* const context, const struct DeviceInfo* info, VkQueue queue);
+        VulkanCommandBufferManager(Context* const context, const struct DeviceInfo* info, VulkanSemaphoreManager* const semaphoreManager, VkQueue queue);
         ~VulkanCommandBufferManager();
 
         VulkanCommandBuffer* acquireNewCmdBuffer(VulkanCommandBuffer::CommandBufferLevel level);
 
-        bool submit(VulkanCommandBuffer* buffer, std::vector<VkSemaphore>& signalSemaphores);
+        bool submit(VulkanCommandBuffer* buffer, std::vector<VulkanSemaphore*>& signalSemaphores);
         void updateCommandBuffers();
         void waitCompete();
 
@@ -59,6 +63,7 @@ namespace vk
         u32      m_familyIndex;
 
         Context* const m_context;
+        VulkanSemaphoreManager* const m_semaphoreManager;
 
         VkCommandPoolCreateFlags    m_poolFlag;
         std::vector<VkCommandPool>  m_commandPools;

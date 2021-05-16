@@ -22,6 +22,7 @@ namespace vk
     class VulkanFramebuffer;
     class VulkanGraphicPipeline;
     class VulkanComputePipeline;
+    class VulkanSemaphore;
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -61,8 +62,11 @@ namespace vk
 
         CommandBufferStatus getStatus() const;
 
-        void addSemaphore(VkPipelineStageFlags mask, VkSemaphore semaphore);
+        void addSemaphore(VkPipelineStageFlags mask, VulkanSemaphore* semaphore);
+        void addSemaphores(VkPipelineStageFlags mask, const std::vector<VulkanSemaphore*>& semaphores);
         bool waitComplete(u64 timeout = 0);
+
+        bool isBackbufferPresented() const;
 
         void beginCommandBuffer();
         void endCommandBuffer();
@@ -128,7 +132,7 @@ namespace vk
         CommandBufferLevel m_level;
         CommandBufferStatus m_status;
 
-        std::vector<VkSemaphore>            m_semaphores;
+        std::vector<VulkanSemaphore*>       m_semaphores;
         std::vector<VkPipelineStageFlags>   m_stageMasks;
         VkFence                             m_fence;
         u64                                 m_capturedFrameIndex;

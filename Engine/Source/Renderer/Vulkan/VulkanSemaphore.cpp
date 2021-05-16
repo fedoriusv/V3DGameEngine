@@ -4,6 +4,7 @@
 
 #ifdef VULKAN_RENDER
 #include "VulkanDebug.h"
+#include "VulkanDeviceCaps.h"
 
 namespace v3d
 {
@@ -16,6 +17,11 @@ VulkanSemaphore::VulkanSemaphore() noexcept
     : m_semaphore(VK_NULL_HANDLE)
     , m_semaphoreStatus(SemaphoreStatus::Free)
 {
+#if VULKAN_DEBUG_MARKERS
+    m_debugName = "Semaphore";
+    m_debugName.append(VulkanDebugUtils::k_addressPreffix);
+    m_debugName.append(std::to_string(reinterpret_cast<const u64>(this)));
+#endif //VULKAN_DEBUG_MARKERS
 }
 
 VulkanSemaphore::~VulkanSemaphore()
@@ -50,7 +56,7 @@ VulkanSemaphore* VulkanSemaphoreManager::acquireSemaphore()
     else
     {
         semaphore = m_freePools.front();
-        semaphore->m_semaphoreStatus = VulkanSemaphore::SemaphoreStatus::Free;
+        VulkanSemaphoreManager::markSemaphore(semaphore, VulkanSemaphore::SemaphoreStatus::Free);
         m_freePools.pop_front();
     }
 
@@ -78,7 +84,7 @@ void VulkanSemaphoreManager::updateSemaphores()
         VulkanSemaphore* semaphore = *semaphoreIter;
         if (!semaphore->isCaptured())
         {
-            semaphore->m_semaphoreStatus = VulkanSemaphore::SemaphoreStatus::Signaled;
+            VulkanSemaphoreManager::markSemaphore(semaphore, VulkanSemaphore::SemaphoreStatus::Signaled);
 
             m_freePools.push_back(semaphore);
             semaphoreIter = m_usedPools.erase(semaphoreIter);
@@ -90,7 +96,32 @@ void VulkanSemaphoreManager::updateSemaphores()
     }
 }
 
-VulkanSemaphore* VulkanSemaphoreManager::createSemaphore()
+bool VulkanSemaphoreManager::markSemaphore(VulkanSemaphore* semaphore, VulkanSemaphore::SemaphoreStatus status)
+{
+    ASSERT(semaphore, "nullptr");
+    /*if (status == VulkanSemaphore::SemaphoreStatus::AssignToSignal)
+    {
+        if (semaphore->m_semaphoreStatus != VulkanSemaphore::SemaphoreStatus::Free)
+        {
+            ASSERT(false, "must be free before signal");
+            return false;
+        }
+    }*/
+
+    if (status == VulkanSemaphore::SemaphoreStatus::AssignToWaiting)
+    {
+        if (semaphore->m_semaphoreStatus != VulkanSemaphore::SemaphoreStatus::AssignToSignal && semaphore->m_semaphoreStatus != VulkanSemaphore::SemaphoreStatus::Signaled)
+        {
+            ASSERT(false, "must be attached to signal");
+            return false;
+        }
+    }
+
+    semaphore->m_semaphoreStatus = status;
+    return true;
+}
+
+VulkanSemaphore* VulkanSemaphoreManager::createSemaphore(const std::string& name)
 {
     VkSemaphore vkSemaphore = VK_NULL_HANDLE;
     VkSemaphoreCreateInfo semaphoreCreateInfo = {};
@@ -108,6 +139,25 @@ VulkanSemaphore* VulkanSemaphoreManager::createSemaphore()
     VulkanSemaphore* semaphore = new VulkanSemaphore();
     semaphore->m_semaphore = vkSemaphore;
     semaphore->m_semaphoreStatus = VulkanSemaphore::SemaphoreStatus::Free;
+
+#if VULKAN_DEBUG_MARKERS
+    if (!name.empty())
+    {
+        semaphore->m_debugName = name;
+    }
+
+    if (VulkanDeviceCaps::getInstance()->debugUtilsObjectNameEnabled)
+    {
+        VkDebugUtilsObjectNameInfoEXT debugUtilsObjectNameInfo = {};
+        debugUtilsObjectNameInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT;
+        debugUtilsObjectNameInfo.pNext = nullptr;
+        debugUtilsObjectNameInfo.objectType = VK_OBJECT_TYPE_SEMAPHORE;
+        debugUtilsObjectNameInfo.objectHandle = reinterpret_cast<u64>(vkSemaphore);
+        debugUtilsObjectNameInfo.pObjectName = semaphore->m_debugName.c_str();
+
+        VulkanWrapper::SetDebugUtilsObjectName(m_device, &debugUtilsObjectNameInfo);
+    }
+#endif //VULKAN_DEBUG_MARKERS
 
     return semaphore;
 }

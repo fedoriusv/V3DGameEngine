@@ -5,6 +5,7 @@
 #ifdef VULKAN_RENDER
 #include "VulkanDebug.h"
 #include "VulkanContext.h"
+#include "VulkanSemaphore.h"
 
 namespace v3d
 {
@@ -13,12 +14,13 @@ namespace renderer
 namespace vk
 {
 
-VulkanCommandBufferManager::VulkanCommandBufferManager(Context* const context, const DeviceInfo* info, VkQueue queue)
+VulkanCommandBufferManager::VulkanCommandBufferManager(Context* const context, const DeviceInfo* info, VulkanSemaphoreManager* const semaphoreManager, VkQueue queue)
     : m_device(info->_device)
     , m_queue(queue)
     , m_familyIndex(info->_queueFamilyIndex)
 
     , m_context(context)
+    , m_semaphoreManager(semaphoreManager)
 
     , m_poolFlag(0)
 {
@@ -104,7 +106,7 @@ VulkanCommandBuffer * VulkanCommandBufferManager::acquireNewCmdBuffer(VulkanComm
     return cmdBuffer;
 }
 
-bool VulkanCommandBufferManager::submit(VulkanCommandBuffer* buffer, std::vector<VkSemaphore>& signalSemaphores)
+bool VulkanCommandBufferManager::submit(VulkanCommandBuffer* buffer, std::vector<VulkanSemaphore*>& signalSemaphores)
 {
     ASSERT(buffer, "buffer is nullptr");
     if (buffer->getStatus() != VulkanCommandBuffer::CommandBufferStatus::End)
@@ -119,21 +121,30 @@ bool VulkanCommandBufferManager::submit(VulkanCommandBuffer* buffer, std::vector
     VkSubmitInfo submitInfo = {};
     submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
     submitInfo.pNext = nullptr;
-    submitInfo.waitSemaphoreCount = static_cast<u32>(buffer->m_semaphores.size());
-    submitInfo.pWaitSemaphores = buffer->m_semaphores.data();
-    submitInfo.pWaitDstStageMask = buffer->m_stageMasks.data();
     submitInfo.commandBufferCount = 1;
     submitInfo.pCommandBuffers = &cmdBuffer;
-    if (signalSemaphores.empty())
+
+    std::vector<VkSemaphore> vkWaitSemaphores;
+    vkWaitSemaphores.reserve(buffer->m_semaphores.size());
+    for (VulkanSemaphore* semaphore : buffer->m_semaphores)
     {
-        submitInfo.signalSemaphoreCount = 0;
-        submitInfo.pSignalSemaphores = VK_NULL_HANDLE;
+        vkWaitSemaphores.push_back(semaphore->getHandle());
+        m_semaphoreManager->markSemaphore(semaphore, VulkanSemaphore::SemaphoreStatus::AssignToWaiting);
     }
-    else
+    submitInfo.waitSemaphoreCount = static_cast<u32>(vkWaitSemaphores.size());
+    submitInfo.pWaitSemaphores = vkWaitSemaphores.data();
+    submitInfo.pWaitDstStageMask = buffer->m_stageMasks.data();
+
+    std::vector<VkSemaphore> vkSignalSemaphores;
+    vkSignalSemaphores.reserve(signalSemaphores.size());
+    for (VulkanSemaphore* semaphore : signalSemaphores)
     {
-        submitInfo.signalSemaphoreCount = static_cast<u32>(signalSemaphores.size());
-        submitInfo.pSignalSemaphores = signalSemaphores.data();
+        vkSignalSemaphores.push_back(semaphore->getHandle());
+        m_semaphoreManager->markSemaphore(semaphore, VulkanSemaphore::SemaphoreStatus::AssignToSignal);
     }
+    submitInfo.signalSemaphoreCount = static_cast<u32>(vkSignalSemaphores.size());
+    submitInfo.pSignalSemaphores = vkSignalSemaphores.data();
+
 
     VkResult result = VulkanWrapper::QueueSubmit(m_queue, 1, &submitInfo, buffer->m_fence);
     if (result != VK_SUCCESS)
