@@ -225,7 +225,8 @@ public:
         {
             resource::ResourceLoaderManager::getInstance()->addPath("examples/rendertarget/data/");
 
-            const renderer::Shader* shader = resource::ResourceLoaderManager::getInstance()->loadShader<renderer::Shader, resource::ShaderSourceFileLoader>(commandList->getContext(), "downsampling.comp");
+            //const renderer::Shader* shader = resource::ResourceLoaderManager::getInstance()->loadShader<renderer::Shader, resource::ShaderSourceFileLoader>(commandList->getContext(), "downsampling.comp");
+            const renderer::Shader* shader = resource::ResourceLoaderManager::getInstance()->loadShader<renderer::Shader, resource::ShaderSourceFileLoader>(commandList->getContext(), "downsampling.cs");
             m_DownsampleProgram = commandList->createObject<renderer::ShaderProgram>(shader);
             m_DownsamplePipeline = commandList->createObject<renderer::ComputePipelineState>(m_DownsampleProgram);
 
