@@ -247,14 +247,14 @@ void VulkanTransitionState::transitionImages(VulkanCommandBuffer* cmdBuffer, con
         {
             ASSERT(vulkanImage->isSwapchain(), "mast be only swapchain");
             srcStage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-            dstStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+            dstStage = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
         }
 
         //form present to attachment
         if (layout == VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL && oldLayout == VK_IMAGE_LAYOUT_PRESENT_SRC_KHR)
         {
             ASSERT(vulkanImage->isSwapchain(), "mast be only swapchain");
-            srcStage = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
+            srcStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
             dstStage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
         }
 
