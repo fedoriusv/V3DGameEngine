@@ -1606,16 +1606,6 @@ VkExtent3D VulkanImage::getSize() const
     return m_dimension;
 }
 
-//u32 VulkanImage::getLayersCount() const
-//{
-//    return m_layerLevels;
-//}
-//
-//u32 VulkanImage::getMipmapsCount() const
-//{
-//    return m_mipLevels;
-//}
-
 VkImageLayout VulkanImage::getLayout(const Image::Subresource& resource) const
 {
     u32 index = 1 + (resource._baseLayer * m_mipLevels + resource._baseMip);
@@ -1632,7 +1622,7 @@ VkImageLayout VulkanImage::setLayout(VkImageLayout newlayout, const Image::Subre
         {
             u32 index = 1 + ((resource._baseLayer + layerIndex) * m_mipLevels + (resource._baseMip + mipIndex));
             ASSERT(index < m_layout.size(), "out of range");
-            VkImageLayout layout = std::exchange(m_layout[index], newlayout);
+            [[maybe_unused]] VkImageLayout layout = std::exchange(m_layout[index], newlayout);
         }
     }
 
@@ -1839,8 +1829,6 @@ bool VulkanImage::ImageViewKey::Compare::operator()(const ImageViewKey& op1, con
 {
     return memcmp(&op1._desc, &op2._desc, sizeof(VkImageSubresourceRange)) == 0;
 }
-
-
 
 } //namespace vk
 } //namespace renderer
