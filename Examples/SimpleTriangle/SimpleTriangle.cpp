@@ -142,7 +142,7 @@ void SimpleTriangle::init(v3d::renderer::CommandList* commandList, const core::D
     m_CommandList->setPipelineState(m_Pipeline);
     m_CommandList->setRenderTarget(m_RenderTarget);
 
-    m_CommandList->submitCommands();
+    m_CommandList->submitCommands(true);
     m_CommandList->flushCommands();
 }
 
