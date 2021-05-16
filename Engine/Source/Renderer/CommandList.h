@@ -103,10 +103,10 @@ namespace renderer
         Backbuffer* getBackbuffer() const;
 
         template<class TObject, class ... Args>
-        TObject* createObject(Args ... args)
+        TObject* createObject(Args&& ... args)
         {
             static_assert(std::is_base_of<Object, TObject>(), "CommandList::createObject wrong type");
-            return new TObject(*this, (args)...);
+            return new TObject(*this, std::forward<Args>(args)...);
         }
 
         enum PendingFlushMask

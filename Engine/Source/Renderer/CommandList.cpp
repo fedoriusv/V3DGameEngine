@@ -846,7 +846,6 @@ CommandList::PendingFlushMaskFlags CommandList::flushPendingCommands(PendingFlus
         };
 
         auto state = m_pendingTransitions._transitions.cbegin()->first;
-        auto& sub = m_pendingTransitions._transitions.cbegin()->second;
         std::vector<std::tuple<const Image*, Image::Subresource>> images;
         for (auto& st : m_pendingTransitions._transitions)
         {
