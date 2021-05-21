@@ -133,11 +133,14 @@ VkShaderStageFlagBits VulkanGraphicPipeline::convertShaderTypeToVkStage(ShaderTy
 {
     switch (type)
     {
-    case ShaderType::ShaderType_Vertex:
+    case ShaderType::Vertex:
         return VK_SHADER_STAGE_VERTEX_BIT;
 
-    case ShaderType::ShaderType_Fragment:
+    case ShaderType::Fragment:
         return VK_SHADER_STAGE_FRAGMENT_BIT;
+
+    case ShaderType::Compute:
+        return VK_SHADER_STAGE_COMPUTE_BIT;
 
     default:
         ASSERT(false, "type not found");
@@ -440,7 +443,7 @@ bool VulkanGraphicPipeline::create(const PipelineGraphicInfo* pipelineInfo)
     }
 
     u32 moduleIndex = 0;
-    for (u32 type = ShaderType::ShaderType_Vertex; type < ShaderType_Count; ++type)
+    for (u32 type = ShaderType::Vertex; type < ShaderType_Count; ++type)
     {
         if (!programDesc._shaders[type])
         {
@@ -532,7 +535,7 @@ bool VulkanGraphicPipeline::create(const PipelineGraphicInfo* pipelineInfo)
     vertexInputStateCreateInfo.vertexBindingDescriptionCount = static_cast<u32>(vertexInputBindingDescriptions.size());
     vertexInputStateCreateInfo.pVertexBindingDescriptions = vertexInputBindingDescriptions.data();
 
-    const Shader* vertexShader = programDesc._shaders[ShaderType::ShaderType_Vertex];
+    const Shader* vertexShader = programDesc._shaders[ShaderType::Vertex];
     ASSERT(vertexShader, "nullptr");
     std::vector<VkVertexInputAttributeDescription> vertexInputAttributeDescriptions;
     vertexInputAttributeDescriptions.reserve(inputAttrDesc._countInputAttributes);
@@ -772,7 +775,7 @@ bool VulkanGraphicPipeline::compileShaders(std::vector<std::tuple<const ShaderHe
         }
 
         std::vector<u32> patchedSpirv;
-        if (std::get<0>(shader)->_type == ShaderType::ShaderType_Vertex)
+        if (std::get<0>(shader)->_type == ShaderType::Vertex)
         {
             patchedSpirv.resize(size / sizeof(u32));
             memcpy(patchedSpirv.data(), source, size);

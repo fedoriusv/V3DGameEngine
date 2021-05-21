@@ -6,6 +6,7 @@
 #ifdef VULKAN_RENDER
 #include "VulkanDebug.h"
 #include "VulkanDeviceCaps.h"
+#include "VulkanGraphicPipeline.h"
 
 namespace v3d
 {
@@ -48,7 +49,7 @@ bool VulkanComputePipeline::create(const PipelineComputeInfo* pipelineInfo)
     }
 #endif //VULKAN_DEBUG
 
-    const Shader* computeShader = pipelineInfo->_programDesc._shaders[ShaderType::ShaderType_Compute];
+    const Shader* computeShader = pipelineInfo->_programDesc._shaders[ShaderType::Compute];
     if (!computeShader || !Pipeline::createShader(computeShader))
     {
         LOG_ERROR("VulkanComputePipeline::create: shader module is failed");
@@ -67,7 +68,7 @@ bool VulkanComputePipeline::create(const PipelineComputeInfo* pipelineInfo)
         pipelineShaderStageCreateInfo.pNext = nullptr;
         pipelineShaderStageCreateInfo.flags = 0;
         pipelineShaderStageCreateInfo.pSpecializationInfo = nullptr;
-        pipelineShaderStageCreateInfo.stage = VK_SHADER_STAGE_COMPUTE_BIT;
+        pipelineShaderStageCreateInfo.stage = VulkanGraphicPipeline::convertShaderTypeToVkStage(ShaderType::Compute);
         pipelineShaderStageCreateInfo.module = m_module;
         pipelineShaderStageCreateInfo.pName = computeShader->getShaderHeader()._entryPoint.c_str();
     }

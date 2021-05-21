@@ -24,10 +24,10 @@ D3DRootSignatureCreator::D3DRootSignatureCreator(const ShaderProgramDescription&
     {
         switch (type)
         {
-        case ShaderType::ShaderType_Vertex:
+        case ShaderType::Vertex:
             return D3D12_SHADER_VISIBILITY_VERTEX;
 
-        case ShaderType::ShaderType_Fragment:
+        case ShaderType::Fragment:
             return D3D12_SHADER_VISIBILITY_PIXEL;
         }
 

@@ -63,7 +63,7 @@ void ForwardPointLightTest::Draw(scene::ModelHelper* geometry, v3d::scene::Camer
         ubo.normalMatrix.makeTransposed();
         ubo.viewMatrix = camera->getViewMatrix();
 
-        m_Program->bindUniformsBuffer<renderer::ShaderType::ShaderType_Vertex>({ "ubo" }, 0, sizeof(UBO), &ubo);
+        m_Program->bindUniformsBuffer<renderer::ShaderType::Vertex>({ "ubo" }, 0, sizeof(UBO), &ubo);
     }
 
     {
@@ -91,8 +91,8 @@ void ForwardPointLightTest::Draw(scene::ModelHelper* geometry, v3d::scene::Camer
         ubo.diffuse = { 0.5f, 0.5f, 0.5f, 1.0f };
         ubo.specular = { 1.0f, 1.0f, 1.0f, 1.0f };
         
-        m_Program->bindUniformsBuffer<renderer::ShaderType::ShaderType_Fragment>({ "light" }, 0, sizeof(LIGHT) * (u32)light.size(), light.data());
-        m_Program->bindUniformsBuffer<renderer::ShaderType::ShaderType_Fragment>({ "ubo" }, 0, sizeof(UBO), &ubo);
+        m_Program->bindUniformsBuffer<renderer::ShaderType::Fragment>({ "light" }, 0, sizeof(LIGHT) * (u32)light.size(), light.data());
+        m_Program->bindUniformsBuffer<renderer::ShaderType::Fragment>({ "ubo" }, 0, sizeof(UBO), &ubo);
     }
 
     geometry->draw(&m_CommandList);
@@ -176,7 +176,7 @@ void ForwardPointLightTextureTest::Draw(scene::ModelHelper* geometry, v3d::scene
         ubo.normalMatrix.makeTransposed();
         ubo.viewMatrix = camera->getViewMatrix();
 
-        m_Program->bindUniformsBuffer<renderer::ShaderType::ShaderType_Vertex>({ "ubo" }, 0, sizeof(UBO), &ubo);
+        m_Program->bindUniformsBuffer<renderer::ShaderType::Vertex>({ "ubo" }, 0, sizeof(UBO), &ubo);
     }
 
     {
@@ -200,12 +200,12 @@ void ForwardPointLightTextureTest::Draw(scene::ModelHelper* geometry, v3d::scene
 
         ubo.viewPosition = { camera->getViewPosition(), 1.0 };
 
-        m_Program->bindUniformsBuffer<renderer::ShaderType::ShaderType_Fragment>({ "light" }, 0, sizeof(LIGHT) * (u32)light.size(), light.data());
-        m_Program->bindUniformsBuffer<renderer::ShaderType::ShaderType_Fragment>({ "ubo" }, 0, sizeof(UBO), &ubo);
+        m_Program->bindUniformsBuffer<renderer::ShaderType::Fragment>({ "light" }, 0, sizeof(LIGHT) * (u32)light.size(), light.data());
+        m_Program->bindUniformsBuffer<renderer::ShaderType::Fragment>({ "ubo" }, 0, sizeof(UBO), &ubo);
 
-        m_Program->bindSampler<renderer::ShaderType::ShaderType_Fragment>({ "samplerColor" }, m_Sampler.get());
-        m_Program->bindTexture<renderer::ShaderType::ShaderType_Fragment, renderer::Texture2D>({ "textureDiffuse" }, m_TextureDiffuse.get());
-        m_Program->bindTexture<renderer::ShaderType::ShaderType_Fragment, renderer::Texture2D>({ "textureSpecular" }, m_TextureSpecular.get());
+        m_Program->bindSampler<renderer::ShaderType::Fragment>({ "samplerColor" }, m_Sampler.get());
+        m_Program->bindTexture<renderer::ShaderType::Fragment, renderer::Texture2D>({ "textureDiffuse" }, m_TextureDiffuse.get());
+        m_Program->bindTexture<renderer::ShaderType::Fragment, renderer::Texture2D>({ "textureSpecular" }, m_TextureSpecular.get());
     }
 
     geometry->draw(&m_CommandList);

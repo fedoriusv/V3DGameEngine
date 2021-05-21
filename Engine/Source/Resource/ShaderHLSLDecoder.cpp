@@ -21,10 +21,10 @@ namespace resource
 const std::map<std::string, renderer::ShaderType> k_HLSL_ExtensionList =
 {
     //hlsl
-    { "vs", renderer::ShaderType::ShaderType_Vertex },
-    { "ps", renderer::ShaderType::ShaderType_Fragment },
+    { "vs", renderer::ShaderType::Vertex },
+    { "ps", renderer::ShaderType::Fragment },
 
-    { "cs", renderer::ShaderType::ShaderType_Compute },
+    { "cs", renderer::ShaderType::Compute },
 };
 
 bool reflect(ID3DBlob* shader, stream::Stream* stream, u32 version);
@@ -88,14 +88,14 @@ Resource* ShaderHLSLDecoder::decode(const stream::Stream* stream, const std::str
 
                 switch (result->second)
                 {
-                case renderer::ShaderType::ShaderType_Vertex:
-                    return renderer::ShaderType::ShaderType_Vertex;
+                case renderer::ShaderType::Vertex:
+                    return renderer::ShaderType::Vertex;
 
-                case renderer::ShaderType::ShaderType_Fragment:
-                    return renderer::ShaderType::ShaderType_Fragment;
+                case renderer::ShaderType::Fragment:
+                    return renderer::ShaderType::Fragment;
 
-                case renderer::ShaderType::ShaderType_Compute:
-                    return renderer::ShaderType::ShaderType_Compute;
+                case renderer::ShaderType::Compute:
+                    return renderer::ShaderType::Compute;
                 }
                 
                 return renderer::ShaderType::ShaderType_Undefined;
@@ -110,7 +110,7 @@ Resource* ShaderHLSLDecoder::decode(const stream::Stream* stream, const std::str
             {
                 switch (type)
                 {
-                case renderer::ShaderType::ShaderType_Vertex:
+                case renderer::ShaderType::Vertex:
                 {
                     switch (model)
                     {
@@ -131,7 +131,7 @@ Resource* ShaderHLSLDecoder::decode(const stream::Stream* stream, const std::str
                     }
                 }
 
-                case renderer::ShaderType::ShaderType_Fragment:
+                case renderer::ShaderType::Fragment:
                 {
                     switch (model)
                     {
@@ -152,7 +152,7 @@ Resource* ShaderHLSLDecoder::decode(const stream::Stream* stream, const std::str
                     }
                 }
 
-                case renderer::ShaderType::ShaderType_Compute:
+                case renderer::ShaderType::Compute:
                 {
                     switch (model)
                     {

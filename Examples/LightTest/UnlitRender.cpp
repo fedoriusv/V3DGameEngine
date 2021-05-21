@@ -59,9 +59,9 @@ void UnlitTextureTest::Draw(scene::ModelHelper* geometry, scene::CameraHelper* c
     ubo.modelMatrix = transform.getTransform();
     ubo.viewMatrix = camera->getViewMatrix();
 
-    m_Program->bindUniformsBuffer<renderer::ShaderType::ShaderType_Vertex>({ "ubo" }, 0, (u32)sizeof(UBO), &ubo);
-    m_Program->bindSampler<renderer::ShaderType::ShaderType_Fragment>({ "samplerColor" }, m_Sampler.get());
-    m_Program->bindTexture<renderer::ShaderType::ShaderType_Fragment, renderer::Texture2D>({ "textureColor" }, m_Texture.get());
+    m_Program->bindUniformsBuffer<renderer::ShaderType::Vertex>({ "ubo" }, 0, (u32)sizeof(UBO), &ubo);
+    m_Program->bindSampler<renderer::ShaderType::Fragment>({ "samplerColor" }, m_Sampler.get());
+    m_Program->bindTexture<renderer::ShaderType::Fragment, renderer::Texture2D>({ "textureColor" }, m_Texture.get());
 
     geometry->draw(&m_CommandList);
 }

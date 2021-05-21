@@ -54,10 +54,10 @@ namespace renderer
     {
         ShaderType_Undefined = -1,
 
-        ShaderType_Vertex = 0,
-        ShaderType_Fragment = 1,
+        Vertex = 0,
+        Fragment = 1,
 
-        ShaderType_Compute = 2,
+        Compute = 2,
 
         ShaderType_Count,
     };
@@ -131,14 +131,17 @@ namespace renderer
     {
         switch (type)
         {
-        case ShaderType_Undefined:
+        case ShaderType::ShaderType_Undefined:
             return "undefined";
 
-        case ShaderType_Vertex:
+        case ShaderType::Vertex:
             return "vertex";
 
-        case ShaderType_Fragment:
+        case ShaderType::Fragment:
             return "fragment";
+
+        case ShaderType::Compute:
+            return "compute";
 
         default:
             ASSERT(false, "not found");

@@ -22,8 +22,8 @@ ShaderProgram::ShaderProgram(renderer::CommandList& cmdList, const std::vector<c
         m_programInfo._shaders[shader->getShaderHeader()._type] = shader;
     }
 
-    if (getShader(ShaderType::ShaderType_Vertex) ||
-    (getShader(ShaderType::ShaderType_Fragment) && getShader(ShaderType::ShaderType_Vertex)))
+    if (ShaderProgram::getShader(ShaderType::Vertex) ||
+    (ShaderProgram::getShader(ShaderType::Fragment) && ShaderProgram::getShader(ShaderType::Vertex)))
     {
         composeProgramData(shaders);
     }
@@ -38,7 +38,7 @@ ShaderProgram::ShaderProgram(renderer::CommandList& cmdList, const Shader* compu
 {
     ASSERT(computeShader, "nullptr");
     m_programInfo._shaders[computeShader->getShaderHeader()._type] = computeShader;
-    if (getShader(ShaderType::ShaderType_Compute))
+    if (ShaderProgram::getShader(ShaderType::Compute))
     {
         composeProgramData({ computeShader });
     }
@@ -461,7 +461,7 @@ bool ShaderProgram::bindUniformsBuffer(ShaderType shaderType, u32 index, u32 off
     return true;
 }
 
-bool ShaderProgram::bindStorageImage(ShaderType shaderType, u32 index, TextureTarget target, const Texture* texture, s32 layer, s32 mip)
+bool ShaderProgram::bindUAV(ShaderType shaderType, u32 index, TextureTarget target, const Texture* texture, s32 layer, s32 mip)
 {
 #if USE_STRING_ID_SHADER
     auto param = m_shaderParameters[shaderType].find(index);

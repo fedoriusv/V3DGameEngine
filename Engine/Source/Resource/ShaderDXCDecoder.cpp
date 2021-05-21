@@ -170,7 +170,7 @@ bool ShaderDXCDecoder::compile(const std::string& source, const std::wstring& na
     {
         switch (type)
         {
-        case renderer::ShaderType::ShaderType_Vertex:
+        case renderer::ShaderType::Vertex:
         {
             switch (model)
             {
@@ -193,7 +193,7 @@ bool ShaderDXCDecoder::compile(const std::string& source, const std::wstring& na
             }
         }
 
-        case renderer::ShaderType::ShaderType_Fragment:
+        case renderer::ShaderType::Fragment:
         {
             switch (model)
             {

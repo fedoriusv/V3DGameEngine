@@ -56,14 +56,14 @@ const std::string k_fragmentDebug = { "\
 void DirectionLightDebug::Init(renderer::CommandList* commandList, renderer::RenderTargetState* renderTarget)
 {
     const stream::Stream* vertexStream = stream::StreamManager::createMemoryStream(k_vertexDebug);
-    renderer::ShaderHeader vertexHeader(renderer::ShaderType::ShaderType_Vertex);
+    renderer::ShaderHeader vertexHeader(renderer::ShaderType::Vertex);
     vertexHeader._contentType = renderer::ShaderHeader::ShaderResource::ShaderResource_Source;
     vertexHeader._shaderModel = renderer::ShaderHeader::ShaderModel::ShaderModel_HLSL_5_1;
     const renderer::Shader* vertShader = resource::ResourceLoaderManager::getInstance()->composeShader<renderer::Shader, resource::ShaderSourceStreamLoader>(commandList->getContext(), "vertex", &vertexHeader, vertexStream);
     delete vertexStream;
 
     const stream::Stream* fragmentStream = stream::StreamManager::createMemoryStream(k_fragmentDebug);
-    renderer::ShaderHeader fragmentHeader(renderer::ShaderType::ShaderType_Fragment);
+    renderer::ShaderHeader fragmentHeader(renderer::ShaderType::Fragment);
     fragmentHeader._contentType = renderer::ShaderHeader::ShaderResource::ShaderResource_Source;
     fragmentHeader._shaderModel = renderer::ShaderHeader::ShaderModel::ShaderModel_HLSL_5_1;
     const renderer::Shader* fragShader = resource::ResourceLoaderManager::getInstance()->composeShader<renderer::Shader, resource::ShaderSourceStreamLoader>(commandList->getContext(), "fragment", &fragmentHeader, fragmentStream);
@@ -117,8 +117,8 @@ void DirectionLightDebug::Draw(renderer::CommandList* commandList, scene::Camera
         ubo.modelMatrix.setRotation(angle);
         ubo.viewMatrix = camera->getViewMatrix();
 
-        m_Program->bindUniformsBuffer<renderer::ShaderType::ShaderType_Vertex>({ "buffer" }, 0, sizeof(UBO), &ubo);
-        m_Program->bindUniformsBuffer<renderer::ShaderType::ShaderType_Fragment>({ "color" }, 0, sizeof(core::Vector4D), &m_LightColor);
+        m_Program->bindUniformsBuffer<renderer::ShaderType::Vertex>({ "buffer" }, 0, sizeof(UBO), &ubo);
+        m_Program->bindUniformsBuffer<renderer::ShaderType::Fragment>({ "color" }, 0, sizeof(core::Vector4D), &m_LightColor);
 
         commandList->draw(renderer::StreamBufferDescription(m_Geometry.get(), 0), 0, 2, 1);
     }
@@ -130,8 +130,8 @@ void DirectionLightDebug::Draw(renderer::CommandList* commandList, scene::Camera
         ubo.modelMatrix.setRotation(angle);
         ubo.viewMatrix = camera->getViewMatrix();
 
-        m_Program->bindUniformsBuffer<renderer::ShaderType::ShaderType_Vertex>({ "buffer" }, 0, sizeof(UBO), & ubo);
-        m_Program->bindUniformsBuffer<renderer::ShaderType::ShaderType_Fragment>({ "color" }, 0, sizeof(core::Vector4D), & m_LightColor);
+        m_Program->bindUniformsBuffer<renderer::ShaderType::Vertex>({ "buffer" }, 0, sizeof(UBO), & ubo);
+        m_Program->bindUniformsBuffer<renderer::ShaderType::Fragment>({ "color" }, 0, sizeof(core::Vector4D), & m_LightColor);
 
         commandList->draw(renderer::StreamBufferDescription(m_Geometry.get(), 0), 0, 2, 1);
     }
@@ -143,8 +143,8 @@ void DirectionLightDebug::Draw(renderer::CommandList* commandList, scene::Camera
         ubo.modelMatrix.setRotation(angle);
         ubo.viewMatrix = camera->getViewMatrix();
 
-        m_Program->bindUniformsBuffer<renderer::ShaderType::ShaderType_Vertex>({ "buffer" }, 0, sizeof(UBO), &ubo);
-        m_Program->bindUniformsBuffer<renderer::ShaderType::ShaderType_Fragment>({ "color" }, 0, sizeof(core::Vector4D), &m_LightColor);
+        m_Program->bindUniformsBuffer<renderer::ShaderType::Vertex>({ "buffer" }, 0, sizeof(UBO), &ubo);
+        m_Program->bindUniformsBuffer<renderer::ShaderType::Fragment>({ "color" }, 0, sizeof(core::Vector4D), &m_LightColor);
 
         commandList->draw(renderer::StreamBufferDescription(m_Geometry.get(), 0), 0, 2, 1);
     }
@@ -166,14 +166,14 @@ void LightDebug::Init(v3d::renderer::CommandList* commandList, v3d::renderer::Re
     m_Geometry = v3d::scene::ModelHelper::createModelHelper(commandList, { cube });
 
     const stream::Stream* vertexStream = stream::StreamManager::createMemoryStream(k_vertexDebug);
-    renderer::ShaderHeader vertexHeader(renderer::ShaderType::ShaderType_Vertex);
+    renderer::ShaderHeader vertexHeader(renderer::ShaderType::Vertex);
     vertexHeader._contentType = renderer::ShaderHeader::ShaderResource::ShaderResource_Source;
     vertexHeader._shaderModel = renderer::ShaderHeader::ShaderModel::ShaderModel_HLSL_5_1;
     const renderer::Shader* vertShader = resource::ResourceLoaderManager::getInstance()->composeShader<renderer::Shader, resource::ShaderSourceStreamLoader>(commandList->getContext(), "vertex", &vertexHeader, vertexStream);
     delete vertexStream;
 
     const stream::Stream* fragmentStream = stream::StreamManager::createMemoryStream(k_fragmentDebug);
-    renderer::ShaderHeader fragmentHeader(renderer::ShaderType::ShaderType_Fragment);
+    renderer::ShaderHeader fragmentHeader(renderer::ShaderType::Fragment);
     fragmentHeader._contentType = renderer::ShaderHeader::ShaderResource::ShaderResource_Source;
     fragmentHeader._shaderModel = renderer::ShaderHeader::ShaderModel::ShaderModel_HLSL_5_1;
     const renderer::Shader* fragShader = resource::ResourceLoaderManager::getInstance()->composeShader<renderer::Shader, resource::ShaderSourceStreamLoader>(commandList->getContext(), "fragment", &fragmentHeader, fragmentStream);
@@ -208,8 +208,8 @@ void LightDebug::Draw(v3d::renderer::CommandList* commandList, v3d::scene::Camer
     ubo.modelMatrix.setTranslation(light);
     ubo.viewMatrix = camera->getViewMatrix();
 
-    m_Program->bindUniformsBuffer<renderer::ShaderType::ShaderType_Vertex>({ "buffer" }, 0, sizeof(UBO), &ubo);
-    m_Program->bindUniformsBuffer<renderer::ShaderType::ShaderType_Fragment>({ "color" }, 0, sizeof(core::Vector4D), &m_lightColor);
+    m_Program->bindUniformsBuffer<renderer::ShaderType::Vertex>({ "buffer" }, 0, sizeof(UBO), &ubo);
+    m_Program->bindUniformsBuffer<renderer::ShaderType::Fragment>({ "color" }, 0, sizeof(core::Vector4D), &m_lightColor);
 
     m_Geometry->draw(commandList);
 }

@@ -187,8 +187,8 @@ void MyApplication::Load()
     {
         std::vector<const renderer::Shader*> shaders = resource::ResourceLoaderManager::getInstance()->loadHLSLShader<renderer::Shader, resource::ShaderSourceFileLoader>(m_CommandList->getContext(), "data/solid_SunShadow.hlsl",
             {
-                {"main_VS", renderer::ShaderType_Vertex },
-                {"main_FS", renderer::ShaderType_Fragment }
+                {"main_VS", renderer::Vertex },
+                {"main_FS", renderer::Fragment }
             });
 
         m_ShadowMappingProgram = m_CommandList->createObject<renderer::ShaderProgram>(shaders);
@@ -205,8 +205,8 @@ void MyApplication::Load()
     {
         std::vector<const renderer::Shader*> shaders = resource::ResourceLoaderManager::getInstance()->loadHLSLShader<renderer::Shader, resource::ShaderSourceFileLoader>(m_CommandList->getContext(), "data/solid_SunCascadedShadow.hlsl",
             {
-                {"main_VS", renderer::ShaderType_Vertex },
-                {"main_FS", renderer::ShaderType_Fragment }
+                {"main_VS", renderer::Vertex },
+                {"main_FS", renderer::Fragment }
             }, 
             { 
                 { "SHADOWMAP_CASCADE_COUNT", std::to_string(CascadedShadowMapping::s_CascadeCount) },
@@ -219,8 +219,8 @@ void MyApplication::Load()
 
         std::vector<const renderer::Shader*> shadersDebug = resource::ResourceLoaderManager::getInstance()->loadHLSLShader<renderer::Shader, resource::ShaderSourceFileLoader>(m_CommandList->getContext(), "data/solid_SunCascadedShadow.hlsl",
             {
-                {"main_VS", renderer::ShaderType_Vertex },
-                {"main_FS", renderer::ShaderType_Fragment }
+                {"main_VS", renderer::Vertex },
+                {"main_FS", renderer::Fragment }
             },
             {
                 { "SHADOWMAP_CASCADE_COUNT", std::to_string(CascadedShadowMapping::s_CascadeCount) },
@@ -234,8 +234,8 @@ void MyApplication::Load()
     {
         std::vector<const renderer::Shader*> shaders = resource::ResourceLoaderManager::getInstance()->loadHLSLShader<renderer::Shader, resource::ShaderSourceFileLoader>(m_CommandList->getContext(), "data/solid_ShadowPointLight.hlsl",
             {
-                {"main_VS", renderer::ShaderType_Vertex },
-                {"main_FS", renderer::ShaderType_Fragment }
+                {"main_VS", renderer::Vertex },
+                {"main_FS", renderer::Fragment }
             },
             {
                 { "NEAR_PLANE", std::to_string(m_ShadowMappingPoint->GetCamera().getNear()) },
@@ -282,7 +282,7 @@ void MyApplication::DrawDirectionLightMode(bool enablePCF, bool cascaded)
                     ubo.lightSpaceMatrix[i] = m_CascadeShadowMapping->GetLightSpaceMatrix()[i];
                 }
 
-                cascadeShadowMappingProgram->bindUniformsBuffer<renderer::ShaderType::ShaderType_Vertex>({ "vs_buffer" }, 0, (u32)sizeof(UBO), &ubo);
+                cascadeShadowMappingProgram->bindUniformsBuffer<renderer::ShaderType::Vertex>({ "vs_buffer" }, 0, (u32)sizeof(UBO), &ubo);
             }
 
             {
@@ -301,11 +301,11 @@ void MyApplication::DrawDirectionLightMode(bool enablePCF, bool cascaded)
                     ubo.casadeSplits[i].x = m_CascadeShadowMapping->GetCascadeSplits()[i];
                 }
 
-                cascadeShadowMappingProgram->bindUniformsBuffer<renderer::ShaderType::ShaderType_Fragment>({ "fs_buffer" }, 0, (u32)sizeof(UBO), &ubo);
+                cascadeShadowMappingProgram->bindUniformsBuffer<renderer::ShaderType::Fragment>({ "fs_buffer" }, 0, (u32)sizeof(UBO), &ubo);
             }
 
-            cascadeShadowMappingProgram->bindSampler<renderer::ShaderType::ShaderType_Fragment>({ "shadowSampler" }, m_ShadowSampler.get());
-            cascadeShadowMappingProgram->bindTexture<renderer::ShaderType::ShaderType_Fragment, renderer::Texture2DArray>({ "cascadedShadowMap" }, m_CascadeShadowMapping->GetDepthMap());
+            cascadeShadowMappingProgram->bindSampler<renderer::ShaderType::Fragment>({ "shadowSampler" }, m_ShadowSampler.get());
+            cascadeShadowMappingProgram->bindTexture<renderer::ShaderType::Fragment, renderer::Texture2DArray>({ "cascadedShadowMap" }, m_CascadeShadowMapping->GetDepthMap());
         }
     }
     else
@@ -335,7 +335,7 @@ void MyApplication::DrawDirectionLightMode(bool enablePCF, bool cascaded)
             ubo.viewMatrix = m_FPSCameraHelper->getViewMatrix();
             ubo.lightSpaceMatrix = m_ShadowMapping->GetLightSpaceMatrix();
 
-            m_ShadowMappingProgram->bindUniformsBuffer<renderer::ShaderType::ShaderType_Vertex>({ "vs_buffer" }, 0, (u32)sizeof(UBO), &ubo);
+            m_ShadowMappingProgram->bindUniformsBuffer<renderer::ShaderType::Vertex>({ "vs_buffer" }, 0, (u32)sizeof(UBO), &ubo);
         }
 
         {
@@ -351,9 +351,9 @@ void MyApplication::DrawDirectionLightMode(bool enablePCF, bool cascaded)
             ubo.viewPosition = m_FPSCameraHelper->getPosition();
             ubo.enablePCF = (u32)enablePCF;
 
-            m_ShadowMappingProgram->bindUniformsBuffer<renderer::ShaderType::ShaderType_Fragment>({ "fs_buffer" }, 0, (u32)sizeof(UBO), &ubo);
-            m_ShadowMappingProgram->bindSampler<renderer::ShaderType::ShaderType_Fragment>({ "shadowSampler" }, m_ShadowSampler.get());
-            m_ShadowMappingProgram->bindTexture<renderer::ShaderType::ShaderType_Fragment, renderer::Texture2D>({ "shadowMap" }, m_ShadowMapping->GetDepthMap());
+            m_ShadowMappingProgram->bindUniformsBuffer<renderer::ShaderType::Fragment>({ "fs_buffer" }, 0, (u32)sizeof(UBO), &ubo);
+            m_ShadowMappingProgram->bindSampler<renderer::ShaderType::Fragment>({ "shadowSampler" }, m_ShadowSampler.get());
+            m_ShadowMappingProgram->bindTexture<renderer::ShaderType::Fragment, renderer::Texture2D>({ "shadowMap" }, m_ShadowMapping->GetDepthMap());
         }
     }
 
@@ -385,7 +385,7 @@ void MyApplication::DrawPointLightMode(bool enablePCF)
         ubo.normalMatrix.makeTransposed();
         ubo.viewMatrix = m_FPSCameraHelper->getViewMatrix();
 
-        m_ShadowMappingPointProgram->bindUniformsBuffer<renderer::ShaderType::ShaderType_Vertex>({ "vs_buffer" }, 0, (u32)sizeof(UBO), &ubo);
+        m_ShadowMappingPointProgram->bindUniformsBuffer<renderer::ShaderType::Vertex>({ "vs_buffer" }, 0, (u32)sizeof(UBO), &ubo);
     }
 
     {
@@ -400,10 +400,10 @@ void MyApplication::DrawPointLightMode(bool enablePCF)
         ubo.viewPosition = m_FPSCameraHelper->getPosition();
         ubo.enablePCF = (u32)enablePCF;
 
-        m_ShadowMappingPointProgram->bindUniformsBuffer<renderer::ShaderType::ShaderType_Fragment>({ "fs_buffer" }, 0, (u32)sizeof(UBO), &ubo);
+        m_ShadowMappingPointProgram->bindUniformsBuffer<renderer::ShaderType::Fragment>({ "fs_buffer" }, 0, (u32)sizeof(UBO), &ubo);
 
-        m_ShadowMappingPointProgram->bindSampler<renderer::ShaderType::ShaderType_Fragment>({ "shadowSampler" }, m_ShadowSampler.get());
-        m_ShadowMappingPointProgram->bindTexture<renderer::ShaderType::ShaderType_Fragment, renderer::TextureCube>({ "shadowMapCube" }, m_ShadowMappingPoint->GetDepthMap());
+        m_ShadowMappingPointProgram->bindSampler<renderer::ShaderType::Fragment>({ "shadowSampler" }, m_ShadowSampler.get());
+        m_ShadowMappingPointProgram->bindTexture<renderer::ShaderType::Fragment, renderer::TextureCube>({ "shadowMapCube" }, m_ShadowMappingPoint->GetDepthMap());
     }
 
     m_Scene->draw(m_CommandList);

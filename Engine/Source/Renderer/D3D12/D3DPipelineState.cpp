@@ -392,7 +392,7 @@ bool D3DGraphicPipelineState::create(const PipelineGraphicInfo* pipelineInfo)
             }
         }
 
-        for (u32 type = ShaderType::ShaderType_Vertex; type < ShaderType::ShaderType_Count; ++type)
+        for (u32 type = ShaderType::Vertex; type < ShaderType::ShaderType_Count; ++type)
         {
             if (m_bytecode[type].BytecodeLength == 0)
             {
@@ -401,12 +401,12 @@ bool D3DGraphicPipelineState::create(const PipelineGraphicInfo* pipelineInfo)
 
             switch (type)
             {
-            case ShaderType::ShaderType_Vertex:
-                psoDesc.VS = m_bytecode[ShaderType::ShaderType_Vertex];
+            case ShaderType::Vertex:
+                psoDesc.VS = m_bytecode[ShaderType::Vertex];
                 break;
 
-            case ShaderType::ShaderType_Fragment:
-                psoDesc.PS = m_bytecode[ShaderType::ShaderType_Fragment];
+            case ShaderType::Fragment:
+                psoDesc.PS = m_bytecode[ShaderType::Fragment];
                 break;
             }
         }
@@ -426,7 +426,7 @@ bool D3DGraphicPipelineState::create(const PipelineGraphicInfo* pipelineInfo)
         for (u32 i = 0; i < inputElementsDesc.size(); ++i)
         {
             auto& inputBinding = inputState._inputAttributes._inputBindings[inputState._inputAttributes._inputAttributes[i]._bindingId];
-            const Shader::Attribute& attribute = pipelineInfo->_programDesc._shaders[ShaderType::ShaderType_Vertex]->getReflectionInfo()._inputAttribute[i];
+            const Shader::Attribute& attribute = pipelineInfo->_programDesc._shaders[ShaderType::Vertex]->getReflectionInfo()._inputAttribute[i];
 
             u32 semanticIndex = 0;
 #if USE_STRING_ID_SHADER

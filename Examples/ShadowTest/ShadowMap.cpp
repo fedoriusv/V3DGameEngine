@@ -69,7 +69,7 @@ void ShadowMapping::Init(const renderer::VertexInputAttribDescription& desc)
 
     const stream::Stream* vertexStream = stream::StreamManager::createMemoryStream(k_vertexSource);
 
-    renderer::ShaderHeader vertexHeader(renderer::ShaderType::ShaderType_Vertex);
+    renderer::ShaderHeader vertexHeader(renderer::ShaderType::Vertex);
     vertexHeader._contentType = renderer::ShaderHeader::ShaderResource::ShaderResource_Source;
     vertexHeader._shaderModel = renderer::ShaderHeader::ShaderModel::ShaderModel_HLSL_5_1;
     const renderer::Shader* vertShader = resource::ResourceLoaderManager::getInstance()->composeShader<renderer::Shader, resource::ShaderSourceStreamLoader>(m_CmdList->getContext(), "shadowmap", &vertexHeader, vertexStream);
@@ -117,7 +117,7 @@ void ShadowMapping::Draw(scene::ModelHelper* geometry, const scene::Transform& t
         ubo.lightSpaceMatrix = m_LightSpaceMatrix;
         ubo.modelMatrix = transform.getTransform();
 
-        m_Program->bindUniformsBuffer<renderer::ShaderType::ShaderType_Vertex>({ "ubo" }, 0, (u32)sizeof(UBO), &ubo);
+        m_Program->bindUniformsBuffer<renderer::ShaderType::Vertex>({ "ubo" }, 0, (u32)sizeof(UBO), &ubo);
     }
     geometry->draw(m_CmdList);
 }
@@ -182,7 +182,7 @@ void CascadedShadowMapping::Init(const renderer::VertexInputAttribDescription& d
 
     const stream::Stream* vertexStream = stream::StreamManager::createMemoryStream(k_vertexSource);
 
-    renderer::ShaderHeader vertexHeader(renderer::ShaderType::ShaderType_Vertex);
+    renderer::ShaderHeader vertexHeader(renderer::ShaderType::Vertex);
     vertexHeader._contentType = renderer::ShaderHeader::ShaderResource::ShaderResource_Source;
     vertexHeader._shaderModel = renderer::ShaderHeader::ShaderModel::ShaderModel_HLSL_5_1;
     const renderer::Shader* vertShader = resource::ResourceLoaderManager::getInstance()->composeShader<renderer::Shader, resource::ShaderSourceStreamLoader>(m_CmdList->getContext(), "shadowmap", &vertexHeader, vertexStream);
@@ -226,7 +226,7 @@ void CascadedShadowMapping::Draw(scene::ModelHelper* geometry, const scene::Tran
         ubo.lightSpaceMatrix = m_LightSpaceMatrices[layer];
         ubo.modelMatrix = transform.getTransform();
 
-        m_Program->bindUniformsBuffer<renderer::ShaderType::ShaderType_Vertex>({ "ubo" }, 0, (u32)sizeof(UBO), &ubo);
+        m_Program->bindUniformsBuffer<renderer::ShaderType::Vertex>({ "ubo" }, 0, (u32)sizeof(UBO), &ubo);
 
         geometry->draw(m_CmdList);
     }
@@ -431,7 +431,7 @@ void ShadowMappingPoint::PrepareShadowMap(const renderer::VertexInputAttribDescr
 
         const stream::Stream* vertexStream = stream::StreamManager::createMemoryStream(vertexSource);
 
-        renderer::ShaderHeader vertexHeader(renderer::ShaderType::ShaderType_Vertex);
+        renderer::ShaderHeader vertexHeader(renderer::ShaderType::Vertex);
         vertexHeader._contentType = renderer::ShaderHeader::ShaderResource::ShaderResource_Source;
         vertexHeader._shaderModel = renderer::ShaderHeader::ShaderModel::ShaderModel_HLSL_5_1;
 
@@ -456,7 +456,7 @@ void ShadowMappingPoint::PrepareShadowMap(const renderer::VertexInputAttribDescr
 
         const stream::Stream* fragmentStream = stream::StreamManager::createMemoryStream(fragmentSource);
 
-        renderer::ShaderHeader fragmentHeader(renderer::ShaderType::ShaderType_Fragment);
+        renderer::ShaderHeader fragmentHeader(renderer::ShaderType::Fragment);
         fragmentHeader._contentType = renderer::ShaderHeader::ShaderResource::ShaderResource_Source;
         fragmentHeader._shaderModel = renderer::ShaderHeader::ShaderModel::ShaderModel_HLSL_5_1;
         fragmentHeader._defines.push_back({ "FAR_PLANE", std::to_string(m_ShadowCamera->getCamera().getFar()) });
@@ -530,7 +530,7 @@ void ShadowMappingPoint::PrepareMuiltiviewShadowMap(const renderer::VertexInputA
 
         const stream::Stream* vertexStream = stream::StreamManager::createMemoryStream(vertexSourceDXC);
 
-        renderer::ShaderHeader vertexHeader(renderer::ShaderType::ShaderType_Vertex);
+        renderer::ShaderHeader vertexHeader(renderer::ShaderType::Vertex);
         vertexHeader._contentType = renderer::ShaderHeader::ShaderResource::ShaderResource_Source;
         vertexHeader._shaderModel = renderer::ShaderHeader::ShaderModel::ShaderModel_HLSL_6_1;
         vertexHeader._defines.push_back({ "SIDES_COUNT", std::to_string(s_PointSidesCount) });
@@ -568,7 +568,7 @@ void ShadowMappingPoint::PrepareMuiltiviewShadowMap(const renderer::VertexInputA
 
         const stream::Stream* vertexStream = stream::StreamManager::createMemoryStream(vertexSourceGL);
 
-        renderer::ShaderHeader vertexHeader(renderer::ShaderType::ShaderType_Vertex);
+        renderer::ShaderHeader vertexHeader(renderer::ShaderType::Vertex);
         vertexHeader._contentType = renderer::ShaderHeader::ShaderResource::ShaderResource_Source;
         vertexHeader._shaderModel = renderer::ShaderHeader::ShaderModel::ShaderModel_GLSL_450;
         vertexHeader._defines.push_back({ "SIDES_COUNT", std::to_string(s_PointSidesCount) });
@@ -595,7 +595,7 @@ void ShadowMappingPoint::PrepareMuiltiviewShadowMap(const renderer::VertexInputA
 
         const stream::Stream* fragmentStream = stream::StreamManager::createMemoryStream(fragmentSource);
 
-        renderer::ShaderHeader fragmentHeader(renderer::ShaderType::ShaderType_Fragment);
+        renderer::ShaderHeader fragmentHeader(renderer::ShaderType::Fragment);
         fragmentHeader._contentType = renderer::ShaderHeader::ShaderResource::ShaderResource_Source;
         fragmentHeader._shaderModel = renderer::ShaderHeader::ShaderModel::ShaderModel_HLSL_5_1;
 #if FORCE_USE_DX_COMPILER
@@ -685,7 +685,7 @@ void ShadowMappingPoint::Draw(scene::ModelHelper* geometry, const scene::Transfo
         ubo.modelMatrix = transform.getTransform();
         ubo.lightPosition = { m_ShadowCamera->getPosition(), 0.0f };
 
-        m_Program->bindUniformsBuffer<renderer::ShaderType::ShaderType_Vertex>({ "ubo" }, 0, (u32)sizeof(UBO), &ubo);
+        m_Program->bindUniformsBuffer<renderer::ShaderType::Vertex>({ "ubo" }, 0, (u32)sizeof(UBO), &ubo);
 
         geometry->draw(m_CmdList);
     }
@@ -709,7 +709,7 @@ void ShadowMappingPoint::Draw(scene::ModelHelper* geometry, const scene::Transfo
             ubo.modelMatrix = transform.getTransform();
             ubo.lightPosition = { m_ShadowCamera->getPosition(), 0.0f };
 
-            m_Program->bindUniformsBuffer<renderer::ShaderType::ShaderType_Vertex>({ "ubo" }, 0, (u32)sizeof(UBO), &ubo);
+            m_Program->bindUniformsBuffer<renderer::ShaderType::Vertex>({ "ubo" }, 0, (u32)sizeof(UBO), &ubo);
 
             geometry->draw(m_CmdList);
         }

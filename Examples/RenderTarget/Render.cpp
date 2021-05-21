@@ -63,8 +63,8 @@ public:
 
         std::vector<const renderer::Shader*> shaders = resource::ResourceLoaderManager::getInstance()->loadHLSLShader<renderer::Shader, resource::ShaderSourceFileLoader>(commandList->getContext(), "texture.hlsl",
             {
-                {"main_VS", renderer::ShaderType_Vertex },
-                {"main_FS", renderer::ShaderType_Fragment }
+                {"main_VS", renderer::Vertex },
+                {"main_FS", renderer::Fragment }
             }, {}, resource::ShaderSource_UseDXCompiler);
 
         v3d::scene::Model* cube = resource::ResourceLoaderManager::getInstance()->load<v3d::scene::Model, resource::ModelFileLoader>("cube.dae");
@@ -98,10 +98,10 @@ public:
         ubo.modelMatrix.makeIdentity();
         ubo.modelMatrix.setScale({ 100.0f, 100.0f, 100.0f });
 
-        m_Program->bindUniformsBuffer<renderer::ShaderType::ShaderType_Vertex>({ "vs_buffer" }, 0, (u32)sizeof(UBO), &ubo);
+        m_Program->bindUniformsBuffer<renderer::ShaderType::Vertex>({ "vs_buffer" }, 0, (u32)sizeof(UBO), &ubo);
 
-        m_Program->bindSampler<renderer::ShaderType::ShaderType_Fragment>({ "colorSampler" }, m_Sampler);
-        m_Program->bindTexture<renderer::ShaderType::ShaderType_Fragment, renderer::Texture2D>({ "colorTexture" }, m_Texture);
+        m_Program->bindSampler<renderer::ShaderType::Fragment>({ "colorSampler" }, m_Sampler);
+        m_Program->bindTexture<renderer::ShaderType::Fragment, renderer::Texture2D>({ "colorTexture" }, m_Texture);
     }
     
     void Draw(v3d::renderer::CommandList* commandList) override
@@ -250,8 +250,8 @@ public:
             {
                 commandList->transition({ m_InputTexture, 0, mip }, renderer::TransitionOp::TransitionOp_GeneralCompute);
 
-                m_DownsampleProgram->bindStorageImage<renderer::ShaderType::ShaderType_Compute, renderer::Texture2D>({ "inputImage" }, m_InputTexture, 0, mip - 1);
-                m_DownsampleProgram->bindStorageImage<renderer::ShaderType::ShaderType_Compute, renderer::Texture2D>({ "resultImage" }, m_InputTexture, 0, mip);
+                m_DownsampleProgram->bindUAV<renderer::ShaderType::Compute, renderer::Texture2D>({ "inputImage" }, m_InputTexture, 0, mip - 1);
+                m_DownsampleProgram->bindUAV<renderer::ShaderType::Compute, renderer::Texture2D>({ "resultImage" }, m_InputTexture, 0, mip);
 
                 commandList->dispatchCompute({ std::max<u32>(width / 4, 1), std::max<u32>(height / 4, 1), 1 });
                 width = std::max(m_InputTexture->getDimension().width >> mip, 1U);
@@ -313,8 +313,8 @@ public:
         const u32 k_mipLevel = 3;
         std::vector<const renderer::Shader*> shaders = resource::ResourceLoaderManager::getInstance()->loadHLSLShader<renderer::Shader, resource::ShaderSourceFileLoader>(commandList->getContext(), "offscreen.hlsl",
             {
-                {"main_VS", renderer::ShaderType_Vertex },
-                {"main_FS", renderer::ShaderType_Fragment }
+                {"main_VS", renderer::Vertex },
+                {"main_FS", renderer::Fragment }
 
             },
             {
@@ -351,11 +351,11 @@ public:
         commandList->setRenderTarget(m_OffscreenRenderTarget);
         commandList->setPipelineState(m_OffscreenPipeline);
 
-        m_OffscreenProgram->bindSampler<renderer::ShaderType::ShaderType_Fragment>({ "colorSampler" }, m_Sampler);
+        m_OffscreenProgram->bindSampler<renderer::ShaderType::Fragment>({ "colorSampler" }, m_Sampler);
 #if USE_DOWNSAMPLE
-        m_OffscreenProgram->bindTexture<renderer::ShaderType::ShaderType_Fragment, renderer::Texture2D>({ "colorTexture" }, m_OffscreenAttachment);
+        m_OffscreenProgram->bindTexture<renderer::ShaderType::Fragment, renderer::Texture2D>({ "colorTexture" }, m_OffscreenAttachment);
 #else
-        m_OffscreenProgram->bindTexture<renderer::ShaderType::ShaderType_Fragment, renderer::Texture2D>({ "colorTexture" }, m_OffscreenAttachment, 0, 0);
+        m_OffscreenProgram->bindTexture<renderer::ShaderType::Fragment, renderer::Texture2D>({ "colorTexture" }, m_OffscreenAttachment, 0, 0);
 #endif
 
         commandList->draw(renderer::StreamBufferDescription(nullptr, 0), 0, 3, 1);

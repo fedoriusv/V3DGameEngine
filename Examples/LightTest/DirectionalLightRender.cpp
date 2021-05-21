@@ -69,7 +69,7 @@ void ForwardDirectionalLightTextureTest::Draw(scene::ModelHelper* geometry, scen
         ubo.normalMatrix.makeTransposed();
         ubo.viewMatrix = camera->getViewMatrix();
 
-        m_Program->bindUniformsBuffer<renderer::ShaderType::ShaderType_Vertex>({ "ubo" }, 0, sizeof(UBO), &ubo);
+        m_Program->bindUniformsBuffer<renderer::ShaderType::Vertex>({ "ubo" }, 0, sizeof(UBO), &ubo);
     }
 
     {
@@ -86,11 +86,11 @@ void ForwardDirectionalLightTextureTest::Draw(scene::ModelHelper* geometry, scen
             light[l].diffuse = std::get<1>(lights[l]);
         }
 
-        m_Program->bindUniformsBuffer<renderer::ShaderType::ShaderType_Fragment>({ "light" }, 0, sizeof(LIGHT) * (u32)lights.size(), light.data());
+        m_Program->bindUniformsBuffer<renderer::ShaderType::Fragment>({ "light" }, 0, sizeof(LIGHT) * (u32)lights.size(), light.data());
     }
 
-    m_Program->bindSampler<renderer::ShaderType::ShaderType_Fragment>({ "samplerColor" }, m_Sampler.get());
-    m_Program->bindTexture<renderer::ShaderType::ShaderType_Fragment, renderer::Texture2D>({ "textureColor" }, m_Texture.get());
+    m_Program->bindSampler<renderer::ShaderType::Fragment>({ "samplerColor" }, m_Sampler.get());
+    m_Program->bindTexture<renderer::ShaderType::Fragment, renderer::Texture2D>({ "textureColor" }, m_Texture.get());
 
     geometry->draw(&m_CommandList);
 }

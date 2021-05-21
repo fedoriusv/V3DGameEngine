@@ -72,7 +72,7 @@ void ForwardNormalMapTest::Draw(scene::ModelHelper* geometry, v3d::scene::Camera
         ubo.normalMatrix.makeTransposed();
         ubo.viewMatrix = camera->getViewMatrix();
 
-        m_Program->bindUniformsBuffer<renderer::ShaderType::ShaderType_Vertex>({ "ubo" }, 0, sizeof(UBO), &ubo);
+        m_Program->bindUniformsBuffer<renderer::ShaderType::Vertex>({ "ubo" }, 0, sizeof(UBO), &ubo);
     }
 
     {
@@ -96,12 +96,12 @@ void ForwardNormalMapTest::Draw(scene::ModelHelper* geometry, v3d::scene::Camera
 
         ubo.viewPosition = { camera->getViewPosition(), 1.0 };
 
-        m_Program->bindUniformsBuffer<renderer::ShaderType::ShaderType_Fragment>({ "light" }, 0, sizeof(LIGHT) * (u32)light.size(), light.data());
-        m_Program->bindUniformsBuffer<renderer::ShaderType::ShaderType_Fragment>({ "ubo" }, 0, sizeof(UBO), &ubo);
-        m_Program->bindSampler<renderer::ShaderType::ShaderType_Fragment>({ "samplerColor" }, m_SamplerColor.get());
-        m_Program->bindSampler<renderer::ShaderType::ShaderType_Fragment>({ "samplerNormal" }, m_SamplerNormalmap.get());
-        m_Program->bindTexture<renderer::ShaderType::ShaderType_Fragment, renderer::Texture2D>({ "textureColor" }, m_TextureColor.get());
-        m_Program->bindTexture<renderer::ShaderType::ShaderType_Fragment, renderer::Texture2D>({ "textureNormal" }, m_TextureNormalmap.get());
+        m_Program->bindUniformsBuffer<renderer::ShaderType::Fragment>({ "light" }, 0, sizeof(LIGHT) * (u32)light.size(), light.data());
+        m_Program->bindUniformsBuffer<renderer::ShaderType::Fragment>({ "ubo" }, 0, sizeof(UBO), &ubo);
+        m_Program->bindSampler<renderer::ShaderType::Fragment>({ "samplerColor" }, m_SamplerColor.get());
+        m_Program->bindSampler<renderer::ShaderType::Fragment>({ "samplerNormal" }, m_SamplerNormalmap.get());
+        m_Program->bindTexture<renderer::ShaderType::Fragment, renderer::Texture2D>({ "textureColor" }, m_TextureColor.get());
+        m_Program->bindTexture<renderer::ShaderType::Fragment, renderer::Texture2D>({ "textureNormal" }, m_TextureNormalmap.get());
     }
 
     geometry->draw(&m_CommandList);
@@ -194,7 +194,7 @@ void ForwardParallaxMappingTest::Draw(scene::ModelHelper* geometry, v3d::scene::
         ubo.normalMatrix.makeTransposed();
         ubo.viewMatrix = camera->getViewMatrix();
 
-        m_Program->bindUniformsBuffer<renderer::ShaderType::ShaderType_Vertex>({ "ubo" }, 0, sizeof(UBO), &ubo);
+        m_Program->bindUniformsBuffer<renderer::ShaderType::Vertex>({ "ubo" }, 0, sizeof(UBO), &ubo);
     }
 
     {
@@ -220,15 +220,15 @@ void ForwardParallaxMappingTest::Draw(scene::ModelHelper* geometry, v3d::scene::
 
         ubo.viewPosition = { camera->getViewPosition(), 1.0 };
 
-        m_Program->bindUniformsBuffer<renderer::ShaderType::ShaderType_Fragment>({ "light" }, 0, sizeof(LIGHT) * (u32)light.size(), light.data());
-        m_Program->bindUniformsBuffer<renderer::ShaderType::ShaderType_Fragment>({ "ubo" }, 0, sizeof(UBO), &ubo);
+        m_Program->bindUniformsBuffer<renderer::ShaderType::Fragment>({ "light" }, 0, sizeof(LIGHT) * (u32)light.size(), light.data());
+        m_Program->bindUniformsBuffer<renderer::ShaderType::Fragment>({ "ubo" }, 0, sizeof(UBO), &ubo);
 
-        m_Program->bindSampler<renderer::ShaderType::ShaderType_Fragment>({ "samplerColor" }, m_SamplerColor.get());
-        m_Program->bindTexture<renderer::ShaderType::ShaderType_Fragment, renderer::Texture2D>({ "textureColor" }, m_TextureColor.get());
+        m_Program->bindSampler<renderer::ShaderType::Fragment>({ "samplerColor" }, m_SamplerColor.get());
+        m_Program->bindTexture<renderer::ShaderType::Fragment, renderer::Texture2D>({ "textureColor" }, m_TextureColor.get());
 
-        m_Program->bindSampler<renderer::ShaderType::ShaderType_Fragment>({ "samplerFilter" }, m_SamplerFilter.get());
-        m_Program->bindTexture<renderer::ShaderType::ShaderType_Fragment, renderer::Texture2D>({ "textureNormal" }, m_TextureNormalmap.get());
-        m_Program->bindTexture<renderer::ShaderType::ShaderType_Fragment, renderer::Texture2D>({ "textureHeight" }, m_TextureHeightmap.get());
+        m_Program->bindSampler<renderer::ShaderType::Fragment>({ "samplerFilter" }, m_SamplerFilter.get());
+        m_Program->bindTexture<renderer::ShaderType::Fragment, renderer::Texture2D>({ "textureNormal" }, m_TextureNormalmap.get());
+        m_Program->bindTexture<renderer::ShaderType::Fragment, renderer::Texture2D>({ "textureHeight" }, m_TextureHeightmap.get());
     }
 
     geometry->draw(&m_CommandList);

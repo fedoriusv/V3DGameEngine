@@ -21,14 +21,14 @@ namespace resource
 const std::map<std::string, renderer::ShaderType> k_SPIRV_ExtensionList =
 {
     //glsl
-    { "vert", renderer::ShaderType::ShaderType_Vertex },
-    { "frag", renderer::ShaderType::ShaderType_Fragment },
-    { "comp", renderer::ShaderType::ShaderType_Compute },
+    { "vert", renderer::ShaderType::Vertex },
+    { "frag", renderer::ShaderType::Fragment },
+    { "comp", renderer::ShaderType::Compute },
 
     //hlsl
-    { "vs", renderer::ShaderType::ShaderType_Vertex },
-    { "ps", renderer::ShaderType::ShaderType_Fragment },
-    { "cs", renderer::ShaderType::ShaderType_Compute },
+    { "vs", renderer::ShaderType::Vertex },
+    { "ps", renderer::ShaderType::Fragment },
+    { "cs", renderer::ShaderType::Compute },
 };
 
  ShaderSpirVDecoder::ShaderSpirVDecoder(const renderer::ShaderHeader& header, bool reflections) noexcept
@@ -148,13 +148,13 @@ Resource* ShaderSpirVDecoder::decode(const stream::Stream* stream, const std::st
                 validShaderType = true;
                 switch (type)
                 {
-                case renderer::ShaderType::ShaderType_Vertex:
+                case renderer::ShaderType::Vertex:
                     return shaderc_shader_kind::shaderc_vertex_shader;
 
-                case renderer::ShaderType::ShaderType_Fragment:
+                case renderer::ShaderType::Fragment:
                     return shaderc_shader_kind::shaderc_fragment_shader;
 
-                case renderer::ShaderType::ShaderType_Compute:
+                case renderer::ShaderType::Compute:
                     return shaderc_shader_kind::shaderc_compute_shader;
 
                 default:
@@ -171,13 +171,13 @@ Resource* ShaderSpirVDecoder::decode(const stream::Stream* stream, const std::st
                 validShaderType = true;
                 switch (type)
                 {
-                case renderer::ShaderType::ShaderType_Vertex:
+                case renderer::ShaderType::Vertex:
                     return  shaderc_shader_kind::shaderc_vertex_shader;
 
-                case renderer::ShaderType::ShaderType_Fragment:
+                case renderer::ShaderType::Fragment:
                     return  shaderc_shader_kind::shaderc_fragment_shader;
 
-                case renderer::ShaderType::ShaderType_Compute:
+                case renderer::ShaderType::Compute:
                     return  shaderc_shader_kind::shaderc_compute_shader;
 
                 default:
@@ -340,17 +340,17 @@ Resource* ShaderSpirVDecoder::decode(const stream::Stream* stream, const std::st
                 if (fileExtension == "vspv")
                 {
                     validShaderType = true;
-                    return renderer::ShaderType::ShaderType_Vertex;
+                    return renderer::ShaderType::Vertex;
                 }
                 else if (fileExtension == "fspv")
                 {
                     validShaderType = true;
-                    return renderer::ShaderType::ShaderType_Fragment;
+                    return renderer::ShaderType::Fragment;
                 }
                 else if (fileExtension == "cspv")
                 {
                     validShaderType = true;
-                    return renderer::ShaderType::ShaderType_Compute;
+                    return renderer::ShaderType::Compute;
                 }
 
                 validShaderType = false;

@@ -45,7 +45,7 @@ namespace renderer
         bool bindUniformsBuffer(const ShaderParam& param, u32 offset, u32 size, const void* data);
 
         template<ShaderType shaderType, class TTexture>
-        bool bindStorageImage(const ShaderParam& param, const TTexture* texture, s32 layer = k_generalLayer, s32 mip = k_allMipmapsLevels);
+        bool bindUAV(const ShaderParam& param, const TTexture* texture, s32 layer = k_generalLayer, s32 mip = k_allMipmapsLevels);
 #else
         template<ShaderType shaderType, class TTexture>
         bool bindTexture(u32 index, const TTexture* texture);
@@ -72,7 +72,7 @@ namespace renderer
         bool bindSampler(ShaderType shaderType, u32 index, const SamplerState* sampler);
         bool bindSampledTexture(ShaderType shaderType, u32 index, TextureTarget target, const Texture* texture, const SamplerState* sampler, s32 layer, s32 mip);
         bool bindUniformsBuffer(ShaderType shaderType, u32 index, u32 offset, u32 size, const void* data);
-        bool bindStorageImage(ShaderType shaderType, u32 index, TextureTarget target, const Texture* texture, s32 layer, s32 mip);
+        bool bindUAV(ShaderType shaderType, u32 index, TextureTarget target, const Texture* texture, s32 layer, s32 mip);
 
         std::map<u32, u32> m_shaderParameters[ShaderType::ShaderType_Count];
 
@@ -108,10 +108,10 @@ namespace renderer
     }
 
     template<ShaderType shaderType, class TTexture>
-    inline bool ShaderProgram::bindStorageImage(const ShaderParam& param, const TTexture* texture, s32 layer, s32 mip)
+    inline bool ShaderProgram::bindUAV(const ShaderParam& param, const TTexture* texture, s32 layer, s32 mip)
     {
         static_assert(std::is_base_of<Texture, TTexture>(), "ShaderProgram::bindTexture wrong type");
-        return bindStorageImage(shaderType, param._id, texture->m_target, texture, layer, mip);
+        return bindUAV(shaderType, param._id, texture->m_target, texture, layer, mip);
     }
 #else
     template<ShaderType shaderType, class TTexture>

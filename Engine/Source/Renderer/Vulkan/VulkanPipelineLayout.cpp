@@ -103,13 +103,13 @@ VkShaderStageFlagBits VulkanPipelineLayoutManager::convertShaderTypeToVkStage(Sh
 {
     switch (type)
     {
-    case ShaderType_Vertex:
+    case ShaderType::Vertex:
         return VK_SHADER_STAGE_VERTEX_BIT;
 
-    case ShaderType_Fragment:
+    case ShaderType::Fragment:
         return VK_SHADER_STAGE_FRAGMENT_BIT;
 
-    case ShaderType_Compute:
+    case ShaderType::Compute:
         return VK_SHADER_STAGE_COMPUTE_BIT;
 
     default:
@@ -314,7 +314,7 @@ VulkanPipelineLayoutManager::DescriptorSetLayoutCreator::DescriptorSetLayoutCrea
     for (u32 setIndex = 0; setIndex < k_maxDescriptorSetIndex; ++setIndex)
     {
         std::vector<VkDescriptorSetLayoutBinding> descriptorSetLayoutBindings;
-        for (u32 type = ShaderType::ShaderType_Vertex; type < ShaderType_Count; ++type)
+        for (u32 type = ShaderType::Vertex; type < ShaderType_Count; ++type)
         {
             const Shader* shader = shaders[type];
             if (!shader)
@@ -418,7 +418,7 @@ VulkanPipelineLayoutManager::DescriptorSetLayoutCreator::DescriptorSetLayoutCrea
     }
     ASSERT(maxSetIndex < k_maxDescriptorSetIndex, "invalid max set index");
 
-    for (u32 type = ShaderType::ShaderType_Vertex; type < ShaderType_Count; ++type)
+    for (u32 type = ShaderType::Vertex; type < ShaderType_Count; ++type)
     {
         const Shader* shader = shaders[type];
         if (!shader)

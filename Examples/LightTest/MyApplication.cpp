@@ -460,8 +460,8 @@ void MyApplication::AxisDebug::Draw(v3d::renderer::CommandList* commandList, v3d
         ubo.viewMatrix = camera->getViewMatrix();
 
         const core::Vector4D red = { 1.0, 0.0, 0.0, 1.0 };
-        m_Program->bindUniformsBuffer<renderer::ShaderType::ShaderType_Vertex>({ "ubo" }, 0, sizeof(UBO), &ubo);
-        m_Program->bindUniformsBuffer<renderer::ShaderType::ShaderType_Fragment>({ "debugColor" }, 0, sizeof(core::Vector4D), &red);
+        m_Program->bindUniformsBuffer<renderer::ShaderType::Vertex>({ "ubo" }, 0, sizeof(UBO), &ubo);
+        m_Program->bindUniformsBuffer<renderer::ShaderType::Fragment>({ "debugColor" }, 0, sizeof(core::Vector4D), &red);
 
         commandList->draw(renderer::StreamBufferDescription(nullptr, 0), 0, 2, 1);
     }
@@ -472,8 +472,8 @@ void MyApplication::AxisDebug::Draw(v3d::renderer::CommandList* commandList, v3d
         ubo.viewMatrix = camera->getViewMatrix();
 
         const core::Vector4D green = { 0.0, 1.0, 0.0, 1.0 };
-        m_Program->bindUniformsBuffer<renderer::ShaderType::ShaderType_Vertex>({ "ubo" }, 0, sizeof(UBO), &ubo);
-        m_Program->bindUniformsBuffer<renderer::ShaderType::ShaderType_Fragment>({ "debugColor" }, 0, sizeof(core::Vector4D), &green);
+        m_Program->bindUniformsBuffer<renderer::ShaderType::Vertex>({ "ubo" }, 0, sizeof(UBO), &ubo);
+        m_Program->bindUniformsBuffer<renderer::ShaderType::Fragment>({ "debugColor" }, 0, sizeof(core::Vector4D), &green);
 
         commandList->draw(renderer::StreamBufferDescription(nullptr, 0), 0, 2, 1);
     }
@@ -484,8 +484,8 @@ void MyApplication::AxisDebug::Draw(v3d::renderer::CommandList* commandList, v3d
         ubo.viewMatrix = camera->getViewMatrix();
 
         const core::Vector4D blue = { 0.0, 0.0, 1.0, 1.0 };
-        m_Program->bindUniformsBuffer<renderer::ShaderType::ShaderType_Vertex>({ "ubo" }, 0, sizeof(UBO), &ubo);
-        m_Program->bindUniformsBuffer<renderer::ShaderType::ShaderType_Fragment>({ "debugColor" }, 0, sizeof(core::Vector4D), &blue);
+        m_Program->bindUniformsBuffer<renderer::ShaderType::Vertex>({ "ubo" }, 0, sizeof(UBO), &ubo);
+        m_Program->bindUniformsBuffer<renderer::ShaderType::Fragment>({ "debugColor" }, 0, sizeof(core::Vector4D), &blue);
 
         commandList->draw(renderer::StreamBufferDescription(nullptr, 0), 0, 2, 1);
     }
@@ -517,8 +517,8 @@ void MyApplication::LightDebug::Draw(v3d::renderer::CommandList* commandList, v3
         ubo.modelMatrix.setScale({ 10.0, 10.0, 10.0 });
         ubo.viewMatrix = camera->getViewMatrix();
 
-        m_Program->bindUniformsBuffer<renderer::ShaderType::ShaderType_Vertex>({ "ubo" }, 0, sizeof(UBO), &ubo);
-        m_Program->bindUniformsBuffer<renderer::ShaderType::ShaderType_Fragment>({ "debugColor" }, 0, sizeof(core::Vector4D), &std::get<1>(light));
+        m_Program->bindUniformsBuffer<renderer::ShaderType::Vertex>({ "ubo" }, 0, sizeof(UBO), &ubo);
+        m_Program->bindUniformsBuffer<renderer::ShaderType::Fragment>({ "debugColor" }, 0, sizeof(core::Vector4D), &std::get<1>(light));
 
         geometry->draw(commandList);
     }
