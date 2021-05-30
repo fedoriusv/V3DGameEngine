@@ -45,7 +45,7 @@ D3DDescriptorSetState::~D3DDescriptorSetState()
     ASSERT(m_usedDescriptorHeaps.empty(), "must be empty");
 }
 
-bool D3DDescriptorSetState::updateDescriptorSets(D3DGraphicsCommandList* cmdList, D3DGraphicPipelineState* pipeline)
+bool D3DDescriptorSetState::updateDescriptorSets(D3DGraphicsCommandList* cmdList, D3DPipelineState* pipeline)
 {
     DescriptorTableContainer table[D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES];
     composeDescriptorSetTable(pipeline, table);
@@ -85,7 +85,7 @@ bool D3DDescriptorSetState::updateDescriptorSets(D3DGraphicsCommandList* cmdList
 
     if (!heaps.empty())
     {
-        cmdList->setDescriptorTables(heaps, tableHeaps);
+        cmdList->setDescriptorTables(heaps, tableHeaps, pipeline->getType());
         return true;
     }
 
@@ -113,7 +113,7 @@ void D3DDescriptorSetState::invalidateDescriptorSetTable()
     m_descriptorSetTable.clear();
 }
 
-void D3DDescriptorSetState::composeDescriptorSetTable(const D3DGraphicPipelineState* pipeline, DescriptorTableContainer table[D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES])
+void D3DDescriptorSetState::composeDescriptorSetTable(const D3DPipelineState* pipeline, DescriptorTableContainer table[D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES])
 {
     for (auto& binding : m_descriptorSetTable)
     {
@@ -152,9 +152,10 @@ void D3DDescriptorSetState::updateDescriptorTable(D3DDescriptorHeap* heap, const
                 case D3D12_DESCRIPTOR_RANGE_TYPE_SRV:
                 {
                     const D3DImage* image = param._resource._image._image;
+                    const Image::Subresource& subresource = param._resource._image._subresource;
 
                     CD3DX12_CPU_DESCRIPTOR_HANDLE imgHandle(heap->getCPUHandle(), descriptorIndex, heap->getIncrement());
-                    m_device->CreateShaderResourceView(image->getResource(), &image->getView<D3D12_SHADER_RESOURCE_VIEW_DESC>(), imgHandle);
+                    m_device->CreateShaderResourceView(image->getResource(), &image->getView<D3D12_SHADER_RESOURCE_VIEW_DESC>(subresource), imgHandle);
                     ++descriptorIndex;
 
                     break;
@@ -174,6 +175,32 @@ void D3DDescriptorSetState::updateDescriptorTable(D3DDescriptorHeap* heap, const
                     break;
                 }
                 case D3D12_DESCRIPTOR_RANGE_TYPE_UAV:
+                {
+                    ID3D12Resource* uavResource = nullptr;
+                    D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc = {};
+
+                    const D3DImage* UAVImage = param._resource._UAV._image._image;
+                    const D3DBuffer* UAVBuffer = param._resource._UAV._buffer._buffer;
+                    if (UAVImage)
+                    {
+                        uavResource = UAVImage->getResource();
+
+                        const Image::Subresource& subresource = param._resource._UAV._image._subresource;
+                        uavDesc = UAVImage->getView<D3D12_UNORDERED_ACCESS_VIEW_DESC>(subresource);
+                    }
+                    else if (UAVBuffer)
+                    {
+                        ASSERT(false, "not impl");
+                    }
+                    ASSERT(uavResource, "nullptr");
+
+                    CD3DX12_CPU_DESCRIPTOR_HANDLE uavHandle(heap->getCPUHandle(), descriptorIndex, heap->getIncrement());
+                    m_device->CreateUnorderedAccessView(uavResource, nullptr, &uavDesc, uavHandle);
+                    ++descriptorIndex;
+
+                    break;
+                }
+
                 default:
                     ASSERT(false, "not impl");
                 }

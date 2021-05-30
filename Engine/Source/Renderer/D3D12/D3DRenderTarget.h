@@ -28,6 +28,8 @@ namespace dx3d
     {
     public:
 
+        static D3D12_RESOURCE_STATES convertTransitionToD3D(TransitionOp transition);
+
         explicit D3DRenderState(const RenderPassDescription& desc) noexcept;
         ~D3DRenderState() = default;
 

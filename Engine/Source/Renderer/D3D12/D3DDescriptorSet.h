@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Common.h"
+#include "Renderer/Image.h"
 
 #ifdef D3D_RENDER
 #include "D3DConfiguration.h"
@@ -18,7 +19,7 @@ namespace dx3d
     class D3DSampler;
     class D3DBuffer;
     class D3DGraphicsCommandList;
-    class D3DGraphicPipelineState;
+    class D3DPipelineState;
     class D3DDescriptorHeapManager;
     class D3DDescriptorHeap;
 
@@ -35,27 +36,51 @@ namespace dx3d
 
         static D3D12_DESCRIPTOR_HEAP_TYPE convertDescriptorTypeToHeapType(D3D12_DESCRIPTOR_RANGE_TYPE descriptorType);
 
-        template<class TResource, class ... Args>
-        bool bindDescriptor(u32 space, u32 binding, const TResource* resource, Args ...args)
+        template<class TResource, bool UAV, class ... Args>
+        bool bindDescriptor(u32 space, u32 binding, u32 array, const TResource* resource, Args ...args)
         {
             static_assert(std::is_base_of<D3DResource, TResource>(), "D3DDescriptorSetState::bindDescriptor wrong type");
 
             Binding bind;
             bind._space = space;
             bind._binding = binding;
-            bind._array = 1;
+            bind._array = array;
 
-            if constexpr (std::is_same<TResource, D3DImage>())
+            if constexpr (std::is_same<TResource, D3DImage>() && UAV == false)
             {
-                bind._type = D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
-                bind._resource._image = { resource };
+                auto function = [&bind](const D3DImage* image, const Image::Subresource& subresource) -> void
+                {
+                    bind._type = D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
+                    bind._resource._image = { image, subresource };
+                };
+                function(resource, args...);
             }
-            else if constexpr (std::is_same<TResource, D3DBuffer>())
+            else if constexpr (std::is_same<TResource, D3DBuffer>() && UAV == false)
             {
                 auto function = [&bind](const D3DBuffer* buffer, u32 offset, u32 size) -> void
                 {
                     bind._type = D3D12_DESCRIPTOR_RANGE_TYPE_CBV;
                     bind._resource._constantBuffer = { buffer, offset, size };
+                };
+                function(resource, args...);
+            }
+            else if constexpr (std::is_same<TResource, D3DImage>() && UAV == true)
+            {
+                auto function = [&bind](const D3DImage* image, const Image::Subresource& subresource) -> void
+                {
+                    bind._type = D3D12_DESCRIPTOR_RANGE_TYPE_UAV;
+                    bind._resource._UAV._image = { image, subresource };
+                    bind._resource._UAV._buffer = { nullptr, 0, 0 };
+                };
+                function(resource, args...);
+            }
+            else if constexpr (std::is_same<TResource, D3DBuffer>() && UAV == true)
+            {
+                auto function = [&bind](const D3DBuffer* buffer, u32 offset, u32 size) -> void
+                {
+                    bind._type = D3D12_DESCRIPTOR_RANGE_TYPE_UAV;
+                    bind._resource._UAV._buffer = { resource, offset, size };
+                    bind._resource._UAV._image = nullptr;
                 };
                 function(resource, args...);
             }
@@ -80,7 +105,7 @@ namespace dx3d
             return true;
         }
 
-        bool updateDescriptorSets(D3DGraphicsCommandList* cmdList, D3DGraphicPipelineState* pipeline);
+        bool updateDescriptorSets(D3DGraphicsCommandList* cmdList, D3DPipelineState* pipeline);
         void updateStatus();
         void invalidateDescriptorSetTable();
 
@@ -107,12 +132,13 @@ namespace dx3d
             D3D12_DESCRIPTOR_RANGE_TYPE _type;
             union
             {
-                struct ShaderResource
+                struct ImageResource
                 {
                     const D3DImage* _image;
+                    Image::Subresource _subresource;
                 };
 
-                struct ConstntBuffer
+                struct BufferResource
                 {
                     const D3DBuffer* _buffer;
                     u32 _offset;
@@ -124,15 +150,22 @@ namespace dx3d
                     const D3DSampler* _sampler;
                 };
 
-                ShaderResource _image;
-                ConstntBuffer _constantBuffer;
+                struct UAV
+                {
+                    ImageResource _image;
+                    BufferResource _buffer;
+                };
+
+                ImageResource _image;
+                BufferResource _constantBuffer;
                 Sampler _sampler;
+                UAV _UAV;
             }
             _resource;
         };
 
         using DescriptorTableContainer = std::map<u32, std::set<Binding, Binding::Less>>;
-        void composeDescriptorSetTable(const D3DGraphicPipelineState* pipeline, DescriptorTableContainer table[D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES]);
+        void composeDescriptorSetTable(const D3DPipelineState* pipeline, DescriptorTableContainer table[D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES]);
 
         void updateDescriptorTable(D3DDescriptorHeap* heap, const DescriptorTableContainer& table, D3D12_DESCRIPTOR_HEAP_TYPE type, std::map<u32, std::tuple<D3DDescriptorHeap*, u32>>& descTable);
 

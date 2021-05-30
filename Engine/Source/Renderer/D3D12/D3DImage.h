@@ -42,43 +42,47 @@ namespace dx3d
         ID3D12Resource* getResource() const;
 
         template<typename VIEW_DESC_TYPE>
-        const VIEW_DESC_TYPE& getView(u32 slice = k_generalLayer, u32 mip = k_allMipmapsLevels) const
+        const VIEW_DESC_TYPE& getView(const Image::Subresource& subresource) const
         {
-            u32 index = D3D12CalcSubresource((mip == k_allMipmapsLevels) ? 0 : mip, (slice == k_generalLayer) ? 0 : slice, 0, (mip == k_allMipmapsLevels) ? m_mipmaps : 1, (slice == k_generalLayer) ? m_arrays : 1) + 1;
-            if (slice == k_generalLayer && mip == k_allMipmapsLevels)
-            {
-                index = D3D12CalcSubresource(0, 0, 0, m_mipmaps, m_arrays);
-            }
-           
             if constexpr (std::is_same<VIEW_DESC_TYPE, D3D12_SHADER_RESOURCE_VIEW_DESC>())
             {
                 ASSERT(!(m_flags & D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE), "must be shader resource flag support");
-                ASSERT(std::get<0>(m_views).size() >= index, "range out");
-                return std::get<0>(m_views)[index];
+                auto found = std::get<0>(m_views).find(subresource);
+                ASSERT(found != std::get<0>(m_views).cend(), "not found");
+                return found->second;
+            }
+            else if constexpr (std::is_same<VIEW_DESC_TYPE, D3D12_UNORDERED_ACCESS_VIEW_DESC>())
+            {
+                ASSERT(m_flags & D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS, "must be UAV flag support");
+                auto found = std::get<1>(m_views).find(subresource);
+                ASSERT(found != std::get<1>(m_views).cend(), "not found");
+                return found->second;
             }
             else if constexpr (std::is_same<VIEW_DESC_TYPE, D3D12_RENDER_TARGET_VIEW_DESC>())
             {
-                ASSERT((m_flags & D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET), "must be shader render target flag support");
-                ASSERT(std::get<1>(m_views).size() >= index, "range out");
-                return std::get<1>(m_views)[index];
+                ASSERT(m_flags & D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET, "must be render target flag support");
+                auto found = std::get<2>(m_views).find(subresource);
+                ASSERT(found != std::get<2>(m_views).cend(), "not found");
+                return found->second;
             }
             else if constexpr (std::is_same<VIEW_DESC_TYPE, D3D12_DEPTH_STENCIL_VIEW_DESC>())
             {
-                ASSERT((m_flags & D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL), "must be shader depth-stencil flag support");
-                ASSERT(std::get<2>(m_views).size() >= index, "range out");
-                return std::get<2>(m_views)[index];
+                ASSERT(m_flags & D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL, "must be depth-stencil flag support");
+                auto found = std::get<3>(m_views).find(subresource);
+                ASSERT(found != std::get<3>(m_views).cend(), "not found");
+                return found->second;
             }
+
         }
 
-
         const core::Dimension3D& getSize() const;
-        D3D12_RESOURCE_DIMENSION getDimension() const;
         DXGI_FORMAT getFormat() const;
         Format getOriginFormat() const;
-        u32 getCountSamples() const;
 
         D3D12_RESOURCE_STATES getState() const;
         D3D12_RESOURCE_STATES setState(D3D12_RESOURCE_STATES state);
+        D3D12_RESOURCE_STATES getState(const Image::Subresource& subresource) const;
+        D3D12_RESOURCE_STATES setState(const Image::Subresource& subresource, D3D12_RESOURCE_STATES state);
 
         static DXGI_FORMAT convertImageFormatToD3DFormat(Format format);
         static D3D12_RESOURCE_DIMENSION convertImageTargetToD3DDimension(TextureTarget target);
@@ -88,30 +92,56 @@ namespace dx3d
         static bool isDepthFormatOnly(DXGI_FORMAT format);
         static bool isStencilFormatOnly(DXGI_FORMAT format);
 
+        static const Image::Subresource makeD3DImageSubresource(const D3DImage* image, u32 slice = k_generalLayer, u32 mips = k_allMipmapsLevels);
+
     private:
 
         static DXGI_FORMAT convertToTypelessFormat(DXGI_FORMAT format);
         static DXGI_FORMAT getCompatibilityFormat(DXGI_FORMAT format);
 
-        bool internalUpdate(Context* context, const core::Dimension3D& offsets, const core::Dimension3D& size, u32 layers, u32 mips, const void* data);
+        D3D12_RESOURCE_DIMENSION getDimension() const;
+        u32 getCountSamples() const;
 
         void createResourceView(DXGI_FORMAT shaderResourceFormat);
+        bool internalUpdate(Context* context, const core::Dimension3D& offsets, const core::Dimension3D& size, u32 layers, u32 mips, const void* data);
 
         ID3D12Device* const m_device;
 
         ID3D12Resource* m_resource;
         CD3DX12_CPU_DESCRIPTOR_HANDLE m_handle;
-        D3D12_RESOURCE_STATES m_state;
+        std::vector<D3D12_RESOURCE_STATES> m_state;
         D3D12_RESOURCE_FLAGS m_flags;
 
-        std::tuple<std::vector<D3D12_SHADER_RESOURCE_VIEW_DESC>, std::vector<D3D12_RENDER_TARGET_VIEW_DESC>, std::vector<D3D12_DEPTH_STENCIL_VIEW_DESC>> m_views;
+        struct ViewKey
+        {
+            ViewKey() noexcept;
+            ViewKey(const Image::Subresource& desc) noexcept;
+
+            Image::Subresource _desc;
+            u32 _hash;
+
+            struct Hash
+            {
+                u32 operator()(const ViewKey& desc) const;
+            };
+
+            struct Compare
+            {
+                bool operator()(const ViewKey& op1, const ViewKey& op2) const;
+            };
+        };
+
+        std::tuple<
+            std::unordered_map<ViewKey, D3D12_SHADER_RESOURCE_VIEW_DESC, ViewKey::Hash, ViewKey::Compare>,
+            std::unordered_map<ViewKey, D3D12_UNORDERED_ACCESS_VIEW_DESC, ViewKey::Hash, ViewKey::Compare>,
+            std::unordered_map<ViewKey, D3D12_RENDER_TARGET_VIEW_DESC, ViewKey::Hash, ViewKey::Compare>,
+            std::unordered_map<ViewKey, D3D12_DEPTH_STENCIL_VIEW_DESC, ViewKey::Hash, ViewKey::Compare>> m_views;
 
         D3D12_RESOURCE_DIMENSION m_dimension;
         DXGI_FORMAT m_format;
         core::Dimension3D m_size;
         u32 m_mipmaps;
         u32 m_arrays;
-
         u32 m_samples;
 
         bool m_swapchain;

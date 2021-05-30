@@ -1,7 +1,11 @@
 #pragma once
 
+#include "Common.h"
+#include "Renderer/Pipeline.h"
+
 #ifdef D3D_RENDER
 #include "D3DConfiguration.h"
+#include "D3DImage.h"
 
 namespace v3d
 {
@@ -15,6 +19,7 @@ namespace dx3d
     class D3DImage;
     class D3DFence;
     class D3DGraphicPipelineState;
+    class D3DComputePipelineState;
     class D3DRenderTarget;
     class D3DResource;
     class D3DDescriptorHeap;
@@ -105,13 +110,16 @@ namespace dx3d
         void draw(u32 vertexCountPerInstance,u32 instanceCount, u32 startVertexLocation, u32 startInstanceLocation);
         void drawIndexed(u32 indexCountPerInstance, u32 instanceCount, u32 startIndexLocation, u32 baseVertexLocation, u32 startInstanceLocation);
 
+        void dispatch(const core::Dimension3D& dimension);
+
         void setViewport(const std::vector<D3D12_VIEWPORT>& viewport);
         void setScissor(const std::vector<D3D12_RECT>& scissors);
 
         void setRenderTarget(D3DRenderTarget* target);
         void setPipelineState(D3DGraphicPipelineState* pipeline);
+        void setPipelineState(D3DComputePipelineState* pipeline);
 
-        void setDescriptorTables(const std::vector<ID3D12DescriptorHeap*>& heaps, const std::map<u32, std::tuple<D3DDescriptorHeap*, u32>>& desc);
+        void setDescriptorTables(const std::vector<ID3D12DescriptorHeap*>& heaps, const std::map<u32, std::tuple<D3DDescriptorHeap*, u32>>& desc, Pipeline::PipelineType type);
 
         void setVertexState(u32 startSlot, const std::vector<u32>& strides, const std::vector<Buffer*>& buffers);
         void setIndexState(Buffer* buffer, DXGI_FORMAT format);
@@ -119,6 +127,7 @@ namespace dx3d
         void setViewInstanceMask(u32 mask);
 
         void transition(D3DImage* image, D3D12_RESOURCE_STATES states);
+        void transition(D3DImage* image, const Image::Subresource& subresource, D3D12_RESOURCE_STATES states);
 
         ID3D12GraphicsCommandList1* getHandle() const;
 

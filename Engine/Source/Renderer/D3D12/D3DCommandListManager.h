@@ -5,7 +5,6 @@
 #ifdef D3D_RENDER
 #include "D3DConfiguration.h"
 #include "D3DCommandList.h"
-#include "D3DPipelineState.h"
 
 namespace v3d
 {

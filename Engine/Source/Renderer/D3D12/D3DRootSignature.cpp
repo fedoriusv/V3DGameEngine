@@ -29,9 +29,14 @@ D3DRootSignatureCreator::D3DRootSignatureCreator(const ShaderProgramDescription&
 
         case ShaderType::Fragment:
             return D3D12_SHADER_VISIBILITY_PIXEL;
+
+        case ShaderType::Compute:
+            return D3D12_SHADER_VISIBILITY_ALL;
+
+        default:
+            ASSERT(false, "not supported");
         }
 
-        ASSERT(false, "not supported");
         return D3D12_SHADER_VISIBILITY_ALL;
     };
 
@@ -74,6 +79,28 @@ D3DRootSignatureCreator::D3DRootSignatureCreator(const ShaderProgramDescription&
                     shareDescRanges[shaderType].push_back(range);
                     [[maybe_unused]] auto key = m_signatureParameters.emplace(image._binding, signatureParameterIndex);
                     ASSERT(key.second, "already is inserted");
+                }
+
+                {
+                    for (auto UAV : info._storageImages)
+                    {
+                        CD3DX12_DESCRIPTOR_RANGE1 range = {};
+                        range.Init(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, UAV._array, UAV._binding, UAV._set, D3D12_DESCRIPTOR_RANGE_FLAG_DATA_STATIC);
+
+                        shareDescRanges[shaderType].push_back(range);
+                        [[maybe_unused]] auto key = m_signatureParameters.emplace(UAV._binding, signatureParameterIndex);
+                        ASSERT(key.second, "already is inserted");
+                    }
+
+                    for (auto UAV : info._storageBuffers)
+                    {
+                        CD3DX12_DESCRIPTOR_RANGE1 range = {};
+                        range.Init(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, UAV._binding, UAV._set, D3D12_DESCRIPTOR_RANGE_FLAG_DATA_STATIC);
+
+                        shareDescRanges[shaderType].push_back(range);
+                        [[maybe_unused]] auto key = m_signatureParameters.emplace(UAV._binding, signatureParameterIndex);
+                        ASSERT(key.second, "already is inserted");
+                    }
                 }
 
                 ASSERT(info._sampledImages.empty(), "not supported");

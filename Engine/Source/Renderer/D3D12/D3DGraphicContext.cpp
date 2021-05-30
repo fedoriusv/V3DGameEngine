@@ -15,7 +15,8 @@
 #include "D3DSampler.h"
 #include "D3DBuffer.h"
 #include "D3DDeviceCaps.h"
-#include "D3DPipelineState.h"
+#include "D3DGraphicPipelineState.h"
+#include "D3DComputePipelineState.h"
 #include "D3DRootSignature.h"
 #include "D3DRenderTarget.h"
 #include "D3DDescriptorHeap.h"
@@ -179,7 +180,10 @@ void D3DGraphicContext::draw(const StreamBufferDescription& desc, u32 firstVerte
     {
         if (m_boundState._bufferDesc != desc)
         {
-            cmdList->setVertexState(0, m_currentState._pipeline->getBuffersStrides(), desc._vertices);
+            ASSERT(m_currentState._pipeline && m_currentState._pipeline->getType() == Pipeline::PipelineType::PipelineType_Graphic, "wrong");
+            D3DGraphicPipelineState* dxPipeline = static_cast<D3DGraphicPipelineState*>(m_currentState._pipeline);
+
+            cmdList->setVertexState(0, dxPipeline->getBuffersStrides(), desc._vertices);
             m_boundState._bufferDesc = desc;
         }
 
@@ -199,8 +203,11 @@ void D3DGraphicContext::drawIndexed(const StreamBufferDescription& desc, u32 fir
     {
         if (m_boundState._bufferDesc != desc)
         {
+            ASSERT(m_currentState._pipeline && m_currentState._pipeline->getType() == Pipeline::PipelineType::PipelineType_Graphic, "wrong");
+            D3DGraphicPipelineState* dxPipeline = static_cast<D3DGraphicPipelineState*>(m_currentState._pipeline);
+
             cmdList->setIndexState(desc._indices, desc._indexType == IndexType_32 ? DXGI_FORMAT_R32_UINT : DXGI_FORMAT_R16_UINT);
-            cmdList->setVertexState(0, m_currentState._pipeline->getBuffersStrides(), desc._vertices);
+            cmdList->setVertexState(0, dxPipeline->getBuffersStrides(), desc._vertices);
 
             m_boundState._bufferDesc = desc;
         }
@@ -211,7 +218,16 @@ void D3DGraphicContext::drawIndexed(const StreamBufferDescription& desc, u32 fir
 
 void D3DGraphicContext::dispatchCompute(const core::Dimension3D& groups)
 {
-    //TODO
+#if D3D_DEBUG
+    LOG_DEBUG("D3DGraphicContext::dispatchCompute");
+#endif //D3D_DEBUG
+    ASSERT(m_currentState.commandList(), "nullptr");
+    D3DGraphicsCommandList* cmdList = m_currentState.commandList();
+
+    if (perpareCompute(cmdList))
+    {
+        cmdList->dispatch(groups);
+    }
 }
 
 void D3DGraphicContext::bindImage(const Shader* shader, u32 bindIndex, const Image* image, s32 layer, s32 mip)
@@ -228,11 +244,12 @@ void D3DGraphicContext::bindImage(const Shader* shader, u32 bindIndex, const Ima
     ASSERT(bindIndex < shader->getReflectionInfo()._images.size(), "range out");
     u32 space = shader->getReflectionInfo()._images[bindIndex]._set;
     u32 binding = shader->getReflectionInfo()._images[bindIndex]._binding;
+    u32 array = shader->getReflectionInfo()._images[bindIndex]._array;
 
-    const D3DImage* dxImage = static_cast<const D3DImage*>(image);
-    cmdList->setUsed(const_cast<D3DImage*>(dxImage), 0);
+    D3DImage* dxImage = const_cast<D3DImage*>(static_cast<const D3DImage*>(image));
+    cmdList->setUsed(dxImage, 0);
 
-    m_descriptorState->bindDescriptor<D3DImage>(space, binding, dxImage);
+    m_descriptorState->bindDescriptor<D3DImage, false, const Image::Subresource&>(space, binding, array, dxImage, D3DImage::makeD3DImageSubresource(dxImage, layer, mip));
 }
 
 void D3DGraphicContext::bindSampler(const Shader* shader, u32 bindIndex, const Sampler::SamplerInfo* samplerInfo)
@@ -253,7 +270,7 @@ void D3DGraphicContext::bindSampler(const Shader* shader, u32 bindIndex, const S
     D3DSampler* dxSampler = static_cast<D3DSampler*>(m_samplerManager->acquireSampler(samplerInfo->_desc));
     cmdList->setUsed(dxSampler, 0);
 
-    m_descriptorState->bindDescriptor<D3DSampler>(space, binding, dxSampler);
+    m_descriptorState->bindDescriptor<D3DSampler, false>(space, binding, 1, dxSampler);
 }
 
 void D3DGraphicContext::bindSampledImage(const Shader* shader, u32 bindIndex, const Image* image, const Sampler::SamplerInfo* samplerInfo, s32 layer, s32 mip)
@@ -278,23 +295,49 @@ void D3DGraphicContext::bindUniformsBuffer(const Shader* shader, u32 bindIndex, 
     ASSERT(bindIndex < shader->getReflectionInfo()._uniformBuffers.size(), "range out");
     u32 space = shader->getReflectionInfo()._uniformBuffers[bindIndex]._set;
     u32 binding = shader->getReflectionInfo()._uniformBuffers[bindIndex]._binding;
+    u32 array = shader->getReflectionInfo()._uniformBuffers[bindIndex]._array;
 
     D3DBuffer* constantBuffer = m_constantBufferManager->acquireConstanBuffer(size);
     ASSERT(constantBuffer, "nulllptr");
     constantBuffer->upload(this, offset, size, data);
     cmdList->setUsed(constantBuffer, 0);
 
-    m_descriptorState->bindDescriptor<D3DBuffer>(space, binding, constantBuffer, 0, size);
+    m_descriptorState->bindDescriptor<D3DBuffer, false>(space, binding, array, constantBuffer, 0, size);
 }
 
 void D3DGraphicContext::bindStorageImage(const Shader* shader, u32 bindIndex, const Image* image, s32 layer, s32 mip)
 {
-    //TODO
+#if D3D_DEBUG
+    LOG_DEBUG("D3DGraphicContext::bindStorageImage");
+#endif //D3D_DEBUG
+    D3DGraphicsCommandList* cmdList = m_currentState.commandList();
+    if (!cmdList)
+    {
+        return;
+    }
+
+    ASSERT(bindIndex < shader->getReflectionInfo()._storageImages.size(), "range out");
+    u32 space = shader->getReflectionInfo()._storageImages[bindIndex]._set;
+    u32 binding = shader->getReflectionInfo()._storageImages[bindIndex]._binding;
+    u32 array = shader->getReflectionInfo()._storageImages[bindIndex]._array;
+
+    D3DImage* dxImage = const_cast<D3DImage*>(static_cast<const D3DImage*>(image));
+    cmdList->setUsed(dxImage, 0);
+
+    m_descriptorState->bindDescriptor<D3DImage, true, const Image::Subresource&>(space, binding, array, dxImage, D3DImage::makeD3DImageSubresource(dxImage, layer, mip));
 }
 
 void D3DGraphicContext::transitionImages(std::vector<std::tuple<const Image*, Image::Subresource>>& images, TransitionOp transition)
 {
-    ASSERT(false, "not impl");
+    D3DGraphicsCommandList* cmdList = static_cast<D3DGraphicsCommandList*>(D3DGraphicContext::getOrAcquireCurrentCommandList());
+    for (auto& img : images)
+    {
+        D3DImage* dxImage = const_cast<D3DImage*>(static_cast<const D3DImage*>(std::get<0>(img)));
+        const Image::Subresource& subresource = std::get<1>(img);
+        D3D12_RESOURCE_STATES dxState = D3DRenderState::convertTransitionToD3D(transition);
+
+        cmdList->transition(dxImage, subresource, dxState);
+    }
 }
 
 void D3DGraphicContext::setViewport(const core::Rect32& viewport, const core::Vector2D& depth)
@@ -421,12 +464,23 @@ void D3DGraphicContext::setPipeline(const Pipeline::PipelineGraphicInfo* pipelin
 
 void D3DGraphicContext::setPipeline(const Pipeline::PipelineComputeInfo* pipelineInfo)
 {
-    //TODO
+    ASSERT(pipelineInfo, "nullptr");
+
+    Pipeline* pipeline = m_pipelineManager->acquireComputePipeline(*pipelineInfo);
+    ASSERT(pipeline, "nullptr");
+#if D3D_DEBUG
+    LOG_DEBUG("D3DGraphicContext::setPipeline %llx", pipeline);
+#endif
+    pipelineInfo->_tracker->attach(pipeline);
+
+    D3DComputePipelineState* dxPipeline = static_cast<D3DComputePipelineState*>(pipeline);
+    m_currentState._pipeline = dxPipeline;
 }
 
 void D3DGraphicContext::removePipeline(Pipeline* pipeline)
 {
-    D3DGraphicPipelineState* dxPipeline = static_cast<D3DGraphicPipelineState*>(pipeline);
+    ASSERT(pipeline, "nullptr");
+    D3DPipelineState* dxPipeline = static_cast<D3DPipelineState*>(pipeline);
     if (dxPipeline->isUsed())
     {
         m_delayedDeleter.requestToDelete(dxPipeline, [this, pipeline]() -> void
@@ -800,7 +854,11 @@ Pipeline* D3DGraphicContext::createPipeline(Pipeline::PipelineType type)
     {
         return new D3DGraphicPipelineState(m_device, m_rootSignatureManager);
     }
-    
+    else if (type == Pipeline::PipelineType::PipelineType_Compute)
+    {
+        return new D3DComputePipelineState(m_device, m_rootSignatureManager);
+    }
+
     ASSERT(false, "not impl");
     return nullptr;
 }
@@ -812,9 +870,12 @@ Sampler* D3DGraphicContext::createSampler(const SamplerDescription& desc)
 
 bool D3DGraphicContext::perpareDraw(D3DGraphicsCommandList* cmdList)
 {
+    ASSERT(m_currentState._pipeline && m_currentState._pipeline->getType() == Pipeline::PipelineType::PipelineType_Graphic, "wrong");
+    D3DGraphicPipelineState* dxPipeline = static_cast<D3DGraphicPipelineState*>(m_currentState._pipeline);
+
     if (m_boundState._pipeline != m_currentState._pipeline)
     {
-        cmdList->setPipelineState(m_currentState._pipeline);
+        cmdList->setPipelineState(dxPipeline);
         m_boundState._pipeline = m_currentState._pipeline;
     }
 
@@ -837,7 +898,24 @@ bool D3DGraphicContext::perpareDraw(D3DGraphicsCommandList* cmdList)
         D3DGraphicContext::clearRenderTargets(cmdList, m_currentState._renderTarget, m_currentState._clearInfo);
     }
 
-    m_descriptorState->updateDescriptorSets(cmdList, m_currentState._pipeline);
+    m_descriptorState->updateDescriptorSets(cmdList, dxPipeline);
+    m_descriptorState->invalidateDescriptorSetTable();
+
+    return true;
+}
+
+bool D3DGraphicContext::perpareCompute(D3DGraphicsCommandList* cmdList)
+{
+    ASSERT(m_currentState._pipeline && m_currentState._pipeline->getType() == Pipeline::PipelineType::PipelineType_Compute, "wrong");
+    D3DComputePipelineState* dxPipeline = static_cast<D3DComputePipelineState*>(m_currentState._pipeline);
+
+    //if (m_boundState._pipeline != m_currentState._pipeline)
+    {
+        cmdList->setPipelineState(dxPipeline);
+        m_boundState._pipeline = m_currentState._pipeline;
+    }
+
+    m_descriptorState->updateDescriptorSets(cmdList, dxPipeline);
     m_descriptorState->invalidateDescriptorSetTable();
 
     return true;
@@ -939,17 +1017,17 @@ void D3DGraphicContext::switchRenderTargetTransitionToWrite(D3DGraphicsCommandLi
     for (u32 i = 0; i < target->getDescription()._countColorAttachments; ++i)
     {
         D3DImage* dxImage = static_cast<D3DImage*>(target->getImages()[i]);
-        //const AttachmentDescription& attachment = target->getDescription()._attachments[i];
+        u32 layer = AttachmentDescription::uncompressLayer(target->getDescription()._attachments[i]._layer);
 
-        cmdList->transition(dxImage, D3D12_RESOURCE_STATE_RENDER_TARGET);
+        cmdList->transition(dxImage, D3DImage::makeD3DImageSubresource(dxImage, layer, 0), D3D12_RESOURCE_STATE_RENDER_TARGET);
     }
 
     if (target->getDescription()._hasDepthStencilAttahment)
     {
         D3DImage* dxImage = static_cast<D3DImage*>(target->getImages().back());
-        //const AttachmentDescription& attachment = target->getDescription()._attachments.back();
+        u32 layer = AttachmentDescription::uncompressLayer(target->getDescription()._attachments.back()._layer);
 
-        cmdList->transition(dxImage, D3D12_RESOURCE_STATE_DEPTH_WRITE);
+        cmdList->transition(dxImage, D3DImage::makeD3DImageSubresource(dxImage, layer, 0), D3D12_RESOURCE_STATE_DEPTH_WRITE);
     }
 }
 
@@ -958,19 +1036,22 @@ void D3DGraphicContext::switchRenderTargetTransitionToFinal(D3DGraphicsCommandLi
     for (u32 i = 0; i < target->getDescription()._countColorAttachments; ++i)
     {
         D3DImage* dxImage = static_cast<D3DImage*>(target->getImages()[i]);
+
         const AttachmentDescription& attachment = target->getDescription()._attachments[i];
+        u32 layer = AttachmentDescription::uncompressLayer(attachment._layer);
+
         switch (attachment._finalTransition)
         {
         case TransitionOp::TransitionOp_ColorAttachment:
-            cmdList->transition(dxImage, D3D12_RESOURCE_STATE_RENDER_TARGET);
+            cmdList->transition(dxImage, D3DImage::makeD3DImageSubresource(dxImage, layer, 0), D3D12_RESOURCE_STATE_RENDER_TARGET);
             break;
 
         case TransitionOp::TransitionOp_ShaderRead:
-            cmdList->transition(dxImage, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+            cmdList->transition(dxImage, D3DImage::makeD3DImageSubresource(dxImage, layer, 0), D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
             break;
 
         case TransitionOp::TransitionOp_Present:
-            cmdList->transition(dxImage, D3D12_RESOURCE_STATE_PRESENT);
+            cmdList->transition(dxImage, D3DImage::makeD3DImageSubresource(dxImage, layer, 0), D3D12_RESOURCE_STATE_PRESENT);
             break;
 
         default:
@@ -981,15 +1062,17 @@ void D3DGraphicContext::switchRenderTargetTransitionToFinal(D3DGraphicsCommandLi
     if (target->getDescription()._hasDepthStencilAttahment)
     {
         D3DImage* dxImage = static_cast<D3DImage*>(target->getImages().back());
+
         const AttachmentDescription& attachment = target->getDescription()._attachments.back();
+        u32 layer = AttachmentDescription::uncompressLayer(attachment._layer);
 
         if (attachment._finalTransition == TransitionOp::TransitionOp_DepthStencilAttachment)
         {
-            cmdList->transition(dxImage, D3D12_RESOURCE_STATE_DEPTH_READ);
+            cmdList->transition(dxImage, D3DImage::makeD3DImageSubresource(dxImage, layer, 0), D3D12_RESOURCE_STATE_DEPTH_READ);
         }
         else if (attachment._finalTransition == TransitionOp::TransitionOp_ShaderRead)
         {
-            cmdList->transition(dxImage, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+            cmdList->transition(dxImage, D3DImage::makeD3DImageSubresource(dxImage, layer, 0), D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
         }
     }
 }

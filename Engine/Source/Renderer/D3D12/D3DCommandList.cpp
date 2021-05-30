@@ -7,7 +7,8 @@
 #include "D3DImage.h"
 #include "D3DBuffer.h"
 #include "D3DFence.h"
-#include "D3DPipelineState.h"
+#include "D3DGraphicPipelineState.h"
+#include "D3DComputePipelineState.h"
 #include "D3DGraphicContext.h"
 #include "D3DRenderTarget.h"
 
@@ -199,7 +200,19 @@ void D3DGraphicsCommandList::setPipelineState(D3DGraphicPipelineState* pipeline)
     this->setUsed(pipeline, 0);
 }
 
-void D3DGraphicsCommandList::setDescriptorTables(const std::vector<ID3D12DescriptorHeap*>& heaps, const std::map<u32, std::tuple<D3DDescriptorHeap*, u32>>& desc)
+void D3DGraphicsCommandList::setPipelineState(D3DComputePipelineState* pipeline)
+{
+    ASSERT(m_commandList, "nullptr");
+    ASSERT(m_status == Status::ReadyToRecord, "not record");
+
+    ID3D12GraphicsCommandList* cmdList = D3DGraphicsCommandList::getHandle();
+    cmdList->SetPipelineState(pipeline->getHandle());
+    cmdList->SetComputeRootSignature(pipeline->getSignatureHandle());
+
+    this->setUsed(pipeline, 0);
+}
+
+void D3DGraphicsCommandList::setDescriptorTables(const std::vector<ID3D12DescriptorHeap*>& heaps, const std::map<u32, std::tuple<D3DDescriptorHeap*, u32>>& desc, Pipeline::PipelineType type)
 {
     ASSERT(m_commandList, "nullptr");
     ASSERT(m_status == Status::ReadyToRecord, "not record");
@@ -211,7 +224,15 @@ void D3DGraphicsCommandList::setDescriptorTables(const std::vector<ID3D12Descrip
     {
         auto& [heap, index] = descHeap;
         CD3DX12_GPU_DESCRIPTOR_HANDLE dtHandle(heap->getGPUHandle(), index, heap->getIncrement());
-        cmdList->SetGraphicsRootDescriptorTable(paramIndex, dtHandle);
+        if (type == Pipeline::PipelineType::PipelineType_Graphic)
+        {
+            cmdList->SetGraphicsRootDescriptorTable(paramIndex, dtHandle);
+        }
+        else
+        {
+            ASSERT(type == Pipeline::PipelineType::PipelineType_Compute, "wrong type");
+            cmdList->SetComputeRootDescriptorTable(paramIndex, dtHandle);
+        }
     }
 }
 
@@ -258,8 +279,6 @@ void D3DGraphicsCommandList::transition(D3DImage* image, D3D12_RESOURCE_STATES s
 
     if (image->getState() != states)
     {
-        ID3D12GraphicsCommandList* cmdList = D3DGraphicsCommandList::getHandle();
-
         D3D12_RESOURCE_STATES oldState = image->setState(states);
 
         D3D12_RESOURCE_BARRIER resourceBarrierDesc = {};
@@ -270,7 +289,43 @@ void D3DGraphicsCommandList::transition(D3DImage* image, D3D12_RESOURCE_STATES s
         resourceBarrierDesc.Transition.StateAfter = states;
         resourceBarrierDesc.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
 
+        ID3D12GraphicsCommandList* cmdList = D3DGraphicsCommandList::getHandle();
         cmdList->ResourceBarrier(1, &resourceBarrierDesc);
+    }
+}
+
+void D3DGraphicsCommandList::transition(D3DImage* image, const Image::Subresource& subresource, D3D12_RESOURCE_STATES states)
+{
+    ASSERT(m_commandList, "nullptr");
+    ASSERT(m_status == Status::ReadyToRecord, "not record");
+
+    std::vector<D3D12_RESOURCE_BARRIER> resourceBarrierDescs;
+    for (u32 layer = 0; layer < subresource._layers; ++layer)
+    {
+        for (u32 mip = 0; mip < subresource._mips; ++mip)
+        {
+            if (image->getState(Image::makeImageSubresource(subresource._baseLayer + layer, 1, subresource._baseMip + mip, 1)) != states)
+            {
+                D3D12_RESOURCE_STATES oldState = image->setState(Image::makeImageSubresource(subresource._baseLayer + layer, 1, subresource._baseMip + mip, 1), states);
+                u32 index = D3D12CalcSubresource(subresource._baseLayer + layer, subresource._baseMip + mip, 0, 1, 1);
+
+                D3D12_RESOURCE_BARRIER resourceBarrierDesc = {};
+                resourceBarrierDesc.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+                resourceBarrierDesc.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
+                resourceBarrierDesc.Transition.pResource = image->getResource();
+                resourceBarrierDesc.Transition.StateBefore = oldState;
+                resourceBarrierDesc.Transition.StateAfter = states;
+                resourceBarrierDesc.Transition.Subresource = index;
+
+                resourceBarrierDescs.push_back(resourceBarrierDesc);
+            }
+        }
+    }
+
+    if (!resourceBarrierDescs.empty())
+    {
+        ID3D12GraphicsCommandList* cmdList = D3DGraphicsCommandList::getHandle();
+        cmdList->ResourceBarrier(static_cast<UINT>(resourceBarrierDescs.size()), resourceBarrierDescs.data());
     }
 }
 
@@ -316,6 +371,15 @@ void D3DGraphicsCommandList::drawIndexed(u32 indexCountPerInstance, u32 instance
     ID3D12GraphicsCommandList* cmdList = D3DGraphicsCommandList::getHandle();
 
     cmdList->DrawIndexedInstanced( indexCountPerInstance, instanceCount, startIndexLocation, baseVertexLocation, startInstanceLocation);
+}
+
+void D3DGraphicsCommandList::dispatch(const core::Dimension3D& dimension)
+{
+    ASSERT(m_commandList, "nullptr");
+    ASSERT(m_status == Status::ReadyToRecord, "not record");
+    ID3D12GraphicsCommandList* cmdList = D3DGraphicsCommandList::getHandle();
+
+    cmdList->Dispatch(dimension.width, dimension.height, dimension.depth);
 }
 
 void D3DGraphicsCommandList::setViewport(const std::vector<D3D12_VIEWPORT>& viewport)

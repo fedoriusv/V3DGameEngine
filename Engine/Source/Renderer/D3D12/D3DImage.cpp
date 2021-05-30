@@ -791,19 +791,50 @@ bool D3DImage::isColorFormat(DXGI_FORMAT format)
 
 bool D3DImage::isDepthFormatOnly(DXGI_FORMAT format)
 {
-    return format == DXGI_FORMAT_D32_FLOAT;
+    return format == DXGI_FORMAT_D32_FLOAT || format == DXGI_FORMAT_D16_UNORM;
 }
 
 bool D3DImage::isStencilFormatOnly(DXGI_FORMAT format)
 {
-    return format == DXGI_FORMAT_D16_UNORM;
+    ASSERT(false, "unsupported");
+    return false;
 }
+
+const Image::Subresource D3DImage::makeD3DImageSubresource(const D3DImage* image, u32 slice, u32 mips)
+{
+    ASSERT(image, "nullpltr");
+    Image::Subresource subresource = {};
+
+    if (slice == k_generalLayer)
+    {
+        subresource._baseLayer = 0;
+        subresource._layers = image->m_arrays;
+    }
+    else
+    {
+        subresource._baseLayer = slice;
+        subresource._layers = 1;
+    }
+
+    if (mips == k_allMipmapsLevels)
+    {
+        subresource._baseMip = 0;
+        subresource._mips = image->m_mipmaps;
+    }
+    else
+    {
+        subresource._baseMip = mips;
+        subresource._mips = 1;
+    }
+
+    return subresource;
+}
+
 
 D3DImage::D3DImage(ID3D12Device* device, Format format, u32 width, u32 height, u32 arrays, u32 samples, TextureUsageFlags flags, const std::string& name) noexcept
     : Image()
     , m_device(device)
     , m_resource(nullptr)
-    , m_state(D3D12_RESOURCE_STATE_COMMON)
     , m_flags(D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE)
 
     , m_dimension(D3D12_RESOURCE_DIMENSION_TEXTURE2D)
@@ -835,13 +866,25 @@ D3DImage::D3DImage(ID3D12Device* device, Format format, u32 width, u32 height, u
     {
         m_flags &= ~D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE;
     }
+
+    if (flags & TextureUsage::TextureUsage_Storage)
+    {
+        m_flags |= D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
+    }
+
+    if (flags & TextureUsage::TextureUsage_GenerateMipmaps)
+    {
+        ASSERT(flags & TextureUsage::TextureUsage_Attachment, "must be attachment");
+        m_mipmaps = ImageFormat::calculateMipmapCount({ m_size.width, m_size.height, m_size.depth });
+    }
+
+    m_state.resize(m_arrays * m_mipmaps + 1, D3D12_RESOURCE_STATE_COMMON);
 }
 
 D3DImage::D3DImage(ID3D12Device* device, D3D12_RESOURCE_DIMENSION dimension, Format format, const core::Dimension3D& size, u32 arrays, u32 mipmap, TextureUsageFlags flags, const std::string& name) noexcept
     : Image()
     , m_device(device)
     , m_resource(nullptr)
-    , m_state(D3D12_RESOURCE_STATE_COMMON)
     , m_flags(D3D12_RESOURCE_FLAG_NONE)
 
     , m_dimension(dimension)
@@ -871,6 +914,13 @@ D3DImage::D3DImage(ID3D12Device* device, D3D12_RESOURCE_DIMENSION dimension, For
             m_flags |= D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
         }
     }
+
+    if (flags & TextureUsage::TextureUsage_Storage)
+    {
+        m_flags |= D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
+    }
+
+    m_state.resize(m_arrays * m_mipmaps + 1, D3D12_RESOURCE_STATE_COMMON);
 }
 
 
@@ -890,7 +940,7 @@ bool D3DImage::create()
     {
         if (!D3DDeviceCaps::getInstance()->getImageFormatSupportInfo(m_originFormat, DeviceCaps::TilingType_Optimal)._supportAttachment)
         {
-            LOG_ERROR("Format %s is not supported to attachmnet", ImageFormatStringDX(m_format).c_str());
+            LOG_ERROR("Format %s is not supported to attachment", ImageFormatStringDX(m_format).c_str());
             ASSERT(false, "not support");
             return false;
         }
@@ -933,6 +983,16 @@ bool D3DImage::create()
         m_mipmaps = 1;
     }
 
+    if (m_flags & D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS)
+    {
+        if (!D3DDeviceCaps::getInstance()->getImageFormatSupportInfo(m_originFormat, DeviceCaps::TilingType_Optimal)._supportStorage)
+        {
+            LOG_ERROR("Format %s is not supported UAV", ImageFormatStringDX(m_format).c_str());
+            ASSERT(false, "not support");
+            return false;
+        }
+    }
+
     D3D12_RESOURCE_DESC textureDesc = {};
     textureDesc.Dimension = m_dimension;
     textureDesc.Alignment = 0;
@@ -948,7 +1008,7 @@ bool D3DImage::create()
 #if D3D_DEBUG
     LOG_DEBUG("CreateCommittedResource: Image [Size %u : %u : %u]; flags %u; format %s", textureDesc.Width, textureDesc.Height, textureDesc.DepthOrArraySize, textureDesc.Flags, ImageFormatStringDX(textureDesc.Format).c_str());
 #endif
-    HRESULT result = m_device->CreateCommittedResource(&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT), D3D12_HEAP_FLAG_NONE, &textureDesc, m_state, optimizedClearValue, IID_PPV_ARGS(&m_resource));
+    HRESULT result = m_device->CreateCommittedResource(&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT), D3D12_HEAP_FLAG_NONE, &textureDesc, m_state.front(), optimizedClearValue, IID_PPV_ARGS(&m_resource));
     if (FAILED(result))
     {
         LOG_ERROR("D3DImage::create CreateCommittedResource is failed. Error %s", D3DDebug::stringError(result).c_str());
@@ -978,7 +1038,7 @@ void D3DImage::createResourceView(DXGI_FORMAT shaderResourceFormat)
 {
     if (!(m_flags & D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE))
     {
-        auto viewShaderSubresource = [this](DXGI_FORMAT shaderResourceFormat, u32 slice, u32 arrays) -> D3D12_SHADER_RESOURCE_VIEW_DESC
+        auto viewShaderSubresource = [this](DXGI_FORMAT shaderResourceFormat, u32 baseMip, u32 mips, u32 firstSlice, u32 sliceArray) -> D3D12_SHADER_RESOURCE_VIEW_DESC
         {
             D3D12_SHADER_RESOURCE_VIEW_DESC view = {};
 
@@ -993,8 +1053,8 @@ void D3DImage::createResourceView(DXGI_FORMAT shaderResourceFormat)
                 {
                     view.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
 
-                    view.Texture2D.MostDetailedMip = 0;
-                    view.Texture2D.MipLevels = m_mipmaps;
+                    view.Texture2D.MostDetailedMip = baseMip;
+                    view.Texture2D.MipLevels = mips;
                     view.Texture2D.PlaneSlice = 0;
                     view.Texture2D.ResourceMinLODClamp = 0.0f;
                 }
@@ -1004,18 +1064,18 @@ void D3DImage::createResourceView(DXGI_FORMAT shaderResourceFormat)
                     {
                         view.ViewDimension = D3D12_SRV_DIMENSION_TEXTURECUBE;
 
-                        view.TextureCube.MostDetailedMip = 0;
-                        view.TextureCube.MipLevels = m_mipmaps;
+                        view.TextureCube.MostDetailedMip = baseMip;
+                        view.TextureCube.MipLevels = mips;
                         view.TextureCube.ResourceMinLODClamp = 0.0f;
                     }
                     else
                     {
                         view.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2DARRAY;
 
-                        view.Texture2DArray.MostDetailedMip = 0;
-                        view.Texture2DArray.MipLevels = m_mipmaps;
-                        view.Texture2DArray.FirstArraySlice = slice;
-                        view.Texture2DArray.ArraySize = arrays;
+                        view.Texture2DArray.MostDetailedMip = baseMip;
+                        view.Texture2DArray.MipLevels = mips;
+                        view.Texture2DArray.FirstArraySlice = firstSlice;
+                        view.Texture2DArray.ArraySize = sliceArray;
                         view.Texture2DArray.PlaneSlice = 0;
                         view.Texture2DArray.ResourceMinLODClamp = 0.0f;
                     }
@@ -1036,25 +1096,91 @@ void D3DImage::createResourceView(DXGI_FORMAT shaderResourceFormat)
             return view;
         };
 
-        std::vector<D3D12_SHADER_RESOURCE_VIEW_DESC>& views = std::get<0>(m_views);
-        views.resize(m_arrays + 1);
+        auto& views = std::get<0>(m_views);
+        if (m_arrays > 1)
+        {
+            D3D12_SHADER_RESOURCE_VIEW_DESC view = viewShaderSubresource(shaderResourceFormat, 0, m_mipmaps, 0, m_arrays);
+            [[maybe_unused]] auto inserted = views.emplace(Image::makeImageSubresource(0, m_arrays, 0, m_mipmaps), view);
+            ASSERT(inserted.second, "already inserted");
+        }
 
-        //base view
-        u32 index = D3D12CalcSubresource(0, 0, 0, m_mipmaps, m_arrays);
-        views[index] = viewShaderSubresource(shaderResourceFormat, 0, m_arrays);
-
-        //slice view
         for (u32 slice = 0; slice < m_arrays; ++slice)
         {
-            u32 index = D3D12CalcSubresource(0, slice, 0, m_mipmaps, 1) + 1;
-            ASSERT(views.size() >= index, "range out");
-            views[index] = viewShaderSubresource(shaderResourceFormat, slice, 1);
+            if (m_mipmaps > 1)
+            {
+                D3D12_SHADER_RESOURCE_VIEW_DESC view = viewShaderSubresource(shaderResourceFormat, 0, m_mipmaps, slice, 1);
+                [[maybe_unused]] auto inserted = views.emplace(Image::makeImageSubresource(slice, 1, 0, m_mipmaps), view);
+                ASSERT(inserted.second, "already inserted");
+            }
+
+            for (u32 mip = 0; mip < m_mipmaps; ++mip)
+            {
+                D3D12_SHADER_RESOURCE_VIEW_DESC view = viewShaderSubresource(shaderResourceFormat, mip, 1, slice, 1);
+                [[maybe_unused]] auto inserted = views.emplace(Image::makeImageSubresource(slice, 1, mip, 1), view);
+                ASSERT(inserted.second, "already inserted");
+            }
+        }
+    }
+
+    if (m_flags & D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS)
+    {
+        auto viewUAVSubresource = [this](DXGI_FORMAT shaderResourceFormat, u32 mip, u32 firstSlice, u32 sliceArrays) -> D3D12_UNORDERED_ACCESS_VIEW_DESC
+        {
+            D3D12_UNORDERED_ACCESS_VIEW_DESC view = {};
+
+            view.Format = shaderResourceFormat;
+
+            switch (m_dimension)
+            {
+            case D3D12_RESOURCE_DIMENSION_TEXTURE2D:
+            {
+                if (m_arrays == 1U)
+                {
+                    view.ViewDimension = D3D12_UAV_DIMENSION_TEXTURE2D;
+
+                    view.Texture2D.MipSlice = mip;
+                    view.Texture2D.PlaneSlice = 0;
+                }
+                else if (m_arrays > 1U)
+                {
+                    view.ViewDimension = D3D12_UAV_DIMENSION_TEXTURE2DARRAY;
+
+                    view.Texture2DArray.FirstArraySlice = firstSlice;
+                    view.Texture2DArray.ArraySize = sliceArrays;
+                    view.Texture2DArray.MipSlice = mip;
+                    view.Texture2DArray.PlaneSlice = 0;
+                }
+                else
+                {
+                    ASSERT(false, "wrong");
+                }
+                break;
+            }
+
+            case D3D12_RESOURCE_DIMENSION_TEXTURE1D:
+            case D3D12_RESOURCE_DIMENSION_TEXTURE3D:
+            default:
+                ASSERT(false, "not impl");
+            }
+
+            return view;
+        };
+
+        auto& views = std::get<1>(m_views);
+        for (u32 slice = 0; slice < m_arrays; ++slice)
+        {
+            for (u32 mip = 0; mip < m_mipmaps; ++mip)
+            {
+                D3D12_UNORDERED_ACCESS_VIEW_DESC view = viewUAVSubresource(shaderResourceFormat, mip, slice, 1);
+                [[maybe_unused]] auto inserted = views.emplace(Image::makeImageSubresource(slice, 1, mip, 1), view);
+                ASSERT(inserted.second, "already inserted");
+            }
         }
     }
 
     if (m_flags & D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET)
     {
-        auto viewRenderTargetSubresource = [this](u32 slice, u32 arrays)-> D3D12_RENDER_TARGET_VIEW_DESC
+        auto viewRenderTargetSubresource = [this](u32 mip, u32 firstSlice, u32 sliceArrays)-> D3D12_RENDER_TARGET_VIEW_DESC
         {
             D3D12_RENDER_TARGET_VIEW_DESC view = {};
 
@@ -1065,7 +1191,7 @@ void D3DImage::createResourceView(DXGI_FORMAT shaderResourceFormat)
                 if (m_samples == 1U)
                 {
                     view.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2D;
-                    view.Texture2D.MipSlice = 0;
+                    view.Texture2D.MipSlice = mip;
                     view.Texture2D.PlaneSlice = 0;
                 }
                 else
@@ -1079,41 +1205,34 @@ void D3DImage::createResourceView(DXGI_FORMAT shaderResourceFormat)
                 if (m_samples == 1U)
                 {
                     view.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2DARRAY;
-                    view.Texture2DArray.MipSlice = 0;
-                    view.Texture2DArray.FirstArraySlice = slice;
-                    view.Texture2DArray.ArraySize = arrays;
+                    view.Texture2DArray.MipSlice = mip;
+                    view.Texture2DArray.FirstArraySlice = firstSlice;
+                    view.Texture2DArray.ArraySize = sliceArrays;
                     view.Texture2DArray.PlaneSlice = 0;
                 }
                 else
                 {
                     view.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2DMSARRAY;
-                    view.Texture2DMSArray.FirstArraySlice = slice;
-                    view.Texture2DMSArray.ArraySize = arrays;
+                    view.Texture2DMSArray.FirstArraySlice = firstSlice;
+                    view.Texture2DMSArray.ArraySize = sliceArrays;
                 }
             }
 
             return view;
         };
 
-        std::vector<D3D12_RENDER_TARGET_VIEW_DESC>& views = std::get<1>(m_views);
-        views.resize(m_arrays + 1);
-        
-        //base view
-        u32 index = D3D12CalcSubresource(0, 0, 0, m_mipmaps, m_arrays);
-        views[index] = viewRenderTargetSubresource(0, m_arrays);
-
-        //slice view
+        auto& views = std::get<2>(m_views);
         for (u32 slice = 0; slice < m_arrays; ++slice)
         {
-            u32 index = D3D12CalcSubresource(0, slice, 0, m_mipmaps, 1) + 1;
-            ASSERT(views.size() >= index, "range out");
-            views[index] = viewRenderTargetSubresource(slice, 1);
+            D3D12_RENDER_TARGET_VIEW_DESC view = viewRenderTargetSubresource(0, slice, 1);
+            [[maybe_unused]] auto inserted = views.emplace(Image::makeImageSubresource(slice, 1, 0, 1), view);
+            ASSERT(inserted.second, "already inserted");
         }
     }
 
     if (m_flags & D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL)
     {
-        auto viewDepthStencilSubresource = [this](u32 slice, u32 arrays)-> D3D12_DEPTH_STENCIL_VIEW_DESC
+        auto viewDepthStencilSubresource = [this](u32 mip, u32 firstSlice, u32 sliceArrays)-> D3D12_DEPTH_STENCIL_VIEW_DESC
         {
             D3D12_DEPTH_STENCIL_VIEW_DESC view = {};
 
@@ -1126,7 +1245,7 @@ void D3DImage::createResourceView(DXGI_FORMAT shaderResourceFormat)
                 if (m_samples == 1U)
                 {
                     view.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
-                    view.Texture2D.MipSlice = 0;
+                    view.Texture2D.MipSlice = mip;
                 }
                 else
                 {
@@ -1139,34 +1258,27 @@ void D3DImage::createResourceView(DXGI_FORMAT shaderResourceFormat)
                 if (m_samples == 1U)
                 {
                     view.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2DARRAY;
-                    view.Texture2DArray.MipSlice = 0;
-                    view.Texture2DArray.FirstArraySlice = slice;
-                    view.Texture2DArray.ArraySize = arrays;
+                    view.Texture2DArray.MipSlice = mip;
+                    view.Texture2DArray.FirstArraySlice = firstSlice;
+                    view.Texture2DArray.ArraySize = sliceArrays;
                 }
                 else
                 {
                     view.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2DMSARRAY;
-                    view.Texture2DMSArray.FirstArraySlice = slice;
-                    view.Texture2DMSArray.ArraySize = arrays;
+                    view.Texture2DMSArray.FirstArraySlice = firstSlice;
+                    view.Texture2DMSArray.ArraySize = sliceArrays;
                 }
             }
 
             return view;
         };
 
-        std::vector<D3D12_DEPTH_STENCIL_VIEW_DESC>& views = std::get<2>(m_views);
-        views.resize(m_arrays + 1);
-
-        //base view
-        u32 index = D3D12CalcSubresource(0, 0, 0, m_mipmaps, m_arrays);
-        views[index] = viewDepthStencilSubresource(0, m_arrays);
-
-        //slice view
+        auto& views = std::get<3>(m_views);
         for (u32 slice = 0; slice < m_arrays; ++slice)
         {
-            u32 index = D3D12CalcSubresource(0, slice, 0, m_mipmaps, 1) + 1;
-            ASSERT(views.size() >= index, "range out");
-            views[index] = viewDepthStencilSubresource(slice, 1);
+            D3D12_DEPTH_STENCIL_VIEW_DESC view = viewDepthStencilSubresource(0, slice, 1);
+            [[maybe_unused]] auto inserted = views.emplace(Image::makeImageSubresource(slice, 1, 0, 1), view);
+            ASSERT(inserted.second, "already inserted");
         }
     }
 }
@@ -1227,7 +1339,7 @@ void D3DImage::clear(Context* context, const core::Vector4D& color)
         static_cast<LONG>(m_size.height)
     };
 
-    D3D12_RESOURCE_STATES oldState = m_state;
+    D3D12_RESOURCE_STATES oldState = m_state.front();
     commandlist->transition(this, D3D12_RESOURCE_STATE_RENDER_TARGET);
 
     if (m_swapchain)
@@ -1256,7 +1368,7 @@ void D3DImage::clear(Context* context, f32 depth, u32 stencil)
         static_cast<LONG>(m_size.height)
     };
 
-    D3D12_RESOURCE_STATES oldState = m_state;
+    D3D12_RESOURCE_STATES oldState = m_state.front();
     commandlist->transition(this, D3D12_RESOURCE_STATE_RENDER_TARGET);
 
     if (m_swapchain)
@@ -1352,7 +1464,7 @@ bool D3DImage::internalUpdate(Context* context, const core::Dimension3D& offsets
         UINT64 dataOffset = 0;
         for (u32 mip = 0; mip < mips; ++mip)
         {
-            UINT index = D3D12CalcSubresource(mip, 0, slice, mips, slices);
+            UINT index = D3D12CalcSubresource(mip, slice, 0, mips, slices);
 
             const u32 width = std::max(m_size.width >> mip, 1U);
 
@@ -1425,12 +1537,32 @@ u32 D3DImage::getCountSamples() const
 
 D3D12_RESOURCE_STATES D3DImage::getState() const
 {
-    return m_state;
+    return m_state.front();
 }
 
 D3D12_RESOURCE_STATES D3DImage::setState(D3D12_RESOURCE_STATES state)
 {
-    D3D12_RESOURCE_STATES oldState = std::exchange(m_state, state);
+    D3D12_RESOURCE_STATES oldState = std::exchange(m_state.front(), state);
+    std::fill(m_state.begin(), m_state.end(), state);
+
+    return oldState;
+}
+
+D3D12_RESOURCE_STATES D3DImage::getState(const Image::Subresource& subresource) const
+{
+    ASSERT(subresource._mips == 1 && subresource._layers == 1, "must be 1");
+    UINT index = D3D12CalcSubresource(subresource._baseMip, subresource._baseLayer, 0, subresource._mips, subresource._layers) + 1;
+    ASSERT(index < m_state.size(), "range out");
+    return m_state[index];
+}
+
+D3D12_RESOURCE_STATES D3DImage::setState(const Image::Subresource& subresource, D3D12_RESOURCE_STATES state)
+{
+    ASSERT(subresource._mips == 1 && subresource._layers == 1, "must be 1");
+    UINT index = D3D12CalcSubresource(subresource._baseMip, subresource._baseLayer, 0, subresource._mips, subresource._layers) + 1;
+    D3D12_RESOURCE_STATES oldState = std::exchange(m_state[index], state);
+    m_state.front() = state;
+
     return oldState;
 }
 
@@ -1438,6 +1570,29 @@ ID3D12Resource* D3DImage::getResource() const
 {
     ASSERT(m_resource, "nullptr");
     return m_resource;
+}
+
+D3DImage::ViewKey::ViewKey() noexcept
+    : _desc({})
+    , _hash(0)
+{
+}
+
+D3DImage::ViewKey::ViewKey(const Image::Subresource& desc) noexcept
+    : _desc(desc)
+    , _hash(crc32c::Crc32c(reinterpret_cast<const char*>(&desc), sizeof(Image::Subresource)))
+{
+}
+
+u32 D3DImage::ViewKey::Hash::operator()(const ViewKey& desc) const
+{
+    ASSERT(desc._hash != 0, "empty hash");
+    return desc._hash;
+}
+
+bool D3DImage::ViewKey::Compare::operator()(const ViewKey& op1, const ViewKey& op2) const
+{
+    return memcmp(&op1._desc, &op2._desc, sizeof(Image::Subresource)) == 0;
 }
 
 } //namespace dx3d

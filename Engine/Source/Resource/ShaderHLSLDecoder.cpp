@@ -510,42 +510,42 @@ bool reflect(ID3DBlob* shader, stream::Stream* stream, u32 version)
         stream->write<u32>(sampledImagesCount);
     }
 
+    bool ms = false;
+    auto convertDXTypeToTextureTarget = [&ms](const D3D_SRV_DIMENSION& dim) -> renderer::TextureTarget
     {
-        bool ms = false;
-        auto convertDXTypeToTextureTarget = [&ms](const D3D_SRV_DIMENSION& dim) ->renderer::TextureTarget
+        switch (dim)
         {
-            switch (dim)
-            {
-            case D3D_SRV_DIMENSION_TEXTURE1D:
-                return renderer::TextureTarget::Texture1D;
+        case D3D_SRV_DIMENSION_TEXTURE1D:
+            return renderer::TextureTarget::Texture1D;
 
-            case D3D_SRV_DIMENSION_TEXTURE1DARRAY:
-                return renderer::TextureTarget::Texture1DArray;
+        case D3D_SRV_DIMENSION_TEXTURE1DARRAY:
+            return renderer::TextureTarget::Texture1DArray;
 
-            case D3D_SRV_DIMENSION_TEXTURE2D:
-            case D3D_SRV_DIMENSION_TEXTURE2DMS:
-                ms = (dim == D3D_SRV_DIMENSION_TEXTURE2DMS) ? true : false;
-                return renderer::TextureTarget::Texture2D;
+        case D3D_SRV_DIMENSION_TEXTURE2D:
+        case D3D_SRV_DIMENSION_TEXTURE2DMS:
+            ms = (dim == D3D_SRV_DIMENSION_TEXTURE2DMS) ? true : false;
+            return renderer::TextureTarget::Texture2D;
 
-            case D3D_SRV_DIMENSION_TEXTURE2DARRAY:
-            case D3D_SRV_DIMENSION_TEXTURE2DMSARRAY:
-                ms = (dim == D3D_SRV_DIMENSION_TEXTURE2DMSARRAY) ? true : false;
-                return renderer::TextureTarget::Texture2DArray;
+        case D3D_SRV_DIMENSION_TEXTURE2DARRAY:
+        case D3D_SRV_DIMENSION_TEXTURE2DMSARRAY:
+            ms = (dim == D3D_SRV_DIMENSION_TEXTURE2DMSARRAY) ? true : false;
+            return renderer::TextureTarget::Texture2DArray;
 
-            case D3D_SRV_DIMENSION_TEXTURE3D:
-                return renderer::TextureTarget::Texture3D;
+        case D3D_SRV_DIMENSION_TEXTURE3D:
+            return renderer::TextureTarget::Texture3D;
 
-            case D3D_SRV_DIMENSION_TEXTURECUBE:
-                return renderer::TextureTarget::TextureCubeMap;
+        case D3D_SRV_DIMENSION_TEXTURECUBE:
+            return renderer::TextureTarget::TextureCubeMap;
 
-            case D3D_SRV_DIMENSION_TEXTURECUBEARRAY:
-            case D3D_SRV_DIMENSION_UNKNOWN:
-            default:
-                ASSERT(false, "not found");
-                return renderer::TextureTarget::Texture2D;
-            }
-        };
+        case D3D_SRV_DIMENSION_TEXTURECUBEARRAY:
+        case D3D_SRV_DIMENSION_UNKNOWN:
+        default:
+            ASSERT(false, "not found");
+            return renderer::TextureTarget::Texture2D;
+        }
+    };
 
+    {
         const std::vector<D3D11_SHADER_INPUT_BIND_DESC>& boundTexturesDescs = bindDescs[D3D_SIT_TEXTURE];
         u32 imagesCount = static_cast<u32>(boundTexturesDescs.size());
         stream->write<u32>(imagesCount);
@@ -608,14 +608,165 @@ bool reflect(ID3DBlob* shader, stream::Stream* stream, u32 version)
         }
     }
 
+    auto convertResourceTypeToFormat = [](D3D_RESOURCE_RETURN_TYPE type, u32 flags) -> renderer::Format
     {
-        u32 countStorageImage = static_cast<u32>(0);
-        stream->write<u32>(countStorageImage);
-    }
+        u32 countComponents = 0;
+        if (flags & D3D_SIF_TEXTURE_COMPONENTS)
+        {
+            countComponents = 4;
+        }
+        else if (flags & D3D_SIF_TEXTURE_COMPONENT_1)
+        {
+            countComponents = 3;
+        }
+        else if (flags & D3D_SIF_TEXTURE_COMPONENT_0)
+        {
+            countComponents = 2;
+        }
+
+        switch (type)
+        {
+        case D3D_RETURN_TYPE_UNORM:
+            if (countComponents == 4)
+            {
+                return renderer::Format::Format_R8G8B8A8_UNorm;
+            }
+            else if (countComponents == 3)
+            {
+                return renderer::Format::Format_R8G8B8_UNorm;
+            }
+            else if (countComponents == 2)
+            {
+                return renderer::Format::Format_R8G8_UNorm;
+            }
+            break;
+
+        case D3D_RETURN_TYPE_SNORM:
+            if (countComponents == 4)
+            {
+                return renderer::Format::Format_R8G8B8A8_SNorm;
+            }
+            else if (countComponents == 3)
+            {
+                return renderer::Format::Format_R8G8B8_SNorm;
+            }
+            else if (countComponents == 2)
+            {
+                return renderer::Format::Format_R8G8_SNorm;
+            }
+            break;
+
+        case D3D_RETURN_TYPE_SINT:
+            if (countComponents == 4)
+            {
+                return renderer::Format::Format_R32G32B32A32_SInt;
+            }
+            else if (countComponents == 3)
+            {
+                return renderer::Format::Format_R32G32B32_SInt;
+            }
+            else if (countComponents == 2)
+            {
+                return renderer::Format::Format_R32G32_SInt;
+            }
+            break;
+
+        case D3D_RETURN_TYPE_UINT:
+            if (countComponents == 4)
+            {
+                return renderer::Format::Format_R32G32B32A32_UInt;
+            }
+            else if (countComponents == 3)
+            {
+                return renderer::Format::Format_R32G32B32_UInt;
+            }
+            else if (countComponents == 2)
+            {
+                return renderer::Format::Format_R32G32_UInt;
+            }
+            break;
+
+        case D3D_RETURN_TYPE_FLOAT:
+            if (countComponents == 4)
+            {
+                return renderer::Format::Format_R32G32B32A32_SFloat;
+            }
+            else if (countComponents == 3)
+            {
+                return renderer::Format::Format_R32G32B32_SFloat;
+            }
+            else if (countComponents == 2)
+            {
+                return renderer::Format::Format_R32G32_SFloat;
+            }
+            break;
+
+        case D3D_RETURN_TYPE_MIXED:
+        case D3D_RETURN_TYPE_DOUBLE:
+        case D3D_RETURN_TYPE_CONTINUED:
+        default:
+            ASSERT(false, "not defined");
+        }
+
+        ASSERT(false, "unknown");
+        return renderer::Format::Format_Undefined;
+    };
 
     {
-        u32 countStorageBuffers = static_cast<u32>(0);
-        stream->write<u32>(countStorageBuffers);
+        const std::vector<D3D11_SHADER_INPUT_BIND_DESC>& boundUAVDescs = bindDescs[D3D_SIT_UAV_RWTYPED];
+        u32 countStorageImage = 0;
+        u32 countStorageBuffers = 0;
+
+        u32 currentSpace = 0;
+        std::vector<std::vector<u32>> UAVTable;
+        UAVTable.resize(renderer::k_maxDescriptorSetIndex);
+
+        for (u32 i = 0; i < boundUAVDescs.size(); ++i)
+        {
+            boundUAVDescs[i].Dimension == D3D_SRV_DIMENSION_BUFFER ? ++countStorageBuffers : ++countStorageImage;
+        }
+
+        {
+            stream->write<u32>(countStorageImage);
+            for (u32 UAVTextureId = 0; UAVTextureId < boundUAVDescs.size(); ++UAVTextureId)
+            {
+                if (boundUAVDescs[UAVTextureId].Dimension == D3D_SRV_DIMENSION_BUFFER)
+                {
+                    continue;
+                }
+
+                u32 currentBinding = boundUAVDescs[UAVTextureId].BindPoint;
+                auto found = std::find(UAVTable[currentSpace].begin(), UAVTable[currentSpace].end(), currentBinding);
+                if (found != UAVTable[currentSpace].end() || (!UAVTable[currentSpace].empty() && currentBinding <= UAVTable[currentSpace].back()))
+                {
+                    ++currentSpace;
+                }
+
+                renderer::Shader::StorageImage UAVTexture;
+                UAVTexture._set = currentSpace;
+                UAVTexture._binding = currentBinding;
+
+                UAVTexture._target = convertDXTypeToTextureTarget(boundUAVDescs[UAVTextureId].Dimension);
+                UAVTexture._format = convertResourceTypeToFormat(boundUAVDescs[UAVTextureId].ReturnType, boundUAVDescs[UAVTextureId].uFlags);
+                UAVTexture._array = boundUAVDescs[UAVTextureId].BindCount;
+                UAVTexture._readonly = false;
+#if USE_STRING_ID_SHADER
+                UAVTexture._name = std::string(boundUAVDescs[UAVTextureId].Name);
+#endif
+                UAVTexture >> stream;
+            }
+        }
+
+        {
+            stream->write<u32>(countStorageBuffers);
+            for (u32 UAVBufferId = 0; UAVBufferId < boundUAVDescs.size(); ++UAVBufferId)
+            {
+                if (boundUAVDescs[UAVBufferId].Dimension == D3D_SRV_DIMENSION_BUFFER)
+                {
+                    ASSERT(false, "not impl");
+                }
+            }
+        }
     }
 
     {
