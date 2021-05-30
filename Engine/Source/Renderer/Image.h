@@ -23,13 +23,18 @@ namespace renderer
 
         struct Subresource
         {
+            bool operator==(const Subresource& sub)
+            {
+                return _baseLayer == sub._baseLayer && _layers == sub._layers && _baseMip == sub._baseMip && _mips == sub._mips;
+            }
+
             u32 _baseLayer;
             u32 _layers;
             u32 _baseMip;
             u32 _mips;
         };
 
-        static Subresource makeImageSubresource(u32 baseLayer, u32 layers, u32 baseMip, u32 mips)
+        static const Subresource makeImageSubresource(u32 baseLayer, u32 layers, u32 baseMip, u32 mips)
         {
             ASSERT(baseLayer != ~0 && baseMip != ~0 && layers != ~0 && mips != ~0, "must be real");
             return { baseLayer, layers, baseMip, mips };
