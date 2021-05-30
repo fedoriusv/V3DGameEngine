@@ -1,5 +1,5 @@
-RWTexture2D<float4> inputImage : register(t0);
-RWTexture2D<float4> resultImage : register(t1);
+RWTexture2D<float4> inputImage : register(u0);
+RWTexture2D<float4> resultImage : register(u1);
 
 float3 image2DInterpolation(uint2 texCoord)
 {

@@ -154,7 +154,7 @@ public:
                 renderer::RenderTargetLoadOp::LoadOp_Clear, renderer::RenderTargetStoreOp::StoreOp_Store, core::Vector4D(0.0f)
             },
             {
-                renderer::TransitionOp::TransitionOp_Undefined, renderer::TransitionOp::TransitionOp_ShaderRead
+                renderer::TransitionOp::TransitionOp_ShaderRead, renderer::TransitionOp::TransitionOp_ShaderRead
             });
 
 #if defined(PLATFORM_ANDROID)
@@ -173,6 +173,10 @@ public:
             {
                 renderer::TransitionOp::TransitionOp_Undefined, renderer::TransitionOp::TransitionOp_DepthStencilAttachment
             });
+
+        commandList->transition(m_ColorAttachment, renderer::TransitionOp::TransitionOp_ShaderRead);
+        commandList->submitCommands(true);
+        commandList->flushCommands();
     }
     
     void Render(v3d::renderer::CommandList* commandList, DrawPolicy* draw) override
@@ -258,6 +262,7 @@ public:
                 height = std::max(m_InputTexture->getDimension().height >> mip, 1U);
             }
 
+            //commandList->submitCommands(true);
             commandList->transition(m_InputTexture, renderer::TransitionOp::TransitionOp_ShaderRead);
             m_OuputTexture = m_InputTexture;
         }
@@ -271,7 +276,7 @@ public:
 public:
 
     //Compute
-    bool m_ComputeDownsampling = false;
+    bool m_ComputeDownsampling = true;
     v3d::renderer::ComputePipelineState* m_DownsamplePipeline;
     v3d::renderer::ShaderProgram* m_DownsampleProgram;
 
@@ -442,6 +447,8 @@ void SceneRenderer::Render(f32 dt)
     //m_CommandList.flushCommands();
 #endif
     m_OffcreenPass->Render(&m_CommandList);
+    //m_CommandList.submitCommands(true);
+    //m_CommandList.flushCommands();
 
     m_CommandList.endFrame();
     m_CommandList.presentFrame();
