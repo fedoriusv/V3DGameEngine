@@ -224,6 +224,11 @@ public:
 
     void Init(v3d::renderer::CommandList* commandList) override
     {
+        if (!commandList->getContext()->getDeviceCaps()->supportBlitImage)
+        {
+            m_ComputeDownsampling = true;
+        }
+
         //Compute
         if (m_ComputeDownsampling)
         {
@@ -276,7 +281,7 @@ public:
 public:
 
     //Compute
-    bool m_ComputeDownsampling = true;
+    bool m_ComputeDownsampling = false;
     v3d::renderer::ComputePipelineState* m_DownsamplePipeline;
     v3d::renderer::ShaderProgram* m_DownsampleProgram;
 
