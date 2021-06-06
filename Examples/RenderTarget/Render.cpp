@@ -63,8 +63,8 @@ public:
 
         std::vector<const renderer::Shader*> shaders = resource::ResourceLoaderManager::getInstance()->loadHLSLShader<renderer::Shader, resource::ShaderSourceFileLoader>(commandList->getContext(), "texture.hlsl",
             {
-                {"main_VS", renderer::Vertex },
-                {"main_FS", renderer::Fragment }
+                {"main_VS", renderer::ShaderType::Vertex },
+                {"main_FS", renderer::ShaderType::Fragment }
             }, {}, resource::ShaderSource_UseDXCompiler);
 
         v3d::scene::Model* cube = resource::ResourceLoaderManager::getInstance()->load<v3d::scene::Model, resource::ModelFileLoader>("cube.dae");
@@ -323,8 +323,8 @@ public:
         const u32 k_mipLevel = 3;
         std::vector<const renderer::Shader*> shaders = resource::ResourceLoaderManager::getInstance()->loadHLSLShader<renderer::Shader, resource::ShaderSourceFileLoader>(commandList->getContext(), "offscreen.hlsl",
             {
-                {"main_VS", renderer::Vertex },
-                {"main_FS", renderer::Fragment }
+                {"main_VS", renderer::ShaderType::Vertex },
+                {"main_FS", renderer::ShaderType::Fragment }
 
             },
             {

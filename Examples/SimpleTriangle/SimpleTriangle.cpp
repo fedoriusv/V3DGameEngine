@@ -72,9 +72,9 @@ void SimpleTriangle::init(v3d::renderer::CommandList* commandList, const core::D
         }");
         const stream::Stream* vertexStream = stream::StreamManager::createMemoryStream(vertexSource);
 
-        renderer::ShaderHeader vertexHeader(renderer::ShaderType::ShaderType_Vertex);
-        vertexHeader._contentType = renderer::ShaderHeader::ShaderResource::ShaderResource_Source;
-        vertexHeader._shaderModel = renderer::ShaderHeader::ShaderModel::ShaderModel_HLSL_5_1;
+        renderer::ShaderHeader vertexHeader(renderer::ShaderType::Vertex);
+        vertexHeader._contentType = renderer::ShaderHeader::ShaderResource::Source;
+        vertexHeader._shaderModel = renderer::ShaderHeader::ShaderModel::HLSL_5_1;
 
         vertShader = resource::ResourceLoaderManager::getInstance()->composeShader<renderer::Shader, resource::ShaderSourceStreamLoader>(m_CommandList->getContext(), "vertex", &vertexHeader, vertexStream);
         delete vertexStream;
@@ -95,9 +95,9 @@ void SimpleTriangle::init(v3d::renderer::CommandList* commandList, const core::D
         }");
         const stream::Stream* fragmentStream = stream::StreamManager::createMemoryStream(fragmentSource);
 
-        renderer::ShaderHeader fragmentHeader(renderer::ShaderType::ShaderType_Fragment);
-        fragmentHeader._contentType = renderer::ShaderHeader::ShaderResource::ShaderResource_Source;
-        fragmentHeader._shaderModel = renderer::ShaderHeader::ShaderModel::ShaderModel_HLSL_5_1;
+        renderer::ShaderHeader fragmentHeader(renderer::ShaderType::Fragment);
+        fragmentHeader._contentType = renderer::ShaderHeader::ShaderResource::Source;
+        fragmentHeader._shaderModel = renderer::ShaderHeader::ShaderModel::HLSL_5_1;
 
         fragShader = resource::ResourceLoaderManager::getInstance()->composeShader<renderer::Shader, resource::ShaderSourceStreamLoader>(m_CommandList->getContext(), "fragment", &fragmentHeader, fragmentStream);
         delete fragmentStream;
@@ -173,7 +173,7 @@ void SimpleTriangle::render()
     ubo1.modelMatrix.setTranslation(core::Vector3D(-1, 0, 0));
     ubo1.viewMatrix = m_Camera->getCamera().getViewMatrix();
 
-    m_Program->bindUniformsBuffer<renderer::ShaderType::ShaderType_Vertex>({ "buffer" }, 0, (u32)sizeof(UBO), &ubo1);
+    m_Program->bindUniformsBuffer<renderer::ShaderType::Vertex>({ "buffer" }, 0, (u32)sizeof(UBO), &ubo1);
     m_CommandList->draw(renderer::StreamBufferDescription(m_Geometry, 0), 0, 3, 1);
 
     UBO ubo2;
@@ -181,7 +181,7 @@ void SimpleTriangle::render()
     ubo2.modelMatrix.setTranslation(core::Vector3D(1, 0, 0));
     ubo2.viewMatrix = m_Camera->getCamera().getViewMatrix();
 
-    m_Program->bindUniformsBuffer<renderer::ShaderType::ShaderType_Vertex>({ "buffer" }, 0, (u32)sizeof(UBO), &ubo2);
+    m_Program->bindUniformsBuffer<renderer::ShaderType::Vertex>({ "buffer" }, 0, (u32)sizeof(UBO), &ubo2);
     m_CommandList->draw(renderer::StreamBufferDescription(m_Geometry, 0), 0, 3, 1);
 }
 
