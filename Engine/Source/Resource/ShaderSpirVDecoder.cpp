@@ -52,7 +52,7 @@ Resource* ShaderSpirVDecoder::decode(const stream::Stream* stream, const std::st
     {
         stream->seekBeg(0);
 
-        if (m_header._contentType == renderer::ShaderHeader::ShaderResource::ShaderResource_Source)
+        if (m_header._contentType == renderer::ShaderHeader::ShaderResource::Source)
         {
             std::string source;
             source.resize(stream->size());
@@ -84,7 +84,7 @@ Resource* ShaderSpirVDecoder::decode(const stream::Stream* stream, const std::st
 #endif
             switch (m_header._shaderModel)
             {
-            case renderer::ShaderHeader::ShaderModel::ShaderModel_GLSL_450:
+            case renderer::ShaderHeader::ShaderModel::GLSL_450:
                 options.SetSourceLanguage(shaderc_source_language_glsl);
 #if (VULKAN_CURRENT_VERSION == VULKAN_VERSION_1_0)
                 options.SetTargetEnvironment(shaderc_target_env_vulkan, shaderc_env_version_vulkan_1_0);
@@ -98,8 +98,8 @@ Resource* ShaderSpirVDecoder::decode(const stream::Stream* stream, const std::st
 #endif
                 break;
 
-            case renderer::ShaderHeader::ShaderModel::ShaderModel_HLSL_5_0:
-            case renderer::ShaderHeader::ShaderModel::ShaderModel_HLSL_5_1:
+            case renderer::ShaderHeader::ShaderModel::HLSL_5_0:
+            case renderer::ShaderHeader::ShaderModel::HLSL_5_1:
                 options.SetSourceLanguage(shaderc_source_language_hlsl);
 #if (VULKAN_CURRENT_VERSION == VULKAN_VERSION_1_0)
                 options.SetTargetEnvironment(shaderc_target_env_vulkan, shaderc_env_version_vulkan_1_0);
@@ -321,7 +321,7 @@ Resource* ShaderSpirVDecoder::decode(const stream::Stream* stream, const std::st
 
             renderer::ShaderHeader* resourceHeader = new renderer::ShaderHeader(m_header);
             resourceHeader->_type = type;
-            resourceHeader->_shaderModel = renderer::ShaderHeader::ShaderModel::ShaderModel_GLSL_450;
+            resourceHeader->_shaderModel = renderer::ShaderHeader::ShaderModel::GLSL_450;
 #if DEBUG
             resourceHeader->_debugName = name;
 #endif
@@ -389,7 +389,7 @@ Resource* ShaderSpirVDecoder::decode(const stream::Stream* stream, const std::st
 #endif
             renderer::ShaderHeader* resourceHeader = new renderer::ShaderHeader(m_header);
             resourceHeader->_type = type;
-            resourceHeader->_shaderModel = renderer::ShaderHeader::ShaderModel::ShaderModel_GLSL_450;
+            resourceHeader->_shaderModel = renderer::ShaderHeader::ShaderModel::GLSL_450;
 #if DEBUG
             resourceHeader->_debugName = name;
 #endif
@@ -509,10 +509,10 @@ bool ShaderSpirVDecoder::parseReflections(const std::vector<u32>& spirv, stream:
 
     auto isHLSL = [](renderer::ShaderHeader::ShaderModel model) -> bool
     {
-        return model == renderer::ShaderHeader::ShaderModel::ShaderModel_HLSL_5_0 || model == renderer::ShaderHeader::ShaderModel::ShaderModel_HLSL_5_1;
+        return model == renderer::ShaderHeader::ShaderModel::HLSL_5_0 || model == renderer::ShaderHeader::ShaderModel::HLSL_5_1;
     };
 
-    if (isHLSL(m_header._shaderModel) || m_header._shaderModel == renderer::ShaderHeader::ShaderModel::ShaderModel_GLSL_450 || m_header._shaderModel == renderer::ShaderHeader::ShaderModel::ShaderModel_SpirV)
+    if (isHLSL(m_header._shaderModel) || m_header._shaderModel == renderer::ShaderHeader::ShaderModel::GLSL_450 || m_header._shaderModel == renderer::ShaderHeader::ShaderModel::SpirV)
     {
         spirv_cross::CompilerGLSL glsl(spirv);
         spirv_cross::ShaderResources resources = glsl.get_shader_resources();

@@ -53,7 +53,7 @@ Resource* ShaderHLSLDecoder::decode(const stream::Stream* stream, const std::str
 
         auto isHLSL = [](renderer::ShaderHeader::ShaderModel model) -> bool
         {
-            return model == renderer::ShaderHeader::ShaderModel::ShaderModel_HLSL_5_0 || model == renderer::ShaderHeader::ShaderModel::ShaderModel_HLSL_5_1;
+            return model == renderer::ShaderHeader::ShaderModel::HLSL_5_0 || model == renderer::ShaderHeader::ShaderModel::HLSL_5_1;
         };
 
         if (!isHLSL(m_header._shaderModel))
@@ -68,7 +68,7 @@ Resource* ShaderHLSLDecoder::decode(const stream::Stream* stream, const std::str
         const std::string shaderName = name;
 #endif
 
-        if (m_header._contentType == renderer::ShaderHeader::ShaderResource::ShaderResource_Source)
+        if (m_header._contentType == renderer::ShaderHeader::ShaderResource::Source)
         {
             std::string source;
             source.resize(stream->size());
@@ -105,7 +105,7 @@ Resource* ShaderHLSLDecoder::decode(const stream::Stream* stream, const std::str
             renderer::ShaderType type = m_header._type == renderer::ShaderType::Undefined ? getShaderTypeFromName(name) : m_header._type;
 
             std::string shaderVersion = "";
-            renderer::ShaderHeader::ShaderModel shaderModel = renderer::ShaderHeader::ShaderModel::ShaderModel_Default;
+            renderer::ShaderHeader::ShaderModel shaderModel = renderer::ShaderHeader::ShaderModel::Default;
             auto getShaderType = [&shaderVersion, &shaderModel](renderer::ShaderType type, renderer::ShaderHeader::ShaderModel model) -> bool
             {
                 switch (type)
@@ -114,14 +114,14 @@ Resource* ShaderHLSLDecoder::decode(const stream::Stream* stream, const std::str
                 {
                     switch (model)
                     {
-                    case renderer::ShaderHeader::ShaderModel::ShaderModel_HLSL_5_0:
-                        shaderModel = renderer::ShaderHeader::ShaderModel::ShaderModel_HLSL_5_0;
+                    case renderer::ShaderHeader::ShaderModel::HLSL_5_0:
+                        shaderModel = renderer::ShaderHeader::ShaderModel::HLSL_5_0;
                         shaderVersion = "vs_5_0";
                         return true;
 
-                    case renderer::ShaderHeader::ShaderModel::ShaderModel_Default:
-                    case renderer::ShaderHeader::ShaderModel::ShaderModel_HLSL_5_1:
-                        shaderModel = renderer::ShaderHeader::ShaderModel::ShaderModel_HLSL_5_1;
+                    case renderer::ShaderHeader::ShaderModel::Default:
+                    case renderer::ShaderHeader::ShaderModel::HLSL_5_1:
+                        shaderModel = renderer::ShaderHeader::ShaderModel::HLSL_5_1;
                         shaderVersion = "vs_5_1";
                         return true;
 
@@ -135,14 +135,14 @@ Resource* ShaderHLSLDecoder::decode(const stream::Stream* stream, const std::str
                 {
                     switch (model)
                     {
-                    case renderer::ShaderHeader::ShaderModel::ShaderModel_HLSL_5_0:
-                        shaderModel = renderer::ShaderHeader::ShaderModel::ShaderModel_HLSL_5_0;
+                    case renderer::ShaderHeader::ShaderModel::HLSL_5_0:
+                        shaderModel = renderer::ShaderHeader::ShaderModel::HLSL_5_0;
                         shaderVersion = "ps_5_0";
                         return true;
 
-                    case renderer::ShaderHeader::ShaderModel::ShaderModel_Default:
-                    case renderer::ShaderHeader::ShaderModel::ShaderModel_HLSL_5_1:
-                        shaderModel = renderer::ShaderHeader::ShaderModel::ShaderModel_HLSL_5_1;
+                    case renderer::ShaderHeader::ShaderModel::Default:
+                    case renderer::ShaderHeader::ShaderModel::HLSL_5_1:
+                        shaderModel = renderer::ShaderHeader::ShaderModel::HLSL_5_1;
                         shaderVersion = "ps_5_1";
                         return true;
 
@@ -156,14 +156,14 @@ Resource* ShaderHLSLDecoder::decode(const stream::Stream* stream, const std::str
                 {
                     switch (model)
                     {
-                    case renderer::ShaderHeader::ShaderModel::ShaderModel_HLSL_5_0:
-                        shaderModel = renderer::ShaderHeader::ShaderModel::ShaderModel_HLSL_5_0;
+                    case renderer::ShaderHeader::ShaderModel::HLSL_5_0:
+                        shaderModel = renderer::ShaderHeader::ShaderModel::HLSL_5_0;
                         shaderVersion = "cs_5_0";
                         return true;
 
-                    case renderer::ShaderHeader::ShaderModel::ShaderModel_Default:
-                    case renderer::ShaderHeader::ShaderModel::ShaderModel_HLSL_5_1:
-                        shaderModel = renderer::ShaderHeader::ShaderModel::ShaderModel_HLSL_5_1;
+                    case renderer::ShaderHeader::ShaderModel::Default:
+                    case renderer::ShaderHeader::ShaderModel::HLSL_5_1:
+                        shaderModel = renderer::ShaderHeader::ShaderModel::HLSL_5_1;
                         shaderVersion = "cs_5_1";
                         return true;
 
@@ -287,7 +287,7 @@ Resource* ShaderHLSLDecoder::decode(const stream::Stream* stream, const std::str
 
             resourceBinary->write<bool>(m_reflections);
 
-            m_version = (shaderModel == renderer::ShaderHeader::ShaderModel::ShaderModel_HLSL_5_1) ? 51 : 50;
+            m_version = (shaderModel == renderer::ShaderHeader::ShaderModel::HLSL_5_1) ? 51 : 50;
             if (m_reflections)
             {
                 if (!reflect(shader, resourceBinary, m_version))

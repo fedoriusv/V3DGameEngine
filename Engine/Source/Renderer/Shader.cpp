@@ -10,8 +10,8 @@ namespace renderer
 
 ShaderHeader::ShaderHeader() noexcept
     : _type(renderer::ShaderType::Undefined)
-    , _contentType(ShaderResource::ShaderResource_Source)
-    , _shaderModel(ShaderModel::ShaderModel_Default)
+    , _contentType(ShaderResource::Source)
+    , _shaderModel(ShaderModel::Default)
     , _optLevel(0)
     , _entryPoint("main")
 {
@@ -19,8 +19,8 @@ ShaderHeader::ShaderHeader() noexcept
 
 ShaderHeader::ShaderHeader(renderer::ShaderType type) noexcept
     : _type(type)
-    , _contentType(ShaderResource::ShaderResource_Source)
-    , _shaderModel(ShaderModel::ShaderModel_Default)
+    , _contentType(ShaderResource::Source)
+    , _shaderModel(ShaderModel::Default)
     , _optLevel(0)
     , _entryPoint("main")
 {

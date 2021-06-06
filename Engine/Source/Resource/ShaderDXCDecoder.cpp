@@ -57,7 +57,7 @@ Resource* ShaderDXCDecoder::decode(const stream::Stream* stream, const std::stri
 
     auto isHLSL_ShaderModel6 = [](renderer::ShaderHeader::ShaderModel model) -> bool
     {
-        return model == renderer::ShaderHeader::ShaderModel::ShaderModel_HLSL_6_0 || model == renderer::ShaderHeader::ShaderModel::ShaderModel_HLSL_6_1;
+        return model == renderer::ShaderHeader::ShaderModel::HLSL_6_0 || model == renderer::ShaderHeader::ShaderModel::HLSL_6_1;
     };
 
     if (!isHLSL_ShaderModel6(m_header._shaderModel))
@@ -72,7 +72,7 @@ Resource* ShaderDXCDecoder::decode(const stream::Stream* stream, const std::stri
     const std::string shaderName = name;
 #endif
 
-    if (m_header._contentType == renderer::ShaderHeader::ShaderResource::ShaderResource_Source)
+    if (m_header._contentType == renderer::ShaderHeader::ShaderResource::Source)
     {
         std::string source;
         source.resize(stream->size());
@@ -137,7 +137,7 @@ Resource* ShaderDXCDecoder::decode(const stream::Stream* stream, const std::stri
 bool ShaderDXCDecoder::compile(const std::string& source, const std::wstring& name, IDxcBlob*& shader) const
 {
     std::vector<LPCWSTR> arguments;
-    if (m_output == renderer::ShaderHeader::ShaderModel::ShaderModel_SpirV)
+    if (m_output == renderer::ShaderHeader::ShaderModel::SpirV)
     {
         arguments.push_back(L"-spirv");
     }
@@ -174,17 +174,17 @@ bool ShaderDXCDecoder::compile(const std::string& source, const std::wstring& na
         {
             switch (model)
             {
-            case renderer::ShaderHeader::ShaderModel::ShaderModel_HLSL_5_0:
+            case renderer::ShaderHeader::ShaderModel::HLSL_5_0:
                 return L"vs_5_0";
 
-            case renderer::ShaderHeader::ShaderModel::ShaderModel_Default:
-            case renderer::ShaderHeader::ShaderModel::ShaderModel_HLSL_5_1:
+            case renderer::ShaderHeader::ShaderModel::Default:
+            case renderer::ShaderHeader::ShaderModel::HLSL_5_1:
                 return L"vs_5_1";
 
-            case renderer::ShaderHeader::ShaderModel::ShaderModel_HLSL_6_0:
+            case renderer::ShaderHeader::ShaderModel::HLSL_6_0:
                 return L"vs_6_0";
 
-            case renderer::ShaderHeader::ShaderModel::ShaderModel_HLSL_6_1:
+            case renderer::ShaderHeader::ShaderModel::HLSL_6_1:
                 return L"vs_6_1";
 
             default:
@@ -197,17 +197,17 @@ bool ShaderDXCDecoder::compile(const std::string& source, const std::wstring& na
         {
             switch (model)
             {
-            case renderer::ShaderHeader::ShaderModel::ShaderModel_HLSL_5_0:
+            case renderer::ShaderHeader::ShaderModel::HLSL_5_0:
                 return L"ps_5_0";
 
-            case renderer::ShaderHeader::ShaderModel::ShaderModel_Default:
-            case renderer::ShaderHeader::ShaderModel::ShaderModel_HLSL_5_1:
+            case renderer::ShaderHeader::ShaderModel::Default:
+            case renderer::ShaderHeader::ShaderModel::HLSL_5_1:
                 return L"ps_5_1";
 
-            case renderer::ShaderHeader::ShaderModel::ShaderModel_HLSL_6_0:
+            case renderer::ShaderHeader::ShaderModel::HLSL_6_0:
                 return L"ps_6_0";
 
-            case renderer::ShaderHeader::ShaderModel::ShaderModel_HLSL_6_1:
+            case renderer::ShaderHeader::ShaderModel::HLSL_6_1:
                 return L"ps_6_1";
 
             default:
@@ -428,7 +428,7 @@ bool ShaderDXCDecoder::compile(const std::string& source, const std::wstring& na
     {
         IDxcBlobEncoding* disassembleShader = nullptr;
         ASSERT(DXSource, "nullptr");
-        if (m_output != renderer::ShaderHeader::ShaderModel::ShaderModel_SpirV)
+        if (m_output != renderer::ShaderHeader::ShaderModel::SpirV)
         {
             HRESULT result = DXCompiler->Disassemble(shader, &disassembleShader);
             if (SUCCEEDED(result))

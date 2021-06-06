@@ -24,8 +24,8 @@ namespace renderer
         */
         enum class ShaderResource : u16
         {
-            ShaderResource_Source,
-            ShaderResource_Bytecode,
+            Source,
+            Bytecode,
         };
 
         /**
@@ -33,14 +33,14 @@ namespace renderer
         */
         enum class ShaderModel : u16
         {
-            ShaderModel_Default,
+            Default,
 
-            ShaderModel_GLSL_450,
-            ShaderModel_HLSL_5_0,
-            ShaderModel_HLSL_5_1,
-            ShaderModel_HLSL_6_0,
-            ShaderModel_HLSL_6_1,
-            ShaderModel_SpirV,
+            GLSL_450,
+            HLSL_5_0,
+            HLSL_5_1,
+            HLSL_6_0,
+            HLSL_6_1,
+            SpirV,
         };
 
         ShaderHeader() noexcept;

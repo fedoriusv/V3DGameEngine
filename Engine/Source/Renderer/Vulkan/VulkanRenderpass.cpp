@@ -485,7 +485,7 @@ bool VulkanRenderPass::createRenderpass2()
                 VkAttachmentReference2KHR msaaAttachmentReference = {};
                 msaaAttachmentReference.sType = VK_STRUCTURE_TYPE_ATTACHMENT_REFERENCE_2_KHR;
                 msaaAttachmentReference.pNext = nullptr;
-                msaaAttachmentReference.aspectMask = 0;
+                msaaAttachmentReference.aspectMask = VulkanImage::getImageAspectFlags(attach._format);
                 msaaAttachmentReference.attachment = index;
                 msaaAttachmentReference.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
@@ -498,7 +498,7 @@ bool VulkanRenderPass::createRenderpass2()
                 VkAttachmentReference2KHR resolveAttachmentReference = {};
                 resolveAttachmentReference.sType = VK_STRUCTURE_TYPE_ATTACHMENT_REFERENCE_2_KHR;
                 resolveAttachmentReference.pNext = nullptr;
-                resolveAttachmentReference.aspectMask = 0;
+                resolveAttachmentReference.aspectMask = VulkanImage::getImageAspectFlags(attach._format);
                 resolveAttachmentReference.attachment = index;
                 resolveAttachmentReference.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 

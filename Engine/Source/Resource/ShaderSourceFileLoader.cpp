@@ -46,8 +46,8 @@ ShaderSourceFileLoader::ShaderSourceFileLoader(const renderer::Context* context,
             ASSERT(!(flags & ShaderSourceBuildFlag::ShaderSource_OptimizationSize || flags & ShaderSourceBuildFlag::ShaderSource_OptimizationPerformance || flags & ShaderSourceBuildFlag::ShaderSource_OptimizationFull), "define can't work with the flag because optimization removes names from spirv");
 #endif
             renderer::ShaderHeader header;
-            header._contentType = renderer::ShaderHeader::ShaderResource::ShaderResource_Source;
-            header._shaderModel = renderer::ShaderHeader::ShaderModel::ShaderModel_GLSL_450;
+            header._contentType = renderer::ShaderHeader::ShaderResource::Source;
+            header._shaderModel = renderer::ShaderHeader::ShaderModel::GLSL_450;
             header._optLevel = optimizationLevel;
             header._defines = defines;
             header._flags |= (flags & ShaderSourceBuildFlag::ShaderSource_Patched) ? ShaderSourceBuildFlag::ShaderSource_Patched : header._flags;
@@ -57,8 +57,8 @@ ShaderSourceFileLoader::ShaderSourceFileLoader(const renderer::Context* context,
 
         {
             renderer::ShaderHeader header;
-            header._contentType = renderer::ShaderHeader::ShaderResource::ShaderResource_Source;
-            header._shaderModel = renderer::ShaderHeader::ShaderModel::ShaderModel_HLSL_5_1;
+            header._contentType = renderer::ShaderHeader::ShaderResource::Source;
+            header._shaderModel = renderer::ShaderHeader::ShaderModel::HLSL_5_1;
             header._optLevel = optimizationLevel;
             header._defines = defines;
             header._flags |= (flags & ShaderSourceBuildFlag::ShaderSource_Patched) ? ShaderSourceBuildFlag::ShaderSource_Patched : header._flags;
@@ -82,14 +82,14 @@ ShaderSourceFileLoader::ShaderSourceFileLoader(const renderer::Context* context,
     else if (context->getRenderType() == renderer::Context::RenderType::DirectXRender)
     {
         renderer::ShaderHeader header;
-        header._contentType = renderer::ShaderHeader::ShaderResource::ShaderResource_Source;
-        header._shaderModel = renderer::ShaderHeader::ShaderModel::ShaderModel_HLSL_5_1;
+        header._contentType = renderer::ShaderHeader::ShaderResource::Source;
+        header._shaderModel = renderer::ShaderHeader::ShaderModel::HLSL_5_1;
         header._optLevel = optimizationLevel;
         header._defines = defines;
 
         if (flags & ShaderSourceBuildFlag::ShaderSource_UseDXCompiler)
         {
-            header._shaderModel = renderer::ShaderHeader::ShaderModel::ShaderModel_HLSL_6_1;
+            header._shaderModel = renderer::ShaderHeader::ShaderModel::HLSL_6_1;
             ResourceDecoderRegistration::registerDecoder(new ShaderDXCDecoder({ "vs", "ps" }, header, header._shaderModel, !(flags & ShaderSourceBuildFlag::ShaderSource_DontUseReflection)));
         }
         ResourceDecoderRegistration::registerDecoder(new ShaderHLSLDecoder({ "vs", "ps", "cs" }, header, !(flags & ShaderSourceBuildFlag::ShaderSource_DontUseReflection)));
@@ -108,8 +108,8 @@ ShaderSourceFileLoader::ShaderSourceFileLoader(const renderer::Context* context,
     ASSERT(context, "context is nullptr");
 
     renderer::ShaderHeader header(type);
-    header._contentType = renderer::ShaderHeader::ShaderResource::ShaderResource_Source;
-    header._shaderModel = renderer::ShaderHeader::ShaderModel::ShaderModel_HLSL_5_1;
+    header._contentType = renderer::ShaderHeader::ShaderResource::Source;
+    header._shaderModel = renderer::ShaderHeader::ShaderModel::HLSL_5_1;
     header._defines = defines;
     header._entryPoint = entryPoint;
     header._optLevel = 0;
@@ -144,7 +144,7 @@ ShaderSourceFileLoader::ShaderSourceFileLoader(const renderer::Context* context,
     {
         if (flags & ShaderSourceBuildFlag::ShaderSource_UseDXCompiler)
         {
-            header._shaderModel = renderer::ShaderHeader::ShaderModel::ShaderModel_HLSL_6_1;
+            header._shaderModel = renderer::ShaderHeader::ShaderModel::HLSL_6_1;
             ResourceDecoderRegistration::registerDecoder(new ShaderDXCDecoder({ "hlsl" }, header, header._shaderModel, !(flags & ShaderSourceBuildFlag::ShaderSource_DontUseReflection)));
         }
         ResourceDecoderRegistration::registerDecoder(new ShaderHLSLDecoder({ "hlsl" }, header, !(flags & ShaderSourceBuildFlag::ShaderSource_DontUseReflection)));
