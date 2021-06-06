@@ -9,6 +9,7 @@
 #include "Renderer/Object/ShaderProgram.h"
 #include "Renderer/Object/PipelineState.h"
 #include "Renderer/Object/RenderTargetState.h"
+#include "Renderer/Object/SamplerState.h"
 
 namespace v3d
 {
@@ -63,6 +64,16 @@ private:
     utils::IntrusivePointer<renderer::ShaderProgram>          m_program;
     utils::IntrusivePointer<renderer::GraphicsPipelineState>  m_pipeline;
     utils::IntrusivePointer<renderer::RenderTargetState>      m_renderTarget;
+
+    utils::IntrusivePointer<renderer::GraphicsPipelineState>  m_pipelineMSAA;
+    utils::IntrusivePointer<renderer::RenderTargetState>      m_renderTargetMSAA;
+
+    utils::IntrusivePointer<renderer::SamplerState>           m_Sampler;
+    utils::IntrusivePointer<renderer::ShaderProgram>          m_programBackbuffer;
+    utils::IntrusivePointer<renderer::GraphicsPipelineState>  m_pipelineBackbuffer;
+    utils::IntrusivePointer<renderer::RenderTargetState>      m_renderTargetBackbuffer;
+
+    bool m_enableMSAA = true;
 };
 
 } //namespace v3d
