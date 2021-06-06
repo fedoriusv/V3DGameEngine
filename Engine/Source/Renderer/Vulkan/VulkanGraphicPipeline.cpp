@@ -443,7 +443,7 @@ bool VulkanGraphicPipeline::create(const PipelineGraphicInfo* pipelineInfo)
     }
 
     u32 moduleIndex = 0;
-    for (u32 type = ShaderType::Vertex; type < ShaderType_Count; ++type)
+    for (u32 type = toEnumType(ShaderType::Vertex); type < (u32)toEnumType(ShaderType::Count); ++type)
     {
         if (!programDesc._shaders[type])
         {
@@ -535,7 +535,7 @@ bool VulkanGraphicPipeline::create(const PipelineGraphicInfo* pipelineInfo)
     vertexInputStateCreateInfo.vertexBindingDescriptionCount = static_cast<u32>(vertexInputBindingDescriptions.size());
     vertexInputStateCreateInfo.pVertexBindingDescriptions = vertexInputBindingDescriptions.data();
 
-    const Shader* vertexShader = programDesc._shaders[ShaderType::Vertex];
+    const Shader* vertexShader = programDesc._shaders[toEnumType(ShaderType::Vertex)];
     ASSERT(vertexShader, "nullptr");
     std::vector<VkVertexInputAttributeDescription> vertexInputAttributeDescriptions;
     vertexInputAttributeDescriptions.reserve(inputAttrDesc._countInputAttributes);

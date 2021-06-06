@@ -83,7 +83,7 @@ Resource* ShaderHLSLDecoder::decode(const stream::Stream* stream, const std::str
                 auto result = k_HLSL_ExtensionList.find(fileExtension);
                 if (result == k_HLSL_ExtensionList.cend())
                 {
-                    return renderer::ShaderType::ShaderType_Undefined;
+                    return renderer::ShaderType::Undefined;
                 }
 
                 switch (result->second)
@@ -98,11 +98,11 @@ Resource* ShaderHLSLDecoder::decode(const stream::Stream* stream, const std::str
                     return renderer::ShaderType::Compute;
                 }
                 
-                return renderer::ShaderType::ShaderType_Undefined;
+                return renderer::ShaderType::Undefined;
             };
 
-            static_assert(renderer::ShaderType::ShaderType_Count == 3, "diff size. Add new types");
-            renderer::ShaderType type = m_header._type == renderer::ShaderType::ShaderType_Undefined ? getShaderTypeFromName(name) : m_header._type;
+            static_assert(toEnumType(renderer::ShaderType::Count) == 3, "diff size. Add new types");
+            renderer::ShaderType type = m_header._type == renderer::ShaderType::Undefined ? getShaderTypeFromName(name) : m_header._type;
 
             std::string shaderVersion = "";
             renderer::ShaderHeader::ShaderModel shaderModel = renderer::ShaderHeader::ShaderModel::ShaderModel_Default;

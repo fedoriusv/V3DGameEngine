@@ -338,7 +338,7 @@ D3DGraphicPipelineState::D3DGraphicPipelineState(ID3D12Device2* device, D3DRootS
 {
     LOG_DEBUG("D3DGraphicPipelineState::D3DGraphicPipelineState constructor %llx", this);
 
-    memset(m_bytecode, 0, sizeof(m_bytecode[ShaderType::ShaderType_Count]));
+    memset(m_bytecode, 0, sizeof(m_bytecode[toEnumType(ShaderType::Count)]));
 }
 
 D3DGraphicPipelineState::~D3DGraphicPipelineState()
@@ -375,21 +375,21 @@ bool D3DGraphicPipelineState::create(const PipelineGraphicInfo* pipelineInfo)
             }
         }
 
-        for (u32 type = ShaderType::Vertex; type < ShaderType::ShaderType_Count; ++type)
+        for (u32 type = toEnumType(ShaderType::Vertex); type < (u32)toEnumType(ShaderType::Count); ++type)
         {
             if (m_bytecode[type].BytecodeLength == 0)
             {
                 continue;
             }
 
-            switch (type)
+            switch ((ShaderType)type)
             {
             case ShaderType::Vertex:
-                psoDesc.VS = m_bytecode[ShaderType::Vertex];
+                psoDesc.VS = m_bytecode[toEnumType(ShaderType::Vertex)];
                 break;
 
             case ShaderType::Fragment:
-                psoDesc.PS = m_bytecode[ShaderType::Fragment];
+                psoDesc.PS = m_bytecode[toEnumType(ShaderType::Fragment)];
                 break;
             }
         }
@@ -409,7 +409,7 @@ bool D3DGraphicPipelineState::create(const PipelineGraphicInfo* pipelineInfo)
         for (u32 i = 0; i < inputElementsDesc.size(); ++i)
         {
             auto& inputBinding = inputState._inputAttributes._inputBindings[inputState._inputAttributes._inputAttributes[i]._bindingId];
-            const Shader::Attribute& attribute = pipelineInfo->_programDesc._shaders[ShaderType::Vertex]->getReflectionInfo()._inputAttribute[i];
+            const Shader::Attribute& attribute = pipelineInfo->_programDesc._shaders[toEnumType(ShaderType::Vertex)]->getReflectionInfo()._inputAttribute[i];
 
             u32 semanticIndex = 0;
 #if USE_STRING_ID_SHADER
@@ -603,7 +603,7 @@ bool D3DGraphicPipelineState::create(const PipelineGraphicInfo* pipelineInfo)
 
 void D3DGraphicPipelineState::destroy()
 {
-    memset(m_bytecode, 0, sizeof(m_bytecode[ShaderType::ShaderType_Count]));
+    memset(m_bytecode, 0, sizeof(m_bytecode[toEnumType(ShaderType::Count)]));
     SAFE_DELETE(m_pipelineState);
 }
 
@@ -619,8 +619,8 @@ D3D12_PRIMITIVE_TOPOLOGY D3DGraphicPipelineState::getTopology() const
 
 bool D3DGraphicPipelineState::compileShader(const ShaderHeader* header, const void* source, u32 size)
 {
-    m_bytecode[header->_type].BytecodeLength = static_cast<u32>(size);
-    m_bytecode[header->_type].pShaderBytecode = source;
+    m_bytecode[toEnumType(header->_type)].BytecodeLength = static_cast<u32>(size);
+    m_bytecode[toEnumType(header->_type)].pShaderBytecode = source;
 
     return true;
 }

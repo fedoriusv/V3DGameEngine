@@ -49,7 +49,7 @@ bool VulkanComputePipeline::create(const PipelineComputeInfo* pipelineInfo)
     }
 #endif //VULKAN_DEBUG
 
-    const Shader* computeShader = pipelineInfo->_programDesc._shaders[ShaderType::Compute];
+    const Shader* computeShader = pipelineInfo->_programDesc._shaders[toEnumType(ShaderType::Compute)];
     if (!computeShader || !Pipeline::createShader(computeShader))
     {
         LOG_ERROR("VulkanComputePipeline::create: shader module is failed");

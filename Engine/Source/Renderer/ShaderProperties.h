@@ -50,16 +50,16 @@ namespace renderer
     /**
     * @brief ShaderType enum
     */
-    enum ShaderType : s16
+    enum class ShaderType : s16
     {
-        ShaderType_Undefined = -1,
+        Undefined = -1,
 
         Vertex = 0,
         Fragment = 1,
 
         Compute = 2,
 
-        ShaderType_Count,
+        Count,
     };
 
 
@@ -100,7 +100,7 @@ namespace renderer
         }
 
         u32 _hash;
-        std::array<const Shader*, ShaderType::ShaderType_Count> _shaders;
+        std::array<const Shader*, toEnumType(ShaderType::Count)> _shaders;
     };
 
     /**
@@ -131,7 +131,7 @@ namespace renderer
     {
         switch (type)
         {
-        case ShaderType::ShaderType_Undefined:
+        case ShaderType::Undefined:
             return "undefined";
 
         case ShaderType::Vertex:

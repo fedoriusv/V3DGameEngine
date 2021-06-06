@@ -72,7 +72,7 @@ bool Pipeline::createShader(const Shader* shader)
 bool Pipeline::createProgram(const ShaderProgramDescription& desc)
 {
     std::vector<std::tuple<const ShaderHeader*, const void*, u32>> shadersData;
-    for (u32 type = ShaderType::Vertex; type < ShaderType_Count; ++type)
+    for (u32 type = toEnumType(ShaderType::Vertex); type < toEnumType(ShaderType::Count); ++type)
     {
         const Shader* shader = desc._shaders[type];
         if (!shader)

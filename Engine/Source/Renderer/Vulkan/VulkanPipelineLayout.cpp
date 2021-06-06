@@ -305,7 +305,7 @@ void VulkanPipelineLayoutManager::destroyDescriptorSetLayouts(std::array<VkDescr
     descriptorSetLayouts.fill(VK_NULL_HANDLE);
 }
 
-VulkanPipelineLayoutManager::DescriptorSetLayoutCreator::DescriptorSetLayoutCreator(const std::array<const Shader*, ShaderType::ShaderType_Count>& shaders) noexcept
+VulkanPipelineLayoutManager::DescriptorSetLayoutCreator::DescriptorSetLayoutCreator(const std::array<const Shader*, toEnumType(ShaderType::Count)>& shaders) noexcept
 {
     _description._pushConstant.clear();
     _description._bindingsSet.fill({});
@@ -314,7 +314,7 @@ VulkanPipelineLayoutManager::DescriptorSetLayoutCreator::DescriptorSetLayoutCrea
     for (u32 setIndex = 0; setIndex < k_maxDescriptorSetIndex; ++setIndex)
     {
         std::vector<VkDescriptorSetLayoutBinding> descriptorSetLayoutBindings;
-        for (u32 type = ShaderType::Vertex; type < ShaderType_Count; ++type)
+        for (u32 type = toEnumType(ShaderType::Vertex); type < (u32)toEnumType(ShaderType::Count); ++type)
         {
             const Shader* shader = shaders[type];
             if (!shader)
@@ -418,7 +418,7 @@ VulkanPipelineLayoutManager::DescriptorSetLayoutCreator::DescriptorSetLayoutCrea
     }
     ASSERT(maxSetIndex < k_maxDescriptorSetIndex, "invalid max set index");
 
-    for (u32 type = ShaderType::Vertex; type < ShaderType_Count; ++type)
+    for (u32 type = toEnumType(ShaderType::Vertex); type < (u32)toEnumType(ShaderType::Count); ++type)
     {
         const Shader* shader = shaders[type];
         if (!shader)

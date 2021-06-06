@@ -74,7 +74,7 @@ namespace renderer
         bool bindUniformsBuffer(ShaderType shaderType, u32 index, u32 offset, u32 size, const void* data);
         bool bindUAV(ShaderType shaderType, u32 index, TextureTarget target, const Texture* texture, s32 layer, s32 mip);
 
-        std::map<u32, u32> m_shaderParameters[ShaderType::ShaderType_Count];
+        std::map<u32, u32> m_shaderParameters[toEnumType(ShaderType::Count)];
 
         void handleNotify(const utils::Observable* obj) override;
     };

@@ -9,7 +9,7 @@ namespace renderer
 {
 
 ShaderHeader::ShaderHeader() noexcept
-    : _type(renderer::ShaderType::ShaderType_Undefined)
+    : _type(renderer::ShaderType::Undefined)
     , _contentType(ShaderResource::ShaderResource_Source)
     , _shaderModel(ShaderModel::ShaderModel_Default)
     , _optLevel(0)

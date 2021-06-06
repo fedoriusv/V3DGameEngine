@@ -189,7 +189,7 @@ Resource* ShaderSpirVDecoder::decode(const stream::Stream* stream, const std::st
                 return shaderc_shader_kind::shaderc_vertex_shader;
             };
 
-            shaderc_shader_kind shaderType = (type == renderer::ShaderType::ShaderType_Undefined)  ? getShaderTypeFromName(name) : getShaderType(type);
+            shaderc_shader_kind shaderType = (type == renderer::ShaderType::Undefined)  ? getShaderTypeFromName(name) : getShaderType(type);
             if (!validShaderType)
             {
                 LOG_ERROR("ShaderSpirVDecoder::decode: Invalid shader type or unsupport");
@@ -354,7 +354,7 @@ Resource* ShaderSpirVDecoder::decode(const stream::Stream* stream, const std::st
                 }
 
                 validShaderType = false;
-                return renderer::ShaderType::ShaderType_Undefined;
+                return renderer::ShaderType::Undefined;
             };
 
             renderer::ShaderType type = getShaderType(name);

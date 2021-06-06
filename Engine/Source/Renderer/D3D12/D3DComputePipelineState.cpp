@@ -44,7 +44,7 @@ bool D3DComputePipelineState::create(const PipelineComputeInfo* pipelineInfo)
 
     //Shader
     {
-        const Shader* computeShader = pipelineInfo->_programDesc._shaders[ShaderType::Compute];
+        const Shader* computeShader = pipelineInfo->_programDesc._shaders[toEnumType(ShaderType::Compute)];
         ASSERT(computeShader, "must be present");
         if (!createShader(computeShader))
         {

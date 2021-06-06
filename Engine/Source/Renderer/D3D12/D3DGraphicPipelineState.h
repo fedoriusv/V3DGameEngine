@@ -53,7 +53,7 @@ namespace dx3d
 
         static bool separateSematic(const std::string& str, std::string& name, u32& id);
 
-        D3D12_SHADER_BYTECODE m_bytecode[ShaderType::ShaderType_Count];
+        D3D12_SHADER_BYTECODE m_bytecode[toEnumType(ShaderType::Count)];
 
         std::vector<u32> m_buffersStride; //Vertex stride
         D3D12_PRIMITIVE_TOPOLOGY m_topology;

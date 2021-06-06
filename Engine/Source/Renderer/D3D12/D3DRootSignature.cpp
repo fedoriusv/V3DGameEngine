@@ -48,8 +48,8 @@ D3DRootSignatureCreator::D3DRootSignatureCreator(const ShaderProgramDescription&
     if (D3DDeviceCaps::getInstance()->rootSignatureVersion.HighestVersion == D3D_ROOT_SIGNATURE_VERSION_1_1)
     {
         std::vector<CD3DX12_ROOT_PARAMETER1> rootParameters;
-        std::vector<CD3DX12_DESCRIPTOR_RANGE1> shareDescRanges[ShaderType::ShaderType_Count];
-        std::vector<CD3DX12_DESCRIPTOR_RANGE1> samplerDescRanges[ShaderType::ShaderType_Count];
+        std::vector<CD3DX12_DESCRIPTOR_RANGE1> shareDescRanges[toEnumType(ShaderType::Count)];
+        std::vector<CD3DX12_DESCRIPTOR_RANGE1> samplerDescRanges[toEnumType(ShaderType::Count)];
         u32 signatureParameterIndex = 0;
         for (auto shader : desc._shaders)
         {
@@ -66,7 +66,7 @@ D3DRootSignatureCreator::D3DRootSignatureCreator(const ShaderProgramDescription&
                     CD3DX12_DESCRIPTOR_RANGE1 range = {};
                     range.Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, cbBuffer._array, cbBuffer._binding, cbBuffer._set, D3D12_DESCRIPTOR_RANGE_FLAG_DATA_STATIC);
 
-                    shareDescRanges[shaderType].push_back(range);
+                    shareDescRanges[toEnumType(shaderType)].push_back(range);
                     [[maybe_unused]] auto key = m_signatureParameters.emplace(cbBuffer._binding, signatureParameterIndex);
                     ASSERT(key.second, "already is inserted");
                 }
@@ -76,7 +76,7 @@ D3DRootSignatureCreator::D3DRootSignatureCreator(const ShaderProgramDescription&
                     CD3DX12_DESCRIPTOR_RANGE1 range = {};
                     range.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, image._array, image._binding, image._set, D3D12_DESCRIPTOR_RANGE_FLAG_DATA_STATIC);
 
-                    shareDescRanges[shaderType].push_back(range);
+                    shareDescRanges[toEnumType(shaderType)].push_back(range);
                     [[maybe_unused]] auto key = m_signatureParameters.emplace(image._binding, signatureParameterIndex);
                     ASSERT(key.second, "already is inserted");
                 }
@@ -87,7 +87,7 @@ D3DRootSignatureCreator::D3DRootSignatureCreator(const ShaderProgramDescription&
                         CD3DX12_DESCRIPTOR_RANGE1 range = {};
                         range.Init(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, UAV._array, UAV._binding, UAV._set, D3D12_DESCRIPTOR_RANGE_FLAG_DATA_STATIC);
 
-                        shareDescRanges[shaderType].push_back(range);
+                        shareDescRanges[toEnumType(shaderType)].push_back(range);
                         [[maybe_unused]] auto key = m_signatureParameters.emplace(UAV._binding, signatureParameterIndex);
                         ASSERT(key.second, "already is inserted");
                     }
@@ -97,19 +97,19 @@ D3DRootSignatureCreator::D3DRootSignatureCreator(const ShaderProgramDescription&
                         CD3DX12_DESCRIPTOR_RANGE1 range = {};
                         range.Init(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, UAV._binding, UAV._set, D3D12_DESCRIPTOR_RANGE_FLAG_DATA_STATIC);
 
-                        shareDescRanges[shaderType].push_back(range);
+                        shareDescRanges[toEnumType(shaderType)].push_back(range);
                         [[maybe_unused]] auto key = m_signatureParameters.emplace(UAV._binding, signatureParameterIndex);
                         ASSERT(key.second, "already is inserted");
                     }
                 }
 
                 ASSERT(info._sampledImages.empty(), "not supported");
-                if (!shareDescRanges[shaderType].empty())
+                if (!shareDescRanges[toEnumType(shaderType)].empty())
                 {
-                    std::sort(shareDescRanges[shaderType].begin(), shareDescRanges[shaderType].end(), descriptorRangeSort);
+                    std::sort(shareDescRanges[toEnumType(shaderType)].begin(), shareDescRanges[toEnumType(shaderType)].end(), descriptorRangeSort);
 
                     CD3DX12_ROOT_PARAMETER1 param = {};
-                    param.InitAsDescriptorTable(static_cast<UINT>(shareDescRanges[shaderType].size()), shareDescRanges[shaderType].data(), shaderVisibility(shaderType));
+                    param.InitAsDescriptorTable(static_cast<UINT>(shareDescRanges[toEnumType(shaderType)].size()), shareDescRanges[toEnumType(shaderType)].data(), shaderVisibility(shaderType));
 
                     rootParameters.push_back(param);
                     ++signatureParameterIndex;
@@ -122,17 +122,17 @@ D3DRootSignatureCreator::D3DRootSignatureCreator(const ShaderProgramDescription&
                     CD3DX12_DESCRIPTOR_RANGE1 range = {};
                     range.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER, 1, sampler._binding, sampler._set, D3D12_DESCRIPTOR_RANGE_FLAG_NONE);
 
-                    samplerDescRanges[shaderType].push_back(range);
+                    samplerDescRanges[toEnumType(shaderType)].push_back(range);
                     [[maybe_unused]] auto key = m_signatureParameters.emplace(sampler._binding, signatureParameterIndex);
                     ASSERT(key.second, "already is inserted");
                 }
 
-                if (!samplerDescRanges[shaderType].empty())
+                if (!samplerDescRanges[toEnumType(shaderType)].empty())
                 {
-                    std::sort(shareDescRanges[shaderType].begin(), shareDescRanges[shaderType].end(), descriptorRangeSort);
+                    std::sort(shareDescRanges[toEnumType(shaderType)].begin(), shareDescRanges[toEnumType(shaderType)].end(), descriptorRangeSort);
 
                     CD3DX12_ROOT_PARAMETER1 param = {};
-                    param.InitAsDescriptorTable(static_cast<UINT>(samplerDescRanges[shaderType].size()), samplerDescRanges[shaderType].data(), shaderVisibility(shaderType));
+                    param.InitAsDescriptorTable(static_cast<UINT>(samplerDescRanges[toEnumType(shaderType)].size()), samplerDescRanges[toEnumType(shaderType)].data(), shaderVisibility(shaderType));
 
                     rootParameters.push_back(param);
                     ++signatureParameterIndex;

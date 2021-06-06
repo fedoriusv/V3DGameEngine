@@ -84,7 +84,7 @@ namespace vk
 
         struct DescriptorSetLayoutCreator
         {
-            explicit DescriptorSetLayoutCreator(const std::array<const Shader*, ShaderType::ShaderType_Count>& shaders) noexcept;
+            explicit DescriptorSetLayoutCreator(const std::array<const Shader*, toEnumType(ShaderType::Count)>& shaders) noexcept;
 
             DescriptorSetLayoutCreator() = delete;
             DescriptorSetLayoutCreator(const DescriptorSetLayoutCreator&) = delete;
