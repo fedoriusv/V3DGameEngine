@@ -52,6 +52,7 @@ namespace renderer
         VendorID vendorID = VendorID_Empty;
 
         bool supportMultiview = false;
+        bool supportBlitImage = false;
 
         struct ImageFormatSupport
         {

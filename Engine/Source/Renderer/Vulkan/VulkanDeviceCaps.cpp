@@ -155,12 +155,12 @@ const VkPhysicalDeviceLimits& VulkanDeviceCaps::getPhysicalDeviceLimits() const
     return m_deviceProperties.limits;
 }
 
-const VkPhysicalDeviceMemoryProperties & VulkanDeviceCaps::getDeviceMemoryProperties() const
+const VkPhysicalDeviceMemoryProperties& VulkanDeviceCaps::getDeviceMemoryProperties() const
 {
     return m_deviceMemoryProps;
 }
 
-const VkPhysicalDeviceFeatures & VulkanDeviceCaps::getPhysicalDeviceFeatures() const
+const VkPhysicalDeviceFeatures& VulkanDeviceCaps::getPhysicalDeviceFeatures() const
 {
     return m_deviceFeatures;
 }
@@ -194,6 +194,7 @@ void VulkanDeviceCaps::fillCapabilitiesList(const DeviceInfo* info)
     supportPipelineExecutableProperties = isEnabledExtension(VK_KHR_PIPELINE_EXECUTABLE_PROPERTIES_EXTENSION_NAME);
 
     supportMultiview = isEnabledExtension(VK_KHR_MULTIVIEW_EXTENSION_NAME);
+    supportBlitImage = true;
 
     if (VulkanDeviceCaps::checkInstanceExtension(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME))
     {
@@ -389,6 +390,7 @@ void VulkanDeviceCaps::fillCapabilitiesList(const DeviceInfo* info)
     LOG_INFO("VulkanDeviceCaps::initialize:  supportDepthAutoResolve is %s", supportDepthAutoResolve ? "supported" : "unsupported");
     LOG_INFO("VulkanDeviceCaps::initialize:  supportDedicatedAllocation is %s", supportDedicatedAllocation ? "supported" : "unsupported");
     LOG_INFO("VulkanDeviceCaps::initialize:  supportMultiview is %s", supportMultiview ? "supported" : "unsupported");
+    LOG_INFO("VulkanDeviceCaps::initialize:  supportBlitImage is %s", supportBlitImage ? "supported" : "unsupported");
 
 #ifdef PLATFORM_ANDROID
 #   ifdef VK_QCOM_render_pass_transform

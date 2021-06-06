@@ -9,6 +9,7 @@
 #include "Object/ShaderProgram.h"
 #include "RenderPass.h"
 #include "Framebuffer.h"
+#include "DeviceCaps.h"
 
 
 namespace v3d
@@ -894,6 +895,7 @@ void CommandList::generateMipmaps(Texture2D* texute, TransitionOp state)
         return;
     }
 
+    ASSERT(m_context->getDeviceCaps()->supportBlitImage, "Must be true");
     ASSERT(texute->getLayersCount() == 1, "must be 1");
     if (CommandList::isImmediate())
     {
