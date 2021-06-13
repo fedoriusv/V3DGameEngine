@@ -557,7 +557,7 @@ bool VulkanRenderPass::createRenderpass2()
         if (depthStencilAutoresolve)
         {
             subpassDescriptionDepthStencilResolve.pDepthStencilResolveAttachment = &resolveDepthStencilAttachmentReferences;
-            subpassDescriptionDepthStencilResolve.depthResolveMode = VK_RESOLVE_MODE_AVERAGE_BIT_KHR;
+            subpassDescriptionDepthStencilResolve.depthResolveMode = VK_RESOLVE_MODE_SAMPLE_ZERO_BIT_KHR;
             subpassDescriptionDepthStencilResolve.stencilResolveMode = VK_RESOLVE_MODE_NONE_KHR;
 
             subpassDescription.pNext = &subpassDescriptionDepthStencilResolve;
