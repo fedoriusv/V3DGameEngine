@@ -1728,26 +1728,54 @@ bool VulkanImage::createViewImage()
 
     if (VulkanImage::isPresentTextureUsageFlag(TextureUsage::TextureUsage_Sampled))
     {
-        VkImageViewCreateInfo imageViewCreateInfo = {};
-        imageViewCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-        imageViewCreateInfo.pNext = vkExtensions;
-        imageViewCreateInfo.flags = 0;
-        imageViewCreateInfo.image = m_image;
-        imageViewCreateInfo.viewType = convertImageTypeToImageViewType(m_type, m_layerLevels == 6U, m_layerLevels > 1);
-        imageViewCreateInfo.format = m_format;
-        imageViewCreateInfo.components = { VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A };
-        imageViewCreateInfo.subresourceRange = VulkanImage::makeImageSubresourceRangeWithAspect(this, VulkanImage::makeVulkanImageSubresource(this), m_aspectMask);
-
-        VkImageView view = VK_NULL_HANDLE;
-        VkResult result = VulkanWrapper::CreateImageView(m_device, &imageViewCreateInfo, VULKAN_ALLOCATOR, &view);
-        if (result != VK_SUCCESS)
+        if (VulkanImage::isColorFormat(m_format))
         {
-            LOG_ERROR("VulkanImage::createViewImage vkCreateImageView is failed. Error: %s", ErrorString(result).c_str());
-            return false;
+            ASSERT(m_aspectMask == VK_IMAGE_ASPECT_COLOR_BIT, "must be color");
+            VkImageViewCreateInfo imageViewCreateInfo = {};
+            imageViewCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+            imageViewCreateInfo.pNext = vkExtensions;
+            imageViewCreateInfo.flags = 0;
+            imageViewCreateInfo.image = m_image;
+            imageViewCreateInfo.viewType = convertImageTypeToImageViewType(m_type, m_layerLevels == 6U, m_layerLevels > 1);
+            imageViewCreateInfo.format = m_format;
+            imageViewCreateInfo.components = { VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A }; //TODO get components from format
+            imageViewCreateInfo.subresourceRange = VulkanImage::makeImageSubresourceRangeWithAspect(this, VulkanImage::makeVulkanImageSubresource(this), VK_IMAGE_ASPECT_COLOR_BIT);
+
+            VkImageView view = VK_NULL_HANDLE;
+            VkResult result = VulkanWrapper::CreateImageView(m_device, &imageViewCreateInfo, VULKAN_ALLOCATOR, &view);
+            if (result != VK_SUCCESS)
+            {
+                LOG_ERROR("VulkanImage::createViewImage vkCreateImageView is failed. Error: %s", ErrorString(result).c_str());
+                return false;
+            }
+
+            [[maybe_unused]] auto viewIter = m_imageViews.insert({ ImageViewKey(imageViewCreateInfo.subresourceRange), view });
+            ASSERT(viewIter.second, "already exsist");
         }
 
-        [[maybe_unused]] auto viewIter = m_imageViews.insert({ ImageViewKey(imageViewCreateInfo.subresourceRange), view });
-        ASSERT(viewIter.second, "already exsist");
+        if (VulkanImage::isDepthStencilFormat(m_format)) //might be Depth only sampled
+        {
+            VkImageViewCreateInfo imageViewCreateInfo = {};
+            imageViewCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+            imageViewCreateInfo.pNext = vkExtensions;
+            imageViewCreateInfo.flags = 0;
+            imageViewCreateInfo.image = m_image;
+            imageViewCreateInfo.viewType = convertImageTypeToImageViewType(m_type, m_layerLevels == 6U, m_layerLevels > 1);
+            imageViewCreateInfo.format = m_format;
+            imageViewCreateInfo.components = { VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY };
+            imageViewCreateInfo.subresourceRange = VulkanImage::makeImageSubresourceRangeWithAspect(this, VulkanImage::makeVulkanImageSubresource(this), VK_IMAGE_ASPECT_DEPTH_BIT);
+
+            VkImageView view = VK_NULL_HANDLE;
+            VkResult result = VulkanWrapper::CreateImageView(m_device, &imageViewCreateInfo, VULKAN_ALLOCATOR, &view);
+            if (result != VK_SUCCESS)
+            {
+                LOG_ERROR("VulkanImage::createViewImage vkCreateImageView is failed. Error: %s", ErrorString(result).c_str());
+                return false;
+            }
+
+            [[maybe_unused]] auto viewIter = m_imageViews.insert({ ImageViewKey(imageViewCreateInfo.subresourceRange), view });
+            ASSERT(viewIter.second, "already exsist");
+        }
     }
 
     if (VulkanImage::isPresentTextureUsageFlag(TextureUsage::TextureUsage_Attachment))
