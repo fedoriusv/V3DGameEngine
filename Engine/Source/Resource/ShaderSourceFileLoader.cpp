@@ -109,7 +109,7 @@ ShaderSourceFileLoader::ShaderSourceFileLoader(const renderer::Context* context,
 
     renderer::ShaderHeader header(type);
     header._contentType = renderer::ShaderHeader::ShaderResource::Source;
-    header._shaderModel = renderer::ShaderHeader::ShaderModel::HLSL_5_1;
+    header._shaderModel = renderer::ShaderHeader::ShaderModel::Default;
     header._defines = defines;
     header._entryPoint = entryPoint;
     header._optLevel = 0;
@@ -136,12 +136,17 @@ ShaderSourceFileLoader::ShaderSourceFileLoader(const renderer::Context* context,
             header._shaderModel = renderer::ShaderHeader::ShaderModel::ShaderModel_HLSL_6_1;
             ResourceDecoderRegistration::registerDecoder(new ShaderDXCDecoder({ "hlsl" }, header, renderer::ShaderHeader::ShaderModel::ShaderModel_SpirV, !(flags & ShaderSourceBuildFlag::ShaderSource_DontUseReflection)));
         }*/
+        header._shaderModel = renderer::ShaderHeader::ShaderModel::HLSL_5_1;
         ResourceDecoderRegistration::registerDecoder(new ShaderSpirVDecoder({ "hlsl" }, header, !(flags & ShaderSourceBuildFlag::ShaderSource_DontUseReflection)));
+
+        header._shaderModel = renderer::ShaderHeader::ShaderModel::GLSL_450;
+        ResourceDecoderRegistration::registerDecoder(new ShaderSpirVDecoder({ "vert", "frag", "comp" }, header, !(flags & ShaderSourceBuildFlag::ShaderSource_DontUseReflection)));
 #endif
     }
 #if D3D_RENDER
     else if (context->getRenderType() == renderer::Context::RenderType::DirectXRender)
     {
+        header._shaderModel = renderer::ShaderHeader::ShaderModel::HLSL_5_1;
         if (flags & ShaderSourceBuildFlag::ShaderSource_UseDXCompiler)
         {
             header._shaderModel = renderer::ShaderHeader::ShaderModel::HLSL_6_1;

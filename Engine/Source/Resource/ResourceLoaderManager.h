@@ -57,6 +57,21 @@ namespace resource
         const TResource* loadShader(renderer::Context* context, std::string filename, std::vector<std::pair<std::string, std::string>> defines = {}, ShaderSourceBuildFlags flags = 0);
 
         /**
+        * @brief loadShader
+        * Create shader from file
+        *
+        * @param renderer::Context* context [required]
+        * @param const std::string filename [required]
+        * @param const std::string entryPoint [required]
+        * @param renderer::ShaderType type [required]
+        * @param std::vector<std::pair<std::string, std::string>> defines [optional]
+        * @param ShaderSourceBuildFlags flags [optional]
+        * @return Shader resource, nullptr if failed
+        */
+        template<class TResource = renderer::Shader, class TResourceLoader>
+        const TResource* loadShader(renderer::Context* context, renderer::ShaderType type, std::string filename, const std::string& entryPoint = "main", std::vector<std::pair<std::string, std::string>> defines = {}, ShaderSourceBuildFlags flags = 0);
+
+        /**
         * @brief loadHLSLShader
         * Create list of HLSL shaders from file
         *
@@ -195,6 +210,50 @@ namespace resource
         if (resourceIter.second)
         {
             TResourceLoader loader(context, defines, flags);
+            Resource* res = loader.load(innerName);
+            if (!res)
+            {
+                m_resources.erase(resourceIter.first);
+                return nullptr;
+            }
+
+            resourceIter.first->second = res;
+            return static_cast<TResource*>(res);
+        }
+
+        return static_cast<TResource*>(resourceIter.first->second);
+    }
+
+    template<class TResource, class TResourceLoader>
+    inline const TResource* ResourceLoaderManager::loadShader(renderer::Context* context, renderer::ShaderType type, std::string filename, const std::string& entryPoint, std::vector<std::pair<std::string, std::string>> defines, ShaderSourceBuildFlags flags)
+    {
+        static_assert(std::is_same<TResource, renderer::Shader>(), "wrong type");
+        std::string innerName(filename);
+        std::transform(filename.begin(), filename.end(), innerName.begin(), ::tolower);
+
+        std::sort(defines.begin(), defines.end(), [](const std::pair<std::string, std::string>& macros1, const std::pair<std::string, std::string>& macros2) -> bool
+            {
+                return macros1.first < macros2.first;
+            });
+
+        auto composeResourceName = [](const std::string& name, const std::vector<std::pair<std::string, std::string>>& defines) -> std::string
+        {
+            std::string outString = name;
+            for (auto& define : defines)
+            {
+                outString.append("_");
+                outString.append(define.first);
+                outString.append(define.second);
+            }
+
+            return outString;
+        };
+        const std::string resourceName = composeResourceName(innerName, defines);
+
+        auto resourceIter = m_resources.emplace(std::make_pair(resourceName, nullptr));
+        if (resourceIter.second)
+        {
+            TResourceLoader loader(context, type, entryPoint, defines, flags);
             Resource* res = loader.load(innerName);
             if (!res)
             {
