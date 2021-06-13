@@ -51,19 +51,19 @@ TextureRender::TextureRender(CommandList& cmdList, const v3d::core::Dimension2D&
                 });
 
 #if defined(PLATFORM_ANDROID)
-            Texture2D* depthAttachmentMSAA = cmdList.createObject<Texture2D>(TextureUsage::TextureUsage_Attachment | TextureUsage::TextureUsage_Resolve, Format::Format_D24_UNorm_S8_UInt, viewport, TextureSamples::TextureSamples_x2);
+            Texture2D* depthAttachmentMSAA = cmdList.createObject<Texture2D>(TextureUsage::TextureUsage_Attachment | TextureUsage::TextureUsage_Resolve | TextureUsage::TextureUsage_Sampled, Format::Format_D24_UNorm_S8_UInt, viewport, TextureSamples::TextureSamples_x2);
 #else
-            Texture2D* depthAttachmentMSAA = cmdList.createObject<Texture2D>(TextureUsage::TextureUsage_Attachment, Format::Format_D32_SFloat_S8_UInt, viewport, TextureSamples::TextureSamples_x2);
+            Texture2D* depthAttachmentMSAA = cmdList.createObject<Texture2D>(TextureUsage::TextureUsage_Attachment | TextureUsage::TextureUsage_Resolve | TextureUsage::TextureUsage_Sampled, Format::Format_D32_SFloat_S8_UInt, viewport, TextureSamples::TextureSamples_x2);
 #endif
             m_renderTargetMSAA->setDepthStencilTexture(depthAttachmentMSAA,
                 {
-                    renderer::RenderTargetLoadOp::LoadOp_Clear, renderer::RenderTargetStoreOp::StoreOp_DontCare, 1.0f
+                    renderer::RenderTargetLoadOp::LoadOp_Clear, renderer::RenderTargetStoreOp::StoreOp_Store, 1.0f
                 },
                 {
                     renderer::RenderTargetLoadOp::LoadOp_DontCare, renderer::RenderTargetStoreOp::StoreOp_DontCare, 0U
                 },
                 {
-                    renderer::TransitionOp::TransitionOp_Undefined, renderer::TransitionOp::TransitionOp_DepthStencilAttachment
+                    renderer::TransitionOp::TransitionOp_Undefined, renderer::TransitionOp::TransitionOp_ShaderRead
                 });
 
             m_pipelineMSAA = cmdList.createObject<GraphicsPipelineState>(vertex, m_program.get(), m_renderTargetMSAA.get());
@@ -237,7 +237,7 @@ void TextureRender::process(renderer::CommandList& cmdList, const std::vector<st
         cmdList.setPipelineState(m_pipelineBackbuffer.get());
 
         m_programBackbuffer->bindSampler<renderer::ShaderType::Fragment>({ "colorSampler" }, m_Sampler.get());
-        m_programBackbuffer->bindTexture<renderer::ShaderType::Fragment, renderer::Texture2D>({ "colorTexture" }, m_renderTargetMSAA->getColorTexture<Texture2D>(0), 0, 0);
+        m_programBackbuffer->bindTexture<renderer::ShaderType::Fragment, renderer::Texture2D>({ "colorTexture" }, m_renderTargetMSAA->getColorTexture<Texture2D>(0));
 
         cmdList.draw(renderer::StreamBufferDescription(nullptr, 0), 0, 3, 1);
     }

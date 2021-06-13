@@ -187,8 +187,8 @@ void MyApplication::Load()
     {
         std::vector<const renderer::Shader*> shaders = resource::ResourceLoaderManager::getInstance()->loadHLSLShader<renderer::Shader, resource::ShaderSourceFileLoader>(m_CommandList->getContext(), "data/solid_SunShadow.hlsl",
             {
-                {"main_VS", renderer::Vertex },
-                {"main_FS", renderer::Fragment }
+                {"main_VS", renderer::ShaderType::Vertex },
+                {"main_FS", renderer::ShaderType::Fragment }
             });
 
         m_ShadowMappingProgram = m_CommandList->createObject<renderer::ShaderProgram>(shaders);
@@ -205,8 +205,8 @@ void MyApplication::Load()
     {
         std::vector<const renderer::Shader*> shaders = resource::ResourceLoaderManager::getInstance()->loadHLSLShader<renderer::Shader, resource::ShaderSourceFileLoader>(m_CommandList->getContext(), "data/solid_SunCascadedShadow.hlsl",
             {
-                {"main_VS", renderer::Vertex },
-                {"main_FS", renderer::Fragment }
+                {"main_VS", renderer::ShaderType::Vertex },
+                {"main_FS", renderer::ShaderType::Fragment }
             }, 
             { 
                 { "SHADOWMAP_CASCADE_COUNT", std::to_string(CascadedShadowMapping::s_CascadeCount) },
@@ -219,8 +219,8 @@ void MyApplication::Load()
 
         std::vector<const renderer::Shader*> shadersDebug = resource::ResourceLoaderManager::getInstance()->loadHLSLShader<renderer::Shader, resource::ShaderSourceFileLoader>(m_CommandList->getContext(), "data/solid_SunCascadedShadow.hlsl",
             {
-                {"main_VS", renderer::Vertex },
-                {"main_FS", renderer::Fragment }
+                {"main_VS", renderer::ShaderType::Vertex },
+                {"main_FS", renderer::ShaderType::Fragment }
             },
             {
                 { "SHADOWMAP_CASCADE_COUNT", std::to_string(CascadedShadowMapping::s_CascadeCount) },
@@ -234,8 +234,8 @@ void MyApplication::Load()
     {
         std::vector<const renderer::Shader*> shaders = resource::ResourceLoaderManager::getInstance()->loadHLSLShader<renderer::Shader, resource::ShaderSourceFileLoader>(m_CommandList->getContext(), "data/solid_ShadowPointLight.hlsl",
             {
-                {"main_VS", renderer::Vertex },
-                {"main_FS", renderer::Fragment }
+                {"main_VS", renderer::ShaderType::Vertex },
+                {"main_FS", renderer::ShaderType::Fragment }
             },
             {
                 { "NEAR_PLANE", std::to_string(m_ShadowMappingPoint->GetCamera().getNear()) },

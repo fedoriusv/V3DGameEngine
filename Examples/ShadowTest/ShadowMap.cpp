@@ -70,8 +70,8 @@ void ShadowMapping::Init(const renderer::VertexInputAttribDescription& desc)
     const stream::Stream* vertexStream = stream::StreamManager::createMemoryStream(k_vertexSource);
 
     renderer::ShaderHeader vertexHeader(renderer::ShaderType::Vertex);
-    vertexHeader._contentType = renderer::ShaderHeader::ShaderResource::ShaderResource_Source;
-    vertexHeader._shaderModel = renderer::ShaderHeader::ShaderModel::ShaderModel_HLSL_5_1;
+    vertexHeader._contentType = renderer::ShaderHeader::ShaderResource::Source;
+    vertexHeader._shaderModel = renderer::ShaderHeader::ShaderModel::HLSL_5_1;
     const renderer::Shader* vertShader = resource::ResourceLoaderManager::getInstance()->composeShader<renderer::Shader, resource::ShaderSourceStreamLoader>(m_CmdList->getContext(), "shadowmap", &vertexHeader, vertexStream);
 
     m_Program = m_CmdList->createObject<renderer::ShaderProgram, std::vector<const renderer::Shader*>>({ vertShader });
@@ -183,8 +183,8 @@ void CascadedShadowMapping::Init(const renderer::VertexInputAttribDescription& d
     const stream::Stream* vertexStream = stream::StreamManager::createMemoryStream(k_vertexSource);
 
     renderer::ShaderHeader vertexHeader(renderer::ShaderType::Vertex);
-    vertexHeader._contentType = renderer::ShaderHeader::ShaderResource::ShaderResource_Source;
-    vertexHeader._shaderModel = renderer::ShaderHeader::ShaderModel::ShaderModel_HLSL_5_1;
+    vertexHeader._contentType = renderer::ShaderHeader::ShaderResource::Source;
+    vertexHeader._shaderModel = renderer::ShaderHeader::ShaderModel::HLSL_5_1;
     const renderer::Shader* vertShader = resource::ResourceLoaderManager::getInstance()->composeShader<renderer::Shader, resource::ShaderSourceStreamLoader>(m_CmdList->getContext(), "shadowmap", &vertexHeader, vertexStream);
 
     m_Program = m_CmdList->createObject<renderer::ShaderProgram, std::vector<const renderer::Shader*>>({ vertShader });
@@ -432,8 +432,8 @@ void ShadowMappingPoint::PrepareShadowMap(const renderer::VertexInputAttribDescr
         const stream::Stream* vertexStream = stream::StreamManager::createMemoryStream(vertexSource);
 
         renderer::ShaderHeader vertexHeader(renderer::ShaderType::Vertex);
-        vertexHeader._contentType = renderer::ShaderHeader::ShaderResource::ShaderResource_Source;
-        vertexHeader._shaderModel = renderer::ShaderHeader::ShaderModel::ShaderModel_HLSL_5_1;
+        vertexHeader._contentType = renderer::ShaderHeader::ShaderResource::Source;
+        vertexHeader._shaderModel = renderer::ShaderHeader::ShaderModel::HLSL_5_1;
 
         vertShader = resource::ResourceLoaderManager::getInstance()->composeShader<renderer::Shader, resource::ShaderSourceStreamLoader>(m_CmdList->getContext(), "shadowmap_vetex", &vertexHeader, vertexStream);
     }
@@ -457,8 +457,8 @@ void ShadowMappingPoint::PrepareShadowMap(const renderer::VertexInputAttribDescr
         const stream::Stream* fragmentStream = stream::StreamManager::createMemoryStream(fragmentSource);
 
         renderer::ShaderHeader fragmentHeader(renderer::ShaderType::Fragment);
-        fragmentHeader._contentType = renderer::ShaderHeader::ShaderResource::ShaderResource_Source;
-        fragmentHeader._shaderModel = renderer::ShaderHeader::ShaderModel::ShaderModel_HLSL_5_1;
+        fragmentHeader._contentType = renderer::ShaderHeader::ShaderResource::Source;
+        fragmentHeader._shaderModel = renderer::ShaderHeader::ShaderModel::HLSL_5_1;
         fragmentHeader._defines.push_back({ "FAR_PLANE", std::to_string(m_ShadowCamera->getCamera().getFar()) });
         fragmentHeader._defines.push_back({ "NEAR_PLANE", std::to_string(m_ShadowCamera->getCamera().getNear()) });
         fragmentHeader._defines.push_back({ "DEPTH_BIAS", std::to_string(0.0001) });
@@ -569,8 +569,8 @@ void ShadowMappingPoint::PrepareMuiltiviewShadowMap(const renderer::VertexInputA
         const stream::Stream* vertexStream = stream::StreamManager::createMemoryStream(vertexSourceGL);
 
         renderer::ShaderHeader vertexHeader(renderer::ShaderType::Vertex);
-        vertexHeader._contentType = renderer::ShaderHeader::ShaderResource::ShaderResource_Source;
-        vertexHeader._shaderModel = renderer::ShaderHeader::ShaderModel::ShaderModel_GLSL_450;
+        vertexHeader._contentType = renderer::ShaderHeader::ShaderResource::Source;
+        vertexHeader._shaderModel = renderer::ShaderHeader::ShaderModel::GLSL_450;
         vertexHeader._defines.push_back({ "SIDES_COUNT", std::to_string(s_PointSidesCount) });
 
         vertShader = resource::ResourceLoaderManager::getInstance()->composeShader<renderer::Shader, resource::ShaderSourceStreamLoader>(m_CmdList->getContext(), "shadowmap_vetex_view", &vertexHeader, vertexStream);
@@ -596,8 +596,8 @@ void ShadowMappingPoint::PrepareMuiltiviewShadowMap(const renderer::VertexInputA
         const stream::Stream* fragmentStream = stream::StreamManager::createMemoryStream(fragmentSource);
 
         renderer::ShaderHeader fragmentHeader(renderer::ShaderType::Fragment);
-        fragmentHeader._contentType = renderer::ShaderHeader::ShaderResource::ShaderResource_Source;
-        fragmentHeader._shaderModel = renderer::ShaderHeader::ShaderModel::ShaderModel_HLSL_5_1;
+        fragmentHeader._contentType = renderer::ShaderHeader::ShaderResource::Source;
+        fragmentHeader._shaderModel = renderer::ShaderHeader::ShaderModel::HLSL_5_1;
 #if FORCE_USE_DX_COMPILER
         fragmentHeader._shaderModel = renderer::ShaderHeader::ShaderModel::ShaderModel_HLSL_6_1;
 #endif
