@@ -53,7 +53,7 @@ TextureRender::TextureRender(CommandList& cmdList, const v3d::core::Dimension2D&
 #if defined(PLATFORM_ANDROID)
             Texture2D* depthAttachmentMSAA = cmdList.createObject<Texture2D>(TextureUsage::TextureUsage_Attachment | TextureUsage::TextureUsage_Resolve | TextureUsage::TextureUsage_Sampled, Format::Format_D24_UNorm_S8_UInt, viewport, TextureSamples::TextureSamples_x2);
 #else
-            Texture2D* depthAttachmentMSAA = cmdList.createObject<Texture2D>(TextureUsage::TextureUsage_Attachment | TextureUsage::TextureUsage_Resolve | TextureUsage::TextureUsage_Sampled, Format::Format_D32_SFloat_S8_UInt, viewport, TextureSamples::TextureSamples_x2);
+            Texture2D* depthAttachmentMSAA = cmdList.createObject<Texture2D>(TextureUsage::TextureUsage_Attachment | TextureUsage::TextureUsage_Sampled, Format::Format_D32_SFloat, viewport, TextureSamples::TextureSamples_x2);
 #endif
             m_renderTargetMSAA->setDepthStencilTexture(depthAttachmentMSAA,
                 {
@@ -105,14 +105,15 @@ TextureRender::TextureRender(CommandList& cmdList, const v3d::core::Dimension2D&
             const renderer::Shader* fragmentShader = nullptr;
             {
                 const std::string fragmentSource("\
-                    struct PS_INPUT\n\
+                    struct VS_OUTPUT\n\
                     {\n\
+                        float4 Pos : SV_Position;\n\
                         float2 UV : TEXTURE;\n\
                     };\n\
                     SamplerState colorSampler : register(s0, space0);\n\
                     Texture2D colorTexture : register(t1, space0);\n\
                     \n\
-                    float4 main(PS_INPUT input) : SV_TARGET0\n\
+                    float4 main(VS_OUTPUT input) : SV_TARGET0\n\
                     {\n\
                         float4 outFragColor = colorTexture.Sample(colorSampler, input.UV);\n\
                         return outFragColor;\n\
