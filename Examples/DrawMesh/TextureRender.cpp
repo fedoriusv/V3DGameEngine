@@ -148,7 +148,7 @@ TextureRender::TextureRender(CommandList& cmdList, const v3d::core::Dimension2D&
             m_pipelineBackbuffer->setDepthTest(false);
         }
 
-        m_Sampler = cmdList.createObject<renderer::SamplerState>(renderer::SamplerFilter::SamplerFilter_Trilinear, renderer::SamplerAnisotropic::SamplerAnisotropic_4x);
+        m_Sampler = cmdList.createObject<renderer::SamplerState>(renderer::SamplerFilter::SamplerFilter_Trilinear, renderer::SamplerAnisotropic::SamplerAnisotropic_None);
     }
     else
     {

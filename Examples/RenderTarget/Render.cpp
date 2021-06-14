@@ -53,7 +53,11 @@ public:
     {
         resource::ResourceLoaderManager::getInstance()->addPath("examples/rendertarget/data/");
 
+#if defined(PLATFORM_ANDROID)
+        m_Sampler = commandList->createObject<renderer::SamplerState>(renderer::SamplerFilter::SamplerFilter_Trilinear, renderer::SamplerAnisotropic::SamplerAnisotropic_None);
+#else
         m_Sampler = commandList->createObject<renderer::SamplerState>(renderer::SamplerFilter::SamplerFilter_Trilinear, renderer::SamplerAnisotropic::SamplerAnisotropic_4x);
+#endif
         m_Sampler->setWrap(renderer::SamplerWrap::TextureWrap_MirroredRepeat);
 
         resource::Image* image = resource::ResourceLoaderManager::getInstance()->load<resource::Image, resource::ImageFileLoader>("basetex.jpg", resource::ImageLoaderFlag_GenerateMipmaps);
@@ -350,7 +354,11 @@ public:
         m_OffscreenPipeline->setDepthWrite(false);
         m_OffscreenPipeline->setDepthTest(false);
 
+#if defined(PLATFORM_ANDROID)
+        m_Sampler = commandList->createObject<renderer::SamplerState>(renderer::SamplerFilter::SamplerFilter_Trilinear, renderer::SamplerAnisotropic::SamplerAnisotropic_None);
+#else
         m_Sampler = commandList->createObject<renderer::SamplerState>(renderer::SamplerFilter::SamplerFilter_Trilinear, renderer::SamplerAnisotropic::SamplerAnisotropic_4x);
+#endif
         m_Sampler->setWrap(renderer::SamplerWrap::TextureWrap_MirroredRepeat);
     }
 
