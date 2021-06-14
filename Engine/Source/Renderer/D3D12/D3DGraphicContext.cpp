@@ -510,7 +510,7 @@ Image* D3DGraphicContext::createImage(TextureTarget target, Format format, const
     LOG_DEBUG("D3DGraphicContext::createImage");
 #endif //D3D_DEBUG
     D3D12_RESOURCE_DIMENSION dxDimension = D3DImage::convertImageTargetToD3DDimension(target); //TODO
-    u32 dxSamples = (samples > TextureSamples::TextureSamples_x1) ? 2 << (u32)samples : 1;
+    u32 dxSamples = (samples > TextureSamples::TextureSamples_x1) ? 1 << (u32)samples : 1;
     ASSERT(dimension.depth == 1, "must be 1");
 
     return new D3DImage(m_device, format, dimension.width, dimension.height, layers, dxSamples, flags, name);
@@ -1040,6 +1040,18 @@ void D3DGraphicContext::switchRenderTargetTransitionToFinal(D3DGraphicsCommandLi
         const AttachmentDescription& attachment = target->getDescription()._attachments[i];
         u32 layer = AttachmentDescription::uncompressLayer(attachment._layer);
 
+        if (D3DImage* dxResolveImage = dxImage->getResolveImage())
+        {
+            cmdList->transition(dxImage, D3DImage::makeD3DImageSubresource(dxImage, layer, 0), D3D12_RESOURCE_STATE_RESOLVE_SOURCE);
+            cmdList->transition(dxResolveImage, D3DImage::makeD3DImageSubresource(dxResolveImage, layer, 0), D3D12_RESOURCE_STATE_RESOLVE_DEST);
+
+            cmdList->resolve(dxImage, D3DImage::makeD3DImageSubresource(dxImage, layer, 0), dxResolveImage, D3DImage::makeD3DImageSubresource(dxResolveImage, layer, 0));
+
+            cmdList->transition(dxImage, D3DImage::makeD3DImageSubresource(dxImage, layer, 0), D3D12_RESOURCE_STATE_RENDER_TARGET);
+
+            dxImage = dxResolveImage;
+        }
+
         switch (attachment._finalTransition)
         {
         case TransitionOp::TransitionOp_ColorAttachment:
@@ -1065,6 +1077,18 @@ void D3DGraphicContext::switchRenderTargetTransitionToFinal(D3DGraphicsCommandLi
 
         const AttachmentDescription& attachment = target->getDescription()._attachments.back();
         u32 layer = AttachmentDescription::uncompressLayer(attachment._layer);
+
+        if (D3DImage* dxResolveImage = dxImage->getResolveImage())
+        {
+            cmdList->transition(dxImage, D3DImage::makeD3DImageSubresource(dxImage, layer, 0), D3D12_RESOURCE_STATE_RESOLVE_SOURCE);
+            cmdList->transition(dxResolveImage, D3DImage::makeD3DImageSubresource(dxResolveImage, layer, 0), D3D12_RESOURCE_STATE_RESOLVE_DEST);
+
+            cmdList->resolve(dxImage, D3DImage::makeD3DImageSubresource(dxImage, layer, 0), dxResolveImage, D3DImage::makeD3DImageSubresource(dxResolveImage, layer, 0));
+
+            cmdList->transition(dxImage, D3DImage::makeD3DImageSubresource(dxImage, layer, 0), D3D12_RESOURCE_STATE_DEPTH_WRITE);
+
+            dxImage = dxResolveImage;
+        }
 
         if (attachment._finalTransition == TransitionOp::TransitionOp_DepthStencilAttachment)
         {

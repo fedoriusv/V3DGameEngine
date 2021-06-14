@@ -546,7 +546,7 @@ bool D3DGraphicPipelineState::create(const PipelineGraphicInfo* pipelineInfo)
         sampleDesc.Quality = 0;
         if (pipelineInfo->_renderpassDesc._desc._attachments[0]._samples > TextureSamples::TextureSamples_x1)
         {
-            sampleDesc.Count = 2 << (u32)(pipelineInfo->_renderpassDesc._desc._attachments[0]._samples);
+            sampleDesc.Count = 1 << (u32)(pipelineInfo->_renderpassDesc._desc._attachments[0]._samples);
         }
         else
         {

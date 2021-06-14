@@ -59,6 +59,7 @@ void D3DDeviceCaps::initialize(ID3D12Device* device)
             m_imageFormatSupport[i][TilingType_Optimal]._supportAttachment = ((formatSupport.Support1 & D3D12_FORMAT_SUPPORT1_RENDER_TARGET) || (formatSupport.Support1 & D3D12_FORMAT_SUPPORT1_DEPTH_STENCIL)) ? true : false;
             m_imageFormatSupport[i][TilingType_Optimal]._supportMip = (formatSupport.Support1 & D3D12_FORMAT_SUPPORT1_MIP) ? true : false;
             m_imageFormatSupport[i][TilingType_Optimal]._supportStorage = (formatSupport.Support1 & D3D12_FORMAT_SUPPORT1_TYPED_UNORDERED_ACCESS_VIEW) ? true : false;
+            m_imageFormatSupport[i][TilingType_Optimal]._supportResolve = (formatSupport.Support1 & D3D12_FORMAT_SUPPORT1_MULTISAMPLE_RESOLVE) ? true : false;
         }
     }
 

@@ -115,6 +115,8 @@ namespace dx3d
         void setViewport(const std::vector<D3D12_VIEWPORT>& viewport);
         void setScissor(const std::vector<D3D12_RECT>& scissors);
 
+        void resolve(D3DImage* image, const Image::Subresource& subresource, D3DImage* resolvedImage, const Image::Subresource& resolvedSubresource);
+
         void setRenderTarget(D3DRenderTarget* target);
         void setPipelineState(D3DGraphicPipelineState* pipeline);
         void setPipelineState(D3DComputePipelineState* pipeline);

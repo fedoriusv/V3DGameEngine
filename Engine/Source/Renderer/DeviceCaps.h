@@ -60,6 +60,7 @@ namespace renderer
             bool _supportSampled;
             bool _supportStorage;
             bool _supportMip;
+            bool _supportResolve;
         };
 
         const ImageFormatSupport& getImageFormatSupportInfo(Format format, TilingType type)

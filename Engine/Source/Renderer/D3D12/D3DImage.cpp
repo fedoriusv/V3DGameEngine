@@ -730,7 +730,24 @@ DXGI_FORMAT D3DImage::convertToTypelessFormat(DXGI_FORMAT format)
     return DXGI_FORMAT_UNKNOWN;
 }
 
-DXGI_FORMAT D3DImage::getCompatibilityFormat(DXGI_FORMAT format)
+DXGI_FORMAT D3DImage::getSampledCompatibilityFormat(DXGI_FORMAT format)
+{
+    switch (format)
+    {
+    case DXGI_FORMAT_D32_FLOAT:
+        return DXGI_FORMAT_R32_FLOAT;
+
+    case DXGI_FORMAT_D32_FLOAT_S8X24_UINT:
+        return DXGI_FORMAT_R32_FLOAT_X8X24_TYPELESS;
+
+    default:
+        ASSERT(false, "format not found");
+    }
+
+    return DXGI_FORMAT_UNKNOWN;
+}
+
+DXGI_FORMAT D3DImage::getResolveCompatibilityFormat(DXGI_FORMAT format)
 {
     switch (format)
     {
@@ -738,7 +755,7 @@ DXGI_FORMAT D3DImage::getCompatibilityFormat(DXGI_FORMAT format)
         return DXGI_FORMAT_R32_FLOAT;
 
     default:
-        ASSERT(false, "format not found");
+        return format;
     }
 
     return DXGI_FORMAT_UNKNOWN;
@@ -844,6 +861,7 @@ D3DImage::D3DImage(ID3D12Device* device, Format format, u32 width, u32 height, u
     , m_arrays(arrays)
     , m_mipmaps(1)
     , m_samples(samples)
+    , m_resolveImage(nullptr)
 
     , m_swapchain(false)
 
@@ -872,7 +890,13 @@ D3DImage::D3DImage(ID3D12Device* device, Format format, u32 width, u32 height, u
         m_flags |= D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
     }
 
-    if (flags & TextureUsage::TextureUsage_GenerateMipmaps)
+    if (flags & TextureUsage::TextureUsage_Resolve)
+    {
+        ASSERT(m_samples > 1, "Count samples must be 1");
+        m_resolveImage = new D3DImage(device, format, width, height, arrays, 1, flags & ~TextureUsage::TextureUsage_Resolve);
+    }
+
+    if ((flags & TextureUsage::TextureUsage_GenerateMipmaps) && !(flags & TextureUsage::TextureUsage_Resolve))
     {
         ASSERT(flags & TextureUsage::TextureUsage_Attachment, "must be attachment");
         m_mipmaps = ImageFormat::calculateMipmapCount({ m_size.width, m_size.height, m_size.depth });
@@ -894,6 +918,7 @@ D3DImage::D3DImage(ID3D12Device* device, D3D12_RESOURCE_DIMENSION dimension, For
     , m_arrays(arrays)
     , m_mipmaps(mipmap)
     , m_samples(1U)
+    , m_resolveImage(nullptr)
 
     , m_swapchain(false)
 
@@ -919,6 +944,7 @@ D3DImage::D3DImage(ID3D12Device* device, D3D12_RESOURCE_DIMENSION dimension, For
     {
         m_flags |= D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
     }
+    ASSERT(!(flags & TextureUsage::TextureUsage_Resolve), "must not be resolve");
 
     m_state.resize(m_arrays * m_mipmaps + 1, D3D12_RESOURCE_STATE_COMMON);
 }
@@ -928,6 +954,7 @@ D3DImage::~D3DImage()
 {
     LOG_DEBUG("D3DImage::~D3DImage destructor %llx", this);
     ASSERT(!m_resource, "not nullptr");
+    ASSERT(!m_resolveImage, "not nullptr");
 }
 
 bool D3DImage::create()
@@ -966,10 +993,10 @@ bool D3DImage::create()
     {
         if (!D3DDeviceCaps::getInstance()->getImageFormatSupportInfo(m_originFormat, DeviceCaps::TilingType_Optimal)._supportSampled)
         {
-            sampledFormat = getCompatibilityFormat(m_format);
+            sampledFormat = D3DImage::getSampledCompatibilityFormat(m_format);
             if (sampledFormat == DXGI_FORMAT_UNKNOWN)
             {
-                ASSERT(false, "can't find supportd format");
+                ASSERT(false, "can't find supported format");
                 return false;
             }
 
@@ -980,6 +1007,7 @@ bool D3DImage::create()
     if (!D3DDeviceCaps::getInstance()->getImageFormatSupportInfo(m_originFormat, DeviceCaps::TilingType_Optimal)._supportMip)
     {
         LOG_WARNING("Format %s is not supported mip levels", ImageFormatStringDX(m_format).c_str());
+        ASSERT(m_mipmaps > 1, "not support");
         m_mipmaps = 1;
     }
 
@@ -993,6 +1021,22 @@ bool D3DImage::create()
         }
     }
 
+    DXGI_FORMAT resolvedFormat = m_format;
+    if (m_samples > 1)
+    {
+        if (!D3DDeviceCaps::getInstance()->getImageFormatSupportInfo(m_originFormat, DeviceCaps::TilingType_Optimal)._supportResolve)
+        {
+            resolvedFormat = D3DImage::getResolveCompatibilityFormat(m_format);
+            if (resolvedFormat == DXGI_FORMAT_UNKNOWN)
+            {
+                ASSERT(false, "can't find supported resolve");
+                return false;
+            }
+
+            LOG_WARNING("Format %s is not supported resolve flag, replace to %s", ImageFormatStringDX(m_format).c_str(), ImageFormatStringDX(resolvedFormat).c_str());
+        }
+    }
+
     D3D12_RESOURCE_DESC textureDesc = {};
     textureDesc.Dimension = m_dimension;
     textureDesc.Alignment = 0;
@@ -1001,7 +1045,7 @@ bool D3DImage::create()
     textureDesc.DepthOrArraySize = m_size.depth * m_arrays;
     textureDesc.MipLevels = m_mipmaps;
     textureDesc.Format = D3DImage::convertToTypelessFormat(m_format);
-    textureDesc.SampleDesc = { 1, 0 };
+    textureDesc.SampleDesc = { m_samples, 0 };
     textureDesc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
     textureDesc.Flags = m_flags;
 
@@ -1030,6 +1074,17 @@ bool D3DImage::create()
     }
     m_resource->SetName(LPCWSTR(wtext));
 #endif
+
+    if (m_resolveImage)
+    {
+        if (!m_resolveImage->create())
+        {
+            D3DImage::destroy();
+
+            LOG_ERROR("D3DImage::create() resolve is failed");
+            return false;
+        }
+    }
 
     return true;
 }
@@ -1322,6 +1377,14 @@ void D3DImage::destroy()
         return;
     }
 
+    if (m_resolveImage)
+    {
+        m_resolveImage->destroy();
+
+        delete m_resolveImage;
+        m_resolveImage = nullptr;
+    }
+
     SAFE_DELETE(m_resource);
 }
 
@@ -1564,6 +1627,11 @@ D3D12_RESOURCE_STATES D3DImage::setState(const Image::Subresource& subresource, 
     m_state.front() = state;
 
     return oldState;
+}
+
+D3DImage* D3DImage::getResolveImage() const
+{
+    return m_resolveImage;
 }
 
 ID3D12Resource* D3DImage::getResource() const

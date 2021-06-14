@@ -39,6 +39,7 @@ namespace dx3d
         bool upload(Context* context, const core::Dimension3D& size, u32 slices, u32 mips, const void* data) override;
         bool upload(Context* context, const core::Dimension3D& offsets, const core::Dimension3D& size, u32 slices, const void* data) override;
 
+        D3DImage* getResolveImage() const;
         ID3D12Resource* getResource() const;
 
         template<typename VIEW_DESC_TYPE>
@@ -76,6 +77,7 @@ namespace dx3d
         }
 
         const core::Dimension3D& getSize() const;
+        u32 getCountSamples() const;
         DXGI_FORMAT getFormat() const;
         Format getOriginFormat() const;
 
@@ -94,13 +96,14 @@ namespace dx3d
 
         static const Image::Subresource makeD3DImageSubresource(const D3DImage* image, u32 slice = k_generalLayer, u32 mips = k_allMipmapsLevels);
 
+        static DXGI_FORMAT getResolveCompatibilityFormat(DXGI_FORMAT format);
+        static DXGI_FORMAT getSampledCompatibilityFormat(DXGI_FORMAT format);
+
     private:
 
         static DXGI_FORMAT convertToTypelessFormat(DXGI_FORMAT format);
-        static DXGI_FORMAT getCompatibilityFormat(DXGI_FORMAT format);
 
         D3D12_RESOURCE_DIMENSION getDimension() const;
-        u32 getCountSamples() const;
 
         void createResourceView(DXGI_FORMAT shaderResourceFormat);
         bool internalUpdate(Context* context, const core::Dimension3D& offsets, const core::Dimension3D& size, u32 layers, u32 mips, const void* data);
@@ -143,6 +146,7 @@ namespace dx3d
         u32 m_mipmaps;
         u32 m_arrays;
         u32 m_samples;
+        D3DImage* m_resolveImage;
 
         bool m_swapchain;
 

@@ -398,6 +398,18 @@ void D3DGraphicsCommandList::setScissor(const std::vector<D3D12_RECT>& scissors)
     D3DGraphicsCommandList::getHandle()->RSSetScissorRects(static_cast<u32>(scissors.size()), scissors.data());
 }
 
+void D3DGraphicsCommandList::resolve(D3DImage* image, const Image::Subresource& subresource, D3DImage* resolvedImage, const Image::Subresource& resolvedSubresource)
+{
+    ASSERT(m_commandList, "nullptr");
+    ASSERT(m_status == Status::ReadyToRecord, "not record");
+    ASSERT(image && resolvedImage, "nullptr");
+
+    u32 subresourceIndex = D3D12CalcSubresource(subresource._baseLayer, subresource._baseMip, 0, subresource._mips, subresource._layers);
+    u32 resolvedSubresourceIndex = D3D12CalcSubresource(resolvedSubresource._baseLayer, resolvedSubresource._baseMip, 0, resolvedSubresource._mips, resolvedSubresource._layers);
+
+    D3DGraphicsCommandList::getHandle()->ResolveSubresource(resolvedImage->getResource(), resolvedSubresourceIndex, image->getResource(), subresourceIndex, D3DImage::getResolveCompatibilityFormat(resolvedImage->getFormat()));
+}
+
 void D3DGraphicsCommandList::setViewInstanceMask(u32 mask)
 {
     ASSERT(m_commandList, "nullptr");
