@@ -935,17 +935,17 @@ VulkanImage::VulkanImage(VulkanMemory::VulkanMemoryAllocator* memory, VkDevice d
 {
     LOG_DEBUG("VulkanImage::VulkanImage constructor %llx", this);
 
-    m_layout.resize(1 + static_cast<u64>(m_layerLevels) * static_cast<u64>(m_mipLevels), (m_tiling == VK_IMAGE_TILING_OPTIMAL) ? VK_IMAGE_LAYOUT_UNDEFINED : VK_IMAGE_LAYOUT_PREINITIALIZED);
-
 #if VULKAN_DEBUG_MARKERS
     m_debugName = name.empty() ? "Image" : name;
     m_debugName.append(VulkanDebugUtils::k_addressPreffix);
     m_debugName.append(std::to_string(reinterpret_cast<const u64>(this)));
-#endif //VULKAN_DEBUG_MARKERS
 
+#endif //VULKAN_DEBUG_MARKERS
 #if DEBUG_OBJECT_MEMORY
     s_objects.insert(this);
 #endif //DEBUG_OBJECT_MEMORY
+
+    m_layout.resize(1 + static_cast<u64>(m_layerLevels) * static_cast<u64>(m_mipLevels), (m_tiling == VK_IMAGE_TILING_OPTIMAL) ? VK_IMAGE_LAYOUT_UNDEFINED : VK_IMAGE_LAYOUT_PREINITIALIZED);
 }
 
 VulkanImage::VulkanImage(VulkanMemory::VulkanMemoryAllocator* memory, VkDevice device, VkFormat format, VkExtent3D dimension, VkSampleCountFlagBits samples, u32 layers, TextureUsageFlags usage, const std::string& name) noexcept
@@ -973,32 +973,32 @@ VulkanImage::VulkanImage(VulkanMemory::VulkanMemoryAllocator* memory, VkDevice d
 {
     LOG_DEBUG("VulkanImage::VulkanImage constructor %llx", this);
 
-    if (isPresentTextureUsageFlag(TextureUsage::TextureUsage_GenerateMipmaps))
+    if (VulkanImage::isPresentTextureUsageFlag(TextureUsage::TextureUsage_Resolve))
     {
-        ASSERT(isPresentTextureUsageFlag(TextureUsage::TextureUsage_Attachment), "must be attachment");
-        m_mipLevels = ImageFormat::calculateMipmapCount({ m_dimension.width, m_dimension.height, m_dimension.depth });
-    }
-    m_layout.resize(1 + static_cast<u64>(m_layerLevels) * static_cast<u64>(m_mipLevels), VK_IMAGE_LAYOUT_UNDEFINED);
-
-    if (VulkanImage::isPresentTextureUsageFlag(TextureUsage_Resolve))
-    {
+        m_usage = usage & ~TextureUsage::TextureUsage_GenerateMipmaps;
         if (VulkanImage::isColorFormat(m_format))
         {
             ASSERT(samples > VkSampleCountFlagBits::VK_SAMPLE_COUNT_1_BIT, "wrong sample count");
-            m_resolveImage = new VulkanImage(memory, device, format, dimension, VkSampleCountFlagBits::VK_SAMPLE_COUNT_1_BIT, layers, usage & ~TextureUsage_Resolve);
+            m_resolveImage = new VulkanImage(memory, device, format, dimension, VkSampleCountFlagBits::VK_SAMPLE_COUNT_1_BIT, layers, usage & ~TextureUsage::TextureUsage_Resolve);
         }
         else
         {
             if (VulkanDeviceCaps::getInstance()->supportDepthAutoResolve)
             {
                 ASSERT(samples > VkSampleCountFlagBits::VK_SAMPLE_COUNT_1_BIT, "wrong sample count");
-                m_resolveImage = new VulkanImage(memory, device, format, dimension, VkSampleCountFlagBits::VK_SAMPLE_COUNT_1_BIT, layers, usage & ~TextureUsage_Resolve);
+                m_resolveImage = new VulkanImage(memory, device, format, dimension, VkSampleCountFlagBits::VK_SAMPLE_COUNT_1_BIT, layers, usage & ~TextureUsage::TextureUsage_Resolve);
             }
             else
             {
                 ASSERT(false, "resolve for depth not supported");
             }
         }
+    }
+
+    if (isPresentTextureUsageFlag(TextureUsage::TextureUsage_GenerateMipmaps))
+    {
+        ASSERT(isPresentTextureUsageFlag(TextureUsage::TextureUsage_Attachment), "must be attachment");
+        m_mipLevels = ImageFormat::calculateMipmapCount({ m_dimension.width, m_dimension.height, m_dimension.depth });
     }
 
 #if VULKAN_DEBUG_MARKERS
@@ -1010,6 +1010,8 @@ VulkanImage::VulkanImage(VulkanMemory::VulkanMemoryAllocator* memory, VkDevice d
 #if DEBUG_OBJECT_MEMORY
     s_objects.insert(this);
 #endif //DEBUG_OBJECT_MEMORY
+
+    m_layout.resize(1 + static_cast<u64>(m_layerLevels) * static_cast<u64>(m_mipLevels), VK_IMAGE_LAYOUT_UNDEFINED);
 }
 
 VulkanImage::~VulkanImage()
@@ -1184,7 +1186,7 @@ bool VulkanImage::create()
     {
         VulkanImage::destroy();
 
-        LOG_ERROR("VulkanImage::VulkanImage::create() is failed");
+        LOG_ERROR("VulkanImage::create() is failed");
         return false;
     }
 #if VULKAN_DEBUG
@@ -1195,7 +1197,7 @@ bool VulkanImage::create()
     {
         VulkanImage::destroy();
 
-        LOG_ERROR("VulkanImage::VulkanImage::create() is failed");
+        LOG_ERROR("VulkanImage::create() is failed");
         return false;
     }
 
@@ -1205,7 +1207,7 @@ bool VulkanImage::create()
         {
             VulkanImage::destroy();
 
-            LOG_ERROR("VulkanImage::VulkanImage::create() esolve is failed");
+            LOG_ERROR("VulkanImage::create() resolve is failed");
             return false;
         }
     }

@@ -315,6 +315,7 @@ void VulkanDeviceCaps::fillCapabilitiesList(const DeviceInfo* info)
 
             ImageFormatSupport& support = m_imageFormatSupport[index][TilingType::TilingType_Optimal];
             support._supportMip = true;
+            support._supportResolve = true;
 
             {
                 VkImageUsageFlags attachmentUsage =  VulkanImage::isColorFormat(vkFormat) ? VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT : VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
