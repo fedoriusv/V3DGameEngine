@@ -124,8 +124,9 @@ bool D3DDebug::attachDevice(ID3D12Device* device, D3D12_DEBUG_FEATURE flags)
         }
     }
 
+    if (flags)
     {
-        HRESULT result = m_debugDevice->SetFeatureMask(flags);
+        HRESULT result = m_debugDevice->SetDebugParameter(D3D12_DEBUG_DEVICE_PARAMETER_FEATURE_FLAGS, &flags, sizeof(D3D12_DEBUG_FEATURE));
         if (FAILED(result))
         {
             LOG_ERROR("D3DDebug::attachDevice SetFeatureMask is failed. Error %s", D3DDebug::stringError(result).c_str());

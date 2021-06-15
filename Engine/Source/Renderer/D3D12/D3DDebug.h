@@ -32,7 +32,7 @@ namespace dx3d
 
     private:
 
-        ID3D12DebugDevice* m_debugDevice;
+        ID3D12DebugDevice2* m_debugDevice;
     };
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////

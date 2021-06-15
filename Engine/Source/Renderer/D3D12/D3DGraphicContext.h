@@ -115,7 +115,7 @@ namespace dx3d
 
         IDXGIFactory4*      m_factory;
         IDXGIAdapter1*      m_adapter;
-        ID3D12Device2*      m_device;
+        ID3D12Device4*      m_device;
 #if D3D_DEBUG_LAYERS
         ID3D12Debug*        m_debugController;
 #endif //D3D_DEBUG_LAYERS
