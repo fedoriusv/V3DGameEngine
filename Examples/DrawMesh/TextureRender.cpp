@@ -51,9 +51,9 @@ TextureRender::TextureRender(CommandList& cmdList, const v3d::core::Dimension2D&
                 });
 
 #if defined(PLATFORM_ANDROID)
-            Texture2D* depthAttachmentMSAA = cmdList.createObject<Texture2D>(TextureUsage::TextureUsage_Attachment | TextureUsage::TextureUsage_Resolve | TextureUsage::TextureUsage_Sampled, Format::Format_D24_UNorm_S8_UInt, viewport, TextureSamples::TextureSamples_x2);
+            Texture2D* depthAttachmentMSAA = cmdList.createObject<Texture2D>(TextureUsage::TextureUsage_Attachment | TextureUsage::TextureUsage_Resolve /*| TextureUsage::TextureUsage_Sampled*/, Format::Format_D24_UNorm_S8_UInt, viewport, TextureSamples::TextureSamples_x2);
 #else
-            Texture2D* depthAttachmentMSAA = cmdList.createObject<Texture2D>(TextureUsage::TextureUsage_Attachment | TextureUsage::TextureUsage_Sampled, Format::Format_D32_SFloat, viewport, TextureSamples::TextureSamples_x2);
+            Texture2D* depthAttachmentMSAA = cmdList.createObject<Texture2D>(TextureUsage::TextureUsage_Attachment /*| TextureUsage::TextureUsage_Sampled*/, Format::Format_D32_SFloat, viewport, TextureSamples::TextureSamples_x2);
 #endif
             m_renderTargetMSAA->setDepthStencilTexture(depthAttachmentMSAA,
                 {
@@ -63,7 +63,7 @@ TextureRender::TextureRender(CommandList& cmdList, const v3d::core::Dimension2D&
                     renderer::RenderTargetLoadOp::LoadOp_DontCare, renderer::RenderTargetStoreOp::StoreOp_DontCare, 0U
                 },
                 {
-                    renderer::TransitionOp::TransitionOp_Undefined, renderer::TransitionOp::TransitionOp_ShaderRead
+                    renderer::TransitionOp::TransitionOp_Undefined, renderer::TransitionOp::TransitionOp_DepthStencilAttachment //renderer::TransitionOp::TransitionOp_ShaderRead
                 });
 
             m_pipelineMSAA = cmdList.createObject<GraphicsPipelineState>(vertex, m_program.get(), m_renderTargetMSAA.get());
