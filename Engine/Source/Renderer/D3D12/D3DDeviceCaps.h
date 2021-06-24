@@ -33,6 +33,7 @@ namespace dx3d
 
         bool globalComandListAllocator = false;
         bool immediateSubmitUpload = false;
+        bool immediateTransition = false;
 
     private:
 

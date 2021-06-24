@@ -84,7 +84,7 @@ namespace dx3d
 
         void init(ID3D12CommandList* cmdList, ID3D12CommandAllocator* allocator, bool own = true);
         bool checkOnComplete();
-        
+
         D3DFence* m_fence;
         std::list<D3DResource*> m_resources;
     };
@@ -128,14 +128,23 @@ namespace dx3d
 
         void setViewInstanceMask(u32 mask);
 
-        void transition(D3DImage* image, D3D12_RESOURCE_STATES states);
-        void transition(D3DImage* image, const Image::Subresource& subresource, D3D12_RESOURCE_STATES states);
+        void transition(D3DImage* image, D3D12_RESOURCE_STATES states, bool immediateTransition = false);
+        void transition(D3DImage* image, const Image::Subresource& subresource, D3D12_RESOURCE_STATES states, bool immediateTransition = false);
 
         ID3D12GraphicsCommandList1* getHandle() const;
 
     private:
 
         friend D3DCommandListManager;
+
+        struct BarrierResources
+        {
+            void add(const D3D12_RESOURCE_BARRIER& resource);
+            void execute(D3DGraphicsCommandList* commandList);
+
+            std::vector<D3D12_RESOURCE_BARRIER> _barrierResources;
+        };
+        BarrierResources m_transition;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

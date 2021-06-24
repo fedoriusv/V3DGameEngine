@@ -1541,7 +1541,7 @@ bool D3DImage::internalUpdate(Context* context, const core::Dimension3D& offsets
     }
 
     D3D12_RESOURCE_STATES oldState = getState();
-    commandlist->transition(this, D3D12_RESOURCE_STATE_COPY_DEST);
+    commandlist->transition(this, D3D12_RESOURCE_STATE_COPY_DEST, true);
 
     UpdateSubresources(commandlist->getHandle(), m_resource, uploadResource, 0, static_cast<UINT>(subResources.size()), uploadBufferSize, subResourceFootPrints.data(), subResourcesNumRows.data(), subResourcesNumRowsSize.data(), subResources.data());
 
@@ -1550,11 +1550,11 @@ bool D3DImage::internalUpdate(Context* context, const core::Dimension3D& offsets
 
     if (!(m_flags & D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE))
     {
-        commandlist->transition(this, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+        commandlist->transition(this, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, true);
     }
     else
     {
-        commandlist->transition(this, oldState);
+        commandlist->transition(this, oldState, true);
     }
 
     bool result = true;
