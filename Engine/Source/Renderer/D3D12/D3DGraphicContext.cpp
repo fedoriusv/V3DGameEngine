@@ -909,7 +909,7 @@ bool D3DGraphicContext::perpareCompute(D3DGraphicsCommandList* cmdList)
     ASSERT(m_currentState._pipeline && m_currentState._pipeline->getType() == Pipeline::PipelineType::PipelineType_Compute, "wrong");
     D3DComputePipelineState* dxPipeline = static_cast<D3DComputePipelineState*>(m_currentState._pipeline);
 
-    //if (m_boundState._pipeline != m_currentState._pipeline)
+    if (m_boundState._pipeline != m_currentState._pipeline)
     {
         cmdList->setPipelineState(dxPipeline);
         m_boundState._pipeline = m_currentState._pipeline;
@@ -1092,7 +1092,7 @@ void D3DGraphicContext::switchRenderTargetTransitionToFinal(D3DGraphicsCommandLi
 
         if (attachment._finalTransition == TransitionOp::TransitionOp_DepthStencilAttachment)
         {
-            cmdList->transition(dxImage, D3DImage::makeD3DImageSubresource(dxImage, layer, 0), D3D12_RESOURCE_STATE_DEPTH_READ);
+            cmdList->transition(dxImage, D3DImage::makeD3DImageSubresource(dxImage, layer, 0), D3D12_RESOURCE_STATE_DEPTH_WRITE);
         }
         else if (attachment._finalTransition == TransitionOp::TransitionOp_ShaderRead)
         {
