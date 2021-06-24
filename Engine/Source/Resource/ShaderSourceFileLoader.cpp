@@ -203,7 +203,7 @@ renderer::Shader* ShaderSourceFileLoader::load(const std::string& name, const st
         }
     }
 
-    LOG_WARNING("ShaderSourceFileLoader::load: File [%s] decoder file hasn't found", name.c_str());
+    LOG_WARNING("ShaderSourceFileLoader::load: File [%s] decoder or file hasn't found", name.c_str());
     return nullptr;
 }
 
