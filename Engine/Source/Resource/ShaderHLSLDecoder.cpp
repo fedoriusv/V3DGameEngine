@@ -200,10 +200,10 @@ Resource* ShaderHLSLDecoder::decode(const stream::Stream* stream, const std::str
             macros.back().Name = nullptr;
             macros.back().Definition = nullptr;
 
-            UINT compileFlags = D3DCOMPILE_OPTIMIZATION_LEVEL1;
+            UINT compileFlags = D3DCOMPILE_ALL_RESOURCES_BOUND;
             if (m_header._optLevel == 0)
             {
-                compileFlags = D3DCOMPILE_OPTIMIZATION_LEVEL0 | D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION;
+                compileFlags |= D3DCOMPILE_OPTIMIZATION_LEVEL0 | D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION;
             }
             else if (m_header._optLevel == 1)
             {
