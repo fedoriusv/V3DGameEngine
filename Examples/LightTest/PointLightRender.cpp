@@ -30,10 +30,17 @@ void ForwardPointLightTest::Load(renderer::RenderTargetState* renderTarget, cons
         { "LIGHT_COUNT", std::to_string(countLights) }
     };
 
-    const renderer::Shader* vertShader = resource::ResourceLoaderManager::getInstance()->loadShader<renderer::Shader, resource::ShaderSourceFileLoader>(m_CommandList.getContext(), "resources/point/phongTextureless.vert");
-    const renderer::Shader* fragShader = resource::ResourceLoaderManager::getInstance()->loadShader<renderer::Shader, resource::ShaderSourceFileLoader>(m_CommandList.getContext(), "resources/point/phongTextureless.frag", constants);
+    //const renderer::Shader* vertShader = resource::ResourceLoaderManager::getInstance()->loadShader<renderer::Shader, resource::ShaderSourceFileLoader>(m_CommandList.getContext(), "resources/point/phongTextureless.vert");
+    //const renderer::Shader* fragShader = resource::ResourceLoaderManager::getInstance()->loadShader<renderer::Shader, resource::ShaderSourceFileLoader>(m_CommandList.getContext(), "resources/point/phongTextureless.frag", constants);
+    //std::vector<const renderer::Shader*> shaders = { vertShader, fragShader };
+    std::vector<const renderer::Shader*> shaders = resource::ResourceLoaderManager::getInstance()->loadHLSLShader<renderer::Shader, resource::ShaderSourceFileLoader>(m_CommandList.getContext(), "resources/point/phongTextureless.hlsl",
+        {
+            {"main_VS", renderer::ShaderType::Vertex },
+            {"main_PS", renderer::ShaderType::Fragment }
 
-    m_Program = m_CommandList.createObject<renderer::ShaderProgram, std::vector<const renderer::Shader*>>({ vertShader, fragShader });
+        }, constants);
+
+    m_Program = m_CommandList.createObject<renderer::ShaderProgram>(shaders);
     m_Pipeline = m_CommandList.createObject<renderer::GraphicsPipelineState>(desc, m_Program.get(), renderTarget);
     m_Pipeline->setPrimitiveTopology(renderer::PrimitiveTopology::PrimitiveTopology_TriangleList);
     m_Pipeline->setFrontFace(renderer::FrontFace::FrontFace_Clockwise);
@@ -63,7 +70,7 @@ void ForwardPointLightTest::Draw(scene::ModelHelper* geometry, v3d::scene::Camer
         ubo.normalMatrix.makeTransposed();
         ubo.viewMatrix = camera->getViewMatrix();
 
-        m_Program->bindUniformsBuffer<renderer::ShaderType::Vertex>({ "ubo" }, 0, sizeof(UBO), &ubo);
+        m_Program->bindUniformsBuffer<renderer::ShaderType::Vertex>({ "vs_ubo" }, 0, sizeof(UBO), &ubo);
     }
 
     {
@@ -92,7 +99,7 @@ void ForwardPointLightTest::Draw(scene::ModelHelper* geometry, v3d::scene::Camer
         ubo.specular = { 1.0f, 1.0f, 1.0f, 1.0f };
         
         m_Program->bindUniformsBuffer<renderer::ShaderType::Fragment>({ "light" }, 0, sizeof(LIGHT) * (u32)light.size(), light.data());
-        m_Program->bindUniformsBuffer<renderer::ShaderType::Fragment>({ "ubo" }, 0, sizeof(UBO), &ubo);
+        m_Program->bindUniformsBuffer<renderer::ShaderType::Fragment>({ "ps_ubo" }, 0, sizeof(UBO), &ubo);
     }
 
     geometry->draw(&m_CommandList);
@@ -138,10 +145,17 @@ void ForwardPointLightTextureTest::Load(renderer::RenderTargetState* renderTarge
         { "LIGHT_COUNT", std::to_string(countLights) }
     };
 
-    const renderer::Shader* vertShader = resource::ResourceLoaderManager::getInstance()->loadShader<renderer::Shader, resource::ShaderSourceFileLoader>(m_CommandList.getContext(), "resources/point/phong.vert");
-    const renderer::Shader* fragShader = resource::ResourceLoaderManager::getInstance()->loadShader<renderer::Shader, resource::ShaderSourceFileLoader>(m_CommandList.getContext(), "resources/point/phong.frag", constants);
+    //const renderer::Shader* vertShader = resource::ResourceLoaderManager::getInstance()->loadShader<renderer::Shader, resource::ShaderSourceFileLoader>(m_CommandList.getContext(), "resources/point/phong.vert");
+    //const renderer::Shader* fragShader = resource::ResourceLoaderManager::getInstance()->loadShader<renderer::Shader, resource::ShaderSourceFileLoader>(m_CommandList.getContext(), "resources/point/phong.frag", constants);
+    //std::vector<const renderer::Shader*> shaders = { vertShader, fragShader };
+    std::vector<const renderer::Shader*> shaders = resource::ResourceLoaderManager::getInstance()->loadHLSLShader<renderer::Shader, resource::ShaderSourceFileLoader>(m_CommandList.getContext(), "resources/point/phong.hlsl",
+        {
+            {"main_VS", renderer::ShaderType::Vertex },
+            {"main_PS", renderer::ShaderType::Fragment }
 
-    m_Program = m_CommandList.createObject<renderer::ShaderProgram, std::vector<const renderer::Shader*>>({ vertShader, fragShader });
+        }, constants);
+
+    m_Program = m_CommandList.createObject<renderer::ShaderProgram>(shaders);
     m_Pipeline = m_CommandList.createObject<renderer::GraphicsPipelineState>(desc, m_Program.get(), renderTarget);
     m_Pipeline->setPrimitiveTopology(renderer::PrimitiveTopology::PrimitiveTopology_TriangleList);
     m_Pipeline->setFrontFace(renderer::FrontFace::FrontFace_Clockwise);
@@ -176,7 +190,7 @@ void ForwardPointLightTextureTest::Draw(scene::ModelHelper* geometry, v3d::scene
         ubo.normalMatrix.makeTransposed();
         ubo.viewMatrix = camera->getViewMatrix();
 
-        m_Program->bindUniformsBuffer<renderer::ShaderType::Vertex>({ "ubo" }, 0, sizeof(UBO), &ubo);
+        m_Program->bindUniformsBuffer<renderer::ShaderType::Vertex>({ "vs_ubo" }, 0, sizeof(UBO), &ubo);
     }
 
     {
@@ -201,7 +215,7 @@ void ForwardPointLightTextureTest::Draw(scene::ModelHelper* geometry, v3d::scene
         ubo.viewPosition = { camera->getViewPosition(), 1.0 };
 
         m_Program->bindUniformsBuffer<renderer::ShaderType::Fragment>({ "light" }, 0, sizeof(LIGHT) * (u32)light.size(), light.data());
-        m_Program->bindUniformsBuffer<renderer::ShaderType::Fragment>({ "ubo" }, 0, sizeof(UBO), &ubo);
+        m_Program->bindUniformsBuffer<renderer::ShaderType::Fragment>({ "ps_ubo" }, 0, sizeof(UBO), &ubo);
 
         m_Program->bindSampler<renderer::ShaderType::Fragment>({ "samplerColor" }, m_Sampler.get());
         m_Program->bindTexture<renderer::ShaderType::Fragment, renderer::Texture2D>({ "textureDiffuse" }, m_TextureDiffuse.get());

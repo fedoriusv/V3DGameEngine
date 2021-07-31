@@ -32,10 +32,17 @@ void ForwardDirectionalLightTextureTest::Load(renderer::RenderTargetState* rende
         { "LIGHT_COUNT", std::to_string(countLights) },
     };
 
-    const renderer::Shader* vertShader = resource::ResourceLoaderManager::getInstance()->loadShader<renderer::Shader, resource::ShaderSourceFileLoader>(m_CommandList.getContext(), "resources/directional/lambert.vert");
-    const renderer::Shader* fragShader = resource::ResourceLoaderManager::getInstance()->loadShader<renderer::Shader, resource::ShaderSourceFileLoader>(m_CommandList.getContext(), "resources/directional/lambert.frag", constants);
+    //const renderer::Shader* vertShader = resource::ResourceLoaderManager::getInstance()->loadShader<renderer::Shader, resource::ShaderSourceFileLoader>(m_CommandList.getContext(), "resources/directional/lambert.vert");
+    //const renderer::Shader* fragShader = resource::ResourceLoaderManager::getInstance()->loadShader<renderer::Shader, resource::ShaderSourceFileLoader>(m_CommandList.getContext(), "resources/directional/lambert.frag", constants);
+    //std::vector<const renderer::Shader*> shaders = { vertShader, fragShader };
+    std::vector<const renderer::Shader*> shaders = resource::ResourceLoaderManager::getInstance()->loadHLSLShader<renderer::Shader, resource::ShaderSourceFileLoader>(m_CommandList.getContext(), "resources/directional/lambert.hlsl",
+        {
+            {"main_VS", renderer::ShaderType::Vertex },
+            {"main_PS", renderer::ShaderType::Fragment }
 
-    m_Program = m_CommandList.createObject<renderer::ShaderProgram, std::vector<const renderer::Shader*>>({ vertShader, fragShader });
+        }, constants);
+
+    m_Program = m_CommandList.createObject<renderer::ShaderProgram>(shaders);
     m_Pipeline = m_CommandList.createObject<renderer::GraphicsPipelineState>(desc, m_Program.get(), renderTarget);
     m_Pipeline->setPrimitiveTopology(renderer::PrimitiveTopology::PrimitiveTopology_TriangleList);
     m_Pipeline->setFrontFace(renderer::FrontFace::FrontFace_Clockwise);
@@ -69,7 +76,7 @@ void ForwardDirectionalLightTextureTest::Draw(scene::ModelHelper* geometry, scen
         ubo.normalMatrix.makeTransposed();
         ubo.viewMatrix = camera->getViewMatrix();
 
-        m_Program->bindUniformsBuffer<renderer::ShaderType::Vertex>({ "ubo" }, 0, sizeof(UBO), &ubo);
+        m_Program->bindUniformsBuffer<renderer::ShaderType::Vertex>({ "vs_ubo" }, 0, sizeof(UBO), &ubo);
     }
 
     {

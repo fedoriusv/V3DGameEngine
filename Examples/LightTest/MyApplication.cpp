@@ -220,6 +220,9 @@ void MyApplication::Initialize()
     m_ParallaxMap = new ForwardParallaxMappingTest(*m_CommandList);
 
     Load();
+
+    m_CommandList->submitCommands(true);
+    m_CommandList->flushCommands();
 }
 
 void MyApplication::Load()
@@ -257,10 +260,17 @@ void MyApplication::Load()
     }
 
     {
-        const renderer::Shader* vertShader = resource::ResourceLoaderManager::getInstance()->loadShader<renderer::Shader, resource::ShaderSourceFileLoader>(m_Context, "resources/debug/debugAxis.vert");
-        const renderer::Shader* fragShader = resource::ResourceLoaderManager::getInstance()->loadShader<renderer::Shader, resource::ShaderSourceFileLoader>(m_Context, "resources/debug/debug.frag");
+        //const renderer::Shader* vertShader = resource::ResourceLoaderManager::getInstance()->loadShader<renderer::Shader, resource::ShaderSourceFileLoader>(m_Context, "resources/debug/debugAxis.vert");
+        //const renderer::Shader* fragShader = resource::ResourceLoaderManager::getInstance()->loadShader<renderer::Shader, resource::ShaderSourceFileLoader>(m_Context, "resources/debug/debug.frag");
+        //std::vector<const renderer::Shader*> shaders = { vertShader, fragShader };
+        std::vector<const renderer::Shader*> shaders = resource::ResourceLoaderManager::getInstance()->loadHLSLShader<renderer::Shader, resource::ShaderSourceFileLoader>(m_Context, "resources/debug/debugAxis.hlsl",
+            {
+                {"main_VS", renderer::ShaderType::Vertex },
+                {"main_PS", renderer::ShaderType::Fragment }
 
-        m_AxisDebug.m_Program = m_CommandList->createObject<renderer::ShaderProgram, std::vector<const renderer::Shader*>>({ vertShader, fragShader });
+            });
+
+        m_AxisDebug.m_Program = m_CommandList->createObject<renderer::ShaderProgram>(shaders);
         m_AxisDebug.m_Pipeline = m_CommandList->createObject<renderer::GraphicsPipelineState>(renderer::VertexInputAttribDescription(), m_AxisDebug.m_Program.get(), m_RenderTarget.get());
         m_AxisDebug.m_Pipeline->setPrimitiveTopology(renderer::PrimitiveTopology::PrimitiveTopology_LineList);
         m_AxisDebug.m_Pipeline->setFrontFace(renderer::FrontFace::FrontFace_Clockwise);
@@ -272,10 +282,17 @@ void MyApplication::Load()
     }
 
     {
-        const renderer::Shader* vertShader = resource::ResourceLoaderManager::getInstance()->loadShader<renderer::Shader, resource::ShaderSourceFileLoader>(m_Context, "resources/debug/debug.vert");
-        const renderer::Shader* fragShader = resource::ResourceLoaderManager::getInstance()->loadShader<renderer::Shader, resource::ShaderSourceFileLoader>(m_Context, "resources/debug/debug.frag");
+        //const renderer::Shader* vertShader = resource::ResourceLoaderManager::getInstance()->loadShader<renderer::Shader, resource::ShaderSourceFileLoader>(m_Context, "resources/debug/debug.vert");
+        //const renderer::Shader* fragShader = resource::ResourceLoaderManager::getInstance()->loadShader<renderer::Shader, resource::ShaderSourceFileLoader>(m_Context, "resources/debug/debug.frag");
+        //std::vector<const renderer::Shader*> shaders = { vertShader, fragShader };
+        std::vector<const renderer::Shader*> shaders = resource::ResourceLoaderManager::getInstance()->loadHLSLShader<renderer::Shader, resource::ShaderSourceFileLoader>(m_Context, "resources/debug/debug.hlsl",
+            {
+                {"main_VS", renderer::ShaderType::Vertex },
+                {"main_PS", renderer::ShaderType::Fragment }
 
-        m_LightDebug.m_Program = m_CommandList->createObject<renderer::ShaderProgram, std::vector<const renderer::Shader*>>({ vertShader, fragShader });
+            });
+
+        m_LightDebug.m_Program = m_CommandList->createObject<renderer::ShaderProgram>(shaders);
         m_LightDebug.m_Pipeline = m_CommandList->createObject<renderer::GraphicsPipelineState>(m_Geometry.front()->getVertexInputAttribDescription(0, 0), m_LightDebug.m_Program.get(), m_RenderTarget.get());
         m_LightDebug.m_Pipeline->setPrimitiveTopology(renderer::PrimitiveTopology::PrimitiveTopology_TriangleList);
         m_LightDebug.m_Pipeline->setFrontFace(renderer::FrontFace::FrontFace_Clockwise);
@@ -460,7 +477,7 @@ void MyApplication::AxisDebug::Draw(v3d::renderer::CommandList* commandList, v3d
         ubo.viewMatrix = camera->getViewMatrix();
 
         const core::Vector4D red = { 1.0, 0.0, 0.0, 1.0 };
-        m_Program->bindUniformsBuffer<renderer::ShaderType::Vertex>({ "ubo" }, 0, sizeof(UBO), &ubo);
+        m_Program->bindUniformsBuffer<renderer::ShaderType::Vertex>({ "vs_ubo" }, 0, sizeof(UBO), &ubo);
         m_Program->bindUniformsBuffer<renderer::ShaderType::Fragment>({ "debugColor" }, 0, sizeof(core::Vector4D), &red);
 
         commandList->draw(renderer::StreamBufferDescription(nullptr, 0), 0, 2, 1);
@@ -472,7 +489,7 @@ void MyApplication::AxisDebug::Draw(v3d::renderer::CommandList* commandList, v3d
         ubo.viewMatrix = camera->getViewMatrix();
 
         const core::Vector4D green = { 0.0, 1.0, 0.0, 1.0 };
-        m_Program->bindUniformsBuffer<renderer::ShaderType::Vertex>({ "ubo" }, 0, sizeof(UBO), &ubo);
+        m_Program->bindUniformsBuffer<renderer::ShaderType::Vertex>({ "vs_ubo" }, 0, sizeof(UBO), &ubo);
         m_Program->bindUniformsBuffer<renderer::ShaderType::Fragment>({ "debugColor" }, 0, sizeof(core::Vector4D), &green);
 
         commandList->draw(renderer::StreamBufferDescription(nullptr, 0), 0, 2, 1);
@@ -484,7 +501,7 @@ void MyApplication::AxisDebug::Draw(v3d::renderer::CommandList* commandList, v3d
         ubo.viewMatrix = camera->getViewMatrix();
 
         const core::Vector4D blue = { 0.0, 0.0, 1.0, 1.0 };
-        m_Program->bindUniformsBuffer<renderer::ShaderType::Vertex>({ "ubo" }, 0, sizeof(UBO), &ubo);
+        m_Program->bindUniformsBuffer<renderer::ShaderType::Vertex>({ "vs_ubo" }, 0, sizeof(UBO), &ubo);
         m_Program->bindUniformsBuffer<renderer::ShaderType::Fragment>({ "debugColor" }, 0, sizeof(core::Vector4D), &blue);
 
         commandList->draw(renderer::StreamBufferDescription(nullptr, 0), 0, 2, 1);
@@ -517,7 +534,7 @@ void MyApplication::LightDebug::Draw(v3d::renderer::CommandList* commandList, v3
         ubo.modelMatrix.setScale({ 10.0, 10.0, 10.0 });
         ubo.viewMatrix = camera->getViewMatrix();
 
-        m_Program->bindUniformsBuffer<renderer::ShaderType::Vertex>({ "ubo" }, 0, sizeof(UBO), &ubo);
+        m_Program->bindUniformsBuffer<renderer::ShaderType::Vertex>({ "vs_ubo" }, 0, sizeof(UBO), &ubo);
         m_Program->bindUniformsBuffer<renderer::ShaderType::Fragment>({ "debugColor" }, 0, sizeof(core::Vector4D), &std::get<1>(light));
 
         geometry->draw(commandList);

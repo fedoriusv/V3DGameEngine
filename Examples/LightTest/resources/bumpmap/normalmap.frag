@@ -22,11 +22,6 @@ layout (binding = 5) uniform LIGHT
     Light lights[LIGHT_COUNT];
 } light;
 
-layout (binding = 6) uniform UBO 
-{
-    vec4 viewPosition;
-} ubo;
-
 layout (location = 0) out vec4 outFragColor;
 
 void main() 

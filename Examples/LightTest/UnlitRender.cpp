@@ -26,10 +26,17 @@ void UnlitTextureTest::Load(renderer::RenderTargetState* renderTarget, const ren
     ASSERT(image, "not found");
     m_Texture = m_CommandList.createObject<renderer::Texture2D>(renderer::TextureUsage_Sampled | renderer::TextureUsage_Write, image->getFormat(), core::Dimension2D(image->getDimension().width, image->getDimension().height), image->getMipMapsCount(), image->getRawData(), "UnlitTexture");
 
-    const renderer::Shader* vertShader = resource::ResourceLoaderManager::getInstance()->loadShader<renderer::Shader, resource::ShaderSourceFileLoader>(m_CommandList.getContext(), "resources/unlit/texture.vert");
-    const renderer::Shader* fragShader = resource::ResourceLoaderManager::getInstance()->loadShader<renderer::Shader, resource::ShaderSourceFileLoader>(m_CommandList.getContext(), "resources/unlit/texture.frag");
+    //const renderer::Shader* vertShader = resource::ResourceLoaderManager::getInstance()->loadShader<renderer::Shader, resource::ShaderSourceFileLoader>(m_CommandList.getContext(), "resources/unlit/texture.vert");
+    //const renderer::Shader* fragShader = resource::ResourceLoaderManager::getInstance()->loadShader<renderer::Shader, resource::ShaderSourceFileLoader>(m_CommandList.getContext(), "resources/unlit/texture.frag");
+    //std::vector<const renderer::Shader*> shaders = { vertShader, fragShader };
+    std::vector<const renderer::Shader*> shaders = resource::ResourceLoaderManager::getInstance()->loadHLSLShader<renderer::Shader, resource::ShaderSourceFileLoader>(m_CommandList.getContext(), "resources/unlit/texture.hlsl",
+        {
+            {"main_VS", renderer::ShaderType::Vertex },
+            {"main_PS", renderer::ShaderType::Fragment }
 
-    m_Program = m_CommandList.createObject<renderer::ShaderProgram, std::vector<const renderer::Shader*>>({ vertShader, fragShader });
+        });
+
+    m_Program = m_CommandList.createObject<renderer::ShaderProgram>(shaders);
     m_Pipeline = m_CommandList.createObject<renderer::GraphicsPipelineState>(desc, m_Program.get(), renderTarget);
     m_Pipeline->setPrimitiveTopology(renderer::PrimitiveTopology::PrimitiveTopology_TriangleList);
     m_Pipeline->setFrontFace(renderer::FrontFace::FrontFace_Clockwise);

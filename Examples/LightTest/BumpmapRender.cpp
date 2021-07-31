@@ -36,8 +36,15 @@ void ForwardNormalMapTest::Load(renderer::RenderTargetState* renderTarget, const
 
     const renderer::Shader* vertShader = resource::ResourceLoaderManager::getInstance()->loadShader<renderer::Shader, resource::ShaderSourceFileLoader>(m_CommandList.getContext(), "resources/bumpmap/normalmap.vert");
     const renderer::Shader* fragShader = resource::ResourceLoaderManager::getInstance()->loadShader<renderer::Shader, resource::ShaderSourceFileLoader>(m_CommandList.getContext(), "resources/bumpmap/normalmap.frag", constants);
+    std::vector<const renderer::Shader*> shaders = { vertShader, fragShader };
+    //std::vector<const renderer::Shader*> shaders = resource::ResourceLoaderManager::getInstance()->loadHLSLShader<renderer::Shader, resource::ShaderSourceFileLoader>(m_CommandList.getContext(), "resources/bumpmap/normalmap.hlsl",
+    //    {
+    //        {"main_VS", renderer::ShaderType::Vertex },
+    //        {"main_PS", renderer::ShaderType::Fragment }
 
-    m_Program = m_CommandList.createObject<renderer::ShaderProgram, std::vector<const renderer::Shader*>>({ vertShader, fragShader });
+    //    }, constants);
+
+    m_Program = m_CommandList.createObject<renderer::ShaderProgram>(shaders);
     m_Pipeline = m_CommandList.createObject<renderer::GraphicsPipelineState>(desc, m_Program.get(), renderTarget);
     m_Pipeline->setPrimitiveTopology(renderer::PrimitiveTopology::PrimitiveTopology_TriangleList);
     m_Pipeline->setFrontFace(renderer::FrontFace::FrontFace_Clockwise);
@@ -72,7 +79,7 @@ void ForwardNormalMapTest::Draw(scene::ModelHelper* geometry, v3d::scene::Camera
         ubo.normalMatrix.makeTransposed();
         ubo.viewMatrix = camera->getViewMatrix();
 
-        m_Program->bindUniformsBuffer<renderer::ShaderType::Vertex>({ "ubo" }, 0, sizeof(UBO), &ubo);
+        m_Program->bindUniformsBuffer<renderer::ShaderType::Vertex>({ "vs_ubo" }, 0, sizeof(UBO), &ubo);
     }
 
     {
@@ -89,15 +96,7 @@ void ForwardNormalMapTest::Draw(scene::ModelHelper* geometry, v3d::scene::Camera
             light[l].color = std::get<1>(lights[l]);
         }
 
-        struct UBO
-        {
-            core::Vector4D viewPosition;
-        } ubo;
-
-        ubo.viewPosition = { camera->getViewPosition(), 1.0 };
-
         m_Program->bindUniformsBuffer<renderer::ShaderType::Fragment>({ "light" }, 0, sizeof(LIGHT) * (u32)light.size(), light.data());
-        m_Program->bindUniformsBuffer<renderer::ShaderType::Fragment>({ "ubo" }, 0, sizeof(UBO), &ubo);
         m_Program->bindSampler<renderer::ShaderType::Fragment>({ "samplerColor" }, m_SamplerColor.get());
         m_Program->bindSampler<renderer::ShaderType::Fragment>({ "samplerNormal" }, m_SamplerNormalmap.get());
         m_Program->bindTexture<renderer::ShaderType::Fragment, renderer::Texture2D>({ "textureColor" }, m_TextureColor.get());
@@ -155,10 +154,17 @@ void ForwardParallaxMappingTest::Load(renderer::RenderTargetState* renderTarget,
         { "QUADRATIC", std::to_string(0.032) }
     };
 
-    const renderer::Shader* vertShader = resource::ResourceLoaderManager::getInstance()->loadShader<renderer::Shader, resource::ShaderSourceFileLoader>(m_CommandList.getContext(), "resources/bumpmap/parallaxmap.vert");
-    const renderer::Shader* fragShader = resource::ResourceLoaderManager::getInstance()->loadShader<renderer::Shader, resource::ShaderSourceFileLoader>(m_CommandList.getContext(), "resources/bumpmap/parallaxmap.frag", constants);
+    //const renderer::Shader* vertShader = resource::ResourceLoaderManager::getInstance()->loadShader<renderer::Shader, resource::ShaderSourceFileLoader>(m_CommandList.getContext(), "resources/bumpmap/parallaxmap.vert");
+    //const renderer::Shader* fragShader = resource::ResourceLoaderManager::getInstance()->loadShader<renderer::Shader, resource::ShaderSourceFileLoader>(m_CommandList.getContext(), "resources/bumpmap/parallaxmap.frag", constants);
+    //std::vector<const renderer::Shader*> shaders = { vertShader, fragShader };
+    std::vector<const renderer::Shader*> shaders = resource::ResourceLoaderManager::getInstance()->loadHLSLShader<renderer::Shader, resource::ShaderSourceFileLoader>(m_CommandList.getContext(), "resources/bumpmap/parallaxmap.hlsl",
+        {
+            {"main_VS", renderer::ShaderType::Vertex },
+            {"main_PS", renderer::ShaderType::Fragment }
 
-    m_Program = m_CommandList.createObject<renderer::ShaderProgram, std::vector<const renderer::Shader*>>({ vertShader, fragShader });
+        }, constants);
+
+    m_Program = m_CommandList.createObject<renderer::ShaderProgram>(shaders);
     m_Pipeline = m_CommandList.createObject<renderer::GraphicsPipelineState>(desc, m_Program.get(), renderTarget);
     m_Pipeline->setPrimitiveTopology(renderer::PrimitiveTopology::PrimitiveTopology_TriangleList);
     m_Pipeline->setFrontFace(renderer::FrontFace::FrontFace_Clockwise);
@@ -194,7 +200,7 @@ void ForwardParallaxMappingTest::Draw(scene::ModelHelper* geometry, v3d::scene::
         ubo.normalMatrix.makeTransposed();
         ubo.viewMatrix = camera->getViewMatrix();
 
-        m_Program->bindUniformsBuffer<renderer::ShaderType::Vertex>({ "ubo" }, 0, sizeof(UBO), &ubo);
+        m_Program->bindUniformsBuffer<renderer::ShaderType::Vertex>({ "vs_ubo" }, 0, sizeof(UBO), &ubo);
     }
 
     {
@@ -221,7 +227,7 @@ void ForwardParallaxMappingTest::Draw(scene::ModelHelper* geometry, v3d::scene::
         ubo.viewPosition = { camera->getViewPosition(), 1.0 };
 
         m_Program->bindUniformsBuffer<renderer::ShaderType::Fragment>({ "light" }, 0, sizeof(LIGHT) * (u32)light.size(), light.data());
-        m_Program->bindUniformsBuffer<renderer::ShaderType::Fragment>({ "ubo" }, 0, sizeof(UBO), &ubo);
+        m_Program->bindUniformsBuffer<renderer::ShaderType::Fragment>({ "ps_ubo" }, 0, sizeof(UBO), &ubo);
 
         m_Program->bindSampler<renderer::ShaderType::Fragment>({ "samplerColor" }, m_SamplerColor.get());
         m_Program->bindTexture<renderer::ShaderType::Fragment, renderer::Texture2D>({ "textureColor" }, m_TextureColor.get());

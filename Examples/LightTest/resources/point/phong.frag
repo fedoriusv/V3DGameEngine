@@ -19,10 +19,10 @@ layout (binding = 4) uniform LIGHT
     Light lights[LIGHT_COUNT];
 } light;
 
-layout (binding = 5) uniform UBO 
+layout (binding = 5) uniform PS_UBO 
 {
     vec4 viewPosition;
-} ubo;
+} ps_ubo;
 
 layout (location = 0) out vec4 outFragColor;
 
@@ -33,7 +33,7 @@ void main()
     
     vec3 normal = normalize(inNormal);
     vec4 colorTextureDiffuse = texture(sampler2D(textureDiffuse, samplerColor), inUV);
-    vec3 viewDir = normalize(ubo.viewPosition.xyz - inPosition);
+    vec3 viewDir = normalize(ps_ubo.viewPosition.xyz - inPosition);
     for (int l = 0; l < LIGHT_COUNT; ++l)
     {
         vec3 lightPos = light.lights[l].position.xyz - inPosition;
