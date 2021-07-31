@@ -869,7 +869,11 @@ void reflectConstantBuffers(ID3D11ShaderReflection* reflector, const std::vector
             ASSERT(false, "not support");
             return { renderer::DataType::DataType_None, 0 };
         }
-
+        else if (desc.Class == D3D_SVC_STRUCT)
+        {
+            ASSERT(desc.Type == D3D_SVT_VOID, "must be void");
+            return { renderer::DataType::DataType_Struct, 0 };
+        }
 
         ASSERT(false, "not support");
         return { renderer::DataType::DataType_None, 0 };
@@ -949,7 +953,25 @@ void reflectConstantBuffers(ID3D11ShaderReflection* reflector, const std::vector
                 HRESULT result = memberType->GetDesc(&memberDesc);
                 ASSERT(SUCCEEDED(result), "GetDesc has failed");
             }
-            const auto [type, size] = convertTypeToDataType(memberDesc);
+            auto [type, size] = convertTypeToDataType(memberDesc);
+
+            if (type == renderer::DataType::DataType_Struct)
+            {
+                for (u32 subMem = 0; subMem < memberDesc.Members; ++subMem)
+                {
+                    ID3D11ShaderReflectionType* subMemberType = memberType->GetMemberTypeByIndex(subMem);
+                    ASSERT(subMemberType, "ID3D11ShaderReflectionType is nullptr");
+                    D3D11_SHADER_TYPE_DESC subMemberDesc = {};
+                    {
+                        HRESULT result = subMemberType->GetDesc(&subMemberDesc);
+                        ASSERT(SUCCEEDED(result), "GetDesc has failed");
+                    }
+                    ASSERT(subMemberDesc.Members == 0, "not supported");
+
+                    const auto [subType, subSize] = convertTypeToDataType(subMemberDesc);
+                    size += subSize;
+                }
+            }
 
             renderer::Shader::UniformBuffer::Uniform uniform;
             uniform._bufferId = bufferID;
@@ -960,7 +982,6 @@ void reflectConstantBuffers(ID3D11ShaderReflection* reflector, const std::vector
 #if USE_STRING_ID_SHADER
             uniform._name = "var_" + std::to_string(mem);
 #endif
-            ASSERT(memberDesc.Members == 0, "not supported");
             offset += uniform._size;
 
             constantBuffer._uniforms.push_back(uniform);
