@@ -32,7 +32,7 @@ namespace dx3d
         static D3D12_PRIMITIVE_TOPOLOGY_TYPE convertPrimitiveTopologyTypeToD3DTopology(PrimitiveTopology topology);
         static D3D_PRIMITIVE_TOPOLOGY convertPrimitiveTopologyToD3DTopology(PrimitiveTopology topology, u32 patch);
         static D3D12_FILL_MODE convertPolygonModeToD3DMode(PolygonMode mode);
-        static D3D12_CULL_MODE convertCulModeToD3D(CullMode mode);
+        static D3D12_CULL_MODE convertCullModeToD3D(CullMode mode);
         static BOOL convertCounterClockwiseToD3D(FrontFace face);
         static D3D12_LOGIC_OP convertLogicOperationToD3D(LogicalOperation op);
         static D3D12_BLEND_OP convertBlenOperationToD3D(BlendOperation op);

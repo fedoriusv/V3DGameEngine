@@ -124,7 +124,7 @@ D3D12_FILL_MODE D3DGraphicPipelineState::convertPolygonModeToD3DMode(PolygonMode
     return D3D12_FILL_MODE_SOLID;
 }
 
-D3D12_CULL_MODE D3DGraphicPipelineState::convertCulModeToD3D(CullMode mode)
+D3D12_CULL_MODE D3DGraphicPipelineState::convertCullModeToD3D(CullMode mode)
 {
     switch (mode)
     {
@@ -424,7 +424,7 @@ bool D3DGraphicPipelineState::create(const PipelineGraphicInfo* pipelineInfo)
             elementDesc.InputSlot = inputState._inputAttributes._inputAttributes[i]._streamId;
             elementDesc.AlignedByteOffset = inputState._inputAttributes._inputAttributes[i]._offest;
 
-            elementDesc.InputSlotClass = convertInputRateToD3DClassification(inputBinding._rate);
+            elementDesc.InputSlotClass = D3DGraphicPipelineState::convertInputRateToD3DClassification(inputBinding._rate);
             elementDesc.InstanceDataStepRate = inputBinding._rate == VertexInputAttribDescription::InputRate_Instance ? inputBinding._stride : 0;
 
             m_buffersStride.push_back(inputBinding._stride);
@@ -436,8 +436,8 @@ bool D3DGraphicPipelineState::create(const PipelineGraphicInfo* pipelineInfo)
 
         psoDesc.InputLayout = inputLayout;
 
-        psoDesc.PrimitiveTopologyType = convertPrimitiveTopologyTypeToD3DTopology(inputState._primitiveTopology);
-        m_topology = convertPrimitiveTopologyToD3DTopology(inputState._primitiveTopology, 0);
+        psoDesc.PrimitiveTopologyType = D3DGraphicPipelineState::convertPrimitiveTopologyTypeToD3DTopology(inputState._primitiveTopology);
+        m_topology = D3DGraphicPipelineState::convertPrimitiveTopologyToD3DTopology(inputState._primitiveTopology, 0);
     }
 
     //Rasterizer State
@@ -445,9 +445,9 @@ bool D3DGraphicPipelineState::create(const PipelineGraphicInfo* pipelineInfo)
         auto& rasterState = pipelineInfo->_pipelineDesc._rasterizationState;
 
         D3D12_RASTERIZER_DESC& state = psoDesc.RasterizerState;
-        state.FillMode = convertPolygonModeToD3DMode(rasterState._polygonMode);
-        state.CullMode = convertCulModeToD3D(rasterState._cullMode);
-        state.FrontCounterClockwise = convertCounterClockwiseToD3D(rasterState._frontFace);
+        state.FillMode = D3DGraphicPipelineState::convertPolygonModeToD3DMode(rasterState._polygonMode);
+        state.CullMode = D3DGraphicPipelineState::convertCullModeToD3D(rasterState._cullMode);
+        state.FrontCounterClockwise = D3DGraphicPipelineState::convertCounterClockwiseToD3D(rasterState._frontFace);
         if (rasterState._depthBiasConstant != 0.f || rasterState._depthBiasClamp != 0.f || rasterState._depthBiasSlope != 0.f)
         {
             state.DepthBias = static_cast<INT>(std::roundf(rasterState._depthBiasConstant));
@@ -480,15 +480,15 @@ bool D3DGraphicPipelineState::create(const PipelineGraphicInfo* pipelineInfo)
         for (u32 i = 0; i < pipelineInfo->_renderpassDesc._desc._countColorAttachments; ++i)
         {
             blendDesc.RenderTarget[i].LogicOpEnable = blendState._logicalOpEnable;
-            blendDesc.RenderTarget[i].LogicOp = convertLogicOperationToD3D(blendState._logicalOp);
+            blendDesc.RenderTarget[i].LogicOp = D3DGraphicPipelineState::convertLogicOperationToD3D(blendState._logicalOp);
 
             blendDesc.RenderTarget[i].BlendEnable = blendState._colorBlendAttachments._colorBlendEnable;
-            blendDesc.RenderTarget[i].BlendOp = convertBlenOperationToD3D(blendState._colorBlendAttachments._blendOp);
-            blendDesc.RenderTarget[i].BlendOpAlpha = convertBlenOperationToD3D(blendState._colorBlendAttachments._alphaBlendOp);
-            blendDesc.RenderTarget[i].SrcBlend = convertBlendFacorToD3D(blendState._colorBlendAttachments._srcBlendFacor);
-            blendDesc.RenderTarget[i].SrcBlendAlpha = convertBlendFacorToD3D(blendState._colorBlendAttachments._srcAlphaBlendFacor);
-            blendDesc.RenderTarget[i].DestBlend = convertBlendFacorToD3D(blendState._colorBlendAttachments._dscBlendFacor);
-            blendDesc.RenderTarget[i].DestBlendAlpha = convertBlendFacorToD3D(blendState._colorBlendAttachments._dscAlphaBlendFacor);
+            blendDesc.RenderTarget[i].BlendOp = D3DGraphicPipelineState::convertBlenOperationToD3D(blendState._colorBlendAttachments._blendOp);
+            blendDesc.RenderTarget[i].BlendOpAlpha = D3DGraphicPipelineState::convertBlenOperationToD3D(blendState._colorBlendAttachments._alphaBlendOp);
+            blendDesc.RenderTarget[i].SrcBlend = D3DGraphicPipelineState::convertBlendFacorToD3D(blendState._colorBlendAttachments._srcBlendFacor);
+            blendDesc.RenderTarget[i].SrcBlendAlpha = D3DGraphicPipelineState::convertBlendFacorToD3D(blendState._colorBlendAttachments._srcAlphaBlendFacor);
+            blendDesc.RenderTarget[i].DestBlend = D3DGraphicPipelineState::convertBlendFacorToD3D(blendState._colorBlendAttachments._dscBlendFacor);
+            blendDesc.RenderTarget[i].DestBlendAlpha = D3DGraphicPipelineState::convertBlendFacorToD3D(blendState._colorBlendAttachments._dscAlphaBlendFacor);
 
             blendDesc.RenderTarget[i].RenderTargetWriteMask = static_cast<UINT8>(blendState._colorBlendAttachments._colorWriteMask);
         }
@@ -500,8 +500,8 @@ bool D3DGraphicPipelineState::create(const PipelineGraphicInfo* pipelineInfo)
 
         CD3DX12_DEPTH_STENCIL_DESC1 depthStencilDesc = {};
         depthStencilDesc.DepthEnable = depthStencilState._depthTestEnable;
-        depthStencilDesc.DepthWriteMask = convertWriteDepthToD3D(depthStencilState._depthWriteEnable);
-        depthStencilDesc.DepthFunc = convertDepthFunctionToD3D(depthStencilState._compareOp);
+        depthStencilDesc.DepthWriteMask = D3DGraphicPipelineState::convertWriteDepthToD3D(depthStencilState._depthWriteEnable);
+        depthStencilDesc.DepthFunc = D3DGraphicPipelineState::convertDepthFunctionToD3D(depthStencilState._compareOp);
 
         //TODO
         depthStencilDesc.StencilEnable = depthStencilState._stencilTestEnable;
