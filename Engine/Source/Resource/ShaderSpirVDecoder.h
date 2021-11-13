@@ -30,11 +30,7 @@ namespace resource
 
     private:
 
-        bool parseReflections(const std::vector<u32>& spirv, stream::Stream* stream) const;
-
         const renderer::ShaderHeader m_header;
-        mutable u32 m_sourceVersion;
-
         bool m_reflections;
     };
 
