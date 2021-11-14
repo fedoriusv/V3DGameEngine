@@ -238,7 +238,7 @@ bool ShaderReflectionSpirV::reflect(const std::vector<u32>& spirv, stream::Strea
                 {
                 case spirv_cross::SPIRType::Half:
                 case spirv_cross::SPIRType::Float:
-                    //case spirv_cross::SPIRType::Double:
+                //case spirv_cross::SPIRType::Double:
                 {
                     if (row == 2)
                     {
@@ -253,6 +253,7 @@ bool ShaderReflectionSpirV::reflect(const std::vector<u32>& spirv, stream::Strea
                         return renderer::DataType::DataType_Vector4;
                     }
                 }
+                break;
 
                 default:
                     break;
@@ -267,7 +268,7 @@ bool ShaderReflectionSpirV::reflect(const std::vector<u32>& spirv, stream::Strea
                 {
                 case spirv_cross::SPIRType::Half:
                 case spirv_cross::SPIRType::Float:
-                    //case spirv_cross::SPIRType::Double:
+                //case spirv_cross::SPIRType::Double:
                 {
                     if (col == 3 && row == 3)
                     {
@@ -278,6 +279,7 @@ bool ShaderReflectionSpirV::reflect(const std::vector<u32>& spirv, stream::Strea
                         return renderer::DataType::DataType_Matrix4;
                     }
                 }
+                break;
 
                 default:
                     break;
