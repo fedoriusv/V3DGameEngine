@@ -24,7 +24,7 @@ void ForwardNormalMapTest::Load(renderer::RenderTargetState* renderTarget, const
     m_TextureColor = m_CommandList.createObject<renderer::Texture2D>(renderer::TextureUsage_Sampled | renderer::TextureUsage_Write,imageColor->getFormat(), core::Dimension2D(imageColor->getDimension().width, imageColor->getDimension().height), imageColor->getMipMapsCount(), imageColor->getRawData(), "DiffuseColor");
     m_SamplerColor = m_CommandList.createObject<renderer::SamplerState>(renderer::SamplerFilter::SamplerFilter_Trilinear, renderer::SamplerAnisotropic::SamplerAnisotropic_4x);
 
-    resource::Image* imageNormal = resource::ResourceLoaderManager::getInstance()->load<resource::Image, resource::ImageFileLoader>("resources/bumpmap/brickwall_normal.jpg", resource::ImageLoaderFlag_GenerateMipmaps);
+    resource::Image* imageNormal = resource::ResourceLoaderManager::getInstance()->load<resource::Image, resource::ImageFileLoader>("resources/bumpmap/brickwall_normal_gl.jpg", resource::ImageLoaderFlag_GenerateMipmaps);
     ASSERT(imageNormal, "not found");
     m_TextureNormalmap = m_CommandList.createObject<renderer::Texture2D>(renderer::TextureUsage_Sampled | renderer::TextureUsage_Write, imageNormal->getFormat(), core::Dimension2D(imageNormal->getDimension().width, imageNormal->getDimension().height), imageNormal->getMipMapsCount(), imageNormal->getRawData(), "NormalMap");
     m_SamplerNormalmap = m_CommandList.createObject<renderer::SamplerState>(renderer::SamplerFilter::SamplerFilter_Nearest, renderer::SamplerAnisotropic::SamplerAnisotropic_None);
@@ -34,15 +34,15 @@ void ForwardNormalMapTest::Load(renderer::RenderTargetState* renderTarget, const
         { "LIGHT_COUNT", std::to_string(countLights) }
     };
 
-    const renderer::Shader* vertShader = resource::ResourceLoaderManager::getInstance()->loadShader<renderer::Shader, resource::ShaderSourceFileLoader>(m_CommandList.getContext(), "resources/bumpmap/normalmap.vert");
-    const renderer::Shader* fragShader = resource::ResourceLoaderManager::getInstance()->loadShader<renderer::Shader, resource::ShaderSourceFileLoader>(m_CommandList.getContext(), "resources/bumpmap/normalmap.frag", constants);
-    std::vector<const renderer::Shader*> shaders = { vertShader, fragShader };
-    //std::vector<const renderer::Shader*> shaders = resource::ResourceLoaderManager::getInstance()->loadHLSLShader<renderer::Shader, resource::ShaderSourceFileLoader>(m_CommandList.getContext(), "resources/bumpmap/normalmap.hlsl",
-    //    {
-    //        {"main_VS", renderer::ShaderType::Vertex },
-    //        {"main_PS", renderer::ShaderType::Fragment }
+    //const renderer::Shader* vertShader = resource::ResourceLoaderManager::getInstance()->loadShader<renderer::Shader, resource::ShaderSourceFileLoader>(m_CommandList.getContext(), "resources/bumpmap/normalmap.vert");
+    //const renderer::Shader* fragShader = resource::ResourceLoaderManager::getInstance()->loadShader<renderer::Shader, resource::ShaderSourceFileLoader>(m_CommandList.getContext(), "resources/bumpmap/normalmap.frag", constants);
+    //std::vector<const renderer::Shader*> shaders = { vertShader, fragShader };
+    std::vector<const renderer::Shader*> shaders = resource::ResourceLoaderManager::getInstance()->loadHLSLShader<renderer::Shader, resource::ShaderSourceFileLoader>(m_CommandList.getContext(), "resources/bumpmap/normalmap.hlsl",
+        {
+            {"main_VS", renderer::ShaderType::Vertex },
+            {"main_PS", renderer::ShaderType::Fragment }
 
-    //    }, constants);
+        }, constants);
 
     m_Program = m_CommandList.createObject<renderer::ShaderProgram>(shaders);
     m_Pipeline = m_CommandList.createObject<renderer::GraphicsPipelineState>(desc, m_Program.get(), renderTarget);
@@ -97,9 +97,11 @@ void ForwardNormalMapTest::Draw(scene::ModelHelper* geometry, v3d::scene::Camera
         }
 
         m_Program->bindUniformsBuffer<renderer::ShaderType::Fragment>({ "light" }, 0, sizeof(LIGHT) * (u32)light.size(), light.data());
+        
         m_Program->bindSampler<renderer::ShaderType::Fragment>({ "samplerColor" }, m_SamplerColor.get());
-        m_Program->bindSampler<renderer::ShaderType::Fragment>({ "samplerNormal" }, m_SamplerNormalmap.get());
         m_Program->bindTexture<renderer::ShaderType::Fragment, renderer::Texture2D>({ "textureColor" }, m_TextureColor.get());
+
+        m_Program->bindSampler<renderer::ShaderType::Fragment>({ "samplerNormal" }, m_SamplerNormalmap.get());
         m_Program->bindTexture<renderer::ShaderType::Fragment, renderer::Texture2D>({ "textureNormal" }, m_TextureNormalmap.get());
     }
 

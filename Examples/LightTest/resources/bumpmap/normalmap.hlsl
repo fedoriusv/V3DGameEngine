@@ -44,8 +44,8 @@ PS_INPUT main_VS(VS_INPUT Input)
 }
 
 SamplerState samplerColor : register(s1);
-SamplerState samplerNormal : register(s2);
-Texture2D textureColor : register(t3);
+Texture2D textureColor : register(t2);
+SamplerState samplerNormal : register(s3);
 Texture2D textureNormal : register(t4);
 
 struct LIGHT
@@ -66,10 +66,10 @@ float4 main_PS(PS_INPUT Input) : SV_TARGET0
     float3 normalDiffuse = textureNormal.Sample(samplerNormal, Input.UV).xyz;
     float3 normal = normalDiffuse * 2.0 - 1.0;
     
-    float4 OutColor = float4(0.0, 0.0, 0.0, 1.0);
-    float3x3 TBN = (float3x3(normalize(Input.Tangent), normalize(Input.Bitangent), normalize(Input.Normal)));
-    normal = mul(TBN, normal);
+    float3x3 TBN = float3x3(normalize(Input.Tangent), normalize(Input.Bitangent), normalize(Input.Normal));
+    normal = mul(normal, TBN);
     
+    float4 OutColor = float4(0.0, 0.0, 0.0, 1.0);
     for (int l = 0; l < LIGHT_COUNT; ++l)
     {
         float3 lightDir = normalize(light.lights[l].position.xyz - Input.Position);

@@ -7,8 +7,8 @@ layout (location = 3) in vec3 inBitangent;
 layout (location = 4) in vec2 inUV;
 
 layout (binding = 1) uniform sampler samplerColor;
-layout (binding = 2) uniform sampler samplerNormal;
-layout (binding = 3) uniform texture2D textureColor;
+layout (binding = 2) uniform texture2D textureColor;
+layout (binding = 3) uniform sampler samplerNormal;
 layout (binding = 4) uniform texture2D textureNormal;
 
 struct Light
