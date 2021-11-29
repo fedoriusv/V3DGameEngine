@@ -31,6 +31,7 @@ namespace dx3d
     class D3DRootSignatureManager;
     class D3DDescriptorHeapManager;
     class D3DConstantBufferManager;
+    class D3DDebugLayerMessageCallback;
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -119,6 +120,10 @@ namespace dx3d
 #if D3D_DEBUG_LAYERS
         ID3D12Debug*        m_debugController;
 #endif //D3D_DEBUG_LAYERS
+#if D3D_DEBUG_LAYERS_CALLBACK
+        D3DDebugLayerMessageCallback* m_debugMessageCallback;
+#endif //D3D_DEBUG_LAYERS_CALLBACK
+
         ID3D12CommandQueue* m_commandQueue;
 
         D3DSwapchain*                 m_swapchain;

@@ -93,6 +93,7 @@
 
 #   define D3D_DEBUG 1
 #   define D3D_DEBUG_LAYERS 1
+#   define D3D_DEBUG_LAYERS_CALLBACK 0
 #endif //D3D_RENDER
 
 #define DEBUG_COMMAND_LIST 0

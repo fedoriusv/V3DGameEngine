@@ -51,6 +51,10 @@ D3DGraphicContext::D3DGraphicContext(const platform::Window* window) noexcept
 #if D3D_DEBUG_LAYERS
     , m_debugController(nullptr)
 #endif //D3D_DEBUG_LAYERS
+#if D3D_DEBUG_LAYERS_CALLBACK
+    , m_debugMessageCallback(nullptr)
+#endif //D3D_DEBUG_LAYERS_CALLBACK
+
     , m_commandQueue(nullptr)
 
     , m_descriptorHeapManager(nullptr)
@@ -95,6 +99,10 @@ D3DGraphicContext::~D3DGraphicContext()
 #if D3D_DEBUG_LAYERS
     ASSERT(!m_debugController, "not nullptr");
 #endif //D3D_DEBUG_LAYERS
+
+#if D3D_DEBUG_LAYERS_CALLBACK
+    ASSERT(!m_debugMessageCallback, "not nullptr");
+#endif //D3D_DEBUG_LAYERS_CALLBACK
 }
 
 void D3DGraphicContext::beginFrame()
@@ -663,6 +671,11 @@ bool D3DGraphicContext::initialize()
 #if D3D_DEBUG
         D3DDebug::getInstance()->attachDevice(m_device, D3D12_DEBUG_FEATURE_NONE);
 #endif //D3D_DEBUG
+
+#if D3D_DEBUG_LAYERS_CALLBACK
+        m_debugMessageCallback = new D3DDebugLayerMessageCallback(m_device);
+        m_debugMessageCallback->registerMessageCallback(D3DDebugLayerMessageCallback::debugLayersMessageCallback, D3D12_MESSAGE_CALLBACK_IGNORE_FILTERS, this);
+#endif //D3D_DEBUG_LAYERS_CALLBACK
     }
 
     {
@@ -814,6 +827,15 @@ void D3DGraphicContext::destroy()
         delete m_descriptorHeapManager;
         m_descriptorHeapManager = nullptr;
     }
+
+#if D3D_DEBUG_LAYERS_CALLBACK
+    if (m_debugMessageCallback)
+    {
+        m_debugMessageCallback->unregisterMessageCallback();
+        delete m_debugMessageCallback;
+        m_debugMessageCallback = nullptr;
+    }
+#endif //D3D_DEBUG_LAYERS_CALLBACK
 
 #if D3D_DEBUG
     D3DDebug::getInstance()->report(D3D12_RLDO_DETAIL | D3D12_RLDO_IGNORE_INTERNAL);

@@ -2,6 +2,8 @@
 #include "Utils/Logger.h"
 
 #ifdef D3D_RENDER
+#include "D3DGraphicContext.h"
+
 namespace v3d
 {
 namespace renderer
@@ -101,8 +103,12 @@ D3DDebug::D3DDebug() noexcept
 
 D3DDebug::~D3DDebug()
 {
-    //The last ptr inside ID3D12Device
-    m_debugDevice->Release();
+    //The last ptrs inside ID3D12Device
+    //SAFE_DELETE(m_debugDevice);
+    if (m_debugDevice)
+    {
+        m_debugDevice->Release();
+    }
 }
 
 bool D3DDebug::attachDevice(ID3D12Device* device, D3D12_DEBUG_FEATURE flags)
@@ -115,10 +121,11 @@ bool D3DDebug::attachDevice(ID3D12Device* device, D3D12_DEBUG_FEATURE flags)
 
     {
         ASSERT(device, "nullptr");
-        HRESULT result = device->QueryInterface(IID_PPV_ARGS(&m_debugDevice));
+        HRESULT result = device->QueryInterface(&m_debugDevice);
+        //device->Release();
         if (FAILED(result))
         {
-            LOG_ERROR("D3DDebug::attachDevice DeviceQueryInterface is failed. Error %s", D3DDebug::stringError(result).c_str());
+            LOG_ERROR("D3DDebug::attachDevice DeviceQueryInterface is failed");
             ASSERT(!m_debugDevice, "not nullptr");
             return false;
         }
@@ -148,6 +155,67 @@ bool D3DDebug::report(D3D12_RLDO_FLAGS flags)
     }
 
     return true;
+}
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////
+
+D3DDebugLayerMessageCallback::D3DDebugLayerMessageCallback(ID3D12Device* device) noexcept
+    : m_infoQueue(nullptr)
+    , m_ID(0)
+{
+    ASSERT(device, "nullptr");
+    HRESULT result = device->QueryInterface(&m_infoQueue); //return nullptr for 10.0.20348, maybe need last SDK or OS
+    if (FAILED(result))
+    {
+        LOG_ERROR("D3DDebugLayerMessageCallback::D3DDebugLayerMessageCallback QueryInterface is failed");
+        ASSERT(m_infoQueue, "nullptr");
+    }
+}
+
+D3DDebugLayerMessageCallback::~D3DDebugLayerMessageCallback()
+{
+    SAFE_DELETE(m_infoQueue);
+}
+
+bool D3DDebugLayerMessageCallback::registerMessageCallback(D3D12MessageFunc callbackFunc, D3D12_MESSAGE_CALLBACK_FLAGS flags, void* userData)
+{
+    ASSERT(m_infoQueue, "nullptr");
+    ASSERT(m_ID != 0, "registered already");
+    HRESULT result = m_infoQueue->RegisterMessageCallback(callbackFunc, flags, userData, &m_ID);
+    if (FAILED(result))
+    {
+        LOG_ERROR("D3DDebugLayerMessageCallback::registerMessageCallback RegisterMessageCallback is failed. Error %s", D3DDebug::stringError(result).c_str());
+        return false;
+    }
+
+    if (m_ID == 0)
+    {
+        LOG_ERROR("D3DDebugLayerMessageCallback::registerMessageCallback Can't be registered");
+        return false;
+    }
+
+    return true;
+}
+
+bool D3DDebugLayerMessageCallback::unregisterMessageCallback()
+{
+    ASSERT(m_infoQueue, "nullptr");
+    ASSERT(m_ID != 0, "not registered");
+    HRESULT result = m_infoQueue->UnregisterMessageCallback(m_ID);
+    if (FAILED(result))
+    {
+        LOG_ERROR("D3DDebugLayerMessageCallback::unregisterMessageCallback UnregisterMessageCallback is failed. Error %s", D3DDebug::stringError(result).c_str());
+        return false;
+    }
+
+    m_ID = 0;
+    return true;
+}
+
+void D3DDebugLayerMessageCallback::debugLayersMessageCallback(D3D12_MESSAGE_CATEGORY category, D3D12_MESSAGE_SEVERITY severity, D3D12_MESSAGE_ID ID, LPCSTR description, void* context)
+{
+    D3DGraphicContext* dxContext = reinterpret_cast<D3DGraphicContext*>(context);
+    //TODO
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////

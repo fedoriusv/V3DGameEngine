@@ -6,6 +6,7 @@
 #if (D3D_VERSION_MAJOR == 12)
 
 #   include <d3d12.h>
+#   include <d3d12sdklayers.h>
 #   include <dxgi1_4.h>
 #   include "d3dx12.h"
 
