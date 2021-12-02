@@ -4,9 +4,6 @@
 #include "Utils/Logger.h"
 
 #ifdef D3D_RENDER
-#include "d3dx12.h"
-//#include "d3d12umddi.h"
-
 #include "D3DDebug.h"
 #include "D3DImage.h"
 #include "D3DRootSignature.h"
@@ -348,7 +345,11 @@ D3DGraphicPipelineState::~D3DGraphicPipelineState()
 
 bool D3DGraphicPipelineState::create(const PipelineGraphicInfo* pipelineInfo)
 {
+#if defined(PLATFORM_XBOX)
+    using CD3DX12_PIPELINE_STATE_STREAM1 = CD3DX12_PIPELINE_STATE_STREAM;
+#endif
     CD3DX12_PIPELINE_STATE_STREAM1 psoDesc = {};
+
     psoDesc.Flags = D3D12_PIPELINE_STATE_FLAG_NONE;
     psoDesc.NodeMask = 0;
 

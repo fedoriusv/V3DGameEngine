@@ -34,7 +34,7 @@ bool D3DComputePipelineState::create(const PipelineGraphicInfo* pipelineInfo)
 
 bool D3DComputePipelineState::create(const PipelineComputeInfo* pipelineInfo)
 {
-    CD3DX12_PIPELINE_STATE_STREAM1 psoDesc = {};
+    CD3DX12_PIPELINE_STATE_STREAM psoDesc = {};
     psoDesc.Flags = D3D12_PIPELINE_STATE_FLAG_NONE;
     psoDesc.NodeMask = 0;
 
