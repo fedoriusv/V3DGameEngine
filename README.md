@@ -62,9 +62,11 @@ To enable set `BUILD_VULKAN_SDK` to ON in `CMakeLists.txt` file.
 `VK_SDK_PATH` must be setted in system enviroments.<br/>
 For using SPIRV for Vulkan start file:<br/>
 Engine\Libs\spirv\install_[windows][android]_platform.bat<br/>
-Required Python 3<br/>
+>Required:<br/>
+>-- Vulkan SDK: https://vulkan.lunarg.com/<br/>
+>-- Python 3<br/>
 
 
 #### DirectX
 To enable set `BUILD_DIRECTX_SDK` to ON in `CMakeLists.txt` file
-
+For using custom DirectXShaderCompiler(DXC) set option to ON in `CMakeLists.txt`
