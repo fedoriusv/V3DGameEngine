@@ -615,6 +615,10 @@ void CommandList::dispatchCompute(const core::Dimension3D& groups)
 
 void CommandList::clearBackbuffer(const core::Vector4D & color)
 {
+    if (!CommandList::isImmediate())
+    {
+        m_pendingFlushMask = CommandList::flushPendingCommands(m_pendingFlushMask);
+    }
     m_swapchainTexture->clear(color);
 }
 
