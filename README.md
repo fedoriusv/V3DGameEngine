@@ -68,5 +68,5 @@ Engine\Libs\spirv\install_[windows][android]_platform.bat<br/>
 
 
 #### DirectX
-To enable set `BUILD_DIRECTX_SDK` to ON in `CMakeLists.txt` file
+To enable set `BUILD_DIRECTX_SDK` to ON in `CMakeLists.txt` file.<br/>
 For using custom DirectXShaderCompiler(DXC) set option to ON in `CMakeLists.txt`
