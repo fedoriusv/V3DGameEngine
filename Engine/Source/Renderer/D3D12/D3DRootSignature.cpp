@@ -39,13 +39,13 @@ D3DRootSignatureCreator::D3DRootSignatureCreator(const ShaderProgramDescription&
         return D3D12_SHADER_VISIBILITY_ALL;
     };
 
-    auto descriptorRangeSort = [](const CD3DX12_DESCRIPTOR_RANGE1& range0, const CD3DX12_DESCRIPTOR_RANGE1& range1) -> bool
-    {
-        return range0.BaseShaderRegister < range1.BaseShaderRegister;
-    };
-
     if (D3DDeviceCaps::getInstance()->rootSignatureVersion.HighestVersion == D3D_ROOT_SIGNATURE_VERSION_1_1)
     {
+        auto descriptorRangeSort = [](const CD3DX12_DESCRIPTOR_RANGE1& range0, const CD3DX12_DESCRIPTOR_RANGE1& range1) -> bool
+        {
+            return range0.BaseShaderRegister < range1.BaseShaderRegister;
+        };
+
         std::vector<CD3DX12_ROOT_PARAMETER1> rootParameters;
         std::vector<CD3DX12_DESCRIPTOR_RANGE1> shareDescRanges[toEnumType(ShaderType::Count)];
         std::vector<CD3DX12_DESCRIPTOR_RANGE1> samplerDescRanges[toEnumType(ShaderType::Count)];
@@ -63,7 +63,7 @@ D3DRootSignatureCreator::D3DRootSignatureCreator(const ShaderProgramDescription&
                 for (auto cbBuffer : info._uniformBuffers)
                 {
                     CD3DX12_DESCRIPTOR_RANGE1 range = {};
-                    range.Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, cbBuffer._array, cbBuffer._binding, cbBuffer._set, D3D12_DESCRIPTOR_RANGE_FLAG_DATA_STATIC);
+                    range.Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, cbBuffer._array, cbBuffer._binding, cbBuffer._set, D3D12_DESCRIPTOR_RANGE_FLAG_DATA_STATIC, D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND);
 
                     shareDescRanges[toEnumType(shaderType)].push_back(range);
                     [[maybe_unused]] auto key = m_signatureParameters.emplace(cbBuffer._binding, signatureParameterIndex);
@@ -73,7 +73,7 @@ D3DRootSignatureCreator::D3DRootSignatureCreator(const ShaderProgramDescription&
                 for (auto image : info._images)
                 {
                     CD3DX12_DESCRIPTOR_RANGE1 range = {};
-                    range.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, image._array, image._binding, image._set, D3D12_DESCRIPTOR_RANGE_FLAG_DATA_STATIC);
+                    range.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, image._array, image._binding, image._set, D3D12_DESCRIPTOR_RANGE_FLAG_DATA_STATIC, D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND);
 
                     shareDescRanges[toEnumType(shaderType)].push_back(range);
                     [[maybe_unused]] auto key = m_signatureParameters.emplace(image._binding, signatureParameterIndex);
@@ -84,7 +84,7 @@ D3DRootSignatureCreator::D3DRootSignatureCreator(const ShaderProgramDescription&
                     for (auto UAV : info._storageImages)
                     {
                         CD3DX12_DESCRIPTOR_RANGE1 range = {};
-                        range.Init(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, UAV._array, UAV._binding, UAV._set, D3D12_DESCRIPTOR_RANGE_FLAG_DATA_STATIC);
+                        range.Init(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, UAV._array, UAV._binding, UAV._set, D3D12_DESCRIPTOR_RANGE_FLAG_DATA_STATIC, D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND);
 
                         shareDescRanges[toEnumType(shaderType)].push_back(range);
                         [[maybe_unused]] auto key = m_signatureParameters.emplace(UAV._binding, signatureParameterIndex);
@@ -94,7 +94,7 @@ D3DRootSignatureCreator::D3DRootSignatureCreator(const ShaderProgramDescription&
                     for (auto UAV : info._storageBuffers)
                     {
                         CD3DX12_DESCRIPTOR_RANGE1 range = {};
-                        range.Init(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, UAV._binding, UAV._set, D3D12_DESCRIPTOR_RANGE_FLAG_DATA_STATIC);
+                        range.Init(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, UAV._binding, UAV._set, D3D12_DESCRIPTOR_RANGE_FLAG_DATA_STATIC, D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND);
 
                         shareDescRanges[toEnumType(shaderType)].push_back(range);
                         [[maybe_unused]] auto key = m_signatureParameters.emplace(UAV._binding, signatureParameterIndex);
@@ -119,7 +119,7 @@ D3DRootSignatureCreator::D3DRootSignatureCreator(const ShaderProgramDescription&
                 for (auto sampler : info._samplers)
                 {
                     CD3DX12_DESCRIPTOR_RANGE1 range = {};
-                    range.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER, 1, sampler._binding, sampler._set, D3D12_DESCRIPTOR_RANGE_FLAG_NONE);
+                    range.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER, 1, sampler._binding, sampler._set, D3D12_DESCRIPTOR_RANGE_FLAG_NONE, D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND);
 
                     samplerDescRanges[toEnumType(shaderType)].push_back(range);
                     [[maybe_unused]] auto key = m_signatureParameters.emplace(sampler._binding, signatureParameterIndex);
@@ -169,7 +169,7 @@ D3DRootSignatureCreator::D3DRootSignatureCreator(const ShaderProgramDescription&
         rootSignatureDesc.Init_1_1(static_cast<UINT>(rootParameters.size()), rootParameters.data(), 0, nullptr, layoutFlags);
 
         ID3DBlob* error;
-        HRESULT result = D3DX12SerializeVersionedRootSignature(&rootSignatureDesc, D3DDeviceCaps::getInstance()->rootSignatureVersion.HighestVersion, &m_signature, &error);
+        HRESULT result = D3DX12SerializeVersionedRootSignature(&rootSignatureDesc, D3D_ROOT_SIGNATURE_VERSION_1_1, &m_signature, &error);
         if (FAILED(result))
         {
             if (error->GetBufferSize() > 0)
@@ -182,10 +182,148 @@ D3DRootSignatureCreator::D3DRootSignatureCreator(const ShaderProgramDescription&
             m_signature->Release();
         }
     }
-    else
+    else //D3D_ROOT_SIGNATURE_VERSION_1_0
     {
-        ASSERT(false, "TODO");
-        //rootSignatureDesc.Init_1_0(static_cast<UINT>(rootParameters.size()), rootParameters.data(), 0, nullptr, D3D12_ROOT_SIGNATURE_FLAG_NONE);
+        auto descriptorRangeSort = [](const CD3DX12_DESCRIPTOR_RANGE& range0, const CD3DX12_DESCRIPTOR_RANGE& range1) -> bool
+        {
+            return range0.BaseShaderRegister < range1.BaseShaderRegister;
+        };
+
+        std::vector<CD3DX12_ROOT_PARAMETER> rootParameters;
+        std::vector<CD3DX12_DESCRIPTOR_RANGE> shareDescRanges[toEnumType(ShaderType::Count)];
+        std::vector<CD3DX12_DESCRIPTOR_RANGE> samplerDescRanges[toEnumType(ShaderType::Count)];
+        u32 signatureParameterIndex = 0;
+        for (auto shader : desc._shaders)
+        {
+            if (!shader)
+            {
+                continue;
+            }
+
+            const Shader::ReflectionInfo& info = shader->getReflectionInfo();
+            ShaderType shaderType = shader->getShaderHeader()._type;
+            {
+                for (auto cbBuffer : info._uniformBuffers)
+                {
+                    CD3DX12_DESCRIPTOR_RANGE range = {};
+                    range.Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, cbBuffer._array, cbBuffer._binding, cbBuffer._set, D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND);
+
+                    shareDescRanges[toEnumType(shaderType)].push_back(range);
+                    [[maybe_unused]] auto key = m_signatureParameters.emplace(cbBuffer._binding, signatureParameterIndex);
+                    ASSERT(key.second, "already is inserted");
+                }
+
+                for (auto image : info._images)
+                {
+                    CD3DX12_DESCRIPTOR_RANGE range = {};
+                    range.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, image._array, image._binding, image._set, D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND);
+
+                    shareDescRanges[toEnumType(shaderType)].push_back(range);
+                    [[maybe_unused]] auto key = m_signatureParameters.emplace(image._binding, signatureParameterIndex);
+                    ASSERT(key.second, "already is inserted");
+                }
+
+                {
+                    for (auto UAV : info._storageImages)
+                    {
+                        CD3DX12_DESCRIPTOR_RANGE range = {};
+                        range.Init(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, UAV._array, UAV._binding, UAV._set, D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND);
+
+                        shareDescRanges[toEnumType(shaderType)].push_back(range);
+                        [[maybe_unused]] auto key = m_signatureParameters.emplace(UAV._binding, signatureParameterIndex);
+                        ASSERT(key.second, "already is inserted");
+                    }
+
+                    for (auto UAV : info._storageBuffers)
+                    {
+                        CD3DX12_DESCRIPTOR_RANGE range = {};
+                        range.Init(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, UAV._binding, UAV._set, D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND);
+
+                        shareDescRanges[toEnumType(shaderType)].push_back(range);
+                        [[maybe_unused]] auto key = m_signatureParameters.emplace(UAV._binding, signatureParameterIndex);
+                        ASSERT(key.second, "already is inserted");
+                    }
+                }
+
+                ASSERT(info._sampledImages.empty(), "not supported");
+                if (!shareDescRanges[toEnumType(shaderType)].empty())
+                {
+                    std::sort(shareDescRanges[toEnumType(shaderType)].begin(), shareDescRanges[toEnumType(shaderType)].end(), descriptorRangeSort);
+
+                    CD3DX12_ROOT_PARAMETER param = {};
+                    param.InitAsDescriptorTable(static_cast<UINT>(shareDescRanges[toEnumType(shaderType)].size()), shareDescRanges[toEnumType(shaderType)].data(), shaderVisibility(shaderType));
+
+                    rootParameters.push_back(param);
+                    ++signatureParameterIndex;
+                }
+            }
+
+            {
+                for (auto sampler : info._samplers)
+                {
+                    CD3DX12_DESCRIPTOR_RANGE range = {};
+                    range.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER, 1, sampler._binding, sampler._set, D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND);
+
+                    samplerDescRanges[toEnumType(shaderType)].push_back(range);
+                    [[maybe_unused]] auto key = m_signatureParameters.emplace(sampler._binding, signatureParameterIndex);
+                    ASSERT(key.second, "already is inserted");
+                }
+
+                if (!samplerDescRanges[toEnumType(shaderType)].empty())
+                {
+                    std::sort(shareDescRanges[toEnumType(shaderType)].begin(), shareDescRanges[toEnumType(shaderType)].end(), descriptorRangeSort);
+
+                    CD3DX12_ROOT_PARAMETER param = {};
+                    param.InitAsDescriptorTable(static_cast<UINT>(samplerDescRanges[toEnumType(shaderType)].size()), samplerDescRanges[toEnumType(shaderType)].data(), shaderVisibility(shaderType));
+
+                    rootParameters.push_back(param);
+                    ++signatureParameterIndex;
+                }
+            }
+        }
+
+        D3D12_ROOT_SIGNATURE_FLAGS layoutFlags =
+            D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT |
+            D3D12_ROOT_SIGNATURE_FLAG_DENY_VERTEX_SHADER_ROOT_ACCESS |
+            D3D12_ROOT_SIGNATURE_FLAG_DENY_HULL_SHADER_ROOT_ACCESS |
+            D3D12_ROOT_SIGNATURE_FLAG_DENY_DOMAIN_SHADER_ROOT_ACCESS |
+            D3D12_ROOT_SIGNATURE_FLAG_DENY_GEOMETRY_SHADER_ROOT_ACCESS |
+            D3D12_ROOT_SIGNATURE_FLAG_DENY_PIXEL_SHADER_ROOT_ACCESS;
+
+        for (auto& param : rootParameters)
+        {
+            if (param.ShaderVisibility == D3D12_SHADER_VISIBILITY_ALL)
+            {
+                layoutFlags &= ~D3D12_ROOT_SIGNATURE_FLAG_DENY_VERTEX_SHADER_ROOT_ACCESS | ~D3D12_ROOT_SIGNATURE_FLAG_DENY_PIXEL_SHADER_ROOT_ACCESS;
+            }
+            else if (param.ShaderVisibility == D3D12_SHADER_VISIBILITY_VERTEX)
+            {
+                layoutFlags &= ~D3D12_ROOT_SIGNATURE_FLAG_DENY_VERTEX_SHADER_ROOT_ACCESS;
+            }
+            else if (param.ShaderVisibility == D3D12_SHADER_VISIBILITY_PIXEL)
+            {
+                layoutFlags &= ~D3D12_ROOT_SIGNATURE_FLAG_DENY_PIXEL_SHADER_ROOT_ACCESS;
+            }
+        }
+
+        m_hash = crc32c::Crc32c(reinterpret_cast<u8*>(rootParameters.data()), sizeof(CD3DX12_ROOT_PARAMETER1) * rootParameters.size());
+
+        CD3DX12_VERSIONED_ROOT_SIGNATURE_DESC rootSignatureDesc;
+        rootSignatureDesc.Init_1_0(static_cast<UINT>(rootParameters.size()), rootParameters.data(), 0, nullptr, layoutFlags);
+
+        ID3DBlob* error;
+        HRESULT result = D3DX12SerializeVersionedRootSignature(&rootSignatureDesc, D3D_ROOT_SIGNATURE_VERSION_1_0, &m_signature, &error);
+        if (FAILED(result))
+        {
+            if (error->GetBufferSize() > 0)
+            {
+                LOG_ERROR("D3DX12SerializeVersionedRootSignature error %s", error->GetBufferPointer());
+                error->Release();
+            }
+
+            ASSERT(false, "D3DX12SerializeVersionedRootSignature");
+            m_signature->Release();
+        }
     }
 }
 
