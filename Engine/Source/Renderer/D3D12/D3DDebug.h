@@ -12,7 +12,6 @@ namespace renderer
 {
 namespace dx3d
 {
-
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
@@ -22,10 +21,11 @@ namespace dx3d
     {
     public:
 
+        static std::string stringError(HRESULT error);
+
+#ifdef PLATFORM_WINDOWS
         D3DDebug() noexcept;
         ~D3DDebug();
-
-        static std::string stringError(HRESULT error);
 
         bool attachDevice(ID3D12Device* device, D3D12_DEBUG_FEATURE flags);
         bool report(D3D12_RLDO_FLAGS flags);
@@ -33,10 +33,12 @@ namespace dx3d
     private:
 
         ID3D12DebugDevice2* m_debugDevice;
+#endif //PLATFORM_WINDOWS
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
+#ifdef PLATFORM_WINDOWS
     class D3DDebugLayerMessageCallback final
     {
     public:
@@ -54,8 +56,8 @@ namespace dx3d
 
         ID3D12InfoQueue1* m_infoQueue;
         DWORD m_ID;
-
     };
+#endif //PLATFORM_WINDOWS
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 

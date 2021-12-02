@@ -96,6 +96,7 @@ std::string D3DDebug::stringError(HRESULT error)
     return std::string("empty");
 }
 
+#ifdef PLATFORM_WINDOWS
 D3DDebug::D3DDebug() noexcept
     : m_debugDevice(nullptr)
 {
@@ -156,9 +157,11 @@ bool D3DDebug::report(D3D12_RLDO_FLAGS flags)
 
     return true;
 }
+#endif //PLATFORM_WINDOWS
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 
+#ifdef PLATFORM_WINDOWS
 D3DDebugLayerMessageCallback::D3DDebugLayerMessageCallback(ID3D12Device* device) noexcept
     : m_infoQueue(nullptr)
     , m_ID(0)
@@ -217,6 +220,7 @@ void D3DDebugLayerMessageCallback::debugLayersMessageCallback(D3D12_MESSAGE_CATE
     D3DGraphicContext* dxContext = reinterpret_cast<D3DGraphicContext*>(context);
     //TODO
 }
+#endif //PLATFORM_WINDOWS
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 
