@@ -1,7 +1,7 @@
 #include "D3DDescriptorHeap.h"
 #include "Utils/Logger.h"
 
-#ifdef VULKAN_RENDER
+#ifdef D3D_RENDER
 #include "D3DDebug.h"
 
 namespace v3d
