@@ -1,16 +1,21 @@
 #include "ShaderReflectionDXC.h"
 #include "Utils/Logger.h"
 
-#ifdef PLATFORM_WINDOWS
+#if defined(PLATFORM_WINDOWS) || defined(PLATFORM_XBOX)
 #include "Renderer/D3D12/D3DDebug.h"
 
 #if USE_CUSTOM_DXC
 #   include "dxc/inc/dxcapi.h"
 #   include "dxc/inc/d3d12shader.h"
 #else
-#   include <dxcapi.h>
-#   include <d3d12shader.h>
-#   pragma comment(lib, "dxcompiler.lib")
+#   if defined(PLATFORM_WINDOWS)
+#       include <dxcapi.h>
+#       include <d3d12shader.h>
+#       pragma comment(lib, "dxcompiler.lib")
+#   elif defined(PLATFORM_XBOX)
+#       include <dxcapi_xs.h>
+#       include <d3d12shader_xs.h>
+#   endif //PLATFORM
 #endif
 
 namespace v3d

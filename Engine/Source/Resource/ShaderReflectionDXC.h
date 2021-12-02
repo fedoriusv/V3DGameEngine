@@ -3,7 +3,7 @@
 #include "Common.h"
 #include "Renderer/Shader.h"
 
-#ifdef PLATFORM_WINDOWS
+#if defined(PLATFORM_WINDOWS) || defined(PLATFORM_XBOX)
 
 struct IDxcBlob;
 
@@ -30,4 +30,4 @@ namespace resource
 
 } //namespace resource
 } //namespace v3d
-#endif //PLATFORM_WINDOWS
+#endif //PLATFORM

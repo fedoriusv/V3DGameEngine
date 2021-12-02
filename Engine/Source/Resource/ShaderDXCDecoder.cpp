@@ -3,7 +3,7 @@
 #include "Utils/Logger.h"
 #include "Utils//Timer.h"
 
-#ifdef PLATFORM_WINDOWS
+#if defined(PLATFORM_WINDOWS) || defined(PLATFORM_XBOX)
 #include "Renderer/D3D12/D3DDebug.h"
 #include "ShaderReflectionSpirV.h"
 #include "ShaderReflectionDXC.h"
@@ -12,11 +12,17 @@
 #   include "dxc/inc/dxcapi.h"
 #   include "dxc/inc/d3d12shader.h"
 #else
-#   include <dxcapi.h>
-#   include <d3d12shader.h>
-#   pragma comment(lib, "dxcompiler.lib")
-//#    pragma comment(lib, "dxil.lib")
-#endif
+#   if defined(PLATFORM_WINDOWS)
+#       include <dxcapi.h>
+#       include <d3d12shader.h>
+#       pragma comment(lib, "dxcompiler.lib")
+//#     pragma comment(lib, "dxil.lib")
+#   elif defined(PLATFORM_XBOX)
+#       include <dxcapi_xs.h>
+#       include <d3d12shader_xs.h>
+#       pragma comment(lib, "dxcompiler.lib")
+#   endif //PLATFORM
+#endif //DXC
 
 namespace v3d
 {
@@ -499,6 +505,7 @@ bool ShaderDXCDecoder::reflect(stream::Stream* stream, IDxcBlob* shader) const
 {
     switch (m_output)
     {
+#ifdef USE_SPIRV
     case renderer::ShaderHeader::ShaderModel::SpirV:
     {
         std::vector<u32> spirv(shader->GetBufferSize() / sizeof(u32));
@@ -508,7 +515,7 @@ bool ShaderDXCDecoder::reflect(stream::Stream* stream, IDxcBlob* shader) const
         ShaderReflectionSpirV reflector(m_header._shaderModel);
         return reflector.reflect(spirv, stream);
     }
-
+#endif //USE_SPIRV
     case renderer::ShaderHeader::ShaderModel::HLSL_6_0:
     case renderer::ShaderHeader::ShaderModel::HLSL_6_1:
     {

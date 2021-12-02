@@ -7,11 +7,8 @@
 
 #include "Renderer/ShaderProperties.h"
 
-#ifdef D3D_RENDER
-#include <d3dcompiler.h>
-#include "Renderer/D3D12/D3DDebug.h"
-
-#pragma comment(lib, "d3dcompiler.lib")
+#if D3D_RENDER
+#   include "Renderer/D3D12/D3DDebug.h"
 
 namespace v3d
 {
@@ -26,6 +23,10 @@ const std::map<std::string, renderer::ShaderType> k_HLSL_ExtensionList =
 
     { "cs", renderer::ShaderType::Compute },
 };
+
+#if defined(PLATFORM_WINDOWS)
+#   include <d3dcompiler.h>
+#   pragma comment(lib, "d3dcompiler.lib")
 
 bool reflect(ID3DBlob* shader, stream::Stream* stream, u32 version);
 void reflectConstantBuffers(ID3D11ShaderReflection* reflector, const std::vector<D3D11_SHADER_INPUT_BIND_DESC>& bindDescs, stream::Stream* stream, u32 version);
@@ -990,6 +991,30 @@ void reflectConstantBuffers(ID3D11ShaderReflection* reflector, const std::vector
         constantBuffer >> stream;
     }
 }
+
+#else
+
+ShaderHLSLDecoder::ShaderHLSLDecoder(const renderer::ShaderHeader& header, bool reflections) noexcept
+    : m_header(header)
+    , m_reflections(reflections)
+    , m_version(0)
+{
+}
+
+ShaderHLSLDecoder::ShaderHLSLDecoder(std::vector<std::string> supportedExtensions, const renderer::ShaderHeader& header, bool reflections) noexcept
+    : ResourceDecoder(supportedExtensions)
+    , m_header(header)
+    , m_reflections(reflections)
+    , m_version(0)
+{
+}
+
+Resource* ShaderHLSLDecoder::decode(const stream::Stream* stream, const std::string& name) const
+{
+    ASSERT(false, "is't supported");
+    return nullptr;
+}
+#endif //PLATFORM_WINDOWS
 
 } //namespace resource
 } //namespace v3d
