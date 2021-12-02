@@ -5,9 +5,11 @@
 
 #if defined(PLATFORM_WINDOWS)
 #   include "Windows/WindowWindows.h"
+#elif defined(PLATFORM_XBOX)
+#   include "XBOX/WindowXBOX.h"
 #elif defined(PLATFORM_ANDROID)
 #   include "Android/WindowAndroid.h"
-#endif //
+#endif //PLATFORM
 
 namespace v3d
 {
@@ -36,9 +38,11 @@ Window* Window::createWindow(const core::Dimension2D& size, const core::Point2D&
     Window* window = nullptr;
 #if defined(PLATFORM_WINDOWS)
     window = new WindowWindows(params, nullptr);
+#elif defined(PLATFORM_XBOX)
+    window = new WindowXBOX(params, nullptr);
 #elif defined(PLATFORM_ANDROID)
     window = new WindowAndroid(params, nullptr);
-#endif //
+#endif //PLATFORM
 
     if (!window)
     {
@@ -69,9 +73,11 @@ Window* Window::createWindow(const core::Dimension2D& size, const core::Point2D&
     Window* window = nullptr;
 #if defined(PLATFORM_WINDOWS)
     window = new WindowWindows(params, receiver);
+#elif defined(PLATFORM_XBOX)
+    window = new WindowXBOX(params, receiver);
 #elif defined(PLATFORM_ANDROID)
     window = new WindowAndroid(params, receiver);
-#endif //
+#endif //PLATFORM
 
     if (!window)
     {
@@ -86,6 +92,7 @@ Window* Window::createWindow(const core::Dimension2D& size, const core::Point2D&
     }
 
     LOG_ERROR("Window::createWindow: Can't initialize window");
+    window->destroy();
     delete window;
 
     return nullptr;

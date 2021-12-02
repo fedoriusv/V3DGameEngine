@@ -4,16 +4,19 @@
 
 #ifdef D3D_RENDER
 #if (D3D_VERSION_MAJOR == 12)
-
-#   include <d3d12.h>
-#   include <d3d12sdklayers.h>
-#   include <dxgi1_4.h>
-#   include "d3dx12.h"
-
-//#ifdef PLATFORM_WINDOWS
+#   if defined(PLATFORM_WINDOWS)
+#       include <d3d12.h>
+#       include <d3d12sdklayers.h>
+#       include <dxgi1_4.h>
+#       include "d3dx12.h"
 //#   include <wrl/client.h>
 //using namespace Microsoft::WRL;
-//#endif
+#       define DX_IID_PPV_ARGS(x) IID_PPV_ARGS(x)
+#   elif defined(PLATFORM_XBOX)
+#       include <d3d12_xs.h>
+#       include <d3dx12_xs.h>
+#       define DX_IID_PPV_ARGS(x) IID_GRAPHICS_PPV_ARGS(x)
+#   endif //PLATFORM
 
 #if DEBUG
 #   define SAFE_DELETE(comp)                \

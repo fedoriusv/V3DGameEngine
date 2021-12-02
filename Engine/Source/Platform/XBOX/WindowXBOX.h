@@ -2,7 +2,7 @@
 
 #include "Common.h"
 #include "Window.h"
-#ifdef PLATFORM_WINDOWS
+#ifdef PLATFORM_XBOX
 
 namespace v3d
 {
@@ -10,15 +10,15 @@ namespace platform
 {
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    class WindowWindows : public Window
+    class WindowXBOX : public Window
     {
     public:
 
-        WindowWindows(const WindowParam& params, event::InputEventReceiver* receiver);
-        ~WindowWindows();
+        WindowXBOX(const WindowParam& params, event::InputEventReceiver* receiver);
+        ~WindowXBOX();
 
-        WindowWindows(const WindowWindows&) = delete;
-        WindowWindows& operator=(const WindowWindows&) = delete;
+        WindowXBOX(const WindowXBOX&) = delete;
+        WindowXBOX& operator=(const WindowXBOX&) = delete;
 
         void minimize() override;
         void maximize() override;
@@ -45,13 +45,9 @@ namespace platform
         bool update() override;
         void destroy() override;
 
-        void fillKeyCodes();
-
         HINSTANCE           m_hInstance;
         HWND                m_hWnd;
-        const std::wstring  m_classname = L"V3DWin";
-
-        LRESULT HandleMessage(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
+        const std::wstring  m_classname = L"V3DXBOX";
 
         static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
     };
@@ -60,4 +56,4 @@ namespace platform
 
 } //namespace platform
 } //namespace v3d
-#endif //PLATFORM_WINDOWS
+#endif //PLATFORM_XBOX

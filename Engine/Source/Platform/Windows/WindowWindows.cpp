@@ -64,7 +64,6 @@ bool WindowWindows::initialize()
     m_params._position.y += borderRect.top;
 
     // Inflate the window size by the OS border
-
     core::Dimension2D size =
     {
         m_params._size.width + borderRect.right - borderRect.left,
@@ -72,12 +71,12 @@ bool WindowWindows::initialize()
     };
     // create window
     ASSERT(!m_hWnd, "Already exist");
-    m_hWnd = CreateWindowEx(dwExStyle, m_classname.c_str(), __TEXT("Test"), dwStyle, m_params._position.x, m_params._position.y, size.width, size.height, NULL, NULL, m_hInstance, this);
+    m_hWnd = CreateWindowEx(dwExStyle, m_classname.c_str(), __TEXT("Window"), dwStyle, m_params._position.x, m_params._position.y, size.width, size.height, NULL, NULL, m_hInstance, this);
     if (!m_hWnd)
     {
-        const u32 Error = GetLastError();
-        DWORD NumHandles = 0;
-        GetProcessHandleCount(GetCurrentProcess(), &NumHandles);
+        const u32 error = GetLastError();
+        DWORD numHandles = 0;
+        GetProcessHandleCount(GetCurrentProcess(), &numHandles);
 
         LOG_ERROR( "WindowWindows::initialize: CreateWindowEx is failed, window %llx", this);
         return false;

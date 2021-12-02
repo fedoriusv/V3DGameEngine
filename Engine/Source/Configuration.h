@@ -43,11 +43,20 @@
 #   error Unsupported platform
 #endif
 
+#if defined(_GAMING_XBOX) && defined(_GAMING_XBOX_SCARLETT)
+#   define PLATFORM_XBOX
+#   define PLATFORM_XBOX_SCARLETT
+#   undef PLATFORM_WINDOWS
+#endif
+
+#if defined(_GAMING_XBOX) && defined(_GAMING_XBOX_XBOXONE)
+#   error Unsupported platform
+#endif
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #ifdef USE_LOGGER
-#   ifndef PLATFORM_ANDROID
+#if   defined(PLATFORM_WINDOWS)
 #       define HIGHLIGHTING_LOGS 1
 #   endif
 #endif //USED_LOGGER

@@ -55,6 +55,9 @@ inline void crashFunc()
 #   define ASSERT(x, message) (x) ? x : crashFunc()
 #endif //DEBUG
 
+#define NOT_IMPL ASSERT(false, "not impl")
+
+
 #ifdef __GNUC__
 #   define DEPRECATED __attribute__((deprecated))
 #elif defined(_MSC_VER)
@@ -67,21 +70,33 @@ inline void crashFunc()
 #   define DEPRECATED
 #endif //
 
-#if defined(PLATFORM_WINDOWS)
+
+#if defined(PLATFORM_WINDOWS) 
+#   define NOMINMAX
+#   include <windows.h>
+#   undef CreateSemaphore
+#   undef CreateEvent
+typedef HINSTANCE NativeInstance;
+typedef HWND      NativeWindows;
+
+#elif defined(PLATFORM_XBOX)
+#   define NOMINMAX
+#   define NODRAWTEXT
+#   define NOGDI
+#   define NOBITMAP
+#   define NOMCX
+#   define NOSERVICE
+#   define NOHELP
 #   include <windows.h>
 typedef HINSTANCE NativeInstance;
 typedef HWND      NativeWindows;
-#   undef max
-#   undef min
-#   undef CreateSemaphore
-#   undef CreateEvent
+
 #elif defined (PLATFORM_ANDROID)
 #   include "Platform/Android/AndroidCommon.h"
 typedef ANativeWindow*   NativeWindows;
 typedef ANativeActivity* NativeInstance;
-#else //
+
+#else //PLATFORM
 typedef void*     NativeInstance;
 typedef void*     NativeWindows;
-#endif //
-
-#define NOT_IMPL ASSERT(false, "not impl")
+#endif //PLATFORM
