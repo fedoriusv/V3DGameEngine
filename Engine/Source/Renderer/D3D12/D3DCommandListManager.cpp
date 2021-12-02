@@ -103,9 +103,9 @@ D3DGraphicsCommandList* D3DCommandListManager::acquireCommandList(D3DCommandList
             }
         }
 
-        ID3D12CommandList* d3dCommandList = nullptr;
+        ID3D12GraphicsCommandList* d3dGraphicCommandList = nullptr;
         {
-            HRESULT result = m_device->CreateCommandList(0, D3DCommandList::convertCommandListTypeToD3DType(type), d3dCommandAllocator, nullptr, IID_PPV_ARGS(&d3dCommandList));
+            HRESULT result = m_device->CreateCommandList(0, D3DCommandList::convertCommandListTypeToD3DType(type), d3dCommandAllocator, nullptr, DX_IID_PPV_ARGS(&d3dGraphicCommandList));
             if (FAILED(result))
             {
                 LOG_ERROR("D3DCommandListManager::acquireCommandList CreateCommandList is failed. Error %s", D3DDebug::stringError(result).c_str());
@@ -116,7 +116,6 @@ D3DGraphicsCommandList* D3DCommandListManager::acquireCommandList(D3DCommandList
         }
 
         D3DGraphicsCommandList* commandList = new D3DGraphicsCommandList(m_device, type);
-        ID3D12GraphicsCommandList* d3dGraphicCommandList = static_cast<ID3D12GraphicsCommandList*>(d3dCommandList);
         {
             HRESULT result = d3dGraphicCommandList->Close();
             if (FAILED(result))
