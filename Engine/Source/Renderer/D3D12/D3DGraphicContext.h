@@ -114,15 +114,17 @@ namespace dx3d
         static void switchRenderTargetTransitionToWrite(D3DGraphicsCommandList* cmdList, D3DRenderTarget* target);
         static void switchRenderTargetTransitionToFinal(D3DGraphicsCommandList* cmdList, D3DRenderTarget* target);
 
-        IDXGIFactory4*      m_factory;
         IDXGIAdapter1*      m_adapter;
         ID3D12Device4*      m_device;
-#if D3D_DEBUG_LAYERS
+#ifdef PLATFORM_WINDOWS
+        IDXGIFactory4*      m_factory;
+#   if D3D_DEBUG_LAYERS
         ID3D12Debug*        m_debugController;
-#endif //D3D_DEBUG_LAYERS
-#if D3D_DEBUG_LAYERS_CALLBACK
+#   endif //D3D_DEBUG_LAYERS
+#   if D3D_DEBUG_LAYERS_CALLBACK
         D3DDebugLayerMessageCallback* m_debugMessageCallback;
-#endif //D3D_DEBUG_LAYERS_CALLBACK
+#   endif //D3D_DEBUG_LAYERS_CALLBACK
+#endif //PLATFORM_WINDOWS
 
         ID3D12CommandQueue* m_commandQueue;
 
@@ -192,10 +194,10 @@ namespace dx3d
         RenderState m_boundState;
         D3DDescriptorSetState* m_descriptorState;
 
+public:
+
         static D3D_FEATURE_LEVEL s_featureLevel;
         static bool s_supportExerimentalShaderModelFeature;
-
-        static void getHardwareAdapter(_In_ IDXGIFactory2* pFactory, _Outptr_result_maybenull_ IDXGIAdapter1** ppAdapter);
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

@@ -36,24 +36,28 @@ D3D_FEATURE_LEVEL D3DGraphicContext::s_featureLevel = D3D_FEATURE_LEVEL_12_0;
 #elif (D3D_VERSION_MAJOR == 12 && D3D_VERSION_MINOR == 1)
 D3D_FEATURE_LEVEL D3DGraphicContext::s_featureLevel = D3D_FEATURE_LEVEL_12_1;
 #else
-#error "DirectX version is not supported"
+#   error "DirectX version is not supported"
 #endif 
 
-#pragma comment(lib, "dxgi.lib")
-#pragma comment(lib, "d3d12.lib")
+#if defined(PLATFORM_WINDOWS)
+#   pragma comment(lib, "dxgi.lib")
+#   pragma comment(lib, "d3d12.lib")
+#endif //PLATFORM
 
 bool D3DGraphicContext::s_supportExerimentalShaderModelFeature = true;
 
 D3DGraphicContext::D3DGraphicContext(const platform::Window* window) noexcept
-    : m_factory(nullptr)
-    , m_adapter(nullptr)
+    : m_adapter(nullptr)
     , m_device(nullptr)
-#if D3D_DEBUG_LAYERS
+#ifdef PLATFORM_WINDOWS
+    , m_factory(nullptr)
+#   if D3D_DEBUG_LAYERS
     , m_debugController(nullptr)
-#endif //D3D_DEBUG_LAYERS
-#if D3D_DEBUG_LAYERS_CALLBACK
+#   endif //D3D_DEBUG_LAYERS
+#   if D3D_DEBUG_LAYERS_CALLBACK
     , m_debugMessageCallback(nullptr)
-#endif //D3D_DEBUG_LAYERS_CALLBACK
+#   endif //D3D_DEBUG_LAYERS_CALLBACK
+#endif //PLATFORM_WINDOWS
 
     , m_commandQueue(nullptr)
 
@@ -94,15 +98,344 @@ D3DGraphicContext::~D3DGraphicContext()
     ASSERT(!m_descriptorHeapManager, "not nullptr");
 
     ASSERT(!m_device, "not nullptr");
+#ifdef PLATFORM_WINDOWS
     ASSERT(!m_adapter, "not nullptr");
     ASSERT(!m_factory, "not nullptr");
-#if D3D_DEBUG_LAYERS
+#   if D3D_DEBUG_LAYERS
     ASSERT(!m_debugController, "not nullptr");
+#   endif //D3D_DEBUG_LAYERS
+
+#   if D3D_DEBUG_LAYERS_CALLBACK
+    ASSERT(!m_debugMessageCallback, "not nullptr");
+#   endif //D3D_DEBUG_LAYERS_CALLBACK
+#endif //PLATFORM_WINDOWS
+}
+
+bool D3DGraphicContext::initialize()
+{
+#if defined(PLATFORM_WINDOWS)
+    UINT dxgiFactoryFlags = 0;
+#if D3D_DEBUG_LAYERS
+    if (SUCCEEDED(D3DWrapper::GetDebugInterface(DX_IID_PPV_ARGS(&m_debugController))))
+    {
+        m_debugController->EnableDebugLayer();
+
+        // Enable additional debug layers.
+        dxgiFactoryFlags |= DXGI_CREATE_FACTORY_DEBUG;
+    }
 #endif //D3D_DEBUG_LAYERS
 
+    {
+        HRESULT result = CreateDXGIFactory2(dxgiFactoryFlags, DX_IID_PPV_ARGS(&m_factory));
+        if (FAILED(result))
+        {
+            LOG_ERROR("D3DGraphicContext::initialize CreateDXGIFactory2 is failed. Error %s", D3DDebug::stringError(result).c_str());
+            return false;
+        }
+
+        // Helper function for acquiring the first available hardware adapter that supports Direct3D 12.
+        // If no such adapter can be found, *ppAdapter will be set to nullptr.
+        auto getHardwareAdapter = [](IDXGIFactory2* pFactory, IDXGIAdapter1** ppAdapter) -> HRESULT
+        {
+            IDXGIAdapter1* adapter = nullptr;
+            *ppAdapter = nullptr;
+
+            for (UINT adapterIndex = 0; DXGI_ERROR_NOT_FOUND != pFactory->EnumAdapters1(adapterIndex, &adapter); ++adapterIndex)
+            {
+                DXGI_ADAPTER_DESC1 desc;
+                adapter->GetDesc1(&desc);
+
+                if (desc.Flags & DXGI_ADAPTER_FLAG_SOFTWARE)
+                {
+                    // Don't select the Basic Render Driver adapter.
+                    // If you want a software adapter, pass in "/warp" on the command line.
+                    continue;
+                }
+
+                // Check to see if the adapter supports Direct3D 12, but don't create the
+                // actual device yet.
+                HRESULT result = D3DWrapper::CreateDevice(adapter, D3DGraphicContext::s_featureLevel, _uuidof(ID3D12Device), nullptr);
+                if (SUCCEEDED(result))
+                {
+                    break;
+                }
+            }
+
+            HRESULT result = adapter->QueryInterface(ppAdapter);
+            adapter->Release();
+
+            return result;
+        };
+        
+        if (HRESULT result = getHardwareAdapter(m_factory, &m_adapter); FAILED(result))
+        {
+            LOG_ERROR("D3DGraphicContext::initialize getHardwareAdapter is failed. Error %d", D3DDebug::stringError(result).c_str());
+            return false;
+        }
+    }
+
+    {
+        std::vector<UUID> experimentalFeatures;
+        if (D3DGraphicContext::s_supportExerimentalShaderModelFeature)
+        {
+            experimentalFeatures.push_back(D3D12ExperimentalShaderModels);
+        }
+
+        if (!experimentalFeatures.empty())
+        {
+            HRESULT result = D3DWrapper::EnableExperimentalFeatures(static_cast<UINT>(experimentalFeatures.size()), experimentalFeatures.data(), nullptr, nullptr);
+            ASSERT(SUCCEEDED(result), "failed");
+        }
+    }
+
+    {
+        HRESULT result = D3DWrapper::CreateDevice(m_adapter, D3DGraphicContext::s_featureLevel, DX_IID_PPV_ARGS(&m_device));
+        if (FAILED(result))
+        {
+            LOG_ERROR("D3DGraphicContext::initialize D3D12CreateDevice is failed. Error %s", D3DDebug::stringError(result).c_str());
+            D3DGraphicContext::destroy();
+
+            return false;
+        }
+
+#if D3D_DEBUG
+        D3DDebug::getInstance()->attachDevice(m_device, D3D12_DEBUG_FEATURE_NONE);
+#endif //D3D_DEBUG
+
 #if D3D_DEBUG_LAYERS_CALLBACK
-    ASSERT(!m_debugMessageCallback, "not nullptr");
+        m_debugMessageCallback = new D3DDebugLayerMessageCallback(m_device);
+        m_debugMessageCallback->registerMessageCallback(D3DDebugLayerMessageCallback::debugLayersMessageCallback, D3D12_MESSAGE_CALLBACK_IGNORE_FILTERS, this);
 #endif //D3D_DEBUG_LAYERS_CALLBACK
+    }
+#elif defined(PLATFORM_XBOX)
+    {
+        D3D12XBOX_CREATE_DEVICE_PARAMETERS params = {};
+        params.Version = D3D12_SDK_VERSION;
+        params.ProcessDebugFlags = D3D12XBOX_PROCESS_DEBUG_FLAG_NONE;
+        params.GraphicsCommandQueueRingSizeBytes = static_cast<UINT>(D3D12XBOX_DEFAULT_SIZE_BYTES);
+        params.pOffchipTessellationBuffer = D3D12_GPU_VIRTUAL_ADDRESS_NULL;
+        params.GraphicsScratchMemorySizeBytes = static_cast<UINT>(D3D12XBOX_DEFAULT_SIZE_BYTES);
+        params.ComputeScratchMemorySizeBytes = static_cast<UINT>(D3D12XBOX_DEFAULT_SIZE_BYTES);
+        params.DisableGeometryShaderAllocations = TRUE;
+        params.DisableTessellationShaderAllocations = TRUE;
+        params.DisableDXR = TRUE;
+        params.DisableAutomaticDPBBBreakBatchEvents = FALSE;
+        params.pDXRStackBuffer = D3D12_GPU_VIRTUAL_ADDRESS_NULL;
+        params.DXRStackBufferOverrideSizeBytes = 0;
+        params.CreateDeviceFlags = D3D12XBOX_CREATE_DEVICE_FLAG_NONE;
+        params.AutoHDRPaperWhiteLevelNits = 0;
+        params.DisableAutomaticCommandSegmentChaining = FALSE;
+
+#if D3D_DEBUG_LAYERS
+        params.ProcessDebugFlags = D3D12_PROCESS_DEBUG_FLAG_DEBUG_LAYER_ENABLED;
+#endif
+
+        HRESULT result = D3DWrapper::CreateDevice(nullptr, &params, DX_IID_PPV_ARGS(&m_device));
+        if (FAILED(result))
+        {
+            LOG_ERROR("D3DGraphicContext::initialize D3D12CreateDevice is failed. Error %s", D3DDebug::stringError(result).c_str());
+            D3DGraphicContext::destroy();
+
+            return false;
+        }
+        m_device->SetName(L"DeviceResources");
+    }
+
+    {
+        IDXGIDevice1* dxgiDevice = nullptr;
+        HRESULT result = m_device->QueryInterface(DX_IID_PPV_ARGS(&dxgiDevice));
+        m_device->Release();
+        ASSERT(SUCCEEDED(result) && dxgiDevice, "nullptr");
+
+        IDXGIAdapter* dxgiAdapter;
+        dxgiDevice->GetAdapter(&dxgiAdapter);
+        m_adapter = static_cast<IDXGIAdapter1*>(dxgiAdapter);
+        ASSERT(m_adapter, "nullptr");
+    }
+#endif //PLATFORM
+
+    D3DDeviceCaps* caps = D3DDeviceCaps::getInstance();
+    caps->initialize(m_adapter, m_device);
+
+    {
+        // Describe and create the command queue.
+        D3D12_COMMAND_QUEUE_DESC queueDesc = {};
+        queueDesc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
+        queueDesc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
+        queueDesc.Priority = 0;
+        queueDesc.NodeMask = 0;
+
+        HRESULT result = m_device->CreateCommandQueue(&queueDesc, DX_IID_PPV_ARGS(&m_commandQueue));
+        if (FAILED(result))
+        {
+            LOG_ERROR("D3DGraphicContext::initialize CreateCommandQueue is failed. Error %s", D3DDebug::stringError(result).c_str());
+            D3DGraphicContext::destroy();
+
+            return false;
+        }
+#if D3D_DEBUG
+        m_commandQueue->SetName(L"PresentCommandQueue");
+#endif //D3D_DEBUG
+    }
+
+    m_descriptorHeapManager = new D3DDescriptorHeapManager(m_device);
+    {
+        D3DSwapchain::SwapchainConfig config;
+        config._window = m_window->getWindowHandle();
+        config._size = m_window->getSize();
+        config._countSwapchainImages = 3;
+        config._vsync = false;
+        config._fullscreen = m_window->isFullscreen();
+#if defined(PLATFORM_WINDOWS)
+        m_swapchain = new D3DSwapchainWindows(m_factory, m_device, m_commandQueue, m_descriptorHeapManager);
+#elif defined(PLATFORM_XBOX)
+        m_swapchain = new D3DSwapchainXBOX(m_adapter, m_device, m_commandQueue, m_descriptorHeapManager);
+#endif //PLATFORM
+        if (!m_swapchain->create(config))
+        {
+            LOG_ERROR("D3DGraphicContext::initialize D3DSwapchain::create is failed");
+            D3DGraphicContext::destroy();
+
+            return false;
+        }
+        m_backufferDescription._size = config._size;
+        m_backufferDescription._format = m_swapchain->getSwapchainImage()->getOriginFormat();
+
+        m_commandListManager = new D3DCommandListManager(m_device, m_commandQueue, config._countSwapchainImages);
+    }
+
+    m_pipelineManager = new PipelineManager(this);
+    m_samplerManager = new SamplerManager(this);
+    m_renderTargetManager = std::make_tuple(new RenderPassManager(this), new FramebufferManager(this));
+
+    m_rootSignatureManager = new D3DRootSignatureManager(m_device);
+    m_constantBufferManager = new D3DConstantBufferManager(m_device);
+
+    m_descriptorState = new D3DDescriptorSetState(m_device, m_descriptorHeapManager);
+#if defined(PLATFORM_WINDOWS) && D3D_DEBUG
+    D3DDebug::getInstance()->report(D3D12_RLDO_SUMMARY | D3D12_RLDO_IGNORE_INTERNAL);
+#endif //D3D_DEBUG
+
+#if FRAME_PROFILER_ENABLE
+    utils::ProfileManager::getInstance()->attach(new FrameTimeProfiler());
+#endif //FRAME_PROFILER_ENABLE
+
+    return true;
+}
+
+void D3DGraphicContext::destroy()
+{
+#if defined(PLATFORM_WINDOWS) && D3D_DEBUG
+    D3DDebug::getInstance()->report(D3D12_RLDO_SUMMARY | D3D12_RLDO_IGNORE_INTERNAL);
+#endif
+
+#if FRAME_PROFILER_ENABLE
+    utils::ProfileManager::getInstance()->freeAllProfilers();
+#endif //FRAME_PROFILER_ENABLE
+    if (m_commandListManager)
+    {
+        m_commandListManager->waitAndClear();
+    }
+
+    if (m_constantBufferManager)
+    {
+        m_constantBufferManager->updateStatus();
+        m_constantBufferManager->destroyConstantBuffers();
+
+        delete m_constantBufferManager;
+        m_constantBufferManager = nullptr;
+    }
+
+    if (m_descriptorState)
+    {
+        m_descriptorState->updateStatus();
+        delete m_descriptorState;
+        m_descriptorState = nullptr;
+    }
+    m_delayedDeleter.update(true);
+
+    //FramebufferManager
+    if (std::get<1>(m_renderTargetManager))
+    {
+        delete std::get<1>(m_renderTargetManager);
+    }
+
+    //RenderPassManager
+    if (std::get<0>(m_renderTargetManager))
+    {
+        delete std::get<0>(m_renderTargetManager);
+    }
+
+    if (m_samplerManager)
+    {
+        delete m_samplerManager;
+        m_samplerManager = nullptr;
+    }
+
+    if (m_pipelineManager)
+    {
+        delete m_pipelineManager;
+        m_pipelineManager = nullptr;
+    }
+
+    if (m_rootSignatureManager)
+    {
+        m_rootSignatureManager->removeAllRootSignatures();
+
+        delete m_rootSignatureManager;
+        m_rootSignatureManager = nullptr;
+    }
+
+    if (m_commandListManager)
+    {
+        delete m_commandListManager;
+        m_commandListManager = nullptr;
+    }
+
+    if (m_swapchain)
+    {
+        m_swapchain->destroy();
+
+        delete m_swapchain;
+        m_swapchain = nullptr;
+    }
+    SAFE_DELETE(m_commandQueue);
+
+    if (m_descriptorHeapManager)
+    {
+        delete m_descriptorHeapManager;
+        m_descriptorHeapManager = nullptr;
+    }
+
+#if defined(PLATFORM_WINDOWS)
+#   if D3D_DEBUG_LAYERS_CALLBACK
+    if (m_debugMessageCallback)
+    {
+        m_debugMessageCallback->unregisterMessageCallback();
+        delete m_debugMessageCallback;
+        m_debugMessageCallback = nullptr;
+    }
+#   endif //D3D_DEBUG_LAYERS_CALLBACK
+
+#   if D3D_DEBUG
+    D3DDebug::getInstance()->report(D3D12_RLDO_DETAIL | D3D12_RLDO_IGNORE_INTERNAL);
+    D3DDebug::getInstance()->freeInstance();
+#   endif
+#endif //PLATFORM_WINDOWS
+
+    SAFE_DELETE(m_device);
+
+#if defined(PLATFORM_WINDOWS)
+    SAFE_DELETE(m_adapter);
+    SAFE_DELETE(m_factory);
+
+#   if D3D_DEBUG_LAYERS
+    if (m_debugController)
+    {
+        SAFE_DELETE(m_debugController);
+    }
+#   endif //D3D_DEBUG_LAYERS
+#endif //PLATFORM_WINDOWS
 }
 
 void D3DGraphicContext::beginFrame()
@@ -619,242 +952,6 @@ D3DResourceDeleter& D3DGraphicContext::getResourceDeleter()
     return m_delayedDeleter;
 }
 
-bool D3DGraphicContext::initialize()
-{
-    UINT dxgiFactoryFlags = 0;
-
-#if D3D_DEBUG_LAYERS
-    if (SUCCEEDED(D3DWrapper::GetDebugInterface(IID_PPV_ARGS(&m_debugController))))
-    {
-        m_debugController->EnableDebugLayer();
-
-        // Enable additional debug layers.
-        dxgiFactoryFlags |= DXGI_CREATE_FACTORY_DEBUG;
-    }
-#endif //D3D_DEBUG_LAYERS
-
-    {
-        HRESULT result = CreateDXGIFactory2(dxgiFactoryFlags, IID_PPV_ARGS(&m_factory));
-        if (FAILED(result))
-        {
-            LOG_ERROR("D3DGraphicContext::initialize CreateDXGIFactory2 is failed. Error %s", D3DDebug::stringError(result).c_str());
-            return false;
-        }
-
-        D3DGraphicContext::getHardwareAdapter(m_factory, &m_adapter);
-    }
-
-    {
-        std::vector<UUID> experimentalFeatures;
-        if (D3DGraphicContext::s_supportExerimentalShaderModelFeature)
-        {
-            experimentalFeatures.push_back(D3D12ExperimentalShaderModels);
-        }
-
-        if (!experimentalFeatures.empty())
-        {
-            HRESULT result = D3DWrapper::EnableExperimentalFeatures(static_cast<UINT>(experimentalFeatures.size()), experimentalFeatures.data(), nullptr, nullptr);
-            ASSERT(SUCCEEDED(result), "failed");
-        }
-    }
-
-    {
-        HRESULT result = D3DWrapper::CreateDevice(m_adapter, D3DGraphicContext::s_featureLevel, IID_PPV_ARGS(&m_device));
-        if (FAILED(result))
-        {
-            LOG_ERROR("D3DGraphicContext::initialize D3D12CreateDevice is failed. Error %s", D3DDebug::stringError(result).c_str());
-            D3DGraphicContext::destroy();
-
-            return false;
-        }
-
-#if D3D_DEBUG
-        D3DDebug::getInstance()->attachDevice(m_device, D3D12_DEBUG_FEATURE_NONE);
-#endif //D3D_DEBUG
-
-#if D3D_DEBUG_LAYERS_CALLBACK
-        m_debugMessageCallback = new D3DDebugLayerMessageCallback(m_device);
-        m_debugMessageCallback->registerMessageCallback(D3DDebugLayerMessageCallback::debugLayersMessageCallback, D3D12_MESSAGE_CALLBACK_IGNORE_FILTERS, this);
-#endif //D3D_DEBUG_LAYERS_CALLBACK
-    }
-
-    {
-        // Describe and create the command queue.
-        D3D12_COMMAND_QUEUE_DESC queueDesc = {};
-        queueDesc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
-        queueDesc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
-        queueDesc.Priority = 0;
-        queueDesc.NodeMask = 0;
-
-        HRESULT result = m_device->CreateCommandQueue(&queueDesc, IID_PPV_ARGS(&m_commandQueue));
-        if (FAILED(result))
-        {
-            LOG_ERROR("D3DGraphicContext::initialize CreateCommandQueue is failed. Error %s", D3DDebug::stringError(result).c_str());
-            D3DGraphicContext::destroy();
-
-            return false;
-        }
-#if D3D_DEBUG
-        m_commandQueue->SetName(L"PresentCommandQueue");
-#endif //D3D_DEBUG
-    }
-
-    D3DDeviceCaps* caps = D3DDeviceCaps::getInstance();
-    caps->initialize(m_device);
-
-    m_descriptorHeapManager = new D3DDescriptorHeapManager(m_device);
-    {
-        D3DSwapchain::SwapchainConfig config;
-        config._window = m_window->getWindowHandle();
-        config._size = m_window->getSize();
-        config._countSwapchainImages = 3;
-        config._vsync = false;
-        config._fullscreen = m_window->isFullscreen();
-
-        m_swapchain = new D3DSwapchain(m_factory, m_device, m_commandQueue, m_descriptorHeapManager);
-        if (!m_swapchain->create(config))
-        {
-            LOG_ERROR("D3DGraphicContext::initialize D3DSwapchain::create is failed");
-            D3DGraphicContext::destroy();
-
-            return false;
-        }
-        m_backufferDescription._size = config._size;
-        m_backufferDescription._format = m_swapchain->getSwapchainImage()->getOriginFormat();
-
-        m_commandListManager = new D3DCommandListManager(m_device, m_commandQueue, config._countSwapchainImages);
-    }
-
-    m_pipelineManager = new PipelineManager(this);
-    m_samplerManager = new SamplerManager(this);
-    m_renderTargetManager = std::make_tuple(new RenderPassManager(this), new FramebufferManager(this));
-
-    m_rootSignatureManager = new D3DRootSignatureManager(m_device);
-    m_constantBufferManager = new D3DConstantBufferManager(m_device);
-
-    m_descriptorState = new D3DDescriptorSetState(m_device, m_descriptorHeapManager);
-#if D3D_DEBUG
-    D3DDebug::getInstance()->report(D3D12_RLDO_SUMMARY | D3D12_RLDO_IGNORE_INTERNAL);
-#endif //D3D_DEBUG
-
-#if FRAME_PROFILER_ENABLE
-    utils::ProfileManager::getInstance()->attach(new FrameTimeProfiler());
-#endif //FRAME_PROFILER_ENABLE
-
-    return true;
-}
-
-void D3DGraphicContext::destroy()
-{
-#if D3D_DEBUG
-    D3DDebug::getInstance()->report(D3D12_RLDO_SUMMARY | D3D12_RLDO_IGNORE_INTERNAL);
-#endif
-
-#if FRAME_PROFILER_ENABLE
-    utils::ProfileManager::getInstance()->freeAllProfilers();
-#endif //FRAME_PROFILER_ENABLE
-    if (m_commandListManager)
-    {
-        m_commandListManager->waitAndClear();
-    }
-
-    if (m_constantBufferManager)
-    {
-        m_constantBufferManager->updateStatus();
-        m_constantBufferManager->destroyConstantBuffers();
-
-        delete m_constantBufferManager;
-        m_constantBufferManager = nullptr;
-    }
-    m_descriptorState->updateStatus();
-    m_delayedDeleter.update(true);
-
-    if (m_descriptorState)
-    {
-        delete m_descriptorState;
-        m_descriptorState = nullptr;
-    }
-
-    //FramebufferManager
-    if (std::get<1>(m_renderTargetManager))
-    {
-        delete std::get<1>(m_renderTargetManager);
-    }
-
-    //RenderPassManager
-    if (std::get<0>(m_renderTargetManager))
-    {
-        delete std::get<0>(m_renderTargetManager);
-    }
-
-    if (m_samplerManager)
-    {
-        delete m_samplerManager;
-        m_samplerManager = nullptr;
-    }
-
-    if (m_pipelineManager)
-    {
-        delete m_pipelineManager;
-        m_pipelineManager = nullptr;
-    }
-
-    if (m_rootSignatureManager)
-    {
-        m_rootSignatureManager->removeAllRootSignatures();
-
-        delete m_rootSignatureManager;
-        m_rootSignatureManager = nullptr;
-    }
-
-    if (m_commandListManager)
-    {
-        delete m_commandListManager;
-        m_commandListManager = nullptr;
-    }
-
-    if (m_swapchain)
-    {
-        m_swapchain->destroy();
-
-        delete m_swapchain;
-        m_swapchain = nullptr;
-    }
-    SAFE_DELETE(m_commandQueue);
-
-    if (m_descriptorHeapManager)
-    {
-        delete m_descriptorHeapManager;
-        m_descriptorHeapManager = nullptr;
-    }
-
-#if D3D_DEBUG_LAYERS_CALLBACK
-    if (m_debugMessageCallback)
-    {
-        m_debugMessageCallback->unregisterMessageCallback();
-        delete m_debugMessageCallback;
-        m_debugMessageCallback = nullptr;
-    }
-#endif //D3D_DEBUG_LAYERS_CALLBACK
-
-#if D3D_DEBUG
-    D3DDebug::getInstance()->report(D3D12_RLDO_DETAIL | D3D12_RLDO_IGNORE_INTERNAL);
-    D3DDebug::getInstance()->freeInstance();
-#endif
-
-    SAFE_DELETE(m_device);
-
-    SAFE_DELETE(m_adapter);
-    SAFE_DELETE(m_factory);
-
-#if D3D_DEBUG_LAYERS
-    if (m_debugController)
-    {
-        SAFE_DELETE(m_debugController);
-    }
-#endif //D3D_DEBUG_LAYERS
-}
-
 void D3DGraphicContext::clearBackbuffer(const core::Vector4D& color)
 {
     m_swapchain->getSwapchainImage()->clear(this, color);
@@ -1122,40 +1219,6 @@ void D3DGraphicContext::switchRenderTargetTransitionToFinal(D3DGraphicsCommandLi
         }
     }
 }
-
-// Helper function for acquiring the first available hardware adapter that supports Direct3D 12.
-// If no such adapter can be found, *ppAdapter will be set to nullptr.
-_Use_decl_annotations_
-void D3DGraphicContext::getHardwareAdapter(IDXGIFactory2* pFactory, IDXGIAdapter1** ppAdapter)
-{
-    IDXGIAdapter1* adapter = nullptr;
-    *ppAdapter = nullptr;
-
-    for (UINT adapterIndex = 0; DXGI_ERROR_NOT_FOUND != pFactory->EnumAdapters1(adapterIndex, &adapter); ++adapterIndex)
-    {
-        DXGI_ADAPTER_DESC1 desc;
-        adapter->GetDesc1(&desc);
-
-        if (desc.Flags & DXGI_ADAPTER_FLAG_SOFTWARE)
-        {
-            // Don't select the Basic Render Driver adapter.
-            // If you want a software adapter, pass in "/warp" on the command line.
-            continue;
-        }
-
-        // Check to see if the adapter supports Direct3D 12, but don't create the
-        // actual device yet.
-        HRESULT result = D3DWrapper::CreateDevice(adapter, D3DGraphicContext::s_featureLevel, _uuidof(ID3D12Device), nullptr);
-        if (SUCCEEDED(result))
-        {
-            break;
-        }
-    }
-
-    ASSERT(SUCCEEDED(adapter->QueryInterface(ppAdapter)), "false");
-    adapter->Release();
-}
-
 
 } //namespace dx3d
 } //namespace renderer
