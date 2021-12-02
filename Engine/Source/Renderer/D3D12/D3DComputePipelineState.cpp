@@ -62,7 +62,7 @@ bool D3DComputePipelineState::create(const PipelineComputeInfo* pipelineInfo)
     streamDesc.SizeInBytes = sizeof(psoDesc);
     streamDesc.pPipelineStateSubobjectStream = &psoDesc;
 
-    HRESULT result = m_device->CreatePipelineState(&streamDesc, IID_PPV_ARGS(&m_pipelineState));
+    HRESULT result = m_device->CreatePipelineState(&streamDesc, DX_IID_PPV_ARGS(&m_pipelineState));
     if (FAILED(result))
     {
         LOG_ERROR("D3DComputePipelineState::create CreateComputePipelineState is failed. Error %s", D3DDebug::stringError(result).c_str());

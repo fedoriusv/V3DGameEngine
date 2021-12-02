@@ -25,7 +25,7 @@ D3DFence::D3DFence(ID3D12Device* device, u64 value) noexcept
     LOG_DEBUG("D3DFence::D3DFence constructor %llx", this);
 
     {
-        HRESULT result = m_device->CreateFence(value, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&m_fence));
+        HRESULT result = m_device->CreateFence(value, D3D12_FENCE_FLAG_NONE, DX_IID_PPV_ARGS(&m_fence));
         if (FAILED(result))
         {
             LOG_ERROR("D3DFence::D3DFence CreateFence is failed. Error %s", D3DDebug::stringError(result).c_str());

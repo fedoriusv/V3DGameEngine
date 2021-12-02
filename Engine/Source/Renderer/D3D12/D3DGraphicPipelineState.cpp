@@ -591,7 +591,7 @@ bool D3DGraphicPipelineState::create(const PipelineGraphicInfo* pipelineInfo)
     streamDesc.SizeInBytes = sizeof(psoDesc);
     streamDesc.pPipelineStateSubobjectStream = &psoDesc;
 
-    HRESULT result = m_device->CreatePipelineState(&streamDesc, IID_PPV_ARGS(&m_pipelineState));
+    HRESULT result = m_device->CreatePipelineState(&streamDesc, DX_IID_PPV_ARGS(&m_pipelineState));
     if (FAILED(result))
     {
         LOG_ERROR("D3DGraphicPipelineState::create CreateGraphicsPipelineState is failed. Error %s", D3DDebug::stringError(result).c_str());

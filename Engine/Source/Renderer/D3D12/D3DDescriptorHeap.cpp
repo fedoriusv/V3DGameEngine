@@ -97,7 +97,7 @@ D3DDescriptorHeap* D3DDescriptorHeapManager::allocateDescriptorHeap(D3D12_DESCRI
     heapDesc.NodeMask = 0;
 
     ID3D12DescriptorHeap* dxDescriptorHeap = nullptr;
-    HRESULT result = m_device->CreateDescriptorHeap(&heapDesc, IID_PPV_ARGS(&dxDescriptorHeap));
+    HRESULT result = m_device->CreateDescriptorHeap(&heapDesc, DX_IID_PPV_ARGS(&dxDescriptorHeap));
     if (FAILED(result))
     {
         LOG_ERROR("D3DDescriptorHeapManager::createDescriptorHeap: CreateDescriptorHeap is failed. Error: %s", D3DDebug::stringError(result).c_str());

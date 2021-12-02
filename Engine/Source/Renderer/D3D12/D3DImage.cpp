@@ -1052,7 +1052,7 @@ bool D3DImage::create()
 #if D3D_DEBUG
     LOG_DEBUG("CreateCommittedResource: Image [Size %u : %u : %u]; flags %u; format %s", textureDesc.Width, textureDesc.Height, textureDesc.DepthOrArraySize, textureDesc.Flags, ImageFormatStringDX(textureDesc.Format).c_str());
 #endif
-    HRESULT result = m_device->CreateCommittedResource(&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT), D3D12_HEAP_FLAG_NONE, &textureDesc, m_state.front(), optimizedClearValue, IID_PPV_ARGS(&m_resource));
+    HRESULT result = m_device->CreateCommittedResource(&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT), D3D12_HEAP_FLAG_NONE, &textureDesc, m_state.front(), optimizedClearValue, DX_IID_PPV_ARGS(&m_resource));
     if (FAILED(result))
     {
         LOG_ERROR("D3DImage::create CreateCommittedResource is failed. Error %s", D3DDebug::stringError(result).c_str());
@@ -1475,7 +1475,7 @@ bool D3DImage::internalUpdate(Context* context, const core::Dimension3D& offsets
 
     ID3D12Resource* uploadResource = nullptr;
     {
-        HRESULT result = m_device->CreateCommittedResource(&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD), D3D12_HEAP_FLAG_NONE, &CD3DX12_RESOURCE_DESC::Buffer(uploadBufferSize), D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, IID_PPV_ARGS(&uploadResource));
+        HRESULT result = m_device->CreateCommittedResource(&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD), D3D12_HEAP_FLAG_NONE, &CD3DX12_RESOURCE_DESC::Buffer(uploadBufferSize), D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, DX_IID_PPV_ARGS(&uploadResource));
         if (FAILED(result))
         {
             LOG_ERROR("D3DImage::upload CreateCommittedResource is failed. Error %s", D3DDebug::stringError(result).c_str());

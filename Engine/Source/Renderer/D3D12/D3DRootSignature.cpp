@@ -211,7 +211,7 @@ std::tuple<ID3D12RootSignature*, std::map<u32, u32>> D3DRootSignatureManager::ac
     if (rooSignature.second)
     {
         ID3D12RootSignature* rootSignature = nullptr;
-        HRESULT result = m_device->CreateRootSignature(0, signatureCreator.m_signature->GetBufferPointer(), signatureCreator.m_signature->GetBufferSize(), IID_PPV_ARGS(&rootSignature));
+        HRESULT result = m_device->CreateRootSignature(0, signatureCreator.m_signature->GetBufferPointer(), signatureCreator.m_signature->GetBufferSize(), DX_IID_PPV_ARGS(&rootSignature));
         if (FAILED(result))
         {
             LOG_ERROR("D3DRootSignatureManager::acquireRootSignature, CreateRootSignature is failed. Error %s", D3DDebug::stringError(result).c_str());

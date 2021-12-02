@@ -55,7 +55,7 @@ D3DGraphicsCommandList* D3DCommandListManager::acquireCommandList(D3DCommandList
     {
         if (!m_commandAllocator[type])
         {
-            HRESULT result = m_device->CreateCommandAllocator(D3DCommandList::convertCommandListTypeToD3DType(type), IID_PPV_ARGS(&m_commandAllocator[type]));
+            HRESULT result = m_device->CreateCommandAllocator(D3DCommandList::convertCommandListTypeToD3DType(type), DX_IID_PPV_ARGS(&m_commandAllocator[type]));
             if (FAILED(result))
             {
                 LOG_ERROR("D3DCommandListManager::acquireCommandList CreateCommandAllocator is failed. Error %s", D3DDebug::stringError(result).c_str());
@@ -65,7 +65,7 @@ D3DGraphicsCommandList* D3DCommandListManager::acquireCommandList(D3DCommandList
 
         ID3D12CommandList* d3dCommandList = nullptr;
         {
-            HRESULT result = m_device->CreateCommandList(0, D3DCommandList::convertCommandListTypeToD3DType(type), m_commandAllocator[type], nullptr, IID_PPV_ARGS(&d3dCommandList));
+            HRESULT result = m_device->CreateCommandList(0, D3DCommandList::convertCommandListTypeToD3DType(type), m_commandAllocator[type], nullptr, DX_IID_PPV_ARGS(&d3dCommandList));
             if (FAILED(result))
             {
                 LOG_ERROR("D3DCommandListManager::acquireCommandList CreateCommandList is failed. Error %s", D3DDebug::stringError(result).c_str());
@@ -95,7 +95,7 @@ D3DGraphicsCommandList* D3DCommandListManager::acquireCommandList(D3DCommandList
     {
         ID3D12CommandAllocator* d3dCommandAllocator = nullptr;
         {
-            HRESULT result = m_device->CreateCommandAllocator(D3DCommandList::convertCommandListTypeToD3DType(type), IID_PPV_ARGS(&d3dCommandAllocator));
+            HRESULT result = m_device->CreateCommandAllocator(D3DCommandList::convertCommandListTypeToD3DType(type), DX_IID_PPV_ARGS(&d3dCommandAllocator));
             if (FAILED(result))
             {
                 LOG_ERROR("D3DCommandListManager::acquireCommandList CreateCommandAllocator is failed. Error %s", D3DDebug::stringError(result).c_str());
