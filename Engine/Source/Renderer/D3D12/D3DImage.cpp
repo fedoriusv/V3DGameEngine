@@ -2,7 +2,6 @@
 #include "Utils/Logger.h"
 
 #ifdef D3D_RENDER
-#include "d3dx12.h"
 #include "D3DDebug.h"
 #include "D3DDeviceCaps.h"
 #include "D3DResource.h"

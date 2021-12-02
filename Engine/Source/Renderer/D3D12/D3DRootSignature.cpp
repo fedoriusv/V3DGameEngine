@@ -5,7 +5,6 @@
 #include "crc32c/crc32c.h"
 
 #ifdef D3D_RENDER
-#include "d3dx12.h"
 #include "D3DDebug.h"
 #include "D3DDeviceCaps.h"
 
