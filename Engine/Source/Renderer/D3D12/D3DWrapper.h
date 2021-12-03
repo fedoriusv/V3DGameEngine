@@ -15,10 +15,14 @@ namespace dx3d
     {
     public:
 
+#if defined(PLATFORM_WINDOWS)
         static HRESULT CreateDevice(IUnknown* pAdapter, D3D_FEATURE_LEVEL MinimumFeatureLevel, REFIID riid, void** ppDevice) noexcept;
-
         static HRESULT EnableExperimentalFeatures(UINT NumFeatures, const IID* pIIDs, void* pConfigurationStructs, UINT* pConfigurationStructSizes) noexcept;
         static HRESULT GetDebugInterface(REFIID riid, void** ppvDebug) noexcept;
+
+#elif defined(PLATFORM_XBOX)
+        static HRESULT CreateDevice(IGraphicsUnknown* pAdapter, const D3D12XBOX_CREATE_DEVICE_PARAMETERS* pParameters, REFIID riid, void** ppDevice) noexcept;
+#endif //PLATFORM
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
