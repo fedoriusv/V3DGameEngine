@@ -151,13 +151,6 @@ namespace dx3d
                 reset();
             }
 
-            D3DGraphicsCommandList* acquireCommandList()
-            {
-                //TODO create if nullptr
-                ASSERT(_commandList, "nullptr");
-                return _commandList;
-            }
-
             D3DGraphicsCommandList* commandList()
             {
                 return _commandList;

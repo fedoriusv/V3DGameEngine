@@ -514,8 +514,8 @@ void D3DGraphicContext::draw(const StreamBufferDescription& desc, u32 firstVerte
 #if D3D_DEBUG
     LOG_DEBUG("D3DGraphicContext::draw");
 #endif //D3D_DEBUG
+    D3DGraphicsCommandList* cmdList = static_cast<D3DGraphicsCommandList*>(D3DGraphicContext::getOrAcquireCurrentCommandList());
     ASSERT(m_currentState.commandList(), "nullptr");
-    D3DGraphicsCommandList* cmdList = m_currentState.commandList();
 
     if (perpareDraw(cmdList))
     {
@@ -537,8 +537,8 @@ void D3DGraphicContext::drawIndexed(const StreamBufferDescription& desc, u32 fir
 #if D3D_DEBUG
     LOG_DEBUG("D3DGraphicContext::drawIndexed");
 #endif //D3D_DEBUG
+    D3DGraphicsCommandList* cmdList = static_cast<D3DGraphicsCommandList*>(D3DGraphicContext::getOrAcquireCurrentCommandList());
     ASSERT(m_currentState.commandList(), "nullptr");
-    D3DGraphicsCommandList* cmdList = m_currentState.commandList();
 
     if (perpareDraw(cmdList))
     {
