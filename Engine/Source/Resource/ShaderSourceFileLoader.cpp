@@ -87,6 +87,9 @@ ShaderSourceFileLoader::ShaderSourceFileLoader(const renderer::Context* context,
         header._optLevel = optimizationLevel;
         header._defines = defines;
 
+#if defined(PLATFORM_XBOX)
+        flags |= ShaderSource_UseDXCompiler;
+#endif
         if (flags & ShaderSourceBuildFlag::ShaderSource_UseDXCompiler)
         {
             header._shaderModel = renderer::ShaderHeader::ShaderModel::HLSL_6_1;
@@ -147,6 +150,10 @@ ShaderSourceFileLoader::ShaderSourceFileLoader(const renderer::Context* context,
     else if (context->getRenderType() == renderer::Context::RenderType::DirectXRender)
     {
         header._shaderModel = renderer::ShaderHeader::ShaderModel::HLSL_5_1;
+
+#if defined(PLATFORM_XBOX)
+        flags |= ShaderSource_UseDXCompiler;
+#endif
         if (flags & ShaderSourceBuildFlag::ShaderSource_UseDXCompiler)
         {
             header._shaderModel = renderer::ShaderHeader::ShaderModel::HLSL_6_1;

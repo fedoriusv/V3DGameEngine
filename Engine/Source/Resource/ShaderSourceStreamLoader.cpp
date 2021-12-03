@@ -46,6 +46,9 @@ ShaderSourceStreamLoader::ShaderSourceStreamLoader(const renderer::Context* cont
     case renderer::Context::RenderType::DirectXRender:
     {
         ASSERT(header, "nullptr");
+#if defined(PLATFORM_XBOX)
+        flags |= ShaderSource_UseDXCompiler;
+#endif
         if (flags & ShaderSource_UseDXCompiler)
         {
             ResourceDecoderRegistration::registerDecoder(new ShaderDXCDecoder(*header, header->_shaderModel, !(flags & ShaderSource_DontUseReflection)));
