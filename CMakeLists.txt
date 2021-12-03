@@ -298,10 +298,10 @@ link_directories(${ENGINE_NAME} ${VULKAN_SDK_LIB_DIRECTORY})
 ##############################################################
 #Crc32
 message(STATUS "Add Crc32 lib")
-set(CRC32_LIB_DERICTORY Engine/Libs/crc32c)
-add_subdirectory(${CRC32_LIB_DERICTORY})
+set(CRC32_LIB_DIRECTORY Engine/Libs/crc32c)
+add_subdirectory(${CRC32_LIB_DIRECTORY})
 set_target_properties(crc32c PROPERTIES
-    ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${CRC32_LIB_DERICTORY}/${PROJECT_PLATFORM}
+    ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${CRC32_LIB_DIRECTORY}/${PROJECT_PLATFORM}
     FOLDER Libs/crc32c
 )
 set_target_properties(crc32c_arm64 PROPERTIES FOLDER Libs/crc32c)
@@ -311,26 +311,27 @@ message(STATUS "Crc32 lib added")
 #Assimp
 if(ASSIMP_LIB)
     message(STATUS "Add Assimp lib")
-    set(ASSIMP_LIB_DERICTORY Engine/Libs/assimp)
-    add_subdirectory(${ASSIMP_LIB_DERICTORY})
+    set(ASSIMP_LIB_DIRECTORY Engine/Libs/assimp)
+    add_subdirectory(${ASSIMP_LIB_DIRECTORY})
     if(TARGET_WIN)
         set_target_properties(assimp PROPERTIES 
-            ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${ASSIMP_LIB_DERICTORY}/${PROJECT_PLATFORM}
+            ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${ASSIMP_LIB_DIRECTORY}/code/${PROJECT_PLATFORM}
             FOLDER Libs/assimp
         )
         set_target_properties(IrrXML PROPERTIES
-            ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${ASSIMP_LIB_DERICTORY}/${PROJECT_PLATFORM}
+            ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${ASSIMP_LIB_DIRECTORY}/condrib/${PROJECT_PLATFORM}
             FOLDER Libs/assimp
         )
         set_target_properties(zlibstatic PROPERTIES
-            ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${ASSIMP_LIB_DERICTORY}/${PROJECT_PLATFORM}
+            ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${ASSIMP_LIB_DIRECTORY}/condrib/${PROJECT_PLATFORM}
             FOLDER Libs/assimp
         )
         set_target_properties(zlib PROPERTIES FOLDER Libs/assimp)
         set_target_properties(UpdateAssimpLibsDebugSymbolsAndDLLs PROPERTIES FOLDER Libs/assimp)
         set_target_properties(uninstall PROPERTIES FOLDER Libs/assimp)
         
-        target_compile_options(assimp PRIVATE -D_SILENCE_ALL_CXX17_DEPRECATION_WARNINGS)   
+        target_compile_options(assimp PRIVATE -D_SILENCE_ALL_CXX17_DEPRECATION_WARNINGS $<$<CONFIG:DEBUG>:/MTd> $<$<CONFIG:RELEASE>:/MT>)
+		target_compile_options(IrrXML PRIVATE $<$<CONFIG:DEBUG>:/MTd> $<$<CONFIG:RELEASE>:/MT>)
         target_compile_options(zlib PRIVATE $<$<CONFIG:DEBUG>:/MTd> $<$<CONFIG:RELEASE>:/MT>)
         target_compile_options(zlibstatic PRIVATE $<$<CONFIG:DEBUG>:/MTd> $<$<CONFIG:RELEASE>:/MT>)
     elseif(TARGET_ANDROID)
