@@ -39,7 +39,7 @@ namespace dx3d
 
         friend class D3DGraphicContext;
 
-        void initialize(ID3D12Device* device);
+        void initialize(IDXGIAdapter1* adapter, ID3D12Device* device);
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

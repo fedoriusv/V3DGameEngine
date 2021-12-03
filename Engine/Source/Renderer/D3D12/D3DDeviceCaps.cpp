@@ -12,7 +12,7 @@ namespace renderer
 namespace dx3d
 {
 
-void D3DDeviceCaps::initialize(ID3D12Device* device)
+void D3DDeviceCaps::initialize(IDXGIAdapter1* adapter, ID3D12Device* device)
 {
     {
         rootSignatureVersion.HighestVersion = D3D_ROOT_SIGNATURE_VERSION_1_1;
@@ -83,6 +83,17 @@ void D3DDeviceCaps::initialize(ID3D12Device* device)
 
     globalComandListAllocator = false; //TODO has memory leak when command lists reset
     ASSERT(!immediateSubmitUpload, "not impl");
+
+#if D3D_DEBUG
+    {
+        DXGI_ADAPTER_DESC desc = {};
+        ASSERT(SUCCEEDED(adapter->GetDesc(&desc)), "failed");
+
+        LOG_INFO("D3DDeviceCaps::initialize: Device ID: %u", desc.DeviceId);
+        LOG_INFO("D3DDeviceCaps::initialize: Vendor: %u", desc.VendorId);
+        LOG_INFO("D3DDeviceCaps::initialize: Revision: %u", desc.Revision);
+    }
+#endif
 }
 
 } //namespace dx3d
