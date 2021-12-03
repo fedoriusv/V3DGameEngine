@@ -52,6 +52,7 @@ else()
     message(FATAL_ERROR "Unknown compiler. Only COMPILER_MSVC|COMPILER_GCC|COMPILER_CLANG supported")
 endif()
 
+set(PROJECT_PLATFORM "")
 if(TARGET_WIN AND WIN32)
     message(STATUS "Platform Windows")
     include(Config/Windows64.cmake)
@@ -289,6 +290,7 @@ if(BUILD_VULKAN_SDK)
     endif()
 endif()
 
+set_target_properties(${ENGINE_NAME} PROPERTIES ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${PROJECT_PLATFORM})
 link_directories(${ENGINE_NAME} ${VULKAN_SDK_LIB_DIRECTORY})
 ##############################################################
 
@@ -296,8 +298,12 @@ link_directories(${ENGINE_NAME} ${VULKAN_SDK_LIB_DIRECTORY})
 ##############################################################
 #Crc32
 message(STATUS "Add Crc32 lib")
-add_subdirectory(Engine/Libs/crc32c)
-set_target_properties(crc32c PROPERTIES FOLDER Libs/crc32c)
+set(CRC32_LIB_DERICTORY Engine/Libs/crc32c)
+add_subdirectory(${CRC32_LIB_DERICTORY})
+set_target_properties(crc32c PROPERTIES
+    ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${CRC32_LIB_DERICTORY}/${PROJECT_PLATFORM}
+    FOLDER Libs/crc32c
+)
 set_target_properties(crc32c_arm64 PROPERTIES FOLDER Libs/crc32c)
 set_target_properties(crc32c_sse42 PROPERTIES FOLDER Libs/crc32c)
 message(STATUS "Crc32 lib added")
@@ -305,14 +311,24 @@ message(STATUS "Crc32 lib added")
 #Assimp
 if(ASSIMP_LIB)
     message(STATUS "Add Assimp lib")
-    add_subdirectory(Engine/Libs/assimp)
+    set(ASSIMP_LIB_DERICTORY Engine/Libs/assimp)
+    add_subdirectory(${ASSIMP_LIB_DERICTORY})
     if(TARGET_WIN)
-        set_target_properties(assimp PROPERTIES FOLDER Libs/assimp)
-        set_target_properties(IrrXML PROPERTIES FOLDER Libs/assimp)
-        set_target_properties(uninstall PROPERTIES FOLDER Libs/assimp)
-        set_target_properties(zlib PROPERTIES FOLDER Libs/assimp)  
-        set_target_properties(zlibstatic PROPERTIES FOLDER Libs/assimp)
+        set_target_properties(assimp PROPERTIES 
+            ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${ASSIMP_LIB_DERICTORY}/${PROJECT_PLATFORM}
+            FOLDER Libs/assimp
+        )
+        set_target_properties(IrrXML PROPERTIES
+            ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${ASSIMP_LIB_DERICTORY}/${PROJECT_PLATFORM}
+            FOLDER Libs/assimp
+        )
+        set_target_properties(zlibstatic PROPERTIES
+            ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${ASSIMP_LIB_DERICTORY}/${PROJECT_PLATFORM}
+            FOLDER Libs/assimp
+        )
+        set_target_properties(zlib PROPERTIES FOLDER Libs/assimp)
         set_target_properties(UpdateAssimpLibsDebugSymbolsAndDLLs PROPERTIES FOLDER Libs/assimp)
+        set_target_properties(uninstall PROPERTIES FOLDER Libs/assimp)
         
         target_compile_options(assimp PRIVATE -D_SILENCE_ALL_CXX17_DEPRECATION_WARNINGS)   
         target_compile_options(zlib PRIVATE $<$<CONFIG:DEBUG>:/MTd> $<$<CONFIG:RELEASE>:/MT>)
@@ -343,10 +359,13 @@ if (BUILD_EXAMPLES)
     message(STATUS "Create Examples:")
     foreach (PROJ ${BUILD_EXAMPLES})
         add_subdirectory(Examples/${PROJ})
+        set_target_properties(${PROJ} PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/Examples/${PROJ}/${PROJECT_PLATFORM})
     endforeach(PROJ)
     
-    set_target_properties(${BUILD_EXAMPLES} PROPERTIES FOLDER Examples)
-    set_target_properties(${BUILD_EXAMPLES} PROPERTIES INCLUDE_DIRECTORIES ${ENGINE_PROJECT_DIR}/${SOURCE_DIR})
+    set_target_properties(${BUILD_EXAMPLES} PROPERTIES 
+        INCLUDE_DIRECTORIES ${ENGINE_PROJECT_DIR}/${SOURCE_DIR}
+        FOLDER Examples
+    )
     message(STATUS "----------------")
 endif ()
 ##############################################################
