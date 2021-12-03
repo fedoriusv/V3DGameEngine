@@ -32,7 +32,7 @@ namespace resource
 
     private:
 
-        bool compile(const std::string& source, const std::wstring& name, IDxcBlob*& shader) const;
+        bool compile(const std::string& source, renderer::ShaderType shaderType, const std::wstring& name, IDxcBlob*& shader) const;
         bool reflect(stream::Stream* stream, IDxcBlob* shader) const;
 
         const renderer::ShaderHeader m_header;

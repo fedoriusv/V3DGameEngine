@@ -1,5 +1,6 @@
 #include "ShaderDXCDecoder.h"
 #include "Stream/StreamManager.h"
+#include "Stream/FileLoader.h"
 #include "Utils/Logger.h"
 #include "Utils//Timer.h"
 
@@ -28,6 +29,15 @@ namespace v3d
 {
 namespace resource
 {
+
+const std::map<std::string, renderer::ShaderType> k_HLSL_ExtensionList =
+{
+    //hlsl
+    { "vs", renderer::ShaderType::Vertex },
+    { "ps", renderer::ShaderType::Fragment },
+
+    { "cs", renderer::ShaderType::Compute },
+};
 
 constexpr u32 g_DXDCIndifier = 0x43425844; //DXBC
 bool checkBytecodeSigning(IDxcBlob* bytecode);
@@ -84,8 +94,19 @@ Resource* ShaderDXCDecoder::decode(const stream::Stream* stream, const std::stri
         timer.start();
 #endif
 
+        renderer::ShaderType shaderType = m_header._type;
+        if (m_header._type == renderer::ShaderType::Undefined)
+        {
+            std::string fileExtension = stream::FileLoader::getFileExtension(name);
+            auto result = k_HLSL_ExtensionList.find(fileExtension);
+            if (result != k_HLSL_ExtensionList.cend())
+            {
+                shaderType = result->second;
+            }
+        }
+
         IDxcBlob* binaryShader = nullptr;
-        if (!compile(source, std::wstring(shaderName.cbegin(), shaderName.cend()), binaryShader))
+        if (!compile(source, shaderType, std::wstring(shaderName.cbegin(), shaderName.cend()), binaryShader))
         {
             if (binaryShader)
             {
@@ -114,6 +135,7 @@ Resource* ShaderDXCDecoder::decode(const stream::Stream* stream, const std::stri
         }
 
         renderer::ShaderHeader* resourceHeader = new renderer::ShaderHeader(m_header);
+        resourceHeader->_type = shaderType;
 #if DEBUG
         resourceHeader->_debugName = shaderName;
 #endif
@@ -136,7 +158,7 @@ Resource* ShaderDXCDecoder::decode(const stream::Stream* stream, const std::stri
     }
 }
 
-bool ShaderDXCDecoder::compile(const std::string& source, const std::wstring& name, IDxcBlob*& shader) const
+bool ShaderDXCDecoder::compile(const std::string& source, renderer::ShaderType shaderType, const std::wstring& name, IDxcBlob*& shader) const
 {
     std::vector<LPCWSTR> arguments;
     if (m_output == renderer::ShaderHeader::ShaderModel::SpirV)
@@ -227,7 +249,7 @@ bool ShaderDXCDecoder::compile(const std::string& source, const std::wstring& na
     };
 
     const std::wstring entryPoint = m_header._entryPoint.empty() ? L"main" : std::wstring(m_header._entryPoint.cbegin(), m_header._entryPoint.cend());
-    const std::wstring target = getShaderTarget(m_header._type, m_header._shaderModel);
+    const std::wstring target = getShaderTarget(shaderType, m_header._shaderModel);
 
 #if USE_CUSTOM_DXC
     IDxcCompiler3* DXCompiler = nullptr;
