@@ -303,8 +303,12 @@ void D3DSwapchainXBOX::destroy()
         delete image;
     }
     m_renderTargets.clear();
-    m_heapManager->deallocDescriptorHeap(m_descriptorHeap);
-    m_descriptorHeap = nullptr;
+
+    if (m_descriptorHeap)
+    {
+        m_heapManager->deallocDescriptorHeap(m_descriptorHeap);
+        m_descriptorHeap = nullptr;
+    }
 }
 
 void D3DSwapchainXBOX::present()

@@ -115,6 +115,7 @@ D3DDescriptorHeap* D3DDescriptorHeapManager::allocateDescriptorHeap(D3D12_DESCRI
 
 void D3DDescriptorHeapManager::deallocDescriptorHeap(D3DDescriptorHeap* heap)
 {
+    ASSERT(heap, "nullptr");
     D3D12_DESCRIPTOR_HEAP_TYPE type = heap->m_desc.Type;
     auto found = std::find(m_heapList[type].begin(), m_heapList[type].end(), heap);
     ASSERT(found != m_heapList[type].end(), "not found");
