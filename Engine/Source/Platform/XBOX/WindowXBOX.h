@@ -4,6 +4,8 @@
 #include "Window.h"
 #ifdef PLATFORM_XBOX
 
+struct _APPSTATE_REGISTRATION;
+
 namespace v3d
 {
 namespace platform
@@ -49,7 +51,15 @@ namespace platform
         HWND                m_hWnd;
         const std::wstring  m_classname = L"V3DXBOX";
 
+        LRESULT ReceiverMessage(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
+
+        _APPSTATE_REGISTRATION* m_hPLM;
         static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
+
+    public:
+
+        static HANDLE s_suspendComplete;
+        static HANDLE s_signalResume;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
