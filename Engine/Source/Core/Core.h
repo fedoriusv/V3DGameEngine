@@ -7,6 +7,7 @@ namespace v3d
     typedef unsigned char       u8;
     typedef signed char         s8;
     typedef char                c8;
+    typedef wchar_t             w16;
     typedef unsigned short      u16;
     typedef signed short        s16;
     typedef unsigned int        u32;
