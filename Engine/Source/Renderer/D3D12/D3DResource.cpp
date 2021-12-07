@@ -124,18 +124,6 @@ void D3DResourceDeleter::garbageCollect()
     }
 }
 
-
-UploadResource::UploadResource(ID3D12Resource* resource) noexcept
-    : m_resource(resource)
-{
-}
-
-UploadResource::~UploadResource()
-{
-    ASSERT(!isUsed(), "still is used");
-    SAFE_DELETE(m_resource);
-}
-
 } //namespace dx3d
 } //namespace renderer
 } //namespace v3d

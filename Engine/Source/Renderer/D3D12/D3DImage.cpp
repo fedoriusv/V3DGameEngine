@@ -8,6 +8,7 @@
 #include "D3DCommandList.h"
 #include "D3DCommandListManager.h"
 #include "D3DGraphicContext.h"
+#include "D3DBuffer.h"
 
 namespace v3d
 {
@@ -1061,7 +1062,7 @@ bool D3DImage::create()
     createResourceView(sampledFormat);
 
 #if D3D_DEBUG
-    wchar_t wtext[64];
+    w16 wtext[64];
     if (!m_debugName.empty())
     {
         mbstowcs(wtext, m_debugName.c_str(), m_debugName.size() + 1);
@@ -1344,7 +1345,7 @@ bool D3DImage::create(ID3D12Resource* resource, CD3DX12_CPU_DESCRIPTOR_HANDLE& h
     D3DImage::createResourceView(m_format);
 
 #if D3D_DEBUG
-    wchar_t wtext[64];
+    w16 wtext[64];
     if (!m_debugName.empty())
     {
         mbstowcs(wtext, m_debugName.c_str(), m_debugName.size() + 1);
@@ -1472,22 +1473,15 @@ bool D3DImage::internalUpdate(Context* context, const core::Dimension3D& offsets
     std::vector<UINT64> subResourcesNumRowsSize(subResourceCount);
     m_device->GetCopyableFootprints(&m_resource->GetDesc(), 0, static_cast<UINT>(subResources.size()), 0, subResourceFootPrints.data(), subResourcesNumRows.data(), subResourcesNumRowsSize.data(), &uploadBufferSize);
 
-    ID3D12Resource* uploadResource = nullptr;
-    {
-        HRESULT result = m_device->CreateCommittedResource(&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD), D3D12_HEAP_FLAG_NONE, &CD3DX12_RESOURCE_DESC::Buffer(uploadBufferSize), D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, DX_IID_PPV_ARGS(&uploadResource));
-        if (FAILED(result))
-        {
-            LOG_ERROR("D3DImage::upload CreateCommittedResource is failed. Error %s", D3DDebug::stringError(result).c_str());
-            SAFE_DELETE(uploadResource);
 
-            return false;
-        }
-#if D3D_DEBUG
-        wchar_t wtext[64];
-        std::string debugName = "UploadBufferResource: " + std::to_string(reinterpret_cast<const u64>(this));
-        mbstowcs(wtext, debugName.c_str(), debugName.size() + 1);
-        uploadResource->SetName(LPCWSTR(wtext));
-#endif
+    D3DBuffer* copyBuffer = new D3DBuffer(m_device, Buffer::BufferType::BufferType_StagingBuffer, StreamBufferUsage::StreamBuffer_Read, uploadBufferSize, "UploadBufferResource");
+    if (!copyBuffer->create())
+    {
+        copyBuffer->destroy();
+        delete copyBuffer;
+
+        ASSERT(false, "D3DBuffer::upload: Create copy buffer is failed");
+        return false;
     }
 
     auto calculateSubresourceRowPitch = [](const core::Dimension3D& size, u32 mipLevel, Format format) -> u64
@@ -1542,10 +1536,16 @@ bool D3DImage::internalUpdate(Context* context, const core::Dimension3D& offsets
     D3D12_RESOURCE_STATES oldState = getState();
     commandlist->transition(this, D3D12_RESOURCE_STATE_COPY_DEST, true);
 
-    UpdateSubresources(commandlist->getHandle(), m_resource, uploadResource, 0, static_cast<UINT>(subResources.size()), uploadBufferSize, subResourceFootPrints.data(), subResourcesNumRows.data(), subResourcesNumRowsSize.data(), subResources.data());
+    if (UINT64 requiredSize = UpdateSubresources(commandlist->getHandle(), m_resource, copyBuffer->getResource(), 0, static_cast<UINT>(subResources.size()), uploadBufferSize, subResourceFootPrints.data(), subResourcesNumRows.data(), subResourcesNumRowsSize.data(), subResources.data()); requiredSize != uploadBufferSize)
+    {
+        copyBuffer->destroy();
+        delete copyBuffer;
 
-    UploadResource* upload = new UploadResource(uploadResource);
-    commandlist->setUsed(upload, 0);
+        ASSERT(false, "copy is failed");
+        return false;
+    }
+
+    commandlist->setUsed(copyBuffer, 0);
 
     if (!(m_flags & D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE))
     {
@@ -1556,20 +1556,18 @@ bool D3DImage::internalUpdate(Context* context, const core::Dimension3D& offsets
         commandlist->transition(this, oldState, true);
     }
 
-    bool result = true;
     if (D3DDeviceCaps::getInstance()->immediateSubmitUpload)
     {
-        commandlist->close();
-        result = dxContext->getCommandListManager()->execute(commandlist);
-        ASSERT(result, "fail");
+        dxContext->submit(true);
     }
 
-    dxContext->getResourceDeleter().requestToDelete(upload, [upload]() -> void
+    dxContext->getResourceDeleter().requestToDelete(copyBuffer, [copyBuffer]() -> void
         {
-            delete upload;
+            copyBuffer->destroy();
+            delete copyBuffer;
         });
 
-    return result;
+    return true;
 }
 
 const core::Dimension3D& D3DImage::getSize() const

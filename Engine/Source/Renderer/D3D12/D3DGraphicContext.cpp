@@ -8,7 +8,6 @@
 #include "Renderer/Shader.h"
 
 #ifdef D3D_RENDER
-#include <wrl.h>
 #include "D3DDebug.h"
 #include "D3DWrapper.h"
 #include "D3DImage.h"
@@ -21,6 +20,7 @@
 #include "D3DRenderTarget.h"
 #include "D3DDescriptorHeap.h"
 #include "D3DConstantBuffer.h"
+#include "D3DMemoryHeap.h"
 
 #include "Renderer/FrameTimeProfiler.h"
 
@@ -61,7 +61,9 @@ D3DGraphicContext::D3DGraphicContext(const platform::Window* window) noexcept
 
     , m_commandQueue(nullptr)
 
+    , m_heapAllocator(nullptr)
     , m_descriptorHeapManager(nullptr)
+
     , m_swapchain(nullptr)
     , m_window(window)
 
@@ -96,6 +98,7 @@ D3DGraphicContext::~D3DGraphicContext()
 
     ASSERT(!m_swapchain, "not nullptr");
     ASSERT(!m_descriptorHeapManager, "not nullptr");
+    ASSERT(!m_heapAllocator, "not nullptr");
 
     ASSERT(!m_device, "not nullptr");
 #ifdef PLATFORM_WINDOWS
@@ -278,6 +281,7 @@ bool D3DGraphicContext::initialize()
 #endif //D3D_DEBUG
     }
 
+    m_heapAllocator = new D3DMemoryHeapAllocator(m_device);
     m_descriptorHeapManager = new D3DDescriptorHeapManager(m_device);
     {
         D3DSwapchain::SwapchainConfig config;
@@ -405,6 +409,12 @@ void D3DGraphicContext::destroy()
     {
         delete m_descriptorHeapManager;
         m_descriptorHeapManager = nullptr;
+    }
+
+    if (m_heapAllocator)
+    {
+        delete m_heapAllocator;
+        m_heapAllocator = nullptr;
     }
 
 #if defined(PLATFORM_WINDOWS)
@@ -886,7 +896,7 @@ Buffer* D3DGraphicContext::createBuffer(Buffer::BufferType type, u16 usageFlag, 
 #endif //D3D_DEBUG
     if (type == Buffer::BufferType::BufferType_VertexBuffer || type == Buffer::BufferType::BufferType_IndexBuffer || type == Buffer::BufferType::BufferType_UniformBuffer)
     {
-        return new D3DBuffer(m_device, type, usageFlag, size, name);
+        return new D3DBuffer(m_device, type, usageFlag, size, name, m_heapAllocator);
     }
 
     ASSERT(false, "not supported");

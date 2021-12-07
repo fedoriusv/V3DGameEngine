@@ -17,6 +17,7 @@ namespace dx3d
 {
     class D3DCommandListManager;
     class D3DImage;
+    class D3DBuffer;
     class D3DFence;
     class D3DGraphicPipelineState;
     class D3DComputePipelineState;
@@ -130,6 +131,7 @@ namespace dx3d
 
         void transition(D3DImage* image, D3D12_RESOURCE_STATES states, bool immediateTransition = false);
         void transition(D3DImage* image, const Image::Subresource& subresource, D3D12_RESOURCE_STATES states, bool immediateTransition = false);
+        void transition(D3DBuffer* buffer, D3D12_RESOURCE_STATES states, bool immediateTransition = false);
 
         ID3D12GraphicsCommandList1* getHandle() const;
 

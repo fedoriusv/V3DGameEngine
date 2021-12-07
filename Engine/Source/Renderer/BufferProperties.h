@@ -28,11 +28,11 @@ namespace renderer
     */
     enum StreamBufferUsage
     {
-        StreamBuffer_Write = 0x01,
-        StreamBuffer_Read = 0x02,
+        StreamBuffer_Write = 0x01,  //Write to buffer
+        StreamBuffer_Read = 0x02,   //Read from buffer
 
-        StreamBuffer_Shared = 0x04,
-        StreamBuffer_Dynamic = 0x08,
+        StreamBuffer_Shared = 0x04, //Share data between Game / Render side
+        StreamBuffer_Dynamic = 0x08,//Stream read/write buffer
     };
 
     typedef u16 StreamBufferUsageFlags;

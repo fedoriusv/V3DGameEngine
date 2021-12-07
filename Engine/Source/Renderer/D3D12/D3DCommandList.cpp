@@ -339,6 +339,32 @@ void D3DGraphicsCommandList::transition(D3DImage* image, const Image::Subresourc
     }
 }
 
+void D3DGraphicsCommandList::transition(D3DBuffer* buffer, D3D12_RESOURCE_STATES states, bool immediateTransition)
+{
+    ASSERT(m_commandList, "nullptr");
+    ASSERT(m_status == Status::ReadyToRecord, "not record");
+
+    if (buffer->getState() != states)
+    {
+        this->setUsed(buffer, 0);
+        D3D12_RESOURCE_STATES oldState = buffer->setState(states);
+
+        D3D12_RESOURCE_BARRIER resourceBarrierDesc = {};
+        resourceBarrierDesc.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+        resourceBarrierDesc.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
+        resourceBarrierDesc.Transition.pResource = buffer->getResource();
+        resourceBarrierDesc.Transition.StateBefore = oldState;
+        resourceBarrierDesc.Transition.StateAfter = states;
+        resourceBarrierDesc.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+
+        m_transition.add(resourceBarrierDesc);
+        if (D3DDeviceCaps::getInstance()->immediateTransition || immediateTransition)
+        {
+            m_transition.execute(this);
+        }
+    }
+}
+
 ID3D12GraphicsCommandList1* D3DGraphicsCommandList::getHandle() const
 {
     ASSERT(m_commandList, "nullptr");

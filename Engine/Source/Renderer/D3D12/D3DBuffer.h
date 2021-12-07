@@ -16,6 +16,10 @@ namespace dx3d
 {
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    class D3DMemoryHeapAllocator;
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
+
     /**
     * D3DBuffer final class. DirectX Render side
     */
@@ -23,7 +27,7 @@ namespace dx3d
     {
     public:
 
-        explicit D3DBuffer(ID3D12Device* device, Buffer::BufferType type, StreamBufferUsageFlags usageFlag, u64 size, const std::string& name = "") noexcept;
+        explicit D3DBuffer(ID3D12Device* device, Buffer::BufferType type, StreamBufferUsageFlags usageFlag, u64 size, const std::string& name = "", D3DMemoryHeapAllocator* allocator = nullptr) noexcept;
         ~D3DBuffer();
 
         D3DBuffer() = delete;
@@ -39,11 +43,18 @@ namespace dx3d
         ID3D12Resource* getResource() const;
         D3D12_GPU_VIRTUAL_ADDRESS getGPUAddress() const;
 
+        D3D12_RESOURCE_STATES getState() const;
+        D3D12_RESOURCE_STATES setState(D3D12_RESOURCE_STATES state);
+
     private:
 
         ID3D12Device* m_device;
+        D3DMemoryHeapAllocator* const m_allocator;
 
         ID3D12Resource* m_resource;
+
+        CD3DX12_HEAP_PROPERTIES m_heapProperties;
+        D3D12_RESOURCE_STATES m_state;
         BufferType m_type;
         u64 m_size;
 

@@ -32,6 +32,7 @@ namespace dx3d
     class D3DDescriptorHeapManager;
     class D3DConstantBufferManager;
     class D3DDebugLayerMessageCallback;
+    class D3DMemoryHeapAllocator;
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -128,9 +129,11 @@ namespace dx3d
 
         ID3D12CommandQueue* m_commandQueue;
 
-        D3DSwapchain*                 m_swapchain;
-        const platform::Window* const m_window;
+        D3DMemoryHeapAllocator* m_heapAllocator;
+        D3DDescriptorHeapManager* m_descriptorHeapManager;
 
+        D3DSwapchain* m_swapchain;
+        const platform::Window* const m_window;
 
         D3DCommandListManager* m_commandListManager;
 
@@ -139,7 +142,6 @@ namespace dx3d
         std::tuple<RenderPassManager*, FramebufferManager*> m_renderTargetManager;
 
         D3DRootSignatureManager* m_rootSignatureManager;
-        D3DDescriptorHeapManager* m_descriptorHeapManager;
         D3DConstantBufferManager* m_constantBufferManager;
 
         D3DResourceDeleter m_delayedDeleter;

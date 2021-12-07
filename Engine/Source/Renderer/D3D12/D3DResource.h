@@ -70,20 +70,6 @@ namespace dx3d
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    class UploadResource : public D3DResource
-    {
-    public:
-
-        explicit  UploadResource(ID3D12Resource* resource) noexcept;
-        ~UploadResource();
-
-    private:
-
-        ID3D12Resource* m_resource;
-    };
-
-    /////////////////////////////////////////////////////////////////////////////////////////////////////
-
 } //namespace dx3d
 } //namespace renderer
 } //namespace v3d
