@@ -20,7 +20,7 @@ namespace dx3d
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
-    * D3DDescriptorHeap class. DirectX Render side
+    * @brief D3DDescriptorHeap class. DirectX Render side
     */
     class D3DDescriptorHeap final : public D3DResource
     {
@@ -50,7 +50,7 @@ namespace dx3d
 
 
     /**
-    * D3DDescriptorHeapManager final class. DirectX Render side
+    * @brief D3DDescriptorHeapManager final class. DirectX Render side
     */
     class D3DDescriptorHeapManager final
     {

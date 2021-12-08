@@ -15,7 +15,7 @@ namespace dx3d
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
-    * D3DDebug final class. DirectX Render side
+    * @brief D3DDebug final class. DirectX Render side
     */
     class D3DDebug final : public utils::Singleton<D3DDebug>
     {
@@ -39,6 +39,10 @@ namespace dx3d
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #ifdef PLATFORM_WINDOWS
+    /**
+    * @brief D3DDebugLayerMessageCallback class. DirectX Render side.
+    * Callback system for validation layers
+    */
     class D3DDebugLayerMessageCallback final
     {
     public:

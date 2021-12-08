@@ -25,6 +25,9 @@ namespace dx3d
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    /**
+    * @brief D3DDescriptorSetState final class. DirectX Render side
+    */
     class D3DDescriptorSetState final
     {
     public:

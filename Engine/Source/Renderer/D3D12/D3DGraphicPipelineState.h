@@ -19,7 +19,7 @@ namespace dx3d
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
-    * D3DGraphicPipelineState final class. DirectX Render side
+    * @brief D3DGraphicPipelineState final class. DirectX Render side
     */
     class D3DGraphicPipelineState final : public D3DPipelineState
     {

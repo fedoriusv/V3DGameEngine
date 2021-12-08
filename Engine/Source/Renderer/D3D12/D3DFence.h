@@ -14,7 +14,7 @@ namespace dx3d
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
-    * D3DFence final class. DirectX Render side
+    * @brief D3DFence final class. DirectX Render side
     */
     class D3DFence final
     {

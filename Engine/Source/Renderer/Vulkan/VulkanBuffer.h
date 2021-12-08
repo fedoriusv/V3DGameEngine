@@ -18,7 +18,7 @@ namespace vk
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
-    * VulkanBuffer class. Vulkan Render side
+    * @brief VulkanBuffer final class. Vulkan Render side
     */
     class VulkanBuffer final : public Buffer, public VulkanResource
     {

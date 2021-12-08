@@ -19,7 +19,7 @@ namespace dx3d
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
-    * D3DCommandListManager final class. DirectX Render side
+    * @brief D3DCommandListManager final class. DirectX Render side
     */
     class D3DCommandListManager final
     {

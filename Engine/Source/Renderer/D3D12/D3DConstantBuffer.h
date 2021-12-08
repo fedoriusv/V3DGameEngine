@@ -18,7 +18,7 @@ namespace dx3d
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
-    * D3DConstanBufferManager final class. DirectX Render side
+    * @brief D3DConstanBufferManager final class. DirectX Render side
     */
     class D3DConstantBufferManager final
     {
