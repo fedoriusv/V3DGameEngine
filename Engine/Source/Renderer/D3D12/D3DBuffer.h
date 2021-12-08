@@ -16,18 +16,18 @@ namespace dx3d
 {
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    class D3DMemoryHeapAllocator;
+    class D3DHeapAllocator;
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
-    * D3DBuffer final class. DirectX Render side
+    * @brief D3DBuffer final class. DirectX Render side
     */
     class D3DBuffer final : public Buffer, public D3DResource
     {
     public:
 
-        explicit D3DBuffer(ID3D12Device* device, Buffer::BufferType type, StreamBufferUsageFlags usageFlag, u64 size, const std::string& name = "", D3DMemoryHeapAllocator* allocator = nullptr) noexcept;
+        explicit D3DBuffer(ID3D12Device* device, Buffer::BufferType type, StreamBufferUsageFlags usageFlag, u64 size, const std::string& name = "", D3DHeapAllocator* allocator = nullptr) noexcept;
         ~D3DBuffer();
 
         D3DBuffer() = delete;
@@ -49,7 +49,7 @@ namespace dx3d
     private:
 
         ID3D12Device* m_device;
-        D3DMemoryHeapAllocator* const m_allocator;
+        D3DHeapAllocator* const m_allocator;
 
         ID3D12Resource* m_resource;
 

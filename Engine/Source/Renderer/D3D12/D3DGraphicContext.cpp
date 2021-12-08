@@ -281,7 +281,7 @@ bool D3DGraphicContext::initialize()
 #endif //D3D_DEBUG
     }
 
-    m_heapAllocator = new D3DMemoryHeapAllocator(m_device);
+    m_heapAllocator = new D3DSimpleHeapAllocator(m_device);
     m_descriptorHeapManager = new D3DDescriptorHeapManager(m_device);
     {
         D3DSwapchain::SwapchainConfig config;

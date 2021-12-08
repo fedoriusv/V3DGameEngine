@@ -9,34 +9,37 @@ namespace renderer
 namespace dx3d
 {
 
-D3DMemoryHeapAllocator::D3DMemoryHeapAllocator(ID3D12Device* device) noexcept
+/////////////////////////////////////////////////////////////////////////////////////////////////////
+
+D3DMemoryHeap D3DMemory::acquireHeap(D3DHeapAllocator& allocator, const D3D12_HEAP_PROPERTIES& props)
+{
+    return *allocator.allocate();
+}
+
+void D3DMemory::removeHeap(D3DHeapAllocator& allocator, D3DMemoryHeap* heap)
+{
+    allocator.deallocate(heap);
+}
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////
+
+D3DSimpleHeapAllocator::D3DSimpleHeapAllocator(ID3D12Device* device) noexcept
     : m_device(device)
 {
 }
 
-D3DMemoryHeapAllocator::~D3DMemoryHeapAllocator()
+D3DSimpleHeapAllocator::~D3DSimpleHeapAllocator()
 {
 }
 
-D3DMemoryHeap D3DMemoryHeapAllocator::acquireHeap()
-{
-    ID3D12Heap* heap = nullptr;
-    u32 offset = 0;
-
-    return {
-        heap,
-        offset
-    };
-}
-
-ID3D12Heap* D3DMemoryHeapAllocator::createHeap(u64 size, u64 align)
+D3DMemoryHeap* D3DSimpleHeapAllocator::allocate()
 {
     ID3D12Heap* heap;
 
     D3D12_HEAP_DESC desc = {};
-    desc.SizeInBytes = core::alignUp(size, align);
+    desc.SizeInBytes = core::alignUp(0, 0);
     desc.Properties;
-    desc.Alignment = align;
+    desc.Alignment = 0;
     desc.Flags = D3D12_HEAP_FLAG_NONE;
 
     HRESULT result = m_device->CreateHeap(&desc, DX_IID_PPV_ARGS(&heap));
@@ -47,6 +50,11 @@ ID3D12Heap* D3DMemoryHeapAllocator::createHeap(u64 size, u64 align)
 
     return nullptr;
 }
+
+void D3DSimpleHeapAllocator::deallocate(D3DMemoryHeap* heap)
+{
+}
+
 
 } //namespace dx3d
 } //namespace renderer

@@ -32,12 +32,12 @@ namespace dx3d
     class D3DDescriptorHeapManager;
     class D3DConstantBufferManager;
     class D3DDebugLayerMessageCallback;
-    class D3DMemoryHeapAllocator;
+    class D3DHeapAllocator;
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
-    * D3DGraphicContext final class. DirectX Render side
+    * @brief D3DGraphicContext final class. DirectX Render side
     */
     class D3DGraphicContext final : public Context
     {
@@ -129,7 +129,7 @@ namespace dx3d
 
         ID3D12CommandQueue* m_commandQueue;
 
-        D3DMemoryHeapAllocator* m_heapAllocator;
+        D3DHeapAllocator* m_heapAllocator;
         D3DDescriptorHeapManager* m_descriptorHeapManager;
 
         D3DSwapchain* m_swapchain;

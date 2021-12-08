@@ -18,7 +18,7 @@ namespace dx3d
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
-    * D3DImage final class. DirectX Render side
+    * @brief D3DImage final class. DirectX Render side
     */
     class D3DImage final : public Image, public D3DResource
     {

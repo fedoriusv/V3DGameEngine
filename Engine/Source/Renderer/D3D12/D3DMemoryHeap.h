@@ -15,7 +15,7 @@ namespace dx3d
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
-    * Memory Heap struct. DirectX Render side
+    * @brief Memory Heap struct. DirectX Render side
     */
     struct D3DMemoryHeap
     {
@@ -26,22 +26,47 @@ namespace dx3d
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
-    * Memory Heap manager. DirectX Render side
+    * @brief Memory Heap class. DirectX Render side
     */
-    class D3DMemoryHeapAllocator final
+    class D3DHeapAllocator
     {
     public:
 
-        explicit D3DMemoryHeapAllocator(ID3D12Device* device) noexcept;
-        ~D3DMemoryHeapAllocator();
+        D3DHeapAllocator() noexcept = default;
+        virtual ~D3DHeapAllocator() = default;
 
-        D3DMemoryHeap acquireHeap();
+        virtual D3DMemoryHeap* allocate() = 0;
+        virtual void deallocate(D3DMemoryHeap* heap) = 0;
+    };
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    /**
+    * @brief Memory manager. DirectX Render side
+    */
+    class D3DMemory final
+    {
+    public:
+
+        static D3DMemoryHeap acquireHeap(D3DHeapAllocator& allocator, const D3D12_HEAP_PROPERTIES& props);
+        static void removeHeap(D3DHeapAllocator& allocator, D3DMemoryHeap* heap);
+    };
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    class D3DSimpleHeapAllocator final : public D3DHeapAllocator
+    {
+    public:
+
+        D3DSimpleHeapAllocator(ID3D12Device* device) noexcept;
+        ~D3DSimpleHeapAllocator();
+
+        D3DMemoryHeap* allocate() override;
+        void deallocate(D3DMemoryHeap* heap) override;
 
     private:
 
-        ID3D12Heap* createHeap(u64 size, u64 align);
-
-        ID3D12Device* const m_device;
+        ID3D12Device* m_device;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

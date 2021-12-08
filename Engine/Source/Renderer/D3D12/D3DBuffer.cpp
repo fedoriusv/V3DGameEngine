@@ -16,7 +16,7 @@ namespace renderer
 namespace dx3d
 {
 
-D3DBuffer::D3DBuffer(ID3D12Device* device, Buffer::BufferType type, StreamBufferUsageFlags usageFlag, u64 size, const std::string& name, D3DMemoryHeapAllocator* allocator) noexcept
+D3DBuffer::D3DBuffer(ID3D12Device* device, Buffer::BufferType type, StreamBufferUsageFlags usageFlag, u64 size, const std::string& name, D3DHeapAllocator* allocator) noexcept
     : m_device(device)
     , m_allocator(nullptr)
 
