@@ -39,6 +39,14 @@ void D3DDeviceCaps::initialize(IDXGIAdapter1* adapter, ID3D12Device* device)
         }
     }
 
+    {
+        HRESULT result = device->CheckFeatureSupport(D3D12_FEATURE_ARCHITECTURE, &featureArchitecture, sizeof(featureArchitecture));
+        if (FAILED(result))
+        {
+            LOG_WARNING("D3DDeviceCaps::initialize: CheckFeatureSupport D3D12_FEATURE_ARCHITECTURE is failed. Error %s", D3DDebug::stringError(result).c_str());
+        }
+    }
+
     for (u32 i = 0; i < Format::Format_Count; ++i)
     {
         D3D12_FEATURE_DATA_FORMAT_SUPPORT formatSupport = {};

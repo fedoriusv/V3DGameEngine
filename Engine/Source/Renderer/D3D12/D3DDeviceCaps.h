@@ -15,7 +15,7 @@ namespace dx3d
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
-    * D3DDeviceCaps struct. Vulkan Render side
+    * @brief D3DDeviceCaps struct. Vulkan Render side
     */
     struct D3DDeviceCaps : DeviceCaps, utils::Singleton<D3DDeviceCaps>
     {
@@ -28,6 +28,7 @@ namespace dx3d
 
         D3D12_FEATURE_DATA_D3D12_OPTIONS featureOptions = {};
         D3D12_FEATURE_DATA_D3D12_OPTIONS3 featureOptions3 = {};
+        D3D12_FEATURE_DATA_ARCHITECTURE featureArchitecture = {};
 
         D3D_SHADER_MODEL supportedShaderModel = D3D_SHADER_MODEL_5_1;
 
