@@ -18,11 +18,13 @@ namespace dx3d
 
 D3DBuffer::D3DBuffer(ID3D12Device* device, Buffer::BufferType type, StreamBufferUsageFlags usageFlag, u64 size, const std::string& name, D3DHeapAllocator* allocator) noexcept
     : m_device(device)
-    , m_allocator(nullptr)
+    , m_allocator(allocator)
 
     , m_resource(nullptr)
 
     , m_heapProperties(CD3DX12_HEAP_PROPERTIES())
+    , m_memoryHeap(D3DMemory::s_invalidMemory)
+
     , m_state(D3D12_RESOURCE_STATE_COMMON)
     , m_type(type)
     , m_size(size)
@@ -106,15 +108,20 @@ bool D3DBuffer::create()
     D3D12_RESOURCE_DESC resourceDesc = CD3DX12_RESOURCE_DESC::Buffer(m_size);
     if (m_allocator)
     {
-        //TODO
-        //D3DMemoryHeap heap = m_allocator->acquireHeap();
+        D3D12_HEAP_FLAGS heapFlags = D3D12_HEAP_FLAG_ALLOW_ONLY_BUFFERS;
+        m_memoryHeap = D3DMemory::acquireHeap(*m_allocator, resourceDesc, m_heapProperties, heapFlags);
+        if (m_memoryHeap == D3DMemory::s_invalidMemory)
+        {
+            LOG_ERROR("D3DBuffer::create Can't get heap");
+            return false;
+        }
 
-        //HRESULT result = m_device->CreatePlacedResource(heap._heap, heap._offset, &resourceDesc, m_state, nullptr, DX_IID_PPV_ARGS(&m_resource));
-        //if (FAILED(result))
-        //{
-        //    LOG_ERROR("D3DBuffer::create CreatePlacedResource is failed. Error %s", D3DDebug::stringError(result).c_str());
-        //    return false;
-        //}
+        HRESULT result = m_device->CreatePlacedResource(m_memoryHeap._heap, m_memoryHeap._offset, &resourceDesc, m_state, nullptr, DX_IID_PPV_ARGS(&m_resource));
+        if (FAILED(result))
+        {
+            LOG_ERROR("D3DBuffer::create CreatePlacedResource is failed. Error %s", D3DDebug::stringError(result).c_str());
+            return false;
+        }
     }
     else
     {
@@ -146,6 +153,10 @@ bool D3DBuffer::create()
 void D3DBuffer::destroy()
 {
     SAFE_DELETE(m_resource);
+    if (m_allocator)
+    {
+        D3DMemory::removeHeap(*m_allocator, m_memoryHeap);
+    }
 }
 
 u64 D3DBuffer::getSize() const

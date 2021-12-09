@@ -21,6 +21,21 @@ namespace dx3d
     {
         ID3D12Heap* _heap;
         u32 _offset;
+
+        bool operator==(const D3DMemoryHeap& otherHeap) const
+        {
+            if (this == &otherHeap)
+            {
+                return true;
+            }
+
+            return _heap == otherHeap._heap && _offset == otherHeap._offset;
+        }
+
+        bool operator!=(const D3DMemoryHeap& otherHeap) const
+        {
+            return !operator==(otherHeap);
+        }
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -32,11 +47,17 @@ namespace dx3d
     {
     public:
 
-        D3DHeapAllocator() noexcept = default;
+        D3DHeapAllocator(ID3D12Device* m_device) noexcept;
         virtual ~D3DHeapAllocator() = default;
 
-        virtual D3DMemoryHeap* allocate() = 0;
+        virtual D3DMemoryHeap allocate(u64 size, u64 align, const D3D12_HEAP_PROPERTIES& props, D3D12_HEAP_FLAGS heapFlags) = 0;
         virtual void deallocate(D3DMemoryHeap* heap) = 0;
+
+    protected:
+
+        friend class D3DMemory;
+
+        ID3D12Device* m_device;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -48,8 +69,10 @@ namespace dx3d
     {
     public:
 
-        static D3DMemoryHeap acquireHeap(D3DHeapAllocator& allocator, const D3D12_HEAP_PROPERTIES& props);
-        static void removeHeap(D3DHeapAllocator& allocator, D3DMemoryHeap* heap);
+        static D3DMemoryHeap acquireHeap(D3DHeapAllocator& allocator, const D3D12_RESOURCE_DESC& desc, const D3D12_HEAP_PROPERTIES& props, D3D12_HEAP_FLAGS heapFlags);
+        static void removeHeap(D3DHeapAllocator& allocator, D3DMemoryHeap& heap);
+
+        static D3DMemoryHeap s_invalidMemory;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -61,12 +84,8 @@ namespace dx3d
         D3DSimpleHeapAllocator(ID3D12Device* device) noexcept;
         ~D3DSimpleHeapAllocator();
 
-        D3DMemoryHeap* allocate() override;
+        D3DMemoryHeap allocate(u64 size, u64 align, const D3D12_HEAP_PROPERTIES& props, D3D12_HEAP_FLAGS heapFlags) override;
         void deallocate(D3DMemoryHeap* heap) override;
-
-    private:
-
-        ID3D12Device* m_device;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

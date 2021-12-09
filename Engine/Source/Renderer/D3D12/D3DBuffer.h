@@ -7,6 +7,7 @@
 #ifdef D3D_RENDER
 #include "D3DConfiguration.h"
 #include "D3DResource.h"
+#include "D3DMemoryHeap.h"
 
 namespace v3d
 {
@@ -54,6 +55,8 @@ namespace dx3d
         ID3D12Resource* m_resource;
 
         CD3DX12_HEAP_PROPERTIES m_heapProperties;
+        D3DMemoryHeap m_memoryHeap;
+
         D3D12_RESOURCE_STATES m_state;
         BufferType m_type;
         u64 m_size;
