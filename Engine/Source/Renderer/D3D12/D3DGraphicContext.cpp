@@ -313,7 +313,7 @@ bool D3DGraphicContext::initialize()
     m_renderTargetManager = std::make_tuple(new RenderPassManager(this), new FramebufferManager(this));
 
     m_rootSignatureManager = new D3DRootSignatureManager(m_device);
-    m_constantBufferManager = new D3DConstantBufferManager(m_device);
+    m_constantBufferManager = new D3DConstantBufferManager(m_device, m_heapAllocator);
 
     m_descriptorState = new D3DDescriptorSetState(m_device, m_descriptorHeapManager);
 #if defined(PLATFORM_WINDOWS) && D3D_DEBUG

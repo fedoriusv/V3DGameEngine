@@ -14,6 +14,7 @@ namespace dx3d
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     class D3DBuffer;
+    class D3DHeapAllocator;
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -24,7 +25,7 @@ namespace dx3d
     {
     public:
 
-        explicit D3DConstantBufferManager(ID3D12Device* device) noexcept;
+        explicit D3DConstantBufferManager(ID3D12Device* device, D3DHeapAllocator* allocator = nullptr) noexcept;
         ~D3DConstantBufferManager();
 
         D3DBuffer* acquireConstanBuffer(u64 requestSize);
@@ -35,6 +36,7 @@ namespace dx3d
     private:
 
         ID3D12Device* m_device;
+        D3DHeapAllocator* m_allocator;
 
         std::queue<D3DBuffer*> m_freeConstantBuffers;
         std::list<D3DBuffer*> m_usedConstantBuffers;

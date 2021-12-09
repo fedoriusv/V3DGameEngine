@@ -11,8 +11,9 @@ namespace renderer
 namespace dx3d
 {
 
-D3DConstantBufferManager::D3DConstantBufferManager(ID3D12Device* device) noexcept
+D3DConstantBufferManager::D3DConstantBufferManager(ID3D12Device* device, D3DHeapAllocator* allocator) noexcept
     : m_device(device)
+    , m_allocator(allocator)
 {
     LOG_DEBUG("D3DConstantBufferManager::D3DConstantBufferManager constructor %llx", this);
 }
@@ -39,7 +40,7 @@ D3DBuffer* D3DConstantBufferManager::acquireConstanBuffer(u64 requestSize)
     }
 
     ASSERT(requestedSize <= k_constantBufferSize, "small size");
-    D3DBuffer* newBuffer = new D3DBuffer(m_device, Buffer::BufferType::BufferType_UniformBuffer, 0, k_constantBufferSize);
+    D3DBuffer* newBuffer = new D3DBuffer(m_device, Buffer::BufferType::BufferType_UniformBuffer, 0, k_constantBufferSize, "ConstantBuffer", m_allocator);
     if (!newBuffer->create())
     {
         LOG_ERROR("D3DConstantBufferManager::acquireConstanBuffer: create buffer is failed");
