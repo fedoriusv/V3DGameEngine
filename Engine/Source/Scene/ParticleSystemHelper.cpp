@@ -1,7 +1,7 @@
 #include "ParticleSystemHelper.h"
 #include "ParticleSystem.h"
 
-#include "Renderer/Object/StreamBuffer.h"
+#include "Renderer/StreamBuffer.h"
 
 namespace v3d
 {

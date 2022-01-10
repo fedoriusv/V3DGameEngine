@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Resource/Resource.h"
+
 #include "Formats.h"
 #include "TextureProperties.h"
 #include "ShaderProperties.h"

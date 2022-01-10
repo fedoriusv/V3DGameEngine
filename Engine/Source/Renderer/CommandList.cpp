@@ -1,15 +1,12 @@
 #include "CommandList.h"
+#include "Texture.h"
+#include "RenderTargetState.h"
+#include "PipelineState.h"
+#include "ShaderProgram.h"
+#include "DeviceCaps.h"
+#include "Core/Context.h"
 #include "Utils/Logger.h"
 #include "Utils/MemoryPool.h"
-
-#include "Context.h"
-#include "Object/Texture.h"
-#include "Object/RenderTargetState.h"
-#include "Object/PipelineState.h"
-#include "Object/ShaderProgram.h"
-#include "RenderPass.h"
-#include "Framebuffer.h"
-#include "DeviceCaps.h"
 
 
 namespace v3d
@@ -464,32 +461,32 @@ private:
     core::Dimension3D m_groups;
 };
 
-    /*CommandInvalidateRenderPass*/
-class CommandInvalidateRenderPass : public Command
+    /*CommandInvalidateRenderTarget*/
+class CommandInvalidateRenderTarget : public Command
 {
 public:
 
-    CommandInvalidateRenderPass(CommandInvalidateRenderPass&) = delete;
-    CommandInvalidateRenderPass() noexcept
+    CommandInvalidateRenderTarget(CommandInvalidateRenderTarget&) = delete;
+    CommandInvalidateRenderTarget() noexcept
     {
 #if DEBUG_COMMAND_LIST
-        LOG_DEBUG("CommandInvalidateRenderPass constructor");
+        LOG_DEBUG("CommandInvalidateRenderTarget constructor");
 #endif //DEBUG_COMMAND_LIST
     }
 
-    ~CommandInvalidateRenderPass()
+    ~CommandInvalidateRenderTarget()
     {
 #if DEBUG_COMMAND_LIST
-        LOG_DEBUG("CommandInvalidateRenderPass constructor");
+        LOG_DEBUG("CommandInvalidateRenderTarget constructor");
 #endif //DEBUG_COMMAND_LIST
     }
 
     void execute(const CommandList& cmdList)
     {
 #if DEBUG_COMMAND_LIST
-        LOG_DEBUG("CommandInvalidateRenderPass execute");
+        LOG_DEBUG("CommandInvalidateRenderTarget execute");
 #endif //DEBUG_COMMAND_LIST
-        cmdList.getContext()->invalidateRenderPass();
+        cmdList.getContext()->invalidateRenderTarget();
     }
 };
 
@@ -628,12 +625,12 @@ void CommandList::setRenderTarget(RenderTargetState* rendertarget)
     {
         if (CommandList::isImmediate())
         {
-            m_context->invalidateRenderPass();
+            m_context->invalidateRenderTarget();
         }
         else
         {
             m_pendingFlushMask = CommandList::flushPendingCommands(m_pendingFlushMask);
-            CommandList::pushCommand(new CommandInvalidateRenderPass());
+            CommandList::pushCommand(new CommandInvalidateRenderTarget());
         }
 
     }

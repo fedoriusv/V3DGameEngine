@@ -2,7 +2,6 @@
 
 #include "Common.h"
 #include "Formats.h"
-#include "crc32c/crc32c.h"
 
 #define USE_STRING_ID_SHADER 1
 
@@ -93,11 +92,7 @@ namespace renderer
     */
     struct ShaderProgramDescription
     {
-        ShaderProgramDescription() noexcept
-            : _hash(0)
-        {
-            _shaders.fill(nullptr);
-        }
+        ShaderProgramDescription() noexcept;
 
         u32 _hash;
         std::array<const Shader*, toEnumType(ShaderType::Count)> _shaders;
@@ -108,17 +103,11 @@ namespace renderer
     */
     struct ShaderParam
     {
-        ShaderParam(const std::string& name) noexcept
-            : _name(name)
-            , _id(crc32c::Crc32c(name))
-        {
-            //TODO: add id manager and id generator to preventing collisions
-        }
+        ShaderParam(const std::string& name) noexcept;
 
         std::string _name;
         u32         _id;
     };
-
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -127,28 +116,7 @@ namespace renderer
     * @param ShaderType type
     * @return shader string name
     */
-    inline std::string ShaderTypeString(ShaderType type)
-    {
-        switch (type)
-        {
-        case ShaderType::Undefined:
-            return "undefined";
-
-        case ShaderType::Vertex:
-            return "vertex";
-
-        case ShaderType::Fragment:
-            return "fragment";
-
-        case ShaderType::Compute:
-            return "compute";
-
-        default:
-            ASSERT(false, "not found");
-        }
-
-        return "unknown";
-    }
+    std::string ShaderTypeString(ShaderType type);
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 

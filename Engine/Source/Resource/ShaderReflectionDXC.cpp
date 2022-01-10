@@ -2,7 +2,7 @@
 #include "Utils/Logger.h"
 
 #if defined(PLATFORM_WINDOWS) || defined(PLATFORM_XBOX)
-#include "Renderer/D3D12/D3DDebug.h"
+#include "Renderer/Core/D3D12/D3DDebug.h"
 
 #if USE_CUSTOM_DXC
 #   include "dxc/inc/dxcapi.h"

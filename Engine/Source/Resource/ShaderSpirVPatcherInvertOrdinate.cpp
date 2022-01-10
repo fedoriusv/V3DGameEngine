@@ -1,5 +1,5 @@
 #include "ShaderSpirVPatcherInvertOrdinate.h"
-#include "Renderer/Context.h"
+#include "Renderer/Core/Context.h"
 #include "Utils/Logger.h"
 
 #ifdef USE_SPIRV

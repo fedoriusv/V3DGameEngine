@@ -1,4 +1,5 @@
 #include "ImageGLiDecoder.h"
+
 #include "Stream/StreamManager.h"
 #include "Resource/Image.h"
 

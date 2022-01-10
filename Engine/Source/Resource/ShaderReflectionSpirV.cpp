@@ -3,7 +3,7 @@
 #include "Stream/StreamManager.h"
 
 #ifdef USE_SPIRV
-#include <SPIRV-Cross/spirv_glsl.hpp>
+#   include <SPIRV-Cross/spirv_glsl.hpp>
 
 namespace v3d
 {

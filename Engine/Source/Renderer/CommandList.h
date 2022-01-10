@@ -1,16 +1,13 @@
 #pragma once
 
 #include "Common.h"
-
 #include "Object.h"
 
-#include "RenderPass.h"
-#include "Framebuffer.h"
-#include "Pipeline.h"
-#include "Sampler.h"
-#include "Image.h"
-#include "Buffer.h"
 #include "TextureProperties.h"
+
+#include "Core/RenderPass.h"
+#include "Core/Framebuffer.h"
+#include "Core/Pipeline.h"
 
 namespace v3d
 {
@@ -31,7 +28,7 @@ namespace renderer
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
-    * Command base class
+    * @brief Command base class
     */
     class Command
     {
@@ -49,7 +46,7 @@ namespace renderer
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
-    * CommandList class
+    * @brief CommandList class
     */
     class CommandList final
     {

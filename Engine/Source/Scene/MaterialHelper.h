@@ -3,8 +3,9 @@
 #include "Common.h"
 #include "Utils/IntrusivePointer.h"
 #include "Renderer/CommandList.h"
-#include "Renderer/Object/ShaderProgram.h"
-#include "Renderer/Object/Texture.h"
+#include "Renderer/ShaderProgram.h"
+#include "Renderer/Texture.h"
+
 #include "Material.h"
 
 namespace v3d

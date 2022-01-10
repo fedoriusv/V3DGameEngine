@@ -1,5 +1,5 @@
 #include "TextureProperties.h"
-#include "Object/Texture.h"
+#include "Texture.h"
 
 #include "crc32c/crc32c.h"
 

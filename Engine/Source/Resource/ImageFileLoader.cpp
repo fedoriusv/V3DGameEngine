@@ -1,6 +1,6 @@
 #include "ImageFileLoader.h"
 
-#include "Renderer/Context.h"
+#include "Renderer/Core/Context.h"
 #include "Stream/FileLoader.h"
 #include "Resource/ResourceLoaderManager.h"
 #include "Resource/Image.h"

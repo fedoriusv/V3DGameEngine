@@ -3,9 +3,9 @@
 #include "Utils/Timer.h"
 #include "Utils/Logger.h"
 
-#include "Renderer/Context.h"
+#include "Renderer/Core/Context.h"
 #ifdef USE_SPIRV
-# include <shaderc/third_party/glslang/SPIRV/spirv.hpp>
+#   include <shaderc/third_party/glslang/SPIRV/spirv.hpp>
 
 namespace v3d
 {

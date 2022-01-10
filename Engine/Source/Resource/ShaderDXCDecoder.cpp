@@ -5,7 +5,7 @@
 #include "Utils//Timer.h"
 
 #if defined(PLATFORM_WINDOWS) || defined(PLATFORM_XBOX)
-#include "Renderer/D3D12/D3DDebug.h"
+#include "Renderer/Core/D3D12/D3DDebug.h"
 #include "ShaderReflectionSpirV.h"
 #include "ShaderReflectionDXC.h"
 

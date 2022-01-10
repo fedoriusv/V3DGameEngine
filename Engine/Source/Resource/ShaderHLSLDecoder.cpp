@@ -8,7 +8,7 @@
 #include "Renderer/ShaderProperties.h"
 
 #if D3D_RENDER
-#   include "Renderer/D3D12/D3DDebug.h"
+#   include "Renderer/Core/D3D12/D3DDebug.h"
 
 namespace v3d
 {

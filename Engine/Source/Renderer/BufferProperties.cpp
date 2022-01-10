@@ -1,5 +1,5 @@
 #include "BufferProperties.h"
-#include "Object/StreamBuffer.h"
+#include "StreamBuffer.h"
 #include "Stream/Stream.h"
 
 namespace v3d

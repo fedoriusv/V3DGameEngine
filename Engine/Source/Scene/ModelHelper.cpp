@@ -2,7 +2,7 @@
 #include "Model.h"
 
 #include "Renderer/CommandList.h"
-#include "Renderer/Object/StreamBuffer.h"
+#include "Renderer/StreamBuffer.h"
 
 namespace v3d
 {
