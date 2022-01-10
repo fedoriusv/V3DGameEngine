@@ -1,5 +1,6 @@
 #include "MyApplication.h"
 #include "Event/InputEventReceiver.h"
+#include "Renderer/Core/Context.h"
 
 namespace app
 {

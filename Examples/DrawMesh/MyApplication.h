@@ -2,7 +2,7 @@
 
 #include "Common.h"
 #include "Platform/Window.h"
-#include "Renderer/Context.h"
+#include "Renderer/Core/Context.h"
 #include "Event/InputEventHandler.h"
 
 #include "Scene.h"

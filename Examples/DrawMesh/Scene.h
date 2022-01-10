@@ -3,7 +3,7 @@
 #include "Common.h"
 #include "Utils/IntrusivePointer.h"
 
-#include "Renderer/Context.h"
+#include "Renderer/Core/Context.h"
 #include "Renderer/CommandList.h"
 #include "Scene/CameraArcballHelper.h"
 
@@ -11,8 +11,8 @@
 #include "Event/InputEventTouch.h"
 #include "Event/InputEventHandler.h"
 
-#include "Renderer/Object/Texture.h"
-#include "Renderer/Object/SamplerState.h"
+#include "Renderer/Texture.h"
+#include "Renderer/SamplerState.h"
 #include "Scene/ModelHelper.h"
 
 #include "TextureRender.h"

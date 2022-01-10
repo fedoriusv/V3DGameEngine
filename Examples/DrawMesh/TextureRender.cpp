@@ -1,8 +1,9 @@
 #include "TextureRender.h"
 
-#include "Renderer/Context.h"
-#include "Renderer/Object/Texture.h"
+#include "Renderer/Texture.h"
 #include "Renderer/Shader.h"
+#include "Renderer/ShaderProgram.h"
+#include "Renderer/Core/Context.h"
 #include "Stream/StreamManager.h"
 #include "Resource/ResourceLoaderManager.h"
 #include "Resource/ShaderSourceStreamLoader.h"

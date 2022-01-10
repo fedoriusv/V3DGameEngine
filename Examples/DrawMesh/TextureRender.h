@@ -6,10 +6,10 @@
 #include "Renderer/CommandList.h"
 
 #include "Renderer/BufferProperties.h"
-#include "Renderer/Object/ShaderProgram.h"
-#include "Renderer/Object/PipelineState.h"
-#include "Renderer/Object/RenderTargetState.h"
-#include "Renderer/Object/SamplerState.h"
+#include "Renderer/ShaderProgram.h"
+#include "Renderer/PipelineState.h"
+#include "Renderer/RenderTargetState.h"
+#include "Renderer/SamplerState.h"
 
 namespace v3d
 {
