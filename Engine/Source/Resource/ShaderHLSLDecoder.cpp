@@ -20,8 +20,12 @@ const std::map<std::string, renderer::ShaderType> k_HLSL_ExtensionList =
     //hlsl
     { "vs", renderer::ShaderType::Vertex },
     { "ps", renderer::ShaderType::Fragment },
-
     { "cs", renderer::ShaderType::Compute },
+
+    //dxbc
+    { "vsb", renderer::ShaderType::Vertex },
+    { "psb", renderer::ShaderType::Fragment },
+    { "csb", renderer::ShaderType::Compute },
 };
 
 #if defined(PLATFORM_WINDOWS)
@@ -54,7 +58,7 @@ Resource* ShaderHLSLDecoder::decode(const stream::Stream* stream, const std::str
 
         auto isHLSL = [](renderer::ShaderHeader::ShaderModel model) -> bool
         {
-            return model == renderer::ShaderHeader::ShaderModel::HLSL_5_0 || model == renderer::ShaderHeader::ShaderModel::HLSL_5_1;
+            return model == renderer::ShaderHeader::ShaderModel::Default ||model == renderer::ShaderHeader::ShaderModel::HLSL_5_0 || model == renderer::ShaderHeader::ShaderModel::HLSL_5_1;
         };
 
         if (!isHLSL(m_header._shaderModel))
@@ -316,14 +320,101 @@ Resource* ShaderHLSLDecoder::decode(const stream::Stream* stream, const std::str
             utils::Timer timer;
             timer.start();
 #endif
-            //TODO binary data
+
+            ID3DBlob* binaryShader = nullptr;
+            HRESULT result = D3DCreateBlob(stream->size(), &binaryShader);
+            if (FAILED(result))
+            {
+                LOG_ERROR("ShaderHLSLDecoder::decode Can't create binary blob [%s]", name.c_str());
+                return nullptr;
+            }
+            
+            stream->read(binaryShader->GetBufferPointer(), binaryShader->GetBufferSize());
+            
+#if (DEBUG & D3D_DEBUG)
+            {
+                ID3DBlob* disassembleShader = nullptr;
+
+                ASSERT(binaryShader, "nullptr");
+                UINT flags = D3D_DISASM_ENABLE_INSTRUCTION_OFFSET;
+                HRESULT result = D3DDisassemble(binaryShader->GetBufferPointer(), binaryShader->GetBufferSize(), flags, "", &disassembleShader);
+                if (SUCCEEDED(result))
+                {
+                    std::string disassembleShaderCode(reinterpret_cast<c8*>(disassembleShader->GetBufferSize(), disassembleShader->GetBufferPointer()));
+                    LOG_DEBUG("Disassemble [%s]: \n %s", name.c_str(), disassembleShaderCode.c_str());
+                }
+
+                if (disassembleShader)
+                {
+                    disassembleShader->Release();
+                }
+            }
+#endif
+
 #if DEBUG
             timer.stop();
             u64 time = timer.getTime<utils::Timer::Duration_MilliSeconds>();
             LOG_DEBUG("ShaderSpirVDecoder::decode, shader %s, is loaded. Time %.4f sec", name.c_str(), static_cast<f32>(time) / 1000.0f);
 #endif
-            ASSERT(false, "not impl");
-            return nullptr;
+
+            auto getShaderTypeFromName = [](const std::string& name) -> renderer::ShaderType
+            {
+                std::string fileExtension = stream::FileLoader::getFileExtension(name);
+                auto result = k_HLSL_ExtensionList.find(fileExtension);
+                if (result == k_HLSL_ExtensionList.cend())
+                {
+                    return renderer::ShaderType::Undefined;
+                }
+
+                switch (result->second)
+                {
+                case renderer::ShaderType::Vertex:
+                    return renderer::ShaderType::Vertex;
+
+                case renderer::ShaderType::Fragment:
+                    return renderer::ShaderType::Fragment;
+
+                case renderer::ShaderType::Compute:
+                    return renderer::ShaderType::Compute;
+                }
+
+                return renderer::ShaderType::Undefined;
+            };
+
+            renderer::ShaderHeader* resourceHeader = new renderer::ShaderHeader(m_header);
+            resourceHeader->_type = getShaderTypeFromName(name);
+            resourceHeader->_shaderModel = renderer::ShaderHeader::ShaderModel::HLSL_5_1;
+#if DEBUG
+            resourceHeader->_debugName = name;
+#endif
+            u32 bytecodeSize = static_cast<u32>(binaryShader->GetBufferSize());
+            stream::Stream* resourceBinary = stream::StreamManager::createMemoryStream(nullptr, bytecodeSize + sizeof(u32) + sizeof(bool));
+            resourceBinary->write<u32>(bytecodeSize);
+            resourceBinary->write(binaryShader->GetBufferPointer(), bytecodeSize);
+
+            resourceBinary->write<bool>(m_reflections);
+
+            m_version = 51; //must be SM51 or SM50
+            if (m_reflections)
+            {
+                if (!reflect(binaryShader, resourceBinary, m_version))
+                {
+                    LOG_ERROR("ShaderHLSLDecoder::decode relect parse is failed. Shader %s", name.c_str());
+
+                    binaryShader->Release();
+
+                    delete resourceHeader;
+                    delete resourceBinary;
+
+                    return nullptr;
+                }
+            }
+
+            Resource* resource = new renderer::Shader(resourceHeader);
+            resource->init(resourceBinary);
+
+            binaryShader->Release();
+            return resource;
         }
     }
 

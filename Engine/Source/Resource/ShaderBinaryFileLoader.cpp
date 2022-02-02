@@ -8,6 +8,10 @@
 #   include "ShaderSpirVDecoder.h"
 #endif //USE_SPIRV
 
+#if D3D_RENDER
+#   include "ShaderHLSLDecoder.h"
+#endif //D3D_RENDER
+
 namespace v3d
 {
 namespace resource
@@ -31,6 +35,22 @@ ShaderBinaryFileLoader::ShaderBinaryFileLoader(const renderer::Context* context,
 #else //USE_SPIRV
         ASSERT(false, "not implemented");
 #endif //USE_SPIRV
+    }
+    else if (context->getRenderType() == renderer::Context::RenderType::DirectXRender)
+    {
+#ifdef D3D_RENDER
+        {
+            renderer::ShaderHeader header;
+            header._contentType = renderer::ShaderHeader::ShaderResource::Bytecode;
+            header._shaderModel = renderer::ShaderHeader::ShaderModel::Default;
+            header._optLevel = 0;
+            ASSERT(defines.empty(), "cant use defines, should be finaly compiled already");
+
+            ResourceDecoderRegistration::registerDecoder(new ShaderHLSLDecoder({ "vsb", "psb", "csb" }, header, !(flags & ShaderBinaryBuildFlag::ShaderBinary_DontUseReflaction)));
+        }
+#else //D3D_RENDER
+        ASSERT(false, "not implemented");
+#endif //D3D_RENDER
     }
 
     ResourceLoader::registerRoot("");
