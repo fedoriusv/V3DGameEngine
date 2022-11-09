@@ -3,10 +3,10 @@
 #include "Common.h"
 #include "Renderer/CommandList.h"
 
-#include "Renderer/Object/ShaderProgram.h"
-#include "Renderer/Object/PipelineState.h"
-#include "Renderer/Object/RenderTargetState.h"
-#include "Renderer/Object/StreamBuffer.h"
+#include "Renderer/ShaderProgram.h"
+#include "Renderer/PipelineState.h"
+#include "Renderer/RenderTargetState.h"
+#include "Renderer/StreamBuffer.h"
 
 #include "Scene/CameraArcballHelper.h"
 

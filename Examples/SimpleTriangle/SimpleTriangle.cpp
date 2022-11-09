@@ -1,7 +1,7 @@
 #include "SimpleTriangle.h"
 
 #include "Renderer/Shader.h"
-#include "Renderer/Object/Texture.h"
+#include "Renderer/Texture.h"
 
 #include "Resource/ResourceLoaderManager.h"
 #include "Resource/ShaderSourceStreamLoader.h"

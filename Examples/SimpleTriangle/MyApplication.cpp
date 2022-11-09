@@ -1,12 +1,12 @@
 #include "MyApplication.h"
 #include "Utils/Logger.h"
 
-#include "Renderer/Context.h"
+#include "Renderer/Core/Context.h"
 #include "Event/InputEventReceiver.h"
 #include "Platform/Window.h"
 
-#include "Renderer/Object/Texture.h"
-#include "Renderer/Object/RenderTargetState.h"
+#include "Renderer/Texture.h"
+#include "Renderer/RenderTargetState.h"
 #include "Renderer/Formats.h"
 
 using namespace v3d;
