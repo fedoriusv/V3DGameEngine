@@ -175,8 +175,8 @@ file(GLOB EVENT_HEADERS ${SOURCE_DIR}/Event/*.h)
 file(GLOB EVENT_SOURCES ${SOURCE_DIR}/Event/*.cpp)
 file(GLOB RENDERER_HEADERS ${SOURCE_DIR}/Renderer/*.h)
 file(GLOB RENDERER_SOURCES ${SOURCE_DIR}/Renderer/*.cpp)
-file(GLOB RENDER_OBJECT_HEADERS ${SOURCE_DIR}/Renderer/Object/*.h)
-file(GLOB RENDER_OBJECT_SOURCES ${SOURCE_DIR}/Renderer/Object/*.cpp)
+file(GLOB RENDER_CORE_HEADERS ${SOURCE_DIR}/Renderer/Core/*.h)
+file(GLOB RENDER_CORE_SOURCES ${SOURCE_DIR}/Renderer/Core/*.cpp)
 file(GLOB RESOURCE_HEADERS ${SOURCE_DIR}/Resource/*.h)
 file(GLOB RESOURCE_SOURCES ${SOURCE_DIR}/Resource/*.cpp)
 file(GLOB STREAM_HEADERS ${SOURCE_DIR}/Stream/*.h)
@@ -195,13 +195,13 @@ elseif(TARGET_ANDROID)
 endif()
 
 if (BUILD_VULKAN_SDK)
-    file(GLOB VULKAN_HEADERS ${SOURCE_DIR}/Renderer/Vulkan/*.h)
-    file(GLOB VULKAN_SOURCES ${SOURCE_DIR}/Renderer/Vulkan/*.cpp)
+    file(GLOB VULKAN_HEADERS ${SOURCE_DIR}/Renderer/Core/Vulkan/*.h)
+    file(GLOB VULKAN_SOURCES ${SOURCE_DIR}/Renderer/Core/Vulkan/*.cpp)
 endif()
 
 if(BUILD_DIRECTX_SDK)
-    file(GLOB DIRECTX_HEADERS ${SOURCE_DIR}/Renderer/D3D12/*.h)
-    file(GLOB DIRECTX_SOURCES ${SOURCE_DIR}/Renderer/D3D12/*.cpp)
+    file(GLOB DIRECTX_HEADERS ${SOURCE_DIR}/Renderer/Core/D3D12/*.h)
+    file(GLOB DIRECTX_SOURCES ${SOURCE_DIR}/Renderer/Core/D3D12/*.cpp)
 endif()
 ##############################################################
 
@@ -213,17 +213,17 @@ source_group("Platform" FILES ${COMMON_PLATFORM_HEADERS} ${COMMON_PLATFORM_SOURC
 source_group("Utils" FILES ${UTILS_HEADERS} ${UTILS_SOURCES})
 source_group("Event" FILES ${EVENT_HEADERS} ${EVENT_SOURCES})
 source_group("Renderer" FILES ${RENDERER_HEADERS} ${RENDERER_SOURCES})
-source_group("Renderer\\Object" FILES ${RENDER_OBJECT_HEADERS} ${RENDER_OBJECT_SOURCES})
+source_group("Renderer\\Core" FILES ${RENDER_CORE_HEADERS} ${RENDER_CORE_SOURCES})
 source_group("Resource" FILES ${RESOURCE_HEADERS} ${RESOURCE_SOURCES})
 source_group("Stream" FILES ${STREAM_HEADERS} ${STREAM_SOURCES})
 source_group("Scene" FILES ${SCENE_HEADERS} ${SCENE_SOURCES})
 
 if(BUILD_VULKAN_SDK)
-    source_group("Renderer\\Vulkan" FILES ${VULKAN_HEADERS} ${VULKAN_SOURCES})
+    source_group("Renderer\\Core\\Vulkan" FILES ${VULKAN_HEADERS} ${VULKAN_SOURCES})
 endif()
 
 if(BUILD_DIRECTX_SDK)
-    source_group("Renderer\\D3D12" FILES ${DIRECTX_HEADERS} ${DIRECTX_SOURCES})
+    source_group("Renderer\\Core\\D3D12" FILES ${DIRECTX_HEADERS} ${DIRECTX_SOURCES})
 endif()
 
 add_library(${ENGINE_NAME} STATIC 
@@ -234,7 +234,7 @@ add_library(${ENGINE_NAME} STATIC
     ${UTILS_HEADERS} ${UTILS_SOURCES}
     ${EVENT_HEADERS} ${EVENT_SOURCES}
     ${RENDERER_HEADERS} ${RENDERER_SOURCES}
-    ${RENDER_OBJECT_HEADERS} ${RENDER_OBJECT_SOURCES}
+    ${RENDER_CORE_HEADERS} ${RENDER_CORE_SOURCES}
     ${RESOURCE_HEADERS} ${RESOURCE_SOURCES}
     ${STREAM_HEADERS} ${STREAM_SOURCES}
     ${SCENE_HEADERS} ${SCENE_SOURCES}
