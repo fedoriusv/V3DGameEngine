@@ -1054,7 +1054,8 @@ bool D3DImage::create()
 #if D3D_DEBUG
     LOG_DEBUG("CreateCommittedResource: Image [Size %u : %u : %u]; flags %u; format %s", textureDesc.Width, textureDesc.Height, textureDesc.DepthOrArraySize, textureDesc.Flags, ImageFormatStringDX(textureDesc.Format).c_str());
 #endif
-    HRESULT result = m_device->CreateCommittedResource(&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT), D3D12_HEAP_FLAG_NONE, &textureDesc, m_state.front(), optimizedClearValue, DX_IID_PPV_ARGS(&m_resource));
+    const CD3DX12_HEAP_PROPERTIES resourceDesc(D3D12_HEAP_TYPE_DEFAULT);
+    HRESULT result = m_device->CreateCommittedResource(&resourceDesc, D3D12_HEAP_FLAG_NONE, &textureDesc, m_state.front(), optimizedClearValue, DX_IID_PPV_ARGS(&m_resource));
     if (FAILED(result))
     {
         LOG_ERROR("D3DImage::create CreateCommittedResource is failed. Error %s", D3DDebug::stringError(result).c_str());
@@ -1473,7 +1474,8 @@ bool D3DImage::internalUpdate(Context* context, const core::Dimension3D& offsets
     std::vector<D3D12_PLACED_SUBRESOURCE_FOOTPRINT> subResourceFootPrints(subResourceCount);
     std::vector<UINT> subResourcesNumRows(subResourceCount);
     std::vector<UINT64> subResourcesNumRowsSize(subResourceCount);
-    m_device->GetCopyableFootprints(&m_resource->GetDesc(), 0, static_cast<UINT>(subResources.size()), 0, subResourceFootPrints.data(), subResourcesNumRows.data(), subResourcesNumRowsSize.data(), &uploadBufferSize);
+    const D3D12_RESOURCE_DESC resourceDesc = m_resource->GetDesc();
+    m_device->GetCopyableFootprints(&resourceDesc, 0, static_cast<UINT>(subResources.size()), 0, subResourceFootPrints.data(), subResourcesNumRows.data(), subResourcesNumRowsSize.data(), &uploadBufferSize);
 
 
     D3DBuffer* copyBuffer = new D3DBuffer(m_device, Buffer::BufferType::BufferType_StagingBuffer, StreamBufferUsage::StreamBuffer_Read, uploadBufferSize, "UploadBufferResource");

@@ -6,6 +6,7 @@
 #ifdef D3D_RENDER
 #include "D3DConfiguration.h"
 #include "D3DImage.h"
+#include "D3DDeviceCaps.h"
 
 namespace v3d
 {

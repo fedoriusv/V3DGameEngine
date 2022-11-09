@@ -51,6 +51,7 @@ namespace dx3d
         D3DDebugLayerMessageCallback(const D3DDebugLayerMessageCallback&) = delete;
         ~D3DDebugLayerMessageCallback();
 
+        //Compatible with Windows SDK 10.0.20348. Make sure you have a proper version.
         bool registerMessageCallback(D3D12MessageFunc callbackFunc, D3D12_MESSAGE_CALLBACK_FLAGS flags, void* userData = nullptr);
         bool unregisterMessageCallback();
 

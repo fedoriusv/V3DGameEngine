@@ -205,7 +205,8 @@ bool D3DBuffer::upload(Context* context, u32 offset, u64 size, const void* data)
         UINT subResourceNumRows = 0;
         UINT64 subResourceNumRowsSize = 0;
         UINT64 uploadBufferSize = 0;
-        m_device->GetCopyableFootprints(&m_resource->GetDesc(), 0, 1, 0, &subResourceFootPrint, &subResourceNumRows, &subResourceNumRowsSize, &uploadBufferSize);
+        const D3D12_RESOURCE_DESC resourceDesc = m_resource->GetDesc();
+        m_device->GetCopyableFootprints(&resourceDesc, 0, 1, 0, &subResourceFootPrint, &subResourceNumRows, &subResourceNumRowsSize, &uploadBufferSize);
         ASSERT(uploadBufferSize == m_size, "must be same");
 
         D3D12_SUBRESOURCE_DATA subresourceData =
