@@ -15,6 +15,7 @@ namespace resource
     /**
     * @brief ImageGLiDecoder decoder.
     * Support formats: "ktx", "kmg", "dds"
+    * @see: https://github.com/g-truc/gli.git
     */
     class ImageGLiDecoder final : public ResourceDecoder
     {

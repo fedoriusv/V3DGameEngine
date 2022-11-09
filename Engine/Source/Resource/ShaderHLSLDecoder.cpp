@@ -329,7 +329,7 @@ Resource* ShaderHLSLDecoder::decode(const stream::Stream* stream, const std::str
                 return nullptr;
             }
             
-            stream->read(binaryShader->GetBufferPointer(), binaryShader->GetBufferSize());
+            stream->read(binaryShader->GetBufferPointer(), static_cast<u32>(binaryShader->GetBufferSize()));
             
 #if (DEBUG & D3D_DEBUG)
             {

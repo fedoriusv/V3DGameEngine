@@ -7,7 +7,7 @@
 #include "Utils/Timer.h"
 
 #ifdef USE_GLI
-#   include "ThirdParty/gli/gli/gli.hpp"
+#   include "ThirdParty/gli/gli/gli.hpp" //Make sure glm is used from own folder
 #   include "ThirdParty/gli/gli/generate_mipmaps.hpp"
 
 namespace v3d
