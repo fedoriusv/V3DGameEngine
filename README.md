@@ -2,11 +2,11 @@
 V3DEngine 2.0 version<br/>
 
 Support render: Vulkan, DirectX<br/>
-Support platform: Windows, Android<br/>
+Support platform: Windows, Android, XBOX<br/>
 
 >Required:<br/>
->-- CMake 3.10<br/>
->-- C++17<br/>
+>-- CMake 3.10 or later<br/>
+>-- C++20<br/>
 
 ## Install
 ```
@@ -16,7 +16,8 @@ git clone --recursive https://github.com/fedoriusv/V3DGameEngine.git
 #### Windows
 ###### Build in Visual Studio:
 >Required:<br/>
->-- Visual Studio 16 2019 x64<br/>
+>-- Visual Studio 17 2022<br/>
+>-- Windows SDK 10.0.20348 or later(for DirectX)<br/>
 >-- Python 3 (for building SPIRV)<br/>
 
 To create Visual Studio project execute `project_msvc.bat`<br/>
@@ -47,18 +48,21 @@ visit: https://github.com/ARM-software/HWCPipe
 -------------------------------------------------  
 
 #### General
-Assimp(dae):<br/>
-For loading models used Assimp library, to enable it set option to ON in `CMakeLists.txt`<br/>
+Assimp (Release3.1):<br/>
+For loading models ang geometry. Supported formats: dae
+Set option to `ON` in `CMakeLists.txt` to enable<br/>
 
-STB (jpg, png, bmp, tga):<br/>
-Used for loading images, to enable it set option to ON in `CMakeLists.txt`<br/>
+STB (0.9.5.3):<br/>
+Uses for loading images. Supported formats: jpg, png, bmp, tga<br/>
+Set option to `ON` in `CMakeLists.txt` to enable<br/>
 
-gli (ktx, kmg, dds):<br/>
-Used for loading compressed images, to enable it set option to ON in `CMakeLists.txt`<br/>
+gli (0.8.2)<br/>
+Uses for loading compressed images, Supported formatd: ktx, kmg, dds<br/>
+Set option to `ON` in `CMakeLists.txt` to enable<br/>
 
 
 #### Vulkan
-To enable set `BUILD_VULKAN_SDK` to ON in `CMakeLists.txt` file.
+To enable vulkan API set `BUILD_VULKAN_SDK` to ON in `CMakeLists.txt` file.
 `VK_SDK_PATH` must be setted in system enviroments.<br/>
 For using SPIRV for Vulkan start file:<br/>
 Engine\Libs\spirv\install_[windows][android]_platform.bat<br/>
