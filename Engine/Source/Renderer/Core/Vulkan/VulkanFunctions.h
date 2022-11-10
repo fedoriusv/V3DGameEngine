@@ -344,6 +344,17 @@
 #   define ENUM_VK_ENTRYPOINTS_PLATFORM_FUNCTIONS(Macro)
 #endif //VK_NO_PROTOTYPES
 
+    //Renderpass2
+#ifdef VK_KHR_create_renderpass2
+#   define ENUM_VK_CREATE_RENDERPASS2_FUNCTIONS(Macro) \
+    Macro(vkCreateRenderPass2KHR) \
+    Macro(vkCmdBeginRenderPass2KHR) \
+    Macro(vkCmdNextSubpass2KHR) \
+    Macro(vkCmdEndRenderPass2KHR)
+#else
+#   define ENUM_VK_CREATE_RENDERPASS2_FUNCTIONS(Macro)
+#endif //VK_KHR_create_renderpass2
+
     //Debug Report
 #ifdef VK_EXT_debug_report
 #   define ENUM_VK_DEBUG_REPORT_FUNCTIONS(Macro) \
@@ -389,6 +400,7 @@
     ENUM_VK_ENTRYPOINTS_SURFACE_FUNCTIONS(Macro) \
     ENUM_VK_ENTRYPOINTS_SWAPCHAIN_FUNCTIONS(Macro) \
     ENUM_VK_ENTRYPOINTS_PLATFORM_FUNCTIONS(Macro) \
+    ENUM_VK_CREATE_RENDERPASS2_FUNCTIONS(Macro) \
     ENUM_VK_DEBUG_REPORT_FUNCTIONS(Macro) \
     ENUM_VK_DEBUG_UTILS_FUNCTIONS(Macro) \
     ENUM_VK_PIPELINE_EXECUTABLE_PROPERTIES_FUNCTIONS(Macro)

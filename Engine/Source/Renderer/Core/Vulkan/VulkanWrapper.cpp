@@ -750,7 +750,8 @@ void VulkanWrapper::CmdExecuteCommands(VkCommandBuffer commandBuffer, uint32_t c
     vkCmdExecuteCommands(commandBuffer, commandBufferCount, pCommandBuffers);
 }
 
-#ifdef VK_VERSION_1_1
+//VULKAN_VERSION_1_1
+#if (VULKAN_CURRENT_VERSION >= VULKAN_VERSION_1_1)
 VkResult VulkanWrapper::EnumerateInstanceVersion(uint32_t * pApiVersion) noexcept
 {
     return vkEnumerateInstanceVersion(pApiVersion);
@@ -1067,9 +1068,10 @@ void VulkanWrapper::GetDescriptorSetLayoutSupport(VkDevice device, const VkDescr
 #   undef vkGetDescriptorSetLayoutSupport
 #endif
 }
-#endif //VK_VERSION_1_1
+#endif //VULKAN_CURRENT_VERSION >= VULKAN_VERSION_1_1
 
-#ifdef VK_VERSION_1_2
+//VULKAN_VERSION_1_2
+#if (VULKAN_CURRENT_VERSION >= VULKAN_VERSION_1_2)
 void VulkanWrapper::CmdDrawIndirectCount(VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset, VkBuffer countBuffer, VkDeviceSize countBufferOffset, uint32_t maxDrawCount, uint32_t stride) noexcept
 {
 #if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_2)
@@ -1207,31 +1209,30 @@ uint64_t VulkanWrapper::GetDeviceMemoryOpaqueCaptureAddress(VkDevice device, con
 #endif
 }
 
-#else
+#else //VULKAN_CURRENT_VERSION >= VULKAN_VERSION_1_2
 
 #ifdef VK_KHR_create_renderpass2
 VkResult VulkanWrapper::CreateRenderPass2(VkDevice device, const VkRenderPassCreateInfo2KHR* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkRenderPass* pRenderPass) noexcept
 {
-    //return vkCreateRenderPass2KHR(device, pCreateInfo, pAllocator, pRenderPass);
-    return VK_RESULT_MAX_ENUM;
+    return vkCreateRenderPass2KHR(device, pCreateInfo, pAllocator, pRenderPass);
 }
 
 void VulkanWrapper::CmdBeginRenderPass2(VkCommandBuffer commandBuffer, const VkRenderPassBeginInfo* pRenderPassBegin, const VkSubpassBeginInfoKHR* pSubpassBeginInfo) noexcept
 {
-    //vkCmdBeginRenderPass2KHR(commandBuffer, pRenderPassBegin, pSubpassBeginInfo);
+    vkCmdBeginRenderPass2KHR(commandBuffer, pRenderPassBegin, pSubpassBeginInfo);
 }
 
 void VulkanWrapper::CmdNextSubpass2(VkCommandBuffer commandBuffer, const VkSubpassBeginInfoKHR* pSubpassBeginInfo, const VkSubpassEndInfoKHR* pSubpassEndInfo) noexcept
 {
-    //vkCmdNextSubpass2KHR(commandBuffer, pSubpassBeginInfo, pSubpassEndInfo);
+    vkCmdNextSubpass2KHR(commandBuffer, pSubpassBeginInfo, pSubpassEndInfo);
 }
 
 void VulkanWrapper::CmdEndRenderPass2(VkCommandBuffer commandBuffer, const VkSubpassEndInfoKHR* pSubpassEndInfo) noexcept
 {
-    //vkCmdEndRenderPass2KHR(commandBuffer, pSubpassEndInfo);
+    vkCmdEndRenderPass2KHR(commandBuffer, pSubpassEndInfo);
 }
 #endif //VK_KHR_create_renderpass2
-#endif //VK_VERSION_1_2
+#endif //VULKAN_CURRENT_VERSION >= VULKAN_VERSION_1_2
 
 #ifdef VK_KHR_surface
 void VulkanWrapper::DestroySurface(VkInstance instance, VkSurfaceKHR surface, const VkAllocationCallbacks * pAllocator) noexcept
