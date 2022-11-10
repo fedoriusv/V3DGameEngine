@@ -1,4 +1,4 @@
-// V3D Engine 2018-2021 Fred Nekrasov
+// V3D Engine 2018-2022 Fred Nekrasov
 #pragma once
 
 //Version 2.0.0
@@ -19,8 +19,8 @@
 
 #if defined(_WIN64) && _WIN64
 #   define PLATFORM_WINDOWS
-#   if defined(_MSC_VER) && (_MSC_VER < 1920)
-#       error "Only Microsoft Visual Studio 2019 RTW (16.0) and later are supported."
+#   if defined(_MSC_VER) && (_MSC_VER < 1930)
+#       error "Only Microsoft Visual Studio 2022 (17.0.1) and later are supported."
 #   endif
 
 #   pragma warning(disable: 26812)
@@ -91,6 +91,7 @@
 #   define VULKAN_VERSION_1_0 VULKAN_MAKE_VERSION(1, 0)
 #   define VULKAN_VERSION_1_1 VULKAN_MAKE_VERSION(1, 1)
 #   define VULKAN_VERSION_1_2 VULKAN_MAKE_VERSION(1, 2)
+#   define VULKAN_VERSION_1_3 VULKAN_MAKE_VERSION(1, 3)
 
 #   define VULKAN_CURRENT_VERSION VULKAN_MAKE_VERSION(VULKAN_VERSION_MAJOR, VULKAN_VERSION_MINOR)
 #endif //VULKAN_RENDER
