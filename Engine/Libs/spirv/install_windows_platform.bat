@@ -3,7 +3,7 @@
 REM vcvarsall.bat find it here: C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Auxiliary\Build
 
 setlocal
-set VS_VERSION="Visual Studio 16 2019"
+set VS_VERSION="Visual Studio 17 2022"
 
 if not exist shaderc (
 	git clone https://github.com/google/shaderc.git

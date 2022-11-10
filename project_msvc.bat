@@ -1,7 +1,7 @@
 @echo off
 
 setlocal
-set VS_VERSION="Visual Studio 16 2019"
+set VS_VERSION="Visual Studio 17 2022"
 
 if not exist Project\Win64 mkdir Project\Win64
 cd Project\Win64
