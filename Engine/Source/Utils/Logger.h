@@ -93,6 +93,8 @@ namespace utils
         bool m_immediateFlush;
         std::vector<std::string> m_fileBuffer;
 
+        std::recursive_mutex m_mutex;
+
         const static std::string s_loggerType[Logger::LoggerCount];
     };
 

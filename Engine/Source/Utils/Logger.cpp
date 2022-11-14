@@ -67,6 +67,8 @@ Logger::~Logger()
 
 void Logger::createLogFile(const std::string& fileName)
 {
+    std::lock_guard lock(m_mutex);
+
     m_logFilename = fileName;
 
     m_file.open(m_logFilename, std::ofstream::out);
@@ -76,6 +78,8 @@ void Logger::createLogFile(const std::string& fileName)
 
 void Logger::log(LoggerType type, u16 maskOut, const char* format, ...)
 {
+    std::lock_guard lock(m_mutex);
+
     if (m_level > type)
     {
         return;
@@ -103,21 +107,29 @@ void Logger::log(LoggerType type, u16 maskOut, const char* format, ...)
 
 void Logger::flush()
 {
+    std::lock_guard lock(m_mutex);
+
     logFlushToFile();
 }
 
 void Logger::setLogLevel(LoggerType type)
 {
+    std::lock_guard lock(m_mutex);
+
     m_level = type;
 }
 
 void Logger::setImmediateFlushToFile(bool immediate)
 {
+    std::lock_guard lock(m_mutex);
+
     m_immediateFlush = immediate;
 }
 
 void Logger::log(const std::string& message, LoggerType type, u16 maskOut)
 {
+    std::lock_guard lock(m_mutex);
+
     if (m_level > type)
     {
         return;
@@ -159,6 +171,8 @@ void Logger::log(const std::string& message, LoggerType type, u16 maskOut)
 
 void Logger::destroyLogFile()
 {
+    std::lock_guard lock(m_mutex);
+
     if (m_file.is_open())
     {
         m_file.close();
