@@ -14,6 +14,7 @@ namespace platform
 
         static core::Point2D getCursorPosition();
         static void setCursorPostion(const core::Point2D& point);
+        static bool setThreadName(std::thread& thread, const std::string& name);
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
