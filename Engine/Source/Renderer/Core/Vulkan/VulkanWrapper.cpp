@@ -5,6 +5,9 @@
 #ifdef VULKAN_RENDER
 #include "VulkanDebug.h"
 
+//Some old hardware require this
+#define FORCE_DISABLE_FUNCTIONALITY_VULKAN_1_2 0
+
 namespace v3d
 {
 namespace renderer
@@ -751,7 +754,7 @@ void VulkanWrapper::CmdExecuteCommands(VkCommandBuffer commandBuffer, uint32_t c
 }
 
 //VULKAN_VERSION_1_1
-#if (VULKAN_CURRENT_VERSION >= VULKAN_VERSION_1_1)
+#ifdef VULKAN_VERSION_1_1
 VkResult VulkanWrapper::EnumerateInstanceVersion(uint32_t * pApiVersion) noexcept
 {
     return vkEnumerateInstanceVersion(pApiVersion);
@@ -1068,12 +1071,13 @@ void VulkanWrapper::GetDescriptorSetLayoutSupport(VkDevice device, const VkDescr
 #   undef vkGetDescriptorSetLayoutSupport
 #endif
 }
-#endif //VULKAN_CURRENT_VERSION >= VULKAN_VERSION_1_1
+#endif //VULKAN_VERSION_1_1
 
 //VULKAN_VERSION_1_2
-#if (VULKAN_CURRENT_VERSION >= VULKAN_VERSION_1_2)
+#ifdef VULKAN_VERSION_1_2
 void VulkanWrapper::CmdDrawIndirectCount(VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset, VkBuffer countBuffer, VkDeviceSize countBufferOffset, uint32_t maxDrawCount, uint32_t stride) noexcept
 {
+#if !FORCE_DISABLE_FUNCTIONALITY_VULKAN_1_2
 #if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_2)
 #   define vkCmdDrawIndirectCount vkCmdDrawIndirectCountKHR
 #endif
@@ -1081,10 +1085,14 @@ void VulkanWrapper::CmdDrawIndirectCount(VkCommandBuffer commandBuffer, VkBuffer
 #if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_2)
 #   undef vkCmdDrawIndirectCount
 #endif
+#else
+    NOT_IMPL;
+#endif //FORCE_DISABLE_FUNCTIONALITY_VULKAN_1_2
 }
 
 void VulkanWrapper::CmdDrawIndexedIndirectCount(VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset, VkBuffer countBuffer, VkDeviceSize countBufferOffset, uint32_t maxDrawCount, uint32_t stride) noexcept
 {
+#if !FORCE_DISABLE_FUNCTIONALITY_VULKAN_1_2
 #if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_2)
 #   define vkCmdDrawIndexedIndirectCount vkCmdDrawIndexedIndirectCountKHR
 #endif
@@ -1092,10 +1100,14 @@ void VulkanWrapper::CmdDrawIndexedIndirectCount(VkCommandBuffer commandBuffer, V
 #if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_2)
 #   undef vkCmdDrawIndexedIndirectCount
 #endif
+#else
+    NOT_IMPL;
+#endif //FORCE_DISABLE_FUNCTIONALITY_VULKAN_1_2
 }
 
 VkResult VulkanWrapper::CreateRenderPass2(VkDevice device, const VkRenderPassCreateInfo2* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkRenderPass* pRenderPass) noexcept
 {
+#if !FORCE_DISABLE_FUNCTIONALITY_VULKAN_1_2
 #if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_2)
 #   define vkCreateRenderPass2 vkCreateRenderPass2KHR
 #endif
@@ -1103,10 +1115,15 @@ VkResult VulkanWrapper::CreateRenderPass2(VkDevice device, const VkRenderPassCre
 #if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_2)
 #   undef vkCreateRenderPass2
 #endif
+#else
+    NOT_IMPL;
+    return VK_RESULT_MAX_ENUM;
+#endif //FORCE_DISABLE_FUNCTIONALITY_VULKAN_1_2
 }
 
 void VulkanWrapper::CmdBeginRenderPass2(VkCommandBuffer commandBuffer, const VkRenderPassBeginInfo* pRenderPassBegin, const VkSubpassBeginInfo* pSubpassBeginInfo) noexcept
 {
+#if !FORCE_DISABLE_FUNCTIONALITY_VULKAN_1_2
 #if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_2)
 #   define vkCmdBeginRenderPass2 vkCmdBeginRenderPass2KHR
 #endif
@@ -1114,10 +1131,14 @@ void VulkanWrapper::CmdBeginRenderPass2(VkCommandBuffer commandBuffer, const VkR
 #if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_2)
 #   undef vkCmdBeginRenderPass2
 #endif
+#else
+    NOT_IMPL;
+#endif //FORCE_DISABLE_FUNCTIONALITY_VULKAN_1_2
 }
 
 void VulkanWrapper::CmdNextSubpass2(VkCommandBuffer commandBuffer, const VkSubpassBeginInfo* pSubpassBeginInfo, const VkSubpassEndInfo* pSubpassEndInfo) noexcept
 {
+#if !FORCE_DISABLE_FUNCTIONALITY_VULKAN_1_2
 #if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_2)
 #   define vkCmdNextSubpass2 vkCmdNextSubpass2KHR
 #endif
@@ -1125,10 +1146,14 @@ void VulkanWrapper::CmdNextSubpass2(VkCommandBuffer commandBuffer, const VkSubpa
 #if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_2)
 #   undef vkCmdNextSubpass2
 #endif
+#else
+    NOT_IMPL;
+#endif //FORCE_DISABLE_FUNCTIONALITY_VULKAN_1_2
 }
 
 void VulkanWrapper::CmdEndRenderPass2(VkCommandBuffer commandBuffer, const VkSubpassEndInfo* pSubpassEndInfo) noexcept
 {
+#if !FORCE_DISABLE_FUNCTIONALITY_VULKAN_1_2
 #if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_2)
 #   define vkCmdEndRenderPass2 vkCmdEndRenderPass2KHR
 #endif
@@ -1136,15 +1161,23 @@ void VulkanWrapper::CmdEndRenderPass2(VkCommandBuffer commandBuffer, const VkSub
 #if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_2)
 #   undef vkCmdEndRenderPass2
 #endif
+#else
+    NOT_IMPL;
+#endif //FORCE_DISABLE_FUNCTIONALITY_VULKAN_1_2
 }
 
 void VulkanWrapper::ResetQueryPool(VkDevice device, VkQueryPool queryPool, uint32_t firstQuery, uint32_t queryCount) noexcept
 {
+#if !FORCE_DISABLE_FUNCTIONALITY_VULKAN_1_2
     vkResetQueryPool(device, queryPool, firstQuery, queryCount);
+#else
+    NOT_IMPL;
+#endif //FORCE_DISABLE_FUNCTIONALITY_VULKAN_1_2
 }
 
 VkResult VulkanWrapper::GetSemaphoreCounterValue(VkDevice device, VkSemaphore semaphore, uint64_t* pValue) noexcept
 {
+#if !FORCE_DISABLE_FUNCTIONALITY_VULKAN_1_2
 #if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_2)
 #   define vkGetSemaphoreCounterValue vkGetSemaphoreCounterValueKHR
 #endif
@@ -1152,10 +1185,15 @@ VkResult VulkanWrapper::GetSemaphoreCounterValue(VkDevice device, VkSemaphore se
 #if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_2)
 #   undef vkGetSemaphoreCounterValue
 #endif
+#else
+    NOT_IMPL;
+    return VK_RESULT_MAX_ENUM;
+#endif //FORCE_DISABLE_FUNCTIONALITY_VULKAN_1_2
 }
 
 VkResult VulkanWrapper::WaitSemaphores(VkDevice device, const VkSemaphoreWaitInfo* pWaitInfo, uint64_t timeout) noexcept
 {
+#if !FORCE_DISABLE_FUNCTIONALITY_VULKAN_1_2
 #if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_2)
 #   define vkWaitSemaphores vkWaitSemaphoresKHR
 #endif
@@ -1163,10 +1201,15 @@ VkResult VulkanWrapper::WaitSemaphores(VkDevice device, const VkSemaphoreWaitInf
 #if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_2)
 #   undef vkWaitSemaphores
 #endif
+#else
+    NOT_IMPL;
+    return VK_RESULT_MAX_ENUM;
+#endif //FORCE_DISABLE_FUNCTIONALITY_VULKAN_1_2
 }
 
 VkResult VulkanWrapper::SignalSemaphore(VkDevice device, const VkSemaphoreSignalInfo* pSignalInfo) noexcept
 {
+#if !FORCE_DISABLE_FUNCTIONALITY_VULKAN_1_2
 #if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_2)
 #   define vkSignalSemaphore vkSignalSemaphoreKHR
 #endif
@@ -1174,10 +1217,15 @@ VkResult VulkanWrapper::SignalSemaphore(VkDevice device, const VkSemaphoreSignal
 #if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_2)
 #   undef vkSignalSemaphore
 #endif
+#else
+    NOT_IMPL;
+    return VK_RESULT_MAX_ENUM;
+#endif //FORCE_DISABLE_FUNCTIONALITY_VULKAN_1_2
 }
 
 VkDeviceAddress VulkanWrapper::GetBufferDeviceAddress(VkDevice device, const VkBufferDeviceAddressInfo* pInfo) noexcept
 {
+#if !FORCE_DISABLE_FUNCTIONALITY_VULKAN_1_2
 #if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_2)
 #   define vkGetBufferDeviceAddress vkGetBufferDeviceAddressKHR
 #endif
@@ -1185,10 +1233,15 @@ VkDeviceAddress VulkanWrapper::GetBufferDeviceAddress(VkDevice device, const VkB
 #if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_2)
 #   undef vkGetBufferDeviceAddress
 #endif
+#else
+    NOT_IMPL;
+    return 0;
+#endif //FORCE_DISABLE_FUNCTIONALITY_VULKAN_1_2
 }
 
 uint64_t VulkanWrapper::GetBufferOpaqueCaptureAddress(VkDevice device, const VkBufferDeviceAddressInfo* pInfo) noexcept
 {
+#if !FORCE_DISABLE_FUNCTIONALITY_VULKAN_1_2
 #if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_2)
 #   define vkGetBufferOpaqueCaptureAddress vkGetBufferOpaqueCaptureAddressKHR
 #endif
@@ -1196,10 +1249,15 @@ uint64_t VulkanWrapper::GetBufferOpaqueCaptureAddress(VkDevice device, const VkB
 #if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_2)
 #   undef vkGetBufferOpaqueCaptureAddress
 #endif
+#else
+    NOT_IMPL;
+    return 0;
+#endif //FORCE_DISABLE_FUNCTIONALITY_VULKAN_1_2
 }
 
 uint64_t VulkanWrapper::GetDeviceMemoryOpaqueCaptureAddress(VkDevice device, const VkDeviceMemoryOpaqueCaptureAddressInfo* pInfo) noexcept
 {
+#if !FORCE_DISABLE_FUNCTIONALITY_VULKAN_1_2
 #if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_2)
 #   define vkGetDeviceMemoryOpaqueCaptureAddress vkGetDeviceMemoryOpaqueCaptureAddressKHR
 #endif
@@ -1207,32 +1265,12 @@ uint64_t VulkanWrapper::GetDeviceMemoryOpaqueCaptureAddress(VkDevice device, con
 #if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_2)
 #   undef vkGetDeviceMemoryOpaqueCaptureAddress
 #endif
+#else
+    NOT_IMPL;
+    return 0;
+#endif //FORCE_DISABLE_FUNCTIONALITY_VULKAN_1_2
 }
-
-#else //VULKAN_CURRENT_VERSION >= VULKAN_VERSION_1_2
-
-#ifdef VK_KHR_create_renderpass2
-VkResult VulkanWrapper::CreateRenderPass2(VkDevice device, const VkRenderPassCreateInfo2KHR* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkRenderPass* pRenderPass) noexcept
-{
-    return vkCreateRenderPass2KHR(device, pCreateInfo, pAllocator, pRenderPass);
-}
-
-void VulkanWrapper::CmdBeginRenderPass2(VkCommandBuffer commandBuffer, const VkRenderPassBeginInfo* pRenderPassBegin, const VkSubpassBeginInfoKHR* pSubpassBeginInfo) noexcept
-{
-    vkCmdBeginRenderPass2KHR(commandBuffer, pRenderPassBegin, pSubpassBeginInfo);
-}
-
-void VulkanWrapper::CmdNextSubpass2(VkCommandBuffer commandBuffer, const VkSubpassBeginInfoKHR* pSubpassBeginInfo, const VkSubpassEndInfoKHR* pSubpassEndInfo) noexcept
-{
-    vkCmdNextSubpass2KHR(commandBuffer, pSubpassBeginInfo, pSubpassEndInfo);
-}
-
-void VulkanWrapper::CmdEndRenderPass2(VkCommandBuffer commandBuffer, const VkSubpassEndInfoKHR* pSubpassEndInfo) noexcept
-{
-    vkCmdEndRenderPass2KHR(commandBuffer, pSubpassEndInfo);
-}
-#endif //VK_KHR_create_renderpass2
-#endif //VULKAN_CURRENT_VERSION >= VULKAN_VERSION_1_2
+#endif //VULKAN_VERSION_1_2
 
 #ifdef VK_KHR_surface
 void VulkanWrapper::DestroySurface(VkInstance instance, VkSurfaceKHR surface, const VkAllocationCallbacks * pAllocator) noexcept
