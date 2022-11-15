@@ -20,6 +20,7 @@
 #include <thread>
 #include <memory>
 #include <mutex>
+#include <semaphore>
 #include <atomic>
 
 #include <fstream>

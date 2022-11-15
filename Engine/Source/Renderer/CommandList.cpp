@@ -45,6 +45,7 @@ void* Command::operator new(size_t size) noexcept
     return ptr;
 }
 
+//may calls from another thread
 void Command::operator delete(void* memory) noexcept
 {
     free(memory);
@@ -495,15 +496,29 @@ public:
 CommandList::CommandList(Context* context, CommandListType type) noexcept
     : m_context(context)
     , m_commandListType(type)
+    , m_thread(nullptr)
+    , m_semaphore(1)
 
     , m_pendingFlushMask(0)
 {
+    if (CommandList::isThreaded())
+    {
+        m_thread = new utils::Thread();
+        m_thread->setName("RenderThread");
+        m_thread->run(std::bind(CommandList::threadedCommandsCallback, this), this);
+    }
+
     m_swapchainTexture = createObject<Backbuffer>();
 }
 
 CommandList::~CommandList()
 {
     CommandList::flushCommands();
+    if (CommandList::isThreaded())
+    {
+        ASSERT(m_thread, "must be not nullptr");
+        m_thread->terminate(true);
+    }
     ASSERT(m_commandList.empty(), "not empty");
 }
 
@@ -515,7 +530,10 @@ void CommandList::flushCommands()
     }
 
     m_pendingFlushMask = CommandList::flushPendingCommands(m_pendingFlushMask);
-    CommandList::executeCommands();
+    if (!CommandList::isThreaded())
+    {
+        CommandList::executeCommands();
+    }
 }
 
 void CommandList::submitCommands(bool wait)
@@ -530,7 +548,10 @@ void CommandList::submitCommands(bool wait)
         CommandList::pushCommand(new CommandSubmit(wait, 0));
         if (wait)
         {
-            CommandList::executeCommands();
+            if (!CommandList::isThreaded())
+            {
+                CommandList::executeCommands();
+            }
         }
     }
 }
@@ -757,18 +778,47 @@ bool CommandList::isImmediate() const
 
 void CommandList::pushCommand(Command* cmd)
 {
+    if (CommandList::isThreaded())
+    {
+        m_semaphore.acquire();
+    }
     m_commandList.push(cmd);
+
+    if (CommandList::isThreaded())
+    {
+        m_semaphore.release();
+    }
 }
 
 void CommandList::executeCommands()
 {
+    if (CommandList::isThreaded())
+    {
+        m_semaphore.acquire();
+    }
+
     while (!m_commandList.empty())
     {
         Command* cmd = m_commandList.front();
         m_commandList.pop();
-
+        
         cmd->execute(*this);
         delete cmd;
+    }
+
+    if (CommandList::isThreaded())
+    {
+        m_semaphore.release();
+    }
+}
+
+void CommandList::threadedCommandsCallback(CommandList* cmdList)
+{
+    ASSERT(cmdList->isThreaded(), "Must be threaded");
+    while (cmdList->m_thread->isRunning())
+    {
+        cmdList->executeCommands();
+        //std::this_thread::yield();
     }
 }
 

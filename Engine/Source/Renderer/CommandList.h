@@ -2,6 +2,7 @@
 
 #include "Common.h"
 #include "Object.h"
+#include "Utils/Thread.h"
 
 #include "TextureProperties.h"
 
@@ -146,12 +147,15 @@ namespace renderer
         };
 
         void executeCommands();
+        static void threadedCommandsCallback(CommandList* cmdList);
 
 
         std::queue<Command*>        m_commandList;
 
         Context*                    m_context;
-        CommandListType             m_commandListType;
+        const CommandListType       m_commandListType;
+        utils::Thread*              m_thread;
+        std::binary_semaphore       m_semaphore;
 
         ContextStates               m_pendingStates;
         RenderTargetPendingState    m_pendingRenderTargetInfo;
