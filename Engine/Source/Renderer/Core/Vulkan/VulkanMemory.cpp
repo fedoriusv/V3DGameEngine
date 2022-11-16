@@ -295,7 +295,9 @@ SimpleVulkanMemoryAllocator::~SimpleVulkanMemoryAllocator()
 
 VulkanMemory::VulkanAllocation SimpleVulkanMemoryAllocator::allocate(VkDeviceSize size, VkDeviceSize align, u32 memoryTypeIndex, const void* extensions)
 {
-    VkDeviceSize alignedSize = core::alignUp<VkDeviceSize>(size, align);
+    //If image is not VK_NULL_HANDLE, VkMemoryAllocateInfo::allocationSize must equal the VkMemoryRequirements::size of the image
+    //(https://vulkan.lunarg.com/doc/view/1.3.231.1/windows/1.3-extensions/vkspec.html#VUID-VkMemoryDedicatedAllocateInfo-image-01433)
+    VkDeviceSize alignedSize = size; //core::alignUp<VkDeviceSize>(size, align);
 
     VulkanMemory::VulkanAllocation memory = {};
 
