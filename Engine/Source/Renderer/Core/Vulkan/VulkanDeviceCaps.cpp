@@ -187,13 +187,18 @@ void VulkanDeviceCaps::fillCapabilitiesList(const DeviceInfo* info)
 
     ASSERT(isEnabledExtension(VK_KHR_MAINTENANCE1_EXTENSION_NAME), "required VK_KHR_maintenance1 extension");
     ASSERT(isEnabledExtension(VK_KHR_MAINTENANCE2_EXTENSION_NAME), "required VK_KHR_maintenance2 extension");
+#if FORCE_DISABLE_FUNCTIONALITY_VULKAN_1_2
+    supportRenderpass2 = false;
+    supportMultiview = false;
+#else
     supportRenderpass2 = isEnabledExtension(VK_KHR_CREATE_RENDERPASS_2_EXTENSION_NAME);
+    supportMultiview = isEnabledExtension(VK_KHR_MULTIVIEW_EXTENSION_NAME);
+#endif //FORCE_DISABLE_FUNCTIONALITY_VULKAN_1_2
     enableSamplerMirrorClampToEdge = isEnabledExtension(VK_KHR_SAMPLER_MIRROR_CLAMP_TO_EDGE_EXTENSION_NAME);
     supportDepthAutoResolve = isEnabledExtension(VK_KHR_DEPTH_STENCIL_RESOLVE_EXTENSION_NAME);
     supportDedicatedAllocation = isEnabledExtension(VK_KHR_DEDICATED_ALLOCATION_EXTENSION_NAME);
     supportPipelineExecutableProperties = isEnabledExtension(VK_KHR_PIPELINE_EXECUTABLE_PROPERTIES_EXTENSION_NAME);
 
-    supportMultiview = isEnabledExtension(VK_KHR_MULTIVIEW_EXTENSION_NAME);
     supportBlitImage = true;
 
     if (VulkanDeviceCaps::checkInstanceExtension(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME))

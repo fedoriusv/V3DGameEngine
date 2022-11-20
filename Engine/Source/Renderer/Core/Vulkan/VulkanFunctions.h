@@ -2,6 +2,8 @@
 #include "Common.h"
 
 #ifdef VULKAN_RENDER
+//Some old hardware is required this
+#   define FORCE_DISABLE_FUNCTIONALITY_VULKAN_1_2 0
 
 #if defined(PLATFORM_WINDOWS)
 #   define VK_USE_PLATFORM_WIN32_KHR

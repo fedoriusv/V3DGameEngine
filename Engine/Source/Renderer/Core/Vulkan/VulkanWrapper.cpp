@@ -5,9 +5,6 @@
 #ifdef VULKAN_RENDER
 #include "VulkanDebug.h"
 
-//Some old hardware require this
-#define FORCE_DISABLE_FUNCTIONALITY_VULKAN_1_2 0
-
 namespace v3d
 {
 namespace renderer
