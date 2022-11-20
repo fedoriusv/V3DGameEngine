@@ -3,9 +3,9 @@
 #include "Utils/IntrusivePointer.h"
 
 #include "Renderer/CommandList.h"
-#include "Renderer/Object/PipelineState.h"
-#include "Renderer/Object/ShaderProgram.h"
-#include "Renderer/Object/StreamBuffer.h"
+#include "Renderer/PipelineState.h"
+#include "Renderer/ShaderProgram.h"
+#include "Renderer/StreamBuffer.h"
 
 #include "Scene/CameraHelper.h"
 #include "Scene/ModelHelper.h"

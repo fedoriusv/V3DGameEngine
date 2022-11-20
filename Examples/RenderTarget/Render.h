@@ -2,11 +2,11 @@
 
 #include "Common.h"
 
-#include "Renderer/Context.h"
+#include "Renderer/Core/Context.h"
 #include "Renderer/CommandList.h"
 
-#include "Renderer/Object/PipelineState.h"
-#include "Renderer/Object/ShaderProgram.h"
+#include "Renderer/PipelineState.h"
+#include "Renderer/ShaderProgram.h"
 
 #include "Scene/CameraArcballHelper.h"
 

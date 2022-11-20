@@ -1,6 +1,6 @@
 #include "ShadowMap.h"
 
-#include "Renderer/Context.h"
+#include "Renderer/Core/Context.h"
 #include "Renderer/DeviceCaps.h"
 
 #include "Resource/ResourceLoaderManager.h"

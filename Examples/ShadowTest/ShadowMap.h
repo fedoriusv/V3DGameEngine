@@ -3,11 +3,11 @@
 #include "Utils/IntrusivePointer.h"
 
 #include "Renderer/CommandList.h"
-#include "Renderer/Object/PipelineState.h"
-#include "Renderer/Object/ShaderProgram.h"
-#include "Renderer/Object/RenderTargetState.h"
-#include "Renderer/Object/Texture.h"
-#include "Renderer/Object/SamplerState.h"
+#include "Renderer/PipelineState.h"
+#include "Renderer/ShaderProgram.h"
+#include "Renderer/RenderTargetState.h"
+#include "Renderer/Texture.h"
+#include "Renderer/SamplerState.h"
 
 #include "Scene/CameraHelper.h"
 #include "Scene/ModelHelper.h"

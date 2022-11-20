@@ -8,11 +8,11 @@
 #include "Resource/ShaderSourceFileLoader.h"
 #include "Resource/ResourceLoaderManager.h"
 
-#include "Renderer/Object/Texture.h"
-#include "Renderer/Object/SamplerState.h"
-#include "Renderer/Object/RenderTargetState.h"
-#include "Renderer/Object/PipelineState.h"
-#include "Renderer/Object/ShaderProgram.h"
+#include "Renderer/Texture.h"
+#include "Renderer/SamplerState.h"
+#include "Renderer/RenderTargetState.h"
+#include "Renderer/PipelineState.h"
+#include "Renderer/ShaderProgram.h"
 
 #include "Scene/Model.h"
 #include "Scene/ModelHelper.h"
