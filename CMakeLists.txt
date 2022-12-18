@@ -291,6 +291,7 @@ if(BUILD_VULKAN_SDK)
 endif()
 
 set_target_properties(${ENGINE_NAME} PROPERTIES ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${PROJECT_PLATFORM})
+set_target_properties(${ENGINE_NAME} PROPERTIES VS_WINDOWS_TARGET_PLATFORM_MIN_VERSION ${WIN_SDK_VERSION})
 link_directories(${ENGINE_NAME} ${VULKAN_SDK_LIB_DIRECTORY})
 ##############################################################
 

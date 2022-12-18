@@ -19,8 +19,10 @@
 
 #if defined(_WIN64) && _WIN64
 #   define PLATFORM_WINDOWS
+#   include "sdkddkver.h"
+
 #   if defined(_MSC_VER) && (_MSC_VER < 1930)
-#       error "Only Microsoft Visual Studio 2022 (17.0.1) and later are supported."
+#       error "Only Microsoft Visual Studio 2022 (17.0.1) or later are supported."
 #   endif
 
 #   pragma warning(disable: 26812)
@@ -56,7 +58,7 @@
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #ifdef USE_LOGGER
-#if   defined(PLATFORM_WINDOWS)
+#   if defined(PLATFORM_WINDOWS)
 #       define HIGHLIGHTING_LOGS 1
 #   endif
 #endif //USED_LOGGER
@@ -100,6 +102,10 @@
 #ifdef D3D_RENDER
 #   define D3D_VERSION_MAJOR 12
 #   define D3D_VERSION_MINOR 0
+
+#   if defined(NTDDI_VERSION) && (NTDDI_VERSION < 0x0A00000A/*NTDDI_WIN10_FE*/)
+#       error "Windows SDK must be 10.0.20348 or later. Make sure you have a proper version"
+#   endif
 
 #   define D3D_DEBUG 1
 #   define D3D_DEBUG_LAYERS 1
