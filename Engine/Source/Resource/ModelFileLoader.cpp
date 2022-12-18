@@ -77,7 +77,7 @@ scene::Model* ModelFileLoader::load(const std::string& name, const std::string& 
                 return nullptr;
             }
 
-            LOG_INFO("ModelFileLoader::load Shader [%s] is loaded", name.c_str());
+            LOG_INFO("ModelFileLoader::load: [%s] is loaded", name.c_str());
             return static_cast<scene::Model*>(resource);
         }
     }

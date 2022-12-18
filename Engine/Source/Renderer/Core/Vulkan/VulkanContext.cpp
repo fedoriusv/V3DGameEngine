@@ -813,16 +813,16 @@ void VulkanContext::beginFrame()
     m_currentTransitionState.transitionImages(drawBuffer, { { m_swapchain->getSwapchainImage(prevImageIndex), { 0, 1, 0, 1} } }, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
 #endif //SWAPCHAIN_ON_ADVANCE
 
-//#if FRAME_PROFILER_ENABLE
+#if FRAME_PROFILER_ENABLE
 //    QueryState state
 //    {
 //        "frame time",
 //        this,
 //        query,
 //    };
-//    utils::ProfileManager::getInstance()->update();
-//    utils::ProfileManager::getInstance()->start(state);
-//#endif //FRAME_PROFILER_ENABLE
+    utils::ProfileManager::getInstance()->update();
+    utils::ProfileManager::getInstance()->start();
+#endif //FRAME_PROFILER_ENABLE
 }
 
 void VulkanContext::endFrame()

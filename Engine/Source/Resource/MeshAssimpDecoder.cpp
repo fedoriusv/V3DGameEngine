@@ -146,7 +146,7 @@ Resource* MeshAssimpDecoder::decode(const stream::Stream* stream, const std::str
 #if LOG_LOADIMG_TIME
         timer.stop();
         u64 time = timer.getTime<utils::Timer::Duration_MilliSeconds>();
-        LOG_INFO("MeshAssimpDecoder::decode , model %s, is loaded. Time %.4f sec", name.c_str(), static_cast<f32>(time) / 1000.0f);
+        LOG_INFO("MeshAssimpDecoder::decode: model %s, is loaded. Time %.4f sec", name.c_str(), static_cast<f32>(time) / 1000.0f);
 #endif
 
 #if DEBUG
