@@ -12,6 +12,8 @@
 #include "VulkanComputePipeline.h"
 #include "VulkanSwapchain.h"
 #include "VulkanSemaphore.h"
+#include "VulkanRenderQuery.h"
+#include "VulkanQuery.h"
 
 namespace v3d
 {
@@ -466,6 +468,51 @@ void VulkanCommandBuffer::cmdSetScissor(const std::vector<VkRect2D>& scissors)
     }
 }
 
+void VulkanCommandBuffer::cmdBeginQuery(VulkanRenderQueryPool* pool, u32 index)
+{
+    ASSERT(m_status == CommandBufferStatus::Begin, "not started");
+    ASSERT(pool->getQueryType() != QueryType::TimeStamp, "must be not timestamp");
+
+    VkQueryControlFlags flags = 0;
+    if (pool->getQueryType() == QueryType::BinaryOcclusion)
+    {
+        flags |= VK_QUERY_CONTROL_PRECISE_BIT;
+    }
+
+    VulkanWrapper::CmdBeginQuery(m_commands, pool->getHandle(), index, flags);
+
+    pool->captureInsideCommandBuffer(this, 0);
+}
+
+void VulkanCommandBuffer::cmdEndQuery(VulkanRenderQueryPool* pool, u32 index)
+{
+    ASSERT(m_status == CommandBufferStatus::Begin, "not started");
+    ASSERT(pool->getQueryType() != QueryType::TimeStamp, "must be not timestamp");
+
+    VulkanWrapper::CmdEndQuery(m_commands, pool->getHandle(), index);
+
+    pool->captureInsideCommandBuffer(this, 0);
+}
+
+void VulkanCommandBuffer::cmdWriteTimestamp(VulkanRenderQueryPool* pool, u32 index, VkPipelineStageFlagBits pipelineStage)
+{
+    ASSERT(m_status == CommandBufferStatus::Begin, "not started");
+    ASSERT(pool->getQueryType() == QueryType::TimeStamp, "must be timestamp");
+
+    VulkanWrapper::CmdWriteTimestamp(m_commands, pipelineStage, pool->getHandle(), index);
+
+    pool->captureInsideCommandBuffer(this, 0);
+}
+
+void VulkanCommandBuffer::cmdResetQueryPool(VulkanRenderQueryPool* pool)
+{
+    ASSERT(m_status == CommandBufferStatus::Begin, "not started");
+
+    VulkanWrapper::CmdResetQueryPool(m_commands, pool->getHandle(), 0, pool->getSize());
+
+    pool->captureInsideCommandBuffer(this, 0);
+}
+
 void VulkanCommandBuffer::cmdBindVertexBuffers(u32 firstBinding, u32 countBindinng, const std::vector<Buffer*>& buffers, const std::vector<u64>& offests)
 {
     ASSERT(m_status == CommandBufferStatus::Begin, "not started");
@@ -601,7 +648,7 @@ void VulkanCommandBuffer::cmdClearImage(VulkanImage* image, VkImageLayout imageL
     ASSERT(m_status == CommandBufferStatus::Begin, "not started");
     ASSERT(!isInsideRenderPass(), "outside render pass");
 
-    ASSERT(image->getImageAspectFlags() == VK_IMAGE_ASPECT_COLOR_BIT, " image is not VK_IMAGE_ASPECT_COLOR_BIT");
+    ASSERT(image->getImageAspectFlags() & VK_IMAGE_ASPECT_COLOR_BIT, " image is not VK_IMAGE_ASPECT_COLOR_BIT");
 
     image->captureInsideCommandBuffer(this, 0);
     if (m_level == CommandBufferLevel::PrimaryBuffer)
@@ -639,7 +686,7 @@ void VulkanCommandBuffer::cmdResolveImage(VulkanImage* src, VkImageLayout srcLay
     ASSERT(!isInsideRenderPass(), "should be outside render pass");
 
     ASSERT(src->getSampleCount() > VK_SAMPLE_COUNT_1_BIT, "should be > 1");
-    ASSERT(dst->getSampleCount() == VK_SAMPLE_COUNT_1_BIT, "should be 1");
+    ASSERT((dst->getSampleCount() & VK_SAMPLE_COUNT_1_BIT) == VK_SAMPLE_COUNT_1_BIT, "should be 1");
 
     src->captureInsideCommandBuffer(this, 0);
     dst->captureInsideCommandBuffer(this, 0);

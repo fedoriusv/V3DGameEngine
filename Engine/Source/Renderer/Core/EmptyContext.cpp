@@ -94,20 +94,20 @@ void EmptyContext::removeRenderPass(RenderPass* renderpass)
     LOG_DEBUG("EmptyContext::removeRenderPass");
 }
 
-void EmptyContext::invalidateRenderTarget()
+Query* EmptyContext::createQuery(QueryType type, Query::QueryRespose callback)
 {
-    LOG_DEBUG("EmptyContext::invalidateRenderTarget");
-}
-
-QueryPool* EmptyContext::createQueryPool(QueryType type)
-{
-    LOG_DEBUG("EmptyContext::createQueryPool");
+    LOG_DEBUG("EmptyContext::createQuery");
     return nullptr;
 }
 
-void EmptyContext::removeQueryPool(QueryPool* pool)
+void EmptyContext::removeQuery(Query* query)
 {
-    LOG_DEBUG("EmptyContext::removeQueryPool");
+    LOG_DEBUG("EmptyContext::removeQuery");
+}
+
+void EmptyContext::invalidateRenderTarget()
+{
+    LOG_DEBUG("EmptyContext::invalidateRenderTarget");
 }
 
 void EmptyContext::setPipeline(const Pipeline::PipelineGraphicInfo* pipelineInfo)

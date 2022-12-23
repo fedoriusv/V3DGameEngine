@@ -2,6 +2,7 @@
 #include "Texture.h"
 #include "RenderTargetState.h"
 #include "PipelineState.h"
+#include "QueryRequest.h"
 #include "ShaderProgram.h"
 #include "DeviceCaps.h"
 #include "Core/Context.h"
@@ -590,6 +591,19 @@ void CommandList::presentFrame()
     {
         CommandList::pushCommand(new CommandPresentFrame());
     }
+}
+
+void CommandList::beginQueryRequest(const QueryRequest* query)
+{
+    if (CommandList::isImmediate())
+    {
+        //m_context->beginQuery(QueryRequest)
+    }
+}
+
+void CommandList::endQueryRequest(const QueryRequest* query)
+{
+
 }
 
 void CommandList::draw(const StreamBufferDescription& desc, u32 firstVertex, u32 countVertex, u32 countInstance)

@@ -69,8 +69,8 @@ namespace renderer
         RenderPass* createRenderPass(const RenderPassDescription* renderpassDesc) override;
         void removeRenderPass(RenderPass* renderpass) override;
 
-        virtual QueryPool* createQueryPool(QueryType type) override;
-        virtual void removeQueryPool(QueryPool* pool) override;
+        Query* createQuery(QueryType type, Query::QueryRespose callback) override;
+        void removeQuery(Query* query) override;
 
         void clearBackbuffer(const core::Vector4D & color) override;
         void generateMipmaps(Image* image, u32 layer, TransitionOp state) override;

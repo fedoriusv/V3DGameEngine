@@ -14,22 +14,17 @@ namespace vk
 {
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    class VulkanQueryPool final : public QueryPool, public VulkanResource
+    /**
+    * @brief VulkanQuery class. Vulkan render side
+    */
+    class VulkanQuery : public Query//, public VulkanResource
     {
     public:
 
-        static VkQueryType convertQueryTypeToVkQuery(QueryType type);
+        VulkanQuery() = delete;
+        VulkanQuery(VulkanQuery&) = delete;
 
-        explicit VulkanQueryPool(VkDevice device, QueryType type, u32 size) noexcept;
-        ~VulkanQueryPool();
-
-        bool create() override;
-        void destroy() override;
-
-    private:
-
-        VkDevice m_device;
-        VkQueryPool m_pool;
+        VulkanQuery(QueryType type, QueryRespose callback);
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

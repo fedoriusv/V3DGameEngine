@@ -850,6 +850,17 @@ void D3DGraphicContext::removePipeline(Pipeline* pipeline)
     }
 }
 
+Query* D3DGraphicContext::createQuery(QueryType type, Query::QueryRespose callback)
+{
+    ASSERT(false, "not impl");
+    return nullptr;
+}
+
+void D3DGraphicContext::removeQuery(Query* query)
+{
+    ASSERT(false, "not impl");
+}
+
 Image* D3DGraphicContext::createImage(TextureTarget target, Format format, const core::Dimension3D& dimension, u32 layers, u32 mipmapLevel, TextureUsageFlags flags, const std::string& name)
 {
 #if D3D_DEBUG
@@ -928,15 +939,6 @@ void D3DGraphicContext::removeBuffer(Buffer* buffer)
         dxBuffer->destroy();
         delete dxBuffer;
     }
-}
-
-QueryPool* D3DGraphicContext::createQueryPool(QueryType type)
-{
-    return nullptr;
-}
-
-void D3DGraphicContext::removeQueryPool(QueryPool* pool)
-{
 }
 
 void D3DGraphicContext::removeSampler(Sampler* sampler)

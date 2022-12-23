@@ -25,6 +25,7 @@ namespace renderer
     class RenderTargetState;
     class GraphicsPipelineState;
     class ComputePipelineState;
+    class QueryRequest;
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -73,6 +74,9 @@ namespace renderer
         void beginFrame();
         void endFrame();
         void presentFrame();
+
+        void beginQueryRequest(const QueryRequest* query);
+        void endQueryRequest(const QueryRequest* query);
 
         void draw(const StreamBufferDescription& desc, u32 firstVertex, u32 countVertex, u32 countInstance);
         void drawIndexed(const StreamBufferDescription& desc, u32 firstIndex, u32 countIndex, u32 countInstance);

@@ -7,6 +7,7 @@
 #include "Renderer/PipelineState.h"
 #include "Renderer/RenderTargetState.h"
 #include "Renderer/StreamBuffer.h"
+#include "Renderer/QueryRequest.h"
 
 #include "Scene/CameraArcballHelper.h"
 
@@ -39,4 +40,6 @@ private:
     v3d::renderer::VertexStreamBuffer* m_Geometry;
 
     v3d::scene::CameraArcballHelper* m_Camera;
+
+    v3d::renderer::QueryRequest* m_Querytest;
 };

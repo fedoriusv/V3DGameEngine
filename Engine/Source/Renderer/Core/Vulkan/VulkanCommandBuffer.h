@@ -3,6 +3,8 @@
 #include "Common.h"
 #include "Renderer/TextureProperties.h"
 #include "Renderer/Core/Buffer.h"
+#include "Renderer/Core/Query.h"
+#include "Renderer/Core/RenderQueryPool.h"
 
 #ifdef VULKAN_RENDER
 #include "VulkanWrapper.h"
@@ -23,6 +25,7 @@ namespace vk
     class VulkanGraphicPipeline;
     class VulkanComputePipeline;
     class VulkanSemaphore;
+    class VulkanRenderQueryPool;
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -79,6 +82,12 @@ namespace vk
         //dynamic states
         void cmdSetViewport(const std::vector<VkViewport>& viewports);
         void cmdSetScissor(const std::vector<VkRect2D>& scissors);
+
+        //query
+        void cmdBeginQuery(VulkanRenderQueryPool* pool, u32 index);
+        void cmdEndQuery(VulkanRenderQueryPool* pool, u32 index);
+        void cmdWriteTimestamp(VulkanRenderQueryPool* pool, u32 index, VkPipelineStageFlagBits pipelineStage);
+        void cmdResetQueryPool(VulkanRenderQueryPool* pool);
 
         //binds
         void cmdBindVertexBuffers(u32 firstBinding, u32 countBindinng, const std::vector<Buffer*>& buffers, const std::vector<u64>& offests);

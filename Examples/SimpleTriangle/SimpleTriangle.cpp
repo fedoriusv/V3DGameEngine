@@ -144,6 +144,11 @@ void SimpleTriangle::init(v3d::renderer::CommandList* commandList, const core::D
 
     m_CommandList->submitCommands(true);
     m_CommandList->flushCommands();
+
+    //m_Querytest = m_CommandList->createObject<renderer::QueryRequest>(renderer::QueryType::TimeStamp, [](float value)->void
+    //    {
+    //        //TODO
+    //    });
 }
 
 void SimpleTriangle::update(f32 dt)
@@ -173,6 +178,8 @@ void SimpleTriangle::render()
     ubo1.modelMatrix.setTranslation(core::Vector3D(-1, 0, 0));
     ubo1.viewMatrix = m_Camera->getCamera().getViewMatrix();
 
+    //m_CommandList->beginQueryRequest(m_Querytest);
+
     m_Program->bindUniformsBuffer<renderer::ShaderType::Vertex>({ "buffer" }, 0, (u32)sizeof(UBO), &ubo1);
     m_CommandList->draw(renderer::StreamBufferDescription(m_Geometry, 0), 0, 3, 1);
 
@@ -183,6 +190,8 @@ void SimpleTriangle::render()
 
     m_Program->bindUniformsBuffer<renderer::ShaderType::Vertex>({ "buffer" }, 0, (u32)sizeof(UBO), &ubo2);
     m_CommandList->draw(renderer::StreamBufferDescription(m_Geometry, 0), 0, 3, 1);
+
+    //m_CommandList->endQueryRequest(m_Querytest);
 }
 
 void SimpleTriangle::terminate()

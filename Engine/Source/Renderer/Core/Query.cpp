@@ -5,42 +5,20 @@ namespace v3d
 namespace renderer
 {
 
-Query::Query() noexcept
-    : m_pool(nullptr)
-    , m_index(~1)
-{
-}
-
-
-QueryPool::QueryPool(QueryType type, u32 size) noexcept
+Query::Query(QueryType type, QueryRespose callback) noexcept
     : m_type(type)
-    , m_size(size)
-{
-    m_queries.reserve(size);
-}
-
-QueryPool::~QueryPool()
-{
-    ASSERT(m_queries.empty(), "must be empty");
-}
-
-
-QueryPoolManager::QueryPoolManager(Context* context) noexcept
-    : m_context(context)
+    , m_callback(callback)
 {
 }
 
-QueryPoolManager::~QueryPoolManager()
+QueryType Query::getType() const
 {
+    return m_type;
 }
 
-Query* QueryPoolManager::acquireQueryPool(QueryType type)
+Query::QueryRespose Query::getCallback() const
 {
-    return nullptr;
-}
-
-void QueryPoolManager::removeQueryPool(QueryPool* pool)
-{
+    return m_callback;
 }
 
 } //namespace renderer

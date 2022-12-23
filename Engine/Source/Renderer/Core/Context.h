@@ -187,8 +187,8 @@ namespace renderer
         virtual Pipeline* createPipeline(Pipeline::PipelineType type) = 0;
         virtual void removePipeline(Pipeline* pipeline) = 0;
 
-        virtual QueryPool* createQueryPool(QueryType type) = 0;
-        virtual void removeQueryPool(QueryPool* pool) = 0;
+        virtual Query* createQuery(QueryType type, Query::QueryRespose callback) = 0;
+        virtual void removeQuery(Query* query) = 0;
 
         /**
         * @brief getCurrentFrameIndex

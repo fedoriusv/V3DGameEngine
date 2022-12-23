@@ -2,7 +2,6 @@
 
 #include "Renderer/Core/Context.h"
 #include "Utils/Observable.h"
-#include "Utils/Semaphore.h"
 
 #ifdef VULKAN_RENDER
 #include "VulkanWrapper.h"
@@ -22,13 +21,8 @@ namespace vk
 {
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    class VulkanImage;
-    class VulkanSampler;
-    class VulkanRenderPass;
-    class VulkanFramebuffer;
     class VulkanGraphicPipeline;
     class VulkanSemaphore;
-
     class VulkanContextState;
     class VulkanSwapchain;
 
@@ -36,8 +30,8 @@ namespace vk
     class VulkanDescriptorSetManager;
     class VulkanStagingBufferManager;
     class VulkanUniformBufferManager;
-    class VulkanSamplerManager;
     class VulkanSemaphoreManager;
+    class VulkanRenderQueryManager;
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -116,8 +110,8 @@ namespace vk
         RenderPass* createRenderPass(const RenderPassDescription* renderpassDesc) override;
         void removeRenderPass(RenderPass* renderpass) override;
 
-        virtual QueryPool* createQueryPool(QueryType type) override;
-        virtual void removeQueryPool(QueryPool* pool) override;
+        Query* createQuery(QueryType type, Query::QueryRespose callback) override;
+        void removeQuery(Query* query) override;
 
         static const std::vector<VkDynamicState>& getDynamicStates();
         static bool isDynamicState(VkDynamicState state);
@@ -159,12 +153,12 @@ namespace vk
         VulkanStagingBufferManager* m_stagingBufferManager;
         VulkanUniformBufferManager* m_uniformBufferManager;
         VulkanSemaphoreManager* m_semaphoreManager;
+        VulkanRenderQueryManager* m_renderQueryManager;
 
         RenderPassManager* m_renderpassManager;
         FramebufferManager* m_framebufferManager;
         PipelineManager* m_pipelineManager;
         SamplerManager* m_samplerManager;
-        QueryPoolManager* m_queryPoolManager;
 
         VulkanMemory::VulkanMemoryAllocator* m_imageMemoryManager;
         VulkanMemory::VulkanMemoryAllocator* m_bufferMemoryManager;

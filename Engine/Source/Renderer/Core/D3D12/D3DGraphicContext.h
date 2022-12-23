@@ -109,8 +109,8 @@ namespace dx3d
         Pipeline* createPipeline(Pipeline::PipelineType type) override;
         void removePipeline(Pipeline* pipeline) override;
 
-        QueryPool* createQueryPool(QueryType type) override;
-        void removeQueryPool(QueryPool* pool) override;
+        Query* createQuery(QueryType type, Query::QueryRespose callback) override;
+        void removeQuery(Query* query) override;
 
         bool initialize() override;
         void destroy() override;

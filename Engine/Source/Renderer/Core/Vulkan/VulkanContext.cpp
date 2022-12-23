@@ -20,12 +20,15 @@
 #include "VulkanComputePipeline.h"
 #include "VulkanContextState.h"
 #include "VulkanSemaphore.h"
+#include "VulkanRenderQuery.h"
 #include "VulkanQuery.h"
 
 #include "Renderer/Core/FrameTimeProfiler.h"
+#include "Renderer/Core/GPUTimeProfiler.h"
 #ifdef PLATFORM_ANDROID
 #   include "Platform/Android/HWCPProfiler.h"
 #endif //PLATFORM_ANDROID
+
 
 namespace v3d
 {
@@ -101,6 +104,8 @@ std::vector<VkDynamicState> VulkanContext::s_dynamicStates =
     //VK_DYNAMIC_STATE_STENCIL_REFERENCE
 };
 
+//GPUTimeProfiler* g_gpuProfiler;
+
 VulkanContext::VulkanContext(platform::Window* window, DeviceMask mask) noexcept
     : m_deviceCaps(*VulkanDeviceCaps::getInstance())
     , m_swapchain(nullptr)
@@ -111,12 +116,12 @@ VulkanContext::VulkanContext(platform::Window* window, DeviceMask mask) noexcept
     , m_stagingBufferManager(nullptr)
     , m_uniformBufferManager(nullptr)
     , m_semaphoreManager(nullptr)
+    , m_renderQueryManager(nullptr)
 
     , m_renderpassManager(nullptr)
     , m_framebufferManager(nullptr)
     , m_pipelineManager(nullptr)
     , m_samplerManager(nullptr)
-    , m_queryPoolManager(nullptr)
 
     , m_imageMemoryManager(nullptr)
     , m_bufferMemoryManager(nullptr)
@@ -150,6 +155,7 @@ VulkanContext::~VulkanContext()
     ASSERT(!m_stagingBufferManager, "m_stagingBufferManager not nullptr");
     ASSERT(!m_uniformBufferManager, "m_uniformBufferManager not nullptr");
     ASSERT(!m_semaphoreManager, "m_semaphoreManager not nullptr");
+    ASSERT(!m_renderQueryManager, "m_renderQueryManager not nullptr");
 
     ASSERT(!m_renderpassManager, "m_renderpassManager not nullptr");
     ASSERT(!m_framebufferManager, "m_framebufferManager not nullptr");
@@ -247,6 +253,7 @@ bool VulkanContext::initialize()
     m_uniformBufferManager = new VulkanUniformBufferManager(m_deviceInfo._device, m_resourceDeleter);
     m_pipelineLayoutManager = new VulkanPipelineLayoutManager(m_deviceInfo._device);
     m_descriptorSetManager = new VulkanDescriptorSetManager(m_deviceInfo._device, m_swapchain->getSwapchainImageCount());
+    m_renderQueryManager = new VulkanRenderQueryManager(m_deviceInfo._device, 4);
 
     m_renderpassManager = new RenderPassManager(this);
     m_framebufferManager = new FramebufferManager(this);
@@ -257,6 +264,8 @@ bool VulkanContext::initialize()
 
 #if FRAME_PROFILER_ENABLE
     utils::ProfileManager::getInstance()->attach(new FrameTimeProfiler());
+    //g_gpuProfiler = new GPUTimeProfiler();
+    //utils::ProfileManager::getInstance()->attach(g_gpuProfiler);
 #   if defined(PLATFORM_ANDROID)
     utils::ProfileManager::getInstance()->attach(new android::HWCPProfiler(
         {
@@ -735,6 +744,12 @@ void VulkanContext::destroy()
         m_samplerManager = nullptr;
     }
 
+    if (m_renderQueryManager)
+    {
+        delete m_renderQueryManager;
+        m_renderQueryManager = nullptr;
+    }
+
     if (m_currentContextState)
     {
         delete m_currentContextState;
@@ -814,12 +829,17 @@ void VulkanContext::beginFrame()
 #endif //SWAPCHAIN_ON_ADVANCE
 
 #if FRAME_PROFILER_ENABLE
-//    QueryState state
-//    {
-//        "frame time",
-//        this,
-//        query,
-//    };
+    //QueryState state
+    //{
+    //    "frame time",
+    //    this,
+    //    query,
+    //};
+    //RenderQuery timeQuery = m_renderQueryManager->acquireRenderQuery(QueryType::TimeStamp);
+    //drawBuffer->cmdResetQueryPool(timeQuery._pool);
+    //drawBuffer->cmdWriteTimestamp(&timeQuery, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT);
+    //g_gpuProfiler->attachBeginFrame(timeQuery);
+
     utils::ProfileManager::getInstance()->update();
     utils::ProfileManager::getInstance()->start();
 #endif //FRAME_PROFILER_ENABLE
@@ -901,7 +921,10 @@ void VulkanContext::submit(bool wait)
             ASSERT(m_currentContextState->getCurrentTypedPipeline<VulkanGraphicPipeline>(), "nullptr");
             drawBuffer->cmdEndRenderPass();
         }
-
+        //
+        //Query::RenderQuery* timeQuery = m_renderQueryPoolManager->acquireRenderQueryPool(QueryType::TimeStamp);
+        //drawBuffer->cmdWriteTimestamp(timeQuery, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT);
+        //
         drawBuffer->endCommandBuffer();
         m_uniformBufferManager->markToUse(drawBuffer, 0);
 
@@ -942,12 +965,30 @@ void VulkanContext::submit(bool wait)
 #endif
 }
 
-void v3d::renderer::vk::VulkanContext::beginQuery(Query* query, const std::string& name)
+void VulkanContext::beginQuery(Query* query, const std::string& name)
 {
+    VulkanCommandBuffer* drawBuffer = m_currentBufferState.acquireAndStartCommandBuffer(CommandTargetType::CmdDrawBuffer);
+    RenderQuery* renderQuery = m_renderQueryManager->acquireRenderQuery(query->getType());
+    drawBuffer->cmdBeginQuery(static_cast<VulkanRenderQueryPool*>(renderQuery->_pool), renderQuery->_index);
+
+    m_renderQueryManager->attachRenderQueryState(
+        VulkanRenderQueryManager::QueryState
+        {
+            query,
+            renderQuery,
+            name,
+        });
 }
 
-void v3d::renderer::vk::VulkanContext::endQuery(Query* query, const std::string& name)
+void VulkanContext::endQuery(Query* query, const std::string& name)
 {
+    VulkanRenderQueryManager::QueryState renderQueryState = m_renderQueryManager->findRenderQueryState(query);
+    if (renderQueryState.isValid())
+    {
+        VulkanCommandBuffer* drawBuffer = m_currentBufferState.getAcitveBuffer(CommandTargetType::CmdDrawBuffer);
+        RenderQuery* renderQuery = renderQueryState._renderQuery;
+        drawBuffer->cmdEndQuery(static_cast<VulkanRenderQueryPool*>(renderQuery->_pool), renderQuery->_index);
+    }
 }
 
 void VulkanContext::clearBackbuffer(const core::Vector4D& color)
@@ -1163,26 +1204,26 @@ void VulkanContext::removeRenderPass(RenderPass* renderpass)
     }
 }
 
-QueryPool* VulkanContext::createQueryPool(QueryType type)
+Query* VulkanContext::createQuery(QueryType type, Query::QueryRespose callback)
 {
-    return new VulkanQueryPool(m_deviceInfo._device, type, 1);
+    return new VulkanQuery(type, callback);
 }
 
-void VulkanContext::removeQueryPool(QueryPool* pool)
+void VulkanContext::removeQuery(Query* query)
 {
-    ASSERT(pool, "nullptr");
-    VulkanQueryPool* vkQueryPool = static_cast<VulkanQueryPool*>(pool);
-    if (vkQueryPool->isCaptured())
-    {
-        m_resourceDeleter.addResourceToDelete(vkQueryPool, [this, vkQueryPool](VulkanResource* resource) -> void
-            {
-                m_queryPoolManager->removeQueryPool(vkQueryPool);
-            });
-    }
-    else
-    {
-        m_queryPoolManager->removeQueryPool(vkQueryPool);
-    }
+    //ASSERT(query, "nullptr");
+    //VulkanQueryPool* vkQueryPool = static_cast<VulkanQueryPool*>(pool);
+    //if (vkQueryPool->isCaptured())
+    //{
+    //    m_resourceDeleter.addResourceToDelete(vkQueryPool, [this, vkQueryPool](VulkanResource* resource) -> void
+    //        {
+    //            m_queryPoolManager->removeQueryPool(vkQueryPool);
+    //        });
+    //}
+    //else
+    //{
+    //    m_queryPoolManager->removeQueryPool(vkQueryPool);
+    //}
 }
 
 void VulkanContext::invalidateRenderTarget()
@@ -1637,6 +1678,7 @@ void VulkanContext::finalizeCommandBufferSubmit()
     m_cmdBufferManager->updateCommandBuffers();
     m_uniformBufferManager->updateUniformBuffers();
     m_semaphoreManager->updateSemaphores();
+    m_renderQueryManager->updateRenderQuery();
 
     m_stagingBufferManager->destroyStagingBuffers();
 
