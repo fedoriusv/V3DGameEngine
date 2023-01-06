@@ -67,7 +67,7 @@ namespace vk
             bool operator()(const SetInfo& set0, const SetInfo& set1) const;
         };
 
-        u64 _key;
+        u64 _key = 0;
         std::vector<BindingInfo> _bindingsInfo;
     };
 

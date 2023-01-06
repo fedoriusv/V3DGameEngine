@@ -122,7 +122,7 @@ namespace renderer
         *
         * @param const GraphicsPipelineStateDescription& desc [required]
         * @param const ShaderProgram* const program [required]
-        * @param onst RenderTargetState* const renderTaget [required]
+        * @param const RenderTargetState* const renderTaget [required]
         */
         explicit GraphicsPipelineState(CommandList& cmdList, const GraphicsPipelineStateDescription& desc, const ShaderProgram* const program, const RenderTargetState* const renderTaget) noexcept;
 

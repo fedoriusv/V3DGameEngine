@@ -229,8 +229,6 @@ namespace renderer
         bool setColorTexture(u32 index, TTexture* colorTexture, s32 layer,
             const ColorOpState& colorOpState, const TransitionState& tansitionState);
 
-
-        /////////////////////////////////
         /**
         * @brief setDepthStencilTexture method. Used to adding a depth-stencil attachment to a render target
         *
