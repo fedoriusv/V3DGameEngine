@@ -1,4 +1,4 @@
-// V3D Engine 2018-2022 Fred Nekrasov
+// V3D Engine 2018-2023 Fred Nekrasov
 #pragma once
 
 //Version 2.0.0
@@ -74,7 +74,7 @@
 #       define VULKAN_VERSION_MINOR 2
 #   endif
 
-#   define VULKAN_DEBUG 1
+#   define VULKAN_DEBUG 0 //Log every render command
 #   define VULKAN_LAYERS_CALLBACKS 1
 #   if VULKAN_LAYERS_CALLBACKS
 #       define VULKAN_VALIDATION_LAYERS_CALLBACK 1
@@ -112,8 +112,8 @@
 #   define D3D_DEBUG_LAYERS_CALLBACK 0
 #endif //D3D_RENDER
 
-#define DEBUG_COMMAND_LIST 0
-#define DEBUG_OBJECT_MEMORY 1
+#define DEBUG_COMMAND_LIST 0 //Logging command list
+#define DEBUG_OBJECT_MEMORY 0
 #define FRAME_PROFILER_ENABLE 1
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////
