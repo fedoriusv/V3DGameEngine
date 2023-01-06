@@ -75,8 +75,9 @@ namespace renderer
         void endFrame();
         void presentFrame();
 
-        void beginQueryRequest(const QueryRequest* query);
-        void endQueryRequest(const QueryRequest* query);
+        void beginQueryRequest(const QueryRequest* query, const std::string& tag = "");
+        void endQueryRequest(const QueryRequest* query, const std::string& tag = "");
+        void timestampQueryRequest(const QueryRequest* query, const std::string& tag = "");
 
         void draw(const StreamBufferDescription& desc, u32 firstVertex, u32 countVertex, u32 countInstance);
         void drawIndexed(const StreamBufferDescription& desc, u32 firstIndex, u32 countIndex, u32 countInstance);

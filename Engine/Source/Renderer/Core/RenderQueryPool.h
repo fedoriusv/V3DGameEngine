@@ -14,16 +14,25 @@ namespace renderer
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
-    * @brief RenderQuery struct
+    * @brief RenderQuery struct. Render side only
     */
     struct RenderQuery
     {
         RenderQueryPool* _pool;
         u32 _index;
+        u32 _used;
 
         RenderQuery() noexcept
             : _pool(nullptr)
             , _index(-1)
+            , _used(false)
+        {
+        }
+
+        RenderQuery(RenderQueryPool* pool, u32 index) noexcept
+            : _pool(pool)
+            , _index(index)
+            , _used(false)
         {
         }
     };
@@ -37,7 +46,7 @@ namespace renderer
     {
     public:
 
-        RenderQueryPool(QueryType type, u32 size) noexcept;
+        RenderQueryPool(QueryType type, u32 poolSize) noexcept;
 
         RenderQueryPool() = delete;
         RenderQueryPool(RenderQueryPool&) = delete;
@@ -46,10 +55,12 @@ namespace renderer
         virtual bool create() = 0;
         virtual void destroy() = 0;
 
-        virtual void reset() = 0;
+        virtual void reset();
 
         QueryType getQueryType() const;
+        u32 getPoolSize() const;
         u32 getSize() const;
+        bool isFilled() const;
 
         RenderQuery* getRenderQuery(u32 index) const;
         std::pair<RenderQuery*, u32> takeFreeRenderQuery();

@@ -232,6 +232,14 @@ void VulkanDeviceCaps::fillCapabilitiesList(const DeviceInfo* info)
                 vkExtensions = &physicalDevicePipelineExecutablePropertiesFeatures;
             }
 
+            VkPhysicalDeviceHostQueryResetFeatures physicalDeviceHostQueryResetFeatures = {};
+            if (isEnabledExtension(VK_EXT_HOST_QUERY_RESET_EXTENSION_NAME))
+            {
+                physicalDeviceHostQueryResetFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_HOST_QUERY_RESET_FEATURES;
+                physicalDeviceHostQueryResetFeatures.pNext = vkExtensions;
+                vkExtensions = &physicalDeviceHostQueryResetFeatures;
+            }
+
             VkPhysicalDeviceFeatures2 physicalDeviceFeatures2 = {};
             physicalDeviceFeatures2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
             physicalDeviceFeatures2.pNext = vkExtensions;
@@ -243,6 +251,7 @@ void VulkanDeviceCaps::fillCapabilitiesList(const DeviceInfo* info)
 #ifdef VK_EXT_custom_border_color
             supportSamplerBorderColor = m_physicalDeviceCustomBorderColorFeatures.customBorderColors && m_physicalDeviceCustomBorderColorFeatures.customBorderColorWithoutFormat;
 #endif
+            hostQueryReset = physicalDeviceHostQueryResetFeatures.hostQueryReset;
             pipelineExecutablePropertiesEnabled = physicalDevicePipelineExecutablePropertiesFeatures.pipelineExecutableInfo;
         }
 

@@ -508,7 +508,7 @@ void VulkanCommandBuffer::cmdResetQueryPool(VulkanRenderQueryPool* pool)
 {
     ASSERT(m_status == CommandBufferStatus::Begin, "not started");
 
-    VulkanWrapper::CmdResetQueryPool(m_commands, pool->getHandle(), 0, pool->getSize());
+    VulkanWrapper::CmdResetQueryPool(m_commands, pool->getHandle(), 0, pool->getPoolSize());
 
     pool->captureInsideCommandBuffer(this, 0);
 }

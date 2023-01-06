@@ -104,9 +104,22 @@ namespace renderer
         virtual void presentFrame() = 0;
         virtual void submit(bool wait = false) = 0;
 
-        //query
-        virtual void beginQuery(Query* query, [[maybe_unused]] const std::string& name = "") = 0;
-        virtual void endQuery(Query* query, [[maybe_unused]] const std::string& name = "") = 0;
+        /**
+        * @brief query begin/end commands. Only for occlusions queries
+        * Can be called inside/outside renderpass
+        * @param const Query* query [required]
+        * @param const std::string& tag [optional]
+        */
+        virtual void beginQuery(const Query* query, [[maybe_unused]] const std::string& tag = "") = 0;
+        virtual void endQuery(const Query* query, [[maybe_unused]] const std::string& tag = "") = 0;
+
+        /**
+        * @brief query timestamp command. Only for timestamp queries
+        * Can be called inside/outside renderpass
+        * @param const Query* query [required]
+        * @param const std::string& tag [optional]
+        */
+        virtual void timestampQuery(const Query* query, [[maybe_unused]] const std::string& tag = "") = 0;
 
         /**
         * @brief draw command by vertex
@@ -187,7 +200,7 @@ namespace renderer
         virtual Pipeline* createPipeline(Pipeline::PipelineType type) = 0;
         virtual void removePipeline(Pipeline* pipeline) = 0;
 
-        virtual Query* createQuery(QueryType type, Query::QueryRespose callback) = 0;
+        virtual Query* createQuery(QueryType type, const Query::QueryRespose& callback, [[maybe_unused]] const std::string& name = "") = 0;
         virtual void removeQuery(Query* query) = 0;
 
         /**

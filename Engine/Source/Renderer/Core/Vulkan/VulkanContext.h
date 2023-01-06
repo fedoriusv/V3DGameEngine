@@ -66,8 +66,9 @@ namespace vk
         void presentFrame() override;
         void submit(bool wait = false) override;
 
-        void beginQuery(Query* query, [[maybe_unused]] const std::string& name = "") override;
-        void endQuery(Query* query, [[maybe_unused]] const std::string& name = "") override;
+        void beginQuery(const Query* query, [[maybe_unused]] const std::string& tag = "") override;
+        void endQuery(const  Query* query, [[maybe_unused]] const std::string& tag = "") override;
+        void timestampQuery(const Query* query, [[maybe_unused]] const std::string& tag = "") override;
 
         void draw(const StreamBufferDescription& desc, u32 firstVertex, u32 vertexCount, u32 firstInstance, u32 instanceCount) override;
         void drawIndexed(const StreamBufferDescription& desc, u32 firstIndex, u32 indexCount, u32 firstInstance, u32 instanceCount) override;
@@ -110,7 +111,7 @@ namespace vk
         RenderPass* createRenderPass(const RenderPassDescription* renderpassDesc) override;
         void removeRenderPass(RenderPass* renderpass) override;
 
-        Query* createQuery(QueryType type, Query::QueryRespose callback) override;
+        Query* createQuery(QueryType type, const Query::QueryRespose& callback, [[maybe_unused]] const std::string& name = "") override;
         void removeQuery(Query* query) override;
 
         static const std::vector<VkDynamicState>& getDynamicStates();

@@ -9,12 +9,12 @@ namespace v3d
 namespace renderer
 {
 
-QueryRequest::QueryRequest(CommandList& cmdList, QueryType type) noexcept
+QueryRequest::QueryRequest(CommandList& cmdList, QueryType type, const std::string& name) noexcept
     : m_cmdList(cmdList)
     , m_query(nullptr)
     , m_type(type)
 {
-    m_query = m_cmdList.getContext()->createQuery(type, std::bind(&QueryRequest::callbackQueryResponse, this, std::placeholders::_1, std::placeholders::_2));
+    m_query = m_cmdList.getContext()->createQuery(type, std::bind(&QueryRequest::callbackQueryResponse, this, std::placeholders::_1, std::placeholders::_2), name);
     ASSERT(m_query, "m_image is nullptr");
     m_query->registerNotify(this);
 }
@@ -74,8 +74,8 @@ void QueryRequest::handleNotify(const utils::Observable* query)
 }
 
 
-QueryTimestampRequest::QueryTimestampRequest(CommandList& cmdList, std::function<void(u32)> callback) noexcept
-    : QueryRequest(cmdList, QueryType::TimeStamp)
+QueryTimestampRequest::QueryTimestampRequest(CommandList& cmdList, std::function<void(u32)> callback, const std::string& name) noexcept
+    : QueryRequest(cmdList, QueryType::TimeStamp, name)
     , m_callback(callback)
 {
 }
@@ -90,6 +90,26 @@ void QueryTimestampRequest::callbackQueryResponse(QueryResult result, const void
 }
 
 QueryTimestampRequest::~QueryTimestampRequest()
+{
+}
+
+
+QueryOcclusionRequest::QueryOcclusionRequest(CommandList& cmdList, std::function<void(u32)> callback, const std::string& name) noexcept
+    : QueryRequest(cmdList, QueryType::TimeStamp, name)
+    , m_callback(callback)
+{
+}
+
+void QueryOcclusionRequest::callbackQueryResponse(QueryResult result, const void* data)
+{
+    if (m_callback && result == QueryResult::Success && data)
+    {
+        u32 samples = *reinterpret_cast<const u32*>(data);
+        m_callback(samples);
+    }
+}
+
+QueryOcclusionRequest::~QueryOcclusionRequest()
 {
 }
 

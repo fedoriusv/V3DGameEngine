@@ -19,18 +19,22 @@ namespace renderer
 
         using QueryRespose = std::function<void(QueryResult result, const void* data)>;
 
+        Query() = delete;
         Query(Query&) = delete;
-        ~Query() = default;
 
-        Query(QueryType type, QueryRespose callback) noexcept;
+        Query(QueryType type, const QueryRespose& callback, [[maybe_unused]] const std::string& name = "") noexcept;
+        virtual ~Query();
 
         QueryType getType() const;
-        QueryRespose getCallback() const;
+        const std::string& getName() const;
+
+        QueryRespose callback() const;
 
     protected:
 
         QueryType m_type;
         QueryRespose m_callback;
+        std::string m_name;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

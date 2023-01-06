@@ -57,6 +57,7 @@ namespace vk
 
         bool enableSamplerMirrorClampToEdge = false;
         bool supportSamplerBorderColor = false;
+        bool hostQueryReset = false;
 
         bool preTransform = false;
         bool renderpassTransformQCOM = false;
@@ -95,7 +96,6 @@ namespace vk
 #ifdef VK_EXT_custom_border_color
         VkPhysicalDeviceCustomBorderColorFeaturesEXT m_physicalDeviceCustomBorderColorFeatures = {};
 #endif
-
         static std::vector<const c8*>        s_enableExtensions;
     };
 

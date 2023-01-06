@@ -23,12 +23,19 @@ namespace renderer
         QueryRequest(QueryRequest&) = delete;
         ~QueryRequest();
 
-        void handleNotify(const utils::Observable* query) override;
-        virtual void callbackQueryResponse(QueryResult result, const void* data) = 0;
-
     protected:
 
-        explicit QueryRequest(CommandList& cmdList, QueryType type) noexcept;
+        /**
+        * @brief QueryRequest constructor.
+        * Private method. Use child interface for call it.
+        *
+        * @param std::function<void(u32)> callback [required]
+        * @param cconst std::string& name [optional]
+        */
+        explicit QueryRequest(CommandList& cmdList, QueryType type, [[maybe_unused]] const std::string& name = "") noexcept;
+
+        void handleNotify(const utils::Observable* query) override;
+        virtual void callbackQueryResponse(QueryResult result, const void* data) = 0;
 
         friend CommandList;
         CommandList& m_cmdList;
@@ -50,25 +57,55 @@ namespace renderer
         QueryTimestampRequest(QueryTimestampRequest&) = delete;
         ~QueryTimestampRequest();
 
-        void callbackQueryResponse(QueryResult result, const void* data) override;
+        /**
+        * @brief Timestamp signature in nanoseconds
+        */
+        using Timestamp = void(u32);
 
     private:
 
-        QueryTimestampRequest(CommandList& cmdList, std::function<void(u32)>) noexcept;
+        /**
+        * @brief QueryTimestampRequest constructor.
+        * Private method. Use createObject interface inside CommandList class to call.
+        *
+        * @param std::function<void(u32)> callback [required]
+        * @param cconst std::string& name [optional]
+        */
+        QueryTimestampRequest(CommandList& cmdList, std::function<Timestamp> callback, [[maybe_unused]] const std::string& name = "") noexcept;
+
+        void callbackQueryResponse(QueryResult result, const void* data) override;
+
+        friend CommandList;
+        std::function<Timestamp> m_callback;
+    };
+
+    /**
+    * @brief QueryOcclusionRequest class. Game side
+    */
+    class QueryOcclusionRequest : public QueryRequest
+    {
+    public:
+
+        QueryOcclusionRequest() = delete;
+        QueryOcclusionRequest(QueryOcclusionRequest&) = delete;
+        ~QueryOcclusionRequest();
+
+    private:
+
+        /**
+        * @brief QueryOcclusionRequest constructor.
+        * Private method. Use createObject interface inside CommandList class to call.
+        *
+        * @param std::function<void(u32)> callback [required]
+        * @param cconst std::string& name [optional]
+        */
+        QueryOcclusionRequest(CommandList& cmdList, std::function<void(u32)> callback, [[maybe_unused]] const std::string& name = "") noexcept;
+
+        void callbackQueryResponse(QueryResult result, const void* data) override;
 
         friend CommandList;
         std::function<void(u32)> m_callback;
     };
-
-    ///**
-    //* @brief QueryOcclusionRequest class. Game side
-    //*/
-    //class QueryOcclusionRequest : public QueryRequest
-    //{
-    //public:
-
-    //    QueryOcclusionRequest();
-    //};
 
     ///**
     //* @brief QueryBinaryOcclusionRequest class. Game side

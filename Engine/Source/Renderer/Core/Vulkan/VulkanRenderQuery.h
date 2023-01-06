@@ -39,6 +39,9 @@ namespace vk
 
         VkDevice m_device;
         VkQueryPool m_pool;
+        bool m_waitComlete;
+
+        friend class VulkanRenderQueryManager;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -52,14 +55,14 @@ namespace vk
 
         struct QueryState
         {
-            Query* _query;
-            RenderQuery* _renderQuery;
-            std::string _name;
-            //CmdBuffer;
+            const Query* const _query = nullptr;
+            RenderQuery* const _renderQuery = nullptr;
+            VulkanCommandBuffer* const _cmdBuffer = nullptr;
+            std::string _tag;
 
             bool isValid() const
             {
-                return _query != nullptr && _renderQuery != nullptr;
+                return _query != nullptr && _renderQuery != nullptr && _cmdBuffer != nullptr;
             }
         };
 
@@ -69,27 +72,30 @@ namespace vk
         explicit VulkanRenderQueryManager(VkDevice device, u32 poolSize) noexcept;
         ~VulkanRenderQueryManager();
 
-        RenderQuery* acquireRenderQuery(QueryType type);
+        RenderQuery* acquireRenderQuery(QueryType type, VulkanCommandBuffer* cmdBuffer);
 
         void updateRenderQuery();
 
-        bool attachRenderQueryState(const QueryState& state);
+        bool applyRenderQueryState(const QueryState& state);
         QueryState findRenderQueryState(Query* query) const;
 
     private:
+
+        RenderQueryPool* acquireRenderQueryPool(QueryType type, VulkanCommandBuffer* cmdBuffer);
+        void resetRenderQueryPool(RenderQueryPool* pool, VulkanCommandBuffer* cmdBuffer);
 
         VkDevice m_device;
         u32 m_poolSize;
 
         struct Pools
         {
-            RenderQueryPool* m_currentPool;
             std::list<RenderQueryPool*> m_usedPools;
             std::list<RenderQueryPool*> m_freePools;
+            RenderQueryPool* m_currentPool = nullptr;
         };
         Pools m_pools[toEnumType(QueryType::Count)];
 
-        std::map<Query*, QueryState> m_renderStates;
+        std::multimap<Query*, QueryState> m_renderStates;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

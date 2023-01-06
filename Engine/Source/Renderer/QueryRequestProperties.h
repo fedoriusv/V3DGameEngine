@@ -9,7 +9,7 @@ namespace renderer
     /**
     * @brief QueryType enum
     */
-    enum class QueryType
+    enum class QueryType : u32
     {
         First = 0,
 
@@ -19,6 +19,17 @@ namespace renderer
         TimeStamp,
 
         Count
+    };
+
+    /**
+    * @brief QueryStatus enum
+    */
+    enum class QueryStatus
+    {
+        Ready,
+        Started,
+        Ended,
+        Submited
     };
 
     /**

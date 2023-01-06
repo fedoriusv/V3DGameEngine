@@ -492,6 +492,105 @@ public:
     }
 };
 
+    /*CommandBeginQuery*/
+class CommandBeginQuery final : public Command
+{
+public:
+    CommandBeginQuery(CommandBeginQuery&) = delete;
+    CommandBeginQuery(Query* query, const std::string& tag) noexcept
+        : m_query(query)
+        , m_tag(tag)
+    {
+#if DEBUG_COMMAND_LIST
+        LOG_DEBUG("CommandBeginQuery constructor");
+#endif //DEBUG_COMMAND_LIST
+    }
+
+    ~CommandBeginQuery()
+    {
+#if DEBUG_COMMAND_LIST
+        LOG_DEBUG("CommandBeginQuery constructor");
+#endif //DEBUG_COMMAND_LIST
+    }
+
+    void execute(const CommandList& cmdList)
+    {
+#if DEBUG_COMMAND_LIST
+        LOG_DEBUG("CommandBeginQuery execute");
+#endif //DEBUG_COMMAND_LIST
+        cmdList.getContext()->beginQuery(m_query, m_tag);
+    }
+
+    Query* const m_query;
+    std::string m_tag;
+};
+
+    /*CommandEndQuery*/
+class CommandEndQuery final : public Command
+{
+public:
+    CommandEndQuery(CommandEndQuery&) = delete;
+    CommandEndQuery(Query* query, const std::string& tag) noexcept
+        : m_query(query)
+        , m_tag(tag)
+    {
+#if DEBUG_COMMAND_LIST
+        LOG_DEBUG("CommandEndQuery constructor");
+#endif //DEBUG_COMMAND_LIST
+    }
+
+    ~CommandEndQuery()
+    {
+#if DEBUG_COMMAND_LIST
+        LOG_DEBUG("CommandEndQuery constructor");
+#endif //DEBUG_COMMAND_LIST
+    }
+
+    void execute(const CommandList& cmdList)
+    {
+#if DEBUG_COMMAND_LIST
+        LOG_DEBUG("CommandEndQuery execute");
+#endif //DEBUG_COMMAND_LIST
+        cmdList.getContext()->endQuery(m_query, m_tag);
+    }
+
+    Query* const m_query;
+    std::string m_tag;
+};
+
+    /*CommandTimestampQuery*/
+class CommandTimestampQuery final : public Command
+{
+public:
+    CommandTimestampQuery(CommandTimestampQuery&) = delete;
+    CommandTimestampQuery(Query* query, const std::string& tag) noexcept
+        : m_query(query)
+        , m_tag(tag)
+    {
+#if DEBUG_COMMAND_LIST
+        LOG_DEBUG("CommandTimestampQuery constructor");
+#endif //DEBUG_COMMAND_LIST
+    }
+
+    ~CommandTimestampQuery()
+    {
+#if DEBUG_COMMAND_LIST
+        LOG_DEBUG("CommandTimestampQuery constructor");
+#endif //DEBUG_COMMAND_LIST
+    }
+
+    void execute(const CommandList& cmdList)
+    {
+#if DEBUG_COMMAND_LIST
+        LOG_DEBUG("CommandTimestampQuery execute");
+#endif //DEBUG_COMMAND_LIST
+        cmdList.getContext()->timestampQuery(m_query, m_tag);
+    }
+
+    Query* const m_query;
+    std::string m_tag;
+};
+
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 
 CommandList::CommandList(Context* context, CommandListType type) noexcept
@@ -593,17 +692,46 @@ void CommandList::presentFrame()
     }
 }
 
-void CommandList::beginQueryRequest(const QueryRequest* query)
+void CommandList::beginQueryRequest(const QueryRequest* query, const std::string& tag)
 {
+    ASSERT(query && query->m_query, "Must be valid");
+    ASSERT(query->m_type == QueryType::Occlusion || query->m_type == QueryType::BinaryOcclusion, "Support occlusion requests only");
     if (CommandList::isImmediate())
     {
-        //m_context->beginQuery(QueryRequest)
+        m_context->beginQuery(query->m_query, tag);
+    }
+    else
+    {
+        CommandList::pushCommand(new CommandBeginQuery(query->m_query, tag));
     }
 }
 
-void CommandList::endQueryRequest(const QueryRequest* query)
+void CommandList::endQueryRequest(const QueryRequest* query, const std::string& tag)
 {
+    ASSERT(query && query->m_query, "Must be valid");
+    ASSERT(query->m_type == QueryType::Occlusion || query->m_type == QueryType::BinaryOcclusion, "Support occlusion requests only");
+    if (CommandList::isImmediate())
+    {
+        m_context->endQuery(query->m_query, tag);
+    }
+    else
+    {
+        CommandList::pushCommand(new CommandEndQuery(query->m_query, tag));
+    }
+}
 
+void CommandList::timestampQueryRequest(const QueryRequest* query, const std::string& tag)
+{
+    ASSERT(query && query->m_query, "Must be valid");
+    ASSERT(query->m_type == QueryType::TimeStamp, "Support timestamp requests only");
+    if (CommandList::isImmediate())
+    {
+        m_context->timestampQuery(query->m_query, tag);
+    }
+    else
+    {
+        CommandList::pushCommand(new CommandTimestampQuery(query->m_query, tag));
+    }
 }
 
 void CommandList::draw(const StreamBufferDescription& desc, u32 firstVertex, u32 countVertex, u32 countInstance)

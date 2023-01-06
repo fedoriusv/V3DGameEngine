@@ -37,14 +37,19 @@ void EmptyContext::submit(bool wait)
     LOG_DEBUG("EmptyContext::submit");
 }
 
-void EmptyContext::beginQuery(Query* query, const std::string& name)
+void EmptyContext::beginQuery(const Query* query, const std::string& tag)
 {
     LOG_DEBUG("EmptyContext::beginQuery");
 }
 
-void EmptyContext::endQuery(Query* query, const std::string& name)
+void EmptyContext::endQuery(const Query* query, const std::string& tag)
 {
     LOG_DEBUG("EmptyContext::endQuery");
+}
+
+void EmptyContext::timestampQuery(const Query* query, const std::string& tag)
+{
+    LOG_DEBUG("EmptyContext::timestampQuery");
 }
 
 void EmptyContext::clearBackbuffer(const core::Vector4D& color)
@@ -94,7 +99,7 @@ void EmptyContext::removeRenderPass(RenderPass* renderpass)
     LOG_DEBUG("EmptyContext::removeRenderPass");
 }
 
-Query* EmptyContext::createQuery(QueryType type, Query::QueryRespose callback)
+Query* EmptyContext::createQuery(QueryType type, const Query::QueryRespose& callback, const std::string& name)
 {
     LOG_DEBUG("EmptyContext::createQuery");
     return nullptr;

@@ -965,30 +965,52 @@ void VulkanContext::submit(bool wait)
 #endif
 }
 
-void VulkanContext::beginQuery(Query* query, const std::string& name)
+void VulkanContext::beginQuery(const Query* query, const std::string& tag)
 {
-    VulkanCommandBuffer* drawBuffer = m_currentBufferState.acquireAndStartCommandBuffer(CommandTargetType::CmdDrawBuffer);
-    RenderQuery* renderQuery = m_renderQueryManager->acquireRenderQuery(query->getType());
-    drawBuffer->cmdBeginQuery(static_cast<VulkanRenderQueryPool*>(renderQuery->_pool), renderQuery->_index);
+    //ASSERT(query->getStatus() == QueryStatus::Ready, "Must be ready for start");
+    //ASSERT(query->getType() == QueryType::Occlusion || query->getType() == QueryType::BinaryOcclusion, "Must be occlusion");
+    //VulkanCommandBuffer* drawBuffer = m_currentBufferState.acquireAndStartCommandBuffer(CommandTargetType::CmdDrawBuffer);
+    //RenderQuery* renderQuery = m_renderQueryManager->acquireRenderQuery(query->getType(), drawBuffer);
+    //drawBuffer->cmdBeginQuery(static_cast<VulkanRenderQueryPool*>(renderQuery->_pool), renderQuery->_index);
 
-    m_renderQueryManager->attachRenderQueryState(
+    //m_renderQueryManager->applyRenderQueryState(
+    //    VulkanRenderQueryManager::QueryState
+    //    {
+    //        query,
+    //        renderQuery,
+    //        drawBuffer,
+    //        name,
+    //    });
+}
+
+void VulkanContext::endQuery(const Query* query, const std::string& tag)
+{
+    //ASSERT(query->getStatus() == QueryStatus::Started, "Must be started");
+    //ASSERT(query->getType() == QueryType::Occlusion || query->getType() == QueryType::BinaryOcclusion, "Must be occlusion");
+    //VulkanRenderQueryManager::QueryState renderQueryState = m_renderQueryManager->findRenderQueryState(query);
+    //if (renderQueryState.isValid())
+    //{
+    //    VulkanCommandBuffer* drawBuffer = renderQueryState._cmdBuffer;
+    //    RenderQuery* renderQuery = renderQueryState._renderQuery;
+    //    drawBuffer->cmdEndQuery(static_cast<VulkanRenderQueryPool*>(renderQuery->_pool), renderQuery->_index);
+    //}
+}
+
+void VulkanContext::timestampQuery(const Query* query, const std::string& tag)
+{
+    ASSERT(query->getType() == QueryType::TimeStamp, "Must be timestamp");
+    VulkanCommandBuffer* drawBuffer = m_currentBufferState.acquireAndStartCommandBuffer(CommandTargetType::CmdDrawBuffer);
+    RenderQuery* renderQuery = m_renderQueryManager->acquireRenderQuery(query->getType(), drawBuffer);
+    drawBuffer->cmdWriteTimestamp(static_cast<VulkanRenderQueryPool*>(renderQuery->_pool), renderQuery->_index, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT);
+
+    m_renderQueryManager->applyRenderQueryState(
         VulkanRenderQueryManager::QueryState
         {
             query,
             renderQuery,
-            name,
+            drawBuffer,
+            tag,
         });
-}
-
-void VulkanContext::endQuery(Query* query, const std::string& name)
-{
-    VulkanRenderQueryManager::QueryState renderQueryState = m_renderQueryManager->findRenderQueryState(query);
-    if (renderQueryState.isValid())
-    {
-        VulkanCommandBuffer* drawBuffer = m_currentBufferState.getAcitveBuffer(CommandTargetType::CmdDrawBuffer);
-        RenderQuery* renderQuery = renderQueryState._renderQuery;
-        drawBuffer->cmdEndQuery(static_cast<VulkanRenderQueryPool*>(renderQuery->_pool), renderQuery->_index);
-    }
 }
 
 void VulkanContext::clearBackbuffer(const core::Vector4D& color)
@@ -1204,9 +1226,9 @@ void VulkanContext::removeRenderPass(RenderPass* renderpass)
     }
 }
 
-Query* VulkanContext::createQuery(QueryType type, Query::QueryRespose callback)
+Query* VulkanContext::createQuery(QueryType type, const Query::QueryRespose& callback, const std::string& name)
 {
-    return new VulkanQuery(type, callback);
+    return new VulkanQuery(type, callback, name);
 }
 
 void VulkanContext::removeQuery(Query* query)

@@ -5,6 +5,8 @@
 #include "VulkanWrapper.h"
 #include "VulkanDebug.h"
 #include "VulkanContext.h"
+#include "VulkanQuery.h"
+#include "VulkanDeviceCaps.h"
 
 namespace v3d
 {
@@ -39,6 +41,7 @@ VulkanRenderQueryPool::VulkanRenderQueryPool(VkDevice device, QueryType type, u3
     : RenderQueryPool(type, size)
     , m_device(device)
     , m_pool(VK_NULL_HANDLE)
+    , m_waitComlete(false)
 {
     LOG_DEBUG("VulkanRenderQueryPool::VulkanRenderQueryPool constructor %llx", this);
 }
@@ -66,18 +69,6 @@ bool VulkanRenderQueryPool::create()
         return false;
     }
 
-    //for (u32 index = 0; index < )
-
-    //m_queries.resize(m_size);
-    //u32 index = 0;
-    //for (RenderQuery& query : m_queries)
-    //{
-    //    query._pool = this;
-    //    query._index = index;
-
-    //    ++index;
-    //}
-
     return true;
 }
 
@@ -92,9 +83,13 @@ void VulkanRenderQueryPool::destroy()
 
 void VulkanRenderQueryPool::reset()
 {
-    //hostQueryReset must be enabled
-    //ASSERT(m_pool, "mist be not nullptr");
-    //VulkanWrapper::ResetQueryPool(m_device, m_pool, 0, m_size);
+    RenderQueryPool::reset();
+
+    ASSERT(m_pool, "must be not nullptr");
+    if (VulkanDeviceCaps::getInstance()->hostQueryReset)
+    {
+        VulkanWrapper::ResetQueryPool(m_device, m_pool, 0, m_size);
+    }
 }
 
 VkQueryPool VulkanRenderQueryPool::getHandle() const
@@ -103,12 +98,11 @@ VkQueryPool VulkanRenderQueryPool::getHandle() const
     return m_pool;
 }
 
-
 VulkanRenderQueryManager::VulkanRenderQueryManager(VkDevice device, u32 poolSize) noexcept
     : m_device(device)
     , m_poolSize(poolSize)
 {
-    for (int poolIndex = toEnumType(QueryType::First); poolIndex < toEnumType(QueryType::Count); ++poolIndex)
+    for (u32 poolIndex = toEnumType(QueryType::First); poolIndex < toEnumType(QueryType::Count); ++poolIndex)
     {
         m_pools[poolIndex].m_currentPool = nullptr;
     }
@@ -116,19 +110,35 @@ VulkanRenderQueryManager::VulkanRenderQueryManager(VkDevice device, u32 poolSize
 
 VulkanRenderQueryManager::~VulkanRenderQueryManager()
 {
-    for (int poolIndex = toEnumType(QueryType::First); poolIndex < toEnumType(QueryType::Count); ++poolIndex)
+    for (u32 poolIndex = toEnumType(QueryType::First); poolIndex < toEnumType(QueryType::Count); ++poolIndex)
     {
         ASSERT(!m_pools[poolIndex].m_currentPool, "must be nullptr");
         ASSERT(m_pools[poolIndex].m_usedPools.empty(), "must be empty");
     }
 }
 
-RenderQuery* VulkanRenderQueryManager::acquireRenderQuery(QueryType type)
+RenderQuery* VulkanRenderQueryManager::acquireRenderQuery(QueryType type, VulkanCommandBuffer* cmdBuffer)
 {
-   /* Pools& pools = m_pools[toEnumType(type)];
+    VulkanRenderQueryPool* pool = static_cast<VulkanRenderQueryPool*>(VulkanRenderQueryManager::acquireRenderQueryPool(type, cmdBuffer));
+    auto [query, index] = pool->takeFreeRenderQuery();
+    ASSERT(query, "must be valid");
+
+    return query;
+}
+
+RenderQueryPool* VulkanRenderQueryManager::acquireRenderQueryPool(QueryType type, VulkanCommandBuffer* cmdBuffer)
+{
+    Pools& pools = m_pools[toEnumType(type)];
     if (pools.m_currentPool)
     {
-        return pools.m_currentPool;
+        if (pools.m_currentPool->isFilled())
+        {
+            pools.m_usedPools.push_back(pools.m_currentPool);
+        }
+        else
+        {
+            return pools.m_currentPool;
+        }
     }
 
     if (!pools.m_freePools.empty())
@@ -136,6 +146,7 @@ RenderQuery* VulkanRenderQueryManager::acquireRenderQuery(QueryType type)
         pools.m_currentPool = pools.m_freePools.front();
         pools.m_freePools.pop_front();
 
+        resetRenderQueryPool(pools.m_currentPool, cmdBuffer);
         return pools.m_currentPool;
     }
 
@@ -148,63 +159,102 @@ RenderQuery* VulkanRenderQueryManager::acquireRenderQuery(QueryType type)
 
         return nullptr;
     }
-    newPool->reset();
+
+    resetRenderQueryPool(newPool, cmdBuffer);
     pools.m_currentPool = newPool;
 
-    return pools.m_currentPool;*/
-    return nullptr;
+    return pools.m_currentPool;
 }
 
-//void VulkanRenderQueryManager::removeRenderQueryPool(RenderQueryPool* pool)
-//{
-//    pool
-//}
+void VulkanRenderQueryManager::resetRenderQueryPool(RenderQueryPool* pool, VulkanCommandBuffer* cmdBuffer)
+{
+    pool->reset();
+    if (!VulkanDeviceCaps::getInstance()->hostQueryReset)
+    {
+        VulkanRenderQueryPool* vkPool = static_cast<VulkanRenderQueryPool*>(pool);
+        cmdBuffer->cmdResetQueryPool(vkPool);
+    }
+}
 
 VulkanRenderQueryManager::QueryState VulkanRenderQueryManager::findRenderQueryState(Query* query) const
 {
+    auto found = m_renderStates.find(query);
+    if (found != m_renderStates.end())
+    {
+        return found->second;
+    }
+
     return QueryState();
 }
 
-bool VulkanRenderQueryManager::attachRenderQueryState(const QueryState& state)
+bool VulkanRenderQueryManager::applyRenderQueryState(const QueryState& state)
 {
-    return false;
+    //VulkanQuery* vkQuery = static_cast<VulkanQuery*>(state._query);
+    //vkQuery->m_status = QueryStatus::Started;
+    state._renderQuery->_used = true;
+
+    //auto found = m_renderStates.emplace(state._query, state);
+    return true;
 }
 
 void VulkanRenderQueryManager::updateRenderQuery()
 {
-    //for (int poolIndex = toEnumType(QueryType::First); poolIndex < toEnumType(QueryType::Count); ++poolIndex)
-    //{
-    //    Pools& pools = m_pools[poolIndex];
-    //    if (pools.m_currentPool)
-    //    {
-    //        VulkanRenderQueryPool* vkCurrentPool = static_cast<VulkanRenderQueryPool*>(pools.m_currentPool);
-    //        if (vkCurrentPool->isCaptured())
-    //        {
-    //            pools.m_usedPools.push_back(vkCurrentPool);
-    //            pools.m_currentPool = nullptr;
-    //        }
-    //    }
+    for (u32 poolIndex = toEnumType(QueryType::First); poolIndex < toEnumType(QueryType::Count); ++poolIndex)
+    {
+        Pools& pools = m_pools[poolIndex];
+        if (pools.m_currentPool)
+        {
+            VulkanRenderQueryPool* vkCurrentPool = static_cast<VulkanRenderQueryPool*>(pools.m_currentPool);
+            if (vkCurrentPool->isCaptured())
+            {
+                pools.m_usedPools.push_back(vkCurrentPool);
+                pools.m_currentPool = nullptr;
+            }
+        }
 
-    //    for (auto iter = pools.m_usedPools.begin(); iter != pools.m_usedPools.end();)
-    //    {
-    //        VulkanRenderQueryPool* vkPool = static_cast<VulkanRenderQueryPool*>(*iter);
-    //        if (!vkPool->isCaptured())
-    //        {
-    //            //callback with query
-    //            std::vector<u32> result;
-    //            result.resize(vkPool->getSize());
-    //            VkResult VkResult = VulkanWrapper::GetQueryPoolResults(m_device, vkPool->getHandle(), 0, 1, vkPool->getSize() * sizeof(u32), result.data(), sizeof(u32), 0);
-    //            if (VkResult == VK_SUCCESS)
-    //            {
-    //                iter = pools.m_usedPools.erase(iter);
-    //                pools.m_freePools.push_back(vkPool);
+        for (auto iter = pools.m_usedPools.begin(); iter != pools.m_usedPools.end();)
+        {
+            VulkanRenderQueryPool* vkPool = static_cast<VulkanRenderQueryPool*>(*iter);
+            if (!vkPool->isCaptured())
+            {
+                std::vector<u32> results;
+                results.resize(vkPool->getSize());
 
-    //                continue;
-    //            }
-    //        }
-    //        ++iter;
-    //    }
-    //}
+                VkQueryResultFlags flags = 0;
+                if (vkPool->m_waitComlete)
+                {
+                    flags |= VK_QUERY_RESULT_WAIT_BIT;
+                }
+
+                VkResult vkResult = VulkanWrapper::GetQueryPoolResults(m_device, vkPool->getHandle(), 0, vkPool->getSize(), vkPool->getSize() * sizeof(u32), results.data(), sizeof(u32), flags);
+                if (vkResult == VK_SUCCESS)
+                {
+                    iter = pools.m_usedPools.erase(iter);
+                    pools.m_freePools.push_back(vkPool);
+
+                    [this](VulkanRenderQueryPool* pool, std::vector<u32>& results) -> void
+                    {
+                        for (auto iter = m_renderStates.begin(); iter != m_renderStates.end();)
+                        {
+                            QueryState& state = iter->second;
+                            if (state._renderQuery->_pool == pool)
+                            {
+                                u32 result = results[state._renderQuery->_index];
+                                std::invoke(state._query->callback(), QueryResult::Success, &result);
+
+                                iter = m_renderStates.erase(iter);
+                            }
+
+                            ++iter;
+                        }
+                    }(vkPool, results);
+
+                    continue;
+                }
+            }
+            ++iter;
+        }
+    }
 }
 
 } //namespace vk
