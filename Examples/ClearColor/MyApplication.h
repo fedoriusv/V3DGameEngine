@@ -4,7 +4,7 @@
 #include "Renderer/CommandList.h"
 
 #include "Platform/Window.h"
-#include "Renderer/Context.h"
+#include "Renderer/Core/Context.h"
 #include "Event/InputEventHandler.h"
 
 class MyApplication
@@ -28,5 +28,5 @@ private:
     v3d::renderer::Context* m_Context;
     v3d::renderer::CommandList* m_CommandList;
 
-    v3d::core::Vector4D m_clearColor;
+    v3d::core::Vector4D m_ClearColor;
 };

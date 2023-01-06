@@ -7,6 +7,7 @@
 #include "Resource/ShaderSourceStreamLoader.h"
 
 #include "Stream/StreamManager.h"
+#include "Utils/Logger.h"
 
 using namespace v3d;
 
@@ -145,19 +146,27 @@ void SimpleTriangle::init(v3d::renderer::CommandList* commandList, const core::D
     m_CommandList->submitCommands(true);
     m_CommandList->flushCommands();
 
-    //m_Querytest = m_CommandList->createObject<renderer::QueryRequest>(renderer::QueryType::TimeStamp, [](float value)->void
-    //    {
-    //        //TODO
-    //    });
+    m_QuerytimeStart = m_CommandList->createObject<renderer::QueryTimestampRequest>([this](u32 value)->void
+        {
+            m_FrameTime._start = value;
+        }, "framestart");
+
+    m_QuerytimeEnd = m_CommandList->createObject<renderer::QueryTimestampRequest>([this](u32 value)->void
+        {
+            m_FrameTime._end = value;
+        }, "frameend");
 }
 
 void SimpleTriangle::update(f32 dt)
 {
     m_Camera->update(dt);
+    LOG_WARNING("GPU Frametime: %.2f ms", (f32)(m_FrameTime._end - m_FrameTime._start)/1000000.f);
 }
 
 void SimpleTriangle::render()
 {
+    m_CommandList->timestampQueryRequest(m_QuerytimeStart);
+
     //update uniforms
     struct UBO
     {
@@ -178,8 +187,6 @@ void SimpleTriangle::render()
     ubo1.modelMatrix.setTranslation(core::Vector3D(-1, 0, 0));
     ubo1.viewMatrix = m_Camera->getCamera().getViewMatrix();
 
-    //m_CommandList->beginQueryRequest(m_Querytest);
-
     m_Program->bindUniformsBuffer<renderer::ShaderType::Vertex>({ "buffer" }, 0, (u32)sizeof(UBO), &ubo1);
     m_CommandList->draw(renderer::StreamBufferDescription(m_Geometry, 0), 0, 3, 1);
 
@@ -191,7 +198,7 @@ void SimpleTriangle::render()
     m_Program->bindUniformsBuffer<renderer::ShaderType::Vertex>({ "buffer" }, 0, (u32)sizeof(UBO), &ubo2);
     m_CommandList->draw(renderer::StreamBufferDescription(m_Geometry, 0), 0, 3, 1);
 
-    //m_CommandList->endQueryRequest(m_Querytest);
+    m_CommandList->timestampQueryRequest(m_QuerytimeEnd);
 }
 
 void SimpleTriangle::terminate()

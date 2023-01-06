@@ -1,12 +1,11 @@
 #include "MyApplication.h"
 #include "Utils/Logger.h"
 
-#include "Renderer/Context.h"
 #include "Event/InputEventReceiver.h"
 #include "Platform/Window.h"
 
-#include "Renderer/Object/Texture.h"
-#include "Renderer/Object/RenderTargetState.h"
+#include "Renderer/Texture.h"
+#include "Renderer/RenderTargetState.h"
 #include "Renderer/Formats.h"
 
 
@@ -39,7 +38,7 @@ MyApplication::MyApplication(int& argc, char** argv)
             s32 bvalue = std::rand();
             f32 b = 1.0f / RAND_MAX * bvalue;
 
-            m_clearColor = {r, g, b, 1.0f };
+            m_ClearColor = {r, g, b, 1.0f };
 
         }
     });
@@ -60,7 +59,7 @@ MyApplication::MyApplication(int& argc, char** argv)
             s32 bvalue = std::rand();
             f32 b = 1.0f / RAND_MAX * bvalue;
 
-            m_clearColor = {r, g, b, 1.0f };
+            m_ClearColor = {r, g, b, 1.0f };
 
         }
     });
@@ -99,7 +98,7 @@ void MyApplication::Initialize()
     ASSERT(m_Context, "context is nullptr");
 
     m_CommandList = new renderer::CommandList(m_Context, renderer::CommandList::CommandListType::DelayedCommandList);
-    m_clearColor = { 1.0, 0.0, 0.0, 1.0 };
+    m_ClearColor = { 1.0, 0.0, 0.0, 1.0 };
 }
 
 bool MyApplication::Running(renderer::CommandList& commandList)
@@ -107,7 +106,7 @@ bool MyApplication::Running(renderer::CommandList& commandList)
     //Frame
     commandList.beginFrame();
 
-    commandList.clearBackbuffer(m_clearColor);
+    commandList.clearBackbuffer(m_ClearColor);
 
     commandList.endFrame();
     commandList.presentFrame();
