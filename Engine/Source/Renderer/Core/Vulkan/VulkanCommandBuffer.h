@@ -161,6 +161,7 @@ namespace vk
         };
 
         RenderPassState m_renderpassState;
+        bool m_focreDrawingToSwapchain;
         Context* const m_context;
 
 #if VULKAN_DEBUG_MARKERS

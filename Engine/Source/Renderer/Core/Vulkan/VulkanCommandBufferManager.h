@@ -56,6 +56,8 @@ namespace vk
 
         void resetPools();
 
+        static void drawToSwapchain(VulkanCommandBuffer* buffer, const class VulkanImage* swapchainImage);
+
     private:
 
         VkDevice m_device;

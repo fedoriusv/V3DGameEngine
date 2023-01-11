@@ -1271,6 +1271,11 @@ void VulkanImage::clear(Context* context, const core::Vector4D& color)
     commandBuffer->cmdPipelineBarrier(this, VK_PIPELINE_STAGE_TRANSFER_BIT | VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
     commandBuffer->cmdClearImage(this, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &clearColorValue);
     commandBuffer->cmdPipelineBarrier(this, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT | VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, layout);
+    
+    if (m_swapchainImage)
+    {
+        VulkanCommandBufferManager::drawToSwapchain(commandBuffer, this);
+    }
 }
 
 void VulkanImage::clear(Context* context, f32 depth, u32 stencil)

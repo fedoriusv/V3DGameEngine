@@ -34,6 +34,8 @@ VulkanCommandBuffer::VulkanCommandBuffer(Context* context, VkDevice device, Comm
     , m_capturedFrameIndex(-1)
     , m_isInsideRenderPass(false)
 
+    , m_focreDrawingToSwapchain(false)
+
     , m_context(context)
 {
     LOG_DEBUG("VulkanCommandBuffer constructor %llx", this);
@@ -175,6 +177,7 @@ void VulkanCommandBuffer::refreshFenceStatus()
                 }
 
                 VulkanCommandBuffer::releaseResources();
+                m_focreDrawingToSwapchain = false;
             }
         }
     }
@@ -185,6 +188,11 @@ bool VulkanCommandBuffer::isBackbufferPresented() const
     if (m_renderpassState._renderpass)
     {
         return m_renderpassState._renderpass->isDrawingToSwapchain();
+    }
+
+    if (m_focreDrawingToSwapchain)
+    {
+        return true;
     }
 
     return false;

@@ -218,6 +218,12 @@ void VulkanCommandBufferManager::resetPools()
     }
 }
 
+void VulkanCommandBufferManager::drawToSwapchain(VulkanCommandBuffer* buffer, const VulkanImage* swapchainImage)
+{
+    ASSERT(buffer && swapchainImage->isSwapchain(), "Buffer is nullptr");
+    buffer->m_focreDrawingToSwapchain = true;
+}
+
 VkCommandPool VulkanCommandBufferManager::createCommandPool(VkDevice device, VkCommandPoolCreateFlags flag, u32 familyIndex)
 {
     VkCommandPoolCreateInfo commandPoolCreateInfo = {};
