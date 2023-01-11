@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.15)
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
 ##############################################################
@@ -245,6 +245,7 @@ add_library(${ENGINE_NAME} STATIC
 target_include_directories(${ENGINE_NAME} BEFORE 
 	PRIVATE ${LIB_INCLUDE_DIRECTORY}
 	PRIVATE $<$<BOOL:BUILD_VULKAN_SDK>:${VULKAN_SDK_INCLUDE_DIRECTORY}>)
+
 ##############################################################
 
 set(BUILD_DEPENDENCIES "")

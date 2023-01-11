@@ -5,7 +5,7 @@ Support render: Vulkan, DirectX<br/>
 Support platform: Windows, Android, XBOX<br/>
 
 >Required:<br/>
->-- CMake 3.10 or later<br/>
+>-- CMake 3.15 or later<br/>
 >-- C++20<br/>
 
 ## Install
