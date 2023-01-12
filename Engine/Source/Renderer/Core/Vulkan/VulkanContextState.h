@@ -102,7 +102,7 @@ namespace vk
                     }
 
                     ASSERT(pool, "nullptr");
-                    ASSERT(!pool->isCaptured(), "caputred");
+                    //ASSERT(!pool->isCaptured(), "captured"); The pool can be captured, due few descriptor sets can lay in one pool
                     pool->captureInsideCommandBuffer(cmdBuffer, 0);
 
                     if (m_currentDesctiptorsSets[setId] != set)
