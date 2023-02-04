@@ -91,6 +91,9 @@ const std::vector<const c8*> k_deviceExtensionsList =
 #ifdef VK_EXT_astc_decode_mode
     VK_EXT_ASTC_DECODE_MODE_EXTENSION_NAME,
 #endif
+#ifdef VK_EXT_host_query_reset
+    //VK_EXT_HOST_QUERY_RESET_EXTENSION_NAME,
+#endif
 };
 
 std::vector<VkDynamicState> VulkanContext::s_dynamicStates =
@@ -593,13 +596,15 @@ bool VulkanContext::createDevice()
     }
 
     void* vkExtension = nullptr;
-#if VULKAN_VALIDATION_LAYERS_CALLBACK //needs for validations check
+
+#ifdef VK_EXT_descriptor_indexing
     if (VulkanDeviceCaps::checkDeviceExtension(m_deviceInfo._physicalDevice, VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME))
     {
         VkPhysicalDeviceDescriptorIndexingFeaturesEXT& physicalDeviceDescriptorIndexingFeatures = VulkanDeviceCaps::getInstance()->m_physicalDeviceDescriptorIndexingFeatures;
         physicalDeviceDescriptorIndexingFeatures.pNext = vkExtension;
         vkExtension = &physicalDeviceDescriptorIndexingFeatures;
     }
+#endif
 
 #ifdef VK_EXT_custom_border_color
     if (VulkanDeviceCaps::checkDeviceExtension(m_deviceInfo._physicalDevice, VK_EXT_CUSTOM_BORDER_COLOR_EXTENSION_NAME))
@@ -610,15 +615,23 @@ bool VulkanContext::createDevice()
     }
 #endif
 
+#ifdef VK_EXT_host_query_reset
+    if (VulkanDeviceCaps::checkDeviceExtension(m_deviceInfo._physicalDevice, VK_EXT_HOST_QUERY_RESET_EXTENSION_NAME))
+    {
+        VkPhysicalDeviceHostQueryResetFeatures& physicalDeviceHostQueryResetFeatures = VulkanDeviceCaps::getInstance()->m_physicalDeviceHostQueryResetFeatures;
+        physicalDeviceHostQueryResetFeatures.pNext = vkExtension;
+        vkExtension = &physicalDeviceHostQueryResetFeatures;
+    }
+#endif
+
     if (VulkanDeviceCaps::checkDeviceExtension(m_deviceInfo._physicalDevice, VK_KHR_PIPELINE_EXECUTABLE_PROPERTIES_EXTENSION_NAME))
     {
         VkPhysicalDevicePipelineExecutablePropertiesFeaturesKHR physicalDevicePipelineExecutablePropertiesFeatures = {};
         physicalDevicePipelineExecutablePropertiesFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PIPELINE_EXECUTABLE_PROPERTIES_FEATURES_KHR;
-        physicalDevicePipelineExecutablePropertiesFeatures.pNext = nullptr;
+        physicalDevicePipelineExecutablePropertiesFeatures.pNext = vkExtension;
         physicalDevicePipelineExecutablePropertiesFeatures.pipelineExecutableInfo = VulkanDeviceCaps::getInstance()->pipelineExecutablePropertiesEnabled;
         vkExtension = &physicalDevicePipelineExecutablePropertiesFeatures;
     }
-#endif //VULKAN_VALIDATION_LAYERS_CALLBACK
 
     VkDeviceCreateInfo deviceCreateInfo = {};
     deviceCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;

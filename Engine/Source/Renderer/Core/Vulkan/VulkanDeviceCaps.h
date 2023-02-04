@@ -91,10 +91,14 @@ namespace vk
         VkPhysicalDeviceProperties          m_deviceProperties = {};
         VkPhysicalDeviceMemoryProperties    m_deviceMemoryProps = {};
         std::vector<VkQueueFamilyProperties> m_queueFamilyProperties = {};
-
+#ifdef VK_EXT_descriptor_indexing
         VkPhysicalDeviceDescriptorIndexingFeaturesEXT m_physicalDeviceDescriptorIndexingFeatures = {};
+#endif
 #ifdef VK_EXT_custom_border_color
         VkPhysicalDeviceCustomBorderColorFeaturesEXT m_physicalDeviceCustomBorderColorFeatures = {};
+#endif
+#ifdef VK_EXT_host_query_reset
+        VkPhysicalDeviceHostQueryResetFeatures m_physicalDeviceHostQueryResetFeatures = {};
 #endif
         static std::vector<const c8*>        s_enableExtensions;
     };

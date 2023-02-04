@@ -206,14 +206,17 @@ void VulkanDeviceCaps::fillCapabilitiesList(const DeviceInfo* info)
         //PhysicalDeviceFeatures2
         {
             void* vkExtensions = nullptr;
+
+#ifdef VK_EXT_descriptor_indexing
             if (isEnabledExtension(VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME))
             {
                 m_physicalDeviceDescriptorIndexingFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES_EXT;
-                m_physicalDeviceDescriptorIndexingFeatures.pNext = nullptr;
+                m_physicalDeviceDescriptorIndexingFeatures.pNext = vkExtensions;
                 vkExtensions = &m_physicalDeviceDescriptorIndexingFeatures;
 
                 supportDescriptorIndexing = true;
             }
+#endif
 
 #ifdef VK_EXT_custom_border_color
             if (isEnabledExtension(VK_EXT_CUSTOM_BORDER_COLOR_EXTENSION_NAME))
@@ -224,20 +227,21 @@ void VulkanDeviceCaps::fillCapabilitiesList(const DeviceInfo* info)
             }
 #endif
 
+#ifdef VK_EXT_host_query_reset
+            if (isEnabledExtension(VK_EXT_HOST_QUERY_RESET_EXTENSION_NAME))
+            {
+                m_physicalDeviceHostQueryResetFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_HOST_QUERY_RESET_FEATURES;
+                m_physicalDeviceHostQueryResetFeatures.pNext = vkExtensions;
+                vkExtensions = &m_physicalDeviceHostQueryResetFeatures;
+            }
+#endif
+
             VkPhysicalDevicePipelineExecutablePropertiesFeaturesKHR physicalDevicePipelineExecutablePropertiesFeatures = {};
             if (isEnabledExtension(VK_KHR_PIPELINE_EXECUTABLE_PROPERTIES_EXTENSION_NAME))
             {
                 physicalDevicePipelineExecutablePropertiesFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PIPELINE_EXECUTABLE_PROPERTIES_FEATURES_KHR;
-                physicalDevicePipelineExecutablePropertiesFeatures.pNext = nullptr;
+                physicalDevicePipelineExecutablePropertiesFeatures.pNext = vkExtensions;
                 vkExtensions = &physicalDevicePipelineExecutablePropertiesFeatures;
-            }
-
-            VkPhysicalDeviceHostQueryResetFeatures physicalDeviceHostQueryResetFeatures = {};
-            if (isEnabledExtension(VK_EXT_HOST_QUERY_RESET_EXTENSION_NAME))
-            {
-                physicalDeviceHostQueryResetFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_HOST_QUERY_RESET_FEATURES;
-                physicalDeviceHostQueryResetFeatures.pNext = vkExtensions;
-                vkExtensions = &physicalDeviceHostQueryResetFeatures;
             }
 
             VkPhysicalDeviceFeatures2 physicalDeviceFeatures2 = {};
@@ -247,11 +251,15 @@ void VulkanDeviceCaps::fillCapabilitiesList(const DeviceInfo* info)
             VulkanWrapper::GetPhysicalDeviceFeatures2(info->_physicalDevice, &physicalDeviceFeatures2);
             memcpy(&m_deviceFeatures, &physicalDeviceFeatures2.features, sizeof(VkPhysicalDeviceFeatures));
 
+#ifdef VK_EXT_descriptor_indexing
             supportDescriptorIndexing = m_physicalDeviceDescriptorIndexingFeatures.descriptorBindingUpdateUnusedWhilePending;
+#endif
 #ifdef VK_EXT_custom_border_color
             supportSamplerBorderColor = m_physicalDeviceCustomBorderColorFeatures.customBorderColors && m_physicalDeviceCustomBorderColorFeatures.customBorderColorWithoutFormat;
 #endif
-            hostQueryReset = physicalDeviceHostQueryResetFeatures.hostQueryReset;
+#ifdef VK_EXT_host_query_reset
+            hostQueryReset = m_physicalDeviceHostQueryResetFeatures.hostQueryReset;
+#endif
             pipelineExecutablePropertiesEnabled = physicalDevicePipelineExecutablePropertiesFeatures.pipelineExecutableInfo;
         }
 
@@ -259,13 +267,15 @@ void VulkanDeviceCaps::fillCapabilitiesList(const DeviceInfo* info)
         {
             void* vkExtensions = nullptr;
 
+#ifdef VK_EXT_descriptor_indexing
             VkPhysicalDeviceDescriptorIndexingPropertiesEXT physicalDeviceDescriptorIndexingProperties = {};
             if (isEnabledExtension(VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME))
             {
                 physicalDeviceDescriptorIndexingProperties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_PROPERTIES_EXT;
-                physicalDeviceDescriptorIndexingProperties.pNext = nullptr;
+                physicalDeviceDescriptorIndexingProperties.pNext = vkExtensions;
                 vkExtensions = &physicalDeviceDescriptorIndexingProperties;
             }
+#endif
 
 #if VULKAN_DEBUG
             VkPhysicalDeviceDriverPropertiesKHR physicalDeviceDriverProperties = {};
