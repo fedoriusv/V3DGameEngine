@@ -1068,7 +1068,7 @@ bool VulkanImage::create()
             imageUsage |= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
         }
 
-        if ((m_usage & TextureUsage::TextureUsage_Attachment) == TextureUsage::TextureUsage_Attachment)
+        if (m_usage == TextureUsage::TextureUsage_Attachment)
         {
             imageUsage |= VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT;
         }
@@ -1310,7 +1310,7 @@ bool VulkanImage::upload(Context* context, const core::Dimension3D& size, u32 la
 {
     ASSERT(m_mipLevels == mips, "should be same");
     ASSERT(m_layerLevels == layers, "should be same");
-    ASSERT((m_samples & VkSampleCountFlagBits::VK_SAMPLE_COUNT_1_BIT) == VkSampleCountFlagBits::VK_SAMPLE_COUNT_1_BIT, "wrong sample count");
+    ASSERT(m_samples == VkSampleCountFlagBits::VK_SAMPLE_COUNT_1_BIT, "wrong sample count");
 
     u64 calculatedSize = ImageFormat::calculateImageSize(size, mips, layers, VulkanImage::convertVkImageFormatToFormat(m_format));
     return VulkanImage::internalUpload(context, core::Dimension3D(0, 0, 0), size, layers, mips, calculatedSize, data);
@@ -1320,7 +1320,7 @@ bool VulkanImage::upload(Context* context, const core::Dimension3D& offsets, con
 {
     ASSERT(m_mipLevels == 1, "should be 1");
     ASSERT(m_layerLevels == layers, "should be same");
-    ASSERT((m_samples & VkSampleCountFlagBits::VK_SAMPLE_COUNT_1_BIT) == VkSampleCountFlagBits::VK_SAMPLE_COUNT_1_BIT, "wrong sample count");
+    ASSERT(m_samples == VkSampleCountFlagBits::VK_SAMPLE_COUNT_1_BIT, "wrong sample count");
 
     ASSERT(size > offsets, "wrong offset");
     core::Dimension3D diffSize = (size - offsets);
@@ -1737,7 +1737,7 @@ bool VulkanImage::createViewImage()
     {
         if (VulkanImage::isColorFormat(m_format))
         {
-            ASSERT((m_aspectMask & VK_IMAGE_ASPECT_COLOR_BIT) == VK_IMAGE_ASPECT_COLOR_BIT, "must be color");
+            ASSERT(m_aspectMask == VK_IMAGE_ASPECT_COLOR_BIT, "must be color");
             VkImageViewCreateInfo imageViewCreateInfo = {};
             imageViewCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
             imageViewCreateInfo.pNext = vkExtensions;

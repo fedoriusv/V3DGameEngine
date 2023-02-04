@@ -515,6 +515,7 @@ void VulkanCommandBuffer::cmdWriteTimestamp(VulkanRenderQueryPool* pool, u32 ind
 void VulkanCommandBuffer::cmdResetQueryPool(VulkanRenderQueryPool* pool)
 {
     ASSERT(m_status == CommandBufferStatus::Begin, "not started");
+    ASSERT(!m_isInsideRenderPass, "must be out of renderpass");
 
     VulkanWrapper::CmdResetQueryPool(m_commands, pool->getHandle(), 0, pool->getPoolSize());
 
@@ -656,7 +657,7 @@ void VulkanCommandBuffer::cmdClearImage(VulkanImage* image, VkImageLayout imageL
     ASSERT(m_status == CommandBufferStatus::Begin, "not started");
     ASSERT(!isInsideRenderPass(), "outside render pass");
 
-    ASSERT(image->getImageAspectFlags() & VK_IMAGE_ASPECT_COLOR_BIT, " image is not VK_IMAGE_ASPECT_COLOR_BIT");
+    ASSERT(image->getImageAspectFlags() == VK_IMAGE_ASPECT_COLOR_BIT, " image is not VK_IMAGE_ASPECT_COLOR_BIT");
 
     image->captureInsideCommandBuffer(this, 0);
     if (m_level == CommandBufferLevel::PrimaryBuffer)
@@ -694,7 +695,7 @@ void VulkanCommandBuffer::cmdResolveImage(VulkanImage* src, VkImageLayout srcLay
     ASSERT(!isInsideRenderPass(), "should be outside render pass");
 
     ASSERT(src->getSampleCount() > VK_SAMPLE_COUNT_1_BIT, "should be > 1");
-    ASSERT((dst->getSampleCount() & VK_SAMPLE_COUNT_1_BIT) == VK_SAMPLE_COUNT_1_BIT, "should be 1");
+    ASSERT(dst->getSampleCount() == VK_SAMPLE_COUNT_1_BIT, "should be 1");
 
     src->captureInsideCommandBuffer(this, 0);
     dst->captureInsideCommandBuffer(this, 0);
