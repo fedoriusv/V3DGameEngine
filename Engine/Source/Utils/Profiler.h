@@ -4,13 +4,26 @@
 #include "Singleton.h"
 #include "Timer.h"
 
-#define PRINT_TO_LOG 1
-
 namespace v3d
 {
 namespace utils
 {
     /////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    /**
+    * @brief ProfilerStaticstics
+    */
+    struct ProfilerStaticstics
+    {
+        ProfilerStaticstics() noexcept = default;
+        virtual ~ProfilerStaticstics() = default;
+
+        virtual void print() const = 0;
+    };
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    class ProfileManager;
 
     /**
     * @brief Profiler class. Uses for render profiler
@@ -19,11 +32,30 @@ namespace utils
     {
     public:
 
+        /**
+        * @brief CommonMetric struct
+        */
+        struct CommonMetric
+        {
+            CommonMetric() noexcept = default;
+
+            u32 _type = 0;
+            u32 _index = 0;
+
+            std::string _name;
+            std::string _desctiption;
+            std::string _unit;
+            f64 _value = 0.0;
+        };
+
+        /**
+        * @brief IntervalFactor enum. Collect counters by factor
+        */
         enum class IntervalFactor
         {
             PerFrame,
             PerSecond,
-            Counter
+            Custom
         };
 
         Profiler() noexcept = default;
@@ -31,48 +63,40 @@ namespace utils
 
         bool isActive() const;
 
-        virtual void start() = 0;
-        virtual void stop() = 0;
+    protected:
 
         virtual void update(f32 dt) = 0;
         virtual void reset() = 0;
 
-        virtual void printToLog() const = 0;
-
-    protected:
+        virtual void collect() = 0;
+        virtual const ProfilerStaticstics* statistic() const = 0;
 
         const IntervalFactor m_factor = IntervalFactor::PerFrame;
         bool m_active = false;
+
+        friend ProfileManager;
     };
 
     /**
     * @brief ProfilerManager class. Handles Profiler
     */
-    class ProfileManager final : public Singleton<ProfileManager>
+    class ProfileManager final
     {
     public:
-
-        void attach(Profiler* profiler);
-        bool dettach(Profiler* profiler);
-
-        void start();
-        void stop();
-
-        void update();
-
-        void freeAllProfilers();
-
-    private:
-
-        /**
-        * @brief reset counter every n miliseconds.
-        */
-        const u32 k_resetTime = 1000 * 1;
 
         ProfileManager() noexcept = default;
         ~ProfileManager();
 
+        void attach(Profiler* profiler);
+        bool dettach(Profiler* profiler);
+
+        void update();
+        void freeProfilers();
+
+    private:
+
         std::set<Profiler*> m_profilers;
+        std::vector<const ProfilerStaticstics*> m_statistic;
         utils::Timer m_timer;
 
         friend Singleton<ProfileManager>;
