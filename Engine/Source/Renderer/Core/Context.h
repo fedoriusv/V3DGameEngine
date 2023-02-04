@@ -73,7 +73,7 @@ namespace renderer
         * @param DeviceMask mask [optional]
         * @return Context pointer
         */
-        static Context* createContext(platform::Window* window, RenderType type, DeviceMask mask = DeviceMask::GraphicMask);
+        [[nodiscard]] static Context* createContext(platform::Window* window, RenderType type, DeviceMask mask = DeviceMask::GraphicMask);
 
         /**
         * @brief destroyContext static function. Used for destroy context.
@@ -98,10 +98,21 @@ namespace renderer
         */
         virtual const DeviceCaps* getDeviceCaps() const = 0;
         
-        //frame
+        /**
+        * @brief frame beginFrame/endFrame
+        */
         virtual void beginFrame() = 0;
         virtual void endFrame() = 0;
+
+        /**
+        * @brief frame presentFrame
+        */
         virtual void presentFrame() = 0;
+
+        /**
+        * @brief frame submit
+        * @param bool wait [optional]
+        */
         virtual void submit(bool wait = false) = 0;
 
         /**
@@ -181,27 +192,30 @@ namespace renderer
         virtual void setPipeline(const Pipeline::PipelineComputeInfo* pipelineInfo) = 0;
 
         //objects
-        virtual Image* createImage(TextureTarget target, Format format, const core::Dimension3D& dimension, u32 layers, u32 mipmapLevel, TextureUsageFlags flags, [[maybe_unused]] const std::string& name = "") = 0;
-        virtual Image* createImage(TextureTarget target, Format format, const core::Dimension3D& dimension, u32 layers, TextureSamples samples, TextureUsageFlags flags, [[maybe_unused]] const std::string& name = "") = 0;
+        [[nodiscard]] virtual Image* createImage(TextureTarget target, Format format, const core::Dimension3D& dimension, u32 layers, u32 mipmapLevel, TextureUsageFlags flags, [[maybe_unused]] const std::string& name = "") = 0;
+        [[nodiscard]] virtual Image* createImage(TextureTarget target, Format format, const core::Dimension3D& dimension, u32 layers, TextureSamples samples, TextureUsageFlags flags, [[maybe_unused]] const std::string& name = "") = 0;
         virtual void removeImage(Image* image) = 0;
 
-        virtual Buffer* createBuffer(Buffer::BufferType type, u16 usageFlag, u64 size, [[maybe_unused]] const std::string& name = "") = 0;
+        [[nodiscard]] virtual Buffer* createBuffer(Buffer::BufferType type, u16 usageFlag, u64 size, [[maybe_unused]] const std::string& name = "") = 0;
         virtual void removeBuffer(Buffer* buffer) = 0;
 
-        virtual Sampler* createSampler(const SamplerDescription& desc) = 0;
+        [[nodiscard]] virtual Sampler* createSampler(const SamplerDescription& desc) = 0;
         virtual void removeSampler(Sampler* sampler) = 0;
 
-        virtual Framebuffer* createFramebuffer(const std::vector<Image*>& attachments, const core::Dimension2D& size) = 0;
+        [[nodiscard]] virtual Framebuffer* createFramebuffer(const std::vector<Image*>& attachments, const core::Dimension2D& size) = 0;
         virtual void removeFramebuffer(Framebuffer* framebuffer) = 0;
 
-        virtual RenderPass* createRenderPass(const RenderPassDescription* renderpassDesc) = 0;
+        [[nodiscard]] virtual RenderPass* createRenderPass(const RenderPassDescription* renderpassDesc) = 0;
         virtual void removeRenderPass(RenderPass* renderpass) = 0;
 
-        virtual Pipeline* createPipeline(Pipeline::PipelineType type) = 0;
+        [[nodiscard]] virtual Pipeline* createPipeline(Pipeline::PipelineType type) = 0;
         virtual void removePipeline(Pipeline* pipeline) = 0;
 
-        virtual Query* createQuery(QueryType type, const Query::QueryRespose& callback, [[maybe_unused]] const std::string& name = "") = 0;
+        [[nodiscard]] virtual Query* createQuery(QueryType type, const Query::QueryRespose& callback, [[maybe_unused]] const std::string& name = "") = 0;
         virtual void removeQuery(Query* query) = 0;
+
+        virtual void clearBackbuffer(const core::Vector4D& color) = 0;
+        virtual void generateMipmaps(Image* image, u32 layer, TransitionOp state) = 0;
 
         /**
         * @brief getCurrentFrameIndex
@@ -221,9 +235,6 @@ namespace renderer
         */
         Format getBackbufferFormat() const;
 
-        virtual void clearBackbuffer(const core::Vector4D& color) = 0;
-        virtual void generateMipmaps(Image* image, u32 layer, TransitionOp state) = 0;
-
     protected:
 
         Context() noexcept;
@@ -241,6 +252,10 @@ namespace renderer
 
         RenderType  m_renderType;
         u64         m_frameCounter;
+
+#if FRAME_PROFILER_ENABLE
+        utils::ProfileManager m_frameProfiler;
+#endif //FRAME_PROFILER_ENABLE
 
         friend Backbuffer;
         friend PipelineState;
