@@ -11,7 +11,9 @@
 #include "VulkanGraphicPipeline.h"
 #include "VulkanDescriptorSet.h"
 
-#define PATCH_SPIRV_REMOVE_UNUSED_LOCATIONS 1
+#if defined(USE_SPIRV)
+#   define PATCH_SPIRV_REMOVE_UNUSED_LOCATIONS 1
+#endif
 #include "Resource/ShaderSpirVPatcherRemoveUnusedLocations.h"
 #include "Resource/ShaderSpirVPatcherVertexTransform.h"
 #include "Resource/ShaderSpirVPatcherInvertOrdinate.h"
