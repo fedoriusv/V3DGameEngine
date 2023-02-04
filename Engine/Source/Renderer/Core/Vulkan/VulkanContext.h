@@ -138,6 +138,7 @@ namespace vk
         bool prepareDispatch(VulkanCommandBuffer* drawBuffer);
 
         void invalidateStates();
+        void finalizeSubmit();
 
         bool createInstance();
         bool createDevice();
