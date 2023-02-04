@@ -106,10 +106,6 @@ bool Window::updateWindow(Window* window)
 
 void Window::detroyWindow(Window* window)
 {
-#if FRAME_PROFILER_ENABLE
-    utils::ProfileManager::freeInstance();
-#endif //FRAME_PROFILER_ENABLE
-
     ASSERT(window, "window is nullptr");
     window->destroy();
 

@@ -227,12 +227,16 @@ namespace vk
         std::vector<VulkanSemaphore*> m_waitSemaphores;
         std::vector<VulkanSemaphore*> m_submitSemaphores;
         std::vector<VulkanSemaphore*> m_presentSemaphores;
-        void finalizeCommandBufferSubmit();
 
         VulkanResourceDeleter m_resourceDeleter;
 
         bool m_insideFrame;
         platform::Window* const m_window;
+
+#if FRAME_PROFILER_ENABLE
+        RenderFrameProfiler* m_CPUProfiler;
+#endif
+
 #if THREADED_PRESENT
         class PresentThread* m_presentThread;
 #endif //THREADED_PRESENT

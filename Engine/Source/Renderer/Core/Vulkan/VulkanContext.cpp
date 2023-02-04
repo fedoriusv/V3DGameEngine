@@ -23,8 +23,6 @@
 #include "VulkanRenderQuery.h"
 #include "VulkanQuery.h"
 
-#include "Renderer/Core/FrameTimeProfiler.h"
-#include "Renderer/Core/GPUTimeProfiler.h"
 #ifdef PLATFORM_ANDROID
 #   include "Platform/Android/HWCPProfiler.h"
 #endif //PLATFORM_ANDROID
@@ -104,8 +102,6 @@ std::vector<VkDynamicState> VulkanContext::s_dynamicStates =
     //VK_DYNAMIC_STATE_STENCIL_REFERENCE
 };
 
-//GPUTimeProfiler* g_gpuProfiler;
-
 VulkanContext::VulkanContext(platform::Window* window, DeviceMask mask) noexcept
     : m_deviceCaps(*VulkanDeviceCaps::getInstance())
     , m_swapchain(nullptr)
@@ -130,6 +126,10 @@ VulkanContext::VulkanContext(platform::Window* window, DeviceMask mask) noexcept
 
     , m_insideFrame(false)
     , m_window(window)
+
+#if FRAME_PROFILER_ENABLE
+    , m_CPUProfiler(nullptr)
+#endif //FRAME_PROFILER_ENABLE
 {
     LOG_DEBUG("VulkanContext created this %llx", this);
 
@@ -167,6 +167,10 @@ VulkanContext::~VulkanContext()
 
     ASSERT(m_deviceInfo._device == VK_NULL_HANDLE, "Device is not nullptr");
     ASSERT(m_deviceInfo._instance == VK_NULL_HANDLE, "Instance is not nullptr");
+
+#if FRAME_PROFILER_ENABLE
+    ASSERT(!m_CPUProfiler, "m_CPUProfiler not nullptr");
+#endif
 }
 
 bool VulkanContext::initialize()
@@ -263,11 +267,22 @@ bool VulkanContext::initialize()
     m_currentContextState = new VulkanContextState(m_deviceInfo._device, m_descriptorSetManager, m_uniformBufferManager);
 
 #if FRAME_PROFILER_ENABLE
-    utils::ProfileManager::getInstance()->attach(new FrameTimeProfiler());
-    //g_gpuProfiler = new GPUTimeProfiler();
-    //utils::ProfileManager::getInstance()->attach(g_gpuProfiler);
+    m_CPUProfiler = new RenderFrameProfiler(
+        {
+            RenderFrameProfiler::FrameCounter::FrameTime,
+            RenderFrameProfiler::FrameCounter::DrawCallCommands,
+            RenderFrameProfiler::FrameCounter::UpdateSubmitResorces,
+            RenderFrameProfiler::FrameCounter::SetPipelineCommands,
+            RenderFrameProfiler::FrameCounter::BindResourceCommands,
+            RenderFrameProfiler::FrameCounter::QueryCommands,
+        },
+        {
+            //RenderFrameProfiler::FrameCounter::DrawCalls,
+        });
+    m_frameProfiler.attach(m_CPUProfiler);
+
 #   if defined(PLATFORM_ANDROID)
-    utils::ProfileManager::getInstance()->attach(new android::HWCPProfiler(
+    m_frameProfiler.attach(new android::HWCPProfiler(
         {
             android::HWCPProfiler::CpuCounter::Cycles,
             android::HWCPProfiler::CpuCounter::Instructions,
@@ -658,7 +673,12 @@ void VulkanContext::destroy()
     }
 
 #if FRAME_PROFILER_ENABLE
-    utils::ProfileManager::getInstance()->freeAllProfilers();
+    if (m_CPUProfiler)
+    {
+        m_frameProfiler.dettach(m_CPUProfiler);
+        delete m_CPUProfiler;
+        m_CPUProfiler = nullptr;
+    }
 #endif //FRAME_PROFILER_ENABLE
 
 #if THREADED_PRESENT
@@ -802,6 +822,12 @@ void VulkanContext::destroy()
 
 void VulkanContext::beginFrame()
 {
+#if FRAME_PROFILER_ENABLE
+    m_frameProfiler.update();
+
+    RenderFrameProfiler::StackProfiler stackFrameProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::FrameTime);
+#endif //FRAME_PROFILER_ENABLE
+
     ASSERT(!m_insideFrame, "must be outside");
     m_insideFrame = true;
 
@@ -817,10 +843,6 @@ void VulkanContext::beginFrame()
     LOG_DEBUG("VulkanContext::beginFrame %llu, image index %u", m_frameCounter, index);
 #endif //VULKAN_DEBUG
 
-#if VULKAN_DUMP
-    VulkanDump::getInstance()->dumpFrameNumber(m_frameCounter);
-#endif
-
     ASSERT(!m_currentBufferState.isCurrentBufferAcitve(CommandTargetType::CmdDrawBuffer), "buffer exist");
     [[maybe_unused]] VulkanCommandBuffer* drawBuffer = m_currentBufferState.acquireAndStartCommandBuffer(CommandTargetType::CmdDrawBuffer);
 #if SWAPCHAIN_ON_ADVANCE
@@ -828,31 +850,19 @@ void VulkanContext::beginFrame()
     m_currentTransitionState.transitionImages(drawBuffer, { { m_swapchain->getSwapchainImage(prevImageIndex), { 0, 1, 0, 1} } }, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
 #endif //SWAPCHAIN_ON_ADVANCE
 
-#if FRAME_PROFILER_ENABLE
-    //QueryState state
-    //{
-    //    "frame time",
-    //    this,
-    //    query,
-    //};
-    //RenderQuery timeQuery = m_renderQueryManager->acquireRenderQuery(QueryType::TimeStamp);
-    //drawBuffer->cmdResetQueryPool(timeQuery._pool);
-    //drawBuffer->cmdWriteTimestamp(&timeQuery, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT);
-    //g_gpuProfiler->attachBeginFrame(timeQuery);
-
-    utils::ProfileManager::getInstance()->update();
-    utils::ProfileManager::getInstance()->start();
-#endif //FRAME_PROFILER_ENABLE
+#if VULKAN_DUMP
+    VulkanDump::getInstance()->dumpFrameNumber(m_frameCounter);
+#endif
 }
 
 void VulkanContext::endFrame()
 {
+#if FRAME_PROFILER_ENABLE
+    RenderFrameProfiler::StackProfiler stackFrameProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::FrameTime);
+#endif //FRAME_PROFILER_ENABLE
+
     ASSERT(m_insideFrame, "must be inside");
     m_insideFrame = false;
-
-#if FRAME_PROFILER_ENABLE
-    utils::ProfileManager::getInstance()->stop();
-#endif //FRAME_PROFILER_ENABLE
 
 #if VULKAN_DEBUG
     LOG_DEBUG("VulkanContext::endFrame %llu", m_frameCounter);
@@ -868,6 +878,11 @@ void VulkanContext::presentFrame()
 #endif //VULKAN_DEBUG
 
     VulkanContext::submit();
+
+#if FRAME_PROFILER_ENABLE
+    RenderFrameProfiler::StackProfiler stackFrameProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::FrameTime);
+    RenderFrameProfiler::StackProfiler stackProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::PresentCommand);
+#endif //FRAME_PROFILER_ENABLE
 
     std::vector<VulkanSemaphore*> semaphores;
     semaphores.insert(semaphores.end(), m_waitSemaphores.begin(), m_waitSemaphores.end());
@@ -885,6 +900,31 @@ void VulkanContext::presentFrame()
 
 void VulkanContext::submit(bool wait)
 {
+#if FRAME_PROFILER_ENABLE
+    RenderFrameProfiler::StackProfiler stackFrameProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::FrameTime);
+    m_CPUProfiler->start(RenderFrameProfiler::FrameCounter::SubmitCommand);
+#endif //FRAME_PROFILER_ENABLE
+
+    //Query commands. TODO
+    m_renderQueryManager->prepare([this]() -> VulkanCommandBuffer*
+        {
+            return m_currentBufferState.acquireAndStartCommandBuffer(CommandTargetType::CmdUploadBuffer);
+        });
+    if (m_currentBufferState.isCurrentBufferAcitve(CommandTargetType::CmdResetQuerytBuffer))
+    {
+        VulkanCommandBuffer* queryBuffer = m_currentBufferState.getAcitveBuffer(CommandTargetType::CmdResetQuerytBuffer);
+        if (queryBuffer->getStatus() == VulkanCommandBuffer::CommandBufferStatus::Begin)
+        {
+            queryBuffer->endCommandBuffer();
+        }
+
+        std::vector<VulkanSemaphore*> querySemaphores; //Must be empty
+        m_cmdBufferManager->submit(queryBuffer, querySemaphores);
+        m_currentBufferState.invalidateCommandBuffer(CommandTargetType::CmdResetQuerytBuffer);
+
+        VulkanWrapper::DeviceWaitIdle(m_deviceInfo._device);
+    }
+
     //Uploads commands
     VulkanSemaphore* uploadSemaphore = nullptr;
     if (m_currentBufferState.isCurrentBufferAcitve(CommandTargetType::CmdUploadBuffer))
@@ -921,10 +961,7 @@ void VulkanContext::submit(bool wait)
             ASSERT(m_currentContextState->getCurrentTypedPipeline<VulkanGraphicPipeline>(), "nullptr");
             drawBuffer->cmdEndRenderPass();
         }
-        //
-        //Query::RenderQuery* timeQuery = m_renderQueryPoolManager->acquireRenderQueryPool(QueryType::TimeStamp);
-        //drawBuffer->cmdWriteTimestamp(timeQuery, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT);
-        //
+
         drawBuffer->endCommandBuffer();
         m_uniformBufferManager->markToUse(drawBuffer, 0);
 
@@ -957,8 +994,13 @@ void VulkanContext::submit(bool wait)
         m_currentBufferState.invalidateCommandBuffer(CommandTargetType::CmdDrawBuffer);
     }
 
-    VulkanContext::finalizeCommandBufferSubmit();
     std::swap(m_waitSemaphores, m_submitSemaphores);
+
+#if FRAME_PROFILER_ENABLE
+        m_CPUProfiler->stop(RenderFrameProfiler::FrameCounter::SubmitCommand);
+#endif //FRAME_PROFILER_ENABLE
+
+    VulkanContext::finalizeSubmit();
 
 #if VULKAN_DUMP
     VulkanDump::getInstance()->flush();
@@ -998,6 +1040,9 @@ void VulkanContext::endQuery(const Query* query, const std::string& tag)
 
 void VulkanContext::timestampQuery(const Query* query, const std::string& tag)
 {
+#if FRAME_PROFILER_ENABLE
+    RenderFrameProfiler::StackProfiler stackFrameProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::FrameTime);
+#endif //FRAME_PROFILER_ENABLE
     ASSERT(query->getType() == QueryType::TimeStamp, "Must be timestamp");
     VulkanCommandBuffer* drawBuffer = m_currentBufferState.acquireAndStartCommandBuffer(CommandTargetType::CmdDrawBuffer);
     RenderQuery* renderQuery = m_renderQueryManager->acquireRenderQuery(query->getType(), drawBuffer);
@@ -1015,6 +1060,10 @@ void VulkanContext::timestampQuery(const Query* query, const std::string& tag)
 
 void VulkanContext::clearBackbuffer(const core::Vector4D& color)
 {
+#if FRAME_PROFILER_ENABLE
+    RenderFrameProfiler::StackProfiler stackFrameProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::FrameTime);
+#endif //FRAME_PROFILER_ENABLE
+
     ASSERT(m_swapchain, "m_swapchain is nullptr");
     m_swapchain->getBackbuffer()->clear(this, color);
 }
@@ -1024,6 +1073,12 @@ void VulkanContext::setViewport(const core::Rect32& viewport, const core::Vector
 #if VULKAN_DEBUG
     LOG_DEBUG("VulkanContext::setViewport [%u, %u; %u, %u]", viewport.getLeftX(), viewport.getTopY(), viewport.getWidth(), viewport.getHeight());
 #endif //VULKAN_DEBUG
+
+#if FRAME_PROFILER_ENABLE
+    RenderFrameProfiler::StackProfiler stackFrameProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::FrameTime);
+    RenderFrameProfiler::StackProfiler stackProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::SetStateCommands);
+#endif //FRAME_PROFILER_ENABLE
+
     if (VulkanContext::isDynamicState(VK_DYNAMIC_STATE_VIEWPORT))
     {
         VkViewport vkViewport = {};
@@ -1053,6 +1108,12 @@ void VulkanContext::setScissor(const core::Rect32& scissor)
 #if VULKAN_DEBUG
     LOG_DEBUG("VulkanContext::setScissor [%u, %u; %u, %u]", scissor.getLeftX(), scissor.getTopY(), scissor.getWidth(), scissor.getHeight());
 #endif //VULKAN_DEBUG
+
+#if FRAME_PROFILER_ENABLE
+    RenderFrameProfiler::StackProfiler stackFrameProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::FrameTime);
+    RenderFrameProfiler::StackProfiler stackProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::SetStateCommands);
+#endif //FRAME_PROFILER_ENABLE
+
     if (VulkanContext::isDynamicState(VK_DYNAMIC_STATE_SCISSOR))
     {
         VkRect2D vkScissor = {};
@@ -1074,8 +1135,13 @@ void VulkanContext::setRenderTarget(const RenderPass::RenderPassInfo* renderpass
 #if VULKAN_DEBUG
     LOG_DEBUG("VulkanContext::setRenderTarget");
 #endif //VULKAN_DEBUG
-    ASSERT(renderpassInfo && framebufferInfo, "nullptr");
 
+#if FRAME_PROFILER_ENABLE
+    RenderFrameProfiler::StackProfiler stackFrameProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::FrameTime);
+    RenderFrameProfiler::StackProfiler stackProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::SetTargetCommands);
+#endif //FRAME_PROFILER_ENABLE
+
+    ASSERT(renderpassInfo && framebufferInfo, "nullptr");
     RenderPass* renderpass = m_renderpassManager->acquireRenderPass(renderpassInfo->_desc);
     ASSERT(renderpass, "renderpass is nullptr");
     renderpassInfo->_tracker->attach(renderpass);
@@ -1194,6 +1260,15 @@ void VulkanContext::setRenderTarget(const RenderPass::RenderPassInfo* renderpass
 
 void VulkanContext::removeFramebuffer(Framebuffer* framebuffer)
 {
+#if VULKAN_DEBUG
+    LOG_DEBUG("VulkanContext::removeFramebuffer %llx", framebuffer);
+#endif //VULKAN_DEBUG
+
+#if FRAME_PROFILER_ENABLE
+    RenderFrameProfiler::StackProfiler stackFrameProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::FrameTime);
+    RenderFrameProfiler::StackProfiler stackProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::RemoveResources);
+#endif //FRAME_PROFILER_ENABLE
+
     ASSERT(framebuffer, "nullptr");
     VulkanFramebuffer* vkFramebuffer = static_cast<VulkanFramebuffer*>(framebuffer);
     if (m_currentContextState->isCurrentFramebuffer(vkFramebuffer) || vkFramebuffer->isCaptured())
@@ -1211,6 +1286,15 @@ void VulkanContext::removeFramebuffer(Framebuffer* framebuffer)
 
 void VulkanContext::removeRenderPass(RenderPass* renderpass)
 {
+#if VULKAN_DEBUG
+    LOG_DEBUG("VulkanContext::removeRenderPass %llx", renderpass);
+#endif //VULKAN_DEBUG
+
+#if FRAME_PROFILER_ENABLE
+    RenderFrameProfiler::StackProfiler stackFrameProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::FrameTime);
+    RenderFrameProfiler::StackProfiler stackProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::RemoveResources);
+#endif //FRAME_PROFILER_ENABLE
+
     ASSERT(renderpass, "nullptr");
     VulkanRenderPass* vkRenderpass = static_cast<VulkanRenderPass*>(renderpass);
     if (m_currentContextState->isCurrentRenderPass(vkRenderpass) || vkRenderpass->isCaptured())
@@ -1228,28 +1312,50 @@ void VulkanContext::removeRenderPass(RenderPass* renderpass)
 
 Query* VulkanContext::createQuery(QueryType type, const Query::QueryRespose& callback, const std::string& name)
 {
+#if FRAME_PROFILER_ENABLE
+    RenderFrameProfiler::StackProfiler stackFrameProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::FrameTime);
+    RenderFrameProfiler::StackProfiler stackProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::CreateResources);
+#endif //FRAME_PROFILER_ENABLE
+
     return new VulkanQuery(type, callback, name);
 }
 
 void VulkanContext::removeQuery(Query* query)
 {
-    //ASSERT(query, "nullptr");
-    //VulkanQueryPool* vkQueryPool = static_cast<VulkanQueryPool*>(pool);
-    //if (vkQueryPool->isCaptured())
-    //{
-    //    m_resourceDeleter.addResourceToDelete(vkQueryPool, [this, vkQueryPool](VulkanResource* resource) -> void
-    //        {
-    //            m_queryPoolManager->removeQueryPool(vkQueryPool);
-    //        });
-    //}
-    //else
-    //{
-    //    m_queryPoolManager->removeQueryPool(vkQueryPool);
-    //}
+#if VULKAN_DEBUG
+    LOG_DEBUG("VulkanContext::removeQuery %llx", query);
+#endif //VULKAN_DEBUG
+
+#if FRAME_PROFILER_ENABLE
+    RenderFrameProfiler::StackProfiler stackFrameProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::FrameTime);
+    RenderFrameProfiler::StackProfiler stackProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::RemoveResources);
+#endif //FRAME_PROFILER_ENABLE
+
+    ASSERT(query, "nullptr");
+    VulkanQuery* vkQuery = static_cast<VulkanQuery*>(query);
+    vkQuery->m_callback = nullptr;
+
+    if (vkQuery->isCaptured())
+    {
+        m_resourceDeleter.addResourceToDelete(vkQuery, [this, vkQuery](VulkanResource* resource) -> void
+            {
+                vkQuery->notifyObservers();
+                delete vkQuery;
+            });
+}
+    else
+    {
+        vkQuery->notifyObservers();
+        delete vkQuery;
+    }
 }
 
 void VulkanContext::invalidateRenderTarget()
 {
+#if FRAME_PROFILER_ENABLE
+    RenderFrameProfiler::StackProfiler stackFrameProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::FrameTime);
+#endif //FRAME_PROFILER_ENABLE
+
     ASSERT(m_currentContextState->getCurrentRenderpass(), "nullptr");
     VulkanCommandBuffer* drawBuffer = m_currentBufferState.getAcitveBuffer(CommandTargetType::CmdDrawBuffer);
     if (drawBuffer->isInsideRenderPass())
@@ -1260,8 +1366,12 @@ void VulkanContext::invalidateRenderTarget()
 
 void VulkanContext::setPipeline(const Pipeline::PipelineGraphicInfo* pipelineInfo)
 {
-    ASSERT(pipelineInfo, "nullptr");
+#if FRAME_PROFILER_ENABLE
+    RenderFrameProfiler::StackProfiler stackFrameProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::FrameTime);
+    RenderFrameProfiler::StackProfiler stackProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::SetPipelineCommands);
+#endif //FRAME_PROFILER_ENABLE
 
+    ASSERT(pipelineInfo, "nullptr");
     Pipeline* pipeline = m_pipelineManager->acquireGraphicPipeline(*pipelineInfo);
     ASSERT(pipeline, "nullptr");
     pipelineInfo->_tracker->attach(pipeline);
@@ -1274,11 +1384,15 @@ void VulkanContext::setPipeline(const Pipeline::PipelineGraphicInfo* pipelineInf
 
 void VulkanContext::setPipeline(const Pipeline::PipelineComputeInfo* pipelineInfo)
 {
-    ASSERT(pipelineInfo, "nullptr");
+#if FRAME_PROFILER_ENABLE
+    RenderFrameProfiler::StackProfiler stackFrameProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::FrameTime);
+    RenderFrameProfiler::StackProfiler stackProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::SetPipelineCommands);
+#endif //FRAME_PROFILER_ENABLE
 
+    ASSERT(pipelineInfo, "nullptr");
     Pipeline* pipeline = m_pipelineManager->acquireComputePipeline(*pipelineInfo);
-    ASSERT(pipeline, "nullptr");
     pipelineInfo->_tracker->attach(pipeline);
+    ASSERT(pipeline, "nullptr");
 #if VULKAN_DEBUG
     LOG_DEBUG("VulkanContext::setPipeline %xll", pipeline);
 #endif //VULKAN_DEBUG
@@ -1288,6 +1402,15 @@ void VulkanContext::setPipeline(const Pipeline::PipelineComputeInfo* pipelineInf
 
 void VulkanContext::removePipeline(Pipeline* pipeline)
 {
+#if VULKAN_DEBUG
+    LOG_DEBUG("VulkanContext::removePipeline %llx", pipeline);
+#endif //VULKAN_DEBUG
+
+#if FRAME_PROFILER_ENABLE
+    RenderFrameProfiler::StackProfiler stackFrameProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::FrameTime);
+    RenderFrameProfiler::StackProfiler stackProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::RemoveResources);
+#endif //FRAME_PROFILER_ENABLE
+
     ASSERT(pipeline, "nullptr");
     VulkanResource* vkResource = nullptr;
     if (pipeline->getType() == Pipeline::PipelineType::PipelineType_Graphic)
@@ -1322,6 +1445,12 @@ Image* VulkanContext::createImage(TextureTarget target, Format format, const cor
         ASSERT(layers == 6U, "must be 6 layers");
     }
 #endif //VULKAN_DEBUG
+
+#if FRAME_PROFILER_ENABLE
+    RenderFrameProfiler::StackProfiler stackFrameProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::FrameTime);
+    RenderFrameProfiler::StackProfiler stackProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::CreateResources);
+#endif //FRAME_PROFILER_ENABLE
+
     VkFormat vkFormat = VulkanImage::convertImageFormatToVkFormat(format);
     VkExtent3D vkExtent = { dimension.width, dimension.height, dimension.depth };
     VkSampleCountFlagBits vkSamples = VulkanImage::convertRenderTargetSamplesToVkSampleCount(samples);
@@ -1338,6 +1467,12 @@ Image* VulkanContext::createImage(TextureTarget target, Format format, const cor
         ASSERT(layers == 6U, "must be 6 layers");
     }
 #endif //VULKAN_DEBUG
+
+#if FRAME_PROFILER_ENABLE
+    RenderFrameProfiler::StackProfiler stackFrameProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::FrameTime);
+    RenderFrameProfiler::StackProfiler stackProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::CreateResources);
+#endif //FRAME_PROFILER_ENABLE
+
     VkImageType vkType = VulkanImage::convertTextureTargetToVkImageType(target);
     VkFormat vkFormat = VulkanImage::convertImageFormatToVkFormat(format);
     VkExtent3D vkExtent = { dimension.width, dimension.height, dimension.depth };
@@ -1347,6 +1482,15 @@ Image* VulkanContext::createImage(TextureTarget target, Format format, const cor
 
 void VulkanContext::removeImage(Image* image)
 {
+#if VULKAN_DEBUG
+    LOG_DEBUG("VulkanContext::removeImage %llx", image);
+#endif //VULKAN_DEBUG
+
+#if FRAME_PROFILER_ENABLE
+    RenderFrameProfiler::StackProfiler stackFrameProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::FrameTime);
+    RenderFrameProfiler::StackProfiler stackProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::RemoveResources);
+#endif //FRAME_PROFILER_ENABLE
+
     ASSERT(image, "nullptr");
     VulkanImage* vkImage = static_cast<VulkanImage*>(image);
     if (vkImage->isCaptured())
@@ -1373,6 +1517,12 @@ Buffer* VulkanContext::createBuffer(Buffer::BufferType type, u16 usageFlag, u64 
 #if VULKAN_DEBUG
     LOG_DEBUG("VulkanContext::createBuffer");
 #endif //VULKAN_DEBUG
+
+#if FRAME_PROFILER_ENABLE
+    RenderFrameProfiler::StackProfiler stackFrameProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::FrameTime);
+    RenderFrameProfiler::StackProfiler stackProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::CreateResources);
+#endif //FRAME_PROFILER_ENABLE
+
     if (type == Buffer::BufferType::BufferType_VertexBuffer || type == Buffer::BufferType::BufferType_IndexBuffer || type == Buffer::BufferType::BufferType_UniformBuffer)
     {
         return new VulkanBuffer(m_bufferMemoryManager, m_deviceInfo._device, type, usageFlag, size, name);
@@ -1384,6 +1534,15 @@ Buffer* VulkanContext::createBuffer(Buffer::BufferType type, u16 usageFlag, u64 
 
 void VulkanContext::removeBuffer(Buffer* buffer)
 {
+#if VULKAN_DEBUG
+    LOG_DEBUG("VulkanContext::removeBuffer %llx", buffer);
+#endif //VULKAN_DEBUG
+
+#if FRAME_PROFILER_ENABLE
+    RenderFrameProfiler::StackProfiler stackFrameProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::FrameTime);
+    RenderFrameProfiler::StackProfiler stackProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::RemoveResources);
+#endif //FRAME_PROFILER_ENABLE
+
     ASSERT(buffer, "nullptr");
     VulkanBuffer* vkBuffer = static_cast<VulkanBuffer*>(buffer);
     if (vkBuffer->isCaptured())
@@ -1407,6 +1566,15 @@ void VulkanContext::removeBuffer(Buffer* buffer)
 
 void VulkanContext::removeSampler(Sampler* sampler)
 {
+#if VULKAN_DEBUG
+    LOG_DEBUG("VulkanContext::removeSampler %llx", sampler);
+#endif //VULKAN_DEBUG
+
+#if FRAME_PROFILER_ENABLE
+    RenderFrameProfiler::StackProfiler stackFrameProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::FrameTime);
+    RenderFrameProfiler::StackProfiler stackProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::RemoveResources);
+#endif //FRAME_PROFILER_ENABLE
+
     ASSERT(sampler, "nullptr");
     VulkanSampler* vkSampler = static_cast<VulkanSampler*>(sampler);
     if (vkSampler->isCaptured())
@@ -1424,6 +1592,11 @@ void VulkanContext::removeSampler(Sampler* sampler)
 
 void VulkanContext::bindUniformsBuffer(const Shader* shader, u32 bindIndex, u32 offset, u32 size, const void* data)
 {
+#if FRAME_PROFILER_ENABLE
+    RenderFrameProfiler::StackProfiler stackFrameProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::FrameTime);
+    RenderFrameProfiler::StackProfiler stackProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::BindResourceCommands);
+#endif //FRAME_PROFILER_ENABLE
+
     const Shader::ReflectionInfo& info = shader->getReflectionInfo();
     const Shader::UniformBuffer& bufferData = info._uniformBuffers[bindIndex];
     if (offset == 0)
@@ -1436,6 +1609,11 @@ void VulkanContext::bindUniformsBuffer(const Shader* shader, u32 bindIndex, u32 
 
 void VulkanContext::bindStorageImage(const Shader* shader, u32 bindIndex, const Image* image, s32 layer, s32 mip)
 {
+#if FRAME_PROFILER_ENABLE
+    RenderFrameProfiler::StackProfiler stackFrameProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::FrameTime);
+    RenderFrameProfiler::StackProfiler stackProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::BindResourceCommands);
+#endif //FRAME_PROFILER_ENABLE
+
     const VulkanImage* vkImage = static_cast<const VulkanImage*>(image);
 
     const Shader::ReflectionInfo& info = shader->getReflectionInfo();
@@ -1446,6 +1624,11 @@ void VulkanContext::bindStorageImage(const Shader* shader, u32 bindIndex, const 
 
 void VulkanContext::transitionImages(std::vector<std::tuple<const Image*, Image::Subresource>>& images, TransitionOp transition)
 {
+#if FRAME_PROFILER_ENABLE
+    RenderFrameProfiler::StackProfiler stackFrameProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::FrameTime);
+    RenderFrameProfiler::StackProfiler stackProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::TransitionsCommands);
+#endif //FRAME_PROFILER_ENABLE
+
     VulkanCommandBuffer* drawBuffer = m_currentBufferState.acquireAndStartCommandBuffer(CommandTargetType::CmdDrawBuffer);
     if (drawBuffer->isInsideRenderPass())
     {
@@ -1472,6 +1655,12 @@ void VulkanContext::draw(const StreamBufferDescription& desc, u32 firstVertex, u
 #if VULKAN_DEBUG
     LOG_DEBUG("VulkanContext::draw");
 #endif //VULKAN_DEBUG
+
+#if FRAME_PROFILER_ENABLE
+    RenderFrameProfiler::StackProfiler stackFrameProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::FrameTime);
+    RenderFrameProfiler::StackProfiler stackProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::DrawCallCommands);
+#endif //FRAME_PROFILER_ENABLE
+
     [[maybe_unused]] bool changed = m_currentContextState->setCurrentVertexBuffers(desc);
 
     VulkanCommandBuffer* drawBuffer = m_currentBufferState.acquireAndStartCommandBuffer(CommandTargetType::CmdDrawBuffer);
@@ -1497,6 +1686,11 @@ void VulkanContext::drawIndexed(const StreamBufferDescription& desc, u32 firstIn
 #if VULKAN_DEBUG
     LOG_DEBUG("VulkanContext::drawIndexed");
 #endif //VULKAN_DEBUG
+#if FRAME_PROFILER_ENABLE
+    RenderFrameProfiler::StackProfiler stackFrameProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::FrameTime);
+    RenderFrameProfiler::StackProfiler stackProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::DrawCallCommands);
+#endif //FRAME_PROFILER_ENABLE
+
     [[maybe_unused]] bool changed = m_currentContextState->setCurrentVertexBuffers(desc);
 
     VulkanCommandBuffer* drawBuffer = m_currentBufferState.acquireAndStartCommandBuffer(CommandTargetType::CmdDrawBuffer);
@@ -1521,7 +1715,16 @@ void VulkanContext::drawIndexed(const StreamBufferDescription& desc, u32 firstIn
 
 void VulkanContext::dispatchCompute(const core::Dimension3D& groups)
 {
-    VulkanCommandBuffer* drawBuffer = m_currentBufferState.acquireAndStartCommandBuffer(CommandTargetType::CmdDrawBuffer); //TODO compute buffer
+#if VULKAN_DEBUG
+    LOG_DEBUG("VulkanContext::dispatchCompute");
+#endif //VULKAN_DEBUG
+
+#if FRAME_PROFILER_ENABLE
+    RenderFrameProfiler::StackProfiler stackFrameProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::FrameTime);
+    RenderFrameProfiler::StackProfiler stackProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::ComputeCallCommands);
+#endif //FRAME_PROFILER_ENABLE
+
+    VulkanCommandBuffer* drawBuffer = m_currentBufferState.acquireAndStartCommandBuffer(CommandTargetType::CmdDrawBuffer); //TODO compute buffer?
     if (prepareDispatch(drawBuffer))
     {
         ASSERT(!drawBuffer->isInsideRenderPass(), "not outside renderpass");
@@ -1533,8 +1736,15 @@ void VulkanContext::dispatchCompute(const core::Dimension3D& groups)
 
 void VulkanContext::bindImage(const Shader* shader, u32 bindIndex, const Image* image, s32 layer, s32 mip)
 {
+#if FRAME_PROFILER_ENABLE
+    RenderFrameProfiler::StackProfiler stackFrameProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::FrameTime);
+    RenderFrameProfiler::StackProfiler stackProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::BindResourceCommands);
+#endif //FRAME_PROFILER_ENABLE
+
+    ASSERT(image, "nullptr");
     const VulkanImage* vkImage = static_cast<const VulkanImage*>(image);
 
+    ASSERT(shader, "nullptr");
     const Shader::ReflectionInfo& info = shader->getReflectionInfo();
     const Shader::Image& imageData = info._images[bindIndex];
 
@@ -1543,11 +1753,17 @@ void VulkanContext::bindImage(const Shader* shader, u32 bindIndex, const Image* 
 
 void VulkanContext::bindSampler(const Shader* shader, u32 bindIndex, const Sampler::SamplerInfo* samplerInfo)
 {
+#if FRAME_PROFILER_ENABLE
+    RenderFrameProfiler::StackProfiler stackFrameProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::FrameTime);
+    RenderFrameProfiler::StackProfiler stackProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::BindResourceCommands);
+#endif //FRAME_PROFILER_ENABLE
+
     Sampler* sampler = m_samplerManager->acquireSampler(samplerInfo->_desc);
     ASSERT(sampler, "nullptr");
     samplerInfo->_tracker->attach(sampler);
     const VulkanSampler* vkSampler = static_cast<const VulkanSampler*>(sampler);
 
+    ASSERT(shader, "nullptr");
     const Shader::ReflectionInfo& info = shader->getReflectionInfo();
     const Shader::Sampler& samplerData = info._samplers[bindIndex];
 
@@ -1556,6 +1772,11 @@ void VulkanContext::bindSampler(const Shader* shader, u32 bindIndex, const Sampl
 
 void VulkanContext::bindSampledImage(const Shader* shader, u32 bindIndex, const Image* image, const Sampler::SamplerInfo* samplerInfo, s32 layer, s32 mip)
 {
+#if FRAME_PROFILER_ENABLE
+    RenderFrameProfiler::StackProfiler stackFrameProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::FrameTime);
+    RenderFrameProfiler::StackProfiler stackProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::BindResourceCommands);
+#endif //FRAME_PROFILER_ENABLE
+
     ASSERT(image && samplerInfo, "nullptr");
     const VulkanImage* vkImage = static_cast<const VulkanImage*>(image);
 
@@ -1564,6 +1785,7 @@ void VulkanContext::bindSampledImage(const Shader* shader, u32 bindIndex, const 
     samplerInfo->_tracker->attach(sampler);
     const VulkanSampler* vkSampler = static_cast<const VulkanSampler*>(sampler);
 
+    ASSERT(shader, "nullptr");
     const Shader::ReflectionInfo& info = shader->getReflectionInfo();
     const Shader::Image& sampledData = info._sampledImages[bindIndex];
 
@@ -1599,16 +1821,43 @@ bool VulkanContext::isDynamicState(VkDynamicState state)
 
 Framebuffer* VulkanContext::createFramebuffer(const std::vector<Image*>& images, const core::Dimension2D& size)
 {
+#if VULKAN_DEBUG
+    LOG_DEBUG("VulkanContext::createFramebuffer");
+#endif //VULKAN_DEBUG
+
+#if FRAME_PROFILER_ENABLE
+    RenderFrameProfiler::StackProfiler stackFrameProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::FrameTime);
+    RenderFrameProfiler::StackProfiler stackProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::CreateResources);
+#endif //FRAME_PROFILER_ENABLE
+
     return new VulkanFramebuffer(m_deviceInfo._device, this, images, size);
 }
 
 RenderPass* VulkanContext::createRenderPass(const RenderPassDescription* renderpassDesc)
 {
+#if VULKAN_DEBUG
+    LOG_DEBUG("VulkanContext::createRenderPass");
+#endif //VULKAN_DEBUG
+
+#if FRAME_PROFILER_ENABLE
+    RenderFrameProfiler::StackProfiler stackFrameProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::FrameTime);
+    RenderFrameProfiler::StackProfiler stackProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::CreateResources);
+#endif //FRAME_PROFILER_ENABLE
+
     return new VulkanRenderPass(m_deviceInfo._device, *renderpassDesc);
 }
 
 Pipeline* VulkanContext::createPipeline(Pipeline::PipelineType type)
 {
+#if VULKAN_DEBUG
+    LOG_DEBUG("VulkanContext::createPipeline");
+#endif //VULKAN_DEBUG
+
+#if FRAME_PROFILER_ENABLE
+    RenderFrameProfiler::StackProfiler stackFrameProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::FrameTime);
+    RenderFrameProfiler::StackProfiler stackProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::CreateResources);
+#endif //FRAME_PROFILER_ENABLE
+
     if (type == Pipeline::PipelineType::PipelineType_Graphic)
     {
         return new VulkanGraphicPipeline(m_deviceInfo._device, this, m_renderpassManager, m_pipelineLayoutManager);
@@ -1624,6 +1873,15 @@ Pipeline* VulkanContext::createPipeline(Pipeline::PipelineType type)
 
 Sampler* VulkanContext::createSampler(const SamplerDescription& desc)
 {
+#if VULKAN_DEBUG
+    LOG_DEBUG("VulkanContext::createSampler");
+#endif //VULKAN_DEBUG
+
+#if FRAME_PROFILER_ENABLE
+    RenderFrameProfiler::StackProfiler stackFrameProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::FrameTime);
+    RenderFrameProfiler::StackProfiler stackProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::CreateResources);
+#endif //FRAME_PROFILER_ENABLE
+
     return new VulkanSampler(m_deviceInfo._device, desc);
 }
 
@@ -1695,11 +1953,16 @@ bool v3d::renderer::vk::VulkanContext::prepareDispatch(VulkanCommandBuffer* draw
     return true;
 }
 
-void VulkanContext::finalizeCommandBufferSubmit()
+void VulkanContext::finalizeSubmit()
 {
+#if FRAME_PROFILER_ENABLE
+    RenderFrameProfiler::StackProfiler stackProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::UpdateSubmitResorces);
+#endif //FRAME_PROFILER_ENABLE
+
     m_cmdBufferManager->updateCommandBuffers();
     m_uniformBufferManager->updateUniformBuffers();
     m_semaphoreManager->updateSemaphores();
+
     m_renderQueryManager->updateRenderQuery();
 
     m_stagingBufferManager->destroyStagingBuffers();

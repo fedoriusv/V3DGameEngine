@@ -19,7 +19,7 @@
 #include "D3DConstantBuffer.h"
 #include "D3DMemoryHeap.h"
 
-#include "Renderer/Core/FrameTimeProfiler.h"
+#include "Renderer/Core/RenderFrameProfiler.h"
 
 namespace v3d
 {
@@ -318,7 +318,7 @@ bool D3DGraphicContext::initialize()
 #endif //D3D_DEBUG
 
 #if FRAME_PROFILER_ENABLE
-    utils::ProfileManager::getInstance()->attach(new FrameTimeProfiler());
+    //utils::ProfileManager::getInstance()->attach(new FrameTimeProfiler(nullptr));
 #endif //FRAME_PROFILER_ENABLE
 
     return true;
@@ -326,13 +326,12 @@ bool D3DGraphicContext::initialize()
 
 void D3DGraphicContext::destroy()
 {
+    LOG_DEBUG("D3DGraphicContext::destroy");
+
 #if defined(PLATFORM_WINDOWS) && D3D_DEBUG
     D3DDebug::getInstance()->report(D3D12_RLDO_SUMMARY | D3D12_RLDO_IGNORE_INTERNAL);
 #endif
 
-#if FRAME_PROFILER_ENABLE
-    utils::ProfileManager::getInstance()->freeAllProfilers();
-#endif //FRAME_PROFILER_ENABLE
     if (m_commandListManager)
     {
         m_commandListManager->waitAndClear();
@@ -458,11 +457,6 @@ void D3DGraphicContext::beginFrame()
 
    ASSERT(!m_currentState.commandList(), "not nullptr");
    D3DGraphicContext::getOrAcquireCurrentCommandList();
-
-#if FRAME_PROFILER_ENABLE
-   utils::ProfileManager::getInstance()->update();
-   utils::ProfileManager::getInstance()->start();
-#endif //FRAME_PROFILER_ENABLE
 }
 
 void D3DGraphicContext::endFrame()
@@ -474,10 +468,6 @@ void D3DGraphicContext::endFrame()
 
 void D3DGraphicContext::presentFrame()
 {
-#if FRAME_PROFILER_ENABLE
-    utils::ProfileManager::getInstance()->stop();
-#endif //FRAME_PROFILER_ENABLE
-
 #if D3D_DEBUG
     LOG_DEBUG("D3DGraphicContext::presentFrame %d", m_frameCounter);
 #endif //D3D_DEBUG
