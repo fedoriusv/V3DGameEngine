@@ -110,11 +110,12 @@ Pipeline::PipelineDescription::PipelineDescription(const PipelineGraphicInfo& pi
     , _pipelineType(Pipeline::PipelineType::PipelineType_Graphic)
     , _hash(0)
 {
-    u32 hash = crc32c::Crc32c((u8*)&_pipelineDesc, sizeof(GraphicsPipelineStateDescription));
-    hash = crc32c::Extend(hash, (u8*)&_renderpassDesc, sizeof(RenderPass::RenderPassInfo));
+    //u32 hash = crc32c::Crc32c((u8*)&_pipelineDesc, sizeof(GraphicsPipelineStateDescription));
+    //hash = crc32c::Extend(hash, (u8*)&_renderpassDesc, sizeof(RenderPass::RenderPassInfo));
 
+    //Use only shader hash, due Crc32 has a lot of collision for pipeline
     _hash = _programDesc._hash;
-    _hash = hash | _hash << 32;
+    //_hash = hash | _hash << 32;
 }
 
 Pipeline::PipelineDescription::PipelineDescription(const PipelineComputeInfo& pipelineInfo) noexcept
@@ -142,7 +143,22 @@ bool Pipeline::PipelineDescription::Compare::operator()(const PipelineDescriptio
     ASSERT(op1._pipelineType == op2._pipelineType, "diff types");
     if (op1._pipelineType == Pipeline::PipelineType::PipelineType_Graphic)
     {
-        return op1._pipelineDesc == op2._pipelineDesc && op1._renderpassDesc == op2._renderpassDesc && op1._programDesc._shaders == op2._programDesc._shaders;
+        if (op1._pipelineDesc != op2._pipelineDesc)
+        {
+            return false;
+        }
+
+        if (op1._renderpassDesc != op2._renderpassDesc)
+        {
+            return false;
+        }
+
+        if (op1._programDesc._shaders != op2._programDesc._shaders)
+        {
+            return false;
+        }
+
+        return true;
     }
     else //Pipeline::PipelineType::PipelineType_Compute
     {
