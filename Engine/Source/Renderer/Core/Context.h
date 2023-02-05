@@ -208,7 +208,7 @@ namespace renderer
         [[nodiscard]] virtual RenderPass* createRenderPass(const RenderPassDescription* renderpassDesc) = 0;
         virtual void removeRenderPass(RenderPass* renderpass) = 0;
 
-        [[nodiscard]] virtual Pipeline* createPipeline(Pipeline::PipelineType type) = 0;
+        [[nodiscard]] virtual Pipeline* createPipeline(Pipeline::PipelineType type, [[maybe_unused]] const std::string& name = "") = 0;
         virtual void removePipeline(Pipeline* pipeline) = 0;
 
         [[nodiscard]] virtual Query* createQuery(QueryType type, const Query::QueryRespose& callback, [[maybe_unused]] const std::string& name = "") = 0;

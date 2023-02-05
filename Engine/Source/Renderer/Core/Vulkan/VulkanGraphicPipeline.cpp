@@ -381,7 +381,7 @@ const VulkanPipelineLayoutDescription& VulkanGraphicPipeline::getPipelineLayoutD
     return m_pipelineLayoutDescription;
 }
 
-VulkanGraphicPipeline::VulkanGraphicPipeline(VkDevice device, Context* context, RenderPassManager* renderpassManager, VulkanPipelineLayoutManager * pipelineLayoutManager)
+VulkanGraphicPipeline::VulkanGraphicPipeline(VkDevice device, Context* context, RenderPassManager* renderpassManager, VulkanPipelineLayoutManager * pipelineLayoutManager, const std::string& name)
     : Pipeline(PipelineType::PipelineType_Graphic)
     , m_device(device)
     , m_pipeline(VK_NULL_HANDLE)
@@ -394,6 +394,14 @@ VulkanGraphicPipeline::VulkanGraphicPipeline(VkDevice device, Context* context, 
     , m_pipelineLayoutManager(pipelineLayoutManager)
 {
     LOG_DEBUG("VulkanGraphicPipeline::VulkanGraphicPipeline constructor %llx", this);
+
+#if VULKAN_DEBUG_MARKERS
+    m_debugName = name.empty() ? "GraphicPipeline" : name;
+    m_debugName.append(VulkanDebugUtils::k_addressPreffix);
+    m_debugName.append(std::to_string(reinterpret_cast<const u64>(this)));
+#endif //VULKAN_DEBUG_MARKERS
+
+
 }
 
 VulkanGraphicPipeline::~VulkanGraphicPipeline()
@@ -713,6 +721,20 @@ bool VulkanGraphicPipeline::create(const PipelineGraphicInfo* pipelineInfo)
         LOG_ERROR("VulkanGraphicPipeline::create vkCreateGraphicsPipelines is failed. Error: %s", ErrorString(result).c_str());
         return false;
     }
+
+#if VULKAN_DEBUG_MARKERS
+    if (VulkanDeviceCaps::getInstance()->debugUtilsObjectNameEnabled)
+    {
+        VkDebugUtilsObjectNameInfoEXT debugUtilsObjectNameInfo = {};
+        debugUtilsObjectNameInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT;
+        debugUtilsObjectNameInfo.pNext = nullptr;
+        debugUtilsObjectNameInfo.objectType = VK_OBJECT_TYPE_PIPELINE;
+        debugUtilsObjectNameInfo.objectHandle = reinterpret_cast<u64>(m_pipeline);
+        debugUtilsObjectNameInfo.pObjectName = m_debugName.c_str();
+
+        VulkanWrapper::SetDebugUtilsObjectName(m_device, &debugUtilsObjectNameInfo);
+    }
+#endif //VULKAN_DEBUG_MARKERS
 
 #if VULKAN_DEBUG
     VulkanGraphicPipeline::pipelineStatistic();

@@ -1860,7 +1860,7 @@ RenderPass* VulkanContext::createRenderPass(const RenderPassDescription* renderp
     return new VulkanRenderPass(m_deviceInfo._device, *renderpassDesc);
 }
 
-Pipeline* VulkanContext::createPipeline(Pipeline::PipelineType type)
+Pipeline* VulkanContext::createPipeline(Pipeline::PipelineType type, const std::string& name)
 {
 #if VULKAN_DEBUG
     LOG_DEBUG("VulkanContext::createPipeline");
@@ -1873,11 +1873,11 @@ Pipeline* VulkanContext::createPipeline(Pipeline::PipelineType type)
 
     if (type == Pipeline::PipelineType::PipelineType_Graphic)
     {
-        return new VulkanGraphicPipeline(m_deviceInfo._device, this, m_renderpassManager, m_pipelineLayoutManager);
+        return new VulkanGraphicPipeline(m_deviceInfo._device, this, m_renderpassManager, m_pipelineLayoutManager, name);
     }
     else if (type == Pipeline::PipelineType::PipelineType_Compute)
     {
-        return new VulkanComputePipeline(m_deviceInfo._device, m_pipelineLayoutManager);
+        return new VulkanComputePipeline(m_deviceInfo._device, m_pipelineLayoutManager, name);
     }
 
     ASSERT(false, "not supported");

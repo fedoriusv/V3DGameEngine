@@ -836,6 +836,7 @@ void CommandList::setPipelineState(GraphicsPipelineState* pipeline)
     pipelineGraphicInfo._programDesc = pipeline->m_program->getShaderDesc();
     pipelineGraphicInfo._renderpassDesc = renderPassDescription;
     pipelineGraphicInfo._tracker = &pipeline->m_tracker;
+    pipelineGraphicInfo._name = pipeline->m_name;
 
     if (CommandList::isImmediate())
     {
@@ -859,6 +860,7 @@ void CommandList::setPipelineState(ComputePipelineState* pipeline)
     Pipeline::PipelineComputeInfo pipelineComputeInfo;
     pipelineComputeInfo._programDesc = pipeline->m_program->getShaderDesc();
     pipelineComputeInfo._tracker = &pipeline->m_tracker;
+    pipelineComputeInfo._name = pipeline->m_name;
 
     if (CommandList::isImmediate())
     {

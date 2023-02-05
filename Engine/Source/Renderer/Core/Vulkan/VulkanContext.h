@@ -102,7 +102,7 @@ namespace vk
         Sampler* createSampler(const SamplerDescription& desc) override;
         void removeSampler(Sampler* sampler) override;
 
-        Pipeline* createPipeline(Pipeline::PipelineType type) override;
+        Pipeline* createPipeline(Pipeline::PipelineType type, [[maybe_unused]] const std::string& name = "") override;
         void removePipeline(Pipeline* pipeline) override;
 
         Framebuffer* createFramebuffer(const std::vector<Image*>& images, const core::Dimension2D& size) override;

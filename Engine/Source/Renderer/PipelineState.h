@@ -29,7 +29,7 @@ namespace renderer
         PipelineState() = delete;
         PipelineState(const PipelineState&) = delete;
 
-        explicit PipelineState(CommandList& cmdList) noexcept;
+        explicit PipelineState(CommandList& cmdList, [[maybe_unused]] const std::string& name = "") noexcept;
         virtual ~PipelineState();
 
     protected:
@@ -40,6 +40,7 @@ namespace renderer
         CommandList& m_cmdList;
 
         ObjectTracker<Pipeline> m_tracker;
+        [[maybe_unused]] const std::string m_name;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -113,8 +114,9 @@ namespace renderer
         * @param const VertexInputAttribDescription& vertex [required]
         * @param const ShaderProgram* const program [required]
         * @param onst RenderTargetState* const renderTaget [required]
+        * @param const std::string& name [optional]
         */
-        explicit GraphicsPipelineState(CommandList& cmdList, const VertexInputAttribDescription& vertex, const ShaderProgram* const program, const RenderTargetState* const renderTaget) noexcept;
+        explicit GraphicsPipelineState(CommandList& cmdList, const VertexInputAttribDescription& vertex, const ShaderProgram* const program, const RenderTargetState* const renderTaget, [[maybe_unused]] const std::string& name = "") noexcept;
 
         /**
         * @brief GraphicsPipelineState constructor.
@@ -123,8 +125,9 @@ namespace renderer
         * @param const GraphicsPipelineStateDescription& desc [required]
         * @param const ShaderProgram* const program [required]
         * @param const RenderTargetState* const renderTaget [required]
+        * @param const std::string& name [optional]
         */
-        explicit GraphicsPipelineState(CommandList& cmdList, const GraphicsPipelineStateDescription& desc, const ShaderProgram* const program, const RenderTargetState* const renderTaget) noexcept;
+        explicit GraphicsPipelineState(CommandList& cmdList, const GraphicsPipelineStateDescription& desc, const ShaderProgram* const program, const RenderTargetState* const renderTaget, [[maybe_unused]] const std::string& name = "") noexcept;
 
         void setShaderProgram(const ShaderProgram* program);
         void setRenderTaget(const RenderTargetState* target);
@@ -150,7 +153,14 @@ namespace renderer
         ComputePipelineState(const ComputePipelineState&) = delete;
         ~ComputePipelineState() = default;
 
-        explicit ComputePipelineState(CommandList& cmdList, const ShaderProgram* const program) noexcept;
+        /**
+        * @brief ComputePipelineState constructor.
+        * Private method. Use createObject interface inside CommandList class to call.
+        *
+        * @param const ShaderProgram* const program [required]
+        * @param const std::string& name [optional]
+        */
+        explicit ComputePipelineState(CommandList& cmdList, const ShaderProgram* const program, [[maybe_unused]] const std::string& name = "") noexcept;
 
         friend CommandList;
 

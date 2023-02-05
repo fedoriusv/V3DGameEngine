@@ -348,6 +348,32 @@ void VulkanDebugUtils::debugCallbackData(const VkDebugUtilsMessengerCallbackData
             break;
         }
 
+        case VK_OBJECT_TYPE_PIPELINE:
+        {
+            if (!objects.pObjectName)
+            {
+                break;
+            }
+
+            [[maybe_unused]] Pipeline* pipeline = nullptr;
+            if (addr != 0ULL && addr != ULLONG_MAX)
+            {
+                pipeline = reinterpret_cast<Pipeline*>(addr);
+                Pipeline::PipelineType type = pipeline->getType();
+                if (type == Pipeline::PipelineType::PipelineType_Graphic)
+                {
+                    VulkanGraphicPipeline* graphicPipeline = reinterpret_cast<VulkanGraphicPipeline*>(pipeline);
+                    break;
+                }
+                else
+                {
+                    VulkanComputePipeline* computePipeline = reinterpret_cast<VulkanComputePipeline*>(pipeline);
+                    break;
+                }
+            }
+            break;
+        }
+
         case VK_OBJECT_TYPE_DEVICE_MEMORY:
         {
             [[maybe_unused]] const char* debugName = objects.pObjectName;

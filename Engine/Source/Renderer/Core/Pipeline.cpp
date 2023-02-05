@@ -168,7 +168,7 @@ Pipeline* PipelineManager::acquireGraphicPipeline(const Pipeline::PipelineGraphi
     auto found = m_pipelineGraphicList.emplace(desc, pipeline);
     if (found.second)
     {
-        pipeline = m_context->createPipeline(Pipeline::PipelineType::PipelineType_Graphic);
+        pipeline = m_context->createPipeline(Pipeline::PipelineType::PipelineType_Graphic, pipelineInfo._name);
         pipeline->m_desc = desc;
 
         if (!pipeline->create(&pipelineInfo))
@@ -197,7 +197,7 @@ Pipeline* PipelineManager::acquireComputePipeline(const Pipeline::PipelineComput
     auto found = m_pipelineComputeList.emplace(desc, pipeline);
     if (found.second)
     {
-        pipeline = m_context->createPipeline(Pipeline::PipelineType::PipelineType_Compute);
+        pipeline = m_context->createPipeline(Pipeline::PipelineType::PipelineType_Compute, pipelineInfo._name);
         pipeline->m_desc = desc;
 
         if (!pipeline->create(&pipelineInfo))

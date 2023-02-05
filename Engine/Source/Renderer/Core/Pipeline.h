@@ -53,6 +53,7 @@ namespace renderer
             RenderPassDescription            _renderpassDesc;
             ShaderProgramDescription         _programDesc;
             ObjectTracker<Pipeline>*         _tracker;
+            [[maybe_unused]] std::string     _name;
         };
 
         /**
@@ -65,8 +66,9 @@ namespace renderer
             {
             }
 
-            ShaderProgramDescription _programDesc;
-            ObjectTracker<Pipeline>* _tracker;
+            ShaderProgramDescription        _programDesc;
+            ObjectTracker<Pipeline>*        _tracker;
+            [[maybe_unused]] std::string    _name;
         };
 
         PipelineType getType() const;

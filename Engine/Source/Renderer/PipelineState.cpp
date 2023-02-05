@@ -8,9 +8,10 @@ namespace v3d
 namespace renderer
 {
 
-PipelineState::PipelineState(CommandList& cmdList) noexcept
+PipelineState::PipelineState(CommandList& cmdList, const std::string& name) noexcept
     : m_cmdList(cmdList)
     , m_tracker(this, std::bind(&GraphicsPipelineState::destroyPipelines, this, std::placeholders::_1))
+    , m_name(name)
 {
 }
 
@@ -70,16 +71,16 @@ void PipelineState::destroyPipelines(const std::vector<Pipeline*>& pipelines)
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-GraphicsPipelineState::GraphicsPipelineState(CommandList& cmdList, const VertexInputAttribDescription& vertex, const ShaderProgram* const program, const RenderTargetState* const renderTaget) noexcept
-    : PipelineState(cmdList)
+GraphicsPipelineState::GraphicsPipelineState(CommandList& cmdList, const VertexInputAttribDescription& vertex, const ShaderProgram* const program, const RenderTargetState* const renderTaget, const std::string& name) noexcept
+    : PipelineState(cmdList, name)
     , m_program(program)
     , m_renderTaget(renderTaget)
 {
     m_pipelineStateDesc._vertexInputState._inputAttributes = vertex;
 }
 
-GraphicsPipelineState::GraphicsPipelineState(CommandList& cmdList, const GraphicsPipelineStateDescription& desc, const ShaderProgram* const program, const RenderTargetState* const renderTaget) noexcept
-    : PipelineState(cmdList)
+GraphicsPipelineState::GraphicsPipelineState(CommandList& cmdList, const GraphicsPipelineStateDescription& desc, const ShaderProgram* const program, const RenderTargetState* const renderTaget, const std::string& name) noexcept
+    : PipelineState(cmdList, name)
     , m_pipelineStateDesc(desc)
     , m_program(program)
     , m_renderTaget(renderTaget)
@@ -282,8 +283,8 @@ void GraphicsPipelineState::setRenderTaget(const RenderTargetState* target)
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-ComputePipelineState::ComputePipelineState(CommandList& cmdList, const ShaderProgram* const program) noexcept
-    : PipelineState(cmdList)
+ComputePipelineState::ComputePipelineState(CommandList& cmdList, const ShaderProgram* const program, const std::string& name) noexcept
+    : PipelineState(cmdList, name)
     , m_program(program)
 {
 }

@@ -192,7 +192,7 @@ RenderPass* EmptyContext::createRenderPass(const RenderPassDescription* renderpa
     return nullptr;
 }
 
-Pipeline* EmptyContext::createPipeline(Pipeline::PipelineType type)
+Pipeline* EmptyContext::createPipeline(Pipeline::PipelineType type, const std::string& name)
 {
     LOG_DEBUG("EmptyContext::createPipeline");
     return nullptr;
