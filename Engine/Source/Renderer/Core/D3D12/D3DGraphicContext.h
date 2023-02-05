@@ -107,7 +107,7 @@ namespace dx3d
         RenderPass* createRenderPass(const RenderPassDescription* renderpassDesc) override;
         void removeRenderPass(RenderPass* renderpass) override;
         
-        Pipeline* createPipeline(Pipeline::PipelineType type) override;
+        Pipeline* createPipeline(Pipeline::PipelineType type, [[maybe_unused]] const std::string& name = "") override;
         void removePipeline(Pipeline* pipeline) override;
 
         Query* createQuery(QueryType type, const Query::QueryRespose& callback, [[maybe_unused]] const std::string& name = "") override;

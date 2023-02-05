@@ -987,7 +987,7 @@ RenderPass* D3DGraphicContext::createRenderPass(const RenderPassDescription* ren
     return new D3DRenderState(*renderpassDesc);
 }
 
-Pipeline* D3DGraphicContext::createPipeline(Pipeline::PipelineType type)
+Pipeline* D3DGraphicContext::createPipeline(Pipeline::PipelineType type, const std::string& name)
 {
     if (type == Pipeline::PipelineType::PipelineType_Graphic)
     {

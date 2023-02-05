@@ -15,7 +15,7 @@ namespace renderer
 namespace vk
 {
 
-VulkanComputePipeline::VulkanComputePipeline(VkDevice device, VulkanPipelineLayoutManager* pipelineLayoutManager)
+VulkanComputePipeline::VulkanComputePipeline(VkDevice device, VulkanPipelineLayoutManager* pipelineLayoutManager, const std::string& name)
     : Pipeline(PipelineType::PipelineType_Compute)
     , m_device(device)
 
@@ -25,6 +25,12 @@ VulkanComputePipeline::VulkanComputePipeline(VkDevice device, VulkanPipelineLayo
     , m_pipelineLayoutManager(pipelineLayoutManager)
 {
     LOG_DEBUG("VulkanComputePipeline::VulkanComputePipeline constructor %llx", this);
+
+#if VULKAN_DEBUG_MARKERS
+    m_debugName = name.empty() ? "ComputePipeline" : name;
+    m_debugName.append(VulkanDebugUtils::k_addressPreffix);
+    m_debugName.append(std::to_string(reinterpret_cast<const u64>(this)));
+#endif //VULKAN_DEBUG_MARKERS
 }
 
 VulkanComputePipeline::~VulkanComputePipeline()
@@ -86,6 +92,20 @@ bool VulkanComputePipeline::create(const PipelineComputeInfo* pipelineInfo)
         LOG_ERROR("VulkanComputePipeline::create vkCreateComputePipelines is failed. Error: %s", ErrorString(result).c_str());
         return false;
     }
+
+#if VULKAN_DEBUG_MARKERS
+    if (VulkanDeviceCaps::getInstance()->debugUtilsObjectNameEnabled)
+    {
+        VkDebugUtilsObjectNameInfoEXT debugUtilsObjectNameInfo = {};
+        debugUtilsObjectNameInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT;
+        debugUtilsObjectNameInfo.pNext = nullptr;
+        debugUtilsObjectNameInfo.objectType = VK_OBJECT_TYPE_PIPELINE;
+        debugUtilsObjectNameInfo.objectHandle = reinterpret_cast<u64>(m_pipeline);
+        debugUtilsObjectNameInfo.pObjectName = m_debugName.c_str();
+
+        VulkanWrapper::SetDebugUtilsObjectName(m_device, &debugUtilsObjectNameInfo);
+}
+#endif //VULKAN_DEBUG_MARKERS
 
 #if VULKAN_DEBUG
     VulkanComputePipeline::pipelineStatistic();

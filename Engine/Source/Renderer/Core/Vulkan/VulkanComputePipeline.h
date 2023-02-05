@@ -33,7 +33,7 @@ namespace vk
         VulkanComputePipeline() = delete;
         VulkanComputePipeline(const VulkanComputePipeline&) = delete;
 
-        VulkanComputePipeline(VkDevice device, VulkanPipelineLayoutManager* pipelineLayoutManager);
+        VulkanComputePipeline(VkDevice device, VulkanPipelineLayoutManager* pipelineLayoutManager, [[maybe_unused]] const std::string& name = "");
         ~VulkanComputePipeline();
 
         VkPipeline getHandle() const;
@@ -62,6 +62,10 @@ namespace vk
         VulkanPipelineLayoutManager* const m_pipelineLayoutManager;
 
         bool pipelineStatistic() const;
+
+#if VULKAN_DEBUG_MARKERS
+        std::string m_debugName;
+#endif //VULKAN_DEBUG_MARKERS
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
