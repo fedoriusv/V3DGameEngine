@@ -1862,6 +1862,12 @@ u32 VulkanImage::ImageViewKey::Hash::operator()(const ImageViewKey& desc) const
 
 bool VulkanImage::ImageViewKey::Compare::operator()(const ImageViewKey& op1, const ImageViewKey& op2) const
 {
+    ASSERT(op1._hash != 0 && op2._hash != 0, "must be not 0");
+    if (op1._hash != op2._hash)
+    {
+        return false;
+    }
+
     return memcmp(&op1._desc, &op2._desc, sizeof(VkImageSubresourceRange)) == 0;
 }
 
