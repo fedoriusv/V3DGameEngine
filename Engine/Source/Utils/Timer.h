@@ -74,8 +74,8 @@ namespace utils
         static u64 convertDuration(const std::chrono::nanoseconds& time);
 
         mutable std::chrono::nanoseconds m_duration;
-        mutable std::chrono::time_point<std::chrono::high_resolution_clock> m_beginTime;
-        mutable std::chrono::time_point<std::chrono::high_resolution_clock> m_endTime;
+        mutable std::chrono::time_point<std::chrono::steady_clock> m_beginTime;
+        mutable std::chrono::time_point<std::chrono::steady_clock> m_endTime;
 
         bool m_isStopped;
     };
@@ -87,7 +87,7 @@ namespace utils
     {
         if (!Timer::isStopped())
         {
-            m_endTime = std::chrono::high_resolution_clock::now();
+            m_endTime = std::chrono::steady_clock::now();
             return Timer::convertDuration<duration>(m_duration + (m_endTime - m_beginTime));
         }
 
@@ -97,7 +97,7 @@ namespace utils
     template<Timer::Duration duration>
     inline u64 Timer::getCurrentTime()
     {
-        auto now = std::chrono::high_resolution_clock::now();
+        auto now = std::chrono::system_clock::now();
         return Timer::convertDuration<duration>(now.time_since_epoch());
     }
 

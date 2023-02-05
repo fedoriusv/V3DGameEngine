@@ -19,7 +19,7 @@ void Timer::start()
 {
     if (Timer::isStopped())
     {
-        m_beginTime = std::chrono::high_resolution_clock::now();
+        m_beginTime = std::chrono::steady_clock::now();
     }
 
     m_isStopped = false;
@@ -29,7 +29,7 @@ void Timer::stop()
 {
     if (!Timer::isStopped())
     {
-        m_endTime = std::chrono::high_resolution_clock::now();
+        m_endTime = std::chrono::steady_clock::now();
         m_duration += (m_endTime - m_beginTime);
     }
 
@@ -40,7 +40,7 @@ void Timer::reset()
 {
     if (!Timer::isStopped())
     {
-        m_beginTime = std::chrono::high_resolution_clock::now();
+        m_beginTime = std::chrono::steady_clock::now();
         m_endTime = m_beginTime;
     }
 
