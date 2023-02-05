@@ -23,6 +23,7 @@ const std::string RenderFrameProfiler::s_frameCounterNames[] =
     "CreateResources",
     "RemoveResources",
     "Query",
+    "Custom"
 };
 
 RenderFrameProfiler::StackProfiler::StackProfiler(RenderFrameProfiler* profiler, FrameCounter counter) noexcept
@@ -41,20 +42,26 @@ RenderFrameProfiler::RenderFrameProfiler(const std::vector<FrameCounter>& active
     : m_counterFPS(0)
     , m_frameTime(0.f)
 {
+    m_factor = IntervalFactor::PerSecond;
     m_staticstic._timer.resize(activeTimers.size(), {});
     m_staticstic._counter.resize(activeCounters.size(), {});
 
-    for (auto activeCounter : activeCounters)
+    for (u32 index = 0; index < m_metrics.size(); ++index)
     {
-        m_metrics.emplace(activeCounter, Counter{ 0U, 0U, 0U, 0x1, false });
-    }
+        Metric& metric = m_metrics[index];
+        metric.reset();
+        metric._recording = false;
 
-    for (auto activeTimer : activeTimers)
-    {
-        auto found = m_metrics.emplace(activeTimer, Counter{ 0U, 0U, 0U, 0x2, false });
-        if (!found.second)
+        auto foundCounter = std::find(activeCounters.cbegin(), activeCounters.cend(), FrameCounter(index));
+        if (foundCounter != activeCounters.cend())
         {
-            found.first->second._collectFlags |= 0x2;
+            metric._collectFlags = 0x1;
+        }
+
+        auto foundTimer = std::find(activeTimers.cbegin(), activeTimers.cend(), FrameCounter(index));
+        if (foundTimer != activeTimers.cend())
+        {
+            metric._collectFlags |= 0x2;
         }
     }
 }
@@ -63,20 +70,20 @@ void RenderFrameProfiler::start(FrameCounter counter)
 {
     m_active = true;
 
-    auto found = m_metrics.find(counter);
-    if (found != m_metrics.end())
+    Metric& metric = m_metrics[toEnumType(counter)];
+    if (metric._collectFlags)
     {
-        ++found->second._calls;
-        if (found->second._collectFlags & 0x2)
+        ++metric._calls;
+        if (metric._collectFlags & 0x2)
         {
-            if (found->second._recording)
+            if (metric._recording)
             {
                 return;
             }
 
             u64 startTime = utils::Timer::getCurrentTime<utils::Timer::Duration_NanoSeconds>();
-            found->second._startTime = startTime;
-            found->second._recording = true;
+            metric._startTime = startTime;
+            metric._recording = true;
         }
     }
 }
@@ -85,20 +92,20 @@ void RenderFrameProfiler::stop(FrameCounter counter)
 {
     m_active = false;
 
-    auto found = m_metrics.find(counter);
-    if (found != m_metrics.end())
+    Metric& metric = m_metrics[toEnumType(counter)];
+    if (metric._collectFlags)
     {
-        if (found->second._collectFlags & 0x2)
+        if (metric._collectFlags & 0x2)
         {
-            if (!found->second._recording)
+            if (!metric._recording)
             {
                 return;
             }
 
             u64 endTime = utils::Timer::getCurrentTime<utils::Timer::Duration_NanoSeconds>();
-            ASSERT(found->second._startTime <= endTime, "must be the greater");
-            found->second._duration += endTime - found->second._startTime;
-            found->second._recording = false;
+            ASSERT(metric._startTime <= endTime, "must be the greater");
+            metric._duration += endTime - metric._startTime;
+            metric._recording = false;
         }
     }
 }
@@ -130,36 +137,39 @@ void RenderFrameProfiler::collect()
     m_staticstic._avgFPS = RenderFrameProfiler::getAverageFPS();
     m_staticstic._frameTime = RenderFrameProfiler::getFrameTime();
 
+    const f32 koeff = (m_factor == IntervalFactor::PerSecond) ? (1.f / (f32)m_counterFPS) : 1.f;
+
     u32 indexCounters = 0;
     u32 indexTimers = 0;
-    for (auto iter = m_metrics.begin(); iter != m_metrics.end(); ++iter)
+    for (u32 index = 0; index < m_metrics.size(); ++index)
     {
-        if (iter->second._collectFlags & 0x1)
+        Metric& metric = m_metrics[index];
+        if (metric._collectFlags & 0x1)
         {
             utils::Profiler::CommonMetric& counterMetric = m_staticstic._counter[indexCounters];
             counterMetric._type = 1;
-            counterMetric._index = toEnumType(iter->first);
-            counterMetric._name = s_frameCounterNames[toEnumType(iter->first)];
+            counterMetric._index = index;
+            counterMetric._name = s_frameCounterNames[index];
             counterMetric._desctiption = "";
             counterMetric._unit = "calls";
-            counterMetric._value = static_cast<f32>(iter->second._calls);
+            counterMetric._value = static_cast<f32>(metric._calls) * koeff;
             ++indexCounters;
         }
 
-        if (iter->second._collectFlags & 0x2)
+        if (metric._collectFlags & 0x2)
         {
-            ASSERT(!iter->second._recording, "must be inactive");
+            ASSERT(!metric._recording, "must be inactive");
             utils::Profiler::CommonMetric& timerMetric = m_staticstic._timer[indexTimers];
             timerMetric._type = 0;
-            timerMetric._index = toEnumType(iter->first);
-            timerMetric._name = s_frameCounterNames[toEnumType(iter->first)];
+            timerMetric._index = index;
+            timerMetric._name = s_frameCounterNames[index];
             timerMetric._desctiption = "";
             timerMetric._unit = "ms";
-            timerMetric._value = ((f32)iter->second._duration) / 1'000'000.f;
+            timerMetric._value = ((f32)metric._duration) * koeff / 1'000'000.f;
             ++indexTimers;
         }
 
-        iter->second.reset();
+        metric.reset();
     }
 }
 

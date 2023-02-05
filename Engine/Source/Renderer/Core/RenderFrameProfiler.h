@@ -38,19 +38,20 @@ namespace renderer
         enum class FrameCounter : u32
         {
             FrameTime = 0,
-            DrawCallCommands,
-            ComputeCallCommands,
-            SubmitCommand,
-            PresentCommand,
-            SetTargetCommands,
-            SetPipelineCommands,
-            SetStateCommands,
-            BindResourceCommands,
-            TransitionsCommands,
+            DrawCalls,
+            ComputeCalls,
+            Submit,
+            Present,
+            SetTarget,
+            SetPipeline,
+            SetStates,
+            BindResources,
+            Transitions,
             UpdateSubmitResorces,
             CreateResources,
             RemoveResources,
             QueryCommands,
+            Custom,
 
             MaxValue
         };
@@ -85,7 +86,7 @@ namespace renderer
         u32 getAverageFPS() const;
         f32 getFrameTime() const;
 
-        struct Counter
+        struct Metric
         {
             u64 _startTime = 0U;
             u64 _duration = 0U;
@@ -102,7 +103,7 @@ namespace renderer
             }
         };
 
-        std::map<FrameCounter, Counter> m_metrics;
+        std::array<Metric, toEnumType(FrameCounter::MaxValue)> m_metrics;
         u32 m_counterFPS;
         f32 m_frameTime;
 

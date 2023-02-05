@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Renderer/Core/Context.h"
+#include "Renderer/Core/RenderFrameProfiler.h"
 #include "Utils/Observable.h"
 
 #ifdef VULKAN_RENDER
@@ -236,7 +237,7 @@ namespace vk
 
 #if FRAME_PROFILER_ENABLE
         RenderFrameProfiler* m_CPUProfiler;
-#endif
+#endif //FRAME_PROFILER_ENABLE
 
 #if THREADED_PRESENT
         class PresentThread* m_presentThread;

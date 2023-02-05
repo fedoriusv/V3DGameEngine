@@ -14,12 +14,16 @@
 #include "VulkanUnifromBuffer.h"
 #include "VulkanSwapchain.h"
 
+#include "Renderer/Core/RenderFrameProfiler.h"
 namespace v3d
 {
 namespace renderer
 {
 namespace vk
 {
+#if FRAME_PROFILER_ENABLE
+extern RenderFrameProfiler* g_CPUProfiler;
+#endif //FRAME_PROFILER_ENABLE
 
 VulkanContextState::VulkanContextState(VkDevice device, VulkanDescriptorSetManager* descriptorSetManager, VulkanUniformBufferManager* unifromBufferManager) noexcept
     : m_device(device)

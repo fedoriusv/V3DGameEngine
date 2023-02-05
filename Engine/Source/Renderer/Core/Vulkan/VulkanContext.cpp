@@ -96,6 +96,9 @@ const std::vector<const c8*> k_deviceExtensionsList =
 #endif
 };
 
+#if FRAME_PROFILER_ENABLE
+RenderFrameProfiler* g_CPUProfiler = nullptr;
+#endif //FRAME_PROFILER_ENABLE
 std::vector<VkDynamicState> VulkanContext::s_dynamicStates =
 {
     VK_DYNAMIC_STATE_VIEWPORT,
@@ -273,16 +276,21 @@ bool VulkanContext::initialize()
     m_CPUProfiler = new RenderFrameProfiler(
         {
             RenderFrameProfiler::FrameCounter::FrameTime,
-            RenderFrameProfiler::FrameCounter::DrawCallCommands,
+            RenderFrameProfiler::FrameCounter::SetTarget,
+            RenderFrameProfiler::FrameCounter::SetPipeline,
+            RenderFrameProfiler::FrameCounter::SetStates,
+            RenderFrameProfiler::FrameCounter::BindResources,
+            RenderFrameProfiler::FrameCounter::DrawCalls,
+            RenderFrameProfiler::FrameCounter::Submit,
+            RenderFrameProfiler::FrameCounter::Present,
             RenderFrameProfiler::FrameCounter::UpdateSubmitResorces,
-            RenderFrameProfiler::FrameCounter::SetPipelineCommands,
-            RenderFrameProfiler::FrameCounter::BindResourceCommands,
-            RenderFrameProfiler::FrameCounter::QueryCommands,
+            RenderFrameProfiler::FrameCounter::Custom,
         },
         {
             //RenderFrameProfiler::FrameCounter::DrawCalls,
         });
     m_frameProfiler.attach(m_CPUProfiler);
+    g_CPUProfiler = m_CPUProfiler;
 
 #   if defined(PLATFORM_ANDROID)
     m_frameProfiler.attach(new android::HWCPProfiler(
@@ -894,7 +902,7 @@ void VulkanContext::presentFrame()
 
 #if FRAME_PROFILER_ENABLE
     RenderFrameProfiler::StackProfiler stackFrameProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::FrameTime);
-    RenderFrameProfiler::StackProfiler stackProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::PresentCommand);
+    RenderFrameProfiler::StackProfiler stackProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::Present);
 #endif //FRAME_PROFILER_ENABLE
 
     std::vector<VulkanSemaphore*> semaphores;
@@ -915,7 +923,7 @@ void VulkanContext::submit(bool wait)
 {
 #if FRAME_PROFILER_ENABLE
     RenderFrameProfiler::StackProfiler stackFrameProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::FrameTime);
-    m_CPUProfiler->start(RenderFrameProfiler::FrameCounter::SubmitCommand);
+    m_CPUProfiler->start(RenderFrameProfiler::FrameCounter::Submit);
 #endif //FRAME_PROFILER_ENABLE
 
     //Query commands. TODO
@@ -1010,7 +1018,7 @@ void VulkanContext::submit(bool wait)
     std::swap(m_waitSemaphores, m_submitSemaphores);
 
 #if FRAME_PROFILER_ENABLE
-        m_CPUProfiler->stop(RenderFrameProfiler::FrameCounter::SubmitCommand);
+        m_CPUProfiler->stop(RenderFrameProfiler::FrameCounter::Submit);
 #endif //FRAME_PROFILER_ENABLE
 
     VulkanContext::finalizeSubmit();
@@ -1089,7 +1097,7 @@ void VulkanContext::setViewport(const core::Rect32& viewport, const core::Vector
 
 #if FRAME_PROFILER_ENABLE
     RenderFrameProfiler::StackProfiler stackFrameProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::FrameTime);
-    RenderFrameProfiler::StackProfiler stackProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::SetStateCommands);
+    RenderFrameProfiler::StackProfiler stackProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::SetStates);
 #endif //FRAME_PROFILER_ENABLE
 
     if (VulkanContext::isDynamicState(VK_DYNAMIC_STATE_VIEWPORT))
@@ -1124,7 +1132,7 @@ void VulkanContext::setScissor(const core::Rect32& scissor)
 
 #if FRAME_PROFILER_ENABLE
     RenderFrameProfiler::StackProfiler stackFrameProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::FrameTime);
-    RenderFrameProfiler::StackProfiler stackProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::SetStateCommands);
+    RenderFrameProfiler::StackProfiler stackProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::SetStates);
 #endif //FRAME_PROFILER_ENABLE
 
     if (VulkanContext::isDynamicState(VK_DYNAMIC_STATE_SCISSOR))
@@ -1151,7 +1159,7 @@ void VulkanContext::setRenderTarget(const RenderPass::RenderPassInfo* renderpass
 
 #if FRAME_PROFILER_ENABLE
     RenderFrameProfiler::StackProfiler stackFrameProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::FrameTime);
-    RenderFrameProfiler::StackProfiler stackProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::SetTargetCommands);
+    RenderFrameProfiler::StackProfiler stackProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::SetTarget);
 #endif //FRAME_PROFILER_ENABLE
 
     ASSERT(renderpassInfo && framebufferInfo, "nullptr");
@@ -1381,7 +1389,7 @@ void VulkanContext::setPipeline(const Pipeline::PipelineGraphicInfo* pipelineInf
 {
 #if FRAME_PROFILER_ENABLE
     RenderFrameProfiler::StackProfiler stackFrameProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::FrameTime);
-    RenderFrameProfiler::StackProfiler stackProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::SetPipelineCommands);
+    RenderFrameProfiler::StackProfiler stackProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::SetPipeline);
 #endif //FRAME_PROFILER_ENABLE
 
     ASSERT(pipelineInfo, "nullptr");
@@ -1399,7 +1407,7 @@ void VulkanContext::setPipeline(const Pipeline::PipelineComputeInfo* pipelineInf
 {
 #if FRAME_PROFILER_ENABLE
     RenderFrameProfiler::StackProfiler stackFrameProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::FrameTime);
-    RenderFrameProfiler::StackProfiler stackProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::SetPipelineCommands);
+    RenderFrameProfiler::StackProfiler stackProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::SetPipeline);
 #endif //FRAME_PROFILER_ENABLE
 
     ASSERT(pipelineInfo, "nullptr");
@@ -1607,7 +1615,7 @@ void VulkanContext::bindUniformsBuffer(const Shader* shader, u32 bindIndex, u32 
 {
 #if FRAME_PROFILER_ENABLE
     RenderFrameProfiler::StackProfiler stackFrameProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::FrameTime);
-    RenderFrameProfiler::StackProfiler stackProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::BindResourceCommands);
+    RenderFrameProfiler::StackProfiler stackProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::BindResources);
 #endif //FRAME_PROFILER_ENABLE
 
     const Shader::ReflectionInfo& info = shader->getReflectionInfo();
@@ -1624,7 +1632,7 @@ void VulkanContext::bindStorageImage(const Shader* shader, u32 bindIndex, const 
 {
 #if FRAME_PROFILER_ENABLE
     RenderFrameProfiler::StackProfiler stackFrameProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::FrameTime);
-    RenderFrameProfiler::StackProfiler stackProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::BindResourceCommands);
+    RenderFrameProfiler::StackProfiler stackProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::BindResources);
 #endif //FRAME_PROFILER_ENABLE
 
     const VulkanImage* vkImage = static_cast<const VulkanImage*>(image);
@@ -1639,7 +1647,7 @@ void VulkanContext::transitionImages(std::vector<std::tuple<const Image*, Image:
 {
 #if FRAME_PROFILER_ENABLE
     RenderFrameProfiler::StackProfiler stackFrameProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::FrameTime);
-    RenderFrameProfiler::StackProfiler stackProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::TransitionsCommands);
+    RenderFrameProfiler::StackProfiler stackProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::Transitions);
 #endif //FRAME_PROFILER_ENABLE
 
     VulkanCommandBuffer* drawBuffer = m_currentBufferState.acquireAndStartCommandBuffer(CommandTargetType::CmdDrawBuffer);
@@ -1671,7 +1679,7 @@ void VulkanContext::draw(const StreamBufferDescription& desc, u32 firstVertex, u
 
 #if FRAME_PROFILER_ENABLE
     RenderFrameProfiler::StackProfiler stackFrameProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::FrameTime);
-    RenderFrameProfiler::StackProfiler stackProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::DrawCallCommands);
+    RenderFrameProfiler::StackProfiler stackProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::DrawCalls);
 #endif //FRAME_PROFILER_ENABLE
 
     [[maybe_unused]] bool changed = m_currentContextState->setCurrentVertexBuffers(desc);
@@ -1687,6 +1695,7 @@ void VulkanContext::draw(const StreamBufferDescription& desc, u32 firstVertex, u
                 drawBuffer->cmdBindVertexBuffers(0, static_cast<u32>(desc._vertices.size()), desc._vertices, desc._offsets);
             }
         }
+
         ASSERT(drawBuffer->isInsideRenderPass(), "not inside renderpass");
         drawBuffer->cmdDraw(firstVertex, vertexCount, firstInstance, instanceCount);
     }
@@ -1699,9 +1708,10 @@ void VulkanContext::drawIndexed(const StreamBufferDescription& desc, u32 firstIn
 #if VULKAN_DEBUG
     LOG_DEBUG("VulkanContext::drawIndexed");
 #endif //VULKAN_DEBUG
+
 #if FRAME_PROFILER_ENABLE
     RenderFrameProfiler::StackProfiler stackFrameProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::FrameTime);
-    RenderFrameProfiler::StackProfiler stackProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::DrawCallCommands);
+    RenderFrameProfiler::StackProfiler stackProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::DrawCalls);
 #endif //FRAME_PROFILER_ENABLE
 
     [[maybe_unused]] bool changed = m_currentContextState->setCurrentVertexBuffers(desc);
@@ -1719,6 +1729,7 @@ void VulkanContext::drawIndexed(const StreamBufferDescription& desc, u32 firstIn
             ASSERT(!descBuff._vertices.empty(), "empty");
             drawBuffer->cmdBindVertexBuffers(0, static_cast<u32>(descBuff._vertices.size()), descBuff._vertices, descBuff._offsets);
         }
+
         ASSERT(drawBuffer->isInsideRenderPass(), "not inside renderpass");
         drawBuffer->cmdDrawIndexed(firstIndex, indexCount, firstInstance, instanceCount, 0);
     }
@@ -1734,7 +1745,7 @@ void VulkanContext::dispatchCompute(const core::Dimension3D& groups)
 
 #if FRAME_PROFILER_ENABLE
     RenderFrameProfiler::StackProfiler stackFrameProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::FrameTime);
-    RenderFrameProfiler::StackProfiler stackProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::ComputeCallCommands);
+    RenderFrameProfiler::StackProfiler stackProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::ComputeCalls);
 #endif //FRAME_PROFILER_ENABLE
 
     VulkanCommandBuffer* drawBuffer = m_currentBufferState.acquireAndStartCommandBuffer(CommandTargetType::CmdDrawBuffer); //TODO compute buffer?
@@ -1751,7 +1762,7 @@ void VulkanContext::bindImage(const Shader* shader, u32 bindIndex, const Image* 
 {
 #if FRAME_PROFILER_ENABLE
     RenderFrameProfiler::StackProfiler stackFrameProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::FrameTime);
-    RenderFrameProfiler::StackProfiler stackProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::BindResourceCommands);
+    RenderFrameProfiler::StackProfiler stackProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::BindResources);
 #endif //FRAME_PROFILER_ENABLE
 
     ASSERT(image, "nullptr");
@@ -1768,7 +1779,7 @@ void VulkanContext::bindSampler(const Shader* shader, u32 bindIndex, const Sampl
 {
 #if FRAME_PROFILER_ENABLE
     RenderFrameProfiler::StackProfiler stackFrameProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::FrameTime);
-    RenderFrameProfiler::StackProfiler stackProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::BindResourceCommands);
+    RenderFrameProfiler::StackProfiler stackProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::BindResources);
 #endif //FRAME_PROFILER_ENABLE
 
     Sampler* sampler = m_samplerManager->acquireSampler(samplerInfo->_desc);
@@ -1787,7 +1798,7 @@ void VulkanContext::bindSampledImage(const Shader* shader, u32 bindIndex, const 
 {
 #if FRAME_PROFILER_ENABLE
     RenderFrameProfiler::StackProfiler stackFrameProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::FrameTime);
-    RenderFrameProfiler::StackProfiler stackProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::BindResourceCommands);
+    RenderFrameProfiler::StackProfiler stackProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::BindResources);
 #endif //FRAME_PROFILER_ENABLE
 
     ASSERT(image && samplerInfo, "nullptr");
