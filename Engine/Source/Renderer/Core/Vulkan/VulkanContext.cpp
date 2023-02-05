@@ -92,7 +92,7 @@ const std::vector<const c8*> k_deviceExtensionsList =
     VK_EXT_ASTC_DECODE_MODE_EXTENSION_NAME,
 #endif
 #ifdef VK_EXT_host_query_reset
-    //VK_EXT_HOST_QUERY_RESET_EXTENSION_NAME,
+    VK_EXT_HOST_QUERY_RESET_EXTENSION_NAME,
 #endif
 };
 
@@ -603,6 +603,7 @@ bool VulkanContext::createDevice()
         queueCreateInfos.push_back(queueInfo);
     }
 
+    //Features
     void* vkExtension = nullptr;
 
 #ifdef VK_EXT_descriptor_indexing
@@ -626,7 +627,7 @@ bool VulkanContext::createDevice()
 #ifdef VK_EXT_host_query_reset
     if (VulkanDeviceCaps::checkDeviceExtension(m_deviceInfo._physicalDevice, VK_EXT_HOST_QUERY_RESET_EXTENSION_NAME))
     {
-        VkPhysicalDeviceHostQueryResetFeatures& physicalDeviceHostQueryResetFeatures = VulkanDeviceCaps::getInstance()->m_physicalDeviceHostQueryResetFeatures;
+        VkPhysicalDeviceHostQueryResetFeaturesEXT& physicalDeviceHostQueryResetFeatures = VulkanDeviceCaps::getInstance()->m_physicalDeviceHostQueryResetFeatures;
         physicalDeviceHostQueryResetFeatures.pNext = vkExtension;
         vkExtension = &physicalDeviceHostQueryResetFeatures;
     }
@@ -898,7 +899,7 @@ void VulkanContext::presentFrame()
     LOG_DEBUG("VulkanContext::presentFrame %llu", m_frameCounter);
 #endif //VULKAN_DEBUG
 
-    VulkanContext::submit();
+    VulkanContext::submit(); //TODO: Should be here?
 
 #if FRAME_PROFILER_ENABLE
     RenderFrameProfiler::StackProfiler stackFrameProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::FrameTime);

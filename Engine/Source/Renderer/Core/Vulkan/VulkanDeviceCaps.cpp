@@ -165,6 +165,11 @@ const VkPhysicalDeviceFeatures& VulkanDeviceCaps::getPhysicalDeviceFeatures() co
     return m_deviceFeatures;
 }
 
+const VkPhysicalDeviceMaintenance3Properties& VulkanDeviceCaps::getPhysicalDeviceMaintenance3Properties() const
+{
+    return m_physicalDeviceMaintenance3Properties;
+}
+
 void VulkanDeviceCaps::fillCapabilitiesList(const DeviceInfo* info)
 {
     ASSERT(info->_physicalDevice != VK_NULL_HANDLE, "PhysicalDevice is nullptr");
@@ -185,8 +190,9 @@ void VulkanDeviceCaps::fillCapabilitiesList(const DeviceInfo* info)
 
     debugUtilsObjectNameEnabled = VulkanDeviceCaps::checkInstanceExtension(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
 
-    ASSERT(isEnabledExtension(VK_KHR_MAINTENANCE1_EXTENSION_NAME), "required VK_KHR_maintenance1 extension");
-    ASSERT(isEnabledExtension(VK_KHR_MAINTENANCE2_EXTENSION_NAME), "required VK_KHR_maintenance2 extension");
+    ASSERT(isEnabledExtension(VK_KHR_MAINTENANCE_1_EXTENSION_NAME), "required VK_KHR_maintenance1 extension");
+    ASSERT(isEnabledExtension(VK_KHR_MAINTENANCE_2_EXTENSION_NAME), "required VK_KHR_maintenance2 extension");
+    ASSERT(isEnabledExtension(VK_KHR_MAINTENANCE_3_EXTENSION_NAME), "required VK_KHR_maintenance2 extension");
 #if FORCE_DISABLE_FUNCTIONALITY_VULKAN_1_2
     supportRenderpass2 = false;
     supportMultiview = false;
@@ -267,8 +273,13 @@ void VulkanDeviceCaps::fillCapabilitiesList(const DeviceInfo* info)
         {
             void* vkExtensions = nullptr;
 
+            //VK_KHR_maintenance3
+            m_physicalDeviceMaintenance3Properties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_3_PROPERTIES;
+            m_physicalDeviceMaintenance3Properties.pNext = vkExtensions;
+            vkExtensions = &m_physicalDeviceMaintenance3Properties;
+
 #ifdef VK_EXT_descriptor_indexing
-            VkPhysicalDeviceDescriptorIndexingPropertiesEXT physicalDeviceDescriptorIndexingProperties = {};
+            VkPhysicalDeviceDescriptorIndexingProperties physicalDeviceDescriptorIndexingProperties = {};
             if (isEnabledExtension(VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME))
             {
                 physicalDeviceDescriptorIndexingProperties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_PROPERTIES_EXT;

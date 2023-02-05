@@ -76,6 +76,7 @@ namespace vk
         const VkPhysicalDeviceLimits& getPhysicalDeviceLimits() const;
         const VkPhysicalDeviceMemoryProperties&  getDeviceMemoryProperties() const;
         const VkPhysicalDeviceFeatures& getPhysicalDeviceFeatures() const;
+        const VkPhysicalDeviceMaintenance3Properties& getPhysicalDeviceMaintenance3Properties() const;
 
         bool debugUtilsObjectNameEnabled = false;
         bool pipelineExecutablePropertiesEnabled = false;
@@ -91,6 +92,7 @@ namespace vk
         VkPhysicalDeviceProperties          m_deviceProperties = {};
         VkPhysicalDeviceMemoryProperties    m_deviceMemoryProps = {};
         std::vector<VkQueueFamilyProperties> m_queueFamilyProperties = {};
+        VkPhysicalDeviceMaintenance3Properties m_physicalDeviceMaintenance3Properties = {};
 #ifdef VK_EXT_descriptor_indexing
         VkPhysicalDeviceDescriptorIndexingFeaturesEXT m_physicalDeviceDescriptorIndexingFeatures = {};
 #endif
