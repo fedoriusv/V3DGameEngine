@@ -71,7 +71,7 @@ namespace utils
         virtual void collect() = 0;
         virtual const ProfilerStaticstics* statistic() const = 0;
 
-        const IntervalFactor m_factor = IntervalFactor::PerFrame;
+        IntervalFactor m_factor = IntervalFactor::PerFrame;
         bool m_active = false;
 
         friend ProfileManager;
