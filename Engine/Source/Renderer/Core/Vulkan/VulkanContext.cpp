@@ -284,10 +284,8 @@ bool VulkanContext::initialize()
             RenderFrameProfiler::FrameCounter::Submit,
             RenderFrameProfiler::FrameCounter::Present,
             RenderFrameProfiler::FrameCounter::UpdateSubmitResorces,
-            RenderFrameProfiler::FrameCounter::Custom,
         },
         {
-            //RenderFrameProfiler::FrameCounter::DrawCalls,
         });
     m_frameProfiler.attach(m_CPUProfiler);
     g_CPUProfiler = m_CPUProfiler;
@@ -1376,6 +1374,7 @@ void VulkanContext::invalidateRenderTarget()
 {
 #if FRAME_PROFILER_ENABLE
     RenderFrameProfiler::StackProfiler stackFrameProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::FrameTime);
+    RenderFrameProfiler::StackProfiler stackProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::SetTarget);
 #endif //FRAME_PROFILER_ENABLE
 
     ASSERT(m_currentContextState->getCurrentRenderpass(), "nullptr");
