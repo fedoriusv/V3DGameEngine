@@ -14,15 +14,20 @@ namespace vk
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     class VulkanBuffer;
+    class VulkanUniformBufferManager;
 
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    /**
+    * @brief VulkanUniformBuffer final class. Vulkan Render side
+    */
     class VulkanUniformBuffer final
     {
     public:
 
-        VulkanUniformBuffer() = delete;
-
+        VulkanUniformBuffer() noexcept;
         VulkanUniformBuffer(VulkanBuffer* buffer, u64 offset, u64 size) noexcept;
-        ~VulkanUniformBuffer();
+        ~VulkanUniformBuffer() = default;
 
         VulkanBuffer* getBuffer() const;
         u64 getOffset() const;
@@ -32,6 +37,9 @@ namespace vk
 
     private:
 
+        friend VulkanUniformBufferManager;
+        void set(VulkanBuffer* buffer, u64 offset, u64 size);
+
         VulkanBuffer*   m_buffer;
         u64             m_offset;
         u64             m_size;
@@ -39,17 +47,17 @@ namespace vk
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    /**
+    * @brief VulkanUniformBufferManager final class. Vulkan Render side
+    */
     class VulkanUniformBufferManager final
     {
     public:
 
-        VulkanUniformBufferManager() = delete;
-        VulkanUniformBufferManager(const VulkanUniformBufferManager&) = delete;
-        VulkanUniformBufferManager& operator=(const VulkanUniformBufferManager&) = delete;
-
         explicit VulkanUniformBufferManager(VkDevice device, VulkanResourceDeleter& resourceDeleter) noexcept;
         ~VulkanUniformBufferManager();
 
+        //VulkanUniformBuffer
         VulkanUniformBuffer* acquireUnformBuffer(u32 requestedSize);
 
         void markToUse(VulkanCommandBuffer* cmdBuffer, u64 frame);
@@ -57,24 +65,29 @@ namespace vk
 
     private:
 
+        VulkanUniformBufferManager() = delete;
+        VulkanUniformBufferManager(const VulkanUniformBufferManager&) = delete;
+        VulkanUniformBufferManager& operator=(const VulkanUniformBufferManager&) = delete;
+
         struct VulkanUniformBufferPool
         {
             VulkanUniformBufferPool() noexcept = default;
 
-            VulkanBuffer* _buffer;
-            u64 _usedSize;
-            u64 _freeSize;
-            u64 _poolSize;
+            VulkanBuffer* _buffer = nullptr;
+            u64 _usedSize = 0U;
+            u64 _freeSize = 0U;
+            u64 _poolSize = 0U;
 
-            std::vector<VulkanUniformBuffer*> _uniformList;
+            u32 _uniformIndex = 0;
+            std::vector<VulkanUniformBuffer> _uniforms;
 
+            VulkanUniformBuffer* prepareUniformBuffer(VulkanBuffer* buffer, u32 offset, u32 size);
             void resetPool();
-            void addUniformBuffer(VulkanUniformBuffer* uniformBuffer, u64 size);
         };
 
-        bool freeUniformBufferPool(VulkanUniformBufferPool* uniformPool, bool waitComplete);
 
-        VulkanUniformBufferPool* getNewPool(u64 size);
+        VulkanUniformBufferPool* getNewPool(u64 size, u32 count);
+        bool freeUniformBufferPool(VulkanUniformBufferPool* uniformPool, bool waitComplete);
 
         VkDevice m_device;
 
