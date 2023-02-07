@@ -48,6 +48,8 @@
 #   include <assert.h>
 #   define ASSERT(x, message) assert(x && message)
 #else //DEBUG
+//#   define RELEASE_WITH_DEBUG
+#   ifdef RELEASE_WITH_DEBUG
 inline void crashFunc(bool x)
 {
     if (x) return;
@@ -55,7 +57,10 @@ inline void crashFunc(bool x)
     int* volatile ptr = 0;
     *ptr = 1;
 }
-#   define ASSERT(x, message) crashFunc(x)
+#       define ASSERT(x, message) crashFunc(x)
+#   else
+#       define ASSERT(x, message)
+#   endif //RELEASE_WITH_DEBUG
 #endif //DEBUG
 
 #define NOT_IMPL ASSERT(false, "not impl")
