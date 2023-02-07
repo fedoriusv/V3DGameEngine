@@ -189,9 +189,6 @@ namespace vk
             void bind(BindingType type, u32 binding, u32 arrayIndex, const VulkanBuffer* buffer, u64 offset, u64 range);
 
             void apply(VulkanCommandBuffer* cmdBuffer, u64 frame, SetInfo& info);
-
-            std::set<const VulkanResource*> _usedResources;
-            std::vector<u32> _offsets;
         };
 
         void updateDescriptorSet(VulkanCommandBuffer* cmdBuffer, VkDescriptorSet set, const BindingState& info);

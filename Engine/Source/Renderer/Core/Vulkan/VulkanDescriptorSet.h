@@ -74,7 +74,8 @@ namespace vk
         };
 
         u64 _key = 0;
-        std::vector<BindingInfo> _bindingsInfo;
+        u64 _size = 0;
+        std::array<BindingInfo, k_maxDescriptorBindingIndex> _bindingsInfo;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

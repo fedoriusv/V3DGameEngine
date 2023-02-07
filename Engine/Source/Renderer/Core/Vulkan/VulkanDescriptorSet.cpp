@@ -31,7 +31,13 @@ size_t SetInfo::Hash::operator()(const SetInfo& set) const
 
 bool SetInfo::Equal::operator()(const SetInfo& set0, const SetInfo& set1) const
 {
-    if (set0._bindingsInfo.size() != set1._bindingsInfo.size())
+    ASSERT(set0._key && set1._key, "must be valid");
+    if (set0._key != set1._key)
+    {
+        return false;
+    }
+
+    if (set0._size != set1._size)
     {
         return false;
     }

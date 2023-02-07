@@ -15,6 +15,7 @@
 #include "VulkanSwapchain.h"
 
 #include "Renderer/Core/RenderFrameProfiler.h"
+
 namespace v3d
 {
 namespace renderer
@@ -390,14 +391,12 @@ void VulkanContextState::BindingState::reset()
     _activeBindingsFlags = 0;
 
     memset(&_set, 0, sizeof(_set));
-
-    _usedResources.clear();
     _offsets.clear();
 }
 
 void VulkanContextState::BindingState::extractBufferOffsets(std::vector<u32>& offsets)
 {
-    offsets = std::move(_offsets);
+    offsets = _offsets;
 }
 
 bool VulkanContextState::BindingState::isActiveBinding(u32 binding) const
@@ -423,17 +422,7 @@ void VulkanContextState::BindingState::bind(BindingType type, u32 binding, u32 a
 
     _activeBindingsFlags |= 1 << binding;
     _dirtyFlag = true;
-
-    if (image)
-    {
-        _usedResources.insert(image);
     }
-
-    if (sampler)
-    {
-        _usedResources.insert(sampler);
-    }
-}
 
 void VulkanContextState::BindingState::bind(BindingType type, u32 binding, u32 arrayIndex, const VulkanBuffer* buffer, u64 offset, u64 range)
 {
@@ -454,15 +443,10 @@ void VulkanContextState::BindingState::bind(BindingType type, u32 binding, u32 a
         bindingInfo._info._bufferInfo.offset = 0;
         _offsets.push_back(static_cast<u32>(offset));
     }
-
-    _usedResources.insert(buffer);
 }
 
 void VulkanContextState::BindingState::apply(VulkanCommandBuffer* cmdBuffer, u64 frame, SetInfo& setInfo)
 {
-    setInfo._bindingsInfo.clear();
-    setInfo._bindingsInfo.reserve(k_maxDescriptorBindingIndex);
-
     u32 hash = 0;
     for (u32 i = 0; i < k_maxDescriptorBindingIndex; ++i)
     {
@@ -471,16 +455,49 @@ void VulkanContextState::BindingState::apply(VulkanCommandBuffer* cmdBuffer, u64
             continue;
         }
 
-        setInfo._bindingsInfo.push_back(std::get<0>(_set[i]));
+        setInfo._bindingsInfo[i] = std::get<0>(_set[i]);
+        ++setInfo._size;
 
         hash = crc32c::Extend(hash, reinterpret_cast<u8*>(&std::get<0>(_set[i])), sizeof(BindingInfo));
+
+        BindingData& bindingData = std::get<1>(_set[i]);
+        switch (setInfo._bindingsInfo[i]._type)
+        {
+            case BindingType::BindingType_Uniform:
+            case BindingType::BindingType_DynamicUniform:
+            {
+                const VulkanResource* buffer = std::get<2>(bindingData._dataBinding)._buffer;
+                ASSERT(buffer, "nullptr");
+                buffer->captureInsideCommandBuffer(cmdBuffer, frame);
+            }
+            break;
+
+            case BindingType::BindingType_Sampler:
+            case BindingType::BindingType_Texture:
+            case BindingType::BindingType_SamplerAndTexture:
+            case BindingType::BindingType_StorageImage:
+            {
+                const VulkanResource* image = std::get<1>(bindingData._dataBinding)._image;
+                if (image)
+                {
+                    image->captureInsideCommandBuffer(cmdBuffer, frame);
+    }
+
+                const VulkanResource* sampler = std::get<1>(bindingData._dataBinding)._sampler;
+                if (sampler)
+    {
+                    sampler->captureInsideCommandBuffer(cmdBuffer, frame);
+                }
+            }
+            break;
+
+            case BindingType::BindingType_Unknown:
+            default:
+                ASSERT(false, "wrong bind resource");
+        }
+
     }
     setInfo._key = hash;
-
-    for (auto& res : _usedResources)
-    {
-        res->captureInsideCommandBuffer(cmdBuffer, frame);
-    }
 }
 
 } //namespace vk
