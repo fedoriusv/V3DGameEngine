@@ -27,8 +27,16 @@ namespace renderer
     {
     public:
 
-        StreamBuffer() = default;
-        virtual ~StreamBuffer() {};
+        virtual ~StreamBuffer();
+
+    protected:
+
+        StreamBuffer(CommandList& cmdList, StreamBufferUsageFlags usage, [[maybe_unused]] const std::string& name = "");
+
+        CommandList& m_cmdList;
+
+        StreamBufferUsageFlags m_usage;
+        [[maybe_unused]] const std::string m_name;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -40,14 +48,15 @@ namespace renderer
     {
     public:
 
-        VertexStreamBuffer() = delete;
-        VertexStreamBuffer(const VertexStreamBuffer&) = delete;
         ~VertexStreamBuffer();
 
         bool update(u32 offset, u64 size, const u8* data);
         bool read(u32 offset, u64 size, u8* data); //TODO: add callback for async
 
     private:
+
+        VertexStreamBuffer() = delete;
+        VertexStreamBuffer(const VertexStreamBuffer&) = delete;
 
         void handleNotify(const utils::Observable* ob) override;
 
@@ -58,17 +67,14 @@ namespace renderer
         * @param  const u8* data [required]
         * @param const std::string& name [optional]
         */
-        explicit VertexStreamBuffer(CommandList& cmdList, StreamBufferUsageFlags usage, u64 size, const u8* data, [[maybe_unused]] const std::string& name = "") noexcept;
-
-        friend CommandList;
-        CommandList& m_cmdList;
+        VertexStreamBuffer(CommandList& cmdList, StreamBufferUsageFlags usage, u64 size, const u8* data, [[maybe_unused]] const std::string& name = "") noexcept;
 
         u64 m_size;
         void* m_data;
-                
-        StreamBufferUsageFlags m_usage;
+
         Buffer* m_buffer;
 
+        friend CommandList;
         friend StreamBufferDescription;
     };
 
@@ -81,14 +87,24 @@ namespace renderer
     {
     public:
 
-        IndexStreamBuffer() = delete;
-        IndexStreamBuffer(const IndexStreamBuffer&) = delete;
         ~IndexStreamBuffer();
 
+        /**
+        * @brief getIndexCount gets count of indexes.
+        * @return Count of indexes
+        */
         u32 getIndexCount() const;
+
+        /**
+        * @brief getIndexBufferType gets type of indexes.
+        * @return type of indexes StreamIndexBufferType
+        */
         StreamIndexBufferType getIndexBufferType() const;
 
     private:
+
+        IndexStreamBuffer() = delete;
+        IndexStreamBuffer(const IndexStreamBuffer&) = delete;
 
         /**
         * @brief IndexStreamBuffer constructor. Used to create buffer index objects.
@@ -98,20 +114,17 @@ namespace renderer
         * @param  const u8* data [required]
         * @param const std::string& name [optional]
         */
-        explicit IndexStreamBuffer(CommandList& cmdList, StreamBufferUsageFlags usage, StreamIndexBufferType type, u32 count, const u8* data, [[maybe_unused]] const std::string& name = "") noexcept;
+        IndexStreamBuffer(CommandList& cmdList, StreamBufferUsageFlags usage, StreamIndexBufferType type, u32 count, const u8* data, [[maybe_unused]] const std::string& name = "") noexcept;
 
         void handleNotify(const utils::Observable* ob) override;
-
-        friend CommandList;
-        CommandList& m_cmdList;
 
         StreamIndexBufferType m_type;
         u32 m_count;
         void* m_data;
 
-        StreamBufferUsageFlags m_usage;
         Buffer* m_buffer;
 
+        friend CommandList;
         friend StreamBufferDescription;
     };
 

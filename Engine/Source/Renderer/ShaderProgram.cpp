@@ -151,6 +151,7 @@ bool ShaderProgram::bindTexture(ShaderType shaderType, u32 index, TextureTarget 
     ASSERT(param != m_shaderParameters[toEnumType(shaderType)].cend(), "bindTexture: bind index not found");
     index = param->second;
 #endif //USE_STRING_ID_SHADER
+
     ASSERT(texture, "nullptr");
     Image* image = texture->getImage();
     if (!image)
@@ -227,15 +228,15 @@ bool ShaderProgram::bindSampler(ShaderType shaderType, u32 index, const SamplerS
     ASSERT(param != m_shaderParameters[toEnumType(shaderType)].cend(), "bindSampler: bind index not found");
     index = param->second;
 #endif //USE_STRING_ID_SHADER
+
     ASSERT(sampler, "nullptr");
+    Sampler::SamplerInfo samplerInfo;
+    samplerInfo._tracker = const_cast<ObjectTracker<Sampler>*>(&sampler->m_trackerSampler);
+    samplerInfo._desc = sampler->m_samplerDesc;
 
     const Shader* shader = m_programInfo._shaders[toEnumType(shaderType)];
     ASSERT(shader, "fail");
     ASSERT(index < shader->getReflectionInfo()._samplers.size(), "range out");
-
-    Sampler::SamplerInfo samplerInfo;
-    samplerInfo._tracker = const_cast<ObjectTracker<Sampler>*>(&sampler->m_trackerSampler);
-    samplerInfo._desc = sampler->m_samplerDesc;
 
     if (m_cmdList.isImmediate())
     {
@@ -297,6 +298,7 @@ bool ShaderProgram::bindSampledTexture(ShaderType shaderType, u32 index, Texture
     ASSERT(param != m_shaderParameters[toEnumType(shaderType)].cend(), "bindSampledTexture: bind index not found");
     index = param->second;
 #endif //USE_STRING_ID_SHADER
+
     ASSERT(texture, "nullptr");
     Image* image = texture->getImage();
     if (!image)
@@ -308,6 +310,7 @@ bool ShaderProgram::bindSampledTexture(ShaderType shaderType, u32 index, Texture
     ASSERT(shader, "fail");
     ASSERT(index < shader->getReflectionInfo()._sampledImages.size(), "range out");
 
+    ASSERT(sampler, "nullptr");
     Sampler::SamplerInfo samplerInfo;
     samplerInfo._tracker = const_cast<ObjectTracker<Sampler>*>(&sampler->m_trackerSampler);
     samplerInfo._desc = sampler->m_samplerDesc;
@@ -467,6 +470,7 @@ bool ShaderProgram::bindUAV(ShaderType shaderType, u32 index, TextureTarget targ
     ASSERT(param != m_shaderParameters[toEnumType(shaderType)].cend(), "bindTexture: bind index not found");
     index = param->second;
 #endif //USE_STRING_ID_SHADER
+
     ASSERT(texture, "nullptr");
     Image* image = texture->getImage();
     if (!image)

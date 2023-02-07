@@ -56,7 +56,7 @@ namespace renderer
 
         template<ShaderType shaderType>
         bool bindUniformsBuffer(u32 index, u32 offset, u32 size, const void* data);
-#endif
+#endif //USE_STRING_ID_SHADER
     private:
 
         ShaderProgram(renderer::CommandList& cmdList, const std::vector<const Shader*>& shaders) noexcept;

@@ -10,16 +10,17 @@ namespace renderer
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    /*CommandCreateBuffer*/
+/*CommandCreateBuffer*/
 class CommandCreateBuffer : public Command
 {
 public:
 
-    explicit CommandCreateBuffer(Buffer* buffer, u64 dataSize, void * data, bool shared) noexcept
+    CommandCreateBuffer(Buffer* buffer, u64 dataSize, void* data, bool shared, const std::string& name) noexcept
         : m_buffer(buffer)
         , m_size(0)
         , m_data(nullptr)
         , m_shadred(shared)
+        , m_name(name)
     {
 #if DEBUG_COMMAND_LIST
         LOG_DEBUG("CommandCreateBuffer constructor");
@@ -73,10 +74,12 @@ public:
 private:
 
     Buffer* m_buffer;
-    u64     m_size;
-    void*   m_data;
-    bool    m_shadred;
-};
+    u64 m_size;
+    void* m_data;
+    bool m_shadred;
+    const std::string m_name;
+ };
+
 
 /*CommandDestroyBuffer*/
 class CommandDestroyBuffer : public Command
@@ -113,15 +116,28 @@ private:
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-VertexStreamBuffer::VertexStreamBuffer(renderer::CommandList& cmdList, StreamBufferUsageFlags usage, u64 size, const u8* data, const std::string& name) noexcept
+StreamBuffer::StreamBuffer(CommandList& cmdList, StreamBufferUsageFlags usage, [[maybe_unused]] const std::string& name)
     : m_cmdList(cmdList)
+    , m_usage(usage)
+    , m_name(name)
+{
+    LOG_DEBUG("StreamBuffer::StreamBuffer constructor %llx", this);
+}
+
+StreamBuffer::~StreamBuffer()
+{
+    LOG_DEBUG("StreamBuffer::StreamBuffer destructor %llx", this);
+}
+
+VertexStreamBuffer::VertexStreamBuffer(renderer::CommandList& cmdList, StreamBufferUsageFlags usage, u64 size, const u8* data, const std::string& name) noexcept
+    : StreamBuffer(cmdList, usage, name)
 
     , m_size(size)
     , m_data(nullptr)
 
-    , m_usage(usage)
     , m_buffer(nullptr)
 {
+    LOG_DEBUG("VertexStreamBuffer::VertexStreamBuffer constructor %llx", this);
     if (data && size > 0)
     {
         m_data = malloc(size);
@@ -151,7 +167,7 @@ VertexStreamBuffer::VertexStreamBuffer(renderer::CommandList& cmdList, StreamBuf
     else
     {
         m_buffer->registerNotify(this);
-        m_cmdList.pushCommand(new CommandCreateBuffer(m_buffer, m_size, m_data, (m_usage & StreamBuffer_Shared)));
+        m_cmdList.pushCommand(new CommandCreateBuffer(m_buffer, m_size, m_data, (m_usage & StreamBuffer_Shared), m_name));
     }
 }
 
@@ -305,16 +321,17 @@ bool VertexStreamBuffer::read(u32 offset, u64 size, u8 * data)
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-IndexStreamBuffer::IndexStreamBuffer(CommandList & cmdList, StreamBufferUsageFlags usage, StreamIndexBufferType type, u32 count, const u8* data, const std::string& name) noexcept
-    : m_cmdList(cmdList)
-    , m_type(type)
+IndexStreamBuffer::IndexStreamBuffer(CommandList& cmdList, StreamBufferUsageFlags usage, StreamIndexBufferType type, u32 count, const u8* data, const std::string& name) noexcept
+    : StreamBuffer(cmdList, usage, name)
 
+    , m_type(type)
     , m_count(count)
     , m_data(nullptr)
 
-    , m_usage(usage)
     , m_buffer(nullptr)
 {
+    LOG_DEBUG("IndexStreamBuffer::IndexStreamBuffer constructor %llx", this);
+
     u32 size = count * ((type == StreamIndexBufferType::IndexType_16) ? sizeof(16) : sizeof(32));
     if (data && size > 0)
     {
@@ -345,7 +362,7 @@ IndexStreamBuffer::IndexStreamBuffer(CommandList & cmdList, StreamBufferUsageFla
     else
     {
         m_buffer->registerNotify(this);
-        m_cmdList.pushCommand(new CommandCreateBuffer(m_buffer, size, m_data, (m_usage & StreamBuffer_Shared)));
+        m_cmdList.pushCommand(new CommandCreateBuffer(m_buffer, size, m_data, (m_usage & StreamBuffer_Shared), name));
     }
 }
 

@@ -112,6 +112,16 @@ namespace renderer
             return new TObject(*this, std::forward<Args>(args)...);
         }
 
+        struct ContextStates
+        {
+            core::Rect32    _viewportColor;
+            core::Vector2D  _viewportDepth;
+            core::Rect32    _scissor;
+        };
+
+
+    private:
+
         enum PendingFlushMask
         {
             PendingFlush_UpdateRenderTarget = 0x1,
@@ -120,19 +130,9 @@ namespace renderer
             PendingFlush_UpdateComputePipeline = 0x8,
             PendingFlush_UpdateTransitions = 0x10
         };
-
         typedef u16 PendingFlushMaskFlags;
 
         PendingFlushMaskFlags flushPendingCommands(PendingFlushMaskFlags pendingFlushMask);
-
-        struct ContextStates
-        {
-            core::Rect32    _viewportColor;
-            core::Vector2D  _viewportDepth;
-            core::Rect32    _scissor;
-        };
-
-    private:
 
         struct RenderTargetPendingState
         {

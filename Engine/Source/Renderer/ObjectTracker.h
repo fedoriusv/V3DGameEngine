@@ -57,7 +57,7 @@ namespace renderer
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
-    * ObjectTracker class. Collecting RenderObject
+    * @brief ObjectTracker class. Collecting RenderObject
     */
     template<class TRenderObject>
     class ObjectTracker
@@ -95,7 +95,6 @@ namespace renderer
                 if (!object->count())
                 {
                     deleteList.push_back((TRenderObject*)object);
-
                 }
             }
 

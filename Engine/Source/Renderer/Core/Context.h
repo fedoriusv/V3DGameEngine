@@ -6,6 +6,7 @@
 #include "Renderer/TextureProperties.h"
 #include "Renderer/BufferProperties.h"
 #include "Renderer/ShaderProperties.h"
+#include "Renderer/PipelineStateProperties.h"
 #include "Renderer/ObjectTracker.h"
 
 #include "Image.h"
@@ -61,9 +62,6 @@ namespace renderer
             ComputeMask = 0x2,
             TransferMask = 0x4
         };
-
-        Context(const Context&) = delete;
-        Context& operator=(const Context&) = delete;
 
         /**
         * @brief createContext static function. Used for create context.
@@ -170,22 +168,31 @@ namespace renderer
         //transfer
         virtual void transitionImages(std::vector<std::tuple<const Image*, Image::Subresource>>& images, TransitionOp transition) = 0;
 
-        //state
+        /**
+        * @brief setViewport command
+        * @param const core::Rect32& viewport [required]
+        * @param const core::Vector2D& depth [required]
+        */
         virtual void setViewport(const core::Rect32& viewport, const core::Vector2D& depth = { 0.0f, 1.0f }) = 0;
+
+        /**
+        * @brief setScissor command
+        * @param const core::Rect32& scissor [required]
+        */
         virtual void setScissor(const core::Rect32& scissor) = 0;
 
         virtual void setRenderTarget(const RenderPass::RenderPassInfo* renderpassInfo, const Framebuffer::FramebufferInfo* framebufferInfo) = 0;
         virtual void invalidateRenderTarget() = 0;
 
         /**
-        * @brief setPipeline
+        * @brief setPipeline command
         * Set Current pipeline state for graphic pipeline
         * @param const Pipeline::PipelineGraphicInfo* pipelineInfo [required]
         */
         virtual void setPipeline(const Pipeline::PipelineGraphicInfo* pipelineInfo) = 0;
 
         /**
-        * @brief setPipeline
+        * @brief setPipeline command
         * Set Current pipeline state for compute pipeline
         * @param const Pipeline::PipelineComputeInfo* pipelineInfo [required]
         */
@@ -239,6 +246,9 @@ namespace renderer
 
         Context() noexcept;
         virtual ~Context() = default;
+
+        Context(const Context&) = delete;
+        Context& operator=(const Context&) = delete;
 
         virtual bool initialize() = 0;
         virtual void destroy() = 0;
