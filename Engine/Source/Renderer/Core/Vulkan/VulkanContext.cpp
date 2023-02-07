@@ -904,7 +904,9 @@ void VulkanContext::presentFrame()
     RenderFrameProfiler::StackProfiler stackProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::Present);
 #endif //FRAME_PROFILER_ENABLE
 
-    std::vector<VulkanSemaphore*> semaphores;
+    std::vector<VulkanSemaphore*>& semaphores = m_pendingState._presentSemaphores;
+    semaphores.clear();
+
     semaphores.insert(semaphores.end(), m_waitSemaphores.begin(), m_waitSemaphores.end());
     semaphores.insert(semaphores.end(), m_presentSemaphores.begin(), m_presentSemaphores.end());
     m_waitSemaphores.clear();

@@ -219,6 +219,8 @@ namespace vk
             std::vector<VkDescriptorSet> _descriptorSets;
             std::vector<u32> _descriptorOffsets;
 
+            std::vector<VulkanSemaphore*> _presentSemaphores;
+
         private:
 
             Pipeline* _pipeline;
