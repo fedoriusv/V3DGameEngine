@@ -65,9 +65,7 @@ namespace vk
 
         VkDevice m_device;
 
-        std::recursive_mutex m_mutex;
         std::vector<VulkanStagingBuffer*> m_stagingBuffers;
-
         VulkanMemory::VulkanMemoryAllocator* m_memoryManager;
     };
 
