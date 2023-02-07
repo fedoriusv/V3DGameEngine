@@ -72,7 +72,7 @@ VulkanStagingBufferManager::~VulkanStagingBufferManager()
     }
 }
 
-VulkanStagingBuffer * VulkanStagingBufferManager::createStagingBuffer(u64 size, u16 usageFlag) const
+VulkanStagingBuffer* VulkanStagingBufferManager::createStagingBuffer(u64 size, u16 usageFlag) const
 {
     VulkanStagingBuffer * stagingBuffer = new VulkanStagingBuffer(m_memoryManager, m_device, size, usageFlag);
     ASSERT(stagingBuffer, "nullptr");
@@ -86,7 +86,7 @@ VulkanStagingBuffer * VulkanStagingBufferManager::createStagingBuffer(u64 size, 
     return stagingBuffer;
 }
 
-void VulkanStagingBufferManager::destroyAfterUse(VulkanStagingBuffer * buffer)
+void VulkanStagingBufferManager::destroyAfterUse(VulkanStagingBuffer* buffer)
 {
     std::lock_guard lock(m_mutex);
     m_stagingBuffers.push_back(buffer);

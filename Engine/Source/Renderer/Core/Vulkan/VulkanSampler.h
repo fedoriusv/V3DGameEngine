@@ -17,7 +17,7 @@ namespace vk
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
-    * VulkanSampler class. Vulkan Render side
+    * @brief VulkanSampler class. Vulkan Render side
     */
     class VulkanSampler final : public Sampler, public VulkanResource
     {

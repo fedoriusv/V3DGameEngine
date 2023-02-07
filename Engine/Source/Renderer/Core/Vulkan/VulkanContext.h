@@ -54,9 +54,6 @@ namespace vk
     {
     public:
 
-        VulkanContext() = delete;
-        VulkanContext(const VulkanContext&) = delete;
-
         explicit VulkanContext(platform::Window* window, DeviceMask mask) noexcept;
         ~VulkanContext();
 
@@ -130,6 +127,9 @@ namespace vk
 
     private:
 
+        VulkanContext() = delete;
+        VulkanContext(const VulkanContext&) = delete;
+
         const std::string s_vulkanApplicationName = "VulkanContext";
 
         bool initialize() override;
@@ -184,9 +184,9 @@ namespace vk
         {
             bool setPendingPipeline(Pipeline* pipeline)
             {
-                if (pipeline && m_pipeline != pipeline)
+                if (pipeline && _pipeline != pipeline)
                 {
-                    m_pipeline = pipeline;
+                    _pipeline = pipeline;
                     return true;
                 }
 
@@ -195,30 +195,30 @@ namespace vk
 
             bool isPipeline()
             {
-                return m_pipeline != nullptr;
+                return _pipeline != nullptr;
             }
 
             bool isGraphicPipeline()
             {
-                return m_pipeline != nullptr && m_pipeline->getType() == Pipeline::PipelineType::PipelineType_Graphic;
+                return _pipeline != nullptr && _pipeline->getType() == Pipeline::PipelineType::PipelineType_Graphic;
             }
 
             bool isComputePipeline()
             {
-                return m_pipeline != nullptr && m_pipeline->getType() == Pipeline::PipelineType::PipelineType_Compute;
+                return _pipeline != nullptr && _pipeline->getType() == Pipeline::PipelineType::PipelineType_Compute;
             }
 
             template<class Type>
             Type* takePipeline()
             {
-                ASSERT(m_pipeline, "nullptr");
+                ASSERT(_pipeline, "nullptr");
                 static_assert(std::is_same<Type, VulkanGraphicPipeline>() || std::is_same<Type, VulkanComputePipeline>(), "wrong type");
-                return static_cast<Type*>(std::exchange(m_pipeline, nullptr));
+                return static_cast<Type*>(std::exchange(_pipeline, nullptr));
             }
 
         private:
 
-            Pipeline* m_pipeline;
+            Pipeline* _pipeline;
         };
 
         PendingState                m_pendingState;

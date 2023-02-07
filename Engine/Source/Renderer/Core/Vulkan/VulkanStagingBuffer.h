@@ -18,7 +18,7 @@ namespace vk
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
-    * VulkanStagingBuffer final class. Vulkan Render side
+    *  @brief VulkanStagingBuffer final class. Vulkan Render side
     */
     class VulkanStagingBuffer final
     {
@@ -39,13 +39,13 @@ namespace vk
 
     private:
 
-        VulkanBuffer*   m_buffer;
+        VulkanBuffer* m_buffer;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
-    * VulkanStagingBufferManager final class. Vulkan Render side
+    *  @brief VulkanStagingBufferManager final class. Vulkan Render side
     */
     class VulkanStagingBufferManager final
     {
@@ -59,8 +59,9 @@ namespace vk
         VulkanStagingBuffer* createStagingBuffer(u64 size, u16 usageFlag) const;
 
         void destroyAfterUse(VulkanStagingBuffer* buffer);
-
         void destroyStagingBuffers();
+
+    private:
 
         VkDevice m_device;
 

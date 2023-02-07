@@ -18,7 +18,7 @@ namespace vk
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
-    * VulkanResource class. Vulkan Render side
+    * @brief VulkanResource class. Vulkan Render side
     */
     class VulkanResource
     {
@@ -55,7 +55,7 @@ namespace vk
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
-    * VulkanResourceDeleter class. Vulkan Render side
+    * @brief VulkanResourceDeleter class. Vulkan Render side
     */
     class VulkanResourceDeleter final
     {

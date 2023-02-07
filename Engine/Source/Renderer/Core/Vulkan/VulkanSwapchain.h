@@ -28,7 +28,7 @@ namespace vk
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
-    * VulkanSwapchain final class. Vulkan Render side
+    *  @brief VulkanSwapchain final class. Vulkan Render side
     */
     class VulkanSwapchain final
     {

@@ -9,7 +9,7 @@ namespace renderer
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
-    * EmptyContext class
+    * @brief EmptyContext class
     */
     class EmptyContext final : public Context
     {

@@ -15,11 +15,12 @@ namespace vk
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
-    * VulkanDescriptorPool class. Vulkan Render side
+    * @brief VulkanDescriptorPool class. Vulkan Render side
     */
     class VulkanDescriptorSetPool : public VulkanResource
     {
     public:
+
         VulkanDescriptorSetPool(VkDevice device, VkDescriptorPoolCreateFlags flag) noexcept;
         ~VulkanDescriptorSetPool();
 
@@ -115,7 +116,7 @@ namespace vk
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
-    * VulkanDescriptorSetProvider class. Vulkan Render side
+    * @brief VulkanDescriptorSetProvider class. Vulkan Render side
     */
     class VulkanDescriptorPoolProvider
     {

@@ -20,6 +20,9 @@ namespace vk
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    /**
+    * @brief BindingType enum. Vulkan Render side
+    */
     enum BindingType : u32
     {
         BindingType_Unknown = 0,
@@ -34,7 +37,7 @@ namespace vk
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
-    * BindingInfo struct. Vulkan Render side
+    * @brief BindingInfo struct. Vulkan Render side
     */
     struct BindingInfo
     {
@@ -55,6 +58,9 @@ namespace vk
         u32             _padding    : 16; //32
     };
 
+    /**
+    * @brief SetInfo struct. Vulkan Render side
+    */
     struct SetInfo
     {
         struct Hash
@@ -72,8 +78,9 @@ namespace vk
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
+
     /**
-    * VulkanDescriptorSetManager class. Vulkan Render side
+    * @brief VulkanDescriptorSetManager class. Vulkan Render side
     */
     class VulkanDescriptorSetManager final
     {

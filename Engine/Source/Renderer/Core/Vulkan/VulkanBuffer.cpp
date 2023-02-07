@@ -324,7 +324,7 @@ VkBuffer VulkanBuffer::getHandle() const
     return m_buffer;
 }
 
-void * VulkanBuffer::map()
+void* VulkanBuffer::map()
 {
     if (!m_buffer)
     {

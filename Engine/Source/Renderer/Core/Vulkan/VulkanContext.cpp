@@ -1987,10 +1987,8 @@ void VulkanContext::finalizeSubmit()
     m_cmdBufferManager->updateCommandBuffers();
     m_uniformBufferManager->updateUniformBuffers();
     m_semaphoreManager->updateSemaphores();
-
-    m_renderQueryManager->updateRenderQuery();
-
     m_stagingBufferManager->destroyStagingBuffers();
+    m_renderQueryManager->updateRenderQuery();
 
     invalidateStates();
     m_resourceDeleter.updateResourceDeleter();
