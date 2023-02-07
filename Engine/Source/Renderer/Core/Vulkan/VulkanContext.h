@@ -216,6 +216,9 @@ namespace vk
                 return static_cast<Type*>(std::exchange(_pipeline, nullptr));
             }
 
+            std::vector<VkDescriptorSet> _descriptorSets;
+            std::vector<u32> _descriptorOffsets;
+
         private:
 
             Pipeline* _pipeline;

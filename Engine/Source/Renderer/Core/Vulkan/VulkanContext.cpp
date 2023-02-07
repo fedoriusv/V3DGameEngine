@@ -1101,7 +1101,7 @@ void VulkanContext::setViewport(const core::Rect32& viewport, const core::Vector
     RenderFrameProfiler::StackProfiler stackProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::SetStates);
 #endif //FRAME_PROFILER_ENABLE
 
-    if (VulkanContext::isDynamicState(VK_DYNAMIC_STATE_VIEWPORT))
+    [[likely]] if (VulkanContext::isDynamicState(VK_DYNAMIC_STATE_VIEWPORT))
     {
         VkViewport vkViewport = {};
         vkViewport.x = static_cast<f32>(viewport.getLeftX());
@@ -1136,7 +1136,7 @@ void VulkanContext::setScissor(const core::Rect32& scissor)
     RenderFrameProfiler::StackProfiler stackProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::SetStates);
 #endif //FRAME_PROFILER_ENABLE
 
-    if (VulkanContext::isDynamicState(VK_DYNAMIC_STATE_SCISSOR))
+    [[likely]] if (VulkanContext::isDynamicState(VK_DYNAMIC_STATE_SCISSOR))
     {
         VkRect2D vkScissor = {};
         vkScissor.offset = { scissor.getLeftX(), scissor.getTopY() };
@@ -1686,7 +1686,7 @@ void VulkanContext::draw(const StreamBufferDescription& desc, u32 firstVertex, u
     [[maybe_unused]] bool changed = m_currentContextState->setCurrentVertexBuffers(desc);
 
     VulkanCommandBuffer* drawBuffer = m_currentBufferState.acquireAndStartCommandBuffer(CommandTargetType::CmdDrawBuffer);
-    if (prepareDraw(drawBuffer))
+    [[likely]] if (prepareDraw(drawBuffer))
     {
         //if (changed)
         {
@@ -1718,7 +1718,7 @@ void VulkanContext::drawIndexed(const StreamBufferDescription& desc, u32 firstIn
     [[maybe_unused]] bool changed = m_currentContextState->setCurrentVertexBuffers(desc);
 
     VulkanCommandBuffer* drawBuffer = m_currentBufferState.acquireAndStartCommandBuffer(CommandTargetType::CmdDrawBuffer);
-    if (prepareDraw(drawBuffer))
+    [[likely]] if (prepareDraw(drawBuffer))
     {
         //if (changed)
         {
@@ -1750,7 +1750,7 @@ void VulkanContext::dispatchCompute(const core::Dimension3D& groups)
 #endif //FRAME_PROFILER_ENABLE
 
     VulkanCommandBuffer* drawBuffer = m_currentBufferState.acquireAndStartCommandBuffer(CommandTargetType::CmdDrawBuffer); //TODO compute buffer?
-    if (prepareDispatch(drawBuffer))
+    [[likely]] if (prepareDispatch(drawBuffer))
     {
         ASSERT(!drawBuffer->isInsideRenderPass(), "not outside renderpass");
         drawBuffer->cmdDispatch(groups);
@@ -1941,11 +1941,9 @@ bool VulkanContext::prepareDraw(VulkanCommandBuffer* drawBuffer)
     }
     ASSERT(m_currentContextState->getCurrentTypedPipeline<VulkanGraphicPipeline>() && m_currentContextState->getCurrentTypedPipeline<VulkanGraphicPipeline>()->getType() == Pipeline::PipelineType::PipelineType_Graphic, "not bound");
 
-    std::vector<VkDescriptorSet> sets;
-    std::vector<u32> offsets;
-    if (m_currentContextState->prepareDescriptorSets<VulkanGraphicPipeline>(drawBuffer, sets, offsets))
+    if (m_currentContextState->prepareDescriptorSets<VulkanGraphicPipeline>(drawBuffer, m_pendingState._descriptorSets, m_pendingState._descriptorOffsets))
     {
-        drawBuffer->cmdBindDescriptorSets(m_currentContextState->getCurrentTypedPipeline<VulkanGraphicPipeline>(), 0, static_cast<u32>(sets.size()), sets, offsets);
+        drawBuffer->cmdBindDescriptorSets(m_currentContextState->getCurrentTypedPipeline<VulkanGraphicPipeline>(), 0, static_cast<u32>(m_pendingState._descriptorSets.size()), m_pendingState._descriptorSets, m_pendingState._descriptorOffsets);
     }
 
     return true;
@@ -1968,11 +1966,9 @@ bool v3d::renderer::vk::VulkanContext::prepareDispatch(VulkanCommandBuffer* draw
     }
     ASSERT(m_currentContextState->getCurrentTypedPipeline<VulkanComputePipeline>() && m_currentContextState->getCurrentTypedPipeline<VulkanComputePipeline>()->getType() == Pipeline::PipelineType::PipelineType_Compute, "not bound");
 
-    std::vector<VkDescriptorSet> sets;
-    [[maybe_unused]] std::vector<u32> offsets;
-    if (m_currentContextState->prepareDescriptorSets<VulkanComputePipeline>(drawBuffer, sets, offsets))
+    if (m_currentContextState->prepareDescriptorSets<VulkanComputePipeline>(drawBuffer, m_pendingState._descriptorSets, m_pendingState._descriptorOffsets))
     {
-        drawBuffer->cmdBindDescriptorSets(m_currentContextState->getCurrentTypedPipeline<VulkanComputePipeline>(), 0, static_cast<u32>(sets.size()), sets);
+        drawBuffer->cmdBindDescriptorSets(m_currentContextState->getCurrentTypedPipeline<VulkanComputePipeline>(), 0, static_cast<u32>(m_pendingState._descriptorSets.size()), m_pendingState._descriptorSets);
     }
 
     return true;

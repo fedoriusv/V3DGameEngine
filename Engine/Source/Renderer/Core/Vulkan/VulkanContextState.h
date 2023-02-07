@@ -68,7 +68,7 @@ namespace vk
         void invokeDynamicStates(bool clear = true);
 
         template<class Type>
-        bool prepareDescriptorSets(VulkanCommandBuffer* cmdBuffer, std::vector<VkDescriptorSet>& sets, [[maybe_unused]] std::vector<u32>& offsets)
+        bool prepareDescriptorSets(VulkanCommandBuffer* cmdBuffer, std::vector<VkDescriptorSet>& sets, std::vector<u32>& offsets)
         {
             static_assert(std::is_same<Type, VulkanGraphicPipeline>() || std::is_same<Type, VulkanComputePipeline>(), "wrong type");
             if (VulkanContextState::getCurrentTypedPipeline<Type>()->getDescriptorSetLayouts()._setLayouts.empty())
@@ -83,6 +83,8 @@ namespace vk
                 return false;
             }
 #endif
+            sets.clear();
+            offsets.clear();
 
             for (u32 setId = 0; setId < k_maxDescriptorSetIndex; ++setId)
             {
