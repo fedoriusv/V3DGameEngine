@@ -322,6 +322,7 @@ namespace renderer
 
         ObjectTracker<Framebuffer>  m_trackerFramebuffer;
         ObjectTracker<RenderPass>   m_trackerRenderpass;
+        [[maybe_unused]] const std::string m_name;
     };
 
 

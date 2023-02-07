@@ -20,7 +20,7 @@ RenderTargetState::RenderTargetState(renderer::CommandList& cmdList, const core:
 
     , m_trackerFramebuffer(this, std::bind(&RenderTargetState::destroyFramebuffers, this, std::placeholders::_1))
     , m_trackerRenderpass(this, std::bind(&RenderTargetState::destroyRenderPasses, this, std::placeholders::_1))
-
+    , m_name(name)
 {
     std::get<0>(m_depthStencilTexture) = nullptr;
 }
