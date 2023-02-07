@@ -13,7 +13,7 @@ namespace renderer
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
-    * RenderObject class
+    * @bief RenderObject class
     */
     template<class TRenderObject>
     class RenderObject
@@ -75,7 +75,7 @@ namespace renderer
             static_assert(std::is_base_of<RenderObject<TRenderObject>, TRenderObject>(), "wrong type");
             std::lock_guard<std::recursive_mutex> lock(m_mutex);
 
-            auto iter = m_list.emplace(object);
+            auto iter = m_list.insert(object);
             if (iter.second)
             {
                 object->link();
