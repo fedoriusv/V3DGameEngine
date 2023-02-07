@@ -73,6 +73,8 @@ namespace vk
         std::deque<VulkanCommandBuffer*> m_freeCmdBuffers[VulkanCommandBuffer::CommandBufferLevelCount];
         std::deque<VulkanCommandBuffer*> m_usedCmdBuffers;
 
+        std::vector<VkSemaphore> m_waitSemaphores;
+        std::vector<VkSemaphore> m_signalSemaphores;
 
         static VkCommandPool createCommandPool(VkDevice device, VkCommandPoolCreateFlags flag, u32 familyIndex);
         static void destoryCommandPool(VkDevice device, VkCommandPool pool);

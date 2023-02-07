@@ -124,26 +124,26 @@ bool VulkanCommandBufferManager::submit(VulkanCommandBuffer* buffer, std::vector
     submitInfo.commandBufferCount = 1;
     submitInfo.pCommandBuffers = &cmdBuffer;
 
-    std::vector<VkSemaphore> vkWaitSemaphores;
-    vkWaitSemaphores.reserve(buffer->m_semaphores.size());
+    m_waitSemaphores.clear();
+    m_waitSemaphores.reserve(buffer->m_semaphores.size());
     for (VulkanSemaphore* semaphore : buffer->m_semaphores)
     {
-        vkWaitSemaphores.push_back(semaphore->getHandle());
+        m_waitSemaphores.push_back(semaphore->getHandle());
         m_semaphoreManager->markSemaphore(semaphore, VulkanSemaphore::SemaphoreStatus::AssignToWaiting);
     }
-    submitInfo.waitSemaphoreCount = static_cast<u32>(vkWaitSemaphores.size());
-    submitInfo.pWaitSemaphores = vkWaitSemaphores.data();
+    submitInfo.waitSemaphoreCount = static_cast<u32>(m_waitSemaphores.size());
+    submitInfo.pWaitSemaphores = m_waitSemaphores.data();
     submitInfo.pWaitDstStageMask = buffer->m_stageMasks.data();
 
-    std::vector<VkSemaphore> vkSignalSemaphores;
-    vkSignalSemaphores.reserve(signalSemaphores.size());
+    m_signalSemaphores.clear();
+    m_signalSemaphores.reserve(signalSemaphores.size());
     for (VulkanSemaphore* semaphore : signalSemaphores)
     {
-        vkSignalSemaphores.push_back(semaphore->getHandle());
+        m_signalSemaphores.push_back(semaphore->getHandle());
         m_semaphoreManager->markSemaphore(semaphore, VulkanSemaphore::SemaphoreStatus::AssignToSignal);
     }
-    submitInfo.signalSemaphoreCount = static_cast<u32>(vkSignalSemaphores.size());
-    submitInfo.pSignalSemaphores = vkSignalSemaphores.data();
+    submitInfo.signalSemaphoreCount = static_cast<u32>(m_signalSemaphores.size());
+    submitInfo.pSignalSemaphores = m_signalSemaphores.data();
 
 
     VkResult result = VulkanWrapper::QueueSubmit(m_queue, 1, &submitInfo, buffer->m_fence);
