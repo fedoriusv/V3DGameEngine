@@ -105,6 +105,27 @@ namespace vk
         static std::vector<const c8*>        s_enableExtensions;
     };
 
+
+    inline const VkPhysicalDeviceLimits& VulkanDeviceCaps::getPhysicalDeviceLimits() const
+    {
+        return m_deviceProperties.limits;
+    }
+
+    inline const VkPhysicalDeviceMemoryProperties& VulkanDeviceCaps::getDeviceMemoryProperties() const
+    {
+        return m_deviceMemoryProps;
+    }
+
+    inline const VkPhysicalDeviceFeatures& VulkanDeviceCaps::getPhysicalDeviceFeatures() const
+    {
+        return m_deviceFeatures;
+    }
+
+    inline const VkPhysicalDeviceMaintenance3Properties& VulkanDeviceCaps::getPhysicalDeviceMaintenance3Properties() const
+    {
+        return m_physicalDeviceMaintenance3Properties;
+    }
+
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
 } //namespace vk

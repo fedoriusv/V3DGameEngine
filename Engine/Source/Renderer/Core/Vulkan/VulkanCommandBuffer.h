@@ -169,6 +169,16 @@ namespace vk
 #endif //VULKAN_DEBUG_MARKERS
     };
 
+    inline VulkanCommandBuffer::CommandBufferStatus VulkanCommandBuffer::getStatus() const
+    {
+        return m_status;
+    }
+
+    inline bool VulkanCommandBuffer::isInsideRenderPass() const
+    {
+        return m_isInsideRenderPass;
+    }
+
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
 } //namespace vk

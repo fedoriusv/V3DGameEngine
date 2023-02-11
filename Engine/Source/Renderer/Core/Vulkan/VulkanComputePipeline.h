@@ -68,6 +68,16 @@ namespace vk
 #endif //VULKAN_DEBUG_MARKERS
     };
 
+    inline const VulkanPipelineLayout& VulkanComputePipeline::getDescriptorSetLayouts() const
+    {
+        return m_pipelineLayout;
+    }
+
+    inline const VulkanPipelineLayoutDescription& VulkanComputePipeline::getPipelineLayoutDescription() const
+    {
+        return m_pipelineLayoutDescription;
+    }
+
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
 } //namespace vk

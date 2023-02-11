@@ -94,11 +94,6 @@ VkCommandBuffer VulkanCommandBuffer::getHandle() const
     return m_commands;
 }
 
-VulkanCommandBuffer::CommandBufferStatus VulkanCommandBuffer::getStatus() const
-{
-    return m_status;
-}
-
 void VulkanCommandBuffer::addSemaphore(VkPipelineStageFlags mask, VulkanSemaphore* semaphore)
 {
     if (m_level == CommandBufferLevel::SecondaryBuffer)
@@ -441,11 +436,6 @@ void VulkanCommandBuffer::cmdEndRenderPass()
     }
 
     m_isInsideRenderPass = false;
-}
-
-bool VulkanCommandBuffer::isInsideRenderPass()
-{
-    return m_isInsideRenderPass;
 }
 
 void VulkanCommandBuffer::cmdSetViewport(const std::vector<VkViewport>& viewports)

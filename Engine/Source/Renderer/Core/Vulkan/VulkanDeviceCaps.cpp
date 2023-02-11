@@ -150,26 +150,6 @@ u32 VulkanDeviceCaps::getQueueFamiliyIndex(VkQueueFlags queueFlags)
     return 0;
 }
 
-const VkPhysicalDeviceLimits& VulkanDeviceCaps::getPhysicalDeviceLimits() const
-{
-    return m_deviceProperties.limits;
-}
-
-const VkPhysicalDeviceMemoryProperties& VulkanDeviceCaps::getDeviceMemoryProperties() const
-{
-    return m_deviceMemoryProps;
-}
-
-const VkPhysicalDeviceFeatures& VulkanDeviceCaps::getPhysicalDeviceFeatures() const
-{
-    return m_deviceFeatures;
-}
-
-const VkPhysicalDeviceMaintenance3Properties& VulkanDeviceCaps::getPhysicalDeviceMaintenance3Properties() const
-{
-    return m_physicalDeviceMaintenance3Properties;
-}
-
 void VulkanDeviceCaps::fillCapabilitiesList(const DeviceInfo* info)
 {
     ASSERT(info->_physicalDevice != VK_NULL_HANDLE, "PhysicalDevice is nullptr");

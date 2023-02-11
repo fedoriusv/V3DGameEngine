@@ -49,6 +49,16 @@ namespace vk
         friend VulkanCommandBuffer;
     };
 
+    inline VulkanResource::Status VulkanResource::getStatus() const
+    {
+        return m_status;
+    }
+    
+    inline bool VulkanResource::isCaptured() const
+    {
+        return m_status == VulkanResource::Status::Status_Captured;
+    }
+
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**

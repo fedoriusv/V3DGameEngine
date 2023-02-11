@@ -52,11 +52,6 @@ void VulkanContextState::invalidateCommandBuffer(CommandTargetType type)
     }
 }
 
-bool VulkanContextState::isCurrentRenderPass(const VulkanRenderPass* pass) const
-{
-    return m_currentRenderpass.first == pass;
-}
-
 bool VulkanContextState::isCurrentFramebuffer(const VulkanFramebuffer * framebuffer) const
 {
     if (m_currentFramebuffer.first.size() == 1)
@@ -77,11 +72,6 @@ bool VulkanContextState::isCurrentFramebuffer(const VulkanFramebuffer * framebuf
     }
 
     return false;
-}
-
-bool VulkanContextState::isCurrentPipeline(const Pipeline* pipeline) const
-{
-    return m_currentPipeline.first == pipeline;
 }
 
 bool VulkanContextState::setCurrentRenderPass(VulkanRenderPass* pass)
@@ -138,12 +128,6 @@ void VulkanContextState::setClearValues(const VkRect2D & area, std::vector<VkCle
     m_renderPassClearValues = std::move(clearValues);
 }
 
-VulkanRenderPass* VulkanContextState::getCurrentRenderpass() const
-{
-    ASSERT(m_currentRenderpass.first, "nullptr");
-    return m_currentRenderpass.first;
-}
-
 VulkanFramebuffer* VulkanContextState::getCurrentFramebuffer() const
 {
     ASSERT(!m_currentFramebuffer.first.empty(), "nullptr");
@@ -155,16 +139,6 @@ VulkanFramebuffer* VulkanContextState::getCurrentFramebuffer() const
     {
         return m_currentFramebuffer.first[VulkanSwapchain::currentSwapchainIndex()];
     }
-}
-
-Pipeline* VulkanContextState::getCurrentPipeline() const
-{
-    return m_currentPipeline.first;
-}
-
-const StreamBufferDescription& VulkanContextState::getStreamBufferDescription() const
-{
-    return m_currentVertexBuffers.first;
 }
 
 bool VulkanContextState::setDynamicState(VkDynamicState state, const std::function<void()>& callback)

@@ -42,6 +42,21 @@ namespace vk
         u64             m_size;
     };
 
+    inline VulkanBuffer* VulkanUniformBuffer::getBuffer() const
+    {
+        return m_buffer;
+    }
+
+    inline u64 VulkanUniformBuffer::getOffset() const
+    {
+        return m_offset;
+    }
+
+    inline u64 VulkanUniformBuffer::getSize() const
+    {
+        return m_size;
+    }
+
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**

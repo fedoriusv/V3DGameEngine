@@ -222,6 +222,32 @@ namespace vk
         mutable BindingState m_currentBindingSlots[k_maxDescriptorSetIndex];
     };
 
+    inline bool VulkanContextState::isCurrentRenderPass(const VulkanRenderPass* pass) const
+    {
+        return m_currentRenderpass.first == pass;
+    }
+
+    inline bool VulkanContextState::isCurrentPipeline(const Pipeline* pipeline) const
+    {
+        return m_currentPipeline.first == pipeline;
+    }
+
+    inline Pipeline* VulkanContextState::getCurrentPipeline() const
+    {
+        return m_currentPipeline.first;
+    }
+
+    inline VulkanRenderPass* VulkanContextState::getCurrentRenderpass() const
+    {
+        return m_currentRenderpass.first;
+    }
+
+    inline const StreamBufferDescription& VulkanContextState::getStreamBufferDescription() const
+    {
+        return m_currentVertexBuffers.first;
+    }
+
+
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
 } //namespace vk

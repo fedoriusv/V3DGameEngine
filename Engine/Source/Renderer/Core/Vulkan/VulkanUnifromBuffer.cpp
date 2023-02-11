@@ -32,21 +32,6 @@ void VulkanUniformBuffer::set(VulkanBuffer* buffer, u64 offset, u64 size)
     m_size = size;
 }
 
-VulkanBuffer* VulkanUniformBuffer::getBuffer() const
-{
-    return m_buffer;
-}
-
-u64 VulkanUniformBuffer::getOffset() const
-{
-    return m_offset;
-}
-
-u64 VulkanUniformBuffer::getSize() const
-{
-    return m_size;
-}
-
 bool VulkanUniformBuffer::update(u32 offset, u32 size, const void* data)
 {
     ASSERT(data, "nullptr");

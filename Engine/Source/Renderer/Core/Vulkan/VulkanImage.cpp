@@ -1589,30 +1589,6 @@ VkImage VulkanImage::getHandle() const
     return m_image;
 }
 
-VkImageAspectFlags VulkanImage::getImageAspectFlags() const
-{
-    ASSERT(m_image != VK_NULL_HANDLE, "nullptr");
-    return m_aspectMask;
-}
-
-VkSampleCountFlagBits VulkanImage::getSampleCount() const
-{
-    ASSERT(m_image != VK_NULL_HANDLE, "nullptr");
-    return m_samples;
-}
-
-VkFormat VulkanImage::getFormat() const
-{
-    ASSERT(m_image != VK_NULL_HANDLE, "nullptr");
-    return m_format;
-}
-
-VkExtent3D VulkanImage::getSize() const
-{
-    ASSERT(m_image != VK_NULL_HANDLE, "nullptr");
-    return m_dimension;
-}
-
 VkImageLayout VulkanImage::getLayout(const Image::Subresource& resource) const
 {
     u32 index = 1 + (resource._baseLayer * m_mipLevels + resource._baseMip);
@@ -1635,11 +1611,6 @@ VkImageLayout VulkanImage::setLayout(VkImageLayout newlayout, const Image::Subre
 
     m_layout.front() = newlayout; //General layout. Need do for every layer and mip
     return oldLayout;
-}
-
-VulkanImage* VulkanImage::getResolveImage() const
-{
-    return m_resolveImage;
 }
 
 void VulkanImage::destroy()
@@ -1679,11 +1650,6 @@ void VulkanImage::destroy()
             VulkanMemory::freeMemory(*m_memoryAllocator, m_memory);
         }
     }
-}
-
-bool VulkanImage::isSwapchain() const
-{
-    return m_swapchainImage;
 }
 
 bool VulkanImage::createViewImage()

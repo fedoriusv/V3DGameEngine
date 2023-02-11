@@ -56,6 +56,16 @@ namespace vk
 #endif //VULKAN_DEBUG_MARKERS
     };
 
+    inline const std::vector<Image*>& VulkanFramebuffer::getImages() const
+    {
+        return m_images;
+    }
+
+    inline const core::Dimension2D& VulkanFramebuffer::getArea() const
+    {
+        return m_size;
+    }
+
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
 } //namespace vk

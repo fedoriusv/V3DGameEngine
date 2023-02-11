@@ -167,16 +167,6 @@ VkPipelineLayout VulkanComputePipeline::getPipelineLayoutHandle() const
     return m_pipelineLayout._pipelineLayout;
 }
 
-const VulkanPipelineLayout& VulkanComputePipeline::getDescriptorSetLayouts() const
-{
-    return m_pipelineLayout;
-}
-
-const VulkanPipelineLayoutDescription& VulkanComputePipeline::getPipelineLayoutDescription() const
-{
-    return m_pipelineLayoutDescription;
-}
-
 bool VulkanComputePipeline::create(const PipelineGraphicInfo* pipelineInfo)
 {
     ASSERT(false, "cant be graphic");

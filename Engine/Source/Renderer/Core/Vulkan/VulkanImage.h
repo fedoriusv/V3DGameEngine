@@ -142,6 +142,36 @@ namespace vk
 #endif //VULKAN_DEBUG_MARKERS
     };
 
+    inline VkImageAspectFlags VulkanImage::getImageAspectFlags() const
+    {
+        return m_aspectMask;
+    }
+
+    inline VkSampleCountFlagBits VulkanImage::getSampleCount() const
+    {
+        return m_samples;
+    }
+
+    inline VkFormat VulkanImage::getFormat() const
+    {
+        return m_format;
+    }
+
+    inline VkExtent3D VulkanImage::getSize() const
+    {
+        return m_dimension;
+    }
+
+    inline VulkanImage* VulkanImage::getResolveImage() const
+    {
+        return m_resolveImage;
+    }
+
+    inline bool VulkanImage::isSwapchain() const
+    {
+        return m_swapchainImage;
+    }
+
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
 } //namespace vk

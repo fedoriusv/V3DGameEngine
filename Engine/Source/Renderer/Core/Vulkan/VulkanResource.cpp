@@ -1,6 +1,7 @@
 #include "VulkanResource.h"
 
 #ifdef VULKAN_RENDER
+#include "VulkanWrapper.h"
 #include "VulkanCommandBuffer.h"
 
 namespace v3d
@@ -20,16 +21,6 @@ VulkanResource::VulkanResource() noexcept
 VulkanResource::~VulkanResource()
 {
     ASSERT(!isCaptured(), "still captured");
-}
-
-VulkanResource::Status VulkanResource::getStatus() const
-{
-    return m_status;
-}
-
-bool VulkanResource::isCaptured() const
-{
-    return m_status == VulkanResource::Status::Status_Captured;
 }
 
 bool VulkanResource::waitComplete(u64 time)

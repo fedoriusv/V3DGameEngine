@@ -371,16 +371,6 @@ VkPipelineLayout VulkanGraphicPipeline::getPipelineLayoutHandle() const
     return m_pipelineLayout._pipelineLayout;
 }
 
-const VulkanPipelineLayout& VulkanGraphicPipeline::getDescriptorSetLayouts() const
-{
-    return m_pipelineLayout;
-}
-
-const VulkanPipelineLayoutDescription& VulkanGraphicPipeline::getPipelineLayoutDescription() const
-{
-    return m_pipelineLayoutDescription;
-}
-
 VulkanGraphicPipeline::VulkanGraphicPipeline(VkDevice device, Context* context, RenderPassManager* renderpassManager, VulkanPipelineLayoutManager * pipelineLayoutManager, const std::string& name)
     : Pipeline(PipelineType::PipelineType_Graphic)
     , m_device(device)
