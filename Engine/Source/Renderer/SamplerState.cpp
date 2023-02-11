@@ -78,46 +78,6 @@ SamplerState::~SamplerState()
     m_trackerSampler.release();
 }
 
-renderer::SamplerFilter SamplerState::getFiltering() const
-{
-    return m_samplerDesc._desc._filter;
-}
-
-SamplerWrap SamplerState::getWrapU() const
-{
-    return m_samplerDesc._desc._wrapU;
-}
-
-SamplerWrap SamplerState::getWrapV() const
-{
-    return m_samplerDesc._desc._wrapV;
-}
-
-SamplerWrap SamplerState::getWrapW() const
-{
-    return m_samplerDesc._desc._wrapW;
-}
-
-SamplerAnisotropic SamplerState::getAnisotropic() const
-{
-    return m_samplerDesc._desc._anisotropic;
-}
-
-CompareOperation SamplerState::getCompareOp() const
-{
-    return m_samplerDesc._desc._compareOp;
-}
-
-const core::Vector4D& SamplerState::getBorderColor() const
-{
-    return m_samplerDesc._desc._borderColor;
-}
-
-bool SamplerState::isEnableCompareOp() const
-{
-    return m_samplerDesc._desc._enableCompOp;
-}
-
 void SamplerState::setFiltering(SamplerFilter filter)
 {
     m_samplerDesc._desc._filter = filter;

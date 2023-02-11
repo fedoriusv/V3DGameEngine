@@ -48,6 +48,10 @@ namespace renderer
 
     protected:
 
+        RenderPass() = delete;
+        RenderPass(const RenderPass&) = delete;
+        RenderPass& operator=(const RenderPass&) = delete;
+
         const RenderPassDescription m_desc;
         friend RenderPassManager;
     };
@@ -61,9 +65,6 @@ namespace renderer
     {
     public:
 
-        RenderPassManager() = delete;
-        RenderPassManager(const RenderPassManager&) = delete;
-
         explicit RenderPassManager(Context *context) noexcept;
         ~RenderPassManager();
 
@@ -71,9 +72,13 @@ namespace renderer
         bool removeRenderPass(const RenderPass* renderPass);
         void clear();
 
-        void handleNotify(const utils::Observable* ob) override;
+        void handleNotify(const utils::Observable* object, void* msg) override;
 
     private:
+
+        RenderPassManager() = delete;
+        RenderPassManager(const RenderPassManager&) = delete;
+        RenderPassManager& operator=(const RenderPassManager&) = delete;
 
         Context* const m_context;
         std::unordered_map<RenderPassDescription, RenderPass*, RenderPassDescription::Hash, RenderPassDescription::Compare> m_renderPassList;

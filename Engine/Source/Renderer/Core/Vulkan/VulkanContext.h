@@ -114,7 +114,7 @@ namespace vk
         static const std::vector<VkDynamicState>& getDynamicStates();
         static bool isDynamicState(VkDynamicState state);
 
-        void handleNotify(const utils::Observable* obj) override;
+        void handleNotify(const utils::Observable* object, void* msg) override;
 
         VulkanStagingBufferManager* getStagingManager();
         VulkanCommandBuffer* getOrCreateAndStartCommandBuffer(CommandTargetType type);
@@ -219,6 +219,7 @@ namespace vk
             std::vector<u32> _descriptorOffsets;
 
             std::vector<VulkanSemaphore*> _presentSemaphores;
+            std::vector<VulkanSemaphore*> _uploadSemaphores;
 
         private:
 

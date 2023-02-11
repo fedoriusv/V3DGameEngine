@@ -90,6 +90,9 @@ namespace renderer
 
     private:
 
+        Pipeline() = delete;
+        Pipeline(const Pipeline&) = delete;
+
         struct PipelineDescription
         {
             PipelineDescription() noexcept;
@@ -131,9 +134,6 @@ namespace renderer
     {
     public:
 
-        PipelineManager() = delete;
-        PipelineManager(const PipelineManager&) = delete;
-
         explicit PipelineManager(Context* context) noexcept;
         ~PipelineManager();
 
@@ -143,9 +143,12 @@ namespace renderer
         bool removePipeline(Pipeline* pipeline);
         void clear();
 
-        void handleNotify(const utils::Observable* ob) override;
+        void handleNotify(const utils::Observable* object, void* msg) override;
 
     private:
+
+        PipelineManager() = delete;
+        PipelineManager(const PipelineManager&) = delete;
 
         Context* const m_context;
         std::unordered_map<Pipeline::PipelineDescription, Pipeline*, Pipeline::PipelineDescription::Hash, Pipeline::PipelineDescription::Compare> m_pipelineGraphicList;

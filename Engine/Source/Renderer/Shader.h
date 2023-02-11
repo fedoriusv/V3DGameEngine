@@ -247,6 +247,11 @@ namespace renderer
         friend renderer::ShaderProgram;
     };
 
+    inline const Shader::ReflectionInfo& Shader::getReflectionInfo() const
+    {
+        return m_reflectionInfo;
+    }
+
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
 } //namespace renderer

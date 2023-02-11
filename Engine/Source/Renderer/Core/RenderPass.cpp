@@ -102,9 +102,9 @@ void RenderPassManager::clear()
     m_renderPassList.clear();
 }
 
-void RenderPassManager::handleNotify(const utils::Observable* ob)
+void RenderPassManager::handleNotify(const utils::Observable* object, void* msg)
 {
-    LOG_DEBUG("RenderPassManager::handleNotify renderpass %llx has been deleted", ob);
+    LOG_DEBUG("RenderPassManager::handleNotify renderpass %llx has been deleted", object);
 }
 
 } //namespace renderer

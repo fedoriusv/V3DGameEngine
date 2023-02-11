@@ -47,6 +47,9 @@ namespace renderer
 
     protected:
 
+        Sampler(Sampler&) = delete;
+        Sampler& operator=(const Sampler&) = delete;
+
         const SamplerDescription m_desc;
         friend SamplerManager;
     };
@@ -60,18 +63,20 @@ namespace renderer
     {
     public:
 
-        SamplerManager() = delete;
-
         explicit SamplerManager(Context *context) noexcept;
         ~SamplerManager();
-
-        void handleNotify(const utils::Observable* ob) override;
 
         Sampler* acquireSampler(const SamplerDescription& samplerDesc);
         bool removeSampler(Sampler* sampler);
         void clear();
 
+        void handleNotify(const utils::Observable* object, void* msg) override;
+
     private:
+
+        SamplerManager() = delete;
+        SamplerManager(const SamplerManager&) = delete;
+        SamplerManager& operator=(const SamplerManager&) = delete;
 
         Context* const m_context;
         std::unordered_map<SamplerDescription, Sampler*, SamplerDescription::Hash, SamplerDescription::Compare> m_samplerList;

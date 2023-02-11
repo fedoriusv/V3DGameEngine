@@ -107,6 +107,36 @@ namespace renderer
         void createTexture(const core::Dimension3D& dimension, const void* data);
     };
 
+    inline TextureTarget Texture::getTarget() const
+    {
+        return m_target;
+    }
+
+    inline Format Texture::getFormat() const
+    {
+        return m_format;
+    }
+
+    inline TextureSamples Texture::getSamples() const
+    {
+        return m_samples;
+    }
+
+    inline u32 Texture::getLayersCount() const
+    {
+        return m_layers;
+    }
+
+    inline u32 Texture::getMipmapsCount() const
+    {
+        return m_mipmaps;
+    }
+
+    inline bool Texture::isBackbuffer() const
+    {
+        return m_backbuffer;
+    }
+
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
@@ -164,9 +194,13 @@ namespace renderer
         Texture2D(const Texture2D&) = delete;
 
         const core::Dimension2D m_dimension;
-
         friend CommandList;
     };
+
+    inline const core::Dimension2D& Texture2D::getDimension() const
+    {
+        return m_dimension;
+    }
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -221,9 +255,13 @@ namespace renderer
         Texture2DArray(const Texture2DArray&) = delete;
 
         const core::Dimension2D m_dimension;
-
         friend CommandList;
     };
+
+    inline const core::Dimension2D& Texture2DArray::getDimension() const
+    {
+        return m_dimension;
+    }
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -279,7 +317,11 @@ namespace renderer
         friend CommandList;
     };
 
-        friend CommandList;
+    inline const core::Dimension2D& TextureCube::getDimension() const
+    {
+        return m_dimension;
+    }
+
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**

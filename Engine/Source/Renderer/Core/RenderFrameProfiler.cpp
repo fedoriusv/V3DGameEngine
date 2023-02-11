@@ -191,7 +191,7 @@ void RenderFrameStaticstics::printTimers() const
 {
     for (auto& time : _timer)
     {
-        LOG("FrameTimeStaticstics:: CPU Render Time %s: %.1f %s", time._name.c_str(), time._value, time._unit.c_str());
+        LOG("FrameTimeStaticstics:: CPU Render Time %s: %.2f %s", time._name.c_str(), time._value, time._unit.c_str());
     }
 }
 

@@ -186,11 +186,6 @@ const ShaderHeader& Shader::getShaderHeader() const
     return *static_cast<const ShaderHeader*>(m_header);
 }
 
-const Shader::ReflectionInfo& Shader::getReflectionInfo() const
-{
-    return m_reflectionInfo;
-}
-
 Shader::Attribute::Attribute() noexcept
     : _location(0)
     , _format(renderer::Format::Format_Undefined)

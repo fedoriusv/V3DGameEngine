@@ -52,16 +52,6 @@ ShaderProgram::~ShaderProgram()
     LOG_DEBUG("ShaderProgram::ShaderProgram destructor %llx", this);
 }
 
-const Shader* ShaderProgram::getShader(ShaderType type) const
-{
-    return m_programInfo._shaders[toEnumType(type)];
-}
-
-const ShaderProgramDescription& ShaderProgram::getShaderDesc() const
-{
-    return m_programInfo;
-}
-
 void ShaderProgram::composeProgramData(const std::vector<const Shader*>& shaders)
 {
     m_programInfo._hash = 0;

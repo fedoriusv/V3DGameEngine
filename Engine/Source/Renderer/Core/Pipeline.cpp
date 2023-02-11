@@ -297,9 +297,9 @@ void PipelineManager::clear()
     m_pipelineComputeList.clear();
 }
 
-void PipelineManager::handleNotify(const utils::Observable * ob)
+void PipelineManager::handleNotify(const utils::Observable* object, void* msg)
 {
-    LOG_DEBUG("PipelineManager pipeline %x has been deleted", ob);
+    LOG_DEBUG("PipelineManager pipeline %x has been deleted", object);
 }
 
 } //namespace renderer

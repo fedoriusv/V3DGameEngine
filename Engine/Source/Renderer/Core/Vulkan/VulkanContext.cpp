@@ -633,6 +633,7 @@ bool VulkanContext::createDevice()
     }
 #endif
 
+#if VULKAN_DEBUG
     if (VulkanDeviceCaps::checkDeviceExtension(m_deviceInfo._physicalDevice, VK_KHR_PIPELINE_EXECUTABLE_PROPERTIES_EXTENSION_NAME))
     {
         VkPhysicalDevicePipelineExecutablePropertiesFeaturesKHR physicalDevicePipelineExecutablePropertiesFeatures = {};
@@ -641,6 +642,7 @@ bool VulkanContext::createDevice()
         physicalDevicePipelineExecutablePropertiesFeatures.pipelineExecutableInfo = VulkanDeviceCaps::getInstance()->pipelineExecutablePropertiesEnabled;
         vkExtension = &physicalDevicePipelineExecutablePropertiesFeatures;
     }
+#endif //VULKAN_DEBUG
 
     VkDeviceCreateInfo deviceCreateInfo = {};
     deviceCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
@@ -958,7 +960,8 @@ void VulkanContext::submit(bool wait)
             uploadBuffer->endCommandBuffer();
         }
 
-        std::vector<VulkanSemaphore*> uploadSemaphores;
+        std::vector<VulkanSemaphore*>& uploadSemaphores = m_pendingState._uploadSemaphores;
+        uploadSemaphores.clear();
         if (m_currentBufferState.isCurrentBufferAcitve(CommandTargetType::CmdDrawBuffer))
         {
             uploadSemaphore = m_semaphoreManager->acquireSemaphore();
@@ -1929,6 +1932,7 @@ Sampler* VulkanContext::createSampler(const SamplerDescription& desc)
 void VulkanContext::invalidateStates()
 {
     m_currentContextState->updateDescriptorStates();
+    m_currentContextState->invalidateRenderQueriesState();
 
     Pipeline* pipeline = m_currentContextState->getCurrentPipeline();
     if (pipeline)
@@ -2058,9 +2062,9 @@ void VulkanContext::generateMipmaps(Image* image, u32 layer, TransitionOp state)
 }
 
 //Another thread
-void VulkanContext::handleNotify(const utils::Observable* obj)
+void VulkanContext::handleNotify(const utils::Observable* object, void* msg)
 {
-    const platform::Window* windows = reinterpret_cast<const platform::Window*>(obj);
+    const platform::Window* windows = reinterpret_cast<const platform::Window*>(object);
     if (windows->isValid())
     {
         LOG_WARNING("VulkanContext::notify, native window %llx (from main)", windows->getWindowHandle());

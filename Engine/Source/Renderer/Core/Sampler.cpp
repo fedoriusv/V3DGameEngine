@@ -94,9 +94,9 @@ void SamplerManager::clear()
     m_samplerList.clear();
 }
 
-void SamplerManager::handleNotify(const utils::Observable* ob)
+void SamplerManager::handleNotify(const utils::Observable* object, void* msg)
 {
-    LOG_DEBUG("SamplerManager::handleNotify sampler %llx has been deleted", ob);
+    LOG_DEBUG("SamplerManager::handleNotify sampler %llx has been deleted", object);
 }
 
 } //namespace renderer

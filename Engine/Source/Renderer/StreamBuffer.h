@@ -154,6 +154,16 @@ namespace renderer
         friend StreamBufferDescription;
     };
 
+    inline u32 IndexStreamBuffer::getIndexCount() const
+    {
+        return m_count;
+    }
+
+    inline StreamIndexBufferType IndexStreamBuffer::getIndexBufferType() const
+    {
+        return m_type;
+    }
+
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
 } //namespace renderer

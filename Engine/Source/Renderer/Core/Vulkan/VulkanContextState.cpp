@@ -13,6 +13,7 @@
 #include "VulkanSampler.h"
 #include "VulkanUnifromBuffer.h"
 #include "VulkanSwapchain.h"
+#include "VulkanQueryPool.h"
 
 #include "Renderer/Core/RenderFrameProfiler.h"
 
@@ -445,11 +446,11 @@ void VulkanContextState::BindingState::bind(BindingType type, u32 binding, u32 a
     bindingInfo._info._imageInfo = VulkanContextState::makeVkDescriptorImageInfo(image, sampler, (type == BindingType::BindingType_StorageImage) ? VK_IMAGE_LAYOUT_GENERAL : VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, subresource);
 
     BindingData& bindingData = std::get<1>(_set[binding]);
-    bindingData._dataBinding = BindingData::BindingImageData { image, sampler };
+    bindingData._dataBinding.emplace<BindingData::BindingImageData>(image, sampler);
 
     _activeBindingsFlags |= 1 << binding;
     _dirtyFlag = true;
-    }
+}
 
 void VulkanContextState::BindingState::bind(BindingType type, u32 binding, u32 arrayIndex, const VulkanBuffer* buffer, u64 offset, u64 range)
 {
@@ -460,7 +461,7 @@ void VulkanContextState::BindingState::bind(BindingType type, u32 binding, u32 a
     bindingInfo._info._bufferInfo = VulkanContextState::makeVkDescriptorBufferInfo(buffer, offset, range);
 
     BindingData& bindingData = std::get<1>(_set[binding]);
-    bindingData._dataBinding = BindingData::BindingBufferData{ buffer, offset, range };
+    bindingData._dataBinding.emplace<BindingData::BindingBufferData>(buffer, offset, range);
 
     _activeBindingsFlags |= 1 << binding;
     _dirtyFlag = true;
@@ -508,11 +509,11 @@ void VulkanContextState::BindingState::apply(VulkanCommandBuffer* cmdBuffer, u64
                 if (image)
                 {
                     image->captureInsideCommandBuffer(cmdBuffer, frame);
-    }
+                }
 
                 const VulkanResource* sampler = std::get<1>(bindingData._dataBinding)._sampler;
                 if (sampler)
-    {
+                {
                     sampler->captureInsideCommandBuffer(cmdBuffer, frame);
                 }
             }

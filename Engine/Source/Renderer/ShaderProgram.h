@@ -136,6 +136,16 @@ namespace renderer
     }
 #endif //USE_STRING_ID_SHADER
 
+    inline const Shader* ShaderProgram::getShader(ShaderType type) const
+    {
+        return m_programInfo._shaders[toEnumType(type)];
+    }
+
+    inline const ShaderProgramDescription& ShaderProgram::getShaderDesc() const
+    {
+        return m_programInfo;
+    }
+
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
 } //namespace renderer

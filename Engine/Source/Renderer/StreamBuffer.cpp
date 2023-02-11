@@ -116,7 +116,7 @@ private:
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-StreamBuffer::StreamBuffer(CommandList& cmdList, StreamBufferUsageFlags usage, [[maybe_unused]] const std::string& name)
+StreamBuffer::StreamBuffer(CommandList& cmdList, StreamBufferUsageFlags usage, [[maybe_unused]] const std::string& name) noexcept
     : m_cmdList(cmdList)
     , m_usage(usage)
     , m_name(name)
@@ -193,10 +193,10 @@ VertexStreamBuffer::~VertexStreamBuffer()
     }
 }
 
-void VertexStreamBuffer::handleNotify(const utils::Observable * ob)
+void VertexStreamBuffer::handleNotify(const utils::Observable* object, void* msg)
 {
     LOG_DEBUG("VertexStreamBuffer::handleNotify to delete buffer %xll", this);
-    ASSERT(m_buffer == ob, "not same");
+    ASSERT(m_buffer == object, "not same");
 
     m_buffer = nullptr;
 }
@@ -388,22 +388,12 @@ IndexStreamBuffer::~IndexStreamBuffer()
     }
 }
 
-void IndexStreamBuffer::handleNotify(const utils::Observable* ob)
+void IndexStreamBuffer::handleNotify(const utils::Observable* object, void* msg)
 {
     LOG_DEBUG("IndexStreamBuffer::handleNotify to delete buffer %xll", this);
-    ASSERT(m_buffer == ob, "not same");
+    ASSERT(m_buffer == object, "not same");
 
     m_buffer = nullptr;
-}
-
-u32 IndexStreamBuffer::getIndexCount() const
-{
-    return m_count;
-}
-
-StreamIndexBufferType IndexStreamBuffer::getIndexBufferType() const
-{
-    return m_type;
 }
 
 } //namespace renderer

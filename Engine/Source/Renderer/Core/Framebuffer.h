@@ -107,9 +107,6 @@ namespace renderer
     {
     public:
 
-        FramebufferManager() = delete;
-        FramebufferManager(const FramebufferManager&) = delete;
-
         explicit FramebufferManager(Context *context) noexcept;
         ~FramebufferManager();
 
@@ -117,9 +114,12 @@ namespace renderer
         bool removeFramebuffer(Framebuffer* framebufer);
         void clear();
 
-        void handleNotify(const utils::Observable* object) override;
+        void handleNotify(const utils::Observable* object, void* msg) override;
 
     private:
+
+        FramebufferManager() = delete;
+        FramebufferManager(const FramebufferManager&) = delete;
 
         Context* const m_context;
         std::unordered_map<Framebuffer::FramebufferDescription, Framebuffer*, Framebuffer::FramebufferDescription::Hash, Framebuffer::FramebufferDescription::Compare> m_framebufferList;

@@ -2,6 +2,8 @@
 
 #include "Common.h"
 
+#include "Utils/Profiler.h"
+
 #include "Renderer/DeviceCaps.h"
 #include "Renderer/TextureProperties.h"
 #include "Renderer/BufferProperties.h"
@@ -274,6 +276,26 @@ namespace renderer
         friend SamplerState;
         friend RenderTargetState;
     };
+
+    inline Context::RenderType Context::getRenderType() const
+    {
+        return m_renderType;
+    }
+
+    inline u64 Context::getCurrentFrameIndex() const
+    {
+        return m_frameCounter;
+    }
+
+    inline const core::Dimension2D& Context::getBackbufferSize() const
+    {
+        return m_backufferDescription._size;
+    }
+
+    inline Format Context::getBackbufferFormat() const
+    {
+        return m_backufferDescription._format;
+    }
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 

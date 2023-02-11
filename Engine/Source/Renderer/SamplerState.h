@@ -81,6 +81,46 @@ namespace renderer
         friend ShaderProgram;
     };
 
+    inline SamplerFilter SamplerState::getFiltering() const
+    {
+        return m_samplerDesc._desc._filter;
+    }
+
+    inline SamplerWrap SamplerState::getWrapU() const
+    {
+        return m_samplerDesc._desc._wrapU;
+    }
+
+    inline SamplerWrap SamplerState::getWrapV() const
+    {
+        return m_samplerDesc._desc._wrapV;
+    }
+
+    inline SamplerWrap SamplerState::getWrapW() const
+    {
+        return m_samplerDesc._desc._wrapW;
+    }
+
+    inline SamplerAnisotropic SamplerState::getAnisotropic() const
+    {
+        return m_samplerDesc._desc._anisotropic;
+    }
+
+    inline CompareOperation SamplerState::getCompareOp() const
+    {
+        return m_samplerDesc._desc._compareOp;
+    }
+
+    inline const core::Vector4D& SamplerState::getBorderColor() const
+    {
+        return m_samplerDesc._desc._borderColor;
+    }
+
+    inline bool SamplerState::isEnableCompareOp() const
+    {
+        return m_samplerDesc._desc._enableCompOp;
+    }
+
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
 } //namespace renderer

@@ -151,7 +151,7 @@ namespace vk
         bool m_isInsideRenderPass;
 
         std::recursive_mutex m_mutex;
-        std::set<VulkanResource*> m_resources;
+        std::unordered_set<VulkanResource*> m_resources;
 
         struct RenderPassState
         {

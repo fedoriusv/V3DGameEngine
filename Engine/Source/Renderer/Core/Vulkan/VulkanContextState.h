@@ -8,6 +8,7 @@
 #include "VulkanCommandBufferManager.h"
 #include "VulkanDescriptorSet.h"
 #include "VulkanDescriptorPool.h"
+#include "VulkanQuery.h"
 
 namespace v3d
 {
@@ -187,6 +188,8 @@ namespace vk
 
             u32  _activeBindingsFlags = 0;
             bool _dirtyFlag = false;
+
+            std::vector<u32> _offsets;
 
             void reset();
 

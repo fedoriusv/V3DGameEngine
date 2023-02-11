@@ -7,9 +7,9 @@ namespace v3d
 {
 namespace renderer
 {
-    class Context;
-
     /////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    class Context;
 
     /**
     * @brief Buffer base class. Render side
@@ -18,6 +18,9 @@ namespace renderer
     {
     public:
 
+        /**
+        * @brief BufferType enum
+        */
         enum class BufferType : u32
         {
             BufferType_VertexBuffer,

@@ -110,40 +110,10 @@ Texture::~Texture()
     //ASSERT(!m_image, "image isn't nullptr");
 }
 
-TextureTarget Texture::getTarget() const
-{
-    return m_target;
-}
-
-Format Texture::getFormat() const
-{
-    return m_format;
-}
-
-TextureSamples Texture::getSamples() const
-{
-    return m_samples;
-}
-
-u32 Texture::getLayersCount() const
-{
-    return m_layers;
-}
-
-u32 Texture::getMipmapsCount() const
-{
-    return m_mipmaps;
-}
-
 Image* Texture::getImage() const
 {
     ASSERT(m_image, "nullptr");
     return m_image;
-}
-
-bool Texture::isBackbuffer() const
-{
-    return m_backbuffer;
 }
 
 bool Texture::isTextureUsageFlagsContains(TextureUsageFlags usage) const
@@ -303,11 +273,6 @@ Texture2D::~Texture2D()
     {
         m_cmdList.pushCommand(new CommandDestroyImage(m_image));
     }
-}
-
-const core::Dimension2D& Texture2D::getDimension() const
-{
-    return m_dimension;
 }
 
 void Texture2D::update(const core::Dimension2D& offset, const core::Dimension2D& size, u32 mipLevel, const void* data)
@@ -501,11 +466,6 @@ Texture2DArray::~Texture2DArray()
     }
 }
 
-const core::Dimension2D& Texture2DArray::getDimension() const
-{
-    return m_dimension;
-}
-
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 
 TextureCube::TextureCube(CommandList& cmdList, TextureUsageFlags usage, Format format, const core::Dimension2D& dimension, TextureSamples samples, const std::string& name) noexcept
@@ -547,11 +507,6 @@ TextureCube::~TextureCube()
     {
         m_cmdList.pushCommand(new CommandDestroyImage(m_image));
     }
-}
-
-const core::Dimension2D& TextureCube::getDimension() const
-{
-    return m_dimension;
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////
