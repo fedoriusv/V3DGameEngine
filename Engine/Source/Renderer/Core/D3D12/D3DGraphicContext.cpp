@@ -510,7 +510,7 @@ void D3DGraphicContext::beginQuery(const Query* query, u32 id, const std::string
 {
 }
 
-void D3DGraphicContext::endQuery(const Query* query, u32 id, const std::string& tag)
+void D3DGraphicContext::endQuery(const Query* query, u32 id)
 {
 }
 

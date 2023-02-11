@@ -264,7 +264,7 @@ bool VulkanContext::initialize()
     m_uniformBufferManager = new VulkanUniformBufferManager(m_deviceInfo._device, m_resourceDeleter);
     m_pipelineLayoutManager = new VulkanPipelineLayoutManager(m_deviceInfo._device);
     m_descriptorSetManager = new VulkanDescriptorSetManager(m_deviceInfo._device, m_swapchain->getSwapchainImageCount());
-    m_renderQueryPoolManager = new VulkanQueryPoolManager(m_deviceInfo._device, 256);
+    m_renderQueryPoolManager = new VulkanQueryPoolManager(m_deviceInfo._device, 1024);
 
     m_renderpassManager = new RenderPassManager(this);
     m_framebufferManager = new FramebufferManager(this);
@@ -717,6 +717,16 @@ void VulkanContext::destroy()
         delete m_cmdBufferManager;
         m_cmdBufferManager = nullptr;
     }
+
+    if (m_renderQueryPoolManager)
+    {
+        //m_renderQueryManager->unbindAllRenderQuery();
+        m_renderQueryPoolManager->updateRenderQueries(true);
+        m_renderQueryPoolManager->clear();
+        delete m_renderQueryPoolManager;
+        m_renderQueryPoolManager = nullptr;
+    }
+
     m_resourceDeleter.updateResourceDeleter(true);
 
     if (m_stagingBufferManager)
@@ -786,12 +796,6 @@ void VulkanContext::destroy()
     {
         delete m_samplerManager;
         m_samplerManager = nullptr;
-    }
-
-    if (m_renderQueryManager)
-    {
-        delete m_renderQueryManager;
-        m_renderQueryManager = nullptr;
     }
 
     if (m_currentContextState)
@@ -946,8 +950,6 @@ void VulkanContext::submit(bool wait)
 
         m_cmdBufferManager->submit(queryBuffer, {});
         m_currentBufferState.invalidateCommandBuffer(CommandTargetType::CmdResetQuerytBuffer);
-
-        //VulkanWrapper::DeviceWaitIdle(m_deviceInfo._device);
     }
 
     //Uploads commands
@@ -1040,46 +1042,31 @@ void VulkanContext::beginQuery(const Query* query, u32 id, const std::string& ta
     RenderFrameProfiler::StackProfiler stackProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::QueryCommands);
 #endif //FRAME_PROFILER_ENABLE
 
-    //ASSERT(query->getType() == QueryType::Occlusion || query->getType() == QueryType::BinaryOcclusion, "Must be occlusion");
-    //VulkanCommandBuffer* drawBuffer = m_currentBufferState.acquireAndStartCommandBuffer(CommandTargetType::CmdDrawBuffer);
-    //RenderQuery* renderQuery = m_renderQueryManager->acquireRenderQuery(query->getType(), drawBuffer);
-    //drawBuffer->cmdBeginQuery(static_cast<VulkanRenderQueryPool*>(renderQuery->_pool), renderQuery->_index);
+    ASSERT(query, "nullptr");
+    ASSERT(query->getType() == QueryType::Occlusion || query->getType() == QueryType::BinaryOcclusion, "Must be occlusion");
+    const VulkanQuery* vkQuery = static_cast<const VulkanQuery*>(query);
+    const VulkanRenderQueryState* renderQuery = m_currentContextState->bindQuery(vkQuery, id, tag);
+    ASSERT(renderQuery, "nullptr");
 
-    //m_renderQueryManager->applyRenderQueryState(
-    //    VulkanRenderQueryManager::QueryState
-    //    {
-    //        query,
-    //        renderQuery,
-    //        drawBuffer,
-    //        name,
-    //    });
+    VulkanCommandBuffer* drawBuffer = m_currentBufferState.acquireAndStartCommandBuffer(CommandTargetType::CmdDrawBuffer);
+    drawBuffer->cmdBeginQuery(renderQuery->_pool, renderQuery->_offset + id);
 }
 
-void VulkanContext::endQuery(const Query* query, u32 id, const std::string& tag)
+void VulkanContext::endQuery(const Query* query, u32 id)
 {
 #if FRAME_PROFILER_ENABLE
     RenderFrameProfiler::StackProfiler stackFrameProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::FrameTime);
     RenderFrameProfiler::StackProfiler stackProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::QueryCommands);
 #endif //FRAME_PROFILER_ENABLE
-//
-//    ASSERT(query->getType() == QueryType::Occlusion || query->getType() == QueryType::BinaryOcclusion, "Must be occlusion");
-//    VulkanCommandBuffer* drawBuffer = m_currentBufferState.getAcitveBuffer(CommandTargetType::CmdDrawBuffer);
-//    VulkanRenderQueryManager::QueryState renderQueryState = m_renderQueryManager->getRenderQueryState(
-//        VulkanRenderQueryManager::QueryState::QueryStateID
-//        {
-//            query,
-//            drawBuffer,
-//            m_frameCounter,
-//            id,
-//
-//        });
-//    if (renderQueryState.isValid())
-//    {
-//        ASSERT(renderQueryState._id == id, "must be same id");
-//        ASSERT(renderQueryState._cmdBuffer == drawBuffer, "Must be same");
-//        RenderQuery* renderQuery = renderQueryState._renderQuery;
-//        drawBuffer->cmdEndQuery(static_cast<VulkanRenderQueryPool*>(renderQuery->_pool), renderQuery->_index);
-//    }
+
+    ASSERT(query, "nullptr");
+    ASSERT(query->getType() == QueryType::Occlusion || query->getType() == QueryType::BinaryOcclusion, "Must be occlusion");
+    const VulkanQuery* vkQuery = static_cast<const VulkanQuery*>(query);
+    const VulkanRenderQueryState* renderQuery = m_currentContextState->bindQuery(vkQuery, id);
+    ASSERT(renderQuery, "nullptr");
+
+    VulkanCommandBuffer* drawBuffer = m_currentBufferState.acquireAndStartCommandBuffer(CommandTargetType::CmdDrawBuffer);
+    drawBuffer->cmdEndQuery(renderQuery->_pool, renderQuery->_offset + id);
 }
 
 void VulkanContext::timestampQuery(const Query* query, u32 id, const std::string& tag)
@@ -1094,6 +1081,7 @@ void VulkanContext::timestampQuery(const Query* query, u32 id, const std::string
     const VulkanQuery* vkQuery = static_cast<const VulkanQuery*>(query);
     const VulkanRenderQueryState* renderQuery = m_currentContextState->bindQuery(vkQuery, id, tag);
     ASSERT(renderQuery, "nullptr");
+
     VulkanCommandBuffer* drawBuffer = m_currentBufferState.acquireAndStartCommandBuffer(CommandTargetType::CmdDrawBuffer);
     drawBuffer->cmdWriteTimestamp(renderQuery->_pool, renderQuery->_offset + id, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT);
 }
@@ -1371,23 +1359,23 @@ void VulkanContext::removeQuery(Query* query)
     RenderFrameProfiler::StackProfiler stackProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::RemoveResources);
 #endif //FRAME_PROFILER_ENABLE
 
-    ASSERT(query, "nullptr");
-    VulkanQuery* vkQuery = static_cast<VulkanQuery*>(query);
-    vkQuery->m_callback = nullptr;
+    //ASSERT(query, "nullptr");
+    //VulkanQuery* vkQuery = static_cast<VulkanQuery*>(query);
+    //vkQuery->m_callback = nullptr;
 
-    if (vkQuery->isCaptured())
-    {
-        m_resourceDeleter.addResourceToDelete(vkQuery, [this, vkQuery](VulkanResource* resource) -> void
-            {
-                vkQuery->notifyObservers();
-                delete vkQuery;
-            });
-}
-    else
-    {
-        vkQuery->notifyObservers();
-        delete vkQuery;
-    }
+    //if (vkQuery->isCaptured())
+    //{
+    //    m_resourceDeleter.addResourceToDelete(vkQuery, [this, vkQuery](VulkanResource* resource) -> void
+    //        {
+    //            vkQuery->notifyObservers();
+    //            delete vkQuery;
+    //        });
+    //}
+    //else
+    //{
+    //    vkQuery->notifyObservers();
+    //    delete vkQuery;
+    //}
 }
 
 void VulkanContext::invalidateRenderTarget()

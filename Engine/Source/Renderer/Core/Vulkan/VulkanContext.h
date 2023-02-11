@@ -3,6 +3,7 @@
 #include "Renderer/Core/Context.h"
 #include "Renderer/Core/RenderFrameProfiler.h"
 #include "Utils/Observable.h"
+#include "Utils/MemoryPool.h"
 
 #ifdef VULKAN_RENDER
 #include "VulkanWrapper.h"
@@ -63,9 +64,9 @@ namespace vk
         void presentFrame() override;
         void submit(bool wait = false) override;
 
-        void beginQuery(const Query* query, u32 id = 0, const std::string& tag = "") override;
-        void endQuery(const  Query* query, u32 id = 0, const std::string& tag = "") override;
-        void timestampQuery(const Query* query, u32 id = 0, const std::string& tag = "") override;
+        void beginQuery(const Query* query, u32 id, const std::string& tag = "") override;
+        void endQuery(const  Query* query, u32 id) override;
+        void timestampQuery(const Query* query, u32 id, const std::string& tag = "") override;
 
         void draw(const StreamBufferDescription& desc, u32 firstVertex, u32 vertexCount, u32 firstInstance, u32 instanceCount) override;
         void drawIndexed(const StreamBufferDescription& desc, u32 firstIndex, u32 indexCount, u32 firstInstance, u32 instanceCount) override;

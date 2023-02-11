@@ -119,20 +119,20 @@ namespace renderer
         * @brief query begin/end commands. Only for occlusions queries
         * Can be called inside/outside renderpass
         * @param const Query* query [required]
-        * @param const u32 id [optional]
+        * @param const u32 id [required]
         * @param const std::string& tag [optional]
         */
-        virtual void beginQuery(const Query* query, u32 id = 0, const std::string& tag = "") = 0;
-        virtual void endQuery(const Query* query, u32 id = 0, const std::string& tag = "") = 0;
+        virtual void beginQuery(const Query* query, u32 id, const std::string& tag = "") = 0;
+        virtual void endQuery(const Query* query, u32 id) = 0;
 
         /**
         * @brief query timestamp command. Only for timestamp queries
         * Can be called inside/outside renderpass
         * @param const Query* query [required]
-        * @param const u32 id [optional]
+        * @param const u32 id [required]
         * @param const std::string& tag [optional]
         */
-        virtual void timestampQuery(const Query* query, u32 id = 0, const std::string& tag = "") = 0;
+        virtual void timestampQuery(const Query* query, u32 id, const std::string& tag = "") = 0;
 
         /**
         * @brief draw command by vertex

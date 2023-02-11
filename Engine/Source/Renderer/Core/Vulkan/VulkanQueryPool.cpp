@@ -185,11 +185,6 @@ void VulkanQueryPoolManager::clear()
 
 void VulkanQueryPoolManager::updateRenderQueries(bool wait)
 {
-    //if (wait)
-    //{
-    //    VulkanWrapper::DeviceWaitIdle(m_device);
-    //}
-
     for (u32 poolIndex = toEnumType(QueryType::First); poolIndex < toEnumType(QueryType::Count); ++poolIndex)
     {
         Pools& pools = m_pools[poolIndex];
@@ -213,6 +208,7 @@ void VulkanQueryPoolManager::updateRenderQueries(bool wait)
                 auto iterBatch = m_batchQuery.find(pool);
                 ASSERT(iterBatch != m_batchQuery.end(), "must be presented");
 
+                bool isFree = false;
                 VulkanRenderQueryBatch& poolBatch = *iterBatch->second;
                 for (u32 index = 0; index < poolBatch.getBatchCount(); ++index)
                 {
@@ -227,11 +223,23 @@ void VulkanQueryPoolManager::updateRenderQueries(bool wait)
                     if (vkResult == VK_SUCCESS)
                     {
                         renderQuery._query->dispatch(QueryResult::Success);
-
-                        iter = pools._usedQueryPools.erase(iter);
-                        pools._freeQueryPools.push_back(pool);
+                        isFree = true;
+                    }
+                    else
+                    {
+                        //Pool is not ready yet. skip
+                        isFree = false;
+                        continue;
                     }
                 }
+
+                if (isFree)
+                {
+                    iter = pools._usedQueryPools.erase(iter);
+                    pools._freeQueryPools.push_back(pool);
+                }
+
+                continue;
             }
 
             ++iter;

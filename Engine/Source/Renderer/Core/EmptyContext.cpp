@@ -42,7 +42,7 @@ void EmptyContext::beginQuery(const Query* query, u32 id, const std::string& tag
     LOG_DEBUG("EmptyContext::beginQuery");
 }
 
-void EmptyContext::endQuery(const Query* query, u32 id, const std::string& tag)
+void EmptyContext::endQuery(const Query* query, u32 id)
 {
     LOG_DEBUG("EmptyContext::endQuery");
 }

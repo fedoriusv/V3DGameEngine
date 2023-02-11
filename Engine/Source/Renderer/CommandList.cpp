@@ -492,19 +492,7 @@ public:
     }
 };
 
-    /*CommandBeginQuery*/
-class CommandBeginQuery final : public Command
-{
-public:
-    CommandBeginQuery(CommandBeginQuery&) = delete;
-    CommandBeginQuery(Query* query, const std::string& tag) noexcept
-        : m_query(query)
-        , m_tag(tag)
-    {
-#if DEBUG_COMMAND_LIST
-        LOG_DEBUG("CommandBeginQuery constructor");
-#endif //DEBUG_COMMAND_LIST
-    }
+/////////////////////////////////////////////////////////////////////////////////////////////////////
 
     ~CommandBeginQuery()
     {

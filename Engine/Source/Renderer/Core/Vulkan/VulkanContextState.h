@@ -148,7 +148,7 @@ namespace vk
         void bindStorageImage(const VulkanImage* image, u32 arrayIndex, const Shader::StorageImage& info, const Image::Subresource& subresource);
         void updateConstantBuffer(const Shader::UniformBuffer& info, u32 offset, u32 size, const void* data);
 
-        const VulkanRenderQueryState* bindQuery(const VulkanQuery* query, u32 index, const std::string& tag);
+        const VulkanRenderQueryState* bindQuery(const VulkanQuery* query, u32 index, const std::string& tag = "");
 
         void invalidateDescriptorSetsState();
         void updateDescriptorStates();

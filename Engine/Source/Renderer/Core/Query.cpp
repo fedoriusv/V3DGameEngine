@@ -35,7 +35,7 @@ Query::~Query()
 
 void Query::dispatch(QueryResult result) const
 {
-    if (m_callback)
+    if (m_callback) //TODO checker to delete
     {
         std::invoke(m_callback, result, static_cast<u32>(m_size * sizeof(u32)), m_data);
     }

@@ -315,7 +315,10 @@ const VulkanRenderQueryState* VulkanContextState::bindQuery(const VulkanQuery* q
     }
 
     inserted.first->second->_recorded[index] = true;
-    inserted.first->second->_tags[index] = tag;
+    if (!tag.empty())
+    {
+        inserted.first->second->_tags[index] = tag;
+    }
 
     return inserted.first->second;
 }

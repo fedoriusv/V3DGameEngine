@@ -9,6 +9,77 @@ namespace v3d
 namespace renderer
 {
 
+    /*CommandBeginQuery*/
+    class CommandBeginQuery final : public Command
+    {
+    public:
+        CommandBeginQuery(CommandBeginQuery&) = delete;
+        CommandBeginQuery(Query* query, u32 id, const std::string& tag) noexcept
+            : m_query(query)
+            , m_id(id)
+            , m_tag(tag)
+        {
+#if DEBUG_COMMAND_LIST
+            LOG_DEBUG("CommandBeginQuery constructor");
+#endif //DEBUG_COMMAND_LIST
+        }
+
+        ~CommandBeginQuery()
+        {
+#if DEBUG_COMMAND_LIST
+            LOG_DEBUG("CommandBeginQuery constructor");
+#endif //DEBUG_COMMAND_LIST
+        }
+
+        void execute(const CommandList& cmdList)
+        {
+#if DEBUG_COMMAND_LIST
+            LOG_DEBUG("CommandBeginQuery execute");
+#endif //DEBUG_COMMAND_LIST
+            cmdList.getContext()->beginQuery(m_query, m_id, m_tag);
+        }
+
+        Query* m_query;
+        u32 m_id;
+        std::string m_tag;
+    };
+
+    /*CommandEndQuery*/
+    class CommandEndQuery final : public Command
+    {
+    public:
+        CommandEndQuery(CommandEndQuery&) = delete;
+        CommandEndQuery(Query* query, u32 id) noexcept
+            : m_query(query)
+            , m_id(id)
+        {
+#if DEBUG_COMMAND_LIST
+            LOG_DEBUG("CommandEndQuery constructor");
+#endif //DEBUG_COMMAND_LIST
+        }
+
+        ~CommandEndQuery()
+        {
+#if DEBUG_COMMAND_LIST
+            LOG_DEBUG("CommandEndQuery constructor");
+#endif //DEBUG_COMMAND_LIST
+        }
+
+        void execute(const CommandList& cmdList)
+        {
+#if DEBUG_COMMAND_LIST
+            LOG_DEBUG("CommandEndQuery execute");
+#endif //DEBUG_COMMAND_LIST
+            cmdList.getContext()->endQuery(m_query, m_id);
+        }
+
+        Query* m_query;
+        u32 m_id;
+        std::string m_tag;
+    };
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
+
 QueryRequest::QueryRequest(CommandList& cmdList, QueryType type, const std::string& name) noexcept
     : m_cmdList(cmdList)
     , m_query(nullptr)
@@ -79,7 +150,7 @@ QueryTimestampRequest::QueryTimestampRequest(CommandList& cmdList, std::function
         {
             if (result == QueryResult::Success && data)
             {
-                //TODO
+                //TODO Async readback
                 memcpy(m_result.data(), data, size);
                 callback(m_result);
                 //cmdList.pushReadbackCall(nullptr, [callback, timestamp, id, tag](Object* caller)
@@ -94,9 +165,36 @@ QueryTimestampRequest::QueryTimestampRequest(CommandList& cmdList, std::function
     m_result.resize(size);
 }
 
-void QueryTimestampRequest::timestampQuery(u32 id)
+QueryTimestampRequest::QueryTimestampRequest(CommandList& cmdList, std::function<TimestampTaged> callback, u32 size, const std::string& name) noexcept
+    : QueryRequest(cmdList, QueryType::TimeStamp, name)
+{
+    m_query = m_cmdList.getContext()->createQuery(m_type, size, [this, &cmdList, callback](QueryResult result, u32 size, const void* data) -> void
+        {
+            if (result == QueryResult::Success && data)
+            {
+                //TODO Async readback
+                memcpy(m_result.data(), data, size);
+                callback(m_result, m_tags);
+                //cmdList.pushReadbackCall(nullptr, [callback, timestamp, id, tag](Object* caller)
+                //    {
+                //        callback(timestamp, id, tag);
+                //    });
+            }
+        }, name);
+    ASSERT(m_query, "m_query is nullptr");
+    m_query->registerNotify(this);
+
+    m_result.resize(size);
+    m_tags.resize(size);
+}
+
+void QueryTimestampRequest::timestampQuery(u32 id, const std::string& tag)
 {
     ASSERT(m_query, "Must be valid");
+
+    ASSERT(id < m_tags.size(), "range out");
+    m_tags[id] = tag;
+
     if (m_cmdList.isImmediate())
     {
         m_cmdList.getContext()->timestampQuery(m_query, id);
@@ -104,13 +202,14 @@ void QueryTimestampRequest::timestampQuery(u32 id)
     else
     {
         /*CommandTimestampQuery*/
-        class CommandTimestampQuery final : public Command
+        class CommandTimestampQuery final : public Command, utils::Observer
         {
         public:
             CommandTimestampQuery(CommandTimestampQuery&) = delete;
-            CommandTimestampQuery(Query* query, u32 id) noexcept
+            CommandTimestampQuery(Query* query, u32 id, const std::string& tag) noexcept
                 : m_query(query)
                 , m_id(id)
+                , m_tag(tag)
             {
 #if DEBUG_COMMAND_LIST
                 LOG_DEBUG("CommandTimestampQuery constructor");
@@ -129,109 +228,24 @@ void QueryTimestampRequest::timestampQuery(u32 id)
 #if DEBUG_COMMAND_LIST
                 LOG_DEBUG("CommandTimestampQuery execute");
 #endif //DEBUG_COMMAND_LIST
-                cmdList.getContext()->timestampQuery(m_query, m_id);
+                cmdList.getContext()->timestampQuery(m_query, m_id, m_tag);
             }
 
-            Query* const m_query;
-            u32 m_id;
-        };
-
-        m_cmdList.pushCommand(new CommandTimestampQuery(m_query, id));
-    }
-}
-
-
-void QueryOcclusionRequest::beginQuery(u32 id)
-{
-    ASSERT(m_query, "Must be valid");
-    if (m_cmdList.isImmediate())
-    {
-        m_cmdList.getContext()->beginQuery(m_query, id);
-    }
-    else
-    {
-        /*CommandBeginQuery*/
-        class CommandBeginQuery final : public Command
-        {
-        public:
-            CommandBeginQuery(CommandBeginQuery&) = delete;
-            CommandBeginQuery(Query* query, u32 id, const std::string& tag) noexcept
-                : m_query(query)
-                , m_id(id)
-                , m_tag(tag)
+            void handleNotify(const utils::Observable* object, void* msg) override
             {
-#if DEBUG_COMMAND_LIST
-                LOG_DEBUG("CommandBeginQuery constructor");
-#endif //DEBUG_COMMAND_LIST
+                LOG_ERROR("CommandTimestampQuery query %llx was deleted", m_query);
+                m_query = nullptr;
             }
 
-            ~CommandBeginQuery()
-            {
-#if DEBUG_COMMAND_LIST
-                LOG_DEBUG("CommandBeginQuery constructor");
-#endif //DEBUG_COMMAND_LIST
-            }
-
-            void execute(const CommandList& cmdList)
-            {
-#if DEBUG_COMMAND_LIST
-                LOG_DEBUG("CommandBeginQuery execute");
-#endif //DEBUG_COMMAND_LIST
-                cmdList.getContext()->beginQuery(m_query, m_id, m_tag);
-            }
-
-            Query* const m_query;
+            Query* m_query;
             u32 m_id;
             std::string m_tag;
         };
+
+        m_cmdList.pushCommand(new CommandTimestampQuery(m_query, id, tag));
     }
 }
 
-void QueryOcclusionRequest::endQuery(u32 id)
-{
-    ASSERT(m_query, "Must be valid");
-    if (m_cmdList.isImmediate())
-    {
-        m_cmdList.getContext()->endQuery(m_query, id);
-    }
-    else
-    {
-        /*CommandEndQuery*/
-        class CommandEndQuery final : public Command
-        {
-        public:
-            CommandEndQuery(CommandEndQuery&) = delete;
-            CommandEndQuery(Query* query, u32 id, const std::string& tag) noexcept
-                : m_query(query)
-                , m_id(id)
-                , m_tag(tag)
-            {
-#if DEBUG_COMMAND_LIST
-                LOG_DEBUG("CommandEndQuery constructor");
-#endif //DEBUG_COMMAND_LIST
-            }
-
-            ~CommandEndQuery()
-            {
-#if DEBUG_COMMAND_LIST
-                LOG_DEBUG("CommandEndQuery constructor");
-#endif //DEBUG_COMMAND_LIST
-            }
-
-            void execute(const CommandList& cmdList)
-            {
-#if DEBUG_COMMAND_LIST
-                LOG_DEBUG("CommandEndQuery execute");
-#endif //DEBUG_COMMAND_LIST
-                cmdList.getContext()->endQuery(m_query, m_id, m_tag);
-            }
-
-            Query* const m_query;
-            u32 m_id;
-            std::string m_tag;
-        };
-    }
-}
 
 QueryOcclusionRequest::QueryOcclusionRequest(CommandList& cmdList, std::function<QuerySamples> callback, u32 size, const std::string& name) noexcept
     : QueryRequest(cmdList, QueryType::Occlusion, name)
@@ -253,6 +267,59 @@ QueryOcclusionRequest::QueryOcclusionRequest(CommandList& cmdList, std::function
     m_query->registerNotify(this);
 
     m_result.resize(size);
+}
+
+QueryOcclusionRequest::QueryOcclusionRequest(CommandList& cmdList, std::function<QuerySamplesTaged> callback, u32 size, const std::string& name) noexcept
+    : QueryRequest(cmdList, QueryType::Occlusion, name)
+{
+    m_query = m_cmdList.getContext()->createQuery(m_type, size, [this, &cmdList, callback](QueryResult result, u32 size, const void* data) -> void
+        {
+            if (result == QueryResult::Success && data)
+            {
+                //TODO
+                memcpy(m_result.data(), data, size);
+                callback(m_result, m_tags);
+                //cmdList.pushReadbackCall(nullptr, [callback, timestamp, id, tag](Object* caller)
+                //    {
+                //        callback(timestamp, id, tag);
+                //    });
+            }
+        }, name);
+    ASSERT(m_query, "m_query is nullptr");
+    m_query->registerNotify(this);
+
+    m_result.resize(size);
+    m_tags.resize(size);
+}
+
+void QueryOcclusionRequest::beginQuery(u32 id, const std::string& tag)
+{
+    ASSERT(m_query, "Must be valid");
+
+    ASSERT(id < m_tags.size(), "range out");
+    m_tags[id] = tag;
+
+    if (m_cmdList.isImmediate())
+    {
+        m_cmdList.getContext()->beginQuery(m_query, id);
+    }
+    else
+    {
+        m_cmdList.pushCommand(new CommandBeginQuery(m_query, id, tag));
+    }
+}
+
+void QueryOcclusionRequest::endQuery(u32 id)
+{
+    ASSERT(m_query, "Must be valid");
+    if (m_cmdList.isImmediate())
+    {
+        m_cmdList.getContext()->endQuery(m_query, id);
+    }
+    else
+    {
+        m_cmdList.pushCommand(new CommandEndQuery(m_query, id));
+    }
 }
 
 QueryBinaryOcclusionRequest::QueryBinaryOcclusionRequest(CommandList& cmdList, std::function<QueryBinarySample> callback, const std::string& name) noexcept

@@ -62,6 +62,11 @@ namespace renderer
         using Timestamp = void(const std::vector<u32>& timestamp);
 
         /**
+        * @brief Timestamp with string tags signature in nanoseconds
+        */
+        using TimestampTaged = void(const std::vector<u32>& timestamp, const std::vector<std::string>& tags);
+
+        /**
         * @brief QueryTimestampRequest destructor.
         */
         ~QueryTimestampRequest() = default;
@@ -71,8 +76,9 @@ namespace renderer
         * request query timestamp by id.
         *
         * @param u32 id [required]
+        * @param const std::string& tag [optional]
         */
-        void timestampQuery(u32 id);
+        void timestampQuery(u32 id, const std::string& tag = "");
 
     private:
 
@@ -85,13 +91,25 @@ namespace renderer
         */
         QueryTimestampRequest(CommandList& cmdList, std::function<Timestamp> callback, u32 size, [[maybe_unused]] const std::string& name = "") noexcept;
 
+        /**
+        * @brief QueryTimestampRequest constructor.
+        * Private method. Use createObject interface inside CommandList class to call.
+        *
+        * @param std::function<TimestampTaged> callback [required]
+        * @param const std::string& name [optional]
+        */
+        QueryTimestampRequest(CommandList& cmdList, std::function<TimestampTaged> callback, u32 size, [[maybe_unused]] const std::string& name = "") noexcept;
+
         QueryTimestampRequest() = delete;
         QueryTimestampRequest(QueryTimestampRequest&) = delete;
 
         friend CommandList;
+
         std::vector<u32> m_result;
+        std::vector<std::string> m_tags;
     };
 
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
     * @brief QueryOcclusionRequest class. Game side
@@ -105,11 +123,22 @@ namespace renderer
         */
         using QuerySamples = void(const std::vector<u32>& samples);
 
+        /**
+        * @brief OcclusionQuery with tags signature in count of samples
+        */
+        using QuerySamplesTaged = void(const std::vector<u32>& samples, const std::vector<std::string>& tags);
+
         QueryOcclusionRequest() = delete;
         QueryOcclusionRequest(QueryOcclusionRequest&) = delete;
         ~QueryOcclusionRequest() = default;
 
-        void beginQuery(u32 id);
+        /**
+        * @brief beginQuery/endQuery function.
+        * request query timestamp by id.
+        * @param u32 id [required]
+        * @param const std::string& tag[optional]
+        */
+        void beginQuery(u32 id, const std::string& tag = "");
         void endQuery(u32 id);
 
     private:
@@ -123,9 +152,22 @@ namespace renderer
         */
         QueryOcclusionRequest(CommandList& cmdList, std::function<QuerySamples> callback, u32 size, [[maybe_unused]] const std::string& name = "") noexcept;
 
+        /**
+        * @brief QueryOcclusionRequest constructor.
+        * Private method. Use createObject interface inside CommandList class to call.
+        *
+        * @param std::function<QuerySamplesTaged> callback [required]
+        * @param const std::string& name [optional]
+        */
+        QueryOcclusionRequest(CommandList& cmdList, std::function<QuerySamplesTaged> callback, u32 size, [[maybe_unused]] const std::string& name = "") noexcept;
+
         friend CommandList;
+
         std::vector<u32> m_result;
+        std::vector<std::string> m_tags;
     };
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
     * @brief QueryBinaryOcclusionRequest class. Game side
@@ -156,6 +198,8 @@ namespace renderer
 
         friend CommandList;
     };
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     ///**
     //* @brief QueryPipelineStatisticRequest class. Game side
