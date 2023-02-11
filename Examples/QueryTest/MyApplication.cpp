@@ -2,6 +2,7 @@
 
 #include "Event/InputEventReceiver.h"
 #include "Utils/Timer.h"
+#include "Utils/Profiler.h"
 
 using namespace v3d;
 
@@ -22,13 +23,13 @@ void MyApplication::Initialize()
 {
     m_Context = renderer::Context::createContext(m_Window, renderer::Context::RenderType::VulkanRender);
     ASSERT(m_Context, "context is nullptr");
-    m_CommandList = new renderer::CommandList(m_Context, renderer::CommandList::CommandListType::DelayedCommandList);
+    m_CommandList = new renderer::CommandList(m_Context, renderer::CommandList::CommandListType::ImmediateCommandList);
 
     m_Scene = new Scene(*m_CommandList, m_Window->getSize());
 
     m_InputEventHandler->connect(std::bind(&Scene::mouseHandle, m_Scene, m_InputEventHandler, std::placeholders::_1));
-    //m_InputEventHandler->connect(std::bind(&Scene::touchHandle, this));
-    //m_InputEventHandler->connect(std::bind(&Scene::keyboardHandle, this));
+    m_InputEventHandler->connect(std::bind(&Scene::keyboardHandle, m_Scene, m_InputEventHandler, std::placeholders::_1));
+    m_InputEventHandler->connect(std::bind(&Scene::touchHandle, m_Scene, m_InputEventHandler, std::placeholders::_1));
 
     m_Window->getInputEventReceiver()->attach(event::InputEvent::InputEventType::MouseInputEvent, m_InputEventHandler);
     m_Window->getInputEventReceiver()->attach(event::InputEvent::InputEventType::TouchInputEvent, m_InputEventHandler);
@@ -40,10 +41,25 @@ bool MyApplication::Running()
     static u64 s_prevTime = 0;
     u64 currentTime = utils::Timer::getCurrentTime();
 
-    const f32 deltaTime = static_cast<f32>(std::max<s64>(static_cast<s64>(currentTime) - static_cast<s64>(s_prevTime), 0)) / 1'000;
+    const f32 diffTime = static_cast<f32>(std::max<s64>(static_cast<s64>(currentTime) - static_cast<s64>(s_prevTime), 0));
+    const f32 deltaTime = diffTime / 1'000.f;
     m_Scene->Run(deltaTime);
 
     s_prevTime = currentTime;
+
+
+    static f32 timePassed = 0;
+    static u32 FPSCounter = 0;
+
+    timePassed += diffTime;// utils::Timer::getCurrentTime() - currentTime;
+    ++FPSCounter;
+    if (timePassed >= 1'000.f) //sec
+    {
+        m_Window->setTextCaption("FPS: " + std::to_string(FPSCounter) + " (" + std::to_string(timePassed/FPSCounter) + "ms)");
+
+        FPSCounter = 0;
+        timePassed = 0.f;
+    }
 
     return true;
 }
@@ -88,6 +104,8 @@ int MyApplication::Execute()
             m_Window->getInputEventReceiver()->sendDeferredEvents();
             MyApplication::Running();
         }
+
+        std::this_thread::yield();
     }
 
     Exit();

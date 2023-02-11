@@ -3,172 +3,249 @@
 #include "Event/InputEventMouse.h"
 #include "Event/InputEventTouch.h"
 #include "Event/InputEventKeyboard.h"
+#include "Utils/Logger.h"
 
 #include "Resource/ResourceLoaderManager.h"
 #include "Resource/ShaderSourceFileLoader.h"
 #include "Resource/ModelFileLoader.h"
+#include "Resource/ImageFileLoader.h"
+#include "Resource/Image.h"
 
 #include "Renderer/ShaderProgram.h"
 #include "Renderer/PipelineState.h"
 #include "Renderer/RenderTargetState.h"
+#include "Renderer/StreamBuffer.h"
+#include "Renderer/SamplerState.h"
+#include "Renderer/Texture.h"
 
 #include "Scene/Model.h"
 
-class MeshPolicy
-{
-public:
-
-    void Init()
-    {
-
-    }
-
-    void UpdateShader()
-    {
-
-    }
-
-    void Draw()
-    {
-
-    }
-};
+#include "BasePass.h"
+#include "OffscreenPass.h"
 
 Scene::Scene(renderer::CommandList& cmdList, const core::Dimension2D& size) noexcept
     : m_CommandList(cmdList)
 {
-    m_FPSCameraHelper = new scene::CameraFPSHelper(new scene::Camera(core::Vector3D(0.0f, 0.0f, -8.0f), core::Vector3D(0.0f, 1.0f, 0.0f)), core::Vector3D(0.0f, 1.0f, -4.0f));
-    m_FPSCameraHelper->setPerspective(45.0f, size, 0.01f, 256.f);
+    m_FPSCameraHelper = new scene::CameraFPSHelper(new scene::Camera(core::Vector3D(0.0f, 0.0f, 0.0f), core::Vector3D(0.0f, 1.0f, 0.0f)), core::Vector3D(0.0f, 0.0f, -30.0f));
+    m_FPSCameraHelper->setPerspective(60.0f, size, 0.001f, 256.f);
 
-    {
-        m_ColorAttachment = m_CommandList.createObject<renderer::Texture2D>(renderer::TextureUsage::TextureUsage_Attachment | renderer::TextureUsage::TextureUsage_Sampled, renderer::Format::Format_R8G8B8A8_UNorm,
-            size, renderer::TextureSamples::TextureSamples_x1, "ColorAttachment");
-        m_DepthAttachment = m_CommandList.createObject<renderer::Texture2D>(renderer::TextureUsage::TextureUsage_Attachment, renderer::Format::Format_D32_SFloat_S8_UInt,
-            size, renderer::TextureSamples::TextureSamples_x1, "DepthAttachment");
+    m_BasePassDraw = new BasePassDraw();
+    m_BasePassDraw->Init(m_CommandList, size);
 
-        m_RenderTarget = m_CommandList.createObject<renderer::RenderTargetState>(size, 0, "RenderTarget");
-        m_RenderTarget->setColorTexture(0, m_ColorAttachment,
-            {
-                renderer::RenderTargetLoadOp::LoadOp_Clear, renderer::RenderTargetStoreOp::StoreOp_Store, core::Vector4D(0.0f)
-            },
-            {
-                renderer::TransitionOp::TransitionOp_Undefined, renderer::TransitionOp::TransitionOp_ShaderRead
-            });
-        m_RenderTarget->setDepthStencilTexture(m_DepthAttachment,
-            {
-                renderer::RenderTargetLoadOp::LoadOp_Clear, renderer::RenderTargetStoreOp::StoreOp_DontCare, 1.0f
-            },
-            {
-                renderer::RenderTargetLoadOp::LoadOp_DontCare, renderer::RenderTargetStoreOp::StoreOp_DontCare, 0U
-            },
-            {
-                renderer::TransitionOp::TransitionOp_Undefined, renderer::TransitionOp::TransitionOp_DepthStencilAttachment
-            });
-    }
+    m_SwapchainPassDraw = new OffscreenPassDraw(true);
+    m_SwapchainPassDraw->Init(m_CommandList, size);
 
-    class TexturedRender : public Scene::BaseRender
-    {
-    public:
-
-        TexturedRender() = default;
-        ~TexturedRender() = default;
-
-        void Init(renderer::CommandList& commandList, const renderer::VertexInputAttribDescription& desc, const renderer::RenderTargetState* renderTaget) override
-        {
-            std::vector<const renderer::Shader*> shaders = resource::ResourceLoaderManager::getInstance()->loadHLSLShader<renderer::Shader, resource::ShaderSourceFileLoader>(commandList.getContext(), "texture.hlsl",
-                {
-                    {"main_VS", renderer::ShaderType::Vertex },
-                    {"main_FS", renderer::ShaderType::Fragment }
-                }, {}, resource::ShaderSource_UseDXCompiler);
-
-            m_Program = commandList.createObject<renderer::ShaderProgram>(shaders);
-            m_Pipeline = commandList.createObject<renderer::GraphicsPipelineState>(desc, m_Program, renderTaget);
-            m_Pipeline->setPrimitiveTopology(renderer::PrimitiveTopology::PrimitiveTopology_TriangleList);
-            m_Pipeline->setFrontFace(renderer::FrontFace::FrontFace_Clockwise);
-            m_Pipeline->setCullMode(renderer::CullMode::CullMode_Back);
-            m_Pipeline->setColorMask(renderer::ColorMask::ColorMask_All);
-            m_Pipeline->setDepthCompareOp(renderer::CompareOperation::CompareOp_Less);
-            m_Pipeline->setDepthWrite(true);
-            m_Pipeline->setDepthTest(true);
-        };
-
-        void Render(renderer::CommandList& commandList) override
-        {
-            commandList.setPipelineState(m_Pipeline);
-
-            //UpdateParams(m_Program);
-            //commandList.draw();
-        }
-
-        void Destroy(renderer::CommandList& commandList) override
-        {
-            delete m_Pipeline;
-            delete m_Program;
-        }
-
-        void UpdateParams(renderer::ShaderProgram*)
-        {
-            //struct UBO
-            //{
-            //    core::Matrix4D projectionMatrix;
-            //    core::Matrix4D viewMatrix;
-            //    core::Matrix4D modelMatrix;
-            //} ubo;
-
-            //ubo.projectionMatrix = m_Scene->getActiveCamera()->getProjectionMatrix();
-            //ubo.viewMatrix = m_Scene->getActiveCamera()->getViewMatrix();
-            //ubo.modelMatrix.makeIdentity();
-            //ubo.modelMatrix.setScale({ 100.0f, 100.0f, 100.0f });
-
-            //m_Program->bindUniformsBuffer<renderer::ShaderType::Vertex>({ "vs_buffer" }, 0, (u32)sizeof(UBO), &ubo);
-
-            //m_Program->bindSampler<renderer::ShaderType::Fragment>({ "colorSampler" }, m_Sampler);
-            //m_Program->bindTexture<renderer::ShaderType::Fragment, renderer::Texture2D>({ "colorTexture" }, m_Texture);
-        }
-
-        renderer::GraphicsPipelineState* m_Pipeline;
-        renderer::ShaderProgram* m_Program;
-
-    };
-    m_TexturedRender = new TexturedRender();
-
-    scene::Model* mesh = nullptr;
-    {
-        mesh = resource::ResourceLoaderManager::getInstance()->load<scene::Model, resource::ModelFileLoader>("cube.dae");
-
-        renderer::VertexStreamBuffer* vertexBuffer = m_CommandList.createObject<renderer::VertexStreamBuffer>(renderer::StreamBuffer_Write | renderer::StreamBuffer_Shared,
-            mesh->getMeshByIndex(0)->getVertexSize(), mesh->getMeshByIndex(0)->getVertexData());
-
-        renderer::IndexStreamBuffer* indexBuffer = m_CommandList.createObject<renderer::IndexStreamBuffer>(renderer::StreamBuffer_Write | renderer::StreamBuffer_Shared,
-            renderer::StreamIndexBufferType::IndexType_32, mesh->getMeshByIndex(0)->getIndexCount(), mesh->getMeshByIndex(0)->getIndexData());
-    }
-
-    m_TexturedRender->Init(m_CommandList, mesh->getMeshByIndex(0)->getVertexInputAttribDesc(), m_RenderTarget);
+    resource::ResourceLoaderManager::getInstance()->addPath("examples/querytest/resources/");
+    LoadScene();
 
     m_CommandList.submitCommands(true);
     m_CommandList.flushCommands();
 }
 
+void Scene::LoadScene()
+{
+    {
+        scene::Model* mesh = resource::ResourceLoaderManager::getInstance()->load<scene::Model, resource::ModelFileLoader>("cube.dae");
+        ASSERT(mesh, "not found");
+        scene::Geometry* meshGeometry = mesh->getMeshByIndex(0);
+
+        {
+            renderer::QueryTimestampRequest* timeStampQuery = m_CommandList.createObject<renderer::QueryTimestampRequest>([this](const std::vector<u32>& timestamp, const std::vector<std::string>& tags)-> void
+                {
+                    m_Measurements._QueryTimings[0]._BeginTime = timestamp[0];
+                    m_Measurements._QueryTimings[0]._EndTime = timestamp[1];
+                    m_Measurements._QueryTimings[1]._BeginTime = timestamp[2];
+                    m_Measurements._QueryTimings[1]._EndTime = timestamp[3];
+                    m_Measurements._QueryTimings[2]._BeginTime = timestamp[4];
+                    m_Measurements._QueryTimings[2]._EndTime = timestamp[5];
+                    m_Measurements._QueryTimings[3]._BeginTime = timestamp[6];
+                    m_Measurements._QueryTimings[3]._EndTime = timestamp[7];
+                }, m_Measurements._QueryTimings.size() * 2);
+            m_Resources.push_back(timeStampQuery);
+
+
+            BasePassDraw::RenderPolicy* render = new BasePassDraw::TexturedRender(meshGeometry->getVertexInputAttribDesc());
+            render->Init(m_CommandList, m_BasePassDraw->GetRenderTarget());
+            m_DrawList._Render = render;
+            m_DrawList._TimeStampQuery = timeStampQuery;
+            m_DrawList._Profiler = &m_SceneProfiler;
+            m_Renderers.push_back(render);
+
+            OffscreenPassDraw::OffsceenRender* offscreen = new  OffscreenPassDraw::OffsceenRender();
+            offscreen->Init(m_CommandList, m_SwapchainPassDraw->GetRenderTarget());
+            m_OffscreenDraw._Render = offscreen;
+            m_OffscreenDraw._TimeStampQuery = timeStampQuery;
+            m_OffscreenDraw._Profiler = &m_SceneProfiler;
+            m_Renderers.push_back(offscreen);
+        }
+
+        const u32 k_meshCount = 1000;
+        for (u32 i = 0; i < k_meshCount; ++i)
+        {
+            renderer::VertexStreamBuffer* vertexBuffer = m_CommandList.createObject<renderer::VertexStreamBuffer>(renderer::StreamBuffer_Write | renderer::StreamBuffer_Shared,
+                meshGeometry->getVertexSize(), meshGeometry->getVertexData(), "VertexBufferBox");
+            m_Resources.push_back(vertexBuffer);
+
+            renderer::IndexStreamBuffer* indexBuffer = m_CommandList.createObject<renderer::IndexStreamBuffer>(renderer::StreamBuffer_Write | renderer::StreamBuffer_Shared,
+                renderer::StreamIndexBufferType::IndexType_32, meshGeometry->getIndexCount(), meshGeometry->getIndexData(), "IndexBufferBox");
+            m_Resources.push_back(indexBuffer);
+
+            BaseDraw::MeshInfo* meshdata = new BaseDraw::MeshInfo
+            {
+                renderer::StreamBufferDescription(indexBuffer, 0, vertexBuffer, 0, 0),
+                mesh->getMeshByIndex(0)->getVertexInputAttribDesc(),
+                { 0, mesh->getMeshByIndex(0)->getIndexCount(), 0, 1, true },
+            };
+            m_DrawList._DrawState.push_back(std::make_tuple(new BaseDraw::ProgramParams(), meshdata));
+        }
+    }
+
+    {
+        renderer::SamplerState* sampler = m_CommandList.createObject<renderer::SamplerState>(renderer::SamplerFilter::SamplerFilter_Trilinear, renderer::SamplerAnisotropic::SamplerAnisotropic_2x);
+        sampler->setWrap(renderer::SamplerWrap::TextureWrap_MirroredRepeat);
+        m_Resources.push_back(sampler);
+
+        resource::Image* image0 = resource::ResourceLoaderManager::getInstance()->load<resource::Image, resource::ImageFileLoader>("box.jpg", resource::ImageLoaderFlag_GenerateMipmaps);
+        ASSERT(image0, "not found");
+        renderer::Texture2D* texture0 = m_CommandList.createObject<renderer::Texture2D>(renderer::TextureUsage_Sampled | renderer::TextureUsage_Write, image0->getFormat(),
+            core::Dimension2D(image0->getDimension().width, image0->getDimension().height), image0->getMipMapsCount(), image0->getRawData(), "Box");
+        m_Resources.push_back(texture0);
+
+        auto randomFloat = [](f32 min, f32 max) -> f32
+        {
+            f32 r = (f32)rand() / (f32)RAND_MAX;
+            return min + r * (max - min);
+        };
+        
+        for (auto& state : m_DrawList._DrawState)
+        {
+            core::Matrix4D transform;
+
+            f32 locationX = randomFloat(-30.f, 30.f);
+            f32 locationY = randomFloat(-30.f, 30.f);
+            f32 locationZ = randomFloat(-30.f, 30.f);
+            transform.setTranslation({ locationX, locationY, locationZ });
+
+            f32 scale = randomFloat(1.f, 3.f) * 100.f;
+            transform.setScale({ scale, scale, scale });
+
+            BaseDraw::ProgramParams* params = std::get<0>(state);
+            params->_ConstantBuffer.modelMatrix = transform;
+            params->_Sampler = sampler;
+            params->_Texture = texture0;
+        }
+
+        m_OffscreenDraw._DrawState.push_back(std::make_tuple(new BaseDraw::ProgramParams
+            {
+                BaseDraw::ProgramParams::UBO(),
+                sampler,
+                m_BasePassDraw->GetRenderTarget()->getColorTexture<renderer::Texture2D>(0)
+            }
+        , nullptr));
+    }
+}
+
+void Scene::UpdateScene()
+{
+    m_SceneProfiler.start("SceneLoop.SceneUpdate");
+
+    for (auto& state : m_DrawList._DrawState)
+    {
+        BaseDraw::ProgramParams* params = std::get<0>(state);
+
+        params->_ConstantBuffer.projectionMatrix = m_FPSCameraHelper->getProjectionMatrix();
+        params->_ConstantBuffer.modelMatrix; //TODO set offset
+        params->_ConstantBuffer.modelMatrix.getInverse(params->_ConstantBuffer.normalMatrix);
+        params->_ConstantBuffer.normalMatrix.makeTransposed();
+        params->_ConstantBuffer.viewMatrix = m_FPSCameraHelper->getViewMatrix();
+    }
+    m_SceneProfiler.stop("SceneLoop.SceneUpdate");
+
+}
+
+void Scene::FreeScene()
+{
+    for (auto& state : m_DrawList._DrawState)
+    {
+        BaseDraw::ProgramParams* params = std::get<0>(state);
+        delete params;
+
+        BaseDraw::MeshInfo* meshInfo = std::get<1>(state);
+        delete meshInfo;
+    }
+    m_DrawList._DrawState.clear();
+    m_DrawList._Render = nullptr;
+
+    for (auto& state : m_OffscreenDraw._DrawState)
+    {
+        delete std::get<0>(state);
+    }
+    m_OffscreenDraw._DrawState.clear();
+    m_OffscreenDraw._Render = nullptr;
+
+    for (BasePassDraw::RenderPolicy* render : m_Renderers)
+    {
+        delete render;
+    }
+    m_Renderers.clear();
+
+    for (Object* object : m_Resources)
+    {
+        delete object;
+    }
+    m_Resources.clear();
+}
+
 Scene::~Scene()
 {
+    FreeScene();
+
+    delete m_BasePassDraw;
+    delete m_SwapchainPassDraw;
+
+    delete m_FPSCameraHelper;
+
     resource::ResourceLoaderManager::getInstance()->clear();
     resource::ResourceLoaderManager::getInstance()->freeInstance();
 }
 
 void Scene::Run(f32 dt)
 {
+    m_SceneProfiler.update(dt);
+    m_SceneProfiler.start("SceneLoop");
+
     m_FPSCameraHelper->update(dt);
+    UpdateScene();
 
+#if CMD_LIST_PROFILER_ENABLE
+    renderer::CommandList::s_commandListProfiler.update(dt);
+#endif
+    m_CommandList.beginFrame();
+
+    m_DrawList._TimeStampQuery->timestampQuery(0, "GPUframe start");
+
+    m_BasePassDraw->Draw(m_CommandList, m_DrawList);
+    m_SwapchainPassDraw->Draw(m_CommandList, m_OffscreenDraw);
+
+    m_DrawList._TimeStampQuery->timestampQuery(1, "GPUframe end");
+
+    m_CommandList.endFrame();
+    m_CommandList.presentFrame();
+
+    m_SceneProfiler.start("SceneLoop.Flush");
+    m_CommandList.flushCommands();
+    m_SceneProfiler.stop("SceneLoop.Flush");
+
+    static f32 k_sec = 0;
+    if (k_sec > 1.0f)
     {
-        m_CommandList.beginFrame();
-
-        m_TexturedRender->Render(m_CommandList);
-
-        m_CommandList.endFrame();
-        m_CommandList.presentFrame();
-
-        m_CommandList.flushCommands();
+        m_Measurements._Draws = m_DrawList._DrawedLastFrame;
+        m_Measurements.Print();
+        k_sec = 0;
     }
+    k_sec += dt;
+
+    m_SceneProfiler.stop("SceneLoop");
 }
 
 void Scene::mouseHandle(const event::InputEventHandler* handler, const event::MouseInputEvent* event)
@@ -182,4 +259,13 @@ void Scene::touchHandle(const event::InputEventHandler* handler, const event::To
 
 void Scene::keyboardHandle(const event::InputEventHandler* handler, const event::KeyboardInputEvent* event)
 {
+    m_FPSCameraHelper->moveHandlerCallback(handler, event);
+}
+
+void Scene::Measurements::Print()
+{
+    LOG_WARNING("GPU Frametime: %.3f ms", (f32)(_QueryTimings[0]._EndTime - _QueryTimings[0]._BeginTime) / 1'000'000.f);
+    LOG_WARNING("GPU Frametime OcclusionTest: %.3f ms", (f32)(_QueryTimings[1]._EndTime - _QueryTimings[1]._BeginTime) / 1'000'000.f);
+    LOG_WARNING("GPU Frametime BasePass: %.3f ms. DrawCalls: %d", (f32)(_QueryTimings[2]._EndTime - _QueryTimings[2]._BeginTime) / 1'000'000.f, _Draws);
+    LOG_WARNING("GPU Frametime Offscreen: %.3f ms", (f32)(_QueryTimings[3]._EndTime - _QueryTimings[3]._BeginTime) / 1'000'000.f);
 }

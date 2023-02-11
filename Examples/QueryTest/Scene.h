@@ -1,10 +1,16 @@
 #pragma once
 
-#include "Renderer/CommandList.h"
+#include "Common.h"
 #include "Event/InputEventHandler.h"
+
+#include "Renderer/CommandList.h"
+#include "Renderer/QueryRequest.h"
 
 #include "Scene/CameraFPSHelper.h"
 #include "Scene/ModelHelper.h"
+#include "Scene/SceneProfiler.h"
+
+#include "BaseDraw.h"
 
 using namespace v3d;
 
@@ -23,25 +29,37 @@ public:
 
 private:
 
-    class BaseRender
-    {
-    public:
-
-        BaseRender() = default;
-        virtual ~BaseRender() = default;
-
-        virtual void Init(renderer::CommandList& commandList, const renderer::VertexInputAttribDescription& desc, const renderer::RenderTargetState* renderTaget) = 0;
-        virtual void Render(renderer::CommandList& commandList) = 0;
-        virtual void Destroy(renderer::CommandList& commandList) = 0;
-    };
+    void LoadScene();
+    void UpdateScene();
+    void FreeScene();
 
     renderer::CommandList& m_CommandList;
 
     scene::CameraFPSHelper* m_FPSCameraHelper;
 
-    renderer::RenderTargetState* m_RenderTarget;
-    renderer::Texture2D* m_ColorAttachment;
-    renderer::Texture2D* m_DepthAttachment;
+    BaseDraw* m_BasePassDraw;
+    BaseDraw::DrawLists m_DrawList;
 
-    BaseRender* m_TexturedRender;
+    BaseDraw* m_SwapchainPassDraw;
+    BaseDraw::DrawLists m_OffscreenDraw;
+
+    std::vector<BaseDraw::RenderPolicy*> m_Renderers;
+    std::vector<Object*> m_Resources;
+
+
+    struct Measurements
+    {
+        void Print();
+
+        struct QueryTiming
+        {
+            f32 _BeginTime = 0;
+            f32 _EndTime = 0;
+        };
+        std::array<QueryTiming, 4> _QueryTimings;
+        u32 _Draws = 0;
+    };
+    Measurements m_Measurements;
+
+    scene::SceneProfiler m_SceneProfiler;
 };
