@@ -26,6 +26,7 @@ namespace vk
         CmdDrawBuffer = 0,
         CmdUploadBuffer = 1,
         CmdTransitionBuffer = 2,
+        CmdResetQuerytBuffer = 3,
 
         CommandTarget_Count
     };

@@ -51,9 +51,9 @@ namespace dx3d
         void presentFrame() override;
         void submit(bool wait = false) override;
 
-        void beginQuery(const Query* query, [[maybe_unused]] const std::string& tag = "") override;
-        void endQuery(const Query* query, [[maybe_unused]] const std::string& tag = "") override;
-        void timestampQuery(const Query* query, [[maybe_unused]] const std::string& tag = "") override;
+        void beginQuery(const Query* query, u32 id = 0, const std::string& tag = "") override;
+        void endQuery(const Query* query, u32 id = 0, const std::string& tag = "") override;
+        void timestampQuery(const Query* query, u32 id = 0, const std::string& tag = "") override;
 
         void draw(const StreamBufferDescription& desc, u32 firstVertex, u32 vertexCount, u32 firstInstance, u32 instanceCount) override;
         void drawIndexed(const StreamBufferDescription& desc, u32 firstIndex, u32 indexCount, u32 firstInstance, u32 instanceCount) override;
@@ -110,7 +110,7 @@ namespace dx3d
         Pipeline* createPipeline(Pipeline::PipelineType type, [[maybe_unused]] const std::string& name = "") override;
         void removePipeline(Pipeline* pipeline) override;
 
-        Query* createQuery(QueryType type, const Query::QueryRespose& callback, [[maybe_unused]] const std::string& name = "") override;
+        Query* createQuery(QueryType type, u32 size, const Query::QueryRespose& callback, [[maybe_unused]] const std::string& name = "") override;
         void removeQuery(Query* query) override;
 
         bool initialize() override;

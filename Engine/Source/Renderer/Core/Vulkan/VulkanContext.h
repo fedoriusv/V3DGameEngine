@@ -7,10 +7,9 @@
 #ifdef VULKAN_RENDER
 #include "VulkanWrapper.h"
 #include "VulkanDeviceCaps.h"
-#include "VulkanCommandBufferManager.h"
 #include "VulkanMemory.h"
-
 #include "VulkanTransitionState.h"
+#include "VulkanCommandBufferManager.h"
 
 #define THREADED_PRESENT 0
 
@@ -32,7 +31,7 @@ namespace vk
     class VulkanStagingBufferManager;
     class VulkanUniformBufferManager;
     class VulkanSemaphoreManager;
-    class VulkanRenderQueryManager;
+    class VulkanQueryPoolManager;
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -64,9 +63,9 @@ namespace vk
         void presentFrame() override;
         void submit(bool wait = false) override;
 
-        void beginQuery(const Query* query, [[maybe_unused]] const std::string& tag = "") override;
-        void endQuery(const  Query* query, [[maybe_unused]] const std::string& tag = "") override;
-        void timestampQuery(const Query* query, [[maybe_unused]] const std::string& tag = "") override;
+        void beginQuery(const Query* query, u32 id = 0, const std::string& tag = "") override;
+        void endQuery(const  Query* query, u32 id = 0, const std::string& tag = "") override;
+        void timestampQuery(const Query* query, u32 id = 0, const std::string& tag = "") override;
 
         void draw(const StreamBufferDescription& desc, u32 firstVertex, u32 vertexCount, u32 firstInstance, u32 instanceCount) override;
         void drawIndexed(const StreamBufferDescription& desc, u32 firstIndex, u32 indexCount, u32 firstInstance, u32 instanceCount) override;
@@ -109,7 +108,7 @@ namespace vk
         RenderPass* createRenderPass(const RenderPassDescription* renderpassDesc) override;
         void removeRenderPass(RenderPass* renderpass) override;
 
-        Query* createQuery(QueryType type, const Query::QueryRespose& callback, [[maybe_unused]] const std::string& name = "") override;
+        Query* createQuery(QueryType type, u32 size, const Query::QueryRespose& callback, [[maybe_unused]] const std::string& name = "") override;
         void removeQuery(Query* query) override;
 
         static const std::vector<VkDynamicState>& getDynamicStates();
@@ -156,7 +155,7 @@ namespace vk
         VulkanStagingBufferManager* m_stagingBufferManager;
         VulkanUniformBufferManager* m_uniformBufferManager;
         VulkanSemaphoreManager* m_semaphoreManager;
-        VulkanRenderQueryManager* m_renderQueryManager;
+        VulkanQueryPoolManager* m_renderQueryPoolManager;
 
         RenderPassManager* m_renderpassManager;
         FramebufferManager* m_framebufferManager;

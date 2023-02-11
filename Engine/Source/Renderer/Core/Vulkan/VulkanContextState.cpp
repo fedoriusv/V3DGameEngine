@@ -26,10 +26,12 @@ namespace vk
 extern RenderFrameProfiler* g_CPUProfiler;
 #endif //FRAME_PROFILER_ENABLE
 
-VulkanContextState::VulkanContextState(VkDevice device, VulkanDescriptorSetManager* descriptorSetManager, VulkanUniformBufferManager* unifromBufferManager) noexcept
+VulkanContextState::VulkanContextState(VkDevice device, VulkanDescriptorSetManager* descriptorSetManager, VulkanUniformBufferManager* unifromBufferManager, VulkanQueryPoolManager* queryPoolManager) noexcept
     : m_device(device)
+
     , m_descriptorSetManager(descriptorSetManager)
     , m_unifromBufferManager(unifromBufferManager)
+    , m_queryPoolManager(queryPoolManager)
 {
     m_currentRenderpass = { nullptr, false };
     m_currentFramebuffer = { { nullptr }, false };
@@ -296,6 +298,57 @@ void VulkanContextState::updateConstantBuffer(const Shader::UniformBuffer& info,
 
     BindingState& bindingSlot = m_currentBindingSlots[info._set];
     bindingSlot.bind(type, info._binding, 0, uniformBuffer->getBuffer(), uniformBuffer->getOffset(), uniformBuffer->getSize());
+}
+
+const VulkanRenderQueryState* VulkanContextState::bindQuery(const VulkanQuery* query, u32 index, const std::string& tag)
+{
+    ASSERT(index < query->getSize(), "range out");
+    auto inserted = m_currentRenderQueryState.emplace(query, nullptr);
+    if (inserted.second)
+    {
+        VulkanRenderQueryState* renderQuery = m_queryPoolManager->acquireRenderQuery(query->getType(), query->getSize());
+        ASSERT(renderQuery, "nullptr");
+        renderQuery->_query = query;
+
+        inserted.first->second = renderQuery;
+    }
+
+    inserted.first->second->_recorded[index] = true;
+    inserted.first->second->_tags[index] = tag;
+
+    return inserted.first->second;
+}
+
+void VulkanContextState::invalidateRenderQueriesState()
+{
+    m_currentRenderQueryState.clear();
+}
+
+void VulkanContextState::prepareRenderQueries(const std::function<VulkanCommandBuffer* ()>& cmdBufferGetter)
+{
+    if (m_currentRenderQueryState.empty())
+    {
+        return;
+    }
+
+    if (VulkanDeviceCaps::getInstance()->hostQueryReset)
+    {
+        std::for_each(m_currentRenderQueryState.begin(), m_currentRenderQueryState.end(), [this](auto& renderQueryIter) -> void
+            {
+                VulkanQueryPool* pool = renderQueryIter.second->_pool;
+                VulkanWrapper::ResetQueryPool(m_device, pool->getHandle(), 0, pool->getCount());
+            });
+    }
+    else
+    {
+        VulkanCommandBuffer* cmdBuffer = cmdBufferGetter();
+        ASSERT(cmdBuffer, "nullptr");
+
+        std::for_each(m_currentRenderQueryState.begin(), m_currentRenderQueryState.end(), [cmdBuffer](auto& renderQueryIter) -> void
+            {
+                cmdBuffer->cmdResetQueryPool(renderQueryIter.second->_pool);
+            });
+    }
 }
 
 void VulkanContextState::invalidateDescriptorSetsState()

@@ -37,17 +37,17 @@ void EmptyContext::submit(bool wait)
     LOG_DEBUG("EmptyContext::submit");
 }
 
-void EmptyContext::beginQuery(const Query* query, const std::string& tag)
+void EmptyContext::beginQuery(const Query* query, u32 id, const std::string& tag)
 {
     LOG_DEBUG("EmptyContext::beginQuery");
 }
 
-void EmptyContext::endQuery(const Query* query, const std::string& tag)
+void EmptyContext::endQuery(const Query* query, u32 id, const std::string& tag)
 {
     LOG_DEBUG("EmptyContext::endQuery");
 }
 
-void EmptyContext::timestampQuery(const Query* query, const std::string& tag)
+void EmptyContext::timestampQuery(const Query* query, u32 id, const std::string& tag)
 {
     LOG_DEBUG("EmptyContext::timestampQuery");
 }
@@ -99,7 +99,7 @@ void EmptyContext::removeRenderPass(RenderPass* renderpass)
     LOG_DEBUG("EmptyContext::removeRenderPass");
 }
 
-Query* EmptyContext::createQuery(QueryType type, const Query::QueryRespose& callback, const std::string& name)
+Query* EmptyContext::createQuery(QueryType type, u32 size, const Query::QueryRespose& callback, const std::string& name)
 {
     LOG_DEBUG("EmptyContext::createQuery");
     return nullptr;

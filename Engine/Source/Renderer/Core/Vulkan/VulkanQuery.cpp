@@ -6,6 +6,7 @@
 #include "VulkanWrapper.h"
 #include "VulkanDebug.h"
 #include "VulkanContext.h"
+#include "VulkanQueryPool.h"
 
 namespace v3d
 {
@@ -14,15 +15,125 @@ namespace renderer
 namespace vk
 {
 
-VulkanQuery::VulkanQuery(QueryType type, const QueryRespose& callback, [[maybe_unused]] const std::string& name) noexcept
-    : Query(type, callback, name)
+VkQueryType VulkanQuery::convertQueryTypeToVkQuery(QueryType type)
+{
+    switch (type)
+    {
+    case QueryType::Occlusion:
+    case QueryType::BinaryOcclusion:
+        return VK_QUERY_TYPE_OCCLUSION;
+
+    case QueryType::PipelineStaticstic:
+        return VK_QUERY_TYPE_PIPELINE_STATISTICS;
+
+    case QueryType::TimeStamp:
+        return VK_QUERY_TYPE_TIMESTAMP;
+
+    default:
+        ASSERT(false, "unknown type");
+    }
+
+    return VK_QUERY_TYPE_OCCLUSION;
+}
+
+
+VulkanQuery::VulkanQuery(QueryType type, u32 size, const QueryRespose& callback, const std::string& name) noexcept
+    : Query(type, size, callback, name)
 {
     LOG_DEBUG("VulkanQuery::VulkanQuery constructor %llx", this);
+
+#if VULKAN_DEBUG_MARKERS
+    m_debugName = name.empty() ? "Query" : name;
+    m_debugName.append(VulkanDebugUtils::k_addressPreffix);
+    m_debugName.append(std::to_string(reinterpret_cast<const u64>(this)));
+#endif //VULKAN_DEBUG_MARKERS
 }
 
 VulkanQuery::~VulkanQuery()
 {
     LOG_DEBUG("VulkanQuery::~VulkanQuery destructor %llx", this);
+}
+
+
+inline void VulkanRenderQueryState::prepare(VulkanQueryPool* pool, u32 offset, u32 count)
+{
+    _pool = pool;
+    _offset = offset;
+    _count = count;
+
+    _recorded.resize(count, false);
+    _tags.resize(count, "");
+}
+
+inline void VulkanRenderQueryState::reset()
+{
+    _pool = nullptr;
+    _offset = 0;
+    _count = 0;
+
+    _query = nullptr;
+
+    _recorded.clear();
+    _tags.clear();
+}
+
+bool VulkanRenderQueryState::validate() const
+{
+#if VULKAN_DEBUG
+    auto found = std::find(_recorded.cbegin(), _recorded.cend(), false);
+    [[unlikely]] if (found != _recorded.cend())
+    {
+        return false;
+    }
+#endif //VULKAN_DEBUG
+    return true;
+}
+
+
+VulkanRenderQueryBatch::VulkanRenderQueryBatch(VulkanQueryPool* pool) noexcept
+    : m_pool(pool)
+    , m_freeCount(pool->getCount())
+    , m_usedCount(0)
+
+    , m_renderQueryIndex(0)
+{
+    LOG_DEBUG("VulkanRenderQueryBatch::VulkanRenderQueryBatch constructor %llx", this);
+
+    m_renderQueryList.resize(pool->getCount(), 
+        { 
+            pool, 0, 0, nullptr, {}, {}
+        });
+}
+
+VulkanRenderQueryBatch::~VulkanRenderQueryBatch()
+{
+    LOG_DEBUG("VulkanRenderQueryBatch::~VulkanRenderQueryBatch destructor %llx", this);
+}
+
+VulkanRenderQueryState* VulkanRenderQueryBatch::prepareRenderQuery(u32 requestedCount)
+{
+    VulkanRenderQueryState& renderquery = m_renderQueryList[m_renderQueryIndex++];
+    renderquery.prepare(m_pool, m_usedCount, requestedCount);
+
+    ASSERT(m_freeCount >= requestedCount, "must be greater");
+    m_freeCount -= requestedCount;
+    m_usedCount += requestedCount;
+
+    return &renderquery;
+}
+
+void VulkanRenderQueryBatch::resetRenderQuery()
+{
+    m_freeCount = m_pool->getCount();
+    m_usedCount = 0;
+
+    m_renderQueryIndex = 0;
+#if VULKAN_DEBUG
+    for (auto& renderQuery : m_renderQueryList)
+    {
+        renderQuery.reset();
+    }
+#endif //VULKAN_DEBUG
 }
 
 } //namespace vk

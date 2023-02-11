@@ -11,13 +11,13 @@ namespace renderer
     */
     enum class QueryType : u32
     {
-        First = 0,
-
-        Occlusion = First,
+        Occlusion = 0,
         BinaryOcclusion,
         PipelineStaticstic,
         TimeStamp,
 
+        First = Occlusion,
+        Last = TimeStamp,
         Count
     };
 

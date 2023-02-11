@@ -12,8 +12,8 @@
 #include "VulkanComputePipeline.h"
 #include "VulkanSwapchain.h"
 #include "VulkanSemaphore.h"
-#include "VulkanRenderQuery.h"
-#include "VulkanQuery.h"
+#include "VulkanQueryPool.h"
+#include "VulkanContext.h"
 
 namespace v3d
 {
@@ -221,7 +221,7 @@ void VulkanCommandBuffer::captureResource(VulkanResource* resource, u64 frame)
 
     m_capturedFrameIndex = (frame == 0) ? m_context->getCurrentFrameIndex() : frame;
     auto iter = m_resources.insert(resource);
-    if (iter.second)
+     if (iter.second)
     {
         ++resource->m_counter;
         resource->m_cmdBuffers.push_back(this);
@@ -464,13 +464,13 @@ void VulkanCommandBuffer::cmdSetScissor(const std::vector<VkRect2D>& scissors)
     }
 }
 
-void VulkanCommandBuffer::cmdBeginQuery(VulkanRenderQueryPool* pool, u32 index)
+void VulkanCommandBuffer::cmdBeginQuery(VulkanQueryPool* pool, u32 index)
 {
     ASSERT(m_status == CommandBufferStatus::Begin, "not started");
-    ASSERT(pool->getQueryType() != QueryType::TimeStamp, "must be not timestamp");
+    ASSERT(pool->getType() != QueryType::TimeStamp, "must be not timestamp");
 
     VkQueryControlFlags flags = 0;
-    if (pool->getQueryType() == QueryType::BinaryOcclusion)
+    if (pool->getType() == QueryType::BinaryOcclusion)
     {
         flags |= VK_QUERY_CONTROL_PRECISE_BIT;
     }
@@ -480,32 +480,32 @@ void VulkanCommandBuffer::cmdBeginQuery(VulkanRenderQueryPool* pool, u32 index)
     pool->captureInsideCommandBuffer(this, 0);
 }
 
-void VulkanCommandBuffer::cmdEndQuery(VulkanRenderQueryPool* pool, u32 index)
+void VulkanCommandBuffer::cmdEndQuery(VulkanQueryPool* pool, u32 index)
 {
     ASSERT(m_status == CommandBufferStatus::Begin, "not started");
-    ASSERT(pool->getQueryType() != QueryType::TimeStamp, "must be not timestamp");
+    ASSERT(pool->getType() != QueryType::TimeStamp, "must be not timestamp");
 
     VulkanWrapper::CmdEndQuery(m_commands, pool->getHandle(), index);
 
     pool->captureInsideCommandBuffer(this, 0);
 }
 
-void VulkanCommandBuffer::cmdWriteTimestamp(VulkanRenderQueryPool* pool, u32 index, VkPipelineStageFlagBits pipelineStage)
+void VulkanCommandBuffer::cmdWriteTimestamp(VulkanQueryPool* pool, u32 index, VkPipelineStageFlagBits pipelineStage)
 {
     ASSERT(m_status == CommandBufferStatus::Begin, "not started");
-    ASSERT(pool->getQueryType() == QueryType::TimeStamp, "must be timestamp");
+    ASSERT(pool->getType() == QueryType::TimeStamp, "must be timestamp");
 
     VulkanWrapper::CmdWriteTimestamp(m_commands, pipelineStage, pool->getHandle(), index);
 
     pool->captureInsideCommandBuffer(this, 0);
 }
 
-void VulkanCommandBuffer::cmdResetQueryPool(VulkanRenderQueryPool* pool)
+void VulkanCommandBuffer::cmdResetQueryPool(VulkanQueryPool* pool)
 {
     ASSERT(m_status == CommandBufferStatus::Begin, "not started");
     ASSERT(!m_isInsideRenderPass, "must be out of renderpass");
 
-    VulkanWrapper::CmdResetQueryPool(m_commands, pool->getHandle(), 0, pool->getPoolSize());
+    VulkanWrapper::CmdResetQueryPool(m_commands, pool->getHandle(), 0, pool->getCount());
 
     pool->captureInsideCommandBuffer(this, 0);
 }

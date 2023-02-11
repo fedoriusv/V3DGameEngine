@@ -20,8 +20,8 @@
 #include "VulkanComputePipeline.h"
 #include "VulkanContextState.h"
 #include "VulkanSemaphore.h"
-#include "VulkanRenderQuery.h"
 #include "VulkanQuery.h"
+#include "VulkanQueryPool.h"
 
 #ifdef PLATFORM_ANDROID
 #   include "Platform/Android/HWCPProfiler.h"
@@ -119,7 +119,7 @@ VulkanContext::VulkanContext(platform::Window* window, DeviceMask mask) noexcept
     , m_stagingBufferManager(nullptr)
     , m_uniformBufferManager(nullptr)
     , m_semaphoreManager(nullptr)
-    , m_renderQueryManager(nullptr)
+    , m_renderQueryPoolManager(nullptr)
 
     , m_renderpassManager(nullptr)
     , m_framebufferManager(nullptr)
@@ -162,7 +162,7 @@ VulkanContext::~VulkanContext()
     ASSERT(!m_stagingBufferManager, "m_stagingBufferManager not nullptr");
     ASSERT(!m_uniformBufferManager, "m_uniformBufferManager not nullptr");
     ASSERT(!m_semaphoreManager, "m_semaphoreManager not nullptr");
-    ASSERT(!m_renderQueryManager, "m_renderQueryManager not nullptr");
+    ASSERT(!m_renderQueryPoolManager, "m_renderQueryPoolManager not nullptr");
 
     ASSERT(!m_renderpassManager, "m_renderpassManager not nullptr");
     ASSERT(!m_framebufferManager, "m_framebufferManager not nullptr");
@@ -264,14 +264,14 @@ bool VulkanContext::initialize()
     m_uniformBufferManager = new VulkanUniformBufferManager(m_deviceInfo._device, m_resourceDeleter);
     m_pipelineLayoutManager = new VulkanPipelineLayoutManager(m_deviceInfo._device);
     m_descriptorSetManager = new VulkanDescriptorSetManager(m_deviceInfo._device, m_swapchain->getSwapchainImageCount());
-    m_renderQueryManager = new VulkanRenderQueryManager(m_deviceInfo._device, 4);
+    m_renderQueryPoolManager = new VulkanQueryPoolManager(m_deviceInfo._device, 256);
 
     m_renderpassManager = new RenderPassManager(this);
     m_framebufferManager = new FramebufferManager(this);
     m_pipelineManager = new PipelineManager(this);
     m_samplerManager = new SamplerManager(this);
 
-    m_currentContextState = new VulkanContextState(m_deviceInfo._device, m_descriptorSetManager, m_uniformBufferManager);
+    m_currentContextState = new VulkanContextState(m_deviceInfo._device, m_descriptorSetManager, m_uniformBufferManager, m_renderQueryPoolManager);
 
 #if FRAME_PROFILER_ENABLE
     m_CPUProfiler = new RenderFrameProfiler(
@@ -282,6 +282,7 @@ bool VulkanContext::initialize()
             RenderFrameProfiler::FrameCounter::SetStates,
             RenderFrameProfiler::FrameCounter::BindResources,
             RenderFrameProfiler::FrameCounter::DrawCalls,
+            RenderFrameProfiler::FrameCounter::QueryCommands,
             RenderFrameProfiler::FrameCounter::Submit,
             RenderFrameProfiler::FrameCounter::Present,
             RenderFrameProfiler::FrameCounter::UpdateSubmitResorces,
@@ -928,10 +929,10 @@ void VulkanContext::submit(bool wait)
     m_CPUProfiler->start(RenderFrameProfiler::FrameCounter::Submit);
 #endif //FRAME_PROFILER_ENABLE
 
-    //Query commands. TODO
-    m_renderQueryManager->prepare([this]() -> VulkanCommandBuffer*
+    //Query commands
+    m_currentContextState->prepareRenderQueries([this]() -> VulkanCommandBuffer*
         {
-            return m_currentBufferState.acquireAndStartCommandBuffer(CommandTargetType::CmdUploadBuffer);
+            return m_currentBufferState.acquireAndStartCommandBuffer(CommandTargetType::CmdResetQuerytBuffer);
         });
     if (m_currentBufferState.isCurrentBufferAcitve(CommandTargetType::CmdResetQuerytBuffer))
     {
@@ -941,11 +942,10 @@ void VulkanContext::submit(bool wait)
             queryBuffer->endCommandBuffer();
         }
 
-        std::vector<VulkanSemaphore*> querySemaphores; //Must be empty
-        m_cmdBufferManager->submit(queryBuffer, querySemaphores);
+        m_cmdBufferManager->submit(queryBuffer, {});
         m_currentBufferState.invalidateCommandBuffer(CommandTargetType::CmdResetQuerytBuffer);
 
-        VulkanWrapper::DeviceWaitIdle(m_deviceInfo._device);
+        //VulkanWrapper::DeviceWaitIdle(m_deviceInfo._device);
     }
 
     //Uploads commands
@@ -1030,9 +1030,13 @@ void VulkanContext::submit(bool wait)
 #endif
 }
 
-void VulkanContext::beginQuery(const Query* query, const std::string& tag)
+void VulkanContext::beginQuery(const Query* query, u32 id, const std::string& tag)
 {
-    //ASSERT(query->getStatus() == QueryStatus::Ready, "Must be ready for start");
+#if FRAME_PROFILER_ENABLE
+    RenderFrameProfiler::StackProfiler stackFrameProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::FrameTime);
+    RenderFrameProfiler::StackProfiler stackProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::QueryCommands);
+#endif //FRAME_PROFILER_ENABLE
+
     //ASSERT(query->getType() == QueryType::Occlusion || query->getType() == QueryType::BinaryOcclusion, "Must be occlusion");
     //VulkanCommandBuffer* drawBuffer = m_currentBufferState.acquireAndStartCommandBuffer(CommandTargetType::CmdDrawBuffer);
     //RenderQuery* renderQuery = m_renderQueryManager->acquireRenderQuery(query->getType(), drawBuffer);
@@ -1048,37 +1052,47 @@ void VulkanContext::beginQuery(const Query* query, const std::string& tag)
     //    });
 }
 
-void VulkanContext::endQuery(const Query* query, const std::string& tag)
-{
-    //ASSERT(query->getStatus() == QueryStatus::Started, "Must be started");
-    //ASSERT(query->getType() == QueryType::Occlusion || query->getType() == QueryType::BinaryOcclusion, "Must be occlusion");
-    //VulkanRenderQueryManager::QueryState renderQueryState = m_renderQueryManager->findRenderQueryState(query);
-    //if (renderQueryState.isValid())
-    //{
-    //    VulkanCommandBuffer* drawBuffer = renderQueryState._cmdBuffer;
-    //    RenderQuery* renderQuery = renderQueryState._renderQuery;
-    //    drawBuffer->cmdEndQuery(static_cast<VulkanRenderQueryPool*>(renderQuery->_pool), renderQuery->_index);
-    //}
-}
-
-void VulkanContext::timestampQuery(const Query* query, const std::string& tag)
+void VulkanContext::endQuery(const Query* query, u32 id, const std::string& tag)
 {
 #if FRAME_PROFILER_ENABLE
     RenderFrameProfiler::StackProfiler stackFrameProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::FrameTime);
+    RenderFrameProfiler::StackProfiler stackProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::QueryCommands);
 #endif //FRAME_PROFILER_ENABLE
-    ASSERT(query->getType() == QueryType::TimeStamp, "Must be timestamp");
-    VulkanCommandBuffer* drawBuffer = m_currentBufferState.acquireAndStartCommandBuffer(CommandTargetType::CmdDrawBuffer);
-    RenderQuery* renderQuery = m_renderQueryManager->acquireRenderQuery(query->getType(), drawBuffer);
-    drawBuffer->cmdWriteTimestamp(static_cast<VulkanRenderQueryPool*>(renderQuery->_pool), renderQuery->_index, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT);
+//
+//    ASSERT(query->getType() == QueryType::Occlusion || query->getType() == QueryType::BinaryOcclusion, "Must be occlusion");
+//    VulkanCommandBuffer* drawBuffer = m_currentBufferState.getAcitveBuffer(CommandTargetType::CmdDrawBuffer);
+//    VulkanRenderQueryManager::QueryState renderQueryState = m_renderQueryManager->getRenderQueryState(
+//        VulkanRenderQueryManager::QueryState::QueryStateID
+//        {
+//            query,
+//            drawBuffer,
+//            m_frameCounter,
+//            id,
+//
+//        });
+//    if (renderQueryState.isValid())
+//    {
+//        ASSERT(renderQueryState._id == id, "must be same id");
+//        ASSERT(renderQueryState._cmdBuffer == drawBuffer, "Must be same");
+//        RenderQuery* renderQuery = renderQueryState._renderQuery;
+//        drawBuffer->cmdEndQuery(static_cast<VulkanRenderQueryPool*>(renderQuery->_pool), renderQuery->_index);
+//    }
+}
 
-    m_renderQueryManager->applyRenderQueryState(
-        VulkanRenderQueryManager::QueryState
-        {
-            query,
-            renderQuery,
-            drawBuffer,
-            tag,
-        });
+void VulkanContext::timestampQuery(const Query* query, u32 id, const std::string& tag)
+{
+#if FRAME_PROFILER_ENABLE
+    RenderFrameProfiler::StackProfiler stackFrameProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::FrameTime);
+    RenderFrameProfiler::StackProfiler stackProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::QueryCommands);
+#endif //FRAME_PROFILER_ENABLE
+
+    ASSERT(query, "nullptr");
+    ASSERT(query->getType() == QueryType::TimeStamp, "Must be timestamp");
+    const VulkanQuery* vkQuery = static_cast<const VulkanQuery*>(query);
+    const VulkanRenderQueryState* renderQuery = m_currentContextState->bindQuery(vkQuery, id, tag);
+    ASSERT(renderQuery, "nullptr");
+    VulkanCommandBuffer* drawBuffer = m_currentBufferState.acquireAndStartCommandBuffer(CommandTargetType::CmdDrawBuffer);
+    drawBuffer->cmdWriteTimestamp(renderQuery->_pool, renderQuery->_offset + id, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT);
 }
 
 void VulkanContext::clearBackbuffer(const core::Vector4D& color)
@@ -1333,14 +1347,14 @@ void VulkanContext::removeRenderPass(RenderPass* renderpass)
     }
 }
 
-Query* VulkanContext::createQuery(QueryType type, const Query::QueryRespose& callback, const std::string& name)
+Query* VulkanContext::createQuery(QueryType type, u32 size, const Query::QueryRespose& callback, const std::string& name)
 {
 #if FRAME_PROFILER_ENABLE
     RenderFrameProfiler::StackProfiler stackFrameProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::FrameTime);
     RenderFrameProfiler::StackProfiler stackProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::CreateResources);
 #endif //FRAME_PROFILER_ENABLE
 
-    return new VulkanQuery(type, callback, name);
+    return new VulkanQuery(type, size, callback, name);
 }
 
 void VulkanContext::removeQuery(Query* query)
@@ -1985,8 +1999,9 @@ void VulkanContext::finalizeSubmit()
     m_cmdBufferManager->updateCommandBuffers();
     m_uniformBufferManager->updateUniformBuffers();
     m_semaphoreManager->updateSemaphores();
+    m_renderQueryPoolManager->updateRenderQueries();
+
     m_stagingBufferManager->destroyStagingBuffers();
-    m_renderQueryManager->updateRenderQuery();
 
     invalidateStates();
     m_resourceDeleter.updateResourceDeleter();

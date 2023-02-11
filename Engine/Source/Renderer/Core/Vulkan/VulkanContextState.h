@@ -35,7 +35,7 @@ namespace vk
     {
     public:
 
-        explicit VulkanContextState(VkDevice device, VulkanDescriptorSetManager* descriptorSetManager, VulkanUniformBufferManager* unifromBufferManager) noexcept;
+        explicit VulkanContextState(VkDevice device, VulkanDescriptorSetManager* descriptorSetManager, VulkanUniformBufferManager* unifromBufferManager, VulkanQueryPoolManager* queryPoolManager) noexcept;
 
         void invalidateCommandBuffer(CommandTargetType type);
 
@@ -139,14 +139,19 @@ namespace vk
             return true;
         }
 
+        void prepareRenderQueries(const std::function<VulkanCommandBuffer* ()>& cmdBufferGetter);
+
         void bindTexture(const VulkanImage* image, const VulkanSampler* sampler, u32 arrayIndex, const Shader::Image& info, const Image::Subresource& subresource);
         void bindTexture(const VulkanImage* image, u32 arrayIndex, const Shader::Image& info, const Image::Subresource& subresource);
         void bindSampler(const VulkanSampler* sampler, const Shader::Sampler& info);
         void bindStorageImage(const VulkanImage* image, u32 arrayIndex, const Shader::StorageImage& info, const Image::Subresource& subresource);
         void updateConstantBuffer(const Shader::UniformBuffer& info, u32 offset, u32 size, const void* data);
 
+        const VulkanRenderQueryState* bindQuery(const VulkanQuery* query, u32 index, const std::string& tag);
+
         void invalidateDescriptorSetsState();
         void updateDescriptorStates();
+        void invalidateRenderQueriesState();
 
         std::vector<VkClearValue> m_renderPassClearValues;
         VkRect2D m_renderPassArea;
@@ -215,9 +220,11 @@ namespace vk
         std::pair<StreamBufferDescription, bool>            m_currentVertexBuffers;
         std::array<VkDescriptorSet, k_maxDescriptorSetIndex> m_currentDesctiptorsSets;
         std::set<VkDescriptorSet>                           m_updatedDescriptorsSets;
+        std::map<const VulkanQuery*, VulkanRenderQueryState*> m_currentRenderQueryState;
 
         VulkanDescriptorSetManager* m_descriptorSetManager;
         VulkanUniformBufferManager* m_unifromBufferManager;
+        VulkanQueryPoolManager* m_queryPoolManager;
 
         mutable BindingState m_currentBindingSlots[k_maxDescriptorSetIndex];
     };

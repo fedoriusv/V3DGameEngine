@@ -14,9 +14,7 @@ QueryRequest::QueryRequest(CommandList& cmdList, QueryType type, const std::stri
     , m_query(nullptr)
     , m_type(type)
 {
-    m_query = m_cmdList.getContext()->createQuery(type, std::bind(&QueryRequest::callbackQueryResponse, this, std::placeholders::_1, std::placeholders::_2), name);
-    ASSERT(m_query, "m_image is nullptr");
-    m_query->registerNotify(this);
+    LOG_DEBUG("QueryRequest::QueryRequest constructor %llx", this);
 }
 
 QueryRequest::~QueryRequest()
@@ -65,7 +63,7 @@ QueryRequest::~QueryRequest()
     }
 }
 
-void QueryRequest::handleNotify(const utils::Observable* query)
+void QueryRequest::handleNotify(const utils::Observable* query, void* msg)
 {
     LOG_DEBUG("QueryRequest::handleNotify to delete the query %xll", this);
     ASSERT(m_query == query, "not same");
@@ -74,43 +72,205 @@ void QueryRequest::handleNotify(const utils::Observable* query)
 }
 
 
-QueryTimestampRequest::QueryTimestampRequest(CommandList& cmdList, std::function<void(u32)> callback, const std::string& name) noexcept
+QueryTimestampRequest::QueryTimestampRequest(CommandList& cmdList, std::function<Timestamp> callback, u32 size, const std::string& name) noexcept
     : QueryRequest(cmdList, QueryType::TimeStamp, name)
-    , m_callback(callback)
 {
+    m_query = m_cmdList.getContext()->createQuery(m_type, size, [this, &cmdList, callback](QueryResult result, u32 size, const void* data) -> void
+        {
+            if (result == QueryResult::Success && data)
+            {
+                //TODO
+                memcpy(m_result.data(), data, size);
+                callback(m_result);
+                //cmdList.pushReadbackCall(nullptr, [callback, timestamp, id, tag](Object* caller)
+                //    {
+                //        callback(timestamp, id, tag);
+                //    });
+            }
+        }, name);
+    ASSERT(m_query, "m_query is nullptr");
+    m_query->registerNotify(this);
+
+    m_result.resize(size);
 }
 
-void QueryTimestampRequest::callbackQueryResponse(QueryResult result, const void* data)
+void QueryTimestampRequest::timestampQuery(u32 id)
 {
-    if (m_callback && result == QueryResult::Success && data)
+    ASSERT(m_query, "Must be valid");
+    if (m_cmdList.isImmediate())
     {
-        u32 timestamp = *reinterpret_cast<const u32*>(data);
-        m_callback(timestamp);
+        m_cmdList.getContext()->timestampQuery(m_query, id);
+    }
+    else
+    {
+        /*CommandTimestampQuery*/
+        class CommandTimestampQuery final : public Command
+        {
+        public:
+            CommandTimestampQuery(CommandTimestampQuery&) = delete;
+            CommandTimestampQuery(Query* query, u32 id) noexcept
+                : m_query(query)
+                , m_id(id)
+            {
+#if DEBUG_COMMAND_LIST
+                LOG_DEBUG("CommandTimestampQuery constructor");
+#endif //DEBUG_COMMAND_LIST
+            }
+
+            ~CommandTimestampQuery()
+            {
+#if DEBUG_COMMAND_LIST
+                LOG_DEBUG("CommandTimestampQuery constructor");
+#endif //DEBUG_COMMAND_LIST
+            }
+
+            void execute(const CommandList& cmdList)
+            {
+#if DEBUG_COMMAND_LIST
+                LOG_DEBUG("CommandTimestampQuery execute");
+#endif //DEBUG_COMMAND_LIST
+                cmdList.getContext()->timestampQuery(m_query, m_id);
+            }
+
+            Query* const m_query;
+            u32 m_id;
+        };
+
+        m_cmdList.pushCommand(new CommandTimestampQuery(m_query, id));
     }
 }
 
-QueryTimestampRequest::~QueryTimestampRequest()
-{
-}
 
-
-QueryOcclusionRequest::QueryOcclusionRequest(CommandList& cmdList, std::function<void(u32)> callback, const std::string& name) noexcept
-    : QueryRequest(cmdList, QueryType::TimeStamp, name)
-    , m_callback(callback)
+void QueryOcclusionRequest::beginQuery(u32 id)
 {
-}
-
-void QueryOcclusionRequest::callbackQueryResponse(QueryResult result, const void* data)
-{
-    if (m_callback && result == QueryResult::Success && data)
+    ASSERT(m_query, "Must be valid");
+    if (m_cmdList.isImmediate())
     {
-        u32 samples = *reinterpret_cast<const u32*>(data);
-        m_callback(samples);
+        m_cmdList.getContext()->beginQuery(m_query, id);
+    }
+    else
+    {
+        /*CommandBeginQuery*/
+        class CommandBeginQuery final : public Command
+        {
+        public:
+            CommandBeginQuery(CommandBeginQuery&) = delete;
+            CommandBeginQuery(Query* query, u32 id, const std::string& tag) noexcept
+                : m_query(query)
+                , m_id(id)
+                , m_tag(tag)
+            {
+#if DEBUG_COMMAND_LIST
+                LOG_DEBUG("CommandBeginQuery constructor");
+#endif //DEBUG_COMMAND_LIST
+            }
+
+            ~CommandBeginQuery()
+            {
+#if DEBUG_COMMAND_LIST
+                LOG_DEBUG("CommandBeginQuery constructor");
+#endif //DEBUG_COMMAND_LIST
+            }
+
+            void execute(const CommandList& cmdList)
+            {
+#if DEBUG_COMMAND_LIST
+                LOG_DEBUG("CommandBeginQuery execute");
+#endif //DEBUG_COMMAND_LIST
+                cmdList.getContext()->beginQuery(m_query, m_id, m_tag);
+            }
+
+            Query* const m_query;
+            u32 m_id;
+            std::string m_tag;
+        };
     }
 }
 
-QueryOcclusionRequest::~QueryOcclusionRequest()
+void QueryOcclusionRequest::endQuery(u32 id)
 {
+    ASSERT(m_query, "Must be valid");
+    if (m_cmdList.isImmediate())
+    {
+        m_cmdList.getContext()->endQuery(m_query, id);
+    }
+    else
+    {
+        /*CommandEndQuery*/
+        class CommandEndQuery final : public Command
+        {
+        public:
+            CommandEndQuery(CommandEndQuery&) = delete;
+            CommandEndQuery(Query* query, u32 id, const std::string& tag) noexcept
+                : m_query(query)
+                , m_id(id)
+                , m_tag(tag)
+            {
+#if DEBUG_COMMAND_LIST
+                LOG_DEBUG("CommandEndQuery constructor");
+#endif //DEBUG_COMMAND_LIST
+            }
+
+            ~CommandEndQuery()
+            {
+#if DEBUG_COMMAND_LIST
+                LOG_DEBUG("CommandEndQuery constructor");
+#endif //DEBUG_COMMAND_LIST
+            }
+
+            void execute(const CommandList& cmdList)
+            {
+#if DEBUG_COMMAND_LIST
+                LOG_DEBUG("CommandEndQuery execute");
+#endif //DEBUG_COMMAND_LIST
+                cmdList.getContext()->endQuery(m_query, m_id, m_tag);
+            }
+
+            Query* const m_query;
+            u32 m_id;
+            std::string m_tag;
+        };
+    }
+}
+
+QueryOcclusionRequest::QueryOcclusionRequest(CommandList& cmdList, std::function<QuerySamples> callback, u32 size, const std::string& name) noexcept
+    : QueryRequest(cmdList, QueryType::Occlusion, name)
+{
+    m_query = m_cmdList.getContext()->createQuery(m_type, size, [this, &cmdList, callback](QueryResult result, u32 size, const void* data) -> void
+        {
+            if (result == QueryResult::Success && data)
+            {
+                //TODO
+                memcpy(m_result.data(), data, size);
+                callback(m_result);
+                //cmdList.pushReadbackCall(nullptr, [callback, timestamp, id, tag](Object* caller)
+                //    {
+                //        callback(timestamp, id, tag);
+                //    });
+            }
+        }, name);
+    ASSERT(m_query, "m_query is nullptr");
+    m_query->registerNotify(this);
+
+    m_result.resize(size);
+}
+
+QueryBinaryOcclusionRequest::QueryBinaryOcclusionRequest(CommandList& cmdList, std::function<QueryBinarySample> callback, const std::string& name) noexcept
+    : QueryRequest(cmdList, QueryType::BinaryOcclusion, name)
+{
+    //m_query = m_cmdList.getContext()->createQuery(m_type, 0, [&cmdList, callback](QueryResult result, u32 size, const void* data, u32 id, const std::string& tag) -> void
+    //    {
+    //        if (result == QueryResult::Success && data)
+    //        {
+    //            bool sampled = *reinterpret_cast<const bool*>(data);
+    //            cmdList.pushReadbackCall(nullptr, [callback, sampled, id, tag](Object* caller)
+    //                {
+    //                    callback(sampled, id, tag);
+    //                });
+    //        }
+    //    }, name);
+    //ASSERT(m_query, "m_query is nullptr");
+    //m_query->registerNotify(this);
 }
 
 } //namespace renderer

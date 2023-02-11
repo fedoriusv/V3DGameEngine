@@ -4,7 +4,6 @@
 #include "Renderer/TextureProperties.h"
 #include "Renderer/Core/Buffer.h"
 #include "Renderer/Core/Query.h"
-#include "Renderer/Core/RenderQueryPool.h"
 
 #ifdef VULKAN_RENDER
 #include "VulkanWrapper.h"
@@ -25,7 +24,7 @@ namespace vk
     class VulkanGraphicPipeline;
     class VulkanComputePipeline;
     class VulkanSemaphore;
-    class VulkanRenderQueryPool;
+    class VulkanQueryPool;
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -80,10 +79,10 @@ namespace vk
         void cmdSetScissor(const std::vector<VkRect2D>& scissors);
 
         //query
-        void cmdBeginQuery(VulkanRenderQueryPool* pool, u32 index);
-        void cmdEndQuery(VulkanRenderQueryPool* pool, u32 index);
-        void cmdWriteTimestamp(VulkanRenderQueryPool* pool, u32 index, VkPipelineStageFlagBits pipelineStage);
-        void cmdResetQueryPool(VulkanRenderQueryPool* pool);
+        void cmdBeginQuery(VulkanQueryPool* pool, u32 index);
+        void cmdEndQuery(VulkanQueryPool* pool, u32 index);
+        void cmdWriteTimestamp(VulkanQueryPool* pool, u32 index, VkPipelineStageFlagBits pipelineStage);
+        void cmdResetQueryPool(VulkanQueryPool* pool);
 
         //binds
         void cmdBindVertexBuffers(u32 firstBinding, u32 countBindinng, const std::vector<Buffer*>& buffers, const std::vector<u64>& offests);

@@ -506,15 +506,15 @@ void D3DGraphicContext::submit(bool wait)
     }
 }
 
-void D3DGraphicContext::beginQuery(const Query* query, const std::string& tag)
+void D3DGraphicContext::beginQuery(const Query* query, u32 id, const std::string& tag)
 {
 }
 
-void D3DGraphicContext::endQuery(const Query* query, const std::string& tag)
+void D3DGraphicContext::endQuery(const Query* query, u32 id, const std::string& tag)
 {
 }
 
-void D3DGraphicContext::timestampQuery(const Query* query, const std::string& tag)
+void D3DGraphicContext::timestampQuery(const Query* query, u32 id, const std::string& tag)
 {
 }
 
@@ -844,7 +844,7 @@ void D3DGraphicContext::removePipeline(Pipeline* pipeline)
     }
 }
 
-Query* D3DGraphicContext::createQuery(QueryType type, const Query::QueryRespose& callback, const std::string& name)
+Query* D3DGraphicContext::createQuery(QueryType type, u32 size, const Query::QueryRespose& callback, const std::string& name)
 {
     ASSERT(false, "not impl");
     return nullptr;
