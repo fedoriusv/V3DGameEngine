@@ -15,10 +15,10 @@ namespace renderer
 {
 namespace vk
 {
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
+
     class VulkanDescriptorSetPool;
     class VulkanDescriptorPoolProvider;
-
-    /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
     * @brief BindingType enum. Vulkan Render side
@@ -90,15 +90,15 @@ namespace vk
         explicit VulkanDescriptorSetManager(VkDevice device, u32 swapchainImages) noexcept;
         ~VulkanDescriptorSetManager();
 
-        VulkanDescriptorSetManager() = delete;
-        VulkanDescriptorSetManager(const VulkanDescriptorSetManager&) = delete;
-
         //DescriptorSets
         VkDescriptorSet acquireDescriptorSet(const VulkanDescriptorSetLayoutDescription& desc, const SetInfo& info, VkDescriptorSetLayout layoutSet, VulkanDescriptorSetPool*& pool);
 
         void updateDescriptorPools();
 
     private:
+
+        VulkanDescriptorSetManager() = delete;
+        VulkanDescriptorSetManager(const VulkanDescriptorSetManager&) = delete;
 
         VulkanDescriptorPoolProvider* m_poolProvider;
         std::vector<VulkanDescriptorSetPool*> m_currentPool;

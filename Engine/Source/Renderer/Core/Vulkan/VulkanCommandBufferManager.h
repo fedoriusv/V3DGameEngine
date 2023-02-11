@@ -18,8 +18,6 @@ namespace vk
     class VulkanSemaphore;
     class VulkanSemaphoreManager;
 
-    /////////////////////////////////////////////////////////////////////////////////////////////////////
-
     /**
     * @brief CommandTargetType enum
     */
@@ -41,10 +39,6 @@ namespace vk
     {
     public:
         
-        VulkanCommandBufferManager() = delete;
-        VulkanCommandBufferManager(const VulkanCommandBufferManager&) = delete;
-        VulkanCommandBufferManager& operator=(const VulkanCommandBufferManager&) = delete;
-
         VulkanCommandBufferManager(Context* const context, const struct DeviceInfo* info, VulkanSemaphoreManager* const semaphoreManager, VkQueue queue);
         ~VulkanCommandBufferManager();
 
@@ -59,6 +53,10 @@ namespace vk
         static void drawToSwapchain(VulkanCommandBuffer* buffer, const class VulkanImage* swapchainImage);
 
     private:
+
+        VulkanCommandBufferManager() = delete;
+        VulkanCommandBufferManager(const VulkanCommandBufferManager&) = delete;
+        VulkanCommandBufferManager& operator=(const VulkanCommandBufferManager&) = delete;
 
         VkDevice m_device;
         VkQueue  m_queue;

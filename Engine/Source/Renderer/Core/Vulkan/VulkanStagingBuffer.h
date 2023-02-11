@@ -24,8 +24,6 @@ namespace vk
     {
     public:
 
-        VulkanStagingBuffer(const VulkanStagingBuffer&) = delete;
-
         VulkanStagingBuffer(VulkanMemory::VulkanMemoryAllocator* memory, VkDevice device, u64 size, StreamBufferUsageFlags usageFlag) noexcept;
         ~VulkanStagingBuffer();
 
@@ -39,6 +37,9 @@ namespace vk
 
     private:
 
+        VulkanStagingBuffer(const VulkanStagingBuffer&) = delete;
+        VulkanStagingBuffer& operator=(const VulkanStagingBuffer&) = delete;
+
         VulkanBuffer* m_buffer;
     };
 
@@ -51,7 +52,6 @@ namespace vk
     {
     public:
 
-        VulkanStagingBufferManager(const VulkanStagingBufferManager&) = delete;
 
         explicit VulkanStagingBufferManager(VkDevice device) noexcept;
         ~VulkanStagingBufferManager();
@@ -62,6 +62,9 @@ namespace vk
         void destroyStagingBuffers();
 
     private:
+
+        VulkanStagingBufferManager(const VulkanStagingBufferManager&) = delete;
+        VulkanStagingBufferManager& operator=(const VulkanStagingBufferManager&) = delete;
 
         VkDevice m_device;
 

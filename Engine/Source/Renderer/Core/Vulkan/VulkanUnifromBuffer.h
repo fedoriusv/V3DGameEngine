@@ -1,7 +1,6 @@
 #include "Common.h"
 
 #ifdef VULKAN_RENDER
-#include "VulkanWrapper.h"
 #include "VulkanResource.h"
 #include "VulkanMemory.h"
 
@@ -15,8 +14,6 @@ namespace vk
 
     class VulkanBuffer;
     class VulkanUniformBufferManager;
-
-    /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
     * @brief VulkanUniformBuffer final class. Vulkan Render side

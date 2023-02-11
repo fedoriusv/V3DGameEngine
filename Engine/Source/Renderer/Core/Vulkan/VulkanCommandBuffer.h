@@ -54,10 +54,6 @@ namespace vk
             Finished
         };
 
-        VulkanCommandBuffer() = delete;
-        VulkanCommandBuffer(const VulkanCommandBuffer&) = delete;
-        VulkanCommandBuffer& operator=(const VulkanCommandBuffer&) = delete;
-
         VulkanCommandBuffer(Context* context, VkDevice device, CommandBufferLevel type, VulkanCommandBuffer* primaryBuffer = nullptr);
         ~VulkanCommandBuffer();
 
@@ -120,6 +116,10 @@ namespace vk
         void cmdDispatch(const core::Dimension3D& groups);
 
     private:
+
+        VulkanCommandBuffer() = delete;
+        VulkanCommandBuffer(const VulkanCommandBuffer&) = delete;
+        VulkanCommandBuffer& operator=(const VulkanCommandBuffer&) = delete;
 
         void init(VkCommandPool pool, VkCommandBuffer buffer);
 

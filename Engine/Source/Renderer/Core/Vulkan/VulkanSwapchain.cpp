@@ -18,6 +18,7 @@
 extern android_app* g_nativeAndroidApp;
 #endif //PLATFORM_ANDROID
 
+
 namespace v3d
 {
 namespace renderer
@@ -219,7 +220,7 @@ bool VulkanSwapchain::create(const SwapchainConfig& config, VkSwapchainKHR oldSw
     }
     std::for_each(surfaceFormats.begin(), surfaceFormats.end(), [](const VkSurfaceFormatKHR& surfaceFormat)
     {
-        LOG_INFO("SurfaceFormat supported format: %d, colorspace: %d", surfaceFormat.format, surfaceFormat.colorSpace);
+        LOG_INFO("SurfaceFormat supported format: %s, colorspace: %d", VulkanImage::imageFormatStringVK(surfaceFormat.format).c_str(), surfaceFormat.colorSpace);
     });
 
     // If the surface format list only includes one entry with VK_FORMAT_UNDEFINED,

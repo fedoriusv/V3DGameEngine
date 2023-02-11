@@ -60,10 +60,6 @@ namespace vk
         {
         public:
 
-            VulkanMemoryAllocator() = delete;
-            VulkanMemoryAllocator(const VulkanMemoryAllocator&) = delete;
-            VulkanMemoryAllocator& operator=(const VulkanMemoryAllocator&) = delete;
-
             explicit VulkanMemoryAllocator(VkDevice device) noexcept;
             virtual ~VulkanMemoryAllocator();
 
@@ -73,6 +69,10 @@ namespace vk
 #endif //VULKAN_DEBUG
 
         protected:
+
+            VulkanMemoryAllocator() = delete;
+            VulkanMemoryAllocator(const VulkanMemoryAllocator&) = delete;
+            VulkanMemoryAllocator& operator=(const VulkanMemoryAllocator&) = delete;
 
             VkDevice m_device;
 
@@ -115,6 +115,9 @@ namespace vk
 
     private:
 
+        SimpleVulkanMemoryAllocator() = delete;
+        SimpleVulkanMemoryAllocator(const SimpleVulkanMemoryAllocator&) = delete;
+
         VulkanMemory::VulkanAllocation allocate(VkDeviceSize size, VkDeviceSize align, u32 memoryTypeIndex, const void* extensions = nullptr) override;
         void deallocate(VulkanMemory::VulkanAllocation& memory) override;
 
@@ -141,6 +144,9 @@ namespace vk
 #endif //VULKAN_DEBUG
 
     private:
+
+        PoolVulkanMemoryAllocator() = delete;
+        PoolVulkanMemoryAllocator(const PoolVulkanMemoryAllocator&) = delete;
 
         VulkanMemory::VulkanAllocation allocate(VkDeviceSize size, VkDeviceSize align, u32 memoryTypeIndex, const void* extensions = nullptr) override;
         void deallocate(VulkanMemory::VulkanAllocation& memory) override;

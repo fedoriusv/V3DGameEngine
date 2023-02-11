@@ -153,6 +153,9 @@ namespace vk
 
     private:
 
+        /**
+        * @brief struct BindingState
+        */
         struct BindingState
         {
             BindingState() = default;

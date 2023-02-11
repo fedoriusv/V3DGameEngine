@@ -30,9 +30,6 @@ namespace vk
     {
     public:
 
-        VulkanComputePipeline() = delete;
-        VulkanComputePipeline(const VulkanComputePipeline&) = delete;
-
         VulkanComputePipeline(VkDevice device, VulkanPipelineLayoutManager* pipelineLayoutManager, [[maybe_unused]] const std::string& name = "");
         ~VulkanComputePipeline();
 
@@ -43,6 +40,9 @@ namespace vk
         const VulkanPipelineLayoutDescription& getPipelineLayoutDescription() const;
 
     private:
+
+        VulkanComputePipeline() = delete;
+        VulkanComputePipeline(const VulkanComputePipeline&) = delete;
 
         bool create(const PipelineGraphicInfo* pipelineInfo) override;
         bool create(const PipelineComputeInfo* pipelineInfo) override;

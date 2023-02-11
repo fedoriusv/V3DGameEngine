@@ -39,6 +39,9 @@ namespace vk
 
     private:
 
+        VulkanFramebuffer() = delete;
+        VulkanFramebuffer(const VulkanFramebuffer&) = delete;
+
         VkDevice                    m_device;
         [[maybe_unused]] const Context* const m_context;
 

@@ -7,11 +7,6 @@
 #include "VulkanWrapper.h"
 #include "VulkanDeviceCaps.h"
 
-/**
-* SWAPCHAIN_ON_ADVANCE feature
-*/
-#define SWAPCHAIN_ON_ADVANCE 1
-
 namespace v3d
 {
 namespace renderer
@@ -19,13 +14,16 @@ namespace renderer
 namespace vk
 {
     /////////////////////////////////////////////////////////////////////////////////////////////////////
-    
+
+    /**
+    * @brief SWAPCHAIN_ON_ADVANCE feature
+    */
+#   define SWAPCHAIN_ON_ADVANCE 1
+
     class VulkanResource;
     class VulkanImage;
     class VulkanSemaphore;
     class VulkanSemaphoreManager;
-
-    /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
     *  @brief VulkanSwapchain final class. Vulkan Render side

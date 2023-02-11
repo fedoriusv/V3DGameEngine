@@ -16,7 +16,7 @@ namespace renderer
 namespace vk
 {
 
-std::string ImageTypeStringVK(VkImageType format)
+std::string VulkanImage::imageTypeStringVK(VkImageType format)
 {
     switch (format)
     {
@@ -32,7 +32,7 @@ std::string ImageTypeStringVK(VkImageType format)
     return "UNKNOWN_TYPE";
 }
 
-std::string ImageFormatStringVK(VkFormat format)
+std::string VulkanImage::imageFormatStringVK(VkFormat format)
 {
     switch (format)
     {
@@ -939,8 +939,8 @@ VulkanImage::VulkanImage(VulkanMemory::VulkanMemoryAllocator* memory, VkDevice d
     m_debugName = name.empty() ? "Image" : name;
     m_debugName.append(VulkanDebugUtils::k_addressPreffix);
     m_debugName.append(std::to_string(reinterpret_cast<const u64>(this)));
-
 #endif //VULKAN_DEBUG_MARKERS
+
 #if DEBUG_OBJECT_MEMORY
     s_objects.insert(this);
 #endif //DEBUG_OBJECT_MEMORY
@@ -1043,7 +1043,7 @@ bool VulkanImage::create()
         unsupport = !supportFormatInfo._supportSampled;
         if (!supportFormatInfo._supportSampled)
         {
-            LOG_ERROR("VulkanImage::create, supportFormatInfo._supportSampled format %s is not supported", ImageFormatStringVK(m_format).c_str());
+            LOG_ERROR("VulkanImage::create, supportFormatInfo._supportSampled format %s is not supported", VulkanImage::imageFormatStringVK(m_format).c_str());
             ASSERT(supportFormatInfo._supportSampled, "format is not supported");
         }
         imageUsage |= VK_IMAGE_USAGE_SAMPLED_BIT;
@@ -1054,7 +1054,7 @@ bool VulkanImage::create()
         unsupport |= !supportFormatInfo._supportAttachment;
         if (!supportFormatInfo._supportAttachment)
         {
-            LOG_ERROR("VulkanImage::create, supportFormatInfo._supportAttachment format %s is not supported", ImageFormatStringVK(m_format).c_str());
+            LOG_ERROR("VulkanImage::create, supportFormatInfo._supportAttachment format %s is not supported", VulkanImage::imageFormatStringVK(m_format).c_str());
             ASSERT(supportFormatInfo._supportAttachment, "format is not supported");
         }
 
@@ -1094,7 +1094,7 @@ bool VulkanImage::create()
         unsupport |= !supportFormatInfo._supportStorage;
         if (!supportFormatInfo._supportStorage)
         {
-            LOG_ERROR("VulkanImage::create, supportFormatInfo._supportStorage format %s is not supported", ImageFormatStringVK(m_format).c_str());
+            LOG_ERROR("VulkanImage::create, supportFormatInfo._supportStorage format %s is not supported", VulkanImage::imageFormatStringVK(m_format).c_str());
             ASSERT(supportFormatInfo._supportStorage, "format is not supported");
         }
         imageUsage |= VK_IMAGE_USAGE_STORAGE_BIT;

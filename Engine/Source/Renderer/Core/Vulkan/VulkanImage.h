@@ -33,6 +33,9 @@ namespace vk
         static Image::Subresource makeVulkanImageSubresource(const VulkanImage* image, u32 layer = k_generalLayer, u32 mip = k_allMipmapsLevels);
         static VkImageSubresourceRange makeImageSubresourceRange(const VulkanImage* image, const Image::Subresource& resource);
 
+        static std::string imageFormatStringVK(VkFormat format);
+        static std::string imageTypeStringVK(VkImageType format);
+
         static VkImageAspectFlags getImageAspectFlags(VkFormat format);
         static bool isColorFormat(VkFormat format);
         static bool isDepthStencilFormat(VkFormat format);
@@ -40,9 +43,6 @@ namespace vk
         static bool isASTCFormat(VkFormat format);
         static bool isSRGBFormat(VkFormat format);
         static bool isAttachmentLayout(const VulkanImage* image, u32 layer);
-
-        VulkanImage() = delete;
-        VulkanImage(const VulkanImage&) = delete;
 
         VulkanImage(VulkanMemory::VulkanMemoryAllocator* memory, VkDevice device, VkImageType type, VkFormat format, VkExtent3D dimension, u32 layers, u32 mipsLevel, VkImageTiling tiling, TextureUsageFlags usage, [[maybe_unused]] const std::string& name = "") noexcept;
         VulkanImage(VulkanMemory::VulkanMemoryAllocator* memory, VkDevice device, VkFormat format, VkExtent3D dimension, VkSampleCountFlagBits samples, u32 layers, TextureUsageFlags usage, [[maybe_unused]] const std::string& name = "") noexcept;
@@ -80,6 +80,9 @@ namespace vk
 #endif //DEBUG_OBJECT_MEMORY
 
     private:
+
+        VulkanImage() = delete;
+        VulkanImage(const VulkanImage&) = delete;
 
         static VkImageSubresourceRange makeImageSubresourceRangeWithAspect(const VulkanImage* image, const Image::Subresource& resource, VkImageAspectFlags aspect);
 

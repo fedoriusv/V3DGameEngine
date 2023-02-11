@@ -15,7 +15,7 @@ namespace vk
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
-    * @brief VulkanSemaphore class
+    * @brief VulkanSemaphore class. Render Vulkan side
     */
     class VulkanSemaphore : public VulkanResource
     {
@@ -36,6 +36,9 @@ namespace vk
 
     private:
 
+        VulkanSemaphore(VulkanSemaphore&) = delete;
+        VulkanSemaphore& operator=(const VulkanSemaphore&) = delete;
+
         friend class VulkanSemaphoreManager;
 
         VkSemaphore m_semaphore;
@@ -45,16 +48,14 @@ namespace vk
 #endif
     };
 
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
+
     /**
     * @brief VulkanSemaphoreManager class
     */
     class VulkanSemaphoreManager final
     {
     public:
-
-        VulkanSemaphoreManager() = delete;
-        VulkanSemaphoreManager(const VulkanSemaphoreManager&) = delete;
-        VulkanSemaphoreManager& operator=(const VulkanSemaphoreManager&) = delete;
 
         explicit VulkanSemaphoreManager(VkDevice device) noexcept;
         ~VulkanSemaphoreManager();
@@ -70,6 +71,10 @@ namespace vk
         void deleteSemaphore(VulkanSemaphore* sem);
 
     private:
+
+        VulkanSemaphoreManager() = delete;
+        VulkanSemaphoreManager(const VulkanSemaphoreManager&) = delete;
+        VulkanSemaphoreManager& operator=(const VulkanSemaphoreManager&) = delete;
 
         VkDevice  m_device;
 

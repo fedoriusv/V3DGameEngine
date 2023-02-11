@@ -97,15 +97,15 @@ namespace vk
         explicit VulkanPipelineLayoutManager(VkDevice device) noexcept;
         ~VulkanPipelineLayoutManager();
 
-        VulkanPipelineLayoutManager() = delete;
-        VulkanPipelineLayoutManager(const VulkanPipelineLayoutManager&) = delete;
-
         VulkanPipelineLayout acquirePipelineLayout(const VulkanPipelineLayoutDescription& desc);
         bool removePipelineLayout(const VulkanPipelineLayoutDescription& desc);
 
         void clear();
 
     private:
+
+        VulkanPipelineLayoutManager() = delete;
+        VulkanPipelineLayoutManager(const VulkanPipelineLayoutManager&) = delete;
 
         VkDescriptorSetLayout acquireDescriptorSetLayout(const std::vector<VkDescriptorSetLayoutBinding>& bindings);
 

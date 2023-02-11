@@ -3,8 +3,6 @@
 #include "Common.h"
 
 #ifdef VULKAN_RENDER
-#include "VulkanWrapper.h"
-
 namespace v3d
 {
 namespace renderer
@@ -14,8 +12,6 @@ namespace vk
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     class VulkanCommandBuffer;
-
-    /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
     * @brief VulkanResource class. Vulkan Render side
@@ -32,7 +28,6 @@ namespace vk
         };
 
         VulkanResource() noexcept;
-        VulkanResource(const VulkanResource&) = delete;
         virtual ~VulkanResource();
 
         Status getStatus() const;
@@ -43,6 +38,8 @@ namespace vk
         void captureInsideCommandBuffer(VulkanCommandBuffer* buffer, u64 frame) const;
 
     private:
+
+        VulkanResource(const VulkanResource&) = delete;
 
         std::atomic<Status>     m_status;
         std::atomic<s64>        m_counter;

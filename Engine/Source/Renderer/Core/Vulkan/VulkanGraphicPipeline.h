@@ -71,7 +71,6 @@ namespace vk
 
         std::vector<VkShaderModule> m_modules;
 
-
         VkDevice     m_device;
         VkPipeline   m_pipeline;
         RenderPass*  m_compatibilityRenderPass;

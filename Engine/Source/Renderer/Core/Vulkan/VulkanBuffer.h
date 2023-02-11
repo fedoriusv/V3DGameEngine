@@ -24,9 +24,6 @@ namespace vk
     {
     public:
 
-        VulkanBuffer() = delete;
-        VulkanBuffer(const VulkanBuffer&) = delete;
-
         VulkanBuffer(VulkanMemory::VulkanMemoryAllocator* memory, VkDevice device, Buffer::BufferType type, StreamBufferUsageFlags usageFlag, u64 size, [[maybe_unused]] const std::string& name = "") noexcept;
         ~VulkanBuffer();
 
@@ -45,6 +42,9 @@ namespace vk
 #endif //DEBUG_OBJECT_MEMORY
 
     private:
+
+        VulkanBuffer() = delete;
+        VulkanBuffer(const VulkanBuffer&) = delete;
 
         bool recreate();
         bool isPresentingBufferUsageFlag(StreamBufferUsage flag);

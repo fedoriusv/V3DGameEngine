@@ -35,6 +35,9 @@ namespace vk
 
     private:
 
+        VulkanDescriptorSetPool() = delete;
+        VulkanDescriptorSetPool(const VulkanDescriptorSetPool&) = delete;
+
         bool createDescriptorPool(u32 setsCount, const std::vector<VkDescriptorPoolSize>& sizes);
 
         bool allocateDescriptorSets(std::vector<VkDescriptorSetLayout>& layout, std::vector<VkDescriptorSet>& descriptorSets);
@@ -122,7 +125,6 @@ namespace vk
     {
     public:
 
-        VulkanDescriptorPoolProvider() = delete;
         VulkanDescriptorPoolProvider(VkDevice device, GenericDescriptorPools* strategy) noexcept;
         ~VulkanDescriptorPoolProvider();
 
@@ -133,6 +135,9 @@ namespace vk
         void resetPools();
 
     private:
+
+        VulkanDescriptorPoolProvider() = delete;
+        VulkanDescriptorPoolProvider(const VulkanDescriptorPoolProvider&) = delete;
 
         VkDevice m_device;
         GenericDescriptorPools* const m_descriptorPools;
