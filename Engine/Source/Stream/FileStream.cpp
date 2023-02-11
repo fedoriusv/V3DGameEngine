@@ -320,7 +320,7 @@ u8* FileStream::map(u32 size) const
     ASSERT(size > 0 && FileStream::tell() + size <= FileStream::size(), "Invalid file size");
     if (m_allocator)
     {
-        m_memory = reinterpret_cast<u8*>(m_allocator->getMemory(size));
+        m_memory = reinterpret_cast<u8*>(m_allocator->allocMemory(size));
     }
     else
     {

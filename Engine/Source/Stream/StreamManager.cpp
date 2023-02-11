@@ -7,18 +7,21 @@ namespace v3d
 namespace stream
 {
 
-const u32 k_initialPoolSize = 1024 * 1024 * 8;
-utils::MemoryPool* StreamManager::m_memoryPool = new utils::MemoryPool(k_initialPoolSize, 64, 1024 * 1024 * 8, utils::MemoryPool::getDefaultMemoryPoolAllocator());
+utils::MemoryPool* StreamManager::s_memoryPool = nullptr;
 
 MemoryStream* StreamManager::createMemoryStream(const void* data, const u32 size)
 {
-    return new MemoryStream(data, size, nullptr);//m_memoryPool);
+    if (!s_memoryPool)
+    {
+        s_memoryPool = new utils::MemoryPool(64 * 1024, utils::MemoryPool::getDefaultMemoryAllocator());
+    }
+
+    return new MemoryStream(data, size, s_memoryPool);
 }
 
 const MemoryStream* StreamManager::createMemoryStream(const std::string& string)
 {
-    MemoryStream* memory = StreamManager::createMemoryStream(nullptr, static_cast<u32>(string.length())/* + sizeof(u32)*/);
-    //memory->write(static_cast<u32>(string.length()));
+    MemoryStream* memory = StreamManager::createMemoryStream(nullptr, static_cast<u32>(string.length()));
     memory->write(string.data(), static_cast<u32>(string.length()));
 
     return memory;
@@ -26,7 +29,7 @@ const MemoryStream* StreamManager::createMemoryStream(const std::string& string)
 
 void StreamManager::clearPools()
 {
-    m_memoryPool->clearPools();
+    s_memoryPool->clear();
 }
 
 } //namespace stream

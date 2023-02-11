@@ -604,7 +604,7 @@ u8* MemoryStream::allocate(u32 size)
 
     if (m_allocator)
     {
-        return reinterpret_cast<u8*>(m_allocator->getMemory(m_allocated));
+        return reinterpret_cast<u8*>(m_allocator->allocMemory(m_allocated));
     }
     else
     {
@@ -626,7 +626,7 @@ bool MemoryStream::checkSize(u32 size)
         s32 newAllocated = 2 * (m_pos + size);
         if (m_allocator)
         {
-            m_stream = reinterpret_cast<u8*>(m_allocator->getMemory(newAllocated));
+            m_stream = reinterpret_cast<u8*>(m_allocator->allocMemory(newAllocated));
         }
         else
         {

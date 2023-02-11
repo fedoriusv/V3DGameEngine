@@ -27,7 +27,7 @@ namespace stream
 
     private:
 
-        static utils::MemoryPool* m_memoryPool;
+        static utils::MemoryPool* s_memoryPool;
     };
 
 
