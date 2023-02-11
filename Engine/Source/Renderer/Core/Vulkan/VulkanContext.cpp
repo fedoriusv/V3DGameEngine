@@ -99,6 +99,7 @@ const std::vector<const c8*> k_deviceExtensionsList =
 #if FRAME_PROFILER_ENABLE
 RenderFrameProfiler* g_CPUProfiler = nullptr;
 #endif //FRAME_PROFILER_ENABLE
+
 std::vector<VkDynamicState> VulkanContext::s_dynamicStates =
 {
     VK_DYNAMIC_STATE_VIEWPORT,

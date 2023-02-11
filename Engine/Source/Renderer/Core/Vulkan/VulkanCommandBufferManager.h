@@ -44,7 +44,7 @@ namespace vk
 
         VulkanCommandBuffer* acquireNewCmdBuffer(VulkanCommandBuffer::CommandBufferLevel level);
 
-        bool submit(VulkanCommandBuffer* buffer, std::vector<VulkanSemaphore*>& signalSemaphores);
+        bool submit(VulkanCommandBuffer* buffer, const std::vector<VulkanSemaphore*>& signalSemaphores);
         void updateCommandBuffers();
         void waitCompete();
 

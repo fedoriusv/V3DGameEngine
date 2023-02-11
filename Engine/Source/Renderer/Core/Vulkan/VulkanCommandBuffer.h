@@ -73,7 +73,7 @@ namespace vk
 
         void cmdBeginRenderpass(const VulkanRenderPass* pass, const VulkanFramebuffer* framebuffer, const VkRect2D& area, const std::vector<VkClearValue>& clearValues);
         void cmdEndRenderPass();
-        bool isInsideRenderPass();
+        bool isInsideRenderPass() const;
 
         //dynamic states
         void cmdSetViewport(const std::vector<VkViewport>& viewports);
@@ -126,7 +126,7 @@ namespace vk
         void captureResource(VulkanResource* resource, u64 frame);
         void releaseResources();
 
-        bool isSafeFrame(u64 frame);
+        bool isSafeFrame(u64 frame) const;
 
         friend VulkanResource;
         friend class VulkanCommandBufferManager;

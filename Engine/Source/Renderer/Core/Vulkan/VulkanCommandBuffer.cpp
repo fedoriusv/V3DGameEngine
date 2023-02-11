@@ -143,9 +143,9 @@ bool VulkanCommandBuffer::waitComplete(u64 timeout)
 
 void VulkanCommandBuffer::refreshFenceStatus()
 {
-    if (m_status == CommandBufferStatus::Submit)
+    [[likely]] if (m_status == CommandBufferStatus::Submit)
     {
-        if (m_level == CommandBufferLevel::PrimaryBuffer)
+        [[likely]] if (m_level == CommandBufferLevel::PrimaryBuffer)
         {
             VkResult result = VulkanWrapper::GetFenceStatus(m_device, m_fence);
             ASSERT(m_context, "nullptr");
@@ -223,7 +223,7 @@ void VulkanCommandBuffer::captureResource(VulkanResource* resource, u64 frame)
     auto iter = m_resources.insert(resource);
     if (iter.second)
     {
-        resource->m_counter++;
+        ++resource->m_counter;
         resource->m_cmdBuffers.push_back(this);
         ASSERT(resource->m_cmdBuffers.size() >= 1, "multibuffer capture");
     }
@@ -234,16 +234,14 @@ void VulkanCommandBuffer::captureResource(VulkanResource* resource, u64 frame)
 void VulkanCommandBuffer::releaseResources()
 {
     std::lock_guard lock(m_mutex);
-
     for (auto& res : m_resources)
     {
-        res->m_counter--;
+        --res->m_counter;
         res->m_cmdBuffers.erase(std::remove(res->m_cmdBuffers.begin(), res->m_cmdBuffers.end(), this));
         ASSERT(res->m_counter >= 0, "less 0");
         if (!res->m_counter)
         {
             ASSERT(res->m_cmdBuffers.empty(), "less 0");
-            //res->m_cmdBuffers.clear();
             res->m_status = VulkanResource::Status::Status_Done;
             res->m_frame = 0;
         }
@@ -251,7 +249,7 @@ void VulkanCommandBuffer::releaseResources()
     m_resources.clear();
 }
 
-bool VulkanCommandBuffer::isSafeFrame(u64 frame)
+bool VulkanCommandBuffer::isSafeFrame(u64 frame) const
 {
     ASSERT(m_context, "nullptr");
     static u64 countSwapchains = static_cast<VulkanContext*>(m_context)->getSwapchain()->getSwapchainImageCount();

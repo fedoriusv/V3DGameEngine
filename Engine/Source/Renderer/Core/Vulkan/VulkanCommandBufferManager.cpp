@@ -106,7 +106,7 @@ VulkanCommandBuffer * VulkanCommandBufferManager::acquireNewCmdBuffer(VulkanComm
     return cmdBuffer;
 }
 
-bool VulkanCommandBufferManager::submit(VulkanCommandBuffer* buffer, std::vector<VulkanSemaphore*>& signalSemaphores)
+bool VulkanCommandBufferManager::submit(VulkanCommandBuffer* buffer, const std::vector<VulkanSemaphore*>& signalSemaphores)
 {
     ASSERT(buffer, "buffer is nullptr");
     if (buffer->getStatus() != VulkanCommandBuffer::CommandBufferStatus::End)
