@@ -77,7 +77,7 @@ namespace renderer
 
         std::map<u32, u32> m_shaderParameters[toEnumType(ShaderType::Count)];
 
-        void handleNotify(const utils::Observable* obj) override;
+        void handleNotify(const utils::Observable* object, void* msg) override;
     };
 
 

@@ -89,8 +89,8 @@ namespace renderer
 
     private:
 
-        mutable u32                 _hash;
-        mutable bool                _dirty;
+        mutable u32 _hash;
+        mutable bool _dirty;
 
         void recalculateHash() const;
     };

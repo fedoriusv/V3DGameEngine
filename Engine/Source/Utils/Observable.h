@@ -20,7 +20,7 @@ namespace utils
         Observer() = default;
         virtual ~Observer() = default;
 
-        virtual void handleNotify(const Observable* obj) = 0;
+        virtual void handleNotify(const Observable* object, void* msg = nullptr) = 0;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -35,12 +35,12 @@ namespace utils
         Observable() = default;
         virtual ~Observable() = default;
 
-        void registerNotify(Observer* obj);
+        void registerNotify(Observer* object);
 
-        void unregisterNotify(Observer* obj);
+        void unregisterNotify(Observer* object);
         void unregisterAll();
 
-        void notifyObservers() const;
+        void notifyObservers(void* msg = nullptr) const;
 
     private:
 

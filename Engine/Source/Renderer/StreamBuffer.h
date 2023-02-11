@@ -25,13 +25,20 @@ namespace renderer
     */
     class StreamBuffer : public Object
     {
-    public:
-
-        virtual ~StreamBuffer();
-
     protected:
 
-        StreamBuffer(CommandList& cmdList, StreamBufferUsageFlags usage, [[maybe_unused]] const std::string& name = "");
+        /**
+        * @brief StreamBuffer destructor
+        */
+        virtual ~StreamBuffer();
+
+        /**
+        * @brief StreamBuffer constructor
+        * @param CommandList& cmdList [required]
+        * @param  StreamBufferUsageFlags usage [required]
+        * @param const std::string& name [optional]
+        */
+        StreamBuffer(CommandList& cmdList, StreamBufferUsageFlags usage, [[maybe_unused]] const std::string& name = "") noexcept;
 
         CommandList& m_cmdList;
 
@@ -48,17 +55,28 @@ namespace renderer
     {
     public:
 
+        /**
+        * @brief VertexStreamBuffer destructor
+        */
         ~VertexStreamBuffer();
 
+        /**
+        * @brief update
+        * @param u32 offset [required]
+        * @param u64 size [required] in bytes
+        * @param const u8* data [required]
+        */
         bool update(u32 offset, u64 size, const u8* data);
+
+        /**
+        * @brief read
+        * @param u32 offset [required]
+        * @param u64 size [required] in bytes
+        * @param const u8* data [required]
+        */
         bool read(u32 offset, u64 size, u8* data); //TODO: add callback for async
 
     private:
-
-        VertexStreamBuffer() = delete;
-        VertexStreamBuffer(const VertexStreamBuffer&) = delete;
-
-        void handleNotify(const utils::Observable* ob) override;
 
         /**
         * @brief VertexStreamBuffer constructor. Used to create buffer data objects.
@@ -68,6 +86,11 @@ namespace renderer
         * @param const std::string& name [optional]
         */
         VertexStreamBuffer(CommandList& cmdList, StreamBufferUsageFlags usage, u64 size, const u8* data, [[maybe_unused]] const std::string& name = "") noexcept;
+
+        VertexStreamBuffer() = delete;
+        VertexStreamBuffer(const VertexStreamBuffer&) = delete;
+
+        void handleNotify(const utils::Observable* object, void* msg) override;
 
         u64 m_size;
         void* m_data;
@@ -87,6 +110,9 @@ namespace renderer
     {
     public:
 
+        /**
+        * @brief IndexStreamBuffer destructor
+        */
         ~IndexStreamBuffer();
 
         /**
@@ -103,9 +129,6 @@ namespace renderer
 
     private:
 
-        IndexStreamBuffer() = delete;
-        IndexStreamBuffer(const IndexStreamBuffer&) = delete;
-
         /**
         * @brief IndexStreamBuffer constructor. Used to create buffer index objects.
         * @param StreamBufferUsageFlags usage [required]
@@ -116,7 +139,10 @@ namespace renderer
         */
         IndexStreamBuffer(CommandList& cmdList, StreamBufferUsageFlags usage, StreamIndexBufferType type, u32 count, const u8* data, [[maybe_unused]] const std::string& name = "") noexcept;
 
-        void handleNotify(const utils::Observable* ob) override;
+        IndexStreamBuffer() = delete;
+        IndexStreamBuffer(const IndexStreamBuffer&) = delete;
+
+        void handleNotify(const utils::Observable* object, void* msg) override;
 
         StreamIndexBufferType m_type;
         u32 m_count;

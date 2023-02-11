@@ -60,14 +60,31 @@ namespace renderer
 
     protected:
 
+        /**
+        * @brief Texture constructor. parent class
+        * @param CommandList& cmdList [required]
+        * @param TextureTarget target [required]
+        * @param Format format [required]
+        * @param TextureSamples samples [required]
+        * @param u32 layers [required]
+        * @param cu32 mipmaps [required]
+        * @param TextureUsageFlags usage [required]
+        */
         explicit Texture(CommandList& cmdList, TextureTarget target, Format format, TextureSamples samples, u32 layers, u32 mipmaps, TextureUsageFlags usage) noexcept;
+
+        /**
+        * @brief Texture destructor
+        */
         virtual ~Texture();
+
+        Texture() = delete;
+        Texture(const Texture&) = delete;
 
         Image* getImage() const;
 
         bool isBackbuffer() const;
 
-        void handleNotify(const utils::Observable* ob) override;
+        void handleNotify(const utils::Observable* object, void* msg) override;
         bool isTextureUsageFlagsContains(TextureUsageFlags usage) const;
 
         CommandList&        m_cmdList;
@@ -99,8 +116,9 @@ namespace renderer
     {
     public:
 
-        Texture2D() = delete;
-        Texture2D(const Texture2D&) = delete;
+        /**
+        * @brief Texture2D destructor
+        */
         ~Texture2D();
 
         /**
@@ -142,6 +160,9 @@ namespace renderer
         */
         explicit Texture2D(CommandList& cmdList, TextureUsageFlags usage, Format format, const core::Dimension2D& dimension, TextureSamples samples, [[maybe_unused]] const std::string& name = "") noexcept;
 
+        Texture2D() = delete;
+        Texture2D(const Texture2D&) = delete;
+
         const core::Dimension2D m_dimension;
 
         friend CommandList;
@@ -156,8 +177,9 @@ namespace renderer
     {
     public:
 
-        Texture2DArray() = delete;
-        Texture2DArray(const Texture2DArray&) = delete;
+        /**
+        * @brief Texture2DArray destructor
+        */
         ~Texture2DArray();
 
         /**
@@ -195,6 +217,9 @@ namespace renderer
         */
         explicit Texture2DArray(CommandList& cmdList, TextureUsageFlags usage, Format format, const core::Dimension2D& dimension, u32 layer, u32 mipmaps = 1, const void* data = nullptr, [[maybe_unused]] const std::string& name = "") noexcept;
 
+        Texture2DArray() = delete;
+        Texture2DArray(const Texture2DArray&) = delete;
+
         const core::Dimension2D m_dimension;
 
         friend CommandList;
@@ -209,8 +234,9 @@ namespace renderer
     {
     public:
 
-        TextureCube() = delete;
-        TextureCube(const TextureCube&) = delete;
+        /**
+        * @brief TextureCube destructor
+        */
         ~TextureCube();
 
         /**
@@ -246,9 +272,21 @@ namespace renderer
         */
         explicit TextureCube(CommandList& cmdList, TextureUsageFlags usage, Format format, const core::Dimension2D& dimension, u32 mipmaps = 1, const void* data = nullptr, [[maybe_unused]] const std::string& name = "") noexcept;
 
+        TextureCube() = delete;
+        TextureCube(const TextureCube&) = delete;
+
         const core::Dimension2D m_dimension;
+        friend CommandList;
+    };
 
         friend CommandList;
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    /**
+    * @brief Texture3D class. Game side
+    */
+    class Texture3D : public Texture
+    {
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -260,8 +298,9 @@ namespace renderer
     {
     public:
 
-        Backbuffer() = delete;
-        Backbuffer(const Backbuffer&) = delete;
+        /**
+        * @brief Backbuffer destructor
+        */
         ~Backbuffer();
 
         /**
@@ -271,9 +310,17 @@ namespace renderer
         const core::Dimension2D& getDimension() const;
 
         void read(const core::Dimension2D& offset, const core::Dimension2D& size, void* const data);
+        
+        /**
+        * @brief clear method.
+        * @param const core::Vector4D& color [required]
+        */
         void clear(const core::Vector4D& color);
 
     private:
+
+        Backbuffer() = delete;
+        Backbuffer(const Backbuffer&) = delete;
 
         /**
         * @brief Backbuffer constructor. Used for creating a backbuffer.

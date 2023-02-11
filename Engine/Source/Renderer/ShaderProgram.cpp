@@ -540,10 +540,10 @@ bool ShaderProgram::bindUAV(ShaderType shaderType, u32 index, TextureTarget targ
     return true;
 }
 
-void ShaderProgram::handleNotify(const utils::Observable* obj)
+void ShaderProgram::handleNotify(const utils::Observable* object, void* msg)
 {
     //remove shader from list
-    auto found = std::find(m_programInfo._shaders.begin(), m_programInfo._shaders.end(), static_cast<const renderer::Shader*>(obj));
+    auto found = std::find(m_programInfo._shaders.begin(), m_programInfo._shaders.end(), static_cast<const renderer::Shader*>(object));
     ASSERT(found != m_programInfo._shaders.end(), "nuot found");
     if (found != m_programInfo._shaders.end())
     {

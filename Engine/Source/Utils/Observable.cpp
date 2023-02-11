@@ -5,16 +5,16 @@ namespace v3d
 namespace utils
 {
 
-void Observable::registerNotify(Observer* obj)
+void Observable::registerNotify(Observer* object)
 {
     std::lock_guard<std::recursive_mutex> lock(m_mutex);
-    m_observers.insert(obj);
+    m_observers.insert(object);
 }
 
-void Observable::unregisterNotify(Observer* obj)
+void Observable::unregisterNotify(Observer* object)
 {
     std::lock_guard<std::recursive_mutex> lock(m_mutex);
-    m_observers.erase(obj);
+    m_observers.erase(object);
 }
 
 void Observable::unregisterAll()
@@ -23,12 +23,12 @@ void Observable::unregisterAll()
     m_observers.clear();
 }
 
-void Observable::notifyObservers() const
+void Observable::notifyObservers(void* msg) const
 {
     std::lock_guard<std::recursive_mutex> lock(m_mutex);
     for (auto& observer : m_observers)
     {
-        observer->handleNotify(this);
+        observer->handleNotify(this, msg);
     }
 }
 

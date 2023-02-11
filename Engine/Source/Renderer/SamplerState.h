@@ -27,9 +27,9 @@ namespace renderer
     {
     public:
 
-        SamplerState() = delete;
-        SamplerState(const SamplerState&) = delete;
-
+        /**
+        * @brief SamplerState destructor
+        */
         ~SamplerState();
 
         SamplerFilter         getFiltering() const;
@@ -66,6 +66,9 @@ namespace renderer
         * @param SamplerAnisotropic aniso [required]
         */
         explicit SamplerState(renderer::CommandList& cmdList, SamplerFilter filter, SamplerAnisotropic aniso) noexcept;
+
+        SamplerState() = delete;
+        SamplerState(const SamplerState&) = delete;
 
         CommandList& m_cmdList;
         friend CommandList;

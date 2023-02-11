@@ -76,7 +76,7 @@ public:
         }
     }
 
-    void handleNotify(const utils::Observable* ob) override
+    void handleNotify(const utils::Observable* object, void* msg) override
     {
         LOG_ERROR("UploadTextureCommand image %llx was deleted", m_image);
         m_image = nullptr;
@@ -151,10 +151,10 @@ bool Texture::isTextureUsageFlagsContains(TextureUsageFlags usage) const
     return m_usage & usage;
 }
 
-void Texture::handleNotify(const utils::Observable* ob)
+void Texture::handleNotify(const utils::Observable* object, void* msg)
 {
     LOG_DEBUG("Texture::handleNotify to delete image %xll", this);
-    ASSERT(m_image == ob, "not same");
+    ASSERT(m_image == object, "not same");
 
     m_image = nullptr;
 }
@@ -373,7 +373,7 @@ void Texture2D::clear(const core::Vector4D& color)
                     }
                 }
 
-                void handleNotify(const utils::Observable* ob) override
+                void handleNotify(const utils::Observable* object, void* msg) override
                 {
                     LOG_ERROR("CommandClearColor image %llx was deleted", m_image);
                     m_image = nullptr;
@@ -436,7 +436,7 @@ void Texture2D::clear(f32 depth, u32 stencil)
                     }
                 }
 
-                void handleNotify(const utils::Observable* ob) override
+                void handleNotify(const utils::Observable* object, void* msg) override
                 {
                     LOG_ERROR("CommandClearDepthStencil image %llx was deleted", m_image);
                     m_image = nullptr;
