@@ -1,9 +1,8 @@
 #pragma once
 
+#include "Utils/Observable.h"
 #include "Renderer/Core/Context.h"
 #include "Renderer/Core/RenderFrameProfiler.h"
-#include "Utils/Observable.h"
-#include "Utils/MemoryPool.h"
 
 #ifdef VULKAN_RENDER
 #include "VulkanWrapper.h"
@@ -50,7 +49,7 @@ namespace vk
     /**
     * @brief VulkanContext final class. Vulkan Render side
     */
-    class VulkanContext final : public Context, public utils::Observer
+    class VulkanContext final : public renderer::Context, public utils::Observer
     {
     public:
 

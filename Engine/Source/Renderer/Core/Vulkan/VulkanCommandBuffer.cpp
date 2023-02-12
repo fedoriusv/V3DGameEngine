@@ -2,6 +2,7 @@
 #include "Utils/Logger.h"
 
 #ifdef VULKAN_RENDER
+#include "VulkanResource.h"
 #include "VulkanDebug.h"
 #include "VulkanContext.h"
 #include "VulkanImage.h"

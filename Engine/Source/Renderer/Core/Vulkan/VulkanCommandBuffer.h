@@ -2,22 +2,22 @@
 
 #include "Common.h"
 #include "Renderer/TextureProperties.h"
-#include "Renderer/Core/Buffer.h"
-#include "Renderer/Core/Query.h"
 
 #ifdef VULKAN_RENDER
 #include "VulkanWrapper.h"
-#include "VulkanResource.h"
 #include "VulkanImage.h"
 
 namespace v3d
 {
 namespace renderer
 {
+    class Buffer;
+    class Context;
 namespace vk
 {
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    class VulkanImage;
     class VulkanBuffer;
     class VulkanRenderPass;
     class VulkanFramebuffer;

@@ -3,6 +3,7 @@
 #include "Common.h"
 
 #ifdef VULKAN_RENDER
+
 namespace v3d
 {
 namespace renderer
