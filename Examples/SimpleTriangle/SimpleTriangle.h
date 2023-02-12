@@ -40,13 +40,4 @@ private:
     v3d::renderer::VertexStreamBuffer* m_Geometry;
 
     v3d::scene::CameraArcballHelper* m_Camera;
-
-    v3d::renderer::QueryTimestampRequest* m_QuerytimeStart;
-    v3d::renderer::QueryTimestampRequest* m_QuerytimeEnd;
-    struct FrameTime
-    {
-        v3d::u32 _start;
-        v3d::u32 _end;
-    };
-    FrameTime m_FrameTime;
 };

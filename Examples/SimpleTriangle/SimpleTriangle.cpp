@@ -145,28 +145,15 @@ void SimpleTriangle::init(v3d::renderer::CommandList* commandList, const core::D
 
     m_CommandList->submitCommands(true);
     m_CommandList->flushCommands();
-
-    m_QuerytimeStart = m_CommandList->createObject<renderer::QueryTimestampRequest>([this](u32 value)->void
-        {
-            m_FrameTime._start = value;
-        }, "framestart");
-
-    m_QuerytimeEnd = m_CommandList->createObject<renderer::QueryTimestampRequest>([this](u32 value)->void
-        {
-            m_FrameTime._end = value;
-        }, "frameend");
 }
 
 void SimpleTriangle::update(f32 dt)
 {
     m_Camera->update(dt);
-    LOG_WARNING("GPU Frametime: %.2f ms", (f32)(m_FrameTime._end - m_FrameTime._start)/1000000.f);
 }
 
 void SimpleTriangle::render()
 {
-    m_CommandList->timestampQueryRequest(m_QuerytimeStart);
-
     //update uniforms
     struct UBO
     {
@@ -197,8 +184,6 @@ void SimpleTriangle::render()
 
     m_Program->bindUniformsBuffer<renderer::ShaderType::Vertex>({ "buffer" }, 0, (u32)sizeof(UBO), &ubo2);
     m_CommandList->draw(renderer::StreamBufferDescription(m_Geometry, 0), 0, 3, 1);
-
-    m_CommandList->timestampQueryRequest(m_QuerytimeEnd);
 }
 
 void SimpleTriangle::terminate()
@@ -226,7 +211,7 @@ void SimpleTriangle::terminate()
         delete m_Program;
         m_Program = nullptr;
     }
-
+    
     if (m_Geometry)
     {
         delete m_Geometry;
