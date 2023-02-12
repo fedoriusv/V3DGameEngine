@@ -85,6 +85,7 @@ bool MyApplication::Running(renderer::CommandList& commandList)
     commandList.endFrame();
     commandList.presentFrame();
     
+    commandList.submitCommands();
     commandList.flushCommands();
 
     return true;

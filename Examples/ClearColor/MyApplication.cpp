@@ -45,7 +45,6 @@ MyApplication::MyApplication(int& argc, char** argv)
 
     m_InputEventHandler->connect([this](const TouchInputEvent* event)
     {
-
         if (event->_event == TouchInputEvent::TouchTypeEvent::TouchMotion && event->_motionEvent == TouchInputEvent::TouchMotionDown)
         {
             LOG_DEBUG("TouchInputEvent event");
@@ -60,7 +59,6 @@ MyApplication::MyApplication(int& argc, char** argv)
             f32 b = 1.0f / RAND_MAX * bvalue;
 
             m_ClearColor = {r, g, b, 1.0f };
-
         }
     });
 

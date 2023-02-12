@@ -1,8 +1,8 @@
 #include "MyApplication.h"
 #include "Utils/Logger.h"
 
-#include "Renderer/Context.h"
 #include "Renderer/CommandList.h"
+#include "Renderer/Core/Context.h"
 
 using namespace v3d;
 using namespace v3d::platform;
@@ -13,7 +13,7 @@ MyApplication::MyApplication(int& argc, char** argv)
     : m_Window(nullptr)
     , m_InputEventHandler(nullptr)
 {
-    m_Window = Window::createWindow({ 1024, 768 }, {800, 500}, false, new v3d::event::InputEventReceiver());
+    m_Window = Window::createWindow({ 1024, 768 }, {300, 50}, false, new v3d::event::InputEventReceiver());
     ASSERT(m_Window, "windows is nullptr");
 
 #ifdef PLATFORM_WINDOWS

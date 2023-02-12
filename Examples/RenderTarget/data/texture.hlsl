@@ -8,7 +8,7 @@ struct VS_INPUT
 struct VS_OUTPUT
 {
     float4 Pos          : SV_POSITION;
-    
+    float3 Normal 		: NORMAL;
     float2 UV           : TEXTURE;
 };
 
@@ -26,6 +26,7 @@ VS_OUTPUT main_VS(VS_INPUT input)
     
     VS_OUTPUT output;
     output.UV = input.UV;
+	output.Normal = input.Normal;
     output.Pos = mul(vs_buffer.projectionMatrix, mul(vs_buffer.viewMatrix, position));
 
     return output;
