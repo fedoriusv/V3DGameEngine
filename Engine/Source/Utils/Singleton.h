@@ -49,7 +49,7 @@ namespace utils
     }
 
     template <class T>
-    T *Singleton<T>::getInstance()
+    inline T *Singleton<T>::getInstance()
     {
         std::call_once(Singleton::s_onceFlag, []()
         {
@@ -61,7 +61,7 @@ namespace utils
     }
 
     template <class T>
-    void Singleton<T>::freeInstance()
+    inline void Singleton<T>::freeInstance()
     {
         if (s_instance)
         {
