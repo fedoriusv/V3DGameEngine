@@ -74,6 +74,7 @@ void BasePassDraw::TexturedRender::Render(renderer::CommandList& commandList, co
 BasePassDraw::OcclusionQuery::OcclusionQuery(const renderer::VertexInputAttribDescription& desc, u32 tests) noexcept
     : m_QueryPipeline(nullptr)
     , m_QueryProgram(nullptr)
+    , m_OcclusionQuery(nullptr)
     , m_DescTemp(desc)
 {
     m_QueryResponse.resize(tests, true);
@@ -81,6 +82,7 @@ BasePassDraw::OcclusionQuery::OcclusionQuery(const renderer::VertexInputAttribDe
 
 BasePassDraw::OcclusionQuery::~OcclusionQuery()
 {
+    delete m_OcclusionQuery;
     delete m_QueryPipeline;
     delete m_QueryProgram;
 }

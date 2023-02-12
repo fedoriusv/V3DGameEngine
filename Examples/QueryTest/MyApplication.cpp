@@ -39,7 +39,7 @@ void MyApplication::Initialize()
 bool MyApplication::Running()
 {
     static u64 s_prevTime = 0;
-    u64 currentTime = utils::Timer::getCurrentTime();
+    const u64 currentTime = utils::Timer::getCurrentTime();
 
     const f32 diffTime = static_cast<f32>(std::max<s64>(static_cast<s64>(currentTime) - static_cast<s64>(s_prevTime), 0));
     const f32 deltaTime = diffTime / 1'000.f;
