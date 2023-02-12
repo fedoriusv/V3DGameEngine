@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Common.h"
+#include "Object.h"
 #include "Utils/Observable.h"
 #include "Renderer/QueryRequestProperties.h"
 
@@ -28,6 +29,8 @@ namespace renderer
         QueryType getType() const;
         u32 getSize() const;
         const std::string& getName() const;
+
+        void notifySelf(Object* caller); //TODO move to observer?
 
     protected:
 

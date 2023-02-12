@@ -235,6 +235,7 @@ void VulkanCommandBuffer::captureResource(VulkanResource* resource, u64 frame)
 void VulkanCommandBuffer::releaseResources()
 {
     std::lock_guard lock(m_mutex);
+
     for (auto& res : m_resources)
     {
         --res->m_counter;

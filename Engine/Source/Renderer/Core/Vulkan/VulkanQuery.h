@@ -23,7 +23,7 @@ namespace vk
     /**
     * @brief VulkanQuery class. Vulkan render side
     */
-    class VulkanQuery : public Query
+    class VulkanQuery : public Query, public VulkanResource
     {
     public:
 

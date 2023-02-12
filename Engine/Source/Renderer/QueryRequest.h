@@ -87,6 +87,7 @@ namespace renderer
         * Private method. Use createObject interface inside CommandList class to call.
         *
         * @param std::function<Timestamp> callback [required]
+        * @param u32 size [required]
         * @param const std::string& name [optional]
         */
         QueryTimestampRequest(CommandList& cmdList, std::function<Timestamp> callback, u32 size, [[maybe_unused]] const std::string& name = "") noexcept;
@@ -96,6 +97,7 @@ namespace renderer
         * Private method. Use createObject interface inside CommandList class to call.
         *
         * @param std::function<TimestampTaged> callback [required]
+        * @param u32 size [required]
         * @param const std::string& name [optional]
         */
         QueryTimestampRequest(CommandList& cmdList, std::function<TimestampTaged> callback, u32 size, [[maybe_unused]] const std::string& name = "") noexcept;
@@ -128,8 +130,9 @@ namespace renderer
         */
         using QuerySamplesTaged = void(const std::vector<u32>& samples, const std::vector<std::string>& tags);
 
-        QueryOcclusionRequest() = delete;
-        QueryOcclusionRequest(QueryOcclusionRequest&) = delete;
+        /**
+        * @brief QueryOcclusionRequest destructor.
+        */
         ~QueryOcclusionRequest() = default;
 
         /**
@@ -148,18 +151,25 @@ namespace renderer
         * Private method. Use createObject interface inside CommandList class to call.
         *
         * @param std::function<QuerySamples> callback [required]
+        * @param u32 size [required]
+        * @param bool binaryOcclusion [optionl]
         * @param const std::string& name [optional]
         */
-        QueryOcclusionRequest(CommandList& cmdList, std::function<QuerySamples> callback, u32 size, [[maybe_unused]] const std::string& name = "") noexcept;
+        QueryOcclusionRequest(CommandList& cmdList, std::function<QuerySamples> callback, u32 size, bool binaryOcclusion = false, [[maybe_unused]] const std::string& name = "") noexcept;
 
         /**
         * @brief QueryOcclusionRequest constructor.
         * Private method. Use createObject interface inside CommandList class to call.
         *
         * @param std::function<QuerySamplesTaged> callback [required]
+        * @param u32 size [required]
+        * @param bool binaryOcclusion [optionl]
         * @param const std::string& name [optional]
         */
-        QueryOcclusionRequest(CommandList& cmdList, std::function<QuerySamplesTaged> callback, u32 size, [[maybe_unused]] const std::string& name = "") noexcept;
+        QueryOcclusionRequest(CommandList& cmdList, std::function<QuerySamplesTaged> callback, u32 size, bool binaryOcclusion = false, [[maybe_unused]] const std::string& name = "") noexcept;
+
+        QueryOcclusionRequest() = delete;
+        QueryOcclusionRequest(QueryOcclusionRequest&) = delete;
 
         friend CommandList;
 
@@ -170,46 +180,11 @@ namespace renderer
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
-    * @brief QueryBinaryOcclusionRequest class. Game side
+    * @brief QueryPipelineStatisticRequest class. Game side
     */
-    class QueryBinaryOcclusionRequest : public QueryRequest
+    class QueryPipelineStatisticRequest : public QueryRequest
     {
-    public:
-
-        /**
-        * @brief QueryBinarySample signature in passsed of sample
-        */
-        using QueryBinarySample = void(bool sampled, u32 id, const std::string& tag);
-
-        QueryBinaryOcclusionRequest() = delete;
-        QueryBinaryOcclusionRequest(QueryBinaryOcclusionRequest&) = delete;
-        ~QueryBinaryOcclusionRequest() = default;
-
-    private:
-
-        /**
-        * @brief QueryBinaryOcclusionRequest constructor.
-        * Private method. Use createObject interface inside CommandList class to call.
-        *
-        * @param std::function<QueryBinarySample> callback [required]
-        * @param const std::string& name [optional]
-        */
-        QueryBinaryOcclusionRequest(CommandList& cmdList, std::function<QueryBinarySample> callback, [[maybe_unused]] const std::string& name = "") noexcept;
-
-        friend CommandList;
     };
-
-    /////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    ///**
-    //* @brief QueryPipelineStatisticRequest class. Game side
-    //*/
-    //class QueryPipelineStatisticRequest : public QueryRequest
-    //{
-    //public:
-
-    //    QueryPipelineStatisticRequest();
-    //};
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 

@@ -14,6 +14,7 @@ namespace vk
 {
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    class VulkanQuery;
     class VulkanQueryPoolManager;
     class VulkanRenderQueryState;
     class VulkanRenderQueryBatch;
@@ -75,6 +76,8 @@ namespace vk
 
         void updateRenderQueries(bool wait = false);
 
+        void markToDelete(VulkanQuery* query);
+
     private:
 
         VulkanQueryPoolManager() = delete;
@@ -91,6 +94,7 @@ namespace vk
         } m_pools[toEnumType(QueryType::Count)];
 
         std::map<VulkanQueryPool*, VulkanRenderQueryBatch*> m_batchQuery;
+        std::vector<VulkanQuery*> m_markedToDelete;
 
         VkDevice m_device;
         const u32 k_poolSize;

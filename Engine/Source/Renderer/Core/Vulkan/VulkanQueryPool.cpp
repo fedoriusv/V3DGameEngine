@@ -181,6 +181,8 @@ void VulkanQueryPoolManager::clear()
         }
         pools._freeQueryPools.clear();
     }
+
+    m_markedToDelete.clear();
 }
 
 void VulkanQueryPoolManager::updateRenderQueries(bool wait)
@@ -219,17 +221,30 @@ void VulkanQueryPoolManager::updateRenderQueries(bool wait)
                         LOG_WARNING("VulkanQueryPoolManager::updateRenderQueries: Some indices are not exectuted. For Query %s", renderQuery._query->getName().c_str());
                     }
 #endif //VULKAN_DEBUG
+                    auto deletedQuery = std::find(m_markedToDelete.begin(), m_markedToDelete.end(), renderQuery._query);
+                    if (deletedQuery != m_markedToDelete.end())
+                    {
+                        //Skip removed query
+                        isFree = true;
+                        continue;
+                    }
+
                     VkResult vkResult = VulkanWrapper::GetQueryPoolResults(m_device, pool->getHandle(), renderQuery._offset, renderQuery._count, renderQuery._count * sizeof(u32), renderQuery._query->m_data, sizeof(u32), flags);
                     if (vkResult == VK_SUCCESS)
                     {
                         renderQuery._query->dispatch(QueryResult::Success);
                         isFree = true;
                     }
-                    else
+                    else if (vkResult == VK_NOT_READY)
                     {
-                        //Pool is not ready yet. skip
+                        //Pool is not ready yet. skip for the next time
                         isFree = false;
                         continue;
+                    }
+                    else
+                    {
+                        LOG_WARNING("VulkanQueryPoolManager::updateRenderQueries: vkGetQueryPoolResults result: %s", ErrorString(vkResult).c_str());
+                        ASSERT(false, "vkGetQueryPoolResults: unhandled behavior");
                     }
                 }
 
@@ -259,6 +274,11 @@ VulkanQueryPool* VulkanQueryPoolManager::getQueryPool(QueryType type, u32 count)
     }
 
     return newPool;
+}
+
+void VulkanQueryPoolManager::markToDelete(VulkanQuery* query)
+{
+    m_markedToDelete.push_back(query);
 }
 
 } //namespace vk

@@ -41,5 +41,10 @@ void Query::dispatch(QueryResult result) const
     }
 }
 
+void Query::notifySelf(Object* caller)
+{
+    m_callback = nullptr;
+}
+
 } //namespace renderer
 } //namespace v3d

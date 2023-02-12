@@ -1050,6 +1050,8 @@ void VulkanContext::beginQuery(const Query* query, u32 id, const std::string& ta
 
     VulkanCommandBuffer* drawBuffer = m_currentBufferState.acquireAndStartCommandBuffer(CommandTargetType::CmdDrawBuffer);
     drawBuffer->cmdBeginQuery(renderQuery->_pool, renderQuery->_offset + id);
+
+    vkQuery->captureInsideCommandBuffer(drawBuffer, 0);
 }
 
 void VulkanContext::endQuery(const Query* query, u32 id)
@@ -1067,6 +1069,8 @@ void VulkanContext::endQuery(const Query* query, u32 id)
 
     VulkanCommandBuffer* drawBuffer = m_currentBufferState.acquireAndStartCommandBuffer(CommandTargetType::CmdDrawBuffer);
     drawBuffer->cmdEndQuery(renderQuery->_pool, renderQuery->_offset + id);
+
+    vkQuery->captureInsideCommandBuffer(drawBuffer, 0);
 }
 
 void VulkanContext::timestampQuery(const Query* query, u32 id, const std::string& tag)
@@ -1084,6 +1088,8 @@ void VulkanContext::timestampQuery(const Query* query, u32 id, const std::string
 
     VulkanCommandBuffer* drawBuffer = m_currentBufferState.acquireAndStartCommandBuffer(CommandTargetType::CmdDrawBuffer);
     drawBuffer->cmdWriteTimestamp(renderQuery->_pool, renderQuery->_offset + id, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT);
+
+    vkQuery->captureInsideCommandBuffer(drawBuffer, 0);
 }
 
 void VulkanContext::clearBackbuffer(const core::Vector4D& color)
@@ -1359,23 +1365,23 @@ void VulkanContext::removeQuery(Query* query)
     RenderFrameProfiler::StackProfiler stackProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::RemoveResources);
 #endif //FRAME_PROFILER_ENABLE
 
-    //ASSERT(query, "nullptr");
-    //VulkanQuery* vkQuery = static_cast<VulkanQuery*>(query);
-    //vkQuery->m_callback = nullptr;
+    ASSERT(query, "nullptr");
+    VulkanQuery* vkQuery = static_cast<VulkanQuery*>(query);
+    if (vkQuery->isCaptured())
+    {
+        m_renderQueryPoolManager->markToDelete(vkQuery);
 
-    //if (vkQuery->isCaptured())
-    //{
-    //    m_resourceDeleter.addResourceToDelete(vkQuery, [this, vkQuery](VulkanResource* resource) -> void
-    //        {
-    //            vkQuery->notifyObservers();
-    //            delete vkQuery;
-    //        });
-    //}
-    //else
-    //{
-    //    vkQuery->notifyObservers();
-    //    delete vkQuery;
-    //}
+        m_resourceDeleter.addResourceToDelete(vkQuery, [this, vkQuery](VulkanResource* resource) -> void
+            {
+                vkQuery->notifyObservers();
+                delete vkQuery;
+            });
+    }
+    else
+    {
+        vkQuery->notifyObservers();
+        delete vkQuery;
+    }
 }
 
 void VulkanContext::invalidateRenderTarget()

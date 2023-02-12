@@ -10,7 +10,7 @@ namespace renderer
 {
 
     /*CommandBeginQuery*/
-    class CommandBeginQuery final : public Command
+    class CommandBeginQuery final : public Command, utils::Observer
     {
     public:
         CommandBeginQuery(CommandBeginQuery&) = delete;
@@ -39,13 +39,19 @@ namespace renderer
             cmdList.getContext()->beginQuery(m_query, m_id, m_tag);
         }
 
+        void handleNotify(const utils::Observable* object, void* msg) override
+        {
+            LOG_ERROR("CommandTimestampQuery query %llx was deleted", m_query);
+            m_query = nullptr;
+        }
+
         Query* m_query;
         u32 m_id;
         std::string m_tag;
     };
 
     /*CommandEndQuery*/
-    class CommandEndQuery final : public Command
+    class CommandEndQuery final : public Command, utils::Observer
     {
     public:
         CommandEndQuery(CommandEndQuery&) = delete;
@@ -73,6 +79,12 @@ namespace renderer
             cmdList.getContext()->endQuery(m_query, m_id);
         }
 
+        void handleNotify(const utils::Observable* object, void* msg) override
+        {
+            LOG_ERROR("CommandTimestampQuery query %llx was deleted", m_query);
+            m_query = nullptr;
+        }
+
         Query* m_query;
         u32 m_id;
         std::string m_tag;
@@ -92,6 +104,7 @@ QueryRequest::~QueryRequest()
 {
     LOG_DEBUG("QueryRequest::~QueryRequest destructor %llx", this);
     ASSERT(m_query, "query nullptr");
+    m_query->notifySelf(this);
     m_query->unregisterNotify(this);
 
     if (m_cmdList.isImmediate())
@@ -247,8 +260,8 @@ void QueryTimestampRequest::timestampQuery(u32 id, const std::string& tag)
 }
 
 
-QueryOcclusionRequest::QueryOcclusionRequest(CommandList& cmdList, std::function<QuerySamples> callback, u32 size, const std::string& name) noexcept
-    : QueryRequest(cmdList, QueryType::Occlusion, name)
+QueryOcclusionRequest::QueryOcclusionRequest(CommandList& cmdList, std::function<QuerySamples> callback, u32 size, bool binaryOcclusion, const std::string& name) noexcept
+    : QueryRequest(cmdList, binaryOcclusion ? QueryType::BinaryOcclusion : QueryType::Occlusion, name)
 {
     m_query = m_cmdList.getContext()->createQuery(m_type, size, [this, &cmdList, callback](QueryResult result, u32 size, const void* data) -> void
         {
@@ -269,8 +282,8 @@ QueryOcclusionRequest::QueryOcclusionRequest(CommandList& cmdList, std::function
     m_result.resize(size);
 }
 
-QueryOcclusionRequest::QueryOcclusionRequest(CommandList& cmdList, std::function<QuerySamplesTaged> callback, u32 size, const std::string& name) noexcept
-    : QueryRequest(cmdList, QueryType::Occlusion, name)
+QueryOcclusionRequest::QueryOcclusionRequest(CommandList& cmdList, std::function<QuerySamplesTaged> callback, u32 size, bool binaryOcclusion, const std::string& name) noexcept
+    : QueryRequest(cmdList, binaryOcclusion ? QueryType::BinaryOcclusion : QueryType::Occlusion, name)
 {
     m_query = m_cmdList.getContext()->createQuery(m_type, size, [this, &cmdList, callback](QueryResult result, u32 size, const void* data) -> void
         {
@@ -320,24 +333,6 @@ void QueryOcclusionRequest::endQuery(u32 id)
     {
         m_cmdList.pushCommand(new CommandEndQuery(m_query, id));
     }
-}
-
-QueryBinaryOcclusionRequest::QueryBinaryOcclusionRequest(CommandList& cmdList, std::function<QueryBinarySample> callback, const std::string& name) noexcept
-    : QueryRequest(cmdList, QueryType::BinaryOcclusion, name)
-{
-    //m_query = m_cmdList.getContext()->createQuery(m_type, 0, [&cmdList, callback](QueryResult result, u32 size, const void* data, u32 id, const std::string& tag) -> void
-    //    {
-    //        if (result == QueryResult::Success && data)
-    //        {
-    //            bool sampled = *reinterpret_cast<const bool*>(data);
-    //            cmdList.pushReadbackCall(nullptr, [callback, sampled, id, tag](Object* caller)
-    //                {
-    //                    callback(sampled, id, tag);
-    //                });
-    //        }
-    //    }, name);
-    //ASSERT(m_query, "m_query is nullptr");
-    //m_query->registerNotify(this);
 }
 
 } //namespace renderer
