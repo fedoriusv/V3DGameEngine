@@ -222,7 +222,7 @@ void VulkanCommandBuffer::captureResource(VulkanResource* resource, u64 frame)
 
     m_capturedFrameIndex = (frame == 0) ? m_context->getCurrentFrameIndex() : frame;
     auto iter = m_resources.insert(resource);
-     if (iter.second)
+    if (iter.second)
     {
         ++resource->m_counter;
         resource->m_cmdBuffers.push_back(this);
@@ -512,16 +512,16 @@ void VulkanCommandBuffer::cmdResetQueryPool(VulkanQueryPool* pool)
     pool->captureInsideCommandBuffer(this, 0);
 }
 
-void VulkanCommandBuffer::cmdBindVertexBuffers(u32 firstBinding, u32 countBindinng, const std::vector<Buffer*>& buffers, const std::vector<u64>& offests)
+void VulkanCommandBuffer::cmdBindVertexBuffers(u32 firstBinding, u32 countBinding, const std::vector<Buffer*>& buffers, const std::vector<u64>& offests)
 {
     ASSERT(m_status == CommandBufferStatus::Begin, "not started");
 
-    std::vector<VkBuffer> vkBuffers;
-    vkBuffers.reserve(buffers.size());
-    for (auto& buffer : buffers)
+    std::array<VkBuffer, k_maxVertexInputBindings> vkBuffers;
+    ASSERT(countBinding < k_maxVertexInputBindings, "range out");
+    for (u32 index = 0; index < buffers.size(); ++index)
     {
-        VulkanBuffer* vkBuffer = static_cast<VulkanBuffer*>(buffer);
-        vkBuffers.push_back(vkBuffer->getHandle());
+        VulkanBuffer* vkBuffer = static_cast<VulkanBuffer*>(buffers[index]);
+        vkBuffers[index] = vkBuffer->getHandle();
 
         vkBuffer->captureInsideCommandBuffer(this, 0);
     }
@@ -529,7 +529,7 @@ void VulkanCommandBuffer::cmdBindVertexBuffers(u32 firstBinding, u32 countBindin
     if (m_level == CommandBufferLevel::PrimaryBuffer)
     {
         static_assert(sizeof(VkDeviceSize) == sizeof(u64));
-        VulkanWrapper::CmdBindVertexBuffers(m_commands, firstBinding, countBindinng, vkBuffers.data(), (const VkDeviceSize*)offests.data());
+        VulkanWrapper::CmdBindVertexBuffers(m_commands, firstBinding, countBinding, vkBuffers.data(), (const VkDeviceSize*)offests.data());
     }
     else
     {
