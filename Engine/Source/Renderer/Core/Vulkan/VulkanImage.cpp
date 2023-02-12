@@ -1135,7 +1135,7 @@ bool VulkanImage::create()
     imageCreateInfo.initialLayout = m_layout.front();
 
 #if VULKAN_DEBUG
-    LOG_DEBUG("vkCreateImage: [Type %s][Size %u : %u : %u [%u]]; flags %u; usage %u; format %s", ImageTypeStringVK(m_type).c_str(), m_dimension.width, m_dimension.height, m_dimension.depth, m_layerLevels, imageFlags, imageUsage, ImageFormatStringVK(m_format).c_str());
+    LOG_DEBUG("vkCreateImage: [Type %s][Size %u : %u : %u [%u]]; flags %u; usage %u; format %s", VulkanImage::imageTypeStringVK(m_type).c_str(), m_dimension.width, m_dimension.height, m_dimension.depth, m_layerLevels, imageFlags, imageUsage, VulkanImage::imageFormatStringVK(m_format).c_str());
 #endif
     VkResult result = VulkanWrapper::CreateImage(m_device, &imageCreateInfo, VULKAN_ALLOCATOR, &m_image);
     if (result != VK_SUCCESS)
