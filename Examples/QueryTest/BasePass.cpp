@@ -35,7 +35,7 @@ void BasePassDraw::TexturedRender::Init(renderer::CommandList& commandList, cons
     m_Pipeline->setCullMode(renderer::CullMode::CullMode_Back);
     m_Pipeline->setPolygonMode(renderer::PolygonMode::PolygonMode_Fill);
     m_Pipeline->setColorMask(renderer::ColorMask::ColorMask_All);
-    m_Pipeline->setDepthCompareOp(renderer::CompareOperation::CompareOp_Equal);
+    m_Pipeline->setDepthCompareOp(renderer::CompareOperation::CompareOp_GreaterOrEqual);
     m_Pipeline->setDepthWrite(true);
     m_Pipeline->setDepthTest(true);
 };
@@ -89,26 +89,19 @@ BasePassDraw::OcclusionQuery::~OcclusionQuery()
 
 void BasePassDraw::OcclusionQuery::Init(renderer::CommandList& commandList, const renderer::RenderTargetState* renderTaget)
 {
-    //const renderer::Shader* shader = resource::ResourceLoaderManager::getInstance()->loadShader<renderer::Shader, resource::ShaderSourceFileLoader>(commandList.getContext(), 
-    //    renderer::ShaderType::Vertex, "query.hlsl", "main_VS", {}, resource::ShaderSource_UseDXCompiler);
+    const renderer::Shader* shader = resource::ResourceLoaderManager::getInstance()->loadShader<renderer::Shader, resource::ShaderSourceFileLoader>(commandList.getContext(), 
+        renderer::ShaderType::Vertex, "query.hlsl", "main_VS", {}, resource::ShaderSource_UseDXCompiler);
 
-    std::vector<const renderer::Shader*> shaders = resource::ResourceLoaderManager::getInstance()->loadHLSLShader<renderer::Shader, resource::ShaderSourceFileLoader>(commandList.getContext(), "query.hlsl",
-        {
-            {"main_VS", renderer::ShaderType::Vertex },
-            {"main_FS", renderer::ShaderType::Fragment }
-        }, {}, resource::ShaderSource_UseDXCompiler);
-
-    m_QueryProgram = commandList.createObject<renderer::ShaderProgram>(shaders);
+    m_QueryProgram = commandList.createObject<renderer::ShaderProgram>(shader);
     m_QueryPipeline = commandList.createObject<renderer::GraphicsPipelineState>(m_DescTemp, m_QueryProgram, renderTaget, "QueryPipeline");
     m_QueryPipeline->setPrimitiveTopology(renderer::PrimitiveTopology::PrimitiveTopology_TriangleList);
     m_QueryPipeline->setFrontFace(renderer::FrontFace::FrontFace_Clockwise);
     m_QueryPipeline->setCullMode(renderer::CullMode::CullMode_Back);
     m_QueryPipeline->setPolygonMode(renderer::PolygonMode::PolygonMode_Fill);
     m_QueryPipeline->setColorMask(renderer::ColorMask::ColorMask_None);
-    m_QueryPipeline->setDepthCompareOp(renderer::CompareOperation::CompareOp_Less);
+    m_QueryPipeline->setDepthCompareOp(renderer::CompareOperation::CompareOp_GreaterOrEqual);
     m_QueryPipeline->setDepthWrite(true);
     m_QueryPipeline->setDepthTest(true);
-    //TODO disable pixelshader
 
     m_OcclusionQuery = commandList.createObject<renderer::QueryOcclusionRequest>([this](const std::vector<u32>& samples, const std::vector<std::string>& tags)-> void
         {
@@ -122,8 +115,6 @@ void BasePassDraw::OcclusionQuery::Init(renderer::CommandList& commandList, cons
 
 void BasePassDraw::OcclusionQuery::Render(renderer::CommandList& commandList, const ProgramParams& params, const MeshInfo* meshData)
 {
-    commandList.setPipelineState(m_QueryPipeline);
-
     m_QueryProgram->bindUniformsBuffer<renderer::ShaderType::Vertex>({ "vs_buffer" }, 0, (u32)sizeof(ProgramParams::UBO), &params._ConstantBuffer);
 
     commandList.drawIndexed(meshData->_BufferDescription, meshData->_DrawProperties._start, meshData->_DrawProperties._count, meshData->_DrawProperties._countInstance);
@@ -134,6 +125,8 @@ void BasePassDraw::OcclusionQuery::DrawOcclusionTest(renderer::CommandList& comm
     drawList._Profiler->start("SceneLoop.BasePassDraw.DrawOcclusionTest");
     //drawList TODO get AABB
     m_AABBList._DrawState = drawList._DrawState;
+
+    commandList.setPipelineState(m_QueryPipeline);
 
     drawList._TimeStampQuery->timestampQuery(2);
     for (u32 i = 0; i < m_AABBList._DrawState.size(); ++i)
@@ -210,7 +203,7 @@ void BasePassDraw::Init(renderer::CommandList& cmdList, const core::Dimension2D&
         });
     m_RenderTarget->setDepthStencilTexture(m_DepthAttachment,
         {
-            renderer::RenderTargetLoadOp::LoadOp_Clear, renderer::RenderTargetStoreOp::StoreOp_DontCare, 1.0f
+            renderer::RenderTargetLoadOp::LoadOp_Clear, renderer::RenderTargetStoreOp::StoreOp_DontCare, 0.0f
         },
         {
             renderer::RenderTargetLoadOp::LoadOp_DontCare, renderer::RenderTargetStoreOp::StoreOp_DontCare, 0U
@@ -238,10 +231,11 @@ void BasePassDraw::Draw(renderer::CommandList& cmdList, DrawLists& drawList)
     cmdList.setRenderTarget(m_RenderTarget);
 
 
-    m_QueryTest->DrawOcclusionTest(cmdList, drawList);
-
     DrawLists visibleDrawList;
+    m_QueryTest->DrawOcclusionTest(cmdList, drawList);
     m_QueryTest->UpdateVisibleList(drawList, visibleDrawList);
+
+    m_RenderTarget->clearAttachments(renderer::TargetRegion(m_RenderTarget->getDimension().width, m_RenderTarget->getDimension().height), core::Vector4D(0.0f), 0.f);
 
     drawList._TimeStampQuery->timestampQuery(4);
     RenderPolicy* render = drawList._Render;

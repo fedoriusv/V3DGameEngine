@@ -27,7 +27,7 @@ Scene::Scene(renderer::CommandList& cmdList, const core::Dimension2D& size) noex
     : m_CommandList(cmdList)
 {
     m_FPSCameraHelper = new scene::CameraFPSHelper(new scene::Camera(core::Vector3D(0.0f, 0.0f, 0.0f), core::Vector3D(0.0f, 1.0f, 0.0f)), core::Vector3D(0.0f, 0.0f, -30.0f));
-    m_FPSCameraHelper->setPerspective(60.0f, size, 0.001f, 256.f);
+    m_FPSCameraHelper->setPerspective(60.0f, size, 0.001f, 56.f);
 
     m_BasePassDraw = new BasePassDraw();
     m_BasePassDraw->Init(m_CommandList, size);
@@ -35,7 +35,7 @@ Scene::Scene(renderer::CommandList& cmdList, const core::Dimension2D& size) noex
     m_SwapchainPassDraw = new OffscreenPassDraw(true);
     m_SwapchainPassDraw->Init(m_CommandList, size);
 
-    resource::ResourceLoaderManager::getInstance()->addPath("examples/querytest/resources/");
+    resource::ResourceLoaderManager::getLazyInstance()->addPath("examples/querytest/resources/");
     LoadScene();
 
     m_CommandList.submitCommands(true);
@@ -45,21 +45,18 @@ Scene::Scene(renderer::CommandList& cmdList, const core::Dimension2D& size) noex
 void Scene::LoadScene()
 {
     {
-        scene::Model* mesh = resource::ResourceLoaderManager::getInstance()->load<scene::Model, resource::ModelFileLoader>("cube.dae");
+        scene::Model* mesh = resource::ResourceLoaderManager::getLazyInstance()->load<scene::Model, resource::ModelFileLoader>("cube.dae");
         ASSERT(mesh, "not found");
         scene::Geometry* meshGeometry = mesh->getMeshByIndex(0);
 
         {
             renderer::QueryTimestampRequest* timeStampQuery = m_CommandList.createObject<renderer::QueryTimestampRequest>([this](const std::vector<u32>& timestamp, const std::vector<std::string>& tags)-> void
                 {
-                    m_Measurements._QueryTimings[0]._BeginTime = timestamp[0];
-                    m_Measurements._QueryTimings[0]._EndTime = timestamp[1];
-                    m_Measurements._QueryTimings[1]._BeginTime = timestamp[2];
-                    m_Measurements._QueryTimings[1]._EndTime = timestamp[3];
-                    m_Measurements._QueryTimings[2]._BeginTime = timestamp[4];
-                    m_Measurements._QueryTimings[2]._EndTime = timestamp[5];
-                    m_Measurements._QueryTimings[3]._BeginTime = timestamp[6];
-                    m_Measurements._QueryTimings[3]._EndTime = timestamp[7];
+                    for (u32 i = 0; i < m_Measurements._QueryTimings.size(); ++i)
+                    {
+                        m_Measurements._QueryTimings[i]._BeginTime = timestamp[i * 2];
+                        m_Measurements._QueryTimings[i]._EndTime = timestamp[i * 2 + 1];
+                    }
                 }, m_Measurements._QueryTimings.size() * 2);
             m_Resources.push_back(timeStampQuery);
 

@@ -7,7 +7,7 @@
 using namespace v3d;
 
 MyApplication::MyApplication(int& argc, char** argv)
-    : m_Window(platform::Window::createWindow({ 1280, 720 }, { 400, 200 }, false, new event::InputEventReceiver()))
+    : m_Window(platform::Window::createWindow({ 1280, 720 }, { 1000, 400 }, false, new event::InputEventReceiver()))
     , m_InputEventHandler(new event::InputEventHandler())
 
     , m_Context(nullptr)
