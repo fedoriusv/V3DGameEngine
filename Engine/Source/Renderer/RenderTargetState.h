@@ -296,6 +296,16 @@ namespace renderer
         */
         bool hasDepthStencilTexture() const;
 
+        /**
+        * @brief clearAttachments method. Used for clearing render tagets inside renderpass
+        *
+        * @param const TargetRegion& region [required]
+        * @param const core::Vector4D& clearColor [required]
+        * @param f32 clearDepth [optional]
+        * @param u32 clearStencil [optional]
+        */
+        void clearAttachments(const TargetRegion& region, const core::Vector4D& clearColor, f32 clearDepth = 0.f, u32 clearStencil = 0.f);
+
     private:
 
         /**

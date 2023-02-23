@@ -289,19 +289,81 @@ bool RenderTargetState::setDepthStencilTexture_Impl(Texture* depthStencilTexture
     return false;
 }
 
-const core::Dimension2D& RenderTargetState::getDimension() const
+void RenderTargetState::clearAttachments(const TargetRegion& region, const core::Vector4D& clearColor, f32 clearDepth, u32 clearStencil)
 {
-    return m_size;
-}
+    std::vector<const renderer::Image*> attachImage;
+    attachImage.reserve(static_cast<u64>(getColorTextureCount()) + (hasDepthStencilTexture() ? 1 : 0));
 
-u32 RenderTargetState::getColorTextureCount() const
-{
-    return static_cast<u32>(m_colorTextures.size());
-}
+    for (u32 index = 0; index < m_colorTextures.size(); ++index)
+    {
+        auto attachment = m_colorTextures.find(index);
+        if (attachment == m_colorTextures.cend())
+        {
+            continue;
+        }
 
-bool RenderTargetState::hasDepthStencilTexture() const
-{
-    return std::get<0>(m_depthStencilTexture) != nullptr;
+        if (std::get<1>(attachment->second)._backbuffer)
+        {
+            attachImage.push_back(nullptr);
+        }
+        else
+        {
+            attachImage.push_back(std::get<0>(attachment->second)->getImage());
+        }
+    }
+
+    if (hasDepthStencilTexture())
+    {
+        attachImage.push_back(std::get<0>(m_depthStencilTexture)->getImage());
+    }
+
+    std::vector<core::Vector4D> clearColors(attachImage.size(), clearColor);
+    Framebuffer::ClearValueInfo clearInfo = { region, clearColors, clearDepth, clearStencil };
+
+    if (m_cmdList.isImmediate())
+    {
+        m_cmdList.getContext()->clearRenderTarget(attachImage, clearInfo);
+    }
+    else
+    {
+        class CommandClearRenderTarget final : public Command
+        {
+        public:
+            CommandClearRenderTarget(const std::vector<const renderer::Image*>& images, const Framebuffer::ClearValueInfo& clearInfo) noexcept
+                : m_images(images)
+                , m_clearInfo(clearInfo)
+            {
+#if DEBUG_COMMAND_LIST
+                LOG_DEBUG("CommandClearRenderTarget constructor");
+#endif //DEBUG_COMMAND_LIST
+            };
+
+            CommandClearRenderTarget() = delete;
+            CommandClearRenderTarget(CommandClearRenderTarget&) = delete;
+
+            ~CommandClearRenderTarget()
+            {
+#if DEBUG_COMMAND_LIST
+                LOG_DEBUG("CommandClearRenderTarget destructor");
+#endif //DEBUG_COMMAND_LIST
+            };
+
+            void execute(const CommandList& cmdList)
+            {
+#if DEBUG_COMMAND_LIST
+                LOG_DEBUG("CommandClearRenderTarget execute");
+#endif //DEBUG_COMMAND_LIST
+                cmdList.getContext()->clearRenderTarget(m_images, m_clearInfo);
+            }
+
+        private:
+
+            std::vector<const renderer::Image*> m_images;
+            Framebuffer::ClearValueInfo m_clearInfo;
+        };
+
+        m_cmdList.pushCommand(new CommandClearRenderTarget(attachImage, clearInfo));
+    }
 }
 
 void RenderTargetState::extractRenderTargetInfo(RenderPassDescription& renderpassDesc, std::vector<Image*>& images, Framebuffer::ClearValueInfo& clearValuesInfo) const
