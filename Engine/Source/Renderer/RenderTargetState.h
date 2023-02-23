@@ -32,8 +32,9 @@ namespace renderer
     {
     public:
 
-        RenderTargetState() = delete;
-        RenderTargetState(const RenderTargetState&) = delete;
+        /**
+        * @brief RenderTargetState desctructor
+        */
         ~RenderTargetState();
 
         /**
@@ -72,7 +73,7 @@ namespace renderer
             {
             }
 
-            DepthOpState(RenderTargetLoadOp loadOp, RenderTargetStoreOp storeOp, f32 clearDepth = 1.0f)
+            DepthOpState(RenderTargetLoadOp loadOp, RenderTargetStoreOp storeOp, f32 clearDepth = 0.f)
                 : _loadOp(loadOp)
                 , _storeOp(storeOp)
                 , _clearDepth(clearDepth)
@@ -173,7 +174,7 @@ namespace renderer
         template<class TTexture>
         bool setDepthStencilTexture(TTexture* depthStencilTexture,
             RenderTargetLoadOp depthLoadOp = RenderTargetLoadOp::LoadOp_DontCare, RenderTargetStoreOp depthStoreOp = RenderTargetStoreOp::StoreOp_DontCare,
-            f32 clearDepth = 1.0f,
+            f32 clearDepth = 0.f,
             RenderTargetLoadOp stencilLoadOp = RenderTargetLoadOp::LoadOp_DontCare, RenderTargetStoreOp stencilStoreOp = RenderTargetStoreOp::StoreOp_DontCare,
             u32 clearStencil = 0);
 
@@ -194,7 +195,7 @@ namespace renderer
         template<class TTexture>
         bool setDepthStencilTexture(TTexture* depthStencilTexture, s32 layer,
             RenderTargetLoadOp depthLoadOp = RenderTargetLoadOp::LoadOp_DontCare, RenderTargetStoreOp depthStoreOp = RenderTargetStoreOp::StoreOp_DontCare,
-            f32 clearDepth = 1.0f,
+            f32 clearDepth = 0.f,
             RenderTargetLoadOp stencilLoadOp = RenderTargetLoadOp::LoadOp_DontCare, RenderTargetStoreOp stencilStoreOp = RenderTargetStoreOp::StoreOp_DontCare,
             u32 clearStencil = 0);
 
@@ -277,10 +278,22 @@ namespace renderer
         template<class TTexture>
         TTexture* getDepthStencilTexture() const;
 
-
+        /**
+        * @brief getDimension method. Size of texture
+        * @return core::Dimension2D
+        */
         const core::Dimension2D& getDimension() const;
 
+        /**
+        * @brief getColorTextureCount method
+        * @return u32. Count of color attachment
+        */
         u32 getColorTextureCount() const;
+
+        /**
+        * @brief hasDepthStencilTexture method
+        * @return bool. Is depth/stencil attachment is presented
+        */
         bool hasDepthStencilTexture() const;
 
     private:
@@ -294,6 +307,9 @@ namespace renderer
         * @param const std::string& name [optional]
         */
         explicit RenderTargetState(CommandList& cmdList, const core::Dimension2D& size, u32 viewsMask = 0, [[maybe_unused]] const std::string& name = "") noexcept;
+
+        RenderTargetState() = delete;
+        RenderTargetState(const RenderTargetState&) = delete;
 
         bool setColorTexture_Impl(u32 index, Texture* colorTexture, RenderTargetLoadOp loadOp, RenderTargetStoreOp storeOp, const core::Vector4D& clearColor);
         bool setColorTexture_Impl(u32 index, Texture* colorTexture, u32 layer, RenderTargetLoadOp loadOp, RenderTargetStoreOp storeOp, const core::Vector4D& clearColor);
@@ -327,56 +343,56 @@ namespace renderer
 
 
     template<class TTexture>
-    bool RenderTargetState::setColorTexture(u32 index, TTexture* colorTexture, RenderTargetLoadOp loadOp, RenderTargetStoreOp storeOp, const core::Vector4D& clearColor)
+    inline bool RenderTargetState::setColorTexture(u32 index, TTexture* colorTexture, RenderTargetLoadOp loadOp, RenderTargetStoreOp storeOp, const core::Vector4D& clearColor)
     {
         static_assert(std::is_same<TTexture, Texture2D>() || std::is_same<TTexture, Backbuffer>(), "wrong type");
         return setColorTexture_Impl(index, colorTexture, loadOp, storeOp, clearColor);
     }
 
     template<class TTexture>
-    bool RenderTargetState::setColorTexture(u32 index, TTexture* colorTexture, s32 layer, RenderTargetLoadOp loadOp, RenderTargetStoreOp storeOp, const core::Vector4D& clearColor)
+    inline bool RenderTargetState::setColorTexture(u32 index, TTexture* colorTexture, s32 layer, RenderTargetLoadOp loadOp, RenderTargetStoreOp storeOp, const core::Vector4D& clearColor)
     {
         static_assert(std::is_same<TTexture, Texture2DArray>() || std::is_same<TTexture, TextureCube>(), "wrong type");
         return setColorTexture_Impl(index, colorTexture, layer, loadOp, storeOp, clearColor);
     }
 
     template<class TTexture>
-    bool RenderTargetState::setColorTexture(u32 index, TTexture* colorTexture, const ColorOpState& colorOpState, const TransitionState& tansitionState)
+    inline bool RenderTargetState::setColorTexture(u32 index, TTexture* colorTexture, const ColorOpState& colorOpState, const TransitionState& tansitionState)
     {
         static_assert(std::is_same<TTexture, Texture2D>() || std::is_same<TTexture, Backbuffer>(), "wrong type");
         return setColorTexture_Impl(index, colorTexture, colorOpState, tansitionState);
     }
 
     template<class TTexture>
-    bool RenderTargetState::setColorTexture(u32 index, TTexture* colorTexture, s32 layer, const ColorOpState& colorOpState, const TransitionState& tansitionState)
+    inline bool RenderTargetState::setColorTexture(u32 index, TTexture* colorTexture, s32 layer, const ColorOpState& colorOpState, const TransitionState& tansitionState)
     {
         static_assert(std::is_same<TTexture, Texture2DArray>() || std::is_same<TTexture, TextureCube>(), "wrong type");
         return setColorTexture_Impl(index, colorTexture, layer, colorOpState, tansitionState);
     }
 
     template<class TTexture>
-    bool RenderTargetState::setDepthStencilTexture(TTexture* depthStencilTexture, RenderTargetLoadOp depthLoadOp, RenderTargetStoreOp depthStoreOp, f32 clearDepth, RenderTargetLoadOp stencilLoadOp, RenderTargetStoreOp stencilStoreOp, u32 clearStencil)
+    inline bool RenderTargetState::setDepthStencilTexture(TTexture* depthStencilTexture, RenderTargetLoadOp depthLoadOp, RenderTargetStoreOp depthStoreOp, f32 clearDepth, RenderTargetLoadOp stencilLoadOp, RenderTargetStoreOp stencilStoreOp, u32 clearStencil)
     {
         static_assert(std::is_same<TTexture, Texture2D>(), "wrong type");
         return setDepthStencilTexture_Impl(depthStencilTexture, depthLoadOp, depthStoreOp, clearDepth, stencilLoadOp, stencilStoreOp, clearStencil);
     }
 
     template<class TTexture>
-    bool RenderTargetState::setDepthStencilTexture(TTexture* depthStencilTexture, s32 layer, RenderTargetLoadOp depthLoadOp, RenderTargetStoreOp depthStoreOp, f32 clearDepth, RenderTargetLoadOp stencilLoadOp, RenderTargetStoreOp stencilStoreOp, u32 clearStencil)
+    inline bool RenderTargetState::setDepthStencilTexture(TTexture* depthStencilTexture, s32 layer, RenderTargetLoadOp depthLoadOp, RenderTargetStoreOp depthStoreOp, f32 clearDepth, RenderTargetLoadOp stencilLoadOp, RenderTargetStoreOp stencilStoreOp, u32 clearStencil)
     {
         static_assert(std::is_same<TTexture, Texture2DArray>() || std::is_same<TTexture, TextureCube>(), "wrong type");
         return setDepthStencilTexture_Impl(depthStencilTexture, layer, depthLoadOp, depthStoreOp, clearDepth, stencilLoadOp, stencilStoreOp, clearStencil);
     }
 
     template<class TTexture>
-    bool RenderTargetState::setDepthStencilTexture(TTexture* depthStencilTexture, const DepthOpState& depthOpState, const StencilOpState& stencilOpState, const TransitionState& tansitionState)
+    inline bool RenderTargetState::setDepthStencilTexture(TTexture* depthStencilTexture, const DepthOpState& depthOpState, const StencilOpState& stencilOpState, const TransitionState& tansitionState)
     {
         static_assert(std::is_same<TTexture, Texture2D>() || std::is_same<TTexture, TextureCube>() || std::is_same<TTexture, Texture2DArray>(), "wrong type");
         return setDepthStencilTexture_Impl(depthStencilTexture, depthOpState, stencilOpState, tansitionState);
     }
 
     template<class TTexture>
-    bool RenderTargetState::setDepthStencilTexture(TTexture* depthStencilTexture, s32 layer, const DepthOpState& depthOpState, const StencilOpState& stencilOpState, const TransitionState& tansitionState)
+    inline bool RenderTargetState::setDepthStencilTexture(TTexture* depthStencilTexture, s32 layer, const DepthOpState& depthOpState, const StencilOpState& stencilOpState, const TransitionState& tansitionState)
     {
         static_assert(std::is_same<TTexture, Texture2DArray>() || std::is_same<TTexture, TextureCube>(), "wrong type");
         return setDepthStencilTexture_Impl(depthStencilTexture, layer, depthOpState, stencilOpState, tansitionState);
@@ -398,10 +414,25 @@ namespace renderer
     }
 
     template<class TTexture>
-    TTexture* RenderTargetState::getDepthStencilTexture() const
+    inline TTexture* RenderTargetState::getDepthStencilTexture() const
     {
         static_assert(std::is_base_of<Texture, TTexture>(), "wrong type");
         return static_cast<TTexture*>(std::get<0>(m_depthStencilTexture));
+    }
+
+    inline const core::Dimension2D& RenderTargetState::getDimension() const
+    {
+        return m_size;
+    }
+
+    inline u32 RenderTargetState::getColorTextureCount() const
+    {
+        return static_cast<u32>(m_colorTextures.size());
+    }
+
+    inline bool RenderTargetState::hasDepthStencilTexture() const
+    {
+        return std::get<0>(m_depthStencilTexture) != nullptr;
     }
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

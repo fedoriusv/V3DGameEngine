@@ -14,7 +14,7 @@ namespace renderer
     /**
     * @brief enum class PolygonMode
     */
-    enum class PolygonMode : u32
+    enum class PolygonMode : u16
     {
         PolygonMode_Fill,
         PolygonMode_Line,
@@ -42,7 +42,7 @@ namespace renderer
     /**
     * @brief enum class FrontFace
     */
-    enum class FrontFace : u32
+    enum class FrontFace : u16
     {
         FrontFace_Clockwise,
         FrontFace_CounterClockwise
@@ -51,7 +51,7 @@ namespace renderer
     /**
     * @brief enum class CullMode
     */
-    enum class CullMode : u32
+    enum class CullMode : u16
     {
         CullMode_None,
         CullMode_Front,
@@ -168,17 +168,19 @@ namespace renderer
                 : _polygonMode(PolygonMode::PolygonMode_Fill)
                 , _frontFace(FrontFace::FrontFace_Clockwise)
                 , _cullMode(CullMode::CullMode_None)
+                , _discardRasterization(false)
 
                 , _depthBiasConstant(0.f)
                 , _depthBiasClamp(0.f)
                 , _depthBiasSlope(0.f)
             {
-                static_assert(sizeof(RasterizationState) == 24, "wrong size");
+                static_assert(sizeof(RasterizationState) == 20, "wrong size");
             }
 
             PolygonMode _polygonMode;
             FrontFace   _frontFace;
             CullMode    _cullMode;
+            u16         _discardRasterization;
 
             f32         _depthBiasConstant;
             f32         _depthBiasClamp;

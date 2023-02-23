@@ -26,15 +26,15 @@ namespace renderer
     {
     public:
 
-        PipelineState() = delete;
-        PipelineState(const PipelineState&) = delete;
-
         explicit PipelineState(CommandList& cmdList, [[maybe_unused]] const std::string& name = "") noexcept;
         virtual ~PipelineState();
 
     protected:
 
         void destroyPipelines(const std::vector<Pipeline*>& pipelines);
+
+        PipelineState() = delete;
+        PipelineState(const PipelineState&) = delete;
 
         friend CommandList;
         CommandList& m_cmdList;
@@ -60,18 +60,59 @@ namespace renderer
     {
     public:
 
-        GraphicsPipelineState() = delete;
-        GraphicsPipelineState(const GraphicsPipelineState&) = delete;
+        /**
+        * @brief GraphicsPipelineState destructor
+        */
         ~GraphicsPipelineState() = default;
 
+        /**
+        * @brief setPolygonMode method. Rasterization state
+        * @param PolygonMode polygonMode [required]
+        */
         void setPolygonMode(PolygonMode polygonMode);
+
+        /**
+        * @brief setFrontFace method. Rasterization state
+        * @param FrontFace frontFace [required]
+        */
         void setFrontFace(FrontFace frontFace);
+
+        /**
+        * @brief setCullMode method. Rasterization state
+        * @param CullMode cullMode [required]
+        */
         void setCullMode(CullMode cullMode);
 
+        /**
+        * @brief setDepthBias method. Rasterization state
+        * @param f32 constantFactor [required]
+        * @param f32 clamp [required]
+        * @param f32 slopeFactor [required]
+        */
         void setDepthBias(f32 constantFactor, f32 clamp, f32 slopeFactor);
 
+        /**
+        * @brief setDisacardRasterization method. Rasterization state
+        * @param bool disabled [required]
+        */
+        void setDisacardRasterization(bool disabled);
+
+        /**
+        * @brief getPolygonMode method. Rasterization state
+        * @return PolygonMode
+        */
         PolygonMode getPolygonMode() const;
+
+        /**
+        * @brief getFrontFace method. Rasterization state
+        * @return FrontFace
+        */
         FrontFace getFrontFace() const;
+
+        /**
+        * @brief getCullMode method. Rasterization state
+        * @return CullMode
+        */
         CullMode getCullMode() const;
 
         void setDepthCompareOp(CompareOperation op);
@@ -129,6 +170,9 @@ namespace renderer
         */
         explicit GraphicsPipelineState(CommandList& cmdList, const GraphicsPipelineStateDescription& desc, const ShaderProgram* const program, const RenderTargetState* const renderTaget, [[maybe_unused]] const std::string& name = "") noexcept;
 
+        GraphicsPipelineState() = delete;
+        GraphicsPipelineState(const GraphicsPipelineState&) = delete;
+
         void setShaderProgram(const ShaderProgram* program);
         void setRenderTaget(const RenderTargetState* target);
 
@@ -149,8 +193,9 @@ namespace renderer
     {
     public:
 
-        ComputePipelineState() = delete;
-        ComputePipelineState(const ComputePipelineState&) = delete;
+        /**
+        * @brief ComputePipelineState destructor
+        */
         ~ComputePipelineState() = default;
 
         /**
@@ -161,6 +206,9 @@ namespace renderer
         * @param const std::string& name [optional]
         */
         explicit ComputePipelineState(CommandList& cmdList, const ShaderProgram* const program, [[maybe_unused]] const std::string& name = "") noexcept;
+
+        ComputePipelineState() = delete;
+        ComputePipelineState(const ComputePipelineState&) = delete;
 
         friend CommandList;
 

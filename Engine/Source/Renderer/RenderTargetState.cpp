@@ -306,10 +306,11 @@ bool RenderTargetState::hasDepthStencilTexture() const
 
 void RenderTargetState::extractRenderTargetInfo(RenderPassDescription& renderpassDesc, std::vector<Image*>& images, Framebuffer::ClearValueInfo& clearValuesInfo) const
 {
-    images.reserve(static_cast<u64>(getColorTextureCount()) + (hasDepthStencilTexture() ? 1 : 0));
+    u32 countImages = static_cast<u64>(getColorTextureCount()) + (hasDepthStencilTexture() ? 1 : 0);
+    images.reserve(countImages);
 
-    clearValuesInfo._size = m_size;
-    clearValuesInfo._color.reserve(images.size());
+    clearValuesInfo._region._size = { 0, 0, m_size.width, m_size.height };
+    clearValuesInfo._color.reserve(countImages);
 
     renderpassDesc._desc._countColorAttachments = getColorTextureCount();
     for (u32 index = 0; index < renderpassDesc._desc._countColorAttachments; ++index)

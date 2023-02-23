@@ -109,6 +109,11 @@ void GraphicsPipelineState::setDepthBias(f32 constantFactor, f32 clamp, f32 slop
     m_pipelineStateDesc._rasterizationState._depthBiasSlope = slopeFactor;
 }
 
+void GraphicsPipelineState::setDisacardRasterization(bool disabled)
+{
+    m_pipelineStateDesc._rasterizationState._discardRasterization = disabled;
+}
+
 PolygonMode GraphicsPipelineState::getPolygonMode() const
 {
     return m_pipelineStateDesc._rasterizationState._polygonMode;

@@ -136,6 +136,20 @@ namespace renderer
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    /**
+    * @brief TargetRegion struct
+    */
+    struct TargetRegion
+    {
+        TargetRegion() = default;
+        TargetRegion(u32 width, u32 height) noexcept;
+
+        core::RectU32 _size;
+        u32           _baseLayer = 0;
+        u32           _layers = 1;
+    };
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
     * @brief AttachmentDescription struct. Uses inside a render target.
