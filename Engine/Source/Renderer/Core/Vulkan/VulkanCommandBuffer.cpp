@@ -474,7 +474,7 @@ void VulkanCommandBuffer::cmdBeginQuery(VulkanQueryPool* pool, u32 index)
 
     [[likely]] if (m_level == CommandBufferLevel::PrimaryBuffer)
     {
-    VulkanWrapper::CmdBeginQuery(m_commands, pool->getHandle(), index, flags);
+        VulkanWrapper::CmdBeginQuery(m_commands, pool->getHandle(), index, flags);
     }
     else
     {
@@ -491,8 +491,8 @@ void VulkanCommandBuffer::cmdEndQuery(VulkanQueryPool* pool, u32 index)
 
     [[likely]] if (m_level == CommandBufferLevel::PrimaryBuffer)
     {
-    VulkanWrapper::CmdEndQuery(m_commands, pool->getHandle(), index);
-}
+        VulkanWrapper::CmdEndQuery(m_commands, pool->getHandle(), index);
+    }
     else
     {
         ASSERT(false, "not implemented");
@@ -507,8 +507,8 @@ void VulkanCommandBuffer::cmdWriteTimestamp(VulkanQueryPool* pool, u32 index, Vk
 
     [[likely]] if (m_level == CommandBufferLevel::PrimaryBuffer)
     {
-    VulkanWrapper::CmdWriteTimestamp(m_commands, pipelineStage, pool->getHandle(), index);
-}
+        VulkanWrapper::CmdWriteTimestamp(m_commands, pipelineStage, pool->getHandle(), index);
+    }
     else
     {
         ASSERT(false, "not implemented");
@@ -647,6 +647,21 @@ void VulkanCommandBuffer::cmdDrawIndexed(u32 firstIndex, u32 indexCount, u32 fir
     [[likely]] if (m_level == CommandBufferLevel::PrimaryBuffer)
     {
         VulkanWrapper::CmdDrawIndexed(m_commands, indexCount, instanceCount, firstIndex, vertexOffest, firstInstance);
+    }
+    else
+    {
+        ASSERT(false, "not implemented");
+    }
+}
+
+void VulkanCommandBuffer::cmdClearAttachments(const std::vector<VkClearAttachment>& attachments, const std::vector<VkClearRect>& regions)
+{
+    ASSERT(m_status == CommandBufferStatus::Begin, "not started");
+    ASSERT(isInsideRenderPass(), "inside render pass");
+
+    [[likely]] if (m_level == CommandBufferLevel::PrimaryBuffer)
+    {
+        VulkanWrapper::CmdClearAttachments(m_commands, static_cast<u32>(attachments.size()), attachments.data(), static_cast<u32>(regions.size()), regions.data());
     }
     else
     {

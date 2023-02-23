@@ -87,6 +87,8 @@ namespace dx3d
         void clearBackbuffer(const core::Vector4D & color) override;
         void generateMipmaps(Image* image, u32 layer, TransitionOp state) override;
 
+        void clearRenderTarget(const std::vector<const Image*>& images, Framebuffer::ClearValueInfo& clearValues) override;
+
         const DeviceCaps* getDeviceCaps() const override;
 
         D3DCommandList* getOrAcquireCurrentCommandList(D3DCommandList::Type type = D3DCommandList::Direct);
@@ -180,7 +182,7 @@ namespace dx3d
                 _renderTarget = nullptr;
 
                 _bufferDesc.clear();
-                _clearInfo.clear();
+                _clearInfo = Framebuffer::ClearValueInfo();
             }
 
             D3DPipelineState* _pipeline;

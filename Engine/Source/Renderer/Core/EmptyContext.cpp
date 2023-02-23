@@ -125,6 +125,11 @@ void EmptyContext::setPipeline(const Pipeline::PipelineComputeInfo* pipelineInfo
     LOG_DEBUG("EmptyContext::setPipeline");
 }
 
+void EmptyContext::clearRenderTarget(const std::vector<const Image*>& images, Framebuffer::ClearValueInfo& clearValues)
+{
+    LOG_DEBUG("EmptyContext::clearRenderTarget");
+}
+
 void EmptyContext::removePipeline(Pipeline* pipeline)
 {
     LOG_DEBUG("EmptyContext::removePipeline");

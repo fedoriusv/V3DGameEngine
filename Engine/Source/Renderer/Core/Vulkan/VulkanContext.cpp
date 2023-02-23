@@ -1435,6 +1435,85 @@ void VulkanContext::setPipeline(const Pipeline::PipelineComputeInfo* pipelineInf
     m_pendingState.setPendingPipeline(pipeline);
 }
 
+void VulkanContext::clearRenderTarget(const std::vector<const Image*>& images, Framebuffer::ClearValueInfo& clearValues)
+{
+#if VULKAN_DEBUG
+    LOG_DEBUG("VulkanContext::clearRenderTarget");
+#endif //VULKAN_DEBUG
+
+#if FRAME_PROFILER_ENABLE
+    RenderFrameProfiler::StackProfiler stackFrameProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::FrameTime);
+    RenderFrameProfiler::StackProfiler stackProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::DrawCalls);
+#endif //FRAME_PROFILER_ENABLE
+
+    VulkanCommandBuffer* drawBuffer = m_currentBufferState.getAcitveBuffer(CommandTargetType::CmdDrawBuffer);
+    if (drawBuffer->isInsideRenderPass())
+    {
+        VulkanRenderPass* pass = m_currentContextState->getCurrentRenderpass();
+        ASSERT(pass, "must be inside render pass");
+        VulkanFramebuffer* framebuffer = m_currentContextState->getCurrentFramebuffer();
+        auto getAttachmentIndex = [framebuffer](const VulkanImage* vkImage) -> u32
+        {
+            u32 index = 0;
+            for (const Image* image : framebuffer->getImages())
+            {
+                if (image == vkImage)
+                {
+                    return index;
+                }
+                ++index;
+            }
+
+            ASSERT(false, "not found");
+            return ~0;
+        };
+
+        std::vector<VkClearAttachment>& clearAttachments = m_currentContextState->m_clearAttachments;
+        clearAttachments.resize(images.size(), {});
+
+        std::vector<VkClearRect>& clearRects = m_currentContextState->m_attachmentClearRects;
+        clearRects.resize(images.size(), {});
+
+        for (u32 index = 0; index < images.size(); ++index)
+        {
+            const VulkanImage* vkImage = static_cast<const VulkanImage*>(images[index]);
+            ASSERT(vkImage && VulkanImage::isAttachmentLayout(vkImage, 0), "wrong");
+
+            VkClearAttachment& attachment = clearAttachments[index];
+            attachment.colorAttachment = getAttachmentIndex(vkImage);
+            if (VulkanImage::isDepthStencilFormat(vkImage->getFormat()))
+            {
+                attachment.aspectMask = vkImage->getImageAspectFlags();
+                attachment.clearValue.color =
+                {
+                    clearValues._color[index].x,
+                    clearValues._color[index].y,
+                    clearValues._color[index].z,
+                    clearValues._color[index].w
+                };
+            }
+            else
+            {
+                attachment.aspectMask = vkImage->getImageAspectFlags();
+                attachment.clearValue.depthStencil.depth = clearValues._depth;
+                attachment.clearValue.depthStencil.stencil = clearValues._stencil;
+            }
+            
+            VkClearRect& rect = clearRects[index];
+            rect.rect.offset = { static_cast<s32>(clearValues._region._size.getLeftX()), static_cast<s32>(clearValues._region._size.getTopY()) };
+            rect.rect.extent = { clearValues._region._size.getWidth(), clearValues._region._size.getHeight() };
+            rect.baseArrayLayer = clearValues._region._baseLayer;
+            rect.layerCount = clearValues._region._layers;
+        }
+
+        drawBuffer->cmdClearAttachments(clearAttachments, clearRects);
+    }
+    else
+    {
+        ASSERT(false, "outside render pass. Need to use beginpass clear logic");
+    }
+}
+
 void VulkanContext::removePipeline(Pipeline* pipeline)
 {
 #if VULKAN_DEBUG

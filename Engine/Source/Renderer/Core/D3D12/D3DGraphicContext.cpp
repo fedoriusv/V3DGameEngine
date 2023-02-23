@@ -950,6 +950,10 @@ void D3DGraphicContext::generateMipmaps(Image* image, u32 layer, TransitionOp st
     ASSERT(false, "not impl");
 }
 
+void D3DGraphicContext::clearRenderTarget(const std::vector<const Image*>& images, Framebuffer::ClearValueInfo& clearValues)
+{
+}
+
 D3DCommandList* D3DGraphicContext::getOrAcquireCurrentCommandList(D3DCommandList::Type type)
 {
     if (!m_currentState.commandList())
@@ -1081,7 +1085,7 @@ void D3DGraphicContext::clearRenderTargets(D3DGraphicsCommandList* cmdList, D3DR
 
                 std::vector<D3D12_RECT> rect =
                 {
-                    { 0, 0, static_cast<LONG>(clearInfo._size.width), static_cast<LONG>(clearInfo._size.height) }
+                    { 0, 0, static_cast<LONG>(clearInfo._region._size.getWidth()), static_cast<LONG>(clearInfo._region._size.getHeight()) }
                 };
 
                 cmdList->clearRenderTarget(target->getColorDescHandles()[i], color, rect);
@@ -1140,7 +1144,7 @@ void D3DGraphicContext::clearRenderTargets(D3DGraphicsCommandList* cmdList, D3DR
             {
                 std::vector<D3D12_RECT> rect =
                 {
-                    { 0, 0, static_cast<LONG>(clearInfo._size.width), static_cast<LONG>(clearInfo._size.height) }
+                    { 0, 0, static_cast<LONG>(clearInfo._region._size.getWidth()), static_cast<LONG>(clearInfo._region._size.getHeight()) }
                 };
 
                 D3D12_CLEAR_FLAGS flag = (D3D12_CLEAR_FLAGS)clearFlags;

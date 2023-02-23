@@ -51,6 +51,8 @@ namespace renderer
         void setPipeline(const Pipeline::PipelineGraphicInfo* pipelineInfo) override;
         void setPipeline(const Pipeline::PipelineComputeInfo* pipelineInfo) override;
 
+        void clearRenderTarget(const std::vector<const Image*>& images, Framebuffer::ClearValueInfo& clearValues) override;
+
         Image* createImage(TextureTarget target, Format format, const core::Dimension3D& dimension, u32 layers, u32 mipmapLevel, TextureUsageFlags flags, [[maybe_unused]] const std::string& name = "") override;
         Image* createImage(TextureTarget target, Format format, const core::Dimension3D& dimension, u32 layers, TextureSamples samples, TextureUsageFlags flags, [[maybe_unused]] const std::string& name = "") override;
         void removeImage(Image* image) override;

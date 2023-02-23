@@ -202,6 +202,8 @@ namespace renderer
         */
         virtual void setPipeline(const Pipeline::PipelineComputeInfo* pipelineInfo) = 0;
 
+        virtual void clearRenderTarget(const std::vector<const Image*>& images, Framebuffer::ClearValueInfo& clearValues) = 0;
+
         //objects
         [[nodiscard]] virtual Image* createImage(TextureTarget target, Format format, const core::Dimension3D& dimension, u32 layers, u32 mipmapLevel, TextureUsageFlags flags, [[maybe_unused]] const std::string& name = "") = 0;
         [[nodiscard]] virtual Image* createImage(TextureTarget target, Format format, const core::Dimension3D& dimension, u32 layers, TextureSamples samples, TextureUsageFlags flags, [[maybe_unused]] const std::string& name = "") = 0;

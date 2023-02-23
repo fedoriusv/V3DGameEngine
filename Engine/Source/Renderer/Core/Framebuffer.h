@@ -2,7 +2,6 @@
 
 #include "Common.h"
 #include "Utils/Observable.h"
-
 #include "Renderer/TextureProperties.h"
 #include "Renderer/ObjectTracker.h"
 
@@ -12,9 +11,9 @@ namespace renderer
 {
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    class Image;
     class Context;
     class RenderPass;
-    class Image;
     class FramebufferManager;
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -27,28 +26,14 @@ namespace renderer
     public:
 
         /**
-        * @brief ClearValueInfo struct
+        * @brief RegionInfo struct
         */
         struct ClearValueInfo
         {
-            ClearValueInfo()
-                : _depth(0.0f)
-                , _stencil(0U)
-            {
-            }
-
-            void clear()
-            {
-                _size = core::Dimension2D(0, 0);
-                _color.clear();
-                _depth = 0.0f;
-                _stencil = 0U;
-            }
-
-            core::Dimension2D           _size;
+            TargetRegion                _region;
             std::vector<core::Vector4D> _color;
-            f32                         _depth;
-            u32                         _stencil;
+            f32                         _depth = 0.f;
+            u32                         _stencil = 0;
         };
 
         /**
