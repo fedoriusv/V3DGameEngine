@@ -13,6 +13,28 @@ namespace renderer
 namespace vk
 {
 
+std::string VulkanMemory::memoryPropertyFlagToStringVK(VkMemoryPropertyFlagBits flag)
+{
+    switch (flag)
+    {
+#define STR(r) case VK_##r: return #r
+        STR(MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+        STR(MEMORY_PROPERTY_HOST_VISIBLE_BIT);
+        STR(MEMORY_PROPERTY_HOST_COHERENT_BIT);
+        STR(MEMORY_PROPERTY_HOST_CACHED_BIT);
+        STR(MEMORY_PROPERTY_LAZILY_ALLOCATED_BIT);
+        STR(MEMORY_PROPERTY_PROTECTED_BIT);
+        STR(MEMORY_PROPERTY_DEVICE_COHERENT_BIT_AMD);
+        STR(MEMORY_PROPERTY_DEVICE_UNCACHED_BIT_AMD);
+        STR(MEMORY_PROPERTY_RDMA_CAPABLE_BIT_NV);
+#undef STR
+    default:
+        ASSERT(false, "not found");
+    }
+
+    return "EMPTY";
+}
+
 VulkanMemory::VulkanAllocation VulkanMemory::s_invalidMemory = 
 {
     VK_NULL_HANDLE,
@@ -25,9 +47,7 @@ VulkanMemory::VulkanAllocation VulkanMemory::s_invalidMemory =
 };
 
 SimpleVulkanMemoryAllocator* VulkanMemory::s_simpleVulkanMemoryAllocator = nullptr;
-
 std::recursive_mutex VulkanMemory::s_mutex;
-
 
 s32 VulkanMemory::findMemoryTypeIndex(const VkMemoryRequirements& memoryRequirements, VkMemoryPropertyFlags memoryPropertyFlags)
 {

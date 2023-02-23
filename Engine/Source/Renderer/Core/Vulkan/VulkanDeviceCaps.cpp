@@ -383,17 +383,68 @@ void VulkanDeviceCaps::fillCapabilitiesList(const DeviceInfo* info)
         }
     }
 
+    auto memoryProperyFlagsString = [](VkMemoryPropertyFlags flags) -> std::string
+    {
+        std::string string;
+        VkMemoryPropertyFlagBits flagsList[] =
+        {
+            VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
+            VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+            VK_MEMORY_PROPERTY_HOST_CACHED_BIT,
+            VK_MEMORY_PROPERTY_LAZILY_ALLOCATED_BIT,
+            VK_MEMORY_PROPERTY_PROTECTED_BIT,
+            VK_MEMORY_PROPERTY_DEVICE_COHERENT_BIT_AMD,
+            VK_MEMORY_PROPERTY_DEVICE_UNCACHED_BIT_AMD,
+            VK_MEMORY_PROPERTY_RDMA_CAPABLE_BIT_NV,
+        };
+
+        for (auto& flag : flagsList)
+        {
+            if (flag & flags)
+            {
+                if (!string.empty())
+                {
+                    string.append("|");
+                }
+                string.append(VulkanMemory::memoryPropertyFlagToStringVK(flag));
+            }
+        }
+
+        return string.empty() ? "EMPTY" : string;
+    };
+
+    auto memoryHeapFlags = [](VkMemoryHeapFlags flags) -> std::string
+    {
+        std::string string;
+        if (VK_MEMORY_HEAP_DEVICE_LOCAL_BIT & flags)
+        {
+            string.append("MEMORY_HEAP_DEVICE_LOCAL_BIT");
+        }
+
+        if (VK_MEMORY_HEAP_MULTI_INSTANCE_BIT & flags)
+        {
+            if (!string.empty())
+            {
+                string.append("|");
+            }
+            string.append("MEMORY_HEAP_DEVICE_LOCAL_BIT");
+        }
+
+        return string.empty() ? "GENERAL" : string;
+    };
+
     VulkanWrapper::GetPhysicalDeviceMemoryProperties(info->_physicalDevice, &m_deviceMemoryProps);
-    LOG_INFO("VulkanDeviceCaps Memory:");
+    LOG_INFO("VulkanDeviceCaps::initialize Memory:");
     LOG_INFO("VulkanDeviceCaps::initialize:  memoryHeapCount is %d", m_deviceMemoryProps.memoryHeapCount);
     for (u32 i = 0; i < m_deviceMemoryProps.memoryHeapCount; ++i)
     {
-        LOG_INFO("VulkanDeviceCaps::initialize:    memoryHeap [flags %d, size %llu]", m_deviceMemoryProps.memoryHeaps[i].flags, m_deviceMemoryProps.memoryHeaps[i].size);
+        LOG_INFO("VulkanDeviceCaps::initialize:    memoryHeap [index %u, flags %s, size %llu]", i, memoryHeapFlags(m_deviceMemoryProps.memoryHeaps[i].flags).c_str(), m_deviceMemoryProps.memoryHeaps[i].size);
     }
     LOG_INFO("VulkanDeviceCaps::initialize:  memoryTypeCount is %d", m_deviceMemoryProps.memoryTypeCount);
     for (u32 i = 0; i < m_deviceMemoryProps.memoryTypeCount; ++i)
     {
-        LOG_INFO("VulkanDeviceCaps::initialize:    memoryType [heapIndex %u, propertyFlags %d]", m_deviceMemoryProps.memoryTypes[i].heapIndex, m_deviceMemoryProps.memoryTypes[i].propertyFlags);
+        LOG_INFO("VulkanDeviceCaps::initialize:    memoryType [heapIndex %u, propertyFlags %s]", m_deviceMemoryProps.memoryTypes[i].heapIndex, memoryProperyFlagsString(m_deviceMemoryProps.memoryTypes[i].propertyFlags).c_str());
     }
 
     supportDeviceCoherentMemory = VulkanMemory::isSupportedMemoryType(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, true);

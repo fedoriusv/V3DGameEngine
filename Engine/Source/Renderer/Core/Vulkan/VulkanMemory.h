@@ -11,9 +11,9 @@ namespace renderer
 {
 namespace vk
 {
-    class VulkanResource;
-
     /////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    class VulkanResource;
 
     /**
     * @brief VulkanMemory class. Render side.
@@ -22,6 +22,8 @@ namespace vk
     class VulkanMemory final
     {
     public:
+
+        static std::string memoryPropertyFlagToStringVK(VkMemoryPropertyFlagBits flag);
 
         enum MemoryProperty
         {
