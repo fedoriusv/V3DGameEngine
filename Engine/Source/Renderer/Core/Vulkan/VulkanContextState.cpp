@@ -77,6 +77,26 @@ bool VulkanContextState::isCurrentFramebuffer(const VulkanFramebuffer* framebuff
     return false;
 }
 
+bool VulkanContextState::isCurrectViewports(const std::vector<VkViewport>& viewports) const
+{
+    if (m_viewports.size() == viewports.size())
+    {
+        return memcmp(m_viewports.data(), viewports.data(), viewports.size() * sizeof(VkViewport)) == 0;
+    }
+
+    return false;
+}
+
+bool VulkanContextState::isCurrectScissors(const std::vector<VkRect2D>& scissors) const
+{
+    if (m_scissors.size() == scissors.size())
+    {
+        return memcmp(m_scissors.data(), scissors.data(), scissors.size() * sizeof(VkRect2D)) == 0;
+    }
+
+    return false;
+}
+
 bool VulkanContextState::setCurrentRenderPass(VulkanRenderPass* pass)
 {
     bool changed = !VulkanContextState::isCurrentRenderPass(pass);
@@ -125,12 +145,6 @@ bool VulkanContextState::setCurrentVertexBuffers(const StreamBufferDescription &
     return changed;
 }
 
-void VulkanContextState::setClearValues(const VkRect2D & area, std::vector<VkClearValue>& clearValues)
-{
-    m_renderPassArea = area;
-    m_renderPassClearValues = std::move(clearValues);
-}
-
 VulkanFramebuffer* VulkanContextState::getCurrentFramebuffer() const
 {
     ASSERT(!m_currentFramebuffer.first.empty(), "nullptr");
@@ -144,7 +158,7 @@ VulkanFramebuffer* VulkanContextState::getCurrentFramebuffer() const
     }
 }
 
-bool VulkanContextState::setDynamicState(VkDynamicState state, const std::function<void()>& callback)
+bool VulkanContextState::setDynamicState(VkDynamicState state, const std::function<void(VulkanCommandBuffer* cmdBuffer)>& callback)
 {
     auto iter = m_stateCallbacks.emplace(state, callback);
     if (iter.second)
@@ -156,11 +170,11 @@ bool VulkanContextState::setDynamicState(VkDynamicState state, const std::functi
     return false;
 }
 
-void VulkanContextState::invokeDynamicStates(bool clear)
+void VulkanContextState::invokeDynamicStates(VulkanCommandBuffer* cmdBuffer, bool clear)
 {
     for (auto& callback : m_stateCallbacks)
     {
-        callback.second();
+        std::invoke(callback.second, cmdBuffer);
     }
 
     if (clear)

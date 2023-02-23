@@ -912,7 +912,7 @@ void VulkanContext::presentFrame()
     RenderFrameProfiler::StackProfiler stackProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::Present);
 #endif //FRAME_PROFILER_ENABLE
 
-    std::vector<VulkanSemaphore*>& semaphores = m_pendingState._presentSemaphores;
+    std::vector<VulkanSemaphore*>& semaphores = m_currentContextState->m_presentSemaphores;
     semaphores.clear();
 
     semaphores.insert(semaphores.end(), m_waitSemaphores.begin(), m_waitSemaphores.end());
@@ -962,7 +962,7 @@ void VulkanContext::submit(bool wait)
             uploadBuffer->endCommandBuffer();
         }
 
-        std::vector<VulkanSemaphore*>& uploadSemaphores = m_pendingState._uploadSemaphores;
+        std::vector<VulkanSemaphore*>& uploadSemaphores = m_currentContextState->m_uploadSemaphores;
         uploadSemaphores.clear();
         if (m_currentBufferState.isCurrentBufferAcitve(CommandTargetType::CmdDrawBuffer))
         {
@@ -1115,7 +1115,10 @@ void VulkanContext::setViewport(const core::Rect32& viewport, const core::Vector
 
     [[likely]] if (VulkanContext::isDynamicState(VK_DYNAMIC_STATE_VIEWPORT))
     {
-        VkViewport vkViewport = {};
+        std::vector<VkViewport>& viewports = m_pendingState._viewports;
+        viewports.resize(1, {});
+
+        VkViewport& vkViewport = viewports[0];
         vkViewport.x = static_cast<f32>(viewport.getLeftX());
         vkViewport.y = static_cast<f32>(viewport.getTopY());
         vkViewport.width = static_cast<f32>(viewport.getWidth());
@@ -1126,10 +1129,14 @@ void VulkanContext::setViewport(const core::Rect32& viewport, const core::Vector
         vkViewport.y = vkViewport.y + vkViewport.height;
         vkViewport.height = -vkViewport.height;
 #endif
-        std::vector<VkViewport> viewports = { vkViewport };
-
-        VulkanCommandBuffer* drawBuffer = m_currentBufferState.acquireAndStartCommandBuffer(CommandTargetType::CmdDrawBuffer);
-        m_currentContextState->setDynamicState(VK_DYNAMIC_STATE_VIEWPORT, std::bind(&VulkanCommandBuffer::cmdSetViewport, drawBuffer, viewports));
+        m_currentContextState->setDynamicState(VK_DYNAMIC_STATE_VIEWPORT, [this](VulkanCommandBuffer* drawBuffer)
+            {
+                if (!m_currentContextState->isCurrectViewports(m_pendingState._viewports))
+                {
+                    drawBuffer->cmdSetViewport(m_pendingState._viewports);
+                    m_currentContextState->m_viewports = std::move(m_pendingState._viewports);
+    }
+            });
     }
     else
     {
@@ -1150,13 +1157,21 @@ void VulkanContext::setScissor(const core::Rect32& scissor)
 
     [[likely]] if (VulkanContext::isDynamicState(VK_DYNAMIC_STATE_SCISSOR))
     {
-        VkRect2D vkScissor = {};
+        std::vector<VkRect2D>& scissors = m_pendingState._scissors;
+        scissors.resize(1, {});
+
+        VkRect2D& vkScissor = scissors[0];
         vkScissor.offset = { scissor.getLeftX(), scissor.getTopY() };
         vkScissor.extent = { static_cast<u32>(scissor.getWidth()), static_cast<u32>(scissor.getHeight()) };
-        std::vector<VkRect2D> scissors = { vkScissor };
 
-        VulkanCommandBuffer* drawBuffer = m_currentBufferState.acquireAndStartCommandBuffer(CommandTargetType::CmdDrawBuffer);
-        m_currentContextState->setDynamicState(VK_DYNAMIC_STATE_SCISSOR, std::bind(&VulkanCommandBuffer::cmdSetScissor, drawBuffer, scissors));
+        m_currentContextState->setDynamicState(VK_DYNAMIC_STATE_SCISSOR, [this](VulkanCommandBuffer* drawBuffer)
+            {
+                if (!m_currentContextState->isCurrectScissors(m_pendingState._scissors))
+                {
+                    drawBuffer->cmdSetScissor(m_pendingState._scissors);
+                    m_currentContextState->m_scissors = std::move(m_pendingState._scissors);
+    }
+            });
     }
     else
     {
@@ -1181,7 +1196,9 @@ void VulkanContext::setRenderTarget(const RenderPass::RenderPassInfo* renderpass
     renderpassInfo->_tracker->attach(renderpass);
     VulkanRenderPass* vkRenderpass = static_cast<VulkanRenderPass*>(renderpass);
 
-    std::vector<VulkanFramebuffer*> vkFramebuffers;
+    std::vector<VulkanFramebuffer*>& vkFramebuffers = m_pendingState._framebuffers;
+    vkFramebuffers.clear();
+
     bool swapchainPresent = std::find(framebufferInfo->_images.cbegin(), framebufferInfo->_images.cend(), nullptr) != framebufferInfo->_images.cend();
     if (swapchainPresent)
     {
@@ -1201,7 +1218,7 @@ void VulkanContext::setRenderTarget(const RenderPass::RenderPassInfo* renderpass
                 images.push_back(*iter);
             }
 
-            auto [framebuffer, isNewFramebuffer] = m_framebufferManager->acquireFramebuffer(renderpass, images, framebufferInfo->_clearInfo._size);
+            auto [framebuffer, isNewFramebuffer] = m_framebufferManager->acquireFramebuffer(renderpass, images, { framebufferInfo->_clearInfo._region._size.getWidth(), framebufferInfo->_clearInfo._region._size.getHeight() });
             ASSERT(framebuffer, "framebuffer is nullptr");
 
             framebufferInfo->_tracker->attach(framebuffer);
@@ -1225,7 +1242,7 @@ void VulkanContext::setRenderTarget(const RenderPass::RenderPassInfo* renderpass
     else
     {
         Framebuffer* framebuffer = nullptr;
-        std::tie(framebuffer, std::ignore) = m_framebufferManager->acquireFramebuffer(renderpass, framebufferInfo->_images, framebufferInfo->_clearInfo._size);
+        std::tie(framebuffer, std::ignore) = m_framebufferManager->acquireFramebuffer(renderpass, framebufferInfo->_images, { framebufferInfo->_clearInfo._region._size.getWidth(), framebufferInfo->_clearInfo._region._size.getHeight() });
         ASSERT(framebuffer, "framebuffer is nullptr");
 
         framebufferInfo->_tracker->attach(framebuffer);
@@ -1246,18 +1263,19 @@ void VulkanContext::setRenderTarget(const RenderPass::RenderPassInfo* renderpass
             }
         }
 
-        //TODO use penging states
         m_currentContextState->setCurrentRenderPass(vkRenderpass);
         m_currentContextState->setCurrentFramebuffer(vkFramebuffers);
 
-        VkRect2D area;
-        area.offset = { 0, 0 };
-        area.extent = { framebufferInfo->_clearInfo._size.width, framebufferInfo->_clearInfo._size.height };
+        VkRect2D& area = m_currentContextState->m_renderPassArea;
+        area.offset = { static_cast<s32>(framebufferInfo->_clearInfo._region._size.getLeftX()), static_cast<s32>(framebufferInfo->_clearInfo._region._size.getTopY()) };
+        area.extent = { framebufferInfo->_clearInfo._region._size.getWidth(), framebufferInfo->_clearInfo._region._size.getHeight() };
 #if VULKAN_DEBUG
     LOG_DEBUG("VulkanContext::setRenderTarget: render area (%d, %d, %d, %d)", area.offset.x, area.offset.y, area.extent.width, area.extent.height);
 #endif //VULKAN_DEBUG
 
-        std::vector<VkClearValue> clearValues;
+        std::vector<VkClearValue>& clearValues = m_currentContextState->m_renderPassClearValues;
+        clearValues.clear();
+
         for (u32 clearIndex = 0; clearIndex < framebufferInfo->_clearInfo._color.size(); ++clearIndex)
         {
             VkClearValue clearColor = {};
@@ -1288,7 +1306,6 @@ void VulkanContext::setRenderTarget(const RenderPass::RenderPassInfo* renderpass
                 clearValues.push_back(depthClear);
             }
         }
-        m_currentContextState->setClearValues(area, clearValues);
     }
 }
 
@@ -1947,7 +1964,7 @@ Framebuffer* VulkanContext::createFramebuffer(const std::vector<Image*>& images,
     RenderFrameProfiler::StackProfiler stackProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::CreateResources);
 #endif //FRAME_PROFILER_ENABLE
 
-    return new VulkanFramebuffer(m_deviceInfo._device, this, images, size);
+    return new VulkanFramebuffer(m_deviceInfo._device, images, size);
 }
 
 RenderPass* VulkanContext::createRenderPass(const RenderPassDescription* renderpassDesc)
@@ -2013,6 +2030,9 @@ void VulkanContext::invalidateStates()
         m_currentContextState->setCurrentPipeline(nullptr);
         m_pendingState.setPendingPipeline(pipeline);
     }
+
+    m_currentContextState->m_viewports.clear();
+    m_currentContextState->m_scissors.clear();
 }
 
 bool VulkanContext::prepareDraw(VulkanCommandBuffer* drawBuffer)
@@ -2024,7 +2044,8 @@ bool VulkanContext::prepareDraw(VulkanCommandBuffer* drawBuffer)
         drawBuffer->cmdBeginRenderpass(m_currentContextState->getCurrentRenderpass(), m_currentContextState->getCurrentFramebuffer(), m_currentContextState->m_renderPassArea, m_currentContextState->m_renderPassClearValues);
     }
 
-    m_currentContextState->invokeDynamicStates();
+    m_currentContextState->invokeDynamicStates(drawBuffer);
+
     if (m_pendingState.isGraphicPipeline())
     {
         if (m_currentContextState->setCurrentPipeline(m_pendingState.takePipeline<VulkanGraphicPipeline>()))

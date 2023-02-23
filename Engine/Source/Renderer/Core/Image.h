@@ -21,6 +21,9 @@ namespace renderer
     {
     public:
 
+        /**
+        * @brief Subresource struct. Render side
+        */
         struct Subresource
         {
             bool operator==(const Subresource& sub)

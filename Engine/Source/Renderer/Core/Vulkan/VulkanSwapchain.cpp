@@ -520,8 +520,8 @@ void VulkanSwapchain::present(VkQueue queue, const std::vector<VulkanSemaphore*>
 
     VkResult innerResults[1] = {};
 
-    std::vector<VkSemaphore> vkWaitSemaphores;
-    vkWaitSemaphores.reserve(waitSemaphores.size());
+    m_internalWaitSemaphores.clear();
+    m_internalWaitSemaphores.reserve(waitSemaphores.size());
 
     VkPresentInfoKHR presentInfoKHR = {};
     presentInfoKHR.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
@@ -538,12 +538,12 @@ void VulkanSwapchain::present(VkQueue queue, const std::vector<VulkanSemaphore*>
     {
         for (VulkanSemaphore* semaphore : waitSemaphores)
         {
-            vkWaitSemaphores.push_back(semaphore->getHandle());
+            m_internalWaitSemaphores.push_back(semaphore->getHandle());
             m_semaphoreManager->markSemaphore(semaphore, VulkanSemaphore::SemaphoreStatus::AssignToWaiting);
         }
 
-        presentInfoKHR.waitSemaphoreCount = static_cast<u32>(vkWaitSemaphores.size());
-        presentInfoKHR.pWaitSemaphores = vkWaitSemaphores.data();
+        presentInfoKHR.waitSemaphoreCount = static_cast<u32>(m_internalWaitSemaphores.size());
+        presentInfoKHR.pWaitSemaphores = m_internalWaitSemaphores.data();
     }
     presentInfoKHR.swapchainCount = 1;
     presentInfoKHR.pSwapchains = &m_swapchain;

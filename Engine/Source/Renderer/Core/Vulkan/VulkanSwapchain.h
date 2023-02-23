@@ -86,6 +86,7 @@ namespace vk
         std::tuple<u32, VulkanSemaphore*> m_presentInfo;
         u32 m_currentSemaphoreIndex;
         std::vector<VulkanSemaphore*> m_acquireSemaphore;
+        std::vector<VkSemaphore> m_internalWaitSemaphores;
 
         void recreateAttachedResources();
         std::vector<std::tuple<VulkanResource*, const std::function<bool(VulkanResource*)>>> m_swapchainResources;

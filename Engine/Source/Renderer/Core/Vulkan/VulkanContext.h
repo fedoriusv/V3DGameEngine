@@ -217,11 +217,13 @@ namespace vk
                 return static_cast<Type*>(std::exchange(_pipeline, nullptr));
             }
 
+            std::vector<VkViewport> _viewports;
+            std::vector<VkRect2D> _scissors;
+
+            std::vector<VulkanFramebuffer*> _framebuffers;
+
             std::vector<VkDescriptorSet> _descriptorSets;
             std::vector<u32> _descriptorOffsets;
-
-            std::vector<VulkanSemaphore*> _presentSemaphores;
-            std::vector<VulkanSemaphore*> _uploadSemaphores;
 
         private:
 

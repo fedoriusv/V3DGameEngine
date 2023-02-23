@@ -43,6 +43,8 @@ namespace vk
         bool isCurrentRenderPass(const VulkanRenderPass* pass) const;
         bool isCurrentFramebuffer(const VulkanFramebuffer* framebuffer) const;
         bool isCurrentPipeline(const Pipeline* pipeline) const;
+        bool isCurrectViewports(const std::vector<VkViewport>& viewports) const;
+        bool isCurrectScissors(const std::vector<VkRect2D>& scissors) const;
 
         bool setCurrentRenderPass(VulkanRenderPass* pass);
         bool setCurrentFramebuffer(VulkanFramebuffer* framebuffer);
@@ -50,7 +52,6 @@ namespace vk
         bool setCurrentPipeline(Pipeline* pipeline);
 
         bool setCurrentVertexBuffers(const StreamBufferDescription& desc);
-        void setClearValues(const VkRect2D& area, std::vector <VkClearValue>& clearValues);
 
         VulkanRenderPass *getCurrentRenderpass() const;
         VulkanFramebuffer* getCurrentFramebuffer() const;
@@ -65,8 +66,8 @@ namespace vk
 
         const StreamBufferDescription& getStreamBufferDescription() const;
 
-        bool setDynamicState(VkDynamicState state, const std::function<void()>& callback);
-        void invokeDynamicStates(bool clear = true);
+        bool setDynamicState(VkDynamicState state, const std::function<void(VulkanCommandBuffer* cmdBuffer)>& callback);
+        void invokeDynamicStates(VulkanCommandBuffer* cmdBuffer, bool clear = true);
 
         template<class Type>
         bool prepareDescriptorSets(VulkanCommandBuffer* cmdBuffer, std::vector<VkDescriptorSet>& sets, std::vector<u32>& offsets)
@@ -156,6 +157,14 @@ namespace vk
 
         std::vector<VkClearValue> m_renderPassClearValues;
         VkRect2D m_renderPassArea;
+        std::vector<VkClearAttachment> m_clearAttachments;
+        std::vector<VkClearRect> m_attachmentClearRects;
+
+        std::vector<VkViewport> m_viewports;
+        std::vector<VkRect2D> m_scissors;
+
+        std::vector<VulkanSemaphore*> m_presentSemaphores;
+        std::vector<VulkanSemaphore*> m_uploadSemaphores;
 
     private:
 
@@ -218,7 +227,7 @@ namespace vk
         std::pair<std::vector<VulkanFramebuffer*>, bool>    m_currentFramebuffer;
         std::pair<Pipeline*, bool>                          m_currentPipeline;
 
-        std::map<VkDynamicState, std::function<void()>>     m_stateCallbacks;
+        std::map<VkDynamicState, std::function<void(VulkanCommandBuffer* cmdBuffer)>> m_stateCallbacks;
 
         std::pair<StreamBufferDescription, bool>            m_currentVertexBuffers;
         std::array<VkDescriptorSet, k_maxDescriptorSetIndex> m_currentDesctiptorsSets;
