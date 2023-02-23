@@ -10,16 +10,6 @@ namespace utils
 {
 }
 
-s32 RefCounted::getCount() const
-{
-    return m_refCount;
-}
-
-void RefCounted::grab() const
-{
-    ++m_refCount;
-}
-
 void RefCounted::drop() const
 {
     --m_refCount;

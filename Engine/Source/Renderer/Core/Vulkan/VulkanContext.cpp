@@ -110,7 +110,7 @@ std::vector<VkDynamicState> VulkanContext::s_dynamicStates =
 };
 
 VulkanContext::VulkanContext(platform::Window* window, DeviceMask mask) noexcept
-    : m_deviceCaps(*VulkanDeviceCaps::getInstance())
+    : m_deviceCaps(*VulkanDeviceCaps::getLazyInstance())
     , m_swapchain(nullptr)
     , m_cmdBufferManager(nullptr)
 
@@ -145,7 +145,7 @@ VulkanContext::VulkanContext(platform::Window* window, DeviceMask mask) noexcept
     m_deviceInfo._mask = mask;
 
 #if VULKAN_DUMP
-    VulkanDump::getInstance()->init(VulkanDump::DumpFlag_None);
+    VulkanDump::getLazyInstance()->init(VulkanDump::DumpFlag_None);
 #endif
 }
 

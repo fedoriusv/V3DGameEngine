@@ -32,6 +32,16 @@ namespace utils
         mutable s32 m_refCount;
     };
 
+    inline s32 RefCounted::getCount() const
+    {
+        return m_refCount;
+    }
+
+    inline void RefCounted::grab() const
+    {
+        ++m_refCount;
+    }
+
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     inline void intrusivePtrAddRef(const RefCounted* obj)

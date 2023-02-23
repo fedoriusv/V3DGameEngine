@@ -17,6 +17,8 @@ namespace utils
     public:
 
         static T*   getInstance();
+
+        static T*   getLazyInstance();
         static void freeInstance();
 
     protected:
@@ -51,10 +53,17 @@ namespace utils
     template <class T>
     inline T *Singleton<T>::getInstance()
     {
+        ASSERT(s_instance, "nullptr");
+        return s_instance;
+    }
+
+    template <class T>
+    inline T* Singleton<T>::getLazyInstance()
+    {
         std::call_once(Singleton::s_onceFlag, []()
-        {
-            s_instance = new T;
-        });
+            {
+                s_instance = new T;
+            });
 
         ASSERT(s_instance, "nullptr");
         return s_instance;

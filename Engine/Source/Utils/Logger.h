@@ -101,12 +101,12 @@ namespace utils
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #ifdef USE_LOGGER
-#   define LOG_DEBUG(messages, ...)     v3d::utils::Logger::getInstance()->log(v3d::utils::Logger::LoggerDebug, v3d::utils::Logger::ConsoleLog, messages, ##__VA_ARGS__);
-#   define LOG(messages, ...)           v3d::utils::Logger::getInstance()->log(v3d::utils::Logger::LoggerNotify, v3d::utils::Logger::ConsoleLog, messages, ##__VA_ARGS__);
-#   define LOG_INFO(messages, ...)      v3d::utils::Logger::getInstance()->log(v3d::utils::Logger::LoggerInfo, v3d::utils::Logger::ConsoleLog, messages, ##__VA_ARGS__);
-#   define LOG_WARNING(messages, ...)   v3d::utils::Logger::getInstance()->log(v3d::utils::Logger::LoggerWarning, v3d::utils::Logger::ConsoleLog, messages, ##__VA_ARGS__);
-#   define LOG_ERROR(messages, ...)     v3d::utils::Logger::getInstance()->log(v3d::utils::Logger::LoggerError, v3d::utils::Logger::ConsoleLog, messages, ##__VA_ARGS__);
-#   define LOG_FATAL(messages, ...)     v3d::utils::Logger::getInstance()->log(v3d::utils::Logger::LoggerFatal, v3d::utils::Logger::ConsoleLog, messages, ##__VA_ARGS__);
+#   define LOG_DEBUG(messages, ...)     v3d::utils::Logger::getLazyInstance()->log(v3d::utils::Logger::LoggerDebug, v3d::utils::Logger::ConsoleLog, messages, ##__VA_ARGS__);
+#   define LOG(messages, ...)           v3d::utils::Logger::getLazyInstance()->log(v3d::utils::Logger::LoggerNotify, v3d::utils::Logger::ConsoleLog, messages, ##__VA_ARGS__);
+#   define LOG_INFO(messages, ...)      v3d::utils::Logger::getLazyInstance()->log(v3d::utils::Logger::LoggerInfo, v3d::utils::Logger::ConsoleLog, messages, ##__VA_ARGS__);
+#   define LOG_WARNING(messages, ...)   v3d::utils::Logger::getLazyInstance()->log(v3d::utils::Logger::LoggerWarning, v3d::utils::Logger::ConsoleLog, messages, ##__VA_ARGS__);
+#   define LOG_ERROR(messages, ...)     v3d::utils::Logger::getLazyInstance()->log(v3d::utils::Logger::LoggerError, v3d::utils::Logger::ConsoleLog, messages, ##__VA_ARGS__);
+#   define LOG_FATAL(messages, ...)     v3d::utils::Logger::getLazyInstance()->log(v3d::utils::Logger::LoggerFatal, v3d::utils::Logger::ConsoleLog, messages, ##__VA_ARGS__);
 
 #else //USE_LOGGER
 #   define LOG_DEBUG(messages, ...)
