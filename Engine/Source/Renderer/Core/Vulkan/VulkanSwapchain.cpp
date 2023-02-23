@@ -705,38 +705,6 @@ bool VulkanSwapchain::recteate(const SwapchainConfig& config)
     return true;
 }
 
-VulkanImage* VulkanSwapchain::getSwapchainImage(u32 index) const
-{
-    return m_swapBuffers[index];
-}
-
-VulkanImage* VulkanSwapchain::getBackbuffer() const
-{
-    ASSERT(s_currentImageIndex >= 0, "invalid index");
-    return m_swapBuffers[s_currentImageIndex];
-}
-
-VulkanSemaphore* VulkanSwapchain::getAcquireSemaphore(u32 index) const
-{
-    ASSERT(index < m_acquireSemaphore.size(), "invalid index");
-    return m_acquireSemaphore[index];
-}
-
-u32 VulkanSwapchain::getSwapchainImageCount() const
-{
-    return static_cast<u32>(m_swapBuffers.size());
-}
-
-u32 VulkanSwapchain::currentSwapchainIndex()
-{
-    return s_currentImageIndex;
-}
-
-VkSurfaceTransformFlagBitsKHR VulkanSwapchain::getTransformFlag() const
-{
-    return m_surfaceCaps.currentTransform;
-}
-
 void VulkanSwapchain::attachResource(VulkanResource* resource, const std::function<bool(VulkanResource*)>& recreator)
 {
     m_swapchainResources.emplace_back(resource, recreator);

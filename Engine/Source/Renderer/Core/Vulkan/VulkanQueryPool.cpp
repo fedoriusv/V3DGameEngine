@@ -58,12 +58,6 @@ void VulkanQueryPool::destroy()
     }
 }
 
-VkQueryPool VulkanQueryPool::getHandle() const
-{
-    ASSERT(m_pool, "mist be not nullptr");
-    return m_pool;
-}
-
 VulkanQueryPoolManager::VulkanQueryPoolManager(VkDevice device, u32 poolSize) noexcept
     : m_device(device)
     , k_poolSize(poolSize)

@@ -28,9 +28,6 @@ namespace vk
         static f32 convertAnisotropyCount(SamplerAnisotropic level);
         static VkSamplerAddressMode convertSamplerWrapToVkSamplerAddressMode(SamplerWrap wrap);
 
-        VulkanSampler() = delete;
-        VulkanSampler(const VulkanSampler&) = delete;
-
         explicit VulkanSampler(VkDevice device, const SamplerDescription& desc, [[maybe_unused]] const std::string& name = "") noexcept;
         ~VulkanSampler();
 
@@ -41,12 +38,21 @@ namespace vk
 
     private:
 
+        VulkanSampler() = delete;
+        VulkanSampler(const VulkanSampler&) = delete;
+
         VkDevice  m_device;
         VkSampler m_sampler;
 #if VULKAN_DEBUG_MARKERS
         std::string m_debugName;
 #endif //VULKAN_DEBUG_MARKERS
     };
+
+    inline VkSampler VulkanSampler::getHandle() const
+    {
+        ASSERT(m_sampler, "nullptr");
+        return m_sampler;
+    }
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 

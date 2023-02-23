@@ -29,12 +29,6 @@ VulkanSemaphore::~VulkanSemaphore()
     ASSERT(m_semaphore == VK_NULL_HANDLE, "must be nullptr");
 }
 
-VkSemaphore VulkanSemaphore::getHandle() const
-{
-    ASSERT(m_semaphore, "nullptr");
-    return m_semaphore;
-}
-
 VulkanSemaphoreManager::VulkanSemaphoreManager(VkDevice device) noexcept
     : m_device(device)
 {

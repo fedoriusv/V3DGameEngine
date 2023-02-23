@@ -155,18 +155,6 @@ bool VulkanComputePipeline::compileShader(const ShaderHeader* header, const void
     return true;
 }
 
-VkPipeline VulkanComputePipeline::getHandle() const
-{
-    ASSERT(m_pipeline != VK_NULL_HANDLE, "nullptr");
-    return m_pipeline;
-}
-
-VkPipelineLayout VulkanComputePipeline::getPipelineLayoutHandle() const
-{
-    ASSERT(m_pipelineLayout._pipelineLayout != VK_NULL_HANDLE, "nullptr");
-    return m_pipelineLayout._pipelineLayout;
-}
-
 bool VulkanComputePipeline::create(const PipelineGraphicInfo* pipelineInfo)
 {
     ASSERT(false, "cant be graphic");

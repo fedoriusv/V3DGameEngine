@@ -78,6 +78,18 @@ namespace vk
         return m_pipelineLayoutDescription;
     }
 
+    inline VkPipeline VulkanComputePipeline::getHandle() const
+    {
+        ASSERT(m_pipeline != VK_NULL_HANDLE, "nullptr");
+        return m_pipeline;
+    }
+
+    inline VkPipelineLayout VulkanComputePipeline::getPipelineLayoutHandle() const
+    {
+        ASSERT(m_pipelineLayout._pipelineLayout != VK_NULL_HANDLE, "nullptr");
+        return m_pipelineLayout._pipelineLayout;
+    }
+
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
 } //namespace vk

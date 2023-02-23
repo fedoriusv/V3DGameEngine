@@ -89,15 +89,9 @@ VulkanCommandBuffer::~VulkanCommandBuffer()
     m_secondaryBuffers.clear();
 }
 
-VkCommandBuffer VulkanCommandBuffer::getHandle() const
-{
-    ASSERT(m_commands != VK_NULL_HANDLE, "nullptr");
-    return m_commands;
-}
-
 void VulkanCommandBuffer::addSemaphore(VkPipelineStageFlags mask, VulkanSemaphore* semaphore)
 {
-    if (m_level == CommandBufferLevel::SecondaryBuffer)
+    [[unlikely]] if (m_level == CommandBufferLevel::SecondaryBuffer)
     {
         ASSERT(m_primaryBuffer, "m_primaryBuffer is nullptr");
         m_primaryBuffer->addSemaphore(mask, semaphore);
@@ -442,7 +436,7 @@ void VulkanCommandBuffer::cmdSetViewport(const std::vector<VkViewport>& viewport
 {
     ASSERT(m_status == CommandBufferStatus::Begin, "not started");
 
-    if (m_level == CommandBufferLevel::PrimaryBuffer)
+    [[likely]] if (m_level == CommandBufferLevel::PrimaryBuffer)
     {
         VulkanWrapper::CmdSetViewport(m_commands, 0, static_cast<u32>(viewports.size()), viewports.data());
     }
@@ -456,7 +450,7 @@ void VulkanCommandBuffer::cmdSetScissor(const std::vector<VkRect2D>& scissors)
 {
     ASSERT(m_status == CommandBufferStatus::Begin, "not started");
 
-    if (m_level == CommandBufferLevel::PrimaryBuffer)
+    [[likely]] if (m_level == CommandBufferLevel::PrimaryBuffer)
     {
         VulkanWrapper::CmdSetScissor(m_commands, 0, static_cast<u32>(scissors.size()), scissors.data());
     }
@@ -470,6 +464,7 @@ void VulkanCommandBuffer::cmdBeginQuery(VulkanQueryPool* pool, u32 index)
 {
     ASSERT(m_status == CommandBufferStatus::Begin, "not started");
     ASSERT(pool->getType() != QueryType::TimeStamp, "must be not timestamp");
+    pool->captureInsideCommandBuffer(this, 0);
 
     VkQueryControlFlags flags = 0;
     if (pool->getType() == QueryType::BinaryOcclusion)
@@ -477,39 +472,56 @@ void VulkanCommandBuffer::cmdBeginQuery(VulkanQueryPool* pool, u32 index)
         flags |= VK_QUERY_CONTROL_PRECISE_BIT;
     }
 
+    [[likely]] if (m_level == CommandBufferLevel::PrimaryBuffer)
+    {
     VulkanWrapper::CmdBeginQuery(m_commands, pool->getHandle(), index, flags);
+    }
+    else
+    {
+        ASSERT(false, "not implemented");
+    }
 
-    pool->captureInsideCommandBuffer(this, 0);
 }
 
 void VulkanCommandBuffer::cmdEndQuery(VulkanQueryPool* pool, u32 index)
 {
     ASSERT(m_status == CommandBufferStatus::Begin, "not started");
     ASSERT(pool->getType() != QueryType::TimeStamp, "must be not timestamp");
-
-    VulkanWrapper::CmdEndQuery(m_commands, pool->getHandle(), index);
-
     pool->captureInsideCommandBuffer(this, 0);
+
+    [[likely]] if (m_level == CommandBufferLevel::PrimaryBuffer)
+    {
+    VulkanWrapper::CmdEndQuery(m_commands, pool->getHandle(), index);
+}
+    else
+    {
+        ASSERT(false, "not implemented");
+    }
 }
 
 void VulkanCommandBuffer::cmdWriteTimestamp(VulkanQueryPool* pool, u32 index, VkPipelineStageFlagBits pipelineStage)
 {
     ASSERT(m_status == CommandBufferStatus::Begin, "not started");
     ASSERT(pool->getType() == QueryType::TimeStamp, "must be timestamp");
-
-    VulkanWrapper::CmdWriteTimestamp(m_commands, pipelineStage, pool->getHandle(), index);
-
     pool->captureInsideCommandBuffer(this, 0);
+
+    [[likely]] if (m_level == CommandBufferLevel::PrimaryBuffer)
+    {
+    VulkanWrapper::CmdWriteTimestamp(m_commands, pipelineStage, pool->getHandle(), index);
+}
+    else
+    {
+        ASSERT(false, "not implemented");
+    }
 }
 
 void VulkanCommandBuffer::cmdResetQueryPool(VulkanQueryPool* pool)
 {
     ASSERT(m_status == CommandBufferStatus::Begin, "not started");
     ASSERT(!m_isInsideRenderPass, "must be out of renderpass");
+    pool->captureInsideCommandBuffer(this, 0);
 
     VulkanWrapper::CmdResetQueryPool(m_commands, pool->getHandle(), 0, pool->getCount());
-
-    pool->captureInsideCommandBuffer(this, 0);
 }
 
 void VulkanCommandBuffer::cmdBindVertexBuffers(u32 firstBinding, u32 countBinding, const std::vector<Buffer*>& buffers, const std::vector<u64>& offests)
@@ -526,7 +538,7 @@ void VulkanCommandBuffer::cmdBindVertexBuffers(u32 firstBinding, u32 countBindin
         vkBuffer->captureInsideCommandBuffer(this, 0);
     }
 
-    if (m_level == CommandBufferLevel::PrimaryBuffer)
+    [[likely]] if (m_level == CommandBufferLevel::PrimaryBuffer)
     {
         static_assert(sizeof(VkDeviceSize) == sizeof(u64));
         VulkanWrapper::CmdBindVertexBuffers(m_commands, firstBinding, countBinding, vkBuffers.data(), (const VkDeviceSize*)offests.data());
@@ -542,7 +554,7 @@ void VulkanCommandBuffer::cmdBindIndexBuffers(VulkanBuffer* buffer, VkDeviceSize
     ASSERT(m_status == CommandBufferStatus::Begin, "not started");
     buffer->captureInsideCommandBuffer(this, 0);
 
-    if (m_level == CommandBufferLevel::PrimaryBuffer)
+    [[likely]] if (m_level == CommandBufferLevel::PrimaryBuffer)
     {
         VulkanWrapper::CmdBindIndexBuffer(m_commands, buffer->getHandle(), offest, type);
     }
@@ -557,7 +569,7 @@ void VulkanCommandBuffer::cmdBindPipeline(VulkanGraphicPipeline* pipeline)
     ASSERT(m_status == CommandBufferStatus::Begin, "not started");
     pipeline->captureInsideCommandBuffer(this, 0);
 
-    if (m_level == CommandBufferLevel::PrimaryBuffer)
+    [[likely]] if (m_level == CommandBufferLevel::PrimaryBuffer)
     {
         VulkanWrapper::CmdBindPipeline(m_commands, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->getHandle());
     }
@@ -572,7 +584,7 @@ void VulkanCommandBuffer::cmdBindPipeline(VulkanComputePipeline* pipeline)
     ASSERT(m_status == CommandBufferStatus::Begin, "not started");
     pipeline->captureInsideCommandBuffer(this, 0);
 
-    if (m_level == CommandBufferLevel::PrimaryBuffer)
+    [[likely]] if (m_level == CommandBufferLevel::PrimaryBuffer)
     {
         VulkanWrapper::CmdBindPipeline(m_commands, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline->getHandle());
     }
@@ -587,7 +599,7 @@ void VulkanCommandBuffer::cmdBindDescriptorSets(VulkanGraphicPipeline* pipeline,
     ASSERT(m_status == CommandBufferStatus::Begin, "not started");
     pipeline->captureInsideCommandBuffer(this, 0);
 
-    if (m_level == CommandBufferLevel::PrimaryBuffer)
+    [[likely]] if (m_level == CommandBufferLevel::PrimaryBuffer)
     {
         VulkanWrapper::CmdBindDescriptorSets(m_commands, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->getPipelineLayoutHandle(), firstSet, countSets, sets.data(), static_cast<u32>(offsets.size()), offsets.data());
     }
@@ -602,7 +614,7 @@ void VulkanCommandBuffer::cmdBindDescriptorSets(VulkanComputePipeline* pipeline,
     ASSERT(m_status == CommandBufferStatus::Begin, "not started");
     pipeline->captureInsideCommandBuffer(this, 0);
 
-    if (m_level == CommandBufferLevel::PrimaryBuffer)
+    [[likely]] if (m_level == CommandBufferLevel::PrimaryBuffer)
     {
         VulkanWrapper::CmdBindDescriptorSets(m_commands, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline->getPipelineLayoutHandle(), firstSet, countSets, sets.data(), 0, nullptr);
     }
@@ -617,7 +629,7 @@ void VulkanCommandBuffer::cmdDraw(u32 firstVertex, u32 vertexCount, u32 firstIns
     ASSERT(m_status == CommandBufferStatus::Begin, "not started");
     ASSERT(isInsideRenderPass(), "inside render pass");
 
-    if (m_level == CommandBufferLevel::PrimaryBuffer)
+    [[likely]] if (m_level == CommandBufferLevel::PrimaryBuffer)
     {
         VulkanWrapper::CmdDraw(m_commands, vertexCount, instanceCount, firstVertex, firstInstance);
     }
@@ -632,7 +644,7 @@ void VulkanCommandBuffer::cmdDrawIndexed(u32 firstIndex, u32 indexCount, u32 fir
     ASSERT(m_status == CommandBufferStatus::Begin, "not started");
     ASSERT(isInsideRenderPass(), "inside render pass");
 
-    if (m_level == CommandBufferLevel::PrimaryBuffer)
+    [[likely]] if (m_level == CommandBufferLevel::PrimaryBuffer)
     {
         VulkanWrapper::CmdDrawIndexed(m_commands, indexCount, instanceCount, firstIndex, vertexOffest, firstInstance);
     }
@@ -648,9 +660,8 @@ void VulkanCommandBuffer::cmdClearImage(VulkanImage* image, VkImageLayout imageL
     ASSERT(!isInsideRenderPass(), "outside render pass");
 
     ASSERT(image->getImageAspectFlags() == VK_IMAGE_ASPECT_COLOR_BIT, " image is not VK_IMAGE_ASPECT_COLOR_BIT");
-
     image->captureInsideCommandBuffer(this, 0);
-    if (m_level == CommandBufferLevel::PrimaryBuffer)
+    [[likely]] if (m_level == CommandBufferLevel::PrimaryBuffer)
     {
         VkImageSubresourceRange imageSubresourceRange = VulkanImage::makeImageSubresourceRange(image, VulkanImage::makeVulkanImageSubresource(image));
         VulkanWrapper::CmdClearColorImage(m_commands, image->getHandle(), imageLayout, pColor, 1, &imageSubresourceRange);
@@ -661,14 +672,15 @@ void VulkanCommandBuffer::cmdClearImage(VulkanImage* image, VkImageLayout imageL
     }
 }
 
-void VulkanCommandBuffer::cmdClearImage(VulkanImage * image, VkImageLayout imageLayout, const VkClearDepthStencilValue* pDepthStencil)
+void VulkanCommandBuffer::cmdClearImage(VulkanImage* image, VkImageLayout imageLayout, const VkClearDepthStencilValue* pDepthStencil)
 {
     ASSERT(m_status == CommandBufferStatus::Begin, "not started");
     ASSERT(!isInsideRenderPass(), "outside render pass");
+
     ASSERT(image->getImageAspectFlags() & (VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT), " image is not VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT");
     image->captureInsideCommandBuffer(this, 0);
 
-    if (m_level == CommandBufferLevel::PrimaryBuffer)
+    [[likely]] if (m_level == CommandBufferLevel::PrimaryBuffer)
     {
         VkImageSubresourceRange imageSubresourceRange = VulkanImage::makeImageSubresourceRange(image, VulkanImage::makeVulkanImageSubresource(image));
         VulkanWrapper::CmdClearDepthStencilImage(m_commands, image->getHandle(), imageLayout, pDepthStencil, 1, &imageSubresourceRange);
@@ -690,7 +702,7 @@ void VulkanCommandBuffer::cmdResolveImage(VulkanImage* src, VkImageLayout srcLay
     src->captureInsideCommandBuffer(this, 0);
     dst->captureInsideCommandBuffer(this, 0);
 
-    if (m_level == CommandBufferLevel::PrimaryBuffer)
+    [[likely]] if (m_level == CommandBufferLevel::PrimaryBuffer)
     {
         VulkanWrapper::CmdResolveImage(m_commands, src->getHandle(), srcLayout, dst->getHandle(), dstLayout, static_cast<u32>(regions.size()), regions.data());
     }
@@ -708,7 +720,7 @@ void VulkanCommandBuffer::cmdBlitImage(VulkanImage* src, VkImageLayout srcLayout
     src->captureInsideCommandBuffer(this, 0);
     dst->captureInsideCommandBuffer(this, 0);
 
-    if (m_level == CommandBufferLevel::PrimaryBuffer)
+    [[likely]] if (m_level == CommandBufferLevel::PrimaryBuffer)
     {
         VulkanWrapper::CmdBlitImage(m_commands, src->getHandle(), srcLayout, dst->getHandle(), dstLayout, static_cast<u32>(regions.size()), regions.data(), VK_FILTER_LINEAR);
 
@@ -730,7 +742,7 @@ void VulkanCommandBuffer::cmdUpdateBuffer(VulkanBuffer* src, u32 offset, u64 siz
     ASSERT(!isInsideRenderPass(), "outside render pass");
     src->captureInsideCommandBuffer(this, 0);
 
-    if (m_level == CommandBufferLevel::PrimaryBuffer)
+    [[likely]] if (m_level == CommandBufferLevel::PrimaryBuffer)
     {
         VulkanWrapper::CmdUpdateBuffer(m_commands, src->getHandle(), offset, size, data);
     }
@@ -748,7 +760,7 @@ void VulkanCommandBuffer::cmdCopyBufferToImage(VulkanBuffer* src, VulkanImage* d
     src->captureInsideCommandBuffer(this, 0);
     dst->captureInsideCommandBuffer(this, 0);
 
-    if (m_level == CommandBufferLevel::PrimaryBuffer)
+    [[likely]] if (m_level == CommandBufferLevel::PrimaryBuffer)
     {
         VulkanWrapper::CmdCopyBufferToImage(m_commands, src->getHandle(), dst->getHandle(), layout, static_cast<u32>(regions.size()), regions.data());
     }
@@ -766,7 +778,7 @@ void VulkanCommandBuffer::cmdCopyBufferToBuffer(VulkanBuffer* src, VulkanBuffer*
     src->captureInsideCommandBuffer(this, 0);
     dst->captureInsideCommandBuffer(this, 0);
 
-    if (m_level == CommandBufferLevel::PrimaryBuffer)
+    [[likely]] if (m_level == CommandBufferLevel::PrimaryBuffer)
     {
         VulkanWrapper::CmdCopyBuffer(m_commands, src->getHandle(), dst->getHandle(), static_cast<u32>(regions.size()), regions.data());
     }
@@ -792,7 +804,7 @@ void VulkanCommandBuffer::cmdPipelineBarrier(const VulkanImage* image, VkPipelin
         return;
     }
 
-    if (m_level == CommandBufferLevel::PrimaryBuffer)
+    [[likely]] if (m_level == CommandBufferLevel::PrimaryBuffer)
     {
         image->captureInsideCommandBuffer(this, 0);
 
@@ -825,7 +837,7 @@ void VulkanCommandBuffer::cmdPipelineBarrier(VulkanBuffer* buffer, VkPipelineSta
     ASSERT(m_status == CommandBufferStatus::Begin, "not started");
     buffer->captureInsideCommandBuffer(this, 0);
 
-    if (m_level == CommandBufferLevel::PrimaryBuffer)
+    [[likely]] if (m_level == CommandBufferLevel::PrimaryBuffer)
     {
         VkBufferMemoryBarrier bufferMemoryBarrier = {};
         //TODO:
@@ -842,7 +854,7 @@ void VulkanCommandBuffer::cmdPipelineBarrier(VkPipelineStageFlags srcStageMask, 
 {
     ASSERT(m_status == CommandBufferStatus::Begin, "not started");
 
-    if (m_level == CommandBufferLevel::PrimaryBuffer)
+    [[likely]] if (m_level == CommandBufferLevel::PrimaryBuffer)
     {
         VulkanWrapper::CmdPipelineBarrier(m_commands, srcStageMask, dstStageMask, VK_DEPENDENCY_BY_REGION_BIT, 1, &memoryBarrier, 0, nullptr, 0, nullptr);
     }
@@ -857,7 +869,7 @@ void VulkanCommandBuffer::cmdDispatch(const core::Dimension3D& groups)
     ASSERT(m_status == CommandBufferStatus::Begin, "not started");
     ASSERT(!isInsideRenderPass(), "must be outside");
 
-    if (m_level == CommandBufferLevel::PrimaryBuffer)
+    [[likely]] if (m_level == CommandBufferLevel::PrimaryBuffer)
     {
         VulkanWrapper::CmdDispatch(m_commands, groups.width, groups.height, groups.depth);
     }

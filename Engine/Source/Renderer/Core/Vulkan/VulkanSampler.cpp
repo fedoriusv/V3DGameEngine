@@ -205,11 +205,6 @@ void VulkanSampler::destroy()
     }
 }
 
-VkSampler VulkanSampler::getHandle() const
-{
-    ASSERT(m_sampler, "nullptr");
-    return m_sampler;
-}
 
 } //namespace vk
 } //namespace renderer

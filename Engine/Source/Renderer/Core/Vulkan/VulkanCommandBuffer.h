@@ -178,6 +178,12 @@ namespace vk
         return m_isInsideRenderPass;
     }
 
+    inline VkCommandBuffer VulkanCommandBuffer::getHandle() const
+    {
+        ASSERT(m_commands != VK_NULL_HANDLE, "nullptr");
+        return m_commands;
+    }
+
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
 } //namespace vk

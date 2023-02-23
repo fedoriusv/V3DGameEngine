@@ -53,11 +53,7 @@ namespace vk
     {
     public:
 
-        VulkanDebugUtils() = default;
-        VulkanDebugUtils(const VulkanDebugUtils&) = delete;
-
         static const u16 k_severityDebugLevel = k_debugLevel;
-
         static const std::string k_addressPreffix;
 
         static bool createDebugUtilsMessenger(VkInstance instance, VkDebugUtilsMessageSeverityFlagsEXT severityFlag, VkDebugUtilsMessageTypeFlagsEXT flags, PFN_vkDebugUtilsMessengerCallbackEXT callback, void* userData = nullptr);
@@ -65,7 +61,11 @@ namespace vk
 
         static VkBool32 VKAPI_PTR defaultDebugUtilsMessengerCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageType, const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, void* pUserData);
 
+        VulkanDebugUtils() = default;
+
     private:
+
+        VulkanDebugUtils(const VulkanDebugUtils&) = delete;
 
         static void debugCallbackData(const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, void* pUserData);
 
@@ -80,15 +80,16 @@ namespace vk
 
         static const u16 k_debugReportLevel = k_debugLevel;
 
-        VulkanDebugReport() = default;
-        VulkanDebugReport(const VulkanDebugReport&) = delete;
-
         static bool createDebugReportCallback(VkInstance instance, VkDebugReportFlagsEXT flags, PFN_vkDebugReportCallbackEXT callback, void* userData = nullptr);
         static void destroyDebugReportCallback(VkInstance instance);
 
         static VkBool32 VKAPI_PTR defaultDebugReportCallback(VkDebugReportFlagsEXT flags, VkDebugReportObjectTypeEXT objectType, uint64_t object, size_t location, int32_t messageCode, const char* pLayerPrefix, const char* pMessage, void* pUserData);
 
+        VulkanDebugReport() = default;
+
     private:
+
+        VulkanDebugReport(const VulkanDebugReport&) = delete;
 
         static VkDebugReportCallbackEXT s_callback;
     };

@@ -1583,19 +1583,6 @@ VkImageView VulkanImage::getImageView(const Image::Subresource& resource, VkImag
     return found->second;
 }
 
-VkImage VulkanImage::getHandle() const
-{
-    ASSERT(m_image != VK_NULL_HANDLE, "nullptr");
-    return m_image;
-}
-
-VkImageLayout VulkanImage::getLayout(const Image::Subresource& resource) const
-{
-    u32 index = 1 + (resource._baseLayer * m_mipLevels + resource._baseMip);
-    ASSERT(index < m_layout.size(), "out of range");
-    return m_layout[index];
-}
-
 VkImageLayout VulkanImage::setLayout(VkImageLayout newlayout, const Image::Subresource& resource)
 {
     VkImageLayout oldLayout = m_layout.front();

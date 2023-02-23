@@ -67,6 +67,12 @@ namespace vk
 #endif //VULKAN_DEBUG_MARKERS
     };
 
+    inline VkBuffer VulkanBuffer::getHandle() const
+    {
+        ASSERT(m_buffer != VK_NULL_HANDLE, "nullptr");
+        return m_buffer;
+    }
+
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
 } //namespace vk

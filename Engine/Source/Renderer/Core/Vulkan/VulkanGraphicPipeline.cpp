@@ -359,18 +359,6 @@ VkVertexInputRate VulkanGraphicPipeline::covertInputRateToVk(VertexInputAttribDe
 
 }
 
-VkPipeline VulkanGraphicPipeline::getHandle() const
-{
-    ASSERT(m_pipeline != VK_NULL_HANDLE, "nullptr");
-    return m_pipeline;
-}
-
-VkPipelineLayout VulkanGraphicPipeline::getPipelineLayoutHandle() const
-{
-    ASSERT(m_pipelineLayout._pipelineLayout != VK_NULL_HANDLE, "nullptr");
-    return m_pipelineLayout._pipelineLayout;
-}
-
 VulkanGraphicPipeline::VulkanGraphicPipeline(VkDevice device, Context* context, RenderPassManager* renderpassManager, VulkanPipelineLayoutManager * pipelineLayoutManager, const std::string& name)
     : Pipeline(PipelineType::PipelineType_Graphic)
     , m_device(device)

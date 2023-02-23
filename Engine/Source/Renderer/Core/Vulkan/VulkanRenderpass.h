@@ -85,6 +85,23 @@ namespace vk
 #endif //VULKAN_DEBUG_MARKERS
     };
 
+    inline bool VulkanRenderPass::isDrawingToSwapchain() const
+    {
+        return (VulkanRenderPass::getDescription()._countColorAttachments == 1) && (VulkanRenderPass::getDescription()._attachments[0]._backbuffer);
+    }
+
+    inline VkRenderPass VulkanRenderPass::getHandle() const
+    {
+        ASSERT(m_renderpass != VK_NULL_HANDLE, "nullptr");
+        return m_renderpass;
+    }
+
+    inline const VulkanRenderPass::VulkanAttachmentDescription& VulkanRenderPass::getAttachmentDescription(u32 index) const
+    {
+        ASSERT(index < m_descriptions.size(), "range out");
+        return m_descriptions[index];
+    }
+
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
 } //namespace vk

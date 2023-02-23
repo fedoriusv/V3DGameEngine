@@ -55,7 +55,7 @@ void VulkanContextState::invalidateCommandBuffer(CommandTargetType type)
     }
 }
 
-bool VulkanContextState::isCurrentFramebuffer(const VulkanFramebuffer * framebuffer) const
+bool VulkanContextState::isCurrentFramebuffer(const VulkanFramebuffer* framebuffer) const
 {
     if (m_currentFramebuffer.first.size() == 1)
     {

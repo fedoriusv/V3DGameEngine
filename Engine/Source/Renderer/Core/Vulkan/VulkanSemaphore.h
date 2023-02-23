@@ -48,6 +48,12 @@ namespace vk
 #endif
     };
 
+    inline VkSemaphore VulkanSemaphore::getHandle() const
+    {
+        ASSERT(m_semaphore, "nullptr");
+        return m_semaphore;
+    }
+
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**

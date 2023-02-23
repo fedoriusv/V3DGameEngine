@@ -107,23 +107,6 @@ VulkanRenderPass::~VulkanRenderPass()
     ASSERT(!m_renderpass, "not nullptr");
 }
 
-VkRenderPass VulkanRenderPass::getHandle() const
-{
-    ASSERT(m_renderpass != VK_NULL_HANDLE, "nullptr");
-    return m_renderpass;
-}
-
-const VulkanRenderPass::VulkanAttachmentDescription& VulkanRenderPass::getAttachmentDescription(u32 index) const
-{
-    ASSERT(index < m_descriptions.size(), "range out");
-    return m_descriptions[index];
-}
-
-bool VulkanRenderPass::isDrawingToSwapchain() const
-{
-    return (VulkanRenderPass::getDescription()._countColorAttachments == 1) && (VulkanRenderPass::getDescription()._attachments[0]._backbuffer);
-}
-
 bool VulkanRenderPass::create()
 {
     ASSERT(!m_renderpass, "not empty");

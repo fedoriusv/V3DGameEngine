@@ -4,7 +4,6 @@
 
 #ifdef VULKAN_RENDER
 #include "VulkanDebug.h"
-#include "VulkanContext.h"
 #include "VulkanImage.h"
 #include "VulkanRenderpass.h"
 #include "VulkanSwapchain.h"
@@ -15,10 +14,8 @@ namespace renderer
 {
 namespace vk
 {
-
-VulkanFramebuffer::VulkanFramebuffer(VkDevice device, const Context* context, const std::vector<Image*>& images, const core::Dimension2D& size, const std::string& name) noexcept
+VulkanFramebuffer::VulkanFramebuffer(VkDevice device, const std::vector<Image*>& images, const core::Dimension2D& size, const std::string& name) noexcept
     : m_device(device)
-    , m_context(context)
     , m_images(images)
     , m_size(size)
 
@@ -36,12 +33,6 @@ VulkanFramebuffer::~VulkanFramebuffer()
 {
     LOG_DEBUG("VulkanFramebuffer::VulkanFramebuffer destructor %llx", this);
     ASSERT(!m_framebuffer, "framebuffer is not nullptr");
-}
-
-VkFramebuffer VulkanFramebuffer::getHandle() const
-{
-    ASSERT(m_framebuffer != VK_NULL_HANDLE, "nullptr");
-    return m_framebuffer;
 }
 
 bool VulkanFramebuffer::create(const RenderPass* pass)

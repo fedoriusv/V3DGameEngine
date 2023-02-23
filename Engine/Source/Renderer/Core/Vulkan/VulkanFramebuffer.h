@@ -10,11 +10,6 @@ namespace v3d
 {
 namespace renderer
 {
-    /////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    class Context;
-
-    /////////////////////////////////////////////////////////////////////////////////////////////////////
 namespace vk
 {
     /////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -26,7 +21,7 @@ namespace vk
     {
     public:
 
-        VulkanFramebuffer(VkDevice device, const Context* context, const std::vector<Image*>& images, const core::Dimension2D& size, [[maybe_unused]] const std::string& name = "") noexcept;
+        VulkanFramebuffer(VkDevice device, const std::vector<Image*>& images, const core::Dimension2D& size, [[maybe_unused]] const std::string& name = "") noexcept;
         ~VulkanFramebuffer();
 
         VkFramebuffer getHandle() const;
@@ -43,7 +38,6 @@ namespace vk
         VulkanFramebuffer(const VulkanFramebuffer&) = delete;
 
         VkDevice                    m_device;
-        [[maybe_unused]] const Context* const m_context;
 
         const std::vector<Image*>   m_images;
         std::vector<VkImageView>    m_imageViews;
@@ -64,6 +58,12 @@ namespace vk
     inline const core::Dimension2D& VulkanFramebuffer::getArea() const
     {
         return m_size;
+    }
+
+    inline VkFramebuffer VulkanFramebuffer::getHandle() const
+    {
+        ASSERT(m_framebuffer != VK_NULL_HANDLE, "nullptr");
+        return m_framebuffer;
     }
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

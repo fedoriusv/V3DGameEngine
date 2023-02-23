@@ -27,36 +27,6 @@ VulkanStagingBuffer::~VulkanStagingBuffer()
     }
 }
 
-bool VulkanStagingBuffer::create()
-{
-    ASSERT(m_buffer, "nullptr");
-    return m_buffer->create();
-}
-
-void VulkanStagingBuffer::destroy()
-{
-    ASSERT(m_buffer, "nullptr");
-    m_buffer->destroy();
-}
-
-void * VulkanStagingBuffer::map()
-{
-    ASSERT(m_buffer, "nullptr");
-    return m_buffer->map();
-}
-
-void VulkanStagingBuffer::unmap()
-{
-    ASSERT(m_buffer, "nullptr");
-    m_buffer->unmap();
-}
-
-VulkanBuffer * VulkanStagingBuffer::getBuffer() const
-{
-    ASSERT(m_buffer, "nullptr");
-    return m_buffer;
-}
-
 VulkanStagingBufferManager::VulkanStagingBufferManager(VkDevice device) noexcept
     : m_device(device)
     , m_memoryManager(new SimpleVulkanMemoryAllocator(device))

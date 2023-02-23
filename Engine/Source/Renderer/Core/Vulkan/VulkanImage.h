@@ -172,6 +172,19 @@ namespace vk
         return m_swapchainImage;
     }
 
+    inline VkImage VulkanImage::getHandle() const
+    {
+        ASSERT(m_image != VK_NULL_HANDLE, "nullptr");
+        return m_image;
+    }
+
+    inline VkImageLayout VulkanImage::getLayout(const Image::Subresource& resource) const
+    {
+        u32 index = 1 + (resource._baseLayer * m_mipLevels + resource._baseMip);
+        ASSERT(index < m_layout.size(), "out of range");
+        return m_layout[index];
+    }
+
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
 } //namespace vk

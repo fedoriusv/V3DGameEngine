@@ -43,6 +43,36 @@ namespace vk
         VulkanBuffer* m_buffer;
     };
 
+    inline bool VulkanStagingBuffer::create()
+    {
+        ASSERT(m_buffer, "nullptr");
+        return m_buffer->create();
+    }
+
+    inline void VulkanStagingBuffer::destroy()
+    {
+        ASSERT(m_buffer, "nullptr");
+        m_buffer->destroy();
+    }
+
+    inline void* VulkanStagingBuffer::map()
+    {
+        ASSERT(m_buffer, "nullptr");
+        return m_buffer->map();
+    }
+
+    inline void VulkanStagingBuffer::unmap()
+    {
+        ASSERT(m_buffer, "nullptr");
+        m_buffer->unmap();
+    }
+
+    inline VulkanBuffer* VulkanStagingBuffer::getBuffer() const
+    {
+        ASSERT(m_buffer, "nullptr");
+        return m_buffer;
+    }
+
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**

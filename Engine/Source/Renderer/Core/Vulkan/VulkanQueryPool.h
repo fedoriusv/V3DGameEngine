@@ -58,6 +58,12 @@ namespace vk
         return m_count;
     }
 
+    inline VkQueryPool VulkanQueryPool::getHandle() const
+    {
+        ASSERT(m_pool, "mist be not nullptr");
+        return m_pool;
+    }
+
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**

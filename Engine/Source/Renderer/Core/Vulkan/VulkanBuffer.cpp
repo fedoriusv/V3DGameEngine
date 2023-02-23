@@ -318,12 +318,6 @@ bool VulkanBuffer::upload(Context* context, u32 offset, u64 size, const void * d
     return false;
 }
 
-VkBuffer VulkanBuffer::getHandle() const
-{
-    ASSERT(m_buffer != VK_NULL_HANDLE, "nullptr");
-    return m_buffer;
-}
-
 void* VulkanBuffer::map()
 {
     if (!m_buffer)
