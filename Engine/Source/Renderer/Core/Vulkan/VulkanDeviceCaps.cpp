@@ -7,6 +7,14 @@
 #include "VulkanImage.h"
 #include "VulkanDescriptorSet.h"
 
+#   ifdef PLATFORM_WINDOWS
+extern "C"
+{
+    __declspec(dllexport) DWORD NvOptimusEnablement = 0x00000001;
+    __declspec(dllexport) DWORD AmdPowerXpressRequestHighPerformance = 0x00000001;
+}
+#   endif //PLATFORM_WINDOWS
+
 namespace v3d
 {
 namespace renderer
