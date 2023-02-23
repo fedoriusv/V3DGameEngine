@@ -9,6 +9,10 @@ namespace core
 {
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
+#define REVERSED_Z 1
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
+
     template <class T>
     class TMatrix4D
     {
@@ -107,12 +111,20 @@ namespace core
 
         matrix[8] = 0.f;
         matrix[9] = 0.f;
+#if REVERSED_Z
+        matrix[10] = zNear / (zNear - zFar);
+#else
         matrix[10] = zFar / (zFar - zNear);
+#endif //REVERSED_Z
         matrix[11] = 1.f;
 
         matrix[12] = 0.f;
         matrix[13] = 0.f;
+#if REVERSED_Z
+        matrix[14] = -(zFar * zNear) / (zNear - zFar);
+#else
         matrix[14] = -(zFar * zNear) / (zFar - zNear);
+#endif //REVERSED_Z
         matrix[15] = 0.f;
 
         return outMatrix;
@@ -122,25 +134,40 @@ namespace core
     {
         Matrix4D outMatrix;
         f32* matrix = outMatrix.getPtr();
-
+#if REVERSED_Z
+        matrix[0] = 2.f * zFar / (right - left);
+#else
         matrix[0] = 2.f * zNear / (right - left);
+#endif //REVERSED_Z
         matrix[1] = 0.f;
         matrix[2] = 0.f;
         matrix[3] = 0.f;
 
         matrix[4] = 0.f;
+#if REVERSED_Z
+        matrix[5] = 2.f * zFar / (top - bottom);
+#else
         matrix[5] = 2.f * zNear / (top - bottom);
+#endif //REVERSED_Z
         matrix[6] = 0.f;
         matrix[7] = 0.f;
 
         matrix[8] = (right + left) / (right - left);
         matrix[9] = (top + bottom) / (top - bottom);
+#if REVERSED_Z
+        matrix[10] = zNear / (zNear - zFar);
+#else
         matrix[10] = zFar / (zFar - zNear);
+#endif //REVERSED_Z
         matrix[11] = 1.f;
 
         matrix[12] = 0.f;
         matrix[13] = 0.f;
+#if REVERSED_Z
+        matrix[14] = -(zFar * zNear) / (zNear - zFar);
+#else
         matrix[14] = -(zFar * zNear) / (zFar - zNear);
+#endif //REVERSED_Z
         matrix[15] = 1.f;
 
         return outMatrix;
@@ -163,12 +190,20 @@ namespace core
 
         matrix[8] = 0.f;
         matrix[9] = 0.f;
+#if REVERSED_Z
+        matrix[10] = 1.f / (zNear - zFar);
+#else
         matrix[10] = 1.f / (zFar - zNear);
+#endif //REVERSED_Z
         matrix[11] = 0.f;
 
         matrix[12] = -(right + left) / (right - left) /*0.f*/;
         matrix[13] = -(top + bottom) / (top - bottom) /*0.f*/;
+#if REVERSED_Z
+        matrix[14] = -zFar / (zNear - zFar);
+#else
         matrix[14] = -zNear / (zFar - zNear);
+#endif //REVERSED_Z
         matrix[15] = 1.f;
 
         return outMatrix;
