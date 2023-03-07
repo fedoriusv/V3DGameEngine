@@ -25,8 +25,6 @@ namespace renderer
     {
     public:
 
-        ShaderProgram() = delete;
-        ShaderProgram(const ShaderProgram &) = delete;
         ~ShaderProgram();
 
         const Shader* getShader(ShaderType type) const;
@@ -60,7 +58,10 @@ namespace renderer
     private:
 
         ShaderProgram(renderer::CommandList& cmdList, const std::vector<const Shader*>& shaders) noexcept;
-        ShaderProgram(renderer::CommandList& cmdList, const Shader* computeShader) noexcept;
+        ShaderProgram(renderer::CommandList& cmdList, const Shader* shader) noexcept;
+
+        ShaderProgram() = delete;
+        ShaderProgram(const ShaderProgram&) = delete;
 
         friend CommandList;
         CommandList& m_cmdList;

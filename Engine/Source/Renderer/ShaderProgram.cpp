@@ -32,14 +32,15 @@ ShaderProgram::ShaderProgram(renderer::CommandList& cmdList, const std::vector<c
     }
 }
 
-ShaderProgram::ShaderProgram(renderer::CommandList& cmdList, const Shader* computeShader) noexcept
+ShaderProgram::ShaderProgram(renderer::CommandList& cmdList, const Shader* shader) noexcept
     : m_cmdList(cmdList)
 {
-    ASSERT(computeShader, "nullptr");
-    m_programInfo._shaders[toEnumType(computeShader->getShaderHeader()._type)] = computeShader;
-    if (ShaderProgram::getShader(ShaderType::Compute))
+    ASSERT(shader, "nullptr");
+    m_programInfo._shaders[toEnumType(shader->getShaderHeader()._type)] = shader;
+
+    if (ShaderProgram::getShader(ShaderType::Vertex) || ShaderProgram::getShader(ShaderType::Compute))
     {
-        composeProgramData({ computeShader });
+        composeProgramData({ shader });
     }
     else
     {
