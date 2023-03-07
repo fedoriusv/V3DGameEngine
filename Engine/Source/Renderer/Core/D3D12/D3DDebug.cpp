@@ -15,8 +15,18 @@ namespace dx3d
 
 std::string D3DDebug::stringError(HRESULT error)
 {
+    //https://learn.microsoft.com/en-us/windows/win32/direct3d12/d3d12-graphics-reference-returnvalues
     switch (error)
     {
+    case E_INVALIDARG:
+        return "INVALIDARG";
+
+    case E_OUTOFMEMORY:
+        return "OUTOFMEMORY";
+
+    case E_NOTIMPL:
+        return "NOTIMPL";
+
     case DXGI_ERROR_ACCESS_DENIED:
         return "DXGI_ERROR_ACCESS_DENIED";
 
@@ -183,7 +193,7 @@ D3DDebugLayerMessageCallback::~D3DDebugLayerMessageCallback()
 bool D3DDebugLayerMessageCallback::registerMessageCallback(D3D12MessageFunc callbackFunc, D3D12_MESSAGE_CALLBACK_FLAGS flags, void* userData)
 {
     ASSERT(m_infoQueue, "nullptr");
-    ASSERT(m_ID != 0, "registered already");
+    ASSERT(!m_ID, "registered already");
     HRESULT result = m_infoQueue->RegisterMessageCallback(callbackFunc, flags, userData, &m_ID);
     if (FAILED(result))
     {
@@ -218,7 +228,32 @@ bool D3DDebugLayerMessageCallback::unregisterMessageCallback()
 void D3DDebugLayerMessageCallback::debugLayersMessageCallback(D3D12_MESSAGE_CATEGORY category, D3D12_MESSAGE_SEVERITY severity, D3D12_MESSAGE_ID ID, LPCSTR description, void* context)
 {
     D3DGraphicContext* dxContext = reinterpret_cast<D3DGraphicContext*>(context);
-    //TODO
+
+    switch (severity)
+    {
+    case D3D12_MESSAGE_SEVERITY::D3D12_MESSAGE_SEVERITY_CORRUPTION:
+        LOG_FATAL("D3DDebug[CORRUPTION]. ID %d, %s", ID, description);
+        break;
+
+    case D3D12_MESSAGE_SEVERITY::D3D12_MESSAGE_SEVERITY_ERROR:
+        LOG_ERROR("D3DDebug[ERROR]. ID %d, %s", ID, description);
+        break;
+
+    case D3D12_MESSAGE_SEVERITY::D3D12_MESSAGE_SEVERITY_WARNING:
+        LOG_WARNING("D3DDebug[WARNING]. ID %d, %s", ID, description);
+        break;
+
+    case D3D12_MESSAGE_SEVERITY::D3D12_MESSAGE_SEVERITY_INFO:
+        LOG_INFO("D3DDebug[INFO]. ID %d, %s", ID, description);
+        break;
+
+    case D3D12_MESSAGE_SEVERITY::D3D12_MESSAGE_SEVERITY_MESSAGE:
+        LOG_DEBUG("D3DDebug[MESSAGE]. ID %d, %s", ID, description);
+        break;
+
+    default:
+        break;
+    }
 }
 #endif //PLATFORM_WINDOWS
 
