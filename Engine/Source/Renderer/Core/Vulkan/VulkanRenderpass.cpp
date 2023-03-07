@@ -163,6 +163,9 @@ bool VulkanRenderPass::createRenderpass()
 
     VkAttachmentReference depthStencilAttachmentReferences = {};
 
+    VkAccessFlags dependencyAccessFlags = 0;
+    VkPipelineStageFlags dependencyStageFlags = 0;
+
     bool depthStencil = false;
     u32 index = 0;
     for (u32 descIndex = 0; descIndex < m_descriptions.size(); ++descIndex)
@@ -195,6 +198,9 @@ bool VulkanRenderPass::createRenderpass()
                 attachmentReference.attachment = index;
                 attachmentReference.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
+                dependencyAccessFlags |= VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+                dependencyStageFlags |= VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+
                 m_layout[index] = { attachmentReference.layout, attach._finalLayout };
                 index++;
 
@@ -209,6 +215,9 @@ bool VulkanRenderPass::createRenderpass()
 
                 depthStencilAttachmentReferences.attachment = index;
                 depthStencilAttachmentReferences.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+
+                dependencyAccessFlags |= VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+                dependencyStageFlags |= VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
 
                 m_layout[index] = { depthStencilAttachmentReferences.layout, attach._finalLayout };
                 index++;
@@ -246,11 +255,13 @@ bool VulkanRenderPass::createRenderpass()
                 msaaAttachmentReference.attachment = index;
                 msaaAttachmentReference.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
+                dependencyAccessFlags |= VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+                dependencyStageFlags |= VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+
                 m_layout[index] = { msaaAttachmentReference.layout, attach._finalLayout };
                 index++;
 
                 colorAttachmentReferences.push_back(msaaAttachmentReference);
-
 
                 VkAttachmentReference resolveAttachmentReference = {};
                 resolveAttachmentReference.attachment = index;
@@ -273,6 +284,9 @@ bool VulkanRenderPass::createRenderpass()
 
                 depthStencilAttachmentReferences.attachment = index;
                 depthStencilAttachmentReferences.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+
+                dependencyAccessFlags |= VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+                dependencyStageFlags |= VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
 
                 m_layout[index] = { depthStencilAttachmentReferences.layout, attach._finalLayout };
                 index++;
@@ -326,6 +340,18 @@ bool VulkanRenderPass::createRenderpass()
         vkExtensions = &renderPassMultiviewCreateInfo;
     }
 
+    std::array<VkSubpassDependency, 1> subpassDependency;
+    {
+        VkSubpassDependency& subpassDependencyBottomExernal = subpassDependency[0];
+        subpassDependencyBottomExernal.srcSubpass = 0;
+        subpassDependencyBottomExernal.dstSubpass = VK_SUBPASS_EXTERNAL;
+        subpassDependencyBottomExernal.srcStageMask = dependencyStageFlags;
+        subpassDependencyBottomExernal.srcAccessMask = dependencyAccessFlags;
+        subpassDependencyBottomExernal.dstStageMask = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+        subpassDependencyBottomExernal.dstAccessMask = 0;
+        subpassDependencyBottomExernal.dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
+    }
+
     VkRenderPassCreateInfo renderPassCreateInfo = {};
     renderPassCreateInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
     renderPassCreateInfo.pNext = vkExtensions;
@@ -334,8 +360,8 @@ bool VulkanRenderPass::createRenderpass()
     renderPassCreateInfo.pAttachments = attachmentDescriptions.data();
     renderPassCreateInfo.subpassCount = static_cast<u32>(subpassDescriptions.size());
     renderPassCreateInfo.pSubpasses = subpassDescriptions.data();
-    renderPassCreateInfo.dependencyCount = 0;     //dependencies.size();
-    renderPassCreateInfo.pDependencies = nullptr; //ependencies.data();
+    renderPassCreateInfo.dependencyCount = static_cast<u32>(subpassDependency.size());
+    renderPassCreateInfo.pDependencies = subpassDependency.data();
 
 #ifdef VK_QCOM_render_pass_transform
     if (VulkanDeviceCaps::getInstance()->renderpassTransformQCOM)
@@ -371,6 +397,9 @@ bool VulkanRenderPass::createRenderpass2()
     VkAttachmentReference2KHR resolveDepthStencilAttachmentReferences = {};
     resolveDepthStencilAttachmentReferences.sType = VK_STRUCTURE_TYPE_ATTACHMENT_REFERENCE_2_KHR;
     resolveDepthStencilAttachmentReferences.pNext = nullptr;
+
+    VkAccessFlags dependencyAccessFlags = 0;
+    VkPipelineStageFlags dependencyStageFlags = 0;
 
     bool depthStencil = false;
     bool depthStencilAutoresolve = false;
@@ -411,6 +440,9 @@ bool VulkanRenderPass::createRenderpass2()
                 attachmentReference.attachment = index;
                 attachmentReference.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
+                dependencyAccessFlags |= VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+                dependencyStageFlags |= VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+
                 m_layout[index] = { attachmentReference.layout, attach._finalLayout };
                 ++index;
 
@@ -424,8 +456,11 @@ bool VulkanRenderPass::createRenderpass2()
                 attachmentDescription.stencilStoreOp = attach._stensilStoreOp;
 
                 depthStencilAttachmentReferences.attachment = index;
-                depthStencilAttachmentReferences.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
                 depthStencilAttachmentReferences.aspectMask = VulkanImage::getImageAspectFlags(attach._format);
+                depthStencilAttachmentReferences.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+
+                dependencyAccessFlags |= VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+                dependencyStageFlags |= VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
 
                 m_layout[index] = { depthStencilAttachmentReferences.layout, attach._finalLayout };
                 ++index;
@@ -472,11 +507,13 @@ bool VulkanRenderPass::createRenderpass2()
                 msaaAttachmentReference.attachment = index;
                 msaaAttachmentReference.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
+                dependencyAccessFlags |= VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+                dependencyStageFlags |= VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+
                 m_layout[index] = { msaaAttachmentReference.layout, attach._finalLayout };
                 ++index;
 
                 colorAttachmentReferences.push_back(msaaAttachmentReference);
-
 
                 VkAttachmentReference2KHR resolveAttachmentReference = {};
                 resolveAttachmentReference.sType = VK_STRUCTURE_TYPE_ATTACHMENT_REFERENCE_2_KHR;
@@ -501,8 +538,11 @@ bool VulkanRenderPass::createRenderpass2()
                 resolveAttachmentDescription.stencilStoreOp = attach._stensilStoreOp;
 
                 depthStencilAttachmentReferences.attachment = index;
-                depthStencilAttachmentReferences.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
                 depthStencilAttachmentReferences.aspectMask = VulkanImage::getImageAspectFlags(attach._format);
+                depthStencilAttachmentReferences.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+
+                dependencyAccessFlags |= VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+                dependencyStageFlags |= VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
 
                 m_layout[index] = { depthStencilAttachmentReferences.layout, attach._finalLayout };
                 ++index;
@@ -525,52 +565,59 @@ bool VulkanRenderPass::createRenderpass2()
         }
     }
 
-    u32 countSubpasses = 1;
-    std::vector<VkSubpassDescription2KHR> subpassDescriptions;
-    subpassDescriptions.reserve(countSubpasses);
+    std::array<VkSubpassDescription2KHR, 1> subpassDescriptions;
+    VkSubpassDescription2KHR& subpassDescription = subpassDescriptions[0];
+    subpassDescription.sType = VK_STRUCTURE_TYPE_SUBPASS_DESCRIPTION_2_KHR;
 
-    for (u32 subpassIndex = 0; subpassIndex < countSubpasses; ++subpassIndex)
+    VkSubpassDescriptionDepthStencilResolveKHR subpassDescriptionDepthStencilResolve = {};
+    subpassDescriptionDepthStencilResolve.sType = VK_STRUCTURE_TYPE_SUBPASS_DESCRIPTION_DEPTH_STENCIL_RESOLVE_KHR;
+    subpassDescriptionDepthStencilResolve.pNext = nullptr;
+    if (depthStencilAutoresolve)
     {
-        VkSubpassDescription2KHR subpassDescription = {};
-        subpassDescription.sType = VK_STRUCTURE_TYPE_SUBPASS_DESCRIPTION_2_KHR;
+        subpassDescriptionDepthStencilResolve.pDepthStencilResolveAttachment = &resolveDepthStencilAttachmentReferences;
+        subpassDescriptionDepthStencilResolve.depthResolveMode = VK_RESOLVE_MODE_SAMPLE_ZERO_BIT_KHR;
+        subpassDescriptionDepthStencilResolve.stencilResolveMode = VK_RESOLVE_MODE_NONE_KHR;
 
-        VkSubpassDescriptionDepthStencilResolveKHR subpassDescriptionDepthStencilResolve = {};
-        subpassDescriptionDepthStencilResolve.sType = VK_STRUCTURE_TYPE_SUBPASS_DESCRIPTION_DEPTH_STENCIL_RESOLVE_KHR;
-        subpassDescriptionDepthStencilResolve.pNext = nullptr;
-        if (depthStencilAutoresolve)
-        {
-            subpassDescriptionDepthStencilResolve.pDepthStencilResolveAttachment = &resolveDepthStencilAttachmentReferences;
-            subpassDescriptionDepthStencilResolve.depthResolveMode = VK_RESOLVE_MODE_SAMPLE_ZERO_BIT_KHR;
-            subpassDescriptionDepthStencilResolve.stencilResolveMode = VK_RESOLVE_MODE_NONE_KHR;
+        subpassDescription.pNext = &subpassDescriptionDepthStencilResolve;
+    }
+    else
+    {
+        subpassDescription.pNext = nullptr;
+    }
 
-            subpassDescription.pNext = &subpassDescriptionDepthStencilResolve;
-        }
-        else
-        {
-            subpassDescription.pNext = nullptr;
-        }
-
-        subpassDescription.flags = 0;
+    subpassDescription.flags = 0;
+    subpassDescription.viewMask = 0;
+    subpassDescription.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+    subpassDescription.inputAttachmentCount = 0;
+    subpassDescription.pInputAttachments = nullptr;
+    subpassDescription.colorAttachmentCount = static_cast<u32>(colorAttachmentReferences.size());
+    subpassDescription.pColorAttachments = colorAttachmentReferences.data();
+    subpassDescription.pResolveAttachments = !resolveAttachmentReferences.empty() ? resolveAttachmentReferences.data() : nullptr;
+    subpassDescription.pDepthStencilAttachment = depthStencil ? &depthStencilAttachmentReferences : nullptr;
+    subpassDescription.preserveAttachmentCount = 0;
+    subpassDescription.pPreserveAttachments = nullptr;
+    if (VulkanDeviceCaps::getInstance()->supportMultiview && m_desc._desc._viewsMask != 0)
+    {
+        subpassDescription.viewMask = m_desc._desc._viewsMask;
+    }
+    else
+    {
         subpassDescription.viewMask = 0;
-        subpassDescription.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-        subpassDescription.inputAttachmentCount = 0;
-        subpassDescription.pInputAttachments = nullptr;
-        subpassDescription.colorAttachmentCount = static_cast<u32>(colorAttachmentReferences.size());
-        subpassDescription.pColorAttachments = colorAttachmentReferences.data();
-        subpassDescription.pResolveAttachments = !resolveAttachmentReferences.empty() ? resolveAttachmentReferences.data() : nullptr;
-        subpassDescription.pDepthStencilAttachment = depthStencil ? &depthStencilAttachmentReferences : nullptr;
-        subpassDescription.preserveAttachmentCount = 0;
-        subpassDescription.pPreserveAttachments = nullptr;
-        if (VulkanDeviceCaps::getInstance()->supportMultiview && m_desc._desc._viewsMask != 0)
-        {
-            subpassDescription.viewMask = m_desc._desc._viewsMask;
-        }
-        else
-        {
-            subpassDescription.viewMask = 0;
-        }
+    }
 
-        subpassDescriptions.push_back(subpassDescription);
+    std::array<VkSubpassDependency2KHR, 1> subpassDependency;
+    {
+        VkSubpassDependency2KHR& subpassDependencyBottomExernal = subpassDependency[0];
+        subpassDependencyBottomExernal.sType = VK_STRUCTURE_TYPE_SUBPASS_DEPENDENCY_2;
+        subpassDependencyBottomExernal.pNext = nullptr;
+        subpassDependencyBottomExernal.srcSubpass = 0;
+        subpassDependencyBottomExernal.dstSubpass = VK_SUBPASS_EXTERNAL;
+        subpassDependencyBottomExernal.srcStageMask = dependencyStageFlags;
+        subpassDependencyBottomExernal.srcAccessMask = dependencyAccessFlags;
+        subpassDependencyBottomExernal.dstStageMask = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+        subpassDependencyBottomExernal.dstAccessMask = 0;
+        subpassDependencyBottomExernal.dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
+        subpassDependencyBottomExernal.viewOffset = 0;
     }
 
     VkRenderPassCreateInfo2KHR renderPassCreateInfo = {};
@@ -581,8 +628,8 @@ bool VulkanRenderPass::createRenderpass2()
     renderPassCreateInfo.pAttachments = attachmentDescriptions.data();
     renderPassCreateInfo.subpassCount = static_cast<u32>(subpassDescriptions.size());
     renderPassCreateInfo.pSubpasses = subpassDescriptions.data();
-    renderPassCreateInfo.dependencyCount = 0;     //dependencies.size();
-    renderPassCreateInfo.pDependencies = nullptr; //ependencies.data();
+    renderPassCreateInfo.dependencyCount = static_cast<u32>(subpassDependency.size());
+    renderPassCreateInfo.pDependencies = subpassDependency.data();
     renderPassCreateInfo.correlatedViewMaskCount = 0;
     renderPassCreateInfo.pCorrelatedViewMasks = nullptr;
 
