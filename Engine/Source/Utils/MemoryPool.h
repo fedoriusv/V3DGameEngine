@@ -49,11 +49,11 @@ namespace utils
 
         /*
         * MemoryPool constuctor
-        * param pageSize : page size (best size 65KB, but no more)
+        * param maxAllocSize : block size for small allocation (best size 65KB, but no more)
         * param allocator: allocator
         * param user: user data
         */
-        explicit MemoryPool(u64 pageSize, MemoryAllocator* allocator = MemoryPool::getDefaultMemoryAllocator(), bool deleteUnusedPools = true, void* user = nullptr) noexcept;
+        explicit MemoryPool(u64 maxAllocSize, MemoryAllocator* allocator = MemoryPool::getDefaultMemoryAllocator(), bool deleteUnusedPools = true, void* user = nullptr) noexcept;
 
         /*
         * ~MemoryPool destuctor
@@ -398,7 +398,6 @@ namespace utils
 
         PoolTable               m_poolTable;
 
-        const u64               k_pageSize;
         const u64               k_maxSizePoolAllocation;
 
         List<Block>             m_largeAllocations;
