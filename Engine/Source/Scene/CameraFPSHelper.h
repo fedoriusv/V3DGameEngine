@@ -35,7 +35,7 @@ namespace scene
     private:
 
         const f32 k_rotationSpeed = 0.8f;
-        const f32 k_movementSpeed = 1000.0f;
+        const f32 k_movementSpeed = 100.0f;
         const f32 k_accelerationSpeed = 10.0f;
 
         static constexpr f32 k_constrainPitch = 89.0f;
