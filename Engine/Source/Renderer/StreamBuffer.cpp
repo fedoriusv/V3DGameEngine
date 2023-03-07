@@ -67,7 +67,7 @@ public:
 
         if (m_data && m_size > 0)
         {
-            m_buffer->upload(cmdList.getContext(), 0, m_size, m_data);
+            m_buffer->write(cmdList.getContext(), 0, m_size, m_data);
         }
     }
 
@@ -161,7 +161,7 @@ VertexStreamBuffer::VertexStreamBuffer(renderer::CommandList& cmdList, StreamBuf
 
         if (m_data)
         {
-            m_buffer->upload(m_cmdList.getContext(), 0, m_size, m_data);
+            m_buffer->write(m_cmdList.getContext(), 0, m_size, m_data);
         }
     }
     else
@@ -231,7 +231,7 @@ bool VertexStreamBuffer::update(u32 offset, u64 size, const u8* data)
 
         if (m_cmdList.isImmediate())
         {
-            return m_buffer->upload(m_cmdList.getContext(), offset, m_size, m_data);
+            return m_buffer->write(m_cmdList.getContext(), offset, m_size, m_data);
         }
         else
         {
@@ -286,7 +286,7 @@ bool VertexStreamBuffer::update(u32 offset, u64 size, const u8* data)
 #endif //DEBUG_COMMAND_LIST
                     if (m_data && m_size > 0)
                     {
-                        m_buffer->upload(cmdList.getContext(), m_offest, m_size, m_data);
+                        m_buffer->write(cmdList.getContext(), m_offest, m_size, m_data);
                     }
                 }
 
@@ -356,7 +356,7 @@ IndexStreamBuffer::IndexStreamBuffer(CommandList& cmdList, StreamBufferUsageFlag
 
         if (m_data)
         {
-            m_buffer->upload(m_cmdList.getContext(), 0, size, m_data);
+            m_buffer->write(m_cmdList.getContext(), 0, size, m_data);
         }
     }
     else

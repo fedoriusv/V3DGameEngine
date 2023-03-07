@@ -30,7 +30,8 @@ namespace vk
         bool create() override;
         void destroy() override;
 
-        bool upload(Context* context, u32 offset, u64 size, const void* data) override;
+        bool write(Context* context, u32 offset, u64 size, const void* data) override;
+        bool read(Context* context, u32 offset, u64 size, const std::function<void(u32, void*)>& readback) override;
 
         VkBuffer getHandle() const;
 

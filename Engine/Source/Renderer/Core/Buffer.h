@@ -26,7 +26,8 @@ namespace renderer
             BufferType_VertexBuffer,
             BufferType_IndexBuffer,
             BufferType_UniformBuffer,
-            BufferType_StagingBuffer
+            BufferType_StagingBuffer,
+            BufferType_Readback
         };
 
         Buffer() = default;
@@ -35,7 +36,8 @@ namespace renderer
         virtual bool create() = 0;
         virtual void destroy() = 0;
 
-        virtual bool upload(Context* context, u32 offset, u64 size, const void* data) = 0;
+        virtual bool write(Context* context, u32 offset, u64 size, const void* data) = 0;
+        virtual bool read(Context* context, u32 offset, u64 size, const std::function<void(u32, void*)>& readback) = 0;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

@@ -39,7 +39,11 @@ namespace dx3d
 
         u64 getSize() const;
 
-        bool upload(Context* context, u32 offset, u64 size, const void* data) override;
+        bool write(Context* context, u32 offset, u64 size, const void* data) override;
+        bool read(Context* context, u32 offset, u64 size, const std::function<void(u32, void*)>& readback) override;
+
+        void* map(u32 offset, u64 size);
+        void unmap(u32 offset, u64 size);
 
         ID3D12Resource* getResource() const;
         D3D12_GPU_VIRTUAL_ADDRESS getGPUAddress() const;
@@ -61,6 +65,7 @@ namespace dx3d
         BufferType m_type;
         u64 m_size;
 
+        bool m_isMapped;
 #if D3D_DEBUG
         std::string m_debugName;
 #endif

@@ -28,6 +28,8 @@ D3DBuffer::D3DBuffer(ID3D12Device* device, Buffer::BufferType type, StreamBuffer
     , m_state(D3D12_RESOURCE_STATE_COMMON)
     , m_type(type)
     , m_size(size)
+
+    , m_isMapped(false)
 #if D3D_DEBUG
     , m_debugName(name)
 #endif
@@ -82,6 +84,15 @@ D3DBuffer::D3DBuffer(ID3D12Device* device, Buffer::BufferType type, StreamBuffer
         ASSERT(usageFlag & StreamBufferUsage::StreamBuffer_Read, "must be read");
         m_heapProperties = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD);
         m_state = D3D12_RESOURCE_STATE_GENERIC_READ;
+
+        break;
+    }
+
+    case Buffer::BufferType::BufferType_Readback:
+    {
+        ASSERT(usageFlag & StreamBufferUsage::StreamBuffer_Read, "must be read");
+        m_heapProperties = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_READBACK);
+        m_state = D3D12_RESOURCE_STATE_COPY_DEST;
 
         break;
     }
@@ -152,6 +163,7 @@ bool D3DBuffer::create()
 
 void D3DBuffer::destroy()
 {
+    ASSERT(!m_isMapped, "must be false");
     SAFE_DELETE(m_resource);
     if (m_allocator)
     {
@@ -164,9 +176,10 @@ u64 D3DBuffer::getSize() const
     return m_size;
 }
 
-bool D3DBuffer::upload(Context* context, u32 offset, u64 size, const void* data)
+bool D3DBuffer::write(Context* context, u32 offset, u64 size, const void* data)
 {
     ASSERT(m_resource, "nullptr");
+    ASSERT(!m_isMapped, "must be false");
     if (m_heapProperties.IsCPUAccessible())
     {
         UINT8* bufferData = nullptr;
@@ -174,7 +187,7 @@ bool D3DBuffer::upload(Context* context, u32 offset, u64 size, const void* data)
         HRESULT result = m_resource->Map(0, &readRange, reinterpret_cast<void**>(&bufferData));
         if (FAILED(result))
         {
-            LOG_ERROR("D3DBuffer::upload map failed %s", D3DDebug::stringError(result).c_str());
+            LOG_ERROR("D3DBuffer::write map failed %s", D3DDebug::stringError(result).c_str());
             return false;
         }
         memcpy(bufferData, data, size);
@@ -194,7 +207,7 @@ bool D3DBuffer::upload(Context* context, u32 offset, u64 size, const void* data)
             copyBuffer->destroy();
             delete copyBuffer;
 
-            ASSERT(false, "D3DBuffer::upload: Create copy buffer is failed");
+            ASSERT(false, "D3DBuffer::write: Create copy buffer is failed");
             return false;
         }
 
@@ -241,6 +254,52 @@ bool D3DBuffer::upload(Context* context, u32 offset, u64 size, const void* data)
     }
 
     return true;
+}
+
+bool D3DBuffer::read(Context* context, u32 offset, u64 size, const std::function<void(u32, void*)>& readback)
+{
+    NOT_IMPL;
+    return false;
+}
+
+void* D3DBuffer::map(u32 offset, u64 size)
+{
+    ASSERT(m_resource, "nullptr");
+    ASSERT(!m_isMapped, "must be not mapped");
+
+    UINT8* bufferData = nullptr;
+    if (!m_isMapped)
+    {
+        if (m_heapProperties.IsCPUAccessible())
+        {
+            CD3DX12_RANGE readRange = { offset, offset + size };
+            HRESULT result = m_resource->Map(0, &readRange, reinterpret_cast<void**>(&bufferData));
+            if (FAILED(result))
+            {
+                LOG_ERROR("D3DBuffer::map failed %s", D3DDebug::stringError(result).c_str());
+                return nullptr;
+            }
+
+            m_isMapped = true;
+        }
+
+    }
+
+    return bufferData;
+}
+
+void D3DBuffer::unmap(u32 offset, u64 size)
+{
+    ASSERT(m_resource, "nullptr");
+    ASSERT(m_isMapped, "must be mapped");
+
+    if (m_isMapped)
+    {
+        CD3DX12_RANGE readRange = { offset, offset + size };
+        m_resource->Unmap(0, &readRange);
+
+        m_isMapped = false;
+    }
 }
 
 ID3D12Resource* D3DBuffer::getResource() const

@@ -230,7 +230,7 @@ void VulkanBuffer::destroy()
     }
 }
 
-bool VulkanBuffer::upload(Context* context, u32 offset, u64 size, const void * data)
+bool VulkanBuffer::write(Context* context, u32 offset, u64 size, const void * data)
 {
     if (!m_buffer)
     {
@@ -315,6 +315,12 @@ bool VulkanBuffer::upload(Context* context, u32 offset, u64 size, const void * d
         return true;
     }
 
+    return false;
+}
+
+bool VulkanBuffer::read(Context* context, u32 offset, u64 size, const std::function<void(u32, void*)>& readback)
+{
+    NOT_IMPL;
     return false;
 }
 
