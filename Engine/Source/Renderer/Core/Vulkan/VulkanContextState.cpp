@@ -43,7 +43,7 @@ VulkanContextState::VulkanContextState(VkDevice device, VulkanDescriptorSetManag
     m_renderPassArea = {{ 0, 0 }, { 0, 0 }};
     m_renderPassClearValues.resize(1, {{{0.0f, 0.0f, 0.0f, 0.0f}}});
 
-    VulkanContextState::invalidateDescriptorSetsState();
+    invalidateDescriptorSetsState();
     m_currentDesctiptorsSets.fill(VK_NULL_HANDLE);
 }
 

@@ -97,8 +97,10 @@ namespace vk
                     bindSet.apply(cmdBuffer, 0, info);
 
                     VulkanDescriptorSetPool* pool = nullptr;
-                    VkDescriptorSet set = m_descriptorSetManager->acquireDescriptorSet(VulkanDescriptorSetLayoutDescription(VulkanContextState::getCurrentTypedPipeline<Type>()->getPipelineLayoutDescription()._bindingsSet[setId]), info,
-                        VulkanContextState::getCurrentTypedPipeline<Type>()->getDescriptorSetLayouts()._setLayouts[setId], pool);
+                    const std::vector<VkDescriptorSetLayoutBinding>& bindingSet = VulkanContextState::getCurrentTypedPipeline<Type>()->getPipelineLayoutDescription()._bindingsSet[setId];
+                    const VkDescriptorSetLayout layoutSet = VulkanContextState::getCurrentTypedPipeline<Type>()->getDescriptorSetLayouts()._setLayouts[setId];
+
+                    VkDescriptorSet set = m_descriptorSetManager->acquireDescriptorSet(VulkanDescriptorSetLayoutDescription(bindingSet), info, layoutSet, pool);
                     if (set == VK_NULL_HANDLE)
                     {
                         ASSERT(false, "fail to allocate descriptor set");
@@ -112,19 +114,12 @@ namespace vk
                     if (m_currentDesctiptorsSets[setId] != set)
                     {
                         m_currentDesctiptorsSets[setId] = set;
-                        if (VulkanDeviceCaps::getInstance()->useDynamicUniforms)
-                        {
                             auto updatedSet = m_updatedDescriptorsSets.insert(set);
                             if (updatedSet.second)
                             {
                                 VulkanContextState::updateDescriptorSet(cmdBuffer, set, bindSet);
                             }
                         }
-                        else
-                        {
-                            VulkanContextState::updateDescriptorSet(cmdBuffer, set, bindSet);
-                        }
-                    }
 
                     sets.push_back(set);
 
