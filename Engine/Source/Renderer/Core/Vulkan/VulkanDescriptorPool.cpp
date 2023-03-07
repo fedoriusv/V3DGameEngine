@@ -211,6 +211,24 @@ bool VulkanDescriptorSetPool::createDescriptorPool(u32 setsCount, const std::vec
         return false;
     }
 
+#if VULKAN_DEBUG_MARKERS
+    if (VulkanDeviceCaps::getInstance()->debugUtilsObjectNameEnabled)
+    {
+        std::string debugName = "DescriptorPool";
+        debugName.append(VulkanDebugUtils::k_addressPreffix);
+        debugName.append(std::to_string(reinterpret_cast<const u64>(this)));
+
+        VkDebugUtilsObjectNameInfoEXT debugUtilsObjectNameInfo = {};
+        debugUtilsObjectNameInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT;
+        debugUtilsObjectNameInfo.pNext = nullptr;
+        debugUtilsObjectNameInfo.objectType = VK_OBJECT_TYPE_DESCRIPTOR_POOL;
+        debugUtilsObjectNameInfo.objectHandle = reinterpret_cast<u64>(m_pool);
+        debugUtilsObjectNameInfo.pObjectName = debugName.c_str();
+
+        VulkanWrapper::SetDebugUtilsObjectName(m_device, &debugUtilsObjectNameInfo);
+    }
+#endif //VULKAN_DEBUG_MARKERS
+
     return true;
 }
 

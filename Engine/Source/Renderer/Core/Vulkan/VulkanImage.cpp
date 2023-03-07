@@ -887,25 +887,6 @@ bool VulkanImage::isSRGBFormat(VkFormat format)
     return false;
 }
 
-bool VulkanImage::isAttachmentLayout(const VulkanImage* image, u32 layer)
-{
-    VkImageLayout layout = image->getLayout(Image::makeImageSubresource(layer, 1, 0, 1));
-    switch (layout)
-    {
-    case VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL:
-    case VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL:
-    case VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL:
-    case VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL:
-    case VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL:
-        return true;
-
-    default:
-        return false;
-    }
-
-    return false;
-}
-
 #if DEBUG_OBJECT_MEMORY
 std::set<VulkanImage*> VulkanImage::s_objects;
 #endif //DEBUG_OBJECT_MEMORY
@@ -1711,6 +1692,22 @@ bool VulkanImage::createViewImage()
 
             [[maybe_unused]] auto viewIter = m_imageViews.insert({ ImageViewKey(imageViewCreateInfo.subresourceRange), view });
             ASSERT(viewIter.second, "already exsist");
+
+#if VULKAN_DEBUG_MARKERS
+            if (VulkanDeviceCaps::getInstance()->debugUtilsObjectNameEnabled)
+            {
+                std::string imageViewName = "ColorView_" + m_debugName;
+
+                VkDebugUtilsObjectNameInfoEXT debugUtilsObjectNameInfo = {};
+                debugUtilsObjectNameInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT;
+                debugUtilsObjectNameInfo.pNext = nullptr;
+                debugUtilsObjectNameInfo.objectType = VK_OBJECT_TYPE_IMAGE_VIEW;
+                debugUtilsObjectNameInfo.objectHandle = reinterpret_cast<u64>(view);
+                debugUtilsObjectNameInfo.pObjectName = imageViewName.c_str();
+
+                VulkanWrapper::SetDebugUtilsObjectName(m_device, &debugUtilsObjectNameInfo);
+            }
+#endif //VULKAN_DEBUG_MARKERS
         }
 
         if (VulkanImage::isDepthStencilFormat(m_format)) //might be Depth only sampled
@@ -1735,6 +1732,22 @@ bool VulkanImage::createViewImage()
 
             [[maybe_unused]] auto viewIter = m_imageViews.insert({ ImageViewKey(imageViewCreateInfo.subresourceRange), view });
             ASSERT(viewIter.second, "already exsist");
+
+#if VULKAN_DEBUG_MARKERS
+            if (VulkanDeviceCaps::getInstance()->debugUtilsObjectNameEnabled)
+            {
+                std::string imageViewName = "DepthView_" + m_debugName;
+
+                VkDebugUtilsObjectNameInfoEXT debugUtilsObjectNameInfo = {};
+                debugUtilsObjectNameInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT;
+                debugUtilsObjectNameInfo.pNext = nullptr;
+                debugUtilsObjectNameInfo.objectType = VK_OBJECT_TYPE_IMAGE_VIEW;
+                debugUtilsObjectNameInfo.objectHandle = reinterpret_cast<u64>(view);
+                debugUtilsObjectNameInfo.pObjectName = imageViewName.c_str();
+
+                VulkanWrapper::SetDebugUtilsObjectName(m_device, &debugUtilsObjectNameInfo);
+            }
+#endif //VULKAN_DEBUG_MARKERS
         }
     }
 

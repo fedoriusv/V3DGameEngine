@@ -285,6 +285,7 @@ void VulkanDebugUtils::debugCallbackData(const VkDebugUtilsMessengerCallbackData
         switch (objects.objectType)
         {
         case VK_OBJECT_TYPE_IMAGE:
+        case VK_OBJECT_TYPE_IMAGE_VIEW:
         {
             if (!objects.pObjectName)
             {
@@ -370,6 +371,24 @@ void VulkanDebugUtils::debugCallbackData(const VkDebugUtilsMessengerCallbackData
                     VulkanComputePipeline* computePipeline = reinterpret_cast<VulkanComputePipeline*>(pipeline);
                     break;
                 }
+            }
+            break;
+        }
+
+        case VK_OBJECT_TYPE_DESCRIPTOR_POOL:
+        {
+            if (!objects.pObjectName)
+            {
+                break;
+            }
+            break;
+        }
+
+        case VK_OBJECT_TYPE_DESCRIPTOR_SET:
+        {
+            if (!objects.pObjectName)
+            {
+                break;
             }
             break;
         }

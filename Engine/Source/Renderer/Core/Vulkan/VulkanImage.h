@@ -42,7 +42,6 @@ namespace vk
         static bool isCompressedFormat(VkFormat format);
         static bool isASTCFormat(VkFormat format);
         static bool isSRGBFormat(VkFormat format);
-        static bool isAttachmentLayout(const VulkanImage* image, u32 layer);
 
         VulkanImage(VulkanMemory::VulkanMemoryAllocator* memory, VkDevice device, VkImageType type, VkFormat format, VkExtent3D dimension, u32 layers, u32 mipsLevel, VkImageTiling tiling, TextureUsageFlags usage, [[maybe_unused]] const std::string& name = "") noexcept;
         VulkanImage(VulkanMemory::VulkanMemoryAllocator* memory, VkDevice device, VkFormat format, VkExtent3D dimension, VkSampleCountFlagBits samples, u32 layers, TextureUsageFlags usage, [[maybe_unused]] const std::string& name = "") noexcept;
