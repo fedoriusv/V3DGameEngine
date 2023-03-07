@@ -156,10 +156,10 @@ void QueryRequest::handleNotify(const utils::Observable* query, void* msg)
 }
 
 
-QueryTimestampRequest::QueryTimestampRequest(CommandList& cmdList, std::function<Timestamp> callback, u32 size, const std::string& name) noexcept
+QueryTimestampRequest::QueryTimestampRequest(CommandList& cmdList, std::function<Timestamp> callback, u32 count, const std::string& name) noexcept
     : QueryRequest(cmdList, QueryType::TimeStamp, name)
 {
-    m_query = m_cmdList.getContext()->createQuery(m_type, size, [this, &cmdList, callback](QueryResult result, u32 size, const void* data) -> void
+    m_query = m_cmdList.getContext()->createQuery(m_type, count, [this, &cmdList, callback](QueryResult result, u32 size, const void* data) -> void
         {
             if (result == QueryResult::Success && data)
             {
@@ -175,13 +175,13 @@ QueryTimestampRequest::QueryTimestampRequest(CommandList& cmdList, std::function
     ASSERT(m_query, "m_query is nullptr");
     m_query->registerNotify(this);
 
-    m_result.resize(size);
+    m_result.resize(count);
 }
 
-QueryTimestampRequest::QueryTimestampRequest(CommandList& cmdList, std::function<TimestampTaged> callback, u32 size, const std::string& name) noexcept
+QueryTimestampRequest::QueryTimestampRequest(CommandList& cmdList, std::function<TimestampTaged> callback, u32 count, const std::string& name) noexcept
     : QueryRequest(cmdList, QueryType::TimeStamp, name)
 {
-    m_query = m_cmdList.getContext()->createQuery(m_type, size, [this, &cmdList, callback](QueryResult result, u32 size, const void* data) -> void
+    m_query = m_cmdList.getContext()->createQuery(m_type, count, [this, &cmdList, callback](QueryResult result, u32 size, const void* data) -> void
         {
             if (result == QueryResult::Success && data)
             {
@@ -197,8 +197,8 @@ QueryTimestampRequest::QueryTimestampRequest(CommandList& cmdList, std::function
     ASSERT(m_query, "m_query is nullptr");
     m_query->registerNotify(this);
 
-    m_result.resize(size);
-    m_tags.resize(size);
+    m_result.resize(count);
+    m_tags.resize(count);
 }
 
 void QueryTimestampRequest::timestampQuery(u32 id, const std::string& tag)
@@ -260,10 +260,10 @@ void QueryTimestampRequest::timestampQuery(u32 id, const std::string& tag)
 }
 
 
-QueryOcclusionRequest::QueryOcclusionRequest(CommandList& cmdList, std::function<QuerySamples> callback, u32 size, bool binaryOcclusion, const std::string& name) noexcept
+QueryOcclusionRequest::QueryOcclusionRequest(CommandList& cmdList, std::function<QuerySamples> callback, u32 count, bool binaryOcclusion, const std::string& name) noexcept
     : QueryRequest(cmdList, binaryOcclusion ? QueryType::BinaryOcclusion : QueryType::Occlusion, name)
 {
-    m_query = m_cmdList.getContext()->createQuery(m_type, size, [this, &cmdList, callback](QueryResult result, u32 size, const void* data) -> void
+    m_query = m_cmdList.getContext()->createQuery(m_type, count, [this, &cmdList, callback](QueryResult result, u32 size, const void* data) -> void
         {
             if (result == QueryResult::Success && data)
             {
@@ -279,7 +279,7 @@ QueryOcclusionRequest::QueryOcclusionRequest(CommandList& cmdList, std::function
     ASSERT(m_query, "m_query is nullptr");
     m_query->registerNotify(this);
 
-    m_result.resize(size);
+    m_result.resize(count);
 }
 
 QueryOcclusionRequest::QueryOcclusionRequest(CommandList& cmdList, std::function<QuerySamplesTaged> callback, u32 size, bool binaryOcclusion, const std::string& name) noexcept

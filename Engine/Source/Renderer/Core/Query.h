@@ -23,12 +23,14 @@ namespace renderer
         */
         using QueryRespose = std::function<void(QueryResult result, u32 size, const void* data)>;
 
-        Query(QueryType type, u32 size, const QueryRespose& callback, [[maybe_unused]] const std::string& name = "") noexcept;
+        Query(QueryType type, u32 count, const QueryRespose& callback) noexcept;
         virtual ~Query();
 
+        virtual bool create() = 0;
+        virtual void destroy() = 0;
+
         QueryType getType() const;
-        u32 getSize() const;
-        const std::string& getName() const;
+        u32 getCount() const;
 
         void notifySelf(Object* caller); //TODO move to observer?
 
@@ -37,14 +39,9 @@ namespace renderer
         Query() = delete;
         Query(Query&) = delete;
 
-        void dispatch(QueryResult result) const;
-
         QueryType m_type;
-        u32 m_size;
-        void* m_data;
-
+        u32 m_count;
         QueryRespose m_callback;
-        std::string m_name;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -54,14 +51,9 @@ namespace renderer
         return m_type;
     }
 
-    inline u32 Query::getSize() const
+    inline u32 Query::getCount() const
     {
-        return m_size;
-    }
-
-    inline const std::string& Query::getName() const
-    {
-        return m_name;
+        return m_count;
     }
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

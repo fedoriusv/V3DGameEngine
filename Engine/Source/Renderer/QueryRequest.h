@@ -59,12 +59,12 @@ namespace renderer
         /**
         * @brief Timestamp signature in nanoseconds
         */
-        using Timestamp = void(const std::vector<u32>& timestamp);
+        using Timestamp = void(const std::vector<u64>& timestamp);
 
         /**
         * @brief Timestamp with string tags signature in nanoseconds
         */
-        using TimestampTaged = void(const std::vector<u32>& timestamp, const std::vector<std::string>& tags);
+        using TimestampTaged = void(const std::vector<u64>& timestamp, const std::vector<std::string>& tags);
 
         /**
         * @brief QueryTimestampRequest destructor.
@@ -87,27 +87,27 @@ namespace renderer
         * Private method. Use createObject interface inside CommandList class to call.
         *
         * @param std::function<Timestamp> callback [required]
-        * @param u32 size [required]
+        * @param u32 count [required]
         * @param const std::string& name [optional]
         */
-        QueryTimestampRequest(CommandList& cmdList, std::function<Timestamp> callback, u32 size, [[maybe_unused]] const std::string& name = "") noexcept;
+        QueryTimestampRequest(CommandList& cmdList, std::function<Timestamp> callback, u32 count, [[maybe_unused]] const std::string& name = "") noexcept;
 
         /**
         * @brief QueryTimestampRequest constructor.
         * Private method. Use createObject interface inside CommandList class to call.
         *
         * @param std::function<TimestampTaged> callback [required]
-        * @param u32 size [required]
+        * @param u32 count [required]
         * @param const std::string& name [optional]
         */
-        QueryTimestampRequest(CommandList& cmdList, std::function<TimestampTaged> callback, u32 size, [[maybe_unused]] const std::string& name = "") noexcept;
+        QueryTimestampRequest(CommandList& cmdList, std::function<TimestampTaged> callback, u32 count, [[maybe_unused]] const std::string& name = "") noexcept;
 
         QueryTimestampRequest() = delete;
         QueryTimestampRequest(QueryTimestampRequest&) = delete;
 
         friend CommandList;
 
-        std::vector<u32> m_result;
+        std::vector<u64> m_result;
         std::vector<std::string> m_tags;
     };
 
@@ -123,12 +123,12 @@ namespace renderer
         /**
         * @brief OcclusionQuery signature in count of samples
         */
-        using QuerySamples = void(const std::vector<u32>& samples);
+        using QuerySamples = void(const std::vector<u64>& samples);
 
         /**
         * @brief OcclusionQuery with tags signature in count of samples
         */
-        using QuerySamplesTaged = void(const std::vector<u32>& samples, const std::vector<std::string>& tags);
+        using QuerySamplesTaged = void(const std::vector<u64>& samples, const std::vector<std::string>& tags);
 
         /**
         * @brief QueryOcclusionRequest destructor.
@@ -151,29 +151,29 @@ namespace renderer
         * Private method. Use createObject interface inside CommandList class to call.
         *
         * @param std::function<QuerySamples> callback [required]
-        * @param u32 size [required]
+        * @param u32 count [required]
         * @param bool binaryOcclusion [optionl]
         * @param const std::string& name [optional]
         */
-        QueryOcclusionRequest(CommandList& cmdList, std::function<QuerySamples> callback, u32 size, bool binaryOcclusion = false, [[maybe_unused]] const std::string& name = "") noexcept;
+        QueryOcclusionRequest(CommandList& cmdList, std::function<QuerySamples> callback, u32 count, bool binaryOcclusion = false, [[maybe_unused]] const std::string& name = "") noexcept;
 
         /**
         * @brief QueryOcclusionRequest constructor.
         * Private method. Use createObject interface inside CommandList class to call.
         *
         * @param std::function<QuerySamplesTaged> callback [required]
-        * @param u32 size [required]
+        * @param u32 count [required]
         * @param bool binaryOcclusion [optionl]
         * @param const std::string& name [optional]
         */
-        QueryOcclusionRequest(CommandList& cmdList, std::function<QuerySamplesTaged> callback, u32 size, bool binaryOcclusion = false, [[maybe_unused]] const std::string& name = "") noexcept;
+        QueryOcclusionRequest(CommandList& cmdList, std::function<QuerySamplesTaged> callback, u32 count, bool binaryOcclusion = false, [[maybe_unused]] const std::string& name = "") noexcept;
 
         QueryOcclusionRequest() = delete;
         QueryOcclusionRequest(QueryOcclusionRequest&) = delete;
 
         friend CommandList;
 
-        std::vector<u32> m_result;
+        std::vector<u64> m_result;
         std::vector<std::string> m_tags;
     };
 
