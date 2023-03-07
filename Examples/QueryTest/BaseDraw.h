@@ -67,4 +67,14 @@ public:
 
     virtual void Init(renderer::CommandList& cmdList, const core::Dimension2D& size) = 0;
     virtual void Draw(renderer::CommandList& cmdList, DrawLists& drawList) = 0;
+
+    bool _EnableQuery = true;
+
+    void QueryTimeStamp(renderer::QueryTimestampRequest* query, u32 id, const std::string& name) const
+    {
+        if (_EnableQuery)
+        {
+            query->timestampQuery(id, name);
+        }
+    }
 };

@@ -46,15 +46,14 @@ private:
     std::vector<BaseDraw::RenderPolicy*> m_Renderers;
     std::vector<Object*> m_Resources;
 
-
     struct Measurements
     {
         void Print();
 
         struct QueryTiming
         {
-            f32 _BeginTime = 0;
-            f32 _EndTime = 0;
+            u64 _BeginTime = 0;
+            u64 _EndTime = 0;
         };
         std::array<QueryTiming, 4> _QueryTimings;
         u32 _Draws = 0;

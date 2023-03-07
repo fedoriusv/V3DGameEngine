@@ -27,7 +27,7 @@ Scene::Scene(renderer::CommandList& cmdList, const core::Dimension2D& size) noex
     : m_CommandList(cmdList)
 {
     m_FPSCameraHelper = new scene::CameraFPSHelper(new scene::Camera(core::Vector3D(0.0f, 0.0f, 0.0f), core::Vector3D(0.0f, 1.0f, 0.0f)), core::Vector3D(0.0f, 0.0f, -30.0f));
-    m_FPSCameraHelper->setPerspective(60.0f, size, 0.001f, 56.f);
+    m_FPSCameraHelper->setPerspective(60.0f, size, 0.001f, 256.f);
 
     m_BasePassDraw = new BasePassDraw();
     m_BasePassDraw->Init(m_CommandList, size);
@@ -50,7 +50,7 @@ void Scene::LoadScene()
         scene::Geometry* meshGeometry = mesh->getMeshByIndex(0);
 
         {
-            renderer::QueryTimestampRequest* timeStampQuery = m_CommandList.createObject<renderer::QueryTimestampRequest>([this](const std::vector<u32>& timestamp, const std::vector<std::string>& tags)-> void
+            renderer::QueryTimestampRequest* timeStampQuery = m_CommandList.createObject<renderer::QueryTimestampRequest>([this](const std::vector<u64>& timestamp, const std::vector<std::string>& tags)-> void
                 {
                     for (u32 i = 0; i < m_Measurements._QueryTimings.size(); ++i)
                     {
@@ -108,6 +108,12 @@ void Scene::LoadScene()
             core::Dimension2D(image0->getDimension().width, image0->getDimension().height), image0->getMipMapsCount(), image0->getRawData(), "Box");
         m_Resources.push_back(texture0);
 
+        resource::Image* image1 = resource::ResourceLoaderManager::getInstance()->load<resource::Image, resource::ImageFileLoader>("basetex.jpg", resource::ImageLoaderFlag_GenerateMipmaps);
+        ASSERT(image1, "not found");
+        renderer::Texture2D* texture1 = m_CommandList.createObject<renderer::Texture2D>(renderer::TextureUsage_Sampled | renderer::TextureUsage_Write, image1->getFormat(),
+            core::Dimension2D(image1->getDimension().width, image1->getDimension().height), image1->getMipMapsCount(), image1->getRawData(), "Tex");
+        m_Resources.push_back(texture1);
+
         auto randomFloat = [](f32 min, f32 max) -> f32
         {
             f32 r = (f32)rand() / (f32)RAND_MAX;
@@ -129,7 +135,7 @@ void Scene::LoadScene()
             BaseDraw::ProgramParams* params = std::get<0>(state);
             params->_ConstantBuffer.modelMatrix = transform;
             params->_Sampler = sampler;
-            params->_Texture = texture0;
+            params->_Texture = ((u32)randomFloat(1.f, 10.f) % 2) ? texture0 : texture1;
         }
 
         m_OffscreenDraw._DrawState.push_back(std::make_tuple(new BaseDraw::ProgramParams
@@ -214,17 +220,14 @@ void Scene::Run(f32 dt)
     m_FPSCameraHelper->update(dt);
     UpdateScene();
 
-#if CMD_LIST_PROFILER_ENABLE
-    renderer::CommandList::s_commandListProfiler.update(dt);
-#endif
     m_CommandList.beginFrame();
 
-    m_DrawList._TimeStampQuery->timestampQuery(0, "GPUframe start");
+    m_BasePassDraw->QueryTimeStamp(m_DrawList._TimeStampQuery, 0, "GPUframe start");
 
     m_BasePassDraw->Draw(m_CommandList, m_DrawList);
     m_SwapchainPassDraw->Draw(m_CommandList, m_OffscreenDraw);
 
-    m_DrawList._TimeStampQuery->timestampQuery(1, "GPUframe end");
+    m_BasePassDraw->QueryTimeStamp(m_DrawList._TimeStampQuery, 1, "GPUframe end");
 
     m_CommandList.endFrame();
     m_CommandList.presentFrame();
@@ -262,7 +265,7 @@ void Scene::keyboardHandle(const event::InputEventHandler* handler, const event:
 void Scene::Measurements::Print()
 {
     LOG_WARNING("GPU Frametime: %.3f ms", (f32)(_QueryTimings[0]._EndTime - _QueryTimings[0]._BeginTime) / 1'000'000.f);
-    LOG_WARNING("GPU Frametime OcclusionTest: %.3f ms", (f32)(_QueryTimings[1]._EndTime - _QueryTimings[1]._BeginTime) / 1'000'000.f);
-    LOG_WARNING("GPU Frametime BasePass: %.3f ms. DrawCalls: %d", (f32)(_QueryTimings[2]._EndTime - _QueryTimings[2]._BeginTime) / 1'000'000.f, _Draws);
-    LOG_WARNING("GPU Frametime Offscreen: %.3f ms", (f32)(_QueryTimings[3]._EndTime - _QueryTimings[3]._BeginTime) / 1'000'000.f);
+    LOG_WARNING("GPU Frametime OcclusionTest: %.3f ms", (f32)(_QueryTimings[3]._EndTime - _QueryTimings[3]._BeginTime) / 1'000'000.f);
+    LOG_WARNING("GPU Frametime BasePass: %.3f ms. DrawCalls: %d", (f32)(_QueryTimings[1]._EndTime - _QueryTimings[1]._BeginTime) / 1'000'000.f, _Draws);
+    LOG_WARNING("GPU Frametime Offscreen: %.3f ms", (f32)(_QueryTimings[2]._EndTime - _QueryTimings[2]._BeginTime) / 1'000'000.f);
 }

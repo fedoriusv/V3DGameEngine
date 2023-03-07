@@ -103,14 +103,14 @@ void BasePassDraw::OcclusionQuery::Init(renderer::CommandList& commandList, cons
     m_QueryPipeline->setDepthWrite(true);
     m_QueryPipeline->setDepthTest(true);
 
-    m_OcclusionQuery = commandList.createObject<renderer::QueryOcclusionRequest>([this](const std::vector<u32>& samples, const std::vector<std::string>& tags)-> void
+    m_OcclusionQuery = commandList.createObject<renderer::QueryOcclusionRequest>([this](const std::vector<u64>& samples, const std::vector<std::string>& tags)-> void
         {
             static const u32 k_samplesThreshold = 1;
             for (u32 index = 0; index < m_QueryResponse.size(); ++index)
             {
                 m_QueryResponse[index] = (samples[index] > k_samplesThreshold) ? true : false;
             }
-        }, static_cast<u32>(m_QueryResponse.size()));
+        }, static_cast<u32>(m_QueryResponse.size()), true);
 }
 
 void BasePassDraw::OcclusionQuery::Render(renderer::CommandList& commandList, const ProgramParams& params, const MeshInfo* meshData)
@@ -128,7 +128,7 @@ void BasePassDraw::OcclusionQuery::DrawOcclusionTest(renderer::CommandList& comm
 
     commandList.setPipelineState(m_QueryPipeline);
 
-    drawList._TimeStampQuery->timestampQuery(2);
+    drawList._TimeStampQuery->timestampQuery(6);
     for (u32 i = 0; i < m_AABBList._DrawState.size(); ++i)
     {
         m_OcclusionQuery->beginQuery(i);
@@ -139,14 +139,14 @@ void BasePassDraw::OcclusionQuery::DrawOcclusionTest(renderer::CommandList& comm
 
         m_OcclusionQuery->endQuery(i);
     }
-    drawList._TimeStampQuery->timestampQuery(3);
+    drawList._TimeStampQuery->timestampQuery(7);
 
     drawList._Profiler->stop("SceneLoop.BasePassDraw.DrawOcclusionTest");
 }
 
 void BasePassDraw::OcclusionQuery::UpdateVisibleList(const DrawLists& dawLists, DrawLists& visibleDrawList)
 {
-    dawLists._Profiler->stop("BasePassDraw.UpdateVisibleList");
+    dawLists._Profiler->start("BasePassDraw.UpdateVisibleList");
 
     visibleDrawList._DrawState.clear();
     visibleDrawList._DrawState.reserve(dawLists._DrawState.size());
@@ -230,14 +230,17 @@ void BasePassDraw::Draw(renderer::CommandList& cmdList, DrawLists& drawList)
     cmdList.setScissor(core::Rect32(0, 0, m_RenderTarget->getDimension().width, m_RenderTarget->getDimension().height));
     cmdList.setRenderTarget(m_RenderTarget);
 
-
-    DrawLists visibleDrawList;
-    m_QueryTest->DrawOcclusionTest(cmdList, drawList);
-    m_QueryTest->UpdateVisibleList(drawList, visibleDrawList);
+    DrawLists visibleDrawList = drawList;
+    if (_EnableQuery)
+    {
+        m_QueryTest->DrawOcclusionTest(cmdList, drawList);
+        m_QueryTest->UpdateVisibleList(drawList, visibleDrawList);
+    }
 
     m_RenderTarget->clearAttachments(renderer::TargetRegion(m_RenderTarget->getDimension().width, m_RenderTarget->getDimension().height), core::Vector4D(0.0f), 0.f);
 
-    drawList._TimeStampQuery->timestampQuery(4);
+    this->QueryTimeStamp(drawList._TimeStampQuery, 2, "BasePassDraw start");
+
     RenderPolicy* render = drawList._Render;
     for (u32 i = 0; i < visibleDrawList._DrawState.size(); ++i)
     {
@@ -246,8 +249,8 @@ void BasePassDraw::Draw(renderer::CommandList& cmdList, DrawLists& drawList)
         render->Render(cmdList, params, meshData);
     }
     drawList._DrawedLastFrame = visibleDrawList._DrawState.size();
-    drawList._TimeStampQuery->timestampQuery(5);
 
+    this->QueryTimeStamp(drawList._TimeStampQuery, 3, "BasePassDraw end");
     drawList._Profiler->stop("SceneLoop.BasePassDraw");
 }
 

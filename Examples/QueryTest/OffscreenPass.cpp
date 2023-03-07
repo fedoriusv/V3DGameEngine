@@ -91,11 +91,11 @@ void OffscreenPassDraw::Draw(renderer::CommandList& cmdList, DrawLists& drawList
     cmdList.setScissor(core::Rect32(0, 0, m_OffscreenTarget->getDimension().width, m_OffscreenTarget->getDimension().height));
     cmdList.setRenderTarget(m_OffscreenTarget);
 
-    drawList._TimeStampQuery->timestampQuery(6);
+    this->QueryTimeStamp(drawList._TimeStampQuery, 4, "OffscreenPassDraw start");
 
     drawList._Render->Render(cmdList, *std::get<0>(drawList._DrawState[0]), nullptr);
 
-    drawList._TimeStampQuery->timestampQuery(7);
+    this->QueryTimeStamp(drawList._TimeStampQuery, 5, "OffscreenPassDraw end");
 
     drawList._Profiler->stop("SceneLoop.OffscreenPassDraw");
 }
