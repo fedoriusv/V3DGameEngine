@@ -315,13 +315,13 @@ void VulkanContextState::updateConstantBuffer(const Shader::UniformBuffer& info,
     bindingSlot.bind(type, info._binding, 0, uniformBuffer->getBuffer(), uniformBuffer->getOffset(), uniformBuffer->getSize());
 }
 
-const VulkanRenderQueryState* VulkanContextState::bindQuery(const VulkanQuery* query, u32 index, const std::string& tag)
+std::tuple<const VulkanRenderQueryState*, bool> VulkanContextState::bindQuery(const VulkanQuery* query, u32 index, const std::string& tag)
 {
-    ASSERT(index < query->getSize(), "range out");
+    ASSERT(index < query->getCount(), "range out");
     auto inserted = m_currentRenderQueryState.emplace(query, nullptr);
     if (inserted.second)
     {
-        VulkanRenderQueryState* renderQuery = m_queryPoolManager->acquireRenderQuery(query->getType(), query->getSize());
+        VulkanRenderQueryState* renderQuery = m_queryPoolManager->acquireRenderQuery(query->getType(), query->getCount());
         ASSERT(renderQuery, "nullptr");
         renderQuery->_query = query;
 
@@ -334,7 +334,7 @@ const VulkanRenderQueryState* VulkanContextState::bindQuery(const VulkanQuery* q
         inserted.first->second->_tags[index] = tag;
     }
 
-    return inserted.first->second;
+    return { inserted.first->second, inserted.second };
 }
 
 void VulkanContextState::invalidateRenderQueriesState()

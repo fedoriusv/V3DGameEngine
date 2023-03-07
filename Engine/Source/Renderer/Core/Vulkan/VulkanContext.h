@@ -110,7 +110,7 @@ namespace vk
         RenderPass* createRenderPass(const RenderPassDescription* renderpassDesc) override;
         void removeRenderPass(RenderPass* renderpass) override;
 
-        Query* createQuery(QueryType type, u32 size, const Query::QueryRespose& callback, [[maybe_unused]] const std::string& name = "") override;
+        Query* createQuery(QueryType type, u32 count, const Query::QueryRespose& callback, [[maybe_unused]] const std::string& name = "") override;
         void removeQuery(Query* query) override;
 
         static const std::vector<VkDynamicState>& getDynamicStates();

@@ -29,18 +29,29 @@ namespace vk
 
         static VkQueryType convertQueryTypeToVkQuery(QueryType type);
 
-        VulkanQuery() = delete;
-        VulkanQuery(VulkanQuery&) = delete;
-
-        VulkanQuery(QueryType type, u32 size, const QueryRespose& callback, [[maybe_unused]] const std::string& name = "") noexcept;
+        VulkanQuery(QueryType type, u32 count, const QueryRespose& callback, [[maybe_unused]] const std::string& name = "") noexcept;
         ~VulkanQuery();
+
+        bool create() override;
+        void destroy() override;
 
     private:
 
-        friend VulkanQueryPoolManager;
+        VulkanQuery() = delete;
+        VulkanQuery(VulkanQuery&) = delete;
+
+        void dispatch(QueryResult result) const;
+
+        void* m_data;
 #if VULKAN_DEBUG_MARKERS
         std::string m_debugName;
 #endif //VULKAN_DEBUG_MARKERS
+
+#if DEBUG_OBJECT_MEMORY
+        static std::set<VulkanQuery*> s_objects;
+#endif //DEBUG_OBJECT_MEMORY
+
+        friend VulkanQueryPoolManager;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

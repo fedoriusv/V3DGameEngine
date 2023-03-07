@@ -224,7 +224,7 @@ namespace renderer
         [[nodiscard]] virtual Pipeline* createPipeline(Pipeline::PipelineType type, [[maybe_unused]] const std::string& name = "") = 0;
         virtual void removePipeline(Pipeline* pipeline) = 0;
 
-        [[nodiscard]] virtual Query* createQuery(QueryType type, u32 size, const Query::QueryRespose& callback, [[maybe_unused]] const std::string& name = "") = 0;
+        [[nodiscard]] virtual Query* createQuery(QueryType type, u32 count, const Query::QueryRespose& callback, [[maybe_unused]] const std::string& name = "") = 0;
         virtual void removeQuery(Query* query) = 0;
 
         virtual void clearBackbuffer(const core::Vector4D& color) = 0;

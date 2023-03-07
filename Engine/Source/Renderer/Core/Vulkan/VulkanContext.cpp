@@ -1045,13 +1045,16 @@ void VulkanContext::beginQuery(const Query* query, u32 id, const std::string& ta
     ASSERT(query, "nullptr");
     ASSERT(query->getType() == QueryType::Occlusion || query->getType() == QueryType::BinaryOcclusion, "Must be occlusion");
     const VulkanQuery* vkQuery = static_cast<const VulkanQuery*>(query);
-    const VulkanRenderQueryState* renderQuery = m_currentContextState->bindQuery(vkQuery, id, tag);
+    auto [renderQuery, isNew] = m_currentContextState->bindQuery(vkQuery, id, tag);
     ASSERT(renderQuery, "nullptr");
 
     VulkanCommandBuffer* drawBuffer = m_currentBufferState.acquireAndStartCommandBuffer(CommandTargetType::CmdDrawBuffer);
     drawBuffer->cmdBeginQuery(renderQuery->_pool, renderQuery->_offset + id);
 
+    if (isNew)
+    {
     vkQuery->captureInsideCommandBuffer(drawBuffer, 0);
+}
 }
 
 void VulkanContext::endQuery(const Query* query, u32 id)
@@ -1064,13 +1067,16 @@ void VulkanContext::endQuery(const Query* query, u32 id)
     ASSERT(query, "nullptr");
     ASSERT(query->getType() == QueryType::Occlusion || query->getType() == QueryType::BinaryOcclusion, "Must be occlusion");
     const VulkanQuery* vkQuery = static_cast<const VulkanQuery*>(query);
-    const VulkanRenderQueryState* renderQuery = m_currentContextState->bindQuery(vkQuery, id);
+    auto [renderQuery, isNew] = m_currentContextState->bindQuery(vkQuery, id);
     ASSERT(renderQuery, "nullptr");
 
     VulkanCommandBuffer* drawBuffer = m_currentBufferState.acquireAndStartCommandBuffer(CommandTargetType::CmdDrawBuffer);
     drawBuffer->cmdEndQuery(renderQuery->_pool, renderQuery->_offset + id);
 
+    if (isNew)
+    {
     vkQuery->captureInsideCommandBuffer(drawBuffer, 0);
+    };
 }
 
 void VulkanContext::timestampQuery(const Query* query, u32 id, const std::string& tag)
@@ -1083,13 +1089,16 @@ void VulkanContext::timestampQuery(const Query* query, u32 id, const std::string
     ASSERT(query, "nullptr");
     ASSERT(query->getType() == QueryType::TimeStamp, "Must be timestamp");
     const VulkanQuery* vkQuery = static_cast<const VulkanQuery*>(query);
-    const VulkanRenderQueryState* renderQuery = m_currentContextState->bindQuery(vkQuery, id, tag);
+    auto [renderQuery, isNew] = m_currentContextState->bindQuery(vkQuery, id, tag);
     ASSERT(renderQuery, "nullptr");
 
     VulkanCommandBuffer* drawBuffer = m_currentBufferState.acquireAndStartCommandBuffer(CommandTargetType::CmdDrawBuffer);
     drawBuffer->cmdWriteTimestamp(renderQuery->_pool, renderQuery->_offset + id, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT);
 
+    if (isNew)
+    {
     vkQuery->captureInsideCommandBuffer(drawBuffer, 0);
+}
 }
 
 void VulkanContext::clearBackbuffer(const core::Vector4D& color)
@@ -1361,14 +1370,23 @@ void VulkanContext::removeRenderPass(RenderPass* renderpass)
     }
 }
 
-Query* VulkanContext::createQuery(QueryType type, u32 size, const Query::QueryRespose& callback, const std::string& name)
+Query* VulkanContext::createQuery(QueryType type, u32 count, const Query::QueryRespose& callback, const std::string& name)
 {
 #if FRAME_PROFILER_ENABLE
     RenderFrameProfiler::StackProfiler stackFrameProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::FrameTime);
     RenderFrameProfiler::StackProfiler stackProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::CreateResources);
 #endif //FRAME_PROFILER_ENABLE
 
-    return new VulkanQuery(type, size, callback, name);
+    VulkanQuery* vkQuery = new VulkanQuery(type, count, callback, name);
+    if (!vkQuery->create())
+    {
+        LOG_DEBUG("VulkanContext::createQuery can't create query");
+        delete vkQuery;
+
+        return nullptr;
+}
+
+    return vkQuery;
 }
 
 void VulkanContext::removeQuery(Query* query)
@@ -1391,12 +1409,16 @@ void VulkanContext::removeQuery(Query* query)
         m_resourceDeleter.addResourceToDelete(vkQuery, [this, vkQuery](VulkanResource* resource) -> void
             {
                 vkQuery->notifyObservers();
+
+                vkQuery->destroy();
                 delete vkQuery;
             });
     }
     else
     {
         vkQuery->notifyObservers();
+
+        vkQuery->destroy();
         delete vkQuery;
     }
 }
@@ -1494,7 +1516,6 @@ void VulkanContext::clearRenderTarget(const std::vector<const Image*>& images, F
         for (u32 index = 0; index < images.size(); ++index)
         {
             const VulkanImage* vkImage = static_cast<const VulkanImage*>(images[index]);
-            ASSERT(vkImage && VulkanImage::isAttachmentLayout(vkImage, 0), "wrong");
 
             VkClearAttachment& attachment = clearAttachments[index];
             attachment.colorAttachment = getAttachmentIndex(vkImage);
@@ -1527,7 +1548,39 @@ void VulkanContext::clearRenderTarget(const std::vector<const Image*>& images, F
     }
     else
     {
-        ASSERT(false, "outside render pass. Need to use beginpass clear logic");
+        VkRect2D& area = m_currentContextState->m_renderPassArea;
+        area.offset = { static_cast<s32>(clearValues._region._size.getLeftX()), static_cast<s32>(clearValues._region._size.getTopY()) };
+        area.extent = { clearValues._region._size.getWidth(), clearValues._region._size.getHeight() };
+
+        std::vector<VkClearValue>& clearValue = m_currentContextState->m_renderPassClearValues;
+        clearValue.clear();
+
+        for (u32 index = 0; index < images.size(); ++index)
+        {
+            const VulkanImage* vkImage = static_cast<const VulkanImage*>(images[index]);
+            if (VulkanImage::isColorFormat(vkImage->getFormat()))
+            {
+                VkClearValue clearColor = {};
+                clearColor.color =
+                {
+                    clearValues._color[index].x,
+                    clearValues._color[index].y,
+                    clearValues._color[index].z,
+                    clearValues._color[index].w,
+                };
+                clearValue.push_back(clearColor);
+            }
+            else
+            {
+                VkClearValue depthClear = {};
+                depthClear.depthStencil =
+                {
+                    clearValues._depth,
+                    clearValues._stencil,
+                };
+                clearValue.push_back(depthClear);
+            }
+        }
     }
 }
 

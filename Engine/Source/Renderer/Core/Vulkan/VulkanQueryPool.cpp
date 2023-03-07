@@ -190,12 +190,13 @@ void VulkanQueryPoolManager::updateRenderQueries(bool wait)
             pools._currentQueryPool = nullptr;
         }
 
+        ASSERT(pools._usedQueryPools.size() < 1024, "too many pools are not resolved. Enable VULKAN_DEBUG for debug");
         for (auto iter = pools._usedQueryPools.begin(); iter != pools._usedQueryPools.end();)
         {
             VulkanQueryPool* pool = (*iter);
             if (!pool->isCaptured())
             {
-                VkQueryResultFlags flags = 0;
+                VkQueryResultFlags flags = VK_QUERY_RESULT_64_BIT;
                 if (wait)
                 {
                     flags |= VK_QUERY_RESULT_WAIT_BIT;
@@ -212,7 +213,7 @@ void VulkanQueryPoolManager::updateRenderQueries(bool wait)
 #if VULKAN_DEBUG
                     if (!renderQuery.validate())
                     {
-                        LOG_WARNING("VulkanQueryPoolManager::updateRenderQueries: Some indices are not exectuted. For Query %s", renderQuery._query->getName().c_str());
+                        LOG_WARNING("VulkanQueryPoolManager::updateRenderQueries: Some indices are not executed. For Query %s", renderQuery._query->m_debugName.c_str());
                     }
 #endif //VULKAN_DEBUG
                     auto deletedQuery = std::find(m_markedToDelete.begin(), m_markedToDelete.end(), renderQuery._query);
@@ -223,7 +224,7 @@ void VulkanQueryPoolManager::updateRenderQueries(bool wait)
                         continue;
                     }
 
-                    VkResult vkResult = VulkanWrapper::GetQueryPoolResults(m_device, pool->getHandle(), renderQuery._offset, renderQuery._count, renderQuery._count * sizeof(u32), renderQuery._query->m_data, sizeof(u32), flags);
+                    VkResult vkResult = VulkanWrapper::GetQueryPoolResults(m_device, pool->getHandle(), renderQuery._offset, renderQuery._count, renderQuery._count * sizeof(u64), renderQuery._query->m_data, sizeof(u64), flags);
                     if (vkResult == VK_SUCCESS)
                     {
                         renderQuery._query->dispatch(QueryResult::Success);
@@ -246,9 +247,8 @@ void VulkanQueryPoolManager::updateRenderQueries(bool wait)
                 {
                     iter = pools._usedQueryPools.erase(iter);
                     pools._freeQueryPools.push_back(pool);
+                    continue;
                 }
-
-                continue;
             }
 
             ++iter;

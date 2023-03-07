@@ -15,6 +15,10 @@ namespace renderer
 namespace vk
 {
 
+#if DEBUG_OBJECT_MEMORY
+    std::set<VulkanQuery*> VulkanQuery::s_objects;
+#endif //DEBUG_OBJECT_MEMORY
+
 VkQueryType VulkanQuery::convertQueryTypeToVkQuery(QueryType type)
 {
     switch (type)
@@ -37,8 +41,9 @@ VkQueryType VulkanQuery::convertQueryTypeToVkQuery(QueryType type)
 }
 
 
-VulkanQuery::VulkanQuery(QueryType type, u32 size, const QueryRespose& callback, const std::string& name) noexcept
-    : Query(type, size, callback, name)
+VulkanQuery::VulkanQuery(QueryType type, u32 count, const QueryRespose& callback, const std::string& name) noexcept
+    : Query(type, count, callback)
+    , m_data(nullptr)
 {
     LOG_DEBUG("VulkanQuery::VulkanQuery constructor %llx", this);
 
@@ -47,11 +52,56 @@ VulkanQuery::VulkanQuery(QueryType type, u32 size, const QueryRespose& callback,
     m_debugName.append(VulkanDebugUtils::k_addressPreffix);
     m_debugName.append(std::to_string(reinterpret_cast<const u64>(this)));
 #endif //VULKAN_DEBUG_MARKERS
+
+#if DEBUG_OBJECT_MEMORY
+    s_objects.insert(this);
+#endif //DEBUG_OBJECT_MEMORY
 }
 
 VulkanQuery::~VulkanQuery()
 {
     LOG_DEBUG("VulkanQuery::~VulkanQuery destructor %llx", this);
+
+#if DEBUG_OBJECT_MEMORY
+    s_objects.erase(this);
+#endif //DEBUG_OBJECT_MEMORY
+    ASSERT(!m_data, "not nullptr");
+}
+
+bool VulkanQuery::create()
+{
+    switch (m_type)
+    {
+    case QueryType::Occlusion:
+    case QueryType::BinaryOcclusion:
+    case QueryType::TimeStamp:
+        m_data = malloc(m_count * sizeof(u64)); //TODO pool ?
+        break;
+
+    default:
+        ASSERT(false, "not impl");
+        return false;
+    }
+
+    return true;
+}
+
+void VulkanQuery::destroy()
+{
+
+    if (m_data)
+    {
+        delete m_data; //TODO pool ?
+        m_data = nullptr;
+    }
+}
+
+void VulkanQuery::dispatch(QueryResult result) const
+{
+    if (m_callback) //TODO checker to delete
+    {
+        std::invoke(m_callback, result, static_cast<u32>(m_count * sizeof(u64)), m_data);
+    }
 }
 
 
