@@ -156,7 +156,7 @@ namespace renderer
         Context*                    m_context;
         const CommandListType       m_commandListType;
         utils::Thread*              m_thread;
-        std::binary_semaphore       m_semaphore;
+        std::binary_semaphore       m_writeSemaphore;
 
         ContextStates               m_pendingStates;
         RenderTargetPendingState    m_pendingRenderTargetInfo;

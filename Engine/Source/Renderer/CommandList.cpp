@@ -494,98 +494,25 @@ public:
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    ~CommandBeginQuery()
+#if CMD_LIST_PROFILER_ENABLE
+CmdListProfiler CommandList::s_commandListProfiler(
     {
-#if DEBUG_COMMAND_LIST
-        LOG_DEBUG("CommandBeginQuery constructor");
-#endif //DEBUG_COMMAND_LIST
-    }
-
-    void execute(const CommandList& cmdList)
-    {
-#if DEBUG_COMMAND_LIST
-        LOG_DEBUG("CommandBeginQuery execute");
-#endif //DEBUG_COMMAND_LIST
-        cmdList.getContext()->beginQuery(m_query, m_tag);
-    }
-
-    Query* const m_query;
-    std::string m_tag;
-};
-
-    /*CommandEndQuery*/
-class CommandEndQuery final : public Command
-{
-public:
-    CommandEndQuery(CommandEndQuery&) = delete;
-    CommandEndQuery(Query* query, const std::string& tag) noexcept
-        : m_query(query)
-        , m_tag(tag)
-    {
-#if DEBUG_COMMAND_LIST
-        LOG_DEBUG("CommandEndQuery constructor");
-#endif //DEBUG_COMMAND_LIST
-    }
-
-    ~CommandEndQuery()
-    {
-#if DEBUG_COMMAND_LIST
-        LOG_DEBUG("CommandEndQuery constructor");
-#endif //DEBUG_COMMAND_LIST
-    }
-
-    void execute(const CommandList& cmdList)
-    {
-#if DEBUG_COMMAND_LIST
-        LOG_DEBUG("CommandEndQuery execute");
-#endif //DEBUG_COMMAND_LIST
-        cmdList.getContext()->endQuery(m_query, m_tag);
-    }
-
-    Query* const m_query;
-    std::string m_tag;
-};
-
-    /*CommandTimestampQuery*/
-class CommandTimestampQuery final : public Command
-{
-public:
-    CommandTimestampQuery(CommandTimestampQuery&) = delete;
-    CommandTimestampQuery(Query* query, const std::string& tag) noexcept
-        : m_query(query)
-        , m_tag(tag)
-    {
-#if DEBUG_COMMAND_LIST
-        LOG_DEBUG("CommandTimestampQuery constructor");
-#endif //DEBUG_COMMAND_LIST
-    }
-
-    ~CommandTimestampQuery()
-    {
-#if DEBUG_COMMAND_LIST
-        LOG_DEBUG("CommandTimestampQuery constructor");
-#endif //DEBUG_COMMAND_LIST
-    }
-
-    void execute(const CommandList& cmdList)
-    {
-#if DEBUG_COMMAND_LIST
-        LOG_DEBUG("CommandTimestampQuery execute");
-#endif //DEBUG_COMMAND_LIST
-        cmdList.getContext()->timestampQuery(m_query, m_tag);
-    }
-
-    Query* const m_query;
-    std::string m_tag;
-};
-
-/////////////////////////////////////////////////////////////////////////////////////////////////////
+        CmdListProfiler::CounterName::CmdAllCommands,
+        CmdListProfiler::CounterName::CmdPushList,
+        CmdListProfiler::CounterName::CmdExecuteList,
+        CmdListProfiler::CounterName::CmdPendingFlush,
+        CmdListProfiler::CounterName::CmdFrame,
+        CmdListProfiler::CounterName::CmdSetState,
+        CmdListProfiler::CounterName::CmdDraw,
+        CmdListProfiler::CounterName::CmdBind,
+    });
+#endif //CMD_LIST_PROFILER_ENABLE
 
 CommandList::CommandList(Context* context, CommandListType type) noexcept
     : m_context(context)
     , m_commandListType(type)
     , m_thread(nullptr)
-    , m_semaphore(1)
+    , m_writeSemaphore(1)
 
     , m_pendingFlushMask(0)
 {
@@ -680,50 +607,13 @@ void CommandList::presentFrame()
     }
 }
 
-void CommandList::beginQueryRequest(const QueryRequest* query, const std::string& tag)
-{
-    ASSERT(query && query->m_query, "Must be valid");
-    ASSERT(query->m_type == QueryType::Occlusion || query->m_type == QueryType::BinaryOcclusion, "Support occlusion requests only");
-    if (CommandList::isImmediate())
-    {
-        m_context->beginQuery(query->m_query, tag);
-    }
-    else
-    {
-        CommandList::pushCommand(new CommandBeginQuery(query->m_query, tag));
-    }
-}
-
-void CommandList::endQueryRequest(const QueryRequest* query, const std::string& tag)
-{
-    ASSERT(query && query->m_query, "Must be valid");
-    ASSERT(query->m_type == QueryType::Occlusion || query->m_type == QueryType::BinaryOcclusion, "Support occlusion requests only");
-    if (CommandList::isImmediate())
-    {
-        m_context->endQuery(query->m_query, tag);
-    }
-    else
-    {
-        CommandList::pushCommand(new CommandEndQuery(query->m_query, tag));
-    }
-}
-
-void CommandList::timestampQueryRequest(const QueryRequest* query, const std::string& tag)
-{
-    ASSERT(query && query->m_query, "Must be valid");
-    ASSERT(query->m_type == QueryType::TimeStamp, "Support timestamp requests only");
-    if (CommandList::isImmediate())
-    {
-        m_context->timestampQuery(query->m_query, tag);
-    }
-    else
-    {
-        CommandList::pushCommand(new CommandTimestampQuery(query->m_query, tag));
-    }
-}
-
 void CommandList::draw(const StreamBufferDescription& desc, u32 firstVertex, u32 countVertex, u32 countInstance)
-{
+    {
+#if CMD_LIST_PROFILER_ENABLE
+    CmdListProfiler::StackProfiler stackAllProfiler(&s_commandListProfiler, CmdListProfiler::CounterName::CmdAllCommands);
+    CmdListProfiler::StackProfiler stackProfiler(&s_commandListProfiler, CmdListProfiler::CounterName::CmdDraw);
+#endif //CMD_LIST_PROFILER_ENABLE
+
     if (CommandList::isImmediate())
     {
         m_context->draw(desc, firstVertex, countVertex, 0, countInstance);
@@ -761,7 +651,7 @@ void CommandList::dispatchCompute(const core::Dimension3D& groups)
     }
 }
 
-void CommandList::clearBackbuffer(const core::Vector4D & color)
+void CommandList::clearBackbuffer(const core::Vector4D& color)
 {
     if (!CommandList::isImmediate())
     {
@@ -912,13 +802,14 @@ void CommandList::pushCommand(Command* cmd)
 {
     if (CommandList::isThreaded())
     {
-        m_semaphore.acquire();
+        m_writeSemaphore.acquire();
     }
     m_commandList.push(cmd);
 
     if (CommandList::isThreaded())
     {
-        m_semaphore.release();
+        m_writeSemaphore.release();
+    }
     }
 }
 
@@ -926,7 +817,7 @@ void CommandList::executeCommands()
 {
     if (CommandList::isThreaded())
     {
-        m_semaphore.acquire();
+        m_writeSemaphore.acquire();
     }
 
     while (!m_commandList.empty())
@@ -940,7 +831,7 @@ void CommandList::executeCommands()
 
     if (CommandList::isThreaded())
     {
-        m_semaphore.release();
+        m_writeSemaphore.release();
     }
 }
 
@@ -950,7 +841,8 @@ void CommandList::threadedCommandsCallback(CommandList* cmdList)
     while (cmdList->m_thread->isRunning())
     {
         cmdList->executeCommands();
-        //std::this_thread::yield();
+
+        std::this_thread::yield();
     }
 }
 
