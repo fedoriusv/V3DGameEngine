@@ -77,7 +77,7 @@ void SimpleTriangle::init(v3d::renderer::CommandList* commandList, const core::D
         vertexHeader._contentType = renderer::ShaderHeader::ShaderResource::Source;
         vertexHeader._shaderModel = renderer::ShaderHeader::ShaderModel::HLSL_5_1;
 
-        vertShader = resource::ResourceLoaderManager::getInstance()->composeShader<renderer::Shader, resource::ShaderSourceStreamLoader>(m_CommandList->getContext(), "vertex", &vertexHeader, vertexStream);
+        vertShader = resource::ResourceLoaderManager::getLazyInstance()->composeShader<renderer::Shader, resource::ShaderSourceStreamLoader>(m_CommandList->getContext(), "vertex", &vertexHeader, vertexStream);
         delete vertexStream;
     }
 
@@ -100,7 +100,7 @@ void SimpleTriangle::init(v3d::renderer::CommandList* commandList, const core::D
         fragmentHeader._contentType = renderer::ShaderHeader::ShaderResource::Source;
         fragmentHeader._shaderModel = renderer::ShaderHeader::ShaderModel::HLSL_5_1;
 
-        fragShader = resource::ResourceLoaderManager::getInstance()->composeShader<renderer::Shader, resource::ShaderSourceStreamLoader>(m_CommandList->getContext(), "fragment", &fragmentHeader, fragmentStream);
+        fragShader = resource::ResourceLoaderManager::getLazyInstance()->composeShader<renderer::Shader, resource::ShaderSourceStreamLoader>(m_CommandList->getContext(), "fragment", &fragmentHeader, fragmentStream);
         delete fragmentStream;
     }
 
