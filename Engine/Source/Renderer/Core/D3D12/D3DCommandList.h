@@ -25,6 +25,7 @@ namespace dx3d
     class D3DRenderTarget;
     class D3DResource;
     class D3DDescriptorHeap;
+    class D3DQueryHeap;
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -67,6 +68,7 @@ namespace dx3d
         void destroy();
 
         void setUsed(D3DResource* resource, u64 frame);
+        bool isReadyForRecord() const;
 
     protected:
 
@@ -90,6 +92,11 @@ namespace dx3d
         D3DFence* m_fence;
         std::list<D3DResource*> m_resources;
     };
+
+    inline bool D3DCommandList::isReadyForRecord() const
+    {
+        return m_status == Status::ReadyToRecord;
+    }
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -129,6 +136,10 @@ namespace dx3d
         void setIndexState(Buffer* buffer, DXGI_FORMAT format);
 
         void setViewInstanceMask(u32 mask);
+
+        void beginQuery(D3DQueryHeap* heap, u32 index);
+        void endQuery(D3DQueryHeap* heap, u32 index);
+        void resolveQuery(D3DQueryHeap* heap, u32 start, u32 count, D3DBuffer* buffer, u32 size);
 
         void transition(D3DImage* image, const Image::Subresource& subresource, D3D12_RESOURCE_STATES states, bool immediateTransition = false);
 

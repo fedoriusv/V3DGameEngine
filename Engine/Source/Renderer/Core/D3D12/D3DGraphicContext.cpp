@@ -18,6 +18,7 @@
 #include "D3DDescriptorHeap.h"
 #include "D3DConstantBuffer.h"
 #include "D3DMemoryHeap.h"
+#include "D3DQueryHeap.h"
 
 #include "Renderer/Core/RenderFrameProfiler.h"
 
@@ -60,6 +61,7 @@ D3DGraphicContext::D3DGraphicContext(const platform::Window* window) noexcept
 
     , m_heapAllocator(nullptr)
     , m_descriptorHeapManager(nullptr)
+    , m_renderQueryManager(nullptr)
 
     , m_swapchain(nullptr)
     , m_window(window)
@@ -85,6 +87,7 @@ D3DGraphicContext::~D3DGraphicContext()
     
     ASSERT(!m_descriptorState, "not nullptr");
     ASSERT(!m_rootSignatureManager, "not nullptr");
+    ASSERT(!m_renderQueryManager, "not nullptr");
 
     ASSERT(!m_samplerManager, "not nullptr");
     ASSERT(!m_pipelineManager, "not nullptr");
@@ -199,7 +202,7 @@ bool D3DGraphicContext::initialize()
         }
 
 #if D3D_DEBUG
-        D3DDebug::getInstance()->attachDevice(m_device, D3D12_DEBUG_FEATURE_NONE);
+        D3DDebug::getLazyInstance()->attachDevice(m_device, D3D12_DEBUG_FEATURE_NONE);
 #endif //D3D_DEBUG
 
 #if D3D_DEBUG_LAYERS_CALLBACK
@@ -254,7 +257,7 @@ bool D3DGraphicContext::initialize()
     }
 #endif //PLATFORM
 
-    D3DDeviceCaps* caps = D3DDeviceCaps::getInstance();
+    D3DDeviceCaps* caps = D3DDeviceCaps::getLazyInstance();
     caps->initialize(m_adapter, m_device);
 
     {
@@ -280,6 +283,7 @@ bool D3DGraphicContext::initialize()
 
     m_heapAllocator = new D3DSimpleHeapAllocator(m_device);
     m_descriptorHeapManager = new D3DDescriptorHeapManager(m_device);
+    m_renderQueryManager = new D3DRenderQueryManager(m_device, m_heapAllocator);
     {
         D3DSwapchain::SwapchainConfig config;
         config._window = m_window->getWindowHandle();
@@ -344,6 +348,12 @@ void D3DGraphicContext::destroy()
 
         delete m_constantBufferManager;
         m_constantBufferManager = nullptr;
+    }
+
+    if (m_renderQueryManager)
+    {
+        m_renderQueryManager;
+        delete m_renderQueryManager;
     }
 
     if (m_descriptorState)
@@ -474,12 +484,13 @@ void D3DGraphicContext::presentFrame()
 
     if (D3DGraphicsCommandList* cmdList = m_currentState.commandList(); cmdList)
     {
+        m_renderQueryManager->resolve(cmdList);
+
         if (m_boundState._renderTarget)
         {
             D3DGraphicContext::switchRenderTargetTransitionToFinal(cmdList, m_boundState._renderTarget);
         }
         cmdList->close();
-
         m_commandListManager->execute(cmdList, false);
         m_currentState.setCommandList(nullptr);
     }
@@ -490,6 +501,7 @@ void D3DGraphicContext::presentFrame()
     m_descriptorState->updateStatus();
     ASSERT(!m_currentState.commandList(), "not nullptr");
     m_constantBufferManager->updateStatus();
+    m_renderQueryManager->update();
     m_delayedDeleter.update(false);
 
     ++m_frameCounter;
@@ -500,6 +512,9 @@ void D3DGraphicContext::submit(bool wait)
     if (m_currentState.commandList())
     {
         D3DGraphicsCommandList* cmdList = m_currentState.commandList();
+
+        m_renderQueryManager->resolve(cmdList);
+
         cmdList->close();
         m_commandListManager->execute(cmdList, wait);
         m_currentState.setCommandList(nullptr);
@@ -508,14 +523,49 @@ void D3DGraphicContext::submit(bool wait)
 
 void D3DGraphicContext::beginQuery(const Query* query, u32 id, const std::string& tag)
 {
+#if D3D_DEBUG
+    LOG_DEBUG("D3DGraphicContext::beginQuery %llx, %d", query, id);
+#endif //D3D_DEBUG
+    ASSERT(query, "nullptr");
+    const D3DRenderQuery* d3dQuery = static_cast<const D3DRenderQuery*>(query);
+    D3DQueryHeap* heap = m_renderQueryManager->acquireQueryHeap(d3dQuery->getType());
+
+    D3DGraphicsCommandList* cmdList = static_cast<D3DGraphicsCommandList*>(D3DGraphicContext::getOrAcquireCurrentCommandList());
+    ASSERT(m_currentState.commandList(), "nullptr");
+    cmdList->beginQuery(heap, id);
+
+    m_renderQueryManager->bind(const_cast<D3DRenderQuery*>(d3dQuery), heap, 0, d3dQuery->getCount());
 }
 
 void D3DGraphicContext::endQuery(const Query* query, u32 id)
 {
+#if D3D_DEBUG
+    LOG_DEBUG("D3DGraphicContext::endQuery %llx, %d", query, id);
+#endif //D3D_DEBUG
+    ASSERT(query, "nullptr");
+    const D3DRenderQuery* d3dQuery = static_cast<const D3DRenderQuery*>(query);
+    D3DQueryHeap* heap = m_renderQueryManager->find(const_cast<D3DRenderQuery*>(d3dQuery));
+    ASSERT(heap, "not found");
+
+    D3DGraphicsCommandList* cmdList = m_currentState.commandList();
+    ASSERT(m_currentState.commandList(), "nullptr");
+    cmdList->endQuery(heap, id);
 }
 
 void D3DGraphicContext::timestampQuery(const Query* query, u32 id, const std::string& tag)
 {
+#if D3D_DEBUG
+    LOG_DEBUG("D3DGraphicContext::timestampQuery %llx, %d", query, id);
+#endif //D3D_DEBUG
+    ASSERT(query, "nullptr");
+    const D3DRenderQuery* d3dQuery = static_cast<const D3DRenderQuery*>(query);
+    D3DQueryHeap* heap = m_renderQueryManager->acquireQueryHeap(d3dQuery->getType());
+
+    D3DGraphicsCommandList* cmdList = static_cast<D3DGraphicsCommandList*>(D3DGraphicContext::getOrAcquireCurrentCommandList());
+    ASSERT(m_currentState.commandList(), "nullptr");
+    cmdList->endQuery(heap, id);
+
+    m_renderQueryManager->bind(const_cast<D3DRenderQuery*>(d3dQuery), heap, 0, d3dQuery->getCount());
 }
 
 void D3DGraphicContext::draw(const StreamBufferDescription& desc, u32 firstVertex, u32 vertexCount, u32 firstInstance, u32 instanceCount)
@@ -649,7 +699,7 @@ void D3DGraphicContext::bindUniformsBuffer(const Shader* shader, u32 bindIndex, 
 
     D3DBuffer* constantBuffer = m_constantBufferManager->acquireConstanBuffer(size);
     ASSERT(constantBuffer, "nulllptr");
-    constantBuffer->upload(this, offset, size, data);
+    constantBuffer->write(this, offset, size, data);
     cmdList->setUsed(constantBuffer, 0);
 
     m_descriptorState->bindDescriptor<D3DBuffer, false>(space, binding, array, constantBuffer, 0, size);
@@ -844,15 +894,48 @@ void D3DGraphicContext::removePipeline(Pipeline* pipeline)
     }
 }
 
-Query* D3DGraphicContext::createQuery(QueryType type, u32 size, const Query::QueryRespose& callback, const std::string& name)
+Query* D3DGraphicContext::createQuery(QueryType type, u32 count, const Query::QueryRespose& callback, const std::string& name)
 {
-    ASSERT(false, "not impl");
+#if D3D_DEBUG
+    LOG_DEBUG("D3DGraphicContext::createQuery");
+#endif //D3D_DEBUG
+    D3DRenderQuery* d3dQuery = new D3DRenderQuery(m_device, type, count, callback, name, m_heapAllocator);
+    if (!d3dQuery->create())
+    {
+        LOG_DEBUG("D3DGraphicContext::createQuery can't create query");
+        delete d3dQuery;
+
     return nullptr;
+}
+
+    return d3dQuery;
 }
 
 void D3DGraphicContext::removeQuery(Query* query)
 {
-    ASSERT(false, "not impl");
+#if D3D_DEBUG
+    LOG_DEBUG("D3DGraphicContext::removeQuery");
+#endif //D3D_DEBUG
+    ASSERT(query, "nullptr");
+    D3DRenderQuery* dxQuery = static_cast<D3DRenderQuery*>(query);
+    if (dxQuery->isUsed())
+    {
+        m_delayedDeleter.requestToDelete(dxQuery, [this, dxQuery]() -> void
+            {
+                dxQuery->notifyObservers();
+
+                dxQuery->destroy();
+                delete dxQuery;
+
+            });
+    }
+    else
+    {
+        dxQuery->notifyObservers();
+
+        dxQuery->destroy();
+        delete dxQuery;
+    }
 }
 
 Image* D3DGraphicContext::createImage(TextureTarget target, Format format, const core::Dimension3D& dimension, u32 layers, u32 mipmapLevel, TextureUsageFlags flags, const std::string& name)

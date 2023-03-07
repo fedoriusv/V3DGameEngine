@@ -33,6 +33,7 @@ namespace dx3d
     class D3DConstantBufferManager;
     class D3DDebugLayerMessageCallback;
     class D3DHeapAllocator;
+    class D3DRenderQueryManager;
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -112,7 +113,7 @@ namespace dx3d
         Pipeline* createPipeline(Pipeline::PipelineType type, [[maybe_unused]] const std::string& name = "") override;
         void removePipeline(Pipeline* pipeline) override;
 
-        Query* createQuery(QueryType type, u32 size, const Query::QueryRespose& callback, [[maybe_unused]] const std::string& name = "") override;
+        Query* createQuery(QueryType type, u32 count, const Query::QueryRespose& callback, [[maybe_unused]] const std::string& name = "") override;
         void removeQuery(Query* query) override;
 
         bool initialize() override;
@@ -142,6 +143,7 @@ namespace dx3d
 
         D3DHeapAllocator* m_heapAllocator;
         D3DDescriptorHeapManager* m_descriptorHeapManager;
+        D3DRenderQueryManager* m_renderQueryManager;
 
         D3DSwapchain* m_swapchain;
         const platform::Window* const m_window;

@@ -12,6 +12,7 @@
 #include "D3DGraphicContext.h"
 #include "D3DRenderTarget.h"
 #include "D3DDeviceCaps.h"
+#include "D3DQueryHeap.h"
 
 
 namespace v3d
@@ -417,6 +418,41 @@ void D3DGraphicsCommandList::setViewInstanceMask(u32 mask)
 
     ID3D12GraphicsCommandList1* cmdList = D3DGraphicsCommandList::getHandle();
     cmdList->SetViewInstanceMask(mask);
+}
+
+void D3DGraphicsCommandList::beginQuery(D3DQueryHeap* heap, u32 index)
+{
+    ASSERT(m_commandList, "nullptr");
+    ASSERT(m_status == Status::ReadyToRecord, "not record");
+
+    ID3D12GraphicsCommandList* cmdList = D3DGraphicsCommandList::getHandle();
+    cmdList->BeginQuery(heap->getHandle(), heap->getType(), index);
+
+    this->setUsed(heap, 0);
+}
+
+void D3DGraphicsCommandList::endQuery(D3DQueryHeap* heap, u32 index)
+{
+    ASSERT(m_commandList, "nullptr");
+    ASSERT(m_status == Status::ReadyToRecord, "not record");
+
+    ID3D12GraphicsCommandList* cmdList = D3DGraphicsCommandList::getHandle();
+    cmdList->EndQuery(heap->getHandle(), heap->getType(), index);
+
+    this->setUsed(heap, 0);
+}
+
+void D3DGraphicsCommandList::resolveQuery(D3DQueryHeap* heap, u32 start, u32 count, D3DBuffer* buffer, u32 size)
+{
+    ASSERT(m_commandList, "nullptr");
+    ASSERT(m_status == Status::ReadyToRecord, "not record");
+    ASSERT(buffer, "nullptr");
+
+    ID3D12GraphicsCommandList* cmdList = D3DGraphicsCommandList::getHandle();
+    cmdList->ResolveQueryData(heap->getHandle(), heap->getType(), start, count, buffer->getResource(), size);
+
+    this->setUsed(heap, 0);
+    this->setUsed(buffer, 0);
 }
 
 void D3DGraphicsCommandList::BarrierResources::add(const D3D12_RESOURCE_BARRIER& resource)
