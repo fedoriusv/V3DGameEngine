@@ -216,20 +216,21 @@ void D3DGraphicsCommandList::setPipelineState(D3DComputePipelineState* pipeline)
     this->setUsed(pipeline, 0);
 }
 
-void D3DGraphicsCommandList::setDescriptorTables(const std::vector<ID3D12DescriptorHeap*>& heaps, const std::map<u32, std::tuple<D3DDescriptorHeap*, u32>>& desc, Pipeline::PipelineType type)
+void D3DGraphicsCommandList::setDescriptorTables(const std::vector<ID3D12DescriptorHeap*>& heaps, const std::vector<std::tuple<u32, D3DDescriptorHeap*, u32>>& desc, Pipeline::PipelineType type)
 {
     ASSERT(m_commandList, "nullptr");
     ASSERT(m_status == Status::ReadyToRecord, "not record");
-
-    m_transition.execute(this);
-
     ID3D12GraphicsCommandList* cmdList = D3DGraphicsCommandList::getHandle();
 
+    m_transition.execute(this); //?
+
     cmdList->SetDescriptorHeaps(static_cast<UINT>(heaps.size()), heaps.data());
-    for (auto& [paramIndex, descHeap] : desc)
+    for (u32 index = 0; index < desc.size(); ++index)
     {
-        auto& [heap, index] = descHeap;
-        CD3DX12_GPU_DESCRIPTOR_HANDLE dtHandle(heap->getGPUHandle(), index, heap->getIncrement());
+        auto& [paramIndex, descHeap, offset] = desc[index];
+        ASSERT(heaps[index] == descHeap->getHandle(), "must be same");
+
+        CD3DX12_GPU_DESCRIPTOR_HANDLE dtHandle(descHeap->getGPUHandle(), offset, descHeap->getIncrement());
         if (type == Pipeline::PipelineType::PipelineType_Graphic)
         {
             cmdList->SetGraphicsRootDescriptorTable(paramIndex, dtHandle);
@@ -239,6 +240,24 @@ void D3DGraphicsCommandList::setDescriptorTables(const std::vector<ID3D12Descrip
             ASSERT(type == Pipeline::PipelineType::PipelineType_Compute, "wrong type");
             cmdList->SetComputeRootDescriptorTable(paramIndex, dtHandle);
         }
+    }
+}
+
+void D3DGraphicsCommandList::setConstantBuffer(u32 paramIndex, const D3DBuffer* buffer, u32 offset, Pipeline::PipelineType type)
+{
+    ASSERT(m_commandList, "nullptr");
+    ASSERT(m_status == Status::ReadyToRecord, "not record");
+    ASSERT(offset < buffer->getSize(), "offset is too big");
+    ID3D12GraphicsCommandList* cmdList = D3DGraphicsCommandList::getHandle();
+
+    if (type == Pipeline::PipelineType::PipelineType_Graphic)
+    {
+        cmdList->SetGraphicsRootConstantBufferView(paramIndex, buffer->getGPUAddress() + offset);
+    }
+    else
+    {
+        ASSERT(type == Pipeline::PipelineType::PipelineType_Compute, "wrong type");
+        cmdList->SetComputeRootConstantBufferView(paramIndex, buffer->getGPUAddress() + offset);
     }
 }
 

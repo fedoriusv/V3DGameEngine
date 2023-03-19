@@ -130,7 +130,8 @@ namespace dx3d
         void setPipelineState(D3DGraphicPipelineState* pipeline);
         void setPipelineState(D3DComputePipelineState* pipeline);
 
-        void setDescriptorTables(const std::vector<ID3D12DescriptorHeap*>& heaps, const std::map<u32, std::tuple<D3DDescriptorHeap*, u32>>& desc, Pipeline::PipelineType type);
+        void setDescriptorTables(const std::vector<ID3D12DescriptorHeap*>& heaps, const std::vector<std::tuple<u32, D3DDescriptorHeap*, u32>>& desc, Pipeline::PipelineType type);
+        void setConstantBuffer(u32 paramIndex, const D3DBuffer* buffer, u32 offset, Pipeline::PipelineType type);
 
         void setVertexState(u32 startSlot, const std::vector<u32>& strides, const std::vector<Buffer*>& buffers);
         void setIndexState(Buffer* buffer, DXGI_FORMAT format);

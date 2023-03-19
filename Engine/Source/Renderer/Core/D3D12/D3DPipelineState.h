@@ -6,6 +6,7 @@
 #ifdef D3D_RENDER
 #include "D3DConfiguration.h"
 #include "D3DResource.h"
+#include "D3DRootSignature.h"
 
 namespace v3d
 {
@@ -31,7 +32,7 @@ namespace dx3d
 
         ID3D12PipelineState* getHandle() const;
         ID3D12RootSignature* getSignatureHandle() const;
-        s32 getSignatureParameterIndex(u32 space, u32 binding) const;
+        u32 getSignatureParameterIndex(const D3DBinding& binding) const;
 
     protected:
 
@@ -40,7 +41,7 @@ namespace dx3d
 
         ID3D12PipelineState* m_pipelineState;
         ID3D12RootSignature* m_rootSignature;
-        std::map<u32, u32> m_signatureParameters;
+        SignatureParameters m_signatureParameters;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

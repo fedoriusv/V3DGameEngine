@@ -35,9 +35,8 @@ ID3D12RootSignature* D3DPipelineState::getSignatureHandle() const
     return m_rootSignature;
 }
 
-s32 D3DPipelineState::getSignatureParameterIndex(u32 space, u32 binding) const
+u32 D3DPipelineState::getSignatureParameterIndex(const D3DBinding& binding) const
 {
-    ASSERT(space == 0, "not impl");
     auto iter = m_signatureParameters.find(binding);
     if (iter != m_signatureParameters.end())
     {

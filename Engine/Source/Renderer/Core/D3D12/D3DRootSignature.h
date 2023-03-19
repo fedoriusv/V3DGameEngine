@@ -5,6 +5,7 @@
 
 #ifdef D3D_RENDER
 #include "D3DConfiguration.h"
+#include "D3DDescriptorSet.h"
 
 namespace v3d
 {
@@ -13,6 +14,8 @@ namespace renderer
 namespace dx3d
 {
     /////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    using SignatureParameters = std::map<D3DBinding, u32, D3DBinding::Less>;
 
     /**
     * D3DRootSignature struct. DirectX Render side
@@ -26,7 +29,7 @@ namespace dx3d
         u32 m_hash;
         ID3DBlob* m_signature;
 
-        std::map<u32, u32> m_signatureParameters;
+        SignatureParameters m_signatureParameters;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -42,7 +45,7 @@ namespace dx3d
         explicit D3DRootSignatureManager(ID3D12Device* device) noexcept;
         ~D3DRootSignatureManager();
 
-        std::tuple<ID3D12RootSignature*, std::map<u32, u32>> acquireRootSignature(const ShaderProgramDescription& desc);
+        std::tuple<ID3D12RootSignature*, SignatureParameters> acquireRootSignature(const ShaderProgramDescription& desc);
         void removeAllRootSignatures();
 
     private:
