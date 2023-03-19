@@ -88,7 +88,8 @@ namespace vk
             sets.clear();
             offsets.clear();
 
-            for (u32 setId = 0; setId < k_maxDescriptorSetIndex; ++setId)
+            u32 descriptorSetCount = VulkanDeviceCaps::getInstance()->maxDescriptorSets;
+            for (u32 setId = 0; setId < descriptorSetCount; ++setId)
             {
                 BindingState& bindSet = m_currentBindingSlots[setId];
                 if (bindSet.isDirty())
@@ -188,7 +189,7 @@ namespace vk
                 std::variant<std::monostate, BindingImageData, BindingBufferData> _dataBinding;
             };
 
-            std::array<std::tuple<BindingInfo, BindingData>, k_maxDescriptorBindingIndex> _set;
+            std::array<std::tuple<BindingInfo, BindingData>, k_maxDescriptorBindingCount> _set;
 
             u32  _activeBindingsFlags = 0;
             bool _dirtyFlag = false;
@@ -225,7 +226,7 @@ namespace vk
         std::map<VkDynamicState, std::function<void(VulkanCommandBuffer* cmdBuffer)>> m_stateCallbacks;
 
         std::pair<StreamBufferDescription, bool>            m_currentVertexBuffers;
-        std::array<VkDescriptorSet, k_maxDescriptorSetIndex> m_currentDesctiptorsSets;
+        std::array<VkDescriptorSet, k_maxDescriptorSetCount> m_currentDesctiptorsSets;
         std::set<VkDescriptorSet>                           m_updatedDescriptorsSets;
         std::map<const VulkanQuery*, VulkanRenderQueryState*> m_currentRenderQueryState;
 
@@ -233,7 +234,7 @@ namespace vk
         VulkanUniformBufferManager* m_unifromBufferManager;
         VulkanQueryPoolManager* m_queryPoolManager;
 
-        mutable BindingState m_currentBindingSlots[k_maxDescriptorSetIndex];
+        mutable BindingState m_currentBindingSlots[k_maxDescriptorSetCount];
     };
 
     inline bool VulkanContextState::isCurrentRenderPass(const VulkanRenderPass* pass) const

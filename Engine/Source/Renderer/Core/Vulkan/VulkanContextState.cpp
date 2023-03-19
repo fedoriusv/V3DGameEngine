@@ -185,8 +185,8 @@ void VulkanContextState::invokeDynamicStates(VulkanCommandBuffer* cmdBuffer, boo
 
 void VulkanContextState::updateDescriptorSet(VulkanCommandBuffer* cmdBuffer, VkDescriptorSet set, const BindingState& state)
 {
-    std::vector<VkWriteDescriptorSet> writeDescriptorSets;
-    writeDescriptorSets.reserve(k_maxDescriptorSetIndex);
+    std::array<VkWriteDescriptorSet, k_maxDescriptorSetCount> writeDescriptorSets;
+    u32 writeDescriptorCount = 0;
 
     for (const auto& binding : state._set)
     {
@@ -196,7 +196,7 @@ void VulkanContextState::updateDescriptorSet(VulkanCommandBuffer* cmdBuffer, VkD
             continue;
         }
 
-        VkWriteDescriptorSet writeDescriptorSet = {};
+        VkWriteDescriptorSet& writeDescriptorSet = writeDescriptorSets[writeDescriptorCount];
         writeDescriptorSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
         writeDescriptorSet.pNext = nullptr; //VkWriteDescriptorSetInlineUniformBlockEXT
         writeDescriptorSet.dstSet = set;
@@ -255,19 +255,19 @@ void VulkanContextState::updateDescriptorSet(VulkanCommandBuffer* cmdBuffer, VkD
             ASSERT(false, "impl");
         }
 
-        writeDescriptorSets.push_back(writeDescriptorSet);
+        ++writeDescriptorCount;
     }
 
-    if (!writeDescriptorSets.empty())
+    if (writeDescriptorCount > 0)
     {
-        VulkanWrapper::UpdateDescriptorSets(m_device, static_cast<u32>(writeDescriptorSets.size()), writeDescriptorSets.data(), 0, nullptr);
+        VulkanWrapper::UpdateDescriptorSets(m_device, writeDescriptorCount, writeDescriptorSets.data(), 0, nullptr);
     }
 }
 
 void VulkanContextState::bindTexture(const VulkanImage* image, const VulkanSampler* sampler, u32 arrayIndex, const Shader::Image& info, const Image::Subresource& subresource)
 {
-    ASSERT(info._set < VulkanDeviceCaps::getInstance()->maxDescriptorSetIndex, "Set index. Out of range");
-    ASSERT(info._binding < VulkanDeviceCaps::getInstance()->maxDescriptorBindingIndex, "Binding index. Out of range");
+    ASSERT(info._set < VulkanDeviceCaps::getInstance()->maxDescriptorSets, "Set index. Out of range");
+    ASSERT(info._binding < VulkanDeviceCaps::getInstance()->maxDescriptorBindings, "Binding index. Out of range");
 
     BindingState& bindingSlot = m_currentBindingSlots[info._set];
     bindingSlot.bind(BindingType::BindingType_SamplerAndTexture, info._binding, arrayIndex, image, subresource, sampler);
@@ -275,8 +275,8 @@ void VulkanContextState::bindTexture(const VulkanImage* image, const VulkanSampl
 
 void VulkanContextState::bindTexture(const VulkanImage* image, u32 arrayIndex, const Shader::Image& info, const Image::Subresource& subresource)
 {
-    ASSERT(info._set < VulkanDeviceCaps::getInstance()->maxDescriptorSetIndex, "Set index. Out of range");
-    ASSERT(info._binding < VulkanDeviceCaps::getInstance()->maxDescriptorBindingIndex, "Binding index. Out of range");
+    ASSERT(info._set < VulkanDeviceCaps::getInstance()->maxDescriptorSets, "Set index. Out of range");
+    ASSERT(info._binding < VulkanDeviceCaps::getInstance()->maxDescriptorBindings, "Binding index. Out of range");
 
     BindingState& bindingSlot = m_currentBindingSlots[info._set];
     bindingSlot.bind(BindingType::BindingType_Texture, info._binding, arrayIndex, image, subresource, nullptr);
@@ -284,8 +284,8 @@ void VulkanContextState::bindTexture(const VulkanImage* image, u32 arrayIndex, c
 
 void VulkanContextState::bindSampler(const VulkanSampler* sampler, const Shader::Sampler& info)
 {
-    ASSERT(info._set < VulkanDeviceCaps::getInstance()->maxDescriptorSetIndex, "Set index. Out of range");
-    ASSERT(info._binding < VulkanDeviceCaps::getInstance()->maxDescriptorBindingIndex, "Binding index. Out of range");
+    ASSERT(info._set < VulkanDeviceCaps::getInstance()->maxDescriptorSets, "Set index. Out of range");
+    ASSERT(info._binding < VulkanDeviceCaps::getInstance()->maxDescriptorBindings, "Binding index. Out of range");
 
     BindingState& bindingSlot = m_currentBindingSlots[info._set];
     bindingSlot.bind(BindingType::BindingType_Sampler, info._binding, 0, nullptr, {}, sampler);
@@ -293,8 +293,8 @@ void VulkanContextState::bindSampler(const VulkanSampler* sampler, const Shader:
 
 void VulkanContextState::bindStorageImage(const VulkanImage* image, u32 arrayIndex, const Shader::StorageImage& info, const Image::Subresource& subresource)
 {
-    ASSERT(info._set < VulkanDeviceCaps::getInstance()->maxDescriptorSetIndex, "Set index. Out of range");
-    ASSERT(info._binding < VulkanDeviceCaps::getInstance()->maxDescriptorBindingIndex, "Binding index. Out of range");
+    ASSERT(info._set < VulkanDeviceCaps::getInstance()->maxDescriptorSets, "Set index. Out of range");
+    ASSERT(info._binding < VulkanDeviceCaps::getInstance()->maxDescriptorBindings, "Binding index. Out of range");
 
     BindingState& bindingSlot = m_currentBindingSlots[info._set];
     bindingSlot.bind(BindingType::BindingType_StorageImage, info._binding, arrayIndex, image, subresource, nullptr);
@@ -302,8 +302,8 @@ void VulkanContextState::bindStorageImage(const VulkanImage* image, u32 arrayInd
 
 void VulkanContextState::updateConstantBuffer(const Shader::UniformBuffer& info, u32 offset, u32 size, const void* data)
 {
-    ASSERT(info._set < VulkanDeviceCaps::getInstance()->maxDescriptorSetIndex, "Set index. Out of range");
-    ASSERT(info._binding < VulkanDeviceCaps::getInstance()->maxDescriptorBindingIndex, "Binding index. Out of range");
+    ASSERT(info._set < VulkanDeviceCaps::getInstance()->maxDescriptorSets, "Set index. Out of range");
+    ASSERT(info._binding < VulkanDeviceCaps::getInstance()->maxDescriptorBindings, "Binding index. Out of range");
 
     ASSERT(size <= info._size * info._array, "over size");
     VulkanUniformBuffer* uniformBuffer = m_unifromBufferManager->acquireUnformBuffer(info._size);
@@ -493,7 +493,8 @@ void VulkanContextState::BindingState::bind(BindingType type, u32 binding, u32 a
 void VulkanContextState::BindingState::apply(VulkanCommandBuffer* cmdBuffer, u64 frame, SetInfo& setInfo)
 {
     u32 hash = 0;
-    for (u32 i = 0; i < k_maxDescriptorBindingIndex; ++i)
+    u32 descriptorBindingCount = VulkanDeviceCaps::getInstance()->maxDescriptorBindings;
+    for (u32 i = 0; i < descriptorBindingCount; ++i)
     {
         if (!BindingState::isActiveBinding(i))
         {

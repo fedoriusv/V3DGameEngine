@@ -58,7 +58,7 @@ namespace vk
         };
 
         u64 _key;
-        std::array<std::vector<VkDescriptorSetLayoutBinding>, k_maxDescriptorSetIndex> _bindingsSet;
+        std::array<std::vector<VkDescriptorSetLayoutBinding>, k_maxDescriptorSetCount> _bindingsSet;
         std::vector<VkPushConstantRange> _pushConstant;
     };
 
@@ -70,7 +70,7 @@ namespace vk
         VulkanPipelineLayout() noexcept;
 
         VkPipelineLayout _pipelineLayout;
-        std::array<VkDescriptorSetLayout, k_maxDescriptorSetIndex> _setLayouts;
+        std::array<VkDescriptorSetLayout, k_maxDescriptorSetCount> _setLayouts;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -109,10 +109,10 @@ namespace vk
 
         VkDescriptorSetLayout acquireDescriptorSetLayout(const std::vector<VkDescriptorSetLayoutBinding>& bindings);
 
-        VkPipelineLayout createPipelineLayout(const VulkanPipelineLayoutDescription& desc, const std::array<VkDescriptorSetLayout, k_maxDescriptorSetIndex>& descriptorSetLayouts);
+        VkPipelineLayout createPipelineLayout(const VulkanPipelineLayoutDescription& desc, const std::array<VkDescriptorSetLayout, k_maxDescriptorSetCount>& descriptorSetLayouts);
 
         VkDescriptorSetLayout createDescriptorSetLayout(const std::vector<VkDescriptorSetLayoutBinding>& bindings);
-        void destroyDescriptorSetLayouts(std::array<VkDescriptorSetLayout, k_maxDescriptorSetIndex>& descriptorSetLayouts);
+        void destroyDescriptorSetLayouts(std::array<VkDescriptorSetLayout, k_maxDescriptorSetCount>& descriptorSetLayouts);
 
         VkDevice m_device;
         std::unordered_map<VulkanDescriptorSetLayoutDescription, VkDescriptorSetLayout, VulkanDescriptorSetLayoutDescription::Hash, VulkanDescriptorSetLayoutDescription::Equal> m_descriptorSetLayouts;

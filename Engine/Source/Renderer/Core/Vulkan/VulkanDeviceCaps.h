@@ -52,9 +52,6 @@ namespace vk
         //immediateResourceSubmit: 0 - not submit, 1 - submit, 2 - submit and wait complete
         u32 immediateResourceSubmit = 0; 
 
-        u32 maxDescriptorSetIndex = 0;
-        u32 maxDescriptorBindingIndex = 0;
-
         bool enableSamplerMirrorClampToEdge = false;
         bool supportSamplerBorderColor = false;
         bool hostQueryReset = false;

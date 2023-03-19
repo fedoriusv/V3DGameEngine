@@ -59,7 +59,7 @@ VulkanPipelineLayoutDescription::VulkanPipelineLayoutDescription() noexcept
 bool VulkanPipelineLayoutDescription::Equal::operator()(const VulkanPipelineLayoutDescription& descl, const VulkanPipelineLayoutDescription& descr) const
 {
     //bindings
-    for (u32 i = 0; i < k_maxDescriptorSetIndex; ++i)
+    for (u32 i = 0; i < k_maxDescriptorSetCount; ++i)
     {
         if (descl._bindingsSet[i].size() != descr._bindingsSet[i].size())
         {
@@ -138,7 +138,7 @@ VulkanPipelineLayout VulkanPipelineLayoutManager::acquirePipelineLayout(const Vu
         VulkanPipelineLayout& layout = found.first->second;
 
         layout._setLayouts.fill(VK_NULL_HANDLE);
-        for (u32 setId = 0; setId < k_maxDescriptorSetIndex; ++setId)
+        for (u32 setId = 0; setId < k_maxDescriptorSetCount; ++setId)
         {
             auto& set = desc._bindingsSet[setId];
             if (set.empty())
@@ -203,10 +203,10 @@ void VulkanPipelineLayoutManager::clear()
 }
 
 
-VkPipelineLayout VulkanPipelineLayoutManager::createPipelineLayout(const VulkanPipelineLayoutDescription& desc, const std::array<VkDescriptorSetLayout, k_maxDescriptorSetIndex>& descriptorSetLayouts)
+VkPipelineLayout VulkanPipelineLayoutManager::createPipelineLayout(const VulkanPipelineLayoutDescription& desc, const std::array<VkDescriptorSetLayout, k_maxDescriptorSetCount>& descriptorSetLayouts)
 {
     std::vector<VkDescriptorSetLayout> vkDescriptorSetLayouts;
-    vkDescriptorSetLayouts.reserve(k_maxDescriptorSetIndex);
+    vkDescriptorSetLayouts.reserve(k_maxDescriptorSetCount);
     for (auto& set : descriptorSetLayouts)
     {
         if (set != VK_NULL_HANDLE)
@@ -293,7 +293,7 @@ VkDescriptorSetLayout VulkanPipelineLayoutManager::createDescriptorSetLayout(con
     return descriptorSetLayout;
 }
 
-void VulkanPipelineLayoutManager::destroyDescriptorSetLayouts(std::array<VkDescriptorSetLayout, k_maxDescriptorSetIndex>& descriptorSetLayouts)
+void VulkanPipelineLayoutManager::destroyDescriptorSetLayouts(std::array<VkDescriptorSetLayout, k_maxDescriptorSetCount>& descriptorSetLayouts)
 {
     for (auto& set : descriptorSetLayouts)
     {
@@ -311,7 +311,7 @@ VulkanPipelineLayoutManager::DescriptorSetLayoutCreator::DescriptorSetLayoutCrea
     _description._bindingsSet.fill({});
 
     u32 maxSetIndex = 0;
-    for (u32 setIndex = 0; setIndex < k_maxDescriptorSetIndex; ++setIndex)
+    for (u32 setIndex = 0; setIndex < k_maxDescriptorSetCount; ++setIndex)
     {
         std::vector<VkDescriptorSetLayoutBinding> descriptorSetLayoutBindings;
         for (u32 type = toEnumType(ShaderType::Vertex); type < (u32)toEnumType(ShaderType::Count); ++type)
@@ -325,7 +325,7 @@ VulkanPipelineLayoutManager::DescriptorSetLayoutCreator::DescriptorSetLayoutCrea
             const Shader::ReflectionInfo& info = shader->getReflectionInfo();
             for (auto& uniform : info._uniformBuffers)
             {
-                ASSERT(uniform._set < k_maxDescriptorSetIndex && uniform._binding < k_maxDescriptorBindingIndex, "range out");
+                ASSERT(uniform._set < k_maxDescriptorSetCount && uniform._binding < k_maxDescriptorBindingCount, "range out");
                 if (uniform._set != setIndex)
                 {
                     continue;
@@ -416,7 +416,7 @@ VulkanPipelineLayoutManager::DescriptorSetLayoutCreator::DescriptorSetLayoutCrea
             _description._bindingsSet[setIndex] = std::move(descriptorSetLayoutBindings);
         }
     }
-    ASSERT(maxSetIndex < k_maxDescriptorSetIndex, "invalid max set index");
+    ASSERT(maxSetIndex < k_maxDescriptorSetCount, "invalid max set index");
 
     for (u32 type = toEnumType(ShaderType::Vertex); type < (u32)toEnumType(ShaderType::Count); ++type)
     {

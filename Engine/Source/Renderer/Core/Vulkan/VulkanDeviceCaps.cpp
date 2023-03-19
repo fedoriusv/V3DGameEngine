@@ -486,8 +486,8 @@ void VulkanDeviceCaps::fillCapabilitiesList(const DeviceInfo* info)
 
 void VulkanDeviceCaps::initialize()
 {
-    maxDescriptorSetIndex = std::min(k_maxDescriptorSetIndex, m_deviceProperties.limits.maxBoundDescriptorSets);
-    maxDescriptorBindingIndex = k_maxDescriptorBindingIndex; // std::min(k_maxDescriptorBindingIndex, m_deviceProperties.limits.maxPerSetDescriptors);
+    maxDescriptorSets = std::min(k_maxDescriptorSetCount, m_deviceProperties.limits.maxBoundDescriptorSets);
+    maxDescriptorBindings = std::min(k_maxDescriptorBindingCount, m_physicalDeviceMaintenance3Properties.maxPerSetDescriptors);
     maxColorAttachments = std::min(k_maxColorAttachments, m_deviceProperties.limits.maxColorAttachments);
 
     ASSERT(maxColorAttachments <= m_deviceProperties.limits.maxFragmentOutputAttachments, "maxFragmentOutputAttachments less than maxColorAttachments");
