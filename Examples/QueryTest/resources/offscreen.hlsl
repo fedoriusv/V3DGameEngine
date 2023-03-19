@@ -1,7 +1,7 @@
 struct VS_OUTPUT
 {
-    float4 Pos : SV_Position;
-    float2 UV : TEXTURE;
+    [[vk::location(0)]] float4 Pos : SV_Position;
+    [[vk::location(1)]] float2 UV  : TEXTURE;
 };
 
 VS_OUTPUT main_VS(uint vertexID : SV_VertexID)
@@ -14,10 +14,10 @@ VS_OUTPUT main_VS(uint vertexID : SV_VertexID)
     return output;
 }
 
-SamplerState colorSampler : register(s0, space0);
-Texture2D colorTexture : register(t1, space0);
+[[vk::binding(0, 0)]] SamplerState colorSampler : register(s0, space0);
+[[vk::binding(1, 0)]] Texture2D colorTexture : register(t0, space0);
 
-float4 main_FS(VS_OUTPUT input) : SV_TARGET0
+[[vk::location(0)]] float4 main_FS(VS_OUTPUT input) : SV_TARGET0
 {
     float4 outFragColor = colorTexture.SampleLevel(colorSampler, input.UV, 0);
     return outFragColor;

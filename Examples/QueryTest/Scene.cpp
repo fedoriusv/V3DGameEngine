@@ -26,7 +26,7 @@
 Scene::Scene(renderer::CommandList& cmdList, const core::Dimension2D& size) noexcept
     : m_CommandList(cmdList)
 {
-    m_FPSCameraHelper = new scene::CameraFPSHelper(new scene::Camera(core::Vector3D(0.0f, 0.0f, 0.0f), core::Vector3D(0.0f, 1.0f, 0.0f)), core::Vector3D(0.0f, 0.0f, -30.0f));
+    m_FPSCameraHelper = new scene::CameraFPSHelper(new scene::Camera(core::Vector3D(0.0f, 0.0f, 0.0f), core::Vector3D(0.0f, 1.0f, 0.0f)), core::Vector3D(0.0f, 0.0f, -90.0f));
     m_FPSCameraHelper->setPerspective(60.0f, size, 0.001f, 256.f);
 
     m_BasePassDraw = new BasePassDraw();
@@ -230,6 +230,7 @@ void Scene::Run(f32 dt)
     m_BasePassDraw->QueryTimeStamp(m_DrawList._TimeStampQuery, 1, "GPUframe end");
 
     m_CommandList.endFrame();
+    m_CommandList.submitCommands();
     m_CommandList.presentFrame();
 
     m_SceneProfiler.start("SceneLoop.Flush");
