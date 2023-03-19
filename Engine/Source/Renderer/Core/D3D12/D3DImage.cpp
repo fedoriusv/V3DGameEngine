@@ -984,7 +984,7 @@ bool D3DImage::create()
         }
         else
         {
-            defaultClearValue.DepthStencil.Depth = 1.f;
+            defaultClearValue.DepthStencil.Depth = 0.f;
             defaultClearValue.DepthStencil.Stencil = 0U;
         }
         optimizedClearValue = &defaultClearValue;
@@ -1341,7 +1341,7 @@ void D3DImage::createResourceView(DXGI_FORMAT shaderResourceFormat)
     }
 }
 
-bool D3DImage::create(ID3D12Resource* resource, CD3DX12_CPU_DESCRIPTOR_HANDLE& handle)
+bool D3DImage::create(ID3D12Resource* resource, D3D12_CPU_DESCRIPTOR_HANDLE& handle)
 {
     ASSERT(resource, "nullptr");
     m_resource = resource;

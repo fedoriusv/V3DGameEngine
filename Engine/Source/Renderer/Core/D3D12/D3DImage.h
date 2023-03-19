@@ -29,7 +29,7 @@ namespace dx3d
         ~D3DImage();
 
         bool create() override;
-        bool create(ID3D12Resource* resource, CD3DX12_CPU_DESCRIPTOR_HANDLE& handle);
+        bool create(ID3D12Resource* resource, D3D12_CPU_DESCRIPTOR_HANDLE& handle);
 
         void destroy() override;
 
@@ -111,7 +111,7 @@ namespace dx3d
         ID3D12Device* const m_device;
 
         ID3D12Resource* m_resource;
-        CD3DX12_CPU_DESCRIPTOR_HANDLE m_handle;
+        D3D12_CPU_DESCRIPTOR_HANDLE m_handle;
         std::vector<D3D12_RESOURCE_STATES> m_state;
         D3D12_RESOURCE_FLAGS m_flags;
 
