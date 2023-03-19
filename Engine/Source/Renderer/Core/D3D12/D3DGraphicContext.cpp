@@ -201,9 +201,9 @@ bool D3DGraphicContext::initialize()
             return false;
         }
 
-#if D3D_DEBUG
+#if D3D_DEBUG_LIVE_REPORT
         D3DDebug::getLazyInstance()->attachDevice(m_device, D3D12_DEBUG_FEATURE_NONE);
-#endif //D3D_DEBUG
+#endif //D3D_DEBUG_LIVE_REPORT
 
 #if D3D_DEBUG_LAYERS_CALLBACK
         m_debugMessageCallback = new D3DDebugLayerMessageCallback(m_device);
@@ -317,14 +317,28 @@ bool D3DGraphicContext::initialize()
     m_constantBufferManager = new D3DConstantBufferManager(m_device, m_heapAllocator);
 
     m_descriptorState = new D3DDescriptorSetState(m_device, m_descriptorHeapManager);
-#if defined(PLATFORM_WINDOWS) && D3D_DEBUG
+#if defined(PLATFORM_WINDOWS) && D3D_DEBUG_LIVE_REPORT
     D3DDebug::getInstance()->report(D3D12_RLDO_SUMMARY | D3D12_RLDO_IGNORE_INTERNAL);
 #endif //D3D_DEBUG
 
 #if FRAME_PROFILER_ENABLE
-    //utils::ProfileManager::getInstance()->attach(new FrameTimeProfiler(nullptr));
+    m_CPUProfiler = new RenderFrameProfiler(
+        {
+            RenderFrameProfiler::FrameCounter::FrameTime,
+            RenderFrameProfiler::FrameCounter::SetTarget,
+            RenderFrameProfiler::FrameCounter::SetPipeline,
+            RenderFrameProfiler::FrameCounter::SetStates,
+            RenderFrameProfiler::FrameCounter::BindResources,
+            RenderFrameProfiler::FrameCounter::DrawCalls,
+            RenderFrameProfiler::FrameCounter::QueryCommands,
+            RenderFrameProfiler::FrameCounter::Submit,
+            RenderFrameProfiler::FrameCounter::Present,
+            RenderFrameProfiler::FrameCounter::UpdateSubmitResorces,
+        },
+        {
+        });
+    m_frameProfiler.attach(m_CPUProfiler);
 #endif //FRAME_PROFILER_ENABLE
-
     return true;
 }
 
@@ -332,7 +346,7 @@ void D3DGraphicContext::destroy()
 {
     LOG_DEBUG("D3DGraphicContext::destroy");
 
-#if defined(PLATFORM_WINDOWS) && D3D_DEBUG
+#if defined(PLATFORM_WINDOWS) && D3D_DEBUG_LIVE_REPORT
     D3DDebug::getInstance()->report(D3D12_RLDO_SUMMARY | D3D12_RLDO_IGNORE_INTERNAL);
 #endif
 
@@ -433,7 +447,7 @@ void D3DGraphicContext::destroy()
     }
 #   endif //D3D_DEBUG_LAYERS_CALLBACK
 
-#   if D3D_DEBUG
+#if defined(PLATFORM_WINDOWS) && D3D_DEBUG_LIVE_REPORT
     D3DDebug::getInstance()->report(D3D12_RLDO_DETAIL | D3D12_RLDO_IGNORE_INTERNAL);
     D3DDebug::getInstance()->freeInstance();
 #   endif
@@ -456,6 +470,12 @@ void D3DGraphicContext::destroy()
 
 void D3DGraphicContext::beginFrame()
 {
+#if FRAME_PROFILER_ENABLE
+    m_frameProfiler.update();
+
+    RenderFrameProfiler::StackProfiler stackFrameProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::FrameTime);
+#endif //FRAME_PROFILER_ENABLE
+
     u32 indexFrame = m_swapchain->acquireImage();
 
     m_commandListManager->sync(indexFrame, m_swapchain->vsync());
@@ -474,6 +494,10 @@ void D3DGraphicContext::endFrame()
 #if D3D_DEBUG
     LOG_DEBUG("D3DGraphicContext::endFrame %d", m_frameCounter);
 #endif //D3D_DEBUG
+
+#if FRAME_PROFILER_ENABLE
+    RenderFrameProfiler::StackProfiler stackFrameProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::FrameTime);
+#endif //FRAME_PROFILER_ENABLE
 }
 
 void D3DGraphicContext::presentFrame()
@@ -481,6 +505,11 @@ void D3DGraphicContext::presentFrame()
 #if D3D_DEBUG
     LOG_DEBUG("D3DGraphicContext::presentFrame %d", m_frameCounter);
 #endif //D3D_DEBUG
+
+#if FRAME_PROFILER_ENABLE
+    RenderFrameProfiler::StackProfiler stackFrameProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::FrameTime);
+    RenderFrameProfiler::StackProfiler stackProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::Present);
+#endif //FRAME_PROFILER_ENABLE
 
     if (D3DGraphicsCommandList* cmdList = m_currentState.commandList(); cmdList)
     {
@@ -509,6 +538,15 @@ void D3DGraphicContext::presentFrame()
 
 void D3DGraphicContext::submit(bool wait)
 {
+#if D3D_DEBUG
+    LOG_DEBUG("D3DGraphicContext::submit");
+#endif //D3D_DEBUG
+
+#if FRAME_PROFILER_ENABLE
+    RenderFrameProfiler::StackProfiler stackFrameProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::FrameTime);
+    RenderFrameProfiler::StackProfiler stackProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::Submit);
+#endif //FRAME_PROFILER_ENABLE
+
     if (m_currentState.commandList())
     {
         D3DGraphicsCommandList* cmdList = m_currentState.commandList();
@@ -573,6 +611,12 @@ void D3DGraphicContext::draw(const StreamBufferDescription& desc, u32 firstVerte
 #if D3D_DEBUG
     LOG_DEBUG("D3DGraphicContext::draw");
 #endif //D3D_DEBUG
+
+#if FRAME_PROFILER_ENABLE
+    RenderFrameProfiler::StackProfiler stackFrameProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::FrameTime);
+    RenderFrameProfiler::StackProfiler stackProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::DrawCalls);
+#endif //FRAME_PROFILER_ENABLE
+
     D3DGraphicsCommandList* cmdList = static_cast<D3DGraphicsCommandList*>(D3DGraphicContext::getOrAcquireCurrentCommandList());
     ASSERT(m_currentState.commandList(), "nullptr");
 
@@ -596,6 +640,12 @@ void D3DGraphicContext::drawIndexed(const StreamBufferDescription& desc, u32 fir
 #if D3D_DEBUG
     LOG_DEBUG("D3DGraphicContext::drawIndexed");
 #endif //D3D_DEBUG
+
+#if FRAME_PROFILER_ENABLE
+    RenderFrameProfiler::StackProfiler stackFrameProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::FrameTime);
+    RenderFrameProfiler::StackProfiler stackProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::DrawCalls);
+#endif //FRAME_PROFILER_ENABLE
+
     D3DGraphicsCommandList* cmdList = static_cast<D3DGraphicsCommandList*>(D3DGraphicContext::getOrAcquireCurrentCommandList());
     ASSERT(m_currentState.commandList(), "nullptr");
 
@@ -621,6 +671,12 @@ void D3DGraphicContext::dispatchCompute(const core::Dimension3D& groups)
 #if D3D_DEBUG
     LOG_DEBUG("D3DGraphicContext::dispatchCompute");
 #endif //D3D_DEBUG
+
+#if FRAME_PROFILER_ENABLE
+    RenderFrameProfiler::StackProfiler stackFrameProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::FrameTime);
+    RenderFrameProfiler::StackProfiler stackProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::ComputeCalls);
+#endif //FRAME_PROFILER_ENABLE
+
     ASSERT(m_currentState.commandList(), "nullptr");
     D3DGraphicsCommandList* cmdList = m_currentState.commandList();
 
@@ -635,19 +691,19 @@ void D3DGraphicContext::bindImage(const Shader* shader, u32 bindIndex, const Ima
 #if D3D_DEBUG
     LOG_DEBUG("D3DGraphicContext::bindImage");
 #endif //D3D_DEBUG
-    D3DGraphicsCommandList* cmdList = m_currentState.commandList();
-    if (!cmdList)
-    {
-        return;
-    }
+
+#if FRAME_PROFILER_ENABLE
+    RenderFrameProfiler::StackProfiler stackFrameProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::FrameTime);
+    RenderFrameProfiler::StackProfiler stackProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::BindResources);
+#endif //FRAME_PROFILER_ENABLE
 
     ASSERT(bindIndex < shader->getReflectionInfo()._images.size(), "range out");
     u32 space = shader->getReflectionInfo()._images[bindIndex]._set;
     u32 binding = shader->getReflectionInfo()._images[bindIndex]._binding;
     u32 array = shader->getReflectionInfo()._images[bindIndex]._array;
 
+    ASSERT(image, "nullptr");
     D3DImage* dxImage = const_cast<D3DImage*>(static_cast<const D3DImage*>(image));
-    cmdList->setUsed(dxImage, 0);
 
     m_descriptorState->bindDescriptor<D3DImage, false, const Image::Subresource&>(space, binding, array, dxImage, D3DImage::makeD3DImageSubresource(dxImage, layer, mip));
 }
@@ -657,18 +713,18 @@ void D3DGraphicContext::bindSampler(const Shader* shader, u32 bindIndex, const S
 #if D3D_DEBUG
     LOG_DEBUG("D3DGraphicContext::bindSampler");
 #endif //D3D_DEBUG
-    D3DGraphicsCommandList* cmdList = m_currentState.commandList();
-    if (!cmdList)
-    {
-        return;
-    }
+
+#if FRAME_PROFILER_ENABLE
+    RenderFrameProfiler::StackProfiler stackFrameProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::FrameTime);
+    RenderFrameProfiler::StackProfiler stackProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::BindResources);
+#endif //FRAME_PROFILER_ENABLE
 
     ASSERT(bindIndex < shader->getReflectionInfo()._samplers.size(), "range out");
     u32 space = shader->getReflectionInfo()._samplers[bindIndex]._set;
     u32 binding = shader->getReflectionInfo()._samplers[bindIndex]._binding;
 
+    ASSERT(samplerInfo, "nullptr");
     D3DSampler* dxSampler = static_cast<D3DSampler*>(m_samplerManager->acquireSampler(samplerInfo->_desc));
-    cmdList->setUsed(dxSampler, 0);
 
     m_descriptorState->bindDescriptor<D3DSampler, false>(space, binding, 1, dxSampler);
 }
@@ -677,8 +733,14 @@ void D3DGraphicContext::bindSampledImage(const Shader* shader, u32 bindIndex, co
 {
 #if D3D_DEBUG
     LOG_DEBUG("D3DGraphicContext::bindSampledImage");
-    ASSERT(false, "unsupported");
 #endif //D3D_DEBUG
+
+#if FRAME_PROFILER_ENABLE
+    RenderFrameProfiler::StackProfiler stackFrameProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::FrameTime);
+    RenderFrameProfiler::StackProfiler stackProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::BindResources);
+#endif //FRAME_PROFILER_ENABLE
+
+    ASSERT(false, "unsupported");
 }
 
 void D3DGraphicContext::bindUniformsBuffer(const Shader* shader, u32 bindIndex, u32 offset, u32 size, const void* data)
@@ -686,11 +748,11 @@ void D3DGraphicContext::bindUniformsBuffer(const Shader* shader, u32 bindIndex, 
 #if D3D_DEBUG
     LOG_DEBUG("D3DGraphicContext::bindUniformsBuffer");
 #endif //D3D_DEBUG
-    D3DGraphicsCommandList* cmdList = m_currentState.commandList();
-    if (!cmdList)
-    {
-        return;
-    }
+
+#if FRAME_PROFILER_ENABLE
+    RenderFrameProfiler::StackProfiler stackFrameProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::FrameTime);
+    RenderFrameProfiler::StackProfiler stackProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::BindResources);
+#endif //FRAME_PROFILER_ENABLE
 
     ASSERT(bindIndex < shader->getReflectionInfo()._uniformBuffers.size(), "range out");
     u32 space = shader->getReflectionInfo()._uniformBuffers[bindIndex]._set;
@@ -700,7 +762,6 @@ void D3DGraphicContext::bindUniformsBuffer(const Shader* shader, u32 bindIndex, 
     D3DBuffer* constantBuffer = m_constantBufferManager->acquireConstanBuffer(size);
     ASSERT(constantBuffer, "nulllptr");
     constantBuffer->write(this, offset, size, data);
-    cmdList->setUsed(constantBuffer, 0);
 
     m_descriptorState->bindDescriptor<D3DBuffer, false>(space, binding, array, constantBuffer, 0, size);
 }
@@ -710,25 +771,30 @@ void D3DGraphicContext::bindStorageImage(const Shader* shader, u32 bindIndex, co
 #if D3D_DEBUG
     LOG_DEBUG("D3DGraphicContext::bindStorageImage");
 #endif //D3D_DEBUG
-    D3DGraphicsCommandList* cmdList = m_currentState.commandList();
-    if (!cmdList)
-    {
-        return;
-    }
+
+#if FRAME_PROFILER_ENABLE
+    RenderFrameProfiler::StackProfiler stackFrameProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::FrameTime);
+    RenderFrameProfiler::StackProfiler stackProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::BindResources);
+#endif //FRAME_PROFILER_ENABLE
 
     ASSERT(bindIndex < shader->getReflectionInfo()._storageImages.size(), "range out");
     u32 space = shader->getReflectionInfo()._storageImages[bindIndex]._set;
     u32 binding = shader->getReflectionInfo()._storageImages[bindIndex]._binding;
     u32 array = shader->getReflectionInfo()._storageImages[bindIndex]._array;
 
+    ASSERT(image, "nullptr");
     D3DImage* dxImage = const_cast<D3DImage*>(static_cast<const D3DImage*>(image));
-    cmdList->setUsed(dxImage, 0);
 
     m_descriptorState->bindDescriptor<D3DImage, true, const Image::Subresource&>(space, binding, array, dxImage, D3DImage::makeD3DImageSubresource(dxImage, layer, mip));
 }
 
 void D3DGraphicContext::transitionImages(std::vector<std::tuple<const Image*, Image::Subresource>>& images, TransitionOp transition)
 {
+#if FRAME_PROFILER_ENABLE
+    RenderFrameProfiler::StackProfiler stackFrameProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::FrameTime);
+    RenderFrameProfiler::StackProfiler stackProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::Transitions);
+#endif //FRAME_PROFILER_ENABLE
+
     D3DGraphicsCommandList* cmdList = static_cast<D3DGraphicsCommandList*>(D3DGraphicContext::getOrAcquireCurrentCommandList());
     for (auto& img : images)
     {
@@ -742,6 +808,15 @@ void D3DGraphicContext::transitionImages(std::vector<std::tuple<const Image*, Im
 
 void D3DGraphicContext::setViewport(const core::Rect32& viewport, const core::Vector2D& depth)
 {
+#if D3D_DEBUG
+    LOG_DEBUG("D3DGraphicContext::setViewport");
+#endif //D3D_DEBUG
+
+#if FRAME_PROFILER_ENABLE
+    RenderFrameProfiler::StackProfiler stackFrameProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::FrameTime);
+    RenderFrameProfiler::StackProfiler stackProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::SetStates);
+#endif //FRAME_PROFILER_ENABLE
+
     D3D12_VIEWPORT dxViewport =
     {
         static_cast<f32>(viewport.getLeftX()),
@@ -758,6 +833,15 @@ void D3DGraphicContext::setViewport(const core::Rect32& viewport, const core::Ve
 
 void D3DGraphicContext::setScissor(const core::Rect32& scissor)
 {
+#if D3D_DEBUG
+    LOG_DEBUG("D3DGraphicContext::setScissor");
+#endif //D3D_DEBUG
+
+#if FRAME_PROFILER_ENABLE
+    RenderFrameProfiler::StackProfiler stackFrameProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::FrameTime);
+    RenderFrameProfiler::StackProfiler stackProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::SetStates);
+#endif //FRAME_PROFILER_ENABLE
+
     D3D12_RECT dxScissor =
     {
         scissor.getLeftX(), scissor.getTopY(), scissor.getRightX(), scissor.getBottomY()
@@ -769,7 +853,14 @@ void D3DGraphicContext::setScissor(const core::Rect32& scissor)
 
 void D3DGraphicContext::setRenderTarget(const RenderPass::RenderPassInfo* renderpassInfo, const Framebuffer::FramebufferInfo* framebufferInfo)
 {
+#if D3D_DEBUG
     LOG_DEBUG("D3DGraphicContext::setRenderTarget");
+#endif //D3D_DEBUG
+
+#if FRAME_PROFILER_ENABLE
+    RenderFrameProfiler::StackProfiler stackFrameProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::FrameTime);
+    RenderFrameProfiler::StackProfiler stackProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::SetTarget);
+#endif //FRAME_PROFILER_ENABLE
     ASSERT(renderpassInfo && framebufferInfo, "nullptr");
 
     D3DRenderState* renderState = static_cast<D3DRenderState*>(std::get<0>(m_renderTargetManager)->acquireRenderPass(renderpassInfo->_desc));
@@ -811,6 +902,16 @@ void D3DGraphicContext::setRenderTarget(const RenderPass::RenderPassInfo* render
 
 void D3DGraphicContext::removeFramebuffer(Framebuffer* framebuffer)
 {
+#if D3D_DEBUG
+    LOG_DEBUG("D3DGraphicContext::removeFramebuffer");
+#endif //D3D_DEBUG
+
+#if FRAME_PROFILER_ENABLE
+    RenderFrameProfiler::StackProfiler stackFrameProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::FrameTime);
+    RenderFrameProfiler::StackProfiler stackProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::RemoveResources);
+#endif //FRAME_PROFILER_ENABLE
+    ASSERT(framebuffer, "nullptr");
+
     D3DRenderTarget* dxRenderTarget = static_cast<D3DRenderTarget*>(framebuffer);
     FramebufferManager* framebufferMgr = std::get<1>(m_renderTargetManager);
     if (dxRenderTarget->isUsed())
@@ -828,6 +929,16 @@ void D3DGraphicContext::removeFramebuffer(Framebuffer* framebuffer)
 
 void D3DGraphicContext::removeRenderPass(RenderPass* renderpass)
 {
+#if D3D_DEBUG
+    LOG_DEBUG("D3DGraphicContext::removeRenderPass");
+#endif //D3D_DEBUG
+
+#if FRAME_PROFILER_ENABLE
+    RenderFrameProfiler::StackProfiler stackFrameProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::FrameTime);
+    RenderFrameProfiler::StackProfiler stackProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::RemoveResources);
+#endif //FRAME_PROFILER_ENABLE
+
+    ASSERT(renderpass, "nullptr");
     D3DRenderState* dxRenderState = static_cast<D3DRenderState*>(renderpass);
     RenderPassManager* renderpassMgr = std::get<0>(m_renderTargetManager);
     if (dxRenderState->isUsed())
@@ -845,17 +956,28 @@ void D3DGraphicContext::removeRenderPass(RenderPass* renderpass)
 
 void D3DGraphicContext::invalidateRenderTarget()
 {
+#if FRAME_PROFILER_ENABLE
+    RenderFrameProfiler::StackProfiler stackFrameProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::FrameTime);
+    RenderFrameProfiler::StackProfiler stackProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::SetTarget);
+#endif //FRAME_PROFILER_ENABLE
+
+    m_currentState._renderTarget = nullptr;
 }
 
 void D3DGraphicContext::setPipeline(const Pipeline::PipelineGraphicInfo* pipelineInfo)
 {
     ASSERT(pipelineInfo, "nullptr");
 
+#if FRAME_PROFILER_ENABLE
+    RenderFrameProfiler::StackProfiler stackFrameProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::FrameTime);
+    RenderFrameProfiler::StackProfiler stackProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::SetPipeline);
+#endif //FRAME_PROFILER_ENABLE
+
     Pipeline* pipeline = m_pipelineManager->acquireGraphicPipeline(*pipelineInfo);
     ASSERT(pipeline, "nullptr");
 #if D3D_DEBUG
     LOG_DEBUG("D3DGraphicContext::setPipeline %llx", pipeline);
-#endif
+#endif //D3D_DEBUG
     pipelineInfo->_tracker->attach(pipeline);
 
     D3DGraphicPipelineState* dxPipeline = static_cast<D3DGraphicPipelineState*>(pipeline);
@@ -866,11 +988,16 @@ void D3DGraphicContext::setPipeline(const Pipeline::PipelineComputeInfo* pipelin
 {
     ASSERT(pipelineInfo, "nullptr");
 
+#if FRAME_PROFILER_ENABLE
+    RenderFrameProfiler::StackProfiler stackFrameProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::FrameTime);
+    RenderFrameProfiler::StackProfiler stackProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::SetPipeline);
+#endif //FRAME_PROFILER_ENABLE
+
     Pipeline* pipeline = m_pipelineManager->acquireComputePipeline(*pipelineInfo);
     ASSERT(pipeline, "nullptr");
 #if D3D_DEBUG
     LOG_DEBUG("D3DGraphicContext::setPipeline %llx", pipeline);
-#endif
+#endif //D3D_DEBUG
     pipelineInfo->_tracker->attach(pipeline);
 
     D3DComputePipelineState* dxPipeline = static_cast<D3DComputePipelineState*>(pipeline);
@@ -879,6 +1006,15 @@ void D3DGraphicContext::setPipeline(const Pipeline::PipelineComputeInfo* pipelin
 
 void D3DGraphicContext::removePipeline(Pipeline* pipeline)
 {
+#if D3D_DEBUG
+    LOG_DEBUG("D3DGraphicContext::removePipeline");
+#endif //D3D_DEBUG
+
+#if FRAME_PROFILER_ENABLE
+    RenderFrameProfiler::StackProfiler stackFrameProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::FrameTime);
+    RenderFrameProfiler::StackProfiler stackProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::RemoveResources);
+#endif //FRAME_PROFILER_ENABLE
+
     ASSERT(pipeline, "nullptr");
     D3DPipelineState* dxPipeline = static_cast<D3DPipelineState*>(pipeline);
     if (dxPipeline->isUsed())
@@ -899,6 +1035,12 @@ Query* D3DGraphicContext::createQuery(QueryType type, u32 count, const Query::Qu
 #if D3D_DEBUG
     LOG_DEBUG("D3DGraphicContext::createQuery");
 #endif //D3D_DEBUG
+
+#if FRAME_PROFILER_ENABLE
+    RenderFrameProfiler::StackProfiler stackFrameProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::FrameTime);
+    RenderFrameProfiler::StackProfiler stackProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::CreateResources);
+#endif //FRAME_PROFILER_ENABLE
+
     D3DRenderQuery* d3dQuery = new D3DRenderQuery(m_device, type, count, callback, name, m_heapAllocator);
     if (!d3dQuery->create())
     {
@@ -916,6 +1058,12 @@ void D3DGraphicContext::removeQuery(Query* query)
 #if D3D_DEBUG
     LOG_DEBUG("D3DGraphicContext::removeQuery");
 #endif //D3D_DEBUG
+
+#if FRAME_PROFILER_ENABLE
+    RenderFrameProfiler::StackProfiler stackFrameProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::FrameTime);
+    RenderFrameProfiler::StackProfiler stackProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::RemoveResources);
+#endif //FRAME_PROFILER_ENABLE
+    
     ASSERT(query, "nullptr");
     D3DRenderQuery* dxQuery = static_cast<D3DRenderQuery*>(query);
     if (dxQuery->isUsed())
@@ -943,6 +1091,12 @@ Image* D3DGraphicContext::createImage(TextureTarget target, Format format, const
 #if D3D_DEBUG
     LOG_DEBUG("D3DGraphicContext::createImage");
 #endif //D3D_DEBUG
+
+#if FRAME_PROFILER_ENABLE
+    RenderFrameProfiler::StackProfiler stackFrameProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::FrameTime);
+    RenderFrameProfiler::StackProfiler stackProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::CreateResources);
+#endif //FRAME_PROFILER_ENABLE
+
     D3D12_RESOURCE_DIMENSION dxDimension = D3DImage::convertImageTargetToD3DDimension(target);
 
     return new D3DImage(m_device, dxDimension, format, dimension, layers, mipmapLevel, flags, name);
@@ -953,7 +1107,13 @@ Image* D3DGraphicContext::createImage(TextureTarget target, Format format, const
 #if D3D_DEBUG
     LOG_DEBUG("D3DGraphicContext::createImage");
 #endif //D3D_DEBUG
-    D3D12_RESOURCE_DIMENSION dxDimension = D3DImage::convertImageTargetToD3DDimension(target); //TODO
+
+#if FRAME_PROFILER_ENABLE
+    RenderFrameProfiler::StackProfiler stackFrameProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::FrameTime);
+    RenderFrameProfiler::StackProfiler stackProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::CreateResources);
+#endif //FRAME_PROFILER_ENABLE
+
+    D3D12_RESOURCE_DIMENSION dxDimension = D3DImage::convertImageTargetToD3DDimension(target);
     u32 dxSamples = (samples > TextureSamples::TextureSamples_x1) ? 1 << (u32)samples : 1;
     ASSERT(dimension.depth == 1, "must be 1");
 
@@ -962,6 +1122,16 @@ Image* D3DGraphicContext::createImage(TextureTarget target, Format format, const
 
 void D3DGraphicContext::removeImage(Image* image)
 {
+#if D3D_DEBUG
+    LOG_DEBUG("D3DGraphicContext::removeImage");
+#endif //D3D_DEBUG
+
+#if FRAME_PROFILER_ENABLE
+    RenderFrameProfiler::StackProfiler stackFrameProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::FrameTime);
+    RenderFrameProfiler::StackProfiler stackProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::RemoveResources);
+#endif //FRAME_PROFILER_ENABLE
+    ASSERT(image, "nullptr");
+
     D3DImage* dxImage = static_cast<D3DImage*>(image);
     if (dxImage->isUsed())
     {
@@ -987,6 +1157,12 @@ Buffer* D3DGraphicContext::createBuffer(Buffer::BufferType type, u16 usageFlag, 
 #if D3D_DEBUG
     LOG_DEBUG("D3DGraphicContext::createBuffer");
 #endif //D3D_DEBUG
+
+#if FRAME_PROFILER_ENABLE
+    RenderFrameProfiler::StackProfiler stackFrameProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::FrameTime);
+    RenderFrameProfiler::StackProfiler stackProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::CreateResources);
+#endif //FRAME_PROFILER_ENABLE
+
     if (type == Buffer::BufferType::BufferType_VertexBuffer || type == Buffer::BufferType::BufferType_IndexBuffer || type == Buffer::BufferType::BufferType_UniformBuffer)
     {
         return new D3DBuffer(m_device, type, usageFlag, size, name, m_heapAllocator);
@@ -998,6 +1174,16 @@ Buffer* D3DGraphicContext::createBuffer(Buffer::BufferType type, u16 usageFlag, 
 
 void D3DGraphicContext::removeBuffer(Buffer* buffer)
 {
+#if D3D_DEBUG
+    LOG_DEBUG("D3DGraphicContext::removeBuffer");
+#endif //D3D_DEBUG
+
+#if FRAME_PROFILER_ENABLE
+    RenderFrameProfiler::StackProfiler stackFrameProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::FrameTime);
+    RenderFrameProfiler::StackProfiler stackProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::RemoveResources);
+#endif //FRAME_PROFILER_ENABLE
+    
+    ASSERT(buffer, "nullptr");
     D3DBuffer* dxBuffer = static_cast<D3DBuffer*>(buffer);
     if (dxBuffer->isUsed())
     {
@@ -1020,6 +1206,30 @@ void D3DGraphicContext::removeBuffer(Buffer* buffer)
 
 void D3DGraphicContext::removeSampler(Sampler* sampler)
 {
+#if D3D_DEBUG
+    LOG_DEBUG("D3DGraphicContext::removeSampler");
+#endif //D3D_DEBUG
+
+#if FRAME_PROFILER_ENABLE
+    RenderFrameProfiler::StackProfiler stackFrameProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::FrameTime);
+    RenderFrameProfiler::StackProfiler stackProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::RemoveResources);
+#endif //FRAME_PROFILER_ENABLE
+
+    ASSERT(sampler, "nullptr");
+    D3DSampler* dxSampler = static_cast<D3DSampler*>(sampler);
+    if (dxSampler->isUsed())
+    {
+        m_delayedDeleter.requestToDelete(dxSampler, [this, dxSampler]() -> void
+            {
+                m_samplerManager->removeSampler(dxSampler);
+            });
+    }
+    else
+    {
+        m_samplerManager->removeSampler(sampler);
+    }
+
+  
     ASSERT(false, "not impl");
 }
 
@@ -1035,47 +1245,57 @@ void D3DGraphicContext::generateMipmaps(Image* image, u32 layer, TransitionOp st
 
 void D3DGraphicContext::clearRenderTarget(const std::vector<const Image*>& images, Framebuffer::ClearValueInfo& clearValues)
 {
-}
+#if D3D_DEBUG
+    LOG_DEBUG("D3DGraphicContext::clearRenderTarget");
+#endif //D3D_DEBUG
 
-D3DCommandList* D3DGraphicContext::getOrAcquireCurrentCommandList(D3DCommandList::Type type)
-{
-    if (!m_currentState.commandList())
-    {
-        m_currentState.setCommandList(m_commandListManager->acquireCommandList(type));
-        m_currentState.commandList()->prepare();
-    }
+#if FRAME_PROFILER_ENABLE
+    RenderFrameProfiler::StackProfiler stackFrameProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::FrameTime);
+    RenderFrameProfiler::StackProfiler stackProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::DrawCalls);
+#endif //FRAME_PROFILER_ENABLE
 
-    ASSERT(m_currentState.commandList(), "nullptr");
-    return m_currentState.commandList();
-}
-
-D3DCommandListManager* D3DGraphicContext::getCommandListManager() const
-{
-    return m_commandListManager;
-}
-
-D3DResourceDeleter& D3DGraphicContext::getResourceDeleter()
-{
-    return m_delayedDeleter;
-}
-
-void D3DGraphicContext::clearBackbuffer(const core::Vector4D& color)
-{
-    m_swapchain->getSwapchainImage()->clear(this, color);
+    //TODO
 }
 
 Framebuffer* D3DGraphicContext::createFramebuffer(const std::vector<Image*>& images, const core::Dimension2D& size)
 {
+#if D3D_DEBUG
+    LOG_DEBUG("D3DGraphicContext::createFramebuffer");
+#endif //D3D_DEBUG
+
+#if FRAME_PROFILER_ENABLE
+    RenderFrameProfiler::StackProfiler stackFrameProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::FrameTime);
+    RenderFrameProfiler::StackProfiler stackProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::CreateResources);
+#endif //FRAME_PROFILER_ENABLE
+
     return new D3DRenderTarget(m_device, m_descriptorHeapManager, images);
 }
 
 RenderPass* D3DGraphicContext::createRenderPass(const RenderPassDescription* renderpassDesc)
 {
+#if D3D_DEBUG
+    LOG_DEBUG("D3DGraphicContext::createRenderPass");
+#endif //D3D_DEBUG
+
+#if FRAME_PROFILER_ENABLE
+    RenderFrameProfiler::StackProfiler stackFrameProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::FrameTime);
+    RenderFrameProfiler::StackProfiler stackProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::CreateResources);
+#endif //FRAME_PROFILER_ENABLE
+
     return new D3DRenderState(*renderpassDesc);
 }
 
 Pipeline* D3DGraphicContext::createPipeline(Pipeline::PipelineType type, const std::string& name)
 {
+#if D3D_DEBUG
+    LOG_DEBUG("D3DGraphicContext::createPipeline");
+#endif //D3D_DEBUG
+
+#if FRAME_PROFILER_ENABLE
+    RenderFrameProfiler::StackProfiler stackFrameProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::FrameTime);
+    RenderFrameProfiler::StackProfiler stackProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::CreateResources);
+#endif //FRAME_PROFILER_ENABLE
+
     if (type == Pipeline::PipelineType::PipelineType_Graphic)
     {
         return new D3DGraphicPipelineState(m_device, m_rootSignatureManager);
@@ -1091,7 +1311,25 @@ Pipeline* D3DGraphicContext::createPipeline(Pipeline::PipelineType type, const s
 
 Sampler* D3DGraphicContext::createSampler(const SamplerDescription& desc)
 {
+#if D3D_DEBUG
+    LOG_DEBUG("D3DGraphicContext::createSampler");
+#endif //D3D_DEBUG
+
+#if FRAME_PROFILER_ENABLE
+    RenderFrameProfiler::StackProfiler stackFrameProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::FrameTime);
+    RenderFrameProfiler::StackProfiler stackProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::CreateResources);
+#endif //FRAME_PROFILER_ENABLE
+
     return new D3DSampler(desc);
+}
+
+void D3DGraphicContext::clearBackbuffer(const core::Vector4D& color)
+{
+#if FRAME_PROFILER_ENABLE
+    RenderFrameProfiler::StackProfiler stackFrameProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::FrameTime);
+#endif //FRAME_PROFILER_ENABLE
+
+    m_swapchain->getSwapchainImage()->clear(this, color);
 }
 
 bool D3DGraphicContext::perpareDraw(D3DGraphicsCommandList* cmdList)
@@ -1147,184 +1385,26 @@ bool D3DGraphicContext::perpareCompute(D3DGraphicsCommandList* cmdList)
     return true;
 }
 
-void D3DGraphicContext::clearRenderTargets(D3DGraphicsCommandList* cmdList, D3DRenderTarget* target, const Framebuffer::ClearValueInfo& clearInfo)
+D3DCommandList* D3DGraphicContext::getOrAcquireCurrentCommandList(D3DCommandList::Type type)
 {
-    for (u32 i = 0; i < target->getImages().size(); ++i)
+    if (!m_currentState.commandList())
     {
-        D3DImage* dxImage = static_cast<D3DImage*>(target->getImages()[i]);
-        if (D3DImage::isColorFormat(dxImage->getFormat()))
-        {
-            const AttachmentDescription& attachment = target->getDescription()._attachments[i];
-            switch (attachment._loadOp)
-            {
-            case RenderTargetLoadOp::LoadOp_DontCare:
-            case RenderTargetLoadOp::LoadOp_Load:
-                break;
-
-            case RenderTargetLoadOp::LoadOp_Clear:
-            {
-                f32 color[4] = {};
-                memcpy(&color, &clearInfo._color[i], sizeof(core::Vector4D));
-
-                std::vector<D3D12_RECT> rect =
-                {
-                    { 0, 0, static_cast<LONG>(clearInfo._region._size.getWidth()), static_cast<LONG>(clearInfo._region._size.getHeight()) }
-                };
-
-                cmdList->clearRenderTarget(target->getColorDescHandles()[i], color, rect);
-                cmdList->setUsed(target, 0);
-            }
-            break;
-
-            default:
-                ASSERT(false, "wrong op");
-            }
-        }
-        else
-        {
-            enum DepthStencilClearFlag
-            {
-                DepthStencilClearFlag_None = 0x0,
-                DepthStencilClearFlag_Depth = D3D12_CLEAR_FLAG_DEPTH,
-                DepthStencilClearFlag_Stencil = D3D12_CLEAR_FLAG_STENCIL
-            };
-
-            const AttachmentDescription& attachment = target->getDescription()._attachments.back();
-            u32 clearFlags = DepthStencilClearFlag::DepthStencilClearFlag_None;
-            switch (attachment._loadOp)
-            {
-            case RenderTargetLoadOp::LoadOp_DontCare:
-            case RenderTargetLoadOp::LoadOp_Load:
-                break;
-
-            case RenderTargetLoadOp::LoadOp_Clear:
-            {
-                clearFlags |= DepthStencilClearFlag::DepthStencilClearFlag_Depth;
-            }
-            break;
-
-            default:
-                ASSERT(false, "wrong op");
+        m_currentState.setCommandList(m_commandListManager->acquireCommandList(type));
+        m_currentState.commandList()->prepare();
             }
 
-            switch (attachment._stencilLoadOp)
-            {
-            case RenderTargetLoadOp::LoadOp_DontCare:
-            case RenderTargetLoadOp::LoadOp_Load:
-                break;
-
-            case RenderTargetLoadOp::LoadOp_Clear:
-            {
-                clearFlags |= DepthStencilClearFlag::DepthStencilClearFlag_Stencil;
-            }
-            break;
-
-            default:
-                ASSERT(false, "wrong op");
+    ASSERT(m_currentState.commandList(), "nullptr");
+    return m_currentState.commandList();
             }
 
-            if (clearFlags != DepthStencilClearFlag::DepthStencilClearFlag_None)
+D3DCommandListManager* D3DGraphicContext::getCommandListManager() const
             {
-                std::vector<D3D12_RECT> rect =
-                {
-                    { 0, 0, static_cast<LONG>(clearInfo._region._size.getWidth()), static_cast<LONG>(clearInfo._region._size.getHeight()) }
-                };
-
-                D3D12_CLEAR_FLAGS flag = (D3D12_CLEAR_FLAGS)clearFlags;
-                cmdList->clearRenderTarget(target->getDepthStencilDescHandles(), clearInfo._depth, clearInfo._stencil, flag, rect);
-                cmdList->setUsed(target, 0);
+    return m_commandListManager;
             }
-        }
-    }
-}
 
-void D3DGraphicContext::switchRenderTargetTransitionToWrite(D3DGraphicsCommandList* cmdList, D3DRenderTarget* target)
-{
-    for (u32 i = 0; i < target->getDescription()._countColorAttachments; ++i)
-    {
-        D3DImage* dxImage = static_cast<D3DImage*>(target->getImages()[i]);
-        u32 layer = AttachmentDescription::uncompressLayer(target->getDescription()._attachments[i]._layer);
-
-        cmdList->transition(dxImage, D3DImage::makeD3DImageSubresource(dxImage, layer, 0), D3D12_RESOURCE_STATE_RENDER_TARGET);
-    }
-
-    if (target->getDescription()._hasDepthStencilAttahment)
-    {
-        D3DImage* dxImage = static_cast<D3DImage*>(target->getImages().back());
-        u32 layer = AttachmentDescription::uncompressLayer(target->getDescription()._attachments.back()._layer);
-
-        cmdList->transition(dxImage, D3DImage::makeD3DImageSubresource(dxImage, layer, 0), D3D12_RESOURCE_STATE_DEPTH_WRITE);
-    }
-}
-
-void D3DGraphicContext::switchRenderTargetTransitionToFinal(D3DGraphicsCommandList* cmdList, D3DRenderTarget* target)
-{
-    for (u32 i = 0; i < target->getDescription()._countColorAttachments; ++i)
-    {
-        D3DImage* dxImage = static_cast<D3DImage*>(target->getImages()[i]);
-
-        const AttachmentDescription& attachment = target->getDescription()._attachments[i];
-        u32 layer = AttachmentDescription::uncompressLayer(attachment._layer);
-
-        if (D3DImage* dxResolveImage = dxImage->getResolveImage())
-        {
-            cmdList->transition(dxImage, D3DImage::makeD3DImageSubresource(dxImage, layer, 0), D3D12_RESOURCE_STATE_RESOLVE_SOURCE);
-            cmdList->transition(dxResolveImage, D3DImage::makeD3DImageSubresource(dxResolveImage, layer, 0), D3D12_RESOURCE_STATE_RESOLVE_DEST);
-
-            cmdList->resolve(dxImage, D3DImage::makeD3DImageSubresource(dxImage, layer, 0), dxResolveImage, D3DImage::makeD3DImageSubresource(dxResolveImage, layer, 0));
-
-            cmdList->transition(dxImage, D3DImage::makeD3DImageSubresource(dxImage, layer, 0), D3D12_RESOURCE_STATE_RENDER_TARGET);
-
-            dxImage = dxResolveImage;
-        }
-
-        switch (attachment._finalTransition)
-        {
-        case TransitionOp::TransitionOp_ColorAttachment:
-            cmdList->transition(dxImage, D3DImage::makeD3DImageSubresource(dxImage, layer, 0), D3D12_RESOURCE_STATE_RENDER_TARGET);
-            break;
-
-        case TransitionOp::TransitionOp_ShaderRead:
-            cmdList->transition(dxImage, D3DImage::makeD3DImageSubresource(dxImage, layer, 0), D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
-            break;
-
-        case TransitionOp::TransitionOp_Present:
-            cmdList->transition(dxImage, D3DImage::makeD3DImageSubresource(dxImage, layer, 0), D3D12_RESOURCE_STATE_PRESENT);
-            break;
-
-        default:
-            ASSERT(false, "wrong transition");
-        }
-    }
-
-    if (target->getDescription()._hasDepthStencilAttahment)
-    {
-        D3DImage* dxImage = static_cast<D3DImage*>(target->getImages().back());
-
-        const AttachmentDescription& attachment = target->getDescription()._attachments.back();
-        u32 layer = AttachmentDescription::uncompressLayer(attachment._layer);
-
-        if (D3DImage* dxResolveImage = dxImage->getResolveImage())
-        {
-            cmdList->transition(dxImage, D3DImage::makeD3DImageSubresource(dxImage, layer, 0), D3D12_RESOURCE_STATE_RESOLVE_SOURCE);
-            cmdList->transition(dxResolveImage, D3DImage::makeD3DImageSubresource(dxResolveImage, layer, 0), D3D12_RESOURCE_STATE_RESOLVE_DEST);
-
-            cmdList->resolve(dxImage, D3DImage::makeD3DImageSubresource(dxImage, layer, 0), dxResolveImage, D3DImage::makeD3DImageSubresource(dxResolveImage, layer, 0));
-
-            cmdList->transition(dxImage, D3DImage::makeD3DImageSubresource(dxImage, layer, 0), D3D12_RESOURCE_STATE_DEPTH_WRITE);
-
-            dxImage = dxResolveImage;
-        }
-
-        if (attachment._finalTransition == TransitionOp::TransitionOp_DepthStencilAttachment)
-        {
-            cmdList->transition(dxImage, D3DImage::makeD3DImageSubresource(dxImage, layer, 0), D3D12_RESOURCE_STATE_DEPTH_WRITE);
-        }
-        else if (attachment._finalTransition == TransitionOp::TransitionOp_ShaderRead)
-        {
-            cmdList->transition(dxImage, D3DImage::makeD3DImageSubresource(dxImage, layer, 0), D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
-        }
-    }
+D3DResourceDeleter& D3DGraphicContext::getResourceDeleter()
+            {
+    return m_delayedDeleter;
 }
 
 } //namespace dx3d
