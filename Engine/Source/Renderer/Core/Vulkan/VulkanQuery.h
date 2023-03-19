@@ -35,6 +35,10 @@ namespace vk
         bool create() override;
         void destroy() override;
 
+#if DEBUG_OBJECT_MEMORY
+        static std::set<VulkanQuery*> s_objects;
+#endif //DEBUG_OBJECT_MEMORY
+
     private:
 
         VulkanQuery() = delete;
@@ -46,10 +50,6 @@ namespace vk
 #if VULKAN_DEBUG_MARKERS
         std::string m_debugName;
 #endif //VULKAN_DEBUG_MARKERS
-
-#if DEBUG_OBJECT_MEMORY
-        static std::set<VulkanQuery*> s_objects;
-#endif //DEBUG_OBJECT_MEMORY
 
         friend VulkanQueryPoolManager;
     };
