@@ -167,7 +167,7 @@ set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -DUSE_LOGGER ${VULKAN_SD
 ##############################################################
 file(GLOB MAIN_HEADERS ${SOURCE_DIR}/*.h)
 file(GLOB MAIN_SOURCES ${SOURCE_DIR}/*.cpp)
-file(GLOB CORE_HEADERS ${SOURCE_DIR}/Core/*.h  ${SOURCE_DIR}/Core/*.inl)
+file(GLOB CORE_HEADERS ${SOURCE_DIR}/Core/*.h ${SOURCE_DIR}/Core/*.inl)
 file(GLOB CORE_SOURCES ${SOURCE_DIR}/Core/*.cpp)
 file(GLOB UTILS_HEADERS ${SOURCE_DIR}/Utils/*.h)
 file(GLOB UTILS_SOURCES ${SOURCE_DIR}/Utils/*.cpp)
@@ -195,7 +195,7 @@ elseif(TARGET_ANDROID)
 endif()
 
 if (BUILD_VULKAN_SDK)
-    file(GLOB VULKAN_HEADERS ${SOURCE_DIR}/Renderer/Core/Vulkan/*.h)
+    file(GLOB VULKAN_HEADERS ${SOURCE_DIR}/Renderer/Core/Vulkan/*.h ${SOURCE_DIR}/Renderer/Core/Vulkan/*.inl)
     file(GLOB VULKAN_SOURCES ${SOURCE_DIR}/Renderer/Core/Vulkan/*.cpp)
 endif()
 
