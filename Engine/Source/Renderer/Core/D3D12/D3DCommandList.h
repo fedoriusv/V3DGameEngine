@@ -2,10 +2,12 @@
 
 #include "Common.h"
 #include "Renderer/Core/Pipeline.h"
+#include "Renderer/Core/Framebuffer.h"
 
 #ifdef D3D_RENDER
 #include "D3DConfiguration.h"
 #include "D3DImage.h"
+#include "D3DBuffer.h"
 #include "D3DDeviceCaps.h"
 
 namespace v3d
@@ -144,10 +146,10 @@ namespace dx3d
 
         void transition(D3DImage* image, const Image::Subresource& subresource, D3D12_RESOURCE_STATES states, bool immediateTransition = false);
 
-        template<class Resource>
-        void transition(Resource* resource, D3D12_RESOURCE_STATES states, bool immediateTransition = false)
+        template<class TResource>
+        void transition(TResource* resource, D3D12_RESOURCE_STATES states, bool immediateTransition = false)
         {
-            static_assert(std::is_same<Resource, D3DImage>() || std::is_same<Resource, D3DBuffer>(), "wrong type");
+            static_assert(std::is_same<TResource, D3DImage>() || std::is_same<TResource, D3DBuffer>(), "wrong type");
             ASSERT(m_commandList, "nullptr");
             ASSERT(m_status == Status::ReadyToRecord, "not record");
 
@@ -173,6 +175,11 @@ namespace dx3d
         }
 
         ID3D12GraphicsCommandList1* getHandle() const;
+
+        static void clearRenderTargets(D3DGraphicsCommandList* cmdList, D3DRenderTarget* target, const Framebuffer::ClearValueInfo& clearInfo);
+
+        static void switchRenderTargetTransitionToWrite(D3DGraphicsCommandList* cmdList, D3DRenderTarget* target);
+        static void switchRenderTargetTransitionToFinal(D3DGraphicsCommandList* cmdList, D3DRenderTarget* target);
 
     private:
 

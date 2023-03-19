@@ -493,6 +493,187 @@ void D3DGraphicsCommandList::BarrierResources::execute(D3DGraphicsCommandList* c
     }
 }
 
+
+void D3DGraphicsCommandList::clearRenderTargets(D3DGraphicsCommandList* cmdList, D3DRenderTarget* target, const Framebuffer::ClearValueInfo& clearInfo)
+{
+    for (u32 i = 0; i < target->getImages().size(); ++i)
+    {
+        D3DImage* dxImage = static_cast<D3DImage*>(target->getImages()[i]);
+        if (D3DImage::isColorFormat(dxImage->getFormat()))
+        {
+            const AttachmentDescription& attachment = target->getDescription()._attachments[i];
+            switch (attachment._loadOp)
+            {
+            case RenderTargetLoadOp::LoadOp_DontCare:
+            case RenderTargetLoadOp::LoadOp_Load:
+                break;
+
+            case RenderTargetLoadOp::LoadOp_Clear:
+            {
+                f32 color[4] = {};
+                memcpy(&color, &clearInfo._color[i], sizeof(core::Vector4D));
+
+                std::vector<D3D12_RECT> rect =
+                {
+                    { 0, 0, static_cast<LONG>(clearInfo._region._size.getWidth()), static_cast<LONG>(clearInfo._region._size.getHeight()) }
+                };
+
+                cmdList->clearRenderTarget(target->getColorDescHandles()[i], color, rect);
+                cmdList->setUsed(target, 0);
+            }
+            break;
+
+            default:
+                ASSERT(false, "wrong op");
+            }
+        }
+        else
+        {
+            enum DepthStencilClearFlag
+            {
+                DepthStencilClearFlag_None = 0x0,
+                DepthStencilClearFlag_Depth = D3D12_CLEAR_FLAG_DEPTH,
+                DepthStencilClearFlag_Stencil = D3D12_CLEAR_FLAG_STENCIL
+            };
+
+            const AttachmentDescription& attachment = target->getDescription()._attachments.back();
+            u32 clearFlags = DepthStencilClearFlag::DepthStencilClearFlag_None;
+            switch (attachment._loadOp)
+            {
+            case RenderTargetLoadOp::LoadOp_DontCare:
+            case RenderTargetLoadOp::LoadOp_Load:
+                break;
+
+            case RenderTargetLoadOp::LoadOp_Clear:
+            {
+                clearFlags |= DepthStencilClearFlag::DepthStencilClearFlag_Depth;
+            }
+            break;
+
+            default:
+                ASSERT(false, "wrong op");
+            }
+
+            switch (attachment._stencilLoadOp)
+            {
+            case RenderTargetLoadOp::LoadOp_DontCare:
+            case RenderTargetLoadOp::LoadOp_Load:
+                break;
+
+            case RenderTargetLoadOp::LoadOp_Clear:
+            {
+                clearFlags |= DepthStencilClearFlag::DepthStencilClearFlag_Stencil;
+            }
+            break;
+
+            default:
+                ASSERT(false, "wrong op");
+            }
+
+            if (clearFlags != DepthStencilClearFlag::DepthStencilClearFlag_None)
+            {
+                std::vector<D3D12_RECT> rect =
+                {
+                    { 0, 0, static_cast<LONG>(clearInfo._region._size.getWidth()), static_cast<LONG>(clearInfo._region._size.getHeight()) }
+                };
+
+                D3D12_CLEAR_FLAGS flag = (D3D12_CLEAR_FLAGS)clearFlags;
+                cmdList->clearRenderTarget(target->getDepthStencilDescHandles(), clearInfo._depth, clearInfo._stencil, flag, rect);
+                cmdList->setUsed(target, 0);
+            }
+        }
+    }
+}
+
+void D3DGraphicsCommandList::switchRenderTargetTransitionToWrite(D3DGraphicsCommandList* cmdList, D3DRenderTarget* target)
+{
+    for (u32 i = 0; i < target->getDescription()._countColorAttachments; ++i)
+    {
+        D3DImage* dxImage = static_cast<D3DImage*>(target->getImages()[i]);
+        u32 layer = AttachmentDescription::uncompressLayer(target->getDescription()._attachments[i]._layer);
+
+        cmdList->transition(dxImage, D3DImage::makeD3DImageSubresource(dxImage, layer, 0), D3D12_RESOURCE_STATE_RENDER_TARGET);
+    }
+
+    if (target->getDescription()._hasDepthStencilAttahment)
+    {
+        D3DImage* dxImage = static_cast<D3DImage*>(target->getImages().back());
+        u32 layer = AttachmentDescription::uncompressLayer(target->getDescription()._attachments.back()._layer);
+
+        cmdList->transition(dxImage, D3DImage::makeD3DImageSubresource(dxImage, layer, 0), D3D12_RESOURCE_STATE_DEPTH_WRITE);
+    }
+}
+
+void D3DGraphicsCommandList::switchRenderTargetTransitionToFinal(D3DGraphicsCommandList* cmdList, D3DRenderTarget* target)
+{
+    for (u32 i = 0; i < target->getDescription()._countColorAttachments; ++i)
+    {
+        D3DImage* dxImage = static_cast<D3DImage*>(target->getImages()[i]);
+
+        const AttachmentDescription& attachment = target->getDescription()._attachments[i];
+        u32 layer = AttachmentDescription::uncompressLayer(attachment._layer);
+
+        if (D3DImage* dxResolveImage = dxImage->getResolveImage())
+        {
+            cmdList->transition(dxImage, D3DImage::makeD3DImageSubresource(dxImage, layer, 0), D3D12_RESOURCE_STATE_RESOLVE_SOURCE);
+            cmdList->transition(dxResolveImage, D3DImage::makeD3DImageSubresource(dxResolveImage, layer, 0), D3D12_RESOURCE_STATE_RESOLVE_DEST);
+
+            cmdList->resolve(dxImage, D3DImage::makeD3DImageSubresource(dxImage, layer, 0), dxResolveImage, D3DImage::makeD3DImageSubresource(dxResolveImage, layer, 0));
+
+            cmdList->transition(dxImage, D3DImage::makeD3DImageSubresource(dxImage, layer, 0), D3D12_RESOURCE_STATE_RENDER_TARGET);
+
+            dxImage = dxResolveImage;
+        }
+
+        switch (attachment._finalTransition)
+        {
+        case TransitionOp::TransitionOp_ColorAttachment:
+            cmdList->transition(dxImage, D3DImage::makeD3DImageSubresource(dxImage, layer, 0), D3D12_RESOURCE_STATE_RENDER_TARGET);
+            break;
+
+        case TransitionOp::TransitionOp_ShaderRead:
+            cmdList->transition(dxImage, D3DImage::makeD3DImageSubresource(dxImage, layer, 0), D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+            break;
+
+        case TransitionOp::TransitionOp_Present:
+            cmdList->transition(dxImage, D3DImage::makeD3DImageSubresource(dxImage, layer, 0), D3D12_RESOURCE_STATE_PRESENT);
+            break;
+
+        default:
+            ASSERT(false, "wrong transition");
+        }
+    }
+
+    if (target->getDescription()._hasDepthStencilAttahment)
+    {
+        D3DImage* dxImage = static_cast<D3DImage*>(target->getImages().back());
+
+        const AttachmentDescription& attachment = target->getDescription()._attachments.back();
+        u32 layer = AttachmentDescription::uncompressLayer(attachment._layer);
+
+        if (D3DImage* dxResolveImage = dxImage->getResolveImage())
+        {
+            cmdList->transition(dxImage, D3DImage::makeD3DImageSubresource(dxImage, layer, 0), D3D12_RESOURCE_STATE_RESOLVE_SOURCE);
+            cmdList->transition(dxResolveImage, D3DImage::makeD3DImageSubresource(dxResolveImage, layer, 0), D3D12_RESOURCE_STATE_RESOLVE_DEST);
+
+            cmdList->resolve(dxImage, D3DImage::makeD3DImageSubresource(dxImage, layer, 0), dxResolveImage, D3DImage::makeD3DImageSubresource(dxResolveImage, layer, 0));
+
+            cmdList->transition(dxImage, D3DImage::makeD3DImageSubresource(dxImage, layer, 0), D3D12_RESOURCE_STATE_DEPTH_WRITE);
+
+            dxImage = dxResolveImage;
+        }
+
+        if (attachment._finalTransition == TransitionOp::TransitionOp_DepthStencilAttachment)
+        {
+            cmdList->transition(dxImage, D3DImage::makeD3DImageSubresource(dxImage, layer, 0), D3D12_RESOURCE_STATE_DEPTH_WRITE);
+        }
+        else if (attachment._finalTransition == TransitionOp::TransitionOp_ShaderRead)
+        {
+            cmdList->transition(dxImage, D3DImage::makeD3DImageSubresource(dxImage, layer, 0), D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+        }
+    }
+}
+
 } //namespace dx3d
 } //namespace renderer
 } //namespace v3d

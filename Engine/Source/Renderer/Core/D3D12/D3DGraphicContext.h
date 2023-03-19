@@ -122,11 +122,6 @@ namespace dx3d
         bool perpareDraw(D3DGraphicsCommandList* cmdList);
         bool perpareCompute(D3DGraphicsCommandList* cmdList);
 
-        void clearRenderTargets(D3DGraphicsCommandList* cmdList, D3DRenderTarget* target, const Framebuffer::ClearValueInfo& clearInfo);
-
-        static void switchRenderTargetTransitionToWrite(D3DGraphicsCommandList* cmdList, D3DRenderTarget* target);
-        static void switchRenderTargetTransitionToFinal(D3DGraphicsCommandList* cmdList, D3DRenderTarget* target);
-
         IDXGIAdapter1*      m_adapter;
         ID3D12Device4*      m_device;
 #ifdef PLATFORM_WINDOWS
