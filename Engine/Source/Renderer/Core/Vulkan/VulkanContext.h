@@ -2,7 +2,6 @@
 
 #include "Utils/Observable.h"
 #include "Renderer/Core/Context.h"
-#include "Renderer/Core/RenderFrameProfiler.h"
 
 #ifdef VULKAN_RENDER
 #include "VulkanWrapper.h"
@@ -243,10 +242,6 @@ namespace vk
 
         bool m_insideFrame;
         platform::Window* const m_window;
-
-#if FRAME_PROFILER_ENABLE
-        RenderFrameProfiler* m_CPUProfiler;
-#endif //FRAME_PROFILER_ENABLE
 
 #if THREADED_PRESENT
         class PresentThread* m_presentThread;

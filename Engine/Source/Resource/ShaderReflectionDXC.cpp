@@ -388,10 +388,6 @@ void reflectConstantBuffers(ID3D12ShaderReflection* reflector, const std::vector
         buffMap.emplace(buffer, constantBufferID);
     }
 
-    u32 currentSpace = 0;
-    std::vector<std::vector<u32>> bufferTable;
-    bufferTable.resize(renderer::k_maxDescriptorSetIndex);
-
     for (UINT constantBufferID = 0; constantBufferID < unifromBufferCount; ++constantBufferID)
     {
         ID3D12ShaderReflectionConstantBuffer* buffer = reflector->GetConstantBufferByName(bindDescs[constantBufferID].Name);
@@ -418,18 +414,13 @@ void reflectConstantBuffers(ID3D12ShaderReflection* reflector, const std::vector
         ASSERT(foundID != buffMap.cend(), "not found");
         u32 bufferID = foundID->second;
 
-        u32 currentBinding = bindDescs[constantBufferID].BindPoint;
-        auto found = std::find(bufferTable[currentSpace].begin(), bufferTable[currentSpace].end(), currentBinding);
-        if (found != bufferTable[currentSpace].end() || (!bufferTable[currentSpace].empty() && currentBinding <= bufferTable[currentSpace].back()))
-        {
-            ++currentSpace;
-        }
-        bufferTable[currentSpace].push_back(currentBinding);
+        u32 currentSpace = bindDescs[constantBufferID].Space;
+        u32 currentRegister = bindDescs[constantBufferID].BindPoint;
 
         renderer::Shader::UniformBuffer constantBuffer;
         constantBuffer._id = bufferID;
         constantBuffer._set = currentSpace;
-        constantBuffer._binding = currentBinding;
+        constantBuffer._binding = currentRegister;
         constantBuffer._array = bufferDesc.Variables;
         constantBuffer._size = bufferDesc.Size;
 #if USE_STRING_ID_SHADER
@@ -509,23 +500,14 @@ void reflectSampledImages(ID3D12ShaderReflection* reflector, const std::vector<D
     u32 imagesCount = static_cast<u32>(boundTexturesDescs.size());
     stream->write<u32>(imagesCount);
 
-    u32 currentSpace = 0;
-    std::vector<std::vector<u32>> textureTable;
-    textureTable.resize(renderer::k_maxDescriptorSetIndex);
-
     for (u32 imageId = 0; imageId < imagesCount; ++imageId)
     {
-        u32 currentBinding = boundTexturesDescs[imageId].BindPoint;
-        auto found = std::find(textureTable[currentSpace].begin(), textureTable[currentSpace].end(), currentBinding);
-        if (found != textureTable[currentSpace].end() || (!textureTable[currentSpace].empty() && currentBinding <= textureTable[currentSpace].back()))
-        {
-            ++currentSpace;
-        }
-        textureTable[currentSpace].push_back(currentBinding);
+        u32 currentSpace = boundTexturesDescs[imageId].Space;
+        u32 currentRegister = boundTexturesDescs[imageId].BindPoint;
 
         renderer::Shader::Image sepImage;
         sepImage._set = currentSpace;
-        sepImage._binding = currentBinding;
+        sepImage._binding = currentRegister;
 
         sepImage._target = convertDXTypeToTextureTarget(boundTexturesDescs[imageId].Dimension);
         sepImage._array = boundTexturesDescs[imageId].BindCount;
@@ -540,26 +522,17 @@ void reflectSampledImages(ID3D12ShaderReflection* reflector, const std::vector<D
 
 void reflectSamplers(ID3D12ShaderReflection* reflector, const std::vector<D3D12_SHADER_INPUT_BIND_DESC>& boundSamplersDescs, stream::Stream* stream)
 {
-    u32 currentSpace = 0;
-    std::vector<std::vector<u32>> samplerTable;
-    samplerTable.resize(renderer::k_maxDescriptorSetIndex);
-
     u32 samplersCount = static_cast<u32>(boundSamplersDescs.size());
     stream->write<u32>(samplersCount);
 
     for (u32 samplerId = 0; samplerId < samplersCount; ++samplerId)
     {
-        u32 currentBinding = boundSamplersDescs[samplerId].BindPoint;
-        auto found = std::find(samplerTable[currentSpace].begin(), samplerTable[currentSpace].end(), currentBinding);
-        if (found != samplerTable[currentSpace].end() || (!samplerTable[currentSpace].empty() && currentBinding <= samplerTable[currentSpace].back()))
-        {
-            ++currentSpace;
-        }
-        samplerTable[currentSpace].push_back(currentBinding);
+        u32 currentSpace = boundSamplersDescs[samplerId].Space;
+        u32 currentRegister = boundSamplersDescs[samplerId].BindPoint;
 
         renderer::Shader::Sampler sampler;
         sampler._set = currentSpace;
-        sampler._binding = currentBinding;
+        sampler._binding = currentRegister;
 #if USE_STRING_ID_SHADER
         sampler._name = std::string(boundSamplersDescs[samplerId].Name);
 #endif

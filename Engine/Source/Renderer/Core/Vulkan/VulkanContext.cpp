@@ -133,10 +133,6 @@ VulkanContext::VulkanContext(platform::Window* window, DeviceMask mask) noexcept
 
     , m_insideFrame(false)
     , m_window(window)
-
-#if FRAME_PROFILER_ENABLE
-    , m_CPUProfiler(nullptr)
-#endif //FRAME_PROFILER_ENABLE
 {
     LOG_DEBUG("VulkanContext created this %llx", this);
 
@@ -174,10 +170,6 @@ VulkanContext::~VulkanContext()
 
     ASSERT(m_deviceInfo._device == VK_NULL_HANDLE, "Device is not nullptr");
     ASSERT(m_deviceInfo._instance == VK_NULL_HANDLE, "Instance is not nullptr");
-
-#if FRAME_PROFILER_ENABLE
-    ASSERT(!m_CPUProfiler, "m_CPUProfiler not nullptr");
-#endif
 }
 
 bool VulkanContext::initialize()
@@ -288,6 +280,7 @@ bool VulkanContext::initialize()
             RenderFrameProfiler::FrameCounter::UpdateSubmitResorces,
         },
         {
+            RenderFrameProfiler::FrameCounter::DrawCalls,
         });
     m_frameProfiler.attach(m_CPUProfiler);
     g_CPUProfiler = m_CPUProfiler;
@@ -821,6 +814,7 @@ void VulkanContext::destroy()
 #if DEBUG_OBJECT_MEMORY
     ASSERT(VulkanBuffer::s_objects.empty(), "buffer objects still exist");
     ASSERT(VulkanImage::s_objects.empty(), "image objects still exist");
+    ASSERT(VulkanQuery::s_objects.empty(), "query objects still exist");
 #endif //DEBUG_OBJECT_MEMORY
 
     if (m_deviceInfo._device)
@@ -885,16 +879,16 @@ void VulkanContext::beginFrame()
 
 void VulkanContext::endFrame()
 {
+#if VULKAN_DEBUG
+    LOG_DEBUG("VulkanContext::endFrame %llu", m_frameCounter);
+#endif //VULKAN_DEBUG
+
 #if FRAME_PROFILER_ENABLE
     RenderFrameProfiler::StackProfiler stackFrameProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::FrameTime);
 #endif //FRAME_PROFILER_ENABLE
 
     ASSERT(m_insideFrame, "must be inside");
     m_insideFrame = false;
-
-#if VULKAN_DEBUG
-    LOG_DEBUG("VulkanContext::endFrame %llu", m_frameCounter);
-#endif //VULKAN_DEBUG
 }
 
 void VulkanContext::presentFrame()
@@ -905,7 +899,7 @@ void VulkanContext::presentFrame()
     LOG_DEBUG("VulkanContext::presentFrame %llu", m_frameCounter);
 #endif //VULKAN_DEBUG
 
-    VulkanContext::submit(); //TODO: Should be here?
+    //VulkanContext::submit(); //TODO: Should be here?
 
 #if FRAME_PROFILER_ENABLE
     RenderFrameProfiler::StackProfiler stackFrameProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::FrameTime);
@@ -1053,8 +1047,8 @@ void VulkanContext::beginQuery(const Query* query, u32 id, const std::string& ta
 
     if (isNew)
     {
-    vkQuery->captureInsideCommandBuffer(drawBuffer, 0);
-}
+        vkQuery->captureInsideCommandBuffer(drawBuffer, 0);
+    }
 }
 
 void VulkanContext::endQuery(const Query* query, u32 id)
@@ -1075,7 +1069,7 @@ void VulkanContext::endQuery(const Query* query, u32 id)
 
     if (isNew)
     {
-    vkQuery->captureInsideCommandBuffer(drawBuffer, 0);
+        vkQuery->captureInsideCommandBuffer(drawBuffer, 0);
     };
 }
 
@@ -1097,8 +1091,8 @@ void VulkanContext::timestampQuery(const Query* query, u32 id, const std::string
 
     if (isNew)
     {
-    vkQuery->captureInsideCommandBuffer(drawBuffer, 0);
-}
+        vkQuery->captureInsideCommandBuffer(drawBuffer, 0);
+    }
 }
 
 void VulkanContext::clearBackbuffer(const core::Vector4D& color)
@@ -1144,7 +1138,7 @@ void VulkanContext::setViewport(const core::Rect32& viewport, const core::Vector
                 {
                     drawBuffer->cmdSetViewport(m_pendingState._viewports);
                     m_currentContextState->m_viewports = std::move(m_pendingState._viewports);
-    }
+                }
             });
     }
     else
@@ -1179,7 +1173,7 @@ void VulkanContext::setScissor(const core::Rect32& scissor)
                 {
                     drawBuffer->cmdSetScissor(m_pendingState._scissors);
                     m_currentContextState->m_scissors = std::move(m_pendingState._scissors);
-    }
+                }
             });
     }
     else
@@ -1384,7 +1378,7 @@ Query* VulkanContext::createQuery(QueryType type, u32 count, const Query::QueryR
         delete vkQuery;
 
         return nullptr;
-}
+    }
 
     return vkQuery;
 }

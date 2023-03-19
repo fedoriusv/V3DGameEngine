@@ -10,6 +10,7 @@
 #include "Renderer/ShaderProperties.h"
 #include "Renderer/PipelineStateProperties.h"
 #include "Renderer/ObjectTracker.h"
+#include "Renderer/Core/RenderFrameProfiler.h"
 
 #include "Image.h"
 #include "Sampler.h"
@@ -251,7 +252,7 @@ namespace renderer
     protected:
 
         Context() noexcept;
-        virtual ~Context() = default;
+        virtual ~Context();
 
         Context(const Context&) = delete;
         Context& operator=(const Context&) = delete;
@@ -271,6 +272,7 @@ namespace renderer
 
 #if FRAME_PROFILER_ENABLE
         utils::ProfileManager m_frameProfiler;
+        RenderFrameProfiler* m_CPUProfiler;
 #endif //FRAME_PROFILER_ENABLE
 
         friend Backbuffer;

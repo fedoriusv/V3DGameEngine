@@ -17,8 +17,16 @@ namespace renderer
 
 Context::Context() noexcept
     : m_frameCounter(0)
+#if FRAME_PROFILER_ENABLE
+    , m_CPUProfiler(nullptr)
+#endif //FRAME_PROFILER_ENABLE
 {
     memset(&m_backufferDescription, 0, sizeof(BackbufferDesc));
+}
+
+Context::~Context()
+{
+    ASSERT(!m_CPUProfiler, "must be nullptr");
 }
 
 Context* Context::createContext(platform::Window* window, RenderType type, DeviceMask mask)

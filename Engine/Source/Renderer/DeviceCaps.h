@@ -3,6 +3,7 @@
 #include "Common.h"
 #include "TextureProperties.h"
 #include "BufferProperties.h"
+#include "ShaderProperties.h"
 
 
 namespace v3d
@@ -46,8 +47,12 @@ namespace renderer
         };
 
         u32 maxColorAttachments = k_maxColorAttachments;
+
         u32 maxVertexInputAttributes = k_maxVertexInputAttributes;
         u32 maxVertexInputBindings = k_maxVertexInputBindings;
+
+        u32 maxDescriptorSets = k_maxDescriptorSetCount;
+        u32 maxDescriptorBindings = k_maxDescriptorBindingCount;
 
         VendorID vendorID = VendorID_Empty;
 
