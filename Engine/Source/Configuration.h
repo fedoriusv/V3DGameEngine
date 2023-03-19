@@ -110,10 +110,12 @@
 #   define D3D_DEBUG 1
 #   define D3D_DEBUG_LAYERS 1
 #   define D3D_DEBUG_LAYERS_CALLBACK 0
+#   define D3D_DEBUG_LIVE_REPORT 0
 #endif //D3D_RENDER
 
 #define DEBUG_COMMAND_LIST 0 //Logging command list
 #define DEBUG_OBJECT_MEMORY 0
+
 #define FRAME_PROFILER_ENABLE 1
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////
