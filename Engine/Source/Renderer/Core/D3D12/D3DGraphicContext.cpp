@@ -517,7 +517,7 @@ void D3DGraphicContext::presentFrame()
 
         if (m_boundState._renderTarget)
         {
-            D3DGraphicContext::switchRenderTargetTransitionToFinal(cmdList, m_boundState._renderTarget);
+            D3DGraphicsCommandList::switchRenderTargetTransitionToFinal(cmdList, m_boundState._renderTarget);
         }
         cmdList->close();
         m_commandListManager->execute(cmdList, false);
@@ -1348,9 +1348,9 @@ bool D3DGraphicContext::perpareDraw(D3DGraphicsCommandList* cmdList)
         //change layout
         if (m_boundState._renderTarget)
         {
-            D3DGraphicContext::switchRenderTargetTransitionToFinal(cmdList, m_boundState._renderTarget);
+            D3DGraphicsCommandList::switchRenderTargetTransitionToFinal(cmdList, m_boundState._renderTarget);
         }
-        D3DGraphicContext::switchRenderTargetTransitionToWrite(cmdList, m_currentState._renderTarget);
+        D3DGraphicsCommandList::switchRenderTargetTransitionToWrite(cmdList, m_currentState._renderTarget);
 
         cmdList->setRenderTarget(m_currentState._renderTarget);
         m_boundState._renderTarget = m_currentState._renderTarget;
@@ -1359,7 +1359,7 @@ bool D3DGraphicContext::perpareDraw(D3DGraphicsCommandList* cmdList)
             cmdList->setViewInstanceMask(m_currentState._renderTarget->getDescription()._viewsMask);
         }
 
-        D3DGraphicContext::clearRenderTargets(cmdList, m_currentState._renderTarget, m_currentState._clearInfo);
+        D3DGraphicsCommandList::clearRenderTargets(cmdList, m_currentState._renderTarget, m_currentState._clearInfo);
     }
 
     m_descriptorState->updateDescriptorSets(cmdList, dxPipeline);
