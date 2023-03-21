@@ -33,6 +33,8 @@ namespace dx3d
 D3D_FEATURE_LEVEL D3DGraphicContext::s_featureLevel = D3D_FEATURE_LEVEL_12_0;
 #elif (D3D_VERSION_MAJOR == 12 && D3D_VERSION_MINOR == 1)
 D3D_FEATURE_LEVEL D3DGraphicContext::s_featureLevel = D3D_FEATURE_LEVEL_12_1;
+#elif (D3D_VERSION_MAJOR == 12 && D3D_VERSION_MINOR == 2)
+    D3D_FEATURE_LEVEL D3DGraphicContext::s_featureLevel = D3D_FEATURE_LEVEL_12_2;
 #else
 #   error "DirectX version is not supported"
 #endif 
@@ -41,6 +43,10 @@ D3D_FEATURE_LEVEL D3DGraphicContext::s_featureLevel = D3D_FEATURE_LEVEL_12_1;
 #   pragma comment(lib, "dxgi.lib")
 #   pragma comment(lib, "d3d12.lib")
 #endif //PLATFORM
+
+#if FRAME_PROFILER_ENABLE
+    RenderFrameProfiler* g_d3dCPUProfiler = nullptr;
+#endif //FRAME_PROFILER_ENABLE
 
 bool D3DGraphicContext::s_supportExerimentalShaderModelFeature = true;
 
@@ -186,13 +192,13 @@ bool D3DGraphicContext::initialize()
         std::vector<UUID> experimentalFeatures;
         if (D3DGraphicContext::s_supportExerimentalShaderModelFeature)
         {
-            experimentalFeatures.push_back(D3D12ExperimentalShaderModels);
+            experimentalFeatures.push_back(D3D12ExperimentalShaderModels); //Should be enabled for shader model 6.0 and higher
         }
 
         if (!experimentalFeatures.empty())
         {
             HRESULT result = D3DWrapper::EnableExperimentalFeatures(static_cast<UINT>(experimentalFeatures.size()), experimentalFeatures.data(), nullptr, nullptr);
-            ASSERT(SUCCEEDED(result), "failed");
+            ASSERT(SUCCEEDED(result), "D3D12ExperimentalShaderModels failed");
         }
     }
 
@@ -341,8 +347,10 @@ bool D3DGraphicContext::initialize()
             RenderFrameProfiler::FrameCounter::UpdateSubmitResorces,
         },
         {
+            RenderFrameProfiler::FrameCounter::DrawCalls
         });
     m_frameProfiler.attach(m_CPUProfiler);
+    g_d3dCPUProfiler = m_CPUProfiler;
 #endif //FRAME_PROFILER_ENABLE
     return true;
 }
@@ -770,7 +778,7 @@ void D3DGraphicContext::bindUniformsBuffer(const Shader* shader, u32 bindIndex, 
     void* constantBufferData = constantBuffer->map(constantBufferOffset + offset, size);
     memcpy(constantBufferData, data, size);
 
-    m_descriptorState->bindDescriptor<D3DBuffer, false>(space, binding, array, constantBuffer, 0, size);
+    m_descriptorState->bindDescriptor<D3DBuffer, false>(space, binding, array, constantBuffer, constantBufferOffset, size);
 }
 
 void D3DGraphicContext::bindStorageImage(const Shader* shader, u32 bindIndex, const Image* image, s32 layer, s32 mip)

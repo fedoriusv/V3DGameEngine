@@ -27,6 +27,9 @@ std::string D3DDebug::stringError(HRESULT error)
     case E_NOTIMPL:
         return "NOTIMPL";
 
+    case E_NOINTERFACE:
+        return "NOINTERFACE";
+
     case DXGI_ERROR_ACCESS_DENIED:
         return "DXGI_ERROR_ACCESS_DENIED";
 
@@ -136,7 +139,7 @@ bool D3DDebug::attachDevice(ID3D12Device* device, D3D12_DEBUG_FEATURE flags)
         //device->Release();
         if (FAILED(result))
         {
-            LOG_ERROR("D3DDebug::attachDevice DeviceQueryInterface is failed");
+            LOG_ERROR("D3DDebug::attachDevice DeviceQueryInterface is failed. Error: %s", D3DDebug::stringError(result).c_str());
             ASSERT(!m_debugDevice, "not nullptr");
             return false;
         }

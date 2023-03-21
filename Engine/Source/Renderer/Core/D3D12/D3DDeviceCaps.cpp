@@ -73,7 +73,7 @@ void D3DDeviceCaps::initialize(IDXGIAdapter1* adapter, ID3D12Device* device)
 
     {
         D3D12_FEATURE_DATA_SHADER_MODEL shaderModel = {};
-        shaderModel.HighestShaderModel = D3D_SHADER_MODEL_6_5; //set max
+        shaderModel.HighestShaderModel = D3D_SHADER_MODEL_6_7; //set max
         HRESULT result = device->CheckFeatureSupport(D3D12_FEATURE_SHADER_MODEL, &shaderModel, sizeof(shaderModel));
         if (SUCCEEDED(result))
         {

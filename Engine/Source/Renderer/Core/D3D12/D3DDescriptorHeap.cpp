@@ -41,9 +41,9 @@ D3DDescriptorHeapManager::~D3DDescriptorHeapManager()
         ASSERT(std::get<0>(m_currentDescriptorHeap[type]) == nullptr, "must be nullptr");
         ASSERT(m_freeDescriptorHeaps[type].empty(), "must be empty");
         ASSERT(m_usedDescriptorHeaps[type].empty(), "must be empty");
-#if D3D_DEBUG
+#if DEBUG_OBJECT_MEMORY
         ASSERT(m_heapList[type].empty(), "must be empty");
-#endif
+#endif //DEBUG_OBJECT_MEMORY
     }
 }
 
@@ -89,21 +89,21 @@ D3DDescriptorHeap* D3DDescriptorHeapManager::allocateDescriptorHeap(D3D12_DESCRI
 
     D3DDescriptorHeap* descriptorHeap = new D3DDescriptorHeap(dxDescriptorHeap, heapDesc);
     descriptorHeap->m_increment = m_device->GetDescriptorHandleIncrementSize(type);
-#if D3D_DEBUG
+#if DEBUG_OBJECT_MEMORY
     m_heapList[type].push_back(descriptorHeap);
-#endif
+#endif //DEBUG_OBJECT_MEMORY
     return descriptorHeap;
 }
 
 void D3DDescriptorHeapManager::deallocDescriptorHeap(D3DDescriptorHeap* heap)
 {
     ASSERT(heap, "nullptr");
-#if D3D_DEBUG
+#if DEBUG_OBJECT_MEMORY
     D3D12_DESCRIPTOR_HEAP_TYPE type = heap->getDescription().Type;
     auto found = std::find(m_heapList[type].begin(), m_heapList[type].end(), heap);
     ASSERT(found != m_heapList[type].end(), "not found");
     m_heapList[heap->getDescription().Type].erase(found);
-#endif
+#endif //DEBUG_OBJECT_MEMORY
 
     ASSERT(heap->isUsed(), "must be free");
     delete heap;
@@ -114,13 +114,13 @@ void D3DDescriptorHeapManager::freeDescriptorHeaps()
     for (u32 i = 0; i < D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES; ++i)
     {
         D3D12_DESCRIPTOR_HEAP_TYPE type = (D3D12_DESCRIPTOR_HEAP_TYPE)i;
-#if D3D_DEBUG
+#if DEBUG_OBJECT_MEMORY
         for (auto& heap : m_heapList[type])
         {
             ASSERT(!heap->isUsed(), "must be free");
         }
         m_heapList[type].clear();
-#endif
+#endif //DEBUG_OBJECT_MEMORY
 
         while (!m_freeDescriptorHeaps[type].empty())
         {

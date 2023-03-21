@@ -238,9 +238,9 @@ namespace dx3d
 
         std::unordered_map<DescriptorInfo, std::tuple<D3DDescriptorHeap*, u32>, DescriptorInfo::Hash, DescriptorInfo::Compare> m_descriptors;
 
-#if D3D_DEBUG
+#if DEBUG_OBJECT_MEMORY
         std::vector<D3DDescriptorHeap*> m_heapList[D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES];
-#endif
+#endif //DEBUG_OBJECT_MEMORY
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

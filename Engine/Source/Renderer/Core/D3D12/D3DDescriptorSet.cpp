@@ -1,5 +1,6 @@
 #include "D3DDescriptorSet.h"
 #include "Utils/Logger.h"
+#include "Renderer/Core/RenderFrameProfiler.h"
 
 #ifdef D3D_RENDER
 #include "D3DPipelineState.h"
@@ -17,6 +18,10 @@ namespace renderer
 {
 namespace dx3d
 {
+
+#if FRAME_PROFILER_ENABLE
+extern RenderFrameProfiler* g_d3dCPUProfiler;
+#endif //FRAME_PROFILER_ENABLE
 
 D3D12_DESCRIPTOR_HEAP_TYPE D3DDescriptorSetState::convertDescriptorTypeToHeapType(D3D12_DESCRIPTOR_RANGE_TYPE descriptorType)
 {
@@ -167,7 +172,7 @@ void D3DDescriptorSetState::invalidateDescriptorSetTable()
 {
     for (u32 setIndex = 0; setIndex < k_maxDescriptorSetCount; ++setIndex)
     {
-        m_descriptorSets[setIndex].clear();
+        m_boundedDescriptorSets[setIndex].clear();
     }
 }
 
@@ -178,7 +183,7 @@ void D3DDescriptorSetState::composeDescriptorSetTables(const D3DPipelineState* p
     for (u32 setIndex = 0; setIndex < k_maxDescriptorSetCount; ++setIndex)
     {
         u32 hash = 0;
-        for (const auto& binding : m_descriptorSets[setIndex])
+        for (const auto& binding : m_boundedDescriptorSets[setIndex])
         {
             s32 paramIndex = pipeline->getSignatureParameterIndex(binding.first);
             if (paramIndex < 0)
@@ -189,14 +194,14 @@ void D3DDescriptorSetState::composeDescriptorSetTables(const D3DPipelineState* p
 
             if (paramIndex >= tables.size())
             {
-                tables.resize(m_descriptorSets[setIndex].size());
+                tables.resize(m_boundedDescriptorSets[setIndex].size());
             }
             ASSERT(paramIndex < tables.size(), "range out");
 
             hash = crc32c::Extend(hash, reinterpret_cast<const u8*>(&binding.second), sizeof(D3DBindingResource));
 
             std::get<0>(tables[paramIndex]) = hash;
-            std::get<1>(tables[paramIndex]) = { D3DDescriptorSetState::convertDescriptorTypeToHeapType(binding.first._type), (u32)m_descriptorSets[setIndex].size(), (bool)binding.first._direct};
+            std::get<1>(tables[paramIndex]) = { D3DDescriptorSetState::convertDescriptorTypeToHeapType(binding.first._type), (u32)m_boundedDescriptorSets[setIndex].size(), (bool)binding.first._direct};
             std::get<2>(tables[paramIndex]).emplace_back(binding.first, binding.second);
         }
     }

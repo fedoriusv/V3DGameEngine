@@ -32,10 +32,7 @@ namespace dx3d
     {
     public:
 
-        D3DDescriptorSetState(ID3D12Device* device, D3DDescriptorHeapManager* manager) noexcept;
-
-        D3DDescriptorSetState() = delete;
-        D3DDescriptorSetState(const D3DDescriptorSetState&) = delete;
+        explicit D3DDescriptorSetState(ID3D12Device* device, D3DDescriptorHeapManager* manager) noexcept;
         ~D3DDescriptorSetState();
 
         static D3D12_DESCRIPTOR_HEAP_TYPE convertDescriptorTypeToHeapType(D3D12_DESCRIPTOR_RANGE_TYPE descriptorType);
@@ -103,7 +100,7 @@ namespace dx3d
             }
 
             static_assert(sizeof(D3DBindingResource) == 32, "DBindingResource wrong size");
-            auto iter = m_descriptorSets[space].emplace(bind, bindingResource);
+            auto iter = m_boundedDescriptorSets[space].emplace(bind, bindingResource);
             if (!iter.second)
             {
                 ASSERT(false, "binding is already presentd inside table");
@@ -119,6 +116,9 @@ namespace dx3d
 
     private:
 
+        D3DDescriptorSetState() = delete;
+        D3DDescriptorSetState(const D3DDescriptorSetState&) = delete;
+
         struct DescriptorTableLayout
         {
             D3D12_DESCRIPTOR_HEAP_TYPE _heapType;
@@ -132,7 +132,7 @@ namespace dx3d
 
         ID3D12Device* const m_device;
         D3DDescriptorHeapManager& m_heapManager;
-        std::map<D3DBinding, D3DBindingResource, D3DBinding::Less> m_descriptorSets[k_maxDescriptorSetCount];
+        std::map<D3DBinding, D3DBindingResource, D3DBinding::Less> m_boundedDescriptorSets[k_maxDescriptorSetCount];
 
         std::vector<std::tuple<u32, DescriptorTableLayout, DescriptorTableContainer>> m_updatedTablesCache;
     };

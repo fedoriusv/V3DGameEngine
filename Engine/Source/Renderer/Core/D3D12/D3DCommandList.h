@@ -94,7 +94,7 @@ namespace dx3d
         bool checkOnComplete();
 
         D3DFence* m_fence;
-        std::list<D3DResource*> m_resources;
+        std::unordered_set<D3DResource*> m_resources;
     };
 
     inline ID3D12CommandList* D3DCommandList::getHandle() const
@@ -202,6 +202,12 @@ namespace dx3d
         };
         BarrierResources m_transition;
     };
+
+    inline ID3D12GraphicsCommandList1* D3DGraphicsCommandList::getHandle() const
+    {
+        ASSERT(m_commandList, "nullptr");
+        return static_cast<ID3D12GraphicsCommandList1*>(m_commandList);
+    }
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 

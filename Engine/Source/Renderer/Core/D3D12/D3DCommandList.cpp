@@ -73,7 +73,7 @@ void D3DCommandList::destroy()
 void D3DCommandList::setUsed(D3DResource* resource, u64 frame)
 {
     resource->attachFence(m_fence, frame);
-    m_resources.push_back(resource);
+    m_resources.insert(resource);
 }
 
 D3DCommandList::D3DCommandList(ID3D12Device* device, Type type) noexcept
