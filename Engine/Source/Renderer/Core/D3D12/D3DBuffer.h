@@ -51,6 +51,10 @@ namespace dx3d
         D3D12_RESOURCE_STATES getState() const;
         D3D12_RESOURCE_STATES setState(D3D12_RESOURCE_STATES state);
 
+#if DEBUG_OBJECT_MEMORY
+        static std::set<D3DBuffer*> s_objects;
+#endif //DEBUG_OBJECT_MEMORY
+
     private:
 
         ID3D12Device* m_device;

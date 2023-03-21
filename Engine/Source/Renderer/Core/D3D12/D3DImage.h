@@ -24,8 +24,8 @@ namespace dx3d
     {
     public:
 
-        explicit D3DImage(ID3D12Device* device, Format format, u32 width, u32 height, u32 arrays, u32 samples, TextureUsageFlags flags, const std::string& name = "") noexcept;
-        explicit D3DImage(ID3D12Device* device, D3D12_RESOURCE_DIMENSION dimension, Format format, const core::Dimension3D& size, u32 arrays, u32 mipmap, TextureUsageFlags flags, const std::string& name = "") noexcept;
+        explicit D3DImage(ID3D12Device* device, Format format, u32 width, u32 height, u32 arrays, u32 samples, TextureUsageFlags flags, [[maybe_unused]] const std::string& name = "") noexcept;
+        explicit D3DImage(ID3D12Device* device, D3D12_RESOURCE_DIMENSION dimension, Format format, const core::Dimension3D& size, u32 arrays, u32 mipmap, TextureUsageFlags flags, [[maybe_unused]] const std::string& name = "") noexcept;
         ~D3DImage();
 
         bool create() override;
@@ -152,9 +152,9 @@ namespace dx3d
 
         Format m_originFormat;
 
-#if D3D_DEBUG
+#if D3D_DEBUG_MARKERS
         std::string m_debugName;
-#endif
+#endif //D3D_DEBUG_MARKERS
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

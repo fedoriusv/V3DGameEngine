@@ -16,6 +16,10 @@ namespace renderer
 namespace dx3d
 {
 
+#if DEBUG_OBJECT_MEMORY
+    std::set<D3DBuffer*> D3DBuffer::s_objects;
+#endif //DEBUG_OBJECT_MEMORY
+
 D3DBuffer::D3DBuffer(ID3D12Device* device, Buffer::BufferType type, StreamBufferUsageFlags usageFlag, u64 size, const std::string& name, D3DHeapAllocator* allocator) noexcept
     : m_device(device)
     , m_allocator(allocator)
@@ -100,12 +104,20 @@ D3DBuffer::D3DBuffer(ID3D12Device* device, Buffer::BufferType type, StreamBuffer
     default:
         ASSERT(false, "unsupported");
     }
+
+#if DEBUG_OBJECT_MEMORY
+    s_objects.insert(this);
+#endif //DEBUG_OBJECT_MEMORY
 }
 
 D3DBuffer::~D3DBuffer()
 {
     LOG_DEBUG("D3DBuffer::~D3DBuffer destructor %llx", this);
     ASSERT(!m_resource, "not nullptr");
+
+#if DEBUG_OBJECT_MEMORY
+    s_objects.erase(this);
+#endif //DEBUG_OBJECT_MEMORY
 }
 
 bool D3DBuffer::create()
@@ -144,19 +156,20 @@ bool D3DBuffer::create()
         }
     }
 
-#if D3D_DEBUG
-    w16 wtext[64];
+#if D3D_DEBUG_MARKERS
+    w16 wtext[128];
     if (!m_debugName.empty())
     {
-        mbstowcs(wtext, m_debugName.c_str(), m_debugName.size() + 1);
+        std::string debugName = m_debugName + ":_" + std::to_string(reinterpret_cast<const u64>(this));
+        mbstowcs(wtext, debugName.c_str(), debugName.size() + 1);
     }
     else
     {
-        std::string debugName = "BufferResource: " + std::to_string(reinterpret_cast<const u64>(this));
+        std::string debugName = "BufferResource:_" + std::to_string(reinterpret_cast<const u64>(this));
         mbstowcs(wtext, debugName.c_str(), debugName.size() + 1);
     }
     m_resource->SetName(LPCWSTR(wtext));
-#endif
+#endif //D3D_DEBUG_MARKERS
 
     return true;
 }

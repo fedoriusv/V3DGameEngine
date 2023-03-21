@@ -849,6 +849,9 @@ const Image::Subresource D3DImage::makeD3DImageSubresource(const D3DImage* image
     return subresource;
 }
 
+#if DEBUG_OBJECT_MEMORY
+    std::set<D3DImage*> D3DImage::s_objects;
+#endif //DEBUG_OBJECT_MEMORY
 
 D3DImage::D3DImage(ID3D12Device* device, Format format, u32 width, u32 height, u32 arrays, u32 samples, TextureUsageFlags flags, const std::string& name) noexcept
     : Image()
@@ -868,9 +871,9 @@ D3DImage::D3DImage(ID3D12Device* device, Format format, u32 width, u32 height, u
     , m_swapchain(false)
 
     , m_originFormat(format)
-#if D3D_DEBUG
+#if D3D_DEBUG_MARKERS
     , m_debugName(name)
-#endif
+#endif //D3D_DEBUG_MARKERS
 {
     LOG_DEBUG("D3DImage::D3DImage constructor %llx", this);
     if (D3DImage::isDepthStencilFormat(m_format))
@@ -905,6 +908,10 @@ D3DImage::D3DImage(ID3D12Device* device, Format format, u32 width, u32 height, u
     }
 
     m_state.resize(m_arrays * m_mipmaps + 1, D3D12_RESOURCE_STATE_COMMON);
+
+#if DEBUG_OBJECT_MEMORY
+    s_objects.insert(this);
+#endif //DEBUG_OBJECT_MEMORY
 }
 
 D3DImage::D3DImage(ID3D12Device* device, D3D12_RESOURCE_DIMENSION dimension, Format format, const core::Dimension3D& size, u32 arrays, u32 mipmap, TextureUsageFlags flags, const std::string& name) noexcept
@@ -925,9 +932,9 @@ D3DImage::D3DImage(ID3D12Device* device, D3D12_RESOURCE_DIMENSION dimension, For
     , m_swapchain(false)
 
     , m_originFormat(format)
-#if D3D_DEBUG
+#if D3D_DEBUG_MARKERS
     , m_debugName(name)
-#endif
+#endif //D3D_DEBUG_MARKERS
 {
     LOG_DEBUG("D3DImage::D3DImage constructor %llx", this);
     if (D3DImage::isDepthStencilFormat(m_format))
@@ -949,6 +956,10 @@ D3DImage::D3DImage(ID3D12Device* device, D3D12_RESOURCE_DIMENSION dimension, For
     ASSERT(!(flags & TextureUsage::TextureUsage_Resolve), "must not be resolve");
 
     m_state.resize(m_arrays * m_mipmaps + 1, D3D12_RESOURCE_STATE_COMMON);
+
+#if DEBUG_OBJECT_MEMORY
+    s_objects.insert(this);
+#endif //DEBUG_OBJECT_MEMORY
 }
 
 
@@ -957,6 +968,10 @@ D3DImage::~D3DImage()
     LOG_DEBUG("D3DImage::~D3DImage destructor %llx", this);
     ASSERT(!m_resource, "not nullptr");
     ASSERT(!m_resolveImage, "not nullptr");
+
+#if DEBUG_OBJECT_MEMORY
+    s_objects.erase(this);
+#endif //DEBUG_OBJECT_MEMORY
 }
 
 bool D3DImage::create()
@@ -1064,19 +1079,20 @@ bool D3DImage::create()
 
     createResourceView(sampledFormat);
 
-#if D3D_DEBUG
-    w16 wtext[64];
+#if D3D_DEBUG_MARKERS
+    w16 wtext[128];
     if (!m_debugName.empty())
     {
-        mbstowcs(wtext, m_debugName.c_str(), m_debugName.size() + 1);
+        std::string debugName = m_debugName + ":_" + std::to_string(reinterpret_cast<const u64>(this));
+        mbstowcs(wtext, debugName.c_str(), debugName.size() + 1);
     }
     else
     {
-        std::string debugName = "ImageResource: " + std::to_string(reinterpret_cast<const u64>(this));
+        std::string debugName = "ImageResource:_" + std::to_string(reinterpret_cast<const u64>(this));
         mbstowcs(wtext, debugName.c_str(), debugName.size() + 1);
     }
     m_resource->SetName(LPCWSTR(wtext));
-#endif
+#endif //D3D_DEBUG_MARKERS
 
     if (m_resolveImage)
     {
@@ -1347,19 +1363,20 @@ bool D3DImage::create(ID3D12Resource* resource, D3D12_CPU_DESCRIPTOR_HANDLE& han
     m_resource = resource;
     D3DImage::createResourceView(m_format);
 
-#if D3D_DEBUG
-    w16 wtext[64];
+#if D3D_DEBUG_MARKERS
+    w16 wtext[128];
     if (!m_debugName.empty())
     {
-        mbstowcs(wtext, m_debugName.c_str(), m_debugName.size() + 1);
+        std::string debugName = m_debugName + ":_" + std::to_string(reinterpret_cast<const u64>(this));
+        mbstowcs(wtext, debugName.c_str(), debugName.size() + 1);
     }
     else
     {
-        std::string debugName = "SwapchainImageResource: " + std::to_string(reinterpret_cast<const u64>(this));
+        std::string debugName = "SwapchainImageResource:_" + std::to_string(reinterpret_cast<const u64>(this));
         mbstowcs(wtext, debugName.c_str(), debugName.size() + 1);
     }
     m_resource->SetName(LPCWSTR(wtext));
-#endif
+#endif //D3D_DEBUG_MARKERS
     m_handle = handle;
     m_swapchain = true;
 

@@ -107,10 +107,13 @@
 #       error "Windows SDK must be 10.0.20348 or later. Make sure you have a proper version"
 #   endif
 
-#   define D3D_DEBUG 1
-#   define D3D_DEBUG_LAYERS 1
+#   define D3D_DEBUG 0 //Detaled logs
+#   define D3D_DEBUG_LAYERS 0
+#   if D3D_DEBUG_LAYERS
+#       define D3D_DEBUG_LIVE_REPORT 1
+#   endif
+#   define D3D_DEBUG_MARKERS 1
 #   define D3D_DEBUG_LAYERS_CALLBACK 0
-#   define D3D_DEBUG_LIVE_REPORT 0
 #endif //D3D_RENDER
 
 #define DEBUG_COMMAND_LIST 0 //Logging command list

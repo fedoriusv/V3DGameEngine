@@ -112,6 +112,11 @@ D3DGraphicContext::~D3DGraphicContext()
     ASSERT(!m_debugMessageCallback, "not nullptr");
 #   endif //D3D_DEBUG_LAYERS_CALLBACK
 #endif //PLATFORM_WINDOWS
+
+#if DEBUG_OBJECT_MEMORY
+    ASSERT(D3DBuffer::s_objects.empty(), "must be empty");
+    ASSERT(D3DImage::s_objects.empty(), "must be empty");
+#endif //DEBUG_OBJECT_MEMORY
 }
 
 bool D3DGraphicContext::initialize()
