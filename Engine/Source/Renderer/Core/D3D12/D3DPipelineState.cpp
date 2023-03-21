@@ -23,18 +23,6 @@ D3DPipelineState::~D3DPipelineState()
     ASSERT(!m_pipelineState, "not nullptr");
 }
 
-ID3D12PipelineState* D3DPipelineState::getHandle() const
-{
-    ASSERT(m_pipelineState, "nullptr");
-    return m_pipelineState;
-}
-
-ID3D12RootSignature* D3DPipelineState::getSignatureHandle() const
-{
-    ASSERT(m_rootSignature, "nullptr");
-    return m_rootSignature;
-}
-
 u32 D3DPipelineState::getSignatureParameterIndex(const D3DBinding& binding) const
 {
     auto iter = m_signatureParameters.find(binding);

@@ -99,6 +99,10 @@ namespace dx3d
         static DXGI_FORMAT getResolveCompatibilityFormat(DXGI_FORMAT format);
         static DXGI_FORMAT getSampledCompatibilityFormat(DXGI_FORMAT format);
 
+#if DEBUG_OBJECT_MEMORY
+        static std::set<D3DImage*> s_objects;
+#endif //DEBUG_OBJECT_MEMORY
+
     private:
 
         static DXGI_FORMAT convertToTypelessFormat(DXGI_FORMAT format);
@@ -156,6 +160,42 @@ namespace dx3d
         std::string m_debugName;
 #endif //D3D_DEBUG_MARKERS
     };
+
+    inline D3DImage* D3DImage::getResolveImage() const
+    {
+        return m_resolveImage;
+    }
+
+    inline ID3D12Resource* D3DImage::getResource() const
+    {
+        ASSERT(m_resource, "nullptr");
+        return m_resource;
+    }
+
+    inline const core::Dimension3D& D3DImage::getSize() const
+    {
+        return m_size;
+    }
+
+    inline D3D12_RESOURCE_DIMENSION D3DImage::getDimension() const
+    {
+        return m_dimension;
+    }
+
+    inline DXGI_FORMAT D3DImage::getFormat() const
+    {
+        return m_format;
+    }
+
+    inline Format D3DImage::getOriginFormat() const
+    {
+        return m_originFormat;
+    }
+
+    inline u32 D3DImage::getCountSamples() const
+    {
+        return m_samples;
+    }
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 

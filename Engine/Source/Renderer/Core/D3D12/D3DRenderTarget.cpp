@@ -131,28 +131,6 @@ void D3DRenderTarget::destroy()
     }
 }
 
-const std::vector<D3D12_CPU_DESCRIPTOR_HANDLE>& D3DRenderTarget::getColorDescHandles() const
-{
-    return m_colorRenderTargets;
-}
-
-const D3D12_CPU_DESCRIPTOR_HANDLE& D3DRenderTarget::getDepthStencilDescHandles() const
-{
-    return m_depthStencilRenderTarget;
-}
-
-const RenderPassDescription::RenderPassDesc& D3DRenderTarget::getDescription() const
-{
-    ASSERT(m_renderState, "nullptr");
-    return m_renderState->getDescription();
-}
-
-const std::vector<Image*>& D3DRenderTarget::getImages() const
-{
-    return m_images;
-}
-
-
 } //namespace dx3d
 } //namespace renderer
 } //namespace v3d

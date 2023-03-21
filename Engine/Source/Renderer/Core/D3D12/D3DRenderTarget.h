@@ -73,6 +73,27 @@ namespace dx3d
         D3D12_CPU_DESCRIPTOR_HANDLE m_depthStencilRenderTarget;
     };
 
+    inline const std::vector<D3D12_CPU_DESCRIPTOR_HANDLE>& D3DRenderTarget::getColorDescHandles() const
+    {
+        return m_colorRenderTargets;
+    }
+
+    inline const D3D12_CPU_DESCRIPTOR_HANDLE& D3DRenderTarget::getDepthStencilDescHandles() const
+    {
+        return m_depthStencilRenderTarget;
+    }
+
+    inline const RenderPassDescription::RenderPassDesc& D3DRenderTarget::getDescription() const
+    {
+        ASSERT(m_renderState, "nullptr");
+        return m_renderState->getDescription();
+    }
+
+    inline const std::vector<Image*>& D3DRenderTarget::getImages() const
+    {
+        return m_images;
+    }
+
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 
 } //namespace dx3d

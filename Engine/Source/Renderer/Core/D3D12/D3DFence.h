@@ -23,9 +23,6 @@ namespace dx3d
         explicit D3DFence(ID3D12Device* device, u64 value = 0) noexcept;
         ~D3DFence();
 
-        D3DFence() = delete;
-        D3DFence(const D3DFence&) = delete;
-
         bool signal(u64 value);
         bool signal(ID3D12CommandQueue* queue);
         bool wait(u64 value);
@@ -44,6 +41,9 @@ namespace dx3d
 
     private:
 
+        D3DFence() = delete;
+        D3DFence(const D3DFence&) = delete;
+
         ID3D12Device* const m_device;
 
         HANDLE m_fenceEvent;
@@ -51,6 +51,17 @@ namespace dx3d
 
         std::atomic<u64> m_value;
     };
+
+    inline u64 D3DFence::getValue() const
+    {
+        return m_value;
+    }
+
+    inline ID3D12Fence* D3DFence::getHandle() const
+    {
+        ASSERT(m_fence, "nullptr");
+        return m_fence;
+    }
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 

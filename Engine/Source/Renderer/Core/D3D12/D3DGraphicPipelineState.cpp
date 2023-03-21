@@ -608,16 +608,6 @@ void D3DGraphicPipelineState::destroy()
     SAFE_DELETE(m_pipelineState);
 }
 
-const std::vector<u32>& D3DGraphicPipelineState::getBuffersStrides() const
-{
-    return m_buffersStride;
-}
-
-D3D12_PRIMITIVE_TOPOLOGY D3DGraphicPipelineState::getTopology() const
-{
-    return m_topology;
-}
-
 bool D3DGraphicPipelineState::compileShader(const ShaderHeader* header, const void* source, u32 size)
 {
     m_bytecode[toEnumType(header->_type)].BytecodeLength = static_cast<u32>(size);

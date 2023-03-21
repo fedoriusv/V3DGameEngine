@@ -38,7 +38,7 @@ namespace dx3d
     * D3DRootSignatureManager final class. DirectX Render side
     */
 
-    class D3DRootSignatureManager
+    class D3DRootSignatureManager final
     {
     public:
 

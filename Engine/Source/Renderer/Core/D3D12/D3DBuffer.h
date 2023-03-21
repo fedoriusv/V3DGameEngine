@@ -75,6 +75,33 @@ namespace dx3d
 #endif
     };
 
+    inline u64 D3DBuffer::getSize() const
+    {
+        return m_size;
+    }
+
+    inline ID3D12Resource* D3DBuffer::getResource() const
+    {
+        ASSERT(m_resource, "nullptr");
+        return m_resource;
+    }
+
+    inline D3D12_GPU_VIRTUAL_ADDRESS D3DBuffer::getGPUAddress() const
+    {
+        ASSERT(m_resource, "nullptr");
+        return m_resource->GetGPUVirtualAddress();
+    }
+
+    inline D3D12_RESOURCE_STATES D3DBuffer::getState() const
+    {
+        return m_state;
+    }
+
+    inline D3D12_RESOURCE_STATES D3DBuffer::setState(D3D12_RESOURCE_STATES state)
+    {
+        return std::exchange(m_state, state);
+    }
+
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
 } //namespace dx3d

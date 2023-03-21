@@ -57,7 +57,7 @@ namespace dx3d
 
         friend class D3DMemory;
 
-        ID3D12Device* m_device;
+        ID3D12Device* const m_device;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

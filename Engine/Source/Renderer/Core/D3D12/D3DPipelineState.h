@@ -44,6 +44,18 @@ namespace dx3d
         SignatureParameters m_signatureParameters;
     };
 
+    inline ID3D12PipelineState* D3DPipelineState::getHandle() const
+    {
+        ASSERT(m_pipelineState, "nullptr");
+        return m_pipelineState;
+    }
+
+    inline ID3D12RootSignature* D3DPipelineState::getSignatureHandle() const
+    {
+        ASSERT(m_rootSignature, "nullptr");
+        return m_rootSignature;
+    }
+
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
 } //namespace dx3d

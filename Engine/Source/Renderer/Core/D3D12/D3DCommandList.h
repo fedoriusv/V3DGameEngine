@@ -97,6 +97,12 @@ namespace dx3d
         std::list<D3DResource*> m_resources;
     };
 
+    inline ID3D12CommandList* D3DCommandList::getHandle() const
+    {
+        ASSERT(m_commandList, "nullptr");
+        return m_commandList;
+    }
+
     inline bool D3DCommandList::isReadyForRecord() const
     {
         return m_status == Status::ReadyToRecord;

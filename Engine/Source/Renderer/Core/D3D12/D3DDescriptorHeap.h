@@ -102,12 +102,14 @@ namespace dx3d
         explicit D3DDescriptorHeap(ID3D12DescriptorHeap* heap, D3D12_DESCRIPTOR_HEAP_DESC& desc) noexcept;
         ~D3DDescriptorHeap();
 
-        D3D12_DESCRIPTOR_HEAP_DESC getDescription() const;
+        const D3D12_DESCRIPTOR_HEAP_DESC& getDescription() const;
         ID3D12DescriptorHeap* getHandle() const;
 
         D3D12_CPU_DESCRIPTOR_HANDLE getCPUHandle() const;
         D3D12_CPU_DESCRIPTOR_HANDLE getCPUHandle(u32 offset) const;
+
         D3D12_GPU_DESCRIPTOR_HANDLE getGPUHandle() const;
+        D3D12_GPU_DESCRIPTOR_HANDLE getGPUHandle(u32 offset) const;
 
         u32 getIncrement() const;
 
@@ -119,6 +121,46 @@ namespace dx3d
 
         friend D3DDescriptorHeapManager;
     };
+
+    inline const D3D12_DESCRIPTOR_HEAP_DESC& D3DDescriptorHeap::getDescription() const
+    {
+        return m_desc;
+    }
+
+    inline ID3D12DescriptorHeap* D3DDescriptorHeap::getHandle() const
+    {
+        ASSERT(m_heap, "nullptr");
+        return m_heap;
+    }
+
+    inline D3D12_CPU_DESCRIPTOR_HANDLE D3DDescriptorHeap::getCPUHandle() const
+    {
+        ASSERT(m_heap, "nullptr");
+        return m_heap->GetCPUDescriptorHandleForHeapStart();
+    }
+
+    inline D3D12_CPU_DESCRIPTOR_HANDLE D3DDescriptorHeap::getCPUHandle(u32 offset) const
+    {
+        ASSERT(m_heap, "nullptr");
+        return D3D12_CPU_DESCRIPTOR_HANDLE(m_heap->GetCPUDescriptorHandleForHeapStart().ptr + m_increment * offset);
+    }
+
+    inline D3D12_GPU_DESCRIPTOR_HANDLE D3DDescriptorHeap::getGPUHandle() const
+    {
+        ASSERT(m_heap, "nullptr");
+        return m_heap->GetGPUDescriptorHandleForHeapStart();
+    }
+
+    inline D3D12_GPU_DESCRIPTOR_HANDLE D3DDescriptorHeap::getGPUHandle(u32 offset) const
+    {
+        ASSERT(m_heap, "nullptr");
+        return D3D12_GPU_DESCRIPTOR_HANDLE(m_heap->GetGPUDescriptorHandleForHeapStart().ptr + m_increment * offset);
+    }
+
+    inline u32 D3DDescriptorHeap::getIncrement() const
+    {
+        return m_increment;
+    }
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 

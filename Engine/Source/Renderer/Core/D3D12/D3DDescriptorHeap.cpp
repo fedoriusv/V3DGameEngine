@@ -25,39 +25,6 @@ D3DDescriptorHeap::~D3DDescriptorHeap()
     SAFE_DELETE(m_heap);
 }
 
-D3D12_DESCRIPTOR_HEAP_DESC D3DDescriptorHeap::getDescription() const
-{
-    return m_desc;
-}
-
-ID3D12DescriptorHeap* D3DDescriptorHeap::getHandle() const
-{
-    return m_heap;
-}
-
-D3D12_CPU_DESCRIPTOR_HANDLE D3DDescriptorHeap::getCPUHandle() const
-{
-    ASSERT(m_heap, "nullptr");
-    return m_heap->GetCPUDescriptorHandleForHeapStart();
-}
-
-D3D12_CPU_DESCRIPTOR_HANDLE D3DDescriptorHeap::getCPUHandle(u32 offset) const
-{
-    ASSERT(m_heap, "nullptr");
-    return D3D12_CPU_DESCRIPTOR_HANDLE(m_heap->GetCPUDescriptorHandleForHeapStart().ptr + m_increment * offset);
-}
-
-D3D12_GPU_DESCRIPTOR_HANDLE D3DDescriptorHeap::getGPUHandle() const
-{
-    ASSERT(m_heap, "nullptr");
-    return m_heap->GetGPUDescriptorHandleForHeapStart();
-}
-
-u32 D3DDescriptorHeap::getIncrement() const
-{
-    return m_increment;
-}
-
 D3DDescriptorHeapManager::D3DDescriptorHeapManager(ID3D12Device* device) noexcept
     : m_device(device)
 {

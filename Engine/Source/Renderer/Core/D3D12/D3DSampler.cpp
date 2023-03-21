@@ -140,11 +140,6 @@ void D3DSampler::destroy()
     //nothing
 }
 
-const D3D12_SAMPLER_DESC& D3DSampler::getDesc() const
-{
-    return m_sampler;
-}
-
 } //namespace dx3d
 } //namespace renderer
 } //namespace v3d

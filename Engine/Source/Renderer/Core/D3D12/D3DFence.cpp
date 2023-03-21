@@ -185,24 +185,12 @@ u64 D3DFence::incrementValue()
     return value;
 }
 
-u64 D3DFence::getValue() const
-{
-    return m_value;
-}
-
 u64 D3DFence::getFenceValue() const
 {
     ASSERT(m_fence, "nullptr");
     u64 value = m_fence->GetCompletedValue();
     return value;
 }
-
-ID3D12Fence* D3DFence::getHandle() const
-{
-    ASSERT(m_fence, "nullptr");
-    return m_fence;
-}
-
 
 } //namespace dx3d
 } //namespace renderer

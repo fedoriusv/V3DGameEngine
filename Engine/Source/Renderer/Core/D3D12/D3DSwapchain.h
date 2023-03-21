@@ -68,6 +68,17 @@ namespace dx3d
 
     };
 
+    inline D3DImage* D3DSwapchain::getSwapchainImage() const
+    {
+        ASSERT(m_renderTargets[m_frameIndex], "nullptr");
+        return m_renderTargets[m_frameIndex];
+    }
+
+    inline bool D3DSwapchain::vsync() const
+    {
+        return m_syncInterval > 0;
+    }
+
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #if defined(PLATFORM_WINDOWS)

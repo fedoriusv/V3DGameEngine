@@ -40,17 +40,6 @@ bool D3DSwapchain::resize(const SwapchainConfig& config)
     return false;
 }
 
-D3DImage* D3DSwapchain::getSwapchainImage() const
-{
-    ASSERT(m_renderTargets[m_frameIndex], "nullptr");
-    return m_renderTargets[m_frameIndex];
-}
-
-bool D3DSwapchain::vsync() const
-{
-    return m_syncInterval > 0;
-}
-
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #if defined(PLATFORM_WINDOWS)

@@ -1591,31 +1591,6 @@ bool D3DImage::internalUpdate(Context* context, const core::Dimension3D& offsets
     return true;
 }
 
-const core::Dimension3D& D3DImage::getSize() const
-{
-    return m_size;
-}
-
-D3D12_RESOURCE_DIMENSION D3DImage::getDimension() const
-{
-    return m_dimension;
-}
-
-DXGI_FORMAT D3DImage::getFormat() const
-{
-    return m_format;
-}
-
-Format D3DImage::getOriginFormat() const
-{
-    return m_originFormat;
-}
-
-u32 D3DImage::getCountSamples() const
-{
-    return m_samples;
-}
-
 D3D12_RESOURCE_STATES D3DImage::getState() const
 {
     return m_state.front();
@@ -1645,17 +1620,6 @@ D3D12_RESOURCE_STATES D3DImage::setState(const Image::Subresource& subresource, 
     m_state.front() = state;
 
     return oldState;
-}
-
-D3DImage* D3DImage::getResolveImage() const
-{
-    return m_resolveImage;
-}
-
-ID3D12Resource* D3DImage::getResource() const
-{
-    ASSERT(m_resource, "nullptr");
-    return m_resource;
 }
 
 D3DImage::ViewKey::ViewKey() noexcept

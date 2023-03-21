@@ -59,6 +59,16 @@ namespace dx3d
         D3D12_PRIMITIVE_TOPOLOGY m_topology;
     };
 
+    inline const std::vector<u32>& D3DGraphicPipelineState::getBuffersStrides() const
+    {
+        return m_buffersStride;
+    }
+
+    inline D3D12_PRIMITIVE_TOPOLOGY D3DGraphicPipelineState::getTopology() const
+    {
+        return m_topology;
+    }
+
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
 } //namespace dx3d

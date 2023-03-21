@@ -102,12 +102,6 @@ D3DCommandList::~D3DCommandList()
     ASSERT(m_resources.empty(), "not empty");
 }
 
-ID3D12CommandList* D3DCommandList::getHandle() const
-{
-    ASSERT(m_commandList, "nullptr");
-    return m_commandList;
-}
-
 void D3DCommandList::init(ID3D12CommandList* cmdList, ID3D12CommandAllocator* allocator, bool own)
 {
     m_commandAllocator = allocator;
@@ -331,12 +325,6 @@ void D3DGraphicsCommandList::transition(D3DImage* image, const Image::Subresourc
     {
         m_transition.execute(this);
     }
-}
-
-ID3D12GraphicsCommandList1* D3DGraphicsCommandList::getHandle() const
-{
-    ASSERT(m_commandList, "nullptr");
-    return static_cast<ID3D12GraphicsCommandList1*>(m_commandList);
 }
 
 void D3DGraphicsCommandList::clearRenderTarget(D3D12_CPU_DESCRIPTOR_HANDLE renderTargetView, const f32 color[4], const std::vector<D3D12_RECT>& rect)
