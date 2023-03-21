@@ -71,7 +71,7 @@ D3DBuffer::D3DBuffer(ID3D12Device* device, Buffer::BufferType type, StreamBuffer
         break;
     }
 
-    case Buffer::BufferType::BufferType_UniformBuffer:
+    case Buffer::BufferType::BufferType_ConstantBuffer:
     {
         m_heapProperties = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD);
         m_state = D3D12_RESOURCE_STATE_GENERIC_READ;

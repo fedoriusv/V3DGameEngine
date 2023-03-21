@@ -120,7 +120,7 @@ bool VulkanBuffer::create()
         break;
     }
 
-    case Buffer::BufferType::BufferType_UniformBuffer:
+    case Buffer::BufferType::BufferType_ConstantBuffer:
     {
         usageBuffer |= VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
         memoryFlags |= VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;

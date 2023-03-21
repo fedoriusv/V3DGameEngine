@@ -204,7 +204,7 @@ bool VulkanUniformBufferManager::freeUniformBufferPool(VulkanUniformBufferPool* 
 VulkanUniformBufferManager::VulkanUniformBufferPool * VulkanUniformBufferManager::getNewPool(u64 size, u32 count)
 {
     VulkanUniformBufferPool* newPool = new VulkanUniformBufferPool();
-    newPool->_buffer = new VulkanBuffer(m_memoryManager, m_device, Buffer::BufferType::BufferType_UniformBuffer, 0, size);
+    newPool->_buffer = new VulkanBuffer(m_memoryManager, m_device, Buffer::BufferType::BufferType_ConstantBuffer, 0, size);
     newPool->_usedSize = 0;
     newPool->_freeSize = size;
     newPool->_poolSize = size;

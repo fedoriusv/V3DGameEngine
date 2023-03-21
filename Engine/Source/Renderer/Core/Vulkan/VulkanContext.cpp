@@ -1701,7 +1701,7 @@ Buffer* VulkanContext::createBuffer(Buffer::BufferType type, u16 usageFlag, u64 
     RenderFrameProfiler::StackProfiler stackProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::CreateResources);
 #endif //FRAME_PROFILER_ENABLE
 
-    if (type == Buffer::BufferType::BufferType_VertexBuffer || type == Buffer::BufferType::BufferType_IndexBuffer || type == Buffer::BufferType::BufferType_UniformBuffer)
+    if (type == Buffer::BufferType::BufferType_VertexBuffer || type == Buffer::BufferType::BufferType_IndexBuffer || type == Buffer::BufferType::BufferType_ConstantBuffer)
     {
         return new VulkanBuffer(m_bufferMemoryManager, m_deviceInfo._device, type, usageFlag, size, name);
     }
