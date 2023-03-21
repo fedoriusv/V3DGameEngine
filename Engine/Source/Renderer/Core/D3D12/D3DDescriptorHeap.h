@@ -29,11 +29,11 @@ namespace dx3d
     */
     struct D3DBinding
     {
-        u32 _space : 8 = 0;
-        u32 _register : 15 = 0;
-        u32 _array : 5 = 0;
-        D3D12_DESCRIPTOR_RANGE_TYPE _type : 3 = D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
-        u32 _direct : 1 = false;
+        u32 _space                          : 8  = 0;
+        u32 _register                       : 15 = 0;
+        u32 _array                          : 5  = 0;
+        D3D12_DESCRIPTOR_RANGE_TYPE _type   : 3 = D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
+        u32 _direct                         : 1 = false;
 
         u32 _pad = 0;
 
