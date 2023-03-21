@@ -78,6 +78,10 @@ namespace vk
         bool debugUtilsObjectNameEnabled = false;
         bool pipelineExecutablePropertiesEnabled = false;
 
+        u32 memoryImagePoolSize = 64 * 1024 * 1024; //default: 64MB
+        u32 memoryBufferPoolSize = 4 * 1024 * 1024; //default: 4MB
+        u32 memoryMinQueryPoolCount = 1024;//default: 1024
+
     private:
 
         friend class VulkanContext;

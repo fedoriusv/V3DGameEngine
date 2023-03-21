@@ -245,8 +245,8 @@ bool VulkanContext::initialize()
     }
     else
     {
-        m_imageMemoryManager = new PoolVulkanMemoryAllocator(m_deviceInfo._device, 64 * 1024 * 1024); //64MB
-        m_bufferMemoryManager = new PoolVulkanMemoryAllocator(m_deviceInfo._device, 4 * 1024 * 1024); //4MB
+        m_imageMemoryManager = new PoolVulkanMemoryAllocator(m_deviceInfo._device, m_deviceCaps.memoryImagePoolSize);
+        m_bufferMemoryManager = new PoolVulkanMemoryAllocator(m_deviceInfo._device, m_deviceCaps.memoryBufferPoolSize);
     }
 
     m_cmdBufferManager = new VulkanCommandBufferManager(this, &m_deviceInfo, m_semaphoreManager, m_queueList[0]);
@@ -256,7 +256,7 @@ bool VulkanContext::initialize()
     m_uniformBufferManager = new VulkanUniformBufferManager(m_deviceInfo._device, m_resourceDeleter);
     m_pipelineLayoutManager = new VulkanPipelineLayoutManager(m_deviceInfo._device);
     m_descriptorSetManager = new VulkanDescriptorSetManager(m_deviceInfo._device, m_swapchain->getSwapchainImageCount());
-    m_renderQueryPoolManager = new VulkanQueryPoolManager(m_deviceInfo._device, 1024);
+    m_renderQueryPoolManager = new VulkanQueryPoolManager(m_deviceInfo._device, m_deviceCaps.memoryMinQueryPoolCount);
 
     m_renderpassManager = new RenderPassManager(this);
     m_framebufferManager = new FramebufferManager(this);

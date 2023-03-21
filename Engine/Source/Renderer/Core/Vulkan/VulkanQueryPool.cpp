@@ -90,14 +90,14 @@ VulkanRenderQueryState* VulkanQueryPoolManager::acquireRenderQuery(QueryType typ
         VulkanRenderQueryBatch* poolBatch = nullptr;
         if (pools._freeQueryPools.empty())
         {
+            u32 newPoolSize = k_poolSize;
             if (requestedSize > k_poolSize)
             {
-                LOG_ERROR("VulkanQueryPoolManager::acquireRenderQuery: pool size less than reqested. PoolSize: %d, reqested %d", k_poolSize, requestedSize);
-                ASSERT(false, "pool size less than reqested");
+                LOG_WARNING("VulkanQueryPoolManager::acquireRenderQuery: min pool size less than reqested. memoryMinQueryPoolCount: %d, reqested %d", k_poolSize, requestedSize);
+                newPoolSize = requestedSize;
 
-                return nullptr;
             }
-            pools._currentQueryPool = VulkanQueryPoolManager::getQueryPool(type, k_poolSize);
+            pools._currentQueryPool = VulkanQueryPoolManager::getQueryPool(type, newPoolSize);
             ASSERT(pools._currentQueryPool, "nullptr");
 
             ASSERT(m_batchQuery.find(pools._currentQueryPool) == m_batchQuery.end(), "already present");
