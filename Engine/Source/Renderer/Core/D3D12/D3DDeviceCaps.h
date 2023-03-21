@@ -36,6 +36,8 @@ namespace dx3d
         bool immediateSubmitUpload = false;
         bool immediateTransition = false;
 
+        u64 memoryConstantBufferSize = 1024;
+
     private:
 
         friend class D3DGraphicContext;

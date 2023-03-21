@@ -70,7 +70,8 @@ namespace dx3d
         u64 m_size;
 
         bool m_isMapped;
-#if D3D_DEBUG
+        UINT8* m_mappedData;
+#if D3D_DEBUG_MARKERS
         std::string m_debugName;
 #endif
     };

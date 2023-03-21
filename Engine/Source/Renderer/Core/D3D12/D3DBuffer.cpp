@@ -34,7 +34,8 @@ D3DBuffer::D3DBuffer(ID3D12Device* device, Buffer::BufferType type, StreamBuffer
     , m_size(size)
 
     , m_isMapped(false)
-#if D3D_DEBUG
+    , m_mappedData(nullptr)
+#if D3D_DEBUG_MARKERS
     , m_debugName(name)
 #endif
 {
@@ -171,11 +172,24 @@ bool D3DBuffer::create()
     m_resource->SetName(LPCWSTR(wtext));
 #endif //D3D_DEBUG_MARKERS
 
+    if (m_type == Buffer::BufferType::BufferType_ConstantBuffer) //Always map for CB
+    {
+        ASSERT(m_heapProperties.IsCPUAccessible(), "must be mappable");
+        m_mappedData = reinterpret_cast<UINT8*>(map(0, m_size));
+        ASSERT(m_mappedData, "map is failed");
+    }
+
     return true;
 }
 
 void D3DBuffer::destroy()
 {
+    if (m_type == Buffer::BufferType::BufferType_ConstantBuffer) //Always map for CB
+    {
+        unmap(0, m_size);
+        m_mappedData = nullptr;
+    }
+
     ASSERT(!m_isMapped, "must be false");
     SAFE_DELETE(m_resource);
     if (m_allocator)
@@ -191,14 +205,14 @@ bool D3DBuffer::write(Context* context, u32 offset, u64 size, const void* data)
     if (m_heapProperties.IsCPUAccessible())
     {
         UINT8* bufferData = nullptr;
-        CD3DX12_RANGE readRange = { offset, offset + size };
+        CD3DX12_RANGE readRange = { 0, 0 }; //Don't care about read
         HRESULT result = m_resource->Map(0, &readRange, reinterpret_cast<void**>(&bufferData));
         if (FAILED(result))
         {
             LOG_ERROR("D3DBuffer::write map failed %s", D3DDebug::stringError(result).c_str());
             return false;
         }
-        memcpy(bufferData, data, size);
+        memcpy(bufferData + offset, data, size);
         m_resource->Unmap(0, &readRange);
     }
     else
@@ -273,9 +287,14 @@ bool D3DBuffer::read(Context* context, u32 offset, u64 size, const std::function
 void* D3DBuffer::map(u32 offset, u64 size)
 {
     ASSERT(m_resource, "nullptr");
-    ASSERT(!m_isMapped, "must be not mapped");
+    ASSERT(!m_isMapped || m_type == Buffer::BufferType::BufferType_ConstantBuffer, "must be not mapped or constant buffer");
+    ASSERT(offset + size <= m_size, "wrong range");
 
     UINT8* bufferData = nullptr;
+    if (m_mappedData)
+    {
+        return m_mappedData + offset;
+    }
     if (!m_isMapped)
     {
         if (m_heapProperties.IsCPUAccessible())
@@ -288,6 +307,7 @@ void* D3DBuffer::map(u32 offset, u64 size)
                 return nullptr;
             }
 
+            bufferData += offset;
             m_isMapped = true;
         }
 

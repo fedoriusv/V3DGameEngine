@@ -28,20 +28,19 @@ namespace dx3d
         explicit D3DConstantBufferManager(ID3D12Device* device, D3DHeapAllocator* allocator = nullptr) noexcept;
         ~D3DConstantBufferManager();
 
-        D3DBuffer* acquireConstanBuffer(u64 requestSize);
+        std::tuple<D3DBuffer*, u32> acquireConstanBuffer(u64 requestSize);
 
-        void updateStatus();
+        void updateConstantBufferStatus();
         void destroyConstantBuffers();
 
     private:
 
-        ID3D12Device* m_device;
-        D3DHeapAllocator* m_allocator;
+        ID3D12Device* const m_device;
+        D3DHeapAllocator* const m_allocator;
 
         std::queue<D3DBuffer*> m_freeConstantBuffers;
         std::list<D3DBuffer*> m_usedConstantBuffers;
-
-        static const u32 k_constantBufferSize = 1024U;
+        std::tuple<D3DBuffer*, u32> m_currentConstantBuffer;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

@@ -362,7 +362,7 @@ void D3DGraphicContext::destroy()
 
     if (m_constantBufferManager)
     {
-        m_constantBufferManager->updateStatus();
+        m_constantBufferManager->updateConstantBufferStatus();
         m_constantBufferManager->destroyConstantBuffers();
 
         delete m_constantBufferManager;
@@ -534,7 +534,7 @@ void D3DGraphicContext::presentFrame()
     m_boundState.reset();
     m_descriptorState->updateStatus();
     ASSERT(!m_currentState.commandList(), "not nullptr");
-    m_constantBufferManager->updateStatus();
+    m_constantBufferManager->updateConstantBufferStatus();
     m_renderQueryManager->update();
     m_delayedDeleter.update(false);
 
@@ -764,9 +764,11 @@ void D3DGraphicContext::bindUniformsBuffer(const Shader* shader, u32 bindIndex, 
     u32 binding = shader->getReflectionInfo()._uniformBuffers[bindIndex]._binding;
     u32 array = shader->getReflectionInfo()._uniformBuffers[bindIndex]._array;
 
-    D3DBuffer* constantBuffer = m_constantBufferManager->acquireConstanBuffer(size);
+    auto [constantBuffer, constantBufferOffset] = m_constantBufferManager->acquireConstanBuffer(size);
     ASSERT(constantBuffer, "nulllptr");
-    constantBuffer->write(this, offset, size, data);
+    ASSERT(constantBufferOffset < constantBuffer->getSize(), "wrong offset");
+    void* constantBufferData = constantBuffer->map(constantBufferOffset + offset, size);
+    memcpy(constantBufferData, data, size);
 
     m_descriptorState->bindDescriptor<D3DBuffer, false>(space, binding, array, constantBuffer, 0, size);
 }
@@ -1168,7 +1170,7 @@ Buffer* D3DGraphicContext::createBuffer(Buffer::BufferType type, u16 usageFlag, 
     RenderFrameProfiler::StackProfiler stackProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::CreateResources);
 #endif //FRAME_PROFILER_ENABLE
 
-    if (type == Buffer::BufferType::BufferType_VertexBuffer || type == Buffer::BufferType::BufferType_IndexBuffer || type == Buffer::BufferType::BufferType_UniformBuffer)
+    if (type == Buffer::BufferType::BufferType_VertexBuffer || type == Buffer::BufferType::BufferType_IndexBuffer || type == Buffer::BufferType::BufferType_ConstantBuffer)
     {
         return new D3DBuffer(m_device, type, usageFlag, size, name, m_heapAllocator);
     }
@@ -1339,6 +1341,7 @@ void D3DGraphicContext::clearBackbuffer(const core::Vector4D& color)
 
 bool D3DGraphicContext::perpareDraw(D3DGraphicsCommandList* cmdList)
 {
+
     ASSERT(m_currentState._pipeline && m_currentState._pipeline->getType() == Pipeline::PipelineType::PipelineType_Graphic, "wrong");
     D3DGraphicPipelineState* dxPipeline = static_cast<D3DGraphicPipelineState*>(m_currentState._pipeline);
 
