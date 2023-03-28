@@ -159,6 +159,7 @@ bool D3DDebug::attachDevice(ID3D12Device* device, D3D12_DEBUG_FEATURE flags, D3D
     }
 
     //Query Info
+    if (!D3DDebug::isRenderDocPresent(device)) //can't work togather
     {
         {
             ASSERT(!m_infoQueue, "already has attached");
@@ -248,7 +249,11 @@ bool D3DDebug::isRenderDocPresent(ID3D12Device* device)
         {
             result = true;
         }
-        SAFE_DELETE(RenderDoc);
+
+        if (RenderDoc)
+        {
+            RenderDoc->Release();
+        }
     }
 
     return result;
