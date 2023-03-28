@@ -42,7 +42,7 @@ namespace dx3d
         bool write(Context* context, u32 offset, u64 size, const void* data) override;
         bool read(Context* context, u32 offset, u64 size, const std::function<void(u32, void*)>& readback) override;
 
-        void* map(u32 offset, u64 size);
+        void* map(u32 offset, u64 size, bool reading = false);
         void unmap(u32 offset, u64 size);
 
         ID3D12Resource* getResource() const;
@@ -70,7 +70,7 @@ namespace dx3d
         u64 m_size;
 
         bool m_isMapped;
-        UINT8* m_mappedData;
+        bool m_isReading;
 #if D3D_DEBUG_MARKERS
         std::string m_debugName;
 #endif

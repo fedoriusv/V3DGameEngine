@@ -776,10 +776,9 @@ void D3DGraphicContext::bindUniformsBuffer(const Shader* shader, u32 bindIndex, 
     auto [constantBuffer, constantBufferOffset] = m_constantBufferManager->acquireConstanBuffer(size);
     ASSERT(constantBuffer, "nulllptr");
     ASSERT(constantBufferOffset < constantBuffer->getSize(), "wrong offset");
-    void* constantBufferData = constantBuffer->map(constantBufferOffset + offset, size);
-    memcpy(constantBufferData, data, size);
+    constantBuffer->update(constantBufferOffset + offset, size, data);
 
-    m_descriptorState->bindDescriptor<D3DBuffer, false>(space, binding, array, constantBuffer, constantBufferOffset, size);
+    m_descriptorState->bindDescriptor<D3DBuffer, false>(space, binding, array, constantBuffer->getBuffer(), constantBufferOffset, size);
 }
 
 void D3DGraphicContext::bindStorageImage(const Shader* shader, u32 bindIndex, const Image* image, s32 layer, s32 mip)

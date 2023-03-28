@@ -12,6 +12,59 @@ namespace renderer
 namespace dx3d
 {
 
+
+D3DConstantBuffer::D3DConstantBuffer(ID3D12Device* device, u32 size, D3DHeapAllocator* allocator) noexcept
+    : m_buffer(new D3DBuffer(device, Buffer::BufferType::BufferType_ConstantBuffer, 0, size, "ConstantBuffer", allocator))
+    , m_mappedData(nullptr)
+{
+    LOG_DEBUG("D3DConstantBuffer::D3DConstantBuffer constructor %llx", this);
+}
+
+D3DConstantBuffer::~D3DConstantBuffer()
+{
+    LOG_DEBUG("D3DConstantBuffer::~D3DConstantBuffer destructor %llx", this);
+    ASSERT(!m_mappedData, "must be unmaped");
+    if (m_buffer)
+    {
+        delete m_buffer;
+        m_buffer = nullptr;
+    }
+}
+
+bool D3DConstantBuffer::create()
+{
+    ASSERT(m_buffer, "nullptr");
+    if (!m_buffer->create())
+    {
+        return false;
+    }
+
+    m_mappedData = m_buffer->map(0, m_buffer->getSize());
+    ASSERT(m_mappedData, "can't to map");
+
+    return true;
+}
+
+void D3DConstantBuffer::destroy()
+{
+    ASSERT(m_buffer, "nullptr");
+
+    m_buffer->unmap(0, m_buffer->getSize());
+    m_mappedData = nullptr;
+
+    m_buffer->destroy();
+}
+
+void D3DConstantBuffer::update(u32 offset, u32 size, const void* data)
+{
+    ASSERT(m_buffer, "nullptr");
+    ASSERT(m_mappedData, "not mapped");
+
+    ASSERT(offset + size <= m_buffer->getSize(), "range out");
+    memcpy(reinterpret_cast<u8*>(m_mappedData) + offset, data, size);
+}
+
+
 D3DConstantBufferManager::D3DConstantBufferManager(ID3D12Device* device, D3DHeapAllocator* allocator) noexcept
     : m_device(device)
     , m_allocator(allocator)
@@ -29,7 +82,7 @@ D3DConstantBufferManager::~D3DConstantBufferManager()
     ASSERT(!std::get<0>(m_currentConstantBuffer), "not nullptr");
 }
 
-std::tuple<D3DBuffer*, u32> D3DConstantBufferManager::acquireConstanBuffer(u64 requestSize)
+std::tuple<D3DConstantBuffer*, u32> D3DConstantBufferManager::acquireConstanBuffer(u64 requestSize)
 {
     u64 requestedSize = core::alignUp<u64>(requestSize, D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT);
 
@@ -56,7 +109,7 @@ std::tuple<D3DBuffer*, u32> D3DConstantBufferManager::acquireConstanBuffer(u64 r
 
     if (!m_freeConstantBuffers.empty())
     {
-        D3DBuffer* buffer = m_freeConstantBuffers.front();
+        D3DConstantBuffer* buffer = m_freeConstantBuffers.front();
         if (buffer->getSize() < requestedSize)
         {
             LOG_WARNING("D3DConstantBufferManager::acquireConstanBuffer: Buffer size is less then requested. Size %d, Requested %d", buffer->getSize(), requestedSize);
@@ -72,7 +125,7 @@ std::tuple<D3DBuffer*, u32> D3DConstantBufferManager::acquireConstanBuffer(u64 r
     }
 
     ASSERT(requestedSize <= desiredBufferSize, "small size");
-    D3DBuffer* newBuffer = new D3DBuffer(m_device, Buffer::BufferType::BufferType_ConstantBuffer, 0, desiredBufferSize, "ConstantBuffer", m_allocator);
+    D3DConstantBuffer* newBuffer = new D3DConstantBuffer(m_device, desiredBufferSize, m_allocator);
     if (!newBuffer->create())
     {
         LOG_ERROR("D3DConstantBufferManager::acquireConstanBuffer: create buffer is failed");
@@ -95,7 +148,7 @@ void D3DConstantBufferManager::updateConstantBufferStatus()
 
     for (auto iter  = m_usedConstantBuffers.begin(); iter != m_usedConstantBuffers.end();)
     {
-        D3DBuffer* buffer = (*iter);
+        D3DConstantBuffer* buffer = (*iter);
         if (buffer->isUsed())
         {
             ++iter;
