@@ -20,7 +20,7 @@ HRESULT D3DWrapper::EnableExperimentalFeatures(UINT NumFeatures, const IID* pIID
 
 HRESULT D3DWrapper::GetDebugInterface(REFIID riid, void** ppvDebug) noexcept
 {
-    return  D3D12GetDebugInterface(riid, ppvDebug);
+    return D3D12GetDebugInterface(riid, ppvDebug);
 }
 
 #elif defined(PLATFORM_XBOX)

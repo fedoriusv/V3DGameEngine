@@ -1,5 +1,6 @@
 #include "D3DDeviceCaps.h"
 #include "Utils/Logger.h"
+#include "Platform/Platform.h"
 
 #ifdef D3D_RENDER
 #include "D3DDebug.h"
@@ -14,6 +15,21 @@ namespace dx3d
 
 void D3DDeviceCaps::initialize(IDXGIAdapter1* adapter, ID3D12Device* device)
 {
+    {
+        DXGI_ADAPTER_DESC desc = {};
+        ASSERT(SUCCEEDED(adapter->GetDesc(&desc)), "failed");
+
+        LOG_INFO("D3DDeviceCaps::initialize: Adapter: %s", platform::Platform::wideToUtf8(desc.Description).c_str());
+        LOG_INFO("D3DDeviceCaps::initialize: Device ID: %u", desc.DeviceId);
+        LOG_INFO("D3DDeviceCaps::initialize: Vendor: %u", desc.VendorId);
+        LOG_INFO("D3DDeviceCaps::initialize: Revision: %u", desc.Revision);
+        LOG_INFO("D3DDeviceCaps::initialize: Dedicated Video Memory: %u KB", (u32)(desc.DedicatedVideoMemory / 1024.f));
+        LOG_INFO("D3DDeviceCaps::initialize: Dedicated System Memory: %u KB", (u32)(desc.DedicatedSystemMemory / 1024.f));
+        LOG_INFO("D3DDeviceCaps::initialize: Shared System Memory: %u KB", (u32)(desc.SharedSystemMemory / 1024.f));
+
+        vendorID = (VendorID)desc.VendorId;
+    }
+
     {
         rootSignatureVersion.HighestVersion = D3D_ROOT_SIGNATURE_VERSION_1_1;
         HRESULT result = device->CheckFeatureSupport(D3D12_FEATURE_ROOT_SIGNATURE, &rootSignatureVersion, sizeof(rootSignatureVersion));
@@ -45,6 +61,10 @@ void D3DDeviceCaps::initialize(IDXGIAdapter1* adapter, ID3D12Device* device)
         {
             LOG_WARNING("D3DDeviceCaps::initialize: CheckFeatureSupport D3D12_FEATURE_ARCHITECTURE is failed. Error %s", D3DDebug::stringError(result).c_str());
         }
+
+        LOG_INFO("D3DDeviceCaps::initialize: TiledRender: %s", featureArchitecture.TileBasedRenderer ? "supported": "not supported");
+        LOG_INFO("D3DDeviceCaps::initialize: UMA: %s ", featureArchitecture.UMA ? "supported" : "not supported");
+        LOG_INFO("D3DDeviceCaps::initialize: CacheCoherent: %s", featureArchitecture.CacheCoherentUMA ? "supported" : "not supported");
     }
 
     for (u32 i = 0; i < Format::Format_Count; ++i)
@@ -81,9 +101,25 @@ void D3DDeviceCaps::initialize(IDXGIAdapter1* adapter, ID3D12Device* device)
         }
     }
 
+    {
+        std::array<D3D_FEATURE_LEVEL, 3> featureLevels =
+        {
+            D3D_FEATURE_LEVEL_12_0,
+            D3D_FEATURE_LEVEL_12_1,
+            D3D_FEATURE_LEVEL_12_2,
+        };
+
+        D3D12_FEATURE_DATA_FEATURE_LEVELS shaderLevel = {};
+        shaderLevel.NumFeatureLevels = static_cast<UINT>(featureLevels.size());
+        shaderLevel.pFeatureLevelsRequested = featureLevels.data();
+        HRESULT result = device->CheckFeatureSupport(D3D12_FEATURE_FEATURE_LEVELS, &shaderLevel, sizeof(shaderLevel));
+        if (SUCCEEDED(result))
+        {
+            featureLevel = shaderLevel.MaxSupportedFeatureLevel;
+        }
+    }
 
     //set features
-
     if ((supportedShaderModel >= D3D_SHADER_MODEL_6_1) && (featureOptions3.ViewInstancingTier >= D3D12_VIEW_INSTANCING_TIER_2) && (D3D12_MAX_VIEW_INSTANCE_COUNT >= 6U)) //TODO D3D12_MAX_VIEW_INSTANCE_COUNT remove condition after api update
     {
         supportMultiview = true;
@@ -91,17 +127,6 @@ void D3DDeviceCaps::initialize(IDXGIAdapter1* adapter, ID3D12Device* device)
 
     globalComandListAllocator = false; //TODO has memory leak when command lists reset
     ASSERT(!immediateSubmitUpload, "not impl");
-
-#if D3D_DEBUG
-    {
-        DXGI_ADAPTER_DESC desc = {};
-        ASSERT(SUCCEEDED(adapter->GetDesc(&desc)), "failed");
-
-        LOG_INFO("D3DDeviceCaps::initialize: Device ID: %u", desc.DeviceId);
-        LOG_INFO("D3DDeviceCaps::initialize: Vendor: %u", desc.VendorId);
-        LOG_INFO("D3DDeviceCaps::initialize: Revision: %u", desc.Revision);
-    }
-#endif
 }
 
 } //namespace dx3d

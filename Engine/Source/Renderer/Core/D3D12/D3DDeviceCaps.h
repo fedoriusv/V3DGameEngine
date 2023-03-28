@@ -31,6 +31,7 @@ namespace dx3d
         D3D12_FEATURE_DATA_ARCHITECTURE featureArchitecture = {};
 
         D3D_SHADER_MODEL supportedShaderModel = D3D_SHADER_MODEL_5_1;
+        D3D_FEATURE_LEVEL featureLevel = D3D_FEATURE_LEVEL_12_0;
 
         bool globalComandListAllocator = false;
         bool immediateSubmitUpload = false;
