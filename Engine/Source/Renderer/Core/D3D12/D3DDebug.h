@@ -27,12 +27,15 @@ namespace dx3d
         D3DDebug() noexcept;
         ~D3DDebug();
 
-        bool attachDevice(ID3D12Device* device, D3D12_DEBUG_FEATURE flags);
+        bool attachDevice(ID3D12Device* device, D3D12_DEBUG_FEATURE flags, D3D12_MESSAGE_SEVERITY severityLevel);
         bool report(D3D12_RLDO_FLAGS flags);
+
+        static bool isRenderDocPresent(ID3D12Device* device);
 
     private:
 
         ID3D12DebugDevice2* m_debugDevice;
+        ID3D12InfoQueue1* m_infoQueue;
 #endif //PLATFORM_WINDOWS
     };
 
@@ -46,6 +49,11 @@ namespace dx3d
     class D3DDebugLayerMessageCallback final
     {
     public:
+
+        /**
+        *   Severity level
+        */
+        const static D3D12_MESSAGE_SEVERITY s_severityLevel = D3D12_MESSAGE_SEVERITY_WARNING;
 
         D3DDebugLayerMessageCallback(ID3D12Device* device) noexcept;
         D3DDebugLayerMessageCallback(const D3DDebugLayerMessageCallback&) = delete;

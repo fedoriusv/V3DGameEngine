@@ -30,9 +30,9 @@ namespace dx3d
 {
 
 #if (D3D_CURRENT_VERSION == D3D_VERSION_12_0)
-D3D_FEATURE_LEVEL D3DGraphicContext::s_featureLevel = D3D_FEATURE_LEVEL_12_0;
+    D3D_FEATURE_LEVEL D3DGraphicContext::s_featureLevel = D3D_FEATURE_LEVEL_12_0;
 #elif (D3D_CURRENT_VERSION == D3D_VERSION_12_1)
-D3D_FEATURE_LEVEL D3DGraphicContext::s_featureLevel = D3D_FEATURE_LEVEL_12_1;
+    D3D_FEATURE_LEVEL D3DGraphicContext::s_featureLevel = D3D_FEATURE_LEVEL_12_1;
 #elif (D3D_CURRENT_VERSION == D3D_VERSION_12_2)
     D3D_FEATURE_LEVEL D3DGraphicContext::s_featureLevel = D3D_FEATURE_LEVEL_12_2;
 #else
@@ -133,6 +133,7 @@ bool D3DGraphicContext::initialize()
     if (SUCCEEDED(D3DWrapper::GetDebugInterface(DX_IID_PPV_ARGS(&m_debugController))))
     {
         m_debugController->EnableDebugLayer();
+        //m_debugController->SetEnableGPUBasedValidation(true); //DXIL validation failed
 
         // Enable additional debug layers.
         dxgiFactoryFlags |= DXGI_CREATE_FACTORY_DEBUG;
@@ -213,12 +214,15 @@ bool D3DGraphicContext::initialize()
         }
 
 #if D3D_DEBUG_LIVE_REPORT
-        D3DDebug::getLazyInstance()->attachDevice(m_device, D3D12_DEBUG_FEATURE_NONE);
+        D3DDebug::getLazyInstance()->attachDevice(m_device, D3D12_DEBUG_FEATURE_NONE, D3D12_MESSAGE_SEVERITY_WARNING);
 #endif //D3D_DEBUG_LIVE_REPORT
 
 #if D3D_DEBUG_LAYERS_CALLBACK
-        m_debugMessageCallback = new D3DDebugLayerMessageCallback(m_device);
-        m_debugMessageCallback->registerMessageCallback(D3DDebugLayerMessageCallback::debugLayersMessageCallback, D3D12_MESSAGE_CALLBACK_IGNORE_FILTERS, this);
+        if (!D3DDebug::isRenderDocPresent(m_device))
+        {
+            m_debugMessageCallback = new D3DDebugLayerMessageCallback(m_device);
+            m_debugMessageCallback->registerMessageCallback(D3DDebugLayerMessageCallback::debugLayersMessageCallback, D3D12_MESSAGE_CALLBACK_IGNORE_FILTERS, this);
+        }
 #endif //D3D_DEBUG_LAYERS_CALLBACK
     }
 #elif defined(PLATFORM_XBOX)
@@ -362,6 +366,15 @@ void D3DGraphicContext::destroy()
 #if defined(PLATFORM_WINDOWS) && D3D_DEBUG_LIVE_REPORT
     D3DDebug::getInstance()->report(D3D12_RLDO_SUMMARY | D3D12_RLDO_IGNORE_INTERNAL);
 #endif
+
+#if FRAME_PROFILER_ENABLE
+    if (m_CPUProfiler)
+    {
+        m_frameProfiler.dettach(m_CPUProfiler);
+        delete m_CPUProfiler;
+        m_CPUProfiler = nullptr;
+    }
+#endif //FRAME_PROFILER_ENABLE
 
     if (m_commandListManager)
     {
@@ -1065,8 +1078,8 @@ Query* D3DGraphicContext::createQuery(QueryType type, u32 count, const Query::Qu
         LOG_DEBUG("D3DGraphicContext::createQuery can't create query");
         delete d3dQuery;
 
-    return nullptr;
-}
+        return nullptr;
+    }
 
     return d3dQuery;
 }
@@ -1410,19 +1423,19 @@ D3DCommandList* D3DGraphicContext::getOrAcquireCurrentCommandList(D3DCommandList
     {
         m_currentState.setCommandList(m_commandListManager->acquireCommandList(type));
         m_currentState.commandList()->prepare();
-            }
+    }
 
     ASSERT(m_currentState.commandList(), "nullptr");
     return m_currentState.commandList();
-            }
+}
 
 D3DCommandListManager* D3DGraphicContext::getCommandListManager() const
-            {
+{
     return m_commandListManager;
-            }
+}
 
 D3DResourceDeleter& D3DGraphicContext::getResourceDeleter()
-            {
+{
     return m_delayedDeleter;
 }
 

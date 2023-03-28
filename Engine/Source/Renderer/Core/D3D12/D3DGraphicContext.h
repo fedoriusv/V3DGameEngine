@@ -127,7 +127,7 @@ namespace dx3d
 #ifdef PLATFORM_WINDOWS
         IDXGIFactory4*      m_factory;
 #   if D3D_DEBUG_LAYERS
-        ID3D12Debug*        m_debugController;
+        ID3D12Debug1*        m_debugController;
 #   endif //D3D_DEBUG_LAYERS
 #   if D3D_DEBUG_LAYERS_CALLBACK
         D3DDebugLayerMessageCallback* m_debugMessageCallback;

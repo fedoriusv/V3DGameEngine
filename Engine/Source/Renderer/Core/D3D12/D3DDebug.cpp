@@ -112,6 +112,7 @@ std::string D3DDebug::stringError(HRESULT error)
 #ifdef PLATFORM_WINDOWS
 D3DDebug::D3DDebug() noexcept
     : m_debugDevice(nullptr)
+    , m_infoQueue(nullptr)
 {
 }
 
@@ -123,35 +124,99 @@ D3DDebug::~D3DDebug()
     {
         m_debugDevice->Release();
     }
+
+    if (m_infoQueue)
+    {
+        m_infoQueue->Release();
+    }
 }
 
-bool D3DDebug::attachDevice(ID3D12Device* device, D3D12_DEBUG_FEATURE flags)
+bool D3DDebug::attachDevice(ID3D12Device* device, D3D12_DEBUG_FEATURE flags, D3D12_MESSAGE_SEVERITY severityLevel)
 {
-    if (m_debugDevice)
+    ASSERT(device, "nullptr");
+    //Debug device
     {
-        LOG_WARNING("D3DDebug::attachDevice device already has attached");
-        return true;
-    }
-
-    {
-        ASSERT(device, "nullptr");
-        HRESULT result = device->QueryInterface(&m_debugDevice);
-        //device->Release();
-        if (FAILED(result))
         {
-            LOG_ERROR("D3DDebug::attachDevice DeviceQueryInterface is failed. Error: %s", D3DDebug::stringError(result).c_str());
-            ASSERT(!m_debugDevice, "not nullptr");
-            return false;
+            ASSERT(!m_debugDevice, "already has attached");
+            HRESULT result = device->QueryInterface(&m_debugDevice);
+            if (FAILED(result))
+            {
+                LOG_ERROR("D3DDebug::attachDevice QueryInterface is failed. Error: %s", D3DDebug::stringError(result).c_str());
+                ASSERT(!m_debugDevice, "not nullptr");
+                return false;
+            }
+        }
+
+        if (flags)
+        {
+            HRESULT result = m_debugDevice->SetDebugParameter(D3D12_DEBUG_DEVICE_PARAMETER_FEATURE_FLAGS, &flags, sizeof(D3D12_DEBUG_FEATURE));
+            if (FAILED(result))
+            {
+                LOG_ERROR("D3DDebug::attachDevice SetFeatureMask is failed. Error %s", D3DDebug::stringError(result).c_str());
+                return false;
+            }
         }
     }
 
-    if (flags)
+    //Query Info
     {
-        HRESULT result = m_debugDevice->SetDebugParameter(D3D12_DEBUG_DEVICE_PARAMETER_FEATURE_FLAGS, &flags, sizeof(D3D12_DEBUG_FEATURE));
-        if (FAILED(result))
         {
-            LOG_ERROR("D3DDebug::attachDevice SetFeatureMask is failed. Error %s", D3DDebug::stringError(result).c_str());
-            return false;
+            ASSERT(!m_infoQueue, "already has attached");
+            HRESULT result = device->QueryInterface(&m_infoQueue);
+            if (FAILED(result))
+            {
+                LOG_ERROR("D3DDebug::attachDevice QueryInterface is failed. Error %s", D3DDebug::stringError(result).c_str());
+                ASSERT(m_infoQueue, "nullptr");
+                return false;
+            }
+        }
+
+        {
+            D3D12_INFO_QUEUE_FILTER queueFiler = {};
+            
+            std::vector<D3D12_MESSAGE_SEVERITY> severityAllowList;
+            switch (severityLevel)
+            {
+            case D3D12_MESSAGE_SEVERITY_MESSAGE:
+                severityAllowList.push_back(D3D12_MESSAGE_SEVERITY_MESSAGE);
+                [[fallthrough]];
+
+            case D3D12_MESSAGE_SEVERITY_INFO:
+                severityAllowList.push_back(D3D12_MESSAGE_SEVERITY_INFO);
+                [[fallthrough]];
+
+            case D3D12_MESSAGE_SEVERITY_WARNING:
+                severityAllowList.push_back(D3D12_MESSAGE_SEVERITY_WARNING);
+                [[fallthrough]];
+
+            case D3D12_MESSAGE_SEVERITY_ERROR:
+                severityAllowList.push_back(D3D12_MESSAGE_SEVERITY_ERROR);
+                [[fallthrough]];
+
+            case D3D12_MESSAGE_SEVERITY_CORRUPTION:
+                severityAllowList.push_back(D3D12_MESSAGE_SEVERITY_CORRUPTION);
+            }
+
+            queueFiler.AllowList.pSeverityList = severityAllowList.data();
+            queueFiler.AllowList.NumSeverities = static_cast<u32>(severityAllowList.size());
+
+            std::vector<D3D12_MESSAGE_ID> IDDenayList;
+            if (D3DGraphicContext::s_supportExerimentalShaderModelFeature)
+            {
+                //WARNING: ID 1243, ID3D12ShaderBytecode::CreatePipelineState : Shader is corrupt or in an unrecognized format, or is not signed.
+                //Ensure that DXIL.dll is used to sign the shader.This shader and PSO containing it will not be validated.
+                IDDenayList.push_back(D3D12_MESSAGE_ID_NON_RETAIL_SHADER_MODEL_WONT_VALIDATE);
+            }
+
+            queueFiler.DenyList.pIDList = IDDenayList.data();
+            queueFiler.DenyList.NumIDs = static_cast<u32>(IDDenayList.size());
+
+            HRESULT result = m_infoQueue->PushStorageFilter(&queueFiler);
+            if (FAILED(result))
+            {
+                LOG_ERROR("D3DDebug::attachDevice PushStorageFilter is failed. Error %s", D3DDebug::stringError(result).c_str());
+                return false;
+            }
         }
     }
 
@@ -170,6 +235,24 @@ bool D3DDebug::report(D3D12_RLDO_FLAGS flags)
 
     return true;
 }
+
+bool D3DDebug::isRenderDocPresent(ID3D12Device* device)
+{
+    bool result = false;
+
+    IID RenderDocID;
+    if (SUCCEEDED(IIDFromString(L"{A7AA6116-9C8D-4BBA-9083-B4D816B71B78}", &RenderDocID)))
+    {
+        IUnknown* RenderDoc;
+        if (SUCCEEDED(device->QueryInterface(RenderDocID, (void**)&RenderDoc)))
+        {
+            result = true;
+        }
+        SAFE_DELETE(RenderDoc);
+    }
+
+    return result;
+}
 #endif //PLATFORM_WINDOWS
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -180,17 +263,23 @@ D3DDebugLayerMessageCallback::D3DDebugLayerMessageCallback(ID3D12Device* device)
     , m_ID(0)
 {
     ASSERT(device, "nullptr");
+
     HRESULT result = device->QueryInterface(&m_infoQueue); //return nullptr for 10.0.20348, maybe need last SDK or OS
     if (FAILED(result))
     {
-        LOG_ERROR("D3DDebugLayerMessageCallback::D3DDebugLayerMessageCallback QueryInterface is failed");
+        LOG_ERROR("D3DDebugLayerMessageCallback::D3DDebugLayerMessageCallback QueryInterface is failed. Error %s", D3DDebug::stringError(result).c_str());
         ASSERT(m_infoQueue, "nullptr");
     }
 }
 
 D3DDebugLayerMessageCallback::~D3DDebugLayerMessageCallback()
 {
-    SAFE_DELETE(m_infoQueue);
+    //The last ptrs inside ID3D12Device
+    //SAFE_DELETE(m_infoQueue);
+    if (m_infoQueue)
+    {
+        m_infoQueue->Release();
+    }
 }
 
 bool D3DDebugLayerMessageCallback::registerMessageCallback(D3D12MessageFunc callbackFunc, D3D12_MESSAGE_CALLBACK_FLAGS flags, void* userData)
@@ -230,7 +319,28 @@ bool D3DDebugLayerMessageCallback::unregisterMessageCallback()
 
 void D3DDebugLayerMessageCallback::debugLayersMessageCallback(D3D12_MESSAGE_CATEGORY category, D3D12_MESSAGE_SEVERITY severity, D3D12_MESSAGE_ID ID, LPCSTR description, void* context)
 {
+    if (severity > D3DDebugLayerMessageCallback::s_severityLevel)
+    {
+        return;
+    }
+
     D3DGraphicContext* dxContext = reinterpret_cast<D3DGraphicContext*>(context);
+    auto exeptionMessages = [](D3D12_MESSAGE_ID ID, D3DGraphicContext* dxContext) -> bool
+    {
+        if (ID == 1243 && dxContext->s_supportExerimentalShaderModelFeature)
+        {
+            //WARNING: ID 1243, ID3D12ShaderBytecode::CreatePipelineState : Shader is corrupt or in an unrecognized format, or is not signed.
+            //Ensure that DXIL.dll is used to sign the shader.This shader and PSO containing it will not be validated.
+            return true;
+        }
+
+        return false;
+    };
+
+    if (exeptionMessages(ID, dxContext))
+    {
+        return;
+    }
 
     switch (severity)
     {
