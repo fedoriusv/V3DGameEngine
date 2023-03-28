@@ -23,25 +23,6 @@ namespace dx3d
 extern RenderFrameProfiler* g_d3dCPUProfiler;
 #endif //FRAME_PROFILER_ENABLE
 
-D3D12_DESCRIPTOR_HEAP_TYPE D3DDescriptorSetState::convertDescriptorTypeToHeapType(D3D12_DESCRIPTOR_RANGE_TYPE descriptorType)
-{
-    switch (descriptorType)
-    {
-    case D3D12_DESCRIPTOR_RANGE_TYPE_SRV:
-    case D3D12_DESCRIPTOR_RANGE_TYPE_UAV:
-    case D3D12_DESCRIPTOR_RANGE_TYPE_CBV:
-        return D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
-
-    case D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER:
-        return D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER;
-
-    default:
-        ASSERT(false, "unsupported");
-    }
-
-    return D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
-}
-
 D3DDescriptorSetState::D3DDescriptorSetState(ID3D12Device* device, D3DDescriptorHeapManager* manager) noexcept
     : m_device(device)
     , m_heapManager(*manager)
@@ -54,33 +35,28 @@ D3DDescriptorSetState::~D3DDescriptorSetState()
     LOG_DEBUG("D3DDescriptorSetState::~D3DDescriptorSetState destructor %llx", this);
 }
 
-bool D3DDescriptorSetState::updateDescriptorSets(D3DGraphicsCommandList* cmdList, D3DPipelineState* pipeline)
+bool D3DDescriptorSetState::updateDescriptorTables(D3DGraphicsCommandList* cmdList, D3DPipelineState* pipeline)
 {
-    m_updatedTablesCache.clear();
-    composeDescriptorSetTables(pipeline, m_updatedTablesCache);
+    m_internalHeaps.clear();
+    m_internalTables.clear();
 
-
-    std::vector<ID3D12DescriptorHeap*> heaps;
-    std::vector<std::tuple<u32, D3DDescriptorHeap*, u32>> tables;
-    for (u32 paramIndex = 0; paramIndex < m_updatedTablesCache.size(); ++paramIndex)
+    for (auto& descriptorTable : pipeline->getSignatureParameters())
     {
-        const auto& tableData = m_updatedTablesCache[paramIndex];
-        if (std::get<2>(tableData).empty())
+        if (descriptorTable._direct)
         {
-            continue;
-        }
-
-        if (std::get<1>(tableData)._direct) // direct binding
-        {
-            for (auto& [binding, resource] : std::get<2>(tableData))
+            for (auto& binding : descriptorTable._bindings)
             {
+                auto found = m_boundedDescriptorSets[binding._space].find(binding);
+                ASSERT(found != m_boundedDescriptorSets[binding._space].end(), "not found");
+                const D3DBindingResource& resource = found->second;
+
                 switch (binding._type)
                 {
                 case D3D12_DESCRIPTOR_RANGE_TYPE_CBV:
                 {
                     const D3DBuffer* buffer = resource._resource._constantBuffer._buffer;
                     u32 offset = resource._resource._constantBuffer._offset;
-                    cmdList->setConstantBuffer(paramIndex, buffer, offset, pipeline->getType());
+                    cmdList->setDirectConstantBuffer(descriptorTable._paramIndex, buffer, offset, pipeline->getType());
 
                     cmdList->setUsed(const_cast<D3DBuffer*>(buffer), 0);
                     break;
@@ -93,77 +69,96 @@ bool D3DDescriptorSetState::updateDescriptorSets(D3DGraphicsCommandList* cmdList
         }
         else
         {
-            auto [heap, offset] = m_heapManager.getDescriptor(D3DDescriptorHeapManager::DescriptorInfo(std::get<2>(tableData), std::get<0>(tableData)));
-            if (!heap)
+            for (u32 i = 0; i < D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES; ++i)
             {
-               std::tie(heap, offset) = m_heapManager.acquireDescriptorHeap(std::get<1>(tableData)._heapType, std::get<1>(tableData)._countDesc);
-               ASSERT(heap, "nullptr");
+                u32 hash = 0;
+                u32 resourceCount = 0;
+                std::array<D3DBindingResource, k_maxDescriptorBindingCount> resources;
 
-               [[maybe_unused]] bool success = m_heapManager.addDescriptor(D3DDescriptorHeapManager::DescriptorInfo(std::get<2>(tableData), std::get<0>(tableData)), {heap, offset});
-               ASSERT(success, "already is presented");
+                D3D12_DESCRIPTOR_HEAP_TYPE heapType = (D3D12_DESCRIPTOR_HEAP_TYPE)i;
+                for (auto& binding : descriptorTable._heapGroups[heapType])
+                {
+                    auto found = m_boundedDescriptorSets[binding._space].find(binding);
+                    ASSERT(found != m_boundedDescriptorSets[binding._space].end(), "not found");
+                    const D3DBindingResource& resource = found->second;
+                    resources[resourceCount++] = resource;
 
-               D3DDescriptorSetState::updateDescriptorTable(heap, offset, std::get<2>(tableData), std::get<1>(tableData)._heapType);
-            }
-            cmdList->setUsed(heap, 0);
-            for (auto& [binding, resource] : std::get<2>(tableData))
-            {
-                switch (binding._type)
-                {
-                case D3D12_DESCRIPTOR_RANGE_TYPE_SRV:
-                {
-                    const D3DImage* image = resource._resource._image._image;
-                    cmdList->setUsed(const_cast<D3DImage*>(image), 0);
-                    break;
-                }
-
-                case D3D12_DESCRIPTOR_RANGE_TYPE_UAV:
-                {
-                    if (const D3DImage* UAVImage = resource._resource._UAV._image._image; UAVImage)
+                    hash = crc32c::Extend(hash, reinterpret_cast<const u8*>(&resource), sizeof(D3DBindingResource));
+                    switch (binding._type)
                     {
-                        cmdList->setUsed(const_cast<D3DImage*>(UAVImage), 0);
+                    case D3D12_DESCRIPTOR_RANGE_TYPE_SRV:
+                    {
+                        const D3DImage* image = resource._resource._image._image;
+                        cmdList->setUsed(const_cast<D3DImage*>(image), 0);
+                        break;
                     }
 
-                    if (const D3DBuffer* UAVBuffer = resource._resource._UAV._buffer._buffer; UAVBuffer)
+                    case D3D12_DESCRIPTOR_RANGE_TYPE_UAV:
                     {
-                        cmdList->setUsed(const_cast<D3DBuffer*>(UAVBuffer), 0);
+                        if (binding._uav)
+                        {
+                            const D3DBuffer* UAVBuffer = resource._resource._UAVBuffer._buffer;
+                            cmdList->setUsed(const_cast<D3DBuffer*>(UAVBuffer), 0);
+                        }
+                        else
+                        {
+                            const D3DImage* UAVImage = resource._resource._UAVImage._image;
+                            cmdList->setUsed(const_cast<D3DImage*>(UAVImage), 0);
+                        }
+                        break;
                     }
-                    break;
+
+                    case D3D12_DESCRIPTOR_RANGE_TYPE_CBV:
+                    {
+                        const D3DBuffer* buffer = resource._resource._constantBuffer._buffer;
+                        cmdList->setUsed(const_cast<D3DBuffer*>(buffer), 0);
+                        break;
+                    }
+
+                    case D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER:
+                    {
+                        const D3DSampler* sampler = resource._resource._sampler._sampler;
+                        cmdList->setUsed(const_cast<D3DSampler*>(sampler), 0);
+                        break;
+                    }
+
+                    default:
+                        ASSERT(false, "not impl");
+                    }
                 }
 
-                case D3D12_DESCRIPTOR_RANGE_TYPE_CBV:
+                if (resourceCount > 0)
                 {
-                    const D3DBuffer* buffer = resource._resource._constantBuffer._buffer;
-                    cmdList->setUsed(const_cast<D3DBuffer*>(buffer), 0);
+                    D3DDescriptorHeapManager::DescriptorTableInfo descriptor(descriptorTable._heapGroups[heapType], resources, hash); //TODO expensive copy. rework
+                    auto [heap, offset] = m_heapManager.getDescriptor(descriptor);
+                    if (!heap)
+                    {
+                        std::tie(heap, offset) = m_heapManager.acquireDescriptorHeap(heapType, descriptorTable._heapGroups[heapType].size());
+                        ASSERT(heap, "nullptr");
 
-                    break;
-                }
+                        [[maybe_unused]] bool success = m_heapManager.addDescriptor(descriptor, { heap, offset });
+                        ASSERT(success, "already is presented");
 
-                case D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER:
-                {
-                    const D3DSampler* sampler = resource._resource._sampler._sampler;
-                    cmdList->setUsed(const_cast<D3DSampler*>(sampler), 0);
-                    break;
-                }
+                        D3DDescriptorSetState::updateResourceView(heap, offset, { descriptorTable._heapGroups[heapType], resources }, heapType);
+                    }
+                    cmdList->setUsed(heap, 0);
 
-                default:
-                    ASSERT(false, "not impl");
+                    m_internalHeaps.push_back(heap->getHandle());
+                    m_internalTables.emplace_back(descriptorTable._paramIndex, heap, offset);
                 }
             }
-
-            heaps.push_back(heap->getHandle());
-            tables.emplace_back(paramIndex, heap, offset);
         }
     }
 
-    if (!heaps.empty())
+    if (!m_internalTables.empty())
     {
-        cmdList->setDescriptorTables(heaps, tables, pipeline->getType());
+        cmdList->setDescriptorTables(m_internalHeaps, m_internalTables, pipeline->getType());
     }
 
-    return false;
+    return true;
 }
 
-void D3DDescriptorSetState::updateStatus()
+void D3DDescriptorSetState::updateDescriptorSetStatus()
 {
     m_heapManager.updateDescriptorHeaps();
 }
@@ -176,43 +171,17 @@ void D3DDescriptorSetState::invalidateDescriptorSetTable()
     }
 }
 
-void D3DDescriptorSetState::composeDescriptorSetTables(const D3DPipelineState* pipeline, std::vector<std::tuple<u32, DescriptorTableLayout, DescriptorTableContainer>>& tables) const
-{
-    tables.clear();
-
-    for (u32 setIndex = 0; setIndex < k_maxDescriptorSetCount; ++setIndex)
-    {
-        u32 hash = 0;
-        for (const auto& binding : m_boundedDescriptorSets[setIndex])
-        {
-            s32 paramIndex = pipeline->getSignatureParameterIndex(binding.first);
-            if (paramIndex < 0)
-            {
-                ASSERT(false, "binding not found");
-                continue;
-            }
-
-            if (paramIndex >= tables.size())
-            {
-                tables.resize(m_boundedDescriptorSets[setIndex].size());
-            }
-            ASSERT(paramIndex < tables.size(), "range out");
-
-            hash = crc32c::Extend(hash, reinterpret_cast<const u8*>(&binding.second), sizeof(D3DBindingResource));
-
-            std::get<0>(tables[paramIndex]) = hash;
-            std::get<1>(tables[paramIndex]) = { D3DDescriptorSetState::convertDescriptorTypeToHeapType(binding.first._type), (u32)m_boundedDescriptorSets[setIndex].size(), (bool)binding.first._direct};
-            std::get<2>(tables[paramIndex]).emplace_back(binding.first, binding.second);
-        }
-    }
-}
-
-void D3DDescriptorSetState::updateDescriptorTable(D3DDescriptorHeap* heap, u32 offset, const DescriptorTableContainer& table, D3D12_DESCRIPTOR_HEAP_TYPE heapType)
+void D3DDescriptorSetState::updateResourceView(D3DDescriptorHeap* heap, u32 offset, const DescriptorTableContainerRef& table, D3D12_DESCRIPTOR_HEAP_TYPE heapType)
 {
     u32 descriptorOffsetIndex = offset;
     u32 descriptorIndex = 0;
-    for (auto& [binding, resorce] : table)
+
+    const std::vector<D3DBinding>& bindings = std::get<0>(table);
+    const std::array<D3DBindingResource, k_maxDescriptorBindingCount>& resources = std::get<1>(table);
+    for (u32 index = 0; index < bindings.size(); ++index)
     {
+        const D3DBinding& binding = bindings[index];
+        const D3DBindingResource& resource = resources[index];
         switch (heapType)
         {
         case D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV:
@@ -222,8 +191,8 @@ void D3DDescriptorSetState::updateDescriptorTable(D3DDescriptorHeap* heap, u32 o
             {
             case D3D12_DESCRIPTOR_RANGE_TYPE_SRV:
             {
-                const D3DImage* image = resorce._resource._image._image;
-                const Image::Subresource& subresource = resorce._resource._image._subresource;
+                const D3DImage* image = resource._resource._image._image;
+                const Image::Subresource& subresource = resource._resource._image._subresource;
 
                 CD3DX12_CPU_DESCRIPTOR_HANDLE imgHandle(heap->getCPUHandle(), offset + descriptorIndex, heap->getIncrement());
                 if (const D3DImage* resolveImage = image->getResolveImage())
@@ -240,11 +209,11 @@ void D3DDescriptorSetState::updateDescriptorTable(D3DDescriptorHeap* heap, u32 o
             }
             case D3D12_DESCRIPTOR_RANGE_TYPE_CBV:
             {
-                const D3DBuffer* buffer = resorce._resource._constantBuffer._buffer;
+                const D3DBuffer* buffer = resource._resource._constantBuffer._buffer;
 
                 D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc = {};
                 cbvDesc.BufferLocation = buffer->getGPUAddress();
-                cbvDesc.SizeInBytes = core::alignUp<UINT>(resorce._resource._constantBuffer._size, 256);
+                cbvDesc.SizeInBytes = core::alignUp<UINT>(resource._resource._constantBuffer._size, 256);
 
                 CD3DX12_CPU_DESCRIPTOR_HANDLE cbHandle(heap->getCPUHandle(), offset + descriptorIndex, heap->getIncrement());
                 m_device->CreateConstantBufferView(&cbvDesc, cbHandle);
@@ -257,18 +226,18 @@ void D3DDescriptorSetState::updateDescriptorTable(D3DDescriptorHeap* heap, u32 o
                 ID3D12Resource* uavResource = nullptr;
                 D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc = {};
 
-                const D3DImage* UAVImage = resorce._resource._UAV._image._image;
-                const D3DBuffer* UAVBuffer = resorce._resource._UAV._buffer._buffer;
-                if (UAVImage)
+                if (binding._uav)
                 {
+                    const D3DBuffer* UAVBuffer = resource._resource._UAVBuffer._buffer;
+                    ASSERT(false, "get View impl");
+                }
+                else
+                {
+                    const D3DImage* UAVImage = resource._resource._UAVImage._image;
                     uavResource = UAVImage->getResource();
 
-                    const Image::Subresource& subresource = resorce._resource._UAV._image._subresource;
+                    const Image::Subresource& subresource = resource._resource._UAVImage._subresource;
                     uavDesc = UAVImage->getView<D3D12_UNORDERED_ACCESS_VIEW_DESC>(subresource);
-                }
-                else if (UAVBuffer)
-                {
-                    ASSERT(false, "not impl");
                 }
                 ASSERT(uavResource, "nullptr");
 
@@ -287,7 +256,7 @@ void D3DDescriptorSetState::updateDescriptorTable(D3DDescriptorHeap* heap, u32 o
 
         case D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER:
         {
-            const D3DSampler* sampler = resorce._resource._sampler._sampler;
+            const D3DSampler* sampler = resource._resource._sampler._sampler;
 
             ASSERT(binding._type == D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER, "wrond type");
             CD3DX12_CPU_DESCRIPTOR_HANDLE samplerHandle(heap->getCPUHandle(), offset + descriptorIndex, heap->getIncrement());

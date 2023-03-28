@@ -237,7 +237,7 @@ void D3DGraphicsCommandList::setDescriptorTables(const std::vector<ID3D12Descrip
     }
 }
 
-void D3DGraphicsCommandList::setConstantBuffer(u32 paramIndex, const D3DBuffer* buffer, u32 offset, Pipeline::PipelineType type)
+void D3DGraphicsCommandList::setDirectConstantBuffer(u32 paramIndex, const D3DBuffer* buffer, u32 offset, Pipeline::PipelineType type)
 {
     ASSERT(m_commandList, "nullptr");
     ASSERT(m_status == Status::ReadyToRecord, "not record");
@@ -260,7 +260,7 @@ void D3DGraphicsCommandList::setVertexState(u32 startSlot, const std::vector<u32
     ASSERT(m_commandList, "nullptr");
     ASSERT(m_status == Status::ReadyToRecord, "not record");
 
-    std::vector<D3D12_VERTEX_BUFFER_VIEW> dxBuffers(buffers.size());
+    std::array<D3D12_VERTEX_BUFFER_VIEW, k_maxVertexInputBindings> dxBuffers;
     for (u32 index = 0; index < buffers.size(); ++index)
     {
         D3DBuffer* dxBuffer = static_cast<D3DBuffer*>(buffers[index]);
@@ -273,7 +273,7 @@ void D3DGraphicsCommandList::setVertexState(u32 startSlot, const std::vector<u32
     }
 
     ID3D12GraphicsCommandList* cmdList = D3DGraphicsCommandList::getHandle();
-    cmdList->IASetVertexBuffers(startSlot, static_cast<u32>(dxBuffers.size()), dxBuffers.data());
+    cmdList->IASetVertexBuffers(startSlot, static_cast<u32>(buffers.size()), dxBuffers.data());
 }
 
 void D3DGraphicsCommandList::setIndexState(Buffer* buffer, DXGI_FORMAT format)
@@ -449,14 +449,15 @@ void D3DGraphicsCommandList::endQuery(D3DQueryHeap* heap, u32 index)
     this->setUsed(heap, 0);
 }
 
-void D3DGraphicsCommandList::resolveQuery(D3DQueryHeap* heap, u32 start, u32 count, D3DBuffer* buffer, u32 size)
+void D3DGraphicsCommandList::resolveQuery(D3DQueryHeap* heap, u32 start, u32 count, D3DBuffer* buffer, u32 offset)
 {
     ASSERT(m_commandList, "nullptr");
     ASSERT(m_status == Status::ReadyToRecord, "not record");
     ASSERT(buffer, "nullptr");
+    ASSERT(offset == core::alignUp<u32>(offset, sizeof(u64)), "must be aligned to 8");
 
     ID3D12GraphicsCommandList* cmdList = D3DGraphicsCommandList::getHandle();
-    cmdList->ResolveQueryData(heap->getHandle(), heap->getType(), start, count, buffer->getResource(), size);
+    cmdList->ResolveQueryData(heap->getHandle(), heap->getType(), start, count, buffer->getResource(), offset);
 
     this->setUsed(heap, 0);
     this->setUsed(buffer, 0);

@@ -23,15 +23,9 @@ D3DPipelineState::~D3DPipelineState()
     ASSERT(!m_pipelineState, "not nullptr");
 }
 
-u32 D3DPipelineState::getSignatureParameterIndex(const D3DBinding& binding) const
+const SignatureParameters& D3DPipelineState::getSignatureParameters() const
 {
-    auto iter = m_signatureParameters.find(binding);
-    if (iter != m_signatureParameters.end())
-    {
-        return iter->second;
-    }
-
-    return -1;
+    return m_signatureParameters;
 }
 
 } //namespace dx3d

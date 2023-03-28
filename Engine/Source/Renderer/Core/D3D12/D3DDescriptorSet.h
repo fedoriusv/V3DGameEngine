@@ -35,8 +35,6 @@ namespace dx3d
         explicit D3DDescriptorSetState(ID3D12Device* device, D3DDescriptorHeapManager* manager) noexcept;
         ~D3DDescriptorSetState();
 
-        static D3D12_DESCRIPTOR_HEAP_TYPE convertDescriptorTypeToHeapType(D3D12_DESCRIPTOR_RANGE_TYPE descriptorType);
-
         template<class TResource, bool UAV, class ... Args>
         bool bindDescriptor(u32 space, u32 reg, u32 array, const TResource* resource, Args ...args)
         {
@@ -63,7 +61,6 @@ namespace dx3d
                 auto function = [&bind, &bindingResource](const D3DBuffer* buffer, u32 offset, u32 size) -> void
                 {
                     bind._type = D3D12_DESCRIPTOR_RANGE_TYPE_CBV;
-                    bind._direct = true;
                     bindingResource._resource._constantBuffer = { buffer, offset, size };
                 };
                 function(resource, args...);
@@ -73,8 +70,8 @@ namespace dx3d
                 auto function = [&bind, &bindingResource](const D3DImage* image, const Image::Subresource& subresource) -> void
                 {
                     bind._type = D3D12_DESCRIPTOR_RANGE_TYPE_UAV;
-                    bindingResource._resource._UAV._image = { image, subresource };
-                    bindingResource._resource._UAV._buffer = { nullptr, 0, 0 };
+                    bind._uav = 0;
+                    bindingResource._resource._UAVImage = { image, subresource };
                 };
                 function(resource, args...);
             }
@@ -83,8 +80,8 @@ namespace dx3d
                 auto function = [&bind, &bindingResource](const D3DBuffer* buffer, u32 offset, u32 size) -> void
                 {
                     bind._type = D3D12_DESCRIPTOR_RANGE_TYPE_UAV;
-                    bindingResource._resource._UAV._buffer = { resource, offset, size };
-                    bindingResource._resource._UAV._image = nullptr;
+                    bind._uav = 1;
+                    bindingResource._resource._UAVBuffer = { resource, offset, size };
                 };
                 function(resource, args...);
             }
@@ -99,7 +96,6 @@ namespace dx3d
                 return false;
             }
 
-            static_assert(sizeof(D3DBindingResource) == 32, "DBindingResource wrong size");
             auto iter = m_boundedDescriptorSets[space].emplace(bind, bindingResource);
             if (!iter.second)
             {
@@ -110,8 +106,8 @@ namespace dx3d
             return true;
         }
 
-        bool updateDescriptorSets(D3DGraphicsCommandList* cmdList, D3DPipelineState* pipeline);
-        void updateStatus(); //Call per submit/present
+        bool updateDescriptorTables(D3DGraphicsCommandList* cmdList, D3DPipelineState* pipeline);
+        void updateDescriptorSetStatus(); //Call per submit/present
         void invalidateDescriptorSetTable(); //Call per draw
 
     private:
@@ -126,15 +122,14 @@ namespace dx3d
             bool _direct;
         };
 
-        void composeDescriptorSetTables(const D3DPipelineState* pipeline, std::vector<std::tuple<u32, DescriptorTableLayout, DescriptorTableContainer>>& tables) const;
-
-        void updateDescriptorTable(D3DDescriptorHeap* heap, u32 offset, const DescriptorTableContainer& table, D3D12_DESCRIPTOR_HEAP_TYPE type);
+        void updateResourceView(D3DDescriptorHeap* heap, u32 offset, const DescriptorTableContainerRef& table, D3D12_DESCRIPTOR_HEAP_TYPE type);
 
         ID3D12Device* const m_device;
         D3DDescriptorHeapManager& m_heapManager;
         std::map<D3DBinding, D3DBindingResource, D3DBinding::Less> m_boundedDescriptorSets[k_maxDescriptorSetCount];
 
-        std::vector<std::tuple<u32, DescriptorTableLayout, DescriptorTableContainer>> m_updatedTablesCache;
+        std::vector<ID3D12DescriptorHeap*> m_internalHeaps;
+        std::vector<std::tuple<u32, D3DDescriptorHeap*, u32>> m_internalTables;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

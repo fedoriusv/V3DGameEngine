@@ -100,14 +100,13 @@ namespace dx3d
         ~D3DRenderQueryManager();
 
         D3DQueryHeap* acquireQueryHeap(QueryType type);
-        void resolve(D3DGraphicsCommandList* cmdList);
-        void update();
 
+        void resolve(D3DGraphicsCommandList* cmdList);
+        void update(bool forceFinish = false);
+        void clear();
 
         bool bind(D3DRenderQuery* query, D3DQueryHeap* heap, u32 start, u32 count);
         D3DQueryHeap* find(D3DRenderQuery* query) const;
-
-        static const u32 s_queryHeapCount = 10000;
 
         struct Range
         {

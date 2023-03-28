@@ -385,7 +385,7 @@ void D3DGraphicContext::destroy()
 
     if (m_descriptorState)
     {
-        m_descriptorState->updateStatus();
+        m_descriptorState->updateDescriptorSetStatus();
         delete m_descriptorState;
         m_descriptorState = nullptr;
     }
@@ -440,6 +440,8 @@ void D3DGraphicContext::destroy()
 
     if (m_descriptorHeapManager)
     {
+        m_descriptorHeapManager->freeDescriptorHeaps();
+
         delete m_descriptorHeapManager;
         m_descriptorHeapManager = nullptr;
     }
@@ -449,7 +451,6 @@ void D3DGraphicContext::destroy()
         delete m_heapAllocator;
         m_heapAllocator = nullptr;
     }
-
 #if defined(PLATFORM_WINDOWS)
 #   if D3D_DEBUG_LAYERS_CALLBACK
     if (m_debugMessageCallback)

@@ -36,7 +36,8 @@ namespace dx3d
         bool immediateSubmitUpload = false;
         bool immediateTransition = false;
 
-        u64 memoryConstantBufferSize = 1024;
+        u64 memoryConstantBufferSize = 1024 * 64; //64KB
+        u32 queryHeapCount = 10000;
 
     private:
 

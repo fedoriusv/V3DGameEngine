@@ -32,7 +32,7 @@ namespace dx3d
 
         ID3D12PipelineState* getHandle() const;
         ID3D12RootSignature* getSignatureHandle() const;
-        u32 getSignatureParameterIndex(const D3DBinding& binding) const;
+        const SignatureParameters& getSignatureParameters() const;
 
     protected:
 

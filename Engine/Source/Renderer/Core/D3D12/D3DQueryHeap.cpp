@@ -4,6 +4,7 @@
 
 #ifdef D3D_RENDER
 #include "D3DDebug.h"
+#include "D3DDeviceCaps.h"
 #include "D3DCommandList.h"
 #include "D3DBuffer.h"
 namespace v3d
@@ -89,7 +90,7 @@ D3DQueryHeap::D3DQueryHeap(ID3D12Device* device, QueryType type, u32 count, D3DH
     , m_count(count)
     , m_resolveBuffer(nullptr)
 {
-    ASSERT(m_count <= D3DRenderQueryManager::s_queryHeapCount, "must be less or heap is too small");
+    ASSERT(m_count <= D3DDeviceCaps::getInstance()->queryHeapCount, "must be less or heap is too small");
     LOG_DEBUG("D3DQueryHeap::D3DQueryHeap constructor %llx", this);
 }
 
@@ -113,7 +114,7 @@ bool D3DQueryHeap::create()
         return false;
     }
 
-    m_resolveBuffer = new D3DBuffer(m_device, Buffer::BufferType::BufferType_Readback, StreamBufferUsage::StreamBuffer_Read, desc.Count * 8, "QueryBuffer", m_allocator);
+    m_resolveBuffer = new D3DBuffer(m_device, Buffer::BufferType::BufferType_Readback, StreamBufferUsage::StreamBuffer_Read, desc.Count * sizeof(u64), "QueryBuffer", m_allocator);
     if (!m_resolveBuffer->create())
     {
         LOG_ERROR("D3DQueryHeap::create can't create resolve buffer");
@@ -167,7 +168,7 @@ D3DQueryHeap* D3DRenderQueryManager::acquireQueryHeap(QueryType type)
     {
         if (m_freeHeaps[toEnumType(type)].empty())
         {
-            heap = new D3DQueryHeap(m_device, type, s_queryHeapCount, m_allocator);
+            heap = new D3DQueryHeap(m_device, type, D3DDeviceCaps::getInstance()->queryHeapCount, m_allocator);
             if (!heap->create())
             {
                 LOG_ERROR("RenderQueryManager::acquireQueryHeap create is failed");
@@ -197,7 +198,7 @@ void D3DRenderQueryManager::resolve(D3DGraphicsCommandList* cmdList)
         auto& [heap, range] = iter.second;
 
         ASSERT(heap->m_resolveBuffer->getState() == D3D12_RESOURCE_STATE_COPY_DEST, "must be copy state");
-        cmdList->resolveQuery(heap, range.start, range.count, heap->m_resolveBuffer, sizeof(u64));
+        cmdList->resolveQuery(heap, range.start, range.count, heap->m_resolveBuffer, 0);
 
         auto inserted = m_resolvedQueries.emplace(heap, std::make_tuple(query, range.count));
         ASSERT(inserted.second, "must be true");
@@ -206,7 +207,7 @@ void D3DRenderQueryManager::resolve(D3DGraphicsCommandList* cmdList)
     m_activeRenderQueries.clear();
 }
 
-void D3DRenderQueryManager::update()
+void D3DRenderQueryManager::update(bool forceFinish)
 {
     for (u32 type = toEnumType(QueryType::First); type < toEnumType(QueryType::Count); ++type)
     {
@@ -218,30 +219,56 @@ void D3DRenderQueryManager::update()
 
         for (auto iter = m_usedHeaps[type].begin(); iter != m_usedHeaps[type].end();)
         {
-            //D3DQueryHeap* heap = (*iter);
-            //D3DBuffer* buffer = heap->m_resolveBuffer;
-            //if (!heap->isUsed() && !buffer->isUsed())
-            //{
-            //    auto found = m_resolvedQueries.find(heap);
-            //    ASSERT(found != m_resolvedQueries.end(), "must be found");
+            D3DQueryHeap* heap = (*iter);
+            D3DBuffer* buffer = heap->m_resolveBuffer;
+            if (!heap->isUsed() && !buffer->isUsed())
+            {
+                [[unlikely]] if (forceFinish)
+                {
+                    m_resolvedQueries.clear();
+                }
+                else
+                {
+                    auto found = m_resolvedQueries.find(heap);
+                    ASSERT(found != m_resolvedQueries.end(), "must be found");
 
-            //    D3DRenderQuery* query = std::get<0>(found->second);
+                    D3DRenderQuery* query = std::get<0>(found->second);
 
-            //    u32 size = std::get<1>(found->second);
-            //    const void* data = buffer->map(0, size);
-            //    query->invoke(QueryResult::Success, size * sizeof(u64), data);
-            //    buffer->unmap(0, size);
+                    u32 size = std::get<1>(found->second);
+                    const void* data = buffer->map(0, size * sizeof(u64), true);
+                    query->invoke(QueryResult::Success, size * sizeof(u64), data);
+                    buffer->unmap(0, size * sizeof(u64));
 
-            //    m_resolvedQueries.erase(found);
+                    m_resolvedQueries.erase(found);
+                }
+                iter = m_usedHeaps[type].erase(iter);
+                m_freeHeaps[type].push(heap);
 
-            //    m_usedHeaps[type].erase(iter);
-            //    m_freeHeaps[type].push(heap);
-
-            //    continue;
-            //}
+                continue;
+            }
 
             ++iter;
         }
+    }
+}
+
+void D3DRenderQueryManager::clear()
+{
+    m_resolvedQueries.clear();
+    for (u32 type = toEnumType(QueryType::First); type < toEnumType(QueryType::Count); ++type)
+    {
+        ASSERT(!m_currentHeap[type], "Must be nupllptr");
+        ASSERT(m_usedHeaps[type].empty(), "Must be empty");
+
+       while (!m_freeHeaps[type].empty())
+       {
+           D3DQueryHeap* heap = m_freeHeaps[type].front();
+           m_freeHeaps[type].pop();
+
+           ASSERT(!heap->isUsed() && !heap->m_resolveBuffer->isUsed(), "Must be free");
+           heap->destroy();
+           delete heap;
+       }
     }
 }
 

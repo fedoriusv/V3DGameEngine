@@ -141,7 +141,7 @@ namespace dx3d
         void setPipelineState(D3DComputePipelineState* pipeline);
 
         void setDescriptorTables(const std::vector<ID3D12DescriptorHeap*>& heaps, const std::vector<std::tuple<u32, D3DDescriptorHeap*, u32>>& desc, Pipeline::PipelineType type);
-        void setConstantBuffer(u32 paramIndex, const D3DBuffer* buffer, u32 offset, Pipeline::PipelineType type);
+        void setDirectConstantBuffer(u32 paramIndex, const D3DBuffer* buffer, u32 offset, Pipeline::PipelineType type);
 
         void setVertexState(u32 startSlot, const std::vector<u32>& strides, const std::vector<Buffer*>& buffers);
         void setIndexState(Buffer* buffer, DXGI_FORMAT format);
@@ -150,7 +150,7 @@ namespace dx3d
 
         void beginQuery(D3DQueryHeap* heap, u32 index);
         void endQuery(D3DQueryHeap* heap, u32 index);
-        void resolveQuery(D3DQueryHeap* heap, u32 start, u32 count, D3DBuffer* buffer, u32 size);
+        void resolveQuery(D3DQueryHeap* heap, u32 start, u32 count, D3DBuffer* buffer, u32 offset);
 
         void transition(D3DImage* image, const Image::Subresource& subresource, D3D12_RESOURCE_STATES states, bool immediateTransition = false);
 

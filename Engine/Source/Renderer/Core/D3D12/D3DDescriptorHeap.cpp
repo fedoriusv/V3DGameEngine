@@ -11,6 +11,25 @@ namespace renderer
 namespace dx3d
 {
 
+D3D12_DESCRIPTOR_HEAP_TYPE D3DDescriptorHeap::convertDescriptorTypeToHeapType(D3D12_DESCRIPTOR_RANGE_TYPE descriptorType)
+{
+    switch (descriptorType)
+    {
+    case D3D12_DESCRIPTOR_RANGE_TYPE_SRV:
+    case D3D12_DESCRIPTOR_RANGE_TYPE_UAV:
+    case D3D12_DESCRIPTOR_RANGE_TYPE_CBV:
+        return D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
+
+    case D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER:
+        return D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER;
+
+    default:
+        ASSERT(false, "unsupported");
+    }
+
+    return D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
+}
+
 D3DDescriptorHeap::D3DDescriptorHeap(ID3D12DescriptorHeap* heap, D3D12_DESCRIPTOR_HEAP_DESC& desc) noexcept
     : m_heap(heap)
     , m_desc(desc)
@@ -105,7 +124,7 @@ void D3DDescriptorHeapManager::deallocDescriptorHeap(D3DDescriptorHeap* heap)
     m_heapList[heap->getDescription().Type].erase(found);
 #endif //DEBUG_OBJECT_MEMORY
 
-    ASSERT(heap->isUsed(), "must be free");
+    ASSERT(!heap->isUsed(), "must be free");
     delete heap;
 }
 
@@ -124,15 +143,16 @@ void D3DDescriptorHeapManager::freeDescriptorHeaps()
 
         while (!m_freeDescriptorHeaps[type].empty())
         {
-            auto& heap = m_freeDescriptorHeaps[type].front();
+            D3DDescriptorHeap* heap = m_freeDescriptorHeaps[type].front();
+            m_freeDescriptorHeaps[type].pop();
+
             ASSERT(!heap->isUsed(), "must be free");
-            m_freeDescriptorHeaps->pop();
             delete heap;
         }
     }
 }
 
-std::tuple<D3DDescriptorHeap*, u32> D3DDescriptorHeapManager::getDescriptor(const DescriptorInfo& info)
+std::tuple<D3DDescriptorHeap*, u32> D3DDescriptorHeapManager::getDescriptor(const DescriptorTableInfo& info)
 {
     auto found = m_descriptors.find(info);
     if (found != m_descriptors.end())
@@ -143,7 +163,7 @@ std::tuple<D3DDescriptorHeap*, u32> D3DDescriptorHeapManager::getDescriptor(cons
     return { nullptr, 0};
 }
 
-bool D3DDescriptorHeapManager::addDescriptor(const DescriptorInfo& info, const std::tuple<D3DDescriptorHeap*, u32>& heap)
+bool D3DDescriptorHeapManager::addDescriptor(const DescriptorTableInfo& info, const std::tuple<D3DDescriptorHeap*, u32>& heap)
 {
     auto added = m_descriptors.emplace(info, heap);
     ASSERT(added.second, "can't to add");

@@ -2,6 +2,7 @@
 
 #include "Common.h"
 #include "Renderer/Core/Image.h"
+#include "Renderer/ShaderProperties.h"
 
 #ifdef D3D_RENDER
 #include "D3DConfiguration.h"
@@ -25,7 +26,7 @@ namespace dx3d
 
     /**
     * @brief D3DBinding struct. DirectX Render side
-    * Size 8 bytes
+    * Size 4 bytes
     */
     struct D3DBinding
     {
@@ -33,15 +34,13 @@ namespace dx3d
         u32 _register                       : 15 = 0;
         u32 _array                          : 5  = 0;
         D3D12_DESCRIPTOR_RANGE_TYPE _type   : 3 = D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
-        u32 _direct                         : 1 = false;
-
-        u32 _pad = 0;
+        u32 _uav                            : 1 = 0;
 
         struct Less
         {
             bool operator()(const D3DBinding& b0, const D3DBinding& b1) const
             {
-                static_assert(sizeof(D3DBinding) == 8, "Wrong size");
+                static_assert(sizeof(D3DBinding) == 4, "Wrong size");
                 return memcmp(&b0, &b1, sizeof(D3DBinding)) < 0;
             }
         };
@@ -49,10 +48,16 @@ namespace dx3d
 
     /**
     * @brief D3DBindingResource struct. DirectX Render side
-    * Size 32 bytes
+    * Size 16 bytes
     */
     struct D3DBindingResource
     {
+        D3DBindingResource() noexcept
+        {
+            memset(this, 0, sizeof(D3DBindingResource));
+            static_assert(sizeof(D3DBindingResource) == 16, "D3DBindingResource wrong size");
+        }
+
         union
         {
             struct ImageResource
@@ -74,21 +79,18 @@ namespace dx3d
                 u64 _padding;
             };
 
-            struct UAV
-            {
-                ImageResource _image;
-                BufferResource _buffer;
-            };
-
             ImageResource _image;
             BufferResource _constantBuffer;
             Sampler _sampler;
-            UAV _UAV;
+            ImageResource _UAVImage;
+            BufferResource _UAVBuffer;
         }
         _resource;
     };
 
-    using DescriptorTableContainer = std::vector<std::tuple<D3DBinding, D3DBindingResource>>;
+
+    using DescriptorTableContainer = std::tuple<const std::vector<D3DBinding>, const std::vector<D3DBindingResource>>;
+    using DescriptorTableContainerRef = std::tuple<const std::vector<D3DBinding>&, const std::array<D3DBindingResource, k_maxDescriptorBindingCount>&>;
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -98,6 +100,8 @@ namespace dx3d
     class D3DDescriptorHeap final : public D3DResource
     {
     public:
+
+        static D3D12_DESCRIPTOR_HEAP_TYPE convertDescriptorTypeToHeapType(D3D12_DESCRIPTOR_RANGE_TYPE descriptorType);
 
         explicit D3DDescriptorHeap(ID3D12DescriptorHeap* heap, D3D12_DESCRIPTOR_HEAP_DESC& desc) noexcept;
         ~D3DDescriptorHeap();
@@ -171,11 +175,11 @@ namespace dx3d
     {
     public:
 
-        struct DescriptorInfo
+        struct DescriptorTableInfo
         {
             struct Hash
             {
-                u64 operator()(const DescriptorInfo& key) const
+                u64 operator()(const DescriptorTableInfo& key) const
                 {
                     ASSERT(key._key != 0, "must be valid");
                     return key._key;
@@ -184,32 +188,33 @@ namespace dx3d
 
             struct Compare
             {
-                bool operator()(const DescriptorInfo& info0, const DescriptorInfo& info1) const
+                bool operator()(const DescriptorTableInfo& info0, const DescriptorTableInfo& info1) const
                 {
                     if (info0._key != info1._key)
                     {
                         return false;
                     }
 
-                    if (info0._table.size() != info1._table.size())
+                    /*if (info0._bindings.size() != info1._bindings.size())
                     {
                         return false;
-                    }
+                    }*/
 
-                    return memcmp(info0._table.data(), info1._table.data(), sizeof(DescriptorTableContainer::value_type) * info0._table.size()) == 0;
+                    return /*memcmp(info0._bindings.data(), info1._bindings.data(), sizeof(D3DBinding) * info0._bindings.size()) == 0 &&*/
+                        memcmp(info0._resources.data(), info1._resources.data(), sizeof(D3DBindingResource) * info0._resources.size()) == 0;
                 }
             };
 
-            explicit DescriptorInfo(const DescriptorTableContainer& table, u32 hash) noexcept
+            explicit DescriptorTableInfo(const std::vector<D3DBinding>& bindings, const std::array<D3DBindingResource, k_maxDescriptorBindingCount>& resources, u32 hash) noexcept
                 : _key(hash)
-                , _table(table)
+                /*, _bindings(bindings)*/
+                , _resources(resources)
             {
-                static_assert(sizeof(DescriptorTableContainer::value_type) == 40, "wrong size");
             }
-           
 
             u64 _key = 0;
-            DescriptorTableContainer _table;
+            /*const std::vector<D3DBinding> _bindings;*/
+            const std::array<D3DBindingResource, k_maxDescriptorBindingCount> _resources;
         };
 
         static u32 getDescriptorNumSize(D3D12_DESCRIPTOR_HEAP_TYPE type);
@@ -217,8 +222,8 @@ namespace dx3d
         explicit D3DDescriptorHeapManager(ID3D12Device* device) noexcept;
         ~D3DDescriptorHeapManager();
 
-        std::tuple<D3DDescriptorHeap*, u32> getDescriptor(const DescriptorInfo& info);
-        bool addDescriptor(const DescriptorInfo& info, const std::tuple<D3DDescriptorHeap*, u32>& heap);
+        std::tuple<D3DDescriptorHeap*, u32> getDescriptor(const DescriptorTableInfo& info);
+        bool addDescriptor(const DescriptorTableInfo& info, const std::tuple<D3DDescriptorHeap*, u32>& heap);
 
         std::tuple<D3DDescriptorHeap*, u32> acquireDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE type, u32 countDescriptors);
         void freeDescriptorHeaps();
@@ -236,7 +241,7 @@ namespace dx3d
         std::list<D3DDescriptorHeap*> m_usedDescriptorHeaps[D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES];
         std::array<std::tuple<D3DDescriptorHeap*, u32, u32>, D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES> m_currentDescriptorHeap;
 
-        std::unordered_map<DescriptorInfo, std::tuple<D3DDescriptorHeap*, u32>, DescriptorInfo::Hash, DescriptorInfo::Compare> m_descriptors;
+        std::unordered_map<DescriptorTableInfo, std::tuple<D3DDescriptorHeap*, u32>, DescriptorTableInfo::Hash, DescriptorTableInfo::Compare> m_descriptors;
 
 #if DEBUG_OBJECT_MEMORY
         std::vector<D3DDescriptorHeap*> m_heapList[D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES];

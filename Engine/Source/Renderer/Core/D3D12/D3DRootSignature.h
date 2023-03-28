@@ -15,7 +15,18 @@ namespace dx3d
 {
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    using SignatureParameters = std::map<D3DBinding, u32, D3DBinding::Less>;
+
+    struct DescriptorTable
+    {
+        std::vector<D3DBinding> _bindings;
+        std::vector<D3DBinding> _heapGroups[D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES];
+        u32 _paramIndex = -1;
+        bool _direct = false;
+    };
+
+    using SignatureParameters = std::vector<DescriptorTable>;
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
     * D3DRootSignature struct. DirectX Render side
@@ -29,7 +40,7 @@ namespace dx3d
         u32 m_hash;
         ID3DBlob* m_signature;
 
-        SignatureParameters m_signatureParameters;
+        std::vector<DescriptorTable> m_signatureTables;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
