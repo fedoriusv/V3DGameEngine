@@ -68,5 +68,25 @@ bool Platform::setThreadName(std::thread& thread, const std::string& name)
 }
 #endif //PLATFORM_WINDOWS
 
+#ifdef PLATFORM_WINDOWS
+std::wstring Platform::utf8ToWide(const char* in)
+{
+    int size = MultiByteToWideChar(CP_UTF8, 0, in, -1, nullptr, 0);
+    // size includes terminating null; std::wstring adds null automatically
+    std::wstring out(static_cast<size_t>(size) - 1, L'\0');
+    MultiByteToWideChar(CP_UTF8, 0, in, -1, &out[0], size);
+    return out;
+}
+
+std::string Platform::wideToUtf8(const wchar_t* in)
+{
+    int size = WideCharToMultiByte(CP_UTF8, 0, in, -1, nullptr, 0, nullptr, nullptr);
+    // size includes terminating null; std::string adds null automatically
+    std::string out(static_cast<size_t>(size) - 1, '\0');
+    WideCharToMultiByte(CP_UTF8, 0, in, -1, &out[0], size, nullptr, nullptr);
+    return out;
+}
+#endif
+
 } //namespace platform
 } //namespace v3d
