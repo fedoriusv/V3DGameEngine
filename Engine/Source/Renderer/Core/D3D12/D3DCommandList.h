@@ -108,6 +108,12 @@ namespace dx3d
         return m_status == Status::ReadyToRecord;
     }
 
+    inline void D3DCommandList::setUsed(D3DResource* resource, u64 frame)
+    {
+        resource->attachFence(m_fence, frame);
+        m_resources.insert(resource);
+    }
+
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**

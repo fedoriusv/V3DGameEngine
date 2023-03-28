@@ -379,8 +379,11 @@ void D3DGraphicContext::destroy()
 
     if (m_renderQueryManager)
     {
-        m_renderQueryManager;
+        m_renderQueryManager->update(true);
+        m_renderQueryManager->clear();
+        
         delete m_renderQueryManager;
+        m_renderQueryManager = nullptr;
     }
 
     if (m_descriptorState)
@@ -436,7 +439,6 @@ void D3DGraphicContext::destroy()
         delete m_swapchain;
         m_swapchain = nullptr;
     }
-    SAFE_DELETE(m_commandQueue);
 
     if (m_descriptorHeapManager)
     {
@@ -445,6 +447,8 @@ void D3DGraphicContext::destroy()
         delete m_descriptorHeapManager;
         m_descriptorHeapManager = nullptr;
     }
+
+    SAFE_DELETE(m_commandQueue);
 
     if (m_heapAllocator)
     {
@@ -525,14 +529,12 @@ void D3DGraphicContext::presentFrame()
     RenderFrameProfiler::StackProfiler stackProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::Present);
 #endif //FRAME_PROFILER_ENABLE
 
-    if (D3DGraphicsCommandList* cmdList = m_currentState.commandList(); cmdList)
+    //post submits
+    if (D3DImage* swapchain = m_swapchain->getSwapchainImage(); swapchain)
     {
-        m_renderQueryManager->resolve(cmdList);
+        D3DGraphicsCommandList* cmdList = static_cast<D3DGraphicsCommandList*>(D3DGraphicContext::getOrAcquireCurrentCommandList());
+        cmdList->transition(swapchain, D3DImage::makeD3DImageSubresource(swapchain, 0, 0), D3D12_RESOURCE_STATE_PRESENT);
 
-        if (m_boundState._renderTarget)
-        {
-            D3DGraphicsCommandList::switchRenderTargetTransitionToFinal(cmdList, m_boundState._renderTarget);
-        }
         cmdList->close();
         m_commandListManager->execute(cmdList, false);
         m_currentState.setCommandList(nullptr);
@@ -540,13 +542,7 @@ void D3DGraphicContext::presentFrame()
 
     m_swapchain->present();
 
-    m_boundState.reset();
-    m_descriptorState->updateStatus();
     ASSERT(!m_currentState.commandList(), "not nullptr");
-    m_constantBufferManager->updateConstantBufferStatus();
-    m_renderQueryManager->update();
-    m_delayedDeleter.update(false);
-
     ++m_frameCounter;
 }
 
@@ -571,6 +567,13 @@ void D3DGraphicContext::submit(bool wait)
         m_commandListManager->execute(cmdList, wait);
         m_currentState.setCommandList(nullptr);
     }
+
+    m_descriptorState->updateDescriptorSetStatus();
+    m_constantBufferManager->updateConstantBufferStatus();
+    m_renderQueryManager->update();
+    m_boundState.reset();
+
+    m_delayedDeleter.update(false);
 }
 
 void D3DGraphicContext::beginQuery(const Query* query, u32 id, const std::string& tag)
@@ -1378,7 +1381,7 @@ bool D3DGraphicContext::perpareDraw(D3DGraphicsCommandList* cmdList)
         D3DGraphicsCommandList::clearRenderTargets(cmdList, m_currentState._renderTarget, m_currentState._clearInfo);
     }
 
-    m_descriptorState->updateDescriptorSets(cmdList, dxPipeline);
+    m_descriptorState->updateDescriptorTables(cmdList, dxPipeline);
     m_descriptorState->invalidateDescriptorSetTable();
 
     return true;
@@ -1395,7 +1398,7 @@ bool D3DGraphicContext::perpareCompute(D3DGraphicsCommandList* cmdList)
         m_boundState._pipeline = m_currentState._pipeline;
     }
 
-    m_descriptorState->updateDescriptorSets(cmdList, dxPipeline);
+    m_descriptorState->updateDescriptorTables(cmdList, dxPipeline);
     m_descriptorState->invalidateDescriptorSetTable();
 
     return true;
