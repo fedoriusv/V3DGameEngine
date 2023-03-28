@@ -29,11 +29,11 @@ namespace renderer
 namespace dx3d
 {
 
-#if (D3D_VERSION_MAJOR == 12 && D3D_VERSION_MINOR == 0)
+#if (D3D_CURRENT_VERSION == D3D_VERSION_12_0)
 D3D_FEATURE_LEVEL D3DGraphicContext::s_featureLevel = D3D_FEATURE_LEVEL_12_0;
-#elif (D3D_VERSION_MAJOR == 12 && D3D_VERSION_MINOR == 1)
+#elif (D3D_CURRENT_VERSION == D3D_VERSION_12_1)
 D3D_FEATURE_LEVEL D3DGraphicContext::s_featureLevel = D3D_FEATURE_LEVEL_12_1;
-#elif (D3D_VERSION_MAJOR == 12 && D3D_VERSION_MINOR == 2)
+#elif (D3D_CURRENT_VERSION == D3D_VERSION_12_2)
     D3D_FEATURE_LEVEL D3DGraphicContext::s_featureLevel = D3D_FEATURE_LEVEL_12_2;
 #else
 #   error "DirectX version is not supported"
