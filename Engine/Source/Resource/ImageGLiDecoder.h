@@ -21,10 +21,10 @@ namespace resource
     {
     public:
 
-        ImageGLiDecoder(std::vector<std::string> supportedExtensions, const resource::ImageHeader& header, bool readHeader, u32 flags = 0) noexcept;
+        explicit ImageGLiDecoder(std::vector<std::string> supportedExtensions, const resource::ImageHeader& header, bool readHeader, u32 flags = 0) noexcept;
         ~ImageGLiDecoder();
 
-        Resource* decode(const stream::Stream* stream, const std::string& name = "") const override;
+        [[nodiscard]] Resource* decode(const stream::Stream* stream, const std::string& name = "") const override;
 
     private:
 

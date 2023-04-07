@@ -222,16 +222,16 @@ Resource* ImageStbDecoder::decode(const stream::Stream* stream, const std::strin
 
         ASSERT(dataStream, "nullptr");
         resource::ImageHeader* newHeader = new resource::ImageHeader(m_header);
-        newHeader->_dimension.width = static_cast<u32>(sizeX);
-        newHeader->_dimension.height = static_cast<u32>(sizeY);
-        newHeader->_dimension.depth = 1;
+        newHeader->_dimension.m_width = static_cast<u32>(sizeX);
+        newHeader->_dimension.m_height = static_cast<u32>(sizeY);
+        newHeader->_dimension.m_depth = 1;
         newHeader->_layers = layers;
         newHeader->_mips = mipmaps;
         newHeader->_format = format;
         newHeader->_size = static_cast<u64>(dataStream->size());
         newHeader->_flipY = false;
 #if DEBUG
-        newHeader->_debugName = name;
+        newHeader->_name = name;
 #endif
 
         stream::Stream* imageStream = stream::StreamManager::createMemoryStream(dataStream->map(dataStream->size()), dataStream->size());

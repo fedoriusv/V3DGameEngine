@@ -20,10 +20,10 @@ namespace resource
     {
     public:
 
-        ImageStbDecoder(std::vector<std::string> supportedExtensions, const resource::ImageHeader& header, bool readHeader, bool generateMipmaps = false) noexcept;
+        explicit ImageStbDecoder(std::vector<std::string> supportedExtensions, const resource::ImageHeader& header, bool readHeader, bool generateMipmaps = false) noexcept;
         ~ImageStbDecoder();
 
-        Resource* decode(const stream::Stream* stream, const std::string& name = "") const override;
+        [[nodiscard]] Resource* decode(const stream::Stream* stream, const std::string& name = "") const override;
 
     private:
 

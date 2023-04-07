@@ -79,7 +79,7 @@ Resource* ShaderDXCDecoder::decode(const stream::Stream* stream, const std::stri
     }
 
 #if DEBUG
-    const std::string shaderName = m_header._debugName.empty() ? name : m_header._debugName;
+    const std::string shaderName = m_header._name.empty() ? name : m_header._name;
 #else
     const std::string shaderName = name;
 #endif
@@ -137,7 +137,7 @@ Resource* ShaderDXCDecoder::decode(const stream::Stream* stream, const std::stri
         renderer::ShaderHeader* resourceHeader = new renderer::ShaderHeader(m_header);
         resourceHeader->_type = shaderType;
 #if DEBUG
-        resourceHeader->_debugName = shaderName;
+        resourceHeader->_name = shaderName;
 #endif
         Resource* resource = new renderer::Shader(resourceHeader);
         resource->init(resourceBinary);

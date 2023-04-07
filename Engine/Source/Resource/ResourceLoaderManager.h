@@ -11,7 +11,6 @@ namespace renderer
 {
     class Context;
 } //namespace renderer
-
 namespace resource
 {
     /////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -27,7 +26,7 @@ namespace resource
     {
     public:
 
-        ResourceLoaderManager() = default;
+        ResourceLoaderManager() noexcept = default;
 
         /**
         * @brief composeShader
@@ -41,7 +40,7 @@ namespace resource
         * @return Shader resource, nullptr if failed
         */
         template<class TResource = renderer::Shader, class TResourceLoader>
-        const TResource* composeShader(renderer::Context* context, const std::string name, const renderer::ShaderHeader* header, const stream::Stream* stream, 
+        [[nodiscard]] const TResource* composeShader(renderer::Context* context, const std::string name, const renderer::ShaderHeader* header, const stream::Stream* stream,
             ShaderSourceBuildFlags flags = resource::ShaderSource_UseDXCompiler);
 
         /**
@@ -55,7 +54,7 @@ namespace resource
         * @return Shader resource, nullptr if failed
         */
         template<class TResource = renderer::Shader, class TResourceLoader>
-        const TResource* loadShader(renderer::Context* context, std::string filename, std::vector<std::pair<std::string, std::string>> defines = {}, 
+        [[nodiscard]] const TResource* loadShader(renderer::Context* context, std::string filename, std::vector<std::pair<std::string, std::string>> defines = {},
             ShaderSourceBuildFlags flags = resource::ShaderSource_UseDXCompiler);
 
         /**
@@ -71,7 +70,7 @@ namespace resource
         * @return Shader resource, nullptr if failed
         */
         template<class TResource = renderer::Shader, class TResourceLoader>
-        const TResource* loadShader(renderer::Context* context, renderer::ShaderType type, std::string filename, const std::string& entryPoint = "main", std::vector<std::pair<std::string, std::string>> defines = {}, 
+        [[nodiscard]] const TResource* loadShader(renderer::Context* context, renderer::ShaderType type, std::string filename, const std::string& entryPoint = "main", std::vector<std::pair<std::string, std::string>> defines = {},
             ShaderSourceBuildFlags flags = resource::ShaderSource_UseDXCompiler);
 
         /**
@@ -86,7 +85,7 @@ namespace resource
         * @return list of shader resources
         */
         template<class TResource = renderer::Shader, class TResourceLoader>
-        std::vector<const TResource*> loadHLSLShader(renderer::Context* context, std::string filename, const std::vector<std::tuple<std::string, renderer::ShaderType>>& entryPoints, std::vector<std::pair<std::string, std::string>> defines = {}, 
+        [[nodiscard]] std::vector<const TResource*> loadHLSLShader(renderer::Context* context, std::string filename, const std::vector<std::tuple<std::string, renderer::ShaderType>>& entryPoints, std::vector<std::pair<std::string, std::string>> defines = {},
             ShaderSourceBuildFlags flags = resource::ShaderSource_UseDXCompiler);
 
         /**
@@ -98,7 +97,7 @@ namespace resource
         * @return current resource, nullptr if failed
         */
         template<class TResource, class TResourceLoader>
-        TResource* load(std::string filename, u32 flags = 0);
+        [[nodiscard]] TResource* load(std::string filename, u32 flags = 0);
 
         /**
         * @brief load
@@ -110,7 +109,7 @@ namespace resource
         * @return current resource, nullptr if failed
         */
         template<class TResource, class TResourceLoader>
-        TResource* load(std::string filename, const ResourceHeader* header, u32 flags = 0);
+        [[nodiscard]] TResource* load(std::string filename, const ResourceHeader* header, u32 flags = 0);
 
         /**
         * @brief clear

@@ -11,6 +11,8 @@ namespace v3d
 {
 namespace resource
 {
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
     class Resource;
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -23,12 +25,11 @@ namespace resource
     {
     public:
 
-        ShaderDXCDecoder(const renderer::ShaderHeader& header, renderer::ShaderHeader::ShaderModel output, bool reflections = true) noexcept;
-        ShaderDXCDecoder(std::vector<std::string> supportedExtensions, const renderer::ShaderHeader& header, renderer::ShaderHeader::ShaderModel output, bool reflections = true) noexcept;
-
+        explicit ShaderDXCDecoder(const renderer::ShaderHeader& header, renderer::ShaderHeader::ShaderModel output, bool reflections = true) noexcept;
+        explicit ShaderDXCDecoder(std::vector<std::string> supportedExtensions, const renderer::ShaderHeader& header, renderer::ShaderHeader::ShaderModel output, bool reflections = true) noexcept;
         ~ShaderDXCDecoder() = default;
 
-        Resource* decode(const stream::Stream* stream, const std::string& name = "") const override;
+        [[nodiscard]] Resource* decode(const stream::Stream* stream, const std::string& name = "") const override;
 
     private:
 

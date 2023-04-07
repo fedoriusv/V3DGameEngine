@@ -17,8 +17,8 @@ namespace resource
     {
     public:
 
-        ShaderReflectionSpirV(renderer::ShaderHeader::ShaderModel model) noexcept;
-        ~ShaderReflectionSpirV();
+        explicit ShaderReflectionSpirV(renderer::ShaderHeader::ShaderModel model) noexcept;
+        ~ShaderReflectionSpirV() = default;
 
         bool reflect(const std::vector<u32>& spirv, stream::Stream* stream);
 

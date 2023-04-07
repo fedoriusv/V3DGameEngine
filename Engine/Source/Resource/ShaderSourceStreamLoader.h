@@ -13,7 +13,6 @@ namespace renderer
     class Shader;
     struct ShaderHeader;
 } //namespace renderer
-
 namespace resource
 {
     //////////////////////////////////////////////////////////////////////////////////
@@ -38,7 +37,7 @@ namespace resource
         * @param const stream::Stream* stream [required]
         * @param bool enableReflection [optional]
         */
-        ShaderSourceStreamLoader(const renderer::Context* context, const renderer::ShaderHeader* header, const stream::Stream* stream, ShaderSourceBuildFlags flags = 0) noexcept;
+        explicit ShaderSourceStreamLoader(const renderer::Context* context, const renderer::ShaderHeader* header, const stream::Stream* stream, ShaderSourceBuildFlags flags = 0) noexcept;
         ~ShaderSourceStreamLoader();
 
         /**
@@ -48,7 +47,7 @@ namespace resource
         * @param const std::string& alias [optional]
         * @return a Shader pointer
         */
-        renderer::Shader* load(const std::string& name, const std::string& alias = "") override;
+        [[nodiscard]] renderer::Shader* load(const std::string& name, const std::string& alias = "") override;
 
     private:
 

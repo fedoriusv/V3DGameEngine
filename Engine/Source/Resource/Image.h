@@ -18,7 +18,7 @@ namespace resource
         ImageHeader() noexcept;
 
         renderer::Format    _format;
-        core::Dimension3D   _dimension;
+        math::Dimension3D   _dimension;
         u32                 _layers;
         u32                 _mips;
 
@@ -38,7 +38,7 @@ namespace resource
         ~Image();
 
         renderer::Format getFormat() const;
-        const core::Dimension3D& getDimension() const;
+        const math::Dimension3D& getDimension() const;
         u32 getLayersCount() const;
         u32 getMipMapsCount() const;
 

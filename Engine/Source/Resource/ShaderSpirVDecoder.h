@@ -21,12 +21,11 @@ namespace resource
     {
     public:
 
-        ShaderSpirVDecoder(const renderer::ShaderHeader& header, bool reflections = false) noexcept;
-        ShaderSpirVDecoder(std::vector<std::string> supportedExtensions, const renderer::ShaderHeader& header, bool reflections) noexcept;
-
+        explicit ShaderSpirVDecoder(const renderer::ShaderHeader& header, bool reflections = false) noexcept;
+        explicit ShaderSpirVDecoder(std::vector<std::string> supportedExtensions, const renderer::ShaderHeader& header, bool reflections) noexcept;
         ~ShaderSpirVDecoder() = default;
 
-        Resource* decode(const stream::Stream* stream, const std::string& name = "") const override;
+        [[nodiscard]] Resource* decode(const stream::Stream* stream, const std::string& name = "") const override;
 
     private:
 

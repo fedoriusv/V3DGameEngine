@@ -227,16 +227,16 @@ Resource* ImageGLiDecoder::decode(const stream::Stream* stream, const std::strin
 #endif
 
         resource::ImageHeader* newHeader = new resource::ImageHeader(m_header);
-        newHeader->_dimension.width = static_cast<u32>(texture.extent().x);
-        newHeader->_dimension.height = static_cast<u32>(texture.extent().y);
-        newHeader->_dimension.depth = static_cast<u32>(texture.extent().z);;
+        newHeader->_dimension.m_width = static_cast<u32>(texture.extent().x);
+        newHeader->_dimension.m_height = static_cast<u32>(texture.extent().y);
+        newHeader->_dimension.m_depth = static_cast<u32>(texture.extent().z);;
         newHeader->_layers = static_cast<u32>(texture.layers());
         newHeader->_mips = static_cast<u32>(texture.levels());
         newHeader->_format = covertFormat(texture.format());
         newHeader->_size = static_cast<u32>(texture.size());
         newHeader->_flipY = flipY;
 #if DEBUG
-        newHeader->_debugName = name;
+        newHeader->_name = name;
 #endif
         stream::Stream* imageStream = stream::StreamManager::createMemoryStream(texture.data(), static_cast<u32>(texture.size()));
 

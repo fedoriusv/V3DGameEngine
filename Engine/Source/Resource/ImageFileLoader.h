@@ -15,17 +15,6 @@ namespace resource
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
-    * @brief ImageLoaderFlag enum
-    */
-    enum ImageLoaderFlag : u32
-    {
-        ImageLoaderFlag_FlipY = 1 << 0,
-        ImageLoaderFlag_GenerateMipmaps = 1 << 1,
-    };
-
-    typedef u32 ImageLoaderFlags;
-
-    /**
     * @brief ImageFileLoader class. Loader from file
     * @see ImageStbDecoder
     * @see ImageGLiDecoder
@@ -33,6 +22,16 @@ namespace resource
     class ImageFileLoader : public ResourceLoader<resource::Image*>, public ResourceDecoderRegistration
     {
     public:
+
+        /**
+        * @brief ImageLoaderFlag enum
+        */
+        enum ImageLoaderFlag : u32
+        {
+            ImageLoaderFlag_FlipY = 1 << 0,
+            ImageLoaderFlag_GenerateMipmaps = 1 << 1,
+        };
+        typedef u32 ImageLoaderFlags;
 
         ImageFileLoader() = delete;
         ImageFileLoader(const ImageFileLoader&) = delete;
@@ -51,7 +50,7 @@ namespace resource
         * @param const std::string& alias [optional]
         * @return Image pointer
         */
-        resource::Image* load(const std::string& name, const std::string& alias = "") override;
+        [[nodiscard]] resource::Image* load(const std::string& name, const std::string& alias = "") override;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

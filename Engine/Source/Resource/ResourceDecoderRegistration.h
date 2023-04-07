@@ -49,7 +49,7 @@ namespace resource
 
     protected:
 
-        const ResourceDecoder* findDecoder(const std::string& extension);
+        [[nodiscard]] const ResourceDecoder* findDecoder(const std::string& extension);
 
     private:
 

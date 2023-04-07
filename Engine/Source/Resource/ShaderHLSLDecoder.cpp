@@ -68,7 +68,7 @@ Resource* ShaderHLSLDecoder::decode(const stream::Stream* stream, const std::str
         }
 
 #if DEBUG
-        const std::string shaderName = m_header._debugName.empty() ? name : m_header._debugName;
+        const std::string shaderName = m_header._name.empty() ? name : m_header._name;
 #else
         const std::string shaderName = name;
 #endif
@@ -283,7 +283,7 @@ Resource* ShaderHLSLDecoder::decode(const stream::Stream* stream, const std::str
             resourceHeader->_type = type;
             resourceHeader->_shaderModel = shaderModel;
 #if DEBUG
-            resourceHeader->_debugName = name;
+            resourceHeader->_name = name;
 #endif
             u32 bytecodeSize = static_cast<u32>(shader->GetBufferSize());
             stream::Stream* resourceBinary = stream::StreamManager::createMemoryStream(nullptr, bytecodeSize + sizeof(u32) + sizeof(bool));
@@ -385,7 +385,7 @@ Resource* ShaderHLSLDecoder::decode(const stream::Stream* stream, const std::str
             resourceHeader->_type = getShaderTypeFromName(name);
             resourceHeader->_shaderModel = renderer::ShaderHeader::ShaderModel::HLSL_5_1;
 #if DEBUG
-            resourceHeader->_debugName = name;
+            resourceHeader->_name = name;
 #endif
             u32 bytecodeSize = static_cast<u32>(binaryShader->GetBufferSize());
             stream::Stream* resourceBinary = stream::StreamManager::createMemoryStream(nullptr, bytecodeSize + sizeof(u32) + sizeof(bool));

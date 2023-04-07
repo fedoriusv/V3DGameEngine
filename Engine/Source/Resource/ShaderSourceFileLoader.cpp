@@ -50,7 +50,7 @@ ShaderSourceFileLoader::ShaderSourceFileLoader(const renderer::Context* context,
             header._shaderModel = renderer::ShaderHeader::ShaderModel::GLSL_450;
             header._optLevel = optimizationLevel;
             header._defines = defines;
-            header._flags |= (flags & ShaderSourceBuildFlag::ShaderSource_Patched) ? ShaderSourceBuildFlag::ShaderSource_Patched : header._flags;
+            header._extraFlags |= (flags & ShaderSourceBuildFlag::ShaderSource_Patched) ? ShaderSourceBuildFlag::ShaderSource_Patched : header._extraFlags;
 
             ResourceDecoderRegistration::registerDecoder(new ShaderSpirVDecoder( { "vert", "frag", "comp" }, header, !(flags & ShaderSourceBuildFlag::ShaderSource_DontUseReflection) ));
         }
@@ -61,7 +61,7 @@ ShaderSourceFileLoader::ShaderSourceFileLoader(const renderer::Context* context,
             header._shaderModel = renderer::ShaderHeader::ShaderModel::HLSL_5_1;
             header._optLevel = optimizationLevel;
             header._defines = defines;
-            header._flags |= (flags & ShaderSourceBuildFlag::ShaderSource_Patched) ? ShaderSourceBuildFlag::ShaderSource_Patched : header._flags;
+            header._extraFlags |= (flags & ShaderSourceBuildFlag::ShaderSource_Patched) ? ShaderSourceBuildFlag::ShaderSource_Patched : header._extraFlags;
 
 #ifdef PLATFORM_WINDOWS
             /*if (flags & ShaderSourceBuildFlag::ShaderSource_UseDXCompiler)

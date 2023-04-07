@@ -10,8 +10,8 @@
 #   include <shaderc/libshaderc/include/shaderc/shaderc.hpp>
 
 #   define PATCH_SYSTEM 0
-#   include "ShaderPatchSpirV.h"
-#   include "ShaderSpirVPatcherBugDriverFix.h"
+#   include "SpirVPatch/ShaderPatchSpirV.h"
+#   include "SpirVPatch/ShaderSpirVPatcherBugDriverFix.h"
 
 namespace v3d
 {
@@ -337,7 +337,7 @@ Resource* ShaderSpirVDecoder::decode(const stream::Stream* stream, const std::st
             resourceHeader->_type = type;
             resourceHeader->_shaderModel = renderer::ShaderHeader::ShaderModel::GLSL_450;
 #if DEBUG
-            resourceHeader->_debugName = name;
+            resourceHeader->_name = name;
 #endif
 
             Resource* resource = new renderer::Shader(resourceHeader);
@@ -407,7 +407,7 @@ Resource* ShaderSpirVDecoder::decode(const stream::Stream* stream, const std::st
             resourceHeader->_type = type;
             resourceHeader->_shaderModel = renderer::ShaderHeader::ShaderModel::GLSL_450;
 #if DEBUG
-            resourceHeader->_debugName = name;
+            resourceHeader->_name = name;
 #endif
 
             Resource* resource = new renderer::Shader(resourceHeader);

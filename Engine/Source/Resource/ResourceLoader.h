@@ -26,7 +26,7 @@ namespace resource
         * @param const std::string& alias [optional]
         * @return T
         */
-        virtual T load(const std::string& name, const std::string& alias = "") = 0;
+        [[nodiscard]] virtual T load(const std::string& name, const std::string& alias = "") = 0;
 
         void registerRoot(const std::string& path);
         void unregisterRoot(const std::string& path);

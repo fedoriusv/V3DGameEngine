@@ -21,12 +21,11 @@ namespace resource
     {
     public:
 
-        ShaderHLSLDecoder(const renderer::ShaderHeader& header, bool reflections = true) noexcept;
-        ShaderHLSLDecoder(std::vector<std::string> supportedExtensions, const renderer::ShaderHeader& header, bool reflections = true) noexcept;
-
+        explicit ShaderHLSLDecoder(const renderer::ShaderHeader& header, bool reflections = true) noexcept;
+        explicit ShaderHLSLDecoder(std::vector<std::string> supportedExtensions, const renderer::ShaderHeader& header, bool reflections = true) noexcept;
         ~ShaderHLSLDecoder() = default;
 
-        Resource* decode(const stream::Stream* stream, const std::string& name = "") const override;
+        [[nodiscard]] Resource* decode(const stream::Stream* stream, const std::string& name = "") const override;
 
     private:
 

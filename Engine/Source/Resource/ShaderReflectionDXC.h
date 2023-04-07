@@ -14,14 +14,14 @@ namespace resource
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
-    * ShaderReflectionDXC. Shader Reflection for DXIL
+    * @brief ShaderReflectionDXC. Shader Reflection for DXIL
     */
     class ShaderReflectionDXC final
     {
     public:
 
-        ShaderReflectionDXC() noexcept;
-        ~ShaderReflectionDXC();
+        ShaderReflectionDXC() noexcept = default;
+        ~ShaderReflectionDXC() = default;
 
         bool reflect(const IDxcBlob* shader, stream::Stream* stream) const;
     };

@@ -1,4 +1,5 @@
 #include "ShaderReflectionDXC.h"
+#include "Stream/Stream.h"
 #include "Utils/Logger.h"
 
 #if defined(PLATFORM_WINDOWS) || defined(PLATFORM_XBOX)
@@ -27,14 +28,6 @@ void reflectAttributes(ID3D12ShaderReflection* reflector, const D3D12_SHADER_DES
 void reflectConstantBuffers(ID3D12ShaderReflection* reflector, const std::vector<D3D12_SHADER_INPUT_BIND_DESC>& bindDescs, stream::Stream* stream);
 void reflectSampledImages(ID3D12ShaderReflection* reflector, const std::vector<D3D12_SHADER_INPUT_BIND_DESC>& boundTexturesDescs, stream::Stream* stream);
 void reflectSamplers(ID3D12ShaderReflection* reflector, const std::vector<D3D12_SHADER_INPUT_BIND_DESC>& boundSamplersDescs, stream::Stream* stream);
-
-ShaderReflectionDXC::ShaderReflectionDXC() noexcept
-{
-}
-
-ShaderReflectionDXC::~ShaderReflectionDXC()
-{
-}
 
 bool ShaderReflectionDXC::reflect(const IDxcBlob* shader, stream::Stream* stream) const
 {

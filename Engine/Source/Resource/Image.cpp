@@ -1,4 +1,5 @@
 #include "Image.h"
+#include "Stream/Stream.h"
 
 namespace v3d
 {
@@ -7,7 +8,7 @@ namespace resource
 
 ImageHeader::ImageHeader() noexcept
     : _format(renderer::Format::Format_Undefined)
-    , _dimension(core::Dimension3D())
+    , _dimension(math::Dimension3D())
     , _layers(1)
     , _mips(1)
 
@@ -41,7 +42,7 @@ renderer::Format Image::getFormat() const
     return Image::getImageHeader()._format;
 }
 
-const core::Dimension3D& Image::getDimension() const
+const math::Dimension3D& Image::getDimension() const
 {
     return Image::getImageHeader()._dimension;
 }

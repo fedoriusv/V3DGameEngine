@@ -16,10 +16,6 @@ ShaderReflectionSpirV::ShaderReflectionSpirV(renderer::ShaderHeader::ShaderModel
 {
 }
 
-ShaderReflectionSpirV::~ShaderReflectionSpirV()
-{
-}
-
 bool ShaderReflectionSpirV::reflect(const std::vector<u32>& spirv, stream::Stream* stream)
 {
    auto convertSPRIVTypeToFormat = [](const spirv_cross::SPIRType& type) -> renderer::Format

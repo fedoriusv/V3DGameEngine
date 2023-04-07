@@ -10,18 +10,10 @@ namespace renderer
     class Context;
     class Shader;
 } //namespace renderer
-
 namespace resource
 {
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    enum ShaderBinaryBuildFlag
-    {
-        ShaderBinary_DontUseReflaction = 1 << 0,
-    };
-
-    typedef u32 ShaderBinaryBuildFlags;
 
     /**
     * @brief ShaderBinaryFileLoader class. Loader from file
@@ -30,6 +22,12 @@ namespace resource
     class ShaderBinaryFileLoader : public ResourceLoader<renderer::Shader*>, public ResourceDecoderRegistration
     {
     public:
+
+        enum ShaderBinaryBuildFlag
+        {
+            ShaderBinary_DontUseReflaction = 1 << 0,
+        };
+        typedef u32 ShaderBinaryBuildFlags;
 
         ShaderBinaryFileLoader() = delete;
         ShaderBinaryFileLoader(const ShaderBinaryFileLoader&) = delete;
@@ -51,8 +49,7 @@ namespace resource
         * @param const std::string& alias [optional]
         * @return Shader pointer
         */
-        renderer::Shader* load(const std::string& name, const std::string& alias = "") override;
-
+        [[nodiscard]] renderer::Shader* load(const std::string& name, const std::string& alias = "") override;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
