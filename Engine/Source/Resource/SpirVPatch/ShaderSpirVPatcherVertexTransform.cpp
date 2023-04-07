@@ -70,10 +70,10 @@ bool PatchVertexTransform::patch(const std::vector<u32>& spirv, std::vector<u32>
         std::tuple<bool, Constant<s32>>(false, { getWordInstruction(spv::Op::OpConstant, 3 + 1), (u32)~0, (u32)~0, 3 }),
     };
 
-    const f32 constantCos = std::cos(m_angle * core::k_degToRad);
+    const f32 constantCos = std::cos(m_angle * math::k_degToRad);
     std::tuple<bool, Constant<f32>> constantCosOp(false, { getWordInstruction(spv::Op::OpConstant, 3 + 1), (u32)~0, (u32)~0, constantCos });
 
-    const f32 constantSin = std::sin(m_angle * core::k_degToRad);
+    const f32 constantSin = std::sin(m_angle * math::k_degToRad);
     std::tuple<bool, Constant<f32>> constantSinOp(false, { getWordInstruction(spv::Op::OpConstant, 3 + 1), (u32)~0, (u32)~0, constantSin });
 
     u32 entryPointID = (u32)~0;
