@@ -43,7 +43,7 @@ D3DBuffer::D3DBuffer(ID3D12Device* device, Buffer::BufferType type, StreamBuffer
 
     switch (type)
     {
-    case Buffer::BufferType::BufferType_VertexBuffer:
+    case Buffer::BufferType::VertexBuffer:
     {
         if (usageFlag & StreamBufferUsage::StreamBuffer_Dynamic)
         {
@@ -59,7 +59,7 @@ D3DBuffer::D3DBuffer(ID3D12Device* device, Buffer::BufferType type, StreamBuffer
         break;
     }
 
-    case Buffer::BufferType::BufferType_IndexBuffer:
+    case Buffer::BufferType::IndexBuffer:
     {
         if (usageFlag & StreamBufferUsage::StreamBuffer_Dynamic)
         {
@@ -76,7 +76,7 @@ D3DBuffer::D3DBuffer(ID3D12Device* device, Buffer::BufferType type, StreamBuffer
         break;
     }
 
-    case Buffer::BufferType::BufferType_ConstantBuffer:
+    case Buffer::BufferType::ConstantBuffer:
     {
         m_heapProperties = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD);
         m_state = D3D12_RESOURCE_STATE_GENERIC_READ;
@@ -84,7 +84,7 @@ D3DBuffer::D3DBuffer(ID3D12Device* device, Buffer::BufferType type, StreamBuffer
         break;
     }
 
-    case Buffer::BufferType::BufferType_StagingBuffer:
+    case Buffer::BufferType::StagingBuffer:
     {
         ASSERT(usageFlag & StreamBufferUsage::StreamBuffer_Read, "must be read");
         m_heapProperties = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD);
@@ -93,7 +93,7 @@ D3DBuffer::D3DBuffer(ID3D12Device* device, Buffer::BufferType type, StreamBuffer
         break;
     }
 
-    case Buffer::BufferType::BufferType_Readback:
+    case Buffer::BufferType::Readback:
     {
         ASSERT(usageFlag & StreamBufferUsage::StreamBuffer_Read, "must be read");
         m_heapProperties = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_READBACK);
@@ -210,7 +210,7 @@ bool D3DBuffer::write(Context* context, u32 offset, u64 size, const void* data)
         D3DGraphicsCommandList* commandlist = static_cast<D3DGraphicsCommandList*>(dxContext->getOrAcquireCurrentCommandList());
         ASSERT(commandlist, "nullptr");
 
-        D3DBuffer* copyBuffer = new D3DBuffer(m_device, BufferType::BufferType_StagingBuffer, StreamBufferUsage::StreamBuffer_Read, m_size, "UploadBufferResource", m_allocator);
+        D3DBuffer* copyBuffer = new D3DBuffer(m_device, BufferType::StagingBuffer, StreamBufferUsage::StreamBuffer_Read, m_size, "UploadBufferResource", m_allocator);
         if (!copyBuffer->create())
         {
             copyBuffer->destroy();

@@ -16,14 +16,14 @@ namespace renderer
 namespace dx3d
 {
 
-D3D12_INPUT_CLASSIFICATION D3DGraphicPipelineState::convertInputRateToD3DClassification(VertexInputAttribDescription::InputRate rate)
+D3D12_INPUT_CLASSIFICATION D3DGraphicPipelineState::convertInputRateToD3DClassification(VertexInputAttributeDescription::InputRate rate)
 {
     switch (rate)
     {
-    case VertexInputAttribDescription::InputRate::InputRate_Vertex:
+    case VertexInputAttributeDescription::InputRate::InputRate_Vertex:
         return D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA;
 
-    case VertexInputAttribDescription::InputRate::InputRate_Instance:
+    case VertexInputAttributeDescription::InputRate::InputRate_Instance:
         return D3D12_INPUT_CLASSIFICATION_PER_INSTANCE_DATA;
     }
 
@@ -426,7 +426,7 @@ bool D3DGraphicPipelineState::create(const PipelineGraphicInfo* pipelineInfo)
             elementDesc.AlignedByteOffset = inputState._inputAttributes._inputAttributes[i]._offest;
 
             elementDesc.InputSlotClass = D3DGraphicPipelineState::convertInputRateToD3DClassification(inputBinding._rate);
-            elementDesc.InstanceDataStepRate = inputBinding._rate == VertexInputAttribDescription::InputRate_Instance ? inputBinding._stride : 0;
+            elementDesc.InstanceDataStepRate = inputBinding._rate == VertexInputAttributeDescription::InputRate_Instance ? inputBinding._stride : 0;
 
             m_buffersStride.push_back(inputBinding._stride);
         }

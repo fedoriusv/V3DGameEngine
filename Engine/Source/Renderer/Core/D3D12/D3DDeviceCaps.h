@@ -29,6 +29,7 @@ namespace dx3d
         D3D12_FEATURE_DATA_D3D12_OPTIONS featureOptions = {};
         D3D12_FEATURE_DATA_D3D12_OPTIONS3 featureOptions3 = {};
         D3D12_FEATURE_DATA_ARCHITECTURE featureArchitecture = {};
+        D3D12_FEATURE_DATA_GPU_VIRTUAL_ADDRESS_SUPPORT gpuVirtualAddress = {};
 
         D3D_SHADER_MODEL supportedShaderModel = D3D_SHADER_MODEL_5_1;
         D3D_FEATURE_LEVEL featureLevel = D3D_FEATURE_LEVEL_12_0;
@@ -44,7 +45,7 @@ namespace dx3d
 
         friend class D3DGraphicContext;
 
-        void initialize(IDXGIAdapter1* adapter, ID3D12Device* device);
+        void initialize(IDXGIAdapter3* adapter, ID3D12Device* device);
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

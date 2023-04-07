@@ -28,7 +28,7 @@ namespace dx3d
         explicit D3DGraphicPipelineState(ID3D12Device2* device, D3DRootSignatureManager* const signatureManager) noexcept;
         ~D3DGraphicPipelineState();
 
-        static D3D12_INPUT_CLASSIFICATION convertInputRateToD3DClassification(VertexInputAttribDescription::InputRate rate);
+        static D3D12_INPUT_CLASSIFICATION convertInputRateToD3DClassification(VertexInputAttributeDescription::InputRate rate);
         static D3D12_PRIMITIVE_TOPOLOGY_TYPE convertPrimitiveTopologyTypeToD3DTopology(PrimitiveTopology topology);
         static D3D_PRIMITIVE_TOPOLOGY convertPrimitiveTopologyToD3DTopology(PrimitiveTopology topology, u32 patch);
         static D3D12_FILL_MODE convertPolygonModeToD3DMode(PolygonMode mode);

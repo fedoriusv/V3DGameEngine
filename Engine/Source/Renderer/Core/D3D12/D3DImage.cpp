@@ -904,7 +904,7 @@ D3DImage::D3DImage(ID3D12Device* device, Format format, u32 width, u32 height, u
     if ((flags & TextureUsage::TextureUsage_GenerateMipmaps) && !(flags & TextureUsage::TextureUsage_Resolve))
     {
         ASSERT(flags & TextureUsage::TextureUsage_Attachment, "must be attachment");
-        m_mipmaps = ImageFormat::calculateMipmapCount({ m_size.width, m_size.height, m_size.depth });
+        m_mipmaps = ImageFormat::calculateMipmapCount({ m_size.m_width, m_size.m_height, m_size.m_depth });
     }
 
     m_state.resize(m_arrays * m_mipmaps + 1, D3D12_RESOURCE_STATE_COMMON);
@@ -914,7 +914,7 @@ D3DImage::D3DImage(ID3D12Device* device, Format format, u32 width, u32 height, u
 #endif //DEBUG_OBJECT_MEMORY
 }
 
-D3DImage::D3DImage(ID3D12Device* device, D3D12_RESOURCE_DIMENSION dimension, Format format, const core::Dimension3D& size, u32 arrays, u32 mipmap, TextureUsageFlags flags, const std::string& name) noexcept
+D3DImage::D3DImage(ID3D12Device* device, D3D12_RESOURCE_DIMENSION dimension, Format format, const math::Dimension3D& size, u32 arrays, u32 mipmap, TextureUsageFlags flags, const std::string& name) noexcept
     : Image()
     , m_device(device)
     , m_resource(nullptr)
@@ -1057,9 +1057,9 @@ bool D3DImage::create()
     D3D12_RESOURCE_DESC textureDesc = {};
     textureDesc.Dimension = m_dimension;
     textureDesc.Alignment = 0;
-    textureDesc.Width = m_size.width;
-    textureDesc.Height = m_size.height;
-    textureDesc.DepthOrArraySize = m_size.depth * m_arrays;
+    textureDesc.Width = m_size.m_width;
+    textureDesc.Height = m_size.m_height;
+    textureDesc.DepthOrArraySize = m_size.m_depth * m_arrays;
     textureDesc.MipLevels = m_mipmaps;
     textureDesc.Format = D3DImage::convertToTypelessFormat(m_format);
     textureDesc.SampleDesc = { m_samples, 0 };
@@ -1408,18 +1408,18 @@ void D3DImage::destroy()
     SAFE_DELETE(m_resource);
 }
 
-void D3DImage::clear(Context* context, const core::Vector4D& color)
+void D3DImage::clear(Context* context, const math::Vector4D& color)
 {
     D3DGraphicsCommandList* commandlist = (D3DGraphicsCommandList*)static_cast<D3DGraphicContext*>(context)->getOrAcquireCurrentCommandList();
     ASSERT(commandlist, "nullptr");
 
-    const FLOAT dxClearColor[] = { color.x, color.y, color.z, color.w };
+    const FLOAT dxClearColor[] = { color.m_x, color.m_y, color.m_z, color.m_w };
     const D3D12_RECT dxRect =
     {
         0,
         0,
-        static_cast<LONG>(m_size.width),
-        static_cast<LONG>(m_size.height)
+        static_cast<LONG>(m_size.m_width),
+        static_cast<LONG>(m_size.m_height)
     };
 
     D3D12_RESOURCE_STATES oldState = m_state.front();
@@ -1447,8 +1447,8 @@ void D3DImage::clear(Context* context, f32 depth, u32 stencil)
     {
         0,
         0,
-        static_cast<LONG>(m_size.width),
-        static_cast<LONG>(m_size.height)
+        static_cast<LONG>(m_size.m_width),
+        static_cast<LONG>(m_size.m_height)
     };
 
     D3D12_RESOURCE_STATES oldState = m_state.front();
@@ -1466,17 +1466,17 @@ void D3DImage::clear(Context* context, f32 depth, u32 stencil)
     commandlist->transition(this, oldState);
 }
 
-bool D3DImage::upload(Context* context, const core::Dimension3D& size, u32 slices, u32 mips, const void* data)
+bool D3DImage::upload(Context* context, const math::Dimension3D& size, u32 slices, u32 mips, const void* data)
 {
-    return D3DImage::internalUpdate(context, core::Dimension3D(0, 0, 0), size, slices, mips, data);
+    return D3DImage::internalUpdate(context, math::Dimension3D(0, 0, 0), size, slices, mips, data);
 }
 
-bool D3DImage::upload(Context* context, const core::Dimension3D& offsets, const core::Dimension3D& size, u32 slices, const void* data)
+bool D3DImage::upload(Context* context, const math::Dimension3D& offsets, const math::Dimension3D& size, u32 slices, const void* data)
 {
     return D3DImage::internalUpdate(context, offsets, size, slices, 1, data);
 }
 
-bool D3DImage::internalUpdate(Context* context, const core::Dimension3D& offsets, const core::Dimension3D& size, u32 slices, u32 mips, const void* data)
+bool D3DImage::internalUpdate(Context* context, const math::Dimension3D& offsets, const math::Dimension3D& size, u32 slices, u32 mips, const void* data)
 {
     D3DGraphicContext* dxContext = static_cast<D3DGraphicContext*>(context);
     ASSERT(dxContext, "nullptr");
@@ -1495,7 +1495,7 @@ bool D3DImage::internalUpdate(Context* context, const core::Dimension3D& offsets
     m_device->GetCopyableFootprints(&resourceDesc, 0, static_cast<UINT>(subResources.size()), 0, subResourceFootPrints.data(), subResourcesNumRows.data(), subResourcesNumRowsSize.data(), &uploadBufferSize);
 
 
-    D3DBuffer* copyBuffer = new D3DBuffer(m_device, Buffer::BufferType::BufferType_StagingBuffer, StreamBufferUsage::StreamBuffer_Read, uploadBufferSize, "UploadBufferResource");
+    D3DBuffer* copyBuffer = new D3DBuffer(m_device, Buffer::BufferType::StagingBuffer, StreamBufferUsage::StreamBuffer_Read, uploadBufferSize, "UploadBufferResource");
     if (!copyBuffer->create())
     {
         copyBuffer->destroy();
@@ -1505,13 +1505,13 @@ bool D3DImage::internalUpdate(Context* context, const core::Dimension3D& offsets
         return false;
     }
 
-    auto calculateSubresourceRowPitch = [](const core::Dimension3D& size, u32 mipLevel, Format format) -> u64
+    auto calculateSubresourceRowPitch = [](const math::Dimension3D& size, u32 mipLevel, Format format) -> u64
     {
-        const u32 width = std::max(size.width >> mipLevel, 1U);
+        const u32 width = std::max(size.m_width >> mipLevel, 1U);
         if (ImageFormat::isFormatCompressed(format))
         {
-            const core::Dimension2D& blockDim = ImageFormat::getBlockDimension(format);
-            const u32 widthSize = (width + blockDim.width - 1) / blockDim.width;
+            const math::Dimension2D& blockDim = ImageFormat::getBlockDimension(format);
+            const u32 widthSize = (width + blockDim.m_width - 1) / blockDim.m_width;
 
             return u64(widthSize * ImageFormat::getFormatBlockSize(format));
         }
@@ -1519,15 +1519,15 @@ bool D3DImage::internalUpdate(Context* context, const core::Dimension3D& offsets
         return u64(width * ImageFormat::getFormatBlockSize(format));
     };
 
-    auto calculateMipmapSize = [](const core::Dimension3D& size, u32 mipLevel, Format format) -> u64
+    auto calculateMipmapSize = [](const math::Dimension3D& size, u32 mipLevel, Format format) -> u64
     {
-        const u32 width = std::max(size.width >> mipLevel, 1U);
-        const u32 height = std::max(size.height >> mipLevel, 1U);
+        const u32 width = std::max(size.m_width >> mipLevel, 1U);
+        const u32 height = std::max(size.m_height >> mipLevel, 1U);
         if (ImageFormat::isFormatCompressed(format))
         {
-            const core::Dimension2D& blockDim = ImageFormat::getBlockDimension(format);
-            const u32 widthSize = (width + blockDim.width - 1) / blockDim.width;
-            const u32 heightSize = (width + blockDim.height - 1) / blockDim.height;
+            const math::Dimension2D& blockDim = ImageFormat::getBlockDimension(format);
+            const u32 widthSize = (width + blockDim.m_width - 1) / blockDim.m_width;
+            const u32 heightSize = (width + blockDim.m_height - 1) / blockDim.m_height;
 
             return u64(widthSize * heightSize * ImageFormat::getFormatBlockSize(format));
         }
@@ -1535,7 +1535,7 @@ bool D3DImage::internalUpdate(Context* context, const core::Dimension3D& offsets
         return u64(width * height * ImageFormat::getFormatBlockSize(format));
     };
 
-    ASSERT(offsets.width == 0 && offsets.height == 0 && offsets.depth == 0, "not impl");
+    ASSERT(offsets.m_width == 0 && offsets.m_height == 0 && offsets.m_depth == 0, "not impl");
     for (u32 slice = 0; slice < slices; ++slice)
     {
         UINT64 dataOffset = 0;
@@ -1543,7 +1543,7 @@ bool D3DImage::internalUpdate(Context* context, const core::Dimension3D& offsets
         {
             UINT index = D3D12CalcSubresource(mip, slice, 0, mips, slices);
 
-            const u32 width = std::max(m_size.width >> mip, 1U);
+            const u32 width = std::max(m_size.m_width >> mip, 1U);
 
             D3D12_SUBRESOURCE_DATA& textureData = subResources[index];
             textureData.pData = reinterpret_cast<const BYTE*>(data) + dataOffset;

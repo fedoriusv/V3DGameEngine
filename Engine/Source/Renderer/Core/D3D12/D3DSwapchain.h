@@ -30,7 +30,7 @@ namespace dx3d
         struct SwapchainConfig
         {
             NativeWindows       _window               = NULL;
-            core::Dimension2D   _size;
+            math::Dimension2D   _size;
             u32                 _countSwapchainImages = 0;
             bool                _vsync                = false;
             bool                _fullscreen           = false;

@@ -150,7 +150,7 @@ bool D3DGraphicContext::initialize()
 
         // Helper function for acquiring the first available hardware adapter that supports Direct3D 12.
         // If no such adapter can be found, *ppAdapter will be set to nullptr.
-        auto getHardwareAdapter = [](IDXGIFactory2* pFactory, IDXGIAdapter1** ppAdapter) -> HRESULT
+        auto getHardwareAdapter = [](IDXGIFactory2* pFactory, IDXGIAdapter** ppAdapter) -> HRESULT
         {
             IDXGIAdapter1* adapter = nullptr;
             *ppAdapter = nullptr;
@@ -182,9 +182,16 @@ bool D3DGraphicContext::initialize()
             return result;
         };
         
-        if (HRESULT result = getHardwareAdapter(m_factory, &m_adapter); FAILED(result))
+        IDXGIAdapter* adapter = nullptr;
+        if (HRESULT result = getHardwareAdapter(m_factory, &adapter); FAILED(result))
         {
             LOG_ERROR("D3DGraphicContext::initialize getHardwareAdapter is failed. Error %d", D3DDebug::stringError(result).c_str());
+            return false;
+        }
+
+        if (HRESULT result = adapter->QueryInterface(&m_adapter); FAILED(result))
+        {
+            LOG_ERROR("D3DGraphicContext::initialize. Can't get Adapter3, QueryInterface is failed. Error %d", D3DDebug::stringError(result).c_str());
             return false;
         }
     }
@@ -356,6 +363,7 @@ bool D3DGraphicContext::initialize()
     m_frameProfiler.attach(m_CPUProfiler);
     g_d3dCPUProfiler = m_CPUProfiler;
 #endif //FRAME_PROFILER_ENABLE
+
     return true;
 }
 
@@ -696,7 +704,7 @@ void D3DGraphicContext::drawIndexed(const StreamBufferDescription& desc, u32 fir
     }
 }
 
-void D3DGraphicContext::dispatchCompute(const core::Dimension3D& groups)
+void D3DGraphicContext::dispatchCompute(const math::Dimension3D& groups)
 {
 #if D3D_DEBUG
     LOG_DEBUG("D3DGraphicContext::dispatchCompute");
@@ -837,7 +845,7 @@ void D3DGraphicContext::transitionImages(std::vector<std::tuple<const Image*, Im
     }
 }
 
-void D3DGraphicContext::setViewport(const core::Rect32& viewport, const core::Vector2D& depth)
+void D3DGraphicContext::setViewport(const math::Rect32& viewport, const math::Vector2D& depth)
 {
 #if D3D_DEBUG
     LOG_DEBUG("D3DGraphicContext::setViewport");
@@ -854,15 +862,15 @@ void D3DGraphicContext::setViewport(const core::Rect32& viewport, const core::Ve
         static_cast<f32>(viewport.getTopY()),
         static_cast<f32>(viewport.getRightX()),
         static_cast<f32>(viewport.getBottomY()),
-        depth.x,
-        depth.y
+        depth.m_x,
+        depth.m_y
     };
 
     D3DGraphicsCommandList* cmdList = static_cast<D3DGraphicsCommandList*>(D3DGraphicContext::getOrAcquireCurrentCommandList());
     cmdList->setViewport({ dxViewport });
 }
 
-void D3DGraphicContext::setScissor(const core::Rect32& scissor)
+void D3DGraphicContext::setScissor(const math::Rect32& scissor)
 {
 #if D3D_DEBUG
     LOG_DEBUG("D3DGraphicContext::setScissor");
@@ -1117,7 +1125,7 @@ void D3DGraphicContext::removeQuery(Query* query)
     }
 }
 
-Image* D3DGraphicContext::createImage(TextureTarget target, Format format, const core::Dimension3D& dimension, u32 layers, u32 mipmapLevel, TextureUsageFlags flags, const std::string& name)
+Image* D3DGraphicContext::createImage(TextureTarget target, Format format, const math::Dimension3D& dimension, u32 layers, u32 mipmapLevel, TextureUsageFlags flags, const std::string& name)
 {
 #if D3D_DEBUG
     LOG_DEBUG("D3DGraphicContext::createImage");
@@ -1133,7 +1141,7 @@ Image* D3DGraphicContext::createImage(TextureTarget target, Format format, const
     return new D3DImage(m_device, dxDimension, format, dimension, layers, mipmapLevel, flags, name);
 }
 
-Image* D3DGraphicContext::createImage(TextureTarget target, Format format, const core::Dimension3D& dimension, u32 layers, TextureSamples samples, TextureUsageFlags flags, const std::string& name)
+Image* D3DGraphicContext::createImage(TextureTarget target, Format format, const math::Dimension3D& dimension, u32 layers, TextureSamples samples, TextureUsageFlags flags, const std::string& name)
 {
 #if D3D_DEBUG
     LOG_DEBUG("D3DGraphicContext::createImage");
@@ -1146,9 +1154,9 @@ Image* D3DGraphicContext::createImage(TextureTarget target, Format format, const
 
     D3D12_RESOURCE_DIMENSION dxDimension = D3DImage::convertImageTargetToD3DDimension(target);
     u32 dxSamples = (samples > TextureSamples::TextureSamples_x1) ? 1 << (u32)samples : 1;
-    ASSERT(dimension.depth == 1, "must be 1");
+    ASSERT(dimension.m_depth == 1, "must be 1");
 
-    return new D3DImage(m_device, format, dimension.width, dimension.height, layers, dxSamples, flags, name);
+    return new D3DImage(m_device, format, dimension.m_width, dimension.m_height, layers, dxSamples, flags, name);
 }
 
 void D3DGraphicContext::removeImage(Image* image)
@@ -1194,7 +1202,7 @@ Buffer* D3DGraphicContext::createBuffer(Buffer::BufferType type, u16 usageFlag, 
     RenderFrameProfiler::StackProfiler stackProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::CreateResources);
 #endif //FRAME_PROFILER_ENABLE
 
-    if (type == Buffer::BufferType::BufferType_VertexBuffer || type == Buffer::BufferType::BufferType_IndexBuffer || type == Buffer::BufferType::BufferType_ConstantBuffer)
+    if (type == Buffer::BufferType::VertexBuffer || type == Buffer::BufferType::IndexBuffer || type == Buffer::BufferType::ConstantBuffer)
     {
         return new D3DBuffer(m_device, type, usageFlag, size, name, m_heapAllocator);
     }
@@ -1288,7 +1296,7 @@ void D3DGraphicContext::clearRenderTarget(const std::vector<const Image*>& image
     //TODO
 }
 
-Framebuffer* D3DGraphicContext::createFramebuffer(const std::vector<Image*>& images, const core::Dimension2D& size)
+Framebuffer* D3DGraphicContext::createFramebuffer(const std::vector<Image*>& images, const math::Dimension2D& size)
 {
 #if D3D_DEBUG
     LOG_DEBUG("D3DGraphicContext::createFramebuffer");
@@ -1354,7 +1362,7 @@ Sampler* D3DGraphicContext::createSampler(const SamplerDescription& desc)
     return new D3DSampler(desc);
 }
 
-void D3DGraphicContext::clearBackbuffer(const core::Vector4D& color)
+void D3DGraphicContext::clearBackbuffer(const math::Vector4D& color)
 {
 #if FRAME_PROFILER_ENABLE
     RenderFrameProfiler::StackProfiler stackFrameProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::FrameTime);
@@ -1415,6 +1423,22 @@ bool D3DGraphicContext::perpareCompute(D3DGraphicsCommandList* cmdList)
     m_descriptorState->invalidateDescriptorSetTable();
 
     return true;
+}
+
+void D3DGraphicContext::videoMemoryInfo()
+{
+    DXGI_QUERY_VIDEO_MEMORY_INFO queryVideoMemoryLocal = {};
+    {
+        HRESULT result = m_adapter->QueryVideoMemoryInfo(0, DXGI_MEMORY_SEGMENT_GROUP_LOCAL, &queryVideoMemoryLocal);
+        ASSERT(SUCCEEDED(result), "QueryVideoMemoryInfo is falied");
+    }
+
+
+    DXGI_QUERY_VIDEO_MEMORY_INFO queryVideoMemoryNonLocal = {};
+    {
+        HRESULT result = m_adapter->QueryVideoMemoryInfo(0, DXGI_MEMORY_SEGMENT_GROUP_NON_LOCAL, &queryVideoMemoryNonLocal);
+        ASSERT(SUCCEEDED(result), "QueryVideoMemoryInfo is falied");
+    }
 }
 
 D3DCommandList* D3DGraphicContext::getOrAcquireCurrentCommandList(D3DCommandList::Type type)

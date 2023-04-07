@@ -13,7 +13,7 @@ namespace renderer
 namespace dx3d
 {
 
-void D3DDeviceCaps::initialize(IDXGIAdapter1* adapter, ID3D12Device* device)
+void D3DDeviceCaps::initialize(IDXGIAdapter3* adapter, ID3D12Device* device)
 {
     {
         DXGI_ADAPTER_DESC desc = {};

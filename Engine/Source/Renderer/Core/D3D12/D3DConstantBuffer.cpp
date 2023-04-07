@@ -12,9 +12,8 @@ namespace renderer
 namespace dx3d
 {
 
-
 D3DConstantBuffer::D3DConstantBuffer(ID3D12Device* device, u32 size, D3DHeapAllocator* allocator) noexcept
-    : m_buffer(new D3DBuffer(device, Buffer::BufferType::BufferType_ConstantBuffer, 0, size, "ConstantBuffer", allocator))
+    : m_buffer(new D3DBuffer(device, Buffer::BufferType::ConstantBuffer, 0, size, "ConstantBuffer", allocator))
     , m_mappedData(nullptr)
 {
     LOG_DEBUG("D3DConstantBuffer::D3DConstantBuffer constructor %llx", this);
@@ -84,7 +83,7 @@ D3DConstantBufferManager::~D3DConstantBufferManager()
 
 std::tuple<D3DConstantBuffer*, u32> D3DConstantBufferManager::acquireConstanBuffer(u64 requestSize)
 {
-    u64 requestedSize = core::alignUp<u64>(requestSize, D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT);
+    u64 requestedSize = math::alignUp<u64>(requestSize, D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT);
 
     u32 desiredBufferSize = D3DDeviceCaps::getInstance()->memoryConstantBufferSize;
     if (std::get<0>(m_currentConstantBuffer))

@@ -25,7 +25,7 @@ namespace dx3d
     public:
 
         explicit D3DImage(ID3D12Device* device, Format format, u32 width, u32 height, u32 arrays, u32 samples, TextureUsageFlags flags, [[maybe_unused]] const std::string& name = "") noexcept;
-        explicit D3DImage(ID3D12Device* device, D3D12_RESOURCE_DIMENSION dimension, Format format, const core::Dimension3D& size, u32 arrays, u32 mipmap, TextureUsageFlags flags, [[maybe_unused]] const std::string& name = "") noexcept;
+        explicit D3DImage(ID3D12Device* device, D3D12_RESOURCE_DIMENSION dimension, Format format, const math::Dimension3D& size, u32 arrays, u32 mipmap, TextureUsageFlags flags, [[maybe_unused]] const std::string& name = "") noexcept;
         ~D3DImage();
 
         bool create() override;
@@ -33,11 +33,11 @@ namespace dx3d
 
         void destroy() override;
 
-        void clear(Context* context, const core::Vector4D& color) override;
+        void clear(Context* context, const math::Vector4D& color) override;
         void clear(Context* context, f32 depth, u32 stencil) override;
 
-        bool upload(Context* context, const core::Dimension3D& size, u32 slices, u32 mips, const void* data) override;
-        bool upload(Context* context, const core::Dimension3D& offsets, const core::Dimension3D& size, u32 slices, const void* data) override;
+        bool upload(Context* context, const math::Dimension3D& size, u32 slices, u32 mips, const void* data) override;
+        bool upload(Context* context, const math::Dimension3D& offsets, const math::Dimension3D& size, u32 slices, const void* data) override;
 
         D3DImage* getResolveImage() const;
         ID3D12Resource* getResource() const;
@@ -76,7 +76,7 @@ namespace dx3d
 
         }
 
-        const core::Dimension3D& getSize() const;
+        const math::Dimension3D& getSize() const;
         u32 getCountSamples() const;
         DXGI_FORMAT getFormat() const;
         Format getOriginFormat() const;
@@ -110,7 +110,7 @@ namespace dx3d
         D3D12_RESOURCE_DIMENSION getDimension() const;
 
         void createResourceView(DXGI_FORMAT shaderResourceFormat);
-        bool internalUpdate(Context* context, const core::Dimension3D& offsets, const core::Dimension3D& size, u32 layers, u32 mips, const void* data);
+        bool internalUpdate(Context* context, const math::Dimension3D& offsets, const math::Dimension3D& size, u32 layers, u32 mips, const void* data);
 
         ID3D12Device* const m_device;
 
@@ -146,7 +146,7 @@ namespace dx3d
 
         D3D12_RESOURCE_DIMENSION m_dimension;
         DXGI_FORMAT m_format;
-        core::Dimension3D m_size;
+        math::Dimension3D m_size;
         u32 m_mipmaps;
         u32 m_arrays;
         u32 m_samples;
@@ -172,7 +172,7 @@ namespace dx3d
         return m_resource;
     }
 
-    inline const core::Dimension3D& D3DImage::getSize() const
+    inline const math::Dimension3D& D3DImage::getSize() const
     {
         return m_size;
     }

@@ -66,11 +66,11 @@ bool D3DSwapchainWindows::create(const SwapchainConfig& config)
     {
         // Describe and create the swap chain.
         DXGI_SWAP_CHAIN_DESC1 swapChainDesc = {};
-        swapChainDesc.Flags = 0;
+        swapChainDesc.Flags = DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH | DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING; //resizeTarget
         swapChainDesc.BufferCount = config._countSwapchainImages;
-        swapChainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
-        swapChainDesc.Width = config._size.width;
-        swapChainDesc.Height = config._size.height;
+        swapChainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT | DXGI_USAGE_SHADER_INPUT;
+        swapChainDesc.Width = config._size.m_width;
+        swapChainDesc.Height = config._size.m_height;
         swapChainDesc.Format = D3DImage::convertImageFormatToD3DFormat(format);
         swapChainDesc.AlphaMode = DXGI_ALPHA_MODE_UNSPECIFIED;
         swapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
@@ -126,7 +126,7 @@ bool D3DSwapchainWindows::create(const SwapchainConfig& config)
             rtvHandle.Offset(1, m_descriptorHeap->getIncrement());
 
             CD3DX12_CPU_DESCRIPTOR_HANDLE imageHandle(m_descriptorHeap->getCPUHandle(), index, m_descriptorHeap->getIncrement());
-            D3DImage* image = new D3DImage(m_device, format, config._size.width, config._size.height, 1U, 1U,
+            D3DImage* image = new D3DImage(m_device, format, config._size.m_width, config._size.m_height, 1U, 1U,
                 TextureUsage::TextureUsage_Attachment | TextureUsage::TextureUsage_Sampled | TextureUsage::TextureUsage_Read, "SwapchainImage_" + std::to_string(index));
             if (!image->create(swapchainImage, imageHandle))
             {

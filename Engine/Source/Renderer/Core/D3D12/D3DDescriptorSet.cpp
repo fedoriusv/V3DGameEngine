@@ -213,7 +213,7 @@ void D3DDescriptorSetState::updateResourceView(D3DDescriptorHeap* heap, u32 offs
 
                 D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc = {};
                 cbvDesc.BufferLocation = buffer->getGPUAddress();
-                cbvDesc.SizeInBytes = core::alignUp<UINT>(resource._resource._constantBuffer._size, 256);
+                cbvDesc.SizeInBytes = math::alignUp<UINT>(resource._resource._constantBuffer._size, 256);
 
                 CD3DX12_CPU_DESCRIPTOR_HANDLE cbHandle(heap->getCPUHandle(), offset + descriptorIndex, heap->getIncrement());
                 m_device->CreateConstantBufferView(&cbvDesc, cbHandle);

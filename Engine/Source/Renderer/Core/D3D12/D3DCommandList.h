@@ -135,7 +135,7 @@ namespace dx3d
         void draw(u32 vertexCountPerInstance,u32 instanceCount, u32 startVertexLocation, u32 startInstanceLocation);
         void drawIndexed(u32 indexCountPerInstance, u32 instanceCount, u32 startIndexLocation, u32 baseVertexLocation, u32 startInstanceLocation);
 
-        void dispatch(const core::Dimension3D& dimension);
+        void dispatch(const math::Dimension3D& dimension);
 
         void setViewport(const std::vector<D3D12_VIEWPORT>& viewport);
         void setScissor(const std::vector<D3D12_RECT>& scissors);

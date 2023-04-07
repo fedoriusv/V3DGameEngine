@@ -114,7 +114,7 @@ bool D3DQueryHeap::create()
         return false;
     }
 
-    m_resolveBuffer = new D3DBuffer(m_device, Buffer::BufferType::BufferType_Readback, StreamBufferUsage::StreamBuffer_Read, desc.Count * sizeof(u64), "QueryBuffer", m_allocator);
+    m_resolveBuffer = new D3DBuffer(m_device, Buffer::BufferType::Readback, StreamBufferUsage::StreamBuffer_Read, desc.Count * sizeof(u64), "QueryBuffer", m_allocator);
     if (!m_resolveBuffer->create())
     {
         LOG_ERROR("D3DQueryHeap::create can't create resolve buffer");

@@ -365,7 +365,7 @@ void D3DGraphicsCommandList::drawIndexed(u32 indexCountPerInstance, u32 instance
     cmdList->DrawIndexedInstanced( indexCountPerInstance, instanceCount, startIndexLocation, baseVertexLocation, startInstanceLocation);
 }
 
-void D3DGraphicsCommandList::dispatch(const core::Dimension3D& dimension)
+void D3DGraphicsCommandList::dispatch(const math::Dimension3D& dimension)
 {
     ASSERT(m_commandList, "nullptr");
     ASSERT(m_status == Status::ReadyToRecord, "not record");
@@ -373,7 +373,7 @@ void D3DGraphicsCommandList::dispatch(const core::Dimension3D& dimension)
     m_transition.execute(this);
 
     ID3D12GraphicsCommandList* cmdList = D3DGraphicsCommandList::getHandle();
-    cmdList->Dispatch(dimension.width, dimension.height, dimension.depth);
+    cmdList->Dispatch(dimension.m_width, dimension.m_height, dimension.m_depth);
 }
 
 void D3DGraphicsCommandList::setViewport(const std::vector<D3D12_VIEWPORT>& viewport)
@@ -448,7 +448,7 @@ void D3DGraphicsCommandList::resolveQuery(D3DQueryHeap* heap, u32 start, u32 cou
     ASSERT(m_commandList, "nullptr");
     ASSERT(m_status == Status::ReadyToRecord, "not record");
     ASSERT(buffer, "nullptr");
-    ASSERT(offset == core::alignUp<u32>(offset, sizeof(u64)), "must be aligned to 8");
+    ASSERT(offset == math::alignUp<u32>(offset, sizeof(u64)), "must be aligned to 8");
 
     ID3D12GraphicsCommandList* cmdList = D3DGraphicsCommandList::getHandle();
     cmdList->ResolveQueryData(heap->getHandle(), heap->getType(), start, count, buffer->getResource(), offset);
@@ -494,7 +494,7 @@ void D3DGraphicsCommandList::clearRenderTargets(D3DGraphicsCommandList* cmdList,
             case RenderTargetLoadOp::LoadOp_Clear:
             {
                 f32 color[4] = {};
-                memcpy(&color, &clearInfo._color[i], sizeof(core::Vector4D));
+                memcpy(&color, &clearInfo._color[i], sizeof(math::Vector4D));
 
                 std::vector<D3D12_RECT> rect =
                 {

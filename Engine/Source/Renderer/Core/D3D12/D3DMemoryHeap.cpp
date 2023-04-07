@@ -56,7 +56,7 @@ D3DMemoryHeap D3DSimpleHeapAllocator::allocate(u64 size, u64 align, const D3D12_
 {
     ID3D12Heap* heap = nullptr;
 
-    ASSERT(size == core::alignUp(size, align), "must be aligned");
+    ASSERT(size == math::alignUp(size, align), "must be aligned");
     D3D12_HEAP_DESC desc = {};
     desc.SizeInBytes = size;
     desc.Alignment = align;
