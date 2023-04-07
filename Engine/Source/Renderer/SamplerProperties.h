@@ -59,7 +59,7 @@ namespace renderer
         */
         struct SamplerDesc
         {
-            core::Vector4D          _borderColor;
+            math::Vector4D          _borderColor;
             f32                     _lodBias;
 
             SamplerAnisotropic      _anisotropic  : 5;

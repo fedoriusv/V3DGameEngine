@@ -78,18 +78,18 @@ namespace renderer
         void draw(const StreamBufferDescription& desc, u32 firstVertex, u32 countVertex, u32 countInstance);
         void drawIndexed(const StreamBufferDescription& desc, u32 firstIndex, u32 countIndex, u32 countInstance);
 
-        void dispatchCompute(const core::Dimension3D& groups = { 1, 1, 1});
+        void dispatchCompute(const math::Dimension3D& groups = { 1, 1, 1});
 
         void pushCommand(Command* cmd);
 
-        void clearBackbuffer(const core::Vector4D& color);
+        void clearBackbuffer(const math::Vector4D& color);
 
         void setRenderTarget(RenderTargetState* rendertarget);
         void setPipelineState(GraphicsPipelineState* pipeline);
         void setPipelineState(ComputePipelineState* pipeline);
 
-        void setViewport(const core::Rect32& viewport, const core::Vector2D& depth = {0.0f, 1.0f});
-        void setScissor(const core::Rect32& scissor);
+        void setViewport(const math::Rect32& viewport, const math::Vector2D& depth = {0.0f, 1.0f});
+        void setScissor(const math::Rect32& scissor);
 
         void transition(const TextureView& texture, TransitionOp state);
 
@@ -110,9 +110,9 @@ namespace renderer
 
         struct ContextStates
         {
-            core::Rect32    _viewportColor;
-            core::Vector2D  _viewportDepth;
-            core::Rect32    _scissor;
+            math::Rect32    _viewportColor;
+            math::Vector2D  _viewportDepth;
+            math::Rect32    _scissor;
         };
 
 

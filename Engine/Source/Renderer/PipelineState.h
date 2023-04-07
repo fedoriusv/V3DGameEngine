@@ -152,12 +152,12 @@ namespace renderer
         * @brief GraphicsPipelineState constructor.
         * Private method. Use createObject interface inside CommandList class to call.
         * 
-        * @param const VertexInputAttribDescription& vertex [required]
+        * @param const VertexInputAttributeDescription& vertex [required]
         * @param const ShaderProgram* const program [required]
         * @param onst RenderTargetState* const renderTaget [required]
         * @param const std::string& name [optional]
         */
-        explicit GraphicsPipelineState(CommandList& cmdList, const VertexInputAttribDescription& vertex, const ShaderProgram* const program, const RenderTargetState* const renderTaget, [[maybe_unused]] const std::string& name = "") noexcept;
+        explicit GraphicsPipelineState(CommandList& cmdList, const VertexInputAttributeDescription& vertex, const ShaderProgram* const program, const RenderTargetState* const renderTaget, [[maybe_unused]] const std::string& name = "") noexcept;
 
         /**
         * @brief GraphicsPipelineState constructor.

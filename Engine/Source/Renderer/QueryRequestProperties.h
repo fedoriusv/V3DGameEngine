@@ -22,17 +22,6 @@ namespace renderer
     };
 
     /**
-    * @brief QueryStatus enum
-    */
-    enum class QueryStatus
-    {
-        Ready,
-        Started,
-        Ended,
-        Submited
-    };
-
-    /**
     * @brief QueryResult enum
     */
     enum class QueryResult

@@ -228,9 +228,9 @@ namespace renderer
         return k_formatList[format][1];
     }
 
-    core::Dimension2D ImageFormat::getBlockDimension(Format format)
+    math::Dimension2D ImageFormat::getBlockDimension(Format format)
     {
-        return core::Dimension2D(k_formatList[format][2], k_formatList[format][3]);
+        return math::Dimension2D(k_formatList[format][2], k_formatList[format][3]);
     }
 
     bool ImageFormat::isFormatCompressed(Format format)
@@ -238,32 +238,32 @@ namespace renderer
         return k_formatList[format][4];
     }
 
-    u64 ImageFormat::calculateImageMipSize(const core::Dimension3D& size, u32 mipLevel, Format format)
+    u64 ImageFormat::calculateImageMipSize(const math::Dimension3D& size, u32 mipLevel, Format format)
     {
-        core::Dimension3D mipSize;
-        mipSize.width = std::max(size.width >> mipLevel, 1U);
-        mipSize.height = std::max(size.height >> mipLevel, 1U);
-        mipSize.depth = std::max(size.depth >> mipLevel, 1U);
+        math::Dimension3D mipSize;
+        mipSize.m_width = math::max(size.m_width >> mipLevel, 1U);
+        mipSize.m_height = math::max(size.m_height >> mipLevel, 1U);
+        mipSize.m_depth = math::max(size.m_depth >> mipLevel, 1U);
 
         u64 calculatedSize = static_cast<u64>(ImageFormat::getFormatBlockSize(format));
         if (ImageFormat::isFormatCompressed(format))
         {
-            auto roundToBlocksLayer = [](const core::Dimension3D& size, const core::Dimension2D& blockDim, u64 blockSize) -> u64
+            auto roundToBlocksLayer = [](const math::Dimension3D& size, const math::Dimension2D& blockDim, u64 blockSize) -> u64
             {
-                const u64 widthSize = (size.width + blockDim.width - 1) / blockDim.width;
-                const u64 heightSize = (size.height + blockDim.height - 1) / blockDim.height;
+                const u64 widthSize = (size.m_width + blockDim.m_width - 1) / blockDim.m_width;
+                const u64 heightSize = (size.m_height + blockDim.m_height - 1) / blockDim.m_height;
                 return widthSize * heightSize * blockSize;
             };
 
             calculatedSize = roundToBlocksLayer(mipSize, ImageFormat::getBlockDimension(format), calculatedSize);
-            return calculatedSize * mipSize.depth;
+            return calculatedSize * mipSize.m_depth;
         }
 
         calculatedSize *= mipSize.getArea();
         return calculatedSize;
     }
 
-    u64 ImageFormat::calculateImageSize(const core::Dimension3D& size, u32 mips, u32 layers, Format format)
+    u64 ImageFormat::calculateImageSize(const math::Dimension3D& size, u32 mips, u32 layers, Format format)
     {
         u64 calculatedSize = 0;
         for (u32 mip = 0; mip < mips; ++mip)
@@ -275,14 +275,14 @@ namespace renderer
         return calculatedSize;
     }
 
-    u32 ImageFormat::calculateMipmapCount(const core::Dimension3D& size)
+    u32 ImageFormat::calculateMipmapCount(const math::Dimension3D& size)
     {
         if (size.getArea() > 1)
         {
-            core::Dimension3D mipSize(size);
-            mipSize.width = std::max(size.width / 2, 1U);
-            mipSize.height = std::max(size.height / 2, 1U);
-            mipSize.depth = std::max(size.depth / 2, 1U);
+            math::Dimension3D mipSize(size);
+            mipSize.m_width = math::max(size.m_width / 2, 1U);
+            mipSize.m_height = math::max(size.m_height / 2, 1U);
+            mipSize.m_depth = math::max(size.m_depth / 2, 1U);
 
             return ImageFormat::calculateMipmapCount(mipSize) + 1;
         }

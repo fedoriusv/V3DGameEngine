@@ -38,7 +38,7 @@ namespace renderer
         * @param  StreamBufferUsageFlags usage [required]
         * @param const std::string& name [optional]
         */
-        StreamBuffer(CommandList& cmdList, StreamBufferUsageFlags usage, [[maybe_unused]] const std::string& name = "") noexcept;
+        explicit StreamBuffer(CommandList& cmdList, StreamBufferUsageFlags usage, [[maybe_unused]] const std::string& name = "") noexcept;
 
         CommandList& m_cmdList;
 
@@ -85,7 +85,7 @@ namespace renderer
         * @param  const u8* data [required]
         * @param const std::string& name [optional]
         */
-        VertexStreamBuffer(CommandList& cmdList, StreamBufferUsageFlags usage, u64 size, const u8* data, [[maybe_unused]] const std::string& name = "") noexcept;
+        explicit VertexStreamBuffer(CommandList& cmdList, StreamBufferUsageFlags usage, u64 size, const u8* data, [[maybe_unused]] const std::string& name = "") noexcept;
 
         VertexStreamBuffer() = delete;
         VertexStreamBuffer(const VertexStreamBuffer&) = delete;
@@ -137,7 +137,7 @@ namespace renderer
         * @param  const u8* data [required]
         * @param const std::string& name [optional]
         */
-        IndexStreamBuffer(CommandList& cmdList, StreamBufferUsageFlags usage, StreamIndexBufferType type, u32 count, const u8* data, [[maybe_unused]] const std::string& name = "") noexcept;
+        explicit IndexStreamBuffer(CommandList& cmdList, StreamBufferUsageFlags usage, StreamIndexBufferType type, u32 count, const u8* data, [[maybe_unused]] const std::string& name = "") noexcept;
 
         IndexStreamBuffer() = delete;
         IndexStreamBuffer(const IndexStreamBuffer&) = delete;

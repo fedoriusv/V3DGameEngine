@@ -129,7 +129,7 @@ void Texture::handleNotify(const utils::Observable* object, void* msg)
     m_image = nullptr;
 }
 
-void Texture::createTexture(const core::Dimension3D& dimension, const void* data)
+void Texture::createTexture(const math::Dimension3D& dimension, const void* data)
 {
     if (m_cmdList.isImmediate())
     {
@@ -153,7 +153,7 @@ void Texture::createTexture(const core::Dimension3D& dimension, const void* data
         {
         public:
 
-            explicit CreateTextureCommand(renderer::Image* image, const core::Dimension3D& offsets, const core::Dimension3D& dim, u32 mips, u32 layers, u64 size, void* data, bool shared) noexcept
+            explicit CreateTextureCommand(renderer::Image* image, const math::Dimension3D& offsets, const math::Dimension3D& dim, u32 mips, u32 layers, u64 size, void* data, bool shared) noexcept
                 : m_image(image)
                 , m_offsets(offsets)
                 , m_dimension(dim)
@@ -214,8 +214,8 @@ void Texture::createTexture(const core::Dimension3D& dimension, const void* data
         private:
 
             renderer::Image* m_image;
-            core::Dimension3D m_offsets;
-            core::Dimension3D m_dimension;
+            math::Dimension3D m_offsets;
+            math::Dimension3D m_dimension;
             u32 m_mipmaps;
             u32 m_layers;
             void* m_data;
@@ -223,19 +223,19 @@ void Texture::createTexture(const core::Dimension3D& dimension, const void* data
         };
 
         u64 calculatedSize = ImageFormat::calculateImageSize(dimension, m_mipmaps, m_layers, m_format);
-        m_cmdList.pushCommand(new CreateTextureCommand(m_image, core::Dimension3D(0, 0, 0), dimension, m_mipmaps, m_layers, calculatedSize, const_cast<void*>(data), (m_usage & TextureUsage_Shared)));
+        m_cmdList.pushCommand(new CreateTextureCommand(m_image, math::Dimension3D(0, 0, 0), dimension, m_mipmaps, m_layers, calculatedSize, const_cast<void*>(data), (m_usage & TextureUsage_Shared)));
     }
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-Texture2D::Texture2D(renderer::CommandList& cmdList, TextureUsageFlags usage, Format format, const core::Dimension2D& dimension, u32 mipmaps, const void* data, const std::string& name) noexcept
-    : Texture(cmdList, TextureTarget::Texture2D, format, TextureSamples::TextureSamples_x1, 1U, (usage& TextureUsage::TextureUsage_GenerateMipmaps) ? ImageFormat::calculateMipmapCount({ dimension.width, dimension.height, 1 }) : mipmaps, usage)
+Texture2D::Texture2D(renderer::CommandList& cmdList, TextureUsageFlags usage, Format format, const math::Dimension2D& dimension, u32 mipmaps, const void* data, const std::string& name) noexcept
+    : Texture(cmdList, TextureTarget::Texture2D, format, TextureSamples::TextureSamples_x1, 1U, (usage& TextureUsage::TextureUsage_GenerateMipmaps) ? ImageFormat::calculateMipmapCount({ dimension.m_width, dimension.m_height, 1 }) : mipmaps, usage)
     , m_dimension(dimension)
 {
     LOG_DEBUG("Texture2D::Texture2D constructor %llx", this);
 
-    core::Dimension3D dim = { m_dimension.width, m_dimension.height, 1 };
+    math::Dimension3D dim = { m_dimension.m_width, m_dimension.m_height, 1 };
 
     m_image = m_cmdList.getContext()->createImage(m_target, m_format, dim, m_layers, m_mipmaps, m_usage, name);
     ASSERT(m_image, "m_image is nullptr");
@@ -244,13 +244,13 @@ Texture2D::Texture2D(renderer::CommandList& cmdList, TextureUsageFlags usage, Fo
     createTexture(dim, data);
 }
 
-Texture2D::Texture2D(renderer::CommandList & cmdList, TextureUsageFlags usage, renderer::Format format, const core::Dimension2D& dimension, TextureSamples samples, const std::string& name) noexcept
-    : Texture(cmdList, TextureTarget::Texture2D, format, samples, 1U, (usage& TextureUsage::TextureUsage_GenerateMipmaps) ? ImageFormat::calculateMipmapCount({ dimension.width, dimension.height, 1 }) : 1U, usage)
+Texture2D::Texture2D(renderer::CommandList & cmdList, TextureUsageFlags usage, renderer::Format format, const math::Dimension2D& dimension, TextureSamples samples, const std::string& name) noexcept
+    : Texture(cmdList, TextureTarget::Texture2D, format, samples, 1U, (usage& TextureUsage::TextureUsage_GenerateMipmaps) ? ImageFormat::calculateMipmapCount({ dimension.m_width, dimension.m_height, 1 }) : 1U, usage)
     , m_dimension(dimension)
 {
     LOG_DEBUG("Texture2D::Texture2D constructor %llx", this);
 
-    core::Dimension3D dim = { m_dimension.width, m_dimension.height, 1 };
+    math::Dimension3D dim = { m_dimension.m_width, m_dimension.m_height, 1 };
 
     m_image = m_cmdList.getContext()->createImage(TextureTarget::Texture2D, m_format, dim, 1U, m_samples, m_usage, name);
     ASSERT(m_image, "m_image is nullptr");
@@ -275,7 +275,7 @@ Texture2D::~Texture2D()
     }
 }
 
-void Texture2D::update(const core::Dimension2D& offset, const core::Dimension2D& size, u32 mipLevel, const void* data)
+void Texture2D::update(const math::Dimension2D& offset, const math::Dimension2D& size, u32 mipLevel, const void* data)
 {
     ASSERT(m_image, "m_image is nullptr");
     if (m_image)
@@ -284,7 +284,7 @@ void Texture2D::update(const core::Dimension2D& offset, const core::Dimension2D&
     }
 }
 
-void Texture2D::read(const core::Dimension2D& offset, const core::Dimension2D& size, u32 mipLevel, void* const data)
+void Texture2D::read(const math::Dimension2D& offset, const math::Dimension2D& size, u32 mipLevel, void* const data)
 {
     ASSERT(m_image, "m_image is nullptr");
     if (m_image)
@@ -293,7 +293,7 @@ void Texture2D::read(const core::Dimension2D& offset, const core::Dimension2D& s
     }
 }
 
-void Texture2D::clear(const core::Vector4D& color)
+void Texture2D::clear(const math::Vector4D& color)
 {
     ASSERT(m_image, "m_image is nullptr");
     if (m_image)
@@ -309,7 +309,7 @@ void Texture2D::clear(const core::Vector4D& color)
             {
             public:
 
-                explicit CommandClearColor(renderer::Image* image, const core::Vector4D& color) noexcept
+                explicit CommandClearColor(renderer::Image* image, const math::Vector4D& color) noexcept
                     : m_image(image)
                     , m_clearColor(color)
                 {
@@ -347,7 +347,7 @@ void Texture2D::clear(const core::Vector4D& color)
             private:
 
                 renderer::Image* m_image;
-                core::Vector4D m_clearColor;
+                math::Vector4D m_clearColor;
             };
 
             m_cmdList.pushCommand(new CommandClearColor(m_image, color));
@@ -420,13 +420,13 @@ void Texture2D::clear(f32 depth, u32 stencil)
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-Texture2DArray::Texture2DArray(CommandList& cmdList, TextureUsageFlags usage, Format format, const core::Dimension2D& dimension, u32 layer, TextureSamples samples, const std::string& name) noexcept
+Texture2DArray::Texture2DArray(CommandList& cmdList, TextureUsageFlags usage, Format format, const math::Dimension2D& dimension, u32 layer, TextureSamples samples, const std::string& name) noexcept
     : Texture(cmdList, TextureTarget::Texture2DArray, format, samples, layer, 1U, usage)
     , m_dimension(dimension)
 {
     LOG_DEBUG("Texture2DArray::Texture2DArray constructor %llx", this);
 
-    core::Dimension3D dim = { m_dimension.width, m_dimension.height, 1 };
+    math::Dimension3D dim = { m_dimension.m_width, m_dimension.m_height, 1 };
 
     m_image = m_cmdList.getContext()->createImage(TextureTarget::Texture2DArray, m_format, dim, m_layers, m_samples, m_usage, name);
     ASSERT(m_image, "m_image is nullptr");
@@ -435,13 +435,13 @@ Texture2DArray::Texture2DArray(CommandList& cmdList, TextureUsageFlags usage, Fo
     createTexture(dim, nullptr);
 }
 
-Texture2DArray::Texture2DArray(CommandList& cmdList, TextureUsageFlags usage, Format format, const core::Dimension2D& dimension, u32 layer, u32 mipmaps, const void* data, const std::string& name) noexcept
+Texture2DArray::Texture2DArray(CommandList& cmdList, TextureUsageFlags usage, Format format, const math::Dimension2D& dimension, u32 layer, u32 mipmaps, const void* data, const std::string& name) noexcept
     : Texture(cmdList, TextureTarget::Texture2DArray, format, TextureSamples::TextureSamples_x1, layer, mipmaps, usage)
     , m_dimension(dimension)
 {
     LOG_DEBUG("Texture2DArray::Texture2DArray constructor %llx", this);
 
-    core::Dimension3D dim = { m_dimension.width, m_dimension.height, 1 };
+    math::Dimension3D dim = { m_dimension.m_width, m_dimension.m_height, 1 };
 
     m_image = m_cmdList.getContext()->createImage(TextureTarget::Texture2DArray, m_format, dim, m_layers, m_mipmaps, m_usage, name);
     ASSERT(m_image, "m_image is nullptr");
@@ -468,29 +468,29 @@ Texture2DArray::~Texture2DArray()
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-TextureCube::TextureCube(CommandList& cmdList, TextureUsageFlags usage, Format format, const core::Dimension2D& dimension, TextureSamples samples, const std::string& name) noexcept
+TextureCube::TextureCube(CommandList& cmdList, TextureUsageFlags usage, Format format, const math::Dimension2D& dimension, TextureSamples samples, const std::string& name) noexcept
     : Texture(cmdList, TextureTarget::TextureCubeMap, format, samples, 6U, 1U, usage)
     , m_dimension(dimension)
 {
     LOG_DEBUG("TextureCube::TextureCube constructor %llx", this);
 
-    m_image = m_cmdList.getContext()->createImage(TextureTarget::TextureCubeMap, m_format, { m_dimension.width, m_dimension.height, 1 }, 6U, m_samples, m_usage, name);
+    m_image = m_cmdList.getContext()->createImage(TextureTarget::TextureCubeMap, m_format, { m_dimension.m_width, m_dimension.m_height, 1 }, 6U, m_samples, m_usage, name);
     ASSERT(m_image, "m_image is nullptr");
     m_image->registerNotify(this);
 
-    createTexture({ m_dimension.width, m_dimension.height, 1 }, nullptr);
+    createTexture({ m_dimension.m_width, m_dimension.m_height, 1 }, nullptr);
 }
 
-TextureCube::TextureCube(CommandList& cmdList, TextureUsageFlags usage, Format format, const core::Dimension2D& dimension, u32 mipmaps, const void* data, const std::string& name) noexcept
+TextureCube::TextureCube(CommandList& cmdList, TextureUsageFlags usage, Format format, const math::Dimension2D& dimension, u32 mipmaps, const void* data, const std::string& name) noexcept
     : Texture(cmdList, TextureTarget::TextureCubeMap, format, TextureSamples::TextureSamples_x1, 6U, mipmaps, usage)
 {
     LOG_DEBUG("TextureCube::TextureCube constructor %llx", this);
 
-    m_image = m_cmdList.getContext()->createImage(TextureTarget::TextureCubeMap, m_format, { m_dimension.width, m_dimension.height, 1 }, 6U, m_mipmaps, m_usage, name);
+    m_image = m_cmdList.getContext()->createImage(TextureTarget::TextureCubeMap, m_format, { m_dimension.m_width, m_dimension.m_height, 1 }, 6U, m_mipmaps, m_usage, name);
     ASSERT(m_image, "m_image is nullptr");
     m_image->registerNotify(this);
 
-    createTexture({ m_dimension.width, m_dimension.height, 1 }, data);
+    createTexture({ m_dimension.m_width, m_dimension.m_height, 1 }, data);
 }
 
 TextureCube::~TextureCube()
@@ -524,17 +524,17 @@ Backbuffer::~Backbuffer()
     LOG_DEBUG("Backbuffer::Backbuffer constructor %llx", this);
 }
 
-const core::Dimension2D& Backbuffer::getDimension() const
+const math::Dimension2D& Backbuffer::getDimension() const
 {
     return m_cmdList.getContext()->m_backufferDescription._size;
 }
 
-void Backbuffer::read(const core::Dimension2D& offset, const core::Dimension2D& size, void* const data)
+void Backbuffer::read(const math::Dimension2D& offset, const math::Dimension2D& size, void* const data)
 {
     NOT_IMPL;
 }
 
-void Backbuffer::clear(const core::Vector4D& color)
+void Backbuffer::clear(const math::Vector4D& color)
 {
     if (m_cmdList.isImmediate())
     {
@@ -547,7 +547,7 @@ void Backbuffer::clear(const core::Vector4D& color)
         {
         public:
 
-            explicit CommandClearBackbuffer(const core::Vector4D& color) noexcept
+            explicit CommandClearBackbuffer(const math::Vector4D& color) noexcept
                 : m_clearColor(color)
             {
 #if DEBUG_COMMAND_LIST
@@ -572,7 +572,7 @@ void Backbuffer::clear(const core::Vector4D& color)
 
         private:
 
-            core::Vector4D m_clearColor;
+            math::Vector4D m_clearColor;
         };
 
         m_cmdList.pushCommand(new CommandClearBackbuffer(color));

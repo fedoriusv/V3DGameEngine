@@ -275,54 +275,54 @@ namespace renderer
         * @param Format format
         * @return count bytes per block
         */
-        static u32 getFormatBlockSize(Format format);
+        [[nodiscard]] static u32 getFormatBlockSize(Format format);
 
         /**
         * @brief Format functions.
         * @param Format format
         * @return count components
         */
-        static u32 getFormatCountComponent(Format format);
+        [[nodiscard]] static u32 getFormatCountComponent(Format format);
 
         /**
         * @brief Format functions.
         * @param Format format
         * @return true if is compressed format
         */
-        static bool isFormatCompressed(Format format);
+        [[nodiscard]] static bool isFormatCompressed(Format format);
 
         /**
-        * @brief Format functions. 
+        * @brief Format functions.
         * @param Format format
         * @return width, heigt inside compression format
         */
-        static core::Dimension2D getBlockDimension(Format format);
+        [[nodiscard]] static math::Dimension2D getBlockDimension(Format format);
 
         /**
         * @brief calculateImageSize function.
-        * @param const core::Dimension3D& size
+        * @param const math::Dimension3D& size
         * @param u32 mipLevel
         * @param Format format
         * @return mip level szie of image in bytes
         */
-        static u64 calculateImageMipSize(const core::Dimension3D& size, u32 mipLevel, Format format);
+        [[nodiscard]] static u64 calculateImageMipSize(const math::Dimension3D& size, u32 mipLevel, Format format);
 
         /**
         * @brief calculateImageSize function.
-        * @param const core::Dimension3D& size
+        * @param const math::Dimension3D& size
         * @param u32 mips
         * @param u32 layers
         * @param Format format
         * @return image size with mips in bytes
         */
-        static u64 calculateImageSize(const core::Dimension3D& size, u32 mips, u32 layers, Format format);
+        [[nodiscard]] static u64 calculateImageSize(const math::Dimension3D& size, u32 mips, u32 layers, Format format);
 
         /**
         * @brief calculateMipmapCount function.
-        * @param const core::Dimension3D& size
+        * @param const math::Dimension3D& size
         * @return count mipmap levels
         */
-        static u32 calculateMipmapCount(const core::Dimension3D& size);
+        [[nodiscard]] static u32 calculateMipmapCount(const math::Dimension3D& size);
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

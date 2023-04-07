@@ -71,7 +71,7 @@ void PipelineState::destroyPipelines(const std::vector<Pipeline*>& pipelines)
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-GraphicsPipelineState::GraphicsPipelineState(CommandList& cmdList, const VertexInputAttribDescription& vertex, const ShaderProgram* const program, const RenderTargetState* const renderTaget, const std::string& name) noexcept
+GraphicsPipelineState::GraphicsPipelineState(CommandList& cmdList, const VertexInputAttributeDescription& vertex, const ShaderProgram* const program, const RenderTargetState* const renderTaget, const std::string& name) noexcept
     : PipelineState(cmdList, name)
     , m_program(program)
     , m_renderTaget(renderTaget)

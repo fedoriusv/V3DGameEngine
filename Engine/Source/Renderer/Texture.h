@@ -104,7 +104,7 @@ namespace renderer
         friend RenderTargetState;
         friend ShaderProgram;
 
-        void createTexture(const core::Dimension3D& dimension, const void* data);
+        void createTexture(const math::Dimension3D& dimension, const void* data);
     };
 
     inline TextureTarget Texture::getTarget() const
@@ -153,13 +153,13 @@ namespace renderer
 
         /**
         * @brief getDimension method.
-        * @return const core::Dimension2D& dimention of texture
+        * @return const math::Dimension2D& dimention of texture
         */
-        const core::Dimension2D& getDimension() const;
+        const math::Dimension2D& getDimension() const;
 
-        void update(const core::Dimension2D& offset, const core::Dimension2D& size, u32 mipLevel, const void* data);
-        void read(const core::Dimension2D& offset, const core::Dimension2D& size, u32 mipLevel, void* const data);
-        void clear(const core::Vector4D& color);
+        void update(const math::Dimension2D& offset, const math::Dimension2D& size, u32 mipLevel, const void* data);
+        void read(const math::Dimension2D& offset, const math::Dimension2D& size, u32 mipLevel, void* const data);
+        void clear(const math::Vector4D& color);
         void clear(f32 depth, u32 stencil);
 
     private:
@@ -170,12 +170,12 @@ namespace renderer
         * 
         * @param TextureUsageFlags usage [required]
         * @param Format format [required]
-        * @param const Dimension2D& dimension [required]
+        * @param const math::Dimension2D& dimension [required]
         * @param u32 mipmaps [optional]
         * @param const void* data [optional]
         * @param const std::string& name [optional]
         */
-        explicit Texture2D(CommandList& cmdList, TextureUsageFlags usage, Format format, const core::Dimension2D& dimension, u32 mipmaps = 1, const void* data = nullptr, [[maybe_unused]] const std::string& name = "") noexcept;
+        explicit Texture2D(CommandList& cmdList, TextureUsageFlags usage, Format format, const math::Dimension2D& dimension, u32 mipmaps = 1, const void* data = nullptr, [[maybe_unused]] const std::string& name = "") noexcept;
 
         /**
         * @brief Texture2D constructor. Used for creating attachments
@@ -183,21 +183,21 @@ namespace renderer
         *
         * @param TextureUsageFlags usage [required]
         * @param Format format [required]
-        * @param const Dimension2D& dimension [required]
+        * @param const math::Dimension2D& dimension [required]
         * @param u32 mipmaps [optional]
         * @param const void* data [optional]
         * @param const std::string& name [optional]
         */
-        explicit Texture2D(CommandList& cmdList, TextureUsageFlags usage, Format format, const core::Dimension2D& dimension, TextureSamples samples, [[maybe_unused]] const std::string& name = "") noexcept;
+        explicit Texture2D(CommandList& cmdList, TextureUsageFlags usage, Format format, const math::Dimension2D& dimension, TextureSamples samples, [[maybe_unused]] const std::string& name = "") noexcept;
 
         Texture2D() = delete;
         Texture2D(const Texture2D&) = delete;
 
-        const core::Dimension2D m_dimension;
+        const math::Dimension2D m_dimension;
         friend CommandList;
     };
 
-    inline const core::Dimension2D& Texture2D::getDimension() const
+    inline const math::Dimension2D& Texture2D::getDimension() const
     {
         return m_dimension;
     }
@@ -218,9 +218,9 @@ namespace renderer
 
         /**
         * @brief getDimension method.
-        * @return const core::Dimension2D& dimention of texture
+        * @return const math::Dimension2D& dimention of texture
         */
-        const core::Dimension2D& getDimension() const;
+        const math::Dimension2D& getDimension() const;
 
     private:
 
@@ -230,12 +230,12 @@ namespace renderer
         *
         * @param TextureUsageFlags usage [required]
         * @param Format format [required]
-        * @param const Dimension2D& dimension [required]
+        * @param const math::Dimension2D& dimension [required]
         * @param u32 layer [required]
         * @param TextureSamples samples [optional]
         * @param const std::string& name [optional]
         */
-        explicit Texture2DArray(CommandList& cmdList, TextureUsageFlags usage, Format format, const core::Dimension2D& dimension, u32 layer, TextureSamples samples, [[maybe_unused]] const std::string& name = "") noexcept;
+        explicit Texture2DArray(CommandList& cmdList, TextureUsageFlags usage, Format format, const math::Dimension2D& dimension, u32 layer, TextureSamples samples, [[maybe_unused]] const std::string& name = "") noexcept;
 
         /**
         * @brief Texture2DArray constructor. Used for creating array of 2D textures
@@ -243,22 +243,22 @@ namespace renderer
         *
         * @param TextureUsageFlags usage [required]
         * @param Format format [required]
-        * @param const Dimension2D& dimension [required]
+        * @param const math::Dimension2D& dimension [required]
         * @param u32 layer [required]
         * @param u32 mipmaps [optional]
         * @param const void* data [optional]
         * @param const std::string& name [optional]
         */
-        explicit Texture2DArray(CommandList& cmdList, TextureUsageFlags usage, Format format, const core::Dimension2D& dimension, u32 layer, u32 mipmaps = 1, const void* data = nullptr, [[maybe_unused]] const std::string& name = "") noexcept;
+        explicit Texture2DArray(CommandList& cmdList, TextureUsageFlags usage, Format format, const math::Dimension2D& dimension, u32 layer, u32 mipmaps = 1, const void* data = nullptr, [[maybe_unused]] const std::string& name = "") noexcept;
 
         Texture2DArray() = delete;
         Texture2DArray(const Texture2DArray&) = delete;
 
-        const core::Dimension2D m_dimension;
+        const math::Dimension2D m_dimension;
         friend CommandList;
     };
 
-    inline const core::Dimension2D& Texture2DArray::getDimension() const
+    inline const math::Dimension2D& Texture2DArray::getDimension() const
     {
         return m_dimension;
     }
@@ -279,9 +279,9 @@ namespace renderer
 
         /**
         * @brief getDimension method.
-        * @return const core::Dimension2D& dimention of texture
+        * @return const math::Dimension2D& dimention of texture
         */
-        const core::Dimension2D& getDimension() const;
+        const math::Dimension2D& getDimension() const;
 
     private:
 
@@ -291,11 +291,11 @@ namespace renderer
         *
         * @param TextureUsageFlags usage [required]
         * @param Format format [required]
-        * @param const Dimension2D& dimension [required]
+        * @param const math::Dimension2D& dimension [required]
         * @param TextureSamples samples [optional]
         * @param const std::string& name [optional]
         */
-        explicit TextureCube(CommandList& cmdList, TextureUsageFlags usage, Format format, const core::Dimension2D& dimension, TextureSamples samples, [[maybe_unused]] const std::string& name = "") noexcept;
+        explicit TextureCube(CommandList& cmdList, TextureUsageFlags usage, Format format, const math::Dimension2D& dimension, TextureSamples samples, [[maybe_unused]] const std::string& name = "") noexcept;
 
         /**
         * @brief TextureCube constructor. Used for creating a cubemap texture
@@ -303,21 +303,21 @@ namespace renderer
         *
         * @param TextureUsageFlags usage [required]
         * @param Format format [required]
-        * @param const Dimension2D& dimension [required]
+        * @param const math::Dimension2D& dimension [required]
         * @param u32 mipmaps [optional]
         * @param const void* data [optional]
         * @param const std::string& name [optional]
         */
-        explicit TextureCube(CommandList& cmdList, TextureUsageFlags usage, Format format, const core::Dimension2D& dimension, u32 mipmaps = 1, const void* data = nullptr, [[maybe_unused]] const std::string& name = "") noexcept;
+        explicit TextureCube(CommandList& cmdList, TextureUsageFlags usage, Format format, const math::Dimension2D& dimension, u32 mipmaps = 1, const void* data = nullptr, [[maybe_unused]] const std::string& name = "") noexcept;
 
         TextureCube() = delete;
         TextureCube(const TextureCube&) = delete;
 
-        const core::Dimension2D m_dimension;
+        const math::Dimension2D m_dimension;
         friend CommandList;
     };
 
-    inline const core::Dimension2D& TextureCube::getDimension() const
+    inline const math::Dimension2D& TextureCube::getDimension() const
     {
         return m_dimension;
     }
@@ -347,17 +347,17 @@ namespace renderer
 
         /**
         * @brief getDimension method.
-        * @return const core::Dimension2D& dimention of backbuffer
+        * @return const math::Dimension2D& dimention of backbuffer
         */
-        const core::Dimension2D& getDimension() const;
+        const math::Dimension2D& getDimension() const;
 
-        void read(const core::Dimension2D& offset, const core::Dimension2D& size, void* const data);
+        void read(const math::Dimension2D& offset, const math::Dimension2D& size, void* const data);
         
         /**
         * @brief clear method.
-        * @param const core::Vector4D& color [required]
+        * @param const math::Vector4D& color [required]
         */
-        void clear(const core::Vector4D& color);
+        void clear(const math::Vector4D& color);
 
     private:
 

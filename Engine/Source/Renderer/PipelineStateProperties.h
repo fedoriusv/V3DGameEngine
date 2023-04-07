@@ -12,9 +12,9 @@ namespace renderer
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
-    * @brief enum class PolygonMode
+    * @brief enum PolygonMode
     */
-    enum class PolygonMode : u16
+    enum PolygonMode : u16
     {
         PolygonMode_Fill,
         PolygonMode_Line,
@@ -22,9 +22,9 @@ namespace renderer
     };
 
     /**
-    * @brief enum class PrimitiveTopology
+    * @brief enum PrimitiveTopology
     */
-    enum class PrimitiveTopology : u32
+    enum PrimitiveTopology : u32
     {
         PrimitiveTopology_PointList,
         PrimitiveTopology_LineList,
@@ -40,9 +40,9 @@ namespace renderer
     };
 
     /**
-    * @brief enum class FrontFace
+    * @brief enum FrontFace
     */
-    enum class FrontFace : u16
+    enum FrontFace : u16
     {
         FrontFace_Clockwise,
         FrontFace_CounterClockwise
@@ -233,9 +233,9 @@ namespace renderer
                 , _depthWriteEnable(false)
                 , _stencilTestEnable(false)
                 , _depthBoundsTestEnable(false)
-                , _depthBounds(core::Vector2D(0.0f))
+                , _depthBounds(math::Vector2D(0.0f))
             {
-                static_assert(sizeof(DepthStencilState) == sizeof(core::Vector2D) + 8, "wrong size");
+                static_assert(sizeof(DepthStencilState) == sizeof(math::Vector2D) + 8, "wrong size");
             }
 
             CompareOperation    _compareOp;
@@ -245,7 +245,7 @@ namespace renderer
             bool                _stencilTestEnable;
 
             bool                _depthBoundsTestEnable;
-            core::Vector2D      _depthBounds;
+            math::Vector2D      _depthBounds;
         };
 
         /**
@@ -254,17 +254,17 @@ namespace renderer
         struct BlendState
         {
             BlendState() noexcept
-                : _constant(core::Vector4D(0.0f))
+                : _constant(math::Vector4D(0.0f))
                 , _logicalOp(LogicalOperation::LogicalOp_And)
                 , _logicalOpEnable(false)
             {
-                static_assert(sizeof(BlendState) == sizeof(ColorBlendAttachmentState) + sizeof(core::Vector4D) + 8, "wrong size");
+                static_assert(sizeof(BlendState) == sizeof(ColorBlendAttachmentState) + sizeof(math::Vector4D) + 8, "wrong size");
             }
 
             ColorBlendAttachmentState _colorBlendAttachments;
             //std::array<ColorBlendAttachmentState, k_maxFramebufferAttachments> _colorBlendAttachments;
 
-            core::Vector4D      _constant;
+            math::Vector4D      _constant;
             LogicalOperation    _logicalOp;
             bool                _logicalOpEnable;
 
@@ -279,11 +279,11 @@ namespace renderer
             VertexInputState() noexcept
                 : _primitiveTopology(PrimitiveTopology::PrimitiveTopology_TriangleList)
             {
-                static_assert(sizeof(VertexInputState) == sizeof(VertexInputAttribDescription) + 4, "wrong size");
+                static_assert(sizeof(VertexInputState) == sizeof(VertexInputAttributeDescription) + 4, "wrong size");
             }
 
-            VertexInputAttribDescription _inputAttributes;
-            PrimitiveTopology            _primitiveTopology;
+            VertexInputAttributeDescription _inputAttributes;
+            PrimitiveTopology               _primitiveTopology;
         };
 
         GraphicsPipelineStateDescription() noexcept = default;

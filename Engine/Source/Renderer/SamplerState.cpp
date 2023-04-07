@@ -124,7 +124,7 @@ void SamplerState::setEnableCompareOp(bool enable)
     m_samplerDesc.dirty();
 }
 
-void SamplerState::setBorderColor(const core::Vector4D& color)
+void SamplerState::setBorderColor(const math::Vector4D& color)
 {
     m_samplerDesc._desc._borderColor = color;
     m_samplerDesc.dirty();

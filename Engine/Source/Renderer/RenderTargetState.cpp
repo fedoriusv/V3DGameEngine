@@ -13,7 +13,7 @@ namespace v3d
 namespace renderer
 {
 
-RenderTargetState::RenderTargetState(renderer::CommandList& cmdList, const core::Dimension2D& size, u32 viewsMask, const std::string& name) noexcept
+RenderTargetState::RenderTargetState(renderer::CommandList& cmdList, const math::Dimension2D& size, u32 viewsMask, const std::string& name) noexcept
     : m_cmdList(cmdList)
     , m_size(size)
     , m_viewsMask(viewsMask)
@@ -32,7 +32,7 @@ RenderTargetState::~RenderTargetState()
     m_trackerFramebuffer.release();
 }
 
-bool RenderTargetState::setColorTexture_Impl(u32 index, Texture* colorTexture, RenderTargetLoadOp loadOp, RenderTargetStoreOp storeOp, const core::Vector4D& clearColor)
+bool RenderTargetState::setColorTexture_Impl(u32 index, Texture* colorTexture, RenderTargetLoadOp loadOp, RenderTargetStoreOp storeOp, const math::Vector4D& clearColor)
 {
     ASSERT(index < m_cmdList.getContext()->getDeviceCaps()->maxColorAttachments, "index >= maxColorattachments");
     if (colorTexture)
@@ -80,7 +80,7 @@ bool RenderTargetState::setColorTexture_Impl(u32 index, Texture* colorTexture, R
     return false;
 }
 
-bool RenderTargetState::setColorTexture_Impl(u32 index, Texture* colorTexture, u32 layer, RenderTargetLoadOp loadOp, RenderTargetStoreOp storeOp, const core::Vector4D& clearColor)
+bool RenderTargetState::setColorTexture_Impl(u32 index, Texture* colorTexture, u32 layer, RenderTargetLoadOp loadOp, RenderTargetStoreOp storeOp, const math::Vector4D& clearColor)
 {
     ASSERT(index < m_cmdList.getContext()->getDeviceCaps()->maxColorAttachments, "index >= maxColorAttachments");
     ASSERT(colorTexture->getTarget() == TextureTarget::TextureCubeMap && layer < 6U, "index >= max 6 sides for cubemap");
@@ -289,7 +289,7 @@ bool RenderTargetState::setDepthStencilTexture_Impl(Texture* depthStencilTexture
     return false;
 }
 
-void RenderTargetState::clearAttachments(const TargetRegion& region, const core::Vector4D& clearColor, f32 clearDepth, u32 clearStencil)
+void RenderTargetState::clearAttachments(const TargetRegion& region, const math::Vector4D& clearColor, f32 clearDepth, u32 clearStencil)
 {
     std::vector<const renderer::Image*> attachImage;
     attachImage.reserve(static_cast<u64>(getColorTextureCount()) + (hasDepthStencilTexture() ? 1 : 0));
@@ -317,7 +317,7 @@ void RenderTargetState::clearAttachments(const TargetRegion& region, const core:
         attachImage.push_back(std::get<0>(m_depthStencilTexture)->getImage());
     }
 
-    std::vector<core::Vector4D> clearColors(attachImage.size(), clearColor);
+    std::vector<math::Vector4D> clearColors(attachImage.size(), clearColor);
     Framebuffer::ClearValueInfo clearInfo = { region, clearColors, clearDepth, clearStencil };
 
     if (m_cmdList.isImmediate())
@@ -371,7 +371,7 @@ void RenderTargetState::extractRenderTargetInfo(RenderPassDescription& renderpas
     u32 countImages = static_cast<u64>(getColorTextureCount()) + (hasDepthStencilTexture() ? 1 : 0);
     images.reserve(countImages);
 
-    clearValuesInfo._region._size = { 0, 0, m_size.width, m_size.height };
+    clearValuesInfo._region._size = { 0, 0, m_size.m_width, m_size.m_height };
     clearValuesInfo._color.reserve(countImages);
 
     renderpassDesc._desc._countColorAttachments = getColorTextureCount();

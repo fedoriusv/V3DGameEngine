@@ -144,7 +144,7 @@ VertexStreamBuffer::VertexStreamBuffer(renderer::CommandList& cmdList, StreamBuf
         memcpy(m_data, data, size);
     }
 
-    m_buffer = m_cmdList.getContext()->createBuffer(Buffer::BufferType::BufferType_VertexBuffer, m_usage, m_size, name);
+    m_buffer = m_cmdList.getContext()->createBuffer(Buffer::BufferType::VertexBuffer, m_usage, m_size, name);
     ASSERT(m_buffer, "m_buffer is nullptr");
 
     if (m_cmdList.isImmediate())
@@ -339,7 +339,7 @@ IndexStreamBuffer::IndexStreamBuffer(CommandList& cmdList, StreamBufferUsageFlag
         memcpy(m_data, data, size);
     }
 
-    m_buffer = m_cmdList.getContext()->createBuffer(Buffer::BufferType::BufferType_IndexBuffer, m_usage, size, name);
+    m_buffer = m_cmdList.getContext()->createBuffer(Buffer::BufferType::IndexBuffer, m_usage, size, name);
     ASSERT(m_buffer, "m_buffer is nullptr");
 
     if (m_cmdList.isImmediate())

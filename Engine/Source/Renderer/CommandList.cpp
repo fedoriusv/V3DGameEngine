@@ -435,7 +435,7 @@ public:
     CommandDispatchCompute() = delete;
     CommandDispatchCompute(CommandDispatchCompute&) = delete;
 
-    explicit CommandDispatchCompute(const core::Dimension3D& groups) noexcept
+    explicit CommandDispatchCompute(const math::Dimension3D& groups) noexcept
         : m_groups(groups)
     {
 #if DEBUG_COMMAND_LIST
@@ -460,7 +460,7 @@ public:
 
 private:
 
-    core::Dimension3D m_groups;
+    math::Dimension3D m_groups;
 };
 
     /*CommandInvalidateRenderTarget*/
@@ -638,7 +638,7 @@ void CommandList::drawIndexed(const StreamBufferDescription& desc, u32 firstInde
     }
 }
 
-void CommandList::dispatchCompute(const core::Dimension3D& groups)
+void CommandList::dispatchCompute(const math::Dimension3D& groups)
 {
     if (CommandList::isImmediate())
     {
@@ -651,7 +651,7 @@ void CommandList::dispatchCompute(const core::Dimension3D& groups)
     }
 }
 
-void CommandList::clearBackbuffer(const core::Vector4D& color)
+void CommandList::clearBackbuffer(const math::Vector4D& color)
 {
     if (!CommandList::isImmediate())
     {
@@ -751,7 +751,7 @@ void CommandList::setPipelineState(ComputePipelineState* pipeline)
     }
 }
 
-void CommandList::setViewport(const core::Rect32& viewport, const core::Vector2D& depth)
+void CommandList::setViewport(const math::Rect32& viewport, const math::Vector2D& depth)
 {
     if (CommandList::isImmediate())
     {
@@ -765,7 +765,7 @@ void CommandList::setViewport(const core::Rect32& viewport, const core::Vector2D
     }
 }
 
-void CommandList::setScissor(const core::Rect32 & scissor)
+void CommandList::setScissor(const math::Rect32& scissor)
 {
     if (CommandList::isImmediate())
     {

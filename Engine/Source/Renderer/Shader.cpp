@@ -1,5 +1,6 @@
 #include "Shader.h"
 #include "Utils/Logger.h"
+#include "Stream/Stream.h"
 
 #include "crc32c/crc32c.h"
 

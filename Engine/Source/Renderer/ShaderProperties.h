@@ -55,7 +55,6 @@ namespace renderer
 
         Vertex = 0,
         Fragment = 1,
-
         Compute = 2,
 
         Count,

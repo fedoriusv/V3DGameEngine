@@ -144,7 +144,7 @@ namespace renderer
         TargetRegion() = default;
         TargetRegion(u32 width, u32 height) noexcept;
 
-        core::RectU32 _size;
+        math::RectU32 _size;
         u32           _baseLayer = 0;
         u32           _layers = 1;
     };
@@ -177,12 +177,12 @@ namespace renderer
 
         u32                   _padding          : 2;
 
-        static s32 uncompressLayer(u32 layer)
+        [[nodiscard]] static s32 uncompressLayer(u32 layer)
         {
             return (layer == 0x07) ? k_generalLayer : static_cast<s32>(layer);
         }
 
-        static u32 compressLayer(s32 layer)
+        [[nodiscard]] static u32 compressLayer(s32 layer)
         {
             return static_cast<u32>(layer);
         }
@@ -209,8 +209,8 @@ namespace renderer
 
         RenderPassDesc _desc;
 
-        static u32 countActiveViews(u32 viewsMask);
-        static bool isActiveViewByIndex(u32 viewsMask, u32 index);
+        [[nodiscard]] static u32 countActiveViews(u32 viewsMask);
+        [[nodiscard]] static bool isActiveViewByIndex(u32 viewsMask, u32 index);
 
         struct Hash
         {
