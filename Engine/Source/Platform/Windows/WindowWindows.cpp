@@ -12,7 +12,7 @@ namespace v3d
 namespace platform
 {
 
-WindowWindows::WindowWindows(const WindowParam& params, event::InputEventReceiver* receiver)
+WindowWindows::WindowWindows(const WindowParam& params, event::InputEventReceiver* receiver) noexcept
     : Window(params, receiver)
     , m_hInstance(NULL)
     , m_hWnd(NULL)
@@ -60,18 +60,18 @@ bool WindowWindows::initialize()
     AdjustWindowRectEx(&borderRect, dwStyle, FALSE, dwExStyle);
 
     // Border rect size is negative - see MoveWindowTo
-    m_params._position.x += borderRect.left;
-    m_params._position.y += borderRect.top;
+    m_params._position.m_x += borderRect.left;
+    m_params._position.m_y += borderRect.top;
 
     // Inflate the window size by the OS border
-    core::Dimension2D size =
+    math::Dimension2D size =
     {
-        m_params._size.width + borderRect.right - borderRect.left,
-        m_params._size.height + borderRect.bottom - borderRect.top
+        m_params._size.m_width + borderRect.right - borderRect.left,
+        m_params._size.m_height + borderRect.bottom - borderRect.top
     };
     // create window
     ASSERT(!m_hWnd, "Already exist");
-    m_hWnd = CreateWindowEx(dwExStyle, m_classname.c_str(), __TEXT("Window"), dwStyle, m_params._position.x, m_params._position.y, size.width, size.height, NULL, NULL, m_hInstance, this);
+    m_hWnd = CreateWindowEx(dwExStyle, m_classname.c_str(), __TEXT("Window"), dwStyle, m_params._position.m_x, m_params._position.m_y, size.m_width, size.m_height, NULL, NULL, m_hInstance, this);
     if (!m_hWnd)
     {
         const u32 error = GetLastError();
@@ -183,14 +183,14 @@ void WindowWindows::setTextCaption(const std::string& text)
     SetWindowTextA(m_hWnd, text.c_str());
 }
 
-void WindowWindows::setPosition(const core::Point2D& pos)
+void WindowWindows::setPosition(const math::Point2D& pos)
 {
     if (m_params._isFullscreen)
     {
         return;
     }
 
-    SetWindowPos(m_hWnd, NULL, pos.x, pos.y, 0, 0, SWP_NOACTIVATE | SWP_NOZORDER | SWP_NOSIZE);
+    SetWindowPos(m_hWnd, NULL, pos.m_x, pos.m_y, 0, 0, SWP_NOACTIVATE | SWP_NOZORDER | SWP_NOSIZE);
     m_params._position = pos;
 }
 
@@ -331,8 +331,8 @@ LRESULT WindowWindows::HandleMessage(HWND hWnd, UINT message, WPARAM wParam, LPA
     case WM_XBUTTONDOWN:
     {
         event::MouseInputEvent* event = new(m_receiver->allocateInputEvent()) event::MouseInputEvent();
-        event->_cursorPosition.x = (s16)LOWORD(lParam);
-        event->_cursorPosition.y = (s16)HIWORD(lParam);
+        event->_cursorPosition.m_x = (s16)LOWORD(lParam);
+        event->_cursorPosition.m_y = (s16)HIWORD(lParam);
         event->_wheelValue = ((f32)((s16)HIWORD(wParam))) / (f32)WHEEL_DELTA;
         event->_event = event::MouseInputEvent::MousePressDown;
         event->_modifers = 0;
@@ -366,8 +366,8 @@ LRESULT WindowWindows::HandleMessage(HWND hWnd, UINT message, WPARAM wParam, LPA
     case WM_XBUTTONUP:
     {
         event::MouseInputEvent* event = new(m_receiver->allocateInputEvent()) event::MouseInputEvent();
-        event->_cursorPosition.x = (s16)LOWORD(lParam);
-        event->_cursorPosition.y = (s16)HIWORD(lParam);
+        event->_cursorPosition.m_x = (s16)LOWORD(lParam);
+        event->_cursorPosition.m_y = (s16)HIWORD(lParam);
         event->_wheelValue = ((f32)((s16)HIWORD(wParam))) / (f32)WHEEL_DELTA;
         event->_event = event::MouseInputEvent::MousePressUp;
         event->_modifers = 0;
@@ -400,8 +400,8 @@ LRESULT WindowWindows::HandleMessage(HWND hWnd, UINT message, WPARAM wParam, LPA
     case WM_XBUTTONDBLCLK:
     {
         event::MouseInputEvent* event = new(m_receiver->allocateInputEvent()) event::MouseInputEvent();
-        event->_cursorPosition.x = (s16)LOWORD(lParam);
-        event->_cursorPosition.y = (s16)HIWORD(lParam);
+        event->_cursorPosition.m_x = (s16)LOWORD(lParam);
+        event->_cursorPosition.m_y = (s16)HIWORD(lParam);
         event->_wheelValue = ((f32)((s16)HIWORD(wParam))) / (f32)WHEEL_DELTA;
         event->_event = event::MouseInputEvent::MouseDoubleClick;
         event->_modifers = 0;
@@ -437,8 +437,8 @@ LRESULT WindowWindows::HandleMessage(HWND hWnd, UINT message, WPARAM wParam, LPA
         ScreenToClient(hWnd, &pt);
 
         event::MouseInputEvent* event = new(m_receiver->allocateInputEvent()) event::MouseInputEvent();
-        event->_cursorPosition.x = (s16)pt.x;
-        event->_cursorPosition.y = (s16)pt.y;
+        event->_cursorPosition.m_x = (s16)pt.x;
+        event->_cursorPosition.m_y = (s16)pt.y;
         event->_wheelValue = ((f32)((s16)HIWORD(wParam))) / (f32)WHEEL_DELTA;
         event->_event = event::MouseInputEvent::MouseWheel;
         event->_modifers = 0;
@@ -450,8 +450,8 @@ LRESULT WindowWindows::HandleMessage(HWND hWnd, UINT message, WPARAM wParam, LPA
     case WM_MOUSEMOVE:
     {
         event::MouseInputEvent* event = new(m_receiver->allocateInputEvent()) event::MouseInputEvent();
-        event->_cursorPosition.x = (s16)LOWORD(lParam);
-        event->_cursorPosition.y = (s16)HIWORD(lParam);
+        event->_cursorPosition.m_x = (s16)LOWORD(lParam);
+        event->_cursorPosition.m_y = (s16)HIWORD(lParam);
         event->_wheelValue = ((f32)((s16)HIWORD(wParam))) / (f32)WHEEL_DELTA;
         event->_event = event::MouseInputEvent::MouseMoved;
         event->_modifers = 0;
@@ -523,8 +523,8 @@ LRESULT WindowWindows::WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lP
 
         case WM_MOVE:
         {
-            window->m_params._position.x = (s16)LOWORD(lParam);
-            window->m_params._position.y = (s16)HIWORD(lParam);
+            window->m_params._position.m_x = (s16)LOWORD(lParam);
+            window->m_params._position.m_y = (s16)HIWORD(lParam);
             return TRUE;
         }
 

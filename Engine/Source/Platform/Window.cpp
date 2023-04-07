@@ -16,7 +16,7 @@ namespace v3d
 namespace platform
 {
 
-Window::Window(const WindowParam& params, event::InputEventReceiver* receiver)
+Window::Window(const WindowParam& params, event::InputEventReceiver* receiver) noexcept
     : m_params(params)
     , m_receiver(receiver)
 {
@@ -27,7 +27,7 @@ Window::~Window()
     ASSERT(!m_receiver, "must be nullptr");
 }
 
-Window* Window::createWindow(const core::Dimension2D& size, const core::Point2D& pos, bool fullscreen, bool resizable)
+Window* Window::createWindow(const math::Dimension2D& size, const math::Point2D& pos, bool fullscreen, bool resizable)
 {
     WindowParam params;
     params._size = size;
@@ -62,7 +62,7 @@ Window* Window::createWindow(const core::Dimension2D& size, const core::Point2D&
     return nullptr;
 }
 
-Window* Window::createWindow(const core::Dimension2D& size, const core::Point2D& pos, bool fullscreen, event::InputEventReceiver* receiver)
+Window* Window::createWindow(const math::Dimension2D& size, const math::Point2D& pos, bool fullscreen, event::InputEventReceiver* receiver)
 {
     WindowParam params;
     params._size = size;
@@ -124,12 +124,12 @@ event::InputEventReceiver* Window::getInputEventReceiver() const
     return m_receiver;
 }
 
-const core::Dimension2D & Window::getSize() const
+const math::Dimension2D & Window::getSize() const
 {
     return m_params._size;
 }
 
-const core::Point2D & Window::getPosition() const
+const math::Point2D & Window::getPosition() const
 {
     return m_params._position;
 }

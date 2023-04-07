@@ -28,8 +28,8 @@ namespace platform
         struct WindowParam
         {
             std::wstring            _caption;
-            core::Dimension2D       _size;
-            core::Point2D           _position;
+            math::Dimension2D       _size;
+            math::Point2D           _position;
             bool                    _isFullscreen;
             bool                    _isResizable;
             bool                    _isVisible;
@@ -38,10 +38,10 @@ namespace platform
             bool                    _isActive;
             bool                    _isFocused;
 
-            WindowParam()
+            WindowParam() noexcept
                 : _caption(L"Window")
-                , _size(core::Dimension2D(1024U, 768U))
-                , _position(core::Point2D(0U, 0U))
+                , _size(math::Dimension2D(1024U, 768U))
+                , _position(math::Point2D(0U, 0U))
                 , _isFullscreen(false)
                 , _isResizable(false)
                 , _isVisible(true)
@@ -55,23 +55,23 @@ namespace platform
 
         /**
         * @brief createWindow function. Create new window.
-        * @param const core::Dimension2D& size [optional]
-        * @param const core::Point2D& pos [optional]
+        * @param const math::Dimension2D& size [required]
+        * @param const math::Point2D& pos [required]
         * @param bool fullscreen [optional]
         * @param bool resizable [optional]
         * @return pointer of created window
         */
-        static Window* createWindow(const core::Dimension2D& size = { 1024U, 768U }, const core::Point2D& pos = { 100U, 100U }, bool fullscreen = false, bool resizable = false);
+        [[nodiscard]] static Window* createWindow(const math::Dimension2D& size, const math::Point2D& pos, bool fullscreen = false, bool resizable = false);
 
         /**
         * @brief createWindow function. Create new window.
-        * @param const core::Dimension2D& size [optional]
-        * @param const core::Point2D& pos [optional]
+        * @param const math::Dimension2D& size [required]
+        * @param const math::Point2D& pos [required]
         * @param bool fullscreen [optional]
         * @param event::InputEventReceiver* receiver [optional]
         * @return pointer of created window
         */
-        static Window* createWindow(const core::Dimension2D& size = { 1024U, 768U }, const core::Point2D& pos = { 100U, 100U }, bool fullscreen = false, event::InputEventReceiver* receiver = nullptr);
+        [[nodiscard]] static Window* createWindow(const math::Dimension2D& size, const math::Point2D& pos, bool fullscreen = false, event::InputEventReceiver* receiver = nullptr);
 
         /**
         * @brief updateWindow function. Updates window
@@ -85,13 +85,6 @@ namespace platform
         */
         static void detroyWindow(Window* window);
 
-        Window(const WindowParam& params, event::InputEventReceiver* receiver);
-        virtual ~Window();
-
-        Window() = delete;
-        Window(const Window&) = delete;
-        Window& operator=(const Window&) = delete;
-
         virtual void minimize() = 0;
         virtual void maximize() = 0;
         virtual void restore() = 0;
@@ -99,17 +92,18 @@ namespace platform
         virtual void setFullScreen(bool value = true) = 0;
         virtual void setResizeble(bool value = true) = 0;
         virtual void setTextCaption(const std::string& text) = 0;
-        virtual void setPosition(const core::Point2D& pos) = 0;
+        virtual void setPosition(const math::Point2D& pos) = 0;
 
         virtual bool isMaximized() const = 0;
         virtual bool isMinimized() const = 0;
         virtual bool isActive() const = 0;
         virtual bool isFocused() const = 0;
-        const core::Point2D& getPosition() const;
 
         bool isFullscreen() const;
         bool isResizable() const;
-        const core::Dimension2D& getSize() const;
+
+        const math::Dimension2D& getSize() const;
+        const math::Point2D& getPosition() const;
 
         event::InputEventReceiver* getInputEventReceiver() const;
 
@@ -120,14 +114,21 @@ namespace platform
 
     protected:
 
+        explicit Window(const WindowParam& params, event::InputEventReceiver* receiver) noexcept;
+        virtual ~Window();
+
+        Window() = delete;
+        Window(const Window&) = delete;
+        Window& operator=(const Window&) = delete;
+
         virtual bool initialize() = 0;
         virtual bool update() = 0;
         virtual void destroy() = 0;
 
-        WindowParam                 m_params;
+        WindowParam m_params;
 
-        event::KeyCodes             m_keyCodes;
-        event::InputEventReceiver*  m_receiver;
+        event::KeyCodes m_keyCodes;
+        event::InputEventReceiver* m_receiver;
 
     };
 

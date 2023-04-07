@@ -5,22 +5,22 @@ namespace v3d
 namespace platform
 {
 
-core::Point2D Platform::getCursorPosition()
+math::Point2D Platform::getCursorPosition()
 {
 #ifdef PLATFORM_WINDOWS
     POINT mouse;
     GetCursorPos(&mouse);
 
-    return core::Point2D(static_cast<s32>(mouse.x), static_cast<s32>(mouse.y));
+    return math::Point2D(static_cast<s32>(mouse.x), static_cast<s32>(mouse.y));
 #endif //PLATFORM_WINDOWS
 
-    return core::Point2D(0U, 0U);
+    return math::Point2D(0U, 0U);
 }
 
-void Platform::setCursorPostion(const core::Point2D & point)
+void Platform::setCursorPostion(const math::Point2D & point)
 {
 #ifdef PLATFORM_WINDOWS
-    SetCursorPos(point.x, point.y);
+    SetCursorPos(point.m_x, point.m_y);
 #endif //PLATFORM_WINDOWS
 }
 

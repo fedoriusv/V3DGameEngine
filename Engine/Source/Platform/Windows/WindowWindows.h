@@ -14,7 +14,7 @@ namespace platform
     {
     public:
 
-        WindowWindows(const WindowParam& params, event::InputEventReceiver* receiver);
+        explicit WindowWindows(const WindowParam& params, event::InputEventReceiver* receiver) noexcept;
         ~WindowWindows();
 
         WindowWindows(const WindowWindows&) = delete;
@@ -27,7 +27,7 @@ namespace platform
         void setFullScreen(bool value = true) override;
         void setResizeble(bool value = true) override;
         void setTextCaption(const std::string& text) override;
-        void setPosition(const core::Point2D& pos) override;
+        void setPosition(const math::Point2D& pos) override;
 
         bool isMaximized() const override;
         bool isMinimized() const override;
