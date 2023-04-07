@@ -159,9 +159,9 @@ namespace renderer
 
         /**
         * @brief compute command
-        * @param const core::Dimension3D& groups [required]
+        * @param const math::Dimension3D& groups [required]
         */
-        virtual void dispatchCompute(const core::Dimension3D& groups) = 0;
+        virtual void dispatchCompute(const math::Dimension3D& groups) = 0;
 
         //program bind
         virtual void bindImage(const Shader* shader, u32 bindIndex, const Image* image, s32 layer = k_generalLayer, s32 mip = k_allMipmapsLevels) = 0;
@@ -175,16 +175,16 @@ namespace renderer
 
         /**
         * @brief setViewport command
-        * @param const core::Rect32& viewport [required]
-        * @param const core::Vector2D& depth [required]
+        * @param const math::Rect32& viewport [required]
+        * @param const math::Vector2D& depth [required]
         */
-        virtual void setViewport(const core::Rect32& viewport, const core::Vector2D& depth = { 0.0f, 1.0f }) = 0;
+        virtual void setViewport(const math::Rect32& viewport, const math::Vector2D& depth = { 0.0f, 1.0f }) = 0;
 
         /**
         * @brief setScissor command
-        * @param const core::Rect32& scissor [required]
+        * @param const math::Rect32& scissor [required]
         */
-        virtual void setScissor(const core::Rect32& scissor) = 0;
+        virtual void setScissor(const math::Rect32& scissor) = 0;
 
         virtual void setRenderTarget(const RenderPass::RenderPassInfo* renderpassInfo, const Framebuffer::FramebufferInfo* framebufferInfo) = 0;
         virtual void invalidateRenderTarget() = 0;
@@ -206,8 +206,8 @@ namespace renderer
         virtual void clearRenderTarget(const std::vector<const Image*>& images, Framebuffer::ClearValueInfo& clearValues) = 0;
 
         //objects
-        [[nodiscard]] virtual Image* createImage(TextureTarget target, Format format, const core::Dimension3D& dimension, u32 layers, u32 mipmapLevel, TextureUsageFlags flags, [[maybe_unused]] const std::string& name = "") = 0;
-        [[nodiscard]] virtual Image* createImage(TextureTarget target, Format format, const core::Dimension3D& dimension, u32 layers, TextureSamples samples, TextureUsageFlags flags, [[maybe_unused]] const std::string& name = "") = 0;
+        [[nodiscard]] virtual Image* createImage(TextureTarget target, Format format, const math::Dimension3D& dimension, u32 layers, u32 mipmapLevel, TextureUsageFlags flags, [[maybe_unused]] const std::string& name = "") = 0;
+        [[nodiscard]] virtual Image* createImage(TextureTarget target, Format format, const math::Dimension3D& dimension, u32 layers, TextureSamples samples, TextureUsageFlags flags, [[maybe_unused]] const std::string& name = "") = 0;
         virtual void removeImage(Image* image) = 0;
 
         [[nodiscard]] virtual Buffer* createBuffer(Buffer::BufferType type, u16 usageFlag, u64 size, [[maybe_unused]] const std::string& name = "") = 0;
@@ -216,7 +216,7 @@ namespace renderer
         [[nodiscard]] virtual Sampler* createSampler(const SamplerDescription& desc) = 0;
         virtual void removeSampler(Sampler* sampler) = 0;
 
-        [[nodiscard]] virtual Framebuffer* createFramebuffer(const std::vector<Image*>& attachments, const core::Dimension2D& size) = 0;
+        [[nodiscard]] virtual Framebuffer* createFramebuffer(const std::vector<Image*>& attachments, const math::Dimension2D& size) = 0;
         virtual void removeFramebuffer(Framebuffer* framebuffer) = 0;
 
         [[nodiscard]] virtual RenderPass* createRenderPass(const RenderPassDescription* renderpassDesc) = 0;
@@ -228,7 +228,7 @@ namespace renderer
         [[nodiscard]] virtual Query* createQuery(QueryType type, u32 count, const Query::QueryRespose& callback, [[maybe_unused]] const std::string& name = "") = 0;
         virtual void removeQuery(Query* query) = 0;
 
-        virtual void clearBackbuffer(const core::Vector4D& color) = 0;
+        virtual void clearBackbuffer(const math::Vector4D& color) = 0;
         virtual void generateMipmaps(Image* image, u32 layer, TransitionOp state) = 0;
 
         /**
@@ -241,7 +241,7 @@ namespace renderer
         * @brief getBackbufferSize
         * @return Backbuffer size
         */
-        const core::Dimension2D& getBackbufferSize() const;
+        const math::Dimension2D& getBackbufferSize() const;
 
         /**
         * @brief getBackbufferFormat
@@ -262,7 +262,7 @@ namespace renderer
 
         struct BackbufferDesc
         {
-            core::Dimension2D _size;
+            math::Dimension2D _size;
             Format            _format;
         };
         BackbufferDesc m_backufferDescription;
@@ -291,7 +291,7 @@ namespace renderer
         return m_frameCounter;
     }
 
-    inline const core::Dimension2D& Context::getBackbufferSize() const
+    inline const math::Dimension2D& Context::getBackbufferSize() const
     {
         return m_backufferDescription._size;
     }

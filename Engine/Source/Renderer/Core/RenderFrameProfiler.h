@@ -10,6 +10,9 @@ namespace renderer
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    /**
+    * @brief RenderFrameStaticstics struct
+    */
     struct RenderFrameStaticstics : utils::ProfilerStaticstics
     {
         RenderFrameStaticstics() noexcept = default;

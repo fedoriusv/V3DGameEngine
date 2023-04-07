@@ -23,7 +23,7 @@ namespace renderer
         */
         using QueryRespose = std::function<void(QueryResult result, u32 size, const void* data)>;
 
-        Query(QueryType type, u32 count, const QueryRespose& callback) noexcept;
+        explicit Query(QueryType type, u32 count, const QueryRespose& callback) noexcept;
         virtual ~Query();
 
         virtual bool create() = 0;

@@ -32,7 +32,7 @@ namespace renderer
         void draw(const StreamBufferDescription& desc, u32 firstVertex, u32 vertexCount, u32 firstInstance, u32 instanceCount) override;
         void drawIndexed(const StreamBufferDescription& desc, u32 firstIndex, u32 indexCount, u32 firstInstance, u32 instanceCount) override;
 
-        void dispatchCompute(const core::Dimension3D& groups) override;
+        void dispatchCompute(const math::Dimension3D& groups) override;
 
         void bindImage(const Shader* shader, u32 bindIndex, const Image* image, s32 layer = k_generalLayer, s32 mip = k_allMipmapsLevels) override;
         void bindSampler(const Shader* shader, u32 bindIndex, const Sampler::SamplerInfo* samplerInfo) override;
@@ -42,8 +42,8 @@ namespace renderer
 
         void transitionImages(std::vector<std::tuple<const Image*, Image::Subresource>>& images, TransitionOp transition) override;
 
-        void setViewport(const core::Rect32& viewport, const core::Vector2D& depth = { 0.0f, 1.0f }) override;
-        void setScissor(const core::Rect32& scissor) override;
+        void setViewport(const math::Rect32& viewport, const math::Vector2D& depth = { 0.0f, 1.0f }) override;
+        void setScissor(const math::Rect32& scissor) override;
 
         void setRenderTarget(const RenderPass::RenderPassInfo* renderpassInfo, const Framebuffer::FramebufferInfo* framebufferInfo) override;
         void invalidateRenderTarget() override;
@@ -53,29 +53,29 @@ namespace renderer
 
         void clearRenderTarget(const std::vector<const Image*>& images, Framebuffer::ClearValueInfo& clearValues) override;
 
-        Image* createImage(TextureTarget target, Format format, const core::Dimension3D& dimension, u32 layers, u32 mipmapLevel, TextureUsageFlags flags, [[maybe_unused]] const std::string& name = "") override;
-        Image* createImage(TextureTarget target, Format format, const core::Dimension3D& dimension, u32 layers, TextureSamples samples, TextureUsageFlags flags, [[maybe_unused]] const std::string& name = "") override;
+        [[nodiscard]] Image* createImage(TextureTarget target, Format format, const math::Dimension3D& dimension, u32 layers, u32 mipmapLevel, TextureUsageFlags flags, [[maybe_unused]] const std::string& name = "") override;
+        [[nodiscard]] Image* createImage(TextureTarget target, Format format, const math::Dimension3D& dimension, u32 layers, TextureSamples samples, TextureUsageFlags flags, [[maybe_unused]] const std::string& name = "") override;
         void removeImage(Image* image) override;
 
-        Buffer* createBuffer(Buffer::BufferType type, u16 usageFlag, u64 size, [[maybe_unused]] const std::string& name = "") override;
+        [[nodiscard]] Buffer* createBuffer(Buffer::BufferType type, u16 usageFlag, u64 size, [[maybe_unused]] const std::string& name = "") override;
         void removeBuffer(Buffer* buffer) override;
 
-        Sampler* createSampler(const SamplerDescription& desc) override;
+        [[nodiscard]] Sampler* createSampler(const SamplerDescription& desc) override;
         void removeSampler(Sampler* sampler) override;
 
-        Pipeline* createPipeline(Pipeline::PipelineType type, [[maybe_unused]] const std::string& name = "") override;
+        [[nodiscard]] Pipeline* createPipeline(Pipeline::PipelineType type, [[maybe_unused]] const std::string& name = "") override;
         void removePipeline(Pipeline* pipeline) override;
 
-        Framebuffer* createFramebuffer(const std::vector<Image*>& attachments, const core::Dimension2D& size) override;
+        [[nodiscard]] Framebuffer* createFramebuffer(const std::vector<Image*>& attachments, const math::Dimension2D& size) override;
         void removeFramebuffer(Framebuffer* framebuffer) override;
 
-        RenderPass* createRenderPass(const RenderPassDescription* renderpassDesc) override;
+        [[nodiscard]] RenderPass* createRenderPass(const RenderPassDescription* renderpassDesc) override;
         void removeRenderPass(RenderPass* renderpass) override;
 
-        Query* createQuery(QueryType type, u32 size, const Query::QueryRespose& callback, [[maybe_unused]] const std::string& name = "") override;
+        [[nodiscard]] Query* createQuery(QueryType type, u32 size, const Query::QueryRespose& callback, [[maybe_unused]] const std::string& name = "") override;
         void removeQuery(Query* query) override;
 
-        void clearBackbuffer(const core::Vector4D & color) override;
+        void clearBackbuffer(const math::Vector4D& color) override;
         void generateMipmaps(Image* image, u32 layer, TransitionOp state) override;
 
     private:

@@ -52,28 +52,28 @@ void EmptyContext::timestampQuery(const Query* query, u32 id, const std::string&
     LOG_DEBUG("EmptyContext::timestampQuery");
 }
 
-void EmptyContext::clearBackbuffer(const core::Vector4D& color)
+void EmptyContext::clearBackbuffer(const math::Vector4D& color)
 {
     LOG_DEBUG("EmptyContext::clearBackbuffer");
 }
 
-void EmptyContext::setViewport(const core::Rect32& viewport, const core::Vector2D& depth)
+void EmptyContext::setViewport(const math::Rect32& viewport, const math::Vector2D& depth)
 {
     LOG_DEBUG("EmptyContext::setViewport");
 }
 
-void EmptyContext::setScissor(const core::Rect32& scissor)
+void EmptyContext::setScissor(const math::Rect32& scissor)
 {
     LOG_DEBUG("EmptyContext::setScissor");
 }
 
-Image* EmptyContext::createImage(TextureTarget target, Format format, const core::Dimension3D& dimension, u32 layers, u32 mipmapLevel, TextureUsageFlags flags, const std::string& name)
+Image* EmptyContext::createImage(TextureTarget target, Format format, const math::Dimension3D& dimension, u32 layers, u32 mipmapLevel, TextureUsageFlags flags, const std::string& name)
 {
     LOG_DEBUG("EmptyContext::createImage");
     return nullptr;
 }
 
-Image* EmptyContext::createImage(TextureTarget target, Format format, const core::Dimension3D& dimension, u32 layers, TextureSamples samples, TextureUsageFlags flags, const std::string& name)
+Image* EmptyContext::createImage(TextureTarget target, Format format, const math::Dimension3D& dimension, u32 layers, TextureSamples samples, TextureUsageFlags flags, const std::string& name)
 {
     LOG_DEBUG("EmptyContext::createImage");
     return nullptr;
@@ -160,7 +160,7 @@ void EmptyContext::drawIndexed(const StreamBufferDescription& desc, u32 firstInd
     LOG_DEBUG("EmptyContext::drawIndexed");
 }
 
-void EmptyContext::dispatchCompute(const core::Dimension3D& groups)
+void EmptyContext::dispatchCompute(const math::Dimension3D& groups)
 {
     LOG_DEBUG("EmptyContext::dispatchCompute");
 }
@@ -185,7 +185,7 @@ const DeviceCaps* EmptyContext::getDeviceCaps() const
     return nullptr;
 }
 
-Framebuffer* EmptyContext::createFramebuffer(const std::vector<Image*>& images, const core::Dimension2D& size)
+Framebuffer* EmptyContext::createFramebuffer(const std::vector<Image*>& images, const math::Dimension2D& size)
 {
     LOG_DEBUG("EmptyContext::createFramebuffer");
     return nullptr;

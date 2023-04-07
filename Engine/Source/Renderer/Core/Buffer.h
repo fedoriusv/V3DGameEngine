@@ -23,11 +23,11 @@ namespace renderer
         */
         enum class BufferType : u32
         {
-            BufferType_VertexBuffer,
-            BufferType_IndexBuffer,
-            BufferType_ConstantBuffer,
-            BufferType_StagingBuffer,
-            BufferType_Readback
+            VertexBuffer,
+            IndexBuffer,
+            ConstantBuffer,
+            StagingBuffer,
+            Readback
         };
 
         Buffer() = default;

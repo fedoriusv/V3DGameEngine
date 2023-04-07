@@ -31,7 +31,7 @@ namespace renderer
         struct ClearValueInfo
         {
             TargetRegion                _region;
-            std::vector<core::Vector4D> _color;
+            std::vector<math::Vector4D> _color;
             f32                         _depth = 0.f;
             u32                         _stencil = 0;
         };
@@ -95,7 +95,7 @@ namespace renderer
         explicit FramebufferManager(Context *context) noexcept;
         ~FramebufferManager();
 
-        std::tuple<Framebuffer*, bool> acquireFramebuffer(const RenderPass* renderpass, const std::vector<Image*>& images, const core::Dimension2D& area);
+        [[nodiscard]] std::tuple<Framebuffer*, bool> acquireFramebuffer(const RenderPass* renderpass, const std::vector<Image*>& images, const math::Dimension2D& area);
         bool removeFramebuffer(Framebuffer* framebufer);
         void clear();
 

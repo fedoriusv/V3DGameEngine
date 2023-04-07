@@ -57,7 +57,7 @@ FramebufferManager::~FramebufferManager()
     FramebufferManager::clear();
 }
 
-std::tuple<Framebuffer*, bool> FramebufferManager::acquireFramebuffer(const RenderPass* renderpass, const std::vector<Image*>& images, const core::Dimension2D& area)
+std::tuple<Framebuffer*, bool> FramebufferManager::acquireFramebuffer(const RenderPass* renderpass, const std::vector<Image*>& images, const math::Dimension2D& area)
 {
     auto buildFramebufferDescription = [&](Framebuffer::FramebufferDescription& desc) -> void
     {

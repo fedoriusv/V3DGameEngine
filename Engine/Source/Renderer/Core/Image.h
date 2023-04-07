@@ -38,7 +38,7 @@ namespace renderer
             u32 _mips       : 16;
         };
 
-        static const Subresource makeImageSubresource(u32 baseLayer, u32 layers, u32 baseMip, u32 mips)
+        [[nodiscard]] static const Subresource makeImageSubresource(u32 baseLayer, u32 layers, u32 baseMip, u32 mips)
         {
             static_assert(sizeof(Subresource) == 8, "Wrong size");
             ASSERT(baseLayer != ~0 && baseMip != ~0 && layers != ~0 && mips != ~0, "must be real");
@@ -51,11 +51,11 @@ namespace renderer
         virtual bool create() = 0;
         virtual void destroy() = 0;
 
-        virtual void clear(Context* context, const core::Vector4D& color) = 0;
+        virtual void clear(Context* context, const math::Vector4D& color) = 0;
         virtual void clear(Context* context, f32 depth, u32 stencil) = 0;
 
-        virtual bool upload(Context* context, const core::Dimension3D& size, u32 layers, u32 mips, const void* data) = 0;
-        virtual bool upload(Context* context, const core::Dimension3D& offsets, const core::Dimension3D& size, u32 layers, const void* data) = 0;
+        virtual bool upload(Context* context, const math::Dimension3D& size, u32 layers, u32 mips, const void* data) = 0;
+        virtual bool upload(Context* context, const math::Dimension3D& offsets, const math::Dimension3D& size, u32 layers, const void* data) = 0;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

@@ -66,7 +66,7 @@ namespace renderer
         explicit SamplerManager(Context *context) noexcept;
         ~SamplerManager();
 
-        Sampler* acquireSampler(const SamplerDescription& samplerDesc);
+        [[nodiscard]] Sampler* acquireSampler(const SamplerDescription& samplerDesc);
         bool removeSampler(Sampler* sampler);
         void clear();
 

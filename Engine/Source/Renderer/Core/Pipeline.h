@@ -28,7 +28,7 @@ namespace renderer
     {
     public:
 
-        static const RenderPassDescription createCompatibilityRenderPassDescription(const RenderPassDescription& renderpassDesc);
+        [[nodiscard]] static const RenderPassDescription createCompatibilityRenderPassDescription(const RenderPassDescription& renderpassDesc);
 
         /**
         * @brief Pipeline PipelineType enum
@@ -137,8 +137,8 @@ namespace renderer
         explicit PipelineManager(Context* context) noexcept;
         ~PipelineManager();
 
-        Pipeline* acquireGraphicPipeline(const Pipeline::PipelineGraphicInfo& pipelineInfo);
-        Pipeline* acquireComputePipeline(const Pipeline::PipelineComputeInfo& pipelineInfo);
+        [[nodiscard]] Pipeline* acquireGraphicPipeline(const Pipeline::PipelineGraphicInfo& pipelineInfo);
+        [[nodiscard]] Pipeline* acquireComputePipeline(const Pipeline::PipelineComputeInfo& pipelineInfo);
 
         bool removePipeline(Pipeline* pipeline);
         void clear();

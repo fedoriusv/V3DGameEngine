@@ -68,7 +68,7 @@ namespace renderer
         explicit RenderPassManager(Context *context) noexcept;
         ~RenderPassManager();
 
-        RenderPass* acquireRenderPass(const RenderPassDescription& renderPassInfo);
+        [[nodiscard]] RenderPass* acquireRenderPass(const RenderPassDescription& renderPassInfo);
         bool removeRenderPass(const RenderPass* renderPass);
         void clear();
 
