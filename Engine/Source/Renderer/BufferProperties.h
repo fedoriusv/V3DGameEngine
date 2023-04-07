@@ -46,9 +46,9 @@ namespace renderer
     ///////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
-    * @brief VertexInputAttributeDesc struct
+    * @brief VertexInputAttributeDescription struct
     */
-    struct VertexInputAttribDescription
+    struct VertexInputAttributeDescription
     {
         enum InputRate : u32
         {
@@ -64,8 +64,8 @@ namespace renderer
             InputBinding() noexcept;
             InputBinding(u32 index, InputRate rate, u32 stride) noexcept;
 
-            void operator >> (stream::Stream* stream);
-            void operator << (const stream::Stream* stream);
+            u32 operator>>(stream::Stream* stream);
+            u32 operator<<(const stream::Stream* stream);
 
             u32       _index;
             InputRate _rate;
@@ -80,8 +80,8 @@ namespace renderer
             InputAttribute() noexcept;
             InputAttribute(u32 binding, u32 stream, Format format, u32 offset) noexcept;
 
-            void operator >> (stream::Stream* stream);
-            void operator << (const stream::Stream* stream);
+            u32 operator>>(stream::Stream* stream);
+            u32 operator<<(const stream::Stream* stream);
 
             u32          _bindingId;
             u32          _streamId;
@@ -89,15 +89,15 @@ namespace renderer
             u32          _offest;
         };
 
-        VertexInputAttribDescription() noexcept;
-        VertexInputAttribDescription(const VertexInputAttribDescription& desc) noexcept;
-        VertexInputAttribDescription(std::vector<InputBinding> inputBindings, std::vector<VertexInputAttribDescription::InputAttribute> inputAttributes) noexcept;
-        VertexInputAttribDescription& operator=(const VertexInputAttribDescription& desc) noexcept;
+        VertexInputAttributeDescription() noexcept;
+        VertexInputAttributeDescription(const VertexInputAttributeDescription& desc) noexcept;
+        VertexInputAttributeDescription(std::vector<InputBinding> inputBindings, std::vector<VertexInputAttributeDescription::InputAttribute> inputAttributes) noexcept;
+        VertexInputAttributeDescription& operator=(const VertexInputAttributeDescription& desc) noexcept;
 
-        bool operator==(const VertexInputAttribDescription& desc);
+        bool operator==(const VertexInputAttributeDescription& desc);
 
-        void operator >> (stream::Stream* stream);
-        void operator << (const stream::Stream* stream);
+        u32 operator>>(stream::Stream* stream);
+        u32 operator<<(const stream::Stream* stream);
 
 
         u32 _countInputBindings;
