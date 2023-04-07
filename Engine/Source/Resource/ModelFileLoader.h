@@ -9,31 +9,11 @@ namespace scene
 {
     class Model;
 } //namespace scene
-
 namespace resource
 {
     struct ResourceHeader;
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    /**
-    * @brief ModelLoaderFlag enum
-    */
-    enum ModelLoaderFlag : u32
-    {
-        ModelLoaderFlag_SeperateMesh = 1 << 0,
-        ModelLoaderFlag_SplitLargeMeshes = 1 << 1,
-        ModelLoaderFlag_NoGenerateIndex = 1 << 2,
-        //ModelLoaderFlag_GenerateTextureCoord = 1 << 3,
-        ModelLoaderFlag_GenerateNormals = 1 << 4,
-        ModelLoaderFlag_GenerateTangentAndBitangent = 1 << 6,
-        ModelLoaderFlag_UseBitangent = 1 << 7,
-        ModelLoaderFlag_ReadHeader = 1 << 8,
-        ModelLoaderFlag_LocalTransform = 1 << 9,
-        ModelLoaderFlag_FlipYPosition = 1 << 10,
-        ModelLoaderFlag_FlipYTextureCoord = 1 << 11,
-    };
-    typedef u32 ModelLoaderFlags;
 
     /**
     * @brief ModelFileLoader class. Loader from file
@@ -42,6 +22,31 @@ namespace resource
     class ModelFileLoader : public ResourceLoader<scene::Model*>, public ResourceDecoderRegistration
     {
     public:
+
+        /**
+        * @brief ModelLoaderFlag enum
+        */
+        enum ModelLoaderFlag : u16
+        {
+            ReadHeader = 1 << 1,
+
+            SkipIndexBuffer = 1 << 2,                    //Don't create Index Buffer
+            SkipNormalsAttribute = 1 << 3,               //Don't use Normal attribute
+            SkipTangentAndBitangentAttribute = 1 << 4,   //Don't use Tangent & Bitangetns attributes
+            SkipTextureCoordtAttributes = 1 << 5,        //Don't use Texture attributes
+
+            SeperatePositionAttribute = 1 << 6,          //Save Position to saparate stream
+            UseBoundingBoxes = 1 << 7,                   //Generate BoundingBox for meshes
+
+            LocalTransform = 1 << 8,                     //Ignore all releative transforms
+            FlipYPosition = 1 << 9,                      //Flip Y position
+            FlipYTextureCoord = 1 << 10,                 //Flip Y texture coordinage
+
+            SplitLargeMeshes = 1 << 11,
+            SkipMaterialLoading = 1 << 12,
+
+        };
+        typedef u16 ModelLoaderFlags;
 
         ModelFileLoader() = delete;
         ModelFileLoader(const ModelFileLoader&) = delete;
@@ -52,7 +57,7 @@ namespace resource
         * @param ModelLoaderFlags flags [required]
         * @see ModelLoaderFlags
         */
-        ModelFileLoader(ModelLoaderFlags flags) noexcept;
+        explicit ModelFileLoader(ModelLoaderFlags flags) noexcept;
 
         /**
         * @brief ModelFileLoader constructor. Create a Model by Header
@@ -60,7 +65,7 @@ namespace resource
         * @param ModelLoaderFlags flags [required]
         * @see ModelLoaderFlags
         */
-        ModelFileLoader(const ResourceHeader* header, ModelLoaderFlags flags) noexcept;
+        explicit ModelFileLoader(const ResourceHeader* header, ModelLoaderFlags flags) noexcept;
 
         /**
         * @brief Load model resource by name from file
@@ -69,7 +74,7 @@ namespace resource
         * @param const std::string& alias [optional]
         * @return Model pointer
         */
-        scene::Model* load(const std::string& name, const std::string& alias = "") override;
+        [[nodiscard]] scene::Model* load(const std::string& name, const std::string& alias = "") override;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

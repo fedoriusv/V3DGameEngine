@@ -4,7 +4,7 @@
 #include "Stream/FileLoader.h"
 #include "Resource/ResourceLoaderManager.h"
 
-#include "Scene/Model.h"
+#include "Scene/Geometry/Model.h"
 
 namespace v3d
 {
@@ -15,7 +15,7 @@ ModelFileLoader::ModelFileLoader(ModelLoaderFlags flags) noexcept
 {
 #ifdef USE_ASSIMP
     scene::ModelHeader header;
-    ResourceDecoderRegistration::registerDecoder(new MeshAssimpDecoder({ "dae" }, header, flags));
+    ResourceDecoderRegistration::registerDecoder(new MeshAssimpDecoder({ "dae", "fbx"}, header, flags));
 #endif //USE_ASSIMP
 
     ResourceLoader::registerRoot("");
@@ -29,7 +29,7 @@ ModelFileLoader::ModelFileLoader(const ResourceHeader* header, ModelLoaderFlags 
 {
 #ifdef USE_ASSIMP
     scene::ModelHeader modelHeader = *static_cast<const scene::ModelHeader*>(header);
-    ResourceDecoderRegistration::registerDecoder(new MeshAssimpDecoder({ "dae" }, modelHeader, flags));
+    ResourceDecoderRegistration::registerDecoder(new MeshAssimpDecoder({ "dae", "fbx"}, modelHeader, flags));
 #endif //USE_ASSIMP
 
     ResourceLoader::registerRoot("");
