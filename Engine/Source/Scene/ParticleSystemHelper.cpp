@@ -11,15 +11,15 @@ namespace scene
 ParticleSystemHelper::ParticleSystemHelper(renderer::CommandList & list)
     : m_cmdList(list)
 {
-    m_attributeDesc = renderer::VertexInputAttribDescription(
-        { renderer::VertexInputAttribDescription::InputBinding(0, renderer::VertexInputAttribDescription::InputRate::InputRate_Vertex, sizeof(ParticleSystem::Particle)) },
+    m_attributeDesc = renderer::VertexInputAttributeDescription(
+        { renderer::VertexInputAttributeDescription::InputBinding(0, renderer::VertexInputAttributeDescription::InputRate::InputRate_Vertex, sizeof(ParticleSystem::Particle)) },
         { 
-            renderer::VertexInputAttribDescription::InputAttribute(0, 0, renderer::Format::Format_R32G32B32A32_SFloat, offsetof(ParticleSystem::Particle, _position)),
-            renderer::VertexInputAttribDescription::InputAttribute(0, 0, renderer::Format::Format_R32G32B32A32_SFloat, offsetof(ParticleSystem::Particle, _color)),
-            renderer::VertexInputAttribDescription::InputAttribute(0, 0, renderer::Format::Format_R32_SFloat, offsetof(ParticleSystem::Particle, _alpha)),
-            renderer::VertexInputAttribDescription::InputAttribute(0, 0, renderer::Format::Format_R32_SFloat, offsetof(ParticleSystem::Particle, _size)),
-            renderer::VertexInputAttribDescription::InputAttribute(0, 0, renderer::Format::Format_R32_SFloat, offsetof(ParticleSystem::Particle, _rotation)),
-            renderer::VertexInputAttribDescription::InputAttribute(0, 0, renderer::Format::Format_R32_SInt, offsetof(ParticleSystem::Particle, _type)),
+            renderer::VertexInputAttributeDescription::InputAttribute(0, 0, renderer::Format::Format_R32G32B32A32_SFloat, offsetof(ParticleSystem::Particle, _position)),
+            renderer::VertexInputAttributeDescription::InputAttribute(0, 0, renderer::Format::Format_R32G32B32A32_SFloat, offsetof(ParticleSystem::Particle, _color)),
+            renderer::VertexInputAttributeDescription::InputAttribute(0, 0, renderer::Format::Format_R32_SFloat, offsetof(ParticleSystem::Particle, _alpha)),
+            renderer::VertexInputAttributeDescription::InputAttribute(0, 0, renderer::Format::Format_R32_SFloat, offsetof(ParticleSystem::Particle, _size)),
+            renderer::VertexInputAttributeDescription::InputAttribute(0, 0, renderer::Format::Format_R32_SFloat, offsetof(ParticleSystem::Particle, _rotation)),
+            renderer::VertexInputAttributeDescription::InputAttribute(0, 0, renderer::Format::Format_R32_SInt, offsetof(ParticleSystem::Particle, _type)),
         }
     );
 
@@ -35,12 +35,12 @@ ParticleSystemHelper::~ParticleSystemHelper()
     m_particleSystems.clear();
 }
 
-const renderer::VertexInputAttribDescription& ParticleSystemHelper::getVertexInputAttribDesc() const
+const renderer::VertexInputAttributeDescription& ParticleSystemHelper::getVertexInputAttribDesc() const
 {
     return m_attributeDesc;
 }
 
-void ParticleSystemHelper::add(u32 particleCount, const core::Vector3D& pos, const core::Vector3D& minVel, const core::Vector3D& maxVel)
+void ParticleSystemHelper::add(u32 particleCount, const math::Vector3D& pos, const math::Vector3D& minVel, const math::Vector3D& maxVel)
 {
     ParticleSystem* particle = new ParticleSystem(particleCount, pos, minVel, maxVel);
     

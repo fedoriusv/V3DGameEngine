@@ -26,12 +26,12 @@ namespace scene
 
         void setTextureParameter(MaterialHeader::Property property, renderer::Texture* texture);
         void setFloatParameter(MaterialHeader::Property property, f32 value);
-        void setVectorParameter(MaterialHeader::Property property, const core::Vector4D& vector);
+        void setVectorParameter(MaterialHeader::Property property, const math::Vector4D& vector);
 
         template <class TTexture>
         TTexture* getTextureParameter(MaterialHeader::Property property) const;
         f32 getFloatParameter(MaterialHeader::Property property) const;
-        core::Vector4D getVectorParameter(MaterialHeader::Property property) const;
+        math::Vector4D getVectorParameter(MaterialHeader::Property property) const;
 
         static MaterialHelper* createMaterialHelper(renderer::CommandList& cmdList, Material* material);
         static std::vector<MaterialHelper*> createMaterialHelpers(renderer::CommandList& cmdList, std::vector<Material*> materials);

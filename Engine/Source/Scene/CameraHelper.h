@@ -20,41 +20,41 @@ namespace scene
         CameraHelper() = delete;
         CameraHelper(const CameraHelper&) = delete;
 
-        explicit CameraHelper(Camera* camera, const core::Vector3D& position) noexcept;
+        explicit CameraHelper(Camera* camera, const math::Vector3D& position) noexcept;
         virtual ~CameraHelper();
 
         Camera& getCamera();
         const Camera& getCamera() const;
 
-        void setPosition(const core::Vector3D& position);
-        void setTarget(const core::Vector3D& target);
-        void setUp(const core::Vector3D& up);
+        void setPosition(const math::Vector3D& position);
+        void setTarget(const math::Vector3D& target);
+        void setUp(const math::Vector3D& up);
 
-        const core::Vector3D& getPosition() const;
-        const core::Vector3D& getTarget() const;
+        const math::Vector3D& getPosition() const;
+        const math::Vector3D& getTarget() const;
 
-        const core::Matrix4D& getProjectionMatrix() const;
-        const core::Matrix4D& getViewMatrix() const;
-        const core::Vector3D& getViewPosition() const;
+        const math::Matrix4D& getProjectionMatrix() const;
+        const math::Matrix4D& getViewMatrix() const;
+        const math::Vector3D& getViewPosition() const;
 
-        void setPerspective(f32 FOV, const core::Dimension2D& size, f32 zNear, f32 zFar);
-        void setOrtho(const core::Rect32& area, f32 zNear, f32 zFar);
+        void setPerspective(f32 FOV, const math::Dimension2D& size, f32 zNear, f32 zFar);
+        void setOrtho(const math::Rect32& area, f32 zNear, f32 zFar);
 
         virtual void update(f32 deltaTime);
 
     private:
 
         Camera*         m_camera;
-        core::Rect32    m_area;
+        math::Rect32    m_area;
 
     protected:
 
-        const core::Rect32& getArea() const;
+        const math::Rect32& getArea() const;
 
         Transform       m_transform;
         bool            m_needUpdate;
 
-        core::Vector3D  m_viewPosition;
+        math::Vector3D  m_viewPosition;
     };
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////

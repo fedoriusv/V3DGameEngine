@@ -9,7 +9,7 @@ namespace v3d
 namespace scene
 {
 
-CameraFPSHelper::CameraFPSHelper(Camera* camera, const core::Vector3D& position) noexcept
+CameraFPSHelper::CameraFPSHelper(Camera* camera, const math::Vector3D& position) noexcept
     : CameraHelper(camera, position)
     , m_moveSpeed(0.f)
 
@@ -25,15 +25,15 @@ void CameraFPSHelper::update(f32 deltaTime)
 {
     if (m_needUpdate)
     {
-        core::Vector3D frontDirection;
-        frontDirection.x = cos(CameraFPSHelper::getRotation().x * core::k_degToRad) * sin(CameraFPSHelper::getRotation().y * core::k_degToRad);
-        frontDirection.y = sin(CameraFPSHelper::getRotation().x * core::k_degToRad);
-        frontDirection.z = cos(CameraFPSHelper::getRotation().x * core::k_degToRad) * cos(CameraFPSHelper::getRotation().y * core::k_degToRad);
+        math::Vector3D frontDirection;
+        frontDirection.m_x = cos(CameraFPSHelper::getRotation().m_x * math::k_degToRad) * sin(CameraFPSHelper::getRotation().m_y * math::k_degToRad);
+        frontDirection.m_y = sin(CameraFPSHelper::getRotation().m_x * math::k_degToRad);
+        frontDirection.m_z = cos(CameraFPSHelper::getRotation().m_x * math::k_degToRad) * cos(CameraFPSHelper::getRotation().m_y * math::k_degToRad);
         frontDirection.normalize();
 
         if (CameraFPSHelper::isDirectionChange())
         {
-            core::Vector3D position = m_transform.getPosition();
+            math::Vector3D position = m_transform.getPosition();
             f32 moveSpeed = deltaTime * m_moveSpeed;
 
             if (m_direction._forward)
@@ -48,7 +48,7 @@ void CameraFPSHelper::update(f32 deltaTime)
 
             if (m_direction._left)
             {
-                core::Vector3D camRight = core::crossProduct(frontDirection, getCamera().getUpVector());
+                math::Vector3D camRight = math::crossProduct(frontDirection, getCamera().getUpVector());
                 camRight.normalize();
 
                 position += camRight * moveSpeed;
@@ -56,7 +56,7 @@ void CameraFPSHelper::update(f32 deltaTime)
 
             if (m_direction._right)
             {
-                core::Vector3D camRight = core::crossProduct(frontDirection, getCamera().getUpVector());
+                math::Vector3D camRight = math::crossProduct(frontDirection, getCamera().getUpVector());
                 camRight.normalize();
 
                 position -= camRight * moveSpeed;
@@ -71,13 +71,13 @@ void CameraFPSHelper::update(f32 deltaTime)
     }
 }
 
-void CameraFPSHelper::setRotation(const core::Vector3D& rotation)
+void CameraFPSHelper::setRotation(const math::Vector3D& rotation)
 {
     m_transform.setRotation(rotation);
     m_needUpdate = true;
 }
 
-const core::Vector3D& CameraFPSHelper::getRotation() const
+const math::Vector3D& CameraFPSHelper::getRotation() const
 {
     return m_transform.getRotation();
 }
@@ -89,19 +89,19 @@ bool CameraFPSHelper::isDirectionChange() const
 
 void CameraFPSHelper::rotateHandlerCallback(const v3d::event::InputEventHandler* handler, const event::MouseInputEvent* event, bool mouseCapture)
 {
-    static core::Point2D position = event->_cursorPosition;
+    static math::Point2D position = event->_cursorPosition;
 
     if (handler->isLeftMousePressed() || mouseCapture)
     {
-        core::Point2D positionDelta = position - event->_cursorPosition;
+        math::Point2D positionDelta = position - event->_cursorPosition;
 
         //if (positionDelta.x != 0 && positionDelta.y != 0)
         {
-            core::Vector3D rotation = CameraFPSHelper::getRotation();
-            rotation.x += positionDelta.y * k_rotationSpeed;
-            rotation.y -= positionDelta.x * k_rotationSpeed;
+            math::Vector3D rotation = CameraFPSHelper::getRotation();
+            rotation.m_x += positionDelta.m_y * k_rotationSpeed;
+            rotation.m_y -= positionDelta.m_x * k_rotationSpeed;
 
-            rotation.x = std::clamp(rotation.x, -k_constrainPitch, k_constrainPitch);
+            rotation.m_x = math::clamp(rotation.m_x, -k_constrainPitch, k_constrainPitch);
             CameraFPSHelper::setRotation(rotation);
         }
     }

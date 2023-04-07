@@ -20,26 +20,26 @@ namespace scene
 
         /**
         * @brief Camera constructor.
-        * @param const core::Vector3D& target [optional]
-        * @param const core::Vector3D& up [optional]
+        * @param const math::Vector3D& target [optional]
+        * @param const math::Vector3D& up [optional]
         * @param bool orthogonal [optional]
         */
-        explicit Camera(const core::Vector3D& target = core::Vector3D(0.0f, 0.0f, 1.0f), const core::Vector3D& up = core::Vector3D(0.0f, 1.0f, 0.0f), bool orthogonal = false) noexcept;
+        explicit Camera(const math::Vector3D& target = math::Vector3D(0.0f, 0.0f, 1.0f), const math::Vector3D& up = math::Vector3D(0.0f, 1.0f, 0.0f), bool orthogonal = false) noexcept;
         virtual ~Camera();
 
-        void setTarget(const core::Vector3D& target);
-        void setUpVector(const core::Vector3D& up);
+        void setTarget(const math::Vector3D& target);
+        void setUpVector(const math::Vector3D& up);
         void setNear(f32 value);
         void setFar(f32 value);
         void setFOV(f32 value);
 
-        const core::Vector3D& getTarget() const;
-        const core::Vector3D& getUpVector() const;
-        const core::Matrix4D& getViewMatrix() const;
-        const core::Matrix4D& getProjectionMatrix() const;
+        const math::Vector3D& getTarget() const;
+        const math::Vector3D& getUpVector() const;
+        const math::Matrix4D& getViewMatrix() const;
+        const math::Matrix4D& getProjectionMatrix() const;
 
-        void setViewMatrix(const core::Matrix4D& view);
-        void setProjectionMatrix(const core::Matrix4D& projection);
+        void setViewMatrix(const math::Matrix4D& view);
+        void setProjectionMatrix(const math::Matrix4D& projection);
 
         f32 getNear() const;
         f32 getFar() const;
@@ -70,10 +70,10 @@ namespace scene
 
         typedef u16 CameraStateFlags;
 
-        void recalculateProjectionMatrix(const core::Rect32& size) const;
-        void recalculateViewMatrix(const core::Vector3D& position) const;
+        void recalculateProjectionMatrix(const math::Rect32& size) const;
+        void recalculateViewMatrix(const math::Vector3D& position) const;
 
-        mutable core::Matrix4D m_transform[TransformMatrix_Count];
+        mutable math::Matrix4D m_transform[TransformMatrix_Count];
         bool m_orthogonal;
 
         f32 m_zNear;
@@ -84,8 +84,8 @@ namespace scene
 
         friend class CameraHelper;
 
-        core::Vector3D m_up;
-        core::Vector3D m_target;
+        math::Vector3D m_up;
+        math::Vector3D m_target;
 
         mutable CameraStateFlags m_matricesFlag;
     };

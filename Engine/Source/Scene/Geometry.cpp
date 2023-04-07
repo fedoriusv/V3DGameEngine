@@ -1,6 +1,6 @@
 #include "Geometry.h"
 #include "Stream/StreamManager.h"
-#include "Scene/Model.h"
+#include "Scene/Geometry/Model.h"
 
 #include "Utils/Logger.h"
 
@@ -168,7 +168,7 @@ bool Geometry::load()
     m_subGeometry.resize(static_cast<u32>(vertexInfo._subData.size()));
 
     u8* indexData = nullptr;
-    if (Geometry::getGeometryHeader()._flags & GeometryHeader::GeometryFlag_PresentIndex)
+    if (Geometry::getGeometryHeader()._flags & GeometryHeader::GeometryFlag::IndexBuffer)
     {
         m_indexStreamBuffer = stream::StreamManager::createMemoryStream(nullptr, static_cast<u32>(indexInfo._size));
         indexData = m_indexStreamBuffer->map(static_cast<u32>(indexInfo._size));
@@ -186,7 +186,7 @@ bool Geometry::load()
         u64 vertexSize = vertexInfo._subData[geomIndex]._size;
         geometry->fillVertexData(vertexInfo._subData[geomIndex]._count, vertexDataPtr, vertexSize);
 
-        if (Geometry::getGeometryHeader()._flags & GeometryHeader::GeometryFlag_PresentIndex)
+        if (Geometry::getGeometryHeader()._flags & GeometryHeader::GeometryFlag::IndexBuffer)
         {
             u8* indexDataPtr = indexData + indexInfo._subData[geomIndex]._offset;
             u64 indexSize = indexInfo._subData[geomIndex]._size;
@@ -206,7 +206,7 @@ bool Geometry::load()
     return true;
 }
 
-const renderer::VertexInputAttribDescription& Geometry::getVertexInputAttribDesc() const
+const renderer::VertexInputAttributeDescription& Geometry::getVertexInputAttribDesc() const
 {
     return m_description;
 }

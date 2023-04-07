@@ -45,7 +45,10 @@ namespace scene
 
         enum GeometryFlag
         {
-            GeometryFlag_PresentIndex = 1 << 0,
+            IndexBuffer = 1 << 0,
+            BoundingBox = 1 << 1,
+            LODs = 1 << 2,
+            SapareatePostionAttribute = 1 << 3
         };
 
         u16 _flags;
@@ -64,7 +67,7 @@ namespace scene
         void init(stream::Stream* stream) override;
         bool load() override;
 
-        const renderer::VertexInputAttribDescription& getVertexInputAttribDesc() const;
+        const renderer::VertexInputAttributeDescription& getVertexInputAttribDesc() const;
 
         u8* getVertexData(s32 subGeometry = -1) const;
         u32 getVertexCount(s32 subGeometry = -1) const;
@@ -115,7 +118,7 @@ namespace scene
         void fillVertexData(u32 count, u8* data, u64 size);
         void fillIndexData(u32 count, u8* data, u64 size);
 
-        renderer::VertexInputAttribDescription m_description;
+        renderer::VertexInputAttributeDescription m_description;
 
         stream::Stream* m_indexStreamBuffer;
         stream::Stream* m_vertexStreamBuffer;

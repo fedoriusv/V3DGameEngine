@@ -6,7 +6,7 @@ namespace v3d
 namespace scene
 {
 
-Camera::Camera(const core::Vector3D& target, const core::Vector3D& up, bool orthogonal) noexcept
+Camera::Camera(const math::Vector3D& target, const math::Vector3D& up, bool orthogonal) noexcept
     : m_orthogonal(orthogonal)
     , m_zNear(0.1f)
     , m_zFar(256.0f)
@@ -25,29 +25,29 @@ Camera::~Camera()
     LOG_DEBUG("Camera destructor %xll", this);
 }
 
-void Camera::setTarget(const core::Vector3D& target)
+void Camera::setTarget(const math::Vector3D& target)
 {
     m_target = target;
     m_matricesFlag |= CameraState::CameraState_View;
 }
 
-void Camera::setUpVector(const core::Vector3D& up)
+void Camera::setUpVector(const math::Vector3D& up)
 {
     m_up = up;
     m_matricesFlag |= CameraState::CameraState_View;
 }
 
-const core::Vector3D& Camera::getTarget() const
+const math::Vector3D& Camera::getTarget() const
 {
     return m_target;
 }
 
-const core::Vector3D& Camera::getUpVector() const
+const math::Vector3D& Camera::getUpVector() const
 {
     return m_up;
 }
 
-const core::Matrix4D& Camera::getViewMatrix() const
+const math::Matrix4D& Camera::getViewMatrix() const
 {
     if (m_matricesFlag & CameraState::CameraState_View)
     {
@@ -58,7 +58,7 @@ const core::Matrix4D& Camera::getViewMatrix() const
     return m_transform[TransformMatrix::TransformMatrix_ViewMatrix];
 }
 
-const core::Matrix4D& Camera::getProjectionMatrix() const
+const math::Matrix4D& Camera::getProjectionMatrix() const
 {
     if (m_matricesFlag & CameraState::CameraState_Projection)
     {
@@ -69,13 +69,13 @@ const core::Matrix4D& Camera::getProjectionMatrix() const
     return m_transform[TransformMatrix::TransformMatrix_ProjectionMatrix];
 }
 
-void Camera::setViewMatrix(const core::Matrix4D & view)
+void Camera::setViewMatrix(const math::Matrix4D& view)
 {
     m_transform[TransformMatrix::TransformMatrix_ViewMatrix] = view;
     m_matricesFlag &= ~CameraState::CameraState_View;
 }
 
-void Camera::setProjectionMatrix(const core::Matrix4D & proj)
+void Camera::setProjectionMatrix(const math::Matrix4D& proj)
 {
     m_transform[TransformMatrix::TransformMatrix_ProjectionMatrix] = proj;
     m_matricesFlag &= ~CameraState::CameraState_Projection;
@@ -119,36 +119,36 @@ void Camera::setFOV(f32 value)
     m_matricesFlag |= CameraState::CameraState_Projection;
 }
 
-void Camera::recalculateProjectionMatrix(const core::Rect32& size) const
+void Camera::recalculateProjectionMatrix(const math::Rect32& size) const
 {
     if (m_matricesFlag & CameraState::CameraState_Projection)
     {
         if (Camera::isOrthogonal())
         {
-            m_transform[TransformMatrix::TransformMatrix_ProjectionMatrix] = core::buildProjectionMatrixOrtho(static_cast<f32>(size.getLeftX()), static_cast<f32>(size.getRightX()), static_cast<f32>(size.getBottomY()), static_cast<f32>(size.getTopY()), m_zNear, m_zFar);
+            m_transform[TransformMatrix::TransformMatrix_ProjectionMatrix] = math::buildProjectionMatrixOrtho(static_cast<f32>(size.getLeftX()), static_cast<f32>(size.getRightX()), static_cast<f32>(size.getBottomY()), static_cast<f32>(size.getTopY()), m_zNear, m_zFar);
         }
         else
         {
-            m_transform[TransformMatrix::TransformMatrix_ProjectionMatrix] = core::buildProjectionMatrixPerspective(m_fieldOfView, static_cast<f32>(size.getWidth()) / static_cast<f32>(size.getHeight()), m_zNear, m_zFar);
+            m_transform[TransformMatrix::TransformMatrix_ProjectionMatrix] = math::buildProjectionMatrixPerspective(m_fieldOfView, static_cast<f32>(size.getWidth()) / static_cast<f32>(size.getHeight()), m_zNear, m_zFar);
         }
         m_matricesFlag &= ~CameraState::CameraState_Projection;
     }
 }
 
-void Camera::recalculateViewMatrix(const core::Vector3D& position) const
+void Camera::recalculateViewMatrix(const math::Vector3D& position) const
 {
     if (m_matricesFlag & CameraState::CameraState_View)
     {
-        core::Vector3D forward = m_target - position;
-        core::Vector3D up = m_up;
-        f32 dp = core::dotProduct(forward.normalize(), up.normalize());
-        if (core::isEquals(fabs(dp), 1.f))
+        math::Vector3D forward = m_target - position;
+        math::Vector3D up = m_up;
+        f32 dp = math::dotProduct(forward.normalize(), up.normalize());
+        if (math::isEquals(fabs(dp), 1.f))
         {
             ASSERT(false, "up and forward vectors are lie parallel");
             //up.x = (up.x + 0.5f);
         }
 
-        m_transform[TransformMatrix::TransformMatrix_ViewMatrix] = core::buildLookAtMatrix(position, m_target, m_up);
+        m_transform[TransformMatrix::TransformMatrix_ViewMatrix] = math::buildLookAtMatrix(position, m_target, m_up);
         m_matricesFlag &= ~CameraState::CameraState_View;
     }
 }

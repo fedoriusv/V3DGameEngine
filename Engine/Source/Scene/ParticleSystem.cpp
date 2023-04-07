@@ -10,7 +10,7 @@ inline f32 rnd(f32 range)
     return range * f32(rand() / f64(RAND_MAX));
 }
 
-ParticleSystem::ParticleSystem(u32 particleCount, const core::Vector3D & pos, const core::Vector3D & minvel, const core::Vector3D & maxvel)
+ParticleSystem::ParticleSystem(u32 particleCount, const math::Vector3D & pos, const math::Vector3D & minvel, const math::Vector3D & maxvel)
     : m_position(pos)
     , m_minVel(minvel)
     , m_maxVel(maxvel)
@@ -26,29 +26,29 @@ ParticleSystem::~ParticleSystem()
 {
 }
 
-void ParticleSystem::init(Particle *particle, const core::Vector3D& emitterPos)
+void ParticleSystem::init(Particle *particle, const math::Vector3D& emitterPos)
 {
-    particle->_vel = core::Vector4D(0.0f, m_minVel.y + rnd(m_maxVel.y - m_minVel.y), 0.0f, 0.0f);
+    particle->_vel = math::Vector4D(0.0f, m_minVel.m_y + rnd(m_maxVel.m_y - m_minVel.m_y), 0.0f, 0.0f);
     particle->_alpha = rnd(0.75f);
     particle->_size = 1.0f + rnd(0.5f);
     particle->_size *= 0.5f;
-    particle->_color = core::Vector4D(1.0f);
+    particle->_color = math::Vector4D(1.0f);
     particle->_type = ParticleType_Flame;
-    particle->_rotation = rnd(2.0f * core::k_pi);
+    particle->_rotation = rnd(2.0f * math::k_pi);
     particle->_rotationSpeed = rnd(2.0f) - rnd(2.0f);
 
     // Get random sphere point
-    f32 theta = rnd(2 * core::k_pi);
-    f32 phi = rnd(core::k_pi) - core::k_pi / 2;
+    f32 theta = rnd(2 * math::k_pi);
+    f32 phi = rnd(math::k_pi) - math::k_pi / 2;
     f32 r = rnd(m_radius);
 
-    particle->_position.x = r * cos(theta) * cos(phi);
-    particle->_position.y = r * sin(phi);
-    particle->_position.z = r * sin(theta) * cos(phi);
+    particle->_position.m_x = r * cos(theta) * cos(phi);
+    particle->_position.m_y = r * sin(phi);
+    particle->_position.m_z = r * sin(theta) * cos(phi);
 
-    particle->_position += core::Vector4D(emitterPos, 0.0f);
+    particle->_position += math::Vector4D(emitterPos, 0.0f);
 
-    particle->_position.w = rnd(16.0f);
+    particle->_position.m_w = rnd(16.0f);
 }
 
 void ParticleSystem::transition(Particle *particle)
@@ -60,11 +60,11 @@ void ParticleSystem::transition(Particle *particle)
         if (rnd(1.0f) < 0.015f)
         {
             particle->_alpha = 0.0f;
-            particle->_color = core::Vector4D(0.15f + rnd(0.25f));
-            particle->_position.x = m_position.x + (particle->_position.x - m_position.x) * 0.5f;
-            particle->_position.z = m_position.z + (particle->_position.z - m_position.z) * 0.5f;
-            particle->_position.w = rnd(16.0f);
-            particle->_vel = core::Vector4D(rnd(1.0f) - rnd(1.0f), (m_minVel.y * 2) + rnd(m_maxVel.y - m_minVel.y), rnd(1.0f) - rnd(1.0f), 0.0f);
+            particle->_color = math::Vector4D(0.15f + rnd(0.25f));
+            particle->_position.m_x = m_position.m_x + (particle->_position.m_x - m_position.m_x) * 0.5f;
+            particle->_position.m_z = m_position.m_z + (particle->_position.m_z - m_position.m_z) * 0.5f;
+            particle->_position.m_w = rnd(16.0f);
+            particle->_vel = math::Vector4D(rnd(1.0f) - rnd(1.0f), (m_minVel.m_y * 2) + rnd(m_maxVel.m_y - m_minVel.m_y), rnd(1.0f) - rnd(1.0f), 0.0f);
             particle->_size = 1.0f + rnd(0.5f);
             particle->_rotationSpeed = rnd(1.0f) - rnd(1.0f);
             particle->_type = ParticleType_Smoke;
@@ -90,7 +90,7 @@ void ParticleSystem::update(f32 dt)
         switch (particle._type)
         {
         case ParticleType_Flame:
-            particle._position.y += particle._vel.y * particleTimer * 3.5f;
+            particle._position.m_y += particle._vel.m_y * particleTimer * 3.5f;
             particle._alpha += particleTimer * 2.5f;
             particle._size -= particleTimer * 0.5f;
             break;

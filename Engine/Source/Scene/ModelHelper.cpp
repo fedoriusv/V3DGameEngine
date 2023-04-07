@@ -1,5 +1,5 @@
 #include "ModelHelper.h"
-#include "Model.h"
+#include "Scene/Geometry/Model.h"
 
 #include "Renderer/CommandList.h"
 #include "Renderer/StreamBuffer.h"
@@ -13,7 +13,7 @@ ModelHelper::ModelHelper(renderer::CommandList* cmdList, const std::vector<const
     : m_models(models)
 {
     ASSERT(!m_models.empty(), "empty list");
-    for (auto model : m_models)
+    /*for (auto model : m_models)
     {
         ASSERT(model, "nullptr");
         for (u32 meshIndex = 0; meshIndex < model->getMeshCount(); ++meshIndex)
@@ -39,7 +39,7 @@ ModelHelper::ModelHelper(renderer::CommandList* cmdList, const std::vector<const
                 m_drawState.push_back(std::make_tuple(renderer::StreamBufferDescription(vertexBuffer, 0, 0), props));
             }
         }
-    }
+    }*/
 }
 
 ModelHelper::~ModelHelper()
@@ -48,11 +48,11 @@ ModelHelper::~ModelHelper()
     m_drawState.clear();
 }
 
-const renderer::VertexInputAttribDescription& ModelHelper::getVertexInputAttribDescription(u32 modelIndex, u32 meshIndex) const
+const renderer::VertexInputAttributeDescription& ModelHelper::getVertexInputAttribDescription(u32 modelIndex, u32 meshIndex) const
 {
     ASSERT(!m_models.empty(), "empty list");
     ASSERT(m_models[modelIndex], "nullptr");
-    return m_models[modelIndex]->getMeshByIndex(meshIndex)->getVertexInputAttribDesc();
+    return m_models[modelIndex]->getMeshByIndex(meshIndex)->getInputAttributeDesc();
 }
 
 const std::vector<std::tuple<renderer::StreamBufferDescription, renderer::DrawProperties>>& ModelHelper::getDrawStates() const

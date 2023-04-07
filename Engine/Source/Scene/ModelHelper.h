@@ -36,7 +36,7 @@ namespace scene
         void draw(renderer::CommandList* cmdList, s32 index = -1);
         u32 getDrawStatesCount() const;
 
-        const renderer::VertexInputAttribDescription& getVertexInputAttribDescription(u32 modelIndex, u32 meshIndex) const;
+        const renderer::VertexInputAttributeDescription& getVertexInputAttribDescription(u32 modelIndex, u32 meshIndex) const;
         const std::vector<std::tuple<renderer::StreamBufferDescription, renderer::DrawProperties>>& getDrawStates() const;
 
         static ModelHelper* createModelHelper(renderer::CommandList* cmdList, const std::vector<const Model*>& models);

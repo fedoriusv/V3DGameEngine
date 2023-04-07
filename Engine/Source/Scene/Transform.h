@@ -10,7 +10,7 @@ namespace scene
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
-    * Transform class
+    * @brief Transform class
     */
     class Transform : public Component
     {
@@ -30,25 +30,25 @@ namespace scene
         Transform() noexcept;
         virtual ~Transform();
 
-        void setPosition(const core::Vector3D& position);
-        void setRotation(const core::Vector3D& rotation);
-        void setScale(const core::Vector3D& scale);
-        void setTransform(const core::Matrix4D& transform);
+        void setPosition(const math::Vector3D& position);
+        void setRotation(const math::Vector3D& rotation);
+        void setScale(const math::Vector3D& scale);
+        void setTransform(const math::Matrix4D& transform);
 
-        const core::Vector3D& getPosition() const;
-        const core::Vector3D& getRotation() const;
-        const core::Vector3D& getScale() const;
-        const core::Matrix4D& getTransform() const;
+        const math::Vector3D& getPosition() const;
+        const math::Vector3D& getRotation() const;
+        const math::Vector3D& getScale() const;
+        const math::Matrix4D& getTransform() const;
 
     private:
 
         void updateTransform() const;
 
-        core::Vector3D m_position;
-        core::Vector3D m_rotation;
-        core::Vector3D m_scale;
+        math::Vector3D m_position;
+        math::Vector3D m_rotation;
+        math::Vector3D m_scale;
 
-        mutable core::Matrix4D m_modelMatrix;
+        mutable math::Matrix4D m_modelMatrix;
         mutable TransformStateFlags m_transformFlag;
     };
 

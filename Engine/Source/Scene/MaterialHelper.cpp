@@ -53,7 +53,7 @@ MaterialHelper::MaterialHelper(renderer::CommandList& cmdList, Material * materi
         ASSERT(image->getLayersCount() == 1, "not handled");
 
         renderer::Texture2D* texture = cmdList.createObject<renderer::Texture2D>(renderer::TextureUsage_Sampled | renderer::TextureUsage_Shared | renderer::TextureUsage_Write,
-            image->getFormat(), core::Dimension2D(image->getDimension().width, image->getDimension().height), image->getMipMapsCount(), image->getRawData(), std::get<0>(iter.second));
+            image->getFormat(), math::Dimension2D(image->getDimension().m_width, image->getDimension().m_height), image->getMipMapsCount(), image->getRawData(), std::get<0>(iter.second));
 
 
         material->setParameter<renderer::Texture*>(iter.first, texture);
@@ -79,10 +79,10 @@ void MaterialHelper::setFloatParameter(MaterialHeader::Property property, f32 va
     m_material->setParameter<f32>(property, value);
 }
 
-void MaterialHelper::setVectorParameter(MaterialHeader::Property property, const core::Vector4D & vector)
+void MaterialHelper::setVectorParameter(MaterialHeader::Property property, const math::Vector4D & vector)
 {
     ASSERT(m_material, "nullptr");
-    m_material->setParameter<core::Vector4D>(property, vector);
+    m_material->setParameter<math::Vector4D>(property, vector);
 }
 
 f32 MaterialHelper::getFloatParameter(MaterialHeader::Property property) const
@@ -91,10 +91,10 @@ f32 MaterialHelper::getFloatParameter(MaterialHeader::Property property) const
     return m_material->getParameter<f32>(property);
 }
 
-core::Vector4D MaterialHelper::getVectorParameter(MaterialHeader::Property property) const
+math::Vector4D MaterialHelper::getVectorParameter(MaterialHeader::Property property) const
 {
     ASSERT(m_material, "nullptr");
-    return m_material->getParameter<core::Vector4D>(property);
+    return m_material->getParameter<math::Vector4D>(property);
 }
 
 } //namespace scene

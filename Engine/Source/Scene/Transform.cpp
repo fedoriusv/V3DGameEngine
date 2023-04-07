@@ -7,9 +7,9 @@ namespace scene
 {
 
 Transform::Transform() noexcept
-    : m_position(core::Vector3D(0.f))
-    , m_rotation(core::Vector3D(0.f))
-    , m_scale(core::Vector3D(1.f))
+    : m_position(math::Vector3D(0.f))
+    , m_rotation(math::Vector3D(0.f))
+    , m_scale(math::Vector3D(1.f))
 
     , m_transformFlag(0/*TransformState::TransformState_All*/)
 {
@@ -21,30 +21,30 @@ Transform::~Transform()
     LOG_DEBUG("Transform destructor %xll", this);
 }
 
-void Transform::setPosition(const core::Vector3D& position)
+void Transform::setPosition(const math::Vector3D& position)
 {
     m_position = position;
     m_transformFlag |= TransformState::TransformState_Translation;
 }
 
-void Transform::setRotation(const core::Vector3D& rotation)
+void Transform::setRotation(const math::Vector3D& rotation)
 {
     m_rotation = rotation;
     m_transformFlag |= TransformState::TransformState_Rotation;
 }
 
-void Transform::setScale(const core::Vector3D& scale)
+void Transform::setScale(const math::Vector3D& scale)
 {
     m_scale = scale;
 
-    bool hasScale = (scale.x != 1.f || scale.y != 1.f || scale.z != 1.f);
+    bool hasScale = (scale.m_x != 1.f || scale.m_y != 1.f || scale.m_z != 1.f);
     if (hasScale)
     {
         m_transformFlag |= TransformState::TransformState_Scale;
     }
 }
 
-void Transform::setTransform(const core::Matrix4D& transform)
+void Transform::setTransform(const math::Matrix4D& transform)
 {
     m_modelMatrix = transform;
 
@@ -54,24 +54,24 @@ void Transform::setTransform(const core::Matrix4D& transform)
     m_transformFlag &= ~TransformState::TransformState_All;
 }
 
-const core::Vector3D& Transform::getPosition() const
+const math::Vector3D& Transform::getPosition() const
 {
     return m_position;
 }
 
-const core::Vector3D& Transform::getRotation() const
+const math::Vector3D& Transform::getRotation() const
 {
     //ASSERT(!(m_transformFlag & TransformState::TransformState_Scale) && !(m_transformFlag & TransformState::TransformState_Rotation), "not updated");
     return m_rotation;
 }
 
-const core::Vector3D& Transform::getScale() const
+const math::Vector3D& Transform::getScale() const
 {
     //ASSERT(!(m_transformFlag & TransformState::TransformState_Scale) && !(m_transformFlag & TransformState::TransformState_Rotation), "not updated");
     return m_scale;
 }
 
-const core::Matrix4D& Transform::getTransform() const
+const math::Matrix4D& Transform::getTransform() const
 {
     Transform::updateTransform();
     return m_modelMatrix;

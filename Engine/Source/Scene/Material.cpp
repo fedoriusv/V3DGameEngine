@@ -60,7 +60,7 @@ bool Material::load()
         }
         else if (index == 2)
         {
-            Material::setParameter<core::Vector4D>(prop.first, std::get<2>(prop.second._value));
+            Material::setParameter<math::Vector4D>(prop.first, std::get<2>(prop.second._value));
         }
     }
 

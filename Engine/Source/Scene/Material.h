@@ -43,7 +43,7 @@ namespace scene
         {
             PropertyInfo();
 
-            std::variant<std::monostate, f32, core::Vector4D> _value;
+            std::variant<std::monostate, f32, math::Vector4D> _value;
             std::string _name;
         };
 
@@ -75,7 +75,7 @@ namespace scene
 
 
         std::string m_name;
-        std::map<MaterialHeader::Property, std::pair<std::variant<std::monostate, f32, core::Vector4D>, renderer::Texture*>> m_properties;
+        std::map<MaterialHeader::Property, std::pair<std::variant<std::monostate, f32, math::Vector4D>, renderer::Texture*>> m_properties;
 
         friend MaterialHelper;
 
@@ -107,13 +107,13 @@ namespace scene
             {
                 return std::get<1>(iter->second.first);
             }
-            else if constexpr (std::is_same<TType, core::Vector4D>::value)
+            else if constexpr (std::is_same<TType, math::Vector4D>::value)
             {
                 return std::get<2>(iter->second.first);
             }
             else
             {
-                static_assert(std::is_same<TType, core::Vector4D>::value || std::is_same<TType, f32>::value, "invalid type");
+                static_assert(std::is_same<TType, math::Vector4D>::value || std::is_same<TType, f32>::value, "invalid type");
             }
         }
 

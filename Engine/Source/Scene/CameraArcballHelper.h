@@ -25,8 +25,8 @@ namespace scene
         explicit CameraArcballHelper(Camera* camera, f32 distance, f32 minDistance, f32 maxDistance) noexcept;
         ~CameraArcballHelper();
 
-        void setRotation(const core::Vector3D& rotation);
-        const core::Vector3D& getRotation() const;
+        void setRotation(const math::Vector3D& rotation);
+        const math::Vector3D& getRotation() const;
 
         void update(f32 deltaTime) override;
 
@@ -35,7 +35,7 @@ namespace scene
 
     private:
 
-        const core::Vector2D m_distanceLimits;
+        const math::Vector2D m_distanceLimits;
 
         const f32   k_rotationSpeed = 0.8f;
         const f32   k_zoomSpeed = 1.0f;

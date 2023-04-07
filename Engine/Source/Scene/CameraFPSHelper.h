@@ -21,11 +21,11 @@ namespace scene
         CameraFPSHelper() = delete;
         CameraFPSHelper(const CameraFPSHelper&) = delete;
 
-        explicit CameraFPSHelper(Camera* camera, const core::Vector3D& position) noexcept;
+        explicit CameraFPSHelper(Camera* camera, const math::Vector3D& position) noexcept;
         ~CameraFPSHelper();
 
-        void setRotation(const core::Vector3D& rotation);
-        const core::Vector3D& getRotation() const;
+        void setRotation(const math::Vector3D& rotation);
+        const math::Vector3D& getRotation() const;
 
         void update(f32 deltaTime) override;
 
