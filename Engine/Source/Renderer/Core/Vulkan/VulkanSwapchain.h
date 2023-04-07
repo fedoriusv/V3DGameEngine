@@ -35,13 +35,13 @@ namespace vk
         struct SwapchainConfig
         {
             platform::Window*       _window               = nullptr;
-            core::Dimension2D       _size;
+            math::Dimension2D       _size;
             u32                     _countSwapchainImages = 0;
             bool                    _vsync                = false;
             bool                    _forceSRGB            = false;
         };
 
-        VulkanSwapchain(const struct DeviceInfo* info, VulkanSemaphoreManager* const semaphoreManager);
+        explicit VulkanSwapchain(const struct DeviceInfo* info, VulkanSemaphoreManager* const semaphoreManager) noexcept;
         ~VulkanSwapchain();
 
         bool create(const SwapchainConfig& config, VkSwapchainKHR oldSwapchain = VK_NULL_HANDLE);
@@ -65,7 +65,7 @@ namespace vk
 
     private:
 
-        static VkSurfaceKHR createSurface(VkInstance vkInstance,  NativeInstance hInstance, NativeWindows hWnd, [[maybe_unused]] const core::Dimension2D& size);
+        static VkSurfaceKHR createSurface(VkInstance vkInstance,  NativeInstance hInstance, NativeWindows hWnd, [[maybe_unused]] const math::Dimension2D& size);
 
         bool createSwapchain(const SwapchainConfig& config, VkSwapchainKHR oldSwapchain = VK_NULL_HANDLE);
         bool createSwapchainImages(const SwapchainConfig& config);

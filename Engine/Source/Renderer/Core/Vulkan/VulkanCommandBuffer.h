@@ -53,7 +53,7 @@ namespace vk
             Finished
         };
 
-        VulkanCommandBuffer(Context* context, VkDevice device, CommandBufferLevel type, VulkanCommandBuffer* primaryBuffer = nullptr);
+        explicit VulkanCommandBuffer(Context* context, VkDevice device, CommandBufferLevel type, VulkanCommandBuffer* primaryBuffer = nullptr) noexcept;
         ~VulkanCommandBuffer();
 
         VkCommandBuffer getHandle() const;
@@ -113,7 +113,7 @@ namespace vk
         void cmdPipelineBarrier(VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask, const VkMemoryBarrier& memoryBarrier);
 
         //compute
-        void cmdDispatch(const core::Dimension3D& groups);
+        void cmdDispatch(const math::Dimension3D& groups);
 
     private:
 

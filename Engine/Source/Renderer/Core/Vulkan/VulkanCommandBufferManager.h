@@ -40,7 +40,7 @@ namespace vk
     {
     public:
         
-        VulkanCommandBufferManager(Context* const context, const struct DeviceInfo* info, VulkanSemaphoreManager* const semaphoreManager, VkQueue queue);
+        explicit VulkanCommandBufferManager(Context* const context, const struct DeviceInfo* info, VulkanSemaphoreManager* const semaphoreManager, VkQueue queue) noexcept;
         ~VulkanCommandBufferManager();
 
         VulkanCommandBuffer* acquireNewCmdBuffer(VulkanCommandBuffer::CommandBufferLevel level);

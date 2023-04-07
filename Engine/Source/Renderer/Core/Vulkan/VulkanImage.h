@@ -43,8 +43,8 @@ namespace vk
         static bool isASTCFormat(VkFormat format);
         static bool isSRGBFormat(VkFormat format);
 
-        VulkanImage(VulkanMemory::VulkanMemoryAllocator* memory, VkDevice device, VkImageType type, VkFormat format, VkExtent3D dimension, u32 layers, u32 mipsLevel, VkImageTiling tiling, TextureUsageFlags usage, [[maybe_unused]] const std::string& name = "") noexcept;
-        VulkanImage(VulkanMemory::VulkanMemoryAllocator* memory, VkDevice device, VkFormat format, VkExtent3D dimension, VkSampleCountFlagBits samples, u32 layers, TextureUsageFlags usage, [[maybe_unused]] const std::string& name = "") noexcept;
+        explicit VulkanImage(VulkanMemory::VulkanMemoryAllocator* memory, VkDevice device, VkImageType type, VkFormat format, VkExtent3D dimension, u32 layers, u32 mipsLevel, VkImageTiling tiling, TextureUsageFlags usage, [[maybe_unused]] const std::string& name = "") noexcept;
+        explicit VulkanImage(VulkanMemory::VulkanMemoryAllocator* memory, VkDevice device, VkFormat format, VkExtent3D dimension, VkSampleCountFlagBits samples, u32 layers, TextureUsageFlags usage, [[maybe_unused]] const std::string& name = "") noexcept;
         ~VulkanImage();
 
         bool create() override;
@@ -52,11 +52,11 @@ namespace vk
 
         bool create(VkImage image);
 
-        void clear(Context* context, const core::Vector4D& color) override;
+        void clear(Context* context, const math::Vector4D& color) override;
         void clear(Context* context, f32 depth, u32 stencil) override;
 
-        bool upload(Context* context, const core::Dimension3D& size, u32 layers, u32 mips, const void* data) override;
-        bool upload(Context* context, const core::Dimension3D& offsets, const core::Dimension3D& size, u32 layers, const void* data) override;
+        bool upload(Context* context, const math::Dimension3D& size, u32 layers, u32 mips, const void* data) override;
+        bool upload(Context* context, const math::Dimension3D& offsets, const math::Dimension3D& size, u32 layers, const void* data) override;
 
         bool generateMipmaps(Context* context, u32 layer);
 
@@ -86,7 +86,7 @@ namespace vk
         static VkImageSubresourceRange makeImageSubresourceRangeWithAspect(const VulkanImage* image, const Image::Subresource& resource, VkImageAspectFlags aspect);
 
         bool createViewImage();
-        bool internalUpload(Context* context, const core::Dimension3D& offsets, const core::Dimension3D& size, u32 layers, u32 mips, u64 dataSize, const void* data);
+        bool internalUpload(Context* context, const math::Dimension3D& offsets, const math::Dimension3D& size, u32 layers, u32 mips, u64 dataSize, const void* data);
 
         bool isPresentTextureUsageFlag(TextureUsageFlags flag) const;
 

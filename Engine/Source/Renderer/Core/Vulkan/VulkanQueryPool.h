@@ -28,7 +28,7 @@ namespace vk
     {
     public:
 
-        VulkanQueryPool(VkDevice device, QueryType type, u32 count) noexcept;
+        explicit VulkanQueryPool(VkDevice device, QueryType type, u32 count) noexcept;
         ~VulkanQueryPool();
 
         bool create();
@@ -73,7 +73,7 @@ namespace vk
     {
     public:
 
-        VulkanQueryPoolManager(VkDevice device, u32 poolSize) noexcept;
+        explicit VulkanQueryPoolManager(VkDevice device, u32 poolSize) noexcept;
         ~VulkanQueryPoolManager();
 
         //VulkanRenderQueryState

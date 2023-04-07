@@ -14,7 +14,7 @@ namespace renderer
 {
 namespace vk
 {
-VulkanFramebuffer::VulkanFramebuffer(VkDevice device, const std::vector<Image*>& images, const core::Dimension2D& size, const std::string& name) noexcept
+VulkanFramebuffer::VulkanFramebuffer(VkDevice device, const std::vector<Image*>& images, const math::Dimension2D& size, const std::string& name) noexcept
     : m_device(device)
     , m_images(images)
     , m_size(size)
@@ -38,8 +38,8 @@ VulkanFramebuffer::~VulkanFramebuffer()
 bool VulkanFramebuffer::create(const RenderPass* pass)
 {
     ASSERT(!m_framebuffer, "framebuffer is not nullptr");
-    ASSERT(VulkanDeviceCaps::getInstance()->getPhysicalDeviceLimits().maxFramebufferWidth >= m_size.width &&
-        VulkanDeviceCaps::getInstance()->getPhysicalDeviceLimits().maxFramebufferHeight >= m_size.height, "maxFramebufferSize is over range");
+    ASSERT(VulkanDeviceCaps::getInstance()->getPhysicalDeviceLimits().maxFramebufferWidth >= m_size.m_width &&
+        VulkanDeviceCaps::getInstance()->getPhysicalDeviceLimits().maxFramebufferHeight >= m_size.m_height, "maxFramebufferSize is over range");
 
 
     const VulkanRenderPass* vkPass = static_cast<const VulkanRenderPass*>(pass);
@@ -50,7 +50,7 @@ bool VulkanFramebuffer::create(const RenderPass* pass)
         const VulkanRenderPass::VulkanAttachmentDescription& desc = vkPass->getAttachmentDescription(attach);
         m_imageViews.push_back(vkImage->getImageView(VulkanImage::makeVulkanImageSubresource(vkImage, desc._layer, desc._mip)));
 #if VULKAN_DEBUG
-        LOG_DEBUG("VulkanFramebuffer::create Framebuffer area (width %u, height %u), image (width %u, height %u)", m_size.width, m_size.height, vkImage->getSize().width, vkImage->getSize().height);
+        LOG_DEBUG("VulkanFramebuffer::create Framebuffer area (width %u, height %u), image (width %u, height %u)", m_size.m_width, m_size.m_height, vkImage->getSize().width, vkImage->getSize().height);
 #endif
 
         if (VulkanImage::isColorFormat(vkImage->getFormat()))
@@ -80,8 +80,8 @@ bool VulkanFramebuffer::create(const RenderPass* pass)
     framebufferCreateInfo.renderPass = vkPass->getHandle();
     framebufferCreateInfo.attachmentCount = static_cast<u32>(m_imageViews.size());
     framebufferCreateInfo.pAttachments = m_imageViews.data();
-    framebufferCreateInfo.width = m_size.width;
-    framebufferCreateInfo.height = m_size.height;
+    framebufferCreateInfo.width = m_size.m_width;
+    framebufferCreateInfo.height = m_size.m_height;
     framebufferCreateInfo.layers = 1;
 
     ASSERT(m_framebuffer == VK_NULL_HANDLE, "not empty");
@@ -107,7 +107,7 @@ bool VulkanFramebuffer::create(const RenderPass* pass)
 #endif //VULKAN_DEBUG_MARKERS
 
 #if VULKAN_DEBUG
-    LOG_DEBUG("VulkanFramebuffer::create Framebuffer has been created %llx. Size (width %u, height %u) ", m_framebuffer, m_size.width, m_size.height);
+    LOG_DEBUG("VulkanFramebuffer::create Framebuffer has been created %llx. Size (width %u, height %u) ", m_framebuffer, m_size.m_width, m_size.m_height);
 #endif
     return true;
 }

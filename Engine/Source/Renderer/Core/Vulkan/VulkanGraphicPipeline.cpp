@@ -14,9 +14,9 @@
 #if defined(USE_SPIRV)
 #   define PATCH_SPIRV_REMOVE_UNUSED_LOCATIONS 1
 #endif
-#include "Resource/ShaderSpirVPatcherRemoveUnusedLocations.h"
-#include "Resource/ShaderSpirVPatcherVertexTransform.h"
-#include "Resource/ShaderSpirVPatcherInvertOrdinate.h"
+#include "Resource/SpirVPatch/ShaderSpirVPatcherRemoveUnusedLocations.h"
+#include "Resource/SpirVPatch/ShaderSpirVPatcherVertexTransform.h"
+#include "Resource/SpirVPatch/ShaderSpirVPatcherInvertOrdinate.h"
 
 namespace v3d
 {
@@ -343,13 +343,13 @@ VkCompareOp VulkanGraphicPipeline::convertCompareOperationToVk(CompareOperation 
     return VK_COMPARE_OP_GREATER;
 }
 
-VkVertexInputRate VulkanGraphicPipeline::covertInputRateToVk(VertexInputAttribDescription::InputRate rate)
+VkVertexInputRate VulkanGraphicPipeline::covertInputRateToVk(VertexInputAttributeDescription::InputRate rate)
 {
-    if (rate == VertexInputAttribDescription::InputRate::InputRate_Vertex)
+    if (rate == VertexInputAttributeDescription::InputRate::InputRate_Vertex)
     {
         return VK_VERTEX_INPUT_RATE_VERTEX;
     }
-    else if (rate == VertexInputAttribDescription::InputRate::InputRate_Instance)
+    else if (rate == VertexInputAttributeDescription::InputRate::InputRate_Instance)
     {
         return VK_VERTEX_INPUT_RATE_INSTANCE;
     }
@@ -508,7 +508,7 @@ bool VulkanGraphicPipeline::create(const PipelineGraphicInfo* pipelineInfo)
     vertexInputStateCreateInfo.pNext = nullptr; //VkPipelineVertexInputDivisorStateCreateInfoEXT
     vertexInputStateCreateInfo.flags = 0;
 
-    const VertexInputAttribDescription& inputAttrDesc = pipelineDesc._vertexInputState._inputAttributes;
+    const VertexInputAttributeDescription& inputAttrDesc = pipelineDesc._vertexInputState._inputAttributes;
 
     std::vector<VkVertexInputBindingDescription> vertexInputBindingDescriptions;
     vertexInputBindingDescriptions.reserve(inputAttrDesc._countInputBindings);
@@ -564,10 +564,10 @@ bool VulkanGraphicPipeline::create(const PipelineGraphicInfo* pipelineInfo)
 
     if (!VulkanContext::isDynamicState(VK_DYNAMIC_STATE_BLEND_CONSTANTS))
     {
-        pipelineColorBlendStateCreateInfo.blendConstants[0] = blendState._constant.x;
-        pipelineColorBlendStateCreateInfo.blendConstants[1] = blendState._constant.y;
-        pipelineColorBlendStateCreateInfo.blendConstants[2] = blendState._constant.z;
-        pipelineColorBlendStateCreateInfo.blendConstants[3] = blendState._constant.w;
+        pipelineColorBlendStateCreateInfo.blendConstants[0] = blendState._constant.m_x;
+        pipelineColorBlendStateCreateInfo.blendConstants[1] = blendState._constant.m_y;
+        pipelineColorBlendStateCreateInfo.blendConstants[2] = blendState._constant.m_z;
+        pipelineColorBlendStateCreateInfo.blendConstants[3] = blendState._constant.m_w;
     }
 
     //bool independentBlend = VulkanDeviceCaps::getInstance()->getPhysicalDeviceFeatures().independentBlend;
@@ -608,8 +608,8 @@ bool VulkanGraphicPipeline::create(const PipelineGraphicInfo* pipelineInfo)
         pipelineDepthStencilStateCreateInfo.depthBoundsTestEnable = depthBlendState._depthBoundsTestEnable;
         if (!VulkanContext::isDynamicState(VK_DYNAMIC_STATE_DEPTH_BOUNDS))
         {
-            pipelineDepthStencilStateCreateInfo.minDepthBounds = depthBlendState._depthBounds.x;
-            pipelineDepthStencilStateCreateInfo.maxDepthBounds = depthBlendState._depthBounds.y;
+            pipelineDepthStencilStateCreateInfo.minDepthBounds = depthBlendState._depthBounds.m_x;
+            pipelineDepthStencilStateCreateInfo.maxDepthBounds = depthBlendState._depthBounds.m_y;
         }
     }
     else

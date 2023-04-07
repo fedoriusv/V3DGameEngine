@@ -64,7 +64,7 @@ bool VulkanBuffer::create()
 
     switch (m_type)
     {
-    case Buffer::BufferType::BufferType_VertexBuffer:
+    case Buffer::BufferType::VertexBuffer:
     {
         usageBuffer |= VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
 
@@ -103,7 +103,7 @@ bool VulkanBuffer::create()
         break;
     }
 
-    case Buffer::BufferType::BufferType_IndexBuffer:
+    case Buffer::BufferType::IndexBuffer:
     {
         ASSERT(m_usageFlags & ~StreamBuffer_Dynamic, "not support");
         usageBuffer |= VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
@@ -120,7 +120,7 @@ bool VulkanBuffer::create()
         break;
     }
 
-    case Buffer::BufferType::BufferType_ConstantBuffer:
+    case Buffer::BufferType::ConstantBuffer:
     {
         usageBuffer |= VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
         memoryFlags |= VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
@@ -129,7 +129,7 @@ bool VulkanBuffer::create()
         break;
     }
 
-    case Buffer::BufferType::BufferType_StagingBuffer:
+    case Buffer::BufferType::StagingBuffer:
     {
         memoryFlags |= VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
         break;

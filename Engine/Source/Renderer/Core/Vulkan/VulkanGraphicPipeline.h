@@ -47,7 +47,7 @@ namespace vk
         static VkLogicOp covertLogicOperationToVk(LogicalOperation logicalOp);
         static VkCompareOp convertCompareOperationToVk(CompareOperation compareOp);
 
-        static VkVertexInputRate covertInputRateToVk(VertexInputAttribDescription::InputRate rate);
+        static VkVertexInputRate covertInputRateToVk(VertexInputAttributeDescription::InputRate rate);
 
         VkPipeline getHandle() const;
         VkPipelineLayout getPipelineLayoutHandle() const;

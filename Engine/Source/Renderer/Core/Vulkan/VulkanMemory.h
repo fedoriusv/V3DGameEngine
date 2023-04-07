@@ -112,7 +112,8 @@ namespace vk
     class SimpleVulkanMemoryAllocator final : public VulkanMemory::VulkanMemoryAllocator
     {
     public:
-        SimpleVulkanMemoryAllocator(VkDevice device) noexcept;
+
+        explicit SimpleVulkanMemoryAllocator(VkDevice device) noexcept;
         ~SimpleVulkanMemoryAllocator();
 
     private:
@@ -137,7 +138,7 @@ namespace vk
     {
     public:
 
-        PoolVulkanMemoryAllocator(VkDevice device, u64 allocationSize) noexcept;
+        explicit PoolVulkanMemoryAllocator(VkDevice device, u64 allocationSize) noexcept;
         ~PoolVulkanMemoryAllocator();
 
 #if VULKAN_DEBUG

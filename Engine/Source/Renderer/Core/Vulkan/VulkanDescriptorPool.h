@@ -21,7 +21,7 @@ namespace vk
     {
     public:
 
-        VulkanDescriptorSetPool(VkDevice device, VkDescriptorPoolCreateFlags flag) noexcept;
+        explicit VulkanDescriptorSetPool(VkDevice device, VkDescriptorPoolCreateFlags flag) noexcept;
         ~VulkanDescriptorSetPool();
 
         bool create(u32 setsCount, const std::vector<VkDescriptorPoolSize>& sizes);
@@ -125,7 +125,7 @@ namespace vk
     {
     public:
 
-        VulkanDescriptorPoolProvider(VkDevice device, GenericDescriptorPools* strategy) noexcept;
+        explicit VulkanDescriptorPoolProvider(VkDevice device, GenericDescriptorPools* strategy) noexcept;
         ~VulkanDescriptorPoolProvider();
 
         VulkanDescriptorSetPool* acquirePool(const VulkanDescriptorSetLayoutDescription& desc, VkDescriptorPoolCreateFlags flag);

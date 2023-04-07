@@ -415,7 +415,7 @@ PoolVulkanMemoryAllocator::Pool::Pool() noexcept
 
 VulkanMemory::VulkanAllocation PoolVulkanMemoryAllocator::allocate(VkDeviceSize size, VkDeviceSize align, u32 memoryTypeIndex, const void* extensions)
 {
-    VkDeviceSize alignedSize = core::alignUp<VkDeviceSize>(size, align);
+    VkDeviceSize alignedSize = math::alignUp<VkDeviceSize>(size, align);
 
     ASSERT(memoryTypeIndex < VK_MAX_MEMORY_TYPES, "out of range");
     auto& heaps = m_heaps[memoryTypeIndex];

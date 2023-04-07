@@ -24,7 +24,7 @@ namespace vk
     {
     public:
 
-        VulkanBuffer(VulkanMemory::VulkanMemoryAllocator* memory, VkDevice device, Buffer::BufferType type, StreamBufferUsageFlags usageFlag, u64 size, [[maybe_unused]] const std::string& name = "") noexcept;
+        explicit VulkanBuffer(VulkanMemory::VulkanMemoryAllocator* memory, VkDevice device, Buffer::BufferType type, StreamBufferUsageFlags usageFlag, u64 size, [[maybe_unused]] const std::string& name = "") noexcept;
         ~VulkanBuffer();
 
         bool create() override;

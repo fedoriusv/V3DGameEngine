@@ -21,13 +21,13 @@ namespace vk
     {
     public:
 
-        VulkanFramebuffer(VkDevice device, const std::vector<Image*>& images, const core::Dimension2D& size, [[maybe_unused]] const std::string& name = "") noexcept;
+        explicit VulkanFramebuffer(VkDevice device, const std::vector<Image*>& images, const math::Dimension2D& size, [[maybe_unused]] const std::string& name = "") noexcept;
         ~VulkanFramebuffer();
 
         VkFramebuffer getHandle() const;
         const std::vector<Image*>& getImages() const;
 
-        const core::Dimension2D& getArea() const;
+        const math::Dimension2D& getArea() const;
 
         bool create(const RenderPass* pass) override;
         void destroy() override;
@@ -41,7 +41,7 @@ namespace vk
 
         const std::vector<Image*>   m_images;
         std::vector<VkImageView>    m_imageViews;
-        core::Dimension2D           m_size;
+        math::Dimension2D           m_size;
 
         VkFramebuffer               m_framebuffer;
 
@@ -55,7 +55,7 @@ namespace vk
         return m_images;
     }
 
-    inline const core::Dimension2D& VulkanFramebuffer::getArea() const
+    inline const math::Dimension2D& VulkanFramebuffer::getArea() const
     {
         return m_size;
     }

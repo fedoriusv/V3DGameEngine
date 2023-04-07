@@ -23,7 +23,7 @@ namespace vk
     public:
 
         VulkanUniformBuffer() noexcept;
-        VulkanUniformBuffer(VulkanBuffer* buffer, u64 offset, u64 size) noexcept;
+        explicit VulkanUniformBuffer(VulkanBuffer* buffer, u64 offset, u64 size) noexcept;
         ~VulkanUniformBuffer() = default;
 
         VulkanBuffer* getBuffer() const;

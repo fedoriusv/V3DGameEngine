@@ -14,7 +14,7 @@ namespace renderer
 namespace vk
 {
 
-VulkanCommandBufferManager::VulkanCommandBufferManager(Context* const context, const DeviceInfo* info, VulkanSemaphoreManager* const semaphoreManager, VkQueue queue)
+VulkanCommandBufferManager::VulkanCommandBufferManager(Context* const context, const DeviceInfo* info, VulkanSemaphoreManager* const semaphoreManager, VkQueue queue) noexcept
     : m_device(info->_device)
     , m_queue(queue)
     , m_familyIndex(info->_queueFamilyIndex)

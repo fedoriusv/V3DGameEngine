@@ -23,7 +23,7 @@ namespace renderer
 namespace vk
 {
 
-VulkanCommandBuffer::VulkanCommandBuffer(Context* context, VkDevice device, CommandBufferLevel level, VulkanCommandBuffer* primaryBuffer)
+VulkanCommandBuffer::VulkanCommandBuffer(Context* context, VkDevice device, CommandBufferLevel level, VulkanCommandBuffer* primaryBuffer) noexcept
     : m_device(device)
 
     , m_pool(VK_NULL_HANDLE)
@@ -319,7 +319,7 @@ void VulkanCommandBuffer::cmdBeginRenderpass(const VulkanRenderPass* pass, const
 {
     ASSERT(m_status == CommandBufferStatus::Begin, "not started");
 #if VULKAN_DEBUG
-        LOG_DEBUG("VulkanCommandBuffer::cmdBeginRenderpass area (x %d, y %d, width %u, height %u), framebuffer area (width %u, height %u)", area.offset.x, area.offset.y, area.extent.width, area.extent.height, framebuffer->getArea().width, framebuffer->getArea().height);
+        LOG_DEBUG("VulkanCommandBuffer::cmdBeginRenderpass area (x %d, y %d, width %u, height %u), framebuffer area (width %u, height %u)", area.offset.x, area.offset.y, area.extent.width, area.extent.height, framebuffer->getArea().m_width, framebuffer->getArea().m_height);
 #endif
 
     pass->captureInsideCommandBuffer(this, 0);
@@ -879,14 +879,14 @@ void VulkanCommandBuffer::cmdPipelineBarrier(VkPipelineStageFlags srcStageMask, 
     }
 }
 
-void VulkanCommandBuffer::cmdDispatch(const core::Dimension3D& groups)
+void VulkanCommandBuffer::cmdDispatch(const math::Dimension3D& groups)
 {
     ASSERT(m_status == CommandBufferStatus::Begin, "not started");
     ASSERT(!isInsideRenderPass(), "must be outside");
 
     [[likely]] if (m_level == CommandBufferLevel::PrimaryBuffer)
     {
-        VulkanWrapper::CmdDispatch(m_commands, groups.width, groups.height, groups.depth);
+        VulkanWrapper::CmdDispatch(m_commands, groups.m_width, groups.m_height, groups.m_depth);
     }
     else
     {

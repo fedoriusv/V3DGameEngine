@@ -1339,12 +1339,24 @@ inline VkResult VulkanWrapper::QueueSubmit2(VkQueue queue, uint32_t submitCount,
 
 inline void VulkanWrapper::CmdCopyBuffer2(VkCommandBuffer commandBuffer, const VkCopyBufferInfo2* pCopyBufferInfo) noexcept
 {
-    NOT_IMPL;
+#if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_3)
+#   define vkCmdCopyBuffer2 vkCmdCopyBuffer2KHR
+#endif
+    return vkCmdCopyBuffer2(commandBuffer, pCopyBufferInfo);
+#if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_3)
+#   undef vkCmdCopyBuffer2
+#endif
 }
 
 inline void VulkanWrapper::CmdCopyImage2(VkCommandBuffer commandBuffer, const VkCopyImageInfo2* pCopyImageInfo) noexcept
 {
-    NOT_IMPL;
+#if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_3)
+#   define vkCmdCopyImage2 vkCmdCopyImage2KHR
+#endif
+    return vkCmdCopyImage2(commandBuffer, pCopyImageInfo);
+#if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_3)
+#   undef vkCmdCopyImage2
+#endif
 }
 
 inline void VulkanWrapper::CmdCopyBufferToImage2(VkCommandBuffer commandBuffer, const VkCopyBufferToImageInfo2* pCopyBufferToImageInfo) noexcept

@@ -29,7 +29,7 @@ namespace vk
 
         static VkQueryType convertQueryTypeToVkQuery(QueryType type);
 
-        VulkanQuery(QueryType type, u32 count, const QueryRespose& callback, [[maybe_unused]] const std::string& name = "") noexcept;
+        explicit VulkanQuery(QueryType type, u32 count, const QueryRespose& callback, [[maybe_unused]] const std::string& name = "") noexcept;
         ~VulkanQuery();
 
         bool create() override;

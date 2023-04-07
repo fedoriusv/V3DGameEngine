@@ -73,7 +73,7 @@ bool createSurfaceAndroidApi(VkInstance vkInstance, NativeInstance hInstance, Na
 
 u32 VulkanSwapchain::s_currentImageIndex = ~0U;
 
-VulkanSwapchain::VulkanSwapchain(const DeviceInfo* info, VulkanSemaphoreManager* const semaphoreManager)
+VulkanSwapchain::VulkanSwapchain(const DeviceInfo* info, VulkanSemaphoreManager* const semaphoreManager) noexcept
     : m_deviceInfo(info)
     , m_surface(VK_NULL_HANDLE)
     , m_surfaceCaps({})
@@ -100,7 +100,7 @@ VulkanSwapchain::~VulkanSwapchain()
     ASSERT(!m_surface, "surface isn't nullptr");
 }
 
-VkSurfaceKHR VulkanSwapchain::createSurface(VkInstance vkInstance, NativeInstance hInstance, NativeWindows hWnd, const core::Dimension2D& size)
+VkSurfaceKHR VulkanSwapchain::createSurface(VkInstance vkInstance, NativeInstance hInstance, NativeWindows hWnd, const math::Dimension2D& size)
 {
     VkSurfaceKHR surface = VK_NULL_HANDLE;
 #if defined(PLATFORM_WINDOWS)
@@ -156,7 +156,7 @@ bool VulkanSwapchain::create(const SwapchainConfig& config, VkSwapchainKHR oldSw
         {
             VulkanSwapchain::destroy();
 
-            std::swap(m_config._size.width, m_config._size.height);
+            std::swap(m_config._size.m_width, m_config._size.m_height);
             ASSERT(m_surface == VK_NULL_HANDLE, "must be nullptr");
             m_surface = VulkanSwapchain::createSurface(m_deviceInfo->_instance, m_config._window->getInstance(), m_config._window->getWindowHandle(), m_config._size);
             if (!m_surface)
@@ -174,18 +174,18 @@ bool VulkanSwapchain::create(const SwapchainConfig& config, VkSwapchainKHR oldSw
         return false;
     }
 
-    if ((m_config._size.width < m_surfaceCaps.minImageExtent.width || m_config._size.width > m_surfaceCaps.maxImageExtent.width) ||
-        (m_config._size.height < m_surfaceCaps.minImageExtent.height || m_config._size.height > m_surfaceCaps.maxImageExtent.height))
+    if ((m_config._size.m_width < m_surfaceCaps.minImageExtent.width || m_config._size.m_width > m_surfaceCaps.maxImageExtent.width) ||
+        (m_config._size.m_height < m_surfaceCaps.minImageExtent.height || m_config._size.m_height > m_surfaceCaps.maxImageExtent.height))
     {
-        u32 newWidth = std::clamp(m_config._size.width, m_surfaceCaps.minImageExtent.width, m_surfaceCaps.maxImageExtent.width);
-        u32 newHeight = std::clamp(m_config._size.height, m_surfaceCaps.minImageExtent.height, m_surfaceCaps.maxImageExtent.height);
+        u32 newWidth = math::clamp(m_config._size.m_width, m_surfaceCaps.minImageExtent.width, m_surfaceCaps.maxImageExtent.width);
+        u32 newHeight = math::clamp(m_config._size.m_height, m_surfaceCaps.minImageExtent.height, m_surfaceCaps.maxImageExtent.height);
 
         LOG_WARNING("VulkanSwapchain::create: Is not supported swapchain size. min[%u, %u], max[%u, %u], requested[%u, %u], chosen[%u, %u]", 
             m_surfaceCaps.minImageExtent.width, m_surfaceCaps.minImageExtent.height, m_surfaceCaps.maxImageExtent.width, m_surfaceCaps.maxImageExtent.height, 
-            m_config._size.width, m_config._size.height, newWidth, newHeight);
+            m_config._size.m_width, m_config._size.m_height, newWidth, newHeight);
 
-        m_config._size.width = newWidth;
-        m_config._size.height = newHeight;
+        m_config._size.m_width = newWidth;
+        m_config._size.m_height = newHeight;
     }
 
     if (m_surfaceCaps.maxImageCount < 2)
@@ -292,7 +292,7 @@ bool VulkanSwapchain::create(const SwapchainConfig& config, VkSwapchainKHR oldSw
 
 bool VulkanSwapchain::createSwapchain(const SwapchainConfig& config, VkSwapchainKHR oldSwapchain)
 {
-    LOG_DEBUG("VulkanSwapchain::createSwapchain size { %d, %d }", config._size.width, config._size.height);
+    LOG_DEBUG("VulkanSwapchain::createSwapchain size { %d, %d }", config._size.m_width, config._size.m_height);
     ASSERT(m_surface, "surface is nullptr");
 
     // Select a present mode for the swapchain
@@ -360,7 +360,7 @@ bool VulkanSwapchain::createSwapchain(const SwapchainConfig& config, VkSwapchain
         }
     }
 
-    const VkExtent2D imageExtent = { config._size.width, config._size.height };
+    const VkExtent2D imageExtent = { config._size.m_width, config._size.m_height };
     LOG_DEBUG("VulkanSwapchain::createSwapChain (width %u, height %u), currentTransform: %u, supportedTransforms: %u, selectedTransform: %u", imageExtent.width, imageExtent.height, m_surfaceCaps.currentTransform, m_surfaceCaps.supportedTransforms, preTransform);
 
     VkSwapchainCreateInfoKHR swapChainInfo = {};
@@ -423,7 +423,7 @@ bool VulkanSwapchain::createSwapchainImages(const SwapchainConfig& config)
     if (m_swapBuffers.empty())
     {
         m_swapBuffers.reserve(swapChainImageCount);
-        VkExtent3D extent = { config._size.width, config._size.height, 1 };
+        VkExtent3D extent = { config._size.m_width, config._size.m_height, 1 };
         for (u32 index = 0; index < images.size(); ++index)
         {
             VulkanImage* swapchainImage = new VulkanImage(nullptr, m_deviceInfo->_device, m_surfaceFormat.format, extent, VK_SAMPLE_COUNT_1_BIT, 1U,

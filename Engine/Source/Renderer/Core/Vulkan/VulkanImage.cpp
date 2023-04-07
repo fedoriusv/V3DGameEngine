@@ -1226,7 +1226,7 @@ bool VulkanImage::create(VkImage image)
     return true;
 }
 
-void VulkanImage::clear(Context* context, const core::Vector4D& color)
+void VulkanImage::clear(Context* context, const math::Vector4D& color)
 {
 #if VULKAN_DEBUG
     LOG_DEBUG("VulkanContext::clearColor [%f, %f, %f, %f]", color[0], color[1], color[2], color[3]);
@@ -1287,31 +1287,31 @@ void VulkanImage::clear(Context* context, f32 depth, u32 stencil)
     commandBuffer->cmdPipelineBarrier(this, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT | VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, layout);
 }
 
-bool VulkanImage::upload(Context* context, const core::Dimension3D& size, u32 layers, u32 mips, const void* data)
+bool VulkanImage::upload(Context* context, const math::Dimension3D& size, u32 layers, u32 mips, const void* data)
 {
     ASSERT(m_mipLevels == mips, "should be same");
     ASSERT(m_layerLevels == layers, "should be same");
     ASSERT(m_samples == VkSampleCountFlagBits::VK_SAMPLE_COUNT_1_BIT, "wrong sample count");
 
     u64 calculatedSize = ImageFormat::calculateImageSize(size, mips, layers, VulkanImage::convertVkImageFormatToFormat(m_format));
-    return VulkanImage::internalUpload(context, core::Dimension3D(0, 0, 0), size, layers, mips, calculatedSize, data);
+    return VulkanImage::internalUpload(context, math::Dimension3D(0, 0, 0), size, layers, mips, calculatedSize, data);
 }
 
-bool VulkanImage::upload(Context* context, const core::Dimension3D& offsets, const core::Dimension3D& size, u32 layers, const void* data)
+bool VulkanImage::upload(Context* context, const math::Dimension3D& offsets, const math::Dimension3D& size, u32 layers, const void* data)
 {
     ASSERT(m_mipLevels == 1, "should be 1");
     ASSERT(m_layerLevels == layers, "should be same");
     ASSERT(m_samples == VkSampleCountFlagBits::VK_SAMPLE_COUNT_1_BIT, "wrong sample count");
 
     ASSERT(size > offsets, "wrong offset");
-    core::Dimension3D diffSize = (size - offsets);
+    math::Dimension3D diffSize = (size - offsets);
     u64 calculatedSize = ImageFormat::calculateImageMipSize(diffSize, 0, VulkanImage::convertVkImageFormatToFormat(m_format)) * layers;
     ASSERT(calculatedSize > 0, "wrong size");
 
     return VulkanImage::internalUpload(context, offsets, size, layers, 1, calculatedSize, data);
 }
 
-bool VulkanImage::internalUpload(Context* context, const core::Dimension3D& offsets, const core::Dimension3D& size, u32 layers, u32 mips, u64 dataSize, const void* data)
+bool VulkanImage::internalUpload(Context* context, const math::Dimension3D& offsets, const math::Dimension3D& size, u32 layers, u32 mips, u64 dataSize, const void* data)
 {
     if (!m_image)
     {
@@ -1344,22 +1344,22 @@ bool VulkanImage::internalUpload(Context* context, const core::Dimension3D& offs
         ASSERT(!VulkanResource::isCaptured(), "still submitted");
         vkContext->getStagingManager()->destroyAfterUse(stagingBuffer);
 
-        auto calculateMipSize = [](const core::Dimension3D& size) -> core::Dimension3D
+        auto calculateMipSize = [](const math::Dimension3D& size) -> math::Dimension3D
         {
-            core::Dimension3D mipSize;
-            mipSize.width = std::max(size.width / 2, 1U);
-            mipSize.height = std::max(size.height / 2, 1U);
-            mipSize.depth = std::max(size.depth / 2, 1U);
+            math::Dimension3D mipSize;
+            mipSize.m_width = math::max(size.m_width / 2, 1U);
+            mipSize.m_height = math::max(size.m_height / 2, 1U);
+            mipSize.m_depth = math::max(size.m_depth / 2, 1U);
 
             return mipSize;
         };
 
-        auto calculateMipOffset = [](const core::Dimension3D& size) -> core::Dimension3D
+        auto calculateMipOffset = [](const math::Dimension3D& size) -> math::Dimension3D
         {
-            core::Dimension3D mipSize;
-            mipSize.width = std::max(size.width / 2, 0U);
-            mipSize.height = std::max(size.height / 2, 0U);
-            mipSize.depth = std::max(size.depth / 2, 0U);
+            math::Dimension3D mipSize;
+            mipSize.m_width = math::max(size.m_width / 2, 0U);
+            mipSize.m_height = math::max(size.m_height / 2, 0U);
+            mipSize.m_depth = math::max(size.m_depth / 2, 0U);
 
             return mipSize;
         };
@@ -1370,16 +1370,16 @@ bool VulkanImage::internalUpload(Context* context, const core::Dimension3D& offs
 
         for (u32 layer = 0; layer < layers; ++layer)
         {
-            core::Dimension3D mipSize = size;
-            core::Dimension3D mipOffset = offsets;
+            math::Dimension3D mipSize = size;
+            math::Dimension3D mipOffset = offsets;
 
             for (u32 mip = 0; mip < mips; ++mip)
             {
                 bufferDataSize = ImageFormat::calculateImageMipSize(size, mip, VulkanImage::convertVkImageFormatToFormat(m_format));
 
                 VkBufferImageCopy regions;
-                regions.imageOffset = { static_cast<s32>(mipOffset.width), static_cast<s32>(mipOffset.height), static_cast<s32>(mipOffset.depth) };
-                regions.imageExtent = { mipSize.width, mipSize.height, mipSize.depth };
+                regions.imageOffset = { static_cast<s32>(mipOffset.m_width), static_cast<s32>(mipOffset.m_height), static_cast<s32>(mipOffset.m_depth) };
+                regions.imageExtent = { mipSize.m_width, mipSize.m_height, mipSize.m_depth };
                 regions.imageSubresource.aspectMask = m_aspectMask;
                 regions.imageSubresource.baseArrayLayer = layer;
                 regions.imageSubresource.layerCount = 1;

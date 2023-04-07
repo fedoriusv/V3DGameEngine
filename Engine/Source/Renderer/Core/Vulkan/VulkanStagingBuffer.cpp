@@ -11,9 +11,8 @@ namespace vk
 {
 
 VulkanStagingBuffer::VulkanStagingBuffer(VulkanMemory::VulkanMemoryAllocator* memory, VkDevice device, u64 size, StreamBufferUsageFlags usageFlag) noexcept
-    : m_buffer(nullptr)
+    : m_buffer(new VulkanBuffer(memory, device, Buffer::BufferType::StagingBuffer, usageFlag, size))
 {
-    m_buffer = new VulkanBuffer(memory, device, Buffer::BufferType::BufferType_StagingBuffer, usageFlag, size);
 }
 
 VulkanStagingBuffer::~VulkanStagingBuffer()

@@ -24,7 +24,7 @@ namespace vk
     {
     public:
 
-        VulkanStagingBuffer(VulkanMemory::VulkanMemoryAllocator* memory, VkDevice device, u64 size, StreamBufferUsageFlags usageFlag) noexcept;
+        explicit VulkanStagingBuffer(VulkanMemory::VulkanMemoryAllocator* memory, VkDevice device, u64 size, StreamBufferUsageFlags usageFlag) noexcept;
         ~VulkanStagingBuffer();
 
         bool create();

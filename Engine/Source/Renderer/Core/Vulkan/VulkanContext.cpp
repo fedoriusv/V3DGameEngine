@@ -1095,7 +1095,7 @@ void VulkanContext::timestampQuery(const Query* query, u32 id, const std::string
     }
 }
 
-void VulkanContext::clearBackbuffer(const core::Vector4D& color)
+void VulkanContext::clearBackbuffer(const math::Vector4D& color)
 {
 #if FRAME_PROFILER_ENABLE
     RenderFrameProfiler::StackProfiler stackFrameProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::FrameTime);
@@ -1105,7 +1105,7 @@ void VulkanContext::clearBackbuffer(const core::Vector4D& color)
     m_swapchain->getBackbuffer()->clear(this, color);
 }
 
-void VulkanContext::setViewport(const core::Rect32& viewport, const core::Vector2D& depth)
+void VulkanContext::setViewport(const math::Rect32& viewport, const math::Vector2D& depth)
 {
 #if VULKAN_DEBUG
     LOG_DEBUG("VulkanContext::setViewport [%u, %u; %u, %u]", viewport.getLeftX(), viewport.getTopY(), viewport.getWidth(), viewport.getHeight());
@@ -1126,8 +1126,8 @@ void VulkanContext::setViewport(const core::Rect32& viewport, const core::Vector
         vkViewport.y = static_cast<f32>(viewport.getTopY());
         vkViewport.width = static_cast<f32>(viewport.getWidth());
         vkViewport.height = static_cast<f32>(viewport.getHeight());
-        vkViewport.minDepth = depth.x;
-        vkViewport.maxDepth = depth.y;
+        vkViewport.minDepth = depth.m_x;
+        vkViewport.maxDepth = depth.m_y;
 #ifndef PLATFORM_ANDROID
         vkViewport.y = vkViewport.y + vkViewport.height;
         vkViewport.height = -vkViewport.height;
@@ -1147,7 +1147,7 @@ void VulkanContext::setViewport(const core::Rect32& viewport, const core::Vector
     }
 }
 
-void VulkanContext::setScissor(const core::Rect32& scissor)
+void VulkanContext::setScissor(const math::Rect32& scissor)
 {
 #if VULKAN_DEBUG
     LOG_DEBUG("VulkanContext::setScissor [%u, %u; %u, %u]", scissor.getLeftX(), scissor.getTopY(), scissor.getWidth(), scissor.getHeight());
@@ -1284,10 +1284,10 @@ void VulkanContext::setRenderTarget(const RenderPass::RenderPassInfo* renderpass
             VkClearValue clearColor = {};
             clearColor.color = 
             {{
-                framebufferInfo->_clearInfo._color[clearIndex].x,
-                framebufferInfo->_clearInfo._color[clearIndex].y,
-                framebufferInfo->_clearInfo._color[clearIndex].z,
-                framebufferInfo->_clearInfo._color[clearIndex].w 
+                framebufferInfo->_clearInfo._color[clearIndex].m_x,
+                framebufferInfo->_clearInfo._color[clearIndex].m_y,
+                framebufferInfo->_clearInfo._color[clearIndex].m_z,
+                framebufferInfo->_clearInfo._color[clearIndex].m_w 
             }};
 
             clearValues.push_back(clearColor);
@@ -1518,10 +1518,10 @@ void VulkanContext::clearRenderTarget(const std::vector<const Image*>& images, F
                 attachment.aspectMask = vkImage->getImageAspectFlags();
                 attachment.clearValue.color =
                 {
-                    clearValues._color[index].x,
-                    clearValues._color[index].y,
-                    clearValues._color[index].z,
-                    clearValues._color[index].w
+                    clearValues._color[index].m_x,
+                    clearValues._color[index].m_y,
+                    clearValues._color[index].m_z,
+                    clearValues._color[index].m_w
                 };
             }
             else
@@ -1557,10 +1557,10 @@ void VulkanContext::clearRenderTarget(const std::vector<const Image*>& images, F
                 VkClearValue clearColor = {};
                 clearColor.color =
                 {
-                    clearValues._color[index].x,
-                    clearValues._color[index].y,
-                    clearValues._color[index].z,
-                    clearValues._color[index].w,
+                    clearValues._color[index].m_x,
+                    clearValues._color[index].m_y,
+                    clearValues._color[index].m_z,
+                    clearValues._color[index].m_w,
                 };
                 clearValue.push_back(clearColor);
             }
@@ -1614,7 +1614,7 @@ void VulkanContext::removePipeline(Pipeline* pipeline)
     }
 }
 
-Image* VulkanContext::createImage(TextureTarget target, Format format, const core::Dimension3D& dimension, u32 layers, TextureSamples samples, TextureUsageFlags flags, const std::string& name)
+Image* VulkanContext::createImage(TextureTarget target, Format format, const math::Dimension3D& dimension, u32 layers, TextureSamples samples, TextureUsageFlags flags, const std::string& name)
 {
 #if VULKAN_DEBUG
     LOG_DEBUG("VulkanContext::createImage");
@@ -1630,13 +1630,13 @@ Image* VulkanContext::createImage(TextureTarget target, Format format, const cor
 #endif //FRAME_PROFILER_ENABLE
 
     VkFormat vkFormat = VulkanImage::convertImageFormatToVkFormat(format);
-    VkExtent3D vkExtent = { dimension.width, dimension.height, dimension.depth };
+    VkExtent3D vkExtent = { dimension.m_width, dimension.m_height, dimension.m_depth };
     VkSampleCountFlagBits vkSamples = VulkanImage::convertRenderTargetSamplesToVkSampleCount(samples);
 
     return new VulkanImage(m_imageMemoryManager, m_deviceInfo._device, vkFormat, vkExtent, vkSamples, layers, flags, name);
 }
 
-Image* VulkanContext::createImage(TextureTarget target, Format format, const core::Dimension3D& dimension, u32 layers, u32 mipLevels, TextureUsageFlags flags, const std::string& name)
+Image* VulkanContext::createImage(TextureTarget target, Format format, const math::Dimension3D& dimension, u32 layers, u32 mipLevels, TextureUsageFlags flags, const std::string& name)
 {
 #if VULKAN_DEBUG
     LOG_DEBUG("VulkanContext::createImage");
@@ -1653,7 +1653,7 @@ Image* VulkanContext::createImage(TextureTarget target, Format format, const cor
 
     VkImageType vkType = VulkanImage::convertTextureTargetToVkImageType(target);
     VkFormat vkFormat = VulkanImage::convertImageFormatToVkFormat(format);
-    VkExtent3D vkExtent = { dimension.width, dimension.height, dimension.depth };
+    VkExtent3D vkExtent = { dimension.m_width, dimension.m_height, dimension.m_depth };
 
     return new VulkanImage(m_imageMemoryManager, m_deviceInfo._device, vkType, vkFormat, vkExtent, layers, mipLevels, VK_IMAGE_TILING_OPTIMAL, flags, name);
 }
@@ -1701,7 +1701,7 @@ Buffer* VulkanContext::createBuffer(Buffer::BufferType type, u16 usageFlag, u64 
     RenderFrameProfiler::StackProfiler stackProfiler(m_CPUProfiler, RenderFrameProfiler::FrameCounter::CreateResources);
 #endif //FRAME_PROFILER_ENABLE
 
-    if (type == Buffer::BufferType::BufferType_VertexBuffer || type == Buffer::BufferType::BufferType_IndexBuffer || type == Buffer::BufferType::BufferType_ConstantBuffer)
+    if (type == Buffer::BufferType::VertexBuffer || type == Buffer::BufferType::IndexBuffer || type == Buffer::BufferType::ConstantBuffer)
     {
         return new VulkanBuffer(m_bufferMemoryManager, m_deviceInfo._device, type, usageFlag, size, name);
     }
@@ -1894,7 +1894,7 @@ void VulkanContext::drawIndexed(const StreamBufferDescription& desc, u32 firstIn
     m_currentContextState->invalidateDescriptorSetsState();
 }
 
-void VulkanContext::dispatchCompute(const core::Dimension3D& groups)
+void VulkanContext::dispatchCompute(const math::Dimension3D& groups)
 {
 #if VULKAN_DEBUG
     LOG_DEBUG("VulkanContext::dispatchCompute");
@@ -2000,7 +2000,7 @@ bool VulkanContext::isDynamicState(VkDynamicState state)
     return false;
 }
 
-Framebuffer* VulkanContext::createFramebuffer(const std::vector<Image*>& images, const core::Dimension2D& size)
+Framebuffer* VulkanContext::createFramebuffer(const std::vector<Image*>& images, const math::Dimension2D& size)
 {
 #if VULKAN_DEBUG
     LOG_DEBUG("VulkanContext::createFramebuffer");

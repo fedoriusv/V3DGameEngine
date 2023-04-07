@@ -15,7 +15,7 @@ namespace renderer
 namespace vk
 {
 
-VulkanComputePipeline::VulkanComputePipeline(VkDevice device, VulkanPipelineLayoutManager* pipelineLayoutManager, const std::string& name)
+VulkanComputePipeline::VulkanComputePipeline(VkDevice device, VulkanPipelineLayoutManager* pipelineLayoutManager, const std::string& name) noexcept
     : Pipeline(PipelineType::PipelineType_Compute)
     , m_device(device)
 

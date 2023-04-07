@@ -23,15 +23,15 @@ namespace vk
     /**
     * @brief BindingType enum. Vulkan Render side
     */
-    enum BindingType : u32
+    enum class BindingType : u32
     {
-        BindingType_Unknown = 0,
-        BindingType_Uniform,
-        BindingType_DynamicUniform,
-        BindingType_Sampler,
-        BindingType_Texture,
-        BindingType_SamplerAndTexture,
-        BindingType_StorageImage,
+        Unknown = 0,
+        Uniform,
+        DynamicUniform,
+        Sampler,
+        Texture,
+        SamplerAndTexture,
+        StorageImage,
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

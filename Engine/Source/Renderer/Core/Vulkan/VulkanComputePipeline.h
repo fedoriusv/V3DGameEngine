@@ -30,7 +30,7 @@ namespace vk
     {
     public:
 
-        VulkanComputePipeline(VkDevice device, VulkanPipelineLayoutManager* pipelineLayoutManager, [[maybe_unused]] const std::string& name = "");
+        explicit VulkanComputePipeline(VkDevice device, VulkanPipelineLayoutManager* pipelineLayoutManager, [[maybe_unused]] const std::string& name = "") noexcept;
         ~VulkanComputePipeline();
 
         VkPipeline getHandle() const;
