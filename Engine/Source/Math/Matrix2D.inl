@@ -1,30 +1,30 @@
 namespace v3d
 {
-namespace core
+namespace math
 {
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     template <class T>
-    TMatrix2D<T>::TMatrix2D()
+    TMatrix2D<T>::TMatrix2D() noexcept
     {
         m_matrix[1] = m_matrix[2] = (T)0;
         m_matrix[0] = m_matrix[3] = (T)1;
     }
 
     template <class T>
-    TMatrix2D<T>::TMatrix2D(const TMatrix2D<T>& other)
+    TMatrix2D<T>::TMatrix2D(const TMatrix2D<T>& other) noexcept
     {
         *this = other;
     }
 
     template <class T>
-    TMatrix2D<T>::TMatrix2D(const T* matrix)
+    TMatrix2D<T>::TMatrix2D(const T* matrix) noexcept
     {
         memcpy(m_matrix, matrix, 4 * sizeof(T));
     }
 
     template <class T>
-    TMatrix2D<T>::TMatrix2D(const T& m0, const T& m1,
-        const T& m2, const T& m3)
+    TMatrix2D<T>::TMatrix2D(const T& m0, const T& m1, const T& m2, const T& m3) noexcept
     {
         m_matrix[0] = m0;
         m_matrix[1] = m1;
@@ -33,31 +33,31 @@ namespace core
     }
 
     template <class T>
-    T& TMatrix2D<T>::operator()(u32 row, u32 col)
+    inline T& TMatrix2D<T>::operator()(u32 row, u32 col)
     {
         return m_matrix[row * 2 + col];
     }
 
     template <class T>
-    const T& TMatrix2D<T>::operator()(u32 row, u32 col) const
+    inline const T& TMatrix2D<T>::operator()(u32 row, u32 col) const
     {
         return m_matrix[row * 2 + col];
     }
 
     template <class T>
-    T& TMatrix2D<T>::operator[](u32 index)
+    inline T& TMatrix2D<T>::operator[](u32 index)
     {
         return m_matrix[index];
     }
 
     template <class T>
-    const T& TMatrix2D<T>::operator[](u32 index) const
+    inline const T& TMatrix2D<T>::operator[](u32 index) const
     {
         return m_matrix[index];
     }
 
     template <class T>
-    TMatrix2D<T>& TMatrix2D<T>::operator=(const T& scalar)
+    inline TMatrix2D<T>& TMatrix2D<T>::operator=(const T& scalar)
     {
         for (s32 i = 0; i < 4; ++i)
         {
@@ -67,19 +67,35 @@ namespace core
     }
 
     template <class T>
-    const T* TMatrix2D<T>::getPtr() const
+    inline TMatrix2D<T>& TMatrix2D<T>::operator=(const TMatrix2D<T>& other)
+    {
+        if (this == &other)
+        {
+            return *this;
+        }
+
+        m_matrix[0] = other[0];
+        m_matrix[1] = other[1];
+        m_matrix[2] = other[2];
+        m_matrix[3] = other[3];
+
+        return *this;
+    }
+
+    template <class T>
+    inline const T* TMatrix2D<T>::getPtr() const
     {
         return m_matrix;
     }
 
     template <class T>
-    T* TMatrix2D<T>::getPtr()
+    inline T* TMatrix2D<T>::getPtr()
     {
         return m_matrix;
     }
 
     template <class T>
-    bool TMatrix2D<T>::operator==(const TMatrix2D<T> &other) const
+    inline bool TMatrix2D<T>::operator==(const TMatrix2D<T> &other) const
     {
         for (s32 i = 0; i < 4; ++i)
         {
@@ -92,13 +108,13 @@ namespace core
     }
 
     template <class T>
-    bool TMatrix2D<T>::operator!=(const TMatrix2D<T> &other) const
+    inline bool TMatrix2D<T>::operator!=(const TMatrix2D<T> &other) const
     {
         return !(*this == other);
     }
 
     template <class T>
-    TMatrix2D<T> TMatrix2D<T>::operator+(const TMatrix2D<T>& other) const
+    inline TMatrix2D<T> TMatrix2D<T>::operator+(const TMatrix2D<T>& other) const
     {
         TMatrix2D<T> temp;
 
@@ -111,7 +127,7 @@ namespace core
     }
 
     template <class T>
-    TMatrix2D<T>& TMatrix2D<T>::operator+=(const TMatrix2D<T>& other)
+    inline TMatrix2D<T>& TMatrix2D<T>::operator+=(const TMatrix2D<T>& other)
     {
         m_matrix[0] += other[0];
         m_matrix[1] += other[1];
@@ -122,7 +138,7 @@ namespace core
     }
 
     template <class T>
-    TMatrix2D<T> TMatrix2D<T>::operator-(const TMatrix2D<T>& other) const
+    inline TMatrix2D<T> TMatrix2D<T>::operator-(const TMatrix2D<T>& other) const
     {
         TMatrix2D<T> temp;
 
@@ -135,7 +151,7 @@ namespace core
     }
 
     template <class T>
-    TMatrix2D<T>& TMatrix2D<T>::operator-=(const TMatrix2D<T>& other)
+    inline TMatrix2D<T>& TMatrix2D<T>::operator-=(const TMatrix2D<T>& other)
     {
         m_matrix[0] -= other[0];
         m_matrix[1] -= other[1];
@@ -145,7 +161,7 @@ namespace core
         return *this;
     }
     template <class T>
-    TMatrix2D<T> TMatrix2D<T>::operator*(const TMatrix2D<T>& other) const
+    inline TMatrix2D<T> TMatrix2D<T>::operator*(const TMatrix2D<T>& other) const
     {
         TMatrix2D<T> temp;
 
@@ -161,7 +177,7 @@ namespace core
     }
 
     template <class T>
-    TMatrix2D<T>& TMatrix2D<T>::operator*=(const TMatrix2D<T>& other)
+    inline TMatrix2D<T>& TMatrix2D<T>::operator*=(const TMatrix2D<T>& other)
     {
         TMatrix2D<T> temp(*this);
 
@@ -177,7 +193,7 @@ namespace core
     }
 
     template <class T>
-    TMatrix2D<T> TMatrix2D<T>::operator*(const T& scalar) const
+    inline TMatrix2D<T> TMatrix2D<T>::operator*(const T& scalar) const
     {
         TMatrix2D<T> temp;
 
@@ -190,7 +206,7 @@ namespace core
     }
 
     template <class T>
-    TMatrix2D<T>& TMatrix2D<T>::operator*=(const T& scalar)
+    inline TMatrix2D<T>& TMatrix2D<T>::operator*=(const T& scalar)
     {
         m_matrix[0] *= scalar;
         m_matrix[1] *= scalar;
@@ -201,14 +217,14 @@ namespace core
     }
 
     template <class T>
-    void TMatrix2D<T>::makeIdentity()
+    inline void TMatrix2D<T>::makeIdentity()
     {
         m_matrix[1] = m_matrix[2] = (T)0;
         m_matrix[0] = m_matrix[3] = (T)1;
     }
 
     template <class T>
-    bool TMatrix2D<T>::isIdentity() const
+    inline bool TMatrix2D<T>::isIdentity() const
     {
         if (!isEquals(m_matrix[0], (T)1) || !isEquals(m_matrix[3], (T)1))
         {
@@ -222,7 +238,7 @@ namespace core
     }
 
     template <class T>
-    void TMatrix2D<T>::setRotation(T angle)
+    inline void TMatrix2D<T>::setRotation(T angle)
     {
         const T cy = cos(angle);
         const T sy = sin(angle);
@@ -235,7 +251,7 @@ namespace core
     }
 
     template <class T>
-    T TMatrix2D<T>::getRotation() const
+    inline T TMatrix2D<T>::getRotation() const
     {
         const TMatrix2D<T> &mat = *this;
 
@@ -254,39 +270,39 @@ namespace core
     template <class T>
     inline void TMatrix2D<T>::preScale(const TVector2D<T>& scale)
     {
-        m_matrix[0] *= scale.x;
-        m_matrix[1] *= scale.y;
-        m_matrix[2] *= scale.x;
-        m_matrix[3] *= scale.y;
+        m_matrix[0] *= scale.m_x;
+        m_matrix[1] *= scale.m_y;
+        m_matrix[2] *= scale.m_x;
+        m_matrix[3] *= scale.m_y;
     }
 
     template <class T>
     inline void TMatrix2D<T>::postScale(const TVector2D<T>& scale)
     {
-        m_matrix[0] *= scale.x;
-        m_matrix[1] *= scale.x;
-        m_matrix[2] *= scale.y;
-        m_matrix[3] *= scale.y;
+        m_matrix[0] *= scale.m_x;
+        m_matrix[1] *= scale.m_x;
+        m_matrix[2] *= scale.m_y;
+        m_matrix[3] *= scale.m_y;
     }
 
     template <class T>
-    void TMatrix2D<T>::setScale(const TVector2D<T>& scale)
+    inline void TMatrix2D<T>::setScale(const TVector2D<T>& scale)
     {
-        m_matrix[0] = scale.x;
-        m_matrix[3] = scale.y;
+        m_matrix[0] = scale.m_x;
+        m_matrix[3] = scale.m_y;
     }
 
     template <class T>
-    TVector2D<T> TMatrix2D<T>::getScale() const
+    inline TVector2D<T> TMatrix2D<T>::getScale() const
     {
         TVector2D<T> scale;
-        scale.x = TVector2D<T>(m_matrix[0], m_matrix[1]).length();
-        scale.y = TVector2D<T>(m_matrix[2], m_matrix[3]).length();
+        scale.m_x = TVector2D<T>(m_matrix[0], m_matrix[1]).length();
+        scale.m_y = TVector2D<T>(m_matrix[2], m_matrix[3]).length();
         return scale;
     }
 
     template <class T>
-    bool TMatrix2D<T>::makeInverse()
+    inline bool TMatrix2D<T>::makeInverse()
     {
         TMatrix2D<T> temp;
 
@@ -300,7 +316,7 @@ namespace core
     }
 
     template <class T>
-    bool TMatrix2D<T>::getInverse(TMatrix2D<T>& out) const
+    inline bool TMatrix2D<T>::getInverse(TMatrix2D<T>& out) const
     {
         T det = m_matrix[0] * m_matrix[3] - m_matrix[1] * m_matrix[2];
 
@@ -320,7 +336,7 @@ namespace core
     }
 
     template <class T>
-    void TMatrix2D<T>::makeTransposed()
+    inline void TMatrix2D<T>::makeTransposed()
     {
         TMatrix2D<T> temp(*this);
 
@@ -331,7 +347,7 @@ namespace core
     }
 
     template <class T>
-    TMatrix2D<T> TMatrix2D<T>::getTransposed() const
+    inline TMatrix2D<T> TMatrix2D<T>::getTransposed() const
     {
         TMatrix2D<T> temp;
 
@@ -344,7 +360,7 @@ namespace core
     }
 
     template <class T>
-    TMatrix2D<T>& TMatrix2D<T>::set(const T* data)
+    inline TMatrix2D<T>& TMatrix2D<T>::set(const T* data)
     {
         if (data)
         {
@@ -354,5 +370,7 @@ namespace core
         return *this;
     }
 
-} //namespace core
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
+
+} //namespace math
 } //namespace v3d

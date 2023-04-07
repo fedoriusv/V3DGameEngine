@@ -5,71 +5,81 @@
 
 namespace v3d
 {
-namespace core
+namespace math
 {
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-#define REVERSED_Z 1
+    /**
+    * @brief Reserved Z
+    */
+#   define REVERSED_Z 1
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    /**
+    * @brief TMatrix4D class
+    */
     template <class T>
     class TMatrix4D
     {
     public:
 
-        TMatrix4D();
-        TMatrix4D(const TMatrix4D<T>& other);
-        TMatrix4D(const TVector4D<T>& col0, const TVector4D<T>& col1, const TVector4D<T>& col2, const TVector4D<T>& col3);
-        TMatrix4D(const T* matrix);
+        TMatrix4D() noexcept;
+        TMatrix4D(const TMatrix4D<T>& other) noexcept;
+        TMatrix4D(const TVector4D<T>& col0, const TVector4D<T>& col1, const TVector4D<T>& col2, const TVector4D<T>& col3) noexcept;
+        TMatrix4D(const T* matrix) noexcept;
         TMatrix4D(const T& m0, const T& m1, const T& m2, const T& m3,
             const T& m4, const T& m5, const T& m6, const T& m7,
             const T& m8, const T& m9, const T& m10, const T& m11,
-            const T& m12, const T& m13, const T& m14, const T& m15);
+            const T& m12, const T& m13, const T& m14, const T& m15) noexcept;
+        ~TMatrix4D() = default;
 
-        T&              operator()(u32 row, u32 col);
-        const T&        operator()(u32 row, u32 col)            const;
-        T&              operator[](u32 index);
-        const T&        operator[](u32 index)                   const;
+        T& operator()(u32 row, u32 col);
+        const T& operator()(u32 row, u32 col) const;
+        T& operator[](u32 index);
+        const T& operator[](u32 index) const;
 
-        TMatrix4D<T>&   operator=(const T& scalar);
-        bool            operator==(const TMatrix4D<T>& other)   const;
-        bool            operator!=(const TMatrix4D<T>& other)   const;
-        TMatrix4D<T>    operator+(const TMatrix4D<T>& other)    const;
-        TMatrix4D<T>&   operator+=(const TMatrix4D<T>& other);
-        TMatrix4D<T>    operator-(const TMatrix4D<T>& other)    const;
-        TMatrix4D<T>&   operator-=(const TMatrix4D<T>& other);
-        TMatrix4D<T>    operator*(const TMatrix4D<T>& other)    const;
-        TMatrix4D<T>&   operator*=(const TMatrix4D<T>& other);
-        TMatrix4D<T>    operator*(const T& scalar)              const;
-        TMatrix4D<T>&   operator*=(const T& scalar);
-        TVector4D<T>    operator*(const TVector4D<T>& vector)   const;
+        TMatrix4D<T>& operator=(const T& scalar);
+        TMatrix4D<T>& operator=(const TMatrix4D<T>& other);
 
-        void            set(const T* matrix);
+        [[nodiscard]] TMatrix4D<T> operator+(const TMatrix4D<T>& other) const;
+        TMatrix4D<T>& operator+=(const TMatrix4D<T>& other);
+        [[nodiscard]] TMatrix4D<T> operator-(const TMatrix4D<T>& other) const;
+        TMatrix4D<T>& operator-=(const TMatrix4D<T>& other);
+        [[nodiscard]] TMatrix4D<T> operator*(const TMatrix4D<T>& other) const;
+        TMatrix4D<T>& operator*=(const TMatrix4D<T>& other);
+        [[nodiscard]] TMatrix4D<T> operator*(const T& scalar) const;
+        TMatrix4D<T>& operator*=(const T& scalar);
+        [[nodiscard]] TVector4D<T> operator*(const TVector4D<T>& vector) const;
 
-        T*              getPtr();
-        const T*        getPtr()                                const;
+        bool operator==(const TMatrix4D<T>& other) const;
+        bool operator!=(const TMatrix4D<T>& other) const;
 
-        void            makeIdentity();
-        bool            isIdentity()                            const;
+        void set(const T* matrix);
 
-        void            makeTransposed();
-        TMatrix4D<T>    getTransposed()                         const;
+        T* getPtr();
+        const T* getPtr() const;
 
-        void            setTranslation(const TVector3D<T>& translation);
-        TVector3D<T>    getTranslation()                        const;
+        void makeIdentity();
+        [[nodiscard]] bool isIdentity() const;
 
-        void            setRotation(const TVector3D<T>& rotation);
-        TVector3D<T>    getRotation()                           const;
+        void makeTransposed();
+        [[nodiscard]] TMatrix4D<T> getTransposed() const;
 
-        void            preScale(const TVector3D<T>& scale);
-        void            postScale(const TVector3D<T>& scale);
-        void            setScale(const TVector3D<T>& scale);
+        void setTranslation(const TVector3D<T>& translation);
+        [[nodiscard]] TVector3D<T> getTranslation() const;
 
-        TVector3D<T>    getScale()                              const;
+        void setRotation(const TVector3D<T>& rotation);
+        [[nodiscard]] TVector3D<T> getRotation() const;
 
-        bool            makeInverse();
-        bool            getInverse(TMatrix4D<T>& outMatrix)     const;
+        void preScale(const TVector3D<T>& scale);
+        void postScale(const TVector3D<T>& scale);
+        void setScale(const TVector3D<T>& scale);
+
+        [[nodiscard]] TVector3D<T> getScale() const;
+
+        bool makeInverse();
+        bool getInverse(TMatrix4D<T>& outMatrix) const;
 
     private:
 
@@ -86,7 +96,7 @@ namespace core
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    using Matrix4D   = TMatrix4D<f32>;
+    using Matrix4D = TMatrix4D<f32>;
     using Matrix4D64 = TMatrix4D<f64>;
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -209,22 +219,22 @@ namespace core
         return outMatrix;
     }
 
-    inline core::Matrix4D buildLookAtMatrix(const core::Vector3D& position, const core::Vector3D& target, const core::Vector3D& upVector)
+    inline Matrix4D buildLookAtMatrix(const Vector3D& position, const Vector3D& target, const Vector3D& upVector)
     {
-        core::Vector3D forward = target - position;
+        Vector3D forward = target - position;
         forward.normalize();
 
-        core::Vector3D right = crossProduct(upVector, forward);
+        Vector3D right = crossProduct(upVector, forward);
         right.normalize();
 
-        core::Vector3D up = crossProduct(forward, right);
+        Vector3D up = crossProduct(forward, right);
 
-        core::Vector3D pos;
-        pos.x = -dotProduct(right, position);
-        pos.y = -dotProduct(up, position);
-        pos.z = -dotProduct(forward, position);
+        Vector3D pos;
+        pos.m_x = -dotProduct(right, position);
+        pos.m_y = -dotProduct(up, position);
+        pos.m_z = -dotProduct(forward, position);
 
-        core::Matrix4D outMatrix(core::Vector4D(right, pos.x), core::Vector4D(up, pos.y), core::Vector4D(forward, pos.z), core::Vector4D(core::Vector3D(0.f), 1.f));
+        Matrix4D outMatrix(Vector4D(right, pos.m_x), Vector4D(up, pos.m_y), Vector4D(forward, pos.m_z), Vector4D(Vector3D(0.f), 1.f));
         outMatrix.makeTransposed();
 
         return outMatrix;
@@ -232,7 +242,7 @@ namespace core
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-} //namespace core
+} //namespace math
 } //namespace v3d
 
 #include "Matrix4D.inl"
