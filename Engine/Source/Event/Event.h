@@ -10,7 +10,8 @@ namespace event
 
     struct Event
     {
-        virtual ~Event() {};
+        Event() noexcept = default;
+        virtual ~Event() = default;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

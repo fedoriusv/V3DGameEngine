@@ -14,7 +14,7 @@ namespace event
         KeyModifier_Meta = 0x10
     };
 
-    enum KeyCode : u32
+    enum class KeyCode : u32
     {
         KeyUknown,  // Default
 
@@ -172,12 +172,15 @@ namespace event
     {
     public:
 
+        KeyCodes() noexcept = default;
+        ~KeyCodes() = default;
+
         inline void add(KeyCode code, u32 systemCode)
         {
             _key.emplace(systemCode, code);
         }
 
-        KeyCode get(u32 code)
+        KeyCode get(u32 code) const
         {
             auto iter = _key.find(code);
             if (iter != _key.end())
@@ -185,12 +188,12 @@ namespace event
                 return iter->second;
             }
 
-            return KeyUknown;
+            return KeyCode::KeyUknown;
         }
 
     private:
 
-        std::map<u32, KeyCode> _key;
+        std::unordered_map<u32, KeyCode> _key;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

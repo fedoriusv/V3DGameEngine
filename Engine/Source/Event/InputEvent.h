@@ -28,10 +28,10 @@ namespace event
             High = 30
         };
 
-        InputEvent();
-        virtual         ~InputEvent();
+        InputEvent() noexcept;
+        virtual ~InputEvent() = default;
 
-        bool            operator<(const InputEvent& event);
+        bool operator<(const InputEvent& event);
 
         u64            _timeStamp;
         InputEventType _eventType;

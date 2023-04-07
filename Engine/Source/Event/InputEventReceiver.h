@@ -14,9 +14,6 @@ namespace event
     {
     public:
 
-        InputEventReceiver(const InputEventReceiver&) = delete;
-        InputEventReceiver& operator=(const InputEventReceiver&) = delete;
-
         InputEventReceiver() noexcept;
         ~InputEventReceiver();
 
@@ -34,6 +31,9 @@ namespace event
         void resetInputEventPool();
 
     private:
+
+        InputEventReceiver(const InputEventReceiver&) = delete;
+        InputEventReceiver& operator=(const InputEventReceiver&) = delete;
 
         std::queue<InputEvent*>                                         m_events;
         std::multimap<InputEvent::InputEventType, InputEventHandler*>   m_receivers;

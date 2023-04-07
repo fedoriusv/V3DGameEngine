@@ -44,15 +44,15 @@ namespace event
             TouchMotionCount
         };
 
-        TouchInputEvent();
-        virtual ~TouchInputEvent();
+        TouchInputEvent() noexcept;
+        virtual ~TouchInputEvent() = default;
 
         bool operator==(const TouchInputEvent& event) const;
 
         TouchTypeEvent          _event;
         TouchMotionEvent        _motionEvent;
         TouchKeyPressEvent      _keyEvent;
-        core::Point2D           _position;
+        math::Point2D           _position;
         KeyCode                 _key;
         u16                     _pointers;
         u8                      _modifers;

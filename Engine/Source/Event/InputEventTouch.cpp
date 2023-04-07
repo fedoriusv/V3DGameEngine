@@ -5,20 +5,16 @@ namespace v3d
 namespace event
 {
 
-TouchInputEvent::TouchInputEvent()
+TouchInputEvent::TouchInputEvent() noexcept
     : _event(TouchUnknown)
     , _motionEvent(TouchMotionUnknown)
     , _keyEvent(TouchKeyPressUnknown)
     , _position({ 0, 0 })
-    , _key(KeyUknown)
+    , _key(KeyCode::KeyUknown)
     , _pointers(0U)
     , _modifers(0)
 {
     _eventType = InputEventType::TouchInputEvent;
-}
-
-TouchInputEvent::~TouchInputEvent()
-{
 }
 
 bool TouchInputEvent::operator==(const TouchInputEvent& event) const

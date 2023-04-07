@@ -5,17 +5,13 @@ namespace v3d
 namespace event
 {
 
-KeyboardInputEvent::KeyboardInputEvent()
+KeyboardInputEvent::KeyboardInputEvent() noexcept
     : _event(KeyboardUnknown)
-    , _key(KeyUknown)
+    , _key(KeyCode::KeyUknown)
     , _character(0)
     , _modifers(0)
 {
     _eventType = InputEventType::KeyboardInputEvent;
-}
-
-KeyboardInputEvent::~KeyboardInputEvent()
-{
 }
 
 bool KeyboardInputEvent::operator==(const KeyboardInputEvent& event) const

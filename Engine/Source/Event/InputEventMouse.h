@@ -24,13 +24,13 @@ namespace event
             MouseCount
         };
 
-        MouseInputEvent();
-        virtual ~MouseInputEvent();
+        MouseInputEvent() noexcept;
+        virtual ~MouseInputEvent() = default;;
 
         bool operator==(const MouseInputEvent& event) const;
 
         MousePressInputEvent    _event;
-        core::Point2D           _cursorPosition;
+        math::Point2D           _cursorPosition;
         f32                     _wheelValue;
         KeyCode                 _key;
         u8                      _modifers;

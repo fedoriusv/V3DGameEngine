@@ -25,7 +25,7 @@ namespace event
 
     public:
 
-        InputEventHandler();
+        InputEventHandler() noexcept;
         ~InputEventHandler();
 
         void connect(std::function<void(const KeyboardInputEvent*)> callback);
@@ -44,7 +44,7 @@ namespace event
         bool isScreenTouched(s16 pointer = -1) const;
         bool isMultiScreenTouch() const;
 
-        const core::Point2D& getCursorPosition() const;
+        const math::Point2D& getCursorPosition() const;
         f32 getMouseWheel() const;
 
     private:
@@ -60,18 +60,18 @@ namespace event
 
         void applyTouches(u32 mask, bool isPressed);
 
-        bool                            m_keysPressed[Key_Codes_Count];
-        bool                            m_mouseStates[MouseInputEvent::MouseCount];
+        bool m_keysPressed[toEnumType(KeyCode::Key_Codes_Count)];
+        bool m_mouseStates[MouseInputEvent::MouseCount];
 
-        bool                            m_touchScreenStates[k_maxTouchScreenFingers];
-        bool                            m_touchScreen;
-        bool                            m_multiScreenTouch;
+        bool m_touchScreenStates[k_maxTouchScreenFingers];
+        bool m_touchScreen;
+        bool m_multiScreenTouch;
         
-        u32                             m_gamepadStates;
+        u32 m_gamepadStates;
 
-        core::Point2D                   m_mousePosition;
-        f32                             m_mouseWheel;
-        const core::Vector2D            m_mouseWheelRange = { -100.0f, +100.0f };
+        math::Point2D m_mousePosition;
+        f32 m_mouseWheel;
+        const math::Vector2D m_mouseWheelRange = { -100.0f, +100.0f };
 
         friend InputEventReceiver;
 

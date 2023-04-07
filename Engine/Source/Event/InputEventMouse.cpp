@@ -5,18 +5,14 @@ namespace v3d
 namespace event
 {
 
-MouseInputEvent::MouseInputEvent()
+MouseInputEvent::MouseInputEvent() noexcept
     : _event(MouseUnknown)
     , _cursorPosition({ 0, 0 })
     , _wheelValue(0.0f)
-    , _key(KeyUknown)
+    , _key(KeyCode::KeyUknown)
     , _modifers(0)
 {
     _eventType = InputEventType::MouseInputEvent;
-}
-
-MouseInputEvent::~MouseInputEvent()
-{
 }
 
 bool MouseInputEvent::operator==(const MouseInputEvent& event) const

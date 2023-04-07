@@ -11,17 +11,18 @@ namespace event
 
     class EventHandler
     {
-    protected:
-
-        EventHandler() = default;
-        EventHandler(const EventHandler&) = delete;
-        EventHandler& operator=(const EventHandler&) = delete;
-
     public:
 
-        virtual         ~EventHandler() {};
+        virtual ~EventHandler() = default;
 
-        virtual bool    onEvent(Event* event) = 0;
+        virtual bool onEvent(Event* event) = 0;
+
+    protected:
+
+        EventHandler() noexcept = default;
+
+        EventHandler(const EventHandler&) = delete;
+        EventHandler& operator=(const EventHandler&) = delete;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

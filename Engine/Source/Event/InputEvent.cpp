@@ -5,14 +5,10 @@ namespace v3d
 namespace event
 {
 
-InputEvent::InputEvent()
+InputEvent::InputEvent() noexcept
     : _timeStamp(0) //TODO: get current time, need class Timer
     , _eventType(InputEventType::UnknownInputEvent)
     , _priority(Normal)
-{
-}
-
-InputEvent::~InputEvent()
 {
 }
 

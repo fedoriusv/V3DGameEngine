@@ -43,8 +43,8 @@ namespace event
             ButtonCount = 32
         };
 
-        GamepadInputEvent();
-        virtual ~GamepadInputEvent();
+        GamepadInputEvent() noexcept;
+        virtual ~GamepadInputEvent() = default;
 
         bool    operator==(const GamepadInputEvent& event) const;
 

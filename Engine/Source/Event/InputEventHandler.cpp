@@ -7,7 +7,7 @@ namespace v3d
 namespace event
 {
 
-InputEventHandler::InputEventHandler()
+InputEventHandler::InputEventHandler() noexcept
     : m_gamepadStates(0U)
     , m_mousePosition({ 0, 0 })
     , m_mouseWheel(0.0f)
@@ -26,7 +26,7 @@ InputEventHandler::~InputEventHandler()
 
 void InputEventHandler::resetKeyPressed()
 {
-    std::fill_n(&m_keysPressed[0], Key_Codes_Count, false);
+    std::fill_n(&m_keysPressed[0], toEnumType(KeyCode::Key_Codes_Count), false);
 
     for (u32 state = 0; state < MouseInputEvent::MouseCount; ++state)
     {
@@ -45,22 +45,22 @@ void InputEventHandler::resetKeyPressed()
 
 void InputEventHandler::applyModifiers(KeyboardInputEvent* event)
 {
-    if (InputEventHandler::isKeyPressed(KeyAlt))
+    if (InputEventHandler::isKeyPressed(KeyCode::KeyAlt))
     {
         event->_modifers |= KeyModifierCode::KeyModifier_Alt;
     }
 
-    if (InputEventHandler::isKeyPressed(KeyControl))
+    if (InputEventHandler::isKeyPressed(KeyCode::KeyControl))
     {
         event->_modifers |= KeyModifierCode::KeyModifier_Ctrl;
     }
 
-    if (InputEventHandler::isKeyPressed(KeyShift))
+    if (InputEventHandler::isKeyPressed(KeyCode::KeyShift))
     {
         event->_modifers |= KeyModifierCode::KeyModifier_Shift;
     }
 
-    if (InputEventHandler::isKeyPressed(KeyCapital))
+    if (InputEventHandler::isKeyPressed(KeyCode::KeyCapital))
     {
         event->_modifers |= KeyModifierCode::KeyModifier_CapsLock;
     }
@@ -68,22 +68,22 @@ void InputEventHandler::applyModifiers(KeyboardInputEvent* event)
 
 void InputEventHandler::applyModifiers(MouseInputEvent * event)
 {
-    if (InputEventHandler::isKeyPressed(KeyAlt))
+    if (InputEventHandler::isKeyPressed(KeyCode::KeyAlt))
     {
         event->_modifers |= KeyModifierCode::KeyModifier_Alt;
     }
 
-    if (InputEventHandler::isKeyPressed(KeyControl))
+    if (InputEventHandler::isKeyPressed(KeyCode::KeyControl))
     {
         event->_modifers |= KeyModifierCode::KeyModifier_Ctrl;
     }
 
-    if (InputEventHandler::isKeyPressed(KeyShift))
+    if (InputEventHandler::isKeyPressed(KeyCode::KeyShift))
     {
         event->_modifers |= KeyModifierCode::KeyModifier_Shift;
     }
 
-    if (InputEventHandler::isKeyPressed(KeyCapital))
+    if (InputEventHandler::isKeyPressed(KeyCode::KeyCapital))
     {
         event->_modifers |= KeyModifierCode::KeyModifier_CapsLock;
     }
@@ -93,17 +93,17 @@ void InputEventHandler::applyModifiers(MouseInputEvent * event)
 
 void InputEventHandler::applyModifiers(TouchInputEvent* event)
 {
-    if (InputEventHandler::isKeyPressed(KeyLAlt) || InputEventHandler::isKeyPressed(KeyRAlt))
+    if (InputEventHandler::isKeyPressed(KeyCode::KeyLAlt) || InputEventHandler::isKeyPressed(KeyCode::KeyRAlt))
     {
         event->_modifers |= KeyModifierCode::KeyModifier_Alt;
     }
 
-    if (InputEventHandler::isKeyPressed(KeyLControl) || InputEventHandler::isKeyPressed(KeyRControl))
+    if (InputEventHandler::isKeyPressed(KeyCode::KeyLControl) || InputEventHandler::isKeyPressed(KeyCode::KeyRControl))
     {
         event->_modifers |= KeyModifierCode::KeyModifier_Ctrl;
     }
 
-    if (InputEventHandler::isKeyPressed(KeyLShift) || InputEventHandler::isKeyPressed(KeyRShift))
+    if (InputEventHandler::isKeyPressed(KeyCode::KeyLShift) || InputEventHandler::isKeyPressed(KeyCode::KeyRShift))
     {
         event->_modifers |= KeyModifierCode::KeyModifier_Shift;
     }
@@ -136,14 +136,14 @@ bool InputEventHandler::onEvent(Event* ev)
         case KeyboardInputEvent::KeyboardPressDown:
         {
             applyModifiers(keyEvent);
-            m_keysPressed[keyEvent->_key] = true;
+            m_keysPressed[toEnumType(keyEvent->_key)] = true;
             break;
         }
 
         case KeyboardInputEvent::KeyboardPressUp:
         {
             applyModifiers(keyEvent);
-            m_keysPressed[keyEvent->_key] = false;
+            m_keysPressed[toEnumType(keyEvent->_key)] = false;
             break;
         }
 
@@ -172,21 +172,21 @@ bool InputEventHandler::onEvent(Event* ev)
             m_mouseStates[state] = state == mouseEvent->_event;
         }
         m_mousePosition = mouseEvent->_cursorPosition;
-        m_mouseWheel = core::clamp(m_mouseWheel + mouseEvent->_wheelValue, m_mouseWheelRange.x, m_mouseWheelRange.y);
+        m_mouseWheel = math::clamp(m_mouseWheel + mouseEvent->_wheelValue, m_mouseWheelRange.m_x, m_mouseWheelRange.m_y);
 
         switch (mouseEvent->_event)
         {
         case MouseInputEvent::MousePressDown:
         {
             applyModifiers(mouseEvent);
-            m_keysPressed[mouseEvent->_key] = true;
+            m_keysPressed[toEnumType(mouseEvent->_key)] = true;
             break;
         }
 
         case MouseInputEvent::MousePressUp:
         {
             applyModifiers(mouseEvent);
-            m_keysPressed[mouseEvent->_key] = false;
+            m_keysPressed[toEnumType(mouseEvent->_key)] = false;
             break;
         }
 
@@ -239,14 +239,14 @@ bool InputEventHandler::onEvent(Event* ev)
             case TouchInputEvent::TouchKeyPressDown:
             {
                 applyModifiers(touchEvent);
-                m_keysPressed[touchEvent->_key] = true;
+                m_keysPressed[toEnumType(touchEvent->_key)] = true;
                 break;
             }
 
             case TouchInputEvent::TouchKeyPressUp:
             {
                 applyModifiers(touchEvent);
-                m_keysPressed[touchEvent->_key] = false;
+                m_keysPressed[toEnumType(touchEvent->_key)] = false;
                 break;
             }
 
@@ -339,22 +339,22 @@ void InputEventHandler::connect(std::function<void(const TouchInputEvent*)> call
 
 bool InputEventHandler::isKeyPressed(const KeyCode& code)  const
 {
-    return m_keysPressed[code];
+    return m_keysPressed[toEnumType(code)];
 }
 
 bool InputEventHandler::isLeftMousePressed() const
 {
-    return /*m_mouseStates[MouseInputEvent::MousePressDown] &&*/ m_keysPressed[KeyLButton];
+    return /*m_mouseStates[MouseInputEvent::MousePressDown] &&*/ m_keysPressed[toEnumType(KeyCode::KeyLButton)];
 }
 
 bool InputEventHandler::isRightMousePressed() const
 {
-    return /*m_mouseStates[MouseInputEvent::MousePressDown] &&*/ m_keysPressed[KeyRButton];
+    return /*m_mouseStates[MouseInputEvent::MousePressDown] &&*/ m_keysPressed[toEnumType(KeyCode::KeyRButton)];
 }
 
 bool InputEventHandler::isMiddleMousePressed() const
 {
-    return /*m_mouseStates[MouseInputEvent::MousePressDown] &&*/ m_keysPressed[KeyMButton];
+    return /*m_mouseStates[MouseInputEvent::MousePressDown] &&*/ m_keysPressed[toEnumType(KeyCode::KeyMButton)];
 }
 
 bool InputEventHandler::isGamepadPressed(const GamepadInputEvent::GamepadButton& code) const
@@ -385,7 +385,7 @@ bool InputEventHandler::isMultiScreenTouch() const
     return m_multiScreenTouch;
 }
 
-const core::Point2D& InputEventHandler::getCursorPosition() const
+const math::Point2D& InputEventHandler::getCursorPosition() const
 {
     return m_mousePosition;
 }

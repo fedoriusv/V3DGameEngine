@@ -21,8 +21,8 @@ namespace event
             KeyboardCount
         };
 
-        KeyboardInputEvent();
-        virtual ~KeyboardInputEvent();
+        KeyboardInputEvent() noexcept;
+        virtual ~KeyboardInputEvent() = default;
 
         bool operator==(const KeyboardInputEvent& event) const;
 

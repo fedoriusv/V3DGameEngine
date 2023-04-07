@@ -7,7 +7,7 @@ namespace event
 {
 
 InputEventReceiver::InputEventReceiver() noexcept
-    : k_maxInputEventSize((u32)core::max(sizeof(MouseInputEvent), sizeof(KeyboardInputEvent), core::max(sizeof(GamepadInputEvent), sizeof(TouchInputEvent))))
+    : k_maxInputEventSize((u32)math::max(sizeof(MouseInputEvent), sizeof(KeyboardInputEvent), math::max(sizeof(GamepadInputEvent), sizeof(TouchInputEvent))))
     , m_eventPool(nullptr)
     , m_currentEventIndex(0)
 {
@@ -48,7 +48,7 @@ void InputEventReceiver::sendDeferredEvents()
         }
 
         temp.pop();
-        //delete event; 
+        //delete event;
         //no need, deleted through pool
     }
 

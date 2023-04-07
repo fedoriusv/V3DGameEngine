@@ -5,17 +5,13 @@ namespace v3d
 namespace event
 {
 
-GamepadInputEvent::GamepadInputEvent()
+GamepadInputEvent::GamepadInputEvent() noexcept
 : _event(GamepadUnknown)
 , _buttons(0)
 , _pov(0)
 , _gamepad(-1)
 {
     _eventType = InputEventType::GamepadInputEvent;
-}
-
-GamepadInputEvent::~GamepadInputEvent()
-{
 }
 
 bool GamepadInputEvent::operator==(const GamepadInputEvent& event) const
