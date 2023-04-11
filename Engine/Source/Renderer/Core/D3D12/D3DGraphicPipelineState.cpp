@@ -413,11 +413,8 @@ bool D3DGraphicPipelineState::create(const PipelineGraphicInfo* pipelineInfo)
             const Shader::Attribute& attribute = pipelineInfo->_programDesc._shaders[toEnumType(ShaderType::Vertex)]->getReflectionInfo()._inputAttribute[i];
 
             u32 semanticIndex = 0;
-#if USE_STRING_ID_SHADER
             separateSematic(attribute._name, semanticNames[i], semanticIndex);
-#else
-            ASSERT(false, "not impl");
-#endif
+
             D3D12_INPUT_ELEMENT_DESC& elementDesc = inputElementsDesc[i];
             elementDesc.SemanticName = semanticNames[i].data();
             elementDesc.SemanticIndex = semanticIndex;
@@ -608,10 +605,10 @@ void D3DGraphicPipelineState::destroy()
     SAFE_DELETE(m_pipelineState);
 }
 
-bool D3DGraphicPipelineState::compileShader(const ShaderHeader* header, const void* source, u32 size)
+bool D3DGraphicPipelineState::compileShader(ShaderType type, const void* source, u32 size)
 {
-    m_bytecode[toEnumType(header->_type)].BytecodeLength = static_cast<u32>(size);
-    m_bytecode[toEnumType(header->_type)].pShaderBytecode = source;
+    m_bytecode[toEnumType(type)].BytecodeLength = static_cast<u32>(size);
+    m_bytecode[toEnumType(type)].pShaderBytecode = source;
 
     return true;
 }

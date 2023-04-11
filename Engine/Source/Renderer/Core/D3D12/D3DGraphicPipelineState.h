@@ -49,7 +49,7 @@ namespace dx3d
         bool create(const PipelineComputeInfo* pipelineInfo) override;
         void destroy() override;
 
-        bool compileShader(const ShaderHeader* header, const void* source, u32 size) override;
+        bool compileShader(ShaderType type, const void* source, u32 size) override;
 
         static bool separateSematic(const std::string& str, std::string& name, u32& id);
 

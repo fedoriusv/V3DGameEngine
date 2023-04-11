@@ -62,7 +62,7 @@ namespace vk
 
         void destroy() override;
 
-        bool compileShaders(std::vector<std::tuple<const ShaderHeader*, const void*, u32>>& shaders) override;
+        bool compileShaders(std::vector<std::tuple<ShaderType, const void*, u32>>& shaders) override;
         void deleteShaderModules();
 
         bool createCompatibilityRenderPass(const RenderPassDescription& renderpassDesc, RenderPass* &compatibilityRenderPass);

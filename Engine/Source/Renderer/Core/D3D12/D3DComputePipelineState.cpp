@@ -77,7 +77,7 @@ void D3DComputePipelineState::destroy()
     SAFE_DELETE(m_pipelineState);
 }
 
-bool D3DComputePipelineState::compileShader(const ShaderHeader* header, const void* source, u32 size)
+bool D3DComputePipelineState::compileShader(ShaderType type, const void* source, u32 size)
 {
     m_bytecode.BytecodeLength = static_cast<u32>(size);
     m_bytecode.pShaderBytecode = source;

@@ -49,7 +49,7 @@ namespace vk
 
         void destroy() override;
 
-        bool compileShader(const ShaderHeader* header, const void* source, u32 size) override;
+        bool compileShader(ShaderType type, const void* source, u32 size) override;
 
         VkDevice m_device;
 

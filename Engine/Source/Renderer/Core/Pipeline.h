@@ -85,8 +85,8 @@ namespace renderer
 
         bool createShader(const Shader* shader);
         bool createProgram(const ShaderProgramDescription& desc);
-        virtual bool compileShader(const ShaderHeader* header, const void* source, u32 size);
-        virtual bool compileShaders(std::vector<std::tuple<const ShaderHeader*, const void*, u32>>& shaders);
+        virtual bool compileShader(ShaderType type, const void* source, u32 size);
+        virtual bool compileShaders(std::vector<std::tuple<ShaderType, const void*, u32>>& shaders);
 
     private:
 

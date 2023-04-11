@@ -444,7 +444,7 @@ bool VulkanGraphicPipeline::create(const PipelineGraphicInfo* pipelineInfo)
         pipelineShaderStageCreateInfo.flags = 0;
         pipelineShaderStageCreateInfo.stage = convertShaderTypeToVkStage((ShaderType)type);
         pipelineShaderStageCreateInfo.module = m_modules[moduleIndex];
-        pipelineShaderStageCreateInfo.pName = programDesc._shaders[type]->getShaderHeader()._entryPoint.c_str();
+        pipelineShaderStageCreateInfo.pName = programDesc._shaders[type]->getEntrypoint().c_str();
         pipelineShaderStageCreateInfo.pSpecializationInfo = nullptr;
 
         ++moduleIndex;
@@ -747,7 +747,7 @@ void VulkanGraphicPipeline::destroy()
     }
 }
 
-bool VulkanGraphicPipeline::compileShaders(std::vector<std::tuple<const ShaderHeader*, const void*, u32>>& shaders)
+bool VulkanGraphicPipeline::compileShaders(std::vector<std::tuple<ShaderType, const void*, u32>>& shaders)
 {
     if (shaders.empty())
     {
@@ -777,7 +777,7 @@ bool VulkanGraphicPipeline::compileShaders(std::vector<std::tuple<const ShaderHe
         }
 
         std::vector<u32> patchedSpirv;
-        if (std::get<0>(shader)->_type == ShaderType::Vertex)
+        if (std::get<0>(shader) == ShaderType::Vertex)
         {
             patchedSpirv.resize(size / sizeof(u32));
             memcpy(patchedSpirv.data(), source, size);

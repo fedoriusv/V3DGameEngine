@@ -76,7 +76,7 @@ bool VulkanComputePipeline::create(const PipelineComputeInfo* pipelineInfo)
         pipelineShaderStageCreateInfo.pSpecializationInfo = nullptr;
         pipelineShaderStageCreateInfo.stage = VulkanGraphicPipeline::convertShaderTypeToVkStage(ShaderType::Compute);
         pipelineShaderStageCreateInfo.module = m_module;
-        pipelineShaderStageCreateInfo.pName = computeShader->getShaderHeader()._entryPoint.c_str();
+        pipelineShaderStageCreateInfo.pName = computeShader->getEntrypoint().c_str();
     }
     computePipelineCreateInfo.stage = pipelineShaderStageCreateInfo;
 
@@ -135,7 +135,7 @@ void VulkanComputePipeline::destroy()
     }
 }
 
-bool VulkanComputePipeline::compileShader(const ShaderHeader* header, const void* source, u32 size)
+bool VulkanComputePipeline::compileShader(ShaderType type, const void* source, u32 size)
 {
     VkShaderModuleCreateInfo shaderModuleCreateInfo = {};
     shaderModuleCreateInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;

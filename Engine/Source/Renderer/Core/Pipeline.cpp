@@ -65,12 +65,12 @@ bool Pipeline::createShader(const Shader* shader)
         return false;
     }
 
-    return compileShader(&shader->getShaderHeader(), shader->m_source, shader->m_size);
+    return compileShader(shader->getShaderType(), shader->m_source, shader->m_size);
 }
 
 bool Pipeline::createProgram(const ShaderProgramDescription& desc)
 {
-    std::vector<std::tuple<const ShaderHeader*, const void*, u32>> shadersData;
+    std::vector<std::tuple<ShaderType, const void*, u32>> shadersData;
     for (u32 type = toEnumType(ShaderType::Vertex); type < (u32)toEnumType(ShaderType::Count); ++type)
     {
         const Shader* shader = desc._shaders[type];
@@ -79,18 +79,18 @@ bool Pipeline::createProgram(const ShaderProgramDescription& desc)
             continue;
         }
 
-        shadersData.push_back({ &shader->getShaderHeader(), shader->m_source, shader->m_size });
+        shadersData.push_back({ shader->getShaderType(), shader->m_source, shader->m_size });
     }
 
     return compileShaders(shadersData);
 }
 
-bool Pipeline::compileShader(const ShaderHeader* header, const void* source, u32 size)
+bool Pipeline::compileShader(ShaderType type, const void* source, u32 size)
 {
     return false;
 }
 
-bool Pipeline::compileShaders(std::vector<std::tuple<const ShaderHeader*, const void*, u32>>& shaders)
+bool Pipeline::compileShaders(std::vector<std::tuple<ShaderType, const void*, u32>>& shaders)
 {
     return false;
 }
