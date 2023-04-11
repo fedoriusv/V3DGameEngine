@@ -22,7 +22,7 @@ SimpleTriangle::SimpleTriangle()
     , m_Pipeline(nullptr)
     , m_Geometry(nullptr)
 
-    , m_Camera(new scene::CameraArcballHelper(new scene::Camera(core::Vector3D(0.0f, 0.0f, 0.0f), core::Vector3D(0.0f, 1.0f, 0.0f)), 3.0f, k_nearValue + 1.0f, k_farValue - 10.0f))
+    , m_Camera(new scene::CameraArcballHelper(new scene::Camera(math::Vector3D(0.0f, 0.0f, 0.0f), math::Vector3D(0.0f, 1.0f, 0.0f)), 3.0f, k_nearValue + 1.0f, k_farValue - 10.0f))
 {
 }
 
@@ -30,7 +30,7 @@ SimpleTriangle::~SimpleTriangle()
 {
 }
 
-void SimpleTriangle::init(v3d::renderer::CommandList* commandList, const core::Dimension2D& size)
+void SimpleTriangle::init(v3d::renderer::CommandList* commandList, const math::Dimension2D& size)
 {
     m_CommandList = commandList;
     ASSERT(m_CommandList, "nullptr");
@@ -74,10 +74,11 @@ void SimpleTriangle::init(v3d::renderer::CommandList* commandList, const core::D
         const stream::Stream* vertexStream = stream::StreamManager::createMemoryStream(vertexSource);
 
         renderer::ShaderHeader vertexHeader(renderer::ShaderType::Vertex);
-        vertexHeader._contentType = renderer::ShaderHeader::ShaderResource::Source;
+        vertexHeader._contentType = renderer::ShaderHeader::ShaderContent::Source;
         vertexHeader._shaderModel = renderer::ShaderHeader::ShaderModel::HLSL_5_1;
 
-        vertShader = resource::ResourceLoaderManager::getLazyInstance()->composeShader<renderer::Shader, resource::ShaderSourceStreamLoader>(m_CommandList->getContext(), "vertex", &vertexHeader, vertexStream);
+        vertShader = resource::ResourceLoaderManager::getLazyInstance()->composeShader<renderer::Shader, resource::ShaderSourceStreamLoader>(
+            m_CommandList->getContext(), "vertex", &vertexHeader, vertexStream, "main", {}, {}, renderer::ShaderCompileFlag::ShaderSource_UseLegacyCompilerForHLSL);
         delete vertexStream;
     }
 
@@ -97,10 +98,11 @@ void SimpleTriangle::init(v3d::renderer::CommandList* commandList, const core::D
         const stream::Stream* fragmentStream = stream::StreamManager::createMemoryStream(fragmentSource);
 
         renderer::ShaderHeader fragmentHeader(renderer::ShaderType::Fragment);
-        fragmentHeader._contentType = renderer::ShaderHeader::ShaderResource::Source;
+        fragmentHeader._contentType = renderer::ShaderHeader::ShaderContent::Source;
         fragmentHeader._shaderModel = renderer::ShaderHeader::ShaderModel::HLSL_5_1;
 
-        fragShader = resource::ResourceLoaderManager::getLazyInstance()->composeShader<renderer::Shader, resource::ShaderSourceStreamLoader>(m_CommandList->getContext(), "fragment", &fragmentHeader, fragmentStream);
+        fragShader = resource::ResourceLoaderManager::getLazyInstance()->composeShader<renderer::Shader, resource::ShaderSourceStreamLoader>(
+            m_CommandList->getContext(), "fragment", &fragmentHeader, fragmentStream, "main", {}, {}, renderer::ShaderCompileFlag::ShaderSource_UseLegacyCompilerForHLSL);
         delete fragmentStream;
     }
 
@@ -110,27 +112,27 @@ void SimpleTriangle::init(v3d::renderer::CommandList* commandList, const core::D
     m_RenderTarget = m_CommandList->createObject<renderer::RenderTargetState>(m_CommandList->getBackbuffer()->getDimension());
     m_RenderTarget->setColorTexture(0, m_CommandList->getBackbuffer(),
         {
-            renderer::RenderTargetLoadOp::LoadOp_Clear, renderer::RenderTargetStoreOp::StoreOp_Store, core::Vector4D(0.0f)
+            renderer::RenderTargetLoadOp::LoadOp_Clear, renderer::RenderTargetStoreOp::StoreOp_Store, math::Vector4D(0.0f)
         },
         {
             renderer::TransitionOp::TransitionOp_Undefined, renderer::TransitionOp::TransitionOp_Present
         });
 
-    std::vector<core::Vector3D> geometryData = 
+    std::vector<math::Vector3D> geometryData = 
     {
         {-1.0f,-1.0f, 0.0f },  { 1.0f, 0.0f, 0.0f },
         { 0.0f, 1.0f, 0.0f },  { 0.0f, 1.0f, 0.0f },
         { 1.0f,-1.0f, 0.0f },  { 0.0f, 0.0f, 1.0f },
     };
-    m_Geometry = m_CommandList->createObject<renderer::VertexStreamBuffer>(renderer::StreamBuffer_Write, static_cast<u32>(geometryData.size() * sizeof(core::Vector3D)), reinterpret_cast<u8*>(geometryData.data()));
+    m_Geometry = m_CommandList->createObject<renderer::VertexStreamBuffer>(renderer::StreamBuffer_Write, static_cast<u32>(geometryData.size() * sizeof(math::Vector3D)), reinterpret_cast<u8*>(geometryData.data()));
 
-    renderer::VertexInputAttribDescription vertexDesc(
+    renderer::VertexInputAttributeDescription vertexDesc(
         { 
-            renderer::VertexInputAttribDescription::InputBinding(0,  renderer::VertexInputAttribDescription::InputRate_Vertex, sizeof(core::Vector3D) + sizeof(core::Vector3D)),
+            renderer::VertexInputAttributeDescription::InputBinding(0,  renderer::VertexInputAttributeDescription::InputRate_Vertex, sizeof(math::Vector3D) + sizeof(math::Vector3D)),
         }, 
         { 
-            renderer::VertexInputAttribDescription::InputAttribute(0, 0, renderer::Format_R32G32B32_SFloat, 0),
-            renderer::VertexInputAttribDescription::InputAttribute(0, 0, renderer::Format_R32G32B32_SFloat, sizeof(core::Vector3D)),
+            renderer::VertexInputAttributeDescription::InputAttribute(0, 0, renderer::Format_R32G32B32_SFloat, 0),
+            renderer::VertexInputAttributeDescription::InputAttribute(0, 0, renderer::Format_R32G32B32_SFloat, sizeof(math::Vector3D)),
         });
 
     m_Pipeline = m_CommandList->createObject<renderer::GraphicsPipelineState>(vertexDesc, m_Program, m_RenderTarget);
@@ -157,21 +159,21 @@ void SimpleTriangle::render()
     //update uniforms
     struct UBO
     {
-        core::Matrix4D projectionMatrix;
-        core::Matrix4D modelMatrix;
-        core::Matrix4D viewMatrix;
+        math::Matrix4D projectionMatrix;
+        math::Matrix4D modelMatrix;
+        math::Matrix4D viewMatrix;
     };
 
     //render
-    m_CommandList->setViewport(core::Rect32(0, 0, m_RenderTarget->getDimension().width, m_RenderTarget->getDimension().height));
-    m_CommandList->setScissor(core::Rect32(0, 0, m_RenderTarget->getDimension().width, m_RenderTarget->getDimension().height));
+    m_CommandList->setViewport(math::Rect32(0, 0, m_RenderTarget->getDimension().m_width, m_RenderTarget->getDimension().m_height));
+    m_CommandList->setScissor(math::Rect32(0, 0, m_RenderTarget->getDimension().m_width, m_RenderTarget->getDimension().m_height));
 
     m_CommandList->setRenderTarget(m_RenderTarget);
     m_CommandList->setPipelineState(m_Pipeline);
 
     UBO ubo1;
     ubo1.projectionMatrix = m_Camera->getCamera().getProjectionMatrix();
-    ubo1.modelMatrix.setTranslation(core::Vector3D(-1, 0, 0));
+    ubo1.modelMatrix.setTranslation(math::Vector3D(-1, 0, 0));
     ubo1.viewMatrix = m_Camera->getCamera().getViewMatrix();
 
     m_Program->bindUniformsBuffer<renderer::ShaderType::Vertex>({ "buffer" }, 0, (u32)sizeof(UBO), &ubo1);
@@ -179,7 +181,7 @@ void SimpleTriangle::render()
 
     UBO ubo2;
     ubo2.projectionMatrix = m_Camera->getCamera().getProjectionMatrix();
-    ubo2.modelMatrix.setTranslation(core::Vector3D(1, 0, 0));
+    ubo2.modelMatrix.setTranslation(math::Vector3D(1, 0, 0));
     ubo2.viewMatrix = m_Camera->getCamera().getViewMatrix();
 
     m_Program->bindUniformsBuffer<renderer::ShaderType::Vertex>({ "buffer" }, 0, (u32)sizeof(UBO), &ubo2);

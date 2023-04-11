@@ -20,7 +20,7 @@ public:
     SimpleTriangle();
     ~SimpleTriangle();
 
-    void init(v3d::renderer::CommandList* m_CommandList, const v3d::core::Dimension2D& size);
+    void init(v3d::renderer::CommandList* m_CommandList, const v3d::math::Dimension2D& size);
     void update(v3d::f32 dt);
     void render();
     void terminate();
