@@ -194,6 +194,7 @@ bool D3DGraphicContext::initialize()
             LOG_ERROR("D3DGraphicContext::initialize. Can't get Adapter3, QueryInterface is failed. Error %d", D3DDebug::stringError(result).c_str());
             return false;
         }
+        m_adapter->Release(); //decriment one of adapter link
     }
 
     {
@@ -495,15 +496,16 @@ void D3DGraphicContext::destroy()
     SAFE_DELETE(m_device);
 
 #if defined(PLATFORM_WINDOWS)
-    SAFE_DELETE(m_adapter);
-    SAFE_DELETE(m_factory);
-
 #   if D3D_DEBUG_LAYERS
     if (m_debugController)
     {
         SAFE_DELETE(m_debugController);
     }
 #   endif //D3D_DEBUG_LAYERS
+
+    SAFE_DELETE(m_adapter);
+    SAFE_DELETE(m_factory);
+
 #endif //PLATFORM_WINDOWS
 }
 
