@@ -10,6 +10,9 @@ namespace platform
 {
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    /**
+    * @brief WindowWindows class. Windows platform
+    */
     class WindowWindows : public Window
     {
     public:

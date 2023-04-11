@@ -8,6 +8,9 @@ namespace platform
 {
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    /**
+    * @brief Platform class. Platform specific functions 
+    */
     class Platform final
     {
     public:
@@ -17,8 +20,8 @@ namespace platform
 
         static bool setThreadName(std::thread& thread, const std::string& name);
 
-        [[nodiscard]] static std::wstring utf8ToWide(const char* in);
-        [[nodiscard]] static std::string wideToUtf8(const wchar_t* in);
+        [[nodiscard]] static std::wstring utf8ToWide(c8* in);
+        [[nodiscard]] static std::string wideToUtf8(w16* in);
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

@@ -114,7 +114,16 @@ namespace platform
 
     protected:
 
+        /**
+        * @brief Window constructor
+        * @param const WindowParam& params [required]
+        * @param event::InputEventReceiver* receiver [required]
+        */
         explicit Window(const WindowParam& params, event::InputEventReceiver* receiver) noexcept;
+
+        /**
+        * @brief Window destructor
+        */
         virtual ~Window();
 
         Window() = delete;
@@ -129,6 +138,9 @@ namespace platform
 
         event::KeyCodes m_keyCodes;
         event::InputEventReceiver* m_receiver;
+
+        template<class T>
+        friend void memory::internal_delete(T* ptr, v3d::memory::MemoryLabel label);
 
     };
 

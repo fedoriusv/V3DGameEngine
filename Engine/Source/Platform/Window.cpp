@@ -37,11 +37,11 @@ Window* Window::createWindow(const math::Dimension2D& size, const math::Point2D&
 
     Window* window = nullptr;
 #if defined(PLATFORM_WINDOWS)
-    window = new WindowWindows(params, nullptr);
+    window = V3D_NEW(WindowWindows, memory::MemoryLabel::MemorySystem)(params, nullptr);
 #elif defined(PLATFORM_XBOX)
-    window = new WindowXBOX(params, nullptr);
+    window = V3D_NEW(WindowXBOX, memory::MemoryLabel::MemorySystem)(params, nullptr);
 #elif defined(PLATFORM_ANDROID)
-    window = new WindowAndroid(params, nullptr);
+    window = V3D_NEW(WindowAndroid, memory::MemoryLabel::MemorySystem)(params, nullptr);
 #endif //PLATFORM
 
     if (!window)
@@ -57,7 +57,7 @@ Window* Window::createWindow(const math::Dimension2D& size, const math::Point2D&
     }
     
     LOG_ERROR("Window::createWindow: Can't initialize window");
-    delete window;
+    V3D_DELETE(window, memory::MemoryLabel::MemorySystem);
 
     return nullptr;
 }
@@ -72,11 +72,11 @@ Window* Window::createWindow(const math::Dimension2D& size, const math::Point2D&
 
     Window* window = nullptr;
 #if defined(PLATFORM_WINDOWS)
-    window = new WindowWindows(params, receiver);
+    window = V3D_NEW(WindowWindows, memory::MemoryLabel::MemorySystem)(params, receiver);
 #elif defined(PLATFORM_XBOX)
-    window = new WindowXBOX(params, receiver);
+    window = V3D_NEW(WindowXBOX, memory::MemoryLabel::MemorySystem)(params, receiver);
 #elif defined(PLATFORM_ANDROID)
-    window = new WindowAndroid(params, receiver);
+    window = V3D_NEW(WindowAndroid, memory::MemoryLabel::MemorySystem)(params, receiver);
 #endif //PLATFORM
 
     if (!window)
@@ -93,7 +93,7 @@ Window* Window::createWindow(const math::Dimension2D& size, const math::Point2D&
 
     LOG_ERROR("Window::createWindow: Can't initialize window");
     window->destroy();
-    delete window;
+    V3D_DELETE(window, memory::MemoryLabel::MemorySystem);
 
     return nullptr;
 }
@@ -115,7 +115,7 @@ void Window::detroyWindow(Window* window)
         window->m_receiver = nullptr;
     }
 
-    delete window;
+    V3D_DELETE(window, memory::MemoryLabel::MemorySystem);
 }
 
 event::InputEventReceiver* Window::getInputEventReceiver() const
