@@ -9,6 +9,9 @@ namespace event
 {
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    /**
+    * @brief GamepadInputEvent struct.
+    */
     struct GamepadInputEvent : InputEvent
     {
         enum GamepadPessInputEvent
@@ -46,7 +49,7 @@ namespace event
         GamepadInputEvent() noexcept;
         virtual ~GamepadInputEvent() = default;
 
-        bool    operator==(const GamepadInputEvent& event) const;
+        bool operator==(const GamepadInputEvent& event) const;
 
         GamepadPessInputEvent   _event;
         u16                     _buttons;

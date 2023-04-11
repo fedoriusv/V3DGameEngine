@@ -10,6 +10,9 @@ namespace event
 {
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    /**
+    * @brief KeyboardInputEvent struct.
+    */
     struct KeyboardInputEvent : InputEvent
     {
         enum KeyboardPressInputEvent

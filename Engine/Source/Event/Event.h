@@ -8,6 +8,10 @@ namespace event
 {
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
+
+    /**
+    * @brief Event base struct.
+    */
     struct Event
     {
         Event() noexcept = default;

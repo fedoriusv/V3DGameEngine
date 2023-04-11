@@ -10,6 +10,9 @@ namespace event
 {
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    /**
+    * @brief TouchInputEvent struct.
+    */
     struct TouchInputEvent : InputEvent
     {
         enum TouchTypeEvent

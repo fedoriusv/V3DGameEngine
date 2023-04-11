@@ -11,7 +11,7 @@ InputEventReceiver::InputEventReceiver() noexcept
     , m_eventPool(nullptr)
     , m_currentEventIndex(0)
 {
-    m_eventPool = reinterpret_cast<InputEvent*>(malloc(k_maxInputEventSize * s_eventPoolSize)); //TODO pool
+    m_eventPool = reinterpret_cast<InputEvent*>(V3D_MALLOC(k_maxInputEventSize * s_eventPoolSize, memory::MemoryLabel::MemorySystem));
     resetInputEventPool();
     LOG_DEBUG("InputEventReceiver::InputEventReceiver constructor %llx, event pool %llx", this, m_eventPool);
  }
@@ -24,7 +24,7 @@ InputEventReceiver::~InputEventReceiver()
 
     if (m_eventPool)
     {
-        free(m_eventPool);
+        V3D_FREE(m_eventPool, memory::MemoryLabel::MemorySystem);
     }
 }
 

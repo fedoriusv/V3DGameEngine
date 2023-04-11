@@ -9,6 +9,10 @@ namespace event
 {
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
+
+    /**
+    * @brief InputEvent struct.
+    */
     struct InputEvent : Event
     {
         enum class InputEventType
