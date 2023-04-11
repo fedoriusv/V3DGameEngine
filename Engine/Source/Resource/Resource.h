@@ -2,6 +2,7 @@
 
 #include "Common.h"
 #include "Utils/Observable.h"
+#include "Utils/ResourceID.h"
 
 namespace v3d
 {
@@ -14,50 +15,87 @@ namespace resource
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
+    * @brief ResourceType enum
+    */
+    enum class ResourceType : u16
+    {
+        EmptyResource = 0,
+        ModelResource,
+        MeshResource,
+        BitmapResource,
+        MaterialResource,
+        ShaderResource,
+
+        ResourceType_Count
+    };
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    /**
     * @brief ResourceHeader meta info about Resource
     */
     struct ResourceHeader
     {
-        ResourceHeader() noexcept;
-        virtual ~ResourceHeader() = default;
+        static const u32 k_nameSize = 64;
 
-        virtual u32 operator>>(stream::Stream* stream);
-        virtual u32 operator<<(const stream::Stream* stream);
+        static bool validateResourceHeader(const ResourceHeader* header);
+        static void fillResourceHeader(ResourceHeader* header, const std::string& name, u32 size, u32 offset, u32 flags = 0);
+
+        ResourceHeader() noexcept = default;
+        explicit ResourceHeader(ResourceType type) noexcept;
+        ResourceHeader(const ResourceHeader& other) noexcept;
+        ~ResourceHeader() = default;
+
+        ResourceType getResourceType() const;
+
+        void setName(const std::string& name);
+
+        u32 operator>>(stream::Stream* stream);
+        u32 operator<<(const stream::Stream* stream);
+
+    private:
+
+        u16 _head;
+        ResourceType _type;
+        u16 _version;
+        u16 _extraFlags;
+
+    public:
 
         u32 _size;
         u32 _offset;
-        u32 _version;
-        u32 _extraFlags;
-#if DEBUG
-        std::string _name;
-#endif
+
+        u64 _timestamp;
+        u64 _unId;
+        u8 _name[k_nameSize];
     };
+
+    inline ResourceType ResourceHeader::getResourceType() const
+    {
+        return _type;
+    }
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
     * @brief Base Interface for Resource class
     */
-    class Resource : public utils::Observable
+    class Resource : public utils::Observable, public utils::ResourceID<Resource, u64>
     {
     public:
 
-        Resource() noexcept;
-        explicit Resource(const ResourceHeader* header) noexcept;
-        virtual ~Resource();
+        Resource() noexcept = default;
+        virtual ~Resource() = default;
 
-        virtual void init(stream::Stream* stream) = 0;
-        virtual bool load() = 0;
+        virtual bool load(const stream::Stream* stream, u32 offset = 0) = 0;
+        virtual bool save(stream::Stream* stream, u32 offset = 0) const = 0;
 
     protected:
 
         Resource(const Resource&) = delete;
         Resource& operator=(const Resource&) = delete;
 
-        const ResourceHeader* m_header;
-        stream::Stream* m_stream;
-        
-        bool m_loaded;
+        bool m_loaded = false;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
