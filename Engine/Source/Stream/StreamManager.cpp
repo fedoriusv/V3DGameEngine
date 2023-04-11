@@ -1,22 +1,14 @@
 #include "StreamManager.h"
 #include "MemoryStream.h"
-#include "Utils/MemoryPool.h"
 
 namespace v3d
 {
 namespace stream
 {
 
-utils::MemoryPool* StreamManager::s_memoryPool = nullptr;
-
 MemoryStream* StreamManager::createMemoryStream(const void* data, const u32 size)
 {
-    if (!s_memoryPool)
-    {
-        s_memoryPool = new utils::MemoryPool(64 * 1024, utils::MemoryPool::getDefaultMemoryAllocator());
-    }
-
-    return new MemoryStream(data, size, s_memoryPool);
+    return V3D_NEW(MemoryStream, memory::MemoryLabel::MemorySystem)(data, size);
 }
 
 const MemoryStream* StreamManager::createMemoryStream(const std::string& string)
@@ -27,9 +19,10 @@ const MemoryStream* StreamManager::createMemoryStream(const std::string& string)
     return memory;
 }
 
-void StreamManager::clearPools()
+void StreamManager::destroyStream(const Stream* stream)
 {
-    s_memoryPool->clear();
+    ASSERT(stream, "nullptr");
+    V3D_DELETE(stream, memory::MemoryLabel::MemorySystem);
 }
 
 } //namespace stream

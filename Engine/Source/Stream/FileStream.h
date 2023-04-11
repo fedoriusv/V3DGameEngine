@@ -4,16 +4,12 @@
 
 namespace v3d
 {
-namespace utils
-{
-    class MemoryPool;
-} //namespace utils
 namespace stream
 {
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
-    * FileStream class
+    * @brief FileStream class
     */
     class FileStream final : public Stream
     {
@@ -36,12 +32,9 @@ namespace stream
         static bool isDirectory(const std::string& path);
         static bool remove(const std::string& file);
 
-        FileStream() noexcept = delete;
-        FileStream(const FileStream&) = delete;
-
-        FileStream(utils::MemoryPool* allocator = nullptr) noexcept;
-        explicit FileStream(const std::string& file, OpenMode openMode = e_in, utils::MemoryPool* allocator = nullptr) noexcept;
-        ~FileStream();
+        FileStream() noexcept;
+        explicit FileStream(const std::string& file, OpenMode openMode = e_in) noexcept;
+        ~FileStream() noexcept;
 
         bool open(const std::string& file, OpenMode openMode = e_in);
         void close() override;
@@ -92,6 +85,9 @@ namespace stream
 
     protected:
 
+        FileStream(const FileStream&) = delete;
+        FileStream& operator==(const FileStream&) = delete;
+
         FILE*           m_file;
         std::string     m_name;
 
@@ -100,8 +96,6 @@ namespace stream
 
         mutable u8*     m_memory;
         mutable bool    m_mapped;
-
-        utils::MemoryPool* const m_allocator;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

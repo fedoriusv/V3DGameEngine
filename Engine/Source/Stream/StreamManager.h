@@ -5,10 +5,6 @@
 
 namespace v3d
 {
-namespace utils
-{
-    class MemoryPool;
-} //namespace utils
 namespace stream
 {
     /////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -20,14 +16,10 @@ namespace stream
     {
     public:
 
-        static MemoryStream* createMemoryStream(const void* data = nullptr, const u32 size = 0);
-        static const MemoryStream* createMemoryStream(const std::string& string);
+        static [[nodiscard]] MemoryStream* createMemoryStream(const void* data = nullptr, const u32 size = 0);
+        static [[nodiscard]] const MemoryStream* createMemoryStream(const std::string& string);
 
-        static void clearPools();
-
-    private:
-
-        static utils::MemoryPool* s_memoryPool;
+        static void destroyStream(const Stream* stream);
     };
 
 

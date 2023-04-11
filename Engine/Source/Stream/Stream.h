@@ -9,7 +9,7 @@ namespace stream
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
-    * Base Interface for Stream class
+    *@brief Base Interface for Stream class
     */
     class Stream
     {

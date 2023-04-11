@@ -1,6 +1,6 @@
 #include "FileStream.h"
 #include "Utils/Logger.h"
-#include "Utils/MemoryPool.h"
+//#include "Utils/MemoryPool.h"
 
 #include <filesystem>
 
@@ -9,27 +9,21 @@ namespace v3d
 namespace stream
 {
 
-using namespace core;
-
-FileStream::FileStream(utils::MemoryPool* allocator) noexcept
+FileStream::FileStream() noexcept
     : m_file(nullptr)
     , m_size(0)
     , m_open(false)
     , m_memory(nullptr)
     , m_mapped(false)
-
-    , m_allocator(allocator)
 {
 }
 
-FileStream::FileStream(const std::string& file, OpenMode openMode, utils::MemoryPool* allocator) noexcept
+FileStream::FileStream(const std::string& file, OpenMode openMode) noexcept
     : m_file(nullptr)
     , m_size(0)
     , m_open(false)
     , m_memory(nullptr)
     , m_mapped(false)
-
-    , m_allocator(allocator)
 {
     if (!open(file, openMode))
     {
@@ -38,7 +32,7 @@ FileStream::FileStream(const std::string& file, OpenMode openMode, utils::Memory
 }
 
 
-FileStream::~FileStream()
+FileStream::~FileStream() noexcept
 {
     FileStream::close();
 }
@@ -318,14 +312,7 @@ u8* FileStream::map(u32 size) const
     }
 
     ASSERT(size > 0 && FileStream::tell() + size <= FileStream::size(), "Invalid file size");
-    if (m_allocator)
-    {
-        m_memory = reinterpret_cast<u8*>(m_allocator->allocMemory(size));
-    }
-    else
-    {
-        m_memory = new u8[size];
-    }
+    m_memory = reinterpret_cast<u8*>(V3D_MALLOC(size, memory::MemoryLabel::MemoryStream));
 
     FileStream::read(m_memory, size);
     m_mapped = true;
@@ -338,15 +325,7 @@ void FileStream::unmap() const
     ASSERT(m_mapped, "Memory not mapped");
     if (m_memory)
     {
-        if (m_allocator)
-        {
-            m_allocator->freeMemory(m_memory);
-        }
-        else
-        {
-            delete[] m_memory;
-            m_memory = nullptr;
-        }
+        V3D_FREE(m_memory, memory::MemoryLabel::MemoryStream);
     }
     m_mapped = false;
 }

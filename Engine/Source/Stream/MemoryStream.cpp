@@ -1,28 +1,26 @@
 #include "MemoryStream.h"
-#include "Utils/MemoryPool.h"
+#include "Memory/MemoryPool.h"
 
 namespace v3d
 {
 namespace stream
 {
 
-MemoryStream::MemoryStream(utils::MemoryPool* allocator) noexcept
+MemoryStream::MemoryStream() noexcept
     : m_stream(nullptr)
     , m_length(0)
     , m_allocated(0)
     , m_pos(0)
     , m_mapped(false)
-    , m_allocator(allocator)
 {
 }
 
-MemoryStream::MemoryStream(const MemoryStream& stream, utils::MemoryPool* allocator) noexcept
+MemoryStream::MemoryStream(const MemoryStream& stream) noexcept
     : m_stream(nullptr)
     , m_length(stream.m_length)
     , m_allocated(stream.m_allocated)
     , m_pos(stream.m_pos)
     , m_mapped(false)
-    , m_allocator(allocator)
 {
     ASSERT(!stream.m_mapped, "data is mapped");
     if (stream.m_stream && m_allocated > 0)
@@ -32,13 +30,12 @@ MemoryStream::MemoryStream(const MemoryStream& stream, utils::MemoryPool* alloca
     }
 }
 
-MemoryStream::MemoryStream(const void* data, u32 size, utils::MemoryPool* allocator) noexcept
+MemoryStream::MemoryStream(const void* data, u32 size) noexcept
     : m_stream(nullptr)
     , m_length(size)
     , m_allocated(size)
     , m_pos(0)
     , m_mapped(false)
-    , m_allocator(allocator)
 {
     if (m_length > 0)
     {
@@ -51,7 +48,7 @@ MemoryStream::MemoryStream(const void* data, u32 size, utils::MemoryPool* alloca
     }
 }
 
-MemoryStream::~MemoryStream()
+MemoryStream::~MemoryStream() noexcept
 {
     MemoryStream::clear();
 }
@@ -578,15 +575,7 @@ void MemoryStream::clear()
 {
     if (m_stream)
     {
-        if (m_allocator)
-        {
-            m_allocator->freeMemory(m_stream);
-        }
-        else
-        {
-            delete[] m_stream;
-        }
-        m_stream = nullptr;
+        V3D_FREE(m_stream, memory::MemoryLabel::MemoryStream);
     }
 
     m_length = 0;
@@ -602,14 +591,7 @@ u8* MemoryStream::allocate(u32 size)
     m_length = size;
     m_pos = 0;
 
-    if (m_allocator)
-    {
-        return reinterpret_cast<u8*>(m_allocator->allocMemory(m_allocated));
-    }
-    else
-    {
-        return new u8[m_allocated];
-    }
+    return reinterpret_cast<u8*>(V3D_MALLOC(m_allocated, memory::MemoryLabel::MemoryStream));
 }
 
 bool MemoryStream::checkSize(u32 size)
@@ -624,27 +606,12 @@ bool MemoryStream::checkSize(u32 size)
     {
         u8* oldStream = m_stream;
         s32 newAllocated = 2 * (m_pos + size);
-        if (m_allocator)
-        {
-            m_stream = reinterpret_cast<u8*>(m_allocator->allocMemory(newAllocated));
-        }
-        else
-        {
-            m_stream = new u8[newAllocated];
-        }
+        m_stream = reinterpret_cast<u8*>(V3D_MALLOC(newAllocated, memory::MemoryLabel::MemoryStream));
 
         memcpy(m_stream, oldStream, m_allocated);
         m_allocated = newAllocated;
 
-        if (m_allocator)
-        {
-            m_allocator->freeMemory(oldStream);
-        }
-        else
-        {
-            delete[] oldStream;
-        }
-        oldStream = nullptr;
+        V3D_FREE(oldStream, memory::MemoryLabel::MemoryStream);
     }
 
     return true;

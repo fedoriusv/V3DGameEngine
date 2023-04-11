@@ -1,31 +1,24 @@
 #pragma once
 
 #include "Stream.h"
-#include "Utils/MemoryPool.h"
 
 namespace v3d
 {
-namespace utils
-{
-    class MemoryPool;
-} //namespace utils
 namespace stream
 {
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
-    * MemoryStream class
+    *@brief MemoryStream class
     */
     class MemoryStream final : public Stream
     {
     public:
 
-        MemoryStream() = delete;
-
-        explicit MemoryStream(utils::MemoryPool* allocator = nullptr) noexcept;
-        explicit MemoryStream(const MemoryStream& stream, utils::MemoryPool* allocator = nullptr) noexcept;
-        explicit MemoryStream(const void* data, u32 size, utils::MemoryPool* allocator = nullptr) noexcept;
-        ~MemoryStream();
+        MemoryStream() noexcept;
+        explicit MemoryStream(const MemoryStream& stream) noexcept;
+        explicit MemoryStream(const void* data, u32 size) noexcept;
+        ~MemoryStream() noexcept;
 
         void close() override;
 
@@ -84,8 +77,6 @@ namespace stream
 
         void clear();
         u8* allocate(u32 size);
-
-        utils::MemoryPool *const m_allocator;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
