@@ -9,31 +9,31 @@ namespace memory
 {
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    ///**
-    //* @brief MemoryManagment
-    //*/
-    //class MemoryManagment
-    //{
-    //public:
+    /**
+    * @brief MemoryManagment
+    */
+    class MemoryManagment
+    {
+    public:
 
-    //    class Memory
-    //    {
-    //    public:
+        class Allocation
+        {
+        public:
 
-    //        Memory() noexcept = default;
-    //        virtual ~Memory() = default;
+            Allocation() noexcept = default;
+            virtual ~Allocation() = default;
 
-    //        virtual void* alloc(u32 size) = 0;
-    //        virtual void dealloc(void* ptr) = 0;
-    //    };
+            virtual void* alloc(u32 size, u32 align) = 0;
+            virtual void dealloc(void* ptr, u32 align) = 0;
+        };
 
-    //    static void* allocate(u32 size, Tag tag);
-    //    static void deallocate(void* ptr, Tag tag);
+        static void* allocate(u32 size, MemoryLabel label, u32 align);
+        static void deallocate(void* ptr, MemoryLabel label, u32 align);
 
-    //private:
+    private:
 
-    //    static std::array<Memory*, toEnumType(Tag::MemoryCount)> s_memoryPools;
-    //};
+        static std::array<Allocation*, toEnumType(MemoryLabel::MemoryCount)> s_memoryAllocations;
+    };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
