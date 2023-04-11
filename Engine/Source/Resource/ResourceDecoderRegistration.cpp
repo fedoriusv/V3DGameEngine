@@ -29,13 +29,13 @@ bool ResourceDecoderRegistration::registerDecoder(const ResourceDecoder* decoder
     return false;
 }
 
-bool ResourceDecoderRegistration::unregisterDecoder(const ResourceDecoder* decoder)
+bool ResourceDecoderRegistration::unregisterDecoder(ResourceDecoder* decoder)
 {
-    auto it = std::find(m_decoders.cbegin(), m_decoders.cend(), decoder);
+    auto it = std::find(m_decoders.begin(), m_decoders.end(), decoder);
     if (it != m_decoders.end())
     {
-        m_decoders.erase(std::remove(m_decoders.begin(), m_decoders.end(), *it), m_decoders.end());
-        delete* it;
+        m_decoders.erase(std::remove(m_decoders.begin(), m_decoders.end(), decoder), m_decoders.end());
+        V3D_DELETE(decoder, memory::MemoryLabel::MemorySystem);
 
         return true;
     }
@@ -45,9 +45,9 @@ bool ResourceDecoderRegistration::unregisterDecoder(const ResourceDecoder* decod
 
 void ResourceDecoderRegistration::unregisterAllDecoders()
 {
-    for (auto decoder : m_decoders)
+    for (auto& decoder : m_decoders)
     {
-        delete decoder;
+        V3D_DELETE(decoder, memory::MemoryLabel::MemorySystem);
     }
     m_decoders.clear();
 }
@@ -56,7 +56,6 @@ const std::vector<const ResourceDecoder*>& ResourceDecoderRegistration::getDecod
 {
     return m_decoders;
 }
-
 
 const ResourceDecoder* ResourceDecoderRegistration::findDecoder(const std::string& extension)
 {

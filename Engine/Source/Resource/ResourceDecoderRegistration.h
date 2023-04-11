@@ -6,8 +6,6 @@ namespace v3d
 {
 namespace resource
 {
-    /////////////////////////////////////////////////////////////////////////////////////////////////////
-
     class ResourceDecoder;
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -31,10 +29,10 @@ namespace resource
 
         /**
         * @brief unregisterDecoder function
-        * @param const ResourceDecoder* decoder [required]
+        * @param ResourceDecoder* decoder [required]
         * @return true if decoder removed successfully
         */
-        bool unregisterDecoder(const ResourceDecoder* decoder);
+        bool unregisterDecoder(ResourceDecoder* decoder);
 
         /**
         * @brief unregisterAllDecoders function
