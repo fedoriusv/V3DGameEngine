@@ -1,5 +1,6 @@
 #include "ImageStbDecoder.h"
 #include "Stream/StreamManager.h"
+#include "ImageFileLoader.h"
 
 #include "Utils/Logger.h"
 #include "Utils/Timer.h"
@@ -21,16 +22,20 @@
 #   include <ThirdParty/stb/stb_image.h>
 #   include <ThirdParty/stb/stb_image_resize.h>
 
+#define LOG_LOADIMG_TIME (DEBUG || 1)
+
 namespace v3d
 {
 namespace resource
 {
 
-ImageStbDecoder::ImageStbDecoder(std::vector<std::string> supportedExtensions, const resource::ImageHeader& header, bool readHeader, bool generateMipmap) noexcept
+ImageStbDecoder::ImageStbDecoder(std::vector<std::string> supportedExtensions, const resource::BitmapHeader& header, u32/*ImageFileLoader::ImageLoaderFlags*/ flags) noexcept
     : ResourceDecoder(supportedExtensions)
     , m_header(header)
-    , m_readHeader(readHeader)
-    , m_generateMipmaps(generateMipmap)
+    , m_readHeader(flags & ImageFileLoader::ImageLoaderFlag::ReadHeader)
+
+    , m_generateMipmaps(flags& ImageFileLoader::ImageLoaderFlag::GenerateMipmaps)
+    , m_flipY(flags& ImageFileLoader::ImageLoaderFlag::FlipY)
 {
 }
 
@@ -54,21 +59,18 @@ Resource* ImageStbDecoder::decode(const stream::Stream* stream, const std::strin
         renderer::Format format = renderer::Format::Format_Undefined;
         stream::Stream* dataStream = nullptr;
 
-        if (m_readHeader)
+#if LOG_LOADIMG_TIME
+        utils::Timer timer;
+        timer.start();
+#endif //LOG_LOADIMG_TIME
+
+        if (m_flipY)
         {
-            if (m_header._flipY)
-            {
-                stbi_set_flip_vertically_on_load(true);
-            }
+            stbi_set_flip_vertically_on_load(true);
 
             reqestedComponentCount = 4;
             //TODO:
         }
-
-#if DEBUG
-        utils::Timer timer;
-        timer.start();
-#endif
 
         void* stbData = nullptr;
         bool is16BitPerChannel = stbi_is_16_bit_from_memory(source, stream->size());
@@ -213,36 +215,42 @@ Resource* ImageStbDecoder::decode(const stream::Stream* stream, const std::strin
                 }
             }
         }
+        ASSERT(dataStream, "nullptr");
 
-#if DEBUG
+        u32 imageStreamSize = dataStream->size() + sizeof(u32);
+        stream::Stream* imageStream = stream::StreamManager::createMemoryStream(nullptr, imageStreamSize);
+        imageStream->write<u32>(imageStreamSize);
+        imageStream->write(dataStream->map(dataStream->size()), dataStream->size());
+        dataStream->unmap();
+        stream::StreamManager::destroyStream(dataStream);
+
+        BitmapHeader newHeader(m_header);
+        BitmapHeader::fillResourceHeader(&newHeader, name, imageStreamSize, 0);
+        newHeader._dimension.m_width = static_cast<u32>(sizeX);
+        newHeader._dimension.m_height = static_cast<u32>(sizeY);
+        newHeader._dimension.m_depth = 1;
+        newHeader._layers = layers;
+        newHeader._mips = mipmaps;
+        newHeader._format = format;
+        newHeader._bitmapFlags |= m_flipY ? BitmapHeader::BitmapHeaderFlag::BitmapFlippedByY : 0;
+
+        Resource* image = V3D_NEW(Bitmap, memory::MemoryLabel::MemoryResource)(V3D_NEW(BitmapHeader, memory::MemoryLabel::MemoryResource)(newHeader));
+        if (!image->load(imageStream))
+        {
+            LOG_ERROR("ImageGLiDecoder::decode: load is falied, %s", name.c_str());
+
+            V3D_DELETE(image, memory::MemoryLabel::MemoryResource);
+            image = nullptr;
+        }
+
+        stream::StreamManager::destroyStream(imageStream);
+        stbi_image_free(stbData);
+
+#if LOG_LOADIMG_TIME
         timer.stop();
         u64 time = timer.getTime<utils::Timer::Duration_MilliSeconds>();
-        LOG_DEBUG("ImageStbDecoder::decode , image %s, is loaded. Time %.4f sec", name.c_str(), static_cast<f32>(time) / 1000.0f);
-#endif
-
-        ASSERT(dataStream, "nullptr");
-        resource::ImageHeader* newHeader = new resource::ImageHeader(m_header);
-        newHeader->_dimension.m_width = static_cast<u32>(sizeX);
-        newHeader->_dimension.m_height = static_cast<u32>(sizeY);
-        newHeader->_dimension.m_depth = 1;
-        newHeader->_layers = layers;
-        newHeader->_mips = mipmaps;
-        newHeader->_format = format;
-        newHeader->_size = static_cast<u64>(dataStream->size());
-        newHeader->_flipY = false;
-#if DEBUG
-        newHeader->_name = name;
-#endif
-
-        stream::Stream* imageStream = stream::StreamManager::createMemoryStream(dataStream->map(dataStream->size()), dataStream->size());
-
-        resource::Image* image = new resource::Image(newHeader);
-        image->init(imageStream);
-
-        dataStream->unmap();
-        delete dataStream;
-
-        stbi_image_free(stbData);
+        LOG_DEBUG("ImageStbDecoder::decode, the image %s, is loaded. Time %.4f sec", name.c_str(), static_cast<f32>(time) / 1000.0f);
+#endif //LOG_LOADIMG_TIME
 
         return image;
     }

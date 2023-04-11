@@ -7,7 +7,7 @@ namespace v3d
 {
 namespace resource
 {
-    class Image;
+    class Bitmap;
 } //namespace scene
 
 namespace resource
@@ -16,10 +16,11 @@ namespace resource
 
     /**
     * @brief ImageFileLoader class. Loader from file
+    * 
     * @see ImageStbDecoder
     * @see ImageGLiDecoder
     */
-    class ImageFileLoader : public ResourceLoader<resource::Image*>, public ResourceDecoderRegistration
+    class ImageFileLoader : public ResourceLoader<resource::Bitmap*>, public ResourceDecoderRegistration
     {
     public:
 
@@ -28,14 +29,15 @@ namespace resource
         */
         enum ImageLoaderFlag : u32
         {
-            ImageLoaderFlag_FlipY = 1 << 0,
-            ImageLoaderFlag_GenerateMipmaps = 1 << 1,
+            ReadHeader = 1 << 0,
+            FlipY = 1 << 1,
+            GenerateMipmaps = 1 << 2,
         };
         typedef u32 ImageLoaderFlags;
 
         ImageFileLoader() = delete;
         ImageFileLoader(const ImageFileLoader&) = delete;
-        ~ImageFileLoader() = default;
+        ImageFileLoader& operator=(const ImageFileLoader&) = delete;
 
         /**
         * @brief ImageFileLoader constructor
@@ -43,6 +45,7 @@ namespace resource
         * @see ImageLoaderFlag
         */
         explicit ImageFileLoader(ImageLoaderFlags flags) noexcept;
+        ~ImageFileLoader() = default;
 
         /**
         * @brief Load image resource by name from file
@@ -50,7 +53,7 @@ namespace resource
         * @param const std::string& alias [optional]
         * @return Image pointer
         */
-        [[nodiscard]] resource::Image* load(const std::string& name, const std::string& alias = "") override;
+        [[nodiscard]] resource::Bitmap* load(const std::string& name, const std::string& alias = "") override;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

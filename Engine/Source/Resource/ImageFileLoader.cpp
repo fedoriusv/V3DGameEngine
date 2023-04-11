@@ -1,9 +1,9 @@
 #include "ImageFileLoader.h"
 
 #include "Renderer/Core/Context.h"
-#include "Stream/FileLoader.h"
 #include "Resource/ResourceLoaderManager.h"
-#include "Resource/Image.h"
+#include "Stream/FileLoader.h"
+
 #if USE_STB
 #   include "ImageStbDecoder.h"
 #endif //USE_STB
@@ -21,19 +21,15 @@ ImageFileLoader::ImageFileLoader(ImageLoaderFlags flags) noexcept
 {
 #if USE_STB
     {
-        resource::ImageHeader header;
-        header._flipY = (flags & ImageLoaderFlag::ImageLoaderFlag_FlipY);
-        bool generateMipmaps = (flags & ImageLoaderFlag::ImageLoaderFlag_GenerateMipmaps);
-
-        ResourceDecoderRegistration::registerDecoder(new ImageStbDecoder({ "jpg", "png", "bmp", "tga" }, header, !!flags, generateMipmaps));
+        resource::BitmapHeader header;
+        ResourceDecoderRegistration::registerDecoder(V3D_NEW(ImageStbDecoder, memory::MemoryLabel::MemorySystem)({ "jpg", "png", "bmp", "tga" }, header, flags));
     }
 #endif //USE_STB
 
 #if USE_GLI
     {
-        resource::ImageHeader header;
-        header._flipY = (flags & ImageLoaderFlag::ImageLoaderFlag_FlipY);
-        ResourceDecoderRegistration::registerDecoder(new ImageGLiDecoder({ "ktx", "kmg", "dds" }, header, !!flags, flags));
+        resource::BitmapHeader header;
+        ResourceDecoderRegistration::registerDecoder(V3D_NEW(ImageGLiDecoder, memory::MemoryLabel::MemorySystem)({ "ktx", "kmg", "dds" }, header, flags));
     }
 #endif //USE_GLI
 
@@ -44,7 +40,7 @@ ImageFileLoader::ImageFileLoader(ImageLoaderFlags flags) noexcept
     ResourceLoader::registerPathes(ResourceLoaderManager::getInstance()->getPathes());
 }
 
-resource::Image* ImageFileLoader::load(const std::string& name, const std::string& alias)
+resource::Bitmap* ImageFileLoader::load(const std::string& name, const std::string& alias)
 {
     for (std::string& root : m_roots)
     {
@@ -66,9 +62,10 @@ resource::Image* ImageFileLoader::load(const std::string& name, const std::strin
             }
 
             Resource* resource = decoder->decode(file, name);
-            file->close();
 
-            delete file;
+            file->close();
+            V3D_DELETE(file, memory::MemoryLabel::MemorySystem);
+            file = nullptr;
 
             if (!resource)
             {
@@ -76,14 +73,8 @@ resource::Image* ImageFileLoader::load(const std::string& name, const std::strin
                 return nullptr;
             }
 
-            if (!resource->load())
-            {
-                LOG_ERROR("ImageFileLoader: Streaming error read file [%s]", name.c_str());
-                return nullptr;
-            }
-
             LOG_INFO("ImageFileLoader::load Image [%s] is loaded", name.c_str());
-            return static_cast<resource::Image*>(resource);
+            return static_cast<resource::Bitmap*>(resource);
         }
     }
 

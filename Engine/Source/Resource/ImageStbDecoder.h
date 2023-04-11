@@ -1,7 +1,7 @@
 #pragma once
 
 #include "ResourceDecoder.h"
-#include "Resource/Image.h"
+#include "Resource/Bitmap.h"
 
 #ifdef USE_STB
 namespace v3d
@@ -15,12 +15,13 @@ namespace resource
     /**
     * @brief ImageStbDecoder decoder.
     * Support formats: "jpeg", "png", "bmp", "tga"
+    * @see: https://github.com/nothings/stb.git
     */
     class ImageStbDecoder final : public ResourceDecoder
     {
     public:
 
-        explicit ImageStbDecoder(std::vector<std::string> supportedExtensions, const resource::ImageHeader& header, bool readHeader, bool generateMipmaps = false) noexcept;
+        explicit ImageStbDecoder(std::vector<std::string> supportedExtensions, const resource::BitmapHeader& header, u32/*ImageFileLoader::ImageLoaderFlags*/ flags = 0) noexcept;
         ~ImageStbDecoder();
 
         [[nodiscard]] Resource* decode(const stream::Stream* stream, const std::string& name = "") const override;
@@ -29,10 +30,11 @@ namespace resource
 
         stream::Stream* generateMipMaps(void* baseMipmap, u32 width, u32 height, u32 componentsCount, u32 componentSize, u32 componentType, u32& mipmapsCount) const;
 
-        const resource::ImageHeader m_header;
+        const resource::BitmapHeader m_header;
         bool m_readHeader;
 
         bool m_generateMipmaps;
+        bool m_flipY;
     };
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////

@@ -1,8 +1,8 @@
 #include "ImageGLiDecoder.h"
 
 #include "Stream/StreamManager.h"
-#include "Resource/Image.h"
-
+#include "Resource/Bitmap.h"
+#include "ImageFileLoader.h"
 #include "Utils/Logger.h"
 #include "Utils/Timer.h"
 
@@ -10,17 +10,20 @@
 #   include "ThirdParty/gli/gli/gli.hpp" //Make sure glm is used from own folder
 #   include "ThirdParty/gli/gli/generate_mipmaps.hpp"
 
+#define LOG_LOADIMG_TIME (DEBUG || 1)
+
 namespace v3d
 {
 namespace resource
 {
 
-ImageGLiDecoder::ImageGLiDecoder(std::vector<std::string> supportedExtensions, const resource::ImageHeader& header, bool readHeader, u32 flags) noexcept
+ImageGLiDecoder::ImageGLiDecoder(std::vector<std::string> supportedExtensions, const resource::BitmapHeader& header, u32/*ImageFileLoader::ImageLoaderFlags*/ flags) noexcept
     : ResourceDecoder(supportedExtensions)
     , m_header(header)
-    , m_readHeader(readHeader)
+    , m_readHeader(flags & ImageFileLoader::ImageLoaderFlag::ReadHeader)
 
-    , m_generateMipmaps(flags &/* ImageLoaderFlag::ImageLoaderFlag_GenerateMipmaps*/0x02)
+    , m_generateMipmaps(flags & ImageFileLoader::ImageLoaderFlag::GenerateMipmaps)
+    , m_flipY(flags & ImageFileLoader::ImageLoaderFlag::FlipY)
 {
 }
 
@@ -35,10 +38,11 @@ Resource* ImageGLiDecoder::decode(const stream::Stream* stream, const std::strin
         stream->seekBeg(0);
         u8* source = stream->map(stream->size());
 
-#if DEBUG
+#if LOG_LOADIMG_TIME
         utils::Timer timer;
         timer.start();
-#endif
+#endif //LOG_LOADIMG_TIME
+
         gli::texture texture = gli::load(reinterpret_cast<c8*>(source), stream->size());
         stream->unmap();
 
@@ -49,16 +53,25 @@ Resource* ImageGLiDecoder::decode(const stream::Stream* stream, const std::strin
             return nullptr;
         }
 
-        bool flipY = false;
-        if (m_readHeader)
-        {
-            flipY = m_header._flipY;
-        }
-
-        if (flipY)
+        if (m_flipY)
         {
             texture = gli::flip(texture);
             ASSERT(!texture.empty(), "fail");
+        }
+
+        if (m_generateMipmaps)
+        {
+            if (gli::is_compressed(texture.format()))
+            {
+                LOG_WARNING("ImageGLiDecoder::decode. Can't generate mipmaps, image has compressed format");
+                ASSERT(false, "error");
+            }
+            else
+            {
+                //TODO: check
+                //texture = gli::generate_mipmaps(texture, gli::filter::FILTER_LINEAR);
+                NOT_IMPL;
+            }
         }
 
         auto covertFormat = [](gli::format format) -> renderer::Format
@@ -205,43 +218,37 @@ Resource* ImageGLiDecoder::decode(const stream::Stream* stream, const std::strin
             return renderer::Format::Format_Undefined;
         };
 
-        if (m_generateMipmaps)
-        {
-            if (gli::is_compressed(texture.format()))
-            {
-                LOG_WARNING("ImageGLiDecoder::decode. Can't generate mipmaps, image has compressed format");
-                ASSERT(false, "error");
-            }
-            else
-            {
-                //TODO: check
-                //texture = gli::generate_mipmaps(texture, gli::filter::FILTER_LINEAR);
-                NOT_IMPL;
-            }
-        }
+        u32 imageStreamSize = static_cast<u32>(texture.size()) + sizeof(u32);
+        stream::Stream* imageStream = stream::StreamManager::createMemoryStream(nullptr, imageStreamSize);
+        ASSERT(imageStream, "nullptr");
+        imageStream->write<u32>(static_cast<u32>(texture.size()));
+        imageStream->write(texture.data(), static_cast<u32>(texture.size()));
 
-#if DEBUG
+        BitmapHeader newHeader(m_header);
+        BitmapHeader::fillResourceHeader(&newHeader, name, imageStreamSize, 0);
+        newHeader._dimension.m_width = static_cast<u32>(texture.extent().x);
+        newHeader._dimension.m_height = static_cast<u32>(texture.extent().y);
+        newHeader._dimension.m_depth = static_cast<u32>(texture.extent().z);
+        newHeader._format = covertFormat(texture.format());
+        newHeader._layers = static_cast<u32>(texture.layers());
+        newHeader._mips = static_cast<u32>(texture.levels());
+        newHeader._bitmapFlags |= m_flipY ? BitmapHeader::BitmapHeaderFlag::BitmapFlippedByY : 0;
+
+        resource::Resource* image = V3D_NEW(Bitmap, memory::MemoryLabel::MemoryResource)(V3D_NEW(BitmapHeader, memory::MemoryLabel::MemoryResource)(newHeader));
+        if (!image->load(imageStream))
+        {
+            LOG_ERROR("ImageGLiDecoder::decode: load is falied, %s", name.c_str());
+
+            V3D_DELETE(image, memory::MemoryLabel::MemoryResource);
+            image = nullptr;
+        }
+        stream::StreamManager::destroyStream(imageStream);
+
+#if LOG_LOADIMG_TIME
         timer.stop();
         u64 time = timer.getTime<utils::Timer::Duration_MilliSeconds>();
-        LOG_DEBUG("ImageGLiDecoder::decode , image %s, is loaded. Time %.4f sec", name.c_str(), static_cast<f32>(time) / 1000.0f);
-#endif
-
-        resource::ImageHeader* newHeader = new resource::ImageHeader(m_header);
-        newHeader->_dimension.m_width = static_cast<u32>(texture.extent().x);
-        newHeader->_dimension.m_height = static_cast<u32>(texture.extent().y);
-        newHeader->_dimension.m_depth = static_cast<u32>(texture.extent().z);;
-        newHeader->_layers = static_cast<u32>(texture.layers());
-        newHeader->_mips = static_cast<u32>(texture.levels());
-        newHeader->_format = covertFormat(texture.format());
-        newHeader->_size = static_cast<u32>(texture.size());
-        newHeader->_flipY = flipY;
-#if DEBUG
-        newHeader->_name = name;
-#endif
-        stream::Stream* imageStream = stream::StreamManager::createMemoryStream(texture.data(), static_cast<u32>(texture.size()));
-
-        resource::Image* image = new resource::Image(newHeader);
-        image->init(imageStream);
+        LOG_DEBUG("ImageGLiDecoder::decode:, the image %s, is loaded. Time %.4f sec", name.c_str(), static_cast<f32>(time) / 1000.0f);
+#endif //LOG_LOADIMG_TIME
 
         return image;
     }
