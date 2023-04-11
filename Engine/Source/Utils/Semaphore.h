@@ -8,22 +8,22 @@ namespace utils
 {
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-class Semaphore
-{
-public:
-    explicit Semaphore(bool signaled = false) noexcept;
+    class [[deprecated("Use std::semaphore instead")]] Semaphore
+    {
+    public:
+        explicit Semaphore(bool signaled = false) noexcept;
 
-    void notify();
-    void wait();
+        void notify();
+        void wait();
 
-    void reset();
+        void reset();
 
-private:
+    private:
 
-    std::mutex              m_mutex;
-    std::condition_variable m_cv;
-    bool                    m_signaled;
-};
+        std::mutex              m_mutex;
+        std::condition_variable m_cv;
+        bool                    m_signaled;
+    };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
