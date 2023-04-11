@@ -19,11 +19,6 @@ namespace dx3d
     */
     struct D3DDeviceCaps : DeviceCaps, utils::Singleton<D3DDeviceCaps>
     {
-        D3DDeviceCaps() = default;
-
-        D3DDeviceCaps(const D3DDeviceCaps&) = delete;
-        D3DDeviceCaps& operator=(const D3DDeviceCaps&) = delete;
-
         D3D12_FEATURE_DATA_ROOT_SIGNATURE rootSignatureVersion = {};
 
         D3D12_FEATURE_DATA_D3D12_OPTIONS featureOptions = {};
@@ -43,7 +38,13 @@ namespace dx3d
 
     private:
 
+        D3DDeviceCaps() = default;
+
+        D3DDeviceCaps(const D3DDeviceCaps&) = delete;
+        D3DDeviceCaps& operator=(const D3DDeviceCaps&) = delete;
+
         friend class D3DGraphicContext;
+        friend utils::Singleton<D3DDeviceCaps>;
 
         void initialize(IDXGIAdapter3* adapter, ID3D12Device* device);
     };

@@ -73,10 +73,10 @@ namespace renderer
             return m_imageFormatSupport[format][type];
         }
 
+    protected:
+
         DeviceCaps() = default;
         virtual ~DeviceCaps() = default;
-
-    protected:
 
         ImageFormatSupport m_imageFormatSupport[Format::Format_Count][TilingType::TilingType_Count] = {};
     };

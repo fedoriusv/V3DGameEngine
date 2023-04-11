@@ -19,12 +19,6 @@ namespace vk
     */
     struct VulkanDeviceCaps : DeviceCaps, utils::Singleton<VulkanDeviceCaps>
     {
-        VulkanDeviceCaps() = default;
-
-        VulkanDeviceCaps(const VulkanDeviceCaps&) = delete;
-        VulkanDeviceCaps& operator=(const VulkanDeviceCaps&) = delete;
-
-
         bool individuallyResetForCommandBuffers = false;
 
         //coherent memmory
@@ -84,7 +78,13 @@ namespace vk
 
     private:
 
+        VulkanDeviceCaps() = default;
+
+        VulkanDeviceCaps(const VulkanDeviceCaps&) = delete;
+        VulkanDeviceCaps& operator=(const VulkanDeviceCaps&) = delete;
+
         friend class VulkanContext;
+        friend  utils::Singleton<VulkanDeviceCaps>;
 
         void fillCapabilitiesList(const struct DeviceInfo* info);
         void initialize();
@@ -103,7 +103,7 @@ namespace vk
 #ifdef VK_EXT_host_query_reset
         VkPhysicalDeviceHostQueryResetFeatures m_physicalDeviceHostQueryResetFeatures = {};
 #endif
-        static std::vector<const c8*>        s_enableExtensions;
+        static std::vector<const c8*> s_enableExtensions;
     };
 
 
