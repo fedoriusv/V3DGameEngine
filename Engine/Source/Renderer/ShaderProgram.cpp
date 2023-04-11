@@ -18,7 +18,7 @@ ShaderProgram::ShaderProgram(renderer::CommandList& cmdList, const std::vector<c
     for (auto& shader : shaders)
     {
         ASSERT(shader, "nullptr");
-        m_programInfo._shaders[toEnumType(shader->getShaderHeader()._type)] = shader;
+        m_programInfo._shaders[toEnumType(shader->getShaderType())] = shader;
     }
 
     if (ShaderProgram::getShader(ShaderType::Vertex) ||
@@ -36,7 +36,7 @@ ShaderProgram::ShaderProgram(renderer::CommandList& cmdList, const Shader* shade
     : m_cmdList(cmdList)
 {
     ASSERT(shader, "nullptr");
-    m_programInfo._shaders[toEnumType(shader->getShaderHeader()._type)] = shader;
+    m_programInfo._shaders[toEnumType(shader->getShaderType())] = shader;
 
     if (ShaderProgram::getShader(ShaderType::Vertex) || ShaderProgram::getShader(ShaderType::Compute))
     {
@@ -61,8 +61,7 @@ void ShaderProgram::composeProgramData(const std::vector<const Shader*>& shaders
         const_cast<Shader*>(shader)->registerNotify(this);
 
         m_programInfo._hash = crc32c::Extend(m_programInfo._hash, reinterpret_cast<const u8*>(&shader->m_hash), sizeof(u32));
-#if USE_STRING_ID_SHADER
-        auto& prameters = m_shaderParameters[toEnumType(shader->getShaderHeader()._type)];
+        auto& prameters = m_shaderParameters[toEnumType(shader->getShaderType())];
         u32 uniformIndex = 0;
         for (auto& buffer : shader->m_reflectionInfo._uniformBuffers)
         {
@@ -131,17 +130,14 @@ void ShaderProgram::composeProgramData(const std::vector<const Shader*>& shaders
             }
             ++storageImageIndex;
         }
-#endif //USE_STRING_ID_SHADER
     }
 }
 
 bool ShaderProgram::bindTexture(ShaderType shaderType, u32 index, TextureTarget target, const Texture* texture, s32 layer, s32 mip)
 {
-#if USE_STRING_ID_SHADER
     auto param = m_shaderParameters[toEnumType(shaderType)].find(index);
     ASSERT(param != m_shaderParameters[toEnumType(shaderType)].cend(), "bindTexture: bind index not found");
     index = param->second;
-#endif //USE_STRING_ID_SHADER
 
     ASSERT(texture, "nullptr");
     Image* image = texture->getImage();
@@ -214,11 +210,9 @@ bool ShaderProgram::bindTexture(ShaderType shaderType, u32 index, TextureTarget 
 
 bool ShaderProgram::bindSampler(ShaderType shaderType, u32 index, const SamplerState* sampler)
 {
-#if USE_STRING_ID_SHADER
     auto param = m_shaderParameters[toEnumType(shaderType)].find(index);
     ASSERT(param != m_shaderParameters[toEnumType(shaderType)].cend(), "bindSampler: bind index not found");
     index = param->second;
-#endif //USE_STRING_ID_SHADER
 
     ASSERT(sampler, "nullptr");
     Sampler::SamplerInfo samplerInfo;
@@ -284,11 +278,9 @@ bool ShaderProgram::bindSampler(ShaderType shaderType, u32 index, const SamplerS
 
 bool ShaderProgram::bindSampledTexture(ShaderType shaderType, u32 index, TextureTarget target, const Texture* texture, const SamplerState* sampler, s32 layer, s32 mip)
 {
-#if USE_STRING_ID_SHADER
     auto param = m_shaderParameters[toEnumType(shaderType)].find(index);
     ASSERT(param != m_shaderParameters[toEnumType(shaderType)].cend(), "bindSampledTexture: bind index not found");
     index = param->second;
-#endif //USE_STRING_ID_SHADER
 
     ASSERT(texture, "nullptr");
     Image* image = texture->getImage();
@@ -367,11 +359,9 @@ bool ShaderProgram::bindSampledTexture(ShaderType shaderType, u32 index, Texture
 
 bool ShaderProgram::bindUniformsBuffer(ShaderType shaderType, u32 index, u32 offset, u32 size, const void* data)
 {
-#if USE_STRING_ID_SHADER
     auto param = m_shaderParameters[toEnumType(shaderType)].find(index);
     ASSERT(param != m_shaderParameters[toEnumType(shaderType)].cend(), "not found");
     index = param->second;
-#endif //USE_STRING_ID_SHADER
 
     const Shader* shader = m_programInfo._shaders[toEnumType(shaderType)];
     ASSERT(shader, "fail");
@@ -456,11 +446,9 @@ bool ShaderProgram::bindUniformsBuffer(ShaderType shaderType, u32 index, u32 off
 
 bool ShaderProgram::bindUAV(ShaderType shaderType, u32 index, TextureTarget target, const Texture* texture, s32 layer, s32 mip)
 {
-#if USE_STRING_ID_SHADER
     auto param = m_shaderParameters[toEnumType(shaderType)].find(index);
     ASSERT(param != m_shaderParameters[toEnumType(shaderType)].cend(), "bindTexture: bind index not found");
     index = param->second;
-#endif //USE_STRING_ID_SHADER
 
     ASSERT(texture, "nullptr");
     Image* image = texture->getImage();

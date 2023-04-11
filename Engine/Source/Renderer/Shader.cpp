@@ -10,67 +10,128 @@ namespace renderer
 {
 
 ShaderHeader::ShaderHeader() noexcept
-    : _type(renderer::ShaderType::Undefined)
-    , _contentType(ShaderResource::Source)
+    : ResourceHeader(resource::ResourceType::ShaderResource)
+    , _shaderType(renderer::ShaderType::Undefined)
+    , _contentType(ShaderContent::Source)
     , _shaderModel(ShaderModel::Default)
     , _optLevel(0)
-    , _entryPoint("main")
 {
+    static_assert(sizeof(ShaderHeader) == sizeof(resource::ResourceHeader) + 8, "wrong size");
 }
 
 ShaderHeader::ShaderHeader(renderer::ShaderType type) noexcept
-    : _type(type)
-    , _contentType(ShaderResource::Source)
+    : ResourceHeader(resource::ResourceType::ShaderResource)
+    , _shaderType(type)
+    , _contentType(ShaderContent::Source)
     , _shaderModel(ShaderModel::Default)
     , _optLevel(0)
-    , _entryPoint("main")
 {
 }
 
-Shader::Shader(const ShaderHeader* header) noexcept
-    : Resource(header)
+ShaderHeader::ShaderHeader(const ShaderHeader& other) noexcept
+    : ResourceHeader(other)
+    , _shaderType(other._shaderType)
+    , _contentType(other._contentType)
+    , _shaderModel(other._shaderModel)
+    , _optLevel(other._optLevel)
+{
+}
+
+u32 ShaderHeader::operator>>(stream::Stream* stream)
+{
+    u32 write = 0;
+    write += ResourceHeader::operator>>(stream);
+
+    write += stream->write<renderer::ShaderType>(_shaderType);
+    write += stream->write<ShaderContent>(_contentType);
+    write += stream->write<ShaderModel>(_shaderModel);
+    write += stream->write<u16>(_optLevel);
+
+    ASSERT(sizeof(ShaderHeader) == write, "wrong size");
+    return write;
+}
+
+u32 ShaderHeader::operator<<(const stream::Stream* stream)
+{
+    u32 read = 0;
+    read += ResourceHeader::operator<<(stream);
+
+    read += stream->read<renderer::ShaderType>(_shaderType);
+    read += stream->read<ShaderContent>(_contentType);
+    read += stream->read<ShaderModel>(_shaderModel);
+    read += stream->read<u16>(_optLevel);
+
+    ASSERT(sizeof(ShaderHeader) == read, "wrong size");
+    return read;
+}
+
+Shader::Shader() noexcept
+    : m_header(nullptr)
     , m_hash(0)
     , m_size(0)
     , m_source(nullptr)
+    , m_entrypoint("")
 {
-    LOG_DEBUG("Shader::Shader constructor");
+    LOG_DEBUG("Shader::Shader constructor %xll", this);
+}
+
+Shader::Shader(ShaderHeader* header) noexcept
+    : m_header(header)
+    , m_hash(0)
+    , m_size(0)
+    , m_source(nullptr)
+    , m_entrypoint("")
+{
+    LOG_DEBUG("Shader::Shader constructor %xll", this);
 }
 
 Shader::~Shader()
 {
-    LOG_DEBUG("Shader::~Shader destructor");
+    LOG_DEBUG("Shader::~Shader destructor %xll", this);
 
     if (m_source)
     {
-        free(m_source);
-        m_source = nullptr;
+        V3D_FREE(m_source, memory::MemoryLabel::MemoryResource);
     }
     m_hash = 0;
     m_size = 0;
+
+    if (m_header)
+    {
+        V3D_DELETE(m_header, memory::MemoryLabel::MemoryResource);
+        m_header = nullptr;
+    }
 }
 
-void Shader::init(stream::Stream* stream)
-{
-    ASSERT(stream, "nullptr");
-    m_stream = stream;
-}
-
-bool Shader::load()
+bool Shader::load(const stream::Stream* stream, u32 offset)
 {
     if (m_loaded)
     {
+        LOG_WARNING("Shader::load: the shader %xll is already loaded", this);
         return true;
     }
 
-    ASSERT(m_stream, "nullptr");
-    
-    m_stream->seekBeg(0);
-    m_stream->read<u32>(m_size);
-    m_source = malloc(m_size); //TODO memory manager
-    m_stream->read(m_source, m_size);
+    ASSERT(stream, "nullptr");
+    stream->seekBeg(offset);
+
+    if (!m_header)
+    {
+        m_header = V3D_NEW(ShaderHeader, memory::MemoryLabel::MemoryResource);
+        m_header->operator<<(stream);
+    }
+    stream->seekBeg(offset + m_header->_offset);
+
+    stream->read<u32>(m_size);
+    if (m_size > 0)
+    {
+        m_source = V3D_MALLOC(m_size, memory::MemoryLabel::MemoryResource);
+        stream->read(m_source, m_size);
+    }
+    stream->read(m_entrypoint);
+    ASSERT(!m_entrypoint.empty(), "must be filled");
 
     bool needParseReflect = false;
-    m_stream->read<bool>(needParseReflect);
+    stream->read<bool>(needParseReflect);
     if (needParseReflect)
     {
         auto sortByLocation = [](const Attribute& obj0, const Attribute& obj1) -> bool
@@ -95,104 +156,104 @@ bool Shader::load()
         };
 
         u32 countInputAttachments;
-        m_stream->read<u32>(countInputAttachments);
+        stream->read<u32>(countInputAttachments);
         m_reflectionInfo._inputAttribute.resize(countInputAttachments);
         for (auto& attribute : m_reflectionInfo._inputAttribute)
         {
-            attribute << m_stream;
+            attribute << stream;
         }
         std::sort(m_reflectionInfo._inputAttribute.begin(), m_reflectionInfo._inputAttribute.end(), sortByLocation);
 
         u32 countOutputAttachments;
-        m_stream->read<u32>(countOutputAttachments);
+        stream->read<u32>(countOutputAttachments);
         m_reflectionInfo._outputAttribute.resize(countOutputAttachments);
         for (auto& attribute : m_reflectionInfo._outputAttribute)
         {
-            attribute << m_stream;
+            attribute << stream;
         }
         std::sort(m_reflectionInfo._outputAttribute.begin(), m_reflectionInfo._outputAttribute.end(), sortByLocation);
 
         u32 countUniformBuffers;
-        m_stream->read<u32>(countUniformBuffers);
+        stream->read<u32>(countUniformBuffers);
         m_reflectionInfo._uniformBuffers.resize(countUniformBuffers);
         for (auto& buffer : m_reflectionInfo._uniformBuffers)
         {
-            buffer << m_stream;
+            buffer << stream;
         }
         std::sort(m_reflectionInfo._uniformBuffers.begin(), m_reflectionInfo._uniformBuffers.end(), sortByDescriptorSet);
 
         u32 countSampledImages;
-        m_stream->read<u32>(countSampledImages);
+        stream->read<u32>(countSampledImages);
         m_reflectionInfo._sampledImages.resize(countSampledImages);
         for (auto& image : m_reflectionInfo._sampledImages)
         {
-            image << m_stream;
+            image << stream;
         }
         std::sort(m_reflectionInfo._sampledImages.begin(), m_reflectionInfo._sampledImages.end(), sortByDescriptorSet);
 
         u32 countImages;
-        m_stream->read<u32>(countImages);
+        stream->read<u32>(countImages);
         m_reflectionInfo._images.resize(countImages);
         for (auto& image : m_reflectionInfo._images)
         {
-            image << m_stream;
+            image << stream;
         }
         std::sort(m_reflectionInfo._images.begin(), m_reflectionInfo._images.end(), sortByDescriptorSet);
 
         u32 countSamplers;
-        m_stream->read<u32>(countSamplers);
+        stream->read<u32>(countSamplers);
         m_reflectionInfo._samplers.resize(countSamplers);
         for (auto& sampler : m_reflectionInfo._samplers)
         {
-            sampler << m_stream;
+            sampler << stream;
         }
         std::sort(m_reflectionInfo._samplers.begin(), m_reflectionInfo._samplers.end(), sortByDescriptorSet);
 
         u32 countStorageImage;
-        m_stream->read<u32>(countStorageImage);
+        stream->read<u32>(countStorageImage);
         m_reflectionInfo._storageImages.resize(countStorageImage);
         for (auto& storageImage : m_reflectionInfo._storageImages)
         {
-            storageImage << m_stream;
+            storageImage << stream;
         }
         std::sort(m_reflectionInfo._storageImages.begin(), m_reflectionInfo._storageImages.end(), sortByDescriptorSet);
 
         u32 countStorageBuffers;
-        m_stream->read<u32>(countStorageBuffers);
+        stream->read<u32>(countStorageBuffers);
         m_reflectionInfo._storageBuffers.resize(countStorageBuffers);
         for (auto& storageBuffer : m_reflectionInfo._storageBuffers)
         {
-            storageBuffer << m_stream;
+            storageBuffer << stream;
         }
         std::sort(m_reflectionInfo._storageBuffers.begin(), m_reflectionInfo._storageBuffers.end(), sortByDescriptorSet);
 
         u32 countPushConstant;
-        m_stream->read<u32>(countPushConstant);
+        stream->read<u32>(countPushConstant);
         m_reflectionInfo._pushConstant.resize(countPushConstant);
         for (auto& pushConstant : m_reflectionInfo._pushConstant)
         {
-            pushConstant << m_stream;
+            pushConstant << stream;
         }
     }
-    m_stream->close();
 
     m_hash = crc32c::Crc32c(reinterpret_cast<u8*>(m_source), m_size);
+    LOG_DEBUG("Shader:load: the stream has been read %d from %d", stream->tell(), stream->size());
 
     m_loaded = true;
     return true;
 }
 
-const ShaderHeader& Shader::getShaderHeader() const
+bool Shader::save(stream::Stream* stream, u32 offset) const
 {
-    return *static_cast<const ShaderHeader*>(m_header);
+    ASSERT(false, "not impl");
+    return false;
 }
+
 
 Shader::Attribute::Attribute() noexcept
     : _location(0)
     , _format(renderer::Format::Format_Undefined)
-#if USE_STRING_ID_SHADER
     , _name("")
-#endif
 {
 }
 
@@ -200,18 +261,14 @@ void Shader::Attribute::operator>>(stream::Stream* stream) const
 {
     stream->write<u32>(_location);
     stream->write<renderer::Format>(_format);
-#if USE_STRING_ID_SHADER
     stream->write(_name);
-#endif
 }
 
 void Shader::Attribute::operator<<(const stream::Stream* stream)
 {
     stream->read<u32>(_location);
     stream->read<renderer::Format>(_format);
-#if USE_STRING_ID_SHADER
     stream->read(_name);
-#endif
 }
 
 
@@ -221,9 +278,7 @@ Shader::UniformBuffer::UniformBuffer() noexcept
     , _binding(0)
     , _array(1)
     , _size(0)
-#if USE_STRING_ID_SHADER
     , _name("")
-#endif
 {
 }
 
@@ -234,9 +289,8 @@ void Shader::UniformBuffer::operator>>(stream::Stream* stream) const
     stream->write<u32>(_binding);
     stream->write<u32>(_array);
     stream->write<u32>(_size);
-#if USE_STRING_ID_SHADER
     stream->write(_name);
-#endif
+
     stream->write<u32>(static_cast<u32>(_uniforms.size()));
     for (auto& uniform : _uniforms)
     {
@@ -251,9 +305,8 @@ void Shader::UniformBuffer::operator<<(const stream::Stream* stream)
     stream->read<u32>(_binding);
     stream->read<u32>(_array);
     stream->read<u32>(_size);
-#if USE_STRING_ID_SHADER
     stream->read(_name);
-#endif
+
     u32 size;
     stream->read<u32>(size);
     _uniforms.resize(size);
@@ -270,9 +323,7 @@ Shader::UniformBuffer::Uniform::Uniform() noexcept
     , _type(renderer::DataType::DataType_None)
     , _size(0)
     , _offset(0)
-#if USE_STRING_ID_SHADER
     , _name("")
-#endif
 {
 }
 
@@ -283,9 +334,7 @@ void Shader::UniformBuffer::Uniform::operator>>(stream::Stream* stream) const
     stream->write<renderer::DataType>(_type);
     stream->write<u32>(_size);
     stream->write<u32>(_offset);
-#if USE_STRING_ID_SHADER
     stream->write(_name);
-#endif
 }
 
 void Shader::UniformBuffer::Uniform::operator<<(const stream::Stream* stream)
@@ -295,9 +344,7 @@ void Shader::UniformBuffer::Uniform::operator<<(const stream::Stream* stream)
     stream->read<renderer::DataType>(_type);
     stream->read<u32>(_size);
     stream->read<u32>(_offset);
-#if USE_STRING_ID_SHADER
     stream->read(_name);
-#endif
 }
 
 
@@ -308,9 +355,7 @@ Shader::Image::Image() noexcept
     , _array(1)
     , _depth(false)
     , _ms(false)
-#if USE_STRING_ID_SHADER
     , _name("")
-#endif
 {
 }
 
@@ -322,9 +367,7 @@ void Shader::Image::operator>>(stream::Stream* stream) const
     stream->write<u32>(_array);
     stream->write<bool>(_depth);
     stream->write<bool>(_ms);
-#if USE_STRING_ID_SHADER
     stream->write(_name);
-#endif
 }
 
 void Shader::Image::operator<<(const stream::Stream* stream)
@@ -335,18 +378,14 @@ void Shader::Image::operator<<(const stream::Stream* stream)
     stream->read<u32>(_array);
     stream->read<bool>(_depth);
     stream->read<bool>(_ms);
-#if USE_STRING_ID_SHADER
     stream->read(_name);
-#endif
 }
 
 
 Shader::Sampler::Sampler() noexcept
     : _set(0)
     , _binding(0)
-#if USE_STRING_ID_SHADER
     , _name("")
-#endif
 {
 }
 
@@ -354,18 +393,14 @@ void Shader::Sampler::operator>>(stream::Stream* stream) const
 {
     stream->write<u32>(_set);
     stream->write<u32>(_binding);
-#if USE_STRING_ID_SHADER
     stream->write(_name);
-#endif
 }
 
 void Shader::Sampler::operator<<(const stream::Stream* stream)
 {
     stream->read<u32>(_set);
     stream->read<u32>(_binding);
-#if USE_STRING_ID_SHADER
     stream->read(_name);
-#endif
 }
 
 Shader::StorageImage::StorageImage() noexcept
@@ -375,9 +410,7 @@ Shader::StorageImage::StorageImage() noexcept
     , _format(renderer::Format::Format_Undefined)
     , _array(1)
     , _readonly(true)
-#if USE_STRING_ID_SHADER
     , _name("")
-#endif
 {
 }
 
@@ -389,9 +422,7 @@ void Shader::StorageImage::operator>>(stream::Stream* stream) const
     stream->write<renderer::Format>(_format);
     stream->write<u32>(_array);
     stream->write<bool>(_readonly);
-#if USE_STRING_ID_SHADER
     stream->write(_name);
-#endif
 }
 
 void Shader::StorageImage::operator<<(const stream::Stream* stream)
@@ -402,17 +433,13 @@ void Shader::StorageImage::operator<<(const stream::Stream* stream)
     stream->read<renderer::Format>(_format);
     stream->read<u32>(_array);
     stream->read<bool>(_readonly);
-#if USE_STRING_ID_SHADER
     stream->read(_name);
-#endif
 }
 
 Shader::StorageBuffer::StorageBuffer() noexcept
     : _set(0)
     , _binding(0)
-#if USE_STRING_ID_SHADER
     , _name("")
-#endif
 {
 }
 
@@ -420,26 +447,20 @@ void Shader::StorageBuffer::operator>>(stream::Stream* stream) const
 {
     stream->write<u32>(_set);
     stream->write<u32>(_binding);
-#if USE_STRING_ID_SHADER
     stream->write(_name);
-#endif
 }
 
 void Shader::StorageBuffer::operator<<(const stream::Stream* stream)
 {
     stream->read<u32>(_set);
     stream->read<u32>(_binding);
-#if USE_STRING_ID_SHADER
     stream->read(_name);
-#endif
 }
 
 Shader::PushConstant::PushConstant() noexcept
     : _offset(0)
     , _size(0)
-#if USE_STRING_ID_SHADER
     , _name("")
-#endif
 {
 }
 
@@ -447,18 +468,14 @@ void Shader::PushConstant::operator>>(stream::Stream* stream) const
 {
     stream->write<u32>(_offset);
     stream->write<u32>(_size);
-#if USE_STRING_ID_SHADER
     stream->write(_name);
-#endif
 }
 
 void Shader::PushConstant::operator<<(const stream::Stream* stream)
 {
     stream->read<u32>(_offset);
     stream->read<u32>(_size);
-#if USE_STRING_ID_SHADER
     stream->read(_name);
-#endif
 }
 
 } //namespace renderer

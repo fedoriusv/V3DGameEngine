@@ -3,46 +3,23 @@
 #include "Common.h"
 #include "Formats.h"
 
-#define USE_STRING_ID_SHADER 1
-
 namespace v3d
 {
-namespace resource
+namespace renderer
 {
+    class Shader;
+
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
-    * @brief ShaderSourceBuildFlag enum.
-    * Flags uses inside childs of ResourceLoader
+    * @brief k_maxDescriptorBindingCount
     */
-    enum ShaderSourceBuildFlag
-    {
-        ShaderSource_DontUseReflection = 1 << 0,
-
-        ShaderSource_OptimizationSize = 1 << 1,
-        ShaderSource_OptimizationPerformance = 1 << 2,
-        ShaderSource_OptimizationFull = 1 << 3,
-
-        ShaderSource_Patched = 1 << 4,
-        ShaderSource_UseDXCompiler = 1 << 5, //For D3D shader should be signed or feature ExperimentalShaderModels is enabled
-    };
-
-    using ShaderSourceBuildFlags = u32;
-
-    /////////////////////////////////////////////////////////////////////////////////////////////////////
-
-} //namespace resource
-
-namespace renderer
-{
-    /////////////////////////////////////////////////////////////////////////////////////////////////////
-
     constexpr u32 k_maxDescriptorSetCount = 4;
+
+    /**
+    * @brief k_maxDescriptorBindingCount
+    */
     constexpr u32 k_maxDescriptorBindingCount = 8;
-
-    /////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    class Shader;
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -116,6 +93,25 @@ namespace renderer
     * @return shader string name
     */
     std::string ShaderTypeString(ShaderType type);
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    /**
+    * @brief ShaderCompileFlag enum.
+    */
+    enum ShaderCompileFlag
+    {
+        ShaderSource_DontUseReflection = 1 << 0,
+
+        ShaderSource_OptimizationSize = 1 << 1,
+        ShaderSource_OptimizationPerformance = 1 << 2,
+        ShaderSource_OptimizationFull = 1 << 3,
+
+        ShaderSource_Patched = 1 << 4,
+        ShaderSource_UseLegacyCompilerForHLSL = 1 << 5,
+        ShaderSource_UseDXCompilerForSpirV = 1 << 6,
+    };
+    typedef u32 ShaderCompileFlags;
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 

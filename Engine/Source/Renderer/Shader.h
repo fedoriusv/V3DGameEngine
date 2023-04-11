@@ -10,10 +10,10 @@ namespace v3d
 {
 namespace renderer
 {
-    /////////////////////////////////////////////////////////////////////////////////////////////////////
-
     class ShaderProgram;
     class Pipeline;
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
     * @brief ShaderHeader meta info about Shader
@@ -21,9 +21,9 @@ namespace renderer
     struct ShaderHeader : resource::ResourceHeader
     {
         /**
-        * @brief enum class ShaderResource
+        * @brief enum class ShaderContent
         */
-        enum class ShaderResource : u16
+        enum class ShaderContent : u16
         {
             Source,
             Bytecode,
@@ -36,36 +36,39 @@ namespace renderer
         {
             Default,
 
-            GLSL_450,
+            GLSL_450,  //Default for GLSL
             HLSL_5_0,
-            HLSL_5_1,
-            HLSL_6_0,
-            HLSL_6_1,
+            HLSL_5_1,  //Default for HLSL Legacy
+            HLSL_6_1,  //Default for HLSL DXC
+            HLSL_6_6,
             SpirV,
         };
 
         ShaderHeader() noexcept;
+        ShaderHeader(const ShaderHeader& other) noexcept;
         explicit ShaderHeader(renderer::ShaderType type) noexcept;
+        ~ShaderHeader() = default;
 
-        renderer::ShaderType _type;
-        ShaderResource       _contentType;
+        u32 operator>>(stream::Stream* stream);
+        u32 operator<<(const stream::Stream* stream);
+
+        renderer::ShaderType _shaderType;
+        ShaderContent        _contentType;
         ShaderModel          _shaderModel;
-        u32                  _optLevel;
-        std::string          _entryPoint;
-
-        std::vector<std::pair<std::string, std::string>> _defines;
-        std::vector<std::string>                         _include;
+        u16                  _optLevel;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
     * @brief Shader class.
-    * Resource, present on Render and Game thread
+    * Resource, presents on Render and Game thread
     */
     class Shader : public resource::Resource
     {
     public:
+
+        using DefineList = std::vector<std::pair<std::string, std::string>>;
 
         /**
         * @brief struct Attribute
@@ -76,9 +79,8 @@ namespace renderer
 
             u32              _location;
             renderer::Format _format;
-#if USE_STRING_ID_SHADER
             std::string      _name;
-#endif
+
             void operator>>(stream::Stream* stream) const;
             void operator<<(const stream::Stream* stream);
         };
@@ -97,9 +99,8 @@ namespace renderer
                 renderer::DataType _type;
                 u32                _size;
                 u32                _offset;
-#if USE_STRING_ID_SHADER
                 std::string        _name;
-#endif
+
                 void operator>>(stream::Stream* stream) const;
                 void operator<<(const stream::Stream* stream);
             };
@@ -111,9 +112,8 @@ namespace renderer
             u32                  _binding;
             u32                  _array;
             u32                  _size;
-#if USE_STRING_ID_SHADER
             std::string          _name;
-#endif
+
             std::vector<Uniform> _uniforms;
 
             void operator>>(stream::Stream* stream) const;
@@ -133,9 +133,8 @@ namespace renderer
             u32                     _array;
             bool                    _depth;
             bool                    _ms;
-#if USE_STRING_ID_SHADER
             std::string             _name;
-#endif
+
             void operator>>(stream::Stream* stream) const;
             void operator<<(const stream::Stream* stream);
         };
@@ -149,9 +148,8 @@ namespace renderer
 
             u32                     _set;
             u32                     _binding;
-#if USE_STRING_ID_SHADER
             std::string             _name;
-#endif
+
             void operator>>(stream::Stream* stream) const;
             void operator<<(const stream::Stream* stream);
         };
@@ -169,9 +167,7 @@ namespace renderer
             renderer::Format        _format;
             u32                     _array;
             bool                    _readonly;
-#if USE_STRING_ID_SHADER
             std::string             _name;
-#endif
 
             void operator>>(stream::Stream* stream) const;
             void operator<<(const stream::Stream* stream);
@@ -186,9 +182,7 @@ namespace renderer
 
             u32                     _set;
             u32                     _binding;
-#if USE_STRING_ID_SHADER
             std::string             _name;
-#endif
 
             void operator>>(stream::Stream* stream) const;
             void operator<<(const stream::Stream* stream);
@@ -203,9 +197,8 @@ namespace renderer
 
             u32         _offset;
             u32         _size;
-#if USE_STRING_ID_SHADER
             std::string _name;
-#endif
+
             void operator>>(stream::Stream* stream) const;
             void operator<<(const stream::Stream* stream);
         };
@@ -226,30 +219,51 @@ namespace renderer
             std::vector<PushConstant>   _pushConstant;
         };
 
-        explicit Shader(const ShaderHeader* header) noexcept;
+        Shader() noexcept;
+        explicit Shader(ShaderHeader* header) noexcept;
         ~Shader();
 
-        void init(stream::Stream* stream) override;
-        bool load() override;
+        renderer::ShaderType getShaderType() const;
+        const std::string& getEntrypoint() const;
 
-        const ShaderHeader& getShaderHeader() const;
         const ReflectionInfo& getReflectionInfo() const;
 
     private:
 
-        ReflectionInfo  m_reflectionInfo;
+        Shader(const Shader&) = delete;
 
-        u32             m_hash;
-        u32             m_size;
-        void*           m_source;
+        bool load(const stream::Stream* stream, u32 offset = 0) override;
+        bool save(stream::Stream* stream, u32 offset = 0) const override;
+
+        ShaderHeader* m_header;
+
+        u32 m_hash;
+        u32 m_size;
+        void* m_source;
+        std::string m_entrypoint;
+
+        ReflectionInfo  m_reflectionInfo;
 
         friend renderer::Pipeline;
         friend renderer::ShaderProgram;
     };
 
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
+
     inline const Shader::ReflectionInfo& Shader::getReflectionInfo() const
     {
         return m_reflectionInfo;
+    }
+
+    inline const std::string& Shader::getEntrypoint() const
+    {
+        return m_entrypoint;
+    }
+
+    inline renderer::ShaderType Shader::getShaderType() const
+    {
+        ASSERT(m_header, "nullptr");
+        return m_header->_shaderType;
     }
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

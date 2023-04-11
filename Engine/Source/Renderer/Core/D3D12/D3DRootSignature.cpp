@@ -82,7 +82,7 @@ D3DRootSignatureCreator::D3DRootSignatureCreator(const ShaderProgramDescription&
             }
 
             const Shader::ReflectionInfo& info = shader->getReflectionInfo();
-            ShaderType shaderType = shader->getShaderHeader()._type;
+            ShaderType shaderType = shader->getShaderType();
 
             //Resources table
             {
