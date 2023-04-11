@@ -11,7 +11,7 @@ namespace utils
     /**
     * @brief IntrusivePointer interface. Smart pointer
     */
-    template <class T>
+    template <class TType>
     class IntrusivePointer
     {
     private:
@@ -20,38 +20,38 @@ namespace utils
 
     public:
 
-        IntrusivePointer();
-        IntrusivePointer(T* p, bool addRef = true);
-        IntrusivePointer(IntrusivePointer const& rhs);
+        IntrusivePointer() noexcept;
+        explicit IntrusivePointer(TType* p, bool addRef = true) noexcept;
+        IntrusivePointer(IntrusivePointer const& rhs) noexcept;
         ~IntrusivePointer();
 
         IntrusivePointer&   operator=(IntrusivePointer const& rhs);
-        IntrusivePointer&   operator=(T* rhs);
-        T&                  operator*() const;
-        T*                  operator->() const;
-        T*                  get() const;
+        IntrusivePointer&   operator=(TType* rhs);
+        TType&               operator*() const;
+        TType*               operator->() const;
+        TType*               get() const;
 
         void                reset();
-        void                reset(T* rhs);
+        void                reset(TType* rhs);
         void                swap(IntrusivePointer& rhs);
 
         operator            bool() const;
 
     private:
 
-        T* m_px;
+        TType* m_px;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    template <class T>
-    IntrusivePointer<T>::IntrusivePointer()
+    template <class TType>
+    IntrusivePointer<TType>::IntrusivePointer() noexcept
         : m_px(nullptr)
     {
     }
 
-    template <class T>
-    IntrusivePointer<T>::IntrusivePointer(T* p, bool addRef)
+    template <class TType>
+    IntrusivePointer<TType>::IntrusivePointer(TType* p, bool addRef) noexcept
         : m_px(p)
     {
         if (m_px != nullptr && addRef)
@@ -60,8 +60,8 @@ namespace utils
         }
     }
 
-    template <class T>
-    IntrusivePointer<T>::IntrusivePointer(IntrusivePointer const& rhs)
+    template <class TType>
+    IntrusivePointer<TType>::IntrusivePointer(IntrusivePointer const& rhs) noexcept
         : m_px(rhs.m_px)
     {
         if (m_px != nullptr)
@@ -70,8 +70,8 @@ namespace utils
         }
     }
 
-    template <class T>
-    IntrusivePointer<T>::~IntrusivePointer()
+    template <class TType>
+    IntrusivePointer<TType>::~IntrusivePointer()
     {
         if (m_px != nullptr)
         {
@@ -79,60 +79,60 @@ namespace utils
         }
     }
 
-    template <class T>
-    IntrusivePointer<T>& IntrusivePointer<T>::operator=(IntrusivePointer const& rhs)
+    template <class TType>
+    IntrusivePointer<TType>& IntrusivePointer<TType>::operator=(IntrusivePointer const& rhs)
     {
         this_type(rhs).swap(*this);
         return *this;
     }
 
-    template <class T>
-    IntrusivePointer<T>& IntrusivePointer<T>::operator=(T* rhs)
+    template <class TType>
+    IntrusivePointer<TType>& IntrusivePointer<TType>::operator=(TType* rhs)
     {
         this_type(rhs).swap(*this);
         return *this;
     }
 
-    template <class T>
-    void IntrusivePointer<T>::reset()
+    template <class TType>
+    void IntrusivePointer<TType>::reset()
     {
         this_type().swap(*this);
     }
 
-    template <class T>
-    void IntrusivePointer<T>::reset(T* rhs)
+    template <class TType>
+    void IntrusivePointer<TType>::reset(TType* rhs)
     {
         this_type(rhs).swap(*this);
     }
 
-    template <class T>
-    T* IntrusivePointer<T>::get() const
+    template <class TType>
+    TType* IntrusivePointer<TType>::get() const
     {
         return m_px;
     }
 
-    template <class T>
-    T& IntrusivePointer<T>::operator*() const
+    template <class TType>
+    TType& IntrusivePointer<TType>::operator*() const
     {
         return *m_px;
     }
 
-    template <class T>
-    T* IntrusivePointer<T>::operator->() const
+    template <class TType>
+    TType* IntrusivePointer<TType>::operator->() const
     {
         return m_px;
     }
 
-    template <class T>
-    IntrusivePointer<T>::operator bool() const
+    template <class TType>
+    IntrusivePointer<TType>::operator bool() const
     {
         return m_px != nullptr;
     }
 
-    template <class T>
-    void IntrusivePointer<T>::swap(IntrusivePointer<T>& rhs)
+    template <class TType>
+    void IntrusivePointer<TType>::swap(IntrusivePointer<TType>& rhs)
     {
-        T* tmp = m_px;
+        TType* tmp = m_px;
         m_px = rhs.m_px;
         rhs.m_px = tmp;
     }
