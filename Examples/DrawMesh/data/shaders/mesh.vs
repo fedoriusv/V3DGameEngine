@@ -1,8 +1,8 @@
 struct VS_INPUT
 {
-    float3 Position : IN_POSITION;
-    float3 Normal   : IN_NORMAL;
-    float2 UV       : IN_TEXTURE;
+    [[vk::location(0)]] float3 Position : IN_POSITION;
+    [[vk::location(1)]] float3 Normal   : IN_NORMAL;
+    [[vk::location(2)]] float2 UV       : IN_TEXTURE;
 };
 
 struct UBO
@@ -13,15 +13,14 @@ struct UBO
     float4x4 normalMatrix;
 };
 
-ConstantBuffer<UBO> ubo : register(b0);
+[[vk::binding(0, 0)]] ConstantBuffer<UBO> ubo : register(b0);
 
 struct PS_INPUT
 {
-    float4 Pos       : SV_POSITION;
-    
-    float3 Position  : POSITION;
-    float3 Normal    : NORMAL;
-    float2 UV        : TEXTURE;
+    [[vk::location(0)]] float4 Pos       : SV_POSITION;
+    [[vk::location(1)]] float3 Position  : POSITION;
+    [[vk::location(2)]] float3 Normal    : NORMAL;
+    [[vk::location(3)]] float2 UV        : TEXTURE;
 };
 
 PS_INPUT main(VS_INPUT Input)

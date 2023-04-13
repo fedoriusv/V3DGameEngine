@@ -10,6 +10,7 @@ using namespace v3d;
 MyApplication::MyApplication(int& argc, char** argv) noexcept
     : m_Window(nullptr)
     , m_Context(nullptr)
+    , m_CommandList(nullptr)
     , m_InputEventHandler(nullptr)
 
     , m_Scene(nullptr)
@@ -55,8 +56,9 @@ bool MyApplication::Initialize()
     {
         return false;
     }
+    m_CommandList = new renderer::CommandList(m_Context, renderer::CommandList::CommandListType::ImmediateCommandList);
 
-    m_Scene = new Scene(m_Context, m_Window->getSize());
+    m_Scene = new Scene(m_Context, m_CommandList, m_Window->getSize());
     m_InputEventHandler->connect([this](const event::MouseInputEvent* event)
         {
             Scene::MouseCallback(m_Scene, m_InputEventHandler, event);
@@ -97,6 +99,7 @@ void MyApplication::Terminate()
         m_InputEventHandler = nullptr;
     }
 
+    delete m_CommandList;
     if (m_Context)
     {
         renderer::Context::destroyContext(m_Context);

@@ -23,15 +23,15 @@ struct TextureUniformParameters
 
     struct UniformBuffer
     {
-        core::Matrix4D _projectionMatrix;
-        core::Matrix4D _viewMatrix;
-        core::Matrix4D _modelMatrix;
-        core::Matrix4D _normalMatrix;
+        math::Matrix4D _projectionMatrix;
+        math::Matrix4D _viewMatrix;
+        math::Matrix4D _modelMatrix;
+        math::Matrix4D _normalMatrix;
     };
 
     struct Light
     {
-        core::Vector4D _lightPos;
+        math::Vector4D _lightPos;
     };
 
     UniformBuffer           _constantBufferVS;
@@ -51,7 +51,7 @@ class TextureRender
 {
 public:
 
-    TextureRender(renderer::CommandList& cmdList, const v3d::core::Dimension2D& viewport, const std::vector<const renderer::Shader*>& shaders, const renderer::VertexInputAttribDescription& vertex) noexcept;
+    TextureRender(renderer::CommandList& cmdList, const v3d::math::Dimension2D& viewport, const std::vector<const renderer::Shader*>& shaders, const renderer::VertexInputAttributeDescription& vertex) noexcept;
     ~TextureRender();
 
     void process(renderer::CommandList& cmdList, const std::vector<std::tuple<renderer::StreamBufferDescription, renderer::DrawProperties>>& props);

@@ -27,6 +27,7 @@ private:
 
     v3d::platform::Window*          m_Window;
     v3d::renderer::Context*         m_Context;
+    v3d::renderer::CommandList*     m_CommandList;
 
     v3d::event::InputEventHandler*  m_InputEventHandler;
 
