@@ -134,7 +134,7 @@ void Scene::LoadVoyager()
 
     {
         scene::Model* model = resource::ResourceLoaderManager::getInstance()->load<scene::Model, resource::ModelFileLoader>("models/voyager/voyager.dae", 
-            resource::ModelFileLoader::ModelLoaderFlag::FlipYTextureCoord | resource::ModelFileLoader::ModelLoaderFlag::SkipTangentAndBitangent);
+            resource::ModelFileLoader::ModelLoaderFlag::FlipYTextureCoord | resource::ModelFileLoader::ModelLoaderFlag::SkipTangentAndBitangent | resource::ModelFileLoader::ModelLoaderFlag::SkipMaterialLoading);
         m_Voyager.m_Model = new scene::ModelHelper(m_CommandList, { model });
     }
 }
