@@ -245,6 +245,7 @@ VulkanMemory::VulkanAllocation VulkanMemory::allocateBufferMemory(VulkanMemoryAl
             return VulkanMemory::s_invalidMemory;
         }
 
+        ASSERT(math::alignUp(memory._offset, memoryRequirements.alignment) == memory._offset, "must be aligned");
         VkResult result = VulkanWrapper::BindBufferMemory(allocator.m_device, buffer, memory._memory, memory._offset);
         if (result != VK_SUCCESS)
         {
@@ -415,7 +416,7 @@ PoolVulkanMemoryAllocator::Pool::Pool() noexcept
 
 VulkanMemory::VulkanAllocation PoolVulkanMemoryAllocator::allocate(VkDeviceSize size, VkDeviceSize align, u32 memoryTypeIndex, const void* extensions)
 {
-    VkDeviceSize alignedSize = math::alignUp<VkDeviceSize>(size, align);
+    VkDeviceSize alignedSize = math::alignUp<VkDeviceSize>(size, VulkanDeviceCaps::getInstance()->getPhysicalDeviceLimits().minMemoryMapAlignment);
 
     ASSERT(memoryTypeIndex < VK_MAX_MEMORY_TYPES, "out of range");
     auto& heaps = m_heaps[memoryTypeIndex];
@@ -427,8 +428,10 @@ VulkanMemory::VulkanAllocation PoolVulkanMemoryAllocator::allocate(VkDeviceSize 
     }
 
     //create new pool
-    ASSERT(m_allocationSize > alignedSize, "Too small size of pool. Set bigger");
-    Pool* newPool = createPool(m_allocationSize, alignedSize, memoryTypeIndex);
+    ;
+    u32 alignedAllocationSize = math::alignUp(m_allocationSize, VulkanDeviceCaps::getInstance()->getPhysicalDeviceLimits().minMemoryMapAlignment);
+    ASSERT(alignedAllocationSize > alignedSize, "Too small size of pool. Set bigger");
+    Pool* newPool = createPool(alignedAllocationSize, alignedSize, memoryTypeIndex);
     if (!newPool)
     {
         return VulkanMemory::s_invalidMemory;
@@ -602,6 +605,8 @@ bool PoolVulkanMemoryAllocator::findAllocationFromPool(std::multimap<VkDeviceSiz
         MemoryChunck freeChunkSize;
         freeChunkSize._size = chunkSize._size - size;
         freeChunkSize._offset = chunkSize._offset + size;
+        ASSERT(math::alignUp(freeChunkSize._offset, VulkanDeviceCaps::getInstance()->getPhysicalDeviceLimits().minMemoryMapAlignment) == freeChunkSize._offset, "must be aligment");
+
         pool->_chunks.insert(freeChunkSize);
         pool->_freeChunks.insert(freeChunkSize);
     }
