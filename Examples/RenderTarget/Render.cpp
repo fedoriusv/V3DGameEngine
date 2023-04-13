@@ -1,7 +1,7 @@
 #include "Render.h"
 
 #include "Renderer/Shader.h"
-#include "Resource/Image.h"
+#include "Resource/Bitmap.h"
 
 #include "Resource/ImageFileLoader.h"
 #include "Resource/ModelFileLoader.h"
@@ -51,7 +51,7 @@ public:
 
     void Init(v3d::renderer::CommandList* commandList, v3d::renderer::RenderTargetState* target) override
     {
-        resource::ResourceLoaderManager::getInstance()->addPath("examples/rendertarget/data/");
+        resource::ResourceLoaderManager::getLazyInstance()->addPath("examples/rendertarget/data/");
 
 #if defined(PLATFORM_ANDROID)
         m_Sampler = commandList->createObject<renderer::SamplerState>(renderer::SamplerFilter::SamplerFilter_Trilinear, renderer::SamplerAnisotropic::SamplerAnisotropic_None);
@@ -60,18 +60,18 @@ public:
 #endif
         m_Sampler->setWrap(renderer::SamplerWrap::TextureWrap_MirroredRepeat);
 
-        resource::Image* image = resource::ResourceLoaderManager::getInstance()->load<resource::Image, resource::ImageFileLoader>("basetex.jpg", resource::ImageLoaderFlag_GenerateMipmaps);
+        resource::Bitmap* image = resource::ResourceLoaderManager::getInstance()->load<resource::Bitmap, resource::ImageFileLoader>("basetex.jpg", resource::ImageFileLoader::ImageLoaderFlag::GenerateMipmaps);
         ASSERT(image, "not found");
         m_Texture = commandList->createObject<renderer::Texture2D>(renderer::TextureUsage_Sampled | renderer::TextureUsage_Write,
-            image->getFormat(), core::Dimension2D(image->getDimension().width, image->getDimension().height), image->getMipMapsCount(), image->getRawData(), "UnlitTexture");
+            image->getFormat(), math::Dimension2D(image->getDimension().m_width, image->getDimension().m_height), image->getMipMapsCount(), image->getBitmap(), "UnlitTexture");
 
-        std::vector<const renderer::Shader*> shaders = resource::ResourceLoaderManager::getInstance()->loadHLSLShader<renderer::Shader, resource::ShaderSourceFileLoader>(commandList->getContext(), "texture.hlsl",
+        std::vector<const renderer::Shader*> shaders = resource::ResourceLoaderManager::getInstance()->loadHLSLShaders<renderer::Shader, resource::ShaderSourceFileLoader>(commandList->getContext(), "texture.hlsl",
             {
                 {"main_VS", renderer::ShaderType::Vertex },
                 {"main_FS", renderer::ShaderType::Fragment }
-            }, {}, resource::ShaderSource_UseDXCompiler);
+            }, {}, {});
 
-        v3d::scene::Model* cube = resource::ResourceLoaderManager::getInstance()->load<v3d::scene::Model, resource::ModelFileLoader>("cube.dae");
+        v3d::scene::Model* cube = resource::ResourceLoaderManager::getInstance()->load<v3d::scene::Model, resource::ModelFileLoader>("cube.dae", resource::ModelFileLoader::ModelLoaderFlag::SkipTangentAndBitangent);
         m_Geometry = v3d::scene::ModelHelper::createModelHelper(commandList, { cube });
 
 
@@ -92,9 +92,9 @@ public:
 
         struct UBO
         {
-            core::Matrix4D projectionMatrix;
-            core::Matrix4D viewMatrix;
-            core::Matrix4D modelMatrix;
+            math::Matrix4D projectionMatrix;
+            math::Matrix4D viewMatrix;
+            math::Matrix4D modelMatrix;
         } ubo;
 
         ubo.projectionMatrix = m_Scene->getActiveCamera()->getProjectionMatrix();
@@ -131,7 +131,7 @@ class BasePassRender : public BaseRender
 {
 public:
 
-    BasePassRender(const core::Dimension2D& viewport) noexcept
+    BasePassRender(const math::Dimension2D& viewport) noexcept
         : m_RenderTarget(nullptr)
         , m_ColorAttachment(nullptr)
         , m_DepthAttachment(nullptr)
@@ -155,7 +155,7 @@ public:
             renderer::Format::Format_R8G8B8A8_UNorm, m_Viewport, renderer::TextureSamples::TextureSamples_x1, "ColorAttachment");
         m_RenderTarget->setColorTexture(0, m_ColorAttachment,
             {
-                renderer::RenderTargetLoadOp::LoadOp_Clear, renderer::RenderTargetStoreOp::StoreOp_Store, core::Vector4D(0.0f)
+                renderer::RenderTargetLoadOp::LoadOp_Clear, renderer::RenderTargetStoreOp::StoreOp_Store, math::Vector4D(0.0f)
             },
             {
                 renderer::TransitionOp::TransitionOp_ShaderRead, renderer::TransitionOp::TransitionOp_ShaderRead
@@ -185,8 +185,8 @@ public:
     
     void Render(v3d::renderer::CommandList* commandList, DrawPolicy* draw) override
     {
-        commandList->setViewport(core::Rect32(0, 0, m_RenderTarget->getDimension().width, m_RenderTarget->getDimension().height));
-        commandList->setScissor(core::Rect32(0, 0, m_RenderTarget->getDimension().width, m_RenderTarget->getDimension().height));
+        commandList->setViewport(math::Rect32(0, 0, m_RenderTarget->getDimension().m_width, m_RenderTarget->getDimension().m_height));
+        commandList->setScissor(math::Rect32(0, 0, m_RenderTarget->getDimension().m_width, m_RenderTarget->getDimension().m_height));
         commandList->setRenderTarget(m_RenderTarget);
 
         draw->Bind(commandList);
@@ -199,7 +199,7 @@ public:
     v3d::renderer::Texture2D* m_ColorAttachment;
     v3d::renderer::Texture2D* m_DepthAttachment;
 
-    core::Dimension2D m_Viewport;
+    math::Dimension2D m_Viewport;
 };
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -236,10 +236,10 @@ public:
         //Compute
         if (m_ComputeDownsampling)
         {
-            resource::ResourceLoaderManager::getInstance()->addPath("examples/rendertarget/data/");
+            resource::ResourceLoaderManager::getLazyInstance()->addPath("examples/rendertarget/data/");
 
-            //const renderer::Shader* shader = resource::ResourceLoaderManager::getInstance()->loadShader<renderer::Shader, resource::ShaderSourceFileLoader>(commandList->getContext(), "downsampling.comp");
-            const renderer::Shader* shader = resource::ResourceLoaderManager::getInstance()->loadShader<renderer::Shader, resource::ShaderSourceFileLoader>(commandList->getContext(), "downsampling.cs");
+            const renderer::Shader* shader = resource::ResourceLoaderManager::getInstance()->loadShader<renderer::Shader, resource::ShaderSourceFileLoader>(commandList->getContext(), "downsampling.cs",
+                "main", {}, {}, 0/*resource::ShaderSourceFileLoader::ShaderSourceFlag::ShaderSource_UseLegacyCompilerForHLSL*/);
             m_DownsampleProgram = commandList->createObject<renderer::ShaderProgram>(shader);
             m_DownsamplePipeline = commandList->createObject<renderer::ComputePipelineState>(m_DownsampleProgram);
 
@@ -257,8 +257,8 @@ public:
 
             commandList->transition({ m_InputTexture, 0, 0 }, renderer::TransitionOp::TransitionOp_GeneralCompute);
 
-            u32 width = m_InputTexture->getDimension().width;
-            u32 height = m_InputTexture->getDimension().height;
+            u32 width = m_InputTexture->getDimension().m_width;
+            u32 height = m_InputTexture->getDimension().m_height;
             for (u32 mip = 1; mip < m_InputTexture->getMipmapsCount(); ++mip)
             {
                 commandList->transition({ m_InputTexture, 0, mip }, renderer::TransitionOp::TransitionOp_GeneralCompute);
@@ -267,8 +267,8 @@ public:
                 m_DownsampleProgram->bindUAV<renderer::ShaderType::Compute, renderer::Texture2D>({ "resultImage" }, m_InputTexture, 0, mip);
 
                 commandList->dispatchCompute({ std::max<u32>(width / 4, 1), std::max<u32>(height / 4, 1), 1 });
-                width = std::max(m_InputTexture->getDimension().width >> mip, 1U);
-                height = std::max(m_InputTexture->getDimension().height >> mip, 1U);
+                width = math::max(m_InputTexture->getDimension().m_width >> mip, 1U);
+                height = math::max(m_InputTexture->getDimension().m_height >> mip, 1U);
             }
 
             //commandList->submitCommands(true);
@@ -322,10 +322,10 @@ public:
 
     void Init(v3d::renderer::CommandList* commandList) override
     {
-        resource::ResourceLoaderManager::getInstance()->addPath("examples/rendertarget/data/");
+        resource::ResourceLoaderManager::getLazyInstance()->addPath("examples/rendertarget/data/");
 
         const u32 k_mipLevel = 3;
-        std::vector<const renderer::Shader*> shaders = resource::ResourceLoaderManager::getInstance()->loadHLSLShader<renderer::Shader, resource::ShaderSourceFileLoader>(commandList->getContext(), "offscreen.hlsl",
+        std::vector<const renderer::Shader*> shaders = resource::ResourceLoaderManager::getInstance()->loadHLSLShaders<renderer::Shader, resource::ShaderSourceFileLoader>(commandList->getContext(), "offscreen.hlsl",
             {
                 {"main_VS", renderer::ShaderType::Vertex },
                 {"main_FS", renderer::ShaderType::Fragment }
@@ -333,19 +333,19 @@ public:
             },
             {
                 { "MIP_LEVEL", std::to_string(k_mipLevel) }
-            }, resource::ShaderSource_UseDXCompiler);
+            }, {});
 
         m_OffscreenRenderTarget = commandList->createObject<renderer::RenderTargetState>(commandList->getBackbuffer()->getDimension(), 0, "OffscreenTarget");
         m_OffscreenRenderTarget->setColorTexture(0, commandList->getBackbuffer(),
             {
-                renderer::RenderTargetLoadOp::LoadOp_DontCare, renderer::RenderTargetStoreOp::StoreOp_Store, core::Vector4D(0.0f)
+                renderer::RenderTargetLoadOp::LoadOp_DontCare, renderer::RenderTargetStoreOp::StoreOp_Store, math::Vector4D(0.0f)
             },
             {
                 renderer::TransitionOp::TransitionOp_Undefined, renderer::TransitionOp::TransitionOp_Present
             });
 
         m_OffscreenProgram = commandList->createObject<renderer::ShaderProgram>(shaders);
-        m_OffscreenPipeline = commandList->createObject<renderer::GraphicsPipelineState>(renderer::VertexInputAttribDescription(), m_OffscreenProgram, m_OffscreenRenderTarget);
+        m_OffscreenPipeline = commandList->createObject<renderer::GraphicsPipelineState>(renderer::VertexInputAttributeDescription(), m_OffscreenProgram, m_OffscreenRenderTarget);
         m_OffscreenPipeline->setPrimitiveTopology(renderer::PrimitiveTopology::PrimitiveTopology_TriangleList);
         m_OffscreenPipeline->setFrontFace(renderer::FrontFace::FrontFace_Clockwise);
         m_OffscreenPipeline->setCullMode(renderer::CullMode::CullMode_Back);
@@ -364,8 +364,8 @@ public:
 
     void Render(v3d::renderer::CommandList* commandList, DrawPolicy* draw) override
     {
-        commandList->setViewport(core::Rect32(0, 0, m_OffscreenRenderTarget->getDimension().width, m_OffscreenRenderTarget->getDimension().height));
-        commandList->setScissor(core::Rect32(0, 0, m_OffscreenRenderTarget->getDimension().width, m_OffscreenRenderTarget->getDimension().height));
+        commandList->setViewport(math::Rect32(0, 0, m_OffscreenRenderTarget->getDimension().m_width, m_OffscreenRenderTarget->getDimension().m_height));
+        commandList->setScissor(math::Rect32(0, 0, m_OffscreenRenderTarget->getDimension().m_width, m_OffscreenRenderTarget->getDimension().m_height));
         commandList->setRenderTarget(m_OffscreenRenderTarget);
         commandList->setPipelineState(m_OffscreenPipeline);
 
@@ -418,9 +418,9 @@ SceneRenderer::~SceneRenderer()
     delete m_Draws;
 }
 
-void SceneRenderer::Prepare(const core::Dimension2D& size)
+void SceneRenderer::Prepare(const math::Dimension2D& size)
 {
-    m_Camera = new v3d::scene::CameraArcballHelper(new scene::Camera(core::Vector3D(0.0f, 0.0f, 0.0f), core::Vector3D(0.0f, 1.0f, 0.0f)), 5.0f, 4.0f, 20.0f);
+    m_Camera = new v3d::scene::CameraArcballHelper(new scene::Camera(math::Vector3D(0.0f, 0.0f, 0.0f), math::Vector3D(0.0f, 1.0f, 0.0f)), 5.0f, 4.0f, 20.0f);
     m_Camera->setPerspective(45.0f, size, 0.1f, 256.f);
 
 
@@ -464,6 +464,7 @@ void SceneRenderer::Render(f32 dt)
     //m_CommandList.flushCommands();
 
     m_CommandList.endFrame();
+    m_CommandList.submitCommands();
     m_CommandList.presentFrame();
 
     m_CommandList.flushCommands();

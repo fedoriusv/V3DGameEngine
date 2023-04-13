@@ -40,7 +40,7 @@ public:
     explicit SceneRenderer(v3d::renderer::CommandList& m_CommandList) noexcept;
     ~SceneRenderer();
 
-    void Prepare(const v3d::core::Dimension2D& size);
+    void Prepare(const v3d::math::Dimension2D& size);
     void Render(v3d::f32 dt);
 
     v3d::scene::CameraArcballHelper* getActiveCamera() const;
