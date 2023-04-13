@@ -1444,7 +1444,7 @@ void VulkanContext::setPipeline(const Pipeline::PipelineGraphicInfo* pipelineInf
     ASSERT(pipeline, "nullptr");
     pipelineInfo->_tracker->attach(pipeline);
 #if VULKAN_DEBUG
-    LOG_DEBUG("VulkanContext::setPipeline %xll", pipeline);
+    LOG_DEBUG("VulkanContext::setPipeline %llx", pipeline);
 #endif //VULKAN_DEBUG
 
     m_pendingState.setPendingPipeline(pipeline);
@@ -1462,7 +1462,7 @@ void VulkanContext::setPipeline(const Pipeline::PipelineComputeInfo* pipelineInf
     pipelineInfo->_tracker->attach(pipeline);
     ASSERT(pipeline, "nullptr");
 #if VULKAN_DEBUG
-    LOG_DEBUG("VulkanContext::setPipeline %xll", pipeline);
+    LOG_DEBUG("VulkanContext::setPipeline %llx", pipeline);
 #endif //VULKAN_DEBUG
 
     m_pendingState.setPendingPipeline(pipeline);

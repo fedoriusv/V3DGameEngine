@@ -149,7 +149,7 @@ QueryRequest::~QueryRequest()
 
 void QueryRequest::handleNotify(const utils::Observable* query, void* msg)
 {
-    LOG_DEBUG("QueryRequest::handleNotify to delete the query %xll", this);
+    LOG_DEBUG("QueryRequest::handleNotify to delete the query %llx", this);
     ASSERT(m_query == query, "not same");
 
     m_query = nullptr;
