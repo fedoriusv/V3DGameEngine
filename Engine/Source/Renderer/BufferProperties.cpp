@@ -197,38 +197,50 @@ bool VertexInputAttributeDescription::operator==(const VertexInputAttributeDescr
 
 u32 VertexInputAttributeDescription::operator>>(stream::Stream* stream)
 {
-    u32 write = 0;
-    write += stream->write<u32>(_countInputBindings);
+    u32 writeSize = 0;
+    u32 writePos = stream->tell();
+
+    stream->write<u32>(_countInputBindings);
+    writeSize += sizeof(u32);
     for (u32 i = 0; i < _countInputBindings; ++i)
     {
-        write += _inputBindings[i] >> stream;
+        writeSize += _inputBindings[i] >> stream;
     }
 
-    write += stream->write<u32>(_countInputAttributes);
+    stream->write<u32>(_countInputAttributes);
+    writeSize += sizeof(u32);
     for (u32 i = 0; i < _countInputAttributes; ++i)
     {
-        write += _inputAttributes[i] >> stream;
+        writeSize += _inputAttributes[i] >> stream;
     }
 
-    return write;
+    writePos = stream->tell() - writePos;
+    ASSERT(writePos == writeSize, "wrong size");
+    return writeSize;
 }
 
 u32 VertexInputAttributeDescription::operator<<(const stream::Stream* stream)
 {
-    u32 read = 0;
-    read += stream->read<u32>(_countInputBindings);
+    u32 readSize = 0;
+    u32 readPos = stream->tell();
+
+    stream->read<u32>(_countInputBindings);
+    readSize += sizeof(u32);
     for (u32 i = 0; i < _countInputBindings; ++i)
     {
-        read += _inputBindings[i] << stream;
+        readSize += _inputBindings[i] << stream;
     }
 
-    read += stream->read<u32>(_countInputAttributes);
+    stream->read<u32>(_countInputAttributes);
+    readSize += sizeof(u32);
     for (u32 i = 0; i < _countInputAttributes; ++i)
     {
-        read += _inputAttributes[i] << stream;
+        readSize += _inputAttributes[i] << stream;
     }
 
-    return read;
+    readPos = stream->tell() - readPos;
+    ASSERT(readPos == readSize, "wrong size");
+    return readSize;
 }
 
 VertexInputAttributeDescription::InputAttribute::InputAttribute() noexcept
@@ -248,24 +260,30 @@ VertexInputAttributeDescription::InputAttribute::InputAttribute(u32 binding, u32
 
 u32 VertexInputAttributeDescription::InputAttribute::operator>>(stream::Stream* stream)
 {
-    u32 write = 0;
-    write += stream->write<u32>(_bindingId);
-    write += stream->write<u32>(_streamId);
-    write += stream->write<Format>(_format);
-    write += stream->write<u32>(_offest);
+    u32 writePos = stream->tell();
 
-    return write;
+    stream->write<u32>(_bindingId);
+    stream->write<u32>(_streamId);
+    stream->write<Format>(_format);
+    stream->write<u32>(_offest);
+
+    u32 writeSize = stream->tell() - writePos;
+    ASSERT(sizeof(InputAttribute) == writeSize, "wrong size");
+    return writeSize;
 }
 
 u32 VertexInputAttributeDescription::InputAttribute::operator<<(const stream::Stream* stream)
 {
-    u32 read = 0;
-    read += stream->read<u32>(_bindingId);
-    read += stream->read<u32>(_streamId);
-    read += stream->read<Format>(_format);
-    read += stream->read<u32>(_offest);
+    u32 readPos = stream->tell();
 
-    return read;
+    stream->read<u32>(_bindingId);
+    stream->read<u32>(_streamId);
+    stream->read<Format>(_format);
+    stream->read<u32>(_offest);
+
+    u32 readSize = stream->tell() - readPos;
+    ASSERT(sizeof(InputAttribute) == readSize, "wrong size");
+    return readSize;
 }
 
 VertexInputAttributeDescription::InputBinding::InputBinding() noexcept
@@ -282,24 +300,30 @@ VertexInputAttributeDescription::InputBinding::InputBinding(u32 index, InputRate
     static_assert(sizeof(InputBinding) == 12, "wrong size");
 }
 
-u32 VertexInputAttributeDescription::InputBinding::operator>>(stream::Stream * stream)
+u32 VertexInputAttributeDescription::InputBinding::operator>>(stream::Stream* stream)
 {
-    u32 write = 0;
-    write += stream->write<u32>(_index);
-    write += stream->write<InputRate>(_rate);
-    write += stream->write<u32>(_stride);
+    u32 writePos = stream->tell();
 
-    return write;
+    stream->write<u32>(_index);
+    stream->write<InputRate>(_rate);
+    stream->write<u32>(_stride);
+
+    u32 writeSize = stream->tell() - writePos;
+    ASSERT(sizeof(InputBinding) == writeSize, "wrong size");
+    return writeSize;
 }
 
-u32 VertexInputAttributeDescription::InputBinding::operator<<(const stream::Stream * stream)
+u32 VertexInputAttributeDescription::InputBinding::operator<<(const stream::Stream* stream)
 {
-    u32 read = 0;
-    read += stream->read<u32>(_index);
-    read += stream->read<InputRate>(_rate);
-    read += stream->read<u32>(_stride);
+    u32 readPos = stream->tell();
 
-    return read;
+    stream->read<u32>(_index);
+    stream->read<InputRate>(_rate);
+    stream->read<u32>(_stride);
+
+    u32 readSize = stream->tell() - readPos;
+    ASSERT(sizeof(InputBinding) == readSize, "wrong size");
+    return readSize;
 }
 
 } //namespace renderer

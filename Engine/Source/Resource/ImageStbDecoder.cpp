@@ -217,15 +217,16 @@ Resource* ImageStbDecoder::decode(const stream::Stream* stream, const std::strin
         }
         ASSERT(dataStream, "nullptr");
 
-        u32 imageStreamSize = dataStream->size() + sizeof(u32);
-        stream::Stream* imageStream = stream::StreamManager::createMemoryStream(nullptr, imageStreamSize);
+        u32 imageStreamSize = dataStream->size();
+        stream::Stream* imageStream = stream::StreamManager::createMemoryStream(nullptr, imageStreamSize + sizeof(u32));
+
         imageStream->write<u32>(imageStreamSize);
         imageStream->write(dataStream->map(dataStream->size()), dataStream->size());
         dataStream->unmap();
         stream::StreamManager::destroyStream(dataStream);
 
         BitmapHeader newHeader(m_header);
-        BitmapHeader::fillResourceHeader(&newHeader, name, imageStreamSize, 0);
+        BitmapHeader::fillResourceHeader(&newHeader, name, imageStreamSize + sizeof(u32), 0);
         newHeader._dimension.m_width = static_cast<u32>(sizeX);
         newHeader._dimension.m_height = static_cast<u32>(sizeY);
         newHeader._dimension.m_depth = 1;

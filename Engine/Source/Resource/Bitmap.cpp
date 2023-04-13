@@ -30,30 +30,32 @@ BitmapHeader::BitmapHeader(const BitmapHeader& other) noexcept
 
 u32 BitmapHeader::operator>>(stream::Stream* stream)
 {
-    u32 write = 0;
-    write += ResourceHeader::operator>>(stream);
+    u32 parent = ResourceHeader::operator>>(stream);
+    u32 write = stream->tell();
 
-    write += stream->write<math::Dimension3D>(_dimension);
-    write += stream->write<renderer::Format>(_format);
-    write += stream->write<u16>(_layers);
-    write += stream->write<u16>(_mips);
-    write += stream->write<BitmapHeaderFlags>(_bitmapFlags);
+    stream->write<math::Dimension3D>(_dimension);
+    stream->write<renderer::Format>(_format);
+    stream->write<u16>(_layers);
+    stream->write<u16>(_mips);
+    stream->write<BitmapHeaderFlags>(_bitmapFlags);
 
+    write = stream->tell() - write + parent;
     ASSERT(sizeof(BitmapHeader) == write, "wrong size");
     return write;
 }
 
 u32 BitmapHeader::operator<<(const stream::Stream* stream)
 {
-    u32 read = 0;
-    read += ResourceHeader::operator<<(stream);
+    u32 parent = ResourceHeader::operator<<(stream);
+    u32 read = stream->tell();
 
-    read += stream->read<math::Dimension3D>(_dimension);
-    read += stream->read<renderer::Format>(_format);
-    read += stream->read<u16>(_layers);
-    read += stream->read<u16>(_mips);
-    read += stream->read<BitmapHeaderFlags>(_bitmapFlags);
+    stream->read<math::Dimension3D>(_dimension);
+    stream->read<renderer::Format>(_format);
+    stream->read<u16>(_layers);
+    stream->read<u16>(_mips);
+    stream->read<BitmapHeaderFlags>(_bitmapFlags);
 
+    read = stream->tell() - read + parent;
     ASSERT(sizeof(BitmapHeader) == read, "wrong size");
     return read;
 }
@@ -63,7 +65,7 @@ Bitmap::Bitmap() noexcept
     , m_bitmap(nullptr)
     , m_size(0)
 {
-    LOG_DEBUG("Bitmap constructor %xll", this);
+    LOG_DEBUG("Bitmap constructor %llx", this);
 }
 
 Bitmap::Bitmap(BitmapHeader* header) noexcept
@@ -71,12 +73,12 @@ Bitmap::Bitmap(BitmapHeader* header) noexcept
     , m_bitmap(nullptr)
     , m_size(0)
 {
-    LOG_DEBUG("Bitmap constructor %xll", this);
+    LOG_DEBUG("Bitmap constructor %llx", this);
 }
 
 Bitmap::~Bitmap()
 {
-    LOG_DEBUG("Bitmap destructor %xll", this);
+    LOG_DEBUG("Bitmap destructor %llx", this);
 
     if (m_header)
     {
@@ -95,7 +97,7 @@ bool Bitmap::load(const stream::Stream* stream, u32 offset)
 {
     if (m_loaded)
     {
-        LOG_WARNING("Bitmap::load: the bitmap %xll is already loaded", this);
+        LOG_WARNING("Bitmap::load: the bitmap %llx is already loaded", this);
         return true;
     }
 
@@ -116,6 +118,7 @@ bool Bitmap::load(const stream::Stream* stream, u32 offset)
         m_bitmap = reinterpret_cast<u8*>(V3D_MALLOC(m_size, memory::MemoryLabel::MemoryResource));
         stream->read(m_bitmap, m_size, sizeof(u8));
     }
+    LOG_DEBUG("Bitmap::load: The stream has been read %d from %d bytes", stream->tell() - m_header->_offset, m_header->_size);
 
     m_loaded = true;
     return true;

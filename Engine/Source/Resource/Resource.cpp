@@ -32,7 +32,7 @@ void ResourceHeader::fillResourceHeader(ResourceHeader* header, const std::strin
 
 ResourceHeader::ResourceHeader(ResourceType type) noexcept
     : _head(g_resourceHeadMagicNumber)
-    , _type(ResourceType::EmptyResource)
+    , _type(type)
     , _version(0x0000)
     , _extraFlags(0x0)
     , _size(0)
@@ -66,44 +66,46 @@ void ResourceHeader::setName(const std::string& name)
 
 u32 ResourceHeader::operator>>(stream::Stream* stream)
 {
-    u32 write = 0;
+    u32 writePos = stream->tell();
     ASSERT(ResourceHeader::validateResourceHeader(this), "wrong header");
-    write += stream->write<u16>(_head);
+    stream->write<u16>(_head);
 
-    write += stream->write<ResourceType>(_type);
-    write += stream->write<u16>(_version);
-    write += stream->write<u32>(_extraFlags);
+    stream->write<ResourceType>(_type);
+    stream->write<u16>(_version);
+    stream->write<u16>(_extraFlags);
 
-    write += stream->write<u32>(_offset);
-    write += stream->write<u32>(_size);
+    stream->write<u32>(_offset);
+    stream->write<u32>(_size);
 
-    write += stream->write<u64>(_timestamp);
-    write += stream->write<u64>(_unId);
-    write += stream->write(_name, sizeof(u8), k_nameSize);
+    stream->write<u64>(_timestamp);
+    stream->write<u64>(_unId);
+    stream->write(_name, sizeof(u8), k_nameSize);
 
-    ASSERT(sizeof(ResourceHeader) == write, "wrong size");
-    return write;
+    u32 writeSize = stream->tell() - writePos;
+    ASSERT(sizeof(ResourceHeader) == writeSize, "wrong size");
+    return writeSize;
 }
 
 u32 ResourceHeader::operator<<(const stream::Stream* stream)
 {
-    u32 read = 0;
-    read += stream->read<u16>(_head);
+    u32 readPos = stream->tell();
+    stream->read<u16>(_head);
     ASSERT(ResourceHeader::validateResourceHeader(this), "wrong header");
 
-    read += stream->read<ResourceType>(_type);
-    read += stream->read<u16>(_version);
-    read += stream->read<u16>(_extraFlags);
+    stream->read<ResourceType>(_type);
+    stream->read<u16>(_version);
+    stream->read<u16>(_extraFlags);
 
-    read += stream->read<u32>(_offset);
-    read += stream->read<u32>(_size);
+    stream->read<u32>(_offset);
+    stream->read<u32>(_size);
 
-    read += stream->read<u64>(_timestamp);
-    read += stream->read<u64>(_unId);
-    read += stream->read(_name, sizeof(u8), k_nameSize);
+    stream->read<u64>(_timestamp);
+    stream->read<u64>(_unId);
+    stream->read(_name, sizeof(u8), k_nameSize);
 
-    ASSERT(sizeof(ResourceHeader) == read, "wrong size");
-    return read;
+    u32 readSize = stream->tell() - readPos;
+    ASSERT(sizeof(ResourceHeader) == readSize, "wrong size");
+    return readSize;
 }
 
 } //manespace resource

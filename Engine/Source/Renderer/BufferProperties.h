@@ -26,7 +26,7 @@ namespace renderer
     /**
     * @brief StreamBufferUsage enum. usageFlag inside StreamBuffer
     */
-    enum StreamBufferUsage
+    enum StreamBufferUsage : u16
     {
         StreamBuffer_Write = 0x01,  //Write to buffer
         StreamBuffer_Read = 0x02,   //Read from buffer
@@ -34,9 +34,11 @@ namespace renderer
         StreamBuffer_Shared = 0x04, //Share data between Game / Render side
         StreamBuffer_Dynamic = 0x08,//Stream read/write buffer
     };
-
     typedef u16 StreamBufferUsageFlags;
 
+    /**
+    * @brief StreamIndexBufferType enum.
+    */
     enum StreamIndexBufferType : u32
     {
         IndexType_16,
