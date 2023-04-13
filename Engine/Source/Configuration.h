@@ -132,7 +132,6 @@
 #define DEBUG_OBJECT_MEMORY 1
 
 #define DEBUG_COMMAND_LIST 0 //Logging command list
-#define DEBUG_OBJECT_MEMORY 1
 
 #define FRAME_PROFILER_ENABLE 1
 
