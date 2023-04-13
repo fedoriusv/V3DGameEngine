@@ -4,7 +4,7 @@
 #include "Stream/FileLoader.h"
 #include "Resource/ResourceLoaderManager.h"
 
-#include "Scene/Geometry/Model.h"
+#include "Scene/Model.h"
 
 namespace v3d
 {
@@ -15,7 +15,7 @@ ModelFileLoader::ModelFileLoader(ModelLoaderFlags flags) noexcept
 {
 #ifdef USE_ASSIMP
     scene::ModelHeader header;
-    ResourceDecoderRegistration::registerDecoder(new MeshAssimpDecoder({ "dae", "fbx"}, header, flags));
+    ResourceDecoderRegistration::registerDecoder(V3D_NEW(MeshAssimpDecoder, memory::MemoryLabel::MemorySystem)({ "dae", "fbx" }, header, flags));
 #endif //USE_ASSIMP
 
     ResourceLoader::registerRoot("");
@@ -29,7 +29,7 @@ ModelFileLoader::ModelFileLoader(const ResourceHeader* header, ModelLoaderFlags 
 {
 #ifdef USE_ASSIMP
     scene::ModelHeader modelHeader = *static_cast<const scene::ModelHeader*>(header);
-    ResourceDecoderRegistration::registerDecoder(new MeshAssimpDecoder({ "dae", "fbx"}, modelHeader, flags));
+    ResourceDecoderRegistration::registerDecoder(V3D_NEW(MeshAssimpDecoder, memory::MemoryLabel::MemorySystem)({ "dae", "fbx" }, modelHeader, flags));
 #endif //USE_ASSIMP
 
     ResourceLoader::registerRoot("");
@@ -61,17 +61,12 @@ scene::Model* ModelFileLoader::load(const std::string& name, const std::string& 
             }
 
             Resource* resource = decoder->decode(file, name);
-            file->close();
 
-            delete file;
+            file->close();
+            V3D_DELETE(file, memory::MemoryLabel::MemorySystem);
+            file = nullptr;
 
             if (!resource)
-            {
-                LOG_ERROR("ModelFileLoader: Streaming error read file [%s]", name.c_str());
-                return nullptr;
-            }
-
-            if (!resource->load())
             {
                 LOG_ERROR("ModelFileLoader: Streaming error read file [%s]", name.c_str());
                 return nullptr;

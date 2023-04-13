@@ -1,8 +1,8 @@
 #pragma once
 
 #include "ResourceDecoder.h"
-#include "Scene/Geometry/Model.h"
 #include "Resource/ModelFileLoader.h"
+#include "Scene/Model.h"
 
 #ifdef USE_ASSIMP
 struct aiScene;
@@ -31,8 +31,8 @@ namespace resource
     private:
 
         u32 decodeMesh(const aiScene* scene, stream::Stream* stream, scene::ModelHeader* header, u32 activeFlags) const;
-        bool decodeMaterial(const aiScene* scene, stream::Stream* stream, scene::ModelHeader* header) const;
-        bool decodeAABB(const aiScene* scene, stream::Stream* stream, scene::ModelHeader* header) const;
+        u32 decodeMaterial(const aiScene* scene, stream::Stream* stream, scene::ModelHeader* header) const;
+        u32 decodeAABB(const aiScene* scene, stream::Stream* stream, scene::ModelHeader* header) const;
 
         mutable scene::ModelHeader m_header;
         bool m_headerRules;

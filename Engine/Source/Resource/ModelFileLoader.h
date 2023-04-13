@@ -17,6 +17,7 @@ namespace resource
 
     /**
     * @brief ModelFileLoader class. Loader from file
+    * 
     * @see MeshAssimpDecoder
     */
     class ModelFileLoader : public ResourceLoader<scene::Model*>, public ResourceDecoderRegistration
@@ -26,31 +27,31 @@ namespace resource
         /**
         * @brief ModelLoaderFlag enum
         */
-        enum ModelLoaderFlag : u16
+        enum ModelLoaderFlag : u32
         {
-            ReadHeader = 1 << 1,
+            ReadHeader = 1 << 0,
 
-            SkipIndexBuffer = 1 << 2,                    //Don't create Index Buffer
-            SkipNormalsAttribute = 1 << 3,               //Don't use Normal attribute
-            SkipTangentAndBitangentAttribute = 1 << 4,   //Don't use Tangent & Bitangetns attributes
-            SkipTextureCoordtAttributes = 1 << 5,        //Don't use Texture attributes
+            SkipIndexBuffer = 1 << 1,                    //Don't create Index Buffer
+            SkipNormals = 1 << 2,                        //Don't use Normal attribute
+            SkipTangentAndBitangent = 1 << 3,            //Don't use Tangent & Bitangetns attributes
+            SkipTextureCoordt = 1 << 4,                  //Don't use Texture attributes
 
-            SeperatePositionAttribute = 1 << 6,          //Save Position to saparate stream
-            UseBoundingBoxes = 1 << 7,                   //Generate BoundingBox for meshes
+            SeperatePosition = 1 << 5,                   //Save Position to saparate stream
+            UseBoundingBoxes = 1 << 6,                   //Generate BoundingBox for meshes
 
-            LocalTransform = 1 << 8,                     //Ignore all releative transforms
-            FlipYPosition = 1 << 9,                      //Flip Y position
-            FlipYTextureCoord = 1 << 10,                 //Flip Y texture coordinage
+            LocalTransform = 1 << 7,                     //Ignore all releative transforms
+            FlipYPosition = 1 << 8,                      //Flip Y position
+            FlipYTextureCoord = 1 << 9,                  //Flip Y texture coordinage
 
-            SplitLargeMeshes = 1 << 11,
-            SkipMaterialLoading = 1 << 12,
+            SplitLargeMeshes = 1 << 10,
+            SkipMaterialLoading = 1 << 11,
 
         };
-        typedef u16 ModelLoaderFlags;
+        typedef u32 ModelLoaderFlags;
 
         ModelFileLoader() = delete;
         ModelFileLoader(const ModelFileLoader&) = delete;
-        ~ModelFileLoader() = default;
+        ModelFileLoader& operator=(const ModelFileLoader&) = delete;
 
         /**
         * @brief ModelFileLoader constructor
@@ -58,6 +59,7 @@ namespace resource
         * @see ModelLoaderFlags
         */
         explicit ModelFileLoader(ModelLoaderFlags flags) noexcept;
+        ~ModelFileLoader() = default;
 
         /**
         * @brief ModelFileLoader constructor. Create a Model by Header
