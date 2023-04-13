@@ -74,7 +74,7 @@
 #       define VULKAN_VERSION_MINOR 2
 #   endif
 
-#   define VULKAN_DEBUG 0 //Log every render command
+#   define VULKAN_DEBUG 1 //Log every render command
 #   define VULKAN_LAYERS_CALLBACKS 1
 #   if VULKAN_LAYERS_CALLBACKS
 #       define VULKAN_VALIDATION_LAYERS_CALLBACK 1
@@ -107,7 +107,7 @@
 #       error "Windows SDK must be 10.0.20348 or later. Make sure you have a proper version"
 #   endif
 
-#   define D3D_DEBUG 0 //Detaled logs
+#   define D3D_DEBUG 1 //Detaled logs
 #   define D3D_DEBUG_LAYERS 1
 #   if D3D_DEBUG_LAYERS
 #       define D3D_DEBUG_LIVE_REPORT 1
@@ -124,6 +124,12 @@
 #   define D3D_CURRENT_VERSION D3D_MAKE_VERSION(D3D_VERSION_MAJOR, D3D_VERSION_MINOR)
 
 #endif //D3D_RENDER
+
+/*
+* @brief Internal memory managment.
+*/
+#define MEMORY_MANAGMENT 1
+#define DEBUG_OBJECT_MEMORY 1
 
 #define DEBUG_COMMAND_LIST 0 //Logging command list
 #define DEBUG_OBJECT_MEMORY 1

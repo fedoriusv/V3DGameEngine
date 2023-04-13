@@ -4,12 +4,6 @@
 #include <memory>
 #include "Types.h"
 
-/*
-* @brief Internal memory managment.
-* TODO: replace to config
-*/
-#define MEMORY_MANAGMENT 1
-
 namespace v3d
 {
 namespace memory
@@ -22,10 +16,10 @@ namespace memory
     enum class MemoryLabel
     {
         MemoryDefault = 0,
-        MemoryResource,
-        MemoryGame,
         MemorySystem,
+        MemoryResource,
         MemoryStream,
+        MemoryGame,
         MemoryRenderCore,
         MemoryCommandList,
 
