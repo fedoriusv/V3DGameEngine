@@ -102,7 +102,7 @@ void SimpleTriangle::init(v3d::renderer::CommandList* commandList, const math::D
         fragmentHeader._shaderModel = renderer::ShaderHeader::ShaderModel::HLSL_5_1;
 
         fragShader = resource::ResourceLoaderManager::getLazyInstance()->composeShader<renderer::Shader, resource::ShaderSourceStreamLoader>(
-            m_CommandList->getContext(), "fragment", &fragmentHeader, fragmentStream, "main", {}, {}, renderer::ShaderCompileFlag::ShaderSource_UseLegacyCompilerForHLSL);
+            m_CommandList->getContext(), "fragment", &fragmentHeader, fragmentStream, "main", {}, {}, resource::ShaderSourceStreamLoader::ShaderSourceFlag::ShaderSource_UseLegacyCompilerForHLSL);
         delete fragmentStream;
     }
 
