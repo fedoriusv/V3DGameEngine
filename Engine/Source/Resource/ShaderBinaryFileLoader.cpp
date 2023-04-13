@@ -17,7 +17,7 @@ namespace v3d
 namespace resource
 {
 
-ShaderBinaryFileLoader::ShaderBinaryFileLoader(const renderer::Context* context, const std::vector<std::pair<std::string, std::string>>& defines, ShaderBinaryBuildFlags flags) noexcept
+ShaderBinaryFileLoader::ShaderBinaryFileLoader(const renderer::Context* context, ShaderBinaryBuildFlags flags) noexcept
 {
     ASSERT(context, "context is nullptr");
     if (context->getRenderType() == renderer::Context::RenderType::VulkanRender)
@@ -25,12 +25,11 @@ ShaderBinaryFileLoader::ShaderBinaryFileLoader(const renderer::Context* context,
 #ifdef USE_SPIRV
         {
             renderer::ShaderHeader header;
-            header._contentType = renderer::ShaderHeader::ShaderResource::Bytecode;
+            header._contentType = renderer::ShaderHeader::ShaderContent::Bytecode;
             header._shaderModel = renderer::ShaderHeader::ShaderModel::SpirV;
             header._optLevel = 0;
-            ASSERT(defines.empty(), "cant use defines, should be finaly compiled already");
 
-            ResourceDecoderRegistration::registerDecoder(new ShaderSpirVDecoder( { "vspv", "fspv", "cspv" }, header, !(flags & ShaderBinaryBuildFlag::ShaderBinary_DontUseReflaction) ));
+            ResourceDecoderRegistration::registerDecoder(V3D_NEW(ShaderSpirVDecoder, memory::MemoryLabel::MemorySystem)({ "vspv", "fspv", "cspv" }, header, "main", {}, {}, flags));
         }
 #else //USE_SPIRV
         ASSERT(false, "not implemented");
@@ -41,12 +40,11 @@ ShaderBinaryFileLoader::ShaderBinaryFileLoader(const renderer::Context* context,
 #ifdef D3D_RENDER
         {
             renderer::ShaderHeader header;
-            header._contentType = renderer::ShaderHeader::ShaderResource::Bytecode;
+            header._contentType = renderer::ShaderHeader::ShaderContent::Bytecode;
             header._shaderModel = renderer::ShaderHeader::ShaderModel::Default;
             header._optLevel = 0;
-            ASSERT(defines.empty(), "cant use defines, should be finaly compiled already");
 
-            ResourceDecoderRegistration::registerDecoder(new ShaderHLSLDecoder({ "vsb", "psb", "csb" }, header, !(flags & ShaderBinaryBuildFlag::ShaderBinary_DontUseReflaction)));
+            ResourceDecoderRegistration::registerDecoder(V3D_NEW(ShaderHLSLDecoder, memory::MemoryLabel::MemorySystem)({ "vspv", "fspv", "cspv" }, header, "main", {}, {}, flags));
         }
 #else //D3D_RENDER
         ASSERT(false, "not implemented");
@@ -78,17 +76,12 @@ renderer::Shader* ShaderBinaryFileLoader::load(const std::string& name, const st
             if (decoder)
             {
                 Resource* resource = decoder->decode(file, name);
-                file->close();
 
-                delete file;
+                file->close();
+                V3D_DELETE(file, memory::MemoryLabel::MemorySystem);
+                file = nullptr;
 
                 if (!resource)
-                {
-                    LOG_ERROR("ShaderBinaryFileLoader: Streaming error read file [%s]", name.c_str());
-                    return nullptr;
-                }
-
-                if (!resource->load())
                 {
                     LOG_ERROR("ShaderBinaryFileLoader: Streaming error read file [%s]", name.c_str());
                     return nullptr;

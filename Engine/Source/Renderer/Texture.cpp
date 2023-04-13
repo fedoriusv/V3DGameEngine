@@ -123,7 +123,7 @@ bool Texture::isTextureUsageFlagsContains(TextureUsageFlags usage) const
 
 void Texture::handleNotify(const utils::Observable* object, void* msg)
 {
-    LOG_DEBUG("Texture::handleNotify to delete image %xll", this);
+    LOG_DEBUG("Texture::handleNotify to delete image %llx", this);
     ASSERT(m_image == object, "not same");
 
     m_image = nullptr;

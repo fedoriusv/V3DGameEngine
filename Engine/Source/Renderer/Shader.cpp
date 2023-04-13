@@ -72,7 +72,7 @@ Shader::Shader() noexcept
     , m_source(nullptr)
     , m_entrypoint("")
 {
-    LOG_DEBUG("Shader::Shader constructor %xll", this);
+    LOG_DEBUG("Shader::Shader constructor %llx", this);
 }
 
 Shader::Shader(ShaderHeader* header) noexcept
@@ -82,12 +82,12 @@ Shader::Shader(ShaderHeader* header) noexcept
     , m_source(nullptr)
     , m_entrypoint("")
 {
-    LOG_DEBUG("Shader::Shader constructor %xll", this);
+    LOG_DEBUG("Shader::Shader constructor %llx", this);
 }
 
 Shader::~Shader()
 {
-    LOG_DEBUG("Shader::~Shader destructor %xll", this);
+    LOG_DEBUG("Shader::~Shader destructor %llx", this);
 
     if (m_source)
     {
@@ -107,7 +107,7 @@ bool Shader::load(const stream::Stream* stream, u32 offset)
 {
     if (m_loaded)
     {
-        LOG_WARNING("Shader::load: the shader %xll is already loaded", this);
+        LOG_WARNING("Shader::load: the shader %llx is already loaded", this);
         return true;
     }
 
@@ -237,7 +237,7 @@ bool Shader::load(const stream::Stream* stream, u32 offset)
     }
 
     m_hash = crc32c::Crc32c(reinterpret_cast<u8*>(m_source), m_size);
-    LOG_DEBUG("Shader:load: the stream has been read %d from %d", stream->tell(), stream->size());
+    LOG_DEBUG("Shader::load: The stream has been read %d from %d bytes", stream->tell() - m_header->_offset, m_header->_size);
 
     m_loaded = true;
     return true;
@@ -257,18 +257,28 @@ Shader::Attribute::Attribute() noexcept
 {
 }
 
-void Shader::Attribute::operator>>(stream::Stream* stream) const
+u32 Shader::Attribute::operator>>(stream::Stream* stream) const
 {
+    u32 writePos = stream->tell();
+
     stream->write<u32>(_location);
     stream->write<renderer::Format>(_format);
     stream->write(_name);
+
+    u32 writeSize = stream->tell() - writePos;
+    return writeSize;
 }
 
-void Shader::Attribute::operator<<(const stream::Stream* stream)
+u32 Shader::Attribute::operator<<(const stream::Stream* stream)
 {
+    u32 readPos = stream->tell();
+
     stream->read<u32>(_location);
     stream->read<renderer::Format>(_format);
     stream->read(_name);
+
+    u32 readSize = stream->tell() - readPos;
+    return readSize;
 }
 
 
@@ -282,8 +292,10 @@ Shader::UniformBuffer::UniformBuffer() noexcept
 {
 }
 
-void Shader::UniformBuffer::operator>>(stream::Stream* stream) const
+u32 Shader::UniformBuffer::operator>>(stream::Stream* stream) const
 {
+    u32 writePos = stream->tell();
+
     stream->write<u32>(_id);
     stream->write<u32>(_set);
     stream->write<u32>(_binding);
@@ -296,10 +308,15 @@ void Shader::UniformBuffer::operator>>(stream::Stream* stream) const
     {
         uniform >> stream;
     }
+
+    u32 writeSize = stream->tell() - writePos;
+    return writeSize;
 }
 
-void Shader::UniformBuffer::operator<<(const stream::Stream* stream)
+u32 Shader::UniformBuffer::operator<<(const stream::Stream* stream)
 {
+    u32 readPos = stream->tell();
+
     stream->read<u32>(_id);
     stream->read<u32>(_set);
     stream->read<u32>(_binding);
@@ -307,18 +324,21 @@ void Shader::UniformBuffer::operator<<(const stream::Stream* stream)
     stream->read<u32>(_size);
     stream->read(_name);
 
-    u32 size;
-    stream->read<u32>(size);
-    _uniforms.resize(size);
+    u32 count = 0;
+    stream->read<u32>(count);
+    _uniforms.resize(count);
 
     for (auto& uniform : _uniforms)
     {
         uniform << stream;
     }
+
+    u32 readSize = stream->tell() - readPos;
+    return readSize;
 }
 
 Shader::UniformBuffer::Uniform::Uniform() noexcept
-    : _bufferId(0)
+    : _bufferID(0)
     , _array(1)
     , _type(renderer::DataType::DataType_None)
     , _size(0)
@@ -327,24 +347,34 @@ Shader::UniformBuffer::Uniform::Uniform() noexcept
 {
 }
 
-void Shader::UniformBuffer::Uniform::operator>>(stream::Stream* stream) const
+u32 Shader::UniformBuffer::Uniform::operator>>(stream::Stream* stream) const
 {
-    stream->write<u32>(_bufferId);
+    u32 writePos = stream->tell();
+
+    stream->write<u32>(_bufferID);
     stream->write<u32>(_array);
     stream->write<renderer::DataType>(_type);
     stream->write<u32>(_size);
     stream->write<u32>(_offset);
     stream->write(_name);
+
+    u32 writeSize = stream->tell() - writePos;
+    return writeSize;
 }
 
-void Shader::UniformBuffer::Uniform::operator<<(const stream::Stream* stream)
+u32 Shader::UniformBuffer::Uniform::operator<<(const stream::Stream* stream)
 {
-    stream->read<u32>(_bufferId);
+    u32 readPos = stream->tell();
+
+    stream->read<u32>(_bufferID);
     stream->read<u32>(_array);
     stream->read<renderer::DataType>(_type);
     stream->read<u32>(_size);
     stream->read<u32>(_offset);
     stream->read(_name);
+
+    u32 readSize = stream->tell() - readPos;
+    return readSize;
 }
 
 
@@ -359,8 +389,10 @@ Shader::Image::Image() noexcept
 {
 }
 
-void Shader::Image::operator>>(stream::Stream* stream) const
+u32 Shader::Image::operator>>(stream::Stream* stream) const
 {
+    u32 writePos = stream->tell();
+
     stream->write<u32>(_set);
     stream->write<u32>(_binding);
     stream->write<renderer::TextureTarget>(_target);
@@ -368,10 +400,15 @@ void Shader::Image::operator>>(stream::Stream* stream) const
     stream->write<bool>(_depth);
     stream->write<bool>(_ms);
     stream->write(_name);
+
+    u32 writeSize = stream->tell() - writePos;
+    return writeSize;
 }
 
-void Shader::Image::operator<<(const stream::Stream* stream)
+u32 Shader::Image::operator<<(const stream::Stream* stream)
 {
+    u32 readPos = stream->tell();
+
     stream->read<u32>(_set);
     stream->read<u32>(_binding);
     stream->read<renderer::TextureTarget>(_target);
@@ -379,6 +416,9 @@ void Shader::Image::operator<<(const stream::Stream* stream)
     stream->read<bool>(_depth);
     stream->read<bool>(_ms);
     stream->read(_name);
+
+    u32 readSize = stream->tell() - readPos;
+    return readSize;
 }
 
 
@@ -389,18 +429,28 @@ Shader::Sampler::Sampler() noexcept
 {
 }
 
-void Shader::Sampler::operator>>(stream::Stream* stream) const
+u32 Shader::Sampler::operator>>(stream::Stream* stream) const
 {
+    u32 writePos = stream->tell();
+
     stream->write<u32>(_set);
     stream->write<u32>(_binding);
     stream->write(_name);
+
+    u32 writeSize = stream->tell() - writePos;
+    return writeSize;
 }
 
-void Shader::Sampler::operator<<(const stream::Stream* stream)
+u32 Shader::Sampler::operator<<(const stream::Stream* stream)
 {
+    u32 readPos = stream->tell();
+
     stream->read<u32>(_set);
     stream->read<u32>(_binding);
     stream->read(_name);
+
+    u32 readSize = stream->tell() - readPos;
+    return readSize;
 }
 
 Shader::StorageImage::StorageImage() noexcept
@@ -414,8 +464,10 @@ Shader::StorageImage::StorageImage() noexcept
 {
 }
 
-void Shader::StorageImage::operator>>(stream::Stream* stream) const
+u32 Shader::StorageImage::operator>>(stream::Stream* stream) const
 {
+    u32 writePos = stream->tell();
+
     stream->write<u32>(_set);
     stream->write<u32>(_binding);
     stream->write<renderer::TextureTarget>(_target);
@@ -423,10 +475,15 @@ void Shader::StorageImage::operator>>(stream::Stream* stream) const
     stream->write<u32>(_array);
     stream->write<bool>(_readonly);
     stream->write(_name);
+
+    u32 writeSize = stream->tell() - writePos;
+    return writeSize;
 }
 
-void Shader::StorageImage::operator<<(const stream::Stream* stream)
+u32 Shader::StorageImage::operator<<(const stream::Stream* stream)
 {
+    u32 readPos = stream->tell();
+
     stream->read<u32>(_set);
     stream->read<u32>(_binding);
     stream->read<renderer::TextureTarget>(_target);
@@ -434,27 +491,49 @@ void Shader::StorageImage::operator<<(const stream::Stream* stream)
     stream->read<u32>(_array);
     stream->read<bool>(_readonly);
     stream->read(_name);
+
+    u32 readSize = stream->tell() - readPos;
+    return readSize;
 }
 
 Shader::StorageBuffer::StorageBuffer() noexcept
     : _set(0)
     , _binding(0)
+    , _format(renderer::Format::Format_Undefined)
+    , _array(1)
+    , _readonly(true)
     , _name("")
 {
 }
 
-void Shader::StorageBuffer::operator>>(stream::Stream* stream) const
+u32 Shader::StorageBuffer::operator>>(stream::Stream* stream) const
 {
+    u32 writePos = stream->tell();
+
     stream->write<u32>(_set);
     stream->write<u32>(_binding);
+    stream->write<renderer::Format>(_format);
+    stream->write<u32>(_array);
+    stream->write<bool>(_readonly);
     stream->write(_name);
+
+    u32 writeSize = stream->tell() - writePos;
+    return writeSize;
 }
 
-void Shader::StorageBuffer::operator<<(const stream::Stream* stream)
+u32 Shader::StorageBuffer::operator<<(const stream::Stream* stream)
 {
+    u32 readPos = stream->tell();
+
     stream->read<u32>(_set);
     stream->read<u32>(_binding);
+    stream->read<renderer::Format>(_format);
+    stream->read<u32>(_array);
+    stream->read<bool>(_readonly);
     stream->read(_name);
+
+    u32 readSize = stream->tell() - readPos;
+    return readSize;
 }
 
 Shader::PushConstant::PushConstant() noexcept
@@ -464,18 +543,28 @@ Shader::PushConstant::PushConstant() noexcept
 {
 }
 
-void Shader::PushConstant::operator>>(stream::Stream* stream) const
+u32 Shader::PushConstant::operator>>(stream::Stream* stream) const
 {
+    u32 writePos = stream->tell();
+
     stream->write<u32>(_offset);
     stream->write<u32>(_size);
     stream->write(_name);
+
+    u32 writeSize = stream->tell() - writePos;
+    return writeSize;
 }
 
-void Shader::PushConstant::operator<<(const stream::Stream* stream)
+u32 Shader::PushConstant::operator<<(const stream::Stream* stream)
 {
+    u32 readPos = stream->tell();
+
     stream->read<u32>(_offset);
     stream->read<u32>(_size);
     stream->read(_name);
+
+    u32 readSize = stream->tell() - readPos;
+    return readSize;
 }
 
 } //namespace renderer

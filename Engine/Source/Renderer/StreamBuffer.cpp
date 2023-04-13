@@ -195,7 +195,7 @@ VertexStreamBuffer::~VertexStreamBuffer()
 
 void VertexStreamBuffer::handleNotify(const utils::Observable* object, void* msg)
 {
-    LOG_DEBUG("VertexStreamBuffer::handleNotify to delete buffer %xll", this);
+    LOG_DEBUG("VertexStreamBuffer::handleNotify to delete buffer %llx", this);
     ASSERT(m_buffer == object, "not same");
 
     m_buffer = nullptr;
@@ -390,7 +390,7 @@ IndexStreamBuffer::~IndexStreamBuffer()
 
 void IndexStreamBuffer::handleNotify(const utils::Observable* object, void* msg)
 {
-    LOG_DEBUG("IndexStreamBuffer::handleNotify to delete buffer %xll", this);
+    LOG_DEBUG("IndexStreamBuffer::handleNotify to delete buffer %llx", this);
     ASSERT(m_buffer == object, "not same");
 
     m_buffer = nullptr;

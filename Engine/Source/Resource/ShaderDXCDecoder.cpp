@@ -25,6 +25,8 @@
 #   endif //PLATFORM
 #endif //DXC
 
+#define LOG_LOADIMG_TIME (DEBUG || 1)
+
 namespace v3d
 {
 namespace resource
@@ -43,59 +45,68 @@ constexpr u32 g_DXDCIndifier = 0x43425844; //DXBC
 bool checkBytecodeSigning(IDxcBlob* bytecode);
 
 
-ShaderDXCDecoder::ShaderDXCDecoder(const renderer::ShaderHeader& header, renderer::ShaderHeader::ShaderModel output, bool reflections) noexcept
+ShaderDXCDecoder::ShaderDXCDecoder(const renderer::ShaderHeader& header, const std::string& entrypoint, const renderer::Shader::DefineList& defines, 
+    const std::vector<std::string>& includes, renderer::ShaderHeader::ShaderModel output, renderer::ShaderCompileFlags flags) noexcept
     : m_header(header)
-    , m_reflections(reflections)
-    , m_output(output)
+    , m_reflections(!(flags & renderer::ShaderCompileFlag::ShaderSource_DontUseReflection))
+
+    , m_entrypoint(entrypoint)
+    , m_defines(defines)
+    , m_includes(includes)
+
+    , m_outputSM(output)
 {
+    ASSERT(!(flags & renderer::ShaderCompileFlag::ShaderSource_UseLegacyCompilerForHLSL), "must be false");
 }
 
-ShaderDXCDecoder::ShaderDXCDecoder(std::vector<std::string> supportedExtensions, const renderer::ShaderHeader& header, renderer::ShaderHeader::ShaderModel output, bool reflections) noexcept
+ShaderDXCDecoder::ShaderDXCDecoder(std::vector<std::string> supportedExtensions, const renderer::ShaderHeader& header, const std::string& entrypoint, const renderer::Shader::DefineList& defines,
+    const std::vector<std::string>& includes, renderer::ShaderHeader::ShaderModel output, renderer::ShaderCompileFlags flags) noexcept
     : ResourceDecoder(supportedExtensions)
     , m_header(header)
-    , m_reflections(reflections)
-    , m_output(output)
+    , m_reflections(!(flags& renderer::ShaderCompileFlag::ShaderSource_DontUseReflection))
+
+    , m_entrypoint(entrypoint)
+    , m_defines(defines)
+    , m_includes(includes)
+
+    , m_outputSM(output)
 {
+    ASSERT(!(flags & renderer::ShaderCompileFlag::ShaderSource_UseLegacyCompilerForHLSL), "must be false");
 }
 
 Resource* ShaderDXCDecoder::decode(const stream::Stream* stream, const std::string& name) const
 {
     if (stream->size() == 0)
     {
+        LOG_ERROR("ShaderDXCDecoder::decode the stream is empty");
         return nullptr;
     }
-
     stream->seekBeg(0);
 
     auto isHLSL_ShaderModel6 = [](renderer::ShaderHeader::ShaderModel model) -> bool
     {
-        return model == renderer::ShaderHeader::ShaderModel::HLSL_6_0 || model == renderer::ShaderHeader::ShaderModel::HLSL_6_1;
+        return model == renderer::ShaderHeader::ShaderModel::Default ||
+            model == renderer::ShaderHeader::ShaderModel::HLSL_6_1 || model == renderer::ShaderHeader::ShaderModel::HLSL_6_6;
     };
 
     if (!isHLSL_ShaderModel6(m_header._shaderModel))
     {
-        LOG_ERROR("ShaderDXCDecoder::decode support HLSL SM 6.0 and above");
+        LOG_ERROR("ShaderDXCDecoder::decode support HLSL SM6.0 and above");
         return nullptr;
     }
 
-#if DEBUG
-    const std::string shaderName = m_header._name.empty() ? name : m_header._name;
-#else
-    const std::string shaderName = name;
-#endif
-
-    if (m_header._contentType == renderer::ShaderHeader::ShaderResource::Source)
+    if (m_header._contentType == renderer::ShaderHeader::ShaderContent::Source)
     {
         std::string source;
         source.resize(stream->size());
         stream->read(source.data(), stream->size());
-#if DEBUG
+#if LOG_LOADIMG_TIME
         utils::Timer timer;
         timer.start();
-#endif
+#endif //LOG_LOADIMG_TIME
 
-        renderer::ShaderType shaderType = m_header._type;
-        if (m_header._type == renderer::ShaderType::Undefined)
+        renderer::ShaderType shaderType = m_header._shaderType;
+        if (m_header._shaderType == renderer::ShaderType::Undefined)
         {
             std::string fileExtension = stream::FileLoader::getFileExtension(name);
             auto result = k_HLSL_ExtensionList.find(fileExtension);
@@ -106,49 +117,59 @@ Resource* ShaderDXCDecoder::decode(const stream::Stream* stream, const std::stri
         }
 
         IDxcBlob* binaryShader = nullptr;
-        if (!compile(source, shaderType, std::wstring(shaderName.cbegin(), shaderName.cend()), binaryShader))
+        if (!ShaderDXCDecoder::compile(source, shaderType, std::wstring(name.cbegin(), name.cend()), binaryShader))
         {
             if (binaryShader)
             {
                 binaryShader->Release();
             }
 
+            LOG_ERROR("ShaderDXCDecoder::decode: compile is failed");
             return nullptr;
         }
 
         ASSERT(binaryShader, "nullptr");
         u32 bytecodeSize = static_cast<u32>(binaryShader->GetBufferSize());
-        stream::Stream* resourceBinary = stream::StreamManager::createMemoryStream(nullptr, bytecodeSize + sizeof(u32) + sizeof(bool));
+        stream::Stream* resourceBinary = stream::StreamManager::createMemoryStream();
+
         resourceBinary->write<u32>(bytecodeSize);
         resourceBinary->write(binaryShader->GetBufferPointer(), bytecodeSize);
+        resourceBinary->write(m_entrypoint);
 
         resourceBinary->write<bool>(m_reflections);
-        if (m_reflections && !reflect(resourceBinary, binaryShader))
+        if (m_reflections && !ShaderDXCDecoder::reflect(resourceBinary, binaryShader))
         {
-            if (binaryShader)
-            {
-                binaryShader->Release();
-            }
-            delete resourceBinary;
+            LOG_ERROR("ShaderDXCDecoder::decode: reflect is failed");
+
+            binaryShader->Release();
+            stream::StreamManager::destroyStream(resourceBinary);
 
             return nullptr;
         }
+        binaryShader->Release();
 
-        renderer::ShaderHeader* resourceHeader = new renderer::ShaderHeader(m_header);
-        resourceHeader->_type = shaderType;
-#if DEBUG
-        resourceHeader->_name = shaderName;
-#endif
-        Resource* resource = new renderer::Shader(resourceHeader);
-        resource->init(resourceBinary);
+        renderer::ShaderHeader shaderHeader(m_header);
+        resource::ResourceHeader::fillResourceHeader(&shaderHeader, name, resourceBinary->size(), 0);
+        shaderHeader._shaderType = shaderType;
+        shaderHeader._contentType = renderer::ShaderHeader::ShaderContent::Bytecode;
+        shaderHeader._shaderModel = m_outputSM;
 
-#if DEBUG
+        Resource* resource = V3D_NEW(renderer::Shader, memory::MemoryLabel::MemoryResource)(V3D_NEW(renderer::ShaderHeader, memory::MemoryLabel::MemoryResource)(shaderHeader));
+        if (!resource->load(resourceBinary))
+        {
+            LOG_ERROR("ShaderDXCDecoder::decode: the shader loading is failed");
+
+            V3D_DELETE(resource, memory::MemoryLabel::MemoryResource);
+            resource = nullptr;
+        }
+        stream::StreamManager::destroyStream(resourceBinary);
+
+#if LOG_LOADIMG_TIME
         timer.stop();
         u64 time = timer.getTime<utils::Timer::Duration_MilliSeconds>();
-        LOG_DEBUG("ShaderDXCDecoder::decode, shader %s, is loaded. Time %.4f sec", name.c_str(), static_cast<f32>(time) / 1000.0f);
-#endif
+        LOG_DEBUG("ShaderDXCDecoder::decode, the shader %s, is loaded. Time %.4f sec", name.c_str(), static_cast<f32>(time) / 1000.0f);
+#endif //LOG_LOADIMG_TIME
 
-        binaryShader->Release();
         return resource;
     }
     else
@@ -161,7 +182,7 @@ Resource* ShaderDXCDecoder::decode(const stream::Stream* stream, const std::stri
 bool ShaderDXCDecoder::compile(const std::string& source, renderer::ShaderType shaderType, const std::wstring& name, IDxcBlob*& shader) const
 {
     std::vector<LPCWSTR> arguments;
-    if (m_output == renderer::ShaderHeader::ShaderModel::SpirV)
+    if (m_outputSM == renderer::ShaderHeader::ShaderModel::SpirV)
     {
         arguments.push_back(L"-spirv");
     }
@@ -171,7 +192,6 @@ bool ShaderDXCDecoder::compile(const std::string& source, renderer::ShaderType s
         arguments.push_back(L"-Od");
         arguments.push_back(L"-Vd");
         arguments.push_back(L"-Zi");
-
         //arguments.push_back(L"-Qembed_debug");
     }
     else if (m_header._optLevel == 1)
@@ -201,15 +221,15 @@ bool ShaderDXCDecoder::compile(const std::string& source, renderer::ShaderType s
             case renderer::ShaderHeader::ShaderModel::HLSL_5_0:
                 return L"vs_5_0";
 
-            case renderer::ShaderHeader::ShaderModel::Default:
             case renderer::ShaderHeader::ShaderModel::HLSL_5_1:
                 return L"vs_5_1";
 
-            case renderer::ShaderHeader::ShaderModel::HLSL_6_0:
-                return L"vs_6_0";
-
+            case renderer::ShaderHeader::ShaderModel::Default:
             case renderer::ShaderHeader::ShaderModel::HLSL_6_1:
                 return L"vs_6_1";
+
+            case renderer::ShaderHeader::ShaderModel::HLSL_6_6:
+                return L"vs_6_6";
 
             default:
                 ASSERT(false, "target hasn't detected");
@@ -224,19 +244,42 @@ bool ShaderDXCDecoder::compile(const std::string& source, renderer::ShaderType s
             case renderer::ShaderHeader::ShaderModel::HLSL_5_0:
                 return L"ps_5_0";
 
-            case renderer::ShaderHeader::ShaderModel::Default:
             case renderer::ShaderHeader::ShaderModel::HLSL_5_1:
                 return L"ps_5_1";
 
-            case renderer::ShaderHeader::ShaderModel::HLSL_6_0:
-                return L"ps_6_0";
-
+            case renderer::ShaderHeader::ShaderModel::Default:
             case renderer::ShaderHeader::ShaderModel::HLSL_6_1:
                 return L"ps_6_1";
+
+            case renderer::ShaderHeader::ShaderModel::HLSL_6_6:
+                return L"ps_6_6";
 
             default:
                 ASSERT(false, "target hasn't detected");
                 return L"ps_x_x";
+            }
+        }
+
+        case renderer::ShaderType::Compute:
+        {
+            switch (model)
+            {
+            case renderer::ShaderHeader::ShaderModel::HLSL_5_0:
+                return L"cs_5_0";
+
+            case renderer::ShaderHeader::ShaderModel::HLSL_5_1:
+                return L"cs_5_1";
+
+            case renderer::ShaderHeader::ShaderModel::Default:
+            case renderer::ShaderHeader::ShaderModel::HLSL_6_1:
+                return L"cs_6_1";
+
+            case renderer::ShaderHeader::ShaderModel::HLSL_6_6:
+                return L"cs_6_6";
+
+            default:
+                ASSERT(false, "target hasn't detected");
+                return L"cs_x_x";
             }
         }
 
@@ -248,7 +291,7 @@ bool ShaderDXCDecoder::compile(const std::string& source, renderer::ShaderType s
         }
     };
 
-    const std::wstring entryPoint = m_header._entryPoint.empty() ? L"main" : std::wstring(m_header._entryPoint.cbegin(), m_header._entryPoint.cend());
+    const std::wstring entryPoint = m_entrypoint.empty() ? L"main" : std::wstring(m_entrypoint.cbegin(), m_entrypoint.cend());
     const std::wstring target = getShaderTarget(shaderType, m_header._shaderModel);
 
 #if USE_CUSTOM_DXC
@@ -341,7 +384,7 @@ bool ShaderDXCDecoder::compile(const std::string& source, renderer::ShaderType s
     //TODO
 
     return true;
-#else
+#else //USE_CUSTOM_DXC
     IDxcCompiler2* DXCompiler = nullptr;
     {
         HRESULT result = DxcCreateInstance(CLSID_DxcCompiler, IID_PPV_ARGS(&DXCompiler));
@@ -378,15 +421,15 @@ bool ShaderDXCDecoder::compile(const std::string& source, renderer::ShaderType s
         }
     }
 
-    std::vector<std::pair<std::wstring, std::wstring>> wsDefines(m_header._defines.size());
+    std::vector<std::pair<std::wstring, std::wstring>> wsDefines(m_defines.size());
     for (u32 i = 0; i < wsDefines.size(); ++i)
     {
-        wsDefines[i].first = std::move(std::wstring(m_header._defines[i].first.cbegin(), m_header._defines[i].first.cend()));
-        wsDefines[i].second = std::move(std::wstring(m_header._defines[i].second.cbegin(), m_header._defines[i].second.cend()));
+        wsDefines[i].first = std::move(std::wstring(m_defines[i].first.cbegin(), m_defines[i].first.cend()));
+        wsDefines[i].second = std::move(std::wstring(m_defines[i].second.cbegin(), m_defines[i].second.cend()));
     }
 
     std::vector<DxcDefine> dxcDefines(wsDefines.size());
-    for (u32 i = 0; i < m_header._defines.size(); ++i)
+    for (u32 i = 0; i < m_defines.size(); ++i)
     {
         DxcDefine& m = dxcDefines[i];
         m.Name = wsDefines[i].first.c_str();
@@ -452,7 +495,7 @@ bool ShaderDXCDecoder::compile(const std::string& source, renderer::ShaderType s
     {
         IDxcBlobEncoding* disassembleShader = nullptr;
         ASSERT(DXSource, "nullptr");
-        if (m_output != renderer::ShaderHeader::ShaderModel::SpirV)
+        if (m_outputSM != renderer::ShaderHeader::ShaderModel::SpirV)
         {
             HRESULT result = DXCompiler->Disassemble(shader, &disassembleShader);
             if (SUCCEEDED(result))
@@ -470,7 +513,7 @@ bool ShaderDXCDecoder::compile(const std::string& source, renderer::ShaderType s
     }
 #endif
 
-    bool useValidator = m_output != renderer::ShaderHeader::ShaderModel::SpirV; //Only for DXBC
+    bool useValidator = m_outputSM != renderer::ShaderHeader::ShaderModel::SpirV; //Only for DXBC
     if (useValidator)
     {
         IDxcValidator* DXValidator = nullptr;
@@ -525,7 +568,7 @@ bool ShaderDXCDecoder::compile(const std::string& source, renderer::ShaderType s
 
 bool ShaderDXCDecoder::reflect(stream::Stream* stream, IDxcBlob* shader) const
 {
-    switch (m_output)
+    switch (m_outputSM)
     {
 #ifdef USE_SPIRV
     case renderer::ShaderHeader::ShaderModel::SpirV:
@@ -538,8 +581,8 @@ bool ShaderDXCDecoder::reflect(stream::Stream* stream, IDxcBlob* shader) const
         return reflector.reflect(spirv, stream);
     }
 #endif //USE_SPIRV
-    case renderer::ShaderHeader::ShaderModel::HLSL_6_0:
     case renderer::ShaderHeader::ShaderModel::HLSL_6_1:
+    case renderer::ShaderHeader::ShaderModel::HLSL_6_6:
     {
         ShaderReflectionDXC reflector;
         return reflector.reflect(shader, stream);

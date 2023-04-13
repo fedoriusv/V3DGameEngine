@@ -11,22 +11,26 @@ namespace v3d
 {
 namespace resource
 {
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
     class Resource;
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
     * @brief ShaderDXCDecoder decoder.
+    * Support source formats: "vs", "ps", "cs", "hlsl".
+    * Support shader model 6.0 and above
     * @see https://github.com/microsoft/DirectXShaderCompiler
     */
     class ShaderDXCDecoder final : public ResourceDecoder
     {
     public:
 
-        explicit ShaderDXCDecoder(const renderer::ShaderHeader& header, renderer::ShaderHeader::ShaderModel output, bool reflections = true) noexcept;
-        explicit ShaderDXCDecoder(std::vector<std::string> supportedExtensions, const renderer::ShaderHeader& header, renderer::ShaderHeader::ShaderModel output, bool reflections = true) noexcept;
+        explicit ShaderDXCDecoder(const renderer::ShaderHeader& header, const std::string& entrypoint, const renderer::Shader::DefineList& defines,
+            const std::vector<std::string>& includes, renderer::ShaderHeader::ShaderModel output, renderer::ShaderCompileFlags flags = 0) noexcept;
+
+        explicit ShaderDXCDecoder(std::vector<std::string> supportedExtensions, const renderer::ShaderHeader& header, const std::string& entrypoint, const renderer::Shader::DefineList& defines,
+            const std::vector<std::string>& includes, renderer::ShaderHeader::ShaderModel output, renderer::ShaderCompileFlags flags = 0) noexcept;
+
         ~ShaderDXCDecoder() = default;
 
         [[nodiscard]] Resource* decode(const stream::Stream* stream, const std::string& name = "") const override;
@@ -39,7 +43,11 @@ namespace resource
         const renderer::ShaderHeader m_header;
         const bool m_reflections;
 
-        const renderer::ShaderHeader::ShaderModel m_output;
+        const std::string m_entrypoint;
+        const renderer::Shader::DefineList m_defines;
+        const std::vector<std::string> m_includes;
+
+        renderer::ShaderHeader::ShaderModel m_outputSM;
     };
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////

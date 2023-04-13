@@ -71,7 +71,7 @@ namespace renderer
         using DefineList = std::vector<std::pair<std::string, std::string>>;
 
         /**
-        * @brief struct Attribute
+        * @brief struct Attribute/Parameters
         */
         struct Attribute
         {
@@ -81,12 +81,12 @@ namespace renderer
             renderer::Format _format;
             std::string      _name;
 
-            void operator>>(stream::Stream* stream) const;
-            void operator<<(const stream::Stream* stream);
+            u32 operator>>(stream::Stream* stream) const;
+            u32 operator<<(const stream::Stream* stream);
         };
 
         /**
-        * @brief struct UniformBuffer
+        * @brief struct UniformBuffer/ConstantBuffer
         */
         struct UniformBuffer
         {
@@ -94,15 +94,15 @@ namespace renderer
             {
                 Uniform() noexcept;
 
-                u32                _bufferId;
+                u32                _bufferID;
                 u32                _array;
                 renderer::DataType _type;
                 u32                _size;
                 u32                _offset;
                 std::string        _name;
 
-                void operator>>(stream::Stream* stream) const;
-                void operator<<(const stream::Stream* stream);
+                u32 operator>>(stream::Stream* stream) const;
+                u32 operator<<(const stream::Stream* stream);
             };
 
             UniformBuffer() noexcept;
@@ -116,12 +116,12 @@ namespace renderer
 
             std::vector<Uniform> _uniforms;
 
-            void operator>>(stream::Stream* stream) const;
-            void operator<<(const stream::Stream* stream);
+            u32 operator>>(stream::Stream* stream) const;
+            u32 operator<<(const stream::Stream* stream);
         };
 
         /**
-        * @brief struct Image
+        * @brief struct Image/Texture
         */
         struct Image
         {
@@ -135,8 +135,8 @@ namespace renderer
             bool                    _ms;
             std::string             _name;
 
-            void operator>>(stream::Stream* stream) const;
-            void operator<<(const stream::Stream* stream);
+            u32 operator>>(stream::Stream* stream) const;
+            u32 operator<<(const stream::Stream* stream);
         };
 
         /**
@@ -150,12 +150,12 @@ namespace renderer
             u32                     _binding;
             std::string             _name;
 
-            void operator>>(stream::Stream* stream) const;
-            void operator<<(const stream::Stream* stream);
+            u32 operator>>(stream::Stream* stream) const;
+            u32 operator<<(const stream::Stream* stream);
         };
 
         /**
-        * @brief struct StorageImage
+        * @brief struct StorageImage/UAV
         */
         struct StorageImage
         {
@@ -169,12 +169,12 @@ namespace renderer
             bool                    _readonly;
             std::string             _name;
 
-            void operator>>(stream::Stream* stream) const;
-            void operator<<(const stream::Stream* stream);
+            u32 operator>>(stream::Stream* stream) const;
+            u32 operator<<(const stream::Stream* stream);
         };
 
         /**
-        * @brief struct StorageBuffer
+        * @brief struct StorageBuffer/UAV
         */
         struct StorageBuffer
         {
@@ -182,10 +182,13 @@ namespace renderer
 
             u32                     _set;
             u32                     _binding;
+            renderer::Format        _format;
+            u32                     _array;
+            bool                    _readonly;
             std::string             _name;
 
-            void operator>>(stream::Stream* stream) const;
-            void operator<<(const stream::Stream* stream);
+            u32 operator>>(stream::Stream* stream) const;
+            u32 operator<<(const stream::Stream* stream);
         };
 
         /**
@@ -199,8 +202,8 @@ namespace renderer
             u32         _size;
             std::string _name;
 
-            void operator>>(stream::Stream* stream) const;
-            void operator<<(const stream::Stream* stream);
+            u32 operator>>(stream::Stream* stream) const;
+            u32 operator<<(const stream::Stream* stream);
         };
 
         /**

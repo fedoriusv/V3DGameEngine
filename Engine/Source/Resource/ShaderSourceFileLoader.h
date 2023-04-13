@@ -3,6 +3,7 @@
 #include "ResourceLoader.h"
 #include "ResourceDecoderRegistration.h"
 #include "Renderer/ShaderProperties.h"
+#include "Renderer/Shader.h"
 
 namespace v3d
 {
@@ -19,35 +20,45 @@ namespace resource
     /**
     * @brief ShaderSourceFileLoader class. Resource loader.
     * Loads shaders for source file
+    * 
     * @see ShaderSpirVDecoder
     * @see ShaderHLSLDecoder
+    * @see ShaderDXCDecoder
     */
     class ShaderSourceFileLoader : public ResourceLoader<renderer::Shader*>, public ResourceDecoderRegistration
     {
     public:
 
+        typedef renderer::ShaderCompileFlag ShaderSourceFlag;
+        typedef renderer::ShaderCompileFlags ShaderSourceFlags;
+
         ShaderSourceFileLoader() = delete;
         ShaderSourceFileLoader(const ShaderSourceFileLoader&) = delete;
+
         ~ShaderSourceFileLoader() = default;
 
         /**
         * @brief ShaderSourceFileLoader constructor.
         * @param const renderer::Context* context [required]
-        * @param const std::vector<std::pair<std::string, std::string>>& defines [optional]
-        * @param ShaderSourceBuildFlags flags [optional] @see ShaderSourceBuildFlags
+        * @param const std::string& entrypoint [optional]
+        * @param const renderer::Shader::DefineList& defines [optional]
+        * @param const std::vector<std::string>& includes [optional]
+        * @param ShaderCompileFlags flags [optional] @see ShaderCompileFlags
         */
-        explicit ShaderSourceFileLoader(const renderer::Context* context, const std::vector<std::pair<std::string, std::string>>& defines = {}, ShaderSourceBuildFlags flags = 0) noexcept;
+        explicit ShaderSourceFileLoader(const renderer::Context* context, const std::string& entrypoint = "main", const renderer::Shader::DefineList& defines = {},
+            const std::vector<std::string>& includes = {}, ShaderSourceFlags flags = 0) noexcept;
 
         /**
         * @brief ShaderSourceFileLoader constructor.
-        * Support HLSL format only
+        * Supports HLSL format only
         * @param const renderer::Context* context [required]
         * @param renderer::ShaderType type [required]
         * @param const std::string& entryPoint [optional]
         * @param const std::vector<std::pair<std::string, std::string>>& defines [optional]
-        * @param ShaderSourceBuildFlags flags [optional] @see ShaderSourceBuildFlags
+        * @param ShaderCompileFlags flags [optional] @see ShaderCompileFlags
         */
-        explicit ShaderSourceFileLoader(const renderer::Context* context, renderer::ShaderType type, const std::string& entryPoint = "main", const std::vector<std::pair<std::string, std::string>>& defines = {}, ShaderSourceBuildFlags flags = 0) noexcept;
+        explicit ShaderSourceFileLoader(const renderer::Context* context, renderer::ShaderType type, const std::string& entryPoint = "main",
+             const std::vector<std::pair<std::string, std::string>>& defines = {}, const std::vector<std::string>& includes = {}, ShaderSourceFlags flags = 0) noexcept;
 
         /**
         * @brief Load a Shader source by name from file

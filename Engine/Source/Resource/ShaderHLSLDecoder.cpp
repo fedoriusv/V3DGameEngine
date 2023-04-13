@@ -10,6 +10,8 @@
 #if D3D_RENDER
 #   include "Renderer/Core/D3D12/D3DDebug.h"
 
+#define LOG_LOADIMG_TIME (DEBUG || 1)
+
 namespace v3d
 {
 namespace resource
@@ -35,17 +37,29 @@ const std::map<std::string, renderer::ShaderType> k_HLSL_ExtensionList =
 bool reflect(ID3DBlob* shader, stream::Stream* stream, u32 version);
 void reflectConstantBuffers(ID3D11ShaderReflection* reflector, const std::vector<D3D11_SHADER_INPUT_BIND_DESC>& bindDescs, stream::Stream* stream, u32 version);
 
-ShaderHLSLDecoder::ShaderHLSLDecoder(const renderer::ShaderHeader& header, bool reflections) noexcept
+ShaderHLSLDecoder::ShaderHLSLDecoder(const renderer::ShaderHeader& header, const std::string& entrypoint, const renderer::Shader::DefineList& defines,
+    const std::vector<std::string>& includes, renderer::ShaderCompileFlags flags) noexcept
     : m_header(header)
-    , m_reflections(reflections)
+    , m_reflections(!(flags& renderer::ShaderCompileFlag::ShaderSource_DontUseReflection))
+
+    , m_entrypoint(entrypoint)
+    , m_defines(defines)
+    , m_includes(includes)
+
     , m_version(0)
 {
 }
 
-ShaderHLSLDecoder::ShaderHLSLDecoder(std::vector<std::string> supportedExtensions, const renderer::ShaderHeader& header, bool reflections) noexcept
+ShaderHLSLDecoder::ShaderHLSLDecoder(std::vector<std::string> supportedExtensions, const renderer::ShaderHeader& header, const std::string& entrypoint, const renderer::Shader::DefineList& defines,
+    const std::vector<std::string>& includes, renderer::ShaderCompileFlags flags) noexcept
     : ResourceDecoder(supportedExtensions)
     , m_header(header)
-    , m_reflections(reflections)
+    , m_reflections(!(flags& renderer::ShaderCompileFlag::ShaderSource_DontUseReflection))
+
+    , m_entrypoint(entrypoint)
+    , m_defines(defines)
+    , m_includes(includes)
+
     , m_version(0)
 {
 }
@@ -56,32 +70,29 @@ Resource* ShaderHLSLDecoder::decode(const stream::Stream* stream, const std::str
     {
         stream->seekBeg(0);
 
-        auto isHLSL = [](renderer::ShaderHeader::ShaderModel model) -> bool
+        auto isHLSL5 = [](renderer::ShaderHeader::ShaderModel model) -> bool
         {
-            return model == renderer::ShaderHeader::ShaderModel::Default ||model == renderer::ShaderHeader::ShaderModel::HLSL_5_0 || model == renderer::ShaderHeader::ShaderModel::HLSL_5_1;
+            return model == renderer::ShaderHeader::ShaderModel::Default ||
+                model == renderer::ShaderHeader::ShaderModel::HLSL_5_0 || model == renderer::ShaderHeader::ShaderModel::HLSL_5_1;
         };
 
-        if (!isHLSL(m_header._shaderModel))
+        if (!isHLSL5(m_header._shaderModel))
         {
             LOG_ERROR("ShaderHLSLDecoder::decode support SM5.0 and SM5.1 HLSL language only");
             return nullptr;
         }
 
-#if DEBUG
-        const std::string shaderName = m_header._name.empty() ? name : m_header._name;
-#else
         const std::string shaderName = name;
-#endif
-
-        if (m_header._contentType == renderer::ShaderHeader::ShaderResource::Source)
+        if (m_header._contentType == renderer::ShaderHeader::ShaderContent::Source)
         {
             std::string source;
             source.resize(stream->size());
             stream->read(source.data(), stream->size());
-#if DEBUG
+#if LOG_LOADIMG_TIME
             utils::Timer timer;
             timer.start();
-#endif
+#endif //LOG_LOADIMG_TIME
+
             auto getShaderTypeFromName = [](const std::string& name) -> renderer::ShaderType
             {
                 std::string fileExtension = stream::FileLoader::getFileExtension(name);
@@ -107,7 +118,7 @@ Resource* ShaderHLSLDecoder::decode(const stream::Stream* stream, const std::str
             };
 
             static_assert(toEnumType(renderer::ShaderType::Count) == 3, "diff size. Add new types");
-            renderer::ShaderType type = m_header._type == renderer::ShaderType::Undefined ? getShaderTypeFromName(name) : m_header._type;
+            renderer::ShaderType shaderType = m_header._shaderType == renderer::ShaderType::Undefined ? getShaderTypeFromName(name) : m_header._shaderType;
 
             std::string shaderVersion = "";
             renderer::ShaderHeader::ShaderModel shaderModel = renderer::ShaderHeader::ShaderModel::Default;
@@ -188,22 +199,25 @@ Resource* ShaderHLSLDecoder::decode(const stream::Stream* stream, const std::str
                 return false;
             };
 
-            if (!getShaderType(type, m_header._shaderModel))
+            if (!getShaderType(shaderType, m_header._shaderModel))
             {
                 LOG_ERROR("ShaderHLSLDecoder::decode wrong version: %s", shaderVersion.c_str());
                 return nullptr;
             }
+            m_version = (shaderModel == renderer::ShaderHeader::ShaderModel::HLSL_5_1) ? 51 : 50;
 
-            std::vector<D3D_SHADER_MACRO> macros(m_header._defines.size() + 1);
-            u32 index = 0;
-            for (auto& def : m_header._defines)
+            std::vector<D3D_SHADER_MACRO> macros(m_defines.size() + 1);
             {
-                macros[index].Name = def.first.c_str();
-                macros[index].Definition = def.second.c_str();
-                ++index;
+                u32 index = 0;
+                for (auto& def : m_defines)
+                {
+                    macros[index].Name = def.first.c_str();
+                    macros[index].Definition = def.second.c_str();
+                    ++index;
+                }
+                macros.back().Name = nullptr;
+                macros.back().Definition = nullptr;
             }
-            macros.back().Name = nullptr;
-            macros.back().Definition = nullptr;
 
             UINT compileFlags = D3DCOMPILE_ALL_RESOURCES_BOUND;
             if (m_header._optLevel == 0)
@@ -224,14 +238,14 @@ Resource* ShaderHLSLDecoder::decode(const stream::Stream* stream, const std::str
             }
 #ifndef DEBUG
             compileFlags |= D3DCOMPILE_WARNINGS_ARE_ERRORS;
-#endif
+#endif //DEBUG
 
             LOG_DEBUG("Shader[%s]:\n %s\n", name.c_str(), source.c_str());
             ID3DBlob* shader = nullptr;
             {
 #if D3D_DEBUG
                 ID3DBlob* debugInfo = nullptr;
-                HRESULT result = D3DCompile2(source.c_str(), source.size(), shaderName.c_str(), macros.data(), nullptr, m_header._entryPoint.c_str(), shaderVersion.c_str(), compileFlags, 0, 0, nullptr, 0, &shader, &debugInfo);
+                HRESULT result = D3DCompile2(source.c_str(), source.size(), shaderName.c_str(), macros.data(), nullptr, m_entrypoint.c_str(), shaderVersion.c_str(), compileFlags, 0, 0, nullptr, 0, &shader, &debugInfo);
                 if (debugInfo)
                 {
                     std::string error(reinterpret_cast<c8*>(debugInfo->GetBufferSize(), debugInfo->GetBufferPointer()));
@@ -239,9 +253,9 @@ Resource* ShaderHLSLDecoder::decode(const stream::Stream* stream, const std::str
 
                     debugInfo->Release();
                 }
-#else
-                HRESULT result = D3DCompile2(source.c_str(), source.size(), shaderName.c_str(), macros.data(), nullptr, m_header._entryPoint.c_str(), shaderVersion.c_str(), compileFlags, 0, 0, nullptr, 0, &shader, nullptr);
-#endif
+#else //D3D_DEBUG
+                HRESULT result = D3DCompile2(source.c_str(), source.size(), shaderName.c_str(), macros.data(), nullptr, m_entrypoint.c_str(), shaderVersion.c_str(), compileFlags, 0, 0, nullptr, 0, &shader, nullptr);
+#endif //D3D_DEBUG
                 if (FAILED(result))
                 {
                     LOG_ERROR("ShaderHLSLDecoder::decode D3DCompile2 is failed. Error %s", renderer::dx3d::D3DDebug::stringError(result).c_str());
@@ -271,55 +285,61 @@ Resource* ShaderHLSLDecoder::decode(const stream::Stream* stream, const std::str
                     disassembleShader->Release();
                 }
             }
-#endif
+#endif //DEBUG
 
-#if DEBUG
-            timer.stop();
-            u64 time = timer.getTime<utils::Timer::Duration_MilliSeconds>();
-            LOG_DEBUG("ShaderHLSLDecoder::decode, shader %s is loaded. Time %.4f sec", name.c_str(), static_cast<f32>(time) / 1000.0f);
-#endif
-
-            renderer::ShaderHeader* resourceHeader = new renderer::ShaderHeader(m_header);
-            resourceHeader->_type = type;
-            resourceHeader->_shaderModel = shaderModel;
-#if DEBUG
-            resourceHeader->_name = name;
-#endif
             u32 bytecodeSize = static_cast<u32>(shader->GetBufferSize());
-            stream::Stream* resourceBinary = stream::StreamManager::createMemoryStream(nullptr, bytecodeSize + sizeof(u32) + sizeof(bool));
+            stream::Stream* resourceBinary = stream::StreamManager::createMemoryStream();
+
             resourceBinary->write<u32>(bytecodeSize);
             resourceBinary->write(shader->GetBufferPointer(), bytecodeSize);
+            resourceBinary->write(m_entrypoint);
 
             resourceBinary->write<bool>(m_reflections);
-
-            m_version = (shaderModel == renderer::ShaderHeader::ShaderModel::HLSL_5_1) ? 51 : 50;
             if (m_reflections)
             {
                 if (!reflect(shader, resourceBinary, m_version))
                 {
-                    LOG_ERROR("ShaderHLSLDecoder::decode relect parse is failed. Shader %s", name.c_str());
+                    LOG_ERROR("ShaderHLSLDecoder::decode: relect is failed. Shader %s", name.c_str());
 
                     shader->Release();
-
-                    delete resourceHeader;
-                    delete resourceBinary;
+                    stream::StreamManager::destroyStream(resourceBinary);
 
                     return nullptr;
                 }
             }
-
-            Resource* resource = new renderer::Shader(resourceHeader);
-            resource->init(resourceBinary);
-
             shader->Release();
+
+            renderer::ShaderHeader shaderHeader(m_header);
+            resource::ResourceHeader::fillResourceHeader(&shaderHeader, name, resourceBinary->size(), 0);
+            shaderHeader._shaderType = shaderType;
+            shaderHeader._shaderModel = shaderModel;
+            shaderHeader._contentType = renderer::ShaderHeader::ShaderContent::Bytecode;
+
+            Resource* resource = V3D_NEW(renderer::Shader, memory::MemoryLabel::MemoryResource)(V3D_NEW(renderer::ShaderHeader, memory::MemoryLabel::MemoryResource)(shaderHeader));
+            if (!resource->load(resourceBinary))
+            {
+                LOG_ERROR("ShaderDXCDecoder::decode: the shader loading is failed");
+
+                stream::StreamManager::destroyStream(resourceBinary);
+                V3D_FREE(resource, memory::MemoryLabel::MemoryResource);
+
+                return nullptr;
+            }
+
+#if LOG_LOADIMG_TIME
+            timer.stop();
+            u64 time = timer.getTime<utils::Timer::Duration_MilliSeconds>();
+            LOG_DEBUG("ShaderHLSLDecoder::decode, the shader %s is loaded. Time %.4f sec", name.c_str(), static_cast<f32>(time) / 1000.0f);
+#endif //LOG_LOADIMG_TIME
+
             return resource;
         }
         else
         {
-#if DEBUG
+#if LOG_LOADIMG_TIME
             utils::Timer timer;
             timer.start();
-#endif
+#endif //LOG_LOADIMG_TIME
 
             ID3DBlob* binaryShader = nullptr;
             HRESULT result = D3DCreateBlob(stream->size(), &binaryShader);
@@ -328,7 +348,7 @@ Resource* ShaderHLSLDecoder::decode(const stream::Stream* stream, const std::str
                 LOG_ERROR("ShaderHLSLDecoder::decode Can't create binary blob [%s]", name.c_str());
                 return nullptr;
             }
-            
+
             stream->read(binaryShader->GetBufferPointer(), static_cast<u32>(binaryShader->GetBufferSize()));
             
 #if (DEBUG & D3D_DEBUG)
@@ -349,13 +369,7 @@ Resource* ShaderHLSLDecoder::decode(const stream::Stream* stream, const std::str
                     disassembleShader->Release();
                 }
             }
-#endif
-
-#if DEBUG
-            timer.stop();
-            u64 time = timer.getTime<utils::Timer::Duration_MilliSeconds>();
-            LOG_DEBUG("ShaderSpirVDecoder::decode, shader %s, is loaded. Time %.4f sec", name.c_str(), static_cast<f32>(time) / 1000.0f);
-#endif
+#endif //DEBUG
 
             auto getShaderTypeFromName = [](const std::string& name) -> renderer::ShaderType
             {
@@ -381,39 +395,53 @@ Resource* ShaderHLSLDecoder::decode(const stream::Stream* stream, const std::str
                 return renderer::ShaderType::Undefined;
             };
 
-            renderer::ShaderHeader* resourceHeader = new renderer::ShaderHeader(m_header);
-            resourceHeader->_type = getShaderTypeFromName(name);
-            resourceHeader->_shaderModel = renderer::ShaderHeader::ShaderModel::HLSL_5_1;
-#if DEBUG
-            resourceHeader->_name = name;
-#endif
             u32 bytecodeSize = static_cast<u32>(binaryShader->GetBufferSize());
-            stream::Stream* resourceBinary = stream::StreamManager::createMemoryStream(nullptr, bytecodeSize + sizeof(u32) + sizeof(bool));
+            stream::Stream* resourceBinary = stream::StreamManager::createMemoryStream();
+
             resourceBinary->write<u32>(bytecodeSize);
             resourceBinary->write(binaryShader->GetBufferPointer(), bytecodeSize);
+            resourceBinary->write(m_entrypoint);
 
             resourceBinary->write<bool>(m_reflections);
-
-            m_version = 51; //must be SM51 or SM50
             if (m_reflections)
             {
+                m_version = 51; //must be SM51 or SM50
                 if (!reflect(binaryShader, resourceBinary, m_version))
                 {
-                    LOG_ERROR("ShaderHLSLDecoder::decode relect parse is failed. Shader %s", name.c_str());
+                    LOG_ERROR("ShaderHLSLDecoder::decode relect is failed. Shader %s", name.c_str());
 
                     binaryShader->Release();
-
-                    delete resourceHeader;
-                    delete resourceBinary;
+                    stream::StreamManager::destroyStream(resourceBinary);
 
                     return nullptr;
                 }
             }
-
-            Resource* resource = new renderer::Shader(resourceHeader);
-            resource->init(resourceBinary);
-
             binaryShader->Release();
+
+            renderer::ShaderHeader shaderHeader(m_header);
+            resource::ResourceHeader::fillResourceHeader(&shaderHeader, name, resourceBinary->size(), 0);
+            shaderHeader._shaderType = getShaderTypeFromName(name);
+            shaderHeader._shaderModel = renderer::ShaderHeader::ShaderModel::HLSL_5_1; //by default
+            shaderHeader._contentType = renderer::ShaderHeader::ShaderContent::Bytecode;
+
+            Resource* resource = V3D_NEW(renderer::Shader, memory::MemoryLabel::MemoryResource)(V3D_NEW(renderer::ShaderHeader, memory::MemoryLabel::MemoryResource)(shaderHeader));
+            if (!resource->load(resourceBinary))
+            {
+                LOG_ERROR("ShaderDXCDecoder::decode: the shader loading is failed");
+
+                stream::StreamManager::destroyStream(resourceBinary);
+                V3D_FREE(resource, memory::MemoryLabel::MemoryResource);
+
+                return nullptr;
+            }
+            stream::StreamManager::destroyStream(resourceBinary);
+
+#if LOG_LOADIMG_TIME
+            timer.stop();
+            u64 time = timer.getTime<utils::Timer::Duration_MilliSeconds>();
+            LOG_DEBUG("ShaderSpirVDecoder::decode, the shader %s, is loaded. Time %.4f sec", name.c_str(), static_cast<f32>(time) / 1000.0f);
+#endif //LOG_LOADIMG_TIME
+
             return resource;
         }
     }
@@ -529,11 +557,11 @@ bool reflect(ID3DBlob* shader, stream::Stream* stream, u32 version)
                 input._location = input._location - 1;
             }
             input._format = convertTypeToFormat(parameterDesc.ComponentType, parameterDesc.Mask);
-#if USE_STRING_ID_SHADER
+
             const std::string name(parameterDesc.SemanticName);
             ASSERT(!name.empty(), "empty name");
             input._name = name + std::to_string(parameterDesc.SemanticIndex);
-#endif
+
             input >> stream;
         }
     }
@@ -573,11 +601,11 @@ bool reflect(ID3DBlob* shader, stream::Stream* stream, u32 version)
                 output._location = output._location - 1;
             }
             output._format = convertTypeToFormat(parameterDesc.ComponentType, parameterDesc.Mask);
-#if USE_STRING_ID_SHADER
+
             const std::string name(parameterDesc.SemanticName);
             ASSERT(!name.empty(), "empty name");
             output._name = name + std::to_string(parameterDesc.SemanticIndex);
-#endif
+
             output >> stream;
         }
     }
@@ -664,9 +692,8 @@ bool reflect(ID3DBlob* shader, stream::Stream* stream, u32 version)
             sepImage._array = boundTexturesDescs[imageId].BindCount;
             sepImage._ms = ms;
             sepImage._depth = false;
-#if USE_STRING_ID_SHADER
             sepImage._name = std::string(boundTexturesDescs[imageId].Name);
-#endif
+
             sepImage >> stream;
         }
     }
@@ -693,9 +720,8 @@ bool reflect(ID3DBlob* shader, stream::Stream* stream, u32 version)
             renderer::Shader::Sampler sampler;
             sampler._set = currentSpace;
             sampler._binding = currentBinding;
-#if USE_STRING_ID_SHADER
             sampler._name = std::string(boundSamplersDescs[samplerId].Name);
-#endif
+
             sampler >> stream;
         }
     }
@@ -842,9 +868,8 @@ bool reflect(ID3DBlob* shader, stream::Stream* stream, u32 version)
                 UAVTexture._format = convertResourceTypeToFormat(boundUAVDescs[UAVTextureId].ReturnType, boundUAVDescs[UAVTextureId].uFlags);
                 UAVTexture._array = boundUAVDescs[UAVTextureId].BindCount;
                 UAVTexture._readonly = false;
-#if USE_STRING_ID_SHADER
                 UAVTexture._name = std::string(boundUAVDescs[UAVTextureId].Name);
-#endif
+
                 UAVTexture >> stream;
             }
         }
@@ -855,7 +880,23 @@ bool reflect(ID3DBlob* shader, stream::Stream* stream, u32 version)
             {
                 if (boundUAVDescs[UAVBufferId].Dimension == D3D_SRV_DIMENSION_BUFFER)
                 {
-                    ASSERT(false, "not impl");
+                    u32 currentBinding = boundUAVDescs[UAVBufferId].BindPoint;
+                    auto found = std::find(UAVTable[currentSpace].begin(), UAVTable[currentSpace].end(), currentBinding);
+                    if (found != UAVTable[currentSpace].end() || (!UAVTable[currentSpace].empty() && currentBinding <= UAVTable[currentSpace].back()))
+                    {
+                        ++currentSpace;
+                    }
+
+                    renderer::Shader::StorageBuffer UAVBuffer;
+                    UAVBuffer._set = currentSpace;
+                    UAVBuffer._binding = currentBinding;
+
+                    UAVBuffer._format = convertResourceTypeToFormat(boundUAVDescs[UAVBufferId].ReturnType, boundUAVDescs[UAVBufferId].uFlags);
+                    UAVBuffer._array = boundUAVDescs[UAVBufferId].BindCount;
+                    UAVBuffer._readonly = false;
+                    UAVBuffer._name = std::string(boundUAVDescs[UAVBufferId].Name);
+
+                    UAVBuffer >> stream;
                 }
             }
         }
@@ -1029,9 +1070,8 @@ void reflectConstantBuffers(ID3D11ShaderReflection* reflector, const std::vector
         constantBuffer._binding = currentBinding;
         constantBuffer._array = bufferDesc.Variables;
         constantBuffer._size = bufferDesc.Size;
-#if USE_STRING_ID_SHADER
         constantBuffer._name = std::string(bufferDesc.Name);
-#endif
+
         ID3D11ShaderReflectionConstantBuffer* structBuffer = structVariable->GetBuffer();
         ASSERT(structBuffer, "ID3D11ShaderReflectionConstantBuffer is nullptr");
 
@@ -1066,14 +1106,13 @@ void reflectConstantBuffers(ID3D11ShaderReflection* reflector, const std::vector
             }
 
             renderer::Shader::UniformBuffer::Uniform uniform;
-            uniform._bufferId = bufferID;
+            uniform._bufferID = bufferID;
             uniform._type = type;
             uniform._array = (memberDesc.Elements == 0) ? 1 : memberDesc.Elements;
             uniform._size = static_cast<u32>(size) * uniform._array;
             uniform._offset = offset;
-#if USE_STRING_ID_SHADER
             uniform._name = "var_" + std::to_string(mem);
-#endif
+
             offset += uniform._size;
 
             constantBuffer._uniforms.push_back(uniform);

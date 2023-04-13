@@ -28,6 +28,7 @@ void reflectAttributes(ID3D12ShaderReflection* reflector, const D3D12_SHADER_DES
 void reflectConstantBuffers(ID3D12ShaderReflection* reflector, const std::vector<D3D12_SHADER_INPUT_BIND_DESC>& bindDescs, stream::Stream* stream);
 void reflectSampledImages(ID3D12ShaderReflection* reflector, const std::vector<D3D12_SHADER_INPUT_BIND_DESC>& boundTexturesDescs, stream::Stream* stream);
 void reflectSamplers(ID3D12ShaderReflection* reflector, const std::vector<D3D12_SHADER_INPUT_BIND_DESC>& boundSamplersDescs, stream::Stream* stream);
+void reflectUAVs(ID3D12ShaderReflection* reflector, const std::vector<D3D12_SHADER_INPUT_BIND_DESC>& boundUAVsDescs, stream::Stream* stream);
 
 bool ShaderReflectionDXC::reflect(const IDxcBlob* shader, stream::Stream* stream) const
 {
@@ -113,22 +114,12 @@ bool ShaderReflectionDXC::reflect(const IDxcBlob* shader, stream::Stream* stream
 
     reflectSampledImages(shaderReflection, bindDescs[D3D_SIT_TEXTURE], stream);
     reflectSamplers(shaderReflection, bindDescs[D3D_SIT_SAMPLER], stream);
-
-    {
-        u32 countStorageImage = static_cast<u32>(0);
-        stream->write<u32>(countStorageImage);
-    }
-
-    {
-        u32 countStorageBuffers = static_cast<u32>(0);
-        stream->write<u32>(countStorageBuffers);
-    }
+    reflectUAVs(shaderReflection, bindDescs[D3D_SIT_UAV_RWTYPED], stream);
 
     {
         u32 pushConstantCount = static_cast<u32>(0);
         stream->write<u32>(pushConstantCount);
     }
-
 
     shaderReflection->Release();
     DXContainerReflection->Release();
@@ -223,11 +214,11 @@ void reflectAttributes(ID3D12ShaderReflection* reflector, const D3D12_SHADER_DES
                 input._location = input._location - 1;
             }
             input._format = convertTypeToFormat(parameterDesc.ComponentType, parameterDesc.Mask);
-#if USE_STRING_ID_SHADER
+
             const std::string name(parameterDesc.SemanticName);
             ASSERT(!name.empty(), "empty name");
             input._name = name + std::to_string(parameterDesc.SemanticIndex);
-#endif
+
             input >> stream;
         }
     }
@@ -267,11 +258,11 @@ void reflectAttributes(ID3D12ShaderReflection* reflector, const D3D12_SHADER_DES
                 output._location = output._location - 1;
             }
             output._format = convertTypeToFormat(parameterDesc.ComponentType, parameterDesc.Mask);
-#if USE_STRING_ID_SHADER
+
             const std::string name(parameterDesc.SemanticName);
             ASSERT(!name.empty(), "empty name");
             output._name = name + std::to_string(parameterDesc.SemanticIndex);
-#endif
+
             output >> stream;
         }
     }
@@ -416,9 +407,8 @@ void reflectConstantBuffers(ID3D12ShaderReflection* reflector, const std::vector
         constantBuffer._binding = currentRegister;
         constantBuffer._array = bufferDesc.Variables;
         constantBuffer._size = bufferDesc.Size;
-#if USE_STRING_ID_SHADER
         constantBuffer._name = std::string(bufferDesc.Name);
-#endif
+
         ID3D12ShaderReflectionConstantBuffer* structBuffer = structVariable->GetBuffer();
         ASSERT(structBuffer, "ID3D11ShaderReflectionConstantBuffer is nullptr");
 
@@ -435,14 +425,13 @@ void reflectConstantBuffers(ID3D12ShaderReflection* reflector, const std::vector
             const auto [type, size] = convertTypeToDataType(memberDesc);
 
             renderer::Shader::UniformBuffer::Uniform uniform;
-            uniform._bufferId = bufferID;
+            uniform._bufferID = bufferID;
             uniform._type = type;
             uniform._array = (memberDesc.Elements == 0) ? 1 : memberDesc.Elements;
             uniform._size = static_cast<u32>(size) * uniform._array;
             uniform._offset = offset;
-#if USE_STRING_ID_SHADER
             uniform._name = "var_" + std::to_string(mem);
-#endif
+
             ASSERT(memberDesc.Members == 0, "not supported");
             offset += uniform._size;
 
@@ -506,9 +495,8 @@ void reflectSampledImages(ID3D12ShaderReflection* reflector, const std::vector<D
         sepImage._array = boundTexturesDescs[imageId].BindCount;
         sepImage._ms = ms;
         sepImage._depth = false;
-#if USE_STRING_ID_SHADER
         sepImage._name = std::string(boundTexturesDescs[imageId].Name);
-#endif
+
         sepImage >> stream;
     }
 }
@@ -526,10 +514,206 @@ void reflectSamplers(ID3D12ShaderReflection* reflector, const std::vector<D3D12_
         renderer::Shader::Sampler sampler;
         sampler._set = currentSpace;
         sampler._binding = currentRegister;
-#if USE_STRING_ID_SHADER
         sampler._name = std::string(boundSamplersDescs[samplerId].Name);
-#endif
+
         sampler >> stream;
+    }
+}
+
+void reflectUAVs(ID3D12ShaderReflection* reflector, const std::vector<D3D12_SHADER_INPUT_BIND_DESC>& boundUAVsDescs, stream::Stream* stream)
+{
+    std::vector<D3D12_SHADER_INPUT_BIND_DESC> UAVImageDescs;
+    std::vector<D3D12_SHADER_INPUT_BIND_DESC> UAVBufferDescs;
+    for (auto& desc : boundUAVsDescs)
+    {
+        ASSERT(desc.Dimension != D3D_SRV_DIMENSION_UNKNOWN, "unknown");
+        if (desc.Dimension == D3D_SRV_DIMENSION_BUFFER || desc.Dimension == D3D_SRV_DIMENSION_BUFFEREX)
+        {
+            UAVBufferDescs.push_back(desc);
+        }
+        else
+        {
+            UAVImageDescs.push_back(desc);
+        }
+    }
+
+    bool ms = false;
+    auto convertDXTypeToTextureTarget = [&ms](const D3D_SRV_DIMENSION& dim) ->renderer::TextureTarget
+    {
+        switch (dim)
+        {
+        case D3D_SRV_DIMENSION_TEXTURE1D:
+            return renderer::TextureTarget::Texture1D;
+
+        case D3D_SRV_DIMENSION_TEXTURE1DARRAY:
+            return renderer::TextureTarget::Texture1DArray;
+
+        case D3D_SRV_DIMENSION_TEXTURE2D:
+        case D3D_SRV_DIMENSION_TEXTURE2DMS:
+            ms = (dim == D3D_SRV_DIMENSION_TEXTURE2DMS) ? true : false;
+            return renderer::TextureTarget::Texture2D;
+
+        case D3D_SRV_DIMENSION_TEXTURE2DARRAY:
+        case D3D_SRV_DIMENSION_TEXTURE2DMSARRAY:
+            ms = (dim == D3D_SRV_DIMENSION_TEXTURE2DMSARRAY) ? true : false;
+            return renderer::TextureTarget::Texture2DArray;
+
+        case D3D_SRV_DIMENSION_TEXTURE3D:
+            return renderer::TextureTarget::Texture3D;
+
+        case D3D_SRV_DIMENSION_TEXTURECUBE:
+            return renderer::TextureTarget::TextureCubeMap;
+
+        case D3D_SRV_DIMENSION_TEXTURECUBEARRAY:
+        case D3D_SRV_DIMENSION_UNKNOWN:
+        default:
+            ASSERT(false, "not found");
+            return renderer::TextureTarget::Texture2D;
+        }
+    };
+
+    auto convertResourceTypeToFormat = [](D3D_RESOURCE_RETURN_TYPE type, u32 flags) -> renderer::Format
+    {
+        u32 countComponents = 0;
+        if (flags & D3D_SIF_TEXTURE_COMPONENTS)
+        {
+            countComponents = 4;
+        }
+        else if (flags & D3D_SIF_TEXTURE_COMPONENT_1)
+        {
+            countComponents = 3;
+        }
+        else if (flags & D3D_SIF_TEXTURE_COMPONENT_0)
+        {
+            countComponents = 2;
+        }
+
+        switch (type)
+        {
+        case D3D_RETURN_TYPE_UNORM:
+            if (countComponents == 4)
+            {
+                return renderer::Format::Format_R8G8B8A8_UNorm;
+            }
+            else if (countComponents == 3)
+            {
+                return renderer::Format::Format_R8G8B8_UNorm;
+            }
+            else if (countComponents == 2)
+            {
+                return renderer::Format::Format_R8G8_UNorm;
+            }
+            break;
+
+        case D3D_RETURN_TYPE_SNORM:
+            if (countComponents == 4)
+            {
+                return renderer::Format::Format_R8G8B8A8_SNorm;
+            }
+            else if (countComponents == 3)
+            {
+                return renderer::Format::Format_R8G8B8_SNorm;
+            }
+            else if (countComponents == 2)
+            {
+                return renderer::Format::Format_R8G8_SNorm;
+            }
+            break;
+
+        case D3D_RETURN_TYPE_SINT:
+            if (countComponents == 4)
+            {
+                return renderer::Format::Format_R32G32B32A32_SInt;
+            }
+            else if (countComponents == 3)
+            {
+                return renderer::Format::Format_R32G32B32_SInt;
+            }
+            else if (countComponents == 2)
+            {
+                return renderer::Format::Format_R32G32_SInt;
+            }
+            break;
+
+        case D3D_RETURN_TYPE_UINT:
+            if (countComponents == 4)
+            {
+                return renderer::Format::Format_R32G32B32A32_UInt;
+            }
+            else if (countComponents == 3)
+            {
+                return renderer::Format::Format_R32G32B32_UInt;
+            }
+            else if (countComponents == 2)
+            {
+                return renderer::Format::Format_R32G32_UInt;
+            }
+            break;
+
+        case D3D_RETURN_TYPE_FLOAT:
+            if (countComponents == 4)
+            {
+                return renderer::Format::Format_R32G32B32A32_SFloat;
+            }
+            else if (countComponents == 3)
+            {
+                return renderer::Format::Format_R32G32B32_SFloat;
+            }
+            else if (countComponents == 2)
+            {
+                return renderer::Format::Format_R32G32_SFloat;
+            }
+            break;
+
+        case D3D_RETURN_TYPE_MIXED:
+        case D3D_RETURN_TYPE_DOUBLE:
+        case D3D_RETURN_TYPE_CONTINUED:
+        default:
+            ASSERT(false, "not defined");
+        }
+
+        ASSERT(false, "unknown");
+        return renderer::Format::Format_Undefined;
+    };
+
+    {
+        u32 countStorageImage = static_cast<u32>(UAVImageDescs.size());
+        stream->write<u32>(countStorageImage);
+
+        for (auto& desc : UAVImageDescs)
+        {
+            renderer::Shader::StorageImage UAVTexture;
+            UAVTexture._set = desc.Space;
+            UAVTexture._binding = desc.BindPoint;
+
+            UAVTexture._target = convertDXTypeToTextureTarget(desc.Dimension);
+            UAVTexture._format = convertResourceTypeToFormat(desc.ReturnType, desc.uFlags);
+            UAVTexture._array = desc.BindCount;
+            UAVTexture._readonly = false;
+            UAVTexture._name = std::string(desc.Name);
+
+            UAVTexture >> stream;
+        }
+    }
+
+    {
+        u32 countStorageBuffers = static_cast<u32>(UAVBufferDescs.size());
+        stream->write<u32>(countStorageBuffers);
+
+        for (auto& desc : UAVBufferDescs)
+        {
+            renderer::Shader::StorageBuffer UAVBuffer;
+            UAVBuffer._set = desc.Space;
+            UAVBuffer._binding = desc.BindPoint;
+
+            UAVBuffer._format = convertResourceTypeToFormat(desc.ReturnType, desc.uFlags);
+            UAVBuffer._array = desc.BindCount;
+            UAVBuffer._readonly = false;
+            UAVBuffer._name = std::string(desc.Name);
+
+            UAVBuffer >> stream;
+        }
+
     }
 }
 

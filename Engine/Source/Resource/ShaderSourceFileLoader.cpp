@@ -14,26 +14,26 @@
 #   include "ShaderDXCDecoder.h"
 #endif // D3Dre
 
-
 namespace v3d
 {
 namespace resource
 {
 
-ShaderSourceFileLoader::ShaderSourceFileLoader(const renderer::Context* context, const std::vector<std::pair<std::string, std::string>>& defines, ShaderSourceBuildFlags flags) noexcept
+ShaderSourceFileLoader::ShaderSourceFileLoader(const renderer::Context* context, const std::string& entrypoint, const renderer::Shader::DefineList& defines,
+    const std::vector<std::string>& includes, ShaderSourceFlags flags) noexcept
 {
     ASSERT(context, "context is nullptr");
 
     u32 optimizationLevel = 0;
-    if (flags & ShaderSourceBuildFlag::ShaderSource_OptimizationFull)
+    if (flags & renderer::ShaderCompileFlag::ShaderSource_OptimizationFull)
     {
         optimizationLevel = 3;
     }
-    else if (flags & ShaderSourceBuildFlag::ShaderSource_OptimizationPerformance)
+    else if (flags & renderer::ShaderCompileFlag::ShaderSource_OptimizationPerformance)
     {
         optimizationLevel = 2;
     }
-    else if (flags & ShaderSourceBuildFlag::ShaderSource_OptimizationSize)
+    else if (flags & renderer::ShaderCompileFlag::ShaderSource_OptimizationSize)
     {
         optimizationLevel = 1;
     }
@@ -42,62 +42,61 @@ ShaderSourceFileLoader::ShaderSourceFileLoader(const renderer::Context* context,
     {
 #ifdef USE_SPIRV
         {
-#if USE_STRING_ID_SHADER
-            ASSERT(!(flags & ShaderSourceBuildFlag::ShaderSource_OptimizationSize || flags & ShaderSourceBuildFlag::ShaderSource_OptimizationPerformance || flags & ShaderSourceBuildFlag::ShaderSource_OptimizationFull), "define can't work with the flag because optimization removes names from spirv");
-#endif
+            ASSERT(!(flags & renderer::ShaderCompileFlag::ShaderSource_OptimizationSize || flags & renderer::ShaderCompileFlag::ShaderSource_OptimizationPerformance ||
+                flags & renderer::ShaderCompileFlag::ShaderSource_OptimizationFull), "define can't work with the flag because optimization removes names from spirv");
+
             renderer::ShaderHeader header;
-            header._contentType = renderer::ShaderHeader::ShaderResource::Source;
+            header._contentType = renderer::ShaderHeader::ShaderContent::Source;
             header._shaderModel = renderer::ShaderHeader::ShaderModel::GLSL_450;
             header._optLevel = optimizationLevel;
-            header._defines = defines;
-            header._extraFlags |= (flags & ShaderSourceBuildFlag::ShaderSource_Patched) ? ShaderSourceBuildFlag::ShaderSource_Patched : header._extraFlags;
 
-            ResourceDecoderRegistration::registerDecoder(new ShaderSpirVDecoder( { "vert", "frag", "comp" }, header, !(flags & ShaderSourceBuildFlag::ShaderSource_DontUseReflection) ));
+            ResourceDecoderRegistration::registerDecoder(
+                V3D_NEW(ShaderSpirVDecoder, memory::MemoryLabel::MemorySystem)({ "vert", "frag", "comp" }, header, entrypoint, defines, includes, flags)
+            );
         }
 
         {
             renderer::ShaderHeader header;
-            header._contentType = renderer::ShaderHeader::ShaderResource::Source;
+            header._contentType = renderer::ShaderHeader::ShaderContent::Source;
             header._shaderModel = renderer::ShaderHeader::ShaderModel::HLSL_5_1;
             header._optLevel = optimizationLevel;
-            header._defines = defines;
-            header._extraFlags |= (flags & ShaderSourceBuildFlag::ShaderSource_Patched) ? ShaderSourceBuildFlag::ShaderSource_Patched : header._extraFlags;
 
-#ifdef PLATFORM_WINDOWS
-            /*if (flags & ShaderSourceBuildFlag::ShaderSource_UseDXCompiler)
-            {
-                ASSERT(false, "assamble and reflaction is not supported now for spirv");
-                header._shaderModel = renderer::ShaderHeader::ShaderModel::ShaderModel_HLSL_6_1;
-                ResourceDecoderRegistration::registerDecoder(new ShaderDXCDecoder({ "vs", "ps" }, header, renderer::ShaderHeader::ShaderModel::ShaderModel_SpirV, !(flags & ShaderSourceBuildFlag::ShaderSource_DontUseReflection)));
-            }*/
-#endif //PLATFORM_WINDOWS
-            ResourceDecoderRegistration::registerDecoder(new ShaderSpirVDecoder( { "vs", "ps", "cs" }, header, !(flags & ShaderSourceBuildFlag::ShaderSource_DontUseReflection) ));
+            ResourceDecoderRegistration::registerDecoder(
+                V3D_NEW(ShaderSpirVDecoder, memory::MemoryLabel::MemorySystem)({ "vs", "ps", "cs" }, header, entrypoint, defines, includes, flags)
+            );
         }
-#else //USE_SPIRV
-        ASSERT(false, "not implemented");
 #endif //USE_SPIRV
     }
 
 #if D3D_RENDER
     else if (context->getRenderType() == renderer::Context::RenderType::DirectXRender)
     {
-        renderer::ShaderHeader header;
-        header._contentType = renderer::ShaderHeader::ShaderResource::Source;
-        header._shaderModel = renderer::ShaderHeader::ShaderModel::HLSL_5_1;
-        header._optLevel = optimizationLevel;
-        header._defines = defines;
-
-#if defined(PLATFORM_XBOX)
-        flags |= ShaderSource_UseDXCompiler;
-#endif
-        if (flags & ShaderSourceBuildFlag::ShaderSource_UseDXCompiler)
+#if !defined(PLATFORM_XBOX)
+        if (flags & renderer::ShaderCompileFlag::ShaderSource_UseLegacyCompilerForHLSL)
         {
-            header._shaderModel = renderer::ShaderHeader::ShaderModel::HLSL_6_1;
-            ResourceDecoderRegistration::registerDecoder(new ShaderDXCDecoder({ "vs", "ps" }, header, header._shaderModel, !(flags & ShaderSourceBuildFlag::ShaderSource_DontUseReflection)));
+            renderer::ShaderHeader header;
+            header._contentType = renderer::ShaderHeader::ShaderContent::Source;
+            header._shaderModel = renderer::ShaderHeader::ShaderModel::HLSL_5_1;
+            header._optLevel = optimizationLevel;
+
+            ResourceDecoderRegistration::registerDecoder(
+                V3D_NEW(ShaderHLSLDecoder, memory::MemoryLabel::MemorySystem)({ "vs", "ps", "cs" }, header, entrypoint, defines, includes, flags)
+            );
         }
-        ResourceDecoderRegistration::registerDecoder(new ShaderHLSLDecoder({ "vs", "ps", "cs" }, header, !(flags & ShaderSourceBuildFlag::ShaderSource_DontUseReflection)));
+        else
+#endif //!PLATFORM_XBOX
+        {
+            renderer::ShaderHeader header;
+            header._contentType = renderer::ShaderHeader::ShaderContent::Source;
+            header._shaderModel = renderer::ShaderHeader::ShaderModel::HLSL_6_1;
+            header._optLevel = optimizationLevel;
+
+            ResourceDecoderRegistration::registerDecoder(
+                V3D_NEW(ShaderDXCDecoder, memory::MemoryLabel::MemorySystem)({ "vs", "ps", "cs" }, header, entrypoint, defines, includes, header._shaderModel, flags)
+            );
+        }
     }
-#endif
+#endif //D3D_RENDER
 
     ResourceLoader::registerRoot("");
     ResourceLoader::registerRoot("../../../../");
@@ -106,60 +105,83 @@ ShaderSourceFileLoader::ShaderSourceFileLoader(const renderer::Context* context,
     ResourceLoader::registerPathes(ResourceLoaderManager::getInstance()->getPathes());
 }
 
-ShaderSourceFileLoader::ShaderSourceFileLoader(const renderer::Context* context, renderer::ShaderType type, const std::string& entryPoint, const std::vector<std::pair<std::string, std::string>>& defines, ShaderSourceBuildFlags flags) noexcept
+ShaderSourceFileLoader::ShaderSourceFileLoader(const renderer::Context* context, renderer::ShaderType type, const std::string& entrypoint,
+    const std::vector<std::pair<std::string, std::string>>& defines, const std::vector<std::string>& includes, ShaderSourceFlags flags) noexcept
 {
     ASSERT(context, "context is nullptr");
 
-    renderer::ShaderHeader header(type);
-    header._contentType = renderer::ShaderHeader::ShaderResource::Source;
-    header._shaderModel = renderer::ShaderHeader::ShaderModel::Default;
-    header._defines = defines;
-    header._entryPoint = entryPoint;
-    header._optLevel = 0;
-    if (flags & ShaderSourceBuildFlag::ShaderSource_OptimizationFull)
+    u32 optimizationLevel = 0;
+    if (flags & renderer::ShaderCompileFlag::ShaderSource_OptimizationFull)
     {
-        header._optLevel = 3;
+        optimizationLevel = 3;
     }
-    else if (flags & ShaderSourceBuildFlag::ShaderSource_OptimizationPerformance)
+    else if (flags & renderer::ShaderCompileFlag::ShaderSource_OptimizationPerformance)
     {
-        header._optLevel = 2;
+        optimizationLevel = 2;
     }
-    else if (flags & ShaderSourceBuildFlag::ShaderSource_OptimizationSize)
+    else if (flags & renderer::ShaderCompileFlag::ShaderSource_OptimizationSize)
     {
-        header._optLevel = 1;
+        optimizationLevel = 1;
     }
 
     if (context->getRenderType() == renderer::Context::RenderType::VulkanRender)
     {
-        header._optLevel = (flags & ShaderSourceBuildFlag::ShaderSource_OptimizationPerformance) ? 2 : (flags & ShaderSourceBuildFlag::ShaderSource_OptimizationSize) ? 1 : 0;
-#ifdef USE_SPIRV
-        /*if (flags & ShaderSourceBuildFlag::ShaderSource_UseDXCompiler)
+#if !defined(PLATFORM_XBOX)
+        if (flags & renderer::ShaderCompileFlag::ShaderSource_UseLegacyCompilerForHLSL)
         {
-            ASSERT(false, "assamble and reflaction is not supported now for spirv");
-            header._shaderModel = renderer::ShaderHeader::ShaderModel::ShaderModel_HLSL_6_1;
-            ResourceDecoderRegistration::registerDecoder(new ShaderDXCDecoder({ "hlsl" }, header, renderer::ShaderHeader::ShaderModel::ShaderModel_SpirV, !(flags & ShaderSourceBuildFlag::ShaderSource_DontUseReflection)));
-        }*/
-        header._shaderModel = renderer::ShaderHeader::ShaderModel::HLSL_5_1;
-        ResourceDecoderRegistration::registerDecoder(new ShaderSpirVDecoder({ "hlsl" }, header, !(flags & ShaderSourceBuildFlag::ShaderSource_DontUseReflection)));
+            renderer::ShaderHeader header;
+            header._contentType = renderer::ShaderHeader::ShaderContent::Source;
+            header._shaderModel = renderer::ShaderHeader::ShaderModel::HLSL_5_1;
+            header._shaderType = type;
+            header._optLevel = optimizationLevel;
 
-        header._shaderModel = renderer::ShaderHeader::ShaderModel::GLSL_450;
-        ResourceDecoderRegistration::registerDecoder(new ShaderSpirVDecoder({ "vert", "frag", "comp" }, header, !(flags & ShaderSourceBuildFlag::ShaderSource_DontUseReflection)));
-#endif
+            ResourceDecoderRegistration::registerDecoder(
+                V3D_NEW(ShaderHLSLDecoder, memory::MemoryLabel::MemorySystem)({ "hlsl" }, header, entrypoint, defines, includes, flags)
+            );
+        }
+        else
+#endif //!PLATFORM_XBOX
+        {
+            renderer::ShaderHeader header;
+            header._contentType = renderer::ShaderHeader::ShaderContent::Source;
+            header._shaderModel = renderer::ShaderHeader::ShaderModel::HLSL_6_1;
+            header._shaderType = type;
+            header._optLevel = optimizationLevel;
+
+            ResourceDecoderRegistration::registerDecoder(
+                V3D_NEW(ShaderDXCDecoder, memory::MemoryLabel::MemorySystem)({ "hlsl" }, header, entrypoint, defines, includes, header._shaderModel, flags)
+            );
+        }
     }
 #if D3D_RENDER
     else if (context->getRenderType() == renderer::Context::RenderType::DirectXRender)
     {
-        header._shaderModel = renderer::ShaderHeader::ShaderModel::HLSL_5_1;
-
-#if defined(PLATFORM_XBOX)
-        flags |= ShaderSource_UseDXCompiler;
-#endif
-        if (flags & ShaderSourceBuildFlag::ShaderSource_UseDXCompiler)
+#if !defined(PLATFORM_XBOX)
+        if (flags & renderer::ShaderCompileFlag::ShaderSource_UseLegacyCompilerForHLSL)
         {
+            renderer::ShaderHeader header;
+            header._contentType = renderer::ShaderHeader::ShaderContent::Source;
+            header._shaderModel = renderer::ShaderHeader::ShaderModel::HLSL_5_1;
+            header._shaderType = type;
+            header._optLevel = optimizationLevel;
+
+            ResourceDecoderRegistration::registerDecoder(
+                V3D_NEW(ShaderHLSLDecoder, memory::MemoryLabel::MemorySystem)({ "hlsl" }, header, entrypoint, defines, includes, flags)
+            );
+    }
+        else
+#endif //!PLATFORM_XBOX
+        {
+            renderer::ShaderHeader header;
+            header._contentType = renderer::ShaderHeader::ShaderContent::Source;
             header._shaderModel = renderer::ShaderHeader::ShaderModel::HLSL_6_1;
-            ResourceDecoderRegistration::registerDecoder(new ShaderDXCDecoder({ "hlsl" }, header, header._shaderModel, !(flags & ShaderSourceBuildFlag::ShaderSource_DontUseReflection)));
+            header._shaderType = type;
+            header._optLevel = optimizationLevel;
+
+            ResourceDecoderRegistration::registerDecoder(
+                V3D_NEW(ShaderDXCDecoder, memory::MemoryLabel::MemorySystem)({ "hlsl" }, header, entrypoint, defines, includes, header._shaderModel, flags)
+            );
         }
-        ResourceDecoderRegistration::registerDecoder(new ShaderHLSLDecoder({ "hlsl" }, header, !(flags & ShaderSourceBuildFlag::ShaderSource_DontUseReflection)));
     }
 #endif
 
@@ -188,17 +210,12 @@ renderer::Shader* ShaderSourceFileLoader::load(const std::string& name, const st
             if (decoder)
             {
                 Resource* resource = decoder->decode(file, name);
-                file->close();
 
-                delete file;
+                file->close();
+                V3D_DELETE(file, memory::MemoryLabel::MemorySystem);
+                file = nullptr;
 
                 if (!resource)
-                {
-                    LOG_ERROR("ShaderSourceFileLoader: Streaming error read file [%s]", name.c_str());
-                    return nullptr;
-                }
-
-                if (!resource->load())
                 {
                     LOG_ERROR("ShaderSourceFileLoader: Streaming error read file [%s]", name.c_str());
                     return nullptr;

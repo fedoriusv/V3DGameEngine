@@ -12,20 +12,21 @@ namespace renderer
 } //namespace renderer
 namespace resource
 {
-
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
     * @brief ShaderBinaryFileLoader class. Loader from file
+    * 
     * @see ShaderSpirVDecoder
+    * @see ShaderHLSLDecoder
     */
     class ShaderBinaryFileLoader : public ResourceLoader<renderer::Shader*>, public ResourceDecoderRegistration
     {
     public:
 
-        enum ShaderBinaryBuildFlag
+        enum ShaderBinaryBuildFlag : u32
         {
-            ShaderBinary_DontUseReflaction = 1 << 0,
+            ShaderBinary_DontUseReflection = 1 << 0,
         };
         typedef u32 ShaderBinaryBuildFlags;
 
@@ -36,11 +37,10 @@ namespace resource
         /**
         * @brief ShaderBinaryFileLoader constructor
         * @param const renderer::Context* context [required]
-        * @param const std::vector<std::pair<std::string, std::string>>& defines [optional]
         * @param ShaderBinaryBuildFlags flags [optional]
         * @see ShaderBinaryBuildFlags
         */
-        explicit ShaderBinaryFileLoader(const renderer::Context* context, const std::vector<std::pair<std::string, std::string>>& defines = {}, ShaderBinaryBuildFlags flags = 0) noexcept;
+        explicit ShaderBinaryFileLoader(const renderer::Context* context, ShaderBinaryBuildFlags flags = 0) noexcept;
 
         /**
         * @brief Load binary shader by name from file

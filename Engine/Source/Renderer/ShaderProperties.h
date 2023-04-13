@@ -41,7 +41,7 @@ namespace renderer
     /**
     * @brief DataType enum
     */
-    enum DataType : s32
+    enum class DataType : s16
     {
         DataType_None = -1,
 

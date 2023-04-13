@@ -13,6 +13,8 @@
 #   include "SpirVPatch/ShaderPatchSpirV.h"
 #   include "SpirVPatch/ShaderSpirVPatcherBugDriverFix.h"
 
+#define LOG_LOADIMG_TIME (DEBUG || 1)
+
 namespace v3d
 {
 namespace resource
@@ -31,16 +33,26 @@ const std::map<std::string, renderer::ShaderType> k_SPIRV_ExtensionList =
     { "cs", renderer::ShaderType::Compute },
 };
 
- ShaderSpirVDecoder::ShaderSpirVDecoder(const renderer::ShaderHeader& header, bool reflections) noexcept
-    : m_header(header)
-    , m_reflections(reflections)
+ ShaderSpirVDecoder::ShaderSpirVDecoder(const renderer::ShaderHeader& header, const std::string& entrypoint, const renderer::Shader::DefineList& defines,
+     const std::vector<std::string>& includes, renderer::ShaderCompileFlags flags) noexcept
+     : m_header(header)
+     , m_reflections(!(flags& renderer::ShaderCompileFlag::ShaderSource_DontUseReflection))
+
+     , m_entrypoint(entrypoint)
+     , m_defines(defines)
+     , m_includes(includes)
 {
 }
 
-ShaderSpirVDecoder::ShaderSpirVDecoder(std::vector<std::string> supportedExtensions, const renderer::ShaderHeader& header, bool reflections) noexcept
+ShaderSpirVDecoder::ShaderSpirVDecoder(std::vector<std::string> supportedExtensions, const renderer::ShaderHeader& header, const std::string& entrypoint, const renderer::Shader::DefineList& defines,
+    const std::vector<std::string>& includes, renderer::ShaderCompileFlags flags) noexcept
     : ResourceDecoder(supportedExtensions)
     , m_header(header)
-    , m_reflections(reflections)
+    , m_reflections(!(flags& renderer::ShaderCompileFlag::ShaderSource_DontUseReflection))
+
+    , m_entrypoint(entrypoint)
+    , m_defines(defines)
+    , m_includes(includes)
 {
 }
 
@@ -50,15 +62,16 @@ Resource* ShaderSpirVDecoder::decode(const stream::Stream* stream, const std::st
     {
         stream->seekBeg(0);
 
-        if (m_header._contentType == renderer::ShaderHeader::ShaderResource::Source)
+        if (m_header._contentType == renderer::ShaderHeader::ShaderContent::Source)
         {
             std::string source;
             source.resize(stream->size());
             stream->read(source.data(), stream->size());
-#if DEBUG
+#if LOG_LOADIMG_TIME
             utils::Timer timer;
             timer.start();
-#endif
+#endif //LOG_LOADIMG_TIME
+
             shaderc::CompileOptions options;
             switch (m_header._optLevel)
             {
@@ -82,6 +95,7 @@ Resource* ShaderSpirVDecoder::decode(const stream::Stream* stream, const std::st
 #endif
             switch (m_header._shaderModel)
             {
+            case renderer::ShaderHeader::ShaderModel::Default:
             case renderer::ShaderHeader::ShaderModel::GLSL_450:
                 options.SetSourceLanguage(shaderc_source_language_glsl);
 #if (VULKAN_CURRENT_VERSION == VULKAN_VERSION_1_0)
@@ -90,14 +104,19 @@ Resource* ShaderSpirVDecoder::decode(const stream::Stream* stream, const std::st
 #elif (VULKAN_CURRENT_VERSION == VULKAN_VERSION_1_1)
                 options.SetTargetEnvironment(shaderc_target_env_vulkan, shaderc_env_version_vulkan_1_1);
                 options.SetTargetSpirv(shaderc_spirv_version_1_3);
-#else
+#elif (VULKAN_CURRENT_VERSION == VULKAN_VERSION_1_2)
                 options.SetTargetEnvironment(shaderc_target_env_vulkan, shaderc_env_version_vulkan_1_2);
                 options.SetTargetSpirv(shaderc_spirv_version_1_5);
+#else
+                options.SetTargetEnvironment(shaderc_target_env_vulkan, shaderc_env_version_vulkan_1_3);
+                options.SetTargetSpirv(shaderc_spirv_version_1_6);
 #endif
                 break;
 
             case renderer::ShaderHeader::ShaderModel::HLSL_5_0:
             case renderer::ShaderHeader::ShaderModel::HLSL_5_1:
+            case renderer::ShaderHeader::ShaderModel::HLSL_6_1:
+            case renderer::ShaderHeader::ShaderModel::HLSL_6_6:
                 options.SetSourceLanguage(shaderc_source_language_hlsl);
 #if (VULKAN_CURRENT_VERSION == VULKAN_VERSION_1_0)
                 options.SetTargetEnvironment(shaderc_target_env_vulkan, shaderc_env_version_vulkan_1_0);
@@ -105,9 +124,12 @@ Resource* ShaderSpirVDecoder::decode(const stream::Stream* stream, const std::st
 #elif (VULKAN_CURRENT_VERSION == VULKAN_VERSION_1_1)
                 options.SetTargetEnvironment(shaderc_target_env_vulkan, shaderc_env_version_vulkan_1_1);
                 options.SetTargetSpirv(shaderc_spirv_version_1_3);
-#else
+#elif (VULKAN_CURRENT_VERSION == VULKAN_VERSION_1_2)
                 options.SetTargetEnvironment(shaderc_target_env_vulkan, shaderc_env_version_vulkan_1_2);
                 options.SetTargetSpirv(shaderc_spirv_version_1_5);
+#else
+                options.SetTargetEnvironment(shaderc_target_env_vulkan, shaderc_env_version_vulkan_1_3);
+                options.SetTargetSpirv(shaderc_spirv_version_1_6);
 #endif
                 break;
 
@@ -117,7 +139,7 @@ Resource* ShaderSpirVDecoder::decode(const stream::Stream* stream, const std::st
                 return nullptr;
             }
 
-            for (auto& define : m_header._defines)
+            for (auto& define : m_defines)
             {
                 if (define.second.empty())
                 {
@@ -130,9 +152,9 @@ Resource* ShaderSpirVDecoder::decode(const stream::Stream* stream, const std::st
             }
 
             bool validShaderType = false;
-            renderer::ShaderType type = m_header._type;
+            renderer::ShaderType shaderType = m_header._shaderType;
 
-            auto getShaderTypeFromName = [&validShaderType, &type](const std::string& name) -> shaderc_shader_kind
+            auto getShaderTypeFromName = [&validShaderType, &shaderType](const std::string& name) -> shaderc_shader_kind
             {
                 std::string fileExtension = stream::FileLoader::getFileExtension(name);
                 auto result = k_SPIRV_ExtensionList.find(fileExtension);
@@ -142,9 +164,9 @@ Resource* ShaderSpirVDecoder::decode(const stream::Stream* stream, const std::st
                     return shaderc_shader_kind::shaderc_vertex_shader;
                 }
 
-                type = result->second;
+                shaderType = result->second;
                 validShaderType = true;
-                switch (type)
+                switch (shaderType)
                 {
                 case renderer::ShaderType::Vertex:
                     return shaderc_shader_kind::shaderc_vertex_shader;
@@ -187,7 +209,7 @@ Resource* ShaderSpirVDecoder::decode(const stream::Stream* stream, const std::st
                 return shaderc_shader_kind::shaderc_vertex_shader;
             };
 
-            shaderc_shader_kind shaderType = (type == renderer::ShaderType::Undefined)  ? getShaderTypeFromName(name) : getShaderType(type);
+            shaderc_shader_kind scShaderType = (shaderType == renderer::ShaderType::Undefined)  ? getShaderTypeFromName(name) : getShaderType(shaderType);
             if (!validShaderType)
             {
                 LOG_ERROR("ShaderSpirVDecoder::decode: Invalid shader type or unsupport");
@@ -197,7 +219,7 @@ Resource* ShaderSpirVDecoder::decode(const stream::Stream* stream, const std::st
             LOG_DEBUG("Compile Shader %s to SpirV:\n %s\n", name.c_str(), source.c_str());
 
             shaderc::Compiler compiler;
-            shaderc::SpvCompilationResult result = compiler.CompileGlslToSpv(source, shaderType, "shader", m_header._entryPoint.c_str(), options);
+            shaderc::SpvCompilationResult result = compiler.CompileGlslToSpv(source, scShaderType, "shader", m_entrypoint.c_str(), options);
             if (!compiler.IsValid())
             {
                 LOG_ERROR("ShaderSpirVDecoder::decode: CompileGlslToSpv is invalid");
@@ -244,7 +266,7 @@ Resource* ShaderSpirVDecoder::decode(const stream::Stream* stream, const std::st
                     return "unknown";
                 }
             };
-            std::string stringType = getStringType(shaderType);
+            std::string stringType = getStringType(scShaderType);
             if (status != shaderc_compilation_status_success)
             {
                 LOG_ERROR("ShaderSpirVDecoder::decode: Shader [%s]%s, compile error %s", stringType.c_str(), name.c_str(), getCompileStatusError(status).c_str());
@@ -265,7 +287,7 @@ Resource* ShaderSpirVDecoder::decode(const stream::Stream* stream, const std::st
                 LOG_WARNING("ShaderSpirVDecoder::decode: header [%s]%s shader warnings messages:\n%s", stringType.c_str(), name.c_str(), result.GetErrorMessage().c_str());
             }
 #if (DEBUG & VULKAN_DEBUG)
-            shaderc::AssemblyCompilationResult assambleResult = compiler.CompileGlslToSpvAssembly(source, shaderType, "shader", m_header._entryPoint.c_str(), options);
+            shaderc::AssemblyCompilationResult assambleResult = compiler.CompileGlslToSpvAssembly(source, scShaderType, "shader", m_entrypoint.c_str(), options);
             ASSERT(compiler.IsValid(), "error");
             shaderc_compilation_status assambleStatus = assambleResult.GetCompilationStatus();
             ASSERT(assambleStatus == shaderc_compilation_status_success, "error");
@@ -295,16 +317,19 @@ Resource* ShaderSpirVDecoder::decode(const stream::Stream* stream, const std::st
 #endif //PATCH_SYSTEM
 
             u32 size = static_cast<u32>(spirvBinary.size()) * sizeof(u32);
-            stream::Stream* resourceSpirvBinary = stream::StreamManager::createMemoryStream(nullptr, size + sizeof(u32) + sizeof(bool));
+            stream::Stream* resourceSpirvBinary = stream::StreamManager::createMemoryStream();
+
             resourceSpirvBinary->write<u32>(size);
             resourceSpirvBinary->write(spirvBinary.data(), size);
+            resourceSpirvBinary->write(m_entrypoint);
 
             resourceSpirvBinary->write<bool>(m_reflections);
             if (m_reflections)
             {
                 auto isHLSL = [](renderer::ShaderHeader::ShaderModel model) -> bool
                 {
-                    return model == renderer::ShaderHeader::ShaderModel::HLSL_5_0 || model == renderer::ShaderHeader::ShaderModel::HLSL_5_1;
+                    return model == renderer::ShaderHeader::ShaderModel::HLSL_5_0 || model == renderer::ShaderHeader::ShaderModel::HLSL_5_1 ||
+                        model == renderer::ShaderHeader::ShaderModel::HLSL_6_1 || model == renderer::ShaderHeader::ShaderModel::HLSL_6_6;
                 };
 
                 if (isHLSL(m_header._shaderModel) || m_header._shaderModel == renderer::ShaderHeader::ShaderModel::GLSL_450)
@@ -313,7 +338,7 @@ Resource* ShaderSpirVDecoder::decode(const stream::Stream* stream, const std::st
                     if (!reflector.reflect(spirvBinary, resourceSpirvBinary))
                     {
                         LOG_ERROR("ShaderSpirVDecoder::decode: parseReflections failed for shader: %s", name.c_str());
-                        delete resourceSpirvBinary;
+                        stream::StreamManager::destroyStream(resourceSpirvBinary);
 
                         return nullptr;
                     }
@@ -321,27 +346,33 @@ Resource* ShaderSpirVDecoder::decode(const stream::Stream* stream, const std::st
                 else
                 {
                     LOG_ERROR("ShaderSpirVDecoder::decode: shader model si not supported for this reflector: %s", name.c_str());
-                    delete resourceSpirvBinary;
+                    stream::StreamManager::destroyStream(resourceSpirvBinary);
 
                     return nullptr;
                 }
             }
 
-#if DEBUG
+            renderer::ShaderHeader shaderHeader(m_header);
+            resource::ResourceHeader::fillResourceHeader(&shaderHeader, name, resourceSpirvBinary->size(), 0);
+            shaderHeader._shaderType = shaderType;
+            shaderHeader._shaderModel = renderer::ShaderHeader::ShaderModel::SpirV;
+            shaderHeader._contentType = renderer::ShaderHeader::ShaderContent::Bytecode;
+
+            Resource* resource = V3D_NEW(renderer::Shader, memory::MemoryLabel::MemoryResource)(V3D_NEW(renderer::ShaderHeader, memory::MemoryLabel::MemoryResource)(shaderHeader));
+            if (!resource->load(resourceSpirvBinary))
+            {
+                LOG_ERROR("ShaderSpirVDecoder::decode: shader load is failed");
+
+                V3D_DELETE(resource, memory::MemoryLabel::MemoryResource);
+                resource = nullptr;
+            }
+            stream::StreamManager::destroyStream(resourceSpirvBinary);
+
+#if LOG_LOADIMG_TIME
             timer.stop();
             u64 time = timer.getTime<utils::Timer::Duration_MilliSeconds>();
             LOG_DEBUG("ShaderSpirVDecoder::decode, shader %s, is loaded. Time %.4f sec", name.c_str(), static_cast<f32>(time) / 1000.0f);
-#endif
-
-            renderer::ShaderHeader* resourceHeader = new renderer::ShaderHeader(m_header);
-            resourceHeader->_type = type;
-            resourceHeader->_shaderModel = renderer::ShaderHeader::ShaderModel::GLSL_450;
-#if DEBUG
-            resourceHeader->_name = name;
-#endif
-
-            Resource* resource = new renderer::Shader(resourceHeader);
-            resource->init(resourceSpirvBinary);
+#endif //LOG_LOADIMG_TIME
 
             return resource;
         }
@@ -371,7 +402,7 @@ Resource* ShaderSpirVDecoder::decode(const stream::Stream* stream, const std::st
                 return renderer::ShaderType::Undefined;
             };
 
-            renderer::ShaderType type = getShaderType(name);
+            renderer::ShaderType shaderType = getShaderType(name);
             ASSERT(validShaderType, "invalid type");
 #if DEBUG
             utils::Timer timer;
@@ -381,9 +412,11 @@ Resource* ShaderSpirVDecoder::decode(const stream::Stream* stream, const std::st
             stream->read(bytecode.data(), sizeof(u32), static_cast<u32>(bytecode.size()));
             ASSERT(bytecode[0] == 0x07230203, "invalid spirv magic number in head");
 
-            stream::Stream* resourceSpirvBinary = stream::StreamManager::createMemoryStream(nullptr, static_cast<u32>(bytecode.size()) + sizeof(u32) + sizeof(bool));
+            stream::Stream* resourceSpirvBinary = stream::StreamManager::createMemoryStream();
+
             resourceSpirvBinary->write<u32>(stream->size());
             resourceSpirvBinary->write(bytecode.data(), stream->size());
+            resourceSpirvBinary->write(m_entrypoint);
 
             resourceSpirvBinary->write<bool>(m_reflections);
             if (m_reflections)
@@ -398,20 +431,28 @@ Resource* ShaderSpirVDecoder::decode(const stream::Stream* stream, const std::st
                     return nullptr;
                 }
             }
-#if DEBUG
+
+            renderer::ShaderHeader shaderHeader(m_header);
+            resource::ResourceHeader::fillResourceHeader(&shaderHeader, name, resourceSpirvBinary->size(), 0);
+            shaderHeader._shaderType = shaderType;
+            shaderHeader._shaderModel = renderer::ShaderHeader::ShaderModel::SpirV;
+            shaderHeader._contentType = renderer::ShaderHeader::ShaderContent::Bytecode;
+
+            Resource* resource = V3D_NEW(renderer::Shader, memory::MemoryLabel::MemoryResource)(V3D_NEW(renderer::ShaderHeader, memory::MemoryLabel::MemoryResource)(shaderHeader));
+            if (!resource->load(resourceSpirvBinary))
+            {
+                LOG_ERROR("ShaderSpirVDecoder::decode: the shader loading is failed");
+
+                V3D_DELETE(resource, memory::MemoryLabel::MemoryResource);
+                resource = nullptr;
+            }
+            stream::StreamManager::destroyStream(resourceSpirvBinary);
+
+#if LOG_LOADIMG_TIME
             timer.stop();
             u64 time = timer.getTime<utils::Timer::Duration_MilliSeconds>();
-            LOG_DEBUG("ShaderSpirVDecoder::decode, shader %s, is loaded. Time %.4f sec", name.c_str(), static_cast<f32>(time) / 1000.0f);
-#endif
-            renderer::ShaderHeader* resourceHeader = new renderer::ShaderHeader(m_header);
-            resourceHeader->_type = type;
-            resourceHeader->_shaderModel = renderer::ShaderHeader::ShaderModel::GLSL_450;
-#if DEBUG
-            resourceHeader->_name = name;
-#endif
-
-            Resource* resource = new renderer::Shader(resourceHeader);
-            resource->init(resourceSpirvBinary);
+            LOG_DEBUG("ShaderSpirVDecoder::decode, the shader %s, is loaded. Time %.4f sec", name.c_str(), static_cast<f32>(time) / 1000.0f);
+#endif //LOG_LOADIMG_TIME
 
             return resource;
         }
