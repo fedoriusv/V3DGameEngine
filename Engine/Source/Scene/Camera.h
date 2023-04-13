@@ -47,9 +47,6 @@ namespace scene
 
         bool isOrthogonal() const;
 
-        void init(stream::Stream* stream) override;
-        bool load() override;
-
     protected:
 
         enum TransformMatrix
@@ -81,6 +78,9 @@ namespace scene
         f32 m_fieldOfView;
 
     private:
+
+        bool load(const stream::Stream* stream, u32 offset = 0) override;
+        bool save(stream::Stream* stream, u32 offset = 0) const override;
 
         friend class CameraHelper;
 

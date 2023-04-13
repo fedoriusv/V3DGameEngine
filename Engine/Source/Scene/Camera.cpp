@@ -17,12 +17,12 @@ Camera::Camera(const math::Vector3D& target, const math::Vector3D& up, bool orth
 
     , m_matricesFlag(CameraState::CameraState_Projection | CameraState::CameraState_View)
 {
-    LOG_DEBUG("Camera constructor %xll", this);
+    LOG_DEBUG("Camera constructor %llx", this);
 }
 
 Camera::~Camera()
 {
-    LOG_DEBUG("Camera destructor %xll", this);
+    LOG_DEBUG("Camera destructor %llx", this);
 }
 
 void Camera::setTarget(const math::Vector3D& target)
@@ -153,23 +153,15 @@ void Camera::recalculateViewMatrix(const math::Vector3D& position) const
     }
 }
 
-void Camera::init(stream::Stream* stream)
+bool Camera::load(const stream::Stream* stream, u32 offset)
 {
-    ASSERT(stream, "nullptr");
-    m_stream = stream;
+    ASSERT(false, "not impl");
+    return false;
 }
 
-bool Camera::load()
+bool Camera::save(stream::Stream* stream, u32 offset) const
 {
-    if (m_loaded)
-    {
-        return true;
-    }
-    ASSERT(m_stream, "nullptr");
-    
-    NOT_IMPL;
-
-    m_loaded = true;
+    ASSERT(false, "not impl");
     return false;
 }
 

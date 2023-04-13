@@ -37,32 +37,34 @@ ShaderHeader::ShaderHeader(const ShaderHeader& other) noexcept
 {
 }
 
-u32 ShaderHeader::operator>>(stream::Stream* stream)
+u32 ShaderHeader::operator>>(stream::Stream* stream) const
 {
-    u32 write = 0;
-    write += ResourceHeader::operator>>(stream);
+    u32 parentSize = ResourceHeader::operator>>(stream);
+    u32 writePos = stream->tell();
 
-    write += stream->write<renderer::ShaderType>(_shaderType);
-    write += stream->write<ShaderContent>(_contentType);
-    write += stream->write<ShaderModel>(_shaderModel);
-    write += stream->write<u16>(_optLevel);
+    stream->write<renderer::ShaderType>(_shaderType);
+    stream->write<ShaderContent>(_contentType);
+    stream->write<ShaderModel>(_shaderModel);
+    stream->write<u16>(_optLevel);
 
-    ASSERT(sizeof(ShaderHeader) == write, "wrong size");
-    return write;
+    u32 writeSize = stream->tell() - writePos + parentSize;
+    ASSERT(sizeof(ShaderHeader) == writeSize, "wrong size");
+    return writeSize;
 }
 
 u32 ShaderHeader::operator<<(const stream::Stream* stream)
 {
-    u32 read = 0;
-    read += ResourceHeader::operator<<(stream);
+    u32 parentSize = ResourceHeader::operator<<(stream);
+    u32 readPos = stream->tell();
 
-    read += stream->read<renderer::ShaderType>(_shaderType);
-    read += stream->read<ShaderContent>(_contentType);
-    read += stream->read<ShaderModel>(_shaderModel);
-    read += stream->read<u16>(_optLevel);
+    stream->read<renderer::ShaderType>(_shaderType);
+    stream->read<ShaderContent>(_contentType);
+    stream->read<ShaderModel>(_shaderModel);
+    stream->read<u16>(_optLevel);
 
-    ASSERT(sizeof(ShaderHeader) == read, "wrong size");
-    return read;
+    u32 readSize = stream->tell() - readPos + parentSize;
+    ASSERT(sizeof(ShaderHeader) == readSize, "wrong size");
+    return readSize;
 }
 
 Shader::Shader() noexcept

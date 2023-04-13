@@ -8,7 +8,8 @@ namespace scene
 {
 
 MeshHeader::MeshHeader() noexcept
-    : _numVertices(0)
+    : ResourceHeader(resource::ResourceType::MeshResource)
+    , _numVertices(0)
     , _vertexStride(0)
     , _numIndices(0)
     , _indexType(renderer::StreamIndexBufferType::IndexType_32)
@@ -18,56 +19,74 @@ MeshHeader::MeshHeader() noexcept
     , _vertexContentFlags(VertexProperies::VertexProperies_Empty)
     , _geometryContentFlags(GeometryContentFlag::Empty)
 {
+    static_assert(sizeof(MeshHeader) == sizeof(ResourceHeader) + 24, "wrong size");
 }
 
-u32 MeshHeader::operator>>(stream::Stream* stream)
+u32 MeshHeader::operator>>(stream::Stream* stream) const
 {
-    u32 write = ResourceHeader::operator>>(stream);
+    u32 parentSize = ResourceHeader::operator>>(stream);
+    u32 writePos = stream->tell();
 
-    write += stream->write<u32>(_numVertices);
-    write += stream->write<u32>(_vertexStride);
-    write += stream->write<u32>(_numIndices);
-    write += stream->write<renderer::StreamIndexBufferType>(_indexType);
+    stream->write<u32>(_numVertices);
+    stream->write<u32>(_vertexStride);
 
-    write += stream->write<renderer::PolygonMode>(_polygonMode);
-    write += stream->write<renderer::FrontFace>(_frontFace);
-    write += stream->write<VertexProperiesFlags>(_vertexContentFlags);
-    write += stream->write<GeometryContentFlags>(_geometryContentFlags);
+    stream->write<u32>(_numIndices);
+    stream->write<renderer::StreamIndexBufferType>(_indexType);
 
-    return write;
+    stream->write<renderer::PolygonMode>(_polygonMode);
+    stream->write<renderer::FrontFace>(_frontFace);
+    stream->write<VertexProperiesFlags>(_vertexContentFlags);
+    stream->write<GeometryContentFlags>(_geometryContentFlags);
+
+    u32 writeSize = stream->tell() - writePos + parentSize;
+    ASSERT(sizeof(MeshHeader) == writeSize, "wrong size");
+    return writeSize;
 }
 
 u32 MeshHeader::operator<<(const stream::Stream* stream)
 {
-    u32 read = ResourceHeader::operator<<(stream);
+    u32 parentSize = ResourceHeader::operator<<(stream);
+    u32 readPos = stream->tell();
 
-    read += stream->read<u32>(_numVertices);
-    read += stream->read<u32>(_vertexStride);
-    read += stream->read<u32>(_numIndices);
-    read += stream->read<renderer::StreamIndexBufferType>(_indexType);
+    stream->read<u32>(_numVertices);
+    stream->read<u32>(_vertexStride);
 
-    read += stream->read<renderer::PolygonMode>(_polygonMode);
-    read += stream->read<renderer::FrontFace>(_frontFace);
-    read += stream->read<VertexProperiesFlags>(_vertexContentFlags);
-    read += stream->read<GeometryContentFlags>(_geometryContentFlags);
+    stream->read<u32>(_numIndices);
+    stream->read<renderer::StreamIndexBufferType>(_indexType);
 
-    return read;
+    stream->read<renderer::PolygonMode>(_polygonMode);
+    stream->read<renderer::FrontFace>(_frontFace);
+    stream->read<VertexProperiesFlags>(_vertexContentFlags);
+    stream->read<GeometryContentFlags>(_geometryContentFlags);
+
+    u32 readSize = stream->tell() - readPos + parentSize;
+    ASSERT(sizeof(MeshHeader) == readSize, "wrong size");
+    return readSize;
 }
 
-Mesh::Mesh(const MeshHeader* header) noexcept
-    : Resource(header)
+Mesh::Mesh() noexcept
+    : m_header(nullptr)
+    , m_indexBuffer({ nullptr, nullptr })
+    , m_indexCount(0)
+    , m_indexType(renderer::StreamIndexBufferType::IndexType_32)
+    , m_vertexCount(0)
+{
+    LOG_DEBUG("Mesh constructor %llx", this);
+}
+
+Mesh::Mesh(MeshHeader* header) noexcept
+    : m_header(header)
     , m_indexBuffer({ nullptr, nullptr})
     , m_indexCount(0)
     , m_indexType(renderer::StreamIndexBufferType::IndexType_32)
     , m_vertexCount(0)
 {
-    LOG_DEBUG("Mesh constructor %xll", this);
+    LOG_DEBUG("Mesh constructor %llx", this);
 }
 
 Mesh::~Mesh()
 {
-    LOG_DEBUG("Model destructor %xll", this);
-    const MeshHeader& header = Mesh::getMeshHeader();
+    LOG_DEBUG("Model destructor %llx", this);
 
     //if (header._flags & MeshHeader::GeometryFlag::IndexBuffer)
     //{
@@ -80,76 +99,85 @@ Mesh::~Mesh()
 
 }
 
-void Mesh::init(stream::Stream* stream)
-{
-    ASSERT(stream, "nullptr");
-    m_stream = stream;
-}
-bool Mesh::load()
+bool Mesh::load(const stream::Stream* stream, u32 offset)
 {
     if (m_loaded)
     {
+        LOG_WARNING("Mesh::load: the mesh %llx is already loaded", this);
         return true;
     }
-    ASSERT(m_stream, "nullptr");
 
-    //const MeshHeader& header = Mesh::getMeshHeader();
-    //m_stream->seekBeg(header._offset);
+    ASSERT(stream, "nullptr");
+    stream->seekBeg(offset);
 
-    //m_description << m_stream;
+    if (!m_header)
+    {
+        m_header = V3D_NEW(MeshHeader, memory::MemoryLabel::MemoryResource);
+        ASSERT(m_header, "nullptr");
+        m_header->operator<<(stream);
+    }
+    stream->seekBeg(m_header->_offset);
 
-    //m_vertexCount = header._vertices;
-    //if (header._flags & MeshHeader::GeometryFlag::SeparatePostionAttribute)
-    //{
-    //    u32 positionBufferSize = header._vertices * header._stride;
-    //    ASSERT(positionBufferSize, "Position buffer is empty");
+    m_description << stream;
 
-    //    stream::Stream* vertexBuffer = stream::StreamManager::createMemoryStream(nullptr, positionBufferSize);
-    //    u8* vetexData = vertexBuffer->map(header._size);
-    //    m_stream->read(vetexData, header._size, 1);
-    //    vertexBuffer->unmap();
+    m_vertexCount = m_header->_numVertices;
+    if (m_header->_geometryContentFlags & MeshHeader::GeometryContentFlag::SeparatePostion)
+    {
+        u32 positionBufferSize;
+        stream->read<u32>(positionBufferSize);
+        ASSERT(positionBufferSize == m_header->_numVertices * sizeof(math::Vector3D), "Should be same");
 
-    //    m_vertexBuffers.emplace_back(vertexBuffer, vetexData);
-    //}
-    //else
-    //{
-    //    u32 vertexBufferSize = header._vertices * header._stride;
-    //    ASSERT(vertexBufferSize, "Vertex buffer is empty");
+        stream::Stream* vertexBuffer = stream::StreamManager::createMemoryStream(nullptr, positionBufferSize);
+        u8* vetexData = vertexBuffer->map(positionBufferSize);
+        stream->read(vetexData, positionBufferSize, 1);
+        vertexBuffer->unmap();
 
-    //    stream::Stream* vertexBuffer = stream::StreamManager::createMemoryStream(nullptr, vertexBufferSize);
-    //    u8* vetexData = vertexBuffer->map(header._size);
-    //    m_stream->read(vetexData, header._size, 1);
-    //    vertexBuffer->unmap();
+        m_vertexBuffers.emplace_back(vertexBuffer, vetexData);
+    }
+    else
+    {
+        u32 vertexBufferSize;
+        stream->read<u32>(vertexBufferSize);
+        ASSERT(vertexBufferSize == m_header->_numVertices * m_header->_vertexStride, "Should be same");
 
-    //    m_vertexBuffers.emplace_back(vertexBuffer, vetexData);
-    //}
+        stream::Stream* vertexBuffer = stream::StreamManager::createMemoryStream(nullptr, vertexBufferSize);
+        u8* vetexData = vertexBuffer->map(vertexBufferSize);
+        stream->read(vetexData, vertexBufferSize, 1);
+        vertexBuffer->unmap();
 
-    //if (header._flags & MeshHeader::GeometryFlag::IndexBuffer)
-    //{
-    //    m_indexCount = header._indices;
-    //    m_indexType = header._indexType == 0 ? renderer::StreamIndexBufferType::IndexType_16 : renderer::StreamIndexBufferType::IndexType_32;
+        m_vertexBuffers.emplace_back(vertexBuffer, vetexData);
+    }
 
-    //    u32 indexBufferSize = header._indices * (header._indexType == 0 ? sizeof(u16) : sizeof(u32));
-    //    ASSERT(indexBufferSize, "Index buffer is empty");
+    m_indexCount = m_header->_numIndices;
+    if (m_header->_geometryContentFlags & MeshHeader::GeometryContentFlag::IndexBuffer)
+    {
+        u32 indexBufferSize;
+        stream->read<u32>(indexBufferSize);
 
-    //    auto& [indexBuffer, indexData] = m_indexBuffer;
-    //    indexBuffer = stream::StreamManager::createMemoryStream(nullptr, indexBufferSize);
-    //    indexData = indexBuffer->map(header._size);
-    //    m_stream->read(indexData, header._size, 1);
-    //}
+        u32 indexTypeSize = m_header->_indexType == renderer::StreamIndexBufferType::IndexType_16 ? sizeof(u16) : sizeof(u32);
+        ASSERT(indexBufferSize == m_header->_numIndices * indexTypeSize, "Should be same");
+
+        auto& [indexBuffer, indexData] = m_indexBuffer;
+        indexBuffer = stream::StreamManager::createMemoryStream(nullptr, indexBufferSize);
+        indexData = indexBuffer->map(indexBufferSize);
+        stream->read(indexData, indexBufferSize, 1);
+    }
 
     //if (header._flags & MeshHeader::GeometryFlag::BoundingBox)
     //{
     //    m_boundingBox << m_stream;
     //}
 
-    //ASSERT(!m_stream->isMapped(), "mapped");
-    //delete m_stream;
-    //m_stream = nullptr;
+    LOG_DEBUG("Mesh::load: The stream has been read %d from %d bytes", stream->tell() - m_header->_offset, m_header->_size);
 
     m_loaded = true;
-
     return true;
+}
+
+bool Mesh::save(stream::Stream* stream, u32 offset) const
+{
+    ASSERT(false, "not impl");
+    return false;
 }
 
 const renderer::VertexInputAttributeDescription& Mesh::getInputAttributeDesc() const
@@ -167,13 +195,13 @@ u64 Mesh::getVertexSize(u32 stream) const
     ASSERT(stream < m_vertexBuffers.size(), "range out");
     if (std::get<0>(m_vertexBuffers[stream]))
     {
-        std::get<0>(m_vertexBuffers[stream])->size();
+        return std::get<0>(m_vertexBuffers[stream])->size();
     }
 
     return 0;
 }
 
-const u8* Mesh::getVertexData(u32 stream) const
+const void* Mesh::getVertexData(u32 stream) const
 {
     ASSERT(stream < m_vertexBuffers.size(), "range out");
     if (std::get<1>(m_vertexBuffers[stream]))
@@ -199,7 +227,7 @@ u64 Mesh::getIndexSize() const
     return 0;
 }
 
-const u8* Mesh::getIndexData() const
+const void* Mesh::getIndexData() const
 {
     if (std::get<1>(m_indexBuffer))
     {
@@ -207,12 +235,6 @@ const u8* Mesh::getIndexData() const
     }
 
     return nullptr;
-}
-
-const MeshHeader& Mesh::getMeshHeader() const
-{
-    ASSERT(m_header, "nullptr");
-    return *static_cast<const MeshHeader*>(m_header);
 }
 
 } //namespace scene

@@ -1,66 +1,181 @@
 #include "Material.h"
 
 #include "Utils/Logger.h"
+#include "Stream/Stream.h"
 
 namespace v3d
 {
 namespace scene
 {
 
-MaterialHeader::MaterialHeader()
+MaterialHeader::MaterialHeader() noexcept
+    : ResourceHeader(resource::ResourceType::MaterialResource)
+    , _numProperties(0)
+    , _numTextures(0)
+{
+    static_assert(sizeof(MaterialHeader) == 8 + sizeof(ResourceHeader), "wrong size");
+}
+
+u32 MaterialHeader::operator>>(stream::Stream* stream) const
+{
+    u32 parentSize = ResourceHeader::operator>>(stream);
+    u32 writePos = stream->tell();
+
+    stream->write<u32>(_numProperties);
+    stream->write<u32>(_numTextures);
+
+    u32 writeSize = stream->tell() - writePos + parentSize;
+    ASSERT(sizeof(MaterialHeader) == writeSize, "wrong size");
+    return writeSize;
+}
+
+u32 MaterialHeader::operator<<(const stream::Stream* stream)
+{
+    u32 parentSize = ResourceHeader::operator<<(stream);
+    u32 readPos = stream->tell();
+
+    stream->read<u32>(_numProperties);
+    stream->read<u32>(_numTextures);
+
+    u32 readSize = stream->tell() - readPos + parentSize;
+    ASSERT(sizeof(MaterialHeader) == readSize, "wrong size");
+    return readSize;
+}
+
+Material::Property::Property() noexcept
+    : _index(0)
+    , _array(1)
+    , _label(PropertyName::Property_Unknown)
+    , _type(PropertyType::Empty)
+    , _data()
+    , _name("")
 {
 }
 
-MaterialHeader::PropertyInfo::PropertyInfo()
+u32 Material::Property::operator>>(stream::Stream* stream) const
 {
+    u32 writePos = stream->tell();
+
+    stream->write<u32>(_index);
+    stream->write<u32>(_array);
+    stream->write<PropertyName>(_label);
+    stream->write<PropertyType>(_type);
+    if (_type == PropertyType::Empty)
+    {
+        //don't writing anything
+    }
+    else if (_type == PropertyType::Value)
+    {
+        stream->write<f32>(std::get<PropertyType::Value>(_data)._value);
+    }
+    else if (_type == PropertyType::Vector)
+    {
+        stream->write<math::Vector4D>(std::get<PropertyType::Vector>(_data)._value);
+    }
+    else if (_type == PropertyType::Texture)
+    {
+        stream->write(std::get<PropertyType::Texture>(_data)._path);
+    }
+    stream->write(_name);
+
+    u32 writeSize = stream->tell() - writePos;
+    return writeSize;
+}
+
+u32 Material::Property::operator<<(const stream::Stream* stream)
+{
+    u32 readPos = stream->tell();
+
+    stream->read<u32>(_index);
+    stream->read<u32>(_array);
+    stream->read<PropertyName>(_label);
+    stream->read<PropertyType>(_type);
+    if (_type == PropertyType::Empty)
+    {
+        //don't read anything
+    }
+    else if (_type == PropertyType::Value)
+    {
+        ValueProperty property;
+        stream->read<f32>(property._value);
+
+        _data = property;
+    }
+    else if (_type == PropertyType::Vector)
+    {
+        VectorProperty property;
+        stream->read<math::Vector4D>(property._value);
+
+        _data = property;
+    }
+    else if (_type == PropertyType::Texture)
+    {
+        TextureProperty property;
+        stream->read(property._path);
+
+        _data = property;
+    }
+    stream->read(_name);
+
+    u32 readSize = stream->tell() - readPos;
+    return readSize;
+}
+
+
+Material::Material() noexcept
+    : m_header(nullptr)
+{
+    LOG_DEBUG("Material constructor %llx", this);
 }
 
 Material::Material(MaterialHeader* header) noexcept
-    : Resource(header)
+    : m_header(header)
 {
-    LOG_DEBUG("Material constructor %xll", this);
+    LOG_DEBUG("Material constructor %llx", this);
 }
 
 Material::~Material()
 {
-    LOG_DEBUG("Material destructor %xll", this);
+    LOG_DEBUG("Material destructor %llx", this);
 }
 
-void Material::init(stream::Stream * stream)
-{
-    //ASSERT(stream, "nullptr");
-    m_stream = stream;
-}
-
-bool Material::load()
+bool Material::load(const stream::Stream* stream, u32 offset)
 {
     if (m_loaded)
     {
+        LOG_WARNING("Material::load: the material %llx is already loaded", this);
         return true;
     }
-    
-    const MaterialHeader& header = Material::getMaterialHeader();
-    for (auto& prop : header._properties)
+
+    ASSERT(stream, "nullptr");
+    stream->seekBeg(offset);
+
+    if (!m_header)
     {
-        if (!prop.second._name.empty())
-        {
-            Material::setParameter<renderer::Texture*>(prop.first, nullptr);
-        }
+        m_header = V3D_NEW(MaterialHeader, memory::MemoryLabel::MemoryResource);
+        ASSERT(m_header, "nullptr");
+        m_header->operator<<(stream);
+    }
+    stream->seekBeg(m_header->_offset);
 
-        u32 index = static_cast<u32>(prop.second._value.index());
-        if (index == 0)
-        {
-            continue;
-        }
+    for (u32 prop = 0; prop < m_header->_numProperties; ++prop)
+    {
+        Material::Property property;
+        property << stream;
 
-        ASSERT(index != 0, "monostate");
-        if (index == 1)
+        ASSERT(property._type != PropertyType::Empty, "monostate");
+        if (property._type == PropertyType::Value)
         {
-            Material::setParameter<f32>(prop.first, std::get<1>(prop.second._value));
+            Material::setParameter<f32>(property._label, std::get<PropertyType::Value>(property._data)._value);
         }
-        else if (index == 2)
+        else if (property._type == PropertyType::Vector)
         {
-            Material::setParameter<math::Vector4D>(prop.first, std::get<2>(prop.second._value));
+            Material::setParameter<math::Vector4D>(property._label, std::get<PropertyType::Vector>(property._data)._value);
+        }
+        else if (property._type == PropertyType::Texture)
+        {
+            //TODO
+            Material::setParameter<renderer::Texture*>(property._label, nullptr);
         }
     }
 
@@ -68,77 +183,10 @@ bool Material::load()
     return true;
 }
 
-/*void Material::setFloatParameter(MaterialHeader::Property property, f32 value)
+bool Material::save(stream::Stream* stream, u32 offset) const
 {
-    auto iter = m_properties.emplace(std::make_pair(property, std::make_pair(value, nullptr)));
-    if (!iter.second)
-    {
-        ASSERT(iter.first->second.first.index() == 0 || iter.first->second.first.index() == 1, "invalid type");
-        iter.first->second.first = value;
-    }
-}
-
-void Material::setVectorParameter(MaterialHeader::Property property, const core::Vector4D & vector)
-{
-    auto iter = m_properties.emplace(std::make_pair(property, std::make_pair(vector, nullptr)));
-    if (!iter.second)
-    {
-        ASSERT(iter.first->second.first.index() == 0 || iter.first->second.first.index() == 2, "invalid type");
-        iter.first->second.first = vector;
-    }
-}
-
-void Material::setTextureParameter(MaterialHeader::Property property, renderer::Texture * texture)
-{
-    auto iter = m_properties.emplace(std::make_pair(property, std::make_pair(std::monostate(), texture)));
-    if (!iter.second)
-    {
-        ASSERT(texture, "nullptr");
-        iter.first->second.second = texture;
-    }
-}
-
-f32 Material::getFloatParameter(MaterialHeader::Property property) const
-{
-    auto iter = m_properties.find(property);
-    if (iter != m_properties.cend() && iter->second.first.index() == 1)
-    {
-        ASSERT(iter->second.first.index() == 1, "invalid type");
-        return std::get<1>(iter->second.first);
-    }
-
-    LOG_WARNING("Material::getFloatParameter property %d not found", property);
-    return 0.0f;
-}
-
-core::Vector4D Material::getVectorParameter(MaterialHeader::Property property) const
-{
-    auto iter = m_properties.find(property);
-    if (iter != m_properties.cend() && iter->second.first.index() == 2)
-    {
-        ASSERT(iter->second.first.index() == 2, "invalid type");
-        return std::get<2>(iter->second.first);
-    }
-
-    LOG_WARNING("Material::getVectorParameter property %d not found", property);
-    return core::Vector4D(0.0f);
-}
-
-renderer::Texture* Material::getTextureParameter(MaterialHeader::Property property) const
-{
-    auto iter = m_properties.find(property);
-    if (iter != m_properties.cend())
-    {
-        return iter->second.second;
-    }
-
-    LOG_WARNING("Material::getTextureParameter property %d not found", property);
-    return nullptr;
-}*/
-
-const MaterialHeader & Material::getMaterialHeader() const
-{
-    return *static_cast<const MaterialHeader*>(m_header);
+    ASSERT(false, "not impl");
+    return false;
 }
 
 } //namespace scene

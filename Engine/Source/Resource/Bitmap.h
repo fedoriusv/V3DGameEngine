@@ -25,7 +25,7 @@ namespace resource
         BitmapHeader(const BitmapHeader& other) noexcept;
         ~BitmapHeader() = default;
 
-        u32 operator>>(stream::Stream* stream);
+        u32 operator>>(stream::Stream* stream) const;
         u32 operator<<(const stream::Stream* stream);
 
         math::Dimension3D   _dimension;

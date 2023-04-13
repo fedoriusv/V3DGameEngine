@@ -9,24 +9,14 @@ namespace scene
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
-    * Component
+    * @brief Component
     */
     class Component
     {
     public:
 
-        Component() noexcept {};
-        virtual ~Component() {};
-
-        void* operator new(size_t size) noexcept
-        {
-            return malloc(size);
-        }
-
-        void operator delete(void* ptr) noexcept
-        {
-            free(ptr);
-        }
+        Component() noexcept = default;
+        virtual ~Component() = default;
     };
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////

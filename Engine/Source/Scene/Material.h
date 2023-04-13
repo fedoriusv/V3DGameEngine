@@ -24,58 +24,104 @@ namespace scene
     */
     struct MaterialHeader : resource::ResourceHeader
     {
-        MaterialHeader();
+        MaterialHeader() noexcept;
+        ~MaterialHeader() noexcept = default;
 
-        enum Property : u32
-        {
-            Property_BaseColor,
-            Property_Diffuse = Property_BaseColor,
-            Property_Ambient,
-            Property_Specular,
-            Property_Emission,
-            Property_Normals,
-            Property_Heightmap,
-            Property_Opacity,
-            Property_Shininess
-        };
+        u32 operator>>(stream::Stream* stream) const;
+        u32 operator<<(const stream::Stream* stream);
 
-        struct PropertyInfo
-        {
-            PropertyInfo();
-
-            std::variant<std::monostate, f32, math::Vector4D> _value;
-            std::string _name;
-        };
-
-        std::map<Property, PropertyInfo> _properties;
+        u32 _numProperties;
+        u32 _numTextures;
     };
 
     /**
-    * Material class. Component
+    * Material class. Component, Resource
     */
     class Material : public Component, public resource::Resource
     {
     public:
 
-        Material(MaterialHeader* header) noexcept;
+        enum PropertyName : u32
+        {
+            Property_Unknown = 0,
+
+            Property_Albedo,
+            Property_Diffuse,
+            Property_Ambient,
+            Property_Specular,
+            Property_Normal,
+            Property_Emission,
+            Property_Transparent,
+            Property_Reflection,
+            Property_Bump,
+            Property_Height,
+            Property_Opacity,
+            Property_Shininess,
+            Property_Refract,
+            Property_Displacement,
+
+            /*...*/
+
+            Property_Count = 255
+        };
+
+        enum PropertyType
+        {
+            Empty   = 0,
+            Value   = 1,
+            Vector  = 2,
+            Texture = 3,
+        };
+
+        struct Property
+        {
+            Property() noexcept;
+
+            u32 operator>>(stream::Stream* stream) const;
+            u32 operator<<(const stream::Stream* stream);
+
+            struct ValueProperty
+            {
+                f32 _value;
+            };
+
+            struct VectorProperty
+            {
+                math::Vector4D _value;
+            };
+
+            struct TextureProperty
+            {
+                std::string _path;
+            };
+
+            u32          _index;
+            u32          _array;
+            PropertyName _label;
+            PropertyType _type;
+            std::variant<std::monostate, ValueProperty, VectorProperty, TextureProperty> _data;
+            std::string _name;
+        };
+
+        Material() noexcept;
+        explicit Material(MaterialHeader* header) noexcept;
         ~Material();
 
-        void init(stream::Stream* stream) override;
-        bool load() override;
+        template<class TType>
+        void setParameter(PropertyName property, TType value);
 
         template<class TType>
-        void setParameter(MaterialHeader::Property property, TType value);
-
-        template<class TType>
-        TType getParameter(MaterialHeader::Property property) const;
+        TType getParameter(PropertyName property) const;
 
     private:
 
-        const MaterialHeader& getMaterialHeader() const;
+        bool load(const stream::Stream* stream, u32 offset = 0) override;
+        bool save(stream::Stream* stream, u32 offset = 0) const override;
 
+        MaterialHeader* m_header;
 
         std::string m_name;
-        std::map<MaterialHeader::Property, std::pair<std::variant<std::monostate, f32, math::Vector4D>, renderer::Texture*>> m_properties;
+        std::unordered_map<PropertyName, std::pair<std::variant<std::monostate, f32, math::Vector4D>, renderer::Texture*>> m_properties;
 
         friend MaterialHelper;
 
@@ -84,7 +130,7 @@ namespace scene
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     template<class TType>
-    inline TType Material::getParameter(MaterialHeader::Property property) const
+    inline TType Material::getParameter(Material::PropertyName property) const
     {
         auto iter = m_properties.find(property);
         if constexpr (std::is_convertible<TType, renderer::Texture*>::value)
@@ -122,7 +168,7 @@ namespace scene
     }
 
     template<class TType>
-    inline void Material::setParameter(MaterialHeader::Property property, TType value)
+    inline void Material::setParameter(Material::PropertyName property, TType value)
     {
         if constexpr (std::is_convertible<TType, renderer::Texture*>::value)
         {

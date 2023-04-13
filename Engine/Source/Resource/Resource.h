@@ -50,7 +50,7 @@ namespace resource
 
         void setName(const std::string& name);
 
-        u32 operator>>(stream::Stream* stream);
+        u32 operator>>(stream::Stream* stream) const;
         u32 operator<<(const stream::Stream* stream);
 
     private:

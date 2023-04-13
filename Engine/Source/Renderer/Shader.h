@@ -49,7 +49,7 @@ namespace renderer
         explicit ShaderHeader(renderer::ShaderType type) noexcept;
         ~ShaderHeader() = default;
 
-        u32 operator>>(stream::Stream* stream);
+        u32 operator>>(stream::Stream* stream) const;
         u32 operator<<(const stream::Stream* stream);
 
         renderer::ShaderType _shaderType;

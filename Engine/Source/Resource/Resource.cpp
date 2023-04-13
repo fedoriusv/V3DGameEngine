@@ -64,7 +64,7 @@ void ResourceHeader::setName(const std::string& name)
     memcpy(_name, name.c_str(), math::min<u64>(name.size(), k_nameSize));
 }
 
-u32 ResourceHeader::operator>>(stream::Stream* stream)
+u32 ResourceHeader::operator>>(stream::Stream* stream) const
 {
     u32 writePos = stream->tell();
     ASSERT(ResourceHeader::validateResourceHeader(this), "wrong header");

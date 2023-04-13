@@ -24,14 +24,14 @@ namespace scene
         explicit MaterialHelper(renderer::CommandList& cmdList, Material* material) noexcept;
         ~MaterialHelper();
 
-        void setTextureParameter(MaterialHeader::Property property, renderer::Texture* texture);
-        void setFloatParameter(MaterialHeader::Property property, f32 value);
-        void setVectorParameter(MaterialHeader::Property property, const math::Vector4D& vector);
+        void setTextureParameter(Material::PropertyName property, renderer::Texture* texture);
+        void setFloatParameter(Material::PropertyName property, f32 value);
+        void setVectorParameter(Material::PropertyName property, const math::Vector4D& vector);
 
         template <class TTexture>
-        TTexture* getTextureParameter(MaterialHeader::Property property) const;
-        f32 getFloatParameter(MaterialHeader::Property property) const;
-        math::Vector4D getVectorParameter(MaterialHeader::Property property) const;
+        TTexture* getTextureParameter(Material::PropertyName property) const;
+        f32 getFloatParameter(Material::PropertyName property) const;
+        math::Vector4D getVectorParameter(Material::PropertyName property) const;
 
         static MaterialHelper* createMaterialHelper(renderer::CommandList& cmdList, Material* material);
         static std::vector<MaterialHelper*> createMaterialHelpers(renderer::CommandList& cmdList, std::vector<Material*> materials);
@@ -45,7 +45,7 @@ namespace scene
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     template<class TTexture>
-    inline TTexture* MaterialHelper::getTextureParameter(MaterialHeader::Property property) const
+    inline TTexture* MaterialHelper::getTextureParameter(Material::PropertyName property) const
     {
         ASSERT(m_material, "nullptr");
         static_assert(std::is_base_of<renderer::Texture, TTexture>(), "wrong type");

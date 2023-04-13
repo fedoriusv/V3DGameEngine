@@ -3,7 +3,7 @@
 
 #include "Resource/ResourceLoaderManager.h"
 #include "Resource/ImageFileLoader.h"
-#include "Resource/Image.h"
+#include "Resource/Bitmap.h"
 
 namespace v3d
 {
@@ -49,11 +49,11 @@ MaterialHelper::MaterialHelper(renderer::CommandList& cmdList, Material * materi
 
     for (auto& iter : images)
     {
-        resource::Image* image = std::get<1>(iter.second);
+        resource::Bitmap* image = std::get<1>(iter.second);
         ASSERT(image->getLayersCount() == 1, "not handled");
 
         renderer::Texture2D* texture = cmdList.createObject<renderer::Texture2D>(renderer::TextureUsage_Sampled | renderer::TextureUsage_Shared | renderer::TextureUsage_Write,
-            image->getFormat(), math::Dimension2D(image->getDimension().m_width, image->getDimension().m_height), image->getMipMapsCount(), image->getRawData(), std::get<0>(iter.second));
+            image->getFormat(), math::Dimension2D(image->getDimension().m_width, image->getDimension().m_height), image->getMipMapsCount(), image->getBitmap(), std::get<0>(iter.second));
 
 
         material->setParameter<renderer::Texture*>(iter.first, texture);
@@ -67,31 +67,31 @@ MaterialHelper::~MaterialHelper()
     m_textures.clear();
 }
 
-void MaterialHelper::setTextureParameter(MaterialHeader::Property property, renderer::Texture * texture)
+void MaterialHelper::setTextureParameter(Material::PropertyName property, renderer::Texture * texture)
 {
     ASSERT(m_material, "nullptr");
     m_material->setParameter<renderer::Texture*>(property, texture);
 }
 
-void MaterialHelper::setFloatParameter(MaterialHeader::Property property, f32 value)
+void MaterialHelper::setFloatParameter(Material::PropertyName property, f32 value)
 {
     ASSERT(m_material, "nullptr");
     m_material->setParameter<f32>(property, value);
 }
 
-void MaterialHelper::setVectorParameter(MaterialHeader::Property property, const math::Vector4D & vector)
+void MaterialHelper::setVectorParameter(Material::PropertyName property, const math::Vector4D & vector)
 {
     ASSERT(m_material, "nullptr");
     m_material->setParameter<math::Vector4D>(property, vector);
 }
 
-f32 MaterialHelper::getFloatParameter(MaterialHeader::Property property) const
+f32 MaterialHelper::getFloatParameter(Material::PropertyName property) const
 {
     ASSERT(m_material, "nullptr");
     return m_material->getParameter<f32>(property);
 }
 
-math::Vector4D MaterialHelper::getVectorParameter(MaterialHeader::Property property) const
+math::Vector4D MaterialHelper::getVectorParameter(Material::PropertyName property) const
 {
     ASSERT(m_material, "nullptr");
     return m_material->getParameter<math::Vector4D>(property);

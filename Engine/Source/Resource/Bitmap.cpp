@@ -28,10 +28,10 @@ BitmapHeader::BitmapHeader(const BitmapHeader& other) noexcept
 {
 }
 
-u32 BitmapHeader::operator>>(stream::Stream* stream)
+u32 BitmapHeader::operator>>(stream::Stream* stream) const
 {
-    u32 parent = ResourceHeader::operator>>(stream);
-    u32 write = stream->tell();
+    u32 parentSize = ResourceHeader::operator>>(stream);
+    u32 writePos = stream->tell();
 
     stream->write<math::Dimension3D>(_dimension);
     stream->write<renderer::Format>(_format);
@@ -39,15 +39,15 @@ u32 BitmapHeader::operator>>(stream::Stream* stream)
     stream->write<u16>(_mips);
     stream->write<BitmapHeaderFlags>(_bitmapFlags);
 
-    write = stream->tell() - write + parent;
-    ASSERT(sizeof(BitmapHeader) == write, "wrong size");
-    return write;
+    u32 writeSize = stream->tell() - writePos + parentSize;
+    ASSERT(sizeof(BitmapHeader) == writeSize, "wrong size");
+    return writeSize;
 }
 
 u32 BitmapHeader::operator<<(const stream::Stream* stream)
 {
-    u32 parent = ResourceHeader::operator<<(stream);
-    u32 read = stream->tell();
+    u32 parentSize = ResourceHeader::operator<<(stream);
+    u32 readPos = stream->tell();
 
     stream->read<math::Dimension3D>(_dimension);
     stream->read<renderer::Format>(_format);
@@ -55,9 +55,9 @@ u32 BitmapHeader::operator<<(const stream::Stream* stream)
     stream->read<u16>(_mips);
     stream->read<BitmapHeaderFlags>(_bitmapFlags);
 
-    read = stream->tell() - read + parent;
-    ASSERT(sizeof(BitmapHeader) == read, "wrong size");
-    return read;
+    u32 readSize = stream->tell() - readPos + parentSize;
+    ASSERT(sizeof(BitmapHeader) == readSize, "wrong size");
+    return readSize;
 }
 
 Bitmap::Bitmap() noexcept

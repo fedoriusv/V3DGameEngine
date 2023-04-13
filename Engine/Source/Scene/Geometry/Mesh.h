@@ -5,7 +5,6 @@
 #include "Resource/Resource.h"
 #include "Renderer/BufferProperties.h"
 #include "Renderer/PipelineStateProperties.h"
-#include "AABB.h"
 
 namespace v3d
 {
@@ -23,7 +22,7 @@ namespace scene
             Empty = 0,
             IndexBuffer = 1 << 0,
             BoundingBox = 1 << 1,
-            SeparatePostionAttribute = 1 << 3
+            SeparatePostion = 1 << 3
         };
         typedef u16 GeometryContentFlags;
 
@@ -51,11 +50,12 @@ namespace scene
         MeshHeader() noexcept;
         ~MeshHeader() noexcept = default;
 
-        u32 operator>>(stream::Stream* stream) override;
-        u32 operator<<(const stream::Stream* stream) override;
+        u32 operator>>(stream::Stream* stream) const;
+        u32 operator<<(const stream::Stream* stream);
 
         u32 _numVertices;
         u32 _vertexStride;
+
         u32 _numIndices;
         renderer::StreamIndexBufferType _indexType;
 
@@ -69,35 +69,36 @@ namespace scene
     {
     public:
 
-        explicit Mesh(const MeshHeader* header) noexcept;
+        Mesh() noexcept;
+        explicit Mesh(MeshHeader* header) noexcept;
         ~Mesh() noexcept;
-
-        void init(stream::Stream* stream) override;
-        bool load() override;
 
         const renderer::VertexInputAttributeDescription& getInputAttributeDesc() const;
 
         u32 getVertexCount() const;
         u64 getVertexSize(u32 stream = 0) const;
-        const u8* getVertexData(u32 stream = 0) const;
+        const void* getVertexData(u32 stream = 0) const;
 
         u32 getIndexCount() const;
         u64 getIndexSize() const;
-        const u8* getIndexData() const;
+        const void* getIndexData() const;
 
         //AABB& getAABB() const;
 
     private:
 
-        const MeshHeader& getMeshHeader() const;
+        bool load(const stream::Stream* stream, u32 offset = 0) override;
+        bool save(stream::Stream* stream, u32 offset = 0) const override;
+
+        MeshHeader* m_header;
 
         renderer::VertexInputAttributeDescription m_description;
 
-        std::tuple<stream::Stream*, u8*> m_indexBuffer;
+        std::tuple<stream::Stream*, void*> m_indexBuffer;
         u32 m_indexCount;
         renderer::StreamIndexBufferType m_indexType;
 
-        std::vector<std::tuple<stream::Stream*, u8*>> m_vertexBuffers;
+        std::vector<std::tuple<stream::Stream*, void*>> m_vertexBuffers;
         u32 m_vertexCount;
 
         //AABB m_boundingBox;

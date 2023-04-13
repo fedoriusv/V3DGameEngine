@@ -1,5 +1,5 @@
 #include "ModelHelper.h"
-#include "Scene/Geometry/Model.h"
+#include "Scene/Model.h"
 
 #include "Renderer/CommandList.h"
 #include "Renderer/StreamBuffer.h"
@@ -13,22 +13,22 @@ ModelHelper::ModelHelper(renderer::CommandList* cmdList, const std::vector<const
     : m_models(models)
 {
     ASSERT(!m_models.empty(), "empty list");
-    /*for (auto model : m_models)
+    for (auto model : m_models)
     {
         ASSERT(model, "nullptr");
         for (u32 meshIndex = 0; meshIndex < model->getMeshCount(); ++meshIndex)
         {
             u64 size = model->getMeshByIndex(meshIndex)->getVertexSize();
-            u8* data = model->getMeshByIndex(meshIndex)->getVertexData();
-            renderer::VertexStreamBuffer* vertexBuffer = cmdList->createObject<renderer::VertexStreamBuffer>(renderer::StreamBuffer_Write | renderer::StreamBuffer_Shared, size, data);
-            m_buffers.push_back(vertexBuffer);
+            const void* data = model->getMeshByIndex(meshIndex)->getVertexData();
+            renderer::VertexStreamBuffer* vertexBuffer = cmdList->createObject<renderer::VertexStreamBuffer>(renderer::StreamBuffer_Write | renderer::StreamBuffer_Shared, size, (u8*)data);
+            m_buffers.push_back(utils::IntrusivePointer<renderer::StreamBuffer>(vertexBuffer));
 
             if (model->getMeshByIndex(meshIndex)->getIndexCount() > 0)
             {
                 u32 count = model->getMeshByIndex(meshIndex)->getIndexCount();
-                u8* data = model->getMeshByIndex(meshIndex)->getIndexData();
-                renderer::IndexStreamBuffer* indexBuffer = cmdList->createObject<renderer::IndexStreamBuffer>(renderer::StreamBuffer_Write | renderer::StreamBuffer_Shared, renderer::StreamIndexBufferType::IndexType_32, count, data);
-                m_buffers.push_back(indexBuffer);
+                const void* data = model->getMeshByIndex(meshIndex)->getIndexData();
+                renderer::IndexStreamBuffer* indexBuffer = cmdList->createObject<renderer::IndexStreamBuffer>(renderer::StreamBuffer_Write | renderer::StreamBuffer_Shared, renderer::StreamIndexBufferType::IndexType_32, count, (u8*)data);
+                m_buffers.push_back(utils::IntrusivePointer<renderer::StreamBuffer>(indexBuffer));
 
                 renderer::DrawProperties props = { 0, count, 0, 1, true };
                 m_drawState.push_back(std::make_tuple(renderer::StreamBufferDescription(indexBuffer, 0, vertexBuffer, 0, 0), props));
@@ -39,7 +39,7 @@ ModelHelper::ModelHelper(renderer::CommandList* cmdList, const std::vector<const
                 m_drawState.push_back(std::make_tuple(renderer::StreamBufferDescription(vertexBuffer, 0, 0), props));
             }
         }
-    }*/
+    }
 }
 
 ModelHelper::~ModelHelper()
