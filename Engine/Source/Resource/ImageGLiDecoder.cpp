@@ -59,7 +59,7 @@ Resource* ImageGLiDecoder::decode(const stream::Stream* stream, const std::strin
             ASSERT(!texture.empty(), "fail");
         }
 
-        if (m_generateMipmaps)
+        if (m_generateMipmaps && texture.max_level() == 0)
         {
             if (gli::is_compressed(texture.format()))
             {
