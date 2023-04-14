@@ -62,7 +62,7 @@ namespace utils
     {
         std::call_once(Singleton::s_onceFlag, []()
             {
-                s_instance = new T;
+                s_instance = V3D_NEW(T, memory::MemoryLabel::MemorySystem);
             });
 
         ASSERT(s_instance, "nullptr");
@@ -74,7 +74,7 @@ namespace utils
     {
         if (s_instance)
         {
-            delete s_instance;
+            V3D_DELETE(s_instance,memory::MemoryLabel::MemorySystem);
         }
 
         s_instance = nullptr;

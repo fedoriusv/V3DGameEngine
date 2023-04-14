@@ -152,7 +152,7 @@ bool Material::load(const stream::Stream* stream, u32 offset)
 
     if (!m_header)
     {
-        m_header = V3D_NEW(MaterialHeader, memory::MemoryLabel::MemoryResource);
+        m_header = V3D_NEW(MaterialHeader, memory::MemoryLabel::MemoryObject);
         ASSERT(m_header, "nullptr");
         m_header->operator<<(stream);
     }

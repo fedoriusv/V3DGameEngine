@@ -17,8 +17,9 @@ namespace memory
     {
         MemoryDefault = 0,
         MemorySystem,
-        MemoryResource,
-        MemoryStream,
+        MemoryObject,
+        MemoryDynamic,
+
         MemoryGame,
         MemoryRenderCore,
         MemoryCommandList,

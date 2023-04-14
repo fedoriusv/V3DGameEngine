@@ -75,7 +75,7 @@ bool VulkanQuery::create()
     case QueryType::Occlusion:
     case QueryType::BinaryOcclusion:
     case QueryType::TimeStamp:
-        m_data = malloc(m_count * sizeof(u64)); //TODO pool ?
+        m_data = V3D_MALLOC(m_count * sizeof(u64), memory::MemoryLabel::MemoryDynamic);
         break;
 
     default:
@@ -91,14 +91,14 @@ void VulkanQuery::destroy()
 
     if (m_data)
     {
-        delete m_data; //TODO pool ?
+        V3D_FREE(m_data, memory::MemoryLabel::MemoryDynamic);
         m_data = nullptr;
     }
 }
 
 void VulkanQuery::dispatch(QueryResult result) const
 {
-    if (m_callback) //TODO checker to delete
+    if (m_callback && m_data) //TODO checker to delete
     {
         std::invoke(m_callback, result, static_cast<u32>(m_count * sizeof(u64)), m_data);
     }

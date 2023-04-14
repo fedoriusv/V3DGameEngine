@@ -154,12 +154,12 @@ Resource* ShaderDXCDecoder::decode(const stream::Stream* stream, const std::stri
         shaderHeader._contentType = renderer::ShaderHeader::ShaderContent::Bytecode;
         shaderHeader._shaderModel = m_outputSM;
 
-        Resource* resource = V3D_NEW(renderer::Shader, memory::MemoryLabel::MemoryResource)(V3D_NEW(renderer::ShaderHeader, memory::MemoryLabel::MemoryResource)(shaderHeader));
+        Resource* resource = V3D_NEW(renderer::Shader, memory::MemoryLabel::MemoryObject)(V3D_NEW(renderer::ShaderHeader, memory::MemoryLabel::MemoryObject)(shaderHeader));
         if (!resource->load(resourceBinary))
         {
             LOG_ERROR("ShaderDXCDecoder::decode: the shader loading is failed");
 
-            V3D_DELETE(resource, memory::MemoryLabel::MemoryResource);
+            V3D_DELETE(resource, memory::MemoryLabel::MemoryObject);
             resource = nullptr;
         }
         stream::StreamManager::destroyStream(resourceBinary);

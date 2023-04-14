@@ -43,7 +43,7 @@ Resource* AssetFileLoader::load(const std::string& name, const std::string& alia
             Resource* resource = decoder->decode(file, name);
 
             file->close();
-            V3D_DELETE(file, memory::MemoryLabel::MemoryResource);
+            V3D_DELETE(file, memory::MemoryLabel::MemorySystem);
             file = nullptr;
 
             if (!resource)

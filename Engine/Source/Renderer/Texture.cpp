@@ -174,7 +174,7 @@ void Texture::createTexture(const math::Dimension3D& dimension, const void* data
                     }
                     else
                     {
-                        m_data = malloc(size); //TODO: get from pool
+                        m_data = V3D_MALLOC(size, memory::MemoryLabel::MemoryDynamic);
                         memcpy(m_data, data, size);
                     }
                 }
@@ -187,7 +187,7 @@ void Texture::createTexture(const math::Dimension3D& dimension, const void* data
 #endif
                 if (m_data && !m_shared)
                 {
-                    free(m_data); //TODO: return to pool
+                    V3D_FREE(m_data, memory::MemoryLabel::MemoryDynamic);
                     m_data = nullptr;
                 }
             }

@@ -312,7 +312,7 @@ u8* FileStream::map(u32 size) const
     }
 
     ASSERT(size > 0 && FileStream::tell() + size <= FileStream::size(), "Invalid file size");
-    m_memory = reinterpret_cast<u8*>(V3D_MALLOC(size, memory::MemoryLabel::MemoryStream));
+    m_memory = reinterpret_cast<u8*>(V3D_MALLOC(size, memory::MemoryLabel::MemoryDynamic));
 
     FileStream::read(m_memory, size);
     m_mapped = true;
@@ -325,7 +325,7 @@ void FileStream::unmap() const
     ASSERT(m_mapped, "Memory not mapped");
     if (m_memory)
     {
-        V3D_FREE(m_memory, memory::MemoryLabel::MemoryStream);
+        V3D_FREE(m_memory, memory::MemoryLabel::MemoryDynamic);
     }
     m_mapped = false;
 }

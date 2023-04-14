@@ -54,7 +54,7 @@ namespace utils
         --m_refCount;
         if (m_refCount == 0)
         {
-            //TODO memory handle
+            //handle by Object new/delete. @see Object class
             delete this;
         }
     }

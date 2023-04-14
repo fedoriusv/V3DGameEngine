@@ -93,14 +93,14 @@ Shader::~Shader()
 
     if (m_source)
     {
-        V3D_FREE(m_source, memory::MemoryLabel::MemoryResource);
+        V3D_FREE(m_source, memory::MemoryLabel::MemoryObject);
     }
     m_hash = 0;
     m_size = 0;
 
     if (m_header)
     {
-        V3D_DELETE(m_header, memory::MemoryLabel::MemoryResource);
+        V3D_DELETE(m_header, memory::MemoryLabel::MemoryObject);
         m_header = nullptr;
     }
 }
@@ -118,7 +118,7 @@ bool Shader::load(const stream::Stream* stream, u32 offset)
 
     if (!m_header)
     {
-        m_header = V3D_NEW(ShaderHeader, memory::MemoryLabel::MemoryResource);
+        m_header = V3D_NEW(ShaderHeader, memory::MemoryLabel::MemoryObject);
         m_header->operator<<(stream);
     }
     stream->seekBeg(offset + m_header->_offset);
@@ -126,7 +126,7 @@ bool Shader::load(const stream::Stream* stream, u32 offset)
     stream->read<u32>(m_size);
     if (m_size > 0)
     {
-        m_source = V3D_MALLOC(m_size, memory::MemoryLabel::MemoryResource);
+        m_source = V3D_MALLOC(m_size, memory::MemoryLabel::MemoryObject);
         stream->read(m_source, m_size);
     }
     stream->read(m_entrypoint);

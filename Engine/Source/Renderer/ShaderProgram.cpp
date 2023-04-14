@@ -397,7 +397,7 @@ bool ShaderProgram::bindUniformsBuffer(ShaderType shaderType, u32 index, u32 off
                 else
                 {
                     ASSERT(m_size > 0, "invalid size");
-                    m_data = malloc(size);
+                    m_data = V3D_MALLOC(size, memory::MemoryLabel::MemoryDynamic);
                     memcpy(m_data, data, size);
                 }
             };
@@ -413,7 +413,7 @@ bool ShaderProgram::bindUniformsBuffer(ShaderType shaderType, u32 index, u32 off
 
                 if (m_data && !m_shared)
                 {
-                    free(m_data);
+                    V3D_FREE(m_data, memory::MemoryLabel::MemoryDynamic);
                     m_data = nullptr;
                 }
             };

@@ -39,28 +39,28 @@ Resource* AssetDecoder::decode(const stream::Stream* stream, const std::string& 
         {
         case ResourceType::ModelResource:
         {
-            scene::ModelHeader* modleHeader = V3D_NEW(scene::ModelHeader, memory::MemoryLabel::MemoryResource);
+            scene::ModelHeader* modleHeader = V3D_NEW(scene::ModelHeader, memory::MemoryLabel::MemoryObject);
             modleHeader->operator<<(stream);
 
-            resource = V3D_NEW(scene::Model, memory::MemoryLabel::MemoryResource)(modleHeader);
+            resource = V3D_NEW(scene::Model, memory::MemoryLabel::MemoryObject)(modleHeader);
         }
         break;
 
         case ResourceType::MeshResource:
         {
-            scene::MeshHeader* meshHeader = V3D_NEW(scene::MeshHeader, memory::MemoryLabel::MemoryResource);
+            scene::MeshHeader* meshHeader = V3D_NEW(scene::MeshHeader, memory::MemoryLabel::MemoryObject);
             meshHeader->operator<<(stream);
 
-            resource = V3D_NEW(scene::Mesh, memory::MemoryLabel::MemoryResource)(meshHeader);
+            resource = V3D_NEW(scene::Mesh, memory::MemoryLabel::MemoryObject)(meshHeader);
         }
         break;
 
         case ResourceType::BitmapResource:
         {
-            resource::BitmapHeader* meshHeader = V3D_NEW(resource::BitmapHeader, memory::MemoryLabel::MemoryResource);
+            resource::BitmapHeader* meshHeader = V3D_NEW(resource::BitmapHeader, memory::MemoryLabel::MemoryObject);
             meshHeader->operator<<(stream);
 
-            resource = V3D_NEW(resource::Bitmap, memory::MemoryLabel::MemoryResource)(meshHeader);
+            resource = V3D_NEW(resource::Bitmap, memory::MemoryLabel::MemoryObject)(meshHeader);
         }
         break;
 
@@ -76,7 +76,7 @@ Resource* AssetDecoder::decode(const stream::Stream* stream, const std::string& 
         {
             LOG_ERROR("AssetDecoder::decode: load is falied, %s", name.c_str());
 
-            V3D_DELETE(resource, memory::MemoryLabel::MemoryResource);
+            V3D_DELETE(resource, memory::MemoryLabel::MemoryObject);
             resource = nullptr;
         }
 

@@ -575,7 +575,7 @@ void MemoryStream::clear()
 {
     if (m_stream)
     {
-        V3D_FREE(m_stream, memory::MemoryLabel::MemoryStream);
+        V3D_FREE(m_stream, memory::MemoryLabel::MemoryDynamic);
     }
 
     m_length = 0;
@@ -591,7 +591,7 @@ u8* MemoryStream::allocate(u32 size)
     m_length = size;
     m_pos = 0;
 
-    return reinterpret_cast<u8*>(V3D_MALLOC(m_allocated, memory::MemoryLabel::MemoryStream));
+    return reinterpret_cast<u8*>(V3D_MALLOC(m_allocated, memory::MemoryLabel::MemoryDynamic));
 }
 
 bool MemoryStream::checkSize(u32 size)
@@ -606,12 +606,12 @@ bool MemoryStream::checkSize(u32 size)
     {
         u8* oldStream = m_stream;
         s32 newAllocated = 2 * (m_pos + size);
-        m_stream = reinterpret_cast<u8*>(V3D_MALLOC(newAllocated, memory::MemoryLabel::MemoryStream));
+        m_stream = reinterpret_cast<u8*>(V3D_MALLOC(newAllocated, memory::MemoryLabel::MemoryDynamic));
 
         memcpy(m_stream, oldStream, m_allocated);
         m_allocated = newAllocated;
 
-        V3D_FREE(oldStream, memory::MemoryLabel::MemoryStream);
+        V3D_FREE(oldStream, memory::MemoryLabel::MemoryDynamic);
     }
 
     return true;

@@ -34,7 +34,7 @@ public:
             }
             else
             {
-                m_data = malloc(m_size); //TODO: get from pool
+                m_data = V3D_MALLOC(m_size, memory::MemoryLabel::MemoryDynamic);
                 memcpy(m_data, data, m_size);
             }
         }
@@ -47,7 +47,7 @@ public:
 #endif //DEBUG_COMMAND_LIST
         if (m_data && !m_shadred)
         {
-            free(m_data); //TODO: return to pool
+            V3D_FREE(m_data, memory::MemoryLabel::MemoryDynamic);
             m_data = nullptr;
         }
     }
@@ -140,7 +140,7 @@ VertexStreamBuffer::VertexStreamBuffer(renderer::CommandList& cmdList, StreamBuf
     LOG_DEBUG("VertexStreamBuffer::VertexStreamBuffer constructor %llx", this);
     if (data && size > 0)
     {
-        m_data = malloc(size);
+        m_data = m_data = V3D_MALLOC(m_size, memory::MemoryLabel::MemoryDynamic);
         memcpy(m_data, data, size);
     }
 
@@ -188,7 +188,7 @@ VertexStreamBuffer::~VertexStreamBuffer()
 
     if (m_data)
     {
-        free(m_data);
+        V3D_FREE(m_data, memory::MemoryLabel::MemoryDynamic);
         m_data = nullptr;
     }
 }
@@ -221,9 +221,9 @@ bool VertexStreamBuffer::update(u32 offset, u64 size, const u8* data)
 
             if (m_data)
             {
-                free(m_data);
+                V3D_FREE(m_data, memory::MemoryLabel::MemoryDynamic);
             }
-            m_data = malloc(size);
+            m_data = V3D_MALLOC(size, memory::MemoryLabel::MemoryDynamic);
             m_size = size;
         }
 
@@ -261,7 +261,7 @@ bool VertexStreamBuffer::update(u32 offset, u64 size, const u8* data)
                         }
                         else
                         {
-                            m_data = malloc(m_size); //TODO: get from pool
+                            m_data = m_data = V3D_MALLOC(m_size, memory::MemoryLabel::MemoryDynamic);
                             memcpy(m_data, data, m_size);
                         }
                     }
@@ -274,7 +274,7 @@ bool VertexStreamBuffer::update(u32 offset, u64 size, const u8* data)
 #endif //DEBUG_COMMAND_LIST
                     if (m_data && !m_shadred)
                     {
-                        free(m_data); //TODO: return to pool
+                        V3D_FREE(m_data, memory::MemoryLabel::MemoryDynamic);
                         m_data = nullptr;
                     }
                 }
@@ -335,7 +335,7 @@ IndexStreamBuffer::IndexStreamBuffer(CommandList& cmdList, StreamBufferUsageFlag
     u32 size = count * ((type == StreamIndexBufferType::IndexType_16) ? sizeof(16) : sizeof(32));
     if (data && size > 0)
     {
-        m_data = malloc(size);
+        m_data = V3D_MALLOC(size, memory::MemoryLabel::MemoryDynamic);
         memcpy(m_data, data, size);
     }
 
@@ -383,7 +383,7 @@ IndexStreamBuffer::~IndexStreamBuffer()
 
     if (m_data)
     {
-        free(m_data);
+        V3D_FREE(m_data, memory::MemoryLabel::MemoryDynamic);
         m_data = nullptr;
     }
 }

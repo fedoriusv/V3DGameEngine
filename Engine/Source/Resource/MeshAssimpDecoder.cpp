@@ -157,12 +157,12 @@ Resource* MeshAssimpDecoder::decode(const stream::Stream* stream, const std::str
             newHeader._localTransform = m_localTransform;
         }
 
-        resource::Resource* model = V3D_NEW(scene::Model, memory::MemoryLabel::MemoryResource)(V3D_NEW(scene::ModelHeader, memory::MemoryLabel::MemoryResource)(newHeader));
+        resource::Resource* model = V3D_NEW(scene::Model, memory::MemoryLabel::MemoryObject)(V3D_NEW(scene::ModelHeader, memory::MemoryLabel::MemoryObject)(newHeader));
         if (!model->load(modelStream))
         {
             LOG_ERROR("MeshAssimpDecoder::decode: the model %s loading is failed", name.c_str());
 
-            V3D_DELETE(model, memory::MemoryLabel::MemoryResource);
+            V3D_DELETE(model, memory::MemoryLabel::MemoryObject);
             model = nullptr;
         }
         stream::StreamManager::destroyStream(modelStream);

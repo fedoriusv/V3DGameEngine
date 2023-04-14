@@ -234,12 +234,12 @@ Resource* ImageGLiDecoder::decode(const stream::Stream* stream, const std::strin
         newHeader._mips = static_cast<u32>(texture.levels());
         newHeader._bitmapFlags |= m_flipY ? BitmapHeader::BitmapHeaderFlag::BitmapFlippedByY : 0;
 
-        resource::Resource* image = V3D_NEW(Bitmap, memory::MemoryLabel::MemoryResource)(V3D_NEW(BitmapHeader, memory::MemoryLabel::MemoryResource)(newHeader));
+        resource::Resource* image = V3D_NEW(Bitmap, memory::MemoryLabel::MemoryObject)(V3D_NEW(BitmapHeader, memory::MemoryLabel::MemoryObject)(newHeader));
         if (!image->load(imageStream))
         {
             LOG_ERROR("ImageGLiDecoder::decode: load is falied, %s", name.c_str());
 
-            V3D_DELETE(image, memory::MemoryLabel::MemoryResource);
+            V3D_DELETE(image, memory::MemoryLabel::MemoryObject);
             image = nullptr;
         }
         stream::StreamManager::destroyStream(imageStream);

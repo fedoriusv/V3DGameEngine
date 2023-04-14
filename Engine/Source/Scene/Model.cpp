@@ -70,13 +70,13 @@ Model::~Model()
     {
         for (auto& mesh : meshLODs)
         {
-            V3D_DELETE(mesh, memory::MemoryLabel::MemoryResource);
+            V3D_DELETE(mesh, memory::MemoryLabel::MemoryObject);
         }
     }
 
     for (auto& material : m_materials)
     {
-        V3D_DELETE(material, memory::MemoryLabel::MemoryResource);
+        V3D_DELETE(material, memory::MemoryLabel::MemoryObject);
     }
 }
 
@@ -126,7 +126,7 @@ bool Model::load(const stream::Stream* stream, u32 offset)
 
     if (!m_header)
     {
-        m_header = V3D_NEW(ModelHeader, memory::MemoryLabel::MemoryResource);
+        m_header = V3D_NEW(ModelHeader, memory::MemoryLabel::MemoryObject);
         ASSERT(m_header, "nullptr");
         m_header->operator<<(stream);
     }
@@ -146,13 +146,13 @@ bool Model::load(const stream::Stream* stream, u32 offset)
             mesh.resize(LODs, nullptr);
             for (u32 LOD = 0; LOD < LODs; ++LOD)
             {
-                resource::Resource* resource = V3D_NEW(Mesh, memory::MemoryLabel::MemoryResource);
+                resource::Resource* resource = V3D_NEW(Mesh, memory::MemoryLabel::MemoryObject);
                 if (!resource->load(stream, stream->tell()))
                 {
                     LOG_ERROR("Model::load: The mesh can't be parsed");
 
                     ASSERT(false, "wrong parsing");
-                    V3D_DELETE(resource, memory::MemoryLabel::MemoryResource);
+                    V3D_DELETE(resource, memory::MemoryLabel::MemoryObject);
 
                     return false;
                 }
@@ -170,13 +170,13 @@ bool Model::load(const stream::Stream* stream, u32 offset)
         m_materials.resize(numMaterials, nullptr);
         for (auto& material : m_materials)
         {
-            resource::Resource* resource = V3D_NEW(Material, memory::MemoryLabel::MemoryResource);
+            resource::Resource* resource = V3D_NEW(Material, memory::MemoryLabel::MemoryObject);
             if (!resource->load(stream, stream->tell()))
             {
                 LOG_ERROR("Model::load: The material can't be parsed");
 
                 ASSERT(false, "wrong parsing");
-                V3D_DELETE(resource, memory::MemoryLabel::MemoryResource);
+                V3D_DELETE(resource, memory::MemoryLabel::MemoryObject);
 
                 return false;
             }
