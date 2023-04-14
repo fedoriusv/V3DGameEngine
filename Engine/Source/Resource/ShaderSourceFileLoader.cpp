@@ -126,21 +126,7 @@ ShaderSourceFileLoader::ShaderSourceFileLoader(const renderer::Context* context,
 
     if (context->getRenderType() == renderer::Context::RenderType::VulkanRender)
     {
-#if !defined(PLATFORM_XBOX)
-        if (flags & renderer::ShaderCompileFlag::ShaderSource_UseLegacyCompilerForHLSL)
-        {
-            renderer::ShaderHeader header;
-            header._contentType = renderer::ShaderHeader::ShaderContent::Source;
-            header._shaderModel = renderer::ShaderHeader::ShaderModel::HLSL_5_1;
-            header._shaderType = type;
-            header._optLevel = optimizationLevel;
-
-            ResourceDecoderRegistration::registerDecoder(
-                V3D_NEW(ShaderHLSLDecoder, memory::MemoryLabel::MemorySystem)({ "hlsl" }, header, entrypoint, defines, includes, flags)
-            );
-        }
-        else
-#endif //!PLATFORM_XBOX
+        if (flags & renderer::ShaderCompileFlag::ShaderSource_UseDXCompilerForSpirV)
         {
             renderer::ShaderHeader header;
             header._contentType = renderer::ShaderHeader::ShaderContent::Source;
@@ -149,7 +135,19 @@ ShaderSourceFileLoader::ShaderSourceFileLoader(const renderer::Context* context,
             header._optLevel = optimizationLevel;
 
             ResourceDecoderRegistration::registerDecoder(
-                V3D_NEW(ShaderDXCDecoder, memory::MemoryLabel::MemorySystem)({ "hlsl" }, header, entrypoint, defines, includes, header._shaderModel, flags)
+                V3D_NEW(ShaderDXCDecoder, memory::MemoryLabel::MemorySystem)({ "hlsl" }, header, entrypoint, defines, includes, renderer::ShaderHeader::ShaderModel::SpirV, flags)
+            );
+        }
+        else
+        {
+            renderer::ShaderHeader header;
+            header._contentType = renderer::ShaderHeader::ShaderContent::Source;
+            header._shaderModel = renderer::ShaderHeader::ShaderModel::HLSL_6_1;
+            header._shaderType = type;
+            header._optLevel = optimizationLevel;
+
+            ResourceDecoderRegistration::registerDecoder(
+                V3D_NEW(ShaderSpirVDecoder, memory::MemoryLabel::MemorySystem)({ "hlsl" }, header, entrypoint, defines, includes, flags)
             );
         }
     }

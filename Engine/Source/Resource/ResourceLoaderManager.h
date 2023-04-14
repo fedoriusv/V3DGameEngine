@@ -59,6 +59,23 @@ namespace resource
             const std::string& entrypoint = "main", const renderer::Shader::DefineList& defines = {}, const std::vector<std::string>& includes = {}, renderer::ShaderCompileFlags flags = 0);
 
         /**
+        * @brief loadShader
+        * Create shader from the file. Suppotrs ShaderSourceFileLoader
+        *
+        * @param renderer::Context* context [required]
+        * @param const std::string& filename [required]
+        * @param renderer::ShaderType type [required]
+        * @param const std::string& entrypoint [optional]
+        * @param const renderer::Shader::DefineList& defines [optional]
+        * @param const std::vector<std::string>& includes [optional]
+        * @param u32 flags [optional]
+        * @return Shader resource, nullptr if failed
+        */
+        template<class TResource = renderer::Shader, class TResourceLoader>
+        [[nodiscard]] const TResource* loadShader(renderer::Context* context, const std::string& filename, renderer::ShaderType type,
+            const std::string& entrypoint = "main", const renderer::Shader::DefineList& defines = {}, const std::vector<std::string>& includes = {}, renderer::ShaderCompileFlags flags = 0);
+
+        /**
         * @brief loadHLSLShaders
         * Create list of HLSL shaders from file. Supports ShaderSourceFileLoader
         *
@@ -196,6 +213,52 @@ namespace resource
         if (resourceIter.second)
         {
             TResourceLoader loader(context, entrypoint, defines, includes, flags);
+            Resource* res = loader.load(innerName);
+            if (!res)
+            {
+                m_resources.erase(resourceIter.first);
+                return nullptr;
+            }
+
+            resourceIter.first->second = res;
+            return static_cast<TResource*>(res);
+        }
+
+        return static_cast<TResource*>(resourceIter.first->second);
+    }
+
+    template<class TResource, class TResourceLoader>
+    inline const TResource* ResourceLoaderManager::loadShader(renderer::Context* context, const std::string& filename, renderer::ShaderType type,
+        const std::string& entrypoint, const renderer::Shader::DefineList& defines, const std::vector<std::string>& includes, renderer::ShaderCompileFlags flags)
+    {
+        static_assert(std::is_same<TResource, renderer::Shader>(), "wrong type");
+        std::string innerName(filename);
+        std::transform(filename.begin(), filename.end(), innerName.begin(), ::tolower);
+
+        renderer::Shader::DefineList innerDefines(defines);
+        std::sort(innerDefines.begin(), innerDefines.end(), [](const std::pair<std::string, std::string>& macros1, const std::pair<std::string, std::string>& macros2) -> bool
+            {
+                return macros1.first < macros2.first;
+            });
+
+        auto composeResourceName = [](const std::string& name, const std::vector<std::pair<std::string, std::string>>& defines) -> std::string
+        {
+            std::string outString = name;
+            for (auto& define : defines)
+            {
+                outString.append("_");
+                outString.append(define.first);
+                outString.append(define.second);
+            }
+
+            return outString;
+        };
+        const std::string resourceName = composeResourceName(innerName, innerDefines);
+
+        auto resourceIter = m_resources.emplace(std::make_pair(resourceName, nullptr));
+        if (resourceIter.second)
+        {
+            TResourceLoader loader(context, type, entrypoint, defines, includes, flags);
             Resource* res = loader.load(innerName);
             if (!res)
             {
