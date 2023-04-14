@@ -18,7 +18,7 @@ public:
     {
     public:
 
-        explicit TexturedRender(const renderer::VertexInputAttribDescription& desc) noexcept;
+        explicit TexturedRender(const renderer::VertexInputAttributeDescription& desc) noexcept;
         ~TexturedRender();
 
         void Init(renderer::CommandList& commandList, const renderer::RenderTargetState* renderTaget) override;
@@ -28,14 +28,14 @@ public:
 
         renderer::GraphicsPipelineState* m_Pipeline;
         renderer::ShaderProgram* m_Program;
-        renderer::VertexInputAttribDescription m_Desc;
+        renderer::VertexInputAttributeDescription m_Desc;
     };
 
     class OcclusionQuery : public RenderPolicy
     {
     public:
 
-        explicit OcclusionQuery(const renderer::VertexInputAttribDescription& desc, u32 tests) noexcept;
+        explicit OcclusionQuery(const renderer::VertexInputAttributeDescription& desc, u32 tests) noexcept;
         ~OcclusionQuery();
 
         void Init(renderer::CommandList& commandList, const renderer::RenderTargetState* renderTaget) override;
@@ -48,7 +48,7 @@ public:
 
         renderer::GraphicsPipelineState* m_QueryPipeline;
         renderer::ShaderProgram* m_QueryProgram;
-        renderer::VertexInputAttribDescription m_DescTemp;
+        renderer::VertexInputAttributeDescription m_DescTemp;
 
         renderer::QueryOcclusionRequest* m_OcclusionQuery;
         std::vector<bool> m_QueryResponse;
@@ -61,7 +61,7 @@ public:
 
     const renderer::RenderTargetState* GetRenderTarget() const override;
 
-    void Init(renderer::CommandList& cmdList, const core::Dimension2D& size)override;
+    void Init(renderer::CommandList& cmdList, const math::Dimension2D& size)override;
     void Draw(renderer::CommandList& cmdList, DrawLists& drawList) override;
 
 private:

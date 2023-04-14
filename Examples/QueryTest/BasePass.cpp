@@ -7,7 +7,7 @@
 #include "Resource/ShaderSourceFileLoader.h"
 
 
-BasePassDraw::TexturedRender::TexturedRender(const renderer::VertexInputAttribDescription& desc) noexcept
+BasePassDraw::TexturedRender::TexturedRender(const renderer::VertexInputAttributeDescription& desc) noexcept
     : m_Pipeline(nullptr)
     , m_Program(nullptr)
     , m_Desc(desc)
@@ -22,11 +22,11 @@ BasePassDraw::TexturedRender::~TexturedRender()
 
 void BasePassDraw::TexturedRender::Init(renderer::CommandList& commandList, const renderer::RenderTargetState* renderTaget)
 {
-    std::vector<const renderer::Shader*> shaders = resource::ResourceLoaderManager::getInstance()->loadHLSLShader<renderer::Shader, resource::ShaderSourceFileLoader>(commandList.getContext(), "texture.hlsl",
+    std::vector<const renderer::Shader*> shaders = resource::ResourceLoaderManager::getInstance()->loadHLSLShaders<renderer::Shader, resource::ShaderSourceFileLoader>(commandList.getContext(), "texture.hlsl",
         {
             {"main_VS", renderer::ShaderType::Vertex },
             {"main_FS", renderer::ShaderType::Fragment }
-        }, {}, resource::ShaderSource_UseDXCompiler);
+        });
 
     m_Program = commandList.createObject<renderer::ShaderProgram>(shaders);
     m_Pipeline = commandList.createObject<renderer::GraphicsPipelineState>(m_Desc, m_Program, renderTaget, "TexturedRenderPipeline");
@@ -71,7 +71,7 @@ void BasePassDraw::TexturedRender::Render(renderer::CommandList& commandList, co
     commandList.drawIndexed(meshData->_BufferDescription, meshData->_DrawProperties._start, meshData->_DrawProperties._count, meshData->_DrawProperties._countInstance);
 }
 
-BasePassDraw::OcclusionQuery::OcclusionQuery(const renderer::VertexInputAttribDescription& desc, u32 tests) noexcept
+BasePassDraw::OcclusionQuery::OcclusionQuery(const renderer::VertexInputAttributeDescription& desc, u32 tests) noexcept
     : m_QueryPipeline(nullptr)
     , m_QueryProgram(nullptr)
     , m_OcclusionQuery(nullptr)
@@ -89,8 +89,8 @@ BasePassDraw::OcclusionQuery::~OcclusionQuery()
 
 void BasePassDraw::OcclusionQuery::Init(renderer::CommandList& commandList, const renderer::RenderTargetState* renderTaget)
 {
-    const renderer::Shader* shader = resource::ResourceLoaderManager::getInstance()->loadShader<renderer::Shader, resource::ShaderSourceFileLoader>(commandList.getContext(), 
-        renderer::ShaderType::Vertex, "query.hlsl", "main_VS", {}, resource::ShaderSource_UseDXCompiler);
+    const renderer::Shader* shader = resource::ResourceLoaderManager::getInstance()->loadShader<renderer::Shader, resource::ShaderSourceFileLoader>(commandList.getContext(), "query.hlsl",
+        renderer::ShaderType::Vertex, "main_VS");
 
     m_QueryProgram = commandList.createObject<renderer::ShaderProgram>(shader);
     m_QueryPipeline = commandList.createObject<renderer::GraphicsPipelineState>(m_DescTemp, m_QueryProgram, renderTaget, "QueryPipeline");
@@ -105,7 +105,7 @@ void BasePassDraw::OcclusionQuery::Init(renderer::CommandList& commandList, cons
 
     m_OcclusionQuery = commandList.createObject<renderer::QueryOcclusionRequest>([this](const std::vector<u64>& samples, const std::vector<std::string>& tags)-> void
         {
-            static const u32 k_samplesThreshold = 1;
+            static const u32 k_samplesThreshold = 0;
             for (u32 index = 0; index < m_QueryResponse.size(); ++index)
             {
                 m_QueryResponse[index] = (samples[index] > k_samplesThreshold) ? true : false;
@@ -186,7 +186,7 @@ const renderer::RenderTargetState* BasePassDraw::GetRenderTarget() const
     return m_RenderTarget;
 }
 
-void BasePassDraw::Init(renderer::CommandList& cmdList, const core::Dimension2D& size)
+void BasePassDraw::Init(renderer::CommandList& cmdList, const math::Dimension2D& size)
 {
     m_ColorAttachment = cmdList.createObject<renderer::Texture2D>(renderer::TextureUsage::TextureUsage_Attachment | renderer::TextureUsage::TextureUsage_Sampled, renderer::Format::Format_R8G8B8A8_UNorm,
         size, renderer::TextureSamples::TextureSamples_x1, "ColorAttachment");
@@ -196,7 +196,7 @@ void BasePassDraw::Init(renderer::CommandList& cmdList, const core::Dimension2D&
     m_RenderTarget = cmdList.createObject<renderer::RenderTargetState>(size, 0, "RenderTarget");
     m_RenderTarget->setColorTexture(0, m_ColorAttachment,
         {
-            renderer::RenderTargetLoadOp::LoadOp_Clear, renderer::RenderTargetStoreOp::StoreOp_Store, core::Vector4D(0.0f)
+            renderer::RenderTargetLoadOp::LoadOp_Clear, renderer::RenderTargetStoreOp::StoreOp_Store, math::Vector4D(0.0f)
         },
         {
             renderer::TransitionOp::TransitionOp_Undefined, renderer::TransitionOp::TransitionOp_ShaderRead
@@ -226,8 +226,8 @@ void BasePassDraw::Draw(renderer::CommandList& cmdList, DrawLists& drawList)
 
     }
 
-    cmdList.setViewport(core::Rect32(0, 0, m_RenderTarget->getDimension().width, m_RenderTarget->getDimension().height));
-    cmdList.setScissor(core::Rect32(0, 0, m_RenderTarget->getDimension().width, m_RenderTarget->getDimension().height));
+    cmdList.setViewport(math::Rect32(0, 0, m_RenderTarget->getDimension().m_width, m_RenderTarget->getDimension().m_height));
+    cmdList.setScissor(math::Rect32(0, 0, m_RenderTarget->getDimension().m_width, m_RenderTarget->getDimension().m_height));
     cmdList.setRenderTarget(m_RenderTarget);
 
     DrawLists visibleDrawList = drawList;
@@ -237,7 +237,7 @@ void BasePassDraw::Draw(renderer::CommandList& cmdList, DrawLists& drawList)
         m_QueryTest->UpdateVisibleList(drawList, visibleDrawList);
     }
 
-    m_RenderTarget->clearAttachments(renderer::TargetRegion(m_RenderTarget->getDimension().width, m_RenderTarget->getDimension().height), core::Vector4D(0.0f), 0.f);
+    m_RenderTarget->clearAttachments(renderer::TargetRegion(m_RenderTarget->getDimension().m_width, m_RenderTarget->getDimension().m_height), math::Vector4D(0.0f), 0.f);
 
     this->QueryTimeStamp(drawList._TimeStampQuery, 2, "BasePassDraw start");
 

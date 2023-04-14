@@ -20,14 +20,14 @@ OffscreenPassDraw::OffsceenRender::~OffsceenRender()
 
 void OffscreenPassDraw::OffsceenRender::Init(renderer::CommandList& commandList, const renderer::RenderTargetState* renderTaget)
 {
-    std::vector<const renderer::Shader*> shaders = resource::ResourceLoaderManager::getInstance()->loadHLSLShader<renderer::Shader, resource::ShaderSourceFileLoader>(commandList.getContext(), "offscreen.hlsl",
+    std::vector<const renderer::Shader*> shaders = resource::ResourceLoaderManager::getInstance()->loadHLSLShaders<renderer::Shader, resource::ShaderSourceFileLoader>(commandList.getContext(), "offscreen.hlsl",
         {
             {"main_VS", renderer::ShaderType::Vertex },
             {"main_FS", renderer::ShaderType::Fragment }
-        }, {}, resource::ShaderSource_UseDXCompiler);
+        });
 
     m_OffscreenProgram = commandList.createObject<renderer::ShaderProgram>(shaders);
-    m_OffscreenPipeline = commandList.createObject<renderer::GraphicsPipelineState>(renderer::VertexInputAttribDescription(), m_OffscreenProgram, renderTaget, "OffscreenPipeline");
+    m_OffscreenPipeline = commandList.createObject<renderer::GraphicsPipelineState>(renderer::VertexInputAttributeDescription(), m_OffscreenProgram, renderTaget, "OffscreenPipeline");
     m_OffscreenPipeline->setPrimitiveTopology(renderer::PrimitiveTopology::PrimitiveTopology_TriangleList);
     m_OffscreenPipeline->setFrontFace(renderer::FrontFace::FrontFace_Clockwise);
     m_OffscreenPipeline->setCullMode(renderer::CullMode::CullMode_Back);
@@ -68,14 +68,14 @@ const renderer::RenderTargetState* OffscreenPassDraw::GetRenderTarget() const
     return m_OffscreenTarget;
 }
 
-void OffscreenPassDraw::Init(renderer::CommandList& cmdList, const core::Dimension2D& size)
+void OffscreenPassDraw::Init(renderer::CommandList& cmdList, const math::Dimension2D& size)
 {
     if (m_isSwapchain)
     {
         m_OffscreenTarget = cmdList.createObject<renderer::RenderTargetState>(size, 0, "ShapchainScreen");
         m_OffscreenTarget->setColorTexture(0, cmdList.getBackbuffer(),
             {
-                renderer::RenderTargetLoadOp::LoadOp_Clear, renderer::RenderTargetStoreOp::StoreOp_Store, core::Vector4D(0.0f)
+                renderer::RenderTargetLoadOp::LoadOp_Clear, renderer::RenderTargetStoreOp::StoreOp_Store, math::Vector4D(0.0f)
             },
         {
             renderer::TransitionOp::TransitionOp_Undefined, renderer::TransitionOp::TransitionOp_Present
@@ -87,8 +87,8 @@ void OffscreenPassDraw::Draw(renderer::CommandList& cmdList, DrawLists& drawList
 {
     drawList._Profiler->start("SceneLoop.OffscreenPassDraw");
 
-    cmdList.setViewport(core::Rect32(0, 0, m_OffscreenTarget->getDimension().width, m_OffscreenTarget->getDimension().height));
-    cmdList.setScissor(core::Rect32(0, 0, m_OffscreenTarget->getDimension().width, m_OffscreenTarget->getDimension().height));
+    cmdList.setViewport(math::Rect32(0, 0, m_OffscreenTarget->getDimension().m_width, m_OffscreenTarget->getDimension().m_height));
+    cmdList.setScissor(math::Rect32(0, 0, m_OffscreenTarget->getDimension().m_width, m_OffscreenTarget->getDimension().m_height));
     cmdList.setRenderTarget(m_OffscreenTarget);
 
     this->QueryTimeStamp(drawList._TimeStampQuery, 4, "OffscreenPassDraw start");

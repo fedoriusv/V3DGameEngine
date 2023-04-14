@@ -33,7 +33,7 @@ MyApplication::MyApplication(int& argc, char** argv)
 
 void MyApplication::Initialize()
 {
-    m_Context = renderer::Context::createContext(m_Window, renderer::Context::RenderType::DirectXRender);
+    m_Context = renderer::Context::createContext(m_Window, renderer::Context::RenderType::VulkanRender);
     ASSERT(m_Context, "context is nullptr");
     m_CommandList = new renderer::CommandList(m_Context, renderer::CommandList::CommandListType::ImmediateCommandList);
 

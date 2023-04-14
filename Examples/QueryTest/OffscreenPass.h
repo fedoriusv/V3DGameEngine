@@ -32,7 +32,7 @@ public:
 
     const renderer::RenderTargetState* GetRenderTarget() const override;
 
-    void Init(renderer::CommandList& cmdList, const core::Dimension2D& size)override;
+    void Init(renderer::CommandList& cmdList, const math::Dimension2D& size)override;
     void Draw(renderer::CommandList& cmdList, DrawLists& drawList) override;
 
 private:

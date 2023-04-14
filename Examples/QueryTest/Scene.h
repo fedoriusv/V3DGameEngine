@@ -18,7 +18,7 @@ class Scene final
 {
 public:
 
-    Scene(renderer::CommandList& cmdList, const core::Dimension2D& size) noexcept;
+    Scene(renderer::CommandList& cmdList, const math::Dimension2D& size) noexcept;
     ~Scene();
 
     void Run(f32 dt);

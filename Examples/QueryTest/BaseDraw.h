@@ -21,10 +21,10 @@ public:
     {
         struct UBO
         {
-            core::Matrix4D projectionMatrix;
-            core::Matrix4D viewMatrix;
-            core::Matrix4D modelMatrix;
-            core::Matrix4D normalMatrix;
+            math::Matrix4D projectionMatrix;
+            math::Matrix4D viewMatrix;
+            math::Matrix4D modelMatrix;
+            math::Matrix4D normalMatrix;
         };
 
         UBO _ConstantBuffer;
@@ -35,7 +35,7 @@ public:
     struct MeshInfo
     {
         renderer::StreamBufferDescription _BufferDescription;
-        renderer::VertexInputAttribDescription _VertexLayoutDescription;
+        renderer::VertexInputAttributeDescription _VertexLayoutDescription;
         renderer::DrawProperties _DrawProperties;
     };
 
@@ -65,7 +65,7 @@ public:
 
     virtual const renderer::RenderTargetState* GetRenderTarget() const = 0;
 
-    virtual void Init(renderer::CommandList& cmdList, const core::Dimension2D& size) = 0;
+    virtual void Init(renderer::CommandList& cmdList, const math::Dimension2D& size) = 0;
     virtual void Draw(renderer::CommandList& cmdList, DrawLists& drawList) = 0;
 
     bool _EnableQuery = true;

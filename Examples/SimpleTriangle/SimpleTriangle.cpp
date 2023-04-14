@@ -128,7 +128,7 @@ void SimpleTriangle::init(v3d::renderer::CommandList* commandList, const math::D
 
     renderer::VertexInputAttributeDescription vertexDesc(
         { 
-            renderer::VertexInputAttributeDescription::InputBinding(0,  renderer::VertexInputAttributeDescription::InputRate_Vertex, sizeof(math::Vector3D) + sizeof(math::Vector3D)),
+            renderer::VertexInputAttributeDescription::InputBinding(0,  renderer::VertexInputAttributeDescription::InputRate::InputRate_Vertex, sizeof(math::Vector3D) + sizeof(math::Vector3D)),
         }, 
         { 
             renderer::VertexInputAttributeDescription::InputAttribute(0, 0, renderer::Format_R32G32B32_SFloat, 0),

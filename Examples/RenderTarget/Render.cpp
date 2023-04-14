@@ -60,7 +60,7 @@ public:
 #endif
         m_Sampler->setWrap(renderer::SamplerWrap::TextureWrap_MirroredRepeat);
 
-        resource::Bitmap* image = resource::ResourceLoaderManager::getInstance()->load<resource::Bitmap, resource::ImageFileLoader>("basetex.jpg", resource::ImageFileLoader::ImageLoaderFlag::GenerateMipmaps);
+        resource::Bitmap* image = resource::ResourceLoaderManager::getInstance()->load<resource::Bitmap, resource::ImageFileLoader>("miplevel.dds", resource::ImageFileLoader::ImageLoaderFlag::GenerateMipmaps);
         ASSERT(image, "not found");
         m_Texture = commandList->createObject<renderer::Texture2D>(renderer::TextureUsage_Sampled | renderer::TextureUsage_Write,
             image->getFormat(), math::Dimension2D(image->getDimension().m_width, image->getDimension().m_height), image->getMipMapsCount(), image->getBitmap(), "UnlitTexture");
@@ -239,7 +239,7 @@ public:
             resource::ResourceLoaderManager::getLazyInstance()->addPath("examples/rendertarget/data/");
 
             const renderer::Shader* shader = resource::ResourceLoaderManager::getInstance()->loadShader<renderer::Shader, resource::ShaderSourceFileLoader>(commandList->getContext(), "downsampling.cs",
-                "main", {}, {}, 0/*resource::ShaderSourceFileLoader::ShaderSourceFlag::ShaderSource_UseLegacyCompilerForHLSL*/);
+                "main", {}, {});
             m_DownsampleProgram = commandList->createObject<renderer::ShaderProgram>(shader);
             m_DownsamplePipeline = commandList->createObject<renderer::ComputePipelineState>(m_DownsampleProgram);
 
@@ -324,7 +324,7 @@ public:
     {
         resource::ResourceLoaderManager::getLazyInstance()->addPath("examples/rendertarget/data/");
 
-        const u32 k_mipLevel = 3;
+        const u32 k_mipLevel = 2;
         std::vector<const renderer::Shader*> shaders = resource::ResourceLoaderManager::getInstance()->loadHLSLShaders<renderer::Shader, resource::ShaderSourceFileLoader>(commandList->getContext(), "offscreen.hlsl",
             {
                 {"main_VS", renderer::ShaderType::Vertex },
