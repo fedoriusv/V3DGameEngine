@@ -1,7 +1,6 @@
 #include "Model.h"
-#include "Stream/StreamManager.h"
-#include "Scene/Geometry.h"
 
+#include "Stream/StreamManager.h"
 #include "Utils/Logger.h"
 
 namespace v3d
