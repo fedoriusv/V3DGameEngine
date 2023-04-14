@@ -28,9 +28,8 @@ u32 MeshHeader::operator>>(stream::Stream* stream) const
     u32 writePos = stream->tell();
 
     stream->write<u32>(_numVertices);
-    stream->write<u32>(_vertexStride);
-
     stream->write<u32>(_numIndices);
+    stream->write<u16>(_vertexStride);
     stream->write<renderer::StreamIndexBufferType>(_indexType);
 
     stream->write<renderer::PolygonMode>(_polygonMode);
@@ -49,9 +48,8 @@ u32 MeshHeader::operator<<(const stream::Stream* stream)
     u32 readPos = stream->tell();
 
     stream->read<u32>(_numVertices);
-    stream->read<u32>(_vertexStride);
-
     stream->read<u32>(_numIndices);
+    stream->read<u16>(_vertexStride);
     stream->read<renderer::StreamIndexBufferType>(_indexType);
 
     stream->read<renderer::PolygonMode>(_polygonMode);
@@ -88,15 +86,23 @@ Mesh::~Mesh()
 {
     LOG_DEBUG("Model destructor %llx", this);
 
-    //if (header._flags & MeshHeader::GeometryFlag::IndexBuffer)
-    //{
-    //    //m_indexBuffer->unmap();
-    //    //stream::StreamManager::destroyStream(m_indexBuffer);
-    //    //m_indexBuffer = nullptr;
-    //    //m_indexData = nullptr;
-    //}
+    if (m_header->_geometryContentFlags & MeshHeader::GeometryContentFlag::IndexBuffer)
+    {
+        ASSERT(std::get<0>(m_indexBuffer), "nullptr");
+        std::get<0>(m_indexBuffer)->unmap();
+        stream::StreamManager::destroyStream(std::get<0>(m_indexBuffer));
+        m_indexBuffer = { nullptr, nullptr };
+        m_indexCount = 0;
+    }
 
-
+    for (auto& stream : m_vertexBuffers)
+    {
+        ASSERT(std::get<0>(stream), "nullptr");
+        std::get<0>(stream)->unmap();
+        stream::StreamManager::destroyStream(std::get<0>(stream));
+    }
+    m_vertexBuffers.clear();
+    m_vertexCount = 0;
 }
 
 bool Mesh::load(const stream::Stream* stream, u32 offset)
@@ -112,7 +118,7 @@ bool Mesh::load(const stream::Stream* stream, u32 offset)
 
     if (!m_header)
     {
-        m_header = V3D_NEW(MeshHeader, memory::MemoryLabel::MemoryResource);
+        m_header = V3D_NEW(MeshHeader, memory::MemoryLabel::MemoryObject);
         ASSERT(m_header, "nullptr");
         m_header->operator<<(stream);
     }
@@ -129,8 +135,7 @@ bool Mesh::load(const stream::Stream* stream, u32 offset)
 
         stream::Stream* vertexBuffer = stream::StreamManager::createMemoryStream(nullptr, positionBufferSize);
         u8* vetexData = vertexBuffer->map(positionBufferSize);
-        stream->read(vetexData, positionBufferSize, 1);
-        vertexBuffer->unmap();
+        stream->read(vetexData, positionBufferSize);
 
         m_vertexBuffers.emplace_back(vertexBuffer, vetexData);
     }
@@ -142,8 +147,7 @@ bool Mesh::load(const stream::Stream* stream, u32 offset)
 
         stream::Stream* vertexBuffer = stream::StreamManager::createMemoryStream(nullptr, vertexBufferSize);
         u8* vetexData = vertexBuffer->map(vertexBufferSize);
-        stream->read(vetexData, vertexBufferSize, 1);
-        vertexBuffer->unmap();
+        stream->read(vetexData, vertexBufferSize);
 
         m_vertexBuffers.emplace_back(vertexBuffer, vetexData);
     }
@@ -160,7 +164,7 @@ bool Mesh::load(const stream::Stream* stream, u32 offset)
         auto& [indexBuffer, indexData] = m_indexBuffer;
         indexBuffer = stream::StreamManager::createMemoryStream(nullptr, indexBufferSize);
         indexData = indexBuffer->map(indexBufferSize);
-        stream->read(indexData, indexBufferSize, 1);
+        stream->read(indexData, indexBufferSize);
     }
 
     //if (header._flags & MeshHeader::GeometryFlag::BoundingBox)

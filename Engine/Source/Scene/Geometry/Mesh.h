@@ -17,19 +17,19 @@ namespace scene
     */
     struct MeshHeader : resource::ResourceHeader
     {
-        enum GeometryContentFlag
+        enum GeometryContentFlag : u32
         {
             Empty = 0,
             IndexBuffer = 1 << 0,
             BoundingBox = 1 << 1,
             SeparatePostion = 1 << 3
         };
-        typedef u16 GeometryContentFlags;
+        typedef u32 GeometryContentFlags;
 
         /**
         * @brief VertexProperies enum
         */
-        enum VertexProperies : u16
+        enum VertexProperies : u32
         {
             VertexProperies_Empty = 0,
             VertexProperies_Position = 1 << 0,
@@ -45,7 +45,7 @@ namespace scene
             VertexProperies_Color2 = 1 << 10,
             VertexProperies_Color3 = 1 << 11,
         };
-        typedef u16 VertexProperiesFlags;
+        typedef u32 VertexProperiesFlags;
 
         MeshHeader() noexcept;
         ~MeshHeader() noexcept = default;
@@ -54,9 +54,8 @@ namespace scene
         u32 operator<<(const stream::Stream* stream);
 
         u32 _numVertices;
-        u32 _vertexStride;
-
         u32 _numIndices;
+        u16 _vertexStride;
         renderer::StreamIndexBufferType _indexType;
 
         renderer::PolygonMode _polygonMode;
