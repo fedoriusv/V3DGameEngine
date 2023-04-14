@@ -20,7 +20,6 @@ namespace v3d
         void* operator new(size_t size) noexcept
         {
             return V3D_MALLOC(size, memory::MemoryLabel::MemoryObject);
-            return malloc(size);
         }
         
         void operator delete(void* ptr) noexcept
