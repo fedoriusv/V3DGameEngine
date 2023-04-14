@@ -113,7 +113,7 @@ StreamBufferDescription& StreamBufferDescription::operator=(StreamBufferDescript
     return *this;
 }
 
-bool StreamBufferDescription::operator==(const StreamBufferDescription& desc)
+bool StreamBufferDescription::operator==(const StreamBufferDescription& desc) const
 {
     if (this == &desc)
     {
@@ -133,7 +133,7 @@ bool StreamBufferDescription::operator==(const StreamBufferDescription& desc)
     return false;
 }
 
-bool StreamBufferDescription::operator!=(const StreamBufferDescription& desc)
+bool StreamBufferDescription::operator!=(const StreamBufferDescription& desc) const
 {
     return !StreamBufferDescription::operator==(desc);
 }
@@ -184,18 +184,18 @@ VertexInputAttributeDescription& VertexInputAttributeDescription::operator=(cons
     return *this;
 }
 
-bool VertexInputAttributeDescription::operator==(const VertexInputAttributeDescription& desc)
+bool VertexInputAttributeDescription::operator==(const VertexInputAttributeDescription& desc) const
 {
     if (_countInputBindings != desc._countInputBindings || _countInputAttributes != desc._countInputAttributes)
     {
         return false;
     }
 
-    return memcpy(_inputBindings.data(), desc._inputBindings.data(), sizeof(_inputBindings)) || 
-        memcpy(_inputAttributes.data(), desc._inputAttributes.data(), sizeof(_inputAttributes));
+    return memcmp(_inputBindings.data(), desc._inputBindings.data(), sizeof(_inputBindings)) == 0 || 
+        memcmp(_inputAttributes.data(), desc._inputAttributes.data(), sizeof(_inputAttributes)) == 0;
 }
 
-u32 VertexInputAttributeDescription::operator>>(stream::Stream* stream)
+u32 VertexInputAttributeDescription::operator>>(stream::Stream* stream) const
 {
     u32 writeSize = 0;
     u32 writePos = stream->tell();
@@ -250,7 +250,7 @@ VertexInputAttributeDescription::InputAttribute::InputAttribute() noexcept
 }
 
 VertexInputAttributeDescription::InputAttribute::InputAttribute(u32 binding, u32 stream, Format format, u32 offset) noexcept
-    : _bindingId(binding)
+    : _bindingID(binding)
     , _streamId(stream)
     , _format(format)
     , _offest(offset)
@@ -258,11 +258,11 @@ VertexInputAttributeDescription::InputAttribute::InputAttribute(u32 binding, u32
     static_assert(sizeof(InputAttribute) == 16, "wrong size");
 }
 
-u32 VertexInputAttributeDescription::InputAttribute::operator>>(stream::Stream* stream)
+u32 VertexInputAttributeDescription::InputAttribute::operator>>(stream::Stream* stream) const
 {
     u32 writePos = stream->tell();
 
-    stream->write<u32>(_bindingId);
+    stream->write<u32>(_bindingID);
     stream->write<u32>(_streamId);
     stream->write<Format>(_format);
     stream->write<u32>(_offest);
@@ -276,7 +276,7 @@ u32 VertexInputAttributeDescription::InputAttribute::operator<<(const stream::St
 {
     u32 readPos = stream->tell();
 
-    stream->read<u32>(_bindingId);
+    stream->read<u32>(_bindingID);
     stream->read<u32>(_streamId);
     stream->read<Format>(_format);
     stream->read<u32>(_offest);
@@ -288,25 +288,25 @@ u32 VertexInputAttributeDescription::InputAttribute::operator<<(const stream::St
 
 VertexInputAttributeDescription::InputBinding::InputBinding() noexcept
 {
-    static_assert(sizeof(InputBinding) == 12, "wrong size");
+    static_assert(sizeof(InputBinding) == 8, "wrong size");
     memset(this, 0, sizeof(InputBinding));
 }
 
-VertexInputAttributeDescription::InputBinding::InputBinding(u32 index, InputRate rate, u32 stride) noexcept
+VertexInputAttributeDescription::InputBinding::InputBinding(u32 index, InputRate rate, u16 stride) noexcept
     : _index(index)
     , _rate(rate)
     , _stride(stride)
 {
-    static_assert(sizeof(InputBinding) == 12, "wrong size");
+    static_assert(sizeof(InputBinding) == 8, "wrong size");
 }
 
-u32 VertexInputAttributeDescription::InputBinding::operator>>(stream::Stream* stream)
+u32 VertexInputAttributeDescription::InputBinding::operator>>(stream::Stream* stream) const
 {
     u32 writePos = stream->tell();
 
     stream->write<u32>(_index);
     stream->write<InputRate>(_rate);
-    stream->write<u32>(_stride);
+    stream->write<u16>(_stride);
 
     u32 writeSize = stream->tell() - writePos;
     ASSERT(sizeof(InputBinding) == writeSize, "wrong size");
@@ -319,7 +319,7 @@ u32 VertexInputAttributeDescription::InputBinding::operator<<(const stream::Stre
 
     stream->read<u32>(_index);
     stream->read<InputRate>(_rate);
-    stream->read<u32>(_stride);
+    stream->read<u16>(_stride);
 
     u32 readSize = stream->tell() - readPos;
     ASSERT(sizeof(InputBinding) == readSize, "wrong size");

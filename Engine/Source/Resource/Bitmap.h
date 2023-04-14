@@ -53,7 +53,7 @@ namespace resource
         u32 getLayersCount() const;
         u32 getMipMapsCount() const;
 
-        const u8* getBitmap() const;
+        const void* getBitmap() const;
         u32 getSize() const;
 
     private:
@@ -66,8 +66,7 @@ namespace resource
 
         BitmapHeader* m_header;
 
-        u8* m_bitmap;
-        u32 m_size;
+        std::tuple<stream::Stream*, void*> m_bitmap;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -94,18 +93,6 @@ namespace resource
     {
         ASSERT(m_header, "nullptr");
         return m_header->_mips;
-    }
-
-    inline const u8* Bitmap::getBitmap() const
-    {
-        ASSERT(m_bitmap, "nullptr");
-        return m_bitmap;
-    }
-
-    inline u32 Bitmap::getSize() const
-    {
-        ASSERT(m_size, "nullptr");
-        return m_size;
     }
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

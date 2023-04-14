@@ -696,7 +696,7 @@ void D3DGraphicContext::drawIndexed(const StreamBufferDescription& desc, u32 fir
             ASSERT(m_currentState._pipeline && m_currentState._pipeline->getType() == Pipeline::PipelineType::PipelineType_Graphic, "wrong");
             D3DGraphicPipelineState* dxPipeline = static_cast<D3DGraphicPipelineState*>(m_currentState._pipeline);
 
-            cmdList->setIndexState(desc._indices, desc._indexType == IndexType_32 ? DXGI_FORMAT_R32_UINT : DXGI_FORMAT_R16_UINT);
+            cmdList->setIndexState(desc._indices, desc._indexType == StreamIndexBufferType::IndexType_32 ? DXGI_FORMAT_R32_UINT : DXGI_FORMAT_R16_UINT);
             cmdList->setVertexState(0, dxPipeline->getBuffersStrides(), desc._vertices);
 
             m_boundState._bufferDesc = desc;

@@ -40,9 +40,9 @@ namespace renderer
     };
 
     /**
-    * @brief enum FrontFace
+    * @brief enum class FrontFace
     */
-    enum FrontFace : u16
+    enum class FrontFace : u16
     {
         FrontFace_Clockwise,
         FrontFace_CounterClockwise

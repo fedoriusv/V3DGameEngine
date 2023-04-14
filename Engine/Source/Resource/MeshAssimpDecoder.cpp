@@ -198,7 +198,7 @@ u32 MeshAssimpDecoder::decodeMesh(const aiScene* scene, stream::Stream* modelStr
                 LOG_DEBUG("MeshAssimpDecoder::decodeMesh: Add Attribute VertexProperies_Position vec3");
 
                 renderer::VertexInputAttributeDescription::InputAttribute attrib;
-                attrib._bindingId = 0;
+                attrib._bindingID = 0;
                 attrib._streamId = 0;
                 attrib._format = renderer::Format::Format_R32G32B32_SFloat;
                 attrib._offest = vertexSize;
@@ -213,7 +213,7 @@ u32 MeshAssimpDecoder::decodeMesh(const aiScene* scene, stream::Stream* modelStr
                 LOG_DEBUG("MeshAssimpDecoder::decodeMesh: Add Attribute VertexProperies_Normals vec3");
 
                 renderer::VertexInputAttributeDescription::InputAttribute attrib;
-                attrib._bindingId = 0;
+                attrib._bindingID = 0;
                 attrib._streamId = 0;
                 attrib._format = renderer::Format::Format_R32G32B32_SFloat;
                 attrib._offest = vertexSize;
@@ -230,7 +230,7 @@ u32 MeshAssimpDecoder::decodeMesh(const aiScene* scene, stream::Stream* modelStr
                     LOG_DEBUG("MeshAssimpDecoder::decodeMesh: Add Attribute VertexProperies_Tangent vec3");
 
                     renderer::VertexInputAttributeDescription::InputAttribute attrib;
-                    attrib._bindingId = 0;
+                    attrib._bindingID = 0;
                     attrib._streamId = 0;
                     attrib._format = renderer::Format::Format_R32G32B32_SFloat;
                     attrib._offest = vertexSize;
@@ -244,7 +244,7 @@ u32 MeshAssimpDecoder::decodeMesh(const aiScene* scene, stream::Stream* modelStr
                     LOG_DEBUG("MeshAssimpDecoder::decodeMesh: Add Attribute VertexProperies_Bitangent vec3");
 
                     renderer::VertexInputAttributeDescription::InputAttribute attrib;
-                    attrib._bindingId = 0;
+                    attrib._bindingID = 0;
                     attrib._streamId = 0;
                     attrib._format = renderer::Format::Format_R32G32B32_SFloat;
                     attrib._offest = vertexSize;
@@ -262,7 +262,7 @@ u32 MeshAssimpDecoder::decodeMesh(const aiScene* scene, stream::Stream* modelStr
                     LOG_DEBUG("MeshAssimpDecoder::decodeMesh: Add Attribute VertexProperies_TextCoord[%d] vec2", uv);
 
                     renderer::VertexInputAttributeDescription::InputAttribute attrib;
-                    attrib._bindingId = 0;
+                    attrib._bindingID = 0;
                     attrib._streamId = 0;
                     attrib._format = renderer::Format::Format_R32G32_SFloat;
                     attrib._offest = vertexSize;
@@ -280,7 +280,7 @@ u32 MeshAssimpDecoder::decodeMesh(const aiScene* scene, stream::Stream* modelStr
                     LOG_DEBUG("MeshAssimpDecoder::decodeMesh: Add Attribute VertexProperies_Color[%d] vec2", c);
 
                     renderer::VertexInputAttributeDescription::InputAttribute attrib;
-                    attrib._bindingId = 0;
+                    attrib._bindingID = 0;
                     attrib._streamId = 0;
                     attrib._format = renderer::Format::Format_R32G32B32A32_SFloat;
                     attrib._offest = vertexSize;
@@ -296,7 +296,7 @@ u32 MeshAssimpDecoder::decodeMesh(const aiScene* scene, stream::Stream* modelStr
 
         const aiMesh* mesh = scene->mMeshes[m];
         LOG_DEBUG("MeshAssimpDecoder::decodeMesh: Load mesh index %d, name %s, material index %d", m, mesh->mName.C_Str(), mesh->mMaterialIndex);
-        ASSERT(mesh->mPrimitiveTypes == aiPrimitiveType_TRIANGLE, "must be triangle");
+        ASSERT((mesh->mPrimitiveTypes & aiPrimitiveType_TRIANGLE) != 0, "must be triangle");
 
         modelStream->write<u32>(1); //Assimp doesn't support LODs loading, always one
         streamMeshesSize += sizeof(u32);
@@ -314,7 +314,7 @@ u32 MeshAssimpDecoder::decodeMesh(const aiScene* scene, stream::Stream* modelStr
             ASSERT(stride > 0, "invalid stride");
             u32 meshBufferSize = stride * mesh->mNumVertices;
 
-            inputBindings.push_back(renderer::VertexInputAttributeDescription::InputBinding(bindingIndex, renderer::VertexInputAttributeDescription::InputRate_Vertex, stride));
+            inputBindings.push_back(renderer::VertexInputAttributeDescription::InputBinding(bindingIndex, renderer::VertexInputAttributeDescription::InputRate::InputRate_Vertex, stride));
 
             activeFlags |= ~scene::MeshHeader::VertexProperies::VertexProperies_Position;
             ++bindingIndex;
@@ -323,7 +323,7 @@ u32 MeshAssimpDecoder::decodeMesh(const aiScene* scene, stream::Stream* modelStr
         ASSERT(stride > 0, "invalid stride");
         u32 meshBufferSize = stride * mesh->mNumVertices;
 
-        inputBindings.push_back(renderer::VertexInputAttributeDescription::InputBinding(bindingIndex, renderer::VertexInputAttributeDescription::InputRate_Vertex, stride));
+        inputBindings.push_back(renderer::VertexInputAttributeDescription::InputBinding(bindingIndex, renderer::VertexInputAttributeDescription::InputRate::InputRate_Vertex, stride));
 
         renderer::VertexInputAttributeDescription attribDescriptionList(inputBindings, inputAttributes);
         meshStreamSize += attribDescriptionList >> meshStream;

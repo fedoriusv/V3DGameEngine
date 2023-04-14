@@ -129,7 +129,7 @@ StreamBuffer::~StreamBuffer()
     LOG_DEBUG("StreamBuffer::StreamBuffer destructor %llx", this);
 }
 
-VertexStreamBuffer::VertexStreamBuffer(renderer::CommandList& cmdList, StreamBufferUsageFlags usage, u64 size, const u8* data, const std::string& name) noexcept
+VertexStreamBuffer::VertexStreamBuffer(renderer::CommandList& cmdList, StreamBufferUsageFlags usage, u64 size, const void* data, const std::string& name) noexcept
     : StreamBuffer(cmdList, usage, name)
 
     , m_size(size)
@@ -201,7 +201,7 @@ void VertexStreamBuffer::handleNotify(const utils::Observable* object, void* msg
     m_buffer = nullptr;
 }
 
-bool VertexStreamBuffer::update(u32 offset, u64 size, const u8* data)
+bool VertexStreamBuffer::update(u32 offset, u64 size, const void* data)
 {
     if (!m_buffer)
     {
@@ -307,7 +307,7 @@ bool VertexStreamBuffer::update(u32 offset, u64 size, const u8* data)
     return false;
 }
 
-bool VertexStreamBuffer::read(u32 offset, u64 size, u8 * data)
+bool VertexStreamBuffer::read(u32 offset, u64 size, void* data)
 {
     if (!m_buffer)
     {
@@ -315,13 +315,13 @@ bool VertexStreamBuffer::read(u32 offset, u64 size, u8 * data)
         return false;
     }
 
-    ASSERT(false, "not implemented");
+    ASSERT(false, "not impl");
     return false;
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-IndexStreamBuffer::IndexStreamBuffer(CommandList& cmdList, StreamBufferUsageFlags usage, StreamIndexBufferType type, u32 count, const u8* data, const std::string& name) noexcept
+IndexStreamBuffer::IndexStreamBuffer(CommandList& cmdList, StreamBufferUsageFlags usage, StreamIndexBufferType type, u32 count, const void* data, const std::string& name) noexcept
     : StreamBuffer(cmdList, usage, name)
 
     , m_type(type)

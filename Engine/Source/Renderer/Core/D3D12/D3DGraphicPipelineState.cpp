@@ -409,7 +409,7 @@ bool D3DGraphicPipelineState::create(const PipelineGraphicInfo* pipelineInfo)
         auto& inputState = pipelineInfo->_pipelineDesc._vertexInputState;
         for (u32 i = 0; i < inputElementsDesc.size(); ++i)
         {
-            auto& inputBinding = inputState._inputAttributes._inputBindings[inputState._inputAttributes._inputAttributes[i]._bindingId];
+            auto& inputBinding = inputState._inputAttributes._inputBindings[inputState._inputAttributes._inputAttributes[i]._bindingID];
             const Shader::Attribute& attribute = pipelineInfo->_programDesc._shaders[toEnumType(ShaderType::Vertex)]->getReflectionInfo()._inputAttribute[i];
 
             u32 semanticIndex = 0;
@@ -423,7 +423,7 @@ bool D3DGraphicPipelineState::create(const PipelineGraphicInfo* pipelineInfo)
             elementDesc.AlignedByteOffset = inputState._inputAttributes._inputAttributes[i]._offest;
 
             elementDesc.InputSlotClass = D3DGraphicPipelineState::convertInputRateToD3DClassification(inputBinding._rate);
-            elementDesc.InstanceDataStepRate = inputBinding._rate == VertexInputAttributeDescription::InputRate_Instance ? inputBinding._stride : 0;
+            elementDesc.InstanceDataStepRate = inputBinding._rate == VertexInputAttributeDescription::InputRate::InputRate_Instance ? inputBinding._stride : 0;
 
             m_buffersStride.push_back(inputBinding._stride);
         }

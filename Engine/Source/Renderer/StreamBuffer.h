@@ -64,17 +64,17 @@ namespace renderer
         * @brief update
         * @param u32 offset [required]
         * @param u64 size [required] in bytes
-        * @param const u8* data [required]
+        * @param const void* data [required]
         */
-        bool update(u32 offset, u64 size, const u8* data);
+        bool update(u32 offset, u64 size, const void* data);
 
         /**
         * @brief read
         * @param u32 offset [required]
         * @param u64 size [required] in bytes
-        * @param const u8* data [required]
+        * @param const void* data [required]
         */
-        bool read(u32 offset, u64 size, u8* data); //TODO: add callback for async
+        bool read(u32 offset, u64 size, void* data); //TODO: add callback for async
 
     private:
 
@@ -82,10 +82,10 @@ namespace renderer
         * @brief VertexStreamBuffer constructor. Used to create buffer data objects.
         * @param StreamBufferUsageFlags usage [required]
         * @param u64 size [required] in bytes
-        * @param  const u8* data [required]
+        * @param  const void* data [required]
         * @param const std::string& name [optional]
         */
-        explicit VertexStreamBuffer(CommandList& cmdList, StreamBufferUsageFlags usage, u64 size, const u8* data, [[maybe_unused]] const std::string& name = "") noexcept;
+        explicit VertexStreamBuffer(CommandList& cmdList, StreamBufferUsageFlags usage, u64 size, const void* data, [[maybe_unused]] const std::string& name = "") noexcept;
 
         VertexStreamBuffer() = delete;
         VertexStreamBuffer(const VertexStreamBuffer&) = delete;
@@ -134,10 +134,10 @@ namespace renderer
         * @param StreamBufferUsageFlags usage [required]
         * @param StreamIndexBufferType type [required]
         * @param u32 count [required]
-        * @param  const u8* data [required]
+        * @param  const void* data [required]
         * @param const std::string& name [optional]
         */
-        explicit IndexStreamBuffer(CommandList& cmdList, StreamBufferUsageFlags usage, StreamIndexBufferType type, u32 count, const u8* data, [[maybe_unused]] const std::string& name = "") noexcept;
+        explicit IndexStreamBuffer(CommandList& cmdList, StreamBufferUsageFlags usage, StreamIndexBufferType type, u32 count, const void* data, [[maybe_unused]] const std::string& name = "") noexcept;
 
         IndexStreamBuffer() = delete;
         IndexStreamBuffer(const IndexStreamBuffer&) = delete;

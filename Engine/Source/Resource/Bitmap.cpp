@@ -1,6 +1,7 @@
 #include "Bitmap.h"
 #include "Stream/Stream.h"
 #include "Utils/Logger.h"
+#include "Stream/StreamManager.h"
 
 namespace v3d
 {
@@ -62,16 +63,14 @@ u32 BitmapHeader::operator<<(const stream::Stream* stream)
 
 Bitmap::Bitmap() noexcept
     : m_header(nullptr)
-    , m_bitmap(nullptr)
-    , m_size(0)
+    , m_bitmap({ nullptr, nullptr })
 {
     LOG_DEBUG("Bitmap constructor %llx", this);
 }
 
 Bitmap::Bitmap(BitmapHeader* header) noexcept
     : m_header(header)
-    , m_bitmap(nullptr)
-    , m_size(0)
+    , m_bitmap({ nullptr, nullptr })
 {
     LOG_DEBUG("Bitmap constructor %llx", this);
 }
@@ -82,14 +81,15 @@ Bitmap::~Bitmap()
 
     if (m_header)
     {
-        V3D_DELETE(m_header, memory::MemoryLabel::MemoryResource);
+        V3D_DELETE(m_header, memory::MemoryLabel::MemoryObject);
         m_header = nullptr;
     }
 
-    if (m_bitmap)
+    if (std::get<0>(m_bitmap))
     {
-        V3D_DELETE(m_bitmap, memory::MemoryLabel::MemoryResource);
-        m_bitmap = nullptr;
+        std::get<0>(m_bitmap)->unmap();
+        stream::StreamManager::destroyStream(std::get<0>(m_bitmap));
+        m_bitmap = { nullptr, nullptr };
     }
 }
 
@@ -106,17 +106,21 @@ bool Bitmap::load(const stream::Stream* stream, u32 offset)
 
     if (!m_header)
     {
-        m_header = V3D_NEW(BitmapHeader, memory::MemoryLabel::MemoryResource);
+        m_header = V3D_NEW(BitmapHeader, memory::MemoryLabel::MemoryObject);
         ASSERT(m_header, "nullptr");
         m_header->operator<<(stream);
     }
     stream->seekBeg(offset + m_header->_offset);
 
-    stream->read<u32>(m_size);
-    if (m_size > 0)
+    u32 size = 0;
+    stream->read<u32>(size);
+    if (size > 0)
     {
-        m_bitmap = reinterpret_cast<u8*>(V3D_MALLOC(m_size, memory::MemoryLabel::MemoryResource));
-        stream->read(m_bitmap, m_size, sizeof(u8));
+        stream::Stream* bitmap = stream::StreamManager::createMemoryStream(nullptr, size);
+        void* ptr = bitmap->map(size);
+        stream->read(ptr, size);
+
+        m_bitmap = { bitmap, ptr };
     }
     LOG_DEBUG("Bitmap::load: The stream has been read %d from %d bytes", stream->tell() - m_header->_offset, m_header->_size);
 
@@ -128,6 +132,18 @@ bool Bitmap::save(stream::Stream* stream, u32 offset) const
 {
     ASSERT(false, "not impl");
     return false;
+}
+
+const void* Bitmap::getBitmap() const
+{
+    ASSERT(std::get<1>(m_bitmap), "nullptr");
+    return std::get<1>(m_bitmap);
+}
+
+u32 Bitmap::getSize() const
+{
+    ASSERT(std::get<0>(m_bitmap), "nullptr");
+    return std::get<0>(m_bitmap)->size();
 }
 
 } //namespace resource

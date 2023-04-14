@@ -532,7 +532,7 @@ bool VulkanGraphicPipeline::create(const PipelineGraphicInfo* pipelineInfo)
     for (u32 index = 0; index < inputAttrDesc._countInputAttributes; ++index)
     {
         VkVertexInputAttributeDescription vertexInputAttributeDescription = {};
-        vertexInputAttributeDescription.binding = inputAttrDesc._inputAttributes[index]._bindingId;
+        vertexInputAttributeDescription.binding = inputAttrDesc._inputAttributes[index]._bindingID;
         vertexInputAttributeDescription.location = reflectionInfo._inputAttribute[index]._location;
         ASSERT(reflectionInfo._inputAttribute[index]._format == inputAttrDesc._inputAttributes[index]._format, "different formats");
         vertexInputAttributeDescription.format = VulkanImage::convertImageFormatToVkFormat(inputAttrDesc._inputAttributes[index]._format);

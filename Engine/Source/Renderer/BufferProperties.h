@@ -37,9 +37,9 @@ namespace renderer
     typedef u16 StreamBufferUsageFlags;
 
     /**
-    * @brief StreamIndexBufferType enum.
+    * @brief StreamIndexBufferType enum class.
     */
-    enum StreamIndexBufferType : u32
+    enum class StreamIndexBufferType : u16
     {
         IndexType_16,
         IndexType_32
@@ -52,7 +52,7 @@ namespace renderer
     */
     struct VertexInputAttributeDescription
     {
-        enum InputRate : u32
+        enum class InputRate : u16
         {
             InputRate_Vertex = 0,
             InputRate_Instance = 1
@@ -64,14 +64,14 @@ namespace renderer
         struct InputBinding
         {
             InputBinding() noexcept;
-            InputBinding(u32 index, InputRate rate, u32 stride) noexcept;
+            InputBinding(u32 index, InputRate rate, u16 stride) noexcept;
 
-            u32 operator>>(stream::Stream* stream);
+            u32 operator>>(stream::Stream* stream) const;
             u32 operator<<(const stream::Stream* stream);
 
             u32       _index;
             InputRate _rate;
-            u32       _stride;
+            u16       _stride;
         };
 
         /**
@@ -82,10 +82,10 @@ namespace renderer
             InputAttribute() noexcept;
             InputAttribute(u32 binding, u32 stream, Format format, u32 offset) noexcept;
 
-            u32 operator>>(stream::Stream* stream);
+            u32 operator>>(stream::Stream* stream) const;
             u32 operator<<(const stream::Stream* stream);
 
-            u32          _bindingId;
+            u32          _bindingID;
             u32          _streamId;
             Format       _format;
             u32          _offest;
@@ -96,9 +96,9 @@ namespace renderer
         VertexInputAttributeDescription(std::vector<InputBinding> inputBindings, std::vector<VertexInputAttributeDescription::InputAttribute> inputAttributes) noexcept;
         VertexInputAttributeDescription& operator=(const VertexInputAttributeDescription& desc) noexcept;
 
-        bool operator==(const VertexInputAttributeDescription& desc);
+        bool operator==(const VertexInputAttributeDescription& desc) const;
 
-        u32 operator>>(stream::Stream* stream);
+        u32 operator>>(stream::Stream* stream) const;
         u32 operator<<(const stream::Stream* stream);
 
 
@@ -132,8 +132,8 @@ namespace renderer
 
         void clear();
 
-        bool operator==(const StreamBufferDescription& desc);
-        bool operator!=(const StreamBufferDescription& desc);
+        bool operator==(const StreamBufferDescription& desc) const;
+        bool operator!=(const StreamBufferDescription& desc) const;
 
         std::vector<Buffer*> _vertices;
         std::vector<u32>     _streamsID;
@@ -141,7 +141,7 @@ namespace renderer
 
         Buffer*               _indices = nullptr;
         u32                   _indicesOffet = 0;
-        StreamIndexBufferType _indexType = IndexType_16;
+        StreamIndexBufferType _indexType = StreamIndexBufferType::IndexType_32;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
