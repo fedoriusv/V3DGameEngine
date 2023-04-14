@@ -25,6 +25,10 @@
 #   endif //PLATFORM
 #endif //DXC
 
+#ifdef USE_SPIRV
+#   include "spirv-tools/libspirv.hpp"
+#endif //USE_SPIRV
+
 #define LOG_LOADIMG_TIME (DEBUG || 1)
 
 namespace v3d
@@ -43,7 +47,9 @@ const std::map<std::string, renderer::ShaderType> k_HLSL_ExtensionList =
 
 constexpr u32 g_DXDCIndifier = 0x43425844; //DXBC
 bool checkBytecodeSigning(IDxcBlob* bytecode);
-
+#ifdef USE_SPIRV
+bool disassembleSpirv(IDxcBlob* binaryBlob, std::string& assembleSPIV);
+#endif //USE_SPIRV
 
 ShaderDXCDecoder::ShaderDXCDecoder(const renderer::ShaderHeader& header, const std::string& entrypoint, const renderer::Shader::DefineList& defines, 
     const std::vector<std::string>& includes, renderer::ShaderHeader::ShaderModel output, renderer::ShaderCompileFlags flags) noexcept
@@ -493,10 +499,19 @@ bool ShaderDXCDecoder::compile(const std::string& source, renderer::ShaderType s
 
 #if (DEBUG & D3D_DEBUG)
     {
-        IDxcBlobEncoding* disassembleShader = nullptr;
         ASSERT(DXSource, "nullptr");
-        if (m_outputSM != renderer::ShaderHeader::ShaderModel::SpirV)
+        if (m_outputSM == renderer::ShaderHeader::ShaderModel::SpirV)
         {
+            std::string disassembleShaderCode;
+            if (disassembleSpirv(shader, disassembleShaderCode))
+            {
+                LOG_DEBUG("Disassemble SPIRV [%s]: \n %s", name.c_str(), disassembleShaderCode.c_str());
+            }
+        }
+        else
+        {
+            IDxcBlobEncoding* disassembleShader = nullptr;
+
             HRESULT result = DXCompiler->Disassemble(shader, &disassembleShader);
             if (SUCCEEDED(result))
             {
@@ -504,11 +519,11 @@ bool ShaderDXCDecoder::compile(const std::string& source, renderer::ShaderType s
                 std::string disassembleShaderCode(reinterpret_cast<c8*>(disassembleShader->GetBufferSize(), disassembleShader->GetBufferPointer()));
                 LOG_DEBUG("Disassemble [%s]: \n %s", name.c_str(), disassembleShaderCode.c_str());
             }
-        }
 
-        if (disassembleShader)
-        {
-            disassembleShader->Release();
+            if (disassembleShader)
+            {
+                disassembleShader->Release();
+            }
         }
     }
 #endif
@@ -577,6 +592,7 @@ bool ShaderDXCDecoder::reflect(stream::Stream* stream, IDxcBlob* shader) const
         memcpy(spirv.data(), shader->GetBufferPointer(), shader->GetBufferSize());
         ASSERT(spirv[0] == 0x07230203, "invalid spirv magic number in head");
 
+        //TODO: parses twice for HLSL and dublicate all binding.
         ShaderReflectionSpirV reflector(m_header._shaderModel);
         return reflector.reflect(spirv, stream);
     }
@@ -623,6 +639,33 @@ bool checkBytecodeSigning(IDxcBlob* bytecode)
 
     return isSigned;
 }
+
+#ifdef USE_SPIRV
+bool disassembleSpirv(IDxcBlob* binaryBlob, std::string& assembleSPIV)
+{
+    if (!binaryBlob)
+    {
+        return true;
+    }
+
+    size_t num32BitWords = (binaryBlob->GetBufferSize() + 3) / 4;
+    std::string binaryStr((char*)binaryBlob->GetBufferPointer(), binaryBlob->GetBufferSize());
+    binaryStr.resize(num32BitWords * 4, 0);
+
+    std::vector<uint32_t> words;
+    words.resize(num32BitWords, 0);
+    memcpy(words.data(), binaryStr.data(), binaryStr.size());
+
+    spvtools::SpirvTools spirvTools(SPV_ENV_UNIVERSAL_1_6);
+    uint32_t options = SPV_BINARY_TO_TEXT_OPTION_FRIENDLY_NAMES | SPV_BINARY_TO_TEXT_OPTION_INDENT;
+
+    if (!spirvTools.Disassemble(words, &assembleSPIV, options))
+    {
+        return false;
+    }
+    return true;
+}
+#endif //USE_SPIRV
 
 } //namespace resource
 } //namespace v3d
