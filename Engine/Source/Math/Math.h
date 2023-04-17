@@ -30,6 +30,8 @@ namespace math
     constexpr f32 k_cos80 = 0.17364817766f;
     constexpr f32 k_cos85 = 0.08715574274f;
 
+    constexpr f32 k_infinity = std::numeric_limits<f32>::infinity();
+
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     template<class T>
