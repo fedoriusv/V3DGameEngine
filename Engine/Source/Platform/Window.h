@@ -140,7 +140,7 @@ namespace platform
         event::InputEventReceiver* m_receiver;
 
         template<class T>
-        friend void memory::internal_delete(T* ptr, v3d::memory::MemoryLabel label);
+        friend void memory::internal_delete(T* ptr, v3d::memory::MemoryLabel label, const v3d::c8* file, v3d::u32 line);
 
     };
 

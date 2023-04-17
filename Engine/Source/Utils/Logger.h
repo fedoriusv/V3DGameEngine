@@ -16,8 +16,6 @@ namespace utils
     {
     public:
 
-        ~Logger();
-
         /**
         * @brief LoggerType enum
         */
@@ -55,8 +53,11 @@ namespace utils
     private:
 
         Logger() noexcept;
+        ~Logger();
 
         friend Singleton<Logger>;
+        template<class T>
+        friend void memory::internal_delete(T* ptr, v3d::memory::MemoryLabel label, const v3d::c8* file, v3d::u32 line);
 
     protected:
 
