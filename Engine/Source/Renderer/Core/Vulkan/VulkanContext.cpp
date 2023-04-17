@@ -840,6 +840,8 @@ void VulkanContext::destroy()
         VulkanWrapper::DestroyInstance(m_deviceInfo._instance, VULKAN_ALLOCATOR);
         m_deviceInfo._instance = VK_NULL_HANDLE;
     }
+
+    VulkanDeviceCaps::freeInstance();
 }
 
 void VulkanContext::beginFrame()

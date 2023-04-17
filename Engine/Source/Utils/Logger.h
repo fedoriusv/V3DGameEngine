@@ -16,6 +16,8 @@ namespace utils
     {
     public:
 
+        ~Logger();
+
         /**
         * @brief LoggerType enum
         */
@@ -52,10 +54,9 @@ namespace utils
 
     private:
 
-        friend Singleton<Logger>;
-
         Logger() noexcept;
-        ~Logger();
+
+        friend Singleton<Logger>;
 
     protected:
 
