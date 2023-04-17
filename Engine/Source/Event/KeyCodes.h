@@ -173,7 +173,11 @@ namespace event
     public:
 
         KeyCodes() noexcept = default;
-        ~KeyCodes() = default;
+
+        ~KeyCodes()
+        {
+            _key.clear();
+        }
 
         inline void add(KeyCode code, u32 systemCode)
         {
