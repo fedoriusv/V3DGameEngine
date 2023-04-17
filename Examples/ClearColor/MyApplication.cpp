@@ -87,15 +87,16 @@ int MyApplication::Execute()
     Exit();
     delete this;
 
+    memory::memory_test();
     return 0;
 }
 
 void MyApplication::Initialize()
 {
-    m_Context = renderer::Context::createContext(m_Window, renderer::Context::RenderType::VulkanRender);
+    m_Context = renderer::Context::createContext(m_Window, renderer::Context::RenderType::DirectXRender);
     ASSERT(m_Context, "context is nullptr");
 
-    m_CommandList = new renderer::CommandList(m_Context, renderer::CommandList::CommandListType::DelayedCommandList);
+    m_CommandList = new renderer::CommandList(m_Context, renderer::CommandList::CommandListType::ImmediateCommandList);
     m_ClearColor = { 1.0, 0.0, 0.0, 1.0 };
 }
 
@@ -107,6 +108,7 @@ bool MyApplication::Running(renderer::CommandList& commandList)
     commandList.clearBackbuffer(m_ClearColor);
 
     commandList.endFrame();
+    commandList.submitCommands();
     commandList.presentFrame();
     
     commandList.flushCommands();
@@ -145,4 +147,6 @@ MyApplication::~MyApplication()
         Window::detroyWindow(m_Window);
         m_Window = nullptr;
     }
+
+    Logger::freeInstance();
 }

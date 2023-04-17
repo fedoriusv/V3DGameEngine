@@ -28,5 +28,5 @@ private:
     v3d::renderer::Context* m_Context;
     v3d::renderer::CommandList* m_CommandList;
 
-    v3d::core::Vector4D m_ClearColor;
+    v3d::math::Vector4D m_ClearColor;
 };

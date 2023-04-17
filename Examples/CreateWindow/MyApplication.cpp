@@ -33,23 +33,23 @@ MyApplication::MyApplication(int& argc, char** argv)
     {
         if (event->_event == MouseInputEvent::MousePressDown)
         {
-            LOG_INFO("MouseInputEvent Down Key %u modif %x, wheel %f, pos %d, %d", event->_key, event->_modifers, event->_wheelValue, event->_cursorPosition.x, event->_cursorPosition.y);
+            LOG_INFO("MouseInputEvent Down Key %u modif %x, wheel %f, pos %d, %d", event->_key, event->_modifers, event->_wheelValue, event->_cursorPosition.m_x, event->_cursorPosition.m_y);
         }
         else if (event->_event == MouseInputEvent::MousePressUp)
         {
-            LOG_INFO("MouseInputEvent UP Key %u modif %x, wheel %f, pos %d, %d", event->_key, event->_modifers, event->_wheelValue, event->_cursorPosition.x, event->_cursorPosition.y);
+            LOG_INFO("MouseInputEvent UP Key %u modif %x, wheel %f, pos %d, %d", event->_key, event->_modifers, event->_wheelValue, event->_cursorPosition.m_x, event->_cursorPosition.m_y);
         }
         else if (event->_event == MouseInputEvent::MouseDoubleClick)
         {
-            LOG_INFO("MouseInputEvent MouseDoubleClick Key %u modif %x, wheel %f, pos %d, %d", event->_key, event->_modifers, event->_wheelValue, event->_cursorPosition.x, event->_cursorPosition.y);
+            LOG_INFO("MouseInputEvent MouseDoubleClick Key %u modif %x, wheel %f, pos %d, %d", event->_key, event->_modifers, event->_wheelValue, event->_cursorPosition.m_x, event->_cursorPosition.m_y);
         }
         else if (event->_event == MouseInputEvent::MouseMoved)
         {
-            LOG_INFO("MouseInputEvent MouseMoved Key %u modif %x, wheel %f, pos %d, %d", event->_key, event->_modifers, event->_wheelValue, event->_cursorPosition.x, event->_cursorPosition.y);
+            LOG_INFO("MouseInputEvent MouseMoved Key %u modif %x, wheel %f, pos %d, %d", event->_key, event->_modifers, event->_wheelValue, event->_cursorPosition.m_x, event->_cursorPosition.m_y);
         }
         else if (event->_event == MouseInputEvent::MouseWheel)
         {
-            LOG_INFO("MouseInputEvent MouseWheel Key %u modif %x, wheel %f, pos %d, %d", event->_key, event->_modifers, event->_wheelValue, event->_cursorPosition.x, event->_cursorPosition.y);
+            LOG_INFO("MouseInputEvent MouseWheel Key %u modif %x, wheel %f, pos %d, %d", event->_key, event->_modifers, event->_wheelValue, event->_cursorPosition.m_x, event->_cursorPosition.m_y);
         }
     });
 
@@ -75,6 +75,7 @@ int MyApplication::Execute()
     Exit();
     delete this;
 
+    memory::memory_test();
     return 0;
 }
 
@@ -133,4 +134,6 @@ MyApplication::~MyApplication()
         Window::detroyWindow(m_Window);
         m_Window = nullptr;
     }
+
+    Logger::freeInstance();
 }
