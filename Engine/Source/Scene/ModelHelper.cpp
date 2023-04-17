@@ -18,15 +18,17 @@ ModelHelper::ModelHelper(renderer::CommandList* cmdList, const std::vector<const
         ASSERT(model, "nullptr");
         for (u32 meshIndex = 0; meshIndex < model->getMeshCount(); ++meshIndex)
         {
-            u64 size = model->getMeshByIndex(meshIndex)->getVertexSize();
-            const void* data = model->getMeshByIndex(meshIndex)->getVertexData();
+            scene::StaticMesh* staticMesh = static_cast<scene::StaticMesh*>(model->getMeshByIndex(meshIndex));
+
+            u64 size = staticMesh->getVertexSize();
+            const void* data = staticMesh->getVertexData();
             renderer::VertexStreamBuffer* vertexBuffer = cmdList->createObject<renderer::VertexStreamBuffer>(renderer::StreamBuffer_Write | renderer::StreamBuffer_Shared, size, (u8*)data);
             m_buffers.push_back(utils::IntrusivePointer<renderer::StreamBuffer>(vertexBuffer));
 
-            if (model->getMeshByIndex(meshIndex)->getIndexCount() > 0)
+            if (staticMesh->getIndexCount() > 0)
             {
-                u32 count = model->getMeshByIndex(meshIndex)->getIndexCount();
-                const void* data = model->getMeshByIndex(meshIndex)->getIndexData();
+                u32 count = staticMesh->getIndexCount();
+                const void* data = staticMesh->getIndexData();
                 renderer::IndexStreamBuffer* indexBuffer = cmdList->createObject<renderer::IndexStreamBuffer>(renderer::StreamBuffer_Write | renderer::StreamBuffer_Shared, renderer::StreamIndexBufferType::IndexType_32, count, (u8*)data);
                 m_buffers.push_back(utils::IntrusivePointer<renderer::StreamBuffer>(indexBuffer));
 
@@ -35,7 +37,7 @@ ModelHelper::ModelHelper(renderer::CommandList* cmdList, const std::vector<const
             }
             else
             {
-                renderer::DrawProperties props = { 0, model->getMeshByIndex(meshIndex)->getVertexCount(), 0, 1, false };
+                renderer::DrawProperties props = { 0, staticMesh->getVertexCount(), 0, 1, false };
                 m_drawState.push_back(std::make_tuple(renderer::StreamBufferDescription(vertexBuffer, 0, 0), props));
             }
         }
@@ -52,7 +54,9 @@ const renderer::VertexInputAttributeDescription& ModelHelper::getVertexInputAttr
 {
     ASSERT(!m_models.empty(), "empty list");
     ASSERT(m_models[modelIndex], "nullptr");
-    return m_models[modelIndex]->getMeshByIndex(meshIndex)->getInputAttributeDesc();
+
+    scene::StaticMesh* staticMesh = static_cast<scene::StaticMesh*>(m_models[modelIndex]->getMeshByIndex(meshIndex));
+    return staticMesh->getInputAttributeDesc();
 }
 
 const std::vector<std::tuple<renderer::StreamBufferDescription, renderer::DrawProperties>>& ModelHelper::getDrawStates() const

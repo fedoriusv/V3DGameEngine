@@ -137,6 +137,12 @@ Material::Material(MaterialHeader* header) noexcept
 Material::~Material()
 {
     LOG_DEBUG("Material destructor %llx", this);
+
+    if (m_header)
+    {
+        V3D_DELETE(m_header, memory::MemoryLabel::MemoryObject);
+        m_header = nullptr;
+    }
 }
 
 bool Material::load(const stream::Stream* stream, u32 offset)

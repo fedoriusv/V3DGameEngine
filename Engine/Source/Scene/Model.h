@@ -4,7 +4,7 @@
 #include "Scene/Component.h"
 #include "Scene/Material.h"
 #include "Resource/Resource.h"
-#include "Geometry/Mesh.h"
+#include "StaticMesh.h"
 
 namespace v3d
 {

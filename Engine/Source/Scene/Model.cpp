@@ -65,6 +65,7 @@ Model::Model(ModelHeader* header) noexcept
 Model::~Model()
 {
     LOG_DEBUG("Model destructor %llx", this);
+
     for (auto& meshLODs : m_meshes)
     {
         for (auto& mesh : meshLODs)
@@ -76,6 +77,12 @@ Model::~Model()
     for (auto& material : m_materials)
     {
         V3D_DELETE(material, memory::MemoryLabel::MemoryObject);
+    }
+
+    if (m_header)
+    {
+        V3D_DELETE(m_header, memory::MemoryLabel::MemoryObject);
+        m_header = nullptr;
     }
 }
 
@@ -145,7 +152,7 @@ bool Model::load(const stream::Stream* stream, u32 offset)
             mesh.resize(LODs, nullptr);
             for (u32 LOD = 0; LOD < LODs; ++LOD)
             {
-                resource::Resource* resource = V3D_NEW(Mesh, memory::MemoryLabel::MemoryObject);
+                resource::Resource* resource = V3D_NEW(StaticMesh, memory::MemoryLabel::MemoryObject);
                 if (!resource->load(stream, stream->tell()))
                 {
                     LOG_ERROR("Model::load: The mesh can't be parsed");

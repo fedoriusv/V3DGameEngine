@@ -6,7 +6,7 @@
 #include "Bitmap.h"
 #include "Scene/Model.h"
 #include "Scene/Material.h"
-#include "Scene/Geometry/Mesh.h"
+#include "Scene/StaticMesh.h"
 #include "Renderer/Shader.h"
 
 #define LOG_LOADIMG_TIME (DEBUG || 1)
@@ -53,7 +53,7 @@ Resource* AssetDecoder::decode(const stream::Stream* stream, const std::string& 
             scene::MeshHeader* meshHeader = V3D_NEW(scene::MeshHeader, memory::MemoryLabel::MemoryObject);
             meshHeader->operator<<(stream);
 
-            resource = V3D_NEW(scene::Mesh, memory::MemoryLabel::MemoryObject)(meshHeader);
+            resource = V3D_NEW(scene::StaticMesh, memory::MemoryLabel::MemoryObject)(meshHeader);
         }
         break;
 

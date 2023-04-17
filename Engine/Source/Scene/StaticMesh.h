@@ -13,7 +13,7 @@ namespace scene
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
-    * @brief MeshHeader meta info of Mesh
+    * @brief MeshHeader meta info of StaticMesh
     */
     struct MeshHeader : resource::ResourceHeader
     {
@@ -64,13 +64,17 @@ namespace scene
         GeometryContentFlags _geometryContentFlags;
     };
 
-    class Mesh: public resource::Resource
+    class Mesh : public resource::Resource
+    {
+    };
+
+    class StaticMesh : public Mesh
     {
     public:
 
-        Mesh() noexcept;
-        explicit Mesh(MeshHeader* header) noexcept;
-        ~Mesh() noexcept;
+        StaticMesh() noexcept;
+        explicit StaticMesh(MeshHeader* header) noexcept;
+        ~StaticMesh() noexcept;
 
         const renderer::VertexInputAttributeDescription& getInputAttributeDesc() const;
 
@@ -82,7 +86,7 @@ namespace scene
         u64 getIndexSize() const;
         const void* getIndexData() const;
 
-        //AABB& getAABB() const;
+        const math::AABB& getAABB() const;
 
     private:
 
@@ -100,8 +104,30 @@ namespace scene
         std::vector<std::tuple<stream::Stream*, void*>> m_vertexBuffers;
         u32 m_vertexCount;
 
-        //AABB m_boundingBox;
+        math::AABB m_boundingBox;
     };
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    inline const renderer::VertexInputAttributeDescription& StaticMesh::getInputAttributeDesc() const
+    {
+        return m_description;
+    }
+
+    inline u32 StaticMesh::getVertexCount() const
+    {
+        return m_vertexCount;
+    }
+
+    inline u32 StaticMesh::getIndexCount() const
+    {
+        return m_indexCount;
+    }
+
+    inline const math::AABB& StaticMesh::getAABB() const
+    {
+        return m_boundingBox;
+    }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 } //namespace scene

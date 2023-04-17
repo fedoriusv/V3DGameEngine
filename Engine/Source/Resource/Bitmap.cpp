@@ -79,17 +79,17 @@ Bitmap::~Bitmap()
 {
     LOG_DEBUG("Bitmap destructor %llx", this);
 
-    if (m_header)
-    {
-        V3D_DELETE(m_header, memory::MemoryLabel::MemoryObject);
-        m_header = nullptr;
-    }
-
     if (std::get<0>(m_bitmap))
     {
         std::get<0>(m_bitmap)->unmap();
         stream::StreamManager::destroyStream(std::get<0>(m_bitmap));
         m_bitmap = { nullptr, nullptr };
+    }
+
+    if (m_header)
+    {
+        V3D_DELETE(m_header, memory::MemoryLabel::MemoryObject);
+        m_header = nullptr;
     }
 }
 

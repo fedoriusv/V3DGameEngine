@@ -1,4 +1,4 @@
-#include "Mesh.h"
+#include "StaticMesh.h"
 #include "Stream/StreamManager.h"
 #include "Utils/Logger.h"
 
@@ -62,29 +62,29 @@ u32 MeshHeader::operator<<(const stream::Stream* stream)
     return readSize;
 }
 
-Mesh::Mesh() noexcept
+StaticMesh::StaticMesh() noexcept
     : m_header(nullptr)
     , m_indexBuffer({ nullptr, nullptr })
     , m_indexCount(0)
     , m_indexType(renderer::StreamIndexBufferType::IndexType_32)
     , m_vertexCount(0)
 {
-    LOG_DEBUG("Mesh constructor %llx", this);
+    LOG_DEBUG("StaticMesh constructor %llx", this);
 }
 
-Mesh::Mesh(MeshHeader* header) noexcept
+StaticMesh::StaticMesh(MeshHeader* header) noexcept
     : m_header(header)
     , m_indexBuffer({ nullptr, nullptr})
     , m_indexCount(0)
     , m_indexType(renderer::StreamIndexBufferType::IndexType_32)
     , m_vertexCount(0)
 {
-    LOG_DEBUG("Mesh constructor %llx", this);
+    LOG_DEBUG("StaticMesh constructor %llx", this);
 }
 
-Mesh::~Mesh()
+StaticMesh::~StaticMesh()
 {
-    LOG_DEBUG("Model destructor %llx", this);
+    LOG_DEBUG("StaticMesh destructor %llx", this);
 
     if (m_header->_geometryContentFlags & MeshHeader::GeometryContentFlag::IndexBuffer)
     {
@@ -103,13 +103,19 @@ Mesh::~Mesh()
     }
     m_vertexBuffers.clear();
     m_vertexCount = 0;
+
+    if (m_header)
+    {
+        V3D_DELETE(m_header, memory::MemoryLabel::MemoryObject);
+        m_header = nullptr;
+    }
 }
 
-bool Mesh::load(const stream::Stream* stream, u32 offset)
+bool StaticMesh::load(const stream::Stream* stream, u32 offset)
 {
     if (m_loaded)
     {
-        LOG_WARNING("Mesh::load: the mesh %llx is already loaded", this);
+        LOG_WARNING("MeshStatic::load: the mesh %llx is already loaded", this);
         return true;
     }
 
@@ -167,34 +173,24 @@ bool Mesh::load(const stream::Stream* stream, u32 offset)
         stream->read(indexData, indexBufferSize);
     }
 
-    //if (header._flags & MeshHeader::GeometryFlag::BoundingBox)
-    //{
-    //    m_boundingBox << m_stream;
-    //}
+    if (m_header->_geometryContentFlags & MeshHeader::GeometryContentFlag::BoundingBox)
+    {
+        stream->read<math::AABB>(m_boundingBox);
+    }
 
-    LOG_DEBUG("Mesh::load: The stream has been read %d from %d bytes", stream->tell() - m_header->_offset, m_header->_size);
+    LOG_DEBUG("StaticMesh::load: The stream has been read %d from %d bytes", stream->tell() - m_header->_offset, m_header->_size);
 
     m_loaded = true;
     return true;
 }
 
-bool Mesh::save(stream::Stream* stream, u32 offset) const
+bool StaticMesh::save(stream::Stream* stream, u32 offset) const
 {
     ASSERT(false, "not impl");
     return false;
 }
 
-const renderer::VertexInputAttributeDescription& Mesh::getInputAttributeDesc() const
-{
-    return m_description;
-}
-
-u32 Mesh::getVertexCount() const
-{
-    return m_vertexCount;
-}
-
-u64 Mesh::getVertexSize(u32 stream) const
+u64 StaticMesh::getVertexSize(u32 stream) const
 {
     ASSERT(stream < m_vertexBuffers.size(), "range out");
     if (std::get<0>(m_vertexBuffers[stream]))
@@ -205,7 +201,7 @@ u64 Mesh::getVertexSize(u32 stream) const
     return 0;
 }
 
-const void* Mesh::getVertexData(u32 stream) const
+const void* StaticMesh::getVertexData(u32 stream) const
 {
     ASSERT(stream < m_vertexBuffers.size(), "range out");
     if (std::get<1>(m_vertexBuffers[stream]))
@@ -216,12 +212,7 @@ const void* Mesh::getVertexData(u32 stream) const
     return nullptr;
 }
 
-u32 Mesh::getIndexCount() const
-{
-    return m_indexCount;
-}
-
-u64 Mesh::getIndexSize() const
+u64 StaticMesh::getIndexSize() const
 {
     if (std::get<0>(m_indexBuffer))
     {
@@ -231,7 +222,7 @@ u64 Mesh::getIndexSize() const
     return 0;
 }
 
-const void* Mesh::getIndexData() const
+const void* StaticMesh::getIndexData() const
 {
     if (std::get<1>(m_indexBuffer))
     {
