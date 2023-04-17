@@ -23,9 +23,14 @@
 #include "BasePass.h"
 #include "OffscreenPass.h"
 
+using namespace v3d::resource;
+using namespace v3d::renderer;
+
 Scene::Scene(renderer::CommandList& cmdList, const math::Dimension2D& size) noexcept
     : m_CommandList(cmdList)
 {
+    resource::ResourceLoaderManager::getLazyInstance()->addPath("examples/querytest/resources/");
+
     m_FPSCameraHelper = new scene::CameraFPSHelper(new scene::Camera(math::Vector3D(0.0f, 0.0f, 0.0f), math::Vector3D(0.0f, 1.0f, 0.0f)), math::Vector3D(0.0f, 0.0f, -90.0f));
     m_FPSCameraHelper->setPerspective(60.0f, size, 0.001f, 256.f);
 
@@ -35,22 +40,23 @@ Scene::Scene(renderer::CommandList& cmdList, const math::Dimension2D& size) noex
     m_SwapchainPassDraw = new OffscreenPassDraw(true);
     m_SwapchainPassDraw->Init(m_CommandList, size);
 
-    resource::ResourceLoaderManager::getLazyInstance()->addPath("examples/querytest/resources/");
     LoadScene();
 
     m_CommandList.submitCommands(true);
     m_CommandList.flushCommands();
+
 }
 
 void Scene::LoadScene()
 {
     {
-        scene::Model* mesh = resource::ResourceLoaderManager::getLazyInstance()->load<scene::Model, resource::ModelFileLoader>("cube.dae");
+        scene::Model* mesh = ResourceLoaderManager::getLazyInstance()->load<scene::Model, ModelFileLoader>("cube.dae",
+            ModelFileLoader::ModelLoaderFlag::SkipTangentAndBitangent | ModelFileLoader::ModelLoaderFlag::SkipMaterialLoading | ModelFileLoader::ModelLoaderFlag::UseBoundingBoxes);
         ASSERT(mesh, "not found");
-        scene::Mesh* meshGeometry = mesh->getMeshByIndex(0);
+        scene::StaticMesh* meshGeometry = static_cast<scene::StaticMesh*>(mesh->getMeshByIndex(0));
 
         {
-            renderer::QueryTimestampRequest* timeStampQuery = m_CommandList.createObject<renderer::QueryTimestampRequest>([this](const std::vector<u64>& timestamp, const std::vector<std::string>& tags)-> void
+            renderer::QueryTimestampRequest* timeStampQuery = m_CommandList.createObject<QueryTimestampRequest>([this](const std::vector<u64>& timestamp, const std::vector<std::string>& tags)-> void
                 {
                     for (u32 i = 0; i < m_Measurements._QueryTimings.size(); ++i)
                     {
@@ -90,27 +96,28 @@ void Scene::LoadScene()
             BaseDraw::MeshInfo* meshdata = new BaseDraw::MeshInfo
             {
                 renderer::StreamBufferDescription(indexBuffer, 0, vertexBuffer, 0, 0),
-                mesh->getMeshByIndex(0)->getInputAttributeDesc(),
-                { 0, mesh->getMeshByIndex(0)->getIndexCount(), 0, 1, true },
+                meshGeometry->getInputAttributeDesc(),
+                { 0, meshGeometry->getIndexCount(), 0, 1, true },
+                meshGeometry->getAABB()
             };
             m_DrawList._DrawState.push_back(std::make_tuple(new BaseDraw::ProgramParams(), meshdata));
         }
     }
 
     {
-        renderer::SamplerState* sampler = m_CommandList.createObject<renderer::SamplerState>(renderer::SamplerFilter::SamplerFilter_Trilinear, renderer::SamplerAnisotropic::SamplerAnisotropic_2x);
-        sampler->setWrap(renderer::SamplerWrap::TextureWrap_MirroredRepeat);
+        renderer::SamplerState* sampler = m_CommandList.createObject<renderer::SamplerState>(SamplerFilter::SamplerFilter_Trilinear, SamplerAnisotropic::SamplerAnisotropic_2x);
+        sampler->setWrap(SamplerWrap::TextureWrap_MirroredRepeat);
         m_Resources.push_back(sampler);
 
-        resource::Bitmap* image0 = resource::ResourceLoaderManager::getInstance()->load<resource::Bitmap, resource::ImageFileLoader>("box.jpg", resource::ImageFileLoader::ImageLoaderFlag::GenerateMipmaps);
+        resource::Bitmap* image0 = ResourceLoaderManager::getInstance()->load<Bitmap, ImageFileLoader>("box.jpg", ImageFileLoader::ImageLoaderFlag::GenerateMipmaps);
         ASSERT(image0, "not found");
-        renderer::Texture2D* texture0 = m_CommandList.createObject<renderer::Texture2D>(renderer::TextureUsage_Sampled | renderer::TextureUsage_Write, image0->getFormat(),
+        renderer::Texture2D* texture0 = m_CommandList.createObject<Texture2D>(TextureUsage_Sampled | TextureUsage_Write, image0->getFormat(),
             math::Dimension2D(image0->getDimension().m_width, image0->getDimension().m_height), image0->getMipMapsCount(), image0->getBitmap(), "Box");
         m_Resources.push_back(texture0);
 
-        resource::Bitmap* image1 = resource::ResourceLoaderManager::getInstance()->load<resource::Bitmap, resource::ImageFileLoader>("basetex.jpg", resource::ImageFileLoader::ImageLoaderFlag::GenerateMipmaps);
+        resource::Bitmap* image1 = ResourceLoaderManager::getInstance()->load<Bitmap, ImageFileLoader>("basetex.jpg", ImageFileLoader::ImageLoaderFlag::GenerateMipmaps);
         ASSERT(image1, "not found");
-        renderer::Texture2D* texture1 = m_CommandList.createObject<renderer::Texture2D>(renderer::TextureUsage_Sampled | renderer::TextureUsage_Write, image1->getFormat(),
+        renderer::Texture2D* texture1 = m_CommandList.createObject<Texture2D>(renderer::TextureUsage_Sampled | renderer::TextureUsage_Write, image1->getFormat(),
             math::Dimension2D(image1->getDimension().m_width, image1->getDimension().m_height), image1->getMipMapsCount(), image1->getBitmap(), "Tex");
         m_Resources.push_back(texture1);
 

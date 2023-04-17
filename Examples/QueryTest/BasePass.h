@@ -35,25 +35,29 @@ public:
     {
     public:
 
-        explicit OcclusionQuery(const renderer::VertexInputAttributeDescription& desc, u32 tests) noexcept;
+        explicit OcclusionQuery() noexcept;
         ~OcclusionQuery();
 
         void Init(renderer::CommandList& commandList, const renderer::RenderTargetState* renderTaget) override;
         void Render(renderer::CommandList& commandList, const ProgramParams& params, const MeshInfo* meshData) override;
 
+        void PrepareGeometry(renderer::CommandList& cmdList, DrawLists& drawList);
         void DrawOcclusionTest(renderer::CommandList& cmdList, DrawLists& drawList);
         void UpdateVisibleList(const DrawLists& dawLists, DrawLists& visibleDrawList);
 
     private:
 
+        void ClearGeometry();
+
         renderer::GraphicsPipelineState* m_QueryPipeline;
         renderer::ShaderProgram* m_QueryProgram;
-        renderer::VertexInputAttributeDescription m_DescTemp;
+        renderer::VertexInputAttributeDescription m_Desc;
 
         renderer::QueryOcclusionRequest* m_OcclusionQuery;
         std::vector<bool> m_QueryResponse;
 
         DrawLists m_AABBList;
+        std::vector<renderer::VertexStreamBuffer*> m_vertexBuffer;
     };
 
     BasePassDraw() noexcept;

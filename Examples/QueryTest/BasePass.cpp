@@ -71,29 +71,52 @@ void BasePassDraw::TexturedRender::Render(renderer::CommandList& commandList, co
     commandList.drawIndexed(meshData->_BufferDescription, meshData->_DrawProperties._start, meshData->_DrawProperties._count, meshData->_DrawProperties._countInstance);
 }
 
-BasePassDraw::OcclusionQuery::OcclusionQuery(const renderer::VertexInputAttributeDescription& desc, u32 tests) noexcept
+BasePassDraw::OcclusionQuery::OcclusionQuery() noexcept
     : m_QueryPipeline(nullptr)
     , m_QueryProgram(nullptr)
     , m_OcclusionQuery(nullptr)
-    , m_DescTemp(desc)
+    , m_Desc(
+        {
+            renderer::VertexInputAttributeDescription::InputBinding(0,  renderer::VertexInputAttributeDescription::InputRate::InputRate_Vertex, sizeof(math::Vector3D))
+        },
+        {
+            renderer::VertexInputAttributeDescription::InputAttribute(0, 0, renderer::Format_R32G32B32_SFloat, 0)
+        })
 {
-    m_QueryResponse.resize(tests, true);
 }
 
 BasePassDraw::OcclusionQuery::~OcclusionQuery()
 {
-    delete m_OcclusionQuery;
+    ClearGeometry();
     delete m_QueryPipeline;
     delete m_QueryProgram;
 }
 
+void BasePassDraw::OcclusionQuery::ClearGeometry()
+{
+    delete m_OcclusionQuery;
+    m_QueryResponse.clear();
+
+    for (u32 i = 0; i < m_AABBList._DrawState.size(); ++i)
+    {
+        delete std::get<1>(m_AABBList._DrawState[i]);
+    }
+    m_AABBList._DrawState.clear();
+
+    for (auto& buffer : m_vertexBuffer)
+    {
+        delete buffer;
+    }
+    m_vertexBuffer.clear();
+}
+
 void BasePassDraw::OcclusionQuery::Init(renderer::CommandList& commandList, const renderer::RenderTargetState* renderTaget)
 {
-    const renderer::Shader* shader = resource::ResourceLoaderManager::getInstance()->loadShader<renderer::Shader, resource::ShaderSourceFileLoader>(commandList.getContext(), "query.hlsl",
+    const renderer::Shader* shader = resource::ResourceLoaderManager::getLazyInstance()->loadShader<renderer::Shader, resource::ShaderSourceFileLoader>(commandList.getContext(), "query.hlsl",
         renderer::ShaderType::Vertex, "main_VS");
 
     m_QueryProgram = commandList.createObject<renderer::ShaderProgram>(shader);
-    m_QueryPipeline = commandList.createObject<renderer::GraphicsPipelineState>(m_DescTemp, m_QueryProgram, renderTaget, "QueryPipeline");
+    m_QueryPipeline = commandList.createObject<renderer::GraphicsPipelineState>(m_Desc, m_QueryProgram, renderTaget, "QueryPipeline");
     m_QueryPipeline->setPrimitiveTopology(renderer::PrimitiveTopology::PrimitiveTopology_TriangleList);
     m_QueryPipeline->setFrontFace(renderer::FrontFace::FrontFace_Clockwise);
     m_QueryPipeline->setCullMode(renderer::CullMode::CullMode_Back);
@@ -102,30 +125,81 @@ void BasePassDraw::OcclusionQuery::Init(renderer::CommandList& commandList, cons
     m_QueryPipeline->setDepthCompareOp(renderer::CompareOperation::CompareOp_GreaterOrEqual);
     m_QueryPipeline->setDepthWrite(true);
     m_QueryPipeline->setDepthTest(true);
+}
 
-    m_OcclusionQuery = commandList.createObject<renderer::QueryOcclusionRequest>([this](const std::vector<u64>& samples, const std::vector<std::string>& tags)-> void
+void BasePassDraw::OcclusionQuery::PrepareGeometry(renderer::CommandList& cmdList, DrawLists& drawList)
+{
+    if (m_QueryResponse.size() < drawList._DrawState.size())
+    {
+        ClearGeometry();
+
+        m_QueryResponse.resize(drawList._DrawState.size(), true);
+        for (u32 i = 0; i < drawList._DrawState.size(); ++i)
         {
-            static const u32 k_samplesThreshold = 0;
-            for (u32 index = 0; index < m_QueryResponse.size(); ++index)
+            math::Vector3D positions[8];
+            math::calculateVerticesFromAABB(std::get<1>(drawList._DrawState[i])->_AABB, positions);
+
+            std::array<math::Vector3D, 36> vertices =
             {
-                m_QueryResponse[index] = (samples[index] > k_samplesThreshold) ? true : false;
-            }
-        }, static_cast<u32>(m_QueryResponse.size()), true);
+                positions[0], positions[1], positions[2], positions[0], positions[2], positions[2],//front
+                positions[4], positions[5], positions[6], positions[4], positions[6], positions[7],//back
+                positions[0], positions[3], positions[4], positions[4], positions[3], positions[7],//left
+                positions[1], positions[5], positions[2], positions[5], positions[6], positions[2],//right
+                positions[3], positions[2], positions[6], positions[3], positions[6], positions[7],//top
+                positions[0], positions[1], positions[5], positions[0], positions[5], positions[4],//bottom
+            };
+            renderer::VertexStreamBuffer* vertexBuffer = cmdList.createObject<renderer::VertexStreamBuffer>(renderer::StreamBuffer_Write, sizeof(math::Vector3D) * vertices.size(), vertices.data(), "QueryAABB");
+            m_vertexBuffer.push_back(vertexBuffer);
+
+            BaseDraw::MeshInfo* meshdata = new BaseDraw::MeshInfo
+            {
+                renderer::StreamBufferDescription(vertexBuffer, 0, 0),
+                m_Desc,
+                { 0, vertices.size(), 0, 1, false},
+                std::get<1>(drawList._DrawState[i])->_AABB
+            };
+            m_AABBList._DrawState.push_back(std::make_tuple(std::get<0>(drawList._DrawState[i]), meshdata));
+        }
+
+        m_OcclusionQuery = cmdList.createObject<renderer::QueryOcclusionRequest>([this](const std::vector<u64>& samples, const std::vector<std::string>& tags)-> void
+            {
+                static const u32 k_samplesThreshold = 0;
+                for (u32 index = 0; index < m_QueryResponse.size(); ++index)
+                {
+                    m_QueryResponse[index] = (samples[index] > k_samplesThreshold) ? true : false;
+                }
+            }, static_cast<u32>(m_QueryResponse.size()), true);
+    }
+    else
+    {
+        for (u32 i = 0; i < drawList._DrawState.size(); ++i)
+        {
+            std::get<0>(m_AABBList._DrawState[i]) = std::get<0>(drawList._DrawState[i]);
+        }
+    }
 }
 
 void BasePassDraw::OcclusionQuery::Render(renderer::CommandList& commandList, const ProgramParams& params, const MeshInfo* meshData)
 {
-    m_QueryProgram->bindUniformsBuffer<renderer::ShaderType::Vertex>({ "vs_buffer" }, 0, (u32)sizeof(ProgramParams::UBO), &params._ConstantBuffer);
+    struct AABB
+    {
+        math::Matrix4D projectionMatrix;
+        math::Matrix4D viewMatrix;
+        math::Matrix4D modelMatrix;
+    } constantBuffer;
 
-    commandList.drawIndexed(meshData->_BufferDescription, meshData->_DrawProperties._start, meshData->_DrawProperties._count, meshData->_DrawProperties._countInstance);
+    constantBuffer.projectionMatrix = params._ConstantBuffer.projectionMatrix;
+    constantBuffer.viewMatrix = params._ConstantBuffer.viewMatrix;
+    constantBuffer.modelMatrix = params._ConstantBuffer.modelMatrix;
+
+    m_QueryProgram->bindUniformsBuffer<renderer::ShaderType::Vertex>({ "vs_buffer" }, 0, (u32)sizeof(AABB), & constantBuffer);
+
+    commandList.draw(meshData->_BufferDescription, meshData->_DrawProperties._start, meshData->_DrawProperties._count, meshData->_DrawProperties._countInstance);
 }
 
 void BasePassDraw::OcclusionQuery::DrawOcclusionTest(renderer::CommandList& commandList, DrawLists& drawList)
 {
     drawList._Profiler->start("SceneLoop.BasePassDraw.DrawOcclusionTest");
-    //drawList TODO get AABB
-    m_AABBList._DrawState = drawList._DrawState;
-
     commandList.setPipelineState(m_QueryPipeline);
 
     drawList._TimeStampQuery->timestampQuery(6);
@@ -212,19 +286,17 @@ void BasePassDraw::Init(renderer::CommandList& cmdList, const math::Dimension2D&
             renderer::TransitionOp::TransitionOp_Undefined, renderer::TransitionOp::TransitionOp_DepthStencilAttachment
         });
 
+    if (_EnableQuery)
+    {
+        m_QueryTest = new OcclusionQuery();
+        m_QueryTest->Init(cmdList, m_RenderTarget);
+    }
 }
 
 void BasePassDraw::Draw(renderer::CommandList& cmdList, DrawLists& drawList)
 {
     drawList._Profiler->start("SceneLoop.BasePassDraw");
     //std::this_thread::sleep_for(std::chrono::duration<double,std::milli>(200));
-
-    if (!m_QueryTest) //TODO
-    {
-        m_QueryTest = new OcclusionQuery(std::get<1>(drawList._DrawState[0])->_VertexLayoutDescription, drawList._DrawState.size());
-        m_QueryTest->Init(cmdList, m_RenderTarget);
-
-    }
 
     cmdList.setViewport(math::Rect32(0, 0, m_RenderTarget->getDimension().m_width, m_RenderTarget->getDimension().m_height));
     cmdList.setScissor(math::Rect32(0, 0, m_RenderTarget->getDimension().m_width, m_RenderTarget->getDimension().m_height));
@@ -233,6 +305,7 @@ void BasePassDraw::Draw(renderer::CommandList& cmdList, DrawLists& drawList)
     DrawLists visibleDrawList = drawList;
     if (_EnableQuery)
     {
+        m_QueryTest->PrepareGeometry(cmdList, drawList);
         m_QueryTest->DrawOcclusionTest(cmdList, drawList);
         m_QueryTest->UpdateVisibleList(drawList, visibleDrawList);
     }

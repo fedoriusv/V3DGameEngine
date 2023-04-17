@@ -3,6 +3,7 @@
 #include "Event/InputEventReceiver.h"
 #include "Utils/Timer.h"
 #include "Utils/Profiler.h"
+#include "Utils/Logger.h"
 
 using namespace v3d;
 
@@ -110,6 +111,9 @@ int MyApplication::Execute()
 
     Exit();
     delete this;
+
+    utils::Logger::freeInstance();
+    memory::memory_test();
 
     return 0;
 }

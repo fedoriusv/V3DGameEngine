@@ -37,6 +37,7 @@ public:
         renderer::StreamBufferDescription _BufferDescription;
         renderer::VertexInputAttributeDescription _VertexLayoutDescription;
         renderer::DrawProperties _DrawProperties;
+        math::AABB _AABB;
     };
 
     class RenderPolicy
