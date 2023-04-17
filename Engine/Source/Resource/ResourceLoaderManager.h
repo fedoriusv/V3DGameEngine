@@ -355,7 +355,7 @@ namespace resource
         for (auto& iter : m_resources)
         {
             Resource* res = iter.second;
-            delete res;
+            V3D_DELETE(res, memory::MemoryLabel::MemoryObject);
         }
         m_resources.clear();
     }
@@ -368,7 +368,7 @@ namespace resource
             if (resource == res)
             {
                 res->notifyObservers();
-                delete res;
+                V3D_DELETE(res, memory::MemoryLabel::MemoryObject);
 
                 m_resources.erase(iter.first);
 
@@ -387,7 +387,7 @@ namespace resource
             if (resource == res)
             {
                 res->notifyObservers();
-                delete res;
+                V3D_DELETE(res, memory::MemoryLabel::MemoryObject);
 
                 m_resources.erase(iter.first);
 
