@@ -18,6 +18,11 @@ namespace stream
         Stream() noexcept = default;
         virtual ~Stream() = default;
 
+        void operator delete(void* ptr) noexcept
+        {
+            V3D_FREE(ptr, memory::MemoryLabel::MemorySystem);
+        }
+
         template <class T>
         u32 read(T& value) const;
 

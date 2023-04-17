@@ -535,6 +535,11 @@ CommandList::~CommandList()
         m_thread->terminate(true);
     }
     ASSERT(m_commandList.empty(), "not empty");
+
+    if (m_swapchainTexture)
+    {
+        V3D_DELETE(m_swapchainTexture, memory::MemoryLabel::MemorySystem);
+}
 }
 
 void CommandList::flushCommands()

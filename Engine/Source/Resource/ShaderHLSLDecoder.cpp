@@ -320,11 +320,10 @@ Resource* ShaderHLSLDecoder::decode(const stream::Stream* stream, const std::str
             {
                 LOG_ERROR("ShaderDXCDecoder::decode: the shader loading is failed");
 
-                stream::StreamManager::destroyStream(resourceBinary);
                 V3D_FREE(resource, memory::MemoryLabel::MemoryObject);
-
-                return nullptr;
+                resource = nullptr;
             }
+            stream::StreamManager::destroyStream(resourceBinary);
 
 #if LOG_LOADIMG_TIME
             timer.stop();
@@ -429,10 +428,8 @@ Resource* ShaderHLSLDecoder::decode(const stream::Stream* stream, const std::str
             {
                 LOG_ERROR("ShaderDXCDecoder::decode: the shader loading is failed");
 
-                stream::StreamManager::destroyStream(resourceBinary);
                 V3D_FREE(resource, memory::MemoryLabel::MemoryObject);
-
-                return nullptr;
+                resource =  nullptr;
             }
             stream::StreamManager::destroyStream(resourceBinary);
 

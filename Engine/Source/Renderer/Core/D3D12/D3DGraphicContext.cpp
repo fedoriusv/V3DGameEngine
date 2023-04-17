@@ -507,6 +507,8 @@ void D3DGraphicContext::destroy()
     SAFE_DELETE(m_factory);
 
 #endif //PLATFORM_WINDOWS
+
+    D3DDeviceCaps::freeInstance();
 }
 
 void D3DGraphicContext::beginFrame()
