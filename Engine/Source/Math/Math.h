@@ -45,6 +45,9 @@ namespace math
     [[nodiscard]] const T& max(const T& a, const T& b, const T& c);
 
     template<class T>
+    T lerp(const T& from, const T& to, f32 t);
+
+    template<class T>
     [[nodiscard]] T abs(const T& a);
 
     template<class T>

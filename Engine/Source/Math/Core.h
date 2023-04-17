@@ -11,5 +11,6 @@
 #include "Matrix4D.h"
 #include "Dimension2D.h"
 #include "Dimension3D.h"
+#include "Quaternion.h"
 #include "Rect.h"
 #include "AABB.h"

@@ -307,8 +307,8 @@ namespace math
     template<class T>
     inline TVector2D<T>& TVector2D<T>::invert()
     {
-        m_x *= -1.0f;
-        m_y *= -1.0f;
+        m_x *= -m_x;
+        m_y *= -m_y;
 
         return *this;
     }

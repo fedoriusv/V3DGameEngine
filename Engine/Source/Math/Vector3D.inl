@@ -330,9 +330,9 @@ namespace math
     template<class T>
     inline TVector3D<T>& TVector3D<T>::invert()
     {
-        m_x *= -1.0f;
-        m_y *= -1.0f;
-        m_z *= -1.0f;
+        m_x *= -m_x;
+        m_y *= -m_y;
+        m_z *= -m_z;
 
         return *this;
     }

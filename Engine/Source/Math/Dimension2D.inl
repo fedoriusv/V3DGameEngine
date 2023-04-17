@@ -1,4 +1,3 @@
-#include "Dimension2D.h"
 namespace v3d
 {
 namespace math
@@ -104,11 +103,11 @@ namespace math
         return *this;
     }
 
-    //template <class T>
-    //inline TDimension2D<T>& TDimension2D<T>::operator-(const TDimension2D<T>& other) const
-    //{
-    //    return TDimension2D<T>(m_width - other.m_width, m_height - other.m_height);
-    //}
+    template <class T>
+    inline TDimension2D<T> TDimension2D<T>::operator-(const TDimension2D<T>& other) const
+    {
+        return TDimension2D<T>(m_width - other.m_width, m_height - other.m_height);
+    }
 
     template <class T>
     inline TDimension2D<T>& TDimension2D<T>::operator-=(const TDimension2D<T>& other)

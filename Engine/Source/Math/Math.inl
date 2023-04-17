@@ -29,6 +29,12 @@ namespace math
     }
 
     template<class T>
+    inline T Lerp(const T& from, const T& to, f32 t) 
+    { 
+        return to * t + from * (1.0f - t); 
+    }
+
+    template<class T>
     inline T abs(const T& a)
     {
         return a < (T)0 ? -a : a;

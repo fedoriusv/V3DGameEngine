@@ -1,4 +1,3 @@
-#include "Dimension3D.h"
 namespace v3d
 {
 namespace math

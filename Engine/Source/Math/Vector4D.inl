@@ -371,10 +371,10 @@ namespace math
     template<class T>
     inline TVector4D<T>& TVector4D<T>::invert()
     {
-        m_x *= -1.0f;
-        m_y *= -1.0f;
-        m_z *= -1.0f;
-        m_w *= -1.0f;
+        m_x *= -m_x;
+        m_y *= -m_y;
+        m_z *= -m_z;
+        m_w *= -m_w;
 
         return *this;
     }
