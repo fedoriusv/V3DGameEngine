@@ -62,6 +62,7 @@ int MyApplication::Execute()
     Exit();
     delete this;
 
+    memory::memory_test();
     return 0;
 }
 
@@ -123,4 +124,6 @@ MyApplication::~MyApplication()
     m_InputEventHandler = nullptr;
 
     Window::detroyWindow(m_Window);
+
+    utils::Logger::freeInstance();
 }
