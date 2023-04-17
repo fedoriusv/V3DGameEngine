@@ -51,6 +51,8 @@ namespace resource
 
         bool m_splitLargeMeshes;
         bool m_skipMaterialLoading;
+
+        mutable std::vector<std::tuple<u32, u32>> m_materialMapper;
     };
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////

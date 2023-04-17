@@ -5,7 +5,7 @@
 #include "Stream/StreamManager.h"
 #include "Resource/ModelFileLoader.h"
 #include "Scene/Material.h"
-#include "Scene/Geometry/Mesh.h"
+#include "Scene/StaticMesh.h"
 
 #include "Utils/Logger.h"
 #include "Utils/Timer.h"
@@ -456,6 +456,19 @@ u32 MeshAssimpDecoder::decodeMesh(const aiScene* scene, stream::Stream* modelStr
         ASSERT(meshStreamSize == meshStream->size(), "different sizes");
 #endif //DEBUG
 
+        if (m_generateBoundingBox)
+        {
+            math::Vector3D min(mesh->mAABB.mMin.x, mesh->mAABB.mMin.y, mesh->mAABB.mMin.z);
+            math::Vector3D max(mesh->mAABB.mMax.x, mesh->mAABB.mMax.y, mesh->mAABB.mMax.z);
+            math::AABB aabb(min, max);
+
+            meshStream->write<math::AABB>(aabb);
+            meshStreamSize += sizeof(math::AABB);
+        }
+#ifdef DEBUG
+        ASSERT(meshStreamSize == meshStream->size(), "different sizes");
+#endif //DEBUG
+
         scene::MeshHeader meshHeader;
         resource::ResourceHeader::fillResourceHeader(&meshHeader, mesh->mName.C_Str(), meshStream->size(), modelStream->size() + sizeof(scene::MeshHeader));
         meshHeader._numVertices = mesh->mNumVertices;
@@ -476,9 +489,7 @@ u32 MeshAssimpDecoder::decodeMesh(const aiScene* scene, stream::Stream* modelStr
         meshStream->unmap();
         stream::StreamManager::destroyStream(meshStream);
 
-        ////Material info
-        //modelStream->write<u32>(mesh->mMaterialIndex);
-        //streamMeshesSize += sizeof(u32);
+        m_materialMapper.push_back({ m, mesh->mMaterialIndex });
     }
 
     LOG_DEBUG("MeshAssimpDecoder::decodeMesh: load meshes: %d, size %d bytes", scene->mNumMeshes, streamMeshesSize);
