@@ -2,6 +2,7 @@
 
 #include "Configuration.h"
 #include <memory>
+#include <assert.h>
 #include "Types.h"
 
 namespace v3d
@@ -27,6 +28,8 @@ namespace memory
         MemoryCount
     };
 
+    void memory_test();
+
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     void* internal_malloc(v3d::u64 size, v3d::memory::MemoryLabel label, v3d::u64 align = 0);
@@ -38,6 +41,14 @@ namespace memory
         if (ptr)
         {
             ptr->~T();
+
+            if (std::is_polymorphic<T>::value)
+            {
+                uintptr_t* vtable_ptr = *(uintptr_t**)ptr;
+                v3d::s64 offset = vtable_ptr[-2];
+                assert(offset == 0);
+                //ptr += offset;
+            }
             ::operator delete(const_cast<std::remove_const<T>::type*>(ptr), label, alignof(T));
         }
     }
