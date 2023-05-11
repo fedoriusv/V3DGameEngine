@@ -85,6 +85,7 @@ namespace scene
         u32 getIndexCount() const;
         u64 getIndexSize() const;
         const void* getIndexData() const;
+        renderer::StreamIndexBufferType getIndexType() const;
 
         const math::AABB& getAABB() const;
 
@@ -127,6 +128,11 @@ namespace scene
     inline const math::AABB& StaticMesh::getAABB() const
     {
         return m_boundingBox;
+    }
+
+    inline renderer::StreamIndexBufferType StaticMesh::getIndexType() const
+    {
+        return m_indexType;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////

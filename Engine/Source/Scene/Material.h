@@ -55,10 +55,14 @@ namespace scene
             Property_Reflection,
             Property_Bump,
             Property_Height,
+            Property_Light,
             Property_Opacity,
             Property_Shininess,
             Property_Refract,
             Property_Displacement,
+            Property_Metallic,
+            Property_Roughness,
+            Property_AmbientOcclusion,
 
             /*...*/
 
@@ -103,6 +107,8 @@ namespace scene
             std::string _name;
         };
 
+        using PropertyData = std::pair<std::variant<std::monostate, f32, math::Vector4D>, renderer::Texture*>;
+
         Material() noexcept;
         explicit Material(MaterialHeader* header) noexcept;
         ~Material();
@@ -113,6 +119,8 @@ namespace scene
         template<class TType>
         TType getParameter(PropertyName property) const;
 
+        const std::unordered_map<PropertyName, PropertyData>& getProperties() const;
+
     private:
 
         bool load(const stream::Stream* stream, u32 offset = 0) override;
@@ -121,13 +129,18 @@ namespace scene
         MaterialHeader* m_header;
 
         std::string m_name;
-        std::unordered_map<PropertyName, std::pair<std::variant<std::monostate, f32, math::Vector4D>, renderer::Texture*>> m_properties;
+        std::unordered_map<PropertyName, PropertyData> m_properties;
 
         friend MaterialHelper;
 
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    inline const std::unordered_map<Material::PropertyName, Material::PropertyData>& Material::getProperties() const
+    {
+        return m_properties;
+    }
 
     template<class TType>
     inline TType Material::getParameter(Material::PropertyName property) const

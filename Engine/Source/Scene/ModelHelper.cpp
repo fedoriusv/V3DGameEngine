@@ -22,14 +22,19 @@ ModelHelper::ModelHelper(renderer::CommandList* cmdList, const std::vector<const
 
             u64 size = staticMesh->getVertexSize();
             const void* data = staticMesh->getVertexData();
-            renderer::VertexStreamBuffer* vertexBuffer = cmdList->createObject<renderer::VertexStreamBuffer>(renderer::StreamBuffer_Write | renderer::StreamBuffer_Shared, size, (u8*)data);
+
+            renderer::VertexStreamBuffer* vertexBuffer = cmdList->createObject<renderer::VertexStreamBuffer>(renderer::StreamBuffer_Write | renderer::StreamBuffer_Shared, size, data);
+            ASSERT(vertexBuffer, "nullptr");
             m_buffers.push_back(utils::IntrusivePointer<renderer::StreamBuffer>(vertexBuffer));
 
             if (staticMesh->getIndexCount() > 0)
             {
                 u32 count = staticMesh->getIndexCount();
                 const void* data = staticMesh->getIndexData();
-                renderer::IndexStreamBuffer* indexBuffer = cmdList->createObject<renderer::IndexStreamBuffer>(renderer::StreamBuffer_Write | renderer::StreamBuffer_Shared, renderer::StreamIndexBufferType::IndexType_32, count, (u8*)data);
+                renderer::StreamIndexBufferType type = staticMesh->getIndexType();
+
+                renderer::IndexStreamBuffer* indexBuffer = cmdList->createObject<renderer::IndexStreamBuffer>(renderer::StreamBuffer_Write | renderer::StreamBuffer_Shared, type, count, data);
+                ASSERT(indexBuffer, "nullptr");
                 m_buffers.push_back(utils::IntrusivePointer<renderer::StreamBuffer>(indexBuffer));
 
                 renderer::DrawProperties props = { 0, count, 0, 1, true };

@@ -27,8 +27,7 @@ namespace scene
     {
     public:
 
-        ModelHelper() = delete;
-        ModelHelper(const ModelHelper&) = delete;
+        static ModelHelper* createModelHelper(renderer::CommandList* cmdList, const std::vector<const Model*>& models);
 
         explicit ModelHelper(renderer::CommandList* cmdList, const std::vector<const Model*>& models) noexcept;
         ~ModelHelper();
@@ -39,9 +38,11 @@ namespace scene
         const renderer::VertexInputAttributeDescription& getVertexInputAttribDescription(u32 modelIndex, u32 meshIndex) const;
         const std::vector<std::tuple<renderer::StreamBufferDescription, renderer::DrawProperties>>& getDrawStates() const;
 
-        static ModelHelper* createModelHelper(renderer::CommandList* cmdList, const std::vector<const Model*>& models);
 
     private:
+
+        ModelHelper() = delete;
+        ModelHelper(const ModelHelper&) = delete;
 
         std::vector<const Model*> m_models;
         std::vector<std::tuple<renderer::StreamBufferDescription, renderer::DrawProperties>> m_drawState;
