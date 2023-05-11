@@ -8,7 +8,7 @@ namespace stream
 
 MemoryStream* StreamManager::createMemoryStream(const void* data, const u32 size)
 {
-    return V3D_NEW(MemoryStream, memory::MemoryLabel::MemorySystem)(data, size);
+    return ::V3D_NEW(MemoryStream, memory::MemoryLabel::MemorySystem)(data, size);
 }
 
 const MemoryStream* StreamManager::createMemoryStream(const std::string& string)

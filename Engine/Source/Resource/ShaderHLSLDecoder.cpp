@@ -315,7 +315,7 @@ Resource* ShaderHLSLDecoder::decode(const stream::Stream* stream, const std::str
             shaderHeader._shaderModel = shaderModel;
             shaderHeader._contentType = renderer::ShaderHeader::ShaderContent::Bytecode;
 
-            Resource* resource = V3D_NEW(renderer::Shader, memory::MemoryLabel::MemoryObject)(V3D_NEW(renderer::ShaderHeader, memory::MemoryLabel::MemoryObject)(shaderHeader));
+            Resource* resource = ::V3D_NEW(renderer::Shader, memory::MemoryLabel::MemoryObject)(V3D_NEW(renderer::ShaderHeader, memory::MemoryLabel::MemoryObject)(shaderHeader));
             if (!resource->load(resourceBinary))
             {
                 LOG_ERROR("ShaderDXCDecoder::decode: the shader loading is failed");
@@ -423,7 +423,7 @@ Resource* ShaderHLSLDecoder::decode(const stream::Stream* stream, const std::str
             shaderHeader._shaderModel = renderer::ShaderHeader::ShaderModel::HLSL_5_1; //by default
             shaderHeader._contentType = renderer::ShaderHeader::ShaderContent::Bytecode;
 
-            Resource* resource = V3D_NEW(renderer::Shader, memory::MemoryLabel::MemoryObject)(V3D_NEW(renderer::ShaderHeader, memory::MemoryLabel::MemoryObject)(shaderHeader));
+            Resource* resource = ::V3D_NEW(renderer::Shader, memory::MemoryLabel::MemoryObject)(V3D_NEW(renderer::ShaderHeader, memory::MemoryLabel::MemoryObject)(shaderHeader));
             if (!resource->load(resourceBinary))
             {
                 LOG_ERROR("ShaderDXCDecoder::decode: the shader loading is failed");

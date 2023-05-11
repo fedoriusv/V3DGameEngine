@@ -235,7 +235,7 @@ Resource* ImageStbDecoder::decode(const stream::Stream* stream, const std::strin
         newHeader._format = format;
         newHeader._bitmapFlags |= m_flipY ? BitmapHeader::BitmapHeaderFlag::BitmapFlippedByY : 0;
 
-        Resource* image = V3D_NEW(Bitmap, memory::MemoryLabel::MemoryObject)(V3D_NEW(BitmapHeader, memory::MemoryLabel::MemoryObject)(newHeader));
+        Resource* image = ::V3D_NEW(Bitmap, memory::MemoryLabel::MemoryObject)(V3D_NEW(BitmapHeader, memory::MemoryLabel::MemoryObject)(newHeader));
         if (!image->load(imageStream))
         {
             LOG_ERROR("ImageGLiDecoder::decode: load is falied, %s", name.c_str());

@@ -358,7 +358,7 @@ Resource* ShaderSpirVDecoder::decode(const stream::Stream* stream, const std::st
             shaderHeader._shaderModel = renderer::ShaderHeader::ShaderModel::SpirV;
             shaderHeader._contentType = renderer::ShaderHeader::ShaderContent::Bytecode;
 
-            Resource* resource = V3D_NEW(renderer::Shader, memory::MemoryLabel::MemoryObject)(V3D_NEW(renderer::ShaderHeader, memory::MemoryLabel::MemoryObject)(shaderHeader));
+            Resource* resource = ::V3D_NEW(renderer::Shader, memory::MemoryLabel::MemoryObject)(V3D_NEW(renderer::ShaderHeader, memory::MemoryLabel::MemoryObject)(shaderHeader));
             if (!resource->load(resourceSpirvBinary))
             {
                 LOG_ERROR("ShaderSpirVDecoder::decode: shader load is failed");
@@ -438,7 +438,7 @@ Resource* ShaderSpirVDecoder::decode(const stream::Stream* stream, const std::st
             shaderHeader._shaderModel = renderer::ShaderHeader::ShaderModel::SpirV;
             shaderHeader._contentType = renderer::ShaderHeader::ShaderContent::Bytecode;
 
-            Resource* resource = V3D_NEW(renderer::Shader, memory::MemoryLabel::MemoryObject)(V3D_NEW(renderer::ShaderHeader, memory::MemoryLabel::MemoryObject)(shaderHeader));
+            Resource* resource = ::V3D_NEW(renderer::Shader, memory::MemoryLabel::MemoryObject)(V3D_NEW(renderer::ShaderHeader, memory::MemoryLabel::MemoryObject)(shaderHeader));
             if (!resource->load(resourceSpirvBinary))
             {
                 LOG_ERROR("ShaderSpirVDecoder::decode: the shader loading is failed");

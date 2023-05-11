@@ -152,7 +152,7 @@ bool Model::load(const stream::Stream* stream, u32 offset)
             mesh.resize(LODs, nullptr);
             for (u32 LOD = 0; LOD < LODs; ++LOD)
             {
-                resource::Resource* resource = V3D_NEW(StaticMesh, memory::MemoryLabel::MemoryObject);
+                resource::Resource* resource = ::V3D_NEW(StaticMesh, memory::MemoryLabel::MemoryObject);
                 if (!resource->load(stream, stream->tell()))
                 {
                     LOG_ERROR("Model::load: The mesh can't be parsed");
@@ -176,7 +176,7 @@ bool Model::load(const stream::Stream* stream, u32 offset)
         m_materials.resize(numMaterials, nullptr);
         for (auto& material : m_materials)
         {
-            resource::Resource* resource = V3D_NEW(Material, memory::MemoryLabel::MemoryObject);
+            resource::Resource* resource = ::V3D_NEW(Material, memory::MemoryLabel::MemoryObject);
             if (!resource->load(stream, stream->tell()))
             {
                 LOG_ERROR("Model::load: The material can't be parsed");

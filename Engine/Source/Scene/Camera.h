@@ -14,7 +14,7 @@ namespace scene
     * @brief Camera class. Component, Resource. Game side.
     * Calculates View and Projection matrices
     */
-    class Camera : public Component, public resource::Resource
+    class Camera : public resource::Resource
     {
     public:
 

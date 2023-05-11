@@ -157,7 +157,7 @@ Resource* MeshAssimpDecoder::decode(const stream::Stream* stream, const std::str
             newHeader._localTransform = m_localTransform;
         }
 
-        resource::Resource* model = V3D_NEW(scene::Model, memory::MemoryLabel::MemoryObject)(V3D_NEW(scene::ModelHeader, memory::MemoryLabel::MemoryObject)(newHeader));
+        resource::Resource* model = ::V3D_NEW(scene::Model, memory::MemoryLabel::MemoryObject)(V3D_NEW(scene::ModelHeader, memory::MemoryLabel::MemoryObject)(newHeader));
         if (!model->load(modelStream))
         {
             LOG_ERROR("MeshAssimpDecoder::decode: the model %s loading is failed", name.c_str());
@@ -562,13 +562,31 @@ u32 MeshAssimpDecoder::decodeMaterial(const aiScene* scene, stream::Stream* mode
         }
         else if (materialProperty->mKey == aiString("$mat.shadingm"))
         {
-            ASSERT(materialProperty->mType == aiPTI_Integer, "wrong type");
-            s32 value;
-            aiReturn result = material->Get(AI_MATKEY_SHADING_MODEL, value);
-            ASSERT(result == aiReturn_SUCCESS, "can't read");
+            if (materialProperty->mType == aiPTI_Integer)
+            {
+                s32 value;
+                aiReturn result = material->Get(AI_MATKEY_SHADING_MODEL, value);
+                ASSERT(result == aiReturn_SUCCESS, "can't read");
 
-            aiShadingMode model = (aiShadingMode)value;
+                aiShadingMode model = (aiShadingMode)value;
 
+                return false;
+            }
+            else if (materialProperty->mType == aiPTI_Buffer)
+            {
+                if (materialProperty->mDataLength == sizeof(u32))
+                {
+                    u32 value;
+                    aiReturn result = material->Get(AI_MATKEY_SHADING_MODEL, value);
+                    ASSERT(result == aiReturn_SUCCESS, "can't read");
+
+                    aiShadingMode model = (aiShadingMode)value;
+
+                    return false;
+                }
+            }
+
+            ASSERT(false, "wrong type");
             return false;
         }
         else if (materialProperty->mKey == aiString("$mat.wireframe"))
@@ -668,7 +686,11 @@ u32 MeshAssimpDecoder::decodeMaterial(const aiScene* scene, stream::Stream* mode
             f32 value;
             aiReturn result = material->Get(AI_MATKEY_SHININESS_STRENGTH, value);
             ASSERT(result == aiReturn_SUCCESS, "can't read");
-            ASSERT(false, "todo");
+
+            property._label = scene::Material::Property_Shininess;
+            property._type = scene::Material::PropertyType::Value;
+            property._data = scene::Material::Property::ValueProperty{ value };
+            property >> stream;
 
             return true;
         }
@@ -869,16 +891,72 @@ u32 MeshAssimpDecoder::decodeMaterial(const aiScene* scene, stream::Stream* mode
             }
         }
 
+        auto texturePropertyName = [](aiTextureType type) -> scene::Material::PropertyName
+        {
+            switch (type)
+            {
+            case aiTextureType::aiTextureType_DIFFUSE:
+                return scene::Material::PropertyName::Property_Diffuse;
+            case aiTextureType::aiTextureType_SPECULAR:
+                return scene::Material::PropertyName::Property_Specular;
+            case aiTextureType::aiTextureType_AMBIENT:
+                return scene::Material::PropertyName::Property_Ambient;
+            case aiTextureType::aiTextureType_EMISSIVE:
+                return scene::Material::PropertyName::Property_Emission;
+            case aiTextureType::aiTextureType_HEIGHT:
+                return scene::Material::PropertyName::Property_Height;
+            case aiTextureType::aiTextureType_NORMALS:
+                return scene::Material::PropertyName::Property_Normal;
+            case aiTextureType::aiTextureType_SHININESS:
+                return scene::Material::PropertyName::Property_Shininess;
+            case aiTextureType::aiTextureType_OPACITY:
+                return scene::Material::PropertyName::Property_Opacity;
+            case aiTextureType::aiTextureType_DISPLACEMENT:
+                return scene::Material::PropertyName::Property_Displacement;
+            case aiTextureType::aiTextureType_LIGHTMAP:
+                return scene::Material::PropertyName::Property_Light;
+            case aiTextureType::aiTextureType_REFLECTION:
+                return scene::Material::PropertyName::Property_Reflection;
+            case aiTextureType::aiTextureType_BASE_COLOR:
+                return scene::Material::PropertyName::Property_Albedo;
+            case aiTextureType::aiTextureType_NORMAL_CAMERA:
+                return scene::Material::PropertyName::Property_Normal;
+            case aiTextureType::aiTextureType_EMISSION_COLOR:
+                return scene::Material::PropertyName::Property_Emission;
+            case aiTextureType::aiTextureType_METALNESS:
+                return scene::Material::PropertyName::Property_Metallic;
+            case aiTextureType::aiTextureType_DIFFUSE_ROUGHNESS:
+                return scene::Material::PropertyName::Property_Roughness;
+            case aiTextureType::aiTextureType_AMBIENT_OCCLUSION:
+                return scene::Material::PropertyName::Property_AmbientOcclusion;
+
+            case aiTextureType::aiTextureType_NONE:
+            default:
+                ASSERT(false, "not found");
+                return scene::Material::PropertyName::Property_Unknown;
+            }
+
+            return scene::Material::PropertyName::Property_Unknown;
+        };
+
         for (u32 type = aiTextureType::aiTextureType_NONE; type <= aiTextureType::aiTextureType_UNKNOWN; ++type)
         {
             u32 countTextures = material->GetTextureCount((aiTextureType)type);
             for (u32 t = 0; t < countTextures; ++t)
             {
+                u32 textureID = material->mNumProperties + type + t;
+
                 aiString path;
                 aiReturn result = material->GetTexture((aiTextureType)type, t, &path);
                 ASSERT(result == aiReturn_SUCCESS, "can't read");
 
-                //TODO
+                scene::Material::Property property;
+                property._index = textureID;
+                property._array = 1;
+                property._label = texturePropertyName((aiTextureType)type);
+                property._type = scene::Material::PropertyType::Texture;
+                property._data = scene::Material::Property::TextureProperty{ path.C_Str() };
+                property >> materialStream;
             }
         }
         aiString name = material->GetName();

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Common.h"
+#include "Object.h"
 #include "Utils/Observable.h"
 #include "Utils/ResourceID.h"
 
@@ -80,7 +81,7 @@ namespace resource
     /**
     * @brief Base Interface for Resource class
     */
-    class Resource : public utils::Observable, public utils::ResourceID<Resource, u64>
+    class Resource : public Object, public utils::Observable, public utils::ResourceID<Resource, u64>
     {
     public:
 

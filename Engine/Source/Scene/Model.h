@@ -58,7 +58,7 @@ namespace scene
     /**
     * @brief Model class. Component, Resource
     */
-    class Model : /*public Component,*/ public resource::Resource
+    class Model : public resource::Resource
     {
     public:
 

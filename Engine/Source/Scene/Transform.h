@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Common.h"
-#include "Component.h"
+#include "Object.h"
 
 namespace v3d
 {
@@ -12,7 +12,7 @@ namespace scene
     /**
     * @brief Transform class
     */
-    class Transform : public Component
+    class Transform : public Object
     {
     public:
 
