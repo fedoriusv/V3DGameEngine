@@ -39,6 +39,7 @@ int MyApplication::Execute()
     Terminate();
     delete this;
 
+    memory::memory_test();
     return 0;
 }
 
