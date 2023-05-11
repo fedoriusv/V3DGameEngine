@@ -18,6 +18,11 @@ namespace stream
         Stream() noexcept = default;
         virtual ~Stream() = default;
 
+        void* operator new(size_t size) noexcept
+        {
+            return V3D_MALLOC(size, memory::MemoryLabel::MemorySystem);
+        }
+
         void operator delete(void* ptr) noexcept
         {
             V3D_FREE(ptr, memory::MemoryLabel::MemorySystem);
