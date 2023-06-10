@@ -7,8 +7,6 @@
 #include "DeviceCaps.h"
 #include "Core/Context.h"
 #include "Utils/Logger.h"
-#include "Utils/MemoryPool.h"
-
 
 namespace v3d
 {

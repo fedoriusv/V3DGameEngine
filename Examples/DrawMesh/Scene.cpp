@@ -218,6 +218,7 @@ void Scene::Exit()
     }
 
     resource::ResourceLoaderManager::getInstance()->clear();
+    resource::ResourceLoaderManager::freeInstance();
 }
 
 void Scene::MouseCallback(Scene* scene, event::InputEventHandler* handler, const event::MouseInputEvent* event)

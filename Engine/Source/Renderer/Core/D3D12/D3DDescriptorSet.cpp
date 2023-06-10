@@ -46,6 +46,11 @@ bool D3DDescriptorSetState::updateDescriptorTables(D3DGraphicsCommandList* cmdLi
         {
             for (auto& binding : descriptorTable._bindings)
             {
+                if (m_boundedDescriptorSets[binding._space].empty())
+                {
+                    continue;
+                }
+
                 auto found = m_boundedDescriptorSets[binding._space].find(binding);
                 ASSERT(found != m_boundedDescriptorSets[binding._space].end(), "not found");
                 const D3DBindingResource& resource = found->second;
@@ -78,6 +83,11 @@ bool D3DDescriptorSetState::updateDescriptorTables(D3DGraphicsCommandList* cmdLi
                 D3D12_DESCRIPTOR_HEAP_TYPE heapType = (D3D12_DESCRIPTOR_HEAP_TYPE)i;
                 for (auto& binding : descriptorTable._heapGroups[heapType])
                 {
+                    if (m_boundedDescriptorSets[binding._space].empty())
+                    {
+                        continue;
+                    }
+
                     auto found = m_boundedDescriptorSets[binding._space].find(binding);
                     ASSERT(found != m_boundedDescriptorSets[binding._space].end(), "not found");
                     const D3DBindingResource& resource = found->second;

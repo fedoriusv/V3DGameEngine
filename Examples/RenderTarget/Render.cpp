@@ -253,7 +253,6 @@ public:
         if (m_ComputeDownsampling) //compute
         {
             ASSERT(m_InputTexture->getMipmapsCount() > 1, "must be alloc");
-            commandList->setPipelineState(m_DownsamplePipeline);
 
             commandList->transition({ m_InputTexture, 0, 0 }, renderer::TransitionOp::TransitionOp_GeneralCompute);
 
@@ -263,16 +262,20 @@ public:
             {
                 commandList->transition({ m_InputTexture, 0, mip }, renderer::TransitionOp::TransitionOp_GeneralCompute);
 
+                commandList->setPipelineState(m_DownsamplePipeline);
                 m_DownsampleProgram->bindUAV<renderer::ShaderType::Compute, renderer::Texture2D>({ "inputImage" }, m_InputTexture, 0, mip - 1);
                 m_DownsampleProgram->bindUAV<renderer::ShaderType::Compute, renderer::Texture2D>({ "resultImage" }, m_InputTexture, 0, mip);
 
                 commandList->dispatchCompute({ std::max<u32>(width / 4, 1), std::max<u32>(height / 4, 1), 1 });
                 width = math::max(m_InputTexture->getDimension().m_width >> mip, 1U);
                 height = math::max(m_InputTexture->getDimension().m_height >> mip, 1U);
+
+                commandList->submitCommands(true);
             }
 
             //commandList->submitCommands(true);
             commandList->transition(m_InputTexture, renderer::TransitionOp::TransitionOp_ShaderRead);
+
             m_OuputTexture = m_InputTexture;
         }
         else

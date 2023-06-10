@@ -210,7 +210,10 @@ void D3DGraphicsCommandList::setDescriptorTables(const std::vector<ID3D12Descrip
     ASSERT(m_status == Status::ReadyToRecord, "not record");
     ID3D12GraphicsCommandList* cmdList = D3DGraphicsCommandList::getHandle();
 
-    m_transition.execute(this); //?
+    if (!D3DDeviceCaps::getInstance()->immediateTransition)
+    {
+        m_transition.execute(this);
+    }
 
     cmdList->SetDescriptorHeaps(static_cast<UINT>(heaps.size()), heaps.data());
     for (u32 index = 0; index < desc.size(); ++index)

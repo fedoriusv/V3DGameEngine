@@ -114,6 +114,9 @@
 #       define D3D_DEBUG_LAYERS_CALLBACK 1
 #   endif
 #   define D3D_DEBUG_MARKERS 1
+#   define D3D_DEBUG_PIX_MARKERS 0
+#   define D3D_DRED_ENABLE 0
+#   define D3D_AFTERMATH_ENABLE 0
 
 #   define D3D_MAKE_VERSION(major, minor) (((major) << 22) | ((minor) << 12))
 

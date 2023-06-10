@@ -31,20 +31,20 @@ std::vector<MaterialHelper*> MaterialHelper::createMaterialHelpers(renderer::Com
 MaterialHelper::MaterialHelper(renderer::CommandList& cmdList, Material * material) noexcept
     : m_material(material)
 {
-    std::map<scene::MaterialHeader::Property, std::tuple<std::string, resource::Image*>> images;
-    for (auto& prop : m_material->getMaterialHeader()._properties)
+    std::map<scene::Material::PropertyName, std::tuple<std::string, resource::Bitmap*>> images;
+    for (auto& prop : m_material->getProperties())
     {
-        if (!prop.second._name.empty())
-        {
-            resource::Image* image = resource::ResourceLoaderManager::getInstance()->load<resource::Image, resource::ImageFileLoader>(prop.second._name);
-            ASSERT(image, "nullptr");
+        //if (!prop.second._name.empty())
+        //{
+        //    resource::Bitmap* image = resource::ResourceLoaderManager::getInstance()->load<resource::Bitmap, resource::ImageFileLoader>(prop.second._name);
+        //    ASSERT(image, "nullptr");
 
-            images.emplace(prop.first, std::make_tuple(prop.second._name, image));
-        }
-        else
-        {
-            //TODO
-        }
+        //    images.emplace(prop.first, std::make_tuple(prop.second._name, image));
+        //}
+        //else
+        //{
+        //    //TODO
+        //}
     }
 
     for (auto& iter : images)
@@ -58,7 +58,7 @@ MaterialHelper::MaterialHelper(renderer::CommandList& cmdList, Material * materi
 
         material->setParameter<renderer::Texture*>(iter.first, texture);
 
-        m_textures.push_back(texture);
+        //m_textures.push_back(texture);
     }
 }
 
