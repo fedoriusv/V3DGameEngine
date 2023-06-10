@@ -15,8 +15,6 @@ namespace v3d
 namespace renderer
 {
 
-utils::MemoryPool g_commandMemoryPool(2048, 64, 2048, utils::MemoryPool::getDefaultMemoryPoolAllocator());
-
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 
 Command::Command() noexcept
@@ -494,20 +492,6 @@ public:
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-#if CMD_LIST_PROFILER_ENABLE
-CmdListProfiler CommandList::s_commandListProfiler(
-    {
-        CmdListProfiler::CounterName::CmdAllCommands,
-        CmdListProfiler::CounterName::CmdPushList,
-        CmdListProfiler::CounterName::CmdExecuteList,
-        CmdListProfiler::CounterName::CmdPendingFlush,
-        CmdListProfiler::CounterName::CmdFrame,
-        CmdListProfiler::CounterName::CmdSetState,
-        CmdListProfiler::CounterName::CmdDraw,
-        CmdListProfiler::CounterName::CmdBind,
-    });
-#endif //CMD_LIST_PROFILER_ENABLE
-
 CommandList::CommandList(Context* context, CommandListType type) noexcept
     : m_context(context)
     , m_commandListType(type)
@@ -539,13 +523,14 @@ CommandList::~CommandList()
     if (m_swapchainTexture)
     {
         V3D_DELETE(m_swapchainTexture, memory::MemoryLabel::MemorySystem);
-}
+    }
 }
 
 void CommandList::flushCommands()
 {
     if (CommandList::isImmediate())
     {
+        CommandList::dispatchReadbackCalls();
         return;
     }
 
@@ -554,6 +539,8 @@ void CommandList::flushCommands()
     {
         CommandList::executeCommands();
     }
+
+    CommandList::dispatchReadbackCalls();
 }
 
 void CommandList::submitCommands(bool wait)
@@ -574,6 +561,8 @@ void CommandList::submitCommands(bool wait)
             }
         }
     }
+
+    CommandList::dispatchReadbackCalls();
 }
 
 void CommandList::beginFrame()
@@ -613,12 +602,7 @@ void CommandList::presentFrame()
 }
 
 void CommandList::draw(const StreamBufferDescription& desc, u32 firstVertex, u32 countVertex, u32 countInstance)
-    {
-#if CMD_LIST_PROFILER_ENABLE
-    CmdListProfiler::StackProfiler stackAllProfiler(&s_commandListProfiler, CmdListProfiler::CounterName::CmdAllCommands);
-    CmdListProfiler::StackProfiler stackProfiler(&s_commandListProfiler, CmdListProfiler::CounterName::CmdDraw);
-#endif //CMD_LIST_PROFILER_ENABLE
-
+{
     if (CommandList::isImmediate())
     {
         m_context->draw(desc, firstVertex, countVertex, 0, countInstance);
@@ -815,7 +799,11 @@ void CommandList::pushCommand(Command* cmd)
     {
         m_writeSemaphore.release();
     }
-    }
+}
+
+void CommandList::pushReadbackCall(Object* caller, std::function<void(Object*)>&& readback)
+{
+    m_readbackCalls.emplace(caller, std::forward<std::function<void(Object*)>>(readback));
 }
 
 void CommandList::executeCommands()
@@ -837,6 +825,17 @@ void CommandList::executeCommands()
     if (CommandList::isThreaded())
     {
         m_writeSemaphore.release();
+    }
+}
+
+void CommandList::dispatchReadbackCalls()
+{
+    while (!m_readbackCalls.empty())
+    {
+        auto& [caller, readback] = m_readbackCalls.front();
+        std::invoke(std::forward<std::function<void(Object*)>>(readback), caller);
+
+        m_readbackCalls.pop();
     }
 }
 

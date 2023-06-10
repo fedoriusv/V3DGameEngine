@@ -81,6 +81,7 @@ namespace renderer
         void dispatchCompute(const math::Dimension3D& groups = { 1, 1, 1});
 
         void pushCommand(Command* cmd);
+        void pushReadbackCall(Object* caller, std::function<void(Object*)>&& readback);
 
         void clearBackbuffer(const math::Vector4D& color);
 
@@ -148,10 +149,11 @@ namespace renderer
         };
 
         void executeCommands();
+        void dispatchReadbackCalls();
         static void threadedCommandsCallback(CommandList* cmdList);
 
-
         std::queue<Command*>        m_commandList;
+        std::queue<std::tuple<Object*, std::function<void(Object*)>>> m_readbackCalls;
 
         Context*                    m_context;
         const CommandListType       m_commandListType;
