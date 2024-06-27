@@ -22,6 +22,7 @@ InputEventHandler::~InputEventHandler()
     m_mouseHandlerCallbacks.clear();
     m_gamepadHandlerCallbacks.clear();
     m_touchHandlerCallbacks.clear();
+    m_systemEventCallbacks.clear();
 }
 
 void InputEventHandler::resetKeyPressed()
@@ -298,6 +299,19 @@ bool InputEventHandler::onEvent(Event* ev)
         return true;
     };
 
+    case InputEvent::InputEventType::SystemEvent:
+    {
+        const SystemEvent* systemEvent = static_cast<const SystemEvent*>(event);
+        for (std::vector<SystemEventCallback>::const_iterator iter = m_systemEventCallbacks.cbegin(); iter != m_systemEventCallbacks.cend(); ++iter)
+        {
+            if ((*iter))
+            {
+                (*iter)(systemEvent);
+            }
+        }
+        return true;
+    }
+
     default:
     {
         return false;
@@ -305,7 +319,7 @@ bool InputEventHandler::onEvent(Event* ev)
     }
 }
 
-void InputEventHandler::connect(std::function<void(const KeyboardInputEvent*)> callback)
+void InputEventHandler::bind(std::function<void(const KeyboardInputEvent*)> callback)
 {
     if (callback)
     {
@@ -313,7 +327,7 @@ void InputEventHandler::connect(std::function<void(const KeyboardInputEvent*)> c
     }
 }
 
-void InputEventHandler::connect(std::function<void(const MouseInputEvent*)> callback)
+void InputEventHandler::bind(std::function<void(const MouseInputEvent*)> callback)
 {
     if (callback)
     {
@@ -321,7 +335,7 @@ void InputEventHandler::connect(std::function<void(const MouseInputEvent*)> call
     }
 }
 
-void InputEventHandler::connect(std::function<void(const GamepadInputEvent*)> callback)
+void InputEventHandler::bind(std::function<void(const GamepadInputEvent*)> callback)
 {
     if (callback)
     {
@@ -329,11 +343,19 @@ void InputEventHandler::connect(std::function<void(const GamepadInputEvent*)> ca
     }
 }
 
-void InputEventHandler::connect(std::function<void(const TouchInputEvent*)> callback)
+void InputEventHandler::bind(std::function<void(const TouchInputEvent*)> callback)
 {
     if (callback)
     {
         m_touchHandlerCallbacks.push_back(callback);
+    }
+}
+
+void InputEventHandler::bind(std::function<void(const SystemEvent*)> callback)
+{
+    if (callback)
+    {
+        m_systemEventCallbacks.push_back(callback);
     }
 }
 

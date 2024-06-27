@@ -38,7 +38,7 @@ namespace event
         std::queue<InputEvent*>                                         m_events;
         std::multimap<InputEvent::InputEventType, InputEventHandler*>   m_receivers;
 
-        static const u32   s_eventPoolSize = 32U;
+        static const u32   s_eventPoolSize = 64U;
         const u32          k_maxInputEventSize;
         InputEvent*        m_eventPool;
         u32                m_currentEventIndex;

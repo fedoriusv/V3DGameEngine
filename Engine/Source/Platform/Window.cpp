@@ -16,6 +16,8 @@ namespace v3d
 namespace platform
 {
 
+std::map<u32, Window*> Window::s_windowsList = {};
+
 Window::Window(const WindowParam& params, event::InputEventReceiver* receiver) noexcept
     : m_params(params)
     , m_receiver(receiver)
@@ -24,12 +26,12 @@ Window::Window(const WindowParam& params, event::InputEventReceiver* receiver) n
 
 Window::~Window()
 {
-    ASSERT(!m_receiver, "must be nullptr");
 }
 
-Window* Window::createWindow(const math::Dimension2D& size, const math::Point2D& pos, bool fullscreen, bool resizable)
+Window* Window::createWindow(const math::Dimension2D& size, const math::Point2D& pos, bool fullscreen, bool resizable, event::InputEventReceiver* receiver, const std::wstring& name)
 {
     WindowParam params;
+    params._name = name.empty() ? L"Window" : name;
     params._size = size;
     params._position = pos;
     params._isFullscreen = fullscreen;
@@ -37,11 +39,11 @@ Window* Window::createWindow(const math::Dimension2D& size, const math::Point2D&
 
     Window* window = nullptr;
 #if defined(PLATFORM_WINDOWS)
-    window = V3D_NEW(WindowWindows, memory::MemoryLabel::MemorySystem)(params, nullptr);
+    window = V3D_NEW(WindowWindows, memory::MemoryLabel::MemorySystem)(params, receiver);
 #elif defined(PLATFORM_XBOX)
-    window = V3D_NEW(WindowXBOX, memory::MemoryLabel::MemorySystem)(params, nullptr);
+    window = V3D_NEW(WindowXBOX, memory::MemoryLabel::MemorySystem)(params, receiver);
 #elif defined(PLATFORM_ANDROID)
-    window = V3D_NEW(WindowAndroid, memory::MemoryLabel::MemorySystem)(params, nullptr);
+    window = V3D_NEW(WindowAndroid, memory::MemoryLabel::MemorySystem)(params, receiver);
 #endif //PLATFORM
 
     if (!window)
@@ -53,6 +55,9 @@ Window* Window::createWindow(const math::Dimension2D& size, const math::Point2D&
 
     if (window->initialize())
     {
+        window->setTextCaption(params._name);
+
+        s_windowsList.emplace(window->ID(), window);
         return window;
     }
     
@@ -62,9 +67,10 @@ Window* Window::createWindow(const math::Dimension2D& size, const math::Point2D&
     return nullptr;
 }
 
-Window* Window::createWindow(const math::Dimension2D& size, const math::Point2D& pos, bool fullscreen, event::InputEventReceiver* receiver)
+Window* Window::createWindow(const math::Dimension2D& size, const math::Point2D& pos, bool fullscreen, event::InputEventReceiver* receiver, const std::wstring& name)
 {
     WindowParam params;
+    params._name = name.empty() ? L"Window" : name;
     params._size = size;
     params._position = pos;
     params._isFullscreen = fullscreen;
@@ -88,6 +94,9 @@ Window* Window::createWindow(const math::Dimension2D& size, const math::Point2D&
 
     if (window->initialize())
     {
+        window->setTextCaption(params._name);
+
+        s_windowsList.emplace(window->ID(), window);
         return window;
     }
 
@@ -98,7 +107,47 @@ Window* Window::createWindow(const math::Dimension2D& size, const math::Point2D&
     return nullptr;
 }
 
-bool Window::updateWindow(Window* window)
+Window* Window::createWindow(const math::Dimension2D& size, const math::Point2D& pos, const Window* parent, bool resizable, const std::wstring& name)
+{
+    WindowParam params;
+    params._name = name.empty() ? L"Window" : name;
+    params._size = size;
+    params._position = pos;
+    params._isFullscreen = false;
+    params._isResizable = resizable;
+
+    Window* window = nullptr;
+#if defined(PLATFORM_WINDOWS)
+    window = V3D_NEW(WindowWindows, memory::MemoryLabel::MemorySystem)(params, parent->getInputEventReceiver(), parent);
+#elif defined(PLATFORM_XBOX)
+    window = V3D_NEW(WindowXBOX, memory::MemoryLabel::MemorySystem)(params, parent->getInputEventReceiver());
+#elif defined(PLATFORM_ANDROID)
+    window = V3D_NEW(WindowAndroid, memory::MemoryLabel::MemorySystem)(params, parent->getInputEventReceiver());
+#endif //PLATFORM
+
+    if (!window)
+    {
+        ASSERT(false, "unsupported platform");
+        LOG_ERROR("Window::createWindow: Unsupported platform");
+        return nullptr;
+    }
+
+    if (window->initialize())
+    {
+        window->setTextCaption(params._name);
+
+        s_windowsList.emplace(window->ID(), window);
+        return window;
+    }
+
+    LOG_ERROR("Window::createWindow: Can't initialize window");
+    window->destroy();
+    V3D_DELETE(window, memory::MemoryLabel::MemorySystem);
+
+    return nullptr;
+}
+
+bool Window::updateEvents(Window* window)
 {
     ASSERT(window, "window is nullptr");
     return window->update();
@@ -107,41 +156,13 @@ bool Window::updateWindow(Window* window)
 void Window::detroyWindow(Window* window)
 {
     ASSERT(window, "window is nullptr");
+
+    auto found = s_windowsList.find(window->ID());
+    ASSERT(found != s_windowsList.end(), "window is not found");
+    s_windowsList.erase(found);
+
     window->destroy();
-
-    if (window->m_receiver)
-    {
-        delete window->m_receiver;
-        window->m_receiver = nullptr;
-    }
-
     V3D_DELETE(window, memory::MemoryLabel::MemorySystem);
-}
-
-event::InputEventReceiver* Window::getInputEventReceiver() const
-{
-    ASSERT(m_receiver, "m_receiver is nullptr");
-    return m_receiver;
-}
-
-const math::Dimension2D & Window::getSize() const
-{
-    return m_params._size;
-}
-
-const math::Point2D & Window::getPosition() const
-{
-    return m_params._position;
-}
-
-bool Window::isFullscreen() const
-{
-    return m_params._isFullscreen;
-}
-
-bool Window::isResizable() const
-{
-    return m_params._isResizable;
 }
 
 } //namespace platform

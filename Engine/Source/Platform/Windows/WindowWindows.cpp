@@ -1,8 +1,10 @@
 #include "WindowWindows.h"
 #include "Event/InputEventKeyboard.h"
 #include "Event/InputEventMouse.h"
+#include "Event/SystemEvent.h"
 #include "Event/InputEventReceiver.h"
 #include "Utils/Logger.h"
+#include "Utils/Timer.h"
 
 #ifdef PLATFORM_WINDOWS
 #include <winuser.h>
@@ -12,10 +14,11 @@ namespace v3d
 namespace platform
 {
 
-WindowWindows::WindowWindows(const WindowParam& params, event::InputEventReceiver* receiver) noexcept
+WindowWindows::WindowWindows(const WindowParam& params, event::InputEventReceiver* receiver, const Window* parent) noexcept
     : Window(params, receiver)
     , m_hInstance(NULL)
     , m_hWnd(NULL)
+    , m_parent(parent)
 {
     LOG_DEBUG("WindowWindows::WindowWindows: Created Windows window %llx", this);
     fillKeyCodes();
@@ -24,6 +27,7 @@ WindowWindows::WindowWindows(const WindowParam& params, event::InputEventReceive
 bool WindowWindows::initialize()
 {
     m_hInstance = GetModuleHandle(NULL);
+    HWND parentHWnd = NULL;
 
     // Register Class
     WNDCLASSEX wcex;
@@ -38,7 +42,7 @@ bool WindowWindows::initialize()
     wcex.hIcon = LoadIcon(NULL, IDI_WINLOGO);
     wcex.hbrBackground = (HBRUSH)GetStockObject(WHITE_BRUSH);
     wcex.lpszMenuName = NULL;
-    wcex.lpszClassName = m_classname.c_str();
+    wcex.lpszClassName = m_params._name.c_str();
     wcex.hIconSm = 0;
     if (!RegisterClassEx(&wcex))
     {
@@ -46,14 +50,31 @@ bool WindowWindows::initialize()
         return false;
     }
 
-    DWORD dwStyle = WS_POPUP;
+    DWORD dwStyle = WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU;
     DWORD dwExStyle = WS_EX_APPWINDOW;
 
-    if (!m_params._isFullscreen)
+    if (m_parent)
     {
-        //dwStyle   = WS_SYSMENU | WS_BORDER | WS_CAPTION | WS_CLIPCHILDREN | WS_CLIPSIBLINGS;
-        dwStyle = WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU;;
-        dwExStyle = WS_EX_APPWINDOW;
+        dwStyle = WS_CHILDWINDOW | WS_CAPTION | WS_SYSMENU;
+        dwExStyle = 0;
+        if (m_params._isResizable)
+        {
+            dwStyle |= WS_THICKFRAME;
+        }
+
+        parentHWnd = m_parent->getWindowHandle();
+    }
+    else
+    {
+        if (m_params._isFullscreen)
+        {
+            dwStyle = WS_POPUP | WS_VISIBLE;
+            dwExStyle = WS_EX_APPWINDOW | WS_EX_TOPMOST;
+        }
+        else if (m_params._isResizable)
+        {
+            dwStyle = WS_OVERLAPPEDWINDOW;
+        }
     }
 
     RECT borderRect = { 0, 0, 0, 0 };
@@ -71,18 +92,26 @@ bool WindowWindows::initialize()
     };
     // create window
     ASSERT(!m_hWnd, "Already exist");
-    m_hWnd = CreateWindowEx(dwExStyle, m_classname.c_str(), __TEXT("Window"), dwStyle, m_params._position.m_x, m_params._position.m_y, size.m_width, size.m_height, NULL, NULL, m_hInstance, this);
+    m_hWnd = CreateWindowEx(dwExStyle, m_params._name.c_str(), m_params._name.c_str(), dwStyle, m_params._position.m_x, m_params._position.m_y, size.m_width, size.m_height, parentHWnd, NULL, m_hInstance, this);
     if (!m_hWnd)
     {
         const u32 error = GetLastError();
         DWORD numHandles = 0;
         GetProcessHandleCount(GetCurrentProcess(), &numHandles);
 
-        LOG_ERROR( "WindowWindows::initialize: CreateWindowEx is failed, window %llx", this);
+        LOG_ERROR( "WindowWindows::initialize: CreateWindowEx is failed, error %u, window %llx", error, this);
         return false;
     }
 
-    ShowWindow(m_hWnd, SW_SHOWNORMAL);
+    if (m_params._isFullscreen)
+    {
+        ShowWindow(m_hWnd, SW_MAXIMIZE);
+    }
+    else
+    {
+        ShowWindow(m_hWnd, SW_SHOWNORMAL);
+    }
+
 #if !USE_LOGGER
     ShowWindow(GetConsoleWindow(), SW_HIDE);
 #endif //USE_LOGGER
@@ -96,15 +125,10 @@ bool WindowWindows::update()
     ZeroMemory(&msg, sizeof(msg));
     msg.message = WM_NULL;
 
-    while(PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
+    while(PeekMessage(&msg, m_hWnd, 0, 0, PM_REMOVE))
     {
         TranslateMessage(&msg);
         DispatchMessage(&msg);
-
-        if (msg.message == WM_QUIT)
-        {
-            return false;
-        }
     }
 
      return true;
@@ -112,13 +136,10 @@ bool WindowWindows::update()
 
 void WindowWindows::destroy()
 {
-    MSG msg;
-    PeekMessage(&msg, NULL, WM_QUIT, WM_QUIT, PM_REMOVE);
     DestroyWindow(m_hWnd);
     m_hWnd = NULL;
 
-    HINSTANCE hInstance = GetModuleHandle(NULL);
-    UnregisterClass(m_classname.c_str(), hInstance);
+    UnregisterClass(m_params._name.c_str(), m_hInstance);
 }
 
 WindowWindows::~WindowWindows()
@@ -178,9 +199,9 @@ void WindowWindows::setResizeble(bool value)
     ASSERT(false, "not implemented");
 }
 
-void WindowWindows::setTextCaption(const std::string& text)
+void WindowWindows::setTextCaption(const std::wstring& text)
 {
-    SetWindowTextA(m_hWnd, text.c_str());
+    SetWindowTextW(m_hWnd, text.c_str());
 }
 
 void WindowWindows::setPosition(const math::Point2D& pos)
@@ -206,7 +227,8 @@ bool WindowWindows::isMinimized() const
 
 bool WindowWindows::isActive() const
 {
-    if (m_hWnd == GetActiveWindow())
+    HWND hWnd = GetActiveWindow();
+    if (m_hWnd == hWnd)
     {
         return m_params._isActive;
     }
@@ -216,7 +238,8 @@ bool WindowWindows::isActive() const
 
 bool WindowWindows::isFocused() const
 {
-    if (m_hWnd == GetFocus())
+    HWND hWnd = GetFocus();
+    if (m_hWnd == hWnd)
     {
         return m_params._isFocused;
     }
@@ -239,11 +262,11 @@ bool WindowWindows::isValid() const
     return m_hWnd != NULL;
 }
 
-LRESULT WindowWindows::HandleMessage(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
+LRESULT WindowWindows::HandleInputMessage(UINT message, WPARAM wParam, LPARAM lParam)
 {
     if (!m_receiver)
     {
-        return DefWindowProc(hWnd, message, wParam, lParam);
+        return DefWindowProc(m_hWnd, message, wParam, lParam);
     }
 
     auto getModifiers = [](WPARAM wParam, LPARAM lParam) -> u8
@@ -307,6 +330,7 @@ LRESULT WindowWindows::HandleMessage(HWND hWnd, UINT message, WPARAM wParam, LPA
         event->_key = m_keyCodes.get((u32)wParam);
         event->_character = (c8)wParam;
         event->_modifers = getModifiers(wParam, lParam);
+        event->_windowID = this->ID();
 
         m_receiver->pushEvent(event);
         return TRUE;
@@ -320,6 +344,7 @@ LRESULT WindowWindows::HandleMessage(HWND hWnd, UINT message, WPARAM wParam, LPA
         event->_key = m_keyCodes.get((u32)wParam);
         event->_character = (c8)wParam;
         event->_modifers = getModifiers(wParam, lParam);
+        event->_windowID = this->ID();
 
         m_receiver->pushEvent(event);
         return TRUE;
@@ -336,6 +361,7 @@ LRESULT WindowWindows::HandleMessage(HWND hWnd, UINT message, WPARAM wParam, LPA
         event->_wheelValue = ((f32)((s16)HIWORD(wParam))) / (f32)WHEEL_DELTA;
         event->_event = event::MouseInputEvent::MousePressDown;
         event->_modifers = 0;
+        event->_windowID = this->ID();
 
         switch (message)
         {
@@ -371,6 +397,7 @@ LRESULT WindowWindows::HandleMessage(HWND hWnd, UINT message, WPARAM wParam, LPA
         event->_wheelValue = ((f32)((s16)HIWORD(wParam))) / (f32)WHEEL_DELTA;
         event->_event = event::MouseInputEvent::MousePressUp;
         event->_modifers = 0;
+        event->_windowID = this->ID();
 
         switch (message)
         {
@@ -405,6 +432,7 @@ LRESULT WindowWindows::HandleMessage(HWND hWnd, UINT message, WPARAM wParam, LPA
         event->_wheelValue = ((f32)((s16)HIWORD(wParam))) / (f32)WHEEL_DELTA;
         event->_event = event::MouseInputEvent::MouseDoubleClick;
         event->_modifers = 0;
+        event->_windowID = this->ID();
 
         switch (message)
         {
@@ -434,7 +462,7 @@ LRESULT WindowWindows::HandleMessage(HWND hWnd, UINT message, WPARAM wParam, LPA
         POINT pt;
         pt.x = LOWORD(lParam);
         pt.y = HIWORD(lParam);
-        ScreenToClient(hWnd, &pt);
+        ScreenToClient(m_hWnd, &pt);
 
         event::MouseInputEvent* event = new(m_receiver->allocateInputEvent()) event::MouseInputEvent();
         event->_cursorPosition.m_x = (s16)pt.x;
@@ -442,6 +470,7 @@ LRESULT WindowWindows::HandleMessage(HWND hWnd, UINT message, WPARAM wParam, LPA
         event->_wheelValue = ((f32)((s16)HIWORD(wParam))) / (f32)WHEEL_DELTA;
         event->_event = event::MouseInputEvent::MouseWheel;
         event->_modifers = 0;
+        event->_windowID = this->ID();
 
         m_receiver->pushEvent(event);
         return TRUE;
@@ -455,26 +484,130 @@ LRESULT WindowWindows::HandleMessage(HWND hWnd, UINT message, WPARAM wParam, LPA
         event->_wheelValue = ((f32)((s16)HIWORD(wParam))) / (f32)WHEEL_DELTA;
         event->_event = event::MouseInputEvent::MouseMoved;
         event->_modifers = 0;
+        event->_windowID = this->ID();
 
         m_receiver->pushEvent(event);
         return TRUE;
     }
     }
 
-    return DefWindowProc(hWnd, message, wParam, lParam);
+    return DefWindowProc(m_hWnd, message, wParam, lParam);
+}
+
+LRESULT WindowWindows::HandleSystemEvents(UINT message, WPARAM wParam, LPARAM lParam)
+{
+    if (!m_receiver)
+    {
+        return DefWindowProc(m_hWnd, message, wParam, lParam);
+    }
+
+    switch (message)
+    {
+    case WM_CREATE:
+    {
+        event::SystemEvent* event = new(m_receiver->allocateInputEvent()) event::SystemEvent();
+        event->_systemEvent = event::SystemEvent::SystemEvent::Create;
+        event->_windowID = this->ID();
+
+        m_receiver->pushEvent(event);
+        return TRUE;
+    }
+
+    case WM_ACTIVATE:
+    {
+        BOOL active = LOWORD(wParam) != WA_INACTIVE;
+        BOOL iconified = HIWORD(wParam) ? TRUE : FALSE;
+
+        if (active && iconified)
+        {
+            active = FALSE;
+        }
+        m_params._isActive = active;
+        return TRUE;
+    }
+
+    case WM_SETFOCUS:
+    {
+        m_params._isFocused = true;
+        return TRUE;
+    }
+
+    case WM_KILLFOCUS:
+    {
+        m_params._isFocused = false;
+        return TRUE;
+    }
+
+    case WM_SHOWWINDOW:
+    {
+        return TRUE;
+    }
+
+    case WM_MOVE:
+    {
+        m_params._position.m_x = (s16)LOWORD(lParam);
+        m_params._position.m_y = (s16)HIWORD(lParam);
+
+        if (m_lastMoveEvent < m_currnetTime)
+        {
+            event::SystemEvent* event = new(m_receiver->allocateInputEvent()) event::SystemEvent();
+            event->_systemEvent = event::SystemEvent::SystemEvent::Move;
+            event->_windowID = this->ID();
+
+            m_receiver->sendEvent(event);
+            m_lastMoveEvent = m_currnetTime;
+        }
+        return TRUE;
+    }
+
+    case WM_SIZE:
+    {
+        m_params._size.m_width = (s16)LOWORD(lParam);
+        m_params._size.m_height = (s16)HIWORD(lParam);
+
+        if (m_lastSizeEvent < m_currnetTime)
+        {
+            event::SystemEvent* event = new(m_receiver->allocateInputEvent()) event::SystemEvent();
+            event->_systemEvent = event::SystemEvent::SystemEvent::Resize;
+            event->_windowID = this->ID();
+
+            m_receiver->sendEvent(event);
+            m_lastSizeEvent = m_currnetTime;
+        }
+        return TRUE;
+    }
+
+    case WM_TIMER:
+    {
+        ++m_currnetTime;
+        return TRUE;
+    }
+
+    case WM_DESTROY:
+    {
+        event::SystemEvent* event = new(m_receiver->allocateInputEvent()) event::SystemEvent();
+        event->_systemEvent = event::SystemEvent::SystemEvent::Destroy;
+        event->_windowID = this->ID();
+
+        m_receiver->pushEvent(event);
+        return TRUE;
+    }
+        
+    }
 }
 
 LRESULT WindowWindows::WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
-    static u32 s_timer_ID = 0;
-
     if (message == WM_CREATE)
     {
         CREATESTRUCT* cs = (CREATESTRUCT*)lParam;
         SetWindowLongPtr(hWnd, GWLP_USERDATA, (LONG_PTR)cs->lpCreateParams);
 
-        SetTimer(hWnd, s_timer_ID, 1000, NULL); //milliseconds
-        return TRUE;
+        WindowWindows* window = reinterpret_cast<WindowWindows*>(cs->lpCreateParams);
+        ASSERT(window, "Must be valid pointer");
+
+        SetTimer(hWnd, window->m_timerID, 100, NULL); //milliseconds
+        return window->HandleSystemEvents(message, wParam, lParam);
     }
     else
     {
@@ -486,70 +619,27 @@ LRESULT WindowWindows::WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lP
             return DefWindowProc(hWnd, message, wParam, lParam);
         }
         WindowWindows* window = reinterpret_cast<WindowWindows*>(lpCreateParams);
+        ASSERT(window, "Must be valid pointer");
 
         switch (message)
         {
         case WM_ACTIVATE:
-        {
-            BOOL active = LOWORD(wParam) != WA_INACTIVE;
-            BOOL iconified = HIWORD(wParam) ? TRUE : FALSE;
-
-            if (active && iconified)
-            {
-                active = FALSE;
-            }
-            window->m_params._isActive = active;
-
-
-            return TRUE;
-        }
-
         case WM_SETFOCUS:
-        {
-            window->m_params._isFocused = true;
-            return TRUE;
-        }
-
         case WM_KILLFOCUS:
-        {
-            window->m_params._isFocused = false;
-            return TRUE;
-        }
-
         case WM_SHOWWINDOW:
-        {
-            return TRUE;
-        }
-
         case WM_MOVE:
-        {
-            window->m_params._position.m_x = (s16)LOWORD(lParam);
-            window->m_params._position.m_y = (s16)HIWORD(lParam);
-            return TRUE;
-        }
-
         case WM_SIZE:
-        {
-            return TRUE;
-        }
-
         case WM_TIMER:
-        {
-            return TRUE;
-        }
+            return window->HandleSystemEvents(message, wParam, lParam);
 
         case WM_DESTROY:
         {
-            KillTimer(hWnd, s_timer_ID);
-            PostQuitMessage(0);
-            return TRUE;
+            KillTimer(hWnd, window->m_timerID);
+            return window->HandleSystemEvents(message, wParam, lParam);
         }
 
         default:
-        {
-            ASSERT(window, "Must be valid pointer");
-            return window->HandleMessage(hWnd, message, wParam, lParam);
-        }
+            return window->HandleInputMessage(message, wParam, lParam);
         }
     }
 

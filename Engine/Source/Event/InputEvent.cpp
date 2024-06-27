@@ -1,4 +1,5 @@
 #include "InputEvent.h"
+#include "Utils/Timer.h"
 
 namespace v3d
 {
@@ -6,10 +7,12 @@ namespace event
 {
 
 InputEvent::InputEvent() noexcept
-    : _timeStamp(0) //TODO: get current time, need class Timer
+    : _timeStamp(utils::Timer::getCurrentTime())
     , _eventType(InputEventType::UnknownInputEvent)
     , _priority(Normal)
+    , _windowID(0)
 {
+    static_assert(sizeof(InputEvent) == 24, "wrong size");
 }
 
 bool InputEvent::operator<(const InputEvent& event)

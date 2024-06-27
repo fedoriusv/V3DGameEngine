@@ -8,6 +8,7 @@
 #include "InputEventMouse.h"
 #include "InputEventGamepad.h"
 #include "InputEventTouch.h"
+#include "SystemEvent.h"
 
 
 namespace v3d
@@ -29,10 +30,11 @@ namespace event
         InputEventHandler() noexcept;
         ~InputEventHandler();
 
-        void connect(std::function<void(const KeyboardInputEvent*)> callback);
-        void connect(std::function<void(const MouseInputEvent*)> callback);
-        void connect(std::function<void(const GamepadInputEvent*)> callback);
-        void connect(std::function<void(const TouchInputEvent*)> callback);
+        void bind(std::function<void(const KeyboardInputEvent*)> callback);
+        void bind(std::function<void(const MouseInputEvent*)> callback);
+        void bind(std::function<void(const GamepadInputEvent*)> callback);
+        void bind(std::function<void(const TouchInputEvent*)> callback);
+        void bind(std::function<void(const SystemEvent*)> callback);
 
         bool isKeyPressed(const KeyCode& code)const;
 
@@ -80,11 +82,13 @@ namespace event
         typedef std::function<void(const MouseInputEvent*)>      MouseCallback;
         typedef std::function<void(const GamepadInputEvent*)>    GamepadCallback;
         typedef std::function<void(const TouchInputEvent*)>      TouchScreenCallback;
+        typedef std::function<void(const SystemEvent*)>          SystemEventCallback;
 
         std::vector<KeyboardCallback>       m_keyboardHandlerCallbacks;
         std::vector<MouseCallback>          m_mouseHandlerCallbacks;
         std::vector<GamepadCallback>        m_gamepadHandlerCallbacks;
         std::vector<TouchScreenCallback>    m_touchHandlerCallbacks;
+        std::vector<SystemEventCallback>    m_systemEventCallbacks;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

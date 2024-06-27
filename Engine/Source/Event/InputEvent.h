@@ -15,17 +15,19 @@ namespace event
     */
     struct InputEvent : Event
     {
-        enum class InputEventType
+        enum class InputEventType : u64
         {
             UnknownInputEvent,
             MouseInputEvent,
             KeyboardInputEvent,
             GamepadInputEvent,
-            JoystickInputEvent,
-            TouchInputEvent
+            TouchInputEvent,
+            SystemEvent,
+
+            InputEventsCount
         };
 
-        enum Priority
+        enum Priority : u64
         {
             Low = 10,
             Normal = 20,
@@ -37,9 +39,10 @@ namespace event
 
         bool operator<(const InputEvent& event);
 
-        u64            _timeStamp;
-        InputEventType _eventType;
-        Priority       _priority;
+        u64                 _timeStamp;
+        InputEventType      _eventType : 16;
+        Priority            _priority : 16;
+        u64                 _windowID : 32;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

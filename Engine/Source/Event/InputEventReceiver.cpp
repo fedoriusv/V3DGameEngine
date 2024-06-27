@@ -1,13 +1,23 @@
 #include "InputEventReceiver.h"
 #include "Utils/Logger.h"
+#include "Platform/Platform.h"
 
 namespace v3d
 {
 namespace event
 {
+    std::array<u32, toEnumType(InputEvent::InputEventType::InputEventsCount)> g_sizeElements =
+    {
+        sizeof(u64),
+        sizeof(MouseInputEvent),
+        sizeof(KeyboardInputEvent),
+        sizeof(GamepadInputEvent),
+        sizeof(TouchInputEvent),
+        sizeof(SystemEvent)
+    };
 
 InputEventReceiver::InputEventReceiver() noexcept
-    : k_maxInputEventSize((u32)math::max(sizeof(MouseInputEvent), sizeof(KeyboardInputEvent), math::max(sizeof(GamepadInputEvent), sizeof(TouchInputEvent))))
+    : k_maxInputEventSize(*std::max_element(g_sizeElements.begin(), g_sizeElements.end()))
     , m_eventPool(nullptr)
     , m_currentEventIndex(0)
 {

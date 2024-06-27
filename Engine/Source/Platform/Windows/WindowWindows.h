@@ -17,7 +17,7 @@ namespace platform
     {
     public:
 
-        explicit WindowWindows(const WindowParam& params, event::InputEventReceiver* receiver) noexcept;
+        explicit WindowWindows(const WindowParam& params, event::InputEventReceiver* receiver, const Window* parent = nullptr) noexcept;
         ~WindowWindows();
 
         WindowWindows(const WindowWindows&) = delete;
@@ -29,7 +29,7 @@ namespace platform
 
         void setFullScreen(bool value = true) override;
         void setResizeble(bool value = true) override;
-        void setTextCaption(const std::string& text) override;
+        void setTextCaption(const std::wstring& text) override;
         void setPosition(const math::Point2D& pos) override;
 
         bool isMaximized() const override;
@@ -52,9 +52,17 @@ namespace platform
 
         HINSTANCE           m_hInstance;
         HWND                m_hWnd;
-        const std::wstring  m_classname = L"V3DWin";
 
-        LRESULT HandleMessage(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
+        u32                 m_timerID = 0;
+        u64                 m_currnetTime = 0;
+        u64                 m_lastMoveEvent = 0;
+        u64                 m_lastSizeEvent = 0;
+
+        const Window*       m_parent;
+
+        LRESULT HandleInputMessage(UINT message, WPARAM wParam, LPARAM lParam);
+        LRESULT HandleSystemEvents(UINT message, WPARAM wParam, LPARAM lParam);
+
 
         static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
     };
