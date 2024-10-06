@@ -12,7 +12,7 @@ namespace memory
     /**
     * @brief MemoryManagment
     */
-    class MemoryManagment
+    class V3D_API MemoryManagment
     {
     public:
 

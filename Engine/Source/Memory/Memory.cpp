@@ -8,12 +8,14 @@ namespace memory
 
 #if MEMORY_DEBUG
 std::vector<std::tuple<void*, v3d::u64, v3d::memory::MemoryLabel, std::string, u32>> g_allocr;
+std::recursive_mutex g_mutex;
 #endif //MEMORY_DEBUG
 
 void* internal_malloc(v3d::u64 size, MemoryLabel label, v3d::u64 align, const v3d::c8* file, v3d::u32 line)
 {
     void* ptr = malloc(size);
 #if MEMORY_DEBUG
+    std::scoped_lock<std::recursive_mutex> scope(g_mutex);
     g_allocr.push_back({ ptr, size, label, file, line });
 #endif //MEMORY_DEBUG
     return ptr;
@@ -22,6 +24,7 @@ void* internal_malloc(v3d::u64 size, MemoryLabel label, v3d::u64 align, const v3
 void internal_free(void* ptr, MemoryLabel label, v3d::u64 align, const v3d::c8* file, v3d::u32 line)
 {
 #if MEMORY_DEBUG
+    std::scoped_lock<std::recursive_mutex> scope(g_mutex);
     auto found = std::find_if(g_allocr.begin(), g_allocr.end(), [ptr](const auto& q)->bool
         {
             return std::get<0>(q) == ptr;
@@ -36,6 +39,7 @@ void internal_free(void* ptr, MemoryLabel label, v3d::u64 align, const v3d::c8* 
 void memory_test()
 {
 #if MEMORY_DEBUG
+    std::scoped_lock<std::recursive_mutex> scope(g_mutex);
     ASSERT(g_allocr.empty(), "memory is not cleared");
 #endif //MEMORY_DEBUG
 }
