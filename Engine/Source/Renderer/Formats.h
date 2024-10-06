@@ -270,6 +270,7 @@ namespace renderer
     class ImageFormat final
     {
     public:
+
         /**
         * @brief Format functions.
         * @param Format format

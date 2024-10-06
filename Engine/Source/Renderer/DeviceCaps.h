@@ -1,10 +1,6 @@
 #pragma once
 
-#include "Common.h"
-#include "TextureProperties.h"
-#include "BufferProperties.h"
-#include "ShaderProperties.h"
-
+#include "Render.h"
 
 namespace v3d
 {
@@ -31,6 +27,28 @@ namespace renderer
         VendorID_Mesa               = 0x10005,
     };
 
+    inline std::string VendorIDString(u32 vendor)
+    {
+        switch (vendor)
+        {
+#define STR(r) case VendorID_ ##r: return #r
+            STR(ATI);
+            STR(ImgTech);
+            STR(ImgTech_Legacy);
+            STR(NVIDIA);
+            STR(ARM);
+            STR(Microsoft);
+            STR(VMWare);
+            STR(Qualcomm);
+            STR(Intel);
+            STR(VBox);
+            STR(Mesa);
+#undef STR
+        default:
+            return "UNKNOWN";
+        }
+    }
+
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
@@ -46,18 +64,18 @@ namespace renderer
             TilingType_Count
         };
 
-        u32 maxColorAttachments = k_maxColorAttachments;
+        u32 _maxColorAttachments = k_maxColorAttachments;
 
-        u32 maxVertexInputAttributes = k_maxVertexInputAttributes;
-        u32 maxVertexInputBindings = k_maxVertexInputBindings;
+        u32 _maxVertexInputAttributes = k_maxVertexInputAttributes;
+        u32 _maxVertexInputBindings = k_maxVertexInputBindings;
 
-        u32 maxDescriptorSets = k_maxDescriptorSetCount;
-        u32 maxDescriptorBindings = k_maxDescriptorBindingCount;
+        u32 _maxDescriptorSets = k_maxDescriptorSetCount;
+        u32 _maxDescriptorBindings = k_maxDescriptorBindingCount;
 
-        VendorID vendorID = VendorID_Empty;
+        VendorID _vendorID = VendorID_Empty;
 
-        bool supportMultiview = false;
-        bool supportBlitImage = false;
+        bool _supportMultiview = false;
+        bool _supportBlitImage = false;
 
         struct ImageFormatSupport
         {
@@ -68,9 +86,9 @@ namespace renderer
             bool _supportResolve;
         };
 
-        const ImageFormatSupport& getImageFormatSupportInfo(Format format, TilingType type)
+        const ImageFormatSupport& getImageFormatSupportInfo(Format format, TilingType type) const
         {
-            return m_imageFormatSupport[format][type];
+            return _imageFormatSupport[format][type];
         }
 
     protected:
@@ -78,7 +96,7 @@ namespace renderer
         DeviceCaps() = default;
         virtual ~DeviceCaps() = default;
 
-        ImageFormatSupport m_imageFormatSupport[Format::Format_Count][TilingType::TilingType_Count] = {};
+        ImageFormatSupport _imageFormatSupport[Format::Format_Count][TilingType::TilingType_Count] = {};
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

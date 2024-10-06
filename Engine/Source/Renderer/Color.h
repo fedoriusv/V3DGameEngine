@@ -1,22 +1,21 @@
 #pragma once
 
-#include "Object.h"
-#include "Render.h"
+#include "Common.h"
 
 namespace v3d
 {
-namespace renderer
+namespace render
 {
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    /**
-    * @brief ShaderProgram class. Game side
-    */
-    class ShaderProgram : public Object
-    {
-    };
+    using ColorRGBF  = math::Vector3D;
+    using ColorRGBAF = math::Vector4D;
+    using ColorRGBA8 = math::TVector4D<u8>;
+
+
+    using Color = ColorRGBAF;
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-} //namespace renderer
+} //namespace render
 } //namespace v3d

@@ -1,12 +1,7 @@
 #pragma once
 
-#include "Common.h"
 #include "Object.h"
-#include "Utils/Observable.h"
-
-#include "SamplerProperties.h"
-#include "ObjectTracker.h"
-#include "CommandList.h"
+#include "Render.h"
 
 namespace v3d
 {
@@ -14,10 +9,31 @@ namespace renderer
 {
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    class Sampler;
     class ShaderProgram;
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    /**
+    * @brief SamplerDesc. The struct describes sampler parameters
+    */
+    struct SamplerDesc
+    {
+        /**
+        * @brief SamplerDesc struct. Size 24 bytes
+        */
+        math::Vector4D          _borderColor; //TODO: color class with 4 bytes
+        f32                     _lodBias;
+
+        SamplerAnisotropic      _anisotropic : 5;
+        SamplerWrap             _wrapU : 3;
+        SamplerWrap             _wrapV : 3;
+        SamplerWrap             _wrapW : 3;
+        SamplerFilter           _filter : 2;
+        CompareOperation        _compareOp : 3;
+        u32                     _enableCompOp : 1;
+
+        u32                     _padding : 12;
+    };
 
     /**
     * @brief SamplerState class. Game side.
@@ -56,7 +72,7 @@ namespace renderer
         * @briefSamplerState constructor. Used for creating sampler.
         * Private method. Use createObject interface inside CommandList class to call.
         */
-        explicit SamplerState(renderer::CommandList& cmdList) noexcept;
+        SamplerState() noexcept;
 
         /**
         * @brief SamplerState constructor. Used for creating sampler.
@@ -65,61 +81,109 @@ namespace renderer
         * @param SamplerFilter filter [required]
         * @param SamplerAnisotropic aniso [required]
         */
-        explicit SamplerState(renderer::CommandList& cmdList, SamplerFilter filter, SamplerAnisotropic aniso) noexcept;
+        SamplerState(SamplerFilter filter, SamplerAnisotropic aniso) noexcept;
 
-        SamplerState() = delete;
-        SamplerState(const SamplerState&) = delete;
-
-        CommandList& m_cmdList;
-        friend CommandList;
-
-        void destroySamplers(const std::vector<Sampler*>& samplers);
-
-        SamplerDescription m_samplerDesc;
-        ObjectTracker<Sampler> m_trackerSampler;
+        SamplerDesc m_samplerDesc;
 
         friend ShaderProgram;
     };
 
     inline SamplerFilter SamplerState::getFiltering() const
     {
-        return m_samplerDesc._desc._filter;
+        return m_samplerDesc._filter;
     }
 
     inline SamplerWrap SamplerState::getWrapU() const
     {
-        return m_samplerDesc._desc._wrapU;
+        return m_samplerDesc._wrapU;
     }
 
     inline SamplerWrap SamplerState::getWrapV() const
     {
-        return m_samplerDesc._desc._wrapV;
+        return m_samplerDesc._wrapV;
     }
 
     inline SamplerWrap SamplerState::getWrapW() const
     {
-        return m_samplerDesc._desc._wrapW;
+        return m_samplerDesc._wrapW;
     }
 
     inline SamplerAnisotropic SamplerState::getAnisotropic() const
     {
-        return m_samplerDesc._desc._anisotropic;
+        return m_samplerDesc._anisotropic;
     }
 
     inline CompareOperation SamplerState::getCompareOp() const
     {
-        return m_samplerDesc._desc._compareOp;
+        return m_samplerDesc._compareOp;
     }
 
     inline const math::Vector4D& SamplerState::getBorderColor() const
     {
-        return m_samplerDesc._desc._borderColor;
+        return m_samplerDesc._borderColor;
     }
 
     inline bool SamplerState::isEnableCompareOp() const
     {
-        return m_samplerDesc._desc._enableCompOp;
+        return m_samplerDesc._enableCompOp;
     }
+
+    inline void SamplerState::setFiltering(SamplerFilter filter)
+    {
+        m_samplerDesc._filter = filter;
+    }
+
+    inline void SamplerState::setWrap(SamplerWrap uvw)
+    {
+        m_samplerDesc._wrapU = uvw;
+        m_samplerDesc._wrapV = uvw;
+        m_samplerDesc._wrapW = uvw;
+    }
+
+    inline void SamplerState::setWrap(SamplerWrap u, SamplerWrap v, SamplerWrap w)
+    {
+        m_samplerDesc._wrapU = u;
+        m_samplerDesc._wrapV = v;
+        m_samplerDesc._wrapW = w;
+    }
+
+    inline void SamplerState::setAnisotropic(SamplerAnisotropic level)
+    {
+        m_samplerDesc._anisotropic = level;
+    }
+
+    inline void SamplerState::setLodBias(f32 value)
+    {
+        m_samplerDesc._lodBias = value;
+    }
+
+    inline void SamplerState::setCompareOp(CompareOperation op)
+    {
+        m_samplerDesc._compareOp = op;
+    }
+
+    inline void SamplerState::setEnableCompareOp(bool enable)
+    {
+        m_samplerDesc._enableCompOp = enable;
+    }
+
+    inline void SamplerState::setBorderColor(const math::Vector4D& color)
+    {
+        m_samplerDesc._borderColor = color;
+    }
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    class Sampler : public utils::ResourceID<Sampler, u8>
+    {
+    protected:
+
+        Sampler() = default;
+        virtual ~Sampler() = default;
+
+        virtual bool create() = 0;
+        virtual void destroy() = 0;
+    };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 

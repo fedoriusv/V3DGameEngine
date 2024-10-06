@@ -22,7 +22,7 @@ namespace renderer
     {
     public:
 
-        RenderObject()
+        RenderObject() noexcept
             : m_countLinks(0)
         {
         }
@@ -51,6 +51,7 @@ namespace renderer
         {
             return m_countLinks;
         }
+
         friend ObjectTracker<TRenderObject>;
 
         std::atomic<s32> m_countLinks;
