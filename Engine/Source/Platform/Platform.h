@@ -11,7 +11,7 @@ namespace platform
     /**
     * @brief Platform class. Platform specific functions 
     */
-    class Platform final
+    class V3D_API Platform final
     {
     public:
 

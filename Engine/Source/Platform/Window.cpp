@@ -1,5 +1,5 @@
 #include "Window.h"
-#include "Event/InputEventReceiver.h"
+#include "Events/InputEventReceiver.h"
 #include "Utils/Logger.h"
 #include "Utils/Profiler.h"
 
@@ -18,7 +18,7 @@ namespace platform
 
 std::map<u32, Window*> Window::s_windowsList = {};
 
-Window::Window(const WindowParam& params, event::InputEventReceiver* receiver) noexcept
+Window::Window(const WindowParams& params, event::InputEventReceiver* receiver) noexcept
     : m_params(params)
     , m_receiver(receiver)
 {
@@ -30,7 +30,7 @@ Window::~Window()
 
 Window* Window::createWindow(const math::Dimension2D& size, const math::Point2D& pos, bool fullscreen, bool resizable, event::InputEventReceiver* receiver, const std::wstring& name)
 {
-    WindowParam params;
+    WindowParams params;
     params._name = name.empty() ? L"Window" : name;
     params._size = size;
     params._position = pos;
@@ -69,7 +69,7 @@ Window* Window::createWindow(const math::Dimension2D& size, const math::Point2D&
 
 Window* Window::createWindow(const math::Dimension2D& size, const math::Point2D& pos, bool fullscreen, event::InputEventReceiver* receiver, const std::wstring& name)
 {
-    WindowParam params;
+    WindowParams params;
     params._name = name.empty() ? L"Window" : name;
     params._size = size;
     params._position = pos;
@@ -109,7 +109,7 @@ Window* Window::createWindow(const math::Dimension2D& size, const math::Point2D&
 
 Window* Window::createWindow(const math::Dimension2D& size, const math::Point2D& pos, const Window* parent, bool resizable, const std::wstring& name)
 {
-    WindowParam params;
+    WindowParams params;
     params._name = name.empty() ? L"Window" : name;
     params._size = size;
     params._position = pos;

@@ -13,11 +13,11 @@ namespace platform
     /**
     * @brief WindowWindows class. Windows platform
     */
-    class WindowWindows : public Window
+    class V3D_API WindowWindows : public Window
     {
     public:
 
-        explicit WindowWindows(const WindowParam& params, event::InputEventReceiver* receiver, const Window* parent = nullptr) noexcept;
+        explicit WindowWindows(const WindowParams& params, event::InputEventReceiver* receiver, const Window* parent = nullptr) noexcept;
         ~WindowWindows();
 
         WindowWindows(const WindowWindows&) = delete;

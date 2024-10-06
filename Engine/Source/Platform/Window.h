@@ -2,8 +2,8 @@
 
 #include "Common.h"
 #include "Utils/Observable.h"
-#include "Utils/ResourceID.h"
-#include "Event/KeyCodes.h"
+#include "Utils/Resource.h"
+#include "Events/KeyCodes.h"
 
 namespace v3d
 {
@@ -19,14 +19,14 @@ namespace platform
     /**
     * @brief Window class. Base class of window
     */
-    class Window : public utils::Observable, public utils::ResourceID<Window, u64>
+    class V3D_API Window : public utils::Observable, public utils::ResourceID<Window, u64>
     {
     public:
 
         /**
-        * @brief WindowParam struct
+        * @brief WindowParams struct
         */
-        struct WindowParam
+        struct WindowParams
         {
             std::wstring            _name;
             math::Dimension2D       _size;
@@ -39,7 +39,7 @@ namespace platform
             bool                    _isActive;
             bool                    _isFocused;
 
-            WindowParam() noexcept
+            WindowParams() noexcept
                 : _name(L"Window")
                 , _size(math::Dimension2D(1024U, 768U))
                 , _position(math::Point2D(0U, 0U))
@@ -133,10 +133,10 @@ namespace platform
 
         /**
         * @brief Window constructor
-        * @param const WindowParam& params [required]
+        * @param const WindowParams& params [required]
         * @param event::InputEventReceiver* receiver [required]
         */
-        explicit Window(const WindowParam& params, event::InputEventReceiver* receiver) noexcept;
+        explicit Window(const WindowParams& params, event::InputEventReceiver* receiver) noexcept;
 
         /**
         * @brief Window destructor
@@ -151,7 +151,7 @@ namespace platform
         virtual bool update() = 0;
         virtual void destroy() = 0;
 
-        WindowParam m_params;
+        WindowParams m_params;
 
         event::KeyCodes m_keyCodes;
         event::InputEventReceiver* m_receiver;

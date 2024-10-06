@@ -1,8 +1,8 @@
 #include "WindowWindows.h"
-#include "Event/InputEventKeyboard.h"
-#include "Event/InputEventMouse.h"
-#include "Event/SystemEvent.h"
-#include "Event/InputEventReceiver.h"
+#include "Events/InputEventKeyboard.h"
+#include "Events/InputEventMouse.h"
+#include "Events/SystemEvent.h"
+#include "Events/InputEventReceiver.h"
 #include "Utils/Logger.h"
 #include "Utils/Timer.h"
 
@@ -14,7 +14,7 @@ namespace v3d
 namespace platform
 {
 
-WindowWindows::WindowWindows(const WindowParam& params, event::InputEventReceiver* receiver, const Window* parent) noexcept
+WindowWindows::WindowWindows(const WindowParams& params, event::InputEventReceiver* receiver, const Window* parent) noexcept
     : Window(params, receiver)
     , m_hInstance(NULL)
     , m_hWnd(NULL)
@@ -592,7 +592,9 @@ LRESULT WindowWindows::HandleSystemEvents(UINT message, WPARAM wParam, LPARAM lP
         m_receiver->pushEvent(event);
         return TRUE;
     }
-        
+
+    default:
+        return FALSE;
     }
 }
 
