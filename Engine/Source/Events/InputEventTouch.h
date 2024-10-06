@@ -13,7 +13,7 @@ namespace event
     /**
     * @brief TouchInputEvent struct.
     */
-    struct TouchInputEvent : InputEvent
+    struct V3D_API TouchInputEvent : InputEvent
     {
         enum TouchTypeEvent
         {

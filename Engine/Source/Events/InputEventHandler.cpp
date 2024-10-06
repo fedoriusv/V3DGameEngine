@@ -11,7 +11,6 @@ InputEventHandler::InputEventHandler() noexcept
     : m_gamepadStates(0U)
     , m_mousePosition({ 0, 0 })
     , m_mouseWheel(0.0f)
-
 {
     resetKeyPressed();
 }
@@ -156,10 +155,8 @@ bool InputEventHandler::onEvent(Event* ev)
 
         for (std::vector<KeyboardCallback>::const_iterator iter = m_keyboardHandlerCallbacks.cbegin(); iter != m_keyboardHandlerCallbacks.cend(); ++iter)
         {
-            if ((*iter))
-            {
-                (*iter)(keyEvent);
-            }
+            ASSERT(*iter, "must be valid");
+            (*iter)(keyEvent);
         }
         return true;
     };
@@ -207,10 +204,8 @@ bool InputEventHandler::onEvent(Event* ev)
 
         for (std::vector<MouseCallback>::const_iterator iter = m_mouseHandlerCallbacks.cbegin(); iter != m_mouseHandlerCallbacks.cend(); ++iter)
         {
-            if ((*iter))
-            {
-                (*iter)(mouseEvent);
-            }
+            ASSERT(*iter, "must be valid");
+            (*iter)(mouseEvent);
         }
         return true;
     };
@@ -222,10 +217,8 @@ bool InputEventHandler::onEvent(Event* ev)
 
         for (std::vector<GamepadCallback>::const_iterator iter = m_gamepadHandlerCallbacks.cbegin(); iter != m_gamepadHandlerCallbacks.cend(); ++iter)
         {
-            if ((*iter))
-            {
-                (*iter)(gamepadEvent);
-            }
+            ASSERT(*iter, "must be valid");
+            (*iter)(gamepadEvent);
         }
         return true;
     };
@@ -291,10 +284,8 @@ bool InputEventHandler::onEvent(Event* ev)
 
         for (std::vector<TouchScreenCallback>::const_iterator iter = m_touchHandlerCallbacks.cbegin(); iter != m_touchHandlerCallbacks.cend(); ++iter)
         {
-            if ((*iter))
-            {
-                (*iter)(touchEvent);
-            }
+            ASSERT(*iter, "must be valid");
+            (*iter)(touchEvent);
         }
         return true;
     };
@@ -304,10 +295,8 @@ bool InputEventHandler::onEvent(Event* ev)
         const SystemEvent* systemEvent = static_cast<const SystemEvent*>(event);
         for (std::vector<SystemEventCallback>::const_iterator iter = m_systemEventCallbacks.cbegin(); iter != m_systemEventCallbacks.cend(); ++iter)
         {
-            if ((*iter))
-            {
-                (*iter)(systemEvent);
-            }
+            ASSERT(*iter, "must be valid");
+            (*iter)(systemEvent);
         }
         return true;
     }

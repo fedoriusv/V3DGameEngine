@@ -13,7 +13,7 @@ namespace event
     /**
     * @brief KeyboardInputEvent struct.
     */
-    struct KeyboardInputEvent : InputEvent
+    struct V3D_API KeyboardInputEvent : InputEvent
     {
         enum KeyboardPressInputEvent
         {

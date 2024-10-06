@@ -12,7 +12,7 @@ namespace event
     /**
     * @brief GamepadInputEvent struct.
     */
-    struct GamepadInputEvent : InputEvent
+    struct V3D_API GamepadInputEvent : InputEvent
     {
         enum GamepadPessInputEvent
         {

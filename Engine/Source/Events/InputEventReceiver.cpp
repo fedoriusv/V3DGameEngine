@@ -1,6 +1,7 @@
 #include "InputEventReceiver.h"
 #include "Utils/Logger.h"
 #include "Platform/Platform.h"
+#include "Platform/Window.h"
 
 namespace v3d
 {
@@ -58,8 +59,7 @@ void InputEventReceiver::sendDeferredEvents()
         }
 
         temp.pop();
-        //delete event;
-        //no need, deleted through pool
+        //no need to delete, ringbuffer pool is used
     }
 
     resetInputEventPool();
@@ -92,8 +92,12 @@ bool InputEventReceiver::sendEvent(InputEvent* event)
     {
         if ((*iter).first == event->_eventType)
         {
-                InputEventHandler* ptr = (*iter).second;
+            platform::Window* window = std::get<1>((*iter).second);
+            if (!window || event->_windowID == window->ID()) [[likely]]
+            {
+                InputEventHandler* ptr = std::get<0>((*iter).second);
                 result = ptr->onEvent(event);
+            }
         }
     }
 
@@ -108,10 +112,10 @@ void InputEventReceiver::reset()
 
 void InputEventReceiver::attach(InputEvent::InputEventType type, InputEventHandler* handler)
 {
-    std::pair<InputEvent::InputEventType, InputEventHandler*> rcv = std::make_pair(type, handler);
-    auto predFind = [rcv](const std::pair<InputEvent::InputEventType, InputEventHandler*>& item) -> bool
+    std::pair<InputEvent::InputEventType, std::tuple<InputEventHandler*, platform::Window*>> rcv = std::make_pair(type, std::make_tuple(handler, nullptr));
+    auto predFind = [rcv](const std::pair<InputEvent::InputEventType, std::tuple<InputEventHandler*, platform::Window*>>& item) -> bool
     {
-        return (rcv.first == item.first && rcv.second == item.second);
+        return (rcv.first == item.first && std::get<0>(rcv.second) == std::get<0>(item.second) && std::get<1>(rcv.second) == std::get<1>(item.second));
     };
 
     auto iter = std::find_if(m_receivers.begin(), m_receivers.end(), predFind);
@@ -119,12 +123,26 @@ void InputEventReceiver::attach(InputEvent::InputEventType type, InputEventHandl
     {
         m_receivers.insert(rcv);
     }
+}
 
+void InputEventReceiver::attach(InputEvent::InputEventType type, InputEventHandler* handler, platform::Window* window)
+{
+    std::pair<InputEvent::InputEventType, std::tuple<InputEventHandler*, platform::Window*>> rcv = std::make_pair(type, std::make_tuple(handler, window));
+    auto predFind = [rcv](const std::pair<InputEvent::InputEventType, std::tuple<InputEventHandler*, platform::Window*>>& item) -> bool
+        {
+            return (rcv.first == item.first && std::get<0>(rcv.second) == std::get<0>(item.second) && std::get<1>(rcv.second) == std::get<1>(item.second));
+        };
+
+    auto iter = std::find_if(m_receivers.begin(), m_receivers.end(), predFind);
+    if (iter == m_receivers.end())
+    {
+        m_receivers.insert(rcv);
+    }
 }
 
 void InputEventReceiver::dettach(InputEvent::InputEventType type)
 {
-    auto predFind = [type](const std::pair<InputEvent::InputEventType, InputEventHandler*>& item) -> bool
+    auto predFind = [type](const std::pair<InputEvent::InputEventType, std::tuple<InputEventHandler*, platform::Window*>>& item) -> bool
     {
         return (type == item.first);
     };
@@ -138,11 +156,26 @@ void InputEventReceiver::dettach(InputEvent::InputEventType type)
 
 void InputEventReceiver::dettach(InputEvent::InputEventType type, InputEventHandler* handler)
 {
-    std::pair<InputEvent::InputEventType, InputEventHandler*> rcv = std::make_pair(type, handler);
-    auto predFind = [rcv](const std::pair<InputEvent::InputEventType, InputEventHandler*>& item) -> bool
+    std::pair<InputEvent::InputEventType, std::tuple<InputEventHandler*, platform::Window*>> rcv = std::make_pair(type, std::make_tuple(handler, nullptr));
+    auto predFind = [rcv](const std::pair<InputEvent::InputEventType, std::tuple<InputEventHandler*, platform::Window*>>& item) -> bool
     {
-        return (rcv.first == item.first && rcv.second == item.second);
+        return (rcv.first == item.first && std::get<0>(rcv.second) == std::get<0>(item.second) && std::get<1>(rcv.second) == std::get<1>(item.second));
     };
+
+    auto iter = std::find_if(m_receivers.begin(), m_receivers.end(), predFind);
+    if (iter != m_receivers.end())
+    {
+        m_receivers.erase(iter);
+    }
+}
+
+void InputEventReceiver::dettach(InputEvent::InputEventType type, InputEventHandler* handler, platform::Window* window)
+{
+    std::pair<InputEvent::InputEventType, std::tuple<InputEventHandler*, platform::Window*>> rcv = std::make_pair(type, std::make_tuple(handler, window));
+    auto predFind = [rcv](const std::pair<InputEvent::InputEventType, std::tuple<InputEventHandler*, platform::Window*>>& item) -> bool
+        {
+            return (rcv.first == item.first && std::get<0>(rcv.second) == std::get<0>(item.second) && std::get<1>(rcv.second) == std::get<1>(item.second));
+        };
 
     auto iter = std::find_if(m_receivers.begin(), m_receivers.end(), predFind);
     if (iter != m_receivers.end())

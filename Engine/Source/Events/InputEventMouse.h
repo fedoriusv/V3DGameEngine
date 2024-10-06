@@ -13,7 +13,7 @@ namespace event
     /**
     * @brief MouseInputEvent struct.
     */
-    struct MouseInputEvent : InputEvent
+    struct V3D_API MouseInputEvent : InputEvent
     {
         enum MousePressInputEvent
         {

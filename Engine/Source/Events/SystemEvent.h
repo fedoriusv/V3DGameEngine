@@ -12,7 +12,7 @@ namespace event
     /**
     * @brief SystemEvent struct.
     */
-    struct SystemEvent : InputEvent
+    struct V3D_API SystemEvent : InputEvent
     {
         enum SystemEventType
         {
@@ -32,7 +32,7 @@ namespace event
 
         bool operator==(const SystemEvent& event) const;
 
-        SystemEventType     _systemEvent;
+        SystemEventType _systemEvent;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

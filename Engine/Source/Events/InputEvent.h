@@ -9,11 +9,10 @@ namespace event
 {
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-
     /**
     * @brief InputEvent struct.
     */
-    struct InputEvent : Event
+    struct V3D_API InputEvent : Event
     {
         enum class InputEventType : u64
         {
