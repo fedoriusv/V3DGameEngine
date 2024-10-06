@@ -1,9 +1,6 @@
 #include "MyApplication.h"
 #include "Utils/Logger.h"
 
-#include "Renderer/CommandList.h"
-#include "Renderer/Core/Context.h"
-
 using namespace v3d;
 using namespace v3d::platform;
 using namespace v3d::utils;

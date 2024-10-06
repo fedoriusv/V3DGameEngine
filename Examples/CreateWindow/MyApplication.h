@@ -2,7 +2,7 @@
 
 #include "Common.h"
 #include "Platform/Window.h"
-#include "Event/InputEventReceiver.h"
+#include "Events/InputEventReceiver.h"
 
 
 class MyApplication

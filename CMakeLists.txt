@@ -7,7 +7,7 @@ option(BUILD_EXAMPLES "Generate Examples" ON)
 ##############################################################
 #Render SDK
 option(BUILD_VULKAN_SDK_OPTION "Build use Vulkan SDK" ON)
-option(BUILD_DIRECTX_SDK_OPTION "Use DirectX SDK(Only for Windows Target)" ON)
+option(BUILD_DIRECTX_SDK_OPTION "Use DirectX SDK(Only for Windows Target)" OFF)
 ##############################################################
 
 #ThirdParty
@@ -19,10 +19,10 @@ include(Config/ThirdParty.cmake)
 #Crc32c lib is required"
 #https://github.com/google/crc32c.git
 
-option(ASSIMP_LIB "Use Assimp lib" ON)
+option(ASSIMP_LIB "Use Assimp lib" OFF)
 #https://github.com/assimp/assimp.git
 
-option(HWCPipe_LIB_OPTION "Use HWCPipe lib(Only for Android Target)" ON)
+option(HWCPipe_LIB_OPTION "Use HWCPipe lib(Only for Android Target)" OFF)
 #https://github.com/ARM-software/HWCPipe.git
 
 option(SPIRV_INSTALL_FROM_GITHUB "implicity install SpirV" OFF)
@@ -171,12 +171,10 @@ file(GLOB MATH_HEADERS ${SOURCE_DIR}/Math/*.h ${SOURCE_DIR}/Math/*.inl)
 file(GLOB MATH_SOURCES ${SOURCE_DIR}/Math/*.cpp)
 file(GLOB UTILS_HEADERS ${SOURCE_DIR}/Utils/*.h)
 file(GLOB UTILS_SOURCES ${SOURCE_DIR}/Utils/*.cpp)
-file(GLOB EVENT_HEADERS ${SOURCE_DIR}/Event/*.h)
-file(GLOB EVENT_SOURCES ${SOURCE_DIR}/Event/*.cpp)
+file(GLOB EVENTS_HEADERS ${SOURCE_DIR}/Events/*.h)
+file(GLOB EVENTS_SOURCES ${SOURCE_DIR}/Events/*.cpp)
 file(GLOB RENDERER_HEADERS ${SOURCE_DIR}/Renderer/*.h)
 file(GLOB RENDERER_SOURCES ${SOURCE_DIR}/Renderer/*.cpp)
-file(GLOB RENDER_CORE_HEADERS ${SOURCE_DIR}/Renderer/Core/*.h)
-file(GLOB RENDER_CORE_SOURCES ${SOURCE_DIR}/Renderer/Core/*.cpp)
 file(GLOB RESOURCE_HEADERS ${SOURCE_DIR}/Resource/*.h)
 file(GLOB RESOURCE_SOURCES ${SOURCE_DIR}/Resource/*.cpp)
 file(GLOB MEMORY_HEADERS ${SOURCE_DIR}/Memory/*.h)
@@ -201,15 +199,15 @@ elseif(TARGET_ANDROID)
 endif()
 
 if (BUILD_VULKAN_SDK)
-    file(GLOB VULKAN_HEADERS ${SOURCE_DIR}/Renderer/Core/Vulkan/*.h ${SOURCE_DIR}/Renderer/Core/Vulkan/*.inl)
-    file(GLOB VULKAN_SOURCES ${SOURCE_DIR}/Renderer/Core/Vulkan/*.cpp)
+    file(GLOB VULKAN_HEADERS ${SOURCE_DIR}/Renderer/Vulkan/*.h ${SOURCE_DIR}/Renderer/Vulkan/*.inl)
+    file(GLOB VULKAN_SOURCES ${SOURCE_DIR}/Renderer/Vulkan/*.cpp)
 	file(GLOB RESOURCE_SPIRV_HEADERS ${SOURCE_DIR}/Resource/SpirVPatch/*.h)
 	file(GLOB RESOURCE_SPIRV_SOURCES ${SOURCE_DIR}/Resource/SpirVPatch/*.cpp)
 endif()
 
 if(BUILD_DIRECTX_SDK)
-    file(GLOB DIRECTX_HEADERS ${SOURCE_DIR}/Renderer/Core/D3D12/*.h)
-    file(GLOB DIRECTX_SOURCES ${SOURCE_DIR}/Renderer/Core/D3D12/*.cpp)
+    file(GLOB DIRECTX_HEADERS ${SOURCE_DIR}/Renderer/D3D12/*.h)
+    file(GLOB DIRECTX_SOURCES ${SOURCE_DIR}/Renderer/D3D12/*.cpp)
 endif()
 ##############################################################
 
@@ -220,9 +218,8 @@ source_group("Math" FILES ${MATH_HEADERS} ${MATH_SOURCES})
 source_group("Platform" FILES ${COMMON_PLATFORM_HEADERS} ${COMMON_PLATFORM_SOURCES} ${PLATFORM_HEADERS} ${PLATFORM_SOURCES})
 source_group("Memory" FILES ${MEMORY_HEADERS} ${MEMORY_SOURCES})
 source_group("Utils" FILES ${UTILS_HEADERS} ${UTILS_SOURCES})
-source_group("Event" FILES ${EVENT_HEADERS} ${EVENT_SOURCES})
+source_group("Events" FILES ${EVENTS_HEADERS} ${EVENTS_SOURCES})
 source_group("Renderer" FILES ${RENDERER_HEADERS} ${RENDERER_SOURCES})
-source_group("Renderer\\Core" FILES ${RENDER_CORE_HEADERS} ${RENDER_CORE_SOURCES})
 source_group("Resource" FILES ${RESOURCE_HEADERS} ${RESOURCE_SOURCES})
 source_group("Stream" FILES ${STREAM_HEADERS} ${STREAM_SOURCES})
 source_group("Scene" FILES ${SCENE_HEADERS} ${SCENE_SOURCES})
@@ -230,12 +227,12 @@ source_group("Scene\\Geometry" FILES ${SCENE_GEOMETRY_HEADERS} ${SCENE_GEOMETRY_
 source_group("Scene\\Components" FILES ${SCENE_COMPONENTS_HEADERS} ${SCENE_COMPONENTS_SOURCES})
 
 if(BUILD_VULKAN_SDK)
-    source_group("Renderer\\Core\\Vulkan" FILES ${VULKAN_HEADERS} ${VULKAN_SOURCES})
+    source_group("Renderer\\Vulkan" FILES ${VULKAN_HEADERS} ${VULKAN_SOURCES})
 	source_group("Resource\\SpirVPatch" FILES ${RESOURCE_SPIRV_HEADERS} ${RESOURCE_SPIRV_SOURCES})
 endif()
 
 if(BUILD_DIRECTX_SDK)
-    source_group("Renderer\\Core\\D3D12" FILES ${DIRECTX_HEADERS} ${DIRECTX_SOURCES})
+    source_group("Renderer\\D3D12" FILES ${DIRECTX_HEADERS} ${DIRECTX_SOURCES})
 endif()
 
 add_library(${ENGINE_NAME} STATIC 
@@ -245,9 +242,8 @@ add_library(${ENGINE_NAME} STATIC
     ${COMMON_PLATFORM_HEADERS} ${COMMON_PLATFORM_SOURCES}
     ${PLATFORM_HEADERS} ${PLATFORM_SOURCES}
     ${UTILS_HEADERS} ${UTILS_SOURCES}
-    ${EVENT_HEADERS} ${EVENT_SOURCES}
+    ${EVENTS_HEADERS} ${EVENTS_SOURCES}
     ${RENDERER_HEADERS} ${RENDERER_SOURCES}
-    ${RENDER_CORE_HEADERS} ${RENDER_CORE_SOURCES}
     ${RESOURCE_HEADERS} ${RESOURCE_SOURCES}
     ${STREAM_HEADERS} ${STREAM_SOURCES}
     ${SCENE_HEADERS} ${SCENE_SOURCES}
