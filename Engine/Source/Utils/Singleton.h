@@ -17,14 +17,15 @@ namespace utils
     public:
 
         static T*   getInstance();
-
         static T*   getLazyInstance();
+
+        static T*   createInstance();
         static void freeInstance();
 
     protected:
 
-                    Singleton();
-        virtual     ~Singleton();
+        Singleton() = default;
+        virtual ~Singleton() = default;
 
     private:
 
@@ -41,16 +42,6 @@ namespace utils
     std::once_flag Singleton<T>::s_onceFlag;
 
     template <class T>
-    Singleton<T>::Singleton()
-    {
-    }
-
-    template <class T>
-    Singleton<T>::~Singleton()
-    {
-    }
-
-    template <class T>
     inline T *Singleton<T>::getInstance()
     {
         ASSERT(s_instance, "nullptr");
@@ -64,6 +55,16 @@ namespace utils
             {
                 s_instance = V3D_NEW(T, memory::MemoryLabel::MemorySystem);
             });
+
+        ASSERT(s_instance, "nullptr");
+        return s_instance;
+    }
+
+    template<class T>
+    inline T* Singleton<T>::createInstance()
+    {
+        ASSERT(!s_instance, "not nullptr");
+        s_instance = V3D_NEW(T, memory::MemoryLabel::MemorySystem);
 
         ASSERT(s_instance, "nullptr");
         return s_instance;

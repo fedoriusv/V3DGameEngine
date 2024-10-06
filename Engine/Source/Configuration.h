@@ -1,4 +1,4 @@
-// V3D Engine 2018-2023 Fred Nekrasov
+// V3D Engine 2024 Fred Nekrasov
 #pragma once
 
 //Version 2.0.0
@@ -22,7 +22,7 @@
 #   include "sdkddkver.h"
 
 #   if defined(_MSC_VER) && (_MSC_VER < 1930)
-#       error "Only Microsoft Visual Studio 2022 (17.0.1) or later are supported."
+#       error "Only Microsoft Visual Studio 2022 (17.0.1) or later is supported."
 #   endif
 
 #   pragma warning(disable: 26812)
@@ -65,39 +65,6 @@
 
 //Render
 /////////////////////////////////////////////////////////////////////////////////////////////////////
-#ifdef VULKAN_RENDER
-#   ifdef PLATFORM_ANDROID
-#       define VULKAN_VERSION_MAJOR 1
-#       define VULKAN_VERSION_MINOR 1
-#   else
-#       define VULKAN_VERSION_MAJOR 1
-#       define VULKAN_VERSION_MINOR 2
-#   endif
-
-#   define VULKAN_DEBUG 0 //Log every render command
-#   define VULKAN_LAYERS_CALLBACKS 1
-#   if VULKAN_LAYERS_CALLBACKS
-#       define VULKAN_VALIDATION_LAYERS_CALLBACK 1
-#       define VULKAN_RENDERDOC_LAYER 0
-#       define VULKAN_DEBUG_MARKERS 1
-#   endif //VULKAN_LAYERS_CALLBACKS
-
-#   define VULKAN_STATISTICS 0
-#   define VULKAN_DUMP 0
-#   if VULKAN_DUMP
-#       define VULKAN_DUMP_FILE "VulkanCommandsDump.log"
-#   endif //VULKAN_DUMP
-
-#   define VULKAN_MAKE_VERSION(major, minor) (((major) << 22) | ((minor) << 12))
-
-#   define VULKAN_VERSION_1_0 VULKAN_MAKE_VERSION(1, 0)
-#   define VULKAN_VERSION_1_1 VULKAN_MAKE_VERSION(1, 1)
-#   define VULKAN_VERSION_1_2 VULKAN_MAKE_VERSION(1, 2)
-#   define VULKAN_VERSION_1_3 VULKAN_MAKE_VERSION(1, 3)
-
-#   define VULKAN_CURRENT_VERSION VULKAN_MAKE_VERSION(VULKAN_VERSION_MAJOR, VULKAN_VERSION_MINOR)
-#endif //VULKAN_RENDER
-
 
 #ifdef D3D_RENDER
 #   define D3D_VERSION_MAJOR 12
@@ -129,7 +96,7 @@
 #endif //D3D_RENDER
 
 #define DEBUG_OBJECT_MEMORY 1
-#define FRAME_PROFILER_ENABLE 1
+#define FRAME_PROFILER_ENABLE 0
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 

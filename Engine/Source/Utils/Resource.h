@@ -16,6 +16,8 @@ namespace utils
     {
     public:
 
+        using ValueType = Type;
+
         ResourceID() noexcept
             : m_ID(0)
         {
@@ -39,6 +41,15 @@ namespace utils
 
     template<class TResource, typename Type>
     std::atomic<Type> ResourceID<TResource, Type>::s_IDGenerator = 1;
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    class Resource
+    {
+    public:
+
+    private:
+    };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 

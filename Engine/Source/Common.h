@@ -42,6 +42,7 @@
 #include <variant>
 
 #include "Math/Core.h"
+#include "Utils/CRC32.h"
 #include "Memory/Memory.h"
 
 #ifdef DEBUG
@@ -65,6 +66,15 @@ inline void crashFunc(bool x)
 
 #define NOT_IMPL ASSERT(false, "not impl")
 
+#if defined (DYNAMIC_LIB)
+#   ifdef V3D_BUILD_DLL
+#       define V3D_API __declspec(dllexport)
+#   else
+#       define V3D_API __declspec(dllimport)
+#   endif // 
+#else
+#       define V3D_API
+#endif //DYNAMIC_LIB
 
 #ifdef __GNUC__
 #   define DEPRECATED __attribute__((deprecated))
@@ -79,7 +89,7 @@ inline void crashFunc(bool x)
 #endif //
 
 
-#if defined(PLATFORM_WINDOWS) 
+#if defined(PLATFORM_WINDOWS)
 #   define NOMINMAX
 #   include <windows.h>
 #   undef CreateSemaphore
