@@ -43,7 +43,7 @@ namespace vk
         void beginRenderTarget(const RenderTargetState& rendertarget) override;
         void endRenderTarget() override;
 
-        void setPipeline(GraphicsPipelineState& pipeline) override;
+        void setPipelineState(GraphicsPipelineState& pipeline) override;
 
         void transition(const TextureView& texture, TransitionOp state)override;
 
@@ -58,7 +58,9 @@ namespace vk
         void clear(Texture* texture, const render::Color& color) override;
         void clear(Texture* texture, f32 depth, u32 stencil) override;
 
-        //virtual bool uploadTexture(CmdList* cmd, Texture* texture) override;
+        bool uploadData(Texture2D* texture, const math::Dimension2D& offset, const math::Dimension2D& size, u32 mipLevel, const void* data) override;
+        bool uploadData(Texture3D* texture, const math::Dimension3D& offset, const math::Dimension3D& size, u32 mipLevel, const void* data) override;
+        bool uploadData(Buffer* buffer, u32 offset, u32 size, void* data) override;
 
     public:
 
@@ -129,6 +131,8 @@ namespace vk
 
         const DeviceInfo& getDeviceInfo() const;
         const VulkanDeviceCaps& getVulkanDeviceCaps() const;
+
+        VulkanStagingBufferManager* getStaginBufferManager() const;
 
     private:
 
@@ -221,6 +225,12 @@ namespace vk
 
         ASSERT(false, "All slots are occupated");
         return -1;
+    }
+
+    inline VulkanStagingBufferManager* VulkanDevice::getStaginBufferManager() const
+    {
+        ASSERT(m_stagingBufferManager, "nullptr");
+        return m_stagingBufferManager;
     }
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

@@ -158,9 +158,7 @@ namespace vk
         };
         RenderPassState m_renderpassState;
 
-        VulkanSemaphore*    m_acquireSemaphore;
         bool                m_drawingToSwapchain;
-
         bool                m_isInsideRenderPass;
 
 #if VULKAN_DEBUG_MARKERS

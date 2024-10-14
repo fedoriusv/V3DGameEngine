@@ -2,7 +2,7 @@
 
 #include "Render.h"
 #include "Formats.h"
-#include "Utils/Resource.h"
+#include "Resource/Resource.h"
 
 namespace v3d
 {
@@ -13,16 +13,56 @@ namespace renderer
     /**
     * @brief ShaderType enum
     */
-    enum class ShaderType : s32
+    enum class ShaderType : u32
     {
-        Undefined = -1,
-
         Vertex = 0,
         Fragment = 1,
         Compute = 2,
 
         Count,
     };
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    /**
+    * @brief enum class ShaderContent
+    */
+    enum class ShaderContent : u32
+    {
+        Source,
+        Bytecode,
+    };
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    /**
+    * @brief enum class ShaderModel
+    */
+    enum class ShaderModel : u32
+    {
+        //GL = GLSL_450, HLSL = HLSL_6_1
+        Default,
+
+        //GLSL
+        GLSL_450,
+
+        //HLSL Legacy
+        HLSL_5_1,
+
+        //HLSL DXC
+        HLSL_6_0,
+        HLSL_6_1, //Default
+        HLSL_6_2,
+        HLSL_6_3,
+        HLSL_6_4,
+        HLSL_6_5,
+        HLSL_6_6,
+
+        GLSL = GLSL_450,
+        HLSL = HLSL_6_1,
+    };
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
     * @brief DataType enum
@@ -47,6 +87,13 @@ namespace renderer
         Count
     };
 
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    struct ShaderDesc
+    {
+        ShaderType _type;
+    };
+
     struct ShaderData
     {
 
@@ -56,9 +103,11 @@ namespace renderer
     * @brief Shader class.
     * Resource, presents on Render and Game thread
     */
-    class Shader : public utils::Resource
+    class Shader : public resource::Resource
     {
     public:
+
+        using DefineList = std::vector<std::pair<std::string, std::string>>;
 
         explicit Shader(ShaderType type) noexcept
             : m_type(type)
@@ -68,6 +117,9 @@ namespace renderer
         virtual ~Shader() = default;
 
     protected:
+
+        bool load(const stream::Stream* stream, u32 offset = 0) override;
+        bool save(stream::Stream* stream, u32 offset = 0) const override;
 
         ShaderType m_type;
     };

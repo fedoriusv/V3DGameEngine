@@ -18,6 +18,7 @@ namespace vk
     /////////////////////////////////////////////////////////////////////////////////////////////////////
     
     class VulkanDevice;
+    class VulkanCmdList;
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -57,13 +58,13 @@ namespace vk
 
         bool hasUsageFlag(TextureUsage usage) const override;
 
-        //void clear(Context* context, const math::Vector4D& color) override;
-        //void clear(Context* context, f32 depth, u32 stencil) override;
+        void clear(VulkanCmdList* cmdList, const render::Color& color);
+        void clear(VulkanCmdList* cmdList, f32 depth, u32 stencil);
 
-        //bool upload(Context* context, const math::Dimension3D& size, u32 layers, u32 mips, const void* data) override;
-        //bool upload(Context* context, const math::Dimension3D& offsets, const math::Dimension3D& size, u32 layers, const void* data) override;
+        bool upload(VulkanCmdList* cmdList, const math::Dimension3D& size, u32 layers, u32 mips, const void* data);
+        bool upload(VulkanCmdList* cmdList, const math::Dimension3D& offsets, const math::Dimension3D& size, u32 layers, const void* data);
 
-        //bool generateMipmaps(Context* context, u32 layer);
+        bool generateMipmaps(VulkanCmdList* cmdList, u32 layer);
 
         VkImage               getHandle() const;
         VkImageAspectFlags    getImageAspectFlags() const;
@@ -89,7 +90,7 @@ namespace vk
         static VkImageSubresourceRange makeImageSubresourceRangeWithAspect(const VulkanImage* image, const RenderTexture::Subresource& resource, VkImageAspectFlags aspect);
 
         bool createViewImage();
-        //bool internalUpload(Context* context, const math::Dimension3D& offsets, const math::Dimension3D& size, u32 layers, u32 mips, u64 dataSize, const void* data);
+        bool internalUpload(VulkanCmdList* cmdList, const math::Dimension3D& offsets, const math::Dimension3D& size, u32 layers, u32 mips, u64 dataSize, const void* data);
 
         VulkanDevice&           m_device;
 

@@ -15,7 +15,7 @@ namespace stream
     /**
     * FileLoader class
     */
-    class FileLoader final
+    class V3D_API FileLoader final
     {
     public:
 

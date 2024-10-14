@@ -2,7 +2,7 @@
 
 #include "Common.h"
 #include "Utils/Observable.h"
-#include "Utils/Resource.h"
+#include "Utils/ResourceID.h"
 #include "Events/KeyCodes.h"
 
 namespace v3d

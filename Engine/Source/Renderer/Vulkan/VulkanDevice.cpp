@@ -5,12 +5,12 @@
 #ifdef VULKAN_RENDER
 #   include "VulkanDebug.h"
 #   include "VulkanImage.h"
+#   include "VulkanBuffer.h"
 #   include "VulkanSwapchain.h"
 #   include "VulkanSemaphore.h"
 #   include "VulkanCommandBuffer.h"
 #   include "VulkanFramebuffer.h"
 #   include "VulkanRenderpass.h"
-#   include "VulkanTransitionState.h"
 #   include "VulkanCommandBufferManager.h"
 
 #ifdef PLATFORM_ANDROID
@@ -873,9 +873,9 @@ void VulkanCmdList::endRenderTarget()
     m_pendingRenderState._insideRenderpass = false;
 }
 
-void VulkanCmdList::setPipeline(GraphicsPipelineState& pipeline)
+void VulkanCmdList::setPipelineState(GraphicsPipelineState& pipeline)
 {
-    //m_pendingRenderState.p
+    //m_pendingRenderState._p
 }
 
 void VulkanCmdList::transition(const TextureView& view, TransitionOp state)
@@ -926,12 +926,10 @@ void VulkanCmdList::clear(Texture* texture, const render::Color& color)
 #endif
 
     VulkanImage* image = nullptr;
-    VulkanCommandBuffer* cmdBuffer = acquireAndStartCommandBuffer(CommandTargetType::CmdDrawBuffer);
-    if (texture->hasUsageFlag(TextureUsage::TextureUsage_Backbuffer)) 
+    if (texture->hasUsageFlag(TextureUsage::TextureUsage_Backbuffer))
     {
         VulkanSwapchain* swapchain = OBJECT_FROM_HANDLE(texture->getTextureHandle(), VulkanSwapchain);
         swapchain->attachCmdList(this);
-        VulkanCommandBufferManager::drawToSwapchain(cmdBuffer, swapchain);
 
         m_presentSemaphores.push_back(swapchain->getCurrentAcquireSemaphore());
         image = swapchain->getCurrentSwapchainImage();
@@ -940,18 +938,8 @@ void VulkanCmdList::clear(Texture* texture, const render::Color& color)
     {
         image = OBJECT_FROM_HANDLE(texture->getTextureHandle(), VulkanImage);
     }
-
-    VkImageLayout layout = image->getLayout(RenderTexture::Subresource());
-    if (layout == VK_IMAGE_LAYOUT_UNDEFINED || layout == VK_IMAGE_LAYOUT_PREINITIALIZED)
-    {
-        layout = texture->hasUsageFlag(TextureUsage::TextureUsage_Backbuffer) ? VK_IMAGE_LAYOUT_PRESENT_SRC_KHR : VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-    }
-
-    const VkClearColorValue* vkColor = reinterpret_cast<const VkClearColorValue*>(&color);
-
-    cmdBuffer->cmdPipelineBarrier(image, VK_PIPELINE_STAGE_TRANSFER_BIT | VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-    cmdBuffer->cmdClearImage(image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, vkColor);
-    cmdBuffer->cmdPipelineBarrier(image, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT | VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, layout);
+    ASSERT(image, "nullptr");
+    image->clear(this, color);
 }
 
 void VulkanCmdList::clear(Texture* texture, f32 depth, u32 stencil)
@@ -960,20 +948,65 @@ void VulkanCmdList::clear(Texture* texture, f32 depth, u32 stencil)
     LOG_DEBUG("VulkanCmdList::clear [%f, %u]", depth, stencil);
 #endif
 
-    VulkanCommandBuffer* cmdBuffer = acquireAndStartCommandBuffer(CommandTargetType::CmdDrawBuffer);
     VulkanImage* image = OBJECT_FROM_HANDLE(texture->getTextureHandle(), VulkanImage);
+    ASSERT(image, "nullptr");
+    image->clear(this, depth, stencil);
+}
 
-    VkImageLayout layout = image->getLayout(RenderTexture::Subresource());
-    if (layout == VK_IMAGE_LAYOUT_UNDEFINED || layout == VK_IMAGE_LAYOUT_PREINITIALIZED)
+bool VulkanCmdList::uploadData(Texture2D* texture, const math::Dimension2D& offset, const math::Dimension2D& size, u32 mipLevel, const void* data)
+{
+#if VULKAN_DEBUG
+    LOG_DEBUG("VulkanCmdList::uploadData");
+#endif
+
+    ASSERT(texture->hasUsageFlag(TextureUsage::TextureUsage_Backbuffer), "swapchain is not supported");
+    VulkanImage* image = OBJECT_FROM_HANDLE(texture->getTextureHandle(), VulkanImage);
+    bool result = image->upload(this, math::Dimension3D(offset.m_width, offset.m_height, 0), math::Dimension3D(size.m_width, size.m_height, 0), mipLevel, data);
+
+    u32 immediateResourceSubmit = m_device.getVulkanDeviceCaps()._immediateResourceSubmit;
+    if (result && immediateResourceSubmit > 0)
     {
-        layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+        m_device.submit(this, immediateResourceSubmit == 2 ? true : false);
     }
 
-    const VkClearDepthStencilValue clearDepthStencilValue = { depth, stencil };
+    return result;
+}
 
-    cmdBuffer->cmdPipelineBarrier(image, VK_PIPELINE_STAGE_TRANSFER_BIT | VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-    cmdBuffer->cmdClearImage(image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &clearDepthStencilValue);
-    cmdBuffer->cmdPipelineBarrier(image, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT | VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, layout);
+bool VulkanCmdList::uploadData(Texture3D* texture, const math::Dimension3D& offset, const math::Dimension3D& size, u32 mipLevel, const void* data)
+{
+#if VULKAN_DEBUG
+    LOG_DEBUG("VulkanCmdList::uploadData");
+#endif
+
+    ASSERT(texture->hasUsageFlag(TextureUsage::TextureUsage_Backbuffer), "swapchain is not supported");
+    VulkanImage* image = OBJECT_FROM_HANDLE(texture->getTextureHandle(), VulkanImage);
+    bool result = image->upload(this, offset, size, mipLevel, data);
+
+    u32 immediateResourceSubmit = m_device.getVulkanDeviceCaps()._immediateResourceSubmit;
+    if (result && immediateResourceSubmit > 0)
+    {
+        m_device.submit(this, immediateResourceSubmit == 2 ? true : false);
+    }
+
+    return result;
+}
+
+bool VulkanCmdList::uploadData(Buffer* buffer, u32 offset, u32 size, void* data)
+{
+#if VULKAN_DEBUG
+    LOG_DEBUG("VulkanCmdList::uploadData");
+#endif
+
+    VulkanBuffer* vkBuffer = OBJECT_FROM_HANDLE(buffer->getBufferHandle(), VulkanBuffer);
+    bool result = vkBuffer->upload(this, offset, size, data);
+
+    u32 immediateResourceSubmit = m_device.getVulkanDeviceCaps()._immediateResourceSubmit;
+    if (result && immediateResourceSubmit > 0)
+    {
+        m_device.submit(this, immediateResourceSubmit == 2 ? true : false);
+    }
+
+    return result;
 }
 
 VulkanCommandBuffer* VulkanCmdList::acquireAndStartCommandBuffer(CommandTargetType type)

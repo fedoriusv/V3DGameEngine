@@ -15,7 +15,7 @@ namespace utils
     /**
     * @brief Thread class
     */
-    class Thread
+    class V3D_API Thread
     {
     public:
 

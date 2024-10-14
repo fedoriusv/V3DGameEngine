@@ -2,18 +2,18 @@
 #include "Utils/Logger.h"
 
 #ifdef VULKAN_RENDER
-#include "VulkanResource.h"
-#include "VulkanDeviceCaps.h"
-#include "VulkanDebug.h"
-#include "VulkanDevice.h"
-#include "VulkanImage.h"
-#include "VulkanSemaphore.h"
-#include "VulkanSwapchain.h"
+#   include "VulkanResource.h"
+#   include "VulkanDeviceCaps.h"
+#   include "VulkanDebug.h"
+#   include "VulkanDevice.h"
+#   include "VulkanImage.h"
+#   include "VulkanSemaphore.h"
+#   include "VulkanSwapchain.h"
 
-#include "VulkanBuffer.h"
-#include "VulkanRenderpass.h"
-#include "VulkanFramebuffer.h"
-#include "VulkanTransitionState.h"
+#   include "VulkanBuffer.h"
+#   include "VulkanRenderpass.h"
+#   include "VulkanFramebuffer.h"
+#   include "VulkanCommandBufferManager.h"
 //#include "VulkanGraphicPipeline.h"
 //#include "VulkanComputePipeline.h"
 //#include "VulkanQueryPool.h"
@@ -38,9 +38,7 @@ VulkanCommandBuffer::VulkanCommandBuffer(VulkanDevice* device, CommandBufferLeve
     , m_fence(VK_NULL_HANDLE)
     , m_capturedFrameIndex(~0U)
 
-    , m_acquireSemaphore(nullptr)
     , m_drawingToSwapchain(false)
-
     , m_isInsideRenderPass(false)
 {
     LOG_DEBUG("VulkanCommandBuffer constructor %llx", this);
@@ -394,9 +392,9 @@ void VulkanCommandBuffer::cmdBeginRenderpass(const VulkanRenderPass* pass, const
 
 void VulkanCommandBuffer::cmdEndRenderPass()
 {
-    /*ASSERT(m_status == CommandBufferStatus::Begin && m_isInsideRenderPass, "invalid state");
+    ASSERT(m_status == CommandBufferStatus::Begin && m_isInsideRenderPass, "invalid state");
 
-    if (VulkanDeviceCaps::getInstance()->supportRenderpass2)
+    if (m_device.getVulkanDeviceCaps()._supportRenderpass2)
     {
         VkSubpassEndInfoKHR subpassEndInfo = {};
         subpassEndInfo.sType = VK_STRUCTURE_TYPE_SUBPASS_END_INFO_KHR;
@@ -407,23 +405,23 @@ void VulkanCommandBuffer::cmdEndRenderPass()
     else
     {
         VulkanWrapper::CmdEndRenderPass(m_commands);
-    }*/
+    }
 
-   /* const VulkanRenderPass* pass = m_renderpassState._renderpass;
+    const VulkanRenderPass* pass = m_renderpassState._renderpass;
     const VulkanFramebuffer* framebuffer = m_renderpassState._framebuffer;
 
     u32 index = 0;
     ASSERT(pass && framebuffer, "nullptr");
     for (auto& image : framebuffer->getImages())
     {
-        VulkanImage* vkImage = static_cast<VulkanImage*>(image);
+        VulkanImage* vkImage = OBJECT_FROM_HANDLE(image, VulkanImage);
 
         VkImageLayout layout = m_renderpassState._renderpass->getAttachmentLayout<1>(index);
         const VulkanRenderPass::VulkanAttachmentDescription& attach = pass->getAttachmentDescription(index);
         vkImage->setLayout(layout, VulkanImage::makeVulkanImageSubresource(vkImage, attach._layer, attach._mip));
 
         ++index;
-    }*/
+    }
 
     m_isInsideRenderPass = false;
 }
@@ -547,7 +545,7 @@ void VulkanCommandBuffer::cmdBindVertexBuffers(u32 firstBinding, u32 countBindin
 
 void VulkanCommandBuffer::cmdBindIndexBuffers(VulkanBuffer* buffer, VkDeviceSize offest, VkIndexType type)
 {
-    /*ASSERT(m_status == CommandBufferStatus::Begin, "not started");
+    ASSERT(m_status == CommandBufferStatus::Begin, "not started");
     buffer->captureInsideCommandBuffer(this, 0);
 
     [[likely]] if (m_level == CommandBufferLevel::PrimaryBuffer)
@@ -557,7 +555,7 @@ void VulkanCommandBuffer::cmdBindIndexBuffers(VulkanBuffer* buffer, VkDeviceSize
     else
     {
         ASSERT(false, "not implemented");
-    }*/
+    }
 }
 
 void VulkanCommandBuffer::cmdBindPipeline(VulkanGraphicPipeline* pipeline)
@@ -749,18 +747,18 @@ void VulkanCommandBuffer::cmdBlitImage(VulkanImage* src, VkImageLayout srcLayout
 
 void VulkanCommandBuffer::cmdUpdateBuffer(VulkanBuffer* src, u32 offset, u64 size, const void* data)
 {
-    //ASSERT(m_status == CommandBufferStatus::Begin, "not started");
-    //ASSERT(!isInsideRenderPass(), "outside render pass");
-    //src->captureInsideCommandBuffer(this, 0);
+    ASSERT(m_status == CommandBufferStatus::Begin, "not started");
+    ASSERT(!isInsideRenderPass(), "outside render pass");
+    src->captureInsideCommandBuffer(this, 0);
 
-    //[[likely]] if (m_level == CommandBufferLevel::PrimaryBuffer)
-    //{
-    //    VulkanWrapper::CmdUpdateBuffer(m_commands, src->getHandle(), offset, size, data);
-    //}
-    //else
-    //{
-    //    ASSERT(false, "not implemented");
-    //}
+    if (m_level == CommandBufferLevel::PrimaryBuffer) [[likely]]
+    {
+        VulkanWrapper::CmdUpdateBuffer(m_commands, src->getHandle(), offset, size, data);
+    }
+    else
+    {
+        ASSERT(false, "not implemented");
+    }
 }
 
 void VulkanCommandBuffer::cmdCopyBufferToImage(VulkanBuffer* src, VulkanImage* dst, VkImageLayout layout, const std::vector<VkBufferImageCopy>& regions)
@@ -845,20 +843,20 @@ void VulkanCommandBuffer::cmdPipelineBarrier(const VulkanImage* image, VkPipelin
 
 void VulkanCommandBuffer::cmdPipelineBarrier(VulkanBuffer* buffer, VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask)
 {
-    //ASSERT(m_status == CommandBufferStatus::Begin, "not started");
-    //buffer->captureInsideCommandBuffer(this, 0);
+    ASSERT(m_status == CommandBufferStatus::Begin, "not started");
+    buffer->captureInsideCommandBuffer(this, 0);
 
-    //[[likely]] if (m_level == CommandBufferLevel::PrimaryBuffer)
-    //{
-    //    VkBufferMemoryBarrier bufferMemoryBarrier = {};
-    //    //TODO:
+    [[likely]] if (m_level == CommandBufferLevel::PrimaryBuffer)
+    {
+        VkBufferMemoryBarrier bufferMemoryBarrier = {};
+        //TODO:
 
-    //    VulkanWrapper::CmdPipelineBarrier(m_commands, srcStageMask, dstStageMask, VK_DEPENDENCY_BY_REGION_BIT, 0, nullptr, 1, &bufferMemoryBarrier, 0, nullptr);
-    //}
-    //else
-    //{
-    //    ASSERT(false, "not implemented");
-    //}
+        VulkanWrapper::CmdPipelineBarrier(m_commands, srcStageMask, dstStageMask, VK_DEPENDENCY_BY_REGION_BIT, 0, nullptr, 1, &bufferMemoryBarrier, 0, nullptr);
+    }
+    else
+    {
+        ASSERT(false, "not implemented");
+    }
 }
 
 void VulkanCommandBuffer::cmdPipelineBarrier(VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask, const VkMemoryBarrier& memoryBarrier)

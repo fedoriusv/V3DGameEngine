@@ -2,7 +2,7 @@
 
 #include "Common.h"
 #include "Utils/RefCounted.h"
-#include "Utils/Resource.h"
+#include "Utils/ResourceID.h"
 
 #include "Utils/CRC32.h"
 #include "crc32c/crc32c.h"

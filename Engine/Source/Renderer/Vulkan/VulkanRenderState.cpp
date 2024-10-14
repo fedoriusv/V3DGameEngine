@@ -3,8 +3,7 @@
 #ifdef VULKAN_RENDER
 #include "VulkanDeviceCaps.h"
 #include "VulkanImage.h"
-#include "VulkanCommandBuffer.h"
-#include "VulkanTransitionState.h"
+#include "VulkanCommandBufferManager.h"
 
 namespace v3d
 {

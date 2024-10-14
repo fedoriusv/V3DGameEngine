@@ -229,93 +229,79 @@ void VulkanBuffer::destroy()
     }
 }
 
-//bool VulkanBuffer::write(Context* context, u32 offset, u64 size, const void * data)
-//{
-//    if (!m_buffer)
-//    {
-//        ASSERT(false, "nullptr");
-//        return false;
-//    }
-//
-//    if (size == 0 || !data)
-//    {
-//        return false;
-//    }
-//
-//    if (m_size != size && offset == 0)
-//    {
-//        if (m_usageFlags & ~StreamBufferUsage::StreamBuffer_Dynamic)
-//        {
-//            ASSERT(false, "different size in non dynamic data");
-//            return false;
-//        }
-//
-//        m_size = size;
-//        if (!VulkanBuffer::recreate())
-//        {
-//            VulkanBuffer::destroy();
-//            return false;
-//        }
-//    }
-//
-//    if (!VulkanBuffer::isPresentingBufferUsageFlag(StreamBufferUsage::StreamBuffer_Dynamic))
-//    {
-//        VulkanContext* vkContext = static_cast<VulkanContext*>(context);
-//        VulkanCommandBuffer* uploadBuffer = vkContext->getOrCreateAndStartCommandBuffer(CommandTargetType::CmdUploadBuffer);
-//        if (m_size <= 65'536)
-//        {
-//            ASSERT(!VulkanResource::isCaptured(), "still submitted");
-//            uploadBuffer->cmdUpdateBuffer(this, offset, m_size, data);
-//        }
-//        else
-//        {
-//            VulkanStagingBuffer* stagingBuffer = vkContext->getStagingManager()->createStagingBuffer(size, StreamBufferUsage::StreamBuffer_Read);
-//            if (!stagingBuffer)
-//            {
-//                ASSERT(false, "staginBuffer is nullptr");
-//                return false;
-//            }
-//            void* stagingData = stagingBuffer->map();
-//            ASSERT(stagingData, "stagingData is nullptr");
-//            memcpy(stagingData, data, size);
-//            stagingBuffer->unmap();
-//
-//            ASSERT(!VulkanResource::isCaptured(), "still submitted");
-//            vkContext->getStagingManager()->destroyAfterUse(stagingBuffer);
-//
-//            VkBufferCopy bufferCopy = {};
-//            bufferCopy.srcOffset = 0;
-//            bufferCopy.dstOffset = offset;
-//            bufferCopy.size = size;
-//
-//            //TODO memory barrier
-//            uploadBuffer->cmdCopyBufferToBuffer(stagingBuffer->getBuffer(), this, { bufferCopy });
-//            //TODO memory barrier
-//
-//            u32 immediateResourceSubmit = VulkanDeviceCaps::getInstance()->immediateResourceSubmit;
-//            if (immediateResourceSubmit > 0)
-//            {
-//                vkContext->submit(immediateResourceSubmit == 2 ? true : false);
-//            }
-//        }
-//    }
-//    else
-//    {
-//        if (VulkanResource::isCaptured())
-//        {
-//            //ASSERT(false, "still submitted");
-//            VulkanResource::waitComplete();
-//        }
-//
-//        void* srcData = VulkanBuffer::map();
-//        memcpy(srcData, data, size);
-//        VulkanBuffer::unmap();
-//
-//        return true;
-//    }
-//
-//    return false;
-//}
+bool VulkanBuffer::upload(VulkanCmdList* cmdList, u32 offset, u64 size, const void* data)
+{
+    if (!m_buffer)
+    {
+        ASSERT(false, "nullptr");
+        return false;
+    }
+
+    if (!size || !data)
+    {
+        return false;
+    }
+
+    if (m_size < size)
+    {
+        ASSERT(false, "different size in non dynamic data");
+        return false;
+    }
+
+    if (VulkanBuffer::hasUsageFlag(BufferUsage::Buffer_Dynamic))
+    {
+        //ASSERT(false, "TODO");
+        //if (VulkanResource::isCaptured())
+        //{
+        //    //VulkanResource::waitComplete();
+        //}
+
+        //void* srcData = VulkanBuffer::map();
+        //memcpy(srcData, data, size);
+        //VulkanBuffer::unmap();
+
+        return true;
+    }
+    else
+    {
+        const u32 k_updateBuffer_MaxSize = 65'536;
+
+        VulkanCommandBuffer* uploadBuffer = cmdList->acquireAndStartCommandBuffer(CommandTargetType::CmdUploadBuffer);
+        if (m_size <= k_updateBuffer_MaxSize)
+        {
+            ASSERT(!VulkanResource::isCaptured(), "still submitted");
+            uploadBuffer->cmdUpdateBuffer(this, offset, m_size, data);
+        }
+        else
+        {
+            VulkanStagingBuffer* stagingBuffer = m_device.getStaginBufferManager()->createStagingBuffer(size, BufferUsage::Buffer_Read);
+            if (!stagingBuffer)
+            {
+                ASSERT(false, "staginBuffer is nullptr");
+                return false;
+            }
+
+            void* stagingData = stagingBuffer->map();
+            ASSERT(stagingData, "stagingData is nullptr");
+            memcpy(stagingData, data, size);
+            stagingBuffer->unmap();
+
+            ASSERT(!VulkanResource::isCaptured(), "still submitted");
+            m_device.getStaginBufferManager()->destroyAfterUse(stagingBuffer);
+
+            VkBufferCopy bufferCopy = {};
+            bufferCopy.srcOffset = 0;
+            bufferCopy.dstOffset = offset;
+            bufferCopy.size = size;
+
+            //TODO memory barrier
+            uploadBuffer->cmdCopyBufferToBuffer(stagingBuffer->getBuffer(), this, { bufferCopy });
+            //TODO memory barrier
+        }
+    }
+
+    return false;
+}
 
 //bool VulkanBuffer::read(Context* context, u32 offset, u64 size, const std::function<void(u32, void*)>& readback)
 //{

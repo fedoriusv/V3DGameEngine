@@ -13,7 +13,7 @@ namespace utils
     /**
     * @brief Observer interface.
     */
-    class Observer
+    class V3D_API Observer
     {
     public:
 
@@ -28,7 +28,7 @@ namespace utils
     /**
     * @brief Observable class.
     */
-    class Observable
+    class V3D_API Observable
     {
     public:
 

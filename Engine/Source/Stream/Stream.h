@@ -11,7 +11,7 @@ namespace stream
     /**
     *@brief Base Interface for Stream class
     */
-    class Stream
+    class V3D_API Stream
     {
     public:
 

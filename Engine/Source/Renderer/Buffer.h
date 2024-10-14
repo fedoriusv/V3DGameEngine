@@ -21,6 +21,20 @@ namespace renderer
     */
     class Buffer : public Object
     {
+    public:
+
+        /**
+        * @brief getBufferHandle method
+        * @return BufferHandle of texture
+        */
+        BufferHandle getBufferHandle() const;
+
+        /**
+        * @brief hasUsageFlag method
+        * @return true if flag contains
+        */
+        bool hasUsageFlag(BufferUsage usage) const;
+
     protected:
 
         /**
@@ -36,18 +50,21 @@ namespace renderer
         */
         virtual ~Buffer();
 
-        bool isUsageFlagContains(BufferUsageFlags usage) const;
-
-        RenderBuffer*       m_buffer;
+        BufferHandle        m_buffer;
         BufferUsageFlags    m_usage;
 
         friend GeometryBufferDesc;
 
     };
 
-    inline bool Buffer::isUsageFlagContains(BufferUsageFlags usage) const
+    inline bool Buffer::hasUsageFlag(BufferUsage usage) const
     {
         return m_usage & usage;
+    }
+
+    inline BufferHandle Buffer::getBufferHandle() const
+    {
+        return m_buffer;
     }
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -64,7 +81,7 @@ namespace renderer
         */
         u64 getSize() const;
 
-    private:
+    public:
 
         /**
         * @brief VertexStreamBuffer constructor. Used to create buffer data objects.
@@ -202,11 +219,11 @@ namespace renderer
 
         ~GeometryBufferDesc() = default;
 
-        RenderBuffer*               _indexBuffer;
+        BufferHandle                _indexBuffer;
         u64                         _indexOffset;
         IndexBufferType             _indexType;
 
-        std::vector<RenderBuffer*>  _vertexBuffers;
+        std::vector<BufferHandle>   _vertexBuffers;
         std::vector<u32>            _streamIDs;
         std::vector<u64>            _offsets;
         std::vector<u64>            _strides;

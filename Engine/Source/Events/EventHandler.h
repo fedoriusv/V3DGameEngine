@@ -12,7 +12,7 @@ namespace event
     /**
     * @brief EventHandler base class.
     */
-    class EventHandler
+    class V3D_API EventHandler
     {
     public:
 

@@ -12,7 +12,7 @@ namespace stream
     /**
     * StreamManager class
     */
-    class StreamManager
+    class V3D_API StreamManager
     {
     public:
 

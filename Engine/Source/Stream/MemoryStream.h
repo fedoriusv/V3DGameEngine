@@ -11,7 +11,7 @@ namespace stream
     /**
     *@brief MemoryStream class
     */
-    class MemoryStream final : public Stream
+    class V3D_API MemoryStream final : public Stream
     {
     public:
 

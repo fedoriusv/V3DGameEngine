@@ -12,7 +12,7 @@ namespace utils
     * @brief Timer class.
     * Uses for time counting
     */
-    class Timer
+    class V3D_API Timer
     {
     public:
 

@@ -11,7 +11,7 @@ namespace stream
     /**
     * @brief FileStream class
     */
-    class FileStream final : public Stream
+    class V3D_API FileStream final : public Stream
     {
     public:
 

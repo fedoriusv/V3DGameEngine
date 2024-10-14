@@ -434,7 +434,7 @@ namespace renderer
         virtual void destroy() = 0;
     };
 
-    using HandleBuffer = ObjectHandle<RenderBuffer*>;
+    using BufferHandle = ObjectHandle<RenderBuffer*>;
 
     ///////////////////////////////////////////////////////////////////////////////////////////////////////
 

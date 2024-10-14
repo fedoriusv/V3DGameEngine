@@ -55,6 +55,17 @@
 #   error Unsupported platform
 #endif
 
+
+#if defined (DYNAMIC_LIB)
+#   ifdef V3D_BUILD_DLL
+#       define V3D_API __declspec(dllexport)
+#   else
+#       define V3D_API __declspec(dllimport)
+#   endif // 
+#else
+#       define V3D_API
+#endif //DYNAMIC_LIB
+
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #ifdef USE_LOGGER

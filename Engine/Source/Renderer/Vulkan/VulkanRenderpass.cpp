@@ -7,7 +7,7 @@
 #   include "VulkanDeviceCaps.h"
 #   include "VulkanDevice.h"
 #   include "VulkanImage.h"
-#   include "VulkanTransitionState.h"
+#   include "VulkanCommandBufferManager.h"
 
 namespace v3d
 {

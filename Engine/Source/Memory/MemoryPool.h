@@ -13,6 +13,8 @@ namespace v3d
 {
 namespace utils
 {
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
+
     typedef unsigned short      u16;
     typedef signed int          s32;
     typedef unsigned int        u32;
@@ -20,6 +22,8 @@ namespace utils
     typedef unsigned long long  u64;
     typedef double              f64;
     typedef void*               address_ptr;
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /*
     * class MemoryPool

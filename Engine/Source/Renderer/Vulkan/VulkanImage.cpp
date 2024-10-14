@@ -4,10 +4,10 @@
 #include "Utils/CRC32.h"
 
 #ifdef VULKAN_RENDER
-#include "VulkanDebug.h"
-#include "VulkanDevice.h"
-//#include "VulkanCommandBufferManager.h"
-//#include "VulkanStagingBuffer.h"
+#   include "VulkanDebug.h"
+#   include "VulkanDevice.h"
+#   include "VulkanCommandBufferManager.h"
+#   include "VulkanStagingBuffer.h"
 
 namespace v3d
 {
@@ -1213,274 +1213,259 @@ bool VulkanImage::create(VkImage image)
     return true;
 }
 
-//void VulkanImage::clear(Context* context, const math::Vector4D& color)
-//{
-//#if VULKAN_DEBUG
-//    LOG_DEBUG("VulkanContext::clearColor [%f, %f, %f, %f]", color[0], color[1], color[2], color[3]);
-//#endif
-//    if (!m_image)
-//    {
-//        ASSERT(false, "nullptr");
-//        return;
-//    }
-//
-//    VkClearColorValue clearColorValue = {{ color[0], color[1], color[2], color[3] }};
-//
-//    VulkanContext* vulkanContext = static_cast<VulkanContext*>(context);
-//    VulkanCommandBuffer* commandBuffer = vulkanContext->getOrCreateAndStartCommandBuffer(CommandTargetType::CmdDrawBuffer);
-//    ASSERT(commandBuffer, "commandBuffer is nullptr");
-//
-//    VkImageLayout layout = m_layout.front();
-//    if (layout == VK_IMAGE_LAYOUT_UNDEFINED || layout == VK_IMAGE_LAYOUT_PREINITIALIZED)
-//    {
-//        layout = m_swapchainImage ? VK_IMAGE_LAYOUT_PRESENT_SRC_KHR : VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-//    }
-//
-//    commandBuffer->cmdPipelineBarrier(this, VK_PIPELINE_STAGE_TRANSFER_BIT | VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-//    commandBuffer->cmdClearImage(this, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &clearColorValue);
-//    commandBuffer->cmdPipelineBarrier(this, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT | VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, layout);
-//    
-//    if (m_swapchainImage)
-//    {
-//        VulkanCommandBufferManager::drawToSwapchain(commandBuffer, this);
-//    }
-//}
-//
-//void VulkanImage::clear(Context* context, f32 depth, u32 stencil)
-//{
-//#if VULKAN_DEBUG
-//    LOG_DEBUG("VulkanContext::clearDepthStencil [%f, %u]", depth, stencil);
-//#endif
-//    if (!m_image)
-//    {
-//        ASSERT(false, "nullptr");
-//        return;
-//    }
-//
-//    VkClearDepthStencilValue clearDepthStencilValue = { depth, stencil };
-//
-//    VulkanContext* vulkanContext = static_cast<VulkanContext*>(context);
-//    VulkanCommandBuffer* commandBuffer = vulkanContext->getOrCreateAndStartCommandBuffer(CommandTargetType::CmdDrawBuffer);
-//    ASSERT(commandBuffer, "commandBuffer is nullptr");
-//
-//    VkImageLayout layout = m_layout.front();
-//    if (layout == VK_IMAGE_LAYOUT_UNDEFINED || layout == VK_IMAGE_LAYOUT_PREINITIALIZED)
-//    {
-//        layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-//    }
-//
-//    commandBuffer->cmdPipelineBarrier(this, VK_PIPELINE_STAGE_TRANSFER_BIT | VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-//    commandBuffer->cmdClearImage(this, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &clearDepthStencilValue);
-//    commandBuffer->cmdPipelineBarrier(this, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT | VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, layout);
-//}
-//
-//bool VulkanImage::upload(Context* context, const math::Dimension3D& size, u32 layers, u32 mips, const void* data)
-//{
-//    ASSERT(m_mipLevels == mips, "should be same");
-//    ASSERT(m_layerLevels == layers, "should be same");
-//    ASSERT(m_samples == VkSampleCountFlagBits::VK_SAMPLE_COUNT_1_BIT, "wrong sample count");
-//
-//    u64 calculatedSize = ImageFormat::calculateImageSize(size, mips, layers, VulkanImage::convertVkImageFormatToFormat(m_format));
-//    return VulkanImage::internalUpload(context, math::Dimension3D(0, 0, 0), size, layers, mips, calculatedSize, data);
-//}
-//
-//bool VulkanImage::upload(Context* context, const math::Dimension3D& offsets, const math::Dimension3D& size, u32 layers, const void* data)
-//{
-//    ASSERT(m_mipLevels == 1, "should be 1");
-//    ASSERT(m_layerLevels == layers, "should be same");
-//    ASSERT(m_samples == VkSampleCountFlagBits::VK_SAMPLE_COUNT_1_BIT, "wrong sample count");
-//
-//    ASSERT(size > offsets, "wrong offset");
-//    math::Dimension3D diffSize = (size - offsets);
-//    u64 calculatedSize = ImageFormat::calculateImageMipSize(diffSize, 0, VulkanImage::convertVkImageFormatToFormat(m_format)) * layers;
-//    ASSERT(calculatedSize > 0, "wrong size");
-//
-//    return VulkanImage::internalUpload(context, offsets, size, layers, 1, calculatedSize, data);
-//}
-//
-//bool VulkanImage::internalUpload(Context* context, const math::Dimension3D& offsets, const math::Dimension3D& size, u32 layers, u32 mips, u64 dataSize, const void* data)
-//{
-//    if (!m_image)
-//    {
-//        ASSERT(false, "nullptr");
-//        return false;
-//    }
-//
-//    if (size.getArea() == 0 || !data)
-//    {
-//        ASSERT(false, "wrong area");
-//        return false;
-//    }
-//
-//    if (m_tiling == VK_IMAGE_TILING_OPTIMAL)
-//    {
-//        VulkanContext* vkContext = static_cast<VulkanContext*>(context);
-//        VulkanCommandBuffer* uploadBuffer = vkContext->getOrCreateAndStartCommandBuffer(CommandTargetType::CmdUploadBuffer);
-//
-//        VulkanStagingBuffer* stagingBuffer = vkContext->getStagingManager()->createStagingBuffer(dataSize, StreamBufferUsage::StreamBuffer_Read);
-//        if (!stagingBuffer)
-//        {
-//            ASSERT(false, "staginBuffer is nullptr");
-//            return false;
-//        }
-//        void* stagingData = stagingBuffer->map();
-//        ASSERT(stagingData, "stagingData is nullptr");
-//        memcpy(stagingData, data, dataSize);
-//        stagingBuffer->unmap();
-//
-//        ASSERT(!VulkanResource::isCaptured(), "still submitted");
-//        vkContext->getStagingManager()->destroyAfterUse(stagingBuffer);
-//
-//        auto calculateMipSize = [](const math::Dimension3D& size) -> math::Dimension3D
-//        {
-//            math::Dimension3D mipSize;
-//            mipSize.m_width = math::max(size.m_width / 2, 1U);
-//            mipSize.m_height = math::max(size.m_height / 2, 1U);
-//            mipSize.m_depth = math::max(size.m_depth / 2, 1U);
-//
-//            return mipSize;
-//        };
-//
-//        auto calculateMipOffset = [](const math::Dimension3D& size) -> math::Dimension3D
-//        {
-//            math::Dimension3D mipSize;
-//            mipSize.m_width = math::max(size.m_width / 2, 0U);
-//            mipSize.m_height = math::max(size.m_height / 2, 0U);
-//            mipSize.m_depth = math::max(size.m_depth / 2, 0U);
-//
-//            return mipSize;
-//        };
-//
-//        u64 bufferOffset = 0;
-//        u64 bufferDataSize = 0;
-//        std::vector<VkBufferImageCopy> bufferImageCopys;
-//
-//        for (u32 layer = 0; layer < layers; ++layer)
-//        {
-//            math::Dimension3D mipSize = size;
-//            math::Dimension3D mipOffset = offsets;
-//
-//            for (u32 mip = 0; mip < mips; ++mip)
-//            {
-//                bufferDataSize = ImageFormat::calculateImageMipSize(size, mip, VulkanImage::convertVkImageFormatToFormat(m_format));
-//
-//                VkBufferImageCopy regions;
-//                regions.imageOffset = { static_cast<s32>(mipOffset.m_width), static_cast<s32>(mipOffset.m_height), static_cast<s32>(mipOffset.m_depth) };
-//                regions.imageExtent = { mipSize.m_width, mipSize.m_height, mipSize.m_depth };
-//                regions.imageSubresource.aspectMask = m_aspectMask;
-//                regions.imageSubresource.baseArrayLayer = layer;
-//                regions.imageSubresource.layerCount = 1;
-//                regions.imageSubresource.mipLevel = mip;
-//                regions.bufferRowLength = 0;
-//                regions.bufferImageHeight = 0;
-//                regions.bufferOffset = bufferOffset;
-//                bufferOffset += bufferDataSize;
-//
-//                bufferImageCopys.push_back(regions);
-//
-//                mipSize = calculateMipSize(mipSize);
-//                mipOffset = calculateMipOffset(mipOffset);
-//            }
-//        }
-//
-//        VkImageLayout prevLayout = m_layout.front();
-//
-//        ASSERT(m_usage & TextureUsage_Write, "should be write");
-//        VkPipelineStageFlags srcStageMask = 0;
-//        if (m_layout.front() == VK_IMAGE_LAYOUT_UNDEFINED) //first time
-//        {
-//            srcStageMask = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
-//        }
-//        else
-//        {
-//            srcStageMask = VK_PIPELINE_STAGE_TRANSFER_BIT;
-//            if (m_usage & TextureUsage_Sampled)
-//            {
-//                srcStageMask |= VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
-//            }
-//        }
-//        VkImageLayout newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-//        uploadBuffer->cmdPipelineBarrier(this, srcStageMask, VK_PIPELINE_STAGE_TRANSFER_BIT, newLayout);
-//       
-//        uploadBuffer->cmdCopyBufferToImage(stagingBuffer->getBuffer(), this, newLayout, bufferImageCopys);
-//
-//        VkPipelineStageFlags dstStageMask = VK_PIPELINE_STAGE_TRANSFER_BIT;
-//        if (prevLayout == VK_IMAGE_LAYOUT_UNDEFINED || prevLayout == VK_IMAGE_LAYOUT_PREINITIALIZED) //first time
-//        {
-//            if (m_usage & TextureUsage_Sampled)
-//            {
-//                newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-//            }
-//        }
-//        else
-//        {
-//            newLayout = prevLayout;
-//        }
-//
-//        if (m_usage & TextureUsage_Sampled)
-//        {
-//            dstStageMask |= VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
-//        }
-//        uploadBuffer->cmdPipelineBarrier(this, VK_PIPELINE_STAGE_TRANSFER_BIT, dstStageMask, newLayout);
-//
-//
-//        u32 immediateResourceSubmit = VulkanDeviceCaps::getInstance()->immediateResourceSubmit;
-//        if (immediateResourceSubmit > 0)
-//        {
-//            vkContext->submit(immediateResourceSubmit == 2 ? true : false);
-//        }
-//    }
-//    else
-//    {
-//        ASSERT(false, "not impl");
-//    }
-//
-//    return true;
-//}
-//
-//bool VulkanImage::generateMipmaps(Context* context, u32 layer)
-//{
-//    if (!m_image)
-//    {
-//        ASSERT(false, "nullptr");
-//        return false;
-//    }
-//
-//    if (!VulkanImage::isPresentTextureUsageFlag(TextureUsage::TextureUsage_GenerateMipmaps))
-//    {
-//        ASSERT(false, "must contains TextureUsage_GenerateMipmaps flag");
-//        return false;
-//    }
-//
-//    ASSERT(m_mipLevels > 1, "image must be created with mipmaps");
-//
-//    VulkanContext* vkContext = static_cast<VulkanContext*>(context);
-//    VulkanCommandBuffer* drawBuffer = vkContext->getOrCreateAndStartCommandBuffer(CommandTargetType::CmdDrawBuffer);
-//
-//    VkImageLayout layoutMips = VulkanImage::getLayout(Image::makeImageSubresource(layer, 1, 1, m_mipLevels - 1));
-//    drawBuffer->cmdPipelineBarrier(this, VulkanTransitionState::selectStageFlagsByImageLayout(layoutMips), VK_PIPELINE_STAGE_TRANSFER_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, { layer, 1, 1, m_mipLevels - 1 });
-//
-//    VkImageLayout baseMip = VulkanImage::getLayout({ layer, 1, 0, 1 });
-//    drawBuffer->cmdPipelineBarrier(this, VulkanTransitionState::selectStageFlagsByImageLayout(baseMip), VK_PIPELINE_STAGE_TRANSFER_BIT, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, { layer, 1, 0, 1 });
-//
-//    for (u32 mip = 1; mip < m_mipLevels; ++mip)
-//    {
-//        VkImageBlit region = {};
-//        region.srcSubresource.aspectMask = VulkanImage::getImageAspectFlags(m_format);
-//        region.srcSubresource.mipLevel = mip - 1;
-//        region.srcSubresource.baseArrayLayer = 0;
-//        region.srcSubresource.layerCount = 1;
-//        region.dstSubresource = region.srcSubresource;
-//        region.dstSubresource.mipLevel = mip;
-//        region.srcOffsets[1] = { std::max(static_cast<s32>(m_dimension.width >> (mip - 1)), 1), std::max(static_cast<s32>(m_dimension.height >> (mip - 1)), 1), 1 };
-//        region.dstOffsets[1] = { std::max(static_cast<s32>(m_dimension.width >> mip), 1), std::max(static_cast<s32>(m_dimension.height >> mip), 1), 1 };
-//
-//        drawBuffer->cmdBlitImage(this, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, this, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, { region });
-//        drawBuffer->cmdPipelineBarrier(this, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, { layer, 1, mip, 1 });
-//    }
-//
-//    return true;
-//}
+void VulkanImage::clear(VulkanCmdList* cmdList, const render::Color& color)
+{
+#if VULKAN_DEBUG
+    LOG_DEBUG("VulkanImage::clearColor [%f, %f, %f, %f]", color[0], color[1], color[2], color[3]);
+#endif
+    if (!m_image)
+    {
+        ASSERT(false, "nullptr");
+        return;
+    }
+
+    VulkanCommandBuffer* cmdBuffer = cmdList->acquireAndStartCommandBuffer(CommandTargetType::CmdDrawBuffer);
+    VkImageLayout layout = VulkanImage::getLayout(RenderTexture::Subresource());
+    if (layout == VK_IMAGE_LAYOUT_UNDEFINED || layout == VK_IMAGE_LAYOUT_PREINITIALIZED)
+    {
+        layout = VulkanImage::hasUsageFlag(TextureUsage::TextureUsage_Backbuffer) ? VK_IMAGE_LAYOUT_PRESENT_SRC_KHR : VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+    }
+
+    const VkClearColorValue* vkColor = reinterpret_cast<const VkClearColorValue*>(&color);
+
+    cmdBuffer->cmdPipelineBarrier(this, VK_PIPELINE_STAGE_TRANSFER_BIT | VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+    cmdBuffer->cmdClearImage(this, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, vkColor);
+    cmdBuffer->cmdPipelineBarrier(this, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT | VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, layout);
+
+    if (VulkanImage::hasUsageFlag(TextureUsage::TextureUsage_Backbuffer))
+    {
+        VulkanCommandBufferManager::drawToSwapchain(cmdBuffer, this);
+    }
+}
+
+void VulkanImage::clear(VulkanCmdList* cmdList, f32 depth, u32 stencil)
+{
+#if VULKAN_DEBUG
+    LOG_DEBUG("VulkanContext::clearDepthStencil [%f, %u]", depth, stencil);
+#endif
+    if (!m_image)
+    {
+        ASSERT(false, "nullptr");
+        return;
+    }
+
+    VulkanCommandBuffer* cmdBuffer = cmdList->acquireAndStartCommandBuffer(CommandTargetType::CmdDrawBuffer);
+    VkImageLayout layout = VulkanImage::getLayout(RenderTexture::Subresource());
+    if (layout == VK_IMAGE_LAYOUT_UNDEFINED || layout == VK_IMAGE_LAYOUT_PREINITIALIZED)
+    {
+        layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+    }
+
+    const VkClearDepthStencilValue clearDepthStencilValue = { depth, stencil };
+
+    cmdBuffer->cmdPipelineBarrier(this, VK_PIPELINE_STAGE_TRANSFER_BIT | VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+    cmdBuffer->cmdClearImage(this, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &clearDepthStencilValue);
+    cmdBuffer->cmdPipelineBarrier(this, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT | VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, layout);
+}
+
+bool VulkanImage::upload(VulkanCmdList* cmdList, const math::Dimension3D& size, u32 layers, u32 mips, const void* data)
+{
+    ASSERT(m_mipLevels == mips, "should be same");
+    ASSERT(m_layerLevels == layers, "should be same");
+    ASSERT(m_samples == VkSampleCountFlagBits::VK_SAMPLE_COUNT_1_BIT, "wrong sample count");
+
+    u64 calculatedSize = ImageFormat::calculateImageSize(size, mips, layers, VulkanImage::convertVkImageFormatToFormat(m_format));
+    return VulkanImage::internalUpload(cmdList, math::Dimension3D(0, 0, 0), size, layers, mips, calculatedSize, data);
+}
+
+bool VulkanImage::upload(VulkanCmdList* cmdList, const math::Dimension3D& offsets, const math::Dimension3D& size, u32 layers, const void* data)
+{
+    ASSERT(m_mipLevels == 1, "should be 1");
+    ASSERT(m_layerLevels == layers, "should be same");
+    ASSERT(m_samples == VkSampleCountFlagBits::VK_SAMPLE_COUNT_1_BIT, "wrong sample count");
+
+    ASSERT(size > offsets, "wrong offset");
+    math::Dimension3D diffSize = (size - offsets);
+    u64 calculatedSize = ImageFormat::calculateImageMipSize(diffSize, 0, VulkanImage::convertVkImageFormatToFormat(m_format)) * layers;
+    ASSERT(calculatedSize > 0, "wrong size");
+
+    return VulkanImage::internalUpload(cmdList, offsets, size, layers, 1, calculatedSize, data);
+}
+
+bool VulkanImage::internalUpload(VulkanCmdList* cmdList, const math::Dimension3D& offsets, const math::Dimension3D& size, u32 layers, u32 mips, u64 dataSize, const void* data)
+{
+    if (!m_image)
+    {
+        ASSERT(false, "nullptr");
+        return false;
+    }
+
+    if (size.getArea() == 0 || !data)
+    {
+        ASSERT(false, "wrong area");
+        return false;
+    }
+
+    if (m_tiling == VK_IMAGE_TILING_OPTIMAL)
+    {
+        VulkanCommandBuffer* cmdBuffer = cmdList->acquireAndStartCommandBuffer(CommandTargetType::CmdUploadBuffer);
+
+        VulkanStagingBuffer* stagingBuffer = m_device.getStaginBufferManager()->createStagingBuffer(dataSize, BufferUsage::Buffer_Read);
+        if (!stagingBuffer)
+        {
+            ASSERT(false, "staginBuffer is nullptr");
+            return false;
+        }
+        void* stagingData = stagingBuffer->map();
+        ASSERT(stagingData, "stagingData is nullptr");
+        memcpy(stagingData, data, dataSize);
+        stagingBuffer->unmap();
+
+        ASSERT(!VulkanResource::isCaptured(), "still submitted");
+        m_device.getStaginBufferManager()->destroyAfterUse(stagingBuffer);
+
+        auto calculateMipSize = [](const math::Dimension3D& size) -> math::Dimension3D
+        {
+            math::Dimension3D mipSize;
+            mipSize.m_width = math::max(size.m_width / 2, 1U);
+            mipSize.m_height = math::max(size.m_height / 2, 1U);
+            mipSize.m_depth = math::max(size.m_depth / 2, 1U);
+
+            return mipSize;
+        };
+
+        auto calculateMipOffset = [](const math::Dimension3D& size) -> math::Dimension3D
+        {
+            math::Dimension3D mipSize;
+            mipSize.m_width = math::max(size.m_width / 2, 0U);
+            mipSize.m_height = math::max(size.m_height / 2, 0U);
+            mipSize.m_depth = math::max(size.m_depth / 2, 0U);
+
+            return mipSize;
+        };
+
+        u64 bufferOffset = 0;
+        u64 bufferDataSize = 0;
+        std::vector<VkBufferImageCopy> bufferImageCopys;
+
+        for (u32 layer = 0; layer < layers; ++layer)
+        {
+            math::Dimension3D mipSize = size;
+            math::Dimension3D mipOffset = offsets;
+
+            for (u32 mip = 0; mip < mips; ++mip)
+            {
+                bufferDataSize = ImageFormat::calculateImageMipSize(size, mip, VulkanImage::convertVkImageFormatToFormat(m_format));
+
+                VkBufferImageCopy regions;
+                regions.imageOffset = { static_cast<s32>(mipOffset.m_width), static_cast<s32>(mipOffset.m_height), static_cast<s32>(mipOffset.m_depth) };
+                regions.imageExtent = { mipSize.m_width, mipSize.m_height, mipSize.m_depth };
+                regions.imageSubresource.aspectMask = m_aspectMask;
+                regions.imageSubresource.baseArrayLayer = layer;
+                regions.imageSubresource.layerCount = 1;
+                regions.imageSubresource.mipLevel = mip;
+                regions.bufferRowLength = 0;
+                regions.bufferImageHeight = 0;
+                regions.bufferOffset = bufferOffset;
+                bufferOffset += bufferDataSize;
+
+                bufferImageCopys.push_back(regions);
+
+                mipSize = calculateMipSize(mipSize);
+                mipOffset = calculateMipOffset(mipOffset);
+            }
+        }
+
+        VkImageLayout prevLayout = m_layout.front();
+
+        ASSERT(m_usage & TextureUsage_Write, "should be write");
+        VkPipelineStageFlags srcStageMask = 0;
+        if (m_layout.front() == VK_IMAGE_LAYOUT_UNDEFINED) //first time
+        {
+            srcStageMask = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+        }
+        else
+        {
+            srcStageMask = VK_PIPELINE_STAGE_TRANSFER_BIT;
+            if (m_usage & TextureUsage_Sampled)
+            {
+                srcStageMask |= VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+            }
+        }
+        VkImageLayout newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+        cmdBuffer->cmdPipelineBarrier(this, srcStageMask, VK_PIPELINE_STAGE_TRANSFER_BIT, newLayout);
+       
+        cmdBuffer->cmdCopyBufferToImage(stagingBuffer->getBuffer(), this, newLayout, bufferImageCopys);
+
+        VkPipelineStageFlags dstStageMask = VK_PIPELINE_STAGE_TRANSFER_BIT;
+        if (prevLayout == VK_IMAGE_LAYOUT_UNDEFINED || prevLayout == VK_IMAGE_LAYOUT_PREINITIALIZED) //first time
+        {
+            if (m_usage & TextureUsage_Sampled)
+            {
+                newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+            }
+        }
+        else
+        {
+            newLayout = prevLayout;
+        }
+
+        if (m_usage & TextureUsage_Sampled)
+        {
+            dstStageMask |= VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+        }
+        cmdBuffer->cmdPipelineBarrier(this, VK_PIPELINE_STAGE_TRANSFER_BIT, dstStageMask, newLayout);
+    }
+    else
+    {
+        ASSERT(false, "not impl");
+    }
+
+    return true;
+}
+
+bool VulkanImage::generateMipmaps(VulkanCmdList* cmdList, u32 layer)
+{
+    if (!m_image)
+    {
+        ASSERT(false, "nullptr");
+        return false;
+    }
+
+    if (!VulkanImage::hasUsageFlag(TextureUsage::TextureUsage_GenerateMipmaps))
+    {
+        ASSERT(false, "must contains TextureUsage_GenerateMipmaps flag");
+        return false;
+    }
+
+    ASSERT(m_mipLevels > 1, "image must be created with mipmaps");
+
+    VulkanCommandBuffer* drawBuffer = cmdList->acquireAndStartCommandBuffer(CommandTargetType::CmdDrawBuffer);
+
+    VkImageLayout layoutMips = VulkanImage::getLayout(RenderTexture::makeSubresource(layer, 1, 1, m_mipLevels - 1));
+    drawBuffer->cmdPipelineBarrier(this, VulkanTransitionState::selectStageFlagsByImageLayout(layoutMips), VK_PIPELINE_STAGE_TRANSFER_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, { layer, 1, 1, m_mipLevels - 1 });
+
+    VkImageLayout baseMip = VulkanImage::getLayout({ layer, 1, 0, 1 });
+    drawBuffer->cmdPipelineBarrier(this, VulkanTransitionState::selectStageFlagsByImageLayout(baseMip), VK_PIPELINE_STAGE_TRANSFER_BIT, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, { layer, 1, 0, 1 });
+
+    for (u32 mip = 1; mip < m_mipLevels; ++mip)
+    {
+        VkImageBlit region = {};
+        region.srcSubresource.aspectMask = VulkanImage::getImageAspectFlags(m_format);
+        region.srcSubresource.mipLevel = mip - 1;
+        region.srcSubresource.baseArrayLayer = 0;
+        region.srcSubresource.layerCount = 1;
+        region.dstSubresource = region.srcSubresource;
+        region.dstSubresource.mipLevel = mip;
+        region.srcOffsets[1] = { std::max(static_cast<s32>(m_dimension.width >> (mip - 1)), 1), std::max(static_cast<s32>(m_dimension.height >> (mip - 1)), 1), 1 };
+        region.dstOffsets[1] = { std::max(static_cast<s32>(m_dimension.width >> mip), 1), std::max(static_cast<s32>(m_dimension.height >> mip), 1), 1 };
+
+        drawBuffer->cmdBlitImage(this, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, this, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, { region });
+        drawBuffer->cmdPipelineBarrier(this, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, { layer, 1, mip, 1 });
+    }
+
+    return true;
+}
 
 VkImageSubresourceRange VulkanImage::makeImageSubresourceRange(const VulkanImage* image, const RenderTexture::Subresource& resource)
 {

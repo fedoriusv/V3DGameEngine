@@ -56,6 +56,10 @@ namespace vk
             Scissors = 1 << 1,
             StencilRef = 1 << 2,
 
+            Pipeline = 1 << 3,
+            RenderPass = 1 << 4,
+            Framebuffer = 1 << 5,
+
             ImageBarrier = 1 << 10,
 
             All = 0xFFFFFFFF
@@ -72,6 +76,7 @@ namespace vk
         VkRect2D   _scissors = {};
         u32        _stencilRef = 0;
 
+        RenderPipeline*     _pipeline = nullptr;
         VulkanRenderPass*   _renderpass = nullptr;
         VulkanFramebuffer*  _framebuffer = nullptr;
         bool _insideRenderpass = false;

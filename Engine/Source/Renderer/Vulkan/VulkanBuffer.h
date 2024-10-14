@@ -17,6 +17,7 @@ namespace vk
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     class VulkanDevice;
+    class VulkanCmdList;
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -35,7 +36,7 @@ namespace vk
 
         bool hasUsageFlag(BufferUsage usage) const override;
 
-        //bool write(Context* context, u32 offset, u64 size, const void* data) override;
+        bool upload(VulkanCmdList* cmdList, u32 offset, u64 size, const void* data);
         //bool read(Context* context, u32 offset, u64 size, const std::function<void(u32, void*)>& readback) override;
 
         VkBuffer getHandle() const;

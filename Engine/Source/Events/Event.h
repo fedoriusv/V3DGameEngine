@@ -11,7 +11,7 @@ namespace event
     /**
     * @brief Event base struct.
     */
-    struct Event
+    struct V3D_API Event
     {
         Event() noexcept = default;
         virtual ~Event() = default;

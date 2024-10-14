@@ -43,6 +43,9 @@ namespace renderer
     };
 
 
+    /**
+    * @brief CmdListCompute interface class
+    */
     class CmdListCompute : public CmdList
     {
     protected:
@@ -56,6 +59,9 @@ namespace renderer
     };
 
 
+    /**
+    * @brief CmdListRender interface class
+    */
     class CmdListRender : public CmdListCompute
     {
     public:
@@ -70,7 +76,7 @@ namespace renderer
         /**
         * @brief setViewport command
         * @param const math::Rect32& viewport [required]
-        * @param const math::Vector2D& depth [required]
+        * @param const math::Vector2D& depth [optional]
         */
         virtual void setViewport(const math::Rect32& viewport, const math::Vector2D& depth = { 0.0f, 1.0f }) = 0;
 
@@ -81,6 +87,8 @@ namespace renderer
         virtual void setScissor(const math::Rect32& scissor) = 0;
 
         /**
+        * @brief setStencilRef command
+        * @param const u32 mask [required]
         */
         virtual void setStencilRef(u32 mask) = 0;
 
@@ -94,7 +102,7 @@ namespace renderer
 
         /**
         */
-        virtual void setPipeline(GraphicsPipelineState& pipeline) = 0;
+        virtual void setPipelineState(GraphicsPipelineState& pipeline) = 0;
 
         /**
         */
@@ -130,15 +138,25 @@ namespace renderer
         virtual void drawIndexed(const GeometryBufferDesc& desc, u32 firstIndex, u32 indexCount, u32 firstInstance, u32 instanceCount) = 0;
 
         /**
+         * @brief clear command
         */
         virtual void clear(Texture* texture, const render::Color& color) = 0;
 
         /**
+         * @brief clear command
         */
         virtual void clear(Texture* texture, f32 depth, u32 stencil) = 0;
 
+        /**
+         * @brief upload command
+        */
+        virtual bool uploadData(Texture2D* texture, const math::Dimension2D& offset, const math::Dimension2D& size, u32 mipLevel, const void* data) = 0;
+        virtual bool uploadData(Texture3D* texture, const math::Dimension3D& offset, const math::Dimension3D& size, u32 mipLevel, const void* data) = 0;
 
-        //virtual bool uploadTexture(CmdList* cmd, Texture* texture) = 0;
+        /**
+         * @brief upload command
+        */
+        virtual bool uploadData(Buffer* buffer, u32 offset, u32 size, void* data) = 0;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -155,9 +173,9 @@ namespace renderer
         */
         enum class RenderType
         {
-            EmptyRender,
-            VulkanRender,
-            DirectXRender
+            Empty,
+            Vulkan,
+            DirectX
         };
 
         /**
@@ -212,26 +230,26 @@ namespace renderer
         virtual void submit(CmdList* cmd, bool wait = false) = 0;
 
         /**
+        * @brief createCommandList
         */
         template<class TCmdList>
-        TCmdList* createCommandList(DeviceMask queueType);
+        [[nodiscard]] TCmdList* createCommandList(DeviceMask queueType);
 
         /**
+        * @brief destroyCommandList
         */
         virtual void destroyCommandList(CmdList* cmdList) = 0;
 
         /**
+        * @brief createSwapchain
         */
-        virtual Swapchain* createSwapchain(platform::Window* window, const Swapchain::SwapchainParams& params) = 0;
+        [[nodiscard]] virtual Swapchain* createSwapchain(platform::Window* window, const Swapchain::SwapchainParams& params) = 0;
 
         /**
+        * @brief destroySwapchain
         */
         virtual void destroySwapchain(Swapchain* swapchain) = 0;
 
-        //virtual Texture2D* createTexture2D() = 0;
-        //virtual Texture3D* createTexture3D() = 0;
-        //virtual Texture2DArray* createTexture2DArray() = 0;
-        //virtual bool destroyTexture(Texture* texture) = 0;
 
     protected:
 
@@ -242,6 +260,15 @@ namespace renderer
         Device& operator=(const Device&) = delete;
 
         virtual CmdList* createCommandList_Impl(DeviceMask queueType) = 0;
+
+        //virtual Texture2D* createTexture2D() = 0;
+        //virtual Texture3D* createTexture3D() = 0;
+        //virtual Texture2DArray* createTexture2DArray() = 0;
+        //virtual void destroyTexture(Texture* texture) = 0;
+
+        //virtual IndexBuffer* createIndexBuffer() = 0;
+        //virtual VertexBuffer* createVertexBuffer() = 0;
+        //virtual void destroyBuffer(Buffer* buffer) = 0;
 
         virtual bool initialize() = 0;
         virtual void destroy() = 0;

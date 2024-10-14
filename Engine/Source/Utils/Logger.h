@@ -12,7 +12,7 @@ namespace utils
     /**
     * @brief Logger class
     */
-    class Logger final : public Singleton<Logger>
+    class V3D_API Logger final : public Singleton<Logger>
     {
     public:
 

@@ -15,9 +15,11 @@ namespace vk
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     class VulkanDevice;
-    class VulkanSwapchain;
+    class VulkanImage;
     class VulkanSemaphore;
     class VulkanSemaphoreManager;
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
     * @brief CommandTargetType enum
@@ -30,6 +32,21 @@ namespace vk
         CmdResetQuerytBuffer = 3,
 
         Count
+    };
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    /**
+    * @brief VulkanTransitionState class. Render side
+    */
+    struct VulkanTransitionState
+    {
+        static VkImageLayout convertTransitionStateToImageLayout(TransitionOp state);
+
+        static VkPipelineStageFlags selectStageFlagsByImageLayout(VkImageLayout layout);
+        static std::tuple<VkAccessFlags, VkAccessFlags> getAccessFlagsFromImageLayout(VkImageLayout oldLayout, VkImageLayout newLayout);
+
+        static void transitionImage(VulkanCommandBuffer* cmdBuffer, std::tuple<const VulkanImage*, RenderTexture::Subresource>& images, VkImageLayout layout, bool toCompute = false);
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -54,7 +71,7 @@ namespace vk
 
         void resetPools();
 
-        static void drawToSwapchain(VulkanCommandBuffer* buffer, const VulkanSwapchain* swapchain);
+        static void drawToSwapchain(VulkanCommandBuffer* buffer, const VulkanImage* swapchainImage);
 
     private:
 
