@@ -1,23 +1,23 @@
 [submodule "Engine/Libs/assimp"]
-	path = Engine/Libs/assimp
+	path = Engine/ThirdParty/assimp
 	url = https://github.com/assimp/assimp.git
 	branch = master
 [submodule "Engine/Libs/crc32c"]
-	path = Engine/Libs/crc32c
+	path = Engine/ThirdParty/crc32c
 	url = https://github.com/google/crc32c.git
 	branch = origin/master
 [submodule "Engine/Libs/HWCPipe"]
 	path = Engine/Libs/HWCPipe
 	url = https://github.com/ARM-software/HWCPipe.git
 [submodule "Engine/Source/ThirdParty/stb"]
-	path = Engine/Source/ThirdParty/stb
+	path = Engine/ThirdParty/stb
 	url = https://github.com/nothings/stb.git
 [submodule "Engine/Source/ThirdParty/gli"]
-	path = Engine/Source/ThirdParty/gli
+	path = Engine/ThirdParty/gli
 	url = https://github.com/g-truc/gli.git
 [submodule "Engine/Source/ThirdParty/termcolor"]
-	path = Engine/Source/ThirdParty/termcolor
+	path = Engine/ThirdParty/termcolor
 	url = https://github.com/ikalnytskyi/termcolor.git
 [submodule "Engine/Source/ThirdParty/glm"]
-	path = Engine/Source/ThirdParty/glm
+	path = Engine/ThirdParty/glm
 	url = https://github.com/g-truc/glm.git
