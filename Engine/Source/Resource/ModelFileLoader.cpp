@@ -1,8 +1,8 @@
 #include "ModelFileLoader.h"
 #include "MeshAssimpDecoder.h"
-#include "Renderer/Core/Context.h"
+#include "Renderer/Device.h"
 #include "Stream/FileLoader.h"
-#include "Resource/ResourceLoaderManager.h"
+#include "Resource/ResourceManager.h"
 
 #include "Scene/Model.h"
 
@@ -18,25 +18,17 @@ ModelFileLoader::ModelFileLoader(ModelLoaderFlags flags) noexcept
     ResourceDecoderRegistration::registerDecoder(V3D_NEW(MeshAssimpDecoder, memory::MemoryLabel::MemorySystem)({ "dae", "fbx" }, header, flags));
 #endif //USE_ASSIMP
 
-    ResourceLoader::registerRoot("");
-    ResourceLoader::registerRoot("../../../../");
-
-    ResourceLoader::registerPath("");
-    ResourceLoader::registerPathes(ResourceLoaderManager::getInstance()->getPathes());
+    ResourceLoader::registerPathes(ResourceManager::getInstance()->getPathes());
 }
 
-ModelFileLoader::ModelFileLoader(Policy* policy, ModelLoaderFlags flags) noexcept
+ModelFileLoader::ModelFileLoader(ResourceDecoder::Policy* policy, ModelLoaderFlags flags) noexcept
 {
 #ifdef USE_ASSIMP
     scene::ModelHeader modelHeader = *static_cast<const scene::ModelHeader*>(header);
     ResourceDecoderRegistration::registerDecoder(V3D_NEW(MeshAssimpDecoder, memory::MemoryLabel::MemorySystem)({ "dae", "fbx" }, modelHeader, flags));
 #endif //USE_ASSIMP
 
-    ResourceLoader::registerRoot("");
-    ResourceLoader::registerRoot("../../../../");
-
-    ResourceLoader::registerPath("");
-    ResourceLoader::registerPathes(ResourceLoaderManager::getInstance()->getPathes());
+    ResourceLoader::registerPathes(ResourceManager::getInstance()->getPathes());
 }
 
 scene::Model* ModelFileLoader::load(const std::string& name, const std::string& alias)
@@ -60,7 +52,7 @@ scene::Model* ModelFileLoader::load(const std::string& name, const std::string& 
                 return nullptr;
             }
 
-            Resource* resource = decoder->decode(file, name);
+            Resource* resource = decoder->decode(file, nullptr, 0, name);
 
             file->close();
             V3D_DELETE(file, memory::MemoryLabel::MemorySystem);

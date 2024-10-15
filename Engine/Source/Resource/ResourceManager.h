@@ -139,7 +139,7 @@ namespace resource
         std::string innerName(name);
         std::transform(name.cbegin(), name.cend(), innerName.begin(), ::tolower);
 
-        renderer::Shader::DefineList innerDefines(defines);
+        renderer::Shader::DefineList innerDefines(policy._defines);
         std::sort(innerDefines.begin(), innerDefines.end(), [](const std::pair<std::string, std::string>& macros1, const std::pair<std::string, std::string>& macros2) -> bool
             {
                 return macros1.first < macros2.first;
@@ -254,7 +254,7 @@ namespace resource
         auto resourceIter = m_resources.emplace(std::make_pair(resourceName, nullptr));
         if (resourceIter.second)
         {
-            TResourceLoader loader(device type, entrypoint, defines, includes, flags);
+            TResourceLoader loader(device, type, entrypoint, defines, includes, flags);
             Resource* res = loader.load(innerName);
             if (!res)
             {

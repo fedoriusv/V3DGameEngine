@@ -37,7 +37,7 @@ namespace resource
     template<class TResource>
     inline const TResource* ShaderCompiler::compileShader(renderer::Device* device, const std::string& name, const ShaderDecoder::ShaderPolicy& policy, const stream::Stream* stream, ShaderCompileFlags flags)
     {
-        return ResourceManager::getLazyInstance()->composeShader<renderer::Shader, resource::ShaderSourceStreamLoader>(device, name, policy, stream, flags);
+        return ResourceManager::getLazyInstance()->composeShader<TResource, resource::ShaderSourceStreamLoader>(device, name, policy, stream, flags);
     }
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

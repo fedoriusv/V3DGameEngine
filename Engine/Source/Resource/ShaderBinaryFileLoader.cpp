@@ -25,7 +25,7 @@ namespace resource
      {
 #ifdef USE_SPIRV
          m_policy._content = renderer::ShaderContent::Bytecode;
-         m_policy._model = renderer::ShaderModel::Default;
+         m_policy._shaderModel = renderer::ShaderModel::Default;
 
          ResourceDecoderRegistration::registerDecoder(V3D_NEW(ShaderSpirVDecoder, memory::MemoryLabel::MemorySystem)({ "vspv", "fspv", "cspv" }));
 #else //USE_SPIRV

@@ -1,11 +1,9 @@
 #include "MeshAssimpDecoder.h"
-#include "Renderer/BufferProperties.h"
-#include "Renderer/PipelineStateProperties.h"
 #include "Renderer/Formats.h"
 #include "Stream/StreamManager.h"
 #include "Resource/ModelFileLoader.h"
-#include "Scene/Material.h"
-#include "Scene/StaticMesh.h"
+//#include "Scene/Material.h"
+//#include "Scene/StaticMesh.h"
 
 #include "Utils/Logger.h"
 #include "Utils/Timer.h"

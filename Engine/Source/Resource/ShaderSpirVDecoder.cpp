@@ -93,7 +93,7 @@ Resource* ShaderSpirVDecoder::decode(const stream::Stream* stream, const Policy*
         options.SetWarningsAsErrors();
 #endif
 
-        switch (shaderPolicy->_model)
+        switch (shaderPolicy->_shaderModel)
         {
         case renderer::ShaderModel::Default:
         case renderer::ShaderModel::GLSL_450:
@@ -143,7 +143,7 @@ Resource* ShaderSpirVDecoder::decode(const stream::Stream* stream, const Policy*
             break;
 
         default:
-            LOG_ERROR("ShaderSpirVDecoder::decode: shader model %d is not supported", shaderPolicy->_model);
+            LOG_ERROR("ShaderSpirVDecoder::decode: shader model %d is not supported", shaderPolicy->_shaderModel);
             ASSERT(false, "shader lang doesn't support");
             return nullptr;
         }
@@ -291,49 +291,34 @@ Resource* ShaderSpirVDecoder::decode(const stream::Stream* stream, const Policy*
         }
 #endif //PATCH_SYSTEM
 
+        bool reflections = !(flags & ShaderCompileFlag::ShaderCompile_DontUseReflection);
+
         u32 size = static_cast<u32>(spirvBinary.size()) * sizeof(u32);
         stream::Stream* resourceSpirvBinary = stream::StreamManager::createMemoryStream();
 
+        resourceSpirvBinary->write<renderer::ShaderType>(shaderPolicy->_type);
+        resourceSpirvBinary->write<renderer::ShaderModel>(shaderPolicy->_shaderModel);
+        resourceSpirvBinary->write(shaderPolicy->_entryPoint);
         resourceSpirvBinary->write<u32>(size);
         resourceSpirvBinary->write(spirvBinary.data(), size);
-        resourceSpirvBinary->write(m_entrypoint);
+        resourceSpirvBinary->write<bool>(reflections);
 
-        resourceSpirvBinary->write<bool>(m_reflections);
-        if (m_reflections)
+        if (reflections)
         {
-            auto isHLSL = [](renderer::ShaderHeader::ShaderModel model) -> bool
-                {
-                    return model == renderer::ShaderHeader::ShaderModel::HLSL_5_0 || model == renderer::ShaderHeader::ShaderModel::HLSL_5_1 ||
-                        model == renderer::ShaderHeader::ShaderModel::HLSL_6_1 || model == renderer::ShaderHeader::ShaderModel::HLSL_6_6;
-                };
-
-            if (isHLSL(m_header._shaderModel) || m_header._shaderModel == renderer::ShaderHeader::ShaderModel::GLSL_450)
+            ShaderReflectionSpirV reflector(shaderPolicy->_shaderModel);
+            if (!reflector.reflect(spirvBinary, resourceSpirvBinary))
             {
-                ShaderReflectionSpirV reflector(m_header._shaderModel);
-                if (!reflector.reflect(spirvBinary, resourceSpirvBinary))
-                {
-                    LOG_ERROR("ShaderSpirVDecoder::decode: parseReflections failed for shader: %s", name.c_str());
-                    stream::StreamManager::destroyStream(resourceSpirvBinary);
-
-                    return nullptr;
-                }
-            }
-            else
-            {
-                LOG_ERROR("ShaderSpirVDecoder::decode: shader model si not supported for this reflector: %s", name.c_str());
+                LOG_ERROR("ShaderSpirVDecoder::decode: parseReflections failed for shader: %s", name.c_str());
                 stream::StreamManager::destroyStream(resourceSpirvBinary);
 
                 return nullptr;
             }
         }
 
-        renderer::ShaderHeader shaderHeader(m_header);
-        resource::ResourceHeader::fillResourceHeader(&shaderHeader, name, resourceSpirvBinary->size(), 0);
-        shaderHeader._shaderType = shaderType;
-        shaderHeader._shaderModel = renderer::ShaderHeader::ShaderModel::SpirV;
-        shaderHeader._contentType = renderer::ShaderHeader::ShaderContent::Bytecode;
+        renderer::Shader::ShaderHeader shaderHeader;
+        resource::ResourceHeader::fill(&shaderHeader, name, resourceSpirvBinary->size(), 0);
 
-        Resource* resource = ::V3D_NEW(renderer::Shader, memory::MemoryLabel::MemoryObject)(V3D_NEW(renderer::ShaderHeader, memory::MemoryLabel::MemoryObject)(shaderHeader));
+        Resource* resource = V3D_NEW(renderer::Shader, memory::MemoryLabel::MemoryObject)(shaderHeader);
         if (!resource->load(resourceSpirvBinary))
         {
             LOG_ERROR("ShaderSpirVDecoder::decode: shader load is failed");
@@ -351,69 +336,43 @@ Resource* ShaderSpirVDecoder::decode(const stream::Stream* stream, const Policy*
 
         return resource;
     }
-    else //ShaderResource_Bytecode
+    else //Bytecode
     {
-        bool validShaderType = false;
-        auto getShaderType = [&validShaderType](const std::string& name) -> renderer::ShaderType
-            {
-                std::string fileExtension = stream::FileLoader::getFileExtension(name);
-                if (fileExtension == "vspv")
-                {
-                    validShaderType = true;
-                    return renderer::ShaderType::Vertex;
-                }
-                else if (fileExtension == "fspv")
-                {
-                    validShaderType = true;
-                    return renderer::ShaderType::Fragment;
-                }
-                else if (fileExtension == "cspv")
-                {
-                    validShaderType = true;
-                    return renderer::ShaderType::Compute;
-                }
-
-                validShaderType = false;
-                return renderer::ShaderType::Undefined;
-            };
-
-        renderer::ShaderType shaderType = getShaderType(name);
-        ASSERT(validShaderType, "invalid type");
 #if DEBUG
         utils::Timer timer;
         timer.start();
 #endif
+        bool reflections = !(flags & ShaderCompileFlag::ShaderCompile_DontUseReflection);
+
         std::vector<u32> bytecode(stream->size() / sizeof(u32));
         stream->read(bytecode.data(), sizeof(u32), static_cast<u32>(bytecode.size()));
         ASSERT(bytecode[0] == g_SPIRVIndifier, "invalid spirv magic number in head");
 
         stream::Stream* resourceSpirvBinary = stream::StreamManager::createMemoryStream();
 
+        resourceSpirvBinary->write<renderer::ShaderType>(shaderPolicy->_type);
+        resourceSpirvBinary->write<renderer::ShaderModel>(shaderPolicy->_shaderModel);
+        resourceSpirvBinary->write(shaderPolicy->_entryPoint);
         resourceSpirvBinary->write<u32>(stream->size());
         resourceSpirvBinary->write(bytecode.data(), stream->size());
-        resourceSpirvBinary->write(m_entrypoint);
+        resourceSpirvBinary->write<bool>(reflections);
 
-        resourceSpirvBinary->write<bool>(m_reflections);
-        if (m_reflections)
+        if (reflections)
         {
-            ASSERT(false, m_header._shaderModel == renderer::ShaderHeader::ShaderModel::SpirV);
-            ShaderReflectionSpirV reflector(m_header._shaderModel);
+            ShaderReflectionSpirV reflector(shaderPolicy->_shaderModel);
             if (!reflector.reflect({ bytecode.cbegin(), bytecode.cend() }, resourceSpirvBinary))
             {
                 LOG_ERROR("ShaderSpirVDecoder::decode: parseReflections failed for shader: %s", name.c_str());
-                delete resourceSpirvBinary;
+                stream::StreamManager::destroyStream(resourceSpirvBinary);
 
                 return nullptr;
             }
         }
 
-        renderer::ShaderHeader shaderHeader(m_header);
-        resource::ResourceHeader::fillResourceHeader(&shaderHeader, name, resourceSpirvBinary->size(), 0);
-        shaderHeader._shaderType = shaderType;
-        shaderHeader._shaderModel = renderer::ShaderHeader::ShaderModel::SpirV;
-        shaderHeader._contentType = renderer::ShaderHeader::ShaderContent::Bytecode;
+        renderer::Shader::ShaderHeader shaderHeader;
+        resource::ResourceHeader::fill(&shaderHeader, name, resourceSpirvBinary->size(), 0);
 
-        Resource* resource = ::V3D_NEW(renderer::Shader, memory::MemoryLabel::MemoryObject)(V3D_NEW(renderer::ShaderHeader, memory::MemoryLabel::MemoryObject)(shaderHeader));
+        Resource* resource = V3D_NEW(renderer::Shader, memory::MemoryLabel::MemoryObject)(shaderHeader);
         if (!resource->load(resourceSpirvBinary))
         {
             LOG_ERROR("ShaderSpirVDecoder::decode: the shader loading is failed");

@@ -37,8 +37,8 @@ namespace resource
 
     private:
 
-        bool compile(const std::string& source, const ShaderPolicy* policy, ShaderCompileFlags flags, IDxcBlob*& shader) const;
-        bool reflect(stream::Stream* stream, const ShaderPolicy* policy, ShaderCompileFlags flags, IDxcBlob* shader) const;
+        bool compile(const std::string& source, const ShaderPolicy* policy, ShaderCompileFlags flags, IDxcBlob*& shader, const std::string& name = "") const;
+        bool reflect(stream::Stream* stream, const ShaderPolicy* policy, ShaderCompileFlags flags, IDxcBlob* shader, const std::string& name = "") const;
     };
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////

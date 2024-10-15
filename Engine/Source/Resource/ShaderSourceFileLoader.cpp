@@ -75,7 +75,7 @@ ShaderSourceFileLoader::ShaderSourceFileLoader(const renderer::Device* device, r
     if (device->getRenderType() == renderer::Device::RenderType::Vulkan)
     {
         m_policy._content = renderer::ShaderContent::Source;
-        m_policy._model = (flags & ShaderCompileFlag::ShaderCompile_UseLegacyCompilerForHLSL) ? renderer::ShaderModel::HLSL_5_1 : renderer::ShaderModel::HLSL;
+        m_policy._shaderModel = (flags & ShaderCompileFlag::ShaderCompile_UseLegacyCompilerForHLSL) ? renderer::ShaderModel::HLSL_5_1 : renderer::ShaderModel::HLSL;
         m_policy._type = type;
         m_policy._defines = defines;
         m_policy._includes = includes;

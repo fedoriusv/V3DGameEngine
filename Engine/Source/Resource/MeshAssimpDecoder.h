@@ -2,7 +2,7 @@
 
 #include "ResourceDecoder.h"
 #include "Resource/ModelFileLoader.h"
-#include "Scene/Model.h"
+//#include "Scene/Model.h"
 
 #ifdef USE_ASSIMP
 struct aiScene;

@@ -47,7 +47,7 @@ namespace resource
         {
             renderer::ShaderType            _type;
             renderer::ShaderContent         _content;
-            renderer::ShaderModel           _model;
+            renderer::ShaderModel           _shaderModel;
             std::string                     _entryPoint = "main";
             renderer::Shader::DefineList    _defines = {};
             std::vector<std::string>        _includes = {};

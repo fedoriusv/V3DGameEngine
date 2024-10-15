@@ -1,9 +1,10 @@
 #include "ShaderSpirVPatcherRemoveUnusedLocations.h"
-#include "Renderer/Core/Context.h"
+
+#include "Renderer/Device.h"
 #include "Utils/Logger.h"
 
 #ifdef USE_SPIRV
-#   include <shaderc/third_party/glslang/SPIRV/spirv.hpp>
+#include <shaderc/third_party/glslang/SPIRV/spirv.hpp>
 
 namespace v3d
 {

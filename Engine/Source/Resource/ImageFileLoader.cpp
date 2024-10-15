@@ -1,8 +1,9 @@
 #include "ImageFileLoader.h"
 
-#include "Renderer/Core/Context.h"
-#include "Resource/ResourceLoaderManager.h"
+#include "Renderer/Device.h"
+#include "Resource/ResourceManager.h"
 #include "Stream/FileLoader.h"
+#include "Bitmap.h"
 
 #if USE_STB
 #   include "ImageStbDecoder.h"
@@ -33,11 +34,7 @@ ImageFileLoader::ImageFileLoader(ImageLoaderFlags flags) noexcept
     }
 #endif //USE_GLI
 
-    ResourceLoader::registerRoot("");
-    ResourceLoader::registerRoot("../../../../");
-
-    ResourceLoader::registerPath("");
-    ResourceLoader::registerPathes(ResourceLoaderManager::getInstance()->getPathes());
+    ResourceLoader::registerPathes(ResourceManager::getInstance()->getPathes());
 }
 
 resource::Bitmap* ImageFileLoader::load(const std::string& name, const std::string& alias)
@@ -61,7 +58,7 @@ resource::Bitmap* ImageFileLoader::load(const std::string& name, const std::stri
                 return nullptr;
             }
 
-            Resource* resource = decoder->decode(file, name);
+            Resource* resource = decoder->decode(file, nullptr, 0, name);
 
             file->close();
             V3D_DELETE(file, memory::MemoryLabel::MemorySystem);

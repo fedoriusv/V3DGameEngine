@@ -134,7 +134,7 @@ void reflectAttributes(spirv_cross::CompilerGLSL* compiler, stream::Stream* stre
     }
 }
 
-void reflectDescriptors(spirv_cross::CompilerGLSL* compiler, stream::Stream* stream, renderer::ShaderHeader::ShaderModel model)
+void reflectDescriptors(spirv_cross::CompilerGLSL* compiler, stream::Stream* stream, renderer::ShaderModel model)
 {
     ASSERT(compiler, "nullptr");
 
@@ -199,7 +199,8 @@ void reflectDescriptors(spirv_cross::CompilerGLSL* compiler, stream::Stream* str
 
         auto isHLSL = [](renderer::ShaderModel model) -> bool
         {
-            return model == renderer::ShaderModel::HLSL_5_0 || model == renderer::ShaderModel::HLSL_5_1;
+                return model == renderer::ShaderModel::Default || model == renderer::ShaderModel::HLSL_5_1
+                    || (model >= renderer::ShaderModel::HLSL_6_0 && model <= renderer::ShaderModel::HLSL_6_6);
         };
 
         std::string name = compiler->get_name(buffer.id);

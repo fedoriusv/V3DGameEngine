@@ -17,6 +17,7 @@ namespace resource
 
     /**
     * @brief ResourceType enum
+    * TODO: static RTTI
     */
     enum class ResourceType : u16
     {
@@ -39,12 +40,13 @@ namespace resource
     {
         static const u32 k_nameSize = 64;
 
-        static bool validateResourceHeader(const ResourceHeader* header);
-        static void fillResourceHeader(ResourceHeader* header, const std::string& name, u32 size, u32 offset, u32 flags = 0);
+        static bool validate(const ResourceHeader* header);
+        static void fill(ResourceHeader* header, const std::string& name, u32 size, u32 offset, u32 flags = 0);
 
         ResourceHeader() noexcept = default;
         explicit ResourceHeader(ResourceType type) noexcept;
-        ResourceHeader(const ResourceHeader& other) noexcept;
+        explicit ResourceHeader(const ResourceHeader& other) noexcept;
+
         ~ResourceHeader() = default;
 
         ResourceType getResourceType() const;
@@ -56,19 +58,19 @@ namespace resource
 
     private:
 
-        u16 _head;
-        ResourceType _type;
-        u16 _version;
-        u16 _extraFlags;
+        u16             _head;
+        ResourceType    _type;
+        u16             _version;
+        u16             _flags;
 
     public:
 
-        u32 _size;
-        u32 _offset;
+        u32             _size;
+        u32             _offset;
 
-        u64 _timestamp;
-        u64 _unId;
-        u8 _name[k_nameSize];
+        u64             _timestamp;
+        u64             _uID;
+        u8              _name[k_nameSize];
     };
 
     inline ResourceType ResourceHeader::getResourceType() const

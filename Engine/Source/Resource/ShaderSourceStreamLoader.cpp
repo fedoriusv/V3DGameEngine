@@ -17,9 +17,9 @@ namespace v3d
 namespace resource
 {
 
-ShaderSourceStreamLoader::ShaderSourceStreamLoader(const renderer::Device* device, const stream::Stream* stream, const ShaderDecoder::ShaderPolicy& policy, ShaderCompileFlags flags) noexcept
-    : m_stream(stream)
-    , m_policy(policy)
+ShaderSourceStreamLoader::ShaderSourceStreamLoader(renderer::Device* device, const ShaderDecoder::ShaderPolicy& policy, const stream::Stream* stream, ShaderCompileFlags flags) noexcept
+    : m_policy(policy)
+    , m_stream(stream)
     , m_flags(flags)
 {
     switch (device->getRenderType())
@@ -27,14 +27,14 @@ ShaderSourceStreamLoader::ShaderSourceStreamLoader(const renderer::Device* devic
 #ifdef USE_SPIRV
     case renderer::Device::RenderType::Vulkan:
     {
-        if (flags & ShaderCompileFlag::ShaderCompile_UseDXCompilerForSpirV)
+        //if (flags & ShaderCompileFlag::ShaderCompile_UseDXCompilerForSpirV)
         {
             ResourceDecoderRegistration::registerDecoder(V3D_NEW(ShaderDXCDecoder, memory::MemoryLabel::MemorySystem)());
         }
-        else
+        /*else
         {
             ResourceDecoderRegistration::registerDecoder(V3D_NEW(ShaderSpirVDecoder, memory::MemoryLabel::MemorySystem)());
-        }
+        }*/
 
         break;
     }

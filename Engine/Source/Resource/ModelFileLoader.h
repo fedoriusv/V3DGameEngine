@@ -2,6 +2,7 @@
 
 #include "ResourceLoader.h"
 #include "ResourceDecoderRegistration.h"
+#include "ResourceDecoder.h"
 
 namespace v3d
 {
@@ -67,7 +68,7 @@ namespace resource
         * @param ModelLoaderFlags flags [required]
         * @see ModelLoaderFlags
         */
-        explicit ModelFileLoader(Policy* policy, ModelLoaderFlags flags) noexcept;
+        explicit ModelFileLoader(ResourceDecoder::Policy* policy, ModelLoaderFlags flags) noexcept;
 
         /**
         * @brief Load model resource by name from file

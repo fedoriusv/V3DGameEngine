@@ -19,8 +19,17 @@ namespace renderer
         Fragment = 1,
         Compute = 2,
 
+        First = Vertex,
+        Last = Compute,
         Count,
     };
+
+    /**
+    * @brief ShaderTypeString function
+    * @param ShaderType type
+    * @return shader string name
+    */
+    std::string ShaderTypeString(ShaderType type);
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -89,18 +98,8 @@ namespace renderer
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    struct ShaderDesc
-    {
-        ShaderType _type;
-    };
-
-    struct ShaderData
-    {
-
-    };
-
     /**
-    * @brief Shader class.
+    * @brief Shader base class.
     * Resource, presents on Render and Game thread
     */
     class Shader : public resource::Resource
@@ -109,28 +108,236 @@ namespace renderer
 
         using DefineList = std::vector<std::pair<std::string, std::string>>;
 
-        explicit Shader(ShaderType type) noexcept
-            : m_type(type)
+        /**
+        * @brief ShaderHeader struct.
+        */
+        struct ShaderHeader : resource::ResourceHeader
         {
-        }
+            ShaderHeader() noexcept
+                : resource::ResourceHeader(resource::ResourceType::ShaderResource)
+            {
+            }
+        };
 
-        virtual ~Shader() = default;
+        /**
+        * @brief ShaderData struct.
+        */
+        struct ShaderData
+        {
+            u32     _size;
+            void*   _data;
+        };
+
+        /**
+        * @brief struct Attribute/Parameters
+        */
+        struct Attribute
+        {
+            Attribute() noexcept;
+
+            u32              _location;
+            renderer::Format _format;
+            std::string      _name;
+
+            u32 operator>>(stream::Stream* stream) const;
+            u32 operator<<(const stream::Stream* stream);
+        };
+
+        /**
+        * @brief struct UniformBuffer/ConstantBuffer
+        */
+        struct UniformBuffer
+        {
+            struct Uniform
+            {
+                Uniform() noexcept;
+
+                u32                _bufferID;
+                u32                _array;
+                renderer::DataType _type;
+                u32                _size;
+                u32                _offset;
+                std::string        _name;
+
+                u32 operator>>(stream::Stream* stream) const;
+                u32 operator<<(const stream::Stream* stream);
+            };
+
+            UniformBuffer() noexcept;
+
+            u32                  _id;
+            u32                  _set;
+            u32                  _binding;
+            u32                  _array;
+            u32                  _size;
+            std::string          _name;
+
+            std::vector<Uniform> _uniforms;
+
+            u32 operator>>(stream::Stream* stream) const;
+            u32 operator<<(const stream::Stream* stream);
+        };
+
+        /**
+        * @brief struct Image/Texture
+        */
+        struct Image
+        {
+            Image() noexcept;
+
+            u32                     _set;
+            u32                     _binding;
+            renderer::TextureTarget _target;
+            u32                     _array;
+            bool                    _depth;
+            bool                    _ms;
+            std::string             _name;
+
+            u32 operator>>(stream::Stream* stream) const;
+            u32 operator<<(const stream::Stream* stream);
+        };
+
+        /**
+        * @brief struct Sampler
+        */
+        struct Sampler
+        {
+            Sampler() noexcept;
+
+            u32                     _set;
+            u32                     _binding;
+            std::string             _name;
+
+            u32 operator>>(stream::Stream* stream) const;
+            u32 operator<<(const stream::Stream* stream);
+        };
+
+        /**
+        * @brief struct StorageImage/UAV
+        */
+        struct StorageImage
+        {
+            StorageImage() noexcept;
+
+            u32                     _set;
+            u32                     _binding;
+            renderer::TextureTarget _target;
+            renderer::Format        _format;
+            u32                     _array;
+            bool                    _readonly;
+            std::string             _name;
+
+            u32 operator>>(stream::Stream* stream) const;
+            u32 operator<<(const stream::Stream* stream);
+        };
+
+        /**
+        * @brief struct StorageBuffer/UAV
+        */
+        struct StorageBuffer
+        {
+            StorageBuffer() noexcept;
+
+            u32                     _set;
+            u32                     _binding;
+            renderer::Format        _format;
+            u32                     _array;
+            bool                    _readonly;
+            std::string             _name;
+
+            u32 operator>>(stream::Stream* stream) const;
+            u32 operator<<(const stream::Stream* stream);
+        };
+
+        /**
+        * @brief struct PushConstant
+        */
+        struct PushConstant
+        {
+            PushConstant() noexcept;
+
+            u32         _offset;
+            u32         _size;
+            std::string _name;
+
+            u32 operator>>(stream::Stream* stream) const;
+            u32 operator<<(const stream::Stream* stream);
+        };
+
+        /**
+        * @brief struct Resources
+        */
+        struct Resources
+        {
+            std::vector<Attribute>      _inputAttribute;
+            std::vector<Attribute>      _outputAttribute;
+            std::vector<UniformBuffer>  _uniformBuffers;
+            std::vector<Image>          _sampledImages;
+            std::vector<Image>          _images;
+            std::vector<Sampler>        _samplers;
+            std::vector<StorageImage>   _storageImages;
+            std::vector<StorageBuffer>  _storageBuffers;
+            std::vector<PushConstant>   _pushConstant;
+        };
+
+        ShaderType getType() const;
+
+    public:
+
+        explicit Shader(const ShaderHeader& header) noexcept;
+        virtual ~Shader();
 
     protected:
+
+        explicit Shader(ShaderType type) noexcept;
 
         bool load(const stream::Stream* stream, u32 offset = 0) override;
         bool save(stream::Stream* stream, u32 offset = 0) const override;
 
-        ShaderType m_type;
+        ShaderHeader    m_header;
+        ShaderType      m_type;
+        ShaderModel     m_shaderModel;
+        std::string     m_entryPoint;
+        ShaderData      m_data;
+
+        Resources       m_mappedResources;
     };
 
-
-    class GraphicShader : public Shader
+    inline ShaderType Shader::getType() const
     {
+        return m_type;
+    }
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    /**
+    * @brief VertexShader class.
+    */
+    class VertexShader : public Shader
+    {
+    public: 
+
+        VertexShader() noexcept;
     };
 
+    /**
+    * @brief FragmentShader class.
+    */
+    class FragmentShader : public Shader
+    {
+    public:
+
+        FragmentShader() noexcept;
+    };
+
+    /**
+    * @brief ComputeShader class.
+    */
     class ComputeShader : public Shader
     {
+    public:
+
+        ComputeShader() noexcept;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

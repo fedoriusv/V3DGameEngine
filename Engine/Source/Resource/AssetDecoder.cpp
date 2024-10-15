@@ -4,9 +4,9 @@
 #include "Utils/Timer.h"
 
 #include "Bitmap.h"
-#include "Scene/Model.h"
-#include "Scene/Material.h"
-#include "Scene/StaticMesh.h"
+//#include "Scene/Model.h"
+//#include "Scene/Material.h"
+//#include "Scene/StaticMesh.h"
 #include "Renderer/Shader.h"
 
 #define LOG_LOADIMG_TIME (DEBUG || 1)
@@ -55,46 +55,46 @@ Resource* AssetDecoder::decode(const stream::Stream* stream, const Policy* polic
     {
     case ResourceType::ModelResource:
     {
-        scene::ModelHeader* modleHeader = V3D_NEW(scene::ModelHeader, memory::MemoryLabel::MemoryObject);
-        modleHeader->operator<<(stream);
+        //scene::ModelHeader* modleHeader = V3D_NEW(scene::ModelHeader, memory::MemoryLabel::MemoryObject);
+        //modleHeader->operator<<(stream);
 
-        resource = ::V3D_NEW(scene::Model, memory::MemoryLabel::MemoryObject)(modleHeader);
+        //resource = ::V3D_NEW(scene::Model, memory::MemoryLabel::MemoryObject)(modleHeader);
     }
     break;
 
     case ResourceType::MeshResource:
     {
-        scene::MeshHeader* meshHeader = V3D_NEW(scene::MeshHeader, memory::MemoryLabel::MemoryObject);
-        meshHeader->operator<<(stream);
+        //scene::MeshHeader* meshHeader = V3D_NEW(scene::MeshHeader, memory::MemoryLabel::MemoryObject);
+        //meshHeader->operator<<(stream);
 
-        resource = ::V3D_NEW(scene::StaticMesh, memory::MemoryLabel::MemoryObject)(meshHeader);
+        //resource = ::V3D_NEW(scene::StaticMesh, memory::MemoryLabel::MemoryObject)(meshHeader);
     }
     break;
 
     case ResourceType::BitmapResource:
     {
-        resource::BitmapHeader* meshHeader = V3D_NEW(resource::BitmapHeader, memory::MemoryLabel::MemoryObject);
-        meshHeader->operator<<(stream);
+        //resource::BitmapHeader* meshHeader = V3D_NEW(resource::BitmapHeader, memory::MemoryLabel::MemoryObject);
+        //meshHeader->operator<<(stream);
 
-        resource = ::V3D_NEW(resource::Bitmap, memory::MemoryLabel::MemoryObject)(meshHeader);
+        //resource = ::V3D_NEW(resource::Bitmap, memory::MemoryLabel::MemoryObject)(meshHeader);
     }
     break;
 
     case ResourceType::ShaderResource:
     {
-        renderer::ShaderHeader* shaderHeader = V3D_NEW(renderer::ShaderHeader, memory::MemoryLabel::MemoryObject);
-        shaderHeader->operator<<(stream);
+        renderer::Shader::ShaderHeader shaderHeader;
+        shaderHeader<<(stream);
 
-        resource = ::V3D_NEW(renderer::Shader, memory::MemoryLabel::MemoryObject)(shaderHeader);
+        resource = V3D_NEW(renderer::Shader, memory::MemoryLabel::MemoryObject)(shaderHeader);
     }
     break;
 
     case ResourceType::MaterialResource:
     {
-        scene::MaterialHeader* materialHeader = V3D_NEW(scene::MaterialHeader, memory::MemoryLabel::MemoryObject);
-        materialHeader->operator<<(stream);
+        //scene::MaterialHeader* materialHeader = V3D_NEW(scene::MaterialHeader, memory::MemoryLabel::MemoryObject);
+        //materialHeader->operator<<(stream);
 
-        resource = ::V3D_NEW(scene::Material, memory::MemoryLabel::MemoryObject)(materialHeader);
+        //resource = ::V3D_NEW(scene::Material, memory::MemoryLabel::MemoryObject)(materialHeader);
     }
     break;
 

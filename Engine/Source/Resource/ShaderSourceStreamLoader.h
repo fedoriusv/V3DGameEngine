@@ -38,7 +38,7 @@ namespace resource
         * @param const renderer::ShaderPolicy* policy [required]
         * @param bool ShaderCompileFlags flags [optional]
         */
-        explicit ShaderSourceStreamLoader(const renderer::Device* device, const stream::Stream* stream, const ShaderDecoder::ShaderPolicy& policy, ShaderCompileFlags flags = 0) noexcept;
+        explicit ShaderSourceStreamLoader(renderer::Device* device, const ShaderDecoder::ShaderPolicy& policy, const stream::Stream* stream, ShaderCompileFlags flags = 0) noexcept;
 
         /**
         * @brief Load a Shader source from by name from stream
