@@ -1,7 +1,7 @@
 #include "Logger.h"
 
 #if HIGHLIGHTING_LOGS
-#   include "ThirdParty/termcolor/include/termcolor/termcolor.hpp"
+#   include "termcolor/include/termcolor/termcolor.hpp"
 using namespace termcolor;
 #endif //HIGHLIGHTING_LOGS
 

@@ -50,7 +50,7 @@ namespace stream
                 return nullptr;
             }
 #endif //PLATFORM_ANDROID
-            stream::FileStream* file = ::V3D_NEW(stream::FileStream, memory::MemoryLabel::MemorySystem)(filename, stream::FileStream::e_in);
+            stream::FileStream* file = V3D_NEW(stream::FileStream, memory::MemoryLabel::MemorySystem)(filename, stream::FileStream::e_in);
             if (!file)
             {
                 LOG_ERROR("FileLoader::file: the file [%s] can't be created", stream::FileStream::absolutePath(filename).c_str());

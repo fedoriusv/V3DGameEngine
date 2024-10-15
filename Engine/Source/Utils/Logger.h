@@ -19,7 +19,7 @@ namespace utils
         /**
         * @brief LoggerType enum
         */
-        enum LoggerType
+        enum LoggerType : u32
         {
             LoggerDebug,
             LoggerNotify,
