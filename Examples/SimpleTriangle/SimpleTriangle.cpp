@@ -1,11 +1,8 @@
 #include "SimpleTriangle.h"
 
 #include "Renderer/Shader.h"
-#include "Renderer/Texture.h"
-
-#include "Resource/ResourceLoaderManager.h"
-#include "Resource/ShaderSourceStreamLoader.h"
-
+#include "Resource/ResourceManager.h"
+#include "Resource/ShaderCompiler.h"
 #include "Stream/StreamManager.h"
 #include "Utils/Logger.h"
 
@@ -15,7 +12,8 @@ const f32 k_nearValue = 0.1f;
 const f32 k_farValue = 30.0f;
 
 SimpleTriangle::SimpleTriangle()
-    : m_CommandList(nullptr)
+    : m_Device(nullptr)
+    , m_Swapchain(nullptr)
 
     , m_Program(nullptr)
     , m_RenderTarget(nullptr)
@@ -30,11 +28,10 @@ SimpleTriangle::~SimpleTriangle()
 {
 }
 
-void SimpleTriangle::init(v3d::renderer::CommandList* commandList, const math::Dimension2D& size)
+void SimpleTriangle::init(v3d::renderer::Device* device, v3d::renderer::Swapchain* swapchain)
 {
-    m_CommandList = commandList;
-    ASSERT(m_CommandList, "nullptr");
-    m_Camera->setPerspective(45.0f, size, k_nearValue, k_farValue);
+    m_Device = device;
+    m_Camera->setPerspective(45.0f, swapchain->getBackbufferSize(), k_nearValue, k_farValue);
 
     const renderer::Shader* vertShader = nullptr;
     {
@@ -73,13 +70,14 @@ void SimpleTriangle::init(v3d::renderer::CommandList* commandList, const math::D
         }");
         const stream::Stream* vertexStream = stream::StreamManager::createMemoryStream(vertexSource);
 
-        renderer::ShaderHeader vertexHeader(renderer::ShaderType::Vertex);
-        vertexHeader._contentType = renderer::ShaderHeader::ShaderContent::Source;
-        vertexHeader._shaderModel = renderer::ShaderHeader::ShaderModel::HLSL_5_1;
+        resource::ShaderDecoder::ShaderPolicy vertexPolicy;
+        vertexPolicy._type = renderer::ShaderType::Vertex;
+        vertexPolicy._shaderModel = renderer::ShaderModel::HLSL_6_2;
+        vertexPolicy._content = renderer::ShaderContent::Source;
+        vertexPolicy._entryPoint = "main";
 
-        vertShader = resource::ResourceLoaderManager::getLazyInstance()->composeShader<renderer::Shader, resource::ShaderSourceStreamLoader>(
-            m_CommandList->getContext(), "vertex", &vertexHeader, vertexStream, "main", {}, {}, renderer::ShaderCompileFlag::ShaderSource_UseLegacyCompilerForHLSL);
-        delete vertexStream;
+        vertShader = resource::ShaderCompiler::compileShader<renderer::Shader>(m_Device, "vertex", vertexPolicy, vertexStream, 0/*resource::ShaderCompileFlag::ShaderCompile_UseDXCompilerForSpirV*/);
+        stream::StreamManager::destroyStream(vertexStream);
     }
 
     const renderer::Shader* fragShader = nullptr;
@@ -97,20 +95,21 @@ void SimpleTriangle::init(v3d::renderer::CommandList* commandList, const math::D
         }");
         const stream::Stream* fragmentStream = stream::StreamManager::createMemoryStream(fragmentSource);
 
-        renderer::ShaderHeader fragmentHeader(renderer::ShaderType::Fragment);
-        fragmentHeader._contentType = renderer::ShaderHeader::ShaderContent::Source;
-        fragmentHeader._shaderModel = renderer::ShaderHeader::ShaderModel::HLSL_5_1;
+        resource::ShaderDecoder::ShaderPolicy fragmentPolicy;
+        fragmentPolicy._type = renderer::ShaderType::Fragment;
+        fragmentPolicy._shaderModel = renderer::ShaderModel::HLSL_6_2;
+        fragmentPolicy._content = renderer::ShaderContent::Source;
+        fragmentPolicy._entryPoint = "main";
 
-        fragShader = resource::ResourceLoaderManager::getLazyInstance()->composeShader<renderer::Shader, resource::ShaderSourceStreamLoader>(
-            m_CommandList->getContext(), "fragment", &fragmentHeader, fragmentStream, "main", {}, {}, resource::ShaderSourceStreamLoader::ShaderSourceFlag::ShaderSource_UseLegacyCompilerForHLSL);
-        delete fragmentStream;
+        fragShader = resource::ShaderCompiler::compileShader<renderer::Shader>(m_Device, "vertex", fragmentPolicy, fragmentStream, 0/*resource::ShaderCompileFlag::ShaderCompile_UseDXCompilerForSpirV*/);
+        stream::StreamManager::destroyStream(fragmentStream);
     }
 
     ASSERT(vertShader && fragShader, "nullptr");
-    m_Program = m_CommandList->createObject<renderer::ShaderProgram, std::vector<const renderer::Shader*>>({ vertShader, fragShader });
+    //m_Program = new renderer::ShaderProgram({ vertShader, fragShader });
 
-    m_RenderTarget = m_CommandList->createObject<renderer::RenderTargetState>(m_CommandList->getBackbuffer()->getDimension());
-    m_RenderTarget->setColorTexture(0, m_CommandList->getBackbuffer(),
+    m_RenderTarget = new renderer::RenderTargetState(m_Device, swapchain->getBackbufferSize());
+    m_RenderTarget->setColorTexture(0, swapchain->getBackbuffer(),
         {
             renderer::RenderTargetLoadOp::LoadOp_Clear, renderer::RenderTargetStoreOp::StoreOp_Store, math::Vector4D(0.0f)
         },
@@ -124,29 +123,29 @@ void SimpleTriangle::init(v3d::renderer::CommandList* commandList, const math::D
         { 0.0f, 1.0f, 0.0f },  { 0.0f, 1.0f, 0.0f },
         { 1.0f,-1.0f, 0.0f },  { 0.0f, 0.0f, 1.0f },
     };
-    m_Geometry = m_CommandList->createObject<renderer::VertexStreamBuffer>(renderer::StreamBuffer_Write, static_cast<u32>(geometryData.size() * sizeof(math::Vector3D)), reinterpret_cast<u8*>(geometryData.data()));
+    //m_Geometry = new renderer::VertexBuffer(renderer::StreamBuffer_Write, static_cast<u32>(geometryData.size() * sizeof(math::Vector3D)), reinterpret_cast<u8*>(geometryData.data()));
 
-    renderer::VertexInputAttributeDescription vertexDesc(
+    renderer::VertexInputAttributeDesc vertexDesc(
         { 
-            renderer::VertexInputAttributeDescription::InputBinding(0,  renderer::VertexInputAttributeDescription::InputRate::InputRate_Vertex, sizeof(math::Vector3D) + sizeof(math::Vector3D)),
+            renderer::VertexInputAttributeDesc::InputBinding(0,  renderer::InputRate::InputRate_Vertex, sizeof(math::Vector3D) + sizeof(math::Vector3D)),
         }, 
         { 
-            renderer::VertexInputAttributeDescription::InputAttribute(0, 0, renderer::Format_R32G32B32_SFloat, 0),
-            renderer::VertexInputAttributeDescription::InputAttribute(0, 0, renderer::Format_R32G32B32_SFloat, sizeof(math::Vector3D)),
+            renderer::VertexInputAttributeDesc::InputAttribute(0, 0, renderer::Format_R32G32B32_SFloat, 0),
+            renderer::VertexInputAttributeDesc::InputAttribute(0, 0, renderer::Format_R32G32B32_SFloat, sizeof(math::Vector3D)),
         });
 
-    m_Pipeline = m_CommandList->createObject<renderer::GraphicsPipelineState>(vertexDesc, m_Program, m_RenderTarget);
+    m_Pipeline = new renderer::GraphicsPipelineState(m_Device, vertexDesc, m_Program, m_RenderTarget);
     m_Pipeline->setPrimitiveTopology(renderer::PrimitiveTopology::PrimitiveTopology_TriangleList);
     m_Pipeline->setFrontFace(renderer::FrontFace::FrontFace_Clockwise);
     m_Pipeline->setCullMode(renderer::CullMode::CullMode_None);
     m_Pipeline->setColorMask(renderer::ColorMask::ColorMask_All);
     m_Pipeline->setDepthWrite(false);
 
-    m_CommandList->setPipelineState(m_Pipeline);
-    m_CommandList->setRenderTarget(m_RenderTarget);
+    //m_CommandList->setPipelineState(m_Pipeline);
+    //m_CommandList->setRenderTarget(m_RenderTarget);
 
-    m_CommandList->submitCommands(true);
-    m_CommandList->flushCommands();
+    //m_CommandList->submitCommands(true);
+    //m_CommandList->flushCommands();
 }
 
 void SimpleTriangle::update(f32 dt)
@@ -165,27 +164,27 @@ void SimpleTriangle::render()
     };
 
     //render
-    m_CommandList->setViewport(math::Rect32(0, 0, m_RenderTarget->getDimension().m_width, m_RenderTarget->getDimension().m_height));
-    m_CommandList->setScissor(math::Rect32(0, 0, m_RenderTarget->getDimension().m_width, m_RenderTarget->getDimension().m_height));
+    //m_CommandList->setViewport(math::Rect32(0, 0, m_RenderTarget->getDimension().m_width, m_RenderTarget->getDimension().m_height));
+    //m_CommandList->setScissor(math::Rect32(0, 0, m_RenderTarget->getDimension().m_width, m_RenderTarget->getDimension().m_height));
 
-    m_CommandList->setRenderTarget(m_RenderTarget);
-    m_CommandList->setPipelineState(m_Pipeline);
+    //m_CommandList->setRenderTarget(m_RenderTarget);
+    //m_CommandList->setPipelineState(m_Pipeline);
 
-    UBO ubo1;
-    ubo1.projectionMatrix = m_Camera->getCamera().getProjectionMatrix();
-    ubo1.modelMatrix.setTranslation(math::Vector3D(-1, 0, 0));
-    ubo1.viewMatrix = m_Camera->getCamera().getViewMatrix();
+    //UBO ubo1;
+    //ubo1.projectionMatrix = m_Camera->getCamera().getProjectionMatrix();
+    //ubo1.modelMatrix.setTranslation(math::Vector3D(-1, 0, 0));
+    //ubo1.viewMatrix = m_Camera->getCamera().getViewMatrix();
 
-    m_Program->bindUniformsBuffer<renderer::ShaderType::Vertex>({ "buffer" }, 0, (u32)sizeof(UBO), &ubo1);
-    m_CommandList->draw(renderer::StreamBufferDescription(m_Geometry, 0), 0, 3, 1);
+    //m_Program->bindUniformsBuffer<renderer::ShaderType::Vertex>({ "buffer" }, 0, (u32)sizeof(UBO), &ubo1);
+    //m_CommandList->draw(renderer::StreamBufferDescription(m_Geometry, 0), 0, 3, 1);
 
-    UBO ubo2;
-    ubo2.projectionMatrix = m_Camera->getCamera().getProjectionMatrix();
-    ubo2.modelMatrix.setTranslation(math::Vector3D(1, 0, 0));
-    ubo2.viewMatrix = m_Camera->getCamera().getViewMatrix();
+    //UBO ubo2;
+    //ubo2.projectionMatrix = m_Camera->getCamera().getProjectionMatrix();
+    //ubo2.modelMatrix.setTranslation(math::Vector3D(1, 0, 0));
+    //ubo2.viewMatrix = m_Camera->getCamera().getViewMatrix();
 
-    m_Program->bindUniformsBuffer<renderer::ShaderType::Vertex>({ "buffer" }, 0, (u32)sizeof(UBO), &ubo2);
-    m_CommandList->draw(renderer::StreamBufferDescription(m_Geometry, 0), 0, 3, 1);
+    //m_Program->bindUniformsBuffer<renderer::ShaderType::Vertex>({ "buffer" }, 0, (u32)sizeof(UBO), &ubo2);
+    //m_CommandList->draw(renderer::StreamBufferDescription(m_Geometry, 0), 0, 3, 1);
 }
 
 void SimpleTriangle::terminate()
@@ -219,9 +218,6 @@ void SimpleTriangle::terminate()
         delete m_Geometry;
         m_Geometry = nullptr;
     }
-
-    resource::ResourceLoaderManager::getInstance()->clear();
-    resource::ResourceLoaderManager::getInstance()->freeInstance();
 
     if (m_Camera)
     {

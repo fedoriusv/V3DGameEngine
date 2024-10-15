@@ -136,7 +136,7 @@ private:
         m_Window->getInputEventReceiver()->attach(InputEvent::InputEventType::SystemEvent, m_InputEventHandler);
 
 
-        m_Device = Device::createDevice(Device::RenderType::VulkanRender, Device::GraphicMask);
+        m_Device = Device::createDevice(Device::RenderType::Vulkan, Device::GraphicMask);
         ASSERT(m_Device, "render is nullptr");
 
         Swapchain::SwapchainParams params;
@@ -184,7 +184,7 @@ private:
     v3d::renderer::CmdListRender* m_CmdList = nullptr;
     v3d::renderer::Swapchain* m_Swapchain = nullptr;
 
-    render::Color m_ClearColor;
+    renderer::Color m_ClearColor;
 };
 
 int main(int argc, char* argv[])
