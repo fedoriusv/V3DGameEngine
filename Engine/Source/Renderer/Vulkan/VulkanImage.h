@@ -58,7 +58,7 @@ namespace vk
 
         bool hasUsageFlag(TextureUsage usage) const override;
 
-        void clear(VulkanCmdList* cmdList, const render::Color& color);
+        void clear(VulkanCmdList* cmdList, const renderer::Color& color);
         void clear(VulkanCmdList* cmdList, f32 depth, u32 stencil);
 
         bool upload(VulkanCmdList* cmdList, const math::Dimension3D& size, u32 layers, u32 mips, const void* data);

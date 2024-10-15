@@ -120,7 +120,7 @@ VulkanDevice::VulkanDevice(DeviceMaskFlags mask) noexcept
 {
     LOG_DEBUG("VulkanDevice created this %llx", this);
 
-    m_renderType = RenderType::VulkanRender;
+    m_renderType = RenderType::Vulkan;
     memset(&m_deviceInfo, 0, sizeof(DeviceInfo));
     m_deviceInfo._queueMask = (VkQueueFlags)mask;
 
@@ -919,7 +919,7 @@ void VulkanCmdList::drawIndexed(const GeometryBufferDesc& desc, u32 firstIndex, 
 {
 }
 
-void VulkanCmdList::clear(Texture* texture, const render::Color& color)
+void VulkanCmdList::clear(Texture* texture, const renderer::Color& color)
 {
 #if VULKAN_DEBUG
     LOG_DEBUG("VulkanCmdList::clear [%f, %f, %f, %f]", color[0], color[1], color[2], color[3]);

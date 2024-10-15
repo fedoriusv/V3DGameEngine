@@ -527,7 +527,7 @@ namespace renderer
     inline TTexture* RenderTargetState::getDepthStencilTexture() const
     {
         static_assert(std::is_base_of<Texture, TTexture>(), "wrong type");
-        return m_renderTargets.back();
+        return static_cast<TTexture*>(m_renderTargets.back());
     }
 
     inline const math::Dimension2D& RenderTargetState::getRenderArea() const

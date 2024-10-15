@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Common.h"
+#include "Renderer/Pipeline.h"
 
 #ifdef VULKAN_RENDER
 #   include "VulkanWrapper.h"

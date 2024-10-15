@@ -1213,7 +1213,7 @@ bool VulkanImage::create(VkImage image)
     return true;
 }
 
-void VulkanImage::clear(VulkanCmdList* cmdList, const render::Color& color)
+void VulkanImage::clear(VulkanCmdList* cmdList, const renderer::Color& color)
 {
 #if VULKAN_DEBUG
     LOG_DEBUG("VulkanImage::clearColor [%f, %f, %f, %f]", color[0], color[1], color[2], color[3]);

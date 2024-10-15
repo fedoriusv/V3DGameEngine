@@ -14,7 +14,7 @@ namespace renderer
 {
 
 Device::Device() noexcept
-    : m_renderType(RenderType::EmptyRender)
+    : m_renderType(RenderType::Empty)
 {
 }
 
@@ -23,17 +23,17 @@ Device* Device::createDevice(RenderType type, DeviceMaskFlags mask)
     Device* render = nullptr;
     switch (type)
     {
-    case RenderType::EmptyRender:
+    case RenderType::Empty:
         break;
 
 #ifdef VULKAN_RENDER
-    case RenderType::VulkanRender:
+    case RenderType::Vulkan:
         render = V3D_NEW(vk::VulkanDevice, memory::MemoryLabel::MemoryRenderCore)(mask);
         break;
 #endif //VULKAN_RENDER
 
 #ifdef D3D_RENDER
-    case RenderType::DirectXRender:
+    case RenderType::DirectX:
         break;
 #endif //D3D_RENDER
 

@@ -376,7 +376,7 @@ namespace renderer
         * @param onst RenderTargetState* const renderTaget [required]
         * @param const std::string& name [optional]
         */
-        explicit GraphicsPipelineState(Device* devive, const VertexInputAttributeDesc& vertex, const ShaderProgram* const program, const RenderTargetState* const renderTaget, const std::string& name = "") noexcept;
+        explicit GraphicsPipelineState(Device* device, const VertexInputAttributeDesc& vertex, const ShaderProgram* const program, const RenderTargetState* const renderTaget, const std::string& name = "") noexcept;
 
         /**
         * @brief GraphicsPipelineState constructor.
@@ -387,7 +387,7 @@ namespace renderer
         * @param const RenderTargetState* const renderTaget [required]
         * @param const std::string& name [optional]
         */
-        explicit GraphicsPipelineState(Device* devive, const GraphicsPipelineStateDesc& desc, const ShaderProgram* const program, const RenderTargetState* const renderTaget, const std::string& name = "") noexcept;
+        explicit GraphicsPipelineState(Device* device, const GraphicsPipelineStateDesc& desc, const ShaderProgram* const program, const RenderTargetState* const renderTaget, const std::string& name = "") noexcept;
 
         /**
         * @brief GraphicsPipelineState destructor

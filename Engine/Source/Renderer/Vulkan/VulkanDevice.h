@@ -55,7 +55,7 @@ namespace vk
         void draw(const GeometryBufferDesc& desc, u32 firstVertex, u32 vertexCount, u32 firstInstance, u32 instanceCount) override;
         void drawIndexed(const GeometryBufferDesc& desc, u32 firstIndex, u32 indexCount, u32 firstInstance, u32 instanceCount) override;
 
-        void clear(Texture* texture, const render::Color& color) override;
+        void clear(Texture* texture, const renderer::Color& color) override;
         void clear(Texture* texture, f32 depth, u32 stencil) override;
 
         bool uploadData(Texture2D* texture, const math::Dimension2D& offset, const math::Dimension2D& size, u32 mipLevel, const void* data) override;

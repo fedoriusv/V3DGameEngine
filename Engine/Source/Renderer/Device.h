@@ -36,7 +36,11 @@ namespace renderer
 
     protected:
 
-        CmdList() noexcept = default;
+        CmdList() noexcept
+            : m_type(Type::Render)
+        {
+        }
+
         virtual ~CmdList() = default;
 
         Type m_type;
@@ -140,7 +144,7 @@ namespace renderer
         /**
          * @brief clear command
         */
-        virtual void clear(Texture* texture, const render::Color& color) = 0;
+        virtual void clear(Texture* texture, const renderer::Color& color) = 0;
 
         /**
          * @brief clear command
