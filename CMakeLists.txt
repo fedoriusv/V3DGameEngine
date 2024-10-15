@@ -3,21 +3,28 @@ set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
 ##############################################################
 #Examples
+##############################################################
 option(BUILD_EXAMPLES "Generate Examples" ON)
+
 ##############################################################
 #Render SDK
+##############################################################
 option(BUILD_VULKAN_SDK_OPTION "Build use Vulkan SDK" ON)
 option(BUILD_DIRECTX_SDK_OPTION "Use DirectX SDK(Only for Windows Target)" OFF)
-##############################################################
 
+##############################################################
 #ThirdParty
-include(Config/ThirdParty.cmake)
 ##############################################################
 
-#External Libs
-##############################################################
 #Crc32c lib is required"
 #https://github.com/google/crc32c.git
+
+option(STB_LIB "Use STB" OFF)
+#https://github.com/nothings/stb.git
+
+option(GLI_LIB "Use GLI. Uses GLM" OFF)
+#https://github.com/g-truc/gli.git
+#https://github.com/g-truc/glm.git
 
 option(ASSIMP_LIB "Use Assimp lib" OFF)
 #https://github.com/assimp/assimp.git
@@ -25,15 +32,16 @@ option(ASSIMP_LIB "Use Assimp lib" OFF)
 option(HWCPipe_LIB_OPTION "Use HWCPipe lib(Only for Android Target)" OFF)
 #https://github.com/ARM-software/HWCPipe.git
 
-option(SPIRV_INSTALL_FROM_GITHUB "implicity install SpirV" OFF)
+option(SPIRV_INSTALL_FROM_GITHUB "Implicity install SpirV" OFF)
 #https://github.com/google/shaderc.git
 #https://github.com/KhronosGroup/SPIRV-Cross.git
 
 option (DXCompiler_LIB_OPTION "Use custom DirectXShaderCompiler lib" OFF)
 #https://github.com/microsoft/DirectXShaderCompiler.git
 
-##############################################################
+include(Config/ThirdParty.cmake)
 
+##############################################################
 #Project
 ##############################################################
 set(SOLUTION_NAME V3DGE)
@@ -72,8 +80,8 @@ endif()
 if(NOT CMAKE_SIZEOF_VOID_P EQUAL 8)
     message(FATAL_ERROR "Only support x64 Architecture")
 endif()
-##############################################################
 
+##############################################################
 #Pathes
 ##############################################################
 set(SOURCE_DIR Engine/Source)
@@ -82,29 +90,15 @@ set(LIB_INCLUDE_DIRECTORY
     ${ENGINE_PROJECT_DIR}/${SOURCE_DIR}
     ${ENGINE_PROJECT_DIR}/${SOURCE_DIR}/Platform
     ${ENGINE_PROJECT_DIR}/Engine/Libs
-    ${ENGINE_PROJECT_DIR}/${SOURCE_DIR}/ThirdParty)
+    ${ENGINE_PROJECT_DIR}/Engine/ThirdParty)
 
 foreach(INCLUDE_SUFFIX ${THIRD_PARTY_LIB_INCLUDE_SUFFIX})
-    set(LIB_INCLUDE_DIRECTORY ${LIB_INCLUDE_DIRECTORY} ${ENGINE_PROJECT_DIR}/${SOURCE_DIR}/ThirdParty/${INCLUDE_SUFFIX})
+    set(LIB_INCLUDE_DIRECTORY ${LIB_INCLUDE_DIRECTORY} ${ENGINE_PROJECT_DIR}/Engine/ThirdParty/${INCLUDE_SUFFIX})
 endforeach()
 
-#Assimp
-if(ASSIMP_LIB)
-    set(THIRD_PARTY_LIB_DEFINE "${THIRD_PARTY_LIB_DEFINE} -DUSE_ASSIMP")
-endif()
-
-#HWCPipe
-if(HWCPipe_LIB)
-    set(THIRD_PARTY_LIB_DEFINE "${THIRD_PARTY_LIB_DEFINE} -DUSE_HWC_PIPE")
-endif()
-
-#DirectXShaderCompiler
-if(DXCompiler_LIB)
-    set(THIRD_PARTY_LIB_DEFINE "${THIRD_PARTY_LIB_DEFINE} -DUSE_CUSTOM_DXC")
-endif()
 ##############################################################
-
 #Vulkan
+##############################################################
 if(BUILD_VULKAN_SDK)
     set(VULKAN_SDK_DEFINE "-DVULKAN_RENDER")
     if(TARGET_ANDROID)
@@ -151,18 +145,22 @@ if(BUILD_VULKAN_SDK)
     endif()
 endif()
 
+##############################################################
 #DirectX
+##############################################################
 if(BUILD_DIRECTX_SDK)
     set(DIRECTX_SDK_DEFINE "-DD3D_RENDER")
     message(STATUS "DirectX SDK Path " ${DirectX_PREFIX_PATH})
 endif()
 
+##############################################################
 #Compiler Flags
+##############################################################
 set(CMAKE_CONFIGURATION_TYPES "Debug;Release" CACHE STRING "" FORCE)
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DDEBUG -DUSE_LOGGER ${VULKAN_SDK_DEFINE} ${DIRECTX_SDK_DEFINE} ${THIRD_PARTY_LIB_DEFINE}")
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -DUSE_LOGGER ${VULKAN_SDK_DEFINE} ${DIRECTX_SDK_DEFINE} ${THIRD_PARTY_LIB_DEFINE}")
-##############################################################
 
+##############################################################
 #Source
 ##############################################################
 file(GLOB MAIN_HEADERS ${SOURCE_DIR}/*.h)
@@ -209,8 +207,8 @@ if(BUILD_DIRECTX_SDK)
     file(GLOB DIRECTX_HEADERS ${SOURCE_DIR}/Renderer/D3D12/*.h)
     file(GLOB DIRECTX_SOURCES ${SOURCE_DIR}/Renderer/D3D12/*.cpp)
 endif()
-##############################################################
 
+##############################################################
 #Filters
 ##############################################################
 source_group("" FILES ${MAIN_HEADERS} ${MAIN_SOURCES})
@@ -257,11 +255,12 @@ target_include_directories(${ENGINE_NAME} BEFORE
 	PRIVATE ${LIB_INCLUDE_DIRECTORY}
 	PRIVATE $<$<BOOL:BUILD_VULKAN_SDK>:${VULKAN_SDK_INCLUDE_DIRECTORY}>)
 
-##############################################################
 
 set(BUILD_DEPENDENCIES "")
+##############################################################
 #Link Libs
 ##############################################################
+
 #Crc32c	
 target_link_libraries(${ENGINE_NAME} crc32c)
 set(BUILD_DEPENDENCIES ${BUILD_DEPENDENCIES} crc32c)
@@ -305,43 +304,40 @@ endif()
 set_target_properties(${ENGINE_NAME} PROPERTIES ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${PROJECT_PLATFORM})
 set_target_properties(${ENGINE_NAME} PROPERTIES VS_WINDOWS_TARGET_PLATFORM_MIN_VERSION ${WIN_SDK_VERSION})
 link_directories(${ENGINE_NAME} ${VULKAN_SDK_LIB_DIRECTORY})
-##############################################################
 
-#Libs
-##############################################################
 #Crc32
 message(STATUS "Add Crc32 lib")
-set(CRC32_LIB_DIRECTORY Engine/Libs/crc32c)
+set(CRC32_LIB_DIRECTORY Engine/ThirdParty/crc32c)
 add_subdirectory(${CRC32_LIB_DIRECTORY})
 set_target_properties(crc32c PROPERTIES
     ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${CRC32_LIB_DIRECTORY}/${PROJECT_PLATFORM}
-    FOLDER Libs/crc32c
+    FOLDER ThirdParty/crc32c
 )
-set_target_properties(crc32c_arm64 PROPERTIES FOLDER Libs/crc32c)
-set_target_properties(crc32c_sse42 PROPERTIES FOLDER Libs/crc32c)
+set_target_properties(crc32c_arm64 PROPERTIES FOLDER ThirdParty/crc32c)
+set_target_properties(crc32c_sse42 PROPERTIES FOLDER ThirdParty/crc32c)
 message(STATUS "Crc32 lib added")
 
 #Assimp
 if(ASSIMP_LIB)
     message(STATUS "Add Assimp lib")
-    set(ASSIMP_LIB_DIRECTORY Engine/Libs/assimp)
+    set(ASSIMP_LIB_DIRECTORY Engine/ThirdParty/assimp)
     add_subdirectory(${ASSIMP_LIB_DIRECTORY})
     if(TARGET_WIN)
         set_target_properties(assimp PROPERTIES 
             ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${ASSIMP_LIB_DIRECTORY}/code/${PROJECT_PLATFORM}
-            FOLDER Libs/assimp
+            FOLDER ThirdParty/assimp
         )
         set_target_properties(IrrXML PROPERTIES
             ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${ASSIMP_LIB_DIRECTORY}/condrib/${PROJECT_PLATFORM}
-            FOLDER Libs/assimp
+            FOLDER ThirdParty/assimp
         )
         set_target_properties(zlibstatic PROPERTIES
             ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${ASSIMP_LIB_DIRECTORY}/condrib/${PROJECT_PLATFORM}
-            FOLDER Libs/assimp
+            FOLDER ThirdParty/assimp
         )
-        set_target_properties(zlib PROPERTIES FOLDER Libs/assimp)
-        set_target_properties(UpdateAssimpLibsDebugSymbolsAndDLLs PROPERTIES FOLDER Libs/assimp)
-        set_target_properties(uninstall PROPERTIES FOLDER Libs/assimp)
+        set_target_properties(zlib PROPERTIES FOLDER ThirdParty/assimp)
+        set_target_properties(UpdateAssimpLibsDebugSymbolsAndDLLs PROPERTIES FOLDER ThirdParty/assimp)
+        set_target_properties(uninstall PROPERTIES FOLDER ThirdParty/assimp)
         
         target_compile_options(assimp PRIVATE -D_SILENCE_ALL_CXX17_DEPRECATION_WARNINGS $<$<CONFIG:DEBUG>:/MTd> $<$<CONFIG:RELEASE>:/MT>)
 		target_compile_options(IrrXML PRIVATE $<$<CONFIG:DEBUG>:/MTd> $<$<CONFIG:RELEASE>:/MT>)
@@ -356,12 +352,11 @@ endif()
 #HWCPipe
 if(HWCPipe_LIB)
     message(STATUS "Add HWCPipe lib")
-    add_subdirectory(Engine/Libs/HWCPipe)
+    add_subdirectory(Engine/ThirdParty/HWCPipe)
     message(STATUS "HWCPipe lib added")
 endif()
 
 ##############################################################
-
 #Examples
 ##############################################################
 if (BUILD_EXAMPLES)
@@ -387,9 +382,9 @@ endif ()
 if (BUILD_DEPENDENCIES)
     add_dependencies(${ENGINE_NAME} ${BUILD_DEPENDENCIES})
 endif()
-##############################################################
 
-#install external libs
+##############################################################
+#Install external libs
 ##############################################################
 
 if (SPIRV_INSTALL_FROM_GITHUB AND WIN32)
