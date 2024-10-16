@@ -487,7 +487,7 @@ bool VulkanSwapchain::createSwapchainImages(const SwapchainParams& params, const
         VkExtent3D extent = { params._size.m_width, params._size.m_height, 1 };
         for (u32 index = 0; index < images.size(); ++index)
         {
-            VulkanImage* swapchainImage = V3D_NEW(VulkanImage, memory::MemoryLabel::MemoryRenderCore)(&m_device, surfaceFormat.format, extent, VK_SAMPLE_COUNT_1_BIT, 1U, flags, "SwapchainImage_" + std::to_string(index));
+            VulkanImage* swapchainImage = V3D_NEW(VulkanImage, memory::MemoryLabel::MemoryRenderCore)(&m_device, m_device.m_imageMemoryManager, surfaceFormat.format, extent, VK_SAMPLE_COUNT_1_BIT, 1U, flags, "SwapchainImage_" + std::to_string(index));
             if (!swapchainImage->create(images[index]))
             {
                 LOG_FATAL("VulkanSwapchain::createSwapchainImages: can't create surface texture");

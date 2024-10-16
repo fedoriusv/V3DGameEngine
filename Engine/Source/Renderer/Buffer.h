@@ -102,7 +102,8 @@ namespace renderer
         VertexBuffer(const VertexBuffer&) = delete;
         VertexBuffer& operator=(const VertexBuffer&) = delete;
 
-        const u64 m_size;
+        Device* const m_device;
+        const u64     m_size;
     };
 
     inline u64 VertexBuffer::getSize() const
@@ -141,7 +142,7 @@ namespace renderer
         * @param  const void* data [required]
         * @param const std::string& name [optional]
         */
-        explicit IndexBuffer(BufferUsageFlags usage, IndexBufferType type, u32 count, const std::string& name = "") noexcept;
+        explicit IndexBuffer(Device* device, BufferUsageFlags usage, IndexBufferType type, u32 count, const std::string& name = "") noexcept;
 
         /**
         * @brief IndexStreamBuffer destructor
@@ -153,6 +154,7 @@ namespace renderer
         IndexBuffer(const IndexBuffer&) = delete;
         IndexBuffer& operator=(const IndexBuffer&) = delete;
 
+        Device* const   m_device;
         IndexBufferType m_type;
         const u32       m_count;
     };

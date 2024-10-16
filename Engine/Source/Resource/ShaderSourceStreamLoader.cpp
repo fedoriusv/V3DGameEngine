@@ -27,14 +27,14 @@ ShaderSourceStreamLoader::ShaderSourceStreamLoader(renderer::Device* device, con
 #ifdef USE_SPIRV
     case renderer::Device::RenderType::Vulkan:
     {
-        //if (flags & ShaderCompileFlag::ShaderCompile_UseDXCompilerForSpirV)
+        if (flags & ShaderCompileFlag::ShaderCompile_UseDXCompilerForSpirV)
         {
             ResourceDecoderRegistration::registerDecoder(V3D_NEW(ShaderDXCDecoder, memory::MemoryLabel::MemorySystem)());
         }
-        /*else
+        else
         {
             ResourceDecoderRegistration::registerDecoder(V3D_NEW(ShaderSpirVDecoder, memory::MemoryLabel::MemorySystem)());
-        }*/
+        }
 
         break;
     }

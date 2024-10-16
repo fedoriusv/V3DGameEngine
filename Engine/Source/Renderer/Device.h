@@ -118,6 +118,7 @@ namespace renderer
         virtual void bindBuffer(u32 binding, Buffer* buffer) = 0;
         virtual void bindSampler(u32 binding, SamplerState* sampler) = 0;
         virtual void bindConstantBuffer(u32 binding, u32 size, void* data) = 0;
+        virtual void bindDescriptorSet(u32 set, std::vector<Descriptor> descriptors) = 0;
 
         /**
         * @brief draw command by vertex
@@ -254,6 +255,14 @@ namespace renderer
         */
         virtual void destroySwapchain(Swapchain* swapchain) = 0;
 
+    public:
+
+        [[nodiscard]] virtual TextureHandle createTexture(TextureTarget target, Format format, const math::Dimension3D& dimension, u32 layers, u32 mipmapLevel, TextureUsageFlags flags, const std::string& name = "") = 0;
+        [[nodiscard]] virtual TextureHandle createTexture(TextureTarget target, Format format, const math::Dimension3D& dimension, u32 layers, TextureSamples samples, TextureUsageFlags flags, const std::string& name = "") = 0;
+        virtual void destroyTexture(TextureHandle texture) = 0;
+
+        [[nodiscard]] virtual BufferHandle createBuffer(RenderBuffer::Type type, u16 usageFlag, u64 size, const std::string& name = "") = 0;
+        virtual void destroyBuffer(BufferHandle buffer) = 0;
 
     protected:
 
@@ -264,15 +273,6 @@ namespace renderer
         Device& operator=(const Device&) = delete;
 
         virtual CmdList* createCommandList_Impl(DeviceMask queueType) = 0;
-
-        //virtual Texture2D* createTexture2D() = 0;
-        //virtual Texture3D* createTexture3D() = 0;
-        //virtual Texture2DArray* createTexture2DArray() = 0;
-        //virtual void destroyTexture(Texture* texture) = 0;
-
-        //virtual IndexBuffer* createIndexBuffer() = 0;
-        //virtual VertexBuffer* createVertexBuffer() = 0;
-        //virtual void destroyBuffer(Buffer* buffer) = 0;
 
         virtual bool initialize() = 0;
         virtual void destroy() = 0;

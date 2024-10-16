@@ -1,5 +1,4 @@
 #include "VulkanMemory.h"
-
 #include "Utils/Logger.h"
 
 #ifdef VULKAN_RENDER
@@ -49,9 +48,8 @@ VulkanMemory::VulkanAllocation VulkanMemory::s_invalidMemory =
 SimpleVulkanMemoryAllocator* VulkanMemory::s_simpleVulkanMemoryAllocator = nullptr;
 std::recursive_mutex VulkanMemory::s_mutex;
 
-s32 VulkanMemory::findMemoryTypeIndex(const VkMemoryRequirements& memoryRequirements, VkMemoryPropertyFlags memoryPropertyFlags)
+s32 VulkanMemory::findMemoryTypeIndex(const VkPhysicalDeviceMemoryProperties& physicalDeviceMemoryProperties, const VkMemoryRequirements& memoryRequirements, VkMemoryPropertyFlags memoryPropertyFlags)
 {
-    /*const VkPhysicalDeviceMemoryProperties& physicalDeviceMemoryProperties = VulkanDeviceCaps::getInstance()->getDeviceMemoryProperties();
     u32 memoryTypeBits = memoryRequirements.memoryTypeBits;
     for (u32 memoryTypeIndex = 0; memoryTypeIndex < physicalDeviceMemoryProperties.memoryTypeCount; ++memoryTypeIndex)
     {
@@ -64,14 +62,13 @@ s32 VulkanMemory::findMemoryTypeIndex(const VkMemoryRequirements& memoryRequirem
         }
 
         memoryTypeBits >>= 1;
-    }*/
+    }
 
     return -1;
 }
 
-bool VulkanMemory::isSupportedMemoryType(VkMemoryPropertyFlags memoryPropertyFlags, bool isEqual)
+bool VulkanMemory::isSupportedMemoryType(const VkPhysicalDeviceMemoryProperties& physicalDeviceMemoryProperties, VkMemoryPropertyFlags memoryPropertyFlags, bool isEqual)
 {
-   /* const VkPhysicalDeviceMemoryProperties& physicalDeviceMemoryProperties = VulkanDeviceCaps::getInstance()->getDeviceMemoryProperties();
     for (u32 memoryTypeIndex = 0; memoryTypeIndex < physicalDeviceMemoryProperties.memoryTypeCount; ++memoryTypeIndex)
     {
         if (isEqual)
@@ -88,7 +85,7 @@ bool VulkanMemory::isSupportedMemoryType(VkMemoryPropertyFlags memoryPropertyFla
                 return true;
             }
         }
-    }*/
+    }
 
     return false;
 }
@@ -108,7 +105,7 @@ VulkanMemory::VulkanAllocation VulkanMemory::allocateImageMemory(VulkanMemoryAll
 
         s32 memoryTypeIndex = -1;
         VulkanAllocation memory = {};
-        if (false/*VulkanDeviceCaps::getInstance()->supportDedicatedAllocation*/)
+        if (allocator.m_device.getVulkanDeviceCaps()._supportDedicatedAllocation)
         {
             VkMemoryDedicatedRequirements memoryDedicatedRequirements = {};
             memoryDedicatedRequirements.sType = VK_STRUCTURE_TYPE_MEMORY_DEDICATED_REQUIREMENTS;
@@ -123,9 +120,9 @@ VulkanMemory::VulkanAllocation VulkanMemory::allocateImageMemory(VulkanMemoryAll
             imageMemoryRequirementsInfo2.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_REQUIREMENTS_INFO_2;
             imageMemoryRequirementsInfo2.pNext = nullptr;
             imageMemoryRequirementsInfo2.image = image;
-            VulkanWrapper::GetImageMemoryRequirements2(allocator.m_device, &imageMemoryRequirementsInfo2, &memoryRequirements2);
+            VulkanWrapper::GetImageMemoryRequirements2(allocator.m_device.getDeviceInfo()._device, &imageMemoryRequirementsInfo2, &memoryRequirements2);
 
-            memoryTypeIndex = VulkanMemory::findMemoryTypeIndex(memoryRequirements2.memoryRequirements, flags);
+            memoryTypeIndex = VulkanMemory::findMemoryTypeIndex(allocator.m_device.getVulkanDeviceCaps().getDeviceMemoryProperties(), memoryRequirements2.memoryRequirements, flags);
             if (memoryTypeIndex < 0)
             {
                 LOG_ERROR("VulkanMemory::allocateImageMemory2: invalid memoryTypeIndex %d, memoryRequirements.memoryTypeBits %d, VkMemoryPropertyFlags %d", memoryTypeIndex, memoryRequirements2.memoryRequirements.memoryTypeBits, flags);
@@ -149,7 +146,7 @@ VulkanMemory::VulkanAllocation VulkanMemory::allocateImageMemory(VulkanMemoryAll
                 memoryDedicatedAllocateInfo.buffer = VK_NULL_HANDLE;
                 vkExtensions = &memoryDedicatedAllocateInfo;
 
-                memory = VulkanMemory::getSimpleMemoryAllocator(allocator.m_device)->allocate(memoryRequirements2.memoryRequirements.size, memoryRequirements2.memoryRequirements.alignment, memoryTypeIndex, vkExtensions);
+                memory = VulkanMemory::getSimpleMemoryAllocator(&allocator.m_device)->allocate(memoryRequirements2.memoryRequirements.size, memoryRequirements2.memoryRequirements.alignment, memoryTypeIndex, vkExtensions);
                 if (memory._memory == VK_NULL_HANDLE)
                 {
                     return VulkanMemory::s_invalidMemory;
@@ -169,9 +166,9 @@ VulkanMemory::VulkanAllocation VulkanMemory::allocateImageMemory(VulkanMemoryAll
         else
         {
             VkMemoryRequirements memoryRequirements = {};
-            VulkanWrapper::GetImageMemoryRequirements(allocator.m_device, image, &memoryRequirements);
+            VulkanWrapper::GetImageMemoryRequirements(allocator.m_device.getDeviceInfo()._device, image, &memoryRequirements);
 
-            s32 memoryTypeIndex = VulkanMemory::findMemoryTypeIndex(memoryRequirements, flags);
+            s32 memoryTypeIndex = VulkanMemory::findMemoryTypeIndex(allocator.m_device.getVulkanDeviceCaps().getDeviceMemoryProperties(), memoryRequirements, flags);
             if (memoryTypeIndex < 0)
             {
                 LOG_ERROR("VulkanMemory::allocateImageMemory: invalid memoryTypeIndex %d, memoryRequirements.memoryTypeBits %d, VkMemoryPropertyFlags %d", memoryTypeIndex, memoryRequirements.memoryTypeBits, flags);
@@ -190,14 +187,14 @@ VulkanMemory::VulkanAllocation VulkanMemory::allocateImageMemory(VulkanMemoryAll
             }
         }
 
-        VkResult result = VulkanWrapper::BindImageMemory(allocator.m_device, image, memory._memory, memory._offset);
+        VkResult result = VulkanWrapper::BindImageMemory(allocator.m_device.getDeviceInfo()._device, image, memory._memory, memory._offset);
         if (result != VK_SUCCESS)
         {
             LOG_ERROR("VulkanMemory::allocateImageMemory: vkBindImageMemory. Error %s", ErrorString(result).c_str());
 
             if (memory._property & MemoryProperty::dedicatedMemory)
             {
-                VulkanMemory::getSimpleMemoryAllocator(allocator.m_device)->deallocate(memory);
+                VulkanMemory::getSimpleMemoryAllocator(&allocator.m_device)->deallocate(memory);
             }
             else
             {
@@ -225,9 +222,9 @@ VulkanMemory::VulkanAllocation VulkanMemory::allocateBufferMemory(VulkanMemoryAl
         std::lock_guard<std::recursive_mutex> lock(s_mutex);
 
         VkMemoryRequirements memoryRequirements = {};
-        VulkanWrapper::GetBufferMemoryRequirements(allocator.m_device, buffer, &memoryRequirements);
+        VulkanWrapper::GetBufferMemoryRequirements(allocator.m_device.getDeviceInfo()._device, buffer, &memoryRequirements);
 
-        s32 memoryTypeIndex = VulkanMemory::findMemoryTypeIndex(memoryRequirements, flags);
+        s32 memoryTypeIndex = VulkanMemory::findMemoryTypeIndex(allocator.m_device.getVulkanDeviceCaps().getDeviceMemoryProperties(),memoryRequirements, flags);
         if (memoryTypeIndex < 0)
         {
             LOG_ERROR("VulkanMemory::allocateBufferMemory: invalid memoryTypeIndex %d, memoryRequirements.memoryTypeBits %d, VkMemoryPropertyFlags %d", memoryTypeIndex, memoryRequirements.memoryTypeBits, flags);
@@ -246,7 +243,7 @@ VulkanMemory::VulkanAllocation VulkanMemory::allocateBufferMemory(VulkanMemoryAl
         }
 
         ASSERT(math::alignUp(memory._offset, memoryRequirements.alignment) == memory._offset, "must be aligned");
-        VkResult result = VulkanWrapper::BindBufferMemory(allocator.m_device, buffer, memory._memory, memory._offset);
+        VkResult result = VulkanWrapper::BindBufferMemory(allocator.m_device.getDeviceInfo()._device, buffer, memory._memory, memory._offset);
         if (result != VK_SUCCESS)
         {
             LOG_ERROR("VulkanMemory::allocateBufferMemory: vkBindBufferMemory. Error %s", ErrorString(result).c_str());
@@ -266,7 +263,7 @@ void VulkanMemory::freeMemory(VulkanMemoryAllocator& allocator, VulkanAllocation
 
         if (memory._property & MemoryProperty::dedicatedMemory)
         {
-            VulkanMemory::getSimpleMemoryAllocator(allocator.m_device)->deallocate(memory);
+            VulkanMemory::getSimpleMemoryAllocator(&allocator.m_device)->deallocate(memory);
         }
         else
         {
@@ -275,14 +272,14 @@ void VulkanMemory::freeMemory(VulkanMemoryAllocator& allocator, VulkanAllocation
     }
 }
 
-VulkanMemory::VulkanMemoryAllocator* VulkanMemory::getSimpleMemoryAllocator(VkDevice device)
+VulkanMemory::VulkanMemoryAllocator* VulkanMemory::getSimpleMemoryAllocator(VulkanDevice* device)
 {
     {
         std::lock_guard<std::recursive_mutex> lock(s_mutex);
 
         if (!s_simpleVulkanMemoryAllocator)
         {
-            s_simpleVulkanMemoryAllocator = new SimpleVulkanMemoryAllocator(device);
+            s_simpleVulkanMemoryAllocator = V3D_NEW(SimpleVulkanMemoryAllocator, memory::MemoryLabel::MemoryRenderCore)(device);
         }
         return s_simpleVulkanMemoryAllocator;
     }
@@ -290,8 +287,8 @@ VulkanMemory::VulkanMemoryAllocator* VulkanMemory::getSimpleMemoryAllocator(VkDe
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-VulkanMemory::VulkanMemoryAllocator::VulkanMemoryAllocator(VkDevice device) noexcept
-    : m_device(device)
+VulkanMemory::VulkanMemoryAllocator::VulkanMemoryAllocator(VulkanDevice* device) noexcept
+    : m_device(*device)
 {
 }
 
@@ -305,7 +302,7 @@ VulkanMemory::VulkanMemoryAllocator::~VulkanMemoryAllocator()
 u32 SimpleVulkanMemoryAllocator::s_debugNameGenerator = 0;
 #endif //VULKAN_DEBUG_MARKERS
 
-SimpleVulkanMemoryAllocator::SimpleVulkanMemoryAllocator(VkDevice device) noexcept
+SimpleVulkanMemoryAllocator::SimpleVulkanMemoryAllocator(VulkanDevice* device) noexcept
     : VulkanMemoryAllocator(device)
 {
 }
@@ -328,47 +325,47 @@ VulkanMemory::VulkanAllocation SimpleVulkanMemoryAllocator::allocate(VkDeviceSiz
     memoryAllocateInfo.allocationSize = alignedSize;
     memoryAllocateInfo.memoryTypeIndex = memoryTypeIndex;
 
-    VkResult result = VulkanWrapper::AllocateMemory(m_device, &memoryAllocateInfo, VULKAN_ALLOCATOR, &memory._memory);
+    VkResult result = VulkanWrapper::AllocateMemory(m_device.getDeviceInfo()._device, &memoryAllocateInfo, VULKAN_ALLOCATOR, &memory._memory);
     if (result != VK_SUCCESS)
     {
         LOG_ERROR("SimpleVulkanMemoryAllocator::allocate vkAllocateMemory is failed. Error: %s", ErrorString(result).c_str());
         return VulkanMemory::s_invalidMemory;
     }
 
-//    const VkPhysicalDeviceMemoryProperties& physicalDeviceMemoryProperties = VulkanDeviceCaps::getInstance()->getDeviceMemoryProperties();
-//
-//    memory._size = alignedSize;
-//    memory._offset = 0;
-//    memory._mapped = nullptr;
-//    memory._flag = physicalDeviceMemoryProperties.memoryTypes[memoryTypeIndex].propertyFlags;
-//
-//    if (memory._flag & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT)
-//    {
-//        VkResult result = VulkanWrapper::MapMemory(m_device, memory._memory, 0, VK_WHOLE_SIZE, 0, &memory._mapped);
-//        if (result != VK_SUCCESS)
-//        {
-//            LOG_ERROR("SimpleVulkanMemoryAllocator::allocate: vkMapMemory. Error %s", ErrorString(result).c_str());
-//            SimpleVulkanMemoryAllocator::deallocate(memory);
-//
-//            return VulkanMemory::s_invalidMemory;
-//        }
-//    }
-//
-//#if VULKAN_DEBUG_MARKERS
-//    if (VulkanDeviceCaps::getInstance()->debugUtilsObjectNameEnabled)
-//    {
-//        std::string debugName = "SimpleAlloc_Memory_" + std::to_string(s_debugNameGenerator++);
-//
-//        VkDebugUtilsObjectNameInfoEXT debugUtilsObjectNameInfo = {};
-//        debugUtilsObjectNameInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT;
-//        debugUtilsObjectNameInfo.pNext = nullptr;
-//        debugUtilsObjectNameInfo.objectType = VK_OBJECT_TYPE_DEVICE_MEMORY;
-//        debugUtilsObjectNameInfo.objectHandle = reinterpret_cast<u64>(memory._memory);
-//        debugUtilsObjectNameInfo.pObjectName = debugName.c_str();
-//
-//        VulkanWrapper::SetDebugUtilsObjectName(m_device, &debugUtilsObjectNameInfo);
-//    }
-//#endif //VULKAN_DEBUG_MARKERS
+    const VkPhysicalDeviceMemoryProperties& physicalDeviceMemoryProperties = m_device.getVulkanDeviceCaps().getDeviceMemoryProperties();
+
+    memory._size = alignedSize;
+    memory._offset = 0;
+    memory._mapped = nullptr;
+    memory._flag = physicalDeviceMemoryProperties.memoryTypes[memoryTypeIndex].propertyFlags;
+
+    if (memory._flag & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT)
+    {
+        VkResult result = VulkanWrapper::MapMemory(m_device.getDeviceInfo()._device, memory._memory, 0, VK_WHOLE_SIZE, 0, &memory._mapped);
+        if (result != VK_SUCCESS)
+        {
+            LOG_ERROR("SimpleVulkanMemoryAllocator::allocate: vkMapMemory. Error %s", ErrorString(result).c_str());
+            SimpleVulkanMemoryAllocator::deallocate(memory);
+
+            return VulkanMemory::s_invalidMemory;
+        }
+    }
+
+#if VULKAN_DEBUG_MARKERS
+    if (m_device.getVulkanDeviceCaps()._debugUtilsObjectNameEnabled)
+    {
+        std::string debugName = "SimpleAlloc_Memory_" + std::to_string(s_debugNameGenerator++);
+
+        VkDebugUtilsObjectNameInfoEXT debugUtilsObjectNameInfo = {};
+        debugUtilsObjectNameInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT;
+        debugUtilsObjectNameInfo.pNext = nullptr;
+        debugUtilsObjectNameInfo.objectType = VK_OBJECT_TYPE_DEVICE_MEMORY;
+        debugUtilsObjectNameInfo.objectHandle = reinterpret_cast<u64>(memory._memory);
+        debugUtilsObjectNameInfo.pObjectName = debugName.c_str();
+
+        VulkanWrapper::SetDebugUtilsObjectName(m_device.getDeviceInfo()._device, &debugUtilsObjectNameInfo);
+    }
+#endif //VULKAN_DEBUG_MARKERS
 
     return memory;
 }
@@ -378,19 +375,19 @@ void SimpleVulkanMemoryAllocator::deallocate(VulkanMemory::VulkanAllocation& mem
     if (memory._mapped)
     {
         ASSERT(memory._memory, "nullptr");
-        VulkanWrapper::UnmapMemory(m_device, memory._memory);
+        VulkanWrapper::UnmapMemory(m_device.getDeviceInfo()._device, memory._memory);
     }
 
     if (memory._memory != VK_NULL_HANDLE)
     {
-        VulkanWrapper::FreeMemory(m_device, memory._memory, VULKAN_ALLOCATOR);
+        VulkanWrapper::FreeMemory(m_device.getDeviceInfo()._device, memory._memory, VULKAN_ALLOCATOR);
     }
     memory = VulkanMemory::s_invalidMemory;
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-PoolVulkanMemoryAllocator::PoolVulkanMemoryAllocator(VkDevice device, u64 allocationSize) noexcept
+PoolVulkanMemoryAllocator::PoolVulkanMemoryAllocator(VulkanDevice* device, u64 allocationSize) noexcept
     : VulkanMemoryAllocator(device)
     , m_allocationSize(allocationSize)
 {
@@ -416,45 +413,44 @@ PoolVulkanMemoryAllocator::Pool::Pool() noexcept
 
 VulkanMemory::VulkanAllocation PoolVulkanMemoryAllocator::allocate(VkDeviceSize size, VkDeviceSize align, u32 memoryTypeIndex, const void* extensions)
 {
-    //VkDeviceSize alignedSize = math::alignUp<VkDeviceSize>(size, VulkanDeviceCaps::getInstance()->getPhysicalDeviceLimits().minMemoryMapAlignment);
+    VkDeviceSize alignedSize = math::alignUp<VkDeviceSize>(size, m_device.getVulkanDeviceCaps().getPhysicalDeviceLimits().minMemoryMapAlignment);
 
-    //ASSERT(memoryTypeIndex < VK_MAX_MEMORY_TYPES, "out of range");
-    //auto& heaps = m_heaps[memoryTypeIndex];
-    //
-    ////find in heap
-    //if (VulkanMemory::VulkanAllocation memory = {}; PoolVulkanMemoryAllocator::findAllocationFromPool(heaps, alignedSize, memory))
-    //{
-    //    return memory;
-    //}
+    ASSERT(memoryTypeIndex < VK_MAX_MEMORY_TYPES, "out of range");
+    auto& heaps = m_heaps[memoryTypeIndex];
+    
+    //find in heap
+    if (VulkanMemory::VulkanAllocation memory = {}; PoolVulkanMemoryAllocator::findAllocationFromPool(heaps, alignedSize, memory))
+    {
+        return memory;
+    }
 
-    ////create new pool
-    //;
-    //u32 alignedAllocationSize = math::alignUp(m_allocationSize, VulkanDeviceCaps::getInstance()->getPhysicalDeviceLimits().minMemoryMapAlignment);
-    //ASSERT(alignedAllocationSize > alignedSize, "Too small size of pool. Set bigger");
-    //Pool* newPool = createPool(alignedAllocationSize, alignedSize, memoryTypeIndex);
-    //if (!newPool)
-    //{
-    //    return VulkanMemory::s_invalidMemory;
-    //}
+    //create new pool
+    u32 alignedAllocationSize = math::alignUp(m_allocationSize, m_device.getVulkanDeviceCaps().getPhysicalDeviceLimits().minMemoryMapAlignment);
+    ASSERT(alignedAllocationSize > alignedSize, "Too small size of pool. Set bigger");
+    Pool* newPool = createPool(alignedAllocationSize, alignedSize, memoryTypeIndex);
+    if (!newPool)
+    {
+        return VulkanMemory::s_invalidMemory;
+    }
 
-    //MemoryChunck reqestedChunk = {};
-    //reqestedChunk._size = alignedSize;
-    //reqestedChunk._offset = 0;
-    //newPool->_chunks.insert(reqestedChunk);
+    MemoryChunck reqestedChunk = {};
+    reqestedChunk._size = alignedSize;
+    reqestedChunk._offset = 0;
+    newPool->_chunks.insert(reqestedChunk);
 
-    //heaps.emplace(newPool->_chunkSize, newPool);
+    heaps.emplace(newPool->_chunkSize, newPool);
 
-    //const VkPhysicalDeviceMemoryProperties& physicalDeviceMemoryProperties = VulkanDeviceCaps::getInstance()->getDeviceMemoryProperties();
-    //VkMemoryPropertyFlags flag = physicalDeviceMemoryProperties.memoryTypes[memoryTypeIndex].propertyFlags;
+    const VkPhysicalDeviceMemoryProperties& physicalDeviceMemoryProperties = m_device.getVulkanDeviceCaps().getDeviceMemoryProperties();
+    VkMemoryPropertyFlags flag = physicalDeviceMemoryProperties.memoryTypes[memoryTypeIndex].propertyFlags;
 
-    //return {
-    //    newPool->_memory,
-    //    newPool->_mapped,
-    //    newPool,
-    //    alignedSize,
-    //    0,
-    //    flag,
-    //};
+    return {
+        newPool->_memory,
+        newPool->_mapped,
+        newPool,
+        alignedSize,
+        0,
+        flag,
+    };
 
     return VulkanMemory::s_invalidMemory;
 }
@@ -540,15 +536,15 @@ void PoolVulkanMemoryAllocator::deallocate(VulkanMemory::VulkanAllocation& memor
         if (pool->_mapped)
         {
             ASSERT(pool->_memory, "nullptr");
-            VulkanWrapper::UnmapMemory(m_device, pool->_memory);
+            VulkanWrapper::UnmapMemory(m_device.getDeviceInfo()._device, pool->_memory);
         }
 
         if (pool->_memory != VK_NULL_HANDLE)
         {
-            VulkanWrapper::FreeMemory(m_device, pool->_memory, VULKAN_ALLOCATOR);
+            VulkanWrapper::FreeMemory(m_device.getDeviceInfo()._device, pool->_memory, VULKAN_ALLOCATOR);
         }
 
-        delete pool;
+        V3D_FREE(pool, memory::MemoryLabel::MemoryRenderCore);
         heaps.erase(poolIter);
     }
     else
@@ -594,7 +590,7 @@ bool PoolVulkanMemoryAllocator::findAllocationFromPool(std::multimap<VkDeviceSiz
     ASSERT(chunkSize._size > size, "fail");
     VkDeviceSize allocatedSize = 0;
     VkDeviceSize allocatedOffset = 0;
-    /*if (chunkSize._size - size >= VulkanDeviceCaps::getInstance()->getPhysicalDeviceLimits().minMemoryMapAlignment)
+    if (chunkSize._size - size >= m_device.getVulkanDeviceCaps().getPhysicalDeviceLimits().minMemoryMapAlignment)
     {
         MemoryChunck reqestedChunkSize;
         reqestedChunkSize._size = size;
@@ -607,7 +603,7 @@ bool PoolVulkanMemoryAllocator::findAllocationFromPool(std::multimap<VkDeviceSiz
         MemoryChunck freeChunkSize;
         freeChunkSize._size = chunkSize._size - size;
         freeChunkSize._offset = chunkSize._offset + size;
-        ASSERT(math::alignUp(freeChunkSize._offset, VulkanDeviceCaps::getInstance()->getPhysicalDeviceLimits().minMemoryMapAlignment) == freeChunkSize._offset, "must be aligment");
+        ASSERT(math::alignUp(freeChunkSize._offset, m_device.getVulkanDeviceCaps().getPhysicalDeviceLimits().minMemoryMapAlignment) == freeChunkSize._offset, "must be aligment");
 
         pool->_chunks.insert(freeChunkSize);
         pool->_freeChunks.insert(freeChunkSize);
@@ -618,10 +614,10 @@ bool PoolVulkanMemoryAllocator::findAllocationFromPool(std::multimap<VkDeviceSiz
 
         allocatedSize = chunkSize._size;
         allocatedOffset = chunkSize._offset;
-    }*/
+    }
 
-   /* const VkPhysicalDeviceMemoryProperties& physicalDeviceMemoryProperties = VulkanDeviceCaps::getInstance()->getDeviceMemoryProperties();
-    VkMemoryPropertyFlags flag = physicalDeviceMemoryProperties.memoryTypes[pool->_memoryTypeIndex].propertyFlags;*/
+    const VkPhysicalDeviceMemoryProperties& physicalDeviceMemoryProperties = m_device.getVulkanDeviceCaps().getDeviceMemoryProperties();
+    VkMemoryPropertyFlags flag = physicalDeviceMemoryProperties.memoryTypes[pool->_memoryTypeIndex].propertyFlags;
 
     memory._memory = pool->_memory;
     memory._mapped = pool->_mapped;
@@ -651,7 +647,7 @@ PoolVulkanMemoryAllocator::Pool* PoolVulkanMemoryAllocator::createPool(VkDeviceS
     memoryAllocateInfo.memoryTypeIndex = memoryTypeIndex;
 
     VkDeviceMemory deviceMemory;
-    VkResult result = VulkanWrapper::AllocateMemory(m_device, &memoryAllocateInfo, VULKAN_ALLOCATOR, &deviceMemory);
+    VkResult result = VulkanWrapper::AllocateMemory(m_device.getDeviceInfo()._device, &memoryAllocateInfo, VULKAN_ALLOCATOR, &deviceMemory);
     if (result != VK_SUCCESS)
     {
         LOG_ERROR("PoolVulkanMemoryAllocator::allocate vkAllocateMemory is failed. Error: %s", ErrorString(result).c_str());
@@ -662,7 +658,7 @@ PoolVulkanMemoryAllocator::Pool* PoolVulkanMemoryAllocator::createPool(VkDeviceS
     freeMemoryChunk._size = poolSize - requestedSize;
     freeMemoryChunk._offset = requestedSize;
 
-    Pool* newPool = new Pool();
+    Pool* newPool = V3D_NEW(Pool, memory::MemoryLabel::MemoryRenderCore)();
     newPool->_memory = deviceMemory;
     newPool->_size = poolSize;
     newPool->_chunkSize = poolSize - requestedSize;
@@ -672,25 +668,24 @@ PoolVulkanMemoryAllocator::Pool* PoolVulkanMemoryAllocator::createPool(VkDeviceS
     newPool->_chunks.insert(freeMemoryChunk);
     newPool->_freeChunks.insert(freeMemoryChunk);
 
-    //const VkPhysicalDeviceMemoryProperties& physicalDeviceMemoryProperties = VulkanDeviceCaps::getInstance()->getDeviceMemoryProperties();
-    //VkMemoryPropertyFlags flag = physicalDeviceMemoryProperties.memoryTypes[memoryTypeIndex].propertyFlags;
+    const VkPhysicalDeviceMemoryProperties& physicalDeviceMemoryProperties = m_device.getVulkanDeviceCaps().getDeviceMemoryProperties();
+    VkMemoryPropertyFlags flag = physicalDeviceMemoryProperties.memoryTypes[memoryTypeIndex].propertyFlags;
 
-    //if (flag & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT)
-    //{
-    //    VkResult result = VulkanWrapper::MapMemory(m_device, newPool->_memory, 0, VK_WHOLE_SIZE, 0, &newPool->_mapped);
-    //    if (result != VK_SUCCESS)
-    //    {
-    //        LOG_ERROR("PoolVulkanMemoryAllocator::allocate: vkMapMemory. Error %s", ErrorString(result).c_str());
+    if (flag & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT)
+    {
+        VkResult result = VulkanWrapper::MapMemory(m_device.getDeviceInfo()._device, newPool->_memory, 0, VK_WHOLE_SIZE, 0, &newPool->_mapped);
+        if (result != VK_SUCCESS)
+        {
+            LOG_ERROR("PoolVulkanMemoryAllocator::allocate: vkMapMemory. Error %s", ErrorString(result).c_str());
 
-    //        VulkanWrapper::FreeMemory(m_device, newPool->_memory, VULKAN_ALLOCATOR);
-    //        delete newPool;
+            VulkanWrapper::FreeMemory(m_device.getDeviceInfo()._device, newPool->_memory, VULKAN_ALLOCATOR);
+            V3D_DELETE(newPool, memory::MemoryLabel::MemoryRenderCore);
 
-    //        return nullptr;
-    //    }
-    //}
+            return nullptr;
+        }
+    }
 
-    //return newPool;
-    return nullptr;
+    return newPool;
 }
 
 #if VULKAN_DEBUG

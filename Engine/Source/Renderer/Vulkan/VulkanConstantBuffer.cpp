@@ -63,7 +63,7 @@ VulkanConstantBufferManager::VulkanConstantBufferManager(VulkanDevice* device, V
     : m_device(*device)
     , m_currentPoolBuffer(nullptr)
 
-    , m_memoryManager(new SimpleVulkanMemoryAllocator(device->getDeviceInfo()._device))
+    , m_memoryManager(new SimpleVulkanMemoryAllocator(device))
     , m_resourceDeleter(resourceDeleter)
     , k_bufferPoolSize(m_device.getVulkanDeviceCaps()._useDynamicUniforms ?
         std::min<u32>(m_device.getVulkanDeviceCaps().getPhysicalDeviceLimits().maxUniformBufferRange, m_device.getVulkanDeviceCaps().getPhysicalDeviceMaintenance3Properties().maxMemoryAllocationSize) : 1 * 1024 * 1024)

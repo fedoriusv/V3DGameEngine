@@ -135,7 +135,7 @@ namespace resource
     template<class TResource, class TResourceLoader>
     inline const TResource* ResourceManager::composeShader(renderer::Device* device, const std::string& name, const ShaderDecoder::ShaderPolicy& policy, const stream::Stream* stream, ShaderCompileFlags flags)
     {
-        static_assert(std::is_same<TResource, renderer::Shader>(), "wrong type");
+        static_assert(std::is_base_of<renderer::Shader, TResource>(), "wrong type");
         std::string innerName(name);
         std::transform(name.cbegin(), name.cend(), innerName.begin(), ::tolower);
 

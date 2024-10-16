@@ -93,11 +93,11 @@ namespace renderer
 
         VertexInputAttributeDesc(const std::initializer_list<VertexInputAttributeDesc::InputBinding>& inputBinding, const std::initializer_list<VertexInputAttributeDesc::InputAttribute>& inputAttributes) noexcept
         {
-            ASSERT(_inputBindings.size() <= inputBinding.size(), "out of range");
+            ASSERT(inputBinding.size() <= _inputBindings.size(), "out of range");
             _countInputBindings = static_cast<u32>(inputBinding.size());
             memcpy(_inputBindings.data(), inputBinding.begin(), sizeof(InputAttribute) * inputBinding.size());
 
-            ASSERT(inputAttributes.size() <= inputAttributes.size(), "out of range");
+            ASSERT(inputAttributes.size() <= _inputAttributes.size(), "out of range");
             _countInputAttributes = static_cast<u32>(inputAttributes.size());
             memcpy(_inputAttributes.data(), inputAttributes.begin(), sizeof(InputAttribute) * inputAttributes.size());
 

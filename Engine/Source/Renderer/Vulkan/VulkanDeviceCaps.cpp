@@ -437,11 +437,11 @@ void VulkanDeviceCaps::fillCapabilitiesList(const DeviceInfo* info)
         LOG_INFO("VulkanDeviceCaps::initialize:    memoryType [heapIndex %u, propertyFlags %s]", _deviceMemoryProps.memoryTypes[i].heapIndex, memoryProperyFlagsString(_deviceMemoryProps.memoryTypes[i].propertyFlags).c_str());
     }
 
-    _supportDeviceCoherentMemory = VulkanMemory::isSupportedMemoryType(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, true);
-    _supportHostCoherentMemory = VulkanMemory::isSupportedMemoryType(VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, false);
+    _supportDeviceCoherentMemory = VulkanMemory::isSupportedMemoryType(_deviceMemoryProps, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, true);
+    _supportHostCoherentMemory = VulkanMemory::isSupportedMemoryType(_deviceMemoryProps, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, false);
 
-    _supportDeviceCacheMemory = VulkanMemory::isSupportedMemoryType(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_CACHED_BIT, true);
-    _supportHostCacheMemory = VulkanMemory::isSupportedMemoryType(VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_CACHED_BIT, false);
+    _supportDeviceCacheMemory = VulkanMemory::isSupportedMemoryType(_deviceMemoryProps, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_CACHED_BIT, true);
+    _supportHostCacheMemory = VulkanMemory::isSupportedMemoryType(_deviceMemoryProps, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_CACHED_BIT, false);
 
     _vendorID = VendorID(_deviceProperties.vendorID);
     LOG_INFO("VulkanDeviceCaps::initialize: API version: %u (%u.%u.%u)", _deviceProperties.apiVersion, VK_VERSION_MAJOR(_deviceProperties.apiVersion), VK_VERSION_MINOR(_deviceProperties.apiVersion), VK_VERSION_PATCH(_deviceProperties.apiVersion));

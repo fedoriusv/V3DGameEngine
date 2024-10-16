@@ -51,6 +51,7 @@ namespace vk
         void bindBuffer(u32 binding, Buffer* buffer) override;
         void bindSampler(u32 binding, SamplerState* sampler) override;
         void bindConstantBuffer(u32 binding, u32 size, void* data) override;
+        void bindDescriptorSet(u32 set, std::vector<Descriptor> descriptors) override;
 
         void draw(const GeometryBufferDesc& desc, u32 firstVertex, u32 vertexCount, u32 firstInstance, u32 instanceCount) override;
         void drawIndexed(const GeometryBufferDesc& desc, u32 firstIndex, u32 indexCount, u32 firstInstance, u32 instanceCount) override;
@@ -118,8 +119,15 @@ namespace vk
 
         void submit(CmdList* cmd, bool wait = false) override;
 
-        Swapchain* createSwapchain(platform::Window* window, const Swapchain::SwapchainParams& params) override;
+        [[nodiscard]] Swapchain* createSwapchain(platform::Window* window, const Swapchain::SwapchainParams& params) override;
         void destroySwapchain(Swapchain* swapchain) override;
+
+        [[nodiscard]] TextureHandle createTexture(TextureTarget target, Format format, const math::Dimension3D& dimension, u32 layers, u32 mipmapLevel, TextureUsageFlags flags, const std::string& name = "") override;
+        [[nodiscard]] TextureHandle createTexture(TextureTarget target, Format format, const math::Dimension3D& dimension, u32 layers, TextureSamples samples, TextureUsageFlags flags, const std::string& name = "") override;
+        void destroyTexture(TextureHandle texture) override;
+
+        [[nodiscard]] BufferHandle createBuffer(RenderBuffer::Type type, u16 usageFlag, u64 size, const std::string& name = "") override;
+        void destroyBuffer(BufferHandle buffer) override;
 
     public:
 
@@ -136,12 +144,11 @@ namespace vk
 
     private:
 
-        friend VulkanSemaphoreManager;
         friend VulkanCommandBufferManager;
         friend VulkanFramebufferManager;
         friend VulkanRenderpassManager;
-        friend VulkanImage;
         friend VulkanCmdList;
+        friend VulkanSwapchain;
 
         VulkanDevice() = delete;
         VulkanDevice(const VulkanDevice&) = delete;

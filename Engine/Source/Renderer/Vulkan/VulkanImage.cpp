@@ -891,8 +891,9 @@ bool VulkanImage::isSRGBFormat(VkFormat format)
 std::set<VulkanImage*> VulkanImage::s_objects;
 #endif //DEBUG_OBJECT_MEMORY
 
-VulkanImage::VulkanImage(VulkanDevice* device, VkImageType type, VkFormat format, VkExtent3D dimension, u32 layers, u32 mipsLevel, VkImageTiling tiling, TextureUsageFlags usage, const std::string& name) noexcept
+VulkanImage::VulkanImage(VulkanDevice* device, VulkanMemory::VulkanMemoryAllocator* alloc, VkImageType type, VkFormat format, VkExtent3D dimension, u32 layers, u32 mipsLevel, VkImageTiling tiling, TextureUsageFlags usage, const std::string& name) noexcept
     : m_device(*device)
+    , m_memoryAllocator(alloc)
     , m_type(type)
     , m_format(format)
     , m_dimension(dimension)
@@ -922,8 +923,9 @@ VulkanImage::VulkanImage(VulkanDevice* device, VkImageType type, VkFormat format
     m_layout.resize(1 + static_cast<u64>(m_layerLevels) * static_cast<u64>(m_mipLevels), (m_tiling == VK_IMAGE_TILING_OPTIMAL) ? VK_IMAGE_LAYOUT_UNDEFINED : VK_IMAGE_LAYOUT_PREINITIALIZED);
 }
 
-VulkanImage::VulkanImage(VulkanDevice* device, VkFormat format, VkExtent3D dimension, VkSampleCountFlagBits samples, u32 layers, TextureUsageFlags usage, const std::string& name) noexcept
+VulkanImage::VulkanImage(VulkanDevice* device, VulkanMemory::VulkanMemoryAllocator* alloc, VkFormat format, VkExtent3D dimension, VkSampleCountFlagBits samples, u32 layers, TextureUsageFlags usage, const std::string& name) noexcept
     : m_device(*device)
+    , m_memoryAllocator(alloc)
     , m_type(VK_IMAGE_TYPE_2D)
     , m_format(format)
     , m_dimension(dimension)
@@ -946,14 +948,14 @@ VulkanImage::VulkanImage(VulkanDevice* device, VkFormat format, VkExtent3D dimen
         if (VulkanImage::isColorFormat(m_format))
         {
             ASSERT(samples > VkSampleCountFlagBits::VK_SAMPLE_COUNT_1_BIT, "wrong sample count");
-            m_resolveImage = new VulkanImage(device, format, dimension, VkSampleCountFlagBits::VK_SAMPLE_COUNT_1_BIT, layers, usage & ~TextureUsage::TextureUsage_Resolve);
+            m_resolveImage = new VulkanImage(device, alloc, format, dimension, VkSampleCountFlagBits::VK_SAMPLE_COUNT_1_BIT, layers, usage & ~TextureUsage::TextureUsage_Resolve);
         }
         else
         {
             if (m_device.getVulkanDeviceCaps()._supportDepthAutoResolve)
             {
                 ASSERT(samples > VkSampleCountFlagBits::VK_SAMPLE_COUNT_1_BIT, "wrong sample count");
-                m_resolveImage = new VulkanImage(device, format, dimension, VkSampleCountFlagBits::VK_SAMPLE_COUNT_1_BIT, layers, usage & ~TextureUsage::TextureUsage_Resolve);
+                m_resolveImage = new VulkanImage(device, alloc, format, dimension, VkSampleCountFlagBits::VK_SAMPLE_COUNT_1_BIT, layers, usage & ~TextureUsage::TextureUsage_Resolve);
             }
             else
             {
@@ -1132,7 +1134,7 @@ bool VulkanImage::create()
         memoryFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
         if (imageUsage & VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT)
         {
-            if (VulkanMemory::isSupportedMemoryType(memoryFlags | VK_MEMORY_PROPERTY_LAZILY_ALLOCATED_BIT, true))
+            if (VulkanMemory::isSupportedMemoryType(m_device.getVulkanDeviceCaps().getDeviceMemoryProperties(), memoryFlags | VK_MEMORY_PROPERTY_LAZILY_ALLOCATED_BIT, true))
             {
                 memoryFlags |= VK_MEMORY_PROPERTY_LAZILY_ALLOCATED_BIT;
             }
@@ -1149,7 +1151,7 @@ bool VulkanImage::create()
         ASSERT(false, "not impl");
     }
 
-    m_memory = VulkanMemory::allocateImageMemory(*m_device.m_imageMemoryManager, m_image, memoryFlags);
+    m_memory = VulkanMemory::allocateImageMemory(*m_memoryAllocator, m_image, memoryFlags);
     if (m_memory == VulkanMemory::s_invalidMemory)
     {
         VulkanImage::destroy();
@@ -1158,7 +1160,7 @@ bool VulkanImage::create()
         return false;
     }
 #if VULKAN_DEBUG
-    m_device.m_imageMemoryManager->linkVulkanObject(m_memory, this);
+    m_memoryAllocator->linkVulkanObject(m_memory, this);
 #endif //VULKAN_DEBUG
 
     if (!createViewImage())
@@ -1580,9 +1582,9 @@ void VulkanImage::destroy()
         if (m_memory != VulkanMemory::s_invalidMemory)
         {
 #if VULKAN_DEBUG
-            m_device.m_imageMemoryManager->unlinkVulkanObject(m_memory, this);
+            m_memoryAllocator->unlinkVulkanObject(m_memory, this);
 #endif //VULKAN_DEBUG
-            VulkanMemory::freeMemory(*m_device.m_imageMemoryManager, m_memory);
+            VulkanMemory::freeMemory(*m_memoryAllocator, m_memory);
         }
     }
 }

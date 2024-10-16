@@ -250,6 +250,110 @@ void VulkanDevice::destroySwapchain(Swapchain* swapchain)
     V3D_FREE(vkSwapchain, memory::MemoryLabel::MemoryRenderCore);
 }
 
+TextureHandle VulkanDevice::createTexture(TextureTarget target, Format format, const math::Dimension3D& dimension, u32 layers, u32 mipmapLevel, TextureUsageFlags flags, const std::string& name)
+{
+#if VULKAN_DEBUG
+    LOG_DEBUG("VulkanDevice::createTexture");
+    if (target == TextureTarget::TextureCubeMap)
+    {
+        ASSERT(layers == 6U, "must be 6 layers");
+    }
+#endif //VULKAN_DEBUG
+
+    VkImageType vkType = VulkanImage::convertTextureTargetToVkImageType(target);
+    VkFormat vkFormat = VulkanImage::convertImageFormatToVkFormat(format);
+    VkExtent3D vkExtent = { dimension.m_width, dimension.m_height, dimension.m_depth };
+
+    VulkanImage* vkImage = V3D_NEW(VulkanImage, memory::MemoryLabel::MemoryRenderCore)(this, m_imageMemoryManager, vkType, vkFormat, vkExtent, layers, mipmapLevel, VK_IMAGE_TILING_OPTIMAL, flags, name);
+    if (!vkImage->create())
+    {
+        vkImage->destroy();
+        V3D_DELETE(vkImage, memory::MemoryLabel::MemoryRenderCore);
+
+        return TextureHandle(nullptr);
+    }
+
+    return TextureHandle(vkImage);
+}
+
+TextureHandle VulkanDevice::createTexture(TextureTarget target, Format format, const math::Dimension3D& dimension, u32 layers, TextureSamples samples, TextureUsageFlags flags, const std::string& name)
+{
+#if VULKAN_DEBUG
+    LOG_DEBUG("VulkanDevice::createTexture");
+    if (target == TextureTarget::TextureCubeMap)
+    {
+        ASSERT(layers == 6U, "must be 6 layers");
+    }
+#endif //VULKAN_DEBUG
+
+    VkFormat vkFormat = VulkanImage::convertImageFormatToVkFormat(format);
+    VkExtent3D vkExtent = { dimension.m_width, dimension.m_height, dimension.m_depth };
+    VkSampleCountFlagBits vkSamples = VulkanImage::convertRenderTargetSamplesToVkSampleCount(samples);
+
+    VulkanImage* vkImage = V3D_NEW(VulkanImage, memory::MemoryLabel::MemoryRenderCore)(this, m_imageMemoryManager, vkFormat, vkExtent, vkSamples, layers, flags, name);
+    if (!vkImage->create())
+    {
+        vkImage->destroy();
+        V3D_DELETE(vkImage, memory::MemoryLabel::MemoryRenderCore);
+
+        return TextureHandle(nullptr);
+    }
+
+    return TextureHandle(vkImage);
+}
+
+void VulkanDevice::destroyTexture(TextureHandle texture)
+{
+#if VULKAN_DEBUG
+    LOG_DEBUG("VulkanDevice::destroyTexture %llx", texture);
+#endif //VULKAN_DEBUG
+
+    ASSERT(texture.isValid(), "nullptr");
+    VulkanImage* vkImage = OBJECT_FROM_HANDLE(texture, VulkanImage);
+    m_resourceDeleter.addResourceToDelete(vkImage, [vkImage](VulkanResource* resource) -> void
+        {
+            //vkImage->notifyObservers();
+
+            vkImage->destroy();
+            V3D_DELETE(vkImage, memory::MemoryLabel::MemoryRenderCore);
+        });
+}
+
+BufferHandle VulkanDevice::createBuffer(RenderBuffer::Type type, u16 usageFlag, u64 size, const std::string& name)
+{
+#if VULKAN_DEBUG
+    LOG_DEBUG("VulkanDevice::createBuffer");
+#endif //VULKAN_DEBUG
+
+    VulkanBuffer* vkBuffer = V3D_NEW(VulkanBuffer, memory::MemoryLabel::MemoryRenderCore)(this, m_bufferMemoryManager, type, usageFlag, size, name);
+    if (!vkBuffer->create())
+    {
+        vkBuffer->destroy();
+        V3D_DELETE(vkBuffer, memory::MemoryLabel::MemoryRenderCore);
+
+        return BufferHandle(nullptr);
+    }
+
+    return BufferHandle(vkBuffer);
+}
+
+void VulkanDevice::destroyBuffer(BufferHandle buffer)
+{
+#if VULKAN_DEBUG
+    LOG_DEBUG("VulkanContext::destroyBuffer %llx", buffer);
+#endif //VULKAN_DEBUG
+
+    ASSERT(buffer.isValid(), "nullptr");
+    VulkanBuffer* vkBuffer = OBJECT_FROM_HANDLE(buffer, VulkanBuffer);
+    m_resourceDeleter.addResourceToDelete(vkBuffer, [vkBuffer](VulkanResource* resource) -> void
+        {
+            //vkBuffer->notifyObservers();
+
+            vkBuffer->destroy();
+            V3D_DELETE(vkBuffer, memory::MemoryLabel::MemoryRenderCore);
+        });
+}
+
 CmdList* VulkanDevice::createCommandList_Impl(DeviceMask queueType)
 {
     VulkanCmdList* cmdList = V3D_NEW(VulkanCmdList, memory::MemoryLabel::MemoryRenderCore)(this);
@@ -314,6 +418,17 @@ bool VulkanDevice::initialize()
     }
 
     m_deviceCaps.initialize();
+
+    if (m_deviceCaps._unifiedMemoryManager)
+    {
+        m_imageMemoryManager = V3D_NEW(SimpleVulkanMemoryAllocator, memory::MemoryLabel::MemoryRenderCore)(this);
+        m_bufferMemoryManager = m_imageMemoryManager;
+    }
+    else
+    {
+        m_imageMemoryManager = V3D_NEW(PoolVulkanMemoryAllocator, memory::MemoryLabel::MemoryRenderCore)(this, m_deviceCaps._memoryImagePoolSize);
+        m_bufferMemoryManager = V3D_NEW(PoolVulkanMemoryAllocator, memory::MemoryLabel::MemoryRenderCore)(this, m_deviceCaps._memoryBufferPoolSize);
+    }
 
     m_semaphoreManager = V3D_NEW(VulkanSemaphoreManager, memory::MemoryLabel::MemoryRenderCore)(this);
     m_framebufferManager = V3D_NEW(VulkanFramebufferManager, memory::MemoryLabel::MemoryRenderCore)(this);
@@ -724,21 +839,20 @@ void VulkanDevice::destroy()
         m_framebufferManager = nullptr;
     }
 
+    if (m_deviceCaps._unifiedMemoryManager)
+    {
+        V3D_DELETE(m_imageMemoryManager, memory::MemoryLabel::MemoryRenderCore);
+        m_imageMemoryManager = nullptr;
+        m_bufferMemoryManager = nullptr;
+    }
+    else
+    {
+        V3D_DELETE(m_imageMemoryManager, memory::MemoryLabel::MemoryRenderCore);
+        m_imageMemoryManager = nullptr;
 
-    //if (m_deviceCaps._unifiedMemoryManager)
-    //{
-    //    delete m_imageMemoryManager;
-    //    m_imageMemoryManager = nullptr;
-    //    m_bufferMemoryManager = nullptr;
-    //}
-    //else
-    //{
-    //    delete m_imageMemoryManager;
-    //    m_imageMemoryManager = nullptr;
-
-    //    delete m_bufferMemoryManager;
-    //    m_bufferMemoryManager = nullptr;
-    //}
+        V3D_DELETE(m_bufferMemoryManager, memory::MemoryLabel::MemoryRenderCore);
+        m_bufferMemoryManager = nullptr;
+    }
 
     if (m_semaphoreManager)
     {
@@ -911,8 +1025,13 @@ void VulkanCmdList::bindConstantBuffer(u32 binding, u32 size, void* data)
 {
 }
 
+void VulkanCmdList::bindDescriptorSet(u32 set, std::vector<Descriptor> descriptors)
+{
+}
+
 void VulkanCmdList::draw(const GeometryBufferDesc& desc, u32 firstVertex, u32 vertexCount, u32 firstInstance, u32 instanceCount)
 {
+
 }
 
 void VulkanCmdList::drawIndexed(const GeometryBufferDesc& desc, u32 firstIndex, u32 indexCount, u32 firstInstance, u32 instanceCount)

@@ -13,7 +13,10 @@ namespace vk
 {
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    class VulkanDevice;
     class VulkanResource;
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
     * @brief VulkanMemory class. Render side.
@@ -62,7 +65,7 @@ namespace vk
         {
         public:
 
-            explicit VulkanMemoryAllocator(VkDevice device) noexcept;
+            explicit VulkanMemoryAllocator(VulkanDevice* device) noexcept;
             virtual ~VulkanMemoryAllocator();
 
 #if VULKAN_DEBUG
@@ -76,7 +79,7 @@ namespace vk
             VulkanMemoryAllocator(const VulkanMemoryAllocator&) = delete;
             VulkanMemoryAllocator& operator=(const VulkanMemoryAllocator&) = delete;
 
-            VkDevice m_device;
+            VulkanDevice& m_device;
 
         private:
 
@@ -86,8 +89,8 @@ namespace vk
             friend VulkanMemory;
         };
 
-        static s32 findMemoryTypeIndex(const VkMemoryRequirements& memoryRequirements, VkMemoryPropertyFlags memoryPropertyFlags);
-        static bool isSupportedMemoryType(VkMemoryPropertyFlags memoryPropertyFlags, bool isEqual);
+        static s32 findMemoryTypeIndex(const VkPhysicalDeviceMemoryProperties& physicalDeviceMemoryProperties, const VkMemoryRequirements& memoryRequirements, VkMemoryPropertyFlags memoryPropertyFlags);
+        static bool isSupportedMemoryType(const VkPhysicalDeviceMemoryProperties& physicalDeviceMemoryProperties, VkMemoryPropertyFlags memoryPropertyFlags, bool isEqual);
 
         static VulkanMemory::VulkanAllocation s_invalidMemory;
 
@@ -98,7 +101,7 @@ namespace vk
 
     private:
 
-        static VulkanMemoryAllocator* getSimpleMemoryAllocator(VkDevice device);
+        static VulkanMemoryAllocator* getSimpleMemoryAllocator(VulkanDevice* device);
 
         static class SimpleVulkanMemoryAllocator* s_simpleVulkanMemoryAllocator;
         static std::recursive_mutex s_mutex;
@@ -113,7 +116,7 @@ namespace vk
     {
     public:
 
-        explicit SimpleVulkanMemoryAllocator(VkDevice device) noexcept;
+        explicit SimpleVulkanMemoryAllocator(VulkanDevice* device) noexcept;
         ~SimpleVulkanMemoryAllocator();
 
     private:
@@ -138,7 +141,7 @@ namespace vk
     {
     public:
 
-        explicit PoolVulkanMemoryAllocator(VkDevice device, u64 allocationSize) noexcept;
+        explicit PoolVulkanMemoryAllocator(VulkanDevice* device, u64 allocationSize) noexcept;
         ~PoolVulkanMemoryAllocator();
 
 #if VULKAN_DEBUG

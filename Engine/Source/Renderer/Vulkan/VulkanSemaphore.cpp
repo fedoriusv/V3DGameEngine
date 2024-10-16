@@ -31,7 +31,7 @@ VulkanSemaphore::~VulkanSemaphore()
 }
 
 VulkanSemaphoreManager::VulkanSemaphoreManager(VulkanDevice* device) noexcept
-    : m_device(device)
+    : m_device(*device)
 {
 }
 
@@ -124,7 +124,7 @@ VulkanSemaphore* VulkanSemaphoreManager::createSemaphore(const std::string& name
     semaphoreCreateInfo.pNext = nullptr;
     semaphoreCreateInfo.flags = 0;
 
-    VkResult result = VulkanWrapper::CreateSemaphore(m_device->m_deviceInfo._device, &semaphoreCreateInfo, VULKAN_ALLOCATOR, &vkSemaphore);
+    VkResult result = VulkanWrapper::CreateSemaphore(m_device.getDeviceInfo()._device, &semaphoreCreateInfo, VULKAN_ALLOCATOR, &vkSemaphore);
     if (result != VK_SUCCESS)
     {
         LOG_ERROR("VulkanSemaphoreManager::createSemaphore vkCreateSemaphore result %d", ErrorString(result).c_str());
@@ -141,7 +141,7 @@ VulkanSemaphore* VulkanSemaphoreManager::createSemaphore(const std::string& name
         semaphore->m_debugName = name;
     }
 
-    if (m_device->m_deviceCaps._debugUtilsObjectNameEnabled)
+    if (m_device.getVulkanDeviceCaps()._debugUtilsObjectNameEnabled)
     {
         VkDebugUtilsObjectNameInfoEXT debugUtilsObjectNameInfo = {};
         debugUtilsObjectNameInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT;
@@ -150,7 +150,7 @@ VulkanSemaphore* VulkanSemaphoreManager::createSemaphore(const std::string& name
         debugUtilsObjectNameInfo.objectHandle = reinterpret_cast<u64>(vkSemaphore);
         debugUtilsObjectNameInfo.pObjectName = semaphore->m_debugName.c_str();
 
-        VulkanWrapper::SetDebugUtilsObjectName(m_device->m_deviceInfo._device, &debugUtilsObjectNameInfo);
+        VulkanWrapper::SetDebugUtilsObjectName(m_device.getDeviceInfo()._device, &debugUtilsObjectNameInfo);
     }
 #endif //VULKAN_DEBUG_MARKERS
 
@@ -160,7 +160,7 @@ VulkanSemaphore* VulkanSemaphoreManager::createSemaphore(const std::string& name
 void VulkanSemaphoreManager::deleteSemaphore(VulkanSemaphore* semaphore)
 {
     ASSERT(semaphore && semaphore->m_semaphore, "nullptr");
-    VulkanWrapper::DestroySemaphore(m_device->m_deviceInfo._device, semaphore->m_semaphore, VULKAN_ALLOCATOR);
+    VulkanWrapper::DestroySemaphore(m_device.getDeviceInfo()._device, semaphore->m_semaphore, VULKAN_ALLOCATOR);
     semaphore->m_semaphore = VK_NULL_HANDLE;
 }
 

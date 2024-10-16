@@ -12,7 +12,7 @@ namespace vk
 {
 
 VulkanStagingBuffer::VulkanStagingBuffer(VulkanDevice* device, VulkanMemory::VulkanMemoryAllocator* memory, u64 size, BufferUsageFlags usageFlag) noexcept
-    : m_buffer(new VulkanBuffer(device, memory, RenderBuffer::Type::StagingBuffer, usageFlag, size))
+    : m_buffer(V3D_NEW(VulkanBuffer, memory::MemoryLabel::MemoryRenderCore)(device, memory, RenderBuffer::Type::StagingBuffer, usageFlag, size))
 {
 }
 
@@ -22,14 +22,14 @@ VulkanStagingBuffer::~VulkanStagingBuffer()
     {
         m_buffer->destroy();
 
-        delete m_buffer;
+        V3D_DELETE(m_buffer, memory::MemoryLabel::MemoryRenderCore);
         m_buffer = nullptr;
     }
 }
 
 VulkanStagingBufferManager::VulkanStagingBufferManager(VulkanDevice* device) noexcept
     : m_device(*device)
-    , m_memoryManager(new SimpleVulkanMemoryAllocator(device->getDeviceInfo()._device))
+    , m_memoryManager(V3D_NEW(SimpleVulkanMemoryAllocator, memory::MemoryLabel::MemoryRenderCore)(device))
 {
 }
 
@@ -37,19 +37,20 @@ VulkanStagingBufferManager::~VulkanStagingBufferManager()
 {
     if (m_memoryManager)
     {
-        delete m_memoryManager;
+        V3D_DELETE(m_memoryManager, memory::MemoryLabel::MemoryRenderCore);
         m_memoryManager = nullptr;
     }
 }
 
 VulkanStagingBuffer* VulkanStagingBufferManager::createStagingBuffer(u64 size, BufferUsageFlags usageFlag) const
 {
-    VulkanStagingBuffer* stagingBuffer = new VulkanStagingBuffer(&m_device, m_memoryManager, size, usageFlag);
+    VulkanStagingBuffer* stagingBuffer = V3D_NEW(VulkanStagingBuffer, memory::MemoryLabel::MemoryRenderCore)(&m_device, m_memoryManager, size, usageFlag);
     ASSERT(stagingBuffer, "nullptr");
     
     if (!stagingBuffer->create())
     {
         ASSERT(false, "fail");
+        V3D_DELETE(stagingBuffer, memory::MemoryLabel::MemoryRenderCore);
         return nullptr;
     }
 
@@ -78,7 +79,7 @@ void VulkanStagingBufferManager::destroyStagingBuffers()
         iter = m_stagingBuffers.erase(iter);
 
         buff->destroy();
-        delete buff;
+        V3D_DELETE(buff, memory::MemoryLabel::MemoryRenderCore);
     }
 }
 

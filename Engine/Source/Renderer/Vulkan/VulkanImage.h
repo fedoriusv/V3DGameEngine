@@ -47,8 +47,8 @@ namespace vk
         static bool isASTCFormat(VkFormat format);
         static bool isSRGBFormat(VkFormat format);
 
-        explicit VulkanImage(VulkanDevice* device, VkImageType type, VkFormat format, VkExtent3D dimension, u32 layers, u32 mipsLevel, VkImageTiling tiling, TextureUsageFlags usage, const std::string& name = "") noexcept;
-        explicit VulkanImage(VulkanDevice* device, VkFormat format, VkExtent3D dimension, VkSampleCountFlagBits samples, u32 layers, TextureUsageFlags usage, const std::string& name = "") noexcept;
+        explicit VulkanImage(VulkanDevice* device, VulkanMemory::VulkanMemoryAllocator* alloc, VkImageType type, VkFormat format, VkExtent3D dimension, u32 layers, u32 mipsLevel, VkImageTiling tiling, TextureUsageFlags usage, const std::string& name = "") noexcept;
+        explicit VulkanImage(VulkanDevice* device, VulkanMemory::VulkanMemoryAllocator* alloc, VkFormat format, VkExtent3D dimension, VkSampleCountFlagBits samples, u32 layers, TextureUsageFlags usage, const std::string& name = "") noexcept;
         ~VulkanImage();
 
         bool create() override;
@@ -92,21 +92,22 @@ namespace vk
         bool createViewImage();
         bool internalUpload(VulkanCmdList* cmdList, const math::Dimension3D& offsets, const math::Dimension3D& size, u32 layers, u32 mips, u64 dataSize, const void* data);
 
-        VulkanDevice&           m_device;
+        VulkanDevice&                           m_device;
+        VulkanMemory::VulkanMemoryAllocator*    m_memoryAllocator;
 
-        VkImageType             m_type;
-        VkFormat                m_format;
-        VkExtent3D              m_dimension;
-        u32                     m_mipLevels;
-        u32                     m_layerLevels;
-        VkSampleCountFlagBits   m_samples;
-        VkImageTiling           m_tiling;
-        VkImageAspectFlags      m_aspectMask;
-        TextureUsageFlags       m_usage;
+        VkImageType                             m_type;
+        VkFormat                                m_format;
+        VkExtent3D                              m_dimension;
+        u32                                     m_mipLevels;
+        u32                                     m_layerLevels;
+        VkSampleCountFlagBits                   m_samples;
+        VkImageTiling                           m_tiling;
+        VkImageAspectFlags                      m_aspectMask;
+        TextureUsageFlags                       m_usage;
 
-        VkImage                 m_image;
-        VulkanImage*            m_resolveImage;
-        VulkanMemory::VulkanAllocation m_memory;
+        VkImage                                 m_image;
+        VulkanImage*                            m_resolveImage;
+        VulkanMemory::VulkanAllocation          m_memory;
 
         std::unordered_map<DescInfo<VkImageSubresourceRange>, VkImageView, DescInfo<VkImageSubresourceRange>::Hash, DescInfo<VkImageSubresourceRange>::Compare> m_imageViews;
         std::vector<VkImageLayout> m_layout;

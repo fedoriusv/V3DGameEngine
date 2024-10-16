@@ -438,5 +438,35 @@ namespace renderer
 
     ///////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    struct Descriptor
+    {
+        enum Type
+        {
+            Descriptor_ConstantBuffer
+        };
+
+        struct ConstantBuffer
+        {
+            void*   _data   = nullptr;
+            u32     _offset = 0;
+            u32     _size   = 0;
+        };
+
+        union
+        {
+            ConstantBuffer _CBO;
+        };
+
+
+        Descriptor(Descriptor::Type type) noexcept
+            : _type(type)
+        {
+        }
+
+        Type _type;
+    };
+
+    ///////////////////////////////////////////////////////////////////////////////////////////////////////
+
 } //namespace renderer
 } //namespace v3d

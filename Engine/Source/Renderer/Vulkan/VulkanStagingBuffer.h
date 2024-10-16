@@ -98,10 +98,10 @@ namespace vk
         VulkanStagingBufferManager(const VulkanStagingBufferManager&) = delete;
         VulkanStagingBufferManager& operator=(const VulkanStagingBufferManager&) = delete;
 
-        VulkanDevice& m_device;
+        VulkanDevice&                           m_device;
+        VulkanMemory::VulkanMemoryAllocator*    m_memoryManager;
 
         std::vector<VulkanStagingBuffer*> m_stagingBuffers;
-        VulkanMemory::VulkanMemoryAllocator* m_memoryManager;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
