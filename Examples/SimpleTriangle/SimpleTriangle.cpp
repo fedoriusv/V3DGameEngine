@@ -7,13 +7,17 @@
 #include "Utils/Logger.h"
 
 using namespace v3d;
+using namespace v3d::renderer;
+using namespace v3d::platform;
+using namespace v3d::utils;
+using namespace v3d::event;
 
 const f32 k_nearValue = 0.1f;
 const f32 k_farValue = 30.0f;
 
 SimpleTriangle::SimpleTriangle()
     : m_Device(nullptr)
-    , m_Swapchain(nullptr)
+    , m_CmdList(nullptr)
 
     , m_Program(nullptr)
     , m_RenderTarget(nullptr)
@@ -28,12 +32,15 @@ SimpleTriangle::~SimpleTriangle()
 {
 }
 
-void SimpleTriangle::init(v3d::renderer::Device* device, v3d::renderer::Swapchain* swapchain)
+void SimpleTriangle::init(renderer::Device* device, renderer::Swapchain* swapchain)
 {
     m_Device = device;
+    m_CmdList = m_Device->createCommandList<renderer::CmdListRender>(Device::GraphicMask);
+
+    m_Rect = { 0, 0, (s32)swapchain->getBackbufferSize().m_width, (s32)swapchain->getBackbufferSize().m_height };
     m_Camera->setPerspective(45.0f, swapchain->getBackbufferSize(), k_nearValue, k_farValue);
 
-    const renderer::Shader* vertShader = nullptr;
+    const renderer::VertexShader* vertShader = nullptr;
     {
         const std::string vertexSource("\
         struct VS_INPUT\n\
@@ -76,11 +83,11 @@ void SimpleTriangle::init(v3d::renderer::Device* device, v3d::renderer::Swapchai
         vertexPolicy._content = renderer::ShaderContent::Source;
         vertexPolicy._entryPoint = "main";
 
-        vertShader = resource::ShaderCompiler::compileShader<renderer::Shader>(m_Device, "vertex", vertexPolicy, vertexStream, 0/*resource::ShaderCompileFlag::ShaderCompile_UseDXCompilerForSpirV*/);
+        vertShader = resource::ShaderCompiler::compileShader<renderer::VertexShader>(m_Device, "vertex", vertexPolicy, vertexStream, 0/*resource::ShaderCompileFlag::ShaderCompile_UseDXCompilerForSpirV*/);
         stream::StreamManager::destroyStream(vertexStream);
     }
 
-    const renderer::Shader* fragShader = nullptr;
+    const renderer::FragmentShader* fragShader = nullptr;
     {
         const std::string fragmentSource("\
         struct PS_INPUT\n\
@@ -101,12 +108,12 @@ void SimpleTriangle::init(v3d::renderer::Device* device, v3d::renderer::Swapchai
         fragmentPolicy._content = renderer::ShaderContent::Source;
         fragmentPolicy._entryPoint = "main";
 
-        fragShader = resource::ShaderCompiler::compileShader<renderer::Shader>(m_Device, "vertex", fragmentPolicy, fragmentStream, 0/*resource::ShaderCompileFlag::ShaderCompile_UseDXCompilerForSpirV*/);
+        fragShader = resource::ShaderCompiler::compileShader<renderer::FragmentShader>(m_Device, "vertex", fragmentPolicy, fragmentStream, 0/*resource::ShaderCompileFlag::ShaderCompile_UseDXCompilerForSpirV*/);
         stream::StreamManager::destroyStream(fragmentStream);
     }
 
     ASSERT(vertShader && fragShader, "nullptr");
-    //m_Program = new renderer::ShaderProgram({ vertShader, fragShader });
+    m_Program = new renderer::ShaderProgram(m_Device, vertShader, fragShader);
 
     m_RenderTarget = new renderer::RenderTargetState(m_Device, swapchain->getBackbufferSize());
     m_RenderTarget->setColorTexture(0, swapchain->getBackbuffer(),
@@ -123,7 +130,7 @@ void SimpleTriangle::init(v3d::renderer::Device* device, v3d::renderer::Swapchai
         { 0.0f, 1.0f, 0.0f },  { 0.0f, 1.0f, 0.0f },
         { 1.0f,-1.0f, 0.0f },  { 0.0f, 0.0f, 1.0f },
     };
-    //m_Geometry = new renderer::VertexBuffer(renderer::StreamBuffer_Write, static_cast<u32>(geometryData.size() * sizeof(math::Vector3D)), reinterpret_cast<u8*>(geometryData.data()));
+    m_Geometry = new renderer::VertexBuffer(m_Device, renderer::Buffer_Write, static_cast<u32>(geometryData.size() * sizeof(math::Vector3D)), "geometry");
 
     renderer::VertexInputAttributeDesc vertexDesc(
         { 
@@ -141,11 +148,9 @@ void SimpleTriangle::init(v3d::renderer::Device* device, v3d::renderer::Swapchai
     m_Pipeline->setColorMask(renderer::ColorMask::ColorMask_All);
     m_Pipeline->setDepthWrite(false);
 
-    //m_CommandList->setPipelineState(m_Pipeline);
-    //m_CommandList->setRenderTarget(m_RenderTarget);
 
-    //m_CommandList->submitCommands(true);
-    //m_CommandList->flushCommands();
+    m_CmdList->uploadData(m_Geometry, 0, static_cast<u32>(geometryData.size() * sizeof(math::Vector3D)), geometryData.data());
+    m_Device->submit(m_CmdList, true);
 }
 
 void SimpleTriangle::update(f32 dt)
@@ -164,27 +169,33 @@ void SimpleTriangle::render()
     };
 
     //render
-    //m_CommandList->setViewport(math::Rect32(0, 0, m_RenderTarget->getDimension().m_width, m_RenderTarget->getDimension().m_height));
-    //m_CommandList->setScissor(math::Rect32(0, 0, m_RenderTarget->getDimension().m_width, m_RenderTarget->getDimension().m_height));
+    m_CmdList->setViewport(m_Rect);
+    m_CmdList->setScissor(m_Rect);
+    m_CmdList->beginRenderTarget(*m_RenderTarget);
 
-    //m_CommandList->setRenderTarget(m_RenderTarget);
-    //m_CommandList->setPipelineState(m_Pipeline);
+    m_CmdList->setPipelineState(*m_Pipeline);
 
-    //UBO ubo1;
-    //ubo1.projectionMatrix = m_Camera->getCamera().getProjectionMatrix();
-    //ubo1.modelMatrix.setTranslation(math::Vector3D(-1, 0, 0));
-    //ubo1.viewMatrix = m_Camera->getCamera().getViewMatrix();
+    UBO ubo1;
+    ubo1.projectionMatrix = m_Camera->getCamera().getProjectionMatrix();
+    ubo1.modelMatrix.setTranslation(math::Vector3D(-1, 0, 0));
+    ubo1.viewMatrix = m_Camera->getCamera().getViewMatrix();
 
-    //m_Program->bindUniformsBuffer<renderer::ShaderType::Vertex>({ "buffer" }, 0, (u32)sizeof(UBO), &ubo1);
-    //m_CommandList->draw(renderer::StreamBufferDescription(m_Geometry, 0), 0, 3, 1);
+    renderer::Descriptor desc1(renderer::Descriptor::Descriptor_ConstantBuffer);
+    desc1._CBO = { &ubo1, 0, sizeof(UBO) };
 
-    //UBO ubo2;
-    //ubo2.projectionMatrix = m_Camera->getCamera().getProjectionMatrix();
-    //ubo2.modelMatrix.setTranslation(math::Vector3D(1, 0, 0));
-    //ubo2.viewMatrix = m_Camera->getCamera().getViewMatrix();
+    m_CmdList->bindDescriptorSet(0, { desc1 });
+    m_CmdList->draw(renderer::GeometryBufferDesc(m_Geometry, 0, sizeof(math::Vector3D) + sizeof(math::Vector3D)), 0, 3, 0, 1);
 
-    //m_Program->bindUniformsBuffer<renderer::ShaderType::Vertex>({ "buffer" }, 0, (u32)sizeof(UBO), &ubo2);
-    //m_CommandList->draw(renderer::StreamBufferDescription(m_Geometry, 0), 0, 3, 1);
+    UBO ubo2;
+    ubo2.projectionMatrix = m_Camera->getCamera().getProjectionMatrix();
+    ubo2.modelMatrix.setTranslation(math::Vector3D(1, 0, 0));
+    ubo2.viewMatrix = m_Camera->getCamera().getViewMatrix();
+
+    renderer::Descriptor desc2(renderer::Descriptor::Descriptor_ConstantBuffer);
+    desc2._CBO = { &ubo1, 0, sizeof(UBO) };
+
+    m_CmdList->bindDescriptorSet(0, { desc2 });
+    m_CmdList->draw(renderer::GeometryBufferDesc(m_Geometry, 0, sizeof(math::Vector3D) + sizeof(math::Vector3D)), 0, 3, 0, 1);
 }
 
 void SimpleTriangle::terminate()
@@ -224,9 +235,11 @@ void SimpleTriangle::terminate()
         delete m_Camera;
         m_Camera = nullptr;
     }
+
+    m_Device->destroyCommandList(m_CmdList);
 }
 
-bool SimpleTriangle::handleInputEvent(v3d::event::InputEventHandler* handler, const v3d::event::InputEvent* event)
+bool SimpleTriangle::handleInputEvent(event::InputEventHandler* handler, const event::InputEvent* event)
 {
     if (event->_eventType == event::InputEvent::InputEventType::MouseInputEvent)
     {
@@ -246,7 +259,7 @@ bool SimpleTriangle::handleInputEvent(v3d::event::InputEventHandler* handler, co
     return false;
 }
 
-bool SimpleTriangle::dispatchEvent(SimpleTriangle* render, v3d::event::InputEventHandler* handler, const v3d::event::InputEvent* event)
+bool SimpleTriangle::dispatchEvent(SimpleTriangle* render, event::InputEventHandler* handler, const event::InputEvent* event)
 {
     return render->handleInputEvent(handler, event);
 }

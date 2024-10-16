@@ -30,8 +30,8 @@ private:
     bool handleInputEvent(v3d::event::InputEventHandler* handler, const v3d::event::InputEvent* event);
 
     v3d::renderer::Device* m_Device;
-    v3d::renderer::Swapchain* m_Swapchain;
     v3d::renderer::CmdListRender* m_CmdList;
+    v3d::math::Rect32 m_Rect;
 
     v3d::renderer::ShaderProgram* m_Program;
     v3d::renderer::RenderTargetState* m_RenderTarget;

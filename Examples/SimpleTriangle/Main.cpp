@@ -111,9 +111,7 @@ private:
 
         Swapchain::SwapchainParams params;
         params._size = m_Window->getSize();
-
         m_Swapchain = m_Device->createSwapchain(m_Window, params);
-        m_CmdList = m_Device->createCommandList<renderer::CmdListRender>(Device::GraphicMask);
 
         m_Triangle->init(m_Device, m_Swapchain);
     }
@@ -153,7 +151,6 @@ private:
 
         if (m_Device)
         {
-            m_Device->destroyCommandList(m_CmdList);
             m_Device->destroySwapchain(m_Swapchain);
 
             renderer::Device::destroyDevice(m_Device);
@@ -166,7 +163,6 @@ private:
     bool m_terminate = false;
 
     v3d::renderer::Device* m_Device = nullptr;
-    v3d::renderer::CmdListRender* m_CmdList = nullptr;
     v3d::renderer::Swapchain* m_Swapchain = nullptr;
 
     SimpleTriangle* m_Triangle;
