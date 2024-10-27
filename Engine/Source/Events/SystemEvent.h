@@ -35,6 +35,17 @@ namespace event
         SystemEventType _systemEvent;
     };
 
+    inline SystemEvent::SystemEvent() noexcept
+        : _systemEvent(SystemEventType::Empty)
+    {
+        _eventType = InputEventType::SystemEvent;
+    }
+
+    inline bool SystemEvent::operator==(const SystemEvent& event) const
+    {
+        return _systemEvent == event._systemEvent;
+    }
+
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
 } //namespace event

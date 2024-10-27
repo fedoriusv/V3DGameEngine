@@ -19,7 +19,7 @@ namespace platform
     /**
     * @brief Window class. Base class of window
     */
-    class V3D_API Window : public utils::Observable, public utils::ResourceID<Window, u64>
+    class V3D_API Window : public utils::Observable, public utils::ResourceID<Window, u32>
     {
     public:
 
