@@ -26,6 +26,7 @@ namespace vk
     class VulkanSemaphore;
     class VulkanQueryPool;
     class VulkanDevice;
+    class VulkanCmdList;
     class VulkanCommandBufferManager;
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -59,7 +60,6 @@ namespace vk
         ~VulkanCommandBuffer();
 
         VkCommandBuffer getHandle() const;
-
         CommandBufferStatus getStatus() const;
 
         void addSemaphore(VkPipelineStageFlags mask, VulkanSemaphore* semaphore);
@@ -71,13 +71,14 @@ namespace vk
         void beginCommandBuffer();
         void endCommandBuffer();
 
-        void cmdBeginRenderpass(const VulkanRenderPass* pass, const VulkanFramebuffer* framebuffer, const VkRect2D& area, const std::vector<VkClearValue>& clearValues);
+        void cmdBeginRenderpass(const VulkanRenderPass* pass, const VulkanFramebuffer* framebuffer, const VkRect2D& area, const std::array<VkClearValue, k_maxColorAttachments>& clearValues);
         void cmdEndRenderPass();
         bool isInsideRenderPass() const;
 
         //dynamic states
-        void cmdSetViewport(const std::vector<VkViewport>& viewports);
-        void cmdSetScissor(const std::vector<VkRect2D>& scissors);
+        void cmdSetViewport(const VkViewport& viewports);
+        void cmdSetScissor(const VkRect2D& scissors);
+        void cmdSetStencilRef(VkStencilFaceFlags faceMask, u32 ref);
 
         //query
         void cmdBeginQuery(VulkanQueryPool* pool, u32 index);
@@ -86,7 +87,7 @@ namespace vk
         void cmdResetQueryPool(VulkanQueryPool* pool);
 
         //binds
-        void cmdBindVertexBuffers(u32 firstBinding, u32 countBindinng, const std::vector<Buffer*>& buffers, const std::vector<u64>& offests);
+        void cmdBindVertexBuffers(u32 firstBinding, u32 countBinding, const std::vector<BufferHandle>& buffers, const std::vector<u64>& offests, const std::vector<u64>& strides);
         void cmdBindIndexBuffers(VulkanBuffer* buffer, VkDeviceSize offest, VkIndexType type);
         void cmdBindPipeline(VulkanGraphicPipeline* pipeline);
         void cmdBindPipeline(VulkanComputePipeline* pipeline);
@@ -131,42 +132,43 @@ namespace vk
 
         friend VulkanResource;
         friend VulkanDevice;
+        friend VulkanCmdList;
         friend VulkanCommandBufferManager;
 
         void refreshFenceStatus();
 
-        VulkanDevice&           m_device;
-        VkCommandPool           m_pool;
-        VkCommandBuffer         m_commands;
-        CommandBufferLevel      m_level;
-        CommandBufferStatus     m_status;
-        u32                     m_queueIndex;
-        std::recursive_mutex    m_mutex;
+        VulkanDevice&                     m_device;
+        VkCommandPool                     m_pool;
+        VkCommandBuffer                   m_commands;
+        CommandBufferLevel                m_level;
+        CommandBufferStatus               m_status;
+        u32                               m_queueIndex;
+        std::recursive_mutex              m_mutex;
 
-        std::vector<VulkanSemaphore*>       m_semaphores;
-        std::vector<VkPipelineStageFlags>   m_stageMasks;
-        VkFence                             m_fence;
-        u64                                 m_capturedFrameIndex;
+        std::vector<VulkanSemaphore*>     m_semaphores;
+        std::vector<VkPipelineStageFlags> m_stageMasks;
+        VkFence                           m_fence;
+        u64                               m_capturedFrameIndex;
 
-        VulkanCommandBuffer*                m_primaryBuffer;
-        std::vector<VulkanCommandBuffer*>   m_secondaryBuffers;
+        VulkanCommandBuffer*              m_primaryBuffer;
+        std::vector<VulkanCommandBuffer*> m_secondaryBuffers;
 
         struct RenderPassState
         {
             const VulkanRenderPass*  _renderpass;
             const VulkanFramebuffer* _framebuffer;
         };
-        RenderPassState m_renderpassState;
+        RenderPassState                   m_renderpassState;
 
-        bool                m_drawingToSwapchain;
-        bool                m_isInsideRenderPass;
+        bool                              m_drawingToSwapchain;
+        bool                              m_isInsideRenderPass;
 
 #if VULKAN_DEBUG_MARKERS
-        std::string m_debugName;
+        std::string                       m_debugName;
 #endif //VULKAN_DEBUG_MARKERS
 
 #if VULKAN_DEBUG
-    std::unordered_set<VulkanResource*> m_resources;
+    std::unordered_set<VulkanResource*>   m_resources;
 #endif
     };
 

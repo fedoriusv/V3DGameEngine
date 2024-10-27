@@ -28,48 +28,12 @@ namespace renderer
             PipelineType_Compute
         };
 
-        /**
-        * @brief PipelineGraphicInfo struct
-        */
-        struct PipelineGraphicInfo
-        {
-            PipelineGraphicInfo() noexcept
-                //    : _tracker(nullptr)
-            {
-            }
-
-            GraphicsPipelineStateDesc       _pipelineDesc;
-            RenderPassDesc                  _renderpassDesc;
-            //ShaderProgramDescription        _programDesc;
-            //ObjectTracker<Pipeline>*        _tracker;
-            std::string                     _name;
-        };
-
-        /**
-        * @brief PipelineComputeInfo struct
-        */
-        struct PipelineComputeInfo
-        {
-            PipelineComputeInfo() noexcept
-                //    : _tracker(nullptr)
-            {
-            }
-
-            //ShaderProgramDescription        _programDesc;
-            //ObjectTracker<Pipeline>*        _tracker;
-            std::string                     _name;
-        };
-
         PipelineType getType() const;
 
     protected:
 
         explicit RenderPipeline(PipelineType type) noexcept;
         virtual ~RenderPipeline();
-
-        virtual bool create(const PipelineGraphicInfo* pipelineInfo) = 0;
-        virtual bool create(const PipelineComputeInfo* pipelineInfo) = 0;
-        virtual void destroy() = 0;
 
     private:
 

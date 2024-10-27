@@ -12,6 +12,8 @@
 #   include "VulkanFramebuffer.h"
 #   include "VulkanRenderpass.h"
 #   include "VulkanCommandBufferManager.h"
+#   include "VulkanGraphicPipeline.h"
+
 
 #ifdef PLATFORM_ANDROID
 #   include "Platform/Android/HWCPProfiler.h"
@@ -116,6 +118,8 @@ VulkanDevice::VulkanDevice(DeviceMaskFlags mask) noexcept
     , m_semaphoreManager(nullptr)
     , m_framebufferManager(nullptr)
     , m_renderpassManager(nullptr)
+    , m_pipelineLayoutManager(nullptr)
+    , m_graphicPipelineManager(nullptr)
 
 {
     LOG_DEBUG("VulkanDevice created this %llx", this);
@@ -132,6 +136,8 @@ VulkanDevice::~VulkanDevice()
 {
     LOG_DEBUG("~VulkanDevice destructor this %llx", this);
 
+    ASSERT(!m_graphicPipelineManager, "m_graphicPipelineManager is not nullptr");
+    ASSERT(!m_pipelineLayoutManager, "m_pipelineLayoutManager is not nullptr");
     ASSERT(!m_renderpassManager, "m_renderpassManager is not nullptr");
     ASSERT(!m_framebufferManager, "m_framebufferManager not nullptr");
     ASSERT(!m_semaphoreManager, "m_semaphoreManager is not nullptr");
@@ -219,8 +225,8 @@ void VulkanDevice::submit(CmdList* cmd, bool wait)
         cmdList.m_currentCmdBuffer[toEnumType(CommandTargetType::CmdDrawBuffer)] = nullptr;
     }
 
-    cmdBufferMgr->updateCommandBuffers();
-    m_semaphoreManager->updateSemaphores();
+    cmdBufferMgr->updateStatus();
+    m_semaphoreManager->updateStatus();
 
     m_resourceDeleter.updateResourceDeleter();
 
@@ -372,7 +378,7 @@ void VulkanDevice::destroyCommandList(CmdList* cmdList)
    
     s32 slot = vkCmdList->m_concurrencySlot;
     m_threadedPools[slot].m_cmdBufferManager->waitQueueCompletion(getQueueByMask(vkCmdList->m_queueMask));
-    m_threadedPools[slot].m_cmdBufferManager->updateCommandBuffers();
+    m_threadedPools[slot].m_cmdBufferManager->updateStatus();
 
     m_maskOfActiveThreadPool &= ~(1 << slot);
     V3D_DELETE(vkCmdList, memory::MemoryLabel::MemoryRenderCore);
@@ -433,6 +439,8 @@ bool VulkanDevice::initialize()
     m_semaphoreManager = V3D_NEW(VulkanSemaphoreManager, memory::MemoryLabel::MemoryRenderCore)(this);
     m_framebufferManager = V3D_NEW(VulkanFramebufferManager, memory::MemoryLabel::MemoryRenderCore)(this);
     m_renderpassManager = V3D_NEW(VulkanRenderpassManager, memory::MemoryLabel::MemoryRenderCore)(this);
+    m_pipelineLayoutManager = V3D_NEW(VulkanPipelineLayoutManager, memory::MemoryLabel::MemoryRenderCore)(this);
+    m_graphicPipelineManager = V3D_NEW(VulkanGraphicPipelineManager, memory::MemoryLabel::MemoryRenderCore)(this);
 
     return true;
 }
@@ -827,6 +835,18 @@ void VulkanDevice::destroy()
     }
     m_threadedPools.clear();
 
+    if (m_graphicPipelineManager)
+    {
+        V3D_DELETE(m_graphicPipelineManager, memory::MemoryLabel::MemoryRenderCore);
+        m_graphicPipelineManager = nullptr;
+    }
+
+    if (m_pipelineLayoutManager)
+    {
+        V3D_DELETE(m_pipelineLayoutManager, memory::MemoryLabel::MemoryRenderCore);
+        m_pipelineLayoutManager = nullptr;
+    }
+
     if (m_renderpassManager)
     {
         V3D_DELETE(m_renderpassManager, memory::MemoryLabel::MemoryRenderCore);
@@ -856,7 +876,7 @@ void VulkanDevice::destroy()
 
     if (m_semaphoreManager)
     {
-        m_semaphoreManager->updateSemaphores();
+        m_semaphoreManager->updateStatus();
         m_semaphoreManager->clear();
         V3D_DELETE(m_semaphoreManager, memory::MemoryLabel::MemoryRenderCore);
         m_semaphoreManager = nullptr;
@@ -960,18 +980,22 @@ void VulkanCmdList::setStencilRef(u32 mask)
 void VulkanCmdList::beginRenderTarget(const RenderTargetState& rendertarget)
 {
 #if VULKAN_DEBUG
-    LOG_DEBUG("VulkanCmdList::beginRenderTarget [%s]", rendertarget.getName());
+    LOG_DEBUG("VulkanCmdList::beginRenderTarget [%s]", rendertarget.getName().c_str());
 #endif //VULKAN_DEBUG
 
     VulkanRenderPass* renderpass = m_device.m_renderpassManager->acquireRenderpass(rendertarget.getRenderPassDesc(), rendertarget.getName());
 
     FramebufferDesc targets(rendertarget.getFramebufferDesc());
-    for (u32 index = 0; index < rendertarget.getRenderPassDesc()._countColorAttachments; ++index)
+    for (u32 index = 0; index < rendertarget.getRenderPassDesc() ._countColorAttachments; ++index)
     {
         if (rendertarget.getRenderPassDesc()._attachmentsDesc[index]._backbuffer)
         {
             ASSERT(targets._images[index].isValid(), "should be vaild");
-            targets._images[index] = TextureHandle(OBJECT_FROM_HANDLE(targets._images[index], VulkanSwapchain)->getCurrentSwapchainImage()); //replace to active swaphain texture
+            VulkanSwapchain* swapchain = OBJECT_FROM_HANDLE(targets._images[index], VulkanSwapchain);
+            targets._images[index] = TextureHandle(swapchain->getCurrentSwapchainImage()); //replace to active swaphain texture
+
+            swapchain->attachCmdList(this);
+            m_presentSemaphores.push_back(swapchain->getCurrentAcquiredSemaphore());
         }
     }
 
@@ -979,7 +1003,9 @@ void VulkanCmdList::beginRenderTarget(const RenderTargetState& rendertarget)
 
     m_pendingRenderState._renderpass = renderpass;
     m_pendingRenderState._framebuffer = framebuffer;
+    m_pendingRenderState._renderArea = VkRect2D{ { 0, 0 }, { rendertarget.getRenderArea().m_width, rendertarget.getRenderArea().m_height }};
     m_pendingRenderState._insideRenderpass = true;
+    m_pendingRenderState.setDirty(VulkanRenderState::RenderPass);
 }
 
 void VulkanCmdList::endRenderTarget()
@@ -987,9 +1013,15 @@ void VulkanCmdList::endRenderTarget()
     m_pendingRenderState._insideRenderpass = false;
 }
 
-void VulkanCmdList::setPipelineState(GraphicsPipelineState& pipeline)
+void VulkanCmdList::setPipelineState(GraphicsPipelineState& state)
 {
-    //m_pendingRenderState._p
+#if VULKAN_DEBUG
+    LOG_DEBUG("VulkanCmdList::setPipelineState [%s]", state.getName().c_str());
+#endif //VULKAN_DEBUG
+
+    VulkanGraphicPipeline* pipeline = m_device.m_graphicPipelineManager->acquireGraphicPipeline(state);
+    m_pendingRenderState._graphicPipeline = pipeline;
+    m_pendingRenderState.setDirty(VulkanRenderState::Pipeline);
 }
 
 void VulkanCmdList::transition(const TextureView& view, TransitionOp state)
@@ -1029,13 +1061,95 @@ void VulkanCmdList::bindDescriptorSet(u32 set, std::vector<Descriptor> descripto
 {
 }
 
+bool VulkanCmdList::prepareDraw(VulkanCommandBuffer* drawBuffer)
+{
+    ASSERT(drawBuffer, "nullptr");
+
+    if (m_pendingRenderState.isDirty(VulkanRenderState::Viewport))
+    {
+        drawBuffer->cmdSetViewport(m_pendingRenderState._viewports);
+        m_currentRenderState._viewports = m_pendingRenderState._viewports;
+        m_pendingRenderState.unsetDirty(VulkanRenderState::Viewport);
+    }
+
+    if (m_pendingRenderState.isDirty(VulkanRenderState::Scissors))
+    {
+        drawBuffer->cmdSetScissor(m_pendingRenderState._scissors);
+        m_currentRenderState._scissors = m_pendingRenderState._scissors;
+        m_pendingRenderState.unsetDirty(VulkanRenderState::Scissors);
+    }
+
+    if (m_pendingRenderState.isDirty(VulkanRenderState::StencilRef))
+    {
+        drawBuffer->cmdSetStencilRef(m_pendingRenderState._stencilMask, m_pendingRenderState._stencilRef);
+        m_currentRenderState._stencilMask = m_pendingRenderState._stencilMask;
+        m_currentRenderState._stencilRef = m_pendingRenderState._stencilRef;
+        m_pendingRenderState.unsetDirty(VulkanRenderState::StencilRef);
+    }
+
+    if (m_pendingRenderState.isDirty(VulkanRenderState::Pipeline))
+    {
+        drawBuffer->cmdBindPipeline(m_pendingRenderState._graphicPipeline);
+        m_currentRenderState._graphicPipeline = m_pendingRenderState._graphicPipeline;
+        m_pendingRenderState.unsetDirty(VulkanRenderState::Pipeline);
+    }
+
+    if (!drawBuffer->isInsideRenderPass())
+    {
+        if (m_pendingRenderState.isDirty(VulkanRenderState::RenderPass))
+        {
+            drawBuffer->cmdBeginRenderpass(m_pendingRenderState._renderpass, m_pendingRenderState._framebuffer, m_pendingRenderState._renderArea, m_pendingRenderState._clearValues);
+            m_currentRenderState._renderpass = m_pendingRenderState._renderpass;
+            m_currentRenderState._framebuffer = m_pendingRenderState._framebuffer;
+            m_currentRenderState._renderArea = m_pendingRenderState._renderArea;
+            m_pendingRenderState.unsetDirty(VulkanRenderState::RenderPass);
+        }
+    }
+
+    //DS
+
+    return true;
+}
+
 void VulkanCmdList::draw(const GeometryBufferDesc& desc, u32 firstVertex, u32 vertexCount, u32 firstInstance, u32 instanceCount)
 {
+#if VULKAN_DEBUG
+    LOG_DEBUG("VulkanCmdList::draw");
+#endif //VULKAN_DEBUG
 
+    VulkanCommandBuffer* drawBuffer = acquireAndStartCommandBuffer(CommandTargetType::CmdDrawBuffer);
+    if (prepareDraw(drawBuffer)) [[likely]]
+    {
+        if (!desc._vertexBuffers.empty())
+        {
+            drawBuffer->cmdBindVertexBuffers(0, static_cast<u32>(desc._vertexBuffers.size()), desc._vertexBuffers, desc._offsets, desc._strides);
+        }
+
+        ASSERT(drawBuffer->isInsideRenderPass(), "not inside renderpass");
+        drawBuffer->cmdDraw(firstVertex, vertexCount, firstInstance, instanceCount);
+    }
 }
 
 void VulkanCmdList::drawIndexed(const GeometryBufferDesc& desc, u32 firstIndex, u32 indexCount, u32 firstInstance, u32 instanceCount)
 {
+#if VULKAN_DEBUG
+    LOG_DEBUG("VulkanContext::drawIndexed");
+#endif //VULKAN_DEBUG
+
+    VulkanCommandBuffer* drawBuffer = acquireAndStartCommandBuffer(CommandTargetType::CmdDrawBuffer);
+    if (prepareDraw(drawBuffer)) [[likely]]
+    {
+        ASSERT(desc._indexBuffer.isValid(), "nullptr");
+        VulkanBuffer* indexBuffer = OBJECT_FROM_HANDLE(desc._indexBuffer, VulkanBuffer);
+        drawBuffer->cmdBindIndexBuffers(indexBuffer, desc._indexOffset, (desc._indexType == IndexBufferType::IndexType_16) ? VK_INDEX_TYPE_UINT16 : VK_INDEX_TYPE_UINT32);
+
+        ASSERT(!desc._vertexBuffers.empty(), "empty");
+        drawBuffer->cmdBindVertexBuffers(0, static_cast<u32>(desc._vertexBuffers.size()), desc._vertexBuffers, desc._offsets, desc._strides);
+
+
+        ASSERT(drawBuffer->isInsideRenderPass(), "not inside renderpass");
+        drawBuffer->cmdDrawIndexed(firstIndex, indexCount, firstInstance, instanceCount, 0);
+    }
 }
 
 void VulkanCmdList::clear(Texture* texture, const renderer::Color& color)
@@ -1045,12 +1159,13 @@ void VulkanCmdList::clear(Texture* texture, const renderer::Color& color)
 #endif
 
     VulkanImage* image = nullptr;
+    VulkanCommandBuffer* cmdBuffer = VulkanCmdList::acquireAndStartCommandBuffer(CommandTargetType::CmdDrawBuffer);
     if (texture->hasUsageFlag(TextureUsage::TextureUsage_Backbuffer))
     {
         VulkanSwapchain* swapchain = OBJECT_FROM_HANDLE(texture->getTextureHandle(), VulkanSwapchain);
         swapchain->attachCmdList(this);
+        m_presentSemaphores.push_back(swapchain->getCurrentAcquiredSemaphore());
 
-        m_presentSemaphores.push_back(swapchain->getCurrentAcquireSemaphore());
         image = swapchain->getCurrentSwapchainImage();
     }
     else
@@ -1058,7 +1173,7 @@ void VulkanCmdList::clear(Texture* texture, const renderer::Color& color)
         image = OBJECT_FROM_HANDLE(texture->getTextureHandle(), VulkanImage);
     }
     ASSERT(image, "nullptr");
-    image->clear(this, color);
+    image->clear(cmdBuffer, color);
 }
 
 void VulkanCmdList::clear(Texture* texture, f32 depth, u32 stencil)
@@ -1067,9 +1182,10 @@ void VulkanCmdList::clear(Texture* texture, f32 depth, u32 stencil)
     LOG_DEBUG("VulkanCmdList::clear [%f, %u]", depth, stencil);
 #endif
 
+    VulkanCommandBuffer* cmdBuffer = VulkanCmdList::acquireAndStartCommandBuffer(CommandTargetType::CmdDrawBuffer);
     VulkanImage* image = OBJECT_FROM_HANDLE(texture->getTextureHandle(), VulkanImage);
     ASSERT(image, "nullptr");
-    image->clear(this, depth, stencil);
+    image->clear(cmdBuffer, depth, stencil);
 }
 
 bool VulkanCmdList::uploadData(Texture2D* texture, const math::Dimension2D& offset, const math::Dimension2D& size, u32 mipLevel, const void* data)
@@ -1078,9 +1194,10 @@ bool VulkanCmdList::uploadData(Texture2D* texture, const math::Dimension2D& offs
     LOG_DEBUG("VulkanCmdList::uploadData");
 #endif
 
+    VulkanCommandBuffer* cmdBuffer = VulkanCmdList::acquireAndStartCommandBuffer(CommandTargetType::CmdUploadBuffer);
     ASSERT(texture->hasUsageFlag(TextureUsage::TextureUsage_Backbuffer), "swapchain is not supported");
     VulkanImage* image = OBJECT_FROM_HANDLE(texture->getTextureHandle(), VulkanImage);
-    bool result = image->upload(this, math::Dimension3D(offset.m_width, offset.m_height, 0), math::Dimension3D(size.m_width, size.m_height, 0), mipLevel, data);
+    bool result = image->upload(cmdBuffer, math::Dimension3D(offset.m_width, offset.m_height, 0), math::Dimension3D(size.m_width, size.m_height, 0), mipLevel, data);
 
     u32 immediateResourceSubmit = m_device.getVulkanDeviceCaps()._immediateResourceSubmit;
     if (result && immediateResourceSubmit > 0)
@@ -1097,9 +1214,10 @@ bool VulkanCmdList::uploadData(Texture3D* texture, const math::Dimension3D& offs
     LOG_DEBUG("VulkanCmdList::uploadData");
 #endif
 
+    VulkanCommandBuffer* cmdBuffer = VulkanCmdList::acquireAndStartCommandBuffer(CommandTargetType::CmdUploadBuffer);
     ASSERT(texture->hasUsageFlag(TextureUsage::TextureUsage_Backbuffer), "swapchain is not supported");
     VulkanImage* image = OBJECT_FROM_HANDLE(texture->getTextureHandle(), VulkanImage);
-    bool result = image->upload(this, offset, size, mipLevel, data);
+    bool result = image->upload(cmdBuffer, offset, size, mipLevel, data);
 
     u32 immediateResourceSubmit = m_device.getVulkanDeviceCaps()._immediateResourceSubmit;
     if (result && immediateResourceSubmit > 0)
@@ -1116,8 +1234,9 @@ bool VulkanCmdList::uploadData(Buffer* buffer, u32 offset, u32 size, void* data)
     LOG_DEBUG("VulkanCmdList::uploadData");
 #endif
 
+    VulkanCommandBuffer* cmdBuffer = VulkanCmdList::acquireAndStartCommandBuffer(CommandTargetType::CmdUploadBuffer);
     VulkanBuffer* vkBuffer = OBJECT_FROM_HANDLE(buffer->getBufferHandle(), VulkanBuffer);
-    bool result = vkBuffer->upload(this, offset, size, data);
+    bool result = vkBuffer->upload(cmdBuffer, offset, size, data);
 
     u32 immediateResourceSubmit = m_device.getVulkanDeviceCaps()._immediateResourceSubmit;
     if (result && immediateResourceSubmit > 0)

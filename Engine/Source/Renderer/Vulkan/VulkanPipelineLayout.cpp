@@ -2,11 +2,12 @@
 
 #include "Utils/Logger.h"
 #include "Renderer/Shader.h"
+#include "Renderer/ShaderProgram.h"
 
 #ifdef VULKAN_RENDER
-#include "VulkanDebug.h"
-#include "VulkanDevice.h"
-#include "VulkanDeviceCaps.h"
+#   include "VulkanDebug.h"
+#   include "VulkanDevice.h"
+#   include "VulkanDeviceCaps.h"
 
 namespace v3d
 {
@@ -304,150 +305,150 @@ void VulkanPipelineLayoutManager::destroyDescriptorSetLayouts(std::array<VkDescr
     descriptorSetLayouts.fill(VK_NULL_HANDLE);
 }
 
-VulkanPipelineLayoutManager::DescriptorSetLayoutCreator::DescriptorSetLayoutCreator(const std::array<Shader*, toEnumType(ShaderType::Count)>& shaders) noexcept
+VulkanPipelineLayoutManager::DescriptorSetLayoutCreator::DescriptorSetLayoutCreator(VulkanDevice& device, const renderer::ShaderProgram* program) noexcept
 {
-    //_description._pushConstant.clear();
-    //_description._bindingsSet.fill({});
+    _description._pushConstant.clear();
+    _description._bindingsSet.fill({});
 
-    //u32 maxSetIndex = 0;
-    //for (u32 setIndex = 0; setIndex < k_maxDescriptorSetCount; ++setIndex)
-    //{
-    //    std::vector<VkDescriptorSetLayoutBinding> descriptorSetLayoutBindings;
-    //    for (u32 type = toEnumType(ShaderType::Vertex); type < (u32)toEnumType(ShaderType::Count); ++type)
-    //    {
-    //        const Shader* shader = shaders[type];
-    //        if (!shader)
-    //        {
-    //            continue;
-    //        }
+    u32 maxSetIndex = 0;
+    for (u32 setIndex = 0; setIndex < k_maxDescriptorSetCount; ++setIndex)
+    {
+        std::vector<VkDescriptorSetLayoutBinding> descriptorSetLayoutBindings;
+        for (u32 type = toEnumType(ShaderType::Vertex); type < (u32)toEnumType(ShaderType::Count); ++type)
+        {
+            const Shader* shader = program->getShader(ShaderType(type));
+            if (!shader)
+            {
+                continue;
+            }
 
-    //        const Shader::ReflectionInfo& info = shader->getReflectionInfo();
-    //        for (auto& uniform : info._uniformBuffers)
-    //        {
-    //            ASSERT(uniform._set < k_maxDescriptorSetCount && uniform._binding < k_maxDescriptorBindingCount, "range out");
-    //            if (uniform._set != setIndex)
-    //            {
-    //                continue;
-    //            }
+            const Shader::Resources& res = shader->getMappingResources();
+            for (auto& uniform : res._uniformBuffers)
+            {
+                ASSERT(uniform._set < k_maxDescriptorSetCount && uniform._binding < k_maxDescriptorBindingCount, "range out");
+                if (uniform._set != setIndex)
+                {
+                    continue;
+                }
 
-    //            VkDescriptorSetLayoutBinding descriptorSetLayoutBinding;
-    //            descriptorSetLayoutBinding.descriptorType = VulkanDeviceCaps::getInstance()->useDynamicUniforms ? VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC : VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-    //            descriptorSetLayoutBinding.binding = uniform._binding;
-    //            descriptorSetLayoutBinding.stageFlags = convertShaderTypeToVkStage((ShaderType)type);
-    //            descriptorSetLayoutBinding.descriptorCount = uniform._array;
-    //            descriptorSetLayoutBinding.pImmutableSamplers = nullptr;
+                VkDescriptorSetLayoutBinding descriptorSetLayoutBinding;
+                descriptorSetLayoutBinding.descriptorType = device.getVulkanDeviceCaps()._useDynamicUniforms ? VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC : VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+                descriptorSetLayoutBinding.binding = uniform._binding;
+                descriptorSetLayoutBinding.stageFlags = convertShaderTypeToVkStage((ShaderType)type);
+                descriptorSetLayoutBinding.descriptorCount = uniform._array;
+                descriptorSetLayoutBinding.pImmutableSamplers = nullptr;
 
-    //            descriptorSetLayoutBindings.push_back(descriptorSetLayoutBinding);
-    //        }
+                descriptorSetLayoutBindings.push_back(descriptorSetLayoutBinding);
+            }
 
-    //        for (auto& sampledImage : info._sampledImages)
-    //        {
-    //            if (sampledImage._set != setIndex)
-    //            {
-    //                continue;
-    //            }
+            for (auto& sampledImage : res._sampledImages)
+            {
+                if (sampledImage._set != setIndex)
+                {
+                    continue;
+                }
 
-    //            VkDescriptorSetLayoutBinding descriptorSetLayoutBinding;
-    //            descriptorSetLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    //            descriptorSetLayoutBinding.binding = sampledImage._binding;
-    //            descriptorSetLayoutBinding.stageFlags = convertShaderTypeToVkStage((ShaderType)type);
-    //            descriptorSetLayoutBinding.descriptorCount = sampledImage._array;
-    //            descriptorSetLayoutBinding.pImmutableSamplers = nullptr;
+                VkDescriptorSetLayoutBinding descriptorSetLayoutBinding;
+                descriptorSetLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+                descriptorSetLayoutBinding.binding = sampledImage._binding;
+                descriptorSetLayoutBinding.stageFlags = convertShaderTypeToVkStage((ShaderType)type);
+                descriptorSetLayoutBinding.descriptorCount = sampledImage._array;
+                descriptorSetLayoutBinding.pImmutableSamplers = nullptr;
 
-    //            descriptorSetLayoutBindings.push_back(descriptorSetLayoutBinding);
-    //        }
+                descriptorSetLayoutBindings.push_back(descriptorSetLayoutBinding);
+            }
 
-    //        for (auto& sampler : info._samplers)
-    //        {
-    //            if (sampler._set != setIndex)
-    //            {
-    //                continue;
-    //            }
+            for (auto& sampler : res._samplers)
+            {
+                if (sampler._set != setIndex)
+                {
+                    continue;
+                }
 
-    //            VkDescriptorSetLayoutBinding descriptorSetLayoutBinding;
-    //            descriptorSetLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLER;
-    //            descriptorSetLayoutBinding.binding = sampler._binding;
-    //            descriptorSetLayoutBinding.stageFlags = convertShaderTypeToVkStage((ShaderType)type);
-    //            descriptorSetLayoutBinding.descriptorCount = 1;
-    //            descriptorSetLayoutBinding.pImmutableSamplers = nullptr;
+                VkDescriptorSetLayoutBinding descriptorSetLayoutBinding;
+                descriptorSetLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLER;
+                descriptorSetLayoutBinding.binding = sampler._binding;
+                descriptorSetLayoutBinding.stageFlags = convertShaderTypeToVkStage((ShaderType)type);
+                descriptorSetLayoutBinding.descriptorCount = 1;
+                descriptorSetLayoutBinding.pImmutableSamplers = nullptr;
 
-    //            descriptorSetLayoutBindings.push_back(descriptorSetLayoutBinding);
-    //        }
+                descriptorSetLayoutBindings.push_back(descriptorSetLayoutBinding);
+            }
 
-    //        for (auto& image : info._images)
-    //        {
-    //            if (image._set != setIndex)
-    //            {
-    //                continue;
-    //            }
+            for (auto& image : res._images)
+            {
+                if (image._set != setIndex)
+                {
+                    continue;
+                }
 
-    //            VkDescriptorSetLayoutBinding descriptorSetLayoutBinding;
-    //            descriptorSetLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
-    //            descriptorSetLayoutBinding.binding = image._binding;
-    //            descriptorSetLayoutBinding.stageFlags = convertShaderTypeToVkStage((ShaderType)type);
-    //            descriptorSetLayoutBinding.descriptorCount = image._array;
-    //            descriptorSetLayoutBinding.pImmutableSamplers = nullptr;
+                VkDescriptorSetLayoutBinding descriptorSetLayoutBinding;
+                descriptorSetLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
+                descriptorSetLayoutBinding.binding = image._binding;
+                descriptorSetLayoutBinding.stageFlags = convertShaderTypeToVkStage((ShaderType)type);
+                descriptorSetLayoutBinding.descriptorCount = image._array;
+                descriptorSetLayoutBinding.pImmutableSamplers = nullptr;
 
-    //            descriptorSetLayoutBindings.push_back(descriptorSetLayoutBinding);
-    //        }
+                descriptorSetLayoutBindings.push_back(descriptorSetLayoutBinding);
+            }
 
-    //        for (auto& storageImage : info._storageImages)
-    //        {
-    //            if (storageImage._set != setIndex)
-    //            {
-    //                continue;
-    //            }
+            for (auto& storageImage : res._storageImages)
+            {
+                if (storageImage._set != setIndex)
+                {
+                    continue;
+                }
 
-    //            VkDescriptorSetLayoutBinding descriptorSetLayoutBinding;
-    //            descriptorSetLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
-    //            descriptorSetLayoutBinding.binding = storageImage._binding;
-    //            descriptorSetLayoutBinding.stageFlags = convertShaderTypeToVkStage((ShaderType)type);
-    //            descriptorSetLayoutBinding.descriptorCount = storageImage._array;
-    //            descriptorSetLayoutBinding.pImmutableSamplers = nullptr;
+                VkDescriptorSetLayoutBinding descriptorSetLayoutBinding;
+                descriptorSetLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+                descriptorSetLayoutBinding.binding = storageImage._binding;
+                descriptorSetLayoutBinding.stageFlags = convertShaderTypeToVkStage((ShaderType)type);
+                descriptorSetLayoutBinding.descriptorCount = storageImage._array;
+                descriptorSetLayoutBinding.pImmutableSamplers = nullptr;
 
-    //            descriptorSetLayoutBindings.push_back(descriptorSetLayoutBinding);
-    //        }
-    //    }
+                descriptorSetLayoutBindings.push_back(descriptorSetLayoutBinding);
+            }
+        }
 
-    //    if (!descriptorSetLayoutBindings.empty())
-    //    {
-    //        maxSetIndex = std::max(maxSetIndex, setIndex);
-    //        _description._bindingsSet[setIndex] = std::move(descriptorSetLayoutBindings);
-    //    }
-    //}
-    //ASSERT(maxSetIndex < k_maxDescriptorSetCount, "invalid max set index");
+        if (!descriptorSetLayoutBindings.empty())
+        {
+            maxSetIndex = std::max(maxSetIndex, setIndex);
+            _description._bindingsSet[setIndex] = std::move(descriptorSetLayoutBindings);
+        }
+    }
+    ASSERT(maxSetIndex < k_maxDescriptorSetCount, "invalid max set index");
 
-    //for (u32 type = toEnumType(ShaderType::Vertex); type < (u32)toEnumType(ShaderType::Count); ++type)
-    //{
-    //    const Shader* shader = shaders[type];
-    //    if (!shader)
-    //    {
-    //        continue;
-    //    }
+    for (u32 type = toEnumType(ShaderType::Vertex); type < (u32)toEnumType(ShaderType::Count); ++type)
+    {
+        const Shader* shader = program->getShader(ShaderType(type));
+        if (!shader)
+        {
+            continue;
+        }
 
-    //    const Shader::ReflectionInfo& info = shader->getReflectionInfo();
-    //    _description._pushConstant.reserve(info._pushConstant.size());
-    //    for (auto& push : info._pushConstant)
-    //    {
-    //        VkPushConstantRange pushConstantRange = {};
-    //        pushConstantRange.stageFlags = convertShaderTypeToVkStage((ShaderType)type);
-    //        pushConstantRange.offset = push._offset;
-    //        pushConstantRange.size = push._size;
+        const Shader::Resources& res = shader->getMappingResources();
+        _description._pushConstant.reserve(res._pushConstant.size());
+        for (auto& push : res._pushConstant)
+        {
+            VkPushConstantRange pushConstantRange = {};
+            pushConstantRange.stageFlags = convertShaderTypeToVkStage((ShaderType)type);
+            pushConstantRange.offset = push._offset;
+            pushConstantRange.size = push._size;
 
-    //        _description._pushConstant.push_back(pushConstantRange);
-    //    }
-    //}
+            _description._pushConstant.push_back(pushConstantRange);
+        }
+    }
 
-    //u64 pushConstantHash = crc32c::Extend(static_cast<u32>(_description._pushConstant.size()), reinterpret_cast<u8*>(_description._pushConstant.data()), _description._pushConstant.size() * sizeof(VkPushConstantRange));
+    u64 pushConstantHash = crc32c::Extend(static_cast<u32>(_description._pushConstant.size()), reinterpret_cast<u8*>(_description._pushConstant.data()), _description._pushConstant.size() * sizeof(VkPushConstantRange));
 
-    //u32 setHash = static_cast<u32>(_description._bindingsSet.size()); //always k_maxDescriptorSetIndex
-    //for (auto& set : _description._bindingsSet)
-    //{
-    //    u32 bindingCount = static_cast<u32>(set.size());
-    //    setHash = crc32c::Extend(setHash, reinterpret_cast<u8*>(&bindingCount), sizeof(u32));
-    //    setHash = crc32c::Extend(setHash, reinterpret_cast<u8*>(set.data()), set.size() * sizeof(VkDescriptorSetLayoutBinding));
-    //}
-    //_description._key = setHash | pushConstantHash << 32;
+    u32 setHash = static_cast<u32>(_description._bindingsSet.size()); //always k_maxDescriptorSetIndex
+    for (auto& set : _description._bindingsSet)
+    {
+        u32 bindingCount = static_cast<u32>(set.size());
+        setHash = crc32c::Extend(setHash, reinterpret_cast<u8*>(&bindingCount), sizeof(u32));
+        setHash = crc32c::Extend(setHash, reinterpret_cast<u8*>(set.data()), set.size() * sizeof(VkDescriptorSetLayoutBinding));
+    }
+    _description._key = setHash | pushConstantHash << 32;
 }
 
 } //namespace vk

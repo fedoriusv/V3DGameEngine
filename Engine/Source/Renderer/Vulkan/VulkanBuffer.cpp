@@ -20,16 +20,15 @@ std::set<VulkanBuffer*> VulkanBuffer::s_objects;
 
 VulkanBuffer::VulkanBuffer(VulkanDevice* device, VulkanMemory::VulkanMemoryAllocator* alloc, RenderBuffer::Type type, BufferUsageFlags usageFlag, u64 size, const std::string& name) noexcept
     : m_device(*device)
-
-    , m_memory(VulkanMemory::s_invalidMemory)
     , m_memoryAllocator(alloc)
 
-    , m_usageFlags(usageFlag)
-    , m_type(type)
-
-    , m_size(size) //Check aligment
     , m_buffer(VK_NULL_HANDLE)
-    
+    , m_memory(VulkanMemory::s_invalidMemory)
+
+    , m_type(type)
+    , m_size(size) //TODO: check aligment
+    , m_usageFlags(usageFlag)
+
     , m_mapped(false)
 {
     LOG_DEBUG("VulkanBuffer::VulkanBuffer constructor %llx", this);
@@ -229,7 +228,7 @@ void VulkanBuffer::destroy()
     }
 }
 
-bool VulkanBuffer::upload(VulkanCmdList* cmdList, u32 offset, u64 size, const void* data)
+bool VulkanBuffer::upload(VulkanCommandBuffer* cmdBuffer, u32 offset, u64 size, const void* data)
 {
     if (!m_buffer)
     {
@@ -266,11 +265,10 @@ bool VulkanBuffer::upload(VulkanCmdList* cmdList, u32 offset, u64 size, const vo
     {
         const u32 k_updateBuffer_MaxSize = 65'536;
 
-        VulkanCommandBuffer* uploadBuffer = cmdList->acquireAndStartCommandBuffer(CommandTargetType::CmdUploadBuffer);
         if (m_size <= k_updateBuffer_MaxSize)
         {
             ASSERT(!VulkanResource::isCaptured(), "still submitted");
-            uploadBuffer->cmdUpdateBuffer(this, offset, m_size, data);
+            cmdBuffer->cmdUpdateBuffer(this, offset, m_size, data);
         }
         else
         {
@@ -295,12 +293,12 @@ bool VulkanBuffer::upload(VulkanCmdList* cmdList, u32 offset, u64 size, const vo
             bufferCopy.size = size;
 
             //TODO memory barrier
-            uploadBuffer->cmdCopyBufferToBuffer(stagingBuffer->getBuffer(), this, { bufferCopy });
+            cmdBuffer->cmdCopyBufferToBuffer(stagingBuffer->getBuffer(), this, { bufferCopy });
             //TODO memory barrier
         }
     }
 
-    return false;
+    return true;
 }
 
 //bool VulkanBuffer::read(Context* context, u32 offset, u64 size, const std::function<void(u32, void*)>& readback)

@@ -26,6 +26,8 @@ namespace vk
     class VulkanStagingBufferManager;
     class VulkanFramebufferManager;
     class VulkanRenderpassManager;
+    class VulkanGraphicPipelineManager;
+    class VulkanPipelineLayoutManager;
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -69,25 +71,43 @@ namespace vk
 
     public:
 
+        Device::DeviceMask getDeviceMask() const;
+        const std::vector<VulkanSemaphore*>& getWaitSemaphores() const;
+
+        bool prepareDraw(VulkanCommandBuffer* drawBuffer);
+
         void postSubmit();
         void postPresent();
 
+    private:
 
-        VulkanDevice&        m_device;
-        Device::DeviceMask   m_queueMask;
-        u32                  m_queueIndex;
-        std::thread::id      m_threadID;
-        u32                  m_concurrencySlot;
+        friend VulkanDevice;
 
-        VulkanCommandBuffer* m_currentCmdBuffer[toEnumType(CommandTargetType::Count)];
-
-        VulkanRenderState    m_pendingRenderState;
-        VulkanRenderState    m_currentRenderState;
+        VulkanDevice&                 m_device;
+        Device::DeviceMask            m_queueMask;
+        u32                           m_queueIndex;
+        std::thread::id               m_threadID;
+        u32                           m_concurrencySlot;
+                                      
+        VulkanCommandBuffer*          m_currentCmdBuffer[toEnumType(CommandTargetType::Count)];
+                                      
+        VulkanRenderState             m_pendingRenderState;
+        VulkanRenderState             m_currentRenderState;
 
         std::vector<VulkanSemaphore*> m_waitSemaphores;
         std::vector<VulkanSemaphore*> m_submitSemaphores;
         std::vector<VulkanSemaphore*> m_presentSemaphores;
     };
+
+    inline Device::DeviceMask VulkanCmdList::getDeviceMask() const
+    {
+        return m_queueMask;
+    }
+
+    inline const std::vector<VulkanSemaphore*>& VulkanCmdList::getWaitSemaphores() const
+    {
+        return m_waitSemaphores;
+    }
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -144,11 +164,10 @@ namespace vk
 
     private:
 
-        friend VulkanCommandBufferManager;
-        friend VulkanFramebufferManager;
-        friend VulkanRenderpassManager;
+        //friend VulkanCommandBufferManager;
         friend VulkanCmdList;
         friend VulkanSwapchain;
+        friend VulkanGraphicPipelineManager;
 
         VulkanDevice() = delete;
         VulkanDevice(const VulkanDevice&) = delete;
@@ -173,10 +192,13 @@ namespace vk
 
         VulkanMemory::VulkanMemoryAllocator*    m_imageMemoryManager;
         VulkanMemory::VulkanMemoryAllocator*    m_bufferMemoryManager;
+
         VulkanStagingBufferManager*             m_stagingBufferManager;
         VulkanSemaphoreManager*                 m_semaphoreManager;
         VulkanFramebufferManager*               m_framebufferManager;
         VulkanRenderpassManager*                m_renderpassManager;
+        VulkanPipelineLayoutManager*            m_pipelineLayoutManager;
+        VulkanGraphicPipelineManager*           m_graphicPipelineManager;
 
         VulkanResourceDeleter                   m_resourceDeleter;
 

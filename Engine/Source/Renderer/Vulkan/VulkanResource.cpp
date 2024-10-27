@@ -102,7 +102,7 @@ void VulkanResourceDeleter::updateResourceDeleter(bool wait)
     }
 
     ASSERT(m_delayedList.empty(), "should be empty");
-    m_delayedList.swap(delayedList);
+    m_delayedList.swap(std::move(delayedList));
 #if DEBUG
     if (wait)
     {

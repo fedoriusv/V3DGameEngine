@@ -46,12 +46,12 @@ namespace vk
         u32 getSwapchainImageCount() const;
         u32 currentSwapchainIndex();
 
-        VulkanSemaphore* getAcquireSemaphore(u32 index) const;
-        VulkanSemaphore* getCurrentAcquireSemaphore() const;
+        VulkanSemaphore* getAcquiredSemaphore(u32 index) const;
+        VulkanSemaphore* getCurrentAcquiredSemaphore() const;
 
         VkSurfaceTransformFlagBitsKHR getTransformFlag() const;
 
-    private:
+    public:
 
         explicit VulkanSwapchain(VulkanDevice* device, VulkanSemaphoreManager* semaphoreManager) noexcept;
         ~VulkanSwapchain();
@@ -68,7 +68,6 @@ namespace vk
 
     private:
 
-        friend VulkanDevice;
         friend VulkanCmdList;
 
         static VkSurfaceKHR createSurface(VkInstance vkInstance, NativeInstance hInstance, NativeWindows hWnd, const math::Dimension2D& size);
@@ -79,7 +78,7 @@ namespace vk
         VulkanDevice&                       m_device;
         platform::Window*                   m_window;
         SwapchainParams                     m_params;
-        std::mutex                          m_mutex;
+        std::recursive_mutex                m_mutex;
 
         VkSurfaceKHR                        m_surface;
         VkSurfaceCapabilitiesKHR            m_surfaceCapabilities;
@@ -91,9 +90,9 @@ namespace vk
         VulkanSemaphoreManager* const       m_semaphoreManager;
         std::tuple<u32, VulkanSemaphore*>   m_presentInfo;
         u32                                 m_currentSemaphoreIndex;
-        std::vector<VulkanSemaphore*>       m_acquireSemaphores;
+        std::vector<VulkanSemaphore*>       m_acquiredSemaphores;
 
-        VulkanCmdList*                      m_cmdLists;
+        std::vector<VulkanCmdList*>         m_cmdLists;
 
         void recreateAttachedResources();
         std::vector<std::tuple<VulkanResource*, const std::function<bool(VulkanResource*)>>> m_swapchainResources;
@@ -114,16 +113,16 @@ namespace vk
         return m_swapchainImages[m_currentImageIndex];
     }
 
-    inline VulkanSemaphore* VulkanSwapchain::getAcquireSemaphore(u32 index) const
+    inline VulkanSemaphore* VulkanSwapchain::getAcquiredSemaphore(u32 index) const
     {
-        ASSERT(index < m_acquireSemaphores.size(), "invalid index");
-        return m_acquireSemaphores[index];
+        ASSERT(index < m_acquiredSemaphores.size(), "invalid index");
+        return m_acquiredSemaphores[index];
     }
 
-    inline VulkanSemaphore* VulkanSwapchain::getCurrentAcquireSemaphore() const
+    inline VulkanSemaphore* VulkanSwapchain::getCurrentAcquiredSemaphore() const
     {
         ASSERT(m_currentSemaphoreIndex >= 0, "invalid index");
-        return m_acquireSemaphores[m_currentSemaphoreIndex];
+        return m_acquiredSemaphores[m_currentSemaphoreIndex];
     }
 
     inline u32 VulkanSwapchain::getSwapchainImageCount() const

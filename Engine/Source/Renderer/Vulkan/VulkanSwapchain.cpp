@@ -86,8 +86,6 @@ VulkanSwapchain::VulkanSwapchain(VulkanDevice* device, VulkanSemaphoreManager* c
     , m_semaphoreManager(semaphoreManager)
     , m_currentSemaphoreIndex(0U)
 
-    , m_cmdLists(nullptr)
-
     , m_insideFrame(false)
     , m_ready(false)
 {
@@ -102,7 +100,7 @@ VulkanSwapchain::~VulkanSwapchain()
 
     ASSERT(m_swapchainImages.empty(), "not empty");
     ASSERT(!m_swapchain, "swapchain is not nullptr");
-    ASSERT(m_acquireSemaphores.empty(), "not empty");
+    ASSERT(m_acquiredSemaphores.empty(), "not empty");
     ASSERT(!m_surface, "surface isn't nullptr");
 }
 
@@ -146,13 +144,12 @@ void VulkanSwapchain::presentFrame()
     LOG_DEBUG("VulkanContext::presentFrame %llu", m_frameCounter);
 #endif //VULKAN_DEBUG
 
-    if (m_cmdLists)
+    for (auto cmdList: m_cmdLists)
     {
-        present(m_device.getQueueByMask(m_cmdLists->m_queueMask), m_cmdLists->m_waitSemaphores);
-
-        m_cmdLists->postPresent();
-        m_cmdLists = nullptr;
+        VulkanSwapchain::present(m_device.getQueueByMask(cmdList->getDeviceMask()), cmdList->getWaitSemaphores());
+        cmdList->postPresent();
     }
+    m_cmdLists.clear();
 
     ++m_frameCounter;
 }
@@ -325,11 +322,12 @@ bool VulkanSwapchain::create(platform::Window* window, const SwapchainParams& pa
         return false;
     }
 
-    m_acquireSemaphores.resize(m_swapchainImages.size(), nullptr);
-    for (u32 index = 0; index < m_swapchainImages.size(); ++index)
+    u32 semaphoreCount = static_cast<u32>(m_swapchainImages.size());
+    m_acquiredSemaphores.resize(semaphoreCount, nullptr);
+    for (u32 index = 0; index < semaphoreCount; ++index)
     {
         std::string semaphoreName("AcquireSemaphore_" + std::to_string(index));
-        m_acquireSemaphores[index] = m_semaphoreManager->createSemaphore(semaphoreName);
+        m_acquiredSemaphores[index] = m_semaphoreManager->createSemaphore(semaphoreName);
     }
 
 #if SWAPCHAIN_ON_ADVANCE
@@ -493,7 +491,7 @@ bool VulkanSwapchain::createSwapchainImages(const SwapchainParams& params, const
                 LOG_FATAL("VulkanSwapchain::createSwapchainImages: can't create surface texture");
 
                 swapchainImage->destroy();
-                delete swapchainImage;
+                V3D_DELETE(swapchainImage, memory::MemoryLabel::MemoryRenderCore);
             }
             else
             {
@@ -543,12 +541,11 @@ void VulkanSwapchain::destroy()
         m_swapchain = VK_NULL_HANDLE;
     }
 
-    for (auto& semaphore : m_acquireSemaphores)
+    for (auto& semaphore : m_acquiredSemaphores)
     {
         m_semaphoreManager->deleteSemaphore(semaphore);
-        delete semaphore;
     }
-    m_acquireSemaphores.clear();
+    m_acquiredSemaphores.clear();
 
     if (m_surface)
     {
@@ -581,7 +578,8 @@ void VulkanSwapchain::present(VkQueue queue, const std::vector<VulkanSemaphore*>
     presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
     presentInfo.pNext = nullptr;
 #if !SWAPCHAIN_ON_ADVANCE
-    VkSemaphore acquireSemaphore = std::get<1>(m_presentInfo)->getHandle();
+    VkSemaphore acquireSemaphore = m_acquiredSemaphores[m_currentSemaphoreIndex]->getHandle();
+    ASSERT(m_currentImageIndex == std::get<0>(m_presentInfo) && m_acquiredSemaphores[m_currentSemaphoreIndex] == std::get<1>(m_presentInfo), ("wrong present"));
     if (waitSemaphores.empty())
     {
         presentInfo.waitSemaphoreCount = 1;
@@ -634,15 +632,16 @@ void VulkanSwapchain::present(VkQueue queue, const std::vector<VulkanSemaphore*>
 #if SWAPCHAIN_ON_ADVANCE
     m_presentInfo = { VulkanSwapchain::currentSwapchainIndex(), m_acquireSemaphore[m_currentSemaphoreIndex] };
 #endif
-    m_currentSemaphoreIndex = (m_currentSemaphoreIndex + 1) % static_cast<u32>(m_acquireSemaphores.size());
+    m_currentSemaphoreIndex = (m_currentSemaphoreIndex + 1) % static_cast<u32>(m_acquiredSemaphores.size());
 }
 
 u32 VulkanSwapchain::acquireImage()
 {
 #if VULKAN_DEBUG
-    LOG_DEBUG("VulkanSwapchain::acquireImage");
+    LOG_DEBUG("VulkanSwapchain::acquireImage semaphoreIndex: %u", m_currentSemaphoreIndex);
 #endif //VULKAN_DEBUG
-    VulkanSemaphore* semaphore = m_acquireSemaphores[m_currentSemaphoreIndex];
+    VulkanSemaphore* semaphore = m_acquiredSemaphores[m_currentSemaphoreIndex];
+    m_semaphoreManager->markSemaphore(semaphore, VulkanSemaphore::SemaphoreStatus::AssignToSignal);
     VkFence fence = VK_NULL_HANDLE;
 
 #if DEBUG_FENCE_ACQUIRE
@@ -707,7 +706,6 @@ u32 VulkanSwapchain::acquireImage()
         ASSERT(false, "vkAcquireNextImageKHR failed");
     }
 
-    m_semaphoreManager->markSemaphore(semaphore, VulkanSemaphore::SemaphoreStatus::AssignToSignal);
     m_currentImageIndex = imageIndex;
 #if !SWAPCHAIN_ON_ADVANCE
     m_presentInfo = { imageIndex, semaphore };
@@ -733,12 +731,11 @@ bool VulkanSwapchain::recteate(platform::Window* window, const SwapchainParams& 
         std::swap(m_swapchain, oldSwapchain);
     }
 
-    for (auto& semaphore : m_acquireSemaphores)
+    for (auto& semaphore : m_acquiredSemaphores)
     {
         m_semaphoreManager->deleteSemaphore(semaphore);
-        delete semaphore;
     }
-    m_acquireSemaphores.clear();
+    m_acquiredSemaphores.clear();
 
     if (m_surface)
     {
@@ -769,10 +766,13 @@ void VulkanSwapchain::attachResource(VulkanResource* resource, const std::functi
 
 void VulkanSwapchain::attachCmdList(VulkanCmdList* cmdlist)
 {
-    std::scoped_lock<std::mutex> lock(m_mutex);
+    std::scoped_lock lock(m_mutex);
 
-    ASSERT(!m_cmdLists, "cmdList is attached already");
-    m_cmdLists = cmdlist;
+    auto found = std::find(m_cmdLists.begin(), m_cmdLists.end(), cmdlist);
+    if (found == m_cmdLists.end())
+    {
+        m_cmdLists.push_back(cmdlist);
+    }
 }
 
 void VulkanSwapchain::recreateAttachedResources()

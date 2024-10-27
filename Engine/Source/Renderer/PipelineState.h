@@ -2,6 +2,7 @@
 
 #include "Object.h"
 #include "Render.h"
+#include "RenderTargetState.h"
 
 //#include "ObjectTracker.h"
 
@@ -13,7 +14,6 @@ namespace renderer
 
     class Device;
     class Pipeline;
-    class RenderTargetState;
     class ShaderProgram;
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -394,6 +394,26 @@ namespace renderer
         */
         ~GraphicsPipelineState() = default;
 
+        /**
+        * @brief getPipelineStateDesc function
+        */
+        const GraphicsPipelineStateDesc& getPipelineStateDesc() const;
+
+        /**
+        * @brief getRenderPassDesc function
+        */
+        const RenderPassDesc& getRenderPassDesc() const;
+
+        /**
+        * @brief getShaderProgram function
+        */
+        const ShaderProgram* getShaderProgram() const;
+
+        /**
+        * @brief getName function
+        */
+        const std::string& getName() const;
+
     private:
 
         GraphicsPipelineState() = delete;
@@ -403,6 +423,7 @@ namespace renderer
         GraphicsPipelineStateDesc   m_pipelineStateDesc;
         const ShaderProgram*        m_program;
         const RenderTargetState*    m_renderTaget;
+        std::string                 m_name;
     };
 
     inline void GraphicsPipelineState::setPolygonMode(PolygonMode polygonMode)
@@ -557,6 +578,26 @@ namespace renderer
     inline PrimitiveTopology GraphicsPipelineState::getPrimitiveTopology() const
     {
         return m_pipelineStateDesc._vertexInputState._primitiveTopology;
+    }
+
+    inline const GraphicsPipelineStateDesc& GraphicsPipelineState::getPipelineStateDesc() const
+    {
+        return m_pipelineStateDesc;
+    }
+
+    inline const RenderPassDesc& GraphicsPipelineState::getRenderPassDesc() const
+    {
+        return m_renderTaget->getRenderPassDesc();
+    }
+
+    inline const ShaderProgram* GraphicsPipelineState::getShaderProgram() const
+    {
+        return m_program;
+    }
+
+    inline const std::string& GraphicsPipelineState::getName() const
+    {
+        return m_name;
     }
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

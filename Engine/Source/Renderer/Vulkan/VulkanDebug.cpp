@@ -292,11 +292,11 @@ void VulkanDebugUtils::debugCallbackData(const VkDebugUtilsMessengerCallbackData
                 break;
             }
 
-            //[[maybe_unused]] VulkanImage* image = nullptr;
-            //if (addr != 0ULL && addr != ULLONG_MAX)
-            //{
-            //    image = reinterpret_cast<VulkanImage*>(addr);
-            //}
+            [[maybe_unused]] VulkanImage* image = nullptr;
+            if (addr != 0ULL && addr != ULLONG_MAX)
+            {
+                image = reinterpret_cast<VulkanImage*>(addr);
+            }
 
             break;
         }
@@ -308,11 +308,11 @@ void VulkanDebugUtils::debugCallbackData(const VkDebugUtilsMessengerCallbackData
                 break;
             }
 
-            //[[maybe_unused]] VulkanBuffer* buffer = nullptr;
-            //if (addr != 0ULL && addr != ULLONG_MAX)
-            //{
-            //    buffer = reinterpret_cast<VulkanBuffer*>(addr);
-            //}
+            [[maybe_unused]] VulkanBuffer* buffer = nullptr;
+            if (addr != 0ULL && addr != ULLONG_MAX)
+            {
+                buffer = reinterpret_cast<VulkanBuffer*>(addr);
+            }
 
             break;
         }
@@ -324,11 +324,11 @@ void VulkanDebugUtils::debugCallbackData(const VkDebugUtilsMessengerCallbackData
                 break;
             }
 
-            //[[maybe_unused]] VulkanFramebuffer* framebuffer = nullptr;
-            //if (addr != 0ULL && addr != ULLONG_MAX)
-            //{
-            //    framebuffer = reinterpret_cast<VulkanFramebuffer*>(addr);
-            //}
+            [[maybe_unused]] VulkanFramebuffer* framebuffer = nullptr;
+            if (addr != 0ULL && addr != ULLONG_MAX)
+            {
+                framebuffer = reinterpret_cast<VulkanFramebuffer*>(addr);
+            }
 
             break;
         }
@@ -340,11 +340,11 @@ void VulkanDebugUtils::debugCallbackData(const VkDebugUtilsMessengerCallbackData
                 break;
             }
 
-            //[[maybe_unused]] VulkanRenderPass* renderpass = nullptr;
-            //if (addr != 0ULL && addr != ULLONG_MAX)
-            //{
-            //    renderpass = reinterpret_cast<VulkanRenderPass*>(addr);
-            //}
+            [[maybe_unused]] VulkanRenderPass* renderpass = nullptr;
+            if (addr != 0ULL && addr != ULLONG_MAX)
+            {
+                renderpass = reinterpret_cast<VulkanRenderPass*>(addr);
+            }
 
             break;
         }
@@ -356,22 +356,22 @@ void VulkanDebugUtils::debugCallbackData(const VkDebugUtilsMessengerCallbackData
                 break;
             }
 
-           /* [[maybe_unused]] Pipeline* pipeline = nullptr;
+            [[maybe_unused]] RenderPipeline* pipeline = nullptr;
             if (addr != 0ULL && addr != ULLONG_MAX)
             {
-                pipeline = reinterpret_cast<Pipeline*>(addr);
-                Pipeline::PipelineType type = pipeline->getType();
-                if (type == Pipeline::PipelineType::PipelineType_Graphic)
+                pipeline = reinterpret_cast<RenderPipeline*>(addr);
+                RenderPipeline::PipelineType type = pipeline->getType();
+                if (type == RenderPipeline::PipelineType::PipelineType_Graphic)
                 {
-                    VulkanGraphicPipeline* graphicPipeline = reinterpret_cast<VulkanGraphicPipeline*>(pipeline);
+                    [[maybe_unused]] VulkanGraphicPipeline* graphicPipeline = reinterpret_cast<VulkanGraphicPipeline*>(pipeline);
                     break;
                 }
                 else
                 {
-                    VulkanComputePipeline* computePipeline = reinterpret_cast<VulkanComputePipeline*>(pipeline);
+                    [[maybe_unused]] VulkanComputePipeline* computePipeline = reinterpret_cast<VulkanComputePipeline*>(pipeline);
                     break;
                 }
-            }*/
+            }
             break;
         }
 
@@ -427,11 +427,11 @@ void VulkanDebugUtils::debugCallbackData(const VkDebugUtilsMessengerCallbackData
                 addr = std::strtoull(view.substr(found + VulkanDebugUtils::k_addressPreffix.size()).data(), &end, 10);
             }
 
-            //[[maybe_unused]] VulkanCommandBuffer* cmdBuffer = nullptr;
-            //if (addr != 0ULL && addr != ULLONG_MAX)
-            //{
-            //    cmdBuffer = reinterpret_cast<VulkanCommandBuffer*>(addr);
-            //}
+            [[maybe_unused]] VulkanCommandBuffer* cmdBuffer = nullptr;
+            if (addr != 0ULL && addr != ULLONG_MAX)
+            {
+                cmdBuffer = reinterpret_cast<VulkanCommandBuffer*>(addr);
+            }
 
             return;
         }

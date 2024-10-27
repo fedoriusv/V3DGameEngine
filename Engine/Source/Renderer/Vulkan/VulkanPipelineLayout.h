@@ -12,6 +12,8 @@ namespace v3d
 {
 namespace renderer
 {
+    class ShaderProgram;
+
 namespace vk
 {
     /////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -88,7 +90,7 @@ namespace vk
 
         struct DescriptorSetLayoutCreator
         {
-            explicit DescriptorSetLayoutCreator(const std::array<Shader*, toEnumType(ShaderType::Count)>& shaders) noexcept;
+            explicit DescriptorSetLayoutCreator(VulkanDevice& device, const renderer::ShaderProgram* program) noexcept;
 
             DescriptorSetLayoutCreator() = delete;
             DescriptorSetLayoutCreator(const DescriptorSetLayoutCreator&) = delete;

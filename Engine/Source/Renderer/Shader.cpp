@@ -31,6 +31,7 @@ Shader::Shader(ShaderType type) noexcept
     : m_header()
     , m_type(type)
     , m_shaderModel(ShaderModel::Default)
+    , m_data({})
 {
     LOG_DEBUG("Shader::Shader constructor %llx", this);
 }
@@ -39,6 +40,7 @@ Shader::Shader(const ShaderHeader& header) noexcept
     : m_header(header)
     , m_type(ShaderType::First)
     , m_shaderModel(ShaderModel::Default)
+    , m_data({})
 {
     LOG_DEBUG("Shader::Shader constructor %llx", this);
 }

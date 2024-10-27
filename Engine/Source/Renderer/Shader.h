@@ -281,11 +281,16 @@ namespace renderer
         };
 
         ShaderType getType() const;
+        const Resources& getMappingResources() const;
 
     public:
 
         explicit Shader(const ShaderHeader& header) noexcept;
         virtual ~Shader();
+
+        const std::string& getEntryPoint() const;
+        const void* getBytecode() const;
+        u32 getBytecodeSize() const;
 
     protected:
 
@@ -306,6 +311,26 @@ namespace renderer
     inline ShaderType Shader::getType() const
     {
         return m_type;
+    }
+
+    inline const std::string& Shader::getEntryPoint() const
+    {
+        return m_entryPoint;
+    }
+
+    inline const void* Shader::getBytecode() const
+    {
+        return m_data._data;
+    }
+    
+    inline u32 Shader::getBytecodeSize() const
+    {
+        return m_data._size;
+    }
+
+    inline const Shader::Resources& Shader::getMappingResources() const
+    {
+        return m_mappedResources;
     }
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

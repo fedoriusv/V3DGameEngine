@@ -56,6 +56,7 @@ VulkanRenderPass::VulkanRenderPass(VulkanDevice* device, const RenderPassDesc& d
     : m_device(*device)
     , m_renderpass(VK_NULL_HANDLE)
     , m_viewsMask(0x0)
+    , m_drawingToSwapchain(false)
 {
     LOG_DEBUG("VulkanRenderpass::VulkanRenderpass constructor %llx", this);
 
@@ -96,6 +97,10 @@ VulkanRenderPass::VulkanRenderPass(VulkanDevice* device, const RenderPassDesc& d
     }
 
     m_viewsMask = description._viewsMask;
+    m_drawingToSwapchain = std::any_of(m_descriptions.cbegin(), m_descriptions.cend(), [](auto& desc)
+        {
+            return desc._swapchainImage;
+        });
 
 #if VULKAN_DEBUG_MARKERS
     m_debugName = name.empty() ? "Renderpass" : name;
@@ -679,6 +684,8 @@ VulkanRenderpassManager::~VulkanRenderpassManager()
 
 VulkanRenderPass* VulkanRenderpassManager::acquireRenderpass(const RenderPassDesc& description, const std::string& name)
 {
+    std::scoped_lock lock(m_mutex);
+
     VulkanRenderPass* renderpass = nullptr;
     auto found = m_renderPassList.emplace(description, renderpass);
     if (found.second)
@@ -702,6 +709,8 @@ VulkanRenderPass* VulkanRenderpassManager::acquireRenderpass(const RenderPassDes
 
 bool VulkanRenderpassManager::removeRenderPass(const VulkanRenderPass* renderPass)
 {
+    std::scoped_lock lock(m_mutex);
+
     /*auto iter = m_renderPassList.find(renderPass->m_desc);
     if (iter == m_renderPassList.cend())
     {

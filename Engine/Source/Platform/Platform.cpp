@@ -69,7 +69,7 @@ bool Platform::setThreadName(std::thread& thread, const std::string& name)
 #endif //PLATFORM_WINDOWS
 
 #ifdef PLATFORM_WINDOWS
-std::wstring Platform::utf8ToWide(c8* in)
+std::wstring Platform::utf8ToWide(const c8* in)
 {
     s32 size = MultiByteToWideChar(CP_UTF8, 0, in, -1, nullptr, 0);
     // size includes terminating null; std::wstring adds null automatically
@@ -78,7 +78,7 @@ std::wstring Platform::utf8ToWide(c8* in)
     return out;
 }
 
-std::string Platform::wideToUtf8(w16* in)
+std::string Platform::wideToUtf8(const w16* in)
 {
     s32 size = WideCharToMultiByte(CP_UTF8, 0, in, -1, nullptr, 0, nullptr, nullptr);
     // size includes terminating null; std::string adds null automatically

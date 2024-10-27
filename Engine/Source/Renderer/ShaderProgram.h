@@ -24,6 +24,8 @@ namespace renderer
         explicit ShaderProgram(Device* device, const VertexShader* vertex, const FragmentShader* fragment) noexcept;
         explicit ShaderProgram(Device* device, const ComputeShader* compute) noexcept;
 
+        const Shader* getShader(ShaderType type) const;
+
     private:
 
         Device* m_device;
@@ -31,6 +33,12 @@ namespace renderer
         std::array<const Shader*, toEnumType(ShaderType::Count)> m_shaders;
         u32 m_shaderMask;
     };
+
+    inline const Shader* ShaderProgram::getShader(ShaderType type) const
+    {
+        ASSERT(type <= ShaderType::Last, "range out");
+        return m_shaders[toEnumType(type)];
+    }
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 

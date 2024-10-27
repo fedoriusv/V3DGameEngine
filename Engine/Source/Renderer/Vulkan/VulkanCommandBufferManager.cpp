@@ -411,7 +411,7 @@ bool VulkanCommandBufferManager::submit(VulkanCommandBuffer* buffer, const std::
     return true;
 }
 
-void VulkanCommandBufferManager::updateCommandBuffers()
+void VulkanCommandBufferManager::updateStatus()
 {
     for (auto iter = m_usedCmdBuffers.begin(); iter != m_usedCmdBuffers.end();)
     {
@@ -437,7 +437,7 @@ void VulkanCommandBufferManager::waitCompletion()
     {
         LOG_ERROR("VulkanCommandBufferManager::waitCompete DeviceWaitIdle. Error %s", ErrorString(result).c_str());
     }
-    VulkanCommandBufferManager::updateCommandBuffers();
+    VulkanCommandBufferManager::updateStatus();
 }
 
 void VulkanCommandBufferManager::waitQueueCompletion(VkQueue queue)
@@ -447,7 +447,7 @@ void VulkanCommandBufferManager::waitQueueCompletion(VkQueue queue)
     {
         LOG_ERROR("VulkanCommandBufferManager::waitCompete QueueWaitIdle. Error %s", ErrorString(result).c_str());
     }
-    VulkanCommandBufferManager::updateCommandBuffers();
+    VulkanCommandBufferManager::updateStatus();
 }
 
 void VulkanCommandBufferManager::resetPools()
@@ -478,11 +478,6 @@ void VulkanCommandBufferManager::resetPools()
             }
         }
     }
-}
-
-void VulkanCommandBufferManager::drawToSwapchain(VulkanCommandBuffer* buffer, const VulkanImage* swapchainImage)
-{
-    buffer->m_drawingToSwapchain = true;
 }
 
 VkCommandPool VulkanCommandBufferManager::createCommandPool(VkDevice device, VkCommandPoolCreateFlags flag, u32 familyIndex)

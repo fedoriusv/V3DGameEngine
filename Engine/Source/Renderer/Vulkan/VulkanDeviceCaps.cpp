@@ -489,7 +489,7 @@ void VulkanDeviceCaps::initialize()
     _unifiedMemoryManager = false;
 
     _useGlobalDescriptorPool = true;
-    _useDynamicUniforms = true;
+    _useDynamicUniforms = false; //TODO
     _useLateDescriptorSetUpdate = false;
 
     LOG_INFO("VulkanDeviceCaps::initialize:  useDynamicUniforms is %s", _useDynamicUniforms ? "enable" : "disable");

@@ -18,7 +18,6 @@ namespace vk
     /////////////////////////////////////////////////////////////////////////////////////////////////////
     
     class VulkanDevice;
-    class VulkanCmdList;
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -58,13 +57,13 @@ namespace vk
 
         bool hasUsageFlag(TextureUsage usage) const override;
 
-        void clear(VulkanCmdList* cmdList, const renderer::Color& color);
-        void clear(VulkanCmdList* cmdList, f32 depth, u32 stencil);
+        void clear(VulkanCommandBuffer* cmdBuffer, const renderer::Color& color);
+        void clear(VulkanCommandBuffer* cmdBuffer, f32 depth, u32 stencil);
 
-        bool upload(VulkanCmdList* cmdList, const math::Dimension3D& size, u32 layers, u32 mips, const void* data);
-        bool upload(VulkanCmdList* cmdList, const math::Dimension3D& offsets, const math::Dimension3D& size, u32 layers, const void* data);
+        bool upload(VulkanCommandBuffer* cmdBuffer, const math::Dimension3D& size, u32 layers, u32 mips, const void* data);
+        bool upload(VulkanCommandBuffer* cmdBuffer, const math::Dimension3D& offsets, const math::Dimension3D& size, u32 layers, const void* data);
 
-        bool generateMipmaps(VulkanCmdList* cmdList, u32 layer);
+        bool generateMipmaps(VulkanCommandBuffer* cmdBuffer, u32 layer);
 
         VkImage               getHandle() const;
         VkImageAspectFlags    getImageAspectFlags() const;
@@ -90,7 +89,7 @@ namespace vk
         static VkImageSubresourceRange makeImageSubresourceRangeWithAspect(const VulkanImage* image, const RenderTexture::Subresource& resource, VkImageAspectFlags aspect);
 
         bool createViewImage();
-        bool internalUpload(VulkanCmdList* cmdList, const math::Dimension3D& offsets, const math::Dimension3D& size, u32 layers, u32 mips, u64 dataSize, const void* data);
+        bool internalUpload(VulkanCommandBuffer* cmdBuffer, const math::Dimension3D& offsets, const math::Dimension3D& size, u32 layers, u32 mips, u64 dataSize, const void* data);
 
         VulkanDevice&                           m_device;
         VulkanMemory::VulkanMemoryAllocator*    m_memoryAllocator;

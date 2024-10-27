@@ -20,8 +20,8 @@ namespace platform
 
         static bool setThreadName(std::thread& thread, const std::string& name);
 
-        [[nodiscard]] static std::wstring utf8ToWide(c8* in);
-        [[nodiscard]] static std::string wideToUtf8(w16* in);
+        [[nodiscard]] static std::wstring utf8ToWide(const c8* in);
+        [[nodiscard]] static std::string wideToUtf8(const w16* in);
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

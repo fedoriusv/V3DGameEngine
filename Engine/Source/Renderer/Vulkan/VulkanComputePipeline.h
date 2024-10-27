@@ -46,9 +46,8 @@ namespace vk
         VulkanComputePipeline() = delete;
         VulkanComputePipeline(const VulkanComputePipeline&) = delete;
 
-        bool create(const PipelineGraphicInfo* pipelineInfo) override;
-        bool create(const PipelineComputeInfo* pipelineInfo) override;
-        void destroy() override;
+        bool create(const ComputePipelineState& state);
+        void destroy();
 
         VulkanDevice&   m_device;
 

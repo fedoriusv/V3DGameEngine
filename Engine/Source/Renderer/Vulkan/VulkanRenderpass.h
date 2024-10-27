@@ -78,13 +78,16 @@ namespace vk
         bool createRenderpass();
         bool createRenderpass2();
 
-        VulkanDevice& m_device;
-        VkRenderPass  m_renderpass;
+        VulkanDevice&                               m_device;
+        VkRenderPass                                m_renderpass;
 
         using LayoutState = std::tuple<VkImageLayout, VkImageLayout>;
-        std::vector<LayoutState> m_layout;
-        std::vector<VulkanAttachmentDescription> m_descriptions;
-        u32 m_viewsMask;
+
+        std::vector<LayoutState>                    m_layout;
+        std::vector<VulkanAttachmentDescription>    m_descriptions;
+        u32                                         m_viewsMask;
+
+        bool                                        m_drawingToSwapchain;
 
 #if VULKAN_DEBUG_MARKERS
         std::string m_debugName;
@@ -93,7 +96,7 @@ namespace vk
 
     inline bool VulkanRenderPass::isDrawingToSwapchain() const
     {
-        return m_descriptions.size() == 1 && m_descriptions[0]._swapchainImage;
+        return m_drawingToSwapchain;
     }
 
     inline VkRenderPass VulkanRenderPass::getHandle() const
@@ -127,6 +130,7 @@ namespace vk
 
         [[nodiscard]] VulkanRenderPass* acquireRenderpass(const RenderPassDesc& description, const std::string& name = "");
         bool removeRenderPass(const VulkanRenderPass* renderPass);
+
         void clear();
 
     private:

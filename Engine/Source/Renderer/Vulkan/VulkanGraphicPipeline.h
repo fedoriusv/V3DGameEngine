@@ -14,6 +14,8 @@ namespace v3d
 {
 namespace renderer
 {
+    class ShaderProgram;
+
 namespace vk
 {
     /////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -52,29 +54,29 @@ namespace vk
         const VulkanPipelineLayout& getDescriptorSetLayouts() const;
         const VulkanPipelineLayoutDescription& getPipelineLayoutDescription() const;
 
+        bool create(const GraphicsPipelineState& state);
+        void destroy();
+
     private:
 
-        bool create(const PipelineGraphicInfo* pipelineInfo) override;
-        bool create(const PipelineComputeInfo* pipelineInfo) override;
-        void destroy() override;
-
+        bool createShaderModules(const renderer::ShaderProgram* program);
         void deleteShaderModules();
         bool createCompatibilityRenderPass(const RenderPassDesc& renderpassDesc, VulkanRenderPass* &compatibilityRenderPass);
 
         bool pipelineStatistic() const;
 
-        std::vector<VkShaderModule> m_modules;
 
-        VulkanDevice&               m_device;
-        VkPipeline                  m_pipeline;
-        VulkanRenderPass*           m_compatibilityRenderPass;
-        //ObjectTracker<RenderPass> m_trackerRenderPass;
+        VulkanDevice&                                                   m_device;
+        VulkanRenderpassManager* const                                  m_renderpassManager;
+        VulkanPipelineLayoutManager* const                              m_pipelineLayoutManager;
+
+        VkPipeline                                                      m_pipeline;
+        VulkanRenderPass*                                               m_compatibilityRenderPass;
+        std::array<VkShaderModule, toEnumType(ShaderType::Count)>       m_modules;
+        //ObjectTracker<RenderPass>         m_trackerRenderPass;
 
         VulkanPipelineLayoutDescription m_pipelineLayoutDescription;
         VulkanPipelineLayout m_pipelineLayout;
-
-        VulkanRenderpassManager* const m_renderpassManager;
-        VulkanPipelineLayoutManager* const m_pipelineLayoutManager;
 
 #if VULKAN_DEBUG_MARKERS
         std::string m_debugName;
@@ -114,18 +116,25 @@ namespace vk
 
         struct VulkanPipelineDesc
         {
-            VulkanPipelineDesc() noexcept;
-            explicit VulkanPipelineDesc(const GraphicsPipelineStateDesc& desc) noexcept;
+            VulkanPipelineDesc() noexcept = default;
+
+            explicit VulkanPipelineDesc(const GraphicsPipelineStateDesc& state, const RenderPassDesc& pass, const ShaderProgram* program) noexcept
+                : _pipelineDesc(state)
+                , _renderpassDesc(pass)
+                , _program(program)
+            {
+
+            }
 
             GraphicsPipelineStateDesc _pipelineDesc;
             RenderPassDesc            _renderpassDesc;
-            //ShaderProgramDescription         _programDesc;
+            const ShaderProgram*      _program = nullptr;
         };
 
         explicit VulkanGraphicPipelineManager(VulkanDevice* device) noexcept;
         ~VulkanGraphicPipelineManager();
 
-        [[nodiscard]] VulkanGraphicPipeline* acquireGraphicPipeline(const GraphicsPipelineStateDesc& description);
+        [[nodiscard]] VulkanGraphicPipeline* acquireGraphicPipeline(const GraphicsPipelineState& state);
 
         bool removePipeline(VulkanGraphicPipeline* pipeline);
         void clear();
@@ -135,7 +144,8 @@ namespace vk
         VulkanGraphicPipelineManager(const VulkanGraphicPipelineManager&) = delete;
         VulkanGraphicPipelineManager& operator=(const VulkanGraphicPipelineManager&) = delete;
 
-        VulkanDevice& m_device;
+        VulkanDevice&           m_device;
+        std::recursive_mutex    m_mutex;
         std::unordered_map<DescInfo<VulkanPipelineDesc>, VulkanGraphicPipeline*, DescInfo<VulkanPipelineDesc>::Hash, DescInfo<VulkanPipelineDesc>::Compare> m_pipelineGraphicList;
     };
 

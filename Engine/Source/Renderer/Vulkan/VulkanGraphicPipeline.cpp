@@ -1,18 +1,19 @@
 #include "VulkanGraphicPipeline.h"
 
 #include "Utils/Logger.h"
+#include "Renderer/ShaderProgram.h"
 
 #ifdef VULKAN_RENDER
-#include "VulkanDebug.h"
-#include "VulkanDevice.h"
-#include "VulkanSwapchain.h"
-#include "VulkanImage.h"
-#include "VulkanRenderpass.h"
+#   include "VulkanDebug.h"
+#   include "VulkanDevice.h"
+#   include "VulkanSwapchain.h"
+#   include "VulkanImage.h"
+#   include "VulkanRenderpass.h"
 //#include "VulkanDescriptorSet.h"
 
 #if defined(USE_SPIRV)
-#   define PATCH_SPIRV_REMOVE_UNUSED_LOCATIONS 0
-#   if PATCH_SPIRV_REMOVE_UNUSED_LOCATIONS
+#   define RUNTIME_PATCH_SPIRV_REMOVE_UNUSED_LOCATIONS 0
+#   if RUNTIME_PATCH_SPIRV_REMOVE_UNUSED_LOCATIONS
 #       include "Resource/SpirVPatch/ShaderSpirVPatcherRemoveUnusedLocations.h"
 #       include "Resource/SpirVPatch/ShaderSpirVPatcherVertexTransform.h"
 #       include "Resource/SpirVPatch/ShaderSpirVPatcherInvertOrdinate.h"
@@ -373,6 +374,7 @@ VulkanGraphicPipeline::VulkanGraphicPipeline(VulkanDevice* device, VulkanRenderp
     , m_pipelineLayoutManager(pipelineLayoutManager)
 {
     LOG_DEBUG("VulkanGraphicPipeline::VulkanGraphicPipeline constructor %llx", this);
+    m_modules.fill(VK_NULL_HANDLE);
 
 #if VULKAN_DEBUG_MARKERS
     m_debugName = name.empty() ? "GraphicPipeline" : name;
@@ -387,12 +389,11 @@ VulkanGraphicPipeline::~VulkanGraphicPipeline()
     ASSERT(!m_pipeline, "not nullptr");
 }
 
-bool VulkanGraphicPipeline::create(const PipelineGraphicInfo* pipelineInfo)
+bool VulkanGraphicPipeline::create(const GraphicsPipelineState& state)
 {
     ASSERT(getType() == PipelineType::PipelineType_Graphic, "invalid type");
 
-    ASSERT(pipelineInfo, "nullptr");
-    const GraphicsPipelineStateDesc& pipelineDesc = pipelineInfo->_pipelineDesc;
+    const GraphicsPipelineStateDesc& pipelineDesc = state.getPipelineStateDesc();
 
     VkPipelineCache pipelineCache = VK_NULL_HANDLE; //TODO
 
@@ -410,7 +411,7 @@ bool VulkanGraphicPipeline::create(const PipelineGraphicInfo* pipelineInfo)
     graphicsPipelineCreateInfo.basePipelineHandle = VK_NULL_HANDLE;
 
     ASSERT(!m_compatibilityRenderPass, "not nullptr");
-    if (!createCompatibilityRenderPass(pipelineInfo->_renderpassDesc, m_compatibilityRenderPass))
+    if (!createCompatibilityRenderPass(state.getRenderPassDesc(), m_compatibilityRenderPass))
     {
         LOG_ERROR("VulkanGraphicPipeline::create couldn't create renderpass for pipline");
         return false;
@@ -421,18 +422,17 @@ bool VulkanGraphicPipeline::create(const PipelineGraphicInfo* pipelineInfo)
 
 
     std::vector<VkPipelineShaderStageCreateInfo> pipelineShaderStageCreateInfos;
-    /*const ShaderProgramDescription& programDesc = pipelineInfo->_programDesc;
-    if (!Pipeline::createProgram(programDesc))
+    if (!VulkanGraphicPipeline::createShaderModules(state.getShaderProgram()))
     {
         LOG_ERROR("VulkanGraphicPipeline::create can't create modules for pipeline");
         deleteShaderModules();
         return false;
-    }*/
+    }
 
-    /*u32 moduleIndex = 0;
-    for (u32 type = toEnumType(ShaderType::Vertex); type < (u32)toEnumType(ShaderType::Count); ++type)
+    u32 moduleIndex = 0;
+    for (u32 type = toEnumType(ShaderType::First); type <= (u32)toEnumType(ShaderType::Last); ++type)
     {
-        if (!programDesc._shaders[type])
+        if (!m_modules[type])
         {
             continue;
         }
@@ -443,7 +443,7 @@ bool VulkanGraphicPipeline::create(const PipelineGraphicInfo* pipelineInfo)
         pipelineShaderStageCreateInfo.flags = 0;
         pipelineShaderStageCreateInfo.stage = convertShaderTypeToVkStage((ShaderType)type);
         pipelineShaderStageCreateInfo.module = m_modules[moduleIndex];
-        pipelineShaderStageCreateInfo.pName = programDesc._shaders[type]->getEntrypoint().c_str();
+        pipelineShaderStageCreateInfo.pName = state.getShaderProgram()->getShader((ShaderType)type)->getEntryPoint().c_str();
         pipelineShaderStageCreateInfo.pSpecializationInfo = nullptr;
 
         ++moduleIndex;
@@ -453,10 +453,10 @@ bool VulkanGraphicPipeline::create(const PipelineGraphicInfo* pipelineInfo)
     graphicsPipelineCreateInfo.stageCount = static_cast<u32>(pipelineShaderStageCreateInfos.size());
     graphicsPipelineCreateInfo.pStages = pipelineShaderStageCreateInfos.data();
 
-    VulkanPipelineLayoutManager::DescriptorSetLayoutCreator layoutDesc(programDesc._shaders);
+    VulkanPipelineLayoutManager::DescriptorSetLayoutCreator layoutDesc(m_device, state.getShaderProgram());
     m_pipelineLayoutDescription = layoutDesc._description;
     m_pipelineLayout = m_pipelineLayoutManager->acquirePipelineLayout(m_pipelineLayoutDescription);
-    graphicsPipelineCreateInfo.layout = m_pipelineLayout._pipelineLayout;*/
+    graphicsPipelineCreateInfo.layout = m_pipelineLayout._pipelineLayout;
 
 
     const GraphicsPipelineStateDesc::RasterizationState& rasterizationState = pipelineDesc._rasterizationState;
@@ -529,18 +529,18 @@ bool VulkanGraphicPipeline::create(const PipelineGraphicInfo* pipelineInfo)
     vertexInputStateCreateInfo.vertexBindingDescriptionCount = static_cast<u32>(vertexInputBindingDescriptions.size());
     vertexInputStateCreateInfo.pVertexBindingDescriptions = vertexInputBindingDescriptions.data();
 
-    //const Shader* vertexShader = programDesc._shaders[toEnumType(ShaderType::Vertex)];
-    //ASSERT(vertexShader, "nullptr");
+    const Shader* vertexShader = state.getShaderProgram()->getShader(ShaderType::Vertex);
+    ASSERT(vertexShader, "nullptr");
     std::vector<VkVertexInputAttributeDescription> vertexInputAttributeDescriptions;
     vertexInputAttributeDescriptions.reserve(inputAttrDesc._countInputAttributes);
-    //const Shader::ReflectionInfo& reflectionInfo = vertexShader->getReflectionInfo();
-    //ASSERT(reflectionInfo._inputAttribute.size() == inputAttrDesc._countInputAttributes, "different sizes");
+    const Shader::Resources& res = vertexShader->getMappingResources();
+    ASSERT(res._inputAttribute.size() == inputAttrDesc._countInputAttributes, "different sizes");
     for (u32 index = 0; index < inputAttrDesc._countInputAttributes; ++index)
     {
         VkVertexInputAttributeDescription vertexInputAttributeDescription = {};
         vertexInputAttributeDescription.binding = inputAttrDesc._inputAttributes[index]._binding;
-        //vertexInputAttributeDescription.location = reflectionInfo._inputAttribute[index]._location;
-        //ASSERT(reflectionInfo._inputAttribute[index]._format == inputAttrDesc._inputAttributes[index]._format, "different formats");
+        vertexInputAttributeDescription.location = res._inputAttribute[index]._location;
+        ASSERT(res._inputAttribute[index]._format == inputAttrDesc._inputAttributes[index]._format, "different formats");
         vertexInputAttributeDescription.format = VulkanImage::convertImageFormatToVkFormat(inputAttrDesc._inputAttributes[index]._format);
         vertexInputAttributeDescription.offset = inputAttrDesc._inputAttributes[index]._offest;
         vertexInputAttributeDescriptions.push_back(vertexInputAttributeDescription);
@@ -578,7 +578,7 @@ bool VulkanGraphicPipeline::create(const PipelineGraphicInfo* pipelineInfo)
 
     //bool independentBlend = VulkanDeviceCaps::getInstance()->getPhysicalDeviceFeatures().independentBlend;
     std::vector<VkPipelineColorBlendAttachmentState> pipelineColorBlendAttachmentStates;
-    for (u32 index = 0; index < pipelineInfo->_renderpassDesc._countColorAttachments; ++index)
+    for (u32 index = 0; index < state.getRenderPassDesc()._countColorAttachments; ++index)
     {
         const GraphicsPipelineStateDesc::BlendState::ColorBlendAttachmentState& colorBlendState = blendState._colorBlendAttachments[index];
         VkPipelineColorBlendAttachmentState pipelineColorBlendAttachmentState = {};
@@ -599,7 +599,7 @@ bool VulkanGraphicPipeline::create(const PipelineGraphicInfo* pipelineInfo)
 
     graphicsPipelineCreateInfo.pColorBlendState = &pipelineColorBlendStateCreateInfo;
 
-    const GraphicsPipelineStateDesc::DepthStencilState& depthBlendState = pipelineInfo->_pipelineDesc._depthStencilState;
+    const GraphicsPipelineStateDesc::DepthStencilState& depthBlendState = state.getPipelineStateDesc()._depthStencilState;
 
     //VkPipelineDepthStencilStateCreateInfo
     VkPipelineDepthStencilStateCreateInfo pipelineDepthStencilStateCreateInfo = {};
@@ -678,9 +678,9 @@ bool VulkanGraphicPipeline::create(const PipelineGraphicInfo* pipelineInfo)
     pipelineMultisampleStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
     pipelineMultisampleStateCreateInfo.pNext = nullptr; //VkPipelineSampleLocationsStateCreateInfoEXT
     pipelineMultisampleStateCreateInfo.flags = 0;
-    if (pipelineInfo->_renderpassDesc._attachmentsDesc[0]._samples > TextureSamples::TextureSamples_x1)
+    if (state.getRenderPassDesc()._attachmentsDesc[0]._samples > TextureSamples::TextureSamples_x1)
     {
-        pipelineMultisampleStateCreateInfo.rasterizationSamples = VulkanImage::convertRenderTargetSamplesToVkSampleCount(pipelineInfo->_renderpassDesc._attachmentsDesc[0]._samples);
+        pipelineMultisampleStateCreateInfo.rasterizationSamples = VulkanImage::convertRenderTargetSamplesToVkSampleCount(state.getRenderPassDesc()._attachmentsDesc[0]._samples);
         pipelineMultisampleStateCreateInfo.sampleShadingEnable = VK_FALSE;
         pipelineMultisampleStateCreateInfo.minSampleShading = 0.0f;
         pipelineMultisampleStateCreateInfo.pSampleMask = nullptr;
@@ -753,95 +753,96 @@ void VulkanGraphicPipeline::destroy()
     }
 }
 
-//bool VulkanGraphicPipeline::compileShaders(std::vector<std::tuple<ShaderType, const void*, u32>>& shaders)
-//{
-//    if (shaders.empty())
-//    {
-//        return false;
-//    }
-//
-//#if PATCH_SPIRV_REMOVE_UNUSED_LOCATIONS
-//    resource::PatchRemoveUnusedLocations removeUnusedLocationPatch;
-//    for (auto& shader : shaders)
-//    {
-//        std::vector<u32> spirv;
-//        spirv.resize(std::get<2>(shader) / sizeof(u32));
-//        memcpy(spirv.data(), std::get<1>(shader), std::get<2>(shader));
-//
-//        removeUnusedLocationPatch.collectDataFromSpirv(spirv);
-//    }
-//#endif //PATCH_SPIRV_REMOVE_UNUSED_LOCATIONS
-//
-//    for (auto& shader : shaders)
-//    {
-//        const void* source = std::get<1>(shader);
-//        u32 size = std::get<2>(shader);
-//        if (!source || size == 0)
-//        {
-//            ASSERT(false, "invalid source");
-//            return false;
-//        }
-//
-//        std::vector<u32> patchedSpirv;
-//        if (std::get<0>(shader) == ShaderType::Vertex)
-//        {
-//            patchedSpirv.resize(size / sizeof(u32));
-//            memcpy(patchedSpirv.data(), source, size);
-//
-//            [[maybe_unused]] resource::ShaderPatcherSpirV patcher;
-//#if PATCH_SPIRV_REMOVE_UNUSED_LOCATIONS
-//            if (patcher.process(&removeUnusedLocationPatch, patchedSpirv))
-//            {
-//                source = patchedSpirv.data();
-//                size = static_cast<u32>(patchedSpirv.size()) * sizeof(u32);
-//            }
-//#endif //PATCH_SPIRV_REMOVE_UNUSED_LOCATIONS
-//
-//#ifdef PLATFORM_ANDROID
-//            resource::PatchInvertOrdinate patchInvertOrdinate;
-//            if (patcher.process(&patchInvertOrdinate, patchedSpirv))
-//            {
-//                source = patchedSpirv.data();
-//                size = static_cast<u32>(patchedSpirv.size()) * sizeof(u32);
-//            }
-//
-//            ASSERT(m_compatibilityRenderPass, "nullptr");
-//            if (VulkanDeviceCaps::getInstance()->preTransform && static_cast<VulkanRenderPass*>(m_compatibilityRenderPass)->isDrawingToSwapchain())
-//            {
-//                VkSurfaceTransformFlagBitsKHR preTransform = static_cast<VulkanContext*>(m_context)->getSwapchain()->getTransformFlag();
-//                if (preTransform & (VK_SURFACE_TRANSFORM_ROTATE_90_BIT_KHR | VK_SURFACE_TRANSFORM_ROTATE_270_BIT_KHR))
-//                {
-//                    f32 angleDegree = (preTransform == VK_SURFACE_TRANSFORM_ROTATE_90_BIT_KHR) ? 90.0f : 270.0f;
-//                    resource::PatchVertexTransform vertexTransform(angleDegree);
-//                    if (patcher.process(&vertexTransform, patchedSpirv))
-//                    {
-//                        source = patchedSpirv.data();
-//                        size = static_cast<u32>(patchedSpirv.size()) * sizeof(u32);
-//                    }
-//                }
-//            }
-//#endif //PLATFORM_ANDROID
-//        }
-//
-//        VkShaderModuleCreateInfo shaderModuleCreateInfo = {};
-//        shaderModuleCreateInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-//        shaderModuleCreateInfo.pNext = nullptr; //VkShaderModuleValidationCacheCreateInfoEXT
-//        shaderModuleCreateInfo.flags = 0;
-//        shaderModuleCreateInfo.pCode = reinterpret_cast<const u32*>(source);
-//        shaderModuleCreateInfo.codeSize = size;
-//
-//        VkShaderModule module = VK_NULL_HANDLE;
-//        VkResult result = VulkanWrapper::CreateShaderModule(m_device, &shaderModuleCreateInfo, VULKAN_ALLOCATOR, &module); //manager
-//        if (result != VK_SUCCESS)
-//        {
-//            LOG_ERROR("VulkanGraphicPipeline::compileShaders vkCreateShaderModule is failed. Error: %s", ErrorString(result).c_str());
-//            return false;
-//        }
-//        m_modules.push_back(module);
-//    }
-//
-//    return true;
-//}
+bool VulkanGraphicPipeline::createShaderModules(const renderer::ShaderProgram* program)
+{
+#if RUNTIME_PATCH_SPIRV_REMOVE_UNUSED_LOCATIONS
+    resource::PatchRemoveUnusedLocations removeUnusedLocationPatch;
+    for (auto& shader : shaders)
+    {
+        std::vector<u32> spirv;
+        spirv.resize(std::get<2>(shader) / sizeof(u32));
+        memcpy(spirv.data(), std::get<1>(shader), std::get<2>(shader));
+
+        removeUnusedLocationPatch.collectDataFromSpirv(spirv);
+    }
+#endif //RUNTIME_PATCH_SPIRV_REMOVE_UNUSED_LOCATIONS
+
+    for (u32 type = toEnumType(ShaderType::First); type <= (u32)toEnumType(ShaderType::Last); ++type)
+    {
+        const Shader* shader = program->getShader(ShaderType(type));
+        if (!shader)
+        {
+            continue;
+        }
+
+        const void* source = shader->getBytecode();
+        u32 size = shader->getBytecodeSize();
+        if (!source || size == 0)
+        {
+            ASSERT(false, "invalid source");
+            return false;
+        }
+
+#if RUNTIME_PATCH_SPIRV_REMOVE_UNUSED_LOCATIONS
+        std::vector<u32> patchedSpirv;
+        if (std::get<0>(shader) == ShaderType::Vertex)
+        {
+            patchedSpirv.resize(size / sizeof(u32));
+            memcpy(patchedSpirv.data(), source, size);
+
+            [[maybe_unused]] resource::ShaderPatcherSpirV patcher;
+            if (patcher.process(&removeUnusedLocationPatch, patchedSpirv))
+            {
+                source = patchedSpirv.data();
+                size = static_cast<u32>(patchedSpirv.size()) * sizeof(u32);
+            }
+#endif //RUNTIME_PATCH_SPIRV_REMOVE_UNUSED_LOCATIONS
+
+#ifdef PLATFORM_ANDROID
+            resource::PatchInvertOrdinate patchInvertOrdinate;
+            if (patcher.process(&patchInvertOrdinate, patchedSpirv))
+            {
+                source = patchedSpirv.data();
+                size = static_cast<u32>(patchedSpirv.size()) * sizeof(u32);
+            }
+
+            ASSERT(m_compatibilityRenderPass, "nullptr");
+            if (VulkanDeviceCaps::getInstance()->preTransform && static_cast<VulkanRenderPass*>(m_compatibilityRenderPass)->isDrawingToSwapchain())
+            {
+                VkSurfaceTransformFlagBitsKHR preTransform = static_cast<VulkanContext*>(m_context)->getSwapchain()->getTransformFlag();
+                if (preTransform & (VK_SURFACE_TRANSFORM_ROTATE_90_BIT_KHR | VK_SURFACE_TRANSFORM_ROTATE_270_BIT_KHR))
+                {
+                    f32 angleDegree = (preTransform == VK_SURFACE_TRANSFORM_ROTATE_90_BIT_KHR) ? 90.0f : 270.0f;
+                    resource::PatchVertexTransform vertexTransform(angleDegree);
+                    if (patcher.process(&vertexTransform, patchedSpirv))
+                    {
+                        source = patchedSpirv.data();
+                        size = static_cast<u32>(patchedSpirv.size()) * sizeof(u32);
+                    }
+                }
+            }
+        }
+#endif //PLATFORM_ANDROID
+
+        VkShaderModuleCreateInfo shaderModuleCreateInfo = {};
+        shaderModuleCreateInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+        shaderModuleCreateInfo.pNext = nullptr; //VkShaderModuleValidationCacheCreateInfoEXT
+        shaderModuleCreateInfo.flags = 0;
+        shaderModuleCreateInfo.pCode = reinterpret_cast<const u32*>(source);
+        shaderModuleCreateInfo.codeSize = size;
+
+        VkShaderModule module = VK_NULL_HANDLE;
+        VkResult result = VulkanWrapper::CreateShaderModule(m_device.getDeviceInfo()._device, &shaderModuleCreateInfo, VULKAN_ALLOCATOR, &module); //manager
+        if (result != VK_SUCCESS)
+        {
+            LOG_ERROR("VulkanGraphicPipeline::compileShaders vkCreateShaderModule is failed. Error: %s", ErrorString(result).c_str());
+            return false;
+        }
+        m_modules[type] = module;
+    }
+
+    return true;
+}
 
 void VulkanGraphicPipeline::deleteShaderModules()
 {
@@ -849,7 +850,7 @@ void VulkanGraphicPipeline::deleteShaderModules()
     {
         VulkanWrapper::DestroyShaderModule(m_device.getDeviceInfo()._device, module, VULKAN_ALLOCATOR);
     }
-    m_modules.clear();
+    m_modules.fill(VK_NULL_HANDLE);
 }
 
 bool VulkanGraphicPipeline::createCompatibilityRenderPass(const RenderPassDesc& renderpassDesc, VulkanRenderPass* &compatibilityRenderPass)
@@ -922,12 +923,6 @@ bool VulkanGraphicPipeline::pipelineStatistic() const
     return false;
 }
 
-bool VulkanGraphicPipeline::create(const PipelineComputeInfo* pipelineInfo)
-{
-    ASSERT(false, "cant be compute");
-    return false;
-}
-
 
 
 VulkanGraphicPipelineManager::VulkanGraphicPipelineManager(VulkanDevice* device) noexcept
@@ -940,35 +935,35 @@ VulkanGraphicPipelineManager::~VulkanGraphicPipelineManager()
     VulkanGraphicPipelineManager::clear();
 }
 
-VulkanGraphicPipeline* VulkanGraphicPipelineManager::acquireGraphicPipeline(const GraphicsPipelineStateDesc& pipelineInfo)
+VulkanGraphicPipeline* VulkanGraphicPipelineManager::acquireGraphicPipeline(const GraphicsPipelineState& state)
 {
-    /*VulkanPipeline::PipelineDescription desc(pipelineInfo);
+    std::scoped_lock lock(m_mutex);
 
     VulkanGraphicPipeline* pipeline = nullptr;
+    VulkanPipelineDesc desc(state.getPipelineStateDesc(), state.getRenderPassDesc(), state.getShaderProgram());
+
     auto found = m_pipelineGraphicList.emplace(desc, pipeline);
     if (found.second)
     {
-        pipeline = m_context->createPipeline(VulkanPipeline::PipelineType::PipelineType_Graphic, pipelineInfo._name);
-        pipeline->m_desc = desc;
-
-        if (!pipeline->create(&pipelineInfo))
+        pipeline = V3D_NEW(VulkanGraphicPipeline, memory::MemoryLabel::MemoryRenderCore)(&m_device, m_device.m_renderpassManager, m_device.m_pipelineLayoutManager, state.getName());
+        if (!pipeline->create(state))
         {
-            pipeline->destroy();
             m_pipelineGraphicList.erase(desc);
 
             ASSERT(false, "can't create pipeline");
+            pipeline->destroy();
+            V3D_FREE(pipeline, memory::MemoryLabel::MemoryRenderCore);
+
             return nullptr;
         }
 
         found.first->second = pipeline;
-        pipeline->registerNotify(this);
+        //pipeline->registerNotify(this);
 
         return pipeline;
     }
 
-    return found.first->second;*/
-
-    return nullptr;
+    return found.first->second;
 }
 
 bool VulkanGraphicPipelineManager::removePipeline(VulkanGraphicPipeline* pipeLine)
@@ -1018,21 +1013,6 @@ void VulkanGraphicPipelineManager::clear()
     //    delete pipeline;
     //}
     //m_pipelineGraphicList.clear();
-
-    //for (auto& iter : m_pipelineComputeList)
-    //{
-    //    Pipeline* pipeline = iter.second;
-    //    if (pipeline->linked())
-    //    {
-    //        LOG_WARNING("PipelineManager::clear pipleline still linked, but reqested to delete");
-    //        ASSERT(false, "pipeline");
-    //    }
-    //    pipeline->notifyObservers();
-
-    //    pipeline->destroy();
-    //    delete pipeline;
-    //}
-    //m_pipelineComputeList.clear();
 }
 
 } //namespace vk

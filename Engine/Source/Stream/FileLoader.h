@@ -22,7 +22,7 @@ namespace stream
         FileLoader() = delete;
         FileLoader(const FileLoader&) = delete;
 
-        static stream::Stream* load(const std::string& filename)
+        static stream::FileStream* load(const std::string& filename)
         {
 #if DEBUG
             LOG_DEBUG("FileLoader::try load [%s] file", stream::FileStream::absolutePath(filename).c_str());
@@ -67,6 +67,15 @@ namespace stream
 
             LOG_DEBUG("FileLoader::file [%s] has been found", stream::FileStream::absolutePath(filename).c_str());
             return file;
+        }
+
+        static void close(stream::FileStream* file)
+        {
+            if (file->isOpen())
+            {
+                file->close();
+            }
+            V3D_DELETE(file, memory::MemoryLabel::MemorySystem);
         }
 
         static std::string getFileExtension(const std::string& fileName)

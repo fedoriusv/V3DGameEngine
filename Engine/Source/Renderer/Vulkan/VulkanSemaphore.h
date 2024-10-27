@@ -21,7 +21,7 @@ namespace vk
     /**
     * @brief VulkanSemaphore class. Render Vulkan side
     */
-    class VulkanSemaphore : public VulkanResource
+    class VulkanSemaphore final
     {
     public:
 
@@ -37,6 +37,7 @@ namespace vk
         ~VulkanSemaphore();
 
         VkSemaphore getHandle() const;
+        bool isUsed() const;
 
     private:
 
@@ -45,10 +46,10 @@ namespace vk
 
         friend class VulkanSemaphoreManager;
 
-        VkSemaphore m_semaphore;
-        SemaphoreStatus m_semaphoreStatus;
+        VkSemaphore     m_semaphore;
+        SemaphoreStatus m_status;
 #if VULKAN_DEBUG_MARKERS
-        std::string m_debugName;
+        std::string     m_debugName;
 #endif
     };
 
@@ -56,6 +57,11 @@ namespace vk
     {
         ASSERT(m_semaphore, "nullptr");
         return m_semaphore;
+    }
+
+    inline bool VulkanSemaphore::isUsed() const
+    {
+        return m_status == SemaphoreStatus::AssignToSignal;
     }
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -73,7 +79,7 @@ namespace vk
         VulkanSemaphore* acquireSemaphore();
 
         void clear();
-        void updateSemaphores();
+        void updateStatus();
 
         bool markSemaphore(VulkanSemaphore* semaphore, VulkanSemaphore::SemaphoreStatus status);
 
@@ -89,8 +95,8 @@ namespace vk
         VulkanDevice&        m_device;
         std::recursive_mutex m_mutex;
 
-        std::deque<VulkanSemaphore*> m_freePools;
-        std::deque<VulkanSemaphore*> m_usedPools;
+        std::deque<VulkanSemaphore*>  m_freePools;
+        std::vector<VulkanSemaphore*> m_usedPools;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

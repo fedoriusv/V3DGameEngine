@@ -14,8 +14,8 @@
 #   include "VulkanRenderpass.h"
 #   include "VulkanFramebuffer.h"
 #   include "VulkanCommandBufferManager.h"
-//#include "VulkanGraphicPipeline.h"
-//#include "VulkanComputePipeline.h"
+#   include "VulkanGraphicPipeline.h"
+#   include "VulkanComputePipeline.h"
 //#include "VulkanQueryPool.h"
 
 namespace v3d
@@ -99,7 +99,6 @@ void VulkanCommandBuffer::addSemaphore(VkPipelineStageFlags mask, VulkanSemaphor
     }
 
     ASSERT(std::find(m_semaphores.cbegin(), m_semaphores.cend(), semaphore) == m_semaphores.cend(), "added multiply times");
-    semaphore->captureInsideCommandBuffer(this, 0);
     m_stageMasks.push_back(mask);
     m_semaphores.push_back(semaphore);
 }
@@ -309,11 +308,11 @@ void VulkanCommandBuffer::endCommandBuffer()
     m_status = CommandBufferStatus::End;
 }
 
-void VulkanCommandBuffer::cmdBeginRenderpass(const VulkanRenderPass* pass, const VulkanFramebuffer* framebuffer, const VkRect2D& area, const std::vector<VkClearValue>& clearValues)
+void VulkanCommandBuffer::cmdBeginRenderpass(const VulkanRenderPass* pass, const VulkanFramebuffer* framebuffer, const VkRect2D& area, const std::array<VkClearValue, k_maxColorAttachments>& clearValues)
 {
     ASSERT(m_status == CommandBufferStatus::Begin, "not started");
 #if VULKAN_DEBUG
-        LOG_DEBUG("VulkanCommandBuffer::cmdBeginRenderpass area (x %d, y %d, width %u, height %u), framebuffer area (width %u, height %u)", area.offset.x, area.offset.y, area.extent.width, area.extent.height, framebuffer->getArea().m_width, framebuffer->getArea().m_height);
+    LOG_DEBUG("VulkanCommandBuffer::cmdBeginRenderpass area [%d, %d, %u, %u], framebuffer area [width %u, height %u]", area.offset.x, area.offset.y, area.extent.width, area.extent.height, framebuffer->getArea().m_width, framebuffer->getArea().m_height);
 #endif
 
     //pass->captureInsideCommandBuffer(this, 0);
@@ -323,8 +322,10 @@ void VulkanCommandBuffer::cmdBeginRenderpass(const VulkanRenderPass* pass, const
     m_renderpassState._framebuffer = framebuffer;
 
     u32 index = 0;
-    for (auto& image : framebuffer->getImages())
+    for (u32 index = 0; index < pass->getCountAttachments(); ++index)
     {
+
+        auto& image = framebuffer->getImages()[index];
         VulkanImage* vkImage = OBJECT_FROM_HANDLE(image, VulkanImage);
         vkImage->captureInsideCommandBuffer(this, 0);
 
@@ -345,7 +346,7 @@ void VulkanCommandBuffer::cmdBeginRenderpass(const VulkanRenderPass* pass, const
     renderPassBeginInfo.renderPass = pass->getHandle();
     renderPassBeginInfo.framebuffer = framebuffer->getHandle();
     renderPassBeginInfo.renderArea = area;
-    renderPassBeginInfo.clearValueCount = static_cast<u32>(clearValues.size());
+    renderPassBeginInfo.clearValueCount = static_cast<u32>(framebuffer->getImages().size());
     renderPassBeginInfo.pClearValues = clearValues.data();
 
 #ifdef PLATFORM_ANDROID
@@ -387,6 +388,7 @@ void VulkanCommandBuffer::cmdBeginRenderpass(const VulkanRenderPass* pass, const
         VulkanWrapper::CmdBeginRenderPass(m_commands, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
     }
 
+    m_drawingToSwapchain = pass->isDrawingToSwapchain();
     m_isInsideRenderPass = true;
 }
 
@@ -412,27 +414,25 @@ void VulkanCommandBuffer::cmdEndRenderPass()
 
     u32 index = 0;
     ASSERT(pass && framebuffer, "nullptr");
-    for (auto& image : framebuffer->getImages())
+    for (u32 index = 0; index < pass->getCountAttachments(); ++index)
     {
-        VulkanImage* vkImage = OBJECT_FROM_HANDLE(image, VulkanImage);
-
+        VulkanImage* image = OBJECT_FROM_HANDLE(framebuffer->getImages()[index], VulkanImage);
+        ASSERT(image, "nullptr");
         VkImageLayout layout = m_renderpassState._renderpass->getAttachmentLayout<1>(index);
         const VulkanRenderPass::VulkanAttachmentDescription& attach = pass->getAttachmentDescription(index);
-        vkImage->setLayout(layout, VulkanImage::makeVulkanImageSubresource(vkImage, attach._layer, attach._mip));
-
-        ++index;
+        image->setLayout(layout, VulkanImage::makeVulkanImageSubresource(image, attach._layer, attach._mip));
     }
 
     m_isInsideRenderPass = false;
 }
 
-void VulkanCommandBuffer::cmdSetViewport(const std::vector<VkViewport>& viewports)
+void VulkanCommandBuffer::cmdSetViewport(const VkViewport& viewport)
 {
     ASSERT(m_status == CommandBufferStatus::Begin, "not started");
 
     if (m_level == CommandBufferLevel::PrimaryBuffer) [[likely]]
     {
-        VulkanWrapper::CmdSetViewport(m_commands, 0, static_cast<u32>(viewports.size()), viewports.data());
+        VulkanWrapper::CmdSetViewport(m_commands, 0, 1, &viewport);
     }
     else
     {
@@ -440,14 +440,28 @@ void VulkanCommandBuffer::cmdSetViewport(const std::vector<VkViewport>& viewport
     }
 }
 
-void VulkanCommandBuffer::cmdSetScissor(const std::vector<VkRect2D>& scissors)
+void VulkanCommandBuffer::cmdSetScissor(const VkRect2D& scissors)
 {
     ASSERT(m_status == CommandBufferStatus::Begin, "not started");
 
     if (m_level == CommandBufferLevel::PrimaryBuffer) [[likely]]
     {
-        VulkanWrapper::CmdSetScissor(m_commands, 0, static_cast<u32>(scissors.size()), scissors.data());
+        VulkanWrapper::CmdSetScissor(m_commands, 0, 1, &scissors);
     }
+    else
+    {
+        ASSERT(false, "not implemented");
+    }
+}
+
+void VulkanCommandBuffer::cmdSetStencilRef(VkStencilFaceFlags faceMask, u32 ref)
+{
+    ASSERT(m_status == CommandBufferStatus::Begin, "not started");
+
+    if (m_level == CommandBufferLevel::PrimaryBuffer) [[likely]]
+        {
+            VulkanWrapper::CmdSetStencilReference(m_commands, faceMask, ref);
+        }
     else
     {
         ASSERT(false, "not implemented");
@@ -518,29 +532,31 @@ void VulkanCommandBuffer::cmdResetQueryPool(VulkanQueryPool* pool)
     VulkanWrapper::CmdResetQueryPool(m_commands, pool->getHandle(), 0, pool->getCount());*/
 }
 
-void VulkanCommandBuffer::cmdBindVertexBuffers(u32 firstBinding, u32 countBinding, const std::vector<Buffer*>& buffers, const std::vector<u64>& offests)
+void VulkanCommandBuffer::cmdBindVertexBuffers(u32 firstBinding, u32 countBinding, const std::vector<BufferHandle>& buffers, const std::vector<u64>& offests, const std::vector<u64>& strides)
 {
-    //ASSERT(m_status == CommandBufferStatus::Begin, "not started");
+    ASSERT(m_status == CommandBufferStatus::Begin, "not started");
 
-    //std::array<VkBuffer, k_maxVertexInputBindings> vkBuffers;
-    //ASSERT(countBinding < k_maxVertexInputBindings, "range out");
-    //for (u32 index = 0; index < buffers.size(); ++index)
-    //{
-    //    VulkanBuffer* vkBuffer = static_cast<VulkanBuffer*>(buffers[index]);
-    //    vkBuffers[index] = vkBuffer->getHandle();
+    std::array<VkBuffer, k_maxVertexInputBindings> vkBuffers;
+    std::array<u64, k_maxVertexInputBindings> vkSizes;
+    ASSERT(countBinding < k_maxVertexInputBindings, "range out");
+    for (u32 index = 0; index < buffers.size(); ++index)
+    {
+        const VulkanBuffer* vkBuffer = OBJECT_FROM_HANDLE(buffers[index], VulkanBuffer);
+        vkBuffers[index] = vkBuffer->getHandle();
+        vkSizes[index] = vkBuffer->getSize();
 
-    //    vkBuffer->captureInsideCommandBuffer(this, 0);
-    //}
+        vkBuffer->captureInsideCommandBuffer(this, 0);
+    }
 
-    //[[likely]] if (m_level == CommandBufferLevel::PrimaryBuffer)
-    //{
-    //    static_assert(sizeof(VkDeviceSize) == sizeof(u64));
-    //    VulkanWrapper::CmdBindVertexBuffers(m_commands, firstBinding, countBinding, vkBuffers.data(), (const VkDeviceSize*)offests.data());
-    //}
-    //else
-    //{
-    //    ASSERT(false, "not implemented");
-    //}
+    if (m_level == CommandBufferLevel::PrimaryBuffer) [[likely]]
+    {
+        static_assert(sizeof(VkDeviceSize) == sizeof(u64));
+        VulkanWrapper::CmdBindVertexBuffers2(m_commands, firstBinding, countBinding, vkBuffers.data(), offests.data(), vkSizes.data(), strides.data());
+    }
+    else
+    {
+        ASSERT(false, "not implemented");
+    }
 }
 
 void VulkanCommandBuffer::cmdBindIndexBuffers(VulkanBuffer* buffer, VkDeviceSize offest, VkIndexType type)
@@ -548,7 +564,7 @@ void VulkanCommandBuffer::cmdBindIndexBuffers(VulkanBuffer* buffer, VkDeviceSize
     ASSERT(m_status == CommandBufferStatus::Begin, "not started");
     buffer->captureInsideCommandBuffer(this, 0);
 
-    [[likely]] if (m_level == CommandBufferLevel::PrimaryBuffer)
+    if (m_level == CommandBufferLevel::PrimaryBuffer) [[likely]]
     {
         VulkanWrapper::CmdBindIndexBuffer(m_commands, buffer->getHandle(), offest, type);
     }
@@ -560,8 +576,8 @@ void VulkanCommandBuffer::cmdBindIndexBuffers(VulkanBuffer* buffer, VkDeviceSize
 
 void VulkanCommandBuffer::cmdBindPipeline(VulkanGraphicPipeline* pipeline)
 {
-    /*ASSERT(m_status == CommandBufferStatus::Begin, "not started");
-    pipeline->captureInsideCommandBuffer(this, 0);
+    ASSERT(m_status == CommandBufferStatus::Begin, "not started");
+    //pipeline->captureInsideCommandBuffer(this, 0);
 
     [[likely]] if (m_level == CommandBufferLevel::PrimaryBuffer)
     {
@@ -570,22 +586,22 @@ void VulkanCommandBuffer::cmdBindPipeline(VulkanGraphicPipeline* pipeline)
     else
     {
         ASSERT(false, "not implemented");
-    }*/
+    }
 }
 
 void VulkanCommandBuffer::cmdBindPipeline(VulkanComputePipeline* pipeline)
 {
-    //ASSERT(m_status == CommandBufferStatus::Begin, "not started");
-    //pipeline->captureInsideCommandBuffer(this, 0);
+    ASSERT(m_status == CommandBufferStatus::Begin, "not started");
+    pipeline->captureInsideCommandBuffer(this, 0);
 
-    //[[likely]] if (m_level == CommandBufferLevel::PrimaryBuffer)
-    //{
-    //    VulkanWrapper::CmdBindPipeline(m_commands, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline->getHandle());
-    //}
-    //else
-    //{
-    //    ASSERT(false, "not implemented");
-    //}
+    if (m_level == CommandBufferLevel::PrimaryBuffer) [[likely]]
+    {
+        VulkanWrapper::CmdBindPipeline(m_commands, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline->getHandle());
+    }
+    else
+    {
+        ASSERT(false, "not implemented");
+    }
 }
 
 void VulkanCommandBuffer::cmdBindDescriptorSets(VulkanGraphicPipeline* pipeline, u32 firstSet, u32 countSets, const std::vector<VkDescriptorSet>& sets, const std::vector<u32>& offsets)
@@ -668,7 +684,7 @@ void VulkanCommandBuffer::cmdClearImage(VulkanImage* image, VkImageLayout imageL
     ASSERT(m_status == CommandBufferStatus::Begin, "not started");
     ASSERT(!isInsideRenderPass(), "outside render pass");
 
-    ASSERT(image->getImageAspectFlags() == VK_IMAGE_ASPECT_COLOR_BIT, " image is not VK_IMAGE_ASPECT_COLOR_BIT");
+    ASSERT((image->getImageAspectFlags() & VK_IMAGE_ASPECT_COLOR_BIT) == VK_IMAGE_ASPECT_COLOR_BIT, " image is not VK_IMAGE_ASPECT_COLOR_BIT");
     image->captureInsideCommandBuffer(this, 0);
     if (m_level == CommandBufferLevel::PrimaryBuffer) [[likely]]
     {
@@ -678,6 +694,11 @@ void VulkanCommandBuffer::cmdClearImage(VulkanImage* image, VkImageLayout imageL
     else
     {
         ASSERT(false, "not implemented");
+    }
+
+    if (image->hasUsageFlag(TextureUsage::TextureUsage_Backbuffer))
+    {
+        m_drawingToSwapchain = true;
     }
 }
 
@@ -698,6 +719,8 @@ void VulkanCommandBuffer::cmdClearImage(VulkanImage* image, VkImageLayout imageL
     {
         ASSERT(false, "not implemented");
     }
+
+    ASSERT(image->hasUsageFlag(TextureUsage::TextureUsage_Backbuffer), "cant be swapchain");
 }
 
 void VulkanCommandBuffer::cmdResolveImage(VulkanImage* src, VkImageLayout srcLayout, VulkanImage* dst, VkImageLayout dstLayout, const std::vector<VkImageResolve>& regions)
@@ -763,38 +786,38 @@ void VulkanCommandBuffer::cmdUpdateBuffer(VulkanBuffer* src, u32 offset, u64 siz
 
 void VulkanCommandBuffer::cmdCopyBufferToImage(VulkanBuffer* src, VulkanImage* dst, VkImageLayout layout, const std::vector<VkBufferImageCopy>& regions)
 {
-    //ASSERT(m_status == CommandBufferStatus::Begin, "not started");
-    //ASSERT(!isInsideRenderPass(), "outside render pass");
+    ASSERT(m_status == CommandBufferStatus::Begin, "not started");
+    ASSERT(!isInsideRenderPass(), "outside render pass");
 
-    //src->captureInsideCommandBuffer(this, 0);
-    //dst->captureInsideCommandBuffer(this, 0);
+    src->captureInsideCommandBuffer(this, 0);
+    dst->captureInsideCommandBuffer(this, 0);
 
-    //[[likely]] if (m_level == CommandBufferLevel::PrimaryBuffer)
-    //{
-    //    VulkanWrapper::CmdCopyBufferToImage(m_commands, src->getHandle(), dst->getHandle(), layout, static_cast<u32>(regions.size()), regions.data());
-    //}
-    //else
-    //{
-    //    ASSERT(false, "not implemented");
-    //}
+    if (m_level == CommandBufferLevel::PrimaryBuffer) [[likely]]
+    {
+        VulkanWrapper::CmdCopyBufferToImage(m_commands, src->getHandle(), dst->getHandle(), layout, static_cast<u32>(regions.size()), regions.data());
+    }
+    else
+    {
+        ASSERT(false, "not implemented");
+    }
 }
 
 void VulkanCommandBuffer::cmdCopyBufferToBuffer(VulkanBuffer* src, VulkanBuffer* dst, const std::vector<VkBufferCopy>& regions)
 {
-    //ASSERT(m_status == CommandBufferStatus::Begin, "not started");
-    //ASSERT(!isInsideRenderPass(), "outside render pass");
+    ASSERT(m_status == CommandBufferStatus::Begin, "not started");
+    ASSERT(!isInsideRenderPass(), "outside render pass");
 
-    //src->captureInsideCommandBuffer(this, 0);
-    //dst->captureInsideCommandBuffer(this, 0);
+    src->captureInsideCommandBuffer(this, 0);
+    dst->captureInsideCommandBuffer(this, 0);
 
-    //[[likely]] if (m_level == CommandBufferLevel::PrimaryBuffer)
-    //{
-    //    VulkanWrapper::CmdCopyBuffer(m_commands, src->getHandle(), dst->getHandle(), static_cast<u32>(regions.size()), regions.data());
-    //}
-    //else
-    //{
-    //    ASSERT(false, "not implemented");
-    //}
+    if (m_level == CommandBufferLevel::PrimaryBuffer) [[likely]]
+    {
+        VulkanWrapper::CmdCopyBuffer(m_commands, src->getHandle(), dst->getHandle(), static_cast<u32>(regions.size()), regions.data());
+    }
+    else
+    {
+        ASSERT(false, "not implemented");
+    }
 }
 
 void VulkanCommandBuffer::cmdPipelineBarrier(const VulkanImage* image, VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask, VkImageLayout layout)
@@ -846,7 +869,7 @@ void VulkanCommandBuffer::cmdPipelineBarrier(VulkanBuffer* buffer, VkPipelineSta
     ASSERT(m_status == CommandBufferStatus::Begin, "not started");
     buffer->captureInsideCommandBuffer(this, 0);
 
-    [[likely]] if (m_level == CommandBufferLevel::PrimaryBuffer)
+    if (m_level == CommandBufferLevel::PrimaryBuffer) [[likely]]
     {
         VkBufferMemoryBarrier bufferMemoryBarrier = {};
         //TODO:

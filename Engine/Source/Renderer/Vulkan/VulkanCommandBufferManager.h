@@ -17,6 +17,7 @@ namespace vk
     class VulkanDevice;
     class VulkanImage;
     class VulkanSemaphore;
+    class VulkanSwapchain;
     class VulkanSemaphoreManager;
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -65,13 +66,13 @@ namespace vk
         VulkanCommandBuffer* acquireNewCmdBuffer(Device::DeviceMask queueMask, CommandBufferLevel level);
 
         bool submit(VulkanCommandBuffer* buffer, const std::vector<VulkanSemaphore*>& signalSemaphores);
-        void updateCommandBuffers();
+
+        void updateStatus();
+
         void waitCompletion();
         void waitQueueCompletion(VkQueue queue);
 
         void resetPools();
-
-        static void drawToSwapchain(VulkanCommandBuffer* buffer, const VulkanImage* swapchainImage);
 
     private:
 

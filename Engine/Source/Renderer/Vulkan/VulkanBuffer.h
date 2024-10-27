@@ -17,7 +17,6 @@ namespace vk
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     class VulkanDevice;
-    class VulkanCmdList;
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -28,7 +27,7 @@ namespace vk
     {
     public:
 
-        explicit VulkanBuffer(VulkanDevice* device, VulkanMemory::VulkanMemoryAllocator* alloc, RenderBuffer::Type type, BufferUsageFlags usageFlag, u64 size, const std::string& name = "") noexcept;
+        explicit VulkanBuffer(VulkanDevice* device, VulkanMemory::VulkanMemoryAllocator* allocator, RenderBuffer::Type type, BufferUsageFlags usageFlag, u64 size, const std::string& name = "") noexcept;
         ~VulkanBuffer();
 
         bool create() override;
@@ -36,10 +35,11 @@ namespace vk
 
         bool hasUsageFlag(BufferUsage usage) const override;
 
-        bool upload(VulkanCmdList* cmdList, u32 offset, u64 size, const void* data);
+        bool upload(VulkanCommandBuffer* cmdBuffer, u32 offset, u64 size, const void* data);
         //bool read(Context* context, u32 offset, u64 size, const std::function<void(u32, void*)>& readback) override;
 
         VkBuffer getHandle() const;
+        u64 getSize() const;
 
         void* map();
         void unmap();
@@ -53,20 +53,20 @@ namespace vk
         VulkanBuffer() = delete;
         VulkanBuffer(const VulkanBuffer&) = delete;
 
-        VulkanDevice&                           m_device;
-        VulkanMemory::VulkanAllocation          m_memory;
-        VulkanMemory::VulkanMemoryAllocator*    m_memoryAllocator;
+        VulkanDevice&                        m_device;
+        VulkanMemory::VulkanMemoryAllocator* m_memoryAllocator;
 
-        BufferUsageFlags m_usageFlags;
-        RenderBuffer::Type m_type;
+        VkBuffer                             m_buffer;
+        VulkanMemory::VulkanAllocation       m_memory;
 
-        u64 m_size;
-        VkBuffer m_buffer;
+        RenderBuffer::Type                   m_type;
+        u64                                  m_size;
+        BufferUsageFlags                     m_usageFlags;
 
-        bool m_mapped;
+        bool                                 m_mapped;
         
 #if VULKAN_DEBUG_MARKERS
-        std::string m_debugName;
+        std::string                          m_debugName;
 #endif //VULKAN_DEBUG_MARKERS
     };
 
@@ -74,6 +74,11 @@ namespace vk
     {
         ASSERT(m_buffer != VK_NULL_HANDLE, "nullptr");
         return m_buffer;
+    }
+
+    inline u64 VulkanBuffer::getSize() const
+    {
+        return m_size;
     }
 
     inline bool VulkanBuffer::hasUsageFlag(BufferUsage usage) const

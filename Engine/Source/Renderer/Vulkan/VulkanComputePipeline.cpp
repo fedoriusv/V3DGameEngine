@@ -40,10 +40,9 @@ VulkanComputePipeline::~VulkanComputePipeline()
     ASSERT(m_pipeline == VK_NULL_HANDLE, "not deleted");
 }
 
-bool VulkanComputePipeline::create(const PipelineComputeInfo* pipelineInfo)
+bool VulkanComputePipeline::create(const ComputePipelineState& state)
 {
     ASSERT(getType() == PipelineType::PipelineType_Compute, "invalid type");
-    ASSERT(pipelineInfo, "nullptr");
 
     VkComputePipelineCreateInfo computePipelineCreateInfo = {};
     computePipelineCreateInfo.sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO;
@@ -155,12 +154,6 @@ void VulkanComputePipeline::destroy()
 //
 //    return true;
 //}
-
-bool VulkanComputePipeline::create(const PipelineGraphicInfo* pipelineInfo)
-{
-    ASSERT(false, "cant be graphic");
-    return false;
-}
 
 bool VulkanComputePipeline::pipelineStatistic() const
 {

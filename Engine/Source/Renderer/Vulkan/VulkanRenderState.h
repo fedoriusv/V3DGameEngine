@@ -19,6 +19,8 @@ namespace vk
     class VulkanRenderPass;
     class VulkanFramebuffer;
     class VulkanCommandBuffer;
+    class VulkanGraphicPipeline;
+    class VulkanComputePipeline;
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -59,7 +61,6 @@ namespace vk
 
             Pipeline = 1 << 3,
             RenderPass = 1 << 4,
-            Framebuffer = 1 << 5,
 
             ImageBarrier = 1 << 10,
 
@@ -72,14 +73,21 @@ namespace vk
         void invalidate();
 
         void setDirty(DiryMask mask);
+        void unsetDirty(DiryMask mask);
+        bool isDirty(DiryMask mask);
 
-        VkViewport _viewports = {};
-        VkRect2D   _scissors = {};
-        u32        _stencilRef = 0;
+        VkViewport                                       _viewports = {};
+        VkRect2D                                         _scissors = {};
+        VkStencilFaceFlags                               _stencilMask = VK_STENCIL_FACE_FRONT_AND_BACK;
+        u32                                              _stencilRef = 0;
+                                                         
+        VulkanGraphicPipeline*                           _graphicPipeline = nullptr;
+        VulkanComputePipeline*                           _computePipeline = nullptr;
 
-        RenderPipeline*     _pipeline = nullptr;
-        VulkanRenderPass*   _renderpass = nullptr;
-        VulkanFramebuffer*  _framebuffer = nullptr;
+        VulkanRenderPass*                                _renderpass = nullptr;
+        VulkanFramebuffer*                               _framebuffer = nullptr;
+        VkRect2D                                         _renderArea = {};
+        std::array<VkClearValue, k_maxColorAttachments>  _clearValues;
         bool _insideRenderpass = false;
 
     private:
@@ -92,6 +100,16 @@ namespace vk
     inline void VulkanRenderState::setDirty(VulkanRenderState::DiryMask mask)
     {
         _dirty |= mask;
+    }
+
+    inline void VulkanRenderState::unsetDirty(DiryMask mask)
+    {
+        _dirty &= ~mask;
+    }
+
+    inline bool VulkanRenderState::isDirty(DiryMask mask)
+    {
+        return _dirty & mask;
     }
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
