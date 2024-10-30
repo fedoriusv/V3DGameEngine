@@ -368,7 +368,7 @@ VulkanGraphicPipeline::VulkanGraphicPipeline(VulkanDevice* device, VulkanRenderp
     , m_pipeline(VK_NULL_HANDLE)
 
     , m_compatibilityRenderPass(nullptr)
-    //, m_trackerRenderPass(nullptr, [](const std::vector<renderer::RenderPass*>&) {})
+    , m_trackerRenderPass(nullptr, [](const std::vector<renderer::RenderPass*>&) {})
 
     , m_renderpassManager(renderpassManager)
     , m_pipelineLayoutManager(pipelineLayoutManager)
@@ -744,11 +744,11 @@ void VulkanGraphicPipeline::destroy()
 
     if (m_compatibilityRenderPass)
     {
-        /*m_trackerRenderPass.release();
+        m_trackerRenderPass.release();
         if (!m_compatibilityRenderPass->linked())
         {
             m_renderpassManager->removeRenderPass(m_compatibilityRenderPass);
-        }*/
+        }
         m_compatibilityRenderPass = nullptr;
     }
 }
@@ -863,7 +863,7 @@ bool VulkanGraphicPipeline::createCompatibilityRenderPass(const RenderPassDesc& 
         return false;
     }
 
-    //m_trackerRenderPass.attach(compatibilityRenderPass);
+    m_trackerRenderPass.attach(compatibilityRenderPass);
     return true;
 }
 
@@ -958,61 +958,57 @@ VulkanGraphicPipeline* VulkanGraphicPipelineManager::acquireGraphicPipeline(cons
         }
 
         found.first->second = pipeline;
-        //pipeline->registerNotify(this);
-
         return pipeline;
     }
 
     return found.first->second;
 }
 
-bool VulkanGraphicPipelineManager::removePipeline(VulkanGraphicPipeline* pipeLine)
+bool VulkanGraphicPipelineManager::removePipeline(VulkanGraphicPipeline* pipeline)
 {
-    //ASSERT(pipeLine->getType() == Pipeline::PipelineType::PipelineType_Graphic || pipeLine->getType() == Pipeline::PipelineType::PipelineType_Compute, "wrong type");
-    //auto& pipelineList = (pipeLine->getType() == Pipeline::PipelineType::PipelineType_Compute) ? m_pipelineComputeList : m_pipelineGraphicList;
+    ASSERT(pipeline->getType() == RenderPipeline::PipelineType::PipelineType_Graphic, "wrong type");
 
-    //auto iter = pipelineList.find(pipeLine->m_desc);
-    //if (iter == pipelineList.cend())
-    //{
-    //    LOG_DEBUG("PipelineManager pipeline not found");
-    //    ASSERT(false, "pipeline");
-    //    return false;
-    //}
+    auto found = std::find_if(m_pipelineGraphicList.begin(), m_pipelineGraphicList.end(), [pipeline](auto& elem) -> bool
+        {
+            return elem.second == pipeline;
+        });
+    if (found == m_pipelineGraphicList.cend())
+    {
+        LOG_DEBUG("VulkanGraphicPipelineManager pipeline not found");
+        ASSERT(false, "pipeline");
+        return false;
+    }
 
-    //Pipeline* pipeline = iter->second;
-    //ASSERT(pipeline == pipeLine, "Different pointers");
-    //if (pipeline->linked())
-    //{
-    //    LOG_WARNING("PipelineManager::removePipeline pipleline still linked, but reqested to delete");
-    //    ASSERT(false, "pipeline");
-    //    //return false;
-    //}
-    //pipelineList.erase(iter);
+    ASSERT(found->second == pipeline, "Different pointers");
+    if (pipeline->linked())
+    {
+        LOG_WARNING("VulkanGraphicPipelineManager::removePipeline pipleline still linked, but reqested to delete");
+        ASSERT(false, "pipeline");
+        //return false;
+    }
+    m_pipelineGraphicList.erase(found);
 
-    //pipeline->notifyObservers();
-
-    //pipeline->destroy();
-    //delete  pipeline;
+    pipeline->destroy();
+    V3D_DELETE(pipeline, memory::MemoryLabel::MemoryRenderCore);
 
     return true;
 }
 
 void VulkanGraphicPipelineManager::clear()
 {
-    //for (auto& iter : m_pipelineGraphicList)
-    //{
-    //    Pipeline* pipeline = iter.second;
-    //    if (pipeline->linked())
-    //    {
-    //        LOG_WARNING("PipelineManager::clear pipleline still linked, but reqested to delete");
-    //        ASSERT(false, "pipeline");
-    //    }
-    //    pipeline->notifyObservers();
+    for (auto& iter : m_pipelineGraphicList)
+    {
+        VulkanGraphicPipeline* pipeline = iter.second;
+        if (pipeline->linked())
+        {
+            LOG_WARNING("VulkanGraphicPipelineManager::clear pipleline still linked, but reqested to delete");
+            ASSERT(false, "pipeline");
+        }
 
-    //    pipeline->destroy();
-    //    delete pipeline;
-    //}
-    //m_pipelineGraphicList.clear();
+        pipeline->destroy();
+        V3D_DELETE(pipeline, memory::MemoryLabel::MemoryRenderCore);
+    }
+    m_pipelineGraphicList.clear();
 }
 
 } //namespace vk

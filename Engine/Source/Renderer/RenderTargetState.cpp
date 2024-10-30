@@ -13,6 +13,9 @@ namespace renderer
 RenderTargetState::RenderTargetState(Device* device, const math::Dimension2D& size, u32 countAttacments, u32 viewsMask, const std::string& name) noexcept
     : m_device(device)
     , m_name(name)
+
+    , m_trackerFramebuffer(this, std::bind(&RenderTargetState::destroyFramebuffers, this, std::placeholders::_1))
+    , m_trackerRenderpass(this, std::bind(&RenderTargetState::destroyRenderPasses, this, std::placeholders::_1))
 {
     LOG_DEBUG("RenderTargetState::RenderTargetState constructor %llx", this);
 
@@ -20,14 +23,18 @@ RenderTargetState::RenderTargetState(Device* device, const math::Dimension2D& si
     m_renderpassDesc._countColorAttachments = countAttacments;
     m_attachmentsDesc._renderArea = size;
     m_attachmentsDesc._viewsMask = viewsMask;
+
+    m_renderTargets.fill(nullptr);
 }
 
 RenderTargetState::~RenderTargetState()
 {
     LOG_DEBUG("RenderTargetState::RenderTargetState destructor %llx", this);
+    m_trackerFramebuffer.release();
+    m_trackerRenderpass.release();
 }
 
-bool RenderTargetState::setColorTexture_Impl(u32 index, Texture* colorTexture, RenderTargetLoadOp loadOp, RenderTargetStoreOp storeOp, const math::Vector4D& clearColor)
+bool RenderTargetState::setColorTexture_Impl(u32 index, Texture* colorTexture, RenderTargetLoadOp loadOp, RenderTargetStoreOp storeOp, const renderer::Color& clearColor)
 {
     ASSERT(index < m_renderpassDesc._countColorAttachments, "index >= count of attachments");
     if (colorTexture) [[likely]]
@@ -61,7 +68,7 @@ bool RenderTargetState::setColorTexture_Impl(u32 index, Texture* colorTexture, R
     return false;
 }
 
-bool RenderTargetState::setColorTexture_Impl(u32 index, Texture* colorTexture, u32 layer, RenderTargetLoadOp loadOp, RenderTargetStoreOp storeOp, const math::Vector4D& clearColor)
+bool RenderTargetState::setColorTexture_Impl(u32 index, Texture* colorTexture, u32 layer, RenderTargetLoadOp loadOp, RenderTargetStoreOp storeOp, const renderer::Color& clearColor)
 {
     ASSERT(index < m_renderpassDesc._countColorAttachments, "index >= count of attachments");
     ASSERT(colorTexture->getTarget() == TextureTarget::TextureCubeMap && layer < 6U, "index >= max 6 sides for cubemap");
@@ -165,7 +172,7 @@ bool RenderTargetState::setColorTexture_Impl(u32 index, Texture* colorTexture, s
     return false;
 }
 
-bool RenderTargetState::setSwapchainTexture_Impl(u32 index, SwapchainTexture* swapchainTexture, RenderTargetLoadOp loadOp, RenderTargetStoreOp storeOp, const math::Vector4D& clearColor)
+bool RenderTargetState::setSwapchainTexture_Impl(u32 index, SwapchainTexture* swapchainTexture, RenderTargetLoadOp loadOp, RenderTargetStoreOp storeOp, const renderer::Color& clearColor)
 {
     ASSERT(index < m_renderpassDesc._countColorAttachments, "index >= count of attachments");
     if (swapchainTexture) [[likely]]
@@ -398,6 +405,22 @@ bool RenderTargetState::checkCompatibility(Texture* texture, AttachmentDesc& des
 
     //TODO check format support
     return true;
+}
+
+void RenderTargetState::destroyFramebuffers(const std::vector<Framebuffer*>& framebuffers)
+{
+    for (auto framebuffer : framebuffers)
+    {
+        m_device->destroyFramebuffer(framebuffer);
+    }
+}
+
+void RenderTargetState::destroyRenderPasses(const std::vector<RenderPass*>& renderPasses)
+{
+    for (auto renderpass : renderPasses)
+    {
+        m_device->destroyRenderpass(renderpass);
+    }
 }
 
 } //namespace renderer

@@ -4,6 +4,7 @@
 #include "Object.h"
 #include "Formats.h"
 #include "Color.h"
+#include "ObjectTracker.h"
 
 namespace v3d
 {
@@ -419,8 +420,9 @@ namespace renderer
             VertexBuffer,
             IndexBuffer,
             ConstantBuffer,
+            StorageBuffer,
+            ReadbackBuffer,
             StagingBuffer,
-            Readback
         };
 
         virtual bool hasUsageFlag(BufferUsage usage) const = 0;
@@ -435,6 +437,31 @@ namespace renderer
     };
 
     using BufferHandle = ObjectHandle<RenderBuffer*>;
+
+    ///////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    /**
+    * @brief Framebuffer base class. Render side
+    */
+    class Framebuffer : public RenderObject<Framebuffer>
+    {
+    protected:
+
+        Framebuffer() = default;
+        virtual ~Framebuffer() = default;
+    };
+
+    /**
+    * @brief RenderPass base class. Render side
+    */
+    class RenderPass : public RenderObject<RenderPass>
+    {
+    protected:
+
+        RenderPass() = default;
+        virtual ~RenderPass() = default;
+    };
+
 
     ///////////////////////////////////////////////////////////////////////////////////////////////////////
 

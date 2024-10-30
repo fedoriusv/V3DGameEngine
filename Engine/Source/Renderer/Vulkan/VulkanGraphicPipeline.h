@@ -66,17 +66,18 @@ namespace vk
         bool pipelineStatistic() const;
 
 
-        VulkanDevice&                                                   m_device;
-        VulkanRenderpassManager* const                                  m_renderpassManager;
-        VulkanPipelineLayoutManager* const                              m_pipelineLayoutManager;
+        VulkanDevice&                                               m_device;
+        VulkanRenderpassManager* const                              m_renderpassManager;
+        VulkanPipelineLayoutManager* const                          m_pipelineLayoutManager;
 
-        VkPipeline                                                      m_pipeline;
-        VulkanRenderPass*                                               m_compatibilityRenderPass;
-        std::array<VkShaderModule, toEnumType(ShaderType::Count)>       m_modules;
-        //ObjectTracker<RenderPass>         m_trackerRenderPass;
+        VkPipeline                                                  m_pipeline;
+        VulkanRenderPass*                                           m_compatibilityRenderPass;
+        ObjectTracker<RenderPass>                                   m_trackerRenderPass;
+        std::array<VkShaderModule, toEnumType(ShaderType::Count)>   m_modules;
 
-        VulkanPipelineLayoutDescription m_pipelineLayoutDescription;
-        VulkanPipelineLayout m_pipelineLayout;
+        VulkanPipelineLayoutDescription                             m_pipelineLayoutDescription;
+        VulkanPipelineLayout                                        m_pipelineLayout;
+
 
 #if VULKAN_DEBUG_MARKERS
         std::string m_debugName;

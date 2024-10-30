@@ -26,8 +26,10 @@ namespace vk
     class VulkanSemaphore;
     class VulkanQueryPool;
     class VulkanDevice;
+    class VulkanFence;
     class VulkanCmdList;
     class VulkanCommandBufferManager;
+    class VulkanSwapchain;
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -64,7 +66,7 @@ namespace vk
 
         void addSemaphore(VkPipelineStageFlags mask, VulkanSemaphore* semaphore);
         void addSemaphores(VkPipelineStageFlags mask, const std::vector<VulkanSemaphore*>& semaphores);
-        bool waitComplete(u64 timeout = 0);
+        bool waitCompletion(u64 time = 0);
 
         bool isBackbufferPresented() const;
 
@@ -109,8 +111,8 @@ namespace vk
         void cmdCopyBufferToBuffer(VulkanBuffer* src, VulkanBuffer* dst, const std::vector<VkBufferCopy>& regions);
 
         //sync
-        void cmdPipelineBarrier(const VulkanImage* image, VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask, VkImageLayout layout);
-        void cmdPipelineBarrier(const VulkanImage* image, VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask, VkImageLayout layout, const RenderTexture::Subresource& resource);
+        void cmdPipelineBarrier(VulkanImage* image, VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask, VkImageLayout layout);
+        void cmdPipelineBarrier(VulkanImage* image, VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask, VkImageLayout layout, const RenderTexture::Subresource& resource);
         void cmdPipelineBarrier(VulkanBuffer* buffer, VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask);
         void cmdPipelineBarrier(VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask, const VkMemoryBarrier& memoryBarrier);
 
@@ -125,7 +127,7 @@ namespace vk
 
         void init(Device::DeviceMask queueMask, VkCommandPool pool, VkCommandBuffer buffer);
 
-        void captureResource(VulkanResource* resource, u64 frame);
+        void markUsed(VulkanResource* resource, u64 frame = 0);
         void releaseResources();
 
         bool isSafeFrame(u64 frame) const;
@@ -143,12 +145,11 @@ namespace vk
         CommandBufferLevel                m_level;
         CommandBufferStatus               m_status;
         u32                               m_queueIndex;
-        std::recursive_mutex              m_mutex;
 
         std::vector<VulkanSemaphore*>     m_semaphores;
         std::vector<VkPipelineStageFlags> m_stageMasks;
-        VkFence                           m_fence;
         u64                               m_capturedFrameIndex;
+        VulkanFence*                      m_fence;
 
         VulkanCommandBuffer*              m_primaryBuffer;
         std::vector<VulkanCommandBuffer*> m_secondaryBuffers;
@@ -159,6 +160,7 @@ namespace vk
             const VulkanFramebuffer* _framebuffer;
         };
         RenderPassState                   m_renderpassState;
+        VulkanSwapchain*                  m_activeSwapchain;
 
         bool                              m_drawingToSwapchain;
         bool                              m_isInsideRenderPass;

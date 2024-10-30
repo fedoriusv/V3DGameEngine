@@ -22,7 +22,7 @@ namespace vk
     /**
     * @brief VulkanRenderpass final class. Vulkan Render side
     */
-    class VulkanRenderPass final : public VulkanResource
+    class VulkanRenderPass final : public RenderPass, public VulkanResource
     {
     public:
 
@@ -129,7 +129,7 @@ namespace vk
         ~VulkanRenderpassManager();
 
         [[nodiscard]] VulkanRenderPass* acquireRenderpass(const RenderPassDesc& description, const std::string& name = "");
-        bool removeRenderPass(const VulkanRenderPass* renderPass);
+        bool removeRenderPass(VulkanRenderPass* renderPass);
 
         void clear();
 

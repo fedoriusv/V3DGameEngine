@@ -13,7 +13,7 @@ namespace renderer
     /**
     * @brief RenderPipeline base class. Render side
     */
-    class RenderPipeline
+    class RenderPipeline : public RenderObject<RenderPipeline>
     {
     public:
 

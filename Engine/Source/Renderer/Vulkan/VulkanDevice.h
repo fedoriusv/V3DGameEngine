@@ -27,6 +27,7 @@ namespace vk
     class VulkanFramebufferManager;
     class VulkanRenderpassManager;
     class VulkanGraphicPipelineManager;
+    class VulkanComputePipelineManager;
     class VulkanPipelineLayoutManager;
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -42,10 +43,11 @@ namespace vk
         void setScissor(const math::Rect32& scissor) override;
         void setStencilRef(u32 mask) override;
 
-        void beginRenderTarget(const RenderTargetState& rendertarget) override;
+        void beginRenderTarget(RenderTargetState& rendertarget) override;
         void endRenderTarget() override;
 
         void setPipelineState(GraphicsPipelineState& pipeline) override;
+        void setPipelineState(ComputePipelineState& pipeline) override;
 
         void transition(const TextureView& texture, TransitionOp state)override;
 
@@ -154,6 +156,10 @@ namespace vk
         bool initialize() override;
         void destroy() override;
 
+        void destroyFramebuffer(Framebuffer* framebuffer) override;
+        void destroyRenderpass(RenderPass* renderpass) override;
+        void destroyPipeline(RenderPipeline* pipeline) override;
+
         VkQueue getQueueByMask(DeviceMask mask);
         u32 getQueueFamilyIndexByMask(DeviceMask mask);
 
@@ -162,12 +168,14 @@ namespace vk
 
         VulkanStagingBufferManager* getStaginBufferManager() const;
 
+
     private:
 
         //friend VulkanCommandBufferManager;
         friend VulkanCmdList;
         friend VulkanSwapchain;
         friend VulkanGraphicPipelineManager;
+        friend VulkanComputePipelineManager;
 
         VulkanDevice() = delete;
         VulkanDevice(const VulkanDevice&) = delete;
@@ -199,6 +207,7 @@ namespace vk
         VulkanRenderpassManager*                m_renderpassManager;
         VulkanPipelineLayoutManager*            m_pipelineLayoutManager;
         VulkanGraphicPipelineManager*           m_graphicPipelineManager;
+        VulkanComputePipelineManager*           m_computePipelineManager;
 
         VulkanResourceDeleter                   m_resourceDeleter;
 
@@ -208,8 +217,8 @@ namespace vk
             VulkanCommandBufferManager* m_cmdBufferManager;
         };
 
-        std::vector<Concurrency> m_threadedPools;
-        u16 m_maskOfActiveThreadPool;
+        std::vector<Concurrency>                m_threadedPools;
+        u16                                     m_maskOfActiveThreadPool;
 
         s32 getFreeThreadSlot() const;
         u32 prepareConcurrencySlot();

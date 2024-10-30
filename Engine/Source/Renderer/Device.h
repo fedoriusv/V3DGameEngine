@@ -9,6 +9,7 @@
 #include "SamplerState.h"
 #include "RenderTargetState.h"
 #include "PipelineState.h"
+#include "ObjectTracker.h"
 
 namespace v3d
 {
@@ -52,6 +53,10 @@ namespace renderer
     */
     class CmdListCompute : public CmdList
     {
+    public:
+
+        virtual void setPipelineState(ComputePipelineState& pipeline) = 0;
+
     protected:
 
         CmdListCompute() noexcept
@@ -98,7 +103,7 @@ namespace renderer
 
         /**
         */
-        virtual void beginRenderTarget(const RenderTargetState& rendertarget) = 0;
+        virtual void beginRenderTarget(RenderTargetState& rendertarget) = 0;
 
         /**
         */
@@ -263,6 +268,12 @@ namespace renderer
 
         [[nodiscard]] virtual BufferHandle createBuffer(RenderBuffer::Type type, u16 usageFlag, u64 size, const std::string& name = "") = 0;
         virtual void destroyBuffer(BufferHandle buffer) = 0;
+
+    public:
+
+        virtual void destroyFramebuffer(Framebuffer* framebuffer) = 0;
+        virtual void destroyRenderpass(RenderPass* renderpass) = 0;
+        virtual void destroyPipeline(RenderPipeline* pipeline) = 0;
 
     protected:
 

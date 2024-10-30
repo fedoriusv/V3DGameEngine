@@ -707,53 +707,50 @@ VulkanRenderPass* VulkanRenderpassManager::acquireRenderpass(const RenderPassDes
     return found.first->second;
 }
 
-bool VulkanRenderpassManager::removeRenderPass(const VulkanRenderPass* renderPass)
+bool VulkanRenderpassManager::removeRenderPass(VulkanRenderPass* renderpass)
 {
     std::scoped_lock lock(m_mutex);
 
-    /*auto iter = m_renderPassList.find(renderPass->m_desc);
-    if (iter == m_renderPassList.cend())
+    auto found = std::find_if(m_renderPassList.begin(), m_renderPassList.end(), [renderpass](auto& elem) -> bool
+        {
+            return elem.second == renderpass;
+        });
+    if (found == m_renderPassList.cend())
     {
         LOG_DEBUG("RenderPassManager renderpass not found");
         ASSERT(false, "renderpass");
         return false;
     }
 
-    VulkanRenderPass* renderpass = iter->second;
-    ASSERT(renderpass == renderPass, "Different pointers");
-    if (renderPass->linked())
+    ASSERT(found->second == renderpass, "Different pointers");
+    if (renderpass->linked())
     {
         LOG_WARNING("RenderPassManager::removeRenderPass renderPass still linked, but reqested to delete");
         ASSERT(false, "renderpass");
         return false;
     }
-    m_renderPassList.erase(iter);
-
-    renderpass->notifyObservers();
+    m_renderPassList.erase(found);
 
     renderpass->destroy();
-    delete renderpass;*/
+    V3D_DELETE(renderpass, memory::MemoryLabel::MemoryRenderCore);
 
     return true;
 }
 
 void VulkanRenderpassManager::clear()
 {
-    //for (auto& iter : m_renderPassList)
-    //{
-    //    VulkanRenderPass* renderpass = iter.second;
-    //    if (renderpass->linked())
-    //    {
-    //        LOG_WARNING("RenderPassManager::removeRenderPass renderPass still linked, but reqested to delete");
-    //        ASSERT(false, "renderpass");
-    //        //return false;
-    //    }
-    //    renderpass->notifyObservers();
-
-    //    renderpass->destroy();
-    //    delete renderpass;
-    //}
-    //m_renderPassList.clear();
+    for (auto& iter : m_renderPassList)
+    {
+        VulkanRenderPass* renderpass = iter.second;
+        if (renderpass->linked())
+        {
+            LOG_WARNING("RenderPassManager::removeRenderPass renderPass still linked, but reqested to delete");
+            ASSERT(false, "renderpass");
+        }
+        renderpass->destroy();
+        V3D_DELETE(renderpass, memory::MemoryLabel::MemoryRenderCore);
+    }
+    m_renderPassList.clear();
 }
 
 } //namespace vk

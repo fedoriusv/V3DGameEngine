@@ -13,6 +13,7 @@
 #   include "VulkanRenderpass.h"
 #   include "VulkanCommandBufferManager.h"
 #   include "VulkanGraphicPipeline.h"
+#   include "VulkanComputePipeline.h"
 
 
 #ifdef PLATFORM_ANDROID
@@ -120,7 +121,7 @@ VulkanDevice::VulkanDevice(DeviceMaskFlags mask) noexcept
     , m_renderpassManager(nullptr)
     , m_pipelineLayoutManager(nullptr)
     , m_graphicPipelineManager(nullptr)
-
+    , m_computePipelineManager(nullptr)
 {
     LOG_DEBUG("VulkanDevice created this %llx", this);
 
@@ -136,6 +137,7 @@ VulkanDevice::~VulkanDevice()
 {
     LOG_DEBUG("~VulkanDevice destructor this %llx", this);
 
+    ASSERT(!m_computePipelineManager, "m_computePipelineManager is not nullptr");
     ASSERT(!m_graphicPipelineManager, "m_graphicPipelineManager is not nullptr");
     ASSERT(!m_pipelineLayoutManager, "m_pipelineLayoutManager is not nullptr");
     ASSERT(!m_renderpassManager, "m_renderpassManager is not nullptr");
@@ -220,7 +222,7 @@ void VulkanDevice::submit(CmdList* cmd, bool wait)
         cmdBufferMgr->submit(drawBuffer, cmdList.m_submitSemaphores);
         if (wait)
         {
-            drawBuffer->waitComplete();
+            drawBuffer->waitCompletion();
         }
         cmdList.m_currentCmdBuffer[toEnumType(CommandTargetType::CmdDrawBuffer)] = nullptr;
     }
@@ -346,7 +348,7 @@ BufferHandle VulkanDevice::createBuffer(RenderBuffer::Type type, u16 usageFlag, 
 void VulkanDevice::destroyBuffer(BufferHandle buffer)
 {
 #if VULKAN_DEBUG
-    LOG_DEBUG("VulkanContext::destroyBuffer %llx", buffer);
+    LOG_DEBUG("VulkanDevice::destroyBuffer %llx", buffer);
 #endif //VULKAN_DEBUG
 
     ASSERT(buffer.isValid(), "nullptr");
@@ -441,6 +443,7 @@ bool VulkanDevice::initialize()
     m_renderpassManager = V3D_NEW(VulkanRenderpassManager, memory::MemoryLabel::MemoryRenderCore)(this);
     m_pipelineLayoutManager = V3D_NEW(VulkanPipelineLayoutManager, memory::MemoryLabel::MemoryRenderCore)(this);
     m_graphicPipelineManager = V3D_NEW(VulkanGraphicPipelineManager, memory::MemoryLabel::MemoryRenderCore)(this);
+    m_computePipelineManager = V3D_NEW(VulkanComputePipelineManager, memory::MemoryLabel::MemoryRenderCore)(this);
 
     return true;
 }
@@ -524,7 +527,7 @@ bool VulkanDevice::createInstance()
 
 #if VULKAN_RENDERDOC_LAYER
     const c8* renderdocLayerName = "VK_LAYER_RENDERDOC_Capture";
-    if (VulkanLayers::checkLayerIsSupported(renderdocLayerName))
+    if (VulkanLayers::checkInstanceLayerIsSupported(renderdocLayerName))
     {
         LOG_INFO("VulkanDevice::createInstance: enable layer: [%s]", renderdocLayerName);
         layerNames.push_back(renderdocLayerName);
@@ -835,6 +838,12 @@ void VulkanDevice::destroy()
     }
     m_threadedPools.clear();
 
+    if (m_computePipelineManager)
+    {
+        V3D_DELETE(m_computePipelineManager, memory::MemoryLabel::MemoryRenderCore);
+        m_computePipelineManager = nullptr;
+    }
+
     if (m_graphicPipelineManager)
     {
         V3D_DELETE(m_graphicPipelineManager, memory::MemoryLabel::MemoryRenderCore);
@@ -907,6 +916,58 @@ void VulkanDevice::destroy()
     }
 }
 
+void VulkanDevice::destroyFramebuffer(Framebuffer* framebuffer)
+{
+#if VULKAN_DEBUG
+    LOG_DEBUG("VulkanDevice::destroyFramebuffer %llx", framebuffer);
+#endif //VULKAN_DEBUG
+
+    ASSERT(framebuffer, "nullptr");
+    VulkanFramebuffer* vkFramebuffer = static_cast<VulkanFramebuffer*>(framebuffer);
+    m_resourceDeleter.addResourceToDelete(vkFramebuffer, [this, vkFramebuffer](VulkanResource* resource) -> void
+        {
+            m_framebufferManager->removeFramebuffer(vkFramebuffer);
+        });
+}
+
+void VulkanDevice::destroyRenderpass(RenderPass* renderpass)
+{
+#if VULKAN_DEBUG
+    LOG_DEBUG("VulkanDevice::destroyRenderpass %llx", renderpass);
+#endif //VULKAN_DEBUG
+
+    ASSERT(renderpass, "nullptr");
+    VulkanRenderPass* vkRenderpass = static_cast<VulkanRenderPass*>(renderpass);
+    m_resourceDeleter.addResourceToDelete(vkRenderpass, [this, vkRenderpass](VulkanResource* resource) -> void
+        {
+            m_renderpassManager->removeRenderPass(vkRenderpass);
+        });
+}
+
+void VulkanDevice::destroyPipeline(RenderPipeline* pipeline)
+{
+#if VULKAN_DEBUG
+    LOG_DEBUG("VulkanDevice::destroyPipeline %llx", pipeline);
+#endif //VULKAN_DEBUG
+
+    ASSERT(pipeline, "nullptr");
+    if (pipeline->getType() == RenderPipeline::PipelineType::PipelineType_Graphic)
+    {
+        VulkanGraphicPipeline* vkPipeline = static_cast<VulkanGraphicPipeline*>(pipeline);
+        m_resourceDeleter.addResourceToDelete(vkPipeline, [this, vkPipeline](VulkanResource* resource) -> void
+            {
+                m_graphicPipelineManager->removePipeline(vkPipeline);
+            });
+    }
+    else if (pipeline->getType() == RenderPipeline::PipelineType::PipelineType_Compute)
+    {
+        VulkanComputePipeline* vkPipeline = static_cast<VulkanComputePipeline*>(pipeline);
+        m_resourceDeleter.addResourceToDelete(vkPipeline, [this, vkPipeline](VulkanResource* resource) -> void
+            {
+                m_computePipelineManager->removePipeline(vkPipeline);
+            });
+    }
+}
 
 
 VulkanCmdList::VulkanCmdList(VulkanDevice* device) noexcept
@@ -977,18 +1038,19 @@ void VulkanCmdList::setStencilRef(u32 mask)
     m_pendingRenderState.setDirty(VulkanRenderState::StencilRef);
 }
 
-void VulkanCmdList::beginRenderTarget(const RenderTargetState& rendertarget)
+void VulkanCmdList::beginRenderTarget(RenderTargetState& rendertarget)
 {
 #if VULKAN_DEBUG
-    LOG_DEBUG("VulkanCmdList::beginRenderTarget [%s]", rendertarget.getName().c_str());
+    LOG_DEBUG("VulkanCmdList::beginRenderTarget [%s]", rendertarget.m_name.c_str());
 #endif //VULKAN_DEBUG
 
-    VulkanRenderPass* renderpass = m_device.m_renderpassManager->acquireRenderpass(rendertarget.getRenderPassDesc(), rendertarget.getName());
+    VulkanRenderPass* renderpass = m_device.m_renderpassManager->acquireRenderpass(rendertarget.m_renderpassDesc, rendertarget.m_name);
+    rendertarget.m_trackerRenderpass.attach(renderpass);
 
-    FramebufferDesc targets(rendertarget.getFramebufferDesc());
-    for (u32 index = 0; index < rendertarget.getRenderPassDesc() ._countColorAttachments; ++index)
+    FramebufferDesc targets(rendertarget.m_attachmentsDesc);
+    for (u32 index = 0; index < rendertarget.m_renderpassDesc._countColorAttachments; ++index)
     {
-        if (rendertarget.getRenderPassDesc()._attachmentsDesc[index]._backbuffer)
+        if (rendertarget.m_renderpassDesc._attachmentsDesc[index]._backbuffer)
         {
             ASSERT(targets._images[index].isValid(), "should be vaild");
             VulkanSwapchain* swapchain = OBJECT_FROM_HANDLE(targets._images[index], VulkanSwapchain);
@@ -999,7 +1061,8 @@ void VulkanCmdList::beginRenderTarget(const RenderTargetState& rendertarget)
         }
     }
 
-    auto [framebuffer, isNew] = m_device.m_framebufferManager->acquireFramebuffer(renderpass, targets, rendertarget.getName());
+    auto [framebuffer, isNew] = m_device.m_framebufferManager->acquireFramebuffer(renderpass, targets, rendertarget.m_name);
+    rendertarget.m_trackerFramebuffer.attach(framebuffer);
 
     m_pendingRenderState._renderpass = renderpass;
     m_pendingRenderState._framebuffer = framebuffer;
@@ -1016,11 +1079,26 @@ void VulkanCmdList::endRenderTarget()
 void VulkanCmdList::setPipelineState(GraphicsPipelineState& state)
 {
 #if VULKAN_DEBUG
-    LOG_DEBUG("VulkanCmdList::setPipelineState [%s]", state.getName().c_str());
+    LOG_DEBUG("VulkanCmdList::setPipelineState [%s]", state.m_name.c_str());
 #endif //VULKAN_DEBUG
 
     VulkanGraphicPipeline* pipeline = m_device.m_graphicPipelineManager->acquireGraphicPipeline(state);
+    state.m_tracker.attach(pipeline);
+
     m_pendingRenderState._graphicPipeline = pipeline;
+    m_pendingRenderState.setDirty(VulkanRenderState::Pipeline);
+}
+
+void VulkanCmdList::setPipelineState(ComputePipelineState& state)
+{
+#if VULKAN_DEBUG
+    LOG_DEBUG("VulkanCmdList::setPipelineState [%s]", state.m_name.c_str());
+#endif //VULKAN_DEBUG
+
+    VulkanComputePipeline* pipeline = m_device.m_computePipelineManager->acquireGraphicPipeline(state);
+    state.m_tracker.attach(pipeline);
+
+    m_pendingRenderState._computePipeline = pipeline;
     m_pendingRenderState.setDirty(VulkanRenderState::Pipeline);
 }
 

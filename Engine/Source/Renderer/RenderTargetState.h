@@ -2,6 +2,7 @@
 
 #include "Object.h"
 #include "Render.h"
+#include "ObjectTracker.h"
 
 namespace v3d
 {
@@ -140,11 +141,11 @@ namespace renderer
             ColorOpState() noexcept
                 : _loadOp(RenderTargetLoadOp::LoadOp_Clear)
                 , _storeOp(RenderTargetStoreOp::StoreOp_Store)
-                , _clearColor(math::Vector4D(0.f))
+                , _clearColor(0.f, 0.f, 0.f, 0.f)
             {
             }
             
-            ColorOpState(RenderTargetLoadOp loadOp, RenderTargetStoreOp storeOp, const math::Vector4D& clearColor) noexcept
+            ColorOpState(RenderTargetLoadOp loadOp, RenderTargetStoreOp storeOp, const renderer::Color& clearColor) noexcept
                 : _loadOp(loadOp)
                 , _storeOp(storeOp)
                 , _clearColor(clearColor)
@@ -153,7 +154,7 @@ namespace renderer
 
             RenderTargetLoadOp      _loadOp     : 16;
             RenderTargetStoreOp     _storeOp    : 16;
-            const math::Vector4D    _clearColor; //TODO: Color class
+            const renderer::Color   _clearColor;
         };
 
         /**
@@ -233,7 +234,7 @@ namespace renderer
         template<class TTexture>
         bool setColorTexture(u32 index, TTexture* colorTexture,
             RenderTargetLoadOp loadOp = RenderTargetLoadOp::LoadOp_Clear, RenderTargetStoreOp storeOp = RenderTargetStoreOp::StoreOp_Store,
-            const math::Vector4D& clearColor = math::Vector4D(0.f));
+            const renderer::Color& clearColor = math::Vector4D(0.f));
 
         /**
         * @brief setColorTexture method. Used to adding a layer of color attachment to render target
@@ -250,7 +251,7 @@ namespace renderer
         template<class TTexture>
         bool setColorTexture(u32 index, TTexture* colorTexture, s32 layer,
             RenderTargetLoadOp loadOp = RenderTargetLoadOp::LoadOp_Clear, RenderTargetStoreOp storeOp = RenderTargetStoreOp::StoreOp_Store,
-            const math::Vector4D& clearColor = math::Vector4D(0.f));
+            const renderer::Color& clearColor = math::Vector4D(0.f));
 
 
         /**
@@ -418,12 +419,12 @@ namespace renderer
         RenderTargetState() = delete;
         RenderTargetState(const RenderTargetState&) = delete;
 
-        bool setColorTexture_Impl(u32 index, Texture* colorTexture, RenderTargetLoadOp loadOp, RenderTargetStoreOp storeOp, const math::Vector4D& clearColor);
-        bool setColorTexture_Impl(u32 index, Texture* colorTexture, u32 layer, RenderTargetLoadOp loadOp, RenderTargetStoreOp storeOp, const math::Vector4D& clearColor);
+        bool setColorTexture_Impl(u32 index, Texture* colorTexture, RenderTargetLoadOp loadOp, RenderTargetStoreOp storeOp, const renderer::Color& clearColor);
+        bool setColorTexture_Impl(u32 index, Texture* colorTexture, u32 layer, RenderTargetLoadOp loadOp, RenderTargetStoreOp storeOp, const renderer::Color& clearColor);
         bool setColorTexture_Impl(u32 index, Texture* colorTexture, const ColorOpState& colorOpState, const TransitionState& tansitionState);
         bool setColorTexture_Impl(u32 index, Texture* colorTexture, s32 layer, const ColorOpState& colorOpState, const TransitionState& tansitionState);
 
-        bool setSwapchainTexture_Impl(u32 index, SwapchainTexture* swapchainTexture, RenderTargetLoadOp loadOp, RenderTargetStoreOp storeOp, const math::Vector4D& clearColor);
+        bool setSwapchainTexture_Impl(u32 index, SwapchainTexture* swapchainTexture, RenderTargetLoadOp loadOp, RenderTargetStoreOp storeOp, const renderer::Color& clearColor);
         bool setSwapchainTexture_Impl(u32 index, SwapchainTexture* swapchainTexture, const ColorOpState& colorOpState, const TransitionState& tansitionState);
 
         bool setDepthStencilTexture_Impl(Texture* depthStencilTexture, RenderTargetLoadOp depthLoadOp, RenderTargetStoreOp depthStoreOp, f32 clearDepth, RenderTargetLoadOp stencilLoadOp, RenderTargetStoreOp stencilStoreOp, u32 clearStencil);
@@ -432,15 +433,20 @@ namespace renderer
         bool setDepthStencilTexture_Impl(Texture* depthStencilTexture, s32 layer, const DepthOpState& depthOpState, const StencilOpState& stencilOpState, const TransitionState& tansitionState);
 
         bool checkCompatibility(Texture* texture, AttachmentDesc& desc);
+        void destroyFramebuffers(const std::vector<Framebuffer*>& framebuffers);
+        void destroyRenderPasses(const std::vector<RenderPass*>& renderPasses);
 
-        Device* const       m_device;
-
-        RenderPassDesc      m_renderpassDesc;
-        FramebufferDesc     m_attachmentsDesc;
-
+        Device* const                                   m_device;
         std::array<Texture*, k_maxColorAttachments + 1> m_renderTargets;
 
-        const std::string   m_name;
+    public:
+
+        RenderPassDesc              m_renderpassDesc;
+        FramebufferDesc             m_attachmentsDesc;
+        ObjectTracker<Framebuffer>  m_trackerFramebuffer;
+        ObjectTracker<RenderPass>   m_trackerRenderpass;
+
+        const std::string           m_name;
     };
 
 

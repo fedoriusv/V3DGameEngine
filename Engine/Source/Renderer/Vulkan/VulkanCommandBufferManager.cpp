@@ -395,7 +395,7 @@ bool VulkanCommandBufferManager::submit(VulkanCommandBuffer* buffer, const std::
     submitInfo.pSignalSemaphores = internalSignalSemaphores.data();
 
 
-    VkResult result = VulkanWrapper::QueueSubmit(std::get<0>(m_device.getDeviceInfo()._queues[buffer->m_queueIndex]), 1, &submitInfo, buffer->m_fence);
+    VkResult result = VulkanWrapper::QueueSubmit(std::get<0>(m_device.getDeviceInfo()._queues[buffer->m_queueIndex]), 1, &submitInfo, buffer->m_fence->getHandle());
     if (result != VK_SUCCESS)
     {
         LOG_ERROR("VulkanCommandBufferManager::submit vkQueueSubmit. Error %s", ErrorString(result).c_str());
@@ -408,6 +408,7 @@ bool VulkanCommandBufferManager::submit(VulkanCommandBuffer* buffer, const std::
     //vkDeviceWaitIdle(m_device);
 
     buffer->m_status = VulkanCommandBuffer::CommandBufferStatus::Submit;
+    buffer->m_capturedFrameIndex = buffer->m_activeSwapchain ? buffer->m_activeSwapchain->getCurrentFrameIndex() : 0;
     return true;
 }
 
@@ -422,6 +423,9 @@ void VulkanCommandBufferManager::updateStatus()
             iter = m_usedCmdBuffers.erase(iter);
 
             cmdBuffer->m_status = VulkanCommandBuffer::CommandBufferStatus::Ready;
+            cmdBuffer->m_activeSwapchain = nullptr;
+            cmdBuffer->m_drawingToSwapchain = false;
+
             m_freeCmdBuffers[cmdBuffer->m_level].push_back(cmdBuffer);
 
             continue;

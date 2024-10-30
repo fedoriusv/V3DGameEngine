@@ -76,7 +76,7 @@ namespace renderer
         bool attach(TRenderObject* object) noexcept
         {
             static_assert(std::is_base_of<RenderObject<TRenderObject>, TRenderObject>(), "wrong type");
-            std::lock_guard<std::recursive_mutex> lock(m_mutex);
+            std::lock_guard lock(m_mutex);
 
             auto iter = m_list.insert(object);
             if (iter.second)
@@ -88,7 +88,7 @@ namespace renderer
 
         void release() noexcept
         {
-            std::lock_guard<std::recursive_mutex> lock(m_mutex);
+            std::lock_guard lock(m_mutex);
 
             std::vector<TRenderObject*> deleteList;
             for (auto& iter : m_list)
@@ -109,10 +109,10 @@ namespace renderer
 
     private:
 
-        std::recursive_mutex m_mutex;
-        std::set<RenderObject<TRenderObject>*> m_list;
+        std::recursive_mutex                    m_mutex;
+        std::set<RenderObject<TRenderObject>*>  m_list;
 
-        Object* m_handle;
+        Object*                                 m_handle;
         std::function<void(const std::vector<TRenderObject*>&)> m_deleteCallback;
     };
 

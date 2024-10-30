@@ -41,21 +41,25 @@ namespace vk
         const VulkanPipelineLayout& getDescriptorSetLayouts() const;
         const VulkanPipelineLayoutDescription& getPipelineLayoutDescription() const;
 
+        bool create(const ComputePipelineState& state);
+        void destroy();
+
     private:
 
         VulkanComputePipeline() = delete;
         VulkanComputePipeline(const VulkanComputePipeline&) = delete;
 
-        bool create(const ComputePipelineState& state);
-        void destroy();
+        bool createShaderModules(const renderer::ShaderProgram* program);
+        void deleteShaderModules();
 
-        VulkanDevice&   m_device;
+        VulkanDevice&                       m_device;
+        VulkanPipelineLayoutManager* const  m_pipelineLayoutManager;
 
-        VkPipeline      m_pipeline;
-        VkShaderModule  m_module;
+        VkPipeline                          m_pipeline;
+        VkShaderModule                      m_module;
 
-        VulkanPipelineLayoutDescription m_pipelineLayoutDescription;
-        VulkanPipelineLayout m_pipelineLayout;
+        VulkanPipelineLayoutDescription     m_pipelineLayoutDescription;
+        VulkanPipelineLayout                m_pipelineLayout;
 
         bool pipelineStatistic() const;
 
@@ -93,7 +97,36 @@ namespace vk
     */
     class VulkanComputePipelineManager final
     {
-        //TODO
+    public:
+
+        struct VulkanPipelineDesc
+        {
+            VulkanPipelineDesc() noexcept = default;
+
+            explicit VulkanPipelineDesc(const ShaderProgram* program) noexcept
+                : _program(program)
+            {
+            }
+
+            const ShaderProgram* _program = nullptr;
+        };
+
+        explicit VulkanComputePipelineManager(VulkanDevice* device) noexcept;
+        ~VulkanComputePipelineManager();
+
+        [[nodiscard]] VulkanComputePipeline* acquireGraphicPipeline(const ComputePipelineState& state);
+
+        bool removePipeline(VulkanComputePipeline* pipeline);
+        void clear();
+
+    private:
+
+        VulkanComputePipelineManager(const VulkanComputePipelineManager&) = delete;
+        VulkanComputePipelineManager& operator=(const VulkanComputePipelineManager&) = delete;
+
+        VulkanDevice&           m_device;
+        std::recursive_mutex    m_mutex;
+        std::unordered_map<DescInfo<VulkanPipelineDesc>, VulkanComputePipeline*, DescInfo<VulkanPipelineDesc>::Hash, DescInfo<VulkanPipelineDesc>::Compare> m_pipelineComputeList;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

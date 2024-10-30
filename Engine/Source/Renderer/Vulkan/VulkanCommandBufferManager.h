@@ -80,14 +80,14 @@ namespace vk
         VulkanCommandBufferManager(const VulkanCommandBufferManager&) = delete;
         VulkanCommandBufferManager& operator=(const VulkanCommandBufferManager&) = delete;
 
-        VulkanDevice&                   m_device;
-        VulkanSemaphoreManager* const   m_semaphoreManager;
+        VulkanDevice&                           m_device;
+        VulkanSemaphoreManager* const           m_semaphoreManager;
 
-        VkCommandPoolCreateFlags m_poolFlag;
+        VkCommandPoolCreateFlags                m_poolFlag;
         std::vector<std::vector<VkCommandPool>> m_commandPools;
 
-        std::deque<VulkanCommandBuffer*>    m_freeCmdBuffers[CommandBufferLevel::CommandBufferLevelCount];
-        std::vector<VulkanCommandBuffer*>   m_usedCmdBuffers;
+        std::deque<VulkanCommandBuffer*>        m_freeCmdBuffers[CommandBufferLevel::CommandBufferLevelCount];
+        std::vector<VulkanCommandBuffer*>       m_usedCmdBuffers;
 
         static VkCommandPool createCommandPool(VkDevice device, VkCommandPoolCreateFlags flag, u32 familyIndex);
         static void destoryCommandPool(VkDevice device, VkCommandPool pool);

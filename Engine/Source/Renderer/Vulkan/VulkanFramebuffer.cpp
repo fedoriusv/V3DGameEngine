@@ -182,13 +182,13 @@ bool VulkanFramebufferManager::removeFramebuffer(VulkanFramebuffer* framebuffer)
     }
     ASSERT(iter == m_framebufferList.end(), "not found");
 
-    //VulkanFramebuffer* vkFramebuffer = iter->second;
-    //if (framebuffer->linked())
-    //{
-    //    LOG_WARNING("FramebufferManager::removeFramebuffer framebufer still linked, but reqested to delete");
-    //    ASSERT(false, "framebuffer");
-    //    return false;
-    //}
+    VulkanFramebuffer* vkFramebuffer = iter->second;
+    if (framebuffer->linked())
+    {
+        LOG_WARNING("FramebufferManager::removeFramebuffer framebufer still linked, but reqested to delete");
+        ASSERT(false, "framebuffer");
+        return false;
+    }
     m_framebufferList.erase(iter);
 
     framebuffer->destroy();
@@ -202,12 +202,11 @@ void VulkanFramebufferManager::clear()
     for (auto& iter : m_framebufferList)
     {
         VulkanFramebuffer* framebuffer = iter.second;
-        //if (framebuffer->linked())
-        //{
-        //    LOG_WARNING("FramebufferManager::removeFramebuffer framebufer still linked, but reqested to delete");
-        //    ASSERT(false, "framebuffer");
-        //    return false;
-        //}
+        if (framebuffer->linked())
+        {
+            LOG_WARNING("FramebufferManager::clear framebufer still linked, but reqested to delete");
+            ASSERT(false, "framebuffer");
+        }
 
         framebuffer->destroy();
         V3D_DELETE(framebuffer, memory::MemoryLabel::MemoryRenderCore);

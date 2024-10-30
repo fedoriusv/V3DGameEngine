@@ -3,8 +3,7 @@
 #include "Object.h"
 #include "Render.h"
 #include "RenderTargetState.h"
-
-//#include "ObjectTracker.h"
+#include "ObjectTracker.h"
 
 namespace v3d
 {
@@ -13,7 +12,7 @@ namespace renderer
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     class Device;
-    class Pipeline;
+    class RenderPipeline;
     class ShaderProgram;
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -392,26 +391,11 @@ namespace renderer
         /**
         * @brief GraphicsPipelineState destructor
         */
-        ~GraphicsPipelineState() = default;
+        ~GraphicsPipelineState();
 
-        /**
-        * @brief getPipelineStateDesc function
-        */
         const GraphicsPipelineStateDesc& getPipelineStateDesc() const;
-
-        /**
-        * @brief getRenderPassDesc function
-        */
         const RenderPassDesc& getRenderPassDesc() const;
-
-        /**
-        * @brief getShaderProgram function
-        */
         const ShaderProgram* getShaderProgram() const;
-
-        /**
-        * @brief getName function
-        */
         const std::string& getName() const;
 
     private:
@@ -419,11 +403,18 @@ namespace renderer
         GraphicsPipelineState() = delete;
         GraphicsPipelineState(const GraphicsPipelineState&) = delete;
 
-        Device* const               m_device;
-        GraphicsPipelineStateDesc   m_pipelineStateDesc;
-        const ShaderProgram*        m_program;
-        const RenderTargetState*    m_renderTaget;
-        std::string                 m_name;
+        void destroyPipelines(const std::vector<RenderPipeline*>& pipelines);
+
+        Device* const                   m_device;
+
+    public:
+
+        GraphicsPipelineStateDesc       m_pipelineStateDesc;
+        const ShaderProgram*            m_program;
+        const RenderTargetState*        m_renderTaget;
+        ObjectTracker<RenderPipeline>   m_tracker;
+
+        const std::string               m_name;
     };
 
     inline void GraphicsPipelineState::setPolygonMode(PolygonMode polygonMode)
@@ -608,7 +599,7 @@ namespace renderer
     */
     class ComputePipelineState : public PipelineState
     {
-    private:
+    public:
 
         /**
         * @brief ComputePipelineState constructor.
@@ -622,14 +613,37 @@ namespace renderer
         /**
         * @brief ComputePipelineState destructor
         */
-        ~ComputePipelineState() = default;
+        ~ComputePipelineState();
+
+        const ShaderProgram* getShaderProgram() const;
+        const std::string& getName() const;
+
+    private:
 
         ComputePipelineState() = delete;
         ComputePipelineState(const ComputePipelineState&) = delete;
 
-        Device* const           m_device;
-        const ShaderProgram*    m_program;
+        void destroyPipelines(const std::vector<RenderPipeline*>& pipelines);
+
+        Device&                         m_device;
+
+    public:
+
+        const ShaderProgram*            m_program;
+        ObjectTracker<RenderPipeline>   m_tracker;
+
+        const std::string               m_name;
     };
+
+    inline const ShaderProgram* ComputePipelineState::getShaderProgram() const
+    {
+        return m_program;
+    }
+
+    inline const std::string& ComputePipelineState::getName() const
+    {
+        return m_name;
+    }
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
