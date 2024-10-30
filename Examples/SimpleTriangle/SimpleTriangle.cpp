@@ -196,6 +196,10 @@ void SimpleTriangle::render()
 
     m_CmdList->bindDescriptorSet(0, { desc2 });
     m_CmdList->draw(renderer::GeometryBufferDesc(m_Geometry, 0, sizeof(math::Vector3D) + sizeof(math::Vector3D)), 0, 3, 0, 1);
+
+    m_CmdList->endRenderTarget();
+
+    m_Device->submit(m_CmdList);
 }
 
 void SimpleTriangle::terminate()
