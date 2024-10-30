@@ -3,6 +3,7 @@
 #include "Renderer/Render.h"
 
 #ifdef VULKAN_RENDER
+#   include "VulkanFence.h"
 
 namespace v3d
 {
@@ -12,7 +13,10 @@ namespace vk
 {
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    class VulkanFence;
     class VulkanCommandBuffer;
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
     * @brief VulkanResource class. Vulkan Render side
@@ -21,43 +25,46 @@ namespace vk
     {
     public:
 
-        enum Status : u32
-        {
-            Status_Free,
-            Status_Captured,
-            Status_Done
-        };
-
         VulkanResource() noexcept;
         virtual ~VulkanResource();
 
-        Status getStatus() const;
-        bool isCaptured() const;
-
-        bool waitCompletion(u64 time = 0);
-
-        void captureInsideCommandBuffer(VulkanCommandBuffer* buffer, u64 frame) const;
+        bool isUsed() const;
 
     private:
 
         VulkanResource(const VulkanResource&) = delete;
 
-        std::atomic<Status>     m_status;
-        std::atomic<s64>        m_counter;
-        std::atomic<u64>        m_frame;
-        std::vector<VulkanCommandBuffer*> m_cmdBuffers;
+        void markUsed(VulkanFence* fence, u64 value);
+
+        std::map<VulkanFence*, std::atomic<s64>> m_fanceInfo;
+        std::atomic<u64>                         m_frame;
+        std::recursive_mutex                     m_mutex;
+#if VULKAN_DEBUG
+        s64 m_ref;
+#endif //VULKAN_DEBUG
 
         friend VulkanCommandBuffer;
     };
 
-    inline VulkanResource::Status VulkanResource::getStatus() const
+    inline bool VulkanResource::isUsed() const
     {
-        return m_status;
+        bool used = std::any_of(m_fanceInfo.begin(), m_fanceInfo.end(), [](const auto& info) -> bool
+            {
+                return info.second < info.first->getValue();
+            });
+
+        return used;
     }
-    
-    inline bool VulkanResource::isCaptured() const
+
+    inline void VulkanResource::markUsed(VulkanFence* fence, u64 value)
     {
-        return m_status == VulkanResource::Status::Status_Captured;
+        std::scoped_lock lock(m_mutex);
+
+        auto inserted = m_fanceInfo.emplace(fence, value);
+        if (!inserted.second)
+        {
+            inserted.first->second = value;
+        }
     }
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -74,12 +81,13 @@ namespace vk
         ~VulkanResourceDeleter();
 
         void addResourceToDelete(VulkanResource* resource, const std::function<void(VulkanResource* resource)>& deleter, bool forceDelete = false);
-        void updateResourceDeleter(bool wait = false);
+        void updateResourceDeleter();
 
     private:
 
         void resourceGarbageCollect();
 
+        std::recursive_mutex m_mutex;
         std::queue<std::pair<VulkanResource*, std::function<void(VulkanResource* resource)>>> m_delayedList;
         std::queue<std::pair<VulkanResource*, std::function<void(VulkanResource* resource)>>> m_deleterList;
     };
