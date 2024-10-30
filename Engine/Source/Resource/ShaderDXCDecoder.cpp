@@ -3,6 +3,7 @@
 #include "Stream/FileLoader.h"
 #include "Utils/Logger.h"
 #include "Utils//Timer.h"
+#include "Platform.h"
 
 #if defined(PLATFORM_WINDOWS) || defined(PLATFORM_XBOX)
 #include "Renderer/D3D12/D3DDebug.h"
@@ -230,6 +231,101 @@ bool ShaderDXCDecoder::compile(const std::string& source, const ShaderPolicy* po
         return target;
     };
 
+    class DXCIncludeHandler : public IDxcIncludeHandler
+    {
+    public:
+
+        DXCIncludeHandler(IDxcUtils* utils) noexcept
+            : m_DXUtils(utils)
+        {
+        }
+
+        ~DXCIncludeHandler()
+        {
+            reset();
+        }
+
+        void addIncludePath(const std::string& path)
+        {
+            m_pathes.emplace(path);
+        }
+
+        void reset()
+        {
+            m_pathes.clear();
+        }
+
+        HRESULT STDMETHODCALLTYPE LoadSource(_In_ LPCWSTR pFilename, _COM_Outptr_result_maybenull_ IDxcBlob** ppIncludeSource) override
+        {
+            std::string fileStr(platform::Platform::wideToUtf8(pFilename));
+            if (!stream::FileStream::isExists(fileStr))
+            {
+                std::set<std::string>::iterator it;
+                for (it = m_pathes.begin(); it != m_pathes.end(); ++it)
+                {
+                    std::string testFilePath(*it);
+                    testFilePath = testFilePath + "\\" + fileStr;
+                    if (!stream::FileStream::isExists(testFilePath))
+                    {
+                        fileStr = testFilePath;
+                        break;
+                    }
+                }
+            }
+
+            stream::FileStream* file = stream::FileLoader::load(fileStr);
+
+            LPCVOID data = file->map(0);
+            IDxcBlobEncoding* source = nullptr;
+            UINT code = CP_UTF8;
+            HRESULT result = m_DXUtils->CreateBlobFromPinned(data, file->size(), code, &source);
+
+            file->unmap();
+            stream::FileLoader::close(file);
+
+            if (FAILED(result))
+            {
+                return result;
+            }
+            *ppIncludeSource = source;
+
+            return S_OK;
+        }
+
+        HRESULT STDMETHODCALLTYPE QueryInterface(REFIID riid, _COM_Outptr_ void __RPC_FAR* __RPC_FAR* ppvObject) override
+        {
+            if (riid == __uuidof(IUnknown))
+            {
+                AddRef();
+                *ppvObject = (void*)(IUnknown*)this;
+                return S_OK;
+            }
+            else if (riid == __uuidof(IDxcIncludeHandler))
+            {
+                AddRef();
+                *ppvObject = (void*)(IDxcIncludeHandler*)this;
+                return S_OK;
+            }
+
+            return E_FAIL;
+        }
+
+        ULONG STDMETHODCALLTYPE AddRef() override
+        {
+            return 0;
+        }
+
+        ULONG STDMETHODCALLTYPE Release() override
+        {
+            return 0;
+        }
+
+    private:
+
+        IDxcUtils* m_DXUtils;
+        std::set<std::string> m_pathes;
+    };
+
     const std::wstring entryPoint = std::wstring(policy->_entryPoint.cbegin(), policy->_entryPoint.cend());
     const std::wstring target = getShaderTarget(policy->_type, policy->_shaderModel);
 
@@ -239,6 +335,16 @@ bool ShaderDXCDecoder::compile(const std::string& source, const ShaderPolicy* po
         if (FAILED(result))
         {
             LOG_FATAL("ShaderDXCDecoder DxcCreateInstance can't create IDxcCompiler. Error: %s", renderer::dx3d::D3DDebug::stringError(result).c_str());
+            return false;
+        }
+    }
+
+    IDxcUtils* DXUtils = nullptr;
+    {
+        HRESULT result = DxcCreateInstance(CLSID_DxcUtils, IID_PPV_ARGS(&DXUtils));
+        if (FAILED(result))
+        {
+            LOG_FATAL("ShaderDXCDecoder DxcCreateInstance can't create IDxcUtils. Error: %s", renderer::dx3d::D3DDebug::stringError(result).c_str());
             return false;
         }
     }
@@ -269,7 +375,7 @@ bool ShaderDXCDecoder::compile(const std::string& source, const ShaderPolicy* po
         arguments.push_back(DXC_ARG_SKIP_OPTIMIZATIONS);
         arguments.push_back(DXC_ARG_DEBUG);
         //arguments.push_back(DXC_ARG_SKIP_VALIDATION);
-        //arguments.push_back(L"-Qembed_debug");
+        arguments.push_back(L"-Qembed_debug");
     }
 
 #ifndef DEBUG
@@ -287,13 +393,23 @@ bool ShaderDXCDecoder::compile(const std::string& source, const ShaderPolicy* po
     {
         std::wstring defineArg;
         defineArg.append(std::move(std::wstring(policy->_defines[i].first.cbegin(), policy->_defines[i].first.cend())));
-        defineArg.append(L" ");
+        defineArg.append(L"=");
         defineArg.append(std::move(std::wstring(policy->_defines[i].second.cbegin(), policy->_defines[i].second.cend())));
 
         defines.push_back(std::move(defineArg));
 
         arguments.push_back(L"-D");
-        arguments.push_back(defines.back().c_str());
+        arguments.push_back(defines[i].c_str());
+    }
+
+    DXCIncludeHandler includer(DXUtils);
+    std::vector<std::wstring> includes;
+    for (u32 i = 0; i < policy->_includes.size(); ++i)
+    {
+        includes.push_back(std::move(std::wstring(policy->_includes[i].cbegin(), policy->_includes[i].cend())));
+
+        arguments.push_back(L"-I");
+        arguments.push_back(includes[i].c_str());
     }
 
     DxcBuffer dxBuffer = {};
@@ -303,9 +419,10 @@ bool ShaderDXCDecoder::compile(const std::string& source, const ShaderPolicy* po
 
     IDxcResult* compileResult = nullptr;
     {
-        HRESULT result = DXCompiler->Compile(&dxBuffer, arguments.data(), static_cast<u32>(arguments.size()), nullptr, IID_PPV_ARGS(&compileResult));
+        HRESULT result = DXCompiler->Compile(&dxBuffer, arguments.data(), static_cast<u32>(arguments.size()), &includer, IID_PPV_ARGS(&compileResult));
         if (FAILED(result))
         {
+            DXUtils->Release();
             DXCompiler->Release();
 
             LOG_ERROR("ShaderDXCDecoder Compile can't create IDxcResult. Error: %s", renderer::dx3d::D3DDebug::stringError(result).c_str());
@@ -350,6 +467,8 @@ bool ShaderDXCDecoder::compile(const std::string& source, const ShaderPolicy* po
         {
             LOG_ERROR("ShaderDXCDecoder Compile is failed");
             compileResult->Release();
+
+            DXUtils->Release();
             DXCompiler->Release();
 
             return false;
@@ -457,6 +576,7 @@ bool ShaderDXCDecoder::compile(const std::string& source, const ShaderPolicy* po
             HRESULT result = DxcCreateInstance(CLSID_DxcValidator, IID_PPV_ARGS(&DXValidator));
             if (FAILED(result))
             {
+                DXUtils->Release();
                 DXCompiler->Release();
 
                 LOG_FATAL("ShaderDXCDecoder DxcCreateInstance can't create DxcValidator. Error: %s", renderer::dx3d::D3DDebug::stringError(result).c_str());
@@ -498,6 +618,7 @@ bool ShaderDXCDecoder::compile(const std::string& source, const ShaderPolicy* po
         DXValidator->Release();
     }
 
+    DXUtils->Release();
     DXCompiler->Release();
 
     return true;

@@ -1,6 +1,9 @@
 ﻿#include "ShaderSpirVDecoder.h"
 #include "Stream/FileLoader.h"
 #include "Stream/StreamManager.h"
+#include "Stream/FileStream.h"
+#include "Platform.h"
+
 
 #include "Utils/Logger.h"
 #include "Utils/Timer.h"
@@ -67,6 +70,71 @@ Resource* ShaderSpirVDecoder::decode(const stream::Stream* stream, const Policy*
     const ShaderDecoder::ShaderPolicy* shaderPolicy = static_cast<const ShaderDecoder::ShaderPolicy*>(policy);
     if (shaderPolicy->_content == renderer::ShaderContent::Source)
     {
+        class Includer : public shaderc::CompileOptions::IncluderInterface
+        {
+        public:
+
+            Includer() noexcept = default;
+
+            ~Includer()
+            {
+                m_includes.clear();
+                m_pathes.clear();
+            }
+
+            void addPath(const std::string& path)
+            {
+                m_pathes.emplace(path);
+            }
+
+            shaderc_include_result* GetInclude(const char* requested_source, shaderc_include_type type, const char* requesting_source, size_t include_depth) override
+            {
+                std::string fileStr(requested_source);
+                if (!stream::FileStream::isExists(fileStr))
+                {
+                    std::set<std::string>::iterator it;
+                    for (it = m_pathes.begin(); it != m_pathes.end(); ++it)
+                    {
+                        std::string testFilePath(*it);
+                        testFilePath = testFilePath + "\\" + fileStr;
+                        if (!stream::FileStream::isExists(testFilePath))
+                        {
+                            fileStr = testFilePath;
+                            break;
+                        }
+                    }
+                }
+
+                stream::FileStream* file = stream::FileLoader::load(fileStr);
+                ASSERT(file, "nullptr");
+
+                void* data = V3D_MALLOC(file->size(), memory::MemoryLabel::MemoryRenderCore);
+                file->read(data, file->size());
+                stream::FileLoader::close(file);
+
+                shaderc_include_result include;
+                include.source_name_length = fileStr.size();
+                include.source_name = (c8*)V3D_MALLOC(include.source_name_length, memory::MemoryLabel::MemoryRenderCore);
+                memcpy((void*)include.source_name, fileStr.c_str(), fileStr.size());
+                include.content_length = file->size();
+                include.content = (c8*)data;
+                include.user_data = nullptr;
+
+                m_includes.push_back(include);
+
+                return &m_includes.back();
+            }
+
+            void ReleaseInclude(shaderc_include_result* data) override
+            {
+                V3D_FREE(data->source_name, memory::MemoryLabel::MemoryRenderCore);
+                V3D_FREE(data->content, memory::MemoryLabel::MemoryRenderCore);
+            }
+
+            std::set<std::string> m_pathes;
+            std::vector<shaderc_include_result> m_includes;
+        };
+
         std::string source;
         source.resize(stream->size());
         stream->read(source.data(), stream->size());
@@ -159,6 +227,9 @@ Resource* ShaderSpirVDecoder::decode(const stream::Stream* stream, const Policy*
                 options.AddMacroDefinition(define.first, define.second);
             }
         }
+
+        std::unique_ptr<shaderc::CompileOptions::IncluderInterface> includer(V3D_NEW(Includer, memory::MemoryLabel::MemoryRenderCore)); //TODO deleter
+        options.SetIncluder(std::move(includer));
 
         bool validShaderType = false;
         auto getShaderType = [&validShaderType](renderer::ShaderType type) -> shaderc_shader_kind
