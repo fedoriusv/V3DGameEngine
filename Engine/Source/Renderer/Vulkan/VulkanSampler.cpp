@@ -121,7 +121,7 @@ VulkanSampler::VulkanSampler(VulkanDevice* device, const SamplerDesc& desc, cons
 
 VulkanSampler::~VulkanSampler()
 {
-    ASSERT(!m_sampler, "still exist");
+    ASSERT(m_sampler == VK_NULL_HANDLE, "still exist");
 }
 
 bool VulkanSampler::create()

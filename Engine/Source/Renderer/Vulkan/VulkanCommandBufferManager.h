@@ -47,14 +47,14 @@ namespace vk
         static VkPipelineStageFlags selectStageFlagsByImageLayout(VkImageLayout layout);
         static std::tuple<VkAccessFlags, VkAccessFlags> getAccessFlagsFromImageLayout(VkImageLayout oldLayout, VkImageLayout newLayout);
 
-        static void transitionImage(VulkanCommandBuffer* cmdBuffer, std::tuple<const VulkanImage*, RenderTexture::Subresource>& images, VkImageLayout layout, bool toCompute = false);
+        static void transitionImage(VulkanCommandBuffer* cmdBuffer, std::tuple<VulkanImage*, RenderTexture::Subresource>& images, VkImageLayout layout, bool toCompute = false);
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
-    * @brief VulkanCommandBufferManager class. Vulkan Render side
-    * Manager per thread
+    * @brief VulkanCommandBufferManager class. Vulkan Render side.
+    * Singlethreaded
     */
     class VulkanCommandBufferManager final
     {

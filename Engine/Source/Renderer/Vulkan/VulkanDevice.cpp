@@ -14,6 +14,7 @@
 #   include "VulkanCommandBufferManager.h"
 #   include "VulkanGraphicPipeline.h"
 #   include "VulkanComputePipeline.h"
+#   include "VulkanConstantBuffer.h"
 
 
 #ifdef PLATFORM_ANDROID
@@ -355,8 +356,6 @@ void VulkanDevice::destroyBuffer(BufferHandle buffer)
     VulkanBuffer* vkBuffer = OBJECT_FROM_HANDLE(buffer, VulkanBuffer);
     m_resourceDeleter.addResourceToDelete(vkBuffer, [vkBuffer](VulkanResource* resource) -> void
         {
-            //vkBuffer->notifyObservers();
-
             vkBuffer->destroy();
             V3D_DELETE(vkBuffer, memory::MemoryLabel::MemoryRenderCore);
         });
@@ -837,6 +836,7 @@ void VulkanDevice::destroy()
         }
     }
     m_threadedPools.clear();
+    m_resourceDeleter.updateResourceDeleter();
 
     if (m_computePipelineManager)
     {
@@ -852,6 +852,7 @@ void VulkanDevice::destroy()
 
     if (m_pipelineLayoutManager)
     {
+        m_pipelineLayoutManager->clear();
         V3D_DELETE(m_pipelineLayoutManager, memory::MemoryLabel::MemoryRenderCore);
         m_pipelineLayoutManager = nullptr;
     }
@@ -976,12 +977,25 @@ VulkanCmdList::VulkanCmdList(VulkanDevice* device) noexcept
     , m_queueIndex(0)
     , m_threadID(std::this_thread::get_id())
     , m_concurrencySlot(~0U)
+
+    , m_CBOManager(nullptr)
 {
+    LOG_DEBUG("VulkanCmdList constructor this %llx", this);
+
     memset(m_currentCmdBuffer, 0, sizeof(m_currentCmdBuffer));
+
+    m_CBOManager = V3D_NEW(VulkanConstantBufferManager, memory::MemoryLabel::MemoryRenderCore)(device);
 }
 
 VulkanCmdList::~VulkanCmdList()
 {
+    LOG_DEBUG("~VulkanCmdList destructor this %llx", this);
+
+    V3D_DELETE(m_CBOManager, memory::MemoryLabel::MemoryRenderCore);
+    m_CBOManager = nullptr;
+
+
+    ASSERT(!m_CBOManager, "m_computePipelineManager is not nullptr");
     for (auto& cmdBuff : m_currentCmdBuffer)
     {
         ASSERT(!cmdBuff, "must be nullptr");

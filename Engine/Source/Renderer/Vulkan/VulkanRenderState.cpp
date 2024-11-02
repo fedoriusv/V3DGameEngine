@@ -12,7 +12,7 @@ namespace renderer
 namespace vk
 {
 
-void VulkanRenderState::addImageBarrier(const VulkanImage* texture, const RenderTexture::Subresource& subresource, VkImageLayout layout)
+void VulkanRenderState::addImageBarrier(VulkanImage* texture, const RenderTexture::Subresource& subresource, VkImageLayout layout)
 {
     if (_imageBarriers.contains(layout))
     {

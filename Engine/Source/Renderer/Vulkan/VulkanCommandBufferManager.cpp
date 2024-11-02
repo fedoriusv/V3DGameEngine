@@ -189,9 +189,9 @@ std::tuple<VkAccessFlags, VkAccessFlags> VulkanTransitionState::getAccessFlagsFr
     return { srcFlag, dstFlag };
 }
 
-void VulkanTransitionState::transitionImage(VulkanCommandBuffer* cmdBuffer, std::tuple<const VulkanImage*, RenderTexture::Subresource>& image, VkImageLayout layout, bool toCompute)
+void VulkanTransitionState::transitionImage(VulkanCommandBuffer* cmdBuffer, std::tuple<VulkanImage*, RenderTexture::Subresource>& image, VkImageLayout layout, bool toCompute)
 {
-    const VulkanImage* vulkanImage = static_cast<const VulkanImage*>(std::get<0>(image));
+    VulkanImage* vulkanImage = static_cast<VulkanImage*>(std::get<0>(image));
 
     VkPipelineStageFlags srcStage = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
     VkPipelineStageFlags dstStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;

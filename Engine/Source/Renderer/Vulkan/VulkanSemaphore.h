@@ -67,7 +67,8 @@ namespace vk
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
-    * @brief VulkanSemaphoreManager class
+    * @brief VulkanSemaphoreManager class.
+    * Multithreaded
     */
     class VulkanSemaphoreManager final
     {
@@ -76,7 +77,7 @@ namespace vk
         explicit VulkanSemaphoreManager(VulkanDevice* device) noexcept;
         ~VulkanSemaphoreManager();
 
-        VulkanSemaphore* acquireSemaphore();
+        [[nodiscard]] VulkanSemaphore* acquireSemaphore();
 
         void clear();
         void updateStatus();
@@ -88,12 +89,11 @@ namespace vk
 
     private:
 
-        VulkanSemaphoreManager() = delete;
         VulkanSemaphoreManager(const VulkanSemaphoreManager&) = delete;
         VulkanSemaphoreManager& operator=(const VulkanSemaphoreManager&) = delete;
 
-        VulkanDevice&        m_device;
-        std::recursive_mutex m_mutex;
+        VulkanDevice&                 m_device;
+        std::recursive_mutex          m_mutex;
 
         std::deque<VulkanSemaphore*>  m_freePools;
         std::vector<VulkanSemaphore*> m_usedPools;

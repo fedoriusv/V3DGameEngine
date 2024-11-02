@@ -79,7 +79,8 @@ namespace vk
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
-    *  @brief VulkanStagingBufferManager final class. Vulkan Render side
+    * @brief VulkanStagingBufferManager final class. Vulkan Render side.
+    * Multithreaded
     */
     class VulkanStagingBufferManager final
     {
@@ -88,7 +89,7 @@ namespace vk
         explicit VulkanStagingBufferManager(VulkanDevice* device) noexcept;
         ~VulkanStagingBufferManager();
 
-        VulkanStagingBuffer* createStagingBuffer(u64 size, BufferUsageFlags usageFlag) const;
+        [[nodiscard]] VulkanStagingBuffer* createStagingBuffer(u64 size, BufferUsageFlags usageFlag) const;
 
         void destroyAfterUse(VulkanStagingBuffer* buffer);
         void destroyStagingBuffers();
@@ -100,8 +101,9 @@ namespace vk
 
         VulkanDevice&                           m_device;
         VulkanMemory::VulkanMemoryAllocator*    m_memoryManager;
+        std::recursive_mutex                    m_mutex;
 
-        std::vector<VulkanStagingBuffer*> m_stagingBuffers;
+        std::vector<VulkanStagingBuffer*>       m_stagingBuffers;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

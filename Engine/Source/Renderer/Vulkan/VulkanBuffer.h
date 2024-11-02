@@ -53,6 +53,8 @@ namespace vk
         VulkanBuffer() = delete;
         VulkanBuffer(const VulkanBuffer&) = delete;
 
+        bool createViewBuffer();
+
         VulkanDevice&                        m_device;
         VulkanMemory::VulkanMemoryAllocator* m_memoryAllocator;
 

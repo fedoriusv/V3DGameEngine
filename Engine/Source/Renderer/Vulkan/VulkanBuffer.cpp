@@ -193,15 +193,13 @@ bool VulkanBuffer::create()
     m_memoryAllocator->linkVulkanObject(m_memory, this);
 #endif //VULKAN_DEBUG
 
-//TODO
-//Create buffer view
-/*if (!createViewBuffer())
-{
-    VulkanBuffer::destroy();
+    if (!createViewBuffer())
+    {
+        VulkanBuffer::destroy();
 
-    LOG_ERROR("VulkanBuffer::VulkanBuffer::create() is failed");
-    return false;
-}*/
+        LOG_ERROR("VulkanBuffer::VulkanBuffer::create() is failed");
+        return false;
+    }
 
     return true;
 }
@@ -267,7 +265,7 @@ bool VulkanBuffer::upload(VulkanCommandBuffer* cmdBuffer, u32 offset, u64 size, 
 
         if (m_size <= k_updateBuffer_MaxSize)
         {
-            ASSERT(!VulkanResource::isCaptured(), "still submitted");
+            ASSERT(!VulkanResource::isUsed(), "still submitted");
             cmdBuffer->cmdUpdateBuffer(this, offset, m_size, data);
         }
         else
@@ -284,7 +282,7 @@ bool VulkanBuffer::upload(VulkanCommandBuffer* cmdBuffer, u32 offset, u64 size, 
             memcpy(stagingData, data, size);
             stagingBuffer->unmap();
 
-            ASSERT(!VulkanResource::isCaptured(), "still submitted");
+            ASSERT(!VulkanResource::isUsed(), "still submitted");
             m_device.getStaginBufferManager()->destroyAfterUse(stagingBuffer);
 
             VkBufferCopy bufferCopy = {};
@@ -372,6 +370,13 @@ void VulkanBuffer::unmap()
         }
     }
     m_mapped = false;
+}
+
+bool VulkanBuffer::createViewBuffer()
+{
+    //TODO
+
+    return true;
 }
 
 } //namespace vk

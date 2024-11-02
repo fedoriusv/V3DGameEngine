@@ -1,8 +1,9 @@
 #include "VulkanResource.h"
 
 #ifdef VULKAN_RENDER
-#include "VulkanWrapper.h"
-//#include "VulkanCommandBuffer.h"
+#   include "VulkanWrapper.h"
+#   include "VulkanCommandBuffer.h"
+#   include "VulkanFence.h"
 
 namespace v3d
 {
@@ -12,10 +13,9 @@ namespace vk
 {
 
 VulkanResource::VulkanResource() noexcept
-    : m_status(VulkanResource::Status::Status_Free)
-    , m_frame(0)
+    : m_fanceInfo()
 #if VULKAN_DEBUG
-    , m_ref(0)
+    , m_refCount(0)
 #endif
 {
 }
@@ -34,7 +34,7 @@ VulkanResourceDeleter::~VulkanResourceDeleter()
 
 void VulkanResourceDeleter::addResourceToDelete(VulkanResource* resource, const std::function<void(VulkanResource* resource)>& deleter, bool forceDelete)
 {
-    std::m_mutex
+    std::scoped_lock lock(m_mutex);
 
     if (forceDelete) [[unlikely]]
     {
@@ -53,47 +53,37 @@ void VulkanResourceDeleter::addResourceToDelete(VulkanResource* resource, const 
     }
 }
 
-void VulkanResourceDeleter::updateResourceDeleter()
+void VulkanResourceDeleter::updateResourceDeleter(bool forceDelete)
 {
+    std::scoped_lock lock(m_mutex);
+
     ASSERT(m_deleterList.empty(), "should be empty");
-    static std::queue<std::pair<VulkanResource*, std::function<void(VulkanResource* resource)>>> delayedList;
+    std::queue<std::pair<VulkanResource*, std::function<void(VulkanResource* resource)>>> delayedList;
     while(!m_delayedList.empty())
     {
         auto iter = m_delayedList.front();
         m_delayedList.pop();
 
-        if (iter.first->isUsed())
+        if (!iter.first->isUsed() || forceDelete)
         {
-            if (wait)
-            {
-                iter.first->waitComplete();
-                m_deleterList.push(iter);
-            }
-            else
-            {
-                delayedList.push(iter);
-            }
+            m_deleterList.push(iter);
         }
         else
         {
-            m_deleterList.push(iter);
+            delayedList.push(iter);
         }
     }
 
     ASSERT(m_delayedList.empty(), "should be empty");
     m_delayedList.swap(delayedList);
-#if DEBUG
-    if (wait)
-    {
-        ASSERT(m_delayedList.empty(), "should be empty");
-    }
-#endif //DEBUG
 
     resourceGarbageCollect();
 }
 
 void VulkanResourceDeleter::resourceGarbageCollect()
 {
+    std::scoped_lock lock(m_mutex);
+
     while (!m_deleterList.empty())
     {
         auto iter = m_deleterList.front();

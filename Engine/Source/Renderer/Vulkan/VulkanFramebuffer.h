@@ -75,7 +75,8 @@ namespace vk
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
-    * @brief VulkanFramebufferManager class
+    * @brief VulkanFramebufferManager class.
+    * Multithreaded
     */
     class VulkanFramebufferManager final
     {
@@ -111,7 +112,8 @@ namespace vk
         VulkanFramebufferManager() = delete;
         VulkanFramebufferManager(const VulkanFramebufferManager&) = delete;
 
-        VulkanDevice& m_device;
+        VulkanDevice&           m_device;
+        std::recursive_mutex    m_mutex;
         std::unordered_map<DescInfo<VulkanFramebufferDesc>, VulkanFramebuffer*, DescInfo<VulkanFramebufferDesc>::Hash, DescInfo<VulkanFramebufferDesc>::Compare> m_framebufferList;
     };
 

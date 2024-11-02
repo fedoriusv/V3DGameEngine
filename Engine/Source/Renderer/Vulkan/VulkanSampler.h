@@ -41,15 +41,15 @@ namespace vk
 
     private:
 
-        VulkanSampler() = delete;
         VulkanSampler(const VulkanSampler&) = delete;
+        VulkanSampler& operator=(const VulkanSampler&) = delete;
 
-        VulkanDevice& m_device;
+        VulkanDevice&   m_device;
 
-        SamplerDesc m_desc;
-        VkSampler m_sampler;
+        SamplerDesc     m_desc;
+        VkSampler       m_sampler;
 #if VULKAN_DEBUG_MARKERS
-        std::string m_debugName;
+        std::string     m_debugName;
 #endif //VULKAN_DEBUG_MARKERS
     };
 

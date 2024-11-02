@@ -68,12 +68,13 @@ namespace vk
         void addSemaphores(VkPipelineStageFlags mask, const std::vector<VulkanSemaphore*>& semaphores);
         bool waitCompletion(u64 time = 0);
 
+        void captureResource(VulkanResource* resource, u64 frame = 0);
         bool isBackbufferPresented() const;
 
         void beginCommandBuffer();
         void endCommandBuffer();
 
-        void cmdBeginRenderpass(const VulkanRenderPass* pass, const VulkanFramebuffer* framebuffer, const VkRect2D& area, const std::array<VkClearValue, k_maxColorAttachments>& clearValues);
+        void cmdBeginRenderpass(VulkanRenderPass* pass, VulkanFramebuffer* framebuffer, const VkRect2D& area, const std::array<VkClearValue, k_maxColorAttachments>& clearValues);
         void cmdEndRenderPass();
         bool isInsideRenderPass() const;
 
@@ -127,7 +128,6 @@ namespace vk
 
         void init(Device::DeviceMask queueMask, VkCommandPool pool, VkCommandBuffer buffer);
 
-        void markUsed(VulkanResource* resource, u64 frame = 0);
         void releaseResources();
 
         bool isSafeFrame(u64 frame) const;

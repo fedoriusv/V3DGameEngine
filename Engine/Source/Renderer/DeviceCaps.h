@@ -72,6 +72,8 @@ namespace renderer
         u32 _maxDescriptorSets = k_maxDescriptorSetCount;
         u32 _maxDescriptorBindings = k_maxDescriptorBindingCount;
 
+        u32 _constantBufferSize = 1024; //1 KB
+
         VendorID _vendorID = VendorID_Empty;
 
         bool _supportMultiview = false;

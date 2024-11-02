@@ -109,7 +109,8 @@ namespace vk
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
-    * @brief VulkanGraphicPipelineManager class
+    * @brief VulkanGraphicPipelineManager class.
+    * Multithreaded
     */
     class VulkanGraphicPipelineManager final
     {

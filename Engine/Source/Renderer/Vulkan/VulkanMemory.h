@@ -20,7 +20,8 @@ namespace vk
 
     /**
     * @brief VulkanMemory class. Render side.
-    * Management of alloc/dealloc vulkan memory
+    * Management of alloc/dealloc vulkan memory.
+    * Multithreaded
     */
     class VulkanMemory final
     {
@@ -59,7 +60,8 @@ namespace vk
         };
 
         /**
-        * @brief VulkanMemoryAllocator class. Base allocator class
+        * @brief VulkanMemoryAllocator class. Base allocator class.
+        * Multithreaded
         */
         class VulkanMemoryAllocator
         {
@@ -79,7 +81,7 @@ namespace vk
             VulkanMemoryAllocator(const VulkanMemoryAllocator&) = delete;
             VulkanMemoryAllocator& operator=(const VulkanMemoryAllocator&) = delete;
 
-            VulkanDevice& m_device;
+            VulkanDevice&        m_device;
 
         private:
 
@@ -99,18 +101,14 @@ namespace vk
 
         static void freeMemory(VulkanMemoryAllocator& allocator, VulkanAllocation& memory);
 
-    private:
-
-        static VulkanMemoryAllocator* getSimpleMemoryAllocator(VulkanDevice* device);
-
-        static class SimpleVulkanMemoryAllocator* s_simpleVulkanMemoryAllocator;
         static std::recursive_mutex s_mutex;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
-    * @brief SimpleVulkanMemoryAllocator class. Simple allocation
+    * @brief SimpleVulkanMemoryAllocator class. Simple allocation.
+    * Multithreaded
     */
     class SimpleVulkanMemoryAllocator final : public VulkanMemory::VulkanMemoryAllocator
     {
@@ -135,7 +133,8 @@ namespace vk
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
-    * @brief PoolVulkanMemoryAllocator class. Pool management allocation
+    * @brief PoolVulkanMemoryAllocator class. Pool management allocation.
+    * Multithreaded
     */
     class PoolVulkanMemoryAllocator final : public VulkanMemory::VulkanMemoryAllocator
     {

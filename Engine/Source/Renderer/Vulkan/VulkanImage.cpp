@@ -1314,7 +1314,7 @@ bool VulkanImage::internalUpload(VulkanCommandBuffer* cmdBuffer, const math::Dim
         memcpy(stagingData, data, dataSize);
         stagingBuffer->unmap();
 
-        ASSERT(!VulkanResource::isCaptured(), "still submitted");
+        ASSERT(!VulkanResource::isUsed(), "still submitted");
         m_device.getStaginBufferManager()->destroyAfterUse(stagingBuffer);
 
         auto calculateMipSize = [](const math::Dimension3D& size) -> math::Dimension3D

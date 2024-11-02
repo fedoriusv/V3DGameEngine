@@ -45,7 +45,6 @@ VulkanMemory::VulkanAllocation VulkanMemory::s_invalidMemory =
     0
 };
 
-SimpleVulkanMemoryAllocator* VulkanMemory::s_simpleVulkanMemoryAllocator = nullptr;
 std::recursive_mutex VulkanMemory::s_mutex;
 
 s32 VulkanMemory::findMemoryTypeIndex(const VkPhysicalDeviceMemoryProperties& physicalDeviceMemoryProperties, const VkMemoryRequirements& memoryRequirements, VkMemoryPropertyFlags memoryPropertyFlags)
@@ -146,7 +145,8 @@ VulkanMemory::VulkanAllocation VulkanMemory::allocateImageMemory(VulkanMemoryAll
                 memoryDedicatedAllocateInfo.buffer = VK_NULL_HANDLE;
                 vkExtensions = &memoryDedicatedAllocateInfo;
 
-                memory = VulkanMemory::getSimpleMemoryAllocator(&allocator.m_device)->allocate(memoryRequirements2.memoryRequirements.size, memoryRequirements2.memoryRequirements.alignment, memoryTypeIndex, vkExtensions);
+                SimpleVulkanMemoryAllocator simpleAllocator(&allocator.m_device);
+                memory = static_cast<VulkanMemoryAllocator*>(&simpleAllocator)->allocate(memoryRequirements2.memoryRequirements.size, memoryRequirements2.memoryRequirements.alignment, memoryTypeIndex, vkExtensions);
                 if (memory._memory == VK_NULL_HANDLE)
                 {
                     return VulkanMemory::s_invalidMemory;
@@ -194,7 +194,8 @@ VulkanMemory::VulkanAllocation VulkanMemory::allocateImageMemory(VulkanMemoryAll
 
             if (memory._property & MemoryProperty::dedicatedMemory)
             {
-                VulkanMemory::getSimpleMemoryAllocator(&allocator.m_device)->deallocate(memory);
+                SimpleVulkanMemoryAllocator simpleAllocator(&allocator.m_device);
+                static_cast<VulkanMemoryAllocator*>(&simpleAllocator)->deallocate(memory);
             }
             else
             {
@@ -258,30 +259,16 @@ VulkanMemory::VulkanAllocation VulkanMemory::allocateBufferMemory(VulkanMemoryAl
 
 void VulkanMemory::freeMemory(VulkanMemoryAllocator& allocator, VulkanAllocation& memory)
 {
-    {
-        std::lock_guard<std::recursive_mutex> lock(s_mutex);
+    std::lock_guard lock(s_mutex);
 
-        if (memory._property & MemoryProperty::dedicatedMemory)
-        {
-            VulkanMemory::getSimpleMemoryAllocator(&allocator.m_device)->deallocate(memory);
-        }
-        else
-        {
-            allocator.deallocate(memory);
-        }
+    if (memory._property & MemoryProperty::dedicatedMemory)
+    {
+        SimpleVulkanMemoryAllocator simpleAllocator(&allocator.m_device);
+        static_cast<VulkanMemoryAllocator*>(&simpleAllocator)->deallocate(memory);
     }
-}
-
-VulkanMemory::VulkanMemoryAllocator* VulkanMemory::getSimpleMemoryAllocator(VulkanDevice* device)
-{
+    else
     {
-        std::lock_guard<std::recursive_mutex> lock(s_mutex);
-
-        if (!s_simpleVulkanMemoryAllocator)
-        {
-            s_simpleVulkanMemoryAllocator = V3D_NEW(SimpleVulkanMemoryAllocator, memory::MemoryLabel::MemoryRenderCore)(device);
-        }
-        return s_simpleVulkanMemoryAllocator;
+        allocator.deallocate(memory);
     }
 }
 
@@ -313,6 +300,8 @@ SimpleVulkanMemoryAllocator::~SimpleVulkanMemoryAllocator()
 
 VulkanMemory::VulkanAllocation SimpleVulkanMemoryAllocator::allocate(VkDeviceSize size, VkDeviceSize align, u32 memoryTypeIndex, const void* extensions)
 {
+    std::scoped_lock lock(VulkanMemory::s_mutex);
+
     //If image is not VK_NULL_HANDLE, VkMemoryAllocateInfo::allocationSize must equal the VkMemoryRequirements::size of the image
     //(https://vulkan.lunarg.com/doc/view/1.3.231.1/windows/1.3-extensions/vkspec.html#VUID-VkMemoryDedicatedAllocateInfo-image-01433)
     VkDeviceSize alignedSize = size; //core::alignUp<VkDeviceSize>(size, align);
@@ -372,6 +361,8 @@ VulkanMemory::VulkanAllocation SimpleVulkanMemoryAllocator::allocate(VkDeviceSiz
 
 void SimpleVulkanMemoryAllocator::deallocate(VulkanMemory::VulkanAllocation& memory)
 {
+    std::scoped_lock lock(VulkanMemory::s_mutex);
+
     if (memory._mapped)
     {
         ASSERT(memory._memory, "nullptr");
@@ -413,6 +404,8 @@ PoolVulkanMemoryAllocator::Pool::Pool() noexcept
 
 VulkanMemory::VulkanAllocation PoolVulkanMemoryAllocator::allocate(VkDeviceSize size, VkDeviceSize align, u32 memoryTypeIndex, const void* extensions)
 {
+    std::lock_guard lock(VulkanMemory::s_mutex);
+
     VkDeviceSize alignedSize = math::alignUp<VkDeviceSize>(size, m_device.getVulkanDeviceCaps().getPhysicalDeviceLimits().minMemoryMapAlignment);
 
     ASSERT(memoryTypeIndex < VK_MAX_MEMORY_TYPES, "out of range");
@@ -457,6 +450,8 @@ VulkanMemory::VulkanAllocation PoolVulkanMemoryAllocator::allocate(VkDeviceSize 
 
 void PoolVulkanMemoryAllocator::deallocate(VulkanMemory::VulkanAllocation& memory)
 {
+    std::lock_guard lock(VulkanMemory::s_mutex);
+
     Pool* pool = reinterpret_cast<Pool*>(memory._metadata);
     ASSERT(pool, "pool nullptr");
 

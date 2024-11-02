@@ -492,6 +492,8 @@ void VulkanDeviceCaps::initialize()
     _useDynamicUniforms = false; //TODO
     _useLateDescriptorSetUpdate = false;
 
+    _constantBufferSize = _useDynamicUniforms ? std::min<u32>(VulkanDeviceCaps::getPhysicalDeviceLimits().maxUniformBufferRange, VulkanDeviceCaps::getPhysicalDeviceMaintenance3Properties().maxMemoryAllocationSize) : 1 * 1024 * 1024;
+
     LOG_INFO("VulkanDeviceCaps::initialize:  useDynamicUniforms is %s", _useDynamicUniforms ? "enable" : "disable");
     LOG_INFO("VulkanDeviceCaps::initialize:  useGlobalDescriptorPool is %s", _useGlobalDescriptorPool ? "enable" : "disable");
 

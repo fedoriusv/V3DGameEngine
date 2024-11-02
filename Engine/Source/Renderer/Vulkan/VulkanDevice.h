@@ -29,6 +29,7 @@ namespace vk
     class VulkanGraphicPipelineManager;
     class VulkanComputePipelineManager;
     class VulkanPipelineLayoutManager;
+    class VulkanConstantBufferManager;
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -92,7 +93,8 @@ namespace vk
         u32                           m_concurrencySlot;
                                       
         VulkanCommandBuffer*          m_currentCmdBuffer[toEnumType(CommandTargetType::Count)];
-                                      
+        VulkanConstantBufferManager*  m_CBOManager;
+
         VulkanRenderState             m_pendingRenderState;
         VulkanRenderState             m_currentRenderState;
 
@@ -213,8 +215,8 @@ namespace vk
 
         struct Concurrency
         {
-            std::thread::id             m_threadID;
-            VulkanCommandBufferManager* m_cmdBufferManager;
+            std::thread::id              m_threadID;
+            VulkanCommandBufferManager*  m_cmdBufferManager;
         };
 
         std::vector<Concurrency>                m_threadedPools;

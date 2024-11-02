@@ -3,6 +3,7 @@
 #include "Renderer/Render.h"
 
 #ifdef VULKAN_RENDER
+#   include "VulkanWrapper.h"
 #   include "VulkanFence.h"
 
 namespace v3d
@@ -33,14 +34,14 @@ namespace vk
     private:
 
         VulkanResource(const VulkanResource&) = delete;
+        VulkanResource& operator=(const VulkanResource&) = delete;
 
-        void markUsed(VulkanFence* fence, u64 value);
+        void markUsed(VulkanFence* fence, u64 value, u64 frame);
 
-        std::map<VulkanFence*, std::atomic<s64>> m_fanceInfo;
-        std::atomic<u64>                         m_frame;
-        std::recursive_mutex                     m_mutex;
+        mutable std::unordered_map<VulkanFence*, std::tuple<u64, u64>>  m_fanceInfo;
+        mutable std::recursive_mutex                                    m_mutex;
 #if VULKAN_DEBUG
-        s64 m_ref;
+        mutable s64                                                     m_refCount;
 #endif //VULKAN_DEBUG
 
         friend VulkanCommandBuffer;
@@ -48,29 +49,45 @@ namespace vk
 
     inline bool VulkanResource::isUsed() const
     {
+        std::scoped_lock lock(m_mutex);
+
         bool used = std::any_of(m_fanceInfo.begin(), m_fanceInfo.end(), [](const auto& info) -> bool
             {
-                return info.second < info.first->getValue();
+                VulkanFence* fence = info.first;
+                return std::get<0>(info.second) >= fence->getValue();
             });
+
+#if VULKAN_DEBUG
+        if (!used)
+        {
+            ASSERT(m_refCount >= 0, "");
+            m_refCount = 0;
+            m_fanceInfo.clear();
+        }
+#endif //VULKAN_DEBUG
 
         return used;
     }
 
-    inline void VulkanResource::markUsed(VulkanFence* fence, u64 value)
+    inline void VulkanResource::markUsed(VulkanFence* fence, u64 value, u64 frame)
     {
         std::scoped_lock lock(m_mutex);
 
-        auto inserted = m_fanceInfo.emplace(fence, value);
+#if VULKAN_DEBUG
+        ++m_refCount;
+#endif //VULKAN_DEBUG
+        auto inserted = m_fanceInfo.emplace(fence, std::make_tuple(value, frame));
         if (!inserted.second)
         {
-            inserted.first->second = value;
+            inserted.first->second = { value, frame };
         }
     }
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
-    * @brief VulkanResourceDeleter class. Vulkan Render side
+    * @brief VulkanResourceDeleter class. Vulkan Render side.
+    * Multithreaded
     */
     class VulkanResourceDeleter final
     {
@@ -81,7 +98,7 @@ namespace vk
         ~VulkanResourceDeleter();
 
         void addResourceToDelete(VulkanResource* resource, const std::function<void(VulkanResource* resource)>& deleter, bool forceDelete = false);
-        void updateResourceDeleter();
+        void updateResourceDeleter(bool forceDelete = false);
 
     private:
 

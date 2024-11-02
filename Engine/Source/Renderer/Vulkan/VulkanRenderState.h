@@ -67,7 +67,7 @@ namespace vk
             All = 0xFFFFFFFF
         };
 
-        void addImageBarrier(const VulkanImage* texture, const RenderTexture::Subresource& subresource, VkImageLayout layout);
+        void addImageBarrier(VulkanImage* texture, const RenderTexture::Subresource& subresource, VkImageLayout layout);
         void flushBarriers(VulkanCommandBuffer* cmdBuffer);
 
         void invalidate();
@@ -92,7 +92,7 @@ namespace vk
 
     private:
 
-        std::multimap<VkImageLayout, std::tuple<const VulkanImage*, RenderTexture::Subresource>> _imageBarriers;
+        std::multimap<VkImageLayout, std::tuple<VulkanImage*, RenderTexture::Subresource>> _imageBarriers;
 
         u64        _dirty;
     };

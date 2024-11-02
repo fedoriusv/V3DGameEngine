@@ -94,6 +94,7 @@ namespace vk
 
     /**
     * @brief VulkanComputePipelineManager class
+    * Multithreaded
     */
     class VulkanComputePipelineManager final
     {

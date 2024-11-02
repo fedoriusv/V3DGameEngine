@@ -119,7 +119,8 @@ namespace vk
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
-    * @brief VulkanRenderpassManager class
+    * @brief VulkanRenderpassManager class.
+    * Multithreaded
     */
     class VulkanRenderpassManager final
     {

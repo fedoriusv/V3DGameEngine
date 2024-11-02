@@ -43,6 +43,8 @@ VulkanSemaphoreManager::~VulkanSemaphoreManager()
 
 VulkanSemaphore* VulkanSemaphoreManager::acquireSemaphore()
 {
+    std::scoped_lock lock(m_mutex);
+
     VulkanSemaphore* semaphore = nullptr;
     if (m_freePools.empty())
     {
@@ -62,6 +64,8 @@ VulkanSemaphore* VulkanSemaphoreManager::acquireSemaphore()
 
 void VulkanSemaphoreManager::clear()
 {
+    std::scoped_lock lock(m_mutex);
+
     ASSERT(m_usedPools.empty(), "must be empty");
     for (auto semaphore : m_freePools)
     {
@@ -72,6 +76,8 @@ void VulkanSemaphoreManager::clear()
 
 void VulkanSemaphoreManager::updateStatus()
 {
+    std::scoped_lock lock(m_mutex);
+
     for (auto semaphoreIter = m_usedPools.begin(); semaphoreIter != m_usedPools.end();)
     {
         VulkanSemaphore* semaphore = *semaphoreIter;
@@ -92,6 +98,8 @@ void VulkanSemaphoreManager::updateStatus()
 bool VulkanSemaphoreManager::markSemaphore(VulkanSemaphore* semaphore, VulkanSemaphore::SemaphoreStatus status)
 {
     ASSERT(semaphore, "nullptr");
+    std::scoped_lock lock(m_mutex);
+
     /*if (status == VulkanSemaphore::SemaphoreStatus::AssignToSignal)
     {
         if (semaphore->m_semaphoreStatus != VulkanSemaphore::SemaphoreStatus::Free)

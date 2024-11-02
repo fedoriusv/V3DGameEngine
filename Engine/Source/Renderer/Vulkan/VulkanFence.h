@@ -22,7 +22,7 @@ namespace vk
     {
     public:
 
-        explicit VulkanFence(VulkanDevice* device) noexcept;
+        explicit VulkanFence(VulkanDevice* device, const std::string& name = "") noexcept;
         ~VulkanFence();
 
         VkFence getHandle() const;
@@ -38,7 +38,9 @@ namespace vk
         VulkanDevice&    m_device;
         VkFence          m_fence;
         std::atomic<u64> m_completed;
-
+#if VULKAN_DEBUG_MARKERS
+        std::string      m_debugName;
+#endif
         friend VulkanCommandBuffer;
     };
 

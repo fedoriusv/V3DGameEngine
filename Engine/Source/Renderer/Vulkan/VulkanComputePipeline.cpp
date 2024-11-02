@@ -266,6 +266,7 @@ VulkanComputePipeline* VulkanComputePipelineManager::acquireGraphicPipeline(cons
 bool VulkanComputePipelineManager::removePipeline(VulkanComputePipeline* pipeline)
 {
     ASSERT(pipeline->getType() == RenderPipeline::PipelineType::PipelineType_Graphic, "wrong type");
+    std::scoped_lock lock(m_mutex);
 
     auto found = std::find_if(m_pipelineComputeList.begin(), m_pipelineComputeList.end(), [pipeline](auto& elem) -> bool
         {
@@ -295,6 +296,8 @@ bool VulkanComputePipelineManager::removePipeline(VulkanComputePipeline* pipelin
 
 void VulkanComputePipelineManager::clear()
 {
+    std::scoped_lock lock(m_mutex);
+
     for (auto& iter : m_pipelineComputeList)
     {
         VulkanComputePipeline* pipeline = iter.second;

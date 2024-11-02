@@ -739,6 +739,8 @@ bool VulkanRenderpassManager::removeRenderPass(VulkanRenderPass* renderpass)
 
 void VulkanRenderpassManager::clear()
 {
+    std::scoped_lock lock(m_mutex);
+
     for (auto& iter : m_renderPassList)
     {
         VulkanRenderPass* renderpass = iter.second;

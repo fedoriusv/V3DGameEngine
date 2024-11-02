@@ -137,6 +137,8 @@ VulkanFramebufferManager::~VulkanFramebufferManager()
 
 std::tuple<VulkanFramebuffer*, bool> VulkanFramebufferManager::acquireFramebuffer(const VulkanRenderPass* renderpass, const FramebufferDesc& description, const std::string& name)
 {
+    std::scoped_lock lock(m_mutex);
+
     auto buildFramebufferDescription = [&](VulkanFramebufferDesc& desc) -> void
         {
             for (u32 index = 0; index < renderpass->getCountAttachments(); ++index)
@@ -171,6 +173,8 @@ std::tuple<VulkanFramebuffer*, bool> VulkanFramebufferManager::acquireFramebuffe
 
 bool VulkanFramebufferManager::removeFramebuffer(VulkanFramebuffer* framebuffer)
 {
+    std::scoped_lock lock(m_mutex);
+
     auto iter = m_framebufferList.begin();
     while (iter != m_framebufferList.end())
     {
@@ -180,7 +184,7 @@ bool VulkanFramebufferManager::removeFramebuffer(VulkanFramebuffer* framebuffer)
         }
         ++iter;
     }
-    ASSERT(iter == m_framebufferList.end(), "not found");
+    ASSERT(iter != m_framebufferList.end(), "not found");
 
     VulkanFramebuffer* vkFramebuffer = iter->second;
     if (framebuffer->linked())
@@ -199,6 +203,8 @@ bool VulkanFramebufferManager::removeFramebuffer(VulkanFramebuffer* framebuffer)
 
 void VulkanFramebufferManager::clear()
 {
+    std::scoped_lock lock(m_mutex);
+
     for (auto& iter : m_framebufferList)
     {
         VulkanFramebuffer* framebuffer = iter.second;
