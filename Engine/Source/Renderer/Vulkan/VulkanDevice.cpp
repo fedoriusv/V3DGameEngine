@@ -15,6 +15,7 @@
 #   include "VulkanGraphicPipeline.h"
 #   include "VulkanComputePipeline.h"
 #   include "VulkanConstantBuffer.h"
+#   include "VulkanStagingBuffer.h"
 
 
 #ifdef PLATFORM_ANDROID
@@ -436,6 +437,7 @@ bool VulkanDevice::initialize()
         m_imageMemoryManager = V3D_NEW(PoolVulkanMemoryAllocator, memory::MemoryLabel::MemoryRenderCore)(this, m_deviceCaps._memoryImagePoolSize);
         m_bufferMemoryManager = V3D_NEW(PoolVulkanMemoryAllocator, memory::MemoryLabel::MemoryRenderCore)(this, m_deviceCaps._memoryBufferPoolSize);
     }
+    m_stagingBufferManager = V3D_NEW(VulkanStagingBufferManager, memory::MemoryLabel::MemoryRenderCore)(this);
 
     m_semaphoreManager = V3D_NEW(VulkanSemaphoreManager, memory::MemoryLabel::MemoryRenderCore)(this);
     m_framebufferManager = V3D_NEW(VulkanFramebufferManager, memory::MemoryLabel::MemoryRenderCore)(this);
@@ -882,6 +884,12 @@ void VulkanDevice::destroy()
 
         V3D_DELETE(m_bufferMemoryManager, memory::MemoryLabel::MemoryRenderCore);
         m_bufferMemoryManager = nullptr;
+    }
+
+    if (m_stagingBufferManager)
+    {
+        V3D_DELETE(m_stagingBufferManager, memory::MemoryLabel::MemoryRenderCore);
+        m_stagingBufferManager = nullptr;
     }
 
     if (m_semaphoreManager)

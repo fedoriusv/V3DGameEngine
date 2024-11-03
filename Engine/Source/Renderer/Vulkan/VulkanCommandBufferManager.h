@@ -17,7 +17,6 @@ namespace vk
     class VulkanDevice;
     class VulkanImage;
     class VulkanSemaphore;
-    class VulkanSwapchain;
     class VulkanSemaphoreManager;
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

@@ -12,11 +12,11 @@ namespace v3d
 {
 namespace renderer
 {
-    class Buffer;
 namespace vk
 {
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    class VulkanDevice;
     class VulkanImage;
     class VulkanBuffer;
     class VulkanRenderPass;
@@ -25,9 +25,7 @@ namespace vk
     class VulkanComputePipeline;
     class VulkanSemaphore;
     class VulkanQueryPool;
-    class VulkanDevice;
     class VulkanFence;
-    class VulkanCmdList;
     class VulkanCommandBufferManager;
     class VulkanSwapchain;
 
@@ -127,17 +125,12 @@ namespace vk
         VulkanCommandBuffer& operator=(const VulkanCommandBuffer&) = delete;
 
         void init(Device::DeviceMask queueMask, VkCommandPool pool, VkCommandBuffer buffer);
-
+        void refreshFenceStatus();
         void releaseResources();
 
         bool isSafeFrame(u64 frame) const;
 
-        friend VulkanResource;
-        friend VulkanDevice;
-        friend VulkanCmdList;
         friend VulkanCommandBufferManager;
-
-        void refreshFenceStatus();
 
         VulkanDevice&                     m_device;
         VkCommandPool                     m_pool;

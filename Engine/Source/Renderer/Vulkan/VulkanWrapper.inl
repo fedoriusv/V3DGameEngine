@@ -1,3 +1,4 @@
+#include "VulkanWrapper.h"
 #ifdef VULKAN_RENDER
 
 namespace v3d
@@ -1361,57 +1362,123 @@ inline void VulkanWrapper::CmdCopyImage2(VkCommandBuffer commandBuffer, const Vk
 
 inline void VulkanWrapper::CmdCopyBufferToImage2(VkCommandBuffer commandBuffer, const VkCopyBufferToImageInfo2* pCopyBufferToImageInfo) noexcept
 {
-    NOT_IMPL;
+#if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_3)
+#   define vkCmdCopyBufferToImage2 vkCmdCopyBufferToImage2KHR
+#endif
+    return vkCmdCopyBufferToImage2(commandBuffer, pCopyBufferToImageInfo);
+#if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_3)
+#   undef vkCmdCopyBufferToImage2KHR
+#endif
 }
 
 inline void VulkanWrapper::CmdCopyImageToBuffer2(VkCommandBuffer commandBuffer, const VkCopyImageToBufferInfo2* pCopyImageToBufferInfo) noexcept
 {
-    NOT_IMPL;
+#if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_3)
+#   define vkCmdCopyImageToBuffer2 vkCmdCopyImageToBuffer2KHR
+#endif
+    return vkCmdCopyImageToBuffer2(commandBuffer, pCopyImageToBufferInfo);
+#if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_3)
+#   undef vkCmdCopyImageToBuffer2
+#endif
 }
 
 inline void VulkanWrapper::CmdBlitImage2(VkCommandBuffer commandBuffer, const VkBlitImageInfo2* pBlitImageInfo) noexcept
 {
-    NOT_IMPL;
+#if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_3)
+#   define vkCmdBlitImage2 vkCmdBlitImage2KHR
+#endif
+    return vkCmdBlitImage2(commandBuffer, pBlitImageInfo);
+#if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_3)
+#   undef vkCmdBlitImage2
+#endif
 }
 
 inline void VulkanWrapper::CmdResolveImage2(VkCommandBuffer commandBuffer, const VkResolveImageInfo2* pResolveImageInfo) noexcept
 {
-    NOT_IMPL;
+#if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_3)
+#   define vkCmdResolveImage2 vkCmdResolveImage2KHR
+#endif
+    return vkCmdResolveImage2(commandBuffer, pResolveImageInfo);
+#if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_3)
+#   undef vkCmdResolveImage2
+#endif
 }
 
 inline void VulkanWrapper::CmdBeginRendering(VkCommandBuffer commandBuffer, const VkRenderingInfo* pRenderingInfo) noexcept
 {
-    NOT_IMPL;
+#if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_3)
+#   define vkCmdBeginRendering vkCmdBeginRenderingKHR
+#endif
+    return vkCmdBeginRendering(commandBuffer, pRenderingInfo);
+#if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_3)
+#   undef vkCmdBeginRendering
+#endif
 }
 
 inline void VulkanWrapper::CmdEndRendering(VkCommandBuffer commandBuffer) noexcept
 {
-    NOT_IMPL;
+#if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_3)
+#   define vkCmdEndRendering vkCmdEndRenderingKHR
+#endif
+    return vkCmdEndRendering(commandBuffer);
+#if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_3)
+#   undef vkCmdEndRendering
+#endif
 }
 
 inline void VulkanWrapper::CmdSetCullMode(VkCommandBuffer commandBuffer, VkCullModeFlags cullMode) noexcept
 {
-    NOT_IMPL;
+#if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_3)
+#   define vkCmdSetCullMode vkCmdSetCullModeEXT
+#endif
+    return vkCmdSetCullMode(commandBuffer, cullMode);
+#if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_3)
+#   undef vkCmdSetCullMode
+#endif
 }
 
 inline void VulkanWrapper::CmdSetFrontFace(VkCommandBuffer commandBuffer, VkFrontFace frontFace) noexcept
 {
-    NOT_IMPL;
+#if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_3)
+#   define vkCmdSetFrontFace vkCmdSetFrontFaceEXT
+#endif
+    return vkCmdSetFrontFace(commandBuffer, frontFace);
+#if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_3)
+#   undef vkCmdSetFrontFace
+#endif
 }
 
 inline void VulkanWrapper::CmdSetPrimitiveTopology(VkCommandBuffer commandBuffer, VkPrimitiveTopology primitiveTopology) noexcept
 {
-    NOT_IMPL;
+#if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_3)
+#   define vkCmdSetPrimitiveTopology vkCmdSetPrimitiveTopologyEXT
+#endif
+    return vkCmdSetPrimitiveTopology(commandBuffer, primitiveTopology);
+#if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_3)
+#   undef vkCmdSetPrimitiveTopology
+#endif
 }
 
 inline void VulkanWrapper::CmdSetViewportWithCount(VkCommandBuffer commandBuffer, uint32_t viewportCount, const VkViewport* pViewports) noexcept
 {
-    NOT_IMPL;
+#if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_3)
+#   define vkCmdSetViewportWithCount vkCmdSetViewportWithCountEXT
+#endif
+    return vkCmdSetViewportWithCount(commandBuffer, viewportCount, pViewports);
+#if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_3)
+#   undef vkCmdSetViewportWithCount
+#endif
 }
 
 inline void VulkanWrapper::CmdSetScissorWithCount(VkCommandBuffer commandBuffer, uint32_t scissorCount, const VkRect2D* pScissors) noexcept
 {
-    NOT_IMPL;
+#if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_3)
+#   define vkCmdSetScissorWithCount vkCmdSetScissorWithCountEXT
+#endif
+    return vkCmdSetScissorWithCount(commandBuffer, scissorCount, pScissors);
+#if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_3)
+#   undef vkCmdSetScissorWithCount
+#endif
 }
 
 inline void VulkanWrapper::CmdBindVertexBuffers2(VkCommandBuffer commandBuffer, uint32_t firstBinding, uint32_t bindingCount, const VkBuffer* pBuffers, const VkDeviceSize* pOffsets, const VkDeviceSize* pSizes, const VkDeviceSize* pStrides) noexcept
@@ -1427,47 +1494,101 @@ inline void VulkanWrapper::CmdBindVertexBuffers2(VkCommandBuffer commandBuffer, 
 
 inline void VulkanWrapper::CmdSetDepthTestEnable(VkCommandBuffer commandBuffer, VkBool32 depthTestEnable) noexcept
 {
-    NOT_IMPL;
+#if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_3)
+#   define vkCmdSetDepthTestEnable vkCmdSetDepthTestEnableEXT
+#endif
+    return vkCmdSetDepthTestEnable(commandBuffer, depthTestEnable);
+#if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_3)
+#   undef vkCmdSetDepthTestEnable
+#endif
 }
 
 inline void VulkanWrapper::CmdSetDepthWriteEnable(VkCommandBuffer commandBuffer, VkBool32 depthWriteEnable) noexcept
 {
-    NOT_IMPL;
+#if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_3)
+#   define vkCmdSetDepthWriteEnable vkCmdSetDepthWriteEnableEXT
+#endif
+    return vkCmdSetDepthWriteEnable(commandBuffer, depthWriteEnable);
+#if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_3)
+#   undef vkCmdSetDepthWriteEnable
+#endif
 }
 
 inline void VulkanWrapper::CmdSetDepthCompareOp(VkCommandBuffer commandBuffer, VkCompareOp depthCompareOp) noexcept
 {
-    NOT_IMPL;
+#if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_3)
+#   define vkCmdSetDepthCompareOp vkCmdSetDepthCompareOpEXT
+#endif
+    return vkCmdSetDepthCompareOp(commandBuffer, depthCompareOp);
+#if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_3)
+#   undef vkCmdSetDepthCompareOp
+#endif
 }
 
 inline void VulkanWrapper::CmdSetDepthBoundsTestEnable(VkCommandBuffer commandBuffer, VkBool32 depthBoundsTestEnable) noexcept
 {
-    NOT_IMPL;
+#if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_3)
+#   define vkCmdSetDepthBoundsTestEnable vkCmdSetDepthBoundsTestEnableEXT
+#endif
+    return vkCmdSetDepthBoundsTestEnable(commandBuffer, depthBoundsTestEnable);
+#if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_3)
+#   undef vkCmdSetDepthBoundsTestEnable
+#endif
 }
 
 inline void VulkanWrapper::CmdSetStencilTestEnable(VkCommandBuffer commandBuffer, VkBool32 stencilTestEnable) noexcept
 {
-    NOT_IMPL;
+#if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_3)
+#   define vkCmdSetStencilTestEnable vkCmdSetStencilTestEnableEXT
+#endif
+    return vkCmdSetStencilTestEnable(commandBuffer, stencilTestEnable);
+#if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_3)
+#   undef vkCmdSetStencilTestEnable
+#endif
 }
 
 inline void VulkanWrapper::CmdSetStencilOp(VkCommandBuffer commandBuffer, VkStencilFaceFlags faceMask, VkStencilOp failOp, VkStencilOp passOp, VkStencilOp depthFailOp, VkCompareOp compareOp) noexcept
 {
-    NOT_IMPL;
+#if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_3)
+#   define vkCmdSetStencilOp vkCmdSetStencilOpEXT
+#endif
+    return vkCmdSetStencilOp(commandBuffer, faceMask, failOp, passOp, depthFailOp, compareOp);
+#if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_3)
+#   undef vkCmdSetStencilOp
+#endif
 }
 
 inline void VulkanWrapper::CmdSetRasterizerDiscardEnable(VkCommandBuffer commandBuffer, VkBool32 rasterizerDiscardEnable) noexcept
 {
-    NOT_IMPL;
+#if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_3)
+#   define vkCmdSetRasterizerDiscardEnable vkCmdSetRasterizerDiscardEnableEXT
+#endif
+    return vkCmdSetRasterizerDiscardEnable(commandBuffer, rasterizerDiscardEnable);
+#if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_3)
+#   undef vkCmdSetRasterizerDiscardEnable
+#endif
 }
 
 inline void VulkanWrapper::CmdSetDepthBiasEnable(VkCommandBuffer commandBuffer, VkBool32 depthBiasEnable) noexcept
 {
-    NOT_IMPL;
+#if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_3)
+#   define vkCmdSetDepthBiasEnable vkCmdSetDepthBiasEnableEXT
+#endif
+    return vkCmdSetDepthBiasEnable(commandBuffer, depthBiasEnable);
+#if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_3)
+#   undef vkCmdSetDepthBiasEnable
+#endif
 }
 
 inline void VulkanWrapper::CmdSetPrimitiveRestartEnable(VkCommandBuffer commandBuffer, VkBool32 primitiveRestartEnable) noexcept
 {
-    NOT_IMPL;
+#if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_3)
+#   define vkCmdSetPrimitiveRestartEnable vkCmdSetPrimitiveRestartEnableEXT
+#endif
+    return vkCmdSetPrimitiveRestartEnable(commandBuffer, primitiveRestartEnable);
+#if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_3)
+#   undef vkCmdSetPrimitiveRestartEnable
+#endif
 }
 
 inline void VulkanWrapper::GetDeviceBufferMemoryRequirements(VkDevice device, const VkDeviceBufferMemoryRequirements* pInfo, VkMemoryRequirements2* pMemoryRequirements) noexcept
@@ -1489,6 +1610,16 @@ inline void VulkanWrapper::GetDeviceImageMemoryRequirements(VkDevice device, con
     return GetDeviceImageMemoryRequirements(device, pInfo, pMemoryRequirements);
 #if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_3)
 #   undef GetDeviceImageMemoryRequirements
+#endif
+}
+inline void VulkanWrapper::GetDeviceImageSparseMemoryRequirements(VkDevice device, const VkDeviceImageMemoryRequirements* pInfo, uint32_t* pSparseMemoryRequirementCount, VkSparseImageMemoryRequirements2* pSparseMemoryRequirements) noexcept
+{
+#if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_3)
+#   define vkGetDeviceImageSparseMemoryRequirements vkGetDeviceImageSparseMemoryRequirementsKHR
+#endif
+    return vkGetDeviceImageSparseMemoryRequirements(device, pInfo, pSparseMemoryRequirementCount, pSparseMemoryRequirements);
+#if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_3)
+#   undef vkGetDeviceImageSparseMemoryRequirements
 #endif
 }
 #endif //VULKAN_VERSION_1_3

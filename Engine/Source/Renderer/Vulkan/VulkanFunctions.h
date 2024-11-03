@@ -21,8 +21,8 @@
 #endif
 
 #ifdef VK_NO_PROTOTYPES
-    //Base functions
-#   define ENUM_VK_ENTRYPOINTS_BASE_FUNCTIONS(Macro) \
+//Base functions
+#define ENUM_VK_ENTRYPOINTS_BASE_FUNCTIONS(Macro) \
     Macro(vkCreateInstance) \
     Macro(vkGetInstanceProcAddr) \
     Macro(vkGetDeviceProcAddr) \
@@ -30,8 +30,8 @@
     Macro(vkEnumerateInstanceLayerProperties) \
     Macro(vkEnumerateInstanceVersion)
 
-    //Core functions
-#   define ENUM_VK_ENTRYPOINTS_CORE_FUNCTIONS(Macro) \
+ //Core functions
+#define ENUM_VK_ENTRYPOINTS_CORE_FUNCTIONS(Macro) \
     Macro(vkDestroyInstance) \
     Macro(vkEnumeratePhysicalDevices) \
     Macro(vkGetPhysicalDeviceFeatures) \
@@ -165,9 +165,38 @@
     Macro(vkCmdEndRenderPass) \
     Macro(vkCmdExecuteCommands)
 
-    //Vulkan core
-#   if (VULKAN_CURRENT_VERSION == VULKAN_VERSION_1_0)
-#       define ENUM_VK_ENTRYPOINTS_CORE_1_1_FUNCTIONS(Macro) \
+//Vulkan 1.1
+#if (VULKAN_CURRENT_VERSION >= VULKAN_VERSION_1_1)
+#    define ENUM_VK_ENTRYPOINTS_CORE_1_1_FUNCTIONS(Macro) \
+        Macro(vkBindBufferMemory2) \
+        Macro(vkBindImageMemory2) \
+        Macro(vkGetDeviceGroupPeerMemoryFeatures) \
+        Macro(vkCmdSetDeviceMask) \
+        Macro(vkCmdDispatchBase) \
+        Macro(vkEnumeratePhysicalDeviceGroups) \
+        Macro(vkGetImageMemoryRequirements2) \
+        Macro(vkGetBufferMemoryRequirements2) \
+        Macro(vkGetImageSparseMemoryRequirements2) \
+        Macro(vkGetPhysicalDeviceFeatures2) \
+        Macro(vkGetPhysicalDeviceProperties2) \
+        Macro(vkGetPhysicalDeviceFormatProperties2) \
+        Macro(vkGetPhysicalDeviceImageFormatProperties2) \
+        Macro(vkGetPhysicalDeviceQueueFamilyProperties2) \
+        Macro(vkGetPhysicalDeviceMemoryProperties2) \
+        Macro(vkGetPhysicalDeviceSparseImageFormatProperties2) \
+        Macro(vkTrimCommandPool) \
+        Macro(vkGetDeviceQueue2) \
+        Macro(vkCreateSamplerYcbcrConversion) \
+        Macro(vkDestroySamplerYcbcrConversion) \
+        Macro(vkCreateDescriptorUpdateTemplate) \
+        Macro(vkDestroyDescriptorUpdateTemplate) \
+        Macro(vkUpdateDescriptorSetWithTemplate) \
+        Macro(vkGetPhysicalDeviceExternalBufferProperties) \
+        Macro(vkGetPhysicalDeviceExternalFenceProperties) \
+        Macro(vkGetPhysicalDeviceExternalSemaphoreProperties) \
+        Macro(vkGetDescriptorSetLayoutSupport)
+#else //VULKAN_VERSION_1_1
+#    define ENUM_VK_ENTRYPOINTS_CORE_1_1_FUNCTIONS(Macro) \
         Macro(vkBindBufferMemory2KHR) \
         Macro(vkBindImageMemory2KHR) \
         Macro(vkGetDeviceGroupPeerMemoryFeaturesKHR) \
@@ -195,98 +224,10 @@
         Macro(vkGetPhysicalDeviceExternalFencePropertiesKHR) \
         Macro(vkGetPhysicalDeviceExternalSemaphorePropertiesKHR) \
         Macro(vkGetDescriptorSetLayoutSupportKHR)
-
-#       define ENUM_VK_ENTRYPOINTS_CORE_1_2_FUNCTIONS(Macro) \
-        Macro(vkCmdDrawIndirectCountKHR) \
-        Macro(vkCmdDrawIndexedIndirectCountKHR) \
-        Macro(vkCreateRenderPass2KHR) \
-        Macro(vkCmdBeginRenderPass2KHR) \
-        Macro(vkCmdNextSubpass2KHR) \
-        Macro(vkCmdEndRenderPass2KHR) \
-        Macro(vkResetQueryPool) \
-        Macro(vkGetSemaphoreCounterValueKHR) \
-        Macro(vkWaitSemaphoresKHR) \
-        Macro(vkSignalSemaphoreKHR) \
-        Macro(vkGetBufferDeviceAddressKHR) \
-        Macro(vkGetBufferOpaqueCaptureAddressKHR) \
-        Macro(vkGetDeviceMemoryOpaqueCaptureAddressKHR)
-
-#   elif (VULKAN_CURRENT_VERSION == VULKAN_VERSION_1_1)
-#       define ENUM_VK_ENTRYPOINTS_CORE_1_1_FUNCTIONS(Macro) \
-        Macro(vkBindBufferMemory2) \
-        Macro(vkBindImageMemory2) \
-        Macro(vkGetDeviceGroupPeerMemoryFeatures) \
-        Macro(vkCmdSetDeviceMask) \
-        Macro(vkCmdDispatchBase) \
-        Macro(vkEnumeratePhysicalDeviceGroups) \
-        Macro(vkGetImageMemoryRequirements2) \
-        Macro(vkGetBufferMemoryRequirements2) \
-        Macro(vkGetImageSparseMemoryRequirements2) \
-        Macro(vkGetPhysicalDeviceFeatures2) \
-        Macro(vkGetPhysicalDeviceProperties2) \
-        Macro(vkGetPhysicalDeviceFormatProperties2) \
-        Macro(vkGetPhysicalDeviceImageFormatProperties2) \
-        Macro(vkGetPhysicalDeviceQueueFamilyProperties2) \
-        Macro(vkGetPhysicalDeviceMemoryProperties2) \
-        Macro(vkGetPhysicalDeviceSparseImageFormatProperties2) \
-        Macro(vkTrimCommandPool) \
-        Macro(vkGetDeviceQueue2) \
-        Macro(vkCreateSamplerYcbcrConversion) \
-        Macro(vkDestroySamplerYcbcrConversion) \
-        Macro(vkCreateDescriptorUpdateTemplate) \
-        Macro(vkDestroyDescriptorUpdateTemplate) \
-        Macro(vkUpdateDescriptorSetWithTemplate) \
-        Macro(vkGetPhysicalDeviceExternalBufferProperties) \
-        Macro(vkGetPhysicalDeviceExternalFenceProperties) \
-        Macro(vkGetPhysicalDeviceExternalSemaphoreProperties) \
-        Macro(vkGetDescriptorSetLayoutSupport)
-
-#       define ENUM_VK_ENTRYPOINTS_CORE_1_2_FUNCTIONS(Macro) \
-        Macro(vkCmdDrawIndirectCountKHR) \
-        Macro(vkCmdDrawIndexedIndirectCountKHR) \
-        Macro(vkCreateRenderPass2KHR) \
-        Macro(vkCmdBeginRenderPass2KHR) \
-        Macro(vkCmdNextSubpass2KHR) \
-        Macro(vkCmdEndRenderPass2KHR) \
-        Macro(vkResetQueryPool) \
-        Macro(vkGetSemaphoreCounterValueKHR) \
-        Macro(vkWaitSemaphoresKHR) \
-        Macro(vkSignalSemaphoreKHR) \
-        Macro(vkGetBufferDeviceAddressKHR) \
-        Macro(vkGetBufferOpaqueCaptureAddressKHR) \
-        Macro(vkGetDeviceMemoryOpaqueCaptureAddressKHR)
-
-#   else //VULKAN_VERSION_1_2
-#       define ENUM_VK_ENTRYPOINTS_CORE_1_1_FUNCTIONS(Macro) \
-        Macro(vkBindBufferMemory2) \
-        Macro(vkBindImageMemory2) \
-        Macro(vkGetDeviceGroupPeerMemoryFeatures) \
-        Macro(vkCmdSetDeviceMask) \
-        Macro(vkCmdDispatchBase) \
-        Macro(vkEnumeratePhysicalDeviceGroups) \
-        Macro(vkGetImageMemoryRequirements2) \
-        Macro(vkGetBufferMemoryRequirements2) \
-        Macro(vkGetImageSparseMemoryRequirements2) \
-        Macro(vkGetPhysicalDeviceFeatures2) \
-        Macro(vkGetPhysicalDeviceProperties2) \
-        Macro(vkGetPhysicalDeviceFormatProperties2) \
-        Macro(vkGetPhysicalDeviceImageFormatProperties2) \
-        Macro(vkGetPhysicalDeviceQueueFamilyProperties2) \
-        Macro(vkGetPhysicalDeviceMemoryProperties2) \
-        Macro(vkGetPhysicalDeviceSparseImageFormatProperties2) \
-        Macro(vkTrimCommandPool) \
-        Macro(vkGetDeviceQueue2) \
-        Macro(vkCreateSamplerYcbcrConversion) \
-        Macro(vkDestroySamplerYcbcrConversion) \
-        Macro(vkCreateDescriptorUpdateTemplate) \
-        Macro(vkDestroyDescriptorUpdateTemplate) \
-        Macro(vkUpdateDescriptorSetWithTemplate) \
-        Macro(vkGetPhysicalDeviceExternalBufferProperties) \
-        Macro(vkGetPhysicalDeviceExternalFenceProperties) \
-        Macro(vkGetPhysicalDeviceExternalSemaphoreProperties) \
-        Macro(vkGetDescriptorSetLayoutSupport)
-
-#       define ENUM_VK_ENTRYPOINTS_CORE_1_2_FUNCTIONS(Macro) \
+#endif //VULKAN_VERSION_1_1
+ //Vulkan 1.2
+#if (VULKAN_CURRENT_VERSION >= VULKAN_VERSION_1_2)
+#   define ENUM_VK_ENTRYPOINTS_CORE_1_2_FUNCTIONS(Macro) \
         Macro(vkCmdDrawIndirectCount) \
         Macro(vkCmdDrawIndexedIndirectCount) \
         Macro(vkCreateRenderPass2) \
@@ -300,86 +241,186 @@
         Macro(vkGetBufferDeviceAddress) \
         Macro(vkGetBufferOpaqueCaptureAddress) \
         Macro(vkGetDeviceMemoryOpaqueCaptureAddress)
-#   endif //VULKAN_VERSION
+#else //VULKAN_VERSION_1_2
+#    define ENUM_VK_ENTRYPOINTS_CORE_1_2_FUNCTIONS(Macro) \
+        Macro(vkCmdDrawIndirectCountKHR) \
+        Macro(vkCmdDrawIndexedIndirectCountKHR) \
+        Macro(vkCreateRenderPass2KHR) \
+        Macro(vkCmdBeginRenderPass2KHR) \
+        Macro(vkCmdNextSubpass2KHR) \
+        Macro(vkCmdEndRenderPass2KHR) \
+        Macro(vkResetQueryPool) \
+        Macro(vkGetSemaphoreCounterValueKHR) \
+        Macro(vkWaitSemaphoresKHR) \
+        Macro(vkSignalSemaphoreKHR) \
+        Macro(vkGetBufferDeviceAddressKHR) \
+        Macro(vkGetBufferOpaqueCaptureAddressKHR) \
+        Macro(vkGetDeviceMemoryOpaqueCaptureAddressKHR)
+#endif //VULKAN_VERSION_1_2
+ //Vulkan 1.3
+#if (VULKAN_CURRENT_VERSION >= VULKAN_VERSION_1_3)
+#   define ENUM_VK_ENTRYPOINTS_CORE_1_3_FUNCTIONS(Macro) \
+        Macro(vkGetPhysicalDeviceToolProperties) \
+        Macro(vkCreatePrivateDataSlot) \
+        Macro(vkDestroyPrivateDataSlot) \
+        Macro(vkSetPrivateData) \
+        Macro(vkGetPrivateData) \
+        Macro(vkCmdSetEvent2) \
+        Macro(vkCmdResetEvent2) \
+        Macro(vkCmdWaitEvents2) \
+        Macro(vkCmdPipelineBarrier2) \
+        Macro(vkCmdWriteTimestamp2) \
+        Macro(vkQueueSubmit2) \
+        Macro(vkCmdCopyBuffer2) \
+        Macro(vkCmdCopyImage2) \
+        Macro(vkCmdCopyBufferToImage2) \
+        Macro(vkCmdCopyImageToBuffer2) \
+        Macro(vkCmdBlitImage2) \
+        Macro(vkCmdResolveImage2) \
+        Macro(vkCmdBeginRendering) \
+        Macro(vkCmdEndRendering) \
+        Macro(vkCmdSetCullMode) \
+        Macro(vkCmdSetFrontFace) \
+        Macro(vkCmdSetPrimitiveTopology) \
+        Macro(vkCmdSetViewportWithCount) \
+        Macro(vkCmdSetScissorWithCount) \
+        Macro(vkCmdBindVertexBuffers2) \
+        Macro(vkCmdSetDepthTestEnable) \
+        Macro(vkCmdSetDepthWriteEnable) \
+        Macro(vkCmdSetDepthCompareOp) \
+        Macro(vkCmdSetDepthBoundsTestEnable) \
+        Macro(vkCmdSetStencilTestEnable) \
+        Macro(vkCmdSetStencilOp) \
+        Macro(vkCmdSetRasterizerDiscardEnable) \
+        Macro(vkCmdSetDepthBiasEnable) \
+        Macro(vkCmdSetPrimitiveRestartEnable) \
+        Macro(vkGetDeviceBufferMemoryRequirements) \
+        Macro(vkGetDeviceImageMemoryRequirements) \
+        Macro(vkGetDeviceImageSparseMemoryRequirements)
+#else //VULKAN_VERSION_1_3
+#   define ENUM_VK_ENTRYPOINTS_CORE_1_3_FUNCTIONS(Macro) \
+        Macro(vkGetPhysicalDeviceToolPropertiesEXT) \
+        Macro(vkCreatePrivateDataSlotEXT) \
+        Macro(vkDestroyPrivateDataSlotEXT) \
+        Macro(vkSetPrivateDataEXT) \
+        Macro(vkGetPrivateDataEXT) \
+        Macro(vkCmdSetEvent2KHR) \
+        Macro(vkCmdResetEvent2KHR) \
+        Macro(vkCmdWaitEvents2KHR) \
+        Macro(vkCmdPipelineBarrier2KHR) \
+        Macro(vkCmdWriteTimestamp2KHR) \
+        Macro(vkQueueSubmit2KHR) \
+        Macro(vkCmdCopyBuffer2KHR) \
+        Macro(vkCmdCopyImage2KHR) \
+        Macro(vkCmdCopyBufferToImage2KHR) \
+        Macro(vkCmdCopyImageToBuffer2KHR) \
+        Macro(vkCmdBlitImage2KHR) \
+        Macro(vkCmdResolveImage2KHR) \
+        Macro(vkCmdBeginRenderingKHR) \
+        Macro(vkCmdEndRenderingKHR) \
+        Macro(vkCmdSetCullModeEXT) \
+        Macro(vkCmdSetFrontFaceEXT) \
+        Macro(vkCmdSetPrimitiveTopologyEXT) \
+        Macro(vkCmdSetViewportWithCountEXT) \
+        Macro(vkCmdSetScissorWithCountEXT) \
+        Macro(vkCmdBindVertexBuffers2EXT) \
+        Macro(vkCmdSetDepthTestEnableEXT) \
+        Macro(vkCmdSetDepthWriteEnableEXT) \
+        Macro(vkCmdSetDepthCompareOpEXT) \
+        Macro(vkCmdSetDepthBoundsTestEnableEXT) \
+        Macro(vkCmdSetStencilTestEnableEXT) \
+        Macro(vkCmdSetStencilOpEXT) \
+        Macro(vkCmdSetRasterizerDiscardEnableEXT) \
+        Macro(vkCmdSetDepthBiasEnableEXT) \
+        Macro(vkCmdSetPrimitiveRestartEnableEXT) \
+        Macro(vkGetDeviceBufferMemoryRequirementsKHR) \
+        Macro(vkGetDeviceImageMemoryRequirementsKHR) \
+        Macro(vkGetDeviceImageSparseMemoryRequirementsKHR)
+#endif //VULKAN_VERSION_1_3
 
-    //Surface
-#   ifdef VK_KHR_surface
+//Surface
+#ifdef VK_KHR_surface
 #   define ENUM_VK_ENTRYPOINTS_SURFACE_FUNCTIONS(Macro) \
-    Macro(vkDestroySurfaceKHR) \
-    Macro(vkGetPhysicalDeviceSurfaceSupportKHR) \
-    Macro(vkGetPhysicalDeviceSurfaceCapabilitiesKHR) \
-    Macro(vkGetPhysicalDeviceSurfaceFormatsKHR) \
-    Macro(vkGetPhysicalDeviceSurfacePresentModesKHR)
+        Macro(vkDestroySurfaceKHR) \
+        Macro(vkGetPhysicalDeviceSurfaceSupportKHR) \
+        Macro(vkGetPhysicalDeviceSurfaceCapabilitiesKHR) \
+        Macro(vkGetPhysicalDeviceSurfaceFormatsKHR) \
+        Macro(vkGetPhysicalDeviceSurfacePresentModesKHR)
 #   endif //VK_KHR_surface
 
-    //Swapchain
-#   ifdef VK_KHR_swapchain
+//Swapchain
+#ifdef VK_KHR_swapchain
 #   define ENUM_VK_ENTRYPOINTS_SWAPCHAIN_FUNCTIONS(Macro) \
-    Macro(vkCreateSwapchainKHR) \
-    Macro(vkDestroySwapchainKHR) \
-    Macro(vkGetSwapchainImagesKHR) \
-    Macro(vkAcquireNextImageKHR) \
-    Macro(vkQueuePresentKHR) \
-    Macro(vkGetDeviceGroupPresentCapabilitiesKHR) \
-    Macro(vkGetDeviceGroupSurfacePresentModesKHR) \
-    Macro(vkGetPhysicalDevicePresentRectanglesKHR) \
-    Macro(vkAcquireNextImage2KHR)
+        Macro(vkCreateSwapchainKHR) \
+        Macro(vkDestroySwapchainKHR) \
+        Macro(vkGetSwapchainImagesKHR) \
+        Macro(vkAcquireNextImageKHR) \
+        Macro(vkQueuePresentKHR) \
+        Macro(vkGetDeviceGroupPresentCapabilitiesKHR) \
+        Macro(vkGetDeviceGroupSurfacePresentModesKHR) \
+        Macro(vkGetPhysicalDevicePresentRectanglesKHR) \
+        Macro(vkAcquireNextImage2KHR)
 #   endif //VK_KHR_swapchain
 
-    //Platform
-#   ifdef VK_KHR_win32_surface
+//Platform
+#ifdef VK_KHR_win32_surface
 #   define ENUM_VK_ENTRYPOINTS_PLATFORM_FUNCTIONS(Macro) \
-    Macro(vkCreateWin32SurfaceKHR)
-#   elif VK_KHR_android_surface
+        Macro(vkCreateWin32SurfaceKHR) \
+        Macro(vkGetPhysicalDeviceWin32PresentationSupportKHR)
+
+#elif VK_KHR_android_surface
 #   define ENUM_VK_ENTRYPOINTS_PLATFORM_FUNCTIONS(Macro) \
-    Macro(vkCreateAndroidSurfaceKHR)
-#   else
+        Macro(vkCreateAndroidSurfaceKHR)
+#else
 #   define ENUM_VK_ENTRYPOINTS_PLATFORM_FUNCTIONS(Macro)
-#   endif //VK_KHR_*_surface
+#endif //VK_KHR_*_surface
+
 #else //VK_NO_PROTOTYPES
 #   define ENUM_VK_ENTRYPOINTS_BASE_FUNCTIONS(Macro)
 #   define ENUM_VK_ENTRYPOINTS_CORE_FUNCTIONS(Macro)
 #   define ENUM_VK_ENTRYPOINTS_CORE_1_1_FUNCTIONS(Macro)
 #   define ENUM_VK_ENTRYPOINTS_CORE_1_2_FUNCTIONS(Macro)
+#   define ENUM_VK_ENTRYPOINTS_CORE_1_3_FUNCTIONS(Macro)
 #   define ENUM_VK_ENTRYPOINTS_SURFACE_FUNCTIONS(Macro)
 #   define ENUM_VK_ENTRYPOINTS_SWAPCHAIN_FUNCTIONS(Macro)
 #   define ENUM_VK_ENTRYPOINTS_PLATFORM_FUNCTIONS(Macro)
 #endif //VK_NO_PROTOTYPES
 
-    //Debug Report
+//Debug Report
 #ifdef VK_EXT_debug_report
 #   define ENUM_VK_DEBUG_REPORT_FUNCTIONS(Macro) \
-    Macro(vkCreateDebugReportCallbackEXT) \
-    Macro(vkDestroyDebugReportCallbackEXT) \
-    Macro(vkDebugReportMessageEXT)
+        Macro(vkCreateDebugReportCallbackEXT) \
+        Macro(vkDestroyDebugReportCallbackEXT) \
+        Macro(vkDebugReportMessageEXT)
 #else
 #   define ENUM_VK_DEBUG_REPORT_FUNCTIONS(Macro)
 #endif //VK_EXT_debug_report
 
-    //Debug Utils
+//Debug Utils
 #ifdef VK_EXT_debug_utils
 #   define ENUM_VK_DEBUG_UTILS_FUNCTIONS(Macro) \
-    Macro(vkSetDebugUtilsObjectNameEXT) \
-    Macro(vkSetDebugUtilsObjectTagEXT) \
-    Macro(vkQueueBeginDebugUtilsLabelEXT) \
-    Macro(vkQueueEndDebugUtilsLabelEXT) \
-    Macro(vkQueueInsertDebugUtilsLabelEXT) \
-    Macro(vkCmdBeginDebugUtilsLabelEXT) \
-    Macro(vkCmdEndDebugUtilsLabelEXT) \
-    Macro(vkCmdInsertDebugUtilsLabelEXT) \
-    Macro(vkCreateDebugUtilsMessengerEXT) \
-    Macro(vkDestroyDebugUtilsMessengerEXT) \
-    Macro(vkSubmitDebugUtilsMessageEXT)
-#   else
+        Macro(vkSetDebugUtilsObjectNameEXT) \
+        Macro(vkSetDebugUtilsObjectTagEXT) \
+        Macro(vkQueueBeginDebugUtilsLabelEXT) \
+        Macro(vkQueueEndDebugUtilsLabelEXT) \
+        Macro(vkQueueInsertDebugUtilsLabelEXT) \
+        Macro(vkCmdBeginDebugUtilsLabelEXT) \
+        Macro(vkCmdEndDebugUtilsLabelEXT) \
+        Macro(vkCmdInsertDebugUtilsLabelEXT) \
+        Macro(vkCreateDebugUtilsMessengerEXT) \
+        Macro(vkDestroyDebugUtilsMessengerEXT) \
+        Macro(vkSubmitDebugUtilsMessageEXT)
+#else
 #   define ENUM_VK_DEBUG_UTILS_FUNCTIONS(Macro)
 #endif //VK_EXT_debug_utils
 
+//Pipeline props
 #ifdef VK_KHR_pipeline_executable_properties
 #   define ENUM_VK_PIPELINE_EXECUTABLE_PROPERTIES_FUNCTIONS(Macro) \
-    Macro(vkGetPipelineExecutablePropertiesKHR) \
-    Macro(vkGetPipelineExecutableStatisticsKHR) \
-    Macro(vkGetPipelineExecutableInternalRepresentationsKHR)
-#   else
+        Macro(vkGetPipelineExecutablePropertiesKHR) \
+        Macro(vkGetPipelineExecutableStatisticsKHR) \
+        Macro(vkGetPipelineExecutableInternalRepresentationsKHR)
+#else
 #   define ENUM_VK_PIPELINE_EXECUTABLE_PROPERTIES_FUNCTIONS(Macro)
 #endif // VK_KHR_pipeline_executable_properties
 
@@ -388,6 +429,7 @@
     ENUM_VK_ENTRYPOINTS_CORE_FUNCTIONS(Macro) \
     ENUM_VK_ENTRYPOINTS_CORE_1_1_FUNCTIONS(Macro) \
     ENUM_VK_ENTRYPOINTS_CORE_1_2_FUNCTIONS(Macro) \
+    ENUM_VK_ENTRYPOINTS_CORE_1_3_FUNCTIONS(Macro) \
     ENUM_VK_ENTRYPOINTS_SURFACE_FUNCTIONS(Macro) \
     ENUM_VK_ENTRYPOINTS_SWAPCHAIN_FUNCTIONS(Macro) \
     ENUM_VK_ENTRYPOINTS_PLATFORM_FUNCTIONS(Macro) \
