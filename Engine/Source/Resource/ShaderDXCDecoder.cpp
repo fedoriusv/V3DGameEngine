@@ -377,11 +377,13 @@ bool ShaderDXCDecoder::compile(const std::string& source, const ShaderPolicy* po
         //arguments.push_back(DXC_ARG_SKIP_VALIDATION);
         arguments.push_back(L"-Qembed_debug");
     }
+    arguments.push_back(L"-HV");
+    arguments.push_back(L"2021");
 
-#ifndef DEBUG
-    arguments.push_back(L"-no-warnings");
-#else
+#ifdef DEBUG
     arguments.push_back(DXC_ARG_WARNINGS_ARE_ERRORS);
+#else
+    arguments.push_back(L"-no-warnings");
 #endif
     if (flags & ShaderCompileFlag::ShaderCompile_UseDXCompilerForSpirV)
     {
