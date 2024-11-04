@@ -22,5 +22,5 @@
 	path = Engine/ThirdParty/glm
 	url = https://github.com/g-truc/glm.git
 [submodule "Engine/Libs/tracy"]
-	path = Engine/Libs/tracy
+	path = Engine/ThirdParty/tracy
 	url = https://github.com/wolfpld/tracy.git
