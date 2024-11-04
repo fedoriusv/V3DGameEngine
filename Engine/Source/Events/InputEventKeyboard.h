@@ -25,7 +25,7 @@ namespace event
         };
 
         KeyboardInputEvent() noexcept;
-        virtual ~KeyboardInputEvent() = default;
+        ~KeyboardInputEvent() = default;
 
         bool operator==(const KeyboardInputEvent& event) const;
 

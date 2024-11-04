@@ -1,10 +1,10 @@
-#include "WindowWindows.h"
 #include "Events/InputEventKeyboard.h"
 #include "Events/InputEventMouse.h"
-#include "Events/SystemEvent.h"
 #include "Events/InputEventReceiver.h"
+#include "Events/SystemEvent.h"
 #include "Utils/Logger.h"
 #include "Utils/Timer.h"
+#include "WindowWindows.h"
 
 #ifdef PLATFORM_WINDOWS
 #include <winuser.h>
@@ -325,7 +325,7 @@ LRESULT WindowWindows::HandleInputMessage(UINT message, WPARAM wParam, LPARAM lP
     case WM_SYSKEYDOWN:
     case WM_KEYDOWN:
     {
-        event::KeyboardInputEvent* event = new(m_receiver->allocateInputEvent()) event::KeyboardInputEvent();
+        event::KeyboardInputEvent* event = V3D_PLACMENT_NEW(m_receiver->allocateInputEvent(), event::KeyboardInputEvent());
         event->_event = event::KeyboardInputEvent::KeyboardPressDown;
         event->_key = m_keyCodes.get((u32)wParam);
         event->_character = (c8)wParam;
@@ -339,7 +339,7 @@ LRESULT WindowWindows::HandleInputMessage(UINT message, WPARAM wParam, LPARAM lP
     case WM_SYSKEYUP:
     case WM_KEYUP:
     {
-        event::KeyboardInputEvent* event = new(m_receiver->allocateInputEvent()) event::KeyboardInputEvent();
+        event::KeyboardInputEvent* event = V3D_PLACMENT_NEW(m_receiver->allocateInputEvent(), event::KeyboardInputEvent());
         event->_event = event::KeyboardInputEvent::KeyboardPressUp;
         event->_key = m_keyCodes.get((u32)wParam);
         event->_character = (c8)wParam;
@@ -355,7 +355,7 @@ LRESULT WindowWindows::HandleInputMessage(UINT message, WPARAM wParam, LPARAM lP
     case WM_MBUTTONDOWN:
     case WM_XBUTTONDOWN:
     {
-        event::MouseInputEvent* event = new(m_receiver->allocateInputEvent()) event::MouseInputEvent();
+        event::MouseInputEvent* event = V3D_PLACMENT_NEW(m_receiver->allocateInputEvent(), event::MouseInputEvent());
         event->_cursorPosition.m_x = (s16)LOWORD(lParam);
         event->_cursorPosition.m_y = (s16)HIWORD(lParam);
         event->_wheelValue = ((f32)((s16)HIWORD(wParam))) / (f32)WHEEL_DELTA;
@@ -391,7 +391,7 @@ LRESULT WindowWindows::HandleInputMessage(UINT message, WPARAM wParam, LPARAM lP
     case WM_MBUTTONUP:
     case WM_XBUTTONUP:
     {
-        event::MouseInputEvent* event = new(m_receiver->allocateInputEvent()) event::MouseInputEvent();
+        event::MouseInputEvent* event = V3D_PLACMENT_NEW(m_receiver->allocateInputEvent(), event::MouseInputEvent());
         event->_cursorPosition.m_x = (s16)LOWORD(lParam);
         event->_cursorPosition.m_y = (s16)HIWORD(lParam);
         event->_wheelValue = ((f32)((s16)HIWORD(wParam))) / (f32)WHEEL_DELTA;
@@ -426,7 +426,7 @@ LRESULT WindowWindows::HandleInputMessage(UINT message, WPARAM wParam, LPARAM lP
     case WM_MBUTTONDBLCLK:
     case WM_XBUTTONDBLCLK:
     {
-        event::MouseInputEvent* event = new(m_receiver->allocateInputEvent()) event::MouseInputEvent();
+        event::MouseInputEvent* event = V3D_PLACMENT_NEW(m_receiver->allocateInputEvent(), event::MouseInputEvent());
         event->_cursorPosition.m_x = (s16)LOWORD(lParam);
         event->_cursorPosition.m_y = (s16)HIWORD(lParam);
         event->_wheelValue = ((f32)((s16)HIWORD(wParam))) / (f32)WHEEL_DELTA;
@@ -464,7 +464,7 @@ LRESULT WindowWindows::HandleInputMessage(UINT message, WPARAM wParam, LPARAM lP
         pt.y = HIWORD(lParam);
         ScreenToClient(m_hWnd, &pt);
 
-        event::MouseInputEvent* event = new(m_receiver->allocateInputEvent()) event::MouseInputEvent();
+        event::MouseInputEvent* event = V3D_PLACMENT_NEW(m_receiver->allocateInputEvent(), event::MouseInputEvent());
         event->_cursorPosition.m_x = (s16)pt.x;
         event->_cursorPosition.m_y = (s16)pt.y;
         event->_wheelValue = ((f32)((s16)HIWORD(wParam))) / (f32)WHEEL_DELTA;
@@ -478,7 +478,7 @@ LRESULT WindowWindows::HandleInputMessage(UINT message, WPARAM wParam, LPARAM lP
 
     case WM_MOUSEMOVE:
     {
-        event::MouseInputEvent* event = new(m_receiver->allocateInputEvent()) event::MouseInputEvent();
+        event::MouseInputEvent* event = V3D_PLACMENT_NEW(m_receiver->allocateInputEvent(), event::MouseInputEvent());
         event->_cursorPosition.m_x = (s16)LOWORD(lParam);
         event->_cursorPosition.m_y = (s16)HIWORD(lParam);
         event->_wheelValue = ((f32)((s16)HIWORD(wParam))) / (f32)WHEEL_DELTA;
@@ -505,8 +505,8 @@ LRESULT WindowWindows::HandleSystemEvents(UINT message, WPARAM wParam, LPARAM lP
     {
     case WM_CREATE:
     {
-        event::SystemEvent* event = new(m_receiver->allocateInputEvent()) event::SystemEvent();
-        event->_systemEvent = event::SystemEvent::SystemEvent::Create;
+        event::SystemEvent* event = V3D_PLACMENT_NEW(m_receiver->allocateInputEvent(), event::SystemEvent());
+        event->_systemEvent = event::SystemEvent::Create;
         event->_windowID = this->ID();
 
         m_receiver->pushEvent(event);
@@ -550,8 +550,9 @@ LRESULT WindowWindows::HandleSystemEvents(UINT message, WPARAM wParam, LPARAM lP
 
         if (m_lastMoveEvent < m_currnetTime)
         {
-            event::SystemEvent* event = new(m_receiver->allocateInputEvent()) event::SystemEvent();
-            event->_systemEvent = event::SystemEvent::SystemEvent::Move;
+            u32 id = this->ID();
+            event::SystemEvent* event = V3D_PLACMENT_NEW(m_receiver->allocateInputEvent(), event::SystemEvent());
+            event->_systemEvent = event::SystemEvent::Move;
             event->_windowID = this->ID();
 
             m_receiver->sendEvent(event);
@@ -567,8 +568,8 @@ LRESULT WindowWindows::HandleSystemEvents(UINT message, WPARAM wParam, LPARAM lP
 
         if (m_lastSizeEvent < m_currnetTime)
         {
-            event::SystemEvent* event = new(m_receiver->allocateInputEvent()) event::SystemEvent();
-            event->_systemEvent = event::SystemEvent::SystemEvent::Resize;
+            event::SystemEvent* event = V3D_PLACMENT_NEW(m_receiver->allocateInputEvent(), event::SystemEvent());
+            event->_systemEvent = event::SystemEvent::Resize;
             event->_windowID = this->ID();
 
             m_receiver->sendEvent(event);
@@ -585,8 +586,8 @@ LRESULT WindowWindows::HandleSystemEvents(UINT message, WPARAM wParam, LPARAM lP
 
     case WM_DESTROY:
     {
-        event::SystemEvent* event = new(m_receiver->allocateInputEvent()) event::SystemEvent();
-        event->_systemEvent = event::SystemEvent::SystemEvent::Destroy;
+        event::SystemEvent* event = V3D_PLACMENT_NEW(m_receiver->allocateInputEvent(), event::SystemEvent());
+        event->_systemEvent = event::SystemEvent::Destroy;
         event->_windowID = this->ID();
 
         m_receiver->pushEvent(event);

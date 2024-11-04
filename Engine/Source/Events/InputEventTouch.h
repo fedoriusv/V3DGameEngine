@@ -48,7 +48,7 @@ namespace event
         };
 
         TouchInputEvent() noexcept;
-        virtual ~TouchInputEvent() = default;
+        ~TouchInputEvent() = default;
 
         bool operator==(const TouchInputEvent& event) const;
 

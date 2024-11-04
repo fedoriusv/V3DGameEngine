@@ -28,15 +28,17 @@ namespace event
         };
 
         SystemEvent() noexcept;
-        virtual ~SystemEvent() = default;
+        ~SystemEvent() = default;
 
         bool operator==(const SystemEvent& event) const;
 
         SystemEventType _systemEvent;
+        u32 _flag;
     };
 
     inline SystemEvent::SystemEvent() noexcept
         : _systemEvent(SystemEventType::Empty)
+        , _flag(0)
     {
         _eventType = InputEventType::SystemEvent;
     }

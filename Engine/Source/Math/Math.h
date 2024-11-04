@@ -9,6 +9,8 @@ namespace math
 {
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    constexpr u32 k_defaultAlignment = 16;
+
     constexpr f32 k_tolerance32 = 0.00005f;
     constexpr f64 k_tolerance64 = 0.000005;
 

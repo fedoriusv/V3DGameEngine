@@ -28,7 +28,7 @@ namespace event
         };
 
         MouseInputEvent() noexcept;
-        virtual ~MouseInputEvent() = default;;
+        ~MouseInputEvent() = default;
 
         bool operator==(const MouseInputEvent& event) const;
 

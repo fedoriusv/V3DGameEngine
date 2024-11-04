@@ -45,7 +45,7 @@ namespace utils
     private:
 
         mutable std::recursive_mutex m_mutex;
-        std::set<Observer*> m_observers;
+        std::set<Observer*>          m_observers;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

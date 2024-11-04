@@ -47,7 +47,7 @@ namespace event
         };
 
         GamepadInputEvent() noexcept;
-        virtual ~GamepadInputEvent() = default;
+        ~GamepadInputEvent() = default;
 
         bool operator==(const GamepadInputEvent& event) const;
 
