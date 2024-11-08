@@ -126,6 +126,7 @@ namespace vk
         {
             std::deque<VulkanDescriptorSetPool*> _usedList;
             std::deque<VulkanDescriptorSetPool*> _freeList;
+            VulkanDescriptorSetPool* _currentPool = nullptr;
         };
 
         std::unordered_map<VulkanDescriptorSetLayoutDescriptionType, LayoutPools*, VulkanDescriptorSetLayoutDescriptionType::Hash, VulkanDescriptorSetLayoutDescriptionType::Compare> _pools;

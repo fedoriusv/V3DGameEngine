@@ -488,7 +488,7 @@ void VulkanDeviceCaps::initialize()
 
     _unifiedMemoryManager = false;
 
-    _useGlobalDescriptorPool = true;
+    _useGlobalDescriptorPool = false;
     _globalDescriptorPoolSize = 2048U;
 
     _useDynamicUniforms = false; //TODO

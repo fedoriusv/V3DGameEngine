@@ -353,11 +353,15 @@ VulkanDescriptorSetPool* LayoutDescriptorPools::acquirePool(const VulkanDescript
     ASSERT(layoutPools, "nullptr");
 
     VulkanDescriptorSetPool* pool = nullptr;
+    if (layoutPools->_currentPool)
+    {
+        return layoutPools->_currentPool;
+    }
+
     if (layoutPools->_freeList.empty())
     {
         pool = LayoutDescriptorPools::createPool(desc, device, flag);
         ASSERT(pool, "nullptr");
-
     }
     else
     {
@@ -366,7 +370,7 @@ VulkanDescriptorSetPool* LayoutDescriptorPools::acquirePool(const VulkanDescript
         ASSERT(!pool->isUsed(), "pool is captured");
     }
 
-    layoutPools->_usedList.push_back(pool);
+    layoutPools->_currentPool = pool;
     return pool;
 }
 
@@ -393,11 +397,18 @@ void LayoutDescriptorPools::updatePools()
     for (auto& pools : _pools)
     {
         LayoutPools* layoutPools = pools.second;
+        if (layoutPools->_currentPool)
+        {
+            layoutPools->_usedList.push_back(layoutPools->_currentPool);
+            layoutPools->_currentPool = nullptr;
+        }
+
         for (auto iter = layoutPools->_usedList.begin(); iter != layoutPools->_usedList.end();)
         {
             VulkanDescriptorSetPool* pool = (*iter);
             if (!pool->isUsed())
             {
+                pool->reset();
                 layoutPools->_freeList.push_back(pool);
                 iter = layoutPools->_usedList.erase(iter);
             }
