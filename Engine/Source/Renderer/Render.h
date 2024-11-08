@@ -467,9 +467,16 @@ namespace renderer
 
     struct Descriptor
     {
-        enum Type
+        enum Type : u32
         {
-            Descriptor_ConstantBuffer
+            Descriptor_ConstantBuffer = 1,
+            Descriptor_Texture,
+        };
+
+        enum Frequency : u32
+        {
+            Frequency_Dynamic = 0,
+            Frequency_Static,
         };
 
         struct ConstantBuffer
@@ -479,18 +486,18 @@ namespace renderer
             u32     _size   = 0;
         };
 
-        union
-        {
-            ConstantBuffer _CBO;
-        };
-
-
         Descriptor(Descriptor::Type type) noexcept
             : _type(type)
+            , _frequency(Frequency::Frequency_Dynamic)
+            , _slot(0)
+            , _resource()
         {
         }
 
-        Type _type;
+        Type        _type       : 4;
+        Frequency   _frequency  : 4;
+        u32         _slot       : 24;
+        std::variant<std::monostate, ConstantBuffer> _resource;
     };
 
     ///////////////////////////////////////////////////////////////////////////////////////////////////////

@@ -79,6 +79,8 @@ namespace vk
         u32 _memoryBufferPoolSize = 4 * 1024 * 1024; //default: 4MB
         u32 _memoryMinQueryPoolCount = 1024;//default: 1024
 
+        u32 _globalDescriptorPoolSize = 2048; //Count of sets in the single pool
+
     private:
 
         VulkanDeviceCaps() = default;

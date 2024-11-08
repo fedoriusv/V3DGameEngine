@@ -16,47 +16,15 @@ namespace renderer
 namespace vk
 {
 
-VulkanDescriptorSetLayoutDescription::VulkanDescriptorSetLayoutDescription() noexcept
-    : _key(0)
-{
-}
-
-VulkanDescriptorSetLayoutDescription::VulkanDescriptorSetLayoutDescription(const std::vector<VkDescriptorSetLayoutBinding>& bindings) noexcept
-    : _key(0)
-    , _bindings(bindings)
-{
-    _key = crc32c::Extend(static_cast<u32>(_bindings.size()), reinterpret_cast<u8*>(_bindings.data()), _bindings.size() * sizeof(VkDescriptorSetLayoutBinding));
-}
-
-bool VulkanDescriptorSetLayoutDescription::Equal::operator()(const VulkanDescriptorSetLayoutDescription& descl, const VulkanDescriptorSetLayoutDescription& descr) const
-{
-    if (descl._bindings.size() != descr._bindings.size())
-    {
-        return false;
-    }
-
-    if (!descl._bindings.empty() && memcmp(descl._bindings.data(), descr._bindings.data(), descl._bindings.size() * sizeof(VkDescriptorSetLayoutBinding)) != 0)
-    {
-        return false;
-    }
-
-    return true;
-}
-
-size_t VulkanDescriptorSetLayoutDescription::Hash::operator()(const VulkanDescriptorSetLayoutDescription& desc) const
-{
-    ASSERT(desc._key, "no init");
-    return desc._key;
-}
-
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 
 VulkanPipelineLayoutDescription::VulkanPipelineLayoutDescription() noexcept
     : _key(0)
+    , _bindingsSetsMask(0)
 {
 }
 
-bool VulkanPipelineLayoutDescription::Equal::operator()(const VulkanPipelineLayoutDescription& descl, const VulkanPipelineLayoutDescription& descr) const
+bool VulkanPipelineLayoutDescription::Compare::operator()(const VulkanPipelineLayoutDescription& descl, const VulkanPipelineLayoutDescription& descr) const
 {
     //bindings
     for (u32 i = 0; i < k_maxDescriptorSetCount; ++i)
@@ -339,6 +307,7 @@ VulkanPipelineLayoutManager::DescriptorSetLayoutCreator::DescriptorSetLayoutCrea
                 descriptorSetLayoutBinding.pImmutableSamplers = nullptr;
 
                 descriptorSetLayoutBindings.push_back(descriptorSetLayoutBinding);
+                _description._bindingsSetsMask |= 1 << setIndex;
             }
 
             for (auto& sampledImage : res._sampledImages)
@@ -356,6 +325,7 @@ VulkanPipelineLayoutManager::DescriptorSetLayoutCreator::DescriptorSetLayoutCrea
                 descriptorSetLayoutBinding.pImmutableSamplers = nullptr;
 
                 descriptorSetLayoutBindings.push_back(descriptorSetLayoutBinding);
+                _description._bindingsSetsMask |= 1 << setIndex;
             }
 
             for (auto& sampler : res._samplers)
@@ -373,6 +343,7 @@ VulkanPipelineLayoutManager::DescriptorSetLayoutCreator::DescriptorSetLayoutCrea
                 descriptorSetLayoutBinding.pImmutableSamplers = nullptr;
 
                 descriptorSetLayoutBindings.push_back(descriptorSetLayoutBinding);
+                _description._bindingsSetsMask |= 1 << setIndex;
             }
 
             for (auto& image : res._images)
@@ -390,6 +361,7 @@ VulkanPipelineLayoutManager::DescriptorSetLayoutCreator::DescriptorSetLayoutCrea
                 descriptorSetLayoutBinding.pImmutableSamplers = nullptr;
 
                 descriptorSetLayoutBindings.push_back(descriptorSetLayoutBinding);
+                _description._bindingsSetsMask |= 1 << setIndex;
             }
 
             for (auto& storageImage : res._storageImages)
@@ -407,6 +379,7 @@ VulkanPipelineLayoutManager::DescriptorSetLayoutCreator::DescriptorSetLayoutCrea
                 descriptorSetLayoutBinding.pImmutableSamplers = nullptr;
 
                 descriptorSetLayoutBindings.push_back(descriptorSetLayoutBinding);
+                _description._bindingsSetsMask |= 1 << setIndex;
             }
         }
 

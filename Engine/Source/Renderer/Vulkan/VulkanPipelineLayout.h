@@ -21,28 +21,49 @@ namespace vk
     class VulkanDevice;
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
-   
+
     /**
     * @brief VulkanPipelineLayoutDescription struct. Vulkan Render side
     */
     struct VulkanDescriptorSetLayoutDescription
     {
-        VulkanDescriptorSetLayoutDescription() noexcept;
+        struct Hasher
+        {
+            static u64 hash(const VulkanDescriptorSetLayoutDescription& data) noexcept
+            {
+                return static_cast<u64>(crc32c::Extend(static_cast<u32>(data._bindings.size()), reinterpret_cast<const u8*>(data._bindings.data()), data._bindings.size() * sizeof(VkDescriptorSetLayoutBinding)));
+            }
+        };
+
+        VulkanDescriptorSetLayoutDescription() noexcept = default;
         VulkanDescriptorSetLayoutDescription(const std::vector<VkDescriptorSetLayoutBinding>& bindings) noexcept;
 
-        struct Equal
-        {
-            bool operator()(const VulkanDescriptorSetLayoutDescription& descl, const VulkanDescriptorSetLayoutDescription& descr) const;
-        };
+        bool operator==(const VulkanDescriptorSetLayoutDescription& other) const;
 
-        struct Hash
-        {
-            size_t operator()(const VulkanDescriptorSetLayoutDescription& desc) const;
-        };
-
-        u64 _key;
-        std::vector<VkDescriptorSetLayoutBinding> _bindings;
+        const std::vector<VkDescriptorSetLayoutBinding>& _bindings;
     };
+
+    inline VulkanDescriptorSetLayoutDescription::VulkanDescriptorSetLayoutDescription(const std::vector<VkDescriptorSetLayoutBinding>& bindings) noexcept
+        : _bindings(bindings)
+    {
+    }
+
+    inline bool VulkanDescriptorSetLayoutDescription::operator==(const VulkanDescriptorSetLayoutDescription& other) const
+    {
+        if (_bindings.size() != other._bindings.size())
+        {
+            return false;
+        }
+
+        if (!_bindings.empty() && memcmp(_bindings.data(), other._bindings.data(), _bindings.size() * sizeof(VkDescriptorSetLayoutBinding)) != 0)
+        {
+            return false;
+        }
+
+        return true;
+    }
+
+    using VulkanDescriptorSetLayoutDescriptionType = DescInfo<VulkanDescriptorSetLayoutDescription, VulkanDescriptorSetLayoutDescription::Hasher>;
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -53,7 +74,7 @@ namespace vk
     {
         VulkanPipelineLayoutDescription() noexcept;
         
-        struct Equal
+        struct Compare
         {
             bool operator()(const VulkanPipelineLayoutDescription& descl, const VulkanPipelineLayoutDescription& descr) const;
         };
@@ -64,6 +85,7 @@ namespace vk
         };
 
         u64 _key;
+        u32 _bindingsSetsMask;
         std::array<std::vector<VkDescriptorSetLayoutBinding>, k_maxDescriptorSetCount> _bindingsSet;
         std::vector<VkPushConstantRange> _pushConstant;
     };
@@ -121,8 +143,8 @@ namespace vk
         void destroyDescriptorSetLayouts(std::array<VkDescriptorSetLayout, k_maxDescriptorSetCount>& descriptorSetLayouts);
 
         VulkanDevice& m_device;
-        std::unordered_map<VulkanDescriptorSetLayoutDescription, VkDescriptorSetLayout, VulkanDescriptorSetLayoutDescription::Hash, VulkanDescriptorSetLayoutDescription::Equal> m_descriptorSetLayouts;
-        std::unordered_map<VulkanPipelineLayoutDescription, VulkanPipelineLayout, VulkanPipelineLayoutDescription::Hash, VulkanPipelineLayoutDescription::Equal> m_pipelinesLayouts;
+        std::unordered_map<VulkanDescriptorSetLayoutDescriptionType, VkDescriptorSetLayout, VulkanDescriptorSetLayoutDescriptionType::Hash, VulkanDescriptorSetLayoutDescriptionType::Compare> m_descriptorSetLayouts;
+        std::unordered_map<VulkanPipelineLayoutDescription, VulkanPipelineLayout, VulkanPipelineLayoutDescription::Hash, VulkanPipelineLayoutDescription::Compare> m_pipelinesLayouts;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

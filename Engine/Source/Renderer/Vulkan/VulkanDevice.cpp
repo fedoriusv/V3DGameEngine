@@ -16,6 +16,7 @@
 #   include "VulkanComputePipeline.h"
 #   include "VulkanConstantBuffer.h"
 #   include "VulkanStagingBuffer.h"
+#   include "VulkanDescriptorPool.h"
 
 
 #ifdef PLATFORM_ANDROID
@@ -232,9 +233,9 @@ void VulkanDevice::submit(CmdList* cmd, bool wait)
     cmdBufferMgr->updateStatus();
     m_semaphoreManager->updateStatus();
 
-    m_resourceDeleter.updateResourceDeleter();
-
     cmdList.postSubmit();
+
+    m_resourceDeleter.updateResourceDeleter();
 }
 
 Swapchain* VulkanDevice::createSwapchain(platform::Window* window, const Swapchain::SwapchainParams& params)
@@ -993,17 +994,29 @@ VulkanCmdList::VulkanCmdList(VulkanDevice* device) noexcept
     memset(m_currentCmdBuffer, 0, sizeof(m_currentCmdBuffer));
 
     m_CBOManager = V3D_NEW(VulkanConstantBufferManager, memory::MemoryLabel::MemoryRenderCore)(device);
+    m_descriptorSetManager = V3D_NEW(VulkanDescriptorSetManager, memory::MemoryLabel::MemoryRenderCore)(device, 0);
 }
 
 VulkanCmdList::~VulkanCmdList()
 {
     LOG_DEBUG("~VulkanCmdList destructor this %llx", this);
 
-    V3D_DELETE(m_CBOManager, memory::MemoryLabel::MemoryRenderCore);
-    m_CBOManager = nullptr;
+    if (m_CBOManager)
+    {
+        V3D_DELETE(m_CBOManager, memory::MemoryLabel::MemoryRenderCore);
+        m_CBOManager = nullptr;
+    }
 
+    if (m_descriptorSetManager)
+    {
+        m_descriptorSetManager->updateStatus();
 
-    ASSERT(!m_CBOManager, "m_computePipelineManager is not nullptr");
+        V3D_DELETE(m_descriptorSetManager, memory::MemoryLabel::MemoryRenderCore);
+        m_descriptorSetManager = nullptr;
+    }
+
+    ASSERT(!m_CBOManager, "m_CBOManager is not nullptr");
+    ASSERT(!m_descriptorSetManager, "m_descriptorSetManager is not nullptr");
     for (auto& cmdBuff : m_currentCmdBuffer)
     {
         ASSERT(!cmdBuff, "must be nullptr");
@@ -1029,7 +1042,7 @@ void VulkanCmdList::setViewport(const math::Rect32& viewport, const math::Vector
     vkViewport.height = -vkViewport.height;
 #endif
 
-    m_pendingRenderState.setDirty(VulkanRenderState::Viewport);
+    m_pendingRenderState.setDirty(DiryStateMask::DiryState_Viewport);
 }
 
 void VulkanCmdList::setScissor(const math::Rect32& scissor)
@@ -1045,7 +1058,7 @@ void VulkanCmdList::setScissor(const math::Rect32& scissor)
     vkScissor.extent.width = static_cast<u32>(scissor.getWidth());
     vkScissor.extent.height = static_cast<u32>(scissor.getHeight());
 
-    m_pendingRenderState.setDirty(VulkanRenderState::Scissors);
+    m_pendingRenderState.setDirty(DiryStateMask::DiryState_Scissors);
 }
 
 void VulkanCmdList::setStencilRef(u32 mask)
@@ -1057,7 +1070,7 @@ void VulkanCmdList::setStencilRef(u32 mask)
 
     m_pendingRenderState._stencilRef = mask;
 
-    m_pendingRenderState.setDirty(VulkanRenderState::StencilRef);
+    m_pendingRenderState.setDirty(DiryStateMask::DiryState_StencilRef);
 }
 
 void VulkanCmdList::beginRenderTarget(RenderTargetState& rendertarget)
@@ -1090,7 +1103,7 @@ void VulkanCmdList::beginRenderTarget(RenderTargetState& rendertarget)
     m_pendingRenderState._framebuffer = framebuffer;
     m_pendingRenderState._renderArea = VkRect2D{ { 0, 0 }, { rendertarget.getRenderArea().m_width, rendertarget.getRenderArea().m_height }};
     m_pendingRenderState._insideRenderpass = true;
-    m_pendingRenderState.setDirty(VulkanRenderState::RenderPass);
+    m_pendingRenderState.setDirty(DiryStateMask::DiryState_RenderPass);
 }
 
 void VulkanCmdList::endRenderTarget()
@@ -1108,7 +1121,7 @@ void VulkanCmdList::setPipelineState(GraphicsPipelineState& state)
     state.m_tracker.attach(pipeline);
 
     m_pendingRenderState._graphicPipeline = pipeline;
-    m_pendingRenderState.setDirty(VulkanRenderState::Pipeline);
+    m_pendingRenderState.setDirty(DiryStateMask::DiryState_Pipeline);
 }
 
 void VulkanCmdList::setPipelineState(ComputePipelineState& state)
@@ -1121,7 +1134,7 @@ void VulkanCmdList::setPipelineState(ComputePipelineState& state)
     state.m_tracker.attach(pipeline);
 
     m_pendingRenderState._computePipeline = pipeline;
-    m_pendingRenderState.setDirty(VulkanRenderState::Pipeline);
+    m_pendingRenderState.setDirty(DiryStateMask::DiryState_Pipeline);
 }
 
 void VulkanCmdList::transition(const TextureView& view, TransitionOp state)
@@ -1157,58 +1170,109 @@ void VulkanCmdList::bindConstantBuffer(u32 binding, u32 size, void* data)
 {
 }
 
-void VulkanCmdList::bindDescriptorSet(u32 set, std::vector<Descriptor> descriptors)
+void VulkanCmdList::bindDescriptorSet(u32 set, const std::vector<Descriptor>& descriptors)
 {
+    ASSERT(set < m_device.getVulkanDeviceCaps()._maxDescriptorSets, "set out of range");
+
+    for (const Descriptor& desc : descriptors)
+    {
+        ASSERT(desc._slot < m_device.getVulkanDeviceCaps()._maxDescriptorBindings, "set out of range");
+        if (desc._type == Descriptor::Type::Descriptor_ConstantBuffer)
+        {
+            const Descriptor::ConstantBuffer& CBO = std::get<Descriptor::Type::Descriptor_ConstantBuffer>(desc._resource);
+            ConstantBufferRange range = m_CBOManager->acquireConstantBuffer(CBO._size);
+            [[maybe_unused]] bool updated = VulkanConstantBufferManager::update(range._buffer, range._offset, CBO._size, CBO._data);
+
+            BindingType type = m_device.getVulkanDeviceCaps()._useDynamicUniforms ? BindingType::DynamicUniform : BindingType::Uniform;
+            m_pendingRenderState.bind(type, set, desc._slot, range._buffer, range._offset, CBO._size);
+        }
+    }
 }
 
 bool VulkanCmdList::prepareDraw(VulkanCommandBuffer* drawBuffer)
 {
     ASSERT(drawBuffer, "nullptr");
 
-    if (m_pendingRenderState.isDirty(VulkanRenderState::Viewport))
+    if (m_pendingRenderState.isDirty(DiryStateMask::DiryState_Viewport))
     {
         drawBuffer->cmdSetViewport(m_pendingRenderState._viewports);
         m_currentRenderState._viewports = m_pendingRenderState._viewports;
-        m_pendingRenderState.unsetDirty(VulkanRenderState::Viewport);
+        m_pendingRenderState.unsetDirty(DiryStateMask::DiryState_Viewport);
     }
 
-    if (m_pendingRenderState.isDirty(VulkanRenderState::Scissors))
+    if (m_pendingRenderState.isDirty(DiryStateMask::DiryState_Scissors))
     {
         drawBuffer->cmdSetScissor(m_pendingRenderState._scissors);
         m_currentRenderState._scissors = m_pendingRenderState._scissors;
-        m_pendingRenderState.unsetDirty(VulkanRenderState::Scissors);
+        m_pendingRenderState.unsetDirty(DiryStateMask::DiryState_Scissors);
     }
 
-    if (m_pendingRenderState.isDirty(VulkanRenderState::StencilRef))
+    if (m_pendingRenderState.isDirty(DiryStateMask::DiryState_StencilRef))
     {
         drawBuffer->cmdSetStencilRef(m_pendingRenderState._stencilMask, m_pendingRenderState._stencilRef);
         m_currentRenderState._stencilMask = m_pendingRenderState._stencilMask;
         m_currentRenderState._stencilRef = m_pendingRenderState._stencilRef;
-        m_pendingRenderState.unsetDirty(VulkanRenderState::StencilRef);
+        m_pendingRenderState.unsetDirty(DiryStateMask::DiryState_StencilRef);
     }
 
-    if (m_pendingRenderState.isDirty(VulkanRenderState::Pipeline))
+    if (m_pendingRenderState.isDirty(DiryStateMask::DiryState_Pipeline))
     {
         drawBuffer->cmdBindPipeline(m_pendingRenderState._graphicPipeline);
         m_currentRenderState._graphicPipeline = m_pendingRenderState._graphicPipeline;
-        m_pendingRenderState.unsetDirty(VulkanRenderState::Pipeline);
+        m_pendingRenderState.unsetDirty(DiryStateMask::DiryState_Pipeline);
     }
 
     if (!drawBuffer->isInsideRenderPass())
     {
-        if (m_pendingRenderState.isDirty(VulkanRenderState::RenderPass))
+        if (m_pendingRenderState.isDirty(DiryStateMask::DiryState_RenderPass))
         {
             drawBuffer->cmdBeginRenderpass(m_pendingRenderState._renderpass, m_pendingRenderState._framebuffer, m_pendingRenderState._renderArea, m_pendingRenderState._clearValues);
             m_currentRenderState._renderpass = m_pendingRenderState._renderpass;
             m_currentRenderState._framebuffer = m_pendingRenderState._framebuffer;
             m_currentRenderState._renderArea = m_pendingRenderState._renderArea;
-            m_pendingRenderState.unsetDirty(VulkanRenderState::RenderPass);
+            m_pendingRenderState.unsetDirty(DiryStateMask::DiryState_RenderPass);
         }
     }
 
     //DS
+    if (VulkanCmdList::prepareDescriptorSets(drawBuffer))
+    {
+        drawBuffer->cmdBindDescriptorSets(m_pendingRenderState._graphicPipeline, m_pendingRenderState._descriptorSets, m_pendingRenderState._dynamicOffsets);
+
+        m_currentRenderState._descriptorSets = std::move(m_pendingRenderState._descriptorSets);
+        m_currentRenderState._dynamicOffsets = std::move(m_pendingRenderState._dynamicOffsets);
+        ASSERT(m_pendingRenderState._descriptorSets.empty(), "must be empty");
+    }
 
     return true;
+}
+
+bool VulkanCmdList::prepareDescriptorSets(VulkanCommandBuffer* drawBuffer)
+{
+    m_pendingRenderState._descriptorSets.clear();
+    for (u32 indexSet = 0; indexSet < k_maxDescriptorSetCount; ++indexSet)
+    {
+        const VulkanPipelineLayoutDescription& layoutDesc = m_pendingRenderState._graphicPipeline->getPipelineLayoutDescription();
+        if ((layoutDesc._bindingsSetsMask >> indexSet) == 0)
+        {
+            continue;
+        }
+
+        if (m_pendingRenderState.isDirty(DiryStateMask::DiryState_DescriptorSet + indexSet))
+        {
+            auto& layoutSet = m_pendingRenderState._graphicPipeline->getDescriptorSetLayouts()._setLayouts[indexSet];
+
+            //get free DS and update
+            auto&& [pool, set, offset] = m_descriptorSetManager->acquireFreeDescriptorSet(VulkanDescriptorSetLayoutDescription(layoutDesc._bindingsSet[indexSet]), layoutSet);
+            m_pendingRenderState._descriptorSets.push_back(set);
+            drawBuffer->captureResource(pool);
+
+            m_descriptorSetManager->updateDescriptorSet(drawBuffer, set, m_pendingRenderState._sets[indexSet]);
+            m_pendingRenderState.unsetDirty(DiryStateMask::DiryState_DescriptorSet + indexSet);
+        }
+    }
+
+    return !m_pendingRenderState._descriptorSets.empty();
 }
 
 void VulkanCmdList::draw(const GeometryBufferDesc& desc, u32 firstVertex, u32 vertexCount, u32 firstInstance, u32 instanceCount)
@@ -1218,7 +1282,7 @@ void VulkanCmdList::draw(const GeometryBufferDesc& desc, u32 firstVertex, u32 ve
 #endif //VULKAN_DEBUG
 
     VulkanCommandBuffer* drawBuffer = acquireAndStartCommandBuffer(CommandTargetType::CmdDrawBuffer);
-    if (prepareDraw(drawBuffer)) [[likely]]
+    if (VulkanCmdList::prepareDraw(drawBuffer)) [[likely]]
     {
         if (!desc._vertexBuffers.empty())
         {
@@ -1237,7 +1301,7 @@ void VulkanCmdList::drawIndexed(const GeometryBufferDesc& desc, u32 firstIndex, 
 #endif //VULKAN_DEBUG
 
     VulkanCommandBuffer* drawBuffer = acquireAndStartCommandBuffer(CommandTargetType::CmdDrawBuffer);
-    if (prepareDraw(drawBuffer)) [[likely]]
+    if (VulkanCmdList::prepareDraw(drawBuffer)) [[likely]]
     {
         ASSERT(desc._indexBuffer.isValid(), "nullptr");
         VulkanBuffer* indexBuffer = OBJECT_FROM_HANDLE(desc._indexBuffer, VulkanBuffer);
@@ -1367,6 +1431,9 @@ void VulkanCmdList::postSubmit()
 
     m_currentRenderState = std::move(m_pendingRenderState);
     m_pendingRenderState.invalidate();
+
+    m_CBOManager->updateStatus();
+    m_descriptorSetManager->updateStatus();
 }
 
 void VulkanCmdList::postPresent()

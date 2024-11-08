@@ -6,6 +6,7 @@
 #ifdef VULKAN_RENDER
 #   include "VulkanWrapper.h"
 #   include "VulkanDeviceCaps.h"
+#   include "VulkanDescriptorSet.h"
 
 namespace v3d
 {
@@ -15,12 +16,37 @@ namespace vk
 {
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    class VulkanResource;
     class VulkanImage;
+    class VulkanBuffer;
+    class VulkanSampler;
     class VulkanRenderPass;
     class VulkanFramebuffer;
     class VulkanCommandBuffer;
     class VulkanGraphicPipeline;
     class VulkanComputePipeline;
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    enum DiryStateMask
+    {
+        DiryState_Viewport = 1 << 0,
+        DiryState_Scissors = 1 << 1,
+        DiryState_StencilRef = 1 << 2,
+
+        DiryState_Pipeline = 1 << 3,
+        DiryState_RenderPass = 1 << 4,
+
+        DiryState_ImageBarriers = 1 << 10,
+        DiryState_BufferBarriers = 1 << 10,
+
+        DiryState_DescriptorSet = 1 << 11,
+        DiryState_DescriptorSetShift = 1 << (11 + k_maxDescriptorSetCount - 1),
+
+        DiryState_All = 0xFFFFFFFFFFFFFFFF
+    };
+
+    typedef u64 DiryStateMaskFlags;
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -32,7 +58,7 @@ namespace vk
     public:
 
         VulkanRenderState() noexcept
-            : _dirty(DiryMask::All)
+            : _dirty(DiryStateMask::DiryState_All)
         {
         }
 
@@ -40,11 +66,25 @@ namespace vk
         {
             _viewports = other._viewports;
             _scissors = other._scissors;
+            _stencilMask = other._stencilMask;
             _stencilRef = other._stencilRef;
+
+            _graphicPipeline = other._graphicPipeline;
+            _computePipeline = other._computePipeline;
 
             _renderpass = other._renderpass;
             _framebuffer = other._framebuffer;
+            _renderArea = other._renderArea;
+            _clearValues = other._clearValues;
             _insideRenderpass = other._insideRenderpass;
+
+            for (u32 i = 0; i < k_maxDescriptorSetCount; ++i)
+            {
+                _sets[i] = other._sets[i];
+            }
+            _descriptorSets = other._descriptorSets;
+            _dynamicOffsets = other._dynamicOffsets;
+
 
             _imageBarriers = std::move(_imageBarriers);
 
@@ -53,28 +93,17 @@ namespace vk
             return *this;
         }
 
-        enum DiryMask
-        {
-            Viewport = 1 << 0,
-            Scissors = 1 << 1,
-            StencilRef = 1 << 2,
-
-            Pipeline = 1 << 3,
-            RenderPass = 1 << 4,
-
-            ImageBarrier = 1 << 10,
-
-            All = 0xFFFFFFFF
-        };
-
         void addImageBarrier(VulkanImage* texture, const RenderTexture::Subresource& subresource, VkImageLayout layout);
         void flushBarriers(VulkanCommandBuffer* cmdBuffer);
 
+        void bind(BindingType type, u32 set, u32 binding, VulkanBuffer* buffer, u64 offset, u64 range);
+        void bind(BindingType type, u32 set, u32 binding, u32 arrayIndex, VulkanImage* image, const RenderTexture::Subresource& subresource, VulkanSampler* sampler);
+
         void invalidate();
 
-        void setDirty(DiryMask mask);
-        void unsetDirty(DiryMask mask);
-        bool isDirty(DiryMask mask);
+        void setDirty(DiryStateMaskFlags mask);
+        void unsetDirty(DiryStateMaskFlags mask);
+        bool isDirty(DiryStateMaskFlags mask);
 
         VkViewport                                       _viewports = {};
         VkRect2D                                         _scissors = {};
@@ -88,26 +117,30 @@ namespace vk
         VulkanFramebuffer*                               _framebuffer = nullptr;
         VkRect2D                                         _renderArea = {};
         std::array<VkClearValue, k_maxColorAttachments>  _clearValues;
-        bool _insideRenderpass = false;
+        bool                                             _insideRenderpass = false;
+
+        SetInfo                                         _sets[k_maxDescriptorSetCount];
+        std::vector<VkDescriptorSet>                    _descriptorSets;
+        std::vector<u32>                                _dynamicOffsets;
 
     private:
 
-        std::multimap<VkImageLayout, std::tuple<VulkanImage*, RenderTexture::Subresource>> _imageBarriers;
+        std::multimap<VkImageLayout, std::tuple<VulkanImage*, RenderTexture::Subresource>>  _imageBarriers;
 
-        u64        _dirty;
+        DiryStateMaskFlags _dirty;
     };
 
-    inline void VulkanRenderState::setDirty(VulkanRenderState::DiryMask mask)
+    inline void VulkanRenderState::setDirty(DiryStateMaskFlags mask)
     {
         _dirty |= mask;
     }
 
-    inline void VulkanRenderState::unsetDirty(DiryMask mask)
+    inline void VulkanRenderState::unsetDirty(DiryStateMaskFlags mask)
     {
         _dirty &= ~mask;
     }
 
-    inline bool VulkanRenderState::isDirty(DiryMask mask)
+    inline bool VulkanRenderState::isDirty(DiryStateMaskFlags mask)
     {
         return _dirty & mask;
     }

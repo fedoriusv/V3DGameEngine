@@ -547,7 +547,7 @@ void VulkanCommandBuffer::cmdBindPipeline(VulkanGraphicPipeline* pipeline)
     ASSERT(m_status == CommandBufferStatus::Begin, "not started");
     VulkanCommandBuffer::captureResource(pipeline);
 
-    [[likely]] if (m_level == CommandBufferLevel::PrimaryBuffer)
+    if (m_level == CommandBufferLevel::PrimaryBuffer) [[likely]]
     {
         VulkanWrapper::CmdBindPipeline(m_commands, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->getHandle());
     }
@@ -572,34 +572,34 @@ void VulkanCommandBuffer::cmdBindPipeline(VulkanComputePipeline* pipeline)
     }
 }
 
-void VulkanCommandBuffer::cmdBindDescriptorSets(VulkanGraphicPipeline* pipeline, u32 firstSet, u32 countSets, const std::vector<VkDescriptorSet>& sets, const std::vector<u32>& offsets)
+void VulkanCommandBuffer::cmdBindDescriptorSets(VulkanGraphicPipeline* pipeline, const std::vector<VkDescriptorSet>& sets, const std::vector<u32>& offsets)
 {
-    //ASSERT(m_status == CommandBufferStatus::Begin, "not started");
-    //pipeline->captureInsideCommandBuffer(this, 0);
+    ASSERT(m_status == CommandBufferStatus::Begin, "not started");
+    VulkanCommandBuffer::captureResource(pipeline);
 
-    //[[likely]] if (m_level == CommandBufferLevel::PrimaryBuffer)
-    //{
-    //    VulkanWrapper::CmdBindDescriptorSets(m_commands, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->getPipelineLayoutHandle(), firstSet, countSets, sets.data(), static_cast<u32>(offsets.size()), offsets.data());
-    //}
-    //else
-    //{
-    //    ASSERT(false, "not implemented");
-    //}
+    if (m_level == CommandBufferLevel::PrimaryBuffer) [[likely]]
+    {
+        VulkanWrapper::CmdBindDescriptorSets(m_commands, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->getPipelineLayoutHandle(), 0, static_cast<u32>(sets.size()), sets.data(), static_cast<u32>(offsets.size()), offsets.data());
+    }
+    else
+    {
+        ASSERT(false, "not implemented");
+    }
 }
 
-void VulkanCommandBuffer::cmdBindDescriptorSets(VulkanComputePipeline* pipeline, u32 firstSet, u32 countSets, const std::vector<VkDescriptorSet>& sets)
+void VulkanCommandBuffer::cmdBindDescriptorSets(VulkanComputePipeline* pipeline, const std::vector<VkDescriptorSet>& sets)
 {
-    //ASSERT(m_status == CommandBufferStatus::Begin, "not started");
-    //pipeline->captureInsideCommandBuffer(this, 0);
+    ASSERT(m_status == CommandBufferStatus::Begin, "not started");
+    VulkanCommandBuffer::captureResource(pipeline);
 
-    //[[likely]] if (m_level == CommandBufferLevel::PrimaryBuffer)
-    //{
-    //    VulkanWrapper::CmdBindDescriptorSets(m_commands, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline->getPipelineLayoutHandle(), firstSet, countSets, sets.data(), 0, nullptr);
-    //}
-    //else
-    //{
-    //    ASSERT(false, "not implemented");
-    //}
+    if (m_level == CommandBufferLevel::PrimaryBuffer) [[likely]]
+    {
+        VulkanWrapper::CmdBindDescriptorSets(m_commands, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline->getPipelineLayoutHandle(), 0, static_cast<u32>(sets.size()), sets.data(), 0, nullptr);
+    }
+    else
+    {
+        ASSERT(false, "not implemented");
+    }
 }
 
 void VulkanCommandBuffer::cmdDraw(u32 firstVertex, u32 vertexCount, u32 firstInstance, u32 instanceCount)

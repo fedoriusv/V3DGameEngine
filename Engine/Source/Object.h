@@ -100,7 +100,7 @@ namespace v3d
 
         struct Hash
         {
-            u64 operator()(const DescInfo<TDesc>& desc) const
+            u64 operator()(const DescInfo<TDesc, Hasher>& desc) const
             {
                 ASSERT(desc.m_hash, "must be calculated");
                 return desc.m_hash;
@@ -109,7 +109,7 @@ namespace v3d
 
         struct Compare
         {
-            bool operator()(const DescInfo<TDesc>& op1, const DescInfo<TDesc>& op2) const
+            bool operator()(const DescInfo<TDesc, Hasher>& op1, const DescInfo<TDesc, Hasher>& op2) const
             {
                 if constexpr (std::equality_comparable<TDesc>)
                 {

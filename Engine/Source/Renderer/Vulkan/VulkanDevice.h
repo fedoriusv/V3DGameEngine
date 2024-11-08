@@ -30,6 +30,7 @@ namespace vk
     class VulkanComputePipelineManager;
     class VulkanPipelineLayoutManager;
     class VulkanConstantBufferManager;
+    class VulkanDescriptorSetManager;
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -56,7 +57,8 @@ namespace vk
         void bindBuffer(u32 binding, Buffer* buffer) override;
         void bindSampler(u32 binding, SamplerState* sampler) override;
         void bindConstantBuffer(u32 binding, u32 size, void* data) override;
-        void bindDescriptorSet(u32 set, std::vector<Descriptor> descriptors) override;
+
+        void bindDescriptorSet(u32 set, const std::vector<Descriptor>& descriptors) override;
 
         void draw(const GeometryBufferDesc& desc, u32 firstVertex, u32 vertexCount, u32 firstInstance, u32 instanceCount) override;
         void drawIndexed(const GeometryBufferDesc& desc, u32 firstIndex, u32 indexCount, u32 firstInstance, u32 instanceCount) override;
@@ -78,6 +80,7 @@ namespace vk
         const std::vector<VulkanSemaphore*>& getWaitSemaphores() const;
 
         bool prepareDraw(VulkanCommandBuffer* drawBuffer);
+        bool prepareDescriptorSets(VulkanCommandBuffer* drawBuffer);
 
         void postSubmit();
         void postPresent();
@@ -94,6 +97,7 @@ namespace vk
                                       
         VulkanCommandBuffer*          m_currentCmdBuffer[toEnumType(CommandTargetType::Count)];
         VulkanConstantBufferManager*  m_CBOManager;
+        VulkanDescriptorSetManager*   m_descriptorSetManager;
 
         VulkanRenderState             m_pendingRenderState;
         VulkanRenderState             m_currentRenderState;

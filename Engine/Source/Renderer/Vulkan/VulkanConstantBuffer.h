@@ -18,53 +18,9 @@ namespace vk
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    /**
-    * @brief VulkanUniformBuffer final class. Vulkan Render side
-    */
-    class VulkanConstantBuffer final
-    {
-    public:
-
-        explicit VulkanConstantBuffer(VulkanDevice* device, VulkanMemory::VulkanMemoryAllocator* alloc, u64 size, const std::string& name = "ConstantBuffer") noexcept;
-        ~VulkanConstantBuffer() = default;
-
-        bool create();
-        void destroy();
-        bool update(u32 offset, u32 size, const void* data);
-
-        VulkanBuffer* getBuffer() const;
-        u64 getOffset() const;
-        u64 getSize() const;
-
-    private:
-
-        friend VulkanConstantBufferManager;
-
-        VulkanBuffer*   m_buffer;
-        u64             m_offset;
-        u64             m_size;
-    };
-
-    inline VulkanBuffer* VulkanConstantBuffer::getBuffer() const
-    {
-        return m_buffer;
-    }
-
-    inline u64 VulkanConstantBuffer::getOffset() const
-    {
-        return m_offset;
-    }
-
-    inline u64 VulkanConstantBuffer::getSize() const
-    {
-        return m_size;
-    }
-
-    /////////////////////////////////////////////////////////////////////////////////////////////////////
-
     struct ConstantBufferRange
     {
-        VulkanConstantBuffer* _CB;
+        VulkanBuffer*         _buffer;
         u64                   _offset;
         u64                   _freeSize;
     };
@@ -82,10 +38,12 @@ namespace vk
         explicit VulkanConstantBufferManager(VulkanDevice* device) noexcept;
         ~VulkanConstantBufferManager();
 
-        ConstantBufferRange acquireUnformBuffer(u32 requestedSize);
+        ConstantBufferRange acquireConstantBuffer(u32 requestedSize);
 
         void markToUse(VulkanCommandBuffer* cmdBuffer, u64 frame);
         void updateStatus();
+
+        static bool update(VulkanBuffer* buffer, u32 offset, u32 size, const void* data);
 
     private:
 
@@ -95,9 +53,9 @@ namespace vk
         VulkanDevice&                           m_device;
         VulkanMemory::VulkanMemoryAllocator*    m_memoryManager;
 
-        std::deque<VulkanConstantBuffer*>       m_freeConstantBuffers;
-        std::vector<VulkanConstantBuffer*>      m_usedConstantBuffers;
-        ConstantBufferRange                     m_currentConstantBuffer;
+        std::deque<VulkanBuffer*>       m_freeConstantBuffers;
+        std::vector<VulkanBuffer*>      m_usedConstantBuffers;
+        ConstantBufferRange             m_currentConstantBuffer;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

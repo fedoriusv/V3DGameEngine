@@ -35,6 +35,21 @@ namespace renderer
             Transfer
         };
 
+        /**
+         * @brief transition command
+        */
+        virtual void transition(const TextureView& texture, TransitionOp state) = 0;
+
+        /**
+         * @brief bindDescriptorSet command
+        */
+        virtual void bindDescriptorSet(u32 set, const std::vector<Descriptor>& descriptors) = 0;
+
+        virtual void bindTexture(u32 binding, Texture* texture) = 0;
+        virtual void bindBuffer(u32 binding, Buffer* buffer) = 0;
+        virtual void bindSampler(u32 binding, SamplerState* sampler) = 0;
+        virtual void bindConstantBuffer(u32 binding, u32 size, void* data) = 0;
+
     protected:
 
         CmdList() noexcept
@@ -112,18 +127,6 @@ namespace renderer
         /**
         */
         virtual void setPipelineState(GraphicsPipelineState& pipeline) = 0;
-
-        /**
-        */
-        virtual void transition(const TextureView& texture, TransitionOp state) = 0;
-
-        /**
-        */
-        virtual void bindTexture(u32 binding, Texture* texture) = 0;
-        virtual void bindBuffer(u32 binding, Buffer* buffer) = 0;
-        virtual void bindSampler(u32 binding, SamplerState* sampler) = 0;
-        virtual void bindConstantBuffer(u32 binding, u32 size, void* data) = 0;
-        virtual void bindDescriptorSet(u32 set, std::vector<Descriptor> descriptors) = 0;
 
         /**
         * @brief draw command by vertex

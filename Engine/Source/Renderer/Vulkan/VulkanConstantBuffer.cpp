@@ -11,47 +11,28 @@ namespace renderer
 {
 namespace vk
 {
-VulkanConstantBuffer::VulkanConstantBuffer(VulkanDevice* device, VulkanMemory::VulkanMemoryAllocator* alloc, u64 size, const std::string& name) noexcept
-    : m_buffer(V3D_NEW(VulkanBuffer, memory::MemoryLabel::MemoryRenderCore)(device, alloc, RenderBuffer::Type::ConstantBuffer, 0, size, name))
-    , m_offset(0U)
-    , m_size(size)
-{
-}
-
-bool VulkanConstantBuffer::create()
-{
-    ASSERT(m_buffer, "nullptr");
-    return m_buffer->create();
-}
-
-void VulkanConstantBuffer::destroy()
-{
-    ASSERT(m_buffer, "nullptr");
-    return m_buffer->destroy();
-}
-
-bool VulkanConstantBuffer::update(u32 offset, u32 size, const void* data)
+bool VulkanConstantBufferManager::update(VulkanBuffer* buffer, u32 offset, u32 size, const void* data)
 {
     ASSERT(data, "nullptr");
-    void* originBuffer = m_buffer->map();
+    void* originBuffer = buffer->map();
     ASSERT(originBuffer, "nullptr");
-    u8* buffer = reinterpret_cast<u8*>(originBuffer) + m_offset;
+    u8* ptr = reinterpret_cast<u8*>(originBuffer);
     
 #if VULKAN_DEBUG
     bool checkContent = false;
     if (checkContent)
     {
-        u32 result = memcmp(buffer, data, size);
+        u32 result = memcmp(ptr, data, size);
         if (!result)
         {
-            m_buffer->unmap();
+            buffer->unmap();
             return false;
         }
     }
 #endif //VULKAN_DEBUG
 
-    memcpy(buffer + offset, data, size);
-    m_buffer->unmap();
+    memcpy(ptr + offset, data, size);
+    buffer->unmap();
 
     return true;
 }
@@ -68,17 +49,11 @@ VulkanConstantBufferManager::VulkanConstantBufferManager(VulkanDevice* device) n
 VulkanConstantBufferManager::~VulkanConstantBufferManager()
 {
     ASSERT(m_usedConstantBuffers.empty(), "must be empty");
-
-    if (m_currentConstantBuffer._CB)
-    {
-        m_currentConstantBuffer._CB->destroy();
-        V3D_DELETE(m_currentConstantBuffer._CB, memory::MemoryLabel::MemoryRenderCore);
-        m_currentConstantBuffer = { nullptr, 0, 0 };
-    }
+    ASSERT(!m_currentConstantBuffer._buffer, "must be nullptr");
 
     while (!m_freeConstantBuffers.empty())
     {
-        VulkanConstantBuffer* constantBuffer = m_freeConstantBuffers.front();
+        VulkanBuffer* constantBuffer = m_freeConstantBuffers.front();
         m_freeConstantBuffers.pop_front();
 
         constantBuffer->destroy();
@@ -92,34 +67,34 @@ VulkanConstantBufferManager::~VulkanConstantBufferManager()
     }
 }
 
-ConstantBufferRange VulkanConstantBufferManager::acquireUnformBuffer(u32 requestedSize)
+ConstantBufferRange VulkanConstantBufferManager::acquireConstantBuffer(u32 requestedSize)
 {
     ASSERT(requestedSize == math::alignUp<u32>(requestedSize, m_device.getVulkanDeviceCaps().getPhysicalDeviceLimits().minMemoryMapAlignment), "must be alignment");
     u32 desiredSize = std::max(m_device.getVulkanDeviceCaps()._constantBufferSize, requestedSize);
 
-    if (m_currentConstantBuffer._CB) //current
+    if (m_currentConstantBuffer._buffer) //current
     {
-        if (m_currentConstantBuffer._CB->getSize() < requestedSize)
+        if (m_currentConstantBuffer._buffer->getSize() < requestedSize)
         {
             desiredSize = requestedSize;
         }
 
         if (requestedSize < m_currentConstantBuffer._freeSize)
         {
-            m_currentConstantBuffer._offset = m_currentConstantBuffer._CB->getSize() - m_currentConstantBuffer._freeSize;
-            ASSERT(m_currentConstantBuffer._offset < m_currentConstantBuffer._CB->getSize(), ("can't be more than buffer size"));
+            m_currentConstantBuffer._offset = m_currentConstantBuffer._buffer->getSize() - m_currentConstantBuffer._freeSize;
+            ASSERT(m_currentConstantBuffer._offset < m_currentConstantBuffer._buffer->getSize(), ("can't be more than buffer size"));
             m_currentConstantBuffer._freeSize -= requestedSize;
             return m_currentConstantBuffer;
         }
         else
         {
-            m_usedConstantBuffers.push_back(m_currentConstantBuffer._CB);
+            m_usedConstantBuffers.push_back(m_currentConstantBuffer._buffer);
         }
     }
 
     if (!m_freeConstantBuffers.empty()) //free
     {
-        VulkanConstantBuffer* buffer = m_freeConstantBuffers.front();
+        VulkanBuffer* buffer = m_freeConstantBuffers.front();
         if (buffer->getSize() < requestedSize)
         {
             desiredSize = requestedSize;
@@ -127,7 +102,7 @@ ConstantBufferRange VulkanConstantBufferManager::acquireUnformBuffer(u32 request
         else
         {
             m_freeConstantBuffers.pop_front();
-            m_currentConstantBuffer._CB = buffer;
+            m_currentConstantBuffer._buffer = buffer;
             m_currentConstantBuffer._offset = 0;
             m_currentConstantBuffer._freeSize = buffer->getSize() - requestedSize;
 
@@ -137,7 +112,7 @@ ConstantBufferRange VulkanConstantBufferManager::acquireUnformBuffer(u32 request
 
     //new
     ASSERT(requestedSize <= desiredSize, ("has small size"));
-    VulkanConstantBuffer* buffer = V3D_NEW(VulkanConstantBuffer, memory::MemoryLabel::MemoryRenderCore)(&m_device, m_memoryManager, desiredSize, "ConstantBuffer");
+    VulkanBuffer* buffer = V3D_NEW(VulkanBuffer, memory::MemoryLabel::MemoryRenderCore)(&m_device, m_memoryManager, RenderBuffer::Type::ConstantBuffer, 0, desiredSize, "ConstantBuffer");
     if (!buffer->create())
     {
         V3D_DELETE(buffer, memory::MemoryLabel::MemoryRenderCore);
@@ -145,7 +120,7 @@ ConstantBufferRange VulkanConstantBufferManager::acquireUnformBuffer(u32 request
         return { nullptr, 0, 0 };
     }
 
-    m_currentConstantBuffer._CB = buffer;
+    m_currentConstantBuffer._buffer = buffer;
     m_currentConstantBuffer._offset = 0;
     m_currentConstantBuffer._freeSize = buffer->getSize() - requestedSize;
 
@@ -154,34 +129,34 @@ ConstantBufferRange VulkanConstantBufferManager::acquireUnformBuffer(u32 request
 
 void VulkanConstantBufferManager::markToUse(VulkanCommandBuffer* cmdBuffer, u64 frame)
 {
-    if (m_currentConstantBuffer._CB && m_device.getVulkanDeviceCaps()._useDynamicUniforms)
+    if (m_currentConstantBuffer._buffer && m_device.getVulkanDeviceCaps()._useDynamicUniforms)
     {
-        cmdBuffer->captureResource(m_currentConstantBuffer._CB->getBuffer(), frame);
+        cmdBuffer->captureResource(m_currentConstantBuffer._buffer, frame);
 
-        m_usedConstantBuffers.push_back(m_currentConstantBuffer._CB);
+        m_usedConstantBuffers.push_back(m_currentConstantBuffer._buffer);
         m_currentConstantBuffer = { nullptr, 0, 0 };
     }
 }
 
 void VulkanConstantBufferManager::updateStatus()
 {
-    if (m_currentConstantBuffer._CB)
+    if (m_currentConstantBuffer._buffer)
     {
-        m_usedConstantBuffers.push_back(m_currentConstantBuffer._CB);
+        m_usedConstantBuffers.push_back(m_currentConstantBuffer._buffer);
         m_currentConstantBuffer = { nullptr, 0, 0 };
     }
 
     for (auto iter = m_usedConstantBuffers.begin(); iter != m_usedConstantBuffers.end();)
     {
-        VulkanConstantBuffer* CBO = (*iter);
-        if (CBO->getBuffer()->isUsed())
+        VulkanBuffer* buffer = (*iter);
+        if (buffer->isUsed())
         {
             ++iter;
         }
         else
         {
             iter = m_usedConstantBuffers.erase(iter);
-            m_freeConstantBuffers.push_back(*iter);
+            m_freeConstantBuffers.push_back(buffer);
         }
     }
 }
