@@ -83,7 +83,7 @@ void SimpleTriangle::init(renderer::Device* device, renderer::Swapchain* swapcha
         vertexPolicy._content = renderer::ShaderContent::Source;
         vertexPolicy._entryPoint = "main";
 
-        vertShader = resource::ShaderCompiler::compileShader<renderer::VertexShader>(m_Device, "vertex", vertexPolicy, vertexStream, 0/*resource::ShaderCompileFlag::ShaderCompile_UseDXCompilerForSpirV*/);
+        vertShader = resource::ShaderCompiler::compileShader<renderer::VertexShader>(m_Device, "vertex", vertexPolicy, vertexStream, resource::ShaderCompileFlag::ShaderCompile_UseDXCompilerForSpirV);
         stream::StreamManager::destroyStream(vertexStream);
     }
 
@@ -108,7 +108,7 @@ void SimpleTriangle::init(renderer::Device* device, renderer::Swapchain* swapcha
         fragmentPolicy._content = renderer::ShaderContent::Source;
         fragmentPolicy._entryPoint = "main";
 
-        fragShader = resource::ShaderCompiler::compileShader<renderer::FragmentShader>(m_Device, "vertex", fragmentPolicy, fragmentStream, 0/*resource::ShaderCompileFlag::ShaderCompile_UseDXCompilerForSpirV*/);
+        fragShader = resource::ShaderCompiler::compileShader<renderer::FragmentShader>(m_Device, "fragment", fragmentPolicy, fragmentStream, resource::ShaderCompileFlag::ShaderCompile_UseDXCompilerForSpirV);
         stream::StreamManager::destroyStream(fragmentStream);
     }
 
@@ -181,7 +181,7 @@ void SimpleTriangle::render()
     ubo1.viewMatrix = m_Camera->getCamera().getViewMatrix();
 
     renderer::Descriptor desc1(renderer::Descriptor::Descriptor_ConstantBuffer);
-    desc1._CBO = { &ubo1, 0, sizeof(UBO) };
+    desc1._resource = renderer::Descriptor::ConstantBuffer{ &ubo1, 0, sizeof(UBO) };
 
     m_CmdList->bindDescriptorSet(0, { desc1 });
     m_CmdList->draw(renderer::GeometryBufferDesc(m_Geometry, 0, sizeof(math::Vector3D) + sizeof(math::Vector3D)), 0, 3, 0, 1);
@@ -192,7 +192,7 @@ void SimpleTriangle::render()
     ubo2.viewMatrix = m_Camera->getCamera().getViewMatrix();
 
     renderer::Descriptor desc2(renderer::Descriptor::Descriptor_ConstantBuffer);
-    desc2._CBO = { &ubo1, 0, sizeof(UBO) };
+    desc2._resource = renderer::Descriptor::ConstantBuffer{ &ubo2, 0, sizeof(UBO) };
 
     m_CmdList->bindDescriptorSet(0, { desc2 });
     m_CmdList->draw(renderer::GeometryBufferDesc(m_Geometry, 0, sizeof(math::Vector3D) + sizeof(math::Vector3D)), 0, 3, 0, 1);
