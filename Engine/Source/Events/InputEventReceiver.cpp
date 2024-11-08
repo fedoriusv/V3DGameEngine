@@ -19,7 +19,7 @@ namespace event
 
     InputEventReceiver::InputEventReceiver() noexcept
     : k_maxInputEventSize(math::alignUp<u32>(*std::max_element(g_sizeElements.begin(), g_sizeElements.end()), math::k_defaultAlignment))
-    , m_eventPool(V3D_MALLOC(k_maxInputEventSize* s_eventPoolSize, memory::MemoryLabel::MemorySystem))
+    , m_eventPool(V3D_MALLOC(k_maxInputEventSize * s_eventPoolSize, memory::MemoryLabel::MemorySystem))
     , m_currentEventIndex(0)
 {
     resetInputEventPool();

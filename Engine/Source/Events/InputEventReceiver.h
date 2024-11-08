@@ -44,9 +44,9 @@ namespace event
         std::queue<InputEvent*> m_events;
         std::multimap<InputEvent::InputEventType, std::tuple<InputEventHandler*, const platform::Window*>> m_receivers;
 
-        void*              m_eventPool;
         const u32          k_maxInputEventSize;
         u32                m_currentEventIndex;
+        void*              m_eventPool;
 
         static const u32   s_eventPoolSize = 64U;
     };
