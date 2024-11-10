@@ -78,6 +78,8 @@ namespace resource
     template<class TResource>
     inline ResourceLoader<TResource>::ResourceLoader() noexcept
     {
+        ResourceLoader<TResource>::registerRoot("");
+        ResourceLoader<TResource>::registerPath("");
     }
 
     template<class TResource>

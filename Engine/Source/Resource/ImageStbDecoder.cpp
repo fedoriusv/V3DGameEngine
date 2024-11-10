@@ -19,8 +19,8 @@
 //#    define STBI_ONLY_HDR
 //#    define STBI_ONLY_PIC
 
-#   include <ThirdParty/stb/stb_image.h>
-#   include <ThirdParty/stb/stb_image_resize.h>
+#   include <stb/stb_image.h>
+#   include <stb/stb_image_resize.h>
 
 #define LOG_LOADIMG_TIME (DEBUG || 1)
 
@@ -29,13 +29,13 @@ namespace v3d
 namespace resource
 {
 
-ImageStbDecoder::ImageStbDecoder(std::vector<std::string> supportedExtensions, const resource::BitmapHeader& header, u32/*ImageFileLoader::ImageLoaderFlags*/ flags) noexcept
-    : ResourceDecoder(supportedExtensions)
-    , m_header(header)
-    , m_readHeader(flags & ImageFileLoader::ImageLoaderFlag::ReadHeader)
+ImageStbDecoder::ImageStbDecoder(const std::vector<std::string>& supportedExtensions) noexcept
+    : ImageDecoder(supportedExtensions)
+{
+}
 
-    , m_generateMipmaps(flags& ImageFileLoader::ImageLoaderFlag::GenerateMipmaps)
-    , m_flipY(flags& ImageFileLoader::ImageLoaderFlag::FlipY)
+ImageStbDecoder::ImageStbDecoder(std::vector<std::string>&& supportedExtensions) noexcept
+    : ImageDecoder(supportedExtensions)
 {
 }
 
@@ -43,7 +43,7 @@ ImageStbDecoder::~ImageStbDecoder()
 {
 }
 
-Resource* ImageStbDecoder::decode(const stream::Stream* stream, const std::string& name) const
+Resource* ImageStbDecoder::decode(const stream::Stream* stream, const Policy* policy, u32 flags, const std::string& name) const
 {
     if (stream->size() > 0)
     {
@@ -64,7 +64,7 @@ Resource* ImageStbDecoder::decode(const stream::Stream* stream, const std::strin
         timer.start();
 #endif //LOG_LOADIMG_TIME
 
-        if (m_flipY)
+        if (flags & ImageLoaderFlag::ImageLoader_FlipY)
         {
             stbi_set_flip_vertically_on_load(true);
 
@@ -121,7 +121,7 @@ Resource* ImageStbDecoder::decode(const stream::Stream* stream, const std::strin
 
             format = convert8BitFormat(componentCount);
 
-            if (m_generateMipmaps)
+            if (flags & ImageLoaderFlag::ImageLoader_GenerateMipmaps)
             {
                 dataStream = ImageStbDecoder::generateMipMaps(stbData, sizeX, sizeY, componentCount, sizeof(u8), STBIR_TYPE_UINT8, mipmaps);
             }
@@ -164,7 +164,7 @@ Resource* ImageStbDecoder::decode(const stream::Stream* stream, const std::strin
 
                 format = convertFloatFormat(componentCount);
 
-                if (m_generateMipmaps)
+                if (flags & ImageLoaderFlag::ImageLoader_GenerateMipmaps)
                 {
                     dataStream = ImageStbDecoder::generateMipMaps(stbData, sizeX, sizeY, componentCount, sizeof(f32), STBIR_TYPE_FLOAT, mipmaps);
                 }
@@ -204,7 +204,7 @@ Resource* ImageStbDecoder::decode(const stream::Stream* stream, const std::strin
 
                 format = convert16BitFormat(componentCount);
 
-                if (m_generateMipmaps)
+                if (flags & ImageLoaderFlag::ImageLoader_GenerateMipmaps)
                 {
                     dataStream = ImageStbDecoder::generateMipMaps(stbData, sizeX, sizeY, componentCount, sizeof(u16), STBIR_TYPE_UINT16, mipmaps);
                 }
@@ -220,22 +220,20 @@ Resource* ImageStbDecoder::decode(const stream::Stream* stream, const std::strin
         u32 imageStreamSize = dataStream->size();
         stream::Stream* imageStream = stream::StreamManager::createMemoryStream(nullptr, imageStreamSize + sizeof(u32));
 
+        math::Dimension3D dimension(static_cast<u32>(sizeX), static_cast<u32>(sizeY), 1);
+        imageStream->write<math::Dimension3D>(dimension);
+        imageStream->write<renderer::Format>(format);
+        imageStream->write<u32>(layers);
+        imageStream->write<u32>(mipmaps);
         imageStream->write<u32>(imageStreamSize);
         imageStream->write(dataStream->map(dataStream->size()), dataStream->size());
         dataStream->unmap();
         stream::StreamManager::destroyStream(dataStream);
 
-        BitmapHeader newHeader(m_header);
-        BitmapHeader::fillResourceHeader(&newHeader, name, imageStreamSize + sizeof(u32), 0);
-        newHeader._dimension.m_width = static_cast<u32>(sizeX);
-        newHeader._dimension.m_height = static_cast<u32>(sizeY);
-        newHeader._dimension.m_depth = 1;
-        newHeader._layers = layers;
-        newHeader._mips = mipmaps;
-        newHeader._format = format;
-        newHeader._bitmapFlags |= m_flipY ? BitmapHeader::BitmapHeaderFlag::BitmapFlippedByY : 0;
+        Bitmap::BitmapHeader header;
+        resource::ResourceHeader::fill(&header, name, imageStream->size(), 0);
 
-        Resource* image = ::V3D_NEW(Bitmap, memory::MemoryLabel::MemoryObject)(V3D_NEW(BitmapHeader, memory::MemoryLabel::MemoryObject)(newHeader));
+        Resource* image = V3D_NEW(Bitmap, memory::MemoryLabel::MemoryObject)(header);
         if (!image->load(imageStream))
         {
             LOG_ERROR("ImageGLiDecoder::decode: load is falied, %s", name.c_str());

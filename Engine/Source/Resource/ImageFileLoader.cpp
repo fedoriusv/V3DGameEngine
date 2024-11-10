@@ -19,19 +19,14 @@ namespace resource
 {
 
 ImageFileLoader::ImageFileLoader(ImageLoaderFlags flags) noexcept
+    : m_policy()
+    , m_flags(flags)
 {
 #if USE_STB
-    {
-        resource::BitmapHeader header;
-        ResourceDecoderRegistration::registerDecoder(V3D_NEW(ImageStbDecoder, memory::MemoryLabel::MemorySystem)({ "jpg", "png", "bmp", "tga" }, header, flags));
-    }
+    ResourceDecoderRegistration::registerDecoder(V3D_NEW(ImageStbDecoder, memory::MemoryLabel::MemorySystem)({ "jpg", "png", "bmp", "tga" }));
 #endif //USE_STB
-
 #if USE_GLI
-    {
-        resource::BitmapHeader header;
-        ResourceDecoderRegistration::registerDecoder(V3D_NEW(ImageGLiDecoder, memory::MemoryLabel::MemorySystem)({ "ktx", "kmg", "dds" }, header, flags));
-    }
+    ResourceDecoderRegistration::registerDecoder(V3D_NEW(ImageGLiDecoder, memory::MemoryLabel::MemorySystem)({ "ktx", "kmg", "dds" }));
 #endif //USE_GLI
 
     ResourceLoader::registerPathes(ResourceManager::getInstance()->getPathes());
@@ -44,7 +39,7 @@ resource::Bitmap* ImageFileLoader::load(const std::string& name, const std::stri
         for (std::string& path : m_pathes)
         {
             const std::string fullPath = root + path + name;
-            stream::Stream* file = stream::FileLoader::load(fullPath);
+            stream::FileStream* file = stream::FileLoader::load(fullPath);
             if (!file)
             {
                 continue;
@@ -58,10 +53,9 @@ resource::Bitmap* ImageFileLoader::load(const std::string& name, const std::stri
                 return nullptr;
             }
 
-            Resource* resource = decoder->decode(file, nullptr, 0, name);
+            Resource* resource = decoder->decode(file, &m_policy, m_flags, name);
 
-            file->close();
-            V3D_DELETE(file, memory::MemoryLabel::MemorySystem);
+            stream::FileLoader::close(file);
             file = nullptr;
 
             if (!resource)

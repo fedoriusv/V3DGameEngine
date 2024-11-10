@@ -42,6 +42,9 @@ namespace resource
         */
         explicit ShaderBinaryFileLoader(const renderer::Device* device, const ShaderDecoder::ShaderPolicy& policy, ShaderCompileFlags flags = 0) noexcept;
 
+        /**
+        * @brief ShaderBinaryFileLoader destructor
+        */
         ~ShaderBinaryFileLoader() = default;
 
         /**

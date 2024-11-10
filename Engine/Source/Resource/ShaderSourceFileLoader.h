@@ -48,9 +48,12 @@ namespace resource
         * @param const std::vector<std::pair<std::string, std::string>>& defines [optional]
         * @param ShaderCompileFlags flags [optional] @see ShaderCompileFlags
         */
-        explicit ShaderSourceFileLoader(const renderer::Device* device, renderer::ShaderType type, const std::string& entryPoint = "main",
+        explicit ShaderSourceFileLoader(renderer::Device* device, renderer::ShaderType type, const std::string& entryPoint = "main",
              const std::vector<std::pair<std::string, std::string>>& defines = {}, const std::vector<std::string>& includes = {}, ShaderCompileFlags flags = 0) noexcept;
 
+        /**
+        * @brief ShaderSourceFileLoader destructor
+        */
         ~ShaderSourceFileLoader() = default;
 
         /**

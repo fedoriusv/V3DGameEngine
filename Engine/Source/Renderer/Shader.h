@@ -367,5 +367,25 @@ namespace renderer
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    template<class TShader>
+    inline ShaderType getShaderTypeByClass()
+    {
+        static_assert(std::is_base_of<renderer::Shader, TShader>(), "wrong type");
+        if constexpr (std::is_same<TShader, VertexShader>::value)
+        {
+            return ShaderType::Vertex;
+        }
+        else if constexpr (std::is_same<TShader, FragmentShader>::value)
+        {
+            return ShaderType::Fragment;
+        }
+        else if constexpr (std::is_same<TShader, ComputeShader>::value)
+        {
+            return ShaderType::Compute;
+        }
+
+        return ShaderType::First;
+    }
+
 } //namespace renderer
 } //namespace v3d

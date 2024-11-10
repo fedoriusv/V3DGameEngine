@@ -66,7 +66,7 @@ bool Shader::load(const stream::Stream* stream, u32 offset)
     }
 
     ASSERT(stream, "nullptr");
-    stream->seekBeg(offset);
+    stream->seekBeg(offset + m_header._offset);
 
     stream->read<ShaderType>(m_type);
     stream->read<ShaderModel>(m_shaderModel);
@@ -212,6 +212,7 @@ bool Shader::save(stream::Stream* stream, u32 offset) const
 
     //stream->write<bool>(reflections);
     //TODO
+    NOT_IMPL;
 
     return false;
 }

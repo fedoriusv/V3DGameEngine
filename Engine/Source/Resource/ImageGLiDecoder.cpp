@@ -7,8 +7,8 @@
 #include "Utils/Timer.h"
 
 #ifdef USE_GLI
-#   include "ThirdParty/gli/gli/gli.hpp" //Make sure glm is used from own folder
-#   include "ThirdParty/gli/gli/generate_mipmaps.hpp"
+#   include "gli/gli/gli.hpp" //Make sure glm is used from own folder
+#   include "gli/gli/generate_mipmaps.hpp"
 
 #define LOG_LOADIMG_TIME (DEBUG || 1)
 
@@ -17,13 +17,13 @@ namespace v3d
 namespace resource
 {
 
-ImageGLiDecoder::ImageGLiDecoder(std::vector<std::string> supportedExtensions, const resource::BitmapHeader& header, u32/*ImageFileLoader::ImageLoaderFlags*/ flags) noexcept
-    : ResourceDecoder(supportedExtensions)
-    , m_header(header)
-    , m_readHeader(flags & ImageFileLoader::ImageLoaderFlag::ReadHeader)
+ImageGLiDecoder::ImageGLiDecoder(const std::vector<std::string>& supportedExtensions) noexcept
+    : ImageDecoder(supportedExtensions)
+{
+}
 
-    , m_generateMipmaps(flags & ImageFileLoader::ImageLoaderFlag::GenerateMipmaps)
-    , m_flipY(flags & ImageFileLoader::ImageLoaderFlag::FlipY)
+ImageGLiDecoder::ImageGLiDecoder(std::vector<std::string>&& supportedExtensions) noexcept
+    : ImageDecoder(supportedExtensions)
 {
 }
 
@@ -31,7 +31,7 @@ ImageGLiDecoder::~ImageGLiDecoder()
 {
 }
 
-Resource* ImageGLiDecoder::decode(const stream::Stream* stream, const std::string& name) const
+Resource* ImageGLiDecoder::decode(const stream::Stream* stream, const Policy* policy, u32 flags, const std::string& name) const
 {
     if (stream->size() > 0)
     {
@@ -53,13 +53,13 @@ Resource* ImageGLiDecoder::decode(const stream::Stream* stream, const std::strin
             return nullptr;
         }
 
-        if (m_flipY)
+        if (flags & ImageLoaderFlag::ImageLoader_FlipY)
         {
             texture = gli::flip(texture);
             ASSERT(!texture.empty(), "fail");
         }
 
-        if (m_generateMipmaps && texture.max_level() == 0)
+        if ((flags & ImageLoaderFlag::ImageLoader_GenerateMipmaps) && texture.max_level() == 0)
         {
             if (gli::is_compressed(texture.format()))
             {
@@ -221,20 +221,20 @@ Resource* ImageGLiDecoder::decode(const stream::Stream* stream, const std::strin
         u32 imageStreamSize = static_cast<u32>(texture.size()) + sizeof(u32);
         stream::Stream* imageStream = stream::StreamManager::createMemoryStream(nullptr, imageStreamSize);
         ASSERT(imageStream, "nullptr");
+
+        math::Dimension3D dimension(static_cast<u32>(texture.extent().x), static_cast<u32>(texture.extent().y), static_cast<u32>(texture.extent().z));
+        renderer::Format format = covertFormat(texture.format());
+        imageStream->write<math::Dimension3D>(dimension);
+        imageStream->write<renderer::Format>(format);
+        imageStream->write<u32>(static_cast<u32>(texture.layers()));
+        imageStream->write<u32>(static_cast<u32>(texture.levels()));
         imageStream->write<u32>(static_cast<u32>(texture.size()));
         imageStream->write(texture.data(), static_cast<u32>(texture.size()));
 
-        BitmapHeader newHeader(m_header);
-        BitmapHeader::fillResourceHeader(&newHeader, name, imageStreamSize, 0);
-        newHeader._dimension.m_width = static_cast<u32>(texture.extent().x);
-        newHeader._dimension.m_height = static_cast<u32>(texture.extent().y);
-        newHeader._dimension.m_depth = static_cast<u32>(texture.extent().z);
-        newHeader._format = covertFormat(texture.format());
-        newHeader._layers = static_cast<u32>(texture.layers());
-        newHeader._mips = static_cast<u32>(texture.levels());
-        newHeader._bitmapFlags |= m_flipY ? BitmapHeader::BitmapHeaderFlag::BitmapFlippedByY : 0;
+        Bitmap::BitmapHeader header;
+        resource::ResourceHeader::fill(&header, name, imageStream->size(), 0);
 
-        resource::Resource* image = ::V3D_NEW(Bitmap, memory::MemoryLabel::MemoryObject)(V3D_NEW(BitmapHeader, memory::MemoryLabel::MemoryObject)(newHeader));
+        resource::Resource* image = V3D_NEW(Bitmap, memory::MemoryLabel::MemoryObject)(header);
         if (!image->load(imageStream))
         {
             LOG_ERROR("ImageGLiDecoder::decode: load is falied, %s", name.c_str());

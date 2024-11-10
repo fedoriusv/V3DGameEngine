@@ -2,6 +2,8 @@
 
 #include "ResourceLoader.h"
 #include "ResourceDecoderRegistration.h"
+#include "ResourceDecoder.h"
+#include "ImageDecoder.h"
 
 namespace v3d
 {
@@ -25,30 +27,15 @@ namespace resource
     public:
 
         /**
-        * @brief ImageLoaderFlag enum
-        */
-        enum ImageLoaderFlag : u32
-        {
-            ReadHeader = 1 << 0,
-            FlipY = 1 << 1,
-            GenerateMipmaps = 1 << 2,
-        };
-        typedef u32 ImageLoaderFlags;
-
-        struct Policy
-        {
-        };
-
-        ImageFileLoader() = delete;
-        ImageFileLoader(const ImageFileLoader&) = delete;
-        ImageFileLoader& operator=(const ImageFileLoader&) = delete;
-
-        /**
         * @brief ImageFileLoader constructor
         * @param ImageLoaderFlags flags [required]
         * @see ImageLoaderFlag
         */
-        explicit ImageFileLoader(ImageLoaderFlags flags) noexcept;
+        explicit ImageFileLoader(ImageLoaderFlags flags = 0) noexcept;
+
+        /**
+        * @brief ImageFileLoader destructor
+        */
         ~ImageFileLoader() = default;
 
         /**
@@ -58,6 +45,15 @@ namespace resource
         * @return Image pointer
         */
         [[nodiscard]] resource::Bitmap* load(const std::string& name, const std::string& alias = "") override;
+
+    private:
+
+        ImageFileLoader() = delete;
+        ImageFileLoader(const ImageFileLoader&) = delete;
+        ImageFileLoader& operator=(const ImageFileLoader&) = delete;
+
+        ImageDecoder::ImagePolicy   m_policy;
+        ImageLoaderFlags            m_flags;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

@@ -259,7 +259,9 @@ namespace renderer
         Format_PVRTC2_2BPP_SRGB_Block_IMG = 1000054006,
         Format_PVRTC2_4BPP_SRGB_Block_IMG = 1000054007,*/
 
-        Format_Count
+        Format_Count,
+
+        Format_Max = 255
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

@@ -68,7 +68,7 @@ ShaderSourceFileLoader::ShaderSourceFileLoader(renderer::Device* device, const S
     ResourceLoader::registerPathes(ResourceManager::getInstance()->getPathes());
 }
 
-ShaderSourceFileLoader::ShaderSourceFileLoader(const renderer::Device* device, renderer::ShaderType type, const std::string& entryPoint,
+ShaderSourceFileLoader::ShaderSourceFileLoader(renderer::Device* device, renderer::ShaderType type, const std::string& entryPoint,
     const std::vector<std::pair<std::string, std::string>>& defines, const std::vector<std::string>& includes, ShaderCompileFlags flags) noexcept
     : m_flags(flags)
 {
@@ -132,7 +132,7 @@ renderer::Shader* ShaderSourceFileLoader::load(const std::string& name, const st
         for (std::string& path : m_pathes)
         {
             const std::string fullPath = root + path + name;
-            stream::Stream* file = stream::FileLoader::load(fullPath);
+            stream::FileStream* file = stream::FileLoader::load(fullPath);
             if (!file)
             {
                 continue;
@@ -144,8 +144,7 @@ renderer::Shader* ShaderSourceFileLoader::load(const std::string& name, const st
             {
                 Resource* resource = decoder->decode(file, &m_policy, m_flags, name);
 
-                file->close();
-                V3D_DELETE(file, memory::MemoryLabel::MemorySystem);
+                stream::FileLoader::close(file);
                 file = nullptr;
 
                 if (!resource)

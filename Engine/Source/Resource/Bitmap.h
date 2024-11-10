@@ -11,41 +11,25 @@ namespace resource
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
-    * @brief BitmapHeader struct.
-    */
-    struct BitmapHeader : ResourceHeader
-    {
-        enum BitmapHeaderFlag
-        {
-            BitmapFlippedByY = 1 << 0,
-        };
-        typedef u32 BitmapHeaderFlags;
-
-        BitmapHeader() noexcept;
-        BitmapHeader(const BitmapHeader& other) noexcept;
-        ~BitmapHeader() = default;
-
-        u32 operator>>(stream::Stream* stream) const;
-        u32 operator<<(const stream::Stream* stream);
-
-        math::Dimension3D   _dimension;
-        renderer::Format    _format;
-        u16                 _layers;
-        u16                 _mips;
-        BitmapHeaderFlags   _bitmapFlags;
-    };
-
-    /////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    /**
     * @brief Bitmap. Resource class
     */
     class Bitmap : public Resource
     {
     public:
 
+        /**
+        * @brief ShaderHeader struct.
+        */
+        struct BitmapHeader : resource::ResourceHeader
+        {
+            BitmapHeader() noexcept
+                : resource::ResourceHeader(resource::ResourceType::BitmapResource)
+            {
+            }
+        };
+
         Bitmap() noexcept;
-        explicit Bitmap(BitmapHeader* header) noexcept;
+        explicit Bitmap(const BitmapHeader& header) noexcept;
         ~Bitmap();
 
         renderer::Format getFormat() const;
@@ -64,8 +48,11 @@ namespace resource
         bool load(const stream::Stream* stream, u32 offset = 0) override;
         bool save(stream::Stream* stream, u32 offset = 0) const override;
 
-        BitmapHeader* m_header;
-
+        BitmapHeader                       m_header;
+        math::Dimension3D                  m_dimension;
+        renderer::Format                   m_format;
+        u32                                m_layers;
+        u32                                m_mips;
         std::tuple<stream::Stream*, void*> m_bitmap;
     };
 
@@ -73,26 +60,22 @@ namespace resource
 
     inline renderer::Format Bitmap::getFormat() const
     {
-        ASSERT(m_header, "nullptr");
-        return m_header->_format;
+        return m_format;
     }
 
     inline const math::Dimension3D& Bitmap::getDimension() const
     {
-        ASSERT(m_header, "nullptr");
-        return m_header->_dimension;
+        return m_dimension;
     }
 
     inline u32 Bitmap::getLayersCount() const
     {
-        ASSERT(m_header, "nullptr");
-        return m_header->_layers;
+        return m_layers;
     }
 
     inline u32 Bitmap::getMipMapsCount() const
     {
-        ASSERT(m_header, "nullptr");
-        return m_header->_mips;
+        return m_mips;
     }
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

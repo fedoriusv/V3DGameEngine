@@ -14,8 +14,6 @@ namespace renderer
 } //namespace renderer
 namespace resource
 {
-    struct ResourceHeader;
-
     /////////////////////////////////////////////////////////////////////////////////////////////////////
     
     /**
@@ -145,19 +143,22 @@ namespace resource
                 return macros1.first < macros2.first;
             });
 
-        auto composeResourceName = [](const std::string& name, const std::vector<std::pair<std::string, std::string>>& defines) -> std::string
+        auto composeResourceName = [](const std::string& name, const std::string& entrypoint, const std::vector<std::pair<std::string, std::string>>& defines) -> std::string
         {
             std::string outString = name;
+            outString.append("#");
+            outString.append(entrypoint);
+
             for (auto& define : defines)
             {
-                outString.append("_");
+                outString.append("#");
                 outString.append(define.first);
                 outString.append(define.second);
             }
 
             return outString;
         };
-        const std::string resourceName = composeResourceName(innerName, innerDefines);
+        const std::string resourceName = composeResourceName(innerName, policy._entryPoint, innerDefines);
 
         auto resourceIter = m_resources.emplace(std::make_pair(resourceName, nullptr));
         if (resourceIter.second)
@@ -181,7 +182,7 @@ namespace resource
     inline const TResource* ResourceManager::loadShader(renderer::Device* device, const std::string& filename,
         const std::string& entrypoint, const renderer::Shader::DefineList& defines, const std::vector<std::string>& includes, ShaderCompileFlags flags)
     {
-        static_assert(std::is_same<TResource, renderer::Shader>(), "wrong type");
+        static_assert(std::is_base_of<renderer::Shader, TResource>(), "wrong type");
         std::string innerName(filename);
         std::transform(filename.begin(), filename.end(), innerName.begin(), ::tolower);
 
@@ -191,24 +192,27 @@ namespace resource
             return macros1.first < macros2.first;
         });
 
-        auto composeResourceName = [](const std::string& name, const std::vector<std::pair<std::string, std::string>>& defines) -> std::string
-        {
-            std::string outString = name;
-            for (auto& define : defines)
+        auto composeResourceName = [](const std::string& name, const std::string& entrypoint, const std::vector<std::pair<std::string, std::string>>& defines) -> std::string
             {
-                outString.append("_");
-                outString.append(define.first);
-                outString.append(define.second);
-            }
+                std::string outString = name;
+                outString.append("#");
+                outString.append(entrypoint);
 
-            return outString;
-        };
-        const std::string resourceName = composeResourceName(innerName, innerDefines);
+                for (auto& define : defines)
+                {
+                    outString.append("#");
+                    outString.append(define.first);
+                    outString.append(define.second);
+                }
+
+                return outString;
+            };
+        const std::string resourceName = composeResourceName(innerName, entrypoint, innerDefines);
 
         auto resourceIter = m_resources.emplace(std::make_pair(resourceName, nullptr));
         if (resourceIter.second)
         {
-            TResourceLoader loader(device, entrypoint, defines, includes, flags);
+            TResourceLoader loader(device, renderer::getShaderTypeByClass<TResource>(), entrypoint, defines, includes, flags);
             Resource* res = loader.load(innerName);
             if (!res)
             {
@@ -227,7 +231,7 @@ namespace resource
     inline const TResource* ResourceManager::loadShader(renderer::Device* device, const std::string& filename, renderer::ShaderType type,
         const std::string& entrypoint, const renderer::Shader::DefineList& defines, const std::vector<std::string>& includes, ShaderCompileFlags flags)
     {
-        static_assert(std::is_same<TResource, renderer::Shader>(), "wrong type");
+        static_assert(std::is_base_of<renderer::Shader, TResource>(), "wrong type");
         std::string innerName(filename);
         std::transform(filename.begin(), filename.end(), innerName.begin(), ::tolower);
 
@@ -237,19 +241,22 @@ namespace resource
                 return macros1.first < macros2.first;
             });
 
-        auto composeResourceName = [](const std::string& name, const std::vector<std::pair<std::string, std::string>>& defines) -> std::string
-        {
-            std::string outString = name;
-            for (auto& define : defines)
+        auto composeResourceName = [](const std::string& name, const std::string& entrypoint, const std::vector<std::pair<std::string, std::string>>& defines) -> std::string
             {
-                outString.append("_");
-                outString.append(define.first);
-                outString.append(define.second);
-            }
+                std::string outString = name;
+                outString.append("#");
+                outString.append(entrypoint);
 
-            return outString;
-        };
-        const std::string resourceName = composeResourceName(innerName, innerDefines);
+                for (auto& define : defines)
+                {
+                    outString.append("#");
+                    outString.append(define.first);
+                    outString.append(define.second);
+                }
+
+                return outString;
+            };
+        const std::string resourceName = composeResourceName(innerName, entrypoint, innerDefines);
 
         auto resourceIter = m_resources.emplace(std::make_pair(resourceName, nullptr));
         if (resourceIter.second)
@@ -273,7 +280,7 @@ namespace resource
     inline std::vector<const TResource*> ResourceManager::loadHLSLShaders(renderer::Device* device, std::string filename, const std::vector<std::tuple<std::string, renderer::ShaderType>>& entryPoints,
         const renderer::Shader::DefineList& defines, const std::vector<std::string>& includes, ShaderCompileFlags flags)
     {
-        static_assert(std::is_same<TResource, renderer::Shader>(), "wrong type");
+        static_assert(std::is_base_of<renderer::Shader, TResource>(), "wrong type");
         std::string innerName(filename);
         std::transform(filename.begin(), filename.end(), innerName.begin(), ::tolower);
 
@@ -288,7 +295,7 @@ namespace resource
             std::string outString = name;
             for (auto& define : defines)
             {
-                outString.append("_");
+                outString.append("#");
                 outString.append(define.first);
                 outString.append(define.second);
             }
