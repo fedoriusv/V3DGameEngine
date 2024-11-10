@@ -526,7 +526,7 @@ namespace renderer
         ASSERT(index < m_renderpassDesc._countColorAttachments, "out of range");
 
         static_assert(std::is_base_of<Texture, TTexture>(), "wrong type");
-        return m_renderTargets[index];
+        return static_cast<TTexture*>(m_renderTargets[index]);
     }
 
     template<class TTexture>
