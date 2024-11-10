@@ -1352,16 +1352,16 @@ void VulkanCmdList::clear(Texture* texture, f32 depth, u32 stencil)
     image->clear(cmdBuffer, depth, stencil);
 }
 
-bool VulkanCmdList::uploadData(Texture2D* texture, const math::Dimension2D& offset, const math::Dimension2D& size, u32 mipLevel, const void* data)
+bool VulkanCmdList::uploadData(Texture2D* texture, u32 size, const void* data)
 {
 #if VULKAN_DEBUG
     LOG_DEBUG("VulkanCmdList::uploadData");
 #endif
 
     VulkanCommandBuffer* cmdBuffer = VulkanCmdList::acquireAndStartCommandBuffer(CommandTargetType::CmdUploadBuffer);
-    ASSERT(texture->hasUsageFlag(TextureUsage::TextureUsage_Backbuffer), "swapchain is not supported");
+    ASSERT(!texture->hasUsageFlag(TextureUsage::TextureUsage_Backbuffer), "swapchain is not supported");
     VulkanImage* image = OBJECT_FROM_HANDLE(texture->getTextureHandle(), VulkanImage);
-    bool result = image->upload(cmdBuffer, math::Dimension3D(offset.m_width, offset.m_height, 0), math::Dimension3D(size.m_width, size.m_height, 0), mipLevel, data);
+    bool result = image->upload(cmdBuffer, size, data);
 
     u32 immediateResourceSubmit = m_device.getVulkanDeviceCaps()._immediateResourceSubmit;
     if (result && immediateResourceSubmit > 0)
@@ -1372,7 +1372,7 @@ bool VulkanCmdList::uploadData(Texture2D* texture, const math::Dimension2D& offs
     return result;
 }
 
-bool VulkanCmdList::uploadData(Texture3D* texture, const math::Dimension3D& offset, const math::Dimension3D& size, u32 mipLevel, const void* data)
+bool VulkanCmdList::uploadData(Texture3D* texture, u32 size, const void* data)
 {
 #if VULKAN_DEBUG
     LOG_DEBUG("VulkanCmdList::uploadData");
@@ -1381,7 +1381,7 @@ bool VulkanCmdList::uploadData(Texture3D* texture, const math::Dimension3D& offs
     VulkanCommandBuffer* cmdBuffer = VulkanCmdList::acquireAndStartCommandBuffer(CommandTargetType::CmdUploadBuffer);
     ASSERT(texture->hasUsageFlag(TextureUsage::TextureUsage_Backbuffer), "swapchain is not supported");
     VulkanImage* image = OBJECT_FROM_HANDLE(texture->getTextureHandle(), VulkanImage);
-    bool result = image->upload(cmdBuffer, offset, size, mipLevel, data);
+    bool result = image->upload(cmdBuffer, size, data);
 
     u32 immediateResourceSubmit = m_device.getVulkanDeviceCaps()._immediateResourceSubmit;
     if (result && immediateResourceSubmit > 0)

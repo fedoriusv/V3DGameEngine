@@ -192,6 +192,7 @@ namespace renderer
         Texture2D(const Texture2D&) = delete;
         Texture2D& operator=(const Texture2D&) = delete;
 
+        Device* const           m_device;
         const math::Dimension2D m_dimension;
     };
 
@@ -254,6 +255,7 @@ namespace renderer
         Texture2DArray(const Texture2DArray&) = delete;
         Texture2DArray& operator=(const Texture2DArray&) = delete;
 
+        Device* const           m_device;
         const math::Dimension2D m_dimension;
     };
 
@@ -314,6 +316,7 @@ namespace renderer
         TextureCube(const TextureCube&) = delete;
         TextureCube& operator=(const TextureCube&) = delete;
 
+        Device* const           m_device;
         const math::Dimension2D m_dimension;
     };
 
@@ -374,6 +377,7 @@ namespace renderer
         Texture3D(const Texture3D&) = delete;
         Texture3D& operator=(const Texture3D&) = delete;
 
+        Device* const           m_device;
         const math::Dimension3D m_dimension;
     };
 

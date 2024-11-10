@@ -163,8 +163,8 @@ namespace renderer
         /**
          * @brief upload command
         */
-        virtual bool uploadData(Texture2D* texture, const math::Dimension2D& offset, const math::Dimension2D& size, u32 mipLevel, const void* data) = 0;
-        virtual bool uploadData(Texture3D* texture, const math::Dimension3D& offset, const math::Dimension3D& size, u32 mipLevel, const void* data) = 0;
+        virtual bool uploadData(Texture2D* texture, u32 size, const void* data) = 0;
+        virtual bool uploadData(Texture3D* texture, u32 size, const void* data) = 0;
 
         /**
          * @brief upload command

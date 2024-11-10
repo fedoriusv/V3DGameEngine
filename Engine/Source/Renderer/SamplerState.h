@@ -2,6 +2,8 @@
 
 #include "Object.h"
 #include "Render.h"
+#include "Color.h"
+#include "ObjectTracker.h"
 
 namespace v3d
 {
@@ -9,7 +11,8 @@ namespace renderer
 {
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    class ShaderProgram;
+    class Device;
+    class Sampler;
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -21,18 +24,18 @@ namespace renderer
         /**
         * @brief SamplerDesc struct. Size 24 bytes
         */
-        math::Vector4D          _borderColor; //TODO: color class with 4 bytes
+        renderer::Color         _borderColor;
         f32                     _lodBias;
 
-        SamplerAnisotropic      _anisotropic : 5;
-        SamplerWrap             _wrapU : 3;
-        SamplerWrap             _wrapV : 3;
-        SamplerWrap             _wrapW : 3;
-        SamplerFilter           _filter : 2;
-        CompareOperation        _compareOp : 3;
-        u32                     _enableCompOp : 1;
+        SamplerAnisotropic      _anisotropic    : 5;
+        SamplerWrap             _wrapU          : 3;
+        SamplerWrap             _wrapV          : 3;
+        SamplerWrap             _wrapW          : 3;
+        SamplerFilter           _filter         : 2;
+        CompareOperation        _compareOp      : 3;
+        u32                     _enableCompOp   : 1;
 
-        u32                     _padding : 12;
+        u32                     _padding        : 12;
     };
 
     /**
@@ -42,11 +45,6 @@ namespace renderer
     class SamplerState : public Object
     {
     public:
-
-        /**
-        * @brief SamplerState destructor
-        */
-        ~SamplerState();
 
         SamplerFilter         getFiltering() const;
         SamplerWrap           getWrapU() const;
@@ -66,26 +64,41 @@ namespace renderer
         void setEnableCompareOp(bool enable);
         void setBorderColor(const math::Vector4D& color);
 
-    private:
-
-        /**
-        * @briefSamplerState constructor. Used for creating sampler.
-        * Private method. Use createObject interface inside CommandList class to call.
-        */
-        SamplerState() noexcept;
+    public:
 
         /**
         * @brief SamplerState constructor. Used for creating sampler.
-        * Private method. Use createObject interface inside CommandList class to call.
+        * Use createObject interface inside CommandList class to call.
+        */
+        SamplerState(Device* device) noexcept;
+
+        /**
+        * @brief SamplerState constructor. Used for creating sampler.
+        * Use createObject interface inside CommandList class to call.
         *
         * @param SamplerFilter filter [required]
         * @param SamplerAnisotropic aniso [required]
         */
-        SamplerState(SamplerFilter filter, SamplerAnisotropic aniso) noexcept;
+        SamplerState(Device* device, SamplerFilter filter, SamplerAnisotropic aniso) noexcept;
 
-        SamplerDesc m_samplerDesc;
+        /**
+        * @brief SamplerState constructor. Used for creating sampler.
+        * Use createObject interface inside CommandList class to call.
+        */
+        SamplerState(Device* device, const SamplerDesc& desc) noexcept;
 
-        friend ShaderProgram;
+        /**
+        * @brief SamplerState destructor
+        */
+        ~SamplerState();
+
+    private:
+
+        void destroySamplers(const std::vector<Sampler*>& samplers);
+        
+        Device* const           m_device;
+        SamplerDesc             m_samplerDesc;
+        ObjectTracker<Sampler>  m_tracker;
     };
 
     inline SamplerFilter SamplerState::getFiltering() const
