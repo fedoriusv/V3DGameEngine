@@ -24,37 +24,35 @@ namespace scene
         */
         struct ModelHeader : resource::ResourceHeader
         {
-            /**
-            * @brief ModelContent enum
-            */
-            enum ModelContent : u32
+            ModelHeader() noexcept
+                : resource::ResourceHeader(resource::ResourceType::ModelResource)
             {
-                ModelContent_Empty = 0,
-                ModelContent_Mesh = 1 << 0,
-                ModelContent_Material = 1 << 1,
-            };
-            typedef u32 ModelContentFlags;
-
-            ModelHeader() noexcept;
-            ModelHeader(const ModelHeader& other) noexcept;
-            ~ModelHeader() = default;
-
-            u32 operator>>(stream::Stream* stream) const;
-            u32 operator<<(const stream::Stream* stream);
-
-            ModelContentFlags   _modelContentFlags;
-            u32                 _localTransform;
+            }
         };
 
-        explicit Model(ModelHeader* header) noexcept;
+        Model() noexcept;
+        explicit Model(const ModelHeader& header) noexcept;
         ~Model() noexcept;
+
+        /**
+        * @brief ModelContent enum
+        */
+        enum ModelContent : u32
+        {
+            ModelContent_Empty = 0,
+            ModelContent_Mesh = 1 << 0,
+            ModelContent_Material = 1 << 1,
+            ModelContent_AABB = 1 << 2,
+        };
+
+        typedef u32 ModelContentFlags;
 
     private:
 
         bool load(const stream::Stream* stream, u32 offset = 0) override;
         bool save(stream::Stream* stream, u32 offset = 0) const override;
 
-        ModelHeader* m_header;
+        ModelHeader m_header;
     };
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////

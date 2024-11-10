@@ -48,44 +48,38 @@ namespace scene
 //    ASSERT(sizeof(ModelHeader) == readSize, "wrong size");
 //    return readSize;
 //}
-//
-//
-//Model::Model() noexcept
-//    : m_header(nullptr)
-//{
-//    LOG_DEBUG("Model constructor %llx", this);
-//}
-//
-//Model::Model(ModelHeader* header) noexcept
-//    : m_header(header)
-//{
-//    LOG_DEBUG("Model constructor %llx", this);
-//}
-//
-//Model::~Model()
-//{
-//    LOG_DEBUG("Model destructor %llx", this);
-//
-//    for (auto& meshLODs : m_meshes)
-//    {
-//        for (auto& mesh : meshLODs)
-//        {
-//            V3D_DELETE(mesh, memory::MemoryLabel::MemoryObject);
-//        }
-//    }
-//
-//    for (auto& material : m_materials)
-//    {
-//        V3D_DELETE(material, memory::MemoryLabel::MemoryObject);
-//    }
-//
-//    if (m_header)
-//    {
-//        V3D_DELETE(m_header, memory::MemoryLabel::MemoryObject);
-//        m_header = nullptr;
-//    }
-//}
-//
+
+
+Model::Model() noexcept
+    : m_header()
+{
+    LOG_DEBUG("Model constructor %llx", this);
+}
+
+Model::Model(const ModelHeader& header) noexcept
+    : m_header(header)
+{
+    LOG_DEBUG("Model constructor %llx", this);
+}
+
+Model::~Model()
+{
+    LOG_DEBUG("Model destructor %llx", this);
+
+    //for (auto& meshLODs : m_meshes)
+    //{
+    //    for (auto& mesh : meshLODs)
+    //    {
+    //        V3D_DELETE(mesh, memory::MemoryLabel::MemoryObject);
+    //    }
+    //}
+
+    //for (auto& material : m_materials)
+    //{
+    //    V3D_DELETE(material, memory::MemoryLabel::MemoryObject);
+    //}
+}
+
 //std::vector<Mesh*> Model::getMesh(u32 index) const
 //{
 //    ASSERT(index < m_meshes.size(), "reange out");
@@ -119,87 +113,87 @@ namespace scene
 //{
 //    return static_cast<u32>(m_materials.size());
 //}
-//
-//bool Model::load(const stream::Stream* stream, u32 offset)
-//{
-//    if (m_loaded)
-//    {
-//        LOG_WARNING("Model::load: the model %llx is already loaded", this);
-//        return true;
-//    }
-//    ASSERT(stream, "nullptr");
-//    stream->seekBeg(offset);
-//
-//    if (!m_header)
-//    {
-//        m_header = V3D_NEW(ModelHeader, memory::MemoryLabel::MemoryObject);
-//        ASSERT(m_header, "nullptr");
-//        m_header->operator<<(stream);
-//    }
-//    stream->seekBeg(m_header->_offset);
-//
-//    if (m_header->_modelContentFlags & ModelHeader::ModelContent::ModelContent_Mesh)
-//    {
-//        u32 numMeshes = 0;
-//        stream->read<u32>(numMeshes);
-//
-//        m_meshes.resize(numMeshes);
-//        for (auto& mesh : m_meshes)
-//        {
-//            u32 LODs = 0;
-//            stream->read<u32>(LODs);
-//
-//            mesh.resize(LODs, nullptr);
-//            for (u32 LOD = 0; LOD < LODs; ++LOD)
-//            {
-//                resource::Resource* resource = ::V3D_NEW(StaticMesh, memory::MemoryLabel::MemoryObject);
-//                if (!resource->load(stream, stream->tell()))
-//                {
-//                    LOG_ERROR("Model::load: The mesh can't be parsed");
-//
-//                    ASSERT(false, "wrong parsing");
-//                    V3D_DELETE(resource, memory::MemoryLabel::MemoryObject);
-//
-//                    return false;
-//                }
-//
-//                mesh[LOD] = static_cast<Mesh*>(resource);
-//            }
-//        }
-//    }
-//    
-//    if (m_header->_modelContentFlags & ModelHeader::ModelContent::ModelContent_Material)
-//    {
-//        u32 numMaterials = 0;
-//        stream->read<u32>(numMaterials);
-//
-//        m_materials.resize(numMaterials, nullptr);
-//        for (auto& material : m_materials)
-//        {
-//            resource::Resource* resource = ::V3D_NEW(Material, memory::MemoryLabel::MemoryObject);
-//            if (!resource->load(stream, stream->tell()))
-//            {
-//                LOG_ERROR("Model::load: The material can't be parsed");
-//
-//                ASSERT(false, "wrong parsing");
-//                V3D_DELETE(resource, memory::MemoryLabel::MemoryObject);
-//
-//                return false;
-//            }
-//
-//            material = static_cast<Material*>(resource);
-//        }
-//    }
-//
-//    m_loaded = true;
-//    return true;
-//}
-//
-//bool Model::save(stream::Stream* stream, u32 offset) const
-//{
-//    ASSERT(false, "not impl");
-//    return false;
-//}
+
+bool Model::load(const stream::Stream* stream, u32 offset)
+{
+    if (m_loaded)
+    {
+        LOG_WARNING("Model::load: the model %llx is already loaded", this);
+        return true;
+    }
+    ASSERT(stream, "nullptr");
+    stream->seekBeg(offset);
+
+    //if (!m_header)
+    //{
+    //    m_header = V3D_NEW(ModelHeader, memory::MemoryLabel::MemoryObject);
+    //    ASSERT(m_header, "nullptr");
+    //    m_header->operator<<(stream);
+    //}
+    //stream->seekBeg(m_header->_offset);
+
+    //if (m_header->_modelContentFlags & ModelHeader::ModelContent::ModelContent_Mesh)
+    //{
+    //    u32 numMeshes = 0;
+    //    stream->read<u32>(numMeshes);
+
+    //    m_meshes.resize(numMeshes);
+    //    for (auto& mesh : m_meshes)
+    //    {
+    //        u32 LODs = 0;
+    //        stream->read<u32>(LODs);
+
+    //        mesh.resize(LODs, nullptr);
+    //        for (u32 LOD = 0; LOD < LODs; ++LOD)
+    //        {
+    //            resource::Resource* resource = ::V3D_NEW(StaticMesh, memory::MemoryLabel::MemoryObject);
+    //            if (!resource->load(stream, stream->tell()))
+    //            {
+    //                LOG_ERROR("Model::load: The mesh can't be parsed");
+
+    //                ASSERT(false, "wrong parsing");
+    //                V3D_DELETE(resource, memory::MemoryLabel::MemoryObject);
+
+    //                return false;
+    //            }
+
+    //            mesh[LOD] = static_cast<Mesh*>(resource);
+    //        }
+    //    }
+    //}
+    //
+    //if (m_header->_modelContentFlags & ModelHeader::ModelContent::ModelContent_Material)
+    //{
+    //    u32 numMaterials = 0;
+    //    stream->read<u32>(numMaterials);
+
+    //    m_materials.resize(numMaterials, nullptr);
+    //    for (auto& material : m_materials)
+    //    {
+    //        resource::Resource* resource = ::V3D_NEW(Material, memory::MemoryLabel::MemoryObject);
+    //        if (!resource->load(stream, stream->tell()))
+    //        {
+    //            LOG_ERROR("Model::load: The material can't be parsed");
+
+    //            ASSERT(false, "wrong parsing");
+    //            V3D_DELETE(resource, memory::MemoryLabel::MemoryObject);
+
+    //            return false;
+    //        }
+
+    //        material = static_cast<Material*>(resource);
+    //    }
+    //}
+
+    //m_loaded = true;
+    return true;
+}
+
+bool Model::save(stream::Stream* stream, u32 offset) const
+{
+    ASSERT(false, "not impl");
+    return false;
+}
 
 } //namespace scene
 } //namespace v3d

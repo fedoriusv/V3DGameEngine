@@ -1,5 +1,5 @@
 #include "ModelFileLoader.h"
-#include "MeshAssimpDecoder.h"
+#include "AssimpDecoder.h"
 #include "Renderer/Device.h"
 #include "Stream/FileLoader.h"
 #include "Resource/ResourceManager.h"
@@ -12,20 +12,22 @@ namespace resource
 {
 
 ModelFileLoader::ModelFileLoader(ModelLoaderFlags flags) noexcept
+    : m_policy()
+    , m_flags(flags)
 {
 #ifdef USE_ASSIMP
-    scene::ModelHeader header;
-    ResourceDecoderRegistration::registerDecoder(V3D_NEW(MeshAssimpDecoder, memory::MemoryLabel::MemorySystem)({ "dae", "fbx" }, header, flags));
+    ResourceDecoderRegistration::registerDecoder(V3D_NEW(AssimpDecoder, memory::MemoryLabel::MemorySystem)({ "dae", "fbx" }));
 #endif //USE_ASSIMP
 
     ResourceLoader::registerPathes(ResourceManager::getInstance()->getPathes());
 }
 
-ModelFileLoader::ModelFileLoader(ResourceDecoder::Policy* policy, ModelLoaderFlags flags) noexcept
+ModelFileLoader::ModelFileLoader(const ModelFileLoader::ModelPolicy& policy, ModelLoaderFlags flags) noexcept
+    : m_policy(policy)
+    , m_flags(flags)
 {
 #ifdef USE_ASSIMP
-    scene::ModelHeader modelHeader = *static_cast<const scene::ModelHeader*>(header);
-    ResourceDecoderRegistration::registerDecoder(V3D_NEW(MeshAssimpDecoder, memory::MemoryLabel::MemorySystem)({ "dae", "fbx" }, modelHeader, flags));
+    ResourceDecoderRegistration::registerDecoder(V3D_NEW(AssimpDecoder, memory::MemoryLabel::MemorySystem)({ "dae", "fbx" }));
 #endif //USE_ASSIMP
 
     ResourceLoader::registerPathes(ResourceManager::getInstance()->getPathes());
@@ -38,7 +40,7 @@ scene::Model* ModelFileLoader::load(const std::string& name, const std::string& 
         for (std::string& path : m_pathes)
         {
             const std::string fullPath = root + path + name;
-            stream::Stream* file = stream::FileLoader::load(fullPath);
+            stream::FileStream* file = stream::FileLoader::load(fullPath);
             if (!file)
             {
                 continue;
@@ -52,10 +54,9 @@ scene::Model* ModelFileLoader::load(const std::string& name, const std::string& 
                 return nullptr;
             }
 
-            Resource* resource = decoder->decode(file, nullptr, 0, name);
+            Resource* resource = decoder->decode(file, &m_policy, m_flags, name);
 
-            file->close();
-            V3D_DELETE(file, memory::MemoryLabel::MemorySystem);
+            stream::FileLoader::close(file);
             file = nullptr;
 
             if (!resource)

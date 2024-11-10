@@ -30,13 +30,14 @@ namespace resource
         };
         typedef u32 AssetLoaderFlags;
 
-        AssetFileLoader(const AssetFileLoader&) = delete;
-        AssetFileLoader& operator=(const AssetFileLoader&) = delete;
-
         /**
         * @brief AssetFileLoader constructor
         */
         explicit AssetFileLoader(AssetLoaderFlags flags = 0) noexcept;
+
+        /**
+        * @brief AssetFileLoader destructor
+        */
         ~AssetFileLoader() = default;
 
         /**
@@ -49,6 +50,9 @@ namespace resource
         [[nodiscard]] Resource* load(const std::string& name, const std::string& alias = "") override;
 
     private:
+
+        AssetFileLoader(const AssetFileLoader&) = delete;
+        AssetFileLoader& operator=(const AssetFileLoader&) = delete;
 
         AssetLoaderFlags m_flags;
     };

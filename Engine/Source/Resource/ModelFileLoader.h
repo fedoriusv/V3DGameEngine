@@ -30,29 +30,27 @@ namespace resource
         */
         enum ModelLoaderFlag : u32
         {
-            ReadHeader = 1 << 0,
+            SkipIndexBuffer = 1 << 0,                    //Don't create Index Buffer
+            SkipNormals = 1 << 1,                        //Don't use Normal attribute
+            SkipTangentAndBitangent = 1 << 2,            //Don't use Tangent & Bitangetns attributes
+            SkipTextureCoord = 1 << 3,                   //Don't use Texture attributes
+            SkipMaterial = 1 << 4,
 
-            SkipIndexBuffer = 1 << 1,                    //Don't create Index Buffer
-            SkipNormals = 1 << 2,                        //Don't use Normal attribute
-            SkipTangentAndBitangent = 1 << 3,            //Don't use Tangent & Bitangetns attributes
-            SkipTextureCoord = 1 << 4,                   //Don't use Texture attributes
+            SeperatePositionStream = 1 << 5,             //Save Position data to saparate stream
+            GenerateBoundingBoxes = 1 << 6,              //Generate BoundingBox for meshes
 
-            SeperatePosition = 1 << 5,                   //Save Position to saparate stream
-            UseBoundingBoxes = 1 << 6,                   //Generate BoundingBox for meshes
+            FlipYPosition = 1 << 7,                      //Flip Y position
+            FlipYTextureCoord = 1 << 8,                  //Flip Y texture coordinage
 
-            LocalTransform = 1 << 7,                     //Ignore all releative transforms
-            FlipYPosition = 1 << 8,                      //Flip Y position
-            FlipYTextureCoord = 1 << 9,                  //Flip Y texture coordinage
-
+            LocalTransform = 1 << 9,                     //Ignore all releative transforms
             SplitLargeMeshes = 1 << 10,
-            SkipMaterialLoading = 1 << 11,
 
         };
         typedef u32 ModelLoaderFlags;
 
-        ModelFileLoader() = delete;
-        ModelFileLoader(const ModelFileLoader&) = delete;
-        ModelFileLoader& operator=(const ModelFileLoader&) = delete;
+        struct ModelPolicy : ResourceDecoder::Policy
+        {
+        };
 
         /**
         * @brief ModelFileLoader constructor
@@ -60,7 +58,6 @@ namespace resource
         * @see ModelLoaderFlags
         */
         explicit ModelFileLoader(ModelLoaderFlags flags) noexcept;
-        ~ModelFileLoader() = default;
 
         /**
         * @brief ModelFileLoader constructor. Create a Model by Header
@@ -68,7 +65,12 @@ namespace resource
         * @param ModelLoaderFlags flags [required]
         * @see ModelLoaderFlags
         */
-        explicit ModelFileLoader(ResourceDecoder::Policy* policy, ModelLoaderFlags flags) noexcept;
+        explicit ModelFileLoader(const ModelFileLoader::ModelPolicy& policy, ModelLoaderFlags flags) noexcept;
+
+        /**
+        * @brief ModelFileLoader destructor
+        */
+        ~ModelFileLoader() = default;
 
         /**
         * @brief Load model resource by name from file
@@ -78,6 +80,15 @@ namespace resource
         * @return Model pointer
         */
         [[nodiscard]] scene::Model* load(const std::string& name, const std::string& alias = "") override;
+
+    private:
+
+        ModelFileLoader() = delete;
+        ModelFileLoader(const ModelFileLoader&) = delete;
+        ModelFileLoader& operator=(const ModelFileLoader&) = delete;
+
+        ModelPolicy      m_policy;
+        ModelLoaderFlags m_flags;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
