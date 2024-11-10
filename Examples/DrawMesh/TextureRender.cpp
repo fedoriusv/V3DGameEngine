@@ -3,15 +3,16 @@
 #include "Renderer/Texture.h"
 #include "Renderer/Shader.h"
 #include "Renderer/ShaderProgram.h"
-#include "Renderer/Core/Context.h"
 #include "Stream/StreamManager.h"
-#include "Resource/ResourceLoaderManager.h"
+#include "Resource/ResourceManager.h"
+#include "Resource/ShaderCompiler.h"
 #include "Resource/ShaderSourceStreamLoader.h"
 
-namespace v3d
-{
 
-using namespace renderer;
+using namespace v3d;
+
+namespace app
+{
 
 TextureUniformParameters::TextureUniformParameters() noexcept
     : _texture(nullptr)
@@ -19,26 +20,27 @@ TextureUniformParameters::TextureUniformParameters() noexcept
 {
 }
 
-void TextureUniformParameters::bindUniformParameters(CommandList& cmdList, ShaderProgram* program)
+void TextureUniformParameters::bindUniformParameters(renderer::CmdListRender& cmdList, renderer::ShaderProgram* program)
 {
-    program->bindUniformsBuffer<ShaderType::Vertex>({ "ubo" }, 0, sizeof(UniformBuffer), &_constantBufferVS);
+    //program->bindUniformsBuffer<ShaderType::Vertex>({ "ubo" }, 0, sizeof(UniformBuffer), &_constantBufferVS);
 
-    program->bindUniformsBuffer<ShaderType::Fragment>({ "light" }, 0, sizeof(Light), &_constantBufferFS);
-    program->bindTexture<ShaderType::Fragment, Texture2D>({ "textureColor" }, _texture);
-    program->bindSampler<ShaderType::Fragment>({ "samplerColor" }, _sampler);
+    //program->bindUniformsBuffer<ShaderType::Fragment>({ "light" }, 0, sizeof(Light), &_constantBufferFS);
+    //program->bindTexture<ShaderType::Fragment, Texture2D>({ "textureColor" }, _texture);
+    //program->bindSampler<ShaderType::Fragment>({ "samplerColor" }, _sampler);
 }
 
 
-TextureRender::TextureRender(CommandList& cmdList, const v3d::math::Dimension2D& viewport, const std::vector<const Shader*>& shaders, const VertexInputAttributeDescription& vertex) noexcept
+TextureRender::TextureRender(renderer::Device* device, renderer::CmdListRender& cmdList, renderer::Swapchain* swapchain, const std::vector<const renderer::Shader*>& shaders, const renderer::VertexInputAttributeDesc& vertex) noexcept
 {
-    m_program = cmdList.createObject<ShaderProgram>(shaders);
+    m_program = new renderer::ShaderProgram(device, static_cast<const renderer::VertexShader*>(shaders[0]), static_cast<const renderer::FragmentShader*>(shaders[1]));
 
     if (m_enableMSAA)
     {
         {
-            m_renderTargetMSAA = cmdList.createObject<RenderTargetState>(viewport);
+            m_renderTargetMSAA = new renderer::RenderTargetState(device, swapchain->getBackbufferSize());
 
-            Texture2D* colorAttachmentMSAA = cmdList.createObject<Texture2D>(TextureUsage::TextureUsage_Attachment | TextureUsage::TextureUsage_Resolve | TextureUsage::TextureUsage_Sampled, Format::Format_R16G16B16A16_SFloat, viewport, TextureSamples::TextureSamples_x2);
+            renderer::Texture2D* colorAttachmentMSAA = new renderer::Texture2D(device, renderer::TextureUsage::TextureUsage_Attachment | renderer::TextureUsage::TextureUsage_Resolve | renderer::TextureUsage::TextureUsage_Sampled,
+                renderer::Format::Format_R16G16B16A16_SFloat, swapchain->getBackbufferSize(), renderer::TextureSamples::TextureSamples_x2);
             m_renderTargetMSAA->setColorTexture(0, colorAttachmentMSAA,
                 {
                     renderer::RenderTargetLoadOp::LoadOp_Clear, renderer::RenderTargetStoreOp::StoreOp_Store, math::Vector4D(0.0f)
@@ -48,9 +50,11 @@ TextureRender::TextureRender(CommandList& cmdList, const v3d::math::Dimension2D&
                 });
 
 #if defined(PLATFORM_ANDROID)
-            Texture2D* depthAttachmentMSAA = cmdList.createObject<Texture2D>(TextureUsage::TextureUsage_Attachment | TextureUsage::TextureUsage_Resolve, Format::Format_D24_UNorm_S8_UInt, viewport, TextureSamples::TextureSamples_x2);
+            renderer::Texture2D* depthAttachmentMSAA = new renderer::Texture2D(device, renderer::TextureUsage::TextureUsage_Attachment | renderer::TextureUsage::TextureUsage_Resolve,
+                renderer::Format::Format_D24_UNorm_S8_UInt, swapchain->getBackbufferSize(), TextureSamples::TextureSamples_x2);
 #else
-            Texture2D* depthAttachmentMSAA = cmdList.createObject<Texture2D>(TextureUsage::TextureUsage_Attachment, Format::Format_D32_SFloat, viewport, TextureSamples::TextureSamples_x2);
+            renderer::Texture2D* depthAttachmentMSAA = new renderer::Texture2D(device, renderer::TextureUsage::TextureUsage_Attachment,
+                renderer::Format::Format_D32_SFloat, swapchain->getBackbufferSize(), renderer::TextureSamples::TextureSamples_x2);
 #endif
             m_renderTargetMSAA->setDepthStencilTexture(depthAttachmentMSAA,
                 {
@@ -63,18 +67,18 @@ TextureRender::TextureRender(CommandList& cmdList, const v3d::math::Dimension2D&
                     renderer::TransitionOp::TransitionOp_Undefined, renderer::TransitionOp::TransitionOp_DepthStencilAttachment
                 });
 
-            m_pipelineMSAA = cmdList.createObject<GraphicsPipelineState>(vertex, m_program.get(), m_renderTargetMSAA.get());
-            m_pipelineMSAA->setPrimitiveTopology(PrimitiveTopology::PrimitiveTopology_TriangleList);
-            m_pipelineMSAA->setFrontFace(FrontFace::FrontFace_Clockwise);
-            m_pipelineMSAA->setCullMode(CullMode::CullMode_None);
-            m_pipelineMSAA->setColorMask(ColorMask::ColorMask_All);
-            m_pipelineMSAA->setDepthCompareOp(CompareOperation::CompareOp_GreaterOrEqual);
+            m_pipelineMSAA = new renderer::GraphicsPipelineState(device, vertex, m_program.get(), m_renderTargetMSAA.get());
+            m_pipelineMSAA->setPrimitiveTopology(renderer::PrimitiveTopology::PrimitiveTopology_TriangleList);
+            m_pipelineMSAA->setFrontFace(renderer::FrontFace::FrontFace_Clockwise);
+            m_pipelineMSAA->setCullMode(renderer::CullMode::CullMode_None);
+            m_pipelineMSAA->setColorMask(renderer::ColorMask::ColorMask_All);
+            m_pipelineMSAA->setDepthCompareOp(renderer::CompareOperation::CompareOp_GreaterOrEqual);
             m_pipelineMSAA->setDepthWrite(true);
             m_pipelineMSAA->setDepthTest(true);
         }
 
         {
-            const renderer::Shader* vertexShader = nullptr;
+            const renderer::VertexShader* vertexShader = nullptr;
             {
                 const std::string vertexSource("\
                     struct VS_OUTPUT\n\
@@ -91,16 +95,18 @@ TextureRender::TextureRender(CommandList& cmdList, const v3d::math::Dimension2D&
                         return output;\n\
                     }");
                 const stream::Stream* vertexStream = stream::StreamManager::createMemoryStream(vertexSource);
-                renderer::ShaderHeader vertexHeader(renderer::ShaderType::Vertex);
-                vertexHeader._contentType = renderer::ShaderHeader::ShaderContent::Source;
-                vertexHeader._shaderModel = renderer::ShaderHeader::ShaderModel::HLSL_5_1;
 
-                vertexShader = resource::ResourceLoaderManager::getInstance()->composeShader<renderer::Shader, resource::ShaderSourceStreamLoader>(cmdList.getContext(), "vertex", &vertexHeader, vertexStream,
-                    "main", {}, {}, resource::ShaderSourceStreamLoader::ShaderSourceFlag::ShaderSource_UseLegacyCompilerForHLSL);
-                delete vertexStream;
+                resource::ShaderDecoder::ShaderPolicy vertexPolicy;
+                vertexPolicy._type = renderer::ShaderType::Vertex;
+                vertexPolicy._shaderModel = renderer::ShaderModel::HLSL_6_2;
+                vertexPolicy._content = renderer::ShaderContent::Source;
+                vertexPolicy._entryPoint = "main";
+
+                vertexShader = resource::ShaderCompiler::compileShader<renderer::VertexShader>(device, "vertex", vertexPolicy, vertexStream, resource::ShaderCompileFlag::ShaderCompile_UseDXCompilerForSpirV);
+                stream::StreamManager::destroyStream(vertexStream);
             }
 
-            const renderer::Shader* fragmentShader = nullptr;
+            const renderer::FragmentShader* fragmentShader = nullptr;
             {
                 const std::string fragmentSource("\
                     struct VS_OUTPUT\n\
@@ -117,19 +123,21 @@ TextureRender::TextureRender(CommandList& cmdList, const v3d::math::Dimension2D&
                         return outFragColor;\n\
                     }");
                 const stream::Stream* fragmentStream = stream::StreamManager::createMemoryStream(fragmentSource);
-                renderer::ShaderHeader fragmentHeader(renderer::ShaderType::Fragment);
-                fragmentHeader._contentType = renderer::ShaderHeader::ShaderContent::Source;
-                fragmentHeader._shaderModel = renderer::ShaderHeader::ShaderModel::HLSL_5_1;
 
-                fragmentShader = resource::ResourceLoaderManager::getInstance()->composeShader<renderer::Shader, resource::ShaderSourceStreamLoader>(cmdList.getContext(), "fragment", &fragmentHeader, fragmentStream,
-                    "main", {}, {}, resource::ShaderSourceStreamLoader::ShaderSourceFlag::ShaderSource_UseLegacyCompilerForHLSL);
-                delete fragmentStream;
+                resource::ShaderDecoder::ShaderPolicy fragmentPolicy;
+                fragmentPolicy._type = renderer::ShaderType::Fragment;
+                fragmentPolicy._shaderModel = renderer::ShaderModel::HLSL_6_2;
+                fragmentPolicy._content = renderer::ShaderContent::Source;
+                fragmentPolicy._entryPoint = "main";
 
-                m_programBackbuffer = cmdList.createObject<renderer::ShaderProgram, std::vector<const renderer::Shader*>>({ vertexShader, fragmentShader });
+                fragmentShader = resource::ShaderCompiler::compileShader<renderer::FragmentShader>(device, "fragment", fragmentPolicy, fragmentStream, resource::ShaderCompileFlag::ShaderCompile_UseDXCompilerForSpirV);
+                stream::StreamManager::destroyStream(fragmentStream);
+
+                m_programBackbuffer = new renderer::ShaderProgram(device, vertexShader, fragmentShader );
             }
 
-            m_renderTargetBackbuffer = cmdList.createObject<RenderTargetState>(viewport);
-            m_renderTargetBackbuffer->setColorTexture(0, cmdList.getBackbuffer(),
+            m_renderTargetBackbuffer = new renderer::RenderTargetState(device, swapchain->getBackbufferSize());
+            m_renderTargetBackbuffer->setColorTexture(0, swapchain->getBackbuffer(),
                 {
                     renderer::RenderTargetLoadOp::LoadOp_DontCare, renderer::RenderTargetStoreOp::StoreOp_Store, math::Vector4D(0.0f)
                 },
@@ -137,7 +145,7 @@ TextureRender::TextureRender(CommandList& cmdList, const v3d::math::Dimension2D&
                     renderer::TransitionOp::TransitionOp_Undefined, renderer::TransitionOp::TransitionOp_Present
                 });
 
-            m_pipelineBackbuffer = cmdList.createObject<renderer::GraphicsPipelineState>(renderer::VertexInputAttributeDescription(), m_programBackbuffer.get(), m_renderTargetBackbuffer.get());
+            m_pipelineBackbuffer = new renderer::GraphicsPipelineState(device, renderer::VertexInputAttributeDesc(), m_programBackbuffer.get(), m_renderTargetBackbuffer.get());
             m_pipelineBackbuffer->setPrimitiveTopology(renderer::PrimitiveTopology::PrimitiveTopology_TriangleList);
             m_pipelineBackbuffer->setFrontFace(renderer::FrontFace::FrontFace_Clockwise);
             m_pipelineBackbuffer->setCullMode(renderer::CullMode::CullMode_Back);
@@ -147,25 +155,27 @@ TextureRender::TextureRender(CommandList& cmdList, const v3d::math::Dimension2D&
             m_pipelineBackbuffer->setDepthTest(false);
         }
 
-        m_Sampler = cmdList.createObject<renderer::SamplerState>(renderer::SamplerFilter::SamplerFilter_Trilinear, renderer::SamplerAnisotropic::SamplerAnisotropic_None);
+        m_Sampler = new renderer::SamplerState(device, renderer::SamplerFilter::SamplerFilter_Trilinear, renderer::SamplerAnisotropic::SamplerAnisotropic_None);
     }
     else
     {
-        m_renderTarget = cmdList.createObject<RenderTargetState>(viewport);
-        m_renderTarget->setColorTexture(0, cmdList.getBackbuffer(), RenderTargetLoadOp::LoadOp_Clear, RenderTargetStoreOp::StoreOp_Store, math::Vector4D(0.0f));
+        m_renderTarget = new renderer::RenderTargetState(device, swapchain->getBackbufferSize());
+        m_renderTarget->setColorTexture(0, swapchain->getBackbuffer(), renderer::RenderTargetLoadOp::LoadOp_Clear, renderer::RenderTargetStoreOp::StoreOp_Store, math::Vector4D(0.0f));
 #if defined(PLATFORM_ANDROID)
-        Texture2D* depthAttachment = cmdList.createObject<Texture2D>(TextureUsage::TextureUsage_Attachment, Format::Format_D24_UNorm_S8_UInt, viewport, TextureSamples::TextureSamples_x1);
+        renderer::Texture2D* depthAttachment = new renderer::Texture2D(device, renderer::TextureUsage::TextureUsage_Attachment, 
+            renderer::Format::Format_D24_UNorm_S8_UInt, swapchain->getBackbufferSize(), renderer::TextureSamples::TextureSamples_x1);
 #else
-        Texture2D* depthAttachment = cmdList.createObject<Texture2D>(TextureUsage::TextureUsage_Attachment, Format::Format_D32_SFloat_S8_UInt, viewport, TextureSamples::TextureSamples_x1);
+        renderer::Texture2D* depthAttachment = new renderer::Texture2D(device, renderer::TextureUsage::TextureUsage_Attachment, 
+            renderer::Format::Format_D32_SFloat_S8_UInt, swapchain->getBackbufferSize(), renderer::TextureSamples::TextureSamples_x1);
 #endif
-        m_renderTarget->setDepthStencilTexture(depthAttachment, RenderTargetLoadOp::LoadOp_Clear, RenderTargetStoreOp::StoreOp_DontCare, 0.0f);
+        m_renderTarget->setDepthStencilTexture(depthAttachment, renderer::RenderTargetLoadOp::LoadOp_Clear, renderer::RenderTargetStoreOp::StoreOp_DontCare, 0.0f);
 
-        m_pipeline = cmdList.createObject<GraphicsPipelineState>(vertex, m_program.get(), m_renderTarget.get());
-        m_pipeline->setPrimitiveTopology(PrimitiveTopology::PrimitiveTopology_TriangleList);
-        m_pipeline->setFrontFace(FrontFace::FrontFace_Clockwise);
-        m_pipeline->setCullMode(CullMode::CullMode_None);
-        m_pipeline->setColorMask(ColorMask::ColorMask_All);
-        m_pipeline->setDepthCompareOp(CompareOperation::CompareOp_GreaterOrEqual);
+        m_pipeline = new renderer::GraphicsPipelineState(device, vertex, m_program.get(), m_renderTarget.get());
+        m_pipeline->setPrimitiveTopology(renderer::PrimitiveTopology::PrimitiveTopology_TriangleList);
+        m_pipeline->setFrontFace(renderer::FrontFace::FrontFace_Clockwise);
+        m_pipeline->setCullMode(renderer::CullMode::CullMode_None);
+        m_pipeline->setColorMask(renderer::ColorMask::ColorMask_All);
+        m_pipeline->setDepthCompareOp(renderer::CompareOperation::CompareOp_GreaterOrEqual);
         m_pipeline->setDepthWrite(true);
         m_pipeline->setDepthTest(true);
     }
@@ -177,13 +187,13 @@ TextureRender::~TextureRender()
     {
         if (m_renderTargetMSAA->getColorTextureCount() > 0)
         {
-            Texture2D* colorAttachment = m_renderTargetMSAA->getColorTexture<Texture2D>(0);
+            renderer::Texture2D* colorAttachment = m_renderTargetMSAA->getColorTexture<renderer::Texture2D>(0);
             delete colorAttachment;
         }
 
         if (m_renderTargetMSAA->hasDepthStencilTexture())
         {
-            Texture2D* depthAttachment = m_renderTargetMSAA->getDepthStencilTexture<Texture2D>();
+            renderer::Texture2D* depthAttachment = m_renderTargetMSAA->getDepthStencilTexture<renderer::Texture2D>();
             delete depthAttachment;
         }
     }
@@ -191,27 +201,27 @@ TextureRender::~TextureRender()
     {
         if (m_renderTarget->hasDepthStencilTexture())
         {
-            Texture2D* depthAttachment = m_renderTarget->getDepthStencilTexture<Texture2D>();
+            renderer::Texture2D* depthAttachment = m_renderTarget->getDepthStencilTexture<renderer::Texture2D>();
             delete depthAttachment;
         }
     }
 }
 
-void TextureRender::process(renderer::CommandList& cmdList, const std::vector<std::tuple<renderer::StreamBufferDescription, renderer::DrawProperties>>& props)
+void TextureRender::process(renderer::CmdListRender& cmdList, const std::vector<std::tuple<renderer::GeometryBufferDesc, DrawProperties>>& props)
 {
     if (m_enableMSAA)
     {
-        cmdList.setViewport(math::Rect32(0, 0, m_renderTargetMSAA->getDimension().m_width, m_renderTargetMSAA->getDimension().m_height));
-        cmdList.setScissor(math::Rect32(0, 0, m_renderTargetMSAA->getDimension().m_width, m_renderTargetMSAA->getDimension().m_height));
-        cmdList.setRenderTarget(m_renderTargetMSAA.get());
-        cmdList.setPipelineState(m_pipelineMSAA.get());
+        cmdList.setViewport(math::Rect32(0, 0, m_renderTargetMSAA->getRenderArea().m_width, m_renderTargetMSAA->getRenderArea().m_height));
+        cmdList.setScissor(math::Rect32(0, 0, m_renderTargetMSAA->getRenderArea().m_width, m_renderTargetMSAA->getRenderArea().m_height));
+        cmdList.beginRenderTarget(*m_renderTargetMSAA.get());
+        cmdList.setPipelineState(*m_pipelineMSAA.get());
     }
     else
     {
-        cmdList.setViewport(math::Rect32(0, 0, m_renderTarget->getDimension().m_width, m_renderTarget->getDimension().m_height));
-        cmdList.setScissor(math::Rect32(0, 0, m_renderTarget->getDimension().m_width, m_renderTarget->getDimension().m_height));
-        cmdList.setRenderTarget(m_renderTarget.get());
-        cmdList.setPipelineState(m_pipeline.get());
+        cmdList.setViewport(math::Rect32(0, 0, m_renderTarget->getRenderArea().m_width, m_renderTarget->getRenderArea().m_height));
+        cmdList.setScissor(math::Rect32(0, 0, m_renderTarget->getRenderArea().m_width, m_renderTarget->getRenderArea().m_height));
+        cmdList.beginRenderTarget(*m_renderTarget.get());
+        cmdList.setPipelineState(*m_pipeline.get());
     }
 
     m_shaderParameters.bindUniformParameters(cmdList, m_program.get());
@@ -219,32 +229,36 @@ void TextureRender::process(renderer::CommandList& cmdList, const std::vector<st
     for (auto& buffer : props)
     {
 
-        const  renderer::DrawProperties& props = std::get<1>(buffer);
+        const  DrawProperties& props = std::get<1>(buffer);
         if (props._indexDraws)
         {
-            cmdList.drawIndexed(std::get<0>(buffer), props._start, props._count, props._countInstance);
+            cmdList.drawIndexed(std::get<0>(buffer), props._start, props._count, 0, props._countInstance);
         }
         else
         {
-            cmdList.draw(std::get<0>(buffer), props._start, props._count, props._countInstance);
+            cmdList.draw(std::get<0>(buffer), props._start, props._count, 0, props._countInstance);
         }
     }
 
+    cmdList.endRenderTarget();
+
     if (m_enableMSAA)
     {
-        cmdList.setViewport(math::Rect32(0, 0, m_renderTargetBackbuffer->getDimension().m_width, m_renderTargetBackbuffer->getDimension().m_height));
-        cmdList.setScissor(math::Rect32(0, 0, m_renderTargetBackbuffer->getDimension().m_width, m_renderTargetBackbuffer->getDimension().m_height));
-        cmdList.setRenderTarget(m_renderTargetBackbuffer.get());
-        cmdList.setPipelineState(m_pipelineBackbuffer.get());
+        cmdList.setViewport(math::Rect32(0, 0, m_renderTargetBackbuffer->getRenderArea().m_width, m_renderTargetBackbuffer->getRenderArea().m_height));
+        cmdList.setScissor(math::Rect32(0, 0, m_renderTargetBackbuffer->getRenderArea().m_width, m_renderTargetBackbuffer->getRenderArea().m_height));
+        cmdList.beginRenderTarget(*m_renderTargetBackbuffer.get());
+        cmdList.setPipelineState(*m_pipelineBackbuffer.get());
 
-        m_programBackbuffer->bindSampler<renderer::ShaderType::Fragment>({ "colorSampler" }, m_Sampler.get());
-        m_programBackbuffer->bindTexture<renderer::ShaderType::Fragment, renderer::Texture2D>({ "colorTexture" }, m_renderTargetMSAA->getColorTexture<Texture2D>(0));
+        //m_programBackbuffer->bindSampler<renderer::ShaderType::Fragment>({ "colorSampler" }, m_Sampler.get());
+        //m_programBackbuffer->bindTexture<renderer::ShaderType::Fragment, renderer::Texture2D>({ "colorTexture" }, m_renderTargetMSAA->getColorTexture<Texture2D>(0));
 
-        cmdList.draw(renderer::StreamBufferDescription(nullptr, 0), 0, 3, 1);
+        cmdList.draw(renderer::GeometryBufferDesc(nullptr, 0, 0), 0, 3, 0, 1);
+
+        cmdList.endRenderTarget();
     }
 }
 
-void TextureRender::updateParameters(renderer::CommandList& cmdList, const std::function<void(TextureUniformParameters&)>& callback)
+void TextureRender::updateParameters(renderer::CmdListRender& cmdList, const std::function<void(TextureUniformParameters&)>& callback)
 {
     callback(m_shaderParameters);
 }

@@ -2,19 +2,14 @@
 
 #include "Common.h"
 #include "Utils/IntrusivePointer.h"
-
-#include "Renderer/Core/Context.h"
-#include "Renderer/CommandList.h"
-#include "Scene/CameraArcballHelper.h"
-
-#include "Event/InputEventMouse.h"
-#include "Event/InputEventTouch.h"
-#include "Event/InputEventHandler.h"
-
+#include "Renderer/Render.h"
+#include "Renderer/Device.h"
 #include "Renderer/Texture.h"
 #include "Renderer/SamplerState.h"
-#include "Scene/ModelHelper.h"
-
+#include "Scene/CameraArcballHelper.h"
+#include "Events/InputEventMouse.h"
+#include "Events/InputEventTouch.h"
+#include "Events/InputEventHandler.h"
 #include "TextureRender.h"
 
 namespace app
@@ -24,10 +19,10 @@ class Scene
 {
 public:
 
-    Scene(v3d::renderer::Context* context, v3d::renderer::CommandList* cmdList, const v3d::math::Dimension2D& size) noexcept;
+    Scene(v3d::renderer::Device* device, v3d::renderer::Swapchain* swapchain) noexcept;
     ~Scene();
 
-    bool Run();
+    void Run(v3d::f32 dt);
     void SendExitSignal();
 
     static void MouseCallback(Scene* scene, v3d::event::InputEventHandler* handler, const v3d::event::MouseInputEvent* event);
@@ -35,9 +30,9 @@ public:
 
 private:
 
-    v3d::renderer::Context*     m_Context;
-    v3d::renderer::CommandList* m_CommandList;
-    v3d::math::Dimension2D      m_Size;
+    v3d::renderer::Device*        m_Device;
+    v3d::renderer::Swapchain*     m_Swapchain;
+    v3d::renderer::CmdListRender* m_CmdList;
 
     enum class States
     {
@@ -51,26 +46,21 @@ private:
 
     void Init();
     void Load();
-    void Update();
-    void Draw();
+    void Draw(v3d::f32 dt);
     void Exit();
 
     v3d::scene::CameraArcballHelper* m_Camera;
-    v3d::TextureRender*              m_Render;
+    app::TextureRender*              m_Render;
 
     struct Model
     {
         v3d::utils::IntrusivePointer<v3d::renderer::Texture2D>    m_Texture;
         v3d::utils::IntrusivePointer<v3d::renderer::SamplerState> m_Sampler;
-        v3d::scene::ModelHelper* m_Model;
+        std::vector<std::tuple<v3d::renderer::GeometryBufferDesc, app::DrawProperties>> m_Props;
     };
-    Model m_Voyager;
-    Model m_Test;
-
-    Model* m_CurrentModel;
+    std::list<Model*> m_Models;
 
     void LoadVoyager();
-    void LoadTest();
 };
 
 } //namespace app

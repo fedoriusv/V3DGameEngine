@@ -1,9 +1,8 @@
 #include "Scene.h"
 #include "Scene/CameraArcballHelper.h"
 #include "Scene/Model.h"
-
 #include "Resource/Bitmap.h"
-#include "Resource/ResourceLoaderManager.h"
+#include "Resource/ResourceManager.h"
 #include "Resource/ShaderSourceFileLoader.h"
 #include "Resource/ImageFileLoader.h"
 #include "Resource/ModelFileLoader.h"
@@ -15,27 +14,27 @@ namespace app
 
 using namespace v3d;
 
-Scene::Scene(renderer::Context* context, v3d::renderer::CommandList* cmdList, const v3d::math::Dimension2D& size) noexcept
-    : m_Context(context)
-    , m_CommandList(cmdList)
-    , m_Size(size)
+Scene::Scene(v3d::renderer::Device* device, renderer::Swapchain* swapchain) noexcept
+    : m_Device(device)
+    , m_Swapchain(swapchain)
+    , m_CmdList(m_Device->createCommandList<renderer::CmdListRender>(renderer::Device::GraphicMask))
 
     , m_CurrentState(States::StateInit)
 
     , m_Camera(nullptr)
     , m_Render(nullptr)
-
-    , m_CurrentModel(nullptr)
 {
-    m_Voyager.m_Model = nullptr;
-    m_Test.m_Model = nullptr;
+    resource::ResourceManager::createInstance();
+    resource::ResourceManager::getInstance()->addPath("../../../../examples/drawmesh/data/");
 }
 
 Scene::~Scene()
 {
+    resource::ResourceManager::getInstance()->clear();
+    resource::ResourceManager::freeInstance();
 }
 
-bool Scene::Run()
+void Scene::Run(f32 dt)
 {
     switch (m_CurrentState)
     {
@@ -43,7 +42,6 @@ bool Scene::Run()
     {
         Init();
         m_CurrentState = States::StateLoad;
-        return true;
     }
 
     case States::StateLoad:
@@ -51,24 +49,19 @@ bool Scene::Run()
         Load();
 
         m_CurrentState = States::StateDraw;
-        return true;
     }
 
     case States::StateDraw:
     {
-        Draw();
-        return true;
+        Draw(dt);
     }
 
     case States::StateExit:
     default:
     {
         Exit();
-        return false;
     }
     }
-
-    return false;
 }
 
 void Scene::SendExitSignal()
@@ -80,119 +73,112 @@ void Scene::Init()
 {
     //init camera
     m_Camera = new scene::CameraArcballHelper(new scene::Camera(math::Vector3D(0.0f, 0.0f, 0.0f), math::Vector3D(0.0f, 1.0f, 0.0f)), 8.0f, 4.0f, 20.0f);
-    m_Camera->setPerspective(45.0f, m_Size, 1.f, 50.f);
+    m_Camera->setPerspective(45.0f, m_Swapchain->getBackbufferSize(), 1.f, 50.f);
     m_Camera->setRotation(math::Vector3D(0.0f, -90.0f, 0.0f));
 }
 
 void Scene::Load()
 {
     //load resources
-    resource::ResourceLoaderManager::getLazyInstance()->addPath("examples/drawmesh/data/");
-    const bool test = false;
-    if (test)
-    {
-        LoadTest();
-        m_CurrentModel = &m_Test;
-    }
-    else
-    {
-        LoadVoyager();
-        m_CurrentModel = &m_Voyager;
-    }
+    LoadVoyager();
 
     {
 #if VULKAN_ONLY
-        const renderer::Shader* vertShader = resource::ResourceLoaderManager::getInstance()->loadShader<renderer::Shader, resource::ShaderSourceFileLoader>(m_Context, "shaders/mesh.vert");
-        const renderer::Shader* fragShader = resource::ResourceLoaderManager::getInstance()->loadShader<renderer::Shader, resource::ShaderSourceFileLoader>(m_Context, "shaders/mesh.frag");
+        const renderer::Shader* vertShader = resource::ResourceManager::getInstance()->loadShader<renderer::Shader, resource::ShaderSourceFileLoader>(m_Device, "shaders/mesh.vert");
+        const renderer::Shader* fragShader = resource::ResourceManager::getInstance()->loadShader<renderer::Shader, resource::ShaderSourceFileLoader>(m_Device, "shaders/mesh.frag");
 #else
-        const renderer::Shader* vertShader = resource::ResourceLoaderManager::getInstance()->loadShader<renderer::Shader, resource::ShaderSourceFileLoader>(m_Context, "shaders/mesh.vs",
-            "main", {}, {});
-        const renderer::Shader* fragShader = resource::ResourceLoaderManager::getInstance()->loadShader<renderer::Shader, resource::ShaderSourceFileLoader>(m_Context, "shaders/mesh.ps",
-            "main", {}, {});
+        const renderer::VertexShader* vertShader = resource::ResourceManager::getInstance()->loadShader<renderer::VertexShader, resource::ShaderSourceFileLoader>(m_Device, "shaders/mesh.hlsl", "main_vs");
+        const renderer::FragmentShader* fragShader = resource::ResourceManager::getInstance()->loadShader<renderer::FragmentShader, resource::ShaderSourceFileLoader>(m_Device, "shaders/mesh.hlsl", "main_ps");
 #endif
-        m_Render = new v3d::TextureRender(*m_CommandList, m_Context->getBackbufferSize(), { vertShader, fragShader }, m_CurrentModel->m_Model->getVertexInputAttribDescription(0, 0));
+        m_Render = new app::TextureRender(m_Device, *m_CmdList, m_Swapchain, {vertShader, fragShader}, renderer::VertexInputAttributeDesc());
     }
-
-    m_CommandList->submitCommands(true);
-    m_CommandList->flushCommands();
 }
 
 void Scene::LoadVoyager()
 {
+    Model* voyager = new Model();
+
     {
 #if defined(PLATFORM_ANDROID)
-        resource::Image* image = resource::ResourceLoaderManager::getInstance()->load<resource::Image, resource::ImageFileLoader>("models/voyager/voyager_astc_8x8_unorm.ktx");
-        m_Voyager.m_Sampler = m_CommandList->createObject<renderer::SamplerState>(renderer::SamplerFilter::SamplerFilter_Bilinear, renderer::SamplerAnisotropic::SamplerAnisotropic_None);
+        resource::Image* image = resource::ResourceManager::getInstance()->load<resource::Image, resource::ImageFileLoader>("models/voyager/voyager_astc_8x8_unorm.ktx");
+        voyager->m_Sampler = m_CommandList->createObject<renderer::SamplerState>(renderer::SamplerFilter::SamplerFilter_Bilinear, renderer::SamplerAnisotropic::SamplerAnisotropic_None);
 #else
-        resource::Bitmap* image = resource::ResourceLoaderManager::getInstance()->load<resource::Bitmap, resource::ImageFileLoader>("models/voyager/voyager_bc3_unorm.ktx");
-        m_Voyager.m_Sampler = m_CommandList->createObject<renderer::SamplerState>(renderer::SamplerFilter::SamplerFilter_Bilinear, renderer::SamplerAnisotropic::SamplerAnisotropic_4x);
+        resource::Bitmap* image = resource::ResourceManager::getInstance()->load<resource::Bitmap, resource::ImageFileLoader>("models/voyager/voyager_bc3_unorm.ktx");
+        voyager->m_Sampler = new renderer::SamplerState(m_Device, renderer::SamplerFilter::SamplerFilter_Bilinear, renderer::SamplerAnisotropic::SamplerAnisotropic_4x);
 #endif
-        m_Voyager.m_Sampler->setWrap(renderer::SamplerWrap::TextureWrap_Repeat);
-        m_Voyager.m_Texture = m_CommandList->createObject<renderer::Texture2D>(renderer::TextureUsage::TextureUsage_Sampled | renderer::TextureUsage_Shared | renderer::TextureUsage_Write,
-            image->getFormat(), math::Dimension2D(image->getDimension().m_width, image->getDimension().m_height), 1, image->getBitmap());
+        voyager->m_Sampler->setWrap(renderer::SamplerWrap::TextureWrap_Repeat);
+        voyager->m_Texture = new renderer::Texture2D(m_Device, renderer::TextureUsage::TextureUsage_Sampled | renderer::TextureUsage_Shared | renderer::TextureUsage_Write,
+            image->getFormat(), math::Dimension2D(image->getDimension().m_width, image->getDimension().m_height), 1);
+        m_CmdList->uploadData(voyager->m_Texture.get(), image->getSize(), image->getBitmap());
     }
 
     {
-        scene::Model* model = resource::ResourceLoaderManager::getInstance()->load<scene::Model, resource::ModelFileLoader>("models/voyager/voyager.dae", 
-            resource::ModelFileLoader::ModelLoaderFlag::FlipYTextureCoord | resource::ModelFileLoader::ModelLoaderFlag::SkipTangentAndBitangent | resource::ModelFileLoader::ModelLoaderFlag::SkipMaterialLoading);
-        m_Voyager.m_Model = new scene::ModelHelper(m_CommandList, { model });
+        scene::Model* model = resource::ResourceManager::getInstance()->load<scene::Model, resource::ModelFileLoader>("models/voyager/voyager.dae",
+            resource::ModelFileLoader::ModelLoaderFlag::FlipYTextureCoord | resource::ModelFileLoader::ModelLoaderFlag::SkipTangentAndBitangent | resource::ModelFileLoader::ModelLoaderFlag::SkipMaterial);
+
+        //renderer::VertexBuffer* vertexBuffer = new renderer::VertexBuffer(m_Device, renderer::Buffer_Read, size);
+        //ASSERT(vertexBuffer, "nullptr");
+        //m_buffers.push_back(utils::IntrusivePointer<renderer::StreamBuffer>(vertexBuffer));
+
+        //if (staticMesh->getIndexCount() > 0)
+        //{
+        //    u32 count = staticMesh->getIndexCount();
+        //    const void* data = staticMesh->getIndexData();
+        //    renderer::StreamIndexBufferType type = staticMesh->getIndexType();
+
+        //    renderer::IndexStreamBuffer* indexBuffer = cmdList->createObject<renderer::IndexStreamBuffer>(renderer::StreamBuffer_Write | renderer::StreamBuffer_Shared, type, count, data);
+        //    ASSERT(indexBuffer, "nullptr");
+        //    m_buffers.push_back(utils::IntrusivePointer<renderer::StreamBuffer>(indexBuffer));
+
+        //    renderer::DrawProperties props = { 0, count, 0, 1, true };
+        //    m_drawState.push_back(std::make_tuple(renderer::StreamBufferDescription(indexBuffer, 0, vertexBuffer, 0, 0), props));
+        //}
+        //else
+        //{
+        //    renderer::DrawProperties props = { 0, staticMesh->getVertexCount(), 0, 1, false };
+        //    m_drawState.push_back(std::make_tuple(renderer::StreamBufferDescription(vertexBuffer, 0, 0), props));
+        //}
     }
+
+    m_Models.push_back(voyager);
 }
 
-void Scene::LoadTest()
-{
-    resource::Bitmap* image = resource::ResourceLoaderManager::getInstance()->load<resource::Bitmap, resource::ImageFileLoader>("engine/data/textures/test_basetex.jpg");
-    m_Test.m_Texture = m_CommandList->createObject<renderer::Texture2D>(renderer::TextureUsage::TextureUsage_Sampled | renderer::TextureUsage_Shared | renderer::TextureUsage_Write,
-        image->getFormat(), math::Dimension2D(image->getDimension().m_width, image->getDimension().m_height), 1, image->getBitmap());
-    m_Test.m_Sampler = m_CommandList->createObject<renderer::SamplerState>(renderer::SamplerFilter::SamplerFilter_Bilinear, renderer::SamplerAnisotropic::SamplerAnisotropic_None);
-    m_Test.m_Sampler->setWrap(renderer::SamplerWrap::TextureWrap_MirroredRepeat);
-
-    scene::Model* model = resource::ResourceLoaderManager::getInstance()->load<scene::Model, resource::ModelFileLoader>("engine/data/models/test_blender.dae", resource::ModelFileLoader::FlipYTextureCoord);
-    m_Test.m_Model = new scene::ModelHelper(m_CommandList, { model });
-}
-
-void Scene::Update()
-{
-    m_Render->updateParameters(*m_CommandList, [this](TextureUniformParameters& params) -> void
-    {
-        //vs
-        params._constantBufferVS._projectionMatrix = m_Camera->getCamera().getProjectionMatrix();
-        params._constantBufferVS._viewMatrix = m_Camera->getCamera().getViewMatrix();
-        params._constantBufferVS._modelMatrix.setTranslation(math::Vector3D(0, 0, 0));
-        params._constantBufferVS._normalMatrix = params._constantBufferVS._modelMatrix;
-        params._constantBufferVS._normalMatrix.makeTransposed();
-
-        params._constantBufferFS._lightPos = math::Vector4D(25.0f, 0.0f, 5.0f, 1.0f);
-
-        //ps
-        params._texture = m_CurrentModel->m_Texture.get();
-        params._sampler = m_CurrentModel->m_Sampler.get();
-    });
-}
-
-void Scene::Draw()
+void Scene::Draw(f32 dt)
 {
     //Frame
-    m_CommandList->beginFrame();
+    m_Swapchain->beginFrame();
 
-    m_Camera->update(0);
-    Update();
+    m_Camera->update(dt);
 
-    m_Render->process(*m_CommandList, m_CurrentModel->m_Model->getDrawStates());
+    for (auto& model : m_Models)
+    {
+        m_Render->updateParameters(*m_CmdList, [this](TextureUniformParameters& params) -> void
+            {
+                //vs
+                params._constantBufferVS._projectionMatrix = m_Camera->getCamera().getProjectionMatrix();
+                params._constantBufferVS._viewMatrix = m_Camera->getCamera().getViewMatrix();
+                params._constantBufferVS._modelMatrix.setTranslation(math::Vector3D(0, 0, 0));
+                params._constantBufferVS._normalMatrix = params._constantBufferVS._modelMatrix;
+                params._constantBufferVS._normalMatrix.makeTransposed();
 
-    m_CommandList->endFrame();
-    m_CommandList->submitCommands();
+                params._constantBufferFS._lightPos = math::Vector4D(25.0f, 0.0f, 5.0f, 1.0f);
 
-    m_CommandList->presentFrame();
+                //ps
+                //params._texture = m_CurrentModel->m_Texture.get();
+                //params._sampler = m_CurrentModel->m_Sampler.get();
+            });
 
-    m_CommandList->flushCommands();
+        m_Render->process(*m_CmdList, model->m_Props);
+    }
+
+    m_Device->submit(m_CmdList);
+
+    m_Swapchain->endFrame();
+    m_Swapchain->presentFrame();
 }
 
 void Scene::Exit()
 {
-    m_CommandList->submitCommands(true);
-    m_CommandList->flushCommands();
-
     if (m_Render)
     {
         delete m_Render;
@@ -204,21 +190,6 @@ void Scene::Exit()
         delete m_Camera;
         m_Camera = nullptr;
     }
-
-    if (m_Voyager.m_Model)
-    {
-        delete m_Voyager.m_Model;
-        m_Voyager = {};
-    }
-
-    if (m_Test.m_Model)
-    {
-        delete m_Test.m_Model;
-        m_Test = {};
-    }
-
-    resource::ResourceLoaderManager::getInstance()->clear();
-    resource::ResourceLoaderManager::freeInstance();
 }
 
 void Scene::MouseCallback(Scene* scene, event::InputEventHandler* handler, const event::MouseInputEvent* event)

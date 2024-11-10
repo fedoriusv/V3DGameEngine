@@ -23,7 +23,7 @@ struct PS_INPUT
     [[vk::location(3)]] float2 UV        : TEXTURE;
 };
 
-PS_INPUT main(VS_INPUT Input)
+PS_INPUT main_vs(VS_INPUT Input)
 {
     PS_INPUT Output;
    
@@ -35,4 +35,26 @@ PS_INPUT main(VS_INPUT Input)
     Output.UV = Input.UV;
 
     return Output;
+}
+
+[[vk::binding(1, 0)]] SamplerState samplerColor : register(s0);
+[[vk::binding(2, 0)]] Texture2D textureColor : register(t0);
+
+struct LIGHT
+{
+    float4 lightPosition;
+};
+
+[[vk::binding(3, 0)]] ConstantBuffer<LIGHT> light : register(b1);
+
+[[vk::location(0)]] float4 main_ps(PS_INPUT Input) : SV_TARGET0
+{
+    float4 OutColor = textureColor.Sample(samplerColor, Input.UV);
+
+    float3 N = normalize(Input.Normal);
+    float3 L = normalize(light.lightPosition.xyz - Input.Position);
+    float diffuseKoeff = max(dot(N, L), 0.01);
+    OutColor = float4(diffuseKoeff * OutColor.rgb, 1.0);
+    
+    return OutColor;
 }
