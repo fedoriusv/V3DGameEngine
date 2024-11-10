@@ -26,7 +26,7 @@ option(GLI_LIB "Use GLI. Uses GLM" ON)
 #https://github.com/g-truc/gli.git
 #https://github.com/g-truc/glm.git
 
-option(ASSIMP_LIB "Use Assimp lib" OFF)
+option(ASSIMP_LIB "Use Assimp lib" ON)
 #https://github.com/assimp/assimp.git
 
 option(HWCPipe_LIB_OPTION "Use HWCPipe lib(Only for Android Target)" OFF)
@@ -187,6 +187,11 @@ file(GLOB SCENE_GEOMETRY_HEADERS ${SOURCE_DIR}/Scene/Geometry/*.h)
 file(GLOB SCENE_GEOMETRY_SOURCES ${SOURCE_DIR}/Scene/Geometry/*.cpp)
 file(GLOB SCENE_COMPONENTS_HEADERS ${SOURCE_DIR}/Scene/Components/*.h)
 file(GLOB SCENE_COMPONENTS_SOURCES ${SOURCE_DIR}/Scene/Components/*.cpp)
+file(GLOB TASK_GRAPH_HEADERS ${SOURCE_DIR}/TaskGraph/*.h)
+file(GLOB TASK_GRAPH_SOURCES ${SOURCE_DIR}/TaskGraph/*.cpp)
+file(GLOB FRAME_GRAPH_HEADERS ${SOURCE_DIR}/FrameGraph/*.h)
+file(GLOB FRAME_GRAPH_SOURCES ${SOURCE_DIR}/FrameGraph/*.cpp)
+
 
 file(GLOB COMMON_PLATFORM_HEADERS ${SOURCE_DIR}/Platform/*.h)
 file(GLOB COMMON_PLATFORM_SOURCES ${SOURCE_DIR}/Platform/*.cpp)
@@ -226,6 +231,8 @@ source_group("Stream" FILES ${STREAM_HEADERS} ${STREAM_SOURCES})
 source_group("Scene" FILES ${SCENE_HEADERS} ${SCENE_SOURCES})
 source_group("Scene\\Geometry" FILES ${SCENE_GEOMETRY_HEADERS} ${SCENE_GEOMETRY_SOURCES})
 source_group("Scene\\Components" FILES ${SCENE_COMPONENTS_HEADERS} ${SCENE_COMPONENTS_SOURCES})
+source_group("TaskGraph" FILES ${TASK_GRAPH_HEADERS} ${TASK_GRAPH_SOURCES})
+source_group("FrameGraph" FILES ${FRAME_GRAPH_HEADERS} ${FRAME_GRAPH_SOURCES})
 
 if(BUILD_VULKAN_SDK)
     source_group("Renderer\\Vulkan" FILES ${VULKAN_HEADERS} ${VULKAN_SOURCES})
@@ -249,8 +256,8 @@ add_library(${ENGINE_NAME} STATIC
     ${RESOURCE_HEADERS} ${RESOURCE_SOURCES}
     ${STREAM_HEADERS} ${STREAM_SOURCES}
     ${SCENE_HEADERS} ${SCENE_SOURCES}
-	${SCENE_GEOMETRY_HEADERS} ${SCENE_GEOMETRY_SOURCES}
-	${SCENE_COMPONENTS_HEADERS} ${SCENE_COMPONENTS_SOURCES}
+    ${SCENE_GEOMETRY_HEADERS} ${SCENE_GEOMETRY_SOURCES}
+    ${SCENE_COMPONENTS_HEADERS} ${SCENE_COMPONENTS_SOURCES}
     $<$<BOOL:BUILD_VULKAN_SDK>:${VULKAN_HEADERS} ${VULKAN_SOURCES} ${RESOURCE_SPIRV_HEADERS} ${RESOURCE_SPIRV_SOURCES}>
     $<$<BOOL:BUILD_DIRECTX_SDK>:${DIRECTX_HEADERS} ${DIRECTX_SOURCES}>
     )
@@ -331,21 +338,11 @@ if(ASSIMP_LIB)
             ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${ASSIMP_LIB_DIRECTORY}/code/${PROJECT_PLATFORM}
             FOLDER ThirdParty/assimp
         )
-        set_target_properties(IrrXML PROPERTIES
-            ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${ASSIMP_LIB_DIRECTORY}/condrib/${PROJECT_PLATFORM}
-            FOLDER ThirdParty/assimp
-        )
-        set_target_properties(zlibstatic PROPERTIES
-            ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${ASSIMP_LIB_DIRECTORY}/condrib/${PROJECT_PLATFORM}
-            FOLDER ThirdParty/assimp
-        )
-        set_target_properties(zlib PROPERTIES FOLDER ThirdParty/assimp)
+        set_target_properties(zlibstatic PROPERTIES FOLDER ThirdParty/assimp)
         set_target_properties(UpdateAssimpLibsDebugSymbolsAndDLLs PROPERTIES FOLDER ThirdParty/assimp)
         set_target_properties(uninstall PROPERTIES FOLDER ThirdParty/assimp)
-        
+		
         target_compile_options(assimp PRIVATE -D_SILENCE_ALL_CXX17_DEPRECATION_WARNINGS $<$<CONFIG:DEBUG>:/MTd> $<$<CONFIG:RELEASE>:/MT>)
-        target_compile_options(IrrXML PRIVATE $<$<CONFIG:DEBUG>:/MTd> $<$<CONFIG:RELEASE>:/MT>)
-        target_compile_options(zlib PRIVATE $<$<CONFIG:DEBUG>:/MTd> $<$<CONFIG:RELEASE>:/MT>)
         target_compile_options(zlibstatic PRIVATE $<$<CONFIG:DEBUG>:/MTd> $<$<CONFIG:RELEASE>:/MT>)
     elseif(TARGET_ANDROID)
         target_compile_options(assimp PRIVATE -D_SILENCE_ALL_CXX17_DEPRECATION_WARNINGS -frtti)
