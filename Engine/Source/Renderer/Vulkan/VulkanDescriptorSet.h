@@ -83,7 +83,6 @@ namespace vk
         };
 
         bool isActiveBinding(u32 binding) const;
-        bool isDirty() const;
         void clear();
 
         void calcHash() const;
@@ -152,7 +151,7 @@ namespace vk
         explicit VulkanDescriptorSetManager(VulkanDevice* device, u32 swapchainImages) noexcept;
         ~VulkanDescriptorSetManager();
 
-        std::tuple<VulkanDescriptorSetPool*, VkDescriptorSet, u32> acquireFreeDescriptorSet(const VulkanDescriptorSetLayoutDescription& desc, VkDescriptorSetLayout layoutSet);
+        [[nodiscard]] std::tuple<VulkanDescriptorSetPool*, VkDescriptorSet, u32> acquireFreeDescriptorSet(const VulkanDescriptorSetLayoutDescription& desc, VkDescriptorSetLayout layoutSet);
 
         void updateDescriptorSet(VulkanCommandBuffer* cmdBuffer, VkDescriptorSet set, const SetInfo& setInfo);
         void updateStatus();

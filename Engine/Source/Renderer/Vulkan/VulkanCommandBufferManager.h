@@ -62,7 +62,7 @@ namespace vk
         explicit VulkanCommandBufferManager(VulkanDevice* device, VulkanSemaphoreManager* semaphoreManager) noexcept;
         ~VulkanCommandBufferManager();
 
-        VulkanCommandBuffer* acquireNewCmdBuffer(Device::DeviceMask queueMask, CommandBufferLevel level);
+        [[nodiscard]] VulkanCommandBuffer* acquireNewCmdBuffer(Device::DeviceMask queueMask, CommandBufferLevel level);
 
         bool submit(VulkanCommandBuffer* buffer, const std::vector<VulkanSemaphore*>& signalSemaphores);
 

@@ -125,7 +125,7 @@ namespace vk
         explicit VulkanPipelineLayoutManager(VulkanDevice* device) noexcept;
         ~VulkanPipelineLayoutManager();
 
-        VulkanPipelineLayout acquirePipelineLayout(const VulkanPipelineLayoutDescription& desc);
+        [[nodiscard]] VulkanPipelineLayout acquirePipelineLayout(const VulkanPipelineLayoutDescription& desc);
         bool removePipelineLayout(const VulkanPipelineLayoutDescription& desc);
 
         void clear();

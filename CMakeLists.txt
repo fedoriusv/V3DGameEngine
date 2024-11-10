@@ -9,8 +9,8 @@ option(BUILD_EXAMPLES "Generate Examples" ON)
 ##############################################################
 #Render SDK
 ##############################################################
-option(BUILD_VULKAN_SDK_OPTION "Build use Vulkan SDK" ON)
-option(BUILD_DIRECTX_SDK_OPTION "Use DirectX SDK(Only for Windows Target)" OFF)
+option(BUILD_VULKAN_SDK_OPTION "Use Vulkan SDK" ON)
+option(BUILD_DIRECTX_SDK_OPTION "Use DirectX SDK" OFF)
 
 ##############################################################
 #ThirdParty
@@ -19,10 +19,10 @@ option(BUILD_DIRECTX_SDK_OPTION "Use DirectX SDK(Only for Windows Target)" OFF)
 #Crc32c lib is required"
 #https://github.com/google/crc32c.git
 
-option(STB_LIB "Use STB" OFF)
+option(STB_LIB "Use STB" ON)
 #https://github.com/nothings/stb.git
 
-option(GLI_LIB "Use GLI. Uses GLM" OFF)
+option(GLI_LIB "Use GLI. Uses GLM" ON)
 #https://github.com/g-truc/gli.git
 #https://github.com/g-truc/glm.git
 
@@ -201,8 +201,8 @@ endif()
 if (BUILD_VULKAN_SDK)
     file(GLOB VULKAN_HEADERS ${SOURCE_DIR}/Renderer/Vulkan/*.h ${SOURCE_DIR}/Renderer/Vulkan/*.inl)
     file(GLOB VULKAN_SOURCES ${SOURCE_DIR}/Renderer/Vulkan/*.cpp)
-	file(GLOB RESOURCE_SPIRV_HEADERS ${SOURCE_DIR}/Resource/SpirVPatch/*.h)
-	file(GLOB RESOURCE_SPIRV_SOURCES ${SOURCE_DIR}/Resource/SpirVPatch/*.cpp)
+    file(GLOB RESOURCE_SPIRV_HEADERS ${SOURCE_DIR}/Resource/SpirVPatch/*.h)
+    file(GLOB RESOURCE_SPIRV_SOURCES ${SOURCE_DIR}/Resource/SpirVPatch/*.cpp)
 endif()
 
 if(BUILD_DIRECTX_SDK)
@@ -229,7 +229,7 @@ source_group("Scene\\Components" FILES ${SCENE_COMPONENTS_HEADERS} ${SCENE_COMPO
 
 if(BUILD_VULKAN_SDK)
     source_group("Renderer\\Vulkan" FILES ${VULKAN_HEADERS} ${VULKAN_SOURCES})
-	source_group("Resource\\SpirVPatch" FILES ${RESOURCE_SPIRV_HEADERS} ${RESOURCE_SPIRV_SOURCES})
+    source_group("Resource\\SpirVPatch" FILES ${RESOURCE_SPIRV_HEADERS} ${RESOURCE_SPIRV_SOURCES})
 endif()
 
 if(BUILD_DIRECTX_SDK)
@@ -256,8 +256,8 @@ add_library(${ENGINE_NAME} STATIC
     )
 
 target_include_directories(${ENGINE_NAME} BEFORE 
-	PRIVATE ${LIB_INCLUDE_DIRECTORY}
-	PRIVATE $<$<BOOL:BUILD_VULKAN_SDK>:${VULKAN_SDK_INCLUDE_DIRECTORY}>)
+    PRIVATE ${LIB_INCLUDE_DIRECTORY}
+    PRIVATE $<$<BOOL:BUILD_VULKAN_SDK>:${VULKAN_SDK_INCLUDE_DIRECTORY}>)
 
 
 set(BUILD_DEPENDENCIES "")
@@ -344,7 +344,7 @@ if(ASSIMP_LIB)
         set_target_properties(uninstall PROPERTIES FOLDER ThirdParty/assimp)
         
         target_compile_options(assimp PRIVATE -D_SILENCE_ALL_CXX17_DEPRECATION_WARNINGS $<$<CONFIG:DEBUG>:/MTd> $<$<CONFIG:RELEASE>:/MT>)
-		target_compile_options(IrrXML PRIVATE $<$<CONFIG:DEBUG>:/MTd> $<$<CONFIG:RELEASE>:/MT>)
+        target_compile_options(IrrXML PRIVATE $<$<CONFIG:DEBUG>:/MTd> $<$<CONFIG:RELEASE>:/MT>)
         target_compile_options(zlib PRIVATE $<$<CONFIG:DEBUG>:/MTd> $<$<CONFIG:RELEASE>:/MT>)
         target_compile_options(zlibstatic PRIVATE $<$<CONFIG:DEBUG>:/MTd> $<$<CONFIG:RELEASE>:/MT>)
     elseif(TARGET_ANDROID)

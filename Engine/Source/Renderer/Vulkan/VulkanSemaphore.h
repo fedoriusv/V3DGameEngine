@@ -84,7 +84,7 @@ namespace vk
 
         bool markSemaphore(VulkanSemaphore* semaphore, VulkanSemaphore::SemaphoreStatus status);
 
-        VulkanSemaphore* createSemaphore(const std::string& name = "");
+        [[nodiscard]] VulkanSemaphore* createSemaphore(const std::string& name = "");
         void deleteSemaphore(VulkanSemaphore* sem);
 
     private:

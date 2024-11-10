@@ -1263,6 +1263,14 @@ void VulkanImage::clear(VulkanCommandBuffer* cmdBuffer, f32 depth, u32 stencil)
     cmdBuffer->cmdPipelineBarrier(this, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT | VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, layout);
 }
 
+bool VulkanImage::upload(VulkanCommandBuffer* cmdBuffer, u32 size, const void* data)
+{
+    math::Dimension3D dim(m_dimension.width, m_dimension.height, m_dimension.depth);
+    u64 calculatedSize = ImageFormat::calculateImageSize(dim, m_mipLevels, m_layerLevels, VulkanImage::convertVkImageFormatToFormat(m_format));
+    ASSERT(size == calculatedSize, "must be same");
+    return VulkanImage::internalUpload(cmdBuffer, math::Dimension3D(0, 0, 0), dim, m_layerLevels, m_mipLevels, calculatedSize, data);
+}
+
 bool VulkanImage::upload(VulkanCommandBuffer* cmdBuffer, const math::Dimension3D& size, u32 layers, u32 mips, const void* data)
 {
     ASSERT(m_mipLevels == mips, "should be same");

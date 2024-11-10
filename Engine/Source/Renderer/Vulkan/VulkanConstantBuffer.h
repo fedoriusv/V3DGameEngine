@@ -38,7 +38,7 @@ namespace vk
         explicit VulkanConstantBufferManager(VulkanDevice* device) noexcept;
         ~VulkanConstantBufferManager();
 
-        ConstantBufferRange acquireConstantBuffer(u32 requestedSize);
+        [[nodiscard]] ConstantBufferRange acquireConstantBuffer(u32 requestedSize);
 
         void markToUse(VulkanCommandBuffer* cmdBuffer, u64 frame);
         void updateStatus();
@@ -50,12 +50,12 @@ namespace vk
         VulkanConstantBufferManager() = delete;
         VulkanConstantBufferManager& operator=(const VulkanConstantBufferManager&) = delete;
 
-        VulkanDevice&                           m_device;
-        VulkanMemory::VulkanMemoryAllocator*    m_memoryManager;
+        VulkanDevice&                         m_device;
+        VulkanMemory::VulkanMemoryAllocator*  m_memoryManager;
 
-        std::deque<VulkanBuffer*>       m_freeConstantBuffers;
-        std::vector<VulkanBuffer*>      m_usedConstantBuffers;
-        ConstantBufferRange             m_currentConstantBuffer;
+        std::deque<VulkanBuffer*>             m_freeConstantBuffers;
+        std::vector<VulkanBuffer*>            m_usedConstantBuffers;
+        ConstantBufferRange                   m_currentConstantBuffer;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

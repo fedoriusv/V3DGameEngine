@@ -81,11 +81,11 @@ namespace vk
             VulkanMemoryAllocator(const VulkanMemoryAllocator&) = delete;
             VulkanMemoryAllocator& operator=(const VulkanMemoryAllocator&) = delete;
 
-            VulkanDevice&        m_device;
+            VulkanDevice& m_device;
 
         private:
 
-            virtual VulkanAllocation allocate(VkDeviceSize size, VkDeviceSize align, u32 memoryTypeIndex, const void* extensions = nullptr) = 0;
+            [[nodiscard]] virtual VulkanAllocation allocate(VkDeviceSize size, VkDeviceSize align, u32 memoryTypeIndex, const void* extensions = nullptr) = 0;
             virtual void deallocate(VulkanMemory::VulkanAllocation& memory) = 0;
 
             friend VulkanMemory;
@@ -122,7 +122,7 @@ namespace vk
         SimpleVulkanMemoryAllocator() = delete;
         SimpleVulkanMemoryAllocator(const SimpleVulkanMemoryAllocator&) = delete;
 
-        VulkanMemory::VulkanAllocation allocate(VkDeviceSize size, VkDeviceSize align, u32 memoryTypeIndex, const void* extensions = nullptr) override;
+        [[nodiscard]] VulkanMemory::VulkanAllocation allocate(VkDeviceSize size, VkDeviceSize align, u32 memoryTypeIndex, const void* extensions = nullptr) override;
         void deallocate(VulkanMemory::VulkanAllocation& memory) override;
 
 #if VULKAN_DEBUG_MARKERS
@@ -153,7 +153,7 @@ namespace vk
         PoolVulkanMemoryAllocator() = delete;
         PoolVulkanMemoryAllocator(const PoolVulkanMemoryAllocator&) = delete;
 
-        VulkanMemory::VulkanAllocation allocate(VkDeviceSize size, VkDeviceSize align, u32 memoryTypeIndex, const void* extensions = nullptr) override;
+        [[nodiscard]] VulkanMemory::VulkanAllocation allocate(VkDeviceSize size, VkDeviceSize align, u32 memoryTypeIndex, const void* extensions = nullptr) override;
         void deallocate(VulkanMemory::VulkanAllocation& memory) override;
 
         struct MemoryChunck
@@ -205,7 +205,7 @@ namespace vk
         };
 
         bool findAllocationFromPool(std::multimap<VkDeviceSize, Pool*>& heaps, VkDeviceSize size, VulkanMemory::VulkanAllocation& memory);
-        Pool* createPool(VkDeviceSize poolSize, VkDeviceSize requestedSize, u32 memoryTypeIndex);
+        [[nodiscard]] Pool* createPool(VkDeviceSize poolSize, VkDeviceSize requestedSize, u32 memoryTypeIndex);
 
 
         VkDeviceSize m_allocationSize;

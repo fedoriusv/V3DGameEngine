@@ -60,6 +60,7 @@ namespace vk
         void clear(VulkanCommandBuffer* cmdBuffer, const renderer::Color& color);
         void clear(VulkanCommandBuffer* cmdBuffer, f32 depth, u32 stencil);
 
+        bool upload(VulkanCommandBuffer* cmdBuffer, u32 size, const void* data);
         bool upload(VulkanCommandBuffer* cmdBuffer, const math::Dimension3D& size, u32 layers, u32 mips, const void* data);
         bool upload(VulkanCommandBuffer* cmdBuffer, const math::Dimension3D& offsets, const math::Dimension3D& size, u32 layers, const void* data);
 
