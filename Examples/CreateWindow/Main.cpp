@@ -17,15 +17,15 @@ public:
 
     CreateWindowsApplication(int& argc, char** argv) noexcept
         : m_MainWindow(nullptr)
-        , m_UIWindow(nullptr)
         , m_InputReceiver(new InputEventReceiver())
 
         , m_InputEventHandler(nullptr)
     {
-        m_MainWindow = Window::createWindow({ 1024, 768 }, { 100, 100 }, false, m_InputReceiver, L"Main");
+        m_MainWindow = Window::createWindow({ 1024, 768 }, { 100, 100 }, false, m_InputReceiver, L"Main. Double click to create sub window");
         ASSERT(m_MainWindow, "windows is nullptr");
-        m_UIWindow = Window::createWindow({ 250, 250 }, { 1150, 100 }, false, true, m_InputReceiver, L"UI");
-        ASSERT(m_UIWindow, "windows is nullptr");
+        Window* UIWindow = Window::createWindow({ 250, 250 }, { 1150, 100 }, false, true, m_InputReceiver, L"UI");
+        ASSERT(UIWindow, "windows is nullptr");
+        m_ChildWindows.push_back(UIWindow);
 
 #ifdef PLATFORM_WINDOWS
         m_InputEventHandler = new InputEventHandler();
@@ -40,7 +40,7 @@ public:
                     LOG_INFO("KeyboardInputEvent, WindowID %u Up Key %c, modif %x", event->_windowID, event->_character, event->_modifers);
                 }
             });
-        m_InputEventHandler->bind([](const MouseInputEvent* event)
+        m_InputEventHandler->bind([this](const MouseInputEvent* event)
             {
                 if (event->_event == MouseInputEvent::MousePressDown)
                 {
@@ -53,6 +53,20 @@ public:
                 else if (event->_event == MouseInputEvent::MouseDoubleClick)
                 {
                     LOG_INFO("MouseInputEvent, WindowID %u MouseDoubleClick Key %u modif %x, wheel %f, pos %d, %d", event->_windowID, event->_key, event->_modifers, event->_wheelValue, event->_cursorPosition.m_x, event->_cursorPosition.m_y);
+
+                    u32 min = 0;
+                    u32 maxW = 1000;
+                    u32 maxH = 500;
+                    u32 rangeW = maxW - min + 1;
+                    u32 rangeH = maxH - min + 1;
+                    s32 w = rand() % rangeW + min;
+                    s32 h = rand() % rangeH + min;
+
+                    std::string name = "UI_" + std::to_string(utils::Timer::getCurrentTime());
+                    std::wstring wname(name.begin(), name.end());
+                    Window* UIWindow = Window::createWindow({ 250, 250 }, { w, h }, false, true, m_InputReceiver, wname);
+                    ASSERT(UIWindow, "windows is nullptr");
+                    m_ChildWindows.push_back(UIWindow);
                 }
                 else if (event->_event == MouseInputEvent::MouseMoved)
                 {
@@ -89,11 +103,11 @@ public:
 
     ~CreateWindowsApplication()
     {
-        if (m_UIWindow)
+        for (Window* w : m_ChildWindows)
         {
-            Window::detroyWindow(m_UIWindow);
-            m_UIWindow = nullptr;
+            Window::detroyWindow(w);
         }
+        m_ChildWindows.clear();
 
         if (m_MainWindow)
         {
@@ -123,9 +137,9 @@ public:
         while (true)
         {
             Window::updateEvents(m_MainWindow);
-            if (m_UIWindow)
+            for (Window* w : m_ChildWindows)
             {
-                Window::updateEvents(m_UIWindow);
+                Window::updateEvents(w);
             }
 
             m_InputReceiver->sendDeferredEvents();
@@ -149,14 +163,15 @@ public:
     void OnDestroy(v3d::platform::Window* window)
     {
         LOG_INFO("OnDestroy, Window %u is destroyed", window->ID());
-        if (window == m_UIWindow)
-        {
-            Window::detroyWindow(m_UIWindow);
-            m_UIWindow = nullptr;
-        }
-        else if (window == m_MainWindow)
+        if (window == m_MainWindow)
         {
             m_teminateApp = true;
+        }
+        else
+        {
+            auto found = std::find(m_ChildWindows.begin(), m_ChildWindows.end(), window);
+            Window::detroyWindow(window);
+            m_ChildWindows.erase(found);
         }
     }
     
@@ -211,7 +226,7 @@ private:
     }
 
     v3d::platform::Window* m_MainWindow;
-    v3d::platform::Window* m_UIWindow;
+    std::list<v3d::platform::Window*> m_ChildWindows;
     v3d::event::InputEventReceiver* m_InputReceiver;
 
     v3d::event::InputEventHandler* m_InputEventHandler;

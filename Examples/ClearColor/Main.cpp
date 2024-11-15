@@ -21,7 +21,7 @@ using namespace v3d::renderer;
 using namespace v3d::utils;
 using namespace v3d::event;
 
-class ClearColorApplication : public v3d::Application
+class ClearColorApplication : public v3d::Application, public InputEventHandler
 {
 public:
 
@@ -30,17 +30,10 @@ public:
     {
         m_Window = Window::createWindow({ 1024, 768 }, { 800, 500 }, false, true, new InputEventReceiver());
         ASSERT(m_Window, "windows is nullptr");
-        m_InputEventHandler = new InputEventHandler();
     }
     
     ~ClearColorApplication()
     {
-        if (m_InputEventHandler)
-        {
-            delete m_InputEventHandler;
-            m_InputEventHandler = nullptr;
-        }
-
         if (m_Window)
         {
             event::InputEventReceiver* ieReceiver = m_Window->getInputEventReceiver();
@@ -84,7 +77,7 @@ private:
 
     void Init()
     {
-        m_InputEventHandler->bind([this](const MouseInputEvent* event)
+        InputEventHandler::bind([this](const MouseInputEvent* event)
             {
                 if (event->_event == MouseInputEvent::MousePressDown || event->_event == MouseInputEvent::MouseDoubleClick)
                 {
@@ -102,7 +95,7 @@ private:
                 }
             });
 
-        m_InputEventHandler->bind([this](const TouchInputEvent* event)
+        InputEventHandler::bind([this](const TouchInputEvent* event)
             {
                 if (event->_event == TouchInputEvent::TouchTypeEvent::TouchMotion && event->_motionEvent == TouchInputEvent::TouchMotionDown)
                 {
@@ -121,7 +114,7 @@ private:
                 }
             });
 
-        m_InputEventHandler->bind([this](const SystemEvent* event)
+        InputEventHandler::bind([this](const SystemEvent* event)
             {
                 Window* window = Window::getWindowsByID(event->_windowID);
                 if (event->_systemEvent == SystemEvent::Destroy)
@@ -131,9 +124,9 @@ private:
             });
         std::srand(u32(std::time(0)));
 
-        m_Window->getInputEventReceiver()->attach(InputEvent::InputEventType::MouseInputEvent, m_InputEventHandler);
-        m_Window->getInputEventReceiver()->attach(InputEvent::InputEventType::TouchInputEvent, m_InputEventHandler);
-        m_Window->getInputEventReceiver()->attach(InputEvent::InputEventType::SystemEvent, m_InputEventHandler);
+        m_Window->getInputEventReceiver()->attach(InputEvent::InputEventType::MouseInputEvent, this);
+        m_Window->getInputEventReceiver()->attach(InputEvent::InputEventType::TouchInputEvent, this);
+        m_Window->getInputEventReceiver()->attach(InputEvent::InputEventType::SystemEvent, this);
 
 
         m_Device = Device::createDevice(Device::RenderType::Vulkan, Device::GraphicMask);
@@ -177,7 +170,7 @@ private:
     }
 
     v3d::platform::Window* m_Window = nullptr;
-    v3d::event::InputEventHandler* m_InputEventHandler = nullptr;
+    //v3d::event::InputEventHandler* m_InputEventHandler = nullptr;
     v3d::renderer::Device* m_Device = nullptr;
     bool m_terminate = false;
 
