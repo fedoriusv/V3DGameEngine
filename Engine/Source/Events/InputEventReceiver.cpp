@@ -30,7 +30,7 @@ InputEventReceiver::~InputEventReceiver()
 {
     LOG_DEBUG("InputEventReceiver::InputEventReceiver destructor %llx event pool %llx", this, m_eventPool);
     InputEventReceiver::reset();
-    m_receivers.clear();
+    m_handlers.clear();
 
     if (m_eventPool)
     {
@@ -96,7 +96,7 @@ bool InputEventReceiver::sendEvent(InputEvent* event)
 {
     bool result = false;
 
-    for (auto iter = m_receivers.begin(); iter != m_receivers.end(); ++iter)
+    for (auto iter = m_handlers.begin(); iter != m_handlers.end(); ++iter)
     {
         if ((*iter).first == event->_eventType)
         {
@@ -126,10 +126,10 @@ void InputEventReceiver::attach(InputEvent::InputEventType type, InputEventHandl
         return (rcv.first == item.first && std::get<0>(rcv.second) == std::get<0>(item.second) && std::get<1>(rcv.second) == std::get<1>(item.second));
     };
 
-    auto iter = std::find_if(m_receivers.begin(), m_receivers.end(), predFind);
-    if (iter == m_receivers.end())
+    auto iter = std::find_if(m_handlers.begin(), m_handlers.end(), predFind);
+    if (iter == m_handlers.end())
     {
-        m_receivers.insert(rcv);
+        m_handlers.insert(rcv);
     }
 }
 
@@ -141,10 +141,10 @@ void InputEventReceiver::attach(InputEvent::InputEventType type, InputEventHandl
             return (rcv.first == item.first && std::get<0>(rcv.second) == std::get<0>(item.second) && std::get<1>(rcv.second) == std::get<1>(item.second));
         };
 
-    auto iter = std::find_if(m_receivers.begin(), m_receivers.end(), predFind);
-    if (iter == m_receivers.end())
+    auto iter = std::find_if(m_handlers.begin(), m_handlers.end(), predFind);
+    if (iter == m_handlers.end())
     {
-        m_receivers.insert(rcv);
+        m_handlers.insert(rcv);
     }
 }
 
@@ -155,10 +155,10 @@ void InputEventReceiver::dettach(InputEvent::InputEventType type)
         return (type == item.first);
     };
 
-    auto iter = std::find_if(m_receivers.begin(), m_receivers.end(), predFind);
-    if (iter != m_receivers.end())
+    auto iter = std::find_if(m_handlers.begin(), m_handlers.end(), predFind);
+    if (iter != m_handlers.end())
     {
-        m_receivers.erase(iter);
+        m_handlers.erase(iter);
     }
 }
 
@@ -170,10 +170,10 @@ void InputEventReceiver::dettach(InputEvent::InputEventType type, InputEventHand
         return (rcv.first == item.first && std::get<0>(rcv.second) == std::get<0>(item.second) && std::get<1>(rcv.second) == std::get<1>(item.second));
     };
 
-    auto iter = std::find_if(m_receivers.begin(), m_receivers.end(), predFind);
-    if (iter != m_receivers.end())
+    auto iter = std::find_if(m_handlers.begin(), m_handlers.end(), predFind);
+    if (iter != m_handlers.end())
     {
-        m_receivers.erase(iter);
+        m_handlers.erase(iter);
     }
 }
 
@@ -185,10 +185,10 @@ void InputEventReceiver::dettach(InputEvent::InputEventType type, InputEventHand
             return (rcv.first == item.first && std::get<0>(rcv.second) == std::get<0>(item.second) && std::get<1>(rcv.second) == std::get<1>(item.second));
         };
 
-    auto iter = std::find_if(m_receivers.begin(), m_receivers.end(), predFind);
-    if (iter != m_receivers.end())
+    auto iter = std::find_if(m_handlers.begin(), m_handlers.end(), predFind);
+    if (iter != m_handlers.end())
     {
-        m_receivers.erase(iter);
+        m_handlers.erase(iter);
     }
 }
 

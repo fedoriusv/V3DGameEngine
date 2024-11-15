@@ -22,7 +22,7 @@ namespace event
     /**
     * @brief InputEventHandler class.
     */
-    class V3D_API InputEventHandler final : public EventHandler
+    class V3D_API InputEventHandler : public EventHandler
     {
 
     public:

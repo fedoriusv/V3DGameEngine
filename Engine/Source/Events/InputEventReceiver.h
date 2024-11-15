@@ -42,7 +42,7 @@ namespace event
         InputEventReceiver& operator=(const InputEventReceiver&) = delete;
 
         std::queue<InputEvent*> m_events;
-        std::multimap<InputEvent::InputEventType, std::tuple<InputEventHandler*, const platform::Window*>> m_receivers;
+        std::multimap<InputEvent::InputEventType, std::tuple<InputEventHandler*, const platform::Window*>> m_handlers;
 
         const u32          k_maxInputEventSize;
         u32                m_currentEventIndex;
