@@ -53,7 +53,7 @@ Resource* AssetDecoder::decode(const stream::Stream* stream, const Policy* polic
     Resource* resource = nullptr;
     switch (generalHeader.getResourceType())
     {
-    case ResourceType::ModelResource:
+    case ResourceType::Model:
     {
         //scene::ModelHeader* modleHeader = V3D_NEW(scene::ModelHeader, memory::MemoryLabel::MemoryObject);
         //modleHeader->operator<<(stream);
@@ -62,16 +62,7 @@ Resource* AssetDecoder::decode(const stream::Stream* stream, const Policy* polic
     }
     break;
 
-    case ResourceType::MeshResource:
-    {
-        //scene::MeshHeader* meshHeader = V3D_NEW(scene::MeshHeader, memory::MemoryLabel::MemoryObject);
-        //meshHeader->operator<<(stream);
-
-        //resource = ::V3D_NEW(scene::StaticMesh, memory::MemoryLabel::MemoryObject)(meshHeader);
-    }
-    break;
-
-    case ResourceType::BitmapResource:
+    case ResourceType::Bitmap:
     {
         //resource::BitmapHeader* meshHeader = V3D_NEW(resource::BitmapHeader, memory::MemoryLabel::MemoryObject);
         //meshHeader->operator<<(stream);
@@ -80,7 +71,7 @@ Resource* AssetDecoder::decode(const stream::Stream* stream, const Policy* polic
     }
     break;
 
-    case ResourceType::ShaderResource:
+    case ResourceType::Shader:
     {
         renderer::Shader::ShaderHeader shaderHeader;
         shaderHeader<<(stream);
@@ -89,7 +80,7 @@ Resource* AssetDecoder::decode(const stream::Stream* stream, const Policy* polic
     }
     break;
 
-    case ResourceType::MaterialResource:
+    case ResourceType::Material:
     {
         //scene::MaterialHeader* materialHeader = V3D_NEW(scene::MaterialHeader, memory::MemoryLabel::MemoryObject);
         //materialHeader->operator<<(stream);
@@ -101,7 +92,7 @@ Resource* AssetDecoder::decode(const stream::Stream* stream, const Policy* polic
     default:
         ASSERT(false, "resource is not found");
     };
-    static_assert(toEnumType(ResourceType::ResourceType_Count) == 6, "handle all resources and increment the value if is needed");
+    static_assert(toEnumType(ResourceType::Count) == 6, "handle all resources and increment the value if is needed");
 
     ASSERT(resource, "nullptr");
     if (!resource->load(stream))

@@ -33,6 +33,8 @@ namespace resource
         u32 decodeMesh(const aiScene* scene, stream::Stream* stream, u32 activeFlags) const;
         u32 decodeMaterial(const aiScene* scene, stream::Stream* stream) const;
         u32 decodeAABB(const aiScene* scene, stream::Stream* stream) const;
+
+        mutable std::vector<std::tuple<u32, u32>> m_materialMapper;
     };
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////

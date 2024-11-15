@@ -66,7 +66,8 @@ bool Shader::load(const stream::Stream* stream, u32 offset)
     }
 
     ASSERT(stream, "nullptr");
-    stream->seekBeg(offset + m_header._offset);
+    stream->seekBeg(offset);
+    ASSERT(offset == m_header._offset, "wrong offset");
 
     stream->read<ShaderType>(m_type);
     stream->read<ShaderModel>(m_shaderModel);

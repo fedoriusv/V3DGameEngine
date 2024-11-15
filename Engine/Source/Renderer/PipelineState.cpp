@@ -1,11 +1,68 @@
 #include "PipelineState.h"
 #include "Device.h"
+#include "Stream/Stream.h"
 #include "Utils/Logger.h"
 
 namespace v3d
 {
 namespace renderer
 {
+
+ u32 VertexInputAttributeDesc::operator>>(stream::Stream* stream) const
+ {
+     u32 writeSize = 0;
+     u32 writePos = stream->tell();
+
+     stream->write<u32>(_countInputBindings);
+     writeSize += sizeof(u32);
+     for (u32 i = 0; i < _countInputBindings; ++i)
+     {
+         stream->write<InputBinding>(_inputBindings[i]);
+         writeSize += sizeof(u32);
+     }
+
+     stream->write<u32>(_countInputAttributes);
+     writeSize += sizeof(u32);
+     for (u32 i = 0; i < _countInputAttributes; ++i)
+     {
+         stream->write<InputAttribute>(_inputAttributes[i]);
+         writeSize += sizeof(u32);
+     }
+
+     writePos = stream->tell() - writePos;
+     ASSERT(writePos == writeSize, "wrong size");
+     return writeSize;
+ }
+
+ u32 VertexInputAttributeDesc::operator<<(const stream::Stream* stream)
+ {
+     u32 readSize = 0;
+     u32 readPos = stream->tell();
+
+     u32 countInputBindings;
+     stream->read<u32>(countInputBindings);
+     readSize += sizeof(u32);
+     for (u32 i = 0; i < countInputBindings; ++i)
+     {
+         stream->read<InputBinding>(_inputBindings[i]);
+         readSize += sizeof(u32);
+     }
+     _countInputBindings = countInputBindings;
+
+     u32 countInputAttributes;
+     stream->read<u32>(countInputAttributes);
+     readSize += sizeof(u32);
+     for (u32 i = 0; i < countInputAttributes; ++i)
+     {
+         stream->read<InputAttribute>(_inputAttributes[i]);
+         readSize += sizeof(u32);
+     }
+     _countInputAttributes = countInputAttributes;
+
+     readPos = stream->tell() - readPos;
+     ASSERT(readPos == readSize, "wrong size");
+     return readSize;
+ }
 
 GraphicsPipelineState::GraphicsPipelineState(Device* device, const VertexInputAttributeDesc& vertex, const ShaderProgram* const program, const RenderTargetState* const renderTaget, const std::string& name) noexcept
     : PipelineState()

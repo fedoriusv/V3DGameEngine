@@ -114,7 +114,7 @@ namespace renderer
         struct ShaderHeader : resource::ResourceHeader
         {
             ShaderHeader() noexcept
-                : resource::ResourceHeader(resource::ResourceType::ShaderResource)
+                : resource::ResourceHeader(resource::ResourceType::Shader)
             {
             }
         };

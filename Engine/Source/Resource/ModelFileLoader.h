@@ -6,13 +6,10 @@
 
 namespace v3d
 {
-namespace scene
-{
-    class Model;
-} //namespace scene
 namespace resource
 {
     struct ResourceHeader;
+    class ModelResource;
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -21,7 +18,7 @@ namespace resource
     * 
     * @see MeshAssimpDecoder
     */
-    class ModelFileLoader : public ResourceLoader<scene::Model*>, public ResourceDecoderRegistration
+    class ModelFileLoader : public ResourceLoader<ModelResource*>, public ResourceDecoderRegistration
     {
     public:
 
@@ -79,7 +76,7 @@ namespace resource
         * @param const std::string& alias [optional]
         * @return Model pointer
         */
-        [[nodiscard]] scene::Model* load(const std::string& name, const std::string& alias = "") override;
+        [[nodiscard]] ModelResource* load(const std::string& name, const std::string& alias = "") override;
 
     private:
 

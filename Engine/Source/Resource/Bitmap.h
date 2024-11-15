@@ -23,7 +23,7 @@ namespace resource
         struct BitmapHeader : resource::ResourceHeader
         {
             BitmapHeader() noexcept
-                : resource::ResourceHeader(resource::ResourceType::BitmapResource)
+                : resource::ResourceHeader(resource::ResourceType::Bitmap)
             {
             }
         };

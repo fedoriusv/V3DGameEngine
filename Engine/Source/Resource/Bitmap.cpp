@@ -7,62 +7,12 @@ namespace v3d
 {
 namespace resource
 {
-
-//BitmapHeader::BitmapHeader() noexcept
-//    : ResourceHeader(resource::ResourceType::BitmapResource)
-//    , _dimension(math::Dimension3D())
-//    , _format(renderer::Format::Format_Undefined)
-//    , _layers(1)
-//    , _mips(1)
-//    , _bitmapFlags(0x0)
-//{
-//    static_assert(sizeof(BitmapHeader) == sizeof(ResourceHeader) + 24, "range out");
-//}
-//
-//BitmapHeader::BitmapHeader(const BitmapHeader& other) noexcept
-//    : ResourceHeader(other)
-//    , _dimension(other._dimension)
-//    , _format(other._format)
-//    , _layers(other._layers)
-//    , _mips(other._mips)
-//    , _bitmapFlags(other._bitmapFlags)
-//{
-//}
-//
-//u32 BitmapHeader::operator>>(stream::Stream* stream) const
-//{
-//    u32 parentSize = ResourceHeader::operator>>(stream);
-//    u32 writePos = stream->tell();
-//
-//    stream->write<math::Dimension3D>(_dimension);
-//    stream->write<renderer::Format>(_format);
-//    stream->write<u16>(_layers);
-//    stream->write<u16>(_mips);
-//    stream->write<BitmapHeaderFlags>(_bitmapFlags);
-//
-//    u32 writeSize = stream->tell() - writePos + parentSize;
-//    ASSERT(sizeof(BitmapHeader) == writeSize, "wrong size");
-//    return writeSize;
-//}
-//
-//u32 BitmapHeader::operator<<(const stream::Stream* stream)
-//{
-//    u32 parentSize = ResourceHeader::operator<<(stream);
-//    u32 readPos = stream->tell();
-//
-//    stream->read<math::Dimension3D>(_dimension);
-//    stream->read<renderer::Format>(_format);
-//    stream->read<u16>(_layers);
-//    stream->read<u16>(_mips);
-//    stream->read<BitmapHeaderFlags>(_bitmapFlags);
-//
-//    u32 readSize = stream->tell() - readPos + parentSize;
-//    ASSERT(sizeof(BitmapHeader) == readSize, "wrong size");
-//    return readSize;
-//}
-
 Bitmap::Bitmap() noexcept
     : m_header()
+    , m_dimension(math::Dimension3D())
+    , m_format(renderer::Format::Format_Undefined)
+    , m_layers(0)
+    , m_mips(0)
     , m_bitmap({ nullptr, nullptr })
 {
     LOG_DEBUG("Bitmap constructor %llx", this);
@@ -70,6 +20,10 @@ Bitmap::Bitmap() noexcept
 
 Bitmap::Bitmap(const BitmapHeader& header) noexcept
     : m_header(header)
+    , m_dimension(math::Dimension3D())
+    , m_format(renderer::Format::Format_Undefined)
+    , m_layers(0)
+    , m_mips(0)
     , m_bitmap({ nullptr, nullptr })
 {
     LOG_DEBUG("Bitmap constructor %llx", this);
@@ -96,7 +50,8 @@ bool Bitmap::load(const stream::Stream* stream, u32 offset)
     }
 
     ASSERT(stream, "stream is nullptr");
-    stream->seekBeg(offset + m_header._offset);
+    stream->seekBeg(offset);
+    ASSERT(offset == m_header._offset, "wrong offset");
 
     stream->read<math::Dimension3D>(m_dimension);
     stream->read<renderer::Format>(m_format);

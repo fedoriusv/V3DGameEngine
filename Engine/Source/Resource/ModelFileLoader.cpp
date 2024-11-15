@@ -3,8 +3,7 @@
 #include "Renderer/Device.h"
 #include "Stream/FileLoader.h"
 #include "Resource/ResourceManager.h"
-
-#include "Scene/Model.h"
+#include "Resource/Model.h"
 
 namespace v3d
 {
@@ -33,7 +32,7 @@ ModelFileLoader::ModelFileLoader(const ModelFileLoader::ModelPolicy& policy, Mod
     ResourceLoader::registerPathes(ResourceManager::getInstance()->getPathes());
 }
 
-scene::Model* ModelFileLoader::load(const std::string& name, const std::string& alias)
+ModelResource* ModelFileLoader::load(const std::string& name, const std::string& alias)
 {
     for (std::string& root : m_roots)
     {
@@ -66,7 +65,7 @@ scene::Model* ModelFileLoader::load(const std::string& name, const std::string& 
             }
 
             LOG_INFO("ModelFileLoader::load: [%s] is loaded", name.c_str());
-            return static_cast<scene::Model*>(resource);
+            return static_cast<ModelResource*>(resource);
         }
     }
 

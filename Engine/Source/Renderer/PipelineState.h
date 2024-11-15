@@ -7,6 +7,10 @@
 
 namespace v3d
 {
+namespace stream
+{
+    class Stream;
+} //namespace stream
 namespace renderer
 {
     /////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -77,37 +81,45 @@ namespace renderer
             u32          _offest    : 16;
         };
 
-        VertexInputAttributeDesc() noexcept
-            : _countInputAttributes(0)
-        {
-            static_assert(sizeof(VertexInputAttributeDesc) == sizeof(_inputBindings) + sizeof(_inputAttributes) + 4, "wrong size");
-        }
+        VertexInputAttributeDesc() noexcept;
+        VertexInputAttributeDesc(const VertexInputAttributeDesc& desc) noexcept;
+        VertexInputAttributeDesc(const std::initializer_list<VertexInputAttributeDesc::InputBinding>& inputBinding, const std::initializer_list<VertexInputAttributeDesc::InputAttribute>& inputAttributes) noexcept;
 
-        VertexInputAttributeDesc(const VertexInputAttributeDesc& desc) noexcept
-            : _countInputAttributes(desc._countInputAttributes)
-            , _inputAttributes(desc._inputAttributes)
-        {
-            static_assert(sizeof(VertexInputAttributeDesc) == sizeof(_inputBindings) + sizeof(_inputAttributes) + 4, "wrong size");
-        }
-
-        VertexInputAttributeDesc(const std::initializer_list<VertexInputAttributeDesc::InputBinding>& inputBinding, const std::initializer_list<VertexInputAttributeDesc::InputAttribute>& inputAttributes) noexcept
-        {
-            ASSERT(inputBinding.size() <= _inputBindings.size(), "out of range");
-            _countInputBindings = static_cast<u32>(inputBinding.size());
-            memcpy(_inputBindings.data(), inputBinding.begin(), sizeof(InputAttribute) * inputBinding.size());
-
-            ASSERT(inputAttributes.size() <= _inputAttributes.size(), "out of range");
-            _countInputAttributes = static_cast<u32>(inputAttributes.size());
-            memcpy(_inputAttributes.data(), inputAttributes.begin(), sizeof(InputAttribute) * inputAttributes.size());
-
-            static_assert(sizeof(VertexInputAttributeDesc) == sizeof(_inputBindings) + sizeof(_inputAttributes) + 4, "wrong size");
-        }
+        u32 operator>>(stream::Stream* stream) const;
+        u32 operator<<(const stream::Stream* stream);
 
         std::array<InputBinding, k_maxVertexInputBindings>      _inputBindings;
         std::array<InputAttribute, k_maxVertexInputAttributes>  _inputAttributes;
         u32                                                     _countInputBindings     : 16;
         u32                                                     _countInputAttributes   : 16;
     };
+
+    inline VertexInputAttributeDesc::VertexInputAttributeDesc() noexcept
+        : _countInputBindings(0)
+        , _countInputAttributes(0)
+    {
+        static_assert(sizeof(VertexInputAttributeDesc) == sizeof(_inputBindings) + sizeof(_inputAttributes) + 4, "wrong size");
+    }
+
+    inline VertexInputAttributeDesc::VertexInputAttributeDesc(const VertexInputAttributeDesc& desc) noexcept
+        : _countInputAttributes(desc._countInputAttributes)
+        , _inputAttributes(desc._inputAttributes)
+    {
+        static_assert(sizeof(VertexInputAttributeDesc) == sizeof(_inputBindings) + sizeof(_inputAttributes) + 4, "wrong size");
+    }
+
+    inline VertexInputAttributeDesc::VertexInputAttributeDesc(const std::initializer_list<VertexInputAttributeDesc::InputBinding>& inputBinding, const std::initializer_list<VertexInputAttributeDesc::InputAttribute>& inputAttributes) noexcept
+    {
+        ASSERT(inputBinding.size() <= _inputBindings.size(), "out of range");
+        _countInputBindings = static_cast<u32>(inputBinding.size());
+        memcpy(_inputBindings.data(), inputBinding.begin(), sizeof(InputAttribute) * inputBinding.size());
+
+        ASSERT(inputAttributes.size() <= _inputAttributes.size(), "out of range");
+        _countInputAttributes = static_cast<u32>(inputAttributes.size());
+        memcpy(_inputAttributes.data(), inputAttributes.begin(), sizeof(InputAttribute) * inputAttributes.size());
+
+        static_assert(sizeof(VertexInputAttributeDesc) == sizeof(_inputBindings) + sizeof(_inputAttributes) + 4, "wrong size");
+    }
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 

@@ -21,14 +21,14 @@ namespace resource
     */
     enum class ResourceType : u16
     {
-        EmptyResource = 0,
-        ModelResource,
-        MeshResource,
-        BitmapResource,
-        MaterialResource,
-        ShaderResource,
+        Empty = 0,
+        Shader,
+        Bitmap,
+        Mesh,
+        Model,
+        Material,
 
-        ResourceType_Count
+        Count
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
