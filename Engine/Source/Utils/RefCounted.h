@@ -16,10 +16,10 @@ namespace utils
     {
     public:
 
-        explicit RefCounted(s32 refCount = 0) noexcept;
+        explicit RefCounted(s64 refCount = 0) noexcept;
         virtual ~RefCounted() = default;
 
-        s32 getCount() const;
+        s64 getCount() const;
 
     private:
 
@@ -29,30 +29,29 @@ namespace utils
         friend void intrusivePtrAddRef(const RefCounted* obj);
         friend void intrusivePtrRelease(const RefCounted* obj);
 
-        mutable s32 m_refCount;
+        mutable std::atomic<s64> m_refCount;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    inline RefCounted::RefCounted(s32 refCount) noexcept
+    inline RefCounted::RefCounted(s64 refCount) noexcept
         : m_refCount(refCount)
     {
     }
 
-    inline s32 RefCounted::getCount() const
+    inline s64 RefCounted::getCount() const
     {
         return m_refCount;
     }
 
     inline void RefCounted::grab() const
     {
-        ++m_refCount;
+        m_refCount.fetch_add(1, std::memory_order_relaxed);
     }
 
     inline void RefCounted::drop() const
     {
-        --m_refCount;
-        if (m_refCount == 0)
+        if (m_refCount.fetch_sub(1, std::memory_order_relaxed) == 0)
         {
             //handle by Object new/delete. @see Object class
             delete this;
