@@ -122,8 +122,8 @@ namespace renderer
     */
     enum class IndexBufferType : u32
     {
-        IndexType_16,
-        IndexType_32
+        IndexType_32,
+        IndexType_16
     };
 
     enum class InputRate : u32
@@ -465,12 +465,20 @@ namespace renderer
 
     ///////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    class Texture;
+    class Buffer;
+    class SamplerState;
+
+    ///////////////////////////////////////////////////////////////////////////////////////////////////////
+
     struct Descriptor
     {
         enum Type : u32
         {
             Descriptor_ConstantBuffer = 1,
             Descriptor_Texture,
+            Descriptor_UAV,
+            Descriptor_Sampler,
         };
 
         enum Frequency : u32
@@ -486,6 +494,38 @@ namespace renderer
             u32     _size   = 0;
         };
 
+        Descriptor(ConstantBuffer CBO, u32 slot) noexcept
+            : _type(Type::Descriptor_ConstantBuffer)
+            , _frequency(Frequency::Frequency_Dynamic)
+            , _slot(slot)
+            , _resource(CBO)
+        {
+        }
+
+        Descriptor(Texture* texture, u32 slot) noexcept
+            : _type(Type::Descriptor_Texture)
+            , _frequency(Frequency::Frequency_Dynamic)
+            , _slot(slot)
+            , _resource(texture)
+        {
+        }
+
+        Descriptor(Buffer* UAV, u32 slot) noexcept
+            : _type(Type::Descriptor_UAV)
+            , _frequency(Frequency::Frequency_Dynamic)
+            , _slot(slot)
+            , _resource(UAV)
+        {
+        }
+
+        Descriptor(SamplerState* sampler, u32 slot) noexcept
+            : _type(Type::Descriptor_Sampler)
+            , _frequency(Frequency::Frequency_Dynamic)
+            , _slot(slot)
+            , _resource(sampler)
+        {
+        }
+
         Descriptor(Descriptor::Type type) noexcept
             : _type(type)
             , _frequency(Frequency::Frequency_Dynamic)
@@ -497,7 +537,7 @@ namespace renderer
         Type        _type       : 4;
         Frequency   _frequency  : 4;
         u32         _slot       : 24;
-        std::variant<std::monostate, ConstantBuffer> _resource;
+        std::variant<std::monostate, ConstantBuffer, Texture*, Buffer*, SamplerState*> _resource;
     };
 
     ///////////////////////////////////////////////////////////////////////////////////////////////////////

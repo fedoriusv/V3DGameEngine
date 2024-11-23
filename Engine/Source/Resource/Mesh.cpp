@@ -1,6 +1,7 @@
 #include "Mesh.h"
 #include "Stream/StreamManager.h"
 #include "Utils/Logger.h"
+#include "Mesh.h"
 
 namespace v3d
 {
@@ -59,11 +60,15 @@ bool MeshResource::load(const stream::Stream* stream, u32 offset)
 
         u32 streamSize = m_indexData._indexCount * (isIndexType32 ? sizeof(u32) : sizeof(u16));
         stream::Stream* indexData = stream::StreamManager::createMemoryStream(nullptr, streamSize);
-        void* ptr = indexData->map(indexData->size());
-        stream->read(ptr, indexData->size());
+        void* ptr = indexData->map(streamSize);
+        stream->read(ptr, streamSize);
+
+        //TODO
 
         m_indexData._indexBuffer = std::make_tuple(indexData, ptr);
     }
+
+    m_loaded = true;
 
     return true;
 }
