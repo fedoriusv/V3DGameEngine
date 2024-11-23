@@ -11,6 +11,7 @@ namespace math
 
     /**
     * @brief Reserved Z
+    * @see https://developer.nvidia.com/content/depth-precision-visualized
     */
 #   define REVERSED_Z 1
 
