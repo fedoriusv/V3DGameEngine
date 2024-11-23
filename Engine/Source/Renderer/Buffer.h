@@ -77,9 +77,16 @@ namespace renderer
     public:
 
         /**
-        * @brief getSize.
+        * @brief getSize. Buffer size in bytes
+        * @return Count of indexes
         */
-        u64 getSize() const;
+        u32 getSize() const;
+
+        /**
+        * @brief getVertices. Count of vertices
+        * @return Count of vertices
+        */
+        u32 getVerticesCount() const;
 
     public:
 
@@ -90,7 +97,7 @@ namespace renderer
         * @param  const void* data [required]
         * @param const std::string& name [optional]
         */
-        explicit VertexBuffer(Device* device, BufferUsageFlags usage, u64 size, const std::string& name = "") noexcept;
+        explicit VertexBuffer(Device* device, BufferUsageFlags usage, u32 count, u32 size, const std::string& name = "") noexcept;
 
         /**
         * @brief VertexBuffer destructor
@@ -103,13 +110,20 @@ namespace renderer
         VertexBuffer& operator=(const VertexBuffer&) = delete;
 
         Device* const m_device;
-        const u64     m_size;
+        const u32     m_size;
+        const u32     m_count;
     };
 
-    inline u64 VertexBuffer::getSize() const
+    inline u32 VertexBuffer::getSize() const
     {
         return m_size;
     }
+
+    inline u32 VertexBuffer::getVerticesCount() const
+    {
+        return m_count;
+    }
+
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -121,18 +135,18 @@ namespace renderer
     public:
 
         /**
-        * @brief getIndexCount gets count of indexes.
-        * @return Count of indexes
+        * @brief getIndicesCount gets count of indices.
+        * @return Count of indices
         */
-        u32 getIndexCount() const;
+        u32 getIndicesCount() const;
 
         /**
-        * @brief getIndexBufferType gets type of indexes.
-        * @return type of indexes StreamIndexBufferType
+        * @brief getIndexBufferType gets type of index buffer.
+        * @return IndexBufferType type
         */
         IndexBufferType getIndexBufferType() const;
 
-    private:
+    public:
 
         /**
         * @brief IndexStreamBuffer constructor. Used to create buffer index objects.
@@ -159,7 +173,7 @@ namespace renderer
         const u32       m_count;
     };
 
-    inline u32 IndexBuffer::getIndexCount() const
+    inline u32 IndexBuffer::getIndicesCount() const
     {
         return m_count;
     }
@@ -179,14 +193,14 @@ namespace renderer
         GeometryBufferDesc() noexcept
             : _indexBuffer(nullptr)
             , _indexOffset(0U)
-            , _indexType(IndexBufferType::IndexType_16)
+            , _indexType(IndexBufferType::IndexType_32)
         {
         }
 
         GeometryBufferDesc(const VertexBuffer* vertex, u32 stream, u64 stride) noexcept
             : _indexBuffer(nullptr)
             , _indexOffset(0U)
-            , _indexType(IndexBufferType::IndexType_16)
+            , _indexType(IndexBufferType::IndexType_32)
 
             , _vertexBuffers({ vertex->m_buffer })
             , _streamIDs({ stream })
@@ -198,7 +212,7 @@ namespace renderer
         GeometryBufferDesc(const VertexBuffer* vertex, u32 stream, u64 stride, u64 offset) noexcept
             : _indexBuffer(nullptr)
             , _indexOffset(0U)
-            , _indexType(IndexBufferType::IndexType_16)
+            , _indexType(IndexBufferType::IndexType_32)
 
             , _vertexBuffers({ vertex->m_buffer })
             , _streamIDs({ stream })
@@ -210,7 +224,7 @@ namespace renderer
         GeometryBufferDesc(const IndexBuffer* index, u32 indexOffset, const VertexBuffer* vertex, u32 stream, u64 stride, u64 vertexOffset) noexcept
             : _indexBuffer(index->m_buffer)
             , _indexOffset(indexOffset)
-            , _indexType(IndexBufferType::IndexType_16)
+            , _indexType(index->getIndexBufferType())
 
             , _vertexBuffers({ vertex->m_buffer })
             , _streamIDs({ stream })

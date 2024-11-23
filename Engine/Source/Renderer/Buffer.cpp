@@ -18,10 +18,11 @@ Buffer::~Buffer()
 }
 
 
-VertexBuffer::VertexBuffer(Device* device, BufferUsageFlags usage, u64 size, const std::string& name) noexcept
+VertexBuffer::VertexBuffer(Device* device, BufferUsageFlags usage, u32 count, u32 size, const std::string& name) noexcept
     : Buffer(usage)
     , m_device(device)
     , m_size(size)
+    , m_count(count)
 {
     LOG_DEBUG("VertexBuffer::VertexBuffer constructor %llx", this);
 
@@ -46,7 +47,7 @@ IndexBuffer::IndexBuffer(Device* device, BufferUsageFlags usage, IndexBufferType
 {
     LOG_DEBUG("IndexBuffer::IndexBuffer constructor %llx", this);
     u64 size = m_count * (type == IndexBufferType::IndexType_16) ? sizeof(u16) : sizeof(u32);
-    m_buffer = m_device->createBuffer(RenderBuffer::Type::IndexBuffer, usage, size, name);
+    m_buffer = m_device->createBuffer(RenderBuffer::Type::IndexBuffer, usage, size * count, name);
     ASSERT(m_buffer.isValid(), "nullptr");
 }
 
