@@ -92,13 +92,28 @@ namespace renderer
         */
         ~SamplerState();
 
+        /**
+        * @brief getSamplerDesc function
+        */
+        const SamplerDesc& getSamplerDesc() const;
+
+        /**
+        * @brief getName function
+        */
+        const std::string& getName() const;
+
     private:
 
         void destroySamplers(const std::vector<Sampler*>& samplers);
         
         Device* const           m_device;
+
+    public:
+
         SamplerDesc             m_samplerDesc;
         ObjectTracker<Sampler>  m_tracker;
+
+        const std::string       m_name;
     };
 
     inline SamplerFilter SamplerState::getFiltering() const
@@ -185,16 +200,26 @@ namespace renderer
         m_samplerDesc._borderColor = color;
     }
 
+    inline const SamplerDesc& SamplerState::getSamplerDesc() const
+    {
+        return m_samplerDesc;
+    }
+
+    inline const std::string& SamplerState::getName() const
+    {
+        return m_name;
+    }
+
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    class Sampler : public utils::ResourceID<Sampler, u8>
+    class Sampler : public RenderObject<Sampler>
     {
     protected:
 
         Sampler() = default;
         virtual ~Sampler() = default;
 
-        virtual bool create() = 0;
+        virtual bool create(const SamplerDesc& desc) = 0;
         virtual void destroy() = 0;
     };
 

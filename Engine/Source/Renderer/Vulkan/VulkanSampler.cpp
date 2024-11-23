@@ -107,9 +107,8 @@ VkSamplerAddressMode VulkanSampler::convertSamplerWrapToVkSamplerAddressMode(Sam
     return VK_SAMPLER_ADDRESS_MODE_REPEAT;
 }
 
-VulkanSampler::VulkanSampler(VulkanDevice* device, const SamplerDesc& desc, const std::string& name) noexcept
+VulkanSampler::VulkanSampler(VulkanDevice* device, const std::string& name) noexcept
     : m_device(*device)
-    , m_desc(desc)
     , m_sampler(VK_NULL_HANDLE)
 {
 #if VULKAN_DEBUG_MARKERS
@@ -124,7 +123,7 @@ VulkanSampler::~VulkanSampler()
     ASSERT(m_sampler == VK_NULL_HANDLE, "still exist");
 }
 
-bool VulkanSampler::create()
+bool VulkanSampler::create(const SamplerDesc& desc)
 {
     void* vkExtension = nullptr;
 
@@ -132,15 +131,15 @@ bool VulkanSampler::create()
     bool enableCustomBorderColor = false;
     VkSamplerCustomBorderColorCreateInfoEXT samplerCustomBorderColorCreateInfoEXT = {};
     if (m_device.getVulkanDeviceCaps()._supportSamplerBorderColor && 
-        (m_desc._wrapU == SamplerWrap::TextureWrap_ClampToBorder || m_desc._wrapV == SamplerWrap::TextureWrap_ClampToBorder || m_desc._wrapW == SamplerWrap::TextureWrap_ClampToBorder))
+        (desc._wrapU == SamplerWrap::TextureWrap_ClampToBorder || desc._wrapV == SamplerWrap::TextureWrap_ClampToBorder || desc._wrapW == SamplerWrap::TextureWrap_ClampToBorder))
     {
         samplerCustomBorderColorCreateInfoEXT.sType = VK_STRUCTURE_TYPE_SAMPLER_CUSTOM_BORDER_COLOR_CREATE_INFO_EXT;
         samplerCustomBorderColorCreateInfoEXT.pNext = nullptr;
         samplerCustomBorderColorCreateInfoEXT.format = VK_FORMAT_UNDEFINED;
-        samplerCustomBorderColorCreateInfoEXT.customBorderColor.float32[0] = m_desc._borderColor[0];
-        samplerCustomBorderColorCreateInfoEXT.customBorderColor.float32[1] = m_desc._borderColor[1];
-        samplerCustomBorderColorCreateInfoEXT.customBorderColor.float32[2] = m_desc._borderColor[2];
-        samplerCustomBorderColorCreateInfoEXT.customBorderColor.float32[3] = m_desc._borderColor[3];
+        samplerCustomBorderColorCreateInfoEXT.customBorderColor.float32[0] = desc._borderColor[0];
+        samplerCustomBorderColorCreateInfoEXT.customBorderColor.float32[1] = desc._borderColor[1];
+        samplerCustomBorderColorCreateInfoEXT.customBorderColor.float32[2] = desc._borderColor[2];
+        samplerCustomBorderColorCreateInfoEXT.customBorderColor.float32[3] = desc._borderColor[3];
 
         vkExtension = &samplerCustomBorderColorCreateInfoEXT;
         enableCustomBorderColor = true;
@@ -151,20 +150,20 @@ bool VulkanSampler::create()
     samplerCreateInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
     samplerCreateInfo.pNext = vkExtension;
     samplerCreateInfo.flags = 0;
-    samplerCreateInfo.magFilter = VulkanSampler::convertSamplerFilterToVk(m_desc._filter);
-    samplerCreateInfo.minFilter = VulkanSampler::convertSamplerFilterToVk(m_desc._filter);
-    samplerCreateInfo.mipmapMode = VulkanSampler::convertMipmapSamplerFilterToVk(m_desc._filter);
-    samplerCreateInfo.anisotropyEnable = (VulkanSampler::convertAnisotropyCount(m_desc._anisotropic) > 0) ? VK_TRUE : VK_FALSE;
-    samplerCreateInfo.maxAnisotropy = VulkanSampler::convertAnisotropyCount(m_desc._anisotropic);
+    samplerCreateInfo.magFilter = VulkanSampler::convertSamplerFilterToVk(desc._filter);
+    samplerCreateInfo.minFilter = VulkanSampler::convertSamplerFilterToVk(desc._filter);
+    samplerCreateInfo.mipmapMode = VulkanSampler::convertMipmapSamplerFilterToVk(desc._filter);
+    samplerCreateInfo.anisotropyEnable = (VulkanSampler::convertAnisotropyCount(desc._anisotropic) > 0) ? VK_TRUE : VK_FALSE;
+    samplerCreateInfo.maxAnisotropy = VulkanSampler::convertAnisotropyCount(desc._anisotropic);
     ASSERT(samplerCreateInfo.maxAnisotropy <= m_device.getVulkanDeviceCaps().getPhysicalDeviceLimits().maxSamplerAnisotropy, "max aniso");
-    samplerCreateInfo.addressModeU = VulkanSampler::convertSamplerWrapToVkSamplerAddressMode(m_desc._wrapU);
-    samplerCreateInfo.addressModeV = VulkanSampler::convertSamplerWrapToVkSamplerAddressMode(m_desc._wrapV);
-    samplerCreateInfo.addressModeW = VulkanSampler::convertSamplerWrapToVkSamplerAddressMode(m_desc._wrapW);
-    samplerCreateInfo.mipLodBias = m_desc._lodBias;
+    samplerCreateInfo.addressModeU = VulkanSampler::convertSamplerWrapToVkSamplerAddressMode(desc._wrapU);
+    samplerCreateInfo.addressModeV = VulkanSampler::convertSamplerWrapToVkSamplerAddressMode(desc._wrapV);
+    samplerCreateInfo.addressModeW = VulkanSampler::convertSamplerWrapToVkSamplerAddressMode(desc._wrapW);
+    samplerCreateInfo.mipLodBias = desc._lodBias;
     samplerCreateInfo.minLod = 0.0f;
     samplerCreateInfo.maxLod = FLT_MAX;
-    samplerCreateInfo.compareEnable = (m_desc._enableCompOp) ? VK_TRUE : VK_FALSE;
-    samplerCreateInfo.compareOp = VulkanGraphicPipeline::convertCompareOperationToVk(m_desc._compareOp);
+    samplerCreateInfo.compareEnable = (desc._enableCompOp) ? VK_TRUE : VK_FALSE;
+    samplerCreateInfo.compareOp = VulkanGraphicPipeline::convertCompareOperationToVk(desc._compareOp);
 #ifdef VK_EXT_custom_border_color
     samplerCreateInfo.borderColor = enableCustomBorderColor ? VK_BORDER_COLOR_FLOAT_CUSTOM_EXT : VK_BORDER_COLOR_FLOAT_TRANSPARENT_BLACK;
 #else
@@ -203,6 +202,83 @@ void VulkanSampler::destroy()
         VulkanWrapper::DestroySampler(m_device.getDeviceInfo()._device, m_sampler, VULKAN_ALLOCATOR);
         m_sampler = VK_NULL_HANDLE;
     }
+}
+
+VulkanSamplerManager::VulkanSamplerManager(VulkanDevice* device) noexcept
+    : m_device(*device)
+{
+}
+
+VulkanSamplerManager::~VulkanSamplerManager()
+{
+    VulkanSamplerManager::clear();
+}
+
+VulkanSampler* VulkanSamplerManager::acquireSampler(const SamplerState& state)
+{
+    VulkanSampler* sampler = nullptr;
+    auto found = m_samplerList.emplace(state.getSamplerDesc(), sampler);
+    if (found.second)
+    {
+        sampler = V3D_NEW(VulkanSampler, memory::MemoryLabel::MemoryRenderCore)(&m_device, state.getName());
+        if (!sampler->create(state.getSamplerDesc()))
+        {
+            sampler->destroy();
+            m_samplerList.erase(found.first);
+
+            ASSERT(false, "can't create sampler");
+            return nullptr;
+        }
+        found.first->second = sampler;
+        return sampler;
+    }
+
+    return found.first->second;
+}
+
+bool VulkanSamplerManager::removeSampler(VulkanSampler* sampler)
+{
+    //auto iter = m_samplerList.find(sampler->m_desc);
+    //if (iter == m_samplerList.cend())
+    //{
+    //    LOG_DEBUG("VulkanSamplerManager sampler not found");
+    //    ASSERT(false, "sampler");
+    //    return false;
+    //}
+
+    //Sampler* samplerIter = iter->second;
+    //ASSERT(samplerIter == sampler, "Different pointers");
+    //if (samplerIter->linked())
+    //{
+    //    LOG_WARNING("PipelineManager::removePipeline sampler still linked, but reqested to delete");
+    //    ASSERT(false, "sampler");
+    //    //return false;
+    //}
+    //m_samplerList.erase(iter);
+
+    //samplerIter->notifyObservers();
+
+    //samplerIter->destroy();
+    //delete  samplerIter;
+
+    return true;
+}
+
+void VulkanSamplerManager::clear()
+{
+    //for (auto& iter : m_samplerList)
+    //{
+    //    Sampler* sampler = iter.second;
+    //    if (sampler->linked())
+    //    {
+    //        LOG_WARNING("VulkanSamplerManager::clear sampler still linked, but reqested to delete");
+    //        ASSERT(false, "sampler");
+    //    }
+
+    //    sampler->destroy();
+    //    delete sampler;
+    //}
+    //m_samplerList.clear();
 }
 
 

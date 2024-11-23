@@ -31,10 +31,10 @@ namespace vk
         static f32 convertAnisotropyCount(SamplerAnisotropic level);
         static VkSamplerAddressMode convertSamplerWrapToVkSamplerAddressMode(SamplerWrap wrap);
 
-        explicit VulkanSampler(VulkanDevice* device, const SamplerDesc& desc, const std::string& name = "") noexcept;
+        explicit VulkanSampler(VulkanDevice* device, const std::string& name = "") noexcept;
         ~VulkanSampler();
 
-        bool create() override;
+        bool create(const SamplerDesc& desc) override;
         void destroy() override;
 
         VkSampler getHandle() const;
@@ -45,8 +45,6 @@ namespace vk
         VulkanSampler& operator=(const VulkanSampler&) = delete;
 
         VulkanDevice&   m_device;
-
-        SamplerDesc     m_desc;
         VkSampler       m_sampler;
 #if VULKAN_DEBUG_MARKERS
         std::string     m_debugName;
@@ -58,6 +56,33 @@ namespace vk
         ASSERT(m_sampler, "nullptr");
         return m_sampler;
     }
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    /**
+    * @brief SamplerManager class
+    * Multithreaded
+    */
+    class VulkanSamplerManager final
+    {
+    public:
+
+        explicit VulkanSamplerManager(VulkanDevice* device) noexcept;
+        ~VulkanSamplerManager();
+
+        [[nodiscard]] VulkanSampler* acquireSampler(const SamplerState& state);
+        bool removeSampler(VulkanSampler* sampler);
+        void clear();
+
+    private:
+
+        VulkanSamplerManager(const VulkanSamplerManager&) = delete;
+        VulkanSamplerManager& operator=(const VulkanSamplerManager&) = delete;
+
+        VulkanDevice& m_device;
+        std::unordered_map<DescInfo<SamplerDesc>, VulkanSampler*, DescInfo<SamplerDesc>::Hash, DescInfo<SamplerDesc>::Compare> m_samplerList;
+    };
+
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 

@@ -96,8 +96,9 @@ namespace vk
         void addImageBarrier(VulkanImage* texture, const RenderTexture::Subresource& subresource, VkImageLayout layout);
         void flushBarriers(VulkanCommandBuffer* cmdBuffer);
 
-        void bind(BindingType type, u32 set, u32 binding, VulkanBuffer* buffer, u64 offset, u64 range);
-        void bind(BindingType type, u32 set, u32 binding, u32 arrayIndex, VulkanImage* image, const RenderTexture::Subresource& subresource, VulkanSampler* sampler);
+        void bind(BindingType type, u32 set, u32 binding, VulkanBuffer* buffer, u32 offset, u32 range);
+        void bind(BindingType type, u32 set, u32 binding, u32 arrayIndex, VulkanImage* image, const RenderTexture::Subresource& subresource);
+        void bind(BindingType type, u32 set, u32 binding, VulkanSampler* sampler);
 
         void invalidate();
 
@@ -143,6 +144,59 @@ namespace vk
     inline bool VulkanRenderState::isDirty(DiryStateMaskFlags mask)
     {
         return _dirty & mask;
+    }
+
+    inline void VulkanRenderState::bind(BindingType type, u32 set, u32 binding, VulkanBuffer* buffer, u32 offset, u32 range)
+    {
+        ASSERT(buffer, "must be valid");
+        ASSERT(type == BindingType::Uniform || type == BindingType::DynamicUniform, "wrong type");
+        BindingInfo& bindingInfo = _sets[set]._bindings[binding];
+        bindingInfo._binding = binding;
+        bindingInfo._arrayIndex = 0;
+        bindingInfo._type = type;
+        bindingInfo._info._bufferInfo = makeVkDescriptorBufferInfo(buffer, static_cast<u64>(offset), static_cast<u64>(range));
+
+        _sets[set]._resource[binding] = buffer;
+        _sets[set]._activeBindingsFlags |= 1 << binding;
+        setDirty(DiryStateMask::DiryState_DescriptorSet + set);
+
+        if (type == BindingType::DynamicUniform)
+        {
+            bindingInfo._info._bufferInfo.offset = 0;
+            _dynamicOffsets.push_back(offset);
+        }
+    }
+
+    inline void VulkanRenderState::bind(BindingType type, u32 set, u32 binding, u32 arrayIndex, VulkanImage* image, const RenderTexture::Subresource& subresource)
+    {
+        ASSERT(type == BindingType::Texture || type == BindingType::RWTexture, "wrong type");
+        VkImageLayout layout = (type == BindingType::RWTexture) ? VK_IMAGE_LAYOUT_GENERAL : VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+
+        BindingInfo& bindingInfo = _sets[set]._bindings[binding];
+        bindingInfo._binding = binding;
+        bindingInfo._arrayIndex = arrayIndex;
+        bindingInfo._type = type;
+        bindingInfo._info._imageInfo = makeVkDescriptorImageInfo(image, nullptr, layout, subresource);
+
+        _sets[set]._resource[binding] = image;
+        _sets[set]._activeBindingsFlags |= 1 << binding;
+        setDirty(DiryStateMask::DiryState_DescriptorSet + set);
+
+        addImageBarrier(image, subresource, layout);
+    }
+
+    inline void VulkanRenderState::bind(BindingType type, u32 set, u32 binding, VulkanSampler* sampler)
+    {
+        ASSERT(type == BindingType::Sampler, "wrong type");
+        BindingInfo& bindingInfo = _sets[set]._bindings[binding];
+        bindingInfo._binding = binding;
+        bindingInfo._arrayIndex = 0;
+        bindingInfo._type = type;
+        bindingInfo._info._imageInfo = makeVkDescriptorImageInfo(nullptr, sampler, VK_IMAGE_LAYOUT_UNDEFINED, {});
+
+        _sets[set]._resource[binding] = sampler;
+        _sets[set]._activeBindingsFlags |= 1 << binding;
+        setDirty(DiryStateMask::DiryState_DescriptorSet + set);
     }
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

@@ -20,6 +20,7 @@ namespace vk
 
     class VulkanDevice;
     class VulkanImage;
+    class VulkanBuffer;
     class VulkanSwapchain;
 
     class VulkanSemaphoreManager;
@@ -31,6 +32,7 @@ namespace vk
     class VulkanPipelineLayoutManager;
     class VulkanConstantBufferManager;
     class VulkanDescriptorSetManager;
+    class VulkanSamplerManager;
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -51,12 +53,12 @@ namespace vk
         void setPipelineState(GraphicsPipelineState& pipeline) override;
         void setPipelineState(ComputePipelineState& pipeline) override;
 
-        void transition(const TextureView& texture, TransitionOp state)override;
+        void transition(const TextureView& textureView, TransitionOp state)override;
 
-        void bindTexture(u32 binding, Texture* texture) override;
-        void bindBuffer(u32 binding, Buffer* buffer) override;
-        void bindSampler(u32 binding, SamplerState* sampler) override;
-        void bindConstantBuffer(u32 binding, u32 size, void* data) override;
+        void bindTexture(u32 set, u32 slot, const TextureView& textureView) override;
+        void bindBuffer(u32 set, u32 slot, Buffer* buffer) override;
+        void bindSampler(u32 set, u32 slot, SamplerState* sampler) override;
+        void bindConstantBuffer(u32 set, u32 slot, u32 size, void* data) override;
 
         void bindDescriptorSet(u32 set, const std::vector<Descriptor>& descriptors) override;
 
@@ -68,7 +70,7 @@ namespace vk
 
         bool uploadData(Texture2D* texture, u32 size, const void* data) override;
         bool uploadData(Texture3D* texture, u32 size, const void* data) override;
-        bool uploadData(Buffer* buffer, u32 offset, u32 size, void* data) override;
+        bool uploadData(Buffer* buffer, u32 offset, u32 size, const void* data) override;
 
     public:
 
@@ -165,6 +167,7 @@ namespace vk
         void destroyFramebuffer(Framebuffer* framebuffer) override;
         void destroyRenderpass(RenderPass* renderpass) override;
         void destroyPipeline(RenderPipeline* pipeline) override;
+        void destroySampler(Sampler* sampler) override;
 
         VkQueue getQueueByMask(DeviceMask mask);
         u32 getQueueFamilyIndexByMask(DeviceMask mask);
@@ -214,6 +217,7 @@ namespace vk
         VulkanPipelineLayoutManager*            m_pipelineLayoutManager;
         VulkanGraphicPipelineManager*           m_graphicPipelineManager;
         VulkanComputePipelineManager*           m_computePipelineManager;
+        VulkanSamplerManager*                   m_samplerManager;
 
         VulkanResourceDeleter                   m_resourceDeleter;
 

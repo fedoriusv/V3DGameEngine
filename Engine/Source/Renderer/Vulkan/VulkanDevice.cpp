@@ -17,7 +17,7 @@
 #   include "VulkanConstantBuffer.h"
 #   include "VulkanStagingBuffer.h"
 #   include "VulkanDescriptorPool.h"
-
+#   include "VulkanSampler.h"
 
 #ifdef PLATFORM_ANDROID
 #   include "Platform/Android/HWCPProfiler.h"
@@ -125,6 +125,7 @@ VulkanDevice::VulkanDevice(DeviceMaskFlags mask) noexcept
     , m_pipelineLayoutManager(nullptr)
     , m_graphicPipelineManager(nullptr)
     , m_computePipelineManager(nullptr)
+    , m_samplerManager(nullptr)
 {
     LOG_DEBUG("VulkanDevice created this %llx", this);
 
@@ -140,6 +141,7 @@ VulkanDevice::~VulkanDevice()
 {
     LOG_DEBUG("~VulkanDevice destructor this %llx", this);
 
+    ASSERT(!m_samplerManager, "m_samplerManager is not nullptr");
     ASSERT(!m_computePipelineManager, "m_computePipelineManager is not nullptr");
     ASSERT(!m_graphicPipelineManager, "m_graphicPipelineManager is not nullptr");
     ASSERT(!m_pipelineLayoutManager, "m_pipelineLayoutManager is not nullptr");
@@ -446,6 +448,7 @@ bool VulkanDevice::initialize()
     m_pipelineLayoutManager = V3D_NEW(VulkanPipelineLayoutManager, memory::MemoryLabel::MemoryRenderCore)(this);
     m_graphicPipelineManager = V3D_NEW(VulkanGraphicPipelineManager, memory::MemoryLabel::MemoryRenderCore)(this);
     m_computePipelineManager = V3D_NEW(VulkanComputePipelineManager, memory::MemoryLabel::MemoryRenderCore)(this);
+    m_samplerManager = V3D_NEW(VulkanSamplerManager, memory::MemoryLabel::MemoryRenderCore)(this);
 
     return true;
 }
@@ -841,6 +844,12 @@ void VulkanDevice::destroy()
     m_threadedPools.clear();
     m_resourceDeleter.updateResourceDeleter();
 
+    if (m_samplerManager)
+    {
+        V3D_DELETE(m_samplerManager, memory::MemoryLabel::MemoryRenderCore);
+        m_samplerManager = nullptr;
+    }
+
     if (m_computePipelineManager)
     {
         V3D_DELETE(m_computePipelineManager, memory::MemoryLabel::MemoryRenderCore);
@@ -977,6 +986,20 @@ void VulkanDevice::destroyPipeline(RenderPipeline* pipeline)
                 m_computePipelineManager->removePipeline(vkPipeline);
             });
     }
+}
+
+void VulkanDevice::destroySampler(Sampler* sampler)
+{
+#if VULKAN_DEBUG
+    LOG_DEBUG("VulkanDevice::destroySampler %llx", sampler);
+#endif //VULKAN_DEBUG
+
+    ASSERT(sampler, "nullptr");
+    VulkanSampler* vkSampler = static_cast<VulkanSampler*>(sampler);
+    m_resourceDeleter.addResourceToDelete(vkSampler, [this, vkSampler](VulkanResource* resource) -> void
+        {
+            m_samplerManager->removeSampler(vkSampler);
+        });
 }
 
 
@@ -1137,37 +1160,53 @@ void VulkanCmdList::setPipelineState(ComputePipelineState& state)
     m_pendingRenderState.setDirty(DiryStateMask::DiryState_Pipeline);
 }
 
-void VulkanCmdList::transition(const TextureView& view, TransitionOp state)
+void VulkanCmdList::transition(const TextureView& textureView, TransitionOp state)
 {
+    ASSERT(textureView._texture, "nullptr");
     VulkanImage* image = nullptr;
-    if (view._texture->hasUsageFlag(TextureUsage::TextureUsage_Backbuffer))
+    if (textureView._texture->hasUsageFlag(TextureUsage::TextureUsage_Backbuffer))
     {
-        VulkanSwapchain* swapchain = OBJECT_FROM_HANDLE(view._texture->getTextureHandle(), VulkanSwapchain);
+        VulkanSwapchain* swapchain = OBJECT_FROM_HANDLE(textureView._texture->getTextureHandle(), VulkanSwapchain);
         image = swapchain->getCurrentSwapchainImage();
     }
     else
     {
-        image = OBJECT_FROM_HANDLE(view._texture->getTextureHandle(), VulkanImage);
+        image = OBJECT_FROM_HANDLE(textureView._texture->getTextureHandle(), VulkanImage);
     }
 
     VkImageLayout newLayout = VulkanTransitionState::convertTransitionStateToImageLayout(state);
-    m_pendingRenderState.addImageBarrier(image, view._subresource, newLayout);
+    m_pendingRenderState.addImageBarrier(image, textureView._subresource, newLayout);
 }
 
-void VulkanCmdList::bindTexture(u32 binding, Texture* texture)
+void VulkanCmdList::bindTexture(u32 set, u32 slot, const TextureView& textureView)
+{
+    ASSERT(textureView._texture, "nullptr");
+    VulkanImage* vkImage = OBJECT_FROM_HANDLE(textureView._texture->getTextureHandle(), VulkanImage);
+    m_pendingRenderState.bind(BindingType::Texture, set, slot, 0, vkImage, textureView._subresource);
+}
+
+void VulkanCmdList::bindBuffer(u32 set, u32 slot, Buffer* buffer)
 {
 }
 
-void VulkanCmdList::bindBuffer(u32 binding, Buffer* buffer)
+void VulkanCmdList::bindSampler(u32 set, u32 slot, SamplerState* sampler)
 {
+    ASSERT(sampler, "nullptr");
+    VulkanSampler* vkSampler = m_device.m_samplerManager->acquireSampler(*sampler);
+    ASSERT(vkSampler, "nullptr");
+    sampler->m_tracker.attach(vkSampler);
+
+    m_pendingRenderState.bind(BindingType::Sampler, set, slot,vkSampler);
 }
 
-void VulkanCmdList::bindSampler(u32 binding, SamplerState* sampler)
+void VulkanCmdList::bindConstantBuffer(u32 set, u32 slot, u32 size, void* data)
 {
-}
+    u32 alignmentSize = math::alignUp<u32>(size, m_device.getVulkanDeviceCaps().getPhysicalDeviceLimits().minMemoryMapAlignment);
+    ConstantBufferRange range = m_CBOManager->acquireConstantBuffer(alignmentSize);
+    [[maybe_unused]] bool updated = VulkanConstantBufferManager::update(range._buffer, range._offset, size, data);
 
-void VulkanCmdList::bindConstantBuffer(u32 binding, u32 size, void* data)
-{
+    BindingType type = (m_device.getVulkanDeviceCaps()._useDynamicUniforms) ? BindingType::DynamicUniform : BindingType::Uniform;
+    m_pendingRenderState.bind(type, set, slot, range._buffer, range._offset, alignmentSize);
 }
 
 void VulkanCmdList::bindDescriptorSet(u32 set, const std::vector<Descriptor>& descriptors)
@@ -1177,14 +1216,46 @@ void VulkanCmdList::bindDescriptorSet(u32 set, const std::vector<Descriptor>& de
     for (const Descriptor& desc : descriptors)
     {
         ASSERT(desc._slot < m_device.getVulkanDeviceCaps()._maxDescriptorBindings, "set out of range");
-        if (desc._type == Descriptor::Type::Descriptor_ConstantBuffer)
+        switch (desc._type)
         {
+        case Descriptor::Type::Descriptor_ConstantBuffer:
+        {
+            ASSERT(desc._resource.index() == Descriptor::Type::Descriptor_ConstantBuffer, "wrong id");
             const Descriptor::ConstantBuffer& CBO = std::get<Descriptor::Type::Descriptor_ConstantBuffer>(desc._resource);
-            ConstantBufferRange range = m_CBOManager->acquireConstantBuffer(CBO._size);
-            [[maybe_unused]] bool updated = VulkanConstantBufferManager::update(range._buffer, range._offset, CBO._size, CBO._data);
+            VulkanCmdList::bindConstantBuffer(set, desc._slot, CBO._size, CBO._data);
 
-            BindingType type = m_device.getVulkanDeviceCaps()._useDynamicUniforms ? BindingType::DynamicUniform : BindingType::Uniform;
-            m_pendingRenderState.bind(type, set, desc._slot, range._buffer, range._offset, CBO._size);
+            break;
+        }
+
+        case Descriptor::Type::Descriptor_Texture:
+        {
+            ASSERT(desc._resource.index() == Descriptor::Type::Descriptor_Texture, "wrong id");
+            Texture* texture = std::get<Descriptor::Type::Descriptor_Texture>(desc._resource);
+            VulkanCmdList::bindTexture(set, desc._slot, texture);
+
+            break;
+        }
+
+        case Descriptor::Type::Descriptor_UAV:
+        {
+            ASSERT(desc._resource.index() == Descriptor::Type::Descriptor_UAV, "wrong id");
+            Buffer* buffer = std::get<Descriptor::Type::Descriptor_UAV>(desc._resource);
+            VulkanCmdList::bindBuffer(set, desc._slot, buffer);
+
+            break;
+        }
+
+        case Descriptor::Type::Descriptor_Sampler:
+        {
+            ASSERT(desc._resource.index() == Descriptor::Type::Descriptor_Sampler, "wrong id");
+            SamplerState* state = std::get<Descriptor::Type::Descriptor_Sampler>(desc._resource);
+            VulkanCmdList::bindSampler(set, desc._slot, state);
+
+            break;
+        }
+
+        default:
+            ASSERT(false, "unknow type");
         }
     }
 }
@@ -1392,7 +1463,7 @@ bool VulkanCmdList::uploadData(Texture3D* texture, u32 size, const void* data)
     return result;
 }
 
-bool VulkanCmdList::uploadData(Buffer* buffer, u32 offset, u32 size, void* data)
+bool VulkanCmdList::uploadData(Buffer* buffer, u32 offset, u32 size, const void* data)
 {
 #if VULKAN_DEBUG
     LOG_DEBUG("VulkanCmdList::uploadData");

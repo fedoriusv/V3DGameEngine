@@ -38,17 +38,17 @@ namespace renderer
         /**
          * @brief transition command
         */
-        virtual void transition(const TextureView& texture, TransitionOp state) = 0;
+        virtual void transition(const TextureView& textureView, TransitionOp state) = 0;
 
         /**
          * @brief bindDescriptorSet command
         */
         virtual void bindDescriptorSet(u32 set, const std::vector<Descriptor>& descriptors) = 0;
 
-        virtual void bindTexture(u32 binding, Texture* texture) = 0;
-        virtual void bindBuffer(u32 binding, Buffer* buffer) = 0;
-        virtual void bindSampler(u32 binding, SamplerState* sampler) = 0;
-        virtual void bindConstantBuffer(u32 binding, u32 size, void* data) = 0;
+        virtual void bindTexture(u32 set, u32 slot, const TextureView& textureView) = 0;
+        virtual void bindBuffer(u32 set, u32 slot, Buffer* buffer) = 0;
+        virtual void bindSampler(u32 set, u32 slot, SamplerState* sampler) = 0;
+        virtual void bindConstantBuffer(u32 set, u32 slot, u32 size, void* data) = 0;
 
     protected:
 
@@ -169,7 +169,7 @@ namespace renderer
         /**
          * @brief upload command
         */
-        virtual bool uploadData(Buffer* buffer, u32 offset, u32 size, void* data) = 0;
+        virtual bool uploadData(Buffer* buffer, u32 offset, u32 size, const void* data) = 0;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -277,6 +277,7 @@ namespace renderer
         virtual void destroyFramebuffer(Framebuffer* framebuffer) = 0;
         virtual void destroyRenderpass(RenderPass* renderpass) = 0;
         virtual void destroyPipeline(RenderPipeline* pipeline) = 0;
+        virtual void destroySampler(Sampler* sampler) = 0;
 
     protected:
 
