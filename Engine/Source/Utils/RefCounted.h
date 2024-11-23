@@ -19,7 +19,7 @@ namespace utils
         explicit RefCounted(s64 refCount = 0) noexcept;
         virtual ~RefCounted() = default;
 
-        s64 getCount() const;
+        s64 getRefs() const;
 
     private:
 
@@ -39,7 +39,7 @@ namespace utils
     {
     }
 
-    inline s64 RefCounted::getCount() const
+    inline s64 RefCounted::getRefs() const
     {
         return m_refCount;
     }
