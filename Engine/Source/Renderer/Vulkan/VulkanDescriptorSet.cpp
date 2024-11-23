@@ -174,7 +174,7 @@ void VulkanDescriptorSetManager::updateDescriptorSet(VulkanCommandBuffer* cmdBuf
             cmdBuffer->captureResource(setInfo._resource[index]);
             break;
 
-        case BindingType::StorageImage:
+        case BindingType::RWTexture:
             ASSERT(binding._info._imageInfo.sampler == VK_NULL_HANDLE, "sampler present");
             ASSERT(binding._info._imageInfo.imageView != VK_NULL_HANDLE, "image");
             writeDescriptorSet.pImageInfo = &binding._info._imageInfo;
