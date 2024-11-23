@@ -73,7 +73,7 @@ private:
     v3d::utils::IntrusivePointer<v3d::renderer::GraphicsPipelineState>  m_pipelineBackbuffer;
     v3d::utils::IntrusivePointer<v3d::renderer::RenderTargetState>      m_renderTargetBackbuffer;
 
-    bool m_enableMSAA = true;
+    bool m_enableMSAA = false;
 };
 
 } //namespace v3d

@@ -56,8 +56,10 @@ private:
     {
         v3d::utils::IntrusivePointer<v3d::renderer::Texture2D>    m_Texture;
         v3d::utils::IntrusivePointer<v3d::renderer::SamplerState> m_Sampler;
+        v3d::renderer::VertexInputAttributeDesc                   m_InputAttrib;
         std::vector<std::tuple<v3d::renderer::GeometryBufferDesc, app::DrawProperties>> m_Props;
     };
+
     std::list<Model*> m_Models;
 
     void LoadVoyager();

@@ -130,7 +130,7 @@ void SimpleTriangle::init(renderer::Device* device, renderer::Swapchain* swapcha
         { 0.0f, 1.0f, 0.0f },  { 0.0f, 1.0f, 0.0f },
         { 1.0f,-1.0f, 0.0f },  { 0.0f, 0.0f, 1.0f },
     };
-    m_Geometry = new renderer::VertexBuffer(m_Device, renderer::Buffer_Write, static_cast<u32>(geometryData.size() * sizeof(math::Vector3D)), "geometry");
+    m_Geometry = new renderer::VertexBuffer(m_Device, renderer::Buffer_Write, static_cast<u32>(geometryData.size()), static_cast<u32>(geometryData.size() * sizeof(math::Vector3D)), "geometry");
 
     renderer::VertexInputAttributeDesc vertexDesc(
         { 

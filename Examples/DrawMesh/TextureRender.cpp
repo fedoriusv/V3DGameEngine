@@ -22,11 +22,13 @@ TextureUniformParameters::TextureUniformParameters() noexcept
 
 void TextureUniformParameters::bindUniformParameters(renderer::CmdListRender& cmdList, renderer::ShaderProgram* program)
 {
-    //program->bindUniformsBuffer<ShaderType::Vertex>({ "ubo" }, 0, sizeof(UniformBuffer), &_constantBufferVS);
+    renderer::Descriptor vsCBO({ &_constantBufferVS, 0, sizeof(_constantBufferVS) }, 0);
 
-    //program->bindUniformsBuffer<ShaderType::Fragment>({ "light" }, 0, sizeof(Light), &_constantBufferFS);
-    //program->bindTexture<ShaderType::Fragment, Texture2D>({ "textureColor" }, _texture);
-    //program->bindSampler<ShaderType::Fragment>({ "samplerColor" }, _sampler);
+    renderer::Descriptor sampler(_sampler, 1);
+    renderer::Descriptor texture(_texture, 2);
+    renderer::Descriptor fsCBO({ &_constantBufferFS, 0, sizeof(_constantBufferFS) }, 3);
+
+    cmdList.bindDescriptorSet(0, { vsCBO, fsCBO, texture, sampler });
 }
 
 
@@ -160,7 +162,13 @@ TextureRender::TextureRender(renderer::Device* device, renderer::CmdListRender& 
     else
     {
         m_renderTarget = new renderer::RenderTargetState(device, swapchain->getBackbufferSize());
-        m_renderTarget->setColorTexture(0, swapchain->getBackbuffer(), renderer::RenderTargetLoadOp::LoadOp_Clear, renderer::RenderTargetStoreOp::StoreOp_Store, math::Vector4D(0.0f));
+        m_renderTarget->setColorTexture(0, swapchain->getBackbuffer(),
+            {
+                renderer::RenderTargetLoadOp::LoadOp_Clear, renderer::RenderTargetStoreOp::StoreOp_Store, math::Vector4D(0.0f)
+        },
+        {
+            renderer::TransitionOp::TransitionOp_Undefined, renderer::TransitionOp::TransitionOp_Present
+        });
 #if defined(PLATFORM_ANDROID)
         renderer::Texture2D* depthAttachment = new renderer::Texture2D(device, renderer::TextureUsage::TextureUsage_Attachment, 
             renderer::Format::Format_D24_UNorm_S8_UInt, swapchain->getBackbufferSize(), renderer::TextureSamples::TextureSamples_x1);
@@ -173,7 +181,7 @@ TextureRender::TextureRender(renderer::Device* device, renderer::CmdListRender& 
         m_pipeline = new renderer::GraphicsPipelineState(device, vertex, m_program.get(), m_renderTarget.get());
         m_pipeline->setPrimitiveTopology(renderer::PrimitiveTopology::PrimitiveTopology_TriangleList);
         m_pipeline->setFrontFace(renderer::FrontFace::FrontFace_Clockwise);
-        m_pipeline->setCullMode(renderer::CullMode::CullMode_None);
+        m_pipeline->setCullMode(renderer::CullMode::CullMode_Back);
         m_pipeline->setColorMask(renderer::ColorMask::ColorMask_All);
         m_pipeline->setDepthCompareOp(renderer::CompareOperation::CompareOp_GreaterOrEqual);
         m_pipeline->setDepthWrite(true);
@@ -249,8 +257,9 @@ void TextureRender::process(renderer::CmdListRender& cmdList, const std::vector<
         cmdList.beginRenderTarget(*m_renderTargetBackbuffer.get());
         cmdList.setPipelineState(*m_pipelineBackbuffer.get());
 
-        //m_programBackbuffer->bindSampler<renderer::ShaderType::Fragment>({ "colorSampler" }, m_Sampler.get());
-        //m_programBackbuffer->bindTexture<renderer::ShaderType::Fragment, renderer::Texture2D>({ "colorTexture" }, m_renderTargetMSAA->getColorTexture<Texture2D>(0));
+        renderer::Descriptor colorSampler(m_renderTargetMSAA->getColorTexture<renderer::Texture2D>(0), 0);
+        renderer::Descriptor colorTexture(m_Sampler.get(), 1);
+        cmdList.bindDescriptorSet(0, { colorSampler, colorTexture });
 
         cmdList.draw(renderer::GeometryBufferDesc(nullptr, 0, 0), 0, 3, 0, 1);
 
