@@ -5,6 +5,10 @@
 
 namespace v3d
 {
+namespace scene
+{
+    class ModelHelper;
+} //namespace scene
 namespace resource
 {
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -48,6 +52,8 @@ namespace resource
         typedef u32 ModelContentFlags;
 
     private:
+
+        friend scene::ModelHelper;
 
         ModelResource(const ModelResource&) = delete;
         ModelResource& operator=(const ModelResource&) = delete;

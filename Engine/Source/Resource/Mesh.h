@@ -8,6 +8,10 @@
 
 namespace v3d
 {
+namespace scene
+{
+    class MeshHelper;
+} //namespace scene
 namespace resource
 {
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -80,6 +84,8 @@ namespace resource
         const renderer::VertexInputAttributeDesc& getInputAttributeDesc() const;
 
     protected:
+
+        friend scene::MeshHelper;
 
         MeshResource(const MeshResource&) = delete;
         MeshResource& operator=(const MeshResource&) = delete;

@@ -2,57 +2,55 @@
 
 #include "Common.h"
 #include "Scene/Component.h"
-//#include "Scene/Material.h"
 #include "Resource/Resource.h"
-//#include "StaticMesh.h"
 
 namespace v3d
 {
+namespace resource
+{
+    class ModelResource;
+} //namespace resource
+namespace renderer
+{
+    class Device;
+    class CmdListRender;
+} //namespace renderer
 namespace scene
 {
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    
+    class Mesh;
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
-    * @brief Model class. Component, Resource
+    * @brief Model class
     */
-    class Model : public resource::Resource
+    class Model : public Object
     {
     public:
 
-        /**
-        * @brief ModelHeader meta info about Model
-        */
-        struct ModelHeader : resource::ResourceHeader
-        {
-            ModelHeader() noexcept
-                : resource::ResourceHeader(resource::ResourceType::ModelResource)
-            {
-            }
-        };
-
         Model() noexcept;
-        explicit Model(const ModelHeader& header) noexcept;
-        ~Model() noexcept;
+        ~Model();
 
-        /**
-        * @brief ModelContent enum
-        */
-        enum ModelContent : u32
+        struct Geometry
         {
-            ModelContent_Empty = 0,
-            ModelContent_Mesh = 1 << 0,
-            ModelContent_Material = 1 << 1,
-            ModelContent_AABB = 1 << 2,
+            std::vector<Mesh*> _LODs;
         };
 
-        typedef u32 ModelContentFlags;
+        std::vector<Geometry> m_geometry;
+    };
 
-    private:
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-        bool load(const stream::Stream* stream, u32 offset = 0) override;
-        bool save(stream::Stream* stream, u32 offset = 0) const override;
+    /**
+    * @brief ModelHelper class
+    */
+    class ModelHelper
+    {
+    public:
 
-        ModelHeader m_header;
+        [[nodisard]] static Model* createModel(renderer::Device* device, renderer::CmdListRender* cmdList, resource::ModelResource* resource);
     };
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////

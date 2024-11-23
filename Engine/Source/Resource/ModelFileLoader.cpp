@@ -5,6 +5,10 @@
 #include "Resource/ResourceManager.h"
 #include "Resource/Model.h"
 
+#define MODEL_FORMAT_DAE "dae"
+#define MODEL_FORMAT_FBX "fbx"
+#define MODEL_FORMAT_GLTF "gltf"
+
 namespace v3d
 {
 namespace resource
@@ -15,7 +19,7 @@ ModelFileLoader::ModelFileLoader(ModelLoaderFlags flags) noexcept
     , m_flags(flags)
 {
 #ifdef USE_ASSIMP
-    ResourceDecoderRegistration::registerDecoder(V3D_NEW(AssimpDecoder, memory::MemoryLabel::MemorySystem)({ "dae", "fbx" }));
+    ResourceDecoderRegistration::registerDecoder(V3D_NEW(AssimpDecoder, memory::MemoryLabel::MemorySystem)({ MODEL_FORMAT_DAE, MODEL_FORMAT_FBX, MODEL_FORMAT_GLTF }));
 #endif //USE_ASSIMP
 
     ResourceLoader::registerPathes(ResourceManager::getInstance()->getPathes());
@@ -26,7 +30,7 @@ ModelFileLoader::ModelFileLoader(const ModelFileLoader::ModelPolicy& policy, Mod
     , m_flags(flags)
 {
 #ifdef USE_ASSIMP
-    ResourceDecoderRegistration::registerDecoder(V3D_NEW(AssimpDecoder, memory::MemoryLabel::MemorySystem)({ "dae", "fbx" }));
+    ResourceDecoderRegistration::registerDecoder(V3D_NEW(AssimpDecoder, memory::MemoryLabel::MemorySystem)({ MODEL_FORMAT_DAE, MODEL_FORMAT_FBX, MODEL_FORMAT_GLTF }));
 #endif //USE_ASSIMP
 
     ResourceLoader::registerPathes(ResourceManager::getInstance()->getPathes());

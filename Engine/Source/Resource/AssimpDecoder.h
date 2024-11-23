@@ -30,7 +30,7 @@ namespace resource
 
     private:
 
-        u32 decodeMesh(const aiScene* scene, stream::Stream* stream, u32 activeFlags) const;
+        u32 decodeMesh(const aiScene* scene, stream::Stream* stream, ModelFileLoader::ModelLoaderFlags flags, u32 vertexPropFlags) const;
         u32 decodeMaterial(const aiScene* scene, stream::Stream* stream) const;
         u32 decodeAABB(const aiScene* scene, stream::Stream* stream) const;
 

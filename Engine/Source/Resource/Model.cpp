@@ -111,7 +111,8 @@ bool ModelResource::load(const stream::Stream* stream, u32 offset)
     //    }
     //}
 
-    //m_loaded = true;
+    m_loaded = true;
+
     return true;
 }
 

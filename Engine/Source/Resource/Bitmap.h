@@ -35,7 +35,7 @@ namespace resource
         renderer::Format getFormat() const;
         const math::Dimension3D& getDimension() const;
         u32 getLayersCount() const;
-        u32 getMipMapsCount() const;
+        u32 getMipmapsCount() const;
 
         const void* getBitmap() const;
         u32 getSize() const;
@@ -73,7 +73,7 @@ namespace resource
         return m_layers;
     }
 
-    inline u32 Bitmap::getMipMapsCount() const
+    inline u32 Bitmap::getMipmapsCount() const
     {
         return m_mips;
     }
