@@ -53,6 +53,7 @@ bool RenderTargetState::setColorTexture_Impl(u32 index, Texture* colorTexture, R
         attachmentDesc._finalTransition = TransitionOp::TransitionOp_ColorAttachment;
         m_attachmentsDesc._images[index] = colorTexture->m_texture;
         m_attachmentsDesc._layers[index] = k_generalLayer;
+        m_attachmentsDesc._clearColorValues[index] = clearColor;
         m_renderTargets[index] = colorTexture;
 
         return checkCompatibility(colorTexture, attachmentDesc);
@@ -88,6 +89,7 @@ bool RenderTargetState::setColorTexture_Impl(u32 index, Texture* colorTexture, u
         attachmentDesc._finalTransition = TransitionOp::TransitionOp_ColorAttachment;
         m_attachmentsDesc._images[index] = colorTexture->m_texture;
         m_attachmentsDesc._layers[index] = k_generalLayer;
+        m_attachmentsDesc._clearColorValues[index] = clearColor;
         m_renderTargets[index] = colorTexture;
 
         return checkCompatibility(colorTexture, attachmentDesc);
@@ -122,6 +124,7 @@ bool RenderTargetState::setColorTexture_Impl(u32 index, Texture* colorTexture, c
         attachmentDesc._finalTransition = tansitionState._finalState;
         m_attachmentsDesc._images[index] = colorTexture->m_texture;
         m_attachmentsDesc._layers[index] = k_generalLayer;
+        m_attachmentsDesc._clearColorValues[index] = Color(0);
         m_renderTargets[index] = colorTexture;
 
         return checkCompatibility(colorTexture, attachmentDesc);
@@ -157,6 +160,7 @@ bool RenderTargetState::setColorTexture_Impl(u32 index, Texture* colorTexture, s
         attachmentDesc._finalTransition = tansitionState._finalState;
         m_attachmentsDesc._images[index] = colorTexture->m_texture;
         m_attachmentsDesc._layers[index] = 0;
+        m_attachmentsDesc._clearColorValues[index] = Color(0);
         m_renderTargets[index] = colorTexture;
 
         return checkCompatibility(colorTexture, attachmentDesc);
@@ -191,6 +195,7 @@ bool RenderTargetState::setSwapchainTexture_Impl(u32 index, SwapchainTexture* sw
         attachmentDesc._finalTransition = TransitionOp::TransitionOp_ColorAttachment;
         m_attachmentsDesc._images[index] = TextureHandle(swapchainTexture->m_swapchain);
         m_attachmentsDesc._layers[index] = k_generalLayer;
+        m_attachmentsDesc._clearColorValues[index] = clearColor;
         m_renderTargets[index] = swapchainTexture;
 
         return checkCompatibility(swapchainTexture, attachmentDesc);
@@ -225,6 +230,7 @@ bool RenderTargetState::setSwapchainTexture_Impl(u32 index, SwapchainTexture* sw
         attachmentDesc._finalTransition = tansitionState._finalState;
         m_attachmentsDesc._images[index] = TextureHandle(swapchainTexture->m_swapchain);
         m_attachmentsDesc._layers[index] = k_generalLayer;
+        m_attachmentsDesc._clearColorValues[index] = Color(0);
         m_renderTargets[index] = swapchainTexture;
 
         return checkCompatibility(swapchainTexture, attachmentDesc);
@@ -258,7 +264,11 @@ bool RenderTargetState::setDepthStencilTexture_Impl(Texture* depthStencilTexture
         attachmentDesc._finalTransition = TransitionOp::TransitionOp_DepthStencilAttachment;
         m_attachmentsDesc._images.back() = depthStencilTexture->m_texture;
         m_attachmentsDesc._layers.back() = k_generalLayer;
+        m_attachmentsDesc._clearDepthValue = clearDepth;
+        m_attachmentsDesc._clearStencilValue = clearStencil;
         m_renderTargets.back() = depthStencilTexture;
+
+        m_renderpassDesc._hasDepthStencilAttahment = true;
 
         return checkCompatibility(depthStencilTexture, attachmentDesc);
     }
@@ -268,6 +278,8 @@ bool RenderTargetState::setDepthStencilTexture_Impl(Texture* depthStencilTexture
         m_attachmentsDesc._images.back() = TextureHandle();
         m_attachmentsDesc._layers.back() = 0;
         m_renderTargets.back() = nullptr;
+
+        m_renderpassDesc._hasDepthStencilAttahment = false;
     }
 
     return false;
@@ -292,7 +304,11 @@ bool RenderTargetState::setDepthStencilTexture_Impl(Texture* depthStencilTexture
         attachmentDesc._finalTransition = TransitionOp::TransitionOp_DepthStencilAttachment;
         m_attachmentsDesc._images.back() = depthStencilTexture->m_texture;
         m_attachmentsDesc._layers.back() = layer;
+        m_attachmentsDesc._clearDepthValue = clearDepth;
+        m_attachmentsDesc._clearStencilValue = clearStencil;
         m_renderTargets.back() = depthStencilTexture;
+
+        m_renderpassDesc._hasDepthStencilAttahment = true;
 
         return checkCompatibility(depthStencilTexture, attachmentDesc);
     }
@@ -302,6 +318,8 @@ bool RenderTargetState::setDepthStencilTexture_Impl(Texture* depthStencilTexture
         m_attachmentsDesc._images.back() = TextureHandle();
         m_attachmentsDesc._layers.back() = 0;
         m_renderTargets.back() = nullptr;
+
+        m_renderpassDesc._hasDepthStencilAttahment = false;
     }
 
     return false;
@@ -325,7 +343,11 @@ bool RenderTargetState::setDepthStencilTexture_Impl(Texture* depthStencilTexture
         attachmentDesc._finalTransition = tansitionState._finalState;
         m_attachmentsDesc._images.back() = depthStencilTexture->m_texture;
         m_attachmentsDesc._layers.back() = k_generalLayer;
+        m_attachmentsDesc._clearDepthValue = 0.f;
+        m_attachmentsDesc._clearStencilValue = 0;
         m_renderTargets.back() = depthStencilTexture;
+
+        m_renderpassDesc._hasDepthStencilAttahment = true;
 
         return checkCompatibility(depthStencilTexture, attachmentDesc);
     }
@@ -335,6 +357,8 @@ bool RenderTargetState::setDepthStencilTexture_Impl(Texture* depthStencilTexture
         m_attachmentsDesc._images.back() = TextureHandle();
         m_attachmentsDesc._layers.back() = 0;
         m_renderTargets.back() = nullptr;
+
+        m_renderpassDesc._hasDepthStencilAttahment = false;
     }
 
     return false;
@@ -358,7 +382,11 @@ bool RenderTargetState::setDepthStencilTexture_Impl(Texture* depthStencilTexture
         attachmentDesc._finalTransition = tansitionState._finalState;
         m_attachmentsDesc._images.back() = depthStencilTexture->m_texture;
         m_attachmentsDesc._layers.back() = layer;
+        m_attachmentsDesc._clearDepthValue = 0.f;
+        m_attachmentsDesc._clearStencilValue = 0;
         m_renderTargets.back() = depthStencilTexture;
+
+        m_renderpassDesc._hasDepthStencilAttahment = true;
 
         return checkCompatibility(depthStencilTexture, attachmentDesc);
     }
@@ -368,6 +396,8 @@ bool RenderTargetState::setDepthStencilTexture_Impl(Texture* depthStencilTexture
         m_attachmentsDesc._images.back() = TextureHandle();
         m_attachmentsDesc._layers.back() = 0;
         m_renderTargets.back() = nullptr;
+
+        m_renderpassDesc._hasDepthStencilAttahment = false;
     }
 
     return false;

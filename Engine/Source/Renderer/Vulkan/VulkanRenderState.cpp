@@ -61,7 +61,7 @@ void VulkanRenderState::invalidate()
     _renderpass = nullptr;
     _framebuffer = nullptr;
     _renderArea = {};
-    _clearValues = {};
+    std::fill(_clearValues.begin(), _clearValues.end(), VkClearValue{});
     _insideRenderpass = false;
 
     for (u32 i = 0; i < k_maxDescriptorSetCount; ++i)

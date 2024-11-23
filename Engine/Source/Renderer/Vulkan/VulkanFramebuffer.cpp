@@ -16,7 +16,7 @@ namespace renderer
 namespace vk
 {
 
-VulkanFramebuffer::VulkanFramebuffer(VulkanDevice* device, const std::array<TextureHandle, k_maxColorAttachments + 1>& images, const math::Dimension2D& size, const std::string& name) noexcept
+VulkanFramebuffer::VulkanFramebuffer(VulkanDevice* device, const std::vector<TextureHandle>& images, const math::Dimension2D& size, const std::string& name) noexcept
     : m_device(*device)
     , m_images(images)
     , m_size(size)
@@ -139,11 +139,15 @@ std::tuple<VulkanFramebuffer*, bool> VulkanFramebufferManager::acquireFramebuffe
 {
     std::scoped_lock lock(m_mutex);
 
+    std::vector<TextureHandle> images;
+    images.reserve(renderpass->getCountAttachments());
     auto buildFramebufferDescription = [&](VulkanFramebufferDesc& desc) -> void
         {
             for (u32 index = 0; index < renderpass->getCountAttachments(); ++index)
             {
-                desc._renderTargetsIDs[index] = OBJECT_FROM_HANDLE(description._images[index], RenderTexture)->ID();
+                TextureHandle image = VulkanImage::isColorFormat(renderpass->getAttachmentDescription(index)._format) ? description._images[index] : description._images.back();
+                desc._renderTargetsIDs[index] = OBJECT_FROM_HANDLE(image, RenderTexture)->ID();
+                images.push_back(image);
             }
         };
 
@@ -154,7 +158,7 @@ std::tuple<VulkanFramebuffer*, bool> VulkanFramebufferManager::acquireFramebuffe
     auto found = m_framebufferList.emplace(desc, framebuffer);
     if (found.second)
     {
-        framebuffer = V3D_NEW(VulkanFramebuffer, memory::MemoryLabel::MemoryRenderCore)(&m_device, description._images, description._renderArea, name);
+        framebuffer = V3D_NEW(VulkanFramebuffer, memory::MemoryLabel::MemoryRenderCore)(&m_device, images, description._renderArea, name);
         if (!framebuffer->create(renderpass))
         {
             framebuffer->destroy();

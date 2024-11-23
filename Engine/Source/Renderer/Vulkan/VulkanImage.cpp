@@ -1468,6 +1468,7 @@ bool VulkanImage::generateMipmaps(VulkanCommandBuffer* cmdBuffer, u32 layer)
 
 VkImageSubresourceRange VulkanImage::makeImageSubresourceRange(const VulkanImage* image, const RenderTexture::Subresource& resource)
 {
+    ASSERT(image, "nullptr");
     VkImageSubresourceRange imageSubresourceRange = {};
     imageSubresourceRange.aspectMask = image->m_aspectMask;
     imageSubresourceRange.baseArrayLayer = resource._baseLayer;
@@ -1480,6 +1481,7 @@ VkImageSubresourceRange VulkanImage::makeImageSubresourceRange(const VulkanImage
 
 RenderTexture::Subresource VulkanImage::makeVulkanImageSubresource(const VulkanImage* image, u32 layer, u32 mip)
 {
+    ASSERT(image, "nullptr");
     RenderTexture::Subresource resource = { layer, 1, mip, 1 };
 
     if (layer == k_generalLayer)

@@ -27,13 +27,13 @@ namespace vk
     {
     public:
 
-        explicit VulkanFramebuffer(VulkanDevice* device, const std::array<TextureHandle, k_maxColorAttachments + 1>& images, const math::Dimension2D& size, const std::string& name = "") noexcept;
+        explicit VulkanFramebuffer(VulkanDevice* device, const std::vector<TextureHandle>& images, const math::Dimension2D& size, const std::string& name = "") noexcept;
         ~VulkanFramebuffer();
 
         VkFramebuffer getHandle() const;
 
-        const std::array<TextureHandle, k_maxColorAttachments + 1>& getImages() const;
-        const math::Dimension2D&  getArea() const;
+        const std::vector<TextureHandle>& getImages() const;
+        const math::Dimension2D& getArea() const;
 
         bool create(const VulkanRenderPass* renderpass);
         void destroy();
@@ -43,20 +43,20 @@ namespace vk
         VulkanFramebuffer() = delete;
         VulkanFramebuffer(const VulkanFramebuffer&) = delete;
 
-        VulkanDevice&                                           m_device;
+        VulkanDevice&               m_device;
 
-        std::array<TextureHandle, k_maxColorAttachments + 1>    m_images;
-        std::vector<VkImageView>                                m_imageViews;
-        math::Dimension2D                                       m_size;
+        std::vector<TextureHandle>  m_images;
+        std::vector<VkImageView>    m_imageViews;
+        math::Dimension2D           m_size;
 
-        VkFramebuffer                                           m_framebuffer;
+        VkFramebuffer               m_framebuffer;
 
 #if VULKAN_DEBUG_MARKERS
         std::string m_debugName;
 #endif //VULKAN_DEBUG_MARKERS
     };
 
-    inline const std::array<TextureHandle, k_maxColorAttachments + 1>& VulkanFramebuffer::getImages() const
+    inline const std::vector<TextureHandle>& VulkanFramebuffer::getImages() const
     {
         return m_images;
     }

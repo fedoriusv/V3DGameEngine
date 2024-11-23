@@ -1125,6 +1125,27 @@ void VulkanCmdList::beginRenderTarget(RenderTargetState& rendertarget)
     m_pendingRenderState._renderpass = renderpass;
     m_pendingRenderState._framebuffer = framebuffer;
     m_pendingRenderState._renderArea = VkRect2D{ { 0, 0 }, { rendertarget.getRenderArea().m_width, rendertarget.getRenderArea().m_height }};
+    if constexpr (sizeof(Color) == sizeof(VkClearValue))
+    {
+        memcpy(m_pendingRenderState._clearValues.data(), rendertarget.m_attachmentsDesc._clearColorValues.data(), sizeof(rendertarget.m_attachmentsDesc._clearColorValues));
+        m_pendingRenderState._clearValues[rendertarget.getColorTextureCount()].depthStencil = { rendertarget.m_attachmentsDesc._clearDepthValue, rendertarget.m_attachmentsDesc._clearStencilValue };
+    }
+    else
+    {
+        for (u32 i = 0; i < rendertarget.getColorTextureCount(); ++i)
+        {
+            //TODO cast to float value
+            m_pendingRenderState._clearValues[i].color =
+            {
+                rendertarget.m_attachmentsDesc._clearColorValues[i].m_x,
+                rendertarget.m_attachmentsDesc._clearColorValues[i].m_y,
+                rendertarget.m_attachmentsDesc._clearColorValues[i].m_z,
+                rendertarget.m_attachmentsDesc._clearColorValues[i].m_w,
+            };
+        }
+        m_pendingRenderState._clearValues[rendertarget.getColorTextureCount()].depthStencil = { rendertarget.m_attachmentsDesc._clearDepthValue, rendertarget.m_attachmentsDesc._clearStencilValue };
+    }
+
     m_pendingRenderState._insideRenderpass = true;
     m_pendingRenderState.setDirty(DiryStateMask::DiryState_RenderPass);
 }

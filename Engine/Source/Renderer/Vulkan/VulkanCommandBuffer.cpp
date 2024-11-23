@@ -277,7 +277,7 @@ void VulkanCommandBuffer::endCommandBuffer()
     m_status = CommandBufferStatus::End;
 }
 
-void VulkanCommandBuffer::cmdBeginRenderpass(VulkanRenderPass* pass, VulkanFramebuffer* framebuffer, const VkRect2D& area, const std::array<VkClearValue, k_maxColorAttachments>& clearValues)
+void VulkanCommandBuffer::cmdBeginRenderpass(VulkanRenderPass* pass, VulkanFramebuffer* framebuffer, const VkRect2D& area, const std::vector<VkClearValue>& clearValues)
 {
     ASSERT(m_status == CommandBufferStatus::Begin, "not started");
 #if VULKAN_DEBUG

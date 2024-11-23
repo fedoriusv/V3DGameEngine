@@ -60,6 +60,8 @@ namespace vk
         VulkanRenderState() noexcept
             : _dirty(DiryStateMask::DiryState_All)
         {
+
+            _clearValues.resize(k_maxColorAttachments + 1);
         }
 
         VulkanRenderState& operator=(VulkanRenderState&& other) noexcept
@@ -75,7 +77,7 @@ namespace vk
             _renderpass = other._renderpass;
             _framebuffer = other._framebuffer;
             _renderArea = other._renderArea;
-            _clearValues = other._clearValues;
+            std::swap(_clearValues, other._clearValues);
             _insideRenderpass = other._insideRenderpass;
 
             for (u32 i = 0; i < k_maxDescriptorSetCount; ++i)
@@ -117,7 +119,7 @@ namespace vk
         VulkanRenderPass*                                _renderpass = nullptr;
         VulkanFramebuffer*                               _framebuffer = nullptr;
         VkRect2D                                         _renderArea = {};
-        std::array<VkClearValue, k_maxColorAttachments>  _clearValues;
+        std::vector<VkClearValue>                        _clearValues;
         bool                                             _insideRenderpass = false;
 
         SetInfo                                         _sets[k_maxDescriptorSetCount];

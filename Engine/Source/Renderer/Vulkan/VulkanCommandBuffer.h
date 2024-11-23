@@ -72,7 +72,7 @@ namespace vk
         void beginCommandBuffer();
         void endCommandBuffer();
 
-        void cmdBeginRenderpass(VulkanRenderPass* pass, VulkanFramebuffer* framebuffer, const VkRect2D& area, const std::array<VkClearValue, k_maxColorAttachments>& clearValues);
+        void cmdBeginRenderpass(VulkanRenderPass* pass, VulkanFramebuffer* framebuffer, const VkRect2D& area, const std::vector<VkClearValue>& clearValues);
         void cmdEndRenderPass();
         bool isInsideRenderPass() const;
 

@@ -121,6 +121,9 @@ namespace renderer
         std::array<TextureHandle, k_maxColorAttachments + 1>    _images;
         std::array<u32, k_maxColorAttachments + 1>              _layers;
         math::Dimension2D                                       _renderArea;
+        std::array<Color, k_maxColorAttachments>                _clearColorValues;
+        f32                                                     _clearDepthValue;
+        u32                                                     _clearStencilValue;
         u32                                                     _viewsMask;
     };
 
