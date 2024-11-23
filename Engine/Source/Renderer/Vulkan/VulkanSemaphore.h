@@ -21,7 +21,7 @@ namespace vk
     /**
     * @brief VulkanSemaphore class. Render Vulkan side
     */
-    class VulkanSemaphore final
+    class VulkanSemaphore : public VulkanResource
     {
     public:
 
@@ -30,14 +30,13 @@ namespace vk
             Free,
             AssignToWaiting,
             AssignToSignal,
-            Signaled,
+            Signaled = Free
         };
 
         VulkanSemaphore() noexcept;
         ~VulkanSemaphore();
 
         VkSemaphore getHandle() const;
-        bool isUsed() const;
 
     private:
 
@@ -57,11 +56,6 @@ namespace vk
     {
         ASSERT(m_semaphore, "nullptr");
         return m_semaphore;
-    }
-
-    inline bool VulkanSemaphore::isUsed() const
-    {
-        return m_status == SemaphoreStatus::AssignToSignal;
     }
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
