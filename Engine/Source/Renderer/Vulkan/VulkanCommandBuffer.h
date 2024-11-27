@@ -28,6 +28,7 @@ namespace vk
     class VulkanFence;
     class VulkanCommandBufferManager;
     class VulkanSwapchain;
+    class VulkanCmdList;
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -126,11 +127,12 @@ namespace vk
 
         void init(Device::DeviceMask queueMask, VkCommandPool pool, VkCommandBuffer buffer);
         void refreshFenceStatus();
-        void releaseResources();
+        void resetStatus();
 
         bool isSafeFrame(u64 frame) const;
 
         friend VulkanCommandBufferManager;
+        friend VulkanCmdList;
 
         VulkanDevice&                     m_device;
         VkCommandPool                     m_pool;

@@ -52,6 +52,7 @@ namespace vk
         bool _enableSamplerMirrorClampToEdge = false;
         bool _supportSamplerBorderColor = false;
         bool _hostQueryReset = false;
+        bool _timelineSemaphore = false;
 
         bool _preTransform = false;
         bool _renderpassTransformQCOM = false;

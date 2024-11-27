@@ -37,7 +37,9 @@ namespace vk
         VulkanResource& operator=(const VulkanResource&) = delete;
 
         void markUsed(VulkanFence* fence, u64 value, u64 frame);
-
+#if VULKAN_DEBUG_MARKERS
+        virtual void fenceTracker(VulkanFence* fence, u64 value, u64 frame) {};
+#endif
         mutable std::unordered_map<VulkanFence*, std::tuple<u64, u64>>  m_fanceInfo;
         mutable std::recursive_mutex                                    m_mutex;
 #if VULKAN_DEBUG
@@ -81,6 +83,9 @@ namespace vk
         {
             inserted.first->second = { value, frame };
         }
+#if VULKAN_DEBUG_MARKERS
+        fenceTracker(fence, value, frame);
+#endif
     }
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

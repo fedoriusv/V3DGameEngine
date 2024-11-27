@@ -87,8 +87,8 @@ namespace vk
 
         mutable u32 _key = 0;
         u32 _activeBindingsFlags = 0;
-        std::array<BindingInfo, k_maxDescriptorBindingCount>     _bindings;
-        std::array<VulkanResource*, k_maxDescriptorBindingCount> _resource;
+        std::array<BindingInfo, k_maxDescriptorBindingCount>     _bindings = {};
+        std::array<VulkanResource*, k_maxDescriptorBindingCount> _resource = {};
     };
 
     inline size_t SetInfo::Hash::operator()(const SetInfo& set) const

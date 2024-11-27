@@ -10,7 +10,7 @@
 #   include "VulkanImage.h"
 #   include "VulkanSemaphore.h"
 
-#define DEBUG_FENCE_ACQUIRE 0
+#define DEBUG_FENCE_ACQUIRE 1
 
 #ifdef PLATFORM_ANDROID
 #   include "Platform/Android/AndroidCommon.h"
@@ -118,7 +118,6 @@ void VulkanSwapchain::beginFrame()
 
 #if SWAPCHAIN_ON_ADVANCE
     ASSERT(prevImageIndex != ~0U, "wrong index");
-    m_currentTransitionState.transitionImages(drawBuffer, { { m_swapchain->getSwapchainImage(prevImageIndex), { 0, 1, 0, 1} } }, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
 #endif //SWAPCHAIN_ON_ADVANCE
 
 #if VULKAN_DUMP
@@ -146,7 +145,11 @@ void VulkanSwapchain::presentFrame()
 
     for (auto cmdList: m_cmdLists)
     {
+#if SWAPCHAIN_ON_ADVANCE
+        VulkanSwapchain::present(m_device.getQueueByMask(cmdList->getDeviceMask()), cmdList->m_presentedSwapchainSemaphores);
+#else
         VulkanSwapchain::present(m_device.getQueueByMask(cmdList->getDeviceMask()), cmdList->getWaitSemaphores());
+#endif
         cmdList->postPresent();
     }
     m_cmdLists.clear();
@@ -322,18 +325,19 @@ bool VulkanSwapchain::create(platform::Window* window, const SwapchainParams& pa
         return false;
     }
 
-    u32 semaphoreCount = static_cast<u32>(m_swapchainImages.size());
+    //Validation issue with VulkanSDK 1.3.296.0. Remove 2 after update SDK
+    u32 semaphoreCount = static_cast<u32>(m_swapchainImages.size()) + 2;
     m_acquiredSemaphores.resize(semaphoreCount, nullptr);
     for (u32 index = 0; index < semaphoreCount; ++index)
     {
         std::string semaphoreName("AcquireSemaphore_" + std::to_string(index));
-        m_acquiredSemaphores[index] = m_semaphoreManager->createSemaphore(semaphoreName);
+        m_acquiredSemaphores[index] = m_semaphoreManager->createSemaphore(VulkanSemaphore::SemaphoreType::Binary, semaphoreName);
     }
 
 #if SWAPCHAIN_ON_ADVANCE
     u32 initialImageIndex = VulkanSwapchain::acquireImage();
-    m_presentInfo = { initialImageIndex, m_acquireSemaphore[m_currentSemaphoreIndex] };
-    m_currentSemaphoreIndex = (m_currentSemaphoreIndex + 1) % static_cast<u32>(m_acquireSemaphore.size());
+    m_presentInfo = { initialImageIndex, m_acquiredSemaphores[m_currentSemaphoreIndex] };
+    m_currentSemaphoreIndex = (m_currentSemaphoreIndex + 1) % static_cast<u32>(m_acquiredSemaphores.size());
 #endif
 
     m_window = window;
@@ -577,30 +581,30 @@ void VulkanSwapchain::present(VkQueue queue, const std::vector<VulkanSemaphore*>
     VkPresentInfoKHR presentInfo = {};
     presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
     presentInfo.pNext = nullptr;
-#if !SWAPCHAIN_ON_ADVANCE
-    VkSemaphore acquireSemaphore = m_acquiredSemaphores[m_currentSemaphoreIndex]->getHandle();
-    ASSERT(m_currentImageIndex == std::get<0>(m_presentInfo) && m_acquiredSemaphores[m_currentSemaphoreIndex] == std::get<1>(m_presentInfo), ("wrong present"));
+
     if (waitSemaphores.empty())
     {
-        presentInfo.waitSemaphoreCount = 1;
-        presentInfo.pWaitSemaphores = &acquireSemaphore;
+        VulkanSemaphore* semaphore = std::get<1>(m_presentInfo);
+        m_semaphoreManager->markSemaphore(semaphore, VulkanSemaphore::SemaphoreStatus::AssignForWaiting);
+        internalWaitSemaphores.push_back(semaphore->getHandle());
     }
     else
-#endif
     {
+        ASSERT(waitSemaphores.size() < 2, "must be one or zero in the list");
         for (VulkanSemaphore* semaphore : waitSemaphores)
         {
             internalWaitSemaphores.push_back(semaphore->getHandle());
-            m_semaphoreManager->markSemaphore(semaphore, VulkanSemaphore::SemaphoreStatus::AssignToWaiting);
+            m_semaphoreManager->markSemaphore(semaphore, VulkanSemaphore::SemaphoreStatus::AssignForWaiting);
         }
-
-        presentInfo.waitSemaphoreCount = static_cast<u32>(internalWaitSemaphores.size());
-        presentInfo.pWaitSemaphores = internalWaitSemaphores.data();
     }
+    presentInfo.waitSemaphoreCount = static_cast<u32>(internalWaitSemaphores.size());
+    presentInfo.pWaitSemaphores = internalWaitSemaphores.data();
+
     presentInfo.swapchainCount = 1;
     presentInfo.pSwapchains = &m_swapchain;
     presentInfo.pImageIndices = &std::get<0>(m_presentInfo);
     presentInfo.pResults = innerResults;
+
 
     VkResult result = VulkanWrapper::QueuePresent(queue, &presentInfo);
     if (result == VK_ERROR_SURFACE_LOST_KHR || result == VK_ERROR_OUT_OF_DATE_KHR)
@@ -630,7 +634,7 @@ void VulkanSwapchain::present(VkQueue queue, const std::vector<VulkanSemaphore*>
     }
 
 #if SWAPCHAIN_ON_ADVANCE
-    m_presentInfo = { VulkanSwapchain::currentSwapchainIndex(), m_acquireSemaphore[m_currentSemaphoreIndex] };
+    m_presentInfo = { VulkanSwapchain::currentSwapchainIndex(), m_acquiredSemaphores[m_currentSemaphoreIndex] };
 #endif
     m_currentSemaphoreIndex = (m_currentSemaphoreIndex + 1) % static_cast<u32>(m_acquiredSemaphores.size());
 }
@@ -641,7 +645,7 @@ u32 VulkanSwapchain::acquireImage()
     LOG_DEBUG("VulkanSwapchain::acquireImage semaphoreIndex: %u", m_currentSemaphoreIndex);
 #endif //VULKAN_DEBUG
     VulkanSemaphore* semaphore = m_acquiredSemaphores[m_currentSemaphoreIndex];
-    m_semaphoreManager->markSemaphore(semaphore, VulkanSemaphore::SemaphoreStatus::AssignToSignal);
+    m_semaphoreManager->markSemaphore(semaphore, VulkanSemaphore::SemaphoreStatus::AssignForSignal);
     VkFence fence = VK_NULL_HANDLE;
 
 #if DEBUG_FENCE_ACQUIRE

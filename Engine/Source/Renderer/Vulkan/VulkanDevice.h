@@ -104,9 +104,11 @@ namespace vk
         VulkanRenderState             m_pendingRenderState;
         VulkanRenderState             m_currentRenderState;
 
-        std::vector<VulkanSemaphore*> m_waitSemaphores;
-        std::vector<VulkanSemaphore*> m_submitSemaphores;
-        std::vector<VulkanSemaphore*> m_presentSemaphores;
+        std::vector<VulkanSemaphore*> m_acquireSwapchainSemaphores;
+        std::vector<VulkanSemaphore*> m_waitSubmitSemaphores;
+        std::vector<VulkanSemaphore*> m_signalSubmitSemaphores;
+    public:
+        std::vector<VulkanSemaphore*> m_presentedSwapchainSemaphores;
     };
 
     inline Device::DeviceMask VulkanCmdList::getDeviceMask() const
@@ -116,17 +118,17 @@ namespace vk
 
     inline const std::vector<VulkanSemaphore*>& VulkanCmdList::getWaitSemaphores() const
     {
-        return m_waitSemaphores;
+        return m_waitSubmitSemaphores;
     }
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     struct DeviceInfo
     {
-        VkInstance                              _instance;
-        VkPhysicalDevice                        _physicalDevice;
-        VkDevice                                _device;
-        VkQueueFlags                            _queueMask;
+        VkInstance                              _instance       = VK_NULL_HANDLE;
+        VkPhysicalDevice                        _physicalDevice = VK_NULL_HANDLE;
+        VkDevice                                _device         = VK_NULL_HANDLE;
+        VkQueueFlags                            _queueMask      = 0;
         std::vector<std::tuple<VkQueue, u32>>   _queues;
     };
 
@@ -224,8 +226,9 @@ namespace vk
         struct Concurrency
         {
             std::thread::id              m_threadID;
-            VulkanCommandBufferManager*  m_cmdBufferManager;
+            VulkanCommandBufferManager*  m_cmdBufferManager = nullptr;
         };
+        VulkanCommandBufferManager*             m_internalCmdBufferManager;
 
         std::vector<Concurrency>                m_threadedPools;
         u16                                     m_maskOfActiveThreadPool;

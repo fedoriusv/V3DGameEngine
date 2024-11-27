@@ -91,7 +91,6 @@ namespace vk
         std::tuple<u32, VulkanSemaphore*>   m_presentInfo;
         u32                                 m_currentSemaphoreIndex;
         std::vector<VulkanSemaphore*>       m_acquiredSemaphores;
-
         std::vector<VulkanCmdList*>         m_cmdLists;
 
         void recreateAttachedResources();

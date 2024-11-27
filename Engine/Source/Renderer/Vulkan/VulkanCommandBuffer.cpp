@@ -94,7 +94,6 @@ void VulkanCommandBuffer::addSemaphores(VkPipelineStageFlags mask, const std::ve
 
 bool VulkanCommandBuffer::waitCompletion(u64 timeout)
 {
-    VulkanCommandBuffer::refreshFenceStatus();
     if (m_status == CommandBufferStatus::Finished)
     {
         return true;
@@ -112,6 +111,9 @@ bool VulkanCommandBuffer::waitCompletion(u64 timeout)
         }
         m_status = CommandBufferStatus::Finished;
         m_fence->incrementValue();
+
+        result = VulkanWrapper::ResetFences(m_device.getDeviceInfo()._device, 1, &vkFence);
+        ASSERT(result == VK_SUCCESS, "must be reseted");
 
         return true;
     }
@@ -134,27 +136,18 @@ void VulkanCommandBuffer::refreshFenceStatus()
                 m_fence->incrementValue();
 
                 result = VulkanWrapper::ResetFences(m_device.getDeviceInfo()._device, 1, &vkFence);
-                if (result != VK_SUCCESS)
-                {
-                    m_status = CommandBufferStatus::Invalid;
-                    LOG_ERROR("VulkanCommandBuffer::refreshFenceStatus vkResetFences. Error %s", ErrorString(result).c_str());
-                }
-
-                m_stageMasks.clear();
-                m_semaphores.clear();
-
-                for (auto& secondaryBuffer : m_secondaryBuffers)
-                {
-                    secondaryBuffer->m_status = m_status;
-
-                    secondaryBuffer->m_stageMasks.clear();
-                    secondaryBuffer->m_semaphores.clear();
-                }
-                VulkanCommandBuffer::releaseResources();
+                ASSERT(result == VK_SUCCESS, "must be reseted");
             }
             else if (result == VK_NOT_READY && VulkanCommandBuffer::isSafeFrame(m_activeSwapchain ? m_activeSwapchain->getCurrentFrameIndex() : 0))
             {
-                //TODO
+                VkResult result = VulkanWrapper::WaitForFences(m_device.getDeviceInfo()._device, 1, &vkFence, VK_TRUE, u64(~0ULL));
+                ASSERT(result == VK_SUCCESS, "must be finished");
+
+                m_status = CommandBufferStatus::Finished;
+                m_fence->incrementValue();
+
+                result = VulkanWrapper::ResetFences(m_device.getDeviceInfo()._device, 1, &vkFence);
+                ASSERT(result == VK_SUCCESS, "must be reseted");
             }
         }
         else
@@ -197,8 +190,20 @@ void VulkanCommandBuffer::captureResource(VulkanResource* resource, u64 frame)
     resource->markUsed(m_fence, m_fence->getValue(), capturedFrame);
 }
 
-void VulkanCommandBuffer::releaseResources()
+void VulkanCommandBuffer::resetStatus()
 {
+    m_status = VulkanCommandBuffer::CommandBufferStatus::Ready;
+    m_activeSwapchain = nullptr;
+    m_drawingToSwapchain = false;
+
+    m_stageMasks.clear();
+    m_semaphores.clear();
+
+    for (auto& secondaryBuffer : m_secondaryBuffers)
+    {
+        secondaryBuffer->resetStatus();
+    }
+
 #if VULKAN_DEBUG
     m_resources.clear();
 #endif //VULKAN_DEBUG

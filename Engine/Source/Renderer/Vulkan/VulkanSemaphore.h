@@ -28,12 +28,19 @@ namespace vk
         enum SemaphoreStatus
         {
             Free,
-            AssignToWaiting,
-            AssignToSignal,
-            Signaled = Free
+            AssignForWaiting,
+            AssignForSignal,
+            AssignToPresent,
+            Signaled
         };
 
-        VulkanSemaphore() noexcept;
+        enum class SemaphoreType
+        {
+            Binary,
+            Timeline
+        };
+
+        VulkanSemaphore(VulkanDevice* device, SemaphoreType type) noexcept;
         ~VulkanSemaphore();
 
         VkSemaphore getHandle() const;
@@ -45,10 +52,14 @@ namespace vk
 
         friend class VulkanSemaphoreManager;
 
+        VulkanDevice&   m_device;
         VkSemaphore     m_semaphore;
+        SemaphoreType   m_type;
         SemaphoreStatus m_status;
 #if VULKAN_DEBUG_MARKERS
         std::string     m_debugName;
+
+        void fenceTracker(VulkanFence* fence, u64 value, u64 frame) override;
 #endif
     };
 
@@ -71,14 +82,14 @@ namespace vk
         explicit VulkanSemaphoreManager(VulkanDevice* device) noexcept;
         ~VulkanSemaphoreManager();
 
-        [[nodiscard]] VulkanSemaphore* acquireSemaphore();
+        [[nodiscard]] VulkanSemaphore* acquireFreeSemaphore();
 
         void clear();
-        void updateStatus();
+        void updateStatus(bool forced = false);
 
         bool markSemaphore(VulkanSemaphore* semaphore, VulkanSemaphore::SemaphoreStatus status);
 
-        [[nodiscard]] VulkanSemaphore* createSemaphore(const std::string& name = "");
+        [[nodiscard]] VulkanSemaphore* createSemaphore(VulkanSemaphore::SemaphoreType type, const std::string& name = "");
         void deleteSemaphore(VulkanSemaphore* sem);
 
     private:
@@ -89,8 +100,8 @@ namespace vk
         VulkanDevice&                 m_device;
         std::recursive_mutex          m_mutex;
 
-        std::deque<VulkanSemaphore*>  m_freePools;
-        std::vector<VulkanSemaphore*> m_usedPools;
+        std::deque<VulkanSemaphore*>  m_freeList;
+        std::vector<VulkanSemaphore*> m_usedList;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

@@ -14,8 +14,10 @@ namespace renderer
 namespace vk
 {
 
-VulkanSemaphore::VulkanSemaphore() noexcept
-    : m_semaphore(VK_NULL_HANDLE)
+VulkanSemaphore::VulkanSemaphore(VulkanDevice* device, SemaphoreType type) noexcept
+    : m_device(*device)
+    , m_semaphore(VK_NULL_HANDLE)
+    , m_type(type)
     , m_status(SemaphoreStatus::Free)
 {
 #if VULKAN_DEBUG_MARKERS
@@ -30,6 +32,29 @@ VulkanSemaphore::~VulkanSemaphore()
     ASSERT(m_semaphore == VK_NULL_HANDLE, "must be nullptr");
 }
 
+#if VULKAN_DEBUG_MARKERS
+void VulkanSemaphore::fenceTracker(VulkanFence* fence, u64 value, u64 frame)
+{
+    if (m_device.getVulkanDeviceCaps()._debugUtilsObjectNameEnabled)
+    {
+        std::string debugName(m_debugName);
+        debugName.append("_Fence:");
+        debugName.append(std::to_string(reinterpret_cast<const u64>(fence)));
+        debugName.append("_value:");
+        debugName.append(std::to_string(value));
+
+        VkDebugUtilsObjectNameInfoEXT debugUtilsObjectNameInfo = {};
+        debugUtilsObjectNameInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT;
+        debugUtilsObjectNameInfo.pNext = nullptr;
+        debugUtilsObjectNameInfo.objectType = VK_OBJECT_TYPE_SEMAPHORE;
+        debugUtilsObjectNameInfo.objectHandle = reinterpret_cast<u64>(m_semaphore);
+        debugUtilsObjectNameInfo.pObjectName = debugName.c_str();
+
+        VulkanWrapper::SetDebugUtilsObjectName(m_device.getDeviceInfo()._device, &debugUtilsObjectNameInfo);
+    }
+}
+#endif
+
 VulkanSemaphoreManager::VulkanSemaphoreManager(VulkanDevice* device) noexcept
     : m_device(*device)
 {
@@ -37,28 +62,29 @@ VulkanSemaphoreManager::VulkanSemaphoreManager(VulkanDevice* device) noexcept
 
 VulkanSemaphoreManager::~VulkanSemaphoreManager()
 {
-    ASSERT(m_freePools.empty(), "not empty");
-    ASSERT(m_usedPools.empty(), "not empty");
+    ASSERT(m_freeList.empty(), "not empty");
+    ASSERT(m_usedList.empty(), "not empty");
 }
 
-VulkanSemaphore* VulkanSemaphoreManager::acquireSemaphore()
+VulkanSemaphore* VulkanSemaphoreManager::acquireFreeSemaphore()
 {
     std::scoped_lock lock(m_mutex);
 
     VulkanSemaphore* semaphore = nullptr;
-    if (m_freePools.empty())
+    if (m_freeList.empty())
     {
-        semaphore = createSemaphore();
+        semaphore = createSemaphore(VulkanSemaphore::SemaphoreType::Binary);
     }
     else
     {
-        semaphore = m_freePools.front();
-        VulkanSemaphoreManager::markSemaphore(semaphore, VulkanSemaphore::SemaphoreStatus::Free);
-        m_freePools.pop_front();
+        semaphore = m_freeList.front();
+        ASSERT(semaphore->m_status == VulkanSemaphore::SemaphoreStatus::Free, "nullptr");
+        m_freeList.pop_front();
     }
 
-    m_usedPools.push_back(semaphore);
     ASSERT(semaphore, "nullptr");
+    m_usedList.push_back(semaphore);
+
     return semaphore;
 }
 
@@ -66,25 +92,26 @@ void VulkanSemaphoreManager::clear()
 {
     std::scoped_lock lock(m_mutex);
 
-    ASSERT(m_usedPools.empty(), "must be empty");
-    for (auto semaphore : m_freePools)
+    ASSERT(m_usedList.empty(), "must be empty");
+    for (auto& semaphore : m_freeList)
     {
         VulkanSemaphoreManager::deleteSemaphore(semaphore);
     }
-    m_freePools.clear();
+    m_freeList.clear();
 }
 
-void VulkanSemaphoreManager::updateStatus()
+void VulkanSemaphoreManager::updateStatus(bool forced)
 {
     std::scoped_lock lock(m_mutex);
 
-    for (auto semaphoreIter = m_usedPools.begin(); semaphoreIter != m_usedPools.end();)
+    for (auto semaphoreIter = m_usedList.begin(); semaphoreIter != m_usedList.end();)
     {
         VulkanSemaphore* semaphore = *semaphoreIter;
-        if (!semaphore->isUsed())
+        // We dont want to free signaled semaphores, it will be used farther
+        if (!semaphore->isUsed() && (forced || semaphore->m_status != VulkanSemaphore::SemaphoreStatus::AssignForSignal))
         {
-            m_freePools.push_back(semaphore);
-            semaphoreIter = m_usedPools.erase(semaphoreIter);
+            m_freeList.push_back(semaphore);
+            semaphoreIter = m_usedList.erase(semaphoreIter);
 
             VulkanSemaphoreManager::markSemaphore(semaphore, VulkanSemaphore::SemaphoreStatus::Free);
 
@@ -100,18 +127,15 @@ bool VulkanSemaphoreManager::markSemaphore(VulkanSemaphore* semaphore, VulkanSem
     ASSERT(semaphore, "nullptr");
     std::scoped_lock lock(m_mutex);
 
-    /*if (status == VulkanSemaphore::SemaphoreStatus::AssignToSignal)
+    if (status == VulkanSemaphore::SemaphoreStatus::Free && semaphore->isUsed())
     {
-        if (semaphore->m_semaphoreStatus != VulkanSemaphore::SemaphoreStatus::Free)
-        {
-            ASSERT(false, "must be free before signal");
-            return false;
-        }
-    }*/
+        ASSERT(false, "must be unused");
+        return false;
+    }
 
-    if (status == VulkanSemaphore::SemaphoreStatus::AssignToWaiting)
+    if (status == VulkanSemaphore::SemaphoreStatus::AssignForWaiting || status == VulkanSemaphore::SemaphoreStatus::AssignToPresent)
     {
-        if (semaphore->m_status != VulkanSemaphore::SemaphoreStatus::AssignToSignal && semaphore->m_status != VulkanSemaphore::SemaphoreStatus::Signaled)
+        if (semaphore->m_status != VulkanSemaphore::SemaphoreStatus::AssignForSignal && semaphore->m_status != VulkanSemaphore::SemaphoreStatus::Signaled)
         {
             ASSERT(false, "must be attached to signal");
             return false;
@@ -122,12 +146,28 @@ bool VulkanSemaphoreManager::markSemaphore(VulkanSemaphore* semaphore, VulkanSem
     return true;
 }
 
-VulkanSemaphore* VulkanSemaphoreManager::createSemaphore(const std::string& name)
+VulkanSemaphore* VulkanSemaphoreManager::createSemaphore(VulkanSemaphore::SemaphoreType type, const std::string& name)
 {
     VkSemaphore vkSemaphore = VK_NULL_HANDLE;
+
+    VkSemaphoreTypeCreateInfo semaphoreTypeCreateInfo = {};
+    semaphoreTypeCreateInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_TYPE_CREATE_INFO;
+    semaphoreTypeCreateInfo.pNext = nullptr;
+    if (m_device.getVulkanDeviceCaps()._timelineSemaphore && type == VulkanSemaphore::SemaphoreType::Timeline)
+    {
+        semaphoreTypeCreateInfo.semaphoreType = VK_SEMAPHORE_TYPE_TIMELINE;
+        semaphoreTypeCreateInfo.initialValue = 0;
+    }
+    else
+    {
+        ASSERT(type == VulkanSemaphore::SemaphoreType::Binary, "not binary");
+        semaphoreTypeCreateInfo.semaphoreType = VK_SEMAPHORE_TYPE_BINARY;
+        semaphoreTypeCreateInfo.initialValue = 0;
+    }
+
     VkSemaphoreCreateInfo semaphoreCreateInfo = {};
     semaphoreCreateInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
-    semaphoreCreateInfo.pNext = nullptr;
+    semaphoreCreateInfo.pNext = &semaphoreTypeCreateInfo;
     semaphoreCreateInfo.flags = 0;
 
     VkResult result = VulkanWrapper::CreateSemaphore(m_device.getDeviceInfo()._device, &semaphoreCreateInfo, VULKAN_ALLOCATOR, &vkSemaphore);
@@ -137,7 +177,7 @@ VulkanSemaphore* VulkanSemaphoreManager::createSemaphore(const std::string& name
         return nullptr;
     }
 
-    VulkanSemaphore* semaphore = V3D_NEW(VulkanSemaphore, memory::MemoryLabel::MemoryRenderCore);
+    VulkanSemaphore* semaphore = V3D_NEW(VulkanSemaphore, memory::MemoryLabel::MemoryRenderCore)(&m_device, type);
     semaphore->m_semaphore = vkSemaphore;
     semaphore->m_status = VulkanSemaphore::SemaphoreStatus::Free;
 

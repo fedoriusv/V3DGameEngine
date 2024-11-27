@@ -228,6 +228,14 @@ void VulkanDeviceCaps::fillCapabilitiesList(const DeviceInfo* info)
                 vkExtensions = &physicalDevicePipelineExecutablePropertiesFeatures;
             }
 
+            VkPhysicalDeviceTimelineSemaphoreFeatures physicalDeviceTimelineSemaphoreFeatures = {};
+            if (isEnabledExtension(VK_KHR_TIMELINE_SEMAPHORE_EXTENSION_NAME))
+            {
+                physicalDeviceTimelineSemaphoreFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TIMELINE_SEMAPHORE_FEATURES;
+                physicalDeviceTimelineSemaphoreFeatures.pNext = vkExtensions;
+                vkExtensions = &physicalDeviceTimelineSemaphoreFeatures;
+            }
+
             VkPhysicalDeviceFeatures2 physicalDeviceFeatures2 = {};
             physicalDeviceFeatures2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
             physicalDeviceFeatures2.pNext = vkExtensions;
@@ -245,6 +253,7 @@ void VulkanDeviceCaps::fillCapabilitiesList(const DeviceInfo* info)
             _hostQueryReset = _physicalDeviceHostQueryResetFeatures.hostQueryReset;
 #endif
             _pipelineExecutablePropertiesEnabled = physicalDevicePipelineExecutablePropertiesFeatures.pipelineExecutableInfo;
+            _timelineSemaphore = physicalDeviceTimelineSemaphoreFeatures.timelineSemaphore;
         }
 
         //PhysicalDeviceProperties2

@@ -194,7 +194,7 @@ void VulkanDebugUtils::destroyDebugUtilsMessenger(VkInstance instance)
     }
 }
 
-VkBool32 VulkanDebugUtils::defaultDebugUtilsMessengerCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageType, const VkDebugUtilsMessengerCallbackDataEXT * pCallbackData, void * pUserData)
+VkBool32 VulkanDebugUtils::defaultDebugUtilsMessengerCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageType, const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, void* pUserData)
 {
     switch (messageType)
     {
@@ -228,6 +228,8 @@ VkBool32 VulkanDebugUtils::defaultDebugUtilsMessengerCallback(VkDebugUtilsMessag
         {
             LOG_ERROR("Validation[%s]Code %d: %s", pCallbackData->pMessageIdName, pCallbackData->messageIdNumber, pCallbackData->pMessage);
             VulkanDebugUtils::debugCallbackData(pCallbackData, pUserData);
+
+            return VK_TRUE;
         };
 
         if (messageSeverity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT)
@@ -247,7 +249,7 @@ VkBool32 VulkanDebugUtils::defaultDebugUtilsMessengerCallback(VkDebugUtilsMessag
             LOG_DEBUG("Validation[%s]Code %d: %s", pCallbackData->pMessageIdName, pCallbackData->messageIdNumber, pCallbackData->pMessage);
             VulkanDebugUtils::debugCallbackData(pCallbackData, pUserData);
         }
-        return VK_TRUE;
+        return VK_FALSE;
     }
 
     case VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT:

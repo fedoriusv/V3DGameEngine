@@ -70,7 +70,7 @@ const std::vector<const c8*> k_deviceExtensionsList =
     VK_KHR_CREATE_RENDERPASS_2_EXTENSION_NAME,
     VK_KHR_DEPTH_STENCIL_RESOLVE_EXTENSION_NAME,
     VK_KHR_MULTIVIEW_EXTENSION_NAME,
-
+    VK_KHR_TIMELINE_SEMAPHORE_EXTENSION_NAME,
     VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME,
 
     VK_KHR_PIPELINE_EXECUTABLE_PROPERTIES_EXTENSION_NAME,
@@ -126,6 +126,7 @@ VulkanDevice::VulkanDevice(DeviceMaskFlags mask) noexcept
     , m_graphicPipelineManager(nullptr)
     , m_computePipelineManager(nullptr)
     , m_samplerManager(nullptr)
+    , m_internalCmdBufferManager(nullptr)
 {
     LOG_DEBUG("VulkanDevice created this %llx", this);
 
@@ -152,6 +153,8 @@ VulkanDevice::~VulkanDevice()
     ASSERT(!m_bufferMemoryManager, "m_bufferMemoryManager not nullptr");
     ASSERT(!m_stagingBufferManager, "m_stagingBufferManager not nullptr");
 
+    ASSERT(!m_internalCmdBufferManager, "m_internalCmdBufferManager not nullptr");
+
     ASSERT(m_deviceInfo._device == VK_NULL_HANDLE, "Device is not nullptr");
     ASSERT(m_deviceInfo._instance == VK_NULL_HANDLE, "Instance is not nullptr");
 }
@@ -173,21 +176,21 @@ void VulkanDevice::submit(CmdList* cmd, bool wait)
         cmdList.m_pendingRenderState.flushBarriers(uploadBuffer);
         uploadBuffer->endCommandBuffer();
 
-        static thread_local std::vector<VulkanSemaphore*> uploadSemaphores;
-        uploadSemaphores.clear();
+        static thread_local std::vector<VulkanSemaphore*> signalUploadSemaphores;
+        signalUploadSemaphores.clear();
         if (cmdList.m_currentCmdBuffer[toEnumType(CommandTargetType::CmdDrawBuffer)])
         {
-            uploadSemaphore = m_semaphoreManager->acquireSemaphore();
-            uploadSemaphores.push_back(uploadSemaphore);
+            uploadSemaphore = m_semaphoreManager->acquireFreeSemaphore();
+            signalUploadSemaphores.push_back(uploadSemaphore);
         }
 
-        if (!cmdList.m_waitSemaphores.empty())
+        if (!cmdList.m_waitSubmitSemaphores.empty())
         {
-            uploadBuffer->addSemaphores(VK_PIPELINE_STAGE_TRANSFER_BIT, cmdList.m_waitSemaphores);
-            cmdList.m_waitSemaphores.clear();
+            uploadBuffer->addSemaphores(VK_PIPELINE_STAGE_TRANSFER_BIT, cmdList.m_waitSubmitSemaphores);
+            cmdList.m_waitSubmitSemaphores.clear();
         }
 
-        cmdBufferMgr->submit(uploadBuffer, uploadSemaphores);
+        cmdBufferMgr->submit(uploadBuffer, signalUploadSemaphores);
         cmdList.m_currentCmdBuffer[toEnumType(CommandTargetType::CmdUploadBuffer)] = nullptr;
     }
 
@@ -212,19 +215,23 @@ void VulkanDevice::submit(CmdList* cmd, bool wait)
 
             if (drawBuffer->isBackbufferPresented())
             {
-                drawBuffer->addSemaphores(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, cmdList.m_presentSemaphores);
-                VulkanSemaphore* semaphore = m_semaphoreManager->acquireSemaphore();
-                cmdList.m_submitSemaphores.push_back(semaphore);
+                ASSERT(!cmdList.m_acquireSwapchainSemaphores.empty(), "must be filled");
+                drawBuffer->addSemaphores(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, cmdList.m_acquireSwapchainSemaphores);
+                if (!wait) //skip signal semaphores when waits result
+                {
+                    VulkanSemaphore* semaphore = m_semaphoreManager->acquireFreeSemaphore();
+                    cmdList.m_signalSubmitSemaphores.push_back(semaphore);
+                }
             }
 
-            if (!cmdList.m_waitSemaphores.empty())
+            if (!cmdList.m_waitSubmitSemaphores.empty())
             {
-                drawBuffer->addSemaphores(VK_PIPELINE_STAGE_TRANSFER_BIT, cmdList.m_waitSemaphores);
-                cmdList.m_waitSemaphores.clear();
+                drawBuffer->addSemaphores(VK_PIPELINE_STAGE_TRANSFER_BIT, cmdList.m_waitSubmitSemaphores);
+                cmdList.m_waitSubmitSemaphores.clear();
             }
         }
 
-        cmdBufferMgr->submit(drawBuffer, cmdList.m_submitSemaphores);
+        cmdBufferMgr->submit(drawBuffer, cmdList.m_signalSubmitSemaphores);
         if (wait)
         {
             drawBuffer->waitCompletion();
@@ -232,10 +239,10 @@ void VulkanDevice::submit(CmdList* cmd, bool wait)
         cmdList.m_currentCmdBuffer[toEnumType(CommandTargetType::CmdDrawBuffer)] = nullptr;
     }
 
+    cmdList.postSubmit();
+
     cmdBufferMgr->updateStatus();
     m_semaphoreManager->updateStatus();
-
-    cmdList.postSubmit();
 
     m_resourceDeleter.updateResourceDeleter();
 }
@@ -251,6 +258,17 @@ Swapchain* VulkanDevice::createSwapchain(platform::Window* window, const Swapcha
         LOG_FATAL("VulkanDevice::createSwapchain: Cant create VulkanSwapchain");
         return nullptr;
     }
+    m_swapchainList.push_back(swapchain);
+
+#if SWAPCHAIN_ON_ADVANCE
+    VulkanCommandBuffer* cmdBuffer = m_internalCmdBufferManager->acquireNewCmdBuffer(Device::DeviceMask::GraphicMask, CommandBufferLevel::PrimaryBuffer);
+    cmdBuffer->beginCommandBuffer();
+    cmdBuffer->cmdPipelineBarrier(swapchain->getCurrentSwapchainImage(), VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, RenderTexture::makeSubresource(0, 1, 0, 1));
+    cmdBuffer->endCommandBuffer();
+    std::vector<VulkanSemaphore*> emptySemaphores;
+    m_internalCmdBufferManager->submit(cmdBuffer, emptySemaphores);
+    m_internalCmdBufferManager->waitCompletion();
+#endif
 
     return swapchain;
 }
@@ -258,6 +276,10 @@ Swapchain* VulkanDevice::createSwapchain(platform::Window* window, const Swapcha
 void VulkanDevice::destroySwapchain(Swapchain* swapchain)
 {
     VulkanSwapchain* vkSwapchain = static_cast<VulkanSwapchain*>(swapchain);
+
+    auto found = std::find(m_swapchainList.cbegin(), m_swapchainList.cend(), vkSwapchain);
+    ASSERT(found != m_swapchainList.cend(), "not found");
+    m_swapchainList.erase(found);
 
     vkSwapchain->destroy();
     V3D_FREE(vkSwapchain, memory::MemoryLabel::MemoryRenderCore);
@@ -449,6 +471,8 @@ bool VulkanDevice::initialize()
     m_graphicPipelineManager = V3D_NEW(VulkanGraphicPipelineManager, memory::MemoryLabel::MemoryRenderCore)(this);
     m_computePipelineManager = V3D_NEW(VulkanComputePipelineManager, memory::MemoryLabel::MemoryRenderCore)(this);
     m_samplerManager = V3D_NEW(VulkanSamplerManager, memory::MemoryLabel::MemoryRenderCore)(this);
+
+    m_internalCmdBufferManager = V3D_NEW(VulkanCommandBufferManager, memory::MemoryLabel::MemoryRenderCore)(this, m_semaphoreManager);
 
     return true;
 }
@@ -731,6 +755,15 @@ bool VulkanDevice::createDevice()
     //Features
     void* vkExtension = nullptr;
 
+    if (VulkanDeviceCaps::checkDeviceExtension(m_deviceInfo._physicalDevice, VK_KHR_TIMELINE_SEMAPHORE_EXTENSION_NAME))
+    {
+        VkPhysicalDeviceTimelineSemaphoreFeatures physicalDeviceTimelineSemaphoreFeatures = {};
+        physicalDeviceTimelineSemaphoreFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TIMELINE_SEMAPHORE_FEATURES;
+        physicalDeviceTimelineSemaphoreFeatures.pNext = vkExtension;
+        physicalDeviceTimelineSemaphoreFeatures.timelineSemaphore = m_deviceCaps._timelineSemaphore;
+        vkExtension = &physicalDeviceTimelineSemaphoreFeatures;
+    }
+
 #ifdef VK_EXT_descriptor_indexing
     if (VulkanDeviceCaps::checkDeviceExtension(m_deviceInfo._physicalDevice, VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME))
     {
@@ -822,6 +855,10 @@ void VulkanDevice::destroy()
 {
     //Called from game thread
     LOG_DEBUG("VulkanDevice::destroy");
+    if (!m_deviceInfo._device)
+    {
+        return;
+    }
 
     VkResult result = VulkanWrapper::DeviceWaitIdle(m_deviceInfo._device);
     if (result != VK_SUCCESS)
@@ -842,6 +879,12 @@ void VulkanDevice::destroy()
         }
     }
     m_threadedPools.clear();
+    if (m_internalCmdBufferManager)
+    {
+        m_internalCmdBufferManager->waitCompletion();
+        V3D_DELETE(m_internalCmdBufferManager, memory::MemoryLabel::MemoryRenderCore);
+    }
+
     m_resourceDeleter.updateResourceDeleter();
 
     if (m_samplerManager)
@@ -904,7 +947,7 @@ void VulkanDevice::destroy()
 
     if (m_semaphoreManager)
     {
-        m_semaphoreManager->updateStatus();
+        m_semaphoreManager->updateStatus(true);
         m_semaphoreManager->clear();
         V3D_DELETE(m_semaphoreManager, memory::MemoryLabel::MemoryRenderCore);
         m_semaphoreManager = nullptr;
@@ -1115,7 +1158,7 @@ void VulkanCmdList::beginRenderTarget(RenderTargetState& rendertarget)
             targets._images[index] = TextureHandle(swapchain->getCurrentSwapchainImage()); //replace to active swaphain texture
 
             swapchain->attachCmdList(this);
-            m_presentSemaphores.push_back(swapchain->getCurrentAcquiredSemaphore());
+            m_acquireSwapchainSemaphores.push_back(swapchain->getCurrentAcquiredSemaphore());
         }
     }
 
@@ -1420,7 +1463,8 @@ void VulkanCmdList::clear(Texture* texture, const renderer::Color& color)
     {
         VulkanSwapchain* swapchain = OBJECT_FROM_HANDLE(texture->getTextureHandle(), VulkanSwapchain);
         swapchain->attachCmdList(this);
-        m_presentSemaphores.push_back(swapchain->getCurrentAcquiredSemaphore());
+        m_acquireSwapchainSemaphores.push_back(swapchain->getCurrentAcquiredSemaphore());
+        cmdBuffer->m_activeSwapchain = swapchain; //TODO
 
         image = swapchain->getCurrentSwapchainImage();
     }
@@ -1518,8 +1562,12 @@ VulkanCommandBuffer* VulkanCmdList::acquireAndStartCommandBuffer(CommandTargetTy
 
 void VulkanCmdList::postSubmit()
 {
-    m_waitSemaphores = std::move(m_submitSemaphores);
-    m_submitSemaphores.clear();
+    m_waitSubmitSemaphores = std::move(m_signalSubmitSemaphores);
+    m_signalSubmitSemaphores.clear();
+    //std::erase_if(m_waitSubmitSemaphores, [](VulkanSemaphore* semaphore) -> bool
+    //    {
+    //        return !semaphore->isUsed();
+    //    });
 
     m_currentRenderState = std::move(m_pendingRenderState);
     m_pendingRenderState.invalidate();
@@ -1530,8 +1578,9 @@ void VulkanCmdList::postSubmit()
 
 void VulkanCmdList::postPresent()
 {
-    m_presentSemaphores.clear();
-    m_waitSemaphores.clear();
+    m_presentedSwapchainSemaphores = std::move(m_waitSubmitSemaphores);
+    m_acquireSwapchainSemaphores.clear();
+    m_waitSubmitSemaphores.clear();
 }
 
 } //namespace vk

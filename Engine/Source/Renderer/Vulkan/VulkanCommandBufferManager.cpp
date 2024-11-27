@@ -377,7 +377,8 @@ bool VulkanCommandBufferManager::submit(VulkanCommandBuffer* buffer, const std::
     for (VulkanSemaphore* semaphore : buffer->m_semaphores)
     {
         internalWaitSemaphores.push_back(semaphore->getHandle());
-        m_semaphoreManager->markSemaphore(semaphore, VulkanSemaphore::SemaphoreStatus::AssignToWaiting);
+        m_semaphoreManager->markSemaphore(semaphore, VulkanSemaphore::SemaphoreStatus::AssignForWaiting);
+        buffer->captureResource(semaphore);
     }
     submitInfo.waitSemaphoreCount = static_cast<u32>(internalWaitSemaphores.size());
     submitInfo.pWaitSemaphores = internalWaitSemaphores.data();
@@ -389,11 +390,31 @@ bool VulkanCommandBufferManager::submit(VulkanCommandBuffer* buffer, const std::
     for (VulkanSemaphore* semaphore : signalSemaphores)
     {
         internalSignalSemaphores.push_back(semaphore->getHandle());
-        m_semaphoreManager->markSemaphore(semaphore, VulkanSemaphore::SemaphoreStatus::AssignToSignal);
+        m_semaphoreManager->markSemaphore(semaphore, VulkanSemaphore::SemaphoreStatus::AssignForSignal);
+        buffer->captureResource(semaphore);
     }
     submitInfo.signalSemaphoreCount = static_cast<u32>(internalSignalSemaphores.size());
     submitInfo.pSignalSemaphores = internalSignalSemaphores.data();
 
+#if VULKAN_DEBUG_MARKERS
+	if (m_device.getVulkanDeviceCaps()._debugUtilsObjectNameEnabled)
+	{
+		std::string debugName;
+		debugName.append("Fence:");
+		debugName.append(std::to_string(reinterpret_cast<const u64>(buffer->m_fence)));
+		debugName.append("_value:");
+		debugName.append(std::to_string(buffer->m_fence->getValue()));
+
+		VkDebugUtilsObjectNameInfoEXT debugUtilsObjectNameInfo = {};
+		debugUtilsObjectNameInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT;
+		debugUtilsObjectNameInfo.pNext = nullptr;
+		debugUtilsObjectNameInfo.objectType = VK_OBJECT_TYPE_FENCE;
+		debugUtilsObjectNameInfo.objectHandle = reinterpret_cast<u64>(buffer->m_fence->getHandle());
+		debugUtilsObjectNameInfo.pObjectName = debugName.c_str();
+
+		VulkanWrapper::SetDebugUtilsObjectName(m_device.getDeviceInfo()._device, &debugUtilsObjectNameInfo);
+	}
+#endif
 
     VkResult result = VulkanWrapper::QueueSubmit(std::get<0>(m_device.getDeviceInfo()._queues[buffer->m_queueIndex]), 1, &submitInfo, buffer->m_fence->getHandle());
     if (result != VK_SUCCESS)
@@ -422,10 +443,7 @@ void VulkanCommandBufferManager::updateStatus()
         {
             iter = m_usedCmdBuffers.erase(iter);
 
-            cmdBuffer->m_status = VulkanCommandBuffer::CommandBufferStatus::Ready;
-            cmdBuffer->m_activeSwapchain = nullptr;
-            cmdBuffer->m_drawingToSwapchain = false;
-
+            cmdBuffer->resetStatus();
             m_freeCmdBuffers[cmdBuffer->m_level].push_back(cmdBuffer);
 
             continue;
