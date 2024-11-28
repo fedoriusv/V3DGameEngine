@@ -243,6 +243,12 @@ namespace renderer
         virtual void submit(CmdList* cmd, bool wait = false) = 0;
 
         /**
+        * @brief waitGPUCompletion
+        * @param CmdList* cmd
+        */
+        virtual void waitGPUCompletion(CmdList* cmd) = 0;
+
+        /**
         * @brief createCommandList
         */
         template<class TCmdList>

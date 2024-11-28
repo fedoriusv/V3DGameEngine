@@ -69,6 +69,7 @@ GraphicsPipelineState::GraphicsPipelineState(Device* device, const VertexInputAt
     , m_device(device)
     , m_program(program)
     , m_renderTaget(renderTaget)
+    , m_name(name)
 
     , m_tracker(this, std::bind(&GraphicsPipelineState::destroyPipelines, this, std::placeholders::_1))
 {
@@ -83,6 +84,7 @@ GraphicsPipelineState::GraphicsPipelineState(Device* device, const GraphicsPipel
     , m_pipelineStateDesc(desc)
     , m_program(program)
     , m_renderTaget(renderTaget)
+    , m_name(name)
 
     , m_tracker(this, std::bind(&GraphicsPipelineState::destroyPipelines, this, std::placeholders::_1))
 {

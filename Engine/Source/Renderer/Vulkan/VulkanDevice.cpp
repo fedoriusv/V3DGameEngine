@@ -247,6 +247,16 @@ void VulkanDevice::submit(CmdList* cmd, bool wait)
     m_resourceDeleter.updateResourceDeleter();
 }
 
+void VulkanDevice::waitGPUCompletion(CmdList* cmd)
+{
+    ASSERT(cmd, "nullptr");
+    VulkanCmdList* vkCmdList = static_cast<VulkanCmdList*>(cmd);
+
+    s32 slot = vkCmdList->m_concurrencySlot;
+    m_threadedPools[slot].m_cmdBufferManager->waitQueueCompletion(getQueueByMask(vkCmdList->m_queueMask));
+    m_threadedPools[slot].m_cmdBufferManager->updateStatus();
+}
+
 Swapchain* VulkanDevice::createSwapchain(platform::Window* window, const Swapchain::SwapchainParams& params)
 {
     VulkanSwapchain* swapchain = V3D_NEW(VulkanSwapchain, memory::MemoryLabel::MemoryRenderCore)(this, m_semaphoreManager);
@@ -403,10 +413,9 @@ void VulkanDevice::destroyCommandList(CmdList* cmdList)
 {
     VulkanCmdList* vkCmdList = static_cast<VulkanCmdList*>(cmdList);
    
-    s32 slot = vkCmdList->m_concurrencySlot;
-    m_threadedPools[slot].m_cmdBufferManager->waitQueueCompletion(getQueueByMask(vkCmdList->m_queueMask));
-    m_threadedPools[slot].m_cmdBufferManager->updateStatus();
+    waitGPUCompletion(vkCmdList);
 
+    s32 slot = vkCmdList->m_concurrencySlot;
     m_maskOfActiveThreadPool &= ~(1 << slot);
     V3D_DELETE(vkCmdList, memory::MemoryLabel::MemoryRenderCore);
 

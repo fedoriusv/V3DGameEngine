@@ -150,6 +150,7 @@ namespace vk
         const DeviceCaps& getDeviceCaps() const override;
 
         void submit(CmdList* cmd, bool wait = false) override;
+        void waitGPUCompletion(CmdList* cmd) override;
 
         [[nodiscard]] Swapchain* createSwapchain(platform::Window* window, const Swapchain::SwapchainParams& params) override;
         void destroySwapchain(Swapchain* swapchain) override;

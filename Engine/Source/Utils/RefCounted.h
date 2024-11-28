@@ -51,7 +51,8 @@ namespace utils
 
     inline void RefCounted::drop() const
     {
-        if (m_refCount.fetch_sub(1, std::memory_order_relaxed) == 0)
+        m_refCount.fetch_sub(1, std::memory_order_relaxed);
+        if (m_refCount.load(std::memory_order_relaxed) == 0)
         {
             //handle by Object new/delete. @see Object class
             delete this;
