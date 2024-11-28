@@ -133,6 +133,7 @@ private:
         if (m_Scene)
         {
             m_Scene->SendExitSignal();
+            m_Scene->Run(0);
 
             delete m_Scene;
             m_Scene = nullptr;

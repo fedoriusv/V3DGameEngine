@@ -61,6 +61,9 @@ private:
 
     TextureUniformParameters m_shaderParameters;
 
+    v3d::utils::IntrusivePointer<v3d::renderer::Texture2D>              m_depthAttachment;
+    v3d::utils::IntrusivePointer<v3d::renderer::Texture2D>              m_colorAttachment;
+
     v3d::utils::IntrusivePointer<v3d::renderer::ShaderProgram>          m_program;
     v3d::utils::IntrusivePointer<v3d::renderer::GraphicsPipelineState>  m_pipeline;
     v3d::utils::IntrusivePointer<v3d::renderer::RenderTargetState>      m_renderTarget;
@@ -68,7 +71,7 @@ private:
     v3d::utils::IntrusivePointer<v3d::renderer::GraphicsPipelineState>  m_pipelineMSAA;
     v3d::utils::IntrusivePointer<v3d::renderer::RenderTargetState>      m_renderTargetMSAA;
 
-    v3d::utils::IntrusivePointer<v3d::renderer::SamplerState>           m_Sampler;
+    v3d::utils::IntrusivePointer<v3d::renderer::SamplerState>           m_sampler;
     v3d::utils::IntrusivePointer<v3d::renderer::ShaderProgram>          m_programBackbuffer;
     v3d::utils::IntrusivePointer<v3d::renderer::GraphicsPipelineState>  m_pipelineBackbuffer;
     v3d::utils::IntrusivePointer<v3d::renderer::RenderTargetState>      m_renderTargetBackbuffer;

@@ -41,9 +41,9 @@ TextureRender::TextureRender(renderer::Device* device, renderer::CmdListRender& 
         {
             m_renderTargetMSAA = new renderer::RenderTargetState(device, swapchain->getBackbufferSize());
 
-            renderer::Texture2D* colorAttachmentMSAA = new renderer::Texture2D(device, renderer::TextureUsage::TextureUsage_Attachment | renderer::TextureUsage::TextureUsage_Resolve | renderer::TextureUsage::TextureUsage_Sampled,
+            m_colorAttachment = new renderer::Texture2D(device, renderer::TextureUsage::TextureUsage_Attachment | renderer::TextureUsage::TextureUsage_Resolve | renderer::TextureUsage::TextureUsage_Sampled,
                 renderer::Format::Format_R16G16B16A16_SFloat, swapchain->getBackbufferSize(), renderer::TextureSamples::TextureSamples_x2);
-            m_renderTargetMSAA->setColorTexture(0, colorAttachmentMSAA,
+            m_renderTargetMSAA->setColorTexture(0, m_colorAttachment.get(),
                 {
                     renderer::RenderTargetLoadOp::LoadOp_Clear, renderer::RenderTargetStoreOp::StoreOp_Store, math::Vector4D(0.0f)
                 },
@@ -52,13 +52,13 @@ TextureRender::TextureRender(renderer::Device* device, renderer::CmdListRender& 
                 });
 
 #if defined(PLATFORM_ANDROID)
-            renderer::Texture2D* depthAttachmentMSAA = new renderer::Texture2D(device, renderer::TextureUsage::TextureUsage_Attachment | renderer::TextureUsage::TextureUsage_Resolve,
+                m_depthAttachment = new renderer::Texture2D(device, renderer::TextureUsage::TextureUsage_Attachment | renderer::TextureUsage::TextureUsage_Resolve,
                 renderer::Format::Format_D24_UNorm_S8_UInt, swapchain->getBackbufferSize(), TextureSamples::TextureSamples_x2);
 #else
-            renderer::Texture2D* depthAttachmentMSAA = new renderer::Texture2D(device, renderer::TextureUsage::TextureUsage_Attachment,
+                m_depthAttachment = new renderer::Texture2D(device, renderer::TextureUsage::TextureUsage_Attachment,
                 renderer::Format::Format_D32_SFloat, swapchain->getBackbufferSize(), renderer::TextureSamples::TextureSamples_x2);
 #endif
-            m_renderTargetMSAA->setDepthStencilTexture(depthAttachmentMSAA,
+            m_renderTargetMSAA->setDepthStencilTexture(m_depthAttachment.get(),
                 {
                     renderer::RenderTargetLoadOp::LoadOp_Clear, renderer::RenderTargetStoreOp::StoreOp_Store, 0.0f
                 },
@@ -147,7 +147,7 @@ TextureRender::TextureRender(renderer::Device* device, renderer::CmdListRender& 
                     renderer::TransitionOp::TransitionOp_Undefined, renderer::TransitionOp::TransitionOp_Present
                 });
 
-            m_pipelineBackbuffer = new renderer::GraphicsPipelineState(device, renderer::VertexInputAttributeDesc(), m_programBackbuffer.get(), m_renderTargetBackbuffer.get());
+            m_pipelineBackbuffer = new renderer::GraphicsPipelineState(device, renderer::VertexInputAttributeDesc(), m_programBackbuffer.get(), m_renderTargetBackbuffer.get(), "Backbuffer");
             m_pipelineBackbuffer->setPrimitiveTopology(renderer::PrimitiveTopology::PrimitiveTopology_TriangleList);
             m_pipelineBackbuffer->setFrontFace(renderer::FrontFace::FrontFace_Clockwise);
             m_pipelineBackbuffer->setCullMode(renderer::CullMode::CullMode_Back);
@@ -157,7 +157,7 @@ TextureRender::TextureRender(renderer::Device* device, renderer::CmdListRender& 
             m_pipelineBackbuffer->setDepthTest(false);
         }
 
-        m_Sampler = new renderer::SamplerState(device, renderer::SamplerFilter::SamplerFilter_Trilinear, renderer::SamplerAnisotropic::SamplerAnisotropic_None);
+        m_sampler = new renderer::SamplerState(device, renderer::SamplerFilter::SamplerFilter_Trilinear, renderer::SamplerAnisotropic::SamplerAnisotropic_None);
     }
     else
     {
@@ -170,15 +170,15 @@ TextureRender::TextureRender(renderer::Device* device, renderer::CmdListRender& 
             renderer::TransitionOp::TransitionOp_Undefined, renderer::TransitionOp::TransitionOp_Present
         });
 #if defined(PLATFORM_ANDROID)
-        renderer::Texture2D* depthAttachment = new renderer::Texture2D(device, renderer::TextureUsage::TextureUsage_Attachment, 
+        m_depthAttachment = new renderer::Texture2D(device, renderer::TextureUsage::TextureUsage_Attachment,
             renderer::Format::Format_D24_UNorm_S8_UInt, swapchain->getBackbufferSize(), renderer::TextureSamples::TextureSamples_x1);
 #else
-        renderer::Texture2D* depthAttachment = new renderer::Texture2D(device, renderer::TextureUsage::TextureUsage_Attachment, 
+        m_depthAttachment = new renderer::Texture2D(device, renderer::TextureUsage::TextureUsage_Attachment,
             renderer::Format::Format_D32_SFloat_S8_UInt, swapchain->getBackbufferSize(), renderer::TextureSamples::TextureSamples_x1);
 #endif
-        m_renderTarget->setDepthStencilTexture(depthAttachment, renderer::RenderTargetLoadOp::LoadOp_Clear, renderer::RenderTargetStoreOp::StoreOp_DontCare, 0.0f);
+        m_renderTarget->setDepthStencilTexture(m_depthAttachment.get(), renderer::RenderTargetLoadOp::LoadOp_Clear, renderer::RenderTargetStoreOp::StoreOp_DontCare, 0.0f);
 
-        m_pipeline = new renderer::GraphicsPipelineState(device, vertex, m_program.get(), m_renderTarget.get());
+        m_pipeline = new renderer::GraphicsPipelineState(device, vertex, m_program.get(), m_renderTarget.get(), "TextureRender");
         m_pipeline->setPrimitiveTopology(renderer::PrimitiveTopology::PrimitiveTopology_TriangleList);
         m_pipeline->setFrontFace(renderer::FrontFace::FrontFace_Clockwise);
         m_pipeline->setCullMode(renderer::CullMode::CullMode_Back);
@@ -191,28 +191,6 @@ TextureRender::TextureRender(renderer::Device* device, renderer::CmdListRender& 
 
 TextureRender::~TextureRender()
 {
-    if (m_enableMSAA)
-    {
-        if (m_renderTargetMSAA->getColorTextureCount() > 0)
-        {
-            renderer::Texture2D* colorAttachment = m_renderTargetMSAA->getColorTexture<renderer::Texture2D>(0);
-            delete colorAttachment;
-        }
-
-        if (m_renderTargetMSAA->hasDepthStencilTexture())
-        {
-            renderer::Texture2D* depthAttachment = m_renderTargetMSAA->getDepthStencilTexture<renderer::Texture2D>();
-            delete depthAttachment;
-        }
-    }
-    else
-    {
-        if (m_renderTarget->hasDepthStencilTexture())
-        {
-            renderer::Texture2D* depthAttachment = m_renderTarget->getDepthStencilTexture<renderer::Texture2D>();
-            delete depthAttachment;
-        }
-    }
 }
 
 void TextureRender::process(renderer::CmdListRender& cmdList, const std::vector<std::tuple<renderer::GeometryBufferDesc, DrawProperties>>& props)
@@ -258,7 +236,7 @@ void TextureRender::process(renderer::CmdListRender& cmdList, const std::vector<
         cmdList.setPipelineState(*m_pipelineBackbuffer.get());
 
         renderer::Descriptor colorSampler(m_renderTargetMSAA->getColorTexture<renderer::Texture2D>(0), 0);
-        renderer::Descriptor colorTexture(m_Sampler.get(), 1);
+        renderer::Descriptor colorTexture(m_sampler.get(), 1);
         cmdList.bindDescriptorSet(0, { colorSampler, colorTexture });
 
         cmdList.draw(renderer::GeometryBufferDesc(nullptr, 0, 0), 0, 3, 0, 1);

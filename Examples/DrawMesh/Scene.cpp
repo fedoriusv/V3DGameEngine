@@ -32,6 +32,9 @@ Scene::Scene(v3d::renderer::Device* device, renderer::Swapchain* swapchain) noex
 
 Scene::~Scene()
 {
+    m_Device->destroyCommandList(m_CmdList);
+    m_CmdList = nullptr;
+
     resource::ResourceManager::getInstance()->clear();
     resource::ResourceManager::freeInstance();
 }
@@ -108,7 +111,7 @@ void Scene::LoadVoyager()
         resource::Image* image = resource::ResourceManager::getInstance()->load<resource::Image, resource::ImageFileLoader>("models/voyager/voyager_astc_8x8_unorm.ktx");
         voyager->m_Sampler = m_CommandList->createObject<renderer::SamplerState>(renderer::SamplerFilter::SamplerFilter_Bilinear, renderer::SamplerAnisotropic::SamplerAnisotropic_None);
 #else
-        resource::Bitmap* image = resource::ResourceManager::getInstance()->load<resource::Bitmap, resource::ImageFileLoader>("models/voyager/miplevel.dds");
+        resource::Bitmap* image = resource::ResourceManager::getInstance()->load<resource::Bitmap, resource::ImageFileLoader>("models/voyager/voyager_bc3_unorm.ktx");
         voyager->m_Sampler = new renderer::SamplerState(m_Device, renderer::SamplerFilter::SamplerFilter_Bilinear, renderer::SamplerAnisotropic::SamplerAnisotropic_4x);
 #endif
         voyager->m_Sampler->setWrap(renderer::SamplerWrap::TextureWrap_Repeat);
@@ -118,8 +121,8 @@ void Scene::LoadVoyager()
     }
 
     {
-        resource::ModelResource* modelRes = resource::ResourceManager::getInstance()->load<resource::ModelResource, resource::ModelFileLoader>("models/voyager/voyager.gltf",
-            resource::ModelFileLoader::ModelLoaderFlag::FlipYTextureCoord | resource::ModelFileLoader::ModelLoaderFlag::SkipTangentAndBitangent/* | resource::ModelFileLoader::ModelLoaderFlag::SkipMaterial*/);
+        resource::ModelResource* modelRes = resource::ResourceManager::getInstance()->load<resource::ModelResource, resource::ModelFileLoader>("models/voyager/voyager.dae",
+            resource::ModelFileLoader::ModelLoaderFlag::FlipYTextureCoord | resource::ModelFileLoader::ModelLoaderFlag::SkipTangentAndBitangent | resource::ModelFileLoader::ModelLoaderFlag::SkipMaterial);
 
         scene::Model* model = scene::ModelHelper::createModel(m_Device, m_CmdList, modelRes);
         for (auto& geom : model->m_geometry)
@@ -187,6 +190,8 @@ void Scene::Exit()
 {
     if (m_Render)
     {
+        m_Device->waitGPUCompletion(m_CmdList);
+
         delete m_Render;
         m_Render = nullptr;
     }
