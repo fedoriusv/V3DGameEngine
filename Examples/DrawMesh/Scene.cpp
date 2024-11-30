@@ -125,6 +125,7 @@ void Scene::LoadVoyager()
             resource::ModelFileLoader::ModelLoaderFlag::FlipYTextureCoord | resource::ModelFileLoader::ModelLoaderFlag::SkipTangentAndBitangent | resource::ModelFileLoader::ModelLoaderFlag::SkipMaterial);
 
         scene::Model* model = scene::ModelHelper::createModel(m_Device, m_CmdList, modelRes);
+        voyager->m_Model = model;
         for (auto& geom : model->m_geometry)
         {
             scene::Mesh* mesh = geom._LODs[0]; //first lod only
@@ -188,10 +189,17 @@ void Scene::Draw(f32 dt)
 
 void Scene::Exit()
 {
+    m_Device->waitGPUCompletion(m_CmdList);
+
+    for (auto& model : m_Models)
+    {
+        delete model->m_Model;
+        delete model;
+    }
+    m_Models.clear();
+
     if (m_Render)
     {
-        m_Device->waitGPUCompletion(m_CmdList);
-
         delete m_Render;
         m_Render = nullptr;
     }

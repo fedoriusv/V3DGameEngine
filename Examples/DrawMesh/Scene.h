@@ -7,6 +7,7 @@
 #include "Renderer/Texture.h"
 #include "Renderer/SamplerState.h"
 #include "Scene/CameraArcballHelper.h"
+#include "Scene/Model.h"
 #include "Events/InputEventMouse.h"
 #include "Events/InputEventTouch.h"
 #include "Events/InputEventHandler.h"
@@ -58,6 +59,7 @@ private:
         v3d::utils::IntrusivePointer<v3d::renderer::SamplerState> m_Sampler;
         v3d::renderer::VertexInputAttributeDesc                   m_InputAttrib;
         std::vector<std::tuple<v3d::renderer::GeometryBufferDesc, app::DrawProperties>> m_Props;
+        v3d::scene::Model* m_Model;
     };
 
     std::list<Model*> m_Models;
