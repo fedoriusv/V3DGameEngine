@@ -298,7 +298,7 @@ namespace renderer
         virtual bool initialize() = 0;
         virtual void destroy() = 0;
 
-        RenderType  m_renderType;
+        RenderType m_renderType;
     };
 
     inline Device::RenderType Device::getRenderType() const

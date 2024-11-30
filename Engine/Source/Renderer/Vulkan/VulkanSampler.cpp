@@ -216,6 +216,8 @@ VulkanSamplerManager::~VulkanSamplerManager()
 
 VulkanSampler* VulkanSamplerManager::acquireSampler(const SamplerState& state)
 {
+    std::scoped_lock lock(m_mutex);
+
     VulkanSampler* sampler = nullptr;
     auto found = m_samplerList.emplace(state.getSamplerDesc(), sampler);
     if (found.second)
@@ -238,47 +240,51 @@ VulkanSampler* VulkanSamplerManager::acquireSampler(const SamplerState& state)
 
 bool VulkanSamplerManager::removeSampler(VulkanSampler* sampler)
 {
-    //auto iter = m_samplerList.find(sampler->m_desc);
-    //if (iter == m_samplerList.cend())
-    //{
-    //    LOG_DEBUG("VulkanSamplerManager sampler not found");
-    //    ASSERT(false, "sampler");
-    //    return false;
-    //}
+    std::scoped_lock lock(m_mutex);
 
-    //Sampler* samplerIter = iter->second;
-    //ASSERT(samplerIter == sampler, "Different pointers");
-    //if (samplerIter->linked())
-    //{
-    //    LOG_WARNING("PipelineManager::removePipeline sampler still linked, but reqested to delete");
-    //    ASSERT(false, "sampler");
-    //    //return false;
-    //}
-    //m_samplerList.erase(iter);
+    auto iter = m_samplerList.begin();
+    while (iter != m_samplerList.end())
+    {
+        if (iter->second == sampler)
+        {
+            break;
+        }
+        ++iter;
+    }
+    ASSERT(iter != m_samplerList.end(), "not found");
 
-    //samplerIter->notifyObservers();
+    VulkanSampler* vkSampler = iter->second;
+    if (sampler->linked())
+    {
+        LOG_WARNING("VulkanSamplerManager::removeSampler sampler still linked, but reqested to delete");
+        ASSERT(false, "framebuffer");
+        return false;
+    }
+    m_samplerList.erase(iter);
 
-    //samplerIter->destroy();
-    //delete  samplerIter;
+    sampler->destroy();
+    V3D_DELETE(sampler, memory::MemoryLabel::MemoryRenderCore);
 
     return true;
 }
 
 void VulkanSamplerManager::clear()
 {
-    //for (auto& iter : m_samplerList)
-    //{
-    //    Sampler* sampler = iter.second;
-    //    if (sampler->linked())
-    //    {
-    //        LOG_WARNING("VulkanSamplerManager::clear sampler still linked, but reqested to delete");
-    //        ASSERT(false, "sampler");
-    //    }
+    std::scoped_lock lock(m_mutex);
 
-    //    sampler->destroy();
-    //    delete sampler;
-    //}
-    //m_samplerList.clear();
+    for (auto& iter : m_samplerList)
+    {
+        VulkanSampler* vkSampler = iter.second;
+        if (vkSampler->linked())
+        {
+            LOG_WARNING("VulkanSamplerManager::clear sampler still linked, but reqested to delete");
+            ASSERT(false, "framebuffer");
+        }
+
+        vkSampler->destroy();
+        V3D_DELETE(vkSampler, memory::MemoryLabel::MemoryRenderCore);
+    }
+    m_samplerList.clear();
 }
 
 

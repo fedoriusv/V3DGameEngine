@@ -193,7 +193,7 @@ bool VulkanFramebufferManager::removeFramebuffer(VulkanFramebuffer* framebuffer)
     VulkanFramebuffer* vkFramebuffer = iter->second;
     if (framebuffer->linked())
     {
-        LOG_WARNING("FramebufferManager::removeFramebuffer framebufer still linked, but reqested to delete");
+        LOG_WARNING("FramebufferManager::removeFramebuffer framebuffer still linked, but reqested to delete");
         ASSERT(false, "framebuffer");
         return false;
     }
@@ -214,7 +214,7 @@ void VulkanFramebufferManager::clear()
         VulkanFramebuffer* framebuffer = iter.second;
         if (framebuffer->linked())
         {
-            LOG_WARNING("FramebufferManager::clear framebufer still linked, but reqested to delete");
+            LOG_WARNING("FramebufferManager::clear framebuffer still linked, but reqested to delete");
             ASSERT(false, "framebuffer");
         }
 

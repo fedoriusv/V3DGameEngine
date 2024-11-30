@@ -2,6 +2,7 @@
 #include "Mesh.h"
 #include "Resource/Model.h"
 #include "Renderer/Device.h"
+#include "Utils/Logger.h"
 
 namespace v3d
 {
@@ -10,10 +11,22 @@ namespace scene
 
  Model::Model() noexcept
  {
+     LOG_DEBUG("Model::Model constructor %llx", this);
  }
  
  Model::~Model()
  {
+     LOG_DEBUG("Model::Model destructor %llx", this);
+
+     for (auto& geom : m_geometry)
+     {
+         for (auto& mesh : geom._LODs)
+         {
+             V3D_DELETE(mesh, memory::MemoryLabel::MemoryObject);
+         }
+         geom._LODs.clear();
+     }
+     m_geometry.clear();
  }
 
  Model* ModelHelper::createModel(renderer::Device* device, renderer::CmdListRender* cmdList, resource::ModelResource* resource)

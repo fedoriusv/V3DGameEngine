@@ -21,64 +21,6 @@ namespace vk
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
-    *  @brief VulkanStagingBuffer final class. Vulkan Render side
-    */
-    class VulkanStagingBuffer final
-    {
-    public:
-
-        explicit VulkanStagingBuffer(VulkanDevice* device, VulkanMemory::VulkanMemoryAllocator* memory, u64 size, BufferUsageFlags usageFlag) noexcept;
-        ~VulkanStagingBuffer();
-
-        bool create();
-        void destroy();
-
-        void* map();
-        void unmap();
-
-        VulkanBuffer* getBuffer() const;
-
-    private:
-
-        VulkanStagingBuffer(const VulkanStagingBuffer&) = delete;
-        VulkanStagingBuffer& operator=(const VulkanStagingBuffer&) = delete;
-
-        VulkanBuffer* m_buffer;
-    };
-
-    inline bool VulkanStagingBuffer::create()
-    {
-        ASSERT(m_buffer, "nullptr");
-        return m_buffer->create();
-    }
-
-    inline void VulkanStagingBuffer::destroy()
-    {
-        ASSERT(m_buffer, "nullptr");
-        m_buffer->destroy();
-    }
-
-    inline void* VulkanStagingBuffer::map()
-    {
-        ASSERT(m_buffer, "nullptr");
-        return m_buffer->map();
-    }
-
-    inline void VulkanStagingBuffer::unmap()
-    {
-        ASSERT(m_buffer, "nullptr");
-        m_buffer->unmap();
-    }
-
-    inline VulkanBuffer* VulkanStagingBuffer::getBuffer() const
-    {
-        ASSERT(m_buffer, "nullptr");
-        return m_buffer;
-    }
-
-    /////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    /**
     * @brief VulkanStagingBufferManager final class. Vulkan Render side.
     * Multithreaded
     */
@@ -89,9 +31,9 @@ namespace vk
         explicit VulkanStagingBufferManager(VulkanDevice* device) noexcept;
         ~VulkanStagingBufferManager();
 
-        [[nodiscard]] VulkanStagingBuffer* createStagingBuffer(u64 size, BufferUsageFlags usageFlag) const;
+        [[nodiscard]] VulkanBuffer* createStagingBuffer(u64 size) const;
 
-        void destroyAfterUse(VulkanStagingBuffer* buffer);
+        void destroyAfterUse(VulkanBuffer* buffer);
         void destroyStagingBuffers();
 
     private:
@@ -103,7 +45,7 @@ namespace vk
         VulkanMemory::VulkanMemoryAllocator*    m_memoryManager;
         std::recursive_mutex                    m_mutex;
 
-        std::vector<VulkanStagingBuffer*>       m_stagingBuffers;
+        std::vector<VulkanBuffer*>              m_stagingBuffers;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

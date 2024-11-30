@@ -11,22 +11,6 @@ namespace renderer
 namespace vk
 {
 
-VulkanStagingBuffer::VulkanStagingBuffer(VulkanDevice* device, VulkanMemory::VulkanMemoryAllocator* memory, u64 size, BufferUsageFlags usageFlag) noexcept
-    : m_buffer(V3D_NEW(VulkanBuffer, memory::MemoryLabel::MemoryRenderCore)(device, memory, RenderBuffer::Type::StagingBuffer, usageFlag, size))
-{
-}
-
-VulkanStagingBuffer::~VulkanStagingBuffer()
-{
-    if (m_buffer)
-    {
-        m_buffer->destroy();
-
-        V3D_DELETE(m_buffer, memory::MemoryLabel::MemoryRenderCore);
-        m_buffer = nullptr;
-    }
-}
-
 VulkanStagingBufferManager::VulkanStagingBufferManager(VulkanDevice* device) noexcept
     : m_device(*device)
     , m_memoryManager(V3D_NEW(SimpleVulkanMemoryAllocator, memory::MemoryLabel::MemoryRenderCore)(device))
@@ -35,6 +19,7 @@ VulkanStagingBufferManager::VulkanStagingBufferManager(VulkanDevice* device) noe
 
 VulkanStagingBufferManager::~VulkanStagingBufferManager()
 {
+    ASSERT(m_stagingBuffers.empty(), "must be empty");
     if (m_memoryManager)
     {
         V3D_DELETE(m_memoryManager, memory::MemoryLabel::MemoryRenderCore);
@@ -42,9 +27,9 @@ VulkanStagingBufferManager::~VulkanStagingBufferManager()
     }
 }
 
-VulkanStagingBuffer* VulkanStagingBufferManager::createStagingBuffer(u64 size, BufferUsageFlags usageFlag) const
+VulkanBuffer* VulkanStagingBufferManager::createStagingBuffer(u64 size) const
 {
-    VulkanStagingBuffer* stagingBuffer = V3D_NEW(VulkanStagingBuffer, memory::MemoryLabel::MemoryRenderCore)(&m_device, m_memoryManager, size, usageFlag);
+    VulkanBuffer* stagingBuffer = V3D_NEW(VulkanBuffer, memory::MemoryLabel::MemoryRenderCore)(&m_device, m_memoryManager, RenderBuffer::Type::StagingBuffer, size, 0, "StagingBuffer");
     ASSERT(stagingBuffer, "nullptr");
     
     if (!stagingBuffer->create())
@@ -57,7 +42,7 @@ VulkanStagingBuffer* VulkanStagingBufferManager::createStagingBuffer(u64 size, B
     return stagingBuffer;
 }
 
-void VulkanStagingBufferManager::destroyAfterUse(VulkanStagingBuffer* buffer)
+void VulkanStagingBufferManager::destroyAfterUse(VulkanBuffer* buffer)
 {
     std::scoped_lock lock(m_mutex);
 
@@ -70,13 +55,13 @@ void VulkanStagingBufferManager::destroyStagingBuffers()
 
     for (auto iter = m_stagingBuffers.begin(); iter != m_stagingBuffers.end();)
     {
-        if ((*iter)->getBuffer()->isUsed())
+        if ((*iter)->isUsed())
         {
             ++iter;
             continue;
         }
 
-        VulkanStagingBuffer* buff = *iter;
+        VulkanBuffer* buff = *iter;
         iter = m_stagingBuffers.erase(iter);
 
         buff->destroy();

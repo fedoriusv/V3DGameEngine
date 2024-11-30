@@ -108,13 +108,13 @@ Resource* ShaderSpirVDecoder::decode(const stream::Stream* stream, const Policy*
                 stream::FileStream* file = stream::FileLoader::load(fileStr);
                 ASSERT(file, "nullptr");
 
-                void* data = V3D_MALLOC(file->size(), memory::MemoryLabel::MemoryRenderCore);
+                void* data = V3D_MALLOC(file->size(), memory::MemoryLabel::MemorySystem);
                 file->read(data, file->size());
                 stream::FileLoader::close(file);
 
                 shaderc_include_result include;
                 include.source_name_length = fileStr.size();
-                include.source_name = (c8*)V3D_MALLOC(include.source_name_length, memory::MemoryLabel::MemoryRenderCore);
+                include.source_name = (c8*)V3D_MALLOC(include.source_name_length, memory::MemoryLabel::MemorySystem);
                 memcpy((void*)include.source_name, fileStr.c_str(), fileStr.size());
                 include.content_length = file->size();
                 include.content = (c8*)data;
@@ -127,8 +127,8 @@ Resource* ShaderSpirVDecoder::decode(const stream::Stream* stream, const Policy*
 
             void ReleaseInclude(shaderc_include_result* data) override
             {
-                V3D_FREE(data->source_name, memory::MemoryLabel::MemoryRenderCore);
-                V3D_FREE(data->content, memory::MemoryLabel::MemoryRenderCore);
+                V3D_FREE(data->source_name, memory::MemoryLabel::MemorySystem);
+                V3D_FREE(data->content, memory::MemoryLabel::MemorySystem);
             }
 
             std::set<std::string> m_pathes;
@@ -228,7 +228,7 @@ Resource* ShaderSpirVDecoder::decode(const stream::Stream* stream, const Policy*
             }
         }
 
-        std::unique_ptr<shaderc::CompileOptions::IncluderInterface> includer(V3D_NEW(Includer, memory::MemoryLabel::MemoryRenderCore)); //TODO deleter
+        std::unique_ptr<shaderc::CompileOptions::IncluderInterface> includer(V3D_NEW(Includer, memory::MemoryLabel::MemorySystem)); //TODO deleter
         options.SetIncluder(std::move(includer));
 
         bool validShaderType = false;

@@ -18,7 +18,7 @@ namespace vk
 std::set<VulkanBuffer*> VulkanBuffer::s_objects;
 #endif //DEBUG_OBJECT_MEMORY
 
-VulkanBuffer::VulkanBuffer(VulkanDevice* device, VulkanMemory::VulkanMemoryAllocator* alloc, RenderBuffer::Type type, BufferUsageFlags usageFlag, u64 size, const std::string& name) noexcept
+VulkanBuffer::VulkanBuffer(VulkanDevice* device, VulkanMemory::VulkanMemoryAllocator* alloc, RenderBuffer::Type type, u64 size, BufferUsageFlags usageFlags, const std::string& name) noexcept
     : m_device(*device)
     , m_memoryAllocator(alloc)
 
@@ -27,7 +27,7 @@ VulkanBuffer::VulkanBuffer(VulkanDevice* device, VulkanMemory::VulkanMemoryAlloc
 
     , m_type(type)
     , m_size(size) //TODO: check aligment
-    , m_usageFlags(usageFlag)
+    , m_usageFlags(usageFlags)
 
     , m_mapped(false)
 {
@@ -65,20 +65,20 @@ bool VulkanBuffer::create()
     case RenderBuffer::Type::VertexBuffer:
     {
         usageBuffer |= VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+        usageBuffer |= VK_BUFFER_USAGE_TRANSFER_DST_BIT;
 
         if (VulkanBuffer::hasUsageFlag(BufferUsage::Buffer_Dynamic))
         {
             memoryFlags |= VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
-            if (VulkanBuffer::hasUsageFlag(BufferUsage::Buffer_Read))
-            {
-                memoryFlags |= VK_MEMORY_PROPERTY_HOST_CACHED_BIT;
-                ASSERT(m_device.getVulkanDeviceCaps()._supportHostCacheMemory, "unsupport coherent memory");
-
-            }
-            else if (VulkanBuffer::hasUsageFlag(BufferUsage::Buffer_Write))
+            if (VulkanBuffer::hasUsageFlag(BufferUsage::Buffer_GPUWrite) && VulkanBuffer::hasUsageFlag(BufferUsage::Buffer_GPURead))
             {
                 memoryFlags |= VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
                 ASSERT(m_device.getVulkanDeviceCaps()._supportHostCoherentMemory, "unsupport coherent memory");
+            }
+            else if (VulkanBuffer::hasUsageFlag(BufferUsage::Buffer_GPUWrite))
+            {
+                memoryFlags |= VK_MEMORY_PROPERTY_HOST_CACHED_BIT;
+                ASSERT(m_device.getVulkanDeviceCaps()._supportHostCacheMemory, "unsupport coherent memory");
             }
             else
             {
@@ -88,14 +88,6 @@ bool VulkanBuffer::create()
         else
         {
             memoryFlags |= VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
-            if (m_device.getVulkanDeviceCaps()._supportDeviceCoherentMemory)
-            {
-                memoryFlags |= VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
-            }
-            else if (m_device.getVulkanDeviceCaps()._supportDeviceCacheMemory)
-            {
-                memoryFlags |= VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_CACHED_BIT;
-            }
         }
 
         break;
@@ -103,16 +95,30 @@ bool VulkanBuffer::create()
 
     case RenderBuffer::Type::IndexBuffer:
     {
-        ASSERT(m_usageFlags & ~BufferUsage::Buffer_Dynamic, "not support");
         usageBuffer |= VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
-        memoryFlags |= VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
-        if (m_device.getVulkanDeviceCaps()._supportDeviceCoherentMemory)
+        usageBuffer |= VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+
+        if (VulkanBuffer::hasUsageFlag(BufferUsage::Buffer_Dynamic))
         {
-            memoryFlags |= VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+            memoryFlags |= VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
+            if (VulkanBuffer::hasUsageFlag(BufferUsage::Buffer_GPUWrite) && VulkanBuffer::hasUsageFlag(BufferUsage::Buffer_GPURead))
+            {
+                memoryFlags |= VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+                ASSERT(m_device.getVulkanDeviceCaps()._supportHostCoherentMemory, "unsupport coherent memory");
+            }
+            else if (VulkanBuffer::hasUsageFlag(BufferUsage::Buffer_GPUWrite))
+            {
+                memoryFlags |= VK_MEMORY_PROPERTY_HOST_CACHED_BIT;
+                ASSERT(m_device.getVulkanDeviceCaps()._supportHostCacheMemory, "unsupport coherent memory");
+            }
+            else
+            {
+                ASSERT(false, "fail");
+            }
         }
-        else if (m_device.getVulkanDeviceCaps()._supportDeviceCacheMemory)
+        else
         {
-            memoryFlags |= VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_CACHED_BIT;
+            memoryFlags |= VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
         }
 
         break;
@@ -129,7 +135,25 @@ bool VulkanBuffer::create()
 
     case RenderBuffer::Type::StagingBuffer:
     {
+        usageBuffer |= VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
         memoryFlags |= VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
+
+        break;
+    }
+
+    case RenderBuffer::Type::StorageBuffer:
+    {
+        ASSERT(false, "not impl");
+        memoryFlags |= VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
+
+        break;
+    }
+
+    case RenderBuffer::Type::ReadbackBuffer:
+    {
+        ASSERT(false, "not impl");
+        usageBuffer |= VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+
         break;
     }
 
@@ -137,16 +161,6 @@ bool VulkanBuffer::create()
         ASSERT(false, "not impl");
     }
 
-    if (VulkanBuffer::hasUsageFlag(BufferUsage::Buffer_Read))
-    {
-        usageBuffer |= VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
-    }
-
-    if (VulkanBuffer::hasUsageFlag(BufferUsage::Buffer_Write))
-    {
-        usageBuffer |= VK_BUFFER_USAGE_TRANSFER_DST_BIT;
-    }
-    
 #if VULKAN_DEBUG
     LOG_DEBUG("vkCreateBuffer: size %u; flags %u; usage %u, memoryFlags %u", m_size, 0, usageBuffer, memoryFlags);
 #endif
@@ -247,17 +261,17 @@ bool VulkanBuffer::upload(VulkanCommandBuffer* cmdBuffer, u32 offset, u64 size, 
 
     if (VulkanBuffer::hasUsageFlag(BufferUsage::Buffer_Dynamic))
     {
-        //ASSERT(false, "TODO");
-        //if (VulkanResource::isCaptured())
-        //{
-        //    //VulkanResource::waitComplete();
-        //}
+        //Don"t care about usge status
+        c8* dstData = reinterpret_cast<c8*>(VulkanBuffer::map());
+        if (dstData)
+        {
+            memcpy(dstData + offset, data, size);
+            VulkanBuffer::unmap();
 
-        //void* srcData = VulkanBuffer::map();
-        //memcpy(srcData, data, size);
-        //VulkanBuffer::unmap();
+            return true;
+        }
 
-        return true;
+        return false;
     }
     else
     {
@@ -270,7 +284,7 @@ bool VulkanBuffer::upload(VulkanCommandBuffer* cmdBuffer, u32 offset, u64 size, 
         }
         else
         {
-            VulkanStagingBuffer* stagingBuffer = m_device.getStaginBufferManager()->createStagingBuffer(size, BufferUsage::Buffer_Read);
+            VulkanBuffer* stagingBuffer = m_device.getStaginBufferManager()->createStagingBuffer(size);
             if (!stagingBuffer)
             {
                 ASSERT(false, "staginBuffer is nullptr");
@@ -291,7 +305,7 @@ bool VulkanBuffer::upload(VulkanCommandBuffer* cmdBuffer, u32 offset, u64 size, 
             bufferCopy.size = size;
 
             //TODO memory barrier
-            cmdBuffer->cmdCopyBufferToBuffer(stagingBuffer->getBuffer(), this, { bufferCopy });
+            cmdBuffer->cmdCopyBufferToBuffer(stagingBuffer, this, { bufferCopy });
             //TODO memory barrier
         }
     }
@@ -299,11 +313,50 @@ bool VulkanBuffer::upload(VulkanCommandBuffer* cmdBuffer, u32 offset, u64 size, 
     return true;
 }
 
-//bool VulkanBuffer::read(Context* context, u32 offset, u64 size, const std::function<void(u32, void*)>& readback)
-//{
-//    NOT_IMPL;
-//    return false;
-//}
+bool VulkanBuffer::readback(VulkanCommandBuffer* cmdBuffer, u32 offset, u64 size, VulkanBuffer*& stagingBuffer)
+{
+    if (!m_buffer || !stagingBuffer)
+    {
+        ASSERT(false, "nullptr");
+        return false;
+    }
+
+    if (m_size < size)
+    {
+        ASSERT(false, "different size in non dynamic data");
+        return false;
+    }
+
+    if (VulkanBuffer::hasUsageFlag(BufferUsage::Buffer_Dynamic))
+    {
+        //Don"t care about usge status
+        c8* srcData = reinterpret_cast<c8*>(VulkanBuffer::map());
+        if (srcData)
+        {
+            c8* dstData = reinterpret_cast<c8*>(stagingBuffer->map());
+
+            memcpy(srcData, dstData + offset, size);
+            VulkanBuffer::unmap();
+
+            return true;
+        }
+
+        return false;
+    }
+    else
+    {
+        VkBufferCopy bufferCopy = {};
+        bufferCopy.srcOffset = offset;
+        bufferCopy.dstOffset = 0;
+        bufferCopy.size = size;
+
+        //TODO memory barrier
+        cmdBuffer->cmdCopyBufferToBuffer(this, stagingBuffer, { bufferCopy });
+        //TODO memory barrier
+    }
+
+    return true;
+}
 
 void* VulkanBuffer::map()
 {
@@ -313,11 +366,7 @@ void* VulkanBuffer::map()
         return nullptr;
     }
 
-    if (m_mapped)
-    {
-        ASSERT(false, "already mappped");
-    }
-
+    ASSERT(!m_mapped, "already mappped");
     ASSERT(m_memory._mapped, "m_memory._mapped can't map");
     if (m_memory._flag & VK_MEMORY_PROPERTY_HOST_CACHED_BIT)
     {

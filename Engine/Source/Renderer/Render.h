@@ -395,10 +395,11 @@ namespace renderer
     */
     enum BufferUsage : u32
     {
-        Buffer_Write    = 0x01,     //Write to buffer
-        Buffer_Read     = 0x02,     //Read from buffer
+        Buffer_GPUOnly     = 0,     // GPU side only
+        Buffer_GPUWrite    = 0x01,  // Write CPU to GPU
+        Buffer_GPURead     = 0x02,  // Read from GPU to CPU
 
-        Buffer_Dynamic  = 0x04,     //Stream read/write buffer
+        Buffer_Dynamic  = 0x04,     // Buffer is shared between CPU and GPU
     };
 
     /**

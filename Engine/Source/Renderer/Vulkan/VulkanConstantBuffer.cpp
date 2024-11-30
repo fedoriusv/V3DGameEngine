@@ -112,7 +112,7 @@ ConstantBufferRange VulkanConstantBufferManager::acquireConstantBuffer(u32 reque
 
     //new
     ASSERT(requestedSize <= desiredSize, ("has small size"));
-    VulkanBuffer* buffer = V3D_NEW(VulkanBuffer, memory::MemoryLabel::MemoryRenderCore)(&m_device, m_memoryManager, RenderBuffer::Type::ConstantBuffer, 0, desiredSize, "ConstantBuffer");
+    VulkanBuffer* buffer = V3D_NEW(VulkanBuffer, memory::MemoryLabel::MemoryRenderCore)(&m_device, m_memoryManager, RenderBuffer::Type::ConstantBuffer, desiredSize, 0, "ConstantBuffer");
     if (!buffer->create())
     {
         V3D_DELETE(buffer, memory::MemoryLabel::MemoryRenderCore);

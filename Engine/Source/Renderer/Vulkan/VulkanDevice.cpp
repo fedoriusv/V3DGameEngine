@@ -370,7 +370,7 @@ BufferHandle VulkanDevice::createBuffer(RenderBuffer::Type type, u16 usageFlag, 
     LOG_DEBUG("VulkanDevice::createBuffer");
 #endif //VULKAN_DEBUG
 
-    VulkanBuffer* vkBuffer = V3D_NEW(VulkanBuffer, memory::MemoryLabel::MemoryRenderCore)(this, m_bufferMemoryManager, type, usageFlag, size, name);
+    VulkanBuffer* vkBuffer = V3D_NEW(VulkanBuffer, memory::MemoryLabel::MemoryRenderCore)(this, m_bufferMemoryManager, type, size, usageFlag, name);
     if (!vkBuffer->create())
     {
         vkBuffer->destroy();
@@ -950,6 +950,7 @@ void VulkanDevice::destroy()
 
     if (m_stagingBufferManager)
     {
+        m_stagingBufferManager->destroyStagingBuffers();
         V3D_DELETE(m_stagingBufferManager, memory::MemoryLabel::MemoryRenderCore);
         m_stagingBufferManager = nullptr;
     }

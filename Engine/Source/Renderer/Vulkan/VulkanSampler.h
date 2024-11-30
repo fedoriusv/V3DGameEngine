@@ -79,7 +79,8 @@ namespace vk
         VulkanSamplerManager(const VulkanSamplerManager&) = delete;
         VulkanSamplerManager& operator=(const VulkanSamplerManager&) = delete;
 
-        VulkanDevice& m_device;
+        VulkanDevice&           m_device;
+        std::recursive_mutex    m_mutex;
         std::unordered_map<DescInfo<SamplerDesc>, VulkanSampler*, DescInfo<SamplerDesc>::Hash, DescInfo<SamplerDesc>::Compare> m_samplerList;
     };
 

@@ -28,13 +28,15 @@ ModelResource::~ModelResource()
 {
     LOG_DEBUG("ModelResource destructor %llx", this);
 
-    //for (auto& meshLODs : m_meshes)
-    //{
-    //    for (auto& mesh : meshLODs)
-    //    {
-    //        V3D_DELETE(mesh, memory::MemoryLabel::MemoryObject);
-    //    }
-    //}
+    for (auto& meshLODs : m_geometry)
+    {
+        for (auto& res : meshLODs._LODs)
+        {
+            V3D_DELETE(res, memory::MemoryLabel::MemoryObject);
+        }
+        meshLODs._LODs.clear();
+    }
+    m_geometry.clear();
 
     //for (auto& material : m_materials)
     //{

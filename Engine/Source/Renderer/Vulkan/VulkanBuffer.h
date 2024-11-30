@@ -27,7 +27,7 @@ namespace vk
     {
     public:
 
-        explicit VulkanBuffer(VulkanDevice* device, VulkanMemory::VulkanMemoryAllocator* allocator, RenderBuffer::Type type, BufferUsageFlags usageFlag, u64 size, const std::string& name = "") noexcept;
+        explicit VulkanBuffer(VulkanDevice* device, VulkanMemory::VulkanMemoryAllocator* alloc, RenderBuffer::Type type, u64 size, BufferUsageFlags usage, const std::string& name = "") noexcept;
         ~VulkanBuffer();
 
         bool create() override;
@@ -36,7 +36,7 @@ namespace vk
         bool hasUsageFlag(BufferUsage usage) const override;
 
         bool upload(VulkanCommandBuffer* cmdBuffer, u32 offset, u64 size, const void* data);
-        //bool read(Context* context, u32 offset, u64 size, const std::function<void(u32, void*)>& readback) override;
+        bool readback(VulkanCommandBuffer* cmdBuffer, u32 offset,u64 size, VulkanBuffer*& stagingBuffer);
 
         VkBuffer getHandle() const;
         u64 getSize() const;

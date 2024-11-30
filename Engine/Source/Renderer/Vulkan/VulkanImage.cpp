@@ -1311,7 +1311,7 @@ bool VulkanImage::internalUpload(VulkanCommandBuffer* cmdBuffer, const math::Dim
 
     if (m_tiling == VK_IMAGE_TILING_OPTIMAL)
     {
-        VulkanStagingBuffer* stagingBuffer = m_device.getStaginBufferManager()->createStagingBuffer(dataSize, BufferUsage::Buffer_Read);
+        VulkanBuffer* stagingBuffer = m_device.getStaginBufferManager()->createStagingBuffer(dataSize);
         if (!stagingBuffer)
         {
             ASSERT(false, "staginBuffer is nullptr");
@@ -1396,7 +1396,7 @@ bool VulkanImage::internalUpload(VulkanCommandBuffer* cmdBuffer, const math::Dim
         VkImageLayout newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
         cmdBuffer->cmdPipelineBarrier(this, srcStageMask, VK_PIPELINE_STAGE_TRANSFER_BIT, newLayout);
        
-        cmdBuffer->cmdCopyBufferToImage(stagingBuffer->getBuffer(), this, newLayout, bufferImageCopys);
+        cmdBuffer->cmdCopyBufferToImage(stagingBuffer, this, newLayout, bufferImageCopys);
 
         VkPipelineStageFlags dstStageMask = VK_PIPELINE_STAGE_TRANSFER_BIT;
         if (prevLayout == VK_IMAGE_LAYOUT_UNDEFINED || prevLayout == VK_IMAGE_LAYOUT_PREINITIALIZED) //first time
