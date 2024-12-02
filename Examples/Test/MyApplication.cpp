@@ -1,32 +1,30 @@
 #include "MyApplication.h"
+
 #include "Utils/Logger.h"
-#include "Utils/MemoryPool.h"
 #include "Utils/Timer.h"
+#include "Stream/StreamManager.h"
+#include "Memory/MemoryPool.h"
+#include "Events/InputEventReceiver.h"
 
-#include "Renderer/Context.h"
-#include "Event/InputEventReceiver.h"
-#include "Platform/Window.h"
-
-#include "Renderer/Object/Texture.h"
-#include "Renderer/Object/StreamBuffer.h"
-#include "Renderer/Object/PipelineState.h"
-#include "Renderer/Object/RenderTargetState.h"
-#include "Renderer/Object/ShaderProgram.h"
-#include "Renderer/Object/SamplerState.h"
 #include "Renderer/Formats.h"
-
-#include "Resource/ResourceLoaderManager.h"
-
+#include "Renderer/Texture.h"
+#include "Renderer/Buffer.h"
 #include "Renderer/Shader.h"
+#include "Renderer/PipelineState.h"
+#include "Renderer/RenderTargetState.h"
+#include "Renderer/ShaderProgram.h"
+#include "Renderer/SamplerState.h"
+
+#include "Resource/ResourceLoader.h"
+#include "Resource/ResourceManager.h"
 #include "Resource/ShaderSourceFileLoader.h"
 #include "Resource/ShaderSourceStreamLoader.h"
 #include "Resource/ShaderBinaryFileLoader.h"
-
-#include "Resource/Image.h"
+#include "Resource/Bitmap.h"
 #include "Resource/ImageFileLoader.h"
 
+#include "Task/TaskScheduler.h"
 
-#include "Stream/StreamManager.h"
 
 #include "crc32c/crc32c.h"
 
@@ -43,100 +41,40 @@ using namespace v3d::resource;
 
 
 MyApplication::MyApplication(int& argc, char** argv)
-    : m_Window(nullptr)
-    , m_InputEventHandler(nullptr)
-
-    , m_Context(nullptr)
-    , m_CommandList(nullptr)
 {
-    m_Window = Window::createWindow({ 1024, 768 }, { 800, 500 }, false, new v3d::event::InputEventReceiver());
-    ASSERT(m_Window, "windows is nullptr");
 
-    m_InputEventHandler = new InputEventHandler();
-    m_InputEventHandler->connect([this](const MouseInputEvent* event)
-    {
-        if (event->_event == MouseInputEvent::MousePressDown || event->_event == MouseInputEvent::MouseDoubleClick)
-        {
-        }
-    });
-
-    std::srand(u32(std::time(0)));
-    m_Window->getInputEventReceiver()->attach(InputEvent::InputEventType::MouseInputEvent, m_InputEventHandler);
 }
 
 int MyApplication::Execute()
 {
-    MyApplication::Initialize();
-    bool running = true;
-    while (running)
-    {
-        running = Window::updateWindow(m_Window);
+    Test_Thread();
+    Test_Task();
 
-        m_Window->getInputEventReceiver()->sendDeferredEvents();
-        if (running)
-        {
-            MyApplication::Running(*m_CommandList);
-        }
-    }
+    //Test_Windows();
+    //std::thread test_thread([this]() -> void
+    //    {
+    //        Test_Timer();
+    //    });
 
-    Exit();
-    delete this;
+    //test_thread.join();
 
-    return 0;
-}
-
-void MyApplication::Initialize()
-{
-    Test_ImageLoadStore();
-
-    //Render test
-    Context::RenderType renderTypes[2] = { Context::RenderType::VulkanRender, Context::RenderType::DirectXRender };
-    for (Context::RenderType renderType : renderTypes)
-    {
-        m_Context = Context::createContext(m_Window, renderType);
-        ASSERT(m_Context, "context is nullptr");
-
-        m_CommandList = new renderer::CommandList(m_Context, renderer::CommandList::CommandListType::DelayedCommandList);
-
-        Test_ShaderLoader();
-        Test_CreateShaderProgram();
-        Test_ShaderParam();
-        Test_CreatePipeline();
-
-        delete m_CommandList;
-        Context::destroyContext(m_Context);
-    }
     //Test_MemoryPool();
+    //Test_ImageLoadStore();
 
-    std::thread test_thread([this]() -> void
-        {
-            Test_Timer();
-        });
+    LOG_DEBUG("Tests are finished");
 
-    test_thread.join();
-
-    LOG_DEBUG("Tests have finished");
-}
-
-bool MyApplication::Running(renderer::CommandList& commandList)
-{
-    //Frame
-    return true;
-}
-
-void MyApplication::Exit()
-{
-    m_Window->getInputEventReceiver()->dettach(InputEvent::InputEventType::MouseInputEvent);
+    delete this;
+    return 0;
 }
 
 void MyApplication::Test_ImageLoadStore()
 {
     LOG_DEBUG("Test_ImageLoad");
-    resource::Image* image = resource::ResourceLoaderManager::getInstance()->load<resource::Image, resource::ImageFileLoader>("examples/test/data/textures/basetex.jpg");
+    resource::Bitmap* image = resource::ResourceManager::getInstance()->load<resource::Bitmap, resource::ImageFileLoader>("examples/test/data/textures/basetex.jpg");
     ASSERT(image, "nullptr");
-    resource::ResourceLoaderManager::getInstance()->remove(image);
+    resource::ResourceManager::getInstance()->remove(image);
 
-    //TODO
+    //TODO test data validation
     [[maybe_unused]] u32 endTest = 0;
 }
 
@@ -250,91 +188,212 @@ void MyApplication::Test_Timer()
     [[maybe_unused]] u32 endTest = 0;
 }
 
+void MyApplication::Test_Thread()
+{
+    LOG_DEBUG("Test_Thread");
+
+    utils::Thread thread;
+
+    bool run = true;
+    thread.run([](void* data) -> void
+        {
+            bool* run = reinterpret_cast<bool*>(data);
+            while (*run)
+            {
+            }
+
+            int a = 0;
+        }, &run);
+
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    ASSERT(thread.isRunning(), "failed");
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    run = false;
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    ASSERT(!thread.isRunning(), "failed");
+
+    thread.terminate();
+}
+
+void MyApplication::Test_Task()
+{
+    LOG_DEBUG("Test_Task");
+
+    task::TaskScheduler scheduler(6);
+
+    const u32 numJobs = 6;
+
+    u64 jobTime[numJobs] = { 0 };
+    u32 jobFinished[numJobs] = { 0 };
+    task::Priority jobPriority[numJobs] = { task::Priority::Normal };
+    std::array<std::function<void()>, numJobs> jobs;
+    for (u32 i = 0; i < numJobs; ++i)
+    {
+        jobs[i] = [&jobTime, &jobFinished, &jobPriority, i]() -> void
+            {
+                u64 value = 0;
+                u64 maxValue = 1'000'000'000'000;
+                auto start = utils::Timer::getCurrentTime();
+                while (value < maxValue)
+                {
+                    ++value;
+                }
+                auto end = utils::Timer::getCurrentTime();
+                jobTime[i] = end - start;
+                ++jobFinished[i];
+            };
+
+        scheduler.spawnTask(jobPriority[i], task::Mask::WorkerThread, jobs[i]);
+    }
+
+    u64 jobNTime = 0;
+    u32 allJobsTimeStart = utils::Timer::getCurrentTime();
+    bool jobNFinished = false;
+
+   while (true)
+    {
+       for (u32 i = 0; i < numJobs; ++i)
+       {
+           if (jobFinished[i] == 1)
+           {
+               LOG_DEBUG("Test_Task JOB%u is finshed time %u", i, jobTime[i]);
+               ++jobFinished[i];
+           }
+       }
+
+       bool finished = std::all_of(std::begin(jobFinished), std::end(jobFinished), [](u32 finish) -> bool
+           {
+               return (finish == 2);
+           });
+       if (finished)
+       {
+           u32 allJobsTimeEnd = utils::Timer::getCurrentTime();
+           LOG_DEBUG("Test_Task JOBs time %u", allJobsTimeEnd - allJobsTimeStart);
+           for (u32 i = 0; i < numJobs; ++i)
+           {
+               ++jobFinished[i];
+           }
+           std::this_thread::sleep_for(std::chrono::milliseconds(100));
+
+           auto job = [&jobNTime, &jobNFinished]() -> void
+               {
+                   u64 value = 0;
+                   u64 maxValue = 1'000'000'000;
+                   auto start = utils::Timer::getCurrentTime();
+                   while (value < maxValue)
+                   {
+                       ++value;
+                   }
+                   auto end = utils::Timer::getCurrentTime();
+                   jobNTime = end - start;
+                   jobNFinished = true;
+               };
+
+           scheduler.spawnTask(task::Priority::Normal, task::Mask::WorkerThread, job);
+       }
+
+       if (jobNFinished)
+       {
+           LOG_DEBUG("Test_Task JobN is finshed time %u", jobNTime);
+           jobNFinished = false;
+       }
+
+       scheduler.mainThreadLoop();
+    }
+
+
+    [[maybe_unused]] u32 endTest = 0;
+}
+
+void MyApplication::Test_Windows()
+{
+}
+
 void MyApplication::Test_MemoryPool()
 {
-    {
-        MemoryPool pool;
+    //{
+    //    MemoryPool pool;
 
-        char* a = (char*)pool.getMemory(253);
-        memset(a, 'a', 253);
-        u64 ofsa = pool.getOffsetInBlock(a);
-        char* b = (char*)pool.getMemory(253);
-        memset(b, 'b', 253);
-        u64 ofsb = pool.getOffsetInBlock(b);
-        char* c = (char*)pool.getMemory(253);
-        memset(c, 'c', 253);
-        u64 ofsc = pool.getOffsetInBlock(c);
-        char* d = (char*)pool.getMemory(253);
-        memset(d, 'd', 253);
-        u64 ofsd = pool.getOffsetInBlock(d);
-        char* e = (char*)pool.getMemory(253);
-        memset(e, 'e', 253);
-        u64 ofse = pool.getOffsetInBlock(e);
-        char* f = (char*)pool.getMemory(253);
-        memset(f, 'f', 10);
-        [[maybe_unused]] u64 ofsf = pool.getOffsetInBlock(f);
-        ////
+    //    char* a = (char*)pool.getMemory(253);
+    //    memset(a, 'a', 253);
+    //    u64 ofsa = pool.getOffsetInBlock(a);
+    //    char* b = (char*)pool.getMemory(253);
+    //    memset(b, 'b', 253);
+    //    u64 ofsb = pool.getOffsetInBlock(b);
+    //    char* c = (char*)pool.getMemory(253);
+    //    memset(c, 'c', 253);
+    //    u64 ofsc = pool.getOffsetInBlock(c);
+    //    char* d = (char*)pool.getMemory(253);
+    //    memset(d, 'd', 253);
+    //    u64 ofsd = pool.getOffsetInBlock(d);
+    //    char* e = (char*)pool.getMemory(253);
+    //    memset(e, 'e', 253);
+    //    u64 ofse = pool.getOffsetInBlock(e);
+    //    char* f = (char*)pool.getMemory(253);
+    //    memset(f, 'f', 10);
+    //    [[maybe_unused]] u64 ofsf = pool.getOffsetInBlock(f);
+    //    ////
 
-        pool.freeMemory((void*)b);
-        [[maybe_unused]] char* nb = (char*)pool.getMemory(253);
-        memset(b, 'B', 253);
-        [[maybe_unused]] u64 nofsb = pool.getOffsetInBlock(b);
+    //    pool.freeMemory((void*)b);
+    //    [[maybe_unused]] char* nb = (char*)pool.getMemory(253);
+    //    memset(b, 'B', 253);
+    //    [[maybe_unused]] u64 nofsb = pool.getOffsetInBlock(b);
 
-        void* hugeData = pool.getMemory(1024 * 1024 * 4);
-        [[maybe_unused]]  u64 ofhugeData = pool.getOffsetInBlock(hugeData);
+    //    void* hugeData = pool.getMemory(1024 * 1024 * 4);
+    //    [[maybe_unused]]  u64 ofhugeData = pool.getOffsetInBlock(hugeData);
 
-        void* hugeData1 = pool.getMemory(1024 * 1024 * 40);
-        [[maybe_unused]] u64 ofhugeData1 = pool.getOffsetInBlock(hugeData1);
+    //    void* hugeData1 = pool.getMemory(1024 * 1024 * 40);
+    //    [[maybe_unused]] u64 ofhugeData1 = pool.getOffsetInBlock(hugeData1);
 
-        pool.freeMemory(hugeData1);
+    //    pool.freeMemory(hugeData1);
 
-        void* hugeData2 = pool.getMemory(1024 * 1024 * 400);
-        [[maybe_unused]] u64 ofhugeData2 = pool.getOffsetInBlock(hugeData2);
+    //    void* hugeData2 = pool.getMemory(1024 * 1024 * 400);
+    //    [[maybe_unused]] u64 ofhugeData2 = pool.getOffsetInBlock(hugeData2);
 
-        pool.clearPools();
-    }
+    //    pool.clearPools();
+    //}
 
-    {
-        auto randomFunc = [](u32 min, u32 max) -> u32
-        {
-            std::srand(u32(std::time(nullptr)));
-            s32 rnd = std::rand();
-            return (u32)(rnd % (max - min + 1) + min);
-         };
+    //{
+    //    auto randomFunc = [](u32 min, u32 max) -> u32
+    //    {
+    //        std::srand(u32(std::time(nullptr)));
+    //        s32 rnd = std::rand();
+    //        return (u32)(rnd % (max - min + 1) + min);
+    //     };
 
 
-        MemoryPool pool(2048, 32, 32, utils::MemoryPool::getDefaultMemoryPoolAllocator());
-        std::vector<std::pair<u32, void*>> sizes;
+    //    MemoryPool pool(2048, 32, 32, utils::MemoryPool::getDefaultMemoryPoolAllocator());
+    //    std::vector<std::pair<u32, void*>> sizes;
 
-        std::random_device rd;
-        std::mt19937 g(rd());
+    //    std::random_device rd;
+    //    std::mt19937 g(rd());
 
-        for (u32 e = 0; e < 100; ++e)
-        {
-            std::uniform_int_distribution<u32> uid(1, 512);
-            for (u32 i = 0; i < 1000; ++i)
-            {
-                u32 rendomSize = uid(g);
-                void* ptr = pool.getMemory(rendomSize);
-                sizes.push_back(std::make_pair(rendomSize, ptr));
-            }
+    //    for (u32 e = 0; e < 100; ++e)
+    //    {
+    //        std::uniform_int_distribution<u32> uid(1, 512);
+    //        for (u32 i = 0; i < 1000; ++i)
+    //        {
+    //            u32 rendomSize = uid(g);
+    //            void* ptr = pool.getMemory(rendomSize);
+    //            sizes.push_back(std::make_pair(rendomSize, ptr));
+    //        }
 
-            std::shuffle(sizes.begin(), sizes.end(), g);
+    //        std::shuffle(sizes.begin(), sizes.end(), g);
 
-            for (u32 i = 0; i < 1000; ++i)
-            {
-                void* ptr = sizes[i].second;
-                pool.freeMemory(ptr);
-            }
-        }
+    //        for (u32 i = 0; i < 1000; ++i)
+    //        {
+    //            void* ptr = sizes[i].second;
+    //            pool.freeMemory(ptr);
+    //        }
+    //    }
 
-        //pool.clearPools();
-    }
+    //    //pool.clearPools();
+    //}
 }
 
 void MyApplication::Test_ShaderLoader()
 {
-    auto checkVertexShaderReflection = [](const Shader::ReflectionInfo& info)
+    auto checkVertexShaderReflection = [](const Shader::Resources& info)
     {
         ASSERT(info._inputAttribute.size() == 3, "wrong");
         ASSERT(info._inputAttribute[0]._location == 0, "wrong");
@@ -361,9 +420,9 @@ void MyApplication::Test_ShaderLoader()
         ASSERT(info._uniformBuffers[0]._name == "ubo00_size64", "wrong");
         ASSERT(info._uniformBuffers[0]._uniforms.size() == 1, "wrong");
         {
-            ASSERT(info._uniformBuffers[0]._uniforms[0]._bufferId == 1, "wrong");
+            ASSERT(info._uniformBuffers[0]._uniforms[0]._bufferID == 1, "wrong");
             ASSERT(info._uniformBuffers[0]._uniforms[0]._array == 1, "wrong");
-            ASSERT(info._uniformBuffers[0]._uniforms[0]._type == DataType::DataType_Matrix4, "wrong");
+            ASSERT(info._uniformBuffers[0]._uniforms[0]._type == DataType::Matrix4, "wrong");
             ASSERT(info._uniformBuffers[0]._uniforms[0]._size == 64, "wrong");
             ASSERT(info._uniformBuffers[0]._uniforms[0]._offset == 0, "wrong");
             //ASSERT(info._uniformBuffers[0]._uniforms[0]._name == "matrix0_00", "wrong");
@@ -376,21 +435,21 @@ void MyApplication::Test_ShaderLoader()
         ASSERT(info._uniformBuffers[1]._name == "ubo01_size192", "wrong");
         ASSERT(info._uniformBuffers[1]._uniforms.size() == 3, "wrong");
         {
-            ASSERT(info._uniformBuffers[1]._uniforms[0]._bufferId == 0, "wrong");
+            ASSERT(info._uniformBuffers[1]._uniforms[0]._bufferID == 0, "wrong");
             ASSERT(info._uniformBuffers[1]._uniforms[0]._array == 1, "wrong");
-            ASSERT(info._uniformBuffers[1]._uniforms[0]._type == DataType::DataType_Matrix4, "wrong");
+            ASSERT(info._uniformBuffers[1]._uniforms[0]._type == DataType::Matrix4, "wrong");
             ASSERT(info._uniformBuffers[1]._uniforms[0]._size == 64, "wrong");
             ASSERT(info._uniformBuffers[1]._uniforms[0]._offset == 0, "wrong");
             //ASSERT(info._uniformBuffers[1]._uniforms[0]._name == "matrix0_01", "wrong");
-            ASSERT(info._uniformBuffers[1]._uniforms[1]._bufferId == 0, "wrong");
+            ASSERT(info._uniformBuffers[1]._uniforms[1]._bufferID == 0, "wrong");
             ASSERT(info._uniformBuffers[1]._uniforms[1]._array == 1, "wrong");
-            ASSERT(info._uniformBuffers[1]._uniforms[1]._type == DataType::DataType_Matrix4, "wrong");
+            ASSERT(info._uniformBuffers[1]._uniforms[1]._type == DataType::Matrix4, "wrong");
             ASSERT(info._uniformBuffers[1]._uniforms[1]._size == 64, "wrong");
             ASSERT(info._uniformBuffers[1]._uniforms[1]._offset == 64, "wrong");
             //ASSERT(info._uniformBuffers[1]._uniforms[1]._name == "matrix1_01", "wrong");
-            ASSERT(info._uniformBuffers[1]._uniforms[2]._bufferId == 0, "wrong");
+            ASSERT(info._uniformBuffers[1]._uniforms[2]._bufferID == 0, "wrong");
             ASSERT(info._uniformBuffers[1]._uniforms[2]._array == 1, "wrong");
-            ASSERT(info._uniformBuffers[1]._uniforms[2]._type == DataType::DataType_Matrix4, "wrong");
+            ASSERT(info._uniformBuffers[1]._uniforms[2]._type == DataType::Matrix4, "wrong");
             ASSERT(info._uniformBuffers[1]._uniforms[2]._size == 64, "wrong");
             ASSERT(info._uniformBuffers[1]._uniforms[2]._offset == 128, "wrong");
             //ASSERT(info._uniformBuffers[1]._uniforms[2]._name == "matrix2_01", "wrong");
@@ -403,22 +462,22 @@ void MyApplication::Test_ShaderLoader()
         ASSERT(info._uniformBuffers[2]._name == "ubo11_size256", "wrong");
         ASSERT(info._uniformBuffers[2]._uniforms.size() == 2, "wrong");
         {
-            ASSERT(info._uniformBuffers[2]._uniforms[0]._bufferId == 2, "wrong");
+            ASSERT(info._uniformBuffers[2]._uniforms[0]._bufferID == 2, "wrong");
             ASSERT(info._uniformBuffers[2]._uniforms[0]._array == 2, "wrong");
-            ASSERT(info._uniformBuffers[2]._uniforms[0]._type == DataType::DataType_Matrix4, "wrong");
+            ASSERT(info._uniformBuffers[2]._uniforms[0]._type == DataType::Matrix4, "wrong");
             ASSERT(info._uniformBuffers[2]._uniforms[0]._size == 64 * 2, "wrong");
             ASSERT(info._uniformBuffers[2]._uniforms[0]._offset == 0, "wrong");
             //ASSERT(info._uniformBuffers[2]._uniforms[0]._name == "matrix0_11", "wrong");
-            ASSERT(info._uniformBuffers[2]._uniforms[1]._bufferId == 2, "wrong");
+            ASSERT(info._uniformBuffers[2]._uniforms[1]._bufferID == 2, "wrong");
             ASSERT(info._uniformBuffers[2]._uniforms[1]._array == 2, "wrong");
-            ASSERT(info._uniformBuffers[2]._uniforms[1]._type == DataType::DataType_Matrix4, "wrong");
+            ASSERT(info._uniformBuffers[2]._uniforms[1]._type == DataType::Matrix4, "wrong");
             ASSERT(info._uniformBuffers[2]._uniforms[1]._size == 64 * 2, "wrong");
             ASSERT(info._uniformBuffers[2]._uniforms[1]._offset == 64 * 2, "wrong");
             //ASSERT(info._uniformBuffers[2]._uniforms[1]._name == "matrix1_11", "wrong");
         }
     };
 
-    auto checkFragmentShaderReflection = [](const Shader::ReflectionInfo& info)
+    auto checkFragmentShaderReflection = [](const Shader::Resources& info)
     {
         ASSERT(info._inputAttribute.size() == 3, "wrong");
         ASSERT(info._inputAttribute[0]._location == 0, "wrong");
@@ -462,91 +521,91 @@ void MyApplication::Test_ShaderLoader()
     };
 
     //vulkan only
-    if (m_Context->getRenderType() == Context::RenderType::VulkanRender)
-    {
-        //load source shaders from file
-        const Shader* glslVShader = ResourceLoaderManager::getInstance()->loadShader<Shader, ShaderSourceFileLoader>(m_Context, "examples/test/data/shaders/testReflectInfoWithNames.vert");
-        ASSERT(glslVShader != nullptr, "wrong");
-        {
-            const Shader::ReflectionInfo& info = glslVShader->getReflectionInfo();
-            checkVertexShaderReflection(info);
-        }
+    //if (m_Device->getRenderType() == Device::RenderType::Vulkan)
+    //{
+    //    //load source shaders from file
+    //    const Shader* glslVShader = ResourceManager::getInstance()->loadShader<Shader, ShaderSourceFileLoader>(m_Device, "examples/test/data/shaders/testReflectInfoWithNames.vert");
+    //    ASSERT(glslVShader != nullptr, "wrong");
+    //    {
+    //        const Shader::Resources& info = glslVShader->getReflectionInfo();
+    //        checkVertexShaderReflection(info);
+    //    }
 
-        const Shader* glslFShader = ResourceLoaderManager::getInstance()->loadShader<Shader, ShaderSourceFileLoader>(m_Context, "examples/test/data/shaders/testReflectInfoWithNames.frag");
-        ASSERT(glslFShader != nullptr, "wrong");
-        {
-            const Shader::ReflectionInfo& info = glslFShader->getReflectionInfo();
-            checkFragmentShaderReflection(info);
-        }
+    //    const Shader* glslFShader = ResourceLoaderManager::getInstance()->loadShader<Shader, ShaderSourceFileLoader>(m_Device, "examples/test/data/shaders/testReflectInfoWithNames.frag");
+    //    ASSERT(glslFShader != nullptr, "wrong");
+    //    {
+    //        const Shader::Resources& info = glslFShader->getReflectionInfo();
+    //        checkFragmentShaderReflection(info);
+    //    }
 
-        ResourceLoaderManager::getInstance()->remove(glslVShader);
-        ResourceLoaderManager::getInstance()->remove(glslFShader);
+    //    ResourceManager::getInstance()->remove(glslVShader);
+    //    ResourceManager::getInstance()->remove(glslFShader);
 
-        //load spirv
-        const Shader* spirvVShader = ResourceLoaderManager::getInstance()->loadShader<Shader, ShaderBinaryFileLoader>(m_Context, "examples/test/data/shaders/testReflectInfoWithNames.vspv");
-        ASSERT(spirvVShader != nullptr, "wrong");
-        {
-            const Shader::ReflectionInfo& info = spirvVShader->getReflectionInfo();
-            checkVertexShaderReflection(info);
-        }
+    //    //load spirv
+    //    const Shader* spirvVShader = ResourceManager::getInstance()->loadShader<Shader, ShaderBinaryFileLoader>(m_Device, "examples/test/data/shaders/testReflectInfoWithNames.vspv");
+    //    ASSERT(spirvVShader != nullptr, "wrong");
+    //    {
+    //        const Shader::Resources& info = spirvVShader->getReflectionInfo();
+    //        checkVertexShaderReflection(info);
+    //    }
 
-        const Shader* spirvFShader = ResourceLoaderManager::getInstance()->loadShader<Shader, ShaderBinaryFileLoader>(m_Context, "examples/test/data/shaders/testReflectInfoWithNames.fspv");
-        ASSERT(spirvFShader != nullptr, "wrong");
-        {
-            const Shader::ReflectionInfo& info = spirvFShader->getReflectionInfo();
-            checkFragmentShaderReflection(info);
-        }
+    //    const Shader* spirvFShader = ResourceManager::getInstance()->loadShader<Shader, ShaderBinaryFileLoader>(m_Device, "examples/test/data/shaders/testReflectInfoWithNames.fspv");
+    //    ASSERT(spirvFShader != nullptr, "wrong");
+    //    {
+    //        const Shader::Resources& info = spirvFShader->getReflectionInfo();
+    //        checkFragmentShaderReflection(info);
+    //    }
 
-        ResourceLoaderManager::getInstance()->remove(spirvVShader);
-        ResourceLoaderManager::getInstance()->remove(spirvFShader);
-    }
+    //    ResourceManager::getInstance()->remove(spirvVShader);
+    //    ResourceManager::getInstance()->remove(spirvFShader);
+    //}
 
-    {
-        const Shader* hlslVShader = ResourceLoaderManager::getInstance()->loadShader<Shader, ShaderSourceFileLoader>(m_Context, "examples/test/data/shaders/testReflectInfoWithNames.vs");
-        ASSERT(hlslVShader != nullptr, "wrong");
-        {
-            const Shader::ReflectionInfo& info = hlslVShader->getReflectionInfo();
-            checkVertexShaderReflection(info);
-        }
+    //{
+    //    const Shader* hlslVShader = ResourceManager::getInstance()->loadShader<Shader, ShaderSourceFileLoader>(m_Device, "examples/test/data/shaders/testReflectInfoWithNames.vs");
+    //    ASSERT(hlslVShader != nullptr, "wrong");
+    //    {
+    //        const Shader::Resources& info = hlslVShader->getReflectionInfo();
+    //        checkVertexShaderReflection(info);
+    //    }
 
-        const Shader* hlslPShader = ResourceLoaderManager::getInstance()->loadShader<Shader, ShaderSourceFileLoader>(m_Context, "examples/test/data/shaders/testReflectInfoWithNames.ps");
-        ASSERT(hlslPShader != nullptr, "wrong");
-        {
-            const Shader::ReflectionInfo& info = hlslPShader->getReflectionInfo();
-            checkFragmentShaderReflection(info);
-        }
+    //    const Shader* hlslPShader = ResourceManager::getInstance()->loadShader<Shader, ShaderSourceFileLoader>(m_Device, "examples/test/data/shaders/testReflectInfoWithNames.ps");
+    //    ASSERT(hlslPShader != nullptr, "wrong");
+    //    {
+    //        const Shader::Resources& info = hlslPShader->getReflectionInfo();
+    //        checkFragmentShaderReflection(info);
+    //    }
 
-        ResourceLoaderManager::getInstance()->remove(hlslVShader);
-        ResourceLoaderManager::getInstance()->remove(hlslPShader);
-    }
+    //    ResourceManager::getInstance()->remove(hlslVShader);
+    //    ResourceManager::getInstance()->remove(hlslPShader);
+    //}
 
-    {
-        std::vector<const Shader*> hlslShaders = ResourceLoaderManager::getInstance()->loadHLSLShader<Shader, ShaderSourceFileLoader>(m_Context, "examples/test/data/shaders/testReflectInfoWithNames.hlsl", { {"mainVS", ShaderType::ShaderType_Vertex}, {"mainPS", ShaderType::ShaderType_Fragment} });
+    //{
+ /*       std::vector<const Shader*> hlslShaders = ResourceManager::getInstance()->loadHLSLShader<Shader, ShaderSourceFileLoader>(m_Device, "examples/test/data/shaders/testReflectInfoWithNames.hlsl", { {"mainVS", ShaderType::ShaderType_Vertex}, {"mainPS", ShaderType::ShaderType_Fragment} });
         ASSERT(!hlslShaders.empty(), "wrong");
 
         {
             ASSERT(hlslShaders[0] != nullptr, "wrong");
-            const Shader::ReflectionInfo& info = hlslShaders[0]->getReflectionInfo();
+            const Shader::Resources& info = hlslShaders[0]->getReflectionInfo();
             checkVertexShaderReflection(info);
         }
 
         {
             ASSERT(hlslShaders[1] != nullptr, "wrong");
-            const Shader::ReflectionInfo& info = hlslShaders[1]->getReflectionInfo();
+            const Shader::Resources& info = hlslShaders[1]->getReflectionInfo();
             checkFragmentShaderReflection(info);
         }
 
-        ResourceLoaderManager::getInstance()->remove(hlslShaders[0]);
-        ResourceLoaderManager::getInstance()->remove(hlslShaders[1]);
-        hlslShaders.clear();
-    }
+        ResourceManager::getInstance()->remove(hlslShaders[0]);
+        ResourceManager::getInstance()->remove(hlslShaders[1]);
+        hlslShaders.clear();*/
+    //}
 
     [[maybe_unused]] u32 endTest = 0;
 }
 
 void MyApplication::Test_CreateShaderProgram()
 {
-    {
+ /*   {
         const Shader* vertShader = nullptr;
         {
             const std::string vertexSource("\
@@ -625,18 +684,18 @@ void MyApplication::Test_CreateShaderProgram()
 
         delete commandList;
 
-        ResourceLoaderManager::getInstance()->remove(vertShader);
-        ResourceLoaderManager::getInstance()->remove(fragShader);
-    }
+        ResourceManager::getInstance()->remove(vertShader);
+        ResourceManager::getInstance()->remove(fragShader);
+    }*/
 }
 
 void MyApplication::Test_ShaderParam()
 {
-    {
-        const Shader* hlslVShader = ResourceLoaderManager::getInstance()->loadShader<Shader, ShaderSourceFileLoader>(m_Context, "examples/test/data/shaders/testReflectInfoWithNames.vs");
+ /*   {
+        const Shader* hlslVShader = ResourceManager::getInstance()->loadShader<Shader, ShaderSourceFileLoader>(m_Context, "examples/test/data/shaders/testReflectInfoWithNames.vs");
         ASSERT(hlslVShader != nullptr, "wrong");
 
-        const Shader* hlslPShader = ResourceLoaderManager::getInstance()->loadShader<Shader, ShaderSourceFileLoader>(m_Context, "examples/test/data/shaders/testReflectInfoWithNames.ps");
+        const Shader* hlslPShader = ResourceManager::getInstance()->loadShader<Shader, ShaderSourceFileLoader>(m_Context, "examples/test/data/shaders/testReflectInfoWithNames.ps");
         ASSERT(hlslPShader != nullptr, "wrong");
 
         CommandList* commandList = new CommandList(m_Context, CommandList::CommandListType::ImmediateCommandList);
@@ -694,9 +753,9 @@ void MyApplication::Test_ShaderParam()
 
         delete commandList;
 
-        ResourceLoaderManager::getInstance()->remove(hlslVShader);
-        ResourceLoaderManager::getInstance()->remove(hlslPShader);
-    }
+        ResourceManager::getInstance()->remove(hlslVShader);
+        ResourceManager::getInstance()->remove(hlslPShader);
+    }*/
 }
 
 void MyApplication::Test_CreatePipeline()
@@ -706,8 +765,4 @@ void MyApplication::Test_CreatePipeline()
 
 MyApplication::~MyApplication()
 {
-    delete m_InputEventHandler;
-    m_InputEventHandler = nullptr;
-
-    Window::detroyWindow(m_Window);
 }

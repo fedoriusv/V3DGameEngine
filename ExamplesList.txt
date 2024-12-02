@@ -2,3 +2,4 @@ CreateWindow
 ClearColor
 SimpleTriangle
 DrawMesh
+Test
