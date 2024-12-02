@@ -61,8 +61,25 @@ bool Platform::setThreadName(std::thread& thread, const std::string& name)
 #pragma warning(pop)
     return false;
 }
+
+bool Platform::setThreadAffinityMask(std::thread& thread, u64 mask)
+{
+    HANDLE hThread = static_cast<HANDLE>(thread.native_handle());
+    if (::SetThreadAffinityMask(hThread, (DWORD_PTR)mask))
+    {
+        return true;
+    }
+
+    return false;
+}
+
 #else
 bool Platform::setThreadName(std::thread& thread, const std::string& name)
+{
+    return false;
+}
+
+bool Platform::setThreadAffinityMask(std::thread& thread, u64 mask)
 {
     return false;
 }

@@ -33,7 +33,12 @@ bool Thread::run(ThreadCallback callback, void* userData)
     m_userData = userData;
     m_isRunning.store(true, std::memory_order_release);
     
-    std::thread oldThread = std::exchange(m_thread, std::thread(callback, userData));
+    std::thread oldThread = std::exchange(m_thread, std::thread([this]() -> void
+        {
+            m_callback(m_userData);
+            m_isRunning.store(false, std::memory_order_release);
+
+        }));
     if (oldThread.joinable())
     {
         oldThread.join();
@@ -85,6 +90,11 @@ void Thread::setName(const std::string& name)
 const std::string& Thread::getName() const
 {
     return m_name;
+}
+
+void Thread::setAffinityMask(u64 mask)
+{
+    platform::Platform::setThreadAffinityMask(m_thread, mask);
 }
 
 } //namespace utils

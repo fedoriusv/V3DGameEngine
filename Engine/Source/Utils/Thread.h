@@ -35,6 +35,8 @@ namespace utils
         void                    setName(const std::string& name);
         const std::string&      getName() const;
 
+        void                    setAffinityMask(u64 mask);
+
     private:
 
         std::thread             m_thread;
