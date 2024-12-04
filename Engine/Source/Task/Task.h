@@ -1,11 +1,14 @@
 #pragma once
 
 #include "Common.h"
+#include "TaskContainers.h"
 
 namespace v3d
 {
 namespace task
 {
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
+
     typedef void(*Fn_construct)(void*, void*);
     typedef void(*Fn_destruct)(void*);
     typedef void(*Fn_entryPoint)(void*);
@@ -17,7 +20,14 @@ namespace task
         Fn_entryPoint _entryPoint;
     };
 
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    /**
+    * @brief Size of functor
+    */
     constexpr u32 k_memoryBlockSize = 512;
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     template<typename Func>
     FunctionType getFunctionType()
@@ -28,7 +38,7 @@ namespace task
             //Fn_construct
             [](void* mem, void* data) -> void
                 {
-                    new(mem) Func(std::forward<Func>(*static_cast<Func*>(data)));
+                    V3D_PLACMENT_NEW(mem, Func(std::forward<Func>(*static_cast<Func*>(data))));
                 },
             //Fn_destruct
             [](void* func) -> void
@@ -43,32 +53,89 @@ namespace task
         };
     }
 
-    enum class Priority
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    /**
+    * @brief TaskPriority enum
+    */
+    enum class TaskPriority
     {
         Normal,
         High,
     };
 
-    enum class Mask
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    /**
+    * @brief Mask enum
+    */
+    enum class TaskMask
     {
         AnyThread,
         MainThread,
         WorkerThread,
     };
 
-    class Task
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    enum TaskStatus
+    {
+        Created,
+        Queued,
+        Executing,
+        Completed,
+        Deleted
+    };
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    /**
+    * @brief Task struct
+    */
+    struct Task : public ThreadSafeNode<Task>
     {
     public:
 
-        Task() noexcept;
+        Task() noexcept = default;
 
-        Priority        m_priority;
-        Mask            m_mask;
-        Fn_entryPoint   m_call;
-        Fn_destruct     m_destruct;
-        c8              m_memBlock[k_memoryBlockSize];
-        std::string     m_name;
+        TaskPriority             _priority;
+        TaskMask                 _mask;
+        Fn_entryPoint            _call;
+        Fn_destruct              _destruct;
+        c8                       _memBlock[k_memoryBlockSize];
+        std::string              _name;
+
+        //std::atomic<TaskStatus>  _result;
     };
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    class TaskCounter
+    {
+    public:
+
+        explicit TaskCounter(u32 value) noexcept;
+        ~TaskCounter();
+
+        TaskCounter(const TaskCounter&) = delete;
+        TaskCounter& operator=(TaskCounter&) = delete;
+
+        u32 wait();
+
+        void increment();
+        void decrement();
+
+        bool compare_exchange(u32 prev, u32 next);
+
+    private:
+        std::atomic<u32>    m_counter;
+        //TODO lock free
+        std::mutex          m_mutex;
+        std::vector<Task*>  m_list;
+    };
+
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
 
 } // namesapce task
 } // namespace v3d

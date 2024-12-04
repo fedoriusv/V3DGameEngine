@@ -8,10 +8,6 @@ namespace utils
 {
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    typedef std::function<void(void*)> ThreadCallback;
-
-    /////////////////////////////////////////////////////////////////////////////////////////////////////
-
     /**
     * @brief Thread class
     */
@@ -25,7 +21,9 @@ namespace utils
         static const std::thread::id    getCurrentThread();
         static const std::thread::id    getMainThreadId();
 
-        bool                    run(ThreadCallback callback, void* userData);
+        template<typename Func, typename...Args>
+        bool                    run(Func&& func, Args&&... args);
+
         void                    terminate(bool wait = false);
 
         bool                    isRunning();
@@ -41,14 +39,44 @@ namespace utils
 
         std::thread             m_thread;
         std::atomic_bool        m_isRunning;
+        std::function<void()>   m_callback;
 
         std::string             m_name;
 
-        void*                   m_userData;
-        ThreadCallback          m_callback;
-
         static std::thread::id  s_mainThreadId;
     };
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    template<typename Func, typename ...Args>
+    inline bool Thread::run(Func&& func, Args && ...args)
+    {
+        if (m_isRunning.load(std::memory_order_acquire))
+        {
+            return true;
+        }
+
+        m_callback = std::bind(std::forward<Func>(func), std::forward<Args>(args)...);
+        std::thread oldThread = std::exchange(m_thread, std::thread([this]() -> void
+            {
+                m_isRunning.store(true, std::memory_order_release);
+                m_callback();
+                m_isRunning.store(false, std::memory_order_release);
+
+            }));
+
+        if (oldThread.joinable())
+        {
+            oldThread.join();
+        }
+
+        if (!m_thread.joinable())
+        {
+            m_isRunning.store(false, std::memory_order_release);
+        }
+
+        return m_isRunning.load(std::memory_order_acquire);
+    }
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 

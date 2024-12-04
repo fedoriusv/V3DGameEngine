@@ -47,7 +47,9 @@ MyApplication::MyApplication(int& argc, char** argv)
 
 int MyApplication::Execute()
 {
+    //Test_Timer();
     Test_Thread();
+    //Test_TaskContainters();
     Test_Task();
 
     //Test_Windows();
@@ -215,6 +217,52 @@ void MyApplication::Test_Thread()
     thread.terminate();
 }
 
+void MyApplication::Test_TaskContainters()
+{
+    struct Val : task::ThreadSafeNode<Val>
+    {
+        int a;
+    };
+
+    Val a; a.a = 1;
+    Val b; b.a = 2;
+    Val c; c.a = 3;
+    Val d; d.a = 4;
+
+    task::ThreadSafeStack<Val> st;
+    st.push(&a);
+    st.push(&b);
+    st.push(&c);
+    st.push(&d);
+
+    Val* sva = st.pop();
+    ASSERT(sva->a == 4, "must be the same");
+    Val* svb = st.pop();
+    ASSERT(svb->a == 3, "must be the same");
+    Val* svc = st.pop();
+    ASSERT(svc->a == 2, "must be the same");
+    Val* svd = st.pop();
+    ASSERT(svd->a == 1, "must be the same");
+
+    task::ThreadSafeQueue<Val> qt;
+
+
+
+    qt.enqueue(&a);
+    qt.enqueue(&b);
+    qt.enqueue(&c);
+    qt.enqueue(&d);
+
+    Val* qva = qt.dequeue();
+    ASSERT(qva->a == 1, "must be the same");
+    Val* qvb = qt.dequeue();
+    ASSERT(qvb->a == 2, "must be the same");
+    Val* qvc = qt.dequeue();
+    ASSERT(qvc->a == 3, "must be the same");
+    Val* qvd = qt.dequeue();
+    ASSERT(qvd->a == 4, "must be the same");
+}
+
 void MyApplication::Test_Task()
 {
     LOG_DEBUG("Test_Task");
@@ -225,14 +273,14 @@ void MyApplication::Test_Task()
 
     u64 jobTime[numJobs] = { 0 };
     u32 jobFinished[numJobs] = { 0 };
-    task::Priority jobPriority[numJobs] = { task::Priority::Normal };
+    task::TaskPriority jobPriority[numJobs] = { task::TaskPriority::Normal };
     std::array<std::function<void()>, numJobs> jobs;
     for (u32 i = 0; i < numJobs; ++i)
     {
         jobs[i] = [&jobTime, &jobFinished, &jobPriority, i]() -> void
             {
                 u64 value = 0;
-                u64 maxValue = 1'000'000'000'000;
+                u64 maxValue = 1'000'000'000;
                 auto start = utils::Timer::getCurrentTime();
                 while (value < maxValue)
                 {
@@ -243,7 +291,7 @@ void MyApplication::Test_Task()
                 ++jobFinished[i];
             };
 
-        scheduler.spawnTask(jobPriority[i], task::Mask::WorkerThread, jobs[i]);
+        scheduler.executeTask(jobPriority[i], task::TaskMask::WorkerThread, jobs[i]);
     }
 
     u64 jobNTime = 0;
@@ -289,7 +337,7 @@ void MyApplication::Test_Task()
                    jobNFinished = true;
                };
 
-           scheduler.spawnTask(task::Priority::Normal, task::Mask::WorkerThread, job);
+           scheduler.executeTask(task::TaskPriority::Normal, task::TaskMask::WorkerThread, job);
        }
 
        if (jobNFinished)

@@ -14,6 +14,7 @@ private:
     void Test_Timer();
     void Test_MemoryPool();
     void Test_Thread();
+    void Test_TaskContainters();
     void Test_Task();
     void Test_Windows();
 
