@@ -9,49 +9,7 @@ namespace task
 {
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    typedef void(*Fn_construct)(void*, void*);
-    typedef void(*Fn_destruct)(void*);
-    typedef void(*Fn_entryPoint)(void*);
-
-    struct FunctionType
-    {
-        Fn_construct  _construct;
-        Fn_destruct   _destruct;
-        Fn_entryPoint _entryPoint;
-    };
-
-    /////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    /**
-    * @brief Size of functor
-    */
-    constexpr u32 k_memoryBlockSize = 512;
-
-    /////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    template<typename Func>
-    FunctionType getFunctionType()
-    {
-        static_assert(sizeof(Func) <= k_memoryBlockSize, "Out of memory");
-        return FunctionType
-        {
-            //Fn_construct
-            [](void* mem, void* data) -> void
-                {
-                    V3D_PLACMENT_NEW(mem, Func(std::forward<Func>(*static_cast<Func*>(data))));
-                },
-            //Fn_destruct
-            [](void* func) -> void
-                {
-                    (static_cast<Func*>(func))->~Func();
-                },
-            //Fn_entryPoint
-            [](void* func) -> void
-                {
-                    (*static_cast<Func*>(func))();
-                }
-        };
-    }
+    class TaskDispatcher;
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -78,62 +36,113 @@ namespace task
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    enum TaskStatus
-    {
-        Created,
-        Queued,
-        Executing,
-        Completed,
-        Deleted
-    };
-
-    /////////////////////////////////////////////////////////////////////////////////////////////////////
-
     /**
     * @brief Task struct
     */
-    struct Task : public ThreadSafeNode<Task>
+    class Task : protected ThreadSafeNode<Task>
     {
     public:
 
-        Task() noexcept = default;
+        enum Status
+        {
+            Empty,
+            Created,
+            Scheduled,
+            Waiting,
+            Executing,
+            Completed,
+        };
 
-        TaskPriority             _priority;
-        TaskMask                 _mask;
-        Fn_entryPoint            _call;
-        Fn_destruct              _destruct;
-        c8                       _memBlock[k_memoryBlockSize];
-        std::string              _name;
+        Task() noexcept;
+        ~Task() = default;
 
-        //std::atomic<TaskStatus>  _result;
-    };
+        template<typename Func, typename ...Args>
+        void init(Func&& func, Args&& ...args)
+        {
+            m_func = std::bind(std::forward<Func>(func), std::forward<Args>(args)...);
+            /*m_func = [ifn = std::move(fn)]()
+                {
+                    ifn();
+                };*/
+        }
 
-    /////////////////////////////////////////////////////////////////////////////////////////////////////
+        template<typename Func, typename ...Args>
+        void init(const std::string& name, Func&& func, Args&& ...args)
+        {
+            m_name = name;
+            m_func = std::bind(std::forward<Func>(func), std::forward<Args>(args)...);
+            /*m_func = [ifn = std::move(fn)]()
+                {
+                    ifn();
+                };*/
+        }
 
-    class TaskCounter
-    {
-    public:
+        template<typename Func, typename ...Args>
+        void cond(Func&& func, Args&& ...args)
+        {
+            m_cond = std::bind(std::forward<Func>(func), std::forward<Args>(args)...);
+            /*m_cond = [ifn = std::move(fn)]()
+                {
+                    return ifn();
+                };*/
+        }
 
-        explicit TaskCounter(u32 value) noexcept;
-        ~TaskCounter();
+        bool isCompeted() const;
+        const std::string& getName() const;
 
-        TaskCounter(const TaskCounter&) = delete;
-        TaskCounter& operator=(TaskCounter&) = delete;
-
-        u32 wait();
-
-        void increment();
-        void decrement();
-
-        bool compare_exchange(u32 prev, u32 next);
+        void waitCompetition();
 
     private:
-        std::atomic<u32>    m_counter;
-        //TODO lock free
-        std::mutex          m_mutex;
-        std::vector<Task*>  m_list;
+
+        friend TaskDispatcher;
+
+        TaskPriority                m_priority;
+        TaskMask                    m_mask;
+        std::atomic<Status>         m_result;
+        std::string                 m_name;
+        //TODO own allocator
+        std::function<void()>       m_func;
+        std::function<bool()>       m_cond;
+        std::condition_variable_any m_wait;
     };
 
+    inline Task::Task() noexcept
+        : m_priority(TaskPriority::Normal)
+        , m_mask(TaskMask::AnyThread)
+        , m_result(Empty)
+    {
+    }
+
+    inline bool Task::isCompeted() const
+    {
+        return m_result.load(std::memory_order_relaxed) > Status::Executing;
+    }
+
+    inline const std::string& Task::getName() const
+    {
+        return m_name;
+    }
+
+    inline void Task::waitCompetition()
+    {
+        struct FakeMutex
+        {
+            void lock()
+            {
+                int b;
+            };
+            void unlock()
+            {
+                int a = 0;
+            };
+        };
+        FakeMutex mutex;
+
+        m_wait.wait(mutex, [this]() -> bool
+            {
+                return isCompeted();
+            });
+    }
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 

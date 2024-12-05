@@ -11,9 +11,8 @@ TaskDispatcher::TaskDispatcher(u32 numWorkingThreads, DispatcherFlags flags) noe
     , m_numWatingTasks(0)
     , m_flags(flags)
 {
-    //TODO calc supported threads
-    u32 supportedNumWorkingTreads = numWorkingThreads;
-    m_numWorkingThreads = supportedNumWorkingTreads;
+    u32 nthreads = std::thread::hardware_concurrency();
+    m_numWorkingThreads = std::clamp(numWorkingThreads, 1u, nthreads);
 
     u32 numQueue = TaskQueue::WorkerThreadQueue_0 + m_numWorkingThreads;
     m_taskQueue.reserve(numQueue);
@@ -46,7 +45,6 @@ void TaskDispatcher::workerThreadLoop()
         if (task)
         {
             run(task);
-            freeTask(task);
         }
         else if (wait()) //double check before sleep
         {
@@ -90,35 +88,22 @@ void TaskDispatcher::threadEntryPoint(u32 threadID)
     workerThreadLoop();
 }
 
-Task* TaskDispatcher::prepareTask(TaskPriority priority, TaskMask mask, const FunctionType& funcType, void* funcData, const std::string& name)
+void TaskDispatcher::pushTask(Task* task, TaskPriority priority, TaskMask mask)
 {
-    Task* task = V3D_NEW(Task, memory::MemoryLabel::MemorySystem);
-    m_numCreatedTasks.fetch_add(1, std::memory_order_relaxed);
+    //update task. No need to lock
+    task->m_priority = priority;
+    task->m_mask = mask;
 
-    task->_priority = priority;
-    task->_mask = mask;
-    task->_call = funcType._entryPoint;
-    task->_destruct = funcType._destruct;
-    task->_name = name;
-    //task->_result = TaskStatus::Created;
-
-    funcType._construct(task->_memBlock, funcData);
-
-    return task;
-}
-
-void TaskDispatcher::pushTask(Task* task)
-{
     TaskQueue* queue = nullptr;
     u32 threadID = TaskDispatcher::s_threadID;
 
-    if (task->_priority == TaskPriority::High)
+    if (task->m_priority == TaskPriority::High)
     {
         queue = m_taskQueue[TaskQueue::HighPriorityQueue];
     }
     else
     {
-        switch (task->_mask)
+        switch (task->m_mask)
         {
         case TaskMask::AnyThread:
             queue = m_taskQueue[TaskQueue::MainThreadQueue + threadID];
@@ -151,12 +136,12 @@ void TaskDispatcher::pushTask(Task* task)
 
     queue->_mutex.lock();
     queue->_tasks.push(task);
-    //task->_result = TaskStatus::Queued;
     if (m_numWatingTasks.load(std::memory_order_relaxed) > 0)
     {
         m_waitingCondition.notify_all();
     }
     queue->_mutex.unlock();
+    task->m_result.store(Task::Status::Scheduled, std::memory_order_relaxed);
 }
 
 Task* TaskDispatcher::popTask()
@@ -169,12 +154,24 @@ Task* TaskDispatcher::popTask()
     priorityQueue->_mutex.lock();
     if (!priorityQueue->_tasks.empty())
     {
-        task = priorityQueue->_tasks.front();
-        priorityQueue->_tasks.pop();
+        u32 countTasks = priorityQueue->_tasks.size();
+        while (countTasks)
+        {
+            Task* checkedTask = priorityQueue->_tasks.front();
+            priorityQueue->_tasks.pop();
+            --countTasks;
 
-        priorityQueue->_mutex.unlock();
-        return task;
-
+            if (checkedTask->m_cond && !checkedTask->m_cond())
+            {
+                priorityQueue->_tasks.push(checkedTask); //push in the end
+                checkedTask->m_result.store(Task::Status::Waiting, std::memory_order_relaxed);
+            }
+            else
+            {
+                task = checkedTask;
+                break;
+            }
+        }
     }
     priorityQueue->_mutex.unlock();
 
@@ -184,8 +181,24 @@ Task* TaskDispatcher::popTask()
     threadQueue->_mutex.lock();
     if (!threadQueue->_tasks.empty())
     {
-        task = threadQueue->_tasks.front();
-        threadQueue->_tasks.pop();
+        u32 countTasks = threadQueue->_tasks.size();
+        while (countTasks)
+        {
+            Task* checkedTask = threadQueue->_tasks.front();
+            threadQueue->_tasks.pop();
+            --countTasks;
+
+            if (checkedTask->m_cond && !checkedTask->m_cond())
+            {
+                threadQueue->_tasks.push(checkedTask); //push in the end
+                checkedTask->m_result.store(Task::Status::Waiting, std::memory_order_relaxed);
+            }
+            else
+            {
+                task = checkedTask;
+                break;
+            }
+        }
     }
     threadQueue->_mutex.unlock();
 
@@ -196,28 +209,26 @@ Task* TaskDispatcher::popTask()
 
 void TaskDispatcher::run(Task* task)
 {
-    //task->_result = TaskStatus::Executing;
-    task->_call(task->_memBlock);
-    //task->_result = TaskStatus::Completed;
-    task->_destruct(task->_memBlock);
-}
-
-void TaskDispatcher::freeTask(Task* task)
-{
-#if DEBUG
-    task->_call = nullptr;
-    task->_destruct = nullptr;
-    memset(task->_memBlock, 0, k_memoryBlockSize);
-    task->_name = "";
-    //task->_result = TaskStatus::Deleted;
-#endif // DEBUG
-
-    V3D_DELETE(task, memory::MemoryLabel::MemorySystem);
-    m_numCreatedTasks.fetch_sub(1, std::memory_order_relaxed);
+    task->m_result.store(Task::Status::Executing, std::memory_order_relaxed);
+    task->m_func();
+    task->m_result.store(Task::Status::Completed, std::memory_order_relaxed);
+    task->m_wait.notify_all();
 }
 
 bool TaskDispatcher::wait()
 {
+    bool sleep = true;
+    u32 threadID = TaskDispatcher::s_threadID;
+
+    TaskQueue* threadQueue = m_taskQueue[TaskQueue::MainThreadQueue + threadID];
+    if (!threadQueue->_mutex.try_lock())
+    {
+        return false;
+    }
+
+    sleep = threadQueue->_tasks.empty();
+    threadQueue->_mutex.unlock();
+
     /*for (s32 index = 0; index < m_taskQueue.size(); ++index)
     {
         if (!m_taskQueue[index]->_mutex.try_lock())
@@ -243,7 +254,7 @@ bool TaskDispatcher::wait()
         }
     }*/
 
-    return true;
+    return sleep;
 }
 
 } //namespace task

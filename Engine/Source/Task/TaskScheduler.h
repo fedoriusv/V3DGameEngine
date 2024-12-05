@@ -41,37 +41,18 @@ namespace task
 
         explicit TaskScheduler(u32 numWorkerThreads) noexcept;
 
-        template<typename Func, typename...Args>
-        void executeTask(TaskPriority priority, TaskMask mask, Func&& func, Args&&... args);
-
-        void executeBatch(Batcher& batch);
-
         void mainThreadLoop();
+
+
+        void executeTask(Task* task, TaskPriority priority, TaskMask mask);
+        void executeTask(std::vector<Task*> tasks, TaskPriority priority, TaskMask mask);
+
+        void waitTask(Task* task);
 
     private:
 
         TaskDispatcher m_dispatcher;
     };
-
-    template<typename Func, typename ...Args>
-    inline void TaskScheduler::executeTask(TaskPriority priority, TaskMask mask, Func&& func, Args && ...args)
-    {
-        auto fn = std::bind(std::forward<Func>(func), std::forward<Args>(args)...);
-        Task* task = m_dispatcher.prepareTask(priority, mask, getFunctionType<decltype(fn)>(), &fn);
-        m_dispatcher.pushTask(task);
-
-        //return TaskResult{ task };
-    }
-
-
-    inline void TaskScheduler::executeBatch(TaskScheduler::Batcher& batch)
-    {
-        //for (auto& func : batch._funcs)
-        //{
-        //    Task* task = m_dispatcher.prepareTask(batch._priority, batch._mask, getFunctionType<decltype(func)>(), &func);
-        //    m_dispatcher.pushTask(task);
-        //}
-    }
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 

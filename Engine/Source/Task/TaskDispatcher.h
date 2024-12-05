@@ -10,14 +10,6 @@ namespace task
 {
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    struct CPUInfo
-    {
-        u32 _physicalCPUs;
-        u32 _logicalCPUs;
-    };
-
-    /////////////////////////////////////////////////////////////////////////////////////////////////////
-
     /**
     * @brief Dispatcher class
     */
@@ -48,14 +40,11 @@ namespace task
         TaskDispatcher(u32 numWorkingThreads, DispatcherFlags flags) noexcept;
         ~TaskDispatcher();
 
-        Task* prepareTask(TaskPriority priority, TaskMask mask, const FunctionType& funcType, void* funcData, const std::string& name = "");
-
-        void pushTask(Task* task);
+        void pushTask(Task* task, TaskPriority priority, TaskMask mask);
         Task* popTask();
 
         void run(Task* task);
         bool wait();
-        void freeTask(Task* task);
 
         void workerThreadLoop();
 
@@ -63,7 +52,7 @@ namespace task
 
         void threadEntryPoint(u32 threadID);
 
-        u32 m_numWorkingThreads;
+        u32                         m_numWorkingThreads;
 
         std::vector<TaskQueue*>     m_taskQueue;
         std::vector<utils::Thread*> m_worker_threads;

@@ -65,6 +65,8 @@ inline void crashFunc(bool x)
 #   endif //RELEASE_WITH_DEBUG
 #endif //DEBUG
 
+#define PLATFORM_BREAK() __debugbreak()
+
 #define NOT_IMPL ASSERT(false, "not impl")
 
 #ifdef __GNUC__

@@ -267,17 +267,18 @@ void MyApplication::Test_Task()
 {
     LOG_DEBUG("Test_Task");
 
-    task::TaskScheduler scheduler(6);
+    task::TaskScheduler scheduler(3);
 
     const u32 numJobs = 6;
 
-    u64 jobTime[numJobs] = { 0 };
     u32 jobFinished[numJobs] = { 0 };
     task::TaskPriority jobPriority[numJobs] = { task::TaskPriority::Normal };
-    std::array<std::function<void()>, numJobs> jobs;
+    std::array<std::function<void(u32 i)>, numJobs> jobs;
+    task::Task tasks[numJobs];
+    u32 allJobsTimeStart = utils::Timer::getCurrentTime();
     for (u32 i = 0; i < numJobs; ++i)
     {
-        jobs[i] = [&jobTime, &jobFinished, &jobPriority, i]() -> void
+        jobs[i] = [&jobFinished](u32 i) -> void
             {
                 u64 value = 0;
                 u64 maxValue = 1'000'000'000;
@@ -287,70 +288,70 @@ void MyApplication::Test_Task()
                     ++value;
                 }
                 auto end = utils::Timer::getCurrentTime();
-                jobTime[i] = end - start;
+                u64 jobTime = end - start;
                 ++jobFinished[i];
+
+                LOG_DEBUG("Test_Task JOB%u is finshed time %u", i, jobTime);
             };
 
-        scheduler.executeTask(jobPriority[i], task::TaskMask::WorkerThread, jobs[i]);
+        tasks[i].init(jobs[i], i);
+        scheduler.executeTask(&tasks[i], jobPriority[i], task::TaskMask::WorkerThread);
     }
 
     u64 jobNTime = 0;
-    u32 allJobsTimeStart = utils::Timer::getCurrentTime();
     bool jobNFinished = false;
+    task::Task task;
+    task.init([&jobNTime, &jobNFinished]() -> void
+        {
+            u64 value = 0;
+            u64 maxValue = 1'000'000'0000;
+            auto start = utils::Timer::getCurrentTime();
+            while (value < maxValue)
+            {
+                ++value;
+            }
+            auto end = utils::Timer::getCurrentTime();
+            jobNTime = end - start;
+            jobNFinished = true;
 
-   while (true)
+            LOG_DEBUG("Test_Task JobLast is finshed time %u", jobNTime);
+        });
+
+    task.cond([&tasks, &numJobs]()
+        {
+            bool finished = std::all_of(std::begin(tasks), std::end(tasks), [](const task::Task& task) -> bool
+                {
+                    return task.isCompeted();
+                });
+
+            return finished;
+        });
+    scheduler.executeTask(&task, task::TaskPriority::Normal, task::TaskMask::WorkerThread);
+
+    while (true)
     {
-       for (u32 i = 0; i < numJobs; ++i)
-       {
-           if (jobFinished[i] == 1)
-           {
-               LOG_DEBUG("Test_Task JOB%u is finshed time %u", i, jobTime[i]);
-               ++jobFinished[i];
-           }
-       }
+        if (task.isCompeted())
+        {
+            bool finished = std::all_of(std::begin(jobFinished), std::end(jobFinished), [](u32 finish) -> bool
+                {
+                    return (finish == 1);
+                });
+            ASSERT(finished, "all jabs must be completed");
 
-       bool finished = std::all_of(std::begin(jobFinished), std::end(jobFinished), [](u32 finish) -> bool
-           {
-               return (finish == 2);
-           });
-       if (finished)
-       {
-           u32 allJobsTimeEnd = utils::Timer::getCurrentTime();
-           LOG_DEBUG("Test_Task JOBs time %u", allJobsTimeEnd - allJobsTimeStart);
-           for (u32 i = 0; i < numJobs; ++i)
-           {
-               ++jobFinished[i];
-           }
-           std::this_thread::sleep_for(std::chrono::milliseconds(100));
+            u32 allJobsTimeEnd = utils::Timer::getCurrentTime();
+            LOG_DEBUG("Test_Task JOBs time %u", allJobsTimeEnd - allJobsTimeStart);
+            break;
+        }
 
-           auto job = [&jobNTime, &jobNFinished]() -> void
-               {
-                   u64 value = 0;
-                   u64 maxValue = 1'000'000'000;
-                   auto start = utils::Timer::getCurrentTime();
-                   while (value < maxValue)
-                   {
-                       ++value;
-                   }
-                   auto end = utils::Timer::getCurrentTime();
-                   jobNTime = end - start;
-                   jobNFinished = true;
-               };
-
-           scheduler.executeTask(task::TaskPriority::Normal, task::TaskMask::WorkerThread, job);
-       }
-
-       if (jobNFinished)
-       {
-           LOG_DEBUG("Test_Task JobN is finshed time %u", jobNTime);
-           jobNFinished = false;
-       }
-
-       scheduler.mainThreadLoop();
+        scheduler.mainThreadLoop();
     }
 
+    u32 waitTimeStart = utils::Timer::getCurrentTime();
+    scheduler.waitTask(&task);
+    u32 waitTimeEnd = utils::Timer::getCurrentTime();
+    LOG_DEBUG("Test_Task Wait time %u", waitTimeEnd - waitTimeStart);
 
-    [[maybe_unused]] u32 endTest = 0;
+   [[maybe_unused]] u32 endTest = 0;
 }
 
 void MyApplication::Test_Windows()

@@ -17,8 +17,25 @@ void TaskScheduler::mainThreadLoop()
     if (task)
     {
         m_dispatcher.run(task);
-        m_dispatcher.freeTask(task);
     }
+}
+
+void TaskScheduler::executeTask(Task* task, TaskPriority priority, TaskMask mask)
+{
+    m_dispatcher.pushTask(task, priority, mask);
+}
+
+void TaskScheduler::executeTask(std::vector<Task*> tasks, TaskPriority priority, TaskMask mask)
+{
+    for (auto& task : tasks)
+    {
+        m_dispatcher.pushTask(task, priority, mask);
+    }
+}
+
+void TaskScheduler::waitTask(Task* task)
+{
+    task->waitCompetition();
 }
 
 } //namespace task
