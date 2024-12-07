@@ -228,7 +228,7 @@ Resource* ShaderSpirVDecoder::decode(const stream::Stream* stream, const Policy*
             }
         }
 
-        std::unique_ptr<shaderc::CompileOptions::IncluderInterface> includer(V3D_NEW(Includer, memory::MemoryLabel::MemorySystem)); //TODO deleter
+        std::unique_ptr<shaderc::CompileOptions::IncluderInterface> includer(new Includer); //Use default deleter
         options.SetIncluder(std::move(includer));
 
         bool validShaderType = false;
