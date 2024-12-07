@@ -82,7 +82,7 @@ namespace scene
         bool load(const stream::Stream* stream, u32 offset = 0) override;
         bool save(stream::Stream* stream, u32 offset = 0) const override;
 
-        friend class CameraHelper;
+        friend class CameraHandler;
 
         math::Vector3D m_up;
         math::Vector3D m_target;

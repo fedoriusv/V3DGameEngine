@@ -11,17 +11,17 @@ namespace scene
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
-    * @brief CameraArcballHelper class. Game side.
+    * @brief CameraHandler class. Game side.
     */
-    class CameraHelper : public Object
+    class CameraHandler : public Object
     {
     public:
 
-        CameraHelper() = delete;
-        CameraHelper(const CameraHelper&) = delete;
+        CameraHandler() = delete;
+        CameraHandler(const CameraHandler&) = delete;
 
-        explicit CameraHelper(Camera* camera, const math::Vector3D& position) noexcept;
-        virtual ~CameraHelper();
+        explicit CameraHandler(Camera* camera, const math::Vector3D& position) noexcept;
+        virtual ~CameraHandler();
 
         Camera& getCamera();
         const Camera& getCamera() const;

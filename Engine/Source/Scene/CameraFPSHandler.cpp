@@ -1,4 +1,4 @@
-#include "CameraFPSHelper.h"
+#include "CameraFPSHandler.h"
 #include "Camera.h"
 
 #include "Platform/Platform.h"
@@ -9,29 +9,29 @@ namespace v3d
 namespace scene
 {
 
-CameraFPSHelper::CameraFPSHelper(Camera* camera, const math::Vector3D& position) noexcept
-    : CameraHelper(camera, position)
+CameraFPSHandler::CameraFPSHandler(Camera* camera, const math::Vector3D& position) noexcept
+    : CameraHandler(camera, position)
     , m_moveSpeed(0.f)
 
     , m_direction({ false, false, false, false })
 {
 }
 
-CameraFPSHelper::~CameraFPSHelper()
+CameraFPSHandler::~CameraFPSHandler()
 {
 }
 
-void CameraFPSHelper::update(f32 deltaTime)
+void CameraFPSHandler::update(f32 deltaTime)
 {
     if (m_needUpdate)
     {
         math::Vector3D frontDirection;
-        frontDirection.m_x = cos(CameraFPSHelper::getRotation().m_x * math::k_degToRad) * sin(CameraFPSHelper::getRotation().m_y * math::k_degToRad);
-        frontDirection.m_y = sin(CameraFPSHelper::getRotation().m_x * math::k_degToRad);
-        frontDirection.m_z = cos(CameraFPSHelper::getRotation().m_x * math::k_degToRad) * cos(CameraFPSHelper::getRotation().m_y * math::k_degToRad);
+        frontDirection.m_x = cos(CameraFPSHandler::getRotation().m_x * math::k_degToRad) * sin(CameraFPSHandler::getRotation().m_y * math::k_degToRad);
+        frontDirection.m_y = sin(CameraFPSHandler::getRotation().m_x * math::k_degToRad);
+        frontDirection.m_z = cos(CameraFPSHandler::getRotation().m_x * math::k_degToRad) * cos(CameraFPSHandler::getRotation().m_y * math::k_degToRad);
         frontDirection.normalize();
 
-        if (CameraFPSHelper::isDirectionChange())
+        if (CameraFPSHandler::isDirectionChange())
         {
             math::Vector3D position = m_transform.getPosition();
             f32 moveSpeed = deltaTime * m_moveSpeed;
@@ -67,27 +67,27 @@ void CameraFPSHelper::update(f32 deltaTime)
         }
 
         getCamera().setTarget(m_transform.getPosition() + frontDirection);
-        CameraHelper::update(deltaTime);
+        CameraHandler::update(deltaTime);
     }
 }
 
-void CameraFPSHelper::setRotation(const math::Vector3D& rotation)
+void CameraFPSHandler::setRotation(const math::Vector3D& rotation)
 {
     m_transform.setRotation(rotation);
     m_needUpdate = true;
 }
 
-const math::Vector3D& CameraFPSHelper::getRotation() const
+const math::Vector3D& CameraFPSHandler::getRotation() const
 {
     return m_transform.getRotation();
 }
 
-bool CameraFPSHelper::isDirectionChange() const
+bool CameraFPSHandler::isDirectionChange() const
 {
     return m_direction._forward || m_direction._back || m_direction._left || m_direction._right;
 }
 
-void CameraFPSHelper::rotateHandlerCallback(const v3d::event::InputEventHandler* handler, const event::MouseInputEvent* event, bool mouseCapture)
+void CameraFPSHandler::rotateHandlerCallback(const v3d::event::InputEventHandler* handler, const event::MouseInputEvent* event, bool mouseCapture)
 {
     static math::Point2D position = event->_cursorPosition;
 
@@ -97,19 +97,19 @@ void CameraFPSHelper::rotateHandlerCallback(const v3d::event::InputEventHandler*
 
         //if (positionDelta.x != 0 && positionDelta.y != 0)
         {
-            math::Vector3D rotation = CameraFPSHelper::getRotation();
+            math::Vector3D rotation = CameraFPSHandler::getRotation();
             rotation.m_x += positionDelta.m_y * k_rotationSpeed;
             rotation.m_y -= positionDelta.m_x * k_rotationSpeed;
 
             rotation.m_x = math::clamp(rotation.m_x, -k_constrainPitch, k_constrainPitch);
-            CameraFPSHelper::setRotation(rotation);
+            CameraFPSHandler::setRotation(rotation);
         }
     }
 
     position = event->_cursorPosition;
 }
 
-void CameraFPSHelper::moveHandlerCallback(const v3d::event::InputEventHandler* handler, const event::KeyboardInputEvent* event)
+void CameraFPSHandler::moveHandlerCallback(const v3d::event::InputEventHandler* handler, const event::KeyboardInputEvent* event)
 {
     m_direction._forward = handler->isKeyPressed(event::KeyCode::KeyKey_W);
     m_direction._back = handler->isKeyPressed(event::KeyCode::KeyKey_S);
@@ -122,7 +122,7 @@ void CameraFPSHelper::moveHandlerCallback(const v3d::event::InputEventHandler* h
         accelerationSpeed = k_accelerationSpeed;
     }
 
-    if (CameraFPSHelper::isDirectionChange())
+    if (CameraFPSHandler::isDirectionChange())
     {
         m_moveSpeed = k_movementSpeed * accelerationSpeed;
         m_needUpdate = true;

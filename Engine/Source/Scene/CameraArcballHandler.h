@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Common.h"
-#include "CameraHelper.h"
+#include "CameraHandler.h"
 
 #include "Events/InputEventHandler.h"
 
@@ -12,18 +12,18 @@ namespace scene
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
-    * @brief CameraArcballHelper class
+    * @brief CameraArcballHandler class
     */
-    class CameraArcballHelper final : public CameraHelper
+    class CameraArcballHandler final : public CameraHandler
     {
     public:
 
-        CameraArcballHelper() = delete;
-        CameraArcballHelper(const CameraArcballHelper&) = delete;
+        CameraArcballHandler() = delete;
+        CameraArcballHandler(const CameraArcballHandler&) = delete;
 
-        explicit CameraArcballHelper(Camera* camera, f32 distance) noexcept;
-        explicit CameraArcballHelper(Camera* camera, f32 distance, f32 minDistance, f32 maxDistance) noexcept;
-        ~CameraArcballHelper();
+        explicit CameraArcballHandler(Camera* camera, f32 distance) noexcept;
+        explicit CameraArcballHandler(Camera* camera, f32 distance, f32 minDistance, f32 maxDistance) noexcept;
+        ~CameraArcballHandler();
 
         void setRotation(const math::Vector3D& rotation);
         const math::Vector3D& getRotation() const;
