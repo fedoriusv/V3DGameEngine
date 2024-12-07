@@ -17,29 +17,8 @@ namespace task
     {
     public:
 
-        class Batcher
-        {
-        public:
-
-            Batcher(TaskPriority priority, TaskMask mask) noexcept
-                : _priority(priority)
-                , _mask(mask)
-            {
-            }
-
-            template<typename Func, typename ...Args>
-            void addTask(Func&& func, Args && ...args)
-            {
-                //auto fn = std::bind(std::forward<Func>(func), std::forward<Args>(args)...);
-                //_funcs.push_back(fn);
-            }
-
-            TaskPriority        _priority;
-            TaskMask            _mask;
-            std::vector<Task*>  _funcs;
-        };
-
         explicit TaskScheduler(u32 numWorkerThreads) noexcept;
+        ~TaskScheduler() = default;
 
         void mainThreadLoop();
 
