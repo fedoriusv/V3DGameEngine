@@ -2,4 +2,5 @@ CreateWindow
 ClearColor
 SimpleTriangle
 DrawMesh
+MultithreadedDraws
 Test
