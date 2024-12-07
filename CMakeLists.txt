@@ -19,6 +19,9 @@ option(BUILD_DIRECTX_SDK_OPTION "Use DirectX SDK" OFF)
 #Crc32c lib is required"
 #https://github.com/google/crc32c.git
 
+#Json lib is required"
+#https://github.com/nlohmann/json.git 
+
 option(STB_LIB "Use STB" ON)
 #https://github.com/nothings/stb.git
 
@@ -324,7 +327,7 @@ add_subdirectory(${CRC32_LIB_DIRECTORY})
 set_target_properties(crc32c PROPERTIES
     ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${CRC32_LIB_DIRECTORY}/${PROJECT_PLATFORM}
     FOLDER ThirdParty/crc32c
-)
+	)
 set_target_properties(crc32c_arm64 PROPERTIES FOLDER ThirdParty/crc32c)
 set_target_properties(crc32c_sse42 PROPERTIES FOLDER ThirdParty/crc32c)
 message(STATUS "Crc32 lib added")

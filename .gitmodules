@@ -24,3 +24,6 @@
 [submodule "Engine/Libs/tracy"]
 	path = Engine/ThirdParty/tracy
 	url = https://github.com/wolfpld/tracy.git
+[submodule "Engine/ThirdParty/json"]
+	path = Engine/ThirdParty/json
+	url = https://github.com/nlohmann/json.git
