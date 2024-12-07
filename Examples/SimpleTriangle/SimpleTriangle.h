@@ -8,7 +8,7 @@
 #include "Renderer/Buffer.h"
 #include "Renderer/Swapchain.h"
 
-#include "Scene/CameraArcballHelper.h"
+#include "Scene/CameraArcballHandler.h"
 #include "Scene/Camera.h"
 
 class SimpleTriangle
@@ -39,5 +39,5 @@ private:
 
     v3d::renderer::VertexBuffer* m_Geometry;
 
-    v3d::scene::CameraArcballHelper* m_Camera;
+    v3d::scene::CameraArcballHandler* m_Camera;
 };

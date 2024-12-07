@@ -24,7 +24,7 @@ SimpleTriangle::SimpleTriangle()
     , m_Pipeline(nullptr)
     , m_Geometry(nullptr)
 
-    , m_Camera(new scene::CameraArcballHelper(new scene::Camera(math::Vector3D(0.0f, 0.0f, 0.0f), math::Vector3D(0.0f, 1.0f, 0.0f)), 3.0f, k_nearValue + 1.0f, k_farValue - 10.0f))
+    , m_Camera(new scene::CameraArcballHandler(new scene::Camera(math::Vector3D(0.0f, 0.0f, 0.0f), math::Vector3D(0.0f, 1.0f, 0.0f)), 3.0f, k_nearValue + 1.0f, k_farValue - 10.0f))
 {
 }
 

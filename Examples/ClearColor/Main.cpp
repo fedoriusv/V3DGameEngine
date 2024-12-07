@@ -170,7 +170,6 @@ private:
     }
 
     v3d::platform::Window* m_Window = nullptr;
-    //v3d::event::InputEventHandler* m_InputEventHandler = nullptr;
     v3d::renderer::Device* m_Device = nullptr;
     bool m_terminate = false;
 

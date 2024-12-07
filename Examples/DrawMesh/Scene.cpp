@@ -1,5 +1,5 @@
 #include "Scene.h"
-#include "Scene/CameraArcballHelper.h"
+#include "Scene/CameraArcballHandler.h"
 #include "Resource/Model.h"
 #include "Resource/Bitmap.h"
 #include "Resource/ResourceManager.h"
@@ -80,7 +80,7 @@ void Scene::SendExitSignal()
 void Scene::Init()
 {
     //init camera
-    m_Camera = new scene::CameraArcballHelper(new scene::Camera(math::Vector3D(0.0f, 0.0f, 0.0f), math::Vector3D(0.0f, 1.0f, 0.0f)), 8.0f, 4.0f, 80.0f);
+    m_Camera = new scene::CameraArcballHandler(new scene::Camera(math::Vector3D(0.0f, 0.0f, 0.0f), math::Vector3D(0.0f, 1.0f, 0.0f)), 8.0f, 4.0f, 80.0f);
     m_Camera->setPerspective(45.0f, m_Swapchain->getBackbufferSize(), 1.f, 50.f);
     m_Camera->setRotation(math::Vector3D(0.0f, -90.0f, 0.0f));
 }

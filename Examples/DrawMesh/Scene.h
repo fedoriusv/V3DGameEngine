@@ -6,7 +6,7 @@
 #include "Renderer/Device.h"
 #include "Renderer/Texture.h"
 #include "Renderer/SamplerState.h"
-#include "Scene/CameraArcballHelper.h"
+#include "Scene/CameraArcballHandler.h"
 #include "Scene/Model.h"
 #include "Events/InputEventMouse.h"
 #include "Events/InputEventTouch.h"
@@ -50,8 +50,8 @@ private:
     void Draw(v3d::f32 dt);
     void Exit();
 
-    v3d::scene::CameraArcballHelper* m_Camera;
-    app::TextureRender*              m_Render;
+    v3d::scene::CameraArcballHandler* m_Camera;
+    app::TextureRender*               m_Render;
 
     struct Model
     {
