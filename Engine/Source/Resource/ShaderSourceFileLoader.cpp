@@ -18,6 +18,12 @@ namespace v3d
 namespace resource
 {
 
+std::map<std::string, renderer::ShaderModel> k_extensionList =
+{
+    { "hlsl", renderer::ShaderModel::HLSL },
+    { "glsl", renderer::ShaderModel::GLSL_450 }
+};
+
 ShaderSourceFileLoader::ShaderSourceFileLoader(renderer::Device* device, const ShaderDecoder::ShaderPolicy& policy, ShaderCompileFlags flags) noexcept
     : m_policy(policy)
     , m_flags(flags)
@@ -87,7 +93,7 @@ ShaderSourceFileLoader::ShaderSourceFileLoader(renderer::Device* device, rendere
         }
         else
         {
-            ResourceDecoderRegistration::registerDecoder(V3D_NEW(ShaderSpirVDecoder, memory::MemoryLabel::MemorySystem)({ "hlsl" }));
+            ResourceDecoderRegistration::registerDecoder(V3D_NEW(ShaderSpirVDecoder, memory::MemoryLabel::MemorySystem)({ "hlsl", "glsl" }));
         }
     }
 #if D3D_RENDER
@@ -142,6 +148,17 @@ renderer::Shader* ShaderSourceFileLoader::load(const std::string& name, const st
             const ResourceDecoder* decoder = findDecoder(fileExtension);
             if (decoder)
             {
+                // Get shader model from extension
+                if (m_flags & ShaderCompileFlag::ShaderCompile_ShaderModelFromExt)
+                {
+                    auto ext = k_extensionList.find(fileExtension);
+                    ASSERT(ext != k_extensionList.cend(), "unknown extention");
+                    if (ext != k_extensionList.cend())
+                    {
+                        m_policy._shaderModel = ext->second;
+                    }
+                }
+
                 Resource* resource = decoder->decode(file, &m_policy, m_flags, name);
 
                 stream::FileLoader::close(file);

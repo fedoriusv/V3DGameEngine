@@ -9,7 +9,7 @@
 #include "Scene/Model.h"
 #include "Scene/Mesh.h"
 
-#define VULKAN_ONLY 0
+#define VULKAN_GLSL 0
 
 namespace app
 {
@@ -91,9 +91,9 @@ void Scene::Load()
     LoadVoyager();
 
     {
-#if VULKAN_ONLY
-        const renderer::Shader* vertShader = resource::ResourceManager::getInstance()->loadShader<renderer::Shader, resource::ShaderSourceFileLoader>(m_Device, "shaders/mesh.vert");
-        const renderer::Shader* fragShader = resource::ResourceManager::getInstance()->loadShader<renderer::Shader, resource::ShaderSourceFileLoader>(m_Device, "shaders/mesh.frag");
+#if VULKAN_GLSL
+        const renderer::Shader* vertShader = resource::ResourceManager::getInstance()->loadShader<renderer::VertexShader, resource::ShaderSourceFileLoader>(m_Device, "shaders/mesh.vert.glsl", "main", {}, {}, resource::ShaderCompile_ShaderModelFromExt);
+        const renderer::Shader* fragShader = resource::ResourceManager::getInstance()->loadShader<renderer::FragmentShader, resource::ShaderSourceFileLoader>(m_Device, "shaders/mesh.frag.glsl", "main", {}, {}, resource::ShaderCompile_ShaderModelFromExt);
 #else
         const renderer::VertexShader* vertShader = resource::ResourceManager::getInstance()->loadShader<renderer::VertexShader, resource::ShaderSourceFileLoader>(m_Device, "shaders/mesh.hlsl", "main_vs");
         const renderer::FragmentShader* fragShader = resource::ResourceManager::getInstance()->loadShader<renderer::FragmentShader, resource::ShaderSourceFileLoader>(m_Device, "shaders/mesh.hlsl", "main_ps");

@@ -262,6 +262,7 @@ Resource* ShaderSpirVDecoder::decode(const stream::Stream* stream, const Policy*
             return nullptr;
         }
 
+        ASSERT(shaderPolicy->_entryPoint == "main", "glslang supports only on entry point with main name");
         LOG_DEBUG("Compile Shader %s to SpirV:\n %s\n", name.c_str(), source.c_str());
 
         shaderc::Compiler compiler;

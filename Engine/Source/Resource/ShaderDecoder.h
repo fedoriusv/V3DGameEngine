@@ -29,6 +29,7 @@ namespace resource
         ShaderCompile_Patched = 1 << 4,
         ShaderCompile_UseLegacyCompilerForHLSL = 1 << 5,
         ShaderCompile_UseDXCompilerForSpirV = 1 << 6,
+        ShaderCompile_ShaderModelFromExt = 1 << 7, // detect shader model by file extention
     };
 
     typedef u32 ShaderCompileFlags;
