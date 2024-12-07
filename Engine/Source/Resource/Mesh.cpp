@@ -20,6 +20,18 @@ MeshResource::MeshResource(const MeshHeader& header) noexcept
 
 MeshResource::~MeshResource()
 {
+    if (std::get<0>(m_indexData._indexBuffer))
+    {
+        stream::StreamManager::destroyStream(std::get<0>(m_indexData._indexBuffer));
+    }
+    m_indexData._indexBuffer = {};
+
+    for (auto& stream : m_vertexData._vertexBuffers)
+    {
+        std::get<0>(stream)->unmap();
+        stream::StreamManager::destroyStream(std::get<0>(stream));
+    }
+    m_vertexData._vertexBuffers.clear();
 }
 
 bool MeshResource::load(const stream::Stream* stream, u32 offset)

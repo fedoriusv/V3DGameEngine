@@ -8,7 +8,7 @@ namespace stream
 
 MemoryStream* StreamManager::createMemoryStream(const void* data, const u32 size)
 {
-    return V3D_NEW(MemoryStream, memory::MemoryLabel::MemorySystem)(data, size);
+    return V3D_NEW(MemoryStream, memory::MemoryLabel::MemoryDynamic)(data, size);
 }
 
 const MemoryStream* StreamManager::createMemoryStream(const std::string& string)
@@ -22,7 +22,7 @@ const MemoryStream* StreamManager::createMemoryStream(const std::string& string)
 void StreamManager::destroyStream(const Stream* stream)
 {
     ASSERT(stream, "nullptr");
-    V3D_DELETE(stream, memory::MemoryLabel::MemorySystem);
+    V3D_DELETE(stream, memory::MemoryLabel::MemoryDynamic);
 }
 
 } //namespace stream
