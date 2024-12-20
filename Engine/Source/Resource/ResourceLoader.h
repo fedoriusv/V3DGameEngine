@@ -46,11 +46,11 @@ namespace resource
         void registerPath(const std::string& path);
 
         /**
-        * @brief registerPathes interface.
+        * @brief registerPaths interface.
         * Register new pathes to the resources
-        * @param const std::vector<std::string> &pathes [required]
+        * @param const std::vector<std::string> &paths [required]
         */
-        void registerPathes(const std::vector<std::string> &pathes);
+        void registerPaths(const std::vector<std::string> &paths);
 
         /**
         * @brief unregisterPath interface.
@@ -69,7 +69,7 @@ namespace resource
     protected:
 
         std::vector<std::string> m_roots;
-        std::vector<std::string> m_pathes;
+        std::vector<std::string> m_paths;
 
     };
 
@@ -86,7 +86,7 @@ namespace resource
     inline ResourceLoader<TResource>::~ResourceLoader()
     {
         m_roots.clear();
-        m_pathes.clear();
+        m_paths.clear();
     }
 
     template<class TResource>
@@ -118,25 +118,25 @@ namespace resource
         std::string innerPath(path);
         std::transform(innerPath.begin(), innerPath.end(), innerPath.begin(), ::tolower);
 
-        auto it = std::find(m_pathes.begin(), m_pathes.end(), innerPath);
-        if (it == m_pathes.end())
+        auto it = std::find(m_paths.begin(), m_paths.end(), innerPath);
+        if (it == m_paths.end())
         {
-            m_pathes.push_back(innerPath);
+            m_paths.push_back(innerPath);
         }
     }
 
     template<class TResource>
-    inline void ResourceLoader<TResource>::registerPathes(const std::vector<std::string>& pathes)
+    inline void ResourceLoader<TResource>::registerPaths(const std::vector<std::string>& paths)
     {
-        for (const std::string& path : pathes)
+        for (const std::string& path : paths)
         {
             std::string innerPath(path);
             std::transform(innerPath.begin(), innerPath.end(), innerPath.begin(), ::tolower);
 
-            auto it = std::find(m_pathes.begin(), m_pathes.end(), innerPath);
-            if (it == m_pathes.end())
+            auto it = std::find(m_paths.begin(), m_paths.end(), innerPath);
+            if (it == m_paths.end())
             {
-                m_pathes.push_back(innerPath);
+                m_paths.push_back(innerPath);
             }
         }
     }
@@ -144,22 +144,22 @@ namespace resource
     template<class TResource>
     inline void ResourceLoader<TResource>::unregisterPath(const std::string & path)
     {
-        auto it = std::find(m_pathes.begin(), m_pathes.end(), path);
-        if (it != m_pathes.end())
+        auto it = std::find(m_paths.begin(), m_paths.end(), path);
+        if (it != m_paths.end())
         {
-            m_pathes.erase(std::remove(m_pathes.begin(), m_pathes.end(), *it), m_pathes.end());
+            m_paths.erase(std::remove(m_paths.begin(), m_paths.end(), *it), m_paths.end());
         }
     }
 
     template<class TResource>
     inline void ResourceLoader<TResource>::unregisterPathes(const std::vector<std::string>& pathes)
     {
-        for (const std::string& path : m_pathes)
+        for (const std::string& path : m_paths)
         {
-            auto it = std::find(m_pathes.begin(), m_pathes.end(), path);
-            if (it != m_pathes.end())
+            auto it = std::find(m_paths.begin(), m_paths.end(), path);
+            if (it != m_paths.end())
             {
-                m_pathes.erase(std::remove(m_pathes.begin(), m_pathes.end(), *it), m_pathes.end());
+                m_paths.erase(std::remove(m_paths.begin(), m_paths.end(), *it), m_paths.end());
             }
         }
     }

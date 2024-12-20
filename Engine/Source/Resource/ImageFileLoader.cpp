@@ -29,14 +29,14 @@ ImageFileLoader::ImageFileLoader(ImageLoaderFlags flags) noexcept
     ResourceDecoderRegistration::registerDecoder(V3D_NEW(ImageGLiDecoder, memory::MemoryLabel::MemorySystem)({ "ktx", "kmg", "dds" }));
 #endif //USE_GLI
 
-    ResourceLoader::registerPathes(ResourceManager::getInstance()->getPathes());
+    ResourceLoader::registerPaths(ResourceManager::getInstance()->getPaths());
 }
 
 resource::Bitmap* ImageFileLoader::load(const std::string& name, const std::string& alias)
 {
     for (std::string& root : m_roots)
     {
-        for (std::string& path : m_pathes)
+        for (std::string& path : m_paths)
         {
             const std::string fullPath = root + path + name;
             stream::FileStream* file = stream::FileLoader::load(fullPath);

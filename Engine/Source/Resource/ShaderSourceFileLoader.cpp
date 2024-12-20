@@ -71,7 +71,7 @@ ShaderSourceFileLoader::ShaderSourceFileLoader(renderer::Device* device, const S
         ASSERT(false, "not suppported");
     }
 
-    ResourceLoader::registerPathes(ResourceManager::getInstance()->getPathes());
+    ResourceLoader::registerPaths(ResourceManager::getInstance()->getPaths());
 }
 
 ShaderSourceFileLoader::ShaderSourceFileLoader(renderer::Device* device, renderer::ShaderType type, const std::string& entryPoint,
@@ -128,14 +128,14 @@ ShaderSourceFileLoader::ShaderSourceFileLoader(renderer::Device* device, rendere
     }
 #endif
 
-    ResourceLoader::registerPathes(ResourceManager::getInstance()->getPathes());
+    ResourceLoader::registerPaths(ResourceManager::getInstance()->getPaths());
 }
 
 renderer::Shader* ShaderSourceFileLoader::load(const std::string& name, const std::string& alias)
 {
     for (std::string& root : m_roots)
     {
-        for (std::string& path : m_pathes)
+        for (std::string& path : m_paths)
         {
             const std::string fullPath = root + path + name;
             stream::FileStream* file = stream::FileLoader::load(fullPath);
@@ -158,6 +158,7 @@ renderer::Shader* ShaderSourceFileLoader::load(const std::string& name, const st
                         m_policy._shaderModel = ext->second;
                     }
                 }
+                m_policy._paths.push_back(path);
 
                 Resource* resource = decoder->decode(file, &m_policy, m_flags, name);
 

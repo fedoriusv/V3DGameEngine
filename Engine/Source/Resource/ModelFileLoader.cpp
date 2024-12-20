@@ -22,7 +22,7 @@ ModelFileLoader::ModelFileLoader(ModelLoaderFlags flags) noexcept
     ResourceDecoderRegistration::registerDecoder(V3D_NEW(AssimpDecoder, memory::MemoryLabel::MemorySystem)({ MODEL_FORMAT_DAE, MODEL_FORMAT_FBX, MODEL_FORMAT_GLTF }));
 #endif //USE_ASSIMP
 
-    ResourceLoader::registerPathes(ResourceManager::getInstance()->getPathes());
+    ResourceLoader::registerPaths(ResourceManager::getInstance()->getPaths());
 }
 
 ModelFileLoader::ModelFileLoader(const ModelFileLoader::ModelPolicy& policy, ModelLoaderFlags flags) noexcept
@@ -33,14 +33,14 @@ ModelFileLoader::ModelFileLoader(const ModelFileLoader::ModelPolicy& policy, Mod
     ResourceDecoderRegistration::registerDecoder(V3D_NEW(AssimpDecoder, memory::MemoryLabel::MemorySystem)({ MODEL_FORMAT_DAE, MODEL_FORMAT_FBX, MODEL_FORMAT_GLTF }));
 #endif //USE_ASSIMP
 
-    ResourceLoader::registerPathes(ResourceManager::getInstance()->getPathes());
+    ResourceLoader::registerPaths(ResourceManager::getInstance()->getPaths());
 }
 
 ModelResource* ModelFileLoader::load(const std::string& name, const std::string& alias)
 {
     for (std::string& root : m_roots)
     {
-        for (std::string& path : m_pathes)
+        for (std::string& path : m_paths)
         {
             const std::string fullPath = root + path + name;
             stream::FileStream* file = stream::FileLoader::load(fullPath);

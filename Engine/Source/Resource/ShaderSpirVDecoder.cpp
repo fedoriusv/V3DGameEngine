@@ -90,14 +90,16 @@ Resource* ShaderSpirVDecoder::decode(const stream::Stream* stream, const Policy*
             shaderc_include_result* GetInclude(const char* requested_source, shaderc_include_type type, const char* requesting_source, size_t include_depth) override
             {
                 std::string fileStr(requested_source);
+                std::transform(fileStr.begin(), fileStr.end(), fileStr.begin(), ::tolower);
+
                 if (!stream::FileStream::isExists(fileStr))
                 {
                     std::set<std::string>::iterator it;
                     for (it = m_pathes.begin(); it != m_pathes.end(); ++it)
                     {
                         std::string testFilePath(*it);
-                        testFilePath = testFilePath + "\\" + fileStr;
-                        if (!stream::FileStream::isExists(testFilePath))
+                        testFilePath = testFilePath + fileStr;
+                        if (stream::FileStream::isExists(testFilePath))
                         {
                             fileStr = testFilePath;
                             break;
@@ -108,15 +110,17 @@ Resource* ShaderSpirVDecoder::decode(const stream::Stream* stream, const Policy*
                 stream::FileStream* file = stream::FileLoader::load(fileStr);
                 ASSERT(file, "nullptr");
 
-                void* data = V3D_MALLOC(file->size(), memory::MemoryLabel::MemorySystem);
+                u32 dataSize = file->size();
+                void* data = V3D_MALLOC(dataSize, memory::MemoryLabel::MemorySystem);
                 file->read(data, file->size());
                 stream::FileLoader::close(file);
 
+                fileStr.push_back('\0');
                 shaderc_include_result include;
                 include.source_name_length = fileStr.size();
                 include.source_name = (c8*)V3D_MALLOC(include.source_name_length, memory::MemoryLabel::MemorySystem);
-                memcpy((void*)include.source_name, fileStr.c_str(), fileStr.size());
-                include.content_length = file->size();
+                memcpy((void*)include.source_name, fileStr.data(), fileStr.size());
+                include.content_length = dataSize;
                 include.content = (c8*)data;
                 include.user_data = nullptr;
 
@@ -228,7 +232,11 @@ Resource* ShaderSpirVDecoder::decode(const stream::Stream* stream, const Policy*
             }
         }
 
-        std::unique_ptr<shaderc::CompileOptions::IncluderInterface> includer(new Includer); //Use default deleter
+        std::unique_ptr<Includer> includer(new Includer); //Use default deleter
+        for (auto& path : shaderPolicy->_paths)
+        {
+            includer->addPath(path);
+        }
         options.SetIncluder(std::move(includer));
 
         bool validShaderType = false;
@@ -261,8 +269,7 @@ Resource* ShaderSpirVDecoder::decode(const stream::Stream* stream, const Policy*
             LOG_ERROR("ShaderSpirVDecoder::decode: Invalid shader type or unsupport");
             return nullptr;
         }
-
-        ASSERT(shaderPolicy->_entryPoint == "main", "glslang supports only on entry point with main name");
+        ASSERT(shaderPolicy->_shaderModel != renderer::ShaderModel::GLSL_450 || shaderPolicy->_entryPoint == "main", "glslang supports only on entry point with main name");
         LOG_DEBUG("Compile Shader %s to SpirV:\n %s\n", name.c_str(), source.c_str());
 
         shaderc::Compiler compiler;

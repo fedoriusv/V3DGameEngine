@@ -52,6 +52,7 @@ namespace resource
             std::string                     _entryPoint = "main";
             renderer::Shader::DefineList    _defines = {};
             std::vector<std::string>        _includes = {};
+            std::vector<std::string>        _paths = {};
         };
 
         explicit ShaderDecoder() noexcept

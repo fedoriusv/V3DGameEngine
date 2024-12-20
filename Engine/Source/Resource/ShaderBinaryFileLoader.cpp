@@ -48,7 +48,7 @@ namespace resource
 #endif //D3D_RENDER
  }
 
-     ResourceLoader::registerPathes(ResourceManager::getInstance()->getPathes());
+     ResourceLoader::registerPaths(ResourceManager::getInstance()->getPaths());
  }
 
 ShaderBinaryFileLoader::ShaderBinaryFileLoader(const renderer::Device* device, const ShaderDecoder::ShaderPolicy& policy, ShaderCompileFlags flags) noexcept
@@ -79,14 +79,14 @@ ShaderBinaryFileLoader::ShaderBinaryFileLoader(const renderer::Device* device, c
 #endif //D3D_RENDER
     }
 
-    ResourceLoader::registerPathes(ResourceManager::getInstance()->getPathes());
+    ResourceLoader::registerPaths(ResourceManager::getInstance()->getPaths());
 }
 
 renderer::Shader* ShaderBinaryFileLoader::load(const std::string& name, const std::string& alias)
 {
     for (std::string& root : m_roots)
     {
-        for (std::string& path : m_pathes)
+        for (std::string& path : m_paths)
         {
             const std::string fullPath = root + path + name;
             stream::Stream* file = stream::FileLoader::load(fullPath);

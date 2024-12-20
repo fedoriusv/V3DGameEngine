@@ -12,14 +12,14 @@ AssetFileLoader::AssetFileLoader(AssetLoaderFlags flags) noexcept
     : m_flags(flags)
 {
     ResourceDecoderRegistration::registerDecoder(V3D_NEW(AssetDecoder, memory::MemoryLabel::MemorySystem)({ "v3dasset" }));
-    ResourceLoader::registerPathes(ResourceManager::getInstance()->getPathes());
+    ResourceLoader::registerPaths(ResourceManager::getInstance()->getPaths());
 }
 
 Resource* AssetFileLoader::load(const std::string& name, const std::string& alias)
 {
     for (std::string& root : m_roots)
     {
-        for (std::string& path : m_pathes)
+        for (std::string& path : m_paths)
         {
             const std::string fullPath = root + path + name;
             stream::Stream* file = stream::FileLoader::load(fullPath);

@@ -247,12 +247,12 @@ bool ShaderDXCDecoder::compile(const std::string& source, const ShaderPolicy* po
 
         void addIncludePath(const std::string& path)
         {
-            m_pathes.emplace(path);
+            m_paths.emplace(path);
         }
 
         void reset()
         {
-            m_pathes.clear();
+            m_paths.clear();
         }
 
         HRESULT STDMETHODCALLTYPE LoadSource(_In_ LPCWSTR pFilename, _COM_Outptr_result_maybenull_ IDxcBlob** ppIncludeSource) override
@@ -261,7 +261,7 @@ bool ShaderDXCDecoder::compile(const std::string& source, const ShaderPolicy* po
             if (!stream::FileStream::isExists(fileStr))
             {
                 std::set<std::string>::iterator it;
-                for (it = m_pathes.begin(); it != m_pathes.end(); ++it)
+                for (it = m_paths.begin(); it != m_paths.end(); ++it)
                 {
                     std::string testFilePath(*it);
                     testFilePath = testFilePath + "\\" + fileStr;
@@ -323,7 +323,7 @@ bool ShaderDXCDecoder::compile(const std::string& source, const ShaderPolicy* po
     private:
 
         IDxcUtils* m_DXUtils;
-        std::set<std::string> m_pathes;
+        std::set<std::string> m_paths;
     };
 
     const std::wstring entryPoint = std::wstring(policy->_entryPoint.cbegin(), policy->_entryPoint.cend());
@@ -412,6 +412,11 @@ bool ShaderDXCDecoder::compile(const std::string& source, const ShaderPolicy* po
 
         arguments.push_back(L"-I");
         arguments.push_back(includes[i].c_str());
+    }
+
+    for (auto& path : policy->_paths)
+    {
+        includer.addIncludePath(path);
     }
 
     DxcBuffer dxBuffer = {};

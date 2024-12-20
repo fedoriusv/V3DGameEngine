@@ -113,7 +113,7 @@ namespace resource
 
         void addPath(const std::string& path);
         void removePath(const std::string& path);
-        const std::vector<std::string>& getPathes() const;
+        const std::vector<std::string>& getPaths() const;
 
     private:
 
@@ -125,7 +125,7 @@ namespace resource
         ResourceManager() noexcept = default;
 
         std::map<std::string, Resource*> m_resources;
-        std::vector<std::string>         m_pathes;
+        std::vector<std::string>         m_paths;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -401,27 +401,27 @@ namespace resource
         return false;
     }
 
-    inline void ResourceManager::addPath(const std::string & path)
+    inline void ResourceManager::addPath(const std::string& path)
     {
-        auto it = std::find(m_pathes.begin(), m_pathes.end(), path);
-        if (it == m_pathes.end())
+        auto it = std::find(m_paths.begin(), m_paths.end(), path);
+        if (it == m_paths.end())
         {
-            m_pathes.push_back(path);
+            m_paths.push_back(path);
         }
     }
 
-    inline void ResourceManager::removePath(const std::string & path)
+    inline void ResourceManager::removePath(const std::string& path)
     {
-        auto it = std::find(m_pathes.begin(), m_pathes.end(), path);
-        if (it != m_pathes.end())
+        auto it = std::find(m_paths.begin(), m_paths.end(), path);
+        if (it != m_paths.end())
         {
-            m_pathes.erase(std::remove(m_pathes.begin(), m_pathes.end(), *it), m_pathes.end());
+            m_paths.erase(std::remove(m_paths.begin(), m_paths.end(), *it), m_paths.end());
         }
     }
 
-    inline const std::vector<std::string>& ResourceManager::getPathes() const
+    inline const std::vector<std::string>& ResourceManager::getPaths() const
     {
-        return m_pathes;
+        return m_paths;
     }
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
