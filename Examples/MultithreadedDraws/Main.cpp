@@ -86,9 +86,9 @@ private:
                 app::Scene::MouseCallback(m_Scene, m_InputEventHandler, event);
             });
 
-        m_InputEventHandler->bind([this](const TouchInputEvent* event)
+        m_InputEventHandler->bind([this](const KeyboardInputEvent* event)
             {
-                app::Scene::TouchCallback(m_Scene, m_InputEventHandler, event);
+                app::Scene::KeyboardCallback(m_Scene, m_InputEventHandler, event);
             });
 
         m_InputEventHandler->bind([this](const SystemEvent* event)
@@ -102,7 +102,7 @@ private:
         std::srand(u32(std::time(0)));
 
         m_Window->getInputEventReceiver()->attach(InputEvent::InputEventType::MouseInputEvent, m_InputEventHandler);
-        m_Window->getInputEventReceiver()->attach(InputEvent::InputEventType::TouchInputEvent, m_InputEventHandler);
+        m_Window->getInputEventReceiver()->attach(InputEvent::InputEventType::KeyboardInputEvent, m_InputEventHandler);
         m_Window->getInputEventReceiver()->attach(InputEvent::InputEventType::SystemEvent, m_InputEventHandler);
 
         m_Device = Device::createDevice(Device::RenderType::Vulkan, Device::GraphicMask);
@@ -117,7 +117,7 @@ private:
 
     bool Run()
     {
-        f32 dt = 0.f;
+        f32 dt = 0.001f;
 
         m_Scene->Run(dt);
 
@@ -127,7 +127,7 @@ private:
     void Exit()
     {
         m_Window->getInputEventReceiver()->dettach(InputEvent::InputEventType::MouseInputEvent);
-        m_Window->getInputEventReceiver()->dettach(InputEvent::InputEventType::TouchInputEvent);
+        m_Window->getInputEventReceiver()->dettach(InputEvent::InputEventType::KeyboardInputEvent);
         m_Window->getInputEventReceiver()->dettach(InputEvent::InputEventType::SystemEvent);
 
         if (m_Scene)

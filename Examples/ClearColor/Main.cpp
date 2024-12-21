@@ -137,6 +137,7 @@ private:
 
         m_Swapchain = m_Device->createSwapchain(m_Window, params);
         m_CmdList = m_Device->createCommandList<renderer::CmdListRender>(Device::GraphicMask);
+        m_Sync = m_Device->createSyncPoint(m_CmdList);
 
         m_ClearColor = { 1.0, 0.0, 0.0, 1.0 };
     }
@@ -147,10 +148,10 @@ private:
         m_Swapchain->beginFrame();
 
         m_CmdList->clear(m_Swapchain->getBackbuffer(), m_ClearColor);
-        m_Device->submit(m_CmdList);
+        m_Device->submit(m_CmdList, m_Swapchain->getSyncPoint());
 
         m_Swapchain->endFrame();
-        m_Swapchain->presentFrame();
+        m_Swapchain->presentFrame(m_Sync);
     }
 
     void Exit()
@@ -161,6 +162,7 @@ private:
 
         if (m_Device)
         {
+            m_Device->destroySyncPoint(m_CmdList, m_Sync);
             m_Device->destroyCommandList(m_CmdList);
             m_Device->destroySwapchain(m_Swapchain);
 
@@ -174,6 +176,7 @@ private:
     bool m_terminate = false;
 
     v3d::renderer::CmdListRender* m_CmdList = nullptr;
+    v3d::renderer::SyncPoint* m_Sync = nullptr;
     v3d::renderer::Swapchain* m_Swapchain = nullptr;
 
     renderer::Color m_ClearColor;

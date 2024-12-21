@@ -28,13 +28,22 @@ public:
     void SendExitSignal();
 
     static void MouseCallback(Scene* scene, v3d::event::InputEventHandler* handler, const v3d::event::MouseInputEvent* event);
-    static void TouchCallback(Scene* scene, v3d::event::InputEventHandler* handler, const v3d::event::TouchInputEvent* event);
+    static void KeyboardCallback(Scene* scene, v3d::event::InputEventHandler* handler, const v3d::event::KeyboardInputEvent* event);
 
 public:
 
-    v3d::renderer::Device*        m_Device;
-    v3d::renderer::Swapchain*     m_Swapchain;
-    v3d::task::TaskScheduler      m_Worker;
+    v3d::renderer::Device*                  m_Device;
+    v3d::renderer::Swapchain*               m_Swapchain;
+    v3d::renderer::CmdListRender*           m_CmdList;
+    v3d::renderer::CmdListRender*           m_CmdList1;
+    v3d::renderer::SyncPoint*               m_Sync;
+
+    v3d::task::TaskScheduler                m_Worker;
+
+    v3d::renderer::ShaderProgram*           m_ProgramBackbuffer;
+    v3d::renderer::GraphicsPipelineState*   m_PipelineBackbuffer;
+    v3d::renderer::RenderTargetState*       m_renderTargetBackbuffer;
+    v3d::renderer::SamplerState*            m_samplerBackbuffer;
 
 private:
 
@@ -58,11 +67,16 @@ private:
 
     v3d::renderer::RenderTargetState* m_RenderTarget;
 
-    struct Model
+    struct ParameterData
+    {
+        v3d::renderer::Texture2D*      _Texture;
+        v3d::renderer::SamplerState*   _Sampler;
+        v3d::math::Matrix4D            _Transform;
+    };
+
+    struct ModelData
     {
         //TODO material
-        v3d::utils::IntrusivePointer<v3d::renderer::Texture2D>                          m_Texture;
-        v3d::utils::IntrusivePointer<v3d::renderer::SamplerState>                       m_Sampler;
 
         v3d::renderer::GraphicsPipelineState*                                           m_Pipeline;
         v3d::renderer::VertexInputAttributeDesc                                         m_InputAttrib;
@@ -70,15 +84,17 @@ private:
         v3d::scene::Model*                                                              m_Model;
 
     };
-    std::list<Model*> m_Models;
+    std::set<ModelData*> m_Models;
 
     struct ModelsGroup
     {
         std::vector<std::tuple<v3d::renderer::GeometryBufferDesc, app::DrawProperties>> m_InputProps;
         v3d::renderer::GraphicsPipelineState*                                           m_Pipeline;
+
+        ParameterData                                                                   m_Parameters;
     };
 
-    std::vector<ModelsGroup*> m_ModelGroups;
+    std::vector<ModelsGroup> m_ModelGroups;
     std::vector<std::tuple<TextureRenderWorker*, v3d::task::Task*, v3d::u32>> m_RenderGroups;
 };
 
