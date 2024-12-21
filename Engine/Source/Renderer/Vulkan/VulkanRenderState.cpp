@@ -45,7 +45,7 @@ void VulkanRenderState::flushBarriers(VulkanCommandBuffer* cmdBuffer)
     }
     _imageBarriers.clear();
 
-    _dirty &= ~DiryStateMask::DiryState_ImageBarriers;
+    unsetDirty(DiryStateMask::DiryState_ImageBarriers);
 }
 
 void VulkanRenderState::invalidate()

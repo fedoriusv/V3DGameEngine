@@ -18,6 +18,7 @@ namespace vk
     /////////////////////////////////////////////////////////////////////////////////////////////////////
     
     class VulkanDevice;
+    class VulkanSwapchain;
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -46,12 +47,14 @@ namespace vk
         static bool isASTCFormat(VkFormat format);
         static bool isSRGBFormat(VkFormat format);
 
+        static VulkanSwapchain* getSwapchainFromImage(const VulkanImage* image);
+
         explicit VulkanImage(VulkanDevice* device, VulkanMemory::VulkanMemoryAllocator* alloc, VkImageType type, VkFormat format, VkExtent3D dimension, u32 layers, u32 mipsLevel, VkImageTiling tiling, TextureUsageFlags usage, const std::string& name = "") noexcept;
         explicit VulkanImage(VulkanDevice* device, VulkanMemory::VulkanMemoryAllocator* alloc, VkFormat format, VkExtent3D dimension, VkSampleCountFlagBits samples, u32 layers, TextureUsageFlags usage, const std::string& name = "") noexcept;
         ~VulkanImage();
 
         bool create() override;
-        bool create(VkImage image);
+        bool create(VkImage image, VulkanSwapchain* swapchain);
 
         void destroy() override;
 
@@ -108,6 +111,7 @@ namespace vk
         VkImage                                 m_image;
         VulkanImage*                            m_resolveImage;
         VulkanMemory::VulkanAllocation          m_memory;
+        VulkanSwapchain*                        m_relatedSwapchain;
 
         std::unordered_map<DescInfo<VkImageSubresourceRange>, VkImageView, DescInfo<VkImageSubresourceRange>::Hash, DescInfo<VkImageSubresourceRange>::Compare> m_imageViews;
         std::vector<VkImageLayout> m_layout;

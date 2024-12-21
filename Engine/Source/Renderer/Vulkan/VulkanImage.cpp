@@ -887,6 +887,12 @@ bool VulkanImage::isSRGBFormat(VkFormat format)
     return false;
 }
 
+VulkanSwapchain* VulkanImage::getSwapchainFromImage(const VulkanImage* image)
+{
+    ASSERT(image->hasUsageFlag(TextureUsage::TextureUsage_Backbuffer), "must be swapchain");
+    return image->m_relatedSwapchain;
+}
+
 #if DEBUG_OBJECT_MEMORY
 std::set<VulkanImage*> VulkanImage::s_objects;
 #endif //DEBUG_OBJECT_MEMORY
@@ -907,6 +913,7 @@ VulkanImage::VulkanImage(VulkanDevice* device, VulkanMemory::VulkanMemoryAllocat
     , m_image(VK_NULL_HANDLE)
     , m_resolveImage(nullptr)
     , m_memory(VulkanMemory::s_invalidMemory)
+    , m_relatedSwapchain(nullptr)
 {
     LOG_DEBUG("VulkanImage::VulkanImage constructor %llx", this);
 
@@ -937,8 +944,9 @@ VulkanImage::VulkanImage(VulkanDevice* device, VulkanMemory::VulkanMemoryAllocat
     , m_usage(usage)
 
     , m_image(VK_NULL_HANDLE)
-    , m_memory(VulkanMemory::s_invalidMemory)
     , m_resolveImage(nullptr)
+    , m_memory(VulkanMemory::s_invalidMemory)
+    , m_relatedSwapchain(nullptr)
 {
     LOG_DEBUG("VulkanImage::VulkanImage constructor %llx", this);
 
@@ -1050,12 +1058,12 @@ bool VulkanImage::create()
 
     if (hasUsageFlag(TextureUsage::TextureUsage_Write))
     {
-        imageUsage |= VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+        imageUsage |= VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
     }
 
     if (hasUsageFlag(TextureUsage::TextureUsage_Read))
     {
-        imageUsage |= VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+        imageUsage |= VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
     }
 
     if (hasUsageFlag(TextureUsage::TextureUsage_Storage))
@@ -1185,11 +1193,12 @@ bool VulkanImage::create()
     return true;
 }
 
-bool VulkanImage::create(VkImage image)
+bool VulkanImage::create(VkImage image, VulkanSwapchain* swapchain)
 {
     ASSERT(image, "image is nullptr");
     ASSERT(!m_image, "m_image already exist");
     m_image = image;
+    m_relatedSwapchain = swapchain;
     ASSERT(hasUsageFlag(TextureUsage::TextureUsage_Backbuffer), "must be swapchain");
 
 #if VULKAN_DEBUG_MARKERS
@@ -1232,11 +1241,21 @@ void VulkanImage::clear(VulkanCommandBuffer* cmdBuffer, const renderer::Color& c
         layout = VulkanImage::hasUsageFlag(TextureUsage::TextureUsage_Backbuffer) ? VK_IMAGE_LAYOUT_PRESENT_SRC_KHR : VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
     }
 
+    VkPipelineStageFlags stage = VK_PIPELINE_STAGE_TRANSFER_BIT;
+    if (layout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
+    {
+        stage |= VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+    }
+    else
+    {
+        stage |= VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+    }
+
     const VkClearColorValue* vkColor = reinterpret_cast<const VkClearColorValue*>(&color);
     ASSERT(cmdBuffer, "nullptr");
-    cmdBuffer->cmdPipelineBarrier(this, VK_PIPELINE_STAGE_TRANSFER_BIT | VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+    cmdBuffer->cmdPipelineBarrier(this, stage, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
     cmdBuffer->cmdClearImage(this, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, vkColor);
-    cmdBuffer->cmdPipelineBarrier(this, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT | VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, layout);
+    cmdBuffer->cmdPipelineBarrier(this, VK_PIPELINE_STAGE_TRANSFER_BIT, stage, layout);
 }
 
 void VulkanImage::clear(VulkanCommandBuffer* cmdBuffer, f32 depth, u32 stencil)
@@ -1258,9 +1277,9 @@ void VulkanImage::clear(VulkanCommandBuffer* cmdBuffer, f32 depth, u32 stencil)
 
     const VkClearDepthStencilValue clearDepthStencilValue = { depth, stencil };
 
-    cmdBuffer->cmdPipelineBarrier(this, VK_PIPELINE_STAGE_TRANSFER_BIT | VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+    cmdBuffer->cmdPipelineBarrier(this, VK_PIPELINE_STAGE_TRANSFER_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
     cmdBuffer->cmdClearImage(this, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &clearDepthStencilValue);
-    cmdBuffer->cmdPipelineBarrier(this, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT | VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, layout);
+    cmdBuffer->cmdPipelineBarrier(this, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT, layout);
 }
 
 bool VulkanImage::upload(VulkanCommandBuffer* cmdBuffer, u32 size, const void* data)

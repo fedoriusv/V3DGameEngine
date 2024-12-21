@@ -10,6 +10,7 @@ namespace renderer
 
     class Device;
     class SwapchainTexture;
+    class SyncPoint;
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -52,7 +53,12 @@ namespace renderer
         /**
         * @brief frame presentFrame
         */
-        virtual void presentFrame() = 0;
+        virtual void presentFrame(SyncPoint* sync = nullptr) = 0;
+
+        /**
+        * @brief frame getSyncPoint
+        */
+        virtual SyncPoint* getSyncPoint() = 0;
 
         /**
         * @brief getCurrentFrameIndex

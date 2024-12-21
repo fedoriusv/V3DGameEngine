@@ -244,7 +244,7 @@ VulkanComputePipeline* VulkanComputePipelineManager::acquireGraphicPipeline(cons
     auto found = m_pipelineComputeList.emplace(desc, pipeline);
     if (found.second)
     {
-        pipeline = V3D_NEW(VulkanComputePipeline, memory::MemoryLabel::MemoryRenderCore)(&m_device, m_device.m_pipelineLayoutManager, state.getName());
+        pipeline = V3D_NEW(VulkanComputePipeline, memory::MemoryLabel::MemoryRenderCore)(&m_device, m_device.getPipelineLayoutManager(), state.getName());
         if (!pipeline->create(state))
         {
             m_pipelineComputeList.erase(desc);

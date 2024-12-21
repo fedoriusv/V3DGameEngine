@@ -471,7 +471,7 @@ bool VulkanGraphicPipeline::create(const GraphicsPipelineState& state)
     rasterizationStateCreateInfo.polygonMode = VulkanGraphicPipeline::convertPolygonModeToVk(rasterizationState._polygonMode);
     rasterizationStateCreateInfo.cullMode = VulkanGraphicPipeline::convertCullModeToVk(rasterizationState._cullMode);
     rasterizationStateCreateInfo.frontFace = VulkanGraphicPipeline::convertFrontFaceToVk(rasterizationState._frontFace);
-    if (!VulkanDevice::isDynamicState(VK_DYNAMIC_STATE_DEPTH_BIAS))
+    if (!VulkanDevice::isDynamicStateSupported(VK_DYNAMIC_STATE_DEPTH_BIAS))
     {
         rasterizationStateCreateInfo.depthBiasEnable = (rasterizationState._depthBiasConstant != 0.f || rasterizationState._depthBiasClamp != 0.f || rasterizationState._depthBiasSlope != 0.f) ? VK_TRUE : VK_FALSE;
         rasterizationStateCreateInfo.depthBiasConstantFactor = rasterizationState._depthBiasConstant;
@@ -484,7 +484,7 @@ bool VulkanGraphicPipeline::create(const GraphicsPipelineState& state)
         ASSERT(false, "not impl");
     }
 
-    if (!VulkanDevice::isDynamicState(VK_DYNAMIC_STATE_LINE_WIDTH))
+    if (!VulkanDevice::isDynamicStateSupported(VK_DYNAMIC_STATE_LINE_WIDTH))
     {
         rasterizationStateCreateInfo.lineWidth = 1.0f; //wideLines
     }
@@ -509,6 +509,7 @@ bool VulkanGraphicPipeline::create(const GraphicsPipelineState& state)
 
     const VertexInputAttributeDesc& inputAttrDesc = pipelineDesc._vertexInputState._inputAttributes;
 
+    bool useStrideBindingDynamicState = false;
     std::vector<VkVertexInputBindingDescription> vertexInputBindingDescriptions;
     vertexInputBindingDescriptions.reserve(inputAttrDesc._countInputBindings);
     for (u32 index = 0; index < inputAttrDesc._countInputBindings; ++index)
@@ -516,9 +517,10 @@ bool VulkanGraphicPipeline::create(const GraphicsPipelineState& state)
         VkVertexInputBindingDescription vertexInputBindingDescription = {};
         vertexInputBindingDescription.binding = inputAttrDesc._inputBindings[index]._binding;
         vertexInputBindingDescription.inputRate = VulkanGraphicPipeline::covertInputRateToVk(inputAttrDesc._inputBindings[index]._rate);
-        if (VulkanDevice::isDynamicState(VK_DYNAMIC_STATE_VERTEX_INPUT_BINDING_STRIDE))
+        if (VulkanDevice::isDynamicStateSupported(VK_DYNAMIC_STATE_VERTEX_INPUT_BINDING_STRIDE))
         {
             vertexInputBindingDescription.stride = 0; //ignore this value
+            useStrideBindingDynamicState = true;
         }
         else
         {
@@ -568,7 +570,7 @@ bool VulkanGraphicPipeline::create(const GraphicsPipelineState& state)
         ASSERT(blendState._logicalOpEnable == VK_FALSE, "feature logicOp not supported");
     }
 
-    if (!VulkanDevice::isDynamicState(VK_DYNAMIC_STATE_BLEND_CONSTANTS))
+    if (!VulkanDevice::isDynamicStateSupported(VK_DYNAMIC_STATE_BLEND_CONSTANTS))
     {
         pipelineColorBlendStateCreateInfo.blendConstants[0] = blendState._constant.m_x;
         pipelineColorBlendStateCreateInfo.blendConstants[1] = blendState._constant.m_y;
@@ -612,7 +614,7 @@ bool VulkanGraphicPipeline::create(const GraphicsPipelineState& state)
     if (m_device.getVulkanDeviceCaps().getPhysicalDeviceFeatures().depthBounds)
     {
         pipelineDepthStencilStateCreateInfo.depthBoundsTestEnable = depthBlendState._depthBoundsTestEnable;
-        if (!VulkanDevice::isDynamicState(VK_DYNAMIC_STATE_DEPTH_BOUNDS))
+        if (!VulkanDevice::isDynamicStateSupported(VK_DYNAMIC_STATE_DEPTH_BOUNDS))
         {
             pipelineDepthStencilStateCreateInfo.minDepthBounds = depthBlendState._depthBounds.m_x;
             pipelineDepthStencilStateCreateInfo.maxDepthBounds = depthBlendState._depthBounds.m_y;
@@ -630,14 +632,19 @@ bool VulkanGraphicPipeline::create(const GraphicsPipelineState& state)
     pipelineDepthStencilStateCreateInfo.back = stencilOpState;
     graphicsPipelineCreateInfo.pDepthStencilState = &pipelineDepthStencilStateCreateInfo;
 
+    std::vector<VkDynamicState> dynamicStates = VulkanDevice::getDynamicStates();
+    if (useStrideBindingDynamicState)
+    {
+        dynamicStates.push_back(VK_DYNAMIC_STATE_VERTEX_INPUT_BINDING_STRIDE);
+    }
 
     //VkPipelineDynamicStateCreateInfo
     VkPipelineDynamicStateCreateInfo pipelineDynamicStateCreateInfo = {};
     pipelineDynamicStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
     pipelineDynamicStateCreateInfo.pNext = nullptr;
     pipelineDynamicStateCreateInfo.flags = 0;
-    pipelineDynamicStateCreateInfo.dynamicStateCount = static_cast<u32>(VulkanDevice::getDynamicStates().size());
-    pipelineDynamicStateCreateInfo.pDynamicStates = VulkanDevice::getDynamicStates().data();
+    pipelineDynamicStateCreateInfo.dynamicStateCount = static_cast<u32>(dynamicStates.size());
+    pipelineDynamicStateCreateInfo.pDynamicStates = dynamicStates.data();
     graphicsPipelineCreateInfo.pDynamicState = &pipelineDynamicStateCreateInfo;
 
     //VkPipelineViewportStateCreateInfo
@@ -646,7 +653,7 @@ bool VulkanGraphicPipeline::create(const GraphicsPipelineState& state)
     pipelineViewportStateCreateInfo.pNext = nullptr;
     pipelineViewportStateCreateInfo.flags = 0;
 
-    if (!VulkanDevice::isDynamicState(VK_DYNAMIC_STATE_VIEWPORT))
+    if (!VulkanDevice::isDynamicStateSupported(VK_DYNAMIC_STATE_VIEWPORT))
     {
         VkViewport viewport = {};
         pipelineViewportStateCreateInfo.viewportCount = 1;
@@ -659,7 +666,7 @@ bool VulkanGraphicPipeline::create(const GraphicsPipelineState& state)
         pipelineViewportStateCreateInfo.viewportCount = 1;
     }
 
-    if (!VulkanDevice::isDynamicState(VK_DYNAMIC_STATE_SCISSOR))
+    if (!VulkanDevice::isDynamicStateSupported(VK_DYNAMIC_STATE_SCISSOR))
     {
         VkRect2D scissor = {};
         pipelineViewportStateCreateInfo.scissorCount = 1;
@@ -945,7 +952,7 @@ VulkanGraphicPipeline* VulkanGraphicPipelineManager::acquireGraphicPipeline(cons
     auto found = m_pipelineGraphicList.emplace(desc, pipeline);
     if (found.second)
     {
-        pipeline = V3D_NEW(VulkanGraphicPipeline, memory::MemoryLabel::MemoryRenderCore)(&m_device, m_device.m_renderpassManager, m_device.m_pipelineLayoutManager, state.getName());
+        pipeline = V3D_NEW(VulkanGraphicPipeline, memory::MemoryLabel::MemoryRenderCore)(&m_device, m_device.getRenderpassManager(), m_device.getPipelineLayoutManager(), state.getName());
         if (!pipeline->create(state))
         {
             m_pipelineGraphicList.erase(desc);

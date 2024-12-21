@@ -68,7 +68,7 @@ namespace vk
         bool waitCompletion(u64 time = 0);
 
         void captureResource(VulkanResource* resource, u64 frame = 0);
-        bool isBackbufferPresented() const;
+        VulkanSwapchain* getActiveSwapchain() const;
 
         void beginCommandBuffer();
         void endCommandBuffer();
@@ -153,11 +153,10 @@ namespace vk
         {
             const VulkanRenderPass*  _renderpass;
             const VulkanFramebuffer* _framebuffer;
+            VulkanSwapchain*         _activeSwapchain;
         };
         RenderPassState                   m_renderpassState;
-        VulkanSwapchain*                  m_activeSwapchain;
 
-        bool                              m_drawingToSwapchain;
         bool                              m_isInsideRenderPass;
 
 #if VULKAN_DEBUG_MARKERS
@@ -185,9 +184,9 @@ namespace vk
         return m_commands;
     }
 
-    inline bool VulkanCommandBuffer::isBackbufferPresented() const
+    inline VulkanSwapchain* VulkanCommandBuffer::getActiveSwapchain() const
     {
-        return m_drawingToSwapchain;
+        return m_renderpassState._activeSwapchain;
     }
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

@@ -85,6 +85,9 @@ VulkanSwapchain::VulkanSwapchain(VulkanDevice* device, VulkanSemaphoreManager* c
 
     , m_semaphoreManager(semaphoreManager)
     , m_currentSemaphoreIndex(0U)
+    , m_acquireSync(V3D_NEW(VulkanSyncPoint, memory::MemoryLabel::MemoryRenderCore))
+
+    , m_presentQueue(VK_NULL_HANDLE)
 
     , m_insideFrame(false)
     , m_ready(false)
@@ -96,12 +99,19 @@ VulkanSwapchain::~VulkanSwapchain()
 {
     LOG_DEBUG("VulkanSwapchain destructor %llx", this);
 
+    V3D_DELETE(m_acquireSync, memory::MemoryLabel::MemoryRenderCore);
+
     ASSERT(!m_ready, "doesn't deleted");
 
     ASSERT(m_swapchainImages.empty(), "not empty");
     ASSERT(!m_swapchain, "swapchain is not nullptr");
     ASSERT(m_acquiredSemaphores.empty(), "not empty");
     ASSERT(!m_surface, "surface isn't nullptr");
+}
+
+SyncPoint* VulkanSwapchain::getSyncPoint()
+{
+    return m_acquireSync;
 }
 
 void VulkanSwapchain::beginFrame()
@@ -111,6 +121,8 @@ void VulkanSwapchain::beginFrame()
 
     [[maybe_unused]] u32 prevImageIndex = VulkanSwapchain::currentSwapchainIndex();
     [[maybe_unused]] u32 index = acquireImage();
+
+    m_acquireSync->m_waitSubmitSemaphores.push_back(VulkanSwapchain::getCurrentAcquiredSemaphore());
 
 #if VULKAN_DEBUG
     LOG_DEBUG("VulkanContext::beginFrame %llu, image index %u", m_frameCounter, index);
@@ -135,24 +147,26 @@ void VulkanSwapchain::endFrame()
     m_insideFrame = false;
 }
 
-void VulkanSwapchain::presentFrame()
+void VulkanSwapchain::presentFrame(SyncPoint* sync)
 {
     ASSERT(!m_insideFrame, "must be outside");
+    VulkanSyncPoint* syncPoint = sync ? static_cast<VulkanSyncPoint*>(sync) : m_acquireSync;
 
 #if VULKAN_DEBUG
     LOG_DEBUG("VulkanContext::presentFrame %llu", m_frameCounter);
 #endif //VULKAN_DEBUG
 
-    for (auto cmdList: m_cmdLists)
+    if (m_presentQueue)
     {
 #if SWAPCHAIN_ON_ADVANCE
-        VulkanSwapchain::present(m_device.getQueueByMask(cmdList->getDeviceMask()), cmdList->m_presentedSwapchainSemaphores);
+        VulkanSwapchain::present(m_presentQueue, lastCmdList->m_presentedSwapchainSemaphores);
 #else
-        VulkanSwapchain::present(m_device.getQueueByMask(cmdList->getDeviceMask()), cmdList->getWaitSemaphores());
+        VulkanSwapchain::present(m_presentQueue, syncPoint->m_signalSubmitSemaphores);
 #endif
-        cmdList->postPresent();
     }
-    m_cmdLists.clear();
+
+    m_acquireSync->m_waitSubmitSemaphores.clear();
+    m_presentQueue = VK_NULL_HANDLE;
 
     ++m_frameCounter;
 }
@@ -490,7 +504,7 @@ bool VulkanSwapchain::createSwapchainImages(const SwapchainParams& params, const
         for (u32 index = 0; index < images.size(); ++index)
         {
             VulkanImage* swapchainImage = V3D_NEW(VulkanImage, memory::MemoryLabel::MemoryRenderCore)(&m_device, m_device.m_imageMemoryManager, surfaceFormat.format, extent, VK_SAMPLE_COUNT_1_BIT, 1U, flags, "SwapchainImage_" + std::to_string(index));
-            if (!swapchainImage->create(images[index]))
+            if (!swapchainImage->create(images[index], this))
             {
                 LOG_FATAL("VulkanSwapchain::createSwapchainImages: can't create surface texture");
 
@@ -510,7 +524,7 @@ bool VulkanSwapchain::createSwapchainImages(const SwapchainParams& params, const
         for (auto& swapchainImage : m_swapchainImages)
         {
             ASSERT(imageIter != images.cend(), "wrong iterrator");
-            if (!swapchainImage->create(*imageIter))
+            if (!swapchainImage->create(*imageIter, this))
             {
                 LOG_FATAL("VulkanSwapchain::createSwapchainImages: can't recreate surface image");
                 for (auto& deletedSwapchainImage : m_swapchainImages)
@@ -768,15 +782,9 @@ void VulkanSwapchain::attachResource(VulkanResource* resource, const std::functi
     m_swapchainResources.emplace_back(resource, recreator);
 }
 
-void VulkanSwapchain::attachCmdList(VulkanCmdList* cmdlist)
+void VulkanSwapchain::attachQueueForPresent(VkQueue queue)
 {
-    std::scoped_lock lock(m_mutex);
-
-    auto found = std::find(m_cmdLists.begin(), m_cmdLists.end(), cmdlist);
-    if (found == m_cmdLists.end())
-    {
-        m_cmdLists.push_back(cmdlist);
-    }
+    m_presentQueue = queue;
 }
 
 void VulkanSwapchain::recreateAttachedResources()

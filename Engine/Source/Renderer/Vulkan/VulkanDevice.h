@@ -33,6 +33,7 @@ namespace vk
     class VulkanConstantBufferManager;
     class VulkanDescriptorSetManager;
     class VulkanSamplerManager;
+    class VulkanSyncPoint;
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -79,36 +80,33 @@ namespace vk
     public:
 
         Device::DeviceMask getDeviceMask() const;
-        const std::vector<VulkanSemaphore*>& getWaitSemaphores() const;
 
         bool prepareDraw(VulkanCommandBuffer* drawBuffer);
         bool prepareDescriptorSets(VulkanCommandBuffer* drawBuffer);
 
         void postSubmit();
-        void postPresent();
 
     private:
 
         friend VulkanDevice;
 
-        VulkanDevice&                 m_device;
-        Device::DeviceMask            m_queueMask;
-        u32                           m_queueIndex;
-        std::thread::id               m_threadID;
-        u32                           m_concurrencySlot;
-                                      
-        VulkanCommandBuffer*          m_currentCmdBuffer[toEnumType(CommandTargetType::Count)];
-        VulkanConstantBufferManager*  m_CBOManager;
-        VulkanDescriptorSetManager*   m_descriptorSetManager;
+        VulkanDevice&                   m_device;
+        Device::DeviceMask              m_queueMask;
+        u32                             m_queueIndex;
+        std::thread::id                 m_threadID;
+        u32                             m_concurrencySlot;
+                                        
+        VulkanCommandBuffer*            m_currentCmdBuffer[toEnumType(CommandTargetType::Count)];
+        VulkanConstantBufferManager*    m_CBOManager;
+        VulkanDescriptorSetManager*     m_descriptorSetManager;
 
-        VulkanRenderState             m_pendingRenderState;
-        VulkanRenderState             m_currentRenderState;
+        VulkanRenderState               m_pendingRenderState;
+        VulkanRenderState               m_currentRenderState;
 
-        std::vector<VulkanSemaphore*> m_acquireSwapchainSemaphores;
-        std::vector<VulkanSemaphore*> m_waitSubmitSemaphores;
-        std::vector<VulkanSemaphore*> m_signalSubmitSemaphores;
+        std::vector<VulkanSyncPoint*>   m_syncPoints;
+
     public:
-        std::vector<VulkanSemaphore*> m_presentedSwapchainSemaphores;
+        std::vector<VulkanSemaphore*> m_presentedSwapchainSemaphores; //TODO
     };
 
     inline Device::DeviceMask VulkanCmdList::getDeviceMask() const
@@ -116,10 +114,20 @@ namespace vk
         return m_queueMask;
     }
 
-    inline const std::vector<VulkanSemaphore*>& VulkanCmdList::getWaitSemaphores() const
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    class VulkanSyncPoint : public SyncPoint
     {
-        return m_waitSubmitSemaphores;
-    }
+    public:
+
+        VulkanSyncPoint() = default;
+        ~VulkanSyncPoint() = default;
+
+    public:
+
+        std::vector<VulkanSemaphore*> m_waitSubmitSemaphores;
+        std::vector<VulkanSemaphore*> m_signalSubmitSemaphores;
+    };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -141,7 +149,7 @@ namespace vk
     {
     public:
 
-        static bool isDynamicState(VkDynamicState state);
+        static bool isDynamicStateSupported(VkDynamicState state);
         static const std::vector<VkDynamicState>& getDynamicStates();
 
         explicit VulkanDevice(DeviceMaskFlags mask) noexcept;
@@ -150,10 +158,14 @@ namespace vk
         const DeviceCaps& getDeviceCaps() const override;
 
         void submit(CmdList* cmd, bool wait = false) override;
+        void submit(CmdList* cmd, SyncPoint* sync, bool wait = false) override;
         void waitGPUCompletion(CmdList* cmd) override;
 
         [[nodiscard]] Swapchain* createSwapchain(platform::Window* window, const Swapchain::SwapchainParams& params) override;
         void destroySwapchain(Swapchain* swapchain) override;
+
+        [[nodiscard]] virtual SyncPoint* createSyncPoint(CmdList* cmd) override;
+        void destroySyncPoint(CmdList* cmd, SyncPoint* sync) override;
 
         [[nodiscard]] TextureHandle createTexture(TextureTarget target, Format format, const math::Dimension3D& dimension, u32 layers, u32 mipmapLevel, TextureUsageFlags flags, const std::string& name = "") override;
         [[nodiscard]] TextureHandle createTexture(TextureTarget target, Format format, const math::Dimension3D& dimension, u32 layers, TextureSamples samples, TextureUsageFlags flags, const std::string& name = "") override;
@@ -179,15 +191,13 @@ namespace vk
         const VulkanDeviceCaps& getVulkanDeviceCaps() const;
 
         VulkanStagingBufferManager* getStaginBufferManager() const;
-
+        VulkanPipelineLayoutManager* getPipelineLayoutManager() const;
+        VulkanRenderpassManager* getRenderpassManager() const;
 
     private:
 
-        //friend VulkanCommandBufferManager;
         friend VulkanCmdList;
         friend VulkanSwapchain;
-        friend VulkanGraphicPipelineManager;
-        friend VulkanComputePipelineManager;
 
         VulkanDevice() = delete;
         VulkanDevice(const VulkanDevice&) = delete;
@@ -202,7 +212,8 @@ namespace vk
         bool createDevice();
 
         const std::string                       s_vulkanApplicationName = "VulkanRender";
-        static std::vector<VkDynamicState>      s_dynamicStates;
+        static std::vector<VkDynamicState>      s_requiredDynamicStates;
+        static std::vector<VkDynamicState>      s_supportedDynamicStates;
 
         DeviceInfo                              m_deviceInfo;
         VulkanDeviceCaps                        m_deviceCaps;
@@ -226,9 +237,10 @@ namespace vk
 
         struct Concurrency
         {
-            std::thread::id              m_threadID;
-            VulkanCommandBufferManager*  m_cmdBufferManager = nullptr;
+            std::thread::id                 m_threadID;
+            VulkanCommandBufferManager*     m_cmdBufferManager = nullptr;
         };
+        std::mutex                              m_mutex;
         VulkanCommandBufferManager*             m_internalCmdBufferManager;
 
         std::vector<Concurrency>                m_threadedPools;
@@ -269,7 +281,7 @@ namespace vk
     {
         for (u32 i = 0; i < m_threadedPools.size(); ++i)
         {
-            if (((m_maskOfActiveThreadPool >> i) & 0b0) == 0)
+            if ((m_maskOfActiveThreadPool >> i) == 0)
             {
                 return i;
             }
@@ -283,6 +295,18 @@ namespace vk
     {
         ASSERT(m_stagingBufferManager, "nullptr");
         return m_stagingBufferManager;
+    }
+
+    inline VulkanPipelineLayoutManager* VulkanDevice::getPipelineLayoutManager() const
+    {
+        ASSERT(m_pipelineLayoutManager, "nullptr");
+        return m_pipelineLayoutManager;
+    }
+
+    inline VulkanRenderpassManager* VulkanDevice::getRenderpassManager() const
+    {
+        ASSERT(m_renderpassManager, "nullptr");
+        return m_renderpassManager;
     }
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

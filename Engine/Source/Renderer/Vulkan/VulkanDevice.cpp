@@ -90,7 +90,14 @@ const std::vector<const c8*> k_deviceExtensionsList =
 #endif
 };
 
-std::vector<VkDynamicState> VulkanDevice::s_dynamicStates =
+std::vector<VkDynamicState> VulkanDevice::s_requiredDynamicStates =
+{
+    VK_DYNAMIC_STATE_VIEWPORT,
+    VK_DYNAMIC_STATE_SCISSOR,
+    VK_DYNAMIC_STATE_STENCIL_REFERENCE,
+};
+
+std::vector<VkDynamicState> VulkanDevice::s_supportedDynamicStates =
 {
     VK_DYNAMIC_STATE_VIEWPORT,
     VK_DYNAMIC_STATE_SCISSOR,
@@ -98,10 +105,10 @@ std::vector<VkDynamicState> VulkanDevice::s_dynamicStates =
     VK_DYNAMIC_STATE_VERTEX_INPUT_BINDING_STRIDE,
 };
 
-bool VulkanDevice::isDynamicState(VkDynamicState state)
+bool VulkanDevice::isDynamicStateSupported(VkDynamicState state)
 {
-    auto iter = std::find(s_dynamicStates.cbegin(), s_dynamicStates.cend(), state);
-    if (iter != s_dynamicStates.cend())
+    auto iter = std::find(s_supportedDynamicStates.cbegin(), s_supportedDynamicStates.cend(), state);
+    if (iter != s_supportedDynamicStates.cend())
     {
         return true;
     }
@@ -111,7 +118,7 @@ bool VulkanDevice::isDynamicState(VkDynamicState state)
 
 const std::vector<VkDynamicState>& VulkanDevice::getDynamicStates()
 {
-    return s_dynamicStates;
+    return s_requiredDynamicStates;
 }
 
 VulkanDevice::VulkanDevice(DeviceMaskFlags mask) noexcept
@@ -161,8 +168,14 @@ VulkanDevice::~VulkanDevice()
 
 void VulkanDevice::submit(CmdList* cmd, bool wait)
 {
+    submit(cmd, nullptr, wait);
+}
+
+void VulkanDevice::submit(CmdList* cmd, SyncPoint* sync, bool wait)
+{
     ASSERT(cmd, "nullptr");
     VulkanCmdList& cmdList = *static_cast<VulkanCmdList*>(cmd);
+    VulkanSyncPoint* syncPoint = static_cast<VulkanSyncPoint*>(sync);
 
     VulkanCommandBufferManager* cmdBufferMgr = m_threadedPools[cmdList.m_concurrencySlot].m_cmdBufferManager;
     ASSERT(cmdBufferMgr, "nullptr");
@@ -184,10 +197,10 @@ void VulkanDevice::submit(CmdList* cmd, bool wait)
             signalUploadSemaphores.push_back(uploadSemaphore);
         }
 
-        if (!cmdList.m_waitSubmitSemaphores.empty())
+        if (syncPoint && !syncPoint->m_waitSubmitSemaphores.empty())
         {
-            uploadBuffer->addSemaphores(VK_PIPELINE_STAGE_TRANSFER_BIT, cmdList.m_waitSubmitSemaphores);
-            cmdList.m_waitSubmitSemaphores.clear();
+            uploadBuffer->addSemaphores(VK_PIPELINE_STAGE_TRANSFER_BIT, syncPoint->m_waitSubmitSemaphores);
+            syncPoint->m_waitSubmitSemaphores.clear();
         }
 
         cmdBufferMgr->submit(uploadBuffer, signalUploadSemaphores);
@@ -195,6 +208,8 @@ void VulkanDevice::submit(CmdList* cmd, bool wait)
     }
 
     //Draw commands
+    static thread_local std::vector<VulkanSemaphore*> signalDrawSemaphores;
+    signalDrawSemaphores.clear();
     if (cmdList.m_currentCmdBuffer[toEnumType(CommandTargetType::CmdDrawBuffer)])
     {
         VulkanCommandBuffer* drawBuffer = cmdList.m_currentCmdBuffer[toEnumType(CommandTargetType::CmdDrawBuffer)];
@@ -205,33 +220,38 @@ void VulkanDevice::submit(CmdList* cmd, bool wait)
 
         cmdList.m_pendingRenderState.flushBarriers(drawBuffer);
         drawBuffer->endCommandBuffer();
-        //m_uniformBufferManager->markToUse(drawBuffer, 0);
 
+        //Sync
         {
-            if (uploadSemaphore != nullptr)
+            if (uploadSemaphore)
             {
                 drawBuffer->addSemaphore(VK_PIPELINE_STAGE_TRANSFER_BIT, uploadSemaphore);
             }
 
-            if (drawBuffer->isBackbufferPresented())
+            VulkanSwapchain* swapchain = drawBuffer->getActiveSwapchain();
+            if (swapchain)
             {
-                ASSERT(!cmdList.m_acquireSwapchainSemaphores.empty(), "must be filled");
-                drawBuffer->addSemaphores(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, cmdList.m_acquireSwapchainSemaphores);
-                if (!wait) //skip signal semaphores when waits result
-                {
-                    VulkanSemaphore* semaphore = m_semaphoreManager->acquireFreeSemaphore();
-                    cmdList.m_signalSubmitSemaphores.push_back(semaphore);
-                }
+                swapchain->attachQueueForPresent(VulkanDevice::getQueueByMask(cmdList.getDeviceMask()));
             }
 
-            if (!cmdList.m_waitSubmitSemaphores.empty())
+            if (syncPoint)
             {
-                drawBuffer->addSemaphores(VK_PIPELINE_STAGE_TRANSFER_BIT, cmdList.m_waitSubmitSemaphores);
-                cmdList.m_waitSubmitSemaphores.clear();
+                if (!syncPoint->m_waitSubmitSemaphores.empty())
+                {
+                    drawBuffer->addSemaphores(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, syncPoint->m_waitSubmitSemaphores);
+                }
+
+                if (!wait)
+                {
+                    for (auto& sync : cmdList.m_syncPoints)
+                    {
+                        signalDrawSemaphores.insert(signalDrawSemaphores.end(), std::make_move_iterator(sync->m_signalSubmitSemaphores.begin()), std::make_move_iterator(sync->m_signalSubmitSemaphores.end()));
+                    }
+                }
             }
         }
 
-        cmdBufferMgr->submit(drawBuffer, cmdList.m_signalSubmitSemaphores);
+        cmdBufferMgr->submit(drawBuffer, signalDrawSemaphores);
         if (wait)
         {
             drawBuffer->waitCompletion();
@@ -263,7 +283,7 @@ Swapchain* VulkanDevice::createSwapchain(platform::Window* window, const Swapcha
     if (!swapchain->create(window, params))
     {
         swapchain->destroy();
-        V3D_FREE(swapchain, memory::MemoryLabel::MemoryRenderCore);
+        V3D_DELETE(swapchain, memory::MemoryLabel::MemoryRenderCore);
 
         LOG_FATAL("VulkanDevice::createSwapchain: Cant create VulkanSwapchain");
         return nullptr;
@@ -292,7 +312,57 @@ void VulkanDevice::destroySwapchain(Swapchain* swapchain)
     m_swapchainList.erase(found);
 
     vkSwapchain->destroy();
-    V3D_FREE(vkSwapchain, memory::MemoryLabel::MemoryRenderCore);
+    V3D_DELETE(vkSwapchain, memory::MemoryLabel::MemoryRenderCore);
+}
+
+SyncPoint* VulkanDevice::createSyncPoint(CmdList* cmd)
+{
+    ASSERT(cmd, "nullptr");
+    VulkanCmdList* vkCmdList = static_cast<VulkanCmdList*>(cmd);
+
+    VulkanSyncPoint* syncPoint = V3D_NEW(VulkanSyncPoint, memory::MemoryLabel::MemoryRenderCore)();
+    ASSERT(syncPoint, "nullptr");
+
+    VulkanSemaphore* waitSemaphore = m_semaphoreManager->createSemaphore(VulkanSemaphore::SemaphoreType::Binary, "SubmitWaitSemaphore");
+    syncPoint->m_waitSubmitSemaphores.push_back(waitSemaphore);
+
+    VulkanSemaphore* signalSemaphore = m_semaphoreManager->createSemaphore(VulkanSemaphore::SemaphoreType::Binary, "SubmitSignalSemaphore");
+    syncPoint->m_signalSubmitSemaphores.push_back(signalSemaphore);
+
+    vkCmdList->m_syncPoints.push_back(syncPoint);
+
+    return syncPoint;
+}
+
+void VulkanDevice::destroySyncPoint(CmdList* cmd, SyncPoint* sync)
+{
+    ASSERT(cmd, "nullptr");
+    VulkanCmdList* vkCmdList = static_cast<VulkanCmdList*>(cmd);
+    VulkanSyncPoint* vkSync = static_cast<VulkanSyncPoint*>(sync);
+
+    auto found = std::find(vkCmdList->m_syncPoints.cbegin(), vkCmdList->m_syncPoints.cend(), vkSync);
+    ASSERT(found != vkCmdList->m_syncPoints.cend(), "not found");
+    vkCmdList->m_syncPoints.erase(found);
+
+    for (auto& wait : vkSync->m_waitSubmitSemaphores)
+    {
+        m_resourceDeleter.addResourceToDelete(wait, [this, wait](VulkanResource* resource) -> void
+            {
+                m_semaphoreManager->deleteSemaphore(wait);
+            });
+    }
+    vkSync->m_waitSubmitSemaphores.clear();
+
+    for (auto& signal : vkSync->m_signalSubmitSemaphores)
+    {
+        m_resourceDeleter.addResourceToDelete(signal, [this, signal](VulkanResource* resource) -> void
+            {
+                m_semaphoreManager->deleteSemaphore(signal);
+            });
+    }
+    vkSync->m_signalSubmitSemaphores.clear();
+
+    V3D_DELETE(vkSync, memory::MemoryLabel::MemoryRenderCore);
 }
 
 TextureHandle VulkanDevice::createTexture(TextureTarget target, Format format, const math::Dimension3D& dimension, u32 layers, u32 mipmapLevel, TextureUsageFlags flags, const std::string& name)
@@ -402,7 +472,8 @@ CmdList* VulkanDevice::createCommandList_Impl(DeviceMask queueType)
     VulkanCmdList* cmdList = V3D_NEW(VulkanCmdList, memory::MemoryLabel::MemoryRenderCore)(this);
     cmdList->m_queueMask = queueType;
     cmdList->m_queueIndex = 0;
-    cmdList->m_concurrencySlot = prepareConcurrencySlot();
+    // unknown slot
+    cmdList->m_concurrencySlot = ~1;
 
     m_cmdLists.push_back(cmdList);
 
@@ -415,6 +486,7 @@ void VulkanDevice::destroyCommandList(CmdList* cmdList)
    
     waitGPUCompletion(vkCmdList);
 
+    // TODO
     s32 slot = vkCmdList->m_concurrencySlot;
     m_maskOfActiveThreadPool &= ~(1 << slot);
     V3D_DELETE(vkCmdList, memory::MemoryLabel::MemoryRenderCore);
@@ -424,6 +496,19 @@ void VulkanDevice::destroyCommandList(CmdList* cmdList)
 
 u32 VulkanDevice::prepareConcurrencySlot()
 {
+    std::lock_guard lock(m_mutex);
+
+    auto getSlotByThread = std::find_if(m_threadedPools.begin(), m_threadedPools.end(), [](const Concurrency& con) -> bool
+        {
+            return con.m_threadID == std::this_thread::get_id();
+        }
+    );
+
+    if (getSlotByThread != m_threadedPools.end())
+    {
+        return std::distance(m_threadedPools.begin(), getSlotByThread);
+    }
+
     s32 slot = getFreeThreadSlot();
     ASSERT(slot >= 0, ("must be valid"));
     m_maskOfActiveThreadPool |= 1 << slot;
@@ -963,6 +1048,12 @@ void VulkanDevice::destroy()
         m_semaphoreManager = nullptr;
     }
 
+#if DEBUG_OBJECT_MEMORY
+    ASSERT(VulkanBuffer::s_objects.empty(), "buffer objects still exist");
+    ASSERT(VulkanImage::s_objects.empty(), "image objects still exist");
+    ASSERT(VulkanSemaphore::s_objects.empty(), "semaphore objects still exist");
+#endif //DEBUG_OBJECT_MEMORY
+
     if (m_deviceInfo._device)
     {
         VulkanWrapper::DestroyDevice(m_deviceInfo._device, VULKAN_ALLOCATOR);
@@ -1102,8 +1193,8 @@ VulkanCmdList::~VulkanCmdList()
 void VulkanCmdList::setViewport(const math::Rect32& viewport, const math::Vector2D& depth)
 {
 #if VULKAN_DEBUG
-    LOG_DEBUG("VulkanCmdList::setViewport [%u, %u; %u, %u]", viewport.getLeftX(), viewport.getTopY(), viewport.getWidth(), viewport.getHeight());
-    if (VulkanDevice::isDynamicState(VK_DYNAMIC_STATE_VIEWPORT), "must be dynamic");
+    LOG_DEBUG("VulkanCmdList[%u]::setViewport [%u, %u; %u, %u]", m_concurrencySlot, viewport.getLeftX(), viewport.getTopY(), viewport.getWidth(), viewport.getHeight());
+    if (VulkanDevice::isDynamicStateSupported(VK_DYNAMIC_STATE_VIEWPORT), "must be dynamic");
 #endif //VULKAN_DEBUG
 
     VkViewport& vkViewport = m_pendingRenderState._viewports;
@@ -1124,8 +1215,8 @@ void VulkanCmdList::setViewport(const math::Rect32& viewport, const math::Vector
 void VulkanCmdList::setScissor(const math::Rect32& scissor)
 {
 #if VULKAN_DEBUG
-    LOG_DEBUG("VulkanCmdList::setScissor [%u, %u; %u, %u]", scissor.getLeftX(), scissor.getTopY(), scissor.getWidth(), scissor.getHeight());
-    if (VulkanDevice::isDynamicState(VK_DYNAMIC_STATE_SCISSOR), "must be dynamic");
+    LOG_DEBUG("VulkanCmdList[%u]::setScissor [%u, %u; %u, %u]", m_concurrencySlot, scissor.getLeftX(), scissor.getTopY(), scissor.getWidth(), scissor.getHeight());
+    if (VulkanDevice::isDynamicStateSupported(VK_DYNAMIC_STATE_SCISSOR), "must be dynamic");
 #endif //VULKAN_DEBUG
 
     VkRect2D& vkScissor = m_pendingRenderState._scissors;
@@ -1140,8 +1231,8 @@ void VulkanCmdList::setScissor(const math::Rect32& scissor)
 void VulkanCmdList::setStencilRef(u32 mask)
 {
 #if VULKAN_DEBUG
-    LOG_DEBUG("VulkanCmdList::setStencilRef [%mask]", mask);
-    if (VulkanDevice::isDynamicState(VK_DYNAMIC_STATE_STENCIL_REFERENCE), "must be dynamic");
+    LOG_DEBUG("VulkanCmdList[%u]::setStencilRef [%mask]", m_concurrencySlot, mask);
+    if (VulkanDevice::isDynamicStateSupported(VK_DYNAMIC_STATE_STENCIL_REFERENCE), "must be dynamic");
 #endif //VULKAN_DEBUG
 
     m_pendingRenderState._stencilRef = mask;
@@ -1152,7 +1243,7 @@ void VulkanCmdList::setStencilRef(u32 mask)
 void VulkanCmdList::beginRenderTarget(RenderTargetState& rendertarget)
 {
 #if VULKAN_DEBUG
-    LOG_DEBUG("VulkanCmdList::beginRenderTarget [%s]", rendertarget.m_name.c_str());
+    LOG_DEBUG("VulkanCmdList[%u]::beginRenderTarget [%s]", m_concurrencySlot, rendertarget.m_name.c_str());
 #endif //VULKAN_DEBUG
 
     VulkanRenderPass* renderpass = m_device.m_renderpassManager->acquireRenderpass(rendertarget.m_renderpassDesc, rendertarget.m_name);
@@ -1166,9 +1257,6 @@ void VulkanCmdList::beginRenderTarget(RenderTargetState& rendertarget)
             ASSERT(targets._images[index].isValid(), "should be vaild");
             VulkanSwapchain* swapchain = OBJECT_FROM_HANDLE(targets._images[index], VulkanSwapchain);
             targets._images[index] = TextureHandle(swapchain->getCurrentSwapchainImage()); //replace to active swaphain texture
-
-            swapchain->attachCmdList(this);
-            m_acquireSwapchainSemaphores.push_back(swapchain->getCurrentAcquiredSemaphore());
         }
     }
 
@@ -1205,13 +1293,16 @@ void VulkanCmdList::beginRenderTarget(RenderTargetState& rendertarget)
 
 void VulkanCmdList::endRenderTarget()
 {
+#if VULKAN_DEBUG
+    LOG_DEBUG("VulkanCmdList[%u]::endRenderTarget", m_concurrencySlot);
+#endif //VULKAN_DEBUG
     m_pendingRenderState._insideRenderpass = false;
 }
 
 void VulkanCmdList::setPipelineState(GraphicsPipelineState& state)
 {
 #if VULKAN_DEBUG
-    LOG_DEBUG("VulkanCmdList::setPipelineState [%s]", state.m_name.c_str());
+    LOG_DEBUG("VulkanCmdList[%u]::setPipelineState [%s]", m_concurrencySlot, state.m_name.c_str());
 #endif //VULKAN_DEBUG
 
     VulkanGraphicPipeline* pipeline = m_device.m_graphicPipelineManager->acquireGraphicPipeline(state);
@@ -1224,7 +1315,7 @@ void VulkanCmdList::setPipelineState(GraphicsPipelineState& state)
 void VulkanCmdList::setPipelineState(ComputePipelineState& state)
 {
 #if VULKAN_DEBUG
-    LOG_DEBUG("VulkanCmdList::setPipelineState [%s]", state.m_name.c_str());
+    LOG_DEBUG("VulkanCmdList[%u]::setPipelineState [%s]", m_concurrencySlot, state.m_name.c_str());
 #endif //VULKAN_DEBUG
 
     VulkanComputePipeline* pipeline = m_device.m_computePipelineManager->acquireGraphicPipeline(state);
@@ -1255,8 +1346,17 @@ void VulkanCmdList::transition(const TextureView& textureView, TransitionOp stat
 void VulkanCmdList::bindTexture(u32 set, u32 slot, const TextureView& textureView)
 {
     ASSERT(textureView._texture, "nullptr");
-    VulkanImage* vkImage = OBJECT_FROM_HANDLE(textureView._texture->getTextureHandle(), VulkanImage);
-    m_pendingRenderState.bind(BindingType::Texture, set, slot, 0, vkImage, textureView._subresource);
+    VulkanImage* image = nullptr;
+    if (textureView._texture->hasUsageFlag(TextureUsage::TextureUsage_Backbuffer))
+    {
+        VulkanSwapchain* swapchain = OBJECT_FROM_HANDLE(textureView._texture->getTextureHandle(), VulkanSwapchain);
+        image = swapchain->getCurrentSwapchainImage();
+    }
+    else
+    {
+        image = OBJECT_FROM_HANDLE(textureView._texture->getTextureHandle(), VulkanImage);
+    }
+    m_pendingRenderState.bind(BindingType::Texture, set, slot, 0, image, textureView._subresource);
 }
 
 void VulkanCmdList::bindBuffer(u32 set, u32 slot, Buffer* buffer)
@@ -1338,6 +1438,26 @@ bool VulkanCmdList::prepareDraw(VulkanCommandBuffer* drawBuffer)
 {
     ASSERT(drawBuffer, "nullptr");
 
+    if (!drawBuffer->isInsideRenderPass())
+    {
+        m_pendingRenderState.flushBarriers(drawBuffer);
+
+        if (m_pendingRenderState.isDirty(DiryStateMask::DiryState_RenderPass))
+        {
+            drawBuffer->cmdBeginRenderpass(m_pendingRenderState._renderpass, m_pendingRenderState._framebuffer, m_pendingRenderState._renderArea, m_pendingRenderState._clearValues);
+            m_currentRenderState._renderpass = m_pendingRenderState._renderpass;
+            m_currentRenderState._framebuffer = m_pendingRenderState._framebuffer;
+            m_currentRenderState._renderArea = m_pendingRenderState._renderArea;
+            m_pendingRenderState.unsetDirty(DiryStateMask::DiryState_RenderPass);
+        }
+    }
+    else
+    {
+        VulkanCommandBuffer* transitionBuffer = acquireAndStartCommandBuffer(CommandTargetType::CmdTransitionBuffer);
+        m_pendingRenderState.flushBarriers(transitionBuffer);
+        //TODO
+    }
+
     if (m_pendingRenderState.isDirty(DiryStateMask::DiryState_Viewport))
     {
         drawBuffer->cmdSetViewport(m_pendingRenderState._viewports);
@@ -1367,18 +1487,6 @@ bool VulkanCmdList::prepareDraw(VulkanCommandBuffer* drawBuffer)
         m_pendingRenderState.unsetDirty(DiryStateMask::DiryState_Pipeline);
     }
 
-    if (!drawBuffer->isInsideRenderPass())
-    {
-        if (m_pendingRenderState.isDirty(DiryStateMask::DiryState_RenderPass))
-        {
-            drawBuffer->cmdBeginRenderpass(m_pendingRenderState._renderpass, m_pendingRenderState._framebuffer, m_pendingRenderState._renderArea, m_pendingRenderState._clearValues);
-            m_currentRenderState._renderpass = m_pendingRenderState._renderpass;
-            m_currentRenderState._framebuffer = m_pendingRenderState._framebuffer;
-            m_currentRenderState._renderArea = m_pendingRenderState._renderArea;
-            m_pendingRenderState.unsetDirty(DiryStateMask::DiryState_RenderPass);
-        }
-    }
-
     //DS
     if (VulkanCmdList::prepareDescriptorSets(drawBuffer))
     {
@@ -1403,7 +1511,7 @@ bool VulkanCmdList::prepareDescriptorSets(VulkanCommandBuffer* drawBuffer)
             continue;
         }
 
-        if (m_pendingRenderState.isDirty(DiryStateMask::DiryState_DescriptorSet + indexSet))
+        if (m_pendingRenderState.isDirty(DiryStateMask(DiryState_DescriptorSet + indexSet)))
         {
             auto& layoutSet = m_pendingRenderState._graphicPipeline->getDescriptorSetLayouts()._setLayouts[indexSet];
 
@@ -1413,7 +1521,7 @@ bool VulkanCmdList::prepareDescriptorSets(VulkanCommandBuffer* drawBuffer)
             drawBuffer->captureResource(pool);
 
             m_descriptorSetManager->updateDescriptorSet(drawBuffer, set, m_pendingRenderState._sets[indexSet]);
-            m_pendingRenderState.unsetDirty(DiryStateMask::DiryState_DescriptorSet + indexSet);
+            m_pendingRenderState.unsetDirty(DiryStateMask(DiryState_DescriptorSet + indexSet));
         }
     }
 
@@ -1423,7 +1531,7 @@ bool VulkanCmdList::prepareDescriptorSets(VulkanCommandBuffer* drawBuffer)
 void VulkanCmdList::draw(const GeometryBufferDesc& desc, u32 firstVertex, u32 vertexCount, u32 firstInstance, u32 instanceCount)
 {
 #if VULKAN_DEBUG
-    LOG_DEBUG("VulkanCmdList::draw");
+    LOG_DEBUG("VulkanCmdList[%u]::draw", m_concurrencySlot);
 #endif //VULKAN_DEBUG
 
     VulkanCommandBuffer* drawBuffer = acquireAndStartCommandBuffer(CommandTargetType::CmdDrawBuffer);
@@ -1442,7 +1550,7 @@ void VulkanCmdList::draw(const GeometryBufferDesc& desc, u32 firstVertex, u32 ve
 void VulkanCmdList::drawIndexed(const GeometryBufferDesc& desc, u32 firstIndex, u32 indexCount, u32 firstInstance, u32 instanceCount)
 {
 #if VULKAN_DEBUG
-    LOG_DEBUG("VulkanContext::drawIndexed");
+    LOG_DEBUG("VulkanContext[%u]::drawIndexed", m_concurrencySlot);
 #endif //VULKAN_DEBUG
 
     VulkanCommandBuffer* drawBuffer = acquireAndStartCommandBuffer(CommandTargetType::CmdDrawBuffer);
@@ -1464,7 +1572,7 @@ void VulkanCmdList::drawIndexed(const GeometryBufferDesc& desc, u32 firstIndex, 
 void VulkanCmdList::clear(Texture* texture, const renderer::Color& color)
 {
 #if VULKAN_DEBUG
-    LOG_DEBUG("VulkanCmdList::clear [%f, %f, %f, %f]", color[0], color[1], color[2], color[3]);
+    LOG_DEBUG("VulkanCmdList[%u]::clear [%f, %f, %f, %f]", m_concurrencySlot, color[0], color[1], color[2], color[3]);
 #endif
 
     VulkanImage* image = nullptr;
@@ -1472,10 +1580,6 @@ void VulkanCmdList::clear(Texture* texture, const renderer::Color& color)
     if (texture->hasUsageFlag(TextureUsage::TextureUsage_Backbuffer))
     {
         VulkanSwapchain* swapchain = OBJECT_FROM_HANDLE(texture->getTextureHandle(), VulkanSwapchain);
-        swapchain->attachCmdList(this);
-        m_acquireSwapchainSemaphores.push_back(swapchain->getCurrentAcquiredSemaphore());
-        cmdBuffer->m_activeSwapchain = swapchain; //TODO
-
         image = swapchain->getCurrentSwapchainImage();
     }
     else
@@ -1489,7 +1593,7 @@ void VulkanCmdList::clear(Texture* texture, const renderer::Color& color)
 void VulkanCmdList::clear(Texture* texture, f32 depth, u32 stencil)
 {
 #if VULKAN_DEBUG
-    LOG_DEBUG("VulkanCmdList::clear [%f, %u]", depth, stencil);
+    LOG_DEBUG("VulkanCmdList[%u]::clear [%f, %u]", m_concurrencySlot, depth, stencil);
 #endif
 
     VulkanCommandBuffer* cmdBuffer = VulkanCmdList::acquireAndStartCommandBuffer(CommandTargetType::CmdDrawBuffer);
@@ -1564,6 +1668,8 @@ VulkanCommandBuffer* VulkanCmdList::acquireAndStartCommandBuffer(CommandTargetTy
         return m_currentCmdBuffer[toEnumType(type)];
     }
 
+    // Select slot
+    m_concurrencySlot = m_device.prepareConcurrencySlot();
     m_currentCmdBuffer[toEnumType(type)] = m_device.m_threadedPools[m_concurrencySlot].m_cmdBufferManager->acquireNewCmdBuffer(m_queueMask, CommandBufferLevel::PrimaryBuffer);
     m_currentCmdBuffer[toEnumType(type)]->beginCommandBuffer();
 
@@ -1572,25 +1678,11 @@ VulkanCommandBuffer* VulkanCmdList::acquireAndStartCommandBuffer(CommandTargetTy
 
 void VulkanCmdList::postSubmit()
 {
-    m_waitSubmitSemaphores = std::move(m_signalSubmitSemaphores);
-    m_signalSubmitSemaphores.clear();
-    //std::erase_if(m_waitSubmitSemaphores, [](VulkanSemaphore* semaphore) -> bool
-    //    {
-    //        return !semaphore->isUsed();
-    //    });
-
     m_currentRenderState = std::move(m_pendingRenderState);
     m_pendingRenderState.invalidate();
 
     m_CBOManager->updateStatus();
     m_descriptorSetManager->updateStatus();
-}
-
-void VulkanCmdList::postPresent()
-{
-    m_presentedSwapchainSemaphores = std::move(m_waitSubmitSemaphores);
-    m_acquireSwapchainSemaphores.clear();
-    m_waitSubmitSemaphores.clear();
 }
 
 } //namespace vk

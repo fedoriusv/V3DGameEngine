@@ -45,6 +45,10 @@ namespace vk
 
         VkSemaphore getHandle() const;
 
+#if DEBUG_OBJECT_MEMORY
+        static std::set<VulkanSemaphore*> s_objects;
+#endif //DEBUG_OBJECT_MEMORY
+
     private:
 
         VulkanSemaphore(VulkanSemaphore&) = delete;

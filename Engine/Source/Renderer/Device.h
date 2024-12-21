@@ -62,6 +62,7 @@ namespace renderer
         Type m_type;
     };
 
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
     * @brief CmdListCompute interface class
@@ -82,6 +83,7 @@ namespace renderer
         ~CmdListCompute() = default;
     };
 
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
     * @brief CmdListRender interface class
@@ -89,13 +91,6 @@ namespace renderer
     class CmdListRender : public CmdListCompute
     {
     public:
-
-        CmdListRender() noexcept
-        {
-            m_type = Type::Render;
-        }
-        
-        ~CmdListRender() = default;
 
         /**
         * @brief setViewport command
@@ -170,6 +165,28 @@ namespace renderer
          * @brief upload command
         */
         virtual bool uploadData(Buffer* buffer, u32 offset, u32 size, const void* data) = 0;
+
+    protected:
+
+        CmdListRender() noexcept
+        {
+            m_type = Type::Render;
+        }
+
+        ~CmdListRender() = default;
+    };
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    /**
+    * @brief SyncPoint interface class
+    */
+    class SyncPoint
+    {
+    protected:
+
+        SyncPoint() = default;
+        virtual ~SyncPoint() = default;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -243,6 +260,12 @@ namespace renderer
         virtual void submit(CmdList* cmd, bool wait = false) = 0;
 
         /**
+        * @brief frame submit
+        * @param bool wait [optional]
+        */
+        virtual void submit(CmdList* cmd, SyncPoint* sync, bool wait = false) = 0;
+
+        /**
         * @brief waitGPUCompletion
         * @param CmdList* cmd
         */
@@ -257,7 +280,7 @@ namespace renderer
         /**
         * @brief destroyCommandList
         */
-        virtual void destroyCommandList(CmdList* cmdList) = 0;
+        virtual void destroyCommandList(CmdList* cmd) = 0;
 
         /**
         * @brief createSwapchain
@@ -268,6 +291,16 @@ namespace renderer
         * @brief destroySwapchain
         */
         virtual void destroySwapchain(Swapchain* swapchain) = 0;
+
+        /**
+        * @brief createSyncPoint
+        */
+        [[nodiscard]] virtual SyncPoint* createSyncPoint(CmdList* cmd) = 0;
+
+        /**
+        * @brief destroySyncPoint
+        */
+        virtual void destroySyncPoint(CmdList* cmd, SyncPoint* sync) = 0;
 
     public:
 

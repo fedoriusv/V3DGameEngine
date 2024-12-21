@@ -38,8 +38,6 @@ VulkanCommandBuffer::VulkanCommandBuffer(VulkanDevice* device, CommandBufferLeve
 
     , m_fence(V3D_NEW(VulkanFence, memory::MemoryLabel::MemoryRenderCore)(&m_device))
 
-    , m_activeSwapchain(nullptr)
-    , m_drawingToSwapchain(false)
     , m_isInsideRenderPass(false)
 {
     LOG_DEBUG("VulkanCommandBuffer constructor %llx", this);
@@ -138,7 +136,7 @@ void VulkanCommandBuffer::refreshFenceStatus()
                 result = VulkanWrapper::ResetFences(m_device.getDeviceInfo()._device, 1, &vkFence);
                 ASSERT(result == VK_SUCCESS, "must be reseted");
             }
-            else if (result == VK_NOT_READY && VulkanCommandBuffer::isSafeFrame(m_activeSwapchain ? m_activeSwapchain->getCurrentFrameIndex() : 0))
+            else if (result == VK_NOT_READY && VulkanCommandBuffer::isSafeFrame(m_renderpassState._activeSwapchain ? m_renderpassState._activeSwapchain->getCurrentFrameIndex() : 0))
             {
                 VkResult result = VulkanWrapper::WaitForFences(m_device.getDeviceInfo()._device, 1, &vkFence, VK_TRUE, u64(~0ULL));
                 ASSERT(result == VK_SUCCESS, "must be finished");
@@ -193,8 +191,7 @@ void VulkanCommandBuffer::captureResource(VulkanResource* resource, u64 frame)
 void VulkanCommandBuffer::resetStatus()
 {
     m_status = VulkanCommandBuffer::CommandBufferStatus::Ready;
-    m_activeSwapchain = nullptr;
-    m_drawingToSwapchain = false;
+    memset(&m_renderpassState, 0, sizeof(RenderPassState));
 
     m_stageMasks.clear();
     m_semaphores.clear();
@@ -211,9 +208,9 @@ void VulkanCommandBuffer::resetStatus()
 
 bool VulkanCommandBuffer::isSafeFrame(u64 frame) const
 {
-    if (m_activeSwapchain)
+    if (m_renderpassState._activeSwapchain)
     {
-        u64 countSwapchains = m_activeSwapchain->getSwapchainImageCount();
+        u64 countSwapchains = m_renderpassState._activeSwapchain->getSwapchainImageCount();
         return (m_capturedFrameIndex + countSwapchains) < frame;
     }
 
@@ -269,8 +266,6 @@ void VulkanCommandBuffer::beginCommandBuffer()
 
 void VulkanCommandBuffer::endCommandBuffer()
 {
-    ASSERT(m_status == CommandBufferStatus::Begin, "invalid state");
-    VulkanWrapper::EndCommandBuffer(m_commands);
 
 #if VULKAN_DEBUG_MARKERS
     if (m_device.getVulkanDeviceCaps()._debugUtilsObjectNameEnabled)
@@ -278,6 +273,9 @@ void VulkanCommandBuffer::endCommandBuffer()
         VulkanWrapper::CmdEndDebugUtilsLabel(m_commands);
     }
 #endif //VULKAN_DEBUG_MARKERS
+
+    ASSERT(m_status == CommandBufferStatus::Begin, "invalid state");
+    VulkanWrapper::EndCommandBuffer(m_commands);
 
     m_status = CommandBufferStatus::End;
 }
@@ -308,6 +306,11 @@ void VulkanCommandBuffer::cmdBeginRenderpass(VulkanRenderPass* pass, VulkanFrame
         vkImage->setLayout(layout, VulkanImage::makeVulkanImageSubresource(vkImage, attach._layer, attach._mip));
 
         ++index;
+
+        if (vkImage->hasUsageFlag(TextureUsage_Backbuffer))
+        {
+            m_renderpassState._activeSwapchain = VulkanImage::getSwapchainFromImage(vkImage);
+        }
 
 #if VULKAN_DEBUG
         LOG_DEBUG("VulkanCommandBuffer::cmdBeginRenderpass framebuffer image (width %u, height %u)", vkImage->getSize().width, vkImage->getSize().height);
@@ -362,7 +365,6 @@ void VulkanCommandBuffer::cmdBeginRenderpass(VulkanRenderPass* pass, VulkanFrame
         VulkanWrapper::CmdBeginRenderPass(m_commands, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
     }
 
-    m_drawingToSwapchain = pass->isDrawingToSwapchain();
     m_isInsideRenderPass = true;
 }
 
@@ -521,10 +523,17 @@ void VulkanCommandBuffer::cmdBindVertexBuffers(u32 firstBinding, u32 countBindin
         VulkanCommandBuffer::captureResource(vkBuffer);
     }
 
+    static_assert(sizeof(VkDeviceSize) == sizeof(u64));
     if (m_level == CommandBufferLevel::PrimaryBuffer) [[likely]]
     {
-        static_assert(sizeof(VkDeviceSize) == sizeof(u64));
-        VulkanWrapper::CmdBindVertexBuffers2(m_commands, firstBinding, countBinding, vkBuffers.data(), offests.data(), vkSizes.data(), strides.data());
+        if (VulkanDevice::isDynamicStateSupported(VK_DYNAMIC_STATE_VERTEX_INPUT_BINDING_STRIDE))
+        {
+            VulkanWrapper::CmdBindVertexBuffers2(m_commands, firstBinding, countBinding, vkBuffers.data(), offests.data(), vkSizes.data(), strides.data());
+        }
+        else
+        {
+            VulkanWrapper::CmdBindVertexBuffers(m_commands, firstBinding, countBinding, vkBuffers.data(), offests.data());
+        }
     }
     else
     {
@@ -671,7 +680,7 @@ void VulkanCommandBuffer::cmdClearImage(VulkanImage* image, VkImageLayout imageL
 
     if (image->hasUsageFlag(TextureUsage::TextureUsage_Backbuffer))
     {
-        m_drawingToSwapchain = true;
+        m_renderpassState._activeSwapchain = VulkanImage::getSwapchainFromImage(image);
     }
 }
 
@@ -691,8 +700,6 @@ void VulkanCommandBuffer::cmdClearImage(VulkanImage* image, VkImageLayout imageL
     {
         ASSERT(false, "not implemented");
     }
-
-    ASSERT(image->hasUsageFlag(TextureUsage::TextureUsage_Backbuffer), "cant be swapchain");
 }
 
 void VulkanCommandBuffer::cmdResolveImage(VulkanImage* src, VkImageLayout srcLayout, VulkanImage* dst, VkImageLayout dstLayout, const std::vector<VkImageResolve>& regions)

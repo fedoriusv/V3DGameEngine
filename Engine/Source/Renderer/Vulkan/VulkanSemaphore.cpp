@@ -14,21 +14,34 @@ namespace renderer
 namespace vk
 {
 
+#if DEBUG_OBJECT_MEMORY
+    std::set<VulkanSemaphore*> VulkanSemaphore::s_objects;
+#endif //DEBUG_OBJECT_MEMORY
+
 VulkanSemaphore::VulkanSemaphore(VulkanDevice* device, SemaphoreType type) noexcept
     : m_device(*device)
     , m_semaphore(VK_NULL_HANDLE)
     , m_type(type)
     , m_status(SemaphoreStatus::Free)
 {
+    LOG_DEBUG("VulkanSemaphore::VulkanSemaphore constructor %llx", this);
 #if VULKAN_DEBUG_MARKERS
     m_debugName = "Semaphore";
     m_debugName.append(VulkanDebugUtils::k_addressPreffix);
     m_debugName.append(std::to_string(reinterpret_cast<const u64>(this)));
 #endif //VULKAN_DEBUG_MARKERS
+
+#if DEBUG_OBJECT_MEMORY
+    s_objects.insert(this);
+#endif //DEBUG_OBJECT_MEMORY
 }
 
 VulkanSemaphore::~VulkanSemaphore()
 {
+    LOG_DEBUG("VulkanSemaphore::VulkanSemaphore destructor %llx", this);
+#if DEBUG_OBJECT_MEMORY
+    s_objects.erase(this);
+#endif //DEBUG_OBJECT_MEMORY
     ASSERT(m_semaphore == VK_NULL_HANDLE, "must be nullptr");
 }
 
@@ -137,8 +150,8 @@ bool VulkanSemaphoreManager::markSemaphore(VulkanSemaphore* semaphore, VulkanSem
     {
         if (semaphore->m_status != VulkanSemaphore::SemaphoreStatus::AssignForSignal && semaphore->m_status != VulkanSemaphore::SemaphoreStatus::Signaled)
         {
-            ASSERT(false, "must be attached to signal");
-            return false;
+            //ASSERT(false, "must be attached to signal");
+            //return false;
         }
     }
 

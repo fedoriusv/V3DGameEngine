@@ -28,6 +28,9 @@ namespace vk
     class VulkanImage;
     class VulkanSemaphore;
     class VulkanSemaphoreManager;
+    class VulkanSyncPoint;
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
     *  @brief VulkanSwapchain final class. Vulkan Render side
@@ -39,7 +42,9 @@ namespace vk
         void beginFrame() override;
         void endFrame()override;
 
-        void presentFrame() override;
+        void presentFrame(SyncPoint* sync = nullptr) override;
+
+        SyncPoint* getSyncPoint() override;
 
         VulkanImage* getCurrentSwapchainImage() const;
         VulkanImage* getSwapchainImage(u32 index) const;
@@ -64,11 +69,10 @@ namespace vk
         u32  acquireImage();
 
         void attachResource(VulkanResource* resource, const std::function<bool(VulkanResource*)>& recreator);
-        void attachCmdList(VulkanCmdList* cmdlist);
+        void attachQueueForPresent(VkQueue queue);
+
 
     private:
-
-        friend VulkanCmdList;
 
         static VkSurfaceKHR createSurface(VkInstance vkInstance, NativeInstance hInstance, NativeWindows hWnd, const math::Dimension2D& size);
 
@@ -78,7 +82,6 @@ namespace vk
         VulkanDevice&                       m_device;
         platform::Window*                   m_window;
         SwapchainParams                     m_params;
-        std::recursive_mutex                m_mutex;
 
         VkSurfaceKHR                        m_surface;
         VkSurfaceCapabilitiesKHR            m_surfaceCapabilities;
@@ -91,7 +94,9 @@ namespace vk
         std::tuple<u32, VulkanSemaphore*>   m_presentInfo;
         u32                                 m_currentSemaphoreIndex;
         std::vector<VulkanSemaphore*>       m_acquiredSemaphores;
-        std::vector<VulkanCmdList*>         m_cmdLists;
+        VulkanSyncPoint*                    m_acquireSync;
+
+        VkQueue                             m_presentQueue;
 
         void recreateAttachedResources();
         std::vector<std::tuple<VulkanResource*, const std::function<bool(VulkanResource*)>>> m_swapchainResources;

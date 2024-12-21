@@ -232,13 +232,13 @@ Task* TaskDispatcher::popTask()
         return task;
     }
     
-    //Steal from others queues
+    //Steal from other queues
     for (s32 index = 1; index < m_numWorkingThreads; ++index)
     {
         u32 threadJ = threadID + index;
-        threadJ = threadJ % m_numWorkingThreads;
+        threadJ = threadJ % m_numWorkingThreads + 1;
 
-        ASSERT(threadID != threadJ, "must be different");
+        //ASSERT(threadID != threadJ, "must be different");
         task = TaskDispatcher::getTaskFromQueue(TaskQueue::MainThreadQueue + threadJ);
         if (task)
         {

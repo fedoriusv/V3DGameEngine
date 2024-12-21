@@ -429,7 +429,7 @@ bool VulkanCommandBufferManager::submit(VulkanCommandBuffer* buffer, const std::
     //vkDeviceWaitIdle(m_device);
 
     buffer->m_status = VulkanCommandBuffer::CommandBufferStatus::Submit;
-    buffer->m_capturedFrameIndex = buffer->m_activeSwapchain ? buffer->m_activeSwapchain->getCurrentFrameIndex() : 0;
+    buffer->m_capturedFrameIndex = buffer->getActiveSwapchain() ? buffer->getActiveSwapchain()->getCurrentFrameIndex() : 0;
     return true;
 }
 
