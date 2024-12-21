@@ -20,13 +20,9 @@ Thread::~Thread()
     m_thread.join();
 }
 
-void Thread::terminate(bool wait)
+void Thread::terminate()
 {
     m_isRunning.store(false, std::memory_order_release);
-    if (wait)
-    {
-        m_thread.join();
-    }
 }
 
 bool Thread::isRunning()

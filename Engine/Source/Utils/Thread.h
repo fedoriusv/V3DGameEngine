@@ -24,7 +24,7 @@ namespace utils
         template<typename Func, typename...Args>
         bool                    run(Func&& func, Args&&... args);
 
-        void                    terminate(bool wait = false);
+        void                    terminate();
 
         bool                    isRunning();
 
@@ -62,7 +62,6 @@ namespace utils
                 m_isRunning.store(true, std::memory_order_release);
                 m_callback();
                 m_isRunning.store(false, std::memory_order_release);
-
             }));
 
         if (oldThread.joinable())

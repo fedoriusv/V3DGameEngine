@@ -48,20 +48,26 @@ namespace task
 
         void workerThreadLoop();
 
+        void lockThread();
+        void unlockThread();
+
     private:
 
         void threadEntryPoint(u32 threadID);
 
+        Task* getTaskFromQueue(u32 id);
+
         u32                         m_numWorkingThreads;
 
         std::vector<TaskQueue*>     m_taskQueue;
-        std::vector<utils::Thread*> m_worker_threads;
+        std::vector<utils::Thread*> m_workerThreads;
         std::atomic<u32>            m_numCreatedTasks;
-        std::atomic<u32>            m_numWatingTasks;
+        std::atomic<u32>            m_numSleepingThreads;
         std::condition_variable_any m_waitingCondition;
 
         std::atomic<u64>            m_roundThreadCounter;
         DispatcherFlags             m_flags;
+        bool                        m_running;
 
         thread_local static u32     s_threadID;
     };
