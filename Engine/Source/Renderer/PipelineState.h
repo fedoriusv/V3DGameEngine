@@ -102,8 +102,10 @@ namespace renderer
     }
 
     inline VertexInputAttributeDesc::VertexInputAttributeDesc(const VertexInputAttributeDesc& desc) noexcept
-        : _countInputAttributes(desc._countInputAttributes)
+        : _inputBindings(desc._inputBindings)
         , _inputAttributes(desc._inputAttributes)
+        , _countInputBindings(desc._countInputBindings)
+        , _countInputAttributes(desc._countInputAttributes)
     {
         static_assert(sizeof(VertexInputAttributeDesc) == sizeof(_inputBindings) + sizeof(_inputAttributes) + 4, "wrong size");
     }

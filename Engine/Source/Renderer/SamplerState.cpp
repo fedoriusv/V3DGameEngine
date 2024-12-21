@@ -1,5 +1,6 @@
 #include "SamplerState.h"
 #include "Utils/Logger.h"
+#include "Device.h"
 
 namespace v3d
 {
@@ -11,6 +12,8 @@ SamplerState::SamplerState(Device* device) noexcept
     , m_tracker(this, std::bind(&SamplerState::destroySamplers, this, std::placeholders::_1))
 {
     LOG_DEBUG("SamplerState::SamplerState constructor %llx", this);
+
+    memset(&m_samplerDesc, 0, sizeof(m_samplerDesc));
 }
 
 SamplerState::SamplerState(Device* device, SamplerFilter filter, SamplerAnisotropic aniso) noexcept
@@ -19,6 +22,7 @@ SamplerState::SamplerState(Device* device, SamplerFilter filter, SamplerAnisotro
 {
     LOG_DEBUG("SamplerState::SamplerState constructor %llx", this);
 
+    memset(&m_samplerDesc, 0, sizeof(m_samplerDesc));
     m_samplerDesc._filter = filter;
     m_samplerDesc._anisotropic = aniso;
 }
@@ -40,7 +44,10 @@ SamplerState::~SamplerState()
 
 void SamplerState::destroySamplers(const std::vector<Sampler*>& samplers)
 {
-    //TODO
+    for (auto& samler : samplers)
+    {
+        m_device->destroySampler(samler);
+    }
 }
 
 } //namespace renderer
