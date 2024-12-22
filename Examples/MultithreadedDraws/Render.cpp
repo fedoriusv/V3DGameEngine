@@ -31,10 +31,7 @@ void TextureRenderWorker::updateParameters(const std::function<void(Render*)>& c
 
 void TextureRenderWorker::process(v3d::renderer::GraphicsPipelineState* pipeline, const std::vector<std::tuple<v3d::renderer::GeometryBufferDesc, DrawProperties>>& props)
 {
-    _CmdList->beginRenderTarget(*_RenderTarget);
     _CmdList->setPipelineState(*pipeline);
-    _CmdList->setViewport(math::Rect32(0, 0, _RenderTarget->getRenderArea().m_width, _RenderTarget->getRenderArea().m_height));
-    _CmdList->setScissor(math::Rect32(0, 0, _RenderTarget->getRenderArea().m_width, _RenderTarget->getRenderArea().m_height));
 
     _ViewportParams.bindUniformParameters(*_CmdList, pipeline->getShaderProgram());
     _LightParams.bindUniformParameters(*_CmdList, pipeline->getShaderProgram());

@@ -19,10 +19,12 @@ namespace app
 
 using namespace v3d;
 
+const u32 k_workerThreadsCount = 4;
+
 Scene::Scene(v3d::renderer::Device* device, renderer::Swapchain* swapchain) noexcept
     : m_Device(device)
     , m_Swapchain(swapchain)
-    , m_Worker(4)
+    , m_Worker(k_workerThreadsCount)
 
     , m_CurrentState(States::StateInit)
 
@@ -83,8 +85,7 @@ void Scene::Init()
     m_Camera->setPerspective(45.0f, m_Swapchain->getBackbufferSize(), 0.01f, 256.f);
 
     m_CmdList = m_Device->createCommandList<renderer::CmdListRender>(renderer::Device::GraphicMask);
-    m_CmdList1 = m_Device->createCommandList<renderer::CmdListRender>(renderer::Device::GraphicMask);
-    //m_Sync = m_Device->createSyncPoint(m_CmdList);
+    m_Sync = m_Device->createSyncPoint(m_CmdList);
 
     //Backbuffer
     {
@@ -244,36 +245,38 @@ void Scene::Load()
 
     //Scene
     {
-        u32 models = 4;
-        for (u32 i = 0; i < models; ++i)
+        ModelData* data = new ModelData();
+        data->_Pipeline = pipeline;
+        for (auto& geom : model->m_geometry)
         {
-            ModelData* data = new ModelData();
-            for (auto& geom : model->m_geometry)
+            scene::Mesh* mesh = geom._LODs[0]; //first lod only
+            if (mesh->m_indexBuffer)
             {
-                scene::Mesh* mesh = geom._LODs[0]; //first lod only
-                if (mesh->m_indexBuffer)
-                {
-                    v3d::renderer::GeometryBufferDesc desc(mesh->m_indexBuffer, 0, mesh->m_vertexBuffer[0], 0, mesh->getVertexAttribDesc()._inputBindings[0]._stride, 0);
-                    app::DrawProperties prop{ 0, mesh->m_indexBuffer->getIndicesCount(), 0, 1, true };
-                    data->m_Props.emplace_back(std::move(desc), prop);
-                    data->m_InputAttrib = mesh->getVertexAttribDesc();
-                }
-                else
-                {
-                    v3d::renderer::GeometryBufferDesc desc(mesh->m_vertexBuffer[0], 0, mesh->getVertexAttribDesc()._inputBindings[0]._stride);
-                    app::DrawProperties prop{ 0, mesh->m_vertexBuffer[0]->getVerticesCount(), 0, 1, false };
-                    data->m_Props.emplace_back(std::move(desc), prop);
-                    data->m_InputAttrib = mesh->getVertexAttribDesc();
-                }
+                v3d::renderer::GeometryBufferDesc desc(mesh->m_indexBuffer, 0, mesh->m_vertexBuffer[0], 0, mesh->getVertexAttribDesc()._inputBindings[0]._stride, 0);
+                app::DrawProperties prop{ 0, mesh->m_indexBuffer->getIndicesCount(), 0, 1, true };
+                data->_Props.emplace_back(std::move(desc), prop);
+                data->_InputAttrib = mesh->getVertexAttribDesc();
             }
-            m_Models.emplace(data);
+            else
+            {
+                v3d::renderer::GeometryBufferDesc desc(mesh->m_vertexBuffer[0], 0, mesh->getVertexAttribDesc()._inputBindings[0]._stride);
+                app::DrawProperties prop{ 0, mesh->m_vertexBuffer[0]->getVerticesCount(), 0, 1, false };
+                data->_Props.emplace_back(std::move(desc), prop);
+                data->_InputAttrib = mesh->getVertexAttribDesc();
+            }
         }
+        m_Models.emplace(data);
+    }
+    m_Pipelines.push_back(pipeline);
 
-        std::random_device rd; // obtain a random number from hardware
-        std::mt19937 gen(rd()); // seed the generator
-        std::uniform_int_distribution<> distr(-10, 10); // define the range
+    std::random_device rd; // obtain a random number from hardware
+    std::mt19937 gen(rd()); // seed the generator
+    std::uniform_int_distribution<> distr(-10, 10); // define the range
 
-        for (ModelData* data : m_Models)
+    const u32 instanceCountPerModel = 40; //load from json
+    for (ModelData* data : m_Models)
+    {
+        for (u32 i = 0; i < instanceCountPerModel; ++i)
         {
             ParameterData params;
             params._Texture = texture;
@@ -282,23 +285,29 @@ void Scene::Load()
             params._Transform.setTranslation(math::Vector3D(distr(gen), distr(gen), distr(gen)));
             params._Transform.setScale({ 100.0f, 100.0f, 100.0f });
 
-            ModelsGroup models{ data->m_Props, pipeline, params };
-            m_ModelGroups.push_back(models);
+            auto pipelineIter = std::find(m_Pipelines.cbegin(), m_Pipelines.cend(), pipeline);
+            ASSERT(pipelineIter != m_Pipelines.cend(), "not found");
+            u32 id = std::distance(m_Pipelines.cbegin(), pipelineIter);
+
+            ModelsGroup models{ data->_Props, params, id };
+            m_ModelInstances.push_back(models);
         }
     }
 
-    //Render Worker
+    //Render Worker for 0 material
     {
-        m_RenderGroups.resize(m_ModelGroups.size());
-        u32 index = 0;
+        u32 materialIndex = 0; //load from json
+        m_RenderGroups.resize(k_workerThreadsCount);
+        u32 perGroup = m_ModelInstances.size() / m_RenderGroups.size();
+        u32 offsetGroup = 0;
+        u32 rangeGroup = perGroup;
         for (auto& group : m_RenderGroups)
         {
             TextureRenderWorker* worker = new TextureRenderWorker;
             worker->_CmdList = m_Device->createCommandList<renderer::CmdListRender>(renderer::Device::GraphicMask);
-            group = { worker, new task::Task, index++ };
+            group = { worker, new task::Task, materialIndex, offsetGroup, rangeGroup };
+            offsetGroup += rangeGroup;
         }
-
-
     }
 
     m_Device->submit(m_CmdList, true);
@@ -314,74 +323,91 @@ void Scene::Draw(f32 dt)
     m_CmdList->transition(renderer::TextureView(m_RenderTarget->getColorTexture<v3d::renderer::Texture2D>(0), 0, 1, 0, 1), renderer::TransitionOp::TransitionOp_ColorAttachment);
     m_CmdList->clear(m_RenderTarget->getColorTexture<v3d::renderer::Texture2D>(0), math::Vector4D(0.0f));
     m_CmdList->clear(m_RenderTarget->getDepthStencilTexture<v3d::renderer::Texture2D>(), 0.0f, 0);
-    m_Device->submit(m_CmdList, true);
+    m_Device->submit(m_CmdList);
 
-    for (auto& [render, task, id] : m_RenderGroups)
+    for (auto& [render, task, pipelineID, offset, range] : m_RenderGroups)
     {
         render->setup(m_RenderTarget, *m_Camera);
-        task->init([](Render* render, ModelsGroup& group) -> void
+        task->init([this](Render* render, v3d::renderer::GraphicsPipelineState* pipeline,u32 groupStart, u32 countGroups) -> void
             {
-                render->updateParameters([&group](Render* render) -> void
-                    {
-                        TextureRenderWorker* tRender = static_cast<TextureRenderWorker*>(render);
+                render->_CmdList->beginRenderTarget(*render->_RenderTarget);
+                render->_CmdList->setViewport(math::Rect32(0, 0, render->_RenderTarget->getRenderArea().m_width, render->_RenderTarget->getRenderArea().m_height));
+                render->_CmdList->setScissor(math::Rect32(0, 0, render->_RenderTarget->getRenderArea().m_width, render->_RenderTarget->getRenderArea().m_height));
 
-                        tRender->_LightParams._constantBuffer._lightPos = math::Vector4D(25.0f, 0.0f, 5.0f, 1.0f);
-                        tRender->_LightParams._constantBuffer._color = math::Vector4D(1.0f);
+                for (u32 groupIndex = 0; groupIndex < countGroups; ++groupIndex)
+                {
+                    ModelsGroup& group = m_ModelInstances[groupStart + groupIndex];
+                    render->updateParameters([group](Render* render) -> void
+                        {
+                            TextureRenderWorker* tRender = static_cast<TextureRenderWorker*>(render);
 
-                        tRender->_TextureParams._constantBufferVS._modelMatrix = group.m_Parameters._Transform;
-                        tRender->_TextureParams._constantBufferVS._normalMatrix = group.m_Parameters._Transform;
-                        tRender->_TextureParams._constantBufferVS._normalMatrix.makeTransposed();
-                        tRender->_TextureParams._texture = group.m_Parameters._Texture;
-                        tRender->_TextureParams._sampler = group.m_Parameters._Sampler;
-                    });
-                render->process(group.m_Pipeline, group.m_InputProps);
-            }, render, m_ModelGroups[id]);
+                            tRender->_LightParams._constantBuffer._lightPos = math::Vector4D(25.0f, 0.0f, 5.0f, 1.0f);
+                            tRender->_LightParams._constantBuffer._color = math::Vector4D(1.0f);
+
+                            tRender->_TextureParams._constantBufferVS._modelMatrix = group._Parameters._Transform;
+                            tRender->_TextureParams._constantBufferVS._normalMatrix = group._Parameters._Transform;
+                            tRender->_TextureParams._constantBufferVS._normalMatrix.makeTransposed();
+                            tRender->_TextureParams._texture = group._Parameters._Texture;
+                            tRender->_TextureParams._sampler = group._Parameters._Sampler;
+                        });
+                    render->process(pipeline, group._InputProps);
+                }
+            }, render, m_Pipelines[pipelineID], offset, range);
 
         m_Worker.executeTask(task, task::TaskPriority::Normal, task::TaskMask::WorkerThread);
     }
      
-    //m_Worker.mainThreadLoop();
-    for (auto& [render, task, id] : m_RenderGroups)
+    m_Worker.mainThreadLoop();
+    for (auto& [render, task, pipelineID, offset, range] : m_RenderGroups)
     {
         m_Worker.waitTask(task);
     }
 
-    for (auto& [render, task, id] : m_RenderGroups)
+    for (auto& [render, task, pipelineID, offset, range] : m_RenderGroups)
     {
-        m_Device->submit(render->_CmdList, true);
+        m_Device->submit(render->_CmdList);
     }
 
     //Backbuffer
     {
-        m_CmdList1->beginRenderTarget(*m_renderTargetBackbuffer);
-        m_CmdList1->setViewport(math::Rect32(0, 0, m_renderTargetBackbuffer->getRenderArea().m_width, m_renderTargetBackbuffer->getRenderArea().m_height));
-        m_CmdList1->setScissor(math::Rect32(0, 0, m_renderTargetBackbuffer->getRenderArea().m_width, m_renderTargetBackbuffer->getRenderArea().m_height));
-        m_CmdList1->setPipelineState(*m_PipelineBackbuffer);
+        m_CmdList->beginRenderTarget(*m_renderTargetBackbuffer);
+        m_CmdList->setViewport(math::Rect32(0, 0, m_renderTargetBackbuffer->getRenderArea().m_width, m_renderTargetBackbuffer->getRenderArea().m_height));
+        m_CmdList->setScissor(math::Rect32(0, 0, m_renderTargetBackbuffer->getRenderArea().m_width, m_renderTargetBackbuffer->getRenderArea().m_height));
+        m_CmdList->setPipelineState(*m_PipelineBackbuffer);
 
         renderer::Descriptor colorSampler(m_samplerBackbuffer, 0);
         renderer::Descriptor colorTexture(m_RenderTarget->getColorTexture<v3d::renderer::Texture2D>(0), 1);
-        m_CmdList1->bindDescriptorSet(0, { colorSampler, colorTexture });
-        m_CmdList1->draw(renderer::GeometryBufferDesc(), 0, 3, 0, 1);
+        m_CmdList->bindDescriptorSet(0, { colorSampler, colorTexture });
+        m_CmdList->draw(renderer::GeometryBufferDesc(), 0, 3, 0, 1);
 
-        m_CmdList1->endRenderTarget();
+        m_CmdList->endRenderTarget();
 
-        m_Device->submit(m_CmdList1, true);
+        m_Device->submit(m_CmdList, m_Swapchain->getSyncPoint());
     }
 
-
     m_Swapchain->endFrame();
-    m_Swapchain->presentFrame();
+    m_Swapchain->presentFrame(m_Sync);
 }
 
 void Scene::Exit()
 {
-    //m_Device->waitGPUCompletion(m_CmdList);
+    m_Device->waitGPUCompletion(m_CmdList);
+    m_Device->destroySyncPoint(m_CmdList, m_Sync);
+    m_Device->destroyCommandList(m_CmdList);
 
-    for (auto& model : m_Models)
+    for (auto& [render, task, pipelineID, offset, range] : m_RenderGroups)
     {
-        delete model->m_Model;
-        delete model;
+        m_Device->destroyCommandList(render->_CmdList);
+        delete render;
+        delete task;
     }
+    m_RenderGroups.clear();
+
+    //for (auto& model : m_Models)
+    //{
+    //    delete model->m_Model;
+    //    delete model;
+    //}
     m_Models.clear();
 
     if (m_Render)

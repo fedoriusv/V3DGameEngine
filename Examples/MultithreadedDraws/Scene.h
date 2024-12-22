@@ -35,7 +35,6 @@ public:
     v3d::renderer::Device*                  m_Device;
     v3d::renderer::Swapchain*               m_Swapchain;
     v3d::renderer::CmdListRender*           m_CmdList;
-    v3d::renderer::CmdListRender*           m_CmdList1;
     v3d::renderer::SyncPoint*               m_Sync;
 
     v3d::task::TaskScheduler                m_Worker;
@@ -62,10 +61,10 @@ private:
     void Draw(v3d::f32 dt);
     void Exit();
 
-    v3d::scene::CameraFPSHandler* m_Camera;
-    app::Render*                  m_Render;
+    v3d::scene::CameraFPSHandler*       m_Camera;
+    app::Render*                        m_Render;
 
-    v3d::renderer::RenderTargetState* m_RenderTarget;
+    v3d::renderer::RenderTargetState*   m_RenderTarget;
 
     struct ParameterData
     {
@@ -78,24 +77,24 @@ private:
     {
         //TODO material
 
-        v3d::renderer::GraphicsPipelineState*                                           m_Pipeline;
-        v3d::renderer::VertexInputAttributeDesc                                         m_InputAttrib;
-        std::vector<std::tuple<v3d::renderer::GeometryBufferDesc, app::DrawProperties>> m_Props;
-        v3d::scene::Model*                                                              m_Model;
+        v3d::renderer::GraphicsPipelineState*                                           _Pipeline;
+        v3d::renderer::VertexInputAttributeDesc                                         _InputAttrib;
+        std::vector<std::tuple<v3d::renderer::GeometryBufferDesc, app::DrawProperties>> _Props;
+        v3d::scene::Model*                                                              _Model;
 
     };
-    std::set<ModelData*> m_Models;
+    std::set<ModelData*>                                m_Models;
+    std::vector<v3d::renderer::GraphicsPipelineState*>  m_Pipelines;
 
     struct ModelsGroup
     {
-        std::vector<std::tuple<v3d::renderer::GeometryBufferDesc, app::DrawProperties>> m_InputProps;
-        v3d::renderer::GraphicsPipelineState*                                           m_Pipeline;
+        std::vector<std::tuple<v3d::renderer::GeometryBufferDesc, app::DrawProperties>> _InputProps;
+        ParameterData                                                                   _Parameters;
+        v3d::u32                                                                        _PipelineID;
+};
 
-        ParameterData                                                                   m_Parameters;
-    };
-
-    std::vector<ModelsGroup> m_ModelGroups;
-    std::vector<std::tuple<TextureRenderWorker*, v3d::task::Task*, v3d::u32>> m_RenderGroups;
+    std::vector<ModelsGroup> m_ModelInstances; //sorted by material
+    std::vector<std::tuple<TextureRenderWorker*, v3d::task::Task*, v3d::u32, v3d::u32, v3d::u32>> m_RenderGroups;
 };
 
 } //namespace app
