@@ -88,7 +88,16 @@ void TaskDispatcher::workerThreadLoop()
             Locker lock(this);
 
             ++m_numSleepingThreads;
-            m_waitingCondition.wait(lock);
+            m_waitingCondition.wait(lock, [this]() -> bool
+                {
+                    bool hasTask = false;
+                    u32 threadID = TaskDispatcher::s_threadID;
+                    m_taskQueue[TaskQueue::MainThreadQueue + threadID]->_mutex.lock();
+                    hasTask = !m_taskQueue[TaskQueue::MainThreadQueue + threadID]->_tasks.empty();
+                    m_taskQueue[TaskQueue::MainThreadQueue + threadID]->_mutex.unlock();
+
+                    return hasTask;
+                });
             --m_numSleepingThreads;
         }
     }
