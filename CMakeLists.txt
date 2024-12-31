@@ -42,6 +42,9 @@ option(SPIRV_INSTALL_FROM_GITHUB "Implicity install SpirV" OFF)
 option (DXCompiler_LIB_OPTION "Use custom DirectXShaderCompiler lib" OFF)
 #https://github.com/microsoft/DirectXShaderCompiler.git
 
+option(PROFILER_TRACY_LIB "Enable tracy profiler for CPU/GPU" ON)
+#https://github.com/wolfpld/tracy.git
+
 include(Config/ThirdParty.cmake)
 
 ##############################################################
@@ -292,6 +295,12 @@ if(HWCPipe_LIB)
     set(BUILD_DEPENDENCIES ${BUILD_DEPENDENCIES} hwcpipe)
 endif()
 
+#Tracy
+if(PROFILER_TRACY_LIB)
+    target_link_libraries(${ENGINE_NAME} TracyClient)
+    set(BUILD_DEPENDENCIES ${BUILD_DEPENDENCIES} TracyClient)
+endif()
+
 # DXCompiler
 if(DXCompiler_LIB AND TARGET_WIN)
     message(STATUS "Link DXCompiler dxcompiler.lib")
@@ -359,6 +368,14 @@ if(HWCPipe_LIB)
     message(STATUS "Add HWCPipe lib")
     add_subdirectory(Engine/ThirdParty/HWCPipe)
     message(STATUS "HWCPipe lib added")
+endif()
+
+#Tracy
+if(PROFILER_TRACY_LIB)
+    message(STATUS "Add Tracy lib")
+    add_subdirectory(Engine/ThirdParty/tracy)
+    set_target_properties(TracyClient PROPERTIES FOLDER ThirdParty/tracy)
+    message(STATUS "Tracy lib added")
 endif()
 
 ##############################################################
