@@ -31,8 +31,6 @@ void TextureRenderWorker::updateParameters(const std::function<void(Render*)>& c
 
 void TextureRenderWorker::process(v3d::renderer::GraphicsPipelineState* pipeline, const std::vector<std::tuple<v3d::renderer::GeometryBufferDesc, DrawProperties>>& props)
 {
-    _CmdList->setPipelineState(*pipeline);
-
     _ViewportParams.bindUniformParameters(*_CmdList, pipeline->getShaderProgram());
     _LightParams.bindUniformParameters(*_CmdList, pipeline->getShaderProgram());
 
@@ -50,8 +48,6 @@ void TextureRenderWorker::process(v3d::renderer::GraphicsPipelineState* pipeline
             _CmdList->draw(std::get<0>(buffer), props._start, props._count, 0, props._countInstance);
         }
     }
-
-    _CmdList->endRenderTarget();
 }
 
 } //namespace v3d

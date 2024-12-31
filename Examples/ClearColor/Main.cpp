@@ -179,7 +179,7 @@ private:
     v3d::renderer::SyncPoint* m_Sync = nullptr;
     v3d::renderer::Swapchain* m_Swapchain = nullptr;
 
-    renderer::Color m_ClearColor;
+    color::Color m_ClearColor;
 };
 
 int main(int argc, char* argv[])

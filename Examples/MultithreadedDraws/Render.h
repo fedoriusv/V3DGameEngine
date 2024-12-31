@@ -8,6 +8,7 @@
 #include "Renderer/RenderTargetState.h"
 #include "Renderer/SamplerState.h"
 #include "Scene/CameraHandler.h"
+#include "FrameProfiler.h"
 
 namespace app
 {
@@ -39,9 +40,15 @@ public:
 
         void bindUniformParameters(v3d::renderer::CmdListRender& cmdList, const v3d::renderer::ShaderProgram* program)
         {
-            v3d::renderer::Descriptor viewport({ &_constantBuffer, 0, sizeof(_constantBuffer) }, 0);
-            cmdList.bindDescriptorSet(0, { viewport });
+            _desc.clear();
+            _desc.emplace_back(v3d::renderer::Descriptor({ &_constantBuffer, 0, sizeof(_constantBuffer) }, 0));
+
+            cmdList.bindDescriptorSet(0, _desc);
         }
+
+    private:
+
+        std::vector<v3d::renderer::Descriptor> _desc;
     };
 
     virtual void setup(v3d::renderer::RenderTargetState* renderTarget, const v3d::scene::CameraHandler& camera) = 0;
@@ -70,9 +77,15 @@ public:
 
         void bindUniformParameters(v3d::renderer::CmdListRender& cmdList, const v3d::renderer::ShaderProgram* program)
         {
-            v3d::renderer::Descriptor params({ &_constantBuffer, 0, sizeof(_constantBuffer) }, 1);
-            cmdList.bindDescriptorSet(0, { params });
+            _desc.clear();
+            _desc.emplace_back(v3d::renderer::Descriptor({ &_constantBuffer, 0, sizeof(_constantBuffer) }, 1));
+
+            cmdList.bindDescriptorSet(0, _desc);
         }
+
+    private:
+
+        std::vector<v3d::renderer::Descriptor> _desc;
     };
 
     struct TextureUniformParameters
@@ -88,12 +101,17 @@ public:
 
         void bindUniformParameters(v3d::renderer::CmdListRender& cmdList, const v3d::renderer::ShaderProgram* program)
         {
-            v3d::renderer::Descriptor vsCBO({ &_constantBufferVS, 0, sizeof(_constantBufferVS) }, 2);
-            v3d::renderer::Descriptor sampler(_sampler, 3);
-            v3d::renderer::Descriptor texture(_texture, 4);
+            _desc.clear();
+            _desc.emplace_back(v3d::renderer::Descriptor({ &_constantBufferVS, 0, sizeof(_constantBufferVS) }, 2));
+            _desc.emplace_back(_sampler, 3);
+            _desc.emplace_back(_texture, 4);
 
-            cmdList.bindDescriptorSet(1, { vsCBO, texture, sampler });
+            cmdList.bindDescriptorSet(1, _desc);
         }
+
+    private:
+
+        std::vector<v3d::renderer::Descriptor> _desc;
     };
 
     void setup(v3d::renderer::RenderTargetState* renderTarget, const v3d::scene::CameraHandler& camera) override;

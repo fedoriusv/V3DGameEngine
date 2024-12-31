@@ -273,7 +273,7 @@ void Scene::Load()
     std::mt19937 gen(rd()); // seed the generator
     std::uniform_int_distribution<> distr(-10, 10); // define the range
 
-    const u32 instanceCountPerModel = 40; //load from json
+    const u32 instanceCountPerModel = 40000; //load from json
     for (ModelData* data : m_Models)
     {
         for (u32 i = 0; i < instanceCountPerModel; ++i)
@@ -315,41 +315,53 @@ void Scene::Load()
 
 void Scene::Draw(f32 dt)
 {
-    //Frame
-    m_Swapchain->beginFrame();
+    {
+        TRACE_PROFILER_SCOPE("BeginFrame", color::WHITE);
+        m_Swapchain->beginFrame();
+    }
 
-    m_Camera->update(dt);
+    {
+        TRACE_PROFILER_SCOPE("SceneUpdate", color::DKGREY);
+        m_Camera->update(dt);
+    }
 
-    m_CmdList->transition(renderer::TextureView(m_RenderTarget->getColorTexture<v3d::renderer::Texture2D>(0), 0, 1, 0, 1), renderer::TransitionOp::TransitionOp_ColorAttachment);
-    m_CmdList->clear(m_RenderTarget->getColorTexture<v3d::renderer::Texture2D>(0), math::Vector4D(0.0f));
-    m_CmdList->clear(m_RenderTarget->getDepthStencilTexture<v3d::renderer::Texture2D>(), 0.0f, 0);
-    m_Device->submit(m_CmdList);
+    {
+        TRACE_PROFILER_SCOPE("ClearRT", color::YELLOW);
+
+        m_CmdList->transition(renderer::TextureView(m_RenderTarget->getColorTexture<v3d::renderer::Texture2D>(0), 0, 1, 0, 1), renderer::TransitionOp::TransitionOp_ColorAttachment);
+        m_CmdList->clear(m_RenderTarget->getColorTexture<v3d::renderer::Texture2D>(0), math::Vector4D(0.0f));
+        m_CmdList->clear(m_RenderTarget->getDepthStencilTexture<v3d::renderer::Texture2D>(), 0.0f, 0);
+        m_Device->submit(m_CmdList);
+    }
 
     for (auto& [render, task, pipelineID, offset, range] : m_RenderGroups)
     {
         render->setup(m_RenderTarget, *m_Camera);
-        task->init([this](Render* render, v3d::renderer::GraphicsPipelineState* pipeline,u32 groupStart, u32 countGroups) -> void
+        task->init([this](Render* render, v3d::renderer::GraphicsPipelineState* pipeline, u32 groupStart, u32 countGroups) -> void
             {
+                TRACE_PROFILER_SCOPE("ThreadDraw", color::DKGREY);
+
                 render->_CmdList->beginRenderTarget(*render->_RenderTarget);
                 render->_CmdList->setViewport(math::Rect32(0, 0, render->_RenderTarget->getRenderArea().m_width, render->_RenderTarget->getRenderArea().m_height));
                 render->_CmdList->setScissor(math::Rect32(0, 0, render->_RenderTarget->getRenderArea().m_width, render->_RenderTarget->getRenderArea().m_height));
 
+                render->_CmdList->setPipelineState(*pipeline);
+
                 for (u32 groupIndex = 0; groupIndex < countGroups; ++groupIndex)
                 {
                     ModelsGroup& group = m_ModelInstances[groupStart + groupIndex];
-                    render->updateParameters([group](Render* render) -> void
-                        {
-                            TextureRenderWorker* tRender = static_cast<TextureRenderWorker*>(render);
 
-                            tRender->_LightParams._constantBuffer._lightPos = math::Vector4D(25.0f, 0.0f, 5.0f, 1.0f);
-                            tRender->_LightParams._constantBuffer._color = math::Vector4D(1.0f);
+                    TextureRenderWorker* tRender = static_cast<TextureRenderWorker*>(render);
 
-                            tRender->_TextureParams._constantBufferVS._modelMatrix = group._Parameters._Transform;
-                            tRender->_TextureParams._constantBufferVS._normalMatrix = group._Parameters._Transform;
-                            tRender->_TextureParams._constantBufferVS._normalMatrix.makeTransposed();
-                            tRender->_TextureParams._texture = group._Parameters._Texture;
-                            tRender->_TextureParams._sampler = group._Parameters._Sampler;
-                        });
+                    tRender->_LightParams._constantBuffer._lightPos = math::Vector4D(25.0f, 0.0f, 5.0f, 1.0f);
+                    tRender->_LightParams._constantBuffer._color = math::Vector4D(1.0f);
+
+                    tRender->_TextureParams._constantBufferVS._modelMatrix = group._Parameters._Transform;
+                    tRender->_TextureParams._constantBufferVS._normalMatrix = group._Parameters._Transform;
+                    tRender->_TextureParams._constantBufferVS._normalMatrix.makeTransposed();
+                    tRender->_TextureParams._texture = group._Parameters._Texture;
+                    tRender->_TextureParams._sampler = group._Parameters._Sampler;
+
                     render->process(pipeline, group._InputProps);
                 }
             }, render, m_Pipelines[pipelineID], offset, range);
@@ -357,19 +369,30 @@ void Scene::Draw(f32 dt)
         m_Worker.executeTask(task, task::TaskPriority::Normal, task::TaskMask::WorkerThread);
     }
      
-    m_Worker.mainThreadLoop();
-    for (auto& [render, task, pipelineID, offset, range] : m_RenderGroups)
     {
-        m_Worker.waitTask(task);
+        TRACE_PROFILER_SCOPE("WaitForThreads", color::RED);
+
+        m_Worker.mainThreadLoop();
+        for (auto& [render, task, pipelineID, offset, range] : m_RenderGroups)
+        {
+            m_Worker.waitTask(task);
+        }
     }
 
-    for (auto& [render, task, pipelineID, offset, range] : m_RenderGroups)
     {
-        m_Device->submit(render->_CmdList);
+        TRACE_PROFILER_SCOPE("SabmitDraws", color::BLUE);
+
+        for (auto& [render, task, pipelineID, offset, range] : m_RenderGroups)
+        {
+            m_Device->submit(render->_CmdList);
+        }
     }
 
     //Backbuffer
     {
+
+        TRACE_PROFILER_SCOPE("BackbufferDraw", color::YELLOW);
+
         m_CmdList->beginRenderTarget(*m_renderTargetBackbuffer);
         m_CmdList->setViewport(math::Rect32(0, 0, m_renderTargetBackbuffer->getRenderArea().m_width, m_renderTargetBackbuffer->getRenderArea().m_height));
         m_CmdList->setScissor(math::Rect32(0, 0, m_renderTargetBackbuffer->getRenderArea().m_width, m_renderTargetBackbuffer->getRenderArea().m_height));
@@ -385,8 +408,12 @@ void Scene::Draw(f32 dt)
         m_Device->submit(m_CmdList, m_Swapchain->getSyncPoint());
     }
 
-    m_Swapchain->endFrame();
-    m_Swapchain->presentFrame(m_Sync);
+    {
+        TRACE_PROFILER_SCOPE("FrameEnd&Present", color::WHITE);
+
+        m_Swapchain->endFrame();
+        m_Swapchain->presentFrame(m_Sync);
+    }
 }
 
 void Scene::Exit()

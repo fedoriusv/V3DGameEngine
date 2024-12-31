@@ -110,6 +110,7 @@ private:
 
         Swapchain::SwapchainParams params;
         params._size = m_Window->getSize();
+        params._vSync = false;
         m_Swapchain = m_Device->createSwapchain(m_Window, params);
 
         m_Scene = new app::Scene(m_Device, m_Swapchain);
@@ -120,6 +121,8 @@ private:
         f32 dt = 0.001f;
 
         m_Scene->Run(dt);
+
+        TRACE_PROFILER_FRAME;
 
         return true;
     }
