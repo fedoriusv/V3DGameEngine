@@ -2,6 +2,8 @@
 
 #include "Render.h"
 #include "DeviceCaps.h"
+#include "RenderFrameProfiler.h"
+#include "Utils/Profiler.h"
 
 #include "Texture.h"
 #include "Buffer.h"
@@ -148,7 +150,7 @@ namespace renderer
         /**
          * @brief clear command
         */
-        virtual void clear(Texture* texture, const renderer::Color& color) = 0;
+        virtual void clear(Texture* texture, const color::Color& color) = 0;
 
         /**
          * @brief clear command
@@ -331,7 +333,10 @@ namespace renderer
         virtual bool initialize() = 0;
         virtual void destroy() = 0;
 
-        RenderType m_renderType;
+        RenderType              m_renderType;
+#if FRAME_PROFILER_ENABLE
+        utils::ProfileManager   m_frameProfiler;
+#endif //FRAME_PROFILER_ENABLE
     };
 
     inline Device::RenderType Device::getRenderType() const

@@ -137,8 +137,6 @@ VulkanFramebufferManager::~VulkanFramebufferManager()
 
 std::tuple<VulkanFramebuffer*, bool> VulkanFramebufferManager::acquireFramebuffer(const VulkanRenderPass* renderpass, const FramebufferDesc& description, const std::string& name)
 {
-    std::scoped_lock lock(m_mutex);
-
     std::vector<TextureHandle> images;
     images.reserve(renderpass->getCountAttachments());
     auto buildFramebufferDescription = [&](VulkanFramebufferDesc& desc) -> void
@@ -154,30 +152,31 @@ std::tuple<VulkanFramebuffer*, bool> VulkanFramebufferManager::acquireFramebuffe
     VulkanFramebufferDesc desc;
     buildFramebufferDescription(desc);
 
-    VulkanFramebuffer* framebuffer = nullptr;
-    auto found = m_framebufferList.emplace(desc, framebuffer);
-    if (found.second)
+
+    std::lock_guard lock(m_device.getMutex());
+
+    auto found = m_framebufferList.find(desc);
+    if (found != m_framebufferList.cend())
     {
-        framebuffer = V3D_NEW(VulkanFramebuffer, memory::MemoryLabel::MemoryRenderCore)(&m_device, images, description._renderArea, name);
-        if (!framebuffer->create(renderpass))
-        {
-            framebuffer->destroy();
-            m_framebufferList.erase(found.first);
-
-            ASSERT(false, "can't create framebuffer");
-            return std::make_tuple(nullptr, false);
-        }
-        found.first->second = framebuffer;
-
-        return std::make_tuple(framebuffer, true);
+        return std::make_tuple(found->second, false);
     }
 
-    return std::make_tuple(found.first->second, false);
+    VulkanFramebuffer* framebuffer = V3D_NEW(VulkanFramebuffer, memory::MemoryLabel::MemoryRenderCore)(&m_device, images, description._renderArea, name);
+    if (!framebuffer->create(renderpass))
+    {
+        framebuffer->destroy();
+
+        ASSERT(false, "can't create framebuffer");
+        return std::make_tuple(nullptr, false);
+    }
+    m_framebufferList.emplace(desc, framebuffer);
+
+    return std::make_tuple(framebuffer, true);
 }
 
 bool VulkanFramebufferManager::removeFramebuffer(VulkanFramebuffer* framebuffer)
 {
-    std::scoped_lock lock(m_mutex);
+    std::lock_guard lock(m_device.getMutex());
 
     auto iter = m_framebufferList.begin();
     while (iter != m_framebufferList.end())
@@ -207,7 +206,7 @@ bool VulkanFramebufferManager::removeFramebuffer(VulkanFramebuffer* framebuffer)
 
 void VulkanFramebufferManager::clear()
 {
-    std::scoped_lock lock(m_mutex);
+    std::lock_guard lock(m_device.getMutex());
 
     for (auto& iter : m_framebufferList)
     {

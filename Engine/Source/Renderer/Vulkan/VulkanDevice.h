@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Renderer/Device.h"
+#include "FrameProfiler.h"
 
 #ifdef VULKAN_RENDER
 #   include "VulkanWrapper.h"
@@ -66,7 +67,7 @@ namespace vk
         void draw(const GeometryBufferDesc& desc, u32 firstVertex, u32 vertexCount, u32 firstInstance, u32 instanceCount) override;
         void drawIndexed(const GeometryBufferDesc& desc, u32 firstIndex, u32 indexCount, u32 firstInstance, u32 instanceCount) override;
 
-        void clear(Texture* texture, const renderer::Color& color) override;
+        void clear(Texture* texture, const color::Color& color) override;
         void clear(Texture* texture, f32 depth, u32 stencil) override;
 
         bool uploadData(Texture2D* texture, u32 size, const void* data) override;
@@ -194,6 +195,8 @@ namespace vk
         VulkanPipelineLayoutManager* getPipelineLayoutManager() const;
         VulkanRenderpassManager* getRenderpassManager() const;
 
+        std::recursive_mutex& getMutex();
+
     private:
 
         friend VulkanCmdList;
@@ -237,10 +240,10 @@ namespace vk
 
         struct Concurrency
         {
-            std::thread::id                 m_threadID;
-            VulkanCommandBufferManager*     m_cmdBufferManager = nullptr;
+            std::thread::id             m_threadID;
+            VulkanCommandBufferManager* m_cmdBufferManager = nullptr;
         };
-        std::mutex                              m_mutex;
+        std::recursive_mutex                    m_mutex;
         VulkanCommandBufferManager*             m_internalCmdBufferManager;
 
         std::vector<Concurrency>                m_threadedPools;
@@ -307,6 +310,11 @@ namespace vk
     {
         ASSERT(m_renderpassManager, "nullptr");
         return m_renderpassManager;
+    }
+
+    inline std::recursive_mutex& VulkanDevice::getMutex()
+    {
+        return m_mutex;
     }
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

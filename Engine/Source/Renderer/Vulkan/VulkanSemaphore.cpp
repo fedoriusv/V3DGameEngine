@@ -81,7 +81,7 @@ VulkanSemaphoreManager::~VulkanSemaphoreManager()
 
 VulkanSemaphore* VulkanSemaphoreManager::acquireFreeSemaphore()
 {
-    std::scoped_lock lock(m_mutex);
+    std::lock_guard lock(m_device.getMutex());
 
     VulkanSemaphore* semaphore = nullptr;
     if (m_freeList.empty())
@@ -103,7 +103,7 @@ VulkanSemaphore* VulkanSemaphoreManager::acquireFreeSemaphore()
 
 void VulkanSemaphoreManager::clear()
 {
-    std::scoped_lock lock(m_mutex);
+    std::scoped_lock lock(m_device.getMutex());
 
     ASSERT(m_usedList.empty(), "must be empty");
     for (auto& semaphore : m_freeList)
@@ -115,7 +115,7 @@ void VulkanSemaphoreManager::clear()
 
 void VulkanSemaphoreManager::updateStatus(bool forced)
 {
-    std::scoped_lock lock(m_mutex);
+    std::scoped_lock lock(m_device.getMutex());
 
     for (auto semaphoreIter = m_usedList.begin(); semaphoreIter != m_usedList.end();)
     {
@@ -138,7 +138,7 @@ void VulkanSemaphoreManager::updateStatus(bool forced)
 bool VulkanSemaphoreManager::markSemaphore(VulkanSemaphore* semaphore, VulkanSemaphore::SemaphoreStatus status)
 {
     ASSERT(semaphore, "nullptr");
-    std::scoped_lock lock(m_mutex);
+    std::scoped_lock lock(m_device.getMutex());
 
     if (status == VulkanSemaphore::SemaphoreStatus::Free && semaphore->isUsed())
     {
@@ -150,8 +150,8 @@ bool VulkanSemaphoreManager::markSemaphore(VulkanSemaphore* semaphore, VulkanSem
     {
         if (semaphore->m_status != VulkanSemaphore::SemaphoreStatus::AssignForSignal && semaphore->m_status != VulkanSemaphore::SemaphoreStatus::Signaled)
         {
-            //ASSERT(false, "must be attached to signal");
-            //return false;
+            ASSERT(false, "must be attached to signal");
+            return false;
         }
     }
 

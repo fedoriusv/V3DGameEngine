@@ -112,8 +112,7 @@ namespace vk
         VulkanFramebufferManager() = delete;
         VulkanFramebufferManager(const VulkanFramebufferManager&) = delete;
 
-        VulkanDevice&           m_device;
-        std::recursive_mutex    m_mutex;
+        VulkanDevice& m_device;
         std::unordered_map<DescInfo<VulkanFramebufferDesc>, VulkanFramebuffer*, DescInfo<VulkanFramebufferDesc>::Hash, DescInfo<VulkanFramebufferDesc>::Compare> m_framebufferList;
     };
 

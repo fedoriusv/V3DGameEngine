@@ -1,7 +1,12 @@
 #pragma once
 
+#include "FrameProfiler.h"
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////
+
 #ifdef VULKAN_RENDER
 
+//Vulkan version
 #ifdef PLATFORM_ANDROID
 #    define VULKAN_VERSION_MAJOR 1
 #    define VULKAN_VERSION_MINOR 1
@@ -10,19 +15,32 @@
 #    define VULKAN_VERSION_MINOR 3
 #endif
 
-#define VULKAN_DEBUG 1 //Log every render command
-#define VULKAN_LAYERS_CALLBACKS 1
+//Debug
+#define VULKAN_DEBUG 0 //Log every render command
+
+//Validation
+#define VULKAN_LAYERS_CALLBACKS (0 || DEBUG)
 #if VULKAN_LAYERS_CALLBACKS
 #    define VULKAN_VALIDATION_LAYERS_CALLBACK 1
 #    define VULKAN_RENDERDOC_LAYER 0
 #    define VULKAN_DEBUG_MARKERS 1
 #endif //VULKAN_LAYERS_CALLBACKS
 
+
 #define VULKAN_STATISTICS 0
+
 #define VULKAN_DUMP 0
 #if VULKAN_DUMP
 #    define VULKAN_DUMP_FILE "VulkanCommandsDump.log"
 #endif //VULKAN_DUMP
+
+//Trace vulkan command
+#define TRACE_VULKAN 1
+#if TRACE_VULKAN
+#   define TRACE_PROFILER_VULKAN_SCOPE TRACE_PROFILER_SCOPE
+#else
+#   define TRACE_PROFILER_VULKAN_SCOPE
+#endif //TRACE_VULKAN
 
 #define VULKAN_MAKE_VERSION(major, minor) (((major) << 22) | ((minor) << 12))
 
@@ -34,3 +52,5 @@
 #define VULKAN_CURRENT_VERSION VULKAN_MAKE_VERSION(VULKAN_VERSION_MAJOR, VULKAN_VERSION_MINOR)
 
 #endif //VULKAN_RENDER
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////

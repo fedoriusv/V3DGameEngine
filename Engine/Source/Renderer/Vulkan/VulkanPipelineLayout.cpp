@@ -100,6 +100,8 @@ VulkanPipelineLayoutManager::~VulkanPipelineLayoutManager()
 
 VulkanPipelineLayout VulkanPipelineLayoutManager::acquirePipelineLayout(const VulkanPipelineLayoutDescription& desc)
 {
+    std::lock_guard lock(m_device.getMutex());
+
     auto found = m_pipelinesLayouts.emplace(desc, VulkanPipelineLayout());
     if (found.second)
     {
@@ -139,6 +141,8 @@ VulkanPipelineLayout VulkanPipelineLayoutManager::acquirePipelineLayout(const Vu
 
 bool VulkanPipelineLayoutManager::removePipelineLayout(const VulkanPipelineLayoutDescription& desc)
 {
+    std::lock_guard lock(m_device.getMutex());
+
     auto iter = m_pipelinesLayouts.find(desc);
     if (iter == m_pipelinesLayouts.cend())
     {
@@ -157,6 +161,8 @@ bool VulkanPipelineLayoutManager::removePipelineLayout(const VulkanPipelineLayou
 
 void VulkanPipelineLayoutManager::clear()
 {
+    std::lock_guard lock(m_device.getMutex());
+
     for (auto& layout : m_pipelinesLayouts)
     {
         VulkanWrapper::DestroyPipelineLayout(m_device.getDeviceInfo()._device, layout.second._pipelineLayout, VULKAN_ALLOCATOR);

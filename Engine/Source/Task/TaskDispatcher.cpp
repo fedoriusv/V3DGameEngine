@@ -240,7 +240,14 @@ Task* TaskDispatcher::popTask()
     {
         return task;
     }
-    
+
+
+    if (threadID == 0 && !(m_flags & DispatcherFlag::AllowToMainThreadStealTasks))
+    {
+        ASSERT(utils::Thread::getCurrentThread() == utils::Thread::getMainThreadId(), "main thread");
+        return nullptr;
+    }
+
     //Steal from other queues
     for (s32 index = 1; index < m_numWorkingThreads; ++index)
     {

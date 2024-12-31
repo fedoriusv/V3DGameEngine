@@ -944,7 +944,7 @@ VulkanGraphicPipelineManager::~VulkanGraphicPipelineManager()
 
 VulkanGraphicPipeline* VulkanGraphicPipelineManager::acquireGraphicPipeline(const GraphicsPipelineState& state)
 {
-    std::scoped_lock lock(m_mutex);
+    std::lock_guard lock(m_device.getMutex());
 
     VulkanGraphicPipeline* pipeline = nullptr;
     VulkanPipelineDesc desc(state.getPipelineStateDesc(), state.getRenderPassDesc(), state.getShaderProgram());
@@ -974,7 +974,7 @@ VulkanGraphicPipeline* VulkanGraphicPipelineManager::acquireGraphicPipeline(cons
 bool VulkanGraphicPipelineManager::removePipeline(VulkanGraphicPipeline* pipeline)
 {
     ASSERT(pipeline->getType() == RenderPipeline::PipelineType::PipelineType_Graphic, "wrong type");
-    std::scoped_lock lock(m_mutex);
+    std::lock_guard lock(m_device.getMutex());
 
     auto found = std::find_if(m_pipelineGraphicList.begin(), m_pipelineGraphicList.end(), [pipeline](auto& elem) -> bool
         {
@@ -1004,7 +1004,7 @@ bool VulkanGraphicPipelineManager::removePipeline(VulkanGraphicPipeline* pipelin
 
 void VulkanGraphicPipelineManager::clear()
 {
-    std::scoped_lock lock(m_mutex);
+    std::lock_guard lock(m_device.getMutex());
 
     for (auto& iter : m_pipelineGraphicList)
     {

@@ -146,8 +146,7 @@ namespace vk
         VulkanGraphicPipelineManager(const VulkanGraphicPipelineManager&) = delete;
         VulkanGraphicPipelineManager& operator=(const VulkanGraphicPipelineManager&) = delete;
 
-        VulkanDevice&           m_device;
-        std::recursive_mutex    m_mutex;
+        VulkanDevice& m_device;
         std::unordered_map<DescInfo<VulkanPipelineDesc>, VulkanGraphicPipeline*, DescInfo<VulkanPipelineDesc>::Hash, DescInfo<VulkanPipelineDesc>::Compare> m_pipelineGraphicList;
     };
 

@@ -34,7 +34,7 @@ VulkanResourceDeleter::~VulkanResourceDeleter()
 
 void VulkanResourceDeleter::addResourceToDelete(VulkanResource* resource, const std::function<void(VulkanResource* resource)>& deleter, bool forceDelete)
 {
-    std::scoped_lock lock(m_mutex);
+    std::lock_guard lock(m_mutex);
 
     if (forceDelete) [[unlikely]]
     {
@@ -55,7 +55,7 @@ void VulkanResourceDeleter::addResourceToDelete(VulkanResource* resource, const 
 
 void VulkanResourceDeleter::updateResourceDeleter(bool forceDelete)
 {
-    std::scoped_lock lock(m_mutex);
+    std::lock_guard lock(m_mutex);
 
     ASSERT(m_deleterList.empty(), "should be empty");
     std::queue<std::pair<VulkanResource*, std::function<void(VulkanResource* resource)>>> delayedList;
@@ -82,7 +82,7 @@ void VulkanResourceDeleter::updateResourceDeleter(bool forceDelete)
 
 void VulkanResourceDeleter::resourceGarbageCollect()
 {
-    std::scoped_lock lock(m_mutex);
+    std::lock_guard lock(m_mutex);
 
     while (!m_deleterList.empty())
     {

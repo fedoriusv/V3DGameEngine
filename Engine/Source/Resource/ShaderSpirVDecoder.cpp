@@ -417,7 +417,7 @@ Resource* ShaderSpirVDecoder::decode(const stream::Stream* stream, const Policy*
     }
     else //Bytecode
     {
-#if DEBUG
+#if LOG_LOADIMG_TIME
         utils::Timer timer;
         timer.start();
 #endif

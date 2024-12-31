@@ -27,6 +27,10 @@ namespace renderer
 namespace vk
 {
 
+#if FRAME_PROFILER_INTERNAL
+    extern RenderFrameProfiler* g_CPUProfiler;
+#endif //FRAME_PROFILER_INTERNAL
+
 #ifdef PLATFORM_WINDOWS
 bool createSurfaceWinApi(VkInstance vkInstance, NativeInstance hInstance, NativeWindows hWnd, VkSurfaceKHR& surface)
 {

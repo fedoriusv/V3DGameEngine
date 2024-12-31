@@ -236,7 +236,7 @@ VulkanComputePipelineManager::~VulkanComputePipelineManager()
 
 VulkanComputePipeline* VulkanComputePipelineManager::acquireGraphicPipeline(const ComputePipelineState& state)
 {
-    std::scoped_lock lock(m_mutex);
+    std::lock_guard lock(m_device.getMutex());
 
     VulkanComputePipeline* pipeline = nullptr;
     VulkanPipelineDesc desc(state.getShaderProgram());
@@ -266,7 +266,7 @@ VulkanComputePipeline* VulkanComputePipelineManager::acquireGraphicPipeline(cons
 bool VulkanComputePipelineManager::removePipeline(VulkanComputePipeline* pipeline)
 {
     ASSERT(pipeline->getType() == RenderPipeline::PipelineType::PipelineType_Graphic, "wrong type");
-    std::scoped_lock lock(m_mutex);
+    std::lock_guard lock(m_device.getMutex());
 
     auto found = std::find_if(m_pipelineComputeList.begin(), m_pipelineComputeList.end(), [pipeline](auto& elem) -> bool
         {
@@ -296,7 +296,7 @@ bool VulkanComputePipelineManager::removePipeline(VulkanComputePipeline* pipelin
 
 void VulkanComputePipelineManager::clear()
 {
-    std::scoped_lock lock(m_mutex);
+    std::lock_guard lock(m_device.getMutex());
 
     for (auto& iter : m_pipelineComputeList)
     {

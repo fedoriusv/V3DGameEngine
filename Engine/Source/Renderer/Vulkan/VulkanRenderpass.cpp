@@ -684,32 +684,30 @@ VulkanRenderpassManager::~VulkanRenderpassManager()
 
 VulkanRenderPass* VulkanRenderpassManager::acquireRenderpass(const RenderPassDesc& description, const std::string& name)
 {
-    std::scoped_lock lock(m_mutex);
+    std::lock_guard lock(m_device.getMutex());
 
-    VulkanRenderPass* renderpass = nullptr;
-    auto found = m_renderPassList.emplace(description, renderpass);
-    if (found.second)
+    auto found = m_renderPassList.find(description);
+    if (found != m_renderPassList.cend())
     {
-        renderpass = V3D_NEW(VulkanRenderPass, memory::MemoryLabel::MemoryRenderCore)(&m_device, description, name);
-        if (!renderpass->create())
-        {
-            renderpass->destroy();
-            m_renderPassList.erase(found.first);
-
-            ASSERT(false, "can't create renderpass");
-            return nullptr;
-        }
-        found.first->second = renderpass;
-
-        return renderpass;
+        return found->second;
     }
 
-    return found.first->second;
+    VulkanRenderPass* renderpass = V3D_NEW(VulkanRenderPass, memory::MemoryLabel::MemoryRenderCore)(&m_device, description, name);
+    if (!renderpass->create())
+    {
+        renderpass->destroy();
+
+        ASSERT(false, "can't create renderpass");
+        return nullptr;
+    }
+    m_renderPassList.emplace(description, renderpass);
+
+    return renderpass;
 }
 
 bool VulkanRenderpassManager::removeRenderPass(VulkanRenderPass* renderpass)
 {
-    std::scoped_lock lock(m_mutex);
+    std::lock_guard lock(m_device.getMutex());
 
     auto found = std::find_if(m_renderPassList.begin(), m_renderPassList.end(), [renderpass](auto& elem) -> bool
         {
@@ -739,7 +737,7 @@ bool VulkanRenderpassManager::removeRenderPass(VulkanRenderPass* renderpass)
 
 void VulkanRenderpassManager::clear()
 {
-    std::scoped_lock lock(m_mutex);
+    std::lock_guard lock(m_device.getMutex());
 
     for (auto& iter : m_renderPassList)
     {

@@ -30,6 +30,7 @@ VulkanDescriptorSetPool::VulkanDescriptorSetPool(VulkanDevice* device, VkDescrip
 
 VulkanDescriptorSetPool::~VulkanDescriptorSetPool()
 {
+    LOG_DEBUG("VulkanDescriptorSetPool::VulkanDescriptorSetPool destructor %llx", this);
     ASSERT(m_pool == VK_NULL_HANDLE, "not nullptr");
 }
 
@@ -128,12 +129,15 @@ bool VulkanDescriptorSetPool::freeDescriptorSet(VkDescriptorSet& descriptorSet)
 
 bool VulkanDescriptorSetPool::allocateDescriptorSets(VkDescriptorSetLayout layout, u32 count, std::vector<VkDescriptorSet>& descriptorSets)
 {
+    std::vector<VkDescriptorSetLayout> layouts;
+    layouts.resize(count, layout);
+
     VkDescriptorSetAllocateInfo descriptorSetAllocateInfo = {};
     descriptorSetAllocateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
     descriptorSetAllocateInfo.pNext = nullptr; //VkDescriptorSetVariableDescriptorCountAllocateInfoEXT
     descriptorSetAllocateInfo.descriptorPool = m_pool;
     descriptorSetAllocateInfo.descriptorSetCount = count;
-    descriptorSetAllocateInfo.pSetLayouts = &layout;
+    descriptorSetAllocateInfo.pSetLayouts = layouts.data();
 
     VkResult result = VulkanWrapper::AllocateDescriptorSets(m_device.getDeviceInfo()._device, &descriptorSetAllocateInfo, descriptorSets.data());
     if (result == VK_ERROR_OUT_OF_POOL_MEMORY || result == VK_ERROR_FRAGMENTED_POOL || result == VK_ERROR_OUT_OF_DEVICE_MEMORY)
@@ -186,6 +190,94 @@ bool VulkanDescriptorSetPool::reset()
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 
+VulkanDescriptorSetPoolLayout::VulkanDescriptorSetPoolLayout(VulkanDevice* device, VkDescriptorPoolCreateFlags flag, VkDescriptorSetLayout layout, const std::string& name) noexcept
+    : VulkanDescriptorSetPool(device, flag, name)
+    , m_layout(layout)
+{
+    LOG_DEBUG("VulkanDescriptorSetPoolLayout::VulkanDescriptorSetPoolLayout constructor %llx", this);
+}
+
+VulkanDescriptorSetPoolLayout::~VulkanDescriptorSetPoolLayout()
+{
+    LOG_DEBUG("VulkanDescriptorSetPool::VulkanDescriptorSetPool destructor %llx", this);
+    ASSERT(m_pool == VK_NULL_HANDLE, "not nullptr");
+}
+
+bool VulkanDescriptorSetPoolLayout::create(u32 setsCount, const std::vector<VkDescriptorPoolSize>& sizes)
+{
+    ASSERT(!m_pool, "not nullptr");
+    VkDescriptorPoolCreateInfo descriptorPoolCreateInfo = {};
+    descriptorPoolCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+    descriptorPoolCreateInfo.pNext = nullptr;
+    descriptorPoolCreateInfo.flags = m_flag;
+    descriptorPoolCreateInfo.maxSets = setsCount;
+    descriptorPoolCreateInfo.poolSizeCount = static_cast<u32>(sizes.size());
+    descriptorPoolCreateInfo.pPoolSizes = sizes.data();
+
+    VkResult result = VulkanWrapper::CreateDescriptorPool(m_device.getDeviceInfo()._device, &descriptorPoolCreateInfo, VULKAN_ALLOCATOR, &m_pool);
+    if (result != VK_SUCCESS)
+    {
+        LOG_ERROR("VulkanDescriptorSetPoolLayout::create vkCreateDescriptorPool is failed. Error: %s", ErrorString(result).c_str());
+        return false;
+    }
+
+    m_freeIndex = 0;
+    m_poolSize = setsCount;
+    m_descriptorSets.resize(m_poolSize, VK_NULL_HANDLE);
+    if (!VulkanDescriptorSetPool::allocateDescriptorSets(m_layout, m_poolSize, m_descriptorSets))
+    {
+        LOG_ERROR("VulkanDescriptorSetPoolLayout::allocateDescriptorSets is failed. Error: %s", ErrorString(result).c_str());
+        return false;
+    }
+
+#if VULKAN_DEBUG_MARKERS
+    if (m_device.getVulkanDeviceCaps()._debugUtilsObjectNameEnabled)
+    {
+        VkDebugUtilsObjectNameInfoEXT debugUtilsObjectNameInfo = {};
+        debugUtilsObjectNameInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT;
+        debugUtilsObjectNameInfo.pNext = nullptr;
+        debugUtilsObjectNameInfo.objectType = VK_OBJECT_TYPE_DESCRIPTOR_POOL;
+        debugUtilsObjectNameInfo.objectHandle = reinterpret_cast<u64>(m_pool);
+        debugUtilsObjectNameInfo.pObjectName = m_debugName.c_str();
+
+        VulkanWrapper::SetDebugUtilsObjectName(m_device.getDeviceInfo()._device, &debugUtilsObjectNameInfo);
+    }
+#endif //VULKAN_DEBUG_MARKERS
+
+    return true;
+}
+
+void VulkanDescriptorSetPoolLayout::destroy()
+{
+    if (m_pool)
+    {
+        VulkanWrapper::DestroyDescriptorPool(m_device.getDeviceInfo()._device, m_pool, VULKAN_ALLOCATOR);
+        m_pool = VK_NULL_HANDLE;
+    }
+    m_descriptorSets.clear();
+}
+
+bool VulkanDescriptorSetPoolLayout::reset()
+{
+    VkResult result = VulkanWrapper::ResetDescriptorPool(m_device.getDeviceInfo()._device, m_pool, m_flag);
+    if (result != VK_SUCCESS)
+    {
+        LOG_ERROR("VulkanDescriptorSetPoolLayout::reset vkResetDescriptorPool is failed. Error: %s", ErrorString(result).c_str());
+        return false;
+    }
+
+    m_freeIndex = 0;
+    if (!VulkanDescriptorSetPool::allocateDescriptorSets(m_layout, m_poolSize, m_descriptorSets))
+    {
+        LOG_ERROR("VulkanDescriptorSetPoolLayout::allocateDescriptorSets is failed. Error: %s", ErrorString(result).c_str());
+        return false;
+    }
+
+    return true;
+}
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////
+
 
 VulkanDescriptorPoolProvider::VulkanDescriptorPoolProvider(VulkanDevice* device, GenericDescriptorPools* stategy) noexcept
     : m_device(*device)
@@ -199,10 +291,10 @@ VulkanDescriptorPoolProvider::~VulkanDescriptorPoolProvider()
     V3D_DELETE(m_descriptorPools, memory::MemoryLabel::MemoryRenderCore);
 }
 
-VulkanDescriptorSetPool* VulkanDescriptorPoolProvider::acquireDescriptorSetPool(const VulkanDescriptorSetLayoutDescription& desc, VkDescriptorPoolCreateFlags flag)
+VulkanDescriptorSetPool* VulkanDescriptorPoolProvider::acquireDescriptorSetPool(const VulkanDescriptorSetLayoutDescription& desc, VkDescriptorSetLayout layout, VkDescriptorPoolCreateFlags flag)
 {
     ASSERT(m_descriptorPools, "nullptr");
-    return m_descriptorPools->acquirePool(desc, &m_device, flag);
+    return m_descriptorPools->acquirePool(&m_device, desc, layout, flag);
 }
 
 void VulkanDescriptorPoolProvider::destroyDescriptorSetPools()
@@ -242,14 +334,22 @@ std::vector<VkDescriptorPoolSize> GlobalDescriptorPools::descriptorPoolSize(u32 
     };
 };
 
-VulkanDescriptorSetPool* GlobalDescriptorPools::acquirePool(const VulkanDescriptorSetLayoutDescription& desc, VulkanDevice* device, VkDescriptorPoolCreateFlags flag)
+VulkanDescriptorSetPool* GlobalDescriptorPools::acquirePool(VulkanDevice* device, const VulkanDescriptorSetLayoutDescription& desc, VkDescriptorSetLayout layout, VkDescriptorPoolCreateFlags flag)
 {
     ASSERT(device->getVulkanDeviceCaps()._useGlobalDescriptorPool, "wrong strategy");
 
     VulkanDescriptorSetPool* pool = nullptr;
     if (_currentDescriptorPool)
     {
-        return _currentDescriptorPool;
+        if (_currentDescriptorPool->hasFreeDescriptors())
+        {
+            return _currentDescriptorPool;
+        }
+        else
+        {
+            _usedDescriptorPools.push_back(_currentDescriptorPool);
+            _currentDescriptorPool = nullptr;
+        }
     }
 
     if (_freeDescriptorPools.empty())
@@ -335,32 +435,40 @@ GlobalDescriptorPools::~GlobalDescriptorPools()
 
 const u32 LayoutDescriptorPools::s_maxSets;
 
-VulkanDescriptorSetPool* LayoutDescriptorPools::acquirePool(const VulkanDescriptorSetLayoutDescription& desc, VulkanDevice* device, VkDescriptorPoolCreateFlags flag)
+VulkanDescriptorSetPool* LayoutDescriptorPools::acquirePool(VulkanDevice* device, const VulkanDescriptorSetLayoutDescription& desc, VkDescriptorSetLayout layout, VkDescriptorPoolCreateFlags flag)
 {
     ASSERT(!device->getVulkanDeviceCaps()._useGlobalDescriptorPool, "wrong strategy");
     LayoutPools* layoutPools = nullptr;
 
-    auto poolsIter = _pools.emplace(desc, nullptr);
-    if (!poolsIter.second)
+    auto found = _pools.find(desc);
+    if (found != _pools.cend())
     {
-        layoutPools  = poolsIter.first->second;
+        layoutPools = found->second;
     }
     else
     {
         layoutPools = V3D_NEW(LayoutPools, memory::MemoryLabel::MemoryRenderCore)();
-        poolsIter.first->second = layoutPools;
+        _pools.emplace(desc, layoutPools);
     }
     ASSERT(layoutPools, "nullptr");
 
     VulkanDescriptorSetPool* pool = nullptr;
     if (layoutPools->_currentPool)
     {
-        return layoutPools->_currentPool;
+        if (layoutPools->_currentPool->hasFreeDescriptors())
+        {
+            return layoutPools->_currentPool;
+        }
+        else
+        {
+            layoutPools->_usedList.push_back(layoutPools->_currentPool);
+            layoutPools->_currentPool = nullptr;
+        }
     }
 
     if (layoutPools->_freeList.empty())
     {
-        pool = LayoutDescriptorPools::createPool(desc, device, flag);
+        pool = LayoutDescriptorPools::createPool(device, desc, layout, flag);
         ASSERT(pool, "nullptr");
     }
     else
@@ -434,9 +542,13 @@ void LayoutDescriptorPools::resetPools()
     }
 }
 
-VulkanDescriptorSetPool* LayoutDescriptorPools::createPool(const VulkanDescriptorSetLayoutDescription& desc, VulkanDevice* device, VkDescriptorPoolCreateFlags flag)
+VulkanDescriptorSetPool* LayoutDescriptorPools::createPool(VulkanDevice* device, const VulkanDescriptorSetLayoutDescription& desc, VkDescriptorSetLayout layout, VkDescriptorPoolCreateFlags flag)
 {
+#if 0
+    VulkanDescriptorSetPool* pool = V3D_NEW(VulkanDescriptorSetPoolLayout, memory::MemoryLabel::MemoryRenderCore)(device, flag, layout);
+#else
     VulkanDescriptorSetPool* pool = V3D_NEW(VulkanDescriptorSetPool, memory::MemoryLabel::MemoryRenderCore)(device, flag);
+#endif
     ASSERT(pool, "nullptr");
 
     std::array<VkDescriptorPoolSize, 9> sizesCount =

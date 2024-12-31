@@ -5,8 +5,8 @@ namespace v3d
 namespace task
 {
 
-TaskScheduler::TaskScheduler(u32 numWorkerThreads) noexcept
-    : m_dispatcher(numWorkerThreads, 0)
+TaskScheduler::TaskScheduler(u32 numWorkerThreads, u32 mask) noexcept
+    : m_dispatcher(numWorkerThreads, mask)
 {
 }
 

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Common.h"
+#include "FrameProfiler.h"
 
 #ifdef VULKAN_RENDER
 #include "VulkanResource.h"
@@ -28,14 +29,15 @@ namespace vk
         explicit VulkanDescriptorSetPool(VulkanDevice* device, VkDescriptorPoolCreateFlags flag, const std::string& name = "") noexcept;
         ~VulkanDescriptorSetPool();
 
-        bool create(u32 setsCount, const std::vector<VkDescriptorPoolSize>& sizes);
-        void destroy();
+        virtual bool create(u32 setsCount, const std::vector<VkDescriptorPoolSize>& sizes);
+        virtual void destroy();
+        virtual bool reset();
 
-        bool reset();
 
-        [[nodiscard]] std::tuple<VkDescriptorSet, u32> getFreeDescriptorSet(VkDescriptorSetLayout layout);
+        bool hasFreeDescriptors() const;
+        [[nodiscard]] virtual std::tuple<VkDescriptorSet, u32> getFreeDescriptorSet(VkDescriptorSetLayout layout);
 
-    private:
+    protected:
 
         VulkanDescriptorSetPool(const VulkanDescriptorSetPool&) = delete;
         VulkanDescriptorSetPool& operator=(const VulkanDescriptorSetPool&) = delete;
@@ -72,6 +74,49 @@ namespace vk
         return { VK_NULL_HANDLE, 0 };
     }
 
+    inline bool VulkanDescriptorSetPool::hasFreeDescriptors() const
+    {
+        return m_freeIndex < m_poolSize;
+    }
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    /**
+    * @brief VulkanDescriptorSetPoolLayout class. Vulkan Render side
+    */
+    class VulkanDescriptorSetPoolLayout : public VulkanDescriptorSetPool
+    {
+    public:
+
+        explicit VulkanDescriptorSetPoolLayout(VulkanDevice* device, VkDescriptorPoolCreateFlags flag, VkDescriptorSetLayout layout, const std::string& name = "") noexcept;
+        ~VulkanDescriptorSetPoolLayout();
+
+        bool create(u32 setsCount, const std::vector<VkDescriptorPoolSize>& sizes) override;
+        void destroy() override;
+        bool reset() override;
+
+        [[nodiscard]] std::tuple<VkDescriptorSet, u32> getFreeDescriptorSet(VkDescriptorSetLayout layout) override;
+
+    private:
+
+        VkDescriptorSetLayout        m_layout;
+        std::vector<VkDescriptorSet> m_descriptorSets;
+    };
+
+    inline std::tuple<VkDescriptorSet, u32> VulkanDescriptorSetPoolLayout::getFreeDescriptorSet(VkDescriptorSetLayout layout)
+    {
+        if (m_freeIndex < m_poolSize)
+        {
+            u32 offset = m_freeIndex;
+            ++m_freeIndex;
+            ASSERT(offset < m_descriptorSets.size(), "range out");
+            
+            return { m_descriptorSets[offset], offset };
+        }
+
+        return { VK_NULL_HANDLE, 0 };
+    }
+
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     struct GenericDescriptorPools
@@ -79,7 +124,7 @@ namespace vk
         GenericDescriptorPools() noexcept = default;
         virtual ~GenericDescriptorPools() = default;
 
-        [[nodiscard]] virtual VulkanDescriptorSetPool* acquirePool(const VulkanDescriptorSetLayoutDescription& desc, VulkanDevice* device, VkDescriptorPoolCreateFlags flag) = 0;
+        [[nodiscard]] virtual VulkanDescriptorSetPool* acquirePool(VulkanDevice* device, const VulkanDescriptorSetLayoutDescription& desc, VkDescriptorSetLayout layout, VkDescriptorPoolCreateFlags flag) = 0;
         virtual void destroyPools() = 0;
 
         virtual void updatePools() = 0;
@@ -91,7 +136,7 @@ namespace vk
         GlobalDescriptorPools() noexcept = default;
         ~GlobalDescriptorPools();
 
-        [[nodiscard]] VulkanDescriptorSetPool* acquirePool(const VulkanDescriptorSetLayoutDescription& desc, VulkanDevice* device, VkDescriptorPoolCreateFlags flag) override;
+        [[nodiscard]] VulkanDescriptorSetPool* acquirePool(VulkanDevice* device, const VulkanDescriptorSetLayoutDescription& desc, VkDescriptorSetLayout layout, VkDescriptorPoolCreateFlags flag) override;
         void destroyPools() override;
 
         void updatePools() override;
@@ -112,7 +157,7 @@ namespace vk
         LayoutDescriptorPools() noexcept = default;
         ~LayoutDescriptorPools();
 
-        [[nodiscard]] VulkanDescriptorSetPool* acquirePool(const VulkanDescriptorSetLayoutDescription& desc, VulkanDevice* device, VkDescriptorPoolCreateFlags flag) override;
+        [[nodiscard]] VulkanDescriptorSetPool* acquirePool(VulkanDevice* device, const VulkanDescriptorSetLayoutDescription& desc, VkDescriptorSetLayout layout, VkDescriptorPoolCreateFlags flag) override;
         void destroyPools() override;
 
         void updatePools() override;
@@ -120,7 +165,7 @@ namespace vk
 
     private:
 
-        VulkanDescriptorSetPool* createPool(const VulkanDescriptorSetLayoutDescription& desc, VulkanDevice* device, VkDescriptorPoolCreateFlags flag);
+        VulkanDescriptorSetPool* createPool(VulkanDevice* device, const VulkanDescriptorSetLayoutDescription& desc, VkDescriptorSetLayout layout, VkDescriptorPoolCreateFlags flag);
 
         struct LayoutPools
         {
@@ -147,7 +192,7 @@ namespace vk
         explicit VulkanDescriptorPoolProvider(VulkanDevice* device, GenericDescriptorPools* strategy) noexcept;
         ~VulkanDescriptorPoolProvider();
 
-        [[nodiscard]] VulkanDescriptorSetPool* acquireDescriptorSetPool(const VulkanDescriptorSetLayoutDescription& desc, VkDescriptorPoolCreateFlags flag);
+        [[nodiscard]] VulkanDescriptorSetPool* acquireDescriptorSetPool(const VulkanDescriptorSetLayoutDescription& desc, VkDescriptorSetLayout layout, VkDescriptorPoolCreateFlags flag);
         void destroyDescriptorSetPools();
 
         void resetDescriptorSetPools();

@@ -60,7 +60,7 @@ namespace vk
 
         bool hasUsageFlag(TextureUsage usage) const override;
 
-        void clear(VulkanCommandBuffer* cmdBuffer, const renderer::Color& color);
+        void clear(VulkanCommandBuffer* cmdBuffer, const color::Color& color);
         void clear(VulkanCommandBuffer* cmdBuffer, f32 depth, u32 stencil);
 
         bool upload(VulkanCommandBuffer* cmdBuffer, u32 size, const void* data);

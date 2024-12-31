@@ -29,6 +29,10 @@ namespace renderer
 {
 namespace vk
 {
+#if FRAME_PROFILER_INTERNAL
+    RenderFrameProfiler* g_CPUProfiler = nullptr;
+#endif //FRAME_PROFILER_INTERNAL
+
 const std::vector<const c8*> k_instanceExtensionsList = 
 {
     VK_KHR_SURFACE_EXTENSION_NAME,
@@ -173,6 +177,11 @@ void VulkanDevice::submit(CmdList* cmd, bool wait)
 
 void VulkanDevice::submit(CmdList* cmd, SyncPoint* sync, bool wait)
 {
+#if FRAME_PROFILER_INTERNAL
+    RenderFrameProfiler::StackProfiler stackFrameProfiler(g_CPUProfiler, 0, RenderFrameProfiler::FrameCounter::FrameTime);
+    g_CPUProfiler->start(0, RenderFrameProfiler::FrameCounter::Submit);
+#endif //FRAME_PROFILER_INTERNAL
+
     ASSERT(cmd, "nullptr");
     VulkanCmdList& cmdList = *static_cast<VulkanCmdList*>(cmd);
     VulkanSyncPoint* syncPoint = static_cast<VulkanSyncPoint*>(sync);
@@ -258,6 +267,9 @@ void VulkanDevice::submit(CmdList* cmd, SyncPoint* sync, bool wait)
         }
         cmdList.m_currentCmdBuffer[toEnumType(CommandTargetType::CmdDrawBuffer)] = nullptr;
     }
+#if FRAME_PROFILER_INTERNAL
+    g_CPUProfiler->stop(0, RenderFrameProfiler::FrameCounter::Submit);
+#endif //FRAME_PROFILER_INTERNAL
 
     cmdList.postSubmit();
 
@@ -269,202 +281,16 @@ void VulkanDevice::submit(CmdList* cmd, SyncPoint* sync, bool wait)
 
 void VulkanDevice::waitGPUCompletion(CmdList* cmd)
 {
+#if FRAME_PROFILER_INTERNAL
+    RenderFrameProfiler::StackProfiler stackFrameProfiler(g_CPUProfiler, 0, RenderFrameProfiler::FrameCounter::FrameTime);
+    RenderFrameProfiler::StackProfiler stackFuncProfiler(g_CPUProfiler, 0, RenderFrameProfiler::FrameCounter::GPUWait);
+#endif //FRAME_PROFILER_INTERNAL
     ASSERT(cmd, "nullptr");
     VulkanCmdList* vkCmdList = static_cast<VulkanCmdList*>(cmd);
 
     s32 slot = vkCmdList->m_concurrencySlot;
     m_threadedPools[slot].m_cmdBufferManager->waitQueueCompletion(getQueueByMask(vkCmdList->m_queueMask));
     m_threadedPools[slot].m_cmdBufferManager->updateStatus();
-}
-
-Swapchain* VulkanDevice::createSwapchain(platform::Window* window, const Swapchain::SwapchainParams& params)
-{
-    VulkanSwapchain* swapchain = V3D_NEW(VulkanSwapchain, memory::MemoryLabel::MemoryRenderCore)(this, m_semaphoreManager);
-    if (!swapchain->create(window, params))
-    {
-        swapchain->destroy();
-        V3D_DELETE(swapchain, memory::MemoryLabel::MemoryRenderCore);
-
-        LOG_FATAL("VulkanDevice::createSwapchain: Cant create VulkanSwapchain");
-        return nullptr;
-    }
-    m_swapchainList.push_back(swapchain);
-
-#if SWAPCHAIN_ON_ADVANCE
-    VulkanCommandBuffer* cmdBuffer = m_internalCmdBufferManager->acquireNewCmdBuffer(Device::DeviceMask::GraphicMask, CommandBufferLevel::PrimaryBuffer);
-    cmdBuffer->beginCommandBuffer();
-    cmdBuffer->cmdPipelineBarrier(swapchain->getCurrentSwapchainImage(), VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, RenderTexture::makeSubresource(0, 1, 0, 1));
-    cmdBuffer->endCommandBuffer();
-    std::vector<VulkanSemaphore*> emptySemaphores;
-    m_internalCmdBufferManager->submit(cmdBuffer, emptySemaphores);
-    m_internalCmdBufferManager->waitCompletion();
-#endif
-
-    return swapchain;
-}
-
-void VulkanDevice::destroySwapchain(Swapchain* swapchain)
-{
-    VulkanSwapchain* vkSwapchain = static_cast<VulkanSwapchain*>(swapchain);
-
-    auto found = std::find(m_swapchainList.cbegin(), m_swapchainList.cend(), vkSwapchain);
-    ASSERT(found != m_swapchainList.cend(), "not found");
-    m_swapchainList.erase(found);
-
-    vkSwapchain->destroy();
-    V3D_DELETE(vkSwapchain, memory::MemoryLabel::MemoryRenderCore);
-}
-
-SyncPoint* VulkanDevice::createSyncPoint(CmdList* cmd)
-{
-    ASSERT(cmd, "nullptr");
-    VulkanCmdList* vkCmdList = static_cast<VulkanCmdList*>(cmd);
-
-    VulkanSyncPoint* syncPoint = V3D_NEW(VulkanSyncPoint, memory::MemoryLabel::MemoryRenderCore)();
-    ASSERT(syncPoint, "nullptr");
-
-    VulkanSemaphore* waitSemaphore = m_semaphoreManager->createSemaphore(VulkanSemaphore::SemaphoreType::Binary, "SubmitWaitSemaphore");
-    syncPoint->m_waitSubmitSemaphores.push_back(waitSemaphore);
-
-    VulkanSemaphore* signalSemaphore = m_semaphoreManager->createSemaphore(VulkanSemaphore::SemaphoreType::Binary, "SubmitSignalSemaphore");
-    syncPoint->m_signalSubmitSemaphores.push_back(signalSemaphore);
-
-    vkCmdList->m_syncPoints.push_back(syncPoint);
-
-    return syncPoint;
-}
-
-void VulkanDevice::destroySyncPoint(CmdList* cmd, SyncPoint* sync)
-{
-    ASSERT(cmd, "nullptr");
-    VulkanCmdList* vkCmdList = static_cast<VulkanCmdList*>(cmd);
-    VulkanSyncPoint* vkSync = static_cast<VulkanSyncPoint*>(sync);
-
-    auto found = std::find(vkCmdList->m_syncPoints.cbegin(), vkCmdList->m_syncPoints.cend(), vkSync);
-    ASSERT(found != vkCmdList->m_syncPoints.cend(), "not found");
-    vkCmdList->m_syncPoints.erase(found);
-
-    for (auto& wait : vkSync->m_waitSubmitSemaphores)
-    {
-        m_resourceDeleter.addResourceToDelete(wait, [this, wait](VulkanResource* resource) -> void
-            {
-                m_semaphoreManager->deleteSemaphore(wait);
-            });
-    }
-    vkSync->m_waitSubmitSemaphores.clear();
-
-    for (auto& signal : vkSync->m_signalSubmitSemaphores)
-    {
-        m_resourceDeleter.addResourceToDelete(signal, [this, signal](VulkanResource* resource) -> void
-            {
-                m_semaphoreManager->deleteSemaphore(signal);
-            });
-    }
-    vkSync->m_signalSubmitSemaphores.clear();
-
-    V3D_DELETE(vkSync, memory::MemoryLabel::MemoryRenderCore);
-}
-
-TextureHandle VulkanDevice::createTexture(TextureTarget target, Format format, const math::Dimension3D& dimension, u32 layers, u32 mipmapLevel, TextureUsageFlags flags, const std::string& name)
-{
-#if VULKAN_DEBUG
-    LOG_DEBUG("VulkanDevice::createTexture");
-    if (target == TextureTarget::TextureCubeMap)
-    {
-        ASSERT(layers == 6U, "must be 6 layers");
-    }
-#endif //VULKAN_DEBUG
-
-    VkImageType vkType = VulkanImage::convertTextureTargetToVkImageType(target);
-    VkFormat vkFormat = VulkanImage::convertImageFormatToVkFormat(format);
-    VkExtent3D vkExtent = { dimension.m_width, dimension.m_height, dimension.m_depth };
-
-    VulkanImage* vkImage = V3D_NEW(VulkanImage, memory::MemoryLabel::MemoryRenderCore)(this, m_imageMemoryManager, vkType, vkFormat, vkExtent, layers, mipmapLevel, VK_IMAGE_TILING_OPTIMAL, flags, name);
-    if (!vkImage->create())
-    {
-        vkImage->destroy();
-        V3D_DELETE(vkImage, memory::MemoryLabel::MemoryRenderCore);
-
-        return TextureHandle(nullptr);
-    }
-
-    return TextureHandle(vkImage);
-}
-
-TextureHandle VulkanDevice::createTexture(TextureTarget target, Format format, const math::Dimension3D& dimension, u32 layers, TextureSamples samples, TextureUsageFlags flags, const std::string& name)
-{
-#if VULKAN_DEBUG
-    LOG_DEBUG("VulkanDevice::createTexture");
-    if (target == TextureTarget::TextureCubeMap)
-    {
-        ASSERT(layers == 6U, "must be 6 layers");
-    }
-#endif //VULKAN_DEBUG
-
-    VkFormat vkFormat = VulkanImage::convertImageFormatToVkFormat(format);
-    VkExtent3D vkExtent = { dimension.m_width, dimension.m_height, dimension.m_depth };
-    VkSampleCountFlagBits vkSamples = VulkanImage::convertRenderTargetSamplesToVkSampleCount(samples);
-
-    VulkanImage* vkImage = V3D_NEW(VulkanImage, memory::MemoryLabel::MemoryRenderCore)(this, m_imageMemoryManager, vkFormat, vkExtent, vkSamples, layers, flags, name);
-    if (!vkImage->create())
-    {
-        vkImage->destroy();
-        V3D_DELETE(vkImage, memory::MemoryLabel::MemoryRenderCore);
-
-        return TextureHandle(nullptr);
-    }
-
-    return TextureHandle(vkImage);
-}
-
-void VulkanDevice::destroyTexture(TextureHandle texture)
-{
-#if VULKAN_DEBUG
-    LOG_DEBUG("VulkanDevice::destroyTexture %llx", texture);
-#endif //VULKAN_DEBUG
-
-    ASSERT(texture.isValid(), "nullptr");
-    VulkanImage* vkImage = OBJECT_FROM_HANDLE(texture, VulkanImage);
-    m_resourceDeleter.addResourceToDelete(vkImage, [vkImage](VulkanResource* resource) -> void
-        {
-            //vkImage->notifyObservers();
-
-            vkImage->destroy();
-            V3D_DELETE(vkImage, memory::MemoryLabel::MemoryRenderCore);
-        });
-}
-
-BufferHandle VulkanDevice::createBuffer(RenderBuffer::Type type, u16 usageFlag, u64 size, const std::string& name)
-{
-#if VULKAN_DEBUG
-    LOG_DEBUG("VulkanDevice::createBuffer");
-#endif //VULKAN_DEBUG
-
-    VulkanBuffer* vkBuffer = V3D_NEW(VulkanBuffer, memory::MemoryLabel::MemoryRenderCore)(this, m_bufferMemoryManager, type, size, usageFlag, name);
-    if (!vkBuffer->create())
-    {
-        vkBuffer->destroy();
-        V3D_DELETE(vkBuffer, memory::MemoryLabel::MemoryRenderCore);
-
-        return BufferHandle(nullptr);
-    }
-
-    return BufferHandle(vkBuffer);
-}
-
-void VulkanDevice::destroyBuffer(BufferHandle buffer)
-{
-#if VULKAN_DEBUG
-    LOG_DEBUG("VulkanDevice::destroyBuffer %llx", buffer);
-#endif //VULKAN_DEBUG
-
-    ASSERT(buffer.isValid(), "nullptr");
-    VulkanBuffer* vkBuffer = OBJECT_FROM_HANDLE(buffer, VulkanBuffer);
-    m_resourceDeleter.addResourceToDelete(vkBuffer, [vkBuffer](VulkanResource* resource) -> void
-        {
-            vkBuffer->destroy();
-            V3D_DELETE(vkBuffer, memory::MemoryLabel::MemoryRenderCore);
-        });
 }
 
 CmdList* VulkanDevice::createCommandList_Impl(DeviceMask queueType)
@@ -568,9 +394,78 @@ bool VulkanDevice::initialize()
 
     m_internalCmdBufferManager = V3D_NEW(VulkanCommandBufferManager, memory::MemoryLabel::MemoryRenderCore)(this, m_semaphoreManager);
 
+#if FRAME_PROFILER_INTERNAL
+    g_CPUProfiler = V3D_NEW(RenderFrameProfiler, memory::MemoryLabel::MemoryRenderCore)(static_cast<u32>(m_threadedPools.size()),
+        {
+            RenderFrameProfiler::FrameCounter::FrameTime,
+            RenderFrameProfiler::FrameCounter::SetTarget,
+            RenderFrameProfiler::FrameCounter::SetPipeline,
+            RenderFrameProfiler::FrameCounter::SetStates,
+            RenderFrameProfiler::FrameCounter::BindResources,
+            RenderFrameProfiler::FrameCounter::DrawCalls,
+            RenderFrameProfiler::FrameCounter::QueryCommands,
+            RenderFrameProfiler::FrameCounter::Submit,
+            RenderFrameProfiler::FrameCounter::Present,
+            RenderFrameProfiler::FrameCounter::UpdateSubmitResorces,
+        },
+        {
+            RenderFrameProfiler::FrameCounter::DrawCalls,
+        });
+        m_frameProfiler.attach(g_CPUProfiler);
+#   if defined(PLATFORM_ANDROID)
+        m_frameProfiler.attach(V3D_NEW(android::HWCPProfiler, memory::MemoryLabel::MemoryRenderCore)(
+            {
+                android::HWCPProfiler::CpuCounter::Cycles,
+                android::HWCPProfiler::CpuCounter::Instructions,
+                android::HWCPProfiler::CpuCounter::CacheReferences,
+                android::HWCPProfiler::CpuCounter::CacheMisses,
+                android::HWCPProfiler::CpuCounter::BranchInstructions,
+                android::HWCPProfiler::CpuCounter::BranchMisses,
+                android::HWCPProfiler::CpuCounter::L1Accesses,
+                android::HWCPProfiler::CpuCounter::InstrRetired,
+                android::HWCPProfiler::CpuCounter::L2Accesses,
+                android::HWCPProfiler::CpuCounter::L3Accesses,
+                android::HWCPProfiler::CpuCounter::BusReads,
+                android::HWCPProfiler::CpuCounter::BusWrites,
+                android::HWCPProfiler::CpuCounter::MemReads,
+                android::HWCPProfiler::CpuCounter::MemWrites,
+                android::HWCPProfiler::CpuCounter::ASESpec,
+                android::HWCPProfiler::CpuCounter::VFPSpec,
+                android::HWCPProfiler::CpuCounter::CryptoSpec
+            },
+            {
+                android::HWCPProfiler::GpuCounter::GpuCycles,
+                android::HWCPProfiler::GpuCounter::VertexComputeCycles,
+                android::HWCPProfiler::GpuCounter::FragmentCycles,
+                android::HWCPProfiler::GpuCounter::TilerCycles,
+                android::HWCPProfiler::GpuCounter::VertexComputeJobs,
+                android::HWCPProfiler::GpuCounter::FragmentJobs,
+                android::HWCPProfiler::GpuCounter::Pixels,
+                android::HWCPProfiler::GpuCounter::Tiles,
+                android::HWCPProfiler::GpuCounter::TransactionEliminations,
+                android::HWCPProfiler::GpuCounter::EarlyZTests,
+                android::HWCPProfiler::GpuCounter::EarlyZKilled,
+                android::HWCPProfiler::GpuCounter::LateZTests,
+                android::HWCPProfiler::GpuCounter::LateZKilled,
+                android::HWCPProfiler::GpuCounter::Instructions,
+                android::HWCPProfiler::GpuCounter::DivergedInstructions,
+                android::HWCPProfiler::GpuCounter::ShaderCycles,
+                android::HWCPProfiler::GpuCounter::ShaderArithmeticCycles,
+                android::HWCPProfiler::GpuCounter::ShaderLoadStoreCycles,
+                android::HWCPProfiler::GpuCounter::ShaderTextureCycles,
+                android::HWCPProfiler::GpuCounter::CacheReadLookups,
+                android::HWCPProfiler::GpuCounter::CacheWriteLookups,
+                android::HWCPProfiler::GpuCounter::ExternalMemoryReadAccesses,
+                android::HWCPProfiler::GpuCounter::ExternalMemoryWriteAccesses,
+                android::HWCPProfiler::GpuCounter::ExternalMemoryReadStalls,
+                android::HWCPProfiler::GpuCounter::ExternalMemoryWriteStalls,
+                android::HWCPProfiler::GpuCounter::ExternalMemoryReadBytes,
+                android::HWCPProfiler::GpuCounter::ExternalMemoryWriteBytes
+            }));
+#   endif //PLATFORM_ANDROID
+#endif //FRAME_PROFILER_INTERNAL
     return true;
 }
-
 
 bool VulkanDevice::createInstance()
 {
@@ -1054,6 +949,15 @@ void VulkanDevice::destroy()
     ASSERT(VulkanSemaphore::s_objects.empty(), "semaphore objects still exist");
 #endif //DEBUG_OBJECT_MEMORY
 
+#if FRAME_PROFILER_INTERNAL
+    if (g_CPUProfiler)
+    {
+        m_frameProfiler.dettach(g_CPUProfiler);
+        V3D_DELETE(g_CPUProfiler, memory::MemoryLabel::MemoryRenderCore);
+        g_CPUProfiler = nullptr;
+    }
+#endif //FRAME_PROFILER_INTERNAL
+
     if (m_deviceInfo._device)
     {
         VulkanWrapper::DestroyDevice(m_deviceInfo._device, VULKAN_ALLOCATOR);
@@ -1079,8 +983,244 @@ void VulkanDevice::destroy()
     }
 }
 
+Swapchain* VulkanDevice::createSwapchain(platform::Window* window, const Swapchain::SwapchainParams& params)
+{
+#if FRAME_PROFILER_INTERNAL
+    RenderFrameProfiler::StackProfiler stackFrameProfiler(g_CPUProfiler, 0, RenderFrameProfiler::FrameCounter::FrameTime);
+    RenderFrameProfiler::StackProfiler stackFuncProfiler(g_CPUProfiler, 0, RenderFrameProfiler::FrameCounter::CreateResources);
+#endif //FRAME_PROFILER_INTERNAL
+    VulkanSwapchain* swapchain = V3D_NEW(VulkanSwapchain, memory::MemoryLabel::MemoryRenderCore)(this, m_semaphoreManager);
+    if (!swapchain->create(window, params))
+    {
+        swapchain->destroy();
+        V3D_DELETE(swapchain, memory::MemoryLabel::MemoryRenderCore);
+
+        LOG_FATAL("VulkanDevice::createSwapchain: Cant create VulkanSwapchain");
+        return nullptr;
+    }
+    m_swapchainList.push_back(swapchain);
+
+#if SWAPCHAIN_ON_ADVANCE
+    VulkanCommandBuffer* cmdBuffer = m_internalCmdBufferManager->acquireNewCmdBuffer(Device::DeviceMask::GraphicMask, CommandBufferLevel::PrimaryBuffer);
+    cmdBuffer->beginCommandBuffer();
+    cmdBuffer->cmdPipelineBarrier(swapchain->getCurrentSwapchainImage(), VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, RenderTexture::makeSubresource(0, 1, 0, 1));
+    cmdBuffer->endCommandBuffer();
+    std::vector<VulkanSemaphore*> emptySemaphores;
+    m_internalCmdBufferManager->submit(cmdBuffer, emptySemaphores);
+    m_internalCmdBufferManager->waitCompletion();
+#endif
+
+    return swapchain;
+}
+
+void VulkanDevice::destroySwapchain(Swapchain* swapchain)
+{
+#if FRAME_PROFILER_INTERNAL
+    RenderFrameProfiler::StackProfiler stackFrameProfiler(g_CPUProfiler, 0, RenderFrameProfiler::FrameCounter::FrameTime);
+    RenderFrameProfiler::StackProfiler stackFuncProfiler(g_CPUProfiler, 0, RenderFrameProfiler::FrameCounter::RemoveResources);
+#endif //FRAME_PROFILER_INTERNAL
+    VulkanSwapchain* vkSwapchain = static_cast<VulkanSwapchain*>(swapchain);
+
+    auto found = std::find(m_swapchainList.cbegin(), m_swapchainList.cend(), vkSwapchain);
+    ASSERT(found != m_swapchainList.cend(), "not found");
+    m_swapchainList.erase(found);
+
+    vkSwapchain->destroy();
+    V3D_DELETE(vkSwapchain, memory::MemoryLabel::MemoryRenderCore);
+}
+
+SyncPoint* VulkanDevice::createSyncPoint(CmdList* cmd)
+{
+#if FRAME_PROFILER_INTERNAL
+    RenderFrameProfiler::StackProfiler stackFrameProfiler(g_CPUProfiler, 0, RenderFrameProfiler::FrameCounter::FrameTime);
+    RenderFrameProfiler::StackProfiler stackFuncProfiler(g_CPUProfiler, 0, RenderFrameProfiler::FrameCounter::CreateResources);
+#endif //FRAME_PROFILER_INTERNAL
+    ASSERT(cmd, "nullptr");
+    VulkanCmdList* vkCmdList = static_cast<VulkanCmdList*>(cmd);
+
+    VulkanSyncPoint* syncPoint = V3D_NEW(VulkanSyncPoint, memory::MemoryLabel::MemoryRenderCore)();
+    ASSERT(syncPoint, "nullptr");
+
+    VulkanSemaphore* waitSemaphore = m_semaphoreManager->createSemaphore(VulkanSemaphore::SemaphoreType::Binary, "SubmitWaitSemaphore");
+    syncPoint->m_waitSubmitSemaphores.push_back(waitSemaphore);
+
+    VulkanSemaphore* signalSemaphore = m_semaphoreManager->createSemaphore(VulkanSemaphore::SemaphoreType::Binary, "SubmitSignalSemaphore");
+    syncPoint->m_signalSubmitSemaphores.push_back(signalSemaphore);
+
+    vkCmdList->m_syncPoints.push_back(syncPoint);
+
+    return syncPoint;
+}
+
+void VulkanDevice::destroySyncPoint(CmdList* cmd, SyncPoint* sync)
+{
+#if FRAME_PROFILER_INTERNAL
+    RenderFrameProfiler::StackProfiler stackFrameProfiler(g_CPUProfiler, 0, RenderFrameProfiler::FrameCounter::FrameTime);
+    RenderFrameProfiler::StackProfiler stackFuncProfiler(g_CPUProfiler, 0, RenderFrameProfiler::FrameCounter::RemoveResources);
+#endif //FRAME_PROFILER_INTERNAL
+    ASSERT(cmd, "nullptr");
+    VulkanCmdList* vkCmdList = static_cast<VulkanCmdList*>(cmd);
+    VulkanSyncPoint* vkSync = static_cast<VulkanSyncPoint*>(sync);
+
+    auto found = std::find(vkCmdList->m_syncPoints.cbegin(), vkCmdList->m_syncPoints.cend(), vkSync);
+    ASSERT(found != vkCmdList->m_syncPoints.cend(), "not found");
+    vkCmdList->m_syncPoints.erase(found);
+
+    for (auto& wait : vkSync->m_waitSubmitSemaphores)
+    {
+        m_resourceDeleter.addResourceToDelete(wait, [this, wait](VulkanResource* resource) -> void
+            {
+                m_semaphoreManager->deleteSemaphore(wait);
+            });
+    }
+    vkSync->m_waitSubmitSemaphores.clear();
+
+    for (auto& signal : vkSync->m_signalSubmitSemaphores)
+    {
+        m_resourceDeleter.addResourceToDelete(signal, [this, signal](VulkanResource* resource) -> void
+            {
+                m_semaphoreManager->deleteSemaphore(signal);
+            });
+    }
+    vkSync->m_signalSubmitSemaphores.clear();
+
+    V3D_DELETE(vkSync, memory::MemoryLabel::MemoryRenderCore);
+}
+
+TextureHandle VulkanDevice::createTexture(TextureTarget target, Format format, const math::Dimension3D& dimension, u32 layers, u32 mipmapLevel, TextureUsageFlags flags, const std::string& name)
+{
+#if FRAME_PROFILER_INTERNAL
+    RenderFrameProfiler::StackProfiler stackFrameProfiler(g_CPUProfiler, 0, RenderFrameProfiler::FrameCounter::FrameTime);
+    RenderFrameProfiler::StackProfiler stackFuncProfiler(g_CPUProfiler, 0, RenderFrameProfiler::FrameCounter::CreateResources);
+#endif //FRAME_PROFILER_INTERNAL
+
+#if VULKAN_DEBUG
+    LOG_DEBUG("VulkanDevice::createTexture");
+    if (target == TextureTarget::TextureCubeMap)
+    {
+        ASSERT(layers == 6U, "must be 6 layers");
+    }
+#endif //VULKAN_DEBUG
+
+    VkImageType vkType = VulkanImage::convertTextureTargetToVkImageType(target);
+    VkFormat vkFormat = VulkanImage::convertImageFormatToVkFormat(format);
+    VkExtent3D vkExtent = { dimension.m_width, dimension.m_height, dimension.m_depth };
+
+    VulkanImage* vkImage = V3D_NEW(VulkanImage, memory::MemoryLabel::MemoryRenderCore)(this, m_imageMemoryManager, vkType, vkFormat, vkExtent, layers, mipmapLevel, VK_IMAGE_TILING_OPTIMAL, flags, name);
+    if (!vkImage->create())
+    {
+        vkImage->destroy();
+        V3D_DELETE(vkImage, memory::MemoryLabel::MemoryRenderCore);
+
+        return TextureHandle(nullptr);
+    }
+
+    return TextureHandle(vkImage);
+}
+
+TextureHandle VulkanDevice::createTexture(TextureTarget target, Format format, const math::Dimension3D& dimension, u32 layers, TextureSamples samples, TextureUsageFlags flags, const std::string& name)
+{
+#if FRAME_PROFILER_INTERNAL
+    RenderFrameProfiler::StackProfiler stackFrameProfiler(g_CPUProfiler, 0, RenderFrameProfiler::FrameCounter::FrameTime);
+    RenderFrameProfiler::StackProfiler stackFuncProfiler(g_CPUProfiler, 0, RenderFrameProfiler::FrameCounter::CreateResources);
+#endif //FRAME_PROFILER_INTERNAL
+
+#if VULKAN_DEBUG
+    LOG_DEBUG("VulkanDevice::createTexture");
+    if (target == TextureTarget::TextureCubeMap)
+    {
+        ASSERT(layers == 6U, "must be 6 layers");
+    }
+#endif //VULKAN_DEBUG
+
+    VkFormat vkFormat = VulkanImage::convertImageFormatToVkFormat(format);
+    VkExtent3D vkExtent = { dimension.m_width, dimension.m_height, dimension.m_depth };
+    VkSampleCountFlagBits vkSamples = VulkanImage::convertRenderTargetSamplesToVkSampleCount(samples);
+
+    VulkanImage* vkImage = V3D_NEW(VulkanImage, memory::MemoryLabel::MemoryRenderCore)(this, m_imageMemoryManager, vkFormat, vkExtent, vkSamples, layers, flags, name);
+    if (!vkImage->create())
+    {
+        vkImage->destroy();
+        V3D_DELETE(vkImage, memory::MemoryLabel::MemoryRenderCore);
+
+        return TextureHandle(nullptr);
+    }
+
+    return TextureHandle(vkImage);
+}
+
+void VulkanDevice::destroyTexture(TextureHandle texture)
+{
+#if FRAME_PROFILER_INTERNAL
+    RenderFrameProfiler::StackProfiler stackFrameProfiler(g_CPUProfiler, 0, RenderFrameProfiler::FrameCounter::FrameTime);
+    RenderFrameProfiler::StackProfiler stackFuncProfiler(g_CPUProfiler, 0, RenderFrameProfiler::FrameCounter::RemoveResources);
+#endif //FRAME_PROFILER_INTERNAL
+
+#if VULKAN_DEBUG
+    LOG_DEBUG("VulkanDevice::destroyTexture %llx", texture);
+#endif //VULKAN_DEBUG
+
+    ASSERT(texture.isValid(), "nullptr");
+    VulkanImage* vkImage = OBJECT_FROM_HANDLE(texture, VulkanImage);
+    m_resourceDeleter.addResourceToDelete(vkImage, [vkImage](VulkanResource* resource) -> void
+        {
+            //vkImage->notifyObservers();
+
+            vkImage->destroy();
+            V3D_DELETE(vkImage, memory::MemoryLabel::MemoryRenderCore);
+        });
+}
+
+BufferHandle VulkanDevice::createBuffer(RenderBuffer::Type type, u16 usageFlag, u64 size, const std::string& name)
+{
+#if FRAME_PROFILER_INTERNAL
+    RenderFrameProfiler::StackProfiler stackFrameProfiler(g_CPUProfiler, 0, RenderFrameProfiler::FrameCounter::FrameTime);
+    RenderFrameProfiler::StackProfiler stackFuncProfiler(g_CPUProfiler, 0, RenderFrameProfiler::FrameCounter::CreateResources);
+#endif //FRAME_PROFILER_INTERNAL
+
+#if VULKAN_DEBUG
+    LOG_DEBUG("VulkanDevice::createBuffer");
+#endif //VULKAN_DEBUG
+
+    VulkanBuffer* vkBuffer = V3D_NEW(VulkanBuffer, memory::MemoryLabel::MemoryRenderCore)(this, m_bufferMemoryManager, type, size, usageFlag, name);
+    if (!vkBuffer->create())
+    {
+        vkBuffer->destroy();
+        V3D_DELETE(vkBuffer, memory::MemoryLabel::MemoryRenderCore);
+
+        return BufferHandle(nullptr);
+    }
+
+    return BufferHandle(vkBuffer);
+}
+
+void VulkanDevice::destroyBuffer(BufferHandle buffer)
+{
+#if FRAME_PROFILER_INTERNAL
+    RenderFrameProfiler::StackProfiler stackFrameProfiler(g_CPUProfiler, 0, RenderFrameProfiler::FrameCounter::FrameTime);
+    RenderFrameProfiler::StackProfiler stackFuncProfiler(g_CPUProfiler, 0, RenderFrameProfiler::FrameCounter::RemoveResources);
+#endif //FRAME_PROFILER_INTERNAL
+
+#if VULKAN_DEBUG
+    LOG_DEBUG("VulkanDevice::destroyBuffer %llx", buffer);
+#endif //VULKAN_DEBUG
+
+    ASSERT(buffer.isValid(), "nullptr");
+    VulkanBuffer* vkBuffer = OBJECT_FROM_HANDLE(buffer, VulkanBuffer);
+    m_resourceDeleter.addResourceToDelete(vkBuffer, [vkBuffer](VulkanResource* resource) -> void
+        {
+            vkBuffer->destroy();
+            V3D_DELETE(vkBuffer, memory::MemoryLabel::MemoryRenderCore);
+        });
+}
+
 void VulkanDevice::destroyFramebuffer(Framebuffer* framebuffer)
 {
+#if FRAME_PROFILER_INTERNAL
+    RenderFrameProfiler::StackProfiler stackFrameProfiler(g_CPUProfiler, 0, RenderFrameProfiler::FrameCounter::FrameTime);
+    RenderFrameProfiler::StackProfiler stackFuncProfiler(g_CPUProfiler, 0, RenderFrameProfiler::FrameCounter::RemoveResources);
+#endif //FRAME_PROFILER_INTERNAL
+
 #if VULKAN_DEBUG
     LOG_DEBUG("VulkanDevice::destroyFramebuffer %llx", framebuffer);
 #endif //VULKAN_DEBUG
@@ -1095,6 +1235,11 @@ void VulkanDevice::destroyFramebuffer(Framebuffer* framebuffer)
 
 void VulkanDevice::destroyRenderpass(RenderPass* renderpass)
 {
+#if FRAME_PROFILER_INTERNAL
+    RenderFrameProfiler::StackProfiler stackFrameProfiler(g_CPUProfiler, 0, RenderFrameProfiler::FrameCounter::FrameTime);
+    RenderFrameProfiler::StackProfiler stackFuncProfiler(g_CPUProfiler, 0, RenderFrameProfiler::FrameCounter::RemoveResources);
+#endif //FRAME_PROFILER_INTERNAL
+
 #if VULKAN_DEBUG
     LOG_DEBUG("VulkanDevice::destroyRenderpass %llx", renderpass);
 #endif //VULKAN_DEBUG
@@ -1109,6 +1254,11 @@ void VulkanDevice::destroyRenderpass(RenderPass* renderpass)
 
 void VulkanDevice::destroyPipeline(RenderPipeline* pipeline)
 {
+#if FRAME_PROFILER_INTERNAL
+    RenderFrameProfiler::StackProfiler stackFrameProfiler(g_CPUProfiler, 0, RenderFrameProfiler::FrameCounter::FrameTime);
+    RenderFrameProfiler::StackProfiler stackFuncProfiler(g_CPUProfiler, 0, RenderFrameProfiler::FrameCounter::RemoveResources);
+#endif //FRAME_PROFILER_INTERNAL
+
 #if VULKAN_DEBUG
     LOG_DEBUG("VulkanDevice::destroyPipeline %llx", pipeline);
 #endif //VULKAN_DEBUG
@@ -1134,6 +1284,11 @@ void VulkanDevice::destroyPipeline(RenderPipeline* pipeline)
 
 void VulkanDevice::destroySampler(Sampler* sampler)
 {
+#if FRAME_PROFILER_INTERNAL
+    RenderFrameProfiler::StackProfiler stackFrameProfiler(g_CPUProfiler, 0, RenderFrameProfiler::FrameCounter::FrameTime);
+    RenderFrameProfiler::StackProfiler stackFuncProfiler(g_CPUProfiler, 0, RenderFrameProfiler::FrameCounter::RemoveResources);
+#endif //FRAME_PROFILER_INTERNAL
+
 #if VULKAN_DEBUG
     LOG_DEBUG("VulkanDevice::destroySampler %llx", sampler);
 #endif //VULKAN_DEBUG
@@ -1197,6 +1352,11 @@ void VulkanCmdList::setViewport(const math::Rect32& viewport, const math::Vector
     if (VulkanDevice::isDynamicStateSupported(VK_DYNAMIC_STATE_VIEWPORT), "must be dynamic");
 #endif //VULKAN_DEBUG
 
+#if FRAME_PROFILER_INTERNAL
+    RenderFrameProfiler::StackProfiler stackFrameProfiler(g_CPUProfiler, m_concurrencySlot, RenderFrameProfiler::FrameCounter::FrameTime);
+    RenderFrameProfiler::StackProfiler stackProfiler(g_CPUProfiler, m_concurrencySlot, RenderFrameProfiler::FrameCounter::SetStates);
+#endif //FRAME_PROFILER_INTERNAL
+
     VkViewport& vkViewport = m_pendingRenderState._viewports;
     vkViewport.x = static_cast<f32>(viewport.getLeftX());
     vkViewport.y = static_cast<f32>(viewport.getTopY());
@@ -1219,6 +1379,11 @@ void VulkanCmdList::setScissor(const math::Rect32& scissor)
     if (VulkanDevice::isDynamicStateSupported(VK_DYNAMIC_STATE_SCISSOR), "must be dynamic");
 #endif //VULKAN_DEBUG
 
+#if FRAME_PROFILER_INTERNAL
+    RenderFrameProfiler::StackProfiler stackFrameProfiler(g_CPUProfiler, m_concurrencySlot, RenderFrameProfiler::FrameCounter::FrameTime);
+    RenderFrameProfiler::StackProfiler stackProfiler(g_CPUProfiler, m_concurrencySlot, RenderFrameProfiler::FrameCounter::SetStates);
+#endif //FRAME_PROFILER_INTERNAL
+
     VkRect2D& vkScissor = m_pendingRenderState._scissors;
     vkScissor.offset.x = scissor.getLeftX();
     vkScissor.offset.y = scissor.getTopY();
@@ -1235,6 +1400,11 @@ void VulkanCmdList::setStencilRef(u32 mask)
     if (VulkanDevice::isDynamicStateSupported(VK_DYNAMIC_STATE_STENCIL_REFERENCE), "must be dynamic");
 #endif //VULKAN_DEBUG
 
+#if FRAME_PROFILER_INTERNAL
+    RenderFrameProfiler::StackProfiler stackFrameProfiler(g_CPUProfiler, m_concurrencySlot, RenderFrameProfiler::FrameCounter::FrameTime);
+    RenderFrameProfiler::StackProfiler stackProfiler(g_CPUProfiler, m_concurrencySlot, RenderFrameProfiler::FrameCounter::SetStates);
+#endif //FRAME_PROFILER_INTERNAL
+
     m_pendingRenderState._stencilRef = mask;
 
     m_pendingRenderState.setDirty(DiryStateMask::DiryState_StencilRef);
@@ -1245,6 +1415,11 @@ void VulkanCmdList::beginRenderTarget(RenderTargetState& rendertarget)
 #if VULKAN_DEBUG
     LOG_DEBUG("VulkanCmdList[%u]::beginRenderTarget [%s]", m_concurrencySlot, rendertarget.m_name.c_str());
 #endif //VULKAN_DEBUG
+#if FRAME_PROFILER_INTERNAL
+    RenderFrameProfiler::StackProfiler stackFrameProfiler(g_CPUProfiler, m_concurrencySlot, RenderFrameProfiler::FrameCounter::FrameTime);
+    RenderFrameProfiler::StackProfiler stackProfiler(g_CPUProfiler, m_concurrencySlot, RenderFrameProfiler::FrameCounter::SetTarget);
+#endif //FRAME_PROFILER_INTERNAL
+    TRACE_PROFILER_SCOPE("beginRenderTarget", color::YELLOW);
 
     VulkanRenderPass* renderpass = m_device.m_renderpassManager->acquireRenderpass(rendertarget.m_renderpassDesc, rendertarget.m_name);
     rendertarget.m_trackerRenderpass.attach(renderpass);
@@ -1266,7 +1441,7 @@ void VulkanCmdList::beginRenderTarget(RenderTargetState& rendertarget)
     m_pendingRenderState._renderpass = renderpass;
     m_pendingRenderState._framebuffer = framebuffer;
     m_pendingRenderState._renderArea = VkRect2D{ { 0, 0 }, { rendertarget.getRenderArea().m_width, rendertarget.getRenderArea().m_height }};
-    if constexpr (sizeof(Color) == sizeof(VkClearValue))
+    if constexpr (sizeof(color::Color) == sizeof(VkClearValue))
     {
         memcpy(m_pendingRenderState._clearValues.data(), rendertarget.m_attachmentsDesc._clearColorValues.data(), sizeof(rendertarget.m_attachmentsDesc._clearColorValues));
         m_pendingRenderState._clearValues[rendertarget.getColorTextureCount()].depthStencil = { rendertarget.m_attachmentsDesc._clearDepthValue, rendertarget.m_attachmentsDesc._clearStencilValue };
@@ -1305,6 +1480,12 @@ void VulkanCmdList::setPipelineState(GraphicsPipelineState& state)
     LOG_DEBUG("VulkanCmdList[%u]::setPipelineState [%s]", m_concurrencySlot, state.m_name.c_str());
 #endif //VULKAN_DEBUG
 
+#if FRAME_PROFILER_INTERNAL
+    RenderFrameProfiler::StackProfiler stackFrameProfiler(g_CPUProfiler, m_concurrencySlot, RenderFrameProfiler::FrameCounter::FrameTime);
+    RenderFrameProfiler::StackProfiler stackProfiler(g_CPUProfiler, m_concurrencySlot, RenderFrameProfiler::FrameCounter::SetPipeline);
+#endif //FRAME_PROFILER_INTERNAL
+    TRACE_PROFILER_SCOPE("setPipelineState", color::MAGENTA);
+
     VulkanGraphicPipeline* pipeline = m_device.m_graphicPipelineManager->acquireGraphicPipeline(state);
     state.m_tracker.attach(pipeline);
 
@@ -1317,6 +1498,12 @@ void VulkanCmdList::setPipelineState(ComputePipelineState& state)
 #if VULKAN_DEBUG
     LOG_DEBUG("VulkanCmdList[%u]::setPipelineState [%s]", m_concurrencySlot, state.m_name.c_str());
 #endif //VULKAN_DEBUG
+
+#if FRAME_PROFILER_INTERNAL
+    RenderFrameProfiler::StackProfiler stackFrameProfiler(g_CPUProfiler, m_concurrencySlot, RenderFrameProfiler::FrameCounter::FrameTime);
+    RenderFrameProfiler::StackProfiler stackProfiler(g_CPUProfiler, m_concurrencySlot, RenderFrameProfiler::FrameCounter::SetPipeline);
+#endif //FRAME_PROFILER_INTERNAL
+    TRACE_PROFILER_SCOPE("setPipelineState", color::MAGENTA);
 
     VulkanComputePipeline* pipeline = m_device.m_computePipelineManager->acquireGraphicPipeline(state);
     state.m_tracker.attach(pipeline);
@@ -1345,6 +1532,8 @@ void VulkanCmdList::transition(const TextureView& textureView, TransitionOp stat
 
 void VulkanCmdList::bindTexture(u32 set, u32 slot, const TextureView& textureView)
 {
+    TRACE_PROFILER_SCOPE("bindTexture", color::GREEN);
+
     ASSERT(textureView._texture, "nullptr");
     VulkanImage* image = nullptr;
     if (textureView._texture->hasUsageFlag(TextureUsage::TextureUsage_Backbuffer))
@@ -1361,20 +1550,25 @@ void VulkanCmdList::bindTexture(u32 set, u32 slot, const TextureView& textureVie
 
 void VulkanCmdList::bindBuffer(u32 set, u32 slot, Buffer* buffer)
 {
+    TRACE_PROFILER_SCOPE("bindBuffer", color::GREEN);
 }
 
 void VulkanCmdList::bindSampler(u32 set, u32 slot, SamplerState* sampler)
 {
+    TRACE_PROFILER_SCOPE("bindSampler", color::GREEN);
+
     ASSERT(sampler, "nullptr");
     VulkanSampler* vkSampler = m_device.m_samplerManager->acquireSampler(*sampler);
     ASSERT(vkSampler, "nullptr");
     sampler->m_tracker.attach(vkSampler);
 
-    m_pendingRenderState.bind(BindingType::Sampler, set, slot,vkSampler);
+    m_pendingRenderState.bind(BindingType::Sampler, set, slot, vkSampler);
 }
 
 void VulkanCmdList::bindConstantBuffer(u32 set, u32 slot, u32 size, void* data)
 {
+    TRACE_PROFILER_SCOPE("bindConstantBuffer", color::GREEN);
+
     u32 alignmentSize = math::alignUp<u32>(size, m_device.getVulkanDeviceCaps().getPhysicalDeviceLimits().minMemoryMapAlignment);
     ConstantBufferRange range = m_CBOManager->acquireConstantBuffer(alignmentSize);
     [[maybe_unused]] bool updated = VulkanConstantBufferManager::update(range._buffer, range._offset, size, data);
@@ -1385,8 +1579,9 @@ void VulkanCmdList::bindConstantBuffer(u32 set, u32 slot, u32 size, void* data)
 
 void VulkanCmdList::bindDescriptorSet(u32 set, const std::vector<Descriptor>& descriptors)
 {
-    ASSERT(set < m_device.getVulkanDeviceCaps()._maxDescriptorSets, "set out of range");
+    TRACE_PROFILER_SCOPE("bindDescriptorSet", color::GREEN);
 
+    ASSERT(set < m_device.getVulkanDeviceCaps()._maxDescriptorSets, "set out of range");
     for (const Descriptor& desc : descriptors)
     {
         ASSERT(desc._slot < m_device.getVulkanDeviceCaps()._maxDescriptorBindings, "set out of range");
@@ -1436,8 +1631,9 @@ void VulkanCmdList::bindDescriptorSet(u32 set, const std::vector<Descriptor>& de
 
 bool VulkanCmdList::prepareDraw(VulkanCommandBuffer* drawBuffer)
 {
-    ASSERT(drawBuffer, "nullptr");
+    TRACE_PROFILER_SCOPE("prepareDraw", color::BLACK);
 
+    ASSERT(drawBuffer, "nullptr");
     if (!drawBuffer->isInsideRenderPass())
     {
         m_pendingRenderState.flushBarriers(drawBuffer);
@@ -1492,9 +1688,10 @@ bool VulkanCmdList::prepareDraw(VulkanCommandBuffer* drawBuffer)
     {
         drawBuffer->cmdBindDescriptorSets(m_pendingRenderState._graphicPipeline, m_pendingRenderState._descriptorSets, m_pendingRenderState._dynamicOffsets);
 
-        m_currentRenderState._descriptorSets = std::move(m_pendingRenderState._descriptorSets);
-        m_currentRenderState._dynamicOffsets = std::move(m_pendingRenderState._dynamicOffsets);
-        ASSERT(m_pendingRenderState._descriptorSets.empty(), "must be empty");
+        std::swap(m_currentRenderState._descriptorSets, m_pendingRenderState._descriptorSets);
+        std::swap(m_currentRenderState._dynamicOffsets, m_pendingRenderState._dynamicOffsets);
+        m_pendingRenderState._descriptorSets.clear();
+        m_pendingRenderState._dynamicOffsets.clear();
     }
 
     return true;
@@ -1502,6 +1699,8 @@ bool VulkanCmdList::prepareDraw(VulkanCommandBuffer* drawBuffer)
 
 bool VulkanCmdList::prepareDescriptorSets(VulkanCommandBuffer* drawBuffer)
 {
+    TRACE_PROFILER_SCOPE("prepareDescriptorSets", color::BLACK);
+
     m_pendingRenderState._descriptorSets.clear();
     for (u32 indexSet = 0; indexSet < k_maxDescriptorSetCount; ++indexSet)
     {
@@ -1518,6 +1717,7 @@ bool VulkanCmdList::prepareDescriptorSets(VulkanCommandBuffer* drawBuffer)
             //get free DS and update
             auto&& [pool, set, offset] = m_descriptorSetManager->acquireFreeDescriptorSet(VulkanDescriptorSetLayoutDescription(layoutDesc._bindingsSet[indexSet]), layoutSet);
             m_pendingRenderState._descriptorSets.push_back(set);
+
             drawBuffer->captureResource(pool);
 
             m_descriptorSetManager->updateDescriptorSet(drawBuffer, set, m_pendingRenderState._sets[indexSet]);
@@ -1533,6 +1733,7 @@ void VulkanCmdList::draw(const GeometryBufferDesc& desc, u32 firstVertex, u32 ve
 #if VULKAN_DEBUG
     LOG_DEBUG("VulkanCmdList[%u]::draw", m_concurrencySlot);
 #endif //VULKAN_DEBUG
+    TRACE_PROFILER_SCOPE("draw", color::RED);
 
     VulkanCommandBuffer* drawBuffer = acquireAndStartCommandBuffer(CommandTargetType::CmdDrawBuffer);
     if (VulkanCmdList::prepareDraw(drawBuffer)) [[likely]]
@@ -1552,6 +1753,7 @@ void VulkanCmdList::drawIndexed(const GeometryBufferDesc& desc, u32 firstIndex, 
 #if VULKAN_DEBUG
     LOG_DEBUG("VulkanContext[%u]::drawIndexed", m_concurrencySlot);
 #endif //VULKAN_DEBUG
+    TRACE_PROFILER_SCOPE("drawIndexed", color::RED);
 
     VulkanCommandBuffer* drawBuffer = acquireAndStartCommandBuffer(CommandTargetType::CmdDrawBuffer);
     if (VulkanCmdList::prepareDraw(drawBuffer)) [[likely]]
@@ -1563,17 +1765,19 @@ void VulkanCmdList::drawIndexed(const GeometryBufferDesc& desc, u32 firstIndex, 
         ASSERT(!desc._vertexBuffers.empty(), "empty");
         drawBuffer->cmdBindVertexBuffers(0, static_cast<u32>(desc._vertexBuffers.size()), desc._vertexBuffers, desc._offsets, desc._strides);
 
-
         ASSERT(drawBuffer->isInsideRenderPass(), "not inside renderpass");
         drawBuffer->cmdDrawIndexed(firstIndex, indexCount, firstInstance, instanceCount, 0);
     }
 }
 
-void VulkanCmdList::clear(Texture* texture, const renderer::Color& color)
+void VulkanCmdList::clear(Texture* texture, const color::Color& color)
 {
 #if VULKAN_DEBUG
     LOG_DEBUG("VulkanCmdList[%u]::clear [%f, %f, %f, %f]", m_concurrencySlot, color[0], color[1], color[2], color[3]);
 #endif
+#if FRAME_PROFILER_INTERNAL
+    RenderFrameProfiler::StackProfiler stackFrameProfiler(g_CPUProfiler, m_concurrencySlot, RenderFrameProfiler::FrameCounter::FrameTime);
+#endif //FRAME_PROFILER_INTERNAL
 
     VulkanImage* image = nullptr;
     VulkanCommandBuffer* cmdBuffer = VulkanCmdList::acquireAndStartCommandBuffer(CommandTargetType::CmdDrawBuffer);
@@ -1595,6 +1799,9 @@ void VulkanCmdList::clear(Texture* texture, f32 depth, u32 stencil)
 #if VULKAN_DEBUG
     LOG_DEBUG("VulkanCmdList[%u]::clear [%f, %u]", m_concurrencySlot, depth, stencil);
 #endif
+#if FRAME_PROFILER_INTERNAL
+    RenderFrameProfiler::StackProfiler stackFrameProfiler(g_CPUProfiler, m_concurrencySlot, RenderFrameProfiler::FrameCounter::FrameTime);
+#endif //FRAME_PROFILER_INTERNAL
 
     VulkanCommandBuffer* cmdBuffer = VulkanCmdList::acquireAndStartCommandBuffer(CommandTargetType::CmdDrawBuffer);
     VulkanImage* image = OBJECT_FROM_HANDLE(texture->getTextureHandle(), VulkanImage);

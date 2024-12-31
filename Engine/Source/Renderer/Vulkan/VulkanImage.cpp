@@ -1224,7 +1224,7 @@ bool VulkanImage::create(VkImage image, VulkanSwapchain* swapchain)
     return true;
 }
 
-void VulkanImage::clear(VulkanCommandBuffer* cmdBuffer, const renderer::Color& color)
+void VulkanImage::clear(VulkanCommandBuffer* cmdBuffer, const color::Color& color)
 {
 #if VULKAN_DEBUG
     LOG_DEBUG("VulkanImage::clearColor [%f, %f, %f, %f]", color[0], color[1], color[2], color[3]);

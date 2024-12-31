@@ -216,31 +216,31 @@ VulkanSamplerManager::~VulkanSamplerManager()
 
 VulkanSampler* VulkanSamplerManager::acquireSampler(const SamplerState& state)
 {
-    std::scoped_lock lock(m_mutex);
 
-    VulkanSampler* sampler = nullptr;
-    auto found = m_samplerList.emplace(state.getSamplerDesc(), sampler);
-    if (found.second)
+    std::scoped_lock lock(m_device.getMutex());
+
+    auto found = m_samplerList.find(state.getSamplerDesc());
+    if (found != m_samplerList.cend())
     {
-        sampler = V3D_NEW(VulkanSampler, memory::MemoryLabel::MemoryRenderCore)(&m_device, state.getName());
-        if (!sampler->create(state.getSamplerDesc()))
-        {
-            sampler->destroy();
-            m_samplerList.erase(found.first);
-
-            ASSERT(false, "can't create sampler");
-            return nullptr;
-        }
-        found.first->second = sampler;
-        return sampler;
+        return found->second;
     }
 
-    return found.first->second;
+    VulkanSampler* sampler = V3D_NEW(VulkanSampler, memory::MemoryLabel::MemoryRenderCore)(&m_device, state.getName());
+    if (!sampler->create(state.getSamplerDesc()))
+    {
+        sampler->destroy();
+
+        ASSERT(false, "can't create sampler");
+        return nullptr;
+    }
+    m_samplerList.emplace(state.getSamplerDesc(), sampler);
+
+    return sampler;
 }
 
 bool VulkanSamplerManager::removeSampler(VulkanSampler* sampler)
 {
-    std::scoped_lock lock(m_mutex);
+    std::scoped_lock lock(m_device.getMutex());
 
     auto iter = m_samplerList.begin();
     while (iter != m_samplerList.end())
@@ -270,7 +270,7 @@ bool VulkanSamplerManager::removeSampler(VulkanSampler* sampler)
 
 void VulkanSamplerManager::clear()
 {
-    std::scoped_lock lock(m_mutex);
+    std::scoped_lock lock(m_device.getMutex());
 
     for (auto& iter : m_samplerList)
     {

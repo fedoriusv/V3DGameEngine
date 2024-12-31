@@ -19,7 +19,8 @@ namespace task
 
         enum DispatcherFlag
         {
-            WorkerThreadPerCore
+            WorkerThreadPerCore,
+            AllowToMainThreadStealTasks
         };
 
         typedef u32 DispatcherFlags;

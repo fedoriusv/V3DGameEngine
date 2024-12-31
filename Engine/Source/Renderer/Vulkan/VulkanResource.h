@@ -51,7 +51,7 @@ namespace vk
 
     inline bool VulkanResource::isUsed() const
     {
-        std::scoped_lock lock(m_mutex);
+        std::lock_guard lock(m_mutex);
 
         bool used = std::any_of(m_fanceInfo.begin(), m_fanceInfo.end(), [](const auto& info) -> bool
             {
@@ -73,7 +73,7 @@ namespace vk
 
     inline void VulkanResource::markUsed(VulkanFence* fence, u64 value, u64 frame)
     {
-        std::scoped_lock lock(m_mutex);
+        std::lock_guard lock(m_mutex);
 
 #if VULKAN_DEBUG
         ++m_refCount;

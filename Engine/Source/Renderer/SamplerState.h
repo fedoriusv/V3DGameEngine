@@ -24,7 +24,7 @@ namespace renderer
         /**
         * @brief SamplerDesc struct. Size 24 bytes
         */
-        renderer::Color         _borderColor;
+        color::Color            _borderColor;
         f32                     _lodBias;
 
         SamplerAnisotropic      _anisotropic    : 5;
@@ -212,6 +212,9 @@ namespace renderer
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    /**
+    * @brief Sampler class
+    */
     class Sampler : public RenderObject<Sampler>
     {
     protected:

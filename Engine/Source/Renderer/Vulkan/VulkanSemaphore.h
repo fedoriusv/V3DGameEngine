@@ -102,7 +102,6 @@ namespace vk
         VulkanSemaphoreManager& operator=(const VulkanSemaphoreManager&) = delete;
 
         VulkanDevice&                 m_device;
-        std::recursive_mutex          m_mutex;
 
         std::deque<VulkanSemaphore*>  m_freeList;
         std::vector<VulkanSemaphore*> m_usedList;

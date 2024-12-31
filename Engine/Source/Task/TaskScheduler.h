@@ -17,7 +17,7 @@ namespace task
     {
     public:
 
-        explicit TaskScheduler(u32 numWorkerThreads) noexcept;
+        explicit TaskScheduler(u32 numWorkerThreads, u32 mask = 0) noexcept;
         ~TaskScheduler() = default;
 
         void mainThreadLoop();

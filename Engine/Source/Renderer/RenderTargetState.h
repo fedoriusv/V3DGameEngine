@@ -121,7 +121,7 @@ namespace renderer
         std::array<TextureHandle, k_maxColorAttachments + 1>    _images;
         std::array<u32, k_maxColorAttachments + 1>              _layers;
         math::Dimension2D                                       _renderArea;
-        std::array<Color, k_maxColorAttachments>                _clearColorValues;
+        std::array<color::Color, k_maxColorAttachments>         _clearColorValues;
         f32                                                     _clearDepthValue;
         u32                                                     _clearStencilValue;
         u32                                                     _viewsMask;
@@ -148,7 +148,7 @@ namespace renderer
             {
             }
             
-            ColorOpState(RenderTargetLoadOp loadOp, RenderTargetStoreOp storeOp, const renderer::Color& clearColor) noexcept
+            ColorOpState(RenderTargetLoadOp loadOp, RenderTargetStoreOp storeOp, const color::Color& clearColor) noexcept
                 : _loadOp(loadOp)
                 , _storeOp(storeOp)
                 , _clearColor(clearColor)
@@ -157,7 +157,7 @@ namespace renderer
 
             RenderTargetLoadOp      _loadOp     : 16;
             RenderTargetStoreOp     _storeOp    : 16;
-            const renderer::Color   _clearColor;
+            const color::Color   _clearColor;
         };
 
         /**
@@ -237,7 +237,7 @@ namespace renderer
         template<class TTexture>
         bool setColorTexture(u32 index, TTexture* colorTexture,
             RenderTargetLoadOp loadOp = RenderTargetLoadOp::LoadOp_Clear, RenderTargetStoreOp storeOp = RenderTargetStoreOp::StoreOp_Store,
-            const renderer::Color& clearColor = math::Vector4D(0.f));
+            const color::Color& clearColor = math::Vector4D(0.f));
 
         /**
         * @brief setColorTexture method. Used to adding a layer of color attachment to render target
@@ -254,7 +254,7 @@ namespace renderer
         template<class TTexture>
         bool setColorTexture(u32 index, TTexture* colorTexture, s32 layer,
             RenderTargetLoadOp loadOp = RenderTargetLoadOp::LoadOp_Clear, RenderTargetStoreOp storeOp = RenderTargetStoreOp::StoreOp_Store,
-            const renderer::Color& clearColor = math::Vector4D(0.f));
+            const color::Color& clearColor = math::Vector4D(0.f));
 
 
         /**
@@ -422,12 +422,12 @@ namespace renderer
         RenderTargetState() = delete;
         RenderTargetState(const RenderTargetState&) = delete;
 
-        bool setColorTexture_Impl(u32 index, Texture* colorTexture, RenderTargetLoadOp loadOp, RenderTargetStoreOp storeOp, const renderer::Color& clearColor);
-        bool setColorTexture_Impl(u32 index, Texture* colorTexture, u32 layer, RenderTargetLoadOp loadOp, RenderTargetStoreOp storeOp, const renderer::Color& clearColor);
+        bool setColorTexture_Impl(u32 index, Texture* colorTexture, RenderTargetLoadOp loadOp, RenderTargetStoreOp storeOp, const color::Color& clearColor);
+        bool setColorTexture_Impl(u32 index, Texture* colorTexture, u32 layer, RenderTargetLoadOp loadOp, RenderTargetStoreOp storeOp, const color::Color& clearColor);
         bool setColorTexture_Impl(u32 index, Texture* colorTexture, const ColorOpState& colorOpState, const TransitionState& tansitionState);
         bool setColorTexture_Impl(u32 index, Texture* colorTexture, s32 layer, const ColorOpState& colorOpState, const TransitionState& tansitionState);
 
-        bool setSwapchainTexture_Impl(u32 index, SwapchainTexture* swapchainTexture, RenderTargetLoadOp loadOp, RenderTargetStoreOp storeOp, const renderer::Color& clearColor);
+        bool setSwapchainTexture_Impl(u32 index, SwapchainTexture* swapchainTexture, RenderTargetLoadOp loadOp, RenderTargetStoreOp storeOp, const color::Color& clearColor);
         bool setSwapchainTexture_Impl(u32 index, SwapchainTexture* swapchainTexture, const ColorOpState& colorOpState, const TransitionState& tansitionState);
 
         bool setDepthStencilTexture_Impl(Texture* depthStencilTexture, RenderTargetLoadOp depthLoadOp, RenderTargetStoreOp depthStoreOp, f32 clearDepth, RenderTargetLoadOp stencilLoadOp, RenderTargetStoreOp stencilStoreOp, u32 clearStencil);

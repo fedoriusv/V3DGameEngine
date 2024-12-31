@@ -99,7 +99,7 @@ std::tuple<VulkanDescriptorSetPool*, VkDescriptorSet, u32> VulkanDescriptorSetMa
     u32 secondTry = 0;
     while (secondTry < 2)
     {
-        VulkanDescriptorSetPool* pool = m_poolProvider->acquireDescriptorSetPool(desc, flag);
+        VulkanDescriptorSetPool* pool = m_poolProvider->acquireDescriptorSetPool(desc, layoutSet, flag);
         ASSERT(pool, "nullptr");
         auto&& [descriptorSet, offset] = pool->getFreeDescriptorSet(layoutSet);
         if (descriptorSet != VK_NULL_HANDLE)

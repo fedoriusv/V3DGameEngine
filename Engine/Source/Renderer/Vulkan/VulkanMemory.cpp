@@ -300,7 +300,7 @@ SimpleVulkanMemoryAllocator::~SimpleVulkanMemoryAllocator()
 
 VulkanMemory::VulkanAllocation SimpleVulkanMemoryAllocator::allocate(VkDeviceSize size, VkDeviceSize align, u32 memoryTypeIndex, const void* extensions)
 {
-    std::scoped_lock lock(VulkanMemory::s_mutex);
+    std::lock_guard lock(VulkanMemory::s_mutex);
 
     //If image is not VK_NULL_HANDLE, VkMemoryAllocateInfo::allocationSize must equal the VkMemoryRequirements::size of the image
     //(https://vulkan.lunarg.com/doc/view/1.3.231.1/windows/1.3-extensions/vkspec.html#VUID-VkMemoryDedicatedAllocateInfo-image-01433)
@@ -361,7 +361,7 @@ VulkanMemory::VulkanAllocation SimpleVulkanMemoryAllocator::allocate(VkDeviceSiz
 
 void SimpleVulkanMemoryAllocator::deallocate(VulkanMemory::VulkanAllocation& memory)
 {
-    std::scoped_lock lock(VulkanMemory::s_mutex);
+    std::lock_guard lock(VulkanMemory::s_mutex);
 
     if (memory._mapped)
     {
