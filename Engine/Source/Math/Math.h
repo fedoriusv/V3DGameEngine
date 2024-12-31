@@ -14,6 +14,8 @@ namespace math
     constexpr f32 k_tolerance32 = 0.00005f;
     constexpr f64 k_tolerance64 = 0.000005;
 
+    constexpr f32 k_inv255 = 1.0f / 255.0f;
+
     constexpr f32 k_pi       = 3.14159265359f;
     constexpr f32 k_rcpPi    = 1.0f / k_pi;
     constexpr f32 k_pi2      = k_pi / 2.0f;

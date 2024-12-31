@@ -45,6 +45,7 @@
 #include "Math/Core.h"
 #include "Utils/CRC32.h"
 #include "Memory/Memory.h"
+#include "Renderer/Color.h"
 
 #ifdef DEBUG
 #   include <assert.h>
