@@ -544,7 +544,7 @@ void LayoutDescriptorPools::resetPools()
 
 VulkanDescriptorSetPool* LayoutDescriptorPools::createPool(VulkanDevice* device, const VulkanDescriptorSetLayoutDescription& desc, VkDescriptorSetLayout layout, VkDescriptorPoolCreateFlags flag)
 {
-#if 0
+#if 0 //TODO: this logic increases time of submit
     VulkanDescriptorSetPool* pool = V3D_NEW(VulkanDescriptorSetPoolLayout, memory::MemoryLabel::MemoryRenderCore)(device, flag, layout);
 #else
     VulkanDescriptorSetPool* pool = V3D_NEW(VulkanDescriptorSetPool, memory::MemoryLabel::MemoryRenderCore)(device, flag);

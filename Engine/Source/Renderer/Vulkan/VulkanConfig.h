@@ -35,7 +35,7 @@
 #endif //VULKAN_DUMP
 
 //Trace vulkan command
-#define TRACE_VULKAN 1
+#define TRACE_VULKAN 0
 #if TRACE_VULKAN
 #   define TRACE_PROFILER_VULKAN_SCOPE TRACE_PROFILER_SCOPE
 #else

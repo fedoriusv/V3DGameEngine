@@ -14,6 +14,12 @@ namespace v3d
 #   define TRACE_PROFILER_FRAME_BEGIN FrameMarkStart("Frame")
 #   define TRACE_PROFILER_FRAME_END FrameMarkEnd("Frame")
 #   define TRACE_PROFILER_SCOPE(name, color) ZoneScopedNC(name, color.getBGRA())
+
+#   if 0
+#       define TRACE_PROFILER_RENDER_SCOPE TRACE_PROFILER_SCOPE
+#   else
+#       define TRACE_PROFILER_RENDER_SCOPE
+#   endif
 #else
 #   define TRACE_PROFILER_FRAME
 #   define TRACE_PROFILER_FRAME_BEGIN
