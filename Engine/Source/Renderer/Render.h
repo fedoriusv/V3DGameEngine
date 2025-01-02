@@ -535,9 +535,9 @@ namespace renderer
         {
         }
 
-        Type        _type       : 4;
-        Frequency   _frequency  : 4;
-        u32         _slot       : 24;
+        Type        _type       : 16;
+        Frequency   _frequency  : 16;
+        u32         _slot;
         std::variant<std::monostate, ConstantBuffer, Texture*, Buffer*, SamplerState*> _resource;
     };
 

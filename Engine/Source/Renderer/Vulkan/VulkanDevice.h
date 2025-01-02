@@ -195,8 +195,6 @@ namespace vk
         VulkanPipelineLayoutManager* getPipelineLayoutManager() const;
         VulkanRenderpassManager* getRenderpassManager() const;
 
-        std::recursive_mutex& getMutex();
-
     private:
 
         friend VulkanCmdList;
@@ -310,11 +308,6 @@ namespace vk
     {
         ASSERT(m_renderpassManager, "nullptr");
         return m_renderpassManager;
-    }
-
-    inline std::recursive_mutex& VulkanDevice::getMutex()
-    {
-        return m_mutex;
     }
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

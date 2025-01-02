@@ -499,6 +499,7 @@ void VulkanDeviceCaps::initialize()
 
     _useGlobalDescriptorPool = false;
     _globalDescriptorPoolSize = 8192U;
+    _layoutDescriptorPoolSize = 8192U;
 
     _useDynamicUniforms = false; //TODO
     _useLateDescriptorSetUpdate = false;

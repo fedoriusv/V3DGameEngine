@@ -236,37 +236,34 @@ VulkanComputePipelineManager::~VulkanComputePipelineManager()
 
 VulkanComputePipeline* VulkanComputePipelineManager::acquireGraphicPipeline(const ComputePipelineState& state)
 {
-    std::lock_guard lock(m_device.getMutex());
+    std::lock_guard lock(m_mutex);
 
-    VulkanComputePipeline* pipeline = nullptr;
     VulkanPipelineDesc desc(state.getShaderProgram());
 
-    auto found = m_pipelineComputeList.emplace(desc, pipeline);
-    if (found.second)
+    auto found = m_pipelineComputeList.find(desc);
+    if (found != m_pipelineComputeList.cend())
     {
-        pipeline = V3D_NEW(VulkanComputePipeline, memory::MemoryLabel::MemoryRenderCore)(&m_device, m_device.getPipelineLayoutManager(), state.getName());
-        if (!pipeline->create(state))
-        {
-            m_pipelineComputeList.erase(desc);
-
-            ASSERT(false, "can't create pipeline");
-            pipeline->destroy();
-            V3D_FREE(pipeline, memory::MemoryLabel::MemoryRenderCore);
-
-            return nullptr;
-        }
-
-        found.first->second = pipeline;
-        return pipeline;
+        return found->second;
     }
 
-    return found.first->second;
+    VulkanComputePipeline* pipeline = V3D_NEW(VulkanComputePipeline, memory::MemoryLabel::MemoryRenderCore)(&m_device, m_device.getPipelineLayoutManager(), state.getName());
+    if (!pipeline->create(state))
+    {
+        ASSERT(false, "can't create pipeline");
+        pipeline->destroy();
+        V3D_FREE(pipeline, memory::MemoryLabel::MemoryRenderCore);
+
+        return nullptr;
+    }
+    m_pipelineComputeList.emplace(desc, pipeline);
+
+    return pipeline;
 }
 
 bool VulkanComputePipelineManager::removePipeline(VulkanComputePipeline* pipeline)
 {
     ASSERT(pipeline->getType() == RenderPipeline::PipelineType::PipelineType_Graphic, "wrong type");
-    std::lock_guard lock(m_device.getMutex());
+    std::lock_guard lock(m_mutex);
 
     auto found = std::find_if(m_pipelineComputeList.begin(), m_pipelineComputeList.end(), [pipeline](auto& elem) -> bool
         {
@@ -296,7 +293,7 @@ bool VulkanComputePipelineManager::removePipeline(VulkanComputePipeline* pipelin
 
 void VulkanComputePipelineManager::clear()
 {
-    std::lock_guard lock(m_device.getMutex());
+    std::lock_guard lock(m_mutex);
 
     for (auto& iter : m_pipelineComputeList)
     {

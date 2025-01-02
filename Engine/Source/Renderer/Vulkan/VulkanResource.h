@@ -41,7 +41,7 @@ namespace vk
         virtual void fenceTracker(VulkanFence* fence, u64 value, u64 frame) {};
 #endif
         mutable std::unordered_map<VulkanFence*, std::tuple<u64, u64>>  m_fanceInfo;
-        mutable std::recursive_mutex                                    m_mutex;
+        mutable std::mutex                                              m_mutex;
 #if VULKAN_DEBUG
         mutable s64                                                     m_refCount;
 #endif //VULKAN_DEBUG
@@ -78,10 +78,15 @@ namespace vk
 #if VULKAN_DEBUG
         ++m_refCount;
 #endif //VULKAN_DEBUG
-        auto inserted = m_fanceInfo.emplace(fence, std::make_tuple(value, frame));
-        if (!inserted.second)
+        auto found = m_fanceInfo.find(fence);
+        if (found != m_fanceInfo.end())
         {
-            inserted.first->second = { value, frame };
+            found->second = { value, frame };
+        }
+        else
+        {
+            [[maybe_unused]] auto inserted = m_fanceInfo.emplace(fence, std::make_tuple(value, frame));
+            ASSERT(inserted.second, "must be unique");
         }
 #if VULKAN_DEBUG_MARKERS
         fenceTracker(fence, value, frame);

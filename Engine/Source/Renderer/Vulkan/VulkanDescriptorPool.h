@@ -176,7 +176,6 @@ namespace vk
 
         std::unordered_map<VulkanDescriptorSetLayoutDescriptionType, LayoutPools*, VulkanDescriptorSetLayoutDescriptionType::Hash, VulkanDescriptorSetLayoutDescriptionType::Compare> _pools;
 
-        static const u32 s_maxSets = 4096;
         static const u32 s_multipliers = 32;
     };
 

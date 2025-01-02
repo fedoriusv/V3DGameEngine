@@ -125,7 +125,29 @@ namespace vk
                 , _renderpassDesc(pass)
                 , _program(program)
             {
+            }
 
+            bool operator==(const VulkanPipelineDesc& other) const
+            {
+                if (this != &other)
+                {
+                    if (_program != other._program)
+                    {
+                        return false;
+                    }
+
+                    if (_pipelineDesc != other._pipelineDesc)
+                    {
+                        return false;
+                    }
+
+                    if (_renderpassDesc != other._renderpassDesc)
+                    {
+                        return false;
+                    }
+                }
+
+                return true;
             }
 
             GraphicsPipelineStateDesc _pipelineDesc;
@@ -146,7 +168,8 @@ namespace vk
         VulkanGraphicPipelineManager(const VulkanGraphicPipelineManager&) = delete;
         VulkanGraphicPipelineManager& operator=(const VulkanGraphicPipelineManager&) = delete;
 
-        VulkanDevice& m_device;
+        VulkanDevice&   m_device;
+        std::mutex      m_mutex;
         std::unordered_map<DescInfo<VulkanPipelineDesc>, VulkanGraphicPipeline*, DescInfo<VulkanPipelineDesc>::Hash, DescInfo<VulkanPipelineDesc>::Compare> m_pipelineGraphicList;
     };
 

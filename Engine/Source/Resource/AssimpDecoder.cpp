@@ -175,7 +175,7 @@ u32 AssimpDecoder::decodeMesh(const aiScene* scene, stream::Stream* modelStream,
                 attrib._binding = 0;
                 attrib._stream = 0;
                 attrib._format = renderer::Format::Format_R32G32B32_SFloat;
-                attrib._offest = vertexSize;
+                attrib._offset = vertexSize;
                 inputAttributes.push_back(attrib);
 
                 contentFlag |= resource::MeshResource::VertexProperies::VertexProperies_Position;
@@ -190,7 +190,7 @@ u32 AssimpDecoder::decodeMesh(const aiScene* scene, stream::Stream* modelStream,
                 attrib._binding = 0;
                 attrib._stream = 0;
                 attrib._format = renderer::Format::Format_R32G32B32_SFloat;
-                attrib._offest = vertexSize;
+                attrib._offset = vertexSize;
                 inputAttributes.push_back(attrib);
 
                 contentFlag |= resource::MeshResource::VertexProperies::VertexProperies_Normals;
@@ -207,7 +207,7 @@ u32 AssimpDecoder::decodeMesh(const aiScene* scene, stream::Stream* modelStream,
                     attrib._binding = 0;
                     attrib._stream = 0;
                     attrib._format = renderer::Format::Format_R32G32B32_SFloat;
-                    attrib._offest = vertexSize;
+                    attrib._offset = vertexSize;
                     inputAttributes.push_back(attrib);
 
                     contentFlag |= resource::MeshResource::VertexProperies::VertexProperies_Tangent;
@@ -221,7 +221,7 @@ u32 AssimpDecoder::decodeMesh(const aiScene* scene, stream::Stream* modelStream,
                     attrib._binding = 0;
                     attrib._stream = 0;
                     attrib._format = renderer::Format::Format_R32G32B32_SFloat;
-                    attrib._offest = vertexSize;
+                    attrib._offset = vertexSize;
                     inputAttributes.push_back(attrib);
 
                     contentFlag |= MeshResource::VertexProperies::VertexProperies_Bitangent;
@@ -239,7 +239,7 @@ u32 AssimpDecoder::decodeMesh(const aiScene* scene, stream::Stream* modelStream,
                     attrib._binding = 0;
                     attrib._stream = 0;
                     attrib._format = renderer::Format::Format_R32G32_SFloat;
-                    attrib._offest = vertexSize;
+                    attrib._offset = vertexSize;
                     inputAttributes.push_back(attrib);
 
                     contentFlag |= MeshResource::VertexProperies::VertexProperies_TextCoord0 + uv;
@@ -257,7 +257,7 @@ u32 AssimpDecoder::decodeMesh(const aiScene* scene, stream::Stream* modelStream,
                     attrib._binding = 0;
                     attrib._stream = 0;
                     attrib._format = renderer::Format::Format_R32G32B32A32_SFloat;
-                    attrib._offest = vertexSize;
+                    attrib._offset = vertexSize;
                     inputAttributes.push_back(attrib);
 
                     contentFlag |= MeshResource::VertexProperies::VertexProperies_Color0 + c;

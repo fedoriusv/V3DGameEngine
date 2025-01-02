@@ -433,8 +433,6 @@ GlobalDescriptorPools::~GlobalDescriptorPools()
 }
 
 
-const u32 LayoutDescriptorPools::s_maxSets;
-
 VulkanDescriptorSetPool* LayoutDescriptorPools::acquirePool(VulkanDevice* device, const VulkanDescriptorSetLayoutDescription& desc, VkDescriptorSetLayout layout, VkDescriptorPoolCreateFlags flag)
 {
     ASSERT(!device->getVulkanDeviceCaps()._useGlobalDescriptorPool, "wrong strategy");
@@ -448,7 +446,8 @@ VulkanDescriptorSetPool* LayoutDescriptorPools::acquirePool(VulkanDevice* device
     else
     {
         layoutPools = V3D_NEW(LayoutPools, memory::MemoryLabel::MemoryRenderCore)();
-        _pools.emplace(desc, layoutPools);
+        [[maybe_unused]] auto inserted = _pools.emplace(desc, layoutPools);
+        ASSERT(inserted.second, "must be valid insertion");
     }
     ASSERT(layoutPools, "nullptr");
 
@@ -577,13 +576,13 @@ VulkanDescriptorSetPool* LayoutDescriptorPools::createPool(VulkanDevice* device,
         }
     }
 
-    u32 setCount = LayoutDescriptorPools::s_maxSets;
+    u32 setCount = device->getVulkanDeviceCaps()._layoutDescriptorPoolSize;
     std::vector<VkDescriptorPoolSize> sizes;
     for (auto& layout : sizesCount)
     {
         if (layout.descriptorCount > 0)
         {
-            u32 count = std::min(layout.descriptorCount * LayoutDescriptorPools::s_multipliers, LayoutDescriptorPools::s_maxSets);
+            u32 count = std::min(layout.descriptorCount * LayoutDescriptorPools::s_multipliers, setCount);
             sizes.push_back({ layout.type, count });
         }
     }

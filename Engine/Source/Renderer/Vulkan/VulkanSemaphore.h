@@ -56,12 +56,12 @@ namespace vk
 
         friend class VulkanSemaphoreManager;
 
-        VulkanDevice&   m_device;
-        VkSemaphore     m_semaphore;
-        SemaphoreType   m_type;
-        SemaphoreStatus m_status;
+        VulkanDevice&                m_device;
+        VkSemaphore                  m_semaphore;
+        SemaphoreType                m_type;
+        std::atomic<SemaphoreStatus> m_status;
 #if VULKAN_DEBUG_MARKERS
-        std::string     m_debugName;
+        std::string                  m_debugName;
 
         void fenceTracker(VulkanFence* fence, u64 value, u64 frame) override;
 #endif
@@ -102,6 +102,7 @@ namespace vk
         VulkanSemaphoreManager& operator=(const VulkanSemaphoreManager&) = delete;
 
         VulkanDevice&                 m_device;
+        std::mutex                    m_mutex;
 
         std::deque<VulkanSemaphore*>  m_freeList;
         std::vector<VulkanSemaphore*> m_usedList;

@@ -684,7 +684,7 @@ VulkanRenderpassManager::~VulkanRenderpassManager()
 
 VulkanRenderPass* VulkanRenderpassManager::acquireRenderpass(const RenderPassDesc& description, const std::string& name)
 {
-    std::lock_guard lock(m_device.getMutex());
+    std::lock_guard lock(m_mutex);
 
     auto found = m_renderPassList.find(description);
     if (found != m_renderPassList.cend())
@@ -700,14 +700,16 @@ VulkanRenderPass* VulkanRenderpassManager::acquireRenderpass(const RenderPassDes
         ASSERT(false, "can't create renderpass");
         return nullptr;
     }
-    m_renderPassList.emplace(description, renderpass);
+    [[maybe_unused]] auto inserted = m_renderPassList.emplace(description, renderpass);
+    ASSERT(inserted.second, "must be valid insertion");
+
 
     return renderpass;
 }
 
 bool VulkanRenderpassManager::removeRenderPass(VulkanRenderPass* renderpass)
 {
-    std::lock_guard lock(m_device.getMutex());
+    std::lock_guard lock(m_mutex);
 
     auto found = std::find_if(m_renderPassList.begin(), m_renderPassList.end(), [renderpass](auto& elem) -> bool
         {
@@ -737,7 +739,7 @@ bool VulkanRenderpassManager::removeRenderPass(VulkanRenderPass* renderpass)
 
 void VulkanRenderpassManager::clear()
 {
-    std::lock_guard lock(m_device.getMutex());
+    std::lock_guard lock(m_mutex);
 
     for (auto& iter : m_renderPassList)
     {

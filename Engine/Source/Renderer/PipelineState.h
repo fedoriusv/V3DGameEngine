@@ -47,6 +47,18 @@ namespace renderer
                 static_assert(sizeof(InputBinding) == 4, "wrong size");
             }
 
+            bool operator==(const InputBinding &other) const
+            {
+                if (this != &other)
+                {
+                    return _binding == other._binding
+                        && _rate == other._rate
+                        && _stride == other._stride;
+                }
+
+                return true;
+            }
+
             u32       _binding : 3; //k_maxVertexInputBindings
             InputRate _rate    : 1;
             u32       _stride  : 12;
@@ -61,7 +73,7 @@ namespace renderer
                 : _binding(0)
                 , _stream(0)
                 , _format(Format::Format_Undefined)
-                , _offest(0)
+                , _offset(0)
             {
                 static_assert(sizeof(InputAttribute) == 4, "wrong size");
             }
@@ -70,20 +82,46 @@ namespace renderer
                 : _binding(binding)
                 , _stream(stream)
                 , _format(format)
-                , _offest(offset)
+                , _offset(offset)
             {
                 static_assert(sizeof(InputAttribute) == 4, "wrong size");
+            }
+
+            bool operator==(const InputAttribute& other) const
+            {
+                if (this != &other)
+                {
+                    return _binding == other._binding
+                        && _stream == other._stream
+                        && _format == other._format
+                        && _offset == other._offset;
+                }
+
+                return true;
             }
 
             u32          _binding   : 3; //k_maxVertexInputBindings
             u32          _stream    : 5;
             Format       _format    : 8;
-            u32          _offest    : 16;
+            u32          _offset    : 16;
         };
 
         VertexInputAttributeDesc() noexcept;
         VertexInputAttributeDesc(const VertexInputAttributeDesc& desc) noexcept;
         VertexInputAttributeDesc(const std::initializer_list<VertexInputAttributeDesc::InputBinding>& inputBinding, const std::initializer_list<VertexInputAttributeDesc::InputAttribute>& inputAttributes) noexcept;
+
+        bool operator==(const VertexInputAttributeDesc& other) const
+        {
+            if (this != &other)
+            {
+                return _countInputBindings == other._countInputBindings
+                    && _countInputAttributes == other._countInputAttributes
+                    && _inputBindings == other._inputBindings
+                    && _inputAttributes == other._inputAttributes;
+            }
+
+            return true;
+        }
 
         u32 operator>>(stream::Stream* stream) const;
         u32 operator<<(const stream::Stream* stream);
@@ -149,6 +187,22 @@ namespace renderer
                 static_assert(sizeof(RasterizationState) == 16, "wrong size");
             }
 
+            bool operator==(const RasterizationState& other) const
+            {
+                if (this != &other)
+                {
+                    return _polygonMode == other._polygonMode
+                        && _frontFace == other._frontFace
+                        && _cullMode == other._cullMode
+                        && _discardRasterization == other._discardRasterization
+                        && _depthBiasConstant == other._depthBiasConstant
+                        && _depthBiasClamp == other._depthBiasClamp
+                        && _depthBiasSlope == other._depthBiasSlope;
+                }
+
+                return true;
+            }
+
             PolygonMode _polygonMode            : 2;
             FrontFace   _frontFace              : 1;
             CullMode    _cullMode               : 3;
@@ -174,16 +228,31 @@ namespace renderer
                 , _unused(0)
                 , _depthBounds(math::Vector2D(0.0f))
             {
-                static_assert(sizeof(DepthStencilState) == sizeof(math::Vector2D) + 8, "wrong size");
+                static_assert(sizeof(DepthStencilState) == sizeof(math::Vector2D) + 4, "wrong size");
             }
 
-            CompareOperation   _compareOp               : 4;
-            u32                _depthTestEnable         : 1;
-            u32                _depthWriteEnable        : 1;
-            u32                _stencilTestEnable       : 1;
-            u32                _depthBoundsTestEnable   : 1;
-            u32                _unused                  : 27;
-            math::Vector2D     _depthBounds;
+            bool operator==(const DepthStencilState& other) const
+            {
+                if (this != &other)
+                {
+                    return _compareOp == other._compareOp
+                        && _depthTestEnable == other._depthTestEnable
+                        && _depthWriteEnable == other._depthWriteEnable
+                        && _stencilTestEnable == other._stencilTestEnable
+                        && _depthBoundsTestEnable == other._depthBoundsTestEnable
+                        && _depthBounds == other._depthBounds;
+                }
+
+                return true;
+            }
+
+            CompareOperation    _compareOp               : 4;
+            u32                 _depthTestEnable         : 1;
+            u32                 _depthWriteEnable        : 1;
+            u32                 _stencilTestEnable       : 1;
+            u32                 _depthBoundsTestEnable   : 1;
+            u32                 _unused                  : 24;
+            math::Vector2D      _depthBounds;
         };
 
         /**
@@ -210,6 +279,23 @@ namespace renderer
                     static_assert(sizeof(ColorBlendAttachmentState) == 8, "wrong size");
                 }
 
+                bool operator==(const ColorBlendAttachmentState& other) const
+                {
+                    if (this != &other)
+                    {
+                        return _blendOp == other._blendOp
+                            && _srcBlendFacor == other._srcBlendFacor
+                            && _dscBlendFacor == other._dscBlendFacor
+                            && _alphaBlendOp == other._alphaBlendOp
+                            && _srcAlphaBlendFacor == other._srcAlphaBlendFacor
+                            && _dscAlphaBlendFacor == other._dscAlphaBlendFacor
+                            && _colorWriteMask == other._colorWriteMask
+                            && _colorBlendEnable == other._colorBlendEnable;
+                    }
+
+                    return true;
+                }
+
                 BlendOperation  _blendOp            : 4;
                 BlendFactor     _srcBlendFacor      : 6;
                 BlendFactor     _dscBlendFacor      : 6;
@@ -227,7 +313,20 @@ namespace renderer
                 , _logicalOpEnable(false)
                 , _unused(0)
             {
-                static_assert(sizeof(BlendState) == sizeof(_colorBlendAttachments) + sizeof(math::Vector4D) + 8, "wrong size");
+                static_assert(sizeof(BlendState) == sizeof(_colorBlendAttachments) + sizeof(math::Vector4D) + 4, "wrong size");
+            }
+
+            bool operator==(const BlendState& other) const
+            {
+                if (this != &other)
+                {
+                    return _colorBlendAttachments == other._colorBlendAttachments
+                        && _constant == other._constant
+                        && _logicalOp == other._logicalOp
+                        && _logicalOpEnable == other._logicalOpEnable;
+                }
+
+                return true;
             }
 
 #if USE_MULTI_COLOR_BLEND_ATTACMENTS
@@ -238,7 +337,7 @@ namespace renderer
             math::Vector4D                                                  _constant;
             LogicalOperation                                                _logicalOp          : 5;
             u32                                                             _logicalOpEnable    : 1;
-            u32                                                             _unused             : 28;
+            u32                                                             _unused             : 26;
         };
 
         /**
@@ -252,6 +351,17 @@ namespace renderer
                 static_assert(sizeof(VertexInputState) == sizeof(VertexInputAttributeDesc) + sizeof(PrimitiveTopology), "wrong size");
             }
 
+            bool operator==(const VertexInputState& other) const
+            {
+                if (this != &other)
+                {
+                    return _inputAttributes == other._inputAttributes
+                        && _primitiveTopology == other._primitiveTopology;
+                }
+
+                return true;
+            }
+
             VertexInputAttributeDesc _inputAttributes;
             PrimitiveTopology        _primitiveTopology;
         };
@@ -260,15 +370,22 @@ namespace renderer
         GraphicsPipelineStateDesc(const GraphicsPipelineStateDesc&) = default;
         GraphicsPipelineStateDesc& operator=(const GraphicsPipelineStateDesc&) = default;
 
-        bool operator==(const GraphicsPipelineStateDesc& op) const
+        bool operator==(const GraphicsPipelineStateDesc& other) const
         {
-            if (this == &op)
+            static_assert(sizeof(GraphicsPipelineStateDesc) == sizeof(VertexInputState) + sizeof(RasterizationState) + sizeof(BlendState) + sizeof(DepthStencilState), "wrong size");
+            if (this != &other)
             {
-                return true;
+#if 1 //fast check. All data must be packed tightly
+                return memcmp(this, &other, sizeof(GraphicsPipelineStateDesc)) == 0;
+#else
+                return _vertexInputState == other._vertexInputState
+                    && _depthStencilState == other._depthStencilState
+                    && _rasterizationState == other._rasterizationState
+                    && _blendState == other._blendState;
+#endif
             }
 
-            static_assert(sizeof(GraphicsPipelineStateDesc) == sizeof(VertexInputState) + sizeof(RasterizationState) + sizeof(BlendState) + sizeof(DepthStencilState), "wrong size");
-            return memcmp(this, &op, sizeof(GraphicsPipelineStateDesc)) == 0;
+            return true;
         }
 
         VertexInputState    _vertexInputState;

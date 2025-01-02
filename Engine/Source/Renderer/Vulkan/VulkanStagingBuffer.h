@@ -42,6 +42,7 @@ namespace vk
         VulkanStagingBufferManager& operator=(const VulkanStagingBufferManager&) = delete;
 
         VulkanDevice&                           m_device;
+        std::mutex                              m_mutex;
         VulkanMemory::VulkanMemoryAllocator*    m_memoryManager;
 
         std::vector<VulkanBuffer*>              m_stagingBuffers;

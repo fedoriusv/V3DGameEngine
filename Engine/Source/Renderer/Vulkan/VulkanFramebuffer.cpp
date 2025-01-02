@@ -153,7 +153,7 @@ std::tuple<VulkanFramebuffer*, bool> VulkanFramebufferManager::acquireFramebuffe
     buildFramebufferDescription(desc);
 
 
-    std::lock_guard lock(m_device.getMutex());
+    std::lock_guard lock(m_mutex);
 
     auto found = m_framebufferList.find(desc);
     if (found != m_framebufferList.cend())
@@ -169,14 +169,15 @@ std::tuple<VulkanFramebuffer*, bool> VulkanFramebufferManager::acquireFramebuffe
         ASSERT(false, "can't create framebuffer");
         return std::make_tuple(nullptr, false);
     }
-    m_framebufferList.emplace(desc, framebuffer);
+    [[maybe_unused]] auto inserted = m_framebufferList.emplace(desc, framebuffer);
+    ASSERT(inserted.second, "must be valid insertion");
 
     return std::make_tuple(framebuffer, true);
 }
 
 bool VulkanFramebufferManager::removeFramebuffer(VulkanFramebuffer* framebuffer)
 {
-    std::lock_guard lock(m_device.getMutex());
+    std::lock_guard lock(m_mutex);
 
     auto iter = m_framebufferList.begin();
     while (iter != m_framebufferList.end())
@@ -206,7 +207,7 @@ bool VulkanFramebufferManager::removeFramebuffer(VulkanFramebuffer* framebuffer)
 
 void VulkanFramebufferManager::clear()
 {
-    std::lock_guard lock(m_device.getMutex());
+    std::lock_guard lock(m_mutex);
 
     for (auto& iter : m_framebufferList)
     {

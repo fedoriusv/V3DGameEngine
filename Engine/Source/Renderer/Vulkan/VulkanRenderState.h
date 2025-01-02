@@ -28,22 +28,22 @@ namespace vk
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    enum DiryStateMask
+    enum DirtyStateMask
     {
-        DiryState_Viewport = 0,
-        DiryState_Scissors = 1,
-        DiryState_StencilRef = 2,
+        DirtyState_Viewport = 0,
+        DirtyState_Scissors = 1,
+        DirtyState_StencilRef = 2,
 
-        DiryState_Pipeline = 3,
-        DiryState_RenderPass = 4,
+        DirtyState_Pipeline = 3,
+        DirtyState_RenderPass = 4,
 
-        DiryState_ImageBarriers = 10,
-        DiryState_BufferBarriers = 10,
+        DirtyState_ImageBarriers = 10,
+        DirtyState_BufferBarriers = 10,
 
-        DiryState_DescriptorSet = 11,
-        DiryState_DescriptorSetShift = (11 + k_maxDescriptorSetCount - 1),
+        DirtyState_DescriptorSet = 11,
+        DirtyState_DescriptorSetShift = (11 + k_maxDescriptorSetCount - 1),
 
-        DiryState_All = 0x0/*0xFFFFFFFFFFFFFFFF*/
+        DirtyState_All = 0x0/*0xFFFFFFFFFFFFFFFF*/
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -56,7 +56,7 @@ namespace vk
     public:
 
         VulkanRenderState() noexcept
-            : _dirty(DiryStateMask::DiryState_All)
+            : _dirty(DirtyStateMask::DirtyState_All)
         {
 
             _clearValues.resize(k_maxColorAttachments + 1);
@@ -102,9 +102,9 @@ namespace vk
 
         void invalidate();
 
-        void setDirty(DiryStateMask mask);
-        void unsetDirty(DiryStateMask mask);
-        bool isDirty(DiryStateMask mask);
+        void setDirty(DirtyStateMask mask);
+        void unsetDirty(DirtyStateMask mask);
+        bool isDirty(DirtyStateMask mask);
 
         VkViewport                                       _viewports = {};
         VkRect2D                                         _scissors = {};
@@ -131,17 +131,17 @@ namespace vk
         u64 _dirty;
     };
 
-    inline void VulkanRenderState::setDirty(DiryStateMask mask)
+    inline void VulkanRenderState::setDirty(DirtyStateMask mask)
     {
         _dirty |= (1 << mask);
     }
 
-    inline void VulkanRenderState::unsetDirty(DiryStateMask mask)
+    inline void VulkanRenderState::unsetDirty(DirtyStateMask mask)
     {
         _dirty &= ~(1 << mask);
     }
 
-    inline bool VulkanRenderState::isDirty(DiryStateMask mask)
+    inline bool VulkanRenderState::isDirty(DirtyStateMask mask)
     {
         return _dirty & (1 << mask);
     }
@@ -158,7 +158,7 @@ namespace vk
 
         _sets[set]._resource[binding] = buffer;
         _sets[set]._activeBindingsFlags |= 1 << binding;
-        setDirty(DiryStateMask(DiryState_DescriptorSet + set));
+        setDirty(DirtyStateMask(DirtyState_DescriptorSet + set));
 
         if (type == BindingType::DynamicUniform)
         {
@@ -180,7 +180,7 @@ namespace vk
 
         _sets[set]._resource[binding] = image;
         _sets[set]._activeBindingsFlags |= 1 << binding;
-        setDirty(DiryStateMask(DiryState_DescriptorSet + set));
+        setDirty(DirtyStateMask(DirtyState_DescriptorSet + set));
 
         addImageBarrier(image, subresource, layout);
     }
@@ -196,7 +196,7 @@ namespace vk
 
         _sets[set]._resource[binding] = sampler;
         _sets[set]._activeBindingsFlags |= 1 << binding;
-        setDirty(DiryStateMask(DiryState_DescriptorSet + set));
+        setDirty(DirtyStateMask(DirtyState_DescriptorSet + set));
     }
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

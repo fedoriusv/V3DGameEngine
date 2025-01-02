@@ -544,7 +544,7 @@ bool VulkanGraphicPipeline::create(const GraphicsPipelineState& state)
         vertexInputAttributeDescription.location = res._inputAttribute[index]._location;
         ASSERT(res._inputAttribute[index]._format == inputAttrDesc._inputAttributes[index]._format, "different formats");
         vertexInputAttributeDescription.format = VulkanImage::convertImageFormatToVkFormat(inputAttrDesc._inputAttributes[index]._format);
-        vertexInputAttributeDescription.offset = inputAttrDesc._inputAttributes[index]._offest;
+        vertexInputAttributeDescription.offset = inputAttrDesc._inputAttributes[index]._offset;
         vertexInputAttributeDescriptions.push_back(vertexInputAttributeDescription);
     }
     vertexInputStateCreateInfo.vertexAttributeDescriptionCount = static_cast<u32>(vertexInputAttributeDescriptions.size());
@@ -944,37 +944,36 @@ VulkanGraphicPipelineManager::~VulkanGraphicPipelineManager()
 
 VulkanGraphicPipeline* VulkanGraphicPipelineManager::acquireGraphicPipeline(const GraphicsPipelineState& state)
 {
-    std::lock_guard lock(m_device.getMutex());
+    std::lock_guard lock(m_mutex);
 
-    VulkanGraphicPipeline* pipeline = nullptr;
     VulkanPipelineDesc desc(state.getPipelineStateDesc(), state.getRenderPassDesc(), state.getShaderProgram());
+    DescInfo<VulkanPipelineDesc> key(desc);
 
-    auto found = m_pipelineGraphicList.emplace(desc, pipeline);
-    if (found.second)
+    auto found = m_pipelineGraphicList.find(desc);
+    if (found != m_pipelineGraphicList.cend())
     {
-        pipeline = V3D_NEW(VulkanGraphicPipeline, memory::MemoryLabel::MemoryRenderCore)(&m_device, m_device.getRenderpassManager(), m_device.getPipelineLayoutManager(), state.getName());
-        if (!pipeline->create(state))
-        {
-            m_pipelineGraphicList.erase(desc);
-
-            ASSERT(false, "can't create pipeline");
-            pipeline->destroy();
-            V3D_FREE(pipeline, memory::MemoryLabel::MemoryRenderCore);
-
-            return nullptr;
-        }
-
-        found.first->second = pipeline;
-        return pipeline;
+        return found->second;
     }
 
-    return found.first->second;
+    VulkanGraphicPipeline* pipeline = V3D_NEW(VulkanGraphicPipeline, memory::MemoryLabel::MemoryRenderCore)(&m_device, m_device.getRenderpassManager(), m_device.getPipelineLayoutManager(), state.getName());
+    if (!pipeline->create(state))
+    {
+        ASSERT(false, "can't create pipeline");
+        pipeline->destroy();
+        V3D_FREE(pipeline, memory::MemoryLabel::MemoryRenderCore);
+
+        return nullptr;
+    }
+    [[maybe_unused]] auto inserted = m_pipelineGraphicList.emplace(key, pipeline);
+    ASSERT(inserted.second, "must be valid insertion");
+
+    return pipeline;
 }
 
 bool VulkanGraphicPipelineManager::removePipeline(VulkanGraphicPipeline* pipeline)
 {
     ASSERT(pipeline->getType() == RenderPipeline::PipelineType::PipelineType_Graphic, "wrong type");
-    std::lock_guard lock(m_device.getMutex());
+    std::lock_guard lock(m_mutex);
 
     auto found = std::find_if(m_pipelineGraphicList.begin(), m_pipelineGraphicList.end(), [pipeline](auto& elem) -> bool
         {
@@ -1004,7 +1003,7 @@ bool VulkanGraphicPipelineManager::removePipeline(VulkanGraphicPipeline* pipelin
 
 void VulkanGraphicPipelineManager::clear()
 {
-    std::lock_guard lock(m_device.getMutex());
+    std::lock_guard lock(m_mutex);
 
     for (auto& iter : m_pipelineGraphicList)
     {

@@ -125,7 +125,8 @@ namespace vk
         VulkanComputePipelineManager(const VulkanComputePipelineManager&) = delete;
         VulkanComputePipelineManager& operator=(const VulkanComputePipelineManager&) = delete;
 
-        VulkanDevice& m_device;
+        VulkanDevice&   m_device;
+        std::mutex      m_mutex;
         std::unordered_map<DescInfo<VulkanPipelineDesc>, VulkanComputePipeline*, DescInfo<VulkanPipelineDesc>::Hash, DescInfo<VulkanPipelineDesc>::Compare> m_pipelineComputeList;
     };
 

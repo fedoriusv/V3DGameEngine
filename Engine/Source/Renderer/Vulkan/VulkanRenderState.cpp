@@ -34,7 +34,7 @@ void VulkanRenderState::addImageBarrier(VulkanImage* texture, const RenderTextur
     }
     _imageBarriers.emplace(layout, std::make_tuple(texture, subresource));
 
-    setDirty(DiryStateMask::DiryState_ImageBarriers);
+    setDirty(DirtyStateMask::DirtyState_ImageBarriers);
 }
 
 void VulkanRenderState::flushBarriers(VulkanCommandBuffer* cmdBuffer)
@@ -45,7 +45,7 @@ void VulkanRenderState::flushBarriers(VulkanCommandBuffer* cmdBuffer)
     }
     _imageBarriers.clear();
 
-    unsetDirty(DiryStateMask::DiryState_ImageBarriers);
+    unsetDirty(DirtyStateMask::DirtyState_ImageBarriers);
 }
 
 void VulkanRenderState::invalidate()
@@ -73,7 +73,7 @@ void VulkanRenderState::invalidate()
 
     _imageBarriers.clear();
 
-    _dirty = DiryStateMask::DiryState_All;
+    _dirty = DirtyStateMask::DirtyState_All;
 }
 
 } //namespace vk

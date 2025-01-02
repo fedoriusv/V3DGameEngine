@@ -6,6 +6,7 @@
 
 #include "Utils/CRC32.h"
 #include "crc32c/crc32c.h"
+#include "ThirdParty/MurmurHash3.h"
 
 
 namespace v3d
@@ -78,7 +79,7 @@ namespace v3d
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     template<typename TData>
-    struct HasherCRC
+    struct HasherCRC32
     {
         static u64 hash(const TData& data) noexcept
         {
@@ -86,7 +87,20 @@ namespace v3d
         }
     };
 
-    template<class TDesc, typename Hasher = HasherCRC<TDesc>>
+    template<typename TData>
+    struct HasherMurmur32
+    {
+        static u64 hash(const TData& data) noexcept
+        {
+            u32 hash = 0;
+            MurmurHash3_x86_32(reinterpret_cast<const void*>(&data), sizeof(TData), 0, &hash);
+            return static_cast<u64>(hash);
+        }
+    };
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    template<class TDesc, typename Hasher = HasherMurmur32<TDesc>>
     struct DescInfo
     {
         DescInfo() noexcept = default;

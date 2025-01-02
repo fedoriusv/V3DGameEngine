@@ -81,6 +81,7 @@ namespace vk
         u32 _memoryMinQueryPoolCount = 1024;//default: 1024
 
         u32 _globalDescriptorPoolSize = 2048; //Count of sets in the single pool
+        u32 _layoutDescriptorPoolSize = 2048; //Count of sets in the single pool
 
     private:
 

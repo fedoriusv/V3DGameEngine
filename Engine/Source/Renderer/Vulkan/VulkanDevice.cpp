@@ -1369,7 +1369,7 @@ void VulkanCmdList::setViewport(const math::Rect32& viewport, const math::Vector
     vkViewport.height = -vkViewport.height;
 #endif
 
-    m_pendingRenderState.setDirty(DiryStateMask::DiryState_Viewport);
+    m_pendingRenderState.setDirty(DirtyStateMask::DirtyState_Viewport);
 }
 
 void VulkanCmdList::setScissor(const math::Rect32& scissor)
@@ -1390,7 +1390,7 @@ void VulkanCmdList::setScissor(const math::Rect32& scissor)
     vkScissor.extent.width = static_cast<u32>(scissor.getWidth());
     vkScissor.extent.height = static_cast<u32>(scissor.getHeight());
 
-    m_pendingRenderState.setDirty(DiryStateMask::DiryState_Scissors);
+    m_pendingRenderState.setDirty(DirtyStateMask::DirtyState_Scissors);
 }
 
 void VulkanCmdList::setStencilRef(u32 mask)
@@ -1407,7 +1407,7 @@ void VulkanCmdList::setStencilRef(u32 mask)
 
     m_pendingRenderState._stencilRef = mask;
 
-    m_pendingRenderState.setDirty(DiryStateMask::DiryState_StencilRef);
+    m_pendingRenderState.setDirty(DirtyStateMask::DirtyState_StencilRef);
 }
 
 void VulkanCmdList::beginRenderTarget(RenderTargetState& rendertarget)
@@ -1463,7 +1463,7 @@ void VulkanCmdList::beginRenderTarget(RenderTargetState& rendertarget)
     }
 
     m_pendingRenderState._insideRenderpass = true;
-    m_pendingRenderState.setDirty(DiryStateMask::DiryState_RenderPass);
+    m_pendingRenderState.setDirty(DirtyStateMask::DirtyState_RenderPass);
 }
 
 void VulkanCmdList::endRenderTarget()
@@ -1489,8 +1489,11 @@ void VulkanCmdList::setPipelineState(GraphicsPipelineState& state)
     VulkanGraphicPipeline* pipeline = m_device.m_graphicPipelineManager->acquireGraphicPipeline(state);
     state.m_tracker.attach(pipeline);
 
-    m_pendingRenderState._graphicPipeline = pipeline;
-    m_pendingRenderState.setDirty(DiryStateMask::DiryState_Pipeline);
+    if (m_pendingRenderState._graphicPipeline != pipeline)
+    {
+        m_pendingRenderState._graphicPipeline = pipeline;
+        m_pendingRenderState.setDirty(DirtyStateMask::DirtyState_Pipeline);
+    }
 }
 
 void VulkanCmdList::setPipelineState(ComputePipelineState& state)
@@ -1508,8 +1511,11 @@ void VulkanCmdList::setPipelineState(ComputePipelineState& state)
     VulkanComputePipeline* pipeline = m_device.m_computePipelineManager->acquireGraphicPipeline(state);
     state.m_tracker.attach(pipeline);
 
-    m_pendingRenderState._computePipeline = pipeline;
-    m_pendingRenderState.setDirty(DiryStateMask::DiryState_Pipeline);
+    if (m_pendingRenderState._computePipeline != pipeline)
+    {
+        m_pendingRenderState._computePipeline = pipeline;
+        m_pendingRenderState.setDirty(DirtyStateMask::DirtyState_Pipeline);
+    }
 }
 
 void VulkanCmdList::transition(const TextureView& textureView, TransitionOp state)
@@ -1638,13 +1644,13 @@ bool VulkanCmdList::prepareDraw(VulkanCommandBuffer* drawBuffer)
     {
         m_pendingRenderState.flushBarriers(drawBuffer);
 
-        if (m_pendingRenderState.isDirty(DiryStateMask::DiryState_RenderPass))
+        if (m_pendingRenderState.isDirty(DirtyStateMask::DirtyState_RenderPass))
         {
             drawBuffer->cmdBeginRenderpass(m_pendingRenderState._renderpass, m_pendingRenderState._framebuffer, m_pendingRenderState._renderArea, m_pendingRenderState._clearValues);
             m_currentRenderState._renderpass = m_pendingRenderState._renderpass;
             m_currentRenderState._framebuffer = m_pendingRenderState._framebuffer;
             m_currentRenderState._renderArea = m_pendingRenderState._renderArea;
-            m_pendingRenderState.unsetDirty(DiryStateMask::DiryState_RenderPass);
+            m_pendingRenderState.unsetDirty(DirtyStateMask::DirtyState_RenderPass);
         }
     }
     else
@@ -1654,33 +1660,33 @@ bool VulkanCmdList::prepareDraw(VulkanCommandBuffer* drawBuffer)
         //TODO
     }
 
-    if (m_pendingRenderState.isDirty(DiryStateMask::DiryState_Viewport))
+    if (m_pendingRenderState.isDirty(DirtyStateMask::DirtyState_Viewport))
     {
         drawBuffer->cmdSetViewport(m_pendingRenderState._viewports);
         m_currentRenderState._viewports = m_pendingRenderState._viewports;
-        m_pendingRenderState.unsetDirty(DiryStateMask::DiryState_Viewport);
+        m_pendingRenderState.unsetDirty(DirtyStateMask::DirtyState_Viewport);
     }
 
-    if (m_pendingRenderState.isDirty(DiryStateMask::DiryState_Scissors))
+    if (m_pendingRenderState.isDirty(DirtyStateMask::DirtyState_Scissors))
     {
         drawBuffer->cmdSetScissor(m_pendingRenderState._scissors);
         m_currentRenderState._scissors = m_pendingRenderState._scissors;
-        m_pendingRenderState.unsetDirty(DiryStateMask::DiryState_Scissors);
+        m_pendingRenderState.unsetDirty(DirtyStateMask::DirtyState_Scissors);
     }
 
-    if (m_pendingRenderState.isDirty(DiryStateMask::DiryState_StencilRef))
+    if (m_pendingRenderState.isDirty(DirtyStateMask::DirtyState_StencilRef))
     {
         drawBuffer->cmdSetStencilRef(m_pendingRenderState._stencilMask, m_pendingRenderState._stencilRef);
         m_currentRenderState._stencilMask = m_pendingRenderState._stencilMask;
         m_currentRenderState._stencilRef = m_pendingRenderState._stencilRef;
-        m_pendingRenderState.unsetDirty(DiryStateMask::DiryState_StencilRef);
+        m_pendingRenderState.unsetDirty(DirtyStateMask::DirtyState_StencilRef);
     }
 
-    if (m_pendingRenderState.isDirty(DiryStateMask::DiryState_Pipeline))
+    if (m_pendingRenderState.isDirty(DirtyStateMask::DirtyState_Pipeline))
     {
         drawBuffer->cmdBindPipeline(m_pendingRenderState._graphicPipeline);
         m_currentRenderState._graphicPipeline = m_pendingRenderState._graphicPipeline;
-        m_pendingRenderState.unsetDirty(DiryStateMask::DiryState_Pipeline);
+        m_pendingRenderState.unsetDirty(DirtyStateMask::DirtyState_Pipeline);
     }
 
     //DS
@@ -1710,7 +1716,7 @@ bool VulkanCmdList::prepareDescriptorSets(VulkanCommandBuffer* drawBuffer)
             continue;
         }
 
-        if (m_pendingRenderState.isDirty(DiryStateMask(DiryState_DescriptorSet + indexSet)))
+        if (m_pendingRenderState.isDirty(DirtyStateMask(DirtyState_DescriptorSet + indexSet)))
         {
             auto& layoutSet = m_pendingRenderState._graphicPipeline->getDescriptorSetLayouts()._setLayouts[indexSet];
 
@@ -1721,7 +1727,7 @@ bool VulkanCmdList::prepareDescriptorSets(VulkanCommandBuffer* drawBuffer)
             drawBuffer->captureResource(pool);
 
             m_descriptorSetManager->updateDescriptorSet(drawBuffer, set, m_pendingRenderState._sets[indexSet]);
-            m_pendingRenderState.unsetDirty(DiryStateMask(DiryState_DescriptorSet + indexSet));
+            m_pendingRenderState.unsetDirty(DirtyStateMask(DirtyState_DescriptorSet + indexSet));
         }
     }
 

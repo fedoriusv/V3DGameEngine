@@ -137,6 +137,43 @@ namespace vk
     VkDescriptorBufferInfo makeVkDescriptorBufferInfo(const VulkanBuffer* buffer, u64 offset, u64 range);
     VkDescriptorImageInfo makeVkDescriptorImageInfo(const VulkanImage* image, const VulkanSampler* sampler, VkImageLayout layout, const RenderTexture::Subresource& subresource);
 
+    inline VkDescriptorBufferInfo makeVkDescriptorBufferInfo(const VulkanBuffer* buffer, u64 offset, u64 range)
+    {
+        VkDescriptorBufferInfo descriptorBufferInfo = {};
+        descriptorBufferInfo.buffer = buffer->getHandle();
+        descriptorBufferInfo.offset = offset;
+        descriptorBufferInfo.range = range;
+
+        return descriptorBufferInfo;
+    }
+
+
+    inline VkDescriptorImageInfo makeVkDescriptorImageInfo(const VulkanImage* image, const VulkanSampler* sampler, VkImageLayout layout, const RenderTexture::Subresource& subresource)
+    {
+        VkDescriptorImageInfo descriptorImageInfo = {};
+        descriptorImageInfo.imageLayout = layout;
+
+        if (sampler)
+        {
+            descriptorImageInfo.sampler = sampler->getHandle();
+        }
+
+        if (image)
+        {
+            const VulkanImage* vkImage = (image->getResolveImage()) ? image->getResolveImage() : image;
+            if (vkImage->getImageAspectFlags() & VK_IMAGE_ASPECT_DEPTH_BIT)
+            {
+                descriptorImageInfo.imageView = vkImage->getImageView(subresource, VK_IMAGE_ASPECT_DEPTH_BIT);
+            }
+            else
+            {
+                descriptorImageInfo.imageView = vkImage->getImageView(subresource, VK_IMAGE_ASPECT_COLOR_BIT);
+            }
+        }
+
+        return descriptorImageInfo;
+    }
+
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**

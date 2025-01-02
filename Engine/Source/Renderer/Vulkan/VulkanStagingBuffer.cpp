@@ -44,14 +44,14 @@ VulkanBuffer* VulkanStagingBufferManager::createStagingBuffer(u64 size) const
 
 void VulkanStagingBufferManager::destroyAfterUse(VulkanBuffer* buffer)
 {
-    std::lock_guard lock(m_device.getMutex());
+    std::lock_guard lock(m_mutex);
 
     m_stagingBuffers.push_back(buffer);
 }
 
 void VulkanStagingBufferManager::destroyStagingBuffers()
 {
-    std::lock_guard lock(m_device.getMutex());
+    std::lock_guard lock(m_mutex);
 
     for (auto iter = m_stagingBuffers.begin(); iter != m_stagingBuffers.end();)
     {

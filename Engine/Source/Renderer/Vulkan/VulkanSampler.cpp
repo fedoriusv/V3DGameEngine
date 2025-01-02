@@ -216,8 +216,7 @@ VulkanSamplerManager::~VulkanSamplerManager()
 
 VulkanSampler* VulkanSamplerManager::acquireSampler(const SamplerState& state)
 {
-
-    std::scoped_lock lock(m_device.getMutex());
+    std::lock_guard lock(m_mutex);
 
     auto found = m_samplerList.find(state.getSamplerDesc());
     if (found != m_samplerList.cend())
@@ -233,14 +232,15 @@ VulkanSampler* VulkanSamplerManager::acquireSampler(const SamplerState& state)
         ASSERT(false, "can't create sampler");
         return nullptr;
     }
-    m_samplerList.emplace(state.getSamplerDesc(), sampler);
+    [[maybe_unused]] auto inserted = m_samplerList.emplace(state.getSamplerDesc(), sampler);
+    ASSERT(inserted.second, "must be valid insertion");
 
     return sampler;
 }
 
 bool VulkanSamplerManager::removeSampler(VulkanSampler* sampler)
 {
-    std::scoped_lock lock(m_device.getMutex());
+    std::lock_guard lock(m_mutex);
 
     auto iter = m_samplerList.begin();
     while (iter != m_samplerList.end())
@@ -270,7 +270,7 @@ bool VulkanSamplerManager::removeSampler(VulkanSampler* sampler)
 
 void VulkanSamplerManager::clear()
 {
-    std::scoped_lock lock(m_device.getMutex());
+    std::lock_guard lock(m_mutex);
 
     for (auto& iter : m_samplerList)
     {
