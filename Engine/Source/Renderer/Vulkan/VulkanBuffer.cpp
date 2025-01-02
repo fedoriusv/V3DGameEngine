@@ -6,6 +6,7 @@
 #   include "VulkanDebug.h"
 #   include "VulkanDevice.h"
 #   include "VulkanStagingBuffer.h"
+#   include "VulkanCommandBuffer.h"
 
 namespace v3d
 {

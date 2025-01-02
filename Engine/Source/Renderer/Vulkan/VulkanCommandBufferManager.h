@@ -1,10 +1,11 @@
 #pragma once
 
 #include "Common.h"
+#include "Renderer/Render.h"
+#include "Renderer/Device.h"
 
 #ifdef VULKAN_RENDER
 #include "VulkanWrapper.h"
-#include "VulkanCommandBuffer.h"
 
 namespace v3d
 {
@@ -16,6 +17,7 @@ namespace vk
 
     class VulkanDevice;
     class VulkanImage;
+    class VulkanCommandBuffer;
     class VulkanSemaphore;
     class VulkanSemaphoreManager;
 
@@ -32,6 +34,19 @@ namespace vk
         CmdResetQuerytBuffer = 3,
 
         Count
+    };
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    /**
+    * @brief CommandBufferLevel enum
+    */
+    enum CommandBufferLevel
+    {
+        PrimaryBuffer = 0,
+        SecondaryBuffer = 1,
+
+        CommandBufferLevelCount
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -93,6 +108,7 @@ namespace vk
 
         static VkCommandBuffer allocateCommandBuffer(VkDevice device, VkCommandPool pool, VkCommandBufferLevel level);
         static void freeCommandBuffer(VkDevice device, VkCommandPool pool, VkCommandBuffer boffer);
+
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

@@ -3,10 +3,20 @@
 #include "Common.h"
 #include "Renderer/Render.h"
 #include "Renderer/Device.h"
+#include "Utils/Logger.h"
 
 #ifdef VULKAN_RENDER
-#include "VulkanWrapper.h"
-#include "VulkanResource.h"
+#   include "VulkanWrapper.h"
+#   include "VulkanResource.h"
+#   include "VulkanBuffer.h"
+#   include "VulkanImage.h"
+#   include "VulkanRenderpass.h"
+#   include "VulkanFramebuffer.h"
+#   include "VulkanFence.h"
+#   include "VulkanGraphicPipeline.h"
+#   include "VulkanComputePipeline.h"
+#   include "VulkanCommandBufferManager.h"
+#   include "VulkanDevice.h"
 
 namespace v3d
 {
@@ -17,28 +27,12 @@ namespace vk
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     class VulkanDevice;
-    class VulkanImage;
-    class VulkanBuffer;
-    class VulkanRenderPass;
-    class VulkanFramebuffer;
-    class VulkanGraphicPipeline;
-    class VulkanComputePipeline;
     class VulkanSemaphore;
     class VulkanQueryPool;
-    class VulkanFence;
-    class VulkanCommandBufferManager;
     class VulkanSwapchain;
     class VulkanCmdList;
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    enum CommandBufferLevel
-    {
-        PrimaryBuffer = 0,
-        SecondaryBuffer = 1,
-
-        CommandBufferLevelCount
-    };
 
     /**
     * @brief VulkanCommandBuffer class. Vulkan Render side
@@ -166,6 +160,11 @@ namespace vk
 #if VULKAN_DEBUG
     std::unordered_set<VulkanResource*>   m_resources;
 #endif
+
+#if TRACE_PROFILER_GPU_ENABLE
+    tracy::VkCtx*                         m_tracyContext = nullptr;
+    tracy::VkCtxScope* m_scope = nullptr;
+#endif
     };
 
     inline VulkanCommandBuffer::CommandBufferStatus VulkanCommandBuffer::getStatus() const
@@ -189,9 +188,20 @@ namespace vk
         return m_renderpassState._activeSwapchain;
     }
 
+    inline void VulkanCommandBuffer::captureResource(VulkanResource* resource, u64 frame)
+    {
+#if VULKAN_DEBUG
+        m_resources.insert(resource);
+#endif //VULKAN_DEBUG
+
+        u64 capturedFrame = (frame == 0) ? m_capturedFrameIndex : frame;
+        resource->markUsed(m_fence, m_fence->getValue(), capturedFrame);
+    }
+
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
 } //namespace vk
 } //namespace renderer
 } //namespace v3d
 #endif //VULKAN_RENDER
+#include "VulkanCommandBuffer.inl"

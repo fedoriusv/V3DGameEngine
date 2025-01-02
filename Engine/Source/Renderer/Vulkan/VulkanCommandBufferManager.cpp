@@ -8,6 +8,7 @@
 #   include "VulkanSemaphore.h"
 #   include "VulkanImage.h"
 #   include "VulkanSwapchain.h"
+#   include "VulkanCommandBuffer.h"
 
 namespace v3d
 {
