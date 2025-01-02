@@ -92,6 +92,9 @@ const std::vector<const c8*> k_deviceExtensionsList =
 #ifdef VK_EXT_host_query_reset
     VK_EXT_HOST_QUERY_RESET_EXTENSION_NAME,
 #endif
+#ifdef VK_EXT_calibrated_timestamps
+    VK_EXT_CALIBRATED_TIMESTAMPS_EXTENSION_NAME,
+#endif
 };
 
 std::vector<VkDynamicState> VulkanDevice::s_requiredDynamicStates =

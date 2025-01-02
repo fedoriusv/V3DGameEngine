@@ -1,7 +1,5 @@
 #pragma once
 
-#include "FrameProfiler.h"
-
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #ifdef VULKAN_RENDER
@@ -16,7 +14,7 @@
 #endif
 
 //Debug
-#define VULKAN_DEBUG 0 //Log every render command
+#define VULKAN_DEBUG (0 || DEBUG) //Log every render command
 
 //Validation
 #define VULKAN_LAYERS_CALLBACKS (0 || DEBUG)
@@ -33,14 +31,6 @@
 #if VULKAN_DUMP
 #    define VULKAN_DUMP_FILE "VulkanCommandsDump.log"
 #endif //VULKAN_DUMP
-
-//Trace vulkan command
-#define TRACE_VULKAN 0
-#if TRACE_VULKAN
-#   define TRACE_PROFILER_VULKAN_SCOPE TRACE_PROFILER_SCOPE
-#else
-#   define TRACE_PROFILER_VULKAN_SCOPE
-#endif //TRACE_VULKAN
 
 #define VULKAN_MAKE_VERSION(major, minor) (((major) << 22) | ((minor) << 12))
 

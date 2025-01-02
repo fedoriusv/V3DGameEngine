@@ -278,6 +278,11 @@ VulkanCommandBufferManager::VulkanCommandBufferManager(VulkanDevice* device, Vul
         m_poolFlag |= VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
     }
     m_commandPools.resize(m_device.getDeviceInfo()._queues.size());
+
+#if TRACE_PROFILER_GPU_ENABLE
+    ASSERT(m_tracyContext == nullptr, "must be nullptr");
+    m_tracyContext = TracyVkContextHostCalibrated(m_device.getDeviceInfo()._instance, m_device.getDeviceInfo()._physicalDevice, m_device.getDeviceInfo()._device, &vkGetInstanceProcAddr, &vkGetDeviceProcAddr);
+#endif
 }
 
 VulkanCommandBufferManager::~VulkanCommandBufferManager()
@@ -305,6 +310,12 @@ VulkanCommandBufferManager::~VulkanCommandBufferManager()
         }
     }
     m_commandPools.clear();
+
+#if TRACE_PROFILER_GPU_ENABLE
+    ASSERT(m_tracyContext != nullptr, "must be valid");
+    TracyVkDestroy(m_tracyContext);
+    m_tracyContext = nullptr;
+#endif
 }
 
 VulkanCommandBuffer* VulkanCommandBufferManager::acquireNewCmdBuffer(Device::DeviceMask queueMask, CommandBufferLevel level)
@@ -328,7 +339,10 @@ VulkanCommandBuffer* VulkanCommandBufferManager::acquireNewCmdBuffer(Device::Dev
         {
             VulkanCommandBuffer* cmdBuffer = V3D_NEW(VulkanCommandBuffer, memory::MemoryLabel::MemoryRenderCore)(&m_device, level);
             cmdBuffer->init(queueMask, pool, buffer);
-
+#if TRACE_PROFILER_GPU_ENABLE
+            ASSERT(m_tracyContext, "must be valid");
+            cmdBuffer->m_tracyContext = m_tracyContext;
+#endif
             m_usedCmdBuffers.push_back(cmdBuffer);
 
             return cmdBuffer;
@@ -348,6 +362,10 @@ VulkanCommandBuffer* VulkanCommandBufferManager::acquireNewCmdBuffer(Device::Dev
 
     VulkanCommandBuffer* cmdBuffer = V3D_NEW(VulkanCommandBuffer, memory::MemoryLabel::MemoryRenderCore)(&m_device, level);
     cmdBuffer->init(queueMask, pool, buffer);
+#if TRACE_PROFILER_GPU_ENABLE
+    ASSERT(m_tracyContext, "must be valid");
+    cmdBuffer->m_tracyContext = m_tracyContext;
+#endif
 
     m_usedCmdBuffers.push_back(cmdBuffer);
 

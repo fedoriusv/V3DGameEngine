@@ -103,6 +103,10 @@ namespace vk
         std::deque<VulkanCommandBuffer*>        m_freeCmdBuffers[CommandBufferLevel::CommandBufferLevelCount];
         std::vector<VulkanCommandBuffer*>       m_usedCmdBuffers;
 
+#if TRACE_PROFILER_GPU_ENABLE
+        tracy::VkCtx*                           m_tracyContext = nullptr;
+#endif
+
         static VkCommandPool createCommandPool(VkDevice device, VkCommandPoolCreateFlags flag, u32 familyIndex);
         static void destoryCommandPool(VkDevice device, VkCommandPool pool);
 

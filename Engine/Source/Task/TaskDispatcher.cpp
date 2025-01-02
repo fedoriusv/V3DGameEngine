@@ -1,4 +1,6 @@
 #include "TaskScheduler.h"
+
+#include "FrameProfiler.h"
 #include "Utils/Logger.h"
 
 namespace v3d
@@ -117,9 +119,12 @@ void TaskDispatcher::unlockThread()
 
 void TaskDispatcher::threadEntryPoint(u32 threadID)
 {
+    [[maybe_unused]] std::string threadName = "WorkerThread_" + std::to_string(threadID);
 #if DEBUG
-    std::string threadName = "WorkerThread_" + std::to_string(threadID);
     m_workerThreads[threadID]->setName(threadName);
+#endif
+#if TRACY_ENABLE
+    tracy::SetThreadName(threadName.c_str());
 #endif
     TaskDispatcher::s_threadID = threadID + 1;
 

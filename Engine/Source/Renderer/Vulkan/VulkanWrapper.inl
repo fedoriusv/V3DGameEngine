@@ -1,4 +1,5 @@
 #include "VulkanWrapper.h"
+#include "FrameProfiler.h"
 #ifdef VULKAN_RENDER
 
 namespace v3d
