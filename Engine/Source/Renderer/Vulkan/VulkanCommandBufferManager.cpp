@@ -196,7 +196,7 @@ void VulkanTransitionState::transitionImage(VulkanCommandBuffer* cmdBuffer, std:
 
     VkPipelineStageFlags srcStage = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
     VkPipelineStageFlags dstStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
-    VkImageLayout oldLayout = vulkanImage->getLayout(std::get<1>(image));
+    VkImageLayout oldLayout = cmdBuffer->getResourceStateTracker().getLayout(vulkanImage, std::get<1>(image));
 
     //to general
     if (layout == VK_IMAGE_LAYOUT_GENERAL)

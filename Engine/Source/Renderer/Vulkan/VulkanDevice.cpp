@@ -192,31 +192,33 @@ void VulkanDevice::submit(CmdList* cmd, SyncPoint* sync, bool wait)
     VulkanCommandBufferManager* cmdBufferMgr = m_threadedPools[cmdList.m_concurrencySlot].m_cmdBufferManager;
     ASSERT(cmdBufferMgr, "nullptr");
 
-    //Uploads commands
-    VulkanSemaphore* uploadSemaphore = nullptr;
-    if (cmdList.m_currentCmdBuffer[toEnumType(CommandTargetType::CmdUploadBuffer)])
+    //Resource commands
+    VulkanSemaphore* resourceSemaphore = nullptr;
+    if (cmdList.m_currentCmdBuffer[toEnumType(CommandTargetType::CmdResourceBuffer)])
     {
-        VulkanCommandBuffer* uploadBuffer = cmdList.m_currentCmdBuffer[toEnumType(CommandTargetType::CmdUploadBuffer)];
+        VulkanCommandBuffer* resourceBuffer = cmdList.m_currentCmdBuffer[toEnumType(CommandTargetType::CmdResourceBuffer)];
 
-        cmdList.m_pendingRenderState.flushBarriers(uploadBuffer);
-        uploadBuffer->endCommandBuffer();
+        //TODO: resource tracker - get global state and create "brige" between cmd buffer states
+        cmdList.m_pendingRenderState.flushBarriers(resourceBuffer);
+        resourceBuffer->endCommandBuffer();
 
-        static thread_local std::vector<VulkanSemaphore*> signalUploadSemaphores;
-        signalUploadSemaphores.clear();
+        static thread_local std::vector<VulkanSemaphore*> signalResourceSemaphores;
+        signalResourceSemaphores.clear();
         if (cmdList.m_currentCmdBuffer[toEnumType(CommandTargetType::CmdDrawBuffer)])
         {
-            uploadSemaphore = m_semaphoreManager->acquireFreeSemaphore();
-            signalUploadSemaphores.push_back(uploadSemaphore);
+            resourceSemaphore = m_semaphoreManager->acquireFreeSemaphore();
+            signalResourceSemaphores.push_back(resourceSemaphore);
         }
 
         if (syncPoint && !syncPoint->m_waitSubmitSemaphores.empty())
         {
-            uploadBuffer->addSemaphores(VK_PIPELINE_STAGE_TRANSFER_BIT, syncPoint->m_waitSubmitSemaphores);
+            resourceBuffer->addSemaphores(VK_PIPELINE_STAGE_TRANSFER_BIT, syncPoint->m_waitSubmitSemaphores);
             syncPoint->m_waitSubmitSemaphores.clear();
         }
 
-        cmdBufferMgr->submit(uploadBuffer, signalUploadSemaphores);
-        cmdList.m_currentCmdBuffer[toEnumType(CommandTargetType::CmdUploadBuffer)] = nullptr;
+        cmdBufferMgr->submit(resourceBuffer, signalResourceSemaphores);
+        resourceBuffer->getResourceStateTracker().finalizeGlobalState();
+        cmdList.m_currentCmdBuffer[toEnumType(CommandTargetType::CmdResourceBuffer)] = nullptr;
     }
 
     //Draw commands
@@ -230,14 +232,15 @@ void VulkanDevice::submit(CmdList* cmd, SyncPoint* sync, bool wait)
             drawBuffer->cmdEndRenderPass();
         }
 
+        //TODO: resource tracker - get global state and create "brige" between cmd buffer states
         cmdList.m_pendingRenderState.flushBarriers(drawBuffer);
         drawBuffer->endCommandBuffer();
 
         //Sync
         {
-            if (uploadSemaphore)
+            if (resourceSemaphore)
             {
-                drawBuffer->addSemaphore(VK_PIPELINE_STAGE_TRANSFER_BIT, uploadSemaphore);
+                drawBuffer->addSemaphore(VK_PIPELINE_STAGE_TRANSFER_BIT, resourceSemaphore);
             }
 
             VulkanSwapchain* swapchain = drawBuffer->getActiveSwapchain();
@@ -268,6 +271,7 @@ void VulkanDevice::submit(CmdList* cmd, SyncPoint* sync, bool wait)
         {
             drawBuffer->waitCompletion();
         }
+        drawBuffer->getResourceStateTracker().finalizeGlobalState();
         cmdList.m_currentCmdBuffer[toEnumType(CommandTargetType::CmdDrawBuffer)] = nullptr;
     }
 #if FRAME_PROFILER_INTERNAL
@@ -1319,7 +1323,7 @@ VulkanCmdList::VulkanCmdList(VulkanDevice* device) noexcept
     memset(m_currentCmdBuffer, 0, sizeof(m_currentCmdBuffer));
 
     m_CBOManager = V3D_NEW(VulkanConstantBufferManager, memory::MemoryLabel::MemoryRenderCore)(device);
-    m_descriptorSetManager = V3D_NEW(VulkanDescriptorSetManager, memory::MemoryLabel::MemoryRenderCore)(device, 0);
+    m_descriptorSetManager = V3D_NEW(VulkanDescriptorSetManager, memory::MemoryLabel::MemoryRenderCore)(device);
 }
 
 VulkanCmdList::~VulkanCmdList()
@@ -1658,9 +1662,8 @@ bool VulkanCmdList::prepareDraw(VulkanCommandBuffer* drawBuffer)
     }
     else
     {
-        VulkanCommandBuffer* transitionBuffer = acquireAndStartCommandBuffer(CommandTargetType::CmdTransitionBuffer);
+        VulkanCommandBuffer* transitionBuffer = acquireAndStartCommandBuffer(CommandTargetType::CmdResourceBuffer);
         m_pendingRenderState.flushBarriers(transitionBuffer);
-        //TODO
     }
 
     if (m_pendingRenderState.isDirty(DirtyStateMask::DirtyState_Viewport))
@@ -1824,7 +1827,7 @@ bool VulkanCmdList::uploadData(Texture2D* texture, u32 size, const void* data)
     LOG_DEBUG("VulkanCmdList::uploadData");
 #endif
 
-    VulkanCommandBuffer* cmdBuffer = VulkanCmdList::acquireAndStartCommandBuffer(CommandTargetType::CmdUploadBuffer);
+    VulkanCommandBuffer* cmdBuffer = VulkanCmdList::acquireAndStartCommandBuffer(CommandTargetType::CmdResourceBuffer);
     ASSERT(!texture->hasUsageFlag(TextureUsage::TextureUsage_Backbuffer), "swapchain is not supported");
     VulkanImage* image = OBJECT_FROM_HANDLE(texture->getTextureHandle(), VulkanImage);
     bool result = image->upload(cmdBuffer, size, data);
@@ -1844,7 +1847,7 @@ bool VulkanCmdList::uploadData(Texture3D* texture, u32 size, const void* data)
     LOG_DEBUG("VulkanCmdList::uploadData");
 #endif
 
-    VulkanCommandBuffer* cmdBuffer = VulkanCmdList::acquireAndStartCommandBuffer(CommandTargetType::CmdUploadBuffer);
+    VulkanCommandBuffer* cmdBuffer = VulkanCmdList::acquireAndStartCommandBuffer(CommandTargetType::CmdResourceBuffer);
     ASSERT(texture->hasUsageFlag(TextureUsage::TextureUsage_Backbuffer), "swapchain is not supported");
     VulkanImage* image = OBJECT_FROM_HANDLE(texture->getTextureHandle(), VulkanImage);
     bool result = image->upload(cmdBuffer, size, data);
@@ -1864,7 +1867,7 @@ bool VulkanCmdList::uploadData(Buffer* buffer, u32 offset, u32 size, const void*
     LOG_DEBUG("VulkanCmdList::uploadData");
 #endif
 
-    VulkanCommandBuffer* cmdBuffer = VulkanCmdList::acquireAndStartCommandBuffer(CommandTargetType::CmdUploadBuffer);
+    VulkanCommandBuffer* cmdBuffer = VulkanCmdList::acquireAndStartCommandBuffer(CommandTargetType::CmdResourceBuffer);
     VulkanBuffer* vkBuffer = OBJECT_FROM_HANDLE(buffer->getBufferHandle(), VulkanBuffer);
     bool result = vkBuffer->upload(cmdBuffer, offset, size, data);
 

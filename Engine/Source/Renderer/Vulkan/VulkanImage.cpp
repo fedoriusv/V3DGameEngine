@@ -957,14 +957,14 @@ VulkanImage::VulkanImage(VulkanDevice* device, VulkanMemory::VulkanMemoryAllocat
         if (VulkanImage::isColorFormat(m_format))
         {
             ASSERT(samples > VkSampleCountFlagBits::VK_SAMPLE_COUNT_1_BIT, "wrong sample count");
-            m_resolveImage = new VulkanImage(device, alloc, format, dimension, VkSampleCountFlagBits::VK_SAMPLE_COUNT_1_BIT, layers, usage & ~TextureUsage::TextureUsage_Resolve);
+            m_resolveImage = V3D_NEW(VulkanImage, memory::MemoryLabel::MemoryRenderCore)(device, alloc, format, dimension, VkSampleCountFlagBits::VK_SAMPLE_COUNT_1_BIT, layers, usage & ~TextureUsage::TextureUsage_Resolve);
         }
         else
         {
             if (m_device.getVulkanDeviceCaps()._supportDepthAutoResolve)
             {
                 ASSERT(samples > VkSampleCountFlagBits::VK_SAMPLE_COUNT_1_BIT, "wrong sample count");
-                m_resolveImage = new VulkanImage(device, alloc, format, dimension, VkSampleCountFlagBits::VK_SAMPLE_COUNT_1_BIT, layers, usage & ~TextureUsage::TextureUsage_Resolve);
+                m_resolveImage = V3D_NEW(VulkanImage, memory::MemoryLabel::MemoryRenderCore)(device, alloc, format, dimension, VkSampleCountFlagBits::VK_SAMPLE_COUNT_1_BIT, layers, usage & ~TextureUsage::TextureUsage_Resolve);
             }
             else
             {
@@ -1236,7 +1236,7 @@ void VulkanImage::clear(VulkanCommandBuffer* cmdBuffer, const color::Color& colo
         return;
     }
 
-    VkImageLayout layout = VulkanImage::getLayout(RenderTexture::Subresource());
+    VkImageLayout layout = cmdBuffer->getResourceStateTracker().getLayout(this, RenderTexture::Subresource());
     if (layout == VK_IMAGE_LAYOUT_UNDEFINED || layout == VK_IMAGE_LAYOUT_PREINITIALIZED)
     {
         layout = VulkanImage::hasUsageFlag(TextureUsage::TextureUsage_Backbuffer) ? VK_IMAGE_LAYOUT_PRESENT_SRC_KHR : VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
@@ -1270,7 +1270,7 @@ void VulkanImage::clear(VulkanCommandBuffer* cmdBuffer, f32 depth, u32 stencil)
         return;
     }
 
-    VkImageLayout layout = VulkanImage::getLayout(RenderTexture::Subresource());
+    VkImageLayout layout = cmdBuffer->getResourceStateTracker().getLayout(this, RenderTexture::Subresource());
     if (layout == VK_IMAGE_LAYOUT_UNDEFINED || layout == VK_IMAGE_LAYOUT_PREINITIALIZED)
     {
         layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
@@ -1461,10 +1461,10 @@ bool VulkanImage::generateMipmaps(VulkanCommandBuffer* cmdBuffer, u32 layer)
 
     ASSERT(m_mipLevels > 1, "image must be created with mipmaps");
 
-    VkImageLayout layoutMips = VulkanImage::getLayout(RenderTexture::makeSubresource(layer, 1, 1, m_mipLevels - 1));
+    VkImageLayout layoutMips = cmdBuffer->getResourceStateTracker().getLayout(this, RenderTexture::makeSubresource(layer, 1, 1, m_mipLevels - 1));
     cmdBuffer->cmdPipelineBarrier(this, VulkanTransitionState::selectStageFlagsByImageLayout(layoutMips), VK_PIPELINE_STAGE_TRANSFER_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, { layer, 1, 1, m_mipLevels - 1 });
 
-    VkImageLayout baseMip = VulkanImage::getLayout({ layer, 1, 0, 1 });
+    VkImageLayout baseMip = cmdBuffer->getResourceStateTracker().getLayout(this, { layer, 1, 0, 1 });
     cmdBuffer->cmdPipelineBarrier(this, VulkanTransitionState::selectStageFlagsByImageLayout(baseMip), VK_PIPELINE_STAGE_TRANSFER_BIT, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, { layer, 1, 0, 1 });
 
     for (u32 mip = 1; mip < m_mipLevels; ++mip)
@@ -1552,7 +1552,14 @@ VkImageView VulkanImage::getImageView(const RenderTexture::Subresource& resource
     return found->second;
 }
 
-VkImageLayout VulkanImage::setLayout(VkImageLayout newlayout, const RenderTexture::Subresource& resource)
+VkImageLayout VulkanImage::getGlobalLayout(const RenderTexture::Subresource& resource) const
+{
+    u32 index = 1 + (resource._baseLayer * m_mipLevels + resource._baseMip);
+    ASSERT(index < m_layout.size(), "out of range");
+    return m_layout[index];
+}
+
+VkImageLayout VulkanImage::setGlobalLayout(VkImageLayout newlayout, const RenderTexture::Subresource& resource)
 {
     VkImageLayout oldLayout = m_layout.front();
     for (u32 layerIndex = 0; layerIndex < resource._layers; ++layerIndex)
@@ -1575,7 +1582,7 @@ void VulkanImage::destroy()
     {
         m_resolveImage->destroy();
 
-        delete m_resolveImage;
+        V3D_DELETE(m_resolveImage, memory::MemoryLabel::MemoryRenderCore);
         m_resolveImage = nullptr;
     }
 

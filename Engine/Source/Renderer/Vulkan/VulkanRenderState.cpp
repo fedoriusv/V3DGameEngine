@@ -6,6 +6,7 @@
 #include "VulkanBuffer.h"
 #include "VulkanSampler.h"
 #include "VulkanCommandBufferManager.h"
+#include "VulkanCommandBuffer.h"
 
 namespace v3d
 {
@@ -24,11 +25,7 @@ void VulkanRenderState::addImageBarrier(VulkanImage* texture, const RenderTextur
         {
             if (std::get<0>(iter->second) == texture && std::get<1>(iter->second) == subresource)
             {
-                if (std::get<0>(iter->second)->getLayout(subresource) == layout)
-                {
-                    //don"t add duplicates
-                    return;
-                }
+                return;
             }
         }
     }
@@ -41,6 +38,11 @@ void VulkanRenderState::flushBarriers(VulkanCommandBuffer* cmdBuffer)
 {
     for (auto& image : _imageBarriers)
     {
+        if (cmdBuffer->getResourceStateTracker().getLayout(std::get<0>(image.second), std::get<1>(image.second)) == image.first)
+        {
+            //don"t add duplicates
+            continue;
+        }
         VulkanTransitionState::transitionImage(cmdBuffer, std::get<1>(image), std::get<0>(image));
     }
     _imageBarriers.clear();

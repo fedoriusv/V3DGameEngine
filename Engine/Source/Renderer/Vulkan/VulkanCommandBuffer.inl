@@ -172,7 +172,7 @@ inline void VulkanCommandBuffer::cmdBlitImage(VulkanImage* src, VkImageLayout sr
     for (const VkImageBlit& blit : regions)
     {
         ASSERT(blit.dstSubresource.layerCount == 1, "TODO");
-        dst->setLayout(dstLayout, VulkanImage::makeVulkanImageSubresource(dst, k_generalLayer, blit.dstSubresource.mipLevel));
+        m_resourceStates.setLayout(dst, dstLayout, VulkanImage::makeVulkanImageSubresource(dst, k_generalLayer, blit.dstSubresource.mipLevel));
     }
 }
 
@@ -215,7 +215,7 @@ inline void VulkanCommandBuffer::cmdPipelineBarrier(VulkanImage* image, VkPipeli
     ASSERT(m_status == CommandBufferStatus::Begin, "not started");
     ASSERT(!VulkanCommandBuffer::isInsideRenderPass(), "can't be inside render pass");
 
-    VkImageLayout oldLayout = image->getLayout(resource);
+    VkImageLayout oldLayout = m_resourceStates.getLayout(image, resource);
     if (oldLayout == layout)
     {
         return;
@@ -237,7 +237,7 @@ inline void VulkanCommandBuffer::cmdPipelineBarrier(VulkanImage* image, VkPipeli
 
     VulkanWrapper::CmdPipelineBarrier(m_commands, srcStageMask, dstStageMask, VK_DEPENDENCY_BY_REGION_BIT, 0, nullptr, 0, nullptr, 1, &imageMemoryBarrier);
 
-    const_cast<VulkanImage*>(image)->setLayout(layout, resource);
+    m_resourceStates.setLayout(image, layout, resource);
 }
 
 inline void VulkanCommandBuffer::cmdPipelineBarrier(VulkanBuffer* buffer, VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask)

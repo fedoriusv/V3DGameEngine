@@ -29,9 +29,8 @@ namespace vk
     enum class CommandTargetType
     {
         CmdDrawBuffer = 0,
-        CmdUploadBuffer = 1,
-        CmdTransitionBuffer = 2,
-        CmdResetQuerytBuffer = 3,
+        CmdResourceBuffer = 1,
+        CmdResetQuerytBuffer = 2,
 
         Count
     };

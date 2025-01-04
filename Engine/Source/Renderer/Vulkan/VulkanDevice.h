@@ -35,6 +35,7 @@ namespace vk
     class VulkanDescriptorSetManager;
     class VulkanSamplerManager;
     class VulkanSyncPoint;
+    class VulkanStateTracker;
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 

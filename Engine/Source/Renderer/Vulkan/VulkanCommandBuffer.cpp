@@ -298,7 +298,7 @@ void VulkanCommandBuffer::cmdBeginRenderpass(VulkanRenderPass* pass, VulkanFrame
 
         VkImageLayout layout = pass->getAttachmentLayout<0>(index);
         const VulkanRenderPass::VulkanAttachmentDescription& attach = pass->getAttachmentDescription(index);
-        vkImage->setLayout(layout, VulkanImage::makeVulkanImageSubresource(vkImage, attach._layer, attach._mip));
+        m_resourceStates.setLayout(vkImage, layout, VulkanImage::makeVulkanImageSubresource(vkImage, attach._layer, attach._mip));
 
         ++index;
 
@@ -391,7 +391,7 @@ void VulkanCommandBuffer::cmdEndRenderPass()
         ASSERT(image, "nullptr");
         VkImageLayout layout = m_renderpassState._renderpass->getAttachmentLayout<1>(index);
         const VulkanRenderPass::VulkanAttachmentDescription& attach = pass->getAttachmentDescription(index);
-        image->setLayout(layout, VulkanImage::makeVulkanImageSubresource(image, attach._layer, attach._mip));
+        m_resourceStates.setLayout(image, layout, VulkanImage::makeVulkanImageSubresource(image, attach._layer, attach._mip));
     }
 
     m_isInsideRenderPass = false;

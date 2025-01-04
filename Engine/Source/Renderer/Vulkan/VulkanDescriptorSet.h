@@ -183,7 +183,7 @@ namespace vk
     {
     public:
 
-        explicit VulkanDescriptorSetManager(VulkanDevice* device, u32 swapchainImages) noexcept;
+        explicit VulkanDescriptorSetManager(VulkanDevice* device) noexcept;
         ~VulkanDescriptorSetManager();
 
         [[nodiscard]] std::tuple<VulkanDescriptorSetPool*, VkDescriptorSet, u32> acquireFreeDescriptorSet(const VulkanDescriptorSetLayoutDescription& desc, VkDescriptorSetLayout layoutSet);

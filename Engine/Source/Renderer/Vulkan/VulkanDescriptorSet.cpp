@@ -37,7 +37,7 @@ auto DescriptorPoolStrategy = [](VulkanDevice* device) -> GenericDescriptorPools
     }
 };
 
-VulkanDescriptorSetManager::VulkanDescriptorSetManager(VulkanDevice* device, u32 swapchainImages) noexcept
+VulkanDescriptorSetManager::VulkanDescriptorSetManager(VulkanDevice* device) noexcept
     : m_device(*device)
     , m_poolProvider(V3D_NEW(VulkanDescriptorPoolProvider, memory::MemoryLabel::MemoryRenderCore)(device, DescriptorPoolStrategy(device)))
 {

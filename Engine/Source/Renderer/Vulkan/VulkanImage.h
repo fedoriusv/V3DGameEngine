@@ -19,6 +19,7 @@ namespace vk
     
     class VulkanDevice;
     class VulkanSwapchain;
+    class VulkanStateTracker;
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -76,8 +77,8 @@ namespace vk
         VkFormat              getFormat() const;
         VkExtent3D            getSize() const;
 
-        VkImageLayout         getLayout(const RenderTexture::Subresource& resource) const;
-        VkImageLayout         setLayout(VkImageLayout layout, const RenderTexture::Subresource& resource);
+        VkImageLayout         getGlobalLayout(const RenderTexture::Subresource& resource) const;
+        VkImageLayout         setGlobalLayout(VkImageLayout layout, const RenderTexture::Subresource& resource);
 
         VulkanImage*          getResolveImage() const;
 
@@ -86,6 +87,8 @@ namespace vk
 #endif //DEBUG_OBJECT_MEMORY
 
     private:
+
+        friend VulkanResourceStateTracker;
 
         VulkanImage() = delete;
         VulkanImage(const VulkanImage&) = delete;
@@ -114,10 +117,10 @@ namespace vk
         VulkanSwapchain*                        m_relatedSwapchain;
 
         std::unordered_map<DescInfo<VkImageSubresourceRange>, VkImageView, DescInfo<VkImageSubresourceRange>::Hash, DescInfo<VkImageSubresourceRange>::Compare> m_imageViews;
-        std::vector<VkImageLayout> m_layout;
+        std::vector<VkImageLayout>              m_layout;
 
 #if VULKAN_DEBUG_MARKERS
-        std::string m_debugName;
+        std::string                             m_debugName;
 #endif //VULKAN_DEBUG_MARKERS
     };
 
@@ -150,13 +153,6 @@ namespace vk
     {
         ASSERT(m_image != VK_NULL_HANDLE, "nullptr");
         return m_image;
-    }
-
-    inline VkImageLayout VulkanImage::getLayout(const RenderTexture::Subresource& resource) const
-    {
-        u32 index = 1 + (resource._baseLayer * m_mipLevels + resource._baseMip);
-        ASSERT(index < m_layout.size(), "out of range");
-        return m_layout[index];
     }
 
     inline bool VulkanImage::hasUsageFlag(TextureUsage usage) const

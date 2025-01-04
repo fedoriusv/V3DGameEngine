@@ -15,6 +15,7 @@ namespace vk
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     class VulkanFence;
+    class VulkanImage;
     class VulkanCommandBuffer;
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -117,6 +118,20 @@ namespace vk
         std::recursive_mutex m_mutex;
         std::queue<std::pair<VulkanResource*, std::function<void(VulkanResource* resource)>>> m_delayedList;
         std::queue<std::pair<VulkanResource*, std::function<void(VulkanResource* resource)>>> m_deleterList;
+    };
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    class VulkanResourceStateTracker
+    {
+    public:
+
+        VkImageLayout getLayout(VulkanImage* image, const RenderTexture::Subresource& resource) const;
+        VkImageLayout setLayout(VulkanImage* image, VkImageLayout layout, const RenderTexture::Subresource& resource);
+
+        void finalizeGlobalState();
+
+        mutable std::map<VulkanImage*, std::vector<VkImageLayout>> m_states;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

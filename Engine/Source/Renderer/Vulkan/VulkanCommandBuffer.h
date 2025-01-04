@@ -56,6 +56,7 @@ namespace vk
 
         VkCommandBuffer getHandle() const;
         CommandBufferStatus getStatus() const;
+        VulkanResourceStateTracker& getResourceStateTracker();
 
         void addSemaphore(VkPipelineStageFlags mask, VulkanSemaphore* semaphore);
         void addSemaphores(VkPipelineStageFlags mask, const std::vector<VulkanSemaphore*>& semaphores);
@@ -142,6 +143,7 @@ namespace vk
 
         VulkanCommandBuffer*              m_primaryBuffer;
         std::vector<VulkanCommandBuffer*> m_secondaryBuffers;
+        VulkanResourceStateTracker        m_resourceStates;
 
         struct RenderPassState
         {
@@ -163,7 +165,6 @@ namespace vk
 
 #if TRACE_PROFILER_GPU_ENABLE
     tracy::VkCtx*                         m_tracyContext = nullptr;
-    tracy::VkCtxScope* m_scope = nullptr;
 #endif
     };
 
@@ -196,6 +197,11 @@ namespace vk
 
         u64 capturedFrame = (frame == 0) ? m_capturedFrameIndex : frame;
         resource->markUsed(m_fence, m_fence->getValue(), capturedFrame);
+    }
+
+    inline VulkanResourceStateTracker& VulkanCommandBuffer::getResourceStateTracker()
+    {
+        return m_resourceStates;
     }
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
