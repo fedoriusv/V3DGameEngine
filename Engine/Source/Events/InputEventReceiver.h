@@ -48,7 +48,7 @@ namespace event
         u32                m_currentEventIndex;
         void*              m_eventPool;
 
-        static const u32   s_eventPoolSize = 64U;
+        static const u32   s_eventPoolSize = 256U;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

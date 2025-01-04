@@ -44,6 +44,8 @@ namespace vk
 
         void presentFrame(SyncPoint* sync = nullptr) override;
 
+        void resize(const math::Dimension2D& size) override;
+
         SyncPoint* getSyncPoint() override;
 
         VulkanImage* getCurrentSwapchainImage() const;

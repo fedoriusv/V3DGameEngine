@@ -566,15 +566,13 @@ LRESULT WindowWindows::HandleSystemEvents(UINT message, WPARAM wParam, LPARAM lP
         m_params._size.m_width = (s16)LOWORD(lParam);
         m_params._size.m_height = (s16)HIWORD(lParam);
 
-        if (m_lastSizeEvent < m_currnetTime)
-        {
-            event::SystemEvent* event = V3D_PLACMENT_NEW(m_receiver->allocateInputEvent(), event::SystemEvent());
-            event->_systemEvent = event::SystemEvent::Resize;
-            event->_windowID = this->ID();
+        event::SystemEvent* event = V3D_PLACMENT_NEW(m_receiver->allocateInputEvent(), event::SystemEvent());
+        event->_systemEvent = event::SystemEvent::Resize;
+        event->_windowID = this->ID();
 
-            m_receiver->sendEvent(event);
-            m_lastSizeEvent = m_currnetTime;
-        }
+        m_receiver->sendEvent(event);
+        m_lastSizeEvent = m_currnetTime;
+
         return TRUE;
     }
 

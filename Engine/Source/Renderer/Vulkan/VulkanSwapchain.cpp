@@ -10,7 +10,7 @@
 #   include "VulkanImage.h"
 #   include "VulkanSemaphore.h"
 
-#define DEBUG_FENCE_ACQUIRE 1
+#define DEBUG_FENCE_ACQUIRE 0
 
 #ifdef PLATFORM_ANDROID
 #   include "Platform/Android/AndroidCommon.h"
@@ -173,6 +173,17 @@ void VulkanSwapchain::presentFrame(SyncPoint* sync)
     m_presentQueue = VK_NULL_HANDLE;
 
     ++m_frameCounter;
+}
+
+void VulkanSwapchain::resize(const math::Dimension2D& size)
+{
+    SwapchainParams params(m_params);
+    params._size = size;
+
+    if (!VulkanSwapchain::recteate(m_window, params))
+    {
+        LOG_FATAL(" VulkanSwapchain::resize recteate was failed");
+    }
 }
 
 VkSurfaceKHR VulkanSwapchain::createSurface(VkInstance vkInstance, NativeInstance hInstance, NativeWindows hWnd, const math::Dimension2D& size)
@@ -364,7 +375,7 @@ bool VulkanSwapchain::create(platform::Window* window, const SwapchainParams& pa
     m_params._countSwapchainImages = static_cast<u32>(m_swapchainImages.size());
     m_params._format = VulkanImage::convertVkImageFormatToFormat(surfaceFormat.format);
 
-    Swapchain::create(&m_device, VulkanImage::convertVkImageFormatToFormat(surfaceFormat.format), size, flags);
+    Swapchain::setup(&m_device, VulkanImage::convertVkImageFormatToFormat(surfaceFormat.format), size, flags);
 
     m_ready = true;
     return true;
@@ -578,7 +589,7 @@ void VulkanSwapchain::destroy()
 
     m_swapchainResources.clear();
 
-    Swapchain::destroy();
+    Swapchain::cleanup();
 
     m_ready = false;
 }
@@ -741,8 +752,10 @@ bool VulkanSwapchain::recteate(platform::Window* window, const SwapchainParams& 
     {
         return false;
     }
+    m_ready = false;
 
-    for (auto& image : m_swapchainImages)
+    VulkanWrapper::DeviceWaitIdle(m_device.getDeviceInfo()._device);
+    for (VulkanImage* image : m_swapchainImages)
     {
         image->destroy();
     }
@@ -753,29 +766,31 @@ bool VulkanSwapchain::recteate(platform::Window* window, const SwapchainParams& 
         std::swap(m_swapchain, oldSwapchain);
     }
 
-    for (auto& semaphore : m_acquiredSemaphores)
+    for (VulkanSemaphore* semaphore : m_acquiredSemaphores)
     {
-        m_semaphoreManager->deleteSemaphore(semaphore);
+        m_device.m_resourceDeleter.addResourceToDelete(semaphore, [this](VulkanResource* resource) -> void
+            {
+                VulkanSemaphore* vkSemaphore = static_cast<VulkanSemaphore*>(resource);
+                m_semaphoreManager->deleteSemaphore(vkSemaphore);
+            });
     }
     m_acquiredSemaphores.clear();
+
+    if (oldSwapchain)
+    {
+        VulkanWrapper::DestroySwapchain(m_device.getDeviceInfo()._device, oldSwapchain, VULKAN_ALLOCATOR);
+    }
 
     if (m_surface)
     {
         VulkanWrapper::DestroySurface(m_device.getDeviceInfo()._instance, m_surface, VULKAN_ALLOCATOR);
         m_surface = VK_NULL_HANDLE;
     }
-    m_ready = false;
-
 
     if (!VulkanSwapchain::create(window, params, VK_NULL_HANDLE/*oldSwapchain*/))
     {
         LOG_FATAL("VulkanSwapchain::recteate: is failed");
         return false;
-    }
-
-    if (oldSwapchain)
-    {
-        VulkanWrapper::DestroySwapchain(m_device.getDeviceInfo()._device, oldSwapchain, VULKAN_ALLOCATOR);
     }
 
     return true;

@@ -1200,6 +1200,7 @@ bool VulkanImage::create(VkImage image, VulkanSwapchain* swapchain)
     ASSERT(!m_image, "m_image already exist");
     m_image = image;
     m_relatedSwapchain = swapchain;
+    std::fill(m_layout.begin(), m_layout.end(), VK_IMAGE_LAYOUT_UNDEFINED);
     ASSERT(hasUsageFlag(TextureUsage::TextureUsage_Backbuffer), "must be swapchain");
 
 #if VULKAN_DEBUG_MARKERS

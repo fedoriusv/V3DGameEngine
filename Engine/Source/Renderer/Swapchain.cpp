@@ -17,19 +17,26 @@ Swapchain::~Swapchain() noexcept
 {
 }
 
-bool Swapchain::create(Device* device, Format format, const math::Dimension2D& size, TextureUsageFlags flags)
+bool Swapchain::setup(Device* device, Format format, const math::Dimension2D& size, TextureUsageFlags flags)
 {
     m_backufferDescription._format = format;
     m_backufferDescription._size = size;
     m_backufferDescription._usageFlags = flags;
-    m_backufferDescription._swapchain = V3D_NEW(SwapchainTexture, memory::MemoryLabel::MemoryRenderCore)(device, this);
+    if (!m_backufferDescription._swapchain)
+    {
+        m_backufferDescription._swapchain = V3D_NEW(SwapchainTexture, memory::MemoryLabel::MemoryRenderCore)(device, this);
+    }
 
     return true;
 }
 
-void Swapchain::destroy()
+void Swapchain::cleanup()
 {
-    V3D_DELETE(m_backufferDescription._swapchain, memory::MemoryLabel::MemoryRenderCore);
+    if (m_backufferDescription._swapchain)
+    {
+        V3D_DELETE(m_backufferDescription._swapchain, memory::MemoryLabel::MemoryRenderCore);
+    }
+    memset(&m_backufferDescription, 0, sizeof(m_backufferDescription));
 }
 
 } //namespace renderer

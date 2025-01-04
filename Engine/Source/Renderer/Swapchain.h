@@ -56,6 +56,11 @@ namespace renderer
         virtual void presentFrame(SyncPoint* sync = nullptr) = 0;
 
         /**
+        * @brief resize swapchain
+        */
+        virtual void resize(const math::Dimension2D& size) = 0;
+
+        /**
         * @brief frame getSyncPoint
         */
         virtual SyncPoint* getSyncPoint() = 0;
@@ -96,8 +101,8 @@ namespace renderer
         Swapchain(const Swapchain&) = delete;
         Swapchain& operator=(const Swapchain&) = delete;
 
-        bool create(Device* device, Format format, const math::Dimension2D& size, TextureUsageFlags flags);
-        void destroy();
+        bool setup(Device* device, Format format, const math::Dimension2D& size, TextureUsageFlags flags);
+        void cleanup();
 
         u64 m_frameCounter;
 
