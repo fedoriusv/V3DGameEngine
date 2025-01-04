@@ -55,7 +55,14 @@ namespace v3d
 #define TRACE_PROFILER_FRAME_END
 #define TRACE_PROFILER_SCOPE(name, color)
 
+#define TRACE_PROFILER_MEMORY_ALLOC(ptr, size, name)
+#define TRACE_PROFILER_MEMORY_FREE(ptr, name)
+
 #define TRACE_PROFILER_RENDER_SCOPE
+#define TRACE_PROFILER_VULKAN_SCOPE
+
+#define TRACE_PROFILER_GPU_SCOPE(context, cmd, name, color)
+
 #endif
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////
