@@ -21,18 +21,18 @@ using namespace v3d::renderer;
 using namespace v3d::utils;
 using namespace v3d::event;
 
-class ClearColorApplication : public v3d::Application, public InputEventHandler
+class EditorApplication : public v3d::Application, public InputEventHandler
 {
 public:
 
-    ClearColorApplication(int& argc, char** argv)
+    EditorApplication(int& argc, char** argv)
         : v3d::Application(argc, argv)
     {
-        m_Window = Window::createWindow({ 1024, 768 }, { 800, 500 }, false, false, new InputEventReceiver());
+        m_Window = Window::createWindow({ 1024, 768 }, { 800, 500 }, false, true, new InputEventReceiver());
         ASSERT(m_Window, "windows is nullptr");
     }
     
-    ~ClearColorApplication()
+    ~EditorApplication()
     {
         if (m_Window)
         {
@@ -61,7 +61,7 @@ public:
             if (m_Window->isValid())
             {
                 m_Window->getInputEventReceiver()->sendDeferredEvents();
-                if (m_terminate)
+                if (m_Terminate)
                 {
                     break;
                 }
@@ -119,7 +119,11 @@ private:
                 Window* window = Window::getWindowsByID(event->_windowID);
                 if (event->_systemEvent == SystemEvent::Destroy)
                 {
-                    m_terminate = true;
+                    m_Terminate = true;
+                }
+                else if (event->_systemEvent == SystemEvent::Resize)
+                {
+                    m_Swapchain->resize(window->getSize());
                 }
             });
         std::srand(u32(std::time(0)));
@@ -173,7 +177,7 @@ private:
 
     v3d::platform::Window* m_Window = nullptr;
     v3d::renderer::Device* m_Device = nullptr;
-    bool m_terminate = false;
+    bool m_Terminate = false;
 
     v3d::renderer::CmdListRender* m_CmdList = nullptr;
     v3d::renderer::SyncPoint* m_Sync = nullptr;
@@ -184,6 +188,6 @@ private:
 
 int main(int argc, char* argv[])
 {
-    ClearColorApplication app(argc, argv);
+    EditorApplication app(argc, argv);
     return app.execute();
 }
