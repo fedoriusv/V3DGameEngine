@@ -27,3 +27,6 @@
 [submodule "Engine/ThirdParty/json"]
 	path = Engine/ThirdParty/json
 	url = https://github.com/nlohmann/json.git
+[submodule "Engine/Source/ThirdParty/imgui"]
+	path = Engine/Source/ThirdParty/imgui
+	url = https://github.com/ocornut/imgui.git

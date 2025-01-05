@@ -20,7 +20,7 @@ option(BUILD_DIRECTX_SDK_OPTION "Use DirectX SDK" OFF)
 #https://github.com/google/crc32c.git
 
 #Json lib is required"
-#https://github.com/nlohmann/json.git 
+#https://github.com/nlohmann/json.git
 
 option(STB_LIB "Use STB" ON)
 #https://github.com/nothings/stb.git
@@ -44,6 +44,9 @@ option (DXCompiler_LIB_OPTION "Use custom DirectXShaderCompiler lib" OFF)
 
 option(PROFILER_TRACY_LIB "Enable tracy profiler for CPU/GPU" ON)
 #https://github.com/wolfpld/tracy.git
+
+option(IMGUI_SOURCE "Enable imgui source files" ON)
+#https://github.com/ocornut/imgui.git
 
 include(Config/ThirdParty.cmake)
 
@@ -197,8 +200,6 @@ file(GLOB TASK_HEADERS ${SOURCE_DIR}/Task/*.h)
 file(GLOB TASK_SOURCES ${SOURCE_DIR}/Task/*.cpp)
 file(GLOB FRAME_GRAPH_HEADERS ${SOURCE_DIR}/FrameGraph/*.h)
 file(GLOB FRAME_GRAPH_SOURCES ${SOURCE_DIR}/FrameGraph/*.cpp)
-
-
 file(GLOB COMMON_PLATFORM_HEADERS ${SOURCE_DIR}/Platform/*.h)
 file(GLOB COMMON_PLATFORM_SOURCES ${SOURCE_DIR}/Platform/*.cpp)
 if(TARGET_WIN)
@@ -208,17 +209,18 @@ elseif(TARGET_ANDROID)
     file(GLOB PLATFORM_HEADERS ${SOURCE_DIR}/Platform/Android/*.h)
     file(GLOB PLATFORM_SOURCES ${SOURCE_DIR}/Platform/Android/*.cpp ${SOURCE_DIR}/Platform/Android/*.c)
 endif()
-
 if (BUILD_VULKAN_SDK)
     file(GLOB VULKAN_HEADERS ${SOURCE_DIR}/Renderer/Vulkan/*.h ${SOURCE_DIR}/Renderer/Vulkan/*.inl)
     file(GLOB VULKAN_SOURCES ${SOURCE_DIR}/Renderer/Vulkan/*.cpp)
     file(GLOB RESOURCE_SPIRV_HEADERS ${SOURCE_DIR}/Resource/SpirVPatch/*.h)
     file(GLOB RESOURCE_SPIRV_SOURCES ${SOURCE_DIR}/Resource/SpirVPatch/*.cpp)
 endif()
-
 if(BUILD_DIRECTX_SDK)
     file(GLOB DIRECTX_HEADERS ${SOURCE_DIR}/Renderer/D3D12/*.h)
     file(GLOB DIRECTX_SOURCES ${SOURCE_DIR}/Renderer/D3D12/*.cpp)
+endif()
+if (IMGUI_SOURCE)
+    file(GLOB IMGUI_SOURCES ${SOURCE_DIR}/ThirdParty/imgui/*.h ${SOURCE_DIR}/ThirdParty/imgui/*.cpp)
 endif()
 
 ##############################################################
@@ -239,14 +241,15 @@ source_group("Scene\\Geometry" FILES ${SCENE_GEOMETRY_HEADERS} ${SCENE_GEOMETRY_
 source_group("Scene\\Components" FILES ${SCENE_COMPONENTS_HEADERS} ${SCENE_COMPONENTS_SOURCES})
 source_group("Task" FILES ${TASK_HEADERS} ${TASK_SOURCES})
 source_group("FrameGraph" FILES ${FRAME_GRAPH_HEADERS} ${FRAME_GRAPH_SOURCES})
-
 if(BUILD_VULKAN_SDK)
     source_group("Renderer\\Vulkan" FILES ${VULKAN_HEADERS} ${VULKAN_SOURCES})
     source_group("Resource\\SpirVPatch" FILES ${RESOURCE_SPIRV_HEADERS} ${RESOURCE_SPIRV_SOURCES})
 endif()
-
 if(BUILD_DIRECTX_SDK)
     source_group("Renderer\\D3D12" FILES ${DIRECTX_HEADERS} ${DIRECTX_SOURCES})
+endif()
+if (IMGUI_SOURCE)
+    source_group("ThirdParty\\imgui" FILES ${IMGUI_SOURCES})
 endif()
 
 add_library(${ENGINE_NAME} STATIC 
@@ -267,6 +270,7 @@ add_library(${ENGINE_NAME} STATIC
     ${TASK_HEADERS} ${TASK_SOURCES}
     $<$<BOOL:BUILD_VULKAN_SDK>:${VULKAN_HEADERS} ${VULKAN_SOURCES} ${RESOURCE_SPIRV_HEADERS} ${RESOURCE_SPIRV_SOURCES}>
     $<$<BOOL:BUILD_DIRECTX_SDK>:${DIRECTX_HEADERS} ${DIRECTX_SOURCES}>
+    $<$<BOOL:IMGUI_SOURCE>:${IMGUI_SOURCES}>
     )
 
 target_include_directories(${ENGINE_NAME} BEFORE 
@@ -376,6 +380,11 @@ if(PROFILER_TRACY_LIB)
     add_subdirectory(Engine/ThirdParty/tracy)
     set_target_properties(TracyClient PROPERTIES FOLDER ThirdParty/tracy)
     message(STATUS "Tracy lib added")
+endif()
+
+#imgui
+if(IMGUI_SOURCE)
+    message(STATUS "imgui sources added")
 endif()
 
 ##############################################################
