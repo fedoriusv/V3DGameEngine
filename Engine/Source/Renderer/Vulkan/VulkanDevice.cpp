@@ -1649,7 +1649,10 @@ bool VulkanCmdList::prepareDraw(VulkanCommandBuffer* drawBuffer)
     ASSERT(drawBuffer, "nullptr");
     if (!drawBuffer->isInsideRenderPass())
     {
-        m_pendingRenderState.flushBarriers(drawBuffer);
+        if (m_pendingRenderState.isDirty(DirtyStateMask::DirtyState_Barriers))
+        {
+            m_pendingRenderState.flushBarriers(drawBuffer);
+        }
 
         if (m_pendingRenderState.isDirty(DirtyStateMask::DirtyState_RenderPass))
         {
@@ -1660,7 +1663,7 @@ bool VulkanCmdList::prepareDraw(VulkanCommandBuffer* drawBuffer)
             m_pendingRenderState.unsetDirty(DirtyStateMask::DirtyState_RenderPass);
         }
     }
-    else
+    else if (m_pendingRenderState.isDirty(DirtyStateMask::DirtyState_Barriers))
     {
         VulkanCommandBuffer* transitionBuffer = acquireAndStartCommandBuffer(CommandTargetType::CmdResourceBuffer);
         m_pendingRenderState.flushBarriers(transitionBuffer);
@@ -1728,12 +1731,18 @@ bool VulkanCmdList::prepareDescriptorSets(VulkanCommandBuffer* drawBuffer)
 
             //get free DS and update
             auto&& [pool, set, offset] = m_descriptorSetManager->acquireFreeDescriptorSet(VulkanDescriptorSetLayoutDescription(layoutDesc._bindingsSet[indexSet]), layoutSet);
+            m_pendingRenderState._boundSets[indexSet] = set;
             m_pendingRenderState._descriptorSets.push_back(set);
 
             drawBuffer->captureResource(pool);
 
-            m_descriptorSetManager->updateDescriptorSet(drawBuffer, set, m_pendingRenderState._sets[indexSet]);
+            m_descriptorSetManager->updateDescriptorSet(drawBuffer, set, m_pendingRenderState._boundSetInfo[indexSet]);
             m_pendingRenderState.unsetDirty(DirtyStateMask(DirtyState_DescriptorSet + indexSet));
+        }
+        else
+        {
+            ASSERT(m_pendingRenderState._boundSets[indexSet], "set is not bound");
+            m_pendingRenderState._descriptorSets.push_back(m_pendingRenderState._boundSets[indexSet]);
         }
     }
 

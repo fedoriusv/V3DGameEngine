@@ -37,8 +37,7 @@ namespace vk
         DirtyState_Pipeline = 3,
         DirtyState_RenderPass = 4,
 
-        DirtyState_ImageBarriers = 10,
-        DirtyState_BufferBarriers = 10,
+        DirtyState_Barriers = 10,
 
         DirtyState_DescriptorSet = 11,
         DirtyState_DescriptorSetShift = (11 + k_maxDescriptorSetCount - 1),
@@ -58,8 +57,10 @@ namespace vk
         VulkanRenderState() noexcept
             : _dirty(DirtyStateMask::DirtyState_All)
         {
-
             _clearValues.resize(k_maxColorAttachments + 1);
+            memset(&_boundSetInfo[0], 0, sizeof(_boundSetInfo));
+            memset(&_boundSets[0], 0, sizeof(_boundSets));
+
         }
 
         VulkanRenderState& operator=(VulkanRenderState&& other) noexcept
@@ -80,7 +81,8 @@ namespace vk
 
             for (u32 i = 0; i < k_maxDescriptorSetCount; ++i)
             {
-                _sets[i] = other._sets[i];
+                _boundSetInfo[i] = other._boundSetInfo[i];
+                _boundSets[i] = _boundSets[i];
             }
             _descriptorSets = other._descriptorSets;
             _dynamicOffsets = other._dynamicOffsets;
@@ -106,23 +108,27 @@ namespace vk
         void unsetDirty(DirtyStateMask mask);
         bool isDirty(DirtyStateMask mask);
 
-        VkViewport                                       _viewports = {};
-        VkRect2D                                         _scissors = {};
-        VkStencilFaceFlags                               _stencilMask = VK_STENCIL_FACE_FRONT_AND_BACK;
-        u32                                              _stencilRef = 0;
-                                                         
-        VulkanGraphicPipeline*                           _graphicPipeline = nullptr;
-        VulkanComputePipeline*                           _computePipeline = nullptr;
+        VkViewport                     _viewports = {};
+        VkRect2D                       _scissors = {};
+        VkStencilFaceFlags             _stencilMask = VK_STENCIL_FACE_FRONT_AND_BACK;
+        u32                            _stencilRef = 0;
+                                       
+        VulkanGraphicPipeline*         _graphicPipeline = nullptr;
+        VulkanComputePipeline*         _computePipeline = nullptr;
 
-        VulkanRenderPass*                                _renderpass = nullptr;
-        VulkanFramebuffer*                               _framebuffer = nullptr;
-        VkRect2D                                         _renderArea = {};
-        std::vector<VkClearValue>                        _clearValues;
-        bool                                             _insideRenderpass = false;
+        VulkanRenderPass*              _renderpass = nullptr;
+        VulkanFramebuffer*             _framebuffer = nullptr;
+        VkRect2D                       _renderArea = {};
+        std::vector<VkClearValue>      _clearValues;
+        bool                           _insideRenderpass = false;
 
-        SetInfo                                         _sets[k_maxDescriptorSetCount];
-        std::vector<VkDescriptorSet>                    _descriptorSets;
-        std::vector<u32>                                _dynamicOffsets;
+        //Current state
+        SetInfo                        _boundSetInfo[k_maxDescriptorSetCount];
+        VkDescriptorSet                _boundSets[k_maxDescriptorSetCount];
+
+        //Per draw data
+        std::vector<VkDescriptorSet>   _descriptorSets;
+        std::vector<u32>               _dynamicOffsets;
 
     private:
 
@@ -150,14 +156,15 @@ namespace vk
     {
         ASSERT(buffer, "must be valid");
         ASSERT(type == BindingType::Uniform || type == BindingType::DynamicUniform, "wrong type");
-        BindingInfo& bindingInfo = _sets[set]._bindings[binding];
+        BindingInfo& bindingInfo = _boundSetInfo[set]._bindings[binding];
         bindingInfo._binding = binding;
         bindingInfo._arrayIndex = 0;
         bindingInfo._type = type;
         bindingInfo._info._bufferInfo = makeVkDescriptorBufferInfo(buffer, static_cast<u64>(offset), static_cast<u64>(range));
 
-        _sets[set]._resource[binding] = buffer;
-        _sets[set]._activeBindingsFlags |= 1 << binding;
+        _boundSetInfo[set]._resource[binding] = buffer;
+        _boundSetInfo[set]._activeBindingsFlags |= 1 << binding;
+        _boundSets[set] = VK_NULL_HANDLE;
         setDirty(DirtyStateMask(DirtyState_DescriptorSet + set));
 
         if (type == BindingType::DynamicUniform)
@@ -172,14 +179,15 @@ namespace vk
         ASSERT(type == BindingType::Texture || type == BindingType::RWTexture, "wrong type");
         VkImageLayout layout = (type == BindingType::RWTexture) ? VK_IMAGE_LAYOUT_GENERAL : VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
-        BindingInfo& bindingInfo = _sets[set]._bindings[binding];
+        BindingInfo& bindingInfo = _boundSetInfo[set]._bindings[binding];
         bindingInfo._binding = binding;
         bindingInfo._arrayIndex = arrayIndex;
         bindingInfo._type = type;
         bindingInfo._info._imageInfo = makeVkDescriptorImageInfo(image, nullptr, layout, subresource);
 
-        _sets[set]._resource[binding] = image;
-        _sets[set]._activeBindingsFlags |= 1 << binding;
+        _boundSetInfo[set]._resource[binding] = image;
+        _boundSetInfo[set]._activeBindingsFlags |= 1 << binding;
+        _boundSets[set] = VK_NULL_HANDLE;
         setDirty(DirtyStateMask(DirtyState_DescriptorSet + set));
 
         addImageBarrier(image, subresource, layout);
@@ -188,14 +196,15 @@ namespace vk
     inline void VulkanRenderState::bind(BindingType type, u32 set, u32 binding, VulkanSampler* sampler)
     {
         ASSERT(type == BindingType::Sampler, "wrong type");
-        BindingInfo& bindingInfo = _sets[set]._bindings[binding];
+        BindingInfo& bindingInfo = _boundSetInfo[set]._bindings[binding];
         bindingInfo._binding = binding;
         bindingInfo._arrayIndex = 0;
         bindingInfo._type = type;
         bindingInfo._info._imageInfo = makeVkDescriptorImageInfo(nullptr, sampler, VK_IMAGE_LAYOUT_UNDEFINED, {});
 
-        _sets[set]._resource[binding] = sampler;
-        _sets[set]._activeBindingsFlags |= 1 << binding;
+        _boundSetInfo[set]._resource[binding] = sampler;
+        _boundSetInfo[set]._activeBindingsFlags |= 1 << binding;
+        _boundSets[set] = VK_NULL_HANDLE;
         setDirty(DirtyStateMask(DirtyState_DescriptorSet + set));
     }
 

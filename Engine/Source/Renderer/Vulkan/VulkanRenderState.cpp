@@ -31,7 +31,7 @@ void VulkanRenderState::addImageBarrier(VulkanImage* texture, const RenderTextur
     }
     _imageBarriers.emplace(layout, std::make_tuple(texture, subresource));
 
-    setDirty(DirtyStateMask::DirtyState_ImageBarriers);
+    setDirty(DirtyStateMask::DirtyState_Barriers);
 }
 
 void VulkanRenderState::flushBarriers(VulkanCommandBuffer* cmdBuffer)
@@ -47,7 +47,7 @@ void VulkanRenderState::flushBarriers(VulkanCommandBuffer* cmdBuffer)
     }
     _imageBarriers.clear();
 
-    unsetDirty(DirtyStateMask::DirtyState_ImageBarriers);
+    unsetDirty(DirtyStateMask::DirtyState_Barriers);
 }
 
 void VulkanRenderState::invalidate()
@@ -68,7 +68,8 @@ void VulkanRenderState::invalidate()
 
     for (u32 i = 0; i < k_maxDescriptorSetCount; ++i)
     {
-        _sets[i] = {};
+        _boundSetInfo[i] = {};
+        _boundSets[i] = VK_NULL_HANDLE;
     }
     _descriptorSets.clear();
     _dynamicOffsets.clear();
