@@ -3,7 +3,9 @@
 #include "Common.h"
 
 #if TRACY_ENABLE
-//#   define TRACY_ON_DEMAND
+#if !TRACY_ON_DEMAND
+#   error "Tracy is used record of all session. Huge memory allocation is possible. Uncomment it if you aware"
+#endif
 #   include "../ThirdParty/tracy/public/tracy/Tracy.hpp"
 #endif //TRACY_ENABLE
 
@@ -22,8 +24,8 @@ namespace v3d
 #define TRACE_PROFILER_SCOPE(name, color) ZoneScopedNC(name, color.getBGRA())
 
 #if 0 //Memory profile
-#    define TRACE_PROFILER_MEMORY_ALLOC(ptr, size, name) TracyAllocN(ptr, size, name)
-#    define TRACE_PROFILER_MEMORY_FREE(ptr, name) TracyFreeN(ptr, name)
+#    define TRACE_PROFILER_MEMORY_ALLOC(ptr, size, name) TracyAlloc(ptr, size)
+#    define TRACE_PROFILER_MEMORY_FREE(ptr, name) TracyFree(ptr)
 #else
 #    define TRACE_PROFILER_MEMORY_ALLOC(ptr, size, name)
 #    define TRACE_PROFILER_MEMORY_FREE(ptr, name)
@@ -43,9 +45,9 @@ namespace v3d
 
 #define TRACE_PROFILER_GPU_ENABLE 0
 #if TRACE_PROFILER_GPU_ENABLE //Trace GPU
-#   define TRACE_PROFILER_GPU_SCOPE(context, cmd, name, color) TracyVkZoneC(context, cmd, name, color)
+#   define TRACE_PROFILER_GPU_SCOPE(render, cmd, name, color) Tracy##render##ZoneC(cmd->m_tracyContext, cmd->getHandle(), name, color)
 #else
-#   define TRACE_PROFILER_GPU_SCOPE(context, cmd, name, color)
+#   define TRACE_PROFILER_GPU_SCOPE(render, cmd, name, color)
 #endif //TRACE_PROFILER_GPU_ENABLE
 
 #else //TRACY_ENABLE
