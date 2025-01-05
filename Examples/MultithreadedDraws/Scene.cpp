@@ -345,6 +345,13 @@ void Scene::Draw(f32 dt)
                 render->_CmdList->setViewport(math::Rect32(0, 0, render->_RenderTarget->getRenderArea().m_width, render->_RenderTarget->getRenderArea().m_height));
                 render->_CmdList->setScissor(math::Rect32(0, 0, render->_RenderTarget->getRenderArea().m_width, render->_RenderTarget->getRenderArea().m_height));
 
+                {
+                    TextureRenderWorker* tRender = static_cast<TextureRenderWorker*>(render);
+                    tRender->_LightParams._constantBuffer._lightPos = math::Vector4D(25.0f, 0.0f, 5.0f, 1.0f);
+                    tRender->_LightParams._constantBuffer._color = math::Vector4D(1.0f);
+                }
+                render->bindParameters(pipeline);
+
                 render->_CmdList->setPipelineState(*pipeline);
 
                 for (u32 groupIndex = 0; groupIndex < countGroups; ++groupIndex)
@@ -352,10 +359,6 @@ void Scene::Draw(f32 dt)
                     ModelsGroup& group = m_ModelInstances[groupStart + groupIndex];
 
                     TextureRenderWorker* tRender = static_cast<TextureRenderWorker*>(render);
-
-                    tRender->_LightParams._constantBuffer._lightPos = math::Vector4D(25.0f, 0.0f, 5.0f, 1.0f);
-                    tRender->_LightParams._constantBuffer._color = math::Vector4D(1.0f);
-
                     tRender->_TextureParams._constantBufferVS._modelMatrix = group._Parameters._Transform;
                     tRender->_TextureParams._constantBufferVS._normalMatrix = group._Parameters._Transform;
                     tRender->_TextureParams._constantBufferVS._normalMatrix.makeTransposed();

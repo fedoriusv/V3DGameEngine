@@ -55,6 +55,7 @@ public:
     virtual void process(v3d::renderer::GraphicsPipelineState* pipeline,const std::vector<std::tuple<v3d::renderer::GeometryBufferDesc, DrawProperties>>& props) = 0;
 
     virtual void updateParameters(const std::function<void(Render*)>& callback) = 0;
+    virtual void bindParameters(v3d::renderer::GraphicsPipelineState* pipeline) = 0;
 
     v3d::renderer::CmdListRender*     _CmdList;
 
@@ -116,8 +117,8 @@ public:
 
     void setup(v3d::renderer::RenderTargetState* renderTarget, const v3d::scene::CameraHandler& camera) override;
     void process(v3d::renderer::GraphicsPipelineState * pipeline, const std::vector<std::tuple<v3d::renderer::GeometryBufferDesc, DrawProperties>>& props) override;
-
     void updateParameters(const std::function<void(Render*)>& callback) override;
+    void bindParameters(v3d::renderer::GraphicsPipelineState* pipeline) override;
 
 public:
 

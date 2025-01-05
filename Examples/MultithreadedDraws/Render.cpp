@@ -29,11 +29,14 @@ void TextureRenderWorker::updateParameters(const std::function<void(Render*)>& c
     callback(this);
 }
 
-void TextureRenderWorker::process(v3d::renderer::GraphicsPipelineState* pipeline, const std::vector<std::tuple<v3d::renderer::GeometryBufferDesc, DrawProperties>>& props)
+void TextureRenderWorker::bindParameters(v3d::renderer::GraphicsPipelineState* pipeline)
 {
     _ViewportParams.bindUniformParameters(*_CmdList, pipeline->getShaderProgram());
     _LightParams.bindUniformParameters(*_CmdList, pipeline->getShaderProgram());
+}
 
+void TextureRenderWorker::process(v3d::renderer::GraphicsPipelineState* pipeline, const std::vector<std::tuple<v3d::renderer::GeometryBufferDesc, DrawProperties>>& props)
+{
     for (auto& buffer : props)
     {
         _TextureParams.bindUniformParameters(*_CmdList, pipeline->getShaderProgram());
