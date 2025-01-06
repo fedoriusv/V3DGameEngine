@@ -355,7 +355,7 @@ bool VulkanSwapchain::create(platform::Window* window, const SwapchainParams& pa
     }
 
     //Validation issue with VulkanSDK 1.3.296.0. Remove 2 after update SDK
-    u32 semaphoreCount = static_cast<u32>(m_swapchainImages.size()) + 2;
+    u32 semaphoreCount = static_cast<u32>(m_swapchainImages.size()) * 2;
     m_acquiredSemaphores.resize(semaphoreCount, nullptr);
     for (u32 index = 0; index < semaphoreCount; ++index)
     {
