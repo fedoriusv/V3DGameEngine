@@ -130,8 +130,11 @@ namespace vk
         VkImageLayout setLayout(VulkanImage* image, VkImageLayout layout, const RenderTexture::Subresource& resource);
 
         void finalizeGlobalState();
+        void prepareGlobalState(const std::function<VulkanCommandBuffer* ()>& cmdBufferGetter);
 
-        mutable std::map<VulkanImage*, std::vector<VkImageLayout>> m_states;
+    private:
+
+        mutable std::map<VulkanImage*, std::tuple<std::vector<VkImageLayout>, std::vector<VkImageLayout>>> m_states;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

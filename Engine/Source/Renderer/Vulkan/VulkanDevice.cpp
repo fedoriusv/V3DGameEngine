@@ -175,7 +175,7 @@ VulkanDevice::~VulkanDevice()
 
 void VulkanDevice::submit(CmdList* cmd, bool wait)
 {
-    submit(cmd, nullptr, wait);
+    VulkanDevice::submit(cmd, nullptr, wait);
 }
 
 void VulkanDevice::submit(CmdList* cmd, SyncPoint* sync, bool wait)
@@ -192,13 +192,33 @@ void VulkanDevice::submit(CmdList* cmd, SyncPoint* sync, bool wait)
     VulkanCommandBufferManager* cmdBufferMgr = m_threadedPools[cmdList.m_concurrencySlot].m_cmdBufferManager;
     ASSERT(cmdBufferMgr, "nullptr");
 
+    //Transition between cmdbuffers
+    VulkanCommandBuffer* transitionBuffer = nullptr;
+    auto transitionBufferGetter = [this, &transitionBuffer]() -> VulkanCommandBuffer*
+        {
+            if (!transitionBuffer)
+            {
+                transitionBuffer = m_internalCmdBufferManager->acquireNewCmdBuffer(Device::DeviceMask::GraphicMask, CommandBufferLevel::PrimaryBuffer);
+                transitionBuffer->beginCommandBuffer();
+            }
+
+            return transitionBuffer;
+        };
+
     //Resource commands
     VulkanSemaphore* resourceSemaphore = nullptr;
     if (cmdList.m_currentCmdBuffer[toEnumType(CommandTargetType::CmdResourceBuffer)])
     {
         VulkanCommandBuffer* resourceBuffer = cmdList.m_currentCmdBuffer[toEnumType(CommandTargetType::CmdResourceBuffer)];
 
-        //TODO: resource tracker - get global state and create "brige" between cmd buffer states
+        resourceBuffer->getResourceStateTracker().prepareGlobalState(transitionBufferGetter);
+        if (transitionBuffer)
+        {
+            transitionBuffer->endCommandBuffer();
+            m_internalCmdBufferManager->submit(transitionBuffer, {});
+            transitionBuffer = nullptr;
+        }
+
         cmdList.m_pendingRenderState.flushBarriers(resourceBuffer);
         resourceBuffer->endCommandBuffer();
 
@@ -232,7 +252,14 @@ void VulkanDevice::submit(CmdList* cmd, SyncPoint* sync, bool wait)
             drawBuffer->cmdEndRenderPass();
         }
 
-        //TODO: resource tracker - get global state and create "brige" between cmd buffer states
+        drawBuffer->getResourceStateTracker().prepareGlobalState(transitionBufferGetter);
+        if (transitionBuffer)
+        {
+            transitionBuffer->endCommandBuffer();
+            m_internalCmdBufferManager->submit(transitionBuffer, {});
+            transitionBuffer = nullptr;
+        }
+
         cmdList.m_pendingRenderState.flushBarriers(drawBuffer);
         drawBuffer->endCommandBuffer();
 

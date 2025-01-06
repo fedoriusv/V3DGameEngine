@@ -100,15 +100,15 @@ VkImageLayout VulkanResourceStateTracker::getLayout(VulkanImage* image, const Re
     auto iter = m_states.find(image);
     if (iter == m_states.end())
     {
-        auto result = m_states.emplace(image, image->m_layout);
+        auto result = m_states.emplace(image, std::make_tuple(image->m_globalLayout, image->m_globalLayout));
         ASSERT(result.second, "must be valid");
         iter = result.first;
     }
 
-    auto& layouts = iter->second;
+    auto& currentLayouts = std::get<1>(iter->second);
     u32 index = 1 + (resource._baseLayer * image->m_mipLevels + resource._baseMip);
-    ASSERT(index < layouts.size(), "out of range");
-    return layouts[index];
+    ASSERT(index < currentLayouts.size(), "out of range");
+    return currentLayouts[index];
 }
 
 VkImageLayout VulkanResourceStateTracker::setLayout(VulkanImage* image, VkImageLayout newlayout, const RenderTexture::Subresource& resource)
@@ -116,24 +116,24 @@ VkImageLayout VulkanResourceStateTracker::setLayout(VulkanImage* image, VkImageL
     auto iter = m_states.find(image);
     if (iter == m_states.end())
     {
-        auto result = m_states.emplace(image, image->m_layout);
+        auto result = m_states.emplace(image, std::make_tuple(image->m_globalLayout, image->m_globalLayout));
         ASSERT(result.second, "must be valid");
         iter = result.first;
     }
 
-    auto& layouts = iter->second;
-    VkImageLayout oldLayout = layouts.front();
+    auto& currentLayouts = std::get<1>(iter->second);
+    VkImageLayout oldLayout = currentLayouts.front();
     for (u32 layerIndex = 0; layerIndex < resource._layers; ++layerIndex)
     {
         for (u32 mipIndex = 0; mipIndex < resource._mips; ++mipIndex)
         {
             u32 index = 1 + ((resource._baseLayer + layerIndex) * image->m_mipLevels + (resource._baseMip + mipIndex));
-            ASSERT(index < layouts.size(), "out of range");
-            [[maybe_unused]] VkImageLayout layout = std::exchange(layouts[index], newlayout);
+            ASSERT(index < currentLayouts.size(), "out of range");
+            [[maybe_unused]] VkImageLayout layout = std::exchange(currentLayouts[index], newlayout);
         }
     }
 
-    layouts.front() = newlayout; //General layout. Need do for every layer and mip
+    currentLayouts.front() = newlayout; //General layout. Need do for every layer and mip
     return oldLayout;
 }
 
@@ -141,9 +141,42 @@ void VulkanResourceStateTracker::finalizeGlobalState()
 {
     for (auto& [image, layouts] : m_states)
     {
-        image->m_layout = layouts;
+        image->m_globalLayout = std::get<1>(layouts);
     }
     m_states.clear();
+}
+
+void VulkanResourceStateTracker::prepareGlobalState(const std::function<VulkanCommandBuffer*()>& cmdBufferGetter)
+{
+    for (auto& [image, layouts] : m_states)
+    {
+        auto& globalLayouts = std::get<0>(layouts);
+        auto& currentLayouts = std::get<1>(layouts);
+        ASSERT(globalLayouts.size() == currentLayouts.size() && globalLayouts.size() == image->m_globalLayout.size(), "must has the same size");
+
+        if (image->m_globalLayout != globalLayouts)
+        {
+            for (u32 layerIndex = 0; layerIndex < image->m_layerLevels; ++layerIndex)
+            {
+                for (u32 mipIndex = 0; mipIndex < image->m_mipLevels; ++mipIndex)
+                {
+                    RenderTexture::Subresource resource{ layerIndex, image->m_layerLevels, mipIndex, image->m_mipLevels };
+                    u32 index = 1 + ((resource._baseLayer + layerIndex) * image->m_mipLevels + (resource._baseMip + mipIndex));
+                    ASSERT(index < image->m_globalLayout.size(), "out of range");
+
+                    VkImageLayout oldLayout = image->m_globalLayout[index];
+                    VkImageLayout newLayout = globalLayouts[index];
+                    if (oldLayout != newLayout)
+                    {
+                        VulkanCommandBuffer* cmdBuffer = cmdBufferGetter();
+                        cmdBuffer->cmdPipelineBarrier(image, resource, oldLayout, newLayout);
+
+                        image->setGlobalLayout(newLayout, resource);
+                    }
+                }
+            }
+        }
+    }
 }
 
 } //namespace vk

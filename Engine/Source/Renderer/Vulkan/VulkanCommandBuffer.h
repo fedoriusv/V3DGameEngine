@@ -107,7 +107,8 @@ namespace vk
 
         //sync
         void cmdPipelineBarrier(VulkanImage* image, VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask, VkImageLayout layout);
-        void cmdPipelineBarrier(VulkanImage* image, VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask, VkImageLayout layout, const RenderTexture::Subresource& resource);
+        void cmdPipelineBarrier(VulkanImage* image, const RenderTexture::Subresource& resource, VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask, VkImageLayout layout);
+        void cmdPipelineBarrier(VulkanImage* image, const RenderTexture::Subresource& resource, VkImageLayout oldLayout, VkImageLayout newLayout);
         void cmdPipelineBarrier(VulkanBuffer* buffer, VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask);
         void cmdPipelineBarrier(VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask, const VkMemoryBarrier& memoryBarrier);
 
@@ -143,7 +144,6 @@ namespace vk
 
         VulkanCommandBuffer*              m_primaryBuffer;
         std::vector<VulkanCommandBuffer*> m_secondaryBuffers;
-        VulkanResourceStateTracker        m_resourceStates;
 
         struct RenderPassState
         {
@@ -152,6 +152,7 @@ namespace vk
             VulkanSwapchain*         _activeSwapchain;
         };
         RenderPassState                   m_renderpassState;
+        VulkanResourceStateTracker        m_resourceStates;
 
         bool                              m_isInsideRenderPass;
 

@@ -58,7 +58,9 @@ namespace vk
         static VkImageLayout convertTransitionStateToImageLayout(TransitionOp state);
 
         static VkPipelineStageFlags selectStageFlagsByImageLayout(VkImageLayout layout);
+
         static std::tuple<VkAccessFlags, VkAccessFlags> getAccessFlagsFromImageLayout(VkImageLayout oldLayout, VkImageLayout newLayout);
+        static std::tuple<VkPipelineStageFlags, VkPipelineStageFlags> getPipelineStageFlagsFromImageLayout(VulkanImage* image, VkImageLayout oldLayout, VkImageLayout newLayout, bool toCompute = false);
 
         static void transitionImage(VulkanCommandBuffer* cmdBuffer, std::tuple<VulkanImage*, RenderTexture::Subresource>& images, VkImageLayout layout, bool toCompute = false);
     };

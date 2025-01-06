@@ -190,16 +190,13 @@ std::tuple<VkAccessFlags, VkAccessFlags> VulkanTransitionState::getAccessFlagsFr
     return { srcFlag, dstFlag };
 }
 
-void VulkanTransitionState::transitionImage(VulkanCommandBuffer* cmdBuffer, std::tuple<VulkanImage*, RenderTexture::Subresource>& image, VkImageLayout layout, bool toCompute)
+std::tuple<VkPipelineStageFlags, VkPipelineStageFlags> VulkanTransitionState::getPipelineStageFlagsFromImageLayout(VulkanImage* vulkanImage, VkImageLayout oldLayout, VkImageLayout newLayout, bool toCompute)
 {
-    VulkanImage* vulkanImage = static_cast<VulkanImage*>(std::get<0>(image));
-
     VkPipelineStageFlags srcStage = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
     VkPipelineStageFlags dstStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
-    VkImageLayout oldLayout = cmdBuffer->getResourceStateTracker().getLayout(vulkanImage, std::get<1>(image));
 
     //to general
-    if (layout == VK_IMAGE_LAYOUT_GENERAL)
+    if (newLayout == VK_IMAGE_LAYOUT_GENERAL)
     {
         dstStage = toCompute ? VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT : VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT;
         if (oldLayout == VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL)
@@ -217,7 +214,7 @@ void VulkanTransitionState::transitionImage(VulkanCommandBuffer* cmdBuffer, std:
     }
 
     //to shader read
-    if (layout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
+    if (newLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
     {
         dstStage = VK_PIPELINE_STAGE_VERTEX_SHADER_BIT | VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
         if (oldLayout == VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL)
@@ -238,7 +235,7 @@ void VulkanTransitionState::transitionImage(VulkanCommandBuffer* cmdBuffer, std:
     }
 
     //to color attachment
-    if (layout == VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL)
+    if (newLayout == VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL)
     {
         ASSERT(VulkanImage::isColorFormat(vulkanImage->getFormat()), "wrong layout");
         srcStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
@@ -246,7 +243,7 @@ void VulkanTransitionState::transitionImage(VulkanCommandBuffer* cmdBuffer, std:
     }
 
     //to preset form attachment
-    if (layout == VK_IMAGE_LAYOUT_PRESENT_SRC_KHR && oldLayout == VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL)
+    if (newLayout == VK_IMAGE_LAYOUT_PRESENT_SRC_KHR && oldLayout == VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL)
     {
         ASSERT(vulkanImage->hasUsageFlag(TextureUsage::TextureUsage_Backbuffer), "mast be only swapchain");
         srcStage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
@@ -254,14 +251,25 @@ void VulkanTransitionState::transitionImage(VulkanCommandBuffer* cmdBuffer, std:
     }
 
     //form present to attachment
-    if (layout == VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL && oldLayout == VK_IMAGE_LAYOUT_PRESENT_SRC_KHR)
+    if (newLayout == VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL && oldLayout == VK_IMAGE_LAYOUT_PRESENT_SRC_KHR)
     {
         ASSERT(vulkanImage->hasUsageFlag(TextureUsage::TextureUsage_Backbuffer), "mast be only swapchain");
         srcStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
         dstStage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
     }
 
-    cmdBuffer->cmdPipelineBarrier(vulkanImage, srcStage, dstStage, layout, std::get<1>(image));
+    return { srcStage, dstStage };
+}
+
+void VulkanTransitionState::transitionImage(VulkanCommandBuffer* cmdBuffer, std::tuple<VulkanImage*, RenderTexture::Subresource>& image, VkImageLayout newLayout, bool toCompute)
+{
+    VulkanImage* vulkanImage = static_cast<VulkanImage*>(std::get<0>(image));
+    RenderTexture::Subresource& resource = std::get<1>(image);
+
+    VkImageLayout oldLayout = cmdBuffer->getResourceStateTracker().getLayout(vulkanImage, std::get<1>(image));
+    auto [srcStage, dstStage] = VulkanTransitionState::getPipelineStageFlagsFromImageLayout(vulkanImage, oldLayout, newLayout, toCompute);
+
+    cmdBuffer->cmdPipelineBarrier(vulkanImage, resource, srcStage, dstStage, newLayout);
 }
 
 
@@ -444,11 +452,13 @@ bool VulkanCommandBufferManager::submit(VulkanCommandBuffer* buffer, const std::
         buffer->m_status = VulkanCommandBuffer::CommandBufferStatus::Invalid;
         return false;
     }
-    //Uncomment for debug
-    //vkDeviceWaitIdle(m_device);
 
     buffer->m_status = VulkanCommandBuffer::CommandBufferStatus::Submit;
     buffer->m_capturedFrameIndex = buffer->getActiveSwapchain() ? buffer->getActiveSwapchain()->getCurrentFrameIndex() : 0;
+
+    //DEBUG: Uncomment for debug
+    //vkDeviceWaitIdle(m_device);
+
     return true;
 }
 

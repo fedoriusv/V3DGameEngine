@@ -77,9 +77,6 @@ namespace vk
         VkFormat              getFormat() const;
         VkExtent3D            getSize() const;
 
-        VkImageLayout         getGlobalLayout(const RenderTexture::Subresource& resource) const;
-        VkImageLayout         setGlobalLayout(VkImageLayout layout, const RenderTexture::Subresource& resource);
-
         VulkanImage*          getResolveImage() const;
 
 #if DEBUG_OBJECT_MEMORY
@@ -97,6 +94,9 @@ namespace vk
 
         bool createViewImage();
         bool internalUpload(VulkanCommandBuffer* cmdBuffer, const math::Dimension3D& offsets, const math::Dimension3D& size, u32 layers, u32 mips, u64 dataSize, const void* data);
+
+        VkImageLayout         getGlobalLayout(const RenderTexture::Subresource& resource) const;
+        VkImageLayout         setGlobalLayout(VkImageLayout layout, const RenderTexture::Subresource& resource);
 
         VulkanDevice&                           m_device;
         VulkanMemory::VulkanMemoryAllocator*    m_memoryAllocator;
@@ -117,7 +117,7 @@ namespace vk
         VulkanSwapchain*                        m_relatedSwapchain;
 
         std::unordered_map<DescInfo<VkImageSubresourceRange>, VkImageView, DescInfo<VkImageSubresourceRange>::Hash, DescInfo<VkImageSubresourceRange>::Compare> m_imageViews;
-        std::vector<VkImageLayout>              m_layout;
+        std::vector<VkImageLayout>              m_globalLayout;
 
 #if VULKAN_DEBUG_MARKERS
         std::string                             m_debugName;

@@ -928,7 +928,7 @@ VulkanImage::VulkanImage(VulkanDevice* device, VulkanMemory::VulkanMemoryAllocat
     s_objects.insert(this);
 #endif //DEBUG_OBJECT_MEMORY
 
-    m_layout.resize(1 + static_cast<u64>(m_layerLevels) * static_cast<u64>(m_mipLevels), (m_tiling == VK_IMAGE_TILING_OPTIMAL) ? VK_IMAGE_LAYOUT_UNDEFINED : VK_IMAGE_LAYOUT_PREINITIALIZED);
+    m_globalLayout.resize(1 + static_cast<u64>(m_layerLevels) * static_cast<u64>(m_mipLevels), (m_tiling == VK_IMAGE_TILING_OPTIMAL) ? VK_IMAGE_LAYOUT_UNDEFINED : VK_IMAGE_LAYOUT_PREINITIALIZED);
 }
 
 VulkanImage::VulkanImage(VulkanDevice* device, VulkanMemory::VulkanMemoryAllocator* alloc, VkFormat format, VkExtent3D dimension, VkSampleCountFlagBits samples, u32 layers, TextureUsageFlags usage, const std::string& name) noexcept
@@ -989,7 +989,7 @@ VulkanImage::VulkanImage(VulkanDevice* device, VulkanMemory::VulkanMemoryAllocat
     s_objects.insert(this);
 #endif //DEBUG_OBJECT_MEMORY
 
-    m_layout.resize(1 + static_cast<u64>(m_layerLevels) * static_cast<u64>(m_mipLevels), VK_IMAGE_LAYOUT_UNDEFINED);
+    m_globalLayout.resize(1 + static_cast<u64>(m_layerLevels) * static_cast<u64>(m_mipLevels), VK_IMAGE_LAYOUT_UNDEFINED);
 }
 
 VulkanImage::~VulkanImage()
@@ -1110,7 +1110,7 @@ bool VulkanImage::create()
     imageCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
     imageCreateInfo.queueFamilyIndexCount = 0;
     imageCreateInfo.pQueueFamilyIndices = nullptr;
-    imageCreateInfo.initialLayout = m_layout.front();
+    imageCreateInfo.initialLayout = m_globalLayout.front();
 
 #if VULKAN_DEBUG
     LOG_DEBUG("vkCreateImage: [Type %s][Size %u : %u : %u [%u]]; flags %u; usage %u; format %s", 
@@ -1200,7 +1200,7 @@ bool VulkanImage::create(VkImage image, VulkanSwapchain* swapchain)
     ASSERT(!m_image, "m_image already exist");
     m_image = image;
     m_relatedSwapchain = swapchain;
-    std::fill(m_layout.begin(), m_layout.end(), VK_IMAGE_LAYOUT_UNDEFINED);
+    std::fill(m_globalLayout.begin(), m_globalLayout.end(), VK_IMAGE_LAYOUT_UNDEFINED);
     ASSERT(hasUsageFlag(TextureUsage::TextureUsage_Backbuffer), "must be swapchain");
 
 #if VULKAN_DEBUG_MARKERS
@@ -1398,11 +1398,10 @@ bool VulkanImage::internalUpload(VulkanCommandBuffer* cmdBuffer, const math::Dim
             }
         }
 
-        VkImageLayout prevLayout = m_layout.front();
-
+        VkImageLayout prevLayout = cmdBuffer->getResourceStateTracker().getLayout(this, RenderTexture::Subresource());
         ASSERT(m_usage & TextureUsage_Write, "should be write");
         VkPipelineStageFlags srcStageMask = 0;
-        if (m_layout.front() == VK_IMAGE_LAYOUT_UNDEFINED) //first time
+        if (m_globalLayout.front() == VK_IMAGE_LAYOUT_UNDEFINED) //first time
         {
             srcStageMask = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
         }
@@ -1463,10 +1462,10 @@ bool VulkanImage::generateMipmaps(VulkanCommandBuffer* cmdBuffer, u32 layer)
     ASSERT(m_mipLevels > 1, "image must be created with mipmaps");
 
     VkImageLayout layoutMips = cmdBuffer->getResourceStateTracker().getLayout(this, RenderTexture::makeSubresource(layer, 1, 1, m_mipLevels - 1));
-    cmdBuffer->cmdPipelineBarrier(this, VulkanTransitionState::selectStageFlagsByImageLayout(layoutMips), VK_PIPELINE_STAGE_TRANSFER_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, { layer, 1, 1, m_mipLevels - 1 });
+    cmdBuffer->cmdPipelineBarrier(this, { layer, 1, 1, m_mipLevels - 1 }, VulkanTransitionState::selectStageFlagsByImageLayout(layoutMips), VK_PIPELINE_STAGE_TRANSFER_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 
     VkImageLayout baseMip = cmdBuffer->getResourceStateTracker().getLayout(this, { layer, 1, 0, 1 });
-    cmdBuffer->cmdPipelineBarrier(this, VulkanTransitionState::selectStageFlagsByImageLayout(baseMip), VK_PIPELINE_STAGE_TRANSFER_BIT, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, { layer, 1, 0, 1 });
+    cmdBuffer->cmdPipelineBarrier(this, { layer, 1, 0, 1 }, VulkanTransitionState::selectStageFlagsByImageLayout(baseMip), VK_PIPELINE_STAGE_TRANSFER_BIT, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
 
     for (u32 mip = 1; mip < m_mipLevels; ++mip)
     {
@@ -1481,7 +1480,7 @@ bool VulkanImage::generateMipmaps(VulkanCommandBuffer* cmdBuffer, u32 layer)
         region.dstOffsets[1] = { std::max(static_cast<s32>(m_dimension.width >> mip), 1), std::max(static_cast<s32>(m_dimension.height >> mip), 1), 1 };
 
         cmdBuffer->cmdBlitImage(this, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, this, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, { region });
-        cmdBuffer->cmdPipelineBarrier(this, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, { layer, 1, mip, 1 });
+        cmdBuffer->cmdPipelineBarrier(this, { layer, 1, mip, 1 }, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
     }
 
     return true;
@@ -1556,24 +1555,24 @@ VkImageView VulkanImage::getImageView(const RenderTexture::Subresource& resource
 VkImageLayout VulkanImage::getGlobalLayout(const RenderTexture::Subresource& resource) const
 {
     u32 index = 1 + (resource._baseLayer * m_mipLevels + resource._baseMip);
-    ASSERT(index < m_layout.size(), "out of range");
-    return m_layout[index];
+    ASSERT(index < m_globalLayout.size(), "out of range");
+    return m_globalLayout[index];
 }
 
 VkImageLayout VulkanImage::setGlobalLayout(VkImageLayout newlayout, const RenderTexture::Subresource& resource)
 {
-    VkImageLayout oldLayout = m_layout.front();
+    VkImageLayout oldLayout = m_globalLayout.front();
     for (u32 layerIndex = 0; layerIndex < resource._layers; ++layerIndex)
     {
         for (u32 mipIndex = 0; mipIndex < resource._mips; ++mipIndex)
         {
             u32 index = 1 + ((resource._baseLayer + layerIndex) * m_mipLevels + (resource._baseMip + mipIndex));
-            ASSERT(index < m_layout.size(), "out of range");
-            [[maybe_unused]] VkImageLayout layout = std::exchange(m_layout[index], newlayout);
+            ASSERT(index < m_globalLayout.size(), "out of range");
+            [[maybe_unused]] VkImageLayout layout = std::exchange(m_globalLayout[index], newlayout);
         }
     }
 
-    m_layout.front() = newlayout; //General layout. Need do for every layer and mip
+    m_globalLayout.front() = newlayout; //General layout. Need do for every layer and mip
     return oldLayout;
 }
 
