@@ -46,20 +46,23 @@ void* internal_malloc(v3d::u64 size, MemoryLabel label, v3d::u64 align, const v3
 
 void internal_free(void* ptr, MemoryLabel label, v3d::u64 align, const v3d::c8* file, v3d::u32 line)
 {
-    TRACE_PROFILER_MEMORY_FREE(ptr, MemoryLabelName(label).c_str());
+    if (ptr)
+    {
+        TRACE_PROFILER_MEMORY_FREE(ptr, MemoryLabelName(label).c_str());
 
 #if MEMORY_DEBUG
-    std::lock_guard scope(g_mutex);
-    auto found = std::find_if(g_allocr.begin(), g_allocr.end(), [ptr](const auto& q)->bool
-        {
-            return std::get<0>(q) == ptr;
-        });
+        std::lock_guard scope(g_mutex);
+        auto found = std::find_if(g_allocr.begin(), g_allocr.end(), [ptr](const auto& q)->bool
+            {
+                return std::get<0>(q) == ptr;
+            });
 
-    ASSERT(found != g_allocr.end(), "not found");
-    g_allocr.erase(found);
+        ASSERT(found != g_allocr.end(), "not found");
+        g_allocr.erase(found);
 #endif //MEMORY_DEBUG
 
-    free(ptr);
+        free(ptr);
+    }
 }
 
 void memory_test()
