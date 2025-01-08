@@ -145,7 +145,7 @@ namespace renderer
         * @param u32 firstInstance [required]
         * @param u32 instanceCount [required]
         */
-        virtual void drawIndexed(const GeometryBufferDesc& desc, u32 firstIndex, u32 indexCount, u32 firstInstance, u32 instanceCount) = 0;
+        virtual void drawIndexed(const GeometryBufferDesc& desc, u32 firstIndex, u32 indexCount, u32 vertexOffest, u32 firstInstance, u32 instanceCount) = 0;
 
         /**
          * @brief clear command

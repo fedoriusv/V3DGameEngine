@@ -66,7 +66,7 @@ namespace vk
         void bindDescriptorSet(u32 set, const std::vector<Descriptor>& descriptors) override;
 
         void draw(const GeometryBufferDesc& desc, u32 firstVertex, u32 vertexCount, u32 firstInstance, u32 instanceCount) override;
-        void drawIndexed(const GeometryBufferDesc& desc, u32 firstIndex, u32 indexCount, u32 firstInstance, u32 instanceCount) override;
+        void drawIndexed(const GeometryBufferDesc& desc, u32 firstIndex, u32 indexCount, u32 vertexOffest, u32 firstInstance, u32 instanceCount) override;
 
         void clear(Texture* texture, const color::Color& color) override;
         void clear(Texture* texture, f32 depth, u32 stencil) override;

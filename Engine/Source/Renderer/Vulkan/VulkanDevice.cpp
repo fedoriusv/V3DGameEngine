@@ -1796,7 +1796,7 @@ void VulkanCmdList::draw(const GeometryBufferDesc& desc, u32 firstVertex, u32 ve
     }
 }
 
-void VulkanCmdList::drawIndexed(const GeometryBufferDesc& desc, u32 firstIndex, u32 indexCount, u32 firstInstance, u32 instanceCount)
+void VulkanCmdList::drawIndexed(const GeometryBufferDesc& desc, u32 firstIndex, u32 indexCount, u32 vertexOffest, u32 firstInstance, u32 instanceCount)
 {
 #if VULKAN_DEBUG
     LOG_DEBUG("VulkanContext[%u]::drawIndexed", m_concurrencySlot);
@@ -1814,7 +1814,7 @@ void VulkanCmdList::drawIndexed(const GeometryBufferDesc& desc, u32 firstIndex, 
         drawBuffer->cmdBindVertexBuffers(0, static_cast<u32>(desc._vertexBuffers.size()), desc._vertexBuffers, desc._offsets, desc._strides);
 
         ASSERT(drawBuffer->isInsideRenderPass(), "not inside renderpass");
-        drawBuffer->cmdDrawIndexed(firstIndex, indexCount, firstInstance, instanceCount, 0);
+        drawBuffer->cmdDrawIndexed(firstIndex, indexCount, firstInstance, instanceCount, vertexOffest);
     }
 }
 
