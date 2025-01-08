@@ -109,7 +109,7 @@ namespace renderer
 
     private:
 
-        std::recursive_mutex                    m_mutex;
+        std::mutex                              m_mutex;
         std::set<RenderObject<TRenderObject>*>  m_list;
 
         Object*                                 m_handle;
