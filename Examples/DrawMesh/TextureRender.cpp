@@ -218,7 +218,7 @@ void TextureRender::process(renderer::CmdListRender& cmdList, const std::vector<
         const  DrawProperties& props = std::get<1>(buffer);
         if (props._indexDraws)
         {
-            cmdList.drawIndexed(std::get<0>(buffer), props._start, props._count, 0, props._countInstance);
+            cmdList.drawIndexed(std::get<0>(buffer), props._start, props._count, 0, 0, props._countInstance);
         }
         else
         {

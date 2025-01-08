@@ -44,7 +44,7 @@ void TextureRenderWorker::process(v3d::renderer::GraphicsPipelineState* pipeline
         const  DrawProperties& props = std::get<1>(buffer);
         if (props._indexDraws)
         {
-            _CmdList->drawIndexed(std::get<0>(buffer), props._start, props._count, 0, props._countInstance);
+            _CmdList->drawIndexed(std::get<0>(buffer), props._start, props._count, 0, 0, props._countInstance);
         }
         else
         {
