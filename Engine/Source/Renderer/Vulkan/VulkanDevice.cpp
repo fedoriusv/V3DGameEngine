@@ -1908,7 +1908,7 @@ bool VulkanCmdList::uploadData(Buffer* buffer, u32 offset, u32 size, const void*
     bool result = vkBuffer->upload(cmdBuffer, offset, size, data);
 
     u32 immediateResourceSubmit = m_device.getVulkanDeviceCaps()._immediateResourceSubmit;
-    if (result && immediateResourceSubmit > 0)
+    if (result && !vkBuffer->hasUsageFlag(BufferUsage::Buffer_Dynamic) && immediateResourceSubmit > 0)
     {
         m_device.submit(this, immediateResourceSubmit == 2 ? true : false);
     }
