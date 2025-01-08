@@ -1927,11 +1927,13 @@ bool VulkanCmdList::uploadData(Buffer* buffer, u32 offset, u32 size, const void*
     VulkanCommandBuffer* cmdBuffer = VulkanCmdList::acquireAndStartCommandBuffer(CommandTargetType::CmdResourceBuffer);
     VulkanBuffer* vkBuffer = OBJECT_FROM_HANDLE(buffer->getBufferHandle(), VulkanBuffer);
     bool result = vkBuffer->upload(cmdBuffer, offset, size, data);
-
-    u32 immediateResourceSubmit = m_device.getVulkanDeviceCaps()._immediateResourceSubmit;
-    if (result && !vkBuffer->hasUsageFlag(BufferUsage::Buffer_Dynamic) && immediateResourceSubmit > 0)
+    if (result && !m_pendingRenderState._insideRenderpass && !vkBuffer->hasUsageFlag(BufferUsage::Buffer_Dynamic))
     {
-        m_device.submit(this, immediateResourceSubmit == 2 ? true : false);
+        u32 immediateResourceSubmit = m_device.getVulkanDeviceCaps()._immediateResourceSubmit;
+        if (immediateResourceSubmit > 0)
+        {
+            m_device.submit(this, immediateResourceSubmit == 2 ? true : false);
+        }
     }
 
     return result;
