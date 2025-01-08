@@ -82,6 +82,8 @@ namespace math
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    using Color4D    = TVector4D<u8>;
+
     using Point4D    = TVector4D<s32>;
     using Point4D64  = TVector4D<s64>;
 
