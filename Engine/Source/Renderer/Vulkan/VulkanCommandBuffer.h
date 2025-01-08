@@ -90,6 +90,8 @@ namespace vk
         void cmdBindPipeline(VulkanComputePipeline* pipeline);
         void cmdBindDescriptorSets(VulkanGraphicPipeline* pipeline, const std::vector<VkDescriptorSet>& sets, const std::vector<u32>& offsets);
         void cmdBindDescriptorSets(VulkanComputePipeline* pipeline, const std::vector<VkDescriptorSet>& sets);
+        void cmdBindPushConstant(VulkanGraphicPipeline* pipeline, VkShaderStageFlags stageFlags, u32 size, const void* data);
+        void cmdBindPushConstant(VulkanComputePipeline* pipeline, VkShaderStageFlags stageFlags, u32 size, const void* data);
 
         //inside renderpass
         void cmdDraw(u32 firstVertex, u32 vertexCount, u32 firstInstance, u32 instanceCount);

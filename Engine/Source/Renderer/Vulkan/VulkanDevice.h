@@ -60,8 +60,9 @@ namespace vk
 
         void bindTexture(u32 set, u32 slot, const TextureView& textureView) override;
         void bindBuffer(u32 set, u32 slot, Buffer* buffer) override;
-        void bindSampler(u32 set, u32 slot, SamplerState* sampler) override;
-        void bindConstantBuffer(u32 set, u32 slot, u32 size, void* data) override;
+        void bindSampler(u32 set, u32 slot, const SamplerState& sampler) override;
+        void bindConstantBuffer(u32 set, u32 slot, u32 size, const void* data) override;
+        void bindPushConstant(ShaderType type, u32 size, const void* data) override;
 
         void bindDescriptorSet(u32 set, const std::vector<Descriptor>& descriptors) override;
 

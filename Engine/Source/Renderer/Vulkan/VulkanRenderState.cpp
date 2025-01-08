@@ -50,6 +50,20 @@ void VulkanRenderState::flushBarriers(VulkanCommandBuffer* cmdBuffer)
     unsetDirty(DirtyStateMask::DirtyState_Barriers);
 }
 
+void VulkanRenderState::init(VulkanDevice* device)
+{
+    _clearValues.resize(k_maxColorAttachments + 1);
+    memset(&_boundSetInfo[0], 0, sizeof(_boundSetInfo));
+    memset(&_boundSets[0], 0, sizeof(_boundSets));
+
+    u32 maxSize = device->getVulkanDeviceCaps().getPhysicalDeviceLimits().maxPushConstantsSize;
+    for (u32 type = toEnumType(ShaderType::First); type <= (u32)toEnumType(ShaderType::Last); ++type)
+    {
+        _pushConstant[type]._size = maxSize;
+        _pushConstant[type]._data = V3D_MALLOC(maxSize, memory::MemoryLabel::MemoryRenderCore);
+    }
+}
+
 void VulkanRenderState::invalidate()
 {
     _viewports = {};

@@ -1352,6 +1352,9 @@ VulkanCmdList::VulkanCmdList(VulkanDevice* device) noexcept
 
     m_CBOManager = V3D_NEW(VulkanConstantBufferManager, memory::MemoryLabel::MemoryRenderCore)(device);
     m_descriptorSetManager = V3D_NEW(VulkanDescriptorSetManager, memory::MemoryLabel::MemoryRenderCore)(device);
+
+    m_pendingRenderState.init(device);
+    m_currentRenderState.init(device);
 }
 
 VulkanCmdList::~VulkanCmdList()
@@ -1594,19 +1597,18 @@ void VulkanCmdList::bindBuffer(u32 set, u32 slot, Buffer* buffer)
     TRACE_PROFILER_RENDER_SCOPE("bindBuffer", color::GREEN);
 }
 
-void VulkanCmdList::bindSampler(u32 set, u32 slot, SamplerState* sampler)
+void VulkanCmdList::bindSampler(u32 set, u32 slot, const SamplerState& sampler)
 {
     TRACE_PROFILER_RENDER_SCOPE("bindSampler", color::GREEN);
 
-    ASSERT(sampler, "nullptr");
-    VulkanSampler* vkSampler = m_device.m_samplerManager->acquireSampler(*sampler);
+    VulkanSampler* vkSampler = m_device.m_samplerManager->acquireSampler(sampler);
     ASSERT(vkSampler, "nullptr");
-    sampler->m_tracker.attach(vkSampler);
+    const_cast<SamplerState&>(sampler).m_tracker.attach(vkSampler);
 
     m_pendingRenderState.bind(BindingType::Sampler, set, slot, vkSampler);
 }
 
-void VulkanCmdList::bindConstantBuffer(u32 set, u32 slot, u32 size, void* data)
+void VulkanCmdList::bindConstantBuffer(u32 set, u32 slot, u32 size, const void* data)
 {
     TRACE_PROFILER_RENDER_SCOPE("bindConstantBuffer", color::GREEN);
 
@@ -1616,6 +1618,14 @@ void VulkanCmdList::bindConstantBuffer(u32 set, u32 slot, u32 size, void* data)
 
     BindingType type = (m_device.getVulkanDeviceCaps()._useDynamicUniforms) ? BindingType::DynamicUniform : BindingType::Uniform;
     m_pendingRenderState.bind(type, set, slot, range._buffer, range._offset, alignmentSize);
+}
+
+void VulkanCmdList::bindPushConstant(ShaderType type, u32 size, const void* data)
+{
+    TRACE_PROFILER_RENDER_SCOPE("bindPushConstant", color::GREEN);
+    ASSERT(size <= m_device.getVulkanDeviceCaps().getPhysicalDeviceLimits().maxPushConstantsSize, "maxSize");
+
+    m_pendingRenderState.bindPushConstant(type, size, data);
 }
 
 void VulkanCmdList::bindDescriptorSet(u32 set, const std::vector<Descriptor>& descriptors)
@@ -1658,8 +1668,8 @@ void VulkanCmdList::bindDescriptorSet(u32 set, const std::vector<Descriptor>& de
         case Descriptor::Type::Descriptor_Sampler:
         {
             ASSERT(desc._resource.index() == Descriptor::Type::Descriptor_Sampler, "wrong id");
-            SamplerState* state = std::get<Descriptor::Type::Descriptor_Sampler>(desc._resource);
-            VulkanCmdList::bindSampler(set, desc._slot, state);
+            SamplerState* sampler = std::get<Descriptor::Type::Descriptor_Sampler>(desc._resource);
+            VulkanCmdList::bindSampler(set, desc._slot, *sampler);
 
             break;
         }
@@ -1724,6 +1734,16 @@ bool VulkanCmdList::prepareDraw(VulkanCommandBuffer* drawBuffer)
         drawBuffer->cmdBindPipeline(m_pendingRenderState._graphicPipeline);
         m_currentRenderState._graphicPipeline = m_pendingRenderState._graphicPipeline;
         m_pendingRenderState.unsetDirty(DirtyStateMask::DirtyState_Pipeline);
+    }
+
+    //PushConstant
+    for (u32 type = toEnumType(ShaderType::First); type <= (u32)toEnumType(ShaderType::Last); ++type)
+    {
+        if (m_pendingRenderState.isDirty(DirtyStateMask(DirtyState_PushConstant + type)))
+        {
+            drawBuffer->cmdBindPushConstant(m_pendingRenderState._graphicPipeline, getShaderStageFlagsByShaderType(ShaderType(type)), m_pendingRenderState._pushConstant[type]._size, m_pendingRenderState._pushConstant[type]._data);
+            m_pendingRenderState.unsetDirty(DirtyStateMask(DirtyState_PushConstant + type));
+        }
     }
 
     //DS

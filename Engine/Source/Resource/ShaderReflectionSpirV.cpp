@@ -179,6 +179,29 @@ void reflectDescriptors(spirv_cross::CompilerGLSL* compiler, stream::Stream* str
         return renderer::Format_Undefined;
     };
 
+    auto calculateMemberSizeInsideStruct = [&compiler](const spirv_cross::SPIRType& type) -> u32
+        {
+            if (type.basetype != spirv_cross::SPIRType::Struct)
+            {
+                return 0;
+            }
+
+            u32 size = 0;
+            for (auto& member : type.member_types)
+            {
+                const spirv_cross::SPIRType& type = compiler->get_type(member);
+                u32 col = type.columns;
+                u32 row = type.vecsize;
+                u32 array = type.array.empty() ? 1 : type.array[0];
+                ASSERT(type.basetype != spirv_cross::SPIRType::Struct, "struct");
+
+                u32 dataSize = (type.width == 32) ? 4 : 8;
+                size += dataSize * col * row * array;
+            }
+
+            return size;
+        };
+
     spirv_cross::ShaderResources resources = compiler->get_shader_resources();
 
     u32 unifromBufferCount = static_cast<u32>(resources.uniform_buffers.size());
@@ -309,30 +332,6 @@ void reflectDescriptors(spirv_cross::CompilerGLSL* compiler, stream::Stream* str
             ASSERT(false, "not support");
             return  renderer::DataType::None;
         };
-
-        auto calculateMemberSizeInsideStruct = [&compiler](const spirv_cross::SPIRType& type) -> u32
-        {
-            if (type.basetype != spirv_cross::SPIRType::Struct)
-            {
-                return 0;
-            }
-
-            u32 size = 0;
-            for (auto& member : type.member_types)
-            {
-                const spirv_cross::SPIRType& type = compiler->get_type(member);
-                u32 col = type.columns;
-                u32 row = type.vecsize;
-                u32 array = type.array.empty() ? 1 : type.array[0];
-                ASSERT(type.basetype != spirv_cross::SPIRType::Struct, "struct");
-
-                u32 dataSize = (type.width == 32) ? 4 : 8;
-                size += dataSize * col * row * array;
-            }
-
-            return size;
-        };
-
 
         u32 offset = 0;
         while (index < block_type.member_types.size())
@@ -530,7 +529,7 @@ void reflectDescriptors(spirv_cross::CompilerGLSL* compiler, stream::Stream* str
 
         renderer::Shader::PushConstant constant;
         constant._offset = offset;
-        constant._size = type.width; //TODO check
+        constant._size = calculateMemberSizeInsideStruct(type);
 
         const std::string& name = compiler->get_name(pushConstant.id);
         ASSERT(!name.empty(), "empty name");

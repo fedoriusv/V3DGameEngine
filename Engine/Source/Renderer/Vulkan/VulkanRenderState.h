@@ -16,6 +16,7 @@ namespace vk
 {
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    class VulkanDevice;
     class VulkanResource;
     class VulkanImage;
     class VulkanBuffer;
@@ -40,7 +41,10 @@ namespace vk
         DirtyState_Barriers = 10,
 
         DirtyState_DescriptorSet = 11,
-        DirtyState_DescriptorSetShift = (11 + k_maxDescriptorSetCount - 1),
+        DirtyState_DescriptorSetShift = (DirtyState_DescriptorSet + k_maxDescriptorSetCount - 1),
+
+        DirtyState_PushConstant = DirtyState_DescriptorSetShift + 1,
+        DirtyState_PushConstantShift = (DirtyState_PushConstant + toEnumType(ShaderType::Count) - 1),
 
         DirtyState_All = 0x0/*0xFFFFFFFFFFFFFFFF*/
     };
@@ -101,7 +105,9 @@ namespace vk
         void bind(BindingType type, u32 set, u32 binding, VulkanBuffer* buffer, u32 offset, u32 range);
         void bind(BindingType type, u32 set, u32 binding, u32 arrayIndex, VulkanImage* image, const RenderTexture::Subresource& subresource);
         void bind(BindingType type, u32 set, u32 binding, VulkanSampler* sampler);
+        void bindPushConstant(ShaderType type, u32 size, const void* data);
 
+        void init(VulkanDevice* device);
         void invalidate();
 
         void setDirty(DirtyStateMask mask);
@@ -129,6 +135,7 @@ namespace vk
         //Per draw data
         std::vector<VkDescriptorSet>   _descriptorSets;
         std::vector<u32>               _dynamicOffsets;
+        PushConstant                   _pushConstant[toEnumType(ShaderType::Count)];
 
     private:
 
@@ -206,6 +213,15 @@ namespace vk
         _boundSetInfo[set]._activeBindingsFlags |= 1 << binding;
         _boundSets[set] = VK_NULL_HANDLE;
         setDirty(DirtyStateMask(DirtyState_DescriptorSet + set));
+    }
+
+    inline void VulkanRenderState::bindPushConstant(ShaderType type, u32 size, const void* data)
+    {
+        ASSERT(toEnumType(type) <= toEnumType(ShaderType::Count), "out of range");
+        _pushConstant[toEnumType(type)]._size = size;
+        memcpy(_pushConstant[toEnumType(type)]._data, data, size);
+
+        setDirty(DirtyStateMask(DirtyState_PushConstant + toEnumType(type)));
     }
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

@@ -97,6 +97,22 @@ inline void VulkanCommandBuffer::cmdBindDescriptorSets(VulkanComputePipeline* pi
     VulkanWrapper::CmdBindDescriptorSets(m_commands, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline->getPipelineLayoutHandle(), 0, static_cast<u32>(sets.size()), sets.data(), 0, nullptr);
 }
 
+inline void VulkanCommandBuffer::cmdBindPushConstant(VulkanGraphicPipeline* pipeline, VkShaderStageFlags stageFlags, u32 size, const void* data)
+{
+    ASSERT(m_status == CommandBufferStatus::Begin, "not started");
+
+    VulkanCommandBuffer::captureResource(pipeline);
+    VulkanWrapper::CmdPushConstants(m_commands, pipeline->getPipelineLayoutHandle(), stageFlags, 0, size, data);
+}
+
+inline void VulkanCommandBuffer::cmdBindPushConstant(VulkanComputePipeline* pipeline, VkShaderStageFlags stageFlags, u32 size, const void* data)
+{
+    ASSERT(m_status == CommandBufferStatus::Begin, "not started");
+
+    VulkanCommandBuffer::captureResource(pipeline);
+    VulkanWrapper::CmdPushConstants(m_commands, pipeline->getPipelineLayoutHandle(), stageFlags, 0, size, data);
+}
+
 inline void VulkanCommandBuffer::cmdDraw(u32 firstVertex, u32 vertexCount, u32 firstInstance, u32 instanceCount)
 {
     ASSERT(m_status == CommandBufferStatus::Begin, "not started");

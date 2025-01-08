@@ -65,6 +65,8 @@ namespace vk
         memset(this, 0, sizeof(BindingInfo));
     }
 
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
+
     /**
     * @brief SetInfo struct. Vulkan Render side
     */
@@ -130,6 +132,40 @@ namespace vk
     {
         u32 count = k_maxDescriptorBindingCount;
         _key = crc32c::Crc32c(reinterpret_cast<const u8*>(_bindings.data()), sizeof(BindingInfo) * count);
+    }
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    /**
+    * @brief PushConstant struct. Vulkan Render side
+    */
+    struct PushConstant
+    {
+        u32   _size;
+        void* _data;
+    };
+
+    VkShaderStageFlags getShaderStageFlagsByShaderType(ShaderType type);
+
+    inline VkShaderStageFlags getShaderStageFlagsByShaderType(ShaderType type)
+    {
+        switch (toEnumType(type))
+        {
+        case toEnumType(ShaderType::Vertex):
+            return VK_SHADER_STAGE_VERTEX_BIT;
+
+        case toEnumType(ShaderType::Fragment):
+            return VK_SHADER_STAGE_FRAGMENT_BIT;
+
+        case toEnumType(ShaderType::Compute):
+            return VK_SHADER_STAGE_COMPUTE_BIT;
+
+        default:
+            ASSERT(false, "unknown type");
+            break;
+        }
+
+        return VK_SHADER_STAGE_ALL;
     }
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

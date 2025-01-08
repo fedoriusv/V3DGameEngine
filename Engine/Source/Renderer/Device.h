@@ -7,6 +7,7 @@
 
 #include "Texture.h"
 #include "Buffer.h"
+#include "Shader.h"
 #include "Swapchain.h"
 #include "SamplerState.h"
 #include "RenderTargetState.h"
@@ -49,8 +50,9 @@ namespace renderer
 
         virtual void bindTexture(u32 set, u32 slot, const TextureView& textureView) = 0;
         virtual void bindBuffer(u32 set, u32 slot, Buffer* buffer) = 0;
-        virtual void bindSampler(u32 set, u32 slot, SamplerState* sampler) = 0;
-        virtual void bindConstantBuffer(u32 set, u32 slot, u32 size, void* data) = 0;
+        virtual void bindSampler(u32 set, u32 slot, const SamplerState& sampler) = 0;
+        virtual void bindConstantBuffer(u32 set, u32 slot, u32 size, const void* data) = 0;
+        virtual void bindPushConstant(ShaderType type, u32 size, const void* data) = 0;
 
     protected:
 
