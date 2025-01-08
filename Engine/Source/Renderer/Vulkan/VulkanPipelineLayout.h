@@ -143,7 +143,7 @@ namespace vk
         void destroyDescriptorSetLayouts(std::array<VkDescriptorSetLayout, k_maxDescriptorSetCount>& descriptorSetLayouts);
 
         VulkanDevice&   m_device;
-        std::mutex      m_mutex;
+        utils::Spinlock m_mutex;
         std::unordered_map<VulkanDescriptorSetLayoutDescriptionType, VkDescriptorSetLayout, VulkanDescriptorSetLayoutDescriptionType::Hash, VulkanDescriptorSetLayoutDescriptionType::Compare> m_descriptorSetLayouts;
         std::unordered_map<VulkanPipelineLayoutDescription, VulkanPipelineLayout, VulkanPipelineLayoutDescription::Hash, VulkanPipelineLayoutDescription::Compare> m_pipelinesLayouts;
     };

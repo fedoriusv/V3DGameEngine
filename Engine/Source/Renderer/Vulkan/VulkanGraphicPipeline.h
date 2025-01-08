@@ -169,7 +169,7 @@ namespace vk
         VulkanGraphicPipelineManager& operator=(const VulkanGraphicPipelineManager&) = delete;
 
         VulkanDevice&   m_device;
-        std::mutex      m_mutex;
+        utils::Spinlock m_mutex;
         std::unordered_map<DescInfo<VulkanPipelineDesc>, VulkanGraphicPipeline*, DescInfo<VulkanPipelineDesc>::Hash, DescInfo<VulkanPipelineDesc>::Compare> m_pipelineGraphicList;
     };
 

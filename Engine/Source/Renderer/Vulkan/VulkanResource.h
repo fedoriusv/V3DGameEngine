@@ -42,7 +42,7 @@ namespace vk
         virtual void fenceTracker(VulkanFence* fence, u64 value, u64 frame) {};
 #endif
         mutable std::unordered_map<VulkanFence*, std::tuple<u64, u64>>  m_fanceInfo;
-        mutable std::mutex                                              m_mutex;
+        mutable utils::Spinlock                                         m_mutex;
 #if VULKAN_DEBUG
         mutable s64                                                     m_refCount;
 #endif //VULKAN_DEBUG
