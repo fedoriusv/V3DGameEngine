@@ -98,7 +98,7 @@ void TaskDispatcher::workerThreadLoop()
                     hasTask = !m_taskQueue[TaskQueue::MainThreadQueue + threadID]->_tasks.empty();
                     m_taskQueue[TaskQueue::MainThreadQueue + threadID]->_mutex.unlock();
 
-                    return hasTask;
+                    return hasTask || !m_running;
                 });
             --m_numSleepingThreads;
         }
@@ -259,7 +259,6 @@ Task* TaskDispatcher::popTask()
         u32 threadJ = threadID + index;
         threadJ = threadJ % m_numWorkingThreads + 1;
 
-        //ASSERT(threadID != threadJ, "must be different");
         task = TaskDispatcher::getTaskFromQueue(TaskQueue::MainThreadQueue + threadJ);
         if (task)
         {
@@ -274,7 +273,11 @@ void TaskDispatcher::run(Task* task)
 {
     task->m_result.store(Task::Status::Executing, std::memory_order_relaxed);
     task->m_func();
-    task->m_result.store(Task::Status::Completed, std::memory_order_relaxed);
+
+    {
+        std::lock_guard<std::mutex> lock(task->m_mutex);
+        task->m_result.store(Task::Status::Completed, std::memory_order_relaxed);
+    }
     task->m_wait.notify_all();
 }
 

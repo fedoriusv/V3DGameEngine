@@ -103,7 +103,9 @@ namespace task
         //TODO own allocator
         std::function<void()>       m_func;
         std::function<bool()>       m_cond;
+
         std::condition_variable_any m_wait;
+        std::mutex                  m_mutex;
     };
 
     inline Task::Task() noexcept
@@ -125,20 +127,9 @@ namespace task
 
     inline void Task::waitCompetition()
     {
-        struct FakeMutex
-        {
-            void lock()
-            {
-                int b;
-            };
-            void unlock()
-            {
-                int a = 0;
-            };
-        };
-        FakeMutex mutex;
+        std::unique_lock<std::mutex> lock(m_mutex);
 
-        m_wait.wait(mutex, [this]() -> bool
+        m_wait.wait(lock, [this]() -> bool
             {
                 return isCompeted();
             });
