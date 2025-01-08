@@ -14,12 +14,16 @@
 #include "Renderer/PipelineState.h"
 #include "Renderer/ShaderProgram.h"
 #include "Renderer/Shader.h"
+#include "Scene/UILayout.h"
+
+#include "Editor.h"
 
 using namespace v3d;
 using namespace v3d::platform;
 using namespace v3d::renderer;
 using namespace v3d::utils;
 using namespace v3d::event;
+
 
 class EditorApplication : public v3d::Application, public InputEventHandler
 {
@@ -77,43 +81,6 @@ private:
 
     void Init()
     {
-        InputEventHandler::bind([this](const MouseInputEvent* event)
-            {
-                if (event->_event == MouseInputEvent::MousePressDown || event->_event == MouseInputEvent::MouseDoubleClick)
-                {
-                    s32 rvalue = std::rand();
-                    f32 r = 1.0f / RAND_MAX * rvalue;
-
-                    s32 gvalue = std::rand();
-                    f32 g = 1.0f / RAND_MAX * gvalue;
-
-                    s32 bvalue = std::rand();
-                    f32 b = 1.0f / RAND_MAX * bvalue;
-
-                    m_ClearColor = { r, g, b, 1.0f };
-
-                }
-            });
-
-        InputEventHandler::bind([this](const TouchInputEvent* event)
-            {
-                if (event->_event == TouchInputEvent::TouchTypeEvent::TouchMotion && event->_motionEvent == TouchInputEvent::TouchMotionDown)
-                {
-                    LOG_DEBUG("TouchInputEvent event");
-
-                    s32 rvalue = std::rand();
-                    f32 r = 1.0f / RAND_MAX * rvalue;
-
-                    s32 gvalue = std::rand();
-                    f32 g = 1.0f / RAND_MAX * gvalue;
-
-                    s32 bvalue = std::rand();
-                    f32 b = 1.0f / RAND_MAX * bvalue;
-
-                    m_ClearColor = { r, g, b, 1.0f };
-                }
-            });
-
         InputEventHandler::bind([this](const SystemEvent* event)
             {
                 Window* window = Window::getWindowsByID(event->_windowID);
@@ -140,22 +107,45 @@ private:
         params._size = m_Window->getSize();
 
         m_Swapchain = m_Device->createSwapchain(m_Window, params);
-        m_CmdList = m_Device->createCommandList<renderer::CmdListRender>(Device::GraphicMask);
-        m_Sync = m_Device->createSyncPoint(m_CmdList);
 
-        m_ClearColor = { 1.0, 0.0, 0.0, 1.0 };
+        m_Backbuffer = new renderer::RenderTargetState(m_Device, m_Swapchain->getBackbufferSize());
+        m_Backbuffer->setColorTexture(0, m_Swapchain->getBackbuffer(),
+            {
+                renderer::RenderTargetLoadOp::LoadOp_Clear, renderer::RenderTargetStoreOp::StoreOp_Store, math::Vector4D(0.0f)
+            },
+            {
+                renderer::TransitionOp::TransitionOp_Undefined, renderer::TransitionOp::TransitionOp_Present
+            }
+        );
+
+        m_UILayout = new scene::UILayout(m_Device);
+        m_UILayout->init(m_Backbuffer);
+
+        m_EditorScene = new EditorScene();
+        m_EditorScene->init(m_Device, m_Swapchain, m_Backbuffer);
+
+        m_CmdList = m_Device->createCommandList<renderer::CmdListRender>(Device::GraphicMask);
     }
     
     void Run()
     {
+        m_UILayout->update(m_Window, this);
+        m_EditorScene->update(0.01f);
+
         //Frame
         m_Swapchain->beginFrame();
 
-        m_CmdList->clear(m_Swapchain->getBackbuffer(), m_ClearColor);
-        m_Device->submit(m_CmdList, m_Swapchain->getSyncPoint());
+        m_CmdList->beginRenderTarget(*m_Backbuffer);
+
+        m_EditorScene->render(m_CmdList);
+        m_UILayout->render(m_CmdList);
+
+        m_CmdList->endRenderTarget();
+
+        m_Device->submit(m_CmdList, true);
 
         m_Swapchain->endFrame();
-        m_Swapchain->presentFrame(m_Sync);
+        m_Swapchain->presentFrame();
     }
 
     void Exit()
@@ -166,7 +156,6 @@ private:
 
         if (m_Device)
         {
-            m_Device->destroySyncPoint(m_CmdList, m_Sync);
             m_Device->destroyCommandList(m_CmdList);
             m_Device->destroySwapchain(m_Swapchain);
 
@@ -177,13 +166,17 @@ private:
 
     v3d::platform::Window* m_Window = nullptr;
     v3d::renderer::Device* m_Device = nullptr;
-    bool m_Terminate = false;
+
+    scene::UILayout* m_UILayout;
+    EditorScene*     m_EditorScene;
 
     v3d::renderer::CmdListRender* m_CmdList = nullptr;
-    v3d::renderer::SyncPoint* m_Sync = nullptr;
     v3d::renderer::Swapchain* m_Swapchain = nullptr;
 
-    color::Color m_ClearColor;
+    v3d::renderer::RenderTargetState* m_Backbuffer = nullptr;
+
+
+    bool m_Terminate = false;
 };
 
 int main(int argc, char* argv[])
