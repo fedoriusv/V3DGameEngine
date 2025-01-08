@@ -189,6 +189,7 @@ void VulkanDevice::submit(CmdList* cmd, SyncPoint* sync, bool wait)
     VulkanCmdList& cmdList = *static_cast<VulkanCmdList*>(cmd);
     VulkanSyncPoint* syncPoint = static_cast<VulkanSyncPoint*>(sync);
 
+    ASSERT(cmdList.m_concurrencySlot != ~1, "invalid slot. Skip submit?");
     VulkanCommandBufferManager* cmdBufferMgr = m_threadedPools[cmdList.m_concurrencySlot].m_cmdBufferManager;
     ASSERT(cmdBufferMgr, "nullptr");
 
