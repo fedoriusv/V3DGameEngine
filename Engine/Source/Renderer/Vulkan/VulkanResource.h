@@ -74,24 +74,27 @@ namespace vk
 
     inline void VulkanResource::markUsed(VulkanFence* fence, u64 value, u64 frame)
     {
-        std::lock_guard lock(m_mutex);
+        {
+            TRACE_PROFILER_RENDER_SCOPE("markUsed", color::BLACK);
 
+            std::lock_guard lock(m_mutex);
 #if VULKAN_DEBUG
-        ++m_refCount;
+            ++m_refCount;
 #endif //VULKAN_DEBUG
-        auto found = m_fanceInfo.find(fence);
-        if (found != m_fanceInfo.end())
-        {
-            found->second = { value, frame };
-        }
-        else
-        {
-            [[maybe_unused]] auto inserted = m_fanceInfo.emplace(fence, std::make_tuple(value, frame));
-            ASSERT(inserted.second, "must be unique");
-        }
+            auto found = m_fanceInfo.find(fence);
+            if (found != m_fanceInfo.end())
+            {
+                found->second = { value, frame };
+            }
+            else
+            {
+                [[maybe_unused]] auto inserted = m_fanceInfo.emplace(fence, std::make_tuple(value, frame));
+                ASSERT(inserted.second, "must be unique");
+            }
 #if VULKAN_DEBUG_MARKERS
-        fenceTracker(fence, value, frame);
+            fenceTracker(fence, value, frame);
 #endif
+        }
     }
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
