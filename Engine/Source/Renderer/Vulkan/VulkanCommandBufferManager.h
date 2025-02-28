@@ -55,6 +55,7 @@ namespace vk
     */
     struct VulkanTransitionState
     {
+        //Image
         static VkImageLayout convertTransitionStateToImageLayout(TransitionOp state);
 
         static VkPipelineStageFlags selectStageFlagsByImageLayout(VkImageLayout layout);

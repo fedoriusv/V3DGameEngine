@@ -58,14 +58,8 @@ namespace vk
     {
     public:
 
-        VulkanRenderState() noexcept
-            : _dirty(DirtyStateMask::DirtyState_All)
-        {
-            _clearValues.resize(k_maxColorAttachments + 1);
-            memset(&_boundSetInfo[0], 0, sizeof(_boundSetInfo));
-            memset(&_boundSets[0], 0, sizeof(_boundSets));
-
-        }
+        VulkanRenderState() noexcept;
+        ~VulkanRenderState();
 
         VulkanRenderState& operator=(VulkanRenderState&& other) noexcept
         {

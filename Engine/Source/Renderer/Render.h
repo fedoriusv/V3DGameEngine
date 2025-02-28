@@ -395,11 +395,10 @@ namespace renderer
     */
     enum BufferUsage : u32
     {
-        Buffer_GPUOnly     = 0,     // GPU side only
-        Buffer_GPUWrite    = 0x01,  // Write CPU to GPU
-        Buffer_GPURead     = 0x02,  // Read from GPU to CPU
-
-        Buffer_Dynamic  = 0x04,     // Buffer is shared between CPU and GPU
+        Buffer_GPUOnly              = 0,     // GPU side only. Upload through command buffer
+        Buffer_GPUWriteCocherent    = 0x01,  // Write CPU to GPU. Cocherent memory. Can be mapped directly
+        Buffer_GPUWriteCached       = 0x02,  // Write CPU to GPU. Cahced memory. Can be mapped by write combine
+        Buffer_GPURead              = 0x03,  // Read from GPU to CPU. Readback logic
     };
 
     /**
@@ -421,12 +420,14 @@ namespace renderer
             VertexBuffer,
             IndexBuffer,
             ConstantBuffer,
-            StorageBuffer,
-            ReadbackBuffer,
+            UnorderedAccess,
             StagingBuffer,
         };
 
         virtual bool hasUsageFlag(BufferUsage usage) const = 0;
+
+        virtual void* map(u32 offset = ~1, u32 size = ~1) = 0;
+        virtual void unmap(u32 offset = ~1, u32 size = ~1) = 0;
 
     protected:
 

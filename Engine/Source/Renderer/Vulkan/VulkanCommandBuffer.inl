@@ -281,14 +281,23 @@ inline void VulkanCommandBuffer::cmdPipelineBarrier(VulkanImage* image, const Re
     VulkanWrapper::CmdPipelineBarrier(m_commands, srcStage, dstStage, VK_DEPENDENCY_BY_REGION_BIT, 0, nullptr, 0, nullptr, 1, &imageMemoryBarrier);
 }
 
-inline void VulkanCommandBuffer::cmdPipelineBarrier(VulkanBuffer* buffer, VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask)
+inline void VulkanCommandBuffer::cmdPipelineBarrier(VulkanBuffer* buffer, u32 offset, u32 size, VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask, VkAccessFlags srcAccessMask, VkAccessFlags dstAccessMask)
 {
     ASSERT(m_status == CommandBufferStatus::Begin, "not started");
     ASSERT(!VulkanCommandBuffer::isInsideRenderPass(), "can't be inside render pass");
 
     VulkanCommandBuffer::captureResource(buffer);
+
     VkBufferMemoryBarrier bufferMemoryBarrier = {};
-    //TODO:
+    bufferMemoryBarrier.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
+    bufferMemoryBarrier.pNext = nullptr;
+    bufferMemoryBarrier.srcAccessMask = srcAccessMask;
+    bufferMemoryBarrier.dstAccessMask = dstAccessMask;
+    bufferMemoryBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    bufferMemoryBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    bufferMemoryBarrier.buffer = buffer->getHandle();
+    bufferMemoryBarrier.offset = offset;
+    bufferMemoryBarrier.size = size;
 
     VulkanWrapper::CmdPipelineBarrier(m_commands, srcStageMask, dstStageMask, VK_DEPENDENCY_BY_REGION_BIT, 0, nullptr, 1, &bufferMemoryBarrier, 0, nullptr);
 }

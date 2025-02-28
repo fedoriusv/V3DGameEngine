@@ -41,8 +41,8 @@ namespace vk
         VkBuffer getHandle() const;
         u64 getSize() const;
 
-        void* map();
-        void unmap();
+        void* map(u32 offset = ~1, u32 size = ~1) override;
+        void unmap(u32 offset = ~1, u32 size = ~1) override;
 
 #if DEBUG_OBJECT_MEMORY
         static std::set<VulkanBuffer*> s_objects;

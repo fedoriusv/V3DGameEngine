@@ -443,7 +443,7 @@ void VulkanDeviceCaps::fillCapabilitiesList(const DeviceInfo* info)
     LOG_INFO("VulkanDeviceCaps::initialize:  memoryTypeCount is %d", _deviceMemoryProps.memoryTypeCount);
     for (u32 i = 0; i < _deviceMemoryProps.memoryTypeCount; ++i)
     {
-        LOG_INFO("VulkanDeviceCaps::initialize:    memoryType [heapIndex %u, propertyFlags %s]", _deviceMemoryProps.memoryTypes[i].heapIndex, memoryProperyFlagsString(_deviceMemoryProps.memoryTypes[i].propertyFlags).c_str());
+        LOG_INFO("VulkanDeviceCaps::initialize:    memoryType %u:[heapIndex %u, propertyFlags %s]", i, _deviceMemoryProps.memoryTypes[i].heapIndex, memoryProperyFlagsString(_deviceMemoryProps.memoryTypes[i].propertyFlags).c_str());
     }
 
     _supportDeviceCoherentMemory = VulkanMemory::isSupportedMemoryType(_deviceMemoryProps, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, true);

@@ -322,10 +322,12 @@ void VulkanDevice::waitGPUCompletion(CmdList* cmd)
 #endif //FRAME_PROFILER_INTERNAL
     ASSERT(cmd, "nullptr");
     VulkanCmdList* vkCmdList = static_cast<VulkanCmdList*>(cmd);
-
-    s32 slot = vkCmdList->m_concurrencySlot;
-    m_threadedPools[slot].m_cmdBufferManager->waitQueueCompletion(getQueueByMask(vkCmdList->m_queueMask));
-    m_threadedPools[slot].m_cmdBufferManager->updateStatus();
+    if (vkCmdList->m_concurrencySlot != ~1)
+    {
+        s32 slot = vkCmdList->m_concurrencySlot;
+        m_threadedPools[slot].m_cmdBufferManager->waitQueueCompletion(getQueueByMask(vkCmdList->m_queueMask));
+        m_threadedPools[slot].m_cmdBufferManager->updateStatus();
+    }
 }
 
 CmdList* VulkanDevice::createCommandList_Impl(DeviceMask queueType)
@@ -1927,13 +1929,11 @@ bool VulkanCmdList::uploadData(Buffer* buffer, u32 offset, u32 size, const void*
     VulkanCommandBuffer* cmdBuffer = VulkanCmdList::acquireAndStartCommandBuffer(CommandTargetType::CmdResourceBuffer);
     VulkanBuffer* vkBuffer = OBJECT_FROM_HANDLE(buffer->getBufferHandle(), VulkanBuffer);
     bool result = vkBuffer->upload(cmdBuffer, offset, size, data);
-    if (result && !m_pendingRenderState._insideRenderpass && !vkBuffer->hasUsageFlag(BufferUsage::Buffer_Dynamic))
+
+    u32 immediateResourceSubmit = m_device.getVulkanDeviceCaps()._immediateResourceSubmit;
+    if (result && !m_pendingRenderState._insideRenderpass  && immediateResourceSubmit > 0)
     {
-        u32 immediateResourceSubmit = m_device.getVulkanDeviceCaps()._immediateResourceSubmit;
-        if (immediateResourceSubmit > 0)
-        {
-            m_device.submit(this, immediateResourceSubmit == 2 ? true : false);
-        }
+        m_device.submit(this, immediateResourceSubmit == 2 ? true : false);
     }
 
     return result;

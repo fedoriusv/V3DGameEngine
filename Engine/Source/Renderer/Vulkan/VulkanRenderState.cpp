@@ -15,6 +15,22 @@ namespace renderer
 namespace vk
 {
 
+VulkanRenderState::VulkanRenderState() noexcept
+    : _dirty(DirtyStateMask::DirtyState_All)
+{
+}
+
+VulkanRenderState::~VulkanRenderState()
+{
+    for (u32 type = toEnumType(ShaderType::First); type <= (u32)toEnumType(ShaderType::Last); ++type)
+    {
+        if (_pushConstant[type]._data)
+        {
+            V3D_FREE(_pushConstant[type]._data, memory::MemoryLabel::MemoryRenderCore);
+        }
+    }
+}
+
 void VulkanRenderState::addImageBarrier(VulkanImage* texture, const RenderTexture::Subresource& subresource, VkImageLayout layout)
 {
     if (_imageBarriers.contains(layout))
@@ -87,6 +103,13 @@ void VulkanRenderState::invalidate()
     }
     _descriptorSets.clear();
     _dynamicOffsets.clear();
+
+#ifdef DEBUG
+    for (u32 type = toEnumType(ShaderType::First); type <= (u32)toEnumType(ShaderType::Last); ++type)
+    {
+        memset(_pushConstant[type]._data, 0, sizeof(_pushConstant[type]._size));
+    }
+#endif
 
     _imageBarriers.clear();
 

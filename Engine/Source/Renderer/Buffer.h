@@ -35,6 +35,21 @@ namespace renderer
         */
         bool hasUsageFlag(BufferUsage usage) const;
 
+        /**
+        * @brief map method
+        * @return void*
+        */
+        template<typename Type = void*>
+        Type* map(u32 offset = ~1, u32 size = ~1)
+        {
+            return static_cast<Type*>(map_Impl(offset, size));
+        }
+
+        /**
+        * @brief unmap method
+        */
+        void unmap(u32 offset = ~1, u32 size = ~1);
+
     protected:
 
         /**
@@ -55,6 +70,9 @@ namespace renderer
 
         friend GeometryBufferDesc;
 
+    private:
+
+        void* map_Impl(u32 offset, u32 size);
     };
 
     inline bool Buffer::hasUsageFlag(BufferUsage usage) const
@@ -66,6 +84,8 @@ namespace renderer
     {
         return m_buffer;
     }
+
+
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 

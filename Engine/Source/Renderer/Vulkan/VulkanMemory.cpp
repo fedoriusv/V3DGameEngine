@@ -582,7 +582,7 @@ bool PoolVulkanMemoryAllocator::findAllocationFromPool(std::multimap<VkDeviceSiz
     pool->_chunks.erase(chunkOffsetIter);
 
 
-    ASSERT(chunkSize._size > size, "fail");
+    ASSERT(chunkSize._size >= size, "fail");
     VkDeviceSize allocatedSize = 0;
     VkDeviceSize allocatedOffset = 0;
     if (chunkSize._size - size >= m_device.getVulkanDeviceCaps().getPhysicalDeviceLimits().minMemoryMapAlignment)

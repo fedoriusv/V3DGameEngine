@@ -111,7 +111,7 @@ namespace vk
         void cmdPipelineBarrier(VulkanImage* image, VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask, VkImageLayout layout);
         void cmdPipelineBarrier(VulkanImage* image, const RenderTexture::Subresource& resource, VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask, VkImageLayout layout);
         void cmdPipelineBarrier(VulkanImage* image, const RenderTexture::Subresource& resource, VkImageLayout oldLayout, VkImageLayout newLayout);
-        void cmdPipelineBarrier(VulkanBuffer* buffer, VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask);
+        void cmdPipelineBarrier(VulkanBuffer* buffer, u32 offset, u32 size, VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask, VkAccessFlags srcAccessMask, VkAccessFlags dstAccessMask);
         void cmdPipelineBarrier(VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask, const VkMemoryBarrier& memoryBarrier);
 
         //compute
