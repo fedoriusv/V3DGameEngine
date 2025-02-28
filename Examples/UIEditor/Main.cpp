@@ -10,11 +10,16 @@
 #include "Renderer/Swapchain.h"
 #include "Events/InputEventHandler.h"
 #include "Events/InputEventReceiver.h"
+#include "Events/InputEventMouse.h"
+#include "Events/InputEventKeyboard.h"
 #include "Renderer/RenderTargetState.h"
 #include "Renderer/PipelineState.h"
 #include "Renderer/ShaderProgram.h"
 #include "Renderer/Shader.h"
-#include "Scene/UILayout.h"
+#include "UI/WigetHandler.h"
+#include "UI/WigetLayout.h"
+#include "UI/Wiget.h"
+#include "UI/ImGui.h"
 
 #include "Editor.h"
 
@@ -32,7 +37,7 @@ public:
     EditorApplication(int& argc, char** argv)
         : v3d::Application(argc, argv)
     {
-        m_Window = Window::createWindow({ 1024, 768 }, { 800, 500 }, false, true, new InputEventReceiver());
+        m_Window = Window::createWindow({ 1280, 720 }, { 800, 500 }, false, true, new InputEventReceiver());
         ASSERT(m_Window, "windows is nullptr");
     }
     
@@ -97,6 +102,7 @@ private:
 
         m_Window->getInputEventReceiver()->attach(InputEvent::InputEventType::MouseInputEvent, this);
         m_Window->getInputEventReceiver()->attach(InputEvent::InputEventType::TouchInputEvent, this);
+        m_Window->getInputEventReceiver()->attach(InputEvent::InputEventType::KeyboardInputEvent, this);
         m_Window->getInputEventReceiver()->attach(InputEvent::InputEventType::SystemEvent, this);
 
 
@@ -118,19 +124,64 @@ private:
             }
         );
 
-        m_UILayout = new scene::UILayout(m_Device);
-        m_UILayout->init(m_Backbuffer);
-
         m_EditorScene = new EditorScene();
         m_EditorScene->init(m_Device, m_Swapchain, m_Backbuffer);
 
         m_CmdList = m_Device->createCommandList<renderer::CmdListRender>(Device::GraphicMask);
+
+        m_UI = ui::WigetHandler::createWigetHander<ui::ImGuiWigetHandler>(m_Device, m_CmdList, m_Backbuffer);
+        m_UI->showDemoUI();
+        InputEventHandler::bind([this](const MouseInputEvent* event)
+            {
+                m_UI->handleMouseCallback(this, event);
+            });
+        InputEventHandler::bind([this](const KeyboardInputEvent* event)
+            {
+                m_UI->handleKeyboardCallback(this, event);
+            });
+
+        ui::WigetLayout* UiLayoutMenu = m_UI->createWigetMenuLayout();
+        UiLayoutMenu->addWiget<ui::WigetMenu>(new ui::WigetMenu("File"))
+            ->addWiget(((new ui::WigetMenu::MenuItem("New"))
+                ->setOnClickedEvent([](const ui::Wiget* w) -> void
+                    {
+                        LOG_DEBUG("New menu click");
+                    }))
+                )
+            ->addWiget(new ui::WigetMenu::MenuItem("Open"))
+            ->addWiget(new ui::WigetMenu::MenuItem("Save"))
+            ->addWiget(((new ui::WigetMenu("Recent Open"))
+                ->addWiget(new ui::WigetMenu::MenuItem("temp.temp")))
+                )
+            ->addWiget(new ui::WigetMenu::MenuItem("Exit"));
+
+        UiLayoutMenu->addWiget<ui::WigetMenu>(new ui::WigetMenu("Edit"))
+            ->setOnClickedEvent([](const ui::Wiget* w) -> void
+                {
+                    LOG_DEBUG("Edit menu click");
+                });
+        UiLayoutMenu->addWiget<ui::WigetMenu>(new ui::WigetMenu("View"))
+            ->setOnClickedEvent([](const ui::Wiget* w) -> void
+                {
+                    LOG_DEBUG("View menu click");
+                });
+
+
+        ui::WigetLayout* UiLayout = m_UI->createWigetLayout("Windiw Test", {300, 300}, {500, 200});
+        UiLayout->addWiget<ui::WigetButton>(new ui::WigetButton("Button test"))
+            ->setOnClickedEvent([](const ui::Wiget* w) -> void
+                {
+                    const ui::WigetButton* b = static_cast<const ui::WigetButton*>(w);
+                    LOG_DEBUG("Button click %s", b->getTitle().c_str());
+                })
+            ->setActive(true)
+            ->setVisible(true);
     }
     
     void Run()
     {
-        m_UILayout->update(m_Window, this);
-        m_EditorScene->update(0.01f);
+        m_UI->update(m_Window, 0.016f);
+        m_EditorScene->update(0.016f);
 
         //Frame
         m_Swapchain->beginFrame();
@@ -138,11 +189,11 @@ private:
         m_CmdList->beginRenderTarget(*m_Backbuffer);
 
         m_EditorScene->render(m_CmdList);
-        m_UILayout->render(m_CmdList);
+        m_UI->render(m_CmdList);
 
         m_CmdList->endRenderTarget();
 
-        m_Device->submit(m_CmdList, true);
+        m_Device->submit(m_CmdList, false);
 
         m_Swapchain->endFrame();
         m_Swapchain->presentFrame();
@@ -152,6 +203,7 @@ private:
     {
         m_Window->getInputEventReceiver()->dettach(InputEvent::InputEventType::MouseInputEvent);
         m_Window->getInputEventReceiver()->dettach(InputEvent::InputEventType::TouchInputEvent);
+        m_Window->getInputEventReceiver()->dettach(InputEvent::InputEventType::KeyboardInputEvent);
         m_Window->getInputEventReceiver()->dettach(InputEvent::InputEventType::SystemEvent);
 
         if (m_Device)
@@ -167,8 +219,8 @@ private:
     v3d::platform::Window* m_Window = nullptr;
     v3d::renderer::Device* m_Device = nullptr;
 
-    scene::UILayout* m_UILayout;
-    EditorScene*     m_EditorScene;
+    ui::ImGuiWigetHandler*  m_UI;
+    EditorScene*            m_EditorScene;
 
     v3d::renderer::CmdListRender* m_CmdList = nullptr;
     v3d::renderer::Swapchain* m_Swapchain = nullptr;

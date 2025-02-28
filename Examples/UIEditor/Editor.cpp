@@ -134,7 +134,6 @@ void EditorScene::init(renderer::Device* device, renderer::Swapchain* swapchain,
     m_Pipeline->setColorMask(renderer::ColorMask::ColorMask_All);
     m_Pipeline->setDepthWrite(false);
 
-
     CmdList->uploadData(m_Geometry, 0, static_cast<u32>(geometryData.size() * sizeof(math::Vector3D)), geometryData.data());
     m_Device->submit(CmdList, true);
 
@@ -228,14 +227,14 @@ bool EditorScene::handleInputEvent(event::InputEventHandler* handler, const even
     if (event->_eventType == event::InputEvent::InputEventType::MouseInputEvent)
     {
         const event::MouseInputEvent* mouseEvent = static_cast<const event::MouseInputEvent*>(event);
-        m_Camera->handlerMouseCallback(handler, mouseEvent);
+        m_Camera->handleMouseCallback(handler, mouseEvent);
 
         return true;
     }
     else if (event->_eventType == event::InputEvent::InputEventType::TouchInputEvent)
     {
         const event::TouchInputEvent* touchEvent = static_cast<const event::TouchInputEvent*>(event);
-        m_Camera->handlerTouchCallback(handler, touchEvent);
+        m_Camera->handleTouchCallback(handler, touchEvent);
 
         return true;
     }

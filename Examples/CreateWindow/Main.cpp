@@ -84,17 +84,20 @@ public:
         m_InputEventHandler->bind([this](const SystemEvent* event)
             {
                 Window* window = Window::getWindowsByID(event->_windowID);
-                if (event->_systemEvent == SystemEvent::Create)
+                if (window)
                 {
-                    OnCreate(window);
-                }
-                else if (event->_systemEvent == SystemEvent::Destroy)
-                {
-                    OnDestroy(window);
-                }
-                else if (event->_systemEvent == SystemEvent::Resize)
-                {
-                    OnResize(window);
+                    if (event->_systemEvent == SystemEvent::Create)
+                    {
+                        OnCreate(window);
+                    }
+                    else if (event->_systemEvent == SystemEvent::Destroy)
+                    {
+                        OnDestroy(window);
+                    }
+                    else if (event->_systemEvent == SystemEvent::Resize)
+                    {
+                        OnResize(window);
+                    }
                 }
             });
 
@@ -177,7 +180,7 @@ public:
     
     void OnResize(v3d::platform::Window* window)
     {
-        LOG_INFO("OnCreate, Window %u is resized, width %u, height %u", window->ID(), window->getSize().m_width, window->getSize().m_height);
+        LOG_INFO("OnResize, Window %u is resized, width %u, height %u", window->ID(), window->getSize().m_width, window->getSize().m_height);
     }
 
 private:
