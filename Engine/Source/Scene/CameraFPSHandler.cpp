@@ -87,7 +87,7 @@ bool CameraFPSHandler::isDirectionChange() const
     return m_direction._forward || m_direction._back || m_direction._left || m_direction._right;
 }
 
-void CameraFPSHandler::rotateHandlerCallback(const v3d::event::InputEventHandler* handler, const event::MouseInputEvent* event, bool mouseCapture)
+void CameraFPSHandler::rotateHandleCallback(const v3d::event::InputEventHandler* handler, const event::MouseInputEvent* event, bool mouseCapture)
 {
     static math::Point2D position = event->_cursorPosition;
 
@@ -109,7 +109,7 @@ void CameraFPSHandler::rotateHandlerCallback(const v3d::event::InputEventHandler
     position = event->_cursorPosition;
 }
 
-void CameraFPSHandler::moveHandlerCallback(const v3d::event::InputEventHandler* handler, const event::KeyboardInputEvent* event)
+void CameraFPSHandler::moveHandleCallback(const v3d::event::InputEventHandler* handler, const event::KeyboardInputEvent* event)
 {
     m_direction._forward = handler->isKeyPressed(event::KeyCode::KeyKey_W);
     m_direction._back = handler->isKeyPressed(event::KeyCode::KeyKey_S);

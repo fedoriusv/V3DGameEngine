@@ -40,3 +40,8 @@ if(PROFILER_TRACY_LIB)
 	set(THIRD_PARTY_LIB_INCLUDE_SUFFIX "${THIRD_PARTY_LIB_INCLUDE_SUFFIX}" "tracy/public")
 	option(TRACY_ON_DEMAND "On-demand profiling" ON)
 endif()
+
+#imgui
+if(IMGUI_SOURCE)
+    set(THIRD_PARTY_LIB_DEFINE "${THIRD_PARTY_LIB_DEFINE} -DUSE_IMGUI")
+endif()

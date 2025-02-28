@@ -59,7 +59,7 @@ void CameraArcballHandler::update(f32 deltaTime)
     }
 }
 
-void CameraArcballHandler::handlerMouseCallback(v3d::event::InputEventHandler* handler, const event::MouseInputEvent* event)
+void CameraArcballHandler::handleMouseCallback(v3d::event::InputEventHandler* handler, const event::MouseInputEvent* event)
 {
     static math::Point2D position = event->_cursorPosition;
     static f32 wheel = event->_wheelValue;
@@ -110,7 +110,7 @@ void CameraArcballHandler::handlerMouseCallback(v3d::event::InputEventHandler* h
     wheel = event->_wheelValue;
 }
 
-void CameraArcballHandler::handlerTouchCallback(v3d::event::InputEventHandler* handler, const event::TouchInputEvent* event)
+void CameraArcballHandler::handleTouchCallback(v3d::event::InputEventHandler* handler, const event::TouchInputEvent* event)
 {
     static math::Point2D position = event->_position;
 
