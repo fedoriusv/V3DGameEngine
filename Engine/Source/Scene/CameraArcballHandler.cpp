@@ -61,12 +61,12 @@ void CameraArcballHandler::update(f32 deltaTime)
 
 void CameraArcballHandler::handleMouseCallback(v3d::event::InputEventHandler* handler, const event::MouseInputEvent* event)
 {
-    static math::Point2D position = event->_cursorPosition;
+    static math::Point2D position = event->_clientCoordinates;
     static f32 wheel = event->_wheelValue;
 
     if (handler->isLeftMousePressed())
     {
-        math::Point2D positionDelta = position - event->_cursorPosition;
+        math::Point2D positionDelta = position - event->_clientCoordinates;
 
         math::Vector3D rotation = CameraArcballHandler::getRotation();
         rotation.m_x -= positionDelta.m_y * k_rotationSpeed;
@@ -76,7 +76,7 @@ void CameraArcballHandler::handleMouseCallback(v3d::event::InputEventHandler* ha
 
     if (handler->isRightMousePressed())
     {
-        s32 positionDelta = position.m_y - event->_cursorPosition.m_y;
+        s32 positionDelta = position.m_y - event->_clientCoordinates.m_y;
         math::Vector3D postion = CameraHandler::getPosition();
         f32 newZPos = postion.m_z - (positionDelta * k_zoomSpeed * 0.1f);
         if (k_signZ < 0)
@@ -106,7 +106,7 @@ void CameraArcballHandler::handleMouseCallback(v3d::event::InputEventHandler* ha
         CameraHandler::setPosition(postion);
     }
 
-    position = event->_cursorPosition;
+    position = event->_clientCoordinates;
     wheel = event->_wheelValue;
 }
 

@@ -89,11 +89,11 @@ bool CameraFPSHandler::isDirectionChange() const
 
 void CameraFPSHandler::rotateHandleCallback(const v3d::event::InputEventHandler* handler, const event::MouseInputEvent* event, bool mouseCapture)
 {
-    static math::Point2D position = event->_cursorPosition;
+    static math::Point2D position = event->_clientCoordinates;
 
     if (handler->isLeftMousePressed() || mouseCapture)
     {
-        math::Point2D positionDelta = position - event->_cursorPosition;
+        math::Point2D positionDelta = position - event->_clientCoordinates;
 
         //if (positionDelta.x != 0 && positionDelta.y != 0)
         {
@@ -106,7 +106,7 @@ void CameraFPSHandler::rotateHandleCallback(const v3d::event::InputEventHandler*
         }
     }
 
-    position = event->_cursorPosition;
+    position = event->_clientCoordinates;
 }
 
 void CameraFPSHandler::moveHandleCallback(const v3d::event::InputEventHandler* handler, const event::KeyboardInputEvent* event)
