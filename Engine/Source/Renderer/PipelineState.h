@@ -467,12 +467,40 @@ namespace renderer
         */
         CullMode getCullMode() const;
 
+        /**
+        * @brief setDepthCompareOp method. Depth-Stencil state
+        * @param CompareOperation op [required]
+        */
         void setDepthCompareOp(CompareOperation op);
+
+        /**
+        * @brief setDepthTest method. Depth-Stencil state
+        * @param bool enable [required]
+        */
         void setDepthTest(bool enable);
+
+        /**
+        * @brief setDepthWrite method. Depth-Stencil state
+        * @param bool enable [required]
+        */
         void setDepthWrite(bool enable);
 
+        /**
+        * @brief getDepthCompareOp method. Depth-Stencil state
+        * @return CompareOperation
+        */
         CompareOperation getDepthCompareOp() const;
+
+        /**
+        * @brief isDepthTestEnable method. Depth-Stencil state
+        * @return bool
+        */
         bool isDepthTestEnable() const;
+
+        /**
+        * @brief isDepthWriteEnable method. Depth-Stencil state
+        * @return bool
+        */
         bool isDepthWriteEnable() const;
 
         void setBlendEnable(bool enable);
@@ -501,23 +529,23 @@ namespace renderer
         * @brief GraphicsPipelineState constructor.
         * Private method. Use createObject interface inside CommandList class to call.
         *
-        * @param const VertexInputAttributeDescription& vertex [required]
+        * @param const VertexInputAttributeDescription& attributeDesc [required]
+        * @param onst RenderPassDesc& renderpassDesc [required]
         * @param const ShaderProgram* const program [required]
-        * @param onst RenderTargetState* const renderTaget [required]
         * @param const std::string& name [optional]
         */
-        explicit GraphicsPipelineState(Device* device, const VertexInputAttributeDesc& vertex, const ShaderProgram* const program, const RenderTargetState* const renderTaget, const std::string& name = "") noexcept;
+        explicit GraphicsPipelineState(Device* device, const VertexInputAttributeDesc& attributeDesc, const RenderPassDesc& renderpassDesc, const ShaderProgram* const program, const std::string& name = "") noexcept;
 
         /**
         * @brief GraphicsPipelineState constructor.
         * Private method. Use createObject interface inside CommandList class to call.
         *
-        * @param const GraphicsPipelineStateDescription& desc [required]
+        * @param const GraphicsPipelineStateDescription& pipelineDesc [required]
+        * @param const RenderPassDesc& renderpassDesc [required]
         * @param const ShaderProgram* const program [required]
-        * @param const RenderTargetState* const renderTaget [required]
         * @param const std::string& name [optional]
         */
-        explicit GraphicsPipelineState(Device* device, const GraphicsPipelineStateDesc& desc, const ShaderProgram* const program, const RenderTargetState* const renderTaget, const std::string& name = "") noexcept;
+        explicit GraphicsPipelineState(Device* device, const GraphicsPipelineStateDesc& pipelineDesc, const RenderPassDesc& renderpassDesc, const ShaderProgram* const program, const std::string& name = "") noexcept;
 
         /**
         * @brief GraphicsPipelineState destructor
@@ -541,8 +569,8 @@ namespace renderer
     public:
 
         GraphicsPipelineStateDesc       m_pipelineStateDesc;
+        const RenderPassDesc            m_renderPassDesc;
         const ShaderProgram*            m_program;
-        const RenderTargetState*        m_renderTaget;
         ObjectTracker<RenderPipeline>   m_tracker;
 
         const std::string               m_name;
@@ -709,7 +737,7 @@ namespace renderer
 
     inline const RenderPassDesc& GraphicsPipelineState::getRenderPassDesc() const
     {
-        return m_renderTaget->getRenderPassDesc();
+        return m_renderPassDesc;
     }
 
     inline const ShaderProgram* GraphicsPipelineState::getShaderProgram() const

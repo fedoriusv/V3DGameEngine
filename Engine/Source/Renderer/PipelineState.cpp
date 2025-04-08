@@ -64,26 +64,26 @@ namespace renderer
      return readSize;
  }
 
-GraphicsPipelineState::GraphicsPipelineState(Device* device, const VertexInputAttributeDesc& vertex, const ShaderProgram* const program, const RenderTargetState* const renderTaget, const std::string& name) noexcept
+GraphicsPipelineState::GraphicsPipelineState(Device* device, const VertexInputAttributeDesc& attributeDesc, const RenderPassDesc& renderpassDesc, const ShaderProgram* const program, const std::string& name) noexcept
     : PipelineState()
     , m_device(device)
     , m_program(program)
-    , m_renderTaget(renderTaget)
+    , m_renderPassDesc(renderpassDesc)
     , m_name(name)
 
     , m_tracker(this, std::bind(&GraphicsPipelineState::destroyPipelines, this, std::placeholders::_1))
 {
     LOG_DEBUG("GraphicsPipelineState::GraphicsPipelineState constructor %llx", this);
 
-    m_pipelineStateDesc._vertexInputState._inputAttributes = vertex;
+    m_pipelineStateDesc._vertexInputState._inputAttributes = attributeDesc;
 }
 
-GraphicsPipelineState::GraphicsPipelineState(Device* device, const GraphicsPipelineStateDesc& desc, const ShaderProgram* const program, const RenderTargetState* const renderTaget, const std::string& name) noexcept
+GraphicsPipelineState::GraphicsPipelineState(Device* device, const GraphicsPipelineStateDesc& pipelineDesc, const RenderPassDesc& renderpassDesc, const ShaderProgram* const program, const std::string& name) noexcept
     : PipelineState()
     , m_device(device)
-    , m_pipelineStateDesc(desc)
+    , m_pipelineStateDesc(pipelineDesc)
+    , m_renderPassDesc(renderpassDesc)
     , m_program(program)
-    , m_renderTaget(renderTaget)
     , m_name(name)
 
     , m_tracker(this, std::bind(&GraphicsPipelineState::destroyPipelines, this, std::placeholders::_1))
