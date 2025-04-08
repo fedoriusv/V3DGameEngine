@@ -21,7 +21,7 @@ public:
 
         , m_InputEventHandler(nullptr)
     {
-        m_MainWindow = Window::createWindow({ 1024, 768 }, { 100, 100 }, false, m_InputReceiver, L"Main. Double click to create sub window");
+        m_MainWindow = Window::createWindow({ 1024, 768 }, { 100, 100 }, false, true, m_InputReceiver, L"Main. Double click to create sub window");
         ASSERT(m_MainWindow, "windows is nullptr");
         Window* UIWindow = Window::createWindow({ 250, 250 }, { 1150, 100 }, false, true, m_InputReceiver, L"UI");
         ASSERT(UIWindow, "windows is nullptr");
@@ -44,15 +44,15 @@ public:
             {
                 if (event->_event == MouseInputEvent::MousePressDown)
                 {
-                    LOG_INFO("MouseInputEvent, WindowID %u Down Key %u modif %x, wheel %f, pos %d, %d", event->_windowID, event->_key, event->_modifers, event->_wheelValue, event->_cursorPosition.m_x, event->_cursorPosition.m_y);
+                    LOG_INFO("MouseInputEvent, WindowID %u Down Key %u modif %x, wheel %f, pos %d, %d", event->_windowID, event->_key, event->_modifers, event->_wheelValue, event->_clientCoordinates.m_x, event->_clientCoordinates.m_y);
                 }
                 else if (event->_event == MouseInputEvent::MousePressUp)
                 {
-                    LOG_INFO("MouseInputEvent, WindowID %u UP Key %u modif %x, wheel %f, pos %d, %d", event->_windowID, event->_key, event->_modifers, event->_wheelValue, event->_cursorPosition.m_x, event->_cursorPosition.m_y);
+                    LOG_INFO("MouseInputEvent, WindowID %u UP Key %u modif %x, wheel %f, pos %d, %d", event->_windowID, event->_key, event->_modifers, event->_wheelValue, event->_clientCoordinates.m_x, event->_clientCoordinates.m_y);
                 }
                 else if (event->_event == MouseInputEvent::MouseDoubleClick)
                 {
-                    LOG_INFO("MouseInputEvent, WindowID %u MouseDoubleClick Key %u modif %x, wheel %f, pos %d, %d", event->_windowID, event->_key, event->_modifers, event->_wheelValue, event->_cursorPosition.m_x, event->_cursorPosition.m_y);
+                    LOG_INFO("MouseInputEvent, WindowID %u MouseDoubleClick Key %u modif %x, wheel %f, pos %d, %d", event->_windowID, event->_key, event->_modifers, event->_wheelValue, event->_clientCoordinates.m_x, event->_clientCoordinates.m_y);
 
                     u32 min = 0;
                     u32 maxW = 1000;
@@ -70,11 +70,11 @@ public:
                 }
                 else if (event->_event == MouseInputEvent::MouseMoved)
                 {
-                    LOG_INFO("MouseInputEvent, WindowID %u MouseMoved Key %u modif %x, wheel %f, pos %d, %d", event->_windowID, event->_key, event->_modifers, event->_wheelValue, event->_cursorPosition.m_x, event->_cursorPosition.m_y);
+                    LOG_INFO("MouseInputEvent, WindowID %u MouseMoved Key %u modif %x, wheel %f, pos %d, %d", event->_windowID, event->_key, event->_modifers, event->_wheelValue, event->_clientCoordinates.m_x, event->_clientCoordinates.m_y);
                 }
                 else if (event->_event == MouseInputEvent::MouseWheel)
                 {
-                    LOG_INFO("MouseInputEvent, WindowID %u MouseWheel Key %u modif %x, wheel %f, pos %d, %d", event->_windowID, event->_key, event->_modifers, event->_wheelValue, event->_cursorPosition.m_x, event->_cursorPosition.m_y);
+                    LOG_INFO("MouseInputEvent, WindowID %u MouseWheel Key %u modif %x, wheel %f, pos %d, %d", event->_windowID, event->_key, event->_modifers, event->_wheelValue, event->_clientCoordinates.m_x, event->_clientCoordinates.m_y);
                 }
             });
 

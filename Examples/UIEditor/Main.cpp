@@ -17,8 +17,7 @@
 #include "Renderer/ShaderProgram.h"
 #include "Renderer/Shader.h"
 #include "UI/WigetHandler.h"
-#include "UI/WigetLayout.h"
-#include "UI/Wiget.h"
+#include "UI/Wigets.h"
 #include "UI/ImGui.h"
 
 #include "Editor.h"
@@ -28,7 +27,6 @@ using namespace v3d::platform;
 using namespace v3d::renderer;
 using namespace v3d::utils;
 using namespace v3d::event;
-
 
 class EditorApplication : public v3d::Application, public InputEventHandler
 {
@@ -70,11 +68,15 @@ public:
             if (m_Window->isValid())
             {
                 m_Window->getInputEventReceiver()->sendDeferredEvents();
+
                 if (m_Terminate)
                 {
                     break;
                 }
+
                 Run();
+
+                m_Window->getInputEventReceiver()->resetInputHandlers();
             }
         }
 
@@ -86,16 +88,35 @@ private:
 
     void Init()
     {
-        InputEventHandler::bind([this](const SystemEvent* event)
+        auto createBackbufferRT = [](Device* device, Swapchain* swapchain) -> renderer::RenderTargetState*
+            {
+                renderer::RenderTargetState* backbuffer = new renderer::RenderTargetState(device, swapchain->getBackbufferSize());
+                backbuffer->setColorTexture(0, swapchain->getBackbuffer(),
+                    {
+                        renderer::RenderTargetLoadOp::LoadOp_Clear, renderer::RenderTargetStoreOp::StoreOp_Store, math::Vector4D(0.0f)
+                    },
+                    {
+                        renderer::TransitionOp::TransitionOp_Undefined, renderer::TransitionOp::TransitionOp_Present
+                    }
+                );
+
+                return backbuffer;
+            };
+
+        InputEventHandler::bind([this, &createBackbufferRT](const SystemEvent* event)
             {
                 Window* window = Window::getWindowsByID(event->_windowID);
-                if (event->_systemEvent == SystemEvent::Destroy)
+                if (m_Window == window && event->_systemEvent == SystemEvent::Destroy)
                 {
                     m_Terminate = true;
                 }
-                else if (event->_systemEvent == SystemEvent::Resize)
+                else if (m_Window == window && event->_systemEvent == SystemEvent::Resize)
                 {
                     m_Swapchain->resize(window->getSize());
+
+                    delete m_Backbuffer;
+                    m_Backbuffer = createBackbufferRT(m_Device, m_Swapchain);
+
                 }
             });
         std::srand(u32(std::time(0)));
@@ -113,23 +134,15 @@ private:
         params._size = m_Window->getSize();
 
         m_Swapchain = m_Device->createSwapchain(m_Window, params);
-
-        m_Backbuffer = new renderer::RenderTargetState(m_Device, m_Swapchain->getBackbufferSize());
-        m_Backbuffer->setColorTexture(0, m_Swapchain->getBackbuffer(),
-            {
-                renderer::RenderTargetLoadOp::LoadOp_Clear, renderer::RenderTargetStoreOp::StoreOp_Store, math::Vector4D(0.0f)
-            },
-            {
-                renderer::TransitionOp::TransitionOp_Undefined, renderer::TransitionOp::TransitionOp_Present
-            }
-        );
+        m_Backbuffer = createBackbufferRT(m_Device, m_Swapchain);
+        ASSERT(m_Backbuffer, "m_Backbuffer is nullptr");
 
         m_EditorScene = new EditorScene();
-        m_EditorScene->init(m_Device, m_Swapchain, m_Backbuffer);
+        m_EditorScene->init(m_Device, m_Swapchain, m_Backbuffer->getRenderPassDesc());
 
         m_CmdList = m_Device->createCommandList<renderer::CmdListRender>(Device::GraphicMask);
 
-        m_UI = ui::WigetHandler::createWigetHander<ui::ImGuiWigetHandler>(m_Device, m_CmdList, m_Backbuffer);
+        m_UI = ui::WigetHandler::createWigetHander<ui::ImGuiWigetHandler>(m_Device, m_CmdList, m_Backbuffer->getRenderPassDesc());
         m_UI->showDemoUI();
         InputEventHandler::bind([this](const MouseInputEvent* event)
             {
@@ -139,8 +152,103 @@ private:
             {
                 m_UI->handleKeyboardCallback(this, event);
             });
+        InputEventHandler::bind([this](const SystemEvent* event)
+            {
+                m_UI->handleSystemCallback(this, event);
+            });
 
-        ui::WigetLayout* UiLayoutMenu = m_UI->createWigetMenuLayout();
+        m_UI->createWiget<ui::WigetMenuBar>()
+            //File
+            .addWiget(ui::WigetMenu("File")
+                .addWiget(ui::WigetMenuItem("New")
+                    .setOnClickedEvent([](const ui::Wiget* w) -> void
+                        {
+                            LOG_DEBUG("new click");
+                        }))
+                .addWiget(ui::WigetMenuItem("Open...")
+                    .setOnClickedEvent([](const ui::Wiget* w) -> void
+                        {
+                            LOG_DEBUG("Open click");
+                        }))
+                .addWiget(ui::WigetMenuItem("Save")
+                    .setOnClickedEvent([](const ui::Wiget* w) -> void
+                        {
+                            LOG_DEBUG("Save click");
+                        }))
+                .addWiget(ui::WigetMenu("Recent Open")
+                    .addWiget(ui::WigetMenuItem("temp.temp"))
+                )
+                .addWiget(ui::WigetMenuItem("Exit")
+                    .setOnClickedEvent([](const ui::Wiget* w) -> void
+                        {
+                            LOG_DEBUG("Exit click");
+                        }))
+            )
+            //Edit
+            .addWiget(ui::WigetMenu("Edit")
+                .setOnClickedEvent([](const ui::Wiget* w) -> void
+                    {
+                        LOG_DEBUG("Open click");
+                    }))
+            //View
+            .addWiget(ui::WigetMenu("View")
+                .setOnClickedEvent([](const ui::Wiget* w) -> void
+                    {
+                        LOG_DEBUG("Save click");
+                    }))
+            .addWiget(ui::WigetMenuItem("TODO")
+                .setOnClickedEvent([](const ui::Wiget* w) -> void
+                    {
+                        LOG_DEBUG("TODO click");
+                    }))
+            .addWiget(ui::WigetMenuItem("FPS:")
+                .setOnUpdate([](ui::Wiget* w, f32 dt) -> void
+                    {
+                        static f32 timePassed = 0;
+                        static u32 FPSCounter = 0;
+
+                        const f32 diffTime = dt * 1'000.f;
+                        timePassed += diffTime;
+                        ++FPSCounter;
+                        if (timePassed >= 1'000.f) //sec
+                        {
+                            static_cast<ui::WigetMenuItem*>(w)->setText(std::format("FPS: {} ({:.2f} ms)", FPSCounter, timePassed / FPSCounter));
+
+                            FPSCounter = 0;
+                            timePassed = 0.f;
+                        }
+                    }));
+
+
+        //m_UI->createWiget<ui::WigetTabBar>();
+
+        m_UI->createWiget<ui::WigetWindow>("Window Test", math::Dimension2D(300, 300), math::Point2D(500, 200))
+            .setActive(true)
+            .setVisible(true)
+            .setOnActiveChanged([](const ui::Wiget* w) -> void
+                {
+                    LOG_DEBUG("New menu click");
+                })
+            .addWiget(ui::WigetButton("button")
+                .setOnClickedEvent([](const ui::Wiget* w) -> void
+                    {
+                        LOG_DEBUG("Button click");
+                    })
+                .setToolTip(true, "test tooltip")
+                )
+            .addWiget(ui::WigetButton("button1")
+                .setOnClickedEvent([](const ui::Wiget* w) -> void
+                    {
+                        LOG_DEBUG("Button click");
+                    })
+                );
+
+        //m_UI->createWiget<ui::WigetWindow>("Viewport", math::Dimension2D(300, 300), math::Point2D(500, 200))
+        //    .setActive(true)
+        //    .setVisible(true);
+
+
+       /* ui::WigetLayout* UiLayoutMenu = m_UI->createWigetMenuLayout();
         UiLayoutMenu->addWiget<ui::WigetMenu>(new ui::WigetMenu("File"))
             ->addWiget(((new ui::WigetMenu::MenuItem("New"))
                 ->setOnClickedEvent([](const ui::Wiget* w) -> void
@@ -175,25 +283,33 @@ private:
                     LOG_DEBUG("Button click %s", b->getTitle().c_str());
                 })
             ->setActive(true)
-            ->setVisible(true);
+            ->setVisible(true);*/
     }
     
     void Run()
     {
-        m_UI->update(m_Window, 0.016f);
-        m_EditorScene->update(0.016f);
+        static u64 s_prevTime = 0;
+        const u64 currentTime = utils::Timer::getCurrentTime();
+        const f32 diffTime = static_cast<f32>(std::max<s64>(static_cast<s64>(currentTime) - static_cast<s64>(s_prevTime), 0));
+        const f32 deltaTime = diffTime / 1'000.f;
+        s_prevTime = currentTime;
+
+
+        m_UI->update(m_Window, this, deltaTime);
+        m_EditorScene->update(deltaTime);
 
         //Frame
         m_Swapchain->beginFrame();
 
         m_CmdList->beginRenderTarget(*m_Backbuffer);
 
-        m_EditorScene->render(m_CmdList);
+        v3d::math::Rect32 veiwportRect{ 0, 0, (s32)m_Backbuffer->getRenderArea().m_width, (s32)m_Backbuffer->getRenderArea().m_height };
+        m_EditorScene->render(m_CmdList, veiwportRect);
         m_UI->render(m_CmdList);
 
         m_CmdList->endRenderTarget();
 
-        m_Device->submit(m_CmdList, false);
+        m_Device->submit(m_CmdList, true);
 
         m_Swapchain->endFrame();
         m_Swapchain->presentFrame();

@@ -30,12 +30,11 @@ EditorScene::~EditorScene()
 {
 }
 
-void EditorScene::init(renderer::Device* device, renderer::Swapchain* swapchain, v3d::renderer::RenderTargetState* target)
+void EditorScene::init(renderer::Device* device, renderer::Swapchain* swapchain, const v3d::renderer::RenderPassDesc& renderpassDesc)
 {
     m_Device = device;
     renderer::CmdListRender* CmdList = m_Device->createCommandList<renderer::CmdListRender>(Device::GraphicMask);
 
-    m_Rect = { 0, 0, (s32)swapchain->getBackbufferSize().m_width, (s32)swapchain->getBackbufferSize().m_height };
     m_Camera->setPerspective(45.0f, swapchain->getBackbufferSize(), k_nearValue, k_farValue);
 
     const renderer::VertexShader* vertShader = nullptr;
@@ -127,7 +126,7 @@ void EditorScene::init(renderer::Device* device, renderer::Swapchain* swapchain,
             renderer::VertexInputAttributeDesc::InputAttribute(0, 0, renderer::Format_R32G32B32_SFloat, sizeof(math::Vector3D)),
         });
 
-    m_Pipeline = new renderer::GraphicsPipelineState(m_Device, vertexDesc, m_Program, target);
+    m_Pipeline = new renderer::GraphicsPipelineState(m_Device, vertexDesc, renderpassDesc, m_Program);
     m_Pipeline->setPrimitiveTopology(renderer::PrimitiveTopology::PrimitiveTopology_TriangleList);
     m_Pipeline->setFrontFace(renderer::FrontFace::FrontFace_Clockwise);
     m_Pipeline->setCullMode(renderer::CullMode::CullMode_None);
@@ -145,7 +144,7 @@ void EditorScene::update(f32 dt)
     m_Camera->update(dt);
 }
 
-void EditorScene::render(v3d::renderer::CmdListRender* cmdList)
+void EditorScene::render(v3d::renderer::CmdListRender* cmdList, const v3d::math::Rect32& viewport)
 {
     //update uniforms
     struct UBO
@@ -156,8 +155,8 @@ void EditorScene::render(v3d::renderer::CmdListRender* cmdList)
     };
 
     //render
-    cmdList->setViewport(m_Rect);
-    cmdList->setScissor(m_Rect);
+    cmdList->setViewport(viewport);
+    cmdList->setScissor(viewport);
     cmdList->setPipelineState(*m_Pipeline);
 
     UBO ubo1;

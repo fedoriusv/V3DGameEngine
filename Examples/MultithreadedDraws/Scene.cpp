@@ -156,7 +156,7 @@ void Scene::Init()
                 renderer::TransitionOp::TransitionOp_Undefined, renderer::TransitionOp::TransitionOp_Present
             });
 
-        m_PipelineBackbuffer = new renderer::GraphicsPipelineState(m_Device, renderer::VertexInputAttributeDesc(), m_ProgramBackbuffer, m_renderTargetBackbuffer, "Backbuffer");
+        m_PipelineBackbuffer = new renderer::GraphicsPipelineState(m_Device, renderer::VertexInputAttributeDesc(), m_renderTargetBackbuffer->getRenderPassDesc(), m_ProgramBackbuffer, "Backbuffer");
         m_PipelineBackbuffer->setPrimitiveTopology(renderer::PrimitiveTopology::PrimitiveTopology_TriangleList);
         m_PipelineBackbuffer->setFrontFace(renderer::FrontFace::FrontFace_Clockwise);
         m_PipelineBackbuffer->setCullMode(renderer::CullMode::CullMode_Back);
@@ -233,7 +233,7 @@ void Scene::Load()
                  renderer::TransitionOp::TransitionOp_DepthStencilAttachment, renderer::TransitionOp::TransitionOp_DepthStencilAttachment
             });
 
-        pipeline = new renderer::GraphicsPipelineState(m_Device, attrib, program, m_RenderTarget, "TextureRender");
+        pipeline = new renderer::GraphicsPipelineState(m_Device, attrib, m_RenderTarget->getRenderPassDesc(), program, "TextureRender");
         pipeline->setPrimitiveTopology(renderer::PrimitiveTopology::PrimitiveTopology_TriangleList);
         pipeline->setFrontFace(renderer::FrontFace::FrontFace_Clockwise);
         pipeline->setCullMode(renderer::CullMode::CullMode_Back);
@@ -457,7 +457,7 @@ void Scene::MouseCallback(Scene* scene, event::InputEventHandler* handler, const
 {
     if (scene->m_Camera)
     {
-        scene->m_Camera->rotateHandlerCallback(handler, event, false);
+        scene->m_Camera->rotateHandleCallback(handler, event, false);
     }
 }
 
@@ -465,7 +465,7 @@ void Scene::KeyboardCallback(Scene* scene, v3d::event::InputEventHandler* handle
 {
     if (scene->m_Camera)
     {
-        scene->m_Camera->moveHandlerCallback(handler, event);
+        scene->m_Camera->moveHandleCallback(handler, event);
     }
 }
 

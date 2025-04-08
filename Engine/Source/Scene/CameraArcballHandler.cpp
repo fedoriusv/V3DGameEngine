@@ -91,7 +91,7 @@ void CameraArcballHandler::handleMouseCallback(v3d::event::InputEventHandler* ha
     }
     else if (event->_event == event::MouseInputEvent::MouseWheel)
     {
-        f32 wheelDelta = wheel - event->_wheelValue;
+        f32 wheelDelta = /*wheel - */event->_wheelValue;
 
         math::Vector3D postion = CameraHandler::getPosition();
         f32 newZPos = postion.m_z + (wheelDelta * k_zoomSpeed);

@@ -69,7 +69,7 @@ TextureRender::TextureRender(renderer::Device* device, renderer::CmdListRender& 
                     renderer::TransitionOp::TransitionOp_Undefined, renderer::TransitionOp::TransitionOp_DepthStencilAttachment
                 });
 
-            m_pipelineMSAA = new renderer::GraphicsPipelineState(device, vertex, m_program.get(), m_renderTargetMSAA.get());
+            m_pipelineMSAA = new renderer::GraphicsPipelineState(device, vertex, m_renderTargetMSAA->getRenderPassDesc(), m_program.get());
             m_pipelineMSAA->setPrimitiveTopology(renderer::PrimitiveTopology::PrimitiveTopology_TriangleList);
             m_pipelineMSAA->setFrontFace(renderer::FrontFace::FrontFace_Clockwise);
             m_pipelineMSAA->setCullMode(renderer::CullMode::CullMode_None);
@@ -147,7 +147,7 @@ TextureRender::TextureRender(renderer::Device* device, renderer::CmdListRender& 
                     renderer::TransitionOp::TransitionOp_Undefined, renderer::TransitionOp::TransitionOp_Present
                 });
 
-            m_pipelineBackbuffer = new renderer::GraphicsPipelineState(device, renderer::VertexInputAttributeDesc(), m_programBackbuffer.get(), m_renderTargetBackbuffer.get(), "Backbuffer");
+            m_pipelineBackbuffer = new renderer::GraphicsPipelineState(device, renderer::VertexInputAttributeDesc(), m_renderTargetBackbuffer->getRenderPassDesc(), m_programBackbuffer.get(), "Backbuffer");
             m_pipelineBackbuffer->setPrimitiveTopology(renderer::PrimitiveTopology::PrimitiveTopology_TriangleList);
             m_pipelineBackbuffer->setFrontFace(renderer::FrontFace::FrontFace_Clockwise);
             m_pipelineBackbuffer->setCullMode(renderer::CullMode::CullMode_Back);
@@ -178,7 +178,7 @@ TextureRender::TextureRender(renderer::Device* device, renderer::CmdListRender& 
 #endif
         m_renderTarget->setDepthStencilTexture(m_depthAttachment.get(), renderer::RenderTargetLoadOp::LoadOp_Clear, renderer::RenderTargetStoreOp::StoreOp_DontCare, 0.0f);
 
-        m_pipeline = new renderer::GraphicsPipelineState(device, vertex, m_program.get(), m_renderTarget.get(), "TextureRender");
+        m_pipeline = new renderer::GraphicsPipelineState(device, vertex, m_renderTarget->getRenderPassDesc(), m_program.get(), "TextureRender");
         m_pipeline->setPrimitiveTopology(renderer::PrimitiveTopology::PrimitiveTopology_TriangleList);
         m_pipeline->setFrontFace(renderer::FrontFace::FrontFace_Clockwise);
         m_pipeline->setCullMode(renderer::CullMode::CullMode_Back);

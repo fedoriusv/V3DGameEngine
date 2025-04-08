@@ -18,9 +18,9 @@ public:
     EditorScene();
     ~EditorScene();
 
-    void init(v3d::renderer::Device* m_Device, v3d::renderer::Swapchain* m_Swapchain, v3d::renderer::RenderTargetState* target);
+    void init(v3d::renderer::Device* m_Device, v3d::renderer::Swapchain* m_Swapchain, const v3d::renderer::RenderPassDesc& renderpassDesc);
     void update(v3d::f32 dt);
-    void render(v3d::renderer::CmdListRender* cmdList);
+    void render(v3d::renderer::CmdListRender* cmdList, const v3d::math::Rect32& viewport);
     void terminate();
 
 private:
@@ -28,7 +28,6 @@ private:
     bool handleInputEvent(v3d::event::InputEventHandler* handler, const v3d::event::InputEvent* event);
 
     v3d::renderer::Device*                  m_Device;
-    v3d::math::Rect32                       m_Rect;
 
     v3d::scene::CameraArcballHandler*       m_Camera;
 

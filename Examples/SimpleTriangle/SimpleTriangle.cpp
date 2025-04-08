@@ -141,7 +141,7 @@ void SimpleTriangle::init(renderer::Device* device, renderer::Swapchain* swapcha
             renderer::VertexInputAttributeDesc::InputAttribute(0, 0, renderer::Format_R32G32B32_SFloat, sizeof(math::Vector3D)),
         });
 
-    m_Pipeline = new renderer::GraphicsPipelineState(m_Device, vertexDesc, m_Program, m_RenderTarget);
+    m_Pipeline = new renderer::GraphicsPipelineState(m_Device, vertexDesc, m_RenderTarget->getRenderPassDesc(), m_Program);
     m_Pipeline->setPrimitiveTopology(renderer::PrimitiveTopology::PrimitiveTopology_TriangleList);
     m_Pipeline->setFrontFace(renderer::FrontFace::FrontFace_Clockwise);
     m_Pipeline->setCullMode(renderer::CullMode::CullMode_None);
@@ -248,14 +248,14 @@ bool SimpleTriangle::handleInputEvent(event::InputEventHandler* handler, const e
     if (event->_eventType == event::InputEvent::InputEventType::MouseInputEvent)
     {
         const event::MouseInputEvent* mouseEvent = static_cast<const event::MouseInputEvent*>(event);
-        m_Camera->handlerMouseCallback(handler, mouseEvent);
+        m_Camera->handleMouseCallback(handler, mouseEvent);
 
         return true;
     }
     else if (event->_eventType == event::InputEvent::InputEventType::TouchInputEvent)
     {
         const event::TouchInputEvent* touchEvent = static_cast<const event::TouchInputEvent*>(event);
-        m_Camera->handlerTouchCallback(handler, touchEvent);
+        m_Camera->handleTouchCallback(handler, touchEvent);
 
         return true;
     }

@@ -215,7 +215,7 @@ void Scene::MouseCallback(Scene* scene, event::InputEventHandler* handler, const
 {
     if (scene->m_Camera)
     {
-        scene->m_Camera->handlerMouseCallback(handler, event);
+        scene->m_Camera->handleMouseCallback(handler, event);
     }
 }
 
@@ -223,7 +223,7 @@ void Scene::TouchCallback(Scene* scene, event::InputEventHandler* handler, const
 {
     if (scene->m_Camera)
     {
-        scene->m_Camera->handlerTouchCallback(handler, event);
+        scene->m_Camera->handleTouchCallback(handler, event);
     }
 }
 
