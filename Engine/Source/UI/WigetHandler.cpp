@@ -1,8 +1,5 @@
 #include "WigetHandler.h"
 #include "Utils/Logger.h"
-#if USE_IMGUI
-#include "ImGui.h"
-#endif //USE_IMGUI
 
 namespace v3d
 {
@@ -18,20 +15,20 @@ WigetHandler::~WigetHandler()
 {
 }
 
-void WigetHandler::update(platform::Window* window, f32 dt)
+void WigetHandler::update(const platform::Window* window, const v3d::event::InputEventHandler* handler, f32 dt)
 {
-    for (auto& layout : m_wigetLayouts)
+    for (Wiget* wiget : m_wigets)
     {
-        layout->update(dt);
+        if (wiget->isVisible())
+        {
+            wiget->update(this, nullptr, dt);
+        }
     }
 }
 
 void WigetHandler::render(renderer::CmdListRender* cmdList)
 {
-    for (auto& layout : m_wigetLayouts)
-    {
-        layout->render(cmdList);
-    }
+    //do nothing
 }
 
 } // namespace ui

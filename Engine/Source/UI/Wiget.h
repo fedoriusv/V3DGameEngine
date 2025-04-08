@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Common.h"
+#include "WigetLayout.h"
 
 namespace v3d
 {
@@ -9,19 +10,28 @@ namespace ui
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     class Wiget;
-    class WigetMenu;
-    class WigetLayout;
     class WigetHandler;
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    using OnWigetEvent = std::function<void (const Wiget*)>;
+    using OnWigetEvent = std::function<void (Wiget*)>;
+    using OnWigetEventFloatParam = std::function<void(Wiget*, f32)>;
 
+    /**
+    * @brief Wiget base class
+    */
     class Wiget
     {
     public:
 
-        explicit Wiget() noexcept;
+        struct Context
+        {
+            Context() noexcept = default;
+            ~Context() = default;
+        };
+
+        explicit Wiget(Context* context) noexcept;
+        Wiget(const Wiget& other) noexcept;
         virtual ~Wiget() = default;
 
         bool isActive() const;
@@ -30,250 +40,213 @@ namespace ui
 
         const std::string& getToolTip() const;
 
-        template<class TWiget = Wiget>
-        TWiget* setActive(bool active);
+        Wiget& setActive(bool active);
+        Wiget& setVisible(bool visible);
+        Wiget& setToolTip(bool show, const std::string& tip = "");
 
-        template<class TWiget = Wiget>
-        TWiget* setVisible(bool visible);
+        Wiget& setOnUpdate(const OnWigetEventFloatParam& event);
+        Wiget& setOnVisibleChanged(const OnWigetEvent& event);
+        Wiget& setOnActiveChanged(const OnWigetEvent& event);
 
-        template<class TWiget = Wiget>
-        TWiget* setToolTip(bool show, const std::string& tip = "");
-
-        template<class TWiget = Wiget>
-        TWiget* setOnVisibleChanged(const OnWigetEvent& event);
-
-        template<class TWiget = Wiget>
-        TWiget* setOnActiveChanged(const OnWigetEvent& event);
+        struct ContextBase : Context
+        {
+            std::string             _toolTip;
+            OnWigetEvent            _onVisibleChanged;
+            OnWigetEvent            _onActiveChanged;
+            OnWigetEventFloatParam  _onUpdate;
+            bool                    _isActive         = true;
+            bool                    _isVisible        = true;
+            bool                    _showToolTip      = false;
+        };
 
     protected:
 
         friend WigetLayout;
-        friend WigetMenu;
+        friend WigetHandler;
 
-        virtual bool update(WigetHandler* handler, f32 dt) = 0;
+        template<class TContext = ContextBase>
+        static TContext& cast_data(Context* context)
+        {
+            return *static_cast<TContext*>(context);
+        }
 
-    public:
+        virtual bool update(WigetHandler* handler, WigetLayout* layout, f32 dt) = 0;
 
-        std::string     m_toolTip;
-        OnWigetEvent    m_onVisibleChanged;
-        OnWigetEvent    m_onActiveChanged;
-        bool            m_isActive;
-        bool            m_isVisible;
-        bool            m_showToolTip;
-
+        Context* m_data;
     };
 
     inline bool Wiget::isActive() const
     {
-        return m_isActive;
+        return cast_data<ContextBase>(m_data)._isActive;
     }
 
     inline bool Wiget::isVisible() const
     {
-        return m_isVisible;
+        return cast_data<ContextBase>(m_data)._isVisible;
     }
 
     inline bool Wiget::isShowToolTip() const
     {
-        return m_showToolTip;
+        return cast_data<ContextBase>(m_data)._showToolTip;
     }
 
     inline const std::string& Wiget::getToolTip() const
     {
-        return m_toolTip;
+        return cast_data<ContextBase>(m_data)._toolTip;
     }
 
-    template<class TWiget>
-    inline TWiget* Wiget::setActive(bool active)
+    inline Wiget& Wiget::setActive(bool active)
     {
-        if (m_isActive != active)
+        if (cast_data<ContextBase>(m_data)._isActive != active)
         {
-            m_isActive = active;
-            if (m_onActiveChanged)
+            cast_data<ContextBase>(m_data)._isActive = active;
+            if (cast_data<ContextBase>(m_data)._onActiveChanged)
             {
-                m_onActiveChanged(this);
+                cast_data<ContextBase>(m_data)._onActiveChanged(this);
             }
         }
 
-        return static_cast<TWiget*>(this);
+        return *this;
     }
 
-    template<class TWiget>
-    inline TWiget* Wiget::setVisible(bool visible)
+    inline Wiget& Wiget::setVisible(bool visible)
     {
-        if (m_isVisible != visible)
+        if (cast_data<ContextBase>(m_data)._isVisible != visible)
         {
-            m_isVisible = visible;
-            if (m_onVisibleChanged)
+            cast_data<ContextBase>(m_data)._isVisible = visible;
+            if (cast_data<ContextBase>(m_data)._onVisibleChanged)
             {
-                m_onVisibleChanged(this);
+                cast_data<ContextBase>(m_data)._onVisibleChanged(this);
             }
         }
 
-        return static_cast<TWiget*>(this);
+        return *this;
     }
 
-    template<class TWiget>
-    inline TWiget* Wiget::setToolTip(bool show, const std::string& tip)
+    inline Wiget& Wiget::setToolTip(bool show, const std::string& tip)
     {
-        m_showToolTip = show;
-        m_toolTip = tip;
-        return static_cast<TWiget*>(this);
+        cast_data<ContextBase>(m_data)._showToolTip = show;
+        cast_data<ContextBase>(m_data)._toolTip = tip;
+        return *this;
     }
 
-    template<class TWiget>
-    inline TWiget* Wiget::setOnVisibleChanged(const OnWigetEvent& event)
+    inline Wiget& Wiget::setOnUpdate(const OnWigetEventFloatParam& event)
     {
-        m_onVisibleChanged = event;
-        return static_cast<TWiget*>(this);
-
+        cast_data<ContextBase>(m_data)._onUpdate = event;
+        return *this;
     }
 
-    template<class TWiget>
-    inline TWiget* Wiget::setOnActiveChanged(const OnWigetEvent& event)
+    inline Wiget& Wiget::setOnVisibleChanged(const OnWigetEvent& event)
     {
-        m_onActiveChanged = event;
-        return static_cast<TWiget*>(this);
+        cast_data<ContextBase>(m_data)._onVisibleChanged = event;
+        return *this;
+    }
+
+    inline Wiget& Wiget::setOnActiveChanged(const OnWigetEvent& event)
+    {
+        cast_data<ContextBase>(m_data)._onActiveChanged = event;
+        return *this;
     }
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    class WigetButton : public Wiget
+    /**
+    * @brief WigetBase template wiget class
+    */
+    template<class TWiget>
+    class WigetBase : public Wiget
     {
     public:
 
-        explicit WigetButton(const std::string& title) noexcept;
-        ~WigetButton() = default;
+        explicit WigetBase(Wiget::Context* context) noexcept;
+        WigetBase(const WigetBase&) noexcept;
+        ~WigetBase() = default;
 
-        const std::string& getTitle() const;
+        bool isActive() const;
+        bool isVisible() const;
+        bool isShowToolTip() const;
 
-        template<class TWiget = WigetButton>
-        TWiget* setTitle(const std::string& title);
+        const std::string& getToolTip() const;
 
-        template<class TWiget = WigetButton>
-        TWiget* setOnClickedEvent(const OnWigetEvent& event);
+        TWiget& setActive(bool active);
+        TWiget& setVisible(bool visible);
+        TWiget& setToolTip(bool show, const std::string& tip);
 
-        template<class TWiget = WigetButton>
-        TWiget* setOnHoveredEvent(const OnWigetEvent& event);
-
-    private:
-
-        bool update(WigetHandler* handler, f32 dt) override;
-
-    public:
-
-        std::string     m_title;
-        OnWigetEvent    m_onClickedEvent;
-        OnWigetEvent    m_onPressedEvent;
-        OnWigetEvent    m_onReleasedEvent;
-        OnWigetEvent    m_onHoveredEvent;
-        OnWigetEvent    m_onUnhoveredEvent;
+        TWiget& setOnUpdate(const OnWigetEventFloatParam& event);
+        TWiget& setOnVisibleChanged(const OnWigetEvent& event);
+        TWiget& setOnActiveChanged(const OnWigetEvent& event);
     };
 
-    inline const std::string& WigetButton::getTitle() const
+    template<class TWiget>
+    inline WigetBase<TWiget>::WigetBase(Wiget::Context* context) noexcept
+        : Wiget(context)
     {
-        return m_title;
     }
 
     template<class TWiget>
-    inline TWiget* WigetButton::setTitle(const std::string& title)
+    inline WigetBase<TWiget>::WigetBase(const WigetBase& other) noexcept
+        : Wiget(other)
     {
-        m_title = title;
-        return static_cast<TWiget*>(this);
     }
 
     template<class TWiget>
-    inline TWiget* WigetButton::setOnClickedEvent(const OnWigetEvent& event)
+    inline bool WigetBase<TWiget>::isActive() const
     {
-        m_onClickedEvent = event;
-        return static_cast<TWiget*>(this);
+        return Wiget::isActive();
     }
 
     template<class TWiget>
-    inline TWiget* WigetButton::setOnHoveredEvent(const OnWigetEvent& event)
+    inline bool WigetBase<TWiget>::isVisible() const
     {
-        m_onHoveredEvent = event;
-        return static_cast<TWiget*>(this);
-    }
-
-    /////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    class WigetMenu : public Wiget
-    {
-    public:
-
-        class MenuItem final : public Wiget
-        {
-        public:
-
-            explicit MenuItem(const std::string& title) noexcept;
-            ~MenuItem() = default;
-
-            const std::string& getTitle() const;
-
-            MenuItem* setTitle(const std::string& title);
-            MenuItem* setOnClickedEvent(const OnWigetEvent& event);
-
-        private:
-
-            bool update(WigetHandler* handler, f32 dt) override;
-
-        public:
-
-            std::string  m_title;
-            OnWigetEvent m_onClickedEvent;
-        };
-
-        explicit WigetMenu(const std::string& title) noexcept;
-        ~WigetMenu();
-
-        const std::string& getTitle() const;
-
-        template<class TWiget = WigetMenu>
-        TWiget* addWiget(Wiget* wiget);
-
-        template<class TWiget = WigetMenu>
-        TWiget* setTitle(const std::string& title);
-
-        template<class TWiget = WigetMenu>
-        TWiget* setOnClickedEvent(const OnWigetEvent& event);
-
-    private:
-
-        bool update(WigetHandler* handler, f32 dt) override;
-
-    public:
-
-        std::string             m_title;
-        std::vector<Wiget*>     m_wigets;
-
-        OnWigetEvent            m_onClickedEvent;
-    };
-
-    inline const std::string& WigetMenu::getTitle() const
-    {
-        return m_title;
+        return Wiget::isVisible();
     }
 
     template<class TWiget>
-    inline TWiget* WigetMenu::addWiget(Wiget* wiget)
+    inline bool WigetBase<TWiget>::isShowToolTip() const
     {
-        m_wigets.push_back(wiget);
-        return static_cast<TWiget*>(this);
+        return Wiget::isShowToolTip();
     }
 
     template<class TWiget>
-    inline TWiget* WigetMenu::setTitle(const std::string& title)
+    inline const std::string& WigetBase<TWiget>::getToolTip() const
     {
-        m_title = title;
-        return static_cast<TWiget*>(this);
+        return Wiget::getToolTip();
     }
 
     template<class TWiget>
-    inline TWiget* WigetMenu::setOnClickedEvent(const OnWigetEvent& event)
+    inline TWiget& WigetBase<TWiget>::setActive(bool active)
     {
-        m_onClickedEvent = event;
-        return static_cast<TWiget*>(this);
+        return *static_cast<TWiget*>(&Wiget::setActive(active));
+    }
+
+    template<class TWiget>
+    inline TWiget& WigetBase<TWiget>::setVisible(bool visible)
+    {
+        return *static_cast<TWiget*>(&Wiget::setVisible(visible));
+    }
+
+    template<class TWiget>
+    inline TWiget& WigetBase<TWiget>::setToolTip(bool show, const std::string& tip)
+    {
+        return *static_cast<TWiget*>(&Wiget::setToolTip(show, tip));
+    }
+
+    template<class TWiget>
+    inline TWiget& WigetBase<TWiget>::setOnUpdate(const OnWigetEventFloatParam& event)
+    {
+        return *static_cast<TWiget*>(&Wiget::setOnUpdate(event));
+    }
+
+    template<class TWiget>
+    inline TWiget& WigetBase<TWiget>::setOnVisibleChanged(const OnWigetEvent& event)
+    {
+        return *static_cast<TWiget*>(&Wiget::setOnVisibleChanged(event));
+    }
+
+    template<class TWiget>
+    inline TWiget& WigetBase<TWiget>::setOnActiveChanged(const OnWigetEvent& event)
+    {
+        return *static_cast<TWiget*>(&Wiget::setOnActiveChanged(event));
     }
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

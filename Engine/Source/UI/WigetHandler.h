@@ -1,6 +1,9 @@
 #pragma once
 
 #include "Common.h"
+#include "Wiget.h"
+
+#include "Renderer/RenderTargetState.h"
 
 namespace v3d
 {
@@ -12,37 +15,36 @@ namespace platform
 namespace event
 {
     class InputEventHandler;
+
     struct MouseInputEvent;
     struct KeyboardInputEvent;
+    struct GamepadInputEvent;
+    struct SystemEvent;
 } //namespace event
 
 namespace renderer
 {
     class Device;
     class CmdListRender;
-    class RenderTargetState;
 } //namespace renderer
 
 namespace ui
 {
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    class Wiget;
-    class WigetLayout;
-    class WigetHandler;
-
-    /////////////////////////////////////////////////////////////////////////////////////////////////////
-    
+    /**
+    * @brief WigetHandler base class
+    */
     class WigetHandler
     {
     public:
 
         template<class TWigetHander>
-        static TWigetHander* createWigetHander(renderer::Device* device, renderer::CmdListRender* cmdList, renderer::RenderTargetState* renderTarget)
+        [[nodiscard]] static TWigetHander* createWigetHander(renderer::Device* device, renderer::CmdListRender* cmdList, const renderer::RenderPassDesc& renderpassDesc)
         {
             static_assert(std::is_base_of<WigetHandler, TWigetHander>(), "wrong type");
             WigetHandler* handler = V3D_NEW(TWigetHander, memory::MemoryLabel::MemorySystem)(device);
-            if (!handler->create(cmdList, renderTarget))
+            if (!handler->create(cmdList, renderpassDesc))
             {
                 handler->destroy();
 
@@ -60,38 +62,54 @@ namespace ui
             handler->destroy();
         }
 
-        virtual WigetLayout* createWigetLayout(const std::string& title, const math::Dimension2D& size, const math::Point2D& pos) = 0;
-        virtual void destroyWigetLayout(WigetLayout* layout) = 0;
+        template<class TWiget, class... TArgs>
+        TWiget& createWiget(TArgs&&... args)
+        {
+            TWiget* obj = V3D_NEW(TWiget, memory::MemoryLabel::MemoryUI)(std::forward<TArgs>(args)...);
+            m_wigets.push_back(obj);
+            return *obj;
+        }
 
-        virtual WigetLayout* createWigetMenuLayout() = 0;
-        virtual void createWigetMenuLayout(WigetLayout* layout) = 0;
+        //template<class TWiget>
+        //TWiget& addWiget(TWiget& wiget)
+        //{
+        //    TWiget* obj = V3D_NEW(TWiget(wiget);
+        //    m_wigets.push_back(obj);
+        //    return *obj;
+        //}
 
-        virtual void update(platform::Window* window, f32 dt);
+        virtual void update(const platform::Window* window, const v3d::event::InputEventHandler* handler, f32 dt);
         virtual void render(renderer::CmdListRender* cmdList);
 
-        virtual void handleMouseCallback(event::InputEventHandler* handler, const event::MouseInputEvent* event) = 0;
+        virtual void handleMouseCallback(const event::InputEventHandler* handler, const event::MouseInputEvent* event) = 0;
         virtual void handleKeyboardCallback(const v3d::event::InputEventHandler* handler, const event::KeyboardInputEvent* event) = 0;
+        virtual void handleGamepadCallback(const v3d::event::InputEventHandler* handler, const event::GamepadInputEvent* event) = 0;
+        virtual void handleSystemCallback(const v3d::event::InputEventHandler* handler, const event::SystemEvent* event) = 0;
 
     public:
 
-        virtual bool drawButton(Wiget* button, f32 dt) = 0;
+        //Menu
+        virtual bool draw_MenuBar(Wiget* menu, Wiget::Context* context, f32 dt) = 0;
+        virtual bool draw_Menu(Wiget* menu, Wiget::Context* context, f32 dt) = 0;
+        virtual bool draw_MenuItem(Wiget* item, Wiget::Context* context, f32 dt) = 0;
+        virtual bool draw_TabBar(Wiget* item, Wiget::Context* context, f32 dt) = 0;
 
-        virtual bool beginDrawMenu(Wiget* menu, f32 dt) = 0;
-        virtual bool endDrawMenu(Wiget* menu, f32 dt) = 0;
-        virtual bool drawMenuItem(Wiget* item, f32 dt) = 0;
+        //Windows
+        virtual bool draw_Window(Wiget::Context* context, f32 dt) = 0;
+
+        virtual bool draw_Button(Wiget* button, Wiget::Context* context, f32 dt) = 0;
+        virtual bool draw_Image(Wiget* image, Wiget::Context* context, f32 dt) = 0;
 
     protected:
 
-        WigetHandler(renderer::Device* device) noexcept;
+        explicit WigetHandler(renderer::Device* device) noexcept;
         virtual ~WigetHandler();
 
-        virtual bool create(renderer::CmdListRender* cmdList, renderer::RenderTargetState* renderTarget) = 0;
+        [[nodiscard]] virtual bool create(renderer::CmdListRender* cmdList, const renderer::RenderPassDesc& renderpassDesc) = 0;
         virtual void destroy() = 0;
 
-        friend WigetLayout;
-
-        renderer::Device* const     m_device;
-        std::vector<WigetLayout*>   m_wigetLayouts;
+        renderer::Device* const m_device;
+        std::vector<Wiget*>     m_wigets;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
