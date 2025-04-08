@@ -91,7 +91,7 @@ inline void crashFunc(bool x)
 #   undef CreateSemaphore
 #   undef CreateEvent
 typedef HINSTANCE NativeInstance;
-typedef HWND      NativeWindows;
+typedef HWND      NativeWindow;
 
 #elif defined(PLATFORM_XBOX)
 #   define NOMINMAX
@@ -103,14 +103,14 @@ typedef HWND      NativeWindows;
 #   define NOHELP
 #   include <windows.h>
 typedef HINSTANCE NativeInstance;
-typedef HWND      NativeWindows;
+typedef HWND      NativeWindow;
 
 #elif defined (PLATFORM_ANDROID)
 #   include "Platform/Android/AndroidCommon.h"
-typedef ANativeWindow*   NativeWindows;
+typedef ANativeWindow* NativeWindow;
 typedef ANativeActivity* NativeInstance;
 
 #else //PLATFORM
 typedef void*     NativeInstance;
-typedef void*     NativeWindows;
+typedef void*     NativeWindow;
 #endif //PLATFORM

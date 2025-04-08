@@ -32,7 +32,7 @@ namespace vk
 #endif //FRAME_PROFILER_INTERNAL
 
 #ifdef PLATFORM_WINDOWS
-bool createSurfaceWinApi(VkInstance vkInstance, NativeInstance hInstance, NativeWindows hWnd, VkSurfaceKHR& surface)
+bool createSurfaceWinApi(VkInstance vkInstance, NativeInstance hInstance, NativeWindow hWnd, VkSurfaceKHR& surface)
 {
     VkWin32SurfaceCreateInfoKHR surfaceCreateInfo = {};
     surfaceCreateInfo.sType = VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR;
@@ -53,7 +53,7 @@ bool createSurfaceWinApi(VkInstance vkInstance, NativeInstance hInstance, Native
 #endif //PLATFORM_WINDOWS
 
 #ifdef PLATFORM_ANDROID
-bool createSurfaceAndroidApi(VkInstance vkInstance, NativeInstance hInstance, NativeWindows hWnd, VkSurfaceKHR& surface, const core::Dimension2D& size)
+bool createSurfaceAndroidApi(VkInstance vkInstance, NativeInstance hInstance, NativeWindow hWnd, VkSurfaceKHR& surface, const core::Dimension2D& size)
 {
     LOG_DEBUG("createSurfaceAndroidApi: createSurfaceAndroidApi: { %d, %d } ", size.width, size.height);
 
@@ -186,7 +186,7 @@ void VulkanSwapchain::resize(const math::Dimension2D& size)
     }
 }
 
-VkSurfaceKHR VulkanSwapchain::createSurface(VkInstance vkInstance, NativeInstance hInstance, NativeWindows hWnd, const math::Dimension2D& size)
+VkSurfaceKHR VulkanSwapchain::createSurface(VkInstance vkInstance, NativeInstance hInstance, NativeWindow hWnd, const math::Dimension2D& size)
 {
     VkSurfaceKHR surface = VK_NULL_HANDLE;
 #if defined(PLATFORM_WINDOWS)

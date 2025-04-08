@@ -31,7 +31,8 @@ namespace event
         {
             Low = 10,
             Normal = 20,
-            High = 30
+            High = 30,
+            RealTime = 100,
         };
 
         InputEvent() noexcept;

@@ -9,6 +9,7 @@ namespace v3d
 namespace platform
 {
     class Window;
+    class WindowWindows;
 } //namespace platform
 namespace event
 {
@@ -30,13 +31,19 @@ namespace event
         void dettach(InputEvent::InputEventType type, InputEventHandler* handler, const platform::Window* window);
 
         void pushEvent(InputEvent* event);
+
         bool sendEvent(InputEvent* event);
         void sendDeferredEvents();
 
-        void* allocateInputEvent();
-        void resetInputEventPool();
+        /**
+        * @brief resetInputHandlers. Calls this in the end of frame
+        */
+        void resetInputHandlers();
 
     private:
+
+        void* allocateInputEvent();
+        void resetInputEventPool();
 
         InputEventReceiver(const InputEventReceiver&) = delete;
         InputEventReceiver& operator=(const InputEventReceiver&) = delete;
@@ -49,6 +56,8 @@ namespace event
         void*              m_eventPool;
 
         static const u32   s_eventPoolSize = 256U;
+
+        friend platform::WindowWindows;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

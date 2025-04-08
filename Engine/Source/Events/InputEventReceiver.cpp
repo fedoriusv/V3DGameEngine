@@ -40,25 +40,21 @@ InputEventReceiver::~InputEventReceiver()
 
 void InputEventReceiver::sendDeferredEvents()
 {
-    if (m_events.empty())
+    if (!m_events.empty())
     {
-        return;
-    }
+        std::queue<InputEvent*> temp(std::move(m_events));
+        ASSERT(m_events.empty(), "must be freed");
 
-    std::queue<InputEvent*> temp(std::move(m_events));
-    InputEventReceiver::reset();
-
-    //LOG_DEBUG("InputEventReceiver queue size %u", temp.size());
-    while (!temp.empty())
-    {
-        InputEvent* event = temp.front();
-        if (!sendEvent(event))
+        while (!temp.empty())
         {
-            //LOG_DEBUG("InputEventReceiver Event not handle");
+            InputEvent* event = temp.front();
+            if (!sendEvent(event))
+            {
+                //LOG_DEBUG("InputEventReceiver Event not handle");
+            }
+            temp.pop();
+            //no need to delete, ringbuffer pool is used
         }
-
-        temp.pop();
-        //no need to delete, ringbuffer pool is used
     }
 
     resetInputEventPool();
@@ -70,6 +66,15 @@ void InputEventReceiver::resetInputEventPool()
 #ifdef DEBUG
     memset(m_eventPool, 0, k_maxInputEventSize * s_eventPoolSize);
 #endif
+}
+
+void InputEventReceiver::resetInputHandlers()
+{
+    for (auto iter = m_handlers.begin(); iter != m_handlers.end(); ++iter)
+    {
+        InputEventHandler* ptr = std::get<0>((*iter).second);
+        ptr->resetEventHandler();
+    }
 }
 
 void* InputEventReceiver::allocateInputEvent()
@@ -89,7 +94,14 @@ void* InputEventReceiver::allocateInputEvent()
 
 void InputEventReceiver::pushEvent(InputEvent* event)
 {
-    m_events.push(event);
+    if (event->_priority == InputEvent::Priority::RealTime)
+    {
+        sendEvent(event);
+    }
+    else
+    {
+        m_events.push(event);
+    }
 }
 
 bool InputEventReceiver::sendEvent(InputEvent* event)

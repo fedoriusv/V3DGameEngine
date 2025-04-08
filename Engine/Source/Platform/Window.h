@@ -86,7 +86,7 @@ namespace platform
         * @param const std::wstring& name [optional]
         * @return pointer of created window
         */
-        [[nodiscard]] static Window* createWindow(const math::Dimension2D& size, const math::Point2D& pos, const Window* parent, bool resizable = false, [[maybe_unused]] const std::wstring& name = L"");
+        [[nodiscard]] static Window* createWindow(const math::Dimension2D& size, const math::Point2D& pos, Window* parent, bool resizable = false, [[maybe_unused]] const std::wstring& name = L"");
 
         /**
         * @brief updateWindow function. Updates window
@@ -103,27 +103,32 @@ namespace platform
         virtual void minimize() = 0;
         virtual void maximize() = 0;
         virtual void restore() = 0;
+        virtual void show() = 0;
+        virtual void focus() = 0;
 
         virtual void setFullScreen(bool value = true) = 0;
         virtual void setResizeble(bool value = true) = 0;
-        virtual void setTextCaption(const std::wstring& text) = 0;
+        virtual void setText(const std::wstring& text) = 0;
+        virtual void setSize(const math::Dimension2D& size) = 0;
         virtual void setPosition(const math::Point2D& pos) = 0;
+
 
         virtual bool isMaximized() const = 0;
         virtual bool isMinimized() const = 0;
         virtual bool isActive() const = 0;
         virtual bool isFocused() const = 0;
 
-        bool isFullscreen() const;
-        bool isResizable() const;
+        virtual bool isFullscreen() const;
+        virtual bool isResizable() const;
 
-        const math::Dimension2D& getSize() const;
-        const math::Point2D& getPosition() const;
+        virtual const math::Dimension2D& getSize() const;
+        virtual const math::Point2D& getPosition() const;
+        virtual const std::wstring& getText() const;
 
         event::InputEventReceiver* getInputEventReceiver() const;
 
         virtual NativeInstance getInstance() const = 0;
-        virtual NativeWindows getWindowHandle() const = 0;
+        virtual NativeWindow getWindowHandle() const = 0;
 
         virtual bool isValid() const = 0;
 
@@ -151,7 +156,7 @@ namespace platform
         virtual bool update() = 0;
         virtual void destroy() = 0;
 
-        WindowParams m_params;
+        mutable WindowParams m_params;
 
         event::KeyCodes m_keyCodes;
         event::InputEventReceiver* m_receiver;
@@ -183,6 +188,11 @@ namespace platform
     inline const math::Point2D& Window::getPosition() const
     {
         return m_params._position;
+    }
+
+    inline const std::wstring& Window::getText() const
+    {
+        return m_params._name;
     }
 
     inline Window* Window::getWindowsByID(u32 id)

@@ -9,10 +9,13 @@ namespace event
 
 InputEventHandler::InputEventHandler() noexcept
     : m_gamepadStates(0U)
-    , m_mousePosition({ 0, 0 })
+    , m_relativeCursorPosition({ 0, 0 })
+    , m_absoluteCursorPosition({ 0, 0 })
     , m_mouseWheel(0.0f)
 {
-    resetKeyPressed();
+    resetKeyStates();
+    resetMouseStates();
+    resetTouchStates();
 }
 
 InputEventHandler::~InputEventHandler()
@@ -24,17 +27,29 @@ InputEventHandler::~InputEventHandler()
     m_systemEventCallbacks.clear();
 }
 
-void InputEventHandler::resetKeyPressed()
+void InputEventHandler::resetEventHandler()
+{
+    m_mouseWheel = 0.0f;
+}
+
+void InputEventHandler::resetKeyStates()
 {
     std::fill_n(&m_keysPressed[0], toEnumType(KeyCode::Key_Codes_Count), false);
+}
 
+void InputEventHandler::resetMouseStates()
+{
     for (u32 state = 0; state < MouseInputEvent::MouseCount; ++state)
     {
         m_mouseStates[state] = false;
     }
-    m_mousePosition = { 0,0 };
+    m_relativeCursorPosition = { 0,0 };
+    m_absoluteCursorPosition = { 0,0 };
     m_mouseWheel = 0.0f;
+}
 
+void InputEventHandler::resetTouchStates()
+{
     for (u32 index = 0; index < k_maxTouchScreenFingers; ++index)
     {
         m_touchScreenStates[index] = false;
@@ -169,8 +184,9 @@ bool InputEventHandler::onEvent(Event* ev)
         {
             m_mouseStates[state] = state == mouseEvent->_event;
         }
-        m_mousePosition = mouseEvent->_cursorPosition;
-        m_mouseWheel = math::clamp(m_mouseWheel + mouseEvent->_wheelValue, m_mouseWheelRange.m_x, m_mouseWheelRange.m_y);
+        m_relativeCursorPosition = mouseEvent->_clientCoordinates;
+        m_absoluteCursorPosition = mouseEvent->_absoluteCoordinates;
+        m_mouseWheel = math::clamp(mouseEvent->_wheelValue, m_mouseWheelRange.m_x, m_mouseWheelRange.m_y);
 
         switch (mouseEvent->_event)
         {
@@ -256,7 +272,8 @@ bool InputEventHandler::onEvent(Event* ev)
         } 
         else if (touchEvent->_event == TouchInputEvent::TouchMotion)
         {
-            m_mousePosition = touchEvent->_position;
+            m_relativeCursorPosition = touchEvent->_position;
+            m_absoluteCursorPosition = touchEvent->_position;
             switch(touchEvent->_motionEvent)
             {
                 case TouchInputEvent::TouchMotionEvent::TouchMotionDown:
@@ -348,6 +365,26 @@ void InputEventHandler::bind(std::function<void(const SystemEvent*)> callback)
     }
 }
 
+bool InputEventHandler::isKeyboardInputEventsBound() const
+{
+    return !m_keyboardHandlerCallbacks.empty();
+}
+
+bool InputEventHandler::isMouseInputEventsBound() const
+{
+    return !m_mouseHandlerCallbacks.empty();
+}
+
+bool InputEventHandler::GamepadInputEventsBound() const
+{
+    return !m_gamepadHandlerCallbacks.empty();
+}
+
+bool InputEventHandler::TouchInputEventsBound() const
+{
+    return !m_touchHandlerCallbacks.empty();
+}
+
 bool InputEventHandler::isKeyPressed(const KeyCode& code)  const
 {
     return m_keysPressed[toEnumType(code)];
@@ -396,9 +433,14 @@ bool InputEventHandler::isMultiScreenTouch() const
     return m_multiScreenTouch;
 }
 
-const math::Point2D& InputEventHandler::getCursorPosition() const
+const math::Point2D& InputEventHandler::getRelativeCursorPosition() const
 {
-    return m_mousePosition;
+    return m_relativeCursorPosition;
+}
+
+const math::Point2D& InputEventHandler::getAbsoluteCursorPosition() const
+{
+    return m_absoluteCursorPosition;
 }
 
 float InputEventHandler::getMouseWheel() const

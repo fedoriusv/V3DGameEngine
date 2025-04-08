@@ -76,7 +76,7 @@ namespace vk
 
     private:
 
-        static VkSurfaceKHR createSurface(VkInstance vkInstance, NativeInstance hInstance, NativeWindows hWnd, const math::Dimension2D& size);
+        static VkSurfaceKHR createSurface(VkInstance vkInstance, NativeInstance hInstance, NativeWindow hWnd, const math::Dimension2D& size);
 
         bool createSwapchain(const SwapchainParams& params, const VkSurfaceFormatKHR& surfaceFormat, VkSwapchainKHR oldSwapchain = VK_NULL_HANDLE);
         bool createSwapchainImages(const SwapchainParams& params, const VkSurfaceFormatKHR& surfaceFormat, TextureUsageFlags flags);

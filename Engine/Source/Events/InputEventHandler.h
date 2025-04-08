@@ -36,6 +36,11 @@ namespace event
         void bind(std::function<void(const TouchInputEvent*)> callback);
         void bind(std::function<void(const SystemEvent*)> callback);
 
+        bool isKeyboardInputEventsBound() const;
+        bool isMouseInputEventsBound() const;
+        bool GamepadInputEventsBound() const;
+        bool TouchInputEventsBound() const;
+
         bool isKeyPressed(const KeyCode& code)const;
 
         bool isLeftMousePressed() const;
@@ -47,7 +52,8 @@ namespace event
         bool isScreenTouched(s16 pointer = -1) const;
         bool isMultiScreenTouch() const;
 
-        const math::Point2D& getCursorPosition() const;
+        const math::Point2D& getRelativeCursorPosition() const;
+        const math::Point2D& getAbsoluteCursorPosition() const;
         f32 getMouseWheel() const;
 
     private:
@@ -55,7 +61,12 @@ namespace event
         static const u32 k_maxTouchScreenFingers = 8;
 
         bool onEvent(Event* event) override;
-        void resetKeyPressed();
+
+        void resetEventHandler();
+
+        void resetKeyStates();
+        void resetMouseStates();
+        void resetTouchStates();
 
         void applyModifiers(KeyboardInputEvent* event);
         void applyModifiers(MouseInputEvent* event);
@@ -72,7 +83,8 @@ namespace event
         
         u32 m_gamepadStates;
 
-        math::Point2D m_mousePosition;
+        math::Point2D m_relativeCursorPosition;
+        math::Point2D m_absoluteCursorPosition;
         f32 m_mouseWheel;
         const math::Vector2D m_mouseWheelRange = { -100.0f, +100.0f };
 

@@ -23,6 +23,8 @@ namespace event
             Resize,
             Suspend,
             Resume,
+            TextInput,
+            Focus,
 
             SystemEventsCount
         };

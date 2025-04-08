@@ -17,7 +17,7 @@ namespace platform
     {
     public:
 
-        explicit WindowWindows(const WindowParams& params, event::InputEventReceiver* receiver, const Window* parent = nullptr) noexcept;
+        explicit WindowWindows(const WindowParams& params, event::InputEventReceiver* receiver, Window* parent = nullptr) noexcept;
         ~WindowWindows();
 
         WindowWindows(const WindowWindows&) = delete;
@@ -26,10 +26,13 @@ namespace platform
         void minimize() override;
         void maximize() override;
         void restore() override;
+        void show() override;
+        void focus() override;
 
         void setFullScreen(bool value = true) override;
         void setResizeble(bool value = true) override;
-        void setTextCaption(const std::wstring& text) override;
+        void setText(const std::wstring& text) override;
+        void setSize(const math::Dimension2D& size) override;
         void setPosition(const math::Point2D& pos) override;
 
         bool isMaximized() const override;
@@ -37,8 +40,11 @@ namespace platform
         bool isActive() const override;
         bool isFocused() const override;
 
+        const math::Dimension2D& getSize() const override;
+        const math::Point2D& getPosition() const override;
+
         NativeInstance getInstance() const override;
-        NativeWindows getWindowHandle() const override;
+        NativeWindow getWindowHandle() const override;
 
         bool isValid() const override;
 
@@ -50,15 +56,19 @@ namespace platform
 
         void fillKeyCodes();
 
-        HINSTANCE           m_hInstance;
-        HWND                m_hWnd;
+        HINSTANCE               m_hInstance;
+        HWND                    m_hWnd;
 
-        u32                 m_timerID = 0;
-        u64                 m_currnetTime = 0;
-        u64                 m_lastMoveEvent = 0;
-        u64                 m_lastSizeEvent = 0;
+        u32                     m_timerID = 0;
+        u64                     m_currnetTime = 0;
+        u64                     m_lastMoveEvent = 0;
+        u64                     m_lastSizeEvent = 0;
 
-        const Window*       m_parent;
+        HWND                    m_mouseHwnd = nullptr;
+        u32                     m_mouseTrackedArea = 0;   // 0: not tracked, 1: client area, 2: non-client area
+
+        Window*                 m_parent;
+        std::vector<Window*>    m_children;
 
         LRESULT HandleInputMessage(UINT message, WPARAM wParam, LPARAM lParam);
         LRESULT HandleSystemEvents(UINT message, WPARAM wParam, LPARAM lParam);

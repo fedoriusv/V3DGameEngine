@@ -33,7 +33,8 @@ namespace event
         bool operator==(const MouseInputEvent& event) const;
 
         MousePressInputEvent    _event;
-        math::Point2D           _cursorPosition;
+        math::Point2D           _clientCoordinates;
+        math::Point2D           _absoluteCoordinates;
         f32                     _wheelValue;
         KeyCode                 _key;
         u8                      _modifers;
@@ -42,7 +43,8 @@ namespace event
 
     inline MouseInputEvent::MouseInputEvent() noexcept
         : _event(MouseUnknown)
-        , _cursorPosition({ 0, 0 })
+        , _clientCoordinates({ 0, 0 })
+        , _absoluteCoordinates({ 0, 0 })
         , _wheelValue(0.0f)
         , _key(KeyCode::KeyUknown)
         , _modifers(0)
@@ -52,8 +54,14 @@ namespace event
 
     inline bool MouseInputEvent::operator==(const MouseInputEvent& event) const
     {
-        return (_cursorPosition == event._cursorPosition && _wheelValue == event._wheelValue &&
-            _event == event._event && _key == event._key && _modifers == event._modifers);
+        return (
+            _clientCoordinates == event._clientCoordinates &&
+            _absoluteCoordinates == event._absoluteCoordinates &&
+            _wheelValue == event._wheelValue &&
+            _event == event._event &&
+            _key == event._key &&
+            _modifers == event._modifers
+            );
     }
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

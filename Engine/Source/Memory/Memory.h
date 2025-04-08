@@ -33,6 +33,7 @@ namespace memory
         MemoryGame,
         MemoryRenderCore,
         MemoryCommandList,
+        MemoryUI,
 
         MemoryCount
     };

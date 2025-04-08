@@ -55,8 +55,6 @@ Window* Window::createWindow(const math::Dimension2D& size, const math::Point2D&
 
     if (window->initialize())
     {
-        window->setTextCaption(params._name);
-
         s_windowsList.emplace(window->ID(), window);
         return window;
     }
@@ -94,8 +92,6 @@ Window* Window::createWindow(const math::Dimension2D& size, const math::Point2D&
 
     if (window->initialize())
     {
-        window->setTextCaption(params._name);
-
         s_windowsList.emplace(window->ID(), window);
         return window;
     }
@@ -107,7 +103,7 @@ Window* Window::createWindow(const math::Dimension2D& size, const math::Point2D&
     return nullptr;
 }
 
-Window* Window::createWindow(const math::Dimension2D& size, const math::Point2D& pos, const Window* parent, bool resizable, const std::wstring& name)
+Window* Window::createWindow(const math::Dimension2D& size, const math::Point2D& pos, Window* parent, bool resizable, const std::wstring& name)
 {
     WindowParams params;
     params._name = name.empty() ? L"Window" : name;
@@ -134,8 +130,6 @@ Window* Window::createWindow(const math::Dimension2D& size, const math::Point2D&
 
     if (window->initialize())
     {
-        window->setTextCaption(params._name);
-
         s_windowsList.emplace(window->ID(), window);
         return window;
     }

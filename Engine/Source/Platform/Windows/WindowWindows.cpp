@@ -8,13 +8,15 @@
 
 #ifdef PLATFORM_WINDOWS
 #include <winuser.h>
+#include <windows.h>
+#include <windowsx.h>
 
 namespace v3d
 {
 namespace platform
 {
 
-WindowWindows::WindowWindows(const WindowParams& params, event::InputEventReceiver* receiver, const Window* parent) noexcept
+WindowWindows::WindowWindows(const WindowParams& params, event::InputEventReceiver* receiver, Window* parent) noexcept
     : Window(params, receiver)
     , m_hInstance(NULL)
     , m_hWnd(NULL)
@@ -27,45 +29,45 @@ WindowWindows::WindowWindows(const WindowParams& params, event::InputEventReceiv
 bool WindowWindows::initialize()
 {
     m_hInstance = GetModuleHandle(NULL);
-    HWND parentHWnd = NULL;
+    std::wstring className = m_params._name;
+    HWND parentHWnd = nullptr;
 
-    // Register Class
-    WNDCLASSEX wcex;
-    wcex.cbSize = sizeof(WNDCLASSEX);
-    wcex.style = CS_HREDRAW | CS_VREDRAW | CS_OWNDC | CS_DBLCLKS;
-    wcex.lpfnWndProc = WindowWindows::WndProc;
-    wcex.cbClsExtra = 0;
-    wcex.cbWndExtra = 0;
-    wcex.hInstance = m_hInstance;
-    wcex.hIcon = NULL;
-    wcex.hCursor = LoadCursor(NULL, IDC_ARROW);
-    wcex.hIcon = LoadIcon(NULL, IDI_WINLOGO);
-    wcex.hbrBackground = (HBRUSH)GetStockObject(WHITE_BRUSH);
-    wcex.lpszMenuName = NULL;
-    wcex.lpszClassName = m_params._name.c_str();
-    wcex.hIconSm = 0;
-    if (!RegisterClassEx(&wcex))
-    {
-        ASSERT(false, "RegisterClassEx is failed");
-        return false;
-    }
-
-    DWORD dwStyle = WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU;
+    DWORD dwStyle = WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_THICKFRAME;
     DWORD dwExStyle = WS_EX_APPWINDOW;
 
     if (m_parent)
     {
-        dwStyle = WS_CHILDWINDOW | WS_CAPTION | WS_SYSMENU;
-        dwExStyle = 0;
-        if (m_params._isResizable)
-        {
-            dwStyle |= WS_THICKFRAME;
-        }
+        dwStyle = WS_POPUP;
+        dwExStyle = WS_EX_APPWINDOW;
 
+        className = m_parent->getText();
         parentHWnd = m_parent->getWindowHandle();
+
+        static_cast<WindowWindows*>(m_parent)->m_children.push_back(this);
     }
     else
     {
+        // Register Class
+        WNDCLASSEX wcex;
+        wcex.cbSize = sizeof(WNDCLASSEX);
+        wcex.style = CS_HREDRAW | CS_VREDRAW | CS_OWNDC | CS_DBLCLKS;
+        wcex.lpfnWndProc = WindowWindows::WndProc;
+        wcex.cbClsExtra = 0;
+        wcex.cbWndExtra = 0;
+        wcex.hInstance = m_hInstance;
+        wcex.hIcon = NULL;
+        wcex.hCursor = LoadCursor(NULL, IDC_ARROW);
+        wcex.hIcon = LoadIcon(NULL, IDI_WINLOGO);
+        wcex.hbrBackground = (HBRUSH)GetStockObject(WHITE_BRUSH);
+        wcex.lpszMenuName = NULL;
+        wcex.lpszClassName = className.c_str();
+        wcex.hIconSm = 0;
+        if (!RegisterClassEx(&wcex))
+        {
+            ASSERT(false, "RegisterClassEx is failed");
+            return false;
+        }
+
         if (m_params._isFullscreen)
         {
             dwStyle = WS_POPUP | WS_VISIBLE;
@@ -73,26 +75,23 @@ bool WindowWindows::initialize()
         }
         else if (m_params._isResizable)
         {
-            dwStyle = WS_OVERLAPPEDWINDOW;
+            dwStyle |= WS_MINIMIZEBOX | WS_MAXIMIZEBOX;
         }
     }
 
-    RECT borderRect = { 0, 0, 0, 0 };
+    RECT borderRect = { 
+        m_params._position.m_x, 
+        m_params._position.m_y, 
+        m_params._position.m_x + (s32)m_params._size.m_width,
+        m_params._position.m_y + (s32)m_params._size.m_height
+    };
     AdjustWindowRectEx(&borderRect, dwStyle, FALSE, dwExStyle);
 
-    // Border rect size is negative - see MoveWindowTo
-    m_params._position.m_x += borderRect.left;
-    m_params._position.m_y += borderRect.top;
-
-    // Inflate the window size by the OS border
-    math::Dimension2D size =
-    {
-        m_params._size.m_width + borderRect.right - borderRect.left,
-        m_params._size.m_height + borderRect.bottom - borderRect.top
-    };
     // create window
     ASSERT(!m_hWnd, "Already exist");
-    m_hWnd = CreateWindowEx(dwExStyle, m_params._name.c_str(), m_params._name.c_str(), dwStyle, m_params._position.m_x, m_params._position.m_y, size.m_width, size.m_height, parentHWnd, NULL, m_hInstance, this);
+    m_hWnd = CreateWindowEx(dwExStyle, className.c_str(), m_params._name.c_str(), dwStyle,
+        borderRect.left, borderRect.top, borderRect.right - borderRect.left, borderRect.bottom - borderRect.top, parentHWnd, NULL, m_hInstance, this);
+
     if (!m_hWnd)
     {
         const u32 error = GetLastError();
@@ -111,6 +110,7 @@ bool WindowWindows::initialize()
     {
         ShowWindow(m_hWnd, SW_SHOWNORMAL);
     }
+    UpdateWindow(m_hWnd);
 
 #if !USE_LOGGER
     ShowWindow(GetConsoleWindow(), SW_HIDE);
@@ -125,7 +125,8 @@ bool WindowWindows::update()
     ZeroMemory(&msg, sizeof(msg));
     msg.message = WM_NULL;
 
-    while(PeekMessage(&msg, m_hWnd, 0, 0, PM_REMOVE))
+    HWND hWnd = m_children.empty() ? m_hWnd : nullptr;
+    while(PeekMessage(&msg, hWnd, 0, 0, PM_REMOVE))
     {
         TranslateMessage(&msg);
         DispatchMessage(&msg);
@@ -136,20 +137,37 @@ bool WindowWindows::update()
 
 void WindowWindows::destroy()
 {
+    if (m_parent && GetCapture() == m_hWnd)
+    {
+        ReleaseCapture();
+        SetCapture(m_parent->getWindowHandle());
+
+        WindowWindows* parent = static_cast<WindowWindows*>(m_parent);
+        auto found = std::find(parent->m_children.begin(), parent->m_children.end(), this);
+        ASSERT(found != parent->m_children.end(), "must be found");
+        parent->m_children.erase(found);
+    }
+
     DestroyWindow(m_hWnd);
     m_hWnd = NULL;
 
-    UnregisterClass(m_params._name.c_str(), m_hInstance);
+    if (!m_parent)
+    {
+        UnregisterClass(m_params._name.c_str(), m_hInstance);
+    }
 }
 
 WindowWindows::~WindowWindows()
 {
     LOG_DEBUG("WindowWindows::~WindowWindows");
     ASSERT(!m_hWnd, "Not destroyed");
+    ASSERT(m_children.empty(), "must be empty");
 }
 
 void WindowWindows::minimize()
 {
+    ASSERT(m_hWnd, "Must be valid");
+
     WINDOWPLACEMENT wndpl;
     wndpl.length = sizeof(WINDOWPLACEMENT);
     GetWindowPlacement(m_hWnd, &wndpl);
@@ -163,6 +181,8 @@ void WindowWindows::minimize()
 
 void WindowWindows::maximize()
 {
+    ASSERT(m_hWnd, "Must be valid");
+
     WINDOWPLACEMENT wndpl;
     wndpl.length = sizeof(WINDOWPLACEMENT);
     GetWindowPlacement(m_hWnd, &wndpl);
@@ -176,6 +196,8 @@ void WindowWindows::maximize()
 
 void WindowWindows::restore()
 {
+    ASSERT(m_hWnd, "Must be valid");
+
     WINDOWPLACEMENT wndpl;
     wndpl.length = sizeof(WINDOWPLACEMENT);
     GetWindowPlacement(m_hWnd, &wndpl);
@@ -185,6 +207,39 @@ void WindowWindows::restore()
 
     m_params._isMinimized = false;
     m_params._isMaximized = false;
+}
+
+void WindowWindows::show()
+{
+    ASSERT(m_hWnd, "Must be valid");
+
+    if (m_parent)
+    {
+        SetWindowLongPtr(m_hWnd, GWLP_HWNDPARENT, (LONG_PTR)nullptr);
+    }
+
+    if (m_params._isFocused)
+    {
+        ShowWindow(m_hWnd, SW_SHOWNA);
+    }
+    else
+    {
+        ShowWindow(m_hWnd, SW_SHOW);
+    }
+
+    if (m_parent)
+    {
+        SetWindowLongPtr(m_hWnd, GWLP_HWNDPARENT, (LONG_PTR)m_parent->getWindowHandle());
+    }
+}
+
+void WindowWindows::focus()
+{
+    ASSERT(m_hWnd, "Must be valid");
+
+    BringWindowToTop(m_hWnd);
+    SetForegroundWindow(m_hWnd);
+    SetFocus(m_hWnd);
 }
 
 void WindowWindows::setFullScreen(bool value)
@@ -199,19 +254,42 @@ void WindowWindows::setResizeble(bool value)
     ASSERT(false, "not implemented");
 }
 
-void WindowWindows::setTextCaption(const std::wstring& text)
+void WindowWindows::setText(const std::wstring& text)
 {
+    ASSERT(m_hWnd, "Must be valid");
+
     SetWindowTextW(m_hWnd, text.c_str());
+    DefWindowProcW(m_hWnd, WM_SETTEXT, 0, (LPARAM)text.c_str());
+}
+
+void WindowWindows::setSize(const math::Dimension2D& size)
+{
+    ASSERT(m_hWnd, "Must be valid");
+
+    RECT rect = { 0, 0, (LONG)size.m_width, (LONG)size.m_height };
+    DWORD dwStyle = ::GetWindowLongW(m_hWnd, GWL_STYLE);
+    DWORD dwExStyle = ::GetWindowLongW(m_hWnd, GWL_EXSTYLE);
+
+    AdjustWindowRectEx(&rect, dwStyle, FALSE, dwExStyle);
+    SetWindowPos(m_hWnd, NULL, 0, 0, rect.right - rect.left, rect.bottom - rect.top, SWP_NOZORDER | SWP_NOMOVE | SWP_NOACTIVATE);
 }
 
 void WindowWindows::setPosition(const math::Point2D& pos)
 {
+    ASSERT(m_hWnd, "Must be valid");
+
     if (m_params._isFullscreen)
     {
         return;
     }
 
+    RECT rect = { (LONG)pos.m_x, (LONG)pos.m_y, (LONG)pos.m_x, (LONG)pos.m_y };
+    DWORD dwStyle = ::GetWindowLongW(m_hWnd, GWL_STYLE);
+    DWORD dwExStyle = ::GetWindowLongW(m_hWnd, GWL_EXSTYLE);
+
+    AdjustWindowRectEx(&rect, dwStyle, FALSE, dwExStyle);
     SetWindowPos(m_hWnd, NULL, pos.m_x, pos.m_y, 0, 0, SWP_NOACTIVATE | SWP_NOZORDER | SWP_NOSIZE);
+
     m_params._position = pos;
 }
 
@@ -227,24 +305,44 @@ bool WindowWindows::isMinimized() const
 
 bool WindowWindows::isActive() const
 {
-    HWND hWnd = GetActiveWindow();
-    if (m_hWnd == hWnd)
-    {
-        return m_params._isActive;
-    }
+    ASSERT(m_hWnd, "Must be valid");
 
-    return false;
+    HWND hWnd = GetActiveWindow();
+    m_params._isActive = m_hWnd == hWnd ? true : false;
+
+    return m_params._isActive;
 }
 
 bool WindowWindows::isFocused() const
 {
-    HWND hWnd = GetFocus();
-    if (m_hWnd == hWnd)
-    {
-        return m_params._isFocused;
-    }
+    ASSERT(m_hWnd, "Must be valid");
 
-    return false;
+    HWND hWnd = GetForegroundWindow();
+    m_params._isFocused = m_hWnd == hWnd ? true : false;
+
+    return m_params._isFocused;
+}
+
+const math::Dimension2D& WindowWindows::getSize() const
+{
+    ASSERT(m_hWnd, "Must be valid");
+
+    RECT rect;
+    GetClientRect(m_hWnd, &rect);
+    m_params._size = { (u32)(rect.right - rect.left), (u32)(rect.bottom - rect.top) };
+
+    return m_params._size;
+}
+
+const math::Point2D& WindowWindows::getPosition() const
+{
+    ASSERT(m_hWnd, "Must be valid");
+
+    POINT pos = { 0, 0 };
+    ClientToScreen(m_hWnd, &pos);
+    m_params._position = { pos.x, pos.y };
+
+    return m_params._position;
 }
 
 NativeInstance WindowWindows::getInstance() const
@@ -252,7 +350,7 @@ NativeInstance WindowWindows::getInstance() const
     return m_hInstance;
 }
 
-NativeWindows WindowWindows::getWindowHandle() const
+NativeWindow WindowWindows::getWindowHandle() const
 {
     return m_hWnd;
 }
@@ -269,7 +367,7 @@ LRESULT WindowWindows::HandleInputMessage(UINT message, WPARAM wParam, LPARAM lP
         return DefWindowProc(m_hWnd, message, wParam, lParam);
     }
 
-    auto getModifiers = [](WPARAM wParam, LPARAM lParam) -> u8
+    static auto getModifiers = [](WPARAM wParam, LPARAM lParam) -> u8
     {
         u8 modifers = 0;
 
@@ -333,7 +431,7 @@ LRESULT WindowWindows::HandleInputMessage(UINT message, WPARAM wParam, LPARAM lP
         event->_windowID = this->ID();
 
         m_receiver->pushEvent(event);
-        return TRUE;
+        return FALSE;
     }
 
     case WM_SYSKEYUP:
@@ -347,78 +445,7 @@ LRESULT WindowWindows::HandleInputMessage(UINT message, WPARAM wParam, LPARAM lP
         event->_windowID = this->ID();
 
         m_receiver->pushEvent(event);
-        return TRUE;
-    }
-
-    case WM_LBUTTONDOWN:
-    case WM_RBUTTONDOWN:
-    case WM_MBUTTONDOWN:
-    case WM_XBUTTONDOWN:
-    {
-        event::MouseInputEvent* event = V3D_PLACMENT_NEW(m_receiver->allocateInputEvent(), event::MouseInputEvent());
-        event->_cursorPosition.m_x = (s16)LOWORD(lParam);
-        event->_cursorPosition.m_y = (s16)HIWORD(lParam);
-        event->_wheelValue = ((f32)((s16)HIWORD(wParam))) / (f32)WHEEL_DELTA;
-        event->_event = event::MouseInputEvent::MousePressDown;
-        event->_modifers = 0;
-        event->_windowID = this->ID();
-
-        switch (message)
-        {
-        case WM_LBUTTONDOWN:
-            event->_key = event::KeyCode::KeyLButton;
-            break;
-
-        case WM_RBUTTONDOWN:
-            event->_key = event::KeyCode::KeyRButton;
-            break;
-
-        case WM_MBUTTONDOWN:
-            event->_key = event::KeyCode::KeyMButton;
-            break;
-
-        case WM_XBUTTONDOWN:
-            event->_key = event::KeyCode::KeyXButton1;
-            break;
-        }
-        m_receiver->pushEvent(event);
-        return TRUE;
-    }
-
-
-    case WM_LBUTTONUP:
-    case WM_RBUTTONUP:
-    case WM_MBUTTONUP:
-    case WM_XBUTTONUP:
-    {
-        event::MouseInputEvent* event = V3D_PLACMENT_NEW(m_receiver->allocateInputEvent(), event::MouseInputEvent());
-        event->_cursorPosition.m_x = (s16)LOWORD(lParam);
-        event->_cursorPosition.m_y = (s16)HIWORD(lParam);
-        event->_wheelValue = ((f32)((s16)HIWORD(wParam))) / (f32)WHEEL_DELTA;
-        event->_event = event::MouseInputEvent::MousePressUp;
-        event->_modifers = 0;
-        event->_windowID = this->ID();
-
-        switch (message)
-        {
-        case WM_LBUTTONUP:
-            event->_key = event::KeyCode::KeyLButton;
-            break;
-
-        case WM_RBUTTONUP:
-            event->_key = event::KeyCode::KeyRButton;
-            break;
-
-        case WM_MBUTTONUP:
-            event->_key = event::KeyCode::KeyMButton;
-            break;
-
-        case WM_XBUTTONUP:
-            event->_key = event::KeyCode::KeyXButton1;
-            break;
-        }
-        m_receiver->pushEvent(event);
-        return TRUE;
+        return FALSE;
     }
 
     case WM_LBUTTONDBLCLK:
@@ -426,10 +453,20 @@ LRESULT WindowWindows::HandleInputMessage(UINT message, WPARAM wParam, LPARAM lP
     case WM_MBUTTONDBLCLK:
     case WM_XBUTTONDBLCLK:
     {
+        if (message == WM_LBUTTONDBLCLK && GetCapture() == nullptr)
+        {
+            SetCapture(m_hWnd); // Allow us to read mouse coordinates when dragging mouse outside of our window bounds.
+        }
+
+        POINT absolutePos = { (LONG)GET_X_LPARAM(lParam), (LONG)GET_Y_LPARAM(lParam) };
+        ClientToScreen(m_hWnd, &absolutePos);
+
         event::MouseInputEvent* event = V3D_PLACMENT_NEW(m_receiver->allocateInputEvent(), event::MouseInputEvent());
-        event->_cursorPosition.m_x = (s16)LOWORD(lParam);
-        event->_cursorPosition.m_y = (s16)HIWORD(lParam);
-        event->_wheelValue = ((f32)((s16)HIWORD(wParam))) / (f32)WHEEL_DELTA;
+        event->_clientCoordinates.m_x = GET_X_LPARAM(lParam);
+        event->_clientCoordinates.m_y = GET_Y_LPARAM(lParam);
+        event->_absoluteCoordinates.m_x = absolutePos.x;
+        event->_absoluteCoordinates.m_y = absolutePos.y;
+        event->_wheelValue = (f32)GET_WHEEL_DELTA_WPARAM(wParam) / (f32)WHEEL_DELTA;
         event->_event = event::MouseInputEvent::MouseDoubleClick;
         event->_modifers = 0;
         event->_windowID = this->ID();
@@ -449,46 +486,190 @@ LRESULT WindowWindows::HandleInputMessage(UINT message, WPARAM wParam, LPARAM lP
             break;
 
         case WM_XBUTTONDBLCLK:
-            event->_key = event::KeyCode::KeyXButton1;
+            event->_key = (GET_XBUTTON_WPARAM(wParam) == XBUTTON1) ? event::KeyCode::KeyXButton1 : event::KeyCode::KeyXButton2;
             break;
         }
         m_receiver->pushEvent(event);
-        return TRUE;
+        return FALSE;
+    }
+
+    case WM_LBUTTONDOWN:
+    case WM_RBUTTONDOWN:
+    case WM_MBUTTONDOWN:
+    case WM_XBUTTONDOWN:
+    {
+        if (message == WM_LBUTTONDOWN && GetCapture() == nullptr)
+        {
+            SetCapture(m_hWnd); // Allow us to read mouse coordinates when dragging mouse outside of our window bounds.
+        }
+
+        POINT absolutePos = { (LONG)GET_X_LPARAM(lParam), (LONG)GET_Y_LPARAM(lParam) };
+        ClientToScreen(m_hWnd, &absolutePos);
+
+        event::MouseInputEvent* event = V3D_PLACMENT_NEW(m_receiver->allocateInputEvent(), event::MouseInputEvent());
+        event->_clientCoordinates.m_x = GET_X_LPARAM(lParam);
+        event->_clientCoordinates.m_y = GET_Y_LPARAM(lParam);
+        event->_absoluteCoordinates.m_x = absolutePos.x;
+        event->_absoluteCoordinates.m_y = absolutePos.y;
+        event->_wheelValue = (f32)GET_WHEEL_DELTA_WPARAM(wParam) / (f32)WHEEL_DELTA;
+        event->_event = event::MouseInputEvent::MousePressDown;
+        event->_modifers = 0;
+        event->_windowID = this->ID();
+
+        switch (message)
+        {
+        case WM_LBUTTONDOWN:
+            event->_key = event::KeyCode::KeyLButton;
+            break;
+
+        case WM_RBUTTONDOWN:
+            event->_key = event::KeyCode::KeyRButton;
+            break;
+
+        case WM_MBUTTONDOWN:
+            event->_key = event::KeyCode::KeyMButton;
+            break;
+
+        case WM_XBUTTONDOWN:
+            event->_key = (GET_XBUTTON_WPARAM(wParam) == XBUTTON1) ? event::KeyCode::KeyXButton1 : event::KeyCode::KeyXButton2;
+            break;
+        }
+        m_receiver->pushEvent(event);
+
+        return FALSE;
+    }
+
+
+    case WM_LBUTTONUP:
+    case WM_RBUTTONUP:
+    case WM_MBUTTONUP:
+    case WM_XBUTTONUP:
+    {
+        if (message == WM_LBUTTONUP && GetCapture() == m_hWnd)
+        {
+            ReleaseCapture();
+        }
+
+        POINT absolutePos = { (LONG)GET_X_LPARAM(lParam), (LONG)GET_Y_LPARAM(lParam) };
+        ClientToScreen(m_hWnd, &absolutePos);
+
+        event::MouseInputEvent* event = V3D_PLACMENT_NEW(m_receiver->allocateInputEvent(), event::MouseInputEvent());
+        event->_clientCoordinates.m_x = GET_X_LPARAM(lParam);
+        event->_clientCoordinates.m_y = GET_Y_LPARAM(lParam);
+        event->_absoluteCoordinates.m_x = absolutePos.x;
+        event->_absoluteCoordinates.m_y = absolutePos.y;
+        event->_wheelValue = (f32)GET_WHEEL_DELTA_WPARAM(wParam) / (f32)WHEEL_DELTA;
+        event->_event = event::MouseInputEvent::MousePressUp;
+        event->_modifers = 0;
+        event->_windowID = this->ID();
+
+        switch (message)
+        {
+        case WM_LBUTTONUP:
+            event->_key = event::KeyCode::KeyLButton;
+            break;
+
+        case WM_RBUTTONUP:
+            event->_key = event::KeyCode::KeyRButton;
+            break;
+
+        case WM_MBUTTONUP:
+            event->_key = event::KeyCode::KeyMButton;
+            break;
+
+        case WM_XBUTTONUP:
+            event->_key = (GET_XBUTTON_WPARAM(wParam) == XBUTTON1) ? event::KeyCode::KeyXButton1 : event::KeyCode::KeyXButton2;
+            break;
+        }
+        m_receiver->pushEvent(event);
+        return FALSE;
     }
 
     case WM_MOUSEWHEEL:
     {
-        //Sometimes return absolute coords
-        POINT pt;
-        pt.x = LOWORD(lParam);
-        pt.y = HIWORD(lParam);
-        ScreenToClient(m_hWnd, &pt);
+        POINT absolutePos = { (LONG)GET_X_LPARAM(lParam), (LONG)GET_Y_LPARAM(lParam) };
+        ClientToScreen(m_hWnd, &absolutePos);
 
         event::MouseInputEvent* event = V3D_PLACMENT_NEW(m_receiver->allocateInputEvent(), event::MouseInputEvent());
-        event->_cursorPosition.m_x = (s16)pt.x;
-        event->_cursorPosition.m_y = (s16)pt.y;
-        event->_wheelValue = ((f32)((s16)HIWORD(wParam))) / (f32)WHEEL_DELTA;
+        event->_clientCoordinates.m_x = GET_X_LPARAM(lParam);
+        event->_clientCoordinates.m_y = GET_Y_LPARAM(lParam);
+        event->_absoluteCoordinates.m_x = absolutePos.x;
+        event->_absoluteCoordinates.m_y = absolutePos.y;
+        event->_wheelValue = (f32)GET_WHEEL_DELTA_WPARAM(wParam) / (f32)WHEEL_DELTA;
         event->_event = event::MouseInputEvent::MouseWheel;
         event->_modifers = 0;
         event->_windowID = this->ID();
 
         m_receiver->pushEvent(event);
-        return TRUE;
+        return FALSE;
     }
 
     case WM_MOUSEMOVE:
+    case WM_NCMOUSEMOVE:
     {
+        const u32 area = (message == WM_MOUSEMOVE) ? 1 : 2;
+        if (m_mouseTrackedArea != area)
+        {
+            TRACKMOUSEEVENT tme_cancel = { sizeof(tme_cancel), (DWORD)TME_CANCEL, m_hWnd, 0 };
+            TRACKMOUSEEVENT tme_track = { sizeof(tme_track), (DWORD)((message == WM_MOUSEMOVE) ? TME_LEAVE : TME_LEAVE | TME_NONCLIENT), m_hWnd, 0 };
+            if (m_mouseTrackedArea != 0)
+            {
+                TrackMouseEvent(&tme_cancel);
+            }
+            TrackMouseEvent(&tme_track);
+            m_mouseTrackedArea = area;
+        }
+
+        POINT localPos = { (LONG)GET_X_LPARAM(lParam), (LONG)GET_Y_LPARAM(lParam) };
+        if (message == WM_NCMOUSEMOVE) // WM_NCMOUSEMOVE are absolute coordinates.
+        {
+            ScreenToClient(m_hWnd, &localPos);
+        }
+
+        POINT absolutePos = { (LONG)GET_X_LPARAM(lParam), (LONG)GET_Y_LPARAM(lParam) };
+        ClientToScreen(m_hWnd, &absolutePos);
+
         event::MouseInputEvent* event = V3D_PLACMENT_NEW(m_receiver->allocateInputEvent(), event::MouseInputEvent());
-        event->_cursorPosition.m_x = (s16)LOWORD(lParam);
-        event->_cursorPosition.m_y = (s16)HIWORD(lParam);
-        event->_wheelValue = ((f32)((s16)HIWORD(wParam))) / (f32)WHEEL_DELTA;
+        event->_clientCoordinates.m_x = localPos.x;
+        event->_clientCoordinates.m_y = localPos.y;
+        event->_absoluteCoordinates.m_x = absolutePos.x;
+        event->_absoluteCoordinates.m_y = absolutePos.y;
+        event->_wheelValue = (f32)GET_WHEEL_DELTA_WPARAM(wParam) / (f32)WHEEL_DELTA;
         event->_event = event::MouseInputEvent::MouseMoved;
         event->_modifers = 0;
         event->_windowID = this->ID();
 
         m_receiver->pushEvent(event);
-        return TRUE;
+        return FALSE;
     }
+
+    case WM_MOUSELEAVE:
+    case WM_NCMOUSELEAVE:
+    {
+        const int area = (message == WM_MOUSELEAVE) ? 1 : 2;
+        if (m_mouseTrackedArea == area)
+        {
+            m_mouseTrackedArea = 0;
+        }
+
+        POINT absolutePos = { (LONG)GET_X_LPARAM(lParam), (LONG)GET_Y_LPARAM(lParam) };
+        ClientToScreen(m_hWnd, &absolutePos);
+
+        event::MouseInputEvent* event = V3D_PLACMENT_NEW(m_receiver->allocateInputEvent(), event::MouseInputEvent());
+        event->_clientCoordinates.m_x = 0;
+        event->_clientCoordinates.m_y = 0;
+        event->_absoluteCoordinates.m_x = absolutePos.x;
+        event->_absoluteCoordinates.m_y = absolutePos.y;
+        event->_wheelValue = (f32)GET_WHEEL_DELTA_WPARAM(wParam) / (f32)WHEEL_DELTA;
+        event->_event = event::MouseInputEvent::MouseMoved;
+        event->_modifers = 0;
+        event->_windowID = this->ID();
+
+        m_receiver->pushEvent(event);
+
+        return FALSE;
+    }
+
     }
 
     return DefWindowProc(m_hWnd, message, wParam, lParam);
@@ -510,7 +691,7 @@ LRESULT WindowWindows::HandleSystemEvents(UINT message, WPARAM wParam, LPARAM lP
         event->_windowID = this->ID();
 
         m_receiver->pushEvent(event);
-        return TRUE;
+        return FALSE;
     }
 
     case WM_ACTIVATE:
@@ -523,24 +704,49 @@ LRESULT WindowWindows::HandleSystemEvents(UINT message, WPARAM wParam, LPARAM lP
             active = FALSE;
         }
         m_params._isActive = active;
-        return TRUE;
+        return FALSE;
     }
 
     case WM_SETFOCUS:
     {
         m_params._isFocused = true;
-        return TRUE;
+
+        event::SystemEvent* event = V3D_PLACMENT_NEW(m_receiver->allocateInputEvent(), event::SystemEvent());
+        event->_systemEvent = event::SystemEvent::Focus;
+        event->_flag = 0x1;
+        event->_windowID = this->ID();
+
+        m_receiver->pushEvent(event);
+        return FALSE;
     }
 
     case WM_KILLFOCUS:
     {
         m_params._isFocused = false;
-        return TRUE;
+
+        event::SystemEvent* event = V3D_PLACMENT_NEW(m_receiver->allocateInputEvent(), event::SystemEvent());
+        event->_systemEvent = event::SystemEvent::Focus;
+        event->_flag = 0x0;
+        event->_windowID = this->ID();
+
+        m_receiver->pushEvent(event);
+        return FALSE;
     }
 
     case WM_SHOWWINDOW:
     {
-        return TRUE;
+        return FALSE;
+    }
+
+    case WM_CHAR:
+    {
+        event::SystemEvent* event = V3D_PLACMENT_NEW(m_receiver->allocateInputEvent(), event::SystemEvent());
+        event->_systemEvent = event::SystemEvent::TextInput;
+        event->_flag = wParam;
+        event->_windowID = this->ID();
+
+        m_receiver->pushEvent(event);
+        return FALSE;
     }
 
     case WM_MOVE:
@@ -553,33 +759,43 @@ LRESULT WindowWindows::HandleSystemEvents(UINT message, WPARAM wParam, LPARAM lP
             u32 id = this->ID();
             event::SystemEvent* event = V3D_PLACMENT_NEW(m_receiver->allocateInputEvent(), event::SystemEvent());
             event->_systemEvent = event::SystemEvent::Move;
+            event->_flag = lParam;
             event->_windowID = this->ID();
 
             m_receiver->sendEvent(event);
             m_lastMoveEvent = m_currnetTime;
         }
-        return TRUE;
+        return FALSE;
     }
 
     case WM_SIZE:
     {
-        m_params._size.m_width = (s16)LOWORD(lParam);
-        m_params._size.m_height = (s16)HIWORD(lParam);
+        if (wParam != SIZE_MINIMIZED)
+        {
+            s32 width = (UINT)LOWORD(lParam);
+            s32 height = (UINT)HIWORD(lParam);
 
-        event::SystemEvent* event = V3D_PLACMENT_NEW(m_receiver->allocateInputEvent(), event::SystemEvent());
-        event->_systemEvent = event::SystemEvent::Resize;
-        event->_windowID = this->ID();
+            if (width > 0 && height > 0 && (m_params._size.m_width != width || m_params._size.m_height != height))
+            {
+                m_params._size.m_width = width;
+                m_params._size.m_height = height;
 
-        m_receiver->sendEvent(event);
-        m_lastSizeEvent = m_currnetTime;
+                event::SystemEvent* event = V3D_PLACMENT_NEW(m_receiver->allocateInputEvent(), event::SystemEvent());
+                event->_systemEvent = event::SystemEvent::Resize;
+                event->_flag = lParam;
+                event->_windowID = this->ID();
 
-        return TRUE;
+                m_receiver->sendEvent(event);
+            }
+            m_lastSizeEvent = m_currnetTime;
+        }
+        return FALSE;
     }
 
     case WM_TIMER:
     {
         ++m_currnetTime;
-        return TRUE;
+        return FALSE;
     }
 
     case WM_DESTROY:
@@ -589,11 +805,11 @@ LRESULT WindowWindows::HandleSystemEvents(UINT message, WPARAM wParam, LPARAM lP
         event->_windowID = this->ID();
 
         m_receiver->pushEvent(event);
-        return TRUE;
+        return FALSE;
     }
 
     default:
-        return FALSE;
+        return TRUE;
     }
 }
 
@@ -614,11 +830,11 @@ LRESULT WindowWindows::WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lP
     {
         LONG_PTR lpCreateParams = 0;
         lpCreateParams = GetWindowLongPtr(hWnd, GWLP_USERDATA);
-
         if (!lpCreateParams)
         {
             return DefWindowProc(hWnd, message, wParam, lParam);
         }
+
         WindowWindows* window = reinterpret_cast<WindowWindows*>(lpCreateParams);
         ASSERT(window, "Must be valid pointer");
 
@@ -631,6 +847,7 @@ LRESULT WindowWindows::WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lP
         case WM_MOVE:
         case WM_SIZE:
         case WM_TIMER:
+        case WM_CHAR:
             return window->HandleSystemEvents(message, wParam, lParam);
 
         case WM_DESTROY:
@@ -643,8 +860,6 @@ LRESULT WindowWindows::WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lP
             return window->HandleInputMessage(message, wParam, lParam);
         }
     }
-
-    return DefWindowProc(hWnd, message, wParam, lParam);
 }
 
 void WindowWindows::fillKeyCodes()

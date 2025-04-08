@@ -1,4 +1,88 @@
 #include "Platform.h"
+#include "Window.h"
+
+#ifdef PLATFORM_WINDOWS
+#include <windows.h>
+#include <windowsx.h> // GET_X_LPARAM(), GET_Y_LPARAM()
+#include <tchar.h>
+#include <dwmapi.h>
+
+static BOOL _IsWindowsVersionOrGreater(WORD major, WORD minor, WORD)
+{
+    typedef LONG(WINAPI* PFN_RtlVerifyVersionInfo)(OSVERSIONINFOEXW*, ULONG, ULONGLONG);
+    static PFN_RtlVerifyVersionInfo RtlVerifyVersionInfoFn = nullptr;
+    if (RtlVerifyVersionInfoFn == nullptr)
+        if (HMODULE ntdllModule = ::GetModuleHandleA("ntdll.dll"))
+            RtlVerifyVersionInfoFn = (PFN_RtlVerifyVersionInfo)GetProcAddress(ntdllModule, "RtlVerifyVersionInfo");
+    if (RtlVerifyVersionInfoFn == nullptr)
+        return FALSE;
+
+    RTL_OSVERSIONINFOEXW versionInfo = { };
+    ULONGLONG conditionMask = 0;
+    versionInfo.dwOSVersionInfoSize = sizeof(RTL_OSVERSIONINFOEXW);
+    versionInfo.dwMajorVersion = major;
+    versionInfo.dwMinorVersion = minor;
+    VER_SET_CONDITION(conditionMask, VER_MAJORVERSION, VER_GREATER_EQUAL);
+    VER_SET_CONDITION(conditionMask, VER_MINORVERSION, VER_GREATER_EQUAL);
+    return (RtlVerifyVersionInfoFn(&versionInfo, VER_MAJORVERSION | VER_MINORVERSION, conditionMask) == 0) ? TRUE : FALSE;
+}
+
+#define _IsWindowsVistaOrGreater()   _IsWindowsVersionOrGreater(HIBYTE(0x0600), LOBYTE(0x0600), 0) // _WIN32_WINNT_VISTA
+#define _IsWindows8OrGreater()       _IsWindowsVersionOrGreater(HIBYTE(0x0602), LOBYTE(0x0602), 0) // _WIN32_WINNT_WIN8
+#define _IsWindows8Point1OrGreater() _IsWindowsVersionOrGreater(HIBYTE(0x0603), LOBYTE(0x0603), 0) // _WIN32_WINNT_WINBLUE
+#define _IsWindows10OrGreater()      _IsWindowsVersionOrGreater(HIBYTE(0x0A00), LOBYTE(0x0A00), 0) // _WIN32_WINNT_WINTHRESHOLD / _WIN32_WINNT_WIN10
+
+#ifndef DPI_ENUMS_DECLARED
+typedef enum { PROCESS_DPI_UNAWARE = 0, PROCESS_SYSTEM_DPI_AWARE = 1, PROCESS_PER_MONITOR_DPI_AWARE = 2 } PROCESS_DPI_AWARENESS;
+typedef enum { MDT_EFFECTIVE_DPI = 0, MDT_ANGULAR_DPI = 1, MDT_RAW_DPI = 2, MDT_DEFAULT = MDT_EFFECTIVE_DPI } MONITOR_DPI_TYPE;
+#endif
+#ifndef _DPI_AWARENESS_CONTEXTS_
+DECLARE_HANDLE(DPI_AWARENESS_CONTEXT);
+#define DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE    (DPI_AWARENESS_CONTEXT)-3
+#endif
+#ifndef DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2
+#define DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2 (DPI_AWARENESS_CONTEXT)-4
+#endif
+typedef HRESULT(WINAPI* PFN_SetProcessDpiAwareness)(PROCESS_DPI_AWARENESS);                     // Shcore.lib + dll, Windows 8.1+
+typedef HRESULT(WINAPI* PFN_GetDpiForMonitor)(HMONITOR, MONITOR_DPI_TYPE, UINT*, UINT*);        // Shcore.lib + dll, Windows 8.1+
+typedef DPI_AWARENESS_CONTEXT(WINAPI* PFN_SetThreadDpiAwarenessContext)(DPI_AWARENESS_CONTEXT); // User32.lib + dll, Windows 10 v1607+ (Creators Update)
+
+#if defined(_MSC_VER) && !defined(NOGDI)
+#pragma comment(lib, "gdi32")   // Link with gdi32.lib for GetDeviceCaps(). MinGW will require linking with '-lgdi32'
+#endif
+
+float GetDpiScaleForMonitor(void* monitor)
+{
+    UINT xdpi = 96, ydpi = 96;
+    if (_IsWindows8Point1OrGreater())
+    {
+        static HINSTANCE shcore_dll = ::LoadLibraryA("shcore.dll"); // Reference counted per-process
+        static PFN_GetDpiForMonitor GetDpiForMonitorFn = nullptr;
+        if (GetDpiForMonitorFn == nullptr && shcore_dll != nullptr)
+            GetDpiForMonitorFn = (PFN_GetDpiForMonitor)::GetProcAddress(shcore_dll, "GetDpiForMonitor");
+        if (GetDpiForMonitorFn != nullptr)
+        {
+            GetDpiForMonitorFn((HMONITOR)monitor, MDT_EFFECTIVE_DPI, &xdpi, &ydpi);
+            ASSERT(xdpi == ydpi, ""); // Please contact me if you hit this assert!
+            return xdpi / 96.0f;
+        }
+    }
+#ifndef NOGDI
+    const HDC dc = ::GetDC(nullptr);
+    xdpi = ::GetDeviceCaps(dc, LOGPIXELSX);
+    ydpi = ::GetDeviceCaps(dc, LOGPIXELSY);
+    ASSERT(xdpi == ydpi, ""); // Please contact me if you hit this assert!
+    ::ReleaseDC(nullptr, dc);
+#endif
+    return xdpi / 96.0f;
+}
+
+float GetDpiScaleForHwnd(void* hwnd)
+{
+    HMONITOR monitor = ::MonitorFromWindow((HWND)hwnd, MONITOR_DEFAULTTONEAREST);
+    return GetDpiScaleForMonitor(monitor);
+}
+#endif
 
 namespace v3d
 {
@@ -103,7 +187,33 @@ std::string Platform::wideToUtf8(const w16* in)
     WideCharToMultiByte(CP_UTF8, 0, in, -1, &out[0], size, nullptr, nullptr);
     return out;
 }
-#endif
+
+void Platform::enumDisplayMonitors(const DisplayMonitorsFunc& func)
+{
+    auto updateMonitors_EnumFunc = [](HMONITOR monitor, HDC hdc, LPRECT rect, LPARAM param) -> BOOL
+    {
+        MONITORINFO info = {};
+        info.cbSize = sizeof(MONITORINFO);
+        if (!::GetMonitorInfo(monitor, &info))
+        {
+            return TRUE;
+        }
+
+        auto& func = *reinterpret_cast<const DisplayMonitorsFunc*>(param);
+
+        math::RectF32 rcMonitor(info.rcMonitor.left, info.rcMonitor.top, info.rcMonitor.right, info.rcMonitor.bottom);
+        math::RectF32 rcWork(info.rcWork.left, info.rcWork.top, info.rcWork.right, info.rcWork.bottom);
+        f32 dpi = GetDpiScaleForMonitor(monitor);
+        return func(rcMonitor, rcWork, dpi, info.dwFlags & MONITORINFOF_PRIMARY, monitor);
+    };
+
+    ::EnumDisplayMonitors(nullptr, nullptr, updateMonitors_EnumFunc, reinterpret_cast<LPARAM>(&func));
+}
+f32 Platform::getDpiScaleForWindow(const Window* window)
+{
+    return GetDpiScaleForHwnd(window->getWindowHandle());
+}
+#endif //PLATFORM_WINDOWS
 
 } //namespace platform
 } //namespace v3d
