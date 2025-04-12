@@ -46,9 +46,9 @@ namespace resource
 
         struct ShaderPolicy : ResourceDecoder::Policy
         {
-            renderer::ShaderType            _type;
-            renderer::ShaderContent         _content;
-            renderer::ShaderModel           _shaderModel;
+            renderer::ShaderType            _type = renderer::ShaderType::First;
+            renderer::ShaderContent         _content = renderer::ShaderContent::Source;
+            renderer::ShaderModel           _shaderModel = renderer::ShaderModel::Default;
             std::string                     _entryPoint = "main";
             renderer::Shader::DefineList    _defines = {};
             std::vector<std::string>        _includes = {};
