@@ -16,24 +16,10 @@ namespace platform
 {
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    struct WindowReport
-    {
-        enum ReportFlag
-        {
-            DestroyWindow = 1 << 0,
-        };
-        typedef u32 ReportFlags;
-
-
-        ReportFlags _flags = 0;
-    };
-
-    /////////////////////////////////////////////////////////////////////////////////////////////////////
-
     /**
     * @brief Window class. Base class of window
     */
-    class V3D_API Window : public utils::Reporter<WindowReport>, public utils::ResourceID<Window, u32>
+    class V3D_API Window : public utils::Reporter<bool>, public utils::ResourceID<Window, u32>
     {
     public:
 

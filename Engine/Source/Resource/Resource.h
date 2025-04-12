@@ -83,7 +83,7 @@ namespace resource
     /**
     * @brief Base Interface for Resource class
     */
-    class Resource : public utils::Observable, public utils::ResourceID<Resource, u64>
+    class Resource : public utils::Reporter<bool>, public utils::ResourceID<Resource, u64>
     {
     public:
 

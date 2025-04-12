@@ -370,7 +370,9 @@ namespace resource
             Resource* res = iter.second;
             if (resource == res)
             {
-                res->notifyObservers();
+                bool readytoDelete = true;
+                res->notify(readytoDelete);
+
                 V3D_DELETE(res, memory::MemoryLabel::MemoryObject);
 
                 m_resources.erase(iter.first);
@@ -389,7 +391,9 @@ namespace resource
             const Resource* res = iter.second;
             if (resource == res)
             {
-                res->notifyObservers();
+                bool readytoDelete = true;
+                res->notify(readytoDelete);
+
                 V3D_DELETE(res, memory::MemoryLabel::MemoryObject);
 
                 m_resources.erase(iter.first);

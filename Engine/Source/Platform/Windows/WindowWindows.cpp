@@ -141,11 +141,8 @@ bool WindowWindows::update()
 
 void WindowWindows::destroy()
 {
-    WindowReport report;
-    report._flags = WindowReport::DestroyWindow;
-
-    notify(report);
-
+    bool readyToDelete = true;
+    notify(readyToDelete);
 
     if (m_parent && GetCapture() == m_hWnd)
     {
