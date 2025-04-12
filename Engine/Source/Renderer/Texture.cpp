@@ -26,6 +26,7 @@ Texture::~Texture()
 Texture2D::Texture2D(Device* device, TextureUsageFlags usage, Format format, const math::Dimension2D& dimension, u32 mipmaps, const std::string& name) noexcept
     : Texture(TextureTarget::Texture2D, format, TextureSamples::TextureSamples_x1, 1, mipmaps, usage)
     , m_device(device)
+    , m_dimension(dimension)
 {
     LOG_DEBUG("Texture2D::Texture2D constructor %llx", this);
 
@@ -36,6 +37,7 @@ Texture2D::Texture2D(Device* device, TextureUsageFlags usage, Format format, con
 Texture2D::Texture2D(Device* device, TextureUsageFlags usage, Format format, const math::Dimension2D& dimension, TextureSamples samples, const std::string& name) noexcept
     : Texture(TextureTarget::Texture2D, format, samples, 1, 1, usage)
     , m_device(device)
+    , m_dimension(dimension)
 {
     LOG_DEBUG("Texture2D::Texture2D constructor %llx", this);
 
@@ -55,6 +57,7 @@ Texture2D::~Texture2D()
 Texture2DArray::Texture2DArray(Device* device, TextureUsageFlags usage, Format format, const math::Dimension2D& dimension, u32 layer, u32 mipmaps, const std::string& name) noexcept
     : Texture(TextureTarget::Texture2DArray, format, TextureSamples::TextureSamples_x1, 1, mipmaps, usage)
     , m_device(device)
+    , m_dimension(dimension)
 {
     LOG_DEBUG("Texture2DArray::Texture2DArray constructor %llx", this);
 
@@ -65,6 +68,7 @@ Texture2DArray::Texture2DArray(Device* device, TextureUsageFlags usage, Format f
 Texture2DArray::Texture2DArray(Device* device, TextureUsageFlags usage, Format format, const math::Dimension2D& dimension, u32 layer, TextureSamples samples, const std::string& name) noexcept
     : Texture(TextureTarget::Texture2DArray, format, samples, 1, 1, usage)
     , m_device(device)
+    , m_dimension(dimension)
 {
     LOG_DEBUG("Texture2DArray::Texture2DArray constructor %llx", this);
 
@@ -84,6 +88,7 @@ Texture2DArray::~Texture2DArray()
 TextureCube::TextureCube(Device* device, TextureUsageFlags usage, Format format, const math::Dimension2D& dimension, u32 mipmaps, const std::string& name) noexcept
     : Texture(TextureTarget::TextureCubeMap, format, TextureSamples::TextureSamples_x1, 1, mipmaps, usage)
     , m_device(device)
+    , m_dimension(dimension)
 {
     LOG_DEBUG("TextureCube::TextureCube constructor %llx", this);
 
@@ -94,6 +99,7 @@ TextureCube::TextureCube(Device* device, TextureUsageFlags usage, Format format,
 TextureCube::TextureCube(Device* device, TextureUsageFlags usage, Format format, const math::Dimension2D& dimension, TextureSamples samples, const std::string& name) noexcept
     : Texture(TextureTarget::TextureCubeMap, format, samples, 1, 1, usage)
     , m_device(device)
+    , m_dimension(dimension)
 {
     LOG_DEBUG("TextureCube::TextureCube constructor %llx", this);
 
@@ -113,6 +119,7 @@ TextureCube::~TextureCube()
 Texture3D::Texture3D(Device* device, TextureUsageFlags usage, Format format, const math::Dimension3D& dimension, u32 mipmaps, const std::string& name) noexcept
     : Texture(TextureTarget::Texture3D, format, TextureSamples::TextureSamples_x1, 1, mipmaps, usage)
     , m_device(device)
+    , m_dimension(dimension)
 {
     LOG_DEBUG("Texture3D::Texture3D constructor %llx", this);
 
@@ -123,6 +130,7 @@ Texture3D::Texture3D(Device* device, TextureUsageFlags usage, Format format, con
 Texture3D::Texture3D(Device* device, TextureUsageFlags usage, Format format, const math::Dimension3D& dimension, TextureSamples samples, const std::string& name) noexcept
     : Texture(TextureTarget::Texture3D, format, samples, 1, 1, usage)
     , m_device(device)
+    , m_dimension(dimension)
 {
     LOG_DEBUG("Texture3D::Texture3D constructor %llx", this);
 
