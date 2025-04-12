@@ -16,10 +16,24 @@ namespace platform
 {
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    struct WindowReport
+    {
+        enum ReportFlag
+        {
+            DestroyWindow = 1 << 0,
+        };
+        typedef u32 ReportFlags;
+
+
+        ReportFlags _flags = 0;
+    };
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
+
     /**
     * @brief Window class. Base class of window
     */
-    class V3D_API Window : public utils::Observable, public utils::ResourceID<Window, u32>
+    class V3D_API Window : public utils::Reporter<WindowReport>, public utils::ResourceID<Window, u32>
     {
     public:
 
@@ -28,7 +42,7 @@ namespace platform
         */
         struct WindowParams
         {
-            std::wstring            _name;
+            std::wstring            _text;
             math::Dimension2D       _size;
             math::Point2D           _position;
             bool                    _isFullscreen;
@@ -40,7 +54,7 @@ namespace platform
             bool                    _isFocused;
 
             WindowParams() noexcept
-                : _name(L"Window")
+                : _text(L"Window")
                 , _size(math::Dimension2D(1024U, 768U))
                 , _position(math::Point2D(0U, 0U))
                 , _isFullscreen(false)
@@ -61,10 +75,10 @@ namespace platform
         * @param bool fullscreen [optional]
         * @param bool resizable [optional]
         * @param InputEventReceiver* receiver [optional]
-        * @param const std::wstring& name [optional]
+        * @param const std::wstring& text [optional]
         * @return pointer of created window
         */
-        [[nodiscard]] static Window* createWindow(const math::Dimension2D& size, const math::Point2D& pos, bool fullscreen = false, bool resizable = false, event::InputEventReceiver* receiver = nullptr , [[maybe_unused]] const std::wstring& name = L"");
+        [[nodiscard]] static Window* createWindow(const math::Dimension2D& size, const math::Point2D& pos, bool fullscreen = false, bool resizable = false, event::InputEventReceiver* receiver = nullptr , [[maybe_unused]] const std::wstring& text = L"");
 
         /**
         * @brief createWindow function. Create new window.
@@ -72,10 +86,10 @@ namespace platform
         * @param const math::Point2D& pos [required]
         * @param bool fullscreen [optional]
         * @param event::InputEventReceiver* receiver [optional]
-        * @param const std::wstring& name [optional]
+        * @param const std::wstring& text [optional]
         * @return pointer of created window
         */
-        [[nodiscard]] static Window* createWindow(const math::Dimension2D& size, const math::Point2D& pos, bool fullscreen = false, event::InputEventReceiver* receiver = nullptr, [[maybe_unused]] const std::wstring& name = L"");
+        [[nodiscard]] static Window* createWindow(const math::Dimension2D& size, const math::Point2D& pos, bool fullscreen = false, event::InputEventReceiver* receiver = nullptr, [[maybe_unused]] const std::wstring& text = L"");
 
         /**
         * @brief createWindow function. Create new window.
@@ -83,10 +97,10 @@ namespace platform
         * @param const math::Point2D& pos [required]
         * @param const Window* parent [required]
         * @param bool resizable [optional]
-        * @param const std::wstring& name [optional]
+        * @param const std::wstring& text [optional]
         * @return pointer of created window
         */
-        [[nodiscard]] static Window* createWindow(const math::Dimension2D& size, const math::Point2D& pos, Window* parent, bool resizable = false, [[maybe_unused]] const std::wstring& name = L"");
+        [[nodiscard]] static Window* createWindow(const math::Dimension2D& size, const math::Point2D& pos, Window* parent, bool resizable = false, [[maybe_unused]] const std::wstring& text = L"");
 
         /**
         * @brief updateWindow function. Updates window
@@ -192,7 +206,7 @@ namespace platform
 
     inline const std::wstring& Window::getText() const
     {
-        return m_params._name;
+        return m_params._text;
     }
 
     inline Window* Window::getWindowsByID(u32 id)

@@ -58,6 +58,7 @@ namespace platform
 
         HINSTANCE               m_hInstance;
         HWND                    m_hWnd;
+        std::wstring            m_className;
 
         u32                     m_timerID = 0;
         u64                     m_currnetTime = 0;

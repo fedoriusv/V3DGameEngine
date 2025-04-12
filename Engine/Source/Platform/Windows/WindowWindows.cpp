@@ -21,6 +21,7 @@ WindowWindows::WindowWindows(const WindowParams& params, event::InputEventReceiv
     , m_hInstance(NULL)
     , m_hWnd(NULL)
     , m_parent(parent)
+    , m_className(L"Window")
 {
     LOG_DEBUG("WindowWindows::WindowWindows: Created Windows window %llx", this);
     fillKeyCodes();
@@ -29,7 +30,7 @@ WindowWindows::WindowWindows(const WindowParams& params, event::InputEventReceiv
 bool WindowWindows::initialize()
 {
     m_hInstance = GetModuleHandle(NULL);
-    std::wstring className = m_params._name;
+    std::wstring className = m_className;
     HWND parentHWnd = nullptr;
 
     DWORD dwStyle = WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_THICKFRAME;
@@ -40,10 +41,12 @@ bool WindowWindows::initialize()
         dwStyle = WS_POPUP;
         dwExStyle = WS_EX_APPWINDOW;
 
-        className = m_parent->getText();
         parentHWnd = m_parent->getWindowHandle();
 
-        static_cast<WindowWindows*>(m_parent)->m_children.push_back(this);
+        WindowWindows* parent = static_cast<WindowWindows*>(m_parent);
+        parent->m_children.push_back(this);
+
+        m_className = parent->m_className;
     }
     else
     {
@@ -60,7 +63,7 @@ bool WindowWindows::initialize()
         wcex.hIcon = LoadIcon(NULL, IDI_WINLOGO);
         wcex.hbrBackground = (HBRUSH)GetStockObject(WHITE_BRUSH);
         wcex.lpszMenuName = NULL;
-        wcex.lpszClassName = className.c_str();
+        wcex.lpszClassName = m_className.c_str();
         wcex.hIconSm = 0;
         if (!RegisterClassEx(&wcex))
         {
@@ -89,7 +92,7 @@ bool WindowWindows::initialize()
 
     // create window
     ASSERT(!m_hWnd, "Already exist");
-    m_hWnd = CreateWindowEx(dwExStyle, className.c_str(), m_params._name.c_str(), dwStyle,
+    m_hWnd = CreateWindowEx(dwExStyle, className.c_str(), m_params._text.c_str(), dwStyle,
         borderRect.left, borderRect.top, borderRect.right - borderRect.left, borderRect.bottom - borderRect.top, parentHWnd, NULL, m_hInstance, this);
 
     if (!m_hWnd)
@@ -98,6 +101,7 @@ bool WindowWindows::initialize()
         DWORD numHandles = 0;
         GetProcessHandleCount(GetCurrentProcess(), &numHandles);
 
+        //https://learn.microsoft.com/en-us/windows/win32/debug/system-error-codes
         LOG_ERROR( "WindowWindows::initialize: CreateWindowEx is failed, error %u, window %llx", error, this);
         return false;
     }
@@ -137,6 +141,12 @@ bool WindowWindows::update()
 
 void WindowWindows::destroy()
 {
+    WindowReport report;
+    report._flags = WindowReport::DestroyWindow;
+
+    notify(report);
+
+
     if (m_parent && GetCapture() == m_hWnd)
     {
         ReleaseCapture();
@@ -153,7 +163,7 @@ void WindowWindows::destroy()
 
     if (!m_parent)
     {
-        UnregisterClass(m_params._name.c_str(), m_hInstance);
+        UnregisterClass(m_className.c_str(), m_hInstance);
     }
 }
 
@@ -607,18 +617,18 @@ LRESULT WindowWindows::HandleInputMessage(UINT message, WPARAM wParam, LPARAM lP
     case WM_MOUSEMOVE:
     case WM_NCMOUSEMOVE:
     {
-        const u32 area = (message == WM_MOUSEMOVE) ? 1 : 2;
-        if (m_mouseTrackedArea != area)
-        {
-            TRACKMOUSEEVENT tme_cancel = { sizeof(tme_cancel), (DWORD)TME_CANCEL, m_hWnd, 0 };
-            TRACKMOUSEEVENT tme_track = { sizeof(tme_track), (DWORD)((message == WM_MOUSEMOVE) ? TME_LEAVE : TME_LEAVE | TME_NONCLIENT), m_hWnd, 0 };
-            if (m_mouseTrackedArea != 0)
-            {
-                TrackMouseEvent(&tme_cancel);
-            }
-            TrackMouseEvent(&tme_track);
-            m_mouseTrackedArea = area;
-        }
+        //const u32 area = (message == WM_MOUSEMOVE) ? 1 : 2;
+        //if (m_mouseTrackedArea != area)
+        //{
+        //    TRACKMOUSEEVENT tme_cancel = { sizeof(tme_cancel), (DWORD)TME_CANCEL, m_hWnd, 0 };
+        //    TRACKMOUSEEVENT tme_track = { sizeof(tme_track), (DWORD)((message == WM_MOUSEMOVE) ? TME_LEAVE : TME_LEAVE | TME_NONCLIENT), m_hWnd, 0 };
+        //    if (m_mouseTrackedArea != 0)
+        //    {
+        //        TrackMouseEvent(&tme_cancel);
+        //    }
+        //    TrackMouseEvent(&tme_track);
+        //    m_mouseTrackedArea = area;
+        //}
 
         POINT localPos = { (LONG)GET_X_LPARAM(lParam), (LONG)GET_Y_LPARAM(lParam) };
         if (message == WM_NCMOUSEMOVE) // WM_NCMOUSEMOVE are absolute coordinates.
@@ -646,11 +656,11 @@ LRESULT WindowWindows::HandleInputMessage(UINT message, WPARAM wParam, LPARAM lP
     case WM_MOUSELEAVE:
     case WM_NCMOUSELEAVE:
     {
-        const int area = (message == WM_MOUSELEAVE) ? 1 : 2;
-        if (m_mouseTrackedArea == area)
-        {
-            m_mouseTrackedArea = 0;
-        }
+        //const int area = (message == WM_MOUSELEAVE) ? 1 : 2;
+        //if (m_mouseTrackedArea == area)
+        //{
+        //    m_mouseTrackedArea = 0;
+        //}
 
         POINT absolutePos = { (LONG)GET_X_LPARAM(lParam), (LONG)GET_Y_LPARAM(lParam) };
         ClientToScreen(m_hWnd, &absolutePos);

@@ -28,10 +28,10 @@ Window::~Window()
 {
 }
 
-Window* Window::createWindow(const math::Dimension2D& size, const math::Point2D& pos, bool fullscreen, bool resizable, event::InputEventReceiver* receiver, const std::wstring& name)
+Window* Window::createWindow(const math::Dimension2D& size, const math::Point2D& pos, bool fullscreen, bool resizable, event::InputEventReceiver* receiver, const std::wstring& text)
 {
     WindowParams params;
-    params._name = name.empty() ? L"Window" : name;
+    params._text = text.empty() ? L"Window" : text;
     params._size = size;
     params._position = pos;
     params._isFullscreen = fullscreen;
@@ -65,10 +65,10 @@ Window* Window::createWindow(const math::Dimension2D& size, const math::Point2D&
     return nullptr;
 }
 
-Window* Window::createWindow(const math::Dimension2D& size, const math::Point2D& pos, bool fullscreen, event::InputEventReceiver* receiver, const std::wstring& name)
+Window* Window::createWindow(const math::Dimension2D& size, const math::Point2D& pos, bool fullscreen, event::InputEventReceiver* receiver, const std::wstring& text)
 {
     WindowParams params;
-    params._name = name.empty() ? L"Window" : name;
+    params._text = text.empty() ? L"Window" : text;
     params._size = size;
     params._position = pos;
     params._isFullscreen = fullscreen;
@@ -103,10 +103,10 @@ Window* Window::createWindow(const math::Dimension2D& size, const math::Point2D&
     return nullptr;
 }
 
-Window* Window::createWindow(const math::Dimension2D& size, const math::Point2D& pos, Window* parent, bool resizable, const std::wstring& name)
+Window* Window::createWindow(const math::Dimension2D& size, const math::Point2D& pos, Window* parent, bool resizable, const std::wstring& text)
 {
     WindowParams params;
-    params._name = name.empty() ? L"Window" : name;
+    params._text = text.empty() ? L"Window" : text;
     params._size = size;
     params._position = pos;
     params._isFullscreen = false;
