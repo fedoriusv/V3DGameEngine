@@ -23,19 +23,31 @@ EditorScene::EditorScene()
     , m_Geometry(nullptr)
 
     , m_Camera(new scene::CameraArcballHandler(new scene::Camera(math::Vector3D(0.0f, 0.0f, 0.0f), math::Vector3D(0.0f, 1.0f, 0.0f)), 3.0f, k_nearValue + 1.0f, k_farValue - 10.0f))
+    , m_Vewiport(nullptr)
 {
+    InputEventHandler::bind([this](const MouseInputEvent* event)
+        {
+            this->handleInputEvent(this, event);
+        }
+    );
+
+    InputEventHandler::bind([this](const KeyboardInputEvent* event)
+        {
+            this->handleInputEvent(this, event);
+        }
+    );
 }
 
 EditorScene::~EditorScene()
 {
 }
 
-void EditorScene::init(renderer::Device* device, renderer::Swapchain* swapchain, const v3d::renderer::RenderPassDesc& renderpassDesc)
+void EditorScene::init(renderer::Device* device, const v3d::math::Dimension2D& viewportSize)
 {
     m_Device = device;
     renderer::CmdListRender* CmdList = m_Device->createCommandList<renderer::CmdListRender>(Device::GraphicMask);
 
-    m_Camera->setPerspective(45.0f, swapchain->getBackbufferSize(), k_nearValue, k_farValue);
+    m_Camera->setPerspective(45.0f, viewportSize, k_nearValue, k_farValue);
 
     const renderer::VertexShader* vertShader = nullptr;
     {
@@ -109,6 +121,8 @@ void EditorScene::init(renderer::Device* device, renderer::Swapchain* swapchain,
     ASSERT(vertShader && fragShader, "nullptr");
     m_Program = new renderer::ShaderProgram(m_Device, vertShader, fragShader);
 
+    recreateViewport(viewportSize);
+
     std::vector<math::Vector3D> geometryData = 
     {
         {-1.0f,-1.0f, 0.0f },  { 1.0f, 0.0f, 0.0f },
@@ -126,12 +140,14 @@ void EditorScene::init(renderer::Device* device, renderer::Swapchain* swapchain,
             renderer::VertexInputAttributeDesc::InputAttribute(0, 0, renderer::Format_R32G32B32_SFloat, sizeof(math::Vector3D)),
         });
 
-    m_Pipeline = new renderer::GraphicsPipelineState(m_Device, vertexDesc, renderpassDesc, m_Program);
+    m_Pipeline = new renderer::GraphicsPipelineState(m_Device, vertexDesc, m_Vewiport->getRenderPassDesc(), m_Program);
     m_Pipeline->setPrimitiveTopology(renderer::PrimitiveTopology::PrimitiveTopology_TriangleList);
     m_Pipeline->setFrontFace(renderer::FrontFace::FrontFace_Clockwise);
     m_Pipeline->setCullMode(renderer::CullMode::CullMode_None);
     m_Pipeline->setColorMask(renderer::ColorMask::ColorMask_All);
-    m_Pipeline->setDepthWrite(false);
+    m_Pipeline->setDepthCompareOp(renderer::CompareOperation::CompareOp_GreaterOrEqual);
+    m_Pipeline->setDepthWrite(true);
+    m_Pipeline->setDepthTest(true);
 
     CmdList->uploadData(m_Geometry, 0, static_cast<u32>(geometryData.size() * sizeof(math::Vector3D)), geometryData.data());
     m_Device->submit(CmdList, true);
@@ -139,13 +155,64 @@ void EditorScene::init(renderer::Device* device, renderer::Swapchain* swapchain,
     m_Device->destroyCommandList(CmdList);
 }
 
+void EditorScene::recreateViewport(const v3d::math::Dimension2D& viewportSize)
+{
+    if (m_Vewiport)
+    {
+        renderer::Texture2D* colorAttachment = m_Vewiport->getColorTexture<renderer::Texture2D>(0);
+        delete colorAttachment;
+
+        renderer::Texture2D* depthAttachment = m_Vewiport->getDepthStencilTexture< renderer::Texture2D>();
+        delete depthAttachment;
+
+        delete m_Vewiport;
+        m_Vewiport = nullptr;
+    }
+
+
+    m_Vewiport = new renderer::RenderTargetState(m_Device, viewportSize);
+
+    renderer::Texture2D* colorAttachment = new renderer::Texture2D(m_Device, renderer::TextureUsage::TextureUsage_Attachment | renderer::TextureUsage::TextureUsage_Sampled | renderer::TextureUsage::TextureUsage_Write,
+        renderer::Format::Format_R8G8B8A8_UNorm, viewportSize, renderer::TextureSamples::TextureSamples_x1, "ViewportColorAttachment");
+    renderer::Texture2D* depthAttachment = new renderer::Texture2D(m_Device, renderer::TextureUsage::TextureUsage_Attachment | renderer::TextureUsage::TextureUsage_Write,
+        renderer::Format::Format_D32_SFloat_S8_UInt, viewportSize, renderer::TextureSamples::TextureSamples_x1, "ViewportDepthAttachment");
+
+    m_Vewiport->setColorTexture(0, colorAttachment,
+        {
+            renderer::RenderTargetLoadOp::LoadOp_Clear, renderer::RenderTargetStoreOp::StoreOp_Store, math::Vector4D(0.0f)
+        },
+        {
+            renderer::TransitionOp::TransitionOp_Undefined, renderer::TransitionOp::TransitionOp_ColorAttachment
+        }
+    );
+
+    m_Vewiport->setDepthStencilTexture(depthAttachment,
+        {
+            renderer::RenderTargetLoadOp::LoadOp_Clear, renderer::RenderTargetStoreOp::StoreOp_Store, 0.0f
+        },
+        {
+            renderer::RenderTargetLoadOp::LoadOp_DontCare, renderer::RenderTargetStoreOp::StoreOp_DontCare, 0
+        },
+        {
+            renderer::TransitionOp::TransitionOp_Undefined, renderer::TransitionOp::TransitionOp_DepthStencilAttachment
+        }
+    );
+}
+
+void EditorScene::cleanup()
+{
+    //TODO
+}
+
 void EditorScene::update(f32 dt)
 {
     m_Camera->update(dt);
 }
 
-void EditorScene::render(v3d::renderer::CmdListRender* cmdList, const v3d::math::Rect32& viewport)
+void EditorScene::render(v3d::renderer::CmdListRender* cmdList)
 {
+    cmdList->beginRenderTarget(*m_Vewiport);
+
     //update uniforms
     struct UBO
     {
@@ -155,8 +222,8 @@ void EditorScene::render(v3d::renderer::CmdListRender* cmdList, const v3d::math:
     };
 
     //render
-    cmdList->setViewport(viewport);
-    cmdList->setScissor(viewport);
+    cmdList->setViewport(math::Rect32(0, 0, m_Vewiport->getRenderArea().m_width, m_Vewiport->getRenderArea().m_height));
+    cmdList->setScissor(math::Rect32(0, 0, m_Vewiport->getRenderArea().m_width, m_Vewiport->getRenderArea().m_height));
     cmdList->setPipelineState(*m_Pipeline);
 
     UBO ubo1;
@@ -180,45 +247,21 @@ void EditorScene::render(v3d::renderer::CmdListRender* cmdList, const v3d::math:
 
     cmdList->bindDescriptorSet(0, { desc2 });
     cmdList->draw(renderer::GeometryBufferDesc(m_Geometry, 0, sizeof(math::Vector3D) + sizeof(math::Vector3D)), 0, 3, 0, 1);
+
+    cmdList->endRenderTarget();
 }
 
-void EditorScene::terminate()
+void EditorScene::onChanged(const v3d::math::Dimension2D& viewportSize)
 {
-    /*renderer::Texture2D* depthAttachment = m_RenderTarget->getDepthStencilTexture<renderer::Texture2D>();
-    if (depthAttachment)
+    if (viewportSize != m_Vewiport->getRenderArea())
     {
-        delete depthAttachment;
+        recreateViewport(viewportSize);
     }
+}
 
-    if (m_Pipeline)
-    {
-        delete m_Pipeline;
-        m_Pipeline = nullptr;
-    }
-
-    if (m_RenderTarget)
-    {
-        delete m_RenderTarget;
-        m_RenderTarget = nullptr;
-    }
-
-    if (m_Program)
-    {
-        delete m_Program;
-        m_Program = nullptr;
-    }
-    
-    if (m_Geometry)
-    {
-        delete m_Geometry;
-        m_Geometry = nullptr;
-    }
-
-    if (m_Camera)
-    {
-        delete m_Camera;
-        m_Camera = nullptr;
-    }*/
+const renderer::Texture2D* EditorScene::getOutputTexture() const
+{
+    return m_Vewiport->getColorTexture<renderer::Texture2D>(0);
 }
 
 bool EditorScene::handleInputEvent(event::InputEventHandler* handler, const event::InputEvent* event)
@@ -240,3 +283,5 @@ bool EditorScene::handleInputEvent(event::InputEventHandler* handler, const even
 
     return false;
 }
+
+

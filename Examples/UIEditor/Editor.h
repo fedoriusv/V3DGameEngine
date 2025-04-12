@@ -1,35 +1,52 @@
 #pragma once
 
 #include "Common.h"
+#include "Events/InputEventHandler.h"
+#include "Events/InputEventReceiver.h"
+#include "Events/InputEventMouse.h"
+#include "Events/InputEventKeyboard.h"
+
 #include "Renderer/Device.h"
 #include "Renderer/ShaderProgram.h"
 #include "Renderer/PipelineState.h"
 #include "Renderer/RenderTargetState.h"
 #include "Renderer/Buffer.h"
 #include "Renderer/Swapchain.h"
+#include "Renderer/Texture.h"
 
 #include "Scene/CameraArcballHandler.h"
 #include "Scene/Camera.h"
 
-class EditorScene
+class EditorScene : public v3d::event::InputEventHandler
 {
 public:
 
     EditorScene();
     ~EditorScene();
 
-    void init(v3d::renderer::Device* m_Device, v3d::renderer::Swapchain* m_Swapchain, const v3d::renderer::RenderPassDesc& renderpassDesc);
+    void init(v3d::renderer::Device* device, const v3d::math::Dimension2D& viewportSize);
+    void cleanup();
+
     void update(v3d::f32 dt);
-    void render(v3d::renderer::CmdListRender* cmdList, const v3d::math::Rect32& viewport);
-    void terminate();
+    void render(v3d::renderer::CmdListRender* cmdList);
+
+    const v3d::renderer::Texture2D* getOutputTexture() const;
+
+
+public:
+
+    void onChanged(const v3d::math::Dimension2D& viewportSize);
 
 private:
 
     bool handleInputEvent(v3d::event::InputEventHandler* handler, const v3d::event::InputEvent* event);
 
+    void recreateViewport(const v3d::math::Dimension2D& viewportSize);
+
     v3d::renderer::Device*                  m_Device;
 
     v3d::scene::CameraArcballHandler*       m_Camera;
+    v3d::renderer::RenderTargetState*       m_Vewiport;
 
     v3d::renderer::ShaderProgram*           m_Program;
     v3d::renderer::GraphicsPipelineState*   m_Pipeline;
