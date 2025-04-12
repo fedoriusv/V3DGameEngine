@@ -24,6 +24,15 @@ namespace ui
     {
     public:
 
+        enum FontSize
+        {
+            SmallFont,
+            MediumFont,
+            LargeFont,
+
+            FontSize_Count
+        };
+
         explicit WigetLayout() noexcept;
         virtual ~WigetLayout();
 

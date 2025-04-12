@@ -40,10 +40,10 @@ namespace ui
     public:
 
         template<class TWigetHander>
-        [[nodiscard]] static TWigetHander* createWigetHander(renderer::Device* device, renderer::CmdListRender* cmdList, const renderer::RenderPassDesc& renderpassDesc)
+        [[nodiscard]] static TWigetHander* createWigetHander(renderer::Device* device, renderer::CmdListRender* cmdList, const renderer::RenderPassDesc& renderpassDesc, u32 flags = 0)
         {
             static_assert(std::is_base_of<WigetHandler, TWigetHander>(), "wrong type");
-            WigetHandler* handler = V3D_NEW(TWigetHander, memory::MemoryLabel::MemorySystem)(device);
+            WigetHandler* handler = V3D_NEW(TWigetHander, memory::MemoryLabel::MemorySystem)(device, flags);
             if (!handler->create(cmdList, renderpassDesc))
             {
                 handler->destroy();
@@ -89,16 +89,23 @@ namespace ui
     public:
 
         //Menu
-        virtual bool draw_MenuBar(Wiget* menu, Wiget::Context* context, f32 dt) = 0;
-        virtual bool draw_Menu(Wiget* menu, Wiget::Context* context, f32 dt) = 0;
-        virtual bool draw_MenuItem(Wiget* item, Wiget::Context* context, f32 dt) = 0;
-        virtual bool draw_TabBar(Wiget* item, Wiget::Context* context, f32 dt) = 0;
+        virtual bool draw_MenuBar(Wiget* wiget, Wiget::Context* context, f32 dt) = 0;
+        virtual bool draw_Menu(Wiget* wiget, Wiget::Context* context, f32 dt) = 0;
+        virtual bool draw_MenuItem(Wiget* wiget, Wiget::Context* context, f32 dt) = 0;
+        virtual bool draw_TabBar(Wiget* wiget, Wiget::Context* context, f32 dt) = 0;
 
         //Windows
-        virtual bool draw_Window(Wiget::Context* context, f32 dt) = 0;
+        virtual bool draw_Window(Wiget* wiget, Wiget::Context* context, f32 dt) = 0;
 
-        virtual bool draw_Button(Wiget* button, Wiget::Context* context, f32 dt) = 0;
-        virtual bool draw_Image(Wiget* image, Wiget::Context* context, f32 dt) = 0;
+        //wigets
+        virtual bool draw_Button(Wiget* wiget, Wiget::Context* context, f32 dt) = 0;
+        virtual bool draw_Image(Wiget* wiget, Wiget::Context* context, f32 dt) = 0;
+        virtual bool draw_CheckBox(Wiget* wiget, Wiget::Context* context, f32 dt) = 0;
+        virtual bool draw_RadioButtonGroup(Wiget* wiget, Wiget::Context* context, f32 dt) = 0;
+        virtual bool draw_ComboBox(Wiget* wiget, Wiget::Context* context, f32 dt) = 0;
+        virtual bool draw_ListBox(Wiget* wiget, Wiget::Context* context, f32 dt) = 0;
+        virtual bool draw_InputField(Wiget* wiget, Wiget::Context* context, f32 dt) = 0;
+        virtual bool draw_InputSlider(Wiget* wiget, Wiget::Context* context, f32 dt) = 0;
 
     protected:
 

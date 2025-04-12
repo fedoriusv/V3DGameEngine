@@ -9,6 +9,8 @@
 
 struct ImGuiContext;
 struct ImDrawData;
+struct ImFont;
+struct ImFontConfig;
 
 namespace v3d
 {
@@ -27,7 +29,7 @@ namespace ui
 {
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    struct ImGuiWigetEvents;
+    struct ImGuiWigetViewportEvents;
     struct ImGuiWigetViewportData;
 
     /**
@@ -37,7 +39,13 @@ namespace ui
     {
     public:
 
-        explicit ImGuiWigetHandler(renderer::Device* device) noexcept;
+        enum ImGuiWigetFlag
+        {
+            ImGui_EditorMode = 1 << 0,
+        };
+        typedef u32 ImGuiWigetFlags;
+
+        explicit ImGuiWigetHandler(renderer::Device* device, ImGuiWigetFlags flags = 0) noexcept;
         ~ImGuiWigetHandler();
 
         void update(const platform::Window* window, const v3d::event::InputEventHandler* handler, f32 dt) override;
@@ -53,14 +61,20 @@ namespace ui
 
     public:
 
-        bool draw_MenuBar(Wiget* menu, Wiget::Context* context, f32 dt) override;
-        bool draw_Menu(Wiget* menu, Wiget::Context* context, f32 dt) override;
-        bool draw_MenuItem(Wiget* item, Wiget::Context* context, f32 dt) override;
-        bool draw_TabBar(Wiget* item, Wiget::Context* context, f32 dt) override;
+        bool draw_MenuBar(Wiget* wiget, Wiget::Context* context, f32 dt) override;
+        bool draw_Menu(Wiget* wiget, Wiget::Context* context, f32 dt) override;
+        bool draw_MenuItem(Wiget* wiget, Wiget::Context* context, f32 dt) override;
+        bool draw_TabBar(Wiget* wiget, Wiget::Context* context, f32 dt) override;
 
-        bool draw_Window(Wiget::Context* context, f32 dt) override;
-        bool draw_Button(Wiget* button, Wiget::Context* context, f32 dt) override;
-        bool draw_Image(Wiget* image, Wiget::Context* context, f32 dt) override;
+        bool draw_Window(Wiget* wiget, Wiget::Context* context, f32 dt) override;
+        bool draw_Button(Wiget* wiget, Wiget::Context* context, f32 dt) override;
+        bool draw_Image(Wiget* wiget, Wiget::Context* context, f32 dt) override;
+        bool draw_CheckBox(Wiget* wiget, Wiget::Context* context, f32 dt) override;
+        bool draw_RadioButtonGroup(Wiget* wiget, Wiget::Context* context, f32 dt) override;
+        bool draw_ComboBox(Wiget* wiget, Wiget::Context* context, f32 dt) override;
+        bool draw_ListBox(Wiget* wiget, Wiget::Context* context, f32 dt) override;
+        bool draw_InputField(Wiget* wiget, Wiget::Context* context, f32 dt) override;
+        bool draw_InputSlider(Wiget* wiget, Wiget::Context* context, f32 dt) override;
 
     private:
 
@@ -72,7 +86,7 @@ namespace ui
 
     private:
 
-        bool createFontTexture(renderer::CmdListRender* cmdList);
+        bool createFontTexture(renderer::CmdListRender* cmdList, ImFontConfig* fontConfig);
         void destroyFontTexture();
 
         bool createPipeline(const renderer::RenderPassDesc& renderpassDesc);
@@ -83,8 +97,10 @@ namespace ui
 
         bool renderDrawData(ImGuiWigetViewportData* viewportData, ImDrawData* drawData);
 
+        std::vector<const renderer::Texture2D*> m_activeTextures;
+        std::array<ImFont*, WigetLayout::FontSize_Count> m_fonts;
         renderer::Texture2D* m_fontAtlas;
-        renderer::SamplerState* m_fontSampler;
+        renderer::SamplerState* m_imageSampler;
 
         renderer::ShaderProgram* m_UIProgram;
         renderer::GraphicsPipelineState* m_UIPipeline;
@@ -93,8 +109,9 @@ namespace ui
         ImGuiWigetViewportData* m_viewportData;
 
         u32 m_frameCounter;
+        ImGuiWigetFlags m_flags;
 
-        friend ImGuiWigetEvents;
+        friend ImGuiWigetViewportEvents;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

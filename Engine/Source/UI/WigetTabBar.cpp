@@ -31,13 +31,12 @@ WigetTabBar::~WigetTabBar()
 
 bool WigetTabBar::update(WigetHandler* handler, WigetLayout* layout, f32 dt)
 {
-    ContextTabBar& context = Wiget::cast_data<ContextTabBar>(m_data);
-    if (context._onUpdate)
+    if (Wiget::update(handler, layout, dt))
     {
-        std::invoke(context._onUpdate, this, dt);
+        return  handler->draw_TabBar(this, m_data, dt);
     }
 
-    return  handler->draw_TabBar(this, m_data, dt);
+    return false;
 }
 
 } //namespace scene

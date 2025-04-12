@@ -17,5 +17,34 @@ Wiget::Wiget(const Wiget& other) noexcept
 {
 }
 
+bool Wiget::update(WigetHandler* handler, WigetLayout* layout, f32 dt)
+{
+    ContextBase& context = cast_data<ContextBase>(m_data);
+    if (context._stateMask & 0x01)
+    {
+        if (context._onActiveChanged)
+        {
+            std::invoke(context._onActiveChanged, this);
+        }
+        context._stateMask &= ~0x01;
+    }
+
+    if (context._stateMask & 0x02)
+    {
+        if (context._onVisibleChanged)
+        {
+            std::invoke(cast_data<ContextBase>(m_data)._onVisibleChanged, this);
+        }
+        context._stateMask &= ~0x02;
+    }
+
+    if (context._onUpdate)
+    {
+        std::invoke(context._onUpdate, this, dt);
+    }
+
+    return true;
+}
+
 } // namespace ui
 } // namespace v3d

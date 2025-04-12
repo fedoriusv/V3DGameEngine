@@ -5,6 +5,10 @@
 
 namespace v3d
 {
+namespace platform
+{
+    class Window;
+} //namespace platform
 namespace ui
 {
     /////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -14,8 +18,12 @@ namespace ui
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    using OnWigetEvent = std::function<void (Wiget*)>;
+    using OnWigetEvent = std::function<void(const Wiget*)>;
+    using OnWigetEventBoolParam = std::function<void(Wiget*, bool)>;
+    using OnWigetEventIntParam = std::function<void(Wiget*, s32)>;
     using OnWigetEventFloatParam = std::function<void(Wiget*, f32)>;
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
     * @brief Wiget base class
@@ -56,7 +64,14 @@ namespace ui
             OnWigetEventFloatParam  _onUpdate;
             bool                    _isActive         = true;
             bool                    _isVisible        = true;
+            bool                    _isPressed        = false;
+            bool                    _isHovered        = false;
             bool                    _showToolTip      = false;
+            bool                    _unused[3]        = {};
+
+            //0x01 - Active
+            //0x02 - Visible
+            u64                     _stateMask        = 0; 
         };
 
     protected:
@@ -70,7 +85,7 @@ namespace ui
             return *static_cast<TContext*>(context);
         }
 
-        virtual bool update(WigetHandler* handler, WigetLayout* layout, f32 dt) = 0;
+        virtual bool update(WigetHandler* handler, WigetLayout* layout, f32 dt);
 
         Context* m_data;
     };
@@ -100,10 +115,7 @@ namespace ui
         if (cast_data<ContextBase>(m_data)._isActive != active)
         {
             cast_data<ContextBase>(m_data)._isActive = active;
-            if (cast_data<ContextBase>(m_data)._onActiveChanged)
-            {
-                cast_data<ContextBase>(m_data)._onActiveChanged(this);
-            }
+            cast_data<ContextBase>(m_data)._stateMask = 0x01; //Active
         }
 
         return *this;
@@ -114,10 +126,7 @@ namespace ui
         if (cast_data<ContextBase>(m_data)._isVisible != visible)
         {
             cast_data<ContextBase>(m_data)._isVisible = visible;
-            if (cast_data<ContextBase>(m_data)._onVisibleChanged)
-            {
-                cast_data<ContextBase>(m_data)._onVisibleChanged(this);
-            }
+            cast_data<ContextBase>(m_data)._stateMask = 0x02; //Visible
         }
 
         return *this;

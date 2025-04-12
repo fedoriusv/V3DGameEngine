@@ -31,13 +31,12 @@ WigetMenuBar::~WigetMenuBar()
 
 bool WigetMenuBar::update(WigetHandler* handler, WigetLayout* layout, f32 dt)
 {
-    ContextMenuBar& context = Wiget::cast_data<ContextMenuBar>(m_data);
-    if (context._onUpdate)
+    if (Wiget::update(handler, layout, dt))
     {
-        std::invoke(context._onUpdate, this, dt);
+        return  handler->draw_MenuBar(this, m_data, dt);
     }
 
-    return  handler->draw_MenuBar(this, m_data, dt);
+    return false;
 }
 
 
@@ -66,13 +65,12 @@ WigetMenu::~WigetMenu()
 
 bool WigetMenu::update(WigetHandler* handler, WigetLayout* layout, f32 dt)
 {
-    ContextMenu& context = Wiget::cast_data<ContextMenu>(m_data);
-    if (context._onUpdate)
+    if (Wiget::update(handler, layout, dt))
     {
-        std::invoke(context._onUpdate, this, dt);
+        return handler->draw_Menu(this, m_data, dt);
     }
 
-    return handler->draw_Menu(this, m_data, dt);
+    return false;
 }
 
 
@@ -101,13 +99,12 @@ WigetMenuItem::~WigetMenuItem()
 
 bool WigetMenuItem::update(WigetHandler* handler, WigetLayout* layout, f32 dt)
 {
-    ContextMenuItem& context = Wiget::cast_data<ContextMenuItem>(m_data);
-    if (context._onUpdate)
+    if (Wiget::update(handler, layout, dt))
     {
-        std::invoke(context._onUpdate, this, dt);
+        return handler->draw_MenuItem(this, m_data, dt);
     }
 
-    return handler->draw_MenuItem(this, m_data, dt);
+    return false;
 }
 
 } // namespace ui

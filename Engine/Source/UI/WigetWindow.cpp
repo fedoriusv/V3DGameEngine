@@ -36,13 +36,12 @@ WigetWindow::~WigetWindow()
 
 bool WigetWindow::update(WigetHandler* handler, WigetLayout* layout, f32 dt)
 {
-    ContextWindow& context = Wiget::cast_data<ContextWindow>(m_data);
-    if (context._onUpdate)
+    if (Wiget::update(handler, layout, dt))
     {
-        std::invoke(context._onUpdate, this, dt);
+        return handler->draw_Window(this, m_data, dt);
     }
 
-    return handler->draw_Window(m_data, dt);
+    return false;
 }
 
 } // namespace ui

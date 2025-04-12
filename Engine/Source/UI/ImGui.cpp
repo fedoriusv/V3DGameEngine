@@ -20,303 +20,13 @@
 
 #if USE_IMGUI
 #include "ThirdParty/imgui/imgui.h"
+#include "ImGuiFonts.h"
+#include "ImGuiViewport.h"
 
 namespace v3d
 {
 namespace ui
 {
-
-constexpr u32 k_ImGui_IndexCount = 4096;
-constexpr u32 k_ImGui_VertexCount = 4096;
-
-struct ImGuiWigetViewportData
-{
-    renderer::Swapchain*                      _swapchain    = nullptr;
-    renderer::CmdListRender*                  _cmdList      = nullptr;
-    renderer::RenderTargetState*              _renderTarget = nullptr;
-                                              
-    std::vector<renderer::IndexBuffer*>       _indexBuffer;
-    std::vector<renderer::VertexBuffer*>      _vertexBuffer;
-    std::vector<renderer::GeometryBufferDesc> _geometryDesc;
-};
-
-struct ImGuiWigetEvents
-{
-    static void ImGui_CreateWindow(ImGuiViewport* vp);
-    static void ImGui_DestroyWindow(ImGuiViewport* vp);
-    static void ImGui_ShowWindow(ImGuiViewport* vp);
-    static void ImGui_SetWindowPos(ImGuiViewport* vp, ImVec2 pos);
-    static ImVec2 ImGui_GetWindowPos(ImGuiViewport* vp);
-    static void ImGui_SetWindowSize(ImGuiViewport* vp, ImVec2 size);
-    static ImVec2 ImGui_GetWindowSize(ImGuiViewport* vp);
-    static void ImGui_SetWindowFocus(ImGuiViewport* vp);
-    static bool ImGui_GetWindowFocus(ImGuiViewport* vp);
-    static bool ImGui_GetWindowMinimized(ImGuiViewport* vp);
-    static void ImGui_SetWindowTitle(ImGuiViewport* vp, const char* str);
-    static void ImGui_SetWindowAlpha(ImGuiViewport* vp, float alpha);
-    static void ImGui_UpdateWindow(ImGuiViewport* vp);
-    static float ImGui_GetWindowDpiScale(ImGuiViewport* vp);
-    static void ImGui_OnChangedViewport(ImGuiViewport* vp);
-    static ImVec4 ImGui_GetWindowWorkAreaInsets(ImGuiViewport* vp);
-
-    static void ImGui_Renderer_CreateWindow(ImGuiViewport* vp);
-    static void ImGui_Renderer_DestroyWindow(ImGuiViewport* vp);
-    static void ImGui_Renderer_SetWindowSize(ImGuiViewport* vp, ImVec2 size);
-    static void ImGui_Renderer_RenderWindow(ImGuiViewport* vp, void* render_arg);
-    static void ImGui_Renderer_Present(ImGuiViewport* vp, void* render_arg);
-};
-
-void ImGuiWigetEvents::ImGui_CreateWindow(ImGuiViewport* vp)
-{
-    if (ImGuiViewport* parentViewport = ImGui::FindViewportByID(vp->ParentViewportId))
-    {
-        platform::Window* parentWindow = reinterpret_cast<platform::Window*>(parentViewport->PlatformUserData);
-        ASSERT(parentWindow, "parentWindow is nullptr");
-
-        platform::Window* window = platform::Window::createWindow({ (u32)vp->Size.x, (u32)vp->Size.y }, { (s32)vp->Pos.x, (s32)vp->Pos.y }, parentWindow, true, L"Child");
-        ASSERT(window, "window is nullptr");
-
-        vp->PlatformUserData = window;
-        vp->PlatformRequestResize = false;
-        vp->PlatformHandle = window->getWindowHandle();
-        vp->PlatformHandleRaw = window->getWindowHandle();
-    }
-}
-
-void ImGuiWigetEvents::ImGui_DestroyWindow(ImGuiViewport* vp)
-{
-    platform::Window* window = reinterpret_cast<platform::Window*>(vp->PlatformUserData);
-    ASSERT(window, "window is nullptr");
-
-    platform::Window::detroyWindow(window);
-
-    vp->PlatformUserData = nullptr;
-    vp->PlatformHandle = nullptr;
-}
-
-void ImGuiWigetEvents::ImGui_ShowWindow(ImGuiViewport* vp)
-{
-    platform::Window* window = reinterpret_cast<platform::Window*>(vp->PlatformUserData);
-    ASSERT(window, "nullptr");
-
-    window->show();
-}
-
-void ImGuiWigetEvents::ImGui_SetWindowPos(ImGuiViewport* vp, ImVec2 pos)
-{
-    platform::Window* window = reinterpret_cast<platform::Window*>(vp->PlatformUserData);
-    ASSERT(window, "nullptr");
-
-    window->setPosition({ (s32)pos.x, (s32)pos.y });
-}
-
-ImVec2 ImGuiWigetEvents::ImGui_GetWindowPos(ImGuiViewport* vp)
-{
-    platform::Window* window = reinterpret_cast<platform::Window*>(vp->PlatformUserData);
-    ASSERT(window, "nullptr");
-
-    const math::Point2D& pos = window->getPosition();
-    return ImVec2(pos.m_x, pos.m_y);
-}
-
-void ImGuiWigetEvents::ImGui_SetWindowSize(ImGuiViewport* vp, ImVec2 size)
-{
-    platform::Window* window = reinterpret_cast<platform::Window*>(vp->PlatformUserData);
-    ASSERT(window, "nullptr");
-
-    window->setSize({ (u32)size.x, (u32)size.y });
-}
-
-ImVec2 ImGuiWigetEvents::ImGui_GetWindowSize(ImGuiViewport* vp)
-{
-    platform::Window* window = reinterpret_cast<platform::Window*>(vp->PlatformUserData);
-    ASSERT(window, "nullptr");
-
-    const math::Dimension2D& size = window->getSize();
-    return ImVec2(size.m_width, size.m_height);
-}
-
-void ImGuiWigetEvents::ImGui_SetWindowFocus(ImGuiViewport* vp)
-{
-    platform::Window* window = reinterpret_cast<platform::Window*>(vp->PlatformUserData);
-    ASSERT(window, "nullptr");
-
-    window->focus();
-}
-
-bool ImGuiWigetEvents::ImGui_GetWindowFocus(ImGuiViewport* vp)
-{
-    platform::Window* window = reinterpret_cast<platform::Window*>(vp->PlatformUserData);
-    ASSERT(window, "nullptr");
-
-    return window->isFocused();
-}
-
-bool ImGuiWigetEvents::ImGui_GetWindowMinimized(ImGuiViewport* vp)
-{
-    platform::Window* window = reinterpret_cast<platform::Window*>(vp->PlatformUserData);
-    ASSERT(window, "nullptr");
-
-    return window->isMinimized();
-}
-
-void ImGuiWigetEvents::ImGui_SetWindowTitle(ImGuiViewport* vp, const char* str)
-{
-    platform::Window* window = reinterpret_cast<platform::Window*>(vp->PlatformUserData);
-    ASSERT(window, "nullptr");
-
-    window->setText(platform::Platform::utf8ToWide(str));
-}
-
-void ImGuiWigetEvents::ImGui_SetWindowAlpha(ImGuiViewport* vp, float alpha)
-{
-}
-
-void ImGuiWigetEvents::ImGui_UpdateWindow(ImGuiViewport* vp)
-{
-}
-
-float ImGuiWigetEvents::ImGui_GetWindowDpiScale(ImGuiViewport* vp)
-{
-    const platform::Window* window = reinterpret_cast<const platform::Window*>(vp->PlatformUserData);
-    if (window)
-    {
-        return platform::Platform::getDpiScaleForWindow(window);
-    }
-
-    return 0;
-}
-
-void ImGuiWigetEvents::ImGui_OnChangedViewport(ImGuiViewport* vp)
-{
-}
-
-ImVec4 ImGuiWigetEvents::ImGui_GetWindowWorkAreaInsets(ImGuiViewport* vp)
-{
-    return ImVec4();
-}
-
-
-void ImGuiWigetEvents::ImGui_Renderer_CreateWindow(ImGuiViewport* vp)
-{
-    ASSERT(ImGui::GetCurrentContext(), "ImGui context is not valid");
-    ImGuiWigetHandler* handler = reinterpret_cast<ImGuiWigetHandler*>(ImGui::GetIO().BackendPlatformUserData);
-    ASSERT(handler, "handler is nullptr");
-
-    platform::Window* window = reinterpret_cast<platform::Window*>(vp->PlatformUserData);
-    ASSERT(window, "window is nullptr");
-
-    renderer::Swapchain::SwapchainParams params;
-    params._size = window->getSize();
-
-    renderer::Swapchain* swapchain = handler->m_device->createSwapchain(window, params);
-    ASSERT(swapchain, "swapchain is nullptr");
-
-    ImGuiWigetViewportData* viewportData = V3D_NEW(ImGuiWigetViewportData, memory::MemoryLabel::MemoryUI);
-    viewportData->_swapchain = swapchain;
-    viewportData->_cmdList = handler->m_device->createCommandList<renderer::CmdListRender>(renderer::Device::GraphicMask);
-    viewportData->_renderTarget = V3D_NEW(renderer::RenderTargetState, memory::MemoryLabel::MemoryUI)(handler->m_device, swapchain->getBackbufferSize(), 1, 0, "WindowViewport");
-    viewportData->_renderTarget->setColorTexture(0, swapchain->getBackbuffer(),
-        {
-            renderer::RenderTargetLoadOp::LoadOp_Clear, renderer::RenderTargetStoreOp::StoreOp_Store, math::Vector4D(0.0f)
-        },
-        {
-            renderer::TransitionOp::TransitionOp_Undefined, renderer::TransitionOp::TransitionOp_Present
-        }
-    );
-
-    if (!handler->createBuffers(viewportData, k_ImGui_IndexCount, k_ImGui_VertexCount))
-    {
-        ASSERT(false, "createBuffers is failed");
-        handler->destroyBuffers(viewportData);
-    }
-
-    vp->RendererUserData = viewportData;
-}
-
-void ImGuiWigetEvents::ImGui_Renderer_DestroyWindow(ImGuiViewport* vp)
-{
-    ASSERT(ImGui::GetCurrentContext(), "ImGui context is not valid");
-    ImGuiWigetHandler* handler = reinterpret_cast<ImGuiWigetHandler*>(ImGui::GetIO().BackendPlatformUserData);
-    ASSERT(handler, "handler is nullptr");
-
-    ImGuiWigetViewportData* viewportData = reinterpret_cast<ImGuiWigetViewportData*>(vp->RendererUserData);
-    ASSERT(viewportData, "viewportData is nullptr");
-
-    V3D_DELETE(viewportData->_renderTarget, memory::MemoryLabel::MemoryUI);
-    handler->m_device->destroyCommandList(viewportData->_cmdList);
-    handler->m_device->destroySwapchain(viewportData->_swapchain);
-    V3D_DELETE(viewportData, memory::MemoryLabel::MemoryUI);
-
-    vp->RendererUserData = nullptr;
-}
-
-void ImGuiWigetEvents::ImGui_Renderer_SetWindowSize(ImGuiViewport* vp, ImVec2 size)
-{
-    ASSERT(ImGui::GetCurrentContext(), "ImGui context is not valid");
-    ImGuiWigetHandler* handler = reinterpret_cast<ImGuiWigetHandler*>(ImGui::GetIO().BackendPlatformUserData);
-    ASSERT(handler, "handler is nullptr");
-
-    platform::Window* window = reinterpret_cast<platform::Window*>(vp->PlatformUserData);
-    ASSERT(window, "window is nullptr");
-
-    ImGuiWigetViewportData* viewportData = reinterpret_cast<ImGuiWigetViewportData*>(vp->RendererUserData);
-    ASSERT(viewportData, "viewportData is nullptr");
-
-
-    V3D_DELETE(viewportData->_renderTarget, memory::MemoryLabel::MemoryUI);
-    handler->m_device->destroySwapchain(viewportData->_swapchain);
-
-
-    renderer::Swapchain::SwapchainParams params;
-    params._size = window->getSize();
-
-    renderer::Swapchain* swapchain = handler->m_device->createSwapchain(window, params);
-    ASSERT(swapchain, "swapchain is nullptr");
-
-    viewportData->_swapchain = swapchain;
-    viewportData->_renderTarget = V3D_NEW(renderer::RenderTargetState, memory::MemoryLabel::MemoryUI)(handler->m_device, swapchain->getBackbufferSize(), 1, 0, "WindowViewport");
-    viewportData->_renderTarget->setColorTexture(0, swapchain->getBackbuffer(),
-        {
-            renderer::RenderTargetLoadOp::LoadOp_Clear, renderer::RenderTargetStoreOp::StoreOp_Store, math::Vector4D(0.0f)
-        },
-        {
-            renderer::TransitionOp::TransitionOp_Undefined, renderer::TransitionOp::TransitionOp_Present
-        }
-    );
-}
-
-void ImGuiWigetEvents::ImGui_Renderer_RenderWindow(ImGuiViewport* vp, void* render_arg)
-{
-    ASSERT(ImGui::GetCurrentContext(), "ImGui context is not valid");
-    ImGuiWigetHandler* handler = reinterpret_cast<ImGuiWigetHandler*>(ImGui::GetIO().BackendPlatformUserData);
-    ASSERT(handler, "handler is nullptr");
-
-    ImGuiWigetViewportData* viewportData = reinterpret_cast<ImGuiWigetViewportData*>(vp->RendererUserData);
-    ASSERT(viewportData, "viewportData is nullptr");
-
-    viewportData->_swapchain->beginFrame();
-
-    viewportData->_cmdList->beginRenderTarget(*viewportData->_renderTarget);
-    if (!handler->renderDrawData(viewportData, vp->DrawData))
-    {
-        viewportData->_cmdList->clear(viewportData->_swapchain->getBackbuffer(), { 1, 0, 0, 0 });
-    }
-    viewportData->_cmdList->endRenderTarget();
-
-    handler->m_device->submit(viewportData->_cmdList);
-
-    viewportData->_swapchain->endFrame();
-}
-
-void ImGuiWigetEvents::ImGui_Renderer_Present(ImGuiViewport* vp, void* render_arg)
-{
-    ASSERT(ImGui::GetCurrentContext(), "ImGui context is not valid");
-    ImGuiWigetViewportData* viewportData = reinterpret_cast<ImGuiWigetViewportData*>(vp->RendererUserData);
-    ASSERT(viewportData, "viewportData is nullptr");
-
-    viewportData->_swapchain->presentFrame();
-}
 
 static ImGuiKey KeyEventToImGuiKey(event::KeyCode key)
 {
@@ -434,13 +144,17 @@ static ImGuiKey KeyEventToImGuiKey(event::KeyCode key)
     return ImGuiKey_None;
 }
 
-ImGuiWigetHandler::ImGuiWigetHandler(renderer::Device* device) noexcept
+ImGuiWigetHandler::ImGuiWigetHandler(renderer::Device* device, ImGuiWigetFlags flags) noexcept
     : WigetHandler(device)
     , m_ImGuiContext(nullptr)
     , m_showDemo(false)
 
+    , m_UIProgram(nullptr)
+    , m_UIPipeline(nullptr)
+
     , m_viewportData(V3D_NEW(ImGuiWigetViewportData, memory::MemoryLabel::MemoryUI)())
     , m_frameCounter(~1)
+    , m_flags(flags)
 {
 }
 
@@ -478,46 +192,55 @@ bool ImGuiWigetHandler::create(renderer::CmdListRender* cmdList, const renderer:
     }
 
     ImGuiIO& imguiIO = ImGui::GetIO();
-    imguiIO.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
-    imguiIO.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;
-    imguiIO.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
-    imguiIO.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
+
     imguiIO.BackendPlatformUserData = this;
     imguiIO.BackendPlatformName = "ImGui";
+    imguiIO.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
+    imguiIO.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;
+
     imguiIO.BackendFlags |= ImGuiBackendFlags_HasMouseCursors;
     imguiIO.BackendFlags |= ImGuiBackendFlags_HasSetMousePos;
+    imguiIO.BackendFlags |= ImGuiBackendFlags_HasMouseHoveredViewport;
+
+    imguiIO.BackendFlags |= ImGuiBackendFlags_RendererHasVtxOffset;
+
+    if (m_flags && ImGuiWigetFlag::ImGui_EditorMode)
+    {
+        imguiIO.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
+        imguiIO.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
+        imguiIO.BackendFlags |= ImGuiBackendFlags_PlatformHasViewports;
+        imguiIO.BackendFlags |= ImGuiBackendFlags_RendererHasViewports;
+        imguiIO.ConfigWindowsMoveFromTitleBarOnly = true;
+        imguiIO.ConfigViewportsNoDefaultParent = false;
+
+    }
 
     ImGuiPlatformIO& imguiPlatformIO = ImGui::GetPlatformIO();
     if (imguiIO.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
     {
-        imguiIO.BackendFlags |= ImGuiBackendFlags_PlatformHasViewports;
-        imguiIO.BackendFlags |= ImGuiBackendFlags_HasMouseHoveredViewport;
-        imguiIO.BackendFlags |= ImGuiBackendFlags_RendererHasVtxOffset;
-        imguiIO.BackendFlags |= ImGuiBackendFlags_RendererHasViewports;
-
         // Window
-        imguiPlatformIO.Platform_CreateWindow = ImGuiWigetEvents::ImGui_CreateWindow;
-        imguiPlatformIO.Platform_DestroyWindow = ImGuiWigetEvents::ImGui_DestroyWindow;
-        imguiPlatformIO.Platform_ShowWindow = ImGuiWigetEvents::ImGui_ShowWindow;
-        imguiPlatformIO.Platform_SetWindowPos = ImGuiWigetEvents::ImGui_SetWindowPos;
-        imguiPlatformIO.Platform_GetWindowPos = ImGuiWigetEvents::ImGui_GetWindowPos;
-        imguiPlatformIO.Platform_SetWindowSize = ImGuiWigetEvents::ImGui_SetWindowSize;
-        imguiPlatformIO.Platform_GetWindowSize = ImGuiWigetEvents::ImGui_GetWindowSize;
-        imguiPlatformIO.Platform_SetWindowFocus = ImGuiWigetEvents::ImGui_SetWindowFocus;
-        imguiPlatformIO.Platform_GetWindowFocus = ImGuiWigetEvents::ImGui_GetWindowFocus;
-        imguiPlatformIO.Platform_GetWindowMinimized = ImGuiWigetEvents::ImGui_GetWindowMinimized;
-        imguiPlatformIO.Platform_SetWindowTitle = ImGuiWigetEvents::ImGui_SetWindowTitle;
-        imguiPlatformIO.Platform_SetWindowAlpha = ImGuiWigetEvents::ImGui_SetWindowAlpha;
-        imguiPlatformIO.Platform_UpdateWindow = ImGuiWigetEvents::ImGui_UpdateWindow;
-        imguiPlatformIO.Platform_GetWindowDpiScale = ImGuiWigetEvents::ImGui_GetWindowDpiScale;
-        imguiPlatformIO.Platform_OnChangedViewport = ImGuiWigetEvents::ImGui_OnChangedViewport;
+        imguiPlatformIO.Platform_CreateWindow = ImGuiWigetViewportEvents::ImGui_CreateWindow;
+        imguiPlatformIO.Platform_DestroyWindow = ImGuiWigetViewportEvents::ImGui_DestroyWindow;
+        imguiPlatformIO.Platform_ShowWindow = ImGuiWigetViewportEvents::ImGui_ShowWindow;
+        imguiPlatformIO.Platform_SetWindowPos = ImGuiWigetViewportEvents::ImGui_SetWindowPos;
+        imguiPlatformIO.Platform_GetWindowPos = ImGuiWigetViewportEvents::ImGui_GetWindowPos;
+        imguiPlatformIO.Platform_SetWindowSize = ImGuiWigetViewportEvents::ImGui_SetWindowSize;
+        imguiPlatformIO.Platform_GetWindowSize = ImGuiWigetViewportEvents::ImGui_GetWindowSize;
+        imguiPlatformIO.Platform_SetWindowFocus = ImGuiWigetViewportEvents::ImGui_SetWindowFocus;
+        imguiPlatformIO.Platform_GetWindowFocus = ImGuiWigetViewportEvents::ImGui_GetWindowFocus;
+        imguiPlatformIO.Platform_GetWindowMinimized = ImGuiWigetViewportEvents::ImGui_GetWindowMinimized;
+        imguiPlatformIO.Platform_SetWindowTitle = ImGuiWigetViewportEvents::ImGui_SetWindowTitle;
+        imguiPlatformIO.Platform_SetWindowAlpha = ImGuiWigetViewportEvents::ImGui_SetWindowAlpha;
+        imguiPlatformIO.Platform_UpdateWindow = ImGuiWigetViewportEvents::ImGui_UpdateWindow;
+        imguiPlatformIO.Platform_GetWindowDpiScale = ImGuiWigetViewportEvents::ImGui_GetWindowDpiScale;
+        imguiPlatformIO.Platform_OnChangedViewport = ImGuiWigetViewportEvents::ImGui_OnChangedViewport;
 
         // Render
-        imguiPlatformIO.Renderer_CreateWindow = ImGuiWigetEvents::ImGui_Renderer_CreateWindow;
-        imguiPlatformIO.Renderer_DestroyWindow = ImGuiWigetEvents::ImGui_Renderer_DestroyWindow;
-        imguiPlatformIO.Renderer_SetWindowSize = ImGuiWigetEvents::ImGui_Renderer_SetWindowSize;
-        imguiPlatformIO.Renderer_RenderWindow = ImGuiWigetEvents::ImGui_Renderer_RenderWindow;
-        imguiPlatformIO.Renderer_SwapBuffers = ImGuiWigetEvents::ImGui_Renderer_Present;
+        imguiPlatformIO.Renderer_CreateWindow = ImGuiWigetViewportEvents::ImGui_Renderer_CreateWindow;
+        imguiPlatformIO.Renderer_DestroyWindow = ImGuiWigetViewportEvents::ImGui_Renderer_DestroyWindow;
+        imguiPlatformIO.Renderer_SetWindowSize = ImGuiWigetViewportEvents::ImGui_Renderer_SetWindowSize;
+        imguiPlatformIO.Renderer_RenderWindow = ImGuiWigetViewportEvents::ImGui_Renderer_RenderWindow;
+        imguiPlatformIO.Renderer_SwapBuffers = ImGuiWigetViewportEvents::ImGui_Renderer_Present;
     }
 
     auto displayMonitors = [](const math::RectF32& rcMonitor, const math::RectF32& rcWork, f32 dpi, bool primary, void* monitor) -> bool
@@ -550,7 +273,59 @@ bool ImGuiWigetHandler::create(renderer::CmdListRender* cmdList, const renderer:
     imguiPlatformIO.Monitors.resize(0);
     platform::Platform::enumDisplayMonitors(displayMonitors);
 
-    if (!createFontTexture(cmdList))
+
+    //Style
+    ImGuiStyle& style = ImGui::GetStyle();
+    style.ScaleAllSizes(1.0f);
+
+    style.Colors[ImGuiCol_Text] = ImVec4(0.31f, 0.25f, 0.24f, 1.00f);
+    style.Colors[ImGuiCol_WindowBg] = ImVec4(0.94f, 0.94f, 0.94f, 0.9f);
+    style.Colors[ImGuiCol_MenuBarBg] = ImVec4(0.74f, 0.74f, 0.94f, 1.00f);
+    style.Colors[ImGuiCol_PopupBg] = ImVec4(0.94f, 0.94f, 0.94f, 0.9f);
+    style.Colors[ImGuiCol_ChildBg] = ImVec4(0.68f, 0.68f, 0.68f, 0.00f);
+    style.Colors[ImGuiCol_Border] = ImVec4(0.50f, 0.50f, 0.50f, 0.60f);
+    style.Colors[ImGuiCol_BorderShadow] = ImVec4(0.00f, 0.00f, 0.00f, 0.00f);
+    style.Colors[ImGuiCol_FrameBg] = ImVec4(0.62f, 0.70f, 0.72f, 0.56f);
+    style.Colors[ImGuiCol_FrameBgHovered] = ImVec4(0.95f, 0.33f, 0.14f, 0.47f);
+    style.Colors[ImGuiCol_FrameBgActive] = ImVec4(0.97f, 0.31f, 0.13f, 0.81f);
+    style.Colors[ImGuiCol_TitleBg] = ImVec4(0.42f, 0.75f, 1.00f, 0.70f);
+    style.Colors[ImGuiCol_TitleBgActive] = ImVec4(0.62f, 0.85f, 1.00f, 0.83f);
+    style.Colors[ImGuiCol_TitleBgCollapsed] = ImVec4(0.40f, 0.65f, 0.80f, 0.50f);
+    style.Colors[ImGuiCol_ScrollbarBg] = ImVec4(0.40f, 0.62f, 0.80f, 0.15f);
+    style.Colors[ImGuiCol_ScrollbarGrab] = ImVec4(0.39f, 0.64f, 0.80f, 0.30f);
+    style.Colors[ImGuiCol_ScrollbarGrabHovered] = ImVec4(0.28f, 0.67f, 0.80f, 0.59f);
+    style.Colors[ImGuiCol_ScrollbarGrabActive] = ImVec4(0.25f, 0.48f, 0.53f, 0.67f);
+    style.Colors[ImGuiCol_PopupBg] = ImVec4(0.89f, 0.98f, 1.00f, 0.99f);
+    style.Colors[ImGuiCol_CheckMark] = ImVec4(0.48f, 0.47f, 0.47f, 0.71f);
+    style.Colors[ImGuiCol_SliderGrabActive] = ImVec4(0.31f, 0.47f, 0.99f, 1.00f);
+    style.Colors[ImGuiCol_Button] = ImVec4(1.00f, 0.79f, 0.18f, 0.78f);
+    style.Colors[ImGuiCol_ButtonHovered] = ImVec4(0.42f, 0.82f, 1.00f, 0.81f);
+    style.Colors[ImGuiCol_ButtonActive] = ImVec4(0.72f, 1.00f, 1.00f, 0.86f);
+    style.Colors[ImGuiCol_Header] = ImVec4(0.65f, 0.78f, 0.84f, 0.80f);
+    style.Colors[ImGuiCol_HeaderHovered] = ImVec4(0.75f, 0.88f, 0.94f, 0.80f);
+    style.Colors[ImGuiCol_HeaderActive] = ImVec4(0.55f, 0.68f, 0.74f, 0.80f);
+    style.Colors[ImGuiCol_ResizeGrip] = ImVec4(0.60f, 0.60f, 0.80f, 0.30f);
+    style.Colors[ImGuiCol_ResizeGripHovered] = ImVec4(1.00f, 1.00f, 1.00f, 0.60f);
+    style.Colors[ImGuiCol_ResizeGripActive] = ImVec4(1.00f, 1.00f, 1.00f, 0.90f);
+    style.Colors[ImGuiCol_TextSelectedBg] = ImVec4(1.00f, 0.99f, 0.54f, 0.43f);
+    style.Alpha = 1.0f;
+    style.FrameRounding = 4;
+    style.IndentSpacing = 12.0f;
+    style.FrameBorderSize = 1.0f;
+    if (imguiIO.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
+    {
+        style.WindowRounding = 0.0f;
+        style.Colors[ImGuiCol_WindowBg].w = 1.0f;
+    }
+
+    ImGui::SetColorEditOptions(ImGuiColorEditFlags_Float);
+    ImGui::StyleColorsDark();
+
+    ImFontConfig fontConfig{};
+    fontConfig.OversampleH = 3;
+    fontConfig.OversampleV = 3;
+    fontConfig.PixelSnapH = true;
+    if (!createFontTexture(cmdList, &fontConfig))
     {
         LOG_ERROR("ImGuiWigetLayout::create createFontTexture is failed");
         destroy();
@@ -574,27 +349,16 @@ bool ImGuiWigetHandler::create(renderer::CmdListRender* cmdList, const renderer:
         return false;
     }
 
-    //TODO: style
-    ImGuiStyle& style = ImGui::GetStyle();
-    style.ScaleAllSizes(1.0f);
-
-
     //ImGui::StyleColorsClassic();
     //ImGui::StyleColorsDark();
     //ImGui::StyleColorsLight();
 
     // Color scheme
-    style.Colors[ImGuiCol_TitleBg] = ImVec4(1.0f, 0.0f, 0.0f, 0.6f);
-    style.Colors[ImGuiCol_TitleBgActive] = ImVec4(1.0f, 0.0f, 0.0f, 0.8f);
-    style.Colors[ImGuiCol_MenuBarBg] = ImVec4(1.0f, 0.0f, 0.0f, 0.4f);
-    style.Colors[ImGuiCol_Header] = ImVec4(1.0f, 0.0f, 0.0f, 0.4f);
-    style.Colors[ImGuiCol_CheckMark] = ImVec4(0.0f, 1.0f, 0.0f, 1.0f);
-
-    if (imguiIO.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
-    {
-        style.WindowRounding = 0.0f;
-        style.Colors[ImGuiCol_WindowBg].w = 1.0f;
-    }
+    //style.Colors[ImGuiCol_TitleBg] = ImVec4(1.0f, 0.0f, 0.0f, 0.6f);
+    //style.Colors[ImGuiCol_TitleBgActive] = ImVec4(1.0f, 0.0f, 0.0f, 0.8f);
+    //style.Colors[ImGuiCol_MenuBarBg] = ImVec4(1.0f, 0.0f, 0.0f, 0.4f);
+    //style.Colors[ImGuiCol_Header] = ImVec4(1.0f, 0.0f, 0.0f, 0.4f);
+    //style.Colors[ImGuiCol_CheckMark] = ImVec4(0.0f, 1.0f, 0.0f, 1.0f);
 
     //ImGui::SetCurrentContext(m_IMGUIContext);
 
@@ -624,6 +388,12 @@ void ImGuiWigetHandler::handleMouseCallback(const event::InputEventHandler* hand
 {
     ASSERT(m_ImGuiContext, "must be valid");
     ASSERT(handler, "must be valid");
+
+    //ImGuiIO& imguiIO = ImGui::GetIO();
+    //imguiIO.AddMouseSourceEvent(ImGuiMouseSource_Mouse);
+    //imguiIO.AddMouseButtonEvent(0, handler->isLeftMousePressed());
+    //imguiIO.AddMouseButtonEvent(1, handler->isRightMousePressed());
+    //imguiIO.AddMouseWheelEvent(0.0f, handler->getMouseWheel());
 }
 
 void ImGuiWigetHandler::handleKeyboardCallback(const v3d::event::InputEventHandler* handler, const event::KeyboardInputEvent* event)
@@ -657,7 +427,7 @@ void ImGuiWigetHandler::handleSystemCallback(const v3d::event::InputEventHandler
 
     if (event->_systemEvent == event::SystemEvent::Focus)
     {
-        //imguiIO.AddFocusEvent(event->_flag);
+        imguiIO.AddFocusEvent(event->_flag);
     }
     else if (event->_systemEvent == event::SystemEvent::TextInput)
     {
@@ -675,6 +445,7 @@ void ImGuiWigetHandler::update(const platform::Window* window, const v3d::event:
     imguiIO.DisplaySize.x = window->getSize().m_width;
     imguiIO.DisplaySize.y = window->getSize().m_height;
     imguiIO.DisplayFramebufferScale = ImVec2(1.0f, 1.0f);
+    imguiIO.FontDefault = m_fonts[WigetLayout::MediumFont];
 
     if (imguiIO.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
     {
@@ -715,7 +486,6 @@ void ImGuiWigetHandler::update(const platform::Window* window, const v3d::event:
 
         imguiIO.AddMouseSourceEvent(ImGuiMouseSource_Mouse);
         imguiIO.AddMousePosEvent(cursorPosition.m_x, cursorPosition.m_y);
-        LOG_DEBUG("cursorPosition %i, %i", cursorPosition.m_x, cursorPosition.m_y);
         imguiIO.AddMouseButtonEvent(0, handler->isLeftMousePressed());
         imguiIO.AddMouseButtonEvent(1, handler->isRightMousePressed());
         imguiIO.AddMouseWheelEvent(0.0f, handler->getMouseWheel());
@@ -728,6 +498,10 @@ void ImGuiWigetHandler::update(const platform::Window* window, const v3d::event:
         imguiIO.AddKeyEvent(ImGuiMod_Alt, handler->isKeyPressed(event::KeyCode::KeyAlt));
         imguiIO.AddKeyEvent(ImGuiMod_Super, handler->isKeyPressed(event::KeyCode::KeyLWin) || handler->isKeyPressed(event::KeyCode::KeyRWin));
     }
+
+    //update text list
+    m_activeTextures.clear();
+    m_activeTextures.push_back(m_fontAtlas);
 
     ImGui::NewFrame();
 
@@ -743,19 +517,28 @@ void ImGuiWigetHandler::update(const platform::Window* window, const v3d::event:
     if (imguiIO.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
     {
         ImGui::UpdatePlatformWindows();
-        ImGui::RenderPlatformWindowsDefault();
     }
 }
 
-bool ImGuiWigetHandler::draw_Window(Wiget::Context* context, f32 dt)
+bool ImGuiWigetHandler::draw_Window(Wiget* window, Wiget::Context* context, f32 dt)
 {
     ASSERT(m_ImGuiContext, "must be valid");
     WigetWindow::ContextWindow* wndCtx = static_cast<WigetWindow::ContextWindow*>(context);
 
-    //ImGui::SetNextWindowPos(ImVec2(static_cast<f32>(wndCtx->_position.m_x), static_cast<f32>(wndCtx->_position.m_y)), ImGuiCond_None);
-    //ImGui::SetNextWindowSize(ImVec2(static_cast<f32>(wndCtx->_size.m_width), static_cast<f32>(wndCtx->_size.m_height)), ImGuiCond_None);
+    ImGui::SetNextWindowPos(ImVec2(static_cast<f32>(wndCtx->_position.m_x), static_cast<f32>(wndCtx->_position.m_y)), ImGuiCond_Once);
+    ImGui::SetNextWindowSize(ImVec2(static_cast<f32>(wndCtx->_size.m_width), static_cast<f32>(wndCtx->_size.m_height)), ImGuiCond_Once);
 
-    ImGuiWindowFlags flags = /*ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse |*/ ImGuiWindowFlags_NoSavedSettings;
+    ImGuiWindowFlags flags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoSavedSettings;
+    if (wndCtx->_flags & WigetWindow::Moveable)
+    {
+        flags &= ~ImGuiWindowFlags_NoMove;
+    }
+
+    if (wndCtx->_flags & WigetWindow::Resizeable)
+    {
+        flags &= ~ImGuiWindowFlags_NoResize;
+    }
+
     bool action = ImGui::Begin(wndCtx->_title.c_str(), 0, flags);
     if (action)
     {
@@ -764,9 +547,37 @@ bool ImGuiWigetHandler::draw_Window(Wiget::Context* context, f32 dt)
             ImGui::SetTooltip(wndCtx->_toolTip.c_str());
         }
 
+        math::Dimension2D size(ImGui::GetWindowSize().x, ImGui::GetWindowSize().y);
+        if (size != wndCtx->_size)
+        {
+            if (wndCtx->_onSizeChanged)
+            {
+                std::invoke(wndCtx->_onSizeChanged, window, size);
+            }
+
+            wndCtx->_size = size;
+        }
+
+        math::Point2D pos(ImGui::GetWindowPos().x, ImGui::GetWindowPos().y);
+        if (pos != wndCtx->_position)
+        {
+            if (wndCtx->_onPositionChanged)
+            {
+                std::invoke(wndCtx->_onPositionChanged, window, pos);
+            }
+
+            wndCtx->_position = pos;
+        }
+
         wndCtx->_layout.update(this, dt);
         ImGui::End();
     }
+
+    //active window
+    ImGuiViewport* viewport = ImGui::GetWindowViewport();
+    platform::Window* activeWindow = reinterpret_cast<platform::Window*>(viewport->PlatformUserData);
+    ASSERT(activeWindow, "window is nullptr");
+    wndCtx->_activeWindow = activeWindow;
 
     return action;
 }
@@ -776,7 +587,33 @@ bool ImGuiWigetHandler::draw_Button(Wiget* button, Wiget::Context* context, f32 
     ASSERT(m_ImGuiContext, "must be valid");
     WigetButton::ContextButton* btnCtx = static_cast<WigetButton::ContextButton*>(context);
 
-    bool action = ImGui::Button(btnCtx->_title.c_str());
+
+    u32 pushCount = 0;
+    if (btnCtx->_stateMask & 0x04)
+    {
+        ImGui::PushStyleColor(ImGuiCol_Button, ImVec4{ btnCtx->_color.m_x, btnCtx->_color.m_y, btnCtx->_color.m_z, btnCtx->_color.m_w });
+        ++pushCount;
+    }
+
+    if (btnCtx->_stateMask & 0x08)
+    {
+        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4{ btnCtx->_colorHovered.m_x, btnCtx->_colorHovered.m_y, btnCtx->_colorHovered.m_z, btnCtx->_colorHovered.m_w });
+        ++pushCount;
+    }
+
+    if (btnCtx->_stateMask & 0x10)
+    {
+        ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4{ btnCtx->_colorActive.m_x, btnCtx->_colorActive.m_y, btnCtx->_colorActive.m_z, btnCtx->_colorActive.m_w });
+        ++pushCount;
+    }
+
+    bool action = ImGui::Button(btnCtx->_text.c_str());
+
+    if (pushCount > 0)
+    {
+        ImGui::PopStyleColor(pushCount);
+    }
+
     if (btnCtx->_showToolTip && ImGui::IsItemHovered(ImGuiHoveredFlags_ForTooltip))
     {
         ImGui::SetTooltip(btnCtx->_toolTip.c_str());
@@ -800,6 +637,170 @@ bool ImGuiWigetHandler::draw_Image(Wiget* image, Wiget::Context* context, f32 dt
     ASSERT(m_ImGuiContext, "must be valid");
     WigetImage::ContextImage* imgCtx = static_cast<WigetImage::ContextImage*>(context);
 
+    if (imgCtx->_texture)
+    {
+        u32 id = ~0;
+        auto found = std::find(m_activeTextures.begin(), m_activeTextures.end(), imgCtx->_texture);
+        if (found == m_activeTextures.end())
+        {
+            m_activeTextures.push_back(imgCtx->_texture);
+            id = m_activeTextures.size() - 1;
+        }
+        else
+        {
+            id = std::distance(m_activeTextures.begin(), found);
+        }
+
+        ImVec2 size = { (f32)imgCtx->_size.m_width, (f32)imgCtx->_size.m_height };
+        ImVec2 uv0 = { imgCtx->_uv.getLeftX(), imgCtx->_uv.getTopY() };
+        ImVec2 uv1 = { imgCtx->_uv.getRightX(), imgCtx->_uv.getBottomY() };
+
+        ImGui::Image(id, size, uv0, uv1);
+
+        if (imgCtx->_showToolTip && ImGui::IsItemHovered(ImGuiHoveredFlags_ForTooltip))
+        {
+            ImGui::SetTooltip(imgCtx->_toolTip.c_str());
+        }
+
+        if (imgCtx->_onHoveredEvent && ImGui::IsItemHovered())
+        {
+            std::invoke(imgCtx->_onHoveredEvent, image);
+        }
+
+        if (imgCtx->_onClickedEvent && ImGui::IsItemClicked())
+        {
+            std::invoke(imgCtx->_onClickedEvent, image);
+        }
+
+        return true;
+    }
+
+    return false;
+}
+
+bool ImGuiWigetHandler::draw_CheckBox(Wiget* wiget, Wiget::Context* context, f32 dt)
+{
+    ASSERT(m_ImGuiContext, "must be valid");
+    WigetCheckBox::ContextCheckBox* cbCtx = static_cast<WigetCheckBox::ContextCheckBox*>(context);
+
+    bool active = ImGui::Checkbox(cbCtx->_text.c_str(), &cbCtx->_value);
+    if (cbCtx->_showToolTip && ImGui::IsItemHovered(ImGuiHoveredFlags_ForTooltip))
+    {
+        ImGui::SetTooltip(cbCtx->_toolTip.c_str());
+    }
+
+    if (cbCtx->_onChangedValueEvent && active)
+    {
+        std::invoke(cbCtx->_onChangedValueEvent, wiget, cbCtx->_value);
+    }
+
+    return active;
+}
+
+bool ImGuiWigetHandler::draw_RadioButtonGroup(Wiget* wiget, Wiget::Context* context, f32 dt)
+{
+    ASSERT(m_ImGuiContext, "must be valid");
+    WigetRadioButtonGroup::ContextRadioButtonGroup* rbCtx = static_cast<WigetRadioButtonGroup::ContextRadioButtonGroup*>(context);
+
+    bool active = false;
+    if (!rbCtx->_list.empty())
+    {
+        ASSERT(rbCtx->_activeIndex < rbCtx->_list.size(), "range out");
+        s32 index = rbCtx->_activeIndex;
+        for (u32 i = 0; i < rbCtx->_list.size() - 1; ++i)
+        {
+            active |= ImGui::RadioButton(rbCtx->_list[i].c_str(), &index, i); ImGui::SameLine();
+        }
+        active |= ImGui::RadioButton(rbCtx->_list.back().c_str(), &index, rbCtx->_list.size() - 1);
+        rbCtx->_activeIndex = index;
+
+        if (rbCtx->_showToolTip && ImGui::IsItemHovered(ImGuiHoveredFlags_ForTooltip))
+        {
+            ImGui::SetTooltip(rbCtx->_toolTip.c_str());
+        }
+
+        if (rbCtx->_onChangedIndexEvent && active)
+        {
+            std::invoke(rbCtx->_onChangedIndexEvent, wiget, rbCtx->_activeIndex);
+        }
+    }
+    return active;
+}
+
+bool ImGuiWigetHandler::draw_ComboBox(Wiget* wiget, Wiget::Context* context, f32 dt)
+{
+    ASSERT(m_ImGuiContext, "must be valid");
+    WigetComboBox::ContextComboBox* cbCtx = static_cast<WigetComboBox::ContextComboBox*>(context);
+
+    static auto items_ArrayGetter = [](void* user_data, int idx) -> const char*
+        {
+            std::vector<std::string>& list = *reinterpret_cast<std::vector<std::string>*>(user_data);
+            return list[idx].c_str();
+        };
+
+    bool active = false;
+    if (!cbCtx->_list.empty())
+    {
+        s32 index = cbCtx->_activeIndex;
+        active = ImGui::Combo("combo", &index, items_ArrayGetter, &cbCtx->_list, cbCtx->_list.size());
+        cbCtx->_activeIndex = index;
+
+        if (cbCtx->_showToolTip && ImGui::IsItemHovered(ImGuiHoveredFlags_ForTooltip))
+        {
+            ImGui::SetTooltip(cbCtx->_toolTip.c_str());
+        }
+
+        if (cbCtx->_onChangedIndexEvent && active)
+        {
+            std::invoke(cbCtx->_onChangedIndexEvent, wiget, cbCtx->_activeIndex);
+        }
+    }
+    return active;
+}
+
+bool ImGuiWigetHandler::draw_ListBox(Wiget* wiget, Wiget::Context* context, f32 dt)
+{
+    ASSERT(m_ImGuiContext, "must be valid");
+    WigetListBox::ContextListBox* lbCtx = static_cast<WigetListBox::ContextListBox*>(context);
+
+    static auto items_ArrayGetter = [](void* user_data, int idx) -> const char*
+        {
+            std::vector<std::string>& list = *reinterpret_cast<std::vector<std::string>*>(user_data);
+            return list[idx].c_str();
+        };
+
+    bool active = false;
+    if (!lbCtx->_list.empty())
+    {
+        s32 index = lbCtx->_activeIndex;
+        active = ImGui::ListBox("listbox", &index, items_ArrayGetter, &lbCtx->_list, lbCtx->_list.size(), 4);
+        lbCtx->_activeIndex = index;
+
+        if (lbCtx->_showToolTip && ImGui::IsItemHovered(ImGuiHoveredFlags_ForTooltip))
+        {
+            ImGui::SetTooltip(lbCtx->_toolTip.c_str());
+        }
+
+        if (lbCtx->_onChangedIndexEvent && active)
+        {
+            std::invoke(lbCtx->_onChangedIndexEvent, wiget, lbCtx->_activeIndex);
+        }
+    }
+    return active;
+}
+
+bool ImGuiWigetHandler::draw_InputField(Wiget* wiget, Wiget::Context* context, f32 dt)
+{
+    static int i0 = 123;
+    ImGui::InputInt("input int", &i0);
+
+    return false;
+}
+
+bool ImGuiWigetHandler::draw_InputSlider(Wiget* wiget, Wiget::Context* context, f32 dt)
+{
+    static int i1 = 0;
+    ImGui::SliderInt("slider int", &i1, -1, 3);
 
     return false;
 }
@@ -886,10 +887,23 @@ void ImGuiWigetHandler::hideDemoUI()
     m_showDemo = false;
 }
 
-bool ImGuiWigetHandler::createFontTexture(renderer::CmdListRender* cmdList)
+bool ImGuiWigetHandler::createFontTexture(renderer::CmdListRender* cmdList, ImFontConfig* fontConfig)
 {
     ImGuiIO& imguiIO = ImGui::GetIO();
-    imguiIO.Fonts->AddFontDefault(); //TODO
+    imguiIO.Fonts->ClearFonts();
+
+    const bool forceDefault = false;
+    if (forceDefault)
+    {
+        ImFont* defafultFont = imguiIO.Fonts->AddFontDefault(fontConfig);
+        m_fonts.fill(defafultFont);
+    }
+    else
+    {
+        m_fonts[WigetLayout::SmallFont] = imguiIO.Fonts->AddFontFromMemoryCompressedTTF(k_source_sans_pro_regular_compressed_data, k_source_sans_pro_regular_compressed_size, 13, fontConfig, imguiIO.Fonts->GetGlyphRangesDefault());
+        m_fonts[WigetLayout::MediumFont] = imguiIO.Fonts->AddFontFromMemoryCompressedTTF(k_source_sans_pro_regular_compressed_data, k_source_sans_pro_regular_compressed_size, 20, fontConfig, imguiIO.Fonts->GetGlyphRangesDefault());
+        m_fonts[WigetLayout::LargeFont] = imguiIO.Fonts->AddFontFromMemoryCompressedTTF(k_source_sans_pro_regular_compressed_data, k_source_sans_pro_regular_compressed_size, 32, fontConfig, imguiIO.Fonts->GetGlyphRangesDefault());
+    }
     imguiIO.FontGlobalScale = 1.0f;
 
     //Font texture
@@ -898,19 +912,21 @@ bool ImGuiWigetHandler::createFontTexture(renderer::CmdListRender* cmdList)
     u32 pixelSize = 4; //RGBA8
     imguiIO.Fonts->GetTexDataAsRGBA32(&pixels, &width, &height);
 
-    m_fontSampler = V3D_NEW(renderer::SamplerState, memory::MemoryLabel::MemoryRenderCore)(m_device, renderer::SamplerFilter::SamplerFilter_Trilinear, renderer::SamplerAnisotropic::SamplerAnisotropic_None);
-    if (!m_fontSampler)
+    m_imageSampler = V3D_NEW(renderer::SamplerState, memory::MemoryLabel::MemoryRenderCore)(m_device, renderer::SamplerFilter::SamplerFilter_Trilinear, renderer::SamplerAnisotropic::SamplerAnisotropic_None);
+    if (!m_imageSampler)
     {
         return false;
     }
-    m_fontSampler->setWrap(renderer::SamplerWrap::TextureWrap_ClampToEdge);
-    m_fontSampler->setBorderColor(math::Vector4D(1.0, 1.0, 1.0, 1.0)); //opaque white
+    m_imageSampler->setWrap(renderer::SamplerWrap::TextureWrap_ClampToEdge);
+    m_imageSampler->setBorderColor(math::Vector4D(1.0, 1.0, 1.0, 1.0)); //opaque white
 
     m_fontAtlas = V3D_NEW(renderer::Texture2D, memory::MemoryLabel::MemoryRenderCore)(m_device, renderer::TextureUsage::TextureUsage_Sampled | renderer::TextureUsage_Write, renderer::Format::Format_R8G8B8A8_UNorm, math::Dimension2D(width, height), 1);
     if (!m_fontAtlas)
     {
         return false;
     }
+    imguiIO.Fonts->SetTexID(0); //reserve for m_fontAtlas
+
     cmdList->uploadData(m_fontAtlas, width * height * pixelSize, pixels);
     m_device->submit(cmdList, true);
 
@@ -919,10 +935,13 @@ bool ImGuiWigetHandler::createFontTexture(renderer::CmdListRender* cmdList)
 
 void ImGuiWigetHandler::destroyFontTexture()
 {
-    if (m_fontSampler)
+    ImGuiIO& imguiIO = ImGui::GetIO();
+    imguiIO.Fonts->ClearFonts();
+
+    if (m_imageSampler)
     {
-        V3D_DELETE(m_fontSampler, memory::MemoryLabel::MemoryRenderCore);
-        m_fontSampler = nullptr;
+        V3D_DELETE(m_imageSampler, memory::MemoryLabel::MemoryRenderCore);
+        m_imageSampler = nullptr;
     }
 
     if (m_fontAtlas)
@@ -1129,7 +1148,7 @@ bool ImGuiWigetHandler::renderDrawData(ImGuiWigetViewportData* viewportData, ImD
 
     ImDrawIdx* idxDst = viewportData->_indexBuffer[currentIndex]->map<ImDrawIdx>();
     ImDrawVert* vtxDst = viewportData->_vertexBuffer[currentIndex]->map<ImDrawVert>();
-    for (int n = 0; n < imDrawData->CmdListsCount; n++)
+    for (u32 n = 0; n < imDrawData->CmdListsCount; n++)
     {
         const ImDrawList* cmd_list = imDrawData->CmdLists[n];
 
@@ -1142,40 +1161,52 @@ bool ImGuiWigetHandler::renderDrawData(ImGuiWigetViewportData* viewportData, ImD
     viewportData->_indexBuffer[currentIndex]->unmap();
     viewportData->_vertexBuffer[currentIndex]->unmap();
 
+    static auto setupRenderState = [this](renderer::CmdListRender* cmdList, ImDrawData* imDrawData, s32 fbWidth, s32 fbHeight) -> void
+        {
+            cmdList->setViewport(math::Rect32(0, 0, fbWidth, fbHeight));
+            cmdList->setPipelineState(*m_UIPipeline);
+
+            struct PushConstant
+            {
+                math::Vector2D _scale;
+                math::Vector2D _translate;
+            } pushConstBlock;
+
+            pushConstBlock._scale = math::Vector2D(2.0f / imDrawData->DisplaySize.x, 2.0f / imDrawData->DisplaySize.y);
+            pushConstBlock._translate = math::Vector2D(-1.0f - imDrawData->DisplayPos.x * pushConstBlock._scale.m_x, -1.0f - imDrawData->DisplayPos.y * pushConstBlock._scale.m_y);
+
+            cmdList->bindPushConstant(renderer::ShaderType::Vertex, sizeof(PushConstant), &pushConstBlock);
+        };
+
     if (imDrawData->CmdListsCount > 0)
     {
-        viewportData->_cmdList->setViewport(math::Rect32(0, 0, imDrawData->DisplaySize.x, imDrawData->DisplaySize.y));
+        setupRenderState(viewportData->_cmdList, imDrawData, fbWidth, fbHeight);
 
-        viewportData->_cmdList->setPipelineState(*m_UIPipeline);
-        viewportData->_cmdList->bindTexture(0, 0, m_fontAtlas);
-        viewportData->_cmdList->bindSampler(0, 1, *m_fontSampler);
-
-        struct PushConstant
-        {
-            math::Vector2D _scale;
-            math::Vector2D _translate;
-        } pushConstBlock;
-        pushConstBlock._scale = math::Vector2D(2.0f / imDrawData->DisplaySize.x, 2.0f / imDrawData->DisplaySize.y);
-        pushConstBlock._translate = math::Vector2D(-1.0f - imDrawData->DisplayPos.x * pushConstBlock._scale.m_x, -1.0f - imDrawData->DisplayPos.y * pushConstBlock._scale.m_y);
-
-        viewportData->_cmdList->bindPushConstant(renderer::ShaderType::Vertex, sizeof(PushConstant), &pushConstBlock);
-
-        int global_vtx_offset = 0;
-        int global_idx_offset = 0;
+        s32 global_vtx_offset = 0;
+        s32 global_idx_offset = 0;
 
         // Will project scissor/clipping rectangles into framebuffer space
         ImVec2 clip_off = imDrawData->DisplayPos;         // (0,0) unless using multi-viewports
         ImVec2 clip_scale = imDrawData->FramebufferScale; // (1,1) unless using retina display which are often (2,2)
 
-        for (int32_t i = 0; i < imDrawData->CmdListsCount; i++)
+        for (u32 i = 0; i < imDrawData->CmdListsCount; i++)
         {
             const ImDrawList* cmd_list = imDrawData->CmdLists[i];
-            for (int32_t j = 0; j < cmd_list->CmdBuffer.Size; j++)
+            for (u32 j = 0; j < cmd_list->CmdBuffer.Size; j++)
             {
                 const ImDrawCmd* pCmd = &cmd_list->CmdBuffer[j];
                 if (pCmd->UserCallback)
                 {
-                    //TODO
+                    // User callback, registered via ImDrawList::AddCallback()
+                    // (ImDrawCallback_ResetRenderState is a special callback value used by the user to request the renderer to reset render state.)
+                    if (pCmd->UserCallback == ImDrawCallback_ResetRenderState)
+                    {
+                        setupRenderState(viewportData->_cmdList, imDrawData, fbWidth, fbHeight);
+                    }
+                    else
+                    {
+                        pCmd->UserCallback(cmd_list, pCmd);
+                    }
                 }
                 else
                 {
@@ -1186,17 +1217,22 @@ bool ImGuiWigetHandler::renderDrawData(ImGuiWigetViewportData* viewportData, ImD
                     // Clamp to viewport as vkCmdSetScissor() won't accept values that are off bounds
                     if (clip_min.x < 0.0f) { clip_min.x = 0.0f; }
                     if (clip_min.y < 0.0f) { clip_min.y = 0.0f; }
-                    if (clip_max.x > imDrawData->DisplaySize.x) { clip_max.x = (float)imDrawData->DisplaySize.x; }
-                    if (clip_max.y > imDrawData->DisplaySize.y) { clip_max.y = (float)imDrawData->DisplaySize.y; }
+                    if (clip_max.x > fbWidth) { clip_max.x = (f32)fbWidth; }
+                    if (clip_max.y > fbHeight) { clip_max.y = (f32)fbHeight; }
                     if (clip_max.x <= clip_min.x || clip_max.y <= clip_min.y)
                         continue;
 
-                    u32 x = (int32_t)(clip_min.x);
-                    u32 y = (int32_t)(clip_min.y);
-                    u32 width = (uint32_t)(clip_max.x - clip_min.x);
-                    u32 height = (uint32_t)(clip_max.y - clip_min.y);
+                    s32 x = (s32)(clip_min.x);
+                    s32 y = (s32)(clip_min.y);
+                    u32 width = (u32)(clip_max.x - clip_min.x);
+                    u32 height = (u32)(clip_max.y - clip_min.y);
 
                     viewportData->_cmdList->setScissor(math::Rect32(x, y, x + width, y + height));
+
+                    u64 textureID = pCmd->GetTexID();
+                    ASSERT(textureID < m_activeTextures.size() && m_activeTextures[textureID], "range out or invalid");
+                    viewportData->_cmdList->bindTexture(0, 0, m_activeTextures[textureID]);
+                    viewportData->_cmdList->bindSampler(0, 1, *m_imageSampler);
                 }
 
                 viewportData->_cmdList->drawIndexed(viewportData->_geometryDesc[currentIndex], pCmd->IdxOffset + global_idx_offset, pCmd->ElemCount, pCmd->VtxOffset + global_vtx_offset, 0, 1);
@@ -1214,6 +1250,12 @@ void ImGuiWigetHandler::render(renderer::CmdListRender* cmdList)
 {
     ++m_frameCounter;
 
+    ImGuiIO& imguiIO = ImGui::GetIO();
+    if (imguiIO.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
+    {
+        ImGui::RenderPlatformWindowsDefault();
+    }
+
     m_viewportData->_cmdList = cmdList;
     m_viewportData->_swapchain = nullptr;
     m_viewportData->_renderTarget = nullptr;
@@ -1223,61 +1265,6 @@ void ImGuiWigetHandler::render(renderer::CmdListRender* cmdList)
     renderDrawData(m_viewportData, imDrawData);
 }
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
-
-
-//void ImGuiWigetMenuLayout::update(f32 dt)
-//{
-//    if (ImGui::BeginMainMenuBar())
-//    {
-//        WigetLayout::update(dt);
-//
-//        //if (ImGui::BeginMenu("File"))
-//        //{
-//        //    ImGui::EndMenu();
-//        //}
-//
-//        ////TODO
-//        //if (ImGui::BeginMenu("File"))
-//        //{
-//        //    if (ImGui::MenuItem("New")) {}
-//        //    if (ImGui::MenuItem("Open", "Ctrl+O")) {}
-//        //    if (ImGui::BeginMenu("Open Recent"))
-//        //    {
-//        //        ImGui::MenuItem("fish_hat.c");
-//        //        ImGui::MenuItem("fish_hat.inl");
-//        //        ImGui::MenuItem("fish_hat.h");
-//        //        if (ImGui::BeginMenu("More.."))
-//        //        {
-//        //            ImGui::MenuItem("Hello");
-//        //            ImGui::MenuItem("Sailor");
-//        //            if (ImGui::BeginMenu("Recurse.."))
-//        //            {
-//        //                ImGui::EndMenu();
-//        //            }
-//        //            ImGui::EndMenu();
-//        //        }
-//        //        ImGui::EndMenu();
-//        //    }
-//        //    if (ImGui::MenuItem("Save", "Ctrl+S")) {}
-//        //    if (ImGui::MenuItem("Save As..")) {}
-//
-//
-//        //    ImGui::EndMenu();
-//        //}
-//        //if (ImGui::BeginMenu("Edit"))
-//        //{
-//        //    if (ImGui::MenuItem("Undo", "CTRL+Z")) {}
-//        //    if (ImGui::MenuItem("Redo", "CTRL+Y", false, false)) {}  // Disabled item
-//        //    ImGui::Separator();
-//        //    if (ImGui::MenuItem("Cut", "CTRL+X")) {}
-//        //    if (ImGui::MenuItem("Copy", "CTRL+C")) {}
-//        //    if (ImGui::MenuItem("Paste", "CTRL+V")) {}
-//        //    ImGui::EndMenu();
-//        //}
-//
-//        ImGui::EndMainMenuBar();
-//    }
-//}
 
 } //namespace ui
 } //namespace v3d
