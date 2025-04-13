@@ -49,7 +49,7 @@ namespace ui
 
     private:
 
-        bool update(WigetHandler* handler, WigetLayout* layout, f32 dt) override;
+        bool update(WigetHandler* handler, Wiget* parent, WigetLayout* layout, f32 dt) override;
     };
 
     inline const std::string& WigetButton::getText() const
@@ -66,21 +66,21 @@ namespace ui
     inline WigetButton& WigetButton::setColor(const color::ColorRGBAF& color)
     {
         Wiget::cast_data<ContextButton>(m_data)._color = color;
-        Wiget::cast_data<ContextButton>(m_data)._stateMask |= 0x04;
+        Wiget::cast_data<ContextButton>(m_data)._stateMask |= 0x100;
         return *this;
     }
 
     inline WigetButton& WigetButton::setColorHovered(const color::ColorRGBAF& color)
     {
         Wiget::cast_data<ContextButton>(m_data)._colorHovered = color;
-        Wiget::cast_data<ContextButton>(m_data)._stateMask |= 0x08;
+        Wiget::cast_data<ContextButton>(m_data)._stateMask |= 0x200;
         return *this;
     }
 
     inline WigetButton& WigetButton::setColorActive(const color::ColorRGBAF& color)
     {
         Wiget::cast_data<ContextButton>(m_data)._colorActive = color;
-        Wiget::cast_data<ContextButton>(m_data)._stateMask |= 0x10;
+        Wiget::cast_data<ContextButton>(m_data)._stateMask |= 0x400;
         return *this;
     }
 
@@ -113,6 +113,8 @@ namespace ui
         WigetImage& setSize(const math::Dimension2D& size);
         WigetImage& setUVs(const math::RectF32& uv);
 
+        WigetImage& setOnDrawRectChanged(const OnWigetEventRect32Param& event);
+
         struct ContextImage : ContextBase
         {
             OnWigetEvent                _onClickedEvent;
@@ -120,14 +122,17 @@ namespace ui
             OnWigetEvent                _onReleasedEvent;
             OnWigetEvent                _onHoveredEvent;
             OnWigetEvent                _onUnhoveredEvent;
+            OnWigetEventRect32Param     _onDrawRectChanged;
             const renderer::Texture2D*  _texture;
             math::Dimension2D           _size;
             math::RectF32               _uv;
+
+            math::Rect32                _drawRectState;
         };
 
     private:
 
-        bool update(WigetHandler* handler, WigetLayout* layout, f32 dt) override;
+        bool update(WigetHandler* handler, Wiget* parent, WigetLayout* layout, f32 dt) override;
     };
 
     inline WigetImage& WigetImage::setTexture(const renderer::Texture2D* texture)
@@ -145,6 +150,12 @@ namespace ui
     inline WigetImage& WigetImage::setUVs(const math::RectF32& uv)
     {
         Wiget::cast_data<ContextImage>(m_data)._uv = uv;
+        return *this;
+    }
+
+    inline WigetImage& WigetImage::setOnDrawRectChanged(const OnWigetEventRect32Param& event)
+    {
+        cast_data<ContextImage>(m_data)._onDrawRectChanged = event;
         return *this;
     }
 
@@ -178,7 +189,7 @@ namespace ui
 
     private:
 
-        bool update(WigetHandler* handler, WigetLayout* layout, f32 dt) override;
+        bool update(WigetHandler* handler, Wiget* parent, WigetLayout* layout, f32 dt) override;
     };
 
     inline const std::string& WigetCheckBox::getText() const
@@ -225,7 +236,7 @@ namespace ui
 
     private:
 
-        bool update(WigetHandler* handler, WigetLayout* layout, f32 dt) override;
+        bool update(WigetHandler* handler, Wiget* parent, WigetLayout* layout, f32 dt) override;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -244,7 +255,7 @@ namespace ui
 
     private:
 
-        bool update(WigetHandler* handler, WigetLayout* layout, f32 dt) override;
+        bool update(WigetHandler* handler, Wiget* parent, WigetLayout* layout, f32 dt) override;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

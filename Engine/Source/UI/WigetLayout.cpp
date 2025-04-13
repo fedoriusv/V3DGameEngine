@@ -16,13 +16,13 @@ WigetLayout::~WigetLayout()
     //remove wigets
 }
 
-void WigetLayout::update(WigetHandler* handler, f32 dt)
+void WigetLayout::update(WigetHandler* handler, Wiget* parent, f32 dt)
 {
     for (auto wiget = m_wigets.begin(); wiget != m_wigets.end(); ++wiget)
     {
         if ((*wiget)->isVisible())
         {
-            (*wiget)->update(handler, this, dt);
+            (*wiget)->update(handler, parent, this, dt);
         }
     }
 }

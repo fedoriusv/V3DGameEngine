@@ -17,7 +17,7 @@ Wiget::Wiget(const Wiget& other) noexcept
 {
 }
 
-bool Wiget::update(WigetHandler* handler, WigetLayout* layout, f32 dt)
+bool Wiget::update(WigetHandler* handler, Wiget* parent, WigetLayout* layout, f32 dt)
 {
     ContextBase& context = cast_data<ContextBase>(m_data);
     if (context._stateMask & 0x01)

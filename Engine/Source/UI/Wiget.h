@@ -19,9 +19,16 @@ namespace ui
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     using OnWigetEvent = std::function<void(const Wiget*)>;
-    using OnWigetEventBoolParam = std::function<void(Wiget*, bool)>;
-    using OnWigetEventIntParam = std::function<void(Wiget*, s32)>;
-    using OnWigetEventFloatParam = std::function<void(Wiget*, f32)>;
+    using OnWigetEventBoolParam = std::function<void(const Wiget*, bool)>;
+    using OnWigetEventIntParam = std::function<void(const Wiget*, s32)>;
+    using OnWigetEventFloatParam = std::function<void(const Wiget*, f32)>;
+
+
+    using OnWigetEventUpdate = std::function<void(Wiget*, f32)>;
+
+    using OnWigetEventDimention2DParam = std::function<void(const Wiget*, const Wiget*, const math::Dimension2D&)>;
+    using OnWigetEventPoint2DParam = std::function<void(const Wiget*, const Wiget*, const math::Point2D&)>;
+    using OnWigetEventRect32Param = std::function<void(const Wiget*, const Wiget*, const math::Rect32&)>;
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -52,16 +59,18 @@ namespace ui
         Wiget& setVisible(bool visible);
         Wiget& setToolTip(bool show, const std::string& tip = "");
 
-        Wiget& setOnUpdate(const OnWigetEventFloatParam& event);
+        Wiget& setOnUpdate(const OnWigetEventUpdate& event);
         Wiget& setOnVisibleChanged(const OnWigetEvent& event);
         Wiget& setOnActiveChanged(const OnWigetEvent& event);
+
+        bool isStateMaskActive(u64 mask) const;
 
         struct ContextBase : Context
         {
             std::string             _toolTip;
             OnWigetEvent            _onVisibleChanged;
             OnWigetEvent            _onActiveChanged;
-            OnWigetEventFloatParam  _onUpdate;
+            OnWigetEventUpdate      _onUpdate;
             bool                    _isActive         = true;
             bool                    _isVisible        = true;
             bool                    _isPressed        = false;
@@ -71,7 +80,10 @@ namespace ui
 
             //0x01 - Active
             //0x02 - Visible
-            u64                     _stateMask        = 0; 
+            //0x04 - ForceUpdate
+            //...
+            //0x80 - Reserved
+            u64                     _stateMask        = 0;
         };
 
     protected:
@@ -85,7 +97,7 @@ namespace ui
             return *static_cast<TContext*>(context);
         }
 
-        virtual bool update(WigetHandler* handler, WigetLayout* layout, f32 dt);
+        virtual bool update(WigetHandler* handler, Wiget* parent, WigetLayout* layout, f32 dt);
 
         Context* m_data;
     };
@@ -139,7 +151,7 @@ namespace ui
         return *this;
     }
 
-    inline Wiget& Wiget::setOnUpdate(const OnWigetEventFloatParam& event)
+    inline Wiget& Wiget::setOnUpdate(const OnWigetEventUpdate& event)
     {
         cast_data<ContextBase>(m_data)._onUpdate = event;
         return *this;
@@ -155,6 +167,11 @@ namespace ui
     {
         cast_data<ContextBase>(m_data)._onActiveChanged = event;
         return *this;
+    }
+
+    inline bool Wiget::isStateMaskActive(u64 mask) const
+    {
+        return cast_data<ContextBase>(m_data)._stateMask & mask;
     }
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -181,7 +198,7 @@ namespace ui
         TWiget& setVisible(bool visible);
         TWiget& setToolTip(bool show, const std::string& tip);
 
-        TWiget& setOnUpdate(const OnWigetEventFloatParam& event);
+        TWiget& setOnUpdate(const OnWigetEventUpdate& event);
         TWiget& setOnVisibleChanged(const OnWigetEvent& event);
         TWiget& setOnActiveChanged(const OnWigetEvent& event);
     };
@@ -241,7 +258,7 @@ namespace ui
     }
 
     template<class TWiget>
-    inline TWiget& WigetBase<TWiget>::setOnUpdate(const OnWigetEventFloatParam& event)
+    inline TWiget& WigetBase<TWiget>::setOnUpdate(const OnWigetEventUpdate& event)
     {
         return *static_cast<TWiget*>(&Wiget::setOnUpdate(event));
     }

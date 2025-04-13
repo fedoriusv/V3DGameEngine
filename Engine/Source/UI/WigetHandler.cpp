@@ -21,7 +21,7 @@ void WigetHandler::update(const platform::Window* window, const v3d::event::Inpu
     {
         if (wiget->isVisible())
         {
-            wiget->update(this, nullptr, dt);
+            wiget->update(this, nullptr, nullptr, dt);
         }
     }
 }

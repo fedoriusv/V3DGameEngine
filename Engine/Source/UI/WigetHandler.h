@@ -98,14 +98,14 @@ namespace ui
         virtual bool draw_Window(Wiget* wiget, Wiget::Context* context, f32 dt) = 0;
 
         //wigets
-        virtual bool draw_Button(Wiget* wiget, Wiget::Context* context, f32 dt) = 0;
-        virtual bool draw_Image(Wiget* wiget, Wiget::Context* context, f32 dt) = 0;
-        virtual bool draw_CheckBox(Wiget* wiget, Wiget::Context* context, f32 dt) = 0;
-        virtual bool draw_RadioButtonGroup(Wiget* wiget, Wiget::Context* context, f32 dt) = 0;
-        virtual bool draw_ComboBox(Wiget* wiget, Wiget::Context* context, f32 dt) = 0;
-        virtual bool draw_ListBox(Wiget* wiget, Wiget::Context* context, f32 dt) = 0;
-        virtual bool draw_InputField(Wiget* wiget, Wiget::Context* context, f32 dt) = 0;
-        virtual bool draw_InputSlider(Wiget* wiget, Wiget::Context* context, f32 dt) = 0;
+        virtual bool draw_Button(Wiget* wiget, Wiget* parent, Wiget::Context* context, f32 dt) = 0;
+        virtual bool draw_Image(Wiget* wiget, Wiget* parent, Wiget::Context* context, f32 dt) = 0;
+        virtual bool draw_CheckBox(Wiget* wiget, Wiget* parent, Wiget::Context* context, f32 dt) = 0;
+        virtual bool draw_RadioButtonGroup(Wiget* wiget, Wiget* parent, Wiget::Context* context, f32 dt) = 0;
+        virtual bool draw_ComboBox(Wiget* wiget, Wiget* parent, Wiget::Context* context, f32 dt) = 0;
+        virtual bool draw_ListBox(Wiget* wiget, Wiget* parent, Wiget::Context* context, f32 dt) = 0;
+        virtual bool draw_InputField(Wiget* wiget, Wiget* parent, Wiget::Context* context, f32 dt) = 0;
+        virtual bool draw_InputSlider(Wiget* wiget, Wiget* parent, Wiget::Context* context, f32 dt) = 0;
 
     protected:
 

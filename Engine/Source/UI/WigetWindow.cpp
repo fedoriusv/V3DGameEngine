@@ -34,9 +34,9 @@ WigetWindow::~WigetWindow()
     }
 }
 
-bool WigetWindow::update(WigetHandler* handler, WigetLayout* layout, f32 dt)
+bool WigetWindow::update(WigetHandler* handler, Wiget* parent, WigetLayout* layout, f32 dt)
 {
-    if (Wiget::update(handler, layout, dt))
+    if (Wiget::update(handler, parent, layout, dt))
     {
         return handler->draw_Window(this, m_data, dt);
     }

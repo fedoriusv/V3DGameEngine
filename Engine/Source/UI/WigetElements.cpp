@@ -29,11 +29,11 @@ WigetButton::~WigetButton()
     }
 }
 
-bool WigetButton::update(WigetHandler* handler, WigetLayout* layout, f32 dt)
+bool WigetButton::update(WigetHandler* handler, Wiget* parent, WigetLayout* layout, f32 dt)
 {
-    if (Wiget::update(handler, layout, dt))
+    if (Wiget::update(handler, parent, layout, dt))
     {
-        return handler->draw_Button(this, m_data, dt);
+        return handler->draw_Button(this, parent, m_data, dt);
     }
 
     return false;
@@ -65,11 +65,11 @@ WigetImage::~WigetImage()
     }
 }
 
-bool WigetImage::update(WigetHandler* handler, WigetLayout* layout, f32 dt)
+bool WigetImage::update(WigetHandler* handler, Wiget* parent, WigetLayout* layout, f32 dt)
 {
-    if (Wiget::update(handler, layout, dt))
+    if (Wiget::update(handler, parent, layout, dt))
     {
-        return handler->draw_Image(this, m_data, dt);
+        return handler->draw_Image(this, parent, m_data, dt);
     }
 
     return false;
@@ -101,11 +101,11 @@ WigetCheckBox::~WigetCheckBox()
     }
 }
 
-bool WigetCheckBox::update(WigetHandler* handler, WigetLayout* layout, f32 dt)
+bool WigetCheckBox::update(WigetHandler* handler, Wiget* parent, WigetLayout* layout, f32 dt)
 {
-    if (Wiget::update(handler, layout, dt))
+    if (Wiget::update(handler, parent, layout, dt))
     {
-        return handler->draw_CheckBox(this, m_data, dt);
+        return handler->draw_CheckBox(this, parent, m_data, dt);
     }
 
     return false;
@@ -135,9 +135,9 @@ WigetInputField::~WigetInputField()
     }
 }
 
-bool WigetInputField::update(WigetHandler* handler, WigetLayout* layout, f32 dt)
+bool WigetInputField::update(WigetHandler* handler, Wiget* parent, WigetLayout* layout, f32 dt)
 {
-    return handler->draw_InputField(this, m_data, dt);
+    return handler->draw_InputField(this, parent, m_data, dt);
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -164,9 +164,9 @@ WigetInputSlider::~WigetInputSlider()
     }
 }
 
-bool WigetInputSlider::update(WigetHandler* handler, WigetLayout* layout, f32 dt)
+bool WigetInputSlider::update(WigetHandler* handler, Wiget* parent, WigetLayout* layout, f32 dt)
 {
-    return handler->draw_InputSlider(this, m_data, dt);
+    return handler->draw_InputSlider(this, parent, m_data, dt);
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////

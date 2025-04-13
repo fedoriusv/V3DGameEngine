@@ -36,7 +36,7 @@ public:
     EditorApplication(int& argc, char** argv)
         : v3d::Application(argc, argv)
     {
-        m_Window = Window::createWindow({ 1280, 720 }, { 800, 500 }, false, true, new InputEventReceiver());
+        m_Window = Window::createWindow({ 1280, 720 }, { 800, 500 }, false, true, new InputEventReceiver(), L"MainWindow");
         ASSERT(m_Window, "windows is nullptr");
     }
     
@@ -107,9 +107,12 @@ private:
         InputEventHandler::bind([this, &createBackbufferRT](const SystemEvent* event)
             {
                 Window* window = Window::getWindowsByID(event->_windowID);
-                if (m_Window == window && event->_systemEvent == SystemEvent::Destroy)
+                if (event->_systemEvent == SystemEvent::Destroy)
                 {
-                    m_Terminate = true;
+                    if (m_Window == window) //Main Window
+                    {
+                        m_Terminate = true;
+                    }
                 }
                 else if (m_Window == window && event->_systemEvent == SystemEvent::Resize)
                 {
@@ -228,7 +231,7 @@ private:
         //m_UI->createWiget<ui::WigetTabBar>();
 
 
-        m_UI->createWiget<ui::WigetWindow>("Window Test", math::Dimension2D(300, 300), math::Point2D(10, 10), ui::WigetWindow::Moveable)
+        m_UI->createWiget<ui::WigetWindow>("Window Test", math::Dimension2D(300, 600), math::Point2D(10, 10), ui::WigetWindow::Moveable)
             .setActive(true)
             .setVisible(true)
             .setOnActiveChanged([](const ui::Wiget* w) -> void
@@ -301,13 +304,17 @@ private:
             );
 
         math::Dimension2D viewportSize(800, 600);
-        ui::WigetWindow& viewport = m_UI->createWiget<ui::WigetWindow>("Viewport", viewportSize, m_Window->getPosition(), ui::WigetWindow::Moveable);
+        ui::WigetWindow& viewport = m_UI->createWiget<ui::WigetWindow>("Viewport", viewportSize, m_Window->getPosition(), ui::WigetWindow::Moveable | ui::WigetWindow::AutoResizeByContent);
         viewport
             .setActive(true)
             .setVisible(true)
-            .setOnSizeChanged([this](const ui::Wiget* w, const math::Dimension2D& dim) -> void
+            .setOnSizeChanged([](const ui::Wiget* w, const ui::Wiget* p, const math::Dimension2D& size) -> void
                 {
-                    m_EditorScene->onChanged(dim);
+                    LOG_DEBUG("OnSizeChanged [%d %d]", size.m_width, size.m_height);
+                })
+            .setOnPositionChanged([](const ui::Wiget* w, const ui::Wiget* p, const math::Point2D& pos) -> void
+                {
+                    LOG_DEBUG("OnPosChanged [%d %d]", pos.m_x, pos.m_y);
                 })
             .addWiget(ui::WigetImage(viewportSize)
                 .setOnUpdate([this](ui::Wiget* w, f32 dt) -> void
@@ -315,6 +322,11 @@ private:
                         auto texture = m_EditorScene->getOutputTexture();
                         static_cast<ui::WigetImage*>(w)->setTexture(texture);
                         static_cast<ui::WigetImage*>(w)->setSize(texture->getDimension());
+                    })
+                .setOnDrawRectChanged([this](const ui::Wiget* w, const ui::Wiget* p, const math::Rect32& dim) -> void
+                    {
+                        const platform::Window* window = static_cast<const ui::WigetWindow*>(p)->getWindow();
+                        m_EditorScene->onChanged(window, dim);
                     })
                 );
         m_ViewportWiget = &viewport;
@@ -325,8 +337,6 @@ private:
 
         m_Window->getInputEventReceiver()->attach(InputEvent::InputEventType::MouseInputEvent, m_EditorScene);
         m_Window->getInputEventReceiver()->attach(InputEvent::InputEventType::KeyboardInputEvent, m_EditorScene);
-
-
     }
     
     void Run()

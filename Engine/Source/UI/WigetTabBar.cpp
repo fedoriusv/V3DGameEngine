@@ -29,9 +29,9 @@ WigetTabBar::~WigetTabBar()
     }
 }
 
-bool WigetTabBar::update(WigetHandler* handler, WigetLayout* layout, f32 dt)
+bool WigetTabBar::update(WigetHandler* handler, Wiget* parent, WigetLayout* layout, f32 dt)
 {
-    if (Wiget::update(handler, layout, dt))
+    if (Wiget::update(handler, parent, layout, dt))
     {
         return  handler->draw_TabBar(this, m_data, dt);
     }

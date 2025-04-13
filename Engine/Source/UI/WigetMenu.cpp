@@ -29,9 +29,9 @@ WigetMenuBar::~WigetMenuBar()
     }
 }
 
-bool WigetMenuBar::update(WigetHandler* handler, WigetLayout* layout, f32 dt)
+bool WigetMenuBar::update(WigetHandler* handler, Wiget* parent, WigetLayout* layout, f32 dt)
 {
-    if (Wiget::update(handler, layout, dt))
+    if (Wiget::update(handler, parent, layout, dt))
     {
         return  handler->draw_MenuBar(this, m_data, dt);
     }
@@ -63,9 +63,9 @@ WigetMenu::~WigetMenu()
     }
 }
 
-bool WigetMenu::update(WigetHandler* handler, WigetLayout* layout, f32 dt)
+bool WigetMenu::update(WigetHandler* handler, Wiget* parent, WigetLayout* layout, f32 dt)
 {
-    if (Wiget::update(handler, layout, dt))
+    if (Wiget::update(handler, parent, layout, dt))
     {
         return handler->draw_Menu(this, m_data, dt);
     }
@@ -97,9 +97,9 @@ WigetMenuItem::~WigetMenuItem()
     }
 }
 
-bool WigetMenuItem::update(WigetHandler* handler, WigetLayout* layout, f32 dt)
+bool WigetMenuItem::update(WigetHandler* handler, Wiget* parent, WigetLayout* layout, f32 dt)
 {
-    if (Wiget::update(handler, layout, dt))
+    if (Wiget::update(handler, parent, layout, dt))
     {
         return handler->draw_MenuItem(this, m_data, dt);
     }

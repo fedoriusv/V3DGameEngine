@@ -23,7 +23,8 @@ EditorScene::EditorScene()
     , m_Geometry(nullptr)
 
     , m_Camera(new scene::CameraArcballHandler(new scene::Camera(math::Vector3D(0.0f, 0.0f, 0.0f), math::Vector3D(0.0f, 1.0f, 0.0f)), 3.0f, k_nearValue + 1.0f, k_farValue - 10.0f))
-    , m_Vewiport(nullptr)
+    , m_CurrentWindow(nullptr)
+    , m_VewiportTarget(nullptr)
 {
     InputEventHandler::bind([this](const MouseInputEvent* event)
         {
@@ -45,6 +46,7 @@ EditorScene::~EditorScene()
 void EditorScene::init(renderer::Device* device, const v3d::math::Dimension2D& viewportSize)
 {
     m_Device = device;
+    m_CurrentViewportRect = math::Rect32(0, 0, viewportSize.m_width, viewportSize.m_height);
     renderer::CmdListRender* CmdList = m_Device->createCommandList<renderer::CmdListRender>(Device::GraphicMask);
 
     m_Camera->setPerspective(45.0f, viewportSize, k_nearValue, k_farValue);
@@ -140,7 +142,7 @@ void EditorScene::init(renderer::Device* device, const v3d::math::Dimension2D& v
             renderer::VertexInputAttributeDesc::InputAttribute(0, 0, renderer::Format_R32G32B32_SFloat, sizeof(math::Vector3D)),
         });
 
-    m_Pipeline = new renderer::GraphicsPipelineState(m_Device, vertexDesc, m_Vewiport->getRenderPassDesc(), m_Program);
+    m_Pipeline = new renderer::GraphicsPipelineState(m_Device, vertexDesc, m_VewiportTarget->getRenderPassDesc(), m_Program);
     m_Pipeline->setPrimitiveTopology(renderer::PrimitiveTopology::PrimitiveTopology_TriangleList);
     m_Pipeline->setFrontFace(renderer::FrontFace::FrontFace_Clockwise);
     m_Pipeline->setCullMode(renderer::CullMode::CullMode_None);
@@ -157,27 +159,27 @@ void EditorScene::init(renderer::Device* device, const v3d::math::Dimension2D& v
 
 void EditorScene::recreateViewport(const v3d::math::Dimension2D& viewportSize)
 {
-    if (m_Vewiport)
+    if (m_VewiportTarget)
     {
-        renderer::Texture2D* colorAttachment = m_Vewiport->getColorTexture<renderer::Texture2D>(0);
+        renderer::Texture2D* colorAttachment = m_VewiportTarget->getColorTexture<renderer::Texture2D>(0);
         delete colorAttachment;
 
-        renderer::Texture2D* depthAttachment = m_Vewiport->getDepthStencilTexture< renderer::Texture2D>();
+        renderer::Texture2D* depthAttachment = m_VewiportTarget->getDepthStencilTexture< renderer::Texture2D>();
         delete depthAttachment;
 
-        delete m_Vewiport;
-        m_Vewiport = nullptr;
+        delete m_VewiportTarget;
+        m_VewiportTarget = nullptr;
     }
 
 
-    m_Vewiport = new renderer::RenderTargetState(m_Device, viewportSize);
+    m_VewiportTarget = new renderer::RenderTargetState(m_Device, viewportSize);
 
     renderer::Texture2D* colorAttachment = new renderer::Texture2D(m_Device, renderer::TextureUsage::TextureUsage_Attachment | renderer::TextureUsage::TextureUsage_Sampled | renderer::TextureUsage::TextureUsage_Write,
         renderer::Format::Format_R8G8B8A8_UNorm, viewportSize, renderer::TextureSamples::TextureSamples_x1, "ViewportColorAttachment");
     renderer::Texture2D* depthAttachment = new renderer::Texture2D(m_Device, renderer::TextureUsage::TextureUsage_Attachment | renderer::TextureUsage::TextureUsage_Write,
         renderer::Format::Format_D32_SFloat_S8_UInt, viewportSize, renderer::TextureSamples::TextureSamples_x1, "ViewportDepthAttachment");
 
-    m_Vewiport->setColorTexture(0, colorAttachment,
+    m_VewiportTarget->setColorTexture(0, colorAttachment,
         {
             renderer::RenderTargetLoadOp::LoadOp_Clear, renderer::RenderTargetStoreOp::StoreOp_Store, math::Vector4D(0.0f)
         },
@@ -186,7 +188,7 @@ void EditorScene::recreateViewport(const v3d::math::Dimension2D& viewportSize)
         }
     );
 
-    m_Vewiport->setDepthStencilTexture(depthAttachment,
+    m_VewiportTarget->setDepthStencilTexture(depthAttachment,
         {
             renderer::RenderTargetLoadOp::LoadOp_Clear, renderer::RenderTargetStoreOp::StoreOp_Store, 0.0f
         },
@@ -211,7 +213,7 @@ void EditorScene::update(f32 dt)
 
 void EditorScene::render(v3d::renderer::CmdListRender* cmdList)
 {
-    cmdList->beginRenderTarget(*m_Vewiport);
+    cmdList->beginRenderTarget(*m_VewiportTarget);
 
     //update uniforms
     struct UBO
@@ -222,8 +224,8 @@ void EditorScene::render(v3d::renderer::CmdListRender* cmdList)
     };
 
     //render
-    cmdList->setViewport(math::Rect32(0, 0, m_Vewiport->getRenderArea().m_width, m_Vewiport->getRenderArea().m_height));
-    cmdList->setScissor(math::Rect32(0, 0, m_Vewiport->getRenderArea().m_width, m_Vewiport->getRenderArea().m_height));
+    cmdList->setViewport(math::Rect32(0, 0, m_VewiportTarget->getRenderArea().m_width, m_VewiportTarget->getRenderArea().m_height));
+    cmdList->setScissor(math::Rect32(0, 0, m_VewiportTarget->getRenderArea().m_width, m_VewiportTarget->getRenderArea().m_height));
     cmdList->setPipelineState(*m_Pipeline);
 
     UBO ubo1;
@@ -251,34 +253,51 @@ void EditorScene::render(v3d::renderer::CmdListRender* cmdList)
     cmdList->endRenderTarget();
 }
 
-void EditorScene::onChanged(const v3d::math::Dimension2D& viewportSize)
+void EditorScene::onChanged(const platform::Window* window, const v3d::math::Rect32& viewport)
 {
-    if (viewportSize != m_Vewiport->getRenderArea())
+    if (viewport != m_CurrentViewportRect)
     {
-        recreateViewport(viewportSize);
+        if (m_CurrentViewportRect.getWidth() != viewport.getWidth() || m_CurrentViewportRect.getHeight() != viewport.getHeight())
+        {
+            recreateViewport({ (u32)viewport.getWidth(), (u32)viewport.getHeight() });
+        }
+
+        m_CurrentViewportRect = viewport;
     }
+    m_CurrentWindow = window;
 }
 
 const renderer::Texture2D* EditorScene::getOutputTexture() const
 {
-    return m_Vewiport->getColorTexture<renderer::Texture2D>(0);
+    return m_VewiportTarget->getColorTexture<renderer::Texture2D>(0);
+}
+
+const v3d::math::Rect32& EditorScene::getViewportArea() const
+{
+    return m_CurrentViewportRect;
 }
 
 bool EditorScene::handleInputEvent(event::InputEventHandler* handler, const event::InputEvent* event)
 {
-    if (event->_eventType == event::InputEvent::InputEventType::MouseInputEvent)
+    if (m_CurrentWindow && m_CurrentWindow->ID() == event->_windowID && m_CurrentWindow->isFocused())
     {
-        const event::MouseInputEvent* mouseEvent = static_cast<const event::MouseInputEvent*>(event);
-        m_Camera->handleMouseCallback(handler, mouseEvent);
+        if (event->_eventType == event::InputEvent::InputEventType::MouseInputEvent)
+        {
+            const event::MouseInputEvent* mouseEvent = static_cast<const event::MouseInputEvent*>(event);
+            if (m_CurrentViewportRect.isPointInside({ mouseEvent->_absoluteCoordinates.m_x, mouseEvent->_absoluteCoordinates.m_y }))
+            {
+                m_Camera->handleMouseCallback(handler, mouseEvent);
+            }
 
-        return true;
-    }
-    else if (event->_eventType == event::InputEvent::InputEventType::TouchInputEvent)
-    {
-        const event::TouchInputEvent* touchEvent = static_cast<const event::TouchInputEvent*>(event);
-        m_Camera->handleTouchCallback(handler, touchEvent);
+            return true;
+        }
+        else if (event->_eventType == event::InputEvent::InputEventType::TouchInputEvent)
+        {
+            const event::TouchInputEvent* touchEvent = static_cast<const event::TouchInputEvent*>(event);
+            m_Camera->handleTouchCallback(handler, touchEvent);
 
-        return true;
+            return true;
+        }
     }
 
     return false;

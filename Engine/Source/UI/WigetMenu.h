@@ -29,7 +29,7 @@ namespace ui
 
     private:
 
-        bool update(WigetHandler* handler, WigetLayout* layout, f32 dt) override;
+        bool update(WigetHandler* handler, Wiget* parent, WigetLayout* layout, f32 dt) override;
     };
 
     template<class TWiget>
@@ -70,7 +70,7 @@ namespace ui
 
     private:
 
-        bool update(WigetHandler* handler, WigetLayout* layout, f32 dt) override;
+        bool update(WigetHandler* handler, Wiget* parent, WigetLayout* layout, f32 dt) override;
     };
 
     inline const std::string& WigetMenu::getText() const
@@ -121,7 +121,7 @@ namespace ui
 
     private:
 
-        bool update(WigetHandler* handler, WigetLayout* layout, f32 dt) override;
+        bool update(WigetHandler* handler, Wiget* parent, WigetLayout* layout, f32 dt) override;
     };
 
     inline const std::string& WigetMenuItem::getText() const

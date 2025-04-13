@@ -39,11 +39,11 @@ WigetRadioButtonGroup::~WigetRadioButtonGroup()
     }
 }
 
-bool WigetRadioButtonGroup::update(WigetHandler* handler, WigetLayout* layout, f32 dt)
+bool WigetRadioButtonGroup::update(WigetHandler* handler, Wiget* parent, WigetLayout* layout, f32 dt)
 {
-    if (Wiget::update(handler, layout, dt))
+    if (Wiget::update(handler, parent, layout, dt))
     {
-        return handler->draw_RadioButtonGroup(this, m_data, dt);
+        return handler->draw_RadioButtonGroup(this, parent, m_data, dt);
     }
 
     return false;
@@ -73,11 +73,11 @@ WigetComboBox::~WigetComboBox()
     }
 }
 
-bool WigetComboBox::update(WigetHandler* handler, WigetLayout* layout, f32 dt)
+bool WigetComboBox::update(WigetHandler* handler, Wiget* parent, WigetLayout* layout, f32 dt)
 {
-    if (Wiget::update(handler, layout, dt))
+    if (Wiget::update(handler, parent, layout, dt))
     {
-        return handler->draw_ComboBox(this, m_data, dt);
+        return handler->draw_ComboBox(this, parent, m_data, dt);
     }
 
     return false;
@@ -107,11 +107,11 @@ WigetListBox::~WigetListBox()
     }
 }
 
-bool WigetListBox::update(WigetHandler* handler, WigetLayout* layout, f32 dt)
+bool WigetListBox::update(WigetHandler* handler, Wiget* parent, WigetLayout* layout, f32 dt)
 {
-    if (Wiget::update(handler, layout, dt))
+    if (Wiget::update(handler, parent, layout, dt))
     {
-        return handler->draw_ListBox(this, m_data, dt);
+        return handler->draw_ListBox(this, parent, m_data, dt);
     }
 
     return false;

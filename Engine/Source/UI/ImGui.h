@@ -67,14 +67,15 @@ namespace ui
         bool draw_TabBar(Wiget* wiget, Wiget::Context* context, f32 dt) override;
 
         bool draw_Window(Wiget* wiget, Wiget::Context* context, f32 dt) override;
-        bool draw_Button(Wiget* wiget, Wiget::Context* context, f32 dt) override;
-        bool draw_Image(Wiget* wiget, Wiget::Context* context, f32 dt) override;
-        bool draw_CheckBox(Wiget* wiget, Wiget::Context* context, f32 dt) override;
-        bool draw_RadioButtonGroup(Wiget* wiget, Wiget::Context* context, f32 dt) override;
-        bool draw_ComboBox(Wiget* wiget, Wiget::Context* context, f32 dt) override;
-        bool draw_ListBox(Wiget* wiget, Wiget::Context* context, f32 dt) override;
-        bool draw_InputField(Wiget* wiget, Wiget::Context* context, f32 dt) override;
-        bool draw_InputSlider(Wiget* wiget, Wiget::Context* context, f32 dt) override;
+
+        bool draw_Button(Wiget* wiget, Wiget* parent, Wiget::Context* context, f32 dt) override;
+        bool draw_Image(Wiget* wiget, Wiget* parent, Wiget::Context* context, f32 dt) override;
+        bool draw_CheckBox(Wiget* wiget, Wiget* parent, Wiget::Context* context, f32 dt) override;
+        bool draw_RadioButtonGroup(Wiget* wiget, Wiget* parent, Wiget::Context* context, f32 dt) override;
+        bool draw_ComboBox(Wiget* wiget, Wiget* parent, Wiget::Context* context, f32 dt) override;
+        bool draw_ListBox(Wiget* wiget, Wiget* parent, Wiget::Context* context, f32 dt) override;
+        bool draw_InputField(Wiget* wiget, Wiget* parent, Wiget::Context* context, f32 dt) override;
+        bool draw_InputSlider(Wiget* wiget, Wiget* parent, Wiget::Context* context, f32 dt) override;
 
     private:
 

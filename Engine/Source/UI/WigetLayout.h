@@ -46,7 +46,7 @@ namespace ui
 
     public:
 
-        virtual void update(WigetHandler* handler, f32 dt);
+        virtual void update(WigetHandler* handler, Wiget* parent, f32 dt);
 
         std::vector<Wiget*> m_wigets;
         //aligment and paddings

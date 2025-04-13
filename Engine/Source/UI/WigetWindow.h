@@ -8,9 +8,6 @@ namespace ui
 {
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    using OnWigetEventDimention2DParam = std::function<void(const Wiget*, const math::Dimension2D&)>;
-    using OnWigetEventPoint2DParam = std::function<void(const Wiget*, const math::Point2D&)>;
-
     /**
     * @brief WigetWindow wiget class
     */
@@ -22,6 +19,8 @@ namespace ui
         {
             Moveable = 1 << 0,
             Resizeable = 1 << 1,
+            Scrollable = 1 << 2,
+            AutoResizeByContent = 1 << 3,
         };
 
         typedef u64 WindowFlags;
@@ -34,7 +33,7 @@ namespace ui
         const math::Point2D& getPosition() const;
         const std::string& getTitle() const;
 
-        const platform::Window* getActiveWindow() const;
+        const platform::Window* getWindow() const;
 
         WigetWindow& setSize(const math::Dimension2D& size);
         WigetWindow& setPosition(const math::Point2D& position);
@@ -58,10 +57,10 @@ namespace ui
             WigetLayout                  _layout;
             OnWigetEventDimention2DParam _onSizeChanged;
             OnWigetEventPoint2DParam     _onPositionChanged;
-            platform::Window*            _activeWindow = nullptr;
+            platform::Window*            _currentWindow = nullptr;
         };
 
-        bool update(WigetHandler* handler, WigetLayout* layout, f32 dt) override;
+        bool update(WigetHandler* handler, Wiget* parent, WigetLayout* layout, f32 dt) override;
 
     };
 
@@ -80,9 +79,9 @@ namespace ui
         return  Wiget::cast_data<ContextWindow>(m_data)._title;
     }
 
-    inline const platform::Window* WigetWindow::getActiveWindow() const
+    inline const platform::Window* WigetWindow::getWindow() const
     {
-        return  Wiget::cast_data<ContextWindow>(m_data)._activeWindow;
+        return  Wiget::cast_data<ContextWindow>(m_data)._currentWindow;
     }
 
     inline WigetWindow& WigetWindow::setSize(const math::Dimension2D& size)
