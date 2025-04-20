@@ -26,7 +26,6 @@ namespace math
         T& operator[](u32 index);
 
         TVector2D<T>& operator=(const TVector2D<T>& other);
-        TVector2D<T>& operator=(const T* other);
 
         [[nodiscard]] TVector2D<T> operator+(const TVector2D<T>& other) const;
         [[nodiscard]] TVector2D<T> operator+(const T scalar) const;

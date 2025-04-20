@@ -28,7 +28,6 @@ namespace math
         T& operator[](u32 index);
 
         TVector3D<T>& operator=(const TVector3D<T>& other);
-        TVector3D<T>& operator=(const T* other);
 
         [[nodiscard]] TVector3D<T> operator+(const TVector3D<T>& other) const;
         [[nodiscard]] TVector3D<T> operator+(const T scalar) const;

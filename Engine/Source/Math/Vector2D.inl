@@ -49,15 +49,6 @@ namespace math
     }
 
     template<class T>
-    inline TVector2D<T>& TVector2D<T>::operator=(const T* other)
-    {
-        m_x = other[0];
-        m_y = other[1];
-
-        return *this;
-    }
-
-    template<class T>
     inline TVector2D<T> TVector2D<T>::operator+(const TVector2D<T>& other) const
     {
         return TVector2D<T>(m_x + other.m_x, m_y + other.m_y);
