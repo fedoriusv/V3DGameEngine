@@ -8,6 +8,7 @@ namespace ui
 
 WigetHandler::WigetHandler(renderer::Device* device) noexcept
     : m_device(device)
+    , m_uiDrawer(nullptr)
 {
 }
 
@@ -26,9 +27,9 @@ void WigetHandler::update(const platform::Window* window, const v3d::event::Inpu
     }
 }
 
-void WigetHandler::render(renderer::CmdListRender* cmdList)
+bool WigetHandler::render(renderer::CmdListRender* cmdList)
 {
-    //do nothing
+    return false;
 }
 
 } // namespace ui

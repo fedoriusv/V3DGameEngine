@@ -1,5 +1,6 @@
 #include "WigetGroups.h"
 #include "WigetHandler.h"
+#include "WigetLayout.h"
 
 namespace v3d
 {
@@ -9,12 +10,12 @@ namespace ui
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 
 WigetRadioButtonGroup::WigetRadioButtonGroup() noexcept
-    : WigetGroup<WigetRadioButtonGroup>(V3D_NEW(WigetRadioButtonGroup::ContextRadioButtonGroup, memory::MemoryLabel::MemoryUI)())
+    : WigetGroupBase<WigetRadioButtonGroup>(V3D_NEW(StateType, memory::MemoryLabel::MemoryUI)())
 {
 }
 
 WigetRadioButtonGroup::WigetRadioButtonGroup(std::vector<std::string>& buttons) noexcept
-    : WigetGroup<WigetRadioButtonGroup>(V3D_NEW(WigetRadioButtonGroup::ContextRadioButtonGroup, memory::MemoryLabel::MemoryUI)())
+    : WigetGroupBase<WigetRadioButtonGroup>(V3D_NEW(StateType, memory::MemoryLabel::MemoryUI)())
 {
     for (auto& btn : buttons)
     {
@@ -23,11 +24,11 @@ WigetRadioButtonGroup::WigetRadioButtonGroup(std::vector<std::string>& buttons) 
 }
 
 WigetRadioButtonGroup::WigetRadioButtonGroup(const WigetRadioButtonGroup& other) noexcept
-    : WigetGroup<WigetRadioButtonGroup>(other)
+    : WigetGroupBase<WigetRadioButtonGroup>(other)
 {
-    WigetRadioButtonGroup::ContextRadioButtonGroup* context = V3D_NEW(WigetRadioButtonGroup::ContextRadioButtonGroup, memory::MemoryLabel::MemoryUI)();
-    *context = *static_cast<WigetRadioButtonGroup::ContextRadioButtonGroup*>(other.m_data);
-    m_data = context;
+    StateType* state = V3D_NEW(StateType, memory::MemoryLabel::MemoryUI)();
+    *state = *static_cast<StateType*>(other.m_data);
+    m_data = state;
 }
 
 WigetRadioButtonGroup::~WigetRadioButtonGroup()
@@ -39,29 +40,34 @@ WigetRadioButtonGroup::~WigetRadioButtonGroup()
     }
 }
 
-bool WigetRadioButtonGroup::update(WigetHandler* handler, Wiget* parent, WigetLayout* layout, f32 dt)
+bool WigetRadioButtonGroup::update(WigetHandler* handler, Wiget* parent, Wiget* layout, f32 dt)
 {
     if (Wiget::update(handler, parent, layout, dt))
     {
-        return handler->draw_RadioButtonGroup(this, parent, m_data, dt);
+        return handler->getWigetDrawer()->draw_RadioButtonGroup(this, parent, static_cast<WigetType*>(layout)->m_data, m_data);
     }
 
     return false;
 }
 
+Wiget* WigetRadioButtonGroup::copy() const
+{
+    return V3D_NEW(WigetRadioButtonGroup, memory::MemoryLabel::MemoryUI)(*this);
+}
+
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 
 WigetComboBox::WigetComboBox() noexcept
-    : WigetGroup<WigetComboBox>(V3D_NEW(WigetComboBox::ContextComboBox, memory::MemoryLabel::MemoryUI)())
+    : WigetGroupBase<WigetComboBox>(V3D_NEW(StateType, memory::MemoryLabel::MemoryUI)())
 {
 }
 
 WigetComboBox::WigetComboBox(const WigetComboBox& other) noexcept
-    : WigetGroup<WigetComboBox>(other)
+    : WigetGroupBase<WigetComboBox>(other)
 {
-    WigetComboBox::ContextComboBox* context = V3D_NEW(WigetComboBox::ContextComboBox, memory::MemoryLabel::MemoryUI)();
-    *context = *static_cast<WigetComboBox::ContextComboBox*>(other.m_data);
-    m_data = context;
+    StateType* state = V3D_NEW(StateType, memory::MemoryLabel::MemoryUI)();
+    *state = *static_cast<StateType*>(other.m_data);
+    m_data = state;
 }
 
 WigetComboBox::~WigetComboBox()
@@ -73,29 +79,34 @@ WigetComboBox::~WigetComboBox()
     }
 }
 
-bool WigetComboBox::update(WigetHandler* handler, Wiget* parent, WigetLayout* layout, f32 dt)
+bool WigetComboBox::update(WigetHandler* handler, Wiget* parent, Wiget* layout, f32 dt)
 {
     if (Wiget::update(handler, parent, layout, dt))
     {
-        return handler->draw_ComboBox(this, parent, m_data, dt);
+        return handler->getWigetDrawer()->draw_ComboBox(this, parent, static_cast<WigetType*>(layout)->m_data, m_data);
     }
 
     return false;
 }
 
+Wiget* WigetComboBox::copy() const
+{
+    return V3D_NEW(WigetComboBox, memory::MemoryLabel::MemoryUI)(*this);
+}
+
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 
 WigetListBox::WigetListBox() noexcept
-    : WigetGroup<WigetListBox>(V3D_NEW(WigetListBox::ContextListBox, memory::MemoryLabel::MemoryUI)())
+    : WigetGroupBase<WigetListBox>(V3D_NEW(StateType, memory::MemoryLabel::MemoryUI)())
 {
 }
 
 WigetListBox::WigetListBox(const WigetListBox& other) noexcept
-    : WigetGroup<WigetListBox>(other)
+    : WigetGroupBase<WigetListBox>(other)
 {
-    WigetListBox::ContextListBox* context = V3D_NEW(WigetListBox::ContextListBox, memory::MemoryLabel::MemoryUI)();
-    *context = *static_cast<WigetListBox::ContextListBox*>(other.m_data);
-    m_data = context;
+    StateType* state = V3D_NEW(StateType, memory::MemoryLabel::MemoryUI)();
+    *state = *static_cast<StateType*>(other.m_data);
+    m_data = state;
 }
 
 WigetListBox::~WigetListBox()
@@ -107,14 +118,19 @@ WigetListBox::~WigetListBox()
     }
 }
 
-bool WigetListBox::update(WigetHandler* handler, Wiget* parent, WigetLayout* layout, f32 dt)
+bool WigetListBox::update(WigetHandler* handler, Wiget* parent, Wiget* layout, f32 dt)
 {
     if (Wiget::update(handler, parent, layout, dt))
     {
-        return handler->draw_ListBox(this, parent, m_data, dt);
+        return handler->getWigetDrawer()->draw_ListBox(this, parent, static_cast<WigetType*>(layout)->m_data, m_data);
     }
 
     return false;
+}
+
+Wiget* WigetListBox::copy() const
+{
+    return V3D_NEW(WigetListBox, memory::MemoryLabel::MemoryUI)(*this);
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////

@@ -2,6 +2,7 @@
 
 #include "Common.h"
 #include "Wiget.h"
+#include "WigetLayout.h"
 
 #include "Renderer/RenderTargetState.h"
 
@@ -31,6 +32,8 @@ namespace renderer
 namespace ui
 {
     /////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    class WigetDrawer;
 
     /**
     * @brief WigetHandler base class
@@ -70,42 +73,15 @@ namespace ui
             return *obj;
         }
 
-        //template<class TWiget>
-        //TWiget& addWiget(TWiget& wiget)
-        //{
-        //    TWiget* obj = V3D_NEW(TWiget(wiget);
-        //    m_wigets.push_back(obj);
-        //    return *obj;
-        //}
-
         virtual void update(const platform::Window* window, const v3d::event::InputEventHandler* handler, f32 dt);
-        virtual void render(renderer::CmdListRender* cmdList);
+        virtual bool render(renderer::CmdListRender* cmdList);
 
         virtual void handleMouseCallback(const event::InputEventHandler* handler, const event::MouseInputEvent* event) = 0;
         virtual void handleKeyboardCallback(const v3d::event::InputEventHandler* handler, const event::KeyboardInputEvent* event) = 0;
         virtual void handleGamepadCallback(const v3d::event::InputEventHandler* handler, const event::GamepadInputEvent* event) = 0;
         virtual void handleSystemCallback(const v3d::event::InputEventHandler* handler, const event::SystemEvent* event) = 0;
 
-    public:
-
-        //Menu
-        virtual bool draw_MenuBar(Wiget* wiget, Wiget::Context* context, f32 dt) = 0;
-        virtual bool draw_Menu(Wiget* wiget, Wiget::Context* context, f32 dt) = 0;
-        virtual bool draw_MenuItem(Wiget* wiget, Wiget::Context* context, f32 dt) = 0;
-        virtual bool draw_TabBar(Wiget* wiget, Wiget::Context* context, f32 dt) = 0;
-
-        //Windows
-        virtual bool draw_Window(Wiget* wiget, Wiget::Context* context, f32 dt) = 0;
-
-        //wigets
-        virtual bool draw_Button(Wiget* wiget, Wiget* parent, Wiget::Context* context, f32 dt) = 0;
-        virtual bool draw_Image(Wiget* wiget, Wiget* parent, Wiget::Context* context, f32 dt) = 0;
-        virtual bool draw_CheckBox(Wiget* wiget, Wiget* parent, Wiget::Context* context, f32 dt) = 0;
-        virtual bool draw_RadioButtonGroup(Wiget* wiget, Wiget* parent, Wiget::Context* context, f32 dt) = 0;
-        virtual bool draw_ComboBox(Wiget* wiget, Wiget* parent, Wiget::Context* context, f32 dt) = 0;
-        virtual bool draw_ListBox(Wiget* wiget, Wiget* parent, Wiget::Context* context, f32 dt) = 0;
-        virtual bool draw_InputField(Wiget* wiget, Wiget* parent, Wiget::Context* context, f32 dt) = 0;
-        virtual bool draw_InputSlider(Wiget* wiget, Wiget* parent, Wiget::Context* context, f32 dt) = 0;
+        WigetDrawer* getWigetDrawer() const;
 
     protected:
 
@@ -116,10 +92,63 @@ namespace ui
         virtual void destroy() = 0;
 
         renderer::Device* const m_device;
+        WigetDrawer*            m_uiDrawer;
         std::vector<Wiget*>     m_wigets;
     };
 
+    inline WigetDrawer* WigetHandler::getWigetDrawer() const
+    {
+        return m_uiDrawer;
+    }
+
     /////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    class WigetDrawer
+    {
+    public:
+
+        WigetDrawer() noexcept = default;
+        virtual ~WigetDrawer() = default;
+
+        //Menu
+        virtual bool draw_MenuBar(Wiget* wiget, Wiget::State* state, f32 dt) = 0;
+        virtual bool draw_Menu(Wiget* wiget, Wiget* base, Wiget::State* layout, Wiget::State* state, f32 dt) = 0;
+        virtual bool draw_MenuItem(Wiget* wiget, Wiget* base, Wiget::State* layout, Wiget::State* state) = 0;
+
+        //TabBar
+        virtual bool draw_TabBar(Wiget* wiget, Wiget::State* state, f32 dt) = 0;
+        virtual bool draw_TabItem(Wiget* wiget, Wiget* base, Wiget::State* layout, Wiget::State* state) = 0;
+
+        //Windows
+        virtual bool draw_Window(Wiget* wiget, Wiget::State* state, f32 dt) = 0;
+
+        //Wigets
+        virtual bool draw_Text(Wiget* wiget, Wiget* base, Wiget::State* layout, Wiget::State* state) = 0;
+        virtual bool draw_Button(Wiget* wiget, Wiget* base, Wiget::State* layout, Wiget::State* state) = 0;
+        virtual bool draw_Image(Wiget* wiget, Wiget* base, Wiget::State* layout, Wiget::State* state) = 0;
+        virtual bool draw_CheckBox(Wiget* wiget, Wiget* base, Wiget::State* layout, Wiget::State* state) = 0;
+        virtual bool draw_RadioButtonGroup(Wiget* wiget, Wiget* base, Wiget::State* layout, Wiget::State* state) = 0;
+        virtual bool draw_ComboBox(Wiget* wiget, Wiget* base, Wiget::State* layout, Wiget::State* state) = 0;
+        virtual bool draw_ListBox(Wiget* wiget, Wiget* base, Wiget::State* layout, Wiget::State* state) = 0;
+        virtual bool draw_InputField(Wiget* wiget, Wiget* base, Wiget::State* layout, Wiget::State* state) = 0;
+        virtual bool draw_InputSlider(Wiget* wiget, Wiget* base, Wiget::State* layout, Wiget::State* state) = 0;
+
+        //Layout
+        virtual void draw_BeginLayoutState(Wiget* layout, Wiget* base, Wiget::State* state) = 0;
+        virtual void draw_EndLayoutState(Wiget* layout, Wiget* base, Wiget::State* state) = 0;
+
+
+        virtual math::Vector2D get_LayoutPadding() const = 0;
+        virtual math::Vector2D get_ItemSpacing() const = 0;
+
+        virtual math::Vector2D calculate_TextSize(Wiget* wiget, Wiget::State* layout, Wiget::State* state) = 0;
+        virtual math::Vector2D calculate_ButtonSize(Wiget* wiget, Wiget::State* layout, Wiget::State* state) = 0;
+        virtual math::Vector2D calculate_ImageSize(Wiget* wiget, Wiget::State* layout, Wiget::State* state) = 0;
+        virtual math::Vector2D calculate_CheckBoxSize(Wiget* wiget, Wiget::State* layout, Wiget::State* state) = 0;
+        virtual math::Vector2D calculate_RadioButtonGroupSize(Wiget* wiget, Wiget::State* layout, Wiget::State* state) = 0;
+        virtual math::Vector2D calculate_ComboBoxSize(Wiget* wiget, Wiget::State* layout, Wiget::State* state) = 0;
+        virtual math::Vector2D calculate_ListBoxSize(Wiget* wiget, Wiget::State* layout, Wiget::State* state) = 0;
+    };
 
 } // namespace ui
 } // namespace v3d

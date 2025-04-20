@@ -7,43 +7,75 @@ namespace v3d
 namespace ui
 {
 
-Wiget::Wiget(Wiget::Context* context) noexcept
-    : m_data(context)
+static u64 s_uidGenerator = 0;
+
+Wiget::Wiget(Wiget::State* state) noexcept
+    : m_data(state)
 {
+    ++s_uidGenerator;
+    cast_data<StateBase>(m_data)._uid = s_uidGenerator;
 }
 
 Wiget::Wiget(const Wiget& other) noexcept
-    : m_data(nullptr) //allocate and copy on child constructor
+    : m_data(nullptr) //Allocate and copy in the child constructor
 {
 }
 
-bool Wiget::update(WigetHandler* handler, Wiget* parent, WigetLayout* layout, f32 dt)
+Wiget::Wiget(Wiget&& other) noexcept
 {
-    ContextBase& context = cast_data<ContextBase>(m_data);
-    if (context._stateMask & 0x01)
+}
+
+Wiget::~Wiget()
+{
+    ASSERT(m_data == nullptr, "must be deleted");
+}
+
+bool Wiget::update(WigetHandler* handler, Wiget* parent, Wiget* layout, f32 dt)
+{
+    StateBase& state = cast_data<StateBase>(m_data);
+
+    if (!state._isCreated)
     {
-        if (context._onActiveChanged)
+        if (state._onCreated)
         {
-            std::invoke(context._onActiveChanged, this);
+            std::invoke(state._onCreated, this);
         }
-        context._stateMask &= ~0x01;
+        state._isCreated = true;
     }
 
-    if (context._stateMask & 0x02)
+    if (state._stateMask & State::StateMask::Active)
     {
-        if (context._onVisibleChanged)
+        if (state._onActiveChanged)
         {
-            std::invoke(cast_data<ContextBase>(m_data)._onVisibleChanged, this);
+            std::invoke(state._onActiveChanged, this);
         }
-        context._stateMask &= ~0x02;
+        state._stateMask &= ~State::StateMask::Active;
     }
 
-    if (context._onUpdate)
+    if (state._stateMask & State::StateMask::Visible)
     {
-        std::invoke(context._onUpdate, this, dt);
+        if (state._onVisibleChanged)
+        {
+            std::invoke(cast_data<StateBase>(m_data)._onVisibleChanged, this);
+        }
+        state._stateMask &= ~State::StateMask::Visible;
+    }
+
+    if (state._onUpdate)
+    {
+        std::invoke(state._onUpdate, this, dt);
     }
 
     return true;
+}
+
+math::Vector2D Wiget::calculateSize(WigetHandler* handler, Wiget* parent, Wiget* layout)
+{
+    return math::Vector2D(0.0f, 0.0f);
+}
+
+void Wiget::handleNotify(const utils::Reporter<WigetReport>* reporter, const WigetReport& data)
+{
 }
 
 } // namespace ui

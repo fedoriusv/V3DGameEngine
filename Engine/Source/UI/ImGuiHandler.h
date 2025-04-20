@@ -31,6 +31,7 @@ namespace ui
 
     struct ImGuiWigetViewportEvents;
     struct ImGuiWigetViewportData;
+    class ImGuiWigetDrawer;
 
     /**
     * @brief ImGuiWigetHandler class
@@ -41,7 +42,7 @@ namespace ui
 
         enum ImGuiWigetFlag
         {
-            ImGui_EditorMode = 1 << 0,
+            ImGui_ViewportMode = 1 << 0,
         };
         typedef u32 ImGuiWigetFlags;
 
@@ -49,7 +50,7 @@ namespace ui
         ~ImGuiWigetHandler();
 
         void update(const platform::Window* window, const v3d::event::InputEventHandler* handler, f32 dt) override;
-        void render(renderer::CmdListRender* cmdList) override;
+        bool render(renderer::CmdListRender* cmdList) override;
 
         void handleMouseCallback(const event::InputEventHandler* handler, const event::MouseInputEvent* event) override;
         void handleKeyboardCallback(const v3d::event::InputEventHandler* handler, const event::KeyboardInputEvent* event) override;
@@ -58,24 +59,6 @@ namespace ui
 
         void showDemoUI();
         void hideDemoUI();
-
-    public:
-
-        bool draw_MenuBar(Wiget* wiget, Wiget::Context* context, f32 dt) override;
-        bool draw_Menu(Wiget* wiget, Wiget::Context* context, f32 dt) override;
-        bool draw_MenuItem(Wiget* wiget, Wiget::Context* context, f32 dt) override;
-        bool draw_TabBar(Wiget* wiget, Wiget::Context* context, f32 dt) override;
-
-        bool draw_Window(Wiget* wiget, Wiget::Context* context, f32 dt) override;
-
-        bool draw_Button(Wiget* wiget, Wiget* parent, Wiget::Context* context, f32 dt) override;
-        bool draw_Image(Wiget* wiget, Wiget* parent, Wiget::Context* context, f32 dt) override;
-        bool draw_CheckBox(Wiget* wiget, Wiget* parent, Wiget::Context* context, f32 dt) override;
-        bool draw_RadioButtonGroup(Wiget* wiget, Wiget* parent, Wiget::Context* context, f32 dt) override;
-        bool draw_ComboBox(Wiget* wiget, Wiget* parent, Wiget::Context* context, f32 dt) override;
-        bool draw_ListBox(Wiget* wiget, Wiget* parent, Wiget::Context* context, f32 dt) override;
-        bool draw_InputField(Wiget* wiget, Wiget* parent, Wiget::Context* context, f32 dt) override;
-        bool draw_InputSlider(Wiget* wiget, Wiget* parent, Wiget::Context* context, f32 dt) override;
 
     private:
 
@@ -113,6 +96,7 @@ namespace ui
         ImGuiWigetFlags m_flags;
 
         friend ImGuiWigetViewportEvents;
+        friend ImGuiWigetDrawer;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

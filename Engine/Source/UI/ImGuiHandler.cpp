@@ -1,4 +1,4 @@
-#include "ImGui.h"
+#include "ImGuiHandler.h"
 #include "Wiget.h"
 
 #include "Utils/Logger.h"
@@ -20,8 +20,10 @@
 
 #if USE_IMGUI
 #include "ThirdParty/imgui/imgui.h"
+#include "ThirdParty/imgui/imgui_internal.h"
 #include "ImGuiFonts.h"
 #include "ImGuiViewport.h"
+#include "ImGuiDrawer.h"
 
 namespace v3d
 {
@@ -156,10 +158,14 @@ ImGuiWigetHandler::ImGuiWigetHandler(renderer::Device* device, ImGuiWigetFlags f
     , m_frameCounter(~1)
     , m_flags(flags)
 {
+    m_uiDrawer = V3D_NEW(ImGuiWigetDrawer, memory::MemoryLabel::MemoryUI)(this);
 }
 
 ImGuiWigetHandler::~ImGuiWigetHandler()
 {
+    V3D_DELETE(m_uiDrawer, memory::MemoryLabel::MemoryUI);
+    m_uiDrawer = nullptr;
+
     ASSERT(m_viewportData->_indexBuffer.empty(), "must be empty");
     ASSERT(m_viewportData->_vertexBuffer.empty(), "must be empty");
     ASSERT(m_viewportData->_geometryDesc.empty(), "must be empty");
@@ -204,7 +210,7 @@ bool ImGuiWigetHandler::create(renderer::CmdListRender* cmdList, const renderer:
 
     imguiIO.BackendFlags |= ImGuiBackendFlags_RendererHasVtxOffset;
 
-    if (m_flags && ImGuiWigetFlag::ImGui_EditorMode)
+    if (m_flags && ImGuiWigetFlag::ImGui_ViewportMode)
     {
         imguiIO.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
         imguiIO.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
@@ -212,7 +218,6 @@ bool ImGuiWigetHandler::create(renderer::CmdListRender* cmdList, const renderer:
         imguiIO.BackendFlags |= ImGuiBackendFlags_RendererHasViewports;
         imguiIO.ConfigWindowsMoveFromTitleBarOnly = true;
         imguiIO.ConfigViewportsNoDefaultParent = false;
-
     }
 
     ImGuiPlatformIO& imguiPlatformIO = ImGui::GetPlatformIO();
@@ -312,6 +317,9 @@ bool ImGuiWigetHandler::create(renderer::CmdListRender* cmdList, const renderer:
     style.FrameRounding = 4;
     style.IndentSpacing = 12.0f;
     style.FrameBorderSize = 1.0f;
+    style.WindowPadding = { 8.0f, 8.0f };
+    style.WindowTitleAlign = { 0.5f, 0.5f };
+    style.WindowMenuButtonPosition = ImGuiDir_None;
     if (imguiIO.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
     {
         style.WindowRounding = 0.0f;
@@ -507,7 +515,10 @@ void ImGuiWigetHandler::update(const platform::Window* window, const v3d::event:
     m_activeTextures.push_back(m_fontAtlas);
 
     ImGui::NewFrame();
-
+    if (imguiIO.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
+    {
+        ImGui::DockSpaceOverViewport(0, ImGui::GetMainViewport());
+    }
     WigetHandler::update(window, handler, dt);
 
     if (m_showDemo)
@@ -521,405 +532,6 @@ void ImGuiWigetHandler::update(const platform::Window* window, const v3d::event:
     {
         ImGui::UpdatePlatformWindows();
     }
-}
-
-bool ImGuiWigetHandler::draw_Window(Wiget* window, Wiget::Context* context, f32 dt)
-{
-    ASSERT(m_ImGuiContext, "must be valid");
-    WigetWindow::ContextWindow* wndCtx = static_cast<WigetWindow::ContextWindow*>(context);
-
-    ImGui::SetNextWindowPos(ImVec2(static_cast<f32>(wndCtx->_position.m_x), static_cast<f32>(wndCtx->_position.m_y)), ImGuiCond_Once);
-    ImGui::SetNextWindowSize(ImVec2(static_cast<f32>(wndCtx->_size.m_width), static_cast<f32>(wndCtx->_size.m_height)), ImGuiCond_Once);
-
-    ImGuiWindowFlags flags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse;
-    if (wndCtx->_flags & WigetWindow::Moveable)
-    {
-        flags &= ~ImGuiWindowFlags_NoMove;
-    }
-
-    if (wndCtx->_flags & WigetWindow::Resizeable)
-    {
-        flags &= ~ImGuiWindowFlags_NoResize;
-    }
-
-    if (wndCtx->_flags & WigetWindow::Scrollable)
-    {
-        flags &= ~ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse;
-    }
-
-    if (wndCtx->_flags & WigetWindow::AutoResizeByContent)
-    {
-        flags |= ImGuiWindowFlags_AlwaysAutoResize;
-    }
-
-    bool action = ImGui::Begin(wndCtx->_title.c_str(), 0, flags);
-    if (action)
-    {
-        ImGuiViewport* viewport = ImGui::GetWindowViewport();
-        platform::Window* activeWindow = reinterpret_cast<platform::Window*>(viewport->PlatformUserData);
-        wndCtx->_stateMask = (wndCtx->_currentWindow != activeWindow) ? 0x04 : 0x0;
-        wndCtx->_currentWindow = activeWindow;
-
-        if (wndCtx->_showToolTip && ImGui::IsItemHovered(ImGuiHoveredFlags_ForTooltip))
-        {
-            ImGui::SetTooltip(wndCtx->_toolTip.c_str());
-        }
-
-        math::Point2D pos(ImGui::GetWindowPos().x, ImGui::GetWindowPos().y);
-        bool posChanged = pos != wndCtx->_position;
-        if (posChanged || wndCtx->_stateMask & 0x04)
-        {
-            wndCtx->_position = pos;
-            if (wndCtx->_onPositionChanged)
-            {
-                std::invoke(wndCtx->_onPositionChanged, window, nullptr, pos);
-            }
-        }
-
-        math::Dimension2D size(ImGui::GetWindowSize().x, ImGui::GetWindowSize().y);
-        bool sizeChanged = size != wndCtx->_size;
-        if (sizeChanged || wndCtx->_stateMask & 0x04)
-        {
-            wndCtx->_size = size;
-            if (wndCtx->_onSizeChanged)
-            {
-                std::invoke(wndCtx->_onSizeChanged, window, nullptr, size);
-            }
-        }
-
-        wndCtx->_layout.update(this, window, dt);
-        ImGui::End();
-    }
-
-    wndCtx->_stateMask &= ~0x04; //ForceUpdate
-    return action;
-}
-
-bool ImGuiWigetHandler::draw_Button(Wiget* button, Wiget* parent, Wiget::Context* context, f32 dt)
-{
-    ASSERT(m_ImGuiContext, "must be valid");
-    WigetButton::ContextButton* btnCtx = static_cast<WigetButton::ContextButton*>(context);
-
-
-    u32 pushCount = 0;
-    if (btnCtx->_stateMask & 0x100)
-    {
-        ImGui::PushStyleColor(ImGuiCol_Button, ImVec4{ btnCtx->_color.m_x, btnCtx->_color.m_y, btnCtx->_color.m_z, btnCtx->_color.m_w });
-        ++pushCount;
-    }
-
-    if (btnCtx->_stateMask & 0x200)
-    {
-        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4{ btnCtx->_colorHovered.m_x, btnCtx->_colorHovered.m_y, btnCtx->_colorHovered.m_z, btnCtx->_colorHovered.m_w });
-        ++pushCount;
-    }
-
-    if (btnCtx->_stateMask & 0x400)
-    {
-        ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4{ btnCtx->_colorActive.m_x, btnCtx->_colorActive.m_y, btnCtx->_colorActive.m_z, btnCtx->_colorActive.m_w });
-        ++pushCount;
-    }
-
-    bool action = ImGui::Button(btnCtx->_text.c_str());
-
-    if (pushCount > 0)
-    {
-        ImGui::PopStyleColor(pushCount);
-    }
-
-    if (btnCtx->_showToolTip && ImGui::IsItemHovered(ImGuiHoveredFlags_ForTooltip))
-    {
-        ImGui::SetTooltip(btnCtx->_toolTip.c_str());
-    }
-
-    if (btnCtx->_onHoveredEvent && ImGui::IsItemHovered())
-    {
-        std::invoke(btnCtx->_onHoveredEvent, button);
-    }
-
-    if (btnCtx->_onClickedEvent && ImGui::IsItemClicked())
-    {
-        std::invoke(btnCtx->_onClickedEvent, button);
-    }
-
-    return action;
-}
-
-bool ImGuiWigetHandler::draw_Image(Wiget* image, Wiget* parent, Wiget::Context* context, f32 dt)
-{
-    ASSERT(m_ImGuiContext, "must be valid");
-    WigetImage::ContextImage* imgCtx = static_cast<WigetImage::ContextImage*>(context);
-
-    if (imgCtx->_texture)
-    {
-        u32 id = ~0;
-        auto found = std::find(m_activeTextures.begin(), m_activeTextures.end(), imgCtx->_texture);
-        if (found == m_activeTextures.end())
-        {
-            m_activeTextures.push_back(imgCtx->_texture);
-            id = m_activeTextures.size() - 1;
-        }
-        else
-        {
-            id = std::distance(m_activeTextures.begin(), found);
-        }
-
-        ImVec2 size = { (f32)imgCtx->_size.m_width, (f32)imgCtx->_size.m_height };
-        ImVec2 uv0 = { imgCtx->_uv.getLeftX(), imgCtx->_uv.getTopY() };
-        ImVec2 uv1 = { imgCtx->_uv.getRightX(), imgCtx->_uv.getBottomY() };
-
-        ImGui::Image(id, size, uv0, uv1);
-
-        ImGuiViewport* viewport = ImGui::GetWindowViewport();
-        platform::Window* activeWindow = reinterpret_cast<platform::Window*>(viewport->PlatformUserData);
-
-        if (imgCtx->_showToolTip && ImGui::IsItemHovered(ImGuiHoveredFlags_ForTooltip))
-        {
-            ImGui::SetTooltip(imgCtx->_toolTip.c_str());
-        }
-
-        if (imgCtx->_onHoveredEvent && ImGui::IsItemHovered())
-        {
-            std::invoke(imgCtx->_onHoveredEvent, image);
-        }
-
-        if (imgCtx->_onClickedEvent && ImGui::IsItemClicked())
-        {
-            std::invoke(imgCtx->_onClickedEvent, image);
-        }
-
-        s32 a = ImGui::GetItemRectMin().x;
-        s32 b = ImGui::GetItemRectMin().y;
-        s32 c = ImGui::GetItemRectMax().x;
-        s32 d = ImGui::GetItemRectMax().y;
-        math::Rect32 rect(a, b, c, d);
-
-        if (imgCtx->_drawRectState != rect || parent->isStateMaskActive(0x04))
-        {
-            imgCtx->_drawRectState = rect;
-            if (imgCtx->_onDrawRectChanged)
-            {
-                std::invoke(imgCtx->_onDrawRectChanged, image, parent, rect);
-            }
-        }
-
-        return true;
-    }
-
-    return false;
-}
-
-bool ImGuiWigetHandler::draw_CheckBox(Wiget* wiget, Wiget* parent, Wiget::Context* context, f32 dt)
-{
-    ASSERT(m_ImGuiContext, "must be valid");
-    WigetCheckBox::ContextCheckBox* cbCtx = static_cast<WigetCheckBox::ContextCheckBox*>(context);
-
-    bool value = cbCtx->_value;
-    bool active = ImGui::Checkbox(cbCtx->_text.c_str(), &value);
-    if (cbCtx->_showToolTip && ImGui::IsItemHovered(ImGuiHoveredFlags_ForTooltip))
-    {
-        ImGui::SetTooltip(cbCtx->_toolTip.c_str());
-    }
-
-    if (value != cbCtx->_value)
-    {
-        cbCtx->_value = value;
-        if (cbCtx->_onChangedValueEvent)
-        {
-            std::invoke(cbCtx->_onChangedValueEvent, wiget, value);
-        }
-    }
-
-    return active;
-}
-
-bool ImGuiWigetHandler::draw_RadioButtonGroup(Wiget* wiget, Wiget* parent, Wiget::Context* context, f32 dt)
-{
-    ASSERT(m_ImGuiContext, "must be valid");
-    WigetRadioButtonGroup::ContextRadioButtonGroup* rbCtx = static_cast<WigetRadioButtonGroup::ContextRadioButtonGroup*>(context);
-
-    bool active = false;
-    if (!rbCtx->_list.empty())
-    {
-        ASSERT(rbCtx->_activeIndex < rbCtx->_list.size(), "range out");
-        s32 index = rbCtx->_activeIndex;
-        for (u32 i = 0; i < rbCtx->_list.size() - 1; ++i)
-        {
-            active |= ImGui::RadioButton(rbCtx->_list[i].c_str(), &index, i); ImGui::SameLine();
-        }
-        active |= ImGui::RadioButton(rbCtx->_list.back().c_str(), &index, rbCtx->_list.size() - 1);
-
-        if (rbCtx->_showToolTip && ImGui::IsItemHovered(ImGuiHoveredFlags_ForTooltip))
-        {
-            ImGui::SetTooltip(rbCtx->_toolTip.c_str());
-        }
-
-        if (rbCtx->_activeIndex != index)
-        {
-            rbCtx->_activeIndex = index;
-            if (rbCtx->_onChangedIndexEvent)
-            {
-                std::invoke(rbCtx->_onChangedIndexEvent, wiget, index);
-            }
-        }
-    }
-    return active;
-}
-
-bool ImGuiWigetHandler::draw_ComboBox(Wiget* wiget, Wiget* parent, Wiget::Context* context, f32 dt)
-{
-    ASSERT(m_ImGuiContext, "must be valid");
-    WigetComboBox::ContextComboBox* cbCtx = static_cast<WigetComboBox::ContextComboBox*>(context);
-
-    static auto items_ArrayGetter = [](void* user_data, int idx) -> const char*
-        {
-            std::vector<std::string>& list = *reinterpret_cast<std::vector<std::string>*>(user_data);
-            return list[idx].c_str();
-        };
-
-    bool active = false;
-    if (!cbCtx->_list.empty())
-    {
-        s32 index = cbCtx->_activeIndex;
-        active = ImGui::Combo("combo", &index, items_ArrayGetter, &cbCtx->_list, cbCtx->_list.size());
-
-        if (cbCtx->_showToolTip && ImGui::IsItemHovered(ImGuiHoveredFlags_ForTooltip))
-        {
-            ImGui::SetTooltip(cbCtx->_toolTip.c_str());
-        }
-
-        if (cbCtx->_activeIndex != index)
-        {
-            cbCtx->_activeIndex = index;
-            if (cbCtx->_onChangedIndexEvent)
-            {
-                std::invoke(cbCtx->_onChangedIndexEvent, wiget, index);
-            }
-        }
-    }
-    return active;
-}
-
-bool ImGuiWigetHandler::draw_ListBox(Wiget* wiget, Wiget* parent, Wiget::Context* context, f32 dt)
-{
-    ASSERT(m_ImGuiContext, "must be valid");
-    WigetListBox::ContextListBox* lbCtx = static_cast<WigetListBox::ContextListBox*>(context);
-
-    static auto items_ArrayGetter = [](void* user_data, int idx) -> const char*
-        {
-            std::vector<std::string>& list = *reinterpret_cast<std::vector<std::string>*>(user_data);
-            return list[idx].c_str();
-        };
-
-    bool active = false;
-    if (!lbCtx->_list.empty())
-    {
-        s32 index = lbCtx->_activeIndex;
-        active = ImGui::ListBox("listbox", &index, items_ArrayGetter, &lbCtx->_list, lbCtx->_list.size(), 4);
-
-        if (lbCtx->_showToolTip && ImGui::IsItemHovered(ImGuiHoveredFlags_ForTooltip))
-        {
-            ImGui::SetTooltip(lbCtx->_toolTip.c_str());
-        }
-
-        if (lbCtx->_activeIndex != index)
-        {
-            lbCtx->_activeIndex = index;
-            if (lbCtx->_onChangedIndexEvent)
-            {
-                std::invoke(lbCtx->_onChangedIndexEvent, wiget, index);
-            }
-        }
-    }
-    return active;
-}
-
-bool ImGuiWigetHandler::draw_InputField(Wiget* wiget, Wiget* parent, Wiget::Context* context, f32 dt)
-{
-    static int i0 = 123;
-    ImGui::InputInt("input int", &i0);
-
-    return false;
-}
-
-bool ImGuiWigetHandler::draw_InputSlider(Wiget* wiget, Wiget* parent, Wiget::Context* context, f32 dt)
-{
-    static int i1 = 0;
-    ImGui::SliderInt("slider int", &i1, -1, 3);
-
-    return false;
-}
-
-bool ImGuiWigetHandler::draw_MenuBar(Wiget* menu, Wiget::Context* context, f32 dt)
-{
-    ASSERT(m_ImGuiContext, "must be valid");
-    WigetMenuBar::ContextMenuBar* menuBarCtx = static_cast<WigetMenuBar::ContextMenuBar*>(context);
-
-    bool action = ImGui::BeginMainMenuBar();
-    if (action)
-    {
-        menuBarCtx->_layout.update(this, menu, dt);
-        ImGui::EndMainMenuBar();
-    }
-
-    return action;
-}
-
-bool ImGuiWigetHandler::draw_Menu(Wiget* menu, Wiget::Context* context, f32 dt)
-{
-    ASSERT(m_ImGuiContext, "must be valid");
-    WigetMenu::ContextMenu* menuCtx = static_cast<WigetMenu::ContextMenu*>(context);
-    ASSERT(!menuCtx->_text.empty(), "must be filled");
-
-    bool action = ImGui::BeginMenu(menuCtx->_text.c_str(), menuCtx->_isActive);
-    if (action)
-    {
-        if (menuCtx->_showToolTip && ImGui::IsItemHovered(ImGuiHoveredFlags_ForTooltip))
-        {
-            ImGui::SetTooltip(menuCtx->_toolTip.c_str());
-        }
-
-        if (menuCtx->_onClickedEvent && ImGui::IsItemClicked())
-        {
-            std::invoke(menuCtx->_onClickedEvent, menu);
-        }
-
-        menuCtx->_layout.update(this, menu, dt);
-        ImGui::EndMenu();
-    }
-
-    return action;
-}
-
-bool ImGuiWigetHandler::draw_MenuItem(Wiget* item, Wiget::Context* context, f32 dt)
-{
-    ASSERT(m_ImGuiContext, "must be valid");
-    WigetMenuItem::ContextMenuItem* itemCtx = static_cast<WigetMenuItem::ContextMenuItem*>(context);
-
-    bool clicked = false;
-    bool action = ImGui::MenuItem(itemCtx->_text.c_str(), nullptr, &clicked, itemCtx->_isActive);
-    if (itemCtx->_onClickedEvent && clicked)
-    {
-        std::invoke(itemCtx->_onClickedEvent, item);
-    }
-
-    return action;
-}
-
-bool ImGuiWigetHandler::draw_TabBar(Wiget* item, Wiget::Context* context, f32 dt)
-{
-    ASSERT(m_ImGuiContext, "must be valid");
-    WigetTabBar::ContextTabBar* barCtx = static_cast<WigetTabBar::ContextTabBar*>(context);
-
-    static ImGuiTabBarFlags tab_bar_flags = ImGuiTabBarFlags_AutoSelectNewTabs | ImGuiTabBarFlags_Reorderable | ImGuiTabBarFlags_FittingPolicyResizeDown;
-    bool action = ImGui::BeginTabBar("Bar", tab_bar_flags);
-    if (action)
-    {
-        barCtx->_layout.update(this, item, dt);
-        ImGui::EndTabBar();
-    }
-
-    return action;
 }
 
 void ImGuiWigetHandler::showDemoUI()
@@ -1291,7 +903,7 @@ bool ImGuiWigetHandler::renderDrawData(ImGuiWigetViewportData* viewportData, ImD
     return true;
 }
 
-void ImGuiWigetHandler::render(renderer::CmdListRender* cmdList)
+bool ImGuiWigetHandler::render(renderer::CmdListRender* cmdList)
 {
     ++m_frameCounter;
 
@@ -1307,7 +919,7 @@ void ImGuiWigetHandler::render(renderer::CmdListRender* cmdList)
 
     ImDrawData* imDrawData = ImGui::GetDrawData();
 
-    renderDrawData(m_viewportData, imDrawData);
+    return renderDrawData(m_viewportData, imDrawData);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////

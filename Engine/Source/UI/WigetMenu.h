@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Wiget.h"
+#include "WigetLayout.h"
 
 namespace v3d
 {
@@ -15,28 +16,54 @@ namespace ui
     {
     public:
 
-        WigetMenuBar() noexcept;
+        enum MenuFlag
+        {
+            MainMenu = 1 << 0,
+        };
+        typedef u64 MenuFlags;
+
+        WigetMenuBar(MenuFlags flags = 0) noexcept;
         WigetMenuBar(const WigetMenuBar&) noexcept;
+        WigetMenuBar(WigetMenuBar&&) noexcept;
         ~WigetMenuBar();
 
-        template<class UWiget>
-        WigetMenuBar& addWiget(const UWiget& wiget);
+        template<class TWiget>
+        WigetMenuBar& addWiget(const TWiget& wiget);
 
-        struct ContextMenuBar : ContextBase
+        template<class TWiget>
+        WigetMenuBar& addWiget(TWiget&& wiget);
+
+        struct StateMenuBar : StateBase
         {
             WigetLayout _layout;
+            MenuFlags   _flags;
         };
 
     private:
 
-        bool update(WigetHandler* handler, Wiget* parent, WigetLayout* layout, f32 dt) override;
+        using WigetType = WigetMenuBar;
+        using StateType = StateMenuBar;
+
+        bool update(WigetHandler* handler, Wiget* parent, Wiget* layout, f32 dt) final;
+        Wiget* copy() const final;
     };
 
     template<class TWiget>
     inline WigetMenuBar& WigetMenuBar::addWiget(const TWiget& wiget)
     {
-        WigetLayout& layout = Wiget::cast_data<ContextMenuBar>(m_data)._layout;
+        WigetLayout& layout = Wiget::cast_data<StateType>(m_data)._layout;
         layout.addWiget<TWiget>(wiget);
+        return *this;
+    }
+
+    template<class TWiget>
+    inline WigetMenuBar& WigetMenuBar::addWiget(TWiget&& wiget)
+    {
+        static_assert(std::is_move_constructible<TWiget>::value, "must be movable");
+        static_assert(std::is_nothrow_move_constructible<TWiget>::value, "should be noexcept movable");
+
+        WigetLayout& layout = Wiget::cast_data<StateType>(m_data)._layout;
+        layout.addWiget(std::forward<TWiget>(wiget));
         return *this;
     }
 
@@ -51,6 +78,7 @@ namespace ui
 
         WigetMenu(const std::string& text) noexcept;
         WigetMenu(const WigetMenu&) noexcept;
+        WigetMenu(WigetMenu&&) noexcept;
         ~WigetMenu();
 
         const std::string& getText() const;
@@ -61,7 +89,10 @@ namespace ui
         template<class TWiget>
         WigetMenu& addWiget(const TWiget& wiget);
 
-        struct ContextMenu : ContextBase
+        template<class TWiget>
+        WigetMenu& addWiget(TWiget&& wiget);
+
+        struct StateMenu : StateBase
         {
             std::string  _text;
             OnWigetEvent _onClickedEvent;
@@ -70,31 +101,46 @@ namespace ui
 
     private:
 
-        bool update(WigetHandler* handler, Wiget* parent, WigetLayout* layout, f32 dt) override;
+        using WigetType = WigetMenu;
+        using StateType = StateMenu;
+
+        bool update(WigetHandler* handler, Wiget* parent, Wiget* layout, f32 dt) final;
+        Wiget* copy() const final;
     };
 
     inline const std::string& WigetMenu::getText() const
     {
-        return  Wiget::cast_data<ContextMenu>(m_data)._text;
+        return  Wiget::cast_data<StateType>(m_data)._text;
     }
 
     inline WigetMenu& WigetMenu::setText(const std::string& text)
     {
-        Wiget::cast_data<ContextMenu>(m_data)._text = text;
+        Wiget::cast_data<StateType>(m_data)._text = text;
         return *this;
     }
 
     inline WigetMenu& WigetMenu::setOnClickedEvent(const OnWigetEvent& event)
     {
-        Wiget::cast_data<ContextMenu>(m_data)._onClickedEvent = event;
+        Wiget::cast_data<StateType>(m_data)._onClickedEvent = event;
         return *this;
     }
 
     template<class TWiget>
     inline WigetMenu& WigetMenu::addWiget(const TWiget& wiget)
     {
-        WigetLayout& layout = Wiget::cast_data<ContextMenu>(m_data)._layout;
+        WigetLayout& layout = Wiget::cast_data<StateType>(m_data)._layout;
         layout.addWiget<TWiget>(wiget);
+        return *this;
+    }
+
+    template<class TWiget>
+    inline WigetMenu& WigetMenu::addWiget(TWiget&& wiget)
+    {
+        static_assert(std::is_move_constructible<TWiget>::value, "must be movable");
+        static_assert(std::is_nothrow_move_constructible<TWiget>::value, "should be noexcept movable");
+
+        WigetLayout& layout = Wiget::cast_data<StateType>(m_data)._layout;
+        layout.addWiget(std::forward<TWiget>(wiget));
         return *this;
     }
 
@@ -106,6 +152,7 @@ namespace ui
 
         explicit WigetMenuItem(const std::string& text) noexcept;
         WigetMenuItem(const WigetMenuItem&) noexcept;
+        WigetMenuItem(WigetMenuItem&&) noexcept;
         ~WigetMenuItem();
 
         const std::string& getText() const;
@@ -113,7 +160,7 @@ namespace ui
         WigetMenuItem& setText(const std::string& text);
         WigetMenuItem& setOnClickedEvent(const OnWigetEvent& event);
 
-        struct ContextMenuItem : ContextBase
+        struct StateMenuItem : StateBase
         {
             std::string  _text;
             OnWigetEvent _onClickedEvent;
@@ -121,23 +168,27 @@ namespace ui
 
     private:
 
-        bool update(WigetHandler* handler, Wiget* parent, WigetLayout* layout, f32 dt) override;
+        using WigetType = WigetMenuItem;
+        using StateType = StateMenuItem;
+
+        bool update(WigetHandler* handler, Wiget* parent, Wiget* layout, f32 dt) final;
+        Wiget* copy() const final;
     };
 
     inline const std::string& WigetMenuItem::getText() const
     {
-        return  Wiget::cast_data<ContextMenuItem>(m_data)._text;
+        return  Wiget::cast_data<StateType>(m_data)._text;
     }
 
     inline WigetMenuItem& WigetMenuItem::setText(const std::string& text)
     {
-        Wiget::cast_data<ContextMenuItem>(m_data)._text = text;
+        Wiget::cast_data<StateType>(m_data)._text = text;
         return *this;
     }
 
     inline WigetMenuItem& WigetMenuItem::setOnClickedEvent(const OnWigetEvent& event)
     {
-        Wiget::cast_data<ContextMenuItem>(m_data)._onClickedEvent = event;
+        Wiget::cast_data<StateType>(m_data)._onClickedEvent = event;
         return *this;
     }
 

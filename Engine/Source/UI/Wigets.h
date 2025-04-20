@@ -8,4 +8,4 @@
 
 #include "WigetWindow.h"
 #include "WigetMenu.h"
-#include "WigetTabBar.h"
+#include "WigetTab.h"

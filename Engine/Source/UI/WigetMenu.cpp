@@ -7,17 +7,27 @@ namespace v3d
 namespace ui
 {
 
-WigetMenuBar::WigetMenuBar() noexcept
-    : WigetBase<WigetMenuBar>(V3D_NEW(WigetMenuBar::ContextMenuBar, memory::MemoryLabel::MemoryUI)())
+/////////////////////////////////////////////////////////////////////////////////////////////////////
+
+WigetMenuBar::WigetMenuBar(MenuFlags flags) noexcept
+    : WigetBase<WigetMenuBar>(V3D_NEW(StateType, memory::MemoryLabel::MemoryUI)())
 {
+    Wiget::cast_data<StateType>(m_data)._flags = flags;
+    Wiget::cast_data<StateType>(m_data)._layout.m_data->_stateMask |= Wiget::State::StateMask::MenuLayout;
 }
 
 WigetMenuBar::WigetMenuBar(const WigetMenuBar& other) noexcept
     : WigetBase<WigetMenuBar>(other)
 {
-    WigetMenuBar::ContextMenuBar* context = V3D_NEW(WigetMenuBar::ContextMenuBar, memory::MemoryLabel::MemoryUI)();
-    *context = *static_cast<WigetMenuBar::ContextMenuBar*>(other.m_data);
-    m_data = context;
+    StateType* state = V3D_NEW(StateType, memory::MemoryLabel::MemoryUI)(*static_cast<const StateType*>(other.m_data));
+    m_data = state;
+}
+
+WigetMenuBar::WigetMenuBar(WigetMenuBar&& other) noexcept
+    : WigetBase<WigetMenuBar>(other)
+{
+    m_data = other.m_data;
+    other.m_data = nullptr;
 }
 
 WigetMenuBar::~WigetMenuBar()
@@ -29,29 +39,42 @@ WigetMenuBar::~WigetMenuBar()
     }
 }
 
-bool WigetMenuBar::update(WigetHandler* handler, Wiget* parent, WigetLayout* layout, f32 dt)
+bool WigetMenuBar::update(WigetHandler* handler, Wiget* parent, Wiget* layout, f32 dt)
 {
     if (Wiget::update(handler, parent, layout, dt))
     {
-        return  handler->draw_MenuBar(this, m_data, dt);
+        return  handler->getWigetDrawer()->draw_MenuBar(this, m_data, dt);
     }
 
     return false;
 }
 
+Wiget* WigetMenuBar::copy() const
+{
+    return V3D_NEW(WigetMenuBar, memory::MemoryLabel::MemoryUI)(*this);
+}
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////
 
 WigetMenu::WigetMenu(const std::string& text) noexcept
-    : WigetBase<WigetMenu>(V3D_NEW(WigetMenu::ContextMenu, memory::MemoryLabel::MemoryUI)())
+    : WigetBase<WigetMenu>(V3D_NEW(StateType, memory::MemoryLabel::MemoryUI)())
 {
     setText(text);
+    Wiget::cast_data<StateType>(m_data)._layout.m_data->_stateMask |= Wiget::State::StateMask::MenuLayout;
 }
 
 WigetMenu::WigetMenu(const WigetMenu& other) noexcept
     : WigetBase<WigetMenu>(other)
 {
-    WigetMenu::ContextMenu* context = V3D_NEW(WigetMenu::ContextMenu, memory::MemoryLabel::MemoryUI)();
-    *context = *static_cast<WigetMenu::ContextMenu*>(other.m_data);
-    m_data = context;
+    StateType* state = V3D_NEW(StateType, memory::MemoryLabel::MemoryUI)(*static_cast<const StateType*>(other.m_data));
+    m_data = state;
+}
+
+WigetMenu::WigetMenu(WigetMenu&& other) noexcept
+    : WigetBase<WigetMenu>(other)
+{
+    m_data = other.m_data;
+    other.m_data = nullptr;
 }
 
 WigetMenu::~WigetMenu()
@@ -63,19 +86,25 @@ WigetMenu::~WigetMenu()
     }
 }
 
-bool WigetMenu::update(WigetHandler* handler, Wiget* parent, WigetLayout* layout, f32 dt)
+bool WigetMenu::update(WigetHandler* handler, Wiget* parent, Wiget* layout, f32 dt)
 {
     if (Wiget::update(handler, parent, layout, dt))
     {
-        return handler->draw_Menu(this, m_data, dt);
+        return handler->getWigetDrawer()->draw_Menu(this, parent, static_cast<WigetType*>(layout)->m_data, m_data, dt);
     }
 
     return false;
 }
 
+Wiget* WigetMenu::copy() const
+{
+    return V3D_NEW(WigetMenu, memory::MemoryLabel::MemoryUI)(*this);
+}
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////
 
 WigetMenuItem::WigetMenuItem(const std::string& text) noexcept
-    : WigetBase<WigetMenuItem>(V3D_NEW(WigetMenuItem::ContextMenuItem, memory::MemoryLabel::MemoryUI)())
+    : WigetBase<WigetMenuItem>(V3D_NEW(StateType, memory::MemoryLabel::MemoryUI)())
 {
     setText(text);
 }
@@ -83,9 +112,15 @@ WigetMenuItem::WigetMenuItem(const std::string& text) noexcept
 WigetMenuItem::WigetMenuItem(const WigetMenuItem& other) noexcept
     : WigetBase<WigetMenuItem>(other)
 {
-    WigetMenuItem::ContextMenuItem* context = V3D_NEW(WigetMenuItem::ContextMenuItem, memory::MemoryLabel::MemoryUI)();
-    *context = *static_cast<WigetMenuItem::ContextMenuItem*>(other.m_data);
-    m_data = context;
+    StateType* state = V3D_NEW(StateType, memory::MemoryLabel::MemoryUI)(*static_cast<const StateType*>(other.m_data));
+    m_data = state;
+}
+
+WigetMenuItem::WigetMenuItem(WigetMenuItem&& other) noexcept
+    : WigetBase<WigetMenuItem>(other)
+{
+    m_data = other.m_data;
+    other.m_data = nullptr;
 }
 
 WigetMenuItem::~WigetMenuItem()
@@ -97,15 +132,22 @@ WigetMenuItem::~WigetMenuItem()
     }
 }
 
-bool WigetMenuItem::update(WigetHandler* handler, Wiget* parent, WigetLayout* layout, f32 dt)
+bool WigetMenuItem::update(WigetHandler* handler, Wiget* parent, Wiget* layout, f32 dt)
 {
     if (Wiget::update(handler, parent, layout, dt))
     {
-        return handler->draw_MenuItem(this, m_data, dt);
+        return handler->getWigetDrawer()->draw_MenuItem(this, parent, static_cast<WigetType*>(layout)->m_data, m_data);
     }
 
     return false;
 }
+
+Wiget* WigetMenuItem::copy() const
+{
+    return V3D_NEW(WigetMenuItem, memory::MemoryLabel::MemoryUI)(*this);
+}
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////
 
 } // namespace ui
 } // namespace v3d

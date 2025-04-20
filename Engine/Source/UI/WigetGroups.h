@@ -10,16 +10,16 @@ namespace ui
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
-    * @brief WigetGroup interface
+    * @brief WigetGroupBase interface
     */
     template<class TWiget>
-    class WigetGroup : public WigetBase<TWiget>
+    class WigetGroupBase : public WigetBase<TWiget>
     {
     protected:
 
-        explicit WigetGroup(Wiget::Context* context) noexcept;
-        WigetGroup(const WigetGroup&) noexcept;
-        ~WigetGroup() = default;
+        explicit WigetGroupBase(Wiget::State* state) noexcept;
+        WigetGroupBase(const WigetGroupBase&) noexcept;
+        ~WigetGroupBase() = default;
 
     public:
 
@@ -31,57 +31,62 @@ namespace ui
 
         TWiget& setOnChangedIndexEvent(const OnWigetEventIntParam& event);
 
-        struct ContextWigetGroup : WigetBase<TWiget>::ContextBase
+        struct StateWigetGroupBase : WigetBase<TWiget>::StateBase
         {
             std::vector<std::string> _list;
             OnWigetEventIntParam     _onChangedIndexEvent;
             u32                      _activeIndex;
         };
+
+    private:
+
+        using WigetType = WigetGroupBase;
+        using StateType = StateWigetGroupBase;
     };
 
     template<class TWiget>
-    inline WigetGroup<TWiget>::WigetGroup(Wiget::Context* context) noexcept
-        : WigetBase<TWiget>(context)
+    inline WigetGroupBase<TWiget>::WigetGroupBase(Wiget::State* state) noexcept
+        : WigetBase<TWiget>(state)
     {
     }
 
     template<class TWiget>
-    inline WigetGroup<TWiget>::WigetGroup(const WigetGroup& other) noexcept
+    inline WigetGroupBase<TWiget>::WigetGroupBase(const WigetGroupBase& other) noexcept
         : WigetBase<TWiget>(other)
     {
     }
 
     template<class TWiget>
-    inline TWiget& WigetGroup<TWiget>::addElement(const std::string& text)
+    inline TWiget& WigetGroupBase<TWiget>::addElement(const std::string& text)
     {
-        Wiget::cast_data<ContextWigetGroup>(WigetBase<TWiget>::m_data)._list.push_back(text);
+        Wiget::cast_data<StateType>(WigetBase<TWiget>::m_data)._list.push_back(text);
         return *static_cast<TWiget*>(this);
     }
 
     template<class TWiget>
-    inline TWiget& WigetGroup<TWiget>::setActiveIndex(u32 index)
+    inline TWiget& WigetGroupBase<TWiget>::setActiveIndex(u32 index)
     {
-        Wiget::cast_data<ContextWigetGroup>(WigetBase<TWiget>::m_data)._activeIndex = index;
+        Wiget::cast_data<StateType>(WigetBase<TWiget>::m_data)._activeIndex = index;
         return *static_cast<TWiget*>(this);
     }
 
     template<class TWiget>
-    inline u32 WigetGroup<TWiget>::getActiveIndex() const
+    inline u32 WigetGroupBase<TWiget>::getActiveIndex() const
     {
-        return Wiget::cast_data<ContextWigetGroup>(WigetBase<TWiget>::m_data)._activeIndex;
+        return Wiget::cast_data<StateType>(WigetBase<TWiget>::m_data)._activeIndex;
     }
 
     template<class TWiget>
-    inline const std::string& WigetGroup<TWiget>::getElement(u32 index) const
+    inline const std::string& WigetGroupBase<TWiget>::getElement(u32 index) const
     {
-        ASSERT(index < Wiget::cast_data<ContextWigetGroup>(WigetBase<TWiget>::m_data)._list.size(), "range out");
-        return Wiget::cast_data<ContextWigetGroup>(WigetBase<TWiget>::m_data)._list[index];
+        ASSERT(index < Wiget::cast_data<StateWigetGroupBase>(WigetBase<TWiget>::m_data)._list.size(), "range out");
+        return Wiget::cast_data<StateType>(WigetBase<TWiget>::m_data)._list[index];
     }
 
     template<class TWiget>
-    inline TWiget& WigetGroup<TWiget>::setOnChangedIndexEvent(const OnWigetEventIntParam& event)
+    inline TWiget& WigetGroupBase<TWiget>::setOnChangedIndexEvent(const OnWigetEventIntParam& event)
     {
-        Wiget::cast_data<ContextWigetGroup>(WigetBase<TWiget>::m_data)._onChangedIndexEvent = event;
+        Wiget::cast_data<StateType>(WigetBase<TWiget>::m_data)._onChangedIndexEvent = event;
         return *static_cast<TWiget*>(this);
     }
 
@@ -90,7 +95,7 @@ namespace ui
     /**
     * @brief WigetRadioButtonGroup class
     */
-    class WigetRadioButtonGroup : public WigetGroup<WigetRadioButtonGroup>
+    class WigetRadioButtonGroup final : public WigetGroupBase<WigetRadioButtonGroup>
     {
     public:
 
@@ -99,13 +104,17 @@ namespace ui
         WigetRadioButtonGroup(const WigetRadioButtonGroup&) noexcept;
         ~WigetRadioButtonGroup();
 
-        struct ContextRadioButtonGroup : ContextWigetGroup
+        struct StateRadioButtonGroup : StateWigetGroupBase
         {
         };
 
     private:
 
-        bool update(WigetHandler* handler, Wiget* parent, WigetLayout* layout, f32 dt) override;
+        using WigetType = WigetRadioButtonGroup;
+        using StateType = StateRadioButtonGroup;
+
+        bool update(WigetHandler* handler, Wiget* parent, Wiget* layout, f32 dt) final;
+        Wiget* copy() const final;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -113,7 +122,7 @@ namespace ui
     /**
     * @brief WigetComboBox class
     */
-    class WigetComboBox : public WigetGroup<WigetComboBox>
+    class WigetComboBox final : public WigetGroupBase<WigetComboBox>
     {
     public:
 
@@ -121,13 +130,17 @@ namespace ui
         WigetComboBox(const WigetComboBox&) noexcept;
         ~WigetComboBox();
 
-        struct ContextComboBox : ContextWigetGroup
+        struct StateComboBox : StateWigetGroupBase
         {
         };
 
     private:
 
-        bool update(WigetHandler* handler, Wiget* parent, WigetLayout* layout, f32 dt) override;
+        using WigetType = WigetComboBox;
+        using StateType = StateComboBox;
+
+        bool update(WigetHandler* handler, Wiget* parent, Wiget* layout, f32 dt) final;
+        Wiget* copy() const final;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -135,7 +148,7 @@ namespace ui
     /**
     * @brief WigetListBox class
     */
-    class WigetListBox : public WigetGroup<WigetListBox>
+    class WigetListBox final : public WigetGroupBase<WigetListBox>
     {
     public:
 
@@ -143,13 +156,17 @@ namespace ui
         WigetListBox(const WigetListBox&) noexcept;
         ~WigetListBox();
 
-        struct ContextListBox : ContextWigetGroup
+        struct StateListBox : StateWigetGroupBase
         {
         };
 
     private:
 
-        bool update(WigetHandler* handler, Wiget* parent, WigetLayout* layout, f32 dt) override;
+        using WigetType = WigetListBox;
+        using StateType = StateListBox;
+
+        bool update(WigetHandler* handler, Wiget* parent, Wiget* layout, f32 dt) final;
+        Wiget* copy() const final;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

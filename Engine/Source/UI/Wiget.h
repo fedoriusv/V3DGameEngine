@@ -1,7 +1,8 @@
 #pragma once
 
 #include "Common.h"
-#include "WigetLayout.h"
+#include "Utils/Copiable.h"
+#include "Utils/Observable.h"
 
 namespace v3d
 {
@@ -15,6 +16,7 @@ namespace ui
 
     class Wiget;
     class WigetHandler;
+    class WigetLayout;
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -32,22 +34,46 @@ namespace ui
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    struct WigetReport
+    {
+    };
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
+
     /**
     * @brief Wiget base class
     */
-    class Wiget
+    class Wiget : public utils::Observer<WigetReport>, protected utils::Copiable<Wiget>
     {
     public:
 
-        struct Context
+        struct State
         {
-            Context() noexcept = default;
-            ~Context() = default;
+            enum StateMask
+            {
+                Active = 0x01,
+                Visible = 0x02,
+                ForceUpdate = 0x04,
+                HorizontalLine = 0x08,
+                WindowLayout = 0x10, //?
+                MenuLayout = 0x20, //?
+                FirstUpdate = 0x40,
+                ChildLayout = 0x80,
+
+                Color = 0x100,
+                HoveredColor = 0x200,
+                ClickedColor = 0x400
+            };
+
+            State() noexcept = default;
+            ~State() = default;
+
+            u64             _uid       = ~0;
+            u64             _stateMask = 0;
+            math::RectF32  _itemRect;
         };
 
-        explicit Wiget(Context* context) noexcept;
-        Wiget(const Wiget& other) noexcept;
-        virtual ~Wiget() = default;
+        virtual ~Wiget();
 
         bool isActive() const;
         bool isVisible() const;
@@ -62,12 +88,14 @@ namespace ui
         Wiget& setOnUpdate(const OnWigetEventUpdate& event);
         Wiget& setOnVisibleChanged(const OnWigetEvent& event);
         Wiget& setOnActiveChanged(const OnWigetEvent& event);
+        Wiget& setOnCreated(const OnWigetEvent& event);
 
-        bool isStateMaskActive(u64 mask) const;
+        bool isStateMaskActive(u64 state) const;
 
-        struct ContextBase : Context
+        struct StateBase : State
         {
             std::string             _toolTip;
+            OnWigetEvent            _onCreated;
             OnWigetEvent            _onVisibleChanged;
             OnWigetEvent            _onActiveChanged;
             OnWigetEventUpdate      _onUpdate;
@@ -76,58 +104,59 @@ namespace ui
             bool                    _isPressed        = false;
             bool                    _isHovered        = false;
             bool                    _showToolTip      = false;
-            bool                    _unused[3]        = {};
-
-            //0x01 - Active
-            //0x02 - Visible
-            //0x04 - ForceUpdate
-            //...
-            //0x80 - Reserved
-            u64                     _stateMask        = 0;
+            bool                    _isCreated        = false;
+            bool                    _isDestroyed      = false;
+            bool                    _unused[1]        = {};
         };
+
+        virtual bool update(WigetHandler* handler, Wiget* parent, Wiget* layout, f32 dt);
+        virtual math::Vector2D calculateSize(WigetHandler* handler, Wiget* parent, Wiget* layout);
+
+        void handleNotify(const utils::Reporter<WigetReport>* reporter, const WigetReport& data) override;
 
     protected:
 
-        friend WigetLayout;
-        friend WigetHandler;
+        explicit Wiget(State* state) noexcept;
+        Wiget(const Wiget& other) noexcept;
+        Wiget(Wiget&& other) noexcept;
 
-        template<class TContext = ContextBase>
-        static TContext& cast_data(Context* context)
+        template<class TState = StateBase>
+        static TState& cast_data(State* state)
         {
-            return *static_cast<TContext*>(context);
+            return *static_cast<TState*>(state);
         }
 
-        virtual bool update(WigetHandler* handler, Wiget* parent, WigetLayout* layout, f32 dt);
+        State* m_data = nullptr;
 
-        Context* m_data;
+        friend WigetHandler;
     };
 
     inline bool Wiget::isActive() const
     {
-        return cast_data<ContextBase>(m_data)._isActive;
+        return cast_data<StateBase>(m_data)._isActive;
     }
 
     inline bool Wiget::isVisible() const
     {
-        return cast_data<ContextBase>(m_data)._isVisible;
+        return cast_data<StateBase>(m_data)._isVisible;
     }
 
     inline bool Wiget::isShowToolTip() const
     {
-        return cast_data<ContextBase>(m_data)._showToolTip;
+        return cast_data<StateBase>(m_data)._showToolTip;
     }
 
     inline const std::string& Wiget::getToolTip() const
     {
-        return cast_data<ContextBase>(m_data)._toolTip;
+        return cast_data<StateBase>(m_data)._toolTip;
     }
 
     inline Wiget& Wiget::setActive(bool active)
     {
-        if (cast_data<ContextBase>(m_data)._isActive != active)
+        if (cast_data<StateBase>(m_data)._isActive != active)
         {
-            cast_data<ContextBase>(m_data)._isActive = active;
-            cast_data<ContextBase>(m_data)._stateMask = 0x01; //Active
+            cast_data<StateBase>(m_data)._isActive = active;
+            cast_data<StateBase>(m_data)._stateMask = State::StateMask::Active;
         }
 
         return *this;
@@ -135,10 +164,10 @@ namespace ui
 
     inline Wiget& Wiget::setVisible(bool visible)
     {
-        if (cast_data<ContextBase>(m_data)._isVisible != visible)
+        if (cast_data<StateBase>(m_data)._isVisible != visible)
         {
-            cast_data<ContextBase>(m_data)._isVisible = visible;
-            cast_data<ContextBase>(m_data)._stateMask = 0x02; //Visible
+            cast_data<StateBase>(m_data)._isVisible = visible;
+            cast_data<StateBase>(m_data)._stateMask = State::StateMask::Visible;
         }
 
         return *this;
@@ -146,32 +175,38 @@ namespace ui
 
     inline Wiget& Wiget::setToolTip(bool show, const std::string& tip)
     {
-        cast_data<ContextBase>(m_data)._showToolTip = show;
-        cast_data<ContextBase>(m_data)._toolTip = tip;
+        cast_data<StateBase>(m_data)._showToolTip = show;
+        cast_data<StateBase>(m_data)._toolTip = tip;
         return *this;
     }
 
     inline Wiget& Wiget::setOnUpdate(const OnWigetEventUpdate& event)
     {
-        cast_data<ContextBase>(m_data)._onUpdate = event;
+        cast_data<StateBase>(m_data)._onUpdate = event;
         return *this;
     }
 
     inline Wiget& Wiget::setOnVisibleChanged(const OnWigetEvent& event)
     {
-        cast_data<ContextBase>(m_data)._onVisibleChanged = event;
+        cast_data<StateBase>(m_data)._onVisibleChanged = event;
         return *this;
     }
 
     inline Wiget& Wiget::setOnActiveChanged(const OnWigetEvent& event)
     {
-        cast_data<ContextBase>(m_data)._onActiveChanged = event;
+        cast_data<StateBase>(m_data)._onActiveChanged = event;
         return *this;
     }
 
-    inline bool Wiget::isStateMaskActive(u64 mask) const
+    inline Wiget& Wiget::setOnCreated(const OnWigetEvent& event)
     {
-        return cast_data<ContextBase>(m_data)._stateMask & mask;
+        cast_data<StateBase>(m_data)._onCreated = event;
+        return *this;
+    }
+
+    inline bool Wiget::isStateMaskActive(u64 state) const
+    {
+        return cast_data<StateBase>(m_data)._stateMask & state;
     }
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -184,9 +219,10 @@ namespace ui
     {
     public:
 
-        explicit WigetBase(Wiget::Context* context) noexcept;
+        explicit WigetBase(Wiget::State* state) noexcept;
         WigetBase(const WigetBase&) noexcept;
-        ~WigetBase() = default;
+        WigetBase(WigetBase&&) noexcept;
+        virtual ~WigetBase() = default;
 
         bool isActive() const;
         bool isVisible() const;
@@ -204,13 +240,19 @@ namespace ui
     };
 
     template<class TWiget>
-    inline WigetBase<TWiget>::WigetBase(Wiget::Context* context) noexcept
+    inline WigetBase<TWiget>::WigetBase(Wiget::State* context) noexcept
         : Wiget(context)
     {
     }
 
     template<class TWiget>
     inline WigetBase<TWiget>::WigetBase(const WigetBase& other) noexcept
+        : Wiget(other)
+    {
+    }
+
+    template<class TWiget>
+    inline WigetBase<TWiget>::WigetBase(WigetBase&& other) noexcept
         : Wiget(other)
     {
     }

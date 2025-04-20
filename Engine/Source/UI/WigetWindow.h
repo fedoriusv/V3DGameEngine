@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Wiget.h"
+#include "WigetLayout.h"
 
 namespace v3d
 {
@@ -11,7 +12,7 @@ namespace ui
     /**
     * @brief WigetWindow wiget class
     */
-    class WigetWindow : public WigetBase<WigetWindow>
+    class WigetWindow final : public WigetBase<WigetWindow>
     {
     public:
 
@@ -22,11 +23,12 @@ namespace ui
             Scrollable = 1 << 2,
             AutoResizeByContent = 1 << 3,
         };
-
         typedef u64 WindowFlags;
 
+        explicit WigetWindow(const std::string& title, WindowFlags flags = 0) noexcept;
         explicit WigetWindow(const std::string& title, const math::Dimension2D& size, const math::Point2D& pos, WindowFlags flags = 0) noexcept;
         WigetWindow(const WigetWindow&) noexcept;
+        WigetWindow(WigetWindow&&) noexcept;
         ~WigetWindow();
 
         const math::Dimension2D& getSize() const;
@@ -41,92 +43,128 @@ namespace ui
 
         WigetWindow& setOnSizeChanged(const OnWigetEventDimention2DParam& event);
         WigetWindow& setOnPositionChanged(const OnWigetEventPoint2DParam& event);
-
-        template<class TWiget>
-        WigetWindow& addWiget(TWiget& wiget);
+        WigetWindow& setOnClosed(const OnWigetEvent& event);
 
         template<class TWiget>
         WigetWindow& addWiget(const TWiget& wiget);
 
-        struct ContextWindow : ContextBase
+        template<class TWiget>
+        WigetWindow& addWiget(TWiget&& wiget);
+
+        WigetWindow& setupWindowLayout(const WigetWindowLayout& layout);
+        WigetWindow& setupWindowLayout(WigetWindowLayout&& layout);
+
+        struct StateWindow : StateBase
         {
-            math::Dimension2D            _size;
-            math::Point2D                _position;
-            std::string                  _title;
-            WindowFlags                  _flags;
-            WigetLayout                  _layout;
-            OnWigetEventDimention2DParam _onSizeChanged;
-            OnWigetEventPoint2DParam     _onPositionChanged;
-            platform::Window*            _currentWindow = nullptr;
+            math::Dimension2D               _size;
+            math::Point2D                   _position;
+            std::string                     _title;
+            WindowFlags                     _flags = 0;
+            WigetLayout                     _layout;
+            WigetWindowLayout               _windowLayout;
+            OnWigetEventDimention2DParam    _onSizeChanged;
+            OnWigetEventPoint2DParam        _onPositionChanged;
+            OnWigetEvent                    _onClosed;
+                                            
+            //States                        
+            platform::Window*               _currentWindow = nullptr;
+            math::RectF32                   _cachedWindowRect;
+            math::Vector2D                  _cachedWindowOffest;
         };
 
-        bool update(WigetHandler* handler, Wiget* parent, WigetLayout* layout, f32 dt) override;
+    private:
 
+        using WigetType = WigetWindow;
+        using StateType = StateWindow;
+
+        bool update(WigetHandler* handler, Wiget* parent, Wiget* layout, f32 dt) final;
+        Wiget* copy() const final;
     };
 
     inline const math::Dimension2D& WigetWindow::getSize() const
     {
-        return Wiget::cast_data<ContextWindow>(m_data)._size;
+        return Wiget::cast_data<StateType>(m_data)._size;
     }
 
     inline const math::Point2D& WigetWindow::getPosition() const
     {
-        return  Wiget::cast_data<ContextWindow>(m_data)._position;
+        return  Wiget::cast_data<StateType>(m_data)._position;
     }
 
     inline const std::string& WigetWindow::getTitle() const
     {
-        return  Wiget::cast_data<ContextWindow>(m_data)._title;
+        return  Wiget::cast_data<StateType>(m_data)._title;
     }
 
     inline const platform::Window* WigetWindow::getWindow() const
     {
-        return  Wiget::cast_data<ContextWindow>(m_data)._currentWindow;
+        return  Wiget::cast_data<StateType>(m_data)._currentWindow;
     }
 
     inline WigetWindow& WigetWindow::setSize(const math::Dimension2D& size)
     {
-        Wiget::cast_data<ContextWindow>(m_data)._size = size;
+        Wiget::cast_data<StateType>(m_data)._size = size;
         return *this;
     }
 
     inline WigetWindow& WigetWindow::setPosition(const math::Point2D& position)
     {
-        Wiget::cast_data<ContextWindow>(m_data)._position = position;
+        Wiget::cast_data<StateType>(m_data)._position = position;
         return *this;
     }
 
     inline WigetWindow& WigetWindow::setTitle(const std::string& title)
     {
-        Wiget::cast_data<ContextWindow>(m_data)._title = title;
+        Wiget::cast_data<StateType>(m_data)._title = title;
         return *this;
     }
 
     inline WigetWindow& WigetWindow::setOnSizeChanged(const OnWigetEventDimention2DParam& event)
     {
-        cast_data<ContextWindow>(m_data)._onSizeChanged = event;
+        cast_data<StateType>(m_data)._onSizeChanged = event;
         return *this;
     }
 
     inline WigetWindow& WigetWindow::setOnPositionChanged(const OnWigetEventPoint2DParam& event)
     {
-        cast_data<ContextWindow>(m_data)._onPositionChanged = event;
+        cast_data<StateType>(m_data)._onPositionChanged = event;
         return *this;
     }
 
-    template<class TWiget>
-    inline WigetWindow& WigetWindow::addWiget(TWiget& wiget)
+    inline WigetWindow& WigetWindow::setOnClosed(const OnWigetEvent& event)
     {
-        WigetLayout& layout = Wiget::cast_data<ContextWindow>(m_data)._layout;
-        layout.addWiget(wiget);
+        cast_data<StateType>(m_data)._onClosed = event;
         return *this;
     }
 
     template<class TWiget>
     inline WigetWindow& WigetWindow::addWiget(const TWiget& wiget)
     {
-        WigetLayout& layout = Wiget::cast_data<ContextWindow>(m_data)._layout;
+        WigetLayout& layout = Wiget::cast_data<StateType>(m_data)._layout;
         layout.addWiget(wiget);
+        return *this;
+    }
+
+    template<class TWiget>
+    inline WigetWindow& WigetWindow::addWiget(TWiget&& wiget)
+    {
+        static_assert(std::is_move_constructible<TWiget>::value, "must be movable");
+        static_assert(std::is_nothrow_move_constructible<TWiget>::value, "should be noexcept movable");
+
+        WigetLayout& layout = Wiget::cast_data<StateType>(m_data)._layout;
+        layout.addWiget(std::forward<TWiget>(wiget));
+        return *this;
+    }
+
+    inline WigetWindow& WigetWindow::setupWindowLayout(const WigetWindowLayout& layout)
+    {
+        cast_data<StateType>(m_data)._windowLayout = layout;
+        return *this;
+    }
+
+    inline WigetWindow& WigetWindow::setupWindowLayout(WigetWindowLayout&& layout)
+    {
+        cast_data<StateType>(m_data)._windowLayout = std::forward<WigetWindowLayout>(layout);
         return *this;
     }
 

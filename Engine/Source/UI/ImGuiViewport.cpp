@@ -6,7 +6,8 @@
 #include "Renderer/Swapchain.h"
 
 #if USE_IMGUI
-#include "ImGui.h"
+#include "ImGuiHandler.h"
+#include "ThirdParty/imgui/imgui.h"
 
 namespace v3d
 {
