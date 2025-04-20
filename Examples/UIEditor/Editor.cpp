@@ -1,10 +1,12 @@
 #include "Editor.h"
 
+#include "Utils/Logger.h"
 #include "Renderer/Shader.h"
 #include "Resource/ResourceManager.h"
 #include "Resource/ShaderCompiler.h"
 #include "Stream/StreamManager.h"
-#include "Utils/Logger.h"
+#include "Resource/ResourceManager.h"
+#include "Resource/ImageFileLoader.h"
 
 using namespace v3d;
 using namespace v3d::renderer;
@@ -199,6 +201,11 @@ void EditorScene::recreateViewport(const v3d::math::Dimension2D& viewportSize)
             renderer::TransitionOp::TransitionOp_Undefined, renderer::TransitionOp::TransitionOp_DepthStencilAttachment
         }
     );
+}
+
+void EditorScene::createTestWindow()
+{
+
 }
 
 void EditorScene::cleanup()

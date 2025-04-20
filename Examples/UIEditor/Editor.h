@@ -57,4 +57,6 @@ private:
     v3d::renderer::GraphicsPipelineState*   m_Pipeline;
     v3d::renderer::VertexBuffer*            m_Geometry;
 
+    void createTestWindow();
+
 };
