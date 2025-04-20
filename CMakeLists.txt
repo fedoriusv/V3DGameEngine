@@ -105,6 +105,10 @@ foreach(INCLUDE_SUFFIX ${THIRD_PARTY_LIB_INCLUDE_SUFFIX})
     set(LIB_INCLUDE_DIRECTORY ${LIB_INCLUDE_DIRECTORY} ${ENGINE_PROJECT_DIR}/Engine/ThirdParty/${INCLUDE_SUFFIX})
 endforeach()
 
+foreach(INCLUDE_SUFFIX ${THIRD_PARTY_SOURCE_INCLUDE_SUFFIX})
+    set(LIB_INCLUDE_DIRECTORY ${LIB_INCLUDE_DIRECTORY} ${ENGINE_PROJECT_DIR}/Engine/Source/ThirdParty/${INCLUDE_SUFFIX})
+endforeach()
+
 ##############################################################
 #Vulkan
 ##############################################################
@@ -222,6 +226,7 @@ if(BUILD_DIRECTX_SDK)
 endif()
 if (IMGUI_SOURCE)
     file(GLOB IMGUI_SOURCES ${SOURCE_DIR}/ThirdParty/imgui/*.h ${SOURCE_DIR}/ThirdParty/imgui/*.cpp)
+    file(GLOB IMGUIZMO_SOURCES ${SOURCE_DIR}/ThirdParty/imguizmo/*.h ${SOURCE_DIR}/ThirdParty/imguizmo/*.cpp)
 endif()
 
 ##############################################################
@@ -252,6 +257,7 @@ if(BUILD_DIRECTX_SDK)
 endif()
 if (IMGUI_SOURCE)
     source_group("ThirdParty\\imgui" FILES ${IMGUI_SOURCES})
+    source_group("ThirdParty\\imguizmo" FILES ${IMGUIZMO_SOURCES})
 endif()
 
 add_library(${ENGINE_NAME} STATIC 
@@ -273,7 +279,7 @@ add_library(${ENGINE_NAME} STATIC
     ${UI_SOURCES}
     $<$<BOOL:BUILD_VULKAN_SDK>:${VULKAN_HEADERS} ${VULKAN_SOURCES} ${RESOURCE_SPIRV_HEADERS} ${RESOURCE_SPIRV_SOURCES}>
     $<$<BOOL:BUILD_DIRECTX_SDK>:${DIRECTX_HEADERS} ${DIRECTX_SOURCES}>
-    $<$<BOOL:IMGUI_SOURCE>:${IMGUI_SOURCES}>
+    $<$<BOOL:IMGUI_SOURCE>:${IMGUI_SOURCES} ${IMGUIZMO_SOURCES}>
     )
 
 target_include_directories(${ENGINE_NAME} BEFORE 

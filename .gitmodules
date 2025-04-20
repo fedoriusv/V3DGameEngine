@@ -30,3 +30,6 @@
 [submodule "Engine/Source/ThirdParty/imgui"]
 	path = Engine/Source/ThirdParty/imgui
 	url = https://github.com/ocornut/imgui.git
+[submodule "Engine/Source/ThirdParty/ImGuizmo"]
+	path = Engine/Source/ThirdParty/ImGuizmo
+	url = git@github.com:CedricGuillemet/ImGuizmo.git
