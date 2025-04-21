@@ -230,11 +230,19 @@ private:
 
         //Scene Editor
         ui::WigetWindow& SceneEditor = m_UI->createWiget<ui::WigetWindow>("Scene Editor", ui::WigetWindow::Moveable | ui::WigetWindow::Resizeable)
-            .addWiget(ui::WigetText("text")
+            .addWiget(ui::WigetText("Mode: "))
+            .addWiget(ui::WigetRadioButtonGroup()
+                .addElement("select")
+                .addElement("move")
+                .addElement("rotate")
+                .addElement("scale")
+                .setActiveIndex(0)
+                .setOnChangedIndexEvent([](const ui::Wiget* w, s32 index) -> void
+                    {
+                        LOG_DEBUG("Mode Index %d", index);
+                    })
+                );
 
-            );
-
-        math::Dimension2D viewportSize(800, 600);
         ui::WigetWindow& win0 = m_UI->createWiget<ui::WigetWindow>("Viewport", ui::WigetWindow::Moveable | ui::WigetWindow::Resizeable)
             .setActive(true)
             .setVisible(true)
@@ -246,20 +254,38 @@ private:
                 {
                     LOG_DEBUG("Viewport OnPosChanged [%d %d]", pos.m_x, pos.m_y);
                 })
+            .setOnFocusChanged([this](const ui::Wiget* w, bool focused)
+                {
+                    if (focused)
+                    {
+                        m_Window->getInputEventReceiver()->attach(InputEvent::InputEventType::MouseInputEvent, m_EditorScene);
+                        m_Window->getInputEventReceiver()->attach(InputEvent::InputEventType::KeyboardInputEvent, m_EditorScene);
+                    }
+                    else
+                    {
+                        m_Window->getInputEventReceiver()->dettach(InputEvent::InputEventType::MouseInputEvent, m_EditorScene);
+                        m_Window->getInputEventReceiver()->dettach(InputEvent::InputEventType::KeyboardInputEvent, m_EditorScene);
+                    }
+                })
             .addWiget(ui::WigetText("text")
                 )
-            .addWiget(ui::WigetImage(viewportSize)
-                .setOnUpdate([this](ui::Wiget* w, f32 dt) -> void
-                    {
-                        auto texture = m_EditorScene->getOutputTexture();
-                        static_cast<ui::WigetImage*>(w)->setTexture(texture);
-                        static_cast<ui::WigetImage*>(w)->setSize(texture->getDimension());
-                    })
-                .setOnDrawRectChanged([this](const ui::Wiget* w, const ui::Wiget* p, const math::Rect32& dim) -> void
-                    {
-                        const platform::Window* window = static_cast<const ui::WigetWindow*>(p)->getWindow();
-                        m_EditorScene->onChanged(window, dim);
-                    })
+            .addWiget(ui::WigetLayout(ui::WigetLayout::Border)
+                .setHAlignment(ui::WigetLayout::HorizontalAlignment::AlignmentFill)
+                .setVAlignment(ui::WigetLayout::VerticalAlignment::AlignmentFill)
+                .addWiget(ui::WigetImage(nullptr, {})
+                    .setOnUpdate([this](ui::Wiget* w, f32 dt) -> void
+                        {
+                            auto texture = m_EditorScene->getOutputTexture();
+                            static_cast<ui::WigetImage*>(w)->setTexture(texture);
+                        })
+                    .setOnDrawRectChanged([this](ui::Wiget* w, ui::Wiget* p, const math::Rect32& dim) -> void
+                        {
+                            m_EditorScene->onChanged(dim);
+
+                            auto texture = m_EditorScene->getOutputTexture();
+                            static_cast<ui::WigetImage*>(w)->setTexture(texture);
+                        })
+                    )
                 );
 
         ui::WigetWindow& win1 = m_UI->createWiget<ui::WigetWindow>("Content", ui::WigetWindow::Moveable | ui::WigetWindow::Resizeable)
@@ -282,7 +308,7 @@ private:
 
         //Editor
         m_EditorScene = new EditorScene();
-        m_EditorScene->init(m_Device, viewportSize);
+        m_EditorScene->init(m_Device, math::Dimension2D(800, 600));
 
         m_Window->getInputEventReceiver()->attach(InputEvent::InputEventType::MouseInputEvent, m_EditorScene);
         m_Window->getInputEventReceiver()->attach(InputEvent::InputEventType::KeyboardInputEvent, m_EditorScene);
@@ -464,9 +490,8 @@ private:
                 .setActive(true)
                 )
             .addWiget(ui::WigetLayout(ui::WigetLayout::Border)
-                .setSize({ 200, 200 })
-                .addWiget(ui::WigetImage({ 200, 200 }, {0.25, 0.25, 1, 1})
-                    .setTexture(texture))
+                .setHAlignment(ui::WigetLayout::HorizontalAlignment::AlignmentFill)
+                .addWiget(ui::WigetImage(texture, { 200, 200 }, {0.25, 0.25, 1, 1}))
                 );
     }
 

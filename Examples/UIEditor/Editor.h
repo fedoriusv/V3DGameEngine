@@ -37,7 +37,7 @@ public:
 
 public:
 
-    void onChanged(const v3d::platform::Window* window, const v3d::math::Rect32& viewport);
+    void onChanged(const v3d::math::Rect32& viewport);
 
 private:
 
@@ -50,7 +50,6 @@ private:
     v3d::scene::CameraArcballHandler*       m_Camera;
     v3d::renderer::RenderTargetState*       m_VewiportTarget;
 
-    const v3d::platform::Window*            m_CurrentWindow;
     v3d::math::Rect32                       m_CurrentViewportRect;
 
     v3d::renderer::ShaderProgram*           m_Program;

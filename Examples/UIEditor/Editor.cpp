@@ -25,7 +25,6 @@ EditorScene::EditorScene()
     , m_Geometry(nullptr)
 
     , m_Camera(new scene::CameraArcballHandler(new scene::Camera(math::Vector3D(0.0f, 0.0f, 0.0f), math::Vector3D(0.0f, 1.0f, 0.0f)), 3.0f, k_nearValue + 1.0f, k_farValue - 10.0f))
-    , m_CurrentWindow(nullptr)
     , m_VewiportTarget(nullptr)
 {
     InputEventHandler::bind([this](const MouseInputEvent* event)
@@ -260,7 +259,7 @@ void EditorScene::render(v3d::renderer::CmdListRender* cmdList)
     cmdList->endRenderTarget();
 }
 
-void EditorScene::onChanged(const platform::Window* window, const v3d::math::Rect32& viewport)
+void EditorScene::onChanged(const v3d::math::Rect32& viewport)
 {
     if (viewport != m_CurrentViewportRect)
     {
@@ -271,7 +270,6 @@ void EditorScene::onChanged(const platform::Window* window, const v3d::math::Rec
 
         m_CurrentViewportRect = viewport;
     }
-    m_CurrentWindow = window;
 }
 
 const renderer::Texture2D* EditorScene::getOutputTexture() const
@@ -286,25 +284,22 @@ const v3d::math::Rect32& EditorScene::getViewportArea() const
 
 bool EditorScene::handleInputEvent(event::InputEventHandler* handler, const event::InputEvent* event)
 {
-    if (m_CurrentWindow && m_CurrentWindow->ID() == event->_windowID && m_CurrentWindow->isFocused())
+    if (event->_eventType == event::InputEvent::InputEventType::MouseInputEvent)
     {
-        if (event->_eventType == event::InputEvent::InputEventType::MouseInputEvent)
+        const event::MouseInputEvent* mouseEvent = static_cast<const event::MouseInputEvent*>(event);
+        if (m_CurrentViewportRect.isPointInside({ mouseEvent->_absoluteCoordinates.m_x, mouseEvent->_absoluteCoordinates.m_y }))
         {
-            const event::MouseInputEvent* mouseEvent = static_cast<const event::MouseInputEvent*>(event);
-            if (m_CurrentViewportRect.isPointInside({ mouseEvent->_absoluteCoordinates.m_x, mouseEvent->_absoluteCoordinates.m_y }))
-            {
-                m_Camera->handleMouseCallback(handler, mouseEvent);
-            }
-
-            return true;
+            m_Camera->handleMouseCallback(handler, mouseEvent);
         }
-        else if (event->_eventType == event::InputEvent::InputEventType::TouchInputEvent)
-        {
-            const event::TouchInputEvent* touchEvent = static_cast<const event::TouchInputEvent*>(event);
-            m_Camera->handleTouchCallback(handler, touchEvent);
 
-            return true;
-        }
+        return true;
+    }
+    else if (event->_eventType == event::InputEvent::InputEventType::TouchInputEvent)
+    {
+        const event::TouchInputEvent* touchEvent = static_cast<const event::TouchInputEvent*>(event);
+        m_Camera->handleTouchCallback(handler, touchEvent);
+
+        return true;
     }
 
     return false;
