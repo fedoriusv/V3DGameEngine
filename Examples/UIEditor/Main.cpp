@@ -38,7 +38,7 @@ public:
     EditorApplication(int& argc, char** argv)
         : v3d::Application(argc, argv)
     {
-        m_Window = Window::createWindow({ 1280, 720 }, { 800, 500 }, false, true, new InputEventReceiver(), L"MainWindow");
+        m_Window = Window::createWindow({ 1280, 720 }, { 800, 500 }, false, true, new InputEventReceiver(), "MainWindow");
         ASSERT(m_Window, "windows is nullptr");
     }
     

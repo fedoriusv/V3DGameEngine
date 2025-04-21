@@ -21,9 +21,9 @@ public:
 
         , m_InputEventHandler(nullptr)
     {
-        m_MainWindow = Window::createWindow({ 1024, 768 }, { 100, 100 }, false, true, m_InputReceiver, L"Main. Double click to create sub window");
+        m_MainWindow = Window::createWindow({ 1024, 768 }, { 100, 100 }, false, true, m_InputReceiver, "Main. Double click to create sub window");
         ASSERT(m_MainWindow, "windows is nullptr");
-        Window* UIWindow = Window::createWindow({ 250, 250 }, { 1150, 100 }, false, true, m_InputReceiver, L"UI");
+        Window* UIWindow = Window::createWindow({ 250, 250 }, { 1150, 100 }, false, true, m_InputReceiver, "UI");
         ASSERT(UIWindow, "windows is nullptr");
         m_ChildWindows.push_back(UIWindow);
 
@@ -63,8 +63,7 @@ public:
                     s32 h = rand() % rangeH + min;
 
                     std::string name = "UI_" + std::to_string(utils::Timer::getCurrentTime());
-                    std::wstring wname(name.begin(), name.end());
-                    Window* UIWindow = Window::createWindow({ 250, 250 }, { w, h }, false, true, m_InputReceiver, wname);
+                    Window* UIWindow = Window::createWindow({ 250, 250 }, { w, h }, false, true, m_InputReceiver, name);
                     ASSERT(UIWindow, "windows is nullptr");
                     m_ChildWindows.push_back(UIWindow);
                 }

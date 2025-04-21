@@ -117,7 +117,11 @@ private:
         InputEventHandler::bind([this](const SystemEvent* event)
             {
                 Window* window = Window::getWindowsByID(event->_windowID);
-                if (event->_systemEvent == SystemEvent::Destroy)
+                if (event->_systemEvent == SystemEvent::Resize)
+                {
+                    m_Swapchain->resize(window->getSize());
+                }
+                else if (event->_systemEvent == SystemEvent::Destroy)
                 {
                     m_terminate = true;
                 }
