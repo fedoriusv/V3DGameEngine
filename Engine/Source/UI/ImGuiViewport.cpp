@@ -21,7 +21,7 @@ void ImGuiWigetViewportEvents::ImGui_CreateWindow(ImGuiViewport* vp)
         platform::Window* parentWindow = reinterpret_cast<platform::Window*>(parentViewport->PlatformUserData);
         ASSERT(parentWindow, "parentWindow is nullptr");
 
-        platform::Window* window = platform::Window::createWindow({ (u32)vp->Size.x, (u32)vp->Size.y }, { (s32)vp->Pos.x, (s32)vp->Pos.y }, parentWindow, false, L"ChildWindow");
+        platform::Window* window = platform::Window::createWindow({ (u32)vp->Size.x, (u32)vp->Size.y }, { (s32)vp->Pos.x, (s32)vp->Pos.y }, parentWindow, false, "ChildWindow");
         ASSERT(window, "window is nullptr");
 
         vp->PlatformUserData = window;
@@ -113,7 +113,7 @@ void ImGuiWigetViewportEvents::ImGui_SetWindowTitle(ImGuiViewport* vp, const cha
     platform::Window* window = reinterpret_cast<platform::Window*>(vp->PlatformUserData);
     ASSERT(window, "nullptr");
 
-    window->setText(platform::Platform::utf8ToWide(str));
+    window->setText(std::string(str));
 }
 
 void ImGuiWigetViewportEvents::ImGui_SetWindowAlpha(ImGuiViewport* vp, float alpha)

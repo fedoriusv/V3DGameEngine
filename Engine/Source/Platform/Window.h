@@ -28,7 +28,7 @@ namespace platform
         */
         struct WindowParams
         {
-            std::wstring            _text;
+            std::string             _text;
             math::Dimension2D       _size;
             math::Point2D           _position;
             bool                    _isFullscreen;
@@ -40,7 +40,7 @@ namespace platform
             bool                    _isFocused;
 
             WindowParams() noexcept
-                : _text(L"Window")
+                : _text("Window")
                 , _size(math::Dimension2D(1024U, 768U))
                 , _position(math::Point2D(0U, 0U))
                 , _isFullscreen(false)
@@ -61,10 +61,10 @@ namespace platform
         * @param bool fullscreen [optional]
         * @param bool resizable [optional]
         * @param InputEventReceiver* receiver [optional]
-        * @param const std::wstring& text [optional]
+        * @param const std::string& text [optional]
         * @return pointer of created window
         */
-        [[nodiscard]] static Window* createWindow(const math::Dimension2D& size, const math::Point2D& pos, bool fullscreen = false, bool resizable = false, event::InputEventReceiver* receiver = nullptr , [[maybe_unused]] const std::wstring& text = L"");
+        [[nodiscard]] static Window* createWindow(const math::Dimension2D& size, const math::Point2D& pos, bool fullscreen = false, bool resizable = false, event::InputEventReceiver* receiver = nullptr , [[maybe_unused]] const std::string& text = "");
 
         /**
         * @brief createWindow function. Create new window.
@@ -72,10 +72,10 @@ namespace platform
         * @param const math::Point2D& pos [required]
         * @param bool fullscreen [optional]
         * @param event::InputEventReceiver* receiver [optional]
-        * @param const std::wstring& text [optional]
+        * @param const std::string& text [optional]
         * @return pointer of created window
         */
-        [[nodiscard]] static Window* createWindow(const math::Dimension2D& size, const math::Point2D& pos, bool fullscreen = false, event::InputEventReceiver* receiver = nullptr, [[maybe_unused]] const std::wstring& text = L"");
+        [[nodiscard]] static Window* createWindow(const math::Dimension2D& size, const math::Point2D& pos, bool fullscreen = false, event::InputEventReceiver* receiver = nullptr, [[maybe_unused]] const std::string& text = "");
 
         /**
         * @brief createWindow function. Create new window.
@@ -83,10 +83,10 @@ namespace platform
         * @param const math::Point2D& pos [required]
         * @param const Window* parent [required]
         * @param bool resizable [optional]
-        * @param const std::wstring& text [optional]
+        * @param const std::string& text [optional]
         * @return pointer of created window
         */
-        [[nodiscard]] static Window* createWindow(const math::Dimension2D& size, const math::Point2D& pos, Window* parent, bool resizable = false, [[maybe_unused]] const std::wstring& text = L"");
+        [[nodiscard]] static Window* createWindow(const math::Dimension2D& size, const math::Point2D& pos, Window* parent, bool resizable = false, [[maybe_unused]] const std::string& text = "");
 
         /**
         * @brief updateWindow function. Updates window
@@ -108,7 +108,7 @@ namespace platform
 
         virtual void setFullScreen(bool value = true) = 0;
         virtual void setResizeble(bool value = true) = 0;
-        virtual void setText(const std::wstring& text) = 0;
+        virtual void setText(const std::string& text) = 0;
         virtual void setSize(const math::Dimension2D& size) = 0;
         virtual void setPosition(const math::Point2D& pos) = 0;
 
@@ -123,7 +123,7 @@ namespace platform
 
         virtual const math::Dimension2D& getSize() const;
         virtual const math::Point2D& getPosition() const;
-        virtual const std::wstring& getText() const;
+        virtual const std::string& getText() const;
 
         event::InputEventReceiver* getInputEventReceiver() const;
 
@@ -190,7 +190,7 @@ namespace platform
         return m_params._position;
     }
 
-    inline const std::wstring& Window::getText() const
+    inline const std::string& Window::getText() const
     {
         return m_params._text;
     }

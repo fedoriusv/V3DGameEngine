@@ -31,7 +31,7 @@ namespace platform
 
         void setFullScreen(bool value = true) override;
         void setResizeble(bool value = true) override;
-        void setText(const std::wstring& text) override;
+        void setText(const std::string& text) override;
         void setSize(const math::Dimension2D& size) override;
         void setPosition(const math::Point2D& pos) override;
 

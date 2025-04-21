@@ -5,6 +5,7 @@
 #include "Utils/Logger.h"
 #include "Utils/Timer.h"
 #include "WindowWindows.h"
+#include "Platform.h"
 
 #ifdef PLATFORM_WINDOWS
 #include <winuser.h>
@@ -21,7 +22,7 @@ WindowWindows::WindowWindows(const WindowParams& params, event::InputEventReceiv
     , m_hInstance(NULL)
     , m_hWnd(NULL)
     , m_parent(parent)
-    , m_className(L"Window")
+    , m_className(L"Window_" + std::to_wstring(reinterpret_cast<u64>(this)))
 {
     LOG_DEBUG("WindowWindows::WindowWindows: Created Windows window %llx", this);
     fillKeyCodes();
@@ -30,15 +31,18 @@ WindowWindows::WindowWindows(const WindowParams& params, event::InputEventReceiv
 bool WindowWindows::initialize()
 {
     m_hInstance = GetModuleHandle(NULL);
-    std::wstring className = m_className;
     HWND parentHWnd = nullptr;
 
-    DWORD dwStyle = WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_THICKFRAME;
+    DWORD dwStyle = WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU;
     DWORD dwExStyle = WS_EX_APPWINDOW;
 
     if (m_parent)
     {
         dwStyle = WS_POPUP;
+        if (m_params._isResizable)
+        {
+            dwStyle |= WS_THICKFRAME;
+        }
         dwExStyle = WS_EX_APPWINDOW;
 
         parentHWnd = m_parent->getWindowHandle();
@@ -78,7 +82,7 @@ bool WindowWindows::initialize()
         }
         else if (m_params._isResizable)
         {
-            dwStyle |= WS_MINIMIZEBOX | WS_MAXIMIZEBOX;
+            dwStyle |= WS_MINIMIZEBOX | WS_MAXIMIZEBOX | WS_THICKFRAME;
         }
     }
 
@@ -92,7 +96,8 @@ bool WindowWindows::initialize()
 
     // create window
     ASSERT(!m_hWnd, "Already exist");
-    m_hWnd = CreateWindowEx(dwExStyle, className.c_str(), m_params._text.c_str(), dwStyle,
+    const std::wstring wtext(m_params._text.cbegin(), m_params._text.cend());
+    m_hWnd = CreateWindowEx(dwExStyle, m_className.c_str(), wtext.c_str(), dwStyle,
         borderRect.left, borderRect.top, borderRect.right - borderRect.left, borderRect.bottom - borderRect.top, parentHWnd, NULL, m_hInstance, this);
 
     if (!m_hWnd)
@@ -261,12 +266,15 @@ void WindowWindows::setResizeble(bool value)
     ASSERT(false, "not implemented");
 }
 
-void WindowWindows::setText(const std::wstring& text)
+void WindowWindows::setText(const std::string& text)
 {
     ASSERT(m_hWnd, "Must be valid");
 
-    SetWindowTextW(m_hWnd, text.c_str());
-    DefWindowProcW(m_hWnd, WM_SETTEXT, 0, (LPARAM)text.c_str());
+    const std::wstring wtext(text.cbegin(), text.cend());
+    SetWindowTextW(m_hWnd, wtext.c_str());
+    DefWindowProcW(m_hWnd, WM_SETTEXT, 0, (LPARAM)wtext.c_str());
+
+    m_params._text = text;
 }
 
 void WindowWindows::setSize(const math::Dimension2D& size)
