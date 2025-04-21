@@ -31,6 +31,8 @@ namespace ui
         WigetWindow(WigetWindow&&) noexcept;
         ~WigetWindow();
 
+        bool isFocused() const;
+
         const math::Dimension2D& getSize() const;
         const math::Point2D& getPosition() const;
         const std::string& getTitle() const;
@@ -43,6 +45,7 @@ namespace ui
 
         WigetWindow& setOnSizeChanged(const OnWigetEventDimention2DParam& event);
         WigetWindow& setOnPositionChanged(const OnWigetEventPoint2DParam& event);
+        WigetWindow& setOnFocusChanged(const OnWigetEventBoolParam& event);
         WigetWindow& setOnClosed(const OnWigetEvent& event);
 
         template<class TWiget>
@@ -59,14 +62,15 @@ namespace ui
             math::Dimension2D               _size;
             math::Point2D                   _position;
             std::string                     _title;
-            WindowFlags                     _flags = 0;
+            WindowFlags                     _createFlags = 0;
             WigetLayout                     _layout;
             WigetWindowLayout               _windowLayout;
             OnWigetEventDimention2DParam    _onSizeChanged;
             OnWigetEventPoint2DParam        _onPositionChanged;
+            OnWigetEventBoolParam           _onFocusChanged;
             OnWigetEvent                    _onClosed;
-                                            
-            //States                        
+
+            //States
             platform::Window*               _currentWindow = nullptr;
             math::RectF32                   _cachedWindowRect;
             math::Vector2D                  _cachedWindowOffest;
@@ -80,6 +84,11 @@ namespace ui
         bool update(WigetHandler* handler, Wiget* parent, Wiget* layout, f32 dt) final;
         Wiget* copy() const final;
     };
+
+    inline bool WigetWindow::isFocused() const
+    {
+        return Wiget::cast_data<StateType>(m_data)._isFocused;
+    }
 
     inline const math::Dimension2D& WigetWindow::getSize() const
     {
@@ -128,6 +137,12 @@ namespace ui
     inline WigetWindow& WigetWindow::setOnPositionChanged(const OnWigetEventPoint2DParam& event)
     {
         cast_data<StateType>(m_data)._onPositionChanged = event;
+        return *this;
+    }
+
+    inline WigetWindow& WigetWindow::setOnFocusChanged(const OnWigetEventBoolParam& event)
+    {
+        cast_data<StateType>(m_data)._onFocusChanged = event;
         return *this;
     }
 

@@ -75,6 +75,13 @@ WigetButton::WigetButton(const WigetButton& other) noexcept
     m_data = state;
 }
 
+WigetButton::WigetButton(WigetButton&& other) noexcept
+    : WigetBase<WigetButton>(other)
+{
+    m_data = other.m_data;
+    other.m_data = nullptr;
+}
+
 WigetButton::~WigetButton()
 {
     if (m_data)
@@ -107,9 +114,10 @@ Wiget* WigetButton::copy() const
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-WigetImage::WigetImage(const math::Dimension2D& size, const math::RectF32& uv) noexcept
+WigetImage::WigetImage(const renderer::Texture2D* texture, const math::Dimension2D& size, const math::RectF32& uv) noexcept
     : WigetBase<WigetImage>(V3D_NEW(StateType, memory::MemoryLabel::MemoryUI)())
 {
+    setTexture(texture);
     setSize(size);
     setUVs(uv);
 }
@@ -120,6 +128,13 @@ WigetImage::WigetImage(const WigetImage& other) noexcept
     StateType* state = V3D_NEW(StateType, memory::MemoryLabel::MemoryUI)();
     *state = *static_cast<StateType*>(other.m_data);
     m_data = state;
+}
+
+WigetImage::WigetImage(WigetImage&& other) noexcept
+    : WigetBase<WigetImage>(other)
+{
+    m_data = other.m_data;
+    other.m_data = nullptr;
 }
 
 WigetImage::~WigetImage()
@@ -139,6 +154,12 @@ bool WigetImage::update(WigetHandler* handler, Wiget* parent, Wiget* layout, f32
     }
 
     return false;
+}
+
+math::Vector2D WigetImage::calculateSize(WigetHandler* handler, Wiget* parent, Wiget* layout)
+{
+    m_data->_itemRect = { {0, 0}, handler->getWigetDrawer()->calculate_ImageSize(this, static_cast<WigetType*>(layout)->m_data, m_data) };
+    return m_data->_itemRect.getSize();
 }
 
 Wiget* WigetImage::copy() const

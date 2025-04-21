@@ -1,4 +1,5 @@
 #include "ImGuiDrawer.h"
+#include "Utils/Logger.h"
 
 #if USE_IMGUI
 #include "Wigets.h"
@@ -38,25 +39,61 @@ bool ImGuiWigetDrawer::draw_Window(Wiget* window, Wiget::State* state, f32 dt)
 
     ImGuiStyle& style = ImGui::GetStyle();
     ImGuiWindowFlags flags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove /*| ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse*/;
-    if (wndCtx->_flags & WigetWindow::Moveable)
+    if (wndCtx->_createFlags & WigetWindow::Moveable)
     {
         flags &= ~ImGuiWindowFlags_NoMove;
     }
 
-    if (wndCtx->_flags & WigetWindow::Resizeable)
+    if (wndCtx->_createFlags & WigetWindow::Resizeable)
     {
         flags &= ~ImGuiWindowFlags_NoResize;
     }
 
-    if (wndCtx->_flags & WigetWindow::Scrollable)
+    if (wndCtx->_createFlags & WigetWindow::Scrollable)
     {
         flags &= ~ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse;
     }
 
-    if (wndCtx->_flags & WigetWindow::AutoResizeByContent)
+    if (wndCtx->_createFlags & WigetWindow::AutoResizeByContent)
     {
         flags |= ImGuiWindowFlags_AlwaysAutoResize;
     }
+
+    static auto callbackHandler = [this](WigetWindow* window, WigetWindow::StateWindow* wndCtx) -> void
+        {
+            math::Point2D pos(ImGui::GetWindowPos().x, ImGui::GetWindowPos().y);
+            const bool posChanged = pos != wndCtx->_position;
+            if (posChanged || wndCtx->_stateMask & Wiget::State::StateMask::ForceUpdate)
+            {
+                wndCtx->_position = pos;
+                if (wndCtx->_onPositionChanged)
+                {
+                    std::invoke(wndCtx->_onPositionChanged, window, nullptr, pos);
+                }
+            }
+
+            math::Dimension2D size(ImGui::GetWindowSize().x, ImGui::GetWindowSize().y);
+            const bool sizeChanged = size != wndCtx->_size;
+            if (sizeChanged || wndCtx->_stateMask & Wiget::State::StateMask::ForceUpdate)
+            {
+                wndCtx->_size = size;
+                if (wndCtx->_onSizeChanged)
+                {
+                    std::invoke(wndCtx->_onSizeChanged, window, nullptr, size);
+                }
+            }
+
+            bool focused = ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows);
+            const bool focusChanged = focused != window->isFocused();
+            if (focusChanged)
+            {
+                wndCtx->_isFocused = focused;
+                if (wndCtx->_onFocusChanged)
+                {
+                    std::invoke(wndCtx->_onFocusChanged, window, focused);
+                }
+            }
+        };
 
     ImGui::PushID(wndCtx->_uid);
     bool open = true;
@@ -65,7 +102,8 @@ bool ImGuiWigetDrawer::draw_Window(Wiget* window, Wiget::State* state, f32 dt)
     {
         ImGuiViewport* viewport = ImGui::GetWindowViewport();
         platform::Window* activeWindow = reinterpret_cast<platform::Window*>(viewport->PlatformUserData);
-        wndCtx->_stateMask = (wndCtx->_currentWindow != activeWindow) ? Wiget::State::StateMask::ForceUpdate : 0x0;
+        wndCtx->_stateMask |= (wndCtx->_currentWindow != activeWindow) ? Wiget::State::StateMask::ForceUpdate : 0x0;
+        
         wndCtx->_currentWindow = activeWindow;
         wndCtx->_cachedWindowRect = { ImGui::GetCursorScreenPos().x, ImGui::GetCursorScreenPos().y, ImGui::GetContentRegionAvail().x + ImGui::GetCursorScreenPos().x, ImGui::GetContentRegionAvail().y + ImGui::GetCursorScreenPos().y };
         wndCtx->_cachedWindowOffest = { ImGui::GetWindowContentRegionMin().x, ImGui::GetWindowContentRegionMin().y };
@@ -75,27 +113,7 @@ bool ImGuiWigetDrawer::draw_Window(Wiget* window, Wiget::State* state, f32 dt)
             ImGui::SetTooltip(wndCtx->_toolTip.c_str());
         }
 
-        math::Point2D pos(ImGui::GetWindowPos().x, ImGui::GetWindowPos().y);
-        bool posChanged = pos != wndCtx->_position;
-        if (posChanged || wndCtx->_stateMask & Wiget::State::StateMask::ForceUpdate)
-        {
-            wndCtx->_position = pos;
-            if (wndCtx->_onPositionChanged)
-            {
-                std::invoke(wndCtx->_onPositionChanged, window, nullptr, pos);
-            }
-        }
-
-        math::Dimension2D size(ImGui::GetWindowSize().x, ImGui::GetWindowSize().y);
-        bool sizeChanged = size != wndCtx->_size;
-        if (sizeChanged || wndCtx->_stateMask & Wiget::State::StateMask::ForceUpdate)
-        {
-            wndCtx->_size = size;
-            if (wndCtx->_onSizeChanged)
-            {
-                std::invoke(wndCtx->_onSizeChanged, window, nullptr, size);
-            }
-        }
+        callbackHandler(static_cast<WigetWindow*>(window), wndCtx);
 
         wndCtx->_layout.update(m_wigetHandler, window, &wndCtx->_layout, dt);
 
@@ -140,27 +158,7 @@ bool ImGuiWigetDrawer::draw_Window(Wiget* window, Wiget::State* state, f32 dt)
         wndCtx->_cachedWindowRect = { ImGui::GetCursorScreenPos().x, ImGui::GetCursorScreenPos().y, ImGui::GetContentRegionAvail().x + ImGui::GetCursorScreenPos().x, ImGui::GetContentRegionAvail().y + ImGui::GetCursorScreenPos().y };
         wndCtx->_cachedWindowOffest = { ImGui::GetWindowContentRegionMin().x, ImGui::GetWindowContentRegionMin().y };
 
-        math::Point2D pos(ImGui::GetWindowPos().x, ImGui::GetWindowPos().y);
-        bool posChanged = pos != wndCtx->_position;
-        if (posChanged || wndCtx->_stateMask & Wiget::State::StateMask::ForceUpdate)
-        {
-            wndCtx->_position = pos;
-            if (wndCtx->_onPositionChanged)
-            {
-                std::invoke(wndCtx->_onPositionChanged, window, nullptr, pos);
-            }
-        }
-
-        math::Dimension2D size(ImGui::GetWindowSize().x, ImGui::GetWindowSize().y);
-        bool sizeChanged = size != wndCtx->_size;
-        if (sizeChanged || wndCtx->_stateMask & Wiget::State::StateMask::ForceUpdate)
-        {
-            wndCtx->_size = size;
-            if (wndCtx->_onSizeChanged)
-            {
-                std::invoke(wndCtx->_onSizeChanged, window, nullptr, size);
-            }
-        }
+        callbackHandler(static_cast<WigetWindow*>(window), wndCtx);
     }
     ImGui::End();
 
@@ -185,7 +183,7 @@ bool ImGuiWigetDrawer::draw_Text(Wiget* wiget, Wiget* base, Wiget::State* layout
         ++pushCount;
     }
 
-    setupHorizontalAligment(layoutCtx, txtCtx->_itemRect.getWidth());
+    setupHorizontalAligment(layoutCtx, 0.f, txtCtx->_itemRect.getWidth());
     //setupVerticalAligment(layoutCtx, txtCtx->_itemRect.getHeight());
 
     if (layoutCtx->_stateMask & Wiget::State::StateMask::HorizontalLine)
@@ -246,7 +244,7 @@ bool ImGuiWigetDrawer::draw_Button(Wiget* button, Wiget* base, Wiget::State* lay
         ++pushCount;
     }
 
-    setupHorizontalAligment(layoutCtx, btnCtx->_itemRect.getWidth());
+    setupHorizontalAligment(layoutCtx, 0.f, btnCtx->_itemRect.getWidth());
     //setupVerticalAligment(layoutCtx, btnCtx->_itemRect.getHeight());
 
     if (layoutCtx->_stateMask & Wiget::State::StateMask::HorizontalLine)
@@ -308,24 +306,39 @@ bool ImGuiWigetDrawer::draw_Image(Wiget* image, Wiget* base, Wiget::State* layou
 {
     ASSERT(ImGui::GetCurrentContext(), "must be valid");
     WigetImage::StateImage* imgCtx = static_cast<WigetImage::StateImage*>(state);
+    WigetLayout::StateLayoutBase* layoutCtx = static_cast<WigetLayout::StateLayoutBase*>(layout);
 
     if (imgCtx->_texture)
     {
+        ImVec2 size = { (f32)imgCtx->_size.m_width, (f32)imgCtx->_size.m_height };
+        ImVec2 uv0 = { imgCtx->_uv.getLeftX(), imgCtx->_uv.getTopY() };
+        ImVec2 uv1 = { imgCtx->_uv.getRightX(), imgCtx->_uv.getBottomY() };
+
+        size.x = setupHorizontalAligment(layoutCtx, size.x, imgCtx->_itemRect.getWidth());
+        //size.y = setupVerticalAligment(layoutCtx, imgCtx->_itemRect.getHeight());
+
+        if (layoutCtx->_aligmentV == WigetLayout::VerticalAlignment::AlignmentFill)
+        {
+            ImVec2 avail = ImGui::GetContentRegionAvail();
+            size.y = layoutCtx->_cachedLayoutRect.getHeight();
+        }
+
+        if (size.x == 0.f || size.y == 0.f)
+        {
+            return false;
+        }
+
         u32 id = ~0;
         auto found = std::find(m_wigetHandler->m_activeTextures.begin(), m_wigetHandler->m_activeTextures.end(), imgCtx->_texture);
         if (found == m_wigetHandler->m_activeTextures.end())
         {
-            m_wigetHandler->m_activeTextures.push_back(imgCtx->_texture);
+            m_wigetHandler->m_activeTextures.push_back(nullptr);
             id = m_wigetHandler->m_activeTextures.size() - 1;
         }
         else
         {
             id = std::distance(m_wigetHandler->m_activeTextures.begin(), found);
         }
-
-        ImVec2 size = { (f32)imgCtx->_size.m_width, (f32)imgCtx->_size.m_height };
-        ImVec2 uv0 = { imgCtx->_uv.getLeftX(), imgCtx->_uv.getTopY() };
-        ImVec2 uv1 = { imgCtx->_uv.getRightX(), imgCtx->_uv.getBottomY() };
 
         ImGui::Image(id, size, uv0, uv1);
 
@@ -361,6 +374,8 @@ bool ImGuiWigetDrawer::draw_Image(Wiget* image, Wiget* base, Wiget::State* layou
                 std::invoke(imgCtx->_onDrawRectChanged, image, base, rect);
             }
         }
+        m_wigetHandler->m_activeTextures[id] = imgCtx->_texture;
+
         return true;
     }
 
@@ -369,7 +384,11 @@ bool ImGuiWigetDrawer::draw_Image(Wiget* image, Wiget* base, Wiget::State* layou
 
 math::Vector2D ImGuiWigetDrawer::calculate_ImageSize(Wiget* wiget, Wiget::State* layout, Wiget::State* state)
 {
-    return math::Vector2D();
+    ASSERT(ImGui::GetCurrentContext(), "must be valid");
+    WigetImage::StateImage* imgCtx = static_cast<WigetImage::StateImage*>(state);
+    ImGuiStyle& style = ImGui::GetStyle();
+
+    return math::Vector2D(imgCtx->_size.m_width + style.FramePadding.x * 2.f, imgCtx->_size.m_height + style.FramePadding.x * 2.f);
 }
 
 bool ImGuiWigetDrawer::draw_CheckBox(Wiget* wiget, Wiget* base, Wiget::State* layout, Wiget::State* state)
@@ -632,21 +651,21 @@ bool ImGuiWigetDrawer::draw_TabBar(Wiget* item, Wiget::State* state, f32 dt)
 
 bool ImGuiWigetDrawer::draw_TabItem(Wiget* wiget, Wiget* base, Wiget::State* layout, Wiget::State* state)
 {
-    ASSERT(ImGui::GetCurrentContext(), "must be valid");
-    WigetTabItem::StateTabItem* tabCtx = static_cast<WigetTabItem::StateTabItem*>(state);
+    //ASSERT(ImGui::GetCurrentContext(), "must be valid");
+    //WigetTabItem::StateTabItem* tabCtx = static_cast<WigetTabItem::StateTabItem*>(state);
 
-    bool clicked = false;
-    bool action = ImGui::BeginTabItem(tabCtx->_text.c_str(), &clicked);
+    //bool clicked = false;
+    //bool action = ImGui::BeginTabItem(tabCtx->_text.c_str(), &clicked);
 
-    if (tabCtx->_onClickedEvent && clicked)
-    {
-        std::invoke(tabCtx->_onClickedEvent, wiget);
-    }
+    //if (tabCtx->_onClickedEvent && clicked)
+    //{
+    //    std::invoke(tabCtx->_onClickedEvent, wiget);
+    //}
 
-    tabCtx->_layout.update(m_wigetHandler, wiget, &tabCtx->_layout, 0);
-    ImGui::EndTabItem();
+    //tabCtx->_layout.update(m_wigetHandler, wiget, &tabCtx->_layout, 0);
+    //ImGui::EndTabItem();
 
-    return action;
+    return false;
 }
 
 void ImGuiWigetDrawer::draw_BeginLayoutState(Wiget* layout, Wiget* base, Wiget::State* state)
@@ -655,25 +674,20 @@ void ImGuiWigetDrawer::draw_BeginLayoutState(Wiget* layout, Wiget* base, Wiget::
     WigetLayout::StateLayoutBase* layoutCtx = static_cast<WigetLayout::StateLayoutBase*>(state);
 
     bool active = true;
-    /*if ((layoutCtx->_stateMask & Wiget::State::StateMask::MenuLayout) == 0)
-    {
-        ImVec2 layoutSize = { (f32)layoutCtx->_size.m_width, (f32)layoutCtx->_size.m_height };
-        if (layoutCtx->_size.m_width == 0 || layoutCtx->_size.m_height == 0)
-        {
-            layoutSize = { layoutCtx->_cachedContentSize.m_x, layoutCtx->_cachedContentSize.m_y };
-        }
-
-        if (layoutCtx->_stateMask & Wiget::State::StateMask::WindowLayout || layoutCtx->_flags & WigetLayout::LayoutFlag::Fill)
-        {
-            layoutSize = { 0.f, 0.f };
-        }
-
-
-    }*/
 
     ImVec2 layoutSize = { (f32)layoutCtx->_size.m_width, (f32)layoutCtx->_size.m_height };
-    if (layoutCtx->_size.m_width > 0 || layoutCtx->_size.m_height > 0)
+    if (layoutCtx->_aligmentH == WigetLayout::HorizontalAlignment::AlignmentFill || (layoutCtx->_size.m_width > 0 || layoutCtx->_size.m_height > 0))
     {
+        if (layoutCtx->_aligmentH == WigetLayout::HorizontalAlignment::AlignmentFill)
+        {
+            layoutSize.x = 0.f;
+        }
+
+        if (layoutCtx->_aligmentH == WigetLayout::HorizontalAlignment::AlignmentFill)
+        {
+            layoutSize.y = 0.f;
+        }
+
         ImGuiChildFlags child_flags = 0;
         ImGuiWindowFlags window_flags = 0;
         if (layoutCtx->_flags & WigetLayout::LayoutFlag::Border)
@@ -687,15 +701,12 @@ void ImGuiWigetDrawer::draw_BeginLayoutState(Wiget* layout, Wiget* base, Wiget::
     layoutCtx->_cachedLayoutRect = { ImGui::GetCursorScreenPos().x, ImGui::GetCursorScreenPos().y, ImGui::GetContentRegionAvail().x + ImGui::GetCursorScreenPos().x, ImGui::GetContentRegionAvail().y + ImGui::GetCursorScreenPos().y };
     layoutCtx->_cachedLayoutOffest = get_LayoutPadding();
 
-    if (active)
-    {
-        ASSERT(layoutCtx->_fontSize < m_wigetHandler->m_fonts.size(), "range out");
-        ImGui::PushFont(m_wigetHandler->m_fonts[layoutCtx->_fontSize]);
+    ASSERT(layoutCtx->_fontSize < m_wigetHandler->m_fonts.size(), "range out");
+    ImGui::PushFont(m_wigetHandler->m_fonts[layoutCtx->_fontSize]);
 
-        if (layoutCtx->_stateMask & Wiget::State::StateMask::HorizontalLine)
-        {
-            ImGui::NewLine();
-        }
+    if (layoutCtx->_stateMask & Wiget::State::StateMask::HorizontalLine)
+    {
+        ImGui::NewLine();
     }
 }
 
@@ -732,9 +743,10 @@ math::Vector2D ImGuiWigetDrawer::get_ItemSpacing() const
     return math::Vector2D(style.ItemSpacing.x, style.ItemSpacing.y);
 }
 
-void ImGuiWigetDrawer::setupHorizontalAligment(Wiget::State* layout, f32 itemWidth)
+f32 ImGuiWigetDrawer::setupHorizontalAligment(Wiget::State* layout, f32 originalWidth, f32 itemWidth)
 {
     ImGuiStyle& style = ImGui::GetStyle();
+    f32 width = originalWidth;
 
     WigetLayout::StateLayoutBase* layoutCtx = static_cast<WigetLayout::StateLayoutBase*>(layout);
     switch (layoutCtx->_aligmentH)
@@ -751,7 +763,6 @@ void ImGuiWigetDrawer::setupHorizontalAligment(Wiget::State* layout, f32 itemWid
         break;
     }
 
-    default:
     case WigetLayout::HorizontalAlignment::AlignmentLeft:
     {
         f32 offset = (layoutCtx->_stateMask & Wiget::State::StateMask::HorizontalLine) ? layoutCtx->_cachedLayoutOffest.m_x : style.WindowPadding.x;
@@ -759,12 +770,25 @@ void ImGuiWigetDrawer::setupHorizontalAligment(Wiget::State* layout, f32 itemWid
         layoutCtx->_cachedLayoutOffest.m_x += itemWidth + get_ItemSpacing().m_x;
         break;
     }
+
+    case WigetLayout::HorizontalAlignment::AlignmentFill:
+    {
+        ImVec2 avail = ImGui::GetContentRegionAvail();
+        width = layoutCtx->_cachedLayoutRect.getWidth();
+        break;
     }
+
+    default:
+        break;
+    }
+
+    return width;
 }
 
-void ImGuiWigetDrawer::setupVerticalAligment(Wiget::State* layout, f32 itemHeight)
+f32 ImGuiWigetDrawer::setupVerticalAligment(Wiget::State* layout, f32 originalHeight, f32 itemHeight)
 {
     ImGuiStyle& style = ImGui::GetStyle();
+    f32 height = originalHeight;
 
     WigetLayout::StateLayoutBase* layoutCtx = static_cast<WigetLayout::StateLayoutBase*>(layout);
     switch (layoutCtx->_aligmentV)
@@ -782,7 +806,6 @@ void ImGuiWigetDrawer::setupVerticalAligment(Wiget::State* layout, f32 itemHeigh
         break;
     }
 
-    default:
     case WigetLayout::VerticalAlignment::AlignmentTop:
     {
         f32 offset = (layoutCtx->_stateMask & Wiget::State::StateMask::HorizontalLine) ? style.WindowPadding.y : layoutCtx->_cachedLayoutOffest.m_y;
@@ -790,7 +813,19 @@ void ImGuiWigetDrawer::setupVerticalAligment(Wiget::State* layout, f32 itemHeigh
         layoutCtx->_cachedLayoutOffest.m_y += itemHeight + get_ItemSpacing().m_y;
         break;
     }
+
+    case WigetLayout::VerticalAlignment::AlignmentFill:
+    {
+        ImVec2 avail = ImGui::GetContentRegionAvail();
+        height = layoutCtx->_cachedLayoutRect.getHeight();
+        break;
     }
+
+    default:
+        break;
+    }
+
+    return height;
 }
 
 } //namespace ui

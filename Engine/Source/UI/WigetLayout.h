@@ -48,6 +48,7 @@ namespace ui
             AlignmentLeft,
             AlignmentCenter,
             AlignmentRight,
+            AlignmentFill
         };
 
         enum class VerticalAlignment : u32
@@ -55,6 +56,7 @@ namespace ui
             AlignmentTop,
             AlignmentCenter,
             AlignmentBottom,
+            AlignmentFill
         };
 
         TWigetLayout& setFontSize(FontSize size);

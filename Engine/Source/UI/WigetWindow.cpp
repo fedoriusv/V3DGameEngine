@@ -12,8 +12,8 @@ WigetWindow::WigetWindow(const std::string& title, WindowFlags flags) noexcept
 {
     setTitle(title);
 
-    Wiget::cast_data<StateType>(m_data)._flags = flags;
-    Wiget::cast_data<StateType>(m_data)._layout.m_data->_stateMask |= Wiget::State::StateMask::WindowLayout | Wiget::State::StateMask::FirstUpdate;
+    Wiget::cast_data<StateType>(m_data)._createFlags = flags;
+    Wiget::cast_data<StateType>(m_data)._layout.m_data->_stateMask |= Wiget::State::StateMask::FirstUpdate;
 }
 
 WigetWindow::WigetWindow(const std::string& title, const math::Dimension2D& size, const math::Point2D& pos, WindowFlags flags) noexcept
@@ -23,8 +23,8 @@ WigetWindow::WigetWindow(const std::string& title, const math::Dimension2D& size
     setSize(size);
     setPosition(pos);
 
-    Wiget::cast_data<StateType>(m_data)._flags = flags;
-    Wiget::cast_data<StateType>(m_data)._layout.m_data->_stateMask |= Wiget::State::StateMask::WindowLayout | Wiget::State::StateMask::FirstUpdate;
+    Wiget::cast_data<StateType>(m_data)._createFlags = flags;
+    Wiget::cast_data<StateType>(m_data)._layout.m_data->_stateMask |= Wiget::State::StateMask::FirstUpdate;
 }
 
 WigetWindow::WigetWindow(const WigetWindow& other) noexcept

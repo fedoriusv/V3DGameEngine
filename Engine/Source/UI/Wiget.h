@@ -28,9 +28,9 @@ namespace ui
 
     using OnWigetEventUpdate = std::function<void(Wiget*, f32)>;
 
-    using OnWigetEventDimention2DParam = std::function<void(const Wiget*, const Wiget*, const math::Dimension2D&)>;
-    using OnWigetEventPoint2DParam = std::function<void(const Wiget*, const Wiget*, const math::Point2D&)>;
-    using OnWigetEventRect32Param = std::function<void(const Wiget*, const Wiget*, const math::Rect32&)>;
+    using OnWigetEventDimention2DParam = std::function<void(Wiget*, Wiget*, const math::Dimension2D&)>;
+    using OnWigetEventPoint2DParam = std::function<void(Wiget*, Wiget*, const math::Point2D&)>;
+    using OnWigetEventRect32Param = std::function<void(Wiget*, Wiget*, const math::Rect32&)>;
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -53,12 +53,10 @@ namespace ui
             {
                 Active = 0x01,
                 Visible = 0x02,
-                ForceUpdate = 0x04,
-                HorizontalLine = 0x08,
-                WindowLayout = 0x10, //?
-                MenuLayout = 0x20, //?
-                FirstUpdate = 0x40,
-                ChildLayout = 0x80,
+                FirstUpdate = 0x04,
+                ForceUpdate = 0x8,
+                HorizontalLine = 0x10,
+                ChildLayout = 0x20,
 
                 Color = 0x100,
                 HoveredColor = 0x200,
@@ -103,10 +101,10 @@ namespace ui
             bool                    _isVisible        = true;
             bool                    _isPressed        = false;
             bool                    _isHovered        = false;
-            bool                    _showToolTip      = false;
             bool                    _isCreated        = false;
             bool                    _isDestroyed      = false;
-            bool                    _unused[1]        = {};
+            bool                    _isFocused        = false;
+            bool                    _showToolTip      = false;
         };
 
         virtual bool update(WigetHandler* handler, Wiget* parent, Wiget* layout, f32 dt);

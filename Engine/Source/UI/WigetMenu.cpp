@@ -13,7 +13,6 @@ WigetMenuBar::WigetMenuBar(MenuFlags flags) noexcept
     : WigetBase<WigetMenuBar>(V3D_NEW(StateType, memory::MemoryLabel::MemoryUI)())
 {
     Wiget::cast_data<StateType>(m_data)._flags = flags;
-    Wiget::cast_data<StateType>(m_data)._layout.m_data->_stateMask |= Wiget::State::StateMask::MenuLayout;
 }
 
 WigetMenuBar::WigetMenuBar(const WigetMenuBar& other) noexcept
@@ -60,7 +59,6 @@ WigetMenu::WigetMenu(const std::string& text) noexcept
     : WigetBase<WigetMenu>(V3D_NEW(StateType, memory::MemoryLabel::MemoryUI)())
 {
     setText(text);
-    Wiget::cast_data<StateType>(m_data)._layout.m_data->_stateMask |= Wiget::State::StateMask::MenuLayout;
 }
 
 WigetMenu::WigetMenu(const WigetMenu& other) noexcept

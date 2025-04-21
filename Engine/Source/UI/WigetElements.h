@@ -75,6 +75,7 @@ namespace ui
 
         explicit WigetButton(const std::string& text, const math::Dimension2D& size = {0, 0}) noexcept;
         WigetButton(const WigetButton&) noexcept;
+        WigetButton(WigetButton&&) noexcept;
         ~WigetButton();
 
         const std::string& getText() const;
@@ -177,8 +178,9 @@ namespace ui
     {
     public:
 
-        WigetImage(const math::Dimension2D& size, const math::RectF32& uv = { 0.0f, 0.0f, 1.0f, 1.0f }) noexcept;
+        explicit WigetImage(const renderer::Texture2D* texture, const math::Dimension2D& size, const math::RectF32& uv = { 0.0f, 0.0f, 1.0f, 1.0f }) noexcept;
         WigetImage(const WigetImage&) noexcept;
+        WigetImage(WigetImage&&) noexcept;
         ~WigetImage();
 
         WigetImage& setTexture(const renderer::Texture2D* texture);
@@ -208,6 +210,7 @@ namespace ui
         using StateType = StateImage;
 
         bool update(WigetHandler* handler, Wiget* parent, Wiget* layout, f32 dt) final;
+        math::Vector2D calculateSize(WigetHandler* handler, Wiget* parent, Wiget* layout) final;
         Wiget* copy() const final;
     };
 

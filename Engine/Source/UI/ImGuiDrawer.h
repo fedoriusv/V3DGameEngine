@@ -54,8 +54,8 @@ namespace ui
 
     private:
 
-        void setupHorizontalAligment(Wiget::State* layout, f32 itemWidth);
-        void setupVerticalAligment(Wiget::State* layout, f32 itemHeight);
+        f32 setupHorizontalAligment(Wiget::State* layout, f32 originalWidth, f32 itemWidth);
+        f32 setupVerticalAligment(Wiget::State* layout, f32 originalHeight, f32 itemHeight);
 
         ImGuiWigetHandler* m_wigetHandler;
     };
