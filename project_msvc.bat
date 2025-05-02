@@ -2,7 +2,7 @@
 
 setlocal
 set VS_VERSION="Visual Studio 17 2022"
-set VS_WIN_SDK_VERSION=10.0.20348.0
+set VS_WIN_SDK_VERSION=10.0.22621.0
 
 if not exist Project\Win64 mkdir Project\Win64
 cd Project\Win64

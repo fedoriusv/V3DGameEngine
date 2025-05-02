@@ -43,7 +43,7 @@ const colorFunc k_colorList[Logger::LoggerCount] =
 
 Logger::Logger() noexcept
     : m_logFilename("logfile.log")
-#if defined(DEBUG)
+#if defined(DEBUG) && !defined(DEVELOPMENT)
     , m_level(LoggerType::LoggerDebug)
 #else //defined(DEBUG)
     , m_level(LoggerType::LoggerNotify)

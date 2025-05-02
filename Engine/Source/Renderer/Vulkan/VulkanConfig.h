@@ -14,10 +14,16 @@
 #endif
 
 //Debug
-#define VULKAN_DEBUG (0 || DEBUG) //Log every render command
+#define VULKAN_DEBUG 0 //Log every render command (optional)
+
 
 //Validation
-#define VULKAN_LAYERS_CALLBACKS (0 || DEBUG)
+#if defined(DEBUG) && !defined(DEVELOPMENT)
+#   define VULKAN_LAYERS_CALLBACKS 1
+#else
+#   define VULKAN_LAYERS_CALLBACKS 0
+#endif
+
 #if VULKAN_LAYERS_CALLBACKS
 #    define VULKAN_VALIDATION_LAYERS_CALLBACK 1
 #    define VULKAN_RENDERDOC_LAYER 0

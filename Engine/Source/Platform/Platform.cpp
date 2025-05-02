@@ -7,6 +7,25 @@
 #include <tchar.h>
 #include <dwmapi.h>
 
+int V3D_AssertYesNoDlg(const char* file, int line, const char* statement, const char* message, ...)
+{
+    const int size = 1024;
+    char str[size];
+    int pos = sprintf_s(str, "Assertion breakpoint: (%s)\n\nFile: %s\nLine: %d\n\n", statement, file, line);
+    if (message)
+    {
+        va_list ap;
+        va_start(ap, message);
+        if (pos < size - 1)
+            vsprintf_s(str + pos, size - pos, message, ap);
+        va_end(ap);
+    }
+
+    strcat_s(str, message ? "\n\nDebug?" : "Debug?");
+
+    return MessageBoxA(NULL, str, "Assert failed", MB_YESNO | MB_ICONERROR) == IDYES;
+}
+
 static BOOL _IsWindowsVersionOrGreater(WORD major, WORD minor, WORD)
 {
     typedef LONG(WINAPI* PFN_RtlVerifyVersionInfo)(OSVERSIONINFOEXW*, ULONG, ULONGLONG);

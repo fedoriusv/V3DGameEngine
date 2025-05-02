@@ -70,7 +70,7 @@ namespace utils
 
         LoggerType m_level;
 
-#ifdef DEBUG
+#if defined(DEBUG) && !defined(DEVELOPMENT)
         /**
         * @brief count buffer messages before flush to console
         */

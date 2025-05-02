@@ -2,6 +2,8 @@
 
 #include "Configuration.h"
 
+#include <assert.h>
+
 #include <string>
 #include <array>
 #include <vector>
@@ -48,10 +50,25 @@
 #include "Memory/Memory.h"
 #include "Renderer/Color.h"
 
+extern int V3D_AssertYesNoDlg(const char* file, int line, const char* statement, const char* message, ...);
+inline void V3D_Assert(const char* file, int line, const char* statement, const char* message, ...)
+{
+    std::cerr << "Assert: " << statement << ", message: " << message << ", file " << file << ", line " << line << '\n';
+#if defined(DEVELOPMENT)
+    if (V3D_AssertYesNoDlg(file, line, statement, message, 0))
+    {
+        assert(false);
+    }
+#else
+    assert(false);
+#endif
+}
 
 #ifdef DEBUG
-#   include <assert.h>
-#   define ASSERT(x, message) assert(x && message)
+#   define ASSERT(cond, ...)                                                        \
+            {                                                                       \
+                if (!(cond)) V3D_Assert(__FILE__, __LINE__, #cond, ##__VA_ARGS__);  \
+            }
 #else //DEBUG
 //#   define RELEASE_WITH_DEBUG
 #   ifdef RELEASE_WITH_DEBUG
@@ -66,24 +83,17 @@ inline void crashFunc(bool x)
 #   else
 #       define ASSERT(x, message)
 #   endif //RELEASE_WITH_DEBUG
-#endif //DEBUG
-
-#define PLATFORM_BREAK() __debugbreak()
+#endif //
 
 #define NOT_IMPL ASSERT(false, "not impl")
 
 #ifdef __GNUC__
-#   define DEPRECATED __attribute__((deprecated))
+#   define BREAK() __builtin_trap()
 #elif defined(_MSC_VER)
-#   if defined(DEPRECATED)
-#       undef DEPRECATED
-#   endif //DEPRECATED
-#   define DEPRECATED __declspec(deprecated)
+#   define BREAK() __debugbreak()
 #else //
-#   pragma message("WARNING: You need to implement DEPRECATED for this compiler")
-#   define DEPRECATED
+#   define BREAK() __builtin_debugtrap()
 #endif //
-
 
 #if defined(PLATFORM_WINDOWS)
 #   define NOMINMAX

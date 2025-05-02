@@ -308,7 +308,7 @@ bool VulkanSwapchain::create(platform::Window* window, const SwapchainParams& pa
     }
     std::for_each(surfaceFormats.begin(), surfaceFormats.end(), [](const VkSurfaceFormatKHR& surfaceFormat)
     {
-        LOG_INFO("SurfaceFormat supported format: %s, colorspace: %d", VulkanImage::imageFormatStringVK(surfaceFormat.format).c_str(), surfaceFormat.colorSpace);
+        LOG_DEBUG("SurfaceFormat supported format: %s, colorspace: %d", VulkanImage::imageFormatStringVK(surfaceFormat.format).c_str(), surfaceFormat.colorSpace);
     });
 
     VkSurfaceFormatKHR surfaceFormat{};

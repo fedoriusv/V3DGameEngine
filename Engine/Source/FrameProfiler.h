@@ -2,7 +2,7 @@
 
 #include "Common.h"
 
-#if TRACY_ENABLE
+#if defined(TRACY_ENABLE)
 #if !TRACY_ON_DEMAND
 #   error "Tracy is used record of all session. Huge memory allocation is possible. Uncomment it if you aware"
 #endif
