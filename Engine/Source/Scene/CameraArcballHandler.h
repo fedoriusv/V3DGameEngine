@@ -3,7 +3,7 @@
 #include "Common.h"
 #include "CameraHandler.h"
 
-#include "Events/InputEventHandler.h"
+#include "Events/Input/InputEventHandler.h"
 
 namespace v3d
 {

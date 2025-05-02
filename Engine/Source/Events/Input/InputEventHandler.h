@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Common.h"
-#include "EventHandler.h"
+#include "Events/EventHandler.h"
 #include "KeyCodes.h"
 
 #include "InputEventKeyboard.h"

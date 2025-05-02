@@ -1,5 +1,5 @@
 #include "Window.h"
-#include "Events/InputEventReceiver.h"
+#include "Events/Input/InputEventReceiver.h"
 #include "Utils/Logger.h"
 #include "Utils/Profiler.h"
 

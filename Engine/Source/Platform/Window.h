@@ -3,7 +3,7 @@
 #include "Common.h"
 #include "Utils/Observable.h"
 #include "Utils/ResourceID.h"
-#include "Events/KeyCodes.h"
+#include "Events/Input/KeyCodes.h"
 
 namespace v3d
 {

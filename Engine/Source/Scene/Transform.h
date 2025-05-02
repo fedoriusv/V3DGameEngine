@@ -12,7 +12,7 @@ namespace scene
     /**
     * @brief Transform class
     */
-    class Transform : public Object
+    class Transform final
     {
     public:
 
