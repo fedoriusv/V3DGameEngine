@@ -360,11 +360,11 @@ bool ImGuiWigetDrawer::draw_Image(Wiget* image, Wiget* base, Wiget::State* layou
             std::invoke(imgCtx->_onClickedEvent, image);
         }
 
-        s32 a = ImGui::GetItemRectMin().x;
-        s32 b = ImGui::GetItemRectMin().y;
-        s32 c = ImGui::GetItemRectMax().x;
-        s32 d = ImGui::GetItemRectMax().y;
-        math::Rect32 rect(a, b, c, d);
+        s32 x = ImGui::GetItemRectMin().x;
+        s32 y = ImGui::GetItemRectMin().y;
+        s32 width = std::max<s32>(ImGui::GetItemRectSize().x, 1);
+        s32 height = std::max<s32>(ImGui::GetItemRectSize().y, 1);
+        math::Rect32 rect(x, y, x + width, y + height);
 
         if (imgCtx->_drawRectState != rect || base->isStateMaskActive(Wiget::State::StateMask::ForceUpdate))
         {
