@@ -50,6 +50,36 @@ WigetWindow::~WigetWindow()
     }
 }
 
+Wiget* WigetWindow::findWidgetByID(u64 id)
+{
+    for (auto& wiget : Wiget::cast_data<StateType>(m_data)._layout.m_wigets)
+    {
+        if (wiget->getID() == id)
+        {
+            return wiget;
+        }
+
+        if (wiget->getType() == type_of<WigetLayout>())
+        {
+            Wiget* child = static_cast<WigetLayout*>(wiget)->findWidgetByID(id);
+            if (child)
+            {
+                return child;
+            }
+        }
+        else if (wiget->getType() == type_of<WigetHorizontalLayout>())
+        {
+            Wiget* child = static_cast<WigetHorizontalLayout*>(wiget)->findWidgetByID(id);
+            if (child)
+            {
+                return child;
+            }
+        }
+    }
+
+    return nullptr;
+}
+
 bool WigetWindow::update(WigetHandler* handler, Wiget* parent, Wiget* layout, f32 dt)
 {
     if (Wiget::update(handler, parent, layout, dt))

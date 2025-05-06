@@ -4,6 +4,7 @@
 
 namespace v3d
 {
+
 namespace ui
 {
 
@@ -49,6 +50,11 @@ WigetLayout::~WigetLayout()
         V3D_DELETE(m_data, memory::MemoryLabel::MemoryUI);
         m_data = nullptr;
     }
+}
+
+TypePtr WigetLayout::getType() const
+{
+    return type_of<WigetLayout>();
 }
 
 bool WigetLayout::update(WigetHandler* handler, Wiget* parent, Wiget* layout, f32 dt)
@@ -152,6 +158,11 @@ WigetHorizontalLayout::~WigetHorizontalLayout()
 {
 }
 
+TypePtr WigetHorizontalLayout::getType() const
+{
+    return type_of<WigetHorizontalLayout>();
+}
+
 Wiget* WigetHorizontalLayout::copy() const
 {
     return V3D_NEW(WigetHorizontalLayout, memory::MemoryLabel::MemoryUI)(*this);
@@ -209,6 +220,11 @@ WigetWindowLayout& WigetWindowLayout::operator=(WigetWindowLayout&& other)
     other.m_data = nullptr;
 
     return *this;
+}
+
+TypePtr WigetWindowLayout::getType() const
+{
+    return type_of<WigetWindowLayout>();
 }
 
 bool WigetWindowLayout::update(WigetHandler* handler, Wiget* parent, Wiget* layout, f32 dt)

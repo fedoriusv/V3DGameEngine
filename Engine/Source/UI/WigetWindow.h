@@ -54,8 +54,12 @@ namespace ui
         template<class TWiget>
         WigetWindow& addWiget(TWiget&& wiget);
 
+        Wiget* findWidgetByID(u64 id);
+
         WigetWindow& setupWindowLayout(const WigetWindowLayout& layout);
         WigetWindow& setupWindowLayout(WigetWindowLayout&& layout);
+
+        TypePtr getType() const final;
 
         struct StateWindow : StateBase
         {
@@ -183,7 +187,27 @@ namespace ui
         return *this;
     }
 
+    inline TypePtr WigetWindow::getType() const
+    {
+        return type_of<WigetType>();
+    }
+
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
 } // namespace ui
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    template<>
+    struct TypeOf<ui::WigetWindow>
+    {
+        static TypePtr get()
+        {
+            static TypePtr ptr = nullptr;
+            return (TypePtr)&ptr;
+        }
+    };
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
+
 } // namespace v3d

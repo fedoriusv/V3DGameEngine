@@ -43,6 +43,7 @@ namespace ui
         enum ImGuiWigetFlag
         {
             ImGui_ViewportMode = 1 << 0,
+            ImGui_Gizmo = 1 << 1,
         };
         typedef u32 ImGuiWigetFlags;
 

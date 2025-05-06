@@ -16,6 +16,10 @@ namespace ui
     class WigetMenu;
     class WigetTabBar;
 
+    class WigetLayout;
+    class WigetHorizontalLayout;
+
+
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
@@ -69,16 +73,18 @@ namespace ui
         VerticalAlignment getVAlignment() const;
 
         template<class TWiget>
-        TWigetLayout& addWiget(const TWiget& wiget); //requires (!std::is_rvalue_reference<TWiget&&>());
+        TWigetLayout& addWiget(const TWiget& wiget);
 
         template<class TWiget>
-        TWigetLayout& addWiget(TWiget&& wiget); //requires (std::is_rvalue_reference<TWiget&&>());
+        TWigetLayout& addWiget(TWiget&& wiget);
+
+        Wiget* findWidgetByID(u64 id);
 
         struct StateLayoutBase : WigetBase<TWigetLayout>::StateBase
         {
             math::Dimension2D   _size;
             math::RectF32       _padding;
-            LayoutFlags         _flags;
+            LayoutFlags         _flags = 0;
             FontSize            _fontSize = FontSize::MediumFont;
             HorizontalAlignment _aligmentH = HorizontalAlignment::AlignmentLeft;
             VerticalAlignment   _aligmentV = VerticalAlignment::AlignmentTop;
@@ -169,6 +175,37 @@ namespace ui
     }
 
     template<class TWigetLayout>
+    inline Wiget* WigetLayoutBase<TWigetLayout>::findWidgetByID(u64 id)
+    {
+        for (auto& wiget : m_wigets)
+        {
+            if (wiget->getID() == id)
+            {
+                return wiget;
+            }
+
+            if (wiget->getType() == type_of<WigetLayout>())
+            {
+                Wiget* child = static_cast<WigetLayout*>(wiget)->findWidgetByID(id);
+                if (child)
+                {
+                    return child;
+                }
+            }
+            else if (wiget->getType() == type_of<WigetHorizontalLayout>())
+            {
+                Wiget* child = static_cast<WigetHorizontalLayout*>(wiget)->findWidgetByID(id);
+                if (child)
+                {
+                    return child;
+                }
+            }
+        }
+
+        return nullptr;
+    }
+
+    template<class TWigetLayout>
     template<class TWiget>
     inline TWigetLayout& WigetLayoutBase<TWigetLayout>::addWiget(const TWiget& wiget)
     {
@@ -185,7 +222,7 @@ namespace ui
         static_assert(std::is_nothrow_move_constructible<TWiget>::value, "should be noexcept movable");
 
         using TWigetRaw = std::decay_t<TWiget>;
-        TWigetRaw* obj = V3D_NEW(TWigetRaw, memory::MemoryLabel::MemoryUI)(std::forward<TWiget>(wiget));
+        TWigetRaw* obj = V3D_NEW(TWigetRaw, memory::MemoryLabel::MemoryUI)(std::forward<TWigetRaw>(wiget));
         m_wigets.push_back(obj);
         return *static_cast<TWigetLayout*>(this);
     }
@@ -203,6 +240,8 @@ namespace ui
         WigetLayout(const WigetLayout&) noexcept;
         WigetLayout(WigetLayout&&) noexcept;
         virtual ~WigetLayout();
+
+        TypePtr getType() const override;
 
         struct StateLayout : StateLayoutBase
         {
@@ -236,6 +275,8 @@ namespace ui
         WigetHorizontalLayout(const WigetHorizontalLayout&) noexcept;
         WigetHorizontalLayout(WigetHorizontalLayout&&) noexcept;
         ~WigetHorizontalLayout();
+
+        TypePtr getType() const final;
 
         struct StateHorizontalLayout : StateLayout
         {
@@ -286,6 +327,8 @@ namespace ui
         WigetWindow* getWindow() const;
         const std::vector<LayoutRule>& getRules() const;
 
+        TypePtr getType() const final;
+
         struct StateViewportLayout : StateBase
         {
             WigetWindow* _main = nullptr;
@@ -314,4 +357,39 @@ namespace ui
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
 } //namespace ui
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    template<>
+    struct TypeOf<ui::WigetLayout>
+    {
+        static TypePtr get()
+        {
+            static TypePtr ptr = nullptr;
+            return (TypePtr)&ptr;
+        }
+    };
+    
+    template<>
+    struct TypeOf<ui::WigetHorizontalLayout>
+    {
+        static TypePtr get()
+        {
+            static TypePtr ptr = nullptr;
+            return (TypePtr)&ptr;
+        }
+    };
+    
+    template<>
+    struct TypeOf<ui::WigetWindowLayout>
+    {
+        static TypePtr get()
+        {
+            static TypePtr ptr = nullptr;
+            return (TypePtr)&ptr;
+        }
+    };
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
+
 } //namespace v3d

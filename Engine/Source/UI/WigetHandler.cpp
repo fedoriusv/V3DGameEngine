@@ -1,4 +1,6 @@
 #include "WigetHandler.h"
+#include "WigetWindow.h"
+
 #include "Utils/Logger.h"
 
 namespace v3d

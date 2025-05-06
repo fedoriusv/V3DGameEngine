@@ -3,6 +3,7 @@
 #include "Common.h"
 #include "Utils/Copiable.h"
 #include "Utils/Observable.h"
+#include "Scene/Transform.h"
 
 namespace v3d
 {
@@ -20,17 +21,16 @@ namespace ui
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    using OnWigetEvent = std::function<void(const Wiget*)>;
-    using OnWigetEventBoolParam = std::function<void(const Wiget*, bool)>;
-    using OnWigetEventIntParam = std::function<void(const Wiget*, s32)>;
-    using OnWigetEventFloatParam = std::function<void(const Wiget*, f32)>;
-
-
-    using OnWigetEventUpdate = std::function<void(Wiget*, f32)>;
+    using OnWigetEvent = std::function<void(Wiget*)>;
+    using OnWigetEventBoolParam = std::function<void(Wiget*, bool)>;
+    using OnWigetEventIntParam = std::function<void(Wiget*, s32)>;
+    using OnWigetEventFloatParam = std::function<void(Wiget*, f32)>;
 
     using OnWigetEventDimention2DParam = std::function<void(Wiget*, Wiget*, const math::Dimension2D&)>;
     using OnWigetEventPoint2DParam = std::function<void(Wiget*, Wiget*, const math::Point2D&)>;
     using OnWigetEventRect32Param = std::function<void(Wiget*, Wiget*, const math::Rect32&)>;
+    using OnWigetEventTransformParam = std::function<void(Wiget*, Wiget*, const scene::Transform&)>;
+    using OnWigetEventMatrix4x4Param = std::function<void(Wiget*, Wiget*, const math::Matrix4D&)>;
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -77,16 +77,17 @@ namespace ui
         bool isVisible() const;
         bool isShowToolTip() const;
 
+        u64 getID() const;
         const std::string& getToolTip() const;
 
         Wiget& setActive(bool active);
         Wiget& setVisible(bool visible);
         Wiget& setToolTip(bool show, const std::string& tip = "");
 
-        Wiget& setOnUpdate(const OnWigetEventUpdate& event);
+        Wiget& setOnCreated(const OnWigetEvent& event);
+        Wiget& setOnUpdate(const OnWigetEventFloatParam& event);
         Wiget& setOnVisibleChanged(const OnWigetEvent& event);
         Wiget& setOnActiveChanged(const OnWigetEvent& event);
-        Wiget& setOnCreated(const OnWigetEvent& event);
 
         bool isStateMaskActive(u64 state) const;
 
@@ -94,9 +95,9 @@ namespace ui
         {
             std::string             _toolTip;
             OnWigetEvent            _onCreated;
+            OnWigetEventFloatParam  _onUpdate;
             OnWigetEvent            _onVisibleChanged;
             OnWigetEvent            _onActiveChanged;
-            OnWigetEventUpdate      _onUpdate;
             bool                    _isActive         = true;
             bool                    _isVisible        = true;
             bool                    _isPressed        = false;
@@ -106,6 +107,8 @@ namespace ui
             bool                    _isFocused        = false;
             bool                    _showToolTip      = false;
         };
+
+        virtual TypePtr getType() const = 0;
 
         virtual bool update(WigetHandler* handler, Wiget* parent, Wiget* layout, f32 dt);
         virtual math::Vector2D calculateSize(WigetHandler* handler, Wiget* parent, Wiget* layout);
@@ -144,6 +147,11 @@ namespace ui
         return cast_data<StateBase>(m_data)._showToolTip;
     }
 
+    inline u64 Wiget::getID() const
+    {
+        return cast_data<StateBase>(m_data)._uid;
+    }
+
     inline const std::string& Wiget::getToolTip() const
     {
         return cast_data<StateBase>(m_data)._toolTip;
@@ -178,7 +186,7 @@ namespace ui
         return *this;
     }
 
-    inline Wiget& Wiget::setOnUpdate(const OnWigetEventUpdate& event)
+    inline Wiget& Wiget::setOnUpdate(const OnWigetEventFloatParam& event)
     {
         cast_data<StateBase>(m_data)._onUpdate = event;
         return *this;
@@ -217,11 +225,6 @@ namespace ui
     {
     public:
 
-        explicit WigetBase(Wiget::State* state) noexcept;
-        WigetBase(const WigetBase&) noexcept;
-        WigetBase(WigetBase&&) noexcept;
-        virtual ~WigetBase() = default;
-
         bool isActive() const;
         bool isVisible() const;
         bool isShowToolTip() const;
@@ -232,9 +235,17 @@ namespace ui
         TWiget& setVisible(bool visible);
         TWiget& setToolTip(bool show, const std::string& tip);
 
-        TWiget& setOnUpdate(const OnWigetEventUpdate& event);
+        TWiget& setOnCreated(const OnWigetEvent& event);
+        TWiget& setOnUpdate(const OnWigetEventFloatParam& event);
         TWiget& setOnVisibleChanged(const OnWigetEvent& event);
         TWiget& setOnActiveChanged(const OnWigetEvent& event);
+
+    protected:
+
+        explicit WigetBase(Wiget::State* state) noexcept;
+        WigetBase(const WigetBase&) noexcept;
+        WigetBase(WigetBase&&) noexcept;
+        virtual ~WigetBase() = default;
     };
 
     template<class TWiget>
@@ -292,13 +303,19 @@ namespace ui
     }
 
     template<class TWiget>
+    inline TWiget& WigetBase<TWiget>::setOnCreated(const OnWigetEvent& event)
+    {
+        return *static_cast<TWiget*>(&Wiget::setOnCreated(event));
+    }
+
+    template<class TWiget>
     inline TWiget& WigetBase<TWiget>::setToolTip(bool show, const std::string& tip)
     {
         return *static_cast<TWiget*>(&Wiget::setToolTip(show, tip));
     }
 
     template<class TWiget>
-    inline TWiget& WigetBase<TWiget>::setOnUpdate(const OnWigetEventUpdate& event)
+    inline TWiget& WigetBase<TWiget>::setOnUpdate(const OnWigetEventFloatParam& event)
     {
         return *static_cast<TWiget*>(&Wiget::setOnUpdate(event));
     }

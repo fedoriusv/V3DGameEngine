@@ -137,6 +137,8 @@ namespace ui
         virtual void draw_BeginLayoutState(Wiget* layout, Wiget* base, Wiget::State* state) = 0;
         virtual void draw_EndLayoutState(Wiget* layout, Wiget* base, Wiget::State* state) = 0;
 
+        virtual void draw_Gizmo(Wiget* wiget, Wiget* base, Wiget::State* layout, Wiget::State* state) = 0;
+        virtual void draw_ViewManipulator(Wiget* wiget, Wiget* base, Wiget::State* layout, Wiget::State* state) = 0;
 
         virtual math::Vector2D get_LayoutPadding() const = 0;
         virtual math::Vector2D get_ItemSpacing() const = 0;

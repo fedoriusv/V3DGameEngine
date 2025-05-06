@@ -104,6 +104,8 @@ namespace ui
         WigetRadioButtonGroup(const WigetRadioButtonGroup&) noexcept;
         ~WigetRadioButtonGroup();
 
+        TypePtr getType() const final;
+
         struct StateRadioButtonGroup : StateWigetGroupBase
         {
         };
@@ -116,6 +118,11 @@ namespace ui
         bool update(WigetHandler* handler, Wiget* parent, Wiget* layout, f32 dt) final;
         Wiget* copy() const final;
     };
+
+    inline TypePtr WigetRadioButtonGroup::getType() const
+    {
+        return type_of<WigetType>();
+    }
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -130,6 +137,8 @@ namespace ui
         WigetComboBox(const WigetComboBox&) noexcept;
         ~WigetComboBox();
 
+        TypePtr getType() const final;
+
         struct StateComboBox : StateWigetGroupBase
         {
         };
@@ -142,6 +151,11 @@ namespace ui
         bool update(WigetHandler* handler, Wiget* parent, Wiget* layout, f32 dt) final;
         Wiget* copy() const final;
     };
+
+    inline TypePtr WigetComboBox::getType() const
+    {
+        return type_of<WigetType>();
+    }
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -156,6 +170,8 @@ namespace ui
         WigetListBox(const WigetListBox&) noexcept;
         ~WigetListBox();
 
+        TypePtr getType() const final;
+
         struct StateListBox : StateWigetGroupBase
         {
         };
@@ -169,7 +185,47 @@ namespace ui
         Wiget* copy() const final;
     };
 
+    inline TypePtr WigetListBox::getType() const
+    {
+        return type_of<WigetType>();
+    }
+
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
 } // namespace ui
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    template<>
+    struct TypeOf<ui::WigetRadioButtonGroup>
+    {
+        static TypePtr get()
+        {
+            static TypePtr ptr = nullptr;
+            return (TypePtr)&ptr;
+        }
+    };
+
+    template<>
+    struct TypeOf<ui::WigetComboBox>
+    {
+        static TypePtr get()
+        {
+            static TypePtr ptr = nullptr;
+            return (TypePtr)&ptr;
+        }
+    };
+
+    template<>
+    struct TypeOf<ui::WigetListBox>
+    {
+        static TypePtr get()
+        {
+            static TypePtr ptr = nullptr;
+            return (TypePtr)&ptr;
+        }
+    };
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
+
 } // namespace v3d

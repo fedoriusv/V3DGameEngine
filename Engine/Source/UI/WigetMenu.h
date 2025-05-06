@@ -33,6 +33,8 @@ namespace ui
         template<class TWiget>
         WigetMenuBar& addWiget(TWiget&& wiget);
 
+        TypePtr getType() const final;
+
         struct StateMenuBar : StateBase
         {
             WigetLayout _layout;
@@ -67,6 +69,11 @@ namespace ui
         return *this;
     }
 
+    inline TypePtr WigetMenuBar::getType() const
+    {
+        return type_of<WigetType>();
+    }
+
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
@@ -91,6 +98,8 @@ namespace ui
 
         template<class TWiget>
         WigetMenu& addWiget(TWiget&& wiget);
+
+        TypePtr getType() const final;
 
         struct StateMenu : StateBase
         {
@@ -123,6 +132,11 @@ namespace ui
     {
         Wiget::cast_data<StateType>(m_data)._onClickedEvent = event;
         return *this;
+    }
+
+    inline TypePtr WigetMenu::getType() const
+    {
+        return type_of<WigetType>();
     }
 
     template<class TWiget>
@@ -160,6 +174,8 @@ namespace ui
         WigetMenuItem& setText(const std::string& text);
         WigetMenuItem& setOnClickedEvent(const OnWigetEvent& event);
 
+        TypePtr getType() const final;
+
         struct StateMenuItem : StateBase
         {
             std::string  _text;
@@ -192,7 +208,47 @@ namespace ui
         return *this;
     }
 
+    inline TypePtr WigetMenuItem::getType() const
+    {
+        return type_of<WigetType>();
+    }
+
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
 } // namespace ui
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    template<>
+    struct TypeOf<ui::WigetMenuBar>
+    {
+        static TypePtr get()
+        {
+            static TypePtr ptr = nullptr;
+            return (TypePtr)&ptr;
+        }
+    };
+    
+    template<>
+    struct TypeOf<ui::WigetMenu>
+    {
+        static TypePtr get()
+        {
+            static TypePtr ptr = nullptr;
+            return (TypePtr)&ptr;
+        }
+    };
+    
+    template<>
+    struct TypeOf<ui::WigetMenuItem>
+    {
+        static TypePtr get()
+        {
+            static TypePtr ptr = nullptr;
+            return (TypePtr)&ptr;
+        }
+    };
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
+
 } // namespace v3d

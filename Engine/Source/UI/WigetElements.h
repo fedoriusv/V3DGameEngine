@@ -30,6 +30,8 @@ namespace ui
         WigetText& setText(const std::string& text);
         WigetText& setColor(const color::ColorRGBAF& color);
 
+        TypePtr getType() const final;
+
         struct StateText : StateBase
         {
             std::string         _text;
@@ -64,6 +66,11 @@ namespace ui
         return *this;
     }
 
+    inline TypePtr WigetText::getType() const
+    {
+        return type_of<WigetType>();
+    }
+
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
@@ -89,6 +96,8 @@ namespace ui
 
         WigetButton& setOnClickedEvent(const OnWigetEvent& event);
         WigetButton& setOnHoveredEvent(const OnWigetEvent& event);
+
+        TypePtr getType() const final;
 
         struct StateButton : StateBase
         {
@@ -169,6 +178,11 @@ namespace ui
         return *this;
     }
 
+    inline TypePtr WigetButton::getType() const
+    {
+        return type_of<WigetType>();
+    }
+
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
@@ -188,6 +202,8 @@ namespace ui
         WigetImage& setUVs(const math::RectF32& uv);
 
         WigetImage& setOnDrawRectChanged(const OnWigetEventRect32Param& event);
+
+        TypePtr getType() const final;
 
         struct StateImage : StateBase
         {
@@ -238,6 +254,11 @@ namespace ui
         return *this;
     }
 
+    inline TypePtr WigetImage::getType() const
+    {
+        return type_of<WigetType>();
+    }
+
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
@@ -258,6 +279,8 @@ namespace ui
         WigetCheckBox& setValue(bool value);
 
         WigetCheckBox& setOnChangedValueEvent(const OnWigetEventBoolParam& event);
+
+        TypePtr getType() const final;
 
         struct StateCheckBox : StateBase
         {
@@ -303,6 +326,11 @@ namespace ui
         return *this;
     }
 
+    inline TypePtr WigetCheckBox::getType() const
+    {
+        return type_of<WigetType>();
+    }
+
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     //TODO
@@ -313,6 +341,8 @@ namespace ui
         explicit WigetInputField() noexcept;
         WigetInputField(const WigetInputField&) noexcept;
         ~WigetInputField();
+
+        TypePtr getType() const final;
 
         struct StateInputField : StateBase
         {
@@ -327,6 +357,11 @@ namespace ui
         Wiget* copy() const final;
     };
 
+    inline TypePtr WigetInputField::getType() const
+    {
+        return type_of<WigetType>();
+    }
+
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
         //TODO
@@ -337,6 +372,8 @@ namespace ui
         explicit WigetInputSlider() noexcept;
         WigetInputSlider(const WigetInputSlider&) noexcept;
         ~WigetInputSlider();
+
+        TypePtr getType() const final;
 
         struct StateInputSlider : StateBase
         {
@@ -351,6 +388,77 @@ namespace ui
         Wiget* copy() const final;
     };
 
+    inline TypePtr WigetInputSlider::getType() const
+    {
+        return type_of<WigetType>();
+    }
+
     /////////////////////////////////////////////////////////////////////////////////////////////////////
+
 } // namespace ui
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
+    
+    template<>
+    struct TypeOf<ui::WigetText>
+    {
+        static TypePtr get()
+        {
+            static TypePtr ptr = nullptr;
+            return (TypePtr)&ptr;
+        }
+    };
+    
+    template<>
+    struct TypeOf<ui::WigetButton>
+    {
+        static TypePtr get()
+        {
+            static TypePtr ptr = nullptr;
+            return (TypePtr)&ptr;
+        }
+    };
+    
+    template<>
+    struct TypeOf<ui::WigetImage>
+    {
+        static TypePtr get()
+        {
+            static TypePtr ptr = nullptr;
+            return (TypePtr)&ptr;
+        }
+    };
+    
+    template<>
+    struct TypeOf<ui::WigetCheckBox>
+    {
+        static TypePtr get()
+        {
+            static TypePtr ptr = nullptr;
+            return (TypePtr)&ptr;
+        }
+    };
+    
+    template<>
+    struct TypeOf<ui::WigetInputField>
+    {
+        static TypePtr get()
+        {
+            static TypePtr ptr = nullptr;
+            return (TypePtr)&ptr;
+        }
+    };
+    
+    template<>
+    struct TypeOf<ui::WigetInputSlider>
+    {
+        static TypePtr get()
+        {
+            static TypePtr ptr = nullptr;
+            return (TypePtr)&ptr;
+        }
+    };
+    
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
+
 } // namespace v3d

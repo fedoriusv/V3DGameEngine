@@ -21,6 +21,7 @@
 #if USE_IMGUI
 #include "ThirdParty/imgui/imgui.h"
 #include "ThirdParty/imgui/imgui_internal.h"
+#include "ThirdParty/ImGuizmo/ImGuizmo.h"
 #include "ImGuiFonts.h"
 #include "ImGuiViewport.h"
 #include "ImGuiDrawer.h"
@@ -519,6 +520,12 @@ void ImGuiWigetHandler::update(const platform::Window* window, const v3d::event:
     {
         ImGui::DockSpaceOverViewport(0, ImGui::GetMainViewport());
     }
+
+    if (m_flags && ImGuiWigetFlag::ImGui_Gizmo)
+    {
+        ImGuizmo::BeginFrame();
+    }
+
     WigetHandler::update(window, handler, dt);
 
     if (m_showDemo)
