@@ -13,12 +13,10 @@ Transform::Transform() noexcept
 
     , m_transformFlag(0/*TransformState::TransformState_All*/)
 {
-    LOG_DEBUG("Transform constructor %llx", this);
 }
 
 Transform::~Transform()
 {
-    LOG_DEBUG("Transform destructor %llx", this);
 }
 
 void Transform::setPosition(const math::Vector3D& position)
