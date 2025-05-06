@@ -28,4 +28,43 @@ namespace v3d
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    class Type;
+    using TypePtr = Type const*;
+
+    template<typename T>
+    struct TypeOf
+    {
+        static TypePtr get()
+        {
+            return TypeOf<T>::get();
+        }
+    };
+
+    template<typename T>
+    TypePtr type_of()
+    {
+        return TypeOf<T>::get();
+    };
+
+    struct MetaObject
+    {
+        template<typename T>
+        MetaObject(T* obj)
+            : _type(type_of<T>())
+            , _object(obj)
+        {
+        }
+
+        MetaObject(TypePtr type)
+            : _type(type)
+            , _object(nullptr)
+        {
+        }
+
+        TypePtr _type;
+        void*   _object;
+    };
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
+
 } //namespace v3d
