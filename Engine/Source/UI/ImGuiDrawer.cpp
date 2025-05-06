@@ -3,9 +3,14 @@
 
 #if USE_IMGUI
 #include "Wigets.h"
+#include "WigetGizmo.h"
 #include "ImGuiHandler.h"
 #include "ThirdParty/imgui/imgui.h"
 #include "ThirdParty/imgui/imgui_internal.h"
+#include "ThirdParty/ImGuizmo/ImGuizmo.h"
+
+#include "Scene/Camera.h"
+#include "Scene/Transform.h"
 
 namespace v3d
 {
@@ -725,6 +730,103 @@ void ImGuiWigetDrawer::draw_EndLayoutState(Wiget* layout, Wiget* base, Wiget::St
 
     layoutCtx->_cachedLayoutRect = {};
     layoutCtx->_cachedLayoutOffest = {};
+}
+
+void ImGuiWigetDrawer::draw_Gizmo(Wiget* wiget, Wiget* base, Wiget::State* layout, Wiget::State* state)
+{
+    ASSERT(ImGui::GetCurrentContext(), "must be valid");
+    WigetGizmo::StateGizmo* gizmoCtx = static_cast<WigetGizmo::StateGizmo*>(state);
+    WigetLayout::StateLayoutBase* layoutCtx = static_cast<WigetLayout::StateLayoutBase*>(layout);
+
+    if (gizmoCtx->_isActive && gizmoCtx->_camera)
+    {
+        const scene::Camera& camera = *gizmoCtx->_camera;
+        scene::Transform transform = gizmoCtx->_transform;
+        math::Matrix4D matrix = transform.getTransform();
+
+        static auto convertOp = [](WigetGizmo::Operation op) -> ImGuizmo::OPERATION
+            {
+                switch (op)
+                {
+                case WigetGizmo::Operation::Translate:
+                    return ImGuizmo::TRANSLATE;
+                case WigetGizmo::Operation::Rotate:
+                    return  ImGuizmo::ROTATE;
+                case WigetGizmo::Operation::Scale:
+                    return ImGuizmo::SCALE;
+                default: break;
+                }
+
+                return ImGuizmo::UNIVERSAL;
+            };
+
+        ImGuizmo::OPERATION gizmoOp = convertOp(gizmoCtx->_operation);
+        ImGuizmo::MODE gizmoMode = ImGuizmo::WORLD;
+        if (gizmoOp != ImGuizmo::SCALE)
+        {
+            gizmoMode = (gizmoCtx->_mode == WigetGizmo::Mode::Local) ? ImGuizmo::LOCAL : ImGuizmo::WORLD;
+        }
+
+        ImGuizmo::SetDrawlist();
+        ImGuizmo::SetRect(layoutCtx->_cachedLayoutRect.getLeftX(), layoutCtx->_cachedLayoutRect.getTopY(), layoutCtx->_cachedLayoutRect.getWidth(), layoutCtx->_cachedLayoutRect.getHeight());
+
+        ImGuizmo::Manipulate(camera.getViewMatrix().getPtr(), camera.getProjectionMatrix().getPtr(), gizmoOp, gizmoMode, matrix.getPtr(), nullptr, nullptr);
+
+        if (ImGuizmo::IsOver() && gizmoCtx->_onHoveredEvent)
+        {
+            std::invoke(gizmoCtx->_onHoveredEvent, wiget);
+        }
+
+        if (ImGuizmo::IsUsing() && gizmoCtx->_onTransformChangedEvent)
+        {
+            scene::Transform modifyTransform;
+            modifyTransform.setTransform(matrix);
+
+            std::invoke(gizmoCtx->_onTransformChangedEvent, wiget, base, modifyTransform);
+        }
+    }
+}
+
+void ImGuiWigetDrawer::draw_ViewManipulator(Wiget* wiget, Wiget* base, Wiget::State* layout, Wiget::State* state)
+{
+    ASSERT(ImGui::GetCurrentContext(), "must be valid");
+    WigetViewManipulator::StateViewManipulator* viewCtx = static_cast<WigetViewManipulator::StateViewManipulator*>(state);
+    WigetLayout::StateLayoutBase* layoutCtx = static_cast<WigetLayout::StateLayoutBase*>(layout);
+
+    if (viewCtx->_isActive && viewCtx->_camera)
+    {
+        const scene::Camera& camera = *viewCtx->_camera;
+
+        float viewManipulateRight = layoutCtx->_cachedLayoutRect.getLeftX() + layoutCtx->_cachedLayoutRect.getWidth();
+        float viewManipulateTop = layoutCtx->_cachedLayoutRect.getTopY();
+        math::Matrix4D viewMatrix = camera.getViewMatrix();
+
+        ImGui::PushStyleColor(ImGuiCol_WindowBg, (ImVec4)ImColor(0.35f, 0.3f, 0.3f));
+
+        ImGuizmo::SetDrawlist();
+        ImGuizmo::SetRect(layoutCtx->_cachedLayoutRect.getLeftX(), layoutCtx->_cachedLayoutRect.getTopY(), layoutCtx->_cachedLayoutRect.getWidth(), layoutCtx->_cachedLayoutRect.getHeight());
+
+        const bool showGrid = true;
+        if (showGrid)
+        {
+            math::Matrix4D identityMatrix;
+            identityMatrix.makeIdentity();
+            ImGuizmo::DrawGrid(camera.getViewMatrix().getPtr(), camera.getProjectionMatrix().getPtr(), identityMatrix.getPtr(), 100.f);
+        }
+        ImGuizmo::ViewManipulate(viewMatrix.getPtr(), 8.f, ImVec2(viewManipulateRight - viewCtx->_size, viewManipulateTop), ImVec2(viewCtx->_size, viewCtx->_size), 0x10101010);
+
+        ImGui::PopStyleColor(1);
+
+        if (ImGuizmo::IsViewManipulateHovered() && viewCtx->_onHoveredEvent)
+        {
+            std::invoke(viewCtx->_onHoveredEvent, wiget);
+        }
+
+        if (ImGuizmo::IsUsingViewManipulate() && viewCtx->_onViewChangedEvent)
+        {
+            std::invoke(viewCtx->_onViewChangedEvent, wiget, base, viewMatrix);
+        }
+    }
 }
 
 math::Vector2D ImGuiWigetDrawer::get_LayoutPadding() const

@@ -41,6 +41,9 @@ namespace ui
         void draw_BeginLayoutState(Wiget* layout, Wiget* base, Wiget::State* state) override;
         void draw_EndLayoutState(Wiget* layout, Wiget* base, Wiget::State* state) override;
 
+        void draw_Gizmo(Wiget* wiget, Wiget* base, Wiget::State* layout, Wiget::State* state) override;
+        void draw_ViewManipulator(Wiget* wiget, Wiget* base, Wiget::State* layout, Wiget::State* state) override;
+
         math::Vector2D get_LayoutPadding() const override;
         math::Vector2D get_ItemSpacing() const override;
 
