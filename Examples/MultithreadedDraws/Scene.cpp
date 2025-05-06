@@ -81,7 +81,7 @@ void Scene::SendExitSignal()
 void Scene::Init()
 {
     //init camera
-    m_Camera = new scene::CameraFPSHandler(new scene::Camera(math::Vector3D(0.0f, 0.0f, -8.0f), math::Vector3D(0.0f, 1.0f, 0.0f)), { 0.0f, 1.0f, -10.0f });
+    m_Camera = new scene::CameraFPSHandler(new scene::Camera(math::Vector3D(0.0f, 0.0f, 0.0f), math::Vector3D(0.0f, 1.0f, 0.0f)), { 0.0f, 1.0f, -1.0f });
     m_Camera->setPerspective(45.0f, m_Swapchain->getBackbufferSize(), 0.01f, 256.f);
 
     m_CmdList = m_Device->createCommandList<renderer::CmdListRender>(renderer::Device::GraphicMask);

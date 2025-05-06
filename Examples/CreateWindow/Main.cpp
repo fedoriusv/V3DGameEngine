@@ -3,7 +3,7 @@
 
 #include "Common.h"
 #include "Platform/Window.h"
-#include "Events/InputEventReceiver.h"
+#include "Events/Input/InputEventReceiver.h"
 #include "Utils/Logger.h"
 
 using namespace v3d;
@@ -27,6 +27,7 @@ public:
         ASSERT(UIWindow, "windows is nullptr");
         m_ChildWindows.push_back(UIWindow);
 
+        ASSERT(false, "nullptr");
 #ifdef PLATFORM_WINDOWS
         m_InputEventHandler = new InputEventHandler();
         m_InputEventHandler->bind([](const KeyboardInputEvent* event)
