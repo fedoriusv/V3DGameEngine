@@ -382,55 +382,51 @@ LRESULT WindowWindows::HandleInputMessage(UINT message, WPARAM wParam, LPARAM lP
         return DefWindowProc(m_hWnd, message, wParam, lParam);
     }
 
-    static auto getModifiers = [](WPARAM wParam, LPARAM lParam) -> u8
+    static auto getKey = [](const event::KeyCodes& codes, WPARAM wParam, LPARAM lParam) -> event::KeyCode
     {
-        u8 modifers = 0;
-
         switch (wParam)
         {
         case VK_MENU: //Alt
             if ((lParam & 0x1000000) == 0) //left
             {
-                modifers |= event::KeyModifierCode::KeyModifier_Alt;
+                return event::KeyCode::KeyLAlt;
             }
             else //right
             {
-                modifers |= event::KeyModifierCode::KeyModifier_Alt;
+                return event::KeyCode::KeyRAlt;
             }
-            break;
 
         case VK_CONTROL:
             if ((lParam & 0x1000000) == 0) //left
             {
-                modifers |= event::KeyModifierCode::KeyModifier_Ctrl;
+                return event::KeyCode::KeyLControl;
             }
             else //right
             {
-                modifers |= event::KeyModifierCode::KeyModifier_Ctrl;
+                return event::KeyCode::KeyRControl;
             }
-            break;
 
         case VK_SHIFT:
         {
             s32 actualKey = MapVirtualKey((lParam & 0x00ff0000) >> 16, MAPVK_VSC_TO_VK_EX);
             if (actualKey == VK_LSHIFT)
             {
-                modifers |= event::KeyModifierCode::KeyModifier_Shift;
+                return event::KeyCode::KeyLShift;
             }
             else
             {
-                modifers |= event::KeyModifierCode::KeyModifier_Shift;
+                return event::KeyCode::KeyRShift;
             }
-            break;
         }
 
         case VK_CAPITAL:
-            modifers |= event::KeyModifierCode::KeyModifier_CapsLock;
-            break;
+            return event::KeyCode::KeyCapital;
 
+        default:
+            break;
         }
 
-        return modifers;
+        return codes.get((u32)wParam);
     };
 
     switch (message)
@@ -440,9 +436,9 @@ LRESULT WindowWindows::HandleInputMessage(UINT message, WPARAM wParam, LPARAM lP
     {
         event::KeyboardInputEvent* event = V3D_PLACMENT_NEW(m_receiver->allocateInputEvent(), event::KeyboardInputEvent());
         event->_event = event::KeyboardInputEvent::KeyboardPressDown;
-        event->_key = m_keyCodes.get((u32)wParam);
+        event->_key = getKey(m_keyCodes, wParam, lParam);
         event->_character = (c8)wParam;
-        event->_modifers = getModifiers(wParam, lParam);
+        event->_modifers = 0;
         event->_windowID = this->ID();
 
         m_receiver->pushEvent(event);
@@ -454,9 +450,9 @@ LRESULT WindowWindows::HandleInputMessage(UINT message, WPARAM wParam, LPARAM lP
     {
         event::KeyboardInputEvent* event = V3D_PLACMENT_NEW(m_receiver->allocateInputEvent(), event::KeyboardInputEvent());
         event->_event = event::KeyboardInputEvent::KeyboardPressUp;
-        event->_key = m_keyCodes.get((u32)wParam);
+        event->_key = getKey(m_keyCodes, wParam, lParam);
         event->_character = (c8)wParam;
-        event->_modifers = getModifiers(wParam, lParam);
+        event->_modifers = 0;
         event->_windowID = this->ID();
 
         m_receiver->pushEvent(event);
@@ -603,7 +599,6 @@ LRESULT WindowWindows::HandleInputMessage(UINT message, WPARAM wParam, LPARAM lP
     case WM_MOUSEWHEEL:
     {
         POINT absolutePos = { (LONG)GET_X_LPARAM(lParam), (LONG)GET_Y_LPARAM(lParam) };
-        ClientToScreen(m_hWnd, &absolutePos);
 
         event::MouseInputEvent* event = V3D_PLACMENT_NEW(m_receiver->allocateInputEvent(), event::MouseInputEvent());
         event->_clientCoordinates.m_x = GET_X_LPARAM(lParam);

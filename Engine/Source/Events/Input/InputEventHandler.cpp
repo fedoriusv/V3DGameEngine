@@ -58,72 +58,6 @@ void InputEventHandler::resetTouchStates()
     m_multiScreenTouch = false;
 }
 
-void InputEventHandler::applyModifiers(KeyboardInputEvent* event)
-{
-    if (InputEventHandler::isKeyPressed(KeyCode::KeyAlt))
-    {
-        event->_modifers |= KeyModifierCode::KeyModifier_Alt;
-    }
-
-    if (InputEventHandler::isKeyPressed(KeyCode::KeyControl))
-    {
-        event->_modifers |= KeyModifierCode::KeyModifier_Ctrl;
-    }
-
-    if (InputEventHandler::isKeyPressed(KeyCode::KeyShift))
-    {
-        event->_modifers |= KeyModifierCode::KeyModifier_Shift;
-    }
-
-    if (InputEventHandler::isKeyPressed(KeyCode::KeyCapital))
-    {
-        event->_modifers |= KeyModifierCode::KeyModifier_CapsLock;
-    }
-}
-
-void InputEventHandler::applyModifiers(MouseInputEvent * event)
-{
-    if (InputEventHandler::isKeyPressed(KeyCode::KeyAlt))
-    {
-        event->_modifers |= KeyModifierCode::KeyModifier_Alt;
-    }
-
-    if (InputEventHandler::isKeyPressed(KeyCode::KeyControl))
-    {
-        event->_modifers |= KeyModifierCode::KeyModifier_Ctrl;
-    }
-
-    if (InputEventHandler::isKeyPressed(KeyCode::KeyShift))
-    {
-        event->_modifers |= KeyModifierCode::KeyModifier_Shift;
-    }
-
-    if (InputEventHandler::isKeyPressed(KeyCode::KeyCapital))
-    {
-        event->_modifers |= KeyModifierCode::KeyModifier_CapsLock;
-    }
-
-    event->_wheelValue = m_mouseWheel;
-}
-
-void InputEventHandler::applyModifiers(TouchInputEvent* event)
-{
-    if (InputEventHandler::isKeyPressed(KeyCode::KeyLAlt) || InputEventHandler::isKeyPressed(KeyCode::KeyRAlt))
-    {
-        event->_modifers |= KeyModifierCode::KeyModifier_Alt;
-    }
-
-    if (InputEventHandler::isKeyPressed(KeyCode::KeyLControl) || InputEventHandler::isKeyPressed(KeyCode::KeyRControl))
-    {
-        event->_modifers |= KeyModifierCode::KeyModifier_Ctrl;
-    }
-
-    if (InputEventHandler::isKeyPressed(KeyCode::KeyLShift) || InputEventHandler::isKeyPressed(KeyCode::KeyRShift))
-    {
-        event->_modifers |= KeyModifierCode::KeyModifier_Shift;
-    }
-}
-
 void InputEventHandler::applyTouches(u32 mask, bool isPressed)
 {
     //TODO
@@ -383,26 +317,6 @@ bool InputEventHandler::GamepadInputEventsBound() const
 bool InputEventHandler::TouchInputEventsBound() const
 {
     return !m_touchHandlerCallbacks.empty();
-}
-
-bool InputEventHandler::isKeyPressed(const KeyCode& code)  const
-{
-    return m_keysPressed[toEnumType(code)];
-}
-
-bool InputEventHandler::isLeftMousePressed() const
-{
-    return /*m_mouseStates[MouseInputEvent::MousePressDown] &&*/ m_keysPressed[toEnumType(KeyCode::KeyLButton)];
-}
-
-bool InputEventHandler::isRightMousePressed() const
-{
-    return /*m_mouseStates[MouseInputEvent::MousePressDown] &&*/ m_keysPressed[toEnumType(KeyCode::KeyRButton)];
-}
-
-bool InputEventHandler::isMiddleMousePressed() const
-{
-    return /*m_mouseStates[MouseInputEvent::MousePressDown] &&*/ m_keysPressed[toEnumType(KeyCode::KeyMButton)];
 }
 
 bool InputEventHandler::isGamepadPressed(const GamepadInputEvent::GamepadButton& code) const

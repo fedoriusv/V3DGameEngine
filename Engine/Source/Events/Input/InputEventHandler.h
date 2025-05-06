@@ -68,9 +68,8 @@ namespace event
         void resetMouseStates();
         void resetTouchStates();
 
-        void applyModifiers(KeyboardInputEvent* event);
-        void applyModifiers(MouseInputEvent* event);
-        void applyModifiers(TouchInputEvent * event);
+        template<class TInputEvent>
+        void applyModifiers(TInputEvent* event);
 
         void applyTouches(u32 mask, bool isPressed);
 
@@ -103,7 +102,52 @@ namespace event
         std::vector<SystemEventCallback>    m_systemEventCallbacks;
     };
 
+    inline bool InputEventHandler::isKeyPressed(const KeyCode& code) const
+    {
+        return m_keysPressed[toEnumType(code)];
+    }
+
+    inline bool InputEventHandler::isLeftMousePressed() const
+    {
+        return m_keysPressed[toEnumType(KeyCode::KeyLButton)];
+    }
+
+    inline bool InputEventHandler::isRightMousePressed() const
+    {
+        return m_keysPressed[toEnumType(KeyCode::KeyRButton)];
+    }
+
+    inline bool InputEventHandler::isMiddleMousePressed() const
+    {
+        return m_keysPressed[toEnumType(KeyCode::KeyMButton)];
+    }
+
+    template<class TInputEvent>
+    inline void InputEventHandler::applyModifiers(TInputEvent* event)
+    {
+        if (InputEventHandler::isKeyPressed(KeyCode::KeyLControl) || InputEventHandler::isKeyPressed(KeyCode::KeyRControl))
+        {
+            event->_modifers |= KeyModifierCode::KeyModifier_Ctrl;
+        }
+
+        if (InputEventHandler::isKeyPressed(KeyCode::KeyLAlt) || InputEventHandler::isKeyPressed(KeyCode::KeyRAlt))
+        {
+            event->_modifers |= KeyModifierCode::KeyModifier_Alt;
+        }
+
+        if (InputEventHandler::isKeyPressed(KeyCode::KeyLShift) || InputEventHandler::isKeyPressed(KeyCode::KeyRShift))
+        {
+            event->_modifers |= KeyModifierCode::KeyModifier_Shift;
+        }
+
+        if (InputEventHandler::isKeyPressed(KeyCode::KeyCapital))
+        {
+            event->_modifers |= KeyModifierCode::KeyModifier_CapsLock;
+        }
+    }
+
     /////////////////////////////////////////////////////////////////////////////////////////////////////
+
 
 } //namespace event
 } //namespace v3d

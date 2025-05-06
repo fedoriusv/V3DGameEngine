@@ -74,7 +74,6 @@ void* operator new[](v3d::u64 size, v3d::memory::MemoryLabel label, v3d::u64 ali
 void operator delete(void* ptr, v3d::memory::MemoryLabel label, v3d::u64 align, const v3d::c8* file, v3d::u32 line) noexcept;
 void operator delete[](void* ptr, v3d::memory::MemoryLabel label, v3d::u64 align, const v3d::c8* file, v3d::u32 line) noexcept;
 
-
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #if MEMORY_MANAGMENT

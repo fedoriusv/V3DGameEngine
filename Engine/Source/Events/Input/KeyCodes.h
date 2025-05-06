@@ -6,12 +6,11 @@ namespace event
 {
     enum KeyModifierCode : u8
     {
-        KeyModifier_Uknown = 0x00,
+        KeyModifier_Uknown = 0x0,
         KeyModifier_Ctrl = 0x1,
         KeyModifier_Alt = 0x2,
         KeyModifier_Shift = 0x4,
-        KeyModifier_CapsLock = 0x8,
-        KeyModifier_Meta = 0x10
+        KeyModifier_CapsLock = 0x8
     };
 
     enum class KeyCode : u32
