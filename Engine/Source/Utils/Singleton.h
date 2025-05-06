@@ -64,7 +64,10 @@ namespace utils
     inline T* Singleton<T>::createInstance()
     {
         ASSERT(!s_instance, "not nullptr");
-        s_instance = V3D_NEW(T, memory::MemoryLabel::MemorySystem);
+        std::call_once(Singleton::s_onceFlag, []()
+            {
+                s_instance = V3D_NEW(T, memory::MemoryLabel::MemorySystem);
+            });
 
         ASSERT(s_instance, "nullptr");
         return s_instance;
