@@ -33,3 +33,6 @@
 [submodule "Engine/Source/ThirdParty/ImGuizmo"]
 	path = Engine/Source/ThirdParty/ImGuizmo
 	url = git@github.com:CedricGuillemet/ImGuizmo.git
+[submodule "Engine/ThirdParty/DirectXMath"]
+	path = Engine/ThirdParty/DirectXMath
+	url = git@github.com:microsoft/DirectXMath.git

@@ -22,6 +22,9 @@ option(BUILD_DIRECTX_SDK_OPTION "Use DirectX SDK" OFF)
 #Json lib is required"
 #https://github.com/nlohmann/json.git
 
+option(DIRECTX_MATH_LIB "Use DirectXMath" ON)
+#https://github.com/microsoft/DirectXMath.git
+
 option(STB_LIB "Use STB" ON)
 #https://github.com/nothings/stb.git
 
@@ -306,6 +309,11 @@ set(BUILD_DEPENDENCIES "")
 target_link_libraries(${ENGINE_NAME} crc32c)
 set(BUILD_DEPENDENCIES ${BUILD_DEPENDENCIES} crc32c)
 
+if (DIRECTX_MATH_LIB)
+    target_link_libraries(${ENGINE_NAME} DirectXMath)
+    set(BUILD_DEPENDENCIES ${BUILD_DEPENDENCIES} DirectXMath)
+endif()
+
 #Assimp	
 if(ASSIMP_LIB)
     target_link_libraries(${ENGINE_NAME} assimp)
@@ -363,6 +371,14 @@ set_target_properties(crc32c PROPERTIES
 set_target_properties(crc32c_arm64 PROPERTIES FOLDER ThirdParty/crc32c)
 set_target_properties(crc32c_sse42 PROPERTIES FOLDER ThirdParty/crc32c)
 message(STATUS "Crc32 lib added")
+
+if (DIRECTX_MATH_LIB)
+    message(STATUS "Add DirectXMath lib")
+    set(DIRECTX_MATH_LIB_DIRECTORY Engine/ThirdParty/DirectXMath)
+    add_subdirectory(${DIRECTX_MATH_LIB_DIRECTORY})
+    set_target_properties(DirectXMath PROPERTIES FOLDER ThirdParty/DirectXMath)
+    message(STATUS "DirectXMath lib added")
+endif()
 
 #Assimp
 if(ASSIMP_LIB)
