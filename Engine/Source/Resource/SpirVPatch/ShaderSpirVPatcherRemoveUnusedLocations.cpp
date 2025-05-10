@@ -4,7 +4,7 @@
 #include "Utils/Logger.h"
 
 #ifdef USE_SPIRV
-#include <shaderc/third_party/glslang/SPIRV/spirv.hpp>
+#include <shaderc/third_party/spirv-tools/external/spirv-headers/include/spirv/1.2/spirv.hpp>
 
 namespace v3d
 {
