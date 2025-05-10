@@ -84,7 +84,7 @@ elseif(TARGET_ANDROID)
     include(Config/Android.cmake)
     set(BUILD_VULKAN_SDK ${BUILD_VULKAN_SDK_OPTION})
     set(HWCPipe_LIB ${HWCPipe_LIB_OPTION})
-    set(DXCompiler_LIB ON)   
+    set(DXCompiler_LIB ON)
 else()
     message(FATAL_ERROR "Unknown platform. Only Platform Windows | Android supported")
 endif()
@@ -101,7 +101,7 @@ set(ENGINE_PROJECT_DIR ${PROJECT_SOURCE_DIR})
 set(LIB_INCLUDE_DIRECTORY 
     ${ENGINE_PROJECT_DIR}/${SOURCE_DIR}
     ${ENGINE_PROJECT_DIR}/${SOURCE_DIR}/Platform
-    ${ENGINE_PROJECT_DIR}/Engine/Libs
+    ${ENGINE_PROJECT_DIR}/Engine/External
     ${ENGINE_PROJECT_DIR}/Engine/ThirdParty)
 
 foreach(INCLUDE_SUFFIX ${THIRD_PARTY_LIB_INCLUDE_SUFFIX})
@@ -130,7 +130,7 @@ if(BUILD_VULKAN_SDK)
     message(STATUS "Vulkan SDK Path " ${VULKAN_SDK_PATH})
 
     #SpirV
-    set(SPIRV_FOLDER ${ENGINE_PROJECT_DIR}/Engine/Libs/spirv)
+    set(SPIRV_FOLDER ${ENGINE_PROJECT_DIR}/Engine/External/spirv)
     if((IS_DIRECTORY ${SPIRV_FOLDER}/shaderc AND IS_DIRECTORY ${SPIRV_FOLDER}/SPIRV-Cross) OR SPIRV_INSTALL_FROM_GITHUB)
         set(VULKAN_SDK_INCLUDE_DIRECTORY ${VULKAN_SDK_INCLUDE_DIRECTORY} ${SPIRV_FOLDER})
         set(VULKAN_SDK_INCLUDE_DIRECTORY ${VULKAN_SDK_INCLUDE_DIRECTORY} ${SPIRV_FOLDER}/shaderc/libshaderc/include)
@@ -335,7 +335,7 @@ endif()
 # DXCompiler
 if(DXCompiler_LIB AND TARGET_WIN)
     message(STATUS "Link DXCompiler dxcompiler.lib")
-    target_link_libraries(${ENGINE_NAME} ${ENGINE_PROJECT_DIR}/Engine/Libs/dxc/lib/x64/dxcompiler.lib)
+    target_link_libraries(${ENGINE_NAME} ${ENGINE_PROJECT_DIR}/Engine/External/dxc/lib/x64/dxcompiler.lib)
 endif()
 
 #Spirv
@@ -367,7 +367,7 @@ add_subdirectory(${CRC32_LIB_DIRECTORY})
 set_target_properties(crc32c PROPERTIES
     ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${CRC32_LIB_DIRECTORY}/${PROJECT_PLATFORM}
     FOLDER ThirdParty/crc32c
-	)
+    )
 set_target_properties(crc32c_arm64 PROPERTIES FOLDER ThirdParty/crc32c)
 set_target_properties(crc32c_sse42 PROPERTIES FOLDER ThirdParty/crc32c)
 message(STATUS "Crc32 lib added")
@@ -393,7 +393,7 @@ if(ASSIMP_LIB)
         set_target_properties(zlibstatic PROPERTIES FOLDER ThirdParty/assimp)
         set_target_properties(UpdateAssimpLibsDebugSymbolsAndDLLs PROPERTIES FOLDER ThirdParty/assimp)
         set_target_properties(uninstall PROPERTIES FOLDER ThirdParty/assimp)
-		
+
         target_compile_options(assimp PRIVATE -D_SILENCE_ALL_CXX17_DEPRECATION_WARNINGS $<$<CONFIG:DEBUG>:/MTd> $<$<CONFIG:RELEASE>:/MT>)
         target_compile_options(zlibstatic PRIVATE $<$<CONFIG:DEBUG>:/MTd> $<$<CONFIG:RELEASE>:/MT>)
     elseif(TARGET_ANDROID)

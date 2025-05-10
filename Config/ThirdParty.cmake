@@ -27,6 +27,9 @@ endif()
 #Assimp
 if(ASSIMP_LIB)
     set(THIRD_PARTY_LIB_DEFINE "${THIRD_PARTY_LIB_DEFINE} -DUSE_ASSIMP")
+    option(BUILD_SHARED_LIBS "Build package with shared libraries." OFF)
+    option(ASSIMP_BUILD_TESTS "If the test suite for Assimp is built in addition to the library." OFF)
+    option(ASSIMP_BUILD_ASSIMP_TOOLS "If the supplementary tools for Assimp are built in addition to the library." OFF)
 endif()
 
 #HWCPipe
@@ -42,12 +45,12 @@ endif()
 #Tracy
 if(PROFILER_TRACY_LIB)
     set(THIRD_PARTY_LIB_DEFINE "${THIRD_PARTY_LIB_DEFINE} -DTRACY_ENABLE")
-	set(THIRD_PARTY_LIB_INCLUDE_SUFFIX "${THIRD_PARTY_LIB_INCLUDE_SUFFIX}" "tracy/public")
-	option(TRACY_ON_DEMAND "On-demand profiling" ON)
+    set(THIRD_PARTY_LIB_INCLUDE_SUFFIX "${THIRD_PARTY_LIB_INCLUDE_SUFFIX}" "tracy/public")
+    option(TRACY_ON_DEMAND "On-demand profiling" ON)
 endif()
 
 #imgui
 if(IMGUI_SOURCE)
     set(THIRD_PARTY_LIB_DEFINE "${THIRD_PARTY_LIB_DEFINE} -DUSE_IMGUI")
-	set(THIRD_PARTY_SOURCE_INCLUDE_SUFFIX "${THIRD_PARTY_SOURCE_INCLUDE_SUFFIX}" "imgui")
+    set(THIRD_PARTY_SOURCE_INCLUDE_SUFFIX "${THIRD_PARTY_SOURCE_INCLUDE_SUFFIX}" "imgui")
 endif()
