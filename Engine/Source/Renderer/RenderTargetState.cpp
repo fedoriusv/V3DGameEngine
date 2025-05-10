@@ -124,7 +124,7 @@ bool RenderTargetState::setColorTexture_Impl(u32 index, Texture* colorTexture, c
         attachmentDesc._finalTransition = tansitionState._finalState;
         m_attachmentsDesc._images[index] = colorTexture->m_texture;
         m_attachmentsDesc._layers[index] = k_generalLayer;
-        m_attachmentsDesc._clearColorValues[index] = color::Color(0);
+        m_attachmentsDesc._clearColorValues[index] = colorOpState._clearColor;
         m_renderTargets[index] = colorTexture;
 
         return checkCompatibility(colorTexture, attachmentDesc);
@@ -134,6 +134,7 @@ bool RenderTargetState::setColorTexture_Impl(u32 index, Texture* colorTexture, c
         m_renderpassDesc._attachmentsDesc[index] = AttachmentDesc();
         m_attachmentsDesc._images[index] = TextureHandle();
         m_attachmentsDesc._layers[index] = 0;
+        m_attachmentsDesc._clearColorValues[index] = color::Color(0);
         m_renderTargets[index] = nullptr;
     }
 
@@ -160,7 +161,7 @@ bool RenderTargetState::setColorTexture_Impl(u32 index, Texture* colorTexture, s
         attachmentDesc._finalTransition = tansitionState._finalState;
         m_attachmentsDesc._images[index] = colorTexture->m_texture;
         m_attachmentsDesc._layers[index] = 0;
-        m_attachmentsDesc._clearColorValues[index] = color::Color(0);
+        m_attachmentsDesc._clearColorValues[index] = colorOpState._clearColor;
         m_renderTargets[index] = colorTexture;
 
         return checkCompatibility(colorTexture, attachmentDesc);
@@ -170,6 +171,7 @@ bool RenderTargetState::setColorTexture_Impl(u32 index, Texture* colorTexture, s
         m_renderpassDesc._attachmentsDesc[index] = AttachmentDesc();
         m_attachmentsDesc._images[index] = TextureHandle();
         m_attachmentsDesc._layers[index] = 0;
+        m_attachmentsDesc._clearColorValues[index] = color::Color(0);
         m_renderTargets[index] = nullptr;
     }
 
@@ -205,6 +207,7 @@ bool RenderTargetState::setSwapchainTexture_Impl(u32 index, SwapchainTexture* sw
         m_renderpassDesc._attachmentsDesc[index] = AttachmentDesc();
         m_attachmentsDesc._images[index] = TextureHandle();
         m_attachmentsDesc._layers[index] = 0;
+        m_attachmentsDesc._clearColorValues[index] = color::Color(0);
         m_renderTargets[index] = nullptr;
     }
 
@@ -230,7 +233,7 @@ bool RenderTargetState::setSwapchainTexture_Impl(u32 index, SwapchainTexture* sw
         attachmentDesc._finalTransition = tansitionState._finalState;
         m_attachmentsDesc._images[index] = TextureHandle(swapchainTexture->m_swapchain);
         m_attachmentsDesc._layers[index] = k_generalLayer;
-        m_attachmentsDesc._clearColorValues[index] = color::Color(0);
+        m_attachmentsDesc._clearColorValues[index] = colorOpState._clearColor;
         m_renderTargets[index] = swapchainTexture;
 
         return checkCompatibility(swapchainTexture, attachmentDesc);
@@ -240,6 +243,7 @@ bool RenderTargetState::setSwapchainTexture_Impl(u32 index, SwapchainTexture* sw
         m_renderpassDesc._attachmentsDesc[index] = AttachmentDesc();
         m_attachmentsDesc._images[index] = TextureHandle();
         m_attachmentsDesc._layers[index] = 0;
+        m_attachmentsDesc._clearColorValues[index] = color::Color(0);
         m_renderTargets[index] = nullptr;
     }
 
