@@ -18,14 +18,11 @@ namespace scene
     {
     public:
 
-        explicit CameraEditorHandler(Camera* camera, const math::Vector3D& position) noexcept;
+        explicit CameraEditorHandler(std::unique_ptr<Camera> camera) noexcept;
         ~CameraEditorHandler();
 
         CameraEditorHandler() = delete;
         CameraEditorHandler(const CameraEditorHandler&) = delete;
-
-        void setRotation(const math::Vector3D& rotation);
-        const math::Vector3D& getRotation() const;
 
         void setMoveSpeed(f32 speed);
         f32 getMoveSpeed() const;
@@ -39,29 +36,21 @@ namespace scene
 
     private:
 
-        static constexpr f32 k_constrainPitch = 89.0f;
+        bool m_freeFlyMode;
+        bool m_orbitingMode;
 
-        enum CameraMode
-        {
-            None,
-            FPSMode,
-            ArcballMode,
-        };
-        CameraMode m_cameraMode;
+        const math::TVector2D<f32>  m_distanceLimits;
 
-        struct Move
-        {
-            bool _forward;
-            bool _back;
-            bool _left;
-            bool _right;
-        };
-        Move m_direction;
-        f32 m_moveSpeed;
-        f32 m_accelerationSpeed;
-        f32 m_rotationSpeed;
+        math::Vector3D              m_rotation; //TODO remove from here
+        math::TVector2D<f32>        m_deltaRotation;
 
-        bool isDirectionChange() const;
+        f32                         m_distance;
+        f32                         m_deltaDistance;
+        math::Vector4D              m_direction;
+
+        f32                         m_rotationSpeed;
+        f32                         m_moveSpeed;
+        f32                         m_accelerationSpeed;
     };
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////

@@ -9,15 +9,24 @@ namespace v3d
 namespace scene
 {
 
-CameraArcballHandler::CameraArcballHandler(Camera* camera, f32 distance) noexcept
-    : CameraHandler(camera, math::Vector3D(0.0f, 0.0f, k_signZ * distance))
-    , m_distanceLimits({ CameraHandler::getCamera().getNear(), CameraHandler::getCamera().getFar() })
+CameraArcballHandler::CameraArcballHandler(std::unique_ptr<Camera> camera, f32 distance) noexcept
+    : CameraHandler(std::move(camera))
+    , m_distanceLimits({ getNear(), getFar() })
+
+    , m_rotation({ 0.f, 0.f, 0.f })
+    , m_deltaRotation({ 0.f, 0.f })
+
+    , m_distance(distance)
+    , m_deltaDistance(0.f)
 {
 }
 
-CameraArcballHandler::CameraArcballHandler(Camera* camera, f32 distance, f32 minDistance, f32 maxDistance) noexcept
-    : CameraHandler(camera, math::Vector3D(0.0f, 0.0f, k_signZ * distance))
+CameraArcballHandler::CameraArcballHandler(std::unique_ptr<Camera> camera, f32 distance, f32 minDistance, f32 maxDistance) noexcept
+    : CameraHandler(std::move(camera))
     , m_distanceLimits({ minDistance, maxDistance })
+
+    , m_distance(distance)
+    , m_deltaDistance(0.f)
 {
 }
 
@@ -25,89 +34,77 @@ CameraArcballHandler::~CameraArcballHandler()
 {
 }
 
-void CameraArcballHandler::setRotation(const math::Vector3D& rotation)
-{
-    m_transform.setRotation(rotation);
-    m_needUpdate = true;
-}
-
-const math::Vector3D& CameraArcballHandler::getRotation() const
-{
-    return m_transform.getRotation();
-}
-
 void CameraArcballHandler::update(f32 deltaTime)
 {
     if (m_needUpdate)
     {
-        CameraHandler::update(deltaTime);
+        m_rotation.setX(m_rotation.getX() + m_deltaRotation._x * m_rotationSpeed * deltaTime);
+        m_rotation.setY(m_rotation.getY() + m_deltaRotation._y * m_rotationSpeed * deltaTime);
+        m_deltaRotation = { 0.f, 0.f };
+
+
+        m_distance += m_deltaDistance * m_zoomSpeed * deltaTime;
+        m_distance = std::clamp(m_distance, m_distanceLimits._x, m_distanceLimits._y);
+        m_deltaDistance = 0.f;
+
+        //TODO
+        math::Matrix4D look = math::SMatrix::lookAtMatrix(math::VectorRegister3D{ 0.0f, 0.0f, 0.0f }, math::VectorRegister3D{ 0.0f, 0.0f, 1.0f }, math::VectorRegister3D{ 0.0f, 1.0f, 0.0f });
+        look.makeInverse();
+        look.setTranslation({ 0.f, 0.f, -m_distance });
 
         math::Matrix4D rotate;
-        rotate.setRotation(math::Vector3D(m_transform.getRotation().m_x, m_transform.getRotation().m_y, 0.0f));
-        //LOG_DEBUG("rotation: x= %f, y=%f, z=%f", rotate.getRotation().x, rotate.getRotation().y, rotate.getRotation().z);
+        rotate.setRotation(m_rotation);
 
-        math::Vector4D position = rotate * math::Vector4D(m_transform.getPosition(), 1.0);
-        m_viewPosition = { position.m_x, position.m_y, position.m_z };
-
-        rotate.makeTransposed();
-        math::Matrix4D look = math::buildLookAtMatrix(m_transform.getPosition(), getCamera().getTarget(), getCamera().getUpVector());
         math::Matrix4D view = look * rotate;
+        m_camera->setTransform(view);
 
-        getCamera().setViewMatrix(view);
+        view.makeInverse();
+        setViewMatrix(view);
 
+        CameraHandler::update(deltaTime);
         m_needUpdate = false;
     }
 }
 
 void CameraArcballHandler::handleMouseCallback(v3d::event::InputEventHandler* handler, const event::MouseInputEvent* event)
 {
-    static math::Point2D position = event->_clientCoordinates;
-    static f32 wheel = event->_wheelValue;
+    static math::Point2D prevPosition = event->_clientCoordinates;
+    math::Point2D positionDelta = prevPosition - event->_clientCoordinates;
 
-    if (handler->isLeftMousePressed())
+    static bool isOrbiting = false;
+
+    const event::MouseInputEvent* mouseEvent = static_cast<const event::MouseInputEvent*>(event);
+    if (mouseEvent->_event == event::MouseInputEvent::MousePressDown && mouseEvent->_key == event::KeyCode::KeyLButton)
     {
-        math::Point2D positionDelta = position - event->_clientCoordinates;
+        prevPosition = {};
+        positionDelta = {};
+        isOrbiting = true;
+    }
+    else if (mouseEvent->_event == event::MouseInputEvent::MousePressUp && mouseEvent->_key == event::KeyCode::KeyLButton)
+    {
+        prevPosition = {};
+        isOrbiting = false;
+    }
 
-        math::Vector3D rotation = CameraArcballHandler::getRotation();
-        rotation.m_x -= positionDelta.m_y * k_rotationSpeed;
-        rotation.m_y -= positionDelta.m_x * k_rotationSpeed;
-        CameraArcballHandler::setRotation(rotation);
+    if (isOrbiting)
+    {
+        m_deltaRotation._x = -positionDelta._y;
+        m_deltaRotation._y = -positionDelta._x;
+        m_needUpdate = true;
     }
 
     if (handler->isRightMousePressed())
     {
-        s32 positionDelta = position.m_y - event->_clientCoordinates.m_y;
-        math::Vector3D postion = CameraHandler::getPosition();
-        f32 newZPos = postion.m_z - (positionDelta * k_zoomSpeed * 0.1f);
-        if (k_signZ < 0)
-        {
-            postion.m_z = math::clamp(newZPos, k_signZ * m_distanceLimits.m_y, k_signZ * m_distanceLimits.m_x);
-        }
-        else
-        {
-            postion.m_z = math::clamp(newZPos, m_distanceLimits.m_x, m_distanceLimits.m_y);
-        }
-        CameraHandler::setPosition(postion);
+        m_deltaDistance = positionDelta._y * 0.1f;
+        m_needUpdate = true;
     }
     else if (event->_event == event::MouseInputEvent::MouseWheel)
     {
-        f32 wheelDelta = /*wheel - */event->_wheelValue;
-
-        math::Vector3D postion = CameraHandler::getPosition();
-        f32 newZPos = postion.m_z + (wheelDelta * k_zoomSpeed);
-        if (k_signZ < 0)
-        {
-            postion.m_z = math::clamp(newZPos, k_signZ * m_distanceLimits.m_y, k_signZ * m_distanceLimits.m_x);
-        }
-        else
-        {
-            postion.m_z = math::clamp(newZPos, m_distanceLimits.m_x, m_distanceLimits.m_y);
-        }
-        CameraHandler::setPosition(postion);
+        m_deltaDistance = event->_wheelValue;
+        m_needUpdate = true;
     }
 
-    position = event->_clientCoordinates;
-    wheel = event->_wheelValue;
+    prevPosition = event->_clientCoordinates;
 }
 
 void CameraArcballHandler::handleTouchCallback(v3d::event::InputEventHandler* handler, const event::TouchInputEvent* event)
@@ -118,31 +115,30 @@ void CameraArcballHandler::handleTouchCallback(v3d::event::InputEventHandler* ha
     {
         if (event->_motionEvent == event::TouchInputEvent::TouchMotionMove && handler->isScreenTouched())
         {
-            LOG_DEBUG("CameraArcballHandler Log: pos %d, %d, _motionEvent %d", event->_position.m_x, event->_position.m_y, event->_motionEvent);
+            LOG_DEBUG("CameraArcballHandler Log: pos %d, %d, _motionEvent %d", event->_position._x, event->_position._y, event->_motionEvent);
 
             if (!handler->isMultiScreenTouch())
             {
                 math::Point2D positionDelta = position - event->_position;
 
-                math::Vector3D rotation = CameraArcballHandler::getRotation();
-                rotation.m_x -= positionDelta.m_y * k_rotationSpeed;
-                rotation.m_y -= positionDelta.m_x * k_rotationSpeed;
-                CameraArcballHandler::setRotation(rotation);
+                //m_cachedRotation.m_x += positionDelta.m_y;
+                //m_cachedRotation.m_y -= positionDelta.m_x;
+                //m_needUpdate = true;
             }
             else if (handler->isMultiScreenTouch())
             {
-                s32 positionDelta = position.m_y - event->_position.m_y;
-                math::Vector3D postion = CameraHandler::getPosition();
-                f32 newZPos = postion.m_z + (positionDelta * k_zoomSpeed * 0.1f);
-                if (k_signZ < 0)
-                {
-                    postion.m_z = math::clamp(newZPos, k_signZ * m_distanceLimits.m_y, k_signZ * m_distanceLimits.m_x);
-                }
-                else
-                {
-                    postion.m_z = math::clamp(newZPos, m_distanceLimits.m_x, m_distanceLimits.m_y);
-                }
-                CameraHandler::setPosition(postion);
+                //s32 positionDelta = position.m_y - event->_position.m_y;
+                //math::Vector3D postion = CameraHandler::getPosition();
+                //f32 newZPos = postion.m_z + (positionDelta * m_zoomSpeed * 0.1f);
+                //if (k_signZ < 0)
+                //{
+                //    postion.m_z = math::clamp(newZPos, k_signZ * m_distanceLimits.m_y, k_signZ * m_distanceLimits.m_x);
+                //}
+                //else
+                //{
+                //    postion.m_z = math::clamp(newZPos, m_distanceLimits.m_x, m_distanceLimits.m_y);
+                //}
+                //CameraHandler::setPosition(postion);
             }
         }
     }

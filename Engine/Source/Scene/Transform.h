@@ -42,7 +42,7 @@ namespace scene
 
     private:
 
-        void updateTransform() const;
+        void claculateTransform() const;
 
         math::Vector3D m_position;
         math::Vector3D m_rotation;

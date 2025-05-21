@@ -7,9 +7,9 @@ namespace scene
 {
 
 Transform::Transform() noexcept
-    : m_position(math::Vector3D(0.f))
-    , m_rotation(math::Vector3D(0.f))
-    , m_scale(math::Vector3D(1.f))
+    : m_position(0.f, 0.f, 0.f)
+    , m_rotation(0.f, 0.f, 0.f)
+    , m_scale(1.f, 1.f, 1.f)
 
     , m_transformFlag(0/*TransformState::TransformState_All*/)
 {
@@ -35,7 +35,7 @@ void Transform::setScale(const math::Vector3D& scale)
 {
     m_scale = scale;
 
-    bool hasScale = (scale.m_x != 1.f || scale.m_y != 1.f || scale.m_z != 1.f);
+    bool hasScale = (scale.getX() != 1.f || scale.getY() != 1.f || scale.getZ() != 1.f);
     if (hasScale)
     {
         m_transformFlag |= TransformState::TransformState_Scale;
@@ -59,37 +59,32 @@ const math::Vector3D& Transform::getPosition() const
 
 const math::Vector3D& Transform::getRotation() const
 {
-    //ASSERT(!(m_transformFlag & TransformState::TransformState_Scale) && !(m_transformFlag & TransformState::TransformState_Rotation), "not updated");
     return m_rotation;
 }
 
 const math::Vector3D& Transform::getScale() const
 {
-    //ASSERT(!(m_transformFlag & TransformState::TransformState_Scale) && !(m_transformFlag & TransformState::TransformState_Rotation), "not updated");
     return m_scale;
 }
 
 const math::Matrix4D& Transform::getTransform() const
 {
-    Transform::updateTransform();
+    Transform::claculateTransform();
     return m_modelMatrix;
 }
 
-void Transform::updateTransform() const
+void Transform::claculateTransform() const
 {
-    if (m_transformFlag & TransformState::TransformState_Rotation)
-    {
-        m_modelMatrix.setRotation(m_rotation);
-        m_transformFlag &= ~TransformState::TransformState_Rotation;
-
-        m_modelMatrix.postScale(m_scale);
-        m_transformFlag &= ~TransformState::TransformState_Scale;
-    }
-
     if (m_transformFlag & TransformState::TransformState_Scale)
     {
         m_modelMatrix.setScale(m_scale);
         m_transformFlag &= ~TransformState::TransformState_Scale;
+    }
+
+    if (m_transformFlag & TransformState::TransformState_Rotation)
+    {
+        m_modelMatrix.setRotation(m_rotation);
+        m_transformFlag &= ~TransformState::TransformState_Rotation;
     }
 
     if (m_transformFlag & TransformState::TransformState_Translation)

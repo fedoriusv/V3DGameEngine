@@ -3,6 +3,7 @@
 #include "Common.h"
 #include "Component.h"
 #include "Resource/Resource.h"
+#include "Renderable.h"
 
 namespace v3d
 {
@@ -14,7 +15,7 @@ namespace scene
     * @brief Camera class. Component, Resource. Game side.
     * Calculates View and Projection matrices
     */
-    class Camera : public resource::Resource
+    class Camera : public Renderable, public resource::Resource
     {
     public:
 
@@ -24,37 +25,50 @@ namespace scene
         * @param const math::Vector3D& up [optional]
         * @param bool orthogonal [optional]
         */
-        explicit Camera(const math::Vector3D& target = math::Vector3D(0.0f, 0.0f, 1.0f), const math::Vector3D& up = math::Vector3D(0.0f, 1.0f, 0.0f), bool orthogonal = false) noexcept;
+        explicit Camera(const math::Vector3D& position = { 0.0f, 0.0f, 0.0f }, const math::Vector3D& target = { 0.0f, 0.0f, 1.0f }, bool orthogonal = false) noexcept;
         virtual ~Camera();
 
+        void setPerspective(f32 FOV, const math::Dimension2D& size, f32 zNear, f32 zFar);
+        void setOrtho(const math::Rect& area, f32 zNear, f32 zFar);
+
         void setTarget(const math::Vector3D& target);
-        void setUpVector(const math::Vector3D& up);
-        void setNear(f32 value);
-        void setFar(f32 value);
-        void setFOV(f32 value);
-
         const math::Vector3D& getTarget() const;
-        const math::Vector3D& getUpVector() const;
-        const math::Matrix4D& getViewMatrix() const;
-        const math::Matrix4D& getProjectionMatrix() const;
+        const math::Vector3D getForwardVector() const;
+        const math::Vector3D getUpVector() const;
 
-        void setViewMatrix(const math::Matrix4D& view);
-        void setProjectionMatrix(const math::Matrix4D& projection);
+        void setPosition(const math::Vector3D& position) override;
+        void setRotation(const math::Vector3D& rotation) override;
+        void setScale(const math::Vector3D& scale) override;
+        void setTransform(const math::Matrix4D& transform) override;
 
+        void setNear(f32 value);
         f32 getNear() const;
+
+        void setFar(f32 value);
         f32 getFar() const;
+
+        void setFOV(f32 value);
         f32 getFOV() const;
 
+        const math::Matrix4D& getViewMatrix() const;
+        const math::Matrix4D& getViewMatrixInverse() const;
+
+        const math::Matrix4D& getProjectionMatrix() const;
+        const math::Matrix4D& getProjectionMatrixInverse() const;
+
+        f32 getAspectRatio() const;
         bool isOrthogonal() const;
 
     protected:
 
-        enum TransformMatrix
+        enum Matrix
         {
-            TransformMatrix_ViewMatrix = 0,
-            TransformMatrix_ProjectionMatrix = 1,
+            Matrix_ViewMatrix = 0,
+            Matrix_ViewMatrixInverse = 1,
+            Matrix_ProjectionMatrix = 2,
+            Matrix_ProjectionMatrixInverse = 3,
 
-            TransformMatrix_Count
+            Matrix_Count
         };
 
         enum CameraState
@@ -67,28 +81,52 @@ namespace scene
 
         typedef u16 CameraStateFlags;
 
-        void recalculateProjectionMatrix(const math::Rect32& size) const;
-        void recalculateViewMatrix(const math::Vector3D& position) const;
+        void recalculateProjectionMatrix() const;
+        void recalculateViewMatrix() const;
 
-        mutable math::Matrix4D m_transform[TransformMatrix_Count];
-        bool m_orthogonal;
+        mutable math::Matrix4D   m_matrices[Matrix_Count];
+        mutable f32              m_aspectRatio;
+        mutable math::Vector3D   m_target;
+        mutable math::Vector3D   m_up;
+        math::Rect               m_area;
+        f32                      m_zNear;
+        f32                      m_zFar;
+        f32                      m_fieldOfView;
+        bool                     m_orthogonal;
+        mutable CameraStateFlags m_matricesFlags;
 
-        f32 m_zNear;
-        f32 m_zFar;
-        f32 m_fieldOfView;
+        friend class CameraHandler;
 
     private:
 
         bool load(const stream::Stream* stream, u32 offset = 0) override;
         bool save(stream::Stream* stream, u32 offset = 0) const override;
-
-        friend class CameraHandler;
-
-        math::Vector3D m_up;
-        math::Vector3D m_target;
-
-        mutable CameraStateFlags m_matricesFlag;
     };
+
+    inline bool Camera::isOrthogonal() const
+    {
+        return m_orthogonal;
+    }
+
+    inline f32 Camera::getNear() const
+    {
+        return m_zNear;
+    }
+
+    inline f32 Camera::getFar() const
+    {
+        return m_zFar;
+    }
+
+    inline f32 Camera::getFOV() const
+    {
+        return m_fieldOfView;
+    }
+
+    inline f32 Camera::getAspectRatio() const
+    {
+        return m_aspectRatio;
+    }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 

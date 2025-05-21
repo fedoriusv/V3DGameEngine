@@ -21,12 +21,9 @@ namespace scene
         CameraArcballHandler() = delete;
         CameraArcballHandler(const CameraArcballHandler&) = delete;
 
-        explicit CameraArcballHandler(Camera* camera, f32 distance) noexcept;
-        explicit CameraArcballHandler(Camera* camera, f32 distance, f32 minDistance, f32 maxDistance) noexcept;
+        explicit CameraArcballHandler(std::unique_ptr<Camera> camera, f32 distance) noexcept;
+        explicit CameraArcballHandler(std::unique_ptr<Camera> camera, f32 distance, f32 minDistance, f32 maxDistance) noexcept;
         ~CameraArcballHandler();
-
-        void setRotation(const math::Vector3D& rotation);
-        const math::Vector3D& getRotation() const;
 
         void update(f32 deltaTime) override;
 
@@ -35,14 +32,16 @@ namespace scene
 
     private:
 
-        const math::Vector2D m_distanceLimits;
+        const math::TVector2D<f32>  m_distanceLimits;
 
-        const f32   k_rotationSpeed = 0.8f;
-        const f32   k_zoomSpeed = 1.0f;
+        math::Vector3D              m_rotation;
+        math::TVector2D<f32>        m_deltaRotation;
 
+        f32                         m_distance;
+        f32                         m_deltaDistance;
 
-        static constexpr f32 k_signZ = -1.0f;
-
+        f32                         m_rotationSpeed = 0.5f;
+        f32                         m_zoomSpeed = 5.0f;
     };
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
