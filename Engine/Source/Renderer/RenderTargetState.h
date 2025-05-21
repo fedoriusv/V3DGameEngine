@@ -230,14 +230,14 @@ namespace renderer
         * @param TTexture* colorTexture [required]
         * @param RenderTargetLoadOp loadOp [optional]
         * @param RenderTargetStoreOp storeOp [optional]
-        * @param const math::Vector4D& clearColor [optional]
+        * @param const color::Color& clearColor [optional]
         *
         * @return true if compatibility is successed
         */
         template<class TTexture>
         bool setColorTexture(u32 index, TTexture* colorTexture,
             RenderTargetLoadOp loadOp = RenderTargetLoadOp::LoadOp_Clear, RenderTargetStoreOp storeOp = RenderTargetStoreOp::StoreOp_Store,
-            const color::Color& clearColor = math::Vector4D(0.f));
+            const color::Color& clearColor = color::Color(0.f));
 
         /**
         * @brief setColorTexture method. Used to adding a layer of color attachment to render target
@@ -247,14 +247,14 @@ namespace renderer
         * @param s32 layer [required]
         * @param RenderTargetLoadOp loadOp [optional]
         * @param RenderTargetStoreOp storeOp [optional]
-        * @param const math::Vector4D& clearColor [optional]
+        * @param const color::Color& clearColor [optional]
         *
         * @return true if compatibility is successed
         */
         template<class TTexture>
         bool setColorTexture(u32 index, TTexture* colorTexture, s32 layer,
             RenderTargetLoadOp loadOp = RenderTargetLoadOp::LoadOp_Clear, RenderTargetStoreOp storeOp = RenderTargetStoreOp::StoreOp_Store,
-            const color::Color& clearColor = math::Vector4D(0.f));
+            const color::Color& clearColor = color::Color(0.f));
 
 
         /**
@@ -454,7 +454,7 @@ namespace renderer
 
 
     template<class TTexture>
-    inline bool RenderTargetState::setColorTexture(u32 index, TTexture* colorTexture, RenderTargetLoadOp loadOp, RenderTargetStoreOp storeOp, const math::Vector4D& clearColor)
+    inline bool RenderTargetState::setColorTexture(u32 index, TTexture* colorTexture, RenderTargetLoadOp loadOp, RenderTargetStoreOp storeOp, const color::Color& clearColor)
     {
         static_assert(std::is_same<TTexture, Texture2D>() || std::is_same<TTexture, SwapchainTexture>(), "wrong type");
         if constexpr (std::is_same<TTexture, SwapchainTexture>())
@@ -468,7 +468,7 @@ namespace renderer
     }
 
     template<class TTexture>
-    inline bool RenderTargetState::setColorTexture(u32 index, TTexture* colorTexture, s32 layer, RenderTargetLoadOp loadOp, RenderTargetStoreOp storeOp, const math::Vector4D& clearColor)
+    inline bool RenderTargetState::setColorTexture(u32 index, TTexture* colorTexture, s32 layer, RenderTargetLoadOp loadOp, RenderTargetStoreOp storeOp, const color::Color& clearColor)
     {
         static_assert(std::is_same<TTexture, Texture2DArray>() || std::is_same<TTexture, TextureCube>(), "wrong type");
         return setColorTexture_Impl(index, colorTexture, layer, loadOp, storeOp, clearColor);

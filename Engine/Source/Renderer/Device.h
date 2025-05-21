@@ -98,16 +98,16 @@ namespace renderer
 
         /**
         * @brief setViewport command
-        * @param const math::Rect32& viewport [required]
+        * @param const math::Rect& viewport [required]
         * @param const math::Vector2D& depth [optional]
         */
-        virtual void setViewport(const math::Rect32& viewport, const math::Vector2D& depth = { 0.0f, 1.0f }) = 0;
+        virtual void setViewport(const math::Rect& viewport, const math::TVector2D<f32>& depth = { 0.0f, 1.0f }) = 0;
 
         /**
         * @brief setScissor command
-        * @param const math::Rect32& scissor [required]
+        * @param const math::Rect& scissor [required]
         */
-        virtual void setScissor(const math::Rect32& scissor) = 0;
+        virtual void setScissor(const math::Rect& scissor) = 0;
 
         /**
         * @brief setStencilRef command

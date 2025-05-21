@@ -241,22 +241,22 @@ namespace renderer
     u64 ImageFormat::calculateImageMipSize(const math::Dimension3D& size, u32 mipLevel, Format format)
     {
         math::Dimension3D mipSize;
-        mipSize.m_width = math::max(size.m_width >> mipLevel, 1U);
-        mipSize.m_height = math::max(size.m_height >> mipLevel, 1U);
-        mipSize.m_depth = math::max(size.m_depth >> mipLevel, 1U);
+        mipSize._width = std::max(size._width >> mipLevel, 1U);
+        mipSize._height = std::max(size._height >> mipLevel, 1U);
+        mipSize._depth = std::max(size._depth >> mipLevel, 1U);
 
         u64 calculatedSize = static_cast<u64>(ImageFormat::getFormatBlockSize(format));
         if (ImageFormat::isFormatCompressed(format))
         {
             auto roundToBlocksLayer = [](const math::Dimension3D& size, const math::Dimension2D& blockDim, u64 blockSize) -> u64
             {
-                const u64 widthSize = (size.m_width + blockDim.m_width - 1) / blockDim.m_width;
-                const u64 heightSize = (size.m_height + blockDim.m_height - 1) / blockDim.m_height;
+                const u64 widthSize = (size._width + blockDim._width - 1) / blockDim._width;
+                const u64 heightSize = (size._height + blockDim._height - 1) / blockDim._height;
                 return widthSize * heightSize * blockSize;
             };
 
             calculatedSize = roundToBlocksLayer(mipSize, ImageFormat::getBlockDimension(format), calculatedSize);
-            return calculatedSize * mipSize.m_depth;
+            return calculatedSize * mipSize._depth;
         }
 
         calculatedSize *= mipSize.getArea();
@@ -280,9 +280,9 @@ namespace renderer
         if (size.getArea() > 1)
         {
             math::Dimension3D mipSize(size);
-            mipSize.m_width = math::max(size.m_width / 2, 1U);
-            mipSize.m_height = math::max(size.m_height / 2, 1U);
-            mipSize.m_depth = math::max(size.m_depth / 2, 1U);
+            mipSize._width = std::max(size._width / 2, 1U);
+            mipSize._height = std::max(size._height / 2, 1U);
+            mipSize._depth = std::max(size._depth / 2, 1U);
 
             return ImageFormat::calculateMipmapCount(mipSize) + 1;
         }

@@ -40,8 +40,8 @@ VulkanFramebuffer::~VulkanFramebuffer()
 bool VulkanFramebuffer::create(const VulkanRenderPass* pass)
 {
     ASSERT(!m_framebuffer, "framebuffer is not nullptr");
-    ASSERT(m_device.getVulkanDeviceCaps().getPhysicalDeviceLimits().maxFramebufferWidth >= m_size.m_width &&
-        m_device.getVulkanDeviceCaps().getPhysicalDeviceLimits().maxFramebufferHeight >= m_size.m_height, "maxFramebufferSize is over range");
+    ASSERT(m_device.getVulkanDeviceCaps().getPhysicalDeviceLimits().maxFramebufferWidth >= m_size._width &&
+        m_device.getVulkanDeviceCaps().getPhysicalDeviceLimits().maxFramebufferHeight >= m_size._height, "maxFramebufferSize is over range");
 
     m_imageViews.reserve(pass->getCountAttachments());
     for (u32 attach = 0; attach < pass->getCountAttachments(); ++attach)
@@ -80,8 +80,8 @@ bool VulkanFramebuffer::create(const VulkanRenderPass* pass)
     framebufferCreateInfo.renderPass = pass->getHandle();
     framebufferCreateInfo.attachmentCount = static_cast<u32>(m_imageViews.size());
     framebufferCreateInfo.pAttachments = m_imageViews.data();
-    framebufferCreateInfo.width = m_size.m_width;
-    framebufferCreateInfo.height = m_size.m_height;
+    framebufferCreateInfo.width = m_size._width;
+    framebufferCreateInfo.height = m_size._height;
     framebufferCreateInfo.layers = 1; //TODO: fill count layers
 
     ASSERT(m_framebuffer == VK_NULL_HANDLE, "not empty");

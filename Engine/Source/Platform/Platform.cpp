@@ -120,10 +120,10 @@ math::Point2D Platform::getCursorPosition()
     return math::Point2D(0U, 0U);
 }
 
-void Platform::setCursorPostion(const math::Point2D & point)
+void Platform::setCursorPostion(const math::Point2D& point)
 {
 #ifdef PLATFORM_WINDOWS
-    SetCursorPos(point.m_x, point.m_y);
+    SetCursorPos(point._x, point._y);
 #endif //PLATFORM_WINDOWS
 }
 
@@ -220,8 +220,8 @@ void Platform::enumDisplayMonitors(const DisplayMonitorsFunc& func)
 
         auto& func = *reinterpret_cast<const DisplayMonitorsFunc*>(param);
 
-        math::RectF32 rcMonitor(info.rcMonitor.left, info.rcMonitor.top, info.rcMonitor.right, info.rcMonitor.bottom);
-        math::RectF32 rcWork(info.rcWork.left, info.rcWork.top, info.rcWork.right, info.rcWork.bottom);
+        math::Rect rcMonitor(info.rcMonitor.left, info.rcMonitor.top, info.rcMonitor.right, info.rcMonitor.bottom);
+        math::Rect rcWork(info.rcWork.left, info.rcWork.top, info.rcWork.right, info.rcWork.bottom);
         f32 dpi = GetDpiScaleForMonitor(monitor);
         return func(rcMonitor, rcWork, dpi, info.dwFlags & MONITORINFOF_PRIMARY, monitor);
     };

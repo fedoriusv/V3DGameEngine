@@ -46,8 +46,8 @@ namespace vk
         VulkanCmdList(VulkanDevice* device) noexcept;
         ~VulkanCmdList();
 
-        void setViewport(const math::Rect32& viewport, const math::Vector2D& depth = { 0.0f, 1.0f }) override;
-        void setScissor(const math::Rect32& scissor) override;
+        void setViewport(const math::Rect& viewport, const math::TVector2D<f32>& depth = { 0.0f, 1.0f }) override;
+        void setScissor(const math::Rect& scissor) override;
         void setStencilRef(u32 mask) override;
 
         void beginRenderTarget(RenderTargetState& rendertarget) override;

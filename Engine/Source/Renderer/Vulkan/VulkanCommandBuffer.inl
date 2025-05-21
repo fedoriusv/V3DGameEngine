@@ -315,7 +315,7 @@ inline void VulkanCommandBuffer::cmdDispatch(const math::Dimension3D& groups)
     ASSERT(m_status == CommandBufferStatus::Begin, "not started");
     ASSERT(!isInsideRenderPass(), "must be outside");
 
-    VulkanWrapper::CmdDispatch(m_commands, groups.m_width, groups.m_height, groups.m_depth);
+    VulkanWrapper::CmdDispatch(m_commands, groups._width, groups._height, groups._depth);
 }
 
 inline void VulkanCommandBuffer::cmdBeginQuery(VulkanQueryPool* pool, u32 index)

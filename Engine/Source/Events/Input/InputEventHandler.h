@@ -85,7 +85,7 @@ namespace event
         math::Point2D m_relativeCursorPosition;
         math::Point2D m_absoluteCursorPosition;
         f32 m_mouseWheel;
-        const math::Vector2D m_mouseWheelRange = { -100.0f, +100.0f };
+        const math::TVector2D<f32> m_mouseWheelRange = { -100.0f, +100.0f };
 
         friend InputEventReceiver;
 

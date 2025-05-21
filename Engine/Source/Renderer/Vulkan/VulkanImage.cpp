@@ -1349,9 +1349,9 @@ bool VulkanImage::internalUpload(VulkanCommandBuffer* cmdBuffer, const math::Dim
         auto calculateMipSize = [](const math::Dimension3D& size) -> math::Dimension3D
         {
             math::Dimension3D mipSize;
-            mipSize.m_width = math::max(size.m_width / 2, 1U);
-            mipSize.m_height = math::max(size.m_height / 2, 1U);
-            mipSize.m_depth = math::max(size.m_depth / 2, 1U);
+            mipSize._width = std::max(size._width / 2, 1U);
+            mipSize._height = std::max(size._height / 2, 1U);
+            mipSize._depth = std::max(size._depth / 2, 1U);
 
             return mipSize;
         };
@@ -1359,9 +1359,9 @@ bool VulkanImage::internalUpload(VulkanCommandBuffer* cmdBuffer, const math::Dim
         auto calculateMipOffset = [](const math::Dimension3D& size) -> math::Dimension3D
         {
             math::Dimension3D mipSize;
-            mipSize.m_width = math::max(size.m_width / 2, 0U);
-            mipSize.m_height = math::max(size.m_height / 2, 0U);
-            mipSize.m_depth = math::max(size.m_depth / 2, 0U);
+            mipSize._width = std::max(size._width / 2, 0U);
+            mipSize._height = std::max(size._height / 2, 0U);
+            mipSize._depth = std::max(size._depth / 2, 0U);
 
             return mipSize;
         };
@@ -1380,8 +1380,8 @@ bool VulkanImage::internalUpload(VulkanCommandBuffer* cmdBuffer, const math::Dim
                 bufferDataSize = ImageFormat::calculateImageMipSize(size, mip, VulkanImage::convertVkImageFormatToFormat(m_format));
 
                 VkBufferImageCopy regions;
-                regions.imageOffset = { static_cast<s32>(mipOffset.m_width), static_cast<s32>(mipOffset.m_height), static_cast<s32>(mipOffset.m_depth) };
-                regions.imageExtent = { mipSize.m_width, mipSize.m_height, mipSize.m_depth };
+                regions.imageOffset = { static_cast<s32>(mipOffset._width), static_cast<s32>(mipOffset._height), static_cast<s32>(mipOffset._depth) };
+                regions.imageExtent = { mipSize._width, mipSize._height, mipSize._depth };
                 regions.imageSubresource.aspectMask = m_aspectMask;
                 regions.imageSubresource.baseArrayLayer = layer;
                 regions.imageSubresource.layerCount = 1;

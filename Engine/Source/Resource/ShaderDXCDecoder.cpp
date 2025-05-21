@@ -2,7 +2,7 @@
 #include "Stream/StreamManager.h"
 #include "Stream/FileLoader.h"
 #include "Utils/Logger.h"
-#include "Utils//Timer.h"
+#include "Utils/Timer.h"
 #include "Platform.h"
 
 #if defined(PLATFORM_WINDOWS) || defined(PLATFORM_XBOX)

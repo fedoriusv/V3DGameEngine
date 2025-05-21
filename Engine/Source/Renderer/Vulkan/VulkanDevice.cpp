@@ -1141,7 +1141,7 @@ TextureHandle VulkanDevice::createTexture(TextureTarget target, Format format, c
 
     VkImageType vkType = VulkanImage::convertTextureTargetToVkImageType(target);
     VkFormat vkFormat = VulkanImage::convertImageFormatToVkFormat(format);
-    VkExtent3D vkExtent = { dimension.m_width, dimension.m_height, dimension.m_depth };
+    VkExtent3D vkExtent = { dimension._width, dimension._height, dimension._depth };
 
     VulkanImage* vkImage = V3D_NEW(VulkanImage, memory::MemoryLabel::MemoryRenderCore)(this, m_imageMemoryManager, vkType, vkFormat, vkExtent, layers, mipmapLevel, VK_IMAGE_TILING_OPTIMAL, flags, name);
     if (!vkImage->create())
@@ -1171,7 +1171,7 @@ TextureHandle VulkanDevice::createTexture(TextureTarget target, Format format, c
 #endif //VULKAN_DEBUG
 
     VkFormat vkFormat = VulkanImage::convertImageFormatToVkFormat(format);
-    VkExtent3D vkExtent = { dimension.m_width, dimension.m_height, dimension.m_depth };
+    VkExtent3D vkExtent = { dimension._width, dimension._height, dimension._depth };
     VkSampleCountFlagBits vkSamples = VulkanImage::convertRenderTargetSamplesToVkSampleCount(samples);
 
     VulkanImage* vkImage = V3D_NEW(VulkanImage, memory::MemoryLabel::MemoryRenderCore)(this, m_imageMemoryManager, vkFormat, vkExtent, vkSamples, layers, flags, name);
@@ -1385,7 +1385,7 @@ VulkanCmdList::~VulkanCmdList()
     }
 }
 
-void VulkanCmdList::setViewport(const math::Rect32& viewport, const math::Vector2D& depth)
+void VulkanCmdList::setViewport(const math::Rect& viewport, const math::TVector2D<f32>& depth)
 {
 #if VULKAN_DEBUG
     LOG_DEBUG("VulkanCmdList[%u]::setViewport [%u, %u; %u, %u]", m_concurrencySlot, viewport.getLeftX(), viewport.getTopY(), viewport.getWidth(), viewport.getHeight());
@@ -1402,8 +1402,8 @@ void VulkanCmdList::setViewport(const math::Rect32& viewport, const math::Vector
     vkViewport.y = static_cast<f32>(viewport.getTopY());
     vkViewport.width = static_cast<f32>(viewport.getWidth());
     vkViewport.height = static_cast<f32>(viewport.getHeight());
-    vkViewport.minDepth = depth.m_x;
-    vkViewport.maxDepth = depth.m_y;
+    vkViewport.minDepth = depth._x;
+    vkViewport.maxDepth = depth._y;
 #ifndef PLATFORM_ANDROID
     vkViewport.y = vkViewport.y + vkViewport.height;
     vkViewport.height = -vkViewport.height;
@@ -1412,7 +1412,7 @@ void VulkanCmdList::setViewport(const math::Rect32& viewport, const math::Vector
     m_pendingRenderState.setDirty(DirtyStateMask::DirtyState_Viewport);
 }
 
-void VulkanCmdList::setScissor(const math::Rect32& scissor)
+void VulkanCmdList::setScissor(const math::Rect& scissor)
 {
 #if VULKAN_DEBUG
     LOG_DEBUG("VulkanCmdList[%u]::setScissor [%u, %u; %u, %u]", m_concurrencySlot, scissor.getLeftX(), scissor.getTopY(), scissor.getWidth(), scissor.getHeight());
@@ -1480,7 +1480,7 @@ void VulkanCmdList::beginRenderTarget(RenderTargetState& rendertarget)
 
     m_pendingRenderState._renderpass = renderpass;
     m_pendingRenderState._framebuffer = framebuffer;
-    m_pendingRenderState._renderArea = VkRect2D{ { 0, 0 }, { rendertarget.getRenderArea().m_width, rendertarget.getRenderArea().m_height }};
+    m_pendingRenderState._renderArea = VkRect2D{ { 0, 0 }, { rendertarget.getRenderArea()._width, rendertarget.getRenderArea()._height }};
     if constexpr (sizeof(color::Color) == sizeof(VkClearValue))
     {
         memcpy(m_pendingRenderState._clearValues.data(), rendertarget.m_attachmentsDesc._clearColorValues.data(), sizeof(rendertarget.m_attachmentsDesc._clearColorValues));
@@ -1493,10 +1493,10 @@ void VulkanCmdList::beginRenderTarget(RenderTargetState& rendertarget)
             //TODO cast to float value
             m_pendingRenderState._clearValues[i].color =
             {
-                rendertarget.m_attachmentsDesc._clearColorValues[i].m_x,
-                rendertarget.m_attachmentsDesc._clearColorValues[i].m_y,
-                rendertarget.m_attachmentsDesc._clearColorValues[i].m_z,
-                rendertarget.m_attachmentsDesc._clearColorValues[i].m_w,
+                rendertarget.m_attachmentsDesc._clearColorValues[i]._x,
+                rendertarget.m_attachmentsDesc._clearColorValues[i]._y,
+                rendertarget.m_attachmentsDesc._clearColorValues[i]._z,
+                rendertarget.m_attachmentsDesc._clearColorValues[i]._w,
             };
         }
         m_pendingRenderState._clearValues[rendertarget.getColorTextureCount()].depthStencil = { rendertarget.m_attachmentsDesc._clearDepthValue, rendertarget.m_attachmentsDesc._clearStencilValue };

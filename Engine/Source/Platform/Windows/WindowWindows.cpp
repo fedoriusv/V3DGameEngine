@@ -87,10 +87,10 @@ bool WindowWindows::initialize()
     }
 
     RECT borderRect = { 
-        m_params._position.m_x, 
-        m_params._position.m_y, 
-        m_params._position.m_x + (s32)m_params._size.m_width,
-        m_params._position.m_y + (s32)m_params._size.m_height
+        m_params._position._x, 
+        m_params._position._y, 
+        m_params._position._x + static_cast<s32>(m_params._size._width),
+        m_params._position._y + static_cast<s32>(m_params._size._height)
     };
     AdjustWindowRectEx(&borderRect, dwStyle, FALSE, dwExStyle);
 
@@ -281,7 +281,7 @@ void WindowWindows::setSize(const math::Dimension2D& size)
 {
     ASSERT(m_hWnd, "Must be valid");
 
-    RECT rect = { 0, 0, (LONG)size.m_width, (LONG)size.m_height };
+    RECT rect = { 0, 0, (LONG)size._width, (LONG)size._height };
     DWORD dwStyle = ::GetWindowLongW(m_hWnd, GWL_STYLE);
     DWORD dwExStyle = ::GetWindowLongW(m_hWnd, GWL_EXSTYLE);
 
@@ -298,12 +298,12 @@ void WindowWindows::setPosition(const math::Point2D& pos)
         return;
     }
 
-    RECT rect = { (LONG)pos.m_x, (LONG)pos.m_y, (LONG)pos.m_x, (LONG)pos.m_y };
+    RECT rect = { (LONG)pos._x, (LONG)pos._y, (LONG)pos._x, (LONG)pos._y };
     DWORD dwStyle = ::GetWindowLongW(m_hWnd, GWL_STYLE);
     DWORD dwExStyle = ::GetWindowLongW(m_hWnd, GWL_EXSTYLE);
 
     AdjustWindowRectEx(&rect, dwStyle, FALSE, dwExStyle);
-    SetWindowPos(m_hWnd, NULL, pos.m_x, pos.m_y, 0, 0, SWP_NOACTIVATE | SWP_NOZORDER | SWP_NOSIZE);
+    SetWindowPos(m_hWnd, NULL, pos._x, pos._y, 0, 0, SWP_NOACTIVATE | SWP_NOZORDER | SWP_NOSIZE);
 
     m_params._position = pos;
 }
@@ -473,10 +473,10 @@ LRESULT WindowWindows::HandleInputMessage(UINT message, WPARAM wParam, LPARAM lP
         ClientToScreen(m_hWnd, &absolutePos);
 
         event::MouseInputEvent* event = V3D_PLACMENT_NEW(m_receiver->allocateInputEvent(), event::MouseInputEvent());
-        event->_clientCoordinates.m_x = GET_X_LPARAM(lParam);
-        event->_clientCoordinates.m_y = GET_Y_LPARAM(lParam);
-        event->_absoluteCoordinates.m_x = absolutePos.x;
-        event->_absoluteCoordinates.m_y = absolutePos.y;
+        event->_clientCoordinates._x = GET_X_LPARAM(lParam);
+        event->_clientCoordinates._y = GET_Y_LPARAM(lParam);
+        event->_absoluteCoordinates._x = absolutePos.x;
+        event->_absoluteCoordinates._y = absolutePos.y;
         event->_wheelValue = (f32)GET_WHEEL_DELTA_WPARAM(wParam) / (f32)WHEEL_DELTA;
         event->_event = event::MouseInputEvent::MouseDoubleClick;
         event->_modifers = 0;
@@ -518,10 +518,10 @@ LRESULT WindowWindows::HandleInputMessage(UINT message, WPARAM wParam, LPARAM lP
         ClientToScreen(m_hWnd, &absolutePos);
 
         event::MouseInputEvent* event = V3D_PLACMENT_NEW(m_receiver->allocateInputEvent(), event::MouseInputEvent());
-        event->_clientCoordinates.m_x = GET_X_LPARAM(lParam);
-        event->_clientCoordinates.m_y = GET_Y_LPARAM(lParam);
-        event->_absoluteCoordinates.m_x = absolutePos.x;
-        event->_absoluteCoordinates.m_y = absolutePos.y;
+        event->_clientCoordinates._x = GET_X_LPARAM(lParam);
+        event->_clientCoordinates._y = GET_Y_LPARAM(lParam);
+        event->_absoluteCoordinates._x = absolutePos.x;
+        event->_absoluteCoordinates._y = absolutePos.y;
         event->_wheelValue = (f32)GET_WHEEL_DELTA_WPARAM(wParam) / (f32)WHEEL_DELTA;
         event->_event = event::MouseInputEvent::MousePressDown;
         event->_modifers = 0;
@@ -565,10 +565,10 @@ LRESULT WindowWindows::HandleInputMessage(UINT message, WPARAM wParam, LPARAM lP
         ClientToScreen(m_hWnd, &absolutePos);
 
         event::MouseInputEvent* event = V3D_PLACMENT_NEW(m_receiver->allocateInputEvent(), event::MouseInputEvent());
-        event->_clientCoordinates.m_x = GET_X_LPARAM(lParam);
-        event->_clientCoordinates.m_y = GET_Y_LPARAM(lParam);
-        event->_absoluteCoordinates.m_x = absolutePos.x;
-        event->_absoluteCoordinates.m_y = absolutePos.y;
+        event->_clientCoordinates._x = GET_X_LPARAM(lParam);
+        event->_clientCoordinates._y = GET_Y_LPARAM(lParam);
+        event->_absoluteCoordinates._x = absolutePos.x;
+        event->_absoluteCoordinates._y = absolutePos.y;
         event->_wheelValue = (f32)GET_WHEEL_DELTA_WPARAM(wParam) / (f32)WHEEL_DELTA;
         event->_event = event::MouseInputEvent::MousePressUp;
         event->_modifers = 0;
@@ -601,10 +601,10 @@ LRESULT WindowWindows::HandleInputMessage(UINT message, WPARAM wParam, LPARAM lP
         POINT absolutePos = { (LONG)GET_X_LPARAM(lParam), (LONG)GET_Y_LPARAM(lParam) };
 
         event::MouseInputEvent* event = V3D_PLACMENT_NEW(m_receiver->allocateInputEvent(), event::MouseInputEvent());
-        event->_clientCoordinates.m_x = GET_X_LPARAM(lParam);
-        event->_clientCoordinates.m_y = GET_Y_LPARAM(lParam);
-        event->_absoluteCoordinates.m_x = absolutePos.x;
-        event->_absoluteCoordinates.m_y = absolutePos.y;
+        event->_clientCoordinates._x = GET_X_LPARAM(lParam);
+        event->_clientCoordinates._y = GET_Y_LPARAM(lParam);
+        event->_absoluteCoordinates._x = absolutePos.x;
+        event->_absoluteCoordinates._y = absolutePos.y;
         event->_wheelValue = (f32)GET_WHEEL_DELTA_WPARAM(wParam) / (f32)WHEEL_DELTA;
         event->_event = event::MouseInputEvent::MouseWheel;
         event->_modifers = 0;
@@ -617,19 +617,6 @@ LRESULT WindowWindows::HandleInputMessage(UINT message, WPARAM wParam, LPARAM lP
     case WM_MOUSEMOVE:
     case WM_NCMOUSEMOVE:
     {
-        //const u32 area = (message == WM_MOUSEMOVE) ? 1 : 2;
-        //if (m_mouseTrackedArea != area)
-        //{
-        //    TRACKMOUSEEVENT tme_cancel = { sizeof(tme_cancel), (DWORD)TME_CANCEL, m_hWnd, 0 };
-        //    TRACKMOUSEEVENT tme_track = { sizeof(tme_track), (DWORD)((message == WM_MOUSEMOVE) ? TME_LEAVE : TME_LEAVE | TME_NONCLIENT), m_hWnd, 0 };
-        //    if (m_mouseTrackedArea != 0)
-        //    {
-        //        TrackMouseEvent(&tme_cancel);
-        //    }
-        //    TrackMouseEvent(&tme_track);
-        //    m_mouseTrackedArea = area;
-        //}
-
         POINT localPos = { (LONG)GET_X_LPARAM(lParam), (LONG)GET_Y_LPARAM(lParam) };
         if (message == WM_NCMOUSEMOVE) // WM_NCMOUSEMOVE are absolute coordinates.
         {
@@ -640,10 +627,10 @@ LRESULT WindowWindows::HandleInputMessage(UINT message, WPARAM wParam, LPARAM lP
         ClientToScreen(m_hWnd, &absolutePos);
 
         event::MouseInputEvent* event = V3D_PLACMENT_NEW(m_receiver->allocateInputEvent(), event::MouseInputEvent());
-        event->_clientCoordinates.m_x = localPos.x;
-        event->_clientCoordinates.m_y = localPos.y;
-        event->_absoluteCoordinates.m_x = absolutePos.x;
-        event->_absoluteCoordinates.m_y = absolutePos.y;
+        event->_clientCoordinates._x = localPos.x;
+        event->_clientCoordinates._y = localPos.y;
+        event->_absoluteCoordinates._x = absolutePos.x;
+        event->_absoluteCoordinates._y = absolutePos.y;
         event->_wheelValue = (f32)GET_WHEEL_DELTA_WPARAM(wParam) / (f32)WHEEL_DELTA;
         event->_event = event::MouseInputEvent::MouseMoved;
         event->_modifers = 0;
@@ -656,20 +643,14 @@ LRESULT WindowWindows::HandleInputMessage(UINT message, WPARAM wParam, LPARAM lP
     case WM_MOUSELEAVE:
     case WM_NCMOUSELEAVE:
     {
-        //const int area = (message == WM_MOUSELEAVE) ? 1 : 2;
-        //if (m_mouseTrackedArea == area)
-        //{
-        //    m_mouseTrackedArea = 0;
-        //}
-
         POINT absolutePos = { (LONG)GET_X_LPARAM(lParam), (LONG)GET_Y_LPARAM(lParam) };
         ClientToScreen(m_hWnd, &absolutePos);
 
         event::MouseInputEvent* event = V3D_PLACMENT_NEW(m_receiver->allocateInputEvent(), event::MouseInputEvent());
-        event->_clientCoordinates.m_x = 0;
-        event->_clientCoordinates.m_y = 0;
-        event->_absoluteCoordinates.m_x = absolutePos.x;
-        event->_absoluteCoordinates.m_y = absolutePos.y;
+        event->_clientCoordinates._x = 0;
+        event->_clientCoordinates._y = 0;
+        event->_absoluteCoordinates._x = absolutePos.x;
+        event->_absoluteCoordinates._y = absolutePos.y;
         event->_wheelValue = (f32)GET_WHEEL_DELTA_WPARAM(wParam) / (f32)WHEEL_DELTA;
         event->_event = event::MouseInputEvent::MouseMoved;
         event->_modifers = 0;
@@ -680,6 +661,7 @@ LRESULT WindowWindows::HandleInputMessage(UINT message, WPARAM wParam, LPARAM lP
         return FALSE;
     }
 
+    return FALSE;
     }
 
     return DefWindowProc(m_hWnd, message, wParam, lParam);
@@ -761,8 +743,8 @@ LRESULT WindowWindows::HandleSystemEvents(UINT message, WPARAM wParam, LPARAM lP
 
     case WM_MOVE:
     {
-        m_params._position.m_x = (s16)LOWORD(lParam);
-        m_params._position.m_y = (s16)HIWORD(lParam);
+        m_params._position._x = (s16)LOWORD(lParam);
+        m_params._position._y = (s16)HIWORD(lParam);
 
         if (m_lastMoveEvent < m_currnetTime)
         {
@@ -785,10 +767,10 @@ LRESULT WindowWindows::HandleSystemEvents(UINT message, WPARAM wParam, LPARAM lP
             s32 width = (UINT)LOWORD(lParam);
             s32 height = (UINT)HIWORD(lParam);
 
-            if (width > 0 && height > 0 && (m_params._size.m_width != width || m_params._size.m_height != height))
+            if (width > 0 && height > 0 && (m_params._size._width != width || m_params._size._height != height))
             {
-                m_params._size.m_width = width;
-                m_params._size.m_height = height;
+                m_params._size._width = width;
+                m_params._size._height = height;
 
                 event::SystemEvent* event = V3D_PLACMENT_NEW(m_receiver->allocateInputEvent(), event::SystemEvent());
                 event->_systemEvent = event::SystemEvent::Resize;

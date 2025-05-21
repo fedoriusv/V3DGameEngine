@@ -112,8 +112,8 @@ namespace color
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    using ColorRGBF  = math::Vector3D;
-    using ColorRGBAF = math::Vector4D;
+    using ColorRGBF  = math::TVector3D<f32>;
+    using ColorRGBAF = math::TVector4D<f32>;
     using ColorRGBA8 = Color8Bit;
 
 

@@ -30,7 +30,7 @@ Texture2D::Texture2D(Device* device, TextureUsageFlags usage, Format format, con
 {
     LOG_DEBUG("Texture2D::Texture2D constructor %llx", this);
 
-    m_texture = m_device->createTexture(TextureTarget::Texture2D, format, math::Dimension3D(dimension.m_width, dimension.m_height, 1), 1, mipmaps, usage, name);
+    m_texture = m_device->createTexture(TextureTarget::Texture2D, format, math::Dimension3D(dimension._width, dimension._height, 1), 1, mipmaps, usage, name);
     ASSERT(m_texture.isValid(), "nullptr");
 }
 
@@ -41,7 +41,7 @@ Texture2D::Texture2D(Device* device, TextureUsageFlags usage, Format format, con
 {
     LOG_DEBUG("Texture2D::Texture2D constructor %llx", this);
 
-    m_texture = m_device->createTexture(TextureTarget::Texture2D, format, math::Dimension3D(dimension.m_width, dimension.m_height, 1), 1, samples, usage, name);
+    m_texture = m_device->createTexture(TextureTarget::Texture2D, format, math::Dimension3D(dimension._width, dimension._height, 1), 1, samples, usage, name);
     ASSERT(m_texture.isValid(), "nullptr");
 }
 
@@ -61,7 +61,7 @@ Texture2DArray::Texture2DArray(Device* device, TextureUsageFlags usage, Format f
 {
     LOG_DEBUG("Texture2DArray::Texture2DArray constructor %llx", this);
 
-    m_texture = m_device->createTexture(TextureTarget::Texture2DArray, format, math::Dimension3D(dimension.m_width, dimension.m_height, 1), layer, mipmaps, usage, name);
+    m_texture = m_device->createTexture(TextureTarget::Texture2DArray, format, math::Dimension3D(dimension._width, dimension._height, 1), layer, mipmaps, usage, name);
     ASSERT(m_texture.isValid(), "nullptr");
 }
 
@@ -72,7 +72,7 @@ Texture2DArray::Texture2DArray(Device* device, TextureUsageFlags usage, Format f
 {
     LOG_DEBUG("Texture2DArray::Texture2DArray constructor %llx", this);
 
-    m_texture = m_device->createTexture(TextureTarget::Texture2DArray, format, math::Dimension3D(dimension.m_width, dimension.m_height, 1), layer, samples, usage, name);
+    m_texture = m_device->createTexture(TextureTarget::Texture2DArray, format, math::Dimension3D(dimension._width, dimension._height, 1), layer, samples, usage, name);
     ASSERT(m_texture.isValid(), "nullptr");
 }
 
@@ -92,7 +92,7 @@ TextureCube::TextureCube(Device* device, TextureUsageFlags usage, Format format,
 {
     LOG_DEBUG("TextureCube::TextureCube constructor %llx", this);
 
-    m_texture = m_device->createTexture(TextureTarget::TextureCubeMap, format, math::Dimension3D(dimension.m_width, dimension.m_height, 1), 6, mipmaps, usage, name);
+    m_texture = m_device->createTexture(TextureTarget::TextureCubeMap, format, math::Dimension3D(dimension._width, dimension._height, 1), 6, mipmaps, usage, name);
     ASSERT(m_texture.isValid(), "nullptr");
 }
 
@@ -103,7 +103,7 @@ TextureCube::TextureCube(Device* device, TextureUsageFlags usage, Format format,
 {
     LOG_DEBUG("TextureCube::TextureCube constructor %llx", this);
 
-    m_texture = m_device->createTexture(TextureTarget::TextureCubeMap, format, math::Dimension3D(dimension.m_width, dimension.m_height, 1), 6, samples, usage, name);
+    m_texture = m_device->createTexture(TextureTarget::TextureCubeMap, format, math::Dimension3D(dimension._width, dimension._height, 1), 6, samples, usage, name);
     ASSERT(m_texture.isValid(), "nullptr");
 }
 

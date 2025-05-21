@@ -577,10 +577,10 @@ bool VulkanGraphicPipeline::create(const GraphicsPipelineState& state)
 
     if (!VulkanDevice::isDynamicStateSupported(VK_DYNAMIC_STATE_BLEND_CONSTANTS))
     {
-        pipelineColorBlendStateCreateInfo.blendConstants[0] = blendState._constant.m_x;
-        pipelineColorBlendStateCreateInfo.blendConstants[1] = blendState._constant.m_y;
-        pipelineColorBlendStateCreateInfo.blendConstants[2] = blendState._constant.m_z;
-        pipelineColorBlendStateCreateInfo.blendConstants[3] = blendState._constant.m_w;
+        pipelineColorBlendStateCreateInfo.blendConstants[0] = blendState._constant[0];
+        pipelineColorBlendStateCreateInfo.blendConstants[1] = blendState._constant[1];
+        pipelineColorBlendStateCreateInfo.blendConstants[2] = blendState._constant[2];
+        pipelineColorBlendStateCreateInfo.blendConstants[3] = blendState._constant[3];
     }
 
     //bool independentBlend = VulkanDeviceCaps::getInstance()->getPhysicalDeviceFeatures().independentBlend;
@@ -621,8 +621,8 @@ bool VulkanGraphicPipeline::create(const GraphicsPipelineState& state)
         pipelineDepthStencilStateCreateInfo.depthBoundsTestEnable = depthBlendState._depthBoundsTestEnable;
         if (!VulkanDevice::isDynamicStateSupported(VK_DYNAMIC_STATE_DEPTH_BOUNDS))
         {
-            pipelineDepthStencilStateCreateInfo.minDepthBounds = depthBlendState._depthBounds.m_x;
-            pipelineDepthStencilStateCreateInfo.maxDepthBounds = depthBlendState._depthBounds.m_y;
+            pipelineDepthStencilStateCreateInfo.minDepthBounds = depthBlendState._depthBounds._x;
+            pipelineDepthStencilStateCreateInfo.maxDepthBounds = depthBlendState._depthBounds._y;
         }
     }
     else

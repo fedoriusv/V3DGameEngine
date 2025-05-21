@@ -179,7 +179,7 @@ u32 AssimpDecoder::decodeMesh(const aiScene* scene, stream::Stream* modelStream,
                 inputAttributes.push_back(attrib);
 
                 contentFlag |= resource::MeshResource::VertexProperies::VertexProperies_Position;
-                vertexSize += sizeof(math::Vector3D);
+                vertexSize += sizeof(math::TVector3D<f32>);
             }
 
             if (mesh->HasNormals() && (presentFlags & MeshResource::VertexProperies::VertexProperies_Normals))
@@ -194,7 +194,7 @@ u32 AssimpDecoder::decodeMesh(const aiScene* scene, stream::Stream* modelStream,
                 inputAttributes.push_back(attrib);
 
                 contentFlag |= resource::MeshResource::VertexProperies::VertexProperies_Normals;
-                vertexSize += sizeof(math::Vector3D);
+                vertexSize += sizeof(math::TVector3D<f32>);
             }
 
             if (mesh->HasTangentsAndBitangents() && 
@@ -211,7 +211,7 @@ u32 AssimpDecoder::decodeMesh(const aiScene* scene, stream::Stream* modelStream,
                     inputAttributes.push_back(attrib);
 
                     contentFlag |= resource::MeshResource::VertexProperies::VertexProperies_Tangent;
-                    vertexSize += sizeof(math::Vector3D);
+                    vertexSize += sizeof(math::TVector3D<f32>);
                 }
                 
                 {
@@ -225,7 +225,7 @@ u32 AssimpDecoder::decodeMesh(const aiScene* scene, stream::Stream* modelStream,
                     inputAttributes.push_back(attrib);
 
                     contentFlag |= MeshResource::VertexProperies::VertexProperies_Bitangent;
-                    vertexSize += sizeof(math::Vector3D);
+                    vertexSize += sizeof(math::TVector3D<f32>);
                 }
             }
 
@@ -243,7 +243,7 @@ u32 AssimpDecoder::decodeMesh(const aiScene* scene, stream::Stream* modelStream,
                     inputAttributes.push_back(attrib);
 
                     contentFlag |= MeshResource::VertexProperies::VertexProperies_TextCoord0 + uv;
-                    vertexSize += sizeof(math::Vector2D);
+                    vertexSize += sizeof(math::TVector2D<f32>);
                 }
             }
 
@@ -261,7 +261,7 @@ u32 AssimpDecoder::decodeMesh(const aiScene* scene, stream::Stream* modelStream,
                     inputAttributes.push_back(attrib);
 
                     contentFlag |= MeshResource::VertexProperies::VertexProperies_Color0 + c;
-                    vertexSize += sizeof(math::Vector4D);
+                    vertexSize += sizeof(math::TVector4D<f32>);
                 }
             }
 
@@ -319,13 +319,13 @@ u32 AssimpDecoder::decodeMesh(const aiScene* scene, stream::Stream* modelStream,
             {
                 for (u32 v = 0; v < mesh->mNumVertices; v++)
                 {
-                    math::Vector3D position;
-                    position.m_x = mesh->mVertices[v].x;
-                    position.m_y = (flags & ModelFileLoader::FlipYPosition) ? -mesh->mVertices[v].y : mesh->mVertices[v].y;
-                    position.m_z = mesh->mVertices[v].z;
+                    math::TVector3D<f32> position;
+                    position._x = mesh->mVertices[v].x;
+                    position._y = (flags & ModelFileLoader::FlipYPosition) ? -mesh->mVertices[v].y : mesh->mVertices[v].y;
+                    position._z = mesh->mVertices[v].z;
 
-                    meshStream->write<math::Vector3D>(position);
-                    meshStreamSize += sizeof(math::Vector3D);
+                    meshStream->write<math::TVector3D<f32>>(position);
+                    meshStreamSize += sizeof(math::TVector3D<f32>);
                 }
             }
         }
@@ -339,56 +339,56 @@ u32 AssimpDecoder::decodeMesh(const aiScene* scene, stream::Stream* modelStream,
         {
             if (mesh->HasPositions() && (vertexPropFlags & MeshResource::VertexProperies::VertexProperies_Position))
             {
-                math::Vector3D position;
-                position.m_x = mesh->mVertices[v].x;
-                position.m_y = (flags & ModelFileLoader::FlipYPosition) ? -mesh->mVertices[v].y : mesh->mVertices[v].y;
-                position.m_z = mesh->mVertices[v].z;
+                math::TVector3D<f32> position;
+                position._x = mesh->mVertices[v].x;
+                position._y = (flags & ModelFileLoader::FlipYPosition) ? -mesh->mVertices[v].y : mesh->mVertices[v].y;
+                position._z = mesh->mVertices[v].z;
 
-                meshStream->write<math::Vector3D>(position);
-                meshStreamSize += sizeof(math::Vector3D);
+                meshStream->write<math::TVector3D<f32>>(position);
+                meshStreamSize += sizeof(math::TVector3D<f32>);
             }
 
             if (mesh->HasNormals() && (vertexPropFlags & MeshResource::VertexProperies::VertexProperies_Normals))
             {
-                math::Vector3D normal;
-                normal.m_x = mesh->mNormals[v].x;
-                normal.m_y = mesh->mNormals[v].y;
-                normal.m_z = mesh->mNormals[v].z;
+                math::TVector3D<f32> normal;
+                normal._x = mesh->mNormals[v].x;
+                normal._y = mesh->mNormals[v].y;
+                normal._z = mesh->mNormals[v].z;
 
-                meshStream->write<math::Vector3D>(normal);
-                meshStreamSize += sizeof(math::Vector3D);
+                meshStream->write<math::TVector3D<f32>>(normal);
+                meshStreamSize += sizeof(math::TVector3D<f32>);
             }
 
             if (mesh->HasTangentsAndBitangents() && 
                 (vertexPropFlags & (MeshResource::VertexProperies::VertexProperies_Tangent | MeshResource::VertexProperies::VertexProperies_Bitangent)))
             {
-                math::Vector3D tangent;
-                tangent.m_x = mesh->mTangents[v].x;
-                tangent.m_y = mesh->mTangents[v].y;
-                tangent.m_z = mesh->mTangents[v].z;
+                math::TVector3D<f32> tangent;
+                tangent._x = mesh->mTangents[v].x;
+                tangent._y = mesh->mTangents[v].y;
+                tangent._z = mesh->mTangents[v].z;
 
-                meshStream->write<math::Vector3D>(tangent);
-                meshStreamSize += sizeof(math::Vector3D);
+                meshStream->write<math::TVector3D<f32>>(tangent);
+                meshStreamSize += sizeof(math::TVector3D<f32>);
 
-                math::Vector3D bitangent;
-                bitangent.m_x = mesh->mBitangents[v].x;
-                bitangent.m_y = mesh->mBitangents[v].y;
-                bitangent.m_z = mesh->mBitangents[v].z;
+                math::TVector3D<f32> bitangent;
+                bitangent._x = mesh->mBitangents[v].x;
+                bitangent._y = mesh->mBitangents[v].y;
+                bitangent._z = mesh->mBitangents[v].z;
 
-                meshStream->write<math::Vector3D>(bitangent);
-                meshStreamSize += sizeof(math::Vector3D);
+                meshStream->write<math::TVector3D<f32>>(bitangent);
+                meshStreamSize += sizeof(math::TVector3D<f32>);
             }
 
             for (u32 uv = 0; uv < resource::k_maxTextureCoordsCount; uv++)
             {
                 if (mesh->HasTextureCoords(uv) && (vertexPropFlags & MeshResource::VertexProperies::VertexProperies_TextCoord0 + uv))
                 {
-                    math::Vector2D coord;
-                    coord.m_x = mesh->mTextureCoords[uv][v].x;
-                    coord.m_y = (flags & ModelFileLoader::FlipYTextureCoord) ? -mesh->mTextureCoords[uv][v].y : mesh->mTextureCoords[uv][v].y;
+                    math::TVector2D<f32> coord;
+                    coord._x = mesh->mTextureCoords[uv][v].x;
+                    coord._y = (flags & ModelFileLoader::FlipYTextureCoord) ? -mesh->mTextureCoords[uv][v].y : mesh->mTextureCoords[uv][v].y;
 
-                    meshStream->write<math::Vector2D>(coord);
-                    meshStreamSize += sizeof(math::Vector2D);
+                    meshStream->write<math::TVector2D<f32>>(coord);
+                    meshStreamSize += sizeof(math::TVector2D<f32>);
                 }
             }
 
@@ -396,14 +396,14 @@ u32 AssimpDecoder::decodeMesh(const aiScene* scene, stream::Stream* modelStream,
             {
                 if (mesh->HasVertexColors(c) && (vertexPropFlags & MeshResource::VertexProperies::VertexProperies_Color0 + c))
                 {
-                    math::Vector4D color;
-                    color.m_x = mesh->mColors[c][v].r;
-                    color.m_y = mesh->mColors[c][v].g;
-                    color.m_z = mesh->mColors[c][v].b;
-                    color.m_w = mesh->mColors[c][v].a;
+                    math::TVector4D<f32> color;
+                    color._x = mesh->mColors[c][v].r;
+                    color._y = mesh->mColors[c][v].g;
+                    color._z = mesh->mColors[c][v].b;
+                    color._w = mesh->mColors[c][v].a;
 
-                    meshStream->write<math::Vector4D>(color);
-                    meshStreamSize += sizeof(math::Vector4D);
+                    meshStream->write<math::TVector4D<f32>>(color);
+                    meshStreamSize += sizeof(math::TVector4D<f32>);
                 }
             }
         }
@@ -442,8 +442,8 @@ u32 AssimpDecoder::decodeMesh(const aiScene* scene, stream::Stream* modelStream,
 
         if (flags & ModelFileLoader::GenerateBoundingBoxes)
         {
-            math::Vector3D min(mesh->mAABB.mMin.x, mesh->mAABB.mMin.y, mesh->mAABB.mMin.z);
-            math::Vector3D max(mesh->mAABB.mMax.x, mesh->mAABB.mMax.y, mesh->mAABB.mMax.z);
+            math::TVector3D<f32> min(mesh->mAABB.mMin.x, mesh->mAABB.mMin.y, mesh->mAABB.mMin.z);
+            math::TVector3D<f32> max(mesh->mAABB.mMax.x, mesh->mAABB.mMax.y, mesh->mAABB.mMax.z);
             math::AABB aabb(min, max);
 
             meshStream->write<math::AABB>(aabb);
@@ -690,7 +690,7 @@ u32 AssimpDecoder::decodeMaterial(const aiScene* scene, stream::Stream* modelStr
     //        aiReturn result = material->Get(AI_MATKEY_COLOR_DIFFUSE, value);
     //        ASSERT(result == aiReturn_SUCCESS, "can't read");
 
-    //        math::Vector4D color;
+    //        math::TVector4D<f32> color;
     //        color.m_x = value.r;
     //        color.m_y = value.g;
     //        color.m_z = value.b;
@@ -710,7 +710,7 @@ u32 AssimpDecoder::decodeMaterial(const aiScene* scene, stream::Stream* modelStr
     //        aiReturn result = material->Get(AI_MATKEY_COLOR_AMBIENT, value);
     //        ASSERT(result == aiReturn_SUCCESS, "can't read");
 
-    //        math::Vector4D color;
+    //        math::TVector4D<f32> color;
     //        color.m_x = value.r;
     //        color.m_y = value.g;
     //        color.m_z = value.b;
@@ -730,7 +730,7 @@ u32 AssimpDecoder::decodeMaterial(const aiScene* scene, stream::Stream* modelStr
     //        aiReturn result = material->Get(AI_MATKEY_COLOR_SPECULAR, value);
     //        ASSERT(result == aiReturn_SUCCESS, "can't read");
 
-    //        math::Vector4D color;
+    //        math::TVector4D<f32> color;
     //        color.m_x = value.r;
     //        color.m_y = value.g;
     //        color.m_z = value.b;
@@ -750,7 +750,7 @@ u32 AssimpDecoder::decodeMaterial(const aiScene* scene, stream::Stream* modelStr
     //        aiReturn result = material->Get(AI_MATKEY_COLOR_EMISSIVE, value);
     //        ASSERT(result == aiReturn_SUCCESS, "can't read");
 
-    //        math::Vector4D color;
+    //        math::TVector4D<f32> color;
     //        color.m_x = value.r;
     //        color.m_y = value.g;
     //        color.m_z = value.b;
@@ -770,7 +770,7 @@ u32 AssimpDecoder::decodeMaterial(const aiScene* scene, stream::Stream* modelStr
     //        aiReturn result = material->Get(AI_MATKEY_COLOR_TRANSPARENT, value);
     //        ASSERT(result == aiReturn_SUCCESS, "can't read");
 
-    //        math::Vector4D color;
+    //        math::TVector4D<f32> color;
     //        color.m_x = value.r;
     //        color.m_y = value.g;
     //        color.m_z = value.b;
@@ -790,7 +790,7 @@ u32 AssimpDecoder::decodeMaterial(const aiScene* scene, stream::Stream* modelStr
     //        aiReturn result = material->Get(AI_MATKEY_COLOR_REFLECTIVE, value);
     //        ASSERT(result == aiReturn_SUCCESS, "can't read");
 
-    //        math::Vector4D color;
+    //        math::TVector4D<f32> color;
     //        color.m_x = value.r;
     //        color.m_y = value.g;
     //        color.m_z = value.b;

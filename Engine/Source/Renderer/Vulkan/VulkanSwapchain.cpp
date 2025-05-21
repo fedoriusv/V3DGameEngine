@@ -244,7 +244,7 @@ bool VulkanSwapchain::create(platform::Window* window, const SwapchainParams& pa
         {
             VulkanSwapchain::destroy();
 
-            std::swap(size.m_width, size.m_height);
+            std::swap(size._width, size._height);
             ASSERT(m_surface == VK_NULL_HANDLE, "must be nullptr");
             m_surface = VulkanSwapchain::createSurface(m_device.getDeviceInfo()._instance, window->getInstance(), window->getWindowHandle(), size);
             if (!m_surface)
@@ -262,18 +262,18 @@ bool VulkanSwapchain::create(platform::Window* window, const SwapchainParams& pa
         return false;
     }
 
-    if ((size.m_width < m_surfaceCapabilities.minImageExtent.width || size.m_width > m_surfaceCapabilities.maxImageExtent.width) ||
-        (size.m_height < m_surfaceCapabilities.minImageExtent.height || size.m_height > m_surfaceCapabilities.maxImageExtent.height))
+    if ((size._width < m_surfaceCapabilities.minImageExtent.width || size._width > m_surfaceCapabilities.maxImageExtent.width) ||
+        (size._height < m_surfaceCapabilities.minImageExtent.height || size._height > m_surfaceCapabilities.maxImageExtent.height))
     {
-        u32 newWidth = math::clamp(size.m_width, m_surfaceCapabilities.minImageExtent.width, m_surfaceCapabilities.maxImageExtent.width);
-        u32 newHeight = math::clamp(size.m_height, m_surfaceCapabilities.minImageExtent.height, m_surfaceCapabilities.maxImageExtent.height);
+        u32 newWidth = std::clamp(size._width, m_surfaceCapabilities.minImageExtent.width, m_surfaceCapabilities.maxImageExtent.width);
+        u32 newHeight = std::clamp(size._height, m_surfaceCapabilities.minImageExtent.height, m_surfaceCapabilities.maxImageExtent.height);
 
         LOG_WARNING("VulkanSwapchain::create: Is not supported swapchain size. min[%u, %u], max[%u, %u], requested[%u, %u], chosen[%u, %u]", 
             m_surfaceCapabilities.minImageExtent.width, m_surfaceCapabilities.minImageExtent.height, m_surfaceCapabilities.maxImageExtent.width, m_surfaceCapabilities.maxImageExtent.height,
-            size.m_width, size.m_height, newWidth, newHeight);
+            size._width, size._height, newWidth, newHeight);
 
-        size.m_width = newWidth;
-        size.m_height = newHeight;
+        size._width = newWidth;
+        size._height = newHeight;
     }
 
     if (m_surfaceCapabilities.maxImageCount < 2)
@@ -383,7 +383,7 @@ bool VulkanSwapchain::create(platform::Window* window, const SwapchainParams& pa
 
 bool VulkanSwapchain::createSwapchain(const SwapchainParams& params, const VkSurfaceFormatKHR& surfaceFormat, VkSwapchainKHR oldSwapchain)
 {
-    LOG_DEBUG("VulkanSwapchain::createSwapchain size { %d, %d }", params._size.m_width, params._size.m_height);
+    LOG_DEBUG("VulkanSwapchain::createSwapchain size { %d, %d }", params._size._width, params._size._height);
     ASSERT(m_surface, "surface is nullptr");
 
     // Select a present mode for the swapchain
@@ -451,7 +451,7 @@ bool VulkanSwapchain::createSwapchain(const SwapchainParams& params, const VkSur
         }
     }
 
-    const VkExtent2D imageExtent = { params._size.m_width, params._size.m_height };
+    const VkExtent2D imageExtent = { params._size._width, params._size._height };
     LOG_DEBUG("VulkanSwapchain::createSwapChain (width %u, height %u), currentTransform: %u, supportedTransforms: %u, selectedTransform: %u", 
         imageExtent.width, imageExtent.height, m_surfaceCapabilities.currentTransform, m_surfaceCapabilities.supportedTransforms, preTransform);
 
@@ -515,7 +515,7 @@ bool VulkanSwapchain::createSwapchainImages(const SwapchainParams& params, const
     if (m_swapchainImages.empty())
     {
         m_swapchainImages.reserve(swapChainImageCount);
-        VkExtent3D extent = { params._size.m_width, params._size.m_height, 1 };
+        VkExtent3D extent = { params._size._width, params._size._height, 1 };
         for (u32 index = 0; index < images.size(); ++index)
         {
             VulkanImage* swapchainImage = V3D_NEW(VulkanImage, memory::MemoryLabel::MemoryRenderCore)(&m_device, m_device.m_imageMemoryManager, surfaceFormat.format, extent, VK_SAMPLE_COUNT_1_BIT, 1U, flags, "SwapchainImage_" + std::to_string(index));

@@ -53,7 +53,7 @@ namespace renderer
         SamplerAnisotropic    getAnisotropic() const;
         CompareOperation      getCompareOp() const;
         bool                  isEnableCompareOp() const;
-        const math::Vector4D& getBorderColor() const;
+        const color::Color&   getBorderColor() const;
 
         void setFiltering(SamplerFilter filter);
         void setWrap(SamplerWrap uvw);
@@ -62,7 +62,7 @@ namespace renderer
         void setLodBias(f32 value);
         void setCompareOp(CompareOperation op);
         void setEnableCompareOp(bool enable);
-        void setBorderColor(const math::Vector4D& color);
+        void setBorderColor(const color::Color& color);
 
     public:
 
@@ -146,7 +146,7 @@ namespace renderer
         return m_samplerDesc._compareOp;
     }
 
-    inline const math::Vector4D& SamplerState::getBorderColor() const
+    inline const color::Color& SamplerState::getBorderColor() const
     {
         return m_samplerDesc._borderColor;
     }
@@ -195,7 +195,7 @@ namespace renderer
         m_samplerDesc._enableCompOp = enable;
     }
 
-    inline void SamplerState::setBorderColor(const math::Vector4D& color)
+    inline void SamplerState::setBorderColor(const color::Color& color)
     {
         m_samplerDesc._borderColor = color;
     }

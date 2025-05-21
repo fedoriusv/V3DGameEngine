@@ -10,7 +10,9 @@ namespace platform
 
     class Window;
 
-    using DisplayMonitorsFunc = std::function<bool(const math::RectF32& rcMonitor, const math::RectF32& rcWork, f32 dpi, bool primary, void* monitor)>;
+    using DisplayMonitorsFunc = std::function<bool(const math::Rect& rcMonitor, const math::Rect& rcWork, f32 dpi, bool primary, void* monitor)>;
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
     * @brief Platform class. Platform specific functions 

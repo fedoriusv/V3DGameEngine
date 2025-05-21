@@ -120,7 +120,7 @@ bool InputEventHandler::onEvent(Event* ev)
         }
         m_relativeCursorPosition = mouseEvent->_clientCoordinates;
         m_absoluteCursorPosition = mouseEvent->_absoluteCoordinates;
-        m_mouseWheel = math::clamp(mouseEvent->_wheelValue, m_mouseWheelRange.m_x, m_mouseWheelRange.m_y);
+        m_mouseWheel = std::clamp(mouseEvent->_wheelValue, m_mouseWheelRange._x, m_mouseWheelRange._y);
 
         switch (mouseEvent->_event)
         {

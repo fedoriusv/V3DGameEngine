@@ -32,13 +32,12 @@ namespace event
 
         bool operator==(const MouseInputEvent& event) const;
 
-        MousePressInputEvent    _event;
-        math::Point2D           _clientCoordinates;
-        math::Point2D           _absoluteCoordinates;
-        f32                     _wheelValue;
-        KeyCode                 _key;
-        u8                      _modifers;
-
+        MousePressInputEvent _event;
+        math::Point2D        _clientCoordinates;
+        math::Point2D        _absoluteCoordinates;
+        f32                  _wheelValue;
+        KeyCode              _key;
+        u8                   _modifers;
     };
 
     inline MouseInputEvent::MouseInputEvent() noexcept
@@ -61,7 +60,7 @@ namespace event
             _event == event._event &&
             _key == event._key &&
             _modifers == event._modifers
-            );
+        );
     }
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

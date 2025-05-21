@@ -226,9 +226,9 @@ namespace renderer
                 , _stencilTestEnable(false)
                 , _depthBoundsTestEnable(false)
                 , _unused(0)
-                , _depthBounds(math::Vector2D(0.0f))
+                , _depthBounds({ 0.0f })
             {
-                static_assert(sizeof(DepthStencilState) == sizeof(math::Vector2D) + 4, "wrong size");
+                static_assert(sizeof(DepthStencilState) == sizeof(math::TVector2D<f32>) + 4, "wrong size");
             }
 
             bool operator==(const DepthStencilState& other) const
@@ -246,13 +246,13 @@ namespace renderer
                 return true;
             }
 
-            CompareOperation    _compareOp               : 4;
-            u32                 _depthTestEnable         : 1;
-            u32                 _depthWriteEnable        : 1;
-            u32                 _stencilTestEnable       : 1;
-            u32                 _depthBoundsTestEnable   : 1;
-            u32                 _unused                  : 24;
-            math::Vector2D      _depthBounds;
+            CompareOperation     _compareOp               : 4;
+            u32                  _depthTestEnable         : 1;
+            u32                  _depthWriteEnable        : 1;
+            u32                  _stencilTestEnable       : 1;
+            u32                  _depthBoundsTestEnable   : 1;
+            u32                  _unused                  : 24;
+            math::TVector2D<f32> _depthBounds;
         };
 
         /**
@@ -308,12 +308,12 @@ namespace renderer
             };
 
             BlendState() noexcept
-                : _constant(math::Vector4D(0.0f))
+                : _constant({ 0.f })
                 , _logicalOp(LogicalOperation::LogicalOp_And)
                 , _logicalOpEnable(false)
                 , _unused(0)
             {
-                static_assert(sizeof(BlendState) == sizeof(_colorBlendAttachments) + sizeof(math::Vector4D) + 4, "wrong size");
+                static_assert(sizeof(BlendState) == sizeof(_colorBlendAttachments) + sizeof(_constant) + 4, "wrong size");
             }
 
             bool operator==(const BlendState& other) const
@@ -321,7 +321,10 @@ namespace renderer
                 if (this != &other)
                 {
                     return _colorBlendAttachments == other._colorBlendAttachments
-                        && _constant == other._constant
+                        && _constant[0] == other._constant[0]
+                        && _constant[1] == other._constant[1]
+                        && _constant[2] == other._constant[2]
+                        && _constant[3] == other._constant[3]
                         && _logicalOp == other._logicalOp
                         && _logicalOpEnable == other._logicalOpEnable;
                 }
@@ -334,7 +337,7 @@ namespace renderer
 #else
             std::array<ColorBlendAttachmentState, 1>                        _colorBlendAttachments;
 #endif
-            math::Vector4D                                                  _constant;
+            f32                                                             _constant[4];
             LogicalOperation                                                _logicalOp          : 5;
             u32                                                             _logicalOpEnable    : 1;
             u32                                                             _unused             : 26;
