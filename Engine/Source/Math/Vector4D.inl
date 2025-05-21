@@ -6,65 +6,62 @@ namespace math
 
     template<class T>
     TVector4D<T>::TVector4D() noexcept
-        : m_x(0)
-        , m_y(0)
-        , m_z(0)
-        , m_w(0)
-    {}
+        : _x(0)
+        , _y(0)
+        , _z(0)
+        , _w(0)
+    {
+    }
 
     template<class T>
     TVector4D<T>::TVector4D(T n) noexcept
-        : m_x(n)
-        , m_y(n)
-        , m_z(n)
-        , m_w(n)
-    {}
+        : _x(n)
+        , _y(n)
+        , _z(n)
+        , _w(n)
+    {
+    }
 
     template<class T>
-    TVector4D<T>::TVector4D(T nx, T nw) noexcept
-        : m_x(nx)
-        , m_y(nx)
-        , m_z(nx)
-        , m_w(nw)
-    {}
-
-    template<class T>
-    TVector4D<T>::TVector4D(T nx, T ny, T nz, T nw) noexcept
-        : m_x(nx)
-        , m_y(ny)
-        , m_z(nz)
-        , m_w(nw)
-    {}
+    TVector4D<T>::TVector4D(T x, T y, T z, T w) noexcept
+        : _x(x)
+        , _y(y)
+        , _z(z)
+        , _w(w)
+    {
+    }
 
     template<class T>
     TVector4D<T>::TVector4D(const TVector4D<T>& other) noexcept
-        : m_x(other.m_x)
-        , m_y(other.m_y)
-        , m_z(other.m_z)
-        , m_w(other.m_w)
-    {}
+        : _x(other._x)
+        , _y(other._y)
+        , _z(other._z)
+        , _w(other._w)
+    {
+    }
 
     template<class T>
-    TVector4D<T>::TVector4D(const TVector3D<T>& other, T nw) noexcept
-        : m_x(other.m_x)
-        , m_y(other.m_y)
-        , m_z(other.m_z)
-        , m_w(nw)
-    {}
+    TVector4D<T>::TVector4D(const TVector3D<T>& other, T w) noexcept
+        : _x(other._x)
+        , _y(other._y)
+        , _z(other._z)
+        , _w(w)
+    {
+    }
 
     template<class T>
     inline TVector4D<T> TVector4D<T>::operator-() const
     {
-        return TVector4D<T>(-m_x, -m_y, -m_z, -m_w);
+        return TVector4D<T>(-_x, -_y, -_z, -_w);
     }
 
     template<class T>
     inline TVector4D<T>& TVector4D<T>::operator=(const TVector4D<T>& other)
     {
-        m_x = other.m_x;
-        m_y = other.m_y;
-        m_z = other.m_z;
-        m_w = other.m_w;
+        _x = other._x;
+        _y = other._y;
+        _z = other._z;
+        _w = other._w;
 
         return *this;
     }
@@ -72,33 +69,33 @@ namespace math
     template<class T>
     inline TVector4D<T> TVector4D<T>::operator+(const TVector4D<T>& other) const
     {
-        return TVector4D<T>(m_x + other.m_x, m_y + other.m_y, m_z + other.m_z, m_w + other.m_w);
+        return TVector4D<T>(_x + other._x, _y + other._y, _z + other._z, _w + other._w);
     }
 
     template<class T>
     inline TVector4D<T>& TVector4D<T>::operator+=(const TVector4D<T>& other)
     {
-        m_x += other.m_x;
-        m_y += other.m_y;
-        m_z += other.m_z;
-        m_w += other.m_w;
+        _x += other._x;
+        _y += other._y;
+        _z += other._z;
+        _w += other._w;
 
         return *this;
     }
 
     template<class T>
-    inline TVector4D<T> TVector4D<T>::operator+(const T scalar) const
+    inline TVector4D<T> TVector4D<T>::operator+(T scalar) const
     {
-        return TVector4D<T>(m_x + scalar, m_y + scalar, m_z + scalar, m_w + scalar);
+        return TVector4D<T>(_x + scalar, _y + scalar, _z + scalar, _w + scalar);
     }
 
     template<class T>
-    inline TVector4D<T>& TVector4D<T>::operator+=(const T scalar)
+    inline TVector4D<T>& TVector4D<T>::operator+=(T scalar)
     {
-        m_x += scalar;
-        m_y += scalar;
-        m_z += scalar;
-        m_w += scalar;
+        _x += scalar;
+        _y += scalar;
+        _z += scalar;
+        _w += scalar;
 
         return *this;
     }
@@ -106,33 +103,33 @@ namespace math
     template<class T>
     inline TVector4D<T> TVector4D<T>::operator-(const TVector4D<T>& other) const
     {
-        return TVector4D<T>(m_x - other.m_x, m_y - other.m_y, m_z - other.m_z, m_w - other.m_w);
+        return TVector4D<T>(_x - other._x, _y - other._y, _z - other._z, _w - other._w);
     }
 
     template<class T>
     inline TVector4D<T>& TVector4D<T>::operator-=(const TVector4D<T>& other)
     {
-        m_x -= other.m_x;
-        m_y -= other.m_y;
-        m_z -= other.m_z;
-        m_w -= other.m_w;
+        _x -= other._x;
+        _y -= other._y;
+        _z -= other._z;
+        _w -= other._w;
 
         return *this;
     }
 
     template<class T>
-    inline TVector4D<T> TVector4D<T>::operator-(const T scalar) const
+    inline TVector4D<T> TVector4D<T>::operator-(T scalar) const
     {
-        return TVector4D<T>(m_x - scalar, m_y - scalar, m_z - scalar, m_w - scalar);
+        return TVector4D<T>(_x - scalar, _y - scalar, _z - scalar, _w - scalar);
     }
 
     template<class T>
-    inline TVector4D<T>& TVector4D<T>::operator-=(const T scalar)
+    inline TVector4D<T>& TVector4D<T>::operator-=(T scalar)
     {
-        m_x -= scalar;
-        m_y -= scalar;
-        m_z -= scalar;
-        m_w -= scalar;
+        _x -= scalar;
+        _y -= scalar;
+        _z -= scalar;
+        _w -= scalar;
 
         return *this;
     }
@@ -140,33 +137,33 @@ namespace math
     template<class T>
     inline TVector4D<T> TVector4D<T>::operator*(const TVector4D<T>& other) const
     {
-        return TVector4D<T>(m_x * other.m_x, m_y * other.m_y, m_z * other.m_z, m_w * other.m_w);
+        return TVector4D<T>(_x * other._x, _y * other._y, _z * other._z, _w * other._w);
     }
 
     template<class T>
     inline TVector4D<T>& TVector4D<T>::operator*=(const TVector4D<T>& other)
     {
-        m_x *= other.m_x;
-        m_y *= other.m_y;
-        m_z *= other.m_z;
-        m_w *= other.m_w;
+        _x *= other._x;
+        _y *= other._y;
+        _z *= other._z;
+        _w *= other._w;
 
         return *this;
     }
 
     template<class T>
-    inline TVector4D<T> TVector4D<T>::operator*(const T scalar) const
+    inline TVector4D<T> TVector4D<T>::operator*(T scalar) const
     {
-        return TVector4D<T>(m_x * scalar, m_y * scalar, m_z * scalar, m_w * scalar);
+        return TVector4D<T>(_x * scalar, _y * scalar, _z * scalar, _w * scalar);
     }
 
     template<class T>
-    inline TVector4D<T>& TVector4D<T>::operator*=(const T scalar)
+    inline TVector4D<T>& TVector4D<T>::operator*=(T scalar)
     {
-        m_x *= scalar;
-        m_y *= scalar;
-        m_z *= scalar;
-        m_w *= scalar;
+        _x *= scalar;
+        _y *= scalar;
+        _z *= scalar;
+        _w *= scalar;
 
         return *this;
     }
@@ -174,35 +171,35 @@ namespace math
     template<class T>
     inline TVector4D<T> TVector4D<T>::operator/(const TVector4D<T>& other) const
     {
-        return TVector4D<T>(m_x / other.m_x, m_y / other.m_y, m_z / other.m_z, m_w / other.m_w);
+        return TVector4D<T>(_x / other._x, _y / other._y, _z / other._z, _w / other._w);
     }
 
     template<class T>
     inline TVector4D<T>& TVector4D<T>::operator/=(const TVector4D<T>& other)
     {
-        m_x /= other.m_x;
-        m_y /= other.m_y;
-        m_z /= other.m_z;
-        m_w /= other.m_w;
+        _x /= other._x;
+        _y /= other._y;
+        _z /= other._z;
+        _w /= other._w;
 
         return *this;
     }
 
     template<class T>
-    inline TVector4D<T> TVector4D<T>::operator/(const T scalar) const
+    inline TVector4D<T> TVector4D<T>::operator/(T scalar) const
     {
         T i = (T)1.0 / scalar;
-        return TVector4D<T>(m_x * i, m_y * i, m_z * i, m_w * i);
+        return TVector4D<T>(_x * i, _y * i, _z * i, _w * i);
     }
 
     template<class T>
-    inline TVector4D<T>& TVector4D<T>::operator/=(const T scalar)
+    inline TVector4D<T>& TVector4D<T>::operator/=(T scalar)
     {
         T i = (T)1.0 / scalar;
-        m_x *= i;
-        m_y *= i;
-        m_z *= i;
-        m_w *= i;
+        _x *= i;
+        _y *= i;
+        _z *= i;
+        _w *= i;
 
         return *this;
     }
@@ -210,37 +207,37 @@ namespace math
     template<class T>
     inline bool TVector4D<T>::operator<=(const TVector4D<T>& other) const
     {
-        return m_x <= other.m_x && m_y <= other.m_y && m_z <= other.m_z && m_w <= other.m_w;
+        return _x <= other._x && _y <= other._y && _z <= other._z && _w <= other._w;
     }
 
     template<class T>
     inline bool TVector4D<T>::operator>=(const TVector4D<T>& other) const
     {
-        return m_x >= other.m_x && m_y >= other.m_y && m_z >= other.m_z && m_w >= other.m_w;
+        return _x >= other._x && _y >= other._y && _z >= other._z && _w >= other._w;
     }
 
     template<class T>
     inline bool TVector4D<T>::operator<(const TVector4D<T>& other) const
     {
-        return m_x < other.m_x && m_y < other.m_y && m_z < other.m_z && m_w < other.m_w;
+        return _x < other._x && _y < other._y && _z < other._z && _w < other._w;
     }
 
     template<class T>
     inline bool TVector4D<T>::operator>(const TVector4D<T>& other) const
     {
-        return m_x > other.m_x && m_y > other.m_y && m_z > other.m_z && m_w > other.m_w;
+        return _x > other._x && _y > other._y && _z > other._z && _w > other._w;
     }
 
     template<class T>
     inline bool TVector4D<T>::operator==(const TVector4D<T>& other) const
     {
-        return this->isEquals(other);
+        return _x == other._x && _y == other._y && _z == other._z && _w == other._w;
     }
 
     template<class T>
     inline bool TVector4D<T>::operator!=(const TVector4D<T>& other) const
     {
-        return !this->isEquals(other);
+        return _x != other._x || _y != other._y || _z != other._z || _w != other._w;
     }
 
     template<class T>
@@ -256,22 +253,19 @@ namespace math
     }
 
     template<class T>
-    inline bool TVector4D<T>::isEquals(const TVector4D<T>& other, const T tolerance) const
+    inline bool TVector4D<T>::isEquals(const TVector4D<T>& other, T tolerance) const
     {
-        const bool isEquals = math::isEquals(m_x, other.m_x, tolerance) &&
-            math::isEquals(m_y, other.m_y, tolerance) &&
-            math::isEquals(m_z, other.m_z, tolerance) &&
-            math::isEquals(m_w, other.m_w, tolerance);
+        const bool isEquals = math::isEquals(_x, other._x, tolerance) && math::isEquals(_y, other._y, tolerance) && math::isEquals(_z, other._z, tolerance) && math::isEquals(_w, other._w, tolerance);
         return isEquals;
     }
 
     template<class T>
-    inline TVector4D<T>& TVector4D<T>::set(const T nx, const T ny, const T nz, const T nw)
+    inline TVector4D<T>& TVector4D<T>::set(T x, T y, T z, T w)
     {
-        m_x = nx;
-        m_y = ny;
-        m_z = nz;
-        m_w = nw;
+        _x = x;
+        _y = y;
+        _z = z;
+        _w = w;
 
         return *this;
     }
@@ -279,21 +273,21 @@ namespace math
     template<class T>
     inline TVector4D<T>& TVector4D<T>::set(const TVector4D<T>& point)
     {
-        m_x = point.m_x;
-        m_y = point.m_y;
-        m_z = point.m_z;
-        m_w = point.m_w;
+        _x = point._x;
+        _y = point._y;
+        _z = point._z;
+        _w = point._w;
 
         return *this;
     }
 
     template<class T>
-    inline TVector4D<T>& TVector4D<T>::set(const TVector3D<T>& point, const T nw)
+    inline TVector4D<T>& TVector4D<T>::set(const TVector3D<T>& point, const T w)
     {
-        m_x = point.m_x;
-        m_y = point.m_y;
-        m_z = point.m_z;
-        m_w = nw;
+        _x = point._x;
+        _y = point._y;
+        _z = point._z;
+        _w = w;
 
         return *this;
     }
@@ -301,27 +295,27 @@ namespace math
     template<class T>
     inline T TVector4D<T>::length() const
     {
-        const T length = (T)sqrt((f64)(m_x * m_x + m_y * m_y + m_z * m_z + m_w * m_w));
+        const T length = (T)std::sqrt((f64)(_x * _x + _y * _y + _z * _z + _w * _w));
         return length;
     }
 
     template<class T>
     inline T TVector4D<T>::lengthSQ() const
     {
-        return m_x * m_x + m_y * m_y + m_z * m_z + m_w * m_w;
+        return _x * _x + _y * _y + _z * _z + _w * _w;
     }
 
     template<class T>
     inline T TVector4D<T>::distanceFrom(const TVector4D<T>& other) const
     {
-        const T distance = TVector4D<T>(m_x - other.m_x, m_y - other.m_y, m_z - other.m_z, m_w - other.m_w).length();
+        const T distance = TVector4D<T>(_x - other._x, _y - other._y, _z - other._z, _w - other._w).length();
         return distance;
     }
 
     template<class T>
     inline T TVector4D<T>::distanceFromSQ(const TVector4D<T>& other) const
     {
-        const T distanceSQ = TVector4D<T>(m_x - other.m_x, m_y - other.m_y, m_z - other.m_z, m_w - other.m_w).lengthSQ();
+        const T distanceSQ = TVector4D<T>(_x - other._x, _y - other._y, _z - other._z, _w - other._w).lengthSQ();
         return distanceSQ;
     }
 
@@ -336,34 +330,16 @@ namespace math
     template<class T>
     inline TVector4D<T>& TVector4D<T>::normalize()
     {
-        T l = m_x * m_x + m_y * m_y + m_z * m_z + m_w * m_w;
+        T l = _x * _x + _y * _y + _z * _z + _w * _w;
         if (l == (T)0.0)
         {
             return *this;
         }
-        l = ((T) 1.0) / (T)sqrt((T)l);
-        m_x *= l;
-        m_y *= l;
-        m_z *= l;
-        m_w *= l;
-
-        return *this;
-    }
-
-    template<class T>
-    inline TVector4D<T>& TVector4D<T>::setLength(T newlength)
-    {
-        normalize();
-        return (*this *= newlength);
-    }
-
-    template<class T>
-    inline TVector4D<T>& TVector4D<T>::invert()
-    {
-        m_x *= -m_x;
-        m_y *= -m_y;
-        m_z *= -m_z;
-        m_w *= -m_w;
+        l = ((T) 1.0) / (T)std::sqrt((T)l);
+        _x *= l;
+        _y *= l;
+        _z *= l;
+        _w *= l;
 
         return *this;
     }

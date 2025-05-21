@@ -6,43 +6,48 @@ namespace math
 
     template<class T>
     TVector3D<T>::TVector3D() noexcept
-        : m_x(0)
-        , m_y(0)
-        , m_z(0)
-    {}
+        : _x(0)
+        , _y(0)
+        , _z(0)
+    {
+    }
 
     template<class T>
     TVector3D<T>::TVector3D(T n) noexcept
-        : m_x(n)
-        , m_y(n)
-        , m_z(n)
-    {}
+        : _x(n)
+        , _y(n)
+        , _z(n)
+    {
+    }
 
     template<class T>
-    TVector3D<T>::TVector3D(T nx, T ny, T nz) noexcept
-        : m_x(nx)
-        , m_y(ny)
-        , m_z(nz)
-    {}
+    TVector3D<T>::TVector3D(T x, T y, T z) noexcept
+        : _x(x)
+        , _y(y)
+        , _z(z)
+    {
+    }
 
     template<class T>
     TVector3D<T>::TVector3D(const TVector3D<T>& other) noexcept
-        : m_x(other.m_x)
-        , m_y(other.m_y)
-        , m_z(other.m_z)
-    {}
+        : _x(other._x)
+        , _y(other._y)
+        , _z(other._z)
+    {
+    }
 
     template<class T>
-    TVector3D<T>::TVector3D(const TVector2D<T>& other, T nz) noexcept
-        : m_x(other.m_x)
-        , m_y(other.m_y)
-        , m_z(nz)
-    {}
+    TVector3D<T>::TVector3D(const TVector2D<T>& other, T z) noexcept
+        : _x(other._x)
+        , _y(other._y)
+        , _z(z)
+    {
+    }
 
     template<class T>
     inline TVector3D<T> TVector3D<T>::operator-() const
     {
-        return TVector3D<T>(-m_x, -m_y, -m_z);
+        return TVector3D<T>(-_x, -_y, -_z);
     }
 
     template<class T>
@@ -53,41 +58,40 @@ namespace math
             return *this;
         }
 
-        m_x = other.m_x;
-        m_y = other.m_y;
-        m_z = other.m_z;
-
+        _x = other._x;
+        _y = other._y;
+        _z = other._z;
         return *this;
     }
 
     template<class T>
     inline TVector3D<T> TVector3D<T>::operator+(const TVector3D<T>& other) const
     {
-        return TVector3D<T>(m_x + other.m_x, m_y + other.m_y, m_z + other.m_z);
+        return TVector3D<T>(_x + other._x, _y + other._y, _z + other._z);
     }
 
     template<class T>
     inline TVector3D<T>& TVector3D<T>::operator+=(const TVector3D<T>& other)
     {
-        m_x += other.m_x;
-        m_y += other.m_y;
-        m_z += other.m_z;
+        _x += other._x;
+        _y += other._y;
+        _z += other._z;
 
         return *this;
     }
 
     template<class T>
-    inline TVector3D<T> TVector3D<T>::operator+(const T scalar) const
+    inline TVector3D<T> TVector3D<T>::operator+(T scalar) const
     {
-        return TVector3D<T>(m_x + scalar, m_y + scalar, m_z + scalar);
+        return TVector3D<T>(_x + scalar, _y + scalar, _z + scalar);
     }
 
     template<class T>
-    inline TVector3D<T>& TVector3D<T>::operator+=(const T scalar)
+    inline TVector3D<T>& TVector3D<T>::operator+=(T scalar)
     {
-        m_x += scalar;
-        m_y += scalar;
-        m_z += scalar;
+        _x += scalar;
+        _y += scalar;
+        _z += scalar;
 
         return *this;
     }
@@ -95,31 +99,31 @@ namespace math
     template<class T>
     inline TVector3D<T> TVector3D<T>::operator-(const TVector3D<T>& other) const
     {
-        return TVector3D<T>(m_x - other.m_x, m_y - other.m_y, m_z - other.m_z);
+        return TVector3D<T>(_x - other._x, _y - other._y, _z - other._z);
     }
 
     template<class T>
     inline TVector3D<T>& TVector3D<T>::operator-=(const TVector3D<T>& other)
     {
-        m_x -= other.m_x;
-        m_y -= other.m_y;
-        m_z -= other.m_z;
+        _x -= other._x;
+        _y -= other._y;
+        _z -= other._z;
 
         return *this;
     }
 
     template<class T>
-    inline TVector3D<T> TVector3D<T>::operator-(const T scalar) const
+    inline TVector3D<T> TVector3D<T>::operator-(T scalar) const
     {
-        return TVector3D<T>(m_x - scalar, m_y - scalar, m_z - scalar);
+        return TVector3D<T>(_x - scalar, _y - scalar, _z - scalar);
     }
 
     template<class T>
-    inline TVector3D<T>& TVector3D<T>::operator-=(const T scalar)
+    inline TVector3D<T>& TVector3D<T>::operator-=(T scalar)
     {
-        m_x -= scalar;
-        m_y -= scalar;
-        m_z -= scalar;
+        _x -= scalar;
+        _y -= scalar;
+        _z -= scalar;
 
         return *this;
     }
@@ -127,31 +131,31 @@ namespace math
     template<class T>
     inline TVector3D<T> TVector3D<T>::operator*(const TVector3D<T>& other) const
     {
-        return TVector3D<T>(m_x * other.m_x, m_y * other.m_y, m_z * other.m_z);
+        return TVector3D<T>(_x * other._x, _y * other._y, _z * other._z);
     }
 
     template<class T>
     inline TVector3D<T>& TVector3D<T>::operator*=(const TVector3D<T>& other)
     {
-        m_x *= other.m_x;
-        m_y *= other.m_y;
-        m_z *= other.m_z;
+        _x *= other._x;
+        _y *= other._y;
+        _z *= other._z;
 
         return *this;
     }
 
     template<class T>
-    inline TVector3D<T> TVector3D<T>::operator*(const T scalar) const
+    inline TVector3D<T> TVector3D<T>::operator*(T scalar) const
     {
-        return TVector3D<T>(m_x * scalar, m_y * scalar, m_z * scalar);
+        return TVector3D<T>(_x * scalar, _y * scalar, _z * scalar);
     }
 
     template<class T>
-    inline TVector3D<T>& TVector3D<T>::operator*=(const T scalar)
+    inline TVector3D<T>& TVector3D<T>::operator*=(T scalar)
     {
-        m_x *= scalar;
-        m_y *= scalar;
-        m_z *= scalar;
+        _x *= scalar;
+        _y *= scalar;
+        _z *= scalar;
 
         return *this;
     }
@@ -159,33 +163,33 @@ namespace math
     template<class T>
     inline TVector3D<T> TVector3D<T>::operator/(const TVector3D<T>& other) const
     {
-        return TVector3D<T>(m_x / other.m_x, m_y / other.m_y, m_z / other.m_z);
+        return TVector3D<T>(_x / other._x, _y / other._y, _z / other._z);
     }
 
     template<class T>
     inline TVector3D<T>& TVector3D<T>::operator/=(const TVector3D<T>& other)
     {
-        m_x /= other.m_x;
-        m_y /= other.m_y;
-        m_z /= other.m_z;
+        _x /= other._x;
+        _y /= other._y;
+        _z /= other._z;
 
         return *this;
     }
 
     template<class T>
-    inline TVector3D<T> TVector3D<T>::operator/(const T scalar) const
+    inline TVector3D<T> TVector3D<T>::operator/(T scalar) const
     {
         T i = (T)1.0 / scalar;
-        return TVector3D<T>(m_x * i, m_y * i, m_z * i);
+        return TVector3D<T>(_x * i, _y * i, _z * i);
     }
 
     template<class T>
-    inline TVector3D<T>& TVector3D<T>::operator/=(const T scalar)
+    inline TVector3D<T>& TVector3D<T>::operator/=(T scalar)
     {
         T i = (T)1.0 / scalar;
-        m_x *= i;
-        m_y *= i;
-        m_z *= i;
+        _x *= i;
+        _y *= i;
+        _z *= i;
 
         return *this;
     }
@@ -193,37 +197,37 @@ namespace math
     template<class T>
     inline bool TVector3D<T>::operator<=(const TVector3D<T>& other) const
     {
-        return m_x <= other.m_x && m_y <= other.m_y && m_z <= other.m_z;
+        return _x <= other._x && _y <= other._y && _z <= other._z;
     }
 
     template<class T>
     inline bool TVector3D<T>::operator>=(const TVector3D<T>& other) const
     {
-        return m_x >= other.m_x && m_y >= other.m_y && m_z >= other.m_z;
+        return _x >= other._x && _y >= other._y && _z >= other._z;
     }
 
     template<class T>
     inline bool TVector3D<T>::operator<(const TVector3D<T>& other) const
     {
-        return m_x < other.m_x && m_y < other.m_y && m_z < other.m_z;
+        return _x < other._x && _y < other._y && _z < other._z;
     }
 
     template<class T>
     inline bool TVector3D<T>::operator>(const TVector3D<T>& other) const
     {
-        return m_x > other.m_x && m_y > other.m_y && m_z > other.m_z;
+        return _x > other._x && _y > other._y && _z > other._z;
     }
 
     template<class T>
     inline bool TVector3D<T>::operator==(const TVector3D<T>& other) const
     {
-        return this->isEquals(other);
+        return _x == other._x && _y == other._y && _z == other._z;
     }
 
     template<class T>
     inline bool TVector3D<T>::operator!=(const TVector3D<T>& other) const
     {
-        return !this->isEquals(other);
+        return _x != other._x || _y != other._y || _z != other._z;
     }
 
     template<class T>
@@ -239,11 +243,11 @@ namespace math
     }
 
     template<class T>
-    inline TVector3D<T>& TVector3D<T>::set(const T nx, const T ny, const T nz)
+    inline TVector3D<T>& TVector3D<T>::set(T x, T y, T z)
     {
-        m_x = nx;
-        m_y = ny;
-        m_z = nz;
+        _x = x;
+        _y = y;
+        _z = z;
 
         return *this;
     }
@@ -251,20 +255,18 @@ namespace math
     template<class T>
     inline TVector3D<T>& TVector3D<T>::set(const TVector3D<T>& point)
     {
-        m_x = point.m_x;
-        m_y = point.m_y;
-        m_z = point.m_z;
+        _x = point._x;
+        _y = point._y;
+        _z = point._z;
 
         return *this;
     }
 
 
     template<class T>
-    inline bool TVector3D<T>::isEquals(const TVector3D<T>& other, const T tolerance) const
+    inline bool TVector3D<T>::isEquals(const TVector3D<T>& other, T tolerance) const
     {
-        const bool isEquels = math::isEquals(m_x, other.m_x, tolerance) &&
-            math::isEquals(m_y, other.m_y, tolerance) &&
-            math::isEquals(m_z, other.m_z, tolerance);
+        const bool isEquels = math::isEquals(_x, other._x, tolerance) && math::isEquals(_y, other._y, tolerance) && math::isEquals(_z, other._z, tolerance);
         return isEquels;
     }
 
@@ -279,59 +281,42 @@ namespace math
     template<class T>
     inline T TVector3D<T>::length() const
     {
-        const T length = (T)sqrt(((f64)m_x * m_x + (f64)m_y * m_y + (f64)m_z * m_z));
+        const T length = (T)sqrt(((f64)_x * _x + (f64)_y * _y + (f64)_z * _z));
         return length;
     }
 
     template<class T>
     inline T TVector3D<T>::lengthSQ() const
     {
-        return m_x * m_x + m_y * m_y + m_z * m_z;
+        return _x * _x + _y * _y + _z * _z;
     }
 
     template<class T>
     inline T TVector3D<T>::distanceFrom(const TVector3D<T>& other) const
     {
-        return TVector3D<T>(m_x - other.m_x, m_y - other.m_y, m_z - other.m_z).length();
+        return TVector3D<T>(_x - other._x, _y - other._y, _z - other._z).length();
     }
 
     template<class T>
     inline T TVector3D<T>::distanceFromSQ(const TVector3D<T>& other) const
     {
-        return TVector3D<T>(m_x - other.m_x, m_y - other.m_y, m_z - other.m_z).lengthSQ();
+        return TVector3D<T>(_x - other._x, _y - other._y, _z - other._z).lengthSQ();
     }
 
     template<class T>
     inline TVector3D<T>& TVector3D<T>::normalize()
     {
-        T l = m_x * m_x + m_y * m_y + m_z * m_z;
-        if (l == (T)0.0)
+        T l = _x * _x + _y * _y + _z * _z;
+        if (l == (T)0)
         {
             return *this;
         }
-        l = ((T) 1.0) / (T)sqrt((T)l);
-        m_x *= l;
-        m_y *= l;
-        m_z *= l;
+        l = ((T)1) / (T)std::sqrt((T)l);
+        _x *= l;
+        _y *= l;
+        _z *= l;
 
         return *this;
-    }
-
-    template<class T>
-    inline TVector3D<T>& TVector3D<T>::invert()
-    {
-        m_x *= -m_x;
-        m_y *= -m_y;
-        m_z *= -m_z;
-
-        return *this;
-    }
-
-    template<class T>
-    inline TVector3D<T>& TVector3D<T>::setLength(T newlength)
-    {
-        normalize();
-        return (*this *= newlength);
     }
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

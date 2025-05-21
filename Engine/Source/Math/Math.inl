@@ -5,42 +5,6 @@ namespace math
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     template<class T>
-    inline const T& min(const T& a, const T& b)
-    {
-        return a < b ? a : b;
-    }
-
-    template<class T>
-    inline const T& min(const T& a, const T& b, const T& c)
-    {
-        return a < b ? min(a, c) : min(b, c);
-    }
-
-    template<class T>
-    inline const T& max(const T& a, const T& b)
-    {
-        return a < b ? b : a;
-    }
-
-    template<class T>
-    inline const T& max(const T& a, const T& b, const T& c)
-    {
-        return a < b ? max(b, c) : max(a, c);
-    }
-
-    template<class T>
-    inline T Lerp(const T& from, const T& to, f32 t) 
-    { 
-        return to * t + from * (1.0f - t); 
-    }
-
-    template<class T>
-    inline T abs(const T& a)
-    {
-        return a < (T)0 ? -a : a;
-    }
-
-    template<class T>
     inline T sign(const T& a)
     {
         if (a == (T)0)
@@ -48,12 +12,6 @@ namespace math
             return (T)0;
         }
         return a < (T)0 ? (T)-1 : (T)1;
-    }
-
-    template <class T>
-    inline const T& clamp(const T& value, const T& low, const T& high)
-    {
-        return min(max(value, low), high);
     }
 
     inline bool isEquals(f32 a, f32 b, f32 tolerance)
@@ -73,12 +31,12 @@ namespace math
 
     inline bool isZero(f64 a, f64 tolerance)
     {
-        return fabs(a) <= tolerance;
+        return std::fabs(a) <= tolerance;
     }
 
     inline bool isZero(f32 a, f32 tolerance)
     {
-        return fabsf(a) <= tolerance;
+        return std::fabsf(a) <= tolerance;
     }
 
     inline bool isZero(s32 a, s32 tolerance)
@@ -106,9 +64,9 @@ namespace math
         return result;
     }
 
-    inline int getShift(u32 val)
+    inline s32 getShift(u32 val)
     {
-        int shift = -1;
+        s32 shift = -1;
         while (val)
         {
             shift++;
@@ -138,12 +96,12 @@ namespace math
 
     inline f32 round(f32 x)
     {
-        return floorf(x + 0.5f);
+        return std::floorf(x + 0.5f);
     }
 
     inline f64 round(f64 x)
     {
-        return floor(x + 0.5);
+        return std::floor(x + 0.5);
     }
 
     template<class T>
@@ -152,7 +110,7 @@ namespace math
         s32 ix = (s32)x;
         T frac = x - (T)ix;
 
-        T p = pow(10.f, decimalPlaces);
+        T p = std::pow(10.f, decimalPlaces);
         T f = (T)((s32)round(frac * p));
         f /= p;
 
@@ -162,7 +120,7 @@ namespace math
     template<class T>
     inline T alignUp(T val, T alignment)
     {
-        return ((val)+(alignment)-1) & ~((alignment)-1);
+        return ((val) + (alignment)-1) & ~((alignment) - 1);
     }
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

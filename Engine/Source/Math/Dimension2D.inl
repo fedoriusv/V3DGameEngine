@@ -1,31 +1,33 @@
+#include "Dimension2D.h"
+
 namespace v3d
 {
 namespace math
 {
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    template <class T>
+    template <DimensionType2D T>
     TDimension2D<T>::TDimension2D() noexcept
-        : m_width(0)
-        , m_height(0)
+        : _width(0)
+        , _height(0)
     {
     }
 
-    template <class T>
-    TDimension2D<T>::TDimension2D(const T& width, const T& height) noexcept
-        : m_width(width)
-        , m_height(height)
+    template <DimensionType2D T>
+    TDimension2D<T>::TDimension2D(T width, T height) noexcept
+        : _width(width)
+        , _height(height)
     {
     }
 
-    template <class T>
+    template <DimensionType2D T>
     TDimension2D<T>::TDimension2D(const TDimension2D<T>& other) noexcept
-        : m_width(other.m_width)
-        , m_height(other.m_height)
+        : _width(other._width)
+        , _height(other._height)
     {
     }
 
-    template <class T>
+    template <DimensionType2D T>
     inline TDimension2D<T>& TDimension2D<T>::operator=(const TDimension2D<T>& other)
     {
         if (this == &other)
@@ -33,107 +35,113 @@ namespace math
             return *this;
         }
 
-        m_width = other.m_width;
-        m_height = other.m_height;
+        _width = other._width;
+        _height = other._height;
 
         return *this;
     }
 
-    template <class T>
+    template <DimensionType2D T>
     inline bool TDimension2D<T>::operator==(const TDimension2D<T>& other) const
     {
         const bool isEquals = 
-            math::isEquals(m_width, other.m_width) &&
-            math::isEquals(m_height, other.m_height);
+            math::isEquals(_width, other._width) &&
+            math::isEquals(_height, other._height);
 
         return isEquals;
     }
 
-    template <class T>
+    template <DimensionType2D T>
     inline bool TDimension2D<T>::operator!=(const TDimension2D<T>& other) const
     {
         return !(*this == other);
     }
 
-    template <class T>
-    inline TDimension2D<T>& TDimension2D<T>::set(const T& width, const T& height)
+    template <DimensionType2D T>
+    inline TDimension2D<T>& TDimension2D<T>::set(T width, T height)
     {
-        m_width = width;
-        m_height = height;
+        _width = width;
+        _height = height;
 
         return *this;
     }
 
-    template <class T>
-    inline TDimension2D<T>& TDimension2D<T>::operator/=(const T& scale)
+    template <DimensionType2D T>
+    inline TDimension2D<T>& TDimension2D<T>::operator/=(T scale)
     {
-        m_width /= scale;
-        m_height /= scale;
+        _width /= scale;
+        _height /= scale;
 
         return *this;
     }
 
-    template <class T>
-    inline TDimension2D<T> TDimension2D<T>::operator/(const T& scale) const
+    template <DimensionType2D T>
+    inline TDimension2D<T> TDimension2D<T>::operator/(T scale) const
     {
-        return TDimension2D<T>(m_width / scale, m_height / scale);
+        return TDimension2D<T>(_width / scale, _height / scale);
     }
 
-    template <class T>
-    inline TDimension2D<T>& TDimension2D<T>::operator*=(const T& scale)
+    template <DimensionType2D T>
+    inline TDimension2D<T>& TDimension2D<T>::operator*=(T scale)
     {
-        m_width *= scale;
-        m_height *= scale;
+        _width *= scale;
+        _height *= scale;
 
         return *this;
     }
 
-    template <class T>
-    inline TDimension2D<T> TDimension2D<T>::operator*(const T& scale) const
+    template <DimensionType2D T>
+    inline TDimension2D<T> TDimension2D<T>::operator*(T scale) const
     {
-        return TDimension2D<T>(m_width * scale, m_height * scale);
+        return TDimension2D<T>(_width * scale, _height * scale);
     }
 
-    template <class T>
+    template <DimensionType2D T>
     inline TDimension2D<T>& TDimension2D<T>::operator+=(const TDimension2D<T>& other)
     {
-        m_width += other.m_width;
-        m_height += other.m_height;
+        _width += other._width;
+        _height += other._height;
 
         return *this;
     }
 
-    template <class T>
+    template <DimensionType2D T>
     inline TDimension2D<T> TDimension2D<T>::operator-(const TDimension2D<T>& other) const
     {
-        return TDimension2D<T>(m_width - other.m_width, m_height - other.m_height);
+        return TDimension2D<T>(_width - other._width, _height - other._height);
     }
 
-    template <class T>
+    template <DimensionType2D T>
     inline TDimension2D<T>& TDimension2D<T>::operator-=(const TDimension2D<T>& other)
     {
-        m_width -= other.m_width;
-        m_height -= other.m_height;
+        _width -= other._width;
+        _height -= other._height;
 
         return *this;
     }
 
-    template <class T>
+    template <DimensionType2D T>
     inline TDimension2D<T> TDimension2D<T>::operator+(const TDimension2D<T>& other) const
     {
-        return TDimension2D<T>(m_width + other.m_width, m_height + other.m_height);
+        return TDimension2D<T>(_width + other._width, _height + other._height);
     }
 
-    template <class T>
+    template <DimensionType2D T>
     inline T TDimension2D<T>::getArea() const
     {
-        return m_width * m_height;
+        return _width * _height;
     }
 
-    template<class T>
+    template<DimensionType2D T>
     inline bool TDimension2D<T>::isNull() const
     {
-        return (m_width == 0 || m_height == 0);
+        return (_width == 0 || _height == 0);
+    }
+
+    template<DimensionType2D T>
+    inline bool TDimension2D<T>::isValid() const
+    {
+        return (_width > 0 && _height > 0);
     }
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

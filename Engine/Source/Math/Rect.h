@@ -10,15 +10,15 @@ namespace math
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
-    * @brief TRect class
+    * @brief TRect struct
     */
-    template <class T>
-    class TRect
+    template <typename T>
+    struct TRect
     {
     public:
 
         TRect() noexcept;
-        TRect(const T& x1, const T& y1, const T& x2, const T& y2) noexcept;
+        TRect(T x1, T y1, T x2, T y2) noexcept;
         TRect(const TVector2D<T>& upperLeft, const TVector2D<T>& lowerRight) noexcept;
         ~TRect() noexcept = default;
 
@@ -32,7 +32,7 @@ namespace math
         bool operator!=(const TRect<T>& other) const;
         bool operator<(const TRect<T>& other) const;
 
-        void set(const T& x1, const T& y1, const T& x2, const T& y2);
+        void set(T x1, T y1, T x2, T y2);
         void set(const TVector2D<T>& upperLeft, const TVector2D<T>& lowerRight);
 
         void scale(T scale);
@@ -47,7 +47,7 @@ namespace math
         void clipAgainst(const TRect<T>& other);
         [[nodiscard]] bool constrainTo(const TRect<T>& other);
 
-        [[nodiscard]] Vector2D getClosestPoint(const TVector2D<T>& point);
+        [[nodiscard]] TVector2D<T> getClosestPoint(const TVector2D<T>& point);
 
         [[nodiscard]] T getWidth() const;
         [[nodiscard]] T getHeight() const;
@@ -68,15 +68,13 @@ namespace math
 
     private:
 
-        TVector2D<T> m_upperLeftCorner;
-        TVector2D<T> m_lowerRightCorner;
+        TVector2D<T> _upperLeftCorner;
+        TVector2D<T> _lowerRightCorner;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    using Rect32  = TRect<s32>;
-    using RectU32 = TRect<u32>;
-    using RectF32 = TRect<f32>;
+    using Rect = TRect<f32>;
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 

@@ -4,170 +4,170 @@ namespace math
 {
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    template <class T>
+    template <typename T>
     TRect<T>::TRect() noexcept
-        : m_upperLeftCorner(0, 0)
-        , m_lowerRightCorner(0, 0)
+        : _upperLeftCorner(0, 0)
+        , _lowerRightCorner(0, 0)
     {
     }
 
 
-    template <class T>
-    TRect<T>::TRect(const T& x1, const T& y1, const T& x2, const T& y2) noexcept
-        : m_upperLeftCorner(x1, y1)
-        , m_lowerRightCorner(x2, y2)
+    template <typename T>
+    TRect<T>::TRect(T x1, T y1, T x2, T y2) noexcept
+        : _upperLeftCorner(x1, y1)
+        , _lowerRightCorner(x2, y2)
     {
     }
 
 
-    template <class T>
+    template <typename T>
     TRect<T>::TRect(const TVector2D<T>& upperLeft, const TVector2D<T>& lowerRight) noexcept
-        : m_upperLeftCorner(upperLeft)
-        , m_lowerRightCorner(lowerRight)
+        : _upperLeftCorner(upperLeft)
+        , _lowerRightCorner(lowerRight)
     {
     }
 
-    template<class T>
+    template<typename T>
     inline TRect<T> TRect<T>::operator+(const TVector2D<T>& pos) const
     {
         TRect<T> ret(*this);
         return ret += pos;
     }
 
-    template<class T>
+    template<typename T>
     inline TRect<T>& TRect<T>::operator+=(const TVector2D<T>& pos)
     {
-        m_upperLeftCorner += pos;
-        m_lowerRightCorner += pos;
+        _upperLeftCorner += pos;
+        _lowerRightCorner += pos;
         return *this;
     }
 
-    template<class T>
-    inline void TRect<T>::set(const T& x1, const T& y1, const T& x2, const T& y2)
+    template<typename T>
+    inline void TRect<T>::set(T x1, T y1, T x2, T y2)
     {
-        m_upperLeftCorner.Set(x1, y1);
-        m_lowerRightCorner.Set(x2, y2);
+        _upperLeftCorner.set(x1, y1);
+        _lowerRightCorner.set(x2, y2);
     }
 
-    template<class T>
+    template<typename T>
     inline void TRect<T>::set(const TVector2D<T>& upperLeft, const TVector2D<T>& lowerRight)
     {
-        m_upperLeftCorner = upperLeft;
-        m_lowerRightCorner = lowerRight;
+        _upperLeftCorner = upperLeft;
+        _lowerRightCorner = lowerRight;
     }
 
-    template<class T>
+    template<typename T>
     inline TRect<T> TRect<T>::operator-(const TVector2D<T>& pos) const
     {
         TRect<T> ret(*this);
         return ret -= pos;
     }
 
-    template<class T>
+    template<typename T>
     inline TRect<T>& TRect<T>::operator-=(const TVector2D<T>& pos)
     {
-        m_upperLeftCorner -= pos;
-        m_lowerRightCorner -= pos;
+        _upperLeftCorner -= pos;
+        _lowerRightCorner -= pos;
         return *this;
     }
 
-    template<class T>
+    template<typename T>
     inline void TRect<T>::scale(T scale)
     {
-        m_upperLeftCorner *= scale;
-        m_lowerRightCorner *= scale;
+        _upperLeftCorner *= scale;
+        _lowerRightCorner *= scale;
     }
 
-    template<class T>
+    template<typename T>
     inline bool TRect<T>::operator==(const TRect<T>& other) const
     {
-        return (m_upperLeftCorner == other.m_upperLeftCorner && m_lowerRightCorner == other.lowerRightCorner);
+        return (_upperLeftCorner == other._upperLeftCorner && _lowerRightCorner == other.lowerRightCorner);
     }
 
-    template<class T>
+    template<typename T>
     inline bool TRect<T>::equals(const TRect<T>& other, T tolerance) const
     {
-        return (m_upperLeftCorner.Equals(other.m_upperLeftCorner, tolerance) && m_lowerRightCorner.Equals(other.m_lowerRightCorner, tolerance));
+        return (_upperLeftCorner.Equals(other._upperLeftCorner, tolerance) && _lowerRightCorner.Equals(other._lowerRightCorner, tolerance));
     }
 
-    template<class T>
+    template<typename T>
     inline bool TRect<T>::operator!=(const TRect<T>& other) const
     {
-        return (m_upperLeftCorner != other.m_upperLeftCorner || m_lowerRightCorner != other.m_lowerRightCorner);
+        return (_upperLeftCorner != other._upperLeftCorner || _lowerRightCorner != other._lowerRightCorner);
     }
 
-    template<class T>
+    template<typename T>
     inline TRect<T>& TRect<T>::operator+=(const TRect<T>& other)
     {
-        addInternalPoint(other.m_upperLeftCorner);
-        addInternalPoint(other.m_lowerRightCorner);
+        addInternalPoint(other._upperLeftCorner);
+        addInternalPoint(other._lowerRightCorner);
         return *this;
     }
 
-    template<class T>
+    template<typename T>
     inline bool TRect<T>::operator<(const TRect<T>& other) const
     {
         return getArea() < other.getArea();
     }
 
-    template<class T>
+    template<typename T>
     inline T TRect<T>::getArea() const
     {
         return getWidth() * getHeight();
     }
 
-    template<class T>
+    template<typename T>
     inline bool TRect<T>::isPointInside(const TVector2D<T>& pos) const
     {
-        return (m_upperLeftCorner.m_x <= pos.m_x && m_upperLeftCorner.m_y <= pos.m_y && m_lowerRightCorner.m_x >= pos.m_x && m_lowerRightCorner.m_y >= pos.m_y);
+        return (_upperLeftCorner._x <= pos._x && _upperLeftCorner._y <= pos._y && _lowerRightCorner._x >= pos._x && _lowerRightCorner._y >= pos._y);
     }
 
-    template<class T>
+    template<typename T>
     inline bool TRect<T>::isRectCollided(const TRect<T>& other) const
     {
-        return (m_lowerRightCorner.m_y > other.m_upperLeftCorner.m_y && m_upperLeftCorner.m_y  < other.m_lowerRightCorner.m_y &&
-            m_lowerRightCorner.m_x > other.m_upperLeftCorner.m_x && m_upperLeftCorner.m_x  < other.m_lowerRightCorner.m_x);
+        return (_lowerRightCorner._y > other._upperLeftCorner._y && _upperLeftCorner._y  < other._lowerRightCorner._y &&
+            _lowerRightCorner._x > other._upperLeftCorner._x && _upperLeftCorner._x  < other._lowerRightCorner._x);
     }
 
-    template<class T>
+    template<typename T>
     inline bool TRect<T>::isRectCollidedLoose(const TRect<T>& other) const
     {
-        return (m_lowerRightCorner.m_y >(other.m_upperLeftCorner.m_y - static_cast<T>(1)) && m_upperLeftCorner.m_y  < (other.m_lowerRightCorner.m_y + static_cast<T>(1)) &&
-            m_lowerRightCorner.m_x >(other.m_upperLeftCorner.m_x - static_cast<T>(1)) && m_upperLeftCorner.m_x < (other.m_lowerRightCorner.m_x + static_cast<T>(1)));
+        return (_lowerRightCorner._y >(other._upperLeftCorner._y - static_cast<T>(1)) && _upperLeftCorner._y  < (other._lowerRightCorner._y + static_cast<T>(1)) &&
+            _lowerRightCorner._x >(other._upperLeftCorner._x - static_cast<T>(1)) && _upperLeftCorner._x < (other._lowerRightCorner._x + static_cast<T>(1)));
     }
 
-    template<class T>
+    template<typename T>
     inline void TRect<T>::clipAgainst(const TRect<T>& other)
     {
-        if (other.m_lowerRightCorner.m_x < m_lowerRightCorner.m_x)
+        if (other._lowerRightCorner._x < _lowerRightCorner._x)
         {
-            m_lowerRightCorner.m_x = other.m_lowerRightCorner.m_x;
+            _lowerRightCorner._x = other._lowerRightCorner._x;
         }
-        if (other.m_lowerRightCorner.m_y < m_lowerRightCorner.m_y)
+        if (other._lowerRightCorner._y < _lowerRightCorner._y)
         {
-            m_lowerRightCorner.m_y = other.m_lowerRightCorner.m_y;
-        }
-
-        if (other.m_upperLeftCorner.m_x > m_upperLeftCorner.m_x)
-        {
-            m_upperLeftCorner.m_x = other.m_upperLeftCorner.m_x;
-        }
-        if (other.m_upperLeftCorner.m_y > m_upperLeftCorner.m_y)
-        {
-            m_upperLeftCorner.m_y = other.m_upperLeftCorner.m_y;
+            _lowerRightCorner._y = other._lowerRightCorner._y;
         }
 
-        if (m_upperLeftCorner.m_y > m_lowerRightCorner.m_y)
+        if (other._upperLeftCorner._x > _upperLeftCorner._x)
         {
-            m_upperLeftCorner.m_y = m_lowerRightCorner.m_y;
+            _upperLeftCorner._x = other._upperLeftCorner._x;
         }
-        if (m_upperLeftCorner.m_x > m_lowerRightCorner.m_x)
+        if (other._upperLeftCorner._y > _upperLeftCorner._y)
         {
-            m_upperLeftCorner.m_x = m_lowerRightCorner.m_x;
+            _upperLeftCorner._y = other._upperLeftCorner._y;
+        }
+
+        if (_upperLeftCorner._y > _lowerRightCorner._y)
+        {
+            _upperLeftCorner._y = _lowerRightCorner._y;
+        }
+        if (_upperLeftCorner._x > _lowerRightCorner._x)
+        {
+            _upperLeftCorner._x = _lowerRightCorner._x;
         }
     }
 
-    template<class T>
+    template<typename T>
     inline bool TRect<T>::constrainTo(const TRect<T>& other)
     {
         if (other.getWidth() < getWidth() || other.getHeight() < getHeight())
@@ -175,146 +175,144 @@ namespace math
             return false;
         }
 
-        T diff = other.m_lowerRightCorner.m_x - m_lowerRightCorner.m_x;
+        T diff = other._lowerRightCorner._x - _lowerRightCorner._x;
         if (diff < 0)
         {
-            m_lowerRightCorner.m_x += diff;
-            m_upperLeftCorner.m_x += diff;
+            _lowerRightCorner._x += diff;
+            _upperLeftCorner._x += diff;
         }
 
-        diff = other.m_lowerRightCorner.m_y - m_lowerRightCorner.m_y;
+        diff = other._lowerRightCorner._y - _lowerRightCorner._y;
         if (diff < 0)
         {
-            m_lowerRightCorner.m_y += diff;
-            m_upperLeftCorner.m_y += diff;
+            _lowerRightCorner.y += diff;
+            _upperLeftCorner.y += diff;
         }
 
-        diff = m_upperLeftCorner.m_x - other.m_upperLeftCorner.m_x;
+        diff = _upperLeftCorner._x - other._upperLeftCorner._x;
         if (diff < 0)
         {
-            m_upperLeftCorner.m_x -= diff;
-            m_lowerRightCorner.m_x -= diff;
+            _upperLeftCorner._x -= diff;
+            _lowerRightCorner._x -= diff;
         }
 
-        diff = m_upperLeftCorner.m_y - other.m_upperLeftCorner.m_y;
+        diff = _upperLeftCorner._y - other._upperLeftCorner._y;
         if (diff < 0)
         {
-            m_upperLeftCorner.m_y -= diff;
-            m_lowerRightCorner.m_y -= diff;
+            _upperLeftCorner._y -= diff;
+            _lowerRightCorner._y -= diff;
         }
 
         return true;
     }
 
-    template<class T>
-    inline Vector2D TRect<T>::getClosestPoint(const TVector2D<T>& pt)
+    template<typename T>
+    inline TVector2D<T> TRect<T>::getClosestPoint(const TVector2D<T>& pt)
     {
-        Vector2D result = pt;
-
-        result.m_x = math::clamp(result.m_x, m_upperLeftCorner.m_x, m_lowerRightCorner.m_x);
-        result.m_y = math::clamp(result.m_y, m_upperLeftCorner.m_y, m_lowerRightCorner.m_y);
-
+        TVector2D<T> result(pt);
+        result._x = std::clamp(result._x, _upperLeftCorner._x, _lowerRightCorner._x);
+        result._y = std::clamp(result._y, _upperLeftCorner._y, _lowerRightCorner._y);
         return result;
     }
 
-    template<class T>
+    template<typename T>
     inline T TRect<T>::getWidth() const
     {
-        return m_lowerRightCorner.m_x - m_upperLeftCorner.m_x;
+        return _lowerRightCorner._x - _upperLeftCorner._x;
     }
 
-    template<class T>
+    template<typename T>
     inline T TRect<T>::getHeight() const
     {
-        return m_lowerRightCorner.m_y - m_upperLeftCorner.m_y;
+        return _lowerRightCorner._y - _upperLeftCorner._y;
     }
 
-    template<class T>
+    template<typename T>
     inline T TRect<T>::getLeftX() const
     {
-        return m_upperLeftCorner.m_x;
+        return _upperLeftCorner._x;
     }
 
-    template<class T>
+    template<typename T>
     inline T TRect<T>::getRightX() const
     {
-        return m_lowerRightCorner.m_x;
+        return _lowerRightCorner._x;
     }
 
-    template<class T>
+    template<typename T>
     inline T TRect<T>::getTopY() const
     {
-        return m_upperLeftCorner.m_y;
+        return _upperLeftCorner._y;
     }
 
-    template<class T>
+    template<typename T>
     inline T TRect<T>::getBottomY() const
     {
-        return m_lowerRightCorner.m_y;
+        return _lowerRightCorner._y;
     }
 
-    template<class T>
+    template<typename T>
     inline void TRect<T>::repair()
     {
-        if (m_lowerRightCorner.m_x < m_upperLeftCorner.m_x)
+        if (_lowerRightCorner._x < _upperLeftCorner._x)
         {
-            T t = m_lowerRightCorner.m_x;
-            m_lowerRightCorner.m_x = m_upperLeftCorner.m_x;
-            m_upperLeftCorner.m_x = t;
+            T t = _lowerRightCorner._x;
+            _lowerRightCorner._x = _upperLeftCorner._x;
+            _upperLeftCorner._x = t;
         }
 
-        if (m_lowerRightCorner.m_y < m_upperLeftCorner.m_y)
+        if (_lowerRightCorner.y < _upperLeftCorner._y)
         {
-            T t = m_lowerRightCorner.m_y;
-            m_lowerRightCorner.m_y = m_upperLeftCorner.m_y;
-            m_upperLeftCorner.m_y = t;
+            T t = _lowerRightCorner._y;
+            _lowerRightCorner._y = _upperLeftCorner._y;
+            _upperLeftCorner._y = t;
         }
     }
 
-    template<class T>
+    template<typename T>
     inline bool TRect<T>::isValid() const
     {
-        return ((m_lowerRightCorner.m_x >= m_upperLeftCorner.m_x) && (m_lowerRightCorner.m_y >= m_upperLeftCorner.m_y));
+        return ((_lowerRightCorner._x >= _upperLeftCorner._x) && (_lowerRightCorner._y >= _upperLeftCorner._y));
     }
 
-    template<class T>
+    template<typename T>
     inline TVector2D<T> TRect<T>::getCenter() const
     {
-        return TVector2D<T>((m_upperLeftCorner.m_x + m_lowerRightCorner.m_x) / 2,
-            (m_upperLeftCorner.m_y + m_lowerRightCorner.m_y) / 2);
+        return TVector2D<T>((_upperLeftCorner._x + _lowerRightCorner._x) / 2,
+            (_upperLeftCorner._y + _lowerRightCorner._y) / 2);
     }
 
-    template<class T>
+    template<typename T>
     inline TVector2D<T> TRect<T>::getSize() const
     {
         return TVector2D<T>(getWidth(), getHeight());
     }
 
-    template<class T>
+    template<typename T>
     inline void TRect<T>::addInternalPoint(const TVector2D<T>& p)
     {
-        addInternalPoint(p.m_x, p.m_y);
+        addInternalPoint(p._x, p._y);
     }
 
-    template<class T>
+    template<typename T>
     inline void TRect<T>::addInternalPoint(const T& x, const T& y)
     {
-        if (x > m_lowerRightCorner.m_x)
+        if (x > _lowerRightCorner._x)
         {
-            m_lowerRightCorner.m_x = x;
+            _lowerRightCorner._x = x;
         }
-        if (y > m_lowerRightCorner.m_y)
+        if (y > _lowerRightCorner._y)
         {
-            m_lowerRightCorner.m_y = y;
+            _lowerRightCorner.y = y;
         }
 
-        if (x < m_upperLeftCorner.m_x)
+        if (x < _upperLeftCorner._x)
         {
-            m_upperLeftCorner.m_x = x;
+            _upperLeftCorner._x = x;
         }
-        if (y < m_upperLeftCorner.m_y)
+        if (y < _upperLeftCorner._y)
         {
-            m_upperLeftCorner.m_y = y;
+            _upperLeftCorner._y = y;
         }
     }
 

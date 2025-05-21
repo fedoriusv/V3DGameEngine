@@ -9,16 +9,16 @@ namespace math
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
-    * @brief TVector2D class
+    * @brief TVector2D struct
     */
-    template <class T>
-    class TVector2D
+    template <typename T>
+    struct TVector2D
     {
     public:
 
         TVector2D() noexcept;
-        TVector2D(T nx, T ny) noexcept;
-        TVector2D(T nx) noexcept;
+        TVector2D(T n) noexcept;
+        TVector2D(T x, T y) noexcept;
         TVector2D(const TVector2D<T>& other) noexcept;
         ~TVector2D() noexcept = default;
 
@@ -28,21 +28,21 @@ namespace math
         TVector2D<T>& operator=(const TVector2D<T>& other);
 
         [[nodiscard]] TVector2D<T> operator+(const TVector2D<T>& other) const;
-        [[nodiscard]] TVector2D<T> operator+(const T scalar) const;
+        [[nodiscard]] TVector2D<T> operator+(T scalar) const;
         TVector2D<T>& operator+=(const TVector2D<T>& other);
-        TVector2D<T>& operator+=(const T scalar);
+        TVector2D<T>& operator+=(T scalar);
         [[nodiscard]] TVector2D<T> operator-(const TVector2D<T>& other) const;
-        [[nodiscard]] TVector2D<T> operator-(const T scalar) const;
+        [[nodiscard]] TVector2D<T> operator-(T scalar) const;
         TVector2D<T>& operator-=(const TVector2D<T>& other);
-        TVector2D<T>& operator-=(const T scalar);
+        TVector2D<T>& operator-=(T scalar);
         [[nodiscard]] TVector2D<T> operator*(const TVector2D<T>& other) const;
-        [[nodiscard]] TVector2D<T> operator*(const T scalar) const;
+        [[nodiscard]] TVector2D<T> operator*(T scalar) const;
         TVector2D<T>& operator*=(const TVector2D<T>& other);
-        TVector2D<T>& operator*=(const T scalar);
+        TVector2D<T>& operator*=(T scalar);
         [[nodiscard]] TVector2D<T> operator/(const TVector2D<T>& other) const;
-        [[nodiscard]] TVector2D<T> operator/(const T scalar) const;
+        [[nodiscard]] TVector2D<T> operator/(T scalar) const;
         TVector2D<T>& operator/=(const TVector2D<T>& other);
-        TVector2D<T>& operator/=(const T scalar);
+        TVector2D<T>& operator/=(T scalar);
 
         [[nodiscard]] TVector2D<T> operator-() const;
 
@@ -53,11 +53,10 @@ namespace math
         bool operator==(const TVector2D<T>& other) const;
         bool operator!=(const TVector2D<T>& other) const;
 
-        TVector2D<T>& set(const T nx, const T ny);
+        TVector2D<T>& set(T x, T y);
         TVector2D<T>& set(const TVector2D<T>& other);
 
-        [[nodiscard]] bool isEquals(const TVector2D<T>& other, const T tolerance = (T)k_tolerance32) const;
-        [[nodiscard]] bool isInLine(const TVector2D<T>& begin, const TVector2D<T>& end) const;
+        [[nodiscard]] bool isEquals(const TVector2D<T>& other, T tolerance = (T)k_tolerance32) const;
 
         [[nodiscard]] T length() const;
         [[nodiscard]] T lengthSQ() const;
@@ -66,56 +65,14 @@ namespace math
         [[nodiscard]] T distanceFromSQ(const TVector2D<T>& other) const;
 
         TVector2D<T>& normalize();
-        TVector2D<T>& invert();
 
-        TVector2D<T>& setLength(T newlength);
-
-        T m_x;
-        T m_y;
+        T _x;
+        T _y;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    using Vector2D      = TVector2D<f32>;
-    using Vector2D64    = TVector2D<f64>;
-
-    using Point2D       = TVector2D<s32>;
-    using Point2D64     = TVector2D<s64>;
-
-    using Point2DU      = TVector2D<u32>;
-    using Point2DU64    = TVector2D<u64>;
-
-    /////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    template<class T>
-    [[nodiscard]] T distance(const TVector2D<T>& v1, const TVector2D<T>& v2)
-    {
-        return TVector2D<T>(v1.m_x - v2.m_x, v1.m_y - v2.m_y).length();
-    }
-
-    template<class T>
-    [[nodiscard]] T dotProduct(const TVector2D<T>& v1, const TVector2D<T>& v2)
-    {
-        return v1.m_x * v2.m_x + v1.m_y * v2.m_y;
-    }
-
-    template<class T>
-    [[nodiscard]] TVector2D<T> crossProduct(const TVector2D<T>& v1, const TVector2D<T>& v2)
-    {
-        return (v1.m_x * v2.m_y) - (v1.m_y * v2.m_x);
-    }
-
-    template<class T>
-    [[nodiscard]] TVector2D<T> interpolate(const TVector2D<T>& v1, const TVector2D<T>& v2, const T d)
-    {
-        return v1 + (v2 - v1) * d;
-    }
-
-    template<class S, class T>
-    [[nodiscard]] TVector2D<T> operator*(const S scalar, const TVector2D<T>& vector)
-    {
-        return vector * scalar;
-    }
+    using Point2D     = TVector2D<s32>;
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 

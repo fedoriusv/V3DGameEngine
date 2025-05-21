@@ -35,30 +35,12 @@ namespace math
     constexpr f32 k_cos85 = 0.08715574274f;
 
     constexpr f32 k_infinity = std::numeric_limits<f32>::infinity();
+    constexpr f32 k_NaN = std::numeric_limits<f32>::quiet_NaN();
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     template<class T>
-    [[nodiscard]] const T& min(const T& a, const T& b);
-    template<class T>
-    [[nodiscard]] const T& min(const T& a, const T& b, const T& c);
-
-    template<class T>
-    [[nodiscard]] const T& max(const T& a, const T& b);
-    template<class T>
-    [[nodiscard]] const T& max(const T& a, const T& b, const T& c);
-
-    template<class T>
-    T lerp(const T& from, const T& to, f32 t);
-
-    template<class T>
-    [[nodiscard]] T abs(const T& a);
-
-    template<class T>
     [[nodiscard]] T sign(const T& a);
-
-    template <class T>
-    [[nodiscard]] const T& clamp(const T& value, const T& low, const T& high);
 
     [[nodiscard]] bool isEquals(f32 a, f32 b, f32 tolerance = k_tolerance32);
     [[nodiscard]] bool isEquals(s32 a, s32 b, s32 tolerance = 0);
@@ -72,12 +54,13 @@ namespace math
     [[nodiscard]] bool isPowerOf2(u32 a);
     [[nodiscard]] u32 getSmallestPowerOf2(u32 val);
 
-    [[nodiscard]] int getShift(u32 val);
+    [[nodiscard]] s32 getShift(u32 val);
     [[nodiscard]] u32 getBitCount(u32 val);
     [[nodiscard]] void setbit_cond(u32& state, s32 condition, u32 mask);
 
     [[nodiscard]] f32 round(f32 x);
     [[nodiscard]] f64 round(f64 x);
+
     template<class T>
     [[nodiscard]] T round(T x, s32 decimalPlaces);
 

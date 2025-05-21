@@ -1,34 +1,36 @@
+#include "Dimension3D.h"
+
 namespace v3d
 {
 namespace math
 {
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    template <class T>
+    template <DimensionType3D T>
     TDimension3D<T>::TDimension3D() noexcept
-        : m_width(0)
-        , m_height(0)
-        , m_depth(0)
+        : _width(0)
+        , _height(0)
+        , _depth(0)
     {
     }
 
-    template <class T>
-    TDimension3D<T>::TDimension3D(const T& width, const T& height, const T& depth) noexcept
-        : m_width(width)
-        , m_height(height)
-        , m_depth(depth)
+    template <DimensionType3D T>
+    TDimension3D<T>::TDimension3D(T width, T height, T depth) noexcept
+        : _width(width)
+        , _height(height)
+        , _depth(depth)
     {
     }
 
-    template <class T>
+    template <DimensionType3D T>
     TDimension3D<T>::TDimension3D(const TDimension3D<T>& other) noexcept
-        : m_width(other.m_width)
-        , m_height(other.m_height)
-        , m_depth(other.m_depth)
+        : _width(other._width)
+        , _height(other._height)
+        , _depth(other._depth)
     {
     }
 
-    template <class T>
+    template <DimensionType3D T>
     inline TDimension3D<T>& TDimension3D<T>::operator=(const TDimension3D<T>& other)
     {
         if (this == &other)
@@ -36,138 +38,144 @@ namespace math
             return *this;
         }
 
-        m_width = other.m_width;
-        m_height = other.m_height;
-        m_depth = other.m_depth;
+        _width = other._width;
+        _height = other._height;
+        _depth = other._depth;
 
         return *this;
     }
 
-    template <class T>
+    template <DimensionType3D T>
     inline bool TDimension3D<T>::operator==(const TDimension3D<T>& other) const
     {
         const bool isEquals = 
-            math::isEquals(m_width, other.m_width) &&
-            math::isEquals(m_height, other.m_height) &&
-            math::isEquals(m_depth, other.m_depth);
+            math::isEquals(_width, other._width) &&
+            math::isEquals(_height, other._height) &&
+            math::isEquals(_depth, other._depth);
 
         return isEquals;
     }
 
-    template <class T>
+    template <DimensionType3D T>
     inline bool TDimension3D<T>::operator!=(const TDimension3D<T>& other) const
     {
         return !(*this == other);
     }
 
-    template<class T>
+    template<DimensionType3D T>
     inline bool TDimension3D<T>::operator>=(const TDimension3D<T>& other) const
     {
         return !(*this <= other);
     }
 
-    template<class T>
+    template<DimensionType3D T>
     inline bool TDimension3D<T>::operator<=(const TDimension3D<T>& other) const
     {
         return (*this < other) || (*this == other);
     }
 
-    template<class T>
+    template<DimensionType3D T>
     inline bool TDimension3D<T>::operator>(const TDimension3D<T>& other) const
     {
         return !(*this < other);
     }
 
-    template<class T>
+    template<DimensionType3D T>
     inline bool TDimension3D<T>::operator<(const TDimension3D<T>& other) const
     {
-        return m_width < other.m_width && m_height < other.m_height && m_depth < other.m_depth;
+        return _width < other._width && _height < other._height && _depth < other._depth;
     }
 
-    template <class T>
-    inline TDimension3D<T>& TDimension3D<T>::set(const T& width, const T& height, const T& depth)
+    template <DimensionType3D T>
+    inline TDimension3D<T>& TDimension3D<T>::set(T width, T height, T depth)
     {
-        m_width = width;
-        m_height = height;
-        m_depth = depth;
+        _width = width;
+        _height = height;
+        _depth = depth;
 
         return *this;
     }
 
-    template <class T>
-    inline TDimension3D<T>& TDimension3D<T>::operator/=(const T& scale)
+    template <DimensionType3D T>
+    inline TDimension3D<T>& TDimension3D<T>::operator/=(T scale)
     {
-        m_width /= scale;
-        m_height /= scale;
-        m_depth /= scale;
+        _width /= scale;
+        _height /= scale;
+        _depth /= scale;
 
         return *this;
     }
 
-    template <class T>
-    inline TDimension3D<T> TDimension3D<T>::operator/(const T& scale) const
+    template <DimensionType3D T>
+    inline TDimension3D<T> TDimension3D<T>::operator/(T scale) const
     {
-        return TDimension3D<T>(m_width / scale, m_height / scale, m_depth / scale);
+        return TDimension3D<T>(_width / scale, _height / scale, _depth / scale);
     }
 
-    template <class T>
-    inline TDimension3D<T>& TDimension3D<T>::operator *= (const T& scale)
+    template <DimensionType3D T>
+    inline TDimension3D<T>& TDimension3D<T>::operator *= (T scale)
     {
-        m_width *= scale;
-        m_height *= scale;
-        m_depth *= scale;
+        _width *= scale;
+        _height *= scale;
+        _depth *= scale;
 
         return *this;
     }
 
-    template <class T>
-    inline TDimension3D<T> TDimension3D<T>::operator*(const T& scale) const
+    template <DimensionType3D T>
+    inline TDimension3D<T> TDimension3D<T>::operator*(T scale) const
     {
-        return TDimension3D<T>(m_width * scale, m_height * scale, m_depth * scale);
+        return TDimension3D<T>(_width * scale, _height * scale, _depth * scale);
     }
 
-    template <class T>
+    template <DimensionType3D T>
     inline TDimension3D<T>& TDimension3D<T>::operator+=(const TDimension3D<T>& other)
     {
-        m_width += other.m_width;
-        m_height += other.m_height;
-        m_depth += other.m_depth;
+        _width += other._width;
+        _height += other._height;
+        _depth += other._depth;
 
         return *this;
     }
 
-    template <class T>
+    template <DimensionType3D T>
     inline TDimension3D<T>& TDimension3D<T>::operator-=(const TDimension3D<T>& other)
     {
-        m_width -= other.m_width;
-        m_height -= other.m_height;
-        m_depth -= other.m_depth;
+        _width -= other._width;
+        _height -= other._height;
+        _depth -= other._depth;
 
         return *this;
     }
 
-    template <class T>
+    template <DimensionType3D T>
     inline TDimension3D<T> TDimension3D<T>::operator+(const TDimension3D<T>& other) const
     {
-        return TDimension3D<T>(m_width + other.m_width, m_height + other.m_height, m_depth + other.m_depth);
+        return TDimension3D<T>(_width + other._width, _height + other._height, _depth + other._depth);
     }
 
-    template<class T>
+    template<DimensionType3D T>
     inline TDimension3D<T> TDimension3D<T>::operator-(const TDimension3D<T>& other) const
     {
-        return TDimension3D<T>(m_width - other.m_width, m_height - other.m_height, m_depth - other.m_depth);
+        return TDimension3D<T>(_width - other._width, _height - other._height, _depth - other._depth);
     }
 
-    template <class T>
+    template <DimensionType3D T>
     inline T TDimension3D<T>::getArea() const
     {
-        return m_width * m_height * m_depth;
+        return _width * _height * _depth;
     }
 
-    template<class T>
+    template<DimensionType3D T>
     inline bool TDimension3D<T>::isNull() const
     {
-        return (m_width == 0 || m_height == 0 || m_depth == 0);
+        return (_width == 0 || _height == 0 || _depth == 0);
+    }
+
+    template<DimensionType3D T>
+    inline bool TDimension3D<T>::isValid() const
+    {
+        return (_width > 0 && _height > 0 && _depth > 0);
     }
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

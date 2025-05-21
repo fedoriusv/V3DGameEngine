@@ -6,22 +6,22 @@ namespace math
 
     template <class T>
     TMinMaxAABB<T>::TMinMaxAABB() noexcept
-        : m_min(k_infinity)
-        , m_max(-k_infinity)
+        : _min(k_infinity)
+        , _max(-k_infinity)
     {
     }
     
     template <class T>
     TMinMaxAABB<T>::TMinMaxAABB(const TMinMaxAABB<T>& other) noexcept
-        : m_min(other.m_min)
-        , m_max(other.m_max)
+        : _min(other._min)
+        , _max(other._max)
     {
     }
 
     template <class T>
     TMinMaxAABB<T>::TMinMaxAABB(const TVector3D<T>& min, const TVector3D<T>& max) noexcept
-        : m_min(min)
-        , m_max(max)
+        : _min(min)
+        , _max(max)
     {
     }
 
@@ -33,8 +33,10 @@ namespace math
             return *this;
         }
 
-        m_min = other.m_min;
-        m_max = other.m_max;
+        _min = other._min;
+        _max = other._max;
+
+        return *this;
     }
 
     template <class T>
@@ -52,7 +54,7 @@ namespace math
     template <class T>
     inline bool TMinMaxAABB<T>::operator==(const TMinMaxAABB<T>& other) const
     {
-        return m_min == other.m_min && m_max == other.m_max;
+        return _min == other._min && _max == other._max;
     }
     
     template <class T>
@@ -64,85 +66,83 @@ namespace math
     template <class T>
     inline const TVector3D<T>& TMinMaxAABB<T>::getMin() const
     {
-        return m_min;
+        return _min;
     }
 
     template <class T>
     inline const TVector3D<T>& TMinMaxAABB<T>::getMax() const
     {
-        return m_max;
+        return _max;
     }
 
     template <class T>
     inline TVector3D<T> TMinMaxAABB<T>::getCenter() const
     {
-        return (m_max + m_min) / 2.0f;
+        return (_max + _min) / 2.0f;
     }
 
     template <class T>
     inline TVector3D<T> TMinMaxAABB<T>::getExtent() const
     {
-        return 0.5f * (m_max - m_min);
+        return 0.5f * (_max - _min);
     }
 
     template <class T>
     inline TVector3D<T> TMinMaxAABB<T>::getSize() const
     {
-        return m_max - m_min;
+        return _max - _min;
     }
 
     template <class T>
     void TMinMaxAABB<T>::expand(T value)
     {
         TVector3D<T> offset(value);
-        m_min -= offset;
-        m_max += offset;
+        _min -= offset;
+        _max += offset;
     }
 
     template <class T>
     void TMinMaxAABB<T>::expand(const TVector3D<T>& value)
     {
-        m_min -= value;
-        m_max += value;
+        _min -= value;
+        _max += value;
     }
 
     template <class T>
     bool TMinMaxAABB<T>::isValid() const
     {
-        return m_min != k_infinity && m_max != -k_infinity;
+        return _min != k_infinity && _max != -k_infinity;
     }
 
     template <class T>
     bool TMinMaxAABB<T>::isInside(const TVector3D<T>& point) const
     {
-        if (point.m_x < m_min.m_x)
+        if (point._x < _min._x)
         {
             return false;
         }
 
-        if (point.m_x > m_max.m_x)
+        if (point._x > _max._x)
         {
             return false;
         }
 
-
-        if (point.m_y < m_min.m_y)
+        if (point._y < _min._y)
         {
             return false;
         }
 
-        if (point.m_y > m_max.m_y)
+        if (point._y > _max._y)
         {
             return false;
         }
 
-
-        if (point.m_z < m_min.m_z)
+        if (point._z < _min._z)
         {
             return false;
         }
 
-        if (point.m_z > m_max.m_z)
+        if (point._z > _max._z)
         {
             return false;
         }

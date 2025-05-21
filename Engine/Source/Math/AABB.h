@@ -2,6 +2,7 @@
 
 #include "Math.h"
 #include "Vector3D.h"
+#include "VectorRegister.h"
 
 namespace v3d
 {
@@ -41,13 +42,12 @@ namespace math
         void expand(const TVector3D<T>& value);
 
         [[nodiscard]] bool isInside(const TVector3D<T>& point) const;
-
         [[nodiscard]] bool isValid() const;
 
     private:
 
-        TVector3D<T> m_min;
-        TVector3D<T> m_max;
+        TVector3D<T> _min;
+        TVector3D<T> _max;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -56,7 +56,8 @@ namespace math
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    inline bool calculateVerticesFromAABB(const AABB& aabb, Vector3D vertices[8])
+    template<typename T>
+    inline bool calculateVerticesFromAABB(const AABB& aabb, TVector3D<T> vertices[8])
     {
         if (!aabb.isValid())
         {
@@ -69,14 +70,14 @@ namespace math
         //  | 4---|-5
         //  |/    |/
         //  0-----1
-        vertices[0].set(aabb.getMin().m_x, aabb.getMin().m_y, aabb.getMin().m_z);
-        vertices[1].set(aabb.getMax().m_x, aabb.getMin().m_y, aabb.getMin().m_z);
-        vertices[2].set(aabb.getMax().m_x, aabb.getMax().m_y, aabb.getMin().m_z);
-        vertices[3].set(aabb.getMin().m_x, aabb.getMax().m_y, aabb.getMin().m_z);
-        vertices[4].set(aabb.getMin().m_x, aabb.getMin().m_y, aabb.getMax().m_z);
-        vertices[5].set(aabb.getMax().m_x, aabb.getMin().m_y, aabb.getMax().m_z);
-        vertices[6].set(aabb.getMax().m_x, aabb.getMax().m_y, aabb.getMax().m_z);
-        vertices[7].set(aabb.getMin().m_x, aabb.getMax().m_y, aabb.getMax().m_z);
+        vertices[0].set(aabb.getMin()._x, aabb.getMin()._y, aabb.getMin()._z);
+        vertices[1].set(aabb.getMax()._x, aabb.getMin()._y, aabb.getMin()._z);
+        vertices[2].set(aabb.getMax()._x, aabb.getMax()._y, aabb.getMin()._z);
+        vertices[3].set(aabb.getMin()._x, aabb.getMax()._y, aabb.getMin()._z);
+        vertices[4].set(aabb.getMin()._x, aabb.getMin()._y, aabb.getMax()._z);
+        vertices[5].set(aabb.getMax()._x, aabb.getMin()._y, aabb.getMax()._z);
+        vertices[6].set(aabb.getMax()._x, aabb.getMax()._y, aabb.getMax()._z);
+        vertices[7].set(aabb.getMin()._x, aabb.getMax()._y, aabb.getMax()._z);
 
         return true;
     }
