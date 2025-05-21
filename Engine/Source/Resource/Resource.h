@@ -36,7 +36,7 @@ namespace resource
     /**
     * @brief ResourceHeader meta info about Resource
     */
-    struct ResourceHeader
+    struct V3D_API ResourceHeader
     {
         static const u32 k_nameSize = 64;
 
@@ -80,14 +80,23 @@ namespace resource
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    struct ResourceReport
+    {
+        enum class Event
+        {
+            Destroy
+        };
+
+        Event _event;
+    };
+
     /**
     * @brief Base Interface for Resource class
     */
-    class Resource : public utils::Reporter<bool>, public utils::ResourceID<Resource, u64>
+    class V3D_API Resource : public utils::Reporter<ResourceReport>, public utils::ResourceID<Resource, u64>
     {
     public:
 
-        Resource() noexcept = default;
         virtual ~Resource() = default;
 
         virtual bool load(const stream::Stream* stream, u32 offset = 0) = 0;
@@ -95,6 +104,7 @@ namespace resource
 
     protected:
 
+        Resource() noexcept = default;
         Resource(const Resource&) = delete;
         Resource& operator=(const Resource&) = delete;
 
