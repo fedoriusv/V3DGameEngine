@@ -811,7 +811,7 @@ LRESULT WindowWindows::HandleSystemEvents(UINT message, WPARAM wParam, LPARAM lP
 
             return TRUE;
         }
-        return FALSE;
+        return DefWindowProc(m_hWnd, message, wParam, lParam);
     }
 
     case WM_DESTROY:
@@ -827,7 +827,7 @@ LRESULT WindowWindows::HandleSystemEvents(UINT message, WPARAM wParam, LPARAM lP
     }
 
     default:
-        return TRUE;
+        return DefWindowProc(m_hWnd, message, wParam, lParam);
     }
 }
 

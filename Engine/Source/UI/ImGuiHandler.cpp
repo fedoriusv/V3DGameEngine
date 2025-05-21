@@ -155,27 +155,30 @@ static bool updateMouseCursor(ImGuiIO& io, ImGuiMouseCursor imgui_cursor)
     if (imgui_cursor == ImGuiMouseCursor_None || io.MouseDrawCursor)
     {
         // Hide OS mouse cursor if imgui is drawing it or if it wants no cursor
-        ::SetCursor(nullptr);
+        platform::Platform::hideCursor();
     }
     else
     {
+        platform::Platform::showCursor();
+
         // Show OS mouse cursor
-        LPTSTR win32_cursor = IDC_ARROW;
+        platform::Platform::CursorIcon cursor = platform::Platform::CursorIcon::Arrow;
         switch (imgui_cursor)
         {
-        case ImGuiMouseCursor_Arrow:        win32_cursor = IDC_ARROW; break;
-        case ImGuiMouseCursor_TextInput:    win32_cursor = IDC_IBEAM; break;
-        case ImGuiMouseCursor_ResizeAll:    win32_cursor = IDC_SIZEALL; break;
-        case ImGuiMouseCursor_ResizeEW:     win32_cursor = IDC_SIZEWE; break;
-        case ImGuiMouseCursor_ResizeNS:     win32_cursor = IDC_SIZENS; break;
-        case ImGuiMouseCursor_ResizeNESW:   win32_cursor = IDC_SIZENESW; break;
-        case ImGuiMouseCursor_ResizeNWSE:   win32_cursor = IDC_SIZENWSE; break;
-        case ImGuiMouseCursor_Hand:         win32_cursor = IDC_HAND; break;
-        case ImGuiMouseCursor_Wait:         win32_cursor = IDC_WAIT; break;
-        case ImGuiMouseCursor_Progress:     win32_cursor = IDC_APPSTARTING; break;
-        case ImGuiMouseCursor_NotAllowed:   win32_cursor = IDC_NO; break;
+        case ImGuiMouseCursor_Arrow:        cursor = platform::Platform::CursorIcon::Arrow; break;
+        case ImGuiMouseCursor_TextInput:    cursor = platform::Platform::CursorIcon::TextInput; break;
+        case ImGuiMouseCursor_ResizeAll:    cursor = platform::Platform::CursorIcon::ResizeAll; break;
+        case ImGuiMouseCursor_ResizeEW:     cursor = platform::Platform::CursorIcon::ResizeEW; break;
+        case ImGuiMouseCursor_ResizeNS:     cursor = platform::Platform::CursorIcon::ResizeNS; break;
+        case ImGuiMouseCursor_ResizeNESW:   cursor = platform::Platform::CursorIcon::ResizeNESW; break;
+        case ImGuiMouseCursor_ResizeNWSE:   cursor = platform::Platform::CursorIcon::ResizeNWSE; break;
+        case ImGuiMouseCursor_Hand:         cursor = platform::Platform::CursorIcon::Hand; break;
+        case ImGuiMouseCursor_Wait:         cursor = platform::Platform::CursorIcon::Wait; break;
+        case ImGuiMouseCursor_Progress:     cursor = platform::Platform::CursorIcon::Progress; break;
+        case ImGuiMouseCursor_NotAllowed:   cursor = platform::Platform::CursorIcon::NotAllowed; break;
         }
-        ::SetCursor(::LoadCursor(nullptr, win32_cursor));
+
+        platform::Platform::setCursorIcon(cursor);
     }
     return true;
 }

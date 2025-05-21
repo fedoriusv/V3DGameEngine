@@ -108,6 +108,76 @@ namespace v3d
 namespace platform
 {
 
+void Platform::setCursorIcon(CursorIcon icon)
+{
+#ifdef PLATFORM_WINDOWS
+    // Show OS mouse cursor
+    LPTSTR win32_cursor = IDC_ARROW;
+    switch (icon)
+    {
+    case CursorIcon::Arrow:
+        win32_cursor = IDC_ARROW;
+        break;
+
+    case CursorIcon::TextInput:
+        win32_cursor = IDC_IBEAM;
+        break;
+
+    case CursorIcon::ResizeAll:
+        win32_cursor = IDC_SIZEALL;
+        break;
+
+    case CursorIcon::ResizeEW:
+        win32_cursor = IDC_SIZEWE;
+        break;
+
+    case CursorIcon::ResizeNS:
+        win32_cursor = IDC_SIZENS;
+        break;
+
+    case CursorIcon::ResizeNESW:
+        win32_cursor = IDC_SIZENESW;
+        break;
+
+    case CursorIcon::ResizeNWSE:
+        win32_cursor = IDC_SIZENWSE;
+        break;
+
+    case CursorIcon::Hand:
+        win32_cursor = IDC_HAND;
+        break;
+
+    case CursorIcon::Wait:
+        win32_cursor = IDC_WAIT;
+        break;
+
+    case CursorIcon::Progress:
+        win32_cursor = IDC_APPSTARTING;
+        break;
+
+    case CursorIcon::NotAllowed:
+        win32_cursor = IDC_NO;
+        break;
+
+    default:
+        win32_cursor = IDC_ARROW;
+    }
+    ::SetCursor(::LoadCursor(NULL, win32_cursor));
+#else
+    ASSERT("not impl");
+#endif //PLATFORM_WINDOWS
+}
+
+void Platform::hideCursor()
+{
+    ::ShowCursor(FALSE);
+}
+
+void Platform::showCursor()
+{
+    ::ShowCursor(TRUE);
+}
+
 math::Point2D Platform::getCursorPosition()
 {
 #ifdef PLATFORM_WINDOWS
@@ -115,6 +185,8 @@ math::Point2D Platform::getCursorPosition()
     GetCursorPos(&mouse);
 
     return math::Point2D(static_cast<s32>(mouse.x), static_cast<s32>(mouse.y));
+#else
+    ASSERT("not impl");
 #endif //PLATFORM_WINDOWS
 
     return math::Point2D(0U, 0U);
@@ -124,6 +196,8 @@ void Platform::setCursorPostion(const math::Point2D& point)
 {
 #ifdef PLATFORM_WINDOWS
     SetCursorPos(point._x, point._y);
+#else
+    ASSERT("not impl");
 #endif //PLATFORM_WINDOWS
 }
 

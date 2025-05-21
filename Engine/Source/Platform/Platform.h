@@ -21,6 +21,25 @@ namespace platform
     {
     public:
 
+        enum class CursorIcon
+        {
+            Arrow,
+            TextInput,
+            ResizeAll,
+            ResizeEW,
+            ResizeNS,
+            ResizeNESW,
+            ResizeNWSE,
+            Hand,
+            Wait,
+            Progress,
+            NotAllowed,
+        };
+
+        static void setCursorIcon(CursorIcon icon);
+        static void showCursor();
+        static void hideCursor();
+
         [[nodiscard]] static math::Point2D getCursorPosition();
         static void setCursorPostion(const math::Point2D& point);
 
