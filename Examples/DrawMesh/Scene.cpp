@@ -80,9 +80,9 @@ void Scene::SendExitSignal()
 void Scene::Init()
 {
     //init camera
-    m_Camera = new scene::CameraArcballHandler(new scene::Camera(math::Vector3D(0.0f, 0.0f, 0.0f), math::Vector3D(0.0f, 1.0f, 0.0f)), 8.0f, 4.0f, 80.0f);
+    m_Camera = new scene::CameraArcballHandler(std::make_unique<scene::Camera>(math::Vector3D(0.0f, 0.0f, 0.0f), math::Vector3D(0.0f, 1.0f, 0.0f)), 8.0f, 4.0f, 80.0f);
     m_Camera->setPerspective(45.0f, m_Swapchain->getBackbufferSize(), 1.f, 50.f);
-    m_Camera->setRotation(math::Vector3D(0.0f, -90.0f, 0.0f));
+    //m_Camera->setRotation(math::Vector3D(0.0f, -90.0f, 0.0f));
 }
 
 void Scene::Load()
@@ -116,7 +116,7 @@ void Scene::LoadVoyager()
 #endif
         voyager->m_Sampler->setWrap(renderer::SamplerWrap::TextureWrap_Repeat);
         voyager->m_Texture = new renderer::Texture2D(m_Device, renderer::TextureUsage::TextureUsage_Sampled | renderer::TextureUsage_Shared | renderer::TextureUsage_Write,
-            image->getFormat(), math::Dimension2D(image->getDimension().m_width, image->getDimension().m_height), image->getMipmapsCount());
+            image->getFormat(), math::Dimension2D(image->getDimension()._width, image->getDimension()._height), image->getMipmapsCount());
         m_CmdList->uploadData(voyager->m_Texture.get(), image->getSize(), image->getBitmap());
     }
 
@@ -165,8 +165,8 @@ void Scene::Draw(f32 dt)
         m_Render->updateParameters(*m_CmdList, [this, model](TextureUniformParameters& params) -> void
             {
                 //vs
-                params._constantBufferVS._projectionMatrix = m_Camera->getCamera().getProjectionMatrix();
-                params._constantBufferVS._viewMatrix = m_Camera->getCamera().getViewMatrix();
+                params._constantBufferVS._projectionMatrix = m_Camera->getProjectionMatrix();
+                params._constantBufferVS._viewMatrix = m_Camera->getViewMatrix();
                 params._constantBufferVS._modelMatrix.setTranslation(math::Vector3D(0, 0, 0));
                 params._constantBufferVS._normalMatrix = params._constantBufferVS._modelMatrix;
                 params._constantBufferVS._normalMatrix.makeTransposed();

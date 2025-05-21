@@ -31,7 +31,7 @@ private:
 
     v3d::renderer::Device* m_Device;
     v3d::renderer::CmdListRender* m_CmdList;
-    v3d::math::Rect32 m_Rect;
+    v3d::math::Rect m_Rect;
 
     v3d::renderer::ShaderProgram* m_Program;
     v3d::renderer::RenderTargetState* m_RenderTarget;

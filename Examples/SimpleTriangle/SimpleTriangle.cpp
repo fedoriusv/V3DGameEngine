@@ -24,7 +24,8 @@ SimpleTriangle::SimpleTriangle()
     , m_Pipeline(nullptr)
     , m_Geometry(nullptr)
 
-    , m_Camera(new scene::CameraArcballHandler(new scene::Camera(math::Vector3D(0.0f, 0.0f, 0.0f), math::Vector3D(0.0f, 1.0f, 0.0f)), 3.0f, k_nearValue + 1.0f, k_farValue - 10.0f))
+    , m_Camera(new scene::CameraArcballHandler(
+        std::make_unique<scene::Camera>(math::Vector3D(0.0f, 0.0f, 3.0f), math::Vector3D(0.0f, 0.0f, 0.0f)), 3.0f, k_nearValue + 1.0f, k_farValue - 10.0f))
 {
 }
 
@@ -37,7 +38,7 @@ void SimpleTriangle::init(renderer::Device* device, renderer::Swapchain* swapcha
     m_Device = device;
     m_CmdList = m_Device->createCommandList<renderer::CmdListRender>(Device::GraphicMask);
 
-    m_Rect = { 0, 0, (s32)swapchain->getBackbufferSize().m_width, (s32)swapchain->getBackbufferSize().m_height };
+    m_Rect = { 0, 0, (f32)swapchain->getBackbufferSize()._width, (f32)swapchain->getBackbufferSize()._height };
     m_Camera->setPerspective(45.0f, swapchain->getBackbufferSize(), k_nearValue, k_farValue);
 
     const renderer::VertexShader* vertShader = nullptr;
@@ -118,27 +119,27 @@ void SimpleTriangle::init(renderer::Device* device, renderer::Swapchain* swapcha
     m_RenderTarget = new renderer::RenderTargetState(m_Device, swapchain->getBackbufferSize());
     m_RenderTarget->setColorTexture(0, swapchain->getBackbuffer(),
         {
-            renderer::RenderTargetLoadOp::LoadOp_Clear, renderer::RenderTargetStoreOp::StoreOp_Store, math::Vector4D(0.0f)
+            renderer::RenderTargetLoadOp::LoadOp_Clear, renderer::RenderTargetStoreOp::StoreOp_Store, color::Color(0.0f)
         },
         {
             renderer::TransitionOp::TransitionOp_Undefined, renderer::TransitionOp::TransitionOp_Present
         });
 
-    std::vector<math::Vector3D> geometryData = 
+    std::vector<math::TVector3D<f32>> geometryData = 
     {
         {-1.0f,-1.0f, 0.0f },  { 1.0f, 0.0f, 0.0f },
         { 0.0f, 1.0f, 0.0f },  { 0.0f, 1.0f, 0.0f },
         { 1.0f,-1.0f, 0.0f },  { 0.0f, 0.0f, 1.0f },
     };
-    m_Geometry = new renderer::VertexBuffer(m_Device, renderer::Buffer_GPUOnly, static_cast<u32>(geometryData.size()), static_cast<u32>(geometryData.size() * sizeof(math::Vector3D)), "geometry");
+    m_Geometry = new renderer::VertexBuffer(m_Device, renderer::Buffer_GPUOnly, static_cast<u32>(geometryData.size()), static_cast<u32>(geometryData.size() * sizeof(math::TVector3D<f32>)), "geometry");
 
     renderer::VertexInputAttributeDesc vertexDesc(
         { 
-            renderer::VertexInputAttributeDesc::InputBinding(0,  renderer::InputRate::InputRate_Vertex, sizeof(math::Vector3D) + sizeof(math::Vector3D)),
+            renderer::VertexInputAttributeDesc::InputBinding(0,  renderer::InputRate::InputRate_Vertex, sizeof(math::TVector3D<f32>) + sizeof(math::TVector3D<f32>)),
         }, 
         { 
             renderer::VertexInputAttributeDesc::InputAttribute(0, 0, renderer::Format_R32G32B32_SFloat, 0),
-            renderer::VertexInputAttributeDesc::InputAttribute(0, 0, renderer::Format_R32G32B32_SFloat, sizeof(math::Vector3D)),
+            renderer::VertexInputAttributeDesc::InputAttribute(0, 0, renderer::Format_R32G32B32_SFloat, sizeof(math::TVector3D<f32>)),
         });
 
     m_Pipeline = new renderer::GraphicsPipelineState(m_Device, vertexDesc, m_RenderTarget->getRenderPassDesc(), m_Program);
@@ -149,7 +150,7 @@ void SimpleTriangle::init(renderer::Device* device, renderer::Swapchain* swapcha
     m_Pipeline->setDepthWrite(false);
 
 
-    m_CmdList->uploadData(m_Geometry, 0, static_cast<u32>(geometryData.size() * sizeof(math::Vector3D)), geometryData.data());
+    m_CmdList->uploadData(m_Geometry, 0, static_cast<u32>(geometryData.size() * sizeof(math::TVector3D<f32>)), geometryData.data());
     m_Device->submit(m_CmdList, true);
 }
 
@@ -177,25 +178,25 @@ void SimpleTriangle::render()
 
     UBO ubo1;
     ubo1.projectionMatrix = m_Camera->getCamera().getProjectionMatrix();
-    ubo1.modelMatrix.setTranslation(math::Vector3D(-1, 0, 0));
-    ubo1.viewMatrix = m_Camera->getCamera().getViewMatrix();
+    ubo1.modelMatrix.setTranslation({ -1, 0, 0 });
+    ubo1.viewMatrix = m_Camera->getViewMatrix();
 
     renderer::Descriptor desc1(renderer::Descriptor::Descriptor_ConstantBuffer);
     desc1._resource = renderer::Descriptor::ConstantBuffer{ &ubo1, 0, sizeof(UBO) };
 
     m_CmdList->bindDescriptorSet(0, { desc1 });
-    m_CmdList->draw(renderer::GeometryBufferDesc(m_Geometry, 0, sizeof(math::Vector3D) + sizeof(math::Vector3D)), 0, 3, 0, 1);
+    m_CmdList->draw(renderer::GeometryBufferDesc(m_Geometry, 0, sizeof(math::TVector3D<f32>) + sizeof(math::TVector3D<f32>)), 0, 3, 0, 1);
 
     UBO ubo2;
     ubo2.projectionMatrix = m_Camera->getCamera().getProjectionMatrix();
-    ubo2.modelMatrix.setTranslation(math::Vector3D(1, 0, 0));
-    ubo2.viewMatrix = m_Camera->getCamera().getViewMatrix();
+    ubo2.modelMatrix.setTranslation({ 1, 0, 0 });
+    ubo2.viewMatrix = m_Camera->getViewMatrix();
 
     renderer::Descriptor desc2(renderer::Descriptor::Descriptor_ConstantBuffer);
     desc2._resource = renderer::Descriptor::ConstantBuffer{ &ubo2, 0, sizeof(UBO) };
 
     m_CmdList->bindDescriptorSet(0, { desc2 });
-    m_CmdList->draw(renderer::GeometryBufferDesc(m_Geometry, 0, sizeof(math::Vector3D) + sizeof(math::Vector3D)), 0, 3, 0, 1);
+    m_CmdList->draw(renderer::GeometryBufferDesc(m_Geometry, 0, sizeof(math::TVector3D<f32>) + sizeof(math::TVector3D<f32>)), 0, 3, 0, 1);
 
     m_CmdList->endRenderTarget();
 

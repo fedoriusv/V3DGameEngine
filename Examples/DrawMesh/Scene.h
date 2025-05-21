@@ -8,9 +8,9 @@
 #include "Renderer/SamplerState.h"
 #include "Scene/CameraArcballHandler.h"
 #include "Scene/Model.h"
-#include "Events/InputEventMouse.h"
-#include "Events/InputEventTouch.h"
-#include "Events/InputEventHandler.h"
+#include "Events/Input/InputEventMouse.h"
+#include "Events/Input/InputEventTouch.h"
+#include "Events/Input/InputEventHandler.h"
 #include "TextureRender.h"
 
 namespace app

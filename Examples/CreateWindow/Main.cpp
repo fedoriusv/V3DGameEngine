@@ -45,15 +45,15 @@ public:
             {
                 if (event->_event == MouseInputEvent::MousePressDown)
                 {
-                    LOG_INFO("MouseInputEvent, WindowID %u Down Key %u modif %x, wheel %f, pos %d, %d", event->_windowID, event->_key, event->_modifers, event->_wheelValue, event->_clientCoordinates.m_x, event->_clientCoordinates.m_y);
+                    LOG_INFO("MouseInputEvent, WindowID %u Down Key %u modif %x, wheel %f, pos %d, %d", event->_windowID, event->_key, event->_modifers, event->_wheelValue, event->_clientCoordinates._x, event->_clientCoordinates._y);
                 }
                 else if (event->_event == MouseInputEvent::MousePressUp)
                 {
-                    LOG_INFO("MouseInputEvent, WindowID %u UP Key %u modif %x, wheel %f, pos %d, %d", event->_windowID, event->_key, event->_modifers, event->_wheelValue, event->_clientCoordinates.m_x, event->_clientCoordinates.m_y);
+                    LOG_INFO("MouseInputEvent, WindowID %u UP Key %u modif %x, wheel %f, pos %d, %d", event->_windowID, event->_key, event->_modifers, event->_wheelValue, event->_clientCoordinates._x, event->_clientCoordinates._y);
                 }
                 else if (event->_event == MouseInputEvent::MouseDoubleClick)
                 {
-                    LOG_INFO("MouseInputEvent, WindowID %u MouseDoubleClick Key %u modif %x, wheel %f, pos %d, %d", event->_windowID, event->_key, event->_modifers, event->_wheelValue, event->_clientCoordinates.m_x, event->_clientCoordinates.m_y);
+                    LOG_INFO("MouseInputEvent, WindowID %u MouseDoubleClick Key %u modif %x, wheel %f, pos %d, %d", event->_windowID, event->_key, event->_modifers, event->_wheelValue, event->_clientCoordinates._x, event->_clientCoordinates._y);
 
                     u32 min = 0;
                     u32 maxW = 1000;
@@ -70,11 +70,11 @@ public:
                 }
                 else if (event->_event == MouseInputEvent::MouseMoved)
                 {
-                    LOG_INFO("MouseInputEvent, WindowID %u MouseMoved Key %u modif %x, wheel %f, pos %d, %d", event->_windowID, event->_key, event->_modifers, event->_wheelValue, event->_clientCoordinates.m_x, event->_clientCoordinates.m_y);
+                    LOG_INFO("MouseInputEvent, WindowID %u MouseMoved Key %u modif %x, wheel %f, pos %d, %d", event->_windowID, event->_key, event->_modifers, event->_wheelValue, event->_clientCoordinates._x, event->_clientCoordinates._y);
                 }
                 else if (event->_event == MouseInputEvent::MouseWheel)
                 {
-                    LOG_INFO("MouseInputEvent, WindowID %u MouseWheel Key %u modif %x, wheel %f, pos %d, %d", event->_windowID, event->_key, event->_modifers, event->_wheelValue, event->_clientCoordinates.m_x, event->_clientCoordinates.m_y);
+                    LOG_INFO("MouseInputEvent, WindowID %u MouseWheel Key %u modif %x, wheel %f, pos %d, %d", event->_windowID, event->_key, event->_modifers, event->_wheelValue, event->_clientCoordinates._x, event->_clientCoordinates._y);
                 }
             });
 
@@ -180,7 +180,7 @@ public:
     
     void OnResize(v3d::platform::Window* window)
     {
-        LOG_INFO("OnResize, Window %u is resized, width %u, height %u", window->ID(), window->getSize().m_width, window->getSize().m_height);
+        LOG_INFO("OnResize, Window %u is resized, width %u, height %u", window->ID(), window->getSize()._width, window->getSize()._height);
     }
 
 private:

@@ -45,7 +45,7 @@ TextureRender::TextureRender(renderer::Device* device, renderer::CmdListRender& 
                 renderer::Format::Format_R16G16B16A16_SFloat, swapchain->getBackbufferSize(), renderer::TextureSamples::TextureSamples_x2);
             m_renderTargetMSAA->setColorTexture(0, m_colorAttachment.get(),
                 {
-                    renderer::RenderTargetLoadOp::LoadOp_Clear, renderer::RenderTargetStoreOp::StoreOp_Store, math::Vector4D(0.0f)
+                    renderer::RenderTargetLoadOp::LoadOp_Clear, renderer::RenderTargetStoreOp::StoreOp_Store, color::Color(0.0f)
                 },
                 {
                     renderer::TransitionOp::TransitionOp_Undefined, renderer::TransitionOp::TransitionOp_ShaderRead
@@ -141,7 +141,7 @@ TextureRender::TextureRender(renderer::Device* device, renderer::CmdListRender& 
             m_renderTargetBackbuffer = new renderer::RenderTargetState(device, swapchain->getBackbufferSize());
             m_renderTargetBackbuffer->setColorTexture(0, swapchain->getBackbuffer(),
                 {
-                    renderer::RenderTargetLoadOp::LoadOp_DontCare, renderer::RenderTargetStoreOp::StoreOp_Store, math::Vector4D(0.0f)
+                    renderer::RenderTargetLoadOp::LoadOp_DontCare, renderer::RenderTargetStoreOp::StoreOp_Store, color::Color(0.0f)
                 },
                 {
                     renderer::TransitionOp::TransitionOp_Undefined, renderer::TransitionOp::TransitionOp_Present
@@ -164,7 +164,7 @@ TextureRender::TextureRender(renderer::Device* device, renderer::CmdListRender& 
         m_renderTarget = new renderer::RenderTargetState(device, swapchain->getBackbufferSize());
         m_renderTarget->setColorTexture(0, swapchain->getBackbuffer(),
             {
-                renderer::RenderTargetLoadOp::LoadOp_Clear, renderer::RenderTargetStoreOp::StoreOp_Store, math::Vector4D(0.0f)
+                renderer::RenderTargetLoadOp::LoadOp_Clear, renderer::RenderTargetStoreOp::StoreOp_Store, color::Color(0.0f)
         },
         {
             renderer::TransitionOp::TransitionOp_Undefined, renderer::TransitionOp::TransitionOp_Present
@@ -197,15 +197,15 @@ void TextureRender::process(renderer::CmdListRender& cmdList, const std::vector<
 {
     if (m_enableMSAA)
     {
-        cmdList.setViewport(math::Rect32(0, 0, m_renderTargetMSAA->getRenderArea().m_width, m_renderTargetMSAA->getRenderArea().m_height));
-        cmdList.setScissor(math::Rect32(0, 0, m_renderTargetMSAA->getRenderArea().m_width, m_renderTargetMSAA->getRenderArea().m_height));
+        cmdList.setViewport(math::Rect(0, 0, m_renderTargetMSAA->getRenderArea()._width, m_renderTargetMSAA->getRenderArea()._height));
+        cmdList.setScissor(math::Rect(0, 0, m_renderTargetMSAA->getRenderArea()._width, m_renderTargetMSAA->getRenderArea()._height));
         cmdList.beginRenderTarget(*m_renderTargetMSAA.get());
         cmdList.setPipelineState(*m_pipelineMSAA.get());
     }
     else
     {
-        cmdList.setViewport(math::Rect32(0, 0, m_renderTarget->getRenderArea().m_width, m_renderTarget->getRenderArea().m_height));
-        cmdList.setScissor(math::Rect32(0, 0, m_renderTarget->getRenderArea().m_width, m_renderTarget->getRenderArea().m_height));
+        cmdList.setViewport(math::Rect(0, 0, m_renderTarget->getRenderArea()._width, m_renderTarget->getRenderArea()._height));
+        cmdList.setScissor(math::Rect(0, 0, m_renderTarget->getRenderArea()._width, m_renderTarget->getRenderArea()._height));
         cmdList.beginRenderTarget(*m_renderTarget.get());
         cmdList.setPipelineState(*m_pipeline.get());
     }
@@ -230,8 +230,8 @@ void TextureRender::process(renderer::CmdListRender& cmdList, const std::vector<
 
     if (m_enableMSAA)
     {
-        cmdList.setViewport(math::Rect32(0, 0, m_renderTargetBackbuffer->getRenderArea().m_width, m_renderTargetBackbuffer->getRenderArea().m_height));
-        cmdList.setScissor(math::Rect32(0, 0, m_renderTargetBackbuffer->getRenderArea().m_width, m_renderTargetBackbuffer->getRenderArea().m_height));
+        cmdList.setViewport(math::Rect(0, 0, m_renderTargetBackbuffer->getRenderArea()._width, m_renderTargetBackbuffer->getRenderArea()._height));
+        cmdList.setScissor(math::Rect(0, 0, m_renderTargetBackbuffer->getRenderArea()._width, m_renderTargetBackbuffer->getRenderArea()._height));
         cmdList.beginRenderTarget(*m_renderTargetBackbuffer.get());
         cmdList.setPipelineState(*m_pipelineBackbuffer.get());
 

@@ -6,8 +6,8 @@
 #include "Platform/Window.h"
 #include "Renderer/Device.h"
 #include "Renderer/Swapchain.h"
-#include "Events/InputEventHandler.h"
-#include "Events/InputEventReceiver.h"
+#include "Events/Input/InputEventHandler.h"
+#include "Events/Input/InputEventReceiver.h"
 #include "Resource/ResourceManager.h"
 #include "Utils/Logger.h"
 
@@ -118,7 +118,7 @@ private:
     
     bool Run()
     {
-        f32 dt = 0.f;
+        f32 dt = 0.16f;
 
         //Frame
         m_Swapchain->beginFrame();
