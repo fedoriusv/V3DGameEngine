@@ -95,6 +95,7 @@ namespace ui
 
         u32 m_frameCounter;
         ImGuiWigetFlags m_flags;
+        u32 m_mouseCursor;
 
         friend ImGuiWigetViewportEvents;
         friend ImGuiWigetDrawer;

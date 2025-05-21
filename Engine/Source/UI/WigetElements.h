@@ -44,7 +44,7 @@ namespace ui
         using StateType = StateText;
 
         bool update(WigetHandler* handler, Wiget* parent, Wiget* layout, f32 dt) final;
-        math::Vector2D calculateSize(WigetHandler* handler, Wiget* parent, Wiget* layout) final;
+        math::TVector2D<f32> calculateSize(WigetHandler* handler, Wiget* parent, Wiget* layout) final;
         Wiget* copy() const final;
     };
 
@@ -119,7 +119,7 @@ namespace ui
         using StateType = StateButton;
 
         bool update(WigetHandler* handler, Wiget* parent, Wiget* layout, f32 dt) final;
-        math::Vector2D calculateSize(WigetHandler* handler, Wiget* parent, Wiget* layout) final;
+        math::TVector2D<f32> calculateSize(WigetHandler* handler, Wiget* parent, Wiget* layout) final;
         Wiget* copy() const final;
     };
 
@@ -192,16 +192,16 @@ namespace ui
     {
     public:
 
-        explicit WigetImage(const renderer::Texture2D* texture, const math::Dimension2D& size, const math::RectF32& uv = { 0.0f, 0.0f, 1.0f, 1.0f }) noexcept;
+        explicit WigetImage(const renderer::Texture2D* texture, const math::Dimension2D& size, const math::Rect& uv = { 0.0f, 0.0f, 1.0f, 1.0f }) noexcept;
         WigetImage(const WigetImage&) noexcept;
         WigetImage(WigetImage&&) noexcept;
         ~WigetImage();
 
         WigetImage& setTexture(const renderer::Texture2D* texture);
         WigetImage& setSize(const math::Dimension2D& size);
-        WigetImage& setUVs(const math::RectF32& uv);
+        WigetImage& setUVs(const math::Rect& uv);
 
-        WigetImage& setOnDrawRectChanged(const OnWigetEventRect32Param& event);
+        WigetImage& setOnDrawRectChanged(const OnWigetEventRectParam& event);
 
         TypePtr getType() const final;
 
@@ -209,15 +209,15 @@ namespace ui
         {
             const renderer::Texture2D*  _texture;
             math::Dimension2D           _size;
-            math::RectF32               _uv;
+            math::Rect                  _uv;
             OnWigetEvent                _onClickedEvent;
             OnWigetEvent                _onPressedEvent;
             OnWigetEvent                _onReleasedEvent;
             OnWigetEvent                _onHoveredEvent;
             OnWigetEvent                _onUnhoveredEvent;
-            OnWigetEventRect32Param     _onDrawRectChanged;
+            OnWigetEventRectParam       _onDrawRectChanged;
 
-            math::Rect32                _drawRectState;
+            math::Rect                  _drawRectState;
         };
 
     private:
@@ -226,7 +226,7 @@ namespace ui
         using StateType = StateImage;
 
         bool update(WigetHandler* handler, Wiget* parent, Wiget* layout, f32 dt) final;
-        math::Vector2D calculateSize(WigetHandler* handler, Wiget* parent, Wiget* layout) final;
+        math::TVector2D<f32> calculateSize(WigetHandler* handler, Wiget* parent, Wiget* layout) final;
         Wiget* copy() const final;
     };
 
@@ -242,13 +242,13 @@ namespace ui
         return *this;
     }
 
-    inline WigetImage& WigetImage::setUVs(const math::RectF32& uv)
+    inline WigetImage& WigetImage::setUVs(const math::Rect& uv)
     {
         Wiget::cast_data<StateType>(m_data)._uv = uv;
         return *this;
     }
 
-    inline WigetImage& WigetImage::setOnDrawRectChanged(const OnWigetEventRect32Param& event)
+    inline WigetImage& WigetImage::setOnDrawRectChanged(const OnWigetEventRectParam& event)
     {
         cast_data<StateType>(m_data)._onDrawRectChanged = event;
         return *this;

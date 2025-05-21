@@ -69,9 +69,9 @@ bool Wiget::update(WigetHandler* handler, Wiget* parent, Wiget* layout, f32 dt)
     return true;
 }
 
-math::Vector2D Wiget::calculateSize(WigetHandler* handler, Wiget* parent, Wiget* layout)
+math::TVector2D<f32> Wiget::calculateSize(WigetHandler* handler, Wiget* parent, Wiget* layout)
 {
-    return math::Vector2D(0.0f, 0.0f);
+    return { 0.0f, 0.0f };
 }
 
 void Wiget::handleNotify(const utils::Reporter<WigetReport>* reporter, const WigetReport& data)

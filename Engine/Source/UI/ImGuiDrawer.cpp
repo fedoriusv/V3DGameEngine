@@ -29,14 +29,14 @@ bool ImGuiWigetDrawer::draw_Window(Wiget* window, Wiget::State* state, f32 dt)
 
     if (wndCtx->_stateMask & Wiget::State::StateMask::FirstUpdate)
     {
-        if (wndCtx->_position.m_x != 0 || wndCtx->_position.m_y != 0)
+        if (wndCtx->_position._x != 0 || wndCtx->_position._y != 0)
         {
-            ImGui::SetNextWindowPos(ImVec2(static_cast<f32>(wndCtx->_position.m_x), static_cast<f32>(wndCtx->_position.m_y)), ImGuiCond_Once);
+            ImGui::SetNextWindowPos(ImVec2(static_cast<f32>(wndCtx->_position._x), static_cast<f32>(wndCtx->_position._y)), ImGuiCond_Once);
         }
 
-        if (wndCtx->_size.m_width > 0 || wndCtx->_size.m_height > 0)
+        if (wndCtx->_size._width > 0 || wndCtx->_size._height > 0)
         {
-            ImGui::SetNextWindowSize(ImVec2(static_cast<f32>(wndCtx->_size.m_width), static_cast<f32>(wndCtx->_size.m_height)), ImGuiCond_Once);
+            ImGui::SetNextWindowSize(ImVec2(static_cast<f32>(wndCtx->_size._width), static_cast<f32>(wndCtx->_size._height)), ImGuiCond_Once);
         }
 
         wndCtx->_stateMask &= ~Wiget::State::StateMask::FirstUpdate;
@@ -184,7 +184,7 @@ bool ImGuiWigetDrawer::draw_Text(Wiget* wiget, Wiget* base, Wiget::State* layout
     u32 pushCount = 0;
     if (txtCtx->_stateMask & Wiget::State::StateMask::Color)
     {
-        ImGui::PushStyleColor(ImGuiCol_Text, ImVec4{ txtCtx->_color.m_x, txtCtx->_color.m_y, txtCtx->_color.m_z, txtCtx->_color.m_w });
+        ImGui::PushStyleColor(ImGuiCol_Text, ImVec4{ txtCtx->_color._x, txtCtx->_color._y, txtCtx->_color._z, txtCtx->_color._w });
         ++pushCount;
     }
 
@@ -208,7 +208,7 @@ bool ImGuiWigetDrawer::draw_Text(Wiget* wiget, Wiget* base, Wiget::State* layout
     return true;
 }
 
-math::Vector2D ImGuiWigetDrawer::calculate_TextSize(Wiget* wiget, Wiget::State* layout, Wiget::State* state)
+math::TVector2D<f32> ImGuiWigetDrawer::calculate_TextSize(Wiget* wiget, Wiget::State* layout, Wiget::State* state)
 {
     ASSERT(ImGui::GetCurrentContext(), "must be valid");
     WigetText::StateText* txtCtx = static_cast<WigetText::StateText*>(state);
@@ -219,7 +219,7 @@ math::Vector2D ImGuiWigetDrawer::calculate_TextSize(Wiget* wiget, Wiget::State* 
     const ImVec2 alignmentSize = ImGui::CalcTextSize(txtCtx->_text.c_str());
     ImGui::PopFont();
 
-    return math::Vector2D(alignmentSize.x, alignmentSize.y);
+    return{ alignmentSize.x, alignmentSize.y };
 }
 
 bool ImGuiWigetDrawer::draw_Button(Wiget* button, Wiget* base, Wiget::State* layout, Wiget::State* state)
@@ -233,19 +233,19 @@ bool ImGuiWigetDrawer::draw_Button(Wiget* button, Wiget* base, Wiget::State* lay
     u32 pushCount = 0;
     if (btnCtx->_stateMask & Wiget::State::StateMask::Color)
     {
-        ImGui::PushStyleColor(ImGuiCol_Button, ImVec4{ btnCtx->_color.m_x, btnCtx->_color.m_y, btnCtx->_color.m_z, btnCtx->_color.m_w });
+        ImGui::PushStyleColor(ImGuiCol_Button, ImVec4{ btnCtx->_color._x, btnCtx->_color._y, btnCtx->_color._z, btnCtx->_color._w });
         ++pushCount;
     }
 
     if (btnCtx->_stateMask & Wiget::State::StateMask::HoveredColor)
     {
-        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4{ btnCtx->_colorHovered.m_x, btnCtx->_colorHovered.m_y, btnCtx->_colorHovered.m_z, btnCtx->_colorHovered.m_w });
+        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4{ btnCtx->_colorHovered._x, btnCtx->_colorHovered._y, btnCtx->_colorHovered._z, btnCtx->_colorHovered._w });
         ++pushCount;
     }
 
     if (btnCtx->_stateMask & Wiget::State::StateMask::ClickedColor)
     {
-        ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4{ btnCtx->_colorActive.m_x, btnCtx->_colorActive.m_y, btnCtx->_colorActive.m_z, btnCtx->_colorActive.m_w });
+        ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4{ btnCtx->_colorActive._x, btnCtx->_colorActive._y, btnCtx->_colorActive._z, btnCtx->_colorActive._w });
         ++pushCount;
     }
 
@@ -258,7 +258,7 @@ bool ImGuiWigetDrawer::draw_Button(Wiget* button, Wiget* base, Wiget::State* lay
     }
 
     ImGui::PushID(btnCtx->_uid);
-    ImVec2 size = { (f32)btnCtx->_size.m_width, (f32)btnCtx->_size.m_height };
+    ImVec2 size = { (f32)btnCtx->_size._width, (f32)btnCtx->_size._height };
     bool action = ImGui::Button(btnCtx->_text.c_str(), size);
     ImGui::PopID();
 
@@ -285,7 +285,7 @@ bool ImGuiWigetDrawer::draw_Button(Wiget* button, Wiget* base, Wiget::State* lay
     return action;
 }
 
-math::Vector2D ImGuiWigetDrawer::calculate_ButtonSize(Wiget* wiget, Wiget::State* layout, Wiget::State* state)
+math::TVector2D<f32> ImGuiWigetDrawer::calculate_ButtonSize(Wiget* wiget, Wiget::State* layout, Wiget::State* state)
 {
     ASSERT(ImGui::GetCurrentContext(), "must be valid");
     ImGuiStyle& style = ImGui::GetStyle();
@@ -293,8 +293,8 @@ math::Vector2D ImGuiWigetDrawer::calculate_ButtonSize(Wiget* wiget, Wiget::State
     WigetButton::StateButton* btnCtx = static_cast<WigetButton::StateButton*>(state);
     WigetLayout::StateLayoutBase* layoutCtx = static_cast<WigetLayout::StateLayoutBase*>(layout);
 
-    ImVec2 alignmentSize{ (f32)btnCtx->_size.m_width, (f32)btnCtx->_size.m_height };
-    if (btnCtx->_size.m_width == 0 || btnCtx->_size.m_height == 0)
+    ImVec2 alignmentSize{ (f32)btnCtx->_size._width, (f32)btnCtx->_size._height };
+    if (btnCtx->_size._width == 0 || btnCtx->_size._height == 0)
     {
         ASSERT(layoutCtx->_fontSize < m_wigetHandler->m_fonts.size(), "range out");
         ImGui::PushFont(m_wigetHandler->m_fonts[layoutCtx->_fontSize]);
@@ -304,7 +304,7 @@ math::Vector2D ImGuiWigetDrawer::calculate_ButtonSize(Wiget* wiget, Wiget::State
         ImGui::PopFont();
     }
 
-    return math::Vector2D(alignmentSize.x, alignmentSize.y);
+    return { alignmentSize.x, alignmentSize.y };
 }
 
 bool ImGuiWigetDrawer::draw_Image(Wiget* image, Wiget* base, Wiget::State* layout, Wiget::State* state)
@@ -315,7 +315,7 @@ bool ImGuiWigetDrawer::draw_Image(Wiget* image, Wiget* base, Wiget::State* layou
 
     if (imgCtx->_texture)
     {
-        ImVec2 size = { (f32)imgCtx->_size.m_width, (f32)imgCtx->_size.m_height };
+        ImVec2 size = { (f32)imgCtx->_size._width, (f32)imgCtx->_size._height };
         ImVec2 uv0 = { imgCtx->_uv.getLeftX(), imgCtx->_uv.getTopY() };
         ImVec2 uv1 = { imgCtx->_uv.getRightX(), imgCtx->_uv.getBottomY() };
 
@@ -369,7 +369,7 @@ bool ImGuiWigetDrawer::draw_Image(Wiget* image, Wiget* base, Wiget::State* layou
         s32 y = ImGui::GetItemRectMin().y;
         s32 width = std::max<s32>(ImGui::GetItemRectSize().x, 1);
         s32 height = std::max<s32>(ImGui::GetItemRectSize().y, 1);
-        math::Rect32 rect(x, y, x + width, y + height);
+        math::Rect rect(x, y, x + width, y + height);
 
         if (imgCtx->_drawRectState != rect || base->isStateMaskActive(Wiget::State::StateMask::ForceUpdate))
         {
@@ -387,13 +387,13 @@ bool ImGuiWigetDrawer::draw_Image(Wiget* image, Wiget* base, Wiget::State* layou
     return false;
 }
 
-math::Vector2D ImGuiWigetDrawer::calculate_ImageSize(Wiget* wiget, Wiget::State* layout, Wiget::State* state)
+math::TVector2D<f32> ImGuiWigetDrawer::calculate_ImageSize(Wiget* wiget, Wiget::State* layout, Wiget::State* state)
 {
     ASSERT(ImGui::GetCurrentContext(), "must be valid");
     WigetImage::StateImage* imgCtx = static_cast<WigetImage::StateImage*>(state);
     ImGuiStyle& style = ImGui::GetStyle();
 
-    return math::Vector2D(imgCtx->_size.m_width + style.FramePadding.x * 2.f, imgCtx->_size.m_height + style.FramePadding.x * 2.f);
+    return { imgCtx->_size._width + style.FramePadding.x * 2.f, imgCtx->_size._height + style.FramePadding.x * 2.f };
 }
 
 bool ImGuiWigetDrawer::draw_CheckBox(Wiget* wiget, Wiget* base, Wiget::State* layout, Wiget::State* state)
@@ -423,9 +423,9 @@ bool ImGuiWigetDrawer::draw_CheckBox(Wiget* wiget, Wiget* base, Wiget::State* la
     return active;
 }
 
-math::Vector2D ImGuiWigetDrawer::calculate_CheckBoxSize(Wiget* wiget, Wiget::State* layout, Wiget::State* state)
+math::TVector2D<f32> ImGuiWigetDrawer::calculate_CheckBoxSize(Wiget* wiget, Wiget::State* layout, Wiget::State* state)
 {
-    return math::Vector2D();
+    return {};
 }
 
 bool ImGuiWigetDrawer::draw_RadioButtonGroup(Wiget* wiget, Wiget* base, Wiget::State* layout, Wiget::State* state)
@@ -461,9 +461,9 @@ bool ImGuiWigetDrawer::draw_RadioButtonGroup(Wiget* wiget, Wiget* base, Wiget::S
     return active;
 }
 
-math::Vector2D ImGuiWigetDrawer::calculate_RadioButtonGroupSize(Wiget* wiget, Wiget::State* layout, Wiget::State* state)
+math::TVector2D<f32> ImGuiWigetDrawer::calculate_RadioButtonGroupSize(Wiget* wiget, Wiget::State* layout, Wiget::State* state)
 {
-    return math::Vector2D();
+    return {};
 }
 
 bool ImGuiWigetDrawer::draw_ComboBox(Wiget* wiget, Wiget* base, Wiget::State* layout, Wiget::State* state)
@@ -500,9 +500,9 @@ bool ImGuiWigetDrawer::draw_ComboBox(Wiget* wiget, Wiget* base, Wiget::State* la
     return active;
 }
 
-math::Vector2D ImGuiWigetDrawer::calculate_ComboBoxSize(Wiget* wiget, Wiget::State* layout, Wiget::State* state)
+math::TVector2D<f32> ImGuiWigetDrawer::calculate_ComboBoxSize(Wiget* wiget, Wiget::State* layout, Wiget::State* state)
 {
-    return math::Vector2D();
+    return {};
 }
 
 bool ImGuiWigetDrawer::draw_ListBox(Wiget* wiget, Wiget* base, Wiget::State* layout, Wiget::State* state)
@@ -539,9 +539,9 @@ bool ImGuiWigetDrawer::draw_ListBox(Wiget* wiget, Wiget* base, Wiget::State* lay
     return active;
 }
 
-math::Vector2D ImGuiWigetDrawer::calculate_ListBoxSize(Wiget* wiget, Wiget::State* layout, Wiget::State* state)
+math::TVector2D<f32> ImGuiWigetDrawer::calculate_ListBoxSize(Wiget* wiget, Wiget::State* layout, Wiget::State* state)
 {
-    return math::Vector2D();
+    return {};
 }
 
 bool ImGuiWigetDrawer::draw_InputField(Wiget* wiget, Wiget* base, Wiget::State* layout, Wiget::State* state)
@@ -680,8 +680,8 @@ void ImGuiWigetDrawer::draw_BeginLayoutState(Wiget* layout, Wiget* base, Wiget::
 
     bool active = true;
 
-    ImVec2 layoutSize = { (f32)layoutCtx->_size.m_width, (f32)layoutCtx->_size.m_height };
-    if (layoutCtx->_aligmentH == WigetLayout::HorizontalAlignment::AlignmentFill || (layoutCtx->_size.m_width > 0 || layoutCtx->_size.m_height > 0))
+    ImVec2 layoutSize = { (f32)layoutCtx->_size._width, (f32)layoutCtx->_size._height };
+    if (layoutCtx->_aligmentH == WigetLayout::HorizontalAlignment::AlignmentFill || (layoutCtx->_size._width > 0 || layoutCtx->_size._height > 0))
     {
         if (layoutCtx->_aligmentH == WigetLayout::HorizontalAlignment::AlignmentFill)
         {
@@ -742,7 +742,6 @@ void ImGuiWigetDrawer::draw_Gizmo(Wiget* wiget, Wiget* base, Wiget::State* layou
     {
         const scene::Camera& camera = *gizmoCtx->_camera;
         scene::Transform transform = gizmoCtx->_transform;
-        math::Matrix4D matrix = transform.getTransform();
 
         static auto convertOp = [](WigetGizmo::Operation op) -> ImGuizmo::OPERATION
             {
@@ -770,7 +769,14 @@ void ImGuiWigetDrawer::draw_Gizmo(Wiget* wiget, Wiget* base, Wiget::State* layou
         ImGuizmo::SetDrawlist();
         ImGuizmo::SetRect(layoutCtx->_cachedLayoutRect.getLeftX(), layoutCtx->_cachedLayoutRect.getTopY(), layoutCtx->_cachedLayoutRect.getWidth(), layoutCtx->_cachedLayoutRect.getHeight());
 
-        ImGuizmo::Manipulate(camera.getViewMatrix().getPtr(), camera.getProjectionMatrix().getPtr(), gizmoOp, gizmoMode, matrix.getPtr(), nullptr, nullptr);
+        f32 rawViewMatrix[16] = {};
+        f32 rawProjectionMatrix[16] = {};
+        f32 rawTransformMatrix[16] = {};
+        camera.getViewMatrix().get(rawViewMatrix);
+        camera.getProjectionMatrix().get(rawProjectionMatrix);
+        transform.getTransform().get(rawTransformMatrix);
+
+        ImGuizmo::Manipulate(rawViewMatrix, rawProjectionMatrix, gizmoOp, gizmoMode, rawTransformMatrix, nullptr, nullptr);
 
         if (ImGuizmo::IsOver() && gizmoCtx->_onHoveredEvent)
         {
@@ -779,6 +785,9 @@ void ImGuiWigetDrawer::draw_Gizmo(Wiget* wiget, Wiget* base, Wiget::State* layou
 
         if (ImGuizmo::IsUsing() && gizmoCtx->_onTransformChangedEvent)
         {
+            math::Matrix4D matrix;
+            matrix.set(rawTransformMatrix);
+
             scene::Transform modifyTransform;
             modifyTransform.setTransform(matrix);
 
@@ -799,21 +808,28 @@ void ImGuiWigetDrawer::draw_ViewManipulator(Wiget* wiget, Wiget* base, Wiget::St
 
         float viewManipulateRight = layoutCtx->_cachedLayoutRect.getLeftX() + layoutCtx->_cachedLayoutRect.getWidth();
         float viewManipulateTop = layoutCtx->_cachedLayoutRect.getTopY();
-        math::Matrix4D viewMatrix = camera.getViewMatrix();
 
         ImGui::PushStyleColor(ImGuiCol_WindowBg, (ImVec4)ImColor(0.35f, 0.3f, 0.3f));
 
         ImGuizmo::SetDrawlist();
         ImGuizmo::SetRect(layoutCtx->_cachedLayoutRect.getLeftX(), layoutCtx->_cachedLayoutRect.getTopY(), layoutCtx->_cachedLayoutRect.getWidth(), layoutCtx->_cachedLayoutRect.getHeight());
 
+        f32 rawViewMatrix[16] = {};
+        f32 rawProjectionMatrix[16] = {};
+        camera.getViewMatrix().get(rawViewMatrix);
+        camera.getProjectionMatrix().get(rawProjectionMatrix);
+
         const bool showGrid = true;
         if (showGrid)
         {
+            f32 rawIdentityMatrix[16] = {};
             math::Matrix4D identityMatrix;
             identityMatrix.makeIdentity();
-            ImGuizmo::DrawGrid(camera.getViewMatrix().getPtr(), camera.getProjectionMatrix().getPtr(), identityMatrix.getPtr(), 100.f);
+            identityMatrix.get(rawIdentityMatrix);
+
+            ImGuizmo::DrawGrid(rawViewMatrix, rawProjectionMatrix, rawIdentityMatrix, 100.f);
         }
-        ImGuizmo::ViewManipulate(viewMatrix.getPtr(), 8.f, ImVec2(viewManipulateRight - viewCtx->_size, viewManipulateTop), ImVec2(viewCtx->_size, viewCtx->_size), 0x10101010);
+        ImGuizmo::ViewManipulate(rawViewMatrix, 8.f, ImVec2(viewManipulateRight - viewCtx->_size, viewManipulateTop), ImVec2(viewCtx->_size, viewCtx->_size), 0x10101010);
 
         ImGui::PopStyleColor(1);
 
@@ -824,25 +840,28 @@ void ImGuiWigetDrawer::draw_ViewManipulator(Wiget* wiget, Wiget* base, Wiget::St
 
         if (ImGuizmo::IsUsingViewManipulate() && viewCtx->_onViewChangedEvent)
         {
+            math::Matrix4D viewMatrix;
+            viewMatrix.set(rawViewMatrix);
+
             std::invoke(viewCtx->_onViewChangedEvent, wiget, base, viewMatrix);
         }
     }
 }
 
-math::Vector2D ImGuiWigetDrawer::get_LayoutPadding() const
+math::TVector2D<f32> ImGuiWigetDrawer::get_LayoutPadding() const
 {
     ASSERT(ImGui::GetCurrentContext(), "must be valid");
     ImGuiStyle& style = ImGui::GetStyle();
 
-    return math::Vector2D(style.WindowPadding.x, style.WindowPadding.y);
+    return { style.WindowPadding.x, style.WindowPadding.y };
 }
 
-math::Vector2D ImGuiWigetDrawer::get_ItemSpacing() const
+math::TVector2D<f32> ImGuiWigetDrawer::get_ItemSpacing() const
 {
     ASSERT(ImGui::GetCurrentContext(), "must be valid");
     ImGuiStyle& style = ImGui::GetStyle();
 
-    return math::Vector2D(style.ItemSpacing.x, style.ItemSpacing.y);
+    return { style.ItemSpacing.x, style.ItemSpacing.y };
 }
 
 f32 ImGuiWigetDrawer::setupHorizontalAligment(Wiget::State* layout, f32 originalWidth, f32 itemWidth)
@@ -860,16 +879,16 @@ f32 ImGuiWigetDrawer::setupHorizontalAligment(Wiget::State* layout, f32 original
     }
     case WigetLayout::HorizontalAlignment::AlignmentRight:
     {
-        f32 offset = (layoutCtx->_stateMask & Wiget::State::StateMask::HorizontalLine) ? layoutCtx->_cachedLayoutOffest.m_x : style.WindowPadding.x;
+        f32 offset = (layoutCtx->_stateMask & Wiget::State::StateMask::HorizontalLine) ? layoutCtx->_cachedLayoutOffest._x : style.WindowPadding.x;
         ImGui::SetCursorPosX(layoutCtx->_cachedLayoutRect.getWidth() - itemWidth - offset);
         break;
     }
 
     case WigetLayout::HorizontalAlignment::AlignmentLeft:
     {
-        f32 offset = (layoutCtx->_stateMask & Wiget::State::StateMask::HorizontalLine) ? layoutCtx->_cachedLayoutOffest.m_x : style.WindowPadding.x;
+        f32 offset = (layoutCtx->_stateMask & Wiget::State::StateMask::HorizontalLine) ? layoutCtx->_cachedLayoutOffest._x : style.WindowPadding.x;
         ImGui::SetCursorPosX(offset);
-        layoutCtx->_cachedLayoutOffest.m_x += itemWidth + get_ItemSpacing().m_x;
+        layoutCtx->_cachedLayoutOffest._x += itemWidth + get_ItemSpacing()._x;
         break;
     }
 
@@ -902,17 +921,17 @@ f32 ImGuiWigetDrawer::setupVerticalAligment(Wiget::State* layout, f32 originalHe
     }
     case WigetLayout::VerticalAlignment::AlignmentBottom:
     {
-        f32 offset = (layoutCtx->_stateMask & Wiget::State::StateMask::HorizontalLine) ? style.WindowPadding.y : layoutCtx->_cachedLayoutOffest.m_y;
+        f32 offset = (layoutCtx->_stateMask & Wiget::State::StateMask::HorizontalLine) ? style.WindowPadding.y : layoutCtx->_cachedLayoutOffest._y;
         ImGui::SetCursorPosY(layoutCtx->_cachedLayoutRect.getHeight() - itemHeight - offset);
-        layoutCtx->_cachedLayoutOffest.m_y += itemHeight + get_ItemSpacing().m_y;
+        layoutCtx->_cachedLayoutOffest._y += itemHeight + get_ItemSpacing()._y;
         break;
     }
 
     case WigetLayout::VerticalAlignment::AlignmentTop:
     {
-        f32 offset = (layoutCtx->_stateMask & Wiget::State::StateMask::HorizontalLine) ? style.WindowPadding.y : layoutCtx->_cachedLayoutOffest.m_y;
+        f32 offset = (layoutCtx->_stateMask & Wiget::State::StateMask::HorizontalLine) ? style.WindowPadding.y : layoutCtx->_cachedLayoutOffest._y;
         ImGui::SetCursorPosY(offset);
-        layoutCtx->_cachedLayoutOffest.m_y += itemHeight + get_ItemSpacing().m_y;
+        layoutCtx->_cachedLayoutOffest._y += itemHeight + get_ItemSpacing()._y;
         break;
     }
 

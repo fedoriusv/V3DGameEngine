@@ -47,7 +47,7 @@ bool WigetText::update(WigetHandler* handler, Wiget* parent, Wiget* layout, f32 
     return false;
 }
 
-math::Vector2D WigetText::calculateSize(WigetHandler* handler, Wiget* parent, Wiget* layout)
+math::TVector2D<f32> WigetText::calculateSize(WigetHandler* handler, Wiget* parent, Wiget* layout)
 {
     m_data->_itemRect = { {0, 0}, handler->getWigetDrawer()->calculate_TextSize(this, static_cast<WigetType*>(layout)->m_data, m_data) };
     return m_data->_itemRect.getSize();
@@ -101,7 +101,7 @@ bool WigetButton::update(WigetHandler* handler, Wiget* parent, Wiget* layout, f3
     return false;
 }
 
-math::Vector2D WigetButton::calculateSize(WigetHandler* handler, Wiget* parent, Wiget* layout)
+math::TVector2D<f32> WigetButton::calculateSize(WigetHandler* handler, Wiget* parent, Wiget* layout)
 {
     m_data->_itemRect = { {0, 0}, handler->getWigetDrawer()->calculate_ButtonSize(this, static_cast<WigetType*>(layout)->m_data, m_data) };
     return m_data->_itemRect.getSize();
@@ -114,7 +114,7 @@ Wiget* WigetButton::copy() const
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-WigetImage::WigetImage(const renderer::Texture2D* texture, const math::Dimension2D& size, const math::RectF32& uv) noexcept
+WigetImage::WigetImage(const renderer::Texture2D* texture, const math::Dimension2D& size, const math::Rect& uv) noexcept
     : WigetBase<WigetImage>(V3D_NEW(StateType, memory::MemoryLabel::MemoryUI)())
 {
     setTexture(texture);
@@ -156,7 +156,7 @@ bool WigetImage::update(WigetHandler* handler, Wiget* parent, Wiget* layout, f32
     return false;
 }
 
-math::Vector2D WigetImage::calculateSize(WigetHandler* handler, Wiget* parent, Wiget* layout)
+math::TVector2D<f32> WigetImage::calculateSize(WigetHandler* handler, Wiget* parent, Wiget* layout)
 {
     m_data->_itemRect = { {0, 0}, handler->getWigetDrawer()->calculate_ImageSize(this, static_cast<WigetType*>(layout)->m_data, m_data) };
     return m_data->_itemRect.getSize();

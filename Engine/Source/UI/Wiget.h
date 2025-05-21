@@ -28,7 +28,7 @@ namespace ui
 
     using OnWigetEventDimention2DParam = std::function<void(Wiget*, Wiget*, const math::Dimension2D&)>;
     using OnWigetEventPoint2DParam = std::function<void(Wiget*, Wiget*, const math::Point2D&)>;
-    using OnWigetEventRect32Param = std::function<void(Wiget*, Wiget*, const math::Rect32&)>;
+    using OnWigetEventRectParam = std::function<void(Wiget*, Wiget*, const math::Rect&)>;
     using OnWigetEventTransformParam = std::function<void(Wiget*, Wiget*, const scene::Transform&)>;
     using OnWigetEventMatrix4x4Param = std::function<void(Wiget*, Wiget*, const math::Matrix4D&)>;
 
@@ -66,9 +66,9 @@ namespace ui
             State() noexcept = default;
             ~State() = default;
 
-            u64             _uid       = ~0;
-            u64             _stateMask = 0;
-            math::RectF32  _itemRect;
+            u64         _uid       = ~0;
+            u64         _stateMask = 0;
+            math::Rect  _itemRect;
         };
 
         virtual ~Wiget();
@@ -111,7 +111,7 @@ namespace ui
         virtual TypePtr getType() const = 0;
 
         virtual bool update(WigetHandler* handler, Wiget* parent, Wiget* layout, f32 dt);
-        virtual math::Vector2D calculateSize(WigetHandler* handler, Wiget* parent, Wiget* layout);
+        virtual math::TVector2D<f32> calculateSize(WigetHandler* handler, Wiget* parent, Wiget* layout);
 
         void handleNotify(const utils::Reporter<WigetReport>* reporter, const WigetReport& data) override;
 

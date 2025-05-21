@@ -64,7 +64,7 @@ ImVec2 ImGuiWigetViewportEvents::ImGui_GetWindowPos(ImGuiViewport* vp)
     ASSERT(window, "nullptr");
 
     const math::Point2D& pos = window->getPosition();
-    return ImVec2(pos.m_x, pos.m_y);
+    return ImVec2(pos._x, pos._y);
 }
 
 void ImGuiWigetViewportEvents::ImGui_SetWindowSize(ImGuiViewport* vp, ImVec2 size)
@@ -81,7 +81,7 @@ ImVec2 ImGuiWigetViewportEvents::ImGui_GetWindowSize(ImGuiViewport* vp)
     ASSERT(window, "nullptr");
 
     const math::Dimension2D& size = window->getSize();
-    return ImVec2(size.m_width, size.m_height);
+    return ImVec2(size._width, size._height);
 }
 
 void ImGuiWigetViewportEvents::ImGui_SetWindowFocus(ImGuiViewport* vp)
@@ -165,7 +165,7 @@ void ImGuiWigetViewportEvents::ImGui_Renderer_CreateWindow(ImGuiViewport* vp)
     viewportData->_renderTarget = V3D_NEW(renderer::RenderTargetState, memory::MemoryLabel::MemoryUI)(handler->m_device, swapchain->getBackbufferSize(), 1, 0, "WindowViewport");
     viewportData->_renderTarget->setColorTexture(0, swapchain->getBackbuffer(),
         {
-            renderer::RenderTargetLoadOp::LoadOp_Clear, renderer::RenderTargetStoreOp::StoreOp_Store, math::Vector4D(0.0f)
+            renderer::RenderTargetLoadOp::LoadOp_Clear, renderer::RenderTargetStoreOp::StoreOp_Store, color::Color(0.0f)
         },
         {
             renderer::TransitionOp::TransitionOp_Undefined, renderer::TransitionOp::TransitionOp_Present
@@ -225,7 +225,7 @@ void ImGuiWigetViewportEvents::ImGui_Renderer_SetWindowSize(ImGuiViewport* vp, I
     viewportData->_renderTarget = V3D_NEW(renderer::RenderTargetState, memory::MemoryLabel::MemoryUI)(handler->m_device, swapchain->getBackbufferSize(), 1, 0, "WindowViewport");
     viewportData->_renderTarget->setColorTexture(0, swapchain->getBackbuffer(),
         {
-            renderer::RenderTargetLoadOp::LoadOp_Clear, renderer::RenderTargetStoreOp::StoreOp_Store, math::Vector4D(0.0f)
+            renderer::RenderTargetLoadOp::LoadOp_Clear, renderer::RenderTargetStoreOp::StoreOp_Store, color::Color(0.0f)
         },
         {
             renderer::TransitionOp::TransitionOp_Undefined, renderer::TransitionOp::TransitionOp_Present

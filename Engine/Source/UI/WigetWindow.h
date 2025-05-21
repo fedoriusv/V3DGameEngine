@@ -76,8 +76,8 @@ namespace ui
 
             //States
             platform::Window*               _currentWindow = nullptr;
-            math::RectF32                   _cachedWindowRect;
-            math::Vector2D                  _cachedWindowOffest;
+            math::Rect                      _cachedWindowRect;
+            math::TVector2D<f32>            _cachedWindowOffest;
         };
 
     private:

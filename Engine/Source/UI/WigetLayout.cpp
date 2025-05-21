@@ -61,7 +61,7 @@ bool WigetLayout::update(WigetHandler* handler, Wiget* parent, Wiget* layout, f3
 {
     WigetDrawer* drawer = handler->getWigetDrawer();
 
-    math::Vector2D layoutSize = { 0.0f , 0.0f };
+    math::TVector2D<f32> layoutSize = { 0.0f , 0.0f };
     u32 countWigets = 0;
     f32 horizontLineHeight = 0;
     for (auto wiget = m_wigets.begin(); wiget != m_wigets.end(); ++wiget)
@@ -70,13 +70,13 @@ bool WigetLayout::update(WigetHandler* handler, Wiget* parent, Wiget* layout, f3
         {
             if (cast_data<StateType>(m_data)._stateMask & Wiget::State::StateMask::HorizontalLine)
             {
-                math::Vector2D size = (*wiget)->calculateSize(handler, parent, this);
-                layoutSize.m_x += size.m_x;
-                layoutSize.m_y = std::max<f32>(size.m_y, layoutSize.m_y);
+                math::TVector2D<f32> size = (*wiget)->calculateSize(handler, parent, this);
+                layoutSize._x += size._x;
+                layoutSize._y = std::max<f32>(size._y, layoutSize._y);
             }
             else
             {
-                layoutSize.m_y += (*wiget)->calculateSize(handler, parent, this).m_y;
+                layoutSize._y += (*wiget)->calculateSize(handler, parent, this)._y;
             }
             ++countWigets;
         }
@@ -84,13 +84,13 @@ bool WigetLayout::update(WigetHandler* handler, Wiget* parent, Wiget* layout, f3
 
     if (cast_data<StateType>(m_data)._stateMask & Wiget::State::StateMask::HorizontalLine)
     {
-        layoutSize.m_x = 0;
-        layoutSize.m_y += drawer->get_LayoutPadding().m_y * 2.0f;
+        layoutSize._x = 0;
+        layoutSize._y += drawer->get_LayoutPadding()._y * 2.0f;
     }
     else
     {
-        layoutSize.m_y += drawer->get_LayoutPadding().m_y * 2.0f;
-        layoutSize.m_y += drawer->get_ItemSpacing().m_y * std::clamp<u32>(countWigets - 1, 0, countWigets);
+        layoutSize._y += drawer->get_LayoutPadding()._y * 2.0f;
+        layoutSize._y += drawer->get_ItemSpacing()._y * std::clamp<u32>(countWigets - 1, 0, countWigets);
     }
 
     cast_data<StateType>(m_data)._cachedContentSize = layoutSize;

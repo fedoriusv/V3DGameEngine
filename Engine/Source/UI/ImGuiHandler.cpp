@@ -147,6 +147,39 @@ static ImGuiKey KeyEventToImGuiKey(event::KeyCode key)
     return ImGuiKey_None;
 }
 
+static bool updateMouseCursor(ImGuiIO& io, ImGuiMouseCursor imgui_cursor)
+{
+    if (io.ConfigFlags & ImGuiConfigFlags_NoMouseCursorChange)
+        return false;
+
+    if (imgui_cursor == ImGuiMouseCursor_None || io.MouseDrawCursor)
+    {
+        // Hide OS mouse cursor if imgui is drawing it or if it wants no cursor
+        ::SetCursor(nullptr);
+    }
+    else
+    {
+        // Show OS mouse cursor
+        LPTSTR win32_cursor = IDC_ARROW;
+        switch (imgui_cursor)
+        {
+        case ImGuiMouseCursor_Arrow:        win32_cursor = IDC_ARROW; break;
+        case ImGuiMouseCursor_TextInput:    win32_cursor = IDC_IBEAM; break;
+        case ImGuiMouseCursor_ResizeAll:    win32_cursor = IDC_SIZEALL; break;
+        case ImGuiMouseCursor_ResizeEW:     win32_cursor = IDC_SIZEWE; break;
+        case ImGuiMouseCursor_ResizeNS:     win32_cursor = IDC_SIZENS; break;
+        case ImGuiMouseCursor_ResizeNESW:   win32_cursor = IDC_SIZENESW; break;
+        case ImGuiMouseCursor_ResizeNWSE:   win32_cursor = IDC_SIZENWSE; break;
+        case ImGuiMouseCursor_Hand:         win32_cursor = IDC_HAND; break;
+        case ImGuiMouseCursor_Wait:         win32_cursor = IDC_WAIT; break;
+        case ImGuiMouseCursor_Progress:     win32_cursor = IDC_APPSTARTING; break;
+        case ImGuiMouseCursor_NotAllowed:   win32_cursor = IDC_NO; break;
+        }
+        ::SetCursor(::LoadCursor(nullptr, win32_cursor));
+    }
+    return true;
+}
+
 ImGuiWigetHandler::ImGuiWigetHandler(renderer::Device* device, ImGuiWigetFlags flags) noexcept
     : WigetHandler(device)
     , m_ImGuiContext(nullptr)
@@ -158,6 +191,7 @@ ImGuiWigetHandler::ImGuiWigetHandler(renderer::Device* device, ImGuiWigetFlags f
     , m_viewportData(V3D_NEW(ImGuiWigetViewportData, memory::MemoryLabel::MemoryUI)())
     , m_frameCounter(~1)
     , m_flags(flags)
+    , m_mouseCursor(ImGuiMouseCursor_Arrow)
 {
     m_uiDrawer = V3D_NEW(ImGuiWigetDrawer, memory::MemoryLabel::MemoryUI)(this);
 }
@@ -249,7 +283,7 @@ bool ImGuiWigetHandler::create(renderer::CmdListRender* cmdList, const renderer:
         imguiPlatformIO.Renderer_SwapBuffers = ImGuiWigetViewportEvents::ImGui_Renderer_Present;
     }
 
-    auto displayMonitors = [](const math::RectF32& rcMonitor, const math::RectF32& rcWork, f32 dpi, bool primary, void* monitor) -> bool
+    auto displayMonitors = [](const math::Rect& rcMonitor, const math::Rect& rcWork, f32 dpi, bool primary, void* monitor) -> bool
         {
             ImGuiPlatformMonitor imguiMonitor;
             imguiMonitor.MainPos = ImVec2(rcMonitor.getLeftX(), rcMonitor.getTopY());
@@ -398,7 +432,7 @@ void ImGuiWigetHandler::handleMouseCallback(const event::InputEventHandler* hand
     ASSERT(m_ImGuiContext, "must be valid");
     ASSERT(handler, "must be valid");
 
-    //ImGuiIO& imguiIO = ImGui::GetIO();
+    ImGuiIO& imguiIO = ImGui::GetIO();
     //imguiIO.AddMouseSourceEvent(ImGuiMouseSource_Mouse);
     //imguiIO.AddMouseButtonEvent(0, handler->isLeftMousePressed());
     //imguiIO.AddMouseButtonEvent(1, handler->isRightMousePressed());
@@ -445,6 +479,10 @@ void ImGuiWigetHandler::handleSystemCallback(const v3d::event::InputEventHandler
     {
         imguiIO.AddInputCharacter(event->_flag);
     }
+    else if (event->_systemEvent == event::SystemEvent::CursorIcon)
+    {
+        updateMouseCursor(imguiIO, m_mouseCursor);
+    }
 }
 
 void ImGuiWigetHandler::update(const platform::Window* window, const v3d::event::InputEventHandler* handler, f32 dt)
@@ -454,8 +492,8 @@ void ImGuiWigetHandler::update(const platform::Window* window, const v3d::event:
 
     ImGuiIO& imguiIO = ImGui::GetIO();
     imguiIO.DeltaTime = (dt == 0.0f) ? 1.0f / 60.0f : dt;
-    imguiIO.DisplaySize.x = window->getSize().m_width;
-    imguiIO.DisplaySize.y = window->getSize().m_height;
+    imguiIO.DisplaySize.x = window->getSize()._width;
+    imguiIO.DisplaySize.y = window->getSize()._height;
     imguiIO.DisplayFramebufferScale = ImVec2(1.0f, 1.0f);
     imguiIO.FontDefault = m_fonts[WigetLayout::MediumFont];
 
@@ -478,7 +516,7 @@ void ImGuiWigetHandler::update(const platform::Window* window, const v3d::event:
 
             ImGuiID mouse_viewport_id = 0;
             //TODO WindowFromPoint
-            if (HWND hovered_hwnd = ::WindowFromPoint({ cursorPosition.m_x, cursorPosition.m_y}))
+            if (HWND hovered_hwnd = ::WindowFromPoint({ cursorPosition._x, cursorPosition._y }))
             {
                 for (ImGuiViewport* viewport : platform_io.Viewports)
                 {
@@ -497,7 +535,7 @@ void ImGuiWigetHandler::update(const platform::Window* window, const v3d::event:
         }
 
         imguiIO.AddMouseSourceEvent(ImGuiMouseSource_Mouse);
-        imguiIO.AddMousePosEvent(cursorPosition.m_x, cursorPosition.m_y);
+        imguiIO.AddMousePosEvent(cursorPosition._x, cursorPosition._y);
         imguiIO.AddMouseButtonEvent(0, handler->isLeftMousePressed());
         imguiIO.AddMouseButtonEvent(1, handler->isRightMousePressed());
         imguiIO.AddMouseWheelEvent(0.0f, handler->getMouseWheel());
@@ -509,6 +547,14 @@ void ImGuiWigetHandler::update(const platform::Window* window, const v3d::event:
         imguiIO.AddKeyEvent(ImGuiMod_Shift, handler->isKeyPressed(event::KeyCode::KeyShift));
         imguiIO.AddKeyEvent(ImGuiMod_Alt, handler->isKeyPressed(event::KeyCode::KeyAlt));
         imguiIO.AddKeyEvent(ImGuiMod_Super, handler->isKeyPressed(event::KeyCode::KeyLWin) || handler->isKeyPressed(event::KeyCode::KeyRWin));
+    }
+
+    // Update OS mouse cursor with the cursor requested by imgui
+    ImGuiMouseCursor mouse_cursor = imguiIO.MouseDrawCursor ? ImGuiMouseCursor_None : ImGui::GetMouseCursor();
+    if (m_mouseCursor != mouse_cursor)
+    {
+        m_mouseCursor = mouse_cursor;
+        updateMouseCursor(imguiIO, mouse_cursor);
     }
 
     //update text list
@@ -582,7 +628,7 @@ bool ImGuiWigetHandler::createFontTexture(renderer::CmdListRender* cmdList, ImFo
         return false;
     }
     m_imageSampler->setWrap(renderer::SamplerWrap::TextureWrap_ClampToEdge);
-    m_imageSampler->setBorderColor(math::Vector4D(1.0, 1.0, 1.0, 1.0)); //opaque white
+    m_imageSampler->setBorderColor(color::Color(1.0, 1.0, 1.0, 1.0)); //opaque white
 
     m_fontAtlas = V3D_NEW(renderer::Texture2D, memory::MemoryLabel::MemoryRenderCore)(m_device, renderer::TextureUsage::TextureUsage_Sampled | renderer::TextureUsage_Write, renderer::Format::Format_R8G8B8A8_UNorm, math::Dimension2D(width, height), 1);
     if (!m_fontAtlas)
@@ -827,17 +873,17 @@ bool ImGuiWigetHandler::renderDrawData(ImGuiWigetViewportData* viewportData, ImD
 
     static auto setupRenderState = [this](renderer::CmdListRender* cmdList, ImDrawData* imDrawData, s32 fbWidth, s32 fbHeight) -> void
         {
-            cmdList->setViewport(math::Rect32(0, 0, fbWidth, fbHeight));
+            cmdList->setViewport(math::Rect(0, 0, fbWidth, fbHeight));
             cmdList->setPipelineState(*m_UIPipeline);
 
             struct PushConstant
             {
-                math::Vector2D _scale;
-                math::Vector2D _translate;
+                math::TVector2D<f32> _scale;
+                math::TVector2D<f32> _translate;
             } pushConstBlock;
 
-            pushConstBlock._scale = math::Vector2D(2.0f / imDrawData->DisplaySize.x, 2.0f / imDrawData->DisplaySize.y);
-            pushConstBlock._translate = math::Vector2D(-1.0f - imDrawData->DisplayPos.x * pushConstBlock._scale.m_x, -1.0f - imDrawData->DisplayPos.y * pushConstBlock._scale.m_y);
+            pushConstBlock._scale = { 2.0f / imDrawData->DisplaySize.x, 2.0f / imDrawData->DisplaySize.y };
+            pushConstBlock._translate = { -1.0f - imDrawData->DisplayPos.x * pushConstBlock._scale._x, -1.0f - imDrawData->DisplayPos.y * pushConstBlock._scale._y };
 
             cmdList->bindPushConstant(renderer::ShaderType::Vertex, sizeof(PushConstant), &pushConstBlock);
         };
@@ -891,7 +937,7 @@ bool ImGuiWigetHandler::renderDrawData(ImGuiWigetViewportData* viewportData, ImD
                     u32 width = (u32)(clip_max.x - clip_min.x);
                     u32 height = (u32)(clip_max.y - clip_min.y);
 
-                    viewportData->_cmdList->setScissor(math::Rect32(x, y, x + width, y + height));
+                    viewportData->_cmdList->setScissor(math::Rect(x, y, x + width, y + height));
 
                     u64 textureID = pCmd->GetTexID();
                     ASSERT(textureID < m_activeTextures.size() && m_activeTextures[textureID], "range out or invalid");

@@ -140,16 +140,16 @@ namespace ui
         virtual void draw_Gizmo(Wiget* wiget, Wiget* base, Wiget::State* layout, Wiget::State* state) = 0;
         virtual void draw_ViewManipulator(Wiget* wiget, Wiget* base, Wiget::State* layout, Wiget::State* state) = 0;
 
-        virtual math::Vector2D get_LayoutPadding() const = 0;
-        virtual math::Vector2D get_ItemSpacing() const = 0;
+        virtual math::TVector2D<f32> get_LayoutPadding() const = 0;
+        virtual math::TVector2D<f32> get_ItemSpacing() const = 0;
 
-        virtual math::Vector2D calculate_TextSize(Wiget* wiget, Wiget::State* layout, Wiget::State* state) = 0;
-        virtual math::Vector2D calculate_ButtonSize(Wiget* wiget, Wiget::State* layout, Wiget::State* state) = 0;
-        virtual math::Vector2D calculate_ImageSize(Wiget* wiget, Wiget::State* layout, Wiget::State* state) = 0;
-        virtual math::Vector2D calculate_CheckBoxSize(Wiget* wiget, Wiget::State* layout, Wiget::State* state) = 0;
-        virtual math::Vector2D calculate_RadioButtonGroupSize(Wiget* wiget, Wiget::State* layout, Wiget::State* state) = 0;
-        virtual math::Vector2D calculate_ComboBoxSize(Wiget* wiget, Wiget::State* layout, Wiget::State* state) = 0;
-        virtual math::Vector2D calculate_ListBoxSize(Wiget* wiget, Wiget::State* layout, Wiget::State* state) = 0;
+        virtual math::TVector2D<f32> calculate_TextSize(Wiget* wiget, Wiget::State* layout, Wiget::State* state) = 0;
+        virtual math::TVector2D<f32> calculate_ButtonSize(Wiget* wiget, Wiget::State* layout, Wiget::State* state) = 0;
+        virtual math::TVector2D<f32> calculate_ImageSize(Wiget* wiget, Wiget::State* layout, Wiget::State* state) = 0;
+        virtual math::TVector2D<f32> calculate_CheckBoxSize(Wiget* wiget, Wiget::State* layout, Wiget::State* state) = 0;
+        virtual math::TVector2D<f32> calculate_RadioButtonGroupSize(Wiget* wiget, Wiget::State* layout, Wiget::State* state) = 0;
+        virtual math::TVector2D<f32> calculate_ComboBoxSize(Wiget* wiget, Wiget::State* layout, Wiget::State* state) = 0;
+        virtual math::TVector2D<f32> calculate_ListBoxSize(Wiget* wiget, Wiget::State* layout, Wiget::State* state) = 0;
     };
 
 } // namespace ui

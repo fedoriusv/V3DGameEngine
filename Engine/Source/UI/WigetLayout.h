@@ -64,7 +64,7 @@ namespace ui
         };
 
         TWigetLayout& setFontSize(FontSize size);
-        TWigetLayout& setPadding(const math::RectF32& padding);
+        TWigetLayout& setPadding(const math::Rect& padding);
         TWigetLayout& setSize(const math::Dimension2D& size);
         TWigetLayout& setHAlignment(HorizontalAlignment align);
         TWigetLayout& setVAlignment(VerticalAlignment align);
@@ -82,17 +82,17 @@ namespace ui
 
         struct StateLayoutBase : WigetBase<TWigetLayout>::StateBase
         {
-            math::Dimension2D   _size;
-            math::RectF32       _padding;
-            LayoutFlags         _flags = 0;
-            FontSize            _fontSize = FontSize::MediumFont;
-            HorizontalAlignment _aligmentH = HorizontalAlignment::AlignmentLeft;
-            VerticalAlignment   _aligmentV = VerticalAlignment::AlignmentTop;
+            math::Dimension2D    _size;
+            math::Rect           _padding;
+            LayoutFlags          _flags = 0;
+            FontSize             _fontSize = FontSize::MediumFont;
+            HorizontalAlignment  _aligmentH = HorizontalAlignment::AlignmentLeft;
+            VerticalAlignment    _aligmentV = VerticalAlignment::AlignmentTop;
 
 
-            math::RectF32       _cachedLayoutRect;
-            math::Vector2D      _cachedLayoutOffest;
-            math::Vector2D      _cachedContentSize;
+            math::Rect           _cachedLayoutRect;
+            math::TVector2D<f32> _cachedLayoutOffest;
+            math::TVector2D<f32> _cachedContentSize;
         };
 
     protected:
@@ -135,7 +135,7 @@ namespace ui
     }
 
     template<class TWigetLayout>
-    inline TWigetLayout& WigetLayoutBase<TWigetLayout>::setPadding(const math::RectF32& padding)
+    inline TWigetLayout& WigetLayoutBase<TWigetLayout>::setPadding(const math::Rect& padding)
     {
         Wiget::cast_data<StateType>(WigetBase<TWigetLayout>::m_data)._padding = padding;
         return *static_cast<TWigetLayout*>(this);

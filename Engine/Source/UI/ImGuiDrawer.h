@@ -44,16 +44,16 @@ namespace ui
         void draw_Gizmo(Wiget* wiget, Wiget* base, Wiget::State* layout, Wiget::State* state) override;
         void draw_ViewManipulator(Wiget* wiget, Wiget* base, Wiget::State* layout, Wiget::State* state) override;
 
-        math::Vector2D get_LayoutPadding() const override;
-        math::Vector2D get_ItemSpacing() const override;
+        math::TVector2D<f32> get_LayoutPadding() const override;
+        math::TVector2D<f32> get_ItemSpacing() const override;
 
-        math::Vector2D calculate_TextSize(Wiget* wiget, Wiget::State* layout, Wiget::State* state) override;
-        math::Vector2D calculate_ButtonSize(Wiget* wiget, Wiget::State* layout, Wiget::State* state) override;
-        math::Vector2D calculate_ImageSize(Wiget* wiget, Wiget::State* layout, Wiget::State* state) override;
-        math::Vector2D calculate_CheckBoxSize(Wiget* wiget, Wiget::State* layout, Wiget::State* state) override;
-        math::Vector2D calculate_RadioButtonGroupSize(Wiget* wiget, Wiget::State* layout, Wiget::State* state) override;
-        math::Vector2D calculate_ComboBoxSize(Wiget* wiget, Wiget::State* layout, Wiget::State* state) override;
-        math::Vector2D calculate_ListBoxSize(Wiget* wiget, Wiget::State* layout, Wiget::State* state) override;
+        math::TVector2D<f32> calculate_TextSize(Wiget* wiget, Wiget::State* layout, Wiget::State* state) override;
+        math::TVector2D<f32> calculate_ButtonSize(Wiget* wiget, Wiget::State* layout, Wiget::State* state) override;
+        math::TVector2D<f32> calculate_ImageSize(Wiget* wiget, Wiget::State* layout, Wiget::State* state) override;
+        math::TVector2D<f32> calculate_CheckBoxSize(Wiget* wiget, Wiget::State* layout, Wiget::State* state) override;
+        math::TVector2D<f32> calculate_RadioButtonGroupSize(Wiget* wiget, Wiget::State* layout, Wiget::State* state) override;
+        math::TVector2D<f32> calculate_ComboBoxSize(Wiget* wiget, Wiget::State* layout, Wiget::State* state) override;
+        math::TVector2D<f32> calculate_ListBoxSize(Wiget* wiget, Wiget::State* layout, Wiget::State* state) override;
 
     private:
 
