@@ -12,7 +12,7 @@ namespace utils
     * @brief ResourceID class. Use for hashing instead pointer addresses
     */
     template<class TResource, typename Type>
-    class ResourceID
+    class V3D_API ResourceID
     {
     public:
 
