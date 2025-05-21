@@ -24,6 +24,7 @@ namespace event
             Suspend,
             Resume,
             TextInput,
+            CursorIcon,
             Focus,
 
             SystemEventsCount
@@ -36,11 +37,13 @@ namespace event
 
         SystemEventType _systemEvent;
         u32 _flag;
+        u64 _handle;
     };
 
     inline SystemEvent::SystemEvent() noexcept
         : _systemEvent(SystemEventType::Empty)
         , _flag(0)
+        , _handle(0)
     {
         _eventType = InputEventType::SystemEvent;
     }

@@ -706,6 +706,7 @@ LRESULT WindowWindows::HandleSystemEvents(UINT message, WPARAM wParam, LPARAM lP
         event::SystemEvent* event = V3D_PLACMENT_NEW(m_receiver->allocateInputEvent(), event::SystemEvent());
         event->_systemEvent = event::SystemEvent::Focus;
         event->_flag = 0x1;
+        event->_handle = (u64)m_hWnd;
         event->_windowID = this->ID();
 
         m_receiver->pushEvent(event);
@@ -719,6 +720,7 @@ LRESULT WindowWindows::HandleSystemEvents(UINT message, WPARAM wParam, LPARAM lP
         event::SystemEvent* event = V3D_PLACMENT_NEW(m_receiver->allocateInputEvent(), event::SystemEvent());
         event->_systemEvent = event::SystemEvent::Focus;
         event->_flag = 0x0;
+        event->_handle = (u64)m_hWnd;
         event->_windowID = this->ID();
 
         m_receiver->pushEvent(event);
@@ -735,6 +737,7 @@ LRESULT WindowWindows::HandleSystemEvents(UINT message, WPARAM wParam, LPARAM lP
         event::SystemEvent* event = V3D_PLACMENT_NEW(m_receiver->allocateInputEvent(), event::SystemEvent());
         event->_systemEvent = event::SystemEvent::TextInput;
         event->_flag = wParam;
+        event->_handle = (u64)m_hWnd;
         event->_windowID = this->ID();
 
         m_receiver->pushEvent(event);
@@ -752,6 +755,7 @@ LRESULT WindowWindows::HandleSystemEvents(UINT message, WPARAM wParam, LPARAM lP
             event::SystemEvent* event = V3D_PLACMENT_NEW(m_receiver->allocateInputEvent(), event::SystemEvent());
             event->_systemEvent = event::SystemEvent::Move;
             event->_flag = lParam;
+            event->_handle = (u64)m_hWnd;
             event->_windowID = this->ID();
 
             m_receiver->sendEvent(event);
@@ -775,6 +779,7 @@ LRESULT WindowWindows::HandleSystemEvents(UINT message, WPARAM wParam, LPARAM lP
                 event::SystemEvent* event = V3D_PLACMENT_NEW(m_receiver->allocateInputEvent(), event::SystemEvent());
                 event->_systemEvent = event::SystemEvent::Resize;
                 event->_flag = lParam;
+                event->_handle = (u64)m_hWnd;
                 event->_windowID = this->ID();
 
                 m_receiver->sendEvent(event);
@@ -790,10 +795,31 @@ LRESULT WindowWindows::HandleSystemEvents(UINT message, WPARAM wParam, LPARAM lP
         return FALSE;
     }
 
+    case WM_SETCURSOR:
+    {
+        if (LOWORD(lParam) == HTCLIENT)
+        {
+            HCURSOR currentCursor = ::GetCursor();
+
+            event::SystemEvent* event = V3D_PLACMENT_NEW(m_receiver->allocateInputEvent(), event::SystemEvent());
+            event->_systemEvent = event::SystemEvent::CursorIcon;
+            event->_flag = 0;
+            event->_handle = (u64)currentCursor;
+            event->_windowID = this->ID();
+
+            m_receiver->sendEvent(event);
+
+            return TRUE;
+        }
+        return FALSE;
+    }
+
     case WM_DESTROY:
     {
         event::SystemEvent* event = V3D_PLACMENT_NEW(m_receiver->allocateInputEvent(), event::SystemEvent());
         event->_systemEvent = event::SystemEvent::Destroy;
+        event->_flag = 0;
+        event->_handle = (u64)m_hWnd;
         event->_windowID = this->ID();
 
         m_receiver->pushEvent(event);
@@ -840,6 +866,7 @@ LRESULT WindowWindows::WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lP
         case WM_SIZE:
         case WM_TIMER:
         case WM_CHAR:
+        case WM_SETCURSOR:
             return window->HandleSystemEvents(message, wParam, lParam);
 
         case WM_DESTROY:
