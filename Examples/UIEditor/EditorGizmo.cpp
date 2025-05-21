@@ -37,9 +37,9 @@ void EditorGizmo::init(ui::WigetGizmo* wiget)
 
 void EditorGizmo::modify(const scene::Transform& transform)
 {
-    LOG_DEBUG("position [%f, %f, %f]", transform.getPosition().m_x, transform.getPosition().m_y, transform.getPosition().m_z);
-    LOG_DEBUG("rotation [%f, %f, %f]", transform.getRotation().m_x, transform.getRotation().m_y, transform.getRotation().m_z);
-    LOG_DEBUG("scale [%f, %f, %f]", transform.getScale().m_x, transform.getScale().m_y, transform.getScale().m_z);
+    LOG_DEBUG("position [%f, %f, %f]", transform.getPosition().getX(), transform.getPosition().getY(), transform.getPosition().getZ());
+    LOG_DEBUG("rotation [%f, %f, %f]", transform.getRotation().getX(), transform.getRotation().getY(), transform.getRotation().getZ());
+    LOG_DEBUG("scale [%f, %f, %f]", transform.getScale().getX(), transform.getScale().getY(), transform.getScale().getZ());
     g_modelTransform = transform;
     m_wiget->setTransform(transform);
 }

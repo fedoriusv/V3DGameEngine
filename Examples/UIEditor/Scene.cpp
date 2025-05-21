@@ -97,7 +97,7 @@ void Scene::drawCube(renderer::Device* device, renderer::CmdListRender* cmdList,
         v3d::math::Vector4D viewportSize;
     };
     ViewportBuffer constantBuffer0;
-    constantBuffer0.cameraPosition = camera->getPosition();
+    constantBuffer0.cameraPosition = { camera->getPosition().getX(), camera->getPosition().getY(), camera->getPosition().getZ(), 0.f };
     constantBuffer0.projectionMatrix = camera->getCamera().getProjectionMatrix();
     constantBuffer0.viewMatrix = camera->getCamera().getViewMatrix();
     constantBuffer0.viewportSize = { 0, 0, 0.f, 0.f };
@@ -110,8 +110,8 @@ void Scene::drawCube(renderer::Device* device, renderer::CmdListRender* cmdList,
         v3d::math::Vector4D color;
     };
     Light constantBuffer1;
-    constantBuffer1.lightPos = math::Vector4D(25.0f, 0.0f, 5.0f, 1.0f);
-    constantBuffer1.color = math::Vector4D(1.0f);
+    constantBuffer1.lightPos = math::Vector4D(0.0f, 0.0f, -10.0f, 1.0f);
+    constantBuffer1.color = { 1.0f, 1.0f, 1.0f, 1.0f };
     cmdList->bindDescriptorSet(0, { renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ &constantBuffer1, 0, sizeof(constantBuffer1)}, 1) });
 
 

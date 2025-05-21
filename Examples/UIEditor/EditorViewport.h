@@ -40,12 +40,13 @@ public:
     void render(renderer::CmdListRender* cmdList);
 
     const renderer::Texture2D* getOutputTexture() const;
-    const math::Rect32&        getViewportArea() const;
+    const math::Rect&          getViewportArea() const;
     scene::Camera*             getCamera();
 
 public:
 
-    void onChanged(const math::Rect32& viewport);
+    void onChanged(const math::Rect& viewport);
+    void onChanged(const math::Matrix4D& view);
 
 private:
 
@@ -55,7 +56,7 @@ private:
 
     scene::CameraEditorHandler*        m_Camera;
     renderer::RenderTargetState*       m_VewiportTarget;
-    math::Rect32                       m_CurrentViewportRect;
+    math::Rect                         m_CurrentViewportRect;
     ViewportParams                     m_VewportParams;
 
     Scene::DrawData                    m_drawState;

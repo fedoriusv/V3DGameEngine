@@ -18,10 +18,15 @@ using namespace v3d::platform;
 using namespace v3d::utils;
 using namespace v3d::event;
 
+namespace v3d
+{
+    extern scene::Transform g_modelTransform;
+}
+
 EditorViewport::EditorViewport()
     : m_Device(nullptr)
 
-    , m_Camera(new scene::CameraEditorHandler(new scene::Camera(math::Vector3D(0.0f, 0.0f, 0.0f), math::Vector3D(0.0f, 1.0f, 0.0f)), math::Vector3D(0.0f, 0.0f, -1.0f)))
+    , m_Camera(new scene::CameraEditorHandler(std::make_unique<scene::Camera>()))
     , m_VewiportTarget(nullptr)
 {
     resource::ResourceManager::createInstance();
@@ -32,7 +37,7 @@ EditorViewport::EditorViewport()
 
     InputEventHandler::bind([this](const MouseInputEvent* event)
         {
-            if (m_CurrentViewportRect.isPointInside({ this->getAbsoluteCursorPosition().m_x, this->getAbsoluteCursorPosition().m_y }))
+            if (m_CurrentViewportRect.isPointInside({ (f32)this->getAbsoluteCursorPosition()._x, (f32)this->getAbsoluteCursorPosition()._y }))
             {
                 m_Camera->handleInputEventCallback(this, event);
             }
@@ -41,8 +46,15 @@ EditorViewport::EditorViewport()
 
     InputEventHandler::bind([this](const KeyboardInputEvent* event)
         {
-            if (m_CurrentViewportRect.isPointInside({ this->getAbsoluteCursorPosition().m_x, this->getAbsoluteCursorPosition().m_y }))
+            if (m_CurrentViewportRect.isPointInside({ (f32)this->getAbsoluteCursorPosition()._x, (f32)this->getAbsoluteCursorPosition()._y }))
             {
+                if (event->_event == event::KeyboardInputEvent::KeyboardPressDown)
+                {
+                    if (event->_key == event::KeyCode::KeyKey_F) //focus on selected object
+                    {
+                        m_Camera->setTarget(g_modelTransform.getPosition()); //TODO
+                    }
+                }
                 m_Camera->handleInputEventCallback(this, event);
             }
         }
@@ -57,10 +69,12 @@ EditorViewport::~EditorViewport()
 void EditorViewport::init(renderer::Device* device, const v3d::math::Dimension2D& viewportSize)
 {
     m_Device = device;
-    m_CurrentViewportRect = math::Rect32(0, 0, viewportSize.m_width, viewportSize.m_height);
+    m_CurrentViewportRect = math::Rect(0, 0, viewportSize._width, viewportSize._height);
     m_Camera->setPerspective(m_VewportParams._fov, viewportSize, m_VewportParams._near, m_VewportParams._far);
     m_Camera->setMoveSpeed(2.f);
-    m_Camera->setRotationSpeed(0.6f);
+    m_Camera->setRotationSpeed(50.0f);
+    m_Camera->setTarget({ 0.f, 0.f, 0.f });
+    m_Camera->setPosition({ 0.f, 0.25f, -1.f });
 
     recreateViewport(viewportSize);
     m_drawState = Scene::loadCube(device, m_VewiportTarget->getRenderPassDesc());
@@ -90,7 +104,7 @@ void EditorViewport::recreateViewport(const v3d::math::Dimension2D& viewportSize
 
     m_VewiportTarget->setColorTexture(0, colorAttachment,
         {
-            renderer::RenderTargetLoadOp::LoadOp_Clear, renderer::RenderTargetStoreOp::StoreOp_Store, math::Vector4D(0.f, 0.f, 0.f, 1.f)
+            renderer::RenderTargetLoadOp::LoadOp_Clear, renderer::RenderTargetStoreOp::StoreOp_Store, color::Color(0.f, 0.f, 0.f, 1.f)
         },
         {
             renderer::TransitionOp::TransitionOp_Undefined, renderer::TransitionOp::TransitionOp_ColorAttachment
@@ -123,15 +137,15 @@ void EditorViewport::update(f32 dt)
 void EditorViewport::render(v3d::renderer::CmdListRender* cmdList)
 {
     cmdList->beginRenderTarget(*m_VewiportTarget);
-    cmdList->setViewport(math::Rect32(0, 0, m_VewiportTarget->getRenderArea().m_width, m_VewiportTarget->getRenderArea().m_height));
-    cmdList->setScissor(math::Rect32(0, 0, m_VewiportTarget->getRenderArea().m_width, m_VewiportTarget->getRenderArea().m_height));
+    cmdList->setViewport(math::Rect(0, 0, m_VewiportTarget->getRenderArea()._width, m_VewiportTarget->getRenderArea()._height));
+    cmdList->setScissor(math::Rect(0, 0, m_VewiportTarget->getRenderArea()._width, m_VewiportTarget->getRenderArea()._height));
 
     Scene::drawCube(m_Device, cmdList, m_drawState, m_Camera);
 
     cmdList->endRenderTarget();
 }
 
-void EditorViewport::onChanged(const v3d::math::Rect32& viewport)
+void EditorViewport::onChanged(const v3d::math::Rect& viewport)
 {
     if (viewport != m_CurrentViewportRect)
     {
@@ -144,17 +158,24 @@ void EditorViewport::onChanged(const v3d::math::Rect32& viewport)
     }
 }
 
+void EditorViewport::onChanged(const math::Matrix4D& view)
+{
+    m_Camera->setViewMatrix(view);
+    m_Camera->setTarget(m_Camera->getPosition() + m_Camera->getCamera().getForwardVector() * 2.f);
+    m_Camera->update(0.f);
+}
+
 const renderer::Texture2D* EditorViewport::getOutputTexture() const
 {
     return m_VewiportTarget->getColorTexture<renderer::Texture2D>(0);
 }
 
-const v3d::math::Rect32& EditorViewport::getViewportArea() const
+const math::Rect& EditorViewport::getViewportArea() const
 {
     return m_CurrentViewportRect;
 }
 
-v3d::scene::Camera* EditorViewport::getCamera()
+scene::Camera* EditorViewport::getCamera()
 {
     return &m_Camera->getCamera();
 }

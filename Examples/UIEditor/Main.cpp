@@ -97,7 +97,7 @@ private:
                 renderer::RenderTargetState* backbuffer = new renderer::RenderTargetState(device, swapchain->getBackbufferSize());
                 backbuffer->setColorTexture(0, swapchain->getBackbuffer(),
                     {
-                        renderer::RenderTargetLoadOp::LoadOp_Clear, renderer::RenderTargetStoreOp::StoreOp_Store, math::Vector4D(0.f, 0.f, 0.f, 1.f)
+                        renderer::RenderTargetLoadOp::LoadOp_Clear, renderer::RenderTargetStoreOp::StoreOp_Store, color::Color(0.f, 0.f, 0.f, 1.f)
                     },
                     {
                         renderer::TransitionOp::TransitionOp_Undefined, renderer::TransitionOp::TransitionOp_Present
@@ -173,24 +173,24 @@ private:
         //Scene Editor
         ui::WigetWindow& sceneEditor = m_UI->createWiget<ui::WigetWindow>("Scene Editor", ui::WigetWindow::Moveable | ui::WigetWindow::Resizeable)
             .addWiget(ui::WigetText("Mode: "))
-                .addWiget(ui::WigetRadioButtonGroup()
-                    .addElement("select")
-                    .addElement("move")
-                    .addElement("rotate")
-                    .addElement("scale")
-                    .setActiveIndex(0)
-                    .setOnChangedIndexEvent([this](ui::Wiget* w, s32 index) -> void
+            .addWiget(ui::WigetRadioButtonGroup()
+                .addElement("select")
+                .addElement("move")
+                .addElement("rotate")
+                .addElement("scale")
+                .setActiveIndex(0)
+                .setOnChangedIndexEvent([this](ui::Wiget* w, s32 index) -> void
+                    {
+                        if (index > 0)
                         {
-                            if (index > 0)
-                            {
-                                m_EditorGizmo->setEnable(true);
-                                m_EditorGizmo->setOperation(index - 1);
-                            }
-                            else
-                            {
-                                m_EditorGizmo->setEnable(false);
-                            }
-                        })
+                            m_EditorGizmo->setEnable(true);
+                            m_EditorGizmo->setOperation(index - 1);
+                        }
+                        else
+                        {
+                            m_EditorGizmo->setEnable(false);
+                        }
+                    })
                 );
 
         ui::WigetWindow& viewportWin = m_UI->createWiget<ui::WigetWindow>("Viewport", ui::WigetWindow::Moveable | ui::WigetWindow::Resizeable)
@@ -198,11 +198,11 @@ private:
             .setVisible(true)
             .setOnSizeChanged([](const ui::Wiget* w, const ui::Wiget* p, const math::Dimension2D& size) -> void
                 {
-                    LOG_DEBUG("Viewport OnSizeChanged [%d %d]", size.m_width, size.m_height);
+                    LOG_DEBUG("Viewport OnSizeChanged [%d %d]", size._width, size._height);
                 })
             .setOnPositionChanged([](const ui::Wiget* w, const ui::Wiget* p, const math::Point2D& pos) -> void
                 {
-                    LOG_DEBUG("Viewport OnPosChanged [%d %d]", pos.m_x, pos.m_y);
+                    LOG_DEBUG("Viewport OnPosChanged [%d %d]", pos._x, pos._y);
                 })
             .setOnFocusChanged([this](const ui::Wiget* w, bool focused)
                 {
@@ -232,7 +232,7 @@ private:
                             auto texture = m_EditorViewport->getOutputTexture();
                             static_cast<ui::WigetImage*>(w)->setTexture(texture);
                         })
-                    .setOnDrawRectChanged([this](ui::Wiget* w, ui::Wiget* p, const math::Rect32& dim) -> void
+                    .setOnDrawRectChanged([this](ui::Wiget* w, ui::Wiget* p, const math::Rect& dim) -> void
                         {
                             m_EditorViewport->onChanged(dim);
 
@@ -252,10 +252,9 @@ private:
                         })
                 )
                 .addWiget(ui::WigetViewManipulator(m_EditorViewport->getCamera())
-                    .setOnViewChangedEvent([this](ui::Wiget* w, ui::Wiget* p, const math::Matrix4D& mat) -> void
+                    .setOnViewChangedEvent([this](ui::Wiget* w, ui::Wiget* p, const math::Matrix4D& view) -> void
                         {
-                            scene::Camera* camera = m_EditorViewport->getCamera();
-                            camera->setViewMatrix(mat);
+                            m_EditorViewport->onChanged(view);
                         })
                 )
             );
@@ -279,7 +278,7 @@ private:
 
         resource::Bitmap* image = resource::ResourceManager::getInstance()->load<resource::Bitmap, resource::ImageFileLoader>("test_basetex.jpg");
         renderer::Texture2D* texture = new renderer::Texture2D(m_Device, renderer::TextureUsage::TextureUsage_Sampled | renderer::TextureUsage_Shared | renderer::TextureUsage_Write,
-            image->getFormat(), math::Dimension2D(image->getDimension().m_width, image->getDimension().m_height), image->getMipmapsCount());
+            image->getFormat(), math::Dimension2D(image->getDimension()._width, image->getDimension()._height), image->getMipmapsCount());
 
         m_CmdList->uploadData(texture, image->getSize(), image->getBitmap());
         m_Device->submit(m_CmdList, true);
@@ -289,7 +288,7 @@ private:
     
     void Run()
     {
-        static u64 s_prevTime = 0;
+        static u64 s_prevTime = utils::Timer::getCurrentTime();
         const u64 currentTime = utils::Timer::getCurrentTime();
         const f32 diffTime = static_cast<f32>(std::max<s64>(static_cast<s64>(currentTime) - static_cast<s64>(s_prevTime), 0));
         const f32 deltaTime = diffTime / 1'000.f;
