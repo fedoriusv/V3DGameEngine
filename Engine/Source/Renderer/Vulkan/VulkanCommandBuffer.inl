@@ -81,20 +81,20 @@ inline void VulkanCommandBuffer::cmdBindPipeline(VulkanComputePipeline* pipeline
     VulkanWrapper::CmdBindPipeline(m_commands, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline->getHandle());
 }
 
-inline void VulkanCommandBuffer::cmdBindDescriptorSets(VulkanGraphicPipeline* pipeline, const std::vector<VkDescriptorSet>& sets, const std::vector<u32>& offsets)
+inline void VulkanCommandBuffer::cmdBindDescriptorSets(VulkanGraphicPipeline* pipeline, u32 first, const std::vector<VkDescriptorSet>& sets, const std::vector<u32>& offsets)
 {
     ASSERT(m_status == CommandBufferStatus::Begin, "not started");
 
     VulkanCommandBuffer::captureResource(pipeline);
-    VulkanWrapper::CmdBindDescriptorSets(m_commands, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->getPipelineLayoutHandle(), 0, static_cast<u32>(sets.size()), sets.data(), static_cast<u32>(offsets.size()), offsets.data());
+    VulkanWrapper::CmdBindDescriptorSets(m_commands, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->getPipelineLayoutHandle(), first, static_cast<u32>(sets.size()), sets.data(), static_cast<u32>(offsets.size()), offsets.data());
 }
 
-inline void VulkanCommandBuffer::cmdBindDescriptorSets(VulkanComputePipeline* pipeline, const std::vector<VkDescriptorSet>& sets)
+inline void VulkanCommandBuffer::cmdBindDescriptorSets(VulkanComputePipeline* pipeline, u32 first, const std::vector<VkDescriptorSet>& sets)
 {
     ASSERT(m_status == CommandBufferStatus::Begin, "not started");
 
     VulkanCommandBuffer::captureResource(pipeline);
-    VulkanWrapper::CmdBindDescriptorSets(m_commands, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline->getPipelineLayoutHandle(), 0, static_cast<u32>(sets.size()), sets.data(), 0, nullptr);
+    VulkanWrapper::CmdBindDescriptorSets(m_commands, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline->getPipelineLayoutHandle(), first, static_cast<u32>(sets.size()), sets.data(), 0, nullptr);
 }
 
 inline void VulkanCommandBuffer::cmdBindPushConstant(VulkanGraphicPipeline* pipeline, VkShaderStageFlags stageFlags, u32 size, const void* data)

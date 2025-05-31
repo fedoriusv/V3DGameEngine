@@ -88,8 +88,8 @@ namespace vk
         void cmdBindIndexBuffers(VulkanBuffer* buffer, VkDeviceSize offest, VkIndexType type);
         void cmdBindPipeline(VulkanGraphicPipeline* pipeline);
         void cmdBindPipeline(VulkanComputePipeline* pipeline);
-        void cmdBindDescriptorSets(VulkanGraphicPipeline* pipeline, const std::vector<VkDescriptorSet>& sets, const std::vector<u32>& offsets);
-        void cmdBindDescriptorSets(VulkanComputePipeline* pipeline, const std::vector<VkDescriptorSet>& sets);
+        void cmdBindDescriptorSets(VulkanGraphicPipeline* pipeline, u32 first, const std::vector<VkDescriptorSet>& sets, const std::vector<u32>& offsets);
+        void cmdBindDescriptorSets(VulkanComputePipeline* pipeline, u32 first, const std::vector<VkDescriptorSet>& sets);
         void cmdBindPushConstant(VulkanGraphicPipeline* pipeline, VkShaderStageFlags stageFlags, u32 size, const void* data);
         void cmdBindPushConstant(VulkanComputePipeline* pipeline, VkShaderStageFlags stageFlags, u32 size, const void* data);
 

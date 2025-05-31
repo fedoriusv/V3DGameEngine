@@ -108,15 +108,10 @@ VulkanPipelineLayout VulkanPipelineLayoutManager::acquirePipelineLayout(const Vu
         VulkanPipelineLayout& layout = found.first->second;
 
         layout._setLayouts.fill(VK_NULL_HANDLE);
-        for (u32 setId = 0; setId < k_maxDescriptorSetCount; ++setId)
+        u32 maxSets = std::bit_width(desc._bindingsSetsMask);
+        for (u32 setId = 0; setId < maxSets; ++setId)
         {
             auto& set = desc._bindingsSet[setId];
-            if (set.empty())
-            {
-                layout._setLayouts[setId] = VK_NULL_HANDLE;
-                continue;
-            }
-
             layout._setLayouts[setId] = VulkanPipelineLayoutManager::acquireDescriptorSetLayout(set);
             if (!layout._setLayouts[setId])
             {
@@ -179,14 +174,13 @@ void VulkanPipelineLayoutManager::clear()
 
 VkPipelineLayout VulkanPipelineLayoutManager::createPipelineLayout(const VulkanPipelineLayoutDescription& desc, const std::array<VkDescriptorSetLayout, k_maxDescriptorSetCount>& descriptorSetLayouts)
 {
+    u32 maxSets = std::bit_width(desc._bindingsSetsMask);
+
     std::vector<VkDescriptorSetLayout> vkDescriptorSetLayouts;
-    vkDescriptorSetLayouts.reserve(k_maxDescriptorSetCount);
-    for (auto& set : descriptorSetLayouts)
+    vkDescriptorSetLayouts.reserve(maxSets);
+    for (u32 i = 0; i < maxSets; ++i)
     {
-        if (set != VK_NULL_HANDLE)
-        {
-            vkDescriptorSetLayouts.push_back(set);
-        }
+        vkDescriptorSetLayouts.push_back(descriptorSetLayouts[i]);
     }
 
     VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo = {};
@@ -305,19 +299,32 @@ VulkanPipelineLayoutManager::DescriptorSetLayoutCreator::DescriptorSetLayoutCrea
                     continue;
                 }
 
-                VkDescriptorSetLayoutBinding descriptorSetLayoutBinding;
-                descriptorSetLayoutBinding.descriptorType = device.getVulkanDeviceCaps()._useDynamicUniforms ? VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC : VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-                descriptorSetLayoutBinding.binding = uniform._binding;
-                descriptorSetLayoutBinding.stageFlags = convertShaderTypeToVkStage((ShaderType)type);
-                descriptorSetLayoutBinding.descriptorCount = uniform._array;
-                descriptorSetLayoutBinding.pImmutableSamplers = nullptr;
+                auto exists = std::find_if(descriptorSetLayoutBindings.begin(), descriptorSetLayoutBindings.end(), [binding = uniform._binding](const VkDescriptorSetLayoutBinding& layoutBinding)
+                    {
+                        return layoutBinding.binding == binding;
+                    });
 
-                descriptorSetLayoutBindings.push_back(descriptorSetLayoutBinding);
-                _description._bindingsSetsMask |= 1 << setIndex;
+                if (exists != descriptorSetLayoutBindings.cend())
+                {
+                    exists->stageFlags |= convertShaderTypeToVkStage((ShaderType)type);
+                }
+                else
+                {
+                    VkDescriptorSetLayoutBinding descriptorSetLayoutBinding;
+                    descriptorSetLayoutBinding.descriptorType = device.getVulkanDeviceCaps()._useDynamicUniforms ? VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC : VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+                    descriptorSetLayoutBinding.binding = uniform._binding;
+                    descriptorSetLayoutBinding.stageFlags = convertShaderTypeToVkStage((ShaderType)type);
+                    descriptorSetLayoutBinding.descriptorCount = uniform._array;
+                    descriptorSetLayoutBinding.pImmutableSamplers = nullptr;
+
+                    descriptorSetLayoutBindings.push_back(descriptorSetLayoutBinding);
+                    _description._bindingsSetsMask |= 1 << setIndex;
+                }
             }
 
             for (auto& sampledImage : res._sampledImages)
             {
+                ASSERT(sampledImage._set < k_maxDescriptorSetCount && sampledImage._binding < k_maxDescriptorBindingCount, "range out");
                 if (sampledImage._set != setIndex)
                 {
                     continue;
@@ -336,6 +343,7 @@ VulkanPipelineLayoutManager::DescriptorSetLayoutCreator::DescriptorSetLayoutCrea
 
             for (auto& sampler : res._samplers)
             {
+                ASSERT(sampler._set < k_maxDescriptorSetCount && sampler._binding < k_maxDescriptorBindingCount, "range out");
                 if (sampler._set != setIndex)
                 {
                     continue;
@@ -354,6 +362,7 @@ VulkanPipelineLayoutManager::DescriptorSetLayoutCreator::DescriptorSetLayoutCrea
 
             for (auto& image : res._images)
             {
+                ASSERT(image._set < k_maxDescriptorSetCount && image._binding < k_maxDescriptorBindingCount, "range out");
                 if (image._set != setIndex)
                 {
                     continue;
@@ -372,20 +381,64 @@ VulkanPipelineLayoutManager::DescriptorSetLayoutCreator::DescriptorSetLayoutCrea
 
             for (auto& storageImage : res._storageImages)
             {
+                ASSERT(storageImage._set < k_maxDescriptorSetCount && storageImage._binding < k_maxDescriptorBindingCount, "range out");
                 if (storageImage._set != setIndex)
                 {
                     continue;
                 }
 
-                VkDescriptorSetLayoutBinding descriptorSetLayoutBinding;
-                descriptorSetLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
-                descriptorSetLayoutBinding.binding = storageImage._binding;
-                descriptorSetLayoutBinding.stageFlags = convertShaderTypeToVkStage((ShaderType)type);
-                descriptorSetLayoutBinding.descriptorCount = storageImage._array;
-                descriptorSetLayoutBinding.pImmutableSamplers = nullptr;
+                auto exists = std::find_if(descriptorSetLayoutBindings.begin(), descriptorSetLayoutBindings.end(), [binding = storageImage._binding](const VkDescriptorSetLayoutBinding& layoutBinding)
+                    {
+                        return layoutBinding.binding == binding;
+                    });
 
-                descriptorSetLayoutBindings.push_back(descriptorSetLayoutBinding);
-                _description._bindingsSetsMask |= 1 << setIndex;
+                if (exists != descriptorSetLayoutBindings.cend())
+                {
+                    exists->stageFlags |= convertShaderTypeToVkStage((ShaderType)type);
+                }
+                else
+                {
+                    VkDescriptorSetLayoutBinding descriptorSetLayoutBinding;
+                    descriptorSetLayoutBinding.descriptorType = device.getVulkanDeviceCaps()._useDynamicUniforms ? VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC : VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+                    descriptorSetLayoutBinding.binding = storageImage._binding;
+                    descriptorSetLayoutBinding.stageFlags = convertShaderTypeToVkStage((ShaderType)type);
+                    descriptorSetLayoutBinding.descriptorCount = storageImage._array;
+                    descriptorSetLayoutBinding.pImmutableSamplers = nullptr;
+
+                    descriptorSetLayoutBindings.push_back(descriptorSetLayoutBinding);
+                    _description._bindingsSetsMask |= 1 << setIndex;
+                }
+            }
+
+            for (auto& storageBuffer : res._storageBuffers)
+            {
+                ASSERT(storageBuffer._set < k_maxDescriptorSetCount && storageBuffer._binding < k_maxDescriptorBindingCount, "range out");
+                if (storageBuffer._set != setIndex)
+                {
+                    continue;
+                }
+
+                auto exists = std::find_if(descriptorSetLayoutBindings.begin(), descriptorSetLayoutBindings.end(), [binding = storageBuffer._binding](const VkDescriptorSetLayoutBinding& layoutBinding)
+                    {
+                        return layoutBinding.binding == binding;
+                    });
+
+                if (exists != descriptorSetLayoutBindings.cend())
+                {
+                    exists->stageFlags |= convertShaderTypeToVkStage((ShaderType)type);
+                }
+                else
+                {
+                    VkDescriptorSetLayoutBinding descriptorSetLayoutBinding;
+                    descriptorSetLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+                    descriptorSetLayoutBinding.binding = storageBuffer._binding;
+                    descriptorSetLayoutBinding.stageFlags = convertShaderTypeToVkStage((ShaderType)type);
+                    descriptorSetLayoutBinding.descriptorCount = storageBuffer._array;
+                    descriptorSetLayoutBinding.pImmutableSamplers = nullptr;
+
+                    descriptorSetLayoutBindings.push_back(descriptorSetLayoutBinding);
+                    _description._bindingsSetsMask |= 1 << setIndex;
+                }
             }
         }
 

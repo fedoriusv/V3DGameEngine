@@ -1735,6 +1735,7 @@ bool VulkanCmdList::prepareDraw(VulkanCommandBuffer* drawBuffer)
         m_currentRenderState._graphicPipeline = m_pendingRenderState._graphicPipeline;
         m_pendingRenderState.unsetDirty(DirtyStateMask::DirtyState_Pipeline);
     }
+    ASSERT(m_pendingRenderState._graphicPipeline, "must be bound");
 
     //PushConstant
     for (u32 type = toEnumType(ShaderType::First); type <= (u32)toEnumType(ShaderType::Last); ++type)
@@ -1749,7 +1750,7 @@ bool VulkanCmdList::prepareDraw(VulkanCommandBuffer* drawBuffer)
     //DS
     if (VulkanCmdList::prepareDescriptorSets(drawBuffer))
     {
-        drawBuffer->cmdBindDescriptorSets(m_pendingRenderState._graphicPipeline, m_pendingRenderState._descriptorSets, m_pendingRenderState._dynamicOffsets);
+        drawBuffer->cmdBindDescriptorSets(m_pendingRenderState._graphicPipeline, 0, m_pendingRenderState._descriptorSets, m_pendingRenderState._dynamicOffsets);
 
         std::swap(m_currentRenderState._descriptorSets, m_pendingRenderState._descriptorSets);
         std::swap(m_currentRenderState._dynamicOffsets, m_pendingRenderState._dynamicOffsets);
@@ -1765,10 +1766,11 @@ bool VulkanCmdList::prepareDescriptorSets(VulkanCommandBuffer* drawBuffer)
     TRACE_PROFILER_RENDER_SCOPE("prepareDescriptorSets", color::BLACK);
 
     m_pendingRenderState._descriptorSets.clear();
-    for (u32 indexSet = 0; indexSet < k_maxDescriptorSetCount; ++indexSet)
+    const VulkanPipelineLayoutDescription& layoutDesc = m_pendingRenderState._graphicPipeline->getPipelineLayoutDescription();
+    u32 maxDescriptorSetCount = std::bit_width(layoutDesc._bindingsSetsMask);
+    for (u32 indexSet = 0; indexSet < maxDescriptorSetCount; ++indexSet)
     {
-        const VulkanPipelineLayoutDescription& layoutDesc = m_pendingRenderState._graphicPipeline->getPipelineLayoutDescription();
-        if ((layoutDesc._bindingsSetsMask >> indexSet) == 0)
+        if ((layoutDesc._bindingsSetsMask >> indexSet) == 0 /*|| layoutDesc._bindingsSet[indexSet].empty()*/)
         {
             continue;
         }
@@ -1784,7 +1786,7 @@ bool VulkanCmdList::prepareDescriptorSets(VulkanCommandBuffer* drawBuffer)
 
             drawBuffer->captureResource(pool);
 
-            m_descriptorSetManager->updateDescriptorSet(drawBuffer, set, m_pendingRenderState._boundSetInfo[indexSet]);
+            m_descriptorSetManager->updateDescriptorSet(drawBuffer, set, layoutDesc._bindingsSet[indexSet], m_pendingRenderState._boundSetInfo[indexSet]);
             m_pendingRenderState.unsetDirty(DirtyStateMask(DirtyState_DescriptorSet + indexSet));
         }
         else

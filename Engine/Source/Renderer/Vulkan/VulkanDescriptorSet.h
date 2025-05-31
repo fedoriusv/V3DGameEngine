@@ -224,7 +224,7 @@ namespace vk
 
         [[nodiscard]] std::tuple<VulkanDescriptorSetPool*, VkDescriptorSet, u32> acquireFreeDescriptorSet(const VulkanDescriptorSetLayoutDescription& desc, VkDescriptorSetLayout layoutSet);
 
-        void updateDescriptorSet(VulkanCommandBuffer* cmdBuffer, VkDescriptorSet set, const SetInfo& setInfo);
+        void updateDescriptorSet(VulkanCommandBuffer* cmdBuffer, VkDescriptorSet set, const std::vector<VkDescriptorSetLayoutBinding>& layoutBindings, const SetInfo& setInfo);
         void updateStatus();
 
     private:

@@ -31,7 +31,15 @@ namespace vk
         {
             static u64 hash(const VulkanDescriptorSetLayoutDescription& data) noexcept
             {
-                return static_cast<u64>(crc32c::Extend(static_cast<u32>(data._bindings.size()), reinterpret_cast<const u8*>(data._bindings.data()), data._bindings.size() * sizeof(VkDescriptorSetLayoutBinding)));
+                static u64 k_emptyValue = 0xFFFFFFFF;
+                if (data._bindings.empty()) //hack for empty descriptors
+                {
+                    return k_emptyValue;
+                }
+
+                u64 value = static_cast<u64>(crc32c::Extend(static_cast<u32>(data._bindings.size()), reinterpret_cast<const u8*>(data._bindings.data()), data._bindings.size() * sizeof(VkDescriptorSetLayoutBinding)));
+                ASSERT(value != k_emptyValue, "invalid");
+                return value;
             }
         };
 

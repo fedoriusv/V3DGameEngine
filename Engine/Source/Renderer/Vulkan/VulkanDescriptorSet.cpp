@@ -76,14 +76,15 @@ std::tuple<VulkanDescriptorSetPool*, VkDescriptorSet, u32> VulkanDescriptorSetMa
     return { nullptr, VK_NULL_HANDLE, 0 };
 }
 
-void VulkanDescriptorSetManager::updateDescriptorSet(VulkanCommandBuffer* cmdBuffer, VkDescriptorSet set, const SetInfo& setInfo)
+void VulkanDescriptorSetManager::updateDescriptorSet(VulkanCommandBuffer* cmdBuffer, VkDescriptorSet set, const std::vector<VkDescriptorSetLayoutBinding>& layoutBindings, const SetInfo& setInfo)
 {
     std::array<VkWriteDescriptorSet, k_maxDescriptorBindingCount> writeDescriptorSets;
     u32 writeDescriptorCount = 0;
 
-    for (u32 index = 0; index < k_maxDescriptorBindingCount; ++index)
+    for (auto& layoutBinding : layoutBindings)
     {
-        auto& binding = setInfo._bindings[index];
+        ASSERT(layoutBinding.binding < k_maxDescriptorBindingCount, "range out");
+        auto& binding = setInfo._bindings[layoutBinding.binding];
         if (binding._type == BindingType::Unknown || !setInfo.isActiveBinding(binding._binding))
         {
             continue;
@@ -111,7 +112,7 @@ void VulkanDescriptorSetManager::updateDescriptorSet(VulkanCommandBuffer* cmdBuf
             //TODO Will update range if it gets errors
             /*VkDescriptorBufferInfo bufferInfo(bindingInfo._info._bufferInfo);
             bufferInfo.offset = 0;
-            bufferInfo.range = state._offsets[index] + bufferInfo.range;*/
+            bufferInfo.range = state._offsets[layoutBinding.binding] + bufferInfo.range;*/
             writeDescriptorSet.pBufferInfo = &binding._info._bufferInfo;
             writeDescriptorSet.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
             break;
@@ -122,8 +123,8 @@ void VulkanDescriptorSetManager::updateDescriptorSet(VulkanCommandBuffer* cmdBuf
             writeDescriptorSet.pImageInfo = &binding._info._imageInfo;
             writeDescriptorSet.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLER;
 
-            ASSERT(setInfo._resource[index], "invalid");
-            cmdBuffer->captureResource(setInfo._resource[index]);
+            ASSERT(setInfo._resource[layoutBinding.binding], "invalid");
+            cmdBuffer->captureResource(setInfo._resource[layoutBinding.binding]);
             break;
 
         case BindingType::Texture:
@@ -132,8 +133,8 @@ void VulkanDescriptorSetManager::updateDescriptorSet(VulkanCommandBuffer* cmdBuf
             writeDescriptorSet.pImageInfo = &binding._info._imageInfo;
             writeDescriptorSet.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
 
-            ASSERT(setInfo._resource[index], "invalid");
-            cmdBuffer->captureResource(setInfo._resource[index]);
+            ASSERT(setInfo._resource[layoutBinding.binding], "invalid");
+            cmdBuffer->captureResource(setInfo._resource[layoutBinding.binding]);
             break;
 
         case BindingType::RWTexture:
@@ -142,8 +143,8 @@ void VulkanDescriptorSetManager::updateDescriptorSet(VulkanCommandBuffer* cmdBuf
             writeDescriptorSet.pImageInfo = &binding._info._imageInfo;
             writeDescriptorSet.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
 
-            ASSERT(setInfo._resource[index], "invalid");
-            cmdBuffer->captureResource(setInfo._resource[index]);
+            ASSERT(setInfo._resource[layoutBinding.binding], "invalid");
+            cmdBuffer->captureResource(setInfo._resource[layoutBinding.binding]);
             break;
 
         default:
