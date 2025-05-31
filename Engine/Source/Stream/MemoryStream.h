@@ -58,7 +58,7 @@ namespace stream
         u32  tell() const override;
         u32  size() const override;
 
-        u8* map(u32 size) const override;
+        u8* map(u32 size = ~1) const override;
         void unmap() const override;
         bool isMapped() const override;
 

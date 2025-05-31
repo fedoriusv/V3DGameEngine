@@ -541,8 +541,11 @@ u8* MemoryStream::map(u32 size) const
 {
     u8* res = 0;
 
+    if (size == ~1)
+    {
+        size = MemoryStream::size();
+    }
     ASSERT(size > 0 && m_pos + size <= m_length, "Invalid memory size");
-
     if (m_stream)
     {
         res = &m_stream[m_pos];

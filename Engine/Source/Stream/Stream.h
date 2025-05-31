@@ -73,7 +73,7 @@ namespace stream
         virtual u32  tell() const = 0;
         virtual u32  size() const = 0;
 
-        virtual u8* map(u32 size) const = 0;
+        virtual u8* map(u32 size = ~1) const = 0;
         virtual void unmap() const = 0;
         virtual bool isMapped() const = 0;
     };

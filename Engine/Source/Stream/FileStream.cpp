@@ -81,6 +81,7 @@ bool FileStream::open(const std::string& file, OpenMode openMode)
     m_name = file;
     m_file = fopen(m_name.c_str(), mode);
     m_open = m_file != nullptr;
+    m_size = FileStream::size();
 
     return m_open;
 }
@@ -311,6 +312,10 @@ u8* FileStream::map(u32 size) const
         return m_memory;
     }
 
+    if (size == ~1)
+    {
+        size = FileStream::size();
+    }
     ASSERT(size > 0 && FileStream::tell() + size <= FileStream::size(), "Invalid file size");
     m_memory = reinterpret_cast<u8*>(V3D_MALLOC(size, memory::MemoryLabel::MemoryDynamic));
 
