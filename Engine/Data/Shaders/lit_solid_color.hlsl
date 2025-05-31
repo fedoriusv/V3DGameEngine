@@ -12,8 +12,7 @@ struct UBO
     float4x4 modelMatrix;
     float4x4 normalMatrix;
 };
-
-[[vk::binding(2, 1)]] ConstantBuffer<UBO> ubo : register(b0, space1);
+[[vk::binding(1, 1)]] ConstantBuffer<UBO> CB_Model : register(b0, space1);
 
 struct PS_INPUT
 {
@@ -27,15 +26,23 @@ PS_INPUT main_vs(VS_INPUT Input)
 {
     PS_INPUT Output;
    
-    float4 position = mul(ubo.modelMatrix, float4(Input.Position, 1.0));
+    float4 position = mul(CB_Model.modelMatrix, float4(Input.Position, 1.0));
     
     Output.Pos = mul(viewport.projectionMatrix, mul(viewport.viewMatrix, position));
     Output.Position = position.xyz / position.w;
-    Output.Normal = mul((float3x3)ubo.normalMatrix, Input.Normal);
+    Output.Normal = mul((float3x3) CB_Model.normalMatrix, Input.Normal);
     Output.UV = Input.UV;
 
     return Output;
 }
+
+
+struct LIGHT
+{
+    float4 lightPosition;
+    float4 color;
+};
+[[vk::binding(1, 0)]] ConstantBuffer<LIGHT> light : register(b1, space0);
 
 [[vk::location(0)]] float4 main_ps(PS_INPUT Input) : SV_TARGET0
 {
