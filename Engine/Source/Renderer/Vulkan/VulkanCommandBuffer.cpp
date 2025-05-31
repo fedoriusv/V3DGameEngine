@@ -342,6 +342,22 @@ void VulkanCommandBuffer::cmdBeginRenderpass(VulkanRenderPass* pass, VulkanFrame
 #   endif //VK_QCOM_render_pass_transform
 #endif //PLATFORM_ANDROID
 
+#if VULKAN_DEBUG_MARKERS
+    if (m_device.getVulkanDeviceCaps()._debugUtilsObjectNameEnabled)
+    {
+        VkDebugUtilsLabelEXT debugUtilsLabel = {};
+        debugUtilsLabel.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_LABEL_EXT;
+        debugUtilsLabel.pNext = nullptr;
+        debugUtilsLabel.pLabelName = framebuffer->m_debugName.c_str();
+        debugUtilsLabel.color[0] = 0.7f;
+        debugUtilsLabel.color[1] = 0.7f;
+        debugUtilsLabel.color[2] = 0.7f;
+        debugUtilsLabel.color[3] = 1.0f;
+
+        VulkanWrapper::CmdBeginDebugUtilsLabel(m_commands, &debugUtilsLabel);
+    }
+#endif //VULKAN_DEBUG_MARKERS
+
     if (m_device.getVulkanDeviceCaps()._supportRenderpass2)
     {
         VkSubpassBeginInfoKHR subpassBeginInfo = {};
@@ -394,6 +410,13 @@ void VulkanCommandBuffer::cmdEndRenderPass()
         const VulkanRenderPass::VulkanAttachmentDescription& attach = pass->getAttachmentDescription(index);
         m_resourceStates.setLayout(image, layout, VulkanImage::makeVulkanImageSubresource(image, attach._layer, attach._mip));
     }
+
+#if VULKAN_DEBUG_MARKERS
+    if (m_device.getVulkanDeviceCaps()._debugUtilsObjectNameEnabled)
+    {
+        VulkanWrapper::CmdEndDebugUtilsLabel(m_commands);
+    }
+#endif //VULKAN_DEBUG_MARKERS
 
     m_isInsideRenderPass = false;
 }

@@ -71,6 +71,22 @@ inline void VulkanCommandBuffer::cmdBindPipeline(VulkanGraphicPipeline* pipeline
 
     VulkanCommandBuffer::captureResource(pipeline);
     VulkanWrapper::CmdBindPipeline(m_commands, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->getHandle());
+
+#if VULKAN_DEBUG_MARKERS
+    if (m_device.getVulkanDeviceCaps()._debugUtilsObjectNameEnabled)
+    {
+        VkDebugUtilsLabelEXT debugUtilsLabel = {};
+        debugUtilsLabel.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_LABEL_EXT;
+        debugUtilsLabel.pNext = nullptr;
+        debugUtilsLabel.pLabelName = pipeline->m_debugName.c_str();
+        debugUtilsLabel.color[0] = 1.0f;
+        debugUtilsLabel.color[1] = 1.0f;
+        debugUtilsLabel.color[2] = 1.0f;
+        debugUtilsLabel.color[3] = 1.0f;
+
+        VulkanWrapper::CmdInsertDebugUtilsLabel(m_commands, &debugUtilsLabel);
+    }
+#endif //VULKAN_DEBUG_MARKERS
 }
 
 inline void VulkanCommandBuffer::cmdBindPipeline(VulkanComputePipeline* pipeline)

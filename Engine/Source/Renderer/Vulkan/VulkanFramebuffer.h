@@ -17,6 +17,7 @@ namespace vk
 
     class VulkanDevice;
     class VulkanRenderPass;
+    class VulkanCommandBuffer;
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -54,6 +55,8 @@ namespace vk
 #if VULKAN_DEBUG_MARKERS
         std::string m_debugName;
 #endif //VULKAN_DEBUG_MARKERS
+
+        friend VulkanCommandBuffer;
     };
 
     inline const std::vector<TextureHandle>& VulkanFramebuffer::getImages() const

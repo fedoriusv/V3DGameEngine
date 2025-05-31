@@ -1346,8 +1346,9 @@ VulkanCmdList::VulkanCmdList(VulkanDevice* device) noexcept
 
     , m_CBOManager(nullptr)
 {
+#if VULKAN_DEBUG
     LOG_DEBUG("VulkanCmdList constructor this %llx", this);
-
+#endif //VULKAN_DEBUG
     memset(m_currentCmdBuffer, 0, sizeof(m_currentCmdBuffer));
 
     m_CBOManager = V3D_NEW(VulkanConstantBufferManager, memory::MemoryLabel::MemoryRenderCore)(device);
@@ -1359,8 +1360,9 @@ VulkanCmdList::VulkanCmdList(VulkanDevice* device) noexcept
 
 VulkanCmdList::~VulkanCmdList()
 {
+#if VULKAN_DEBUG
     LOG_DEBUG("~VulkanCmdList destructor this %llx", this);
-
+#endif //VULKAN_DEBUG
     if (m_CBOManager)
     {
         V3D_DELETE(m_CBOManager, memory::MemoryLabel::MemoryRenderCore);
