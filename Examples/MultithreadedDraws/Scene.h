@@ -6,7 +6,7 @@
 #include "Renderer/Device.h"
 #include "Renderer/Texture.h"
 #include "Renderer/SamplerState.h"
-#include "Scene/CameraFPSHandler.h"
+#include "Scene/Camera/CameraFreeFlyHandler.h"
 #include "Scene/Model.h"
 #include "Events/Input/InputEventMouse.h"
 #include "Events/Input/InputEventTouch.h"
@@ -61,7 +61,7 @@ private:
     void Draw(v3d::f32 dt);
     void Exit();
 
-    v3d::scene::CameraFPSHandler*       m_Camera;
+    v3d::scene::CameraFreeFlyHandler*   m_Camera;
     app::Render*                        m_Render;
 
     v3d::renderer::RenderTargetState*   m_RenderTarget;

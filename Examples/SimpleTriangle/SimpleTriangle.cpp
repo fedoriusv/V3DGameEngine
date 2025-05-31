@@ -2,7 +2,7 @@
 
 #include "Renderer/Shader.h"
 #include "Resource/ResourceManager.h"
-#include "Resource/ShaderCompiler.h"
+#include "Resource/Loader/ShaderCompiler.h"
 #include "Stream/StreamManager.h"
 #include "Utils/Logger.h"
 

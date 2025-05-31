@@ -16,10 +16,10 @@ namespace app
 
 void TextureRenderWorker::setup(v3d::renderer::RenderTargetState* renderTarget, const v3d::scene::CameraHandler& camera)
 {
-    _ViewportParams._constantBuffer._cameraPosition = camera.getPosition();
+    _ViewportParams._constantBuffer._cameraPosition = v3d::math::Vector4D(camera.getPosition().getX(), camera.getPosition().getY(), camera.getPosition().getZ(), 0.0f);
     _ViewportParams._constantBuffer._projectionMatrix = camera.getCamera().getProjectionMatrix();
     _ViewportParams._constantBuffer._viewMatrix = camera.getCamera().getViewMatrix();
-    _ViewportParams._constantBuffer._viewportSize = { (v3d::f32)renderTarget->getRenderArea().m_width, (v3d::f32)renderTarget->getRenderArea().m_height, 0.f, 0.f };
+    _ViewportParams._constantBuffer._viewportSize = { (v3d::f32)renderTarget->getRenderArea()._width, (v3d::f32)renderTarget->getRenderArea()._height, 0.f, 0.f };
 
     _RenderTarget = renderTarget;
 }

@@ -72,7 +72,7 @@ public:
         struct Light
         {
             v3d::math::Vector4D _lightPos;
-            v3d::math::Vector4D _color;
+            v3d::color::Color _color;
         };
         Light _constantBuffer;
 

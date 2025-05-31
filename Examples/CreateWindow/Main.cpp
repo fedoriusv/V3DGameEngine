@@ -27,7 +27,6 @@ public:
         ASSERT(UIWindow, "windows is nullptr");
         m_ChildWindows.push_back(UIWindow);
 
-        ASSERT(false, "nullptr");
 #ifdef PLATFORM_WINDOWS
         m_InputEventHandler = new InputEventHandler();
         m_InputEventHandler->bind([](const KeyboardInputEvent* event)

@@ -118,8 +118,7 @@ private:
 
     bool Run()
     {
-        f32 dt = 0.001f;
-
+        f32 dt = 0.16f;
         m_Scene->Run(dt);
 
         TRACE_PROFILER_FRAME;

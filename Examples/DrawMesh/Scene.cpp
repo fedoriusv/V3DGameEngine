@@ -1,13 +1,13 @@
 #include "Scene.h"
-#include "Scene/CameraArcballHandler.h"
 #include "Resource/Model.h"
 #include "Resource/Bitmap.h"
 #include "Resource/ResourceManager.h"
-#include "Resource/ShaderSourceFileLoader.h"
-#include "Resource/ImageFileLoader.h"
-#include "Resource/ModelFileLoader.h"
+#include "Resource/Loader/ShaderSourceFileLoader.h"
+#include "Resource/Loader/ImageFileLoader.h"
+#include "Resource/Loader/ModelFileLoader.h"
 #include "Scene/Model.h"
-#include "Scene/Mesh.h"
+#include "Scene/Geometry/Mesh.h"
+#include "Scene/Camera/CameraArcballHandler.h"
 
 #define VULKAN_GLSL 0
 

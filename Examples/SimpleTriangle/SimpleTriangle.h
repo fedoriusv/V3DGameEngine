@@ -8,8 +8,8 @@
 #include "Renderer/Buffer.h"
 #include "Renderer/Swapchain.h"
 
-#include "Scene/CameraArcballHandler.h"
-#include "Scene/Camera.h"
+#include "Scene/Camera/CameraArcballHandler.h"
+#include "Scene/Camera/Camera.h"
 
 class SimpleTriangle
 {

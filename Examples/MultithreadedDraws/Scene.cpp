@@ -1,16 +1,19 @@
 #include "Scene.h"
-#include "Scene/CameraArcballHandler.h"
+
+#include "Stream/StreamManager.h"
+
+#include "Scene/Model.h"
+#include "Scene/Geometry/Mesh.h"
+#include "Scene/Camera/CameraArcballHandler.h"
+
 #include "Resource/Model.h"
 #include "Resource/Bitmap.h"
 #include "Resource/ResourceManager.h"
-#include "Resource/ShaderSourceFileLoader.h"
-#include "Resource/ImageFileLoader.h"
-#include "Resource/ModelFileLoader.h"
-#include "Scene/Model.h"
-#include "Scene/Mesh.h"
-#include "Resource/AssetSourceFileLoader.h"
-#include "Stream/StreamManager.h"
-#include "Resource/ShaderCompiler.h"
+#include "Resource/Loader/ShaderSourceFileLoader.h"
+#include "Resource/Loader/ImageFileLoader.h"
+#include "Resource/Loader/ModelFileLoader.h"
+#include "Resource/Loader/AssetSourceFileLoader.h"
+#include "Resource/Loader/ShaderCompiler.h"
 
 #define VULKAN_ONLY 0
 
@@ -81,7 +84,7 @@ void Scene::SendExitSignal()
 void Scene::Init()
 {
     //init camera
-    m_Camera = new scene::CameraFPSHandler(new scene::Camera(math::Vector3D(0.0f, 0.0f, 0.0f), math::Vector3D(0.0f, 1.0f, 0.0f)), { 0.0f, 1.0f, -1.0f });
+    m_Camera = new scene::CameraFreeFlyHandler(std::make_unique<scene::Camera>(math::Vector3D(0.0f, 0.0f, 0.0f), math::Vector3D(0.0f, 1.0f, 0.0f)), { 0.0f, 1.0f, -1.0f });
     m_Camera->setPerspective(45.0f, m_Swapchain->getBackbufferSize(), 0.01f, 256.f);
 
     m_CmdList = m_Device->createCommandList<renderer::CmdListRender>(renderer::Device::GraphicMask);
@@ -150,7 +153,7 @@ void Scene::Init()
         m_renderTargetBackbuffer = new renderer::RenderTargetState(m_Device, m_Swapchain->getBackbufferSize());
         m_renderTargetBackbuffer->setColorTexture(0, m_Swapchain->getBackbuffer(),
             {
-                renderer::RenderTargetLoadOp::LoadOp_DontCare, renderer::RenderTargetStoreOp::StoreOp_Store, math::Vector4D(1.0f)
+                renderer::RenderTargetLoadOp::LoadOp_DontCare, renderer::RenderTargetStoreOp::StoreOp_Store, color::Color(1.0f)
             },
             {
                 renderer::TransitionOp::TransitionOp_Undefined, renderer::TransitionOp::TransitionOp_Present
@@ -192,7 +195,7 @@ void Scene::Load()
     sampler->setWrap(renderer::SamplerWrap::TextureWrap_Repeat);
 
     renderer::Texture2D* texture = new renderer::Texture2D(m_Device, renderer::TextureUsage::TextureUsage_Sampled | renderer::TextureUsage_Shared | renderer::TextureUsage_Write,
-        image->getFormat(), math::Dimension2D(image->getDimension().m_width, image->getDimension().m_height), image->getMipmapsCount());
+        image->getFormat(), math::Dimension2D(image->getDimension()._width, image->getDimension()._height), image->getMipmapsCount());
 
     m_CmdList->uploadData(texture, image->getSize(), image->getBitmap());
 
@@ -214,7 +217,7 @@ void Scene::Load()
             renderer::Format::Format_R8G8B8A8_UNorm, m_Swapchain->getBackbufferSize(), renderer::TextureSamples::TextureSamples_x1, "ColorAttachment");
         m_RenderTarget->setColorTexture(0, colorAttachment,
             {
-                renderer::RenderTargetLoadOp::LoadOp_Load, renderer::RenderTargetStoreOp::StoreOp_Store, math::Vector4D(0.0f)
+                renderer::RenderTargetLoadOp::LoadOp_Load, renderer::RenderTargetStoreOp::StoreOp_Store, color::Color(0.0f)
             },
             {
                 renderer::TransitionOp::TransitionOp_ColorAttachment, renderer::TransitionOp::TransitionOp_ColorAttachment
@@ -273,7 +276,7 @@ void Scene::Load()
     std::mt19937 gen(rd()); // seed the generator
     std::uniform_int_distribution<> distr(-10, 10); // define the range
 
-    const u32 instanceCountPerModel = 40000; //load from json
+    const u32 instanceCountPerModel = 40/*000*/; //load from json
     for (ModelData* data : m_Models)
     {
         for (u32 i = 0; i < instanceCountPerModel; ++i)
@@ -329,7 +332,7 @@ void Scene::Draw(f32 dt)
         TRACE_PROFILER_SCOPE("ClearRT", color::YELLOW);
 
         m_CmdList->transition(renderer::TextureView(m_RenderTarget->getColorTexture<v3d::renderer::Texture2D>(0), 0, 1, 0, 1), renderer::TransitionOp::TransitionOp_ColorAttachment);
-        m_CmdList->clear(m_RenderTarget->getColorTexture<v3d::renderer::Texture2D>(0), math::Vector4D(0.0f));
+        m_CmdList->clear(m_RenderTarget->getColorTexture<v3d::renderer::Texture2D>(0), color::Color(0.0f));
         m_CmdList->clear(m_RenderTarget->getDepthStencilTexture<v3d::renderer::Texture2D>(), 0.0f, 0);
         m_Device->submit(m_CmdList);
     }
@@ -342,13 +345,13 @@ void Scene::Draw(f32 dt)
                 TRACE_PROFILER_SCOPE("ThreadDraw", color::DKGREY);
 
                 render->_CmdList->beginRenderTarget(*render->_RenderTarget);
-                render->_CmdList->setViewport(math::Rect32(0, 0, render->_RenderTarget->getRenderArea().m_width, render->_RenderTarget->getRenderArea().m_height));
-                render->_CmdList->setScissor(math::Rect32(0, 0, render->_RenderTarget->getRenderArea().m_width, render->_RenderTarget->getRenderArea().m_height));
+                render->_CmdList->setViewport(math::Rect(0, 0, render->_RenderTarget->getRenderArea()._width, render->_RenderTarget->getRenderArea()._height));
+                render->_CmdList->setScissor(math::Rect(0, 0, render->_RenderTarget->getRenderArea()._width, render->_RenderTarget->getRenderArea()._height));
 
                 {
                     TextureRenderWorker* tRender = static_cast<TextureRenderWorker*>(render);
                     tRender->_LightParams._constantBuffer._lightPos = math::Vector4D(25.0f, 0.0f, 5.0f, 1.0f);
-                    tRender->_LightParams._constantBuffer._color = math::Vector4D(1.0f);
+                    tRender->_LightParams._constantBuffer._color = color::Color(1.0f);
                 }
                 render->bindParameters(pipeline);
 
@@ -397,8 +400,8 @@ void Scene::Draw(f32 dt)
         TRACE_PROFILER_SCOPE("BackbufferDraw", color::YELLOW);
 
         m_CmdList->beginRenderTarget(*m_renderTargetBackbuffer);
-        m_CmdList->setViewport(math::Rect32(0, 0, m_renderTargetBackbuffer->getRenderArea().m_width, m_renderTargetBackbuffer->getRenderArea().m_height));
-        m_CmdList->setScissor(math::Rect32(0, 0, m_renderTargetBackbuffer->getRenderArea().m_width, m_renderTargetBackbuffer->getRenderArea().m_height));
+        m_CmdList->setViewport(math::Rect(0, 0, m_renderTargetBackbuffer->getRenderArea()._width, m_renderTargetBackbuffer->getRenderArea()._height));
+        m_CmdList->setScissor(math::Rect(0, 0, m_renderTargetBackbuffer->getRenderArea()._width, m_renderTargetBackbuffer->getRenderArea()._height));
         m_CmdList->setPipelineState(*m_PipelineBackbuffer);
 
         renderer::Descriptor colorSampler(m_samplerBackbuffer, 0);
