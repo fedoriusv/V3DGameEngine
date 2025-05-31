@@ -1,5 +1,7 @@
 #pragma once
 
+#include <type_traits>
+
 namespace v3d
 {
     /////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -30,45 +32,6 @@ namespace v3d
 
     template<typename T>
     concept FloatType = std::is_same_v<T, f32> || std::is_same_v<T, f64> || std::is_same_v<T, f80>;
-
-    /////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    class Type;
-    using TypePtr = Type const*;
-
-    template<typename T>
-    struct TypeOf
-    {
-        static TypePtr get()
-        {
-            return TypeOf<T>::get();
-        }
-    };
-
-    template<typename T>
-    TypePtr type_of()
-    {
-        return TypeOf<T>::get();
-    };
-
-    struct MetaObject
-    {
-        template<typename T>
-        MetaObject(T* obj)
-            : _type(type_of<T>())
-            , _object(obj)
-        {
-        }
-
-        MetaObject(TypePtr type)
-            : _type(type)
-            , _object(nullptr)
-        {
-        }
-
-        TypePtr _type;
-        void*   _object;
-    };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 

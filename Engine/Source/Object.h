@@ -13,44 +13,77 @@ namespace v3d
 {
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    template<typename ObjectPtrType = void*>
+    class Type;
+    using TypePtr = Type const*;
+
+    template<typename ObjectType>
+    struct TypeOf
+    {
+        static TypePtr get()
+        {
+            static_assert(false, "must not be called");
+            return TypeOf<ObjectType>::get();
+        }
+    };
+
+    template<typename ObjectType>
+    TypePtr typeOf()
+    {
+        return TypeOf<ObjectType>::get();
+    };
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    /**
+    * @brief ObjectHandle
+    */
     struct ObjectHandle
     {
-        explicit ObjectHandle(ObjectPtrType object = nullptr) noexcept
-            : _object(object)
+        ObjectHandle() noexcept
+            : _type(nullptr)
+            , _object(nullptr)
         {
-            static_assert(std::is_pointer<ObjectPtrType>::value, "must be ptr");
+        }
+
+        template<typename ObjectType>
+        ObjectHandle(ObjectType* object) noexcept
+            : _type(typeOf<ObjectType>())
+            , _object(object)
+        {
+        }
+
+        ObjectHandle(TypePtr type) noexcept
+            : _type(type)
+            , _object(nullptr)
+        {
         }
 
         bool isValid() const
-        { 
-            return _object != nullptr;
+        {
+            return _object != nullptr && _type != nullptr;
         }
 
-        void reset()
-        { 
-            _object = nullptr;
+        template<typename ObjectType>
+        bool isType() const
+        {
+            return _type == typeOf<ObjectType>();
         }
 
-        bool operator==(const ObjectHandle<ObjectPtrType>& object) const
-        { 
-            return _object == object._object;
-        }
-
-        bool operator!=(const ObjectHandle<ObjectPtrType>& object) const
-        { 
-            return _object != object._object;
-        }
-
-        ObjectPtrType _object;
+        TypePtr _type;
+        void*   _object;
     };
 
-#define OBJECT_FROM_HANDLE(handle, type) reinterpret_cast<type*>((handle)._object)
-
-    template<typename ObjectHandle, typename ObjectPtrType = void*>
-    constexpr ObjectPtrType objectFromHandle(ObjectHandle handle)
+    template<typename ObjectType>
+    ObjectType* objectFromHandle(ObjectHandle handle)
     {
-        return reinterpret_cast<ObjectPtrType*>((handle)._object);
+        ASSERT(handle.isType<ObjectType>(), "different types");
+        return reinterpret_cast<ObjectType*>((handle)._object);
+    }
+
+    template<typename ObjectType>
+    constexpr ObjectHandle makeObjectHandle(ObjectType* object = nullptr)
+    {
+        return ObjectHandle(object);
     }
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
