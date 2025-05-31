@@ -114,6 +114,8 @@ namespace renderer
         ObjectTracker<Sampler>  m_tracker;
 
         const std::string       m_name;
+
+        static_assert(sizeof(SamplerDesc) == 24, "wrong size");
     };
 
     inline SamplerFilter SamplerState::getFiltering() const

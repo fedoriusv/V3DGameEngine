@@ -6,6 +6,15 @@ namespace v3d
 namespace renderer
 {
 
+RenderPipeline::RenderPipeline(PipelineType type) noexcept
+    : m_pipelineType(type)
+{
+}
+
+RenderPipeline::~RenderPipeline()
+{
+}
+
 const RenderPassDesc RenderPipeline::createCompatibilityRenderPassDescription(const RenderPassDesc& renderpassDesc)
 {
     RenderPassDesc compatibilityRenderpassDesc(renderpassDesc);
@@ -38,15 +47,6 @@ const RenderPassDesc RenderPipeline::createCompatibilityRenderPassDescription(co
     }
 
     return compatibilityRenderpassDesc;
-}
-
-RenderPipeline::RenderPipeline(PipelineType type) noexcept
-    : m_pipelineType(type)
-{
-}
-
-RenderPipeline::~RenderPipeline()
-{
 }
 
 } //namespace renderer
