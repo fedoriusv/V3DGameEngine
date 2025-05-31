@@ -3,8 +3,8 @@
 #include "Configuration.h"
 #include <memory>
 #include <assert.h>
-#include "Types.h"
 
+#include "Types.h"
 
 #if MEMORY_DEBUG
 #   define __FILE_PATH__ __FILE__

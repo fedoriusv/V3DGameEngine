@@ -134,8 +134,7 @@ namespace math
             DirectX::XMMATRIX rotationMatrix = DirectX::XMMatrixRotationQuaternion(rotationQuat);
             DirectX::XMMATRIX translationMatrix = DirectX::XMMatrixTranslationFromVector(translation);
 
-            TMatrixRegister<T, Rows, Cols> m;
-            m._m = scaleMatrix * rotationMatrix * translationMatrix;
+            _m = scaleMatrix * rotationMatrix * translationMatrix;
         }
     }
 
