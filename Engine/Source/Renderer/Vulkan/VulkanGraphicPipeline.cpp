@@ -590,7 +590,11 @@ bool VulkanGraphicPipeline::create(const GraphicsPipelineState& state)
     std::vector<VkPipelineColorBlendAttachmentState> pipelineColorBlendAttachmentStates;
     for (u32 index = 0; index < state.getRenderPassDesc()._countColorAttachments; ++index)
     {
+#if USE_MULTI_COLOR_BLEND_ATTACMENTS
         const GraphicsPipelineStateDesc::BlendState::ColorBlendAttachmentState& colorBlendState = blendState._colorBlendAttachments[index];
+#else
+        const GraphicsPipelineStateDesc::BlendState::ColorBlendAttachmentState& colorBlendState = blendState._colorBlendAttachments[0];
+#endif
         VkPipelineColorBlendAttachmentState pipelineColorBlendAttachmentState = {};
         pipelineColorBlendAttachmentState.blendEnable = colorBlendState._colorBlendEnable;
         pipelineColorBlendAttachmentState.srcColorBlendFactor = VulkanGraphicPipeline::convertBlendFactorToVk(colorBlendState._srcBlendFacor);
