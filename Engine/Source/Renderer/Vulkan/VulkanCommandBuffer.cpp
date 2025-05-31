@@ -40,8 +40,9 @@ VulkanCommandBuffer::VulkanCommandBuffer(VulkanDevice* device, CommandBufferLeve
 
     , m_isInsideRenderPass(false)
 {
+#if VULKAN_DEBUG
     LOG_DEBUG("VulkanCommandBuffer constructor %llx", this);
-
+#endif //VULKAN_DEBUG
     if (m_level == CommandBufferLevel::SecondaryBuffer)
     {
         ASSERT(primaryBuffer, "primaryBuffer is nullptr");
@@ -59,8 +60,9 @@ VulkanCommandBuffer::VulkanCommandBuffer(VulkanDevice* device, CommandBufferLeve
 
 VulkanCommandBuffer::~VulkanCommandBuffer()
 {
+#if VULKAN_DEBUG
     LOG_DEBUG("~VulkanCommandBuffer destructor %llx", this);
-
+#endif //VULKAN_DEBUG
     //released form pool manager
     m_commands = VK_NULL_HANDLE;
     V3D_DELETE(m_fence, memory::MemoryLabel::MemoryRenderCore);

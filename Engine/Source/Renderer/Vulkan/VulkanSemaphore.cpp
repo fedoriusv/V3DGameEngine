@@ -24,7 +24,9 @@ VulkanSemaphore::VulkanSemaphore(VulkanDevice* device, SemaphoreType type) noexc
     , m_type(type)
     , m_status(SemaphoreStatus::Free)
 {
+#if VULKAN_DEBUG
     LOG_DEBUG("VulkanSemaphore::VulkanSemaphore constructor %llx", this);
+#endif //VULKAN_DEBUG
 #if VULKAN_DEBUG_MARKERS
     m_debugName = "Semaphore";
     m_debugName.append(VulkanDebugUtils::k_addressPreffix);
@@ -38,7 +40,9 @@ VulkanSemaphore::VulkanSemaphore(VulkanDevice* device, SemaphoreType type) noexc
 
 VulkanSemaphore::~VulkanSemaphore()
 {
+#if VULKAN_DEBUG
     LOG_DEBUG("VulkanSemaphore::VulkanSemaphore destructor %llx", this);
+#endif //VULKAN_DEBUG
 #if DEBUG_OBJECT_MEMORY
     s_objects.erase(this);
 #endif //DEBUG_OBJECT_MEMORY
@@ -66,7 +70,7 @@ void VulkanSemaphore::fenceTracker(VulkanFence* fence, u64 value, u64 frame)
         VulkanWrapper::SetDebugUtilsObjectName(m_device.getDeviceInfo()._device, &debugUtilsObjectNameInfo);
     }
 }
-#endif
+#endif //VULKAN_DEBUG_MARKERS
 
 VulkanSemaphoreManager::VulkanSemaphoreManager(VulkanDevice* device) noexcept
     : m_device(*device)

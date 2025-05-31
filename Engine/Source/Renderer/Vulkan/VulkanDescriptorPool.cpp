@@ -20,7 +20,9 @@ VulkanDescriptorSetPool::VulkanDescriptorSetPool(VulkanDevice* device, VkDescrip
     , m_poolSize(0)
     , m_flag(flag)
 {
+#if VULKAN_DEBUG
     LOG_DEBUG("VulkanDescriptorSetPool::VulkanDescriptorSetPool constructor %llx", this);
+#endif //VULKAN_DEBUG
 #if VULKAN_DEBUG_MARKERS
     m_debugName = name.empty() ? "DescriptorPool" : name;
     m_debugName.append(VulkanDebugUtils::k_addressPreffix);
@@ -30,7 +32,9 @@ VulkanDescriptorSetPool::VulkanDescriptorSetPool(VulkanDevice* device, VkDescrip
 
 VulkanDescriptorSetPool::~VulkanDescriptorSetPool()
 {
+#if VULKAN_DEBUG
     LOG_DEBUG("VulkanDescriptorSetPool::VulkanDescriptorSetPool destructor %llx", this);
+#endif //VULKAN_DEBUG
     ASSERT(m_pool == VK_NULL_HANDLE, "not nullptr");
 }
 

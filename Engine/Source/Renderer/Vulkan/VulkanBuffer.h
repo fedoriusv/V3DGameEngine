@@ -23,7 +23,7 @@ namespace vk
     /**
     * @brief VulkanBuffer final class. Vulkan Render side
     */
-    class VulkanBuffer final : public renderer::RenderBuffer, public VulkanResource
+    class VulkanBuffer final : public RenderBuffer, public VulkanResource
     {
     public:
 

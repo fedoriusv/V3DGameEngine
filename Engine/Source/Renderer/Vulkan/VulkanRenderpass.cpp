@@ -58,8 +58,9 @@ VulkanRenderPass::VulkanRenderPass(VulkanDevice* device, const RenderPassDesc& d
     , m_viewsMask(0x0)
     , m_drawingToSwapchain(false)
 {
+#if VULKAN_DEBUG
     LOG_DEBUG("VulkanRenderpass::VulkanRenderpass constructor %llx", this);
-
+#endif //VULKAN_DEBUG
     u32 countAttachments = (description._hasDepthStencilAttahment) ? description._countColorAttachments + 1 : description._countColorAttachments;
     m_descriptions.resize(countAttachments);
     for (u32 index = 0; index < description._countColorAttachments; ++index)
@@ -111,7 +112,9 @@ VulkanRenderPass::VulkanRenderPass(VulkanDevice* device, const RenderPassDesc& d
 
 VulkanRenderPass::~VulkanRenderPass()
 {
+#if VULKAN_DEBUG
     LOG_DEBUG("VulkanRenderpass::VulkanRenderpass destructor %llx", this);
+#endif //VULKAN_DEBUG
     ASSERT(!m_renderpass, "not nullptr");
 }
 

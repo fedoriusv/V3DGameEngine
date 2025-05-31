@@ -23,7 +23,9 @@ VulkanFramebuffer::VulkanFramebuffer(VulkanDevice* device, const std::vector<Tex
 
     , m_framebuffer(VK_NULL_HANDLE)
 {
+#if VULKAN_DEBUG
     LOG_DEBUG("VulkanFramebuffer::VulkanFramebuffer constructor %llx", this);
+#endif //VULKAN_DEBUG
 #if VULKAN_DEBUG_MARKERS
     m_debugName = name.empty() ? "Framebuffer" : name;
     m_debugName.append(VulkanDebugUtils::k_addressPreffix);
@@ -33,7 +35,9 @@ VulkanFramebuffer::VulkanFramebuffer(VulkanDevice* device, const std::vector<Tex
 
 VulkanFramebuffer::~VulkanFramebuffer()
 {
+#if VULKAN_DEBUG
     LOG_DEBUG("VulkanFramebuffer::VulkanFramebuffer destructor %llx", this);
+#endif //VULKAN_DEBUG
     ASSERT(!m_framebuffer, "framebuffer is not nullptr");
 }
 

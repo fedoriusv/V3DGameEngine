@@ -916,8 +916,9 @@ VulkanImage::VulkanImage(VulkanDevice* device, VulkanMemory::VulkanMemoryAllocat
     , m_memory(VulkanMemory::s_invalidMemory)
     , m_relatedSwapchain(nullptr)
 {
+#if VULKAN_DEBUG
     LOG_DEBUG("VulkanImage::VulkanImage constructor %llx", this);
-
+#endif //VULKAN_DEBUG
 #if VULKAN_DEBUG_MARKERS
     m_debugName = name.empty() ? "Image" : name;
     m_debugName.append(VulkanDebugUtils::k_addressPreffix);
@@ -949,8 +950,9 @@ VulkanImage::VulkanImage(VulkanDevice* device, VulkanMemory::VulkanMemoryAllocat
     , m_memory(VulkanMemory::s_invalidMemory)
     , m_relatedSwapchain(nullptr)
 {
+#if VULKAN_DEBUG
     LOG_DEBUG("VulkanImage::VulkanImage constructor %llx", this);
-
+#endif //VULKAN_DEBUG
     if (hasUsageFlag(TextureUsage::TextureUsage_Resolve))
     {
         m_usage = usage & ~TextureUsage::TextureUsage_GenerateMipmaps;
@@ -994,7 +996,9 @@ VulkanImage::VulkanImage(VulkanDevice* device, VulkanMemory::VulkanMemoryAllocat
 
 VulkanImage::~VulkanImage()
 {
+#if VULKAN_DEBUG
     LOG_DEBUG("VulkanImage::VulkanImage destructor %llx", this);
+#endif //VULKAN_DEBUG
 #if DEBUG_OBJECT_MEMORY
     s_objects.erase(this);
 #endif //DEBUG_OBJECT_MEMORY

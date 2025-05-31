@@ -32,7 +32,9 @@ VulkanBuffer::VulkanBuffer(VulkanDevice* device, VulkanMemory::VulkanMemoryAlloc
 
     , m_mapped(false)
 {
+#if VULKAN_DEBUG
     LOG_DEBUG("VulkanBuffer::VulkanBuffer constructor %llx", this);
+#endif //VULKAN_DEBUG
 #if VULKAN_DEBUG_MARKERS
     m_debugName = name.empty() ? "Buffer" : name;
     m_debugName.append(VulkanDebugUtils::k_addressPreffix);
@@ -46,7 +48,9 @@ VulkanBuffer::VulkanBuffer(VulkanDevice* device, VulkanMemory::VulkanMemoryAlloc
 
 VulkanBuffer::~VulkanBuffer()
 {
+#if VULKAN_DEBUG
     LOG_DEBUG("VulkanBuffer::VulkanBuffer destructor %llx", this);
+#endif //VULKAN_DEBUG
 #if DEBUG_OBJECT_MEMORY
     s_objects.erase(this);
 #endif //DEBUG_OBJECT_MEMORY

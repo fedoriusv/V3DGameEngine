@@ -373,9 +373,10 @@ VulkanGraphicPipeline::VulkanGraphicPipeline(VulkanDevice* device, VulkanRenderp
     , m_renderpassManager(renderpassManager)
     , m_pipelineLayoutManager(pipelineLayoutManager)
 {
+#if VULKAN_DEBUG
     LOG_DEBUG("VulkanGraphicPipeline::VulkanGraphicPipeline constructor %llx", this);
+#endif //VULKAN_DEBUG
     m_modules.fill(VK_NULL_HANDLE);
-
 #if VULKAN_DEBUG_MARKERS
     m_debugName = name.empty() ? "GraphicPipeline" : name;
     m_debugName.append(VulkanDebugUtils::k_addressPreffix);
@@ -385,7 +386,9 @@ VulkanGraphicPipeline::VulkanGraphicPipeline(VulkanDevice* device, VulkanRenderp
 
 VulkanGraphicPipeline::~VulkanGraphicPipeline()
 {
+#if VULKAN_DEBUG
     LOG_DEBUG("VulkanRenderPass::VulkanRenderPass destructor %llx", this);
+#endif //VULKAN_DEBUG
     ASSERT(!m_pipeline, "not nullptr");
 }
 
