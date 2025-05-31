@@ -386,7 +386,7 @@ namespace renderer
         virtual void destroy() = 0;
     };
 
-    using TextureHandle = ObjectHandle<void*>;
+    using TextureHandle = ObjectHandle;
 
     ///////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -438,7 +438,7 @@ namespace renderer
         virtual void destroy() = 0;
     };
 
-    using BufferHandle = ObjectHandle<RenderBuffer*>;
+    using BufferHandle = ObjectHandle;
 
     ///////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -545,4 +545,29 @@ namespace renderer
     ///////////////////////////////////////////////////////////////////////////////////////////////////////
 
 } //namespace renderer
+
+    ///////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    template<>
+    struct TypeOf<renderer::RenderTexture>
+    {
+        static TypePtr get()
+        {
+            static TypePtr ptr = nullptr;
+            return (TypePtr)&ptr;
+        }
+    };
+
+    template<>
+    struct TypeOf<renderer::RenderBuffer>
+    {
+        static TypePtr get()
+        {
+            static TypePtr ptr = nullptr;
+            return (TypePtr)&ptr;
+        }
+    };
+
+    ///////////////////////////////////////////////////////////////////////////////////////////////////////
+
 } //namespace v3d

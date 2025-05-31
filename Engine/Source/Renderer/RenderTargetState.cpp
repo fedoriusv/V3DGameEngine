@@ -47,7 +47,7 @@ bool RenderTargetState::setColorTexture_Impl(u32 index, Texture* colorTexture, R
         attachmentDesc._stencilLoadOp = RenderTargetLoadOp::LoadOp_DontCare;
         attachmentDesc._stencilStoreOp = RenderTargetStoreOp::StoreOp_DontCare;
         attachmentDesc._backbuffer = false;
-        attachmentDesc._autoResolve = OBJECT_FROM_HANDLE(colorTexture->m_texture, RenderTexture)->hasUsageFlag(TextureUsage::TextureUsage_Resolve);
+        attachmentDesc._autoResolve = objectFromHandle<RenderTexture>(colorTexture->m_texture)->hasUsageFlag(TextureUsage::TextureUsage_Resolve);
         attachmentDesc._layer = AttachmentDesc::compressLayer(k_generalLayer);
         attachmentDesc._initTransition = TransitionOp::TransitionOp_Undefined;
         attachmentDesc._finalTransition = TransitionOp::TransitionOp_ColorAttachment;
@@ -61,7 +61,7 @@ bool RenderTargetState::setColorTexture_Impl(u32 index, Texture* colorTexture, R
     else
     {
         m_renderpassDesc._attachmentsDesc[index] = AttachmentDesc();
-        m_attachmentsDesc._images[index] = TextureHandle();
+        m_attachmentsDesc._images[index] = makeObjectHandle<RenderTexture>(nullptr);
         m_attachmentsDesc._layers[index] = 0;
         m_renderTargets[index] = nullptr;
     }
@@ -83,7 +83,7 @@ bool RenderTargetState::setColorTexture_Impl(u32 index, Texture* colorTexture, u
         attachmentDesc._stencilLoadOp = RenderTargetLoadOp::LoadOp_DontCare;
         attachmentDesc._stencilStoreOp = RenderTargetStoreOp::StoreOp_DontCare;
         attachmentDesc._backbuffer = false;
-        attachmentDesc._autoResolve = OBJECT_FROM_HANDLE(colorTexture->m_texture, RenderTexture)->hasUsageFlag(TextureUsage::TextureUsage_Resolve);
+        attachmentDesc._autoResolve = objectFromHandle<RenderTexture>(colorTexture->m_texture)->hasUsageFlag(TextureUsage::TextureUsage_Resolve);
         attachmentDesc._layer = AttachmentDesc::compressLayer(layer);
         attachmentDesc._initTransition = TransitionOp::TransitionOp_Undefined;
         attachmentDesc._finalTransition = TransitionOp::TransitionOp_ColorAttachment;
@@ -97,7 +97,7 @@ bool RenderTargetState::setColorTexture_Impl(u32 index, Texture* colorTexture, u
     else
     {
         m_renderpassDesc._attachmentsDesc[index] = AttachmentDesc();
-        m_attachmentsDesc._images[index] = TextureHandle();
+        m_attachmentsDesc._images[index] = makeObjectHandle<RenderTexture>(nullptr);
         m_attachmentsDesc._layers[index] = 0;
         m_renderTargets[index] = nullptr;
     }
@@ -118,7 +118,7 @@ bool RenderTargetState::setColorTexture_Impl(u32 index, Texture* colorTexture, c
         attachmentDesc._stencilLoadOp = RenderTargetLoadOp::LoadOp_DontCare;
         attachmentDesc._stencilStoreOp = RenderTargetStoreOp::StoreOp_DontCare;
         attachmentDesc._backbuffer = false;
-        attachmentDesc._autoResolve = OBJECT_FROM_HANDLE(colorTexture->m_texture, RenderTexture)->hasUsageFlag(TextureUsage::TextureUsage_Resolve);
+        attachmentDesc._autoResolve = objectFromHandle<RenderTexture>(colorTexture->m_texture)->hasUsageFlag(TextureUsage::TextureUsage_Resolve);
         attachmentDesc._layer = AttachmentDesc::compressLayer(k_generalLayer);
         attachmentDesc._initTransition = tansitionState._initialState;
         attachmentDesc._finalTransition = tansitionState._finalState;
@@ -132,7 +132,7 @@ bool RenderTargetState::setColorTexture_Impl(u32 index, Texture* colorTexture, c
     else
     {
         m_renderpassDesc._attachmentsDesc[index] = AttachmentDesc();
-        m_attachmentsDesc._images[index] = TextureHandle();
+        m_attachmentsDesc._images[index] = makeObjectHandle<RenderTexture>(nullptr);
         m_attachmentsDesc._layers[index] = 0;
         m_attachmentsDesc._clearColorValues[index] = color::Color(0);
         m_renderTargets[index] = nullptr;
@@ -155,7 +155,7 @@ bool RenderTargetState::setColorTexture_Impl(u32 index, Texture* colorTexture, s
         attachmentDesc._stencilLoadOp = RenderTargetLoadOp::LoadOp_DontCare;
         attachmentDesc._stencilStoreOp = RenderTargetStoreOp::StoreOp_DontCare;
         attachmentDesc._backbuffer = false;
-        attachmentDesc._autoResolve = OBJECT_FROM_HANDLE(colorTexture->m_texture, RenderTexture)->hasUsageFlag(TextureUsage::TextureUsage_Resolve);
+        attachmentDesc._autoResolve = objectFromHandle<RenderTexture>(colorTexture->m_texture)->hasUsageFlag(TextureUsage::TextureUsage_Resolve);
         attachmentDesc._layer = AttachmentDesc::compressLayer(layer);
         attachmentDesc._initTransition = tansitionState._initialState;
         attachmentDesc._finalTransition = tansitionState._finalState;
@@ -169,7 +169,7 @@ bool RenderTargetState::setColorTexture_Impl(u32 index, Texture* colorTexture, s
     else
     {
         m_renderpassDesc._attachmentsDesc[index] = AttachmentDesc();
-        m_attachmentsDesc._images[index] = TextureHandle();
+        m_attachmentsDesc._images[index] = makeObjectHandle<RenderTexture>(nullptr);
         m_attachmentsDesc._layers[index] = 0;
         m_attachmentsDesc._clearColorValues[index] = color::Color(0);
         m_renderTargets[index] = nullptr;
@@ -205,7 +205,7 @@ bool RenderTargetState::setSwapchainTexture_Impl(u32 index, SwapchainTexture* sw
     else
     {
         m_renderpassDesc._attachmentsDesc[index] = AttachmentDesc();
-        m_attachmentsDesc._images[index] = TextureHandle();
+        m_attachmentsDesc._images[index] = makeObjectHandle<RenderTexture>(nullptr);
         m_attachmentsDesc._layers[index] = 0;
         m_attachmentsDesc._clearColorValues[index] = color::Color(0);
         m_renderTargets[index] = nullptr;
@@ -241,7 +241,7 @@ bool RenderTargetState::setSwapchainTexture_Impl(u32 index, SwapchainTexture* sw
     else
     {
         m_renderpassDesc._attachmentsDesc[index] = AttachmentDesc();
-        m_attachmentsDesc._images[index] = TextureHandle();
+        m_attachmentsDesc._images[index] = makeObjectHandle<RenderTexture>(nullptr);
         m_attachmentsDesc._layers[index] = 0;
         m_attachmentsDesc._clearColorValues[index] = color::Color(0);
         m_renderTargets[index] = nullptr;
@@ -262,7 +262,7 @@ bool RenderTargetState::setDepthStencilTexture_Impl(Texture* depthStencilTexture
         attachmentDesc._stencilLoadOp = stencilLoadOp;
         attachmentDesc._stencilStoreOp = stencilStoreOp;
         attachmentDesc._backbuffer = false;
-        attachmentDesc._autoResolve = OBJECT_FROM_HANDLE(depthStencilTexture->m_texture, RenderTexture)->hasUsageFlag(TextureUsage::TextureUsage_Resolve);
+        attachmentDesc._autoResolve = objectFromHandle<RenderTexture>(depthStencilTexture->m_texture)->hasUsageFlag(TextureUsage::TextureUsage_Resolve);
         attachmentDesc._layer = AttachmentDesc::compressLayer(k_generalLayer);
         attachmentDesc._initTransition = TransitionOp::TransitionOp_Undefined;
         attachmentDesc._finalTransition = TransitionOp::TransitionOp_DepthStencilAttachment;
@@ -279,7 +279,7 @@ bool RenderTargetState::setDepthStencilTexture_Impl(Texture* depthStencilTexture
     else
     {
         m_renderpassDesc._attachmentsDesc.back() = AttachmentDesc();
-        m_attachmentsDesc._images.back() = TextureHandle();
+        m_attachmentsDesc._images.back() = makeObjectHandle<RenderTexture>(nullptr);
         m_attachmentsDesc._layers.back() = 0;
         m_renderTargets.back() = nullptr;
 
@@ -302,7 +302,7 @@ bool RenderTargetState::setDepthStencilTexture_Impl(Texture* depthStencilTexture
         attachmentDesc._stencilLoadOp = stencilLoadOp;
         attachmentDesc._stencilStoreOp = stencilStoreOp;
         attachmentDesc._backbuffer = false;
-        attachmentDesc._autoResolve = OBJECT_FROM_HANDLE(depthStencilTexture->m_texture, RenderTexture)->hasUsageFlag(TextureUsage::TextureUsage_Resolve);
+        attachmentDesc._autoResolve = objectFromHandle<RenderTexture>(depthStencilTexture->m_texture)->hasUsageFlag(TextureUsage::TextureUsage_Resolve);
         attachmentDesc._layer = AttachmentDesc::compressLayer(layer);
         attachmentDesc._initTransition = TransitionOp::TransitionOp_Undefined;
         attachmentDesc._finalTransition = TransitionOp::TransitionOp_DepthStencilAttachment;
@@ -319,7 +319,7 @@ bool RenderTargetState::setDepthStencilTexture_Impl(Texture* depthStencilTexture
     else
     {
         m_renderpassDesc._attachmentsDesc.back() = AttachmentDesc();
-        m_attachmentsDesc._images.back() = TextureHandle();
+        m_attachmentsDesc._images.back() = makeObjectHandle<RenderTexture>(nullptr);
         m_attachmentsDesc._layers.back() = 0;
         m_renderTargets.back() = nullptr;
 
@@ -341,7 +341,7 @@ bool RenderTargetState::setDepthStencilTexture_Impl(Texture* depthStencilTexture
         attachmentDesc._stencilLoadOp = stencilOpState._loadOp;
         attachmentDesc._stencilStoreOp = stencilOpState._storeOp;
         attachmentDesc._backbuffer = false;
-        attachmentDesc._autoResolve = OBJECT_FROM_HANDLE(depthStencilTexture->m_texture, RenderTexture)->hasUsageFlag(TextureUsage::TextureUsage_Resolve);
+        attachmentDesc._autoResolve = objectFromHandle<RenderTexture>(depthStencilTexture->m_texture)->hasUsageFlag(TextureUsage::TextureUsage_Resolve);
         attachmentDesc._layer = AttachmentDesc::compressLayer(k_generalLayer);
         attachmentDesc._initTransition = tansitionState._initialState;
         attachmentDesc._finalTransition = tansitionState._finalState;
@@ -358,7 +358,7 @@ bool RenderTargetState::setDepthStencilTexture_Impl(Texture* depthStencilTexture
     else
     {
         m_renderpassDesc._attachmentsDesc.back() = AttachmentDesc();
-        m_attachmentsDesc._images.back() = TextureHandle();
+        m_attachmentsDesc._images.back() = makeObjectHandle<RenderTexture>(nullptr);
         m_attachmentsDesc._layers.back() = 0;
         m_renderTargets.back() = nullptr;
 
@@ -380,7 +380,7 @@ bool RenderTargetState::setDepthStencilTexture_Impl(Texture* depthStencilTexture
         attachmentDesc._stencilLoadOp = stencilOpState._loadOp;
         attachmentDesc._stencilStoreOp = stencilOpState._storeOp;
         attachmentDesc._backbuffer = false;
-        attachmentDesc._autoResolve = OBJECT_FROM_HANDLE(depthStencilTexture->m_texture, RenderTexture)->hasUsageFlag(TextureUsage::TextureUsage_Resolve);
+        attachmentDesc._autoResolve = objectFromHandle<RenderTexture>(depthStencilTexture->m_texture)->hasUsageFlag(TextureUsage::TextureUsage_Resolve);
         attachmentDesc._layer = AttachmentDesc::compressLayer(layer);
         attachmentDesc._initTransition = tansitionState._initialState;
         attachmentDesc._finalTransition = tansitionState._finalState;
@@ -397,7 +397,7 @@ bool RenderTargetState::setDepthStencilTexture_Impl(Texture* depthStencilTexture
     else
     {
         m_renderpassDesc._attachmentsDesc.back() = AttachmentDesc();
-        m_attachmentsDesc._images.back() = TextureHandle();
+        m_attachmentsDesc._images.back() = makeObjectHandle<RenderTexture>(nullptr);
         m_attachmentsDesc._layers.back() = 0;
         m_renderTargets.back() = nullptr;
 

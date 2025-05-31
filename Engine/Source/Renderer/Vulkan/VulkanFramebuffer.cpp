@@ -50,7 +50,7 @@ bool VulkanFramebuffer::create(const VulkanRenderPass* pass)
     m_imageViews.reserve(pass->getCountAttachments());
     for (u32 attach = 0; attach < pass->getCountAttachments(); ++attach)
     {
-        const VulkanImage* vkImage = OBJECT_FROM_HANDLE(m_images[attach], VulkanImage);
+        const VulkanImage* vkImage = static_cast<VulkanImage*>(objectFromHandle<RenderTexture>(m_images[attach]));
         const VulkanRenderPass::VulkanAttachmentDescription& desc = pass->getAttachmentDescription(attach);
         m_imageViews.push_back(vkImage->getImageView(VulkanImage::makeVulkanImageSubresource(vkImage, desc._layer, desc._mip)));
 #if VULKAN_DEBUG
@@ -148,7 +148,7 @@ std::tuple<VulkanFramebuffer*, bool> VulkanFramebufferManager::acquireFramebuffe
             for (u32 index = 0; index < renderpass->getCountAttachments(); ++index)
             {
                 TextureHandle image = VulkanImage::isColorFormat(renderpass->getAttachmentDescription(index)._format) ? description._images[index] : description._images.back();
-                desc._renderTargetsIDs[index] = OBJECT_FROM_HANDLE(image, RenderTexture)->ID();
+                desc._renderTargetsIDs[index] = objectFromHandle<RenderTexture>(image)->ID();
                 images.push_back(image);
             }
         };

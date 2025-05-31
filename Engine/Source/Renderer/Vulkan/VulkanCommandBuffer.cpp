@@ -295,7 +295,7 @@ void VulkanCommandBuffer::cmdBeginRenderpass(VulkanRenderPass* pass, VulkanFrame
     {
 
         auto& image = framebuffer->getImages()[index];
-        VulkanImage* vkImage = OBJECT_FROM_HANDLE(image, VulkanImage);
+        VulkanImage* vkImage = static_cast<VulkanImage*>(objectFromHandle<RenderTexture>(image));
         VulkanCommandBuffer::captureResource(vkImage);
 
         VkImageLayout layout = pass->getAttachmentLayout<0>(index);
@@ -368,7 +368,6 @@ void VulkanCommandBuffer::cmdBeginRenderpass(VulkanRenderPass* pass, VulkanFrame
 void VulkanCommandBuffer::cmdEndRenderPass()
 {
     ASSERT(m_status == CommandBufferStatus::Begin && m_isInsideRenderPass, "invalid state");
-
     if (m_device.getVulkanDeviceCaps()._supportRenderpass2)
     {
         VkSubpassEndInfoKHR subpassEndInfo = {};
@@ -389,7 +388,7 @@ void VulkanCommandBuffer::cmdEndRenderPass()
     ASSERT(pass && framebuffer, "nullptr");
     for (u32 index = 0; index < pass->getCountAttachments(); ++index)
     {
-        VulkanImage* image = OBJECT_FROM_HANDLE(framebuffer->getImages()[index], VulkanImage);
+        VulkanImage* image = static_cast<VulkanImage*>(objectFromHandle<RenderTexture>(framebuffer->getImages()[index]));
         ASSERT(image, "nullptr");
         VkImageLayout layout = m_renderpassState._renderpass->getAttachmentLayout<1>(index);
         const VulkanRenderPass::VulkanAttachmentDescription& attach = pass->getAttachmentDescription(index);

@@ -21,7 +21,7 @@ void* Buffer::map_Impl(u32 offset, u32 size)
 {
     ASSERT(m_buffer.isValid(), "nullptr");
     ASSERT(Buffer::hasUsageFlag(BufferUsage::Buffer_GPUWriteCocherent) || Buffer::hasUsageFlag(BufferUsage::Buffer_GPUWriteCached), "must be dynamic");
-    RenderBuffer* buffer = OBJECT_FROM_HANDLE(m_buffer, RenderBuffer);
+    RenderBuffer* buffer = objectFromHandle<RenderBuffer>(m_buffer);
     return buffer->map(offset, size);
 }
 
@@ -29,7 +29,7 @@ void Buffer::unmap(u32 offset, u32 size)
 {
     ASSERT(m_buffer.isValid(), "nullptr");
     ASSERT(Buffer::hasUsageFlag(BufferUsage::Buffer_GPUWriteCocherent) || Buffer::hasUsageFlag(BufferUsage::Buffer_GPUWriteCached), "must be dynamic");
-    RenderBuffer* buffer = OBJECT_FROM_HANDLE(m_buffer, RenderBuffer);
+    RenderBuffer* buffer = objectFromHandle<RenderBuffer>(m_buffer);
     buffer->unmap(offset, size);
 }
 
