@@ -14,15 +14,11 @@
 
 #include "UI/Wigets.h"
 #include "UI/WigetGizmo.h"
-#include "UI/ImGuiHandler.h"
-
-#include "Resource/ImageFileLoader.h"
-#include "Resource/ResourceManager.h"
-#include "Resource/Bitmap.h"
+#include "UI/ImGui/ImGuiHandler.h"
 
 #include "EditorUI.h"
-#include "EditorViewport.h"
 #include "EditorGizmo.h"
+#include "EditorScene.h"
 
 using namespace v3d;
 using namespace v3d::platform;
@@ -36,7 +32,7 @@ public:
 
     EditorApplication(int& argc, char** argv)
         : v3d::Application(argc, argv)
-        , m_EditorViewport(new EditorViewport())
+        , m_EditorScene(new EditorScene())
         , m_EditorGizmo(new EditorGizmo())
     {
         m_Window = Window::createWindow({ 1280, 720 }, { 800, 500 }, false, true, new InputEventReceiver(), "MainWindow");
@@ -143,12 +139,11 @@ private:
         m_Backbuffer = createBackbufferRT(m_Device, m_Swapchain);
         ASSERT(m_Backbuffer, "m_Backbuffer is nullptr");
 
-        m_CmdList = m_Device->createCommandList<renderer::CmdListRender>(Device::GraphicMask);
-        m_EditorViewport->init(m_Device, math::Dimension2D(800, 600));
+        m_EditorScene->create(m_Device, math::Dimension2D(800, 600));
 
         //UI
-        m_UI = ui::WigetHandler::createWigetHander<ui::ImGuiWigetHandler>(m_Device, m_CmdList, m_Backbuffer->getRenderPassDesc(), ui::ImGuiWigetHandler::ImGui_ViewportMode | ui::ImGuiWigetHandler::ImGui_Gizmo);
-        m_UI->showDemoUI();
+        m_UI = ui::WigetHandler::createWigetHander<ui::ImGuiWigetHandler>(m_Device, m_Backbuffer->getRenderPassDesc(), ui::ImGuiWigetHandler::ImGui_ViewportMode | ui::ImGuiWigetHandler::ImGui_Gizmo);
+        //m_UI->showDemoUI();
 
         InputEventHandler::bind([this](const MouseInputEvent* event)
             {
@@ -208,20 +203,24 @@ private:
                 {
                     if (focused)
                     {
-                        m_Window->getInputEventReceiver()->attach(InputEvent::InputEventType::MouseInputEvent, m_EditorViewport);
-                        m_Window->getInputEventReceiver()->attach(InputEvent::InputEventType::KeyboardInputEvent, m_EditorViewport);
-                        m_Window->getInputEventReceiver()->attach(InputEvent::InputEventType::MouseInputEvent, m_EditorGizmo);
-                        m_Window->getInputEventReceiver()->attach(InputEvent::InputEventType::KeyboardInputEvent, m_EditorGizmo);
+                        m_Window->getInputEventReceiver()->attach(InputEvent::InputEventType::MouseInputEvent, m_EditorScene);
+                        m_Window->getInputEventReceiver()->attach(InputEvent::InputEventType::KeyboardInputEvent, m_EditorScene);
+                        m_Window->getInputEventReceiver()->attach(InputEvent::InputEventType::MouseInputEvent, m_EditorScene);
+                        m_Window->getInputEventReceiver()->attach(InputEvent::InputEventType::KeyboardInputEvent, m_EditorScene);
                     }
                     else
                     {
-                        m_Window->getInputEventReceiver()->dettach(InputEvent::InputEventType::MouseInputEvent, m_EditorViewport);
-                        m_Window->getInputEventReceiver()->dettach(InputEvent::InputEventType::KeyboardInputEvent, m_EditorViewport);
-                        m_Window->getInputEventReceiver()->dettach(InputEvent::InputEventType::MouseInputEvent, m_EditorGizmo);
-                        m_Window->getInputEventReceiver()->dettach(InputEvent::InputEventType::KeyboardInputEvent, m_EditorGizmo);
+                        m_Window->getInputEventReceiver()->dettach(InputEvent::InputEventType::MouseInputEvent, m_EditorScene);
+                        m_Window->getInputEventReceiver()->dettach(InputEvent::InputEventType::KeyboardInputEvent, m_EditorScene);
+                        m_Window->getInputEventReceiver()->dettach(InputEvent::InputEventType::MouseInputEvent, m_EditorScene);
+                        m_Window->getInputEventReceiver()->dettach(InputEvent::InputEventType::KeyboardInputEvent, m_EditorScene);
                     }
                 })
-            .addWiget(ui::WigetText("text")
+            .addWiget(ui::WigetButton("View")
+                .setOnClickedEvent([](const ui::Wiget* w) -> void
+                    {
+                        LOG_DEBUG("TODO: Show context menu");
+                    })
             )
             .addWiget(ui::WigetLayout(ui::WigetLayout::Border)
                 .setHAlignment(ui::WigetLayout::HorizontalAlignment::AlignmentFill)
@@ -229,18 +228,18 @@ private:
                 .addWiget(ui::WigetImage(nullptr, {})
                     .setOnUpdate([this](ui::Wiget* w, f32 dt) -> void
                         {
-                            auto texture = m_EditorViewport->getOutputTexture();
+                            auto texture = m_EditorScene->getOutputTexture();
                             static_cast<ui::WigetImage*>(w)->setTexture(texture);
                         })
                     .setOnDrawRectChanged([this](ui::Wiget* w, ui::Wiget* p, const math::Rect& dim) -> void
                         {
-                            m_EditorViewport->onChanged(dim);
+                            m_EditorScene->onChanged(dim);
 
-                            auto texture = m_EditorViewport->getOutputTexture();
+                            auto texture = m_EditorScene->getOutputTexture();
                             static_cast<ui::WigetImage*>(w)->setTexture(texture);
                         })
                 )
-                .addWiget(ui::WigetGizmo(m_EditorViewport->getCamera())
+                .addWiget(ui::WigetGizmo(m_EditorScene->getCamera())
                     .setActive(false)
                     .setOnCreated([this](ui::Wiget* w) -> void
                         {
@@ -251,10 +250,10 @@ private:
                             m_EditorGizmo->modify(tr);
                         })
                 )
-                .addWiget(ui::WigetViewManipulator(m_EditorViewport->getCamera())
+                .addWiget(ui::WigetViewManipulator(m_EditorScene->getCamera())
                     .setOnViewChangedEvent([this](ui::Wiget* w, ui::Wiget* p, const math::Matrix4D& view) -> void
                         {
-                            m_EditorViewport->onChanged(view);
+                            m_EditorScene->onChanged(view);
                         })
                 )
             );
@@ -275,15 +274,9 @@ private:
                 { ui::WigetWindowLayout::DirDown, 0.2f, &win3  } 
             }));
 
-
-        resource::Bitmap* image = resource::ResourceManager::getInstance()->load<resource::Bitmap, resource::ImageFileLoader>("test_basetex.jpg");
-        renderer::Texture2D* texture = new renderer::Texture2D(m_Device, renderer::TextureUsage::TextureUsage_Sampled | renderer::TextureUsage_Shared | renderer::TextureUsage_Write,
-            image->getFormat(), math::Dimension2D(image->getDimension()._width, image->getDimension()._height), image->getMipmapsCount());
-
-        m_CmdList->uploadData(texture, image->getSize(), image->getBitmap());
-        m_Device->submit(m_CmdList, true);
-
         //editor::UI::constuctTestUIWindow(m_UI, texture);
+
+        //m_CmdList = m_Device->createCommandList<renderer::CmdListRender>(Device::GraphicMask);
     }
     
     void Run()
@@ -294,29 +287,35 @@ private:
         const f32 deltaTime = diffTime / 1'000.f;
         s_prevTime = currentTime;
 
-
-        m_EditorViewport->update(deltaTime);
-        m_UI->update(m_Window, this, deltaTime);
-
         //Scene
-        m_EditorViewport->render(m_CmdList);
-        m_Device->submit(m_CmdList, true);
-
-        //UI
-        m_Swapchain->beginFrame();
-
-        m_CmdList->beginRenderTarget(*m_Backbuffer);
-        if (!m_UI->render(m_CmdList))
         {
-            m_CmdList->clear(m_Swapchain->getBackbuffer(), { 0, 0, 0, 0 });
+            m_EditorScene->preRender(deltaTime);
+            m_EditorScene->postRender();
+            m_EditorScene->submitRender();
         }
-        m_CmdList->endRenderTarget();
+        //Scene
 
-        m_Device->submit(m_CmdList, true);
+        //Editor UI
+        {
+            renderer::CmdListRender* cmdList = m_Device->createCommandList<renderer::CmdListRender>(Device::GraphicMask);
 
-        m_Swapchain->endFrame();
-        m_Swapchain->presentFrame();
-        //UI
+            m_UI->update(m_Window, this, deltaTime);
+            m_Swapchain->beginFrame();
+
+            cmdList->beginRenderTarget(*m_Backbuffer);
+            if (!m_UI->render(cmdList))
+            {
+                cmdList->clear(m_Swapchain->getBackbuffer(), { 0, 0, 0, 0 });
+            }
+            cmdList->endRenderTarget();
+
+            m_Device->submit(cmdList, true);
+            m_Device->destroyCommandList(cmdList);
+
+            m_Swapchain->endFrame();
+            m_Swapchain->presentFrame();
+        }
+        //Editor UI
     }
 
     void Exit()
@@ -324,6 +323,9 @@ private:
         m_Window->getInputEventReceiver()->dettach(InputEvent::InputEventType::MouseInputEvent, this);
         m_Window->getInputEventReceiver()->dettach(InputEvent::InputEventType::KeyboardInputEvent, this);
         m_Window->getInputEventReceiver()->dettach(InputEvent::InputEventType::SystemEvent, this);
+
+        m_EditorScene->destroy();
+        delete m_EditorScene;
 
         if (m_Device)
         {
@@ -340,7 +342,7 @@ private:
 
     ui::ImGuiWigetHandler*  m_UI;
 
-    EditorViewport*         m_EditorViewport;
+    EditorScene*            m_EditorScene;
     EditorGizmo*            m_EditorGizmo;
 
     v3d::renderer::CmdListRender* m_CmdList = nullptr;

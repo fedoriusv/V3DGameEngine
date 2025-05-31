@@ -3,7 +3,7 @@
 
 #include "Utils/Logger.h"
 #include "Resource/ResourceManager.h"
-#include "Resource/ImageFileLoader.h"
+#include "Resource/Loader/ImageFileLoader.h"
 #include "Resource/Bitmap.h"
 
 namespace v3d
