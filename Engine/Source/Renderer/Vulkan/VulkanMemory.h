@@ -40,10 +40,11 @@ namespace vk
         struct VulkanAllocation final
         {
             VkDeviceMemory          _memory;
-            void*                   _mapped;
-            void*                   _metadata;
             VkDeviceSize            _size;
             VkDeviceSize            _offset;
+            VkDeviceSize            _alignment;
+            void*                   _mapped;
+            void*                   _metadata;
             VkMemoryPropertyFlags   _flag;
             u32                     _property;
 
@@ -204,7 +205,7 @@ namespace vk
 #endif //VULKAN_DEBUG
         };
 
-        bool findAllocationFromPool(std::multimap<VkDeviceSize, Pool*>& heaps, VkDeviceSize size, VulkanMemory::VulkanAllocation& memory);
+        bool findAllocationFromPool(std::multimap<VkDeviceSize, Pool*>& heaps, VkDeviceSize size, VkDeviceSize align, VulkanMemory::VulkanAllocation& memory);
         [[nodiscard]] Pool* createPool(VkDeviceSize poolSize, VkDeviceSize requestedSize, u32 memoryTypeIndex);
 
 

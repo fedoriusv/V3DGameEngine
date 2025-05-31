@@ -37,10 +37,11 @@ std::string VulkanMemory::memoryPropertyFlagToStringVK(VkMemoryPropertyFlagBits 
 VulkanMemory::VulkanAllocation VulkanMemory::s_invalidMemory = 
 {
     VK_NULL_HANDLE,
-    nullptr,
-    nullptr,
     0,
     0,
+    0,
+    nullptr,
+    nullptr,
     0,
     0
 };
@@ -304,7 +305,8 @@ VulkanMemory::VulkanAllocation SimpleVulkanMemoryAllocator::allocate(VkDeviceSiz
 
     //If image is not VK_NULL_HANDLE, VkMemoryAllocateInfo::allocationSize must equal the VkMemoryRequirements::size of the image
     //(https://vulkan.lunarg.com/doc/view/1.3.231.1/windows/1.3-extensions/vkspec.html#VUID-VkMemoryDedicatedAllocateInfo-image-01433)
-    VkDeviceSize alignedSize = size; //core::alignUp<VkDeviceSize>(size, align);
+    VkDeviceSize alignedSize = size; //math::alignUp<VkDeviceSize>(size, align);
+    ASSERT(math::alignUp<VkDeviceSize>(size, align) == alignedSize, "must be aligned");
 
     VulkanMemory::VulkanAllocation memory = {};
 
@@ -325,6 +327,7 @@ VulkanMemory::VulkanAllocation SimpleVulkanMemoryAllocator::allocate(VkDeviceSiz
 
     memory._size = alignedSize;
     memory._offset = 0;
+    memory._alignment = align;
     memory._mapped = nullptr;
     memory._flag = physicalDeviceMemoryProperties.memoryTypes[memoryTypeIndex].propertyFlags;
 
@@ -402,23 +405,25 @@ PoolVulkanMemoryAllocator::Pool::Pool() noexcept
 {
 }
 
-VulkanMemory::VulkanAllocation PoolVulkanMemoryAllocator::allocate(VkDeviceSize size, VkDeviceSize align, u32 memoryTypeIndex, const void* extensions)
+VulkanMemory::VulkanAllocation PoolVulkanMemoryAllocator::allocate(VkDeviceSize size, VkDeviceSize alignment, u32 memoryTypeIndex, const void* extensions)
 {
     std::lock_guard lock(VulkanMemory::s_mutex);
 
-    VkDeviceSize alignedSize = math::alignUp<VkDeviceSize>(size, m_device.getVulkanDeviceCaps().getPhysicalDeviceLimits().minMemoryMapAlignment);
+    //The Vulkan spec states : memoryOffset must be an integer multiple of the alignment member of the VkMemoryRequirements structure returned from a call to vkGetImageMemoryRequirements with image
+    //(https ://vulkan.lunarg.com/doc/view/1.3.296.0/windows/1.3-extensions/vkspec.html#VUID-vkBindImageMemory-memoryOffset-01048)
+    VkDeviceSize alignedSize = math::alignUp<VkDeviceSize>(size, alignment);
 
     ASSERT(memoryTypeIndex < VK_MAX_MEMORY_TYPES, "out of range");
     auto& heaps = m_heaps[memoryTypeIndex];
     
     //find in heap
-    if (VulkanMemory::VulkanAllocation memory = {}; PoolVulkanMemoryAllocator::findAllocationFromPool(heaps, alignedSize, memory))
+    if (VulkanMemory::VulkanAllocation memory = {}; PoolVulkanMemoryAllocator::findAllocationFromPool(heaps, alignedSize, alignment, memory))
     {
         return memory;
     }
 
     //create new pool
-    u32 alignedAllocationSize = math::alignUp(m_allocationSize, m_device.getVulkanDeviceCaps().getPhysicalDeviceLimits().minMemoryMapAlignment);
+    u32 alignedAllocationSize = math::alignUp<VkDeviceSize>(m_allocationSize, alignment);
     ASSERT(alignedAllocationSize > alignedSize, "Too small size of pool. Set bigger");
     Pool* newPool = createPool(alignedAllocationSize, alignedSize, memoryTypeIndex);
     if (!newPool)
@@ -438,11 +443,13 @@ VulkanMemory::VulkanAllocation PoolVulkanMemoryAllocator::allocate(VkDeviceSize 
 
     return {
         newPool->_memory,
-        newPool->_mapped,
-        newPool,
         alignedSize,
         0,
+        alignment,
+        newPool->_mapped,
+        newPool,
         flag,
+        0
     };
 
     return VulkanMemory::s_invalidMemory;
@@ -557,7 +564,7 @@ void PoolVulkanMemoryAllocator::deallocate(VulkanMemory::VulkanAllocation& memor
     memory = VulkanMemory::s_invalidMemory;
 }
 
-bool PoolVulkanMemoryAllocator::findAllocationFromPool(std::multimap<VkDeviceSize, Pool*>& heaps, VkDeviceSize size, VulkanMemory::VulkanAllocation& memory)
+bool PoolVulkanMemoryAllocator::findAllocationFromPool(std::multimap<VkDeviceSize, Pool*>& heaps, VkDeviceSize size, VkDeviceSize alignment, VulkanMemory::VulkanAllocation& memory)
 {
     auto heapIter = heaps.lower_bound(size);
     if (heapIter == heaps.cend())
@@ -585,12 +592,14 @@ bool PoolVulkanMemoryAllocator::findAllocationFromPool(std::multimap<VkDeviceSiz
     ASSERT(chunkSize._size >= size, "fail");
     VkDeviceSize allocatedSize = 0;
     VkDeviceSize allocatedOffset = 0;
-    if (chunkSize._size - size >= m_device.getVulkanDeviceCaps().getPhysicalDeviceLimits().minMemoryMapAlignment)
+    if (chunkSize._size - size >= alignment)
     {
         MemoryChunck reqestedChunkSize;
         reqestedChunkSize._size = size;
-        reqestedChunkSize._offset = chunkSize._offset;
+        reqestedChunkSize._offset = math::alignUp(chunkSize._offset, alignment);
         pool->_chunks.insert(reqestedChunkSize);
+        ASSERT(math::alignUp(reqestedChunkSize._size, alignment) == reqestedChunkSize._size, "must be aligment");
+        ASSERT(math::alignUp(reqestedChunkSize._offset, alignment) == reqestedChunkSize._offset, "must be aligment");
 
         allocatedSize = reqestedChunkSize._size;
         allocatedOffset = reqestedChunkSize._offset;
@@ -598,7 +607,6 @@ bool PoolVulkanMemoryAllocator::findAllocationFromPool(std::multimap<VkDeviceSiz
         MemoryChunck freeChunkSize;
         freeChunkSize._size = chunkSize._size - size;
         freeChunkSize._offset = chunkSize._offset + size;
-        ASSERT(math::alignUp(freeChunkSize._offset, m_device.getVulkanDeviceCaps().getPhysicalDeviceLimits().minMemoryMapAlignment) == freeChunkSize._offset, "must be aligment");
 
         pool->_chunks.insert(freeChunkSize);
         pool->_freeChunks.insert(freeChunkSize);
@@ -615,11 +623,13 @@ bool PoolVulkanMemoryAllocator::findAllocationFromPool(std::multimap<VkDeviceSiz
     VkMemoryPropertyFlags flag = physicalDeviceMemoryProperties.memoryTypes[pool->_memoryTypeIndex].propertyFlags;
 
     memory._memory = pool->_memory;
-    memory._mapped = pool->_mapped;
-    memory._metadata = pool;
     memory._size = allocatedSize;
     memory._offset = allocatedOffset;
+    memory._alignment = alignment;
+    memory._mapped = pool->_mapped;
+    memory._metadata = pool;
     //memory._flag = flag;
+    //memory._property
 
     VkDeviceSize maxChuckSize = pool->_freeChunks.empty() ? 0 : pool->_freeChunks.rbegin()->_size;
     if (maxChuckSize != pool->_chunkSize)
