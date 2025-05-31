@@ -159,22 +159,22 @@ namespace renderer
         Format_D24_UNorm_S8_UInt = 129,
         Format_D32_SFloat_S8_UInt = 130,
 
-        Format_BC1_RGB_UNorm_Block = 131,   //Format_RGB_DXT1_Unorm_Block8
+        Format_BC1_RGB_UNorm_Block = 131,   //Format_RGB_DXT1_UNorm_Block8
         Format_BC1_RGB_SRGB_Block = 132,    //Format_RGB_DXT1_SRGB_Block8
-        Format_BC1_RGBA_UNorm_Block = 133,  //Format_RGBA_DXT1_Unorm_Block8
+        Format_BC1_RGBA_UNorm_Block = 133,  //Format_RGBA_DXT1_UNorm_Block8
         Format_BC1_RGBA_SRGB_Block = 134,   //Format_RGBA_DXT1_SRGA_Block8
-        Format_BC2_UNorm_Block = 135,       //Format_RGB_DXT3_Unorm_Block16
+        Format_BC2_UNorm_Block = 135,       //Format_RGB_DXT3_UNorm_Block16
         Format_BC2_SRGB_Block = 136,        //Format_RGB_DXT3_SRGB_Block16
-        Format_BC3_UNorm_Block = 137,       //Format_RGB_DXT5_Unorm_Block16
-        Format_BC3_SRGB_Block = 138,        //Format_RGB_DXT5_SRGB_Block16
-        Format_BC4_UNorm_Block = 139,
-        Format_BC4_SNorm_Block = 140,
-        Format_BC5_UNorm_Block = 141,
-        Format_BC5_SNorm_Block = 142,
-        Format_BC6H_UFloat_Block = 143,
-        Format_BC6H_SFloat_Block = 144,
-        Format_BC7_UNorm_Block = 145,
-        Format_BC7_SRGB_Block = 146,
+        Format_BC3_UNorm_Block = 137,       //Format_RGB_DXT5_UNorm_Block16
+        Format_BC3_SRGB_Block = 138,        //Format_RGB_ATI1N_SRGB_Block16
+        Format_BC4_UNorm_Block = 139,       //Format_R_ATI1N_UNorm_Block8
+        Format_BC4_SNorm_Block = 140,       //Format_R_ATI1N_SNorm_Block8
+        Format_BC5_UNorm_Block = 141,       //Format_RG_ATI2N_UNorm_Block16
+        Format_BC5_SNorm_Block = 142,       //Format_RG_ATI2N_SNorm_Block16
+        Format_BC6H_UFloat_Block = 143,     //Format_RGB_BP_UFloat_Block16
+        Format_BC6H_SFloat_Block = 144,     //Format_RGB_BP_SFloat_Block16
+        Format_BC7_UNorm_Block = 145,       //Format_RGBA_BP_UNorm_Block16
+        Format_BC7_SRGB_Block = 146,        //Format_RGBA_BP_SRGB_Block16
 
         Format_ETC2_R8G8B8_UNorm_Block = 147,
         Format_ETC2_R8G8B8_SRGB_Block = 148,
