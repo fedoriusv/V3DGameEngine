@@ -4,7 +4,7 @@
 #include "Resource.h"
 #include "Utils/Singleton.h"
 #include "Renderer/Shader.h"
-#include "ShaderDecoder.h"
+#include "Resource/Decoder/ShaderDecoder.h"
 
 namespace v3d
 {

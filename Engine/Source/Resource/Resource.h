@@ -22,6 +22,7 @@ namespace resource
     enum class ResourceType : u16
     {
         Empty = 0,
+        Technique,
         Shader,
         Bitmap,
         Mesh,

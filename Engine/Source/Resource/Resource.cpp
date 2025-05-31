@@ -63,7 +63,7 @@ ResourceHeader::ResourceHeader(const ResourceHeader& other) noexcept
 void ResourceHeader::setName(const std::string& name)
 {
     ASSERT(name.size() < k_nameSize, "max size is limited");
-    memcpy(_name, name.c_str(), math::min<u64>(name.size(), k_nameSize));
+    memcpy(_name, name.c_str(), std::min<u64>(name.size(), k_nameSize));
 }
 
 u32 ResourceHeader::operator>>(stream::Stream* stream) const
