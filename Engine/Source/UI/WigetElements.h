@@ -68,7 +68,7 @@ namespace ui
 
     inline TypePtr WigetText::getType() const
     {
-        return type_of<WigetType>();
+        return typeOf<WigetType>();
     }
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -180,7 +180,7 @@ namespace ui
 
     inline TypePtr WigetButton::getType() const
     {
-        return type_of<WigetType>();
+        return typeOf<WigetType>();
     }
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -256,7 +256,7 @@ namespace ui
 
     inline TypePtr WigetImage::getType() const
     {
-        return type_of<WigetType>();
+        return typeOf<WigetType>();
     }
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -328,7 +328,7 @@ namespace ui
 
     inline TypePtr WigetCheckBox::getType() const
     {
-        return type_of<WigetType>();
+        return typeOf<WigetType>();
     }
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -359,7 +359,7 @@ namespace ui
 
     inline TypePtr WigetInputField::getType() const
     {
-        return type_of<WigetType>();
+        return typeOf<WigetType>();
     }
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -390,7 +390,7 @@ namespace ui
 
     inline TypePtr WigetInputSlider::getType() const
     {
-        return type_of<WigetType>();
+        return typeOf<WigetType>();
     }
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

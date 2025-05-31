@@ -2,14 +2,14 @@
 #include "Utils/Logger.h"
 
 #if USE_IMGUI
-#include "Wigets.h"
-#include "WigetGizmo.h"
+#include "UI/Wigets.h"
+#include "UI/WigetGizmo.h"
 #include "ImGuiHandler.h"
 #include "ThirdParty/imgui/imgui.h"
 #include "ThirdParty/imgui/imgui_internal.h"
 #include "ThirdParty/ImGuizmo/ImGuizmo.h"
 
-#include "Scene/Camera.h"
+#include "Scene/Camera/Camera.h"
 #include "Scene/Transform.h"
 
 namespace v3d
@@ -819,7 +819,7 @@ void ImGuiWigetDrawer::draw_ViewManipulator(Wiget* wiget, Wiget* base, Wiget::St
         camera.getViewMatrix().get(rawViewMatrix);
         camera.getProjectionMatrix().get(rawProjectionMatrix);
 
-        const bool showGrid = true;
+        const bool showGrid = false;
         if (showGrid)
         {
             f32 rawIdentityMatrix[16] = {};

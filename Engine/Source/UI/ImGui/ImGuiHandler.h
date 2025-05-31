@@ -2,8 +2,8 @@
 
 #if USE_IMGUI
 #include "Common.h"
-#include "WigetHandler.h"
-#include "WigetLayout.h"
+#include "UI/WigetHandler.h"
+#include "UI/WigetLayout.h"
 
 #include "Renderer/Buffer.h"
 
@@ -63,7 +63,7 @@ namespace ui
 
     private:
 
-        bool create(renderer::CmdListRender* cmdList, const renderer::RenderPassDesc& renderpassDesc) override;
+        bool create(const renderer::RenderPassDesc& renderpassDesc) override;
         void destroy() override;
 
         ImGuiContext* m_ImGuiContext;

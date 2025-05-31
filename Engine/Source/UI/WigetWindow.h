@@ -189,7 +189,7 @@ namespace ui
 
     inline TypePtr WigetWindow::getType() const
     {
-        return type_of<WigetType>();
+        return typeOf<WigetType>();
     }
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

@@ -121,7 +121,7 @@ namespace ui
 
     inline TypePtr WigetRadioButtonGroup::getType() const
     {
-        return type_of<WigetType>();
+        return typeOf<WigetType>();
     }
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -154,7 +154,7 @@ namespace ui
 
     inline TypePtr WigetComboBox::getType() const
     {
-        return type_of<WigetType>();
+        return typeOf<WigetType>();
     }
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -187,7 +187,7 @@ namespace ui
 
     inline TypePtr WigetListBox::getType() const
     {
-        return type_of<WigetType>();
+        return typeOf<WigetType>();
     }
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

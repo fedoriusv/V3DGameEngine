@@ -54,7 +54,7 @@ WigetLayout::~WigetLayout()
 
 TypePtr WigetLayout::getType() const
 {
-    return type_of<WigetLayout>();
+    return typeOf<WigetLayout>();
 }
 
 bool WigetLayout::update(WigetHandler* handler, Wiget* parent, Wiget* layout, f32 dt)
@@ -160,7 +160,7 @@ WigetHorizontalLayout::~WigetHorizontalLayout()
 
 TypePtr WigetHorizontalLayout::getType() const
 {
-    return type_of<WigetHorizontalLayout>();
+    return typeOf<WigetHorizontalLayout>();
 }
 
 Wiget* WigetHorizontalLayout::copy() const
@@ -224,7 +224,7 @@ WigetWindowLayout& WigetWindowLayout::operator=(WigetWindowLayout&& other)
 
 TypePtr WigetWindowLayout::getType() const
 {
-    return type_of<WigetWindowLayout>();
+    return typeOf<WigetWindowLayout>();
 }
 
 bool WigetWindowLayout::update(WigetHandler* handler, Wiget* parent, Wiget* layout, f32 dt)

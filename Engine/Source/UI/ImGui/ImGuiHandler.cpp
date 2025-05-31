@@ -1,5 +1,4 @@
 #include "ImGuiHandler.h"
-#include "Wiget.h"
 
 #include "Utils/Logger.h"
 #include "Platform/Window.h"
@@ -15,7 +14,7 @@
 #include "Renderer/Shader.h"
 #include "Renderer/Texture.h"
 #include "Stream/StreamManager.h"
-#include "Resource/ShaderCompiler.h"
+#include "Resource/Loader/ShaderCompiler.h"
 #include "UI/Wigets.h"
 
 #if USE_IMGUI
@@ -212,7 +211,7 @@ ImGuiWigetHandler::~ImGuiWigetHandler()
     ASSERT(!m_ImGuiContext, "must be nullptr");
 }
 
-bool ImGuiWigetHandler::create(renderer::CmdListRender* cmdList, const renderer::RenderPassDesc& renderpassDesc)
+bool ImGuiWigetHandler::create(const renderer::RenderPassDesc& renderpassDesc)
 {
     ASSERT(!m_ImGuiContext, "must be nullptr");
     ImGui::SetAllocatorFunctions(
@@ -366,6 +365,8 @@ bool ImGuiWigetHandler::create(renderer::CmdListRender* cmdList, const renderer:
 
     ImGui::SetColorEditOptions(ImGuiColorEditFlags_Float);
     ImGui::StyleColorsDark();
+
+    renderer::CmdListRender* cmdList = m_device->createCommandList<renderer::CmdListRender>(renderer::Device::GraphicMask);
 
     ImFontConfig fontConfig{};
     fontConfig.OversampleH = 3;

@@ -106,7 +106,7 @@ namespace ui
 
     inline TypePtr WigetGizmo::getType() const
     {
-        return type_of<WigetType>();
+        return typeOf<WigetType>();
     }
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -164,7 +164,7 @@ namespace ui
 
     inline TypePtr WigetViewManipulator::getType() const
     {
-        return type_of<WigetType>();
+        return typeOf<WigetType>();
     }
 
 } // namespace ui

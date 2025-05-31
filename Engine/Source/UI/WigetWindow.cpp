@@ -59,7 +59,7 @@ Wiget* WigetWindow::findWidgetByID(u64 id)
             return wiget;
         }
 
-        if (wiget->getType() == type_of<WigetLayout>())
+        if (wiget->getType() == typeOf<WigetLayout>())
         {
             Wiget* child = static_cast<WigetLayout*>(wiget)->findWidgetByID(id);
             if (child)
@@ -67,7 +67,7 @@ Wiget* WigetWindow::findWidgetByID(u64 id)
                 return child;
             }
         }
-        else if (wiget->getType() == type_of<WigetHorizontalLayout>())
+        else if (wiget->getType() == typeOf<WigetHorizontalLayout>())
         {
             Wiget* child = static_cast<WigetHorizontalLayout*>(wiget)->findWidgetByID(id);
             if (child)

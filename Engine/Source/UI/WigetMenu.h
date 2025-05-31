@@ -71,7 +71,7 @@ namespace ui
 
     inline TypePtr WigetMenuBar::getType() const
     {
-        return type_of<WigetType>();
+        return typeOf<WigetType>();
     }
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -136,7 +136,7 @@ namespace ui
 
     inline TypePtr WigetMenu::getType() const
     {
-        return type_of<WigetType>();
+        return typeOf<WigetType>();
     }
 
     template<class TWiget>
@@ -210,7 +210,7 @@ namespace ui
 
     inline TypePtr WigetMenuItem::getType() const
     {
-        return type_of<WigetType>();
+        return typeOf<WigetType>();
     }
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

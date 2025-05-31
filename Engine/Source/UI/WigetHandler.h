@@ -43,11 +43,11 @@ namespace ui
     public:
 
         template<class TWigetHander>
-        [[nodiscard]] static TWigetHander* createWigetHander(renderer::Device* device, renderer::CmdListRender* cmdList, const renderer::RenderPassDesc& renderpassDesc, u32 flags = 0)
+        [[nodiscard]] static TWigetHander* createWigetHander(renderer::Device* device, const renderer::RenderPassDesc& renderpassDesc, u32 flags = 0)
         {
             static_assert(std::is_base_of<WigetHandler, TWigetHander>(), "wrong type");
             WigetHandler* handler = V3D_NEW(TWigetHander, memory::MemoryLabel::MemorySystem)(device, flags);
-            if (!handler->create(cmdList, renderpassDesc))
+            if (!handler->create(renderpassDesc))
             {
                 handler->destroy();
 
@@ -88,7 +88,7 @@ namespace ui
         explicit WigetHandler(renderer::Device* device) noexcept;
         virtual ~WigetHandler();
 
-        [[nodiscard]] virtual bool create(renderer::CmdListRender* cmdList, const renderer::RenderPassDesc& renderpassDesc) = 0;
+        [[nodiscard]] virtual bool create(const renderer::RenderPassDesc& renderpassDesc) = 0;
         virtual void destroy() = 0;
 
         renderer::Device* const m_device;
