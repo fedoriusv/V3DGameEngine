@@ -2,7 +2,7 @@
 
 #include "Common.h"
 #include "Camera.h"
-#include "Transform.h"
+#include "Scene/Transform.h"
 
 namespace v3d
 {

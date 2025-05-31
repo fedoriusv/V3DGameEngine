@@ -125,7 +125,6 @@ void CameraHandler::setViewMatrix(const math::Matrix4D& view)
 {
     m_camera->m_matrices[Camera::Matrix::Matrix_ViewMatrix] = view;
     m_camera->m_matrices[Camera::Matrix::Matrix_ViewMatrixInverse] = view.getInversed();
-    m_camera->m_transform.setTransform(m_camera->m_matrices[Camera::Matrix::Matrix_ViewMatrixInverse]);
     m_camera->m_matricesFlags &= ~Camera::CameraState::CameraState_View;
 }
 

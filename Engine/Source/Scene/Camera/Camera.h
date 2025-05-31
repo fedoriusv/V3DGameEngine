@@ -1,9 +1,9 @@
 #pragma once
 
 #include "Common.h"
-#include "Component.h"
+#include "Scene/Renderable.h"
+#include "Scene/Component.h"
 #include "Resource/Resource.h"
-#include "Renderable.h"
 
 namespace v3d
 {

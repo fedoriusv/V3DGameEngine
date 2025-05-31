@@ -1,8 +1,11 @@
 #include "Model.h"
-#include "Mesh.h"
+
+#include "Resource/Mesh.h"
 #include "Resource/Model.h"
 #include "Renderer/Device.h"
 #include "Utils/Logger.h"
+
+#include "Scene/Geometry/Mesh.h"
 
 namespace v3d
 {
@@ -22,7 +25,7 @@ namespace scene
      {
          for (auto& mesh : geom._LODs)
          {
-             V3D_DELETE(mesh, memory::MemoryLabel::MemoryObject);
+             //V3D_DELETE(mesh, memory::MemoryLabel::MemoryObject);
          }
          geom._LODs.clear();
      }

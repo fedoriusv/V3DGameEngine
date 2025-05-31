@@ -12,12 +12,12 @@ namespace scene
 CameraEditorHandler::CameraEditorHandler(std::unique_ptr<Camera> camera) noexcept
     : CameraHandler(std::move(camera))
 
+    , m_distanceLimits({-10, 10})
+
     , m_moveSpeed(1.f)
     , m_accelerationSpeed(1.f)
     , m_rotationSpeed(1.0f)
 
-    , m_distanceLimits({-10, 10})
-    , m_distance(2.f)
     , m_deltaDistance(0.f)
 
     , m_freeFlyMode(false)
@@ -33,7 +33,7 @@ void CameraEditorHandler::update(f32 deltaTime)
 {
     if (m_needUpdate)
     {
-        math::Matrix4D look = math::SMatrix::lookAtMatrix(math::VectorRegister3D{ 0.0f, 0.0f, 0.0f }, math::VectorRegister3D{ 0.0f, 0.0f, 1.0f }, m_camera->getUpVector());
+        /*math::Matrix4D look = math::SMatrix::lookAtMatrix(math::VectorRegister3D{ 0.0f, 0.0f, 0.0f }, math::VectorRegister3D{ 0.0f, 0.0f, 1.0f }, m_camera->getUpVector());
         look.makeInverse();
 
         m_rotation.setX(m_rotation.getX() + m_deltaRotation._x * m_rotationSpeed * deltaTime);
@@ -71,10 +71,54 @@ void CameraEditorHandler::update(f32 deltaTime)
             m_camera->setTarget(m_camera->getPosition() + m_camera->getForwardVector() * 2.f);
 
             view.makeInverse();
-            setViewMatrix(view);
-        }
+            setViewMatrix(view);*/
 
-        LOG_DEBUG("forwardVector : %f, %f, %f", m_camera->getForwardVector().getX(), m_camera->getForwardVector().getY(), m_camera->getForwardVector().getZ());
+        math::Vector3D rotation;
+        rotation.setX(m_camera->getRotation().getX() + m_deltaRotation._x * m_rotationSpeed * deltaTime);
+        rotation.setY(m_camera->getRotation().getY() + m_deltaRotation._y * m_rotationSpeed * deltaTime);
+        m_deltaRotation = { 0.f, 0.f };
+
+        if (m_orbitingMode)
+        {
+            f32 distance = (m_camera->getTarget() - m_camera->getPosition()).length();
+            distance += m_deltaDistance * m_moveSpeed * deltaTime;
+            distance = std::clamp(distance, m_distanceLimits._x, m_distanceLimits._y);
+            m_deltaDistance = 0.f;
+
+            math::Matrix4D translation;
+            translation.setTranslation({ 0.f, 0.f, -distance });
+
+            math::Matrix4D rotate;
+            rotate.setRotation(rotation);
+            rotate.setTranslation(m_camera->getTarget());
+
+            math::Matrix4D view = translation * rotate;
+
+            m_camera->setRotation(rotation);
+            m_camera->setPosition(view.getTranslation());
+
+            math::Matrix4D transform = m_camera->getTransform();
+            transform.makeInverse();
+            CameraHandler::setViewMatrix(transform);
+        }
+        else if (m_freeFlyMode)
+        {
+            math::Matrix4D rotate;
+            rotate.setRotation(rotation);
+
+            m_accelerationSpeed = std::clamp(m_accelerationSpeed, 0.1f, 1.f);
+            math::Vector4D forward = rotate * (m_direction * m_moveSpeed * m_accelerationSpeed * deltaTime);
+            m_direction = { 0.f, 0.f, 0.f, 0.f };
+
+            m_camera->setRotation(rotation);
+            m_camera->setPosition(m_camera->getPosition() + math::Vector3D{ forward.getX(), forward.getY(), forward.getZ() });
+
+            math::Matrix4D transform = m_camera->getTransform();
+            m_camera->setTarget(m_camera->getPosition() + m_camera->getForwardVector() * 2.f);
+
+            transform.makeInverse();
+            CameraHandler::setViewMatrix(transform);
+        }
 
         CameraHandler::update(deltaTime);
         m_needUpdate = false;

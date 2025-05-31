@@ -41,10 +41,7 @@ namespace scene
 
         const math::TVector2D<f32>  m_distanceLimits;
 
-        math::Vector3D              m_rotation; //TODO remove from here
         math::TVector2D<f32>        m_deltaRotation;
-
-        f32                         m_distance;
         f32                         m_deltaDistance;
         math::Vector4D              m_direction;
 

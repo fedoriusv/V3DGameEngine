@@ -12,25 +12,25 @@ namespace scene
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
-    * @brief CameraFPSHandler class
+    * @brief CameraFreeFlyHandler class
     */
-    class CameraFPSHandler final : public CameraHandler
+    class CameraFreeFlyHandler final : public CameraHandler
     {
     public:
 
-        CameraFPSHandler() = delete;
-        CameraFPSHandler(const CameraFPSHandler&) = delete;
+        CameraFreeFlyHandler() = delete;
+        CameraFreeFlyHandler(const CameraFreeFlyHandler&) = delete;
 
-        explicit CameraFPSHandler(Camera* camera, const math::Vector3D& position) noexcept;
-        ~CameraFPSHandler();
+        explicit CameraFreeFlyHandler(std::unique_ptr<Camera> camera, const math::Vector3D& position) noexcept;
+        ~CameraFreeFlyHandler();
 
         void setRotation(const math::Vector3D& rotation);
         const math::Vector3D& getRotation() const;
 
         void update(f32 deltaTime) override;
 
-        void rotateHandleCallback(const v3d::event::InputEventHandler* handler, const event::MouseInputEvent* event, bool mouseCapture);
-        void moveHandleCallback(const v3d::event::InputEventHandler* handler, const event::KeyboardInputEvent* event);
+        void rotateHandleCallback(const v3d::event::InputEventHandler* handler, const event::InputEvent* event, bool mouseCapture);
+        void moveHandleCallback(const v3d::event::InputEventHandler* handler, const event::InputEvent* event);
 
     private:
 
