@@ -1510,6 +1510,12 @@ void VulkanCmdList::endRenderTarget()
     LOG_DEBUG("VulkanCmdList[%u]::endRenderTarget", m_concurrencySlot);
 #endif //VULKAN_DEBUG
     m_pendingRenderState._insideRenderpass = false;
+
+    VulkanCommandBuffer* drawBuffer = m_currentCmdBuffer[toEnumType(CommandTargetType::CmdDrawBuffer)];
+    if (drawBuffer && drawBuffer->isInsideRenderPass())
+    {
+        drawBuffer->cmdEndRenderPass();
+    }
 }
 
 void VulkanCmdList::setPipelineState(GraphicsPipelineState& state)
