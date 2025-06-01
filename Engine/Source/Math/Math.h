@@ -54,10 +54,6 @@ namespace math
     [[nodiscard]] bool isPowerOf2(u32 a);
     [[nodiscard]] u32 getSmallestPowerOf2(u32 val);
 
-    [[nodiscard]] s32 getShift(u32 val);
-    [[nodiscard]] u32 getBitCount(u32 val);
-    [[nodiscard]] void setbit_cond(u32& state, s32 condition, u32 mask);
-
     [[nodiscard]] f32 round(f32 x);
     [[nodiscard]] f64 round(f64 x);
 

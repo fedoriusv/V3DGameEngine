@@ -64,36 +64,6 @@ namespace math
         return result;
     }
 
-    inline s32 getShift(u32 val)
-    {
-        s32 shift = -1;
-        while (val)
-        {
-            shift++;
-            val >>= 1;
-        }
-        return shift;
-    }
-
-    inline u32 getBitCount(u32 val)
-    {
-        u32 count = 0;
-        while (val)
-        {
-            if (val & 0x1)
-            {
-                count++;
-            }
-            val >>= 1;
-        }
-        return count;
-    }
-
-    inline void setbit_cond(u32& state, s32 condition, u32 mask)
-    {
-        state ^= ((-condition >> 31) ^ state) & mask;
-    }
-
     inline f32 round(f32 x)
     {
         return std::floorf(x + 0.5f);
