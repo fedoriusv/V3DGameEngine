@@ -357,7 +357,7 @@ namespace math
     inline MatrixRegister4x4 SMatrix::projectionMatrixPerspective(T fieldOfView, T aspectRatio, T zNear, T zFar)
     {
         MatrixRegister4x4 m;
-#if ENABLE_REVERSE_Z
+#if ENABLE_REVERSED_Z
         m._m = DirectX::XMMatrixPerspectiveFovLH(fieldOfView, aspectRatio, zFar, zNear);
 #else
         m._m = DirectX::XMMatrixPerspectiveFovLH(fieldOfView, aspectRatio, zNear, zFar);
@@ -369,7 +369,7 @@ namespace math
     inline MatrixRegister4x4 SMatrix::projectionMatrixFrustum(T left, T right, T bottom, T top, T zNear, T zFar)
     {
         MatrixRegister4x4 m;
-#if ENABLE_REVERSE_Z
+#if ENABLE_REVERSED_Z
         m._m = DirectX::XMMatrixPerspectiveLH(right - left, top - bottom, zFar, zNear);
 #else
         m._m = DirectX::XMMatrixPerspectiveLH(right - left, top - bottom, zNear, zFar);
@@ -381,7 +381,7 @@ namespace math
     inline MatrixRegister4x4 SMatrix::projectionMatrixOrtho(T left, T right, T bottom, T top, T zNear, T zFar)
     {
         MatrixRegister4x4 m;
-#if ENABLE_REVERSE_Z
+#if ENABLE_REVERSED_Z
         m._m = DirectX::XMMatrixOrthographicLH(right - left, top - bottom, zFar, zNear);
 #else
         m._m = DirectX::XMMatrixOrthographicLH(right - left, top - bottom, zNear, zFar);
