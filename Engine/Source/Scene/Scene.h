@@ -53,6 +53,7 @@ namespace scene
                 math::Vector4D viewportSize;
                 math::float2   cursorPosition;
                 u64            time;
+                math::float4   random;
 
             } _viewportBuffer;
 

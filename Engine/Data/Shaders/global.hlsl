@@ -9,6 +9,7 @@ struct Viewport
     float4   viewportSize;
     float2   cursorPosition;
     uint64_t time;
+    float4   random;
 };
 
 [[vk::binding(0, 0)]] ConstantBuffer<Viewport> viewport : register(b0, space0);

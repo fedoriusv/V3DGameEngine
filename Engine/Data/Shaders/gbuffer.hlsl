@@ -44,6 +44,7 @@ VS_OUTPUT gbuffer_standard_vs(VS_INPUT Input)
     return Output;
 }
 
+///////////////////////////////////////////////////////////////////////////////////////
 
 [[vk::binding(2, 1)]] SamplerState samplerState : register(s0, space1);
 [[vk::binding(3, 1)]] Texture2D textureAlbedo   : register(t0, space1);
@@ -63,7 +64,7 @@ PS_GBUFFER_OUTPUT gbuffer_standard_ps(PS_INPUT Input)
     PS_GBUFFER_OUTPUT Output;
     
     float3 albedo = textureAlbedo.Sample(samplerState, Input.UV).rgb;
-    float3 normal = textureNormal.Sample(samplerState, Input.UV).rgb * 2.0 - float3(1.0);
+    float3 normal = textureNormal.Sample(samplerState, Input.UV).rgb * 2.0 - 1.0;
     float metalness = textureMaterial.Sample(samplerState, Input.UV).r;
     float roughness = textureMaterial.Sample(samplerState, Input.UV).g;
     
@@ -78,4 +79,11 @@ PS_GBUFFER_OUTPUT gbuffer_standard_ps(PS_INPUT Input)
     Output.Material = float4(roughness, metalness, 0.0, 0.0);
 
     return Output;
+}
+
+///////////////////////////////////////////////////////////////////////////////////////
+
+void gbuffer_depth_ps(PS_INPUT Input)
+{
+    //nothing
 }
