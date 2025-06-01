@@ -347,8 +347,8 @@ bool RenderTargetState::setDepthStencilTexture_Impl(Texture* depthStencilTexture
         attachmentDesc._finalTransition = tansitionState._finalState;
         m_attachmentsDesc._images.back() = depthStencilTexture->m_texture;
         m_attachmentsDesc._layers.back() = k_generalLayer;
-        m_attachmentsDesc._clearDepthValue = 0.f;
-        m_attachmentsDesc._clearStencilValue = 0;
+        m_attachmentsDesc._clearDepthValue = depthOpState._clearDepth;
+        m_attachmentsDesc._clearStencilValue = stencilOpState._clearStencil;
         m_renderTargets.back() = depthStencilTexture;
 
         m_renderpassDesc._hasDepthStencilAttahment = true;
@@ -386,8 +386,8 @@ bool RenderTargetState::setDepthStencilTexture_Impl(Texture* depthStencilTexture
         attachmentDesc._finalTransition = tansitionState._finalState;
         m_attachmentsDesc._images.back() = depthStencilTexture->m_texture;
         m_attachmentsDesc._layers.back() = layer;
-        m_attachmentsDesc._clearDepthValue = 0.f;
-        m_attachmentsDesc._clearStencilValue = 0;
+        m_attachmentsDesc._clearDepthValue = depthOpState._clearDepth;
+        m_attachmentsDesc._clearStencilValue = stencilOpState._clearStencil;
         m_renderTargets.back() = depthStencilTexture;
 
         m_renderpassDesc._hasDepthStencilAttahment = true;
