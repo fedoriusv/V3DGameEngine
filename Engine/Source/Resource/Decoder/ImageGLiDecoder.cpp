@@ -84,6 +84,11 @@ Resource* ImageGLiDecoder::decode(const stream::Stream* stream, const Policy* po
             case gli::format::FORMAT_RGBA8_SRGB_PACK8:
                 return renderer::Format::Format_R8G8B8A8_SRGB;
 
+            case gli::format::FORMAT_BGRA8_UNORM_PACK8:
+                return renderer::Format::Format_B8G8R8A8_UNorm;
+
+            case gli::format::FORMAT_BGRA8_SRGB_PACK8:
+                return renderer::Format::Format_B8G8R8A8_SRGB;
 
             case gli::format::FORMAT_RGB_DXT1_UNORM_BLOCK8:
                 return renderer::Format::Format_BC1_RGB_UNorm_Block;
