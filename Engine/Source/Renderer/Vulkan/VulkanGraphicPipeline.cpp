@@ -549,7 +549,11 @@ bool VulkanGraphicPipeline::create(const GraphicsPipelineState& state)
         {
             VkFormat shaderFormat = VulkanImage::convertImageFormatToVkFormat(res._inputAttribute[index]._format);
             VkFormat descFormat = VulkanImage::convertImageFormatToVkFormat(inputAttrDesc._inputAttributes[index]._format);
+#if VULKAN_DEBUG_MARKERS
+            LOG_WARNING("VulkanGraphicPipeline::create: [%s] different input attribute formats index: %u, shader - %s, desc - %s ", m_debugName.c_str(), index, VulkanImage::imageFormatStringVK(shaderFormat).c_str(), VulkanImage::imageFormatStringVK(descFormat).c_str());
+#else
             LOG_WARNING("VulkanGraphicPipeline::create: different input attribute formats index: %u, shader - %s, desc - %s ", index, VulkanImage::imageFormatStringVK(shaderFormat).c_str(), VulkanImage::imageFormatStringVK(descFormat).c_str());
+#endif
         }
         vertexInputAttributeDescription.format = VulkanImage::convertImageFormatToVkFormat(inputAttrDesc._inputAttributes[index]._format);
         vertexInputAttributeDescription.offset = inputAttrDesc._inputAttributes[index]._offset;
