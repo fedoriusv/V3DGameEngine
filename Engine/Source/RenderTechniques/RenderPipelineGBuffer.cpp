@@ -11,28 +11,6 @@ namespace v3d
 namespace renderer
 {
 
-struct GBufferStandardVertex
-{
-    math::float3 position;
-    math::float3 normal;
-    math::float3 tangent;
-    math::float3 binormal;
-    math::float2 UV;
-};
-
-static renderer::VertexInputAttributeDesc GBufferStandardVertexDesc(
-        {
-            renderer::VertexInputAttributeDesc::InputBinding(0,  renderer::InputRate::InputRate_Vertex, sizeof(GBufferStandardVertex)),
-        },
-        {
-            renderer::VertexInputAttributeDesc::InputAttribute(0, 0, renderer::Format_R32G32B32_SFloat, offsetof(GBufferStandardVertex, position)),
-            renderer::VertexInputAttributeDesc::InputAttribute(0, 0, renderer::Format_R32G32B32_SFloat, offsetof(GBufferStandardVertex, normal)),
-            renderer::VertexInputAttributeDesc::InputAttribute(0, 0, renderer::Format_R32G32B32_SFloat, offsetof(GBufferStandardVertex, tangent)),
-            renderer::VertexInputAttributeDesc::InputAttribute(0, 0, renderer::Format_R32G32B32_SFloat, offsetof(GBufferStandardVertex, binormal)),
-            renderer::VertexInputAttributeDesc::InputAttribute(0, 0, renderer::Format_R32G32_SFloat, offsetof(GBufferStandardVertex, UV)),
-        }
-    );
-
 RenderPipelineGBufferStage::RenderPipelineGBufferStage(RenderTechnique* technique) noexcept
     : RenderPipelineStage(technique, "gbuffer")
     , m_gBufferRenderTarget(nullptr)
@@ -59,15 +37,19 @@ void RenderPipelineGBufferStage::create(Device* device, scene::Scene::SceneData&
             "gbuffer.hlsl", "gbuffer_standard_ps", {}, {}/*, resource::ShaderCompileFlag::ShaderCompile_UseDXCompilerForSpirV*/);
 
         renderer::GraphicsPipelineState* pipeline = new renderer::GraphicsPipelineState(
-            device, GBufferStandardVertexDesc, m_gBufferRenderTarget->getRenderPassDesc(), new renderer::ShaderProgram(device, vertShader, fragShader), "gbuffer_pipeline");
+            device, VertexFormatStandardDesc, m_gBufferRenderTarget->getRenderPassDesc(), new renderer::ShaderProgram(device, vertShader, fragShader), "gbuffer_pipeline");
 
         pipeline->setPrimitiveTopology(renderer::PrimitiveTopology::PrimitiveTopology_TriangleList);
         pipeline->setFrontFace(renderer::FrontFace::FrontFace_Clockwise);
         pipeline->setCullMode(renderer::CullMode::CullMode_Back);
         pipeline->setColorMask(renderer::ColorMask::ColorMask_All);
+#if ENABLE_REVERSED_Z
         pipeline->setDepthCompareOp(renderer::CompareOperation::CompareOp_GreaterOrEqual);
-        pipeline->setDepthWrite(true);
+#else
+        pipeline->setDepthCompareOp(renderer::CompareOperation::CompareOp_LessOrEqual);
+#endif
         pipeline->setDepthTest(true);
+        pipeline->setDepthWrite(false);
 
         m_pipeline.emplace_back(pipeline);
     }
@@ -123,7 +105,7 @@ void RenderPipelineGBufferStage::execute(Device* device, scene::Scene::SceneData
                     renderer::Descriptor(draw.m_material, 5)
                 });
 
-            renderer::GeometryBufferDesc desc(draw.m_IdxBuffer, 0, draw.m_VtxBuffer, 0, sizeof(GBufferStandardVertex), 0);
+            renderer::GeometryBufferDesc desc(draw.m_IdxBuffer, 0, draw.m_VtxBuffer, 0, sizeof(VertexFormatStandard), 0);
             state.m_renderState.m_cmdList->drawIndexed(desc, 0, draw.m_IdxBuffer->getIndicesCount(), 0, 0, 1);
         }
     }
@@ -181,24 +163,24 @@ void RenderPipelineGBufferStage::createRenderTarget(Device* device, scene::Scene
         }
     );
 
-    renderer::Texture2D* depthAttachment = new renderer::Texture2D(device, renderer::TextureUsage::TextureUsage_Attachment | renderer::TextureUsage::TextureUsage_Sampled,
-        renderer::Format::Format_D32_SFloat, state.m_viewportState.m_viewpotSize, renderer::TextureSamples::TextureSamples_x1, "depth_stencil");
-    m_gBufferRenderTarget->setDepthStencilTexture(depthAttachment,
-        {
-            renderer::RenderTargetLoadOp::LoadOp_Clear, renderer::RenderTargetStoreOp::StoreOp_Store, 0.0f
-        },
-        {
-            renderer::RenderTargetLoadOp::LoadOp_DontCare, renderer::RenderTargetStoreOp::StoreOp_DontCare, 0U
-        },
-        {
-            renderer::TransitionOp::TransitionOp_Undefined, renderer::TransitionOp::TransitionOp_DepthStencilAttachment
-        }
-    );
-
     state.m_globalResources.bind("gbuffer_albedo", albedoAttachment);
     state.m_globalResources.bind("gbuffer_normals", normalsAttachment);
     state.m_globalResources.bind("gbuffer_material", materialAttachment);
-    state.m_globalResources.bind("depth_stencil", depthAttachment);
+
+    ObjectHandle depth_stencil = state.m_globalResources.get("depth_stencil");
+    ASSERT(depth_stencil.isValid(), "must be valid");
+    renderer::Texture2D* depthAttachment = objectFromHandle<renderer::Texture2D>(depth_stencil);
+    m_gBufferRenderTarget->setDepthStencilTexture(depthAttachment,
+        {
+            renderer::RenderTargetLoadOp::LoadOp_Load, renderer::RenderTargetStoreOp::StoreOp_Store, 0.0f
+        },
+        {
+            renderer::RenderTargetLoadOp::LoadOp_Load, renderer::RenderTargetStoreOp::StoreOp_Store, 0U
+        },
+        {
+            renderer::TransitionOp::TransitionOp_DepthStencilAttachment, renderer::TransitionOp::TransitionOp_DepthStencilAttachment
+        }
+    );
 }
 
 void RenderPipelineGBufferStage::destroyRenderTarget(Device* device, scene::Scene::SceneData& data)
@@ -212,9 +194,6 @@ void RenderPipelineGBufferStage::destroyRenderTarget(Device* device, scene::Scen
 
     renderer::Texture2D* materialAttachment = m_gBufferRenderTarget->getColorTexture<renderer::Texture2D>(2);
     delete materialAttachment;
-
-    renderer::Texture2D* depthStencilAttachment = m_gBufferRenderTarget->getDepthStencilTexture<renderer::Texture2D>();
-    delete depthStencilAttachment;
 
     delete m_gBufferRenderTarget;
     m_gBufferRenderTarget = nullptr;

@@ -11,28 +11,6 @@ namespace v3d
 namespace renderer
 {
 
-struct GBufferStandardVertex
-{
-    math::float3 position;
-    math::float3 normal;
-    math::float3 tangent;
-    math::float3 binormal;
-    math::float2 UV;
-};
-
-static renderer::VertexInputAttributeDesc GBufferStandardVertexDesc(
-    {
-        renderer::VertexInputAttributeDesc::InputBinding(0,  renderer::InputRate::InputRate_Vertex, sizeof(GBufferStandardVertex)),
-    },
-    {
-        renderer::VertexInputAttributeDesc::InputAttribute(0, 0, renderer::Format_R32G32B32_SFloat, offsetof(GBufferStandardVertex, position)),
-        renderer::VertexInputAttributeDesc::InputAttribute(0, 0, renderer::Format_R32G32B32_SFloat, offsetof(GBufferStandardVertex, normal)),
-        renderer::VertexInputAttributeDesc::InputAttribute(0, 0, renderer::Format_R32G32B32_SFloat, offsetof(GBufferStandardVertex, tangent)),
-        renderer::VertexInputAttributeDesc::InputAttribute(0, 0, renderer::Format_R32G32B32_SFloat, offsetof(GBufferStandardVertex, binormal)),
-        renderer::VertexInputAttributeDesc::InputAttribute(0, 0, renderer::Format_R32G32_SFloat, offsetof(GBufferStandardVertex, UV)),
-    }
-);
-
 RenderPipelineTransparencyStage::RenderPipelineTransparencyStage(RenderTechnique* technique) noexcept
     : RenderPipelineStage(technique, "transparency")
     , m_transparencyRenderTarget(nullptr)

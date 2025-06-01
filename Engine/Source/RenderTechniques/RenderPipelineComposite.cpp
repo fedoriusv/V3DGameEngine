@@ -122,7 +122,7 @@ void RenderPipelineCompositionStage::createRenderTarget(Device* device, scene::S
         }
     );
 
-    data.m_globalResources.bind("render_target", composition);
+    data.m_globalResources.bind("opaque_composite", composition);
 }
 
 void RenderPipelineCompositionStage::destroyRenderTarget(Device* device, scene::Scene::SceneData& data)
