@@ -14,10 +14,6 @@ namespace renderer
     {
     public:
 
-        struct MeshData
-        {
-        };
-
         explicit  RenderPipelineTransparencyStage(RenderTechnique* technique) noexcept;
         ~RenderPipelineTransparencyStage();
 
@@ -34,8 +30,31 @@ namespace renderer
         void createRenderTarget(Device* device, scene::Scene::SceneData& data);
         void destroyRenderTarget(Device* device, scene::Scene::SceneData& data);
 
+        renderer::RenderTargetState* m_stochasticTransparency_TotalAlpha;
+        renderer::RenderTargetState* m_stochasticTransparency_Depth;
+        renderer::RenderTargetState* m_stochasticTransparency_AccumulateColor;
+        renderer::RenderTargetState* m_stochasticTransparency_Final;
+        renderer::SamplerState* m_sampler;
+        void executeStochasticTransparency(Device* device, scene::Scene::SceneData& state);
+        
+
         renderer::RenderTargetState* m_transparencyRenderTarget;
-        std::vector<v3d::renderer::GraphicsPipelineState*> m_pipeline;
+        renderer::RenderTargetState* m_transparencyRenderTargetPass2;
+        bool m_stochastic = true;
+
+        enum Pass
+        {
+            StochasticTotalAlpha,
+            StochasticDepth,
+            StochasticTotalAccumulateColor,
+            StochasticTotalFinal,
+
+            Blend,
+
+            Count
+        };
+
+        std::array<v3d::renderer::GraphicsPipelineState*, Pass::Count> m_pipeline = {};
     };
 
 } //namespace renderer
