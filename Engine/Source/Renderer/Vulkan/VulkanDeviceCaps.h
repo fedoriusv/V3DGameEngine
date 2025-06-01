@@ -53,6 +53,7 @@ namespace vk
         bool _supportSamplerBorderColor = false;
         bool _hostQueryReset = false;
         bool _timelineSemaphore = false;
+        bool _supportDiscardAsDemote = false;
 
         bool _preTransform = false;
         bool _renderpassTransformQCOM = false;
@@ -108,6 +109,9 @@ namespace vk
 #endif
 #ifdef VK_EXT_host_query_reset
         VkPhysicalDeviceHostQueryResetFeatures _physicalDeviceHostQueryResetFeatures = {};
+#endif
+#ifdef VK_EXT_shader_demote_to_helper_invocation
+        VkPhysicalDeviceShaderDemoteToHelperInvocationFeaturesEXT _physicalDeviceShaderDemoteToHelperInvocationFeatures = {};
 #endif
         static std::vector<const c8*> s_enableExtensions;
     };

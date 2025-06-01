@@ -220,6 +220,15 @@ void VulkanDeviceCaps::fillCapabilitiesList(const DeviceInfo* info)
             }
 #endif
 
+#ifdef VK_EXT_shader_demote_to_helper_invocation
+            if (isEnabledExtension(VK_EXT_SHADER_DEMOTE_TO_HELPER_INVOCATION_EXTENSION_NAME))
+            {
+                _physicalDeviceShaderDemoteToHelperInvocationFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_DEMOTE_TO_HELPER_INVOCATION_FEATURES_EXT;
+                _physicalDeviceShaderDemoteToHelperInvocationFeatures.pNext = vkExtensions;
+                vkExtensions = &_physicalDeviceShaderDemoteToHelperInvocationFeatures;
+            }
+#endif
+
             VkPhysicalDevicePipelineExecutablePropertiesFeaturesKHR physicalDevicePipelineExecutablePropertiesFeatures = {};
             if (isEnabledExtension(VK_KHR_PIPELINE_EXECUTABLE_PROPERTIES_EXTENSION_NAME))
             {
@@ -251,6 +260,9 @@ void VulkanDeviceCaps::fillCapabilitiesList(const DeviceInfo* info)
 #endif
 #ifdef VK_EXT_host_query_reset
             _hostQueryReset = _physicalDeviceHostQueryResetFeatures.hostQueryReset;
+#endif
+#ifdef VK_EXT_shader_demote_to_helper_invocation
+            _supportDiscardAsDemote = _physicalDeviceShaderDemoteToHelperInvocationFeatures.shaderDemoteToHelperInvocation;
 #endif
             _pipelineExecutablePropertiesEnabled = physicalDevicePipelineExecutablePropertiesFeatures.pipelineExecutableInfo;
             _timelineSemaphore = physicalDeviceTimelineSemaphoreFeatures.timelineSemaphore;

@@ -92,6 +92,9 @@ const std::vector<const c8*> k_deviceExtensionsList =
 #ifdef VK_EXT_host_query_reset
     VK_EXT_HOST_QUERY_RESET_EXTENSION_NAME,
 #endif
+#ifdef VK_EXT_shader_demote_to_helper_invocation
+    VK_EXT_SHADER_DEMOTE_TO_HELPER_INVOCATION_EXTENSION_NAME,
+#endif
 #ifdef VK_EXT_calibrated_timestamps
     VK_EXT_CALIBRATED_TIMESTAMPS_EXTENSION_NAME,
 #endif
@@ -814,6 +817,15 @@ bool VulkanDevice::createDevice()
         VkPhysicalDeviceHostQueryResetFeaturesEXT& physicalDeviceHostQueryResetFeatures = m_deviceCaps._physicalDeviceHostQueryResetFeatures;
         physicalDeviceHostQueryResetFeatures.pNext = vkExtension;
         vkExtension = &physicalDeviceHostQueryResetFeatures;
+    }
+#endif
+
+#ifdef VK_EXT_shader_demote_to_helper_invocation
+    if (VulkanDeviceCaps::checkDeviceExtension(m_deviceInfo._physicalDevice, VK_EXT_SHADER_DEMOTE_TO_HELPER_INVOCATION_EXTENSION_NAME))
+    {
+        VkPhysicalDeviceShaderDemoteToHelperInvocationFeaturesEXT physicalDeviceShaderDemoteToHelperInvocationFeatures = m_deviceCaps._physicalDeviceShaderDemoteToHelperInvocationFeatures;
+        physicalDeviceShaderDemoteToHelperInvocationFeatures.pNext = vkExtension;
+        vkExtension = &physicalDeviceShaderDemoteToHelperInvocationFeatures;
     }
 #endif
 
