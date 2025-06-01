@@ -69,6 +69,24 @@ namespace math
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    template<class T>
+    inline T random(T min, T max)
+    {
+        static std::default_random_engine e;
+        if constexpr (std::is_floating_point_v<T>)
+        {
+            static std::uniform_real_distribution<> dis(min, max);
+            return dis(e);
+        }
+        else
+        {
+            static std::uniform_int_distribution<> dis(min, max);
+            return dis(e);
+        }
+    }
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
+
 } //namespace math
 } //namespace v3d
 
