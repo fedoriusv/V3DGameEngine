@@ -23,6 +23,7 @@
 #include "RenderTechniques/RenderPipelineUIOverlay.h"
 #include "RenderTechniques/RenderPipelineComposite.h"
 #include "RenderTechniques/RenderPipelineTransparency.h"
+#include "RenderTechniques/RenderPipelineZPrepass.h"
 
 #include "Stream/StreamManager.h"
 
@@ -36,6 +37,7 @@ scene::Transform g_modelTransform;
 
 EditorScene::RenderPipelineScene::RenderPipelineScene()
 {
+    new renderer::RenderPipelineZPrepassStage(this);
     new renderer::RenderPipelineGBufferStage(this);
     new renderer::RenderPipelineCompositionStage(this);
     new renderer::RenderPipelineTransparencyStage(this);
@@ -121,6 +123,7 @@ void EditorScene::preRender(f32 dt)
     m_states[m_stateIndex].m_viewportState._viewportBuffer.viewportSize = { 0, 0, (f32)m_states[m_stateIndex].m_viewportState.m_viewpotSize._width, (f32)m_states[m_stateIndex].m_viewportState.m_viewpotSize._height };
     m_states[m_stateIndex].m_viewportState._viewportBuffer.cursorPosition = { (f32)this->getRelativeCursorPosition()._x, (f32)this->getRelativeCursorPosition()._y };
     m_states[m_stateIndex].m_viewportState._viewportBuffer.time = utils::Timer::getCurrentTime();
+    m_states[m_stateIndex].m_viewportState._viewportBuffer.random = { math::random<f32>(0.f, 0.1f),math::random<f32>(0.f, 0.1f), math::random<f32>(0.f, 0.1f), math::random<f32>(0.f, 0.1f) };
 
     m_pipeline.prepare(m_device, m_states[m_stateIndex]);
 }
@@ -207,12 +210,14 @@ void EditorScene::loadResources()
     renderer::Texture2D* default_normal = loadTexture2D(cmdList, "default_normal.dds");
     renderer::Texture2D* default_material = loadTexture2D(cmdList, "default_material.dds");
     renderer::Texture2D* uv_grid = loadTexture2D(cmdList, "uv_grid.dds");
+    renderer::Texture2D* noise_blue = loadTexture2D(cmdList, "noise_blue.dds");
 
     m_states[m_stateIndex].m_globalResources.bind("default_black", default_black);
     m_states[m_stateIndex].m_globalResources.bind("default_white", default_white);
     m_states[m_stateIndex].m_globalResources.bind("default_normal", default_normal);
     m_states[m_stateIndex].m_globalResources.bind("default_material", default_material);
     m_states[m_stateIndex].m_globalResources.bind("uv_grid", uv_grid);
+    m_states[m_stateIndex].m_globalResources.bind("noise_blue", noise_blue);
 
     renderer::SamplerState* sampler = new renderer::SamplerState(m_device, renderer::SamplerFilter::SamplerFilter_Trilinear, renderer::SamplerAnisotropic::SamplerAnisotropic_4x);
 
@@ -253,7 +258,7 @@ void EditorScene::loadResources()
             model->m_geometry[0]._LODs[0]->m_vertexBuffer[0]
         });
     m_states[m_stateIndex].m_data[1].m_transform.setPosition({0, 0, -0.5 });
-    m_states[m_stateIndex].m_data[1].m_tint = { 1.f, 0.f, 0.f, 0.5f };
+    m_states[m_stateIndex].m_data[1].m_tint = { 1.f, 0.f, 0.f, 0.2f };
     m_states[m_stateIndex].m_data[1].m_sampler = sampler;
     m_states[m_stateIndex].m_data[1].m_albedo = default_white;
     m_states[m_stateIndex].m_data[1].m_normals = default_normal;
@@ -268,7 +273,7 @@ void EditorScene::loadResources()
             model->m_geometry[0]._LODs[0]->m_vertexBuffer[0]
         });
     m_states[m_stateIndex].m_data[2].m_transform.setPosition({ 0.01, 0.01, -0.49 });
-    m_states[m_stateIndex].m_data[2].m_tint = { 0.f, 1.f, 0.f, 0.5f };
+    m_states[m_stateIndex].m_data[2].m_tint = { 0.f, 1.f, 0.f, 0.2f };
     m_states[m_stateIndex].m_data[2].m_sampler = sampler;
     m_states[m_stateIndex].m_data[2].m_albedo = default_white;
     m_states[m_stateIndex].m_data[2].m_normals = default_normal;
@@ -283,7 +288,7 @@ void EditorScene::loadResources()
             model->m_geometry[0]._LODs[0]->m_vertexBuffer[0]
         });
     m_states[m_stateIndex].m_data[3].m_transform.setPosition({ -0.01, -0.01, -0.51 });
-    m_states[m_stateIndex].m_data[3].m_tint = { 0.f, 0.f, 1.f, 0.5f };
+    m_states[m_stateIndex].m_data[3].m_tint = { 0.f, 0.f, 1.f, 0.2f };
     m_states[m_stateIndex].m_data[3].m_sampler = sampler;
     m_states[m_stateIndex].m_data[3].m_albedo = default_white;
     m_states[m_stateIndex].m_data[3].m_normals = default_normal;
