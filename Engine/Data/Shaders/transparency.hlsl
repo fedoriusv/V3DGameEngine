@@ -130,6 +130,11 @@ typedef VS_OUTPUT PS_INPUT;
 
 ///////////////////////////////////////////////////////////////////////////////////////
 
+float rand(float2 seed)
+{
+    return frac(sin(dot(seed, float2(127.1, 311.7))) * 43758.5453123);
+}
+
 [[vk::binding(6, 1)]] Texture2D blueNoiseTexture : register(t3, space1);
 
 void stochastic_depth_ps(PS_INPUT Input, uint PrimitiveID : SV_PRIMITIVEID)
@@ -139,12 +144,13 @@ void stochastic_depth_ps(PS_INPUT Input, uint PrimitiveID : SV_PRIMITIVEID)
     //float3 alpha = textureAlbedo.Sample(samplerState, Input.UV).a;
     float alpha = CB_Model.tint.a;
 
-    //float2 noiseSize = viewport.viewportSize.zw / 64.0;
+    float2 noiseSize = viewport.viewportSize.zw / 64.0;
     for (int s = 0; s < 8; ++s)
     {
-        float2 offset = viewport.random.xy/** (PrimitiveID + 1) * (s + 1)*/;
-        float blueNoise = blueNoiseTexture.Sample(samplerState, /*positionScreenUV*/Input.UV + offset).a;
-        if (blueNoise >= alpha)
+        float2 offset = viewport.random.xy * (PrimitiveID + 1) * (s + 1);
+        //float noise = rand(Input.Position.xy * viewport.random.xy);
+        float noise = blueNoiseTexture.Sample(samplerState, positionScreenUV + offset).a - 0.2;
+        if (noise >= alpha)
         {
             discard;
         }
@@ -211,8 +217,9 @@ struct PS_OFFSCREEN_INPUT
     float3 opaqueColor = textureBaseColor.Sample(samplerState, Input.UV).rgb;
     float4 transparencyColor = textureAccumulateColor.Sample(samplerState, Input.UV);
     
-    float3 color = opaqueColor.rgb * (1 - correctedAlpha) + transparencyColor.rgb;
+    float3 color = opaqueColor.rgb * (1 - /*correctedAlpha*/transparencyColor.a) + transparencyColor.rgb;
     //float3 color = lerp(opaqueColor.rgb, transparencyColor.rgb, correctedAlpha);
     
     return float4(color, 1.0);
+    
 }
