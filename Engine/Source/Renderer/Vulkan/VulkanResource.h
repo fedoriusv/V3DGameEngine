@@ -75,7 +75,7 @@ namespace vk
     inline void VulkanResource::markUsed(VulkanFence* fence, u64 value, u64 frame)
     {
         {
-            TRACE_PROFILER_RENDER_SCOPE("markUsed", color::BLACK);
+            TRACE_PROFILER_RENDER_SCOPE("markUsed", color::color8bit::BLACK);
 
             std::lock_guard lock(m_mutex);
 #if VULKAN_DEBUG

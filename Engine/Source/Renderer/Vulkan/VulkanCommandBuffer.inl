@@ -72,7 +72,7 @@ inline void VulkanCommandBuffer::cmdBindPipeline(VulkanGraphicPipeline* pipeline
     VulkanCommandBuffer::captureResource(pipeline);
     VulkanWrapper::CmdBindPipeline(m_commands, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->getHandle());
 
-#if VULKAN_DEBUG_MARKERS
+#if VULKAN_DEBUG_MARKERS && 0
     if (m_device.getVulkanDeviceCaps()._debugUtilsObjectNameEnabled)
     {
         VkDebugUtilsLabelEXT debugUtilsLabel = {};

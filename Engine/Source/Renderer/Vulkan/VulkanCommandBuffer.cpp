@@ -342,7 +342,7 @@ void VulkanCommandBuffer::cmdBeginRenderpass(VulkanRenderPass* pass, VulkanFrame
 #   endif //VK_QCOM_render_pass_transform
 #endif //PLATFORM_ANDROID
 
-#if VULKAN_DEBUG_MARKERS
+#if VULKAN_DEBUG_MARKERS && 0
     if (m_device.getVulkanDeviceCaps()._debugUtilsObjectNameEnabled)
     {
         VkDebugUtilsLabelEXT debugUtilsLabel = {};
@@ -411,7 +411,7 @@ void VulkanCommandBuffer::cmdEndRenderPass()
         m_resourceStates.setLayout(image, layout, VulkanImage::makeVulkanImageSubresource(image, attach._layer, attach._mip));
     }
 
-#if VULKAN_DEBUG_MARKERS
+#if VULKAN_DEBUG_MARKERS && 0
     if (m_device.getVulkanDeviceCaps()._debugUtilsObjectNameEnabled)
     {
         VulkanWrapper::CmdEndDebugUtilsLabel(m_commands);

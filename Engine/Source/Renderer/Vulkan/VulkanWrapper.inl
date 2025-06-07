@@ -105,7 +105,7 @@ inline void VulkanWrapper::GetDeviceQueue(VkDevice device, uint32_t queueFamilyI
 inline VkResult VulkanWrapper::QueueSubmit(VkQueue queue, uint32_t submitCount, const VkSubmitInfo* pSubmits, VkFence fence) noexcept
 {
     {
-        TRACE_PROFILER_VULKAN_SCOPE("vkQueueSubmit", color::BLACK);
+        TRACE_PROFILER_VULKAN_SCOPE("vkQueueSubmit", color::color8bit::BLACK);
         return vkQueueSubmit(queue, submitCount, pSubmits, fence);
     }
 }
@@ -113,7 +113,7 @@ inline VkResult VulkanWrapper::QueueSubmit(VkQueue queue, uint32_t submitCount, 
 inline VkResult VulkanWrapper::QueueWaitIdle(VkQueue queue) noexcept
 {
     {
-        TRACE_PROFILER_VULKAN_SCOPE("vkQueueWaitIdle", color::BLACK);
+        TRACE_PROFILER_VULKAN_SCOPE("vkQueueWaitIdle", color::color8bit::BLACK);
         return vkQueueWaitIdle(queue);
     }
 }
@@ -121,7 +121,7 @@ inline VkResult VulkanWrapper::QueueWaitIdle(VkQueue queue) noexcept
 inline VkResult VulkanWrapper::DeviceWaitIdle(VkDevice device) noexcept
 {
     {
-        TRACE_PROFILER_VULKAN_SCOPE("vkDeviceWaitIdle", color::BLACK);
+        TRACE_PROFILER_VULKAN_SCOPE("vkDeviceWaitIdle", color::color8bit::BLACK);
         return vkDeviceWaitIdle(device);
     }
 }
@@ -241,7 +241,7 @@ inline VkResult VulkanWrapper::GetFenceStatus(VkDevice device, VkFence fence) no
 inline VkResult VulkanWrapper::WaitForFences(VkDevice device, uint32_t fenceCount, const VkFence* pFences, VkBool32 waitAll, uint64_t timeout) noexcept
 {
     {
-        TRACE_PROFILER_VULKAN_SCOPE("vkWaitForFences", color::BLACK);
+        TRACE_PROFILER_VULKAN_SCOPE("vkWaitForFences", color::color8bit::BLACK);
         return vkWaitForFences(device, fenceCount, pFences, waitAll, timeout);
     }
 }
@@ -294,7 +294,7 @@ inline void VulkanWrapper::DestroyQueryPool(VkDevice device, VkQueryPool queryPo
 inline VkResult VulkanWrapper::GetQueryPoolResults(VkDevice device, VkQueryPool queryPool, uint32_t firstQuery, uint32_t queryCount, size_t dataSize, void* pData, VkDeviceSize stride, VkQueryResultFlags flags) noexcept
 {
     {
-        TRACE_PROFILER_VULKAN_SCOPE("vkGetQueryPoolResults", color::BLACK);
+        TRACE_PROFILER_VULKAN_SCOPE("vkGetQueryPoolResults", color::color8bit::BLACK);
         return vkGetQueryPoolResults(device, queryPool, firstQuery, queryCount, dataSize, pData, stride, flags);
     }
 }
@@ -452,7 +452,7 @@ inline void VulkanWrapper::DestroyDescriptorSetLayout(VkDevice device, VkDescrip
 inline VkResult VulkanWrapper::CreateDescriptorPool(VkDevice device, const VkDescriptorPoolCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDescriptorPool* pDescriptorPool) noexcept
 {
     {
-        TRACE_PROFILER_VULKAN_SCOPE("vkCreateDescriptorPool", color::BLACK);
+        TRACE_PROFILER_VULKAN_SCOPE("vkCreateDescriptorPool", color::color8bit::BLACK);
         return vkCreateDescriptorPool(device, pCreateInfo, pAllocator, pDescriptorPool);
     }
 }
@@ -460,7 +460,7 @@ inline VkResult VulkanWrapper::CreateDescriptorPool(VkDevice device, const VkDes
 inline void VulkanWrapper::DestroyDescriptorPool(VkDevice device, VkDescriptorPool descriptorPool, const VkAllocationCallbacks* pAllocator) noexcept
 {
     {
-        TRACE_PROFILER_VULKAN_SCOPE("vkDestroyDescriptorPool", color::BLACK);
+        TRACE_PROFILER_VULKAN_SCOPE("vkDestroyDescriptorPool", color::color8bit::BLACK);
         vkDestroyDescriptorPool(device, descriptorPool, pAllocator);
     }
 }
@@ -468,7 +468,7 @@ inline void VulkanWrapper::DestroyDescriptorPool(VkDevice device, VkDescriptorPo
 inline VkResult VulkanWrapper::ResetDescriptorPool(VkDevice device, VkDescriptorPool descriptorPool, VkDescriptorPoolResetFlags flags) noexcept
 {
     {
-        TRACE_PROFILER_VULKAN_SCOPE("vkResetDescriptorPool", color::BLACK);
+        TRACE_PROFILER_VULKAN_SCOPE("vkResetDescriptorPool", color::color8bit::BLACK);
         return vkResetDescriptorPool(device, descriptorPool, flags);
     }
 }
@@ -476,7 +476,7 @@ inline VkResult VulkanWrapper::ResetDescriptorPool(VkDevice device, VkDescriptor
 inline VkResult VulkanWrapper::AllocateDescriptorSets(VkDevice device, const VkDescriptorSetAllocateInfo* pAllocateInfo, VkDescriptorSet* pDescriptorSets) noexcept
 {
     {
-        TRACE_PROFILER_VULKAN_SCOPE("vkAllocateDescriptorSets", color::BLACK);
+        TRACE_PROFILER_VULKAN_SCOPE("vkAllocateDescriptorSets", color::color8bit::BLACK);
         return vkAllocateDescriptorSets(device, pAllocateInfo, pDescriptorSets);
     }
 }
@@ -484,7 +484,7 @@ inline VkResult VulkanWrapper::AllocateDescriptorSets(VkDevice device, const VkD
 inline VkResult VulkanWrapper::FreeDescriptorSets(VkDevice device, VkDescriptorPool descriptorPool, uint32_t descriptorSetCount, const VkDescriptorSet* pDescriptorSets) noexcept
 {
     {
-        TRACE_PROFILER_VULKAN_SCOPE("vkFreeDescriptorSets", color::BLACK);
+        TRACE_PROFILER_VULKAN_SCOPE("vkFreeDescriptorSets", color::color8bit::BLACK);
         return vkFreeDescriptorSets(device, descriptorPool, descriptorSetCount, pDescriptorSets);
     }
 }
@@ -492,7 +492,7 @@ inline VkResult VulkanWrapper::FreeDescriptorSets(VkDevice device, VkDescriptorP
 inline void VulkanWrapper::UpdateDescriptorSets(VkDevice device, uint32_t descriptorWriteCount, const VkWriteDescriptorSet* pDescriptorWrites, uint32_t descriptorCopyCount, const VkCopyDescriptorSet* pDescriptorCopies) noexcept
 {
     {
-        TRACE_PROFILER_VULKAN_SCOPE("vkUpdateDescriptorSets", color::BLACK);
+        TRACE_PROFILER_VULKAN_SCOPE("vkUpdateDescriptorSets", color::color8bit::BLACK);
         vkUpdateDescriptorSets(device, descriptorWriteCount, pDescriptorWrites, descriptorCopyCount, pDescriptorCopies);
     }
 }
@@ -535,7 +535,7 @@ inline void VulkanWrapper::DestroyCommandPool(VkDevice device, VkCommandPool com
 inline VkResult VulkanWrapper::ResetCommandPool(VkDevice device, VkCommandPool commandPool, VkCommandPoolResetFlags flags) noexcept
 {
     {
-        TRACE_PROFILER_VULKAN_SCOPE("vkResetCommandPool", color::BLACK);
+        TRACE_PROFILER_VULKAN_SCOPE("vkResetCommandPool", color::color8bit::BLACK);
         return vkResetCommandPool(device, commandPool, flags);
     }
 }
@@ -543,7 +543,7 @@ inline VkResult VulkanWrapper::ResetCommandPool(VkDevice device, VkCommandPool c
 inline VkResult VulkanWrapper::AllocateCommandBuffers(VkDevice device, const VkCommandBufferAllocateInfo* pAllocateInfo, VkCommandBuffer* pCommandBuffers) noexcept
 {
     {
-        TRACE_PROFILER_VULKAN_SCOPE("vkAllocateCommandBuffers", color::BLACK);
+        TRACE_PROFILER_VULKAN_SCOPE("vkAllocateCommandBuffers", color::color8bit::BLACK);
         return vkAllocateCommandBuffers(device, pAllocateInfo, pCommandBuffers);
     }
 }
@@ -551,7 +551,7 @@ inline VkResult VulkanWrapper::AllocateCommandBuffers(VkDevice device, const VkC
 inline void VulkanWrapper::FreeCommandBuffers(VkDevice device, VkCommandPool commandPool, uint32_t commandBufferCount, const VkCommandBuffer* pCommandBuffers) noexcept
 {
     {
-        TRACE_PROFILER_VULKAN_SCOPE("vkFreeCommandBuffers", color::BLACK);
+        TRACE_PROFILER_VULKAN_SCOPE("vkFreeCommandBuffers", color::color8bit::BLACK);
         vkFreeCommandBuffers(device, commandPool, commandBufferCount, pCommandBuffers);
     }
 }
@@ -559,7 +559,7 @@ inline void VulkanWrapper::FreeCommandBuffers(VkDevice device, VkCommandPool com
 inline VkResult VulkanWrapper::BeginCommandBuffer(VkCommandBuffer commandBuffer, const VkCommandBufferBeginInfo* pBeginInfo) noexcept
 {
     {
-        TRACE_PROFILER_VULKAN_SCOPE("vkBeginCommandBuffer", color::BLACK);
+        TRACE_PROFILER_VULKAN_SCOPE("vkBeginCommandBuffer", color::color8bit::BLACK);
         return vkBeginCommandBuffer(commandBuffer, pBeginInfo);
     }
 }
@@ -567,7 +567,7 @@ inline VkResult VulkanWrapper::BeginCommandBuffer(VkCommandBuffer commandBuffer,
 inline VkResult VulkanWrapper::EndCommandBuffer(VkCommandBuffer commandBuffer) noexcept
 {
     {
-        TRACE_PROFILER_VULKAN_SCOPE("vkEndCommandBuffer", color::BLACK);
+        TRACE_PROFILER_VULKAN_SCOPE("vkEndCommandBuffer", color::color8bit::BLACK);
         return vkEndCommandBuffer(commandBuffer);
     }
 }
@@ -575,7 +575,7 @@ inline VkResult VulkanWrapper::EndCommandBuffer(VkCommandBuffer commandBuffer) n
 inline VkResult VulkanWrapper::ResetCommandBuffer(VkCommandBuffer commandBuffer, VkCommandBufferResetFlags flags) noexcept
 {
     {
-        TRACE_PROFILER_VULKAN_SCOPE("vkResetCommandBuffer", color::BLACK);
+        TRACE_PROFILER_VULKAN_SCOPE("vkResetCommandBuffer", color::color8bit::BLACK);
         return vkResetCommandBuffer(commandBuffer, flags);
     }
 }
@@ -583,7 +583,7 @@ inline VkResult VulkanWrapper::ResetCommandBuffer(VkCommandBuffer commandBuffer,
 inline void VulkanWrapper::CmdBindPipeline(VkCommandBuffer commandBuffer, VkPipelineBindPoint pipelineBindPoint, VkPipeline pipeline) noexcept
 {
     {
-        TRACE_PROFILER_VULKAN_SCOPE("vkCmdBindPipeline", color::BLACK);
+        TRACE_PROFILER_VULKAN_SCOPE("vkCmdBindPipeline", color::color8bit::BLACK);
         vkCmdBindPipeline(commandBuffer, pipelineBindPoint, pipeline);
     }
 }
@@ -636,7 +636,7 @@ inline void VulkanWrapper::CmdSetStencilReference(VkCommandBuffer commandBuffer,
 inline void VulkanWrapper::CmdBindDescriptorSets(VkCommandBuffer commandBuffer, VkPipelineBindPoint pipelineBindPoint, VkPipelineLayout layout, uint32_t firstSet, uint32_t descriptorSetCount, const VkDescriptorSet* pDescriptorSets, uint32_t dynamicOffsetCount, const uint32_t* pDynamicOffsets) noexcept
 {
     {
-        TRACE_PROFILER_VULKAN_SCOPE("vkCmdBindDescriptorSets", color::BLACK);
+        TRACE_PROFILER_VULKAN_SCOPE("vkCmdBindDescriptorSets", color::color8bit::BLACK);
         vkCmdBindDescriptorSets(commandBuffer, pipelineBindPoint, layout, firstSet, descriptorSetCount, pDescriptorSets, dynamicOffsetCount, pDynamicOffsets);
     }
 }
@@ -644,7 +644,7 @@ inline void VulkanWrapper::CmdBindDescriptorSets(VkCommandBuffer commandBuffer, 
 inline void VulkanWrapper::CmdBindIndexBuffer(VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset, VkIndexType indexType) noexcept
 {
     {
-        TRACE_PROFILER_VULKAN_SCOPE("vkCmdBindIndexBuffer", color::BLACK);
+        TRACE_PROFILER_VULKAN_SCOPE("vkCmdBindIndexBuffer", color::color8bit::BLACK);
         vkCmdBindIndexBuffer(commandBuffer, buffer, offset, indexType);
     }
 }
@@ -652,7 +652,7 @@ inline void VulkanWrapper::CmdBindIndexBuffer(VkCommandBuffer commandBuffer, VkB
 inline void VulkanWrapper::CmdBindVertexBuffers(VkCommandBuffer commandBuffer, uint32_t firstBinding, uint32_t bindingCount, const VkBuffer* pBuffers, const VkDeviceSize* pOffsets) noexcept
 {
     {
-        TRACE_PROFILER_VULKAN_SCOPE("vkCmdBindVertexBuffers", color::BLACK);
+        TRACE_PROFILER_VULKAN_SCOPE("vkCmdBindVertexBuffers", color::color8bit::BLACK);
         vkCmdBindVertexBuffers(commandBuffer, firstBinding, bindingCount, pBuffers, pOffsets);
     }
 }
@@ -660,7 +660,7 @@ inline void VulkanWrapper::CmdBindVertexBuffers(VkCommandBuffer commandBuffer, u
 inline void VulkanWrapper::CmdDraw(VkCommandBuffer commandBuffer, uint32_t vertexCount, uint32_t instanceCount, uint32_t firstVertex, uint32_t firstInstance) noexcept
 {
     {
-        TRACE_PROFILER_VULKAN_SCOPE("vkCmdDraw", color::BLACK);
+        TRACE_PROFILER_VULKAN_SCOPE("vkCmdDraw", color::color8bit::BLACK);
         vkCmdDraw(commandBuffer, vertexCount, instanceCount, firstVertex, firstInstance);
     }
 }
@@ -668,7 +668,7 @@ inline void VulkanWrapper::CmdDraw(VkCommandBuffer commandBuffer, uint32_t verte
 inline void VulkanWrapper::CmdDrawIndexed(VkCommandBuffer commandBuffer, uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex, int32_t vertexOffset, uint32_t firstInstance) noexcept
 {
     {
-        TRACE_PROFILER_VULKAN_SCOPE("vkCmdDrawIndexed", color::BLACK);
+        TRACE_PROFILER_VULKAN_SCOPE("vkCmdDrawIndexed", color::color8bit::BLACK);
         vkCmdDrawIndexed(commandBuffer, indexCount, instanceCount, firstIndex, vertexOffset, firstInstance);
     }
 }
@@ -676,7 +676,7 @@ inline void VulkanWrapper::CmdDrawIndexed(VkCommandBuffer commandBuffer, uint32_
 inline void VulkanWrapper::CmdDrawIndirect(VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset, uint32_t drawCount, uint32_t stride) noexcept
 {
     {
-        TRACE_PROFILER_VULKAN_SCOPE("vkCmdDrawIndirect", color::BLACK);
+        TRACE_PROFILER_VULKAN_SCOPE("vkCmdDrawIndirect", color::color8bit::BLACK);
         vkCmdDrawIndirect(commandBuffer, buffer, offset, drawCount, stride);
     }
 }
@@ -684,7 +684,7 @@ inline void VulkanWrapper::CmdDrawIndirect(VkCommandBuffer commandBuffer, VkBuff
 inline void VulkanWrapper::CmdDrawIndexedIndirect(VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset, uint32_t drawCount, uint32_t stride) noexcept
 {
     {
-        TRACE_PROFILER_VULKAN_SCOPE("vkCmdDrawIndexedIndirect", color::BLACK);
+        TRACE_PROFILER_VULKAN_SCOPE("vkCmdDrawIndexedIndirect", color::color8bit::BLACK);
         vkCmdDrawIndexedIndirect(commandBuffer, buffer, offset, drawCount, stride);
     }
 }
@@ -692,7 +692,7 @@ inline void VulkanWrapper::CmdDrawIndexedIndirect(VkCommandBuffer commandBuffer,
 inline void VulkanWrapper::CmdDispatch(VkCommandBuffer commandBuffer, uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ) noexcept
 {
     {
-        TRACE_PROFILER_VULKAN_SCOPE("vkCmdDispatch", color::BLACK);
+        TRACE_PROFILER_VULKAN_SCOPE("vkCmdDispatch", color::color8bit::BLACK);
         vkCmdDispatch(commandBuffer, groupCountX, groupCountY, groupCountZ);
     }
 }
@@ -700,7 +700,7 @@ inline void VulkanWrapper::CmdDispatch(VkCommandBuffer commandBuffer, uint32_t g
 inline void VulkanWrapper::CmdDispatchIndirect(VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset) noexcept
 {
     {
-        TRACE_PROFILER_VULKAN_SCOPE("vkCmdDispatchIndirect", color::BLACK);
+        TRACE_PROFILER_VULKAN_SCOPE("vkCmdDispatchIndirect", color::color8bit::BLACK);
         vkCmdDispatchIndirect(commandBuffer, buffer, offset);
     }
 }
@@ -814,7 +814,7 @@ inline void VulkanWrapper::CmdPushConstants(VkCommandBuffer commandBuffer, VkPip
 inline void VulkanWrapper::CmdBeginRenderPass(VkCommandBuffer commandBuffer, const VkRenderPassBeginInfo* pRenderPassBegin, VkSubpassContents contents) noexcept
 {
     {
-        TRACE_PROFILER_VULKAN_SCOPE("vkCmdBeginRenderPass", color::BLACK);
+        TRACE_PROFILER_VULKAN_SCOPE("vkCmdBeginRenderPass", color::color8bit::BLACK);
         vkCmdBeginRenderPass(commandBuffer, pRenderPassBegin, contents);
     }
 }
@@ -827,7 +827,7 @@ inline void VulkanWrapper::CmdNextSubpass(VkCommandBuffer commandBuffer, VkSubpa
 inline void VulkanWrapper::CmdEndRenderPass(VkCommandBuffer commandBuffer) noexcept
 {
     {
-        TRACE_PROFILER_VULKAN_SCOPE("vkCmdEndRenderPass", color::BLACK);
+        TRACE_PROFILER_VULKAN_SCOPE("vkCmdEndRenderPass", color::color8bit::BLACK);
         vkCmdEndRenderPass(commandBuffer);
     }
 }
@@ -835,7 +835,7 @@ inline void VulkanWrapper::CmdEndRenderPass(VkCommandBuffer commandBuffer) noexc
 inline void VulkanWrapper::CmdExecuteCommands(VkCommandBuffer commandBuffer, uint32_t commandBufferCount, const VkCommandBuffer* pCommandBuffers) noexcept
 {
     {
-        TRACE_PROFILER_VULKAN_SCOPE("vkCmdExecuteCommands", color::BLACK);
+        TRACE_PROFILER_VULKAN_SCOPE("vkCmdExecuteCommands", color::color8bit::BLACK);
         vkCmdExecuteCommands(commandBuffer, commandBufferCount, pCommandBuffers);
     }
 }
@@ -1201,7 +1201,7 @@ inline void VulkanWrapper::CmdBeginRenderPass2(VkCommandBuffer commandBuffer, co
 #   define vkCmdBeginRenderPass2 vkCmdBeginRenderPass2KHR
 #endif
     {
-        TRACE_PROFILER_VULKAN_SCOPE("vkCmdBeginRenderPass2", color::BLACK);
+        TRACE_PROFILER_VULKAN_SCOPE("vkCmdBeginRenderPass2", color::color8bit::BLACK);
         vkCmdBeginRenderPass2(commandBuffer, pRenderPassBegin, pSubpassBeginInfo);
     }
 #if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_2)
@@ -1215,7 +1215,7 @@ inline void VulkanWrapper::CmdNextSubpass2(VkCommandBuffer commandBuffer, const 
 #   define vkCmdNextSubpass2 vkCmdNextSubpass2KHR
 #endif
     {
-        TRACE_PROFILER_VULKAN_SCOPE("vkCmdNextSubpass2", color::BLACK);
+        TRACE_PROFILER_VULKAN_SCOPE("vkCmdNextSubpass2", color::color8bit::BLACK);
         vkCmdNextSubpass2(commandBuffer, pSubpassBeginInfo, pSubpassEndInfo);
     }
 #if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_2)
@@ -1229,7 +1229,7 @@ inline void VulkanWrapper::CmdEndRenderPass2(VkCommandBuffer commandBuffer, cons
 #   define vkCmdEndRenderPass2 vkCmdEndRenderPass2KHR
 #endif
     {
-        TRACE_PROFILER_VULKAN_SCOPE("vkCmdEndRenderPass2", color::BLACK);
+        TRACE_PROFILER_VULKAN_SCOPE("vkCmdEndRenderPass2", color::color8bit::BLACK);
         vkCmdEndRenderPass2(commandBuffer, pSubpassEndInfo);
     }
 #if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_2)
@@ -1243,7 +1243,7 @@ inline void VulkanWrapper::ResetQueryPool(VkDevice device, VkQueryPool queryPool
 #   define vkResetQueryPool vkResetQueryPoolEXT
 #endif
     {
-        TRACE_PROFILER_VULKAN_SCOPE("vkResetQueryPool", color::BLACK);
+        TRACE_PROFILER_VULKAN_SCOPE("vkResetQueryPool", color::color8bit::BLACK);
         vkResetQueryPool(device, queryPool, firstQuery, queryCount);
     }
 #if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_2)
@@ -1268,7 +1268,7 @@ inline VkResult VulkanWrapper::WaitSemaphores(VkDevice device, const VkSemaphore
 #   define vkWaitSemaphores vkWaitSemaphoresKHR
 #endif
     {
-        TRACE_PROFILER_VULKAN_SCOPE("vkWaitSemaphores", color::BLACK);
+        TRACE_PROFILER_VULKAN_SCOPE("vkWaitSemaphores", color::color8bit::BLACK);
         return vkWaitSemaphores(device, pWaitInfo, timeout);
     }
 #if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_2)
@@ -1441,7 +1441,7 @@ inline VkResult VulkanWrapper::QueueSubmit2(VkQueue queue, uint32_t submitCount,
 #   define vkQueueSubmit2 vkQueueSubmit2KHR
 #endif
     {
-        TRACE_PROFILER_VULKAN_SCOPE("vkQueueSubmit2", color::BLACK);
+        TRACE_PROFILER_VULKAN_SCOPE("vkQueueSubmit2", color::color8bit::BLACK);
         return vkQueueSubmit2(queue, submitCount, pSubmits, fence);
     }
 #if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_3)
@@ -1598,7 +1598,7 @@ inline void VulkanWrapper::CmdBindVertexBuffers2(VkCommandBuffer commandBuffer, 
 #   define vkCmdBindVertexBuffers2 vkCmdBindVertexBuffers2EXT
 #endif
     {
-        TRACE_PROFILER_VULKAN_SCOPE("vkCmdBindVertexBuffers2", color::BLACK);
+        TRACE_PROFILER_VULKAN_SCOPE("vkCmdBindVertexBuffers2", color::color8bit::BLACK);
         return vkCmdBindVertexBuffers2(commandBuffer, firstBinding, bindingCount, pBuffers, pOffsets, pSizes, pStrides);
     }
 #if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_3)
@@ -1810,7 +1810,7 @@ inline VkResult VulkanWrapper::GetSwapchainImages(VkDevice device, VkSwapchainKH
 inline VkResult VulkanWrapper::AcquireNextImage(VkDevice device, VkSwapchainKHR swapchain, uint64_t timeout, VkSemaphore semaphore, VkFence fence, uint32_t* pImageIndex) noexcept
 {
     {
-        TRACE_PROFILER_VULKAN_SCOPE("vkAcquireNextImageKHR", color::BLACK);
+        TRACE_PROFILER_VULKAN_SCOPE("vkAcquireNextImageKHR", color::color8bit::BLACK);
         return vkAcquireNextImageKHR(device, swapchain, timeout, semaphore, fence, pImageIndex);
     }
 }
@@ -1818,7 +1818,7 @@ inline VkResult VulkanWrapper::AcquireNextImage(VkDevice device, VkSwapchainKHR 
 inline VkResult VulkanWrapper::QueuePresent(VkQueue queue, const VkPresentInfoKHR* pPresentInfo) noexcept
 {
     {
-        TRACE_PROFILER_VULKAN_SCOPE("vkQueuePresentKHR", color::BLACK);
+        TRACE_PROFILER_VULKAN_SCOPE("vkQueuePresentKHR", color::color8bit::BLACK);
         return vkQueuePresentKHR(queue, pPresentInfo);
     }
 }
@@ -1841,7 +1841,7 @@ inline VkResult VulkanWrapper::GetPhysicalDevicePresentRectangles(VkPhysicalDevi
 inline VkResult VulkanWrapper::AcquireNextImage2(VkDevice device, const VkAcquireNextImageInfoKHR* pAcquireInfo, uint32_t* pImageIndex) noexcept
 {
     {
-        TRACE_PROFILER_VULKAN_SCOPE("vkAcquireNextImage2KHR", color::BLACK);
+        TRACE_PROFILER_VULKAN_SCOPE("vkAcquireNextImage2KHR", color::color8bit::BLACK);
         return vkAcquireNextImage2KHR(device, pAcquireInfo, pImageIndex);
     }
 }
