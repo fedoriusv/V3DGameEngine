@@ -79,6 +79,7 @@
 
 #define DEBUG_OBJECT_MEMORY 1
 #define FRAME_PROFILER_ENABLE (0 || PROFILE)
+#define GPU_MARKERS_ENABLE (DEBUG || DEVELOPMENT)
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 
