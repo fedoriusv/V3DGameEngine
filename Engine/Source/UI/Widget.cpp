@@ -1,5 +1,5 @@
-#include "Wiget.h"
-#include "WigetHandler.h"
+#include "Widget.h"
+#include "WidgetHandler.h"
 #include "Utils/Logger.h"
 
 namespace v3d
@@ -9,28 +9,28 @@ namespace ui
 
 static u64 s_uidGenerator = 0;
 
-Wiget::Wiget(Wiget::State* state) noexcept
+Widget::Widget(Widget::State* state) noexcept
     : m_data(state)
 {
     ++s_uidGenerator;
     cast_data<StateBase>(m_data)._uid = s_uidGenerator;
 }
 
-Wiget::Wiget(const Wiget& other) noexcept
+Widget::Widget(const Widget& other) noexcept
     : m_data(nullptr) //Allocate and copy in the child constructor
 {
 }
 
-Wiget::Wiget(Wiget&& other) noexcept
+Widget::Widget(Widget&& other) noexcept
 {
 }
 
-Wiget::~Wiget()
+Widget::~Widget()
 {
     ASSERT(m_data == nullptr, "must be deleted");
 }
 
-bool Wiget::update(WigetHandler* handler, Wiget* parent, Wiget* layout, f32 dt)
+bool Widget::update(WidgetHandler* handler, Widget* parent, Widget* layout, f32 dt)
 {
     StateBase& state = cast_data<StateBase>(m_data);
 
@@ -69,12 +69,12 @@ bool Wiget::update(WigetHandler* handler, Wiget* parent, Wiget* layout, f32 dt)
     return true;
 }
 
-math::TVector2D<f32> Wiget::calculateSize(WigetHandler* handler, Wiget* parent, Wiget* layout)
+math::TVector2D<f32> Widget::calculateSize(WidgetHandler* handler, Widget* parent, Widget* layout)
 {
     return { 0.0f, 0.0f };
 }
 
-void Wiget::handleNotify(const utils::Reporter<WigetReport>* reporter, const WigetReport& data)
+void Widget::handleNotify(const utils::Reporter<WidgetReport>* reporter, const WidgetReport& data)
 {
 }
 

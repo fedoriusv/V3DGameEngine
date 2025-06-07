@@ -15,7 +15,7 @@
 #include "Renderer/Texture.h"
 #include "Stream/StreamManager.h"
 #include "Resource/Loader/ShaderCompiler.h"
-#include "UI/Wigets.h"
+#include "UI/Widgets.h"
 
 #if USE_IMGUI
 #include "ThirdParty/imgui/imgui.h"
@@ -182,23 +182,23 @@ static bool updateMouseCursor(ImGuiIO& io, ImGuiMouseCursor imgui_cursor)
     return true;
 }
 
-ImGuiWigetHandler::ImGuiWigetHandler(renderer::Device* device, ImGuiWigetFlags flags) noexcept
-    : WigetHandler(device)
+ImGuiWidgetHandler::ImGuiWidgetHandler(renderer::Device* device, ImGuiWidgetFlags flags) noexcept
+    : WidgetHandler(device)
     , m_ImGuiContext(nullptr)
     , m_showDemo(false)
 
     , m_UIProgram(nullptr)
     , m_UIPipeline(nullptr)
 
-    , m_viewportData(V3D_NEW(ImGuiWigetViewportData, memory::MemoryLabel::MemoryUI)())
+    , m_viewportData(V3D_NEW(ImGuiWidgetViewportData, memory::MemoryLabel::MemoryUI)())
     , m_frameCounter(~1)
     , m_flags(flags)
     , m_mouseCursor(ImGuiMouseCursor_Arrow)
 {
-    m_uiDrawer = V3D_NEW(ImGuiWigetDrawer, memory::MemoryLabel::MemoryUI)(this);
+    m_uiDrawer = V3D_NEW(ImGuiWidgetDrawer, memory::MemoryLabel::MemoryUI)(this);
 }
 
-ImGuiWigetHandler::~ImGuiWigetHandler()
+ImGuiWidgetHandler::~ImGuiWidgetHandler()
 {
     V3D_DELETE(m_uiDrawer, memory::MemoryLabel::MemoryUI);
     m_uiDrawer = nullptr;
@@ -211,7 +211,7 @@ ImGuiWigetHandler::~ImGuiWigetHandler()
     ASSERT(!m_ImGuiContext, "must be nullptr");
 }
 
-bool ImGuiWigetHandler::create(const renderer::RenderPassDesc& renderpassDesc)
+bool ImGuiWidgetHandler::create(const renderer::RenderPassDesc& renderpassDesc)
 {
     ASSERT(!m_ImGuiContext, "must be nullptr");
     ImGui::SetAllocatorFunctions(
@@ -228,7 +228,7 @@ bool ImGuiWigetHandler::create(const renderer::RenderPassDesc& renderpassDesc)
     m_ImGuiContext = ImGui::CreateContext();
     if (!m_ImGuiContext)
     {
-        LOG_ERROR("ImGuiWigetLayout::create CreateContext is failed");
+        LOG_ERROR("ImGuiWidgetLayout::create CreateContext is failed");
         destroy();
 
         return false;
@@ -247,7 +247,7 @@ bool ImGuiWigetHandler::create(const renderer::RenderPassDesc& renderpassDesc)
 
     imguiIO.BackendFlags |= ImGuiBackendFlags_RendererHasVtxOffset;
 
-    if (m_flags && ImGuiWigetFlag::ImGui_ViewportMode)
+    if (m_flags && ImGuiWidgetFlag::ImGui_ViewportMode)
     {
         imguiIO.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
         imguiIO.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
@@ -261,28 +261,28 @@ bool ImGuiWigetHandler::create(const renderer::RenderPassDesc& renderpassDesc)
     if (imguiIO.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
     {
         // Window
-        imguiPlatformIO.Platform_CreateWindow = ImGuiWigetViewportEvents::ImGui_CreateWindow;
-        imguiPlatformIO.Platform_DestroyWindow = ImGuiWigetViewportEvents::ImGui_DestroyWindow;
-        imguiPlatformIO.Platform_ShowWindow = ImGuiWigetViewportEvents::ImGui_ShowWindow;
-        imguiPlatformIO.Platform_SetWindowPos = ImGuiWigetViewportEvents::ImGui_SetWindowPos;
-        imguiPlatformIO.Platform_GetWindowPos = ImGuiWigetViewportEvents::ImGui_GetWindowPos;
-        imguiPlatformIO.Platform_SetWindowSize = ImGuiWigetViewportEvents::ImGui_SetWindowSize;
-        imguiPlatformIO.Platform_GetWindowSize = ImGuiWigetViewportEvents::ImGui_GetWindowSize;
-        imguiPlatformIO.Platform_SetWindowFocus = ImGuiWigetViewportEvents::ImGui_SetWindowFocus;
-        imguiPlatformIO.Platform_GetWindowFocus = ImGuiWigetViewportEvents::ImGui_GetWindowFocus;
-        imguiPlatformIO.Platform_GetWindowMinimized = ImGuiWigetViewportEvents::ImGui_GetWindowMinimized;
-        imguiPlatformIO.Platform_SetWindowTitle = ImGuiWigetViewportEvents::ImGui_SetWindowTitle;
-        imguiPlatformIO.Platform_SetWindowAlpha = ImGuiWigetViewportEvents::ImGui_SetWindowAlpha;
-        imguiPlatformIO.Platform_UpdateWindow = ImGuiWigetViewportEvents::ImGui_UpdateWindow;
-        imguiPlatformIO.Platform_GetWindowDpiScale = ImGuiWigetViewportEvents::ImGui_GetWindowDpiScale;
-        imguiPlatformIO.Platform_OnChangedViewport = ImGuiWigetViewportEvents::ImGui_OnChangedViewport;
+        imguiPlatformIO.Platform_CreateWindow = ImGuiWidgetViewportEvents::ImGui_CreateWindow;
+        imguiPlatformIO.Platform_DestroyWindow = ImGuiWidgetViewportEvents::ImGui_DestroyWindow;
+        imguiPlatformIO.Platform_ShowWindow = ImGuiWidgetViewportEvents::ImGui_ShowWindow;
+        imguiPlatformIO.Platform_SetWindowPos = ImGuiWidgetViewportEvents::ImGui_SetWindowPos;
+        imguiPlatformIO.Platform_GetWindowPos = ImGuiWidgetViewportEvents::ImGui_GetWindowPos;
+        imguiPlatformIO.Platform_SetWindowSize = ImGuiWidgetViewportEvents::ImGui_SetWindowSize;
+        imguiPlatformIO.Platform_GetWindowSize = ImGuiWidgetViewportEvents::ImGui_GetWindowSize;
+        imguiPlatformIO.Platform_SetWindowFocus = ImGuiWidgetViewportEvents::ImGui_SetWindowFocus;
+        imguiPlatformIO.Platform_GetWindowFocus = ImGuiWidgetViewportEvents::ImGui_GetWindowFocus;
+        imguiPlatformIO.Platform_GetWindowMinimized = ImGuiWidgetViewportEvents::ImGui_GetWindowMinimized;
+        imguiPlatformIO.Platform_SetWindowTitle = ImGuiWidgetViewportEvents::ImGui_SetWindowTitle;
+        imguiPlatformIO.Platform_SetWindowAlpha = ImGuiWidgetViewportEvents::ImGui_SetWindowAlpha;
+        imguiPlatformIO.Platform_UpdateWindow = ImGuiWidgetViewportEvents::ImGui_UpdateWindow;
+        imguiPlatformIO.Platform_GetWindowDpiScale = ImGuiWidgetViewportEvents::ImGui_GetWindowDpiScale;
+        imguiPlatformIO.Platform_OnChangedViewport = ImGuiWidgetViewportEvents::ImGui_OnChangedViewport;
 
         // Render
-        imguiPlatformIO.Renderer_CreateWindow = ImGuiWigetViewportEvents::ImGui_Renderer_CreateWindow;
-        imguiPlatformIO.Renderer_DestroyWindow = ImGuiWigetViewportEvents::ImGui_Renderer_DestroyWindow;
-        imguiPlatformIO.Renderer_SetWindowSize = ImGuiWigetViewportEvents::ImGui_Renderer_SetWindowSize;
-        imguiPlatformIO.Renderer_RenderWindow = ImGuiWigetViewportEvents::ImGui_Renderer_RenderWindow;
-        imguiPlatformIO.Renderer_SwapBuffers = ImGuiWigetViewportEvents::ImGui_Renderer_Present;
+        imguiPlatformIO.Renderer_CreateWindow = ImGuiWidgetViewportEvents::ImGui_Renderer_CreateWindow;
+        imguiPlatformIO.Renderer_DestroyWindow = ImGuiWidgetViewportEvents::ImGui_Renderer_DestroyWindow;
+        imguiPlatformIO.Renderer_SetWindowSize = ImGuiWidgetViewportEvents::ImGui_Renderer_SetWindowSize;
+        imguiPlatformIO.Renderer_RenderWindow = ImGuiWidgetViewportEvents::ImGui_Renderer_RenderWindow;
+        imguiPlatformIO.Renderer_SwapBuffers = ImGuiWidgetViewportEvents::ImGui_Renderer_Present;
     }
 
     auto displayMonitors = [](const math::Rect& rcMonitor, const math::Rect& rcWork, f32 dpi, bool primary, void* monitor) -> bool
@@ -374,7 +374,7 @@ bool ImGuiWigetHandler::create(const renderer::RenderPassDesc& renderpassDesc)
     fontConfig.PixelSnapH = true;
     if (!createFontTexture(cmdList, &fontConfig))
     {
-        LOG_ERROR("ImGuiWigetLayout::create createFontTexture is failed");
+        LOG_ERROR("ImGuiWidgetLayout::create createFontTexture is failed");
         destroy();
 
         return false;
@@ -382,7 +382,7 @@ bool ImGuiWigetHandler::create(const renderer::RenderPassDesc& renderpassDesc)
 
     if (!createPipeline(renderpassDesc))
     {
-        LOG_ERROR("ImGuiWigetLayout::create createPipeline is failed");
+        LOG_ERROR("ImGuiWidgetLayout::create createPipeline is failed");
         destroy();
 
         return false;
@@ -390,7 +390,7 @@ bool ImGuiWigetHandler::create(const renderer::RenderPassDesc& renderpassDesc)
 
     if (!createBuffers(m_viewportData, k_ImGui_IndexCount, k_ImGui_VertexCount))
     {
-        LOG_ERROR("ImGuiWigetLayout::create createBuffers is failed");
+        LOG_ERROR("ImGuiWidgetLayout::create createBuffers is failed");
         destroy();
 
         return false;
@@ -412,7 +412,7 @@ bool ImGuiWigetHandler::create(const renderer::RenderPassDesc& renderpassDesc)
     return true;
 }
 
-void ImGuiWigetHandler::destroy()
+void ImGuiWidgetHandler::destroy()
 {
     ImGuiIO& imguiIO = ImGui::GetIO();
     if (imguiIO.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
@@ -431,7 +431,7 @@ void ImGuiWigetHandler::destroy()
     }
 }
 
-void ImGuiWigetHandler::handleMouseCallback(const event::InputEventHandler* handler, const event::MouseInputEvent* event)
+void ImGuiWidgetHandler::handleMouseCallback(const event::InputEventHandler* handler, const event::MouseInputEvent* event)
 {
     ASSERT(m_ImGuiContext, "must be valid");
     ASSERT(handler, "must be valid");
@@ -443,7 +443,7 @@ void ImGuiWigetHandler::handleMouseCallback(const event::InputEventHandler* hand
     //imguiIO.AddMouseWheelEvent(0.0f, handler->getMouseWheel());
 }
 
-void ImGuiWigetHandler::handleKeyboardCallback(const v3d::event::InputEventHandler* handler, const event::KeyboardInputEvent* event)
+void ImGuiWidgetHandler::handleKeyboardCallback(const v3d::event::InputEventHandler* handler, const event::KeyboardInputEvent* event)
 {
     ASSERT(m_ImGuiContext, "must be valid");
     ASSERT(handler, "must be valid");
@@ -459,13 +459,13 @@ void ImGuiWigetHandler::handleKeyboardCallback(const v3d::event::InputEventHandl
     }
 }
 
-void ImGuiWigetHandler::handleGamepadCallback(const v3d::event::InputEventHandler* handler, const event::GamepadInputEvent* event)
+void ImGuiWidgetHandler::handleGamepadCallback(const v3d::event::InputEventHandler* handler, const event::GamepadInputEvent* event)
 {
     ASSERT(m_ImGuiContext, "must be valid");
     ASSERT(handler, "must be valid");
 }
 
-void ImGuiWigetHandler::handleSystemCallback(const v3d::event::InputEventHandler* handler, const event::SystemEvent* event)
+void ImGuiWidgetHandler::handleSystemCallback(const v3d::event::InputEventHandler* handler, const event::SystemEvent* event)
 {
     ASSERT(m_ImGuiContext, "must be valid");
     ASSERT(handler, "must be valid");
@@ -489,7 +489,7 @@ void ImGuiWigetHandler::handleSystemCallback(const v3d::event::InputEventHandler
     }
 }
 
-void ImGuiWigetHandler::update(const platform::Window* window, const v3d::event::InputEventHandler* handler, f32 dt)
+void ImGuiWidgetHandler::update(const platform::Window* window, const v3d::event::InputEventHandler* handler, f32 dt)
 {
     ASSERT(m_ImGuiContext, "must be valid");
     ASSERT(handler, "must be valid");
@@ -499,7 +499,7 @@ void ImGuiWigetHandler::update(const platform::Window* window, const v3d::event:
     imguiIO.DisplaySize.x = window->getSize()._width;
     imguiIO.DisplaySize.y = window->getSize()._height;
     imguiIO.DisplayFramebufferScale = ImVec2(1.0f, 1.0f);
-    imguiIO.FontDefault = m_fonts[WigetLayout::MediumFont];
+    imguiIO.FontDefault = m_fonts[WidgetLayout::MediumFont];
 
     if (imguiIO.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
     {
@@ -571,12 +571,12 @@ void ImGuiWigetHandler::update(const platform::Window* window, const v3d::event:
         ImGui::DockSpaceOverViewport(0, ImGui::GetMainViewport());
     }
 
-    if (m_flags && ImGuiWigetFlag::ImGui_Gizmo)
+    if (m_flags && ImGuiWidgetFlag::ImGui_Gizmo)
     {
         ImGuizmo::BeginFrame();
     }
 
-    WigetHandler::update(window, handler, dt);
+    WidgetHandler::update(window, handler, dt);
 
     if (m_showDemo)
     {
@@ -591,17 +591,17 @@ void ImGuiWigetHandler::update(const platform::Window* window, const v3d::event:
     }
 }
 
-void ImGuiWigetHandler::showDemoUI()
+void ImGuiWidgetHandler::showDemoUI()
 {
     m_showDemo = true;
 }
 
-void ImGuiWigetHandler::hideDemoUI()
+void ImGuiWidgetHandler::hideDemoUI()
 {
     m_showDemo = false;
 }
 
-bool ImGuiWigetHandler::createFontTexture(renderer::CmdListRender* cmdList, ImFontConfig* fontConfig)
+bool ImGuiWidgetHandler::createFontTexture(renderer::CmdListRender* cmdList, ImFontConfig* fontConfig)
 {
     ImGuiIO& imguiIO = ImGui::GetIO();
     imguiIO.Fonts->ClearFonts();
@@ -614,9 +614,9 @@ bool ImGuiWigetHandler::createFontTexture(renderer::CmdListRender* cmdList, ImFo
     }
     else
     {
-        m_fonts[WigetLayout::SmallFont] = imguiIO.Fonts->AddFontFromMemoryCompressedTTF(k_source_sans_pro_regular_compressed_data, k_source_sans_pro_regular_compressed_size, 13, fontConfig, imguiIO.Fonts->GetGlyphRangesDefault());
-        m_fonts[WigetLayout::MediumFont] = imguiIO.Fonts->AddFontFromMemoryCompressedTTF(k_source_sans_pro_regular_compressed_data, k_source_sans_pro_regular_compressed_size, 20, fontConfig, imguiIO.Fonts->GetGlyphRangesDefault());
-        m_fonts[WigetLayout::LargeFont] = imguiIO.Fonts->AddFontFromMemoryCompressedTTF(k_source_sans_pro_regular_compressed_data, k_source_sans_pro_regular_compressed_size, 32, fontConfig, imguiIO.Fonts->GetGlyphRangesDefault());
+        m_fonts[WidgetLayout::SmallFont] = imguiIO.Fonts->AddFontFromMemoryCompressedTTF(k_source_sans_pro_regular_compressed_data, k_source_sans_pro_regular_compressed_size, 13, fontConfig, imguiIO.Fonts->GetGlyphRangesDefault());
+        m_fonts[WidgetLayout::MediumFont] = imguiIO.Fonts->AddFontFromMemoryCompressedTTF(k_source_sans_pro_regular_compressed_data, k_source_sans_pro_regular_compressed_size, 20, fontConfig, imguiIO.Fonts->GetGlyphRangesDefault());
+        m_fonts[WidgetLayout::LargeFont] = imguiIO.Fonts->AddFontFromMemoryCompressedTTF(k_source_sans_pro_regular_compressed_data, k_source_sans_pro_regular_compressed_size, 32, fontConfig, imguiIO.Fonts->GetGlyphRangesDefault());
     }
     imguiIO.FontGlobalScale = 1.0f;
 
@@ -647,7 +647,7 @@ bool ImGuiWigetHandler::createFontTexture(renderer::CmdListRender* cmdList, ImFo
     return true;
 }
 
-void ImGuiWigetHandler::destroyFontTexture()
+void ImGuiWidgetHandler::destroyFontTexture()
 {
     ImGuiIO& imguiIO = ImGui::GetIO();
     imguiIO.Fonts->ClearFonts();
@@ -665,7 +665,7 @@ void ImGuiWigetHandler::destroyFontTexture()
     }
 }
 
-bool ImGuiWigetHandler::createBuffers(ImGuiWigetViewportData* viewportData, u32 indexCount, u32 vertexCount)
+bool ImGuiWidgetHandler::createBuffers(ImGuiWidgetViewportData* viewportData, u32 indexCount, u32 vertexCount)
 {
     viewportData->_indexBuffer.resize(k_countSwapchaints);
     viewportData->_vertexBuffer.resize(k_countSwapchaints);
@@ -681,7 +681,7 @@ bool ImGuiWigetHandler::createBuffers(ImGuiWigetViewportData* viewportData, u32 
     return true;
 }
 
-void ImGuiWigetHandler::destroyBuffers(ImGuiWigetViewportData* viewportData)
+void ImGuiWidgetHandler::destroyBuffers(ImGuiWidgetViewportData* viewportData)
 {
     for (u32 i = 0; i < k_countSwapchaints; ++i)
     {
@@ -694,7 +694,7 @@ void ImGuiWigetHandler::destroyBuffers(ImGuiWigetViewportData* viewportData)
     viewportData->_geometryDesc.clear();
 }
 
-bool ImGuiWigetHandler::createPipeline(const renderer::RenderPassDesc& renderpassDesc)
+bool ImGuiWidgetHandler::createPipeline(const renderer::RenderPassDesc& renderpassDesc)
 {
     //shaders
     {
@@ -817,7 +817,7 @@ bool ImGuiWigetHandler::createPipeline(const renderer::RenderPassDesc& renderpas
     return true;
 }
 
-void ImGuiWigetHandler::destroyPipeline()
+void ImGuiWidgetHandler::destroyPipeline()
 {
     if (m_UIPipeline)
     {
@@ -832,7 +832,7 @@ void ImGuiWigetHandler::destroyPipeline()
     }
 }
 
-bool ImGuiWigetHandler::renderDrawData(ImGuiWigetViewportData* viewportData, ImDrawData* imDrawData)
+bool ImGuiWidgetHandler::renderDrawData(ImGuiWidgetViewportData* viewportData, ImDrawData* imDrawData)
 {
     const u32 currentIndex = m_frameCounter % k_countSwapchaints;
 
@@ -960,7 +960,7 @@ bool ImGuiWigetHandler::renderDrawData(ImGuiWigetViewportData* viewportData, ImD
     return true;
 }
 
-bool ImGuiWigetHandler::render(renderer::CmdListRender* cmdList)
+bool ImGuiWidgetHandler::render(renderer::CmdListRender* cmdList)
 {
     ++m_frameCounter;
 

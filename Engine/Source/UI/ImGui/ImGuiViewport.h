@@ -27,7 +27,7 @@ namespace ui
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    struct ImGuiWigetViewportData
+    struct ImGuiWidgetViewportData
     {
         renderer::Swapchain*                        _swapchain = nullptr;
         renderer::CmdListRender*                    _cmdList = nullptr;
@@ -40,7 +40,7 @@ namespace ui
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    struct ImGuiWigetViewportEvents
+    struct ImGuiWidgetViewportEvents
     {
         static void ImGui_CreateWindow(ImGuiViewport* vp);
         static void ImGui_DestroyWindow(ImGuiViewport* vp);

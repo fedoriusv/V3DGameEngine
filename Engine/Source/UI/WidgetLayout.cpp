@@ -1,5 +1,5 @@
-#include "WigetLayout.h"
-#include "WigetHandler.h"
+#include "WidgetLayout.h"
+#include "WidgetHandler.h"
 #include "Utils/Logger.h"
 
 namespace v3d
@@ -10,26 +10,26 @@ namespace ui
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-WigetLayout::WigetLayout(LayoutFlags flags) noexcept
-    : WigetLayoutBase<WigetLayout>(V3D_NEW(StateType, memory::MemoryLabel::MemoryUI)())
+WidgetLayout::WidgetLayout(LayoutFlags flags) noexcept
+    : WidgetLayoutBase<WidgetLayout>(V3D_NEW(StateType, memory::MemoryLabel::MemoryUI)())
 {
-    Wiget::cast_data<StateType>(m_data)._flags = flags;
+    Widget::cast_data<StateType>(m_data)._flags = flags;
 }
 
-WigetLayout::WigetLayout(const WigetLayout& other) noexcept
-    : WigetLayoutBase<WigetLayout>(other)
+WidgetLayout::WidgetLayout(const WidgetLayout& other) noexcept
+    : WidgetLayoutBase<WidgetLayout>(other)
 {
     StateType* state = V3D_NEW(StateType, memory::MemoryLabel::MemoryUI)(*static_cast<const StateType*>(other.m_data));
     m_data = state;
 
-    for (const Wiget* wiget : other.m_wigets)
+    for (const Widget* wiget : other.m_wigets)
     {
         m_wigets.push_back(wiget->copy());
     }
 }
 
-WigetLayout::WigetLayout(WigetLayout&& other) noexcept
-    : WigetLayoutBase<WigetLayout>(other)
+WidgetLayout::WidgetLayout(WidgetLayout&& other) noexcept
+    : WidgetLayoutBase<WidgetLayout>(other)
 {
     m_data = other.m_data;
     other.m_data = nullptr;
@@ -37,9 +37,9 @@ WigetLayout::WigetLayout(WigetLayout&& other) noexcept
     m_wigets = std::move(other.m_wigets);
 }
 
-WigetLayout::~WigetLayout()
+WidgetLayout::~WidgetLayout()
 {
-    for (Wiget* wiget : m_wigets)
+    for (Widget* wiget : m_wigets)
     {
         V3D_DELETE(wiget, memory::MemoryLabel::MemoryUI);
     }
@@ -52,23 +52,23 @@ WigetLayout::~WigetLayout()
     }
 }
 
-TypePtr WigetLayout::getType() const
+TypePtr WidgetLayout::getType() const
 {
-    return typeOf<WigetLayout>();
+    return typeOf<WidgetLayout>();
 }
 
-bool WigetLayout::update(WigetHandler* handler, Wiget* parent, Wiget* layout, f32 dt)
+bool WidgetLayout::update(WidgetHandler* handler, Widget* parent, Widget* layout, f32 dt)
 {
-    WigetDrawer* drawer = handler->getWigetDrawer();
+    WidgetDrawer* drawer = handler->getWidgetDrawer();
 
     math::TVector2D<f32> layoutSize = { 0.0f , 0.0f };
-    u32 countWigets = 0;
+    u32 countWidgets = 0;
     f32 horizontLineHeight = 0;
     for (auto wiget = m_wigets.begin(); wiget != m_wigets.end(); ++wiget)
     {
         if ((*wiget)->isVisible())
         {
-            if (cast_data<StateType>(m_data)._stateMask & Wiget::State::StateMask::HorizontalLine)
+            if (cast_data<StateType>(m_data)._stateMask & Widget::State::StateMask::HorizontalLine)
             {
                 math::TVector2D<f32> size = (*wiget)->calculateSize(handler, parent, this);
                 layoutSize._x += size._x;
@@ -78,11 +78,11 @@ bool WigetLayout::update(WigetHandler* handler, Wiget* parent, Wiget* layout, f3
             {
                 layoutSize._y += (*wiget)->calculateSize(handler, parent, this)._y;
             }
-            ++countWigets;
+            ++countWidgets;
         }
     }
 
-    if (cast_data<StateType>(m_data)._stateMask & Wiget::State::StateMask::HorizontalLine)
+    if (cast_data<StateType>(m_data)._stateMask & Widget::State::StateMask::HorizontalLine)
     {
         layoutSize._x = 0;
         layoutSize._y += drawer->get_LayoutPadding()._y * 2.0f;
@@ -90,7 +90,7 @@ bool WigetLayout::update(WigetHandler* handler, Wiget* parent, Wiget* layout, f3
     else
     {
         layoutSize._y += drawer->get_LayoutPadding()._y * 2.0f;
-        layoutSize._y += drawer->get_ItemSpacing()._y * std::clamp<u32>(countWigets - 1, 0, countWigets);
+        layoutSize._y += drawer->get_ItemSpacing()._y * std::clamp<u32>(countWidgets - 1, 0, countWidgets);
     }
 
     cast_data<StateType>(m_data)._cachedContentSize = layoutSize;
@@ -131,73 +131,73 @@ bool WigetLayout::update(WigetHandler* handler, Wiget* parent, Wiget* layout, f3
     return true;
 }
 
-Wiget* WigetLayout::copy() const
+Widget* WidgetLayout::copy() const
 {
-    return V3D_NEW(WigetLayout, memory::MemoryLabel::MemoryUI)(*this);
+    return V3D_NEW(WidgetLayout, memory::MemoryLabel::MemoryUI)(*this);
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-WigetHorizontalLayout::WigetHorizontalLayout() noexcept
-    : WigetLayout()
+WidgetHorizontalLayout::WidgetHorizontalLayout() noexcept
+    : WidgetLayout()
 {
-    Wiget::cast_data<StateType>(m_data)._stateMask |= State::StateMask::HorizontalLine;
+    Widget::cast_data<StateType>(m_data)._stateMask |= State::StateMask::HorizontalLine;
 }
 
-WigetHorizontalLayout::WigetHorizontalLayout(const WigetHorizontalLayout& other) noexcept
-    : WigetLayout(other)
-{
-}
-
-WigetHorizontalLayout::WigetHorizontalLayout(WigetHorizontalLayout&& other) noexcept
-    : WigetLayout(other)
+WidgetHorizontalLayout::WidgetHorizontalLayout(const WidgetHorizontalLayout& other) noexcept
+    : WidgetLayout(other)
 {
 }
 
-WigetHorizontalLayout::~WigetHorizontalLayout()
+WidgetHorizontalLayout::WidgetHorizontalLayout(WidgetHorizontalLayout&& other) noexcept
+    : WidgetLayout(other)
 {
 }
 
-TypePtr WigetHorizontalLayout::getType() const
+WidgetHorizontalLayout::~WidgetHorizontalLayout()
 {
-    return typeOf<WigetHorizontalLayout>();
 }
 
-Wiget* WigetHorizontalLayout::copy() const
+TypePtr WidgetHorizontalLayout::getType() const
 {
-    return V3D_NEW(WigetHorizontalLayout, memory::MemoryLabel::MemoryUI)(*this);
+    return typeOf<WidgetHorizontalLayout>();
+}
+
+Widget* WidgetHorizontalLayout::copy() const
+{
+    return V3D_NEW(WidgetHorizontalLayout, memory::MemoryLabel::MemoryUI)(*this);
 }
 
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-WigetWindowLayout::WigetWindowLayout() noexcept
-    : WigetBase<WigetWindowLayout>(V3D_NEW(StateType, memory::MemoryLabel::MemoryUI)())
+WidgetWindowLayout::WidgetWindowLayout() noexcept
+    : WidgetBase<WidgetWindowLayout>(V3D_NEW(StateType, memory::MemoryLabel::MemoryUI)())
 {
 }
 
-WigetWindowLayout::WigetWindowLayout(WigetWindow* main, const std::vector<LayoutRule>& layouts) noexcept
-    : WigetBase<WigetWindowLayout>(V3D_NEW(StateType, memory::MemoryLabel::MemoryUI)())
+WidgetWindowLayout::WidgetWindowLayout(WidgetWindow* main, const std::vector<LayoutRule>& layouts) noexcept
+    : WidgetBase<WidgetWindowLayout>(V3D_NEW(StateType, memory::MemoryLabel::MemoryUI)())
 {
-    Wiget::cast_data<StateType>(m_data)._main = main;
-    Wiget::cast_data<StateType>(m_data)._rules = layouts;
+    Widget::cast_data<StateType>(m_data)._main = main;
+    Widget::cast_data<StateType>(m_data)._rules = layouts;
 }
 
-WigetWindowLayout::WigetWindowLayout(const WigetWindowLayout& other) noexcept
-    : WigetBase<WigetWindowLayout>(other)
+WidgetWindowLayout::WidgetWindowLayout(const WidgetWindowLayout& other) noexcept
+    : WidgetBase<WidgetWindowLayout>(other)
 {
     StateType* state = V3D_NEW(StateType, memory::MemoryLabel::MemoryUI)(*static_cast<const StateType*>(other.m_data));
     m_data = state;
 }
 
-WigetWindowLayout::WigetWindowLayout(WigetWindowLayout&& other) noexcept
-    : WigetBase<WigetWindowLayout>(other)
+WidgetWindowLayout::WidgetWindowLayout(WidgetWindowLayout&& other) noexcept
+    : WidgetBase<WidgetWindowLayout>(other)
 {
     m_data = other.m_data;
     other.m_data = nullptr;
 }
 
-WigetWindowLayout::~WigetWindowLayout()
+WidgetWindowLayout::~WidgetWindowLayout()
 {
     if (m_data)
     {
@@ -206,7 +206,7 @@ WigetWindowLayout::~WigetWindowLayout()
     }
 }
 
-WigetWindowLayout& WigetWindowLayout::operator=(const WigetWindowLayout& other)
+WidgetWindowLayout& WidgetWindowLayout::operator=(const WidgetWindowLayout& other)
 {
     StateType* state = V3D_NEW(StateType, memory::MemoryLabel::MemoryUI)(*static_cast<const StateType*>(other.m_data));
     m_data = state;
@@ -214,7 +214,7 @@ WigetWindowLayout& WigetWindowLayout::operator=(const WigetWindowLayout& other)
     return *this;
 }
 
-WigetWindowLayout& WigetWindowLayout::operator=(WigetWindowLayout&& other)
+WidgetWindowLayout& WidgetWindowLayout::operator=(WidgetWindowLayout&& other)
 {
     m_data = other.m_data;
     other.m_data = nullptr;
@@ -222,19 +222,19 @@ WigetWindowLayout& WigetWindowLayout::operator=(WigetWindowLayout&& other)
     return *this;
 }
 
-TypePtr WigetWindowLayout::getType() const
+TypePtr WidgetWindowLayout::getType() const
 {
-    return typeOf<WigetWindowLayout>();
+    return typeOf<WidgetWindowLayout>();
 }
 
-bool WigetWindowLayout::update(WigetHandler* handler, Wiget* parent, Wiget* layout, f32 dt)
+bool WidgetWindowLayout::update(WidgetHandler* handler, Widget* parent, Widget* layout, f32 dt)
 {
     return false;
 }
 
-Wiget* WigetWindowLayout::copy() const
+Widget* WidgetWindowLayout::copy() const
 {
-    return V3D_NEW(WigetWindowLayout, memory::MemoryLabel::MemoryUI)(*this);
+    return V3D_NEW(WidgetWindowLayout, memory::MemoryLabel::MemoryUI)(*this);
 }
 
 } //namespace scene

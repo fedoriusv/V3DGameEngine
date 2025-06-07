@@ -2,8 +2,8 @@
 
 #if USE_IMGUI
 #include "Common.h"
-#include "UI/WigetHandler.h"
-#include "UI/WigetLayout.h"
+#include "UI/WidgetHandler.h"
+#include "UI/WidgetLayout.h"
 
 #include "Renderer/Buffer.h"
 
@@ -29,26 +29,26 @@ namespace ui
 {
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    struct ImGuiWigetViewportEvents;
-    struct ImGuiWigetViewportData;
-    class ImGuiWigetDrawer;
+    struct ImGuiWidgetViewportEvents;
+    struct ImGuiWidgetViewportData;
+    class ImGuiWidgetDrawer;
 
     /**
-    * @brief ImGuiWigetHandler class
+    * @brief ImGuiWidgetHandler class
     */
-    class ImGuiWigetHandler final : public WigetHandler
+    class ImGuiWidgetHandler final : public WidgetHandler
     {
     public:
 
-        enum ImGuiWigetFlag
+        enum ImGuiWidgetFlag
         {
             ImGui_ViewportMode = 1 << 0,
             ImGui_Gizmo = 1 << 1,
         };
-        typedef u32 ImGuiWigetFlags;
+        typedef u32 ImGuiWidgetFlags;
 
-        explicit ImGuiWigetHandler(renderer::Device* device, ImGuiWigetFlags flags = 0) noexcept;
-        ~ImGuiWigetHandler();
+        explicit ImGuiWidgetHandler(renderer::Device* device, ImGuiWidgetFlags flags = 0) noexcept;
+        ~ImGuiWidgetHandler();
 
         void update(const platform::Window* window, const v3d::event::InputEventHandler* handler, f32 dt) override;
         bool render(renderer::CmdListRender* cmdList) override;
@@ -77,28 +77,28 @@ namespace ui
         bool createPipeline(const renderer::RenderPassDesc& renderpassDesc);
         void destroyPipeline();
 
-        bool createBuffers(ImGuiWigetViewportData* viewportData, u32 indexCount, u32 vertexCount);
-        void destroyBuffers(ImGuiWigetViewportData* viewportData);
+        bool createBuffers(ImGuiWidgetViewportData* viewportData, u32 indexCount, u32 vertexCount);
+        void destroyBuffers(ImGuiWidgetViewportData* viewportData);
 
-        bool renderDrawData(ImGuiWigetViewportData* viewportData, ImDrawData* drawData);
+        bool renderDrawData(ImGuiWidgetViewportData* viewportData, ImDrawData* drawData);
 
-        std::vector<const renderer::Texture2D*> m_activeTextures;
-        std::array<ImFont*, WigetLayout::FontSize_Count> m_fonts;
-        renderer::Texture2D* m_fontAtlas;
-        renderer::SamplerState* m_imageSampler;
+        std::vector<const renderer::Texture2D*>             m_activeTextures;
+        std::array<ImFont*, WidgetLayout::FontSize_Count>   m_fonts;
+        renderer::Texture2D*                                m_fontAtlas;
+        renderer::SamplerState*                             m_imageSampler;
 
-        renderer::ShaderProgram* m_UIProgram;
-        renderer::GraphicsPipelineState* m_UIPipeline;
+        renderer::ShaderProgram*                            m_UIProgram;
+        renderer::GraphicsPipelineState*                    m_UIPipeline;
 
-        const static u32 k_countSwapchaints = 3;
-        ImGuiWigetViewportData* m_viewportData;
+        const static u32                                    k_countSwapchaints = 3;
+        ImGuiWidgetViewportData*                            m_viewportData;
 
-        u32 m_frameCounter;
-        ImGuiWigetFlags m_flags;
-        u32 m_mouseCursor;
+        u32                                                 m_frameCounter;
+        ImGuiWidgetFlags                                    m_flags;
+        u32                                                 m_mouseCursor;
 
-        friend ImGuiWigetViewportEvents;
-        friend ImGuiWigetDrawer;
+        friend ImGuiWidgetViewportEvents;
+        friend ImGuiWidgetDrawer;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

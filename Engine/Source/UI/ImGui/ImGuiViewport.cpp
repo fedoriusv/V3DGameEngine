@@ -14,7 +14,7 @@ namespace v3d
 namespace ui
 {
 
-void ImGuiWigetViewportEvents::ImGui_CreateWindow(ImGuiViewport* vp)
+void ImGuiWidgetViewportEvents::ImGui_CreateWindow(ImGuiViewport* vp)
 {
     if (ImGuiViewport* parentViewport = ImGui::FindViewportByID(vp->ParentViewportId))
     {
@@ -31,7 +31,7 @@ void ImGuiWigetViewportEvents::ImGui_CreateWindow(ImGuiViewport* vp)
     }
 }
 
-void ImGuiWigetViewportEvents::ImGui_DestroyWindow(ImGuiViewport* vp)
+void ImGuiWidgetViewportEvents::ImGui_DestroyWindow(ImGuiViewport* vp)
 {
     platform::Window* window = reinterpret_cast<platform::Window*>(vp->PlatformUserData);
     ASSERT(window, "window is nullptr");
@@ -42,7 +42,7 @@ void ImGuiWigetViewportEvents::ImGui_DestroyWindow(ImGuiViewport* vp)
     vp->PlatformHandle = nullptr;
 }
 
-void ImGuiWigetViewportEvents::ImGui_ShowWindow(ImGuiViewport* vp)
+void ImGuiWidgetViewportEvents::ImGui_ShowWindow(ImGuiViewport* vp)
 {
     platform::Window* window = reinterpret_cast<platform::Window*>(vp->PlatformUserData);
     ASSERT(window, "nullptr");
@@ -50,7 +50,7 @@ void ImGuiWigetViewportEvents::ImGui_ShowWindow(ImGuiViewport* vp)
     window->show();
 }
 
-void ImGuiWigetViewportEvents::ImGui_SetWindowPos(ImGuiViewport* vp, ImVec2 pos)
+void ImGuiWidgetViewportEvents::ImGui_SetWindowPos(ImGuiViewport* vp, ImVec2 pos)
 {
     platform::Window* window = reinterpret_cast<platform::Window*>(vp->PlatformUserData);
     ASSERT(window, "nullptr");
@@ -58,7 +58,7 @@ void ImGuiWigetViewportEvents::ImGui_SetWindowPos(ImGuiViewport* vp, ImVec2 pos)
     window->setPosition({ (s32)pos.x, (s32)pos.y });
 }
 
-ImVec2 ImGuiWigetViewportEvents::ImGui_GetWindowPos(ImGuiViewport* vp)
+ImVec2 ImGuiWidgetViewportEvents::ImGui_GetWindowPos(ImGuiViewport* vp)
 {
     platform::Window* window = reinterpret_cast<platform::Window*>(vp->PlatformUserData);
     ASSERT(window, "nullptr");
@@ -67,7 +67,7 @@ ImVec2 ImGuiWigetViewportEvents::ImGui_GetWindowPos(ImGuiViewport* vp)
     return ImVec2(pos._x, pos._y);
 }
 
-void ImGuiWigetViewportEvents::ImGui_SetWindowSize(ImGuiViewport* vp, ImVec2 size)
+void ImGuiWidgetViewportEvents::ImGui_SetWindowSize(ImGuiViewport* vp, ImVec2 size)
 {
     platform::Window* window = reinterpret_cast<platform::Window*>(vp->PlatformUserData);
     ASSERT(window, "nullptr");
@@ -75,7 +75,7 @@ void ImGuiWigetViewportEvents::ImGui_SetWindowSize(ImGuiViewport* vp, ImVec2 siz
     window->setSize({ (u32)size.x, (u32)size.y });
 }
 
-ImVec2 ImGuiWigetViewportEvents::ImGui_GetWindowSize(ImGuiViewport* vp)
+ImVec2 ImGuiWidgetViewportEvents::ImGui_GetWindowSize(ImGuiViewport* vp)
 {
     platform::Window* window = reinterpret_cast<platform::Window*>(vp->PlatformUserData);
     ASSERT(window, "nullptr");
@@ -84,7 +84,7 @@ ImVec2 ImGuiWigetViewportEvents::ImGui_GetWindowSize(ImGuiViewport* vp)
     return ImVec2(size._width, size._height);
 }
 
-void ImGuiWigetViewportEvents::ImGui_SetWindowFocus(ImGuiViewport* vp)
+void ImGuiWidgetViewportEvents::ImGui_SetWindowFocus(ImGuiViewport* vp)
 {
     platform::Window* window = reinterpret_cast<platform::Window*>(vp->PlatformUserData);
     ASSERT(window, "nullptr");
@@ -92,7 +92,7 @@ void ImGuiWigetViewportEvents::ImGui_SetWindowFocus(ImGuiViewport* vp)
     window->focus();
 }
 
-bool ImGuiWigetViewportEvents::ImGui_GetWindowFocus(ImGuiViewport* vp)
+bool ImGuiWidgetViewportEvents::ImGui_GetWindowFocus(ImGuiViewport* vp)
 {
     platform::Window* window = reinterpret_cast<platform::Window*>(vp->PlatformUserData);
     ASSERT(window, "nullptr");
@@ -100,7 +100,7 @@ bool ImGuiWigetViewportEvents::ImGui_GetWindowFocus(ImGuiViewport* vp)
     return window->isFocused();
 }
 
-bool ImGuiWigetViewportEvents::ImGui_GetWindowMinimized(ImGuiViewport* vp)
+bool ImGuiWidgetViewportEvents::ImGui_GetWindowMinimized(ImGuiViewport* vp)
 {
     platform::Window* window = reinterpret_cast<platform::Window*>(vp->PlatformUserData);
     ASSERT(window, "nullptr");
@@ -108,7 +108,7 @@ bool ImGuiWigetViewportEvents::ImGui_GetWindowMinimized(ImGuiViewport* vp)
     return window->isMinimized();
 }
 
-void ImGuiWigetViewportEvents::ImGui_SetWindowTitle(ImGuiViewport* vp, const char* str)
+void ImGuiWidgetViewportEvents::ImGui_SetWindowTitle(ImGuiViewport* vp, const char* str)
 {
     platform::Window* window = reinterpret_cast<platform::Window*>(vp->PlatformUserData);
     ASSERT(window, "nullptr");
@@ -116,15 +116,15 @@ void ImGuiWigetViewportEvents::ImGui_SetWindowTitle(ImGuiViewport* vp, const cha
     window->setText(std::string(str));
 }
 
-void ImGuiWigetViewportEvents::ImGui_SetWindowAlpha(ImGuiViewport* vp, float alpha)
+void ImGuiWidgetViewportEvents::ImGui_SetWindowAlpha(ImGuiViewport* vp, float alpha)
 {
 }
 
-void ImGuiWigetViewportEvents::ImGui_UpdateWindow(ImGuiViewport* vp)
+void ImGuiWidgetViewportEvents::ImGui_UpdateWindow(ImGuiViewport* vp)
 {
 }
 
-float ImGuiWigetViewportEvents::ImGui_GetWindowDpiScale(ImGuiViewport* vp)
+float ImGuiWidgetViewportEvents::ImGui_GetWindowDpiScale(ImGuiViewport* vp)
 {
     const platform::Window* window = reinterpret_cast<const platform::Window*>(vp->PlatformUserData);
     if (window)
@@ -135,19 +135,19 @@ float ImGuiWigetViewportEvents::ImGui_GetWindowDpiScale(ImGuiViewport* vp)
     return 0;
 }
 
-void ImGuiWigetViewportEvents::ImGui_OnChangedViewport(ImGuiViewport* vp)
+void ImGuiWidgetViewportEvents::ImGui_OnChangedViewport(ImGuiViewport* vp)
 {
 }
 
-ImVec4 ImGuiWigetViewportEvents::ImGui_GetWindowWorkAreaInsets(ImGuiViewport* vp)
+ImVec4 ImGuiWidgetViewportEvents::ImGui_GetWindowWorkAreaInsets(ImGuiViewport* vp)
 {
     return ImVec4();
 }
 
-void ImGuiWigetViewportEvents::ImGui_Renderer_CreateWindow(ImGuiViewport* vp)
+void ImGuiWidgetViewportEvents::ImGui_Renderer_CreateWindow(ImGuiViewport* vp)
 {
     ASSERT(ImGui::GetCurrentContext(), "ImGui context is not valid");
-    ImGuiWigetHandler* handler = reinterpret_cast<ImGuiWigetHandler*>(ImGui::GetIO().BackendPlatformUserData);
+    ImGuiWidgetHandler* handler = reinterpret_cast<ImGuiWidgetHandler*>(ImGui::GetIO().BackendPlatformUserData);
     ASSERT(handler, "handler is nullptr");
 
     platform::Window* window = reinterpret_cast<platform::Window*>(vp->PlatformUserData);
@@ -159,7 +159,7 @@ void ImGuiWigetViewportEvents::ImGui_Renderer_CreateWindow(ImGuiViewport* vp)
     renderer::Swapchain* swapchain = handler->m_device->createSwapchain(window, params);
     ASSERT(swapchain, "swapchain is nullptr");
 
-    ImGuiWigetViewportData* viewportData = V3D_NEW(ImGuiWigetViewportData, memory::MemoryLabel::MemoryUI);
+    ImGuiWidgetViewportData* viewportData = V3D_NEW(ImGuiWidgetViewportData, memory::MemoryLabel::MemoryUI);
     viewportData->_swapchain = swapchain;
     viewportData->_cmdList = handler->m_device->createCommandList<renderer::CmdListRender>(renderer::Device::GraphicMask);
     viewportData->_renderTarget = V3D_NEW(renderer::RenderTargetState, memory::MemoryLabel::MemoryUI)(handler->m_device, swapchain->getBackbufferSize(), 1, 0, "WindowViewport");
@@ -181,13 +181,13 @@ void ImGuiWigetViewportEvents::ImGui_Renderer_CreateWindow(ImGuiViewport* vp)
     vp->RendererUserData = viewportData;
 }
 
-void ImGuiWigetViewportEvents::ImGui_Renderer_DestroyWindow(ImGuiViewport* vp)
+void ImGuiWidgetViewportEvents::ImGui_Renderer_DestroyWindow(ImGuiViewport* vp)
 {
     ASSERT(ImGui::GetCurrentContext(), "ImGui context is not valid");
-    ImGuiWigetHandler* handler = reinterpret_cast<ImGuiWigetHandler*>(ImGui::GetIO().BackendPlatformUserData);
+    ImGuiWidgetHandler* handler = reinterpret_cast<ImGuiWidgetHandler*>(ImGui::GetIO().BackendPlatformUserData);
     ASSERT(handler, "handler is nullptr");
 
-    ImGuiWigetViewportData* viewportData = reinterpret_cast<ImGuiWigetViewportData*>(vp->RendererUserData);
+    ImGuiWidgetViewportData* viewportData = reinterpret_cast<ImGuiWidgetViewportData*>(vp->RendererUserData);
     ASSERT(viewportData, "viewportData is nullptr");
 
     V3D_DELETE(viewportData->_renderTarget, memory::MemoryLabel::MemoryUI);
@@ -198,16 +198,16 @@ void ImGuiWigetViewportEvents::ImGui_Renderer_DestroyWindow(ImGuiViewport* vp)
     vp->RendererUserData = nullptr;
 }
 
-void ImGuiWigetViewportEvents::ImGui_Renderer_SetWindowSize(ImGuiViewport* vp, ImVec2 size)
+void ImGuiWidgetViewportEvents::ImGui_Renderer_SetWindowSize(ImGuiViewport* vp, ImVec2 size)
 {
     ASSERT(ImGui::GetCurrentContext(), "ImGui context is not valid");
-    ImGuiWigetHandler* handler = reinterpret_cast<ImGuiWigetHandler*>(ImGui::GetIO().BackendPlatformUserData);
+    ImGuiWidgetHandler* handler = reinterpret_cast<ImGuiWidgetHandler*>(ImGui::GetIO().BackendPlatformUserData);
     ASSERT(handler, "handler is nullptr");
 
     platform::Window* window = reinterpret_cast<platform::Window*>(vp->PlatformUserData);
     ASSERT(window, "window is nullptr");
 
-    ImGuiWigetViewportData* viewportData = reinterpret_cast<ImGuiWigetViewportData*>(vp->RendererUserData);
+    ImGuiWidgetViewportData* viewportData = reinterpret_cast<ImGuiWidgetViewportData*>(vp->RendererUserData);
     ASSERT(viewportData, "viewportData is nullptr");
 
 
@@ -233,13 +233,13 @@ void ImGuiWigetViewportEvents::ImGui_Renderer_SetWindowSize(ImGuiViewport* vp, I
     );
 }
 
-void ImGuiWigetViewportEvents::ImGui_Renderer_RenderWindow(ImGuiViewport* vp, void* render_arg)
+void ImGuiWidgetViewportEvents::ImGui_Renderer_RenderWindow(ImGuiViewport* vp, void* render_arg)
 {
     ASSERT(ImGui::GetCurrentContext(), "ImGui context is not valid");
-    ImGuiWigetHandler* handler = reinterpret_cast<ImGuiWigetHandler*>(ImGui::GetIO().BackendPlatformUserData);
+    ImGuiWidgetHandler* handler = reinterpret_cast<ImGuiWidgetHandler*>(ImGui::GetIO().BackendPlatformUserData);
     ASSERT(handler, "handler is nullptr");
 
-    ImGuiWigetViewportData* viewportData = reinterpret_cast<ImGuiWigetViewportData*>(vp->RendererUserData);
+    ImGuiWidgetViewportData* viewportData = reinterpret_cast<ImGuiWidgetViewportData*>(vp->RendererUserData);
     ASSERT(viewportData, "viewportData is nullptr");
 
     viewportData->_swapchain->beginFrame();
@@ -256,10 +256,10 @@ void ImGuiWigetViewportEvents::ImGui_Renderer_RenderWindow(ImGuiViewport* vp, vo
     viewportData->_swapchain->endFrame();
 }
 
-void ImGuiWigetViewportEvents::ImGui_Renderer_Present(ImGuiViewport* vp, void* render_arg)
+void ImGuiWidgetViewportEvents::ImGui_Renderer_Present(ImGuiViewport* vp, void* render_arg)
 {
     ASSERT(ImGui::GetCurrentContext(), "ImGui context is not valid");
-    ImGuiWigetViewportData* viewportData = reinterpret_cast<ImGuiWigetViewportData*>(vp->RendererUserData);
+    ImGuiWidgetViewportData* viewportData = reinterpret_cast<ImGuiWidgetViewportData*>(vp->RendererUserData);
     ASSERT(viewportData, "viewportData is nullptr");
 
     viewportData->_swapchain->presentFrame();
