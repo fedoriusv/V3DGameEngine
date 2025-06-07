@@ -9,6 +9,7 @@
 #include "Resource/Model.h"
 #include "Resource/Mesh.h"
 #include "Resource/Loader//ModelFileLoader.h"
+#include "Stream/FileLoader.h"
 
 #ifdef USE_ASSIMP
 #   include <assimp/Importer.hpp>
@@ -48,12 +49,20 @@ Resource* AssimpDecoder::decode(const stream::Stream* stream, const Policy* poli
         timer.start();
 #endif //LOG_LOADIMG_TIME
 
-        u32 assimpFlags = 0;
-        const aiScene* scene;
-        Assimp::Importer Importer;
-
         MeshResource::VertexProperiesFlags activeFlags = MeshResource::VertexProperies::VertexProperies_Position;
-        assimpFlags = aiProcess_ConvertToLeftHanded | aiProcess_Triangulate | aiProcess_SortByPType;
+        u32 assimpFlags =
+            aiProcess_ValidateDataStructure |
+            aiProcess_ImproveCacheLocality |
+            aiProcess_RemoveRedundantMaterials |
+            aiProcess_FindDegenerates |
+            aiProcess_FindInvalidData |
+            aiProcess_LimitBoneWeights |
+            aiProcess_OptimizeMeshes |
+            aiProcess_Triangulate |
+            aiProcess_ConvertToLeftHanded |
+            aiProcess_SortByPType |
+            aiProcess_GlobalScale |
+            0;
 
         if (!(flags & ModelFileLoader::SkipIndexBuffer))
         {
@@ -74,7 +83,7 @@ Resource* AssimpDecoder::decode(const stream::Stream* stream, const Policy* poli
 
         if (!(flags & ModelFileLoader::SkipTextureCoord))
         {
-            assimpFlags |= aiProcess_GenUVCoords;
+            assimpFlags |= aiProcess_GenUVCoords | aiProcess_TransformUVCoords;
             activeFlags |= MeshResource::VertexProperies::VertexProperies_TextCoord0 | MeshResource::VertexProperies::VertexProperies_TextCoord1 |
                 MeshResource::VertexProperies::VertexProperies_TextCoord2 | MeshResource::VertexProperies::VertexProperies_TextCoord3;
         }
@@ -94,12 +103,22 @@ Resource* AssimpDecoder::decode(const stream::Stream* stream, const Policy* poli
             assimpFlags |= aiProcess_PreTransformVertices;
         }
 
-        u8* data = stream->map(stream->size());
+        const u8* data = stream->map(stream->size());
         ASSERT(data, "nullptr");
-        scene = Importer.ReadFileFromMemory(data, stream->size(), assimpFlags);
+
+        Assimp::Importer Importer;
+        Importer.SetPropertyInteger(AI_CONFIG_IMPORT_TER_MAKE_UVS, 1);
+        Importer.SetPropertyInteger(AI_CONFIG_PP_SBP_REMOVE, aiPrimitiveType_POINT | aiPrimitiveType_LINE);
+        Importer.SetPropertyInteger(AI_CONFIG_IMPORT_FBX_PRESERVE_PIVOTS, 0);
+        Importer.SetPropertyFloat(AI_CONFIG_PP_GSN_MAX_SMOOTHING_ANGLE, 80.f);
+
+        std::string fileExtension = stream::FileLoader::getFileExtension(name);
+        const aiScene* scene = Importer.ReadFileFromMemory(data, stream->size(), assimpFlags, fileExtension.c_str());
         stream->unmap();
         if (!scene)
         {
+            LOG_ERROR("AssimpDecoder::decode: Load of model [%s] is failed: %d", name.c_str(), Importer.GetErrorString());
+
             ASSERT(false, "nullptr");
             return nullptr;
         }
