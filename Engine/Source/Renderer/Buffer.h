@@ -54,9 +54,7 @@ namespace renderer
 
         /**
         * @brief Buffer constructor
-        * @param CommandList& cmdList [required]
-        * @param  StreamBufferUsageFlags usage [required]
-        * @param const std::string& name [optional]
+        * @param BufferUsageFlags usage [required]
         */
         explicit Buffer(BufferUsageFlags usage) noexcept;
 
@@ -65,8 +63,8 @@ namespace renderer
         */
         virtual ~Buffer();
 
-        BufferHandle        m_buffer;
-        BufferUsageFlags    m_usage;
+        BufferHandle     m_buffer;
+        BufferUsageFlags m_usage;
 
         friend GeometryBufferDesc;
 
@@ -111,10 +109,10 @@ namespace renderer
     public:
 
         /**
-        * @brief VertexStreamBuffer constructor. Used to create buffer data objects.
-        * @param StreamBufferUsageFlags usage [required]
-        * @param u64 size [required] in bytes
-        * @param  const void* data [required]
+        * @brief VertexBuffer constructor. Used to create buffer data objects.
+        * @param BufferUsageFlags usage [required]
+        * @param u32 count [required]
+        * @param u32 size [required] in bytes
         * @param const std::string& name [optional]
         */
         explicit VertexBuffer(Device* device, BufferUsageFlags usage, u32 count, u32 size, const std::string& name = "") noexcept;
@@ -169,17 +167,16 @@ namespace renderer
     public:
 
         /**
-        * @brief IndexStreamBuffer constructor. Used to create buffer index objects.
-        * @param StreamBufferUsageFlags usage [required]
-        * @param StreamIndexBufferType type [required]
+        * @brief IndexBuffer constructor. Used to create buffer index objects.
+        * @param BufferUsageFlags usage [required]
+        * @param IndexBufferType type [required]
         * @param u32 count [required]
-        * @param  const void* data [required]
         * @param const std::string& name [optional]
         */
         explicit IndexBuffer(Device* device, BufferUsageFlags usage, IndexBufferType type, u32 count, const std::string& name = "") noexcept;
 
         /**
-        * @brief IndexStreamBuffer destructor
+        * @brief IndexBuffer destructor
         */
         ~IndexBuffer();
 
@@ -201,6 +198,51 @@ namespace renderer
     inline IndexBufferType IndexBuffer::getIndexBufferType() const
     {
         return m_type;
+    }
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+    /**
+    * @brief UnorderedAccessBuffer class. Game side
+    */
+    class UnorderedAccessBuffer : public Buffer
+    {
+    public:
+
+        /**
+        * @brief getSize in bytes
+        * @return Size in bytes
+        */
+        u32 getSize() const;
+
+    public:
+
+        /**
+        * @brief UnorderedAccessBuffer constructor. Used to create UAV
+        * @param BufferUsageFlags usage [required]
+        * @param u32 size [required]
+        * @param const std::string& name [optional]
+        */
+        explicit UnorderedAccessBuffer(Device* device, BufferUsageFlags usage, u32 size, const std::string& name = "") noexcept;
+
+        /**
+        * @brief UnorderedAccessBuffer destructor
+        */
+        ~UnorderedAccessBuffer();
+
+    private:
+
+        UnorderedAccessBuffer(const UnorderedAccessBuffer&) = delete;
+        UnorderedAccessBuffer& operator=(const UnorderedAccessBuffer&) = delete;
+
+        Device* const m_device;
+        const u32     m_size;
+    };
+
+    inline u32 UnorderedAccessBuffer::getSize() const
+    {
+        return m_size;
     }
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -255,18 +297,34 @@ namespace renderer
 
         ~GeometryBufferDesc() = default;
 
-        BufferHandle                _indexBuffer;
-        u64                         _indexOffset;
-        IndexBufferType             _indexType;
+        BufferHandle              _indexBuffer;
+        u64                       _indexOffset;
+        IndexBufferType           _indexType;
 
-        std::vector<BufferHandle>   _vertexBuffers;
-        std::vector<u32>            _streamIDs;
-        std::vector<u64>            _offsets;
-        std::vector<u64>            _strides;
+        std::vector<BufferHandle> _vertexBuffers;
+        std::vector<u32>          _streamIDs;
+        std::vector<u64>          _offsets;
+        std::vector<u64>          _strides;
 
     };
 
     ///////////////////////////////////////////////////////////////////////////////////////////////////////
 
 } //namespace renderer
+
+    ///////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    template<>
+    struct TypeOf<renderer::UnorderedAccessBuffer>
+    {
+        static TypePtr get()
+        {
+            static TypePtr ptr = nullptr;
+            return (TypePtr)&ptr;
+        }
+    };
+
+    ///////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
 } //namespace v3d

@@ -59,8 +59,9 @@ namespace vk
         void transition(const TextureView& textureView, TransitionOp state)override;
 
         void bindTexture(u32 set, u32 slot, const TextureView& textureView) override;
-        void bindBuffer(u32 set, u32 slot, Buffer* buffer) override;
         void bindSampler(u32 set, u32 slot, const SamplerState& sampler) override;
+        void bindUAV(u32 set, u32 slot, Buffer* buffer) override;
+        void bindUAV(u32 set, u32 slot, Texture* texture) override;
         void bindConstantBuffer(u32 set, u32 slot, u32 size, const void* data) override;
         void bindPushConstant(ShaderType type, u32 size, const void* data) override;
 

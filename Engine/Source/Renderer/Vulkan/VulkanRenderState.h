@@ -162,7 +162,7 @@ namespace vk
     inline void VulkanRenderState::bind(BindingType type, u32 set, u32 binding, VulkanBuffer* buffer, u32 offset, u32 range)
     {
         ASSERT(buffer, "must be valid");
-        ASSERT(type == BindingType::Uniform || type == BindingType::DynamicUniform, "wrong type");
+        ASSERT(type == BindingType::Uniform || type == BindingType::DynamicUniform || type == BindingType::RWBuffer, "wrong type");
         BindingInfo& bindingInfo = _boundSetInfo[set]._bindings[binding];
         bindingInfo._binding = binding;
         bindingInfo._arrayIndex = 0;

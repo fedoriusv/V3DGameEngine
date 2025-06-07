@@ -147,6 +147,15 @@ void VulkanDescriptorSetManager::updateDescriptorSet(VulkanCommandBuffer* cmdBuf
             cmdBuffer->captureResource(setInfo._resource[layoutBinding.binding]);
             break;
 
+        case BindingType::RWBuffer:
+            ASSERT(binding._info._bufferInfo.buffer != VK_NULL_HANDLE, "buffer present");
+            writeDescriptorSet.pBufferInfo = &binding._info._bufferInfo;
+            writeDescriptorSet.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+
+            ASSERT(setInfo._resource[layoutBinding.binding], "invalid");
+            cmdBuffer->captureResource(setInfo._resource[layoutBinding.binding]);
+            break;
+
         default:
             ASSERT(false, "impl");
         }

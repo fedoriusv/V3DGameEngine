@@ -1612,10 +1612,22 @@ void VulkanCmdList::bindTexture(u32 set, u32 slot, const TextureView& textureVie
     m_pendingRenderState.bind(BindingType::Texture, set, slot, 0, image, textureView._subresource);
 }
 
-void VulkanCmdList::bindBuffer(u32 set, u32 slot, Buffer* buffer)
+void VulkanCmdList::bindUAV(u32 set, u32 slot, Buffer* buffer)
 {
     TRACE_PROFILER_RENDER_SCOPE("bindBuffer", color::color8bit::GREEN);
 
+    ASSERT(buffer, "nullptr");
+    VulkanBuffer* vkBuffer = static_cast<VulkanBuffer*>(objectFromHandle<RenderBuffer>(buffer->getBufferHandle()));
+    m_pendingRenderState.bind(BindingType::RWBuffer, set, slot, vkBuffer, 0, vkBuffer->getSize());
+}
+
+void VulkanCmdList::bindUAV(u32 set, u32 slot, Texture* texture)
+{
+    TRACE_PROFILER_RENDER_SCOPE("bindBuffer", color::color8bit::GREEN);
+
+    ASSERT(texture, "nullptr");
+    VulkanImage* vkImage = static_cast<VulkanImage*>(objectFromHandle<RenderTexture>(texture->getTextureHandle()));
+    m_pendingRenderState.bind(BindingType::RWTexture, set, slot, 0, vkImage, {});
 }
 
 void VulkanCmdList::bindSampler(u32 set, u32 slot, const SamplerState& sampler)
@@ -1681,7 +1693,7 @@ void VulkanCmdList::bindDescriptorSet(u32 set, const std::vector<Descriptor>& de
         {
             ASSERT(desc._resource.index() == Descriptor::Type::Descriptor_UAV, "wrong id");
             Buffer* buffer = std::get<Descriptor::Type::Descriptor_UAV>(desc._resource);
-            VulkanCmdList::bindBuffer(set, desc._slot, buffer);
+            VulkanCmdList::bindUAV(set, desc._slot, buffer);
 
             break;
         }

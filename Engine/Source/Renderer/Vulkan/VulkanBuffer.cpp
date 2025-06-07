@@ -128,9 +128,26 @@ bool VulkanBuffer::create()
 
     case RenderBuffer::Type::UnorderedAccess:
     {
-        ASSERT(false, "not impl");
-        memoryFlags |= VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
-
+        usageBuffer |= VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
+        if (VulkanBuffer::hasUsageFlag(BufferUsage::Buffer_GPUWriteCocherent))
+        {
+            memoryFlags |= VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+            ASSERT(m_device.getVulkanDeviceCaps()._supportHostCoherentMemory, "unsupport coherent memory");
+        }
+        else if (VulkanBuffer::hasUsageFlag(BufferUsage::Buffer_GPUWriteCached))
+        {
+            memoryFlags |= VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_CACHED_BIT;
+            ASSERT(m_device.getVulkanDeviceCaps()._supportHostCacheMemory, "unsupport coherent memory");
+        }
+        else if (VulkanBuffer::hasUsageFlag(BufferUsage::Buffer_GPURead))
+        {
+            memoryFlags |= VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+        }
+        else //gpu only
+        {
+            memoryFlags |= VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+            usageBuffer |= VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+        }
         break;
     }
 
