@@ -19,9 +19,9 @@ namespace math
     {
     public:
 
-        TDimension3D() noexcept;
-        TDimension3D(T width, T height, T depth) noexcept;
-        TDimension3D(const TDimension3D<T>& other) noexcept;
+        constexpr TDimension3D() noexcept;
+        constexpr TDimension3D(T width, T height, T depth) noexcept;
+        constexpr TDimension3D(const TDimension3D<T>& other) noexcept;
         ~TDimension3D() = default;
 
         TDimension3D<T>& operator=(const TDimension3D<T>& other);

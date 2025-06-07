@@ -5,7 +5,7 @@ namespace math
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     template<class T>
-    TVector3D<T>::TVector3D() noexcept
+    constexpr inline TVector3D<T>::TVector3D() noexcept
         : _x(0)
         , _y(0)
         , _z(0)
@@ -13,7 +13,7 @@ namespace math
     }
 
     template<class T>
-    TVector3D<T>::TVector3D(T n) noexcept
+    constexpr inline TVector3D<T>::TVector3D(T n) noexcept
         : _x(n)
         , _y(n)
         , _z(n)
@@ -21,7 +21,7 @@ namespace math
     }
 
     template<class T>
-    TVector3D<T>::TVector3D(T x, T y, T z) noexcept
+    constexpr inline TVector3D<T>::TVector3D(T x, T y, T z) noexcept
         : _x(x)
         , _y(y)
         , _z(z)
@@ -29,7 +29,7 @@ namespace math
     }
 
     template<class T>
-    TVector3D<T>::TVector3D(const TVector3D<T>& other) noexcept
+    constexpr inline TVector3D<T>::TVector3D(const TVector3D<T>& other) noexcept
         : _x(other._x)
         , _y(other._y)
         , _z(other._z)
@@ -37,7 +37,7 @@ namespace math
     }
 
     template<class T>
-    TVector3D<T>::TVector3D(const TVector2D<T>& other, T z) noexcept
+    constexpr inline TVector3D<T>::TVector3D(const TVector2D<T>& other, T z) noexcept
         : _x(other._x)
         , _y(other._y)
         , _z(z)

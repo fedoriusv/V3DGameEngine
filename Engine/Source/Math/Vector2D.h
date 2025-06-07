@@ -16,10 +16,10 @@ namespace math
     {
     public:
 
-        TVector2D() noexcept;
-        TVector2D(T n) noexcept;
-        TVector2D(T x, T y) noexcept;
-        TVector2D(const TVector2D<T>& other) noexcept;
+        constexpr TVector2D() noexcept;
+        constexpr TVector2D(T n) noexcept;
+        constexpr TVector2D(T x, T y) noexcept;
+        constexpr TVector2D(const TVector2D<T>& other) noexcept;
         ~TVector2D() noexcept = default;
 
         [[nodiscard]] T operator[](u32 index) const;

@@ -17,11 +17,11 @@ namespace math
     {
     public:
 
-        TVector3D() noexcept;
-        TVector3D(T n) noexcept;
-        TVector3D(T x, T y, T z) noexcept;
-        TVector3D(const TVector3D<T>& other) noexcept;
-        TVector3D(const TVector2D<T>& other, T z) noexcept;
+        constexpr TVector3D() noexcept;
+        constexpr TVector3D(T n) noexcept;
+        constexpr TVector3D(T x, T y, T z) noexcept;
+        constexpr TVector3D(const TVector3D<T>& other) noexcept;
+        constexpr TVector3D(const TVector2D<T>& other, T z) noexcept;
         ~TVector3D() noexcept = default;
 
         [[nodiscard]] T operator[](u32 index) const;

@@ -5,23 +5,21 @@ namespace math
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     template <typename T>
-    TRect<T>::TRect() noexcept
+    constexpr inline TRect<T>::TRect() noexcept
         : _upperLeftCorner(0, 0)
         , _lowerRightCorner(0, 0)
     {
     }
 
-
     template <typename T>
-    TRect<T>::TRect(T x1, T y1, T x2, T y2) noexcept
+    constexpr inline TRect<T>::TRect(T x1, T y1, T x2, T y2) noexcept
         : _upperLeftCorner(x1, y1)
         , _lowerRightCorner(x2, y2)
     {
     }
 
-
     template <typename T>
-    TRect<T>::TRect(const TVector2D<T>& upperLeft, const TVector2D<T>& lowerRight) noexcept
+    constexpr inline TRect<T>::TRect(const TVector2D<T>& upperLeft, const TVector2D<T>& lowerRight) noexcept
         : _upperLeftCorner(upperLeft)
         , _lowerRightCorner(lowerRight)
     {

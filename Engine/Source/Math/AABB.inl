@@ -5,21 +5,21 @@ namespace math
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     template <class T>
-    TMinMaxAABB<T>::TMinMaxAABB() noexcept
+    inline TMinMaxAABB<T>::TMinMaxAABB() noexcept
         : _min(k_infinity)
         , _max(-k_infinity)
     {
     }
     
     template <class T>
-    TMinMaxAABB<T>::TMinMaxAABB(const TMinMaxAABB<T>& other) noexcept
+    inline TMinMaxAABB<T>::TMinMaxAABB(const TMinMaxAABB<T>& other) noexcept
         : _min(other._min)
         , _max(other._max)
     {
     }
 
     template <class T>
-    TMinMaxAABB<T>::TMinMaxAABB(const TVector3D<T>& min, const TVector3D<T>& max) noexcept
+    inline TMinMaxAABB<T>::TMinMaxAABB(const TVector3D<T>& min, const TVector3D<T>& max) noexcept
         : _min(min)
         , _max(max)
     {

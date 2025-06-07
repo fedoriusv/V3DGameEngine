@@ -19,9 +19,9 @@ namespace math
     {
     public:
 
-        TDimension2D() noexcept;
-        TDimension2D(T width, T height) noexcept;
-        TDimension2D(const TDimension2D<T>& other) noexcept;
+        constexpr TDimension2D() noexcept;
+        constexpr TDimension2D(T width, T height) noexcept;
+        constexpr TDimension2D(const TDimension2D<T>& other) noexcept;
         ~TDimension2D() = default;
 
         TDimension2D<T>& operator=(const TDimension2D<T>& other);

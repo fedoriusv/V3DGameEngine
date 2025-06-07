@@ -7,7 +7,7 @@ namespace math
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     template <DimensionType3D T>
-    TDimension3D<T>::TDimension3D() noexcept
+    constexpr inline TDimension3D<T>::TDimension3D() noexcept
         : _width(0)
         , _height(0)
         , _depth(0)
@@ -15,7 +15,7 @@ namespace math
     }
 
     template <DimensionType3D T>
-    TDimension3D<T>::TDimension3D(T width, T height, T depth) noexcept
+    constexpr inline TDimension3D<T>::TDimension3D(T width, T height, T depth) noexcept
         : _width(width)
         , _height(height)
         , _depth(depth)
@@ -23,7 +23,7 @@ namespace math
     }
 
     template <DimensionType3D T>
-    TDimension3D<T>::TDimension3D(const TDimension3D<T>& other) noexcept
+    constexpr inline TDimension3D<T>::TDimension3D(const TDimension3D<T>& other) noexcept
         : _width(other._width)
         , _height(other._height)
         , _depth(other._depth)

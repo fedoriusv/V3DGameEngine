@@ -7,21 +7,21 @@ namespace math
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     template <DimensionType2D T>
-    TDimension2D<T>::TDimension2D() noexcept
+    constexpr inline TDimension2D<T>::TDimension2D() noexcept
         : _width(0)
         , _height(0)
     {
     }
 
     template <DimensionType2D T>
-    TDimension2D<T>::TDimension2D(T width, T height) noexcept
+    constexpr inline TDimension2D<T>::TDimension2D(T width, T height) noexcept
         : _width(width)
         , _height(height)
     {
     }
 
     template <DimensionType2D T>
-    TDimension2D<T>::TDimension2D(const TDimension2D<T>& other) noexcept
+    constexpr inline TDimension2D<T>::TDimension2D(const TDimension2D<T>& other) noexcept
         : _width(other._width)
         , _height(other._height)
     {

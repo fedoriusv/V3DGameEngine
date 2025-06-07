@@ -5,28 +5,28 @@ namespace math
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     template<typename T>
-    inline TVector2D<T>::TVector2D() noexcept
+    constexpr inline TVector2D<T>::TVector2D() noexcept
         : _x(0)
         , _y(0)
     {
     }
 
     template<typename T>
-    inline TVector2D<T>::TVector2D(T x, T y) noexcept
+    constexpr inline TVector2D<T>::TVector2D(T x, T y) noexcept
         : _x(x)
         , _y(y)
     {
     }
 
     template<typename T>
-    inline TVector2D<T>::TVector2D(T n) noexcept
+    constexpr inline TVector2D<T>::TVector2D(T n) noexcept
         : _x(n)
         , _y(n)
     {
     }
 
     template<typename T>
-    inline TVector2D<T>::TVector2D(const TVector2D<T>& other) noexcept
+    constexpr inline TVector2D<T>::TVector2D(const TVector2D<T>& other) noexcept
         : _x(other._x)
         , _y(other._y)
     {

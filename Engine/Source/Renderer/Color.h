@@ -98,26 +98,45 @@ namespace color
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    constexpr Color8Bit WHITE(255, 255, 255);
-    constexpr Color8Bit LTGREY(192, 192, 192);
-    constexpr Color8Bit MDGREY(128, 128, 128);
-    constexpr Color8Bit DKGREY(64, 64, 64);
-    constexpr Color8Bit BLACK(0, 0, 0);
-    constexpr Color8Bit RED(255, 0, 0);
-    constexpr Color8Bit GREEN(0, 255, 0);
-    constexpr Color8Bit BLUE(0, 0, 255);
-    constexpr Color8Bit CYAN(0, 255, 255);
-    constexpr Color8Bit MAGENTA(255, 0, 255);
-    constexpr Color8Bit YELLOW(255, 255, 0);
-
-    /////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    using ColorRGBF  = math::TVector3D<f32>;
+    using ColorRGBF = math::TVector3D<f32>;
     using ColorRGBAF = math::TVector4D<f32>;
     using ColorRGBA8 = Color8Bit;
 
-
     using Color = ColorRGBAF;
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    namespace color8bit
+    {
+        constexpr Color8Bit WHITE(255, 255, 255);
+        constexpr Color8Bit LTGREY(192, 192, 192);
+        constexpr Color8Bit MDGREY(128, 128, 128);
+        constexpr Color8Bit DKGREY(64, 64, 64);
+        constexpr Color8Bit BLACK(0, 0, 0);
+        constexpr Color8Bit RED(255, 0, 0);
+        constexpr Color8Bit GREEN(0, 255, 0);
+        constexpr Color8Bit BLUE(0, 0, 255);
+        constexpr Color8Bit CYAN(0, 255, 255);
+        constexpr Color8Bit MAGENTA(255, 0, 255);
+        constexpr Color8Bit YELLOW(255, 255, 0);
+    } //namespace color8bit
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    namespace colorrgbaf
+    {
+        constexpr ColorRGBAF WHITE(1.f, 1.f, 1.f, 1.f);
+        constexpr ColorRGBAF LTGREY(0.75f, 0.75f, 0.75f, 1.f);
+        constexpr ColorRGBAF MDGREY(0.5f, 0.5f, 0.5f, 1.f);
+        constexpr ColorRGBAF DKGREY(0.25f, 0.25f, 0.25f, 1.f);
+        constexpr ColorRGBAF BLACK(0.f, 0.f, 0.f, 1.f);
+        constexpr ColorRGBAF RED(1.f, 0.f, 0.f, 1.f);
+        constexpr ColorRGBAF GREEN(0.f, 1.f, 0.f, 1.f);
+        constexpr ColorRGBAF BLUE(0.f, 0.f, 1.f, 1.f);
+        constexpr ColorRGBAF CYAN(0.f, 1.f, 1.f, 1.f);
+        constexpr ColorRGBAF MAGENTA(1.f, 0.f, 1.f, 1.f);
+        constexpr ColorRGBAF YELLOW(1.f, 1.f, 0.f, 1.f);
+    } //namespace colorrgbaf
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 

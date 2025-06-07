@@ -17,9 +17,9 @@ namespace math
     {
     public:
 
-        TRect() noexcept;
-        TRect(T x1, T y1, T x2, T y2) noexcept;
-        TRect(const TVector2D<T>& upperLeft, const TVector2D<T>& lowerRight) noexcept;
+        constexpr TRect() noexcept;
+        constexpr TRect(T x1, T y1, T x2, T y2) noexcept;
+        constexpr TRect(const TVector2D<T>& upperLeft, const TVector2D<T>& lowerRight) noexcept;
         ~TRect() noexcept = default;
 
         [[nodiscard]] TRect<T> operator+(const TVector2D<T>& pos) const;
