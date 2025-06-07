@@ -30,6 +30,7 @@ namespace scene
             renderer::VertexBuffer* m_VtxBuffer;
 
             scene::Transform m_transform;
+            scene::Transform m_prevTransform;
 
             renderer::SamplerState* m_sampler;
             renderer::Texture2D* m_albedo;
@@ -45,15 +46,18 @@ namespace scene
 
         struct ViewportState
         {
-            struct ViewportBuffer
+            alignas(16) struct ViewportBuffer
             {
                 math::Matrix4D projectionMatrix;
                 math::Matrix4D viewMatrix;
+                math::Matrix4D prevProjectionMatrix;
+                math::Matrix4D prevViewMatrix;
                 math::Vector4D cameraPosition;
-                math::Vector4D viewportSize;
+                math::float2   viewportSize;
                 math::float2   cursorPosition;
-                u64            time;
                 math::float4   random;
+                u64            time;
+                math::float2   _unused = {};
 
             } _viewportBuffer;
 

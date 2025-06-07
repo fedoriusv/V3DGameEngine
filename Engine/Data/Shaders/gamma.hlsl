@@ -1,4 +1,4 @@
-#include "global.hlsl"
+#include "global.hlsli"
 
 struct GammaBuffer
 {

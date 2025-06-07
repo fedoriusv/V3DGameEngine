@@ -1,4 +1,4 @@
-#include "global.hlsl"
+#include "global.hlsli"
 
 struct VS_INPUT
 {
@@ -20,21 +20,26 @@ struct ModelBuffer
 
 struct VS_OUTPUT
 {
-    float4 Position : SV_POSITION;
-    [[vk::location(0)]] float3 WorldPos : POSITION;
-    [[vk::location(1)]] float3 Normal : NORMAL;
-    [[vk::location(2)]] float3 Tangent : TANGENT;
-    [[vk::location(3)]] float3 Bitangent : BITANGENT;
-    [[vk::location(4)]] float2 UV : TEXTURE;
+    float4                     Position     : SV_POSITION;
+    [[vk::location(0)]] float3 PrevPosition : PREVPOSITION;
+    [[vk::location(1)]] float3 WorldPos     : POSITION;
+    [[vk::location(2)]] float3 Normal       : NORMAL;
+    [[vk::location(3)]] float3 Tangent      : TANGENT;
+    [[vk::location(4)]] float3 Bitangent    : BITANGENT;
+    [[vk::location(5)]] float2 UV           : TEXTURE;
 };
 
 VS_OUTPUT transparency_vs(VS_INPUT Input)
 {
     VS_OUTPUT Output;
    
+    float4x4 viewProjection = mul(viewport.projectionMatrix, viewport.viewMatrix);
+    float4x4 prevViewProjection = mul(viewport.prevProjectionMatrix, viewport.prevViewMatrix);
+    
     float4 position = mul(CB_Model.modelMatrix, float4(Input.Position, 1.0));
     
-    Output.Position = mul(viewport.projectionMatrix, mul(viewport.viewMatrix, position));
+    Output.Position = mul(viewProjection, position);
+    Output.PrevPosition = mul(prevViewProjection, position);
     Output.WorldPos = position.xyz / position.w;
     Output.Normal = mul((float3x3) CB_Model.normalMatrix, Input.Normal);
     Output.Tangent = mul((float3x3) CB_Model.normalMatrix, Input.Tangent);

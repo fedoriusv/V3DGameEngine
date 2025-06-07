@@ -5,11 +5,14 @@ struct Viewport
 {
     float4x4 projectionMatrix;
     float4x4 viewMatrix;
+    float4x4 prevProjectionMatrix;
+    float4x4 prevViewMatrix;
     float4   cameraPosition;
-    float4   viewportSize;
+    float2   viewportSize;
     float2   cursorPosition;
-    uint64_t time;
     float4   random;
+    uint64_t time;
+    float2   _unused;
 };
 
 [[vk::binding(0, 0)]] ConstantBuffer<Viewport> viewport : register(b0, space0);
