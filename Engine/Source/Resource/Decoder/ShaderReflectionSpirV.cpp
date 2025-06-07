@@ -140,42 +140,58 @@ void reflectDescriptors(spirv_cross::CompilerGLSL* compiler, stream::Stream* str
 
     auto convertSPRIVTypeToImageFormat = [](const spirv_cross::SPIRType& type)->renderer::Format
     {
-        ASSERT(type.basetype == spirv_cross::SPIRType::Image, "wrong type");
-        switch (type.image.format)
+        if (type.basetype == spirv_cross::SPIRType::Struct) //Structured Buffer/Texture
         {
-        case spv::ImageFormat::ImageFormatRgba32f:
-            return renderer::Format_R32G32B32A32_SFloat;
+            return renderer::Format_Undefined;
+        }
+        else if (type.basetype == spirv_cross::SPIRType::Image || type.basetype == spirv_cross::SPIRType::SampledImage)
+        {
+            switch (type.image.format)
+            {
+            case spv::ImageFormat::ImageFormatRgba32f:
+                return renderer::Format_R32G32B32A32_SFloat;
 
-        case spv::ImageFormat::ImageFormatRg32f:
-            return renderer::Format_R32G32_SFloat;
+            case spv::ImageFormat::ImageFormatRg32f:
+                return renderer::Format_R32G32_SFloat;
 
-        case spv::ImageFormat::ImageFormatR32f:
-            return renderer::Format_R32_SFloat;
+            case spv::ImageFormat::ImageFormatR32f:
+                return renderer::Format_R32_SFloat;
 
-        case spv::ImageFormat::ImageFormatRgba8:
-            return renderer::Format_R8G8B8A8_UNorm;
+            case spv::ImageFormat::ImageFormatRgba16f:
+                return renderer::Format_R16G16B16A16_SFloat;
 
-        case spv::ImageFormat::ImageFormatRgba8Snorm:
-            return renderer::Format_R8G8B8A8_SNorm;
+            case spv::ImageFormat::ImageFormatRg16f:
+                return renderer::Format_R16G16_SFloat;
 
-        case spv::ImageFormat::ImageFormatRg8:
-            return renderer::Format_R8G8_UNorm;
+            case spv::ImageFormat::ImageFormatR16f:
+                return renderer::Format_R16_SFloat;
 
-        case spv::ImageFormat::ImageFormatRg8Snorm:
-            return renderer::Format_R8G8_SNorm;
+            case spv::ImageFormat::ImageFormatRgba8:
+                return renderer::Format_R8G8B8A8_UNorm;
 
-        case spv::ImageFormat::ImageFormatR8:
-            return renderer::Format_R8_UNorm;
+            case spv::ImageFormat::ImageFormatRgba8Snorm:
+                return renderer::Format_R8G8B8A8_SNorm;
 
-        case spv::ImageFormat::ImageFormatR8Snorm:
-            return renderer::Format_R8_SNorm;
+            case spv::ImageFormat::ImageFormatRg8:
+                return renderer::Format_R8G8_UNorm;
 
-        case spv::ImageFormat::ImageFormatUnknown:
-        default:
-            ASSERT(false, "format not found");
-            break;
+            case spv::ImageFormat::ImageFormatRg8Snorm:
+                return renderer::Format_R8G8_SNorm;
+
+            case spv::ImageFormat::ImageFormatR8:
+                return renderer::Format_R8_UNorm;
+
+            case spv::ImageFormat::ImageFormatR8Snorm:
+                return renderer::Format_R8_SNorm;
+
+            case spv::ImageFormat::ImageFormatUnknown:
+            default:
+                ASSERT(false, "format not found");
+                break;
+            }
         }
 
+        ASSERT(false, "format not found");
         return renderer::Format_Undefined;
     };
 
@@ -192,7 +208,7 @@ void reflectDescriptors(spirv_cross::CompilerGLSL* compiler, stream::Stream* str
                 const spirv_cross::SPIRType& type = compiler->get_type(member);
                 u32 col = type.columns;
                 u32 row = type.vecsize;
-                u32 array = type.array.empty() ? 1 : type.array[0];
+                u32 array = std::max<u32>(type.array.empty() ? 1 : type.array[0], 1);
                 ASSERT(type.basetype != spirv_cross::SPIRType::Struct, "struct");
 
                 u32 dataSize = (type.width == 32) ? 4 : 8;
@@ -515,6 +531,7 @@ void reflectDescriptors(spirv_cross::CompilerGLSL* compiler, stream::Stream* str
         renderer::Shader::StorageBuffer storageBuffer;
         storageBuffer._set = set;
         storageBuffer._binding = binding;
+        storageBuffer._stride = calculateMemberSizeInsideStruct(type);
         storageBuffer._array = type.array.empty() ? 1 : type.array[0];
         storageBuffer._format = convertSPRIVTypeToImageFormat(type);
         storageBuffer._readonly = compiler->get_decoration(buffer.id, spv::DecorationNonWritable);

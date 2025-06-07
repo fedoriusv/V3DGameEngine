@@ -163,9 +163,9 @@ namespace renderer
 
                 u32                _bufferID;
                 u32                _array;
-                renderer::DataType _type;
                 u32                _size;
                 u32                _offset;
+                renderer::DataType _type;
                 std::string        _name;
 
                 u32 operator>>(stream::Stream* stream) const;
@@ -196,8 +196,8 @@ namespace renderer
 
             u32                     _set;
             u32                     _binding;
-            renderer::TextureTarget _target;
             u32                     _array;
+            renderer::TextureTarget _target;
             bool                    _depth;
             bool                    _ms;
             std::string             _name;
@@ -230,9 +230,9 @@ namespace renderer
 
             u32                     _set;
             u32                     _binding;
-            renderer::TextureTarget _target;
             renderer::Format        _format;
             u32                     _array;
+            renderer::TextureTarget _target;
             bool                    _readonly;
             std::string             _name;
 
@@ -241,7 +241,7 @@ namespace renderer
         };
 
         /**
-        * @brief struct StorageBuffer/UAV
+        * @brief struct StorageBuffer/UAV/StructuredBuffer
         */
         struct StorageBuffer
         {
@@ -249,8 +249,9 @@ namespace renderer
 
             u32                     _set;
             u32                     _binding;
-            renderer::Format        _format;
+            u32                     _stride;
             u32                     _array;
+            renderer::Format        _format;
             bool                    _readonly;
             std::string             _name;
 

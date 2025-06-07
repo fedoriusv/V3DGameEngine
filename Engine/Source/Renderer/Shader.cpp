@@ -308,9 +308,9 @@ u32 Shader::UniformBuffer::operator<<(const stream::Stream* stream)
 Shader::UniformBuffer::Uniform::Uniform() noexcept
     : _bufferID(0)
     , _array(1)
-    , _type(renderer::DataType::None)
     , _size(0)
     , _offset(0)
+    , _type(renderer::DataType::None)
     , _name("")
 {
 }
@@ -321,9 +321,9 @@ u32 Shader::UniformBuffer::Uniform::operator>>(stream::Stream* stream) const
 
     stream->write<u32>(_bufferID);
     stream->write<u32>(_array);
-    stream->write<renderer::DataType>(_type);
     stream->write<u32>(_size);
     stream->write<u32>(_offset);
+    stream->write<renderer::DataType>(_type);
     stream->write(_name);
 
     u32 writeSize = stream->tell() - writePos;
@@ -336,9 +336,9 @@ u32 Shader::UniformBuffer::Uniform::operator<<(const stream::Stream* stream)
 
     stream->read<u32>(_bufferID);
     stream->read<u32>(_array);
-    stream->read<renderer::DataType>(_type);
     stream->read<u32>(_size);
     stream->read<u32>(_offset);
+    stream->read<renderer::DataType>(_type);
     stream->read(_name);
 
     u32 readSize = stream->tell() - readPos;
@@ -349,8 +349,8 @@ u32 Shader::UniformBuffer::Uniform::operator<<(const stream::Stream* stream)
 Shader::Image::Image() noexcept
     : _set(0)
     , _binding(0)
-    , _target(renderer::TextureTarget::Texture2D)
     , _array(1)
+    , _target(renderer::TextureTarget::Texture2D)
     , _depth(false)
     , _ms(false)
     , _name("")
@@ -363,8 +363,8 @@ u32 Shader::Image::operator>>(stream::Stream* stream) const
 
     stream->write<u32>(_set);
     stream->write<u32>(_binding);
-    stream->write<renderer::TextureTarget>(_target);
     stream->write<u32>(_array);
+    stream->write<renderer::TextureTarget>(_target);
     stream->write<bool>(_depth);
     stream->write<bool>(_ms);
     stream->write(_name);
@@ -379,8 +379,8 @@ u32 Shader::Image::operator<<(const stream::Stream* stream)
 
     stream->read<u32>(_set);
     stream->read<u32>(_binding);
-    stream->read<renderer::TextureTarget>(_target);
     stream->read<u32>(_array);
+    stream->read<renderer::TextureTarget>(_target);
     stream->read<bool>(_depth);
     stream->read<bool>(_ms);
     stream->read(_name);
@@ -424,9 +424,9 @@ u32 Shader::Sampler::operator<<(const stream::Stream* stream)
 Shader::StorageImage::StorageImage() noexcept
     : _set(0)
     , _binding(0)
-    , _target(renderer::TextureTarget::Texture2D)
     , _format(renderer::Format::Format_Undefined)
     , _array(1)
+    , _target(renderer::TextureTarget::Texture2D)
     , _readonly(true)
     , _name("")
 {
@@ -438,9 +438,9 @@ u32 Shader::StorageImage::operator>>(stream::Stream* stream) const
 
     stream->write<u32>(_set);
     stream->write<u32>(_binding);
-    stream->write<renderer::TextureTarget>(_target);
     stream->write<renderer::Format>(_format);
     stream->write<u32>(_array);
+    stream->write<renderer::TextureTarget>(_target);
     stream->write<bool>(_readonly);
     stream->write(_name);
 
@@ -454,9 +454,9 @@ u32 Shader::StorageImage::operator<<(const stream::Stream* stream)
 
     stream->read<u32>(_set);
     stream->read<u32>(_binding);
-    stream->read<renderer::TextureTarget>(_target);
     stream->read<renderer::Format>(_format);
     stream->read<u32>(_array);
+    stream->read<renderer::TextureTarget>(_target);
     stream->read<bool>(_readonly);
     stream->read(_name);
 
@@ -467,8 +467,9 @@ u32 Shader::StorageImage::operator<<(const stream::Stream* stream)
 Shader::StorageBuffer::StorageBuffer() noexcept
     : _set(0)
     , _binding(0)
-    , _format(renderer::Format::Format_Undefined)
+    , _stride(0)
     , _array(1)
+    , _format(renderer::Format::Format_Undefined)
     , _readonly(true)
     , _name("")
 {
@@ -480,8 +481,9 @@ u32 Shader::StorageBuffer::operator>>(stream::Stream* stream) const
 
     stream->write<u32>(_set);
     stream->write<u32>(_binding);
-    stream->write<renderer::Format>(_format);
+    stream->write<u32>(_stride);
     stream->write<u32>(_array);
+    stream->write<renderer::Format>(_format);
     stream->write<bool>(_readonly);
     stream->write(_name);
 
@@ -495,8 +497,9 @@ u32 Shader::StorageBuffer::operator<<(const stream::Stream* stream)
 
     stream->read<u32>(_set);
     stream->read<u32>(_binding);
-    stream->read<renderer::Format>(_format);
+    stream->read<u32>(_stride);
     stream->read<u32>(_array);
+    stream->read<renderer::Format>(_format);
     stream->read<bool>(_readonly);
     stream->read(_name);
 
