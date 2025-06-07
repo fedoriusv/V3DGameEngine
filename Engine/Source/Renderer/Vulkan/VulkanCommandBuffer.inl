@@ -334,6 +334,54 @@ inline void VulkanCommandBuffer::cmdDispatch(const math::Dimension3D& groups)
     VulkanWrapper::CmdDispatch(m_commands, groups._width, groups._height, groups._depth);
 }
 
+inline void VulkanCommandBuffer::setDebugMarker(const std::string& marker, const color::Color& color)
+{
+#if VULKAN_DEBUG_MARKERS
+    if (m_device.getVulkanDeviceCaps()._debugUtilsObjectNameEnabled)
+    {
+        VkDebugUtilsLabelEXT debugUtilsLabel = {};
+        debugUtilsLabel.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_LABEL_EXT;
+        debugUtilsLabel.pNext = nullptr;
+        debugUtilsLabel.pLabelName = marker.c_str();
+        debugUtilsLabel.color[0] = color._x;
+        debugUtilsLabel.color[1] = color._y;
+        debugUtilsLabel.color[2] = color._z;
+        debugUtilsLabel.color[3] = color._w;
+
+        VulkanWrapper::CmdInsertDebugUtilsLabel(m_commands, &debugUtilsLabel);
+    }
+#endif //VULKAN_DEBUG_MARKERS
+}
+
+inline void VulkanCommandBuffer::beginDebugMarker(const std::string& marker, const color::Color& color)
+{
+#if VULKAN_DEBUG_MARKERS
+    if (m_device.getVulkanDeviceCaps()._debugUtilsObjectNameEnabled)
+    {
+        VkDebugUtilsLabelEXT debugUtilsLabel = {};
+        debugUtilsLabel.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_LABEL_EXT;
+        debugUtilsLabel.pNext = nullptr;
+        debugUtilsLabel.pLabelName = marker.c_str();
+        debugUtilsLabel.color[0] = color._x;
+        debugUtilsLabel.color[1] = color._y;
+        debugUtilsLabel.color[2] = color._z;
+        debugUtilsLabel.color[3] = color._w;
+
+        VulkanWrapper::CmdBeginDebugUtilsLabel(m_commands, &debugUtilsLabel);
+    }
+#endif //VULKAN_DEBUG_MARKERS
+}
+
+inline void VulkanCommandBuffer::endDebugMarker(const std::string& marker, const color::Color& color)
+{
+#if VULKAN_DEBUG_MARKERS
+    if (m_device.getVulkanDeviceCaps()._debugUtilsObjectNameEnabled)
+    {
+        VulkanWrapper::CmdEndDebugUtilsLabel(m_commands);
+    }
+#endif //VULKAN_DEBUG_MARKERS
+}
+
 inline void VulkanCommandBuffer::cmdBeginQuery(VulkanQueryPool* pool, u32 index)
 {
     ASSERT(m_status == CommandBufferStatus::Begin, "not started");

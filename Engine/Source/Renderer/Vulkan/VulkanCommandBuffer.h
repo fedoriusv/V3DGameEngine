@@ -117,6 +117,11 @@ namespace vk
         //compute
         void cmdDispatch(const math::Dimension3D& groups);
 
+        //debug markers
+        void setDebugMarker(const std::string& marker, const color::Color& color);
+        void beginDebugMarker(const std::string& marker, const color::Color& color);
+        void endDebugMarker(const std::string& marker, const color::Color& color);
+
     private:
 
         VulkanCommandBuffer() = delete;

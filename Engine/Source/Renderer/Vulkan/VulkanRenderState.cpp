@@ -116,6 +116,23 @@ void VulkanRenderState::invalidate()
     _dirty = DirtyStateMask::DirtyState_All;
 }
 
+void VulkanRenderState::flushDebugMarkers(VulkanCommandBuffer* cmdBuffer)
+{
+    while (!_debugMarkers.empty())
+    {
+        auto& [marker, color, start] = _debugMarkers.front();
+        if (start)
+        {
+            cmdBuffer->beginDebugMarker(marker, color);
+        }
+        else
+        {
+            cmdBuffer->endDebugMarker(marker, color);
+        }
+        _debugMarkers.pop();
+    }
+}
+
 } //namespace vk
 } //namespace renderer
 } //namespace v3d

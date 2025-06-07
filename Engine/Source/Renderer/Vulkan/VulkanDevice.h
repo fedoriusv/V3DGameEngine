@@ -76,6 +76,10 @@ namespace vk
         bool uploadData(Texture3D* texture, u32 size, const void* data) override;
         bool uploadData(Buffer* buffer, u32 offset, u32 size, const void* data) override;
 
+        void insertDebugMarker(const std::string& marker, const color::Color& color) override;
+        void beginDebugMarker(const std::string& marker, const color::Color& color) override;
+        void endDebugMarker(const std::string& marker) override;
+
     public:
 
         VulkanCommandBuffer* acquireAndStartCommandBuffer(CommandTargetType type);

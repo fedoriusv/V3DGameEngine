@@ -87,6 +87,7 @@ namespace vk
 
 
             _imageBarriers = std::move(_imageBarriers);
+            _debugMarkers = std::move(_debugMarkers);
 
             _dirty = other._dirty;
 
@@ -107,6 +108,8 @@ namespace vk
         void setDirty(DirtyStateMask mask);
         void unsetDirty(DirtyStateMask mask);
         bool isDirty(DirtyStateMask mask);
+
+        void flushDebugMarkers(VulkanCommandBuffer* cmdBuffer);
 
         VkViewport                     _viewports = {};
         VkRect2D                       _scissors = {};
@@ -130,6 +133,9 @@ namespace vk
         std::vector<VkDescriptorSet>   _descriptorSets;
         std::vector<u32>               _dynamicOffsets;
         PushConstant                   _pushConstant[toEnumType(ShaderType::Count)];
+
+        //debug
+        std::queue<std::tuple<std::string, color::Color, bool>> _debugMarkers;
 
     private:
 

@@ -54,6 +54,10 @@ namespace renderer
         virtual void bindConstantBuffer(u32 set, u32 slot, u32 size, const void* data) = 0;
         virtual void bindPushConstant(ShaderType type, u32 size, const void* data) = 0;
 
+        virtual void insertDebugMarker(const std::string& marker, const color::Color& color) = 0;
+        virtual void beginDebugMarker(const std::string& marker, const color::Color& color) = 0;
+        virtual void endDebugMarker(const std::string& marker) = 0;
+
     protected:
 
         CmdList() noexcept
@@ -352,6 +356,35 @@ namespace renderer
         return static_cast<TCmdList*>(createCommandList_Impl(queueType));
     }
 
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    struct DebugMarkerScope
+    {
+        DebugMarkerScope(CmdList* cmd, const std::string& marker, const color::Color& color) noexcept
+            : _cmd(cmd)
+            , _marker(marker)
+            , _color(color)
+        {
+            _cmd->beginDebugMarker(marker, color);
+        }
+
+        ~DebugMarkerScope()
+        {
+            _cmd->endDebugMarker(_marker);
+        }
+
+    private:
+
+        CmdList*        _cmd;
+        std::string     _marker;
+        color::Color    _color;
+    };
+
+#if GPU_MARKERS_ENABLE
+#   define DEBUG_MARKER_SCOPE(cmd, name, color) renderer::DebugMarkerScope _mrk(cmd, name, color)
+#else
+#   define DEBUG_MARKER_SCOPE(cmd, name, color)
+#endif
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
 } //namespace renderer

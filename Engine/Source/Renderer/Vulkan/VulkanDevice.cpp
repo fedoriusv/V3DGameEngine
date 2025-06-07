@@ -1959,19 +1959,36 @@ bool VulkanCmdList::uploadData(Buffer* buffer, u32 offset, u32 size, const void*
     return result;
 }
 
+void VulkanCmdList::insertDebugMarker(const std::string& marker, const color::Color& color)
+{
+    //m_pendingRenderState._debugMarkers.emplace_back(marker, color, false);
+}
+
+void VulkanCmdList::beginDebugMarker(const std::string& marker, const color::Color& color)
+{
+    m_pendingRenderState._debugMarkers.emplace(marker, color, true);
+}
+
+void VulkanCmdList::endDebugMarker(const std::string& marker)
+{
+    m_pendingRenderState._debugMarkers.emplace(marker, color::Color(), false);
+}
+
 VulkanCommandBuffer* VulkanCmdList::acquireAndStartCommandBuffer(CommandTargetType type)
 {
-    if (m_currentCmdBuffer[toEnumType(type)])
+    VulkanCommandBuffer* cmdBufer = m_currentCmdBuffer[toEnumType(type)];
+    if (cmdBufer)
     {
-        return m_currentCmdBuffer[toEnumType(type)];
+        return cmdBufer;
     }
 
     // Select slot
     m_concurrencySlot = m_device.prepareConcurrencySlot();
-    m_currentCmdBuffer[toEnumType(type)] = m_device.m_threadedPools[m_concurrencySlot].m_cmdBufferManager->acquireNewCmdBuffer(m_queueMask, CommandBufferLevel::PrimaryBuffer);
-    m_currentCmdBuffer[toEnumType(type)]->beginCommandBuffer();
+    cmdBufer = m_device.m_threadedPools[m_concurrencySlot].m_cmdBufferManager->acquireNewCmdBuffer(m_queueMask, CommandBufferLevel::PrimaryBuffer);
+    cmdBufer->beginCommandBuffer();
+    m_currentCmdBuffer[toEnumType(type)] = cmdBufer;
 
-    return m_currentCmdBuffer[toEnumType(type)];
+    return cmdBufer;
 }
 
 void VulkanCmdList::postSubmit()
