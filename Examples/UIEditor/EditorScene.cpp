@@ -1,4 +1,5 @@
 #include "EditorScene.h"
+#include "Utils/Logger.h"
 
 #include "Resource/Model.h"
 #include "Resource/Bitmap.h"
@@ -24,6 +25,7 @@
 #include "RenderTechniques/RenderPipelineComposite.h"
 #include "RenderTechniques/RenderPipelineTransparency.h"
 #include "RenderTechniques/RenderPipelineZPrepass.h"
+#include "RenderTechniques/RenderPipelineFXAA.h"
 
 #include "Stream/StreamManager.h"
 
@@ -34,14 +36,16 @@ namespace v3d
 {
 
 scene::Transform g_modelTransform;
+u32 g_activeIndex = 0;
 
 EditorScene::RenderPipelineScene::RenderPipelineScene()
 {
     new renderer::RenderPipelineZPrepassStage(this);
     new renderer::RenderPipelineGBufferStage(this);
     new renderer::RenderPipelineCompositionStage(this);
-    new renderer::RenderPipelineTransparencyStage(this);
+    //new renderer::RenderPipelineTransparencyStage(this);
     new renderer::RenderPipelineOutlineStage(this);
+    //new renderer::RenderPipelineFXAAStage(this);
     new renderer::RenderPipelineGammaCorrectionStage(this);
     new renderer::RenderPipelineUIOverlayStage(this);
 }
@@ -53,6 +57,7 @@ EditorScene::RenderPipelineScene::~RenderPipelineScene()
 EditorScene::EditorScene() noexcept
     : m_device()
     , m_camera(new scene::CameraEditorHandler(std::make_unique<scene::Camera>()))
+    , m_contentList(nullptr)
 {
     InputEventHandler::bind([this](const event::MouseInputEvent* event)
         {
@@ -83,6 +88,8 @@ EditorScene::EditorScene() noexcept
     resource::ResourceManager::getInstance()->addPath("../../../../engine/data/textures/");
     resource::ResourceManager::getInstance()->addPath("../../../../engine/data/models/");
     resource::ResourceManager::getInstance()->addPath("../../../../engine/data/shaders/");
+
+    resource::ResourceManager::getInstance()->addPath("../../../../engine/data/_suntemple/");
 
     m_states.resize(3, {});
     m_stateIndex = 0;
@@ -117,15 +124,28 @@ void EditorScene::preRender(f32 dt)
     m_camera->update(dt);
     m_states[m_stateIndex].m_viewportState.m_camera = m_camera;
 
-    m_states[m_stateIndex].m_viewportState._viewportBuffer.projectionMatrix = m_camera->getCamera().getProjectionMatrix();
-    m_states[m_stateIndex].m_viewportState._viewportBuffer.viewMatrix = m_camera->getCamera().getViewMatrix();
-    m_states[m_stateIndex].m_viewportState._viewportBuffer.cameraPosition = { m_camera->getPosition().getX(), m_camera->getPosition().getY(), m_camera->getPosition().getZ(), 0.f };
-    m_states[m_stateIndex].m_viewportState._viewportBuffer.viewportSize = { 0, 0, (f32)m_states[m_stateIndex].m_viewportState.m_viewpotSize._width, (f32)m_states[m_stateIndex].m_viewportState.m_viewpotSize._height };
-    m_states[m_stateIndex].m_viewportState._viewportBuffer.cursorPosition = { (f32)this->getRelativeCursorPosition()._x, (f32)this->getRelativeCursorPosition()._y };
-    m_states[m_stateIndex].m_viewportState._viewportBuffer.time = utils::Timer::getCurrentTime();
-    m_states[m_stateIndex].m_viewportState._viewportBuffer.random = { math::random<f32>(0.f, 0.1f),math::random<f32>(0.f, 0.1f), math::random<f32>(0.f, 0.1f), math::random<f32>(0.f, 0.1f) };
+    s32 posX = (s32)this->getAbsoluteCursorPosition()._x - (s32)m_currentViewportRect.getLeftX();
+    posX = (posX < 0) ? 0 : posX;
+    s32 posY = (s32)this->getAbsoluteCursorPosition()._y - (s32)m_currentViewportRect.getTopY();
+    posY = (posY < 0) ? 0 : posY;
+
+    ViewportState::ViewportBuffer& viewportState = m_states[m_stateIndex].m_viewportState._viewportBuffer;
+    viewportState.prevProjectionMatrix = viewportState.projectionMatrix;
+    viewportState.prevViewMatrix = viewportState.viewMatrix;
+    viewportState.projectionMatrix = m_camera->getCamera().getProjectionMatrix();
+    viewportState.viewMatrix = m_camera->getCamera().getViewMatrix();
+    viewportState.cameraPosition = { m_camera->getPosition().getX(), m_camera->getPosition().getY(), m_camera->getPosition().getZ(), 0.f };
+    viewportState.viewportSize = { (f32)m_states[m_stateIndex].m_viewportState.m_viewpotSize._width, (f32)m_states[m_stateIndex].m_viewportState.m_viewpotSize._height };
+    viewportState.cursorPosition = { (f32)posX, (f32)posY };
+    viewportState.random = { math::random<f32>(0.f, 0.1f),math::random<f32>(0.f, 0.1f), math::random<f32>(0.f, 0.1f), math::random<f32>(0.f, 0.1f) };
+    viewportState.time = utils::Timer::getCurrentTime();
 
     m_pipeline.prepare(m_device, m_states[m_stateIndex]);
+
+    //if (g_activeIndex > -1)
+    {
+        m_states[m_stateIndex].m_data[g_activeIndex].m_transform = g_modelTransform;
+    }
 }
 
 void EditorScene::postRender()
@@ -140,6 +160,28 @@ void EditorScene::submitRender()
     m_states[m_stateIndex].m_renderState.m_cmdList = nullptr;
 
     m_stateIndex = 0;//(m_stateIndex + 1) % m_states.size();
+}
+
+void EditorScene::test_setOpacity(f32 op)
+{
+    for (auto& v : m_states[m_stateIndex].m_data)
+    {
+        v.m_tint._w = op;
+    }
+}
+
+void EditorScene::test_initContent(ui::WidgetListBox* list)
+{
+    m_contentList = list;
+    for (auto& v : m_states[m_stateIndex].m_data)
+    {
+        m_contentList->addElement("Object_" + std::to_string(v.m_objectID));
+    }
+}
+
+void EditorScene::test_selectItem(u32 i)
+{
+    g_activeIndex = i;
 }
 
 void EditorScene::onChanged(const v3d::math::Rect& viewport)
@@ -221,6 +263,11 @@ void EditorScene::loadResources()
 
     renderer::SamplerState* sampler = new renderer::SamplerState(m_device, renderer::SamplerFilter::SamplerFilter_Trilinear, renderer::SamplerAnisotropic::SamplerAnisotropic_4x);
 
+    auto rendomVector = []() ->math::float3
+        {
+            return { math::random<f32>(0.0, 1.0), math::random<f32>(0.0, 1.0), math::random<f32>(0.0, 1.0) };
+        };
+
     //load model
     static auto loadModel = [this](renderer::CmdListRender* cmdList, const std::string& file) ->  scene::Model*
         {
@@ -235,70 +282,79 @@ void EditorScene::loadResources()
         };
 
     scene::Model* model = loadModel(cmdList, "cube.dae");
+    //scene::Model* sunTemple = loadModel(cmdList, "SunTemple.fbx");
 
-    //1
-    m_states[m_stateIndex].m_data.push_back(DrawInstanceData{
-                model->m_geometry[0]._LODs[0]->m_indexBuffer,
-                model->m_geometry[0]._LODs[0]->m_vertexBuffer[0]
-        });
-    m_states[m_stateIndex].m_data[0].m_transform.setPosition({ 0, 0, 0 });
-    m_states[m_stateIndex].m_data[0].m_transform.setScale({ 100, 100, 1 });
-    m_states[m_stateIndex].m_data[0].m_tint = { 1.f, 1.f, 1.f, 1.f };
-    m_states[m_stateIndex].m_data[0].m_sampler = sampler;
-    m_states[m_stateIndex].m_data[0].m_albedo = default_white;
-    m_states[m_stateIndex].m_data[0].m_normals = default_normal;
-    m_states[m_stateIndex].m_data[0].m_material = default_material;
-    m_states[m_stateIndex].m_data[0].m_stageID = "gbuffer";
-    m_states[m_stateIndex].m_data[0].m_pipelineID = 0;
-    m_states[m_stateIndex].m_data[0].m_objectID = 0;
 
-    //2
-    m_states[m_stateIndex].m_data.push_back(DrawInstanceData{
+    //for (u32 i = 0; i < sunTemple->m_geometry.size(); ++i)
+    //{
+    //    m_states[m_stateIndex].m_data.push_back(DrawInstanceData{
+    //            sunTemple->m_geometry[0]._LODs[0]->m_indexBuffer,
+    //            sunTemple->m_geometry[0]._LODs[0]->m_vertexBuffer[0]
+    //        });
+
+    //    m_states[m_stateIndex].m_data[i].m_tint = { 1, 1, 1, 1 };
+    //    m_states[m_stateIndex].m_data[i].m_sampler = sampler;
+    //    m_states[m_stateIndex].m_data[i].m_albedo = uv_grid;
+    //    m_states[m_stateIndex].m_data[i].m_normals = default_normal;
+    //    m_states[m_stateIndex].m_data[i].m_material = default_material;
+    //    m_states[m_stateIndex].m_data[i].m_stageID = "gbuffer";
+    //    m_states[m_stateIndex].m_data[i].m_pipelineID = 0;
+    //    m_states[m_stateIndex].m_data[i].m_objectID = m_states[m_stateIndex].m_data.size();
+    //}
+
+    u32 countOpaque = 10;//sunTemple->m_geometry.size();
+    for (u32 i = 0; i < countOpaque; ++i)
+    {
+        m_states[m_stateIndex].m_data.push_back(DrawInstanceData{
             model->m_geometry[0]._LODs[0]->m_indexBuffer,
             model->m_geometry[0]._LODs[0]->m_vertexBuffer[0]
-        });
-    m_states[m_stateIndex].m_data[1].m_transform.setPosition({0, 0, -0.5 });
-    m_states[m_stateIndex].m_data[1].m_tint = { 1.f, 0.f, 0.f, 0.2f };
-    m_states[m_stateIndex].m_data[1].m_sampler = sampler;
-    m_states[m_stateIndex].m_data[1].m_albedo = default_white;
-    m_states[m_stateIndex].m_data[1].m_normals = default_normal;
-    m_states[m_stateIndex].m_data[1].m_material = default_material;
-    m_states[m_stateIndex].m_data[1].m_stageID = "transparency";
-    m_states[m_stateIndex].m_data[1].m_pipelineID = 0;
-    m_states[m_stateIndex].m_data[1].m_objectID = 1;
+            });
 
-    //3
-    m_states[m_stateIndex].m_data.push_back(DrawInstanceData{
+        math::float3 pos = rendomVector() * 0.75f;
+        math::float3 scale = rendomVector() * 10.f;
+
+        m_states[m_stateIndex].m_data[i].m_transform.setPosition({ pos._x, pos._y, pos._z });
+        m_states[m_stateIndex].m_data[i].m_transform.setScale({ scale._x, scale._x, scale._x });
+        m_states[m_stateIndex].m_data[i].m_prevTransform = m_states[m_stateIndex].m_data[i].m_transform;
+        m_states[m_stateIndex].m_data[i].m_tint = { 1, 1, 1, 1 };
+        m_states[m_stateIndex].m_data[i].m_sampler = sampler;
+        m_states[m_stateIndex].m_data[i].m_albedo = uv_grid;
+        m_states[m_stateIndex].m_data[i].m_normals = default_normal;
+        m_states[m_stateIndex].m_data[i].m_material = default_material;
+        m_states[m_stateIndex].m_data[i].m_stageID = "gbuffer";
+        m_states[m_stateIndex].m_data[i].m_pipelineID = 0;
+        m_states[m_stateIndex].m_data[i].m_objectID = m_states[m_stateIndex].m_data.size();
+    }
+
+
+    /*u32 countTr = 30;
+    for (u32 i = countOpaque; i < countTr; ++i)
+    {
+        m_states[m_stateIndex].m_data.push_back(DrawInstanceData{
             model->m_geometry[0]._LODs[0]->m_indexBuffer,
             model->m_geometry[0]._LODs[0]->m_vertexBuffer[0]
-        });
-    m_states[m_stateIndex].m_data[2].m_transform.setPosition({ 0.01, 0.01, -0.49 });
-    m_states[m_stateIndex].m_data[2].m_tint = { 0.f, 1.f, 0.f, 0.2f };
-    m_states[m_stateIndex].m_data[2].m_sampler = sampler;
-    m_states[m_stateIndex].m_data[2].m_albedo = default_white;
-    m_states[m_stateIndex].m_data[2].m_normals = default_normal;
-    m_states[m_stateIndex].m_data[2].m_material = default_material;
-    m_states[m_stateIndex].m_data[2].m_stageID = "transparency";
-    m_states[m_stateIndex].m_data[2].m_pipelineID = 0;
-    m_states[m_stateIndex].m_data[2].m_objectID = 2;
+            });
 
-    //4
-    m_states[m_stateIndex].m_data.push_back(DrawInstanceData{
-            model->m_geometry[0]._LODs[0]->m_indexBuffer,
-            model->m_geometry[0]._LODs[0]->m_vertexBuffer[0]
-        });
-    m_states[m_stateIndex].m_data[3].m_transform.setPosition({ -0.01, -0.01, -0.51 });
-    m_states[m_stateIndex].m_data[3].m_tint = { 0.f, 0.f, 1.f, 0.2f };
-    m_states[m_stateIndex].m_data[3].m_sampler = sampler;
-    m_states[m_stateIndex].m_data[3].m_albedo = default_white;
-    m_states[m_stateIndex].m_data[3].m_normals = default_normal;
-    m_states[m_stateIndex].m_data[3].m_material = default_material;
-    m_states[m_stateIndex].m_data[3].m_stageID = "transparency";
-    m_states[m_stateIndex].m_data[3].m_pipelineID = 0;
-    m_states[m_stateIndex].m_data[3].m_objectID = 3;
+        math::float3 pos = rendomVector() * 0.3f;
+        math::float3 scale = rendomVector() * 10.f;
+        math::float3 color = rendomVector();
+
+        m_states[m_stateIndex].m_data[i].m_transform.setPosition({ pos._x, pos._y, pos._z });
+        m_states[m_stateIndex].m_data[i].m_transform.setScale({ scale._x, scale._x, scale._x });
+        m_states[m_stateIndex].m_data[i].m_tint = { color._x, color._y, color._z, 0.5f };
+        m_states[m_stateIndex].m_data[i].m_sampler = sampler;
+        m_states[m_stateIndex].m_data[i].m_albedo = default_white;
+        m_states[m_stateIndex].m_data[i].m_normals = default_normal;
+        m_states[m_stateIndex].m_data[i].m_material = default_material;
+        m_states[m_stateIndex].m_data[i].m_stageID = "transparency";
+        m_states[m_stateIndex].m_data[i].m_pipelineID = 0;
+        m_states[m_stateIndex].m_data[i].m_objectID = m_states[m_stateIndex].m_data.size();
+    }*/
 
     m_device->submit(cmdList, true);
     m_device->destroyCommandList(cmdList);
+
+    g_modelTransform = m_states[m_stateIndex].m_data[g_activeIndex].m_transform;
 }
 
 } //namespace v3d

@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Common.h"
-#include "UI/WigetHandler.h"
+#include "UI/WidgetHandler.h"
 
 namespace v3d
 {
@@ -17,11 +17,11 @@ namespace editor
     {
     public:
 
-        static ui::WigetMenuBar& constructMainMenu(ui::WigetHandler* handler);
+        static ui::WidgetMenuBar& constructMainMenu(ui::WidgetHandler* handler);
 
-        static void constructTransformProp(ui::WigetHandler* handler);
+        static void constructTransformProp(ui::WidgetHandler* handler);
 
-        static void constuctTestUIWindow(ui::WigetHandler* handler, renderer::Texture2D* texture);
+        static void constuctTestUIWindow(ui::WidgetHandler* handler, renderer::Texture2D* texture);
     };
 
 } //namespace editor

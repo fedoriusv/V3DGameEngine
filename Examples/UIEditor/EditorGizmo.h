@@ -2,7 +2,7 @@
 
 #include "Common.h"
 #include "Events/Input/InputEventHandler.h"
-#include "UI/WigetGizmo.h"
+#include "UI/WidgetGizmo.h"
 
 using namespace v3d;
 
@@ -13,7 +13,7 @@ public:
     EditorGizmo();
     ~EditorGizmo();
 
-    void init(ui::WigetGizmo* wiget);
+    void init(ui::WidgetGizmo* widget);
     void modify(const scene::Transform& transform);
     void select();
 
@@ -26,5 +26,5 @@ private:
 
     bool handleInputEvent(v3d::event::InputEventHandler* handler, const v3d::event::InputEvent* event);
 
-    ui::WigetGizmo* m_wiget;
+    ui::WidgetGizmo* m_gizmo;
 };

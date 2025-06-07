@@ -12,8 +12,8 @@
 #include "Renderer/Swapchain.h"
 #include "Renderer/RenderTargetState.h"
 
-#include "UI/Wigets.h"
-#include "UI/WigetGizmo.h"
+#include "UI/Widgets.h"
+#include "UI/WidgetGizmo.h"
 #include "UI/ImGui/ImGuiHandler.h"
 
 #include "EditorUI.h"
@@ -142,7 +142,7 @@ private:
         m_EditorScene->create(m_Device, math::Dimension2D(800, 600));
 
         //UI
-        m_UI = ui::WigetHandler::createWigetHander<ui::ImGuiWigetHandler>(m_Device, m_Backbuffer->getRenderPassDesc(), ui::ImGuiWigetHandler::ImGui_ViewportMode | ui::ImGuiWigetHandler::ImGui_Gizmo);
+        m_UI = ui::WidgetHandler::createWidgetHander<ui::ImGuiWidgetHandler>(m_Device, m_Backbuffer->getRenderPassDesc(), ui::ImGuiWidgetHandler::ImGui_ViewportMode | ui::ImGuiWidgetHandler::ImGui_Gizmo);
         //m_UI->showDemoUI();
 
         InputEventHandler::bind([this](const MouseInputEvent* event)
@@ -166,15 +166,15 @@ private:
         editor::UI::constructMainMenu(m_UI);
 
         //Scene Editor
-        ui::WigetWindow& sceneEditor = m_UI->createWiget<ui::WigetWindow>("Scene Editor", ui::WigetWindow::Moveable | ui::WigetWindow::Resizeable)
-            .addWiget(ui::WigetText("Mode: "))
-            .addWiget(ui::WigetRadioButtonGroup()
+        ui::WidgetWindow& sceneEditor = m_UI->createWidget<ui::WidgetWindow>("Scene Editor", ui::WidgetWindow::Moveable | ui::WidgetWindow::Resizeable)
+            .addWidget(ui::WidgetText("Mode: "))
+            .addWidget(ui::WidgetRadioButtonGroup()
                 .addElement("select")
                 .addElement("move")
                 .addElement("rotate")
                 .addElement("scale")
                 .setActiveIndex(0)
-                .setOnChangedIndexEvent([this](ui::Wiget* w, s32 index) -> void
+                .setOnChangedIndexEvent([this](ui::Widget* w, s32 index) -> void
                     {
                         if (index > 0)
                         {
@@ -188,18 +188,18 @@ private:
                     })
                 );
 
-        ui::WigetWindow& viewportWin = m_UI->createWiget<ui::WigetWindow>("Viewport", ui::WigetWindow::Moveable | ui::WigetWindow::Resizeable)
+        ui::WidgetWindow& viewportWin = m_UI->createWidget<ui::WidgetWindow>("Viewport", ui::WidgetWindow::Moveable | ui::WidgetWindow::Resizeable)
             .setActive(true)
             .setVisible(true)
-            .setOnSizeChanged([](const ui::Wiget* w, const ui::Wiget* p, const math::Dimension2D& size) -> void
+            .setOnSizeChanged([](const ui::Widget* w, const ui::Widget* p, const math::Dimension2D& size) -> void
                 {
                     LOG_DEBUG("Viewport OnSizeChanged [%d %d]", size._width, size._height);
                 })
-            .setOnPositionChanged([](const ui::Wiget* w, const ui::Wiget* p, const math::Point2D& pos) -> void
+            .setOnPositionChanged([](const ui::Widget* w, const ui::Widget* p, const math::Point2D& pos) -> void
                 {
                     LOG_DEBUG("Viewport OnPosChanged [%d %d]", pos._x, pos._y);
                 })
-            .setOnFocusChanged([this](const ui::Wiget* w, bool focused)
+            .setOnFocusChanged([this](const ui::Widget* w, bool focused)
                 {
                     if (focused)
                     {
@@ -216,62 +216,76 @@ private:
                         m_Window->getInputEventReceiver()->dettach(InputEvent::InputEventType::KeyboardInputEvent, m_EditorScene);
                     }
                 })
-            .addWiget(ui::WigetButton("View")
-                .setOnClickedEvent([](const ui::Wiget* w) -> void
+            .addWidget(ui::WidgetButton("View")
+                .setOnClickedEvent([](const ui::Widget* w) -> void
                     {
                         LOG_DEBUG("TODO: Show context menu");
                     })
             )
-            .addWiget(ui::WigetLayout(ui::WigetLayout::Border)
-                .setHAlignment(ui::WigetLayout::HorizontalAlignment::AlignmentFill)
-                .setVAlignment(ui::WigetLayout::VerticalAlignment::AlignmentFill)
-                .addWiget(ui::WigetImage(nullptr, {})
-                    .setOnUpdate([this](ui::Wiget* w, f32 dt) -> void
+            .addWidget(ui::WidgetLayout(ui::WidgetLayout::Border)
+                .setHAlignment(ui::WidgetLayout::HorizontalAlignment::AlignmentFill)
+                .setVAlignment(ui::WidgetLayout::VerticalAlignment::AlignmentFill)
+                .addWidget(ui::WidgetImage(nullptr, {})
+                    .setOnUpdate([this](ui::Widget* w, f32 dt) -> void
                         {
                             auto texture = m_EditorScene->getOutputTexture();
-                            static_cast<ui::WigetImage*>(w)->setTexture(texture);
+                            static_cast<ui::WidgetImage*>(w)->setTexture(texture);
                         })
-                    .setOnDrawRectChanged([this](ui::Wiget* w, ui::Wiget* p, const math::Rect& dim) -> void
+                    .setOnDrawRectChanged([this](ui::Widget* w, ui::Widget* p, const math::Rect& dim) -> void
                         {
                             m_EditorScene->onChanged(dim);
 
                             auto texture = m_EditorScene->getOutputTexture();
-                            static_cast<ui::WigetImage*>(w)->setTexture(texture);
+                            static_cast<ui::WidgetImage*>(w)->setTexture(texture);
                         })
                 )
-                .addWiget(ui::WigetGizmo(m_EditorScene->getCamera())
+                .addWidget(ui::WidgetGizmo(m_EditorScene->getCamera())
                     .setActive(false)
-                    .setOnCreated([this](ui::Wiget* w) -> void
+                    .setOnCreated([this](ui::Widget* w) -> void
                         {
-                            m_EditorGizmo->init(static_cast<ui::WigetGizmo*>(w));
+                            m_EditorGizmo->init(static_cast<ui::WidgetGizmo*>(w));
                         })
-                    .setOnTransformChangedEvent([this](ui::Wiget* w, ui::Wiget* p, const scene::Transform& tr) -> void
+                    .setOnTransformChangedEvent([this](ui::Widget* w, ui::Widget* p, const scene::Transform& tr) -> void
                         {
                             m_EditorGizmo->modify(tr);
                         })
                 )
-                .addWiget(ui::WigetViewManipulator(m_EditorScene->getCamera())
-                    .setOnViewChangedEvent([this](ui::Wiget* w, ui::Wiget* p, const math::Matrix4D& view) -> void
+                .addWidget(ui::WidgetViewManipulator(m_EditorScene->getCamera())
+                    .setOnViewChangedEvent([this](ui::Widget* w, ui::Widget* p, const math::Matrix4D& view) -> void
                         {
                             m_EditorScene->onChanged(view);
                         })
                 )
             );
 
-        ui::WigetWindow& win1 = m_UI->createWiget<ui::WigetWindow>("Content", ui::WigetWindow::Moveable | ui::WigetWindow::Resizeable)
-            .addWiget(ui::WigetText("text")
+        ui::WidgetWindow& win1 = m_UI->createWidget<ui::WidgetWindow>("Content", ui::WidgetWindow::Moveable | ui::WidgetWindow::Resizeable)
+            .addWidget(ui::WidgetText("text"))
+            .addWidget(ui::WidgetListBox()
+                .setOnCreated([this](ui::Widget* w) -> void
+                    {
+                        m_EditorScene->test_initContent(static_cast<ui::WidgetListBox*>(w));
+                    })
+                .setOnChangedIndexEvent([this](ui::Widget* w, u32 i) -> void
+                    {
+                        m_EditorScene->test_selectItem(i);
+                    })
             );
-        ui::WigetWindow& win2 = m_UI->createWiget<ui::WigetWindow>("Properties", ui::WigetWindow::Moveable | ui::WigetWindow::Resizeable)
-            .addWiget(ui::WigetText("text")
+        ui::WidgetWindow& win2 = m_UI->createWidget<ui::WidgetWindow>("Properties", ui::WidgetWindow::Moveable | ui::WidgetWindow::Resizeable)
+            .addWidget(ui::WidgetText("text"))
+            .addWidget(ui::WidgetInputField(0.5)
+                .setOnChangedValueEvent([this](ui::Widget* w, f32 v) -> void
+                    {
+                        m_EditorScene->test_setOpacity(v);
+                    })
             );
-        ui::WigetWindow& win3 = m_UI->createWiget<ui::WigetWindow>("Output", ui::WigetWindow::Moveable | ui::WigetWindow::Resizeable)
-            .addWiget(ui::WigetText("text")
+        ui::WidgetWindow& win3 = m_UI->createWidget<ui::WidgetWindow>("Output", ui::WidgetWindow::Moveable | ui::WidgetWindow::Resizeable)
+            .addWidget(ui::WidgetText("text")
             );
 
-        sceneEditor.setupWindowLayout(ui::WigetWindowLayout(&viewportWin, {
-                { ui::WigetWindowLayout::DirLeft, 0.2f, &win1  },
-                { ui::WigetWindowLayout::DirRight, 0.2f, &win2 },
-                { ui::WigetWindowLayout::DirDown, 0.2f, &win3  } 
+        sceneEditor.setupWindowLayout(ui::WidgetWindowLayout(&viewportWin, {
+                { ui::WidgetWindowLayout::DirLeft, 0.2f, &win1  },
+                { ui::WidgetWindowLayout::DirRight, 0.2f, &win2 },
+                { ui::WidgetWindowLayout::DirDown, 0.2f, &win3  } 
             }));
 
         //editor::UI::constuctTestUIWindow(m_UI, texture);
@@ -340,7 +354,7 @@ private:
     v3d::platform::Window* m_Window = nullptr;
     v3d::renderer::Device* m_Device = nullptr;
 
-    ui::ImGuiWigetHandler*  m_UI;
+    ui::ImGuiWidgetHandler*  m_UI;
 
     EditorScene*            m_EditorScene;
     EditorGizmo*            m_EditorGizmo;

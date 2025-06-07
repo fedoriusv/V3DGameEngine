@@ -10,6 +10,8 @@
 #include "Scene/Camera/CameraEditorHandler.h"
 #include "Scene/Camera/Camera.h"
 
+#include "UI/WidgetGroups.h"
+
 namespace v3d
 {
 class EditorScene : public scene::Scene, public event::InputEventHandler
@@ -34,6 +36,10 @@ public:
     void postRender();
 
     void submitRender();
+
+    void test_setOpacity(f32 op);
+    void test_initContent(ui::WidgetListBox* list);
+    void test_selectItem(u32 i);
 
 public:
 
@@ -65,6 +71,8 @@ public:
     scene::CameraEditorHandler*     m_camera;
     math::Rect                      m_currentViewportRect;
     ViewportParams                  m_vewportParams;
+
+    ui::WidgetListBox* m_contentList;
 };
 
 } //namespace v3d

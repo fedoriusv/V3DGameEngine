@@ -11,7 +11,7 @@ namespace v3d
 }
 
 EditorGizmo::EditorGizmo()
-    : m_wiget(nullptr)
+    : m_gizmo(nullptr)
 {
     InputEventHandler::bind([this](const event::MouseInputEvent* event)
         {
@@ -30,9 +30,9 @@ EditorGizmo::~EditorGizmo()
 {
 }
 
-void EditorGizmo::init(ui::WigetGizmo* wiget)
+void EditorGizmo::init(ui::WidgetGizmo* widget)
 {
-    m_wiget = wiget;
+    m_gizmo = widget;
 }
 
 void EditorGizmo::modify(const scene::Transform& transform)
@@ -41,7 +41,7 @@ void EditorGizmo::modify(const scene::Transform& transform)
     LOG_DEBUG("rotation [%f, %f, %f]", transform.getRotation().getX(), transform.getRotation().getY(), transform.getRotation().getZ());
     LOG_DEBUG("scale [%f, %f, %f]", transform.getScale().getX(), transform.getScale().getY(), transform.getScale().getZ());
     g_modelTransform = transform;
-    m_wiget->setTransform(transform);
+    m_gizmo->setTransform(transform);
 }
 
 void EditorGizmo::select()
@@ -50,23 +50,23 @@ void EditorGizmo::select()
 
 void EditorGizmo::setEnable(bool enable)
 {
-    if (m_wiget)
+    if (m_gizmo)
     {
-        m_wiget->setActive(enable);
+        m_gizmo->setActive(enable);
     }
 }
 
 void EditorGizmo::setOperation(u32 index)
 {
-    static std::array<ui::WigetGizmo::Operation, 3> op = {
-        ui::WigetGizmo::Operation::Translate,
-        ui::WigetGizmo::Operation::Rotate,
-        ui::WigetGizmo::Operation::Scale
+    static std::array<ui::WidgetGizmo::Operation, 3> op = {
+        ui::WidgetGizmo::Operation::Translate,
+        ui::WidgetGizmo::Operation::Rotate,
+        ui::WidgetGizmo::Operation::Scale
     };
 
-    if (m_wiget)
+    if (m_gizmo)
     {
-        m_wiget->setOperation(op[index]);
+        m_gizmo->setOperation(op[index]);
     }
 }
 
