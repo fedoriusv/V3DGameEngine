@@ -57,6 +57,8 @@ void RenderPipelineCompositionStage::prepare(Device* device, scene::Scene::Scene
 
 void RenderPipelineCompositionStage::execute(Device* device, scene::Scene::SceneData& state)
 {
+    DEBUG_MARKER_SCOPE(state.m_renderState.m_cmdList, "Composition", color::colorrgbaf::GREEN);
+
     state.m_renderState.m_cmdList->beginRenderTarget(*m_compositionRenderTarget);
     state.m_renderState.m_cmdList->setViewport({ 0.f, 0.f, (f32)state.m_viewportState.m_viewpotSize._width, (f32)state.m_viewportState.m_viewpotSize._height });
     state.m_renderState.m_cmdList->setScissor({ 0.f, 0.f, (f32)state.m_viewportState.m_viewpotSize._width, (f32)state.m_viewportState.m_viewpotSize._height });
@@ -88,8 +90,9 @@ void RenderPipelineCompositionStage::execute(Device* device, scene::Scene::Scene
         });
 
     state.m_renderState.m_cmdList->draw(renderer::GeometryBufferDesc(), 0, 3, 0, 1);
-
     state.m_renderState.m_cmdList->endRenderTarget();
+
+    state.m_globalResources.bind("render_target", m_compositionRenderTarget->getColorTexture<renderer::Texture2D>(0));
 }
 
 void RenderPipelineCompositionStage::changed(Device* device, scene::Scene::SceneData& data)
@@ -111,7 +114,7 @@ void RenderPipelineCompositionStage::createRenderTarget(Device* device, scene::S
     m_compositionRenderTarget = new renderer::RenderTargetState(device, data.m_viewportState.m_viewpotSize, 1, 0, "composition_pass");
 
     renderer::Texture2D* composition = new renderer::Texture2D(device, renderer::TextureUsage::TextureUsage_Attachment | renderer::TextureUsage::TextureUsage_Sampled,
-        renderer::Format::Format_R8G8B8A8_UNorm, data.m_viewportState.m_viewpotSize, renderer::TextureSamples::TextureSamples_x1, "composition");
+        renderer::Format::Format_R16G16B16A16_SFloat, data.m_viewportState.m_viewpotSize, renderer::TextureSamples::TextureSamples_x1, "composition");
 
     m_compositionRenderTarget->setColorTexture(0, composition,
         {
@@ -122,7 +125,7 @@ void RenderPipelineCompositionStage::createRenderTarget(Device* device, scene::S
         }
     );
 
-    data.m_globalResources.bind("opaque_composite", composition);
+    data.m_globalResources.bind("composite", composition);
 }
 
 void RenderPipelineCompositionStage::destroyRenderTarget(Device* device, scene::Scene::SceneData& data)

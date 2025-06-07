@@ -57,6 +57,8 @@ void RenderPipelineGammaCorrectionStage::prepare(Device* device, scene::Scene::S
 
 void RenderPipelineGammaCorrectionStage::execute(Device* device, scene::Scene::SceneData& state)
 {
+    DEBUG_MARKER_SCOPE(state.m_renderState.m_cmdList, "Gamma", color::colorrgbaf::GREEN);
+
     state.m_renderState.m_cmdList->beginRenderTarget(*m_gammaRenderTarget);
     state.m_renderState.m_cmdList->setViewport({ 0.f, 0.f, (f32)state.m_viewportState.m_viewpotSize._width, (f32)state.m_viewportState.m_viewpotSize._height });
     state.m_renderState.m_cmdList->setScissor({ 0.f, 0.f, (f32)state.m_viewportState.m_viewpotSize._width, (f32)state.m_viewportState.m_viewpotSize._height });
@@ -86,6 +88,7 @@ void RenderPipelineGammaCorrectionStage::execute(Device* device, scene::Scene::S
         });
 
     state.m_renderState.m_cmdList->draw(renderer::GeometryBufferDesc(), 0, 3, 0, 1);
+    state.m_renderState.m_cmdList->endRenderTarget();
 }
 
 void RenderPipelineGammaCorrectionStage::changed(Device* device, scene::Scene::SceneData& data)

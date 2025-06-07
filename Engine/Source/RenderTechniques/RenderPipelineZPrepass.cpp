@@ -6,6 +6,8 @@
 #include "Resource/Loader/ShaderSourceFileLoader.h"
 #include "Resource/Loader/ModelFileLoader.h"
 
+#include "Task/RenderTask/RenderTask.h"
+
 namespace v3d
 {
 namespace renderer
@@ -50,6 +52,13 @@ void RenderPipelineZPrepassStage::create(Device* device, scene::Scene::SceneData
 
 void RenderPipelineZPrepassStage::destroy(Device* device, scene::Scene::SceneData& state)
 {
+    destroyRenderTarget(device, state);
+
+    const renderer::ShaderProgram* program = m_depthPipeline->getShaderProgram();
+    delete program;
+
+    delete m_depthPipeline;
+    m_depthPipeline = nullptr;
 }
 
 void RenderPipelineZPrepassStage::prepare(Device* device, scene::Scene::SceneData& state)
@@ -58,45 +67,56 @@ void RenderPipelineZPrepassStage::prepare(Device* device, scene::Scene::SceneDat
 
 void RenderPipelineZPrepassStage::execute(Device* device, scene::Scene::SceneData& state)
 {
-    state.m_renderState.m_cmdList->beginRenderTarget(*m_depthRenderTarget);
-    state.m_renderState.m_cmdList->setViewport({ 0.f, 0.f, (f32)state.m_viewportState.m_viewpotSize._width, (f32)state.m_viewportState.m_viewpotSize._height });
-    state.m_renderState.m_cmdList->setScissor({ 0.f, 0.f, (f32)state.m_viewportState.m_viewpotSize._width, (f32)state.m_viewportState.m_viewpotSize._height });
-    state.m_renderState.m_cmdList->setStencilRef(0);
-    state.m_renderState.m_cmdList->setPipelineState(*m_depthPipeline);
-
-    state.m_renderState.m_cmdList->bindDescriptorSet(0,
+    static auto renderTask = [this, &state](Device* device, CmdListRender* cmdList) -> void
         {
-            renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ &state.m_viewportState._viewportBuffer, 0, sizeof(state.m_viewportState._viewportBuffer)}, 0)
-        });
+            DEBUG_MARKER_SCOPE(cmdList, "ZPrepass", color::colorrgbaf::GREEN);
 
-    for (auto& draw : state.m_data)
-    {
-        if (draw.m_stageID == "gbuffer")
-        {
-            struct ModelBuffer
-            {
-                math::Matrix4D modelMatrix;
-                math::Matrix4D normalMatrix;
-                math::float4 tint;
-                u64 objectID;
-                u64 _pad;
-            };
-            ModelBuffer constantBuffer;
-            constantBuffer.modelMatrix = draw.m_transform.getTransform();
-            constantBuffer.normalMatrix = constantBuffer.modelMatrix.getTransposed();
-            constantBuffer.tint = draw.m_tint;
-            constantBuffer.objectID = draw.m_objectID;
+            cmdList->beginRenderTarget(*m_depthRenderTarget);
+            cmdList->setViewport({ 0.f, 0.f, (f32)state.m_viewportState.m_viewpotSize._width, (f32)state.m_viewportState.m_viewpotSize._height });
+            cmdList->setScissor({ 0.f, 0.f, (f32)state.m_viewportState.m_viewpotSize._width, (f32)state.m_viewportState.m_viewpotSize._height });
+            cmdList->setStencilRef(0);
 
-            state.m_renderState.m_cmdList->bindDescriptorSet(1,
+            cmdList->setPipelineState(*m_depthPipeline);
+
+            cmdList->bindDescriptorSet(0,
                 {
-                    renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ &constantBuffer, 0, sizeof(constantBuffer)}, 1),
+                    renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ &state.m_viewportState._viewportBuffer, 0, sizeof(state.m_viewportState._viewportBuffer)}, 0)
                 });
 
-            renderer::GeometryBufferDesc desc(draw.m_IdxBuffer, 0, draw.m_VtxBuffer, 0, sizeof(VertexFormatStandard), 0);
-            state.m_renderState.m_cmdList->drawIndexed(desc, 0, draw.m_IdxBuffer->getIndicesCount(), 0, 0, 1);
-        }
-    }
-    state.m_renderState.m_cmdList->endRenderTarget();
+            for (auto& draw : state.m_data)
+            {
+                if (draw.m_stageID == "gbuffer")
+                {
+                    struct ModelBuffer
+                    {
+                        math::Matrix4D modelMatrix;
+                        math::Matrix4D normalMatrix;
+                        math::float4 tint;
+                        u64 objectID;
+                        u64 _pad = 0;
+                    };
+                    ModelBuffer constantBuffer;
+                    constantBuffer.modelMatrix = draw.m_transform.getTransform();
+                    constantBuffer.normalMatrix = constantBuffer.modelMatrix.getTransposed();
+                    constantBuffer.tint = draw.m_tint;
+                    constantBuffer.objectID = draw.m_objectID;
+
+                    cmdList->bindDescriptorSet(1,
+                        {
+                            renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ &constantBuffer, 0, sizeof(constantBuffer)}, 1),
+                        });
+
+                    DEBUG_MARKER_SCOPE(cmdList, std::format("Object {}, pipeline {}", draw.m_objectID, m_depthPipeline->getName()), color::colorrgbaf::LTGREY);
+                    renderer::GeometryBufferDesc desc(draw.m_IdxBuffer, 0, draw.m_VtxBuffer, 0, sizeof(VertexFormatStandard), 0);
+                    cmdList->drawIndexed(desc, 0, draw.m_IdxBuffer->getIndicesCount(), 0, 0, 1);
+                }
+            }
+
+            cmdList->endRenderTarget();
+        };
+
+    //TODO move to another thread
+    renderTask(device, state.m_renderState.m_cmdList);
 }
 
 void RenderPipelineZPrepassStage::changed(Device* device, scene::Scene::SceneData& data)

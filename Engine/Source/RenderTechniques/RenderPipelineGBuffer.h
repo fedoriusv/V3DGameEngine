@@ -34,7 +34,7 @@ namespace renderer
         void createRenderTarget(Device* device, scene::Scene::SceneData& data);
         void destroyRenderTarget(Device* device, scene::Scene::SceneData& data);
 
-        renderer::RenderTargetState* m_gBufferRenderTarget;
+        renderer::RenderTargetState* m_GBufferRenderTarget;
         std::vector<v3d::renderer::GraphicsPipelineState*> m_pipeline;
     };
 
