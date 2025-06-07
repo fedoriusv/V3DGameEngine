@@ -77,8 +77,8 @@ namespace vk
         bool _debugUtilsObjectNameEnabled = false;
         bool _pipelineExecutablePropertiesEnabled = false;
 
-        u32 _memoryImagePoolSize = 64 * 1024 * 1024; //default: 64MB
-        u32 _memoryBufferPoolSize = 4 * 1024 * 1024; //default: 4MB
+        u32 _memoryImagePoolSize = 512 * 1024 * 1024; //default: 512 MB
+        u32 _memoryBufferPoolSize = 64 * 1024 * 1024; //default: 4 MB
         u32 _memoryMinQueryPoolCount = 1024;//default: 1024
 
         u32 _globalDescriptorPoolSize = 2048; //Count of sets in the single pool
