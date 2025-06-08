@@ -1,53 +1,6 @@
 #include "global.hlsli"
+#include "gbuffer_common.hlsli"
 #include "lighting.hlsli"
-
-struct VS_INPUT
-{
-    [[vk::location(0)]] float3 Position  : IN_POSITION;
-    [[vk::location(1)]] float3 Normal    : IN_NORMAL;
-    [[vk::location(2)]] float3 Tangent   : IN_TANGENT;
-    [[vk::location(3)]] float3 Bitangent : IN_BITANGENT;
-    [[vk::location(4)]] float2 UV        : IN_TEXTURE;
-};
-
-struct ModelBuffer
-{
-    float4x4 modelMatrix;
-    float4x4 prevModelMatrix;
-    float4x4 normalMatrix;
-    float4   tint;
-    uint64_t objectID;
-};
-[[vk::binding(1, 1)]] ConstantBuffer<ModelBuffer> CB_Model : register(b0, space1);
-
-struct VS_OUTPUT
-{
-    float4                     Position     : SV_POSITION;
-    [[vk::location(0)]] float4 PrevPosition : PREVPOSITION;
-    [[vk::location(1)]] float3 WorldPos     : POSITION;
-    [[vk::location(2)]] float3 Normal       : NORMAL;
-    [[vk::location(3)]] float3 Tangent      : TANGENT;
-    [[vk::location(4)]] float3 Bitangent    : BITANGENT;
-    [[vk::location(5)]] float2 UV           : TEXTURE;
-};
-
-VS_OUTPUT gbuffer_standard_vs(VS_INPUT Input)
-{
-    VS_OUTPUT Output;
-   
-    float4 position = mul(CB_Model.modelMatrix, float4(Input.Position, 1.0));
-    float4 prevPosition = mul(CB_Model.prevModelMatrix, float4(Input.Position, 1.0));
-    
-    Output.Position = mul(viewport.projectionMatrix, mul(viewport.viewMatrix, position));
-    Output.PrevPosition = mul(viewport.prevProjectionMatrix, mul(viewport.prevViewMatrix, prevPosition));
-    Output.WorldPos = position.xyz / position.w;
-    Output.Normal = mul((float3x3) CB_Model.normalMatrix, Input.Normal);
-    Output.Tangent = mul((float3x3) CB_Model.normalMatrix, Input.Tangent);
-    Output.Bitangent = mul((float3x3) CB_Model.normalMatrix, Input.Bitangent);
-    Output.UV = Input.UV;
-
-    return Output;
-}
 
 ///////////////////////////////////////////////////////////////////////////////////////
 
@@ -56,7 +9,7 @@ VS_OUTPUT gbuffer_standard_vs(VS_INPUT Input)
 [[vk::binding(4, 1)]] Texture2D textureNormal   : register(t1, space1);
 [[vk::binding(5, 1)]] Texture2D textureMaterial : register(t2, space1);
 
-typedef VS_OUTPUT PS_INPUT;
+typedef VS_GBUFFER_STANDARD_OUTPUT PS_GBUFFER_STANDARD_INPUT;
 
 struct PS_GBUFFER_STRUCT
 {
@@ -66,7 +19,7 @@ struct PS_GBUFFER_STRUCT
     [[vk::location(3)]] float2 Velocity : SV_TARGET3; // RG = Velocity
 };
 
-PS_GBUFFER_STRUCT gbuffer_standard_ps(PS_INPUT Input)
+PS_GBUFFER_STRUCT gbuffer_standard_ps(PS_GBUFFER_STANDARD_INPUT Input)
 {
     PS_GBUFFER_STRUCT Output;
     
@@ -92,7 +45,7 @@ PS_GBUFFER_STRUCT gbuffer_standard_ps(PS_INPUT Input)
 
 ///////////////////////////////////////////////////////////////////////////////////////
 
-void gbuffer_depth_ps(PS_INPUT Input)
+void gbuffer_depth_ps(PS_GBUFFER_STANDARD_INPUT Input)
 {
     //nothing
 }

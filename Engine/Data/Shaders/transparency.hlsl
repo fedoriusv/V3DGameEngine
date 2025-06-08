@@ -1,53 +1,5 @@
 #include "global.hlsli"
-
-struct VS_INPUT
-{
-    [[vk::location(0)]] float3 Position : IN_POSITION;
-    [[vk::location(1)]] float3 Normal : IN_NORMAL;
-    [[vk::location(2)]] float3 Tangent : IN_TANGENT;
-    [[vk::location(3)]] float3 Bitangent : IN_BITANGENT;
-    [[vk::location(4)]] float2 UV : IN_TEXTURE;
-};
-
-struct ModelBuffer
-{
-    float4x4 modelMatrix;
-    float4x4 normalMatrix;
-    float4 tint;
-    uint64_t objectID;
-};
-[[vk::binding(1, 1)]] ConstantBuffer<ModelBuffer> CB_Model : register(b0, space1);
-
-struct VS_OUTPUT
-{
-    float4                     Position     : SV_POSITION;
-    [[vk::location(0)]] float3 PrevPosition : PREVPOSITION;
-    [[vk::location(1)]] float3 WorldPos     : POSITION;
-    [[vk::location(2)]] float3 Normal       : NORMAL;
-    [[vk::location(3)]] float3 Tangent      : TANGENT;
-    [[vk::location(4)]] float3 Bitangent    : BITANGENT;
-    [[vk::location(5)]] float2 UV           : TEXTURE;
-};
-
-VS_OUTPUT transparency_vs(VS_INPUT Input)
-{
-    VS_OUTPUT Output;
-   
-    float4x4 viewProjection = mul(viewport.projectionMatrix, viewport.viewMatrix);
-    float4x4 prevViewProjection = mul(viewport.prevProjectionMatrix, viewport.prevViewMatrix);
-    
-    float4 position = mul(CB_Model.modelMatrix, float4(Input.Position, 1.0));
-    
-    Output.Position = mul(viewProjection, position);
-    Output.PrevPosition = mul(prevViewProjection, position);
-    Output.WorldPos = position.xyz / position.w;
-    Output.Normal = mul((float3x3) CB_Model.normalMatrix, Input.Normal);
-    Output.Tangent = mul((float3x3) CB_Model.normalMatrix, Input.Tangent);
-    Output.Bitangent = mul((float3x3) CB_Model.normalMatrix, Input.Bitangent);
-    Output.UV = Input.UV;
-
-    return Output;
-}
+#include "gbuffer_common.hlsli"
 
 ///////////////////////////////////////////////////////////////////////////////////////
 
@@ -56,7 +8,7 @@ VS_OUTPUT transparency_vs(VS_INPUT Input)
 [[vk::binding(4, 1)]] Texture2D textureNormal : register(t1, space1);
 [[vk::binding(5, 1)]] Texture2D textureMaterial : register(t2, space1);
 
-typedef VS_OUTPUT PS_INPUT;
+typedef VS_GBUFFER_STANDARD_OUTPUT PS_INPUT;
 
 [[vk::location(0)]] float4 transparency_ps(PS_INPUT Input) : SV_TARGET0
 {
@@ -144,21 +96,30 @@ float rand(float2 seed)
 
 void stochastic_depth_ps(PS_INPUT Input, uint PrimitiveID : SV_PRIMITIVEID)
 {
-    float2 positionScreenUV = Input.Position.xy * (1.0 / viewport.viewportSize.zw);
+    float2 positionScreenUV = Input.Position.xy * (1.0 / viewport.viewportSize.xy);
 
     //float3 alpha = textureAlbedo.Sample(samplerState, Input.UV).a;
     float alpha = CB_Model.tint.a;
 
-    float2 noiseSize = viewport.viewportSize.zw / 64.0;
-    for (int s = 0; s < 8; ++s)
+    float2 noiseSize = viewport.viewportSize.xy / 64.0;
+    const float S = 8.0;
+    float noiseAccum = 0.0;
+    for (int s = 0; s < S; ++s)
     {
         float2 offset = viewport.random.xy * (PrimitiveID + 1) * (s + 1);
         //float noise = rand(Input.Position.xy * viewport.random.xy);
-        float noise = blueNoiseTexture.Sample(samplerState, positionScreenUV + offset).a - 0.2;
-        if (noise >= alpha)
-        {
-            discard;
-        }
+        float noise = blueNoiseTexture.Sample(samplerState, positionScreenUV /*Input.UV*/ + offset).a;
+        noiseAccum += noise;
+        //if (noise >= alpha)
+        //{
+        //    discard;
+        //}
+    }
+    
+    noiseAccum = noiseAccum / S;
+    if (noiseAccum >= alpha)
+    {
+        discard;
     }
 }
 

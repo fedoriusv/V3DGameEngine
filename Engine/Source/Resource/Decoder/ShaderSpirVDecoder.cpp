@@ -116,27 +116,40 @@ Resource* ShaderSpirVDecoder::decode(const stream::Stream* stream, const Policy*
                 stream::FileLoader::close(file);
 
                 fileStr.push_back('\0');
-                shaderc_include_result include;
-                include.source_name_length = fileStr.size();
-                include.source_name = (c8*)V3D_MALLOC(include.source_name_length, memory::MemoryLabel::MemorySystem);
-                memcpy((void*)include.source_name, fileStr.data(), fileStr.size());
-                include.content_length = dataSize;
-                include.content = (c8*)data;
-                include.user_data = nullptr;
+                shaderc_include_result* include = V3D_NEW(shaderc_include_result, memory::MemoryLabel::MemorySystem);
+                include->source_name_length = fileStr.size();
+                include->source_name = (c8*)V3D_MALLOC(include->source_name_length, memory::MemoryLabel::MemorySystem);
+                memcpy((void*)include->source_name, fileStr.data(), fileStr.size());
+                include->content_length = dataSize;
+                include->content = (c8*)data;
+                include->user_data = nullptr;
 
                 m_includes.push_back(include);
 
-                return &m_includes.back();
+                return m_includes.back();
             }
 
             void ReleaseInclude(shaderc_include_result* data) override
             {
-                V3D_FREE(data->source_name, memory::MemoryLabel::MemorySystem);
+                auto found = std::find_if(m_includes.begin(), m_includes.end(), [data](const shaderc_include_result* include) -> bool
+                    {
+                        return include->content == data->content && include->source_name == data->source_name;
+                    });
+
+                ASSERT(found != m_includes.end(), "must be found");
+                shaderc_include_result* include = *found;
+                m_includes.erase(found);
+
+                V3D_FREE(include->source_name, memory::MemoryLabel::MemorySystem);
+                include->source_name = nullptr;
                 V3D_FREE(data->content, memory::MemoryLabel::MemorySystem);
+                include->content = nullptr;
+                V3D_DELETE(include, memory::MemoryLabel::MemorySystem);
+                include = nullptr;
             }
 
             std::set<std::string> m_pathes;
-            std::vector<shaderc_include_result> m_includes;
+            std::vector<shaderc_include_result*> m_includes;
         };
 
         std::string source;
