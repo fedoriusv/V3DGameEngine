@@ -65,6 +65,11 @@ namespace scene
             scene::CameraHandler* m_camera;
         };
 
+        struct EditorState
+        {
+            u32 selectedObjectID;
+        };
+
         struct RenderState
         {
             renderer::CmdListRender* m_cmdList;
@@ -78,6 +83,7 @@ namespace scene
             renderer::RenderObjectTracker m_globalResources;
 
             ViewportState m_viewportState;
+            EditorState m_editorState;
             RenderState m_renderState;
         };
 
