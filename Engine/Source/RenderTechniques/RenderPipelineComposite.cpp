@@ -84,7 +84,7 @@ void RenderPipelineCompositionStage::execute(Device* device, scene::Scene::Scene
     state.m_renderState.m_cmdList->bindDescriptorSet(1,
         {
             renderer::Descriptor(m_sampler, 1),
-            renderer::Descriptor(gbuffer_albedo_texture, 2)
+            renderer::Descriptor(renderer::TextureView(gbuffer_albedo_texture, 0, 0), 2)
             //renderer::Descriptor(gbuffer_normals_texture, 3),
             //renderer::Descriptor(gbuffer_material_texture, 4),
         });

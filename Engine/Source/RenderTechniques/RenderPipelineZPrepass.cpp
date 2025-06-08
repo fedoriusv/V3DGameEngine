@@ -90,13 +90,15 @@ void RenderPipelineZPrepassStage::execute(Device* device, scene::Scene::SceneDat
                     struct ModelBuffer
                     {
                         math::Matrix4D modelMatrix;
+                        math::Matrix4D prevModelMatrix;
                         math::Matrix4D normalMatrix;
-                        math::float4 tint;
-                        u64 objectID;
-                        u64 _pad = 0;
+                        math::float4   tint;
+                        u64            objectID;
+                        u64           _pad = 0;
                     };
                     ModelBuffer constantBuffer;
                     constantBuffer.modelMatrix = draw.m_transform.getTransform();
+                    constantBuffer.prevModelMatrix = draw.m_prevTransform.getTransform();
                     constantBuffer.normalMatrix = constantBuffer.modelMatrix.getTransposed();
                     constantBuffer.tint = draw.m_tint;
                     constantBuffer.objectID = draw.m_objectID;

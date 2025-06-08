@@ -84,7 +84,7 @@ void RenderPipelineGammaCorrectionStage::execute(Device* device, scene::Scene::S
         {
             renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ &constantBuffer, 0, sizeof(constantBuffer)}, 1),
             renderer::Descriptor(m_sampler, 2),
-            renderer::Descriptor(texture, 3),
+            renderer::Descriptor(renderer::TextureView(texture, 0, 0), 3),
         });
 
     state.m_renderState.m_cmdList->draw(renderer::GeometryBufferDesc(), 0, 3, 0, 1);

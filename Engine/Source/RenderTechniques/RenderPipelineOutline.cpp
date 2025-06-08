@@ -47,8 +47,8 @@ void RenderPipelineOutlineStage::create(Device* device, scene::Scene::SceneData&
     m_sampler->setWrap(renderer::SamplerWrap::TextureWrap_MirroredRepeat);
 
     m_readbackObjectID = new renderer::UnorderedAccessBuffer(device, renderer::BufferUsage::Buffer_GPURead, sizeof(u64) * 2, "objectID");
-    mappedData = m_readbackObjectID->map();
-    state.m_globalResources.bind("readback_objectID", m_readbackObjectID);
+    m_mappedData._ptr = m_readbackObjectID->map<u32>();
+    state.m_globalResources.bind("readback_objectIDData", &m_mappedData);
 }
 
 void RenderPipelineOutlineStage::destroy(Device* device, scene::Scene::SceneData& state)
@@ -60,11 +60,6 @@ void RenderPipelineOutlineStage::destroy(Device* device, scene::Scene::SceneData
 
 void RenderPipelineOutlineStage::prepare(Device* device, scene::Scene::SceneData& state)
 {
-    if (mappedData)
-    {
-        u32* objectID = (u32*)mappedData;
-        LOG_DEBUG("object hovered %u %u [%u, %u]", objectID[0], objectID[1], objectID[2], objectID[3]);
-    }
 }
 
 void RenderPipelineOutlineStage::execute(Device* device, scene::Scene::SceneData& state)
@@ -89,30 +84,27 @@ void RenderPipelineOutlineStage::execute(Device* device, scene::Scene::SceneData
     ASSERT(gbuffer_material.isValid(), "must be valid");
     renderer::Texture2D* gbuffer_materialTexture = objectFromHandle<renderer::Texture2D>(gbuffer_material);
 
-    u32 selectedID = 0;
-    if (mappedData)
-    {
-        selectedID = *(u32*)mappedData;
-    }
-
     struct OutlineBuffer
     {
-        math::float4 selectedID;
+        math::float4 lineColor;
+        f32          lineThickness;
+        u32          selectedID;
     };
     OutlineBuffer constantBuffer;
-    constantBuffer.selectedID._x = (f32)selectedID;
+    constantBuffer.lineColor = { 1.f, 1.f, 0.f, 1.f };
+    constantBuffer.lineThickness = 2.f;
+    constantBuffer.selectedID = state.m_editorState.selectedObjectID;
 
     state.m_renderState.m_cmdList->bindDescriptorSet(1,
         {
             renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ &constantBuffer, 0, sizeof(constantBuffer)}, 1),
             renderer::Descriptor(m_sampler, 2),
-            renderer::Descriptor(compositeTexture, 3),
-            renderer::Descriptor(gbuffer_materialTexture, 4),
+            renderer::Descriptor(renderer::TextureView(compositeTexture, 0, 0), 3),
+            renderer::Descriptor(renderer::TextureView(gbuffer_materialTexture, 0, 0), 4),
             renderer::Descriptor(m_readbackObjectID, 5),
         });
 
     state.m_renderState.m_cmdList->draw(renderer::GeometryBufferDesc(), 0, 3, 0, 1);
-
     state.m_renderState.m_cmdList->endRenderTarget();
 
     state.m_globalResources.bind("render_target", m_renderTarget->getColorTexture<renderer::Texture2D>(0));

@@ -102,11 +102,11 @@ void RenderPipelineGBufferStage::execute(Device* device, scene::Scene::SceneData
                         math::Matrix4D normalMatrix;
                         math::float4   tint;
                         u64            objectID;
-                        u64           _pad;
+                        u64           _pad = 0;
                     };
                     ModelBuffer constantBuffer;
                     constantBuffer.modelMatrix = draw.m_transform.getTransform();
-                    constantBuffer.modelMatrix = draw.m_prevTransform.getTransform();
+                    constantBuffer.prevModelMatrix = draw.m_prevTransform.getTransform();
                     constantBuffer.normalMatrix = constantBuffer.modelMatrix.getTransposed();
                     constantBuffer.tint = draw.m_tint;
                     constantBuffer.objectID = draw.m_objectID;
@@ -115,9 +115,9 @@ void RenderPipelineGBufferStage::execute(Device* device, scene::Scene::SceneData
                         {
                             renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ &constantBuffer, 0, sizeof(constantBuffer)}, 1),
                             renderer::Descriptor(draw.m_sampler, 2),
-                            renderer::Descriptor(draw.m_albedo, 3),
-                            renderer::Descriptor(draw.m_normals, 4),
-                            renderer::Descriptor(draw.m_material, 5),
+                            renderer::Descriptor(renderer::TextureView(draw.m_albedo), 3),
+                            renderer::Descriptor(renderer::TextureView(draw.m_normals), 4),
+                            renderer::Descriptor(renderer::TextureView(draw.m_material), 5),
                         });
 
                     DEBUG_MARKER_SCOPE(cmdList, std::format("Object {}, pipeline {}", draw.m_objectID, m_pipeline[draw.m_pipelineID]->getName()), color::colorrgbaf::LTGREY);

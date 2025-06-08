@@ -13,6 +13,11 @@ namespace renderer
     {
     public:
 
+        struct MappedData
+        {
+            u32* _ptr;
+        };
+
         explicit RenderPipelineOutlineStage(RenderTechnique* technique) noexcept;
         ~RenderPipelineOutlineStage();
 
@@ -34,8 +39,20 @@ namespace renderer
         renderer::GraphicsPipelineState* m_pipeline;
 
         renderer::UnorderedAccessBuffer* m_readbackObjectID;
-        void* mappedData;
+        MappedData m_mappedData;
+
     };
 
 } //namespace renderer
+
+    template<>
+    struct TypeOf<renderer::RenderPipelineOutlineStage::MappedData>
+    {
+        static TypePtr get()
+        {
+            static TypePtr ptr = nullptr;
+            return (TypePtr)&ptr;
+        }
+    };
+
 } //namespace v3d
