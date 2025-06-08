@@ -23,7 +23,7 @@
 #include "RenderTechniques/RenderPipelineGammaCorrection.h"
 #include "RenderTechniques/RenderPipelineUIOverlay.h"
 #include "RenderTechniques/RenderPipelineComposite.h"
-#include "RenderTechniques/RenderPipelineTransparency.h"
+#include "RenderTechniques/RenderPipelineDepthOIT.h"
 #include "RenderTechniques/RenderPipelineZPrepass.h"
 #include "RenderTechniques/RenderPipelineFXAA.h"
 
@@ -39,7 +39,7 @@ EditorScene::RenderPipelineScene::RenderPipelineScene()
     new renderer::RenderPipelineZPrepassStage(this);
     new renderer::RenderPipelineGBufferStage(this);
     new renderer::RenderPipelineCompositionStage(this);
-    //new renderer::RenderPipelineTransparencyStage(this);
+    new renderer::RenderPipelineDepthOITStage(this);
     new renderer::RenderPipelineOutlineStage(this);
     //new renderer::RenderPipelineFXAAStage(this);
     new renderer::RenderPipelineGammaCorrectionStage(this);
@@ -358,8 +358,7 @@ void EditorScene::loadResources()
         m_states[m_stateIndex].m_data[i].m_objectID = m_states[m_stateIndex].m_data.size();
     }
 
-
-    /*u32 countTr = 30;
+    u32 countTr = 20;
     for (u32 i = countOpaque; i < countTr; ++i)
     {
         m_states[m_stateIndex].m_data.push_back(DrawInstanceData{
@@ -373,15 +372,15 @@ void EditorScene::loadResources()
 
         m_states[m_stateIndex].m_data[i].m_transform.setPosition({ pos._x, pos._y, pos._z });
         m_states[m_stateIndex].m_data[i].m_transform.setScale({ scale._x, scale._x, scale._x });
-        m_states[m_stateIndex].m_data[i].m_tint = { color._x, color._y, color._z, 0.5f };
+        m_states[m_stateIndex].m_data[i].m_tint = { 1, 1, 1, 0.5f };/* { color._x, color._y, color._z, 0.5f };*/
         m_states[m_stateIndex].m_data[i].m_sampler = sampler;
-        m_states[m_stateIndex].m_data[i].m_albedo = default_white;
+        m_states[m_stateIndex].m_data[i].m_albedo = uv_grid;
         m_states[m_stateIndex].m_data[i].m_normals = default_normal;
         m_states[m_stateIndex].m_data[i].m_material = default_material;
         m_states[m_stateIndex].m_data[i].m_stageID = "transparency";
         m_states[m_stateIndex].m_data[i].m_pipelineID = 0;
         m_states[m_stateIndex].m_data[i].m_objectID = m_states[m_stateIndex].m_data.size();
-    }*/
+    }
 
     m_device->submit(cmdList, true);
     m_device->destroyCommandList(cmdList);

@@ -10,12 +10,12 @@ namespace v3d
 {
 namespace renderer
 {
-    class RenderPipelineTransparencyStage : public RenderPipelineStage
+    class RenderPipelineDepthOITStage : public RenderPipelineStage
     {
     public:
 
-        explicit  RenderPipelineTransparencyStage(RenderTechnique* technique) noexcept;
-        ~RenderPipelineTransparencyStage();
+        explicit  RenderPipelineDepthOITStage(RenderTechnique* technique) noexcept;
+        ~RenderPipelineDepthOITStage();
 
         void create(Device* device, scene::Scene::SceneData& state) override;
         void destroy(Device* device, scene::Scene::SceneData& state) override;
@@ -48,9 +48,6 @@ namespace renderer
             StochasticDepth,
             StochasticTotalAccumulateColor,
             StochasticTotalFinal,
-
-            Blend,
-
             Count
         };
 
