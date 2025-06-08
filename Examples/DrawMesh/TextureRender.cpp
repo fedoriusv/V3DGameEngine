@@ -25,7 +25,7 @@ void TextureUniformParameters::bindUniformParameters(renderer::CmdListRender& cm
     renderer::Descriptor vsCBO({ &_constantBufferVS, 0, sizeof(_constantBufferVS) }, 0);
 
     renderer::Descriptor sampler(_sampler, 1);
-    renderer::Descriptor texture(_texture, 2);
+    renderer::Descriptor texture(renderer::TextureView(_texture), 2);
     renderer::Descriptor fsCBO({ &_constantBufferFS, 0, sizeof(_constantBufferFS) }, 3);
 
     cmdList.bindDescriptorSet(0, { vsCBO, fsCBO, texture, sampler });
@@ -235,8 +235,8 @@ void TextureRender::process(renderer::CmdListRender& cmdList, const std::vector<
         cmdList.beginRenderTarget(*m_renderTargetBackbuffer.get());
         cmdList.setPipelineState(*m_pipelineBackbuffer.get());
 
-        renderer::Descriptor colorSampler(m_renderTargetMSAA->getColorTexture<renderer::Texture2D>(0), 0);
-        renderer::Descriptor colorTexture(m_sampler.get(), 1);
+        renderer::Descriptor colorTexture(m_renderTargetMSAA->getColorTexture<renderer::Texture2D>(0), 0);
+        renderer::Descriptor colorSampler(m_sampler.get(), 1);
         cmdList.bindDescriptorSet(0, { colorSampler, colorTexture });
 
         cmdList.draw(renderer::GeometryBufferDesc(nullptr, 0, 0), 0, 3, 0, 1);
