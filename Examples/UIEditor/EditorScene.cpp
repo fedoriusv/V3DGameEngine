@@ -32,11 +32,7 @@
 #include "Events/Input/InputEventMouse.h"
 #include "Events/Input/InputEventKeyboard.h"
 
-namespace v3d
-{
-
-scene::Transform g_modelTransform;
-u32 g_activeIndex = 0;
+using namespace v3d;
 
 EditorScene::RenderPipelineScene::RenderPipelineScene()
 {
@@ -63,6 +59,24 @@ EditorScene::EditorScene() noexcept
         {
             if (m_currentViewportRect.isPointInside({ (f32)this->getAbsoluteCursorPosition()._x, (f32)this->getAbsoluteCursorPosition()._y }))
             {
+                if (event->_event == event::MouseInputEvent::MouseDoubleClick)
+                {
+                    ObjectHandle selectedObject = m_states[m_stateIndex].m_globalResources.get("readback_objectIDData");
+                    if (selectedObject.isValid())
+                    {
+                        renderer::RenderPipelineOutlineStage::MappedData* readback_objectIDData = objectFromHandle<renderer::RenderPipelineOutlineStage::MappedData>(selectedObject);
+                        m_selectedObjects._activeIndex = (readback_objectIDData->_ptr) ? readback_objectIDData->_ptr[0] - 1 : -1;
+                        if (m_selectedObjects._activeIndex > -1)
+                        {
+                            m_selectedObjects._modelTransform = m_states[m_stateIndex].m_data[m_selectedObjects._activeIndex].m_transform;
+
+                            struct EditorReport report;
+                            report.transform = m_selectedObjects._modelTransform;
+
+                            this->notify(report);
+                        }
+                    }
+                }
                 m_camera->handleInputEventCallback(this, event);
             }
         }
@@ -76,7 +90,7 @@ EditorScene::EditorScene() noexcept
                 {
                     if (event->_key == event::KeyCode::KeyKey_F) //focus on selected object
                     {
-                        m_camera->setTarget(g_modelTransform.getPosition()); //TODO
+                        m_camera->setTarget(m_selectedObjects._modelTransform.getPosition()); //TODO
                     }
                 }
                 m_camera->handleInputEventCallback(this, event);
@@ -140,12 +154,14 @@ void EditorScene::preRender(f32 dt)
     viewportState.random = { math::random<f32>(0.f, 0.1f),math::random<f32>(0.f, 0.1f), math::random<f32>(0.f, 0.1f), math::random<f32>(0.f, 0.1f) };
     viewportState.time = utils::Timer::getCurrentTime();
 
+    m_states[m_stateIndex].m_editorState.selectedObjectID = m_selectedObjects._activeIndex + 1;
+    if (m_selectedObjects._activeIndex > -1)
+    {
+        m_states[m_stateIndex].m_data[m_selectedObjects._activeIndex].m_transform = m_selectedObjects._modelTransform;
+    }
+
     m_pipeline.prepare(m_device, m_states[m_stateIndex]);
 
-    //if (g_activeIndex > -1)
-    {
-        m_states[m_stateIndex].m_data[g_activeIndex].m_transform = g_modelTransform;
-    }
 }
 
 void EditorScene::postRender()
@@ -161,6 +177,26 @@ void EditorScene::submitRender()
 
     m_stateIndex = 0;//(m_stateIndex + 1) % m_states.size();
 }
+
+void EditorScene::modifyObject(const scene::Transform& transform)
+{
+    if (m_selectedObjects._activeIndex > -1)
+    {
+        m_selectedObjects._modelTransform = transform;
+    }
+}
+
+void EditorScene::selectObject(u32 i)
+{
+    m_selectedObjects._activeIndex = i;
+    m_selectedObjects._modelTransform = m_states[m_stateIndex].m_data[m_selectedObjects._activeIndex].m_transform;
+
+    struct EditorReport report;
+    report.transform = m_selectedObjects._modelTransform;
+
+    this->notify(report);
+}
+
 
 void EditorScene::test_setOpacity(f32 op)
 {
@@ -179,10 +215,6 @@ void EditorScene::test_initContent(ui::WidgetListBox* list)
     }
 }
 
-void EditorScene::test_selectItem(u32 i)
-{
-    g_activeIndex = i;
-}
 
 void EditorScene::onChanged(const v3d::math::Rect& viewport)
 {
@@ -353,8 +385,4 @@ void EditorScene::loadResources()
 
     m_device->submit(cmdList, true);
     m_device->destroyCommandList(cmdList);
-
-    g_modelTransform = m_states[m_stateIndex].m_data[g_activeIndex].m_transform;
 }
-
-} //namespace v3d

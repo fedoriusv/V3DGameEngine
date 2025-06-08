@@ -1,12 +1,15 @@
 #pragma once
 
 #include "Common.h"
+#include "Utils/Observable.h"
 #include "Events/Input/InputEventHandler.h"
 #include "UI/WidgetGizmo.h"
 
+#include "EditorScene.h"
+
 using namespace v3d;
 
-class EditorGizmo : public event::InputEventHandler
+class EditorGizmo : public event::InputEventHandler, public utils::Observer<EditorReport>
 {
 public:
 
@@ -23,6 +26,8 @@ public:
     void update(f32 dt);
 
 private:
+
+    void handleNotify(const utils::Reporter<EditorReport>* reporter, const EditorReport& data) override;
 
     bool handleInputEvent(v3d::event::InputEventHandler* handler, const v3d::event::InputEvent* event);
 

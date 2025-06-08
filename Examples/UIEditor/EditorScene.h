@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Common.h"
+#include "Utils/Observable.h"
 
 #include "Scene/Scene.h"
 #include "Renderer/Device.h"
@@ -12,9 +13,14 @@
 
 #include "UI/WidgetGroups.h"
 
-namespace v3d
+using namespace v3d;
+
+struct EditorReport
 {
-class EditorScene : public scene::Scene, public event::InputEventHandler
+    scene::Transform transform;
+};
+
+class EditorScene : public scene::Scene, public event::InputEventHandler, public utils::Reporter<EditorReport>
 {
 public:
 
@@ -37,9 +43,13 @@ public:
 
     void submitRender();
 
+public:
+
+    void modifyObject(const scene::Transform& transform);
+    void selectObject(u32 i);
+
     void test_setOpacity(f32 op);
     void test_initContent(ui::WidgetListBox* list);
-    void test_selectItem(u32 i);
 
 public:
 
@@ -68,11 +78,17 @@ public:
         f32 _far = 10000.f;
     };
 
+    struct SelectedObjects
+    {
+        scene::Transform _modelTransform;
+        s32 _activeIndex = -1;
+    };
+
     scene::CameraEditorHandler*     m_camera;
     math::Rect                      m_currentViewportRect;
     ViewportParams                  m_vewportParams;
 
+    SelectedObjects                 m_selectedObjects;
+
     ui::WidgetListBox* m_contentList;
 };
-
-} //namespace v3d

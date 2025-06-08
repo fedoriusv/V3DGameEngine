@@ -5,11 +5,6 @@
 
 #include "Utils/Logger.h"
 
-namespace v3d
-{
-    extern scene::Transform g_modelTransform;
-}
-
 EditorGizmo::EditorGizmo()
     : m_gizmo(nullptr)
 {
@@ -40,7 +35,6 @@ void EditorGizmo::modify(const scene::Transform& transform)
     LOG_DEBUG("position [%f, %f, %f]", transform.getPosition().getX(), transform.getPosition().getY(), transform.getPosition().getZ());
     LOG_DEBUG("rotation [%f, %f, %f]", transform.getRotation().getX(), transform.getRotation().getY(), transform.getRotation().getZ());
     LOG_DEBUG("scale [%f, %f, %f]", transform.getScale().getX(), transform.getScale().getY(), transform.getScale().getZ());
-    g_modelTransform = transform;
     m_gizmo->setTransform(transform);
 }
 
@@ -72,6 +66,11 @@ void EditorGizmo::setOperation(u32 index)
 
 void EditorGizmo::update(f32 dt)
 {
+}
+
+void EditorGizmo::handleNotify(const utils::Reporter<EditorReport>* reporter, const EditorReport& data)
+{
+    modify(data.transform);
 }
 
 bool EditorGizmo::handleInputEvent(v3d::event::InputEventHandler* handler, const v3d::event::InputEvent* event)
