@@ -1680,19 +1680,28 @@ void VulkanCmdList::bindDescriptorSet(u32 set, const std::vector<Descriptor>& de
             break;
         }
 
-        case Descriptor::Type::Descriptor_Texture:
+        case Descriptor::Type::Descriptor_TextureSampled:
         {
-            ASSERT(desc._resource.index() == Descriptor::Type::Descriptor_Texture, "wrong id");
-            Texture* texture = std::get<Descriptor::Type::Descriptor_Texture>(desc._resource);
-            VulkanCmdList::bindTexture(set, desc._slot, texture);
+            ASSERT(desc._resource.index() == Descriptor::Type::Descriptor_TextureSampled, "wrong id");
+            const TextureView& view = std::get<Descriptor::Type::Descriptor_TextureSampled>(desc._resource);
+            VulkanCmdList::bindTexture(set, desc._slot, view);
 
             break;
         }
 
-        case Descriptor::Type::Descriptor_UAV:
+        case Descriptor::Type::Descriptor_RWTexture:
         {
-            ASSERT(desc._resource.index() == Descriptor::Type::Descriptor_UAV, "wrong id");
-            Buffer* buffer = std::get<Descriptor::Type::Descriptor_UAV>(desc._resource);
+            ASSERT(desc._resource.index() == Descriptor::Type::Descriptor_RWTexture, "wrong id");
+            Texture* texture = std::get<Descriptor::Type::Descriptor_RWTexture>(desc._resource);
+            VulkanCmdList::bindUAV(set, desc._slot, texture);
+
+            break;
+        }
+
+        case Descriptor::Type::Descriptor_RWBuffer:
+        {
+            ASSERT(desc._resource.index() == Descriptor::Type::Descriptor_RWBuffer, "wrong id");
+            Buffer* buffer = std::get<Descriptor::Type::Descriptor_RWBuffer>(desc._resource);
             VulkanCmdList::bindUAV(set, desc._slot, buffer);
 
             break;

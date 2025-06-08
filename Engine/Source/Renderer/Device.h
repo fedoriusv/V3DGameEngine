@@ -12,6 +12,7 @@
 #include "SamplerState.h"
 #include "RenderTargetState.h"
 #include "PipelineState.h"
+#include "Descriptor.h"
 #include "ObjectTracker.h"
 
 namespace v3d

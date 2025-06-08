@@ -526,6 +526,16 @@ namespace renderer
         }
     };
 
+    template<>
+    struct TypeOf<renderer::TextureView>
+    {
+        static TypePtr get()
+        {
+            static TypePtr ptr = nullptr;
+            return (TypePtr)&ptr;
+        }
+    };
+
     ///////////////////////////////////////////////////////////////////////////////////////////////////////
 
 } //namespace v3d
