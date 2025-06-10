@@ -28,9 +28,9 @@ void RenderPipelineDepthOITStage::create(Device* device, scene::Scene::SceneData
     //stochastic pass 1: accumulate alpha
     {
         const renderer::VertexShader* vertShader = resource::ResourceManager::getInstance()->loadShader<renderer::VertexShader, resource::ShaderSourceFileLoader>(device,
-            "transparency.hlsl", "gbuffer_standard_vs", {}, {}/*, resource::ShaderCompileFlag::ShaderCompile_UseDXCompilerForSpirV*/);
+            "gbuffer.hlsl", "gbuffer_standard_vs", {}, {}/*, resource::ShaderCompileFlag::ShaderCompile_UseDXCompilerForSpirV*/);
         const renderer::FragmentShader* fragShader = resource::ResourceManager::getInstance()->loadShader<renderer::FragmentShader, resource::ShaderSourceFileLoader>(device,
-            "transparency.hlsl", "transparency_alpha_ps", {}, {}/*, resource::ShaderCompileFlag::ShaderCompile_UseDXCompilerForSpirV*/);
+            "transparency_sdoit.hlsl", "transparency_alpha_ps", {}, {}/*, resource::ShaderCompileFlag::ShaderCompile_UseDXCompilerForSpirV*/);
 
         renderer::GraphicsPipelineState* pipeline = new renderer::GraphicsPipelineState(
             device, VertexFormatStandardDesc, m_stochasticTransparency_TotalAlpha->getRenderPassDesc(), new renderer::ShaderProgram(device, vertShader, fragShader), "st_total_alpha_pass1");
@@ -61,9 +61,9 @@ void RenderPipelineDepthOITStage::create(Device* device, scene::Scene::SceneData
     //stochastic pass 2: transparency depth
     {
         const renderer::VertexShader* vertShader = resource::ResourceManager::getInstance()->loadShader<renderer::VertexShader, resource::ShaderSourceFileLoader>(device,
-            "transparency.hlsl", "gbuffer_standard_vs", {}, {}/*, resource::ShaderCompileFlag::ShaderCompile_UseDXCompilerForSpirV*/);
+            "gbuffer.hlsl", "gbuffer_standard_vs", {}, {}/*, resource::ShaderCompileFlag::ShaderCompile_UseDXCompilerForSpirV*/);
         const renderer::FragmentShader* fragShader = resource::ResourceManager::getInstance()->loadShader<renderer::FragmentShader, resource::ShaderSourceFileLoader>(device,
-            "transparency.hlsl", "stochastic_depth_ps", {}, {}/*, resource::ShaderCompileFlag::ShaderCompile_UseDXCompilerForSpirV*/);
+            "transparency_sdoit.hlsl", "stochastic_depth_ps", {}, {}/*, resource::ShaderCompileFlag::ShaderCompile_UseDXCompilerForSpirV*/);
 
         renderer::GraphicsPipelineState* pipeline = new renderer::GraphicsPipelineState(
             device, VertexFormatStandardDesc, m_stochasticTransparency_Depth->getRenderPassDesc(), new renderer::ShaderProgram(device, vertShader, fragShader), "st_transparency_depth_pass2");
@@ -86,9 +86,9 @@ void RenderPipelineDepthOITStage::create(Device* device, scene::Scene::SceneData
     //stochastic pass 3: accumulate color
     {
         const renderer::VertexShader* vertShader = resource::ResourceManager::getInstance()->loadShader<renderer::VertexShader, resource::ShaderSourceFileLoader>(device,
-            "transparency.hlsl", "gbuffer_standard_vs", {}, {}/*, resource::ShaderCompileFlag::ShaderCompile_UseDXCompilerForSpirV*/);
+            "gbuffer.hlsl", "gbuffer_standard_vs", {}, {}/*, resource::ShaderCompileFlag::ShaderCompile_UseDXCompilerForSpirV*/);
         const renderer::FragmentShader* fragShader = resource::ResourceManager::getInstance()->loadShader<renderer::FragmentShader, resource::ShaderSourceFileLoader>(device,
-            "transparency.hlsl", "transparency_accumulate_color_ps", {}, {}/*, resource::ShaderCompileFlag::ShaderCompile_UseDXCompilerForSpirV*/);
+            "transparency_sdoit.hlsl", "transparency_accumulate_color_ps", {}, {}/*, resource::ShaderCompileFlag::ShaderCompile_UseDXCompilerForSpirV*/);
 
         renderer::GraphicsPipelineState* pipeline = new renderer::GraphicsPipelineState(
             device, VertexFormatStandardDesc, m_stochasticTransparency_AccumulateColor->getRenderPassDesc(), new renderer::ShaderProgram(device, vertShader, fragShader), "st_accumulate_color_pass3");
@@ -116,7 +116,7 @@ void RenderPipelineDepthOITStage::create(Device* device, scene::Scene::SceneData
         const renderer::VertexShader* vertShader = resource::ResourceManager::getInstance()->loadShader<renderer::VertexShader, resource::ShaderSourceFileLoader>(device,
             "offscreen.hlsl", "offscreen_vs", {}, {}/*, resource::ShaderCompileFlag::ShaderCompile_UseDXCompilerForSpirV*/);
         const renderer::FragmentShader* fragShader = resource::ResourceManager::getInstance()->loadShader<renderer::FragmentShader, resource::ShaderSourceFileLoader>(device,
-            "transparency.hlsl", "stochastic_transparency_final_ps", {}, {}/*, resource::ShaderCompileFlag::ShaderCompile_UseDXCompilerForSpirV*/);
+            "transparency_sdoit.hlsl", "stochastic_transparency_final_ps", {}, {}/*, resource::ShaderCompileFlag::ShaderCompile_UseDXCompilerForSpirV*/);
 
         renderer::GraphicsPipelineState* pipeline = new renderer::GraphicsPipelineState(
             device, renderer::VertexInputAttributeDesc(), m_stochasticTransparency_Final->getRenderPassDesc(), new renderer::ShaderProgram(device, vertShader, fragShader), "st_transparency_final_pass4");
@@ -130,10 +130,10 @@ void RenderPipelineDepthOITStage::create(Device* device, scene::Scene::SceneData
         pipeline->setDepthTest(false);
 
         m_pipeline[Pass::StochasticTotalFinal] = pipeline;
-
-        m_sampler = new renderer::SamplerState(device, renderer::SamplerFilter::SamplerFilter_Trilinear, renderer::SamplerAnisotropic::SamplerAnisotropic_4x);
-        m_sampler->setWrap(renderer::SamplerWrap::TextureWrap_MirroredRepeat);
     }
+
+    m_sampler = new renderer::SamplerState(device, renderer::SamplerFilter::SamplerFilter_Trilinear, renderer::SamplerAnisotropic::SamplerAnisotropic_4x);
+    m_sampler->setWrap(renderer::SamplerWrap::TextureWrap_MirroredRepeat);
 }
 
 void RenderPipelineDepthOITStage::destroy(Device* device, scene::Scene::SceneData& state)
@@ -234,7 +234,7 @@ void RenderPipelineDepthOITStage::executeStochasticTransparency(Device* device, 
                     renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ &constantBuffer, 0, sizeof(constantBuffer)}, 1),
                     renderer::Descriptor(draw.m_sampler, 2),
                     renderer::Descriptor(renderer::TextureView(draw.m_albedo), 3),
-                    renderer::Descriptor(renderer::TextureView(noise_blue_texture), 6)
+                    renderer::Descriptor(renderer::TextureView(noise_blue_texture), 4)
                 });
 
             renderer::GeometryBufferDesc desc(draw.m_IdxBuffer, 0, draw.m_VtxBuffer, 0, sizeof(VertexFormatStandard), 0);

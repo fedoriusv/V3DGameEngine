@@ -9,7 +9,7 @@
 #include "Resource/Loader/ModelFileLoader.h"
 #include "Resource/Loader/ShaderCompiler.h"
 
-#include "Scene/Model.h"
+#include "Scene/ModelHandler.h"
 #include "Scene/Geometry/Mesh.h"
 
 #include "Renderer/Render.h"
@@ -23,9 +23,11 @@
 #include "RenderTechniques/RenderPipelineGammaCorrection.h"
 #include "RenderTechniques/RenderPipelineUIOverlay.h"
 #include "RenderTechniques/RenderPipelineComposite.h"
-#include "RenderTechniques/RenderPipelineDepthOIT.h"
 #include "RenderTechniques/RenderPipelineZPrepass.h"
 #include "RenderTechniques/RenderPipelineFXAA.h"
+#include "RenderTechniques/RenderPipelineDepthOIT.h"
+#include "RenderTechniques/RenderPipelineMSOIT.h"
+#include "RenderTechniques/RenderPipelineSOIT.h"
 
 #include "Stream/StreamManager.h"
 
@@ -40,6 +42,8 @@ EditorScene::RenderPipelineScene::RenderPipelineScene()
     new renderer::RenderPipelineGBufferStage(this);
     new renderer::RenderPipelineCompositionStage(this);
     new renderer::RenderPipelineDepthOITStage(this);
+    //new renderer::RenderPipelineMSOITStage(this);
+    //new renderer::RenderPipelineSOITStage(this);
     new renderer::RenderPipelineOutlineStage(this);
     //new renderer::RenderPipelineFXAAStage(this);
     new renderer::RenderPipelineGammaCorrectionStage(this);
@@ -372,9 +376,9 @@ void EditorScene::loadResources()
 
         m_states[m_stateIndex].m_data[i].m_transform.setPosition({ pos._x, pos._y, pos._z });
         m_states[m_stateIndex].m_data[i].m_transform.setScale({ scale._x, scale._x, scale._x });
-        m_states[m_stateIndex].m_data[i].m_tint = { 1, 1, 1, 0.5f };/* { color._x, color._y, color._z, 0.5f };*/
+        m_states[m_stateIndex].m_data[i].m_tint = { color._x, color._y, color._z, 0.5f };
         m_states[m_stateIndex].m_data[i].m_sampler = sampler;
-        m_states[m_stateIndex].m_data[i].m_albedo = uv_grid;
+        m_states[m_stateIndex].m_data[i].m_albedo = default_white;
         m_states[m_stateIndex].m_data[i].m_normals = default_normal;
         m_states[m_stateIndex].m_data[i].m_material = default_material;
         m_states[m_stateIndex].m_data[i].m_stageID = "transparency";

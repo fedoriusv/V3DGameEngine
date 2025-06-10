@@ -111,7 +111,7 @@ void RenderPipelineCompositionStage::changed(Device* device, scene::Scene::Scene
 void RenderPipelineCompositionStage::createRenderTarget(Device* device, scene::Scene::SceneData& data)
 {
     ASSERT(m_compositionRenderTarget == nullptr, "must be nullptr");
-    m_compositionRenderTarget = new renderer::RenderTargetState(device, data.m_viewportState.m_viewpotSize, 1, 0, "composition_pass");
+    m_compositionRenderTarget = new renderer::RenderTargetState(device, data.m_viewportState.m_viewpotSize, 1);
 
     renderer::Texture2D* composition = new renderer::Texture2D(device, renderer::TextureUsage::TextureUsage_Attachment | renderer::TextureUsage::TextureUsage_Sampled,
         renderer::Format::Format_R16G16B16A16_SFloat, data.m_viewportState.m_viewpotSize, renderer::TextureSamples::TextureSamples_x1, "composition");
@@ -124,8 +124,6 @@ void RenderPipelineCompositionStage::createRenderTarget(Device* device, scene::S
             renderer::TransitionOp::TransitionOp_Undefined, renderer::TransitionOp::TransitionOp_ColorAttachment
         }
     );
-
-    data.m_globalResources.bind("composite", composition);
 }
 
 void RenderPipelineCompositionStage::destroyRenderTarget(Device* device, scene::Scene::SceneData& data)

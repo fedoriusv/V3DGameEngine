@@ -44,7 +44,7 @@ void RenderPipelineOutlineStage::create(Device* device, scene::Scene::SceneData&
    m_pipeline->setDepthTest(false);
 
     m_sampler = new renderer::SamplerState(device, renderer::SamplerFilter::SamplerFilter_Trilinear, renderer::SamplerAnisotropic::SamplerAnisotropic_4x);
-    m_sampler->setWrap(renderer::SamplerWrap::TextureWrap_MirroredRepeat);
+    m_sampler->setWrap(renderer::SamplerWrap::TextureWrap_ClampToBorder);
 
     m_readbackObjectID = new renderer::UnorderedAccessBuffer(device, renderer::BufferUsage::Buffer_GPURead, sizeof(u64) * 2, "objectID");
     m_mappedData._ptr = m_readbackObjectID->map<u32>();
