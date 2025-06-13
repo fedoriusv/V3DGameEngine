@@ -1,24 +1,117 @@
 #pragma once
 
 #include "Common.h"
+#include "FNV-1a.h"
 
 namespace v3d
 {
 namespace utils
 {
-    using StringID = std::string;
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    //class StringID
-    //{
-    //public:
+    template <u32 SIZE>
+    class ConstexprString
+    {
+    public:
 
-    //    StringID();
-    //    ~StringID();
+        constexpr ConstexprString(const c8(&str)[SIZE]) noexcept
+        {
+            for (u32 i = 0; i < SIZE; ++i) {
+                m_str[i] = str[i];
+            }
+        }
 
-    //private:
+        constexpr const c8* c_str() const
+        {
+            return m_str;
+        }
 
+        constexpr u32 size() const
+        {
+            return SIZE - 1;
+        }
 
-    //};
+        constexpr char operator[](c8 index) const
+        {
+            return index < SIZE ? m_str[index] : '\0';
+        }
+
+    private:
+
+        c8 m_str[SIZE];
+    };
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    /**
+    * @brief StringID. Compile time string
+    */
+    template <UIntType T>
+    class TStringID
+    {
+    public:
+
+        constexpr TStringID(T hash, const c8* str) noexcept
+            : m_hash(hash)
+            , m_str(str)
+        {
+        }
+
+        template <u32 N>
+        constexpr TStringID(const c8(&str)[N]) noexcept
+            : m_hash(fnv1a_hash<T>(str))
+            , m_str(str)
+        {
+        }
+
+        constexpr TStringID() noexcept
+            : m_hash(0)
+            , m_str("")
+        {
+        }
+
+        constexpr TStringID(const TStringID& other) noexcept
+            : m_hash(other.m_hash)
+            , m_str(other.m_str)
+        {
+        }
+
+        constexpr T value() const
+        {
+            return m_hash;
+        }
+
+        constexpr std::string_view name() const
+        { 
+            return m_str;
+        }
+
+        constexpr bool operator==(const TStringID<T>& other) const
+        {
+            return m_hash == other.m_hash;
+        }
+
+        constexpr bool operator<(const TStringID<T>& other) const
+        {
+            return m_hash < other.m_hash;
+        }
+
+    private:
+        T         m_hash;
+        const c8* m_str;
+    };
+
+    template <UIntType T = u64, u32 N>
+    consteval TStringID<T> MakeStringID(const c8(&str)[N])
+    {
+        return TStringID<T>(fnv1a_hash<T>(str), str);
+    }
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    using StringID = TStringID<u64>;
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
 
 } //namespace utils
 } //namespace v3d
