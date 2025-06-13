@@ -5,6 +5,7 @@
 #include "Application.h"
 
 #include "Utils/Logger.h"
+#include "Utils/StringID.h"
 #include "Platform/Window.h"
 #include "Events/Input/InputEventReceiver.h"
 

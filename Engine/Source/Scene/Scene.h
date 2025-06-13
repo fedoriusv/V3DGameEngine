@@ -39,7 +39,7 @@ namespace scene
             math::float4 m_tint;
 
 
-            std::string m_stageID;
+            utils::StringID m_stageID;
             u64 m_pipelineID;
             u64 m_objectID;
         };

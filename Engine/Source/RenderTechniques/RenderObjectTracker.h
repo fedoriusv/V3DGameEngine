@@ -10,7 +10,6 @@ namespace v3d
 {
 namespace renderer
 {
-
     class RenderObjectTracker
     {
     public:
@@ -21,9 +20,17 @@ namespace renderer
         void bind(const utils::StringID& id, ObjectHandle handle);
         ObjectHandle get(const utils::StringID& id) const;
 
+        struct Hash
+        {
+            constexpr u64 operator()(const utils::StringID& obj) const
+            {
+                return obj.value();
+            }
+        };
+
     private:
 
-        std::map<utils::StringID, ObjectHandle> m_resources;
+        std::unordered_map<utils::StringID, ObjectHandle, Hash> m_resources;
     };
 
     inline void RenderObjectTracker::bind(const utils::StringID& id, ObjectHandle handle)
