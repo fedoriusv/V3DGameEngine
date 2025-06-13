@@ -1,4 +1,4 @@
-#include "global.hlsl"
+#include "offscreen_common.hlsli"
 
 #define FXAA_PC 1
 #define FXAA_HLSL_5 1
@@ -6,15 +6,14 @@
 #define FXAA_QUALITY__PRESET 12
 #include "Fxaa3_11.h"
 
-struct PS_INPUT
-{
-    [[vk::location(0)]] float2 UV : TEXTURE;
-};
+///////////////////////////////////////////////////////////////////////////////////////
 
 [[vk::binding(1, 1)]] SamplerState samplerState : register(s0, space1);
 [[vk::binding(2, 1)]] Texture2D textureColor   : register(t0, space1);
 
-float4 fxaa_ps(PS_INPUT Input) : SV_TARGET0
+///////////////////////////////////////////////////////////////////////////////////////
+
+float4 fxaa_ps(PS_OFFSCREEN_INPUT input) : SV_TARGET0
 {
     uint dx, dy;
     textureColor.GetDimensions(dx, dy);
@@ -24,6 +23,7 @@ float4 fxaa_ps(PS_INPUT Input) : SV_TARGET0
     t.smpl = samplerState;
     t.tex = textureColor;
 
-    return FxaaPixelShader(Input.UV, 0, t, t, t, rcpro, 0, 0, 0, 1.0, 0.166, 0.0312, 0, 0, 0, 0);
-
+    return FxaaPixelShader(input.UV, 0, t, t, t, rcpro, 0, 0, 0, 1.0, 0.166, 0.0312, 0, 0, 0, 0);
 }
+
+///////////////////////////////////////////////////////////////////////////////////////

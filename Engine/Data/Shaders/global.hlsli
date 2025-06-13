@@ -1,6 +1,9 @@
 #ifndef _GLOBAL_HLSL_
 #define _GLOBAL_HLSL_
 
+#define HLSL 1
+#define GLSL 0
+
 struct Viewport
 {
     float4x4 projectionMatrix;
@@ -14,7 +17,5 @@ struct Viewport
     uint64_t time;
     float2   _unused;
 };
-
-[[vk::binding(0, 0)]] ConstantBuffer<Viewport> viewport : register(b0, space0);
 
 #endif //_GLOBAL_HLSL_
