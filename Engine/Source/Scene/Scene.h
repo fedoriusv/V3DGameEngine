@@ -54,10 +54,10 @@ namespace scene
                 math::Matrix4D prevViewMatrix;
                 math::Vector4D cameraPosition;
                 math::float2   viewportSize;
-                math::float2   cursorPosition;
+                math::float2   clipNearFar;
                 math::float4   random;
+                math::float2   cursorPosition;
                 u64            time;
-                math::float2   _unused = {};
 
             } _viewportBuffer;
 

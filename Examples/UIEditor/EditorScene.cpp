@@ -28,6 +28,7 @@
 #include "RenderTechniques/RenderPipelineDepthOIT.h"
 #include "RenderTechniques/RenderPipelineMSOIT.h"
 #include "RenderTechniques/RenderPipelineSOIT.h"
+#include "RenderTechniques/RenderPipelineMBOIT.h"
 
 #include "Stream/StreamManager.h"
 
@@ -41,10 +42,10 @@ EditorScene::RenderPipelineScene::RenderPipelineScene()
     new renderer::RenderPipelineZPrepassStage(this);
     new renderer::RenderPipelineGBufferStage(this);
     new renderer::RenderPipelineCompositionStage(this);
-    new renderer::RenderPipelineDepthOITStage(this);
-    //new renderer::RenderPipelineMSOITStage(this);
-    //new renderer::RenderPipelineSOITStage(this);
-    new renderer::RenderPipelineOutlineStage(this);
+    //new renderer::RenderPipelineDepthOITStage(this);
+    new renderer::RenderPipelineSOITStage(this);
+    //new renderer::RenderPipelineMBOITStage(this);
+    //new renderer::RenderPipelineOutlineStage(this);
     //new renderer::RenderPipelineFXAAStage(this);
     new renderer::RenderPipelineGammaCorrectionStage(this);
     new renderer::RenderPipelineUIOverlayStage(this);
@@ -154,8 +155,9 @@ void EditorScene::preRender(f32 dt)
     viewportState.viewMatrix = m_camera->getCamera().getViewMatrix();
     viewportState.cameraPosition = { m_camera->getPosition().getX(), m_camera->getPosition().getY(), m_camera->getPosition().getZ(), 0.f };
     viewportState.viewportSize = { (f32)m_states[m_stateIndex].m_viewportState.m_viewpotSize._width, (f32)m_states[m_stateIndex].m_viewportState.m_viewpotSize._height };
-    viewportState.cursorPosition = { (f32)posX, (f32)posY };
+    viewportState.clipNearFar = { m_camera->getNear(), m_camera->getFar() };
     viewportState.random = { math::random<f32>(0.f, 0.1f),math::random<f32>(0.f, 0.1f), math::random<f32>(0.f, 0.1f), math::random<f32>(0.f, 0.1f) };
+    viewportState.cursorPosition = { (f32)posX, (f32)posY };
     viewportState.time = utils::Timer::getCurrentTime();
 
     m_states[m_stateIndex].m_editorState.selectedObjectID = m_selectedObjects._activeIndex + 1;
