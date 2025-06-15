@@ -36,10 +36,10 @@ void RenderPipelineGammaCorrectionStage::create(Device* device, scene::Scene::Sc
     pipeline->setPrimitiveTopology(renderer::PrimitiveTopology::PrimitiveTopology_TriangleList);
     pipeline->setFrontFace(renderer::FrontFace::FrontFace_Clockwise);
     pipeline->setCullMode(renderer::CullMode::CullMode_Back);
-    pipeline->setColorMask(renderer::ColorMask::ColorMask_All);
     pipeline->setDepthCompareOp(renderer::CompareOperation::CompareOp_Always);
     pipeline->setDepthWrite(false);
     pipeline->setDepthTest(false);
+    pipeline->setColorMask(0, renderer::ColorMask::ColorMask_All);
 
     m_pipeline.push_back(pipeline);
 

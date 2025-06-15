@@ -38,7 +38,6 @@ void RenderPipelineDepthOITStage::create(Device* device, scene::Scene::SceneData
         pipeline->setPrimitiveTopology(renderer::PrimitiveTopology::PrimitiveTopology_TriangleList);
         pipeline->setFrontFace(renderer::FrontFace::FrontFace_Clockwise);
         pipeline->setCullMode(renderer::CullMode::CullMode_None);
-        pipeline->setColorMask(renderer::ColorMask::ColorMask_All);
 #if ENABLE_REVERSED_Z
         pipeline->setDepthCompareOp(renderer::CompareOperation::CompareOp_GreaterOrEqual);
 #else
@@ -47,9 +46,10 @@ void RenderPipelineDepthOITStage::create(Device* device, scene::Scene::SceneData
         pipeline->setDepthTest(true);
         pipeline->setDepthWrite(false);
 
-        pipeline->setBlendEnable(true);
-        pipeline->setColorBlendFactor(renderer::BlendFactor::BlendFactor_One, renderer::BlendFactor::BlendFactor_One);
-        pipeline->setColorBlendOp(renderer::BlendOperation::BlendOp_Add);
+        pipeline->setBlendEnable(0, true);
+        pipeline->setColorMask(0, renderer::ColorMask::ColorMask_All);
+        pipeline->setColorBlendFactor(0, renderer::BlendFactor::BlendFactor_One, renderer::BlendFactor::BlendFactor_One);
+        pipeline->setColorBlendOp(0, renderer::BlendOperation::BlendOp_Add);
         //pipeline->setColorBlendFactor(renderer::BlendFactor::BlendFactor_Zero, renderer::BlendFactor::BlendFactor_OneMinusSrcColor);
         //pipeline->setColorBlendOp(renderer::BlendOperation::BlendOp_Add);
         //pipeline->setAlphaBlendFactor(renderer::BlendFactor::BlendFactor_One, renderer::BlendFactor::BlendFactor_One);
@@ -71,7 +71,6 @@ void RenderPipelineDepthOITStage::create(Device* device, scene::Scene::SceneData
         pipeline->setPrimitiveTopology(renderer::PrimitiveTopology::PrimitiveTopology_TriangleList);
         pipeline->setFrontFace(renderer::FrontFace::FrontFace_Clockwise);
         pipeline->setCullMode(renderer::CullMode::CullMode_None);
-        pipeline->setColorMask(renderer::ColorMask::ColorMask_All);
 #if ENABLE_REVERSED_Z
         pipeline->setDepthCompareOp(renderer::CompareOperation::CompareOp_GreaterOrEqual);
 #else
@@ -79,6 +78,7 @@ void RenderPipelineDepthOITStage::create(Device* device, scene::Scene::SceneData
 #endif
         pipeline->setDepthWrite(true);
         pipeline->setDepthTest(true);
+        pipeline->setColorMask(0, renderer::ColorMask::ColorMask_All);
 
         m_pipeline[Pass::StochasticDepth] = pipeline;
     }
@@ -96,7 +96,6 @@ void RenderPipelineDepthOITStage::create(Device* device, scene::Scene::SceneData
         pipeline->setPrimitiveTopology(renderer::PrimitiveTopology::PrimitiveTopology_TriangleList);
         pipeline->setFrontFace(renderer::FrontFace::FrontFace_Clockwise);
         pipeline->setCullMode(renderer::CullMode::CullMode_None);
-        pipeline->setColorMask(renderer::ColorMask::ColorMask_All);
 #if ENABLE_REVERSED_Z
         pipeline->setDepthCompareOp(renderer::CompareOperation::CompareOp_Equal);
 #else
@@ -104,9 +103,11 @@ void RenderPipelineDepthOITStage::create(Device* device, scene::Scene::SceneData
 #endif
         pipeline->setDepthWrite(false);
         pipeline->setDepthTest(true);
-        pipeline->setBlendEnable(true);
-        pipeline->setColorBlendFactor(renderer::BlendFactor::BlendFactor_One, renderer::BlendFactor::BlendFactor_One);
-        pipeline->setColorBlendOp(renderer::BlendOperation::BlendOp_Add);
+
+        pipeline->setBlendEnable(0, true);
+        pipeline->setColorMask(0, renderer::ColorMask::ColorMask_All);
+        pipeline->setColorBlendFactor(0, renderer::BlendFactor::BlendFactor_One, renderer::BlendFactor::BlendFactor_One);
+        pipeline->setColorBlendOp(0, renderer::BlendOperation::BlendOp_Add);
 
         m_pipeline[Pass::StochasticTotalAccumulateColor] = pipeline;
     }
@@ -124,10 +125,10 @@ void RenderPipelineDepthOITStage::create(Device* device, scene::Scene::SceneData
         pipeline->setPrimitiveTopology(renderer::PrimitiveTopology::PrimitiveTopology_TriangleList);
         pipeline->setFrontFace(renderer::FrontFace::FrontFace_Clockwise);
         pipeline->setCullMode(renderer::CullMode::CullMode_Back);
-        pipeline->setColorMask(renderer::ColorMask::ColorMask_All);
         pipeline->setDepthCompareOp(renderer::CompareOperation::CompareOp_Always);
         pipeline->setDepthWrite(false);
         pipeline->setDepthTest(false);
+        pipeline->setColorMask(0, renderer::ColorMask::ColorMask_All);
 
         m_pipeline[Pass::StochasticTotalFinal] = pipeline;
     }

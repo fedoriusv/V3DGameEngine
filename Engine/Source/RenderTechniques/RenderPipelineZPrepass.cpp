@@ -40,7 +40,6 @@ void RenderPipelineZPrepassStage::create(Device* device, scene::Scene::SceneData
    m_depthPipeline->setPrimitiveTopology(renderer::PrimitiveTopology::PrimitiveTopology_TriangleList);
    m_depthPipeline->setFrontFace(renderer::FrontFace::FrontFace_Clockwise);
    m_depthPipeline->setCullMode(renderer::CullMode::CullMode_Back);
-   m_depthPipeline->setColorMask(renderer::ColorMask::ColorMask_All);
 #if ENABLE_REVERSED_Z
    m_depthPipeline->setDepthCompareOp(renderer::CompareOperation::CompareOp_GreaterOrEqual);
 #else
@@ -48,6 +47,7 @@ void RenderPipelineZPrepassStage::create(Device* device, scene::Scene::SceneData
 #endif
     m_depthPipeline->setDepthWrite(true);
     m_depthPipeline->setDepthTest(true);
+   m_depthPipeline->setColorMask(0, renderer::ColorMask::ColorMask_All);
 }
 
 void RenderPipelineZPrepassStage::destroy(Device* device, scene::Scene::SceneData& state)

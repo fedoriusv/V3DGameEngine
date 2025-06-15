@@ -36,7 +36,6 @@ void RenderPipelineMSOITStage::create(Device* device, scene::Scene::SceneData& s
         pipeline->setPrimitiveTopology(renderer::PrimitiveTopology::PrimitiveTopology_TriangleList);
         pipeline->setFrontFace(renderer::FrontFace::FrontFace_Clockwise);
         pipeline->setCullMode(renderer::CullMode::CullMode_None);
-        pipeline->setColorMask(renderer::ColorMask::ColorMask_All);
 #if ENABLE_REVERSED_Z
         pipeline->setDepthCompareOp(renderer::CompareOperation::CompareOp_GreaterOrEqual);
 #else
@@ -44,6 +43,7 @@ void RenderPipelineMSOITStage::create(Device* device, scene::Scene::SceneData& s
 #endif
         pipeline->setDepthTest(false); //is missing here!! need MSAA
         pipeline->setDepthWrite(false);
+        pipeline->setColorMask(0, renderer::ColorMask::ColorMask_All);
 
         m_pipeline[Pass::MultiSamplePass] = pipeline;
     }
@@ -60,9 +60,9 @@ void RenderPipelineMSOITStage::create(Device* device, scene::Scene::SceneData& s
         pipeline->setPrimitiveTopology(renderer::PrimitiveTopology::PrimitiveTopology_TriangleList);
         pipeline->setFrontFace(renderer::FrontFace::FrontFace_Clockwise);
         pipeline->setCullMode(renderer::CullMode::CullMode_Back);
-        pipeline->setColorMask(renderer::ColorMask::ColorMask_All);
         pipeline->setDepthCompareOp(renderer::CompareOperation::CompareOp_Always);
         pipeline->setDepthWrite(false);
+        pipeline->setColorMask(0, renderer::ColorMask::ColorMask_All);
         pipeline->setDepthTest(false);
 
         m_pipeline[Pass::ResolvePass] = pipeline;

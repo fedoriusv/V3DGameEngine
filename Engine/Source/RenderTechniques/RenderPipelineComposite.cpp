@@ -36,10 +36,10 @@ void RenderPipelineCompositionStage::create(Device* device, scene::Scene::SceneD
     pipeline->setPrimitiveTopology(renderer::PrimitiveTopology::PrimitiveTopology_TriangleList);
     pipeline->setFrontFace(renderer::FrontFace::FrontFace_Clockwise);
     pipeline->setCullMode(renderer::CullMode::CullMode_Back);
-    pipeline->setColorMask(renderer::ColorMask::ColorMask_All);
     pipeline->setDepthCompareOp(renderer::CompareOperation::CompareOp_Always);
     pipeline->setDepthWrite(false);
     pipeline->setDepthTest(false);
+    pipeline->setColorMask(0, renderer::ColorMask::ColorMask_All);
 
     m_pipeline.push_back(pipeline);
 
@@ -122,8 +122,9 @@ void RenderPipelineCompositionStage::createRenderTarget(Device* device, scene::S
         },
         {
             renderer::TransitionOp::TransitionOp_Undefined, renderer::TransitionOp::TransitionOp_ColorAttachment
-        }
-    );
+        });
+
+    data.m_globalResources.bind("composition_target", composition);
 }
 
 void RenderPipelineCompositionStage::destroyRenderTarget(Device* device, scene::Scene::SceneData& data)

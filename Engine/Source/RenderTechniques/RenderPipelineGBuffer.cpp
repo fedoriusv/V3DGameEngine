@@ -42,7 +42,6 @@ void RenderPipelineGBufferStage::create(Device* device, scene::Scene::SceneData&
         pipeline->setPrimitiveTopology(renderer::PrimitiveTopology::PrimitiveTopology_TriangleList);
         pipeline->setFrontFace(renderer::FrontFace::FrontFace_Clockwise);
         pipeline->setCullMode(renderer::CullMode::CullMode_Back);
-        pipeline->setColorMask(renderer::ColorMask::ColorMask_All);
 #if ENABLE_REVERSED_Z
         pipeline->setDepthCompareOp(renderer::CompareOperation::CompareOp_GreaterOrEqual);
 #else
@@ -50,6 +49,10 @@ void RenderPipelineGBufferStage::create(Device* device, scene::Scene::SceneData&
 #endif
         pipeline->setDepthTest(true);
         pipeline->setDepthWrite(false);
+        pipeline->setColorMask(0, renderer::ColorMask::ColorMask_All);
+        pipeline->setColorMask(1, renderer::ColorMask::ColorMask_All);
+        pipeline->setColorMask(2, renderer::ColorMask::ColorMask_All);
+        pipeline->setColorMask(3, renderer::ColorMask::ColorMask_All);
 
         m_pipeline.emplace_back(pipeline);
     }

@@ -804,12 +804,12 @@ bool ImGuiWidgetHandler::createPipeline(const renderer::RenderPassDesc& renderpa
         m_UIPipeline->setFrontFace(renderer::FrontFace::FrontFace_CounterClockwise);
         m_UIPipeline->setCullMode(renderer::CullMode::CullMode_None);
         m_UIPipeline->setPolygonMode(renderer::PolygonMode::PolygonMode_Fill);
-        m_UIPipeline->setColorMask(renderer::ColorMask::ColorMask_All);
-        m_UIPipeline->setBlendEnable(true);
-        m_UIPipeline->setColorBlendFactor(renderer::BlendFactor::BlendFactor_SrcAlpha, renderer::BlendFactor::BlendFactor_OneMinusSrcAlpha);
-        m_UIPipeline->setColorBlendOp(renderer::BlendOperation::BlendOp_Add);
-        m_UIPipeline->setAlphaBlendFactor(renderer::BlendFactor::BlendFactor_OneMinusSrcAlpha, renderer::BlendFactor::BlendFactor_Zero);
-        m_UIPipeline->setAlphaBlendOp(renderer::BlendOperation::BlendOp_Add);
+        m_UIPipeline->setColorMask(0, renderer::ColorMask::ColorMask_All);
+        m_UIPipeline->setBlendEnable(0, true);
+        m_UIPipeline->setColorBlendFactor(0, renderer::BlendFactor::BlendFactor_SrcAlpha, renderer::BlendFactor::BlendFactor_OneMinusSrcAlpha);
+        m_UIPipeline->setColorBlendOp(0, renderer::BlendOperation::BlendOp_Add);
+        m_UIPipeline->setAlphaBlendFactor(0, renderer::BlendFactor::BlendFactor_OneMinusSrcAlpha, renderer::BlendFactor::BlendFactor_Zero);
+        m_UIPipeline->setAlphaBlendOp(0, renderer::BlendOperation::BlendOp_Add);
         m_UIPipeline->setDepthWrite(false);
         m_UIPipeline->setDepthTest(false);
     }

@@ -38,10 +38,10 @@ void RenderPipelineOutlineStage::create(Device* device, scene::Scene::SceneData&
    m_pipeline->setPrimitiveTopology(renderer::PrimitiveTopology::PrimitiveTopology_TriangleList);
    m_pipeline->setFrontFace(renderer::FrontFace::FrontFace_Clockwise);
    m_pipeline->setCullMode(renderer::CullMode::CullMode_Back);
-   m_pipeline->setColorMask(renderer::ColorMask::ColorMask_All);
    m_pipeline->setDepthCompareOp(renderer::CompareOperation::CompareOp_Always);
    m_pipeline->setDepthWrite(false);
    m_pipeline->setDepthTest(false);
+   m_pipeline->setColorMask(0, renderer::ColorMask::ColorMask_All);
 
     m_sampler = new renderer::SamplerState(device, renderer::SamplerFilter::SamplerFilter_Trilinear, renderer::SamplerAnisotropic::SamplerAnisotropic_4x);
     m_sampler->setWrap(renderer::SamplerWrap::TextureWrap_ClampToBorder);

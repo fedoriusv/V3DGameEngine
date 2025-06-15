@@ -36,7 +36,6 @@ void RenderPipelineSOITStage::create(Device* device, scene::Scene::SceneData& st
         pipeline->setPrimitiveTopology(renderer::PrimitiveTopology::PrimitiveTopology_TriangleList);
         pipeline->setFrontFace(renderer::FrontFace::FrontFace_Clockwise);
         pipeline->setCullMode(renderer::CullMode::CullMode_None);
-        pipeline->setColorMask(renderer::ColorMask::ColorMask_All);
 #if ENABLE_REVERSED_Z
         pipeline->setDepthCompareOp(renderer::CompareOperation::CompareOp_GreaterOrEqual);
 #else
@@ -45,9 +44,13 @@ void RenderPipelineSOITStage::create(Device* device, scene::Scene::SceneData& st
         pipeline->setDepthTest(true);
         pipeline->setDepthWrite(false);
 
-        pipeline->setBlendEnable(true);
-        pipeline->setColorBlendFactor(renderer::BlendFactor::BlendFactor_SrcAlpha, renderer::BlendFactor::BlendFactor_OneMinusSrcAlpha);
-        pipeline->setColorBlendOp(renderer::BlendOperation::BlendOp_Add);
+        for (u32 i = 0; i < 4; ++i)
+        {
+            pipeline->setBlendEnable(i, true);
+            pipeline->setColorMask(i, renderer::ColorMask::ColorMask_All);
+            pipeline->setColorBlendFactor(i, renderer::BlendFactor::BlendFactor_SrcAlpha, renderer::BlendFactor::BlendFactor_OneMinusSrcAlpha);
+            pipeline->setColorBlendOp(i, renderer::BlendOperation::BlendOp_Add);
+        }
 
         m_pipeline[Pass::MultiSamplePass] = pipeline;
     }
@@ -64,14 +67,14 @@ void RenderPipelineSOITStage::create(Device* device, scene::Scene::SceneData& st
         pipeline->setPrimitiveTopology(renderer::PrimitiveTopology::PrimitiveTopology_TriangleList);
         pipeline->setFrontFace(renderer::FrontFace::FrontFace_Clockwise);
         pipeline->setCullMode(renderer::CullMode::CullMode_Back);
-        pipeline->setColorMask(renderer::ColorMask::ColorMask_All);
         pipeline->setDepthCompareOp(renderer::CompareOperation::CompareOp_Always);
         pipeline->setDepthWrite(false);
         pipeline->setDepthTest(false);
 
-        pipeline->setBlendEnable(true);
-        pipeline->setColorBlendFactor(renderer::BlendFactor::BlendFactor_One, renderer::BlendFactor::BlendFactor_OneMinusSrcAlpha);
-        pipeline->setColorBlendOp(renderer::BlendOperation::BlendOp_Add);
+        pipeline->setBlendEnable(0, true);
+        pipeline->setColorMask(0, renderer::ColorMask::ColorMask_All);
+        pipeline->setColorBlendFactor(0, renderer::BlendFactor::BlendFactor_One, renderer::BlendFactor::BlendFactor_OneMinusSrcAlpha);
+        pipeline->setColorBlendOp(0, renderer::BlendOperation::BlendOp_Add);
 
         m_pipeline[Pass::ResolvePass] = pipeline;
     }
@@ -124,6 +127,11 @@ void RenderPipelineSOITStage::execute(Device* device, scene::Scene::SceneData& s
                 constantBuffer.tint = draw.m_tint;
                 constantBuffer.objectID = draw.m_objectID;
 
+
+                ObjectHandle noise_blue = state.m_globalResources.get("noise_blue");
+                ASSERT(noise_blue.isValid(), "must be valid");
+                renderer::Texture2D* noise_blue_texture = objectFromHandle<renderer::Texture2D>(noise_blue);
+
                 state.m_renderState.m_cmdList->bindDescriptorSet(1,
                     {
                         renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ &constantBuffer, 0, sizeof(constantBuffer)}, 1),
@@ -131,6 +139,7 @@ void RenderPipelineSOITStage::execute(Device* device, scene::Scene::SceneData& s
                         renderer::Descriptor(renderer::TextureView(draw.m_albedo), 3),
                         renderer::Descriptor(renderer::TextureView(draw.m_normals), 4),
                         renderer::Descriptor(renderer::TextureView(draw.m_material), 5),
+                        renderer::Descriptor(renderer::TextureView(noise_blue_texture), 6),
                     });
 
                 renderer::GeometryBufferDesc desc(draw.m_IdxBuffer, 0, draw.m_VtxBuffer, 0, sizeof(VertexFormatStandard), 0);
