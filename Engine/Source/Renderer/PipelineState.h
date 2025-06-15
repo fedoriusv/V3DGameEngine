@@ -332,6 +332,8 @@ namespace renderer
                 return true;
             }
 
+#define USE_MULTI_COLOR_BLEND_ATTACMENTS 1
+
 #if USE_MULTI_COLOR_BLEND_ATTACMENTS
             std::array<ColorBlendAttachmentState, k_maxColorAttachments>    _colorBlendAttachments;
 #else
@@ -506,24 +508,24 @@ namespace renderer
         */
         bool isDepthWriteEnable() const;
 
-        void setBlendEnable(bool enable);
-        void setColorBlendFactor(BlendFactor src, BlendFactor dst);
-        void setColorBlendOp(BlendOperation op);
-        void setAlphaBlendFactor(BlendFactor src, BlendFactor dst);
-        void setAlphaBlendOp(BlendOperation op);
+        void setBlendEnable(u32 index, bool enable);
+        void setColorBlendFactor(u32 index, BlendFactor src, BlendFactor dst);
+        void setColorBlendOp(u32 index,BlendOperation op);
+        void setAlphaBlendFactor(u32 index, BlendFactor src, BlendFactor dst);
+        void setAlphaBlendOp(u32 index, BlendOperation op);
 
-        bool isBlendEnable() const;
-        BlendFactor getSrcColorBlendFactor() const;
-        BlendFactor getDstColorBlendFactor() const;
-        BlendOperation getColorBlendOp() const;
-        BlendFactor getSrcAlphaBlendFactor() const;
-        BlendFactor getDstAlphaBlendFactor() const;
-        BlendOperation getAlphaBlendOp() const;
+        bool isBlendEnable(u32 index) const;
+        BlendFactor getSrcColorBlendFactor(u32 index) const;
+        BlendFactor getDstColorBlendFactor(u32 index) const;
+        BlendOperation getColorBlendOp(u32 index) const;
+        BlendFactor getSrcAlphaBlendFactor(u32 index) const;
+        BlendFactor getDstAlphaBlendFactor(u32 index) const;
+        BlendOperation getAlphaBlendOp(u32 index) const;
 
-        void setColorMask(ColorMaskFlags colormask);
+        void setColorMask(u32 index, ColorMaskFlags colormask);
         void setPrimitiveTopology(PrimitiveTopology primitiveTopology);
 
-        ColorMaskFlags getColorMask() const;
+        ColorMaskFlags getColorMask(u32 index) const;
         PrimitiveTopology getPrimitiveTopology() const;
 
     public:
@@ -656,76 +658,76 @@ namespace renderer
         return m_pipelineStateDesc._depthStencilState._depthWriteEnable;
     }
 
-    inline void GraphicsPipelineState::setBlendEnable(bool enable)
+    inline void GraphicsPipelineState::setBlendEnable(u32 index, bool enable)
     {
-        m_pipelineStateDesc._blendState._colorBlendAttachments[0]._colorBlendEnable = enable;
+        m_pipelineStateDesc._blendState._colorBlendAttachments[index]._colorBlendEnable = enable;
     }
 
-    inline void GraphicsPipelineState::setColorBlendFactor(BlendFactor src, BlendFactor dst)
+    inline void GraphicsPipelineState::setColorBlendFactor(u32 index, BlendFactor src, BlendFactor dst)
     {
-        m_pipelineStateDesc._blendState._colorBlendAttachments[0]._srcBlendFacor = src;
-        m_pipelineStateDesc._blendState._colorBlendAttachments[0]._dscBlendFacor = dst;
+        m_pipelineStateDesc._blendState._colorBlendAttachments[index]._srcBlendFacor = src;
+        m_pipelineStateDesc._blendState._colorBlendAttachments[index]._dscBlendFacor = dst;
     }
 
-    inline void GraphicsPipelineState::setColorBlendOp(BlendOperation op)
+    inline void GraphicsPipelineState::setColorBlendOp(u32 index, BlendOperation op)
     {
-        m_pipelineStateDesc._blendState._colorBlendAttachments[0]._blendOp = op;
+        m_pipelineStateDesc._blendState._colorBlendAttachments[index]._blendOp = op;
     }
 
-    inline void GraphicsPipelineState::setAlphaBlendFactor(BlendFactor src, BlendFactor dst)
+    inline void GraphicsPipelineState::setAlphaBlendFactor(u32 index, BlendFactor src, BlendFactor dst)
     {
-        m_pipelineStateDesc._blendState._colorBlendAttachments[0]._srcAlphaBlendFacor = src;
-        m_pipelineStateDesc._blendState._colorBlendAttachments[0]._dscAlphaBlendFacor = dst;
+        m_pipelineStateDesc._blendState._colorBlendAttachments[index]._srcAlphaBlendFacor = src;
+        m_pipelineStateDesc._blendState._colorBlendAttachments[index]._dscAlphaBlendFacor = dst;
     }
 
-    inline void GraphicsPipelineState::setAlphaBlendOp(BlendOperation op)
+    inline void GraphicsPipelineState::setAlphaBlendOp(u32 index, BlendOperation op)
     {
-        m_pipelineStateDesc._blendState._colorBlendAttachments[0]._alphaBlendOp = op;
+        m_pipelineStateDesc._blendState._colorBlendAttachments[index]._alphaBlendOp = op;
     }
 
-    inline bool GraphicsPipelineState::isBlendEnable() const
+    inline bool GraphicsPipelineState::isBlendEnable(u32 index) const
     {
-        return m_pipelineStateDesc._blendState._colorBlendAttachments[0]._colorBlendEnable;
+        return m_pipelineStateDesc._blendState._colorBlendAttachments[index]._colorBlendEnable;
     }
 
-    inline BlendFactor GraphicsPipelineState::getSrcColorBlendFactor() const
+    inline BlendFactor GraphicsPipelineState::getSrcColorBlendFactor(u32 index) const
     {
-        return m_pipelineStateDesc._blendState._colorBlendAttachments[0]._srcBlendFacor;
+        return m_pipelineStateDesc._blendState._colorBlendAttachments[index]._srcBlendFacor;
     }
 
-    inline BlendFactor GraphicsPipelineState::getDstColorBlendFactor() const
+    inline BlendFactor GraphicsPipelineState::getDstColorBlendFactor(u32 index) const
     {
-        return m_pipelineStateDesc._blendState._colorBlendAttachments[0]._dscBlendFacor;
+        return m_pipelineStateDesc._blendState._colorBlendAttachments[index]._dscBlendFacor;
     }
 
-    inline BlendOperation GraphicsPipelineState::getColorBlendOp() const
+    inline BlendOperation GraphicsPipelineState::getColorBlendOp(u32 index) const
     {
-        return m_pipelineStateDesc._blendState._colorBlendAttachments[0]._blendOp;
+        return m_pipelineStateDesc._blendState._colorBlendAttachments[index]._blendOp;
     }
 
-    inline BlendFactor GraphicsPipelineState::getSrcAlphaBlendFactor() const
+    inline BlendFactor GraphicsPipelineState::getSrcAlphaBlendFactor(u32 index) const
     {
-        return m_pipelineStateDesc._blendState._colorBlendAttachments[0]._srcAlphaBlendFacor;
+        return m_pipelineStateDesc._blendState._colorBlendAttachments[index]._srcAlphaBlendFacor;
     }
 
-    inline BlendFactor GraphicsPipelineState::getDstAlphaBlendFactor() const
+    inline BlendFactor GraphicsPipelineState::getDstAlphaBlendFactor(u32 index) const
     {
-        return m_pipelineStateDesc._blendState._colorBlendAttachments[0]._dscAlphaBlendFacor;
+        return m_pipelineStateDesc._blendState._colorBlendAttachments[index]._dscAlphaBlendFacor;
     }
 
-    inline BlendOperation GraphicsPipelineState::getAlphaBlendOp() const
+    inline BlendOperation GraphicsPipelineState::getAlphaBlendOp(u32 index) const
     {
-        return m_pipelineStateDesc._blendState._colorBlendAttachments[0]._alphaBlendOp;
+        return m_pipelineStateDesc._blendState._colorBlendAttachments[index]._alphaBlendOp;
     }
 
-    inline void GraphicsPipelineState::setColorMask(ColorMaskFlags colormask)
+    inline void GraphicsPipelineState::setColorMask(u32 index, ColorMaskFlags colormask)
     {
-        m_pipelineStateDesc._blendState._colorBlendAttachments[0]._colorWriteMask = colormask;
+        m_pipelineStateDesc._blendState._colorBlendAttachments[index]._colorWriteMask = colormask;
     }
 
-    inline ColorMaskFlags GraphicsPipelineState::getColorMask() const
+    inline ColorMaskFlags GraphicsPipelineState::getColorMask(u32 index) const
     {
-        return m_pipelineStateDesc._blendState._colorBlendAttachments[0]._colorWriteMask;
+        return m_pipelineStateDesc._blendState._colorBlendAttachments[index]._colorWriteMask;
     }
 
     inline PrimitiveTopology GraphicsPipelineState::getPrimitiveTopology() const
