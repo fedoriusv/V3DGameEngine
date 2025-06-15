@@ -247,6 +247,8 @@ if (IMGUI_SOURCE)
     file(GLOB IMGUIZMO_SOURCES ${SOURCE_DIR}/ThirdParty/imguizmo/*.h ${SOURCE_DIR}/ThirdParty/imguizmo/*.cpp)
     file(GLOB UI_IMGUI_SOURCES ${SOURCE_DIR}/UI/ImGui/*.h ${SOURCE_DIR}/UI/ImGui/*.cpp)
 endif()
+file(GLOB SHADER_SOURCES Engine/Data/Shaders/*.h Engine/Data/Shaders/*.hlsli Engine/Data/Shaders/*.hlsl)
+set_source_files_properties(${SHADER_SOURCES} PROPERTIES LANGUAGE HLSL)
 
 ##############################################################
 #Filters
@@ -285,6 +287,7 @@ if (IMGUI_SOURCE)
     source_group("ThirdParty\\imguizmo" FILES ${IMGUIZMO_SOURCES})
     source_group("UI\\ImGui" FILES ${UI_IMGUI_SOURCES})
 endif()
+source_group("Data\\Shaders" FILES ${SHADER_SOURCES})
 
 add_library(${ENGINE_NAME} STATIC
     ${MAIN_HEADERS} ${MAIN_SOURCES}
@@ -313,7 +316,8 @@ add_library(${ENGINE_NAME} STATIC
     $<$<BOOL:BUILD_VULKAN_SDK>:${VULKAN_HEADERS} ${VULKAN_SOURCES} ${RESOURCE_SPIRV_HEADERS} ${RESOURCE_SPIRV_SOURCES}>
     $<$<BOOL:BUILD_DIRECTX_SDK>:${DIRECTX_HEADERS} ${DIRECTX_SOURCES}>
     $<$<BOOL:IMGUI_SOURCE>:${IMGUI_SOURCES} ${IMGUIZMO_SOURCES} ${UI_IMGUI_SOURCES}>
-    )
+    ${SHADER_SOURCES}
+)
 
 target_include_directories(${ENGINE_NAME} BEFORE 
     PRIVATE ${LIB_INCLUDE_DIRECTORY}
