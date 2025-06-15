@@ -12,10 +12,15 @@ struct Viewport
     float4x4 prevViewMatrix;
     float4   cameraPosition;
     float2   viewportSize;
-    float2   cursorPosition;
+    float2   clipNearFar;
     float4   random;
+    float2   cursorPosition;
     uint64_t time;
-    float2   _unused;
 };
+
+float linearize_depth(in float d, in float zNear, in float zFar)
+{
+    return zNear * zFar / (zNear + d * (zFar - zNear));
+}
 
 #endif //_GLOBAL_HLSL_

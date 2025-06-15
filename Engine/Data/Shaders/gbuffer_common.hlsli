@@ -33,10 +33,10 @@ typedef VS_GBUFFER_STANDARD_OUTPUT PS_GBUFFER_STANDARD_INPUT;
 
 struct PS_GBUFFER_STRUCT
 {
-    [[vk::location(0)]] float4 Albedo   : SV_TARGET0; // RGB = Albedo, A = unused
-    [[vk::location(1)]] float4 Normal   : SV_TARGET1; // RGB = Normal (world), A = unused
-    [[vk::location(2)]] float4 Material : SV_TARGET2; // R = Roughness, G = Metalness, B = objectID, A = unused
-    [[vk::location(3)]] float2 Velocity : SV_TARGET3; // RG = Velocity
+    [[vk::location(0)]] float4 BaseColor : SV_TARGET0; // RGB = BaseColor, A = unused
+    [[vk::location(1)]] float4 Normal    : SV_TARGET1; // RGB = Normal (world), A = unused
+    [[vk::location(2)]] float4 Material  : SV_TARGET2; // R = Roughness, G = Metalness, B = objectID, A = unused
+    [[vk::location(3)]] float2 Velocity  : SV_TARGET3; // RG = Velocity
 };
 
 ///////////////////////////////////////////////////////////////////////////////////////
@@ -98,7 +98,7 @@ PS_GBUFFER_STRUCT _gbuffer_standard_ps(
     float3x3 TBN = float3x3(T, B, N);
     normal = mul(TBN, normalize(normal));
 
-    Output.Albedo = float4(albedo * model.tint.rgb, 1.0);
+    Output.BaseColor = float4(albedo * model.tint.rgb, 1.0);
     Output.Normal = float4(normal * 0.5 + 0.5, 0.0);
     Output.Material = float4(roughness, metalness, model.objectID, 0.0);
     Output.Velocity = velocity;
@@ -131,7 +131,7 @@ PS_GBUFFER_STRUCT _gbuffer_standard_alpha_ps(
     float3x3 TBN = float3x3(T, B, N);
     normal = mul(TBN, normalize(normal));
 
-    Output.Albedo = float4(albedo * model.tint.rgb, model.tint.a);
+    Output.BaseColor = float4(albedo * model.tint.rgb, model.tint.a);
     Output.Normal = float4(normal * 0.5 + 0.5, 0.0);
     Output.Material = float4(roughness, metalness, model.objectID, 0.0);
     Output.Velocity = velocity;
