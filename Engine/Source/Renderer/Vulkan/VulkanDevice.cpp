@@ -1627,7 +1627,7 @@ void VulkanCmdList::bindUAV(u32 set, u32 slot, Texture* texture)
 
     ASSERT(texture, "nullptr");
     VulkanImage* vkImage = static_cast<VulkanImage*>(objectFromHandle<RenderTexture>(texture->getTextureHandle()));
-    m_pendingRenderState.bind(BindingType::RWTexture, set, slot, 0, vkImage, {});
+    m_pendingRenderState.bind(BindingType::RWTexture, set, slot, 0, vkImage, RenderTexture::makeSubresource(0, vkImage->getArrayLayers(), 0, 1));
 }
 
 void VulkanCmdList::bindSampler(u32 set, u32 slot, const SamplerState& sampler)
@@ -1892,7 +1892,6 @@ void VulkanCmdList::clear(Texture* texture, const color::Color& color)
 #if FRAME_PROFILER_INTERNAL
     RenderFrameProfiler::StackProfiler stackFrameProfiler(g_CPUProfiler, m_concurrencySlot, RenderFrameProfiler::FrameCounter::FrameTime);
 #endif //FRAME_PROFILER_INTERNAL
-
     VulkanImage* image = nullptr;
     VulkanCommandBuffer* cmdBuffer = VulkanCmdList::acquireAndStartCommandBuffer(CommandTargetType::CmdDrawBuffer);
     if (texture->hasUsageFlag(TextureUsage::TextureUsage_Backbuffer))
@@ -1904,6 +1903,9 @@ void VulkanCmdList::clear(Texture* texture, const color::Color& color)
     {
         image = static_cast<VulkanImage*>(objectFromHandle<RenderTexture>(texture->getTextureHandle()));
     }
+
+    m_pendingRenderState.flushDebugMarkers(cmdBuffer);
+
     ASSERT(image, "nullptr");
     image->clear(cmdBuffer, color);
 }
@@ -1919,6 +1921,9 @@ void VulkanCmdList::clear(Texture* texture, f32 depth, u32 stencil)
 
     VulkanCommandBuffer* cmdBuffer = VulkanCmdList::acquireAndStartCommandBuffer(CommandTargetType::CmdDrawBuffer);
     VulkanImage* image = static_cast<VulkanImage*>(objectFromHandle<RenderTexture>(texture->getTextureHandle()));
+
+    m_pendingRenderState.flushDebugMarkers(cmdBuffer);
+
     ASSERT(image, "nullptr");
     image->clear(cmdBuffer, depth, stencil);
 }

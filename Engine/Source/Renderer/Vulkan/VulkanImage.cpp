@@ -905,7 +905,7 @@ VulkanImage::VulkanImage(VulkanDevice* device, VulkanMemory::VulkanMemoryAllocat
     , m_format(format)
     , m_dimension(dimension)
     , m_mipLevels(mipsLevel)
-    , m_layerLevels(layers)
+    , m_arrayLayers(layers)
     , m_samples(VK_SAMPLE_COUNT_1_BIT)
     , m_tiling(VK_IMAGE_TILING_OPTIMAL)
     , m_aspectMask(VulkanImage::getImageAspectFlags(format))
@@ -929,7 +929,7 @@ VulkanImage::VulkanImage(VulkanDevice* device, VulkanMemory::VulkanMemoryAllocat
     s_objects.insert(this);
 #endif //DEBUG_OBJECT_MEMORY
 
-    m_globalLayout.resize(1 + static_cast<u64>(m_layerLevels) * static_cast<u64>(m_mipLevels), (m_tiling == VK_IMAGE_TILING_OPTIMAL) ? VK_IMAGE_LAYOUT_UNDEFINED : VK_IMAGE_LAYOUT_PREINITIALIZED);
+    m_globalLayout.resize(1 + static_cast<u64>(m_arrayLayers) * static_cast<u64>(m_mipLevels), (m_tiling == VK_IMAGE_TILING_OPTIMAL) ? VK_IMAGE_LAYOUT_UNDEFINED : VK_IMAGE_LAYOUT_PREINITIALIZED);
 }
 
 VulkanImage::VulkanImage(VulkanDevice* device, VulkanMemory::VulkanMemoryAllocator* alloc, VkFormat format, VkExtent3D dimension, VkSampleCountFlagBits samples, u32 layers, TextureUsageFlags usage, const std::string& name) noexcept
@@ -939,7 +939,7 @@ VulkanImage::VulkanImage(VulkanDevice* device, VulkanMemory::VulkanMemoryAllocat
     , m_format(format)
     , m_dimension(dimension)
     , m_mipLevels(1)
-    , m_layerLevels(layers)
+    , m_arrayLayers(layers)
     , m_samples(samples)
     , m_tiling(VK_IMAGE_TILING_OPTIMAL)
     , m_aspectMask(VulkanImage::getImageAspectFlags(format))
@@ -991,7 +991,7 @@ VulkanImage::VulkanImage(VulkanDevice* device, VulkanMemory::VulkanMemoryAllocat
     s_objects.insert(this);
 #endif //DEBUG_OBJECT_MEMORY
 
-    m_globalLayout.resize(1 + static_cast<u64>(m_layerLevels) * static_cast<u64>(m_mipLevels), VK_IMAGE_LAYOUT_UNDEFINED);
+    m_globalLayout.resize(1 + static_cast<u64>(m_arrayLayers) * static_cast<u64>(m_mipLevels), VK_IMAGE_LAYOUT_UNDEFINED);
 }
 
 VulkanImage::~VulkanImage()
@@ -1063,12 +1063,12 @@ bool VulkanImage::create()
 
     if (hasUsageFlag(TextureUsage::TextureUsage_Write))
     {
-        imageUsage |= VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+        imageUsage |= VK_IMAGE_USAGE_TRANSFER_DST_BIT;
     }
 
     if (hasUsageFlag(TextureUsage::TextureUsage_Read))
     {
-        imageUsage |= VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+        imageUsage |= VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
     }
 
     if (hasUsageFlag(TextureUsage::TextureUsage_Storage))
@@ -1082,7 +1082,7 @@ bool VulkanImage::create()
         imageUsage |= VK_IMAGE_USAGE_STORAGE_BIT;
     }
 
-    if (m_layerLevels == 6U)
+    if (m_arrayLayers == 6U)
     {
         imageFlags |= VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
     }
@@ -1107,7 +1107,7 @@ bool VulkanImage::create()
     imageCreateInfo.format = m_format;
     imageCreateInfo.extent = m_dimension;
     imageCreateInfo.mipLevels = m_mipLevels;
-    imageCreateInfo.arrayLayers = m_layerLevels;
+    imageCreateInfo.arrayLayers = m_arrayLayers;
     imageCreateInfo.samples = m_samples;
     imageCreateInfo.tiling = m_tiling;
     imageCreateInfo.usage = imageUsage;
@@ -1118,7 +1118,7 @@ bool VulkanImage::create()
 
 #if VULKAN_DEBUG
     LOG_DEBUG("vkCreateImage: [Type %s][Size %u : %u : %u [%u]]; flags %u; usage %u; format %s", 
-        VulkanImage::imageTypeStringVK(m_type).c_str(), m_dimension.width, m_dimension.height, m_dimension.depth, m_layerLevels, imageFlags, imageUsage, VulkanImage::imageFormatStringVK(m_format).c_str());
+        VulkanImage::imageTypeStringVK(m_type).c_str(), m_dimension.width, m_dimension.height, m_dimension.depth, m_arrayLayers, imageFlags, imageUsage, VulkanImage::imageFormatStringVK(m_format).c_str());
 #endif
     VkResult result = VulkanWrapper::CreateImage(m_device.getDeviceInfo()._device, &imageCreateInfo, VULKAN_ALLOCATOR, &m_image);
     if (result != VK_SUCCESS)
@@ -1244,17 +1244,40 @@ void VulkanImage::clear(VulkanCommandBuffer* cmdBuffer, const color::Color& colo
     VkImageLayout layout = cmdBuffer->getResourceStateTracker().getLayout(this, RenderTexture::Subresource());
     if (layout == VK_IMAGE_LAYOUT_UNDEFINED || layout == VK_IMAGE_LAYOUT_PREINITIALIZED)
     {
-        layout = VulkanImage::hasUsageFlag(TextureUsage::TextureUsage_Backbuffer) ? VK_IMAGE_LAYOUT_PRESENT_SRC_KHR : VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+        if (VulkanImage::hasUsageFlag(TextureUsage::TextureUsage_Backbuffer))
+        {
+            layout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+        }
+        else if (VulkanImage::hasUsageFlag(TextureUsage::TextureUsage_Attachment))
+        {
+            layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+        }
+        else if (VulkanImage::hasUsageFlag(TextureUsage::TextureUsage_Storage))
+        {
+            layout = VK_IMAGE_LAYOUT_GENERAL;
+        }
+        else
+        {
+            ASSERT(false, "unknown layout");
+            layout = VK_IMAGE_LAYOUT_GENERAL;
+        }
     }
 
     VkPipelineStageFlags stage = VK_PIPELINE_STAGE_TRANSFER_BIT;
-    if (layout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
+    if (VulkanImage::hasUsageFlag(TextureUsage::TextureUsage_Backbuffer) || VulkanImage::hasUsageFlag(TextureUsage::TextureUsage_Attachment))
     {
-        stage |= VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+        if (layout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
+        {
+            stage |= VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+        }
+        else
+        {
+            stage |= VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+        }
     }
-    else
+    else if (VulkanImage::hasUsageFlag(TextureUsage::TextureUsage_Storage))
     {
-        stage |= VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+        stage |= VK_PIPELINE_STAGE_VERTEX_SHADER_BIT | VK_PIPELINE_STAGE_GEOMETRY_SHADER_BIT | VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
     }
 
     const VkClearColorValue* vkColor = reinterpret_cast<const VkClearColorValue*>(&color);
@@ -1291,15 +1314,15 @@ void VulkanImage::clear(VulkanCommandBuffer* cmdBuffer, f32 depth, u32 stencil)
 bool VulkanImage::upload(VulkanCommandBuffer* cmdBuffer, u32 size, const void* data)
 {
     math::Dimension3D dim(m_dimension.width, m_dimension.height, m_dimension.depth);
-    u64 calculatedSize = ImageFormat::calculateImageSize(dim, m_mipLevels, m_layerLevels, VulkanImage::convertVkImageFormatToFormat(m_format));
+    u64 calculatedSize = ImageFormat::calculateImageSize(dim, m_mipLevels, m_arrayLayers, VulkanImage::convertVkImageFormatToFormat(m_format));
     ASSERT(size == calculatedSize, "must be same");
-    return VulkanImage::internalUpload(cmdBuffer, math::Dimension3D(0, 0, 0), dim, m_layerLevels, m_mipLevels, calculatedSize, data);
+    return VulkanImage::internalUpload(cmdBuffer, math::Dimension3D(0, 0, 0), dim, m_arrayLayers, m_mipLevels, calculatedSize, data);
 }
 
 bool VulkanImage::upload(VulkanCommandBuffer* cmdBuffer, const math::Dimension3D& size, u32 layers, u32 mips, const void* data)
 {
     ASSERT(m_mipLevels == mips, "should be same");
-    ASSERT(m_layerLevels == layers, "should be same");
+    ASSERT(m_arrayLayers == layers, "should be same");
     ASSERT(m_samples == VkSampleCountFlagBits::VK_SAMPLE_COUNT_1_BIT, "wrong sample count");
 
     u64 calculatedSize = ImageFormat::calculateImageSize(size, mips, layers, VulkanImage::convertVkImageFormatToFormat(m_format));
@@ -1309,7 +1332,7 @@ bool VulkanImage::upload(VulkanCommandBuffer* cmdBuffer, const math::Dimension3D
 bool VulkanImage::upload(VulkanCommandBuffer* cmdBuffer, const math::Dimension3D& offsets, const math::Dimension3D& size, u32 layers, const void* data)
 {
     ASSERT(m_mipLevels == 1, "should be 1");
-    ASSERT(m_layerLevels == layers, "should be same");
+    ASSERT(m_arrayLayers == layers, "should be same");
     ASSERT(m_samples == VkSampleCountFlagBits::VK_SAMPLE_COUNT_1_BIT, "wrong sample count");
 
     ASSERT(size > offsets, "wrong offset");
@@ -1511,7 +1534,7 @@ RenderTexture::Subresource VulkanImage::makeVulkanImageSubresource(const VulkanI
     if (layer == k_generalLayer)
     {
         resource._baseLayer = 0;
-        resource._layers = image->m_layerLevels;
+        resource._layers = image->m_arrayLayers;
     }
 
     if (mip == k_allMipmapsLevels)
@@ -1676,7 +1699,7 @@ bool VulkanImage::createViewImage()
             imageViewCreateInfo.pNext = vkExtensions;
             imageViewCreateInfo.flags = 0;
             imageViewCreateInfo.image = m_image;
-            imageViewCreateInfo.viewType = convertImageTypeToImageViewType(m_type, m_layerLevels == 6U, m_layerLevels > 1);
+            imageViewCreateInfo.viewType = convertImageTypeToImageViewType(m_type, m_arrayLayers == 6U, m_arrayLayers > 1);
             imageViewCreateInfo.format = m_format;
             imageViewCreateInfo.components = { VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A }; //TODO get components from format
             imageViewCreateInfo.subresourceRange = VulkanImage::makeImageSubresourceRangeWithAspect(this, VulkanImage::makeVulkanImageSubresource(this), VK_IMAGE_ASPECT_COLOR_BIT);
@@ -1716,7 +1739,7 @@ bool VulkanImage::createViewImage()
             imageViewCreateInfo.pNext = vkExtensions;
             imageViewCreateInfo.flags = 0;
             imageViewCreateInfo.image = m_image;
-            imageViewCreateInfo.viewType = convertImageTypeToImageViewType(m_type, m_layerLevels == 6U, m_layerLevels > 1);
+            imageViewCreateInfo.viewType = convertImageTypeToImageViewType(m_type, m_arrayLayers == 6U, m_arrayLayers > 1);
             imageViewCreateInfo.format = m_format;
             imageViewCreateInfo.components = { VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY };
             imageViewCreateInfo.subresourceRange = VulkanImage::makeImageSubresourceRangeWithAspect(this, VulkanImage::makeVulkanImageSubresource(this), VK_IMAGE_ASPECT_DEPTH_BIT);
@@ -1752,14 +1775,14 @@ bool VulkanImage::createViewImage()
 
     if (hasUsageFlag(TextureUsage::TextureUsage_Attachment))
     {
-        for (u32 layer = 0; layer < m_layerLevels; ++layer)
+        for (u32 layer = 0; layer < m_arrayLayers; ++layer)
         {
             VkImageViewCreateInfo imageViewCreateInfo = {};
             imageViewCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
             imageViewCreateInfo.pNext = vkExtensions;
             imageViewCreateInfo.flags = 0;
             imageViewCreateInfo.image = m_image;
-            imageViewCreateInfo.viewType = convertImageTypeToImageViewType(m_type, false, m_layerLevels > 1);
+            imageViewCreateInfo.viewType = convertImageTypeToImageViewType(m_type, false, m_arrayLayers > 1);
             imageViewCreateInfo.format = m_format;
             imageViewCreateInfo.components = { VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A };
             imageViewCreateInfo.subresourceRange = VulkanImage::makeImageSubresourceRange(this, VulkanImage::makeVulkanImageSubresource(this, static_cast<s32>(layer), 0));
@@ -1784,7 +1807,7 @@ bool VulkanImage::createViewImage()
                     imageViewCreateInfo.pNext = vkExtensions;
                     imageViewCreateInfo.flags = 0;
                     imageViewCreateInfo.image = m_image;
-                    imageViewCreateInfo.viewType = convertImageTypeToImageViewType(m_type, false, m_layerLevels > 1);
+                    imageViewCreateInfo.viewType = convertImageTypeToImageViewType(m_type, false, m_arrayLayers > 1);
                     imageViewCreateInfo.format = m_format;
                     imageViewCreateInfo.components = { VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A };
                     imageViewCreateInfo.subresourceRange = VulkanImage::makeImageSubresourceRange(this, VulkanImage::makeVulkanImageSubresource(this, static_cast<s32>(layer), static_cast<s32>(mip)));

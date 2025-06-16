@@ -156,16 +156,30 @@ void VulkanResourceStateTracker::prepareGlobalState(const std::function<VulkanCo
 
         if (image->m_globalLayout != globalLayouts)
         {
-            for (u32 layerIndex = 0; layerIndex < image->m_layerLevels; ++layerIndex)
+            //general layout
+            {
+                RenderTexture::Subresource resource{ 0, image->getArrayLayers(), 0, image->m_mipLevels };
+                VkImageLayout oldLayout = globalLayouts[0];
+                VkImageLayout newLayout = image->m_globalLayout[0];
+                if (oldLayout != newLayout)
+                {
+                    VulkanCommandBuffer* cmdBuffer = cmdBufferGetter();
+                    cmdBuffer->cmdPipelineBarrier(image, resource, oldLayout, newLayout);
+
+                    image->setGlobalLayout(newLayout, resource);
+                }
+            }
+
+            for (u32 layerIndex = 0; layerIndex < image->getArrayLayers(); ++layerIndex)
             {
                 for (u32 mipIndex = 0; mipIndex < image->m_mipLevels; ++mipIndex)
                 {
-                    RenderTexture::Subresource resource{ layerIndex, image->m_layerLevels, mipIndex, image->m_mipLevels };
-                    u32 index = 1 + ((resource._baseLayer + layerIndex) * image->m_mipLevels + (resource._baseMip + mipIndex));
+                    RenderTexture::Subresource resource{ layerIndex, 1, mipIndex, 1 };
+                    u32 index = 1 + (resource._baseLayer * image->m_mipLevels + resource._baseMip);
                     ASSERT(index < image->m_globalLayout.size(), "out of range");
 
-                    VkImageLayout oldLayout = image->m_globalLayout[index];
-                    VkImageLayout newLayout = globalLayouts[index];
+                    VkImageLayout oldLayout = globalLayouts[index];
+                    VkImageLayout newLayout = image->m_globalLayout[index];
                     if (oldLayout != newLayout)
                     {
                         VulkanCommandBuffer* cmdBuffer = cmdBufferGetter();

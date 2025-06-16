@@ -17,7 +17,7 @@ namespace renderer
 namespace vk
 {
 
-#define GENERAL_LAYER_FOR_SHADER_ONLY 0
+#define GENERAL_LAYER_FOR_SHADER_ONLY 1
 
 VkImageLayout VulkanTransitionState::convertTransitionStateToImageLayout(TransitionOp state)
 {

@@ -23,14 +23,14 @@ Texture::~Texture()
 }
 
 
-Texture2D::Texture2D(Device* device, TextureUsageFlags usage, Format format, const math::Dimension2D& dimension, u32 mipmaps, const std::string& name) noexcept
-    : Texture(TextureTarget::Texture2D, format, TextureSamples::TextureSamples_x1, 1, mipmaps, usage)
+Texture2D::Texture2D(Device* device, TextureUsageFlags usage, Format format, const math::Dimension2D& dimension, u32 array, u32 mipmaps, const std::string& name) noexcept
+    : Texture(TextureTarget::Texture2D, format, TextureSamples::TextureSamples_x1, array, mipmaps, usage)
     , m_device(device)
     , m_dimension(dimension)
 {
     LOG_DEBUG("Texture2D::Texture2D constructor %llx", this);
 
-    m_texture = m_device->createTexture(TextureTarget::Texture2D, format, math::Dimension3D(dimension._width, dimension._height, 1), 1, mipmaps, usage, name);
+    m_texture = m_device->createTexture(TextureTarget::Texture2D, format, math::Dimension3D(dimension._width, dimension._height, 1), array, mipmaps, usage, name);
     ASSERT(m_texture.isValid(), "nullptr");
 }
 
@@ -48,37 +48,6 @@ Texture2D::Texture2D(Device* device, TextureUsageFlags usage, Format format, con
 Texture2D::~Texture2D()
 {
     LOG_DEBUG("Texture2D::Texture2D destructor %llx", this);
-
-    ASSERT(m_texture.isValid(), "nullptr");
-    m_device->destroyTexture(m_texture);
-}
-
-
-Texture2DArray::Texture2DArray(Device* device, TextureUsageFlags usage, Format format, const math::Dimension2D& dimension, u32 layer, u32 mipmaps, const std::string& name) noexcept
-    : Texture(TextureTarget::Texture2DArray, format, TextureSamples::TextureSamples_x1, 1, mipmaps, usage)
-    , m_device(device)
-    , m_dimension(dimension)
-{
-    LOG_DEBUG("Texture2DArray::Texture2DArray constructor %llx", this);
-
-    m_texture = m_device->createTexture(TextureTarget::Texture2DArray, format, math::Dimension3D(dimension._width, dimension._height, 1), layer, mipmaps, usage, name);
-    ASSERT(m_texture.isValid(), "nullptr");
-}
-
-Texture2DArray::Texture2DArray(Device* device, TextureUsageFlags usage, Format format, const math::Dimension2D& dimension, u32 layer, TextureSamples samples, const std::string& name) noexcept
-    : Texture(TextureTarget::Texture2DArray, format, samples, 1, 1, usage)
-    , m_device(device)
-    , m_dimension(dimension)
-{
-    LOG_DEBUG("Texture2DArray::Texture2DArray constructor %llx", this);
-
-    m_texture = m_device->createTexture(TextureTarget::Texture2DArray, format, math::Dimension3D(dimension._width, dimension._height, 1), layer, samples, usage, name);
-    ASSERT(m_texture.isValid(), "nullptr");
-}
-
-Texture2DArray::~Texture2DArray()
-{
-    LOG_DEBUG("Texture2DArray::Texture2DArray destructor %llx", this);
 
     ASSERT(m_texture.isValid(), "nullptr");
     m_device->destroyTexture(m_texture);
@@ -141,6 +110,25 @@ Texture3D::Texture3D(Device* device, TextureUsageFlags usage, Format format, con
 Texture3D::~Texture3D()
 {
     LOG_DEBUG("Texture3D::Texture3D destructor %llx", this);
+
+    ASSERT(m_texture.isValid(), "nullptr");
+    m_device->destroyTexture(m_texture);
+}
+
+UnorderedAccessTexture2D::UnorderedAccessTexture2D(Device* device, TextureUsageFlags usage, Format format, const math::Dimension2D& dimension, u32 array, const std::string& name) noexcept
+    : Texture(TextureTarget::Texture2D, format, TextureSamples::TextureSamples_x1, array, 1, usage)
+    , m_device(device)
+    , m_dimension(dimension)
+{
+    LOG_DEBUG("UnorderedAccessTexture2D::UnorderedAccessTexture2D constructor %llx", this);
+
+    m_texture = m_device->createTexture(TextureTarget::Texture2D, format, math::Dimension3D(dimension._width, dimension._height, 1), array, 1, usage, name);
+    ASSERT(m_texture.isValid(), "nullptr");
+}
+
+UnorderedAccessTexture2D::~UnorderedAccessTexture2D()
+{
+    LOG_DEBUG("UnorderedAccessTexture2D::UnorderedAccessTexture2D destructor %llx", this);
 
     ASSERT(m_texture.isValid(), "nullptr");
     m_device->destroyTexture(m_texture);

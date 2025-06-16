@@ -326,7 +326,7 @@ namespace renderer
 
         TextureUsage_Sampled            = 0x4,      //Texture is shader visible, read only
         TextureUsage_Attachment         = 0x8,      //Texture is render target
-        TextureUsage_Storage            = 0x10,     //Shader storage
+        TextureUsage_Storage            = 0x10,     //Shader storage/UAV
 
         TextureUsage_Resolve            = 0x20,     //Multisample render target
         TextureUsage_GenerateMipmaps    = 0x40,     //Internaly generate mipmaps for rendertarget

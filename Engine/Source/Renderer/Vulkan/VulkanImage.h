@@ -76,6 +76,7 @@ namespace vk
         VkImageView           getImageView(const RenderTexture::Subresource& resource, VkImageAspectFlags aspects = 0) const;
         VkFormat              getFormat() const;
         VkExtent3D            getSize() const;
+        u32                   getArrayLayers() const;
 
         VulkanImage*          getResolveImage() const;
 
@@ -105,7 +106,7 @@ namespace vk
         VkFormat                                m_format;
         VkExtent3D                              m_dimension;
         u32                                     m_mipLevels;
-        u32                                     m_layerLevels;
+        u32                                     m_arrayLayers;
         VkSampleCountFlagBits                   m_samples;
         VkImageTiling                           m_tiling;
         VkImageAspectFlags                      m_aspectMask;
@@ -142,6 +143,11 @@ namespace vk
     inline VkExtent3D VulkanImage::getSize() const
     {
         return m_dimension;
+    }
+
+    inline u32 VulkanImage::getArrayLayers() const
+    {
+        return m_arrayLayers;
     }
 
     inline VulkanImage* VulkanImage::getResolveImage() const

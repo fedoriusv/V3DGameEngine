@@ -148,6 +148,8 @@ void reflectDescriptors(spirv_cross::CompilerGLSL* compiler, stream::Stream* str
         {
             switch (type.image.format)
             {
+
+            //float
             case spv::ImageFormat::ImageFormatRgba32f:
                 return renderer::Format_R32G32B32A32_SFloat;
 
@@ -157,6 +159,7 @@ void reflectDescriptors(spirv_cross::CompilerGLSL* compiler, stream::Stream* str
             case spv::ImageFormat::ImageFormatR32f:
                 return renderer::Format_R32_SFloat;
 
+            //float16
             case spv::ImageFormat::ImageFormatRgba16f:
                 return renderer::Format_R16G16B16A16_SFloat;
 
@@ -166,6 +169,47 @@ void reflectDescriptors(spirv_cross::CompilerGLSL* compiler, stream::Stream* str
             case spv::ImageFormat::ImageFormatR16f:
                 return renderer::Format_R16_SFloat;
 
+            //uint
+            case spv::ImageFormat::ImageFormatRgba32ui:
+                return renderer::Format_R32G32B32A32_UInt;
+
+            case spv::ImageFormat::ImageFormatRg32ui:
+                return renderer::Format_R32G32_UInt;
+
+            case spv::ImageFormat::ImageFormatR32ui:
+                return renderer::Format_R32_UInt;
+
+            //int
+            case spv::ImageFormat::ImageFormatRgba32i:
+                return renderer::Format_R32G32B32A32_SInt;
+
+            case spv::ImageFormat::ImageFormatRg32i:
+                return renderer::Format_R32G32_SInt;
+
+            case spv::ImageFormat::ImageFormatR32i:
+                return renderer::Format_R32_SInt;
+
+            //uint16
+            case spv::ImageFormat::ImageFormatRgba16ui:
+                return renderer::Format_R16G16B16A16_UInt;
+
+            case spv::ImageFormat::ImageFormatRg16ui:
+                return renderer::Format_R16G16_UInt;
+
+            case spv::ImageFormat::ImageFormatR16ui:
+                return renderer::Format_R16_UInt;
+
+            //int16
+            case spv::ImageFormat::ImageFormatRgba16i:
+                return renderer::Format_R16G16B16A16_SInt;
+
+            case spv::ImageFormat::ImageFormatRg16i:
+                return renderer::Format_R16G16_SInt;
+
+            case spv::ImageFormat::ImageFormatR16i:
+                return renderer::Format_R16_SInt;
+
+            //byte
             case spv::ImageFormat::ImageFormatRgba8:
                 return renderer::Format_R8G8B8A8_UNorm;
 

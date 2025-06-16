@@ -164,11 +164,11 @@ namespace renderer
         * @param TextureUsageFlags usage [required]
         * @param Format format [required]
         * @param const math::Dimension2D& dimension [required]
+        * @param u32 array [optional]
         * @param u32 mipmaps [optional]
-        * @param const void* data [optional]
         * @param const std::string& name [optional]
         */
-        explicit Texture2D(Device* device, TextureUsageFlags usage, Format format, const math::Dimension2D& dimension, u32 mipmaps = 1, const std::string& name = "") noexcept;
+        explicit Texture2D(Device* device, TextureUsageFlags usage, Format format, const math::Dimension2D& dimension, u32 array = 1, u32 mipmaps = 1, const std::string& name = "") noexcept;
 
         /**
         * @brief Texture2D constructor. Used for creating attachments
@@ -177,7 +177,6 @@ namespace renderer
         * @param Format format [required]
         * @param const math::Dimension2D& dimension [required]
         * @param u32 mipmaps [optional]
-        * @param const void* data [optional]
         * @param const std::string& name [optional]
         */
         explicit Texture2D(Device* device, TextureUsageFlags usage, Format format, const math::Dimension2D& dimension, TextureSamples samples, const std::string& name = "") noexcept;
@@ -197,69 +196,6 @@ namespace renderer
     };
 
     inline const math::Dimension2D& Texture2D::getDimension() const
-    {
-        return m_dimension;
-    }
-
-    /////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    /**
-    * @brief Texture2DArray class. Game side
-    */
-    class Texture2DArray final : public Texture
-    {
-    public:
-
-        /**
-        * @brief getDimension method.
-        * @return const math::Dimension2D& dimention of texture
-        */
-        const math::Dimension2D& getDimension() const;
-
-    public:
-
-        /**
-        * @brief Texture2DArray constructor. Used for creating array of 2D textures
-        * Private method. Use createObject interface inside CommandList class to call.
-        *
-        * @param TextureUsageFlags usage [required]
-        * @param Format format [required]
-        * @param const math::Dimension2D& dimension [required]
-        * @param u32 layer [required]
-        * @param u32 mipmaps [optional]
-        * @param const void* data [optional]
-        * @param const std::string& name [optional]
-        */
-        explicit Texture2DArray(Device* device, TextureUsageFlags usage, Format format, const math::Dimension2D& dimension, u32 layer, u32 mipmaps = 1, const std::string& name = "") noexcept;
-
-        /**
-        * @brief Texture2DArray constructor. Used for creating 2D array of attachments
-        * Private method. Use createObject interface inside CommandList class to call.
-        *
-        * @param TextureUsageFlags usage [required]
-        * @param Format format [required]
-        * @param const math::Dimension2D& dimension [required]
-        * @param u32 layer [required]
-        * @param TextureSamples samples [optional]
-        * @param const std::string& name [optional]
-        */
-        explicit Texture2DArray(Device* device, TextureUsageFlags usage, Format format, const math::Dimension2D& dimension, u32 layer, TextureSamples samples, const std::string& name = "") noexcept;
-
-        /**
-        * @brief Texture2DArray destructor
-        */
-        ~Texture2DArray();
-
-    private:
-
-        Texture2DArray(const Texture2DArray&) = delete;
-        Texture2DArray& operator=(const Texture2DArray&) = delete;
-
-        Device* const           m_device;
-        const math::Dimension2D m_dimension;
-    };
-
-    inline const math::Dimension2D& Texture2DArray::getDimension() const
     {
         return m_dimension;
     }
@@ -289,7 +225,6 @@ namespace renderer
         * @param Format format [required]
         * @param const math::Dimension2D& dimension [required]
         * @param u32 mipmaps [optional]
-        * @param const void* data [optional]
         * @param const std::string& name [optional]
         */
         explicit TextureCube(Device* device, TextureUsageFlags usage, Format format, const math::Dimension2D& dimension, u32 mipmaps = 1, const std::string& name = "") noexcept;
@@ -350,7 +285,6 @@ namespace renderer
         * @param Format format [required]
         * @param const math::Dimension2D& dimension [required]
         * @param u32 mipmaps [optional]
-        * @param const void* data [optional]
         * @param const std::string& name [optional]
         */
         explicit Texture3D(Device* device, TextureUsageFlags usage, Format format, const math::Dimension3D& dimension, u32 mipmaps = 1, const std::string& name = "") noexcept;
@@ -388,6 +322,52 @@ namespace renderer
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    /**
+    * @brief UnorderedAccessTexture class. Game side
+    */
+    class UnorderedAccessTexture2D : public Texture
+    {
+    public:
+
+        /**
+        * @brief getDimension method.
+        * @return const math::Dimension2D& dimention of texture
+        */
+        const math::Dimension2D& getDimension() const;
+
+    public:
+
+        /**
+        * @brief UnorderedAccessTexture2D constructor. Used for creating UAV
+        *
+        * @param TextureUsageFlags usage [required]
+        * @param Format format [required]
+        * @param u32 array [required]
+        * @param const math::Dimension2D& dimension [required]
+        * @param const std::string& name [optional]
+        */
+        explicit UnorderedAccessTexture2D(Device* device, TextureUsageFlags usage, Format format, const math::Dimension2D& dimension, u32 array = 1, const std::string& name = "") noexcept;
+
+        /**
+        * @brief UnorderedAccessTexture destructor
+        */
+        ~UnorderedAccessTexture2D();
+
+    private:
+
+        UnorderedAccessTexture2D(const UnorderedAccessTexture2D&) = delete;
+        UnorderedAccessTexture2D& operator=(const UnorderedAccessTexture2D&) = delete;
+
+        Device* const           m_device;
+        const math::Dimension2D m_dimension;
+    };
+
+    inline const math::Dimension2D& UnorderedAccessTexture2D::getDimension() const
+    {
+        return m_dimension;
+    }
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
     * @brief SwapchainTexture class. Wraps swapchain images
@@ -497,7 +477,7 @@ namespace renderer
     };
 
     template<>
-    struct TypeOf<renderer::Texture2DArray>
+    struct TypeOf<renderer::TextureCube>
     {
         static TypePtr get()
         {
@@ -507,7 +487,7 @@ namespace renderer
     };
 
     template<>
-    struct TypeOf<renderer::TextureCube>
+    struct TypeOf<renderer::UnorderedAccessTexture2D>
     {
         static TypePtr get()
         {
