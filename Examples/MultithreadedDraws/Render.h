@@ -7,7 +7,7 @@
 #include "Renderer/PipelineState.h"
 #include "Renderer/RenderTargetState.h"
 #include "Renderer/SamplerState.h"
-#include "Scene/CameraHandler.h"
+#include "Scene/Camera/CameraHandler.h"
 #include "FrameProfiler.h"
 
 namespace app
@@ -105,7 +105,7 @@ public:
             _desc.clear();
             _desc.emplace_back(v3d::renderer::Descriptor({ &_constantBufferVS, 0, sizeof(_constantBufferVS) }, 2));
             _desc.emplace_back(_sampler, 3);
-            _desc.emplace_back(_texture, 4);
+            _desc.emplace_back(v3d::renderer::TextureView(_texture), 4);
 
             cmdList.bindDescriptorSet(1, _desc);
         }

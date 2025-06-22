@@ -2,7 +2,7 @@
 
 #include "Stream/StreamManager.h"
 
-#include "Scene/Model.h"
+#include "Scene/ModelHandler.h"
 #include "Scene/Geometry/Mesh.h"
 #include "Scene/Camera/CameraArcballHandler.h"
 
@@ -163,7 +163,7 @@ void Scene::Init()
         m_PipelineBackbuffer->setPrimitiveTopology(renderer::PrimitiveTopology::PrimitiveTopology_TriangleList);
         m_PipelineBackbuffer->setFrontFace(renderer::FrontFace::FrontFace_Clockwise);
         m_PipelineBackbuffer->setCullMode(renderer::CullMode::CullMode_Back);
-        m_PipelineBackbuffer->setColorMask(renderer::ColorMask::ColorMask_All);
+        m_PipelineBackbuffer->setColorMask(0, renderer::ColorMask::ColorMask_All);
         m_PipelineBackbuffer->setDepthCompareOp(renderer::CompareOperation::CompareOp_Always);
         m_PipelineBackbuffer->setDepthWrite(false);
         m_PipelineBackbuffer->setDepthTest(false);
@@ -240,7 +240,7 @@ void Scene::Load()
         pipeline->setPrimitiveTopology(renderer::PrimitiveTopology::PrimitiveTopology_TriangleList);
         pipeline->setFrontFace(renderer::FrontFace::FrontFace_Clockwise);
         pipeline->setCullMode(renderer::CullMode::CullMode_Back);
-        pipeline->setColorMask(renderer::ColorMask::ColorMask_All);
+        pipeline->setColorMask(0, renderer::ColorMask::ColorMask_All);
         pipeline->setDepthCompareOp(renderer::CompareOperation::CompareOp_GreaterOrEqual);
         pipeline->setDepthWrite(true);
         pipeline->setDepthTest(true);
@@ -405,7 +405,7 @@ void Scene::Draw(f32 dt)
         m_CmdList->setPipelineState(*m_PipelineBackbuffer);
 
         renderer::Descriptor colorSampler(m_samplerBackbuffer, 0);
-        renderer::Descriptor colorTexture(m_RenderTarget->getColorTexture<v3d::renderer::Texture2D>(0), 1);
+        renderer::Descriptor colorTexture(v3d::renderer::TextureView(m_RenderTarget->getColorTexture<v3d::renderer::Texture2D>(0), 0, 0), 1);
         m_CmdList->bindDescriptorSet(0, { colorSampler, colorTexture });
         m_CmdList->draw(renderer::GeometryBufferDesc(), 0, 3, 0, 1);
 

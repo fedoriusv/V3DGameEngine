@@ -299,6 +299,8 @@ private:
     
     void Run()
     {
+        m_EditorScene->beginFrame();
+
         static u64 s_prevTime = utils::Timer::getCurrentTime();
         const u64 currentTime = utils::Timer::getCurrentTime();
         const f32 diffTime = static_cast<f32>(std::max<s64>(static_cast<s64>(currentTime) - static_cast<s64>(s_prevTime), 0));
@@ -334,6 +336,8 @@ private:
             m_Swapchain->presentFrame();
         }
         //Editor UI
+
+        m_EditorScene->endFrame();
     }
 
     void Exit()

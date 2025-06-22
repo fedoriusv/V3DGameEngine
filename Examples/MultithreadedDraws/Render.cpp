@@ -5,8 +5,8 @@
 #include "Renderer/ShaderProgram.h"
 #include "Stream/StreamManager.h"
 #include "Resource/ResourceManager.h"
-#include "Resource/ShaderCompiler.h"
-#include "Resource/ShaderSourceStreamLoader.h"
+#include "Resource/Loader/ShaderCompiler.h"
+#include "Resource/Loader/ShaderSourceStreamLoader.h"
 
 
 using namespace v3d;

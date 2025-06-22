@@ -10,7 +10,9 @@
 
 #include "Scene/Camera/CameraEditorHandler.h"
 #include "Scene/Camera/Camera.h"
+#include "Scene/ModelHandler.h"
 
+#include "UI/WidgetHandler.h"
 #include "UI/WidgetGroups.h"
 
 using namespace v3d;
@@ -20,7 +22,7 @@ struct EditorReport
     scene::Transform transform;
 };
 
-class EditorScene : public scene::Scene, public event::InputEventHandler, public utils::Reporter<EditorReport>
+class EditorScene : public event::InputEventHandler, public utils::Reporter<EditorReport>
 {
 public:
 
@@ -28,7 +30,7 @@ public:
     {
     public:
 
-        RenderPipelineScene();
+        RenderPipelineScene(scene::ModelHandler* modelHandler);
         ~RenderPipelineScene();
     };
 
@@ -37,6 +39,8 @@ public:
 
     void create(renderer::Device* device, const math::Dimension2D& viewportSize);
     void destroy();
+    void beginFrame();
+    void endFrame();
 
     void preRender(f32 dt);
     void postRender();
@@ -67,7 +71,11 @@ public:
     void loadResources();
 
     renderer::Device*   m_device;
-    RenderPipelineScene m_pipeline;
+
+    scene::ModelHandler* m_modelHandler;
+    ui::WidgetHandler* m_UiHandler;
+
+    RenderPipelineScene m_mainPipeline;
 
 public:
 
@@ -91,4 +99,8 @@ public:
     SelectedObjects                 m_selectedObjects;
 
     ui::WidgetListBox* m_contentList;
+    u64 m_frameCounter;
+
+    std::vector<scene::SceneData> m_states;
+    u32 m_stateIndex;
 };

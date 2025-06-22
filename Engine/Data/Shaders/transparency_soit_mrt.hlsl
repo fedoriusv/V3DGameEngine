@@ -1,4 +1,5 @@
 #include "global.hlsli"
+#include "viewport.hlsli"
 #include "gbuffer_common.hlsli"
 #include "offscreen_common.hlsli"
 
@@ -89,7 +90,8 @@ PS_MSOIT_STRUCT msoit_mrt_ps(PS_GBUFFER_STANDARD_INPUT input, bool frontFace : S
         discard;
     }
     
-    int mask = a2c(color.a, int2(input.Position.xy), input.WorldPos, int(CB_Viewport.time), frontFace);
+    float3 viewPos = mul(CB_Viewport.viewMatrix, float4(input.WorldPos, 1.0)).xyz;
+    int mask = a2c(color.a, int2(input.Position.xy), viewPos, int(CB_Viewport.time), frontFace);
     
     PS_MSOIT_STRUCT Output;
     Output.sample0 = float4(0.0, 0.0, 0.0, 0.0);
@@ -104,21 +106,21 @@ PS_MSOIT_STRUCT msoit_mrt_ps(PS_GBUFFER_STANDARD_INPUT input, bool frontFace : S
     
     if (mask & 0x1)
     {
-        Output.sample0 = float4(color.rgb, 1.0);
+        Output.sample0 = float4(color.rgb * color.a, color.a);
     }
     if (mask & 0x2)
     {
-        Output.sample1 = float4(color.rgb, 1.0);
+        Output.sample1 = float4(color.rgb * color.a, color.a);
     }
     
     if (mask & 0x4)
     {
-        Output.sample2 = float4(color.rgb, 1.0);
+        Output.sample2 = float4(color.rgb * color.a, color.a);
     }
     
     if (mask & 0x8)
     {
-        Output.sample3 = float4(color.rgb, 1.0);
+        Output.sample3 = float4(color.rgb * color.a, color.a);
     }
     
     return Output;
@@ -133,22 +135,22 @@ PS_MSOIT_STRUCT msoit_mrt_ps(PS_GBUFFER_STANDARD_INPUT input, bool frontFace : S
     float u_weight = 1.0;
     {
         float4 sampleColor = texture0.SampleLevel(samplerState, input.UV, 0);
-        sampleColor = (sampleColor.a > 0.0) ? float4(sampleColor.rgb, 1.0) : float4(0.0);
+        sampleColor = (sampleColor.a > 0.0) ? float4(sampleColor.rgb, sampleColor.a) : float4(0.0);
         outputColor += sampleColor;
     }
     {
         float4 sampleColor = texture1.SampleLevel(samplerState, input.UV, 0);
-        sampleColor = (sampleColor.a > 0.0) ? float4(sampleColor.rgb, 1.0) : float4(0.0);
+        sampleColor = (sampleColor.a > 0.0) ? float4(sampleColor.rgb, sampleColor.a) : float4(0.0);
         outputColor += sampleColor;
     }
     {
         float4 sampleColor = texture2.SampleLevel(samplerState, input.UV, 0);
-        sampleColor = (sampleColor.a > 0.0) ? float4(sampleColor.rgb, 1.0) : float4(0.0);
+        sampleColor = (sampleColor.a > 0.0) ? float4(sampleColor.rgb, sampleColor.a) : float4(0.0);
         outputColor += sampleColor;
     }
     {
         float4 sampleColor = texture3.SampleLevel(samplerState, input.UV, 0);
-        sampleColor = (sampleColor.a > 0.0) ? float4(sampleColor.rgb, 1.0) : float4(0.0);
+        sampleColor = (sampleColor.a > 0.0) ? float4(sampleColor.rgb, sampleColor.a) : float4(0.0);
         outputColor += sampleColor;
     }
     

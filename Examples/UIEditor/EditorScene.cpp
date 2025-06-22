@@ -25,8 +25,8 @@
 #include "RenderTechniques/RenderPipelineComposite.h"
 #include "RenderTechniques/RenderPipelineZPrepass.h"
 #include "RenderTechniques/RenderPipelineFXAA.h"
+#include "RenderTechniques/RenderPipelineTAA.h"
 #include "RenderTechniques/RenderPipelineDepthOIT.h"
-#include "RenderTechniques/RenderPipelineMSOIT.h"
 #include "RenderTechniques/RenderPipelineSOIT.h"
 #include "RenderTechniques/RenderPipelineMBOIT.h"
 
@@ -37,18 +37,19 @@
 
 using namespace v3d;
 
-EditorScene::RenderPipelineScene::RenderPipelineScene()
+EditorScene::RenderPipelineScene::RenderPipelineScene(scene::ModelHandler* modelHandler)
 {
-    new renderer::RenderPipelineZPrepassStage(this);
-    new renderer::RenderPipelineGBufferStage(this);
+    new renderer::RenderPipelineZPrepassStage(this, modelHandler);
+    new renderer::RenderPipelineGBufferStage(this, modelHandler);
     new renderer::RenderPipelineCompositionStage(this);
     //new renderer::RenderPipelineDepthOITStage(this);
-    new renderer::RenderPipelineSOITStage(this);
-    //new renderer::RenderPipelineMBOITStage(this);
-    //new renderer::RenderPipelineOutlineStage(this);
+    //new renderer::RenderPipelineSOITStage(this);
+    new renderer::RenderPipelineMBOITStage(this);
+    new renderer::RenderPipelineOutlineStage(this);
     //new renderer::RenderPipelineFXAAStage(this);
+    new renderer::RenderPipelineTAAStage(this);
     new renderer::RenderPipelineGammaCorrectionStage(this);
-    new renderer::RenderPipelineUIOverlayStage(this);
+    new renderer::RenderPipelineUIOverlayStage(this, nullptr);
 }
 
 EditorScene::RenderPipelineScene::~RenderPipelineScene()
@@ -57,8 +58,16 @@ EditorScene::RenderPipelineScene::~RenderPipelineScene()
 
 EditorScene::EditorScene() noexcept
     : m_device()
+
+    , m_modelHandler(new scene::ModelHandler())
+    , m_UiHandler(nullptr)
+
+    , m_mainPipeline(m_modelHandler)
+
     , m_camera(new scene::CameraEditorHandler(std::make_unique<scene::Camera>()))
     , m_contentList(nullptr)
+    , m_frameCounter(0)
+
 {
     InputEventHandler::bind([this](const event::MouseInputEvent* event)
         {
@@ -126,13 +135,22 @@ void EditorScene::create(renderer::Device* device, const math::Dimension2D& view
 
     loadResources();
 
-    m_states[m_stateIndex].m_viewportState.m_viewpotSize = { (u32)viewportSize._width, (u32)viewportSize._height };
-    m_pipeline.create(m_device, m_states[m_stateIndex]);
+    m_states[m_stateIndex].m_viewportState._viewpotSize = { (u32)viewportSize._width, (u32)viewportSize._height };
+    m_mainPipeline.create(m_device, m_states[m_stateIndex]);
 }
 
 void EditorScene::destroy()
 {
-    m_pipeline.destroy(m_device, m_states[m_stateIndex]);
+    m_mainPipeline.destroy(m_device, m_states[m_stateIndex]);
+}
+
+void EditorScene::beginFrame()
+{
+}
+
+void EditorScene::endFrame()
+{
+    ++m_frameCounter;
 }
 
 void EditorScene::preRender(f32 dt)
@@ -141,20 +159,22 @@ void EditorScene::preRender(f32 dt)
     m_states[m_stateIndex].m_renderState.m_cmdList = cmdList;
 
     m_camera->update(dt);
-    m_states[m_stateIndex].m_viewportState.m_camera = m_camera;
+    m_states[m_stateIndex].m_viewportState._camera = m_camera;
 
     s32 posX = (s32)this->getAbsoluteCursorPosition()._x - (s32)m_currentViewportRect.getLeftX();
     posX = (posX < 0) ? 0 : posX;
     s32 posY = (s32)this->getAbsoluteCursorPosition()._y - (s32)m_currentViewportRect.getTopY();
     posY = (posY < 0) ? 0 : posY;
 
-    ViewportState::ViewportBuffer& viewportState = m_states[m_stateIndex].m_viewportState._viewportBuffer;
+    scene::ViewportState::ViewportBuffer& viewportState = m_states[m_stateIndex].m_viewportState._viewportBuffer;
     viewportState.prevProjectionMatrix = viewportState.projectionMatrix;
     viewportState.prevViewMatrix = viewportState.viewMatrix;
+    viewportState.prevCameraJitter = viewportState.cameraJitter;
     viewportState.projectionMatrix = m_camera->getCamera().getProjectionMatrix();
     viewportState.viewMatrix = m_camera->getCamera().getViewMatrix();
+    viewportState.cameraJitter = scene::CameraHandler::calculateJitter(m_frameCounter, m_states[m_stateIndex].m_viewportState._viewpotSize);
     viewportState.cameraPosition = { m_camera->getPosition().getX(), m_camera->getPosition().getY(), m_camera->getPosition().getZ(), 0.f };
-    viewportState.viewportSize = { (f32)m_states[m_stateIndex].m_viewportState.m_viewpotSize._width, (f32)m_states[m_stateIndex].m_viewportState.m_viewpotSize._height };
+    viewportState.viewportSize = { (f32)m_states[m_stateIndex].m_viewportState._viewpotSize._width, (f32)m_states[m_stateIndex].m_viewportState._viewpotSize._height };
     viewportState.clipNearFar = { m_camera->getNear(), m_camera->getFar() };
     viewportState.random = { math::random<f32>(0.f, 0.1f),math::random<f32>(0.f, 0.1f), math::random<f32>(0.f, 0.1f), math::random<f32>(0.f, 0.1f) };
     viewportState.cursorPosition = { (f32)posX, (f32)posY };
@@ -166,13 +186,13 @@ void EditorScene::preRender(f32 dt)
         m_states[m_stateIndex].m_data[m_selectedObjects._activeIndex].m_transform = m_selectedObjects._modelTransform;
     }
 
-    m_pipeline.prepare(m_device, m_states[m_stateIndex]);
+    m_mainPipeline.prepare(m_device, m_states[m_stateIndex]);
 
 }
 
 void EditorScene::postRender()
 {
-    m_pipeline.execute(m_device, m_states[m_stateIndex]);
+    m_mainPipeline.execute(m_device, m_states[m_stateIndex]);
 }
 
 void EditorScene::submitRender()
@@ -228,8 +248,7 @@ void EditorScene::onChanged(const v3d::math::Rect& viewport)
     {
         if (m_currentViewportRect.getWidth() != viewport.getWidth() || m_currentViewportRect.getHeight() != viewport.getHeight())
         {
-            m_states[m_stateIndex].m_viewportState.m_viewpotSize = { (u32)viewport.getWidth(), (u32)viewport.getHeight() };
-            m_pipeline.changed(m_device, m_states[m_stateIndex]);
+            m_states[m_stateIndex].m_viewportState._viewpotSize = { (u32)viewport.getWidth(), (u32)viewport.getHeight() };
         }
 
         m_currentViewportRect = viewport;
@@ -269,7 +288,7 @@ void EditorScene::loadResources()
             if (bitmap)
             {
                 renderer::Texture2D* texture = new renderer::Texture2D(m_device, renderer::TextureUsage::TextureUsage_Sampled | renderer::TextureUsage_Shared | renderer::TextureUsage_Write,
-                    bitmap->getFormat(), { bitmap->getDimension()._width, bitmap->getDimension()._height }, bitmap->getMipmapsCount(), file);
+                    bitmap->getFormat(), { bitmap->getDimension()._width, bitmap->getDimension()._height }, 1, bitmap->getMipmapsCount(), file);
                 ASSERT(texture, "not valid");
 
                 cmdList->uploadData(texture, bitmap->getSize(), bitmap->getBitmap());
@@ -343,7 +362,7 @@ void EditorScene::loadResources()
     u32 countOpaque = 10;//sunTemple->m_geometry.size();
     for (u32 i = 0; i < countOpaque; ++i)
     {
-        m_states[m_stateIndex].m_data.push_back(DrawInstanceData{
+        m_states[m_stateIndex].m_data.push_back(scene::DrawInstanceData{
             model->m_geometry[0]._LODs[0]->m_indexBuffer,
             model->m_geometry[0]._LODs[0]->m_vertexBuffer[0]
             });
@@ -367,7 +386,7 @@ void EditorScene::loadResources()
     u32 countTr = 20;
     for (u32 i = countOpaque; i < countTr; ++i)
     {
-        m_states[m_stateIndex].m_data.push_back(DrawInstanceData{
+        m_states[m_stateIndex].m_data.push_back(scene::DrawInstanceData{
             model->m_geometry[0]._LODs[0]->m_indexBuffer,
             model->m_geometry[0]._LODs[0]->m_vertexBuffer[0]
             });
