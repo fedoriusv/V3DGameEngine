@@ -290,6 +290,14 @@ void RenderPipelineMBOITStage::createRenderTarget(Device* device, scene::SceneDa
     ASSERT(depth_stencil.isValid(), "must be valid");
     renderer::Texture2D* depthStencilTexture = objectFromHandle<renderer::Texture2D>(depth_stencil);
 
+    ObjectHandle material = data.m_globalResources.get("gbuffer_material");
+    ASSERT(material.isValid(), "must be valid");
+    renderer::Texture2D* materialTexture = objectFromHandle<renderer::Texture2D>(material);
+
+    ObjectHandle velocity = data.m_globalResources.get("gbuffer_velocity");
+    ASSERT(velocity.isValid(), "must be valid");
+    renderer::Texture2D* velocityTexture = objectFromHandle<renderer::Texture2D>(velocity);
+
     //pass 1
     ASSERT(m_rt[Pass::MBOIT_Pass1] == nullptr, "must be nulptr");
     m_rt[Pass::MBOIT_Pass1] = new renderer::RenderTargetState(device, data.m_viewportState._viewpotSize, 2);
@@ -325,7 +333,7 @@ void RenderPipelineMBOITStage::createRenderTarget(Device* device, scene::SceneDa
 
     //pass 2
     ASSERT(m_rt[Pass::MBOIT_Pass2] == nullptr, "must be nulptr");
-    m_rt[Pass::MBOIT_Pass2] = new renderer::RenderTargetState(device, data.m_viewportState._viewpotSize, 1);
+    m_rt[Pass::MBOIT_Pass2] = new renderer::RenderTargetState(device, data.m_viewportState._viewpotSize, 3);
 
     m_rt[Pass::MBOIT_Pass2]->setColorTexture(0, new renderer::Texture2D(device, renderer::TextureUsage::TextureUsage_Attachment | renderer::TextureUsage::TextureUsage_Sampled,
         renderer::Format::Format_R32G32B32A32_SFloat, data.m_viewportState._viewpotSize, renderer::TextureSamples::TextureSamples_x1, "mboit_resolve"),
@@ -334,6 +342,22 @@ void RenderPipelineMBOITStage::createRenderTarget(Device* device, scene::SceneDa
         },
         {
             renderer::TransitionOp::TransitionOp_Undefined, renderer::TransitionOp::TransitionOp_ColorAttachment
+        });
+
+    m_rt[Pass::MBOIT_Pass2]->setColorTexture(1, materialTexture,
+        {
+            renderer::RenderTargetLoadOp::LoadOp_Load, renderer::RenderTargetStoreOp::StoreOp_Store, color::Color(0.0f, 0.0f, 0.0f, 0.0f)
+        },
+        {
+            renderer::TransitionOp::TransitionOp_ColorAttachment, renderer::TransitionOp::TransitionOp_ColorAttachment
+        });
+
+    m_rt[Pass::MBOIT_Pass2]->setColorTexture(2, velocityTexture,
+        {
+            renderer::RenderTargetLoadOp::LoadOp_Load, renderer::RenderTargetStoreOp::StoreOp_Store, color::Color(0.0f, 0.0f, 0.0f, 0.0f)
+        },
+        {
+            renderer::TransitionOp::TransitionOp_ColorAttachment, renderer::TransitionOp::TransitionOp_ColorAttachment
         });
 
     m_rt[Pass::MBOIT_Pass2]->setDepthStencilTexture(depthStencilTexture,

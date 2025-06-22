@@ -267,7 +267,15 @@ PS_MBOIT_STRUCT mboit_pass1_ps(PS_GBUFFER_STANDARD_INPUT Input)
     return output;
 }
 
-[[vk::location(0)]] float4 mboit_pass2_ps(PS_GBUFFER_STANDARD_INPUT Input) : SV_TARGET0
+
+struct PS_TRANSPARENCY_OUTPUT
+{
+    [[vk::location(0)]] float4 Accumulate : COLOR;
+    [[vk::location(1)]] float4 Material : MATERIAL;
+    [[vk::location(2)]] float2 Velocity : VELOCITY;
+};
+
+PS_TRANSPARENCY_OUTPUT mboit_pass2_ps(PS_GBUFFER_STANDARD_INPUT Input)
 {
     PS_GBUFFER_STRUCT GBubfferStruct = _gbuffer_standard_alpha_ps(Input, CB_Viewport, CB_Model, texture0, texture1, texture2, samplerState);
     
@@ -289,7 +297,13 @@ PS_MBOIT_STRUCT mboit_pass1_ps(PS_GBUFFER_STANDARD_INPUT Input)
     resolveMoments(transmittanceDepth, totalTransmittance, depth, viewPos.xy, zeroMoment, totalMoments_p1234, moment_bias, overestimation);
     
     float coverage = clamp(opacity + lerp(MIN_COVERAGE, EMISSIVE_ELEMENT_COVERAGE, saturate(emissive)), MIN_COVERAGE, MAX_COVERAGE);
-    return float4(color * opacity * transmittanceDepth, coverage * transmittanceDepth);
+
+    PS_TRANSPARENCY_OUTPUT Output;
+    Output.Accumulate = float4(color * opacity * transmittanceDepth, coverage * transmittanceDepth);
+    Output.Material = GBubfferStruct.Material;
+    Output.Velocity = GBubfferStruct.Velocity;
+	
+    return Output;
 }
 
 void resolveTotalMoments(out float total_transmittance, float zeroth_moment)
@@ -313,6 +327,6 @@ void resolveTotalMoments(out float total_transmittance, float zeroth_moment)
     f = isfinite(f) ? f : 0.0;
     float3 transparencyColor = totalTransparencyColor.rgb * f;
 
-    float4 finalColor = float4(baseColor + transparencyColor, 1.0);
+    float4 finalColor = float4(baseColor * totalTransmittance + transparencyColor, 1.0);
     return finalColor;
 }
