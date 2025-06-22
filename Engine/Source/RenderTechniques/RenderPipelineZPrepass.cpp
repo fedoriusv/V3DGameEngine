@@ -142,7 +142,7 @@ void RenderPipelineZPrepassStage::createRenderTarget(Device* device, scene::Scen
     m_depthRenderTarget = new renderer::RenderTargetState(device, data.m_viewportState._viewpotSize, 0, 0, "zprepass");
 
     renderer::Texture2D* depthStencilAttachment = new renderer::Texture2D(device, renderer::TextureUsage::TextureUsage_Attachment | renderer::TextureUsage::TextureUsage_Sampled,
-        renderer::Format::Format_R32_SFloat, data.m_viewportState._viewpotSize, renderer::TextureSamples::TextureSamples_x1, "depth_stencil");
+        renderer::Format::Format_D32_SFloat, data.m_viewportState._viewpotSize, renderer::TextureSamples::TextureSamples_x1, "depth_stencil");
     m_depthRenderTarget->setDepthStencilTexture(depthStencilAttachment,
         {
             renderer::RenderTargetLoadOp::LoadOp_Clear, renderer::RenderTargetStoreOp::StoreOp_Store, clearValue
