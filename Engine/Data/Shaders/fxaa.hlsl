@@ -1,3 +1,4 @@
+#include "global.hlsli"
 #include "offscreen_common.hlsli"
 
 #define FXAA_PC 1
@@ -13,7 +14,7 @@
 
 ///////////////////////////////////////////////////////////////////////////////////////
 
-float4 fxaa_ps(PS_OFFSCREEN_INPUT input) : SV_TARGET0
+[[vk::location(0)]] float4 fxaa_ps(PS_OFFSCREEN_INPUT Input) : SV_TARGET0
 {
     uint dx, dy;
     textureColor.GetDimensions(dx, dy);
@@ -23,7 +24,7 @@ float4 fxaa_ps(PS_OFFSCREEN_INPUT input) : SV_TARGET0
     t.smpl = samplerState;
     t.tex = textureColor;
 
-    return FxaaPixelShader(input.UV, 0, t, t, t, rcpro, 0, 0, 0, 1.0, 0.166, 0.0312, 0, 0, 0, 0);
+    return FxaaPixelShader(Input.UV, 0, t, t, t, rcpro, 0, 0, 0, 1.0, 0.166, 0.0312, 0, 0, 0, 0);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////

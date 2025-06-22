@@ -1,4 +1,5 @@
 #include "global.hlsli"
+#include "viewport.hlsli"
 #include "gbuffer_common.hlsli"
 #include "lighting.hlsli"
 
@@ -14,21 +15,21 @@
 
 ///////////////////////////////////////////////////////////////////////////////////////
 
-VS_GBUFFER_STANDARD_OUTPUT gbuffer_standard_vs(VS_GBUFFER_STANDARD_INPUT input)
+VS_GBUFFER_STANDARD_OUTPUT gbuffer_standard_vs(VS_GBUFFER_STANDARD_INPUT Input)
 {
-    return _gbuffer_standard_vs(input, CB_Viewport, CB_Model);
+    return _gbuffer_standard_vs(Input, CB_Viewport, CB_Model);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////
 
-PS_GBUFFER_STRUCT gbuffer_standard_ps(PS_GBUFFER_STANDARD_INPUT input)
+PS_GBUFFER_STRUCT gbuffer_standard_ps(PS_GBUFFER_STANDARD_INPUT Input)
 {
-    return _gbuffer_standard_ps(input, CB_Viewport, CB_Model, textureAlbedo, textureNormal, textureMaterial, samplerState);
+    return _gbuffer_standard_ps(Input, CB_Viewport, CB_Model, textureAlbedo, textureNormal, textureMaterial, samplerState);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////
 
-void gbuffer_depth_ps(PS_GBUFFER_STANDARD_INPUT input)
+void gbuffer_depth_ps(PS_GBUFFER_STANDARD_INPUT Input)
 {
     //nothing
 }

@@ -1,4 +1,5 @@
 #include "global.hlsli"
+#include "viewport.hlsli"
 #include "offscreen_common.hlsli"
 
 ///////////////////////////////////////////////////////////////////////////////////////
@@ -12,8 +13,8 @@
 
 ///////////////////////////////////////////////////////////////////////////////////////
 
-float4 main_ps(PS_OFFSCREEN_INPUT input) : SV_TARGET0
+[[vk::location(0)]] float4 main_ps(PS_OFFSCREEN_INPUT Input) : SV_TARGET0
 {
-    float4 fragColor = textureBaseColor.Sample(samplerState, input.UV);
+    float4 fragColor = textureBaseColor.SampleLevel(samplerState, Input.UV, 0);
     return fragColor;
 }

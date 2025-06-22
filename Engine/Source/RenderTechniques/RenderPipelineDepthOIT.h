@@ -30,28 +30,24 @@ namespace renderer
         void createRenderTarget(Device* device, scene::Scene::SceneData& data);
         void destroyRenderTarget(Device* device, scene::Scene::SceneData& data);
 
-        renderer::RenderTargetState* m_stochasticTransparency_TotalAlpha;
-        renderer::RenderTargetState* m_stochasticTransparency_Depth;
-        renderer::RenderTargetState* m_stochasticTransparency_AccumulateColor;
-        renderer::RenderTargetState* m_stochasticTransparency_Final;
-        renderer::SamplerState* m_sampler;
-        void executeStochasticTransparency(Device* device, scene::Scene::SceneData& state);
-        
-
-        renderer::RenderTargetState* m_transparencyRenderTarget;
-        renderer::RenderTargetState* m_transparencyRenderTargetPass2;
-        bool m_stochastic = true;
+        void executeStochasticTotalAlpha_Pass1(Device* device, scene::Scene::SceneData& state);
+        void executeStochasticDepth_Pass2(Device* device, scene::Scene::SceneData& state);
+        void executeStochasticAccumulateColor_Pass3(Device* device, scene::Scene::SceneData& state);
+        void executeStochasticComposite_Pass4(Device* device, scene::Scene::SceneData& state);
 
         enum Pass
         {
             StochasticTotalAlpha,
             StochasticDepth,
             StochasticTotalAccumulateColor,
-            StochasticTotalFinal,
+            StochasticComposite,
             Count
         };
 
+        std::array<v3d::renderer::RenderTargetState*, Pass::Count> m_rt = {};
         std::array<v3d::renderer::GraphicsPipelineState*, Pass::Count> m_pipeline = {};
+        renderer::SamplerState* m_sampler;
+        renderer::UnorderedAccessTexture2D* m_depthSamples;
     };
 
 } //namespace renderer
