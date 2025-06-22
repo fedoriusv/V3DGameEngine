@@ -51,6 +51,8 @@ namespace scene
 
         virtual void update(f32 deltaTime);
 
+        static math::float2 calculateJitter(u32 frameID, const math::Dimension2D& viewport);
+
     protected:
 
         std::unique_ptr<Camera> m_camera;

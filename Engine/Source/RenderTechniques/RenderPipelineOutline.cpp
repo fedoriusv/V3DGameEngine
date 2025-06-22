@@ -23,7 +23,7 @@ RenderPipelineOutlineStage::~RenderPipelineOutlineStage()
 {
 }
 
-void RenderPipelineOutlineStage::create(Device* device, scene::Scene::SceneData& state)
+void RenderPipelineOutlineStage::create(Device* device, scene::SceneData& state)
 {
     createRenderTarget(device, state);
 
@@ -51,24 +51,33 @@ void RenderPipelineOutlineStage::create(Device* device, scene::Scene::SceneData&
     state.m_globalResources.bind("readback_objectIDData", &m_mappedData);
 }
 
-void RenderPipelineOutlineStage::destroy(Device* device, scene::Scene::SceneData& state)
+void RenderPipelineOutlineStage::destroy(Device* device, scene::SceneData& state)
 {
     m_readbackObjectID->unmap();
     delete m_readbackObjectID;
     m_readbackObjectID = nullptr;
 }
 
-void RenderPipelineOutlineStage::prepare(Device* device, scene::Scene::SceneData& state)
+void RenderPipelineOutlineStage::prepare(Device* device, scene::SceneData& state)
 {
+    if (!m_renderTarget)
+    {
+        createRenderTarget(device, state);
+    }
+    else if (m_renderTarget->getRenderArea() != state.m_viewportState._viewpotSize)
+    {
+        destroyRenderTarget(device, state);
+        createRenderTarget(device, state);
+    }
 }
 
-void RenderPipelineOutlineStage::execute(Device* device, scene::Scene::SceneData& state)
+void RenderPipelineOutlineStage::execute(Device* device, scene::SceneData& state)
 {
     DEBUG_MARKER_SCOPE(state.m_renderState.m_cmdList, "Outline", color::colorrgbaf::GREEN);
 
     state.m_renderState.m_cmdList->beginRenderTarget(*m_renderTarget);
-    state.m_renderState.m_cmdList->setViewport({ 0.f, 0.f, (f32)state.m_viewportState.m_viewpotSize._width, (f32)state.m_viewportState.m_viewpotSize._height });
-    state.m_renderState.m_cmdList->setScissor({ 0.f, 0.f, (f32)state.m_viewportState.m_viewpotSize._width, (f32)state.m_viewportState.m_viewpotSize._height });
+    state.m_renderState.m_cmdList->setViewport({ 0.f, 0.f, (f32)state.m_viewportState._viewpotSize._width, (f32)state.m_viewportState._viewpotSize._height });
+    state.m_renderState.m_cmdList->setScissor({ 0.f, 0.f, (f32)state.m_viewportState._viewpotSize._width, (f32)state.m_viewportState._viewpotSize._height });
     state.m_renderState.m_cmdList->setPipelineState(*m_pipeline);
 
     state.m_renderState.m_cmdList->bindDescriptorSet(0,
@@ -110,26 +119,13 @@ void RenderPipelineOutlineStage::execute(Device* device, scene::Scene::SceneData
     state.m_globalResources.bind("render_target", m_renderTarget->getColorTexture<renderer::Texture2D>(0));
 }
 
-void RenderPipelineOutlineStage::changed(Device* device, scene::Scene::SceneData& data)
-{
-    if (!m_renderTarget)
-    {
-        createRenderTarget(device, data);
-    }
-    else if (m_renderTarget->getRenderArea() != data.m_viewportState.m_viewpotSize)
-    {
-        destroyRenderTarget(device, data);
-        createRenderTarget(device, data);
-    }
-}
-
-void RenderPipelineOutlineStage::createRenderTarget(Device* device, scene::Scene::SceneData& data)
+void RenderPipelineOutlineStage::createRenderTarget(Device* device, scene::SceneData& data)
 {
     ASSERT(m_renderTarget == nullptr, "must be nullptr");
-    m_renderTarget = new renderer::RenderTargetState(device, data.m_viewportState.m_viewpotSize, 1, 0, "outline_pass");
+    m_renderTarget = new renderer::RenderTargetState(device, data.m_viewportState._viewpotSize, 1, 0, "outline_pass");
 
     renderer::Texture2D* outline = new renderer::Texture2D(device, renderer::TextureUsage::TextureUsage_Attachment | renderer::TextureUsage::TextureUsage_Sampled,
-        renderer::Format::Format_R8G8B8A8_UNorm, data.m_viewportState.m_viewpotSize, renderer::TextureSamples::TextureSamples_x1, "outline");
+        renderer::Format::Format_R8G8B8A8_UNorm, data.m_viewportState._viewpotSize, renderer::TextureSamples::TextureSamples_x1, "outline");
 
     m_renderTarget->setColorTexture(0, outline,
         {
@@ -141,7 +137,7 @@ void RenderPipelineOutlineStage::createRenderTarget(Device* device, scene::Scene
     );
 }
 
-void RenderPipelineOutlineStage::destroyRenderTarget(Device* device, scene::Scene::SceneData& data)
+void RenderPipelineOutlineStage::destroyRenderTarget(Device* device, scene::SceneData& data)
 {
     ASSERT(m_renderTarget, "must be valid");
     renderer::Texture2D* outline = m_renderTarget->getColorTexture<renderer::Texture2D>(0);

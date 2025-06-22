@@ -121,6 +121,39 @@ void CameraHandler::update(f32 deltaTime)
     }
 }
 
+math::float2 CameraHandler::calculateJitter(u32 frameID, const math::Dimension2D& viewport)
+{
+    static constexpr u32 s_sampleCount = 16;
+    static auto halton = [](u32 index, u32 base) -> f32
+        {
+            f32 f = 1.0f;
+            f32 invb = 1.f / (f32)base;
+            f32 result = 0.0f;
+
+            while (index > 0)
+            {
+                f *= invb;
+                result = result + f * f32(index % base);
+                index = u32(std::floorf(index * invb));
+            }
+
+            return result;
+        };
+
+    const f32 raito = (f32)viewport._width / (f32)viewport._height;
+    const u32 phaseCount = s_sampleCount / 2 * raito * raito;
+    u32 index = frameID % phaseCount;
+    math::float2 jitterOffest = { halton(index, 2) - 0.5f, halton(index, 3) - 0.5f };
+
+    math::float2 jitter =
+    {
+        jitterOffest._x / (f32)viewport._width * 2.0f,
+        jitterOffest._y / (f32)viewport._height * -2.0f
+    };
+
+    return jitter;
+}
+
 void CameraHandler::setViewMatrix(const math::Matrix4D& view)
 {
     m_camera->m_matrices[Camera::Matrix::Matrix_ViewMatrix] = view;

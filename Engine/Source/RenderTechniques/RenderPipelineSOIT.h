@@ -17,18 +17,16 @@ namespace renderer
         explicit  RenderPipelineSOITStage(RenderTechnique* technique) noexcept;
         ~RenderPipelineSOITStage();
 
-        void create(Device* device, scene::Scene::SceneData& state) override;
-        void destroy(Device* device, scene::Scene::SceneData& state) override;
+        void create(Device* device, scene::SceneData& state) override;
+        void destroy(Device* device, scene::SceneData& state) override;
 
-        void prepare(Device* device, scene::Scene::SceneData& state) override;
-        void execute(Device* device, scene::Scene::SceneData& state) override;
-
-        void changed(Device* device, scene::Scene::SceneData& data) override;
+        void prepare(Device* device, scene::SceneData& state) override;
+        void execute(Device* device, scene::SceneData& state) override;
 
     private:
 
-        void createRenderTarget(Device* device, scene::Scene::SceneData& data);
-        void destroyRenderTarget(Device* device, scene::Scene::SceneData& data);
+        void createRenderTarget(Device* device, scene::SceneData& data);
+        void destroyRenderTarget(Device* device, scene::SceneData& data);
 
         renderer::RenderTargetState* m_mrtPass;
         renderer::RenderTargetState* m_resolvePass;

@@ -30,7 +30,7 @@ RenderTechnique::~RenderTechnique()
     m_stages.clear();
 }
 
-void RenderTechnique::create(Device* device, scene::Scene::SceneData& data)
+void RenderTechnique::create(Device* device, scene::SceneData& data)
 {
     for (auto& [id, stage] : m_stages)
     {
@@ -38,7 +38,7 @@ void RenderTechnique::create(Device* device, scene::Scene::SceneData& data)
     }
 }
 
-void RenderTechnique::destroy(Device* device, scene::Scene::SceneData& data)
+void RenderTechnique::destroy(Device* device, scene::SceneData& data)
 {
     for (auto& [id, stage] : m_stages)
     {
@@ -46,7 +46,7 @@ void RenderTechnique::destroy(Device* device, scene::Scene::SceneData& data)
     }
 }
 
-void RenderTechnique::prepare(Device* device, scene::Scene::SceneData& data)
+void RenderTechnique::prepare(Device* device, scene::SceneData& data)
 {
     for (auto& [id, stage] : m_stages)
     {
@@ -54,18 +54,11 @@ void RenderTechnique::prepare(Device* device, scene::Scene::SceneData& data)
     }
 }
 
-void RenderTechnique::execute(Device* device, scene::Scene::SceneData& data)
+void RenderTechnique::execute(Device* device, scene::SceneData& data)
 {
     for (auto& [id, stage] : m_stages)
     {
         stage->execute(device, data);
-    }
-}
-void RenderTechnique::changed(Device* device, scene::Scene::SceneData& data)
-{
-    for (auto& [id, stage] : m_stages)
-    {
-        stage->changed(device, data);
     }
 }
 

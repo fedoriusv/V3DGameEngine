@@ -21,13 +21,11 @@ namespace renderer
         explicit RenderPipelineStage(RenderTechnique* technique, const std::string& id) noexcept;
         virtual ~RenderPipelineStage();
 
-        virtual void create(Device* device, scene::Scene::SceneData& data) = 0;
-        virtual void destroy(Device* device, scene::Scene::SceneData& data) = 0;
+        virtual void create(Device* device, scene::SceneData& data) = 0;
+        virtual void destroy(Device* device, scene::SceneData& data) = 0;
 
-        virtual void prepare(Device* device, scene::Scene::SceneData& data) = 0;
-        virtual void execute(Device* device, scene::Scene::SceneData& data) = 0;
-
-        virtual void changed(Device* device, scene::Scene::SceneData& data) {};
+        virtual void prepare(Device* device, scene::SceneData& data) = 0;
+        virtual void execute(Device* device, scene::SceneData& data) = 0;
 
     protected:
 
@@ -40,13 +38,11 @@ namespace renderer
     {
     public:
 
-        void create(Device* device, scene::Scene::SceneData& data);
-        void destroy(Device* device, scene::Scene::SceneData& data);
+        void create(Device* device, scene::SceneData& data);
+        void destroy(Device* device, scene::SceneData& data);
 
-        void prepare(Device* device, scene::Scene::SceneData& data);
-        void execute(Device* device, scene::Scene::SceneData& data);
-
-        void changed(Device* device, scene::Scene::SceneData& data);
+        void prepare(Device* device, scene::SceneData& data);
+        void execute(Device* device, scene::SceneData& data);
 
     protected:
 

@@ -14,6 +14,7 @@ namespace renderer
 RenderPipelineCompositionStage::RenderPipelineCompositionStage(RenderTechnique* technique) noexcept
     : RenderPipelineStage(technique, "composition")
     , m_compositionRenderTarget(nullptr)
+    , m_sampler(nullptr)
 {
 }
 
@@ -21,7 +22,7 @@ RenderPipelineCompositionStage::~RenderPipelineCompositionStage()
 {
 }
 
-void RenderPipelineCompositionStage::create(Device* device, scene::Scene::SceneData& state)
+void RenderPipelineCompositionStage::create(Device* device, scene::SceneData& state)
 {
     createRenderTarget(device, state);
 
@@ -47,21 +48,34 @@ void RenderPipelineCompositionStage::create(Device* device, scene::Scene::SceneD
     m_sampler->setWrap(renderer::SamplerWrap::TextureWrap_MirroredRepeat);
 }
 
-void RenderPipelineCompositionStage::destroy(Device* device, scene::Scene::SceneData& state)
+void RenderPipelineCompositionStage::destroy(Device* device, scene::SceneData& state)
 {
+    destroyRenderTarget(device, state);
+
+    delete m_sampler;
+    m_sampler = nullptr;
 }
 
-void RenderPipelineCompositionStage::prepare(Device* device, scene::Scene::SceneData& state)
+void RenderPipelineCompositionStage::prepare(Device* device, scene::SceneData& state)
 {
+    if (!m_compositionRenderTarget)
+    {
+        createRenderTarget(device, state);
+    }
+    else if (m_compositionRenderTarget->getRenderArea() != state.m_viewportState._viewpotSize)
+    {
+        destroyRenderTarget(device, state);
+        createRenderTarget(device, state);
+    }
 }
 
-void RenderPipelineCompositionStage::execute(Device* device, scene::Scene::SceneData& state)
+void RenderPipelineCompositionStage::execute(Device* device, scene::SceneData& state)
 {
     DEBUG_MARKER_SCOPE(state.m_renderState.m_cmdList, "Composition", color::colorrgbaf::GREEN);
 
     state.m_renderState.m_cmdList->beginRenderTarget(*m_compositionRenderTarget);
-    state.m_renderState.m_cmdList->setViewport({ 0.f, 0.f, (f32)state.m_viewportState.m_viewpotSize._width, (f32)state.m_viewportState.m_viewpotSize._height });
-    state.m_renderState.m_cmdList->setScissor({ 0.f, 0.f, (f32)state.m_viewportState.m_viewpotSize._width, (f32)state.m_viewportState.m_viewpotSize._height });
+    state.m_renderState.m_cmdList->setViewport({ 0.f, 0.f, (f32)state.m_viewportState._viewpotSize._width, (f32)state.m_viewportState._viewpotSize._height });
+    state.m_renderState.m_cmdList->setScissor({ 0.f, 0.f, (f32)state.m_viewportState._viewpotSize._width, (f32)state.m_viewportState._viewpotSize._height });
     state.m_renderState.m_cmdList->setPipelineState(*m_pipeline[0]);
 
     state.m_renderState.m_cmdList->bindDescriptorSet(0,
@@ -95,26 +109,13 @@ void RenderPipelineCompositionStage::execute(Device* device, scene::Scene::Scene
     state.m_globalResources.bind("render_target", m_compositionRenderTarget->getColorTexture<renderer::Texture2D>(0));
 }
 
-void RenderPipelineCompositionStage::changed(Device* device, scene::Scene::SceneData& data)
-{
-    if (!m_compositionRenderTarget)
-    {
-        createRenderTarget(device, data);
-    }
-    else if (m_compositionRenderTarget->getRenderArea() != data.m_viewportState.m_viewpotSize)
-    {
-        destroyRenderTarget(device, data);
-        createRenderTarget(device, data);
-    }
-}
-
-void RenderPipelineCompositionStage::createRenderTarget(Device* device, scene::Scene::SceneData& data)
+void RenderPipelineCompositionStage::createRenderTarget(Device* device, scene::SceneData& data)
 {
     ASSERT(m_compositionRenderTarget == nullptr, "must be nullptr");
-    m_compositionRenderTarget = new renderer::RenderTargetState(device, data.m_viewportState.m_viewpotSize, 1);
+    m_compositionRenderTarget = new renderer::RenderTargetState(device, data.m_viewportState._viewpotSize, 1);
 
     renderer::Texture2D* composition = new renderer::Texture2D(device, renderer::TextureUsage::TextureUsage_Attachment | renderer::TextureUsage::TextureUsage_Sampled,
-        renderer::Format::Format_R16G16B16A16_SFloat, data.m_viewportState.m_viewpotSize, renderer::TextureSamples::TextureSamples_x1, "composition");
+        renderer::Format::Format_R16G16B16A16_SFloat, data.m_viewportState._viewpotSize, renderer::TextureSamples::TextureSamples_x1, "composition");
 
     m_compositionRenderTarget->setColorTexture(0, composition,
         {
@@ -127,7 +128,7 @@ void RenderPipelineCompositionStage::createRenderTarget(Device* device, scene::S
     data.m_globalResources.bind("composition_target", composition);
 }
 
-void RenderPipelineCompositionStage::destroyRenderTarget(Device* device, scene::Scene::SceneData& data)
+void RenderPipelineCompositionStage::destroyRenderTarget(Device* device, scene::SceneData& data)
 {
     ASSERT(m_compositionRenderTarget, "must be valid");
     renderer::Texture2D* composition = m_compositionRenderTarget->getColorTexture<renderer::Texture2D>(0);

@@ -13,7 +13,7 @@ namespace v3d
 namespace renderer
 {
 
-RenderPipelineZPrepassStage::RenderPipelineZPrepassStage(RenderTechnique* technique) noexcept
+RenderPipelineZPrepassStage::RenderPipelineZPrepassStage(RenderTechnique* technique, scene::ModelHandler* modelHandler) noexcept
     : RenderPipelineStage(technique, "zprepass")
 
     , m_depthRenderTarget(nullptr)
@@ -25,7 +25,7 @@ RenderPipelineZPrepassStage::~RenderPipelineZPrepassStage()
 {
 }
 
-void RenderPipelineZPrepassStage::create(Device* device, scene::Scene::SceneData& state)
+void RenderPipelineZPrepassStage::create(Device* device, scene::SceneData& state)
 {
     createRenderTarget(device, state);
 
@@ -50,7 +50,7 @@ void RenderPipelineZPrepassStage::create(Device* device, scene::Scene::SceneData
    m_depthPipeline->setColorMask(0, renderer::ColorMask::ColorMask_All);
 }
 
-void RenderPipelineZPrepassStage::destroy(Device* device, scene::Scene::SceneData& state)
+void RenderPipelineZPrepassStage::destroy(Device* device, scene::SceneData& state)
 {
     destroyRenderTarget(device, state);
 
@@ -61,19 +61,28 @@ void RenderPipelineZPrepassStage::destroy(Device* device, scene::Scene::SceneDat
     m_depthPipeline = nullptr;
 }
 
-void RenderPipelineZPrepassStage::prepare(Device* device, scene::Scene::SceneData& state)
+void RenderPipelineZPrepassStage::prepare(Device* device, scene::SceneData& state)
 {
+    if (!m_depthRenderTarget)
+    {
+        createRenderTarget(device, state);
+    }
+    else if (m_depthRenderTarget->getRenderArea() != state.m_viewportState._viewpotSize)
+    {
+        destroyRenderTarget(device, state);
+        createRenderTarget(device, state);
+    }
 }
 
-void RenderPipelineZPrepassStage::execute(Device* device, scene::Scene::SceneData& state)
+void RenderPipelineZPrepassStage::execute(Device* device, scene::SceneData& state)
 {
     static auto renderTask = [this, &state](Device* device, CmdListRender* cmdList) -> void
         {
             DEBUG_MARKER_SCOPE(cmdList, "ZPrepass", color::colorrgbaf::GREEN);
 
             cmdList->beginRenderTarget(*m_depthRenderTarget);
-            cmdList->setViewport({ 0.f, 0.f, (f32)state.m_viewportState.m_viewpotSize._width, (f32)state.m_viewportState.m_viewpotSize._height });
-            cmdList->setScissor({ 0.f, 0.f, (f32)state.m_viewportState.m_viewpotSize._width, (f32)state.m_viewportState.m_viewpotSize._height });
+            cmdList->setViewport({ 0.f, 0.f, (f32)state.m_viewportState._viewpotSize._width, (f32)state.m_viewportState._viewpotSize._height });
+            cmdList->setScissor({ 0.f, 0.f, (f32)state.m_viewportState._viewpotSize._width, (f32)state.m_viewportState._viewpotSize._height });
             cmdList->setStencilRef(0);
 
             cmdList->setPipelineState(*m_depthPipeline);
@@ -121,20 +130,7 @@ void RenderPipelineZPrepassStage::execute(Device* device, scene::Scene::SceneDat
     renderTask(device, state.m_renderState.m_cmdList);
 }
 
-void RenderPipelineZPrepassStage::changed(Device* device, scene::Scene::SceneData& data)
-{
-    if (!m_depthRenderTarget)
-    {
-        createRenderTarget(device, data);
-    }
-    else if (m_depthRenderTarget->getRenderArea() != data.m_viewportState.m_viewpotSize)
-    {
-        destroyRenderTarget(device, data);
-        createRenderTarget(device, data);
-    }
-}
-
-void RenderPipelineZPrepassStage::createRenderTarget(Device* device, scene::Scene::SceneData& data)
+void RenderPipelineZPrepassStage::createRenderTarget(Device* device, scene::SceneData& data)
 {
 #if ENABLE_REVERSED_Z
     f32 clearValue = 0.0f;
@@ -143,10 +139,10 @@ void RenderPipelineZPrepassStage::createRenderTarget(Device* device, scene::Scen
 #endif
 
     ASSERT(m_depthRenderTarget == nullptr, "must be nullptr");
-    m_depthRenderTarget = new renderer::RenderTargetState(device, data.m_viewportState.m_viewpotSize, 0, 0, "zprepass");
+    m_depthRenderTarget = new renderer::RenderTargetState(device, data.m_viewportState._viewpotSize, 0, 0, "zprepass");
 
     renderer::Texture2D* depthStencilAttachment = new renderer::Texture2D(device, renderer::TextureUsage::TextureUsage_Attachment | renderer::TextureUsage::TextureUsage_Sampled,
-        renderer::Format::Format_D32_SFloat, data.m_viewportState.m_viewpotSize, renderer::TextureSamples::TextureSamples_x1, "depth_stencil");
+        renderer::Format::Format_R32_SFloat, data.m_viewportState._viewpotSize, renderer::TextureSamples::TextureSamples_x1, "depth_stencil");
     m_depthRenderTarget->setDepthStencilTexture(depthStencilAttachment,
         {
             renderer::RenderTargetLoadOp::LoadOp_Clear, renderer::RenderTargetStoreOp::StoreOp_Store, clearValue
@@ -162,7 +158,7 @@ void RenderPipelineZPrepassStage::createRenderTarget(Device* device, scene::Scen
     data.m_globalResources.bind("depth_stencil", depthStencilAttachment);
 }
 
-void RenderPipelineZPrepassStage::destroyRenderTarget(Device* device, scene::Scene::SceneData& data)
+void RenderPipelineZPrepassStage::destroyRenderTarget(Device* device, scene::SceneData& data)
 {
     ASSERT(m_depthRenderTarget, "must be valid");
     renderer::Texture2D* depthStencilAttachment = m_depthRenderTarget->getDepthStencilTexture<renderer::Texture2D>();

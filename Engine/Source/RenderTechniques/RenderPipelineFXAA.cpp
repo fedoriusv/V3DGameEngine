@@ -23,7 +23,7 @@ RenderPipelineFXAAStage::~RenderPipelineFXAAStage()
 {
 }
 
-void RenderPipelineFXAAStage::create(Device* device, scene::Scene::SceneData& state)
+void RenderPipelineFXAAStage::create(Device* device, scene::SceneData& state)
 {
     createRenderTarget(device, state);
 
@@ -49,19 +49,28 @@ void RenderPipelineFXAAStage::create(Device* device, scene::Scene::SceneData& st
     m_sampler->setWrap(renderer::SamplerWrap::TextureWrap_MirroredRepeat);
 }
 
-void RenderPipelineFXAAStage::destroy(Device* device, scene::Scene::SceneData& state)
+void RenderPipelineFXAAStage::destroy(Device* device, scene::SceneData& state)
 {
 }
 
-void RenderPipelineFXAAStage::prepare(Device* device, scene::Scene::SceneData& state)
+void RenderPipelineFXAAStage::prepare(Device* device, scene::SceneData& state)
 {
+    if (!m_renderTarget)
+    {
+        createRenderTarget(device, state);
+    }
+    else if (m_renderTarget->getRenderArea() != state.m_viewportState._viewpotSize)
+    {
+        destroyRenderTarget(device, state);
+        createRenderTarget(device, state);
+    }
 }
 
-void RenderPipelineFXAAStage::execute(Device* device, scene::Scene::SceneData& state)
+void RenderPipelineFXAAStage::execute(Device* device, scene::SceneData& state)
 {
     state.m_renderState.m_cmdList->beginRenderTarget(*m_renderTarget);
-    state.m_renderState.m_cmdList->setViewport({ 0.f, 0.f, (f32)state.m_viewportState.m_viewpotSize._width, (f32)state.m_viewportState.m_viewpotSize._height });
-    state.m_renderState.m_cmdList->setScissor({ 0.f, 0.f, (f32)state.m_viewportState.m_viewpotSize._width, (f32)state.m_viewportState.m_viewpotSize._height });
+    state.m_renderState.m_cmdList->setViewport({ 0.f, 0.f, (f32)state.m_viewportState._viewpotSize._width, (f32)state.m_viewportState._viewpotSize._height });
+    state.m_renderState.m_cmdList->setScissor({ 0.f, 0.f, (f32)state.m_viewportState._viewpotSize._width, (f32)state.m_viewportState._viewpotSize._height });
     state.m_renderState.m_cmdList->setPipelineState(*m_pipeline[0]);
 
     state.m_renderState.m_cmdList->bindDescriptorSet(0,
@@ -86,26 +95,13 @@ void RenderPipelineFXAAStage::execute(Device* device, scene::Scene::SceneData& s
     state.m_globalResources.bind("render_target", m_renderTarget->getColorTexture<renderer::Texture2D>(0));
 }
 
-void RenderPipelineFXAAStage::changed(Device* device, scene::Scene::SceneData& data)
-{
-    if (!m_renderTarget)
-    {
-        createRenderTarget(device, data);
-    }
-    else if (m_renderTarget->getRenderArea() != data.m_viewportState.m_viewpotSize)
-    {
-        destroyRenderTarget(device, data);
-        createRenderTarget(device, data);
-    }
-}
-
-void RenderPipelineFXAAStage::createRenderTarget(Device* device, scene::Scene::SceneData& data)
+void RenderPipelineFXAAStage::createRenderTarget(Device* device, scene::SceneData& data)
 {
     ASSERT(m_renderTarget == nullptr, "must be nullptr");
-    m_renderTarget = new renderer::RenderTargetState(device, data.m_viewportState.m_viewpotSize, 1, 0, "fxaa_pass");
+    m_renderTarget = new renderer::RenderTargetState(device, data.m_viewportState._viewpotSize, 1, 0, "fxaa_pass");
 
     renderer::Texture2D* texture = new renderer::Texture2D(device, renderer::TextureUsage::TextureUsage_Attachment | renderer::TextureUsage::TextureUsage_Sampled,
-        renderer::Format::Format_R8G8B8A8_UNorm, data.m_viewportState.m_viewpotSize, renderer::TextureSamples::TextureSamples_x1, "fxaa");
+        renderer::Format::Format_R8G8B8A8_UNorm, data.m_viewportState._viewpotSize, renderer::TextureSamples::TextureSamples_x1, "fxaa");
 
     m_renderTarget->setColorTexture(0, texture,
         {
@@ -119,7 +115,7 @@ void RenderPipelineFXAAStage::createRenderTarget(Device* device, scene::Scene::S
     data.m_globalResources.bind("fxaa", texture);
 }
 
-void RenderPipelineFXAAStage::destroyRenderTarget(Device* device, scene::Scene::SceneData& data)
+void RenderPipelineFXAAStage::destroyRenderTarget(Device* device, scene::SceneData& data)
 {
     ASSERT(m_renderTarget, "must be valid");
     renderer::Texture2D* composition = m_renderTarget->getColorTexture<renderer::Texture2D>(0);

@@ -8,6 +8,10 @@
 
 namespace v3d
 {
+namespace scene
+{
+    class ModelHandler;
+} //namespace scene
 namespace renderer
 {
     class RenderPipelineGBufferStage : public RenderPipelineStage
@@ -18,21 +22,19 @@ namespace renderer
         {
         };
 
-        explicit  RenderPipelineGBufferStage(RenderTechnique* technique) noexcept;
+        explicit  RenderPipelineGBufferStage(RenderTechnique* technique, scene::ModelHandler* modelHandler) noexcept;
         ~RenderPipelineGBufferStage();
 
-        void create(Device* device, scene::Scene::SceneData& state) override;
-        void destroy(Device* device, scene::Scene::SceneData& state) override;
+        void create(Device* device, scene::SceneData& state) override;
+        void destroy(Device* device, scene::SceneData& state) override;
 
-        void prepare(Device* device, scene::Scene::SceneData& state) override;
-        void execute(Device* device, scene::Scene::SceneData& state) override;
-
-        void changed(Device* device, scene::Scene::SceneData& data) override;
+        void prepare(Device* device, scene::SceneData& state) override;
+        void execute(Device* device, scene::SceneData& state) override;
 
     private:
 
-        void createRenderTarget(Device* device, scene::Scene::SceneData& data);
-        void destroyRenderTarget(Device* device, scene::Scene::SceneData& data);
+        void createRenderTarget(Device* device, scene::SceneData& data);
+        void destroyRenderTarget(Device* device, scene::SceneData& data);
 
         renderer::RenderTargetState* m_GBufferRenderTarget;
         std::vector<v3d::renderer::GraphicsPipelineState*> m_pipeline;

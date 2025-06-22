@@ -17,23 +17,21 @@ namespace renderer
         explicit  RenderPipelineDepthOITStage(RenderTechnique* technique) noexcept;
         ~RenderPipelineDepthOITStage();
 
-        void create(Device* device, scene::Scene::SceneData& state) override;
-        void destroy(Device* device, scene::Scene::SceneData& state) override;
+        void create(Device* device, scene::SceneData& state) override;
+        void destroy(Device* device, scene::SceneData& state) override;
 
-        void prepare(Device* device, scene::Scene::SceneData& state) override;
-        void execute(Device* device, scene::Scene::SceneData& state) override;
-
-        void changed(Device* device, scene::Scene::SceneData& data) override;
+        void prepare(Device* device, scene::SceneData& state) override;
+        void execute(Device* device, scene::SceneData& state) override;
 
     private:
 
-        void createRenderTarget(Device* device, scene::Scene::SceneData& data);
-        void destroyRenderTarget(Device* device, scene::Scene::SceneData& data);
+        void createRenderTarget(Device* device, scene::SceneData& data);
+        void destroyRenderTarget(Device* device, scene::SceneData& data);
 
-        void executeStochasticTotalAlpha_Pass1(Device* device, scene::Scene::SceneData& state);
-        void executeStochasticDepth_Pass2(Device* device, scene::Scene::SceneData& state);
-        void executeStochasticAccumulateColor_Pass3(Device* device, scene::Scene::SceneData& state);
-        void executeStochasticComposite_Pass4(Device* device, scene::Scene::SceneData& state);
+        void executeStochasticTotalAlpha_Pass1(Device* device, scene::SceneData& state);
+        void executeStochasticDepth_Pass2(Device* device, scene::SceneData& state);
+        void executeStochasticAccumulateColor_Pass3(Device* device, scene::SceneData& state);
+        void executeStochasticComposite_Pass4(Device* device, scene::SceneData& state);
 
         enum Pass
         {

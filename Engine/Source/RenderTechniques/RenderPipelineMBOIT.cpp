@@ -20,7 +20,7 @@ RenderPipelineMBOITStage::~RenderPipelineMBOITStage()
 {
 }
 
-void RenderPipelineMBOITStage::create(Device* device, scene::Scene::SceneData& state)
+void RenderPipelineMBOITStage::create(Device* device, scene::SceneData& state)
 {
     createRenderTarget(device, state);
 
@@ -45,15 +45,19 @@ void RenderPipelineMBOITStage::create(Device* device, scene::Scene::SceneData& s
         pipeline->setDepthTest(true);
         pipeline->setDepthWrite(false);
 
-        for (u32 i = 0; i < 2; ++i)
-        {
-            pipeline->setBlendEnable(i, true);
-            pipeline->setColorMask(i, renderer::ColorMask::ColorMask_All);
-            pipeline->setColorBlendFactor(i, renderer::BlendFactor::BlendFactor_One, renderer::BlendFactor::BlendFactor_One);
-            pipeline->setColorBlendOp(i, renderer::BlendOperation::BlendOp_Add);
-            pipeline->setAlphaBlendFactor(i, renderer::BlendFactor::BlendFactor_One, renderer::BlendFactor::BlendFactor_One);
-            pipeline->setAlphaBlendOp(i, renderer::BlendOperation::BlendOp_Add);
-        }
+         pipeline->setBlendEnable(0, true);
+         pipeline->setColorMask(0, renderer::ColorMask::ColorMask_All);
+         pipeline->setColorBlendFactor(0, renderer::BlendFactor::BlendFactor_One, renderer::BlendFactor::BlendFactor_One);
+         pipeline->setColorBlendOp(0, renderer::BlendOperation::BlendOp_Add);
+         pipeline->setAlphaBlendFactor(0, renderer::BlendFactor::BlendFactor_One, renderer::BlendFactor::BlendFactor_One);
+         pipeline->setAlphaBlendOp(0, renderer::BlendOperation::BlendOp_Add);
+
+         pipeline->setBlendEnable(1, false);
+         //pipeline->setColorMask(1, renderer::ColorMask::ColorMask_All);
+         //pipeline->setColorBlendFactor(1, renderer::BlendFactor::BlendFactor_One, renderer::BlendFactor::BlendFactor_One);
+         //pipeline->setColorBlendOp(1, renderer::BlendOperation::BlendOp_Add);
+         //pipeline->setAlphaBlendFactor(1, renderer::BlendFactor::BlendFactor_One, renderer::BlendFactor::BlendFactor_One);
+         //pipeline->setAlphaBlendOp(1, renderer::BlendOperation::BlendOp_Add);
 
         m_pipeline[Pass::MBOIT_Pass1] = pipeline;
     }
@@ -108,11 +112,8 @@ void RenderPipelineMBOITStage::create(Device* device, scene::Scene::SceneData& s
         pipeline->setDepthCompareOp(renderer::CompareOperation::CompareOp_Always);
         pipeline->setDepthWrite(false);
         pipeline->setDepthTest(false);
-
         pipeline->setBlendEnable(0, false);
         pipeline->setColorMask(0, renderer::ColorMask::ColorMask_All);
-        //pipeline->setColorBlendFactor(0, renderer::BlendFactor::BlendFactor_SrcAlpha, renderer::BlendFactor::BlendFactor_SrcAlpha);
-        //pipeline->setColorBlendOp(0, renderer::BlendOperation::BlendOp_Add);
 
         m_pipeline[Pass::CompositionPass] = pipeline;
     }
@@ -121,23 +122,32 @@ void RenderPipelineMBOITStage::create(Device* device, scene::Scene::SceneData& s
     m_sampler->setWrap(renderer::SamplerWrap::TextureWrap_MirroredRepeat);
 }
 
-void RenderPipelineMBOITStage::destroy(Device* device, scene::Scene::SceneData& state)
+void RenderPipelineMBOITStage::destroy(Device* device, scene::SceneData& state)
 {
 }
 
-void RenderPipelineMBOITStage::prepare(Device* device, scene::Scene::SceneData& state)
+void RenderPipelineMBOITStage::prepare(Device* device, scene::SceneData& state)
 {
+    if (!m_rt[Pass::MBOIT_Pass1])
+    {
+        createRenderTarget(device, state);
+    }
+    else if (m_rt[Pass::MBOIT_Pass1]->getRenderArea() != state.m_viewportState._viewpotSize)
+    {
+        destroyRenderTarget(device, state);
+        createRenderTarget(device, state);
+    }
 }
 
-void RenderPipelineMBOITStage::execute(Device* device, scene::Scene::SceneData& state)
+void RenderPipelineMBOITStage::execute(Device* device, scene::SceneData& state)
 {
     DEBUG_MARKER_SCOPE(state.m_renderState.m_cmdList, "Transparency", color::colorrgbaf::GREEN);
 
     //pass 1
     {
         state.m_renderState.m_cmdList->beginRenderTarget(*m_rt[Pass::MBOIT_Pass1]);
-        state.m_renderState.m_cmdList->setViewport({ 0.f, 0.f, (f32)state.m_viewportState.m_viewpotSize._width, (f32)state.m_viewportState.m_viewpotSize._height });
-        state.m_renderState.m_cmdList->setScissor({ 0.f, 0.f, (f32)state.m_viewportState.m_viewpotSize._width, (f32)state.m_viewportState.m_viewpotSize._height });
+        state.m_renderState.m_cmdList->setViewport({ 0.f, 0.f, (f32)state.m_viewportState._viewpotSize._width, (f32)state.m_viewportState._viewpotSize._height });
+        state.m_renderState.m_cmdList->setScissor({ 0.f, 0.f, (f32)state.m_viewportState._viewpotSize._width, (f32)state.m_viewportState._viewpotSize._height });
         state.m_renderState.m_cmdList->setPipelineState(*m_pipeline[Pass::MBOIT_Pass1]);
 
         state.m_renderState.m_cmdList->bindDescriptorSet(0,
@@ -184,8 +194,8 @@ void RenderPipelineMBOITStage::execute(Device* device, scene::Scene::SceneData& 
     //pass 2
     {
         state.m_renderState.m_cmdList->beginRenderTarget(*m_rt[Pass::MBOIT_Pass2]);
-        state.m_renderState.m_cmdList->setViewport({ 0.f, 0.f, (f32)state.m_viewportState.m_viewpotSize._width, (f32)state.m_viewportState.m_viewpotSize._height });
-        state.m_renderState.m_cmdList->setScissor({ 0.f, 0.f, (f32)state.m_viewportState.m_viewpotSize._width, (f32)state.m_viewportState.m_viewpotSize._height });
+        state.m_renderState.m_cmdList->setViewport({ 0.f, 0.f, (f32)state.m_viewportState._viewpotSize._width, (f32)state.m_viewportState._viewpotSize._height });
+        state.m_renderState.m_cmdList->setScissor({ 0.f, 0.f, (f32)state.m_viewportState._viewpotSize._width, (f32)state.m_viewportState._viewpotSize._height });
         state.m_renderState.m_cmdList->setPipelineState(*m_pipeline[Pass::MBOIT_Pass2]);
 
         state.m_renderState.m_cmdList->bindDescriptorSet(0,
@@ -250,8 +260,8 @@ void RenderPipelineMBOITStage::execute(Device* device, scene::Scene::SceneData& 
 
 
         state.m_renderState.m_cmdList->beginRenderTarget(*m_rt[Pass::CompositionPass]);
-        state.m_renderState.m_cmdList->setViewport({ 0.f, 0.f, (f32)state.m_viewportState.m_viewpotSize._width, (f32)state.m_viewportState.m_viewpotSize._height });
-        state.m_renderState.m_cmdList->setScissor({ 0.f, 0.f, (f32)state.m_viewportState.m_viewpotSize._width, (f32)state.m_viewportState.m_viewpotSize._height });
+        state.m_renderState.m_cmdList->setViewport({ 0.f, 0.f, (f32)state.m_viewportState._viewpotSize._width, (f32)state.m_viewportState._viewpotSize._height });
+        state.m_renderState.m_cmdList->setScissor({ 0.f, 0.f, (f32)state.m_viewportState._viewpotSize._width, (f32)state.m_viewportState._viewpotSize._height });
         state.m_renderState.m_cmdList->setPipelineState(*m_pipeline[Pass::CompositionPass]);
 
         state.m_renderState.m_cmdList->bindDescriptorSet(0,
@@ -264,6 +274,7 @@ void RenderPipelineMBOITStage::execute(Device* device, scene::Scene::SceneData& 
                 renderer::Descriptor(m_sampler, 2),
                 renderer::Descriptor(renderer::TextureView(composition_Texture), 3),
                 renderer::Descriptor(renderer::TextureView(m_rt[Pass::MBOIT_Pass2]->getColorTexture<renderer::Texture2D>(0), 0, 0), 4),
+                renderer::Descriptor(renderer::TextureView(m_rt[Pass::MBOIT_Pass1]->getColorTexture<renderer::Texture2D>(0), 0, 0), 5),
             });
 
         state.m_renderState.m_cmdList->draw(renderer::GeometryBufferDesc(), 0, 3, 0, 1);
@@ -273,20 +284,7 @@ void RenderPipelineMBOITStage::execute(Device* device, scene::Scene::SceneData& 
     state.m_globalResources.bind("render_target", m_rt[Pass::CompositionPass]->getColorTexture<renderer::Texture2D>(0));
 }
 
-void RenderPipelineMBOITStage::changed(Device* device, scene::Scene::SceneData& data)
-{
-    if (!m_rt[Pass::MBOIT_Pass1])
-    {
-        createRenderTarget(device, data);
-    }
-    else if (m_rt[Pass::MBOIT_Pass1]->getRenderArea() != data.m_viewportState.m_viewpotSize)
-    {
-        destroyRenderTarget(device, data);
-        createRenderTarget(device, data);
-    }
-}
-
-void RenderPipelineMBOITStage::createRenderTarget(Device* device, scene::Scene::SceneData& data)
+void RenderPipelineMBOITStage::createRenderTarget(Device* device, scene::SceneData& data)
 {
     ObjectHandle depth_stencil = data.m_globalResources.get("depth_stencil");
     ASSERT(depth_stencil.isValid(), "must be valid");
@@ -294,10 +292,10 @@ void RenderPipelineMBOITStage::createRenderTarget(Device* device, scene::Scene::
 
     //pass 1
     ASSERT(m_rt[Pass::MBOIT_Pass1] == nullptr, "must be nulptr");
-    m_rt[Pass::MBOIT_Pass1] = new renderer::RenderTargetState(device, data.m_viewportState.m_viewpotSize, 2);
+    m_rt[Pass::MBOIT_Pass1] = new renderer::RenderTargetState(device, data.m_viewportState._viewpotSize, 2);
 
     m_rt[Pass::MBOIT_Pass1]->setColorTexture(0, new renderer::Texture2D(device, renderer::TextureUsage::TextureUsage_Attachment | renderer::TextureUsage::TextureUsage_Sampled,
-        renderer::Format::Format_R32_SFloat, data.m_viewportState.m_viewpotSize, renderer::TextureSamples::TextureSamples_x1, "mboit_od"),
+        renderer::Format::Format_R32_SFloat, data.m_viewportState._viewpotSize, renderer::TextureSamples::TextureSamples_x1, "mboit_od"),
         {
             renderer::RenderTargetLoadOp::LoadOp_Clear, renderer::RenderTargetStoreOp::StoreOp_Store, color::Color(0.0f, 0.0f, 0.0f, 0.0f)
         },
@@ -306,7 +304,7 @@ void RenderPipelineMBOITStage::createRenderTarget(Device* device, scene::Scene::
         });
 
     m_rt[Pass::MBOIT_Pass1]->setColorTexture(1, new renderer::Texture2D(device, renderer::TextureUsage::TextureUsage_Attachment | renderer::TextureUsage::TextureUsage_Sampled,
-        renderer::Format::Format_R32G32B32A32_SFloat, data.m_viewportState.m_viewpotSize, renderer::TextureSamples::TextureSamples_x1, "mboit_d1234"),
+        renderer::Format::Format_R32G32B32A32_SFloat, data.m_viewportState._viewpotSize, renderer::TextureSamples::TextureSamples_x1, "mboit_d1234"),
         {
             renderer::RenderTargetLoadOp::LoadOp_Clear, renderer::RenderTargetStoreOp::StoreOp_Store, color::Color(0.0f, 0.0f, 0.0f, 0.0f)
         },
@@ -327,10 +325,10 @@ void RenderPipelineMBOITStage::createRenderTarget(Device* device, scene::Scene::
 
     //pass 2
     ASSERT(m_rt[Pass::MBOIT_Pass2] == nullptr, "must be nulptr");
-    m_rt[Pass::MBOIT_Pass2] = new renderer::RenderTargetState(device, data.m_viewportState.m_viewpotSize, 1);
+    m_rt[Pass::MBOIT_Pass2] = new renderer::RenderTargetState(device, data.m_viewportState._viewpotSize, 1);
 
     m_rt[Pass::MBOIT_Pass2]->setColorTexture(0, new renderer::Texture2D(device, renderer::TextureUsage::TextureUsage_Attachment | renderer::TextureUsage::TextureUsage_Sampled,
-        renderer::Format::Format_R32G32B32A32_SFloat, data.m_viewportState.m_viewpotSize, renderer::TextureSamples::TextureSamples_x1, "mboit_resolve"),
+        renderer::Format::Format_R32G32B32A32_SFloat, data.m_viewportState._viewpotSize, renderer::TextureSamples::TextureSamples_x1, "mboit_resolve"),
         {
             renderer::RenderTargetLoadOp::LoadOp_Clear, renderer::RenderTargetStoreOp::StoreOp_Store, color::Color(0.0f, 0.0f, 0.0f, 0.0f)
         },
@@ -350,10 +348,10 @@ void RenderPipelineMBOITStage::createRenderTarget(Device* device, scene::Scene::
         });
 
     //resolve
-    m_rt[Pass::CompositionPass] = new renderer::RenderTargetState(device, data.m_viewportState.m_viewpotSize, 1);
+    m_rt[Pass::CompositionPass] = new renderer::RenderTargetState(device, data.m_viewportState._viewpotSize, 1);
 
     m_rt[Pass::CompositionPass]->setColorTexture(0, new renderer::Texture2D(device, renderer::TextureUsage::TextureUsage_Attachment | renderer::TextureUsage::TextureUsage_Sampled,
-        renderer::Format::Format_R16G16B16A16_SFloat, data.m_viewportState.m_viewpotSize, renderer::TextureSamples::TextureSamples_x1, "mboit_composition"),
+        renderer::Format::Format_R16G16B16A16_SFloat, data.m_viewportState._viewpotSize, renderer::TextureSamples::TextureSamples_x1, "mboit_composition"),
         {
             renderer::RenderTargetLoadOp::LoadOp_DontCare, renderer::RenderTargetStoreOp::StoreOp_Store, color::Color(0.0f)
         },
@@ -363,7 +361,7 @@ void RenderPipelineMBOITStage::createRenderTarget(Device* device, scene::Scene::
     );
 }
 
-void RenderPipelineMBOITStage::destroyRenderTarget(Device* device, scene::Scene::SceneData& data)
+void RenderPipelineMBOITStage::destroyRenderTarget(Device* device, scene::SceneData& data)
 {
     {
         ASSERT(m_rt[Pass::MBOIT_Pass1], "must be valid");

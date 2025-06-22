@@ -11,7 +11,7 @@ namespace v3d
 namespace renderer
 {
 
-RenderPipelineGBufferStage::RenderPipelineGBufferStage(RenderTechnique* technique) noexcept
+RenderPipelineGBufferStage::RenderPipelineGBufferStage(RenderTechnique* technique, scene::ModelHandler* modelHandler) noexcept
     : RenderPipelineStage(technique, "gbuffer")
     , m_GBufferRenderTarget(nullptr)
 {
@@ -22,7 +22,7 @@ RenderPipelineGBufferStage::~RenderPipelineGBufferStage()
     ASSERT(m_GBufferRenderTarget == nullptr, "must be nullptr");
 }
 
-void RenderPipelineGBufferStage::create(Device* device, scene::Scene::SceneData& state)
+void RenderPipelineGBufferStage::create(Device* device, scene::SceneData& state)
 {
     createRenderTarget(device, state);
 
@@ -58,7 +58,7 @@ void RenderPipelineGBufferStage::create(Device* device, scene::Scene::SceneData&
     }
 }
 
-void RenderPipelineGBufferStage::destroy(Device* device, scene::Scene::SceneData& state)
+void RenderPipelineGBufferStage::destroy(Device* device, scene::SceneData& state)
 {
     destroyRenderTarget(device, state);
 
@@ -72,19 +72,28 @@ void RenderPipelineGBufferStage::destroy(Device* device, scene::Scene::SceneData
     }
 }
 
-void RenderPipelineGBufferStage::prepare(Device* device, scene::Scene::SceneData& state)
+void RenderPipelineGBufferStage::prepare(Device* device, scene::SceneData& state)
 {
+    if (!m_GBufferRenderTarget)
+    {
+        createRenderTarget(device, state);
+    }
+    else if (m_GBufferRenderTarget->getRenderArea() != state.m_viewportState._viewpotSize)
+    {
+        destroyRenderTarget(device, state);
+        createRenderTarget(device, state);
+    }
 }
 
-void RenderPipelineGBufferStage::execute(Device* device, scene::Scene::SceneData& state)
+void RenderPipelineGBufferStage::execute(Device* device, scene::SceneData& state)
 {
     static auto renderTask = [this, &state](Device* device, CmdListRender* cmdList) -> void
         {
             DEBUG_MARKER_SCOPE(state.m_renderState.m_cmdList, "GBuffer", color::colorrgbaf::GREEN);
 
             state.m_renderState.m_cmdList->beginRenderTarget(*m_GBufferRenderTarget);
-            state.m_renderState.m_cmdList->setViewport({ 0.f, 0.f, (f32)state.m_viewportState.m_viewpotSize._width, (f32)state.m_viewportState.m_viewpotSize._height });
-            state.m_renderState.m_cmdList->setScissor({ 0.f, 0.f, (f32)state.m_viewportState.m_viewpotSize._width, (f32)state.m_viewportState.m_viewpotSize._height });
+            state.m_renderState.m_cmdList->setViewport({ 0.f, 0.f, (f32)state.m_viewportState._viewpotSize._width, (f32)state.m_viewportState._viewpotSize._height });
+            state.m_renderState.m_cmdList->setScissor({ 0.f, 0.f, (f32)state.m_viewportState._viewpotSize._width, (f32)state.m_viewportState._viewpotSize._height });
             state.m_renderState.m_cmdList->setStencilRef(0);
 
             state.m_renderState.m_cmdList->bindDescriptorSet(0,
@@ -135,26 +144,13 @@ void RenderPipelineGBufferStage::execute(Device* device, scene::Scene::SceneData
     renderTask(device, state.m_renderState.m_cmdList);
 }
 
-void RenderPipelineGBufferStage::changed(Device* device, scene::Scene::SceneData& data)
-{
-    if (!m_GBufferRenderTarget)
-    {
-        createRenderTarget(device, data);
-    }
-    else if (m_GBufferRenderTarget->getRenderArea() != data.m_viewportState.m_viewpotSize)
-    {
-        destroyRenderTarget(device, data);
-        createRenderTarget(device, data);
-    }
-}
-
-void RenderPipelineGBufferStage::createRenderTarget(Device* device, scene::Scene::SceneData& state)
+void RenderPipelineGBufferStage::createRenderTarget(Device* device, scene::SceneData& state)
 {
     ASSERT(m_GBufferRenderTarget == nullptr, "must be nullptr");
-    m_GBufferRenderTarget = new renderer::RenderTargetState(device, state.m_viewportState.m_viewpotSize, 4, 0, "gbuffer_pass");
+    m_GBufferRenderTarget = new renderer::RenderTargetState(device, state.m_viewportState._viewpotSize, 4, 0, "gbuffer_pass");
 
     renderer::Texture2D* albedoAttachment = new renderer::Texture2D(device, renderer::TextureUsage::TextureUsage_Attachment | renderer::TextureUsage::TextureUsage_Sampled,
-        renderer::Format::Format_R8G8B8A8_UNorm, state.m_viewportState.m_viewpotSize, renderer::TextureSamples::TextureSamples_x1, "gbuffer_albedo");
+        renderer::Format::Format_R8G8B8A8_UNorm, state.m_viewportState._viewpotSize, renderer::TextureSamples::TextureSamples_x1, "gbuffer_albedo");
     m_GBufferRenderTarget->setColorTexture(0, albedoAttachment,
         {
             renderer::RenderTargetLoadOp::LoadOp_Clear, renderer::RenderTargetStoreOp::StoreOp_Store, color::Color(0.0f, 0.0f, 0.0f, 1.0f)
@@ -165,35 +161,35 @@ void RenderPipelineGBufferStage::createRenderTarget(Device* device, scene::Scene
     );
 
     renderer::Texture2D* normalsAttachment = new renderer::Texture2D(device, renderer::TextureUsage::TextureUsage_Attachment | renderer::TextureUsage::TextureUsage_Sampled,
-        renderer::Format::Format_R16G16B16A16_SFloat, state.m_viewportState.m_viewpotSize, renderer::TextureSamples::TextureSamples_x1, "gbuffer_normals");
+        renderer::Format::Format_R16G16B16A16_SFloat, state.m_viewportState._viewpotSize, renderer::TextureSamples::TextureSamples_x1, "gbuffer_normals");
     m_GBufferRenderTarget->setColorTexture(1, normalsAttachment,
         {
             renderer::RenderTargetLoadOp::LoadOp_Clear, renderer::RenderTargetStoreOp::StoreOp_Store, color::Color(0.0f, 0.0f, 0.0f, 1.0f)
         },
         {
-            renderer::TransitionOp::TransitionOp_Undefined, renderer::TransitionOp::TransitionOp_ShaderRead
+            renderer::TransitionOp::TransitionOp_Undefined, renderer::TransitionOp::TransitionOp_ColorAttachment
         }
     );
 
     renderer::Texture2D* materialAttachment = new renderer::Texture2D(device, renderer::TextureUsage::TextureUsage_Attachment | renderer::TextureUsage::TextureUsage_Sampled,
-        renderer::Format::Format_R16G16B16A16_SFloat, state.m_viewportState.m_viewpotSize, renderer::TextureSamples::TextureSamples_x1, "gbuffer_material");
+        renderer::Format::Format_R16G16B16A16_SFloat, state.m_viewportState._viewpotSize, renderer::TextureSamples::TextureSamples_x1, "gbuffer_material");
     m_GBufferRenderTarget->setColorTexture(2, materialAttachment,
         {
             renderer::RenderTargetLoadOp::LoadOp_Clear, renderer::RenderTargetStoreOp::StoreOp_Store, color::Color(0.0f, 0.0f, 0.0f, 1.0f)
         },
         {
-            renderer::TransitionOp::TransitionOp_Undefined, renderer::TransitionOp::TransitionOp_ShaderRead
+            renderer::TransitionOp::TransitionOp_Undefined, renderer::TransitionOp::TransitionOp_ColorAttachment
         }
     );
 
     renderer::Texture2D* velocityAttachment = new renderer::Texture2D(device, renderer::TextureUsage::TextureUsage_Attachment | renderer::TextureUsage::TextureUsage_Sampled,
-        renderer::Format::Format_R16G16_SFloat, state.m_viewportState.m_viewpotSize, renderer::TextureSamples::TextureSamples_x1, "gbuffer_velocity");
+        renderer::Format::Format_R16G16_SFloat, state.m_viewportState._viewpotSize, renderer::TextureSamples::TextureSamples_x1, "gbuffer_velocity");
     m_GBufferRenderTarget->setColorTexture(3, velocityAttachment,
         {
             renderer::RenderTargetLoadOp::LoadOp_Clear, renderer::RenderTargetStoreOp::StoreOp_Store, color::Color(0.0f, 0.0f, 0.0f, 1.0f)
         },
         {
-            renderer::TransitionOp::TransitionOp_Undefined, renderer::TransitionOp::TransitionOp_ShaderRead
+            renderer::TransitionOp::TransitionOp_Undefined, renderer::TransitionOp::TransitionOp_ColorAttachment
         }
     );
 
@@ -218,7 +214,7 @@ void RenderPipelineGBufferStage::createRenderTarget(Device* device, scene::Scene
     );
 }
 
-void RenderPipelineGBufferStage::destroyRenderTarget(Device* device, scene::Scene::SceneData& data)
+void RenderPipelineGBufferStage::destroyRenderTarget(Device* device, scene::SceneData& data)
 {
     ASSERT(m_GBufferRenderTarget, "must be valid");
     renderer::Texture2D* albedoAttachment = m_GBufferRenderTarget->getColorTexture<renderer::Texture2D>(0);

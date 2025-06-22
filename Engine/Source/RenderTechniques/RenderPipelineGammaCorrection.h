@@ -16,18 +16,16 @@ namespace renderer
         explicit RenderPipelineGammaCorrectionStage(RenderTechnique* technique) noexcept;
         ~RenderPipelineGammaCorrectionStage();
 
-        void create(Device* device, scene::Scene::SceneData& state) override;
-        void destroy(Device* device, scene::Scene::SceneData& state) override;
+        void create(Device* device, scene::SceneData& state) override;
+        void destroy(Device* device, scene::SceneData& state) override;
 
-        void prepare(Device* device, scene::Scene::SceneData& state) override;
-        void execute(Device* device, scene::Scene::SceneData& state) override;
-
-        void changed(Device* device, scene::Scene::SceneData& data) override;
+        void prepare(Device* device, scene::SceneData& state) override;
+        void execute(Device* device, scene::SceneData& state) override;
 
     private:
 
-        void createRenderTarget(Device* device, scene::Scene::SceneData& data);
-        void destroyRenderTarget(Device* device, scene::Scene::SceneData& data);
+        void createRenderTarget(Device* device, scene::SceneData& data);
+        void destroyRenderTarget(Device* device, scene::SceneData& data);
 
         renderer::RenderTargetState* m_gammaRenderTarget;
         renderer::SamplerState* m_sampler;
