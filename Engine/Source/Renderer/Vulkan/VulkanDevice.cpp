@@ -1956,8 +1956,8 @@ bool VulkanCmdList::uploadData(Texture3D* texture, u32 size, const void* data)
 
     VulkanCommandBuffer* cmdBuffer = VulkanCmdList::acquireAndStartCommandBuffer(CommandTargetType::CmdResourceBuffer);
     ASSERT(texture->hasUsageFlag(TextureUsage::TextureUsage_Backbuffer), "swapchain is not supported");
-    VulkanImage* image = static_cast<VulkanImage*>(objectFromHandle<RenderTexture>(texture->getTextureHandle()));
-    bool result = image->upload(cmdBuffer, size, data);
+    VulkanImage* vkImage = static_cast<VulkanImage*>(objectFromHandle<RenderTexture>(texture->getTextureHandle()));
+    bool result = vkImage->upload(cmdBuffer, size, data);
 
     u32 immediateResourceSubmit = m_device.getVulkanDeviceCaps()._immediateResourceSubmit;
     if (result && immediateResourceSubmit > 0)
@@ -1985,6 +1985,191 @@ bool VulkanCmdList::uploadData(Buffer* buffer, u32 offset, u32 size, const void*
     }
 
     return result;
+}
+
+void VulkanCmdList::copy(Texture* src, Texture* dst, const math::Dimension3D& size)
+{
+#if VULKAN_DEBUG
+    LOG_DEBUG("VulkanCmdList::copy");
+#endif
+
+    VulkanCommandBuffer* cmdBuffer = VulkanCmdList::acquireAndStartCommandBuffer(CommandTargetType::CmdResourceBuffer);
+    VulkanImage* vkSrcImage = static_cast<VulkanImage*>(objectFromHandle<RenderTexture>(src->getTextureHandle()));
+    VulkanImage* vkDstImage = static_cast<VulkanImage*>(objectFromHandle<RenderTexture>(dst->getTextureHandle()));
+
+    static auto makeSubresourceLayer = [](VulkanImage* image, u32 mip) -> VkImageSubresourceLayers
+        {
+            VkImageSubresourceLayers layer = {};
+            layer.aspectMask = image->getImageAspectFlags();
+            layer.mipLevel = mip;
+            layer.baseArrayLayer = 0;
+            layer.layerCount = image->getArrayLayers();
+
+            return layer;
+        };
+
+    std::vector<VkImageCopy> regions;
+    for (u32 mip = 0; mip < src->getMipmapsCount(); ++mip)
+    {
+        VkImageCopy region = {};
+        region.srcOffset = { 0, 0, 0 };
+        region.srcSubresource = makeSubresourceLayer(vkSrcImage, mip);
+        region.dstOffset = { 0, 0, 0 };
+        region.dstSubresource = makeSubresourceLayer(vkDstImage, mip);
+        region.extent = { size._width, size._height, size._depth };
+
+        regions.push_back(region);
+    }
+
+    static auto getPipelineStage = [](const VulkanImage* vkImage) -> VkPipelineStageFlags
+        {
+            VkPipelineStageFlags imageStage = 0;
+            if (vkImage->hasUsageFlag(TextureUsage::TextureUsage_Sampled))
+            {
+                imageStage |= VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+            }
+
+            if (vkImage->isColorFormat(vkImage->getFormat()) && vkImage->hasUsageFlag(TextureUsage::TextureUsage_Attachment))
+            {
+                imageStage |= VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+            }
+            else if (vkImage->isDepthStencilFormat(vkImage->getFormat()) && vkImage->hasUsageFlag(TextureUsage::TextureUsage_Attachment))
+            {
+                imageStage |= VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
+            }
+
+            if (vkImage->hasUsageFlag(TextureUsage::TextureUsage_Storage))
+            {
+                imageStage |= VK_PIPELINE_STAGE_VERTEX_SHADER_BIT | VK_PIPELINE_STAGE_GEOMETRY_SHADER_BIT | VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+            }
+
+            return imageStage;
+        };
+
+    VkImageLayout srcImageOldLayout = cmdBuffer->getResourceStateTracker().getLayout(vkSrcImage, RenderTexture::Subresource());
+    VkPipelineStageFlags srcImageStage = getPipelineStage(vkSrcImage);
+    cmdBuffer->cmdPipelineBarrier(vkSrcImage, srcImageStage, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+
+    VkImageLayout dstImageOldLayout = cmdBuffer->getResourceStateTracker().getLayout(vkDstImage, RenderTexture::Subresource());
+    VkPipelineStageFlags dstImageStage = getPipelineStage(vkDstImage);
+    cmdBuffer->cmdPipelineBarrier(vkDstImage, dstImageStage, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+
+    cmdBuffer->cmdCopyImageToImage(vkSrcImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, vkDstImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, regions);
+
+    static auto getImageLayout = [](const VulkanImage* vkImage, VkImageLayout layout) -> VkImageLayout
+        {
+            if (layout == VK_IMAGE_LAYOUT_UNDEFINED || layout == VK_IMAGE_LAYOUT_PREINITIALIZED) //first time
+            {
+                if (vkImage->hasUsageFlag(TextureUsage::TextureUsage_Sampled))
+                {
+                    layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+                }
+            }
+
+            return layout;
+        };
+
+    cmdBuffer->cmdPipelineBarrier(vkSrcImage, VK_PIPELINE_STAGE_TRANSFER_BIT, srcImageStage, getImageLayout(vkSrcImage, srcImageOldLayout));
+    cmdBuffer->cmdPipelineBarrier(vkDstImage, VK_PIPELINE_STAGE_TRANSFER_BIT, dstImageStage, getImageLayout(vkDstImage, dstImageOldLayout));
+
+    u32 immediateResourceSubmit = m_device.getVulkanDeviceCaps()._immediateResourceSubmit;
+    if (!m_pendingRenderState._insideRenderpass && immediateResourceSubmit > 0)
+    {
+        m_device.submit(this, immediateResourceSubmit == 2 ? true : false);
+    }
+}
+
+void VulkanCmdList::copy(const TextureView& src, const TextureView& dst, const math::Dimension3D& size)
+{
+    VulkanCommandBuffer* cmdBuffer = VulkanCmdList::acquireAndStartCommandBuffer(CommandTargetType::CmdResourceBuffer);
+    VulkanImage* vkSrcImage = static_cast<VulkanImage*>(objectFromHandle<RenderTexture>(src._texture->getTextureHandle()));
+    VulkanImage* vkDstImage = static_cast<VulkanImage*>(objectFromHandle<RenderTexture>(dst._texture->getTextureHandle()));
+
+    static auto getPipelineStage = [](const VulkanImage* vkImage) -> VkPipelineStageFlags
+        {
+            VkPipelineStageFlags imageStage = 0;
+            if (vkImage->hasUsageFlag(TextureUsage::TextureUsage_Sampled))
+            {
+                imageStage |= VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+            }
+
+            if (vkImage->isColorFormat(vkImage->getFormat()) && vkImage->hasUsageFlag(TextureUsage::TextureUsage_Attachment))
+            {
+                imageStage |= VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+            }
+            else if (vkImage->isDepthStencilFormat(vkImage->getFormat()) && vkImage->hasUsageFlag(TextureUsage::TextureUsage_Attachment))
+            {
+                imageStage |= VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
+            }
+
+            if (vkImage->hasUsageFlag(TextureUsage::TextureUsage_Storage))
+            {
+                imageStage |= VK_PIPELINE_STAGE_VERTEX_SHADER_BIT | VK_PIPELINE_STAGE_GEOMETRY_SHADER_BIT | VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+            }
+
+            return imageStage;
+        };
+
+    static auto makeSubresourceLayer = [](VulkanImage* image, u32 mip, u32 baseLayer, u32 countLayers) -> VkImageSubresourceLayers
+        {
+            VkImageSubresourceLayers layer = {};
+            layer.aspectMask = image->getImageAspectFlags();
+            layer.mipLevel = mip;
+            layer.baseArrayLayer = baseLayer;
+            layer.layerCount = countLayers;
+
+            return layer;
+        };
+
+    std::vector<VkImageCopy> regions;
+    for (u32 mip = src._subresource._baseMip; mip < src._subresource._mips; ++mip)
+    {
+        VkImageCopy regions = {};
+        regions.srcOffset = { 0, 0, 0 };
+        regions.srcSubresource = makeSubresourceLayer(vkSrcImage, mip, src._subresource._baseLayer, src._subresource._layers);
+        regions.dstOffset = { 0, 0, 0 };
+        regions.dstSubresource = makeSubresourceLayer(vkDstImage, mip, dst._subresource._baseLayer, dst._subresource._layers);
+        regions.extent = { size._width, size._height, size._depth };
+    }
+
+    VkImageLayout srcImageOldLayout = cmdBuffer->getResourceStateTracker().getLayout(vkSrcImage, src._subresource);
+    VkPipelineStageFlags srcImageStage = getPipelineStage(vkSrcImage);
+    cmdBuffer->cmdPipelineBarrier(vkSrcImage, src._subresource, srcImageStage, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+
+    VkImageLayout dstImageOldLayout = cmdBuffer->getResourceStateTracker().getLayout(vkDstImage, dst._subresource);
+    VkPipelineStageFlags dstImageStage = getPipelineStage(vkDstImage);
+    cmdBuffer->cmdPipelineBarrier(vkDstImage, dst._subresource, dstImageStage, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+
+    cmdBuffer->cmdCopyImageToImage(vkSrcImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, vkDstImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, regions);
+
+    cmdBuffer->cmdPipelineBarrier(vkSrcImage, src._subresource, VK_PIPELINE_STAGE_TRANSFER_BIT, srcImageStage, srcImageOldLayout);
+    cmdBuffer->cmdPipelineBarrier(vkDstImage, dst._subresource, VK_PIPELINE_STAGE_TRANSFER_BIT, dstImageStage, dstImageOldLayout);
+
+    u32 immediateResourceSubmit = m_device.getVulkanDeviceCaps()._immediateResourceSubmit;
+    if (!m_pendingRenderState._insideRenderpass && immediateResourceSubmit > 0)
+    {
+        m_device.submit(this, immediateResourceSubmit == 2 ? true : false);
+    }
+}
+
+void VulkanCmdList::copy(Buffer* src, u32 srcOffset, Buffer* dst, u32 dstOffset, u32 size)
+{
+    VulkanCommandBuffer* cmdBuffer = VulkanCmdList::acquireAndStartCommandBuffer(CommandTargetType::CmdResourceBuffer);
+    VulkanBuffer* vkSrcBuffer = static_cast<VulkanBuffer*>(objectFromHandle<RenderBuffer>(src->getBufferHandle()));
+    VulkanBuffer* vkDstBuffer = static_cast<VulkanBuffer*>(objectFromHandle<RenderBuffer>(dst->getBufferHandle()));
+
+    VkBufferCopy regions = {};
+    regions.srcOffset = static_cast<VkDeviceSize>(srcOffset);
+    regions.dstOffset = static_cast<VkDeviceSize>(dstOffset);
+    regions.size = static_cast<VkDeviceSize>(size);
+
+    cmdBuffer->cmdCopyBufferToBuffer(vkSrcBuffer, vkDstBuffer, { regions });
+
+    u32 immediateResourceSubmit = m_device.getVulkanDeviceCaps()._immediateResourceSubmit;
+    if (!m_pendingRenderState._insideRenderpass && immediateResourceSubmit > 0)
+    {
+        m_device.submit(this, immediateResourceSubmit == 2 ? true : false);
+    }
 }
 
 void VulkanCmdList::insertDebugMarker(const std::string& marker, const color::Color& color)

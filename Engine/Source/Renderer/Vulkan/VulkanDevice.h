@@ -77,6 +77,10 @@ namespace vk
         bool uploadData(Texture3D* texture, u32 size, const void* data) override;
         bool uploadData(Buffer* buffer, u32 offset, u32 size, const void* data) override;
 
+        void copy(Texture* src, Texture* dst, const math::Dimension3D& size) override;
+        void copy(const TextureView& src, const TextureView& dst, const math::Dimension3D& size) override;
+        void copy(Buffer* src, u32 srcOffset, Buffer* dst, u32 dstOffset, u32 size) override;
+
         void insertDebugMarker(const std::string& marker, const color::Color& color) override;
         void beginDebugMarker(const std::string& marker, const color::Color& color) override;
         void endDebugMarker(const std::string& marker) override;

@@ -30,6 +30,14 @@ namespace math
     {
     }
 
+    template<DimensionType3D T>
+    inline constexpr TDimension3D<T>::TDimension3D(const TDimension2D<T>& other, T depth) noexcept
+        : _width(other._width)
+        , _height(other._height)
+        , _depth(depth)
+    {
+    }
+
     template <DimensionType3D T>
     inline TDimension3D<T>& TDimension3D<T>::operator=(const TDimension3D<T>& other)
     {

@@ -369,7 +369,7 @@ namespace renderer
         static_assert(sizeof(Subresource) == 8, "Wrong size");
 
 
-        [[nodiscard]] static const Subresource makeSubresource(u32 baseLayer, u32 layers, u32 baseMip, u32 mips)
+        [[nodiscard]] static constexpr Subresource makeSubresource(u32 baseLayer, u32 layers, u32 baseMip, u32 mips)
         {
             ASSERT(baseLayer != ~0 && baseMip != ~0 && layers != ~0 && mips != ~0, "must be real");
             return { baseLayer, layers, baseMip, mips };

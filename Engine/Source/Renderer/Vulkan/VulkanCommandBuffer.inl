@@ -237,6 +237,16 @@ inline void VulkanCommandBuffer::cmdCopyBufferToBuffer(VulkanBuffer* src, Vulkan
     VulkanWrapper::CmdCopyBuffer(m_commands, src->getHandle(), dst->getHandle(), static_cast<u32>(regions.size()), regions.data());
 }
 
+inline void VulkanCommandBuffer::cmdCopyImageToImage(VulkanImage* src, VkImageLayout srcLayout, VulkanImage* dst, VkImageLayout dstLayout, const std::vector<VkImageCopy>& regions)
+{
+    ASSERT(m_status == CommandBufferStatus::Begin, "not started");
+    ASSERT(!isInsideRenderPass(), "outside render pass");
+
+    VulkanCommandBuffer::captureResource(src);
+    VulkanCommandBuffer::captureResource(dst);
+    VulkanWrapper::CmdCopyImage(m_commands, src->getHandle(), srcLayout, dst->getHandle(), dstLayout, static_cast<u32>(regions.size()), regions.data());
+}
+
 inline void VulkanCommandBuffer::cmdPipelineBarrier(VulkanImage* image, VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask, VkImageLayout layout)
 {
     VulkanCommandBuffer::cmdPipelineBarrier(image, VulkanImage::makeVulkanImageSubresource(image), srcStageMask, dstStageMask, layout);

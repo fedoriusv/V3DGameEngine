@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Math.h"
+#include "Dimension2D.h"
 
 namespace v3d
 {
@@ -22,6 +23,7 @@ namespace math
         constexpr TDimension3D() noexcept;
         constexpr TDimension3D(T width, T height, T depth) noexcept;
         constexpr TDimension3D(const TDimension3D<T>& other) noexcept;
+        constexpr TDimension3D(const TDimension2D<T>& other, T depth = 1U) noexcept;
         ~TDimension3D() = default;
 
         TDimension3D<T>& operator=(const TDimension3D<T>& other);

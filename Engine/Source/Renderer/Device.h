@@ -60,6 +60,10 @@ namespace renderer
         virtual void beginDebugMarker(const std::string& marker, const color::Color& color) = 0;
         virtual void endDebugMarker(const std::string& marker) = 0;
 
+        virtual void copy(Texture* src, Texture* dst, const math::Dimension3D& size) = 0;
+        virtual void copy(const TextureView& src, const TextureView& dst, const math::Dimension3D& size) = 0;
+        virtual void copy(Buffer* src, u32 srcOffset, Buffer* dst, u32 dstOffset, u32 size) = 0;
+
     protected:
 
         CmdList() noexcept
