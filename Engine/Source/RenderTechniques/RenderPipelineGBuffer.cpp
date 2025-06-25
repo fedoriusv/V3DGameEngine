@@ -48,7 +48,34 @@ void RenderPipelineGBufferStage::create(Device* device, scene::SceneData& state)
         pipeline->setDepthCompareOp(renderer::CompareOperation::CompareOp_LessOrEqual);
 #endif
         pipeline->setDepthTest(true);
-        pipeline->setDepthWrite(false);
+        pipeline->setDepthWrite(true);
+        pipeline->setColorMask(0, renderer::ColorMask::ColorMask_All);
+        pipeline->setColorMask(1, renderer::ColorMask::ColorMask_All);
+        pipeline->setColorMask(2, renderer::ColorMask::ColorMask_All);
+        pipeline->setColorMask(3, renderer::ColorMask::ColorMask_All);
+
+        m_pipeline.emplace_back(pipeline);
+    }
+
+    {
+        const renderer::VertexShader* vertShader = resource::ResourceManager::getInstance()->loadShader<renderer::VertexShader, resource::ShaderSourceFileLoader>(device,
+            "gbuffer.hlsl", "gbuffer_standard_vs", {}, {}/*, resource::ShaderCompileFlag::ShaderCompile_UseDXCompilerForSpirV*/);
+        const renderer::FragmentShader* fragShader = resource::ResourceManager::getInstance()->loadShader<renderer::FragmentShader, resource::ShaderSourceFileLoader>(device,
+            "gbuffer.hlsl", "gbuffer_masked_ps", {}, {}/*, resource::ShaderCompileFlag::ShaderCompile_UseDXCompilerForSpirV*/);
+
+        renderer::GraphicsPipelineState* pipeline = new renderer::GraphicsPipelineState(
+            device, VertexFormatStandardDesc, m_GBufferRenderTarget->getRenderPassDesc(), new renderer::ShaderProgram(device, vertShader, fragShader), "gbuffer_masked_pipeline");
+
+        pipeline->setPrimitiveTopology(renderer::PrimitiveTopology::PrimitiveTopology_TriangleList);
+        pipeline->setFrontFace(renderer::FrontFace::FrontFace_Clockwise);
+        pipeline->setCullMode(renderer::CullMode::CullMode_None);
+#if ENABLE_REVERSED_Z
+        pipeline->setDepthCompareOp(renderer::CompareOperation::CompareOp_GreaterOrEqual);
+#else
+        pipeline->setDepthCompareOp(renderer::CompareOperation::CompareOp_LessOrEqual);
+#endif
+        pipeline->setDepthTest(true);
+        pipeline->setDepthWrite(true);
         pipeline->setColorMask(0, renderer::ColorMask::ColorMask_All);
         pipeline->setColorMask(1, renderer::ColorMask::ColorMask_All);
         pipeline->setColorMask(2, renderer::ColorMask::ColorMask_All);
@@ -130,6 +157,44 @@ void RenderPipelineGBufferStage::execute(Device* device, scene::SceneData& state
                             renderer::Descriptor(renderer::TextureView(draw.m_albedo), 3),
                             renderer::Descriptor(renderer::TextureView(draw.m_normals), 4),
                             renderer::Descriptor(renderer::TextureView(draw.m_material), 5),
+                        });
+
+                    DEBUG_MARKER_SCOPE(cmdList, std::format("Object {}, pipeline {}", draw.m_objectID, m_pipeline[draw.m_pipelineID]->getName()), color::colorrgbaf::LTGREY);
+                    renderer::GeometryBufferDesc desc(draw.m_IdxBuffer, 0, draw.m_VtxBuffer, 0, sizeof(VertexFormatStandard), 0);
+                    state.m_renderState.m_cmdList->drawIndexed(desc, 0, draw.m_IdxBuffer->getIndicesCount(), 0, 0, 1);
+                }
+                else if (draw.m_stageID == "masked")
+                {
+                    state.m_renderState.m_cmdList->setPipelineState(*m_pipeline[draw.m_pipelineID]);
+
+                    ObjectHandle noise_blue = state.m_globalResources.get("noise_blue");
+                    ASSERT(noise_blue.isValid(), "must be valid");
+                    renderer::Texture2D* noise_blue_texture = objectFromHandle<renderer::Texture2D>(noise_blue);
+
+                    struct ModelBuffer
+                    {
+                        math::Matrix4D modelMatrix;
+                        math::Matrix4D prevModelMatrix;
+                        math::Matrix4D normalMatrix;
+                        math::float4   tint;
+                        u64            objectID;
+                        u64           _pad = 0;
+                    };
+                    ModelBuffer constantBuffer;
+                    constantBuffer.modelMatrix = draw.m_transform.getTransform();
+                    constantBuffer.prevModelMatrix = draw.m_prevTransform.getTransform();
+                    constantBuffer.normalMatrix = constantBuffer.modelMatrix.getTransposed();
+                    constantBuffer.tint = draw.m_tint;
+                    constantBuffer.objectID = draw.m_objectID;
+
+                    state.m_renderState.m_cmdList->bindDescriptorSet(1,
+                        {
+                            renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ &constantBuffer, 0, sizeof(constantBuffer)}, 1),
+                            renderer::Descriptor(draw.m_sampler, 2),
+                            renderer::Descriptor(renderer::TextureView(draw.m_albedo), 3),
+                            renderer::Descriptor(renderer::TextureView(draw.m_normals), 4),
+                            renderer::Descriptor(renderer::TextureView(draw.m_material), 5),
+                            renderer::Descriptor(renderer::TextureView(noise_blue_texture), 6),
                         });
 
                     DEBUG_MARKER_SCOPE(cmdList, std::format("Object {}, pipeline {}", draw.m_objectID, m_pipeline[draw.m_pipelineID]->getName()), color::colorrgbaf::LTGREY);
