@@ -126,6 +126,7 @@ namespace math
         DirectX::XMVECTOR oldScale;
         DirectX::XMVECTOR rotationQuat;
         DirectX::XMVECTOR translation;
+
         if (DirectX::XMMatrixDecompose(&oldScale, &rotationQuat, &translation, _m))
         {
             DirectX::XMVECTOR newScale = DirectX::XMVectorSet(DirectX::XMVectorGetX(scale._v), DirectX::XMVectorGetY(scale._v), DirectX::XMVectorGetZ(scale._v), 0.0f);
@@ -282,8 +283,19 @@ namespace math
     inline void TMatrixRegister<T, Rows, Cols>::setRotation(const TVectorRegister<T, 3>& rotation)
     {
         static_assert(Rows == 4 && Cols == 4, "Unsupported dimension");
-        DirectX::XMVECTOR v = DirectX::XMVectorSet(DirectX::XMVectorGetX(rotation._v) * k_degToRad, DirectX::XMVectorGetY(rotation._v) * k_degToRad, DirectX::XMVectorGetZ(rotation._v) * k_degToRad, 1);
-        _m = DirectX::XMMatrixRotationRollPitchYawFromVector(v);
+        DirectX::XMVECTOR scale;
+        [[maybe_unused]] DirectX::XMVECTOR rotationQuat;
+        DirectX::XMVECTOR translation;
+        if (DirectX::XMMatrixDecompose(&scale, &rotationQuat, &translation, _m))
+        {
+            DirectX::XMVECTOR v = DirectX::XMVectorSet(DirectX::XMVectorGetX(rotation._v) * k_degToRad, DirectX::XMVectorGetY(rotation._v) * k_degToRad, DirectX::XMVectorGetZ(rotation._v) * k_degToRad, 1);
+
+            DirectX::XMMATRIX scaleMatrix = DirectX::XMMatrixScalingFromVector(scale);
+            DirectX::XMMATRIX rotationMatrix = DirectX::XMMatrixRotationRollPitchYawFromVector(v);
+            DirectX::XMMATRIX translationMatrix = DirectX::XMMatrixTranslationFromVector(translation);
+
+            _m = scaleMatrix * rotationMatrix * translationMatrix;
+        }
     }
 
     template<RegisterType T, u32 Rows, u32 Cols> requires ValidMatrixDim<Rows, Cols>
