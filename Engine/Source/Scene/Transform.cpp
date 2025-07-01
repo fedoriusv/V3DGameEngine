@@ -34,12 +34,7 @@ void Transform::setRotation(const math::Vector3D& rotation)
 void Transform::setScale(const math::Vector3D& scale)
 {
     m_scale = scale;
-
-    bool hasScale = (scale.getX() != 1.f || scale.getY() != 1.f || scale.getZ() != 1.f);
-    if (hasScale)
-    {
-        m_transformFlag |= TransformState::TransformState_Scale;
-    }
+    m_transformFlag |= TransformState::TransformState_Scale;
 }
 
 void Transform::setTransform(const math::Matrix4D& transform)
