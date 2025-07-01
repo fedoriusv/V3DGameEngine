@@ -9,13 +9,22 @@
 
 [[vk::binding(1, 1)]] ConstantBuffer<ModelBuffer> CB_Model : register(b1, space1);
 [[vk::binding(2, 1)]] SamplerState samplerState : register(s0, space1);
-[[vk::binding(3, 1)]] Texture2D textureBaseColor : register(t0, space1);
-[[vk::binding(4, 1)]] Texture2D texture0 : register(t1, space1);
-[[vk::binding(5, 1)]] Texture2D texture1 : register(t2, space1);
-[[vk::binding(6, 1)]] Texture2D texture2 : register(t3, space1);
-[[vk::binding(7, 1)]] Texture2D texture3 : register(t4, space1);
+[[vk::binding(3, 1)]] Texture2D texture0 : register(t0, space1);
+[[vk::binding(4, 1)]] Texture2D texture1 : register(t1, space1);
+[[vk::binding(5, 1)]] Texture2D texture2 : register(t2, space1);
+[[vk::binding(7, 1)]] RWStructuredBuffer<uint4> RWBuffer0 : register(u0, space1);
 
 ///////////////////////////////////////////////////////////////////////////////////////
+
+uint FloatToUint(float value)
+{
+    return asuint(value);
+}
+
+float UintToFloat(uint u)
+{
+    return asfloat(u);
+}
 
 float dither2x2(int2 pixel)
 {
@@ -58,111 +67,66 @@ int a2c(float alpha, int2 pixel, float3 view_position, int frame_id, bool frontF
 
 ///////////////////////////////////////////////////////////////////////////////////////
 
-struct PS_MSOIT_STRUCT
+float msoit_mrt_ps(PS_GBUFFER_STANDARD_INPUT input, bool frontFace : SV_ISFRONTFACE, uint PrimitiveID : SV_PRIMITIVEID) : SV_TARGET0
 {
-    [[vk::location(0)]] float4 sample0 : SV_TARGET0;
-    [[vk::location(1)]] float4 sample1 : SV_TARGET1;
-    [[vk::location(2)]] float4 sample2 : SV_TARGET2;
-    [[vk::location(3)]] float4 sample3 : SV_TARGET3;
-};
-
-PS_MSOIT_STRUCT msoit_mrt_ps(PS_GBUFFER_STANDARD_INPUT input, bool frontFace : SV_ISFRONTFACE, uint PrimitiveID : SV_PRIMITIVEID)
-{
-    float3 albedo = textureBaseColor.Sample(samplerState, input.UV).rgb;
-    float3 normal = texture0.Sample(samplerState, input.UV).rgb * 2.0 - 1.0;
-    float metalness = texture1.Sample(samplerState, input.UV).r;
-    float roughness = texture1.Sample(samplerState, input.UV).g;
+    PS_GBUFFER_STRUCT GBubfferStruct = _gbuffer_standard_alpha_ps(input, CB_Viewport, CB_Model, texture0, texture1, texture2, samplerState);
     
-    float3 N = normalize(input.Normal);
-    float3 T = normalize(input.Bitangent);
-    float3 B = normalize(input.Tangent);
-    float3x3 TBN = float3x3(T, B, N);
-    normal = mul(TBN, normalize(normal));
-    
-    float4 color = float4( /*albedo **/CB_Model.tint.rgb * CB_Model.tint.a, CB_Model.tint.a);
-    
-    //temp
-    float2 positionScreenUV = input.Position.xy * (1.0 / CB_Viewport.viewportSize.xy);
-    float2 offset = CB_Viewport.random.xy * (PrimitiveID + 1);
-    float noise = texture2.Sample(samplerState, positionScreenUV + offset).a;
-    if (noise >= color.a)
-    {
-        discard;
-    }
+    float3 color = GBubfferStruct.BaseColor.rgb;
+    float opacity = GBubfferStruct.BaseColor.a;
+    float emissive = 0.0;
     
     float3 viewPos = mul(CB_Viewport.viewMatrix, float4(input.WorldPos, 1.0)).xyz;
-    int mask = a2c(color.a, int2(input.Position.xy), viewPos, int(CB_Viewport.time), frontFace);
+    int samplemask = 15;//    a2c(opacity, int2(input.Position.xy), viewPos, int(CB_Viewport.time), frontFace);
     
-    PS_MSOIT_STRUCT Output;
-    Output.sample0 = float4(0.0, 0.0, 0.0, 0.0);
-    Output.sample1 = float4(0.0, 0.0, 0.0, 0.0);
-    Output.sample2 = float4(0.0, 0.0, 0.0, 0.0);
-    Output.sample3 = float4(0.0, 0.0, 0.0, 0.0);
-    
-    if (mask == 0)
+    uint2 pixelCoord = input.Position.xy;
+    uint sampleCount = 4;
+    for (int s = 0; s < sampleCount; ++s)
     {
-        discard;
+        if (samplemask & (1 << s))
+        {
+            float3 colorSample = color.rgb * opacity;
+            uint index = s * CB_Viewport.viewportSize.x * CB_Viewport.viewportSize.y + pixelCoord.y * CB_Viewport.viewportSize.x + pixelCoord.x;
+            
+            InterlockedAdd(RWBuffer0[index].r, FloatToUint(0.25));
+            InterlockedAdd(RWBuffer0[index].a, FloatToUint(0.25));
+            //InterlockedAdd(RWBuffer0[index].r, FloatToUint(colorSample.r));
+            //InterlockedAdd(RWBuffer0[index].g, FloatToUint(colorSample.g));
+            //InterlockedAdd(RWBuffer0[index].b, FloatToUint(colorSample.b));
+            //InterlockedAdd(RWBuffer0[index].a, FloatToUint(opacity));
+        }
     }
     
-    if (mask & 0x1)
-    {
-        Output.sample0 = float4(color.rgb * color.a, color.a);
-    }
-    if (mask & 0x2)
-    {
-        Output.sample1 = float4(color.rgb * color.a, color.a);
-    }
-    
-    if (mask & 0x4)
-    {
-        Output.sample2 = float4(color.rgb * color.a, color.a);
-    }
-    
-    if (mask & 0x8)
-    {
-        Output.sample3 = float4(color.rgb * color.a, color.a);
-    }
-    
-    return Output;
+    return opacity;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////
 
 [[vk::location(0)]] float4 msoit_resolve_ps(PS_OFFSCREEN_INPUT input) : SV_TARGET0
 {
-    float4 outputColor = float4(0.0);
-    int numSamples = 4;
-    float u_weight = 1.0;
-    {
-        float4 sampleColor = texture0.SampleLevel(samplerState, input.UV, 0);
-        sampleColor = (sampleColor.a > 0.0) ? float4(sampleColor.rgb, sampleColor.a) : float4(0.0);
-        outputColor += sampleColor;
-    }
-    {
-        float4 sampleColor = texture1.SampleLevel(samplerState, input.UV, 0);
-        sampleColor = (sampleColor.a > 0.0) ? float4(sampleColor.rgb, sampleColor.a) : float4(0.0);
-        outputColor += sampleColor;
-    }
-    {
-        float4 sampleColor = texture2.SampleLevel(samplerState, input.UV, 0);
-        sampleColor = (sampleColor.a > 0.0) ? float4(sampleColor.rgb, sampleColor.a) : float4(0.0);
-        outputColor += sampleColor;
-    }
-    {
-        float4 sampleColor = texture3.SampleLevel(samplerState, input.UV, 0);
-        sampleColor = (sampleColor.a > 0.0) ? float4(sampleColor.rgb, sampleColor.a) : float4(0.0);
-        outputColor += sampleColor;
-    }
+    float3 baseColor = texture0.SampleLevel(samplerState, input.UV, 0).rgb;
+    float totalAlpha = texture1.SampleLevel(samplerState, input.UV, 0).r;
     
-    outputColor.rgb /= max(1.0, outputColor.a);
-    outputColor.a /= float(numSamples);
-    outputColor.rgb *= outputColor.a;
+    uint2 pixelCoord = input.Position.xy;
+
+    float4 accumulatedTransparencyColor = float4(0.0);
+    uint sampleCount = 4;
+    for (int s = 0; s < sampleCount; ++s)
+    {
+        uint index = s * CB_Viewport.viewportSize.x * CB_Viewport.viewportSize.y + pixelCoord.y * CB_Viewport.viewportSize.x + pixelCoord.x;
+        uint4 colorSample = RWBuffer0[index].rgba;
+        accumulatedTransparencyColor += float4(UintToFloat(colorSample.r), UintToFloat(colorSample.g), UintToFloat(colorSample.b), UintToFloat(colorSample.a));
+    }
+    accumulatedTransparencyColor /= sampleCount;
+
+    float alphaCorrected = saturate(accumulatedTransparencyColor.a / totalAlpha);
     
-    //float3 baseColor = textureBaseColor.Sample(samplerState, input.UV).rgb;
-    float alpha = outputColor.a; // 1.0
+    float3 transparencyColor = accumulatedTransparencyColor.rgb;
+    transparencyColor.rgb /= max(1.0, accumulatedTransparencyColor.a);
+    transparencyColor.rgb *= alphaCorrected;
     
-    float4 finalColor = float4( /* baseColor * (1.0 - outputColor.a) +*/float3(u_weight * outputColor.rgb), alpha);
-    return finalColor;
+    float3 color = baseColor.rgb * (1.0 - alphaCorrected) + transparencyColor.rgb;
+    return float4(color, 1.0);
+
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////
