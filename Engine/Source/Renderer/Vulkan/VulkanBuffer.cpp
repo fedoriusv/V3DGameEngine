@@ -312,6 +312,18 @@ bool VulkanBuffer::readback(VulkanCommandBuffer* cmdBuffer, u32 offset, u64 size
     return true;
 }
 
+void VulkanBuffer::clear(VulkanCommandBuffer* cmdBuffer, u32 value)
+{
+    if (!m_buffer)
+    {
+        ASSERT(false, "nullptr");
+    }
+
+    //TODO buffer barrier
+    cmdBuffer->cmdFillBuffer(this, 0, m_size, value);
+    //TODO buffer barrier
+}
+
 void* VulkanBuffer::map(u32 offset, u32 size)
 {
     if (!m_buffer)

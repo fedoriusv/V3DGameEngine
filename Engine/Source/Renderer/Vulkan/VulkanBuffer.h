@@ -38,6 +38,8 @@ namespace vk
         bool upload(VulkanCommandBuffer* cmdBuffer, u32 offset, u64 size, const void* data);
         bool readback(VulkanCommandBuffer* cmdBuffer, u32 offset,u64 size, VulkanBuffer*& stagingBuffer);
 
+        void clear(VulkanCommandBuffer* cmdBuffer, u32 value);
+
         VkBuffer getHandle() const;
         u64 getSize() const;
 

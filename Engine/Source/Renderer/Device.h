@@ -111,7 +111,7 @@ namespace renderer
         * @param const math::Rect& viewport [required]
         * @param const math::Vector2D& depth [optional]
         */
-        virtual void setViewport(const math::Rect& viewport, const math::TVector2D<f32>& depth = { 0.0f, 1.0f }) = 0;
+        virtual void setViewport(const math::Rect& viewport, const math::float2& depth = { 0.0f, 1.0f }) = 0;
 
         /**
         * @brief setScissor command
@@ -160,14 +160,19 @@ namespace renderer
         virtual void drawIndexed(const GeometryBufferDesc& desc, u32 firstIndex, u32 indexCount, u32 vertexOffest, u32 firstInstance, u32 instanceCount) = 0;
 
         /**
-         * @brief clear command
+         * @brief clear texture command
         */
         virtual void clear(Texture* texture, const color::Color& color) = 0;
 
         /**
-         * @brief clear command
+         * @brief clear depth-stencil texture command
         */
         virtual void clear(Texture* texture, f32 depth, u32 stencil) = 0;
+
+        /**
+         * @brief clear command
+        */
+        virtual void clear(Buffer* buffer, u32 value) = 0;
 
         /**
          * @brief upload command

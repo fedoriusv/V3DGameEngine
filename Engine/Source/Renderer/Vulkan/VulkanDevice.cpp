@@ -1397,7 +1397,7 @@ VulkanCmdList::~VulkanCmdList()
     }
 }
 
-void VulkanCmdList::setViewport(const math::Rect& viewport, const math::TVector2D<f32>& depth)
+void VulkanCmdList::setViewport(const math::Rect& viewport, const math::float2& depth)
 {
 #if VULKAN_DEBUG
     LOG_DEBUG("VulkanCmdList[%u]::setViewport [%u, %u; %u, %u]", m_concurrencySlot, viewport.getLeftX(), viewport.getTopY(), viewport.getWidth(), viewport.getHeight());
@@ -1913,7 +1913,7 @@ void VulkanCmdList::clear(Texture* texture, const color::Color& color)
 void VulkanCmdList::clear(Texture* texture, f32 depth, u32 stencil)
 {
 #if VULKAN_DEBUG
-    LOG_DEBUG("VulkanCmdList[%u]::clear [%f, %u]", m_concurrencySlot, depth, stencil);
+    LOG_DEBUG("VulkanCmdList[%u]::clear [%f, %u, %u]", m_concurrencySlot, depth, stencil);
 #endif
 #if FRAME_PROFILER_INTERNAL
     RenderFrameProfiler::StackProfiler stackFrameProfiler(g_CPUProfiler, m_concurrencySlot, RenderFrameProfiler::FrameCounter::FrameTime);
@@ -1926,6 +1926,21 @@ void VulkanCmdList::clear(Texture* texture, f32 depth, u32 stencil)
 
     ASSERT(image, "nullptr");
     image->clear(cmdBuffer, depth, stencil);
+}
+
+void VulkanCmdList::clear(Buffer* buffer, u32 value)
+{
+#if VULKAN_DEBUG
+    LOG_DEBUG("VulkanCmdList[%u]::clear [%f, %u]", m_concurrencySlot, value);
+#endif
+
+    VulkanCommandBuffer* cmdBuffer = VulkanCmdList::acquireAndStartCommandBuffer(CommandTargetType::CmdDrawBuffer);
+    VulkanBuffer* vkBuffer = static_cast<VulkanBuffer*>(objectFromHandle<RenderBuffer>(buffer->getBufferHandle()));
+
+    m_pendingRenderState.flushDebugMarkers(cmdBuffer);
+
+    ASSERT(vkBuffer, "nullptr");
+    vkBuffer->clear(cmdBuffer, value);
 }
 
 bool VulkanCmdList::uploadData(Texture2D* texture, u32 size, const void* data)

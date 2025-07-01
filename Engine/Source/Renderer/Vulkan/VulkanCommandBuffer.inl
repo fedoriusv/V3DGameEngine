@@ -208,6 +208,15 @@ inline void VulkanCommandBuffer::cmdBlitImage(VulkanImage* src, VkImageLayout sr
     }
 }
 
+inline void VulkanCommandBuffer::cmdFillBuffer(VulkanBuffer* dst, u32 offset, u64 size, u32 data)
+{
+    ASSERT(m_status == CommandBufferStatus::Begin, "not started");
+    ASSERT(!isInsideRenderPass(), "should be outside render pass");
+
+    VulkanCommandBuffer::captureResource(dst);
+    VulkanWrapper::CmdFillBuffer(m_commands, dst->getHandle(), offset, size, data);
+}
+
 inline void VulkanCommandBuffer::cmdUpdateBuffer(VulkanBuffer* src, u32 offset, u64 size, const void* data)
 {
     ASSERT(m_status == CommandBufferStatus::Begin, "not started");

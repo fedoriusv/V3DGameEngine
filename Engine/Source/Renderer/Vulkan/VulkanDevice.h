@@ -46,7 +46,7 @@ namespace vk
         VulkanCmdList(VulkanDevice* device) noexcept;
         ~VulkanCmdList();
 
-        void setViewport(const math::Rect& viewport, const math::TVector2D<f32>& depth = { 0.0f, 1.0f }) override;
+        void setViewport(const math::Rect& viewport, const math::float2& depth = { 0.0f, 1.0f }) override;
         void setScissor(const math::Rect& scissor) override;
         void setStencilRef(u32 mask) override;
 
@@ -72,6 +72,7 @@ namespace vk
 
         void clear(Texture* texture, const color::Color& color) override;
         void clear(Texture* texture, f32 depth, u32 stencil) override;
+        void clear(Buffer* buffer, u32 value) override;
 
         bool uploadData(Texture2D* texture, u32 size, const void* data) override;
         bool uploadData(Texture3D* texture, u32 size, const void* data) override;
