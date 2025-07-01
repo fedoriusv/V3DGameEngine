@@ -74,6 +74,7 @@ namespace math
 
     using float2    = TVector2D<f32>;
     using int2      = TVector2D<s32>;
+    using uint2 = TVector2D<u32>;
 
     using Point2D     = TVector2D<s32>;
 

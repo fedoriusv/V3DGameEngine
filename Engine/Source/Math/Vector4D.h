@@ -79,6 +79,7 @@ namespace math
 
     using float4 = TVector4D<f32>;
     using int4 = TVector4D<s32>;
+    using uint4 = TVector4D<u32>;
 
     using Color4D    = TVector4D<u8>;
     using Point4D    = TVector4D<s32>;

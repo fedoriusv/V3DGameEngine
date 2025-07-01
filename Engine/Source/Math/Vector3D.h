@@ -78,6 +78,7 @@ namespace math
 
     using float3 = TVector3D<f32>;
     using int3 = TVector3D<s32>;
+    using uint3 = TVector3D<u32>;
 
     using Point3D    = TVector3D<s32>;
 
