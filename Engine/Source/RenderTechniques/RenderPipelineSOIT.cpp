@@ -13,6 +13,7 @@ namespace renderer
 
 RenderPipelineSOITStage::RenderPipelineSOITStage(RenderTechnique* technique) noexcept
     : RenderPipelineStage(technique, "transparency")
+    , m_colorSamples(nullptr)
 {
 }
 
@@ -31,7 +32,7 @@ void RenderPipelineSOITStage::create(Device* device, scene::SceneData& state)
             "transparency_soit_mrt.hlsl", "msoit_mrt_ps", {}, {}/*, resource::ShaderCompileFlag::ShaderCompile_UseDXCompilerForSpirV*/);
 
         renderer::GraphicsPipelineState* pipeline = new renderer::GraphicsPipelineState(
-            device, VertexFormatStandardDesc, m_mrtPass->getRenderPassDesc(), new renderer::ShaderProgram(device, vertShader, fragShader), "soit_pipeline");
+            device, VertexFormatStandardDesc, m_rt[Pass::MultiSamplePass]->getRenderPassDesc(), new renderer::ShaderProgram(device, vertShader, fragShader), "soit_pipeline");
 
         pipeline->setPrimitiveTopology(renderer::PrimitiveTopology::PrimitiveTopology_TriangleList);
         pipeline->setFrontFace(renderer::FrontFace::FrontFace_Clockwise);
@@ -42,21 +43,13 @@ void RenderPipelineSOITStage::create(Device* device, scene::SceneData& state)
         pipeline->setDepthCompareOp(renderer::CompareOperation::CompareOp_Less);
 #endif
         pipeline->setDepthTest(true);
-        pipeline->setDepthWrite(true);
-
-        for (u32 i = 0; i < 4; ++i)
-        {
-            pipeline->setBlendEnable(i, true);
-            pipeline->setColorMask(i, renderer::ColorMask::ColorMask_All);
-            //pipeline->setColorBlendFactor(i, renderer::BlendFactor::BlendFactor_SrcAlpha, renderer::BlendFactor::BlendFactor_OneMinusSrcAlpha);
-            //pipeline->setColorBlendOp(i, renderer::BlendOperation::BlendOp_Add);
-            //pipeline->setAlphaBlendFactor(i, renderer::BlendFactor::BlendFactor_SrcAlpha, renderer::BlendFactor::BlendFactor_OneMinusSrcAlpha);
-            //pipeline->setAlphaBlendOp(i, renderer::BlendOperation::BlendOp_Add);
-            pipeline->setColorBlendFactor(i, renderer::BlendFactor::BlendFactor_One, renderer::BlendFactor::BlendFactor_One);
-            pipeline->setColorBlendOp(i, renderer::BlendOperation::BlendOp_Add);
-            pipeline->setAlphaBlendFactor(i, renderer::BlendFactor::BlendFactor_One, renderer::BlendFactor::BlendFactor_One);
-            pipeline->setAlphaBlendOp(i, renderer::BlendOperation::BlendOp_Add);
-        }
+        pipeline->setDepthWrite(false);
+        pipeline->setBlendEnable(0, true);
+        pipeline->setColorMask(0, renderer::ColorMask::ColorMask_All);
+        pipeline->setColorBlendFactor(0, renderer::BlendFactor::BlendFactor_One, renderer::BlendFactor::BlendFactor_One);
+        pipeline->setColorBlendOp(0, renderer::BlendOperation::BlendOp_Add);
+        pipeline->setAlphaBlendFactor(0, renderer::BlendFactor::BlendFactor_One, renderer::BlendFactor::BlendFactor_One);
+        pipeline->setAlphaBlendOp(0, renderer::BlendOperation::BlendOp_Add);
 
         m_pipeline[Pass::MultiSamplePass] = pipeline;
     }
@@ -68,7 +61,7 @@ void RenderPipelineSOITStage::create(Device* device, scene::SceneData& state)
             "transparency_soit_mrt.hlsl", "msoit_resolve_ps", {}, {}/*, resource::ShaderCompileFlag::ShaderCompile_UseDXCompilerForSpirV*/);
 
         renderer::GraphicsPipelineState* pipeline = new renderer::GraphicsPipelineState(
-            device, renderer::VertexInputAttributeDesc(), m_resolvePass->getRenderPassDesc(), new renderer::ShaderProgram(device, vertShader, fragShader), "soit_resolve_pipeline");
+            device, renderer::VertexInputAttributeDesc(), m_rt[Pass::ResolvePass]->getRenderPassDesc(), new renderer::ShaderProgram(device, vertShader, fragShader), "soit_resolve_pipeline");
 
         pipeline->setPrimitiveTopology(renderer::PrimitiveTopology::PrimitiveTopology_TriangleList);
         pipeline->setFrontFace(renderer::FrontFace::FrontFace_Clockwise);
@@ -77,7 +70,7 @@ void RenderPipelineSOITStage::create(Device* device, scene::SceneData& state)
         pipeline->setDepthWrite(false);
         pipeline->setDepthTest(false);
 
-        pipeline->setBlendEnable(0, true);
+        pipeline->setBlendEnable(0, false);
         pipeline->setColorMask(0, renderer::ColorMask::ColorMask_All);
         pipeline->setColorBlendFactor(0, renderer::BlendFactor::BlendFactor_One, renderer::BlendFactor::BlendFactor_OneMinusSrcAlpha);
         pipeline->setColorBlendOp(0, renderer::BlendOperation::BlendOp_Add);
@@ -95,11 +88,18 @@ void RenderPipelineSOITStage::destroy(Device* device, scene::SceneData& state)
 
 void RenderPipelineSOITStage::prepare(Device* device, scene::SceneData& state)
 {
-    if (!m_resolvePass)
+    u32 bufferSize = sizeof(math::uint4) * state.m_viewportState._viewpotSize._width * state.m_viewportState._viewpotSize._height;
+    if (!m_colorSamples || m_colorSamples->getSize() != bufferSize)
+    {
+        delete m_colorSamples;
+        m_colorSamples = new renderer::UnorderedAccessBuffer(device, BufferUsage::Buffer_GPUOnly, bufferSize, "color_samples");
+    }
+
+    if (!m_rt[Pass::ResolvePass])
     {
         createRenderTarget(device, state);
     }
-    else if (m_resolvePass->getRenderArea() != state.m_viewportState._viewpotSize)
+    else if (m_rt[Pass::ResolvePass]->getRenderArea() != state.m_viewportState._viewpotSize)
     {
         destroyRenderTarget(device, state);
         createRenderTarget(device, state);
@@ -110,9 +110,14 @@ void RenderPipelineSOITStage::execute(Device* device, scene::SceneData& state)
 {
     DEBUG_MARKER_SCOPE(state.m_renderState.m_cmdList, "Transparency", color::colorrgbaf::GREEN);
 
+    {
+        DEBUG_MARKER_SCOPE(state.m_renderState.m_cmdList, "Transparency.Clear", color::colorrgbaf::GREEN);
+        state.m_renderState.m_cmdList->clear(m_colorSamples, 0);
+    }
+
     //pass 1
     {
-        state.m_renderState.m_cmdList->beginRenderTarget(*m_mrtPass);
+        state.m_renderState.m_cmdList->beginRenderTarget(*m_rt[Pass::MultiSamplePass]);
         state.m_renderState.m_cmdList->setViewport({ 0.f, 0.f, (f32)state.m_viewportState._viewpotSize._width, (f32)state.m_viewportState._viewpotSize._height });
         state.m_renderState.m_cmdList->setScissor({ 0.f, 0.f, (f32)state.m_viewportState._viewpotSize._width, (f32)state.m_viewportState._viewpotSize._height });
         state.m_renderState.m_cmdList->setPipelineState(*m_pipeline[Pass::MultiSamplePass]);
@@ -155,6 +160,7 @@ void RenderPipelineSOITStage::execute(Device* device, scene::SceneData& state)
                         renderer::Descriptor(renderer::TextureView(draw.m_normals), 4),
                         renderer::Descriptor(renderer::TextureView(draw.m_material), 5),
                         renderer::Descriptor(renderer::TextureView(noise_blue_texture), 6),
+                        renderer::Descriptor(m_colorSamples, 7),
                     });
 
                 renderer::GeometryBufferDesc desc(draw.m_IdxBuffer, 0, draw.m_VtxBuffer, 0, sizeof(VertexFormatStandard), 0);
@@ -169,18 +175,8 @@ void RenderPipelineSOITStage::execute(Device* device, scene::SceneData& state)
         ObjectHandle baseColor = state.m_globalResources.get("render_target");
         ASSERT(baseColor.isValid(), "must be valid");
         renderer::Texture2D* baseColorTexture = objectFromHandle<renderer::Texture2D>(baseColor);
-        m_resolvePass->setColorTexture(0, baseColorTexture,
-            {
-                renderer::RenderTargetLoadOp::LoadOp_Load, renderer::RenderTargetStoreOp::StoreOp_Store, color::Color(0.0f)
-            },
-            {
-                renderer::TransitionOp::TransitionOp_ColorAttachment, renderer::TransitionOp::TransitionOp_ColorAttachment
-            }
-        );
 
-        state.m_renderState.m_cmdList->beginRenderTarget(*m_resolvePass);
-        state.m_renderState.m_cmdList->setViewport({ 0.f, 0.f, (f32)state.m_viewportState._viewpotSize._width, (f32)state.m_viewportState._viewpotSize._height });
-        state.m_renderState.m_cmdList->setScissor({ 0.f, 0.f, (f32)state.m_viewportState._viewpotSize._width, (f32)state.m_viewportState._viewpotSize._height });
+        state.m_renderState.m_cmdList->beginRenderTarget(*m_rt[Pass::ResolvePass]);
         state.m_renderState.m_cmdList->setPipelineState(*m_pipeline[Pass::ResolvePass]);
 
         state.m_renderState.m_cmdList->bindDescriptorSet(0,
@@ -188,50 +184,41 @@ void RenderPipelineSOITStage::execute(Device* device, scene::SceneData& state)
                 renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ &state.m_viewportState._viewportBuffer, 0, sizeof(state.m_viewportState._viewportBuffer)}, 0)
             });
 
-        //ObjectHandle baseColor = state.m_globalResources.get("render_target");
-        //ASSERT(baseColor.isValid(), "must be valid");
-        //renderer::Texture2D* baseColorTexture = objectFromHandle<renderer::Texture2D>(baseColor);
-
         state.m_renderState.m_cmdList->bindDescriptorSet(1,
             {
                 renderer::Descriptor(m_sampler, 2),
-                //renderer::Descriptor(renderer::TextureView(baseColorTexture, 0, 0), 3),
-                renderer::Descriptor(renderer::TextureView(m_mrtPass->getColorTexture<renderer::Texture2D>(0), 0, 0), 4),
-                renderer::Descriptor(renderer::TextureView(m_mrtPass->getColorTexture<renderer::Texture2D>(1), 0, 0), 5),
-                renderer::Descriptor(renderer::TextureView(m_mrtPass->getColorTexture<renderer::Texture2D>(2), 0, 0), 6),
-                renderer::Descriptor(renderer::TextureView(m_mrtPass->getColorTexture<renderer::Texture2D>(3), 0, 0), 7),
+                renderer::Descriptor(renderer::TextureView(baseColorTexture, 0, 0), 3),
+                renderer::Descriptor(renderer::TextureView(m_rt[Pass::MultiSamplePass]->getColorTexture<renderer::Texture2D>(0), 0, 0), 4),
+                renderer::Descriptor(m_colorSamples, 7),
             });
 
         state.m_renderState.m_cmdList->draw(renderer::GeometryBufferDesc(), 0, 3, 0, 1);
         state.m_renderState.m_cmdList->endRenderTarget();
-    }
 
-    state.m_globalResources.bind("render_target", m_resolvePass->getColorTexture<renderer::Texture2D>(0));
+        state.m_globalResources.bind("render_target", m_rt[Pass::ResolvePass]->getColorTexture<renderer::Texture2D>(0));
+    }
 }
 
 void RenderPipelineSOITStage::createRenderTarget(Device* device, scene::SceneData& data)
 {
     //1
-    m_mrtPass = new renderer::RenderTargetState(device, data.m_viewportState._viewpotSize, 4);
+    m_rt[Pass::MultiSamplePass] = new renderer::RenderTargetState(device, data.m_viewportState._viewpotSize, 1);
 
-    for (u32 i = 0; i < 4; ++i)
-    {
-        renderer::Texture2D* msTexture = new renderer::Texture2D(device, renderer::TextureUsage::TextureUsage_Attachment | renderer::TextureUsage::TextureUsage_Sampled,
-            renderer::Format::Format_R16G16B16A16_SFloat, data.m_viewportState._viewpotSize, renderer::TextureSamples::TextureSamples_x1, "mrt_" + std::to_string(i));
-        m_mrtPass->setColorTexture(i, msTexture,
-            {
-                renderer::RenderTargetLoadOp::LoadOp_Clear, renderer::RenderTargetStoreOp::StoreOp_Store, color::Color(0.0f, 0.0f, 0.0f, 0.0f)
-            },
+    renderer::Texture2D* texture = new renderer::Texture2D(device, renderer::TextureUsage::TextureUsage_Attachment | renderer::TextureUsage::TextureUsage_Sampled,
+        renderer::Format::Format_R32_SFloat, data.m_viewportState._viewpotSize, renderer::TextureSamples::TextureSamples_x1, "total_alpha");
+    m_rt[Pass::MultiSamplePass]->setColorTexture(0, texture,
+        {
+            renderer::RenderTargetLoadOp::LoadOp_Clear, renderer::RenderTargetStoreOp::StoreOp_Store, color::Color(0.0f, 0.0f, 0.0f, 0.0f)
+        },
             {
                 renderer::TransitionOp::TransitionOp_Undefined, renderer::TransitionOp::TransitionOp_ColorAttachment
             }
-        );
-    }
+    );
 
     ObjectHandle depth_stencil = data.m_globalResources.get("depth_stencil");
     ASSERT(depth_stencil.isValid(), "must be valid");
     renderer::Texture2D* depth_stencil_texture = objectFromHandle<renderer::Texture2D>(depth_stencil);
-    m_mrtPass->setDepthStencilTexture(depth_stencil_texture,
+    m_rt[Pass::MultiSamplePass]->setDepthStencilTexture(depth_stencil_texture,
         {
             renderer::RenderTargetLoadOp::LoadOp_Load, renderer::RenderTargetStoreOp::StoreOp_Store, 0.0f
         },
@@ -243,37 +230,39 @@ void RenderPipelineSOITStage::createRenderTarget(Device* device, scene::SceneDat
         });
 
     //2
-    m_resolvePass = new renderer::RenderTargetState(device, data.m_viewportState._viewpotSize, 1);
-
-    m_dummyTexture = new renderer::Texture2D(device, renderer::TextureUsage::TextureUsage_Attachment | renderer::TextureUsage::TextureUsage_Sampled,
-        renderer::Format::Format_R16G16B16A16_SFloat, data.m_viewportState._viewpotSize, renderer::TextureSamples::TextureSamples_x1, "msoit_resolve");
-    m_resolvePass->setColorTexture(0, m_dummyTexture,
+    m_rt[Pass::ResolvePass] = new renderer::RenderTargetState(device, data.m_viewportState._viewpotSize, 1);
+    renderer::Texture2D* final = new renderer::Texture2D(device, renderer::TextureUsage::TextureUsage_Attachment | renderer::TextureUsage::TextureUsage_Sampled,
+        renderer::Format::Format_R32G32B32A32_SFloat, data.m_viewportState._viewpotSize, renderer::TextureSamples::TextureSamples_x1, "st_final");
+    m_rt[Pass::ResolvePass]->setColorTexture(0, final,
         {
-            renderer::RenderTargetLoadOp::LoadOp_Load, renderer::RenderTargetStoreOp::StoreOp_Store, color::Color(0.0f)
+            renderer::RenderTargetLoadOp::LoadOp_DontCare, renderer::RenderTargetStoreOp::StoreOp_Store, color::Color(0.0f)
         },
         {
-            renderer::TransitionOp::TransitionOp_ColorAttachment, renderer::TransitionOp::TransitionOp_ColorAttachment
-        }
-    );
+            renderer::TransitionOp::TransitionOp_Undefined, renderer::TransitionOp::TransitionOp_ColorAttachment
+        });
+
+    data.m_globalResources.bind("full_composite", final);
 }
 
 void RenderPipelineSOITStage::destroyRenderTarget(Device* device, scene::SceneData& data)
 {
-    ASSERT(m_mrtPass, "must be valid");
-    for (u32 i = 0; i < 4; ++i)
     {
-        renderer::Texture2D* msTexture = m_mrtPass->getColorTexture<renderer::Texture2D>(i);
-        delete msTexture;
+        ASSERT(m_rt[Pass::MultiSamplePass], "must be valid");
+        renderer::Texture2D* color0 = m_rt[Pass::MultiSamplePass]->getColorTexture<renderer::Texture2D>(0);
+        delete color0;
+
+        delete  m_rt[Pass::MultiSamplePass];
+        m_rt[Pass::MultiSamplePass] = nullptr;
     }
-    delete m_mrtPass;
-    m_mrtPass = nullptr;
 
+    {
+        ASSERT(m_rt[Pass::ResolvePass], "must be valid");
+        renderer::Texture2D* color0 = m_rt[Pass::ResolvePass]->getColorTexture<renderer::Texture2D>(0);
+        delete color0;
 
-    ASSERT(m_resolvePass, "must be valid");
-    delete m_dummyTexture;
-
-    delete m_resolvePass;
-    m_resolvePass = nullptr;
+        delete  m_rt[Pass::ResolvePass];
+        m_rt[Pass::ResolvePass] = nullptr;
+    }
 }
 
 } //namespace renderer

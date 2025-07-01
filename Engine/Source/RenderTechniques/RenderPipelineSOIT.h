@@ -28,8 +28,6 @@ namespace renderer
         void createRenderTarget(Device* device, scene::SceneData& data);
         void destroyRenderTarget(Device* device, scene::SceneData& data);
 
-        renderer::RenderTargetState* m_mrtPass;
-        renderer::RenderTargetState* m_resolvePass;
         renderer::SamplerState* m_sampler;
         renderer::Texture2D* m_dummyTexture;
 
@@ -42,6 +40,8 @@ namespace renderer
         };
 
         std::array<v3d::renderer::GraphicsPipelineState*, Pass::Count> m_pipeline = {};
+        std::array<v3d::renderer::RenderTargetState*, Pass::Count> m_rt = {};
+        renderer::UnorderedAccessBuffer* m_colorSamples;
     };
 
 } //namespace renderer

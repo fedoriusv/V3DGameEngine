@@ -123,16 +123,16 @@ void RenderPipelineGBufferStage::execute(Device* device, scene::SceneData& state
             state.m_renderState.m_cmdList->setScissor({ 0.f, 0.f, (f32)state.m_viewportState._viewpotSize._width, (f32)state.m_viewportState._viewpotSize._height });
             state.m_renderState.m_cmdList->setStencilRef(0);
 
-            state.m_renderState.m_cmdList->bindDescriptorSet(0,
-                {
-                    renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ &state.m_viewportState._viewportBuffer, 0, sizeof(state.m_viewportState._viewportBuffer)}, 0)
-                });
-
             for (auto& draw : state.m_data)
             {
                 if (draw.m_stageID == "gbuffer")
                 {
                     state.m_renderState.m_cmdList->setPipelineState(*m_pipeline[draw.m_pipelineID]);
+
+                    state.m_renderState.m_cmdList->bindDescriptorSet(0,
+                        {
+                            renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ &state.m_viewportState._viewportBuffer, 0, sizeof(state.m_viewportState._viewportBuffer)}, 0)
+                        });
 
                     struct ModelBuffer
                     {
@@ -167,9 +167,15 @@ void RenderPipelineGBufferStage::execute(Device* device, scene::SceneData& state
                 {
                     state.m_renderState.m_cmdList->setPipelineState(*m_pipeline[draw.m_pipelineID]);
 
-                    ObjectHandle noise_blue = state.m_globalResources.get("noise_blue");
-                    ASSERT(noise_blue.isValid(), "must be valid");
-                    renderer::Texture2D* noise_blue_texture = objectFromHandle<renderer::Texture2D>(noise_blue);
+                    ObjectHandle noise = state.m_globalResources.get("tiling_noise");
+                    ASSERT(noise.isValid(), "must be valid");
+                    renderer::Texture2D* noiseTexture = objectFromHandle<renderer::Texture2D>(noise);
+
+                    state.m_renderState.m_cmdList->bindDescriptorSet(0,
+                        {
+                            renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ &state.m_viewportState._viewportBuffer, 0, sizeof(state.m_viewportState._viewportBuffer)}, 0)
+                        });
+
 
                     struct ModelBuffer
                     {
@@ -194,7 +200,7 @@ void RenderPipelineGBufferStage::execute(Device* device, scene::SceneData& state
                             renderer::Descriptor(renderer::TextureView(draw.m_albedo), 3),
                             renderer::Descriptor(renderer::TextureView(draw.m_normals), 4),
                             renderer::Descriptor(renderer::TextureView(draw.m_material), 5),
-                            renderer::Descriptor(renderer::TextureView(noise_blue_texture), 6),
+                            renderer::Descriptor(renderer::TextureView(noiseTexture), 6),
                         });
 
                     DEBUG_MARKER_SCOPE(cmdList, std::format("Object {}, pipeline {}", draw.m_objectID, m_pipeline[draw.m_pipelineID]->getName()), color::colorrgbaf::LTGREY);
