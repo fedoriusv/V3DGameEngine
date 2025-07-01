@@ -5,7 +5,7 @@
 
 #include "Utils/Logger.h"
 
-EditorGizmo::EditorGizmo()
+EditorGizmo::EditorGizmo() noexcept
     : m_gizmo(nullptr)
 {
     InputEventHandler::bind([this](const event::MouseInputEvent* event)
@@ -66,14 +66,30 @@ void EditorGizmo::setOperation(u32 index)
 
 void EditorGizmo::update(f32 dt)
 {
+    if (m_selectedObject)
+    {
+        modify(m_selectedObject->m_transform);
+    }
 }
 
 void EditorGizmo::handleNotify(const utils::Reporter<EditorReport>* reporter, const EditorReport& data)
 {
-    modify(data.transform);
+    modify(data.instanceObject->m_transform);
+
+    m_selectedObject = data.instanceObject;
 }
 
-bool EditorGizmo::handleInputEvent(v3d::event::InputEventHandler* handler, const v3d::event::InputEvent* event)
+bool EditorGizmo::handleGameEvent(event::GameEventHandler* handler, const event::GameEvent* event)
+{
+    if (event->_eventType == event::GameEvent::GameEventType::SelectObject)
+    {
+        //modify(data.transform);
+    }
+
+    return false;
+}
+
+bool EditorGizmo::handleInputEvent(event::InputEventHandler* handler, const event::InputEvent* event)
 {
     return false;
 }

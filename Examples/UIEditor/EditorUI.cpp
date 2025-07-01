@@ -84,8 +84,12 @@ void UI::constructTransformProp(ui::WidgetHandler* handler)
     //TODO
 }
 
-void UI::constuctTestUIWindow(ui::WidgetHandler* handler, renderer::Texture2D* texture)
+void UI::constuctTestUIWindow(ui::WidgetHandler* handler, EditorScene* scene)
 {
+    ObjectHandle uv_grid = scene->m_states[0].m_globalResources.get("uv_grid");
+    ASSERT(uv_grid.isValid(), "must be valid");
+    renderer::Texture2D* texture = objectFromHandle<renderer::Texture2D>(uv_grid);
+
     handler->createWidget<ui::WidgetWindow>("Window Test", math::Dimension2D(800, 800), math::Point2D(10, 10), ui::WidgetWindow::Moveable | ui::WidgetWindow::Resizeable)
         .setActive(true)
         .setVisible(true)
@@ -193,8 +197,14 @@ void UI::constuctTestUIWindow(ui::WidgetHandler* handler, renderer::Texture2D* t
                     LOG_DEBUG("WidgetComboBox Index %d", index);
                 })
         )
-        .addWidget(ui::WidgetInputField(0)
+        .addWidget(ui::WidgetInputText("text")
             .setActive(true)
+        )
+        .addWidget(ui::WidgetInputInt(1)
+            .setActive(true)
+        )
+        .addWidget(ui::WidgetInputFloat3(1, 2, 3)
+        .setActive(true)
         )
         .addWidget(ui::WidgetInputSlider()
             .setActive(true)

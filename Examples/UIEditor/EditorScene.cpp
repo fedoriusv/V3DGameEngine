@@ -44,7 +44,7 @@ EditorScene::RenderPipelineScene::RenderPipelineScene(scene::ModelHandler* model
     new renderer::RenderPipelineCompositionStage(this);
     //new renderer::RenderPipelineDepthOITStage(this);
     //new renderer::RenderPipelineSOITStage(this);
-    new renderer::RenderPipelineMBOITStage(this);
+    //new renderer::RenderPipelineMBOITStage(this);
     new renderer::RenderPipelineOutlineStage(this);
     //new renderer::RenderPipelineFXAAStage(this);
     new renderer::RenderPipelineTAAStage(this);
@@ -82,10 +82,8 @@ EditorScene::EditorScene() noexcept
                         m_selectedObjects._activeIndex = (readback_objectIDData->_ptr) ? readback_objectIDData->_ptr[0] - 1 : -1;
                         if (m_selectedObjects._activeIndex > -1)
                         {
-                            m_selectedObjects._modelTransform = m_states[m_stateIndex].m_data[m_selectedObjects._activeIndex].m_transform;
-
                             struct EditorReport report;
-                            report.transform = m_selectedObjects._modelTransform;
+                            report.instanceObject = &m_states[m_stateIndex].m_data[m_selectedObjects._activeIndex];
 
                             this->notify(report);
                         }
@@ -104,7 +102,7 @@ EditorScene::EditorScene() noexcept
                 {
                     if (event->_key == event::KeyCode::KeyKey_F) //focus on selected object
                     {
-                        m_camera->setTarget(m_selectedObjects._modelTransform.getPosition()); //TODO
+                        m_camera->setTarget(m_states[m_stateIndex].m_data[m_selectedObjects._activeIndex].m_transform.getPosition()); //TODO
                     }
                 }
                 m_camera->handleInputEventCallback(this, event);
@@ -181,10 +179,6 @@ void EditorScene::preRender(f32 dt)
     viewportState.time = utils::Timer::getCurrentTime();
 
     m_states[m_stateIndex].m_editorState.selectedObjectID = m_selectedObjects._activeIndex + 1;
-    if (m_selectedObjects._activeIndex > -1)
-    {
-        m_states[m_stateIndex].m_data[m_selectedObjects._activeIndex].m_transform = m_selectedObjects._modelTransform;
-    }
 
     m_mainPipeline.prepare(m_device, m_states[m_stateIndex]);
 
@@ -208,17 +202,16 @@ void EditorScene::modifyObject(const scene::Transform& transform)
 {
     if (m_selectedObjects._activeIndex > -1)
     {
-        m_selectedObjects._modelTransform = transform;
+        m_states[m_stateIndex].m_data[m_selectedObjects._activeIndex].m_transform = transform;
     }
 }
 
 void EditorScene::selectObject(u32 i)
 {
     m_selectedObjects._activeIndex = i;
-    m_selectedObjects._modelTransform = m_states[m_stateIndex].m_data[m_selectedObjects._activeIndex].m_transform;
 
     struct EditorReport report;
-    report.transform = m_selectedObjects._modelTransform;
+    report.instanceObject = &m_states[m_stateIndex].m_data[m_selectedObjects._activeIndex];
 
     this->notify(report);
 }
@@ -310,6 +303,7 @@ void EditorScene::loadResources()
     renderer::Texture2D* default_material = loadTexture2D(cmdList, "default_material.dds");
     renderer::Texture2D* uv_grid = loadTexture2D(cmdList, "uv_grid.dds");
     renderer::Texture2D* noise_blue = loadTexture2D(cmdList, "noise_blue.dds");
+    renderer::Texture2D* tiling_noise = loadTexture2D(cmdList, "good64x64tilingnoisehighfreq.dds");
 
     m_states[m_stateIndex].m_globalResources.bind("default_black", default_black);
     m_states[m_stateIndex].m_globalResources.bind("default_white", default_white);
@@ -317,6 +311,7 @@ void EditorScene::loadResources()
     m_states[m_stateIndex].m_globalResources.bind("default_material", default_material);
     m_states[m_stateIndex].m_globalResources.bind("uv_grid", uv_grid);
     m_states[m_stateIndex].m_globalResources.bind("noise_blue", noise_blue);
+    m_states[m_stateIndex].m_globalResources.bind("tiling_noise", tiling_noise);
 
     renderer::SamplerState* sampler = new renderer::SamplerState(m_device, renderer::SamplerFilter::SamplerFilter_Trilinear, renderer::SamplerAnisotropic::SamplerAnisotropic_4x);
 
@@ -402,8 +397,8 @@ void EditorScene::loadResources()
         m_states[m_stateIndex].m_data[i].m_albedo = default_white;
         m_states[m_stateIndex].m_data[i].m_normals = default_normal;
         m_states[m_stateIndex].m_data[i].m_material = default_material;
-        m_states[m_stateIndex].m_data[i].m_stageID = "transparency";
-        m_states[m_stateIndex].m_data[i].m_pipelineID = 0;
+        m_states[m_stateIndex].m_data[i].m_stageID = "masked";//"transparency";
+        m_states[m_stateIndex].m_data[i].m_pipelineID = 1;
         m_states[m_stateIndex].m_data[i].m_objectID = m_states[m_stateIndex].m_data.size();
     }
 

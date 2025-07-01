@@ -3,11 +3,14 @@
 #include "Common.h"
 #include "Utils/Observable.h"
 
-#include "Scene/Scene.h"
+#include "Events/Input/InputEventHandler.h"
+#include "Events/Game/GameEventHandler.h"
+
 #include "Renderer/Device.h"
 #include "Renderer/RenderTargetState.h"
 #include "RenderTechniques/RenderPipelineStage.h"
 
+#include "Scene/Scene.h"
 #include "Scene/Camera/CameraEditorHandler.h"
 #include "Scene/Camera/Camera.h"
 #include "Scene/ModelHandler.h"
@@ -19,7 +22,7 @@ using namespace v3d;
 
 struct EditorReport
 {
-    scene::Transform transform;
+    scene::DrawInstanceData* instanceObject;
 };
 
 class EditorScene : public event::InputEventHandler, public utils::Reporter<EditorReport>
@@ -88,7 +91,6 @@ public:
 
     struct SelectedObjects
     {
-        scene::Transform _modelTransform;
         s32 _activeIndex = -1;
     };
 

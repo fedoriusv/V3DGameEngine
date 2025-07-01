@@ -3,6 +3,7 @@
 #include "Common.h"
 #include "Utils/Observable.h"
 #include "Events/Input/InputEventHandler.h"
+#include "Events/Game/GameEventHandler.h"
 #include "UI/WidgetGizmo.h"
 
 #include "EditorScene.h"
@@ -13,7 +14,7 @@ class EditorGizmo : public event::InputEventHandler, public utils::Observer<Edit
 {
 public:
 
-    EditorGizmo();
+    EditorGizmo() noexcept;
     ~EditorGizmo();
 
     void init(ui::WidgetGizmo* widget);
@@ -29,7 +30,10 @@ private:
 
     void handleNotify(const utils::Reporter<EditorReport>* reporter, const EditorReport& data) override;
 
-    bool handleInputEvent(v3d::event::InputEventHandler* handler, const v3d::event::InputEvent* event);
+    bool handleGameEvent(event::GameEventHandler* handler, const event::GameEvent* event);
+    bool handleInputEvent(event::InputEventHandler* handler, const event::InputEvent* event);
 
     ui::WidgetGizmo* m_gizmo;
+
+    scene::DrawInstanceData* m_selectedObject = nullptr;
 };

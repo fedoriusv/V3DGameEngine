@@ -8,6 +8,7 @@
 #include "Utils/StringID.h"
 #include "Platform/Window.h"
 #include "Events/Input/InputEventReceiver.h"
+#include "Events/Game/GameEventReceiver.h"
 
 #include "Renderer/Device.h"
 #include "Renderer/Swapchain.h"
@@ -20,6 +21,8 @@
 #include "EditorUI.h"
 #include "EditorGizmo.h"
 #include "EditorScene.h"
+#include "EditorContentScreen.h"
+#include "EditorPropertyScreen.h"
 
 using namespace v3d;
 using namespace v3d::platform;
@@ -27,23 +30,37 @@ using namespace v3d::renderer;
 using namespace v3d::utils;
 using namespace v3d::event;
 
+constexpr math::Dimension2D k_editorResolution = { 1920, 1080 };
+
 class EditorApplication : public v3d::Application, public InputEventHandler
 {
 public:
 
     EditorApplication(int& argc, char** argv)
         : v3d::Application(argc, argv)
+        , m_UI(nullptr)
         , m_EditorScene(new EditorScene())
+
         , m_EditorGizmo(new EditorGizmo())
+        , m_EditorContentScreen(new EditorContentScreen())
+        , m_EditorPropertyScreen(new EditorPropertyScreen())
     {
-        m_Window = Window::createWindow({ 1920, 1080 }, { 200, 200 }, false, true, new InputEventReceiver(), "MainWindow");
+        m_Window = Window::createWindow(k_editorResolution, { 200, 200 }, false, true, new InputEventReceiver(), "MainWindow");
         ASSERT(m_Window, "windows is nullptr");
 
         m_EditorScene->registerNotify(m_EditorGizmo);
+        m_EditorScene->registerNotify(m_EditorContentScreen);
+        m_EditorScene->registerNotify(m_EditorPropertyScreen);
     }
     
     ~EditorApplication()
     {
+        m_EditorScene->unregisterAll();
+        delete m_EditorGizmo;
+        delete m_EditorContentScreen;
+        delete m_EditorPropertyScreen;
+        delete m_EditorScene;
+
         if (m_Window)
         {
             event::InputEventReceiver* ieReceiver = m_Window->getInputEventReceiver();
@@ -142,11 +159,11 @@ private:
         m_Backbuffer = createBackbufferRT(m_Device, m_Swapchain);
         ASSERT(m_Backbuffer, "m_Backbuffer is nullptr");
 
-        m_EditorScene->create(m_Device, math::Dimension2D(800, 600));
+        m_EditorScene->create(m_Device, k_editorResolution);
 
         //UI
         m_UI = ui::WidgetHandler::createWidgetHander<ui::ImGuiWidgetHandler>(m_Device, m_Backbuffer->getRenderPassDesc(), ui::ImGuiWidgetHandler::ImGui_ViewportMode | ui::ImGuiWidgetHandler::ImGui_Gizmo);
-        //m_UI->showDemoUI();
+        m_UI->showDemoUI();
 
         InputEventHandler::bind([this](const MouseInputEvent* event)
             {
@@ -208,15 +225,11 @@ private:
                     {
                         m_Window->getInputEventReceiver()->attach(InputEvent::InputEventType::MouseInputEvent, m_EditorScene);
                         m_Window->getInputEventReceiver()->attach(InputEvent::InputEventType::KeyboardInputEvent, m_EditorScene);
-                        //m_Window->getInputEventReceiver()->attach(InputEvent::InputEventType::MouseInputEvent, m_EditorScene);
-                        //m_Window->getInputEventReceiver()->attach(InputEvent::InputEventType::KeyboardInputEvent, m_EditorScene);
                     }
                     else
                     {
                         m_Window->getInputEventReceiver()->dettach(InputEvent::InputEventType::MouseInputEvent, m_EditorScene);
                         m_Window->getInputEventReceiver()->dettach(InputEvent::InputEventType::KeyboardInputEvent, m_EditorScene);
-                       //m_Window->getInputEventReceiver()->dettach(InputEvent::InputEventType::MouseInputEvent, m_EditorScene);
-                        //m_Window->getInputEventReceiver()->dettach(InputEvent::InputEventType::KeyboardInputEvent, m_EditorScene);
                     }
                 })
             .addWidget(ui::WidgetButton("View")
@@ -274,14 +287,9 @@ private:
                         m_EditorScene->selectObject(i);
                     })
             );
-        ui::WidgetWindow& win2 = m_UI->createWidget<ui::WidgetWindow>("Properties", ui::WidgetWindow::Moveable | ui::WidgetWindow::Resizeable)
-            .addWidget(ui::WidgetText("text"))
-            .addWidget(ui::WidgetInputField(0.5)
-                .setOnChangedValueEvent([this](ui::Widget* w, f32 v) -> void
-                    {
-                        m_EditorScene->test_setOpacity(v);
-                    })
-            );
+        ui::WidgetWindow& win2 = m_UI->createWidget<ui::WidgetWindow>("Properties", ui::WidgetWindow::Moveable | ui::WidgetWindow::Resizeable);
+        m_EditorPropertyScreen->init(&win2);
+
         ui::WidgetWindow& win3 = m_UI->createWidget<ui::WidgetWindow>("Assest Browser", ui::WidgetWindow::Moveable | ui::WidgetWindow::Resizeable)
             .addWidget(ui::WidgetText("text")
             );
@@ -292,9 +300,7 @@ private:
                 { ui::WidgetWindowLayout::DirDown, 0.2f, &win3  } 
             }));
 
-        //editor::UI::constuctTestUIWindow(m_UI, texture);
-
-        //m_CmdList = m_Device->createCommandList<renderer::CmdListRender>(Device::GraphicMask);
+        editor::UI::constuctTestUIWindow(m_UI, m_EditorScene);
     }
     
     void Run()
@@ -309,6 +315,10 @@ private:
 
         //Scene
         {
+            m_EditorGizmo->update(deltaTime);
+            m_EditorContentScreen->update(deltaTime);
+            m_EditorPropertyScreen->update(deltaTime);
+
             m_EditorScene->preRender(deltaTime);
             m_EditorScene->postRender();
             m_EditorScene->submitRender();
@@ -346,13 +356,10 @@ private:
         m_Window->getInputEventReceiver()->dettach(InputEvent::InputEventType::KeyboardInputEvent, this);
         m_Window->getInputEventReceiver()->dettach(InputEvent::InputEventType::SystemEvent, this);
 
-        m_EditorScene->unregisterAll();
         m_EditorScene->destroy();
-        delete m_EditorScene;
 
         if (m_Device)
         {
-            m_Device->destroyCommandList(m_CmdList);
             m_Device->destroySwapchain(m_Swapchain);
 
             renderer::Device::destroyDevice(m_Device);
@@ -362,16 +369,16 @@ private:
 
     v3d::platform::Window* m_Window = nullptr;
     v3d::renderer::Device* m_Device = nullptr;
+    v3d::renderer::Swapchain* m_Swapchain = nullptr;
+    v3d::renderer::RenderTargetState* m_Backbuffer = nullptr;
 
     ui::ImGuiWidgetHandler*  m_UI;
 
     EditorScene*            m_EditorScene;
+
     EditorGizmo*            m_EditorGizmo;
-
-    v3d::renderer::CmdListRender* m_CmdList = nullptr;
-    v3d::renderer::Swapchain* m_Swapchain = nullptr;
-
-    v3d::renderer::RenderTargetState* m_Backbuffer = nullptr;
+    EditorContentScreen*    m_EditorContentScreen;
+    EditorPropertyScreen*   m_EditorPropertyScreen;
 
     bool m_Terminate = false;
 };
