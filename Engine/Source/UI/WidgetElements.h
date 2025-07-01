@@ -44,7 +44,7 @@ namespace ui
         using StateType = StateText;
 
         bool update(WidgetHandler* handler, Widget* parent, Widget* layout, f32 dt) final;
-        math::TVector2D<f32> calculateSize(WidgetHandler* handler, Widget* parent, Widget* layout) final;
+        math::float2 calculateSize(WidgetHandler* handler, Widget* parent, Widget* layout) final;
         Widget* copy() const final;
     };
 
@@ -119,7 +119,7 @@ namespace ui
         using StateType = StateButton;
 
         bool update(WidgetHandler* handler, Widget* parent, Widget* layout, f32 dt) final;
-        math::TVector2D<f32> calculateSize(WidgetHandler* handler, Widget* parent, Widget* layout) final;
+        math::float2 calculateSize(WidgetHandler* handler, Widget* parent, Widget* layout) final;
         Widget* copy() const final;
     };
 
@@ -226,7 +226,7 @@ namespace ui
         using StateType = StateImage;
 
         bool update(WidgetHandler* handler, Widget* parent, Widget* layout, f32 dt) final;
-        math::TVector2D<f32> calculateSize(WidgetHandler* handler, Widget* parent, Widget* layout) final;
+        math::float2 calculateSize(WidgetHandler* handler, Widget* parent, Widget* layout) final;
         Widget* copy() const final;
     };
 
@@ -270,6 +270,7 @@ namespace ui
 
         explicit WidgetCheckBox(const std::string& text, bool value) noexcept;
         WidgetCheckBox(const WidgetCheckBox&) noexcept;
+        WidgetCheckBox(WidgetCheckBox&&) noexcept;
         ~WidgetCheckBox();
 
         const std::string& getText() const;
@@ -334,61 +335,6 @@ namespace ui
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     //TODO
-    class WidgetInputField final : public WidgetBase<WidgetInputField>
-    {
-    public:
-
-        explicit WidgetInputField(f32 value) noexcept;
-        WidgetInputField(const WidgetInputField&) noexcept;
-        ~WidgetInputField();
-
-        TypePtr getType() const final;
-
-        WidgetInputField& setValue(f32 value);
-        f32 getValue() const;
-
-        WidgetInputField& setOnChangedValueEvent(const OnWidgetEventFloatParam& event);
-
-        struct StateInputField : StateBase
-        {
-            f32                    _value;
-            OnWidgetEventFloatParam _onChangedValueEvent;
-        };
-
-    private:
-
-        using WidgetType = WidgetInputField;
-        using StateType = StateInputField;
-
-        bool update(WidgetHandler* handler, Widget* parent, Widget* layout, f32 dt) final;
-        Widget* copy() const final;
-    };
-
-    inline WidgetInputField& WidgetInputField::setValue(f32 value)
-    {
-        Widget::cast_data<StateType>(m_data)._value = value;
-        return *this;
-    }
-
-    inline f32 WidgetInputField::getValue() const
-    {
-        return Widget::cast_data<StateType>(m_data)._value;
-    }
-
-    inline WidgetInputField& WidgetInputField::setOnChangedValueEvent(const OnWidgetEventFloatParam& event)
-    {
-        Widget::cast_data<StateType>(m_data)._onChangedValueEvent = event;
-        return *this;
-    }
-
-    inline TypePtr WidgetInputField::getType() const
-    {
-        return typeOf<WidgetType>();
-    }
-
-    /////////////////////////////////////////////////////////////////////////////////////////////////////
-
-        //TODO
     class WidgetInputSlider final : public WidgetBase<WidgetInputSlider>
     {
     public:
@@ -455,16 +401,6 @@ namespace ui
     
     template<>
     struct TypeOf<ui::WidgetCheckBox>
-    {
-        static TypePtr get()
-        {
-            static TypePtr ptr = nullptr;
-            return (TypePtr)&ptr;
-        }
-    };
-    
-    template<>
-    struct TypeOf<ui::WidgetInputField>
     {
         static TypePtr get()
         {

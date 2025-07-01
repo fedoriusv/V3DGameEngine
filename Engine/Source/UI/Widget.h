@@ -24,7 +24,12 @@ namespace ui
     using OnWidgetEvent = std::function<void(Widget*)>;
     using OnWidgetEventBoolParam = std::function<void(Widget*, bool)>;
     using OnWidgetEventIntParam = std::function<void(Widget*, s32)>;
+    using OnWidgetEventInt2Param = std::function<void(Widget*, const math::int2&)>;
+    using OnWidgetEventInt3Param = std::function<void(Widget*, const math::int3&)>;
     using OnWidgetEventFloatParam = std::function<void(Widget*, f32)>;
+    using OnWidgetEventFloat2Param = std::function<void(Widget*, const math::float2&)>;
+    using OnWidgetEventFloat3Param = std::function<void(Widget*, const math::float3&)>;
+    using OnWidgetEventStringParam = std::function<void(Widget*, const std::string&)>;
 
     using OnWidgetEventDimention2DParam = std::function<void(Widget*, Widget*, const math::Dimension2D&)>;
     using OnWidgetEventPoint2DParam = std::function<void(Widget*, Widget*, const math::Point2D&)>;
@@ -111,7 +116,7 @@ namespace ui
         virtual TypePtr getType() const = 0;
 
         virtual bool update(WidgetHandler* handler, Widget* parent, Widget* layout, f32 dt);
-        virtual math::TVector2D<f32> calculateSize(WidgetHandler* handler, Widget* parent, Widget* layout);
+        virtual math::float2 calculateSize(WidgetHandler* handler, Widget* parent, Widget* layout);
 
         void handleNotify(const utils::Reporter<WidgetReport>* reporter, const WidgetReport& data) override;
 

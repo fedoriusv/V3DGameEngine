@@ -61,7 +61,7 @@ bool WidgetLayout::update(WidgetHandler* handler, Widget* parent, Widget* layout
 {
     WidgetDrawer* drawer = handler->getWidgetDrawer();
 
-    math::TVector2D<f32> layoutSize = { 0.0f , 0.0f };
+    math::float2 layoutSize = { 0.0f , 0.0f };
     u32 countWidgets = 0;
     f32 horizontLineHeight = 0;
     for (auto wiget = m_wigets.begin(); wiget != m_wigets.end(); ++wiget)
@@ -70,7 +70,7 @@ bool WidgetLayout::update(WidgetHandler* handler, Widget* parent, Widget* layout
         {
             if (cast_data<StateType>(m_data)._stateMask & Widget::State::StateMask::HorizontalLine)
             {
-                math::TVector2D<f32> size = (*wiget)->calculateSize(handler, parent, this);
+                math::float2 size = (*wiget)->calculateSize(handler, parent, this);
                 layoutSize._x += size._x;
                 layoutSize._y = std::max<f32>(size._y, layoutSize._y);
             }

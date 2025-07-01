@@ -228,7 +228,7 @@ namespace renderer
                 , _unused(0)
                 , _depthBounds({ 0.0f })
             {
-                static_assert(sizeof(DepthStencilState) == sizeof(math::TVector2D<f32>) + 4, "wrong size");
+                static_assert(sizeof(DepthStencilState) == sizeof(math::float2) + 4, "wrong size");
             }
 
             bool operator==(const DepthStencilState& other) const
@@ -252,7 +252,7 @@ namespace renderer
             u32                  _stencilTestEnable       : 1;
             u32                  _depthBoundsTestEnable   : 1;
             u32                  _unused                  : 24;
-            math::TVector2D<f32> _depthBounds;
+            math::float2         _depthBounds;
         };
 
         /**

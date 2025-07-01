@@ -31,6 +31,13 @@ WidgetRadioButtonGroup::WidgetRadioButtonGroup(const WidgetRadioButtonGroup& oth
     m_data = state;
 }
 
+WidgetRadioButtonGroup::WidgetRadioButtonGroup(WidgetRadioButtonGroup&& other) noexcept
+    : WidgetGroupBase<WidgetRadioButtonGroup>(other)
+{
+    m_data = other.m_data;
+    other.m_data = nullptr;
+}
+
 WidgetRadioButtonGroup::~WidgetRadioButtonGroup()
 {
     if (m_data)
@@ -70,6 +77,13 @@ WidgetComboBox::WidgetComboBox(const WidgetComboBox& other) noexcept
     m_data = state;
 }
 
+WidgetComboBox::WidgetComboBox(WidgetComboBox&& other) noexcept
+    : WidgetGroupBase<WidgetComboBox>(other)
+{
+    m_data = other.m_data;
+    other.m_data = nullptr;
+}
+
 WidgetComboBox::~WidgetComboBox()
 {
     if (m_data)
@@ -107,6 +121,13 @@ WidgetListBox::WidgetListBox(const WidgetListBox& other) noexcept
     StateType* state = V3D_NEW(StateType, memory::MemoryLabel::MemoryUI)();
     *state = *static_cast<StateType*>(other.m_data);
     m_data = state;
+}
+
+WidgetListBox::WidgetListBox(WidgetListBox&& other) noexcept
+    : WidgetGroupBase<WidgetListBox>(other)
+{
+    m_data = other.m_data;
+    other.m_data = nullptr;
 }
 
 WidgetListBox::~WidgetListBox()

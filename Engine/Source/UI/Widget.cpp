@@ -69,7 +69,7 @@ bool Widget::update(WidgetHandler* handler, Widget* parent, Widget* layout, f32 
     return true;
 }
 
-math::TVector2D<f32> Widget::calculateSize(WidgetHandler* handler, Widget* parent, Widget* layout)
+math::float2 Widget::calculateSize(WidgetHandler* handler, Widget* parent, Widget* layout)
 {
     return { 0.0f, 0.0f };
 }

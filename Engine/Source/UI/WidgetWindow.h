@@ -54,6 +54,8 @@ namespace ui
         template<class TWidget>
         WidgetWindow& addWidget(TWidget&& wiget);
 
+        void removeWigets();
+
         Widget* findWidgetByID(u64 id);
 
         WidgetWindow& setupWindowLayout(const WidgetWindowLayout& layout);
@@ -77,7 +79,7 @@ namespace ui
             //States
             platform::Window*             _currentWindow = nullptr;
             math::Rect                    _cachedWindowRect;
-            math::TVector2D<f32>          _cachedWindowOffest;
+            math::float2                  _cachedWindowOffest;
         };
 
     private:
@@ -173,6 +175,12 @@ namespace ui
         WidgetLayout& layout = Widget::cast_data<StateType>(m_data)._layout;
         layout.addWidget(std::forward<TWidget>(wiget));
         return *this;
+    }
+
+    inline void WidgetWindow::removeWigets()
+    {
+        WidgetLayout& layout = Widget::cast_data<StateType>(m_data)._layout;
+        layout.removeWigets();
     }
 
     inline WidgetWindow& WidgetWindow::setupWindowLayout(const WidgetWindowLayout& layout)

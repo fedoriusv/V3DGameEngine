@@ -39,15 +39,15 @@ namespace scene
         bool m_freeFlyMode;
         bool m_orbitingMode;
 
-        const math::TVector2D<f32>  m_distanceLimits;
+        const math::float2 m_distanceLimits;
 
-        math::TVector2D<f32>        m_deltaRotation;
-        f32                         m_deltaDistance;
-        math::Vector4D              m_direction;
+        math::float2       m_deltaRotation;
+        f32                m_deltaDistance;
+        math::Vector4D     m_direction;
 
-        f32                         m_rotationSpeed;
-        f32                         m_moveSpeed;
-        f32                         m_accelerationSpeed;
+        f32                m_rotationSpeed;
+        f32                m_moveSpeed;
+        f32                m_accelerationSpeed;
     };
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////

@@ -264,7 +264,7 @@ u32 AssimpDecoder::decodeMesh(const aiScene* scene, stream::Stream* modelStream,
                     inputAttributes.push_back(attrib);
 
                     contentFlag |= MeshResource::VertexProperies::VertexProperies_TextCoord0 + uv;
-                    vertexSize += sizeof(math::TVector2D<f32>);
+                    vertexSize += sizeof(math::float2);
                 }
             }
 
@@ -404,12 +404,12 @@ u32 AssimpDecoder::decodeMesh(const aiScene* scene, stream::Stream* modelStream,
             {
                 if (mesh->HasTextureCoords(uv) && (vertexPropFlags & MeshResource::VertexProperies::VertexProperies_TextCoord0 + uv))
                 {
-                    math::TVector2D<f32> coord;
+                    math::float2 coord;
                     coord._x = mesh->mTextureCoords[uv][v].x;
                     coord._y = (flags & ModelFileLoader::FlipYTextureCoord) ? -mesh->mTextureCoords[uv][v].y : mesh->mTextureCoords[uv][v].y;
 
-                    meshStream->write<math::TVector2D<f32>>(coord);
-                    meshStreamSize += sizeof(math::TVector2D<f32>);
+                    meshStream->write<math::float2>(coord);
+                    meshStreamSize += sizeof(math::float2);
                 }
             }
 

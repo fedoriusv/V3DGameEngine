@@ -19,6 +19,7 @@ namespace ui
 
         explicit WidgetGroupBase(Widget::State* state) noexcept;
         WidgetGroupBase(const WidgetGroupBase&) noexcept;
+        WidgetGroupBase(WidgetGroupBase&&) noexcept;
         ~WidgetGroupBase() = default;
 
     public:
@@ -52,6 +53,12 @@ namespace ui
 
     template<class TWidget>
     inline WidgetGroupBase<TWidget>::WidgetGroupBase(const WidgetGroupBase& other) noexcept
+        : WidgetBase<TWidget>(other)
+    {
+    }
+
+    template<class TWidget>
+    inline WidgetGroupBase<TWidget>::WidgetGroupBase(WidgetGroupBase&& other) noexcept
         : WidgetBase<TWidget>(other)
     {
     }
@@ -102,6 +109,7 @@ namespace ui
         explicit WidgetRadioButtonGroup(std::vector<std::string>& buttons) noexcept;
         WidgetRadioButtonGroup() noexcept;
         WidgetRadioButtonGroup(const WidgetRadioButtonGroup&) noexcept;
+        WidgetRadioButtonGroup(WidgetRadioButtonGroup&&) noexcept;
         ~WidgetRadioButtonGroup();
 
         TypePtr getType() const final;
@@ -135,6 +143,7 @@ namespace ui
 
         explicit WidgetComboBox() noexcept;
         WidgetComboBox(const WidgetComboBox&) noexcept;
+        WidgetComboBox(WidgetComboBox&&) noexcept;
         ~WidgetComboBox();
 
         TypePtr getType() const final;
@@ -168,6 +177,7 @@ namespace ui
 
         explicit WidgetListBox() noexcept;
         WidgetListBox(const WidgetListBox&) noexcept;
+        WidgetListBox(WidgetListBox&&) noexcept;
         ~WidgetListBox();
 
         TypePtr getType() const final;

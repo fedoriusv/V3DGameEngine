@@ -208,7 +208,7 @@ bool ImGuiWidgetDrawer::draw_Text(Widget* wiget, Widget* base, Widget::State* la
     return true;
 }
 
-math::TVector2D<f32> ImGuiWidgetDrawer::calculate_TextSize(Widget* wiget, Widget::State* layout, Widget::State* state)
+math::float2 ImGuiWidgetDrawer::calculate_TextSize(Widget* wiget, Widget::State* layout, Widget::State* state)
 {
     ASSERT(ImGui::GetCurrentContext(), "must be valid");
     WidgetText::StateText* txtCtx = static_cast<WidgetText::StateText*>(state);
@@ -285,7 +285,7 @@ bool ImGuiWidgetDrawer::draw_Button(Widget* button, Widget* base, Widget::State*
     return action;
 }
 
-math::TVector2D<f32> ImGuiWidgetDrawer::calculate_ButtonSize(Widget* wiget, Widget::State* layout, Widget::State* state)
+math::float2 ImGuiWidgetDrawer::calculate_ButtonSize(Widget* wiget, Widget::State* layout, Widget::State* state)
 {
     ASSERT(ImGui::GetCurrentContext(), "must be valid");
     ImGuiStyle& style = ImGui::GetStyle();
@@ -387,7 +387,7 @@ bool ImGuiWidgetDrawer::draw_Image(Widget* image, Widget* base, Widget::State* l
     return false;
 }
 
-math::TVector2D<f32> ImGuiWidgetDrawer::calculate_ImageSize(Widget* wiget, Widget::State* layout, Widget::State* state)
+math::float2 ImGuiWidgetDrawer::calculate_ImageSize(Widget* wiget, Widget::State* layout, Widget::State* state)
 {
     ASSERT(ImGui::GetCurrentContext(), "must be valid");
     WidgetImage::StateImage* imgCtx = static_cast<WidgetImage::StateImage*>(state);
@@ -423,7 +423,7 @@ bool ImGuiWidgetDrawer::draw_CheckBox(Widget* wiget, Widget* base, Widget::State
     return active;
 }
 
-math::TVector2D<f32> ImGuiWidgetDrawer::calculate_CheckBoxSize(Widget* wiget, Widget::State* layout, Widget::State* state)
+math::float2 ImGuiWidgetDrawer::calculate_CheckBoxSize(Widget* wiget, Widget::State* layout, Widget::State* state)
 {
     return {};
 }
@@ -461,7 +461,7 @@ bool ImGuiWidgetDrawer::draw_RadioButtonGroup(Widget* wiget, Widget* base, Widge
     return active;
 }
 
-math::TVector2D<f32> ImGuiWidgetDrawer::calculate_RadioButtonGroupSize(Widget* wiget, Widget::State* layout, Widget::State* state)
+math::float2 ImGuiWidgetDrawer::calculate_RadioButtonGroupSize(Widget* wiget, Widget::State* layout, Widget::State* state)
 {
     return {};
 }
@@ -481,7 +481,9 @@ bool ImGuiWidgetDrawer::draw_ComboBox(Widget* wiget, Widget* base, Widget::State
     if (!cbCtx->_list.empty())
     {
         s32 index = cbCtx->_activeIndex;
-        active = ImGui::Combo("combo", &index, items_ArrayGetter, &cbCtx->_list, cbCtx->_list.size());
+        ImGui::PushID(cbCtx->_uid);
+        active = ImGui::Combo("", &index, items_ArrayGetter, &cbCtx->_list, cbCtx->_list.size());
+        ImGui::PopID();
 
         if (cbCtx->_showToolTip && ImGui::IsItemHovered(ImGuiHoveredFlags_ForTooltip))
         {
@@ -500,7 +502,7 @@ bool ImGuiWidgetDrawer::draw_ComboBox(Widget* wiget, Widget* base, Widget::State
     return active;
 }
 
-math::TVector2D<f32> ImGuiWidgetDrawer::calculate_ComboBoxSize(Widget* wiget, Widget::State* layout, Widget::State* state)
+math::float2 ImGuiWidgetDrawer::calculate_ComboBoxSize(Widget* wiget, Widget::State* layout, Widget::State* state)
 {
     return {};
 }
@@ -520,7 +522,9 @@ bool ImGuiWidgetDrawer::draw_ListBox(Widget* wiget, Widget* base, Widget::State*
     if (!lbCtx->_list.empty())
     {
         s32 index = lbCtx->_activeIndex;
-        active = ImGui::ListBox("listbox", &index, items_ArrayGetter, &lbCtx->_list, lbCtx->_list.size(), 4);
+        ImGui::PushID(lbCtx->_uid);
+        active = ImGui::ListBox("", &index, items_ArrayGetter, &lbCtx->_list, lbCtx->_list.size(), 4);
+        ImGui::PopID();
 
         if (lbCtx->_showToolTip && ImGui::IsItemHovered(ImGuiHoveredFlags_ForTooltip))
         {
@@ -539,35 +543,225 @@ bool ImGuiWidgetDrawer::draw_ListBox(Widget* wiget, Widget* base, Widget::State*
     return active;
 }
 
-math::TVector2D<f32> ImGuiWidgetDrawer::calculate_ListBoxSize(Widget* wiget, Widget::State* layout, Widget::State* state)
+bool ImGuiWidgetDrawer::draw_InputText(Widget* widget, Widget* base, Widget::State* layout, Widget::State* state)
+{
+    ASSERT(ImGui::GetCurrentContext(), "must be valid");
+    WidgetInputText::StateInputText* itCtx = static_cast<WidgetInputText::StateInputText*>(state);
+    WidgetLayout::StateLayoutBase* layoutCtx = static_cast<WidgetLayout::StateLayoutBase*>(layout);
+
+    setupHorizontalAligment(layoutCtx, 0.f, itCtx->_itemRect.getWidth());
+
+    if (layoutCtx->_stateMask & Widget::State::StateMask::HorizontalLine)
+    {
+        ImGui::SameLine();
+    }
+
+    ImGuiInputTextFlags flags = 0;
+
+    const u32 buffSize = 1024;
+    c8 value[buffSize];
+    memcpy(value, itCtx->_value[0].c_str(), itCtx->_value[0].length());
+    value[itCtx->_value[0].length()] = '\0';
+
+    bool active = false;
+    if (itCtx->_multiline)
+    {
+        ImVec2 size = { static_cast<f32>(itCtx->_size._width), static_cast<f32>(itCtx->_size._height) };
+        ImGui::PushID(itCtx->_uid);
+        active = ImGui::InputTextMultiline("", value, buffSize, size, flags);
+        ImGui::PopID();
+    }
+    else
+    {
+        ImGui::PushID(itCtx->_uid);
+        active = ImGui::InputText("", value, buffSize, flags);
+        ImGui::PopID();
+    }
+
+    if (active && ImGui::IsItemEdited())
+    {
+        u32 strSize = strlen(value);
+        if (itCtx->_onChangedValueEvent)
+        {
+            std::invoke(itCtx->_onChangedValueEvent, widget, std::string(value, strSize));
+        }
+
+        itCtx->_value[0].assign(value, strSize);
+    }
+
+    return active;
+}
+
+bool ImGuiWidgetDrawer::draw_InputInt(Widget* widget, Widget* base, Widget::State* layout, Widget::State* state, u32 array)
+{
+    ASSERT(ImGui::GetCurrentContext(), "must be valid");
+    WidgetInputInt::StateInputInt* iiCtx = static_cast<WidgetInputInt::StateInputInt*>(state);
+    WidgetLayout::StateLayoutBase* layoutCtx = static_cast<WidgetLayout::StateLayoutBase*>(layout);
+
+    setupHorizontalAligment(layoutCtx, 0.f, iiCtx->_itemRect.getWidth());
+
+    if (layoutCtx->_stateMask & Widget::State::StateMask::HorizontalLine)
+    {
+        ImGui::SameLine();
+    }
+
+    auto value = iiCtx->_value;
+
+    ImGuiInputTextFlags flags = 0;
+    bool active = false;
+    if (array == 1)
+    {
+        ImGui::PushID(iiCtx->_uid);
+        active = ImGui::InputInt("", &value[0], 1, 100, flags);
+        ImGui::PopID();
+    }
+    else
+    {
+        ImGui::PushID(iiCtx->_uid);
+        active = ImGui::InputScalarN("", ImGuiDataType_S32, value.data(), array, nullptr, nullptr, "%d", flags);
+        ImGui::PopID();
+    }
+
+    if (active && ImGui::IsItemEdited())
+    {
+        if (iiCtx->_onChangedValueEvent)
+        {
+            std::invoke(iiCtx->_onChangedValueEvent, widget, value[0]);
+        }
+
+        iiCtx->_value = value;
+    }
+
+    return active;
+}
+
+bool ImGuiWidgetDrawer::draw_InputFloat(Widget* widget, Widget* base, Widget::State* layout, Widget::State* state, u32 array)
+{
+    ASSERT(ImGui::GetCurrentContext(), "must be valid");
+
+    ImGuiInputTextFlags flags = 0;
+    bool active = false;
+    if (array == 1)
+    {
+        WidgetInputFloat::StateInputFloat* ifCtx = static_cast<WidgetInputFloat::StateInputFloat*>(state);
+        WidgetLayout::StateLayoutBase* layoutCtx = static_cast<WidgetLayout::StateLayoutBase*>(layout);
+
+        setupHorizontalAligment(layoutCtx, 0.f, ifCtx->_itemRect.getWidth());
+
+        if (layoutCtx->_stateMask & Widget::State::StateMask::HorizontalLine)
+        {
+            ImGui::SameLine();
+        }
+
+        f32 value = ifCtx->_value[0];
+
+        ImGui::PushID(ifCtx->_uid);
+        active = ImGui::InputFloat("", &value);
+        ImGui::PopID();
+
+        if (active && ImGui::IsItemEdited())
+        {
+            if (ifCtx->_onChangedValueEvent)
+            {
+                std::invoke(ifCtx->_onChangedValueEvent, widget, value);
+            }
+            ifCtx->_value[0] = value;
+        }
+    }
+    else if (array == 3)
+    {
+        WidgetInputFloat3::StateInputFloat3* ifCtx = static_cast<WidgetInputFloat3::StateInputFloat3*>(state);
+        WidgetLayout::StateLayoutBase* layoutCtx = static_cast<WidgetLayout::StateLayoutBase*>(layout);
+
+        setupHorizontalAligment(layoutCtx, 0.f, ifCtx->_itemRect.getWidth());
+
+        if (layoutCtx->_stateMask & Widget::State::StateMask::HorizontalLine)
+        {
+            ImGui::SameLine();
+        }
+
+        auto value = ifCtx->_value;
+
+        ImGui::PushID(ifCtx->_uid);
+        active = ImGui::InputScalarN("", ImGuiDataType_Float, value.data(), array, nullptr, nullptr, "%.3f", flags);
+        ImGui::PopID();
+
+        if (active && ImGui::IsItemEdited())
+        {
+            if (ifCtx->_onChangedValueEvent)
+            {
+                const math::float3 val = { value[0], value[1], value[2] };
+                std::invoke(ifCtx->_onChangedValueEvent, widget, val);
+            }
+            ifCtx->_value = value;
+        }
+    }
+    else
+    {
+        ASSERT(false, "impl");
+    }
+
+    return active;
+}
+
+math::float2 ImGuiWidgetDrawer::calculate_ListBoxSize(Widget* wiget, Widget::State* layout, Widget::State* state)
 {
     return {};
 }
 
-bool ImGuiWidgetDrawer::draw_InputField(Widget* wiget, Widget* base, Widget::State* layout, Widget::State* state)
+bool ImGuiWidgetDrawer::draw_InputSlider(Widget* wiget, Widget* base, Widget::State* layout, Widget::State* state)
 {
     ASSERT(ImGui::GetCurrentContext(), "must be valid");
-    WidgetInputField::StateInputField* ifCtx = static_cast<WidgetInputField::StateInputField*>(state);
+    WidgetInputSlider::StateInputSlider* isCtx = static_cast<WidgetInputSlider::StateInputSlider*>(state);
+    WidgetLayout::StateLayoutBase* layoutCtx = static_cast<WidgetLayout::StateLayoutBase*>(layout);
 
-    f32 value = ifCtx->_value;
-    bool active = ImGui::InputFloat("input", &value);
-    if (active && value != ifCtx->_value)
-    {
-        if (ifCtx->_onChangedValueEvent)
-        {
-            std::invoke(ifCtx->_onChangedValueEvent, wiget, value);
-        }
-        ifCtx->_value = value;
-    }
+    setupHorizontalAligment(layoutCtx, 0.f, isCtx->_itemRect.getWidth());
+
+    //type & dim
+    static int i1 = 0;
+    ImGui::SliderInt("slider int", &i1, -1, 3);
+
+    static float i2 = 0.0;
+    ImGui::DragFloat("DragFloat", &i2);
 
     return false;
 }
 
-bool ImGuiWidgetDrawer::draw_InputSlider(Widget* wiget, Widget* base, Widget::State* layout, Widget::State* state)
+bool ImGuiWidgetDrawer::draw_TreeNode(Widget* widget, Widget* base, Widget::State* layout, Widget::State* state, f32 dt)
 {
-    static int i1 = 0;
-    ImGui::SliderInt("slider int", &i1, -1, 3);
+    ASSERT(ImGui::GetCurrentContext(), "must be valid");
+    WidgetTreeNode::StateTreeNode* tn = static_cast<WidgetTreeNode::StateTreeNode*>(state);
 
+    ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_Framed;
+    if (tn->_collapsingHeader)
+    {
+        flags |= ImGuiTreeNodeFlags_DefaultOpen;
+    }
+
+    ImGui::PushID(tn->_uid);
+    bool active = ImGui::TreeNodeEx(tn->_text.c_str(), flags);
+    if (active)
+    {
+        tn->_layout.update(m_widgetHandler, base, &tn->_layout, dt);
+        ImGui::TreePop();
+    }
+    ImGui::PopID();
+
+    if (tn->_showToolTip && ImGui::IsItemHovered(ImGuiHoveredFlags_ForTooltip))
+    {
+        ImGui::SetTooltip(tn->_toolTip.c_str());
+    }
+
+    return true;
+}
+
+math::float2 ImGuiWidgetDrawer::calculate_TreeNodeSize(Widget* widget, Widget::State* layout, Widget::State* state)
+{
+    return math::float2();
+}
+
+bool ImGuiWidgetDrawer::draw_Table(Widget* widget, Widget* base, Widget::State* layout, Widget::State* state)
+{
     return false;
 }
 
@@ -584,6 +778,11 @@ bool ImGuiWidgetDrawer::draw_MenuBar(Widget* menubar, Widget::State* state, f32 
     }
 
     return action;
+}
+
+math::float2 ImGuiWidgetDrawer::calculate_TableSize(Widget* widget, Widget::State* layout, Widget::State* state)
+{
+    return math::float2();
 }
 
 bool ImGuiWidgetDrawer::draw_Menu(Widget* menu, Widget* base, Widget::State* layout, Widget::State* state, f32 dt)
@@ -859,7 +1058,7 @@ void ImGuiWidgetDrawer::draw_ViewManipulator(Widget* wiget, Widget* base, Widget
     }
 }
 
-math::TVector2D<f32> ImGuiWidgetDrawer::get_LayoutPadding() const
+math::float2 ImGuiWidgetDrawer::get_LayoutPadding() const
 {
     ASSERT(ImGui::GetCurrentContext(), "must be valid");
     ImGuiStyle& style = ImGui::GetStyle();
@@ -867,7 +1066,7 @@ math::TVector2D<f32> ImGuiWidgetDrawer::get_LayoutPadding() const
     return { style.WindowPadding.x, style.WindowPadding.y };
 }
 
-math::TVector2D<f32> ImGuiWidgetDrawer::get_ItemSpacing() const
+math::float2 ImGuiWidgetDrawer::get_ItemSpacing() const
 {
     ASSERT(ImGui::GetCurrentContext(), "must be valid");
     ImGuiStyle& style = ImGui::GetStyle();

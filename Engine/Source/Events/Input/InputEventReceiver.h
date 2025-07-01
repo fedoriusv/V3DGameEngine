@@ -15,6 +15,9 @@ namespace event
 {
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    /**
+    * @brief InputEventReceiver class.
+    */
     class V3D_API InputEventReceiver final
     {
     public:

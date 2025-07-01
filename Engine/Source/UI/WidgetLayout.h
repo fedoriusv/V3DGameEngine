@@ -78,6 +78,8 @@ namespace ui
         template<class TWidget>
         TWidgetLayout& addWidget(TWidget&& wiget);
 
+        void removeWigets();
+
         Widget* findWidgetByID(u64 id);
 
         struct StateLayoutBase : WidgetBase<TWidgetLayout>::StateBase
@@ -90,9 +92,9 @@ namespace ui
             VerticalAlignment    _aligmentV = VerticalAlignment::AlignmentTop;
 
 
-            math::Rect           _cachedLayoutRect;
-            math::TVector2D<f32> _cachedLayoutOffest;
-            math::TVector2D<f32> _cachedContentSize;
+            math::Rect   _cachedLayoutRect;
+            math::float2 _cachedLayoutOffest;
+            math::float2 _cachedContentSize;
         };
 
     protected:
@@ -225,6 +227,16 @@ namespace ui
         TWidgetRaw* obj = V3D_NEW(TWidgetRaw, memory::MemoryLabel::MemoryUI)(std::forward<TWidgetRaw>(wiget));
         m_wigets.push_back(obj);
         return *static_cast<TWidgetLayout*>(this);
+    }
+
+    template<class TWidgetLayout>
+    inline void WidgetLayoutBase<TWidgetLayout>::removeWigets()
+    {
+        for (auto& wiget : m_wigets)
+        {
+            V3D_DELETE(wiget, memory::MemoryLabel::MemoryUI);
+        }
+        m_wigets.clear();
     }
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

@@ -882,8 +882,8 @@ bool ImGuiWidgetHandler::renderDrawData(ImGuiWidgetViewportData* viewportData, I
 
             struct PushConstant
             {
-                math::TVector2D<f32> _scale;
-                math::TVector2D<f32> _translate;
+                math::float2 _scale;
+                math::float2 _translate;
             } pushConstBlock;
 
             pushConstBlock._scale = { 2.0f / imDrawData->DisplaySize.x, 2.0f / imDrawData->DisplaySize.y };

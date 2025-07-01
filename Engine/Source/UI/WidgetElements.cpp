@@ -47,7 +47,7 @@ bool WidgetText::update(WidgetHandler* handler, Widget* parent, Widget* layout, 
     return false;
 }
 
-math::TVector2D<f32> WidgetText::calculateSize(WidgetHandler* handler, Widget* parent, Widget* layout)
+math::float2 WidgetText::calculateSize(WidgetHandler* handler, Widget* parent, Widget* layout)
 {
     m_data->_itemRect = { {0, 0}, handler->getWidgetDrawer()->calculate_TextSize(this, static_cast<WidgetType*>(layout)->m_data, m_data) };
     return m_data->_itemRect.getSize();
@@ -101,7 +101,7 @@ bool WidgetButton::update(WidgetHandler* handler, Widget* parent, Widget* layout
     return false;
 }
 
-math::TVector2D<f32> WidgetButton::calculateSize(WidgetHandler* handler, Widget* parent, Widget* layout)
+math::float2 WidgetButton::calculateSize(WidgetHandler* handler, Widget* parent, Widget* layout)
 {
     m_data->_itemRect = { {0, 0}, handler->getWidgetDrawer()->calculate_ButtonSize(this, static_cast<WidgetType*>(layout)->m_data, m_data) };
     return m_data->_itemRect.getSize();
@@ -156,7 +156,7 @@ bool WidgetImage::update(WidgetHandler* handler, Widget* parent, Widget* layout,
     return false;
 }
 
-math::TVector2D<f32> WidgetImage::calculateSize(WidgetHandler* handler, Widget* parent, Widget* layout)
+math::float2 WidgetImage::calculateSize(WidgetHandler* handler, Widget* parent, Widget* layout)
 {
     m_data->_itemRect = { {0, 0}, handler->getWidgetDrawer()->calculate_ImageSize(this, static_cast<WidgetType*>(layout)->m_data, m_data) };
     return m_data->_itemRect.getSize();
@@ -184,6 +184,13 @@ WidgetCheckBox::WidgetCheckBox(const WidgetCheckBox& other) noexcept
     m_data = state;
 }
 
+WidgetCheckBox::WidgetCheckBox(WidgetCheckBox&& other) noexcept
+    : WidgetBase<WidgetCheckBox>(other)
+{
+    m_data = other.m_data;
+    other.m_data = nullptr;
+}
+
 WidgetCheckBox::~WidgetCheckBox()
 {
     if (m_data)
@@ -206,46 +213,6 @@ bool WidgetCheckBox::update(WidgetHandler* handler, Widget* parent, Widget* layo
 Widget* WidgetCheckBox::copy() const
 {
     return V3D_NEW(WidgetCheckBox, memory::MemoryLabel::MemoryUI)(*this);
-}
-
-/////////////////////////////////////////////////////////////////////////////////////////////////////
-
-WidgetInputField::WidgetInputField(f32 value) noexcept
-    : WidgetBase<WidgetInputField>(V3D_NEW(StateType, memory::MemoryLabel::MemoryUI)())
-{
-    setValue(value);
-}
-
-WidgetInputField::WidgetInputField(const WidgetInputField& other) noexcept
-    : WidgetBase<WidgetInputField>(other)
-{
-    StateType* state = V3D_NEW(StateType, memory::MemoryLabel::MemoryUI)();
-    *state = *static_cast<StateType*>(other.m_data);
-    m_data = state;
-}
-
-WidgetInputField::~WidgetInputField()
-{
-    if (m_data)
-    {
-        V3D_DELETE(m_data, memory::MemoryLabel::MemoryUI);
-        m_data = nullptr;
-    }
-}
-
-bool WidgetInputField::update(WidgetHandler* handler, Widget* parent, Widget* layout, f32 dt)
-{
-    if (Widget::update(handler, parent, layout, dt))
-    {
-        return handler->getWidgetDrawer()->draw_InputField(this, parent, static_cast<WidgetType*>(layout)->m_data, m_data);
-    }
-
-    return false;
-}
-
-Widget* WidgetInputField::copy() const
-{
-    return V3D_NEW(WidgetInputField, memory::MemoryLabel::MemoryUI)(*this);
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////

@@ -32,16 +32,16 @@ namespace scene
 
     private:
 
-        const math::TVector2D<f32>  m_distanceLimits;
+        const math::float2 m_distanceLimits;
 
-        math::Vector3D              m_rotation;
-        math::TVector2D<f32>        m_deltaRotation;
+        math::Vector3D     m_rotation;
+        math::float2       m_deltaRotation;
 
-        f32                         m_distance;
-        f32                         m_deltaDistance;
+        f32                m_distance;
+        f32                m_deltaDistance;
 
-        f32                         m_rotationSpeed = 0.5f;
-        f32                         m_zoomSpeed = 5.0f;
+        f32                m_rotationSpeed = 0.5f;
+        f32                m_zoomSpeed = 5.0f;
     };
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////

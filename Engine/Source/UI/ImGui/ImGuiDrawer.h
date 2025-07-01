@@ -28,6 +28,8 @@ namespace ui
 
         bool draw_Window(Widget* wiget, Widget::State* state, f32 dt) override;
 
+        bool draw_TreeNode(Widget* widget, Widget* base, Widget::State* layout, Widget::State* state, f32 dt) override;
+
         bool draw_Text(Widget* wiget, Widget* base, Widget::State* layout, Widget::State* state) override;
         bool draw_Button(Widget* wiget, Widget* base, Widget::State* layout, Widget::State* state) override;
         bool draw_Image(Widget* wiget, Widget* base, Widget::State* layout, Widget::State* state) override;
@@ -35,8 +37,11 @@ namespace ui
         bool draw_RadioButtonGroup(Widget* wiget, Widget* base, Widget::State* layout, Widget::State* state) override;
         bool draw_ComboBox(Widget* wiget, Widget* base, Widget::State* layout, Widget::State* state) override;
         bool draw_ListBox(Widget* wiget, Widget* base, Widget::State* layout, Widget::State* state) override;
-        bool draw_InputField(Widget* wiget, Widget* base, Widget::State* layout, Widget::State* state) override;
+        bool draw_InputText(Widget* widget, Widget* base, Widget::State* layout, Widget::State* state) override;
+        bool draw_InputInt(Widget* widget, Widget* base, Widget::State* layout, Widget::State* state, u32 array) override;
+        bool draw_InputFloat(Widget* widget, Widget* base, Widget::State* layout, Widget::State* state, u32 array) override;
         bool draw_InputSlider(Widget* wiget, Widget* base, Widget::State* layout, Widget::State* state) override;
+        bool draw_Table(Widget* widget, Widget* base, Widget::State* layout, Widget::State* state) override;
 
         void draw_BeginLayoutState(Widget* layout, Widget* base, Widget::State* state) override;
         void draw_EndLayoutState(Widget* layout, Widget* base, Widget::State* state) override;
@@ -44,16 +49,18 @@ namespace ui
         void draw_Gizmo(Widget* wiget, Widget* base, Widget::State* layout, Widget::State* state) override;
         void draw_ViewManipulator(Widget* wiget, Widget* base, Widget::State* layout, Widget::State* state) override;
 
-        math::TVector2D<f32> get_LayoutPadding() const override;
-        math::TVector2D<f32> get_ItemSpacing() const override;
+        math::float2 get_LayoutPadding() const override;
+        math::float2 get_ItemSpacing() const override;
 
-        math::TVector2D<f32> calculate_TextSize(Widget* wiget, Widget::State* layout, Widget::State* state) override;
-        math::TVector2D<f32> calculate_ButtonSize(Widget* wiget, Widget::State* layout, Widget::State* state) override;
-        math::TVector2D<f32> calculate_ImageSize(Widget* wiget, Widget::State* layout, Widget::State* state) override;
-        math::TVector2D<f32> calculate_CheckBoxSize(Widget* wiget, Widget::State* layout, Widget::State* state) override;
-        math::TVector2D<f32> calculate_RadioButtonGroupSize(Widget* wiget, Widget::State* layout, Widget::State* state) override;
-        math::TVector2D<f32> calculate_ComboBoxSize(Widget* wiget, Widget::State* layout, Widget::State* state) override;
-        math::TVector2D<f32> calculate_ListBoxSize(Widget* wiget, Widget::State* layout, Widget::State* state) override;
+        math::float2 calculate_TextSize(Widget* wiget, Widget::State* layout, Widget::State* state) override;
+        math::float2 calculate_ButtonSize(Widget* wiget, Widget::State* layout, Widget::State* state) override;
+        math::float2 calculate_ImageSize(Widget* wiget, Widget::State* layout, Widget::State* state) override;
+        math::float2 calculate_CheckBoxSize(Widget* wiget, Widget::State* layout, Widget::State* state) override;
+        math::float2 calculate_RadioButtonGroupSize(Widget* wiget, Widget::State* layout, Widget::State* state) override;
+        math::float2 calculate_ComboBoxSize(Widget* wiget, Widget::State* layout, Widget::State* state) override;
+        math::float2 calculate_ListBoxSize(Widget* wiget, Widget::State* layout, Widget::State* state) override;
+        math::float2 calculate_TreeNodeSize(Widget* widget, Widget::State* layout, Widget::State* state) override;
+        math::float2 calculate_TableSize(Widget* widget, Widget::State* layout, Widget::State* state) override;
 
     private:
 
