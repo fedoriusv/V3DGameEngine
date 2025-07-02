@@ -73,70 +73,11 @@ Resource* ImageStbDecoder::decode(const stream::Stream* stream, const Policy* po
         }
 
         void* stbData = nullptr;
+        bool isFloatFormat = stbi_is_hdr_from_memory(source, stream->size());
         bool is16BitPerChannel = stbi_is_16_bit_from_memory(source, stream->size());
-        if (!is16BitPerChannel)
+        if (isFloatFormat)
         {
-            //8-bit per channel
-            stbi_info_from_memory(source, stream->size(), &sizeX, &sizeY, &componentCount);
-            if (componentCount == 3)
-            {
-                reqestedComponentCount = 4; //Render doesn't support RGB8 for PC. Use instead RGBA8
-            }
-            else
-            {
-                reqestedComponentCount = componentCount;
-            }
-
-            stbData = stbi_load_from_memory(source, stream->size(), &sizeX, &sizeY, &componentCount, reqestedComponentCount);
-            LOG_DEBUG("ImageStbDecoder::decode load image %s, size [%d, %d], components %d", name.c_str(), sizeX, sizeY, componentCount);
-
-            stream->unmap();
-
-            if (!stbData)
-            {
-                LOG_ERROR("ImageStbDecoder::decode fail, Error : %s", stbi_failure_reason());
-                ASSERT(false, "load failed");
-                return nullptr;
-            }
-            componentCount = reqestedComponentCount;
-
-            auto convert8BitFormat = [](s32 componentCount) -> renderer::Format
-            {
-                switch (componentCount)
-                {
-                case 1:
-                    return renderer::Format::Format_R8_UNorm;
-                case 2:
-                    return renderer::Format::Format_R8G8_UNorm;
-                case 3:
-                    return renderer::Format::Format_R8G8B8_UNorm;
-                case 4:
-                    return renderer::Format::Format_R8G8B8A8_UNorm;
-                default:
-                    ASSERT(false, "wrong counter");
-                };
-
-                return renderer::Format::Format_R8G8B8A8_UNorm;
-            };
-
-            format = convert8BitFormat(componentCount);
-
-            if (flags & ImageLoaderFlag::ImageLoader_GenerateMipmaps)
-            {
-                dataStream = ImageStbDecoder::generateMipMaps(stbData, sizeX, sizeY, componentCount, sizeof(u8), STBIR_TYPE_UINT8, mipmaps);
-            }
-            else
-            {
-                u32 baseMipmapSize = sizeX * sizeY * componentCount * sizeof(u8);
-                dataStream = stream::StreamManager::createMemoryStream(stbData, baseMipmapSize);
-            }
-        }
-        else
-        {
-            bool isFloatFormat = stbi_is_hdr_from_memory(source, stream->size());
-            if (isFloatFormat)
-            {
-                auto convertFloatFormat = [](s32 componentCount) -> renderer::Format
+            auto convertFloatFormat = [](s32 componentCount) -> renderer::Format
                 {
                     switch (componentCount)
                     {
@@ -155,28 +96,51 @@ Resource* ImageStbDecoder::decode(const stream::Stream* stream, const Policy* po
                     return renderer::Format::Format_R16G16B16A16_UNorm;
                 };
 
-                stbData = stbi_loadf_from_memory(source, stream->size(), &sizeX, &sizeY, &componentCount, reqestedComponentCount);
-                if (!stbData)
-                {
-                    ASSERT(false, "load failed");
-                    return nullptr;
-                }
+            stbData = stbi_loadf_from_memory(source, stream->size(), &sizeX, &sizeY, &componentCount, reqestedComponentCount);
+            stream->unmap();
 
-                format = convertFloatFormat(componentCount);
+            if (!stbData)
+            {
+                ASSERT(false, "load failed");
+                return nullptr;
+            }
+            LOG_DEBUG("ImageStbDecoder::decode load image %s, size [%d, %d], components %d", name.c_str(), sizeX, sizeY, componentCount);
+            format = convertFloatFormat(componentCount);
 
-                if (flags & ImageLoaderFlag::ImageLoader_GenerateMipmaps)
-                {
-                    dataStream = ImageStbDecoder::generateMipMaps(stbData, sizeX, sizeY, componentCount, sizeof(f32), STBIR_TYPE_FLOAT, mipmaps);
-                }
-                else
-                {
-                    u32 baseMipmapSize = sizeX * sizeY * componentCount * sizeof(u16);
-                    dataStream = stream::StreamManager::createMemoryStream(stbData, baseMipmapSize);
-                }
+            if (flags & ImageLoaderFlag::ImageLoader_GenerateMipmaps)
+            {
+                dataStream = ImageStbDecoder::generateMipMaps(stbData, sizeX, sizeY, componentCount, sizeof(f32), STBIR_TYPE_FLOAT, mipmaps);
             }
             else
             {
-                auto convert16BitFormat = [](s32 componentCount) -> renderer::Format
+                u32 baseMipmapSize = sizeX * sizeY * componentCount * sizeof(u16);
+                dataStream = stream::StreamManager::createMemoryStream(stbData, baseMipmapSize);
+            }
+        }
+        else if (is16BitPerChannel)
+        {
+            stbi_info_from_memory(source, stream->size(), &sizeX, &sizeY, &componentCount);
+            if (componentCount == 3)
+            {
+                reqestedComponentCount = 4; //Render doesn't support RGB16 for PC. Use instead RGBA16
+            }
+            else
+            {
+                reqestedComponentCount = componentCount;
+            }
+
+            stbData = stbi_load_16_from_memory(source, stream->size(), &sizeX, &sizeY, &componentCount, reqestedComponentCount);
+            stream->unmap();
+
+            if (!stbData)
+            {
+                ASSERT(false, "load failed");
+                return nullptr;
+            }
+            LOG_DEBUG("ImageStbDecoder::decode load image %s, size [%d, %d], components %d", name.c_str(), sizeX, sizeY, componentCount);
+            componentCount = reqestedComponentCount;
+
+            auto convert16BitFormat = [](s32 componentCount) -> renderer::Format
                 {
                     switch (componentCount)
                     {
@@ -194,25 +158,70 @@ Resource* ImageStbDecoder::decode(const stream::Stream* stream, const Policy* po
 
                     return renderer::Format::Format_R16G16B16A16_UNorm;
                 };
+            format = convert16BitFormat(componentCount);
 
-                stbData = stbi_load_16_from_memory(source, stream->size(), &sizeX, &sizeY, &componentCount, reqestedComponentCount);
-                if (!stbData)
-                {
-                    ASSERT(false, "load failed");
-                    return nullptr;
-                }
+            if (flags & ImageLoaderFlag::ImageLoader_GenerateMipmaps)
+            {
+                dataStream = ImageStbDecoder::generateMipMaps(stbData, sizeX, sizeY, componentCount, sizeof(u16), STBIR_TYPE_UINT16, mipmaps);
+            }
+            else
+            {
+                u32 baseMipmapSize = sizeX * sizeY * componentCount * sizeof(u16);
+                dataStream = stream::StreamManager::createMemoryStream(stbData, baseMipmapSize);
+            }
+        }
+        else //8-bit per channel
+        {
+            stbi_info_from_memory(source, stream->size(), &sizeX, &sizeY, &componentCount);
+            if (componentCount == 3)
+            {
+                reqestedComponentCount = 4; //Render doesn't support RGB8 for PC. Use instead RGBA8
+            }
+            else
+            {
+                reqestedComponentCount = componentCount;
+            }
 
-                format = convert16BitFormat(componentCount);
+            stbData = stbi_load_from_memory(source, stream->size(), &sizeX, &sizeY, &componentCount, reqestedComponentCount);
+            stream->unmap();
 
-                if (flags & ImageLoaderFlag::ImageLoader_GenerateMipmaps)
+            if (!stbData)
+            {
+                LOG_ERROR("ImageStbDecoder::decode fail, Error : %s", stbi_failure_reason());
+                ASSERT(false, "load failed");
+                return nullptr;
+            }
+            LOG_DEBUG("ImageStbDecoder::decode load image %s, size [%d, %d], components %d", name.c_str(), sizeX, sizeY, componentCount);
+            componentCount = reqestedComponentCount;
+
+            auto convert8BitFormat = [](s32 componentCount) -> renderer::Format
                 {
-                    dataStream = ImageStbDecoder::generateMipMaps(stbData, sizeX, sizeY, componentCount, sizeof(u16), STBIR_TYPE_UINT16, mipmaps);
-                }
-                else
-                {
-                    u32 baseMipmapSize = sizeX * sizeY * componentCount * sizeof(u16);
-                    dataStream = stream::StreamManager::createMemoryStream(stbData, baseMipmapSize);
-                }
+                    switch (componentCount)
+                    {
+                    case 1:
+                        return renderer::Format::Format_R8_UNorm;
+                    case 2:
+                        return renderer::Format::Format_R8G8_UNorm;
+                    case 3:
+                        return renderer::Format::Format_R8G8B8_UNorm;
+                    case 4:
+                        return renderer::Format::Format_R8G8B8A8_UNorm;
+                    default:
+                        ASSERT(false, "wrong counter");
+                    };
+
+                    return renderer::Format::Format_R8G8B8A8_UNorm;
+                };
+            format = convert8BitFormat(componentCount);
+
+            if (flags & ImageLoaderFlag::ImageLoader_GenerateMipmaps)
+            {
+                dataStream = ImageStbDecoder::generateMipMaps(stbData, sizeX, sizeY, componentCount, sizeof(u8), STBIR_TYPE_UINT8, mipmaps);
+            }
+            else
+            {
+                u32 baseMipmapSize = sizeX * sizeY * componentCount * sizeof(u8);
+                dataStream = stream::StreamManager::createMemoryStream(stbData, baseMipmapSize);
             }
         }
         ASSERT(dataStream, "nullptr");
@@ -289,6 +298,7 @@ stream::Stream* ImageStbDecoder::generateMipMaps(void* baseMipmap, u32 width, u3
     dataStream->write(baseMipmap, baseMipmapSize); //copy a base mipmap
 
     void* srcData = baseMipmap;
+    stbir_colorspace colorspace = STBIR_COLORSPACE_LINEAR;
     for (u32 mip = 1; mip < mipMapsSizes.size(); ++mip)
     {
         u32 mipmapSize = std::get<0>(mipMapsSizes[mip]) * std::get<1>(mipMapsSizes[mip]) * componentsCount * componentSize;
@@ -296,7 +306,7 @@ stream::Stream* ImageStbDecoder::generateMipMaps(void* baseMipmap, u32 width, u3
 
         s32 result = stbir_resize(reinterpret_cast<u8*>(srcData), std::get<0>(mipMapsSizes[mip - 1]), std::get<1>(mipMapsSizes[mip - 1]), 0,
             reinterpret_cast<u8*>(dstData), std::get<0>(mipMapsSizes[mip]), std::get<1>(mipMapsSizes[mip]), 0, (stbir_datatype)componentType, componentsCount,
-            -1, 0, STBIR_EDGE_CLAMP, STBIR_EDGE_CLAMP, STBIR_FILTER_DEFAULT, STBIR_FILTER_DEFAULT, STBIR_COLORSPACE_LINEAR, nullptr);
+            -1, 0, STBIR_EDGE_CLAMP, STBIR_EDGE_CLAMP, STBIR_FILTER_DEFAULT, STBIR_FILTER_DEFAULT, colorspace, nullptr);
         ASSERT(result, "mipmap generate failed");
         
         dataStream->unmap();
