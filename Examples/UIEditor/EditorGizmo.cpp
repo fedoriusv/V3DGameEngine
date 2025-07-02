@@ -7,6 +7,7 @@
 
 EditorGizmo::EditorGizmo() noexcept
     : m_gizmo(nullptr)
+    , m_currentOp(-1)
 {
     InputEventHandler::bind([this](const event::MouseInputEvent* event)
         {
@@ -46,6 +47,7 @@ void EditorGizmo::setEnable(bool enable)
 {
     if (m_gizmo)
     {
+        m_currentOp = -1;
         m_gizmo->setActive(enable);
     }
 }
@@ -60,21 +62,30 @@ void EditorGizmo::setOperation(u32 index)
 
     if (m_gizmo)
     {
+        m_currentOp = index;
         m_gizmo->setOperation(op[index]);
     }
 }
 
 void EditorGizmo::update(f32 dt)
 {
-    if (m_selectedObject)
+    if (m_selectedObject && m_currentOp > -1)
     {
-        modify(m_selectedObject->m_transform);
+        modify(m_selectedObject->_transform);
     }
 }
 
 void EditorGizmo::handleNotify(const utils::Reporter<EditorReport>* reporter, const EditorReport& data)
 {
-    modify(data.instanceObject->m_transform);
+    if (data.instanceObject && m_currentOp > -1)
+    {
+        m_gizmo->setActive(true);
+        modify(data.instanceObject->_transform);
+    }
+    else
+    {
+        m_gizmo->setActive(false);
+    }
 
     m_selectedObject = data.instanceObject;
 }

@@ -18,8 +18,6 @@ void EditorPropertyScreen::init(ui::WidgetWindow* widget)
 
 void EditorPropertyScreen::build()
 {
-    static u32 v = 0;
-
     ASSERT(m_window, "must be valid");
     ui::WidgetWindow& window = *m_window;
     window.removeWigets();
@@ -42,7 +40,7 @@ void EditorPropertyScreen::build()
                                 {
                                     if (this->m_selectedObject)
                                     {
-                                        this->m_selectedObject->m_transform.setPosition({ val._x, val._y, val._z });
+                                        this->m_selectedObject->_transform.setPosition({ val._x, val._y, val._z });
                                     }
                                 })
                         )
@@ -58,7 +56,7 @@ void EditorPropertyScreen::build()
                                 {
                                     if (this->m_selectedObject)
                                     {
-                                        this->m_selectedObject->m_transform.setRotation({ val._x, val._y, val._z });
+                                        this->m_selectedObject->_transform.setRotation({ val._x, val._y, val._z });
                                     }
                                 })
                         )
@@ -74,7 +72,7 @@ void EditorPropertyScreen::build()
                                 {
                                     if (this->m_selectedObject)
                                     {
-                                        this->m_selectedObject->m_transform.setScale({ val._x, val._y, val._z });
+                                        this->m_selectedObject->_transform.setScale({ val._x, val._y, val._z });
                                     }
                                 })
                         )
@@ -93,15 +91,13 @@ void EditorPropertyScreen::build()
                 )
             );
     }
-
-    ++v;
 }
 
 void EditorPropertyScreen::update(f32 dt)
 {
     if (m_selectedObject)
     {
-        const scene::Transform& transform = m_selectedObject->m_transform;
+        const scene::Transform& transform = m_selectedObject->_transform;
 
         if (m_propertyPosition)
         {

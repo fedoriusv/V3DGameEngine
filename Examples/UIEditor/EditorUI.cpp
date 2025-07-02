@@ -86,7 +86,7 @@ void UI::constructTransformProp(ui::WidgetHandler* handler)
 
 void UI::constuctTestUIWindow(ui::WidgetHandler* handler, EditorScene* scene)
 {
-    ObjectHandle uv_grid = scene->m_states[0].m_globalResources.get("uv_grid");
+    ObjectHandle uv_grid = scene->m_sceneData.m_globalResources.get("uv_grid");
     ASSERT(uv_grid.isValid(), "must be valid");
     renderer::Texture2D* texture = objectFromHandle<renderer::Texture2D>(uv_grid);
 

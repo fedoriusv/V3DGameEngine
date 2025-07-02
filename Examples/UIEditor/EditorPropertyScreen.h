@@ -33,5 +33,5 @@ private:
     ui::WidgetInputFloat3* m_propertyRotation = nullptr;
     ui::WidgetInputFloat3* m_propertyScale = nullptr;
 
-    scene::DrawInstanceData* m_selectedObject = nullptr;
+    scene::DrawInstanceDataState* m_selectedObject = nullptr;
 };

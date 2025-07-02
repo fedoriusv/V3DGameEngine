@@ -34,6 +34,7 @@ private:
     bool handleInputEvent(event::InputEventHandler* handler, const event::InputEvent* event);
 
     ui::WidgetGizmo* m_gizmo;
+    s32 m_currentOp;
 
-    scene::DrawInstanceData* m_selectedObject = nullptr;
+    scene::DrawInstanceDataState* m_selectedObject = nullptr;
 };

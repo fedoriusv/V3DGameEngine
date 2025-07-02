@@ -22,7 +22,7 @@ using namespace v3d;
 
 struct EditorReport
 {
-    scene::DrawInstanceData* instanceObject;
+    scene::DrawInstanceDataState* instanceObject;
 };
 
 class EditorScene : public event::InputEventHandler, public utils::Reporter<EditorReport>
@@ -55,7 +55,6 @@ public:
     void modifyObject(const scene::Transform& transform);
     void selectObject(u32 i);
 
-    void test_setOpacity(f32 op);
     void test_initContent(ui::WidgetListBox* list);
 
 public:
@@ -103,6 +102,12 @@ public:
     ui::WidgetListBox* m_contentList;
     u64 m_frameCounter;
 
-    std::vector<scene::SceneData> m_states;
+    scene::SceneData m_sceneData;
+    std::vector<scene::FrameData> m_frameState;
     u32 m_stateIndex;
+
+private:
+
+    void test_loadCubes(u32 countOpaque, u32 countTransparency);
+
 };
